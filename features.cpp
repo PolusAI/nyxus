@@ -1,5 +1,6 @@
 #include <unordered_map>
 #include <unordered_set> // <vector>
+#include <algorithm>
 #include <iostream>
 
 // Ordered map
@@ -57,10 +58,11 @@ void performLabelStatsReduction()
 {
 	for (auto& lv : labelValues)
 	{
-		if (lv.second->size() == 0)
-			continue;
-
+		// Sort unique intensities
 		std::vector<int> A{ lv.second->begin(), lv.second->end() };
+		std::sort (A.begin(), A.end());
+
+		// Pick the median
 		if (A.size() % 2 != 0)
 		{
 			int median = A[A.size() / 2];
