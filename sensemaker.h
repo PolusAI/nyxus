@@ -18,3 +18,5 @@ int checkAndReadDataset(
 
 void updateLabelStats (int label, int intensity);
 void printLabelStats();
+void clearLabelStats();
+void performLabelStatsReduction();

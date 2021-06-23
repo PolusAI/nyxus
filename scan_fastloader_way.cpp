@@ -8,6 +8,7 @@
 
 // Sanity
 #include<windows.h>
+#include <chrono>
 
 int ingestDataset1 (std::vector<std::string> &intensFiles, std::vector<std::string> &labelFiles, int numFastloaderThreads)
 {
@@ -98,19 +99,23 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 			}
 		}
 
-	// Sanity check
-	printLabelStats();
-
 	return true;
 }
 
 int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::string>& labelFiles, int numFastloaderThreads)
 {
+	// Sanity
+	std::chrono::time_point<std::chrono::system_clock> start, end;
+	start = std::chrono::system_clock::now();
+
 	bool ok = true;
 
 	int nf = intensFiles.size();
 	for (int i = 0; i < nf; i++)
 	{
+		// Clear label stats buffers
+		clearLabelStats();
+
 		auto &ifp = intensFiles[i], 
 			&lfp = labelFiles[i];
 
@@ -118,7 +123,18 @@ int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::strin
 		ok = scanFilePair (ifp, lfp, numFastloaderThreads);
 		if (ok == false)
 			return 1;
+
+		// Execute calculations requiring reduction
+		performLabelStatsReduction();
+
+		// Sanity check
+		printLabelStats();
 	}
+
+	// Sanity
+	end = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end - start;
+	std::cout << "Elapsed time (s) " << elapsed_seconds.count() << std::endl;
 
 	return 0; // success
 }
