@@ -1,1 +1,1 @@
-# NIH slide sensemaker
+# mosaic microscopy slide sensemaker
