@@ -81,7 +81,7 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 	for (int row = 0; row < nth; row++)
 		for (int col = 0; col < ntw; col++)
 		{
-			std::cout << "\treading tile " << row * ntw + col + 1 << "/" << nth * ntw << std::endl;
+			std::cout << "\tt." << row * ntw + col + 1 << "/" << nth * ntw << std::endl;
 
 			I.loadTileFromFile (ptrI, row, col, 0 /*layer*/, lvl);
 			L.loadTileFromFile (ptrL, row, col, 0 /*layer*/, lvl);
@@ -94,7 +94,7 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 				auto label = dataL[i];
 				if (label != 0)
 				{
-					updateLabelStats (label, dataI[i]);
+					update_label_stats (label, dataI[i]);
 				}
 			}
 		}
@@ -125,10 +125,10 @@ int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::strin
 			return 1;
 
 		// Execute calculations requiring reduction
-		performLabelStatsReduction();
+		do_partial_stats_reduction();
 
 		// Sanity check
-		printLabelStats();
+		print_label_stats();
 	}
 
 	// Sanity
@@ -172,7 +172,7 @@ bool scanViaFastloader (const std::string & fpath, int num_threads)
 	for (int row=0; row<nth; row++)
 		for (int col = 0; col < ntw; col++)
 		{
-			std::cout << "\treading tile " << row*ntw+col+1 << " of " << nth*ntw << std::endl;
+			std::cout << "\tt." << row*ntw+col+1 << " of " << nth*ntw << std::endl;
 			fl.loadTileFromFile (data, row, col, 0 /*layer*/, 0 /*level*/);
 
 			// Calculate statistics
