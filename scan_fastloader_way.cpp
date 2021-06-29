@@ -78,31 +78,53 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 	std::shared_ptr<std::vector<uint32_t>> ptrI = std::make_shared<std::vector<uint32_t>> (tileSize);
 	std::shared_ptr<std::vector<uint32_t>> ptrL = std::make_shared<std::vector<uint32_t>> (tileSize);
 
+	int cnt = 1;
 	for (int row = 0; row < nth; row++)
 		for (int col = 0; col < ntw; col++)
 		{
-			std::cout << "\tt." << row * ntw + col + 1 << "/" << nth * ntw << std::endl;
+			std::cout << "\tt." << row * ntw + col + 1 << "/" << nth * ntw;
+			if (cnt++ % 4 == 0)
+				std::cout << std::endl;
+
+			// --Timing
+			std::chrono::time_point<std::chrono::system_clock> start, end;
+			start = std::chrono::system_clock::now();
 
 			I.loadTileFromFile (ptrI, row, col, 0 /*layer*/, lvl);
 			L.loadTileFromFile (ptrL, row, col, 0 /*layer*/, lvl);
 			auto& dataI = *ptrI;
 			auto& dataL = *ptrL;
 
-			// Calculate statistics
+			// --Timing
+			end = std::chrono::system_clock::now();
+			std::chrono::duration<double> elapsed1 = end - start;
+
+			// Calculate features
+			
+			// --Timing
+			start = std::chrono::system_clock::now();
+
 			for (unsigned long i = 0; i < tileSize; i++)
 			{
 				auto label = dataL[i];
 				if (label != 0)
 				{
-					update_label_stats (label, dataI[i]);
+					int y = i / tw,
+						x = i % tw;
+					update_label_stats (x, y, label, dataI[i]);
 				}
 			}
+
+			// --Timing
+			end = std::chrono::system_clock::now();
+			std::chrono::duration<double> elapsed2 = end - start;
+			std::cout << "\tTiming loadTile vs featureScan [s]: " << elapsed1.count() << " / " << elapsed2.count() << " = " << elapsed2.count()/elapsed1.count() << " x" << std::endl;
 		}
 
 	return true;
 }
 
-int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::string>& labelFiles, int numFastloaderThreads)
+int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::string>& labelFiles, int numFastloaderThreads, std::string outputDir)
 {
 	// Sanity
 	std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -124,11 +146,25 @@ int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::strin
 		if (ok == false)
 			return 1;
 
+		// --Timing
+		std::chrono::time_point<std::chrono::system_clock> start, end;
+		start = std::chrono::system_clock::now();
+
 		// Execute calculations requiring reduction
 		do_partial_stats_reduction();
 
+		// --Timing
+		end = std::chrono::system_clock::now();
+		std::chrono::duration<double> elapsed2 = end - start;
+		std::cout << "\tTiming of sensemaker::reduce [s] " << elapsed2.count() << std::endl;
+
 		// Sanity check
-		print_label_stats();
+		//---	print_label_stats();
+
+		// Save the result for this intensity-label file pair
+		ok = save_features (ifp, outputDir);
+		if (ok == false)
+			return 2;
 	}
 
 	// Sanity

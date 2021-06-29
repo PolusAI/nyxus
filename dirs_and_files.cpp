@@ -15,7 +15,7 @@ void readDirectoryFiles(const std::string & dir, std::vector<std::string> & file
 		files.push_back (entry.path().string());
 }
 
-bool datasetDirsOK(std::string & dirIntens, std::string & dirLabels, std::string & dirOut)
+int datasetDirsOK (std::string & dirIntens, std::string & dirLabels, std::string & dirOut)
 {
 	if (!directoryExists(dirIntens))
 	{
@@ -26,14 +26,15 @@ bool datasetDirsOK(std::string & dirIntens, std::string & dirLabels, std::string
 	if (!directoryExists(dirLabels))
 	{
 		std::cout << "Error: " << dirLabels << " is not a directory" << std::endl;
-		return 1;
+		return 2;
 	}
 
 	if (!directoryExists(dirOut))
 	{
 		std::cout << "Error: " << dirOut << " is not a directory" << std::endl;
-		return 1;
+		return 3;
 	}
+	return 0; // success
 }
 
 int checkAndReadDataset(
@@ -43,7 +44,7 @@ int checkAndReadDataset(
 	std::vector <std::string>& intensFiles, std::vector <std::string>& labelFiles)
 {
 	// Check the directories
-	if (datasetDirsOK(dirIntens, dirLabels, dirOut) == false)
+	if (datasetDirsOK(dirIntens, dirLabels, dirOut) != 0)
 		return 1;	// No need to issue console messages here, datasetDirsOK() does that
 
 	readDirectoryFiles(dirIntens, intensFiles);
@@ -62,6 +63,12 @@ int checkAndReadDataset(
 	}
 
 	return 0; // success
+}
+
+std::string getPureFname(std::string fpath)
+{
+	std::filesystem::path p(fpath);
+	return p.filename().string(); 
 }
 
 
