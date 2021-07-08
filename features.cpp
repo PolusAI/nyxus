@@ -1,3 +1,5 @@
+#include <cmath>
+#include <memory>
 #include <unordered_map>
 #include <unordered_set> 
 #include <algorithm>
@@ -15,6 +17,7 @@ std::unordered_map <int, StatsInt> labelMins;
 std::unordered_map <int, StatsInt> labelMaxs;
 std::unordered_map <int, StatsInt> labelMassEnergy;
 std::unordered_map <int, StatsReal> labelVariance;
+std::unordered_map <int, StatsReal> labelStddev;	// Is calculated from 'lavelVariance' in Reduce()
 std::unordered_map <int, StatsReal> labelCentroid_x;
 std::unordered_map <int, StatsReal> labelCentroid_y;
 std::unordered_map <int, StatsReal> labelM2;
@@ -23,7 +26,58 @@ std::unordered_map <int, StatsReal> labelM4;
 std::unordered_map <int, StatsReal> labelSkewness;
 std::unordered_map <int, StatsReal> labelKurtosis;
 std::unordered_map <int, StatsReal> labelMAD;
+std::unordered_map <int, StatsReal> labelRMS;
+std::unordered_map <int, std::shared_ptr<Histo>> labelHistogram;
+std::unordered_map <int, StatsReal> labelP10;
+std::unordered_map <int, StatsReal> labelP25;
+std::unordered_map <int, StatsReal> labelP75;
+std::unordered_map <int, StatsReal> labelP90;
+std::unordered_map <int, StatsReal> labelIQR;
+std::unordered_map <int, StatsReal> labelEntropy;
+std::unordered_map <int, StatsReal> labelMode;
+std::unordered_map <int, StatsReal> labelUniformity;
+std::unordered_map <int, StatsReal> labelRMAD;
 
+// Research
+StatsReal intensityMin = -999.0, intensityMax = -999.0;
+
+constexpr int N2R = 50*1000;
+constexpr int N2R_2 = 50*1000;
+
+void init_feature_buffers()
+{
+	uniqueLabels.reserve (N2R);
+	labelCount.reserve (N2R);
+	labelPrevCount.reserve (N2R);
+	labelPrevIntens.reserve (N2R);
+	labelMeans.reserve (N2R);
+	labelValues.reserve (N2R);
+	labelMedians.reserve (N2R);
+	labelMins.reserve (N2R);
+	labelMaxs.reserve (N2R);
+	labelMassEnergy.reserve (N2R);
+	labelVariance.reserve (N2R);
+	labelStddev.reserve (N2R);
+	labelCentroid_x.reserve (N2R);
+	labelCentroid_y.reserve (N2R);
+	labelM2.reserve (N2R);
+	labelM3.reserve (N2R);
+	labelM4.reserve (N2R);
+	labelSkewness.reserve (N2R);
+	labelKurtosis.reserve (N2R);
+	labelMAD.reserve (N2R);
+	labelRMS.reserve (N2R);
+	labelHistogram.reserve (N2R);
+	labelP10.reserve (N2R);
+	labelP25.reserve (N2R);
+	labelP75.reserve (N2R);
+	labelP90.reserve (N2R);
+	labelIQR.reserve (N2R);
+	labelEntropy.reserve (N2R);
+	labelMode.reserve (N2R);
+	labelUniformity.reserve (N2R);
+	labelRMAD.reserve (N2R);
+}
 
 void clearLabelStats()
 {
@@ -38,6 +92,7 @@ void clearLabelStats()
 	labelMaxs.clear();
 	labelMassEnergy.clear();
 	labelVariance.clear();
+	labelStddev.clear();
 	labelCentroid_x.clear();
 	labelCentroid_y.clear();
 	labelM2.clear();
@@ -46,45 +101,38 @@ void clearLabelStats()
 	labelSkewness.clear();
 	labelKurtosis.clear();
 	labelMAD.clear();
+	labelRMS.clear();
+	labelHistogram.clear();
+	labelP10.clear();
+	labelP25.clear();
+	labelP75.clear();
+	labelP90.clear();
+	labelIQR.clear();
+	labelEntropy.clear();
+	labelMode.clear();
+	labelUniformity.clear();
+	labelRMAD.clear();
 }
-
-/*
- *
- * This function should be called per each pixel.
- *
-	"min",
-	"max",
-	"range",
-	"mean",
-	"median",
-	"standard_deviation",
-	"skewness",
-	"kurtosis",
-	"mean_absolute_deviation",
-	"energy",
-"root_mean_squared",
-"entropy",
-"mode",
-"uniformity",
-"p10",
-"p25",
-"p75",
-"p90",
-"interquartile_range",
-"robust_mean_absolute_deviation",
-	"weighted_centroid_y",	// wndchrm output[20]
-	"weighted_centroid_x"	// wndchrm output[21]
- */
 
 void update_label_stats (int x, int y, int label, PixIntens intensity)
 {
+	// Research
+	if (intensityMin == -999.0 || intensityMin>intensity)
+		intensityMin = intensity;
+	if (intensityMax == -999.0 || intensityMax<intensity)
+		intensityMax = intensity;
+	
     // Remember this label
-    uniqueLabels.insert(label);
+    //-	uniqueLabels.insert(label);
 
     // Calculate features updates for this "iteration"
-	auto it = labelMeans.find(label);
-	if (it == labelMeans.end())
+	
+	auto it = uniqueLabels.find(label); //-	auto it = labelMeans.find(label);
+	if (it == uniqueLabels.end()) //-	if (it == labelMeans.end())
 	{
+		// Remember this label
+		uniqueLabels.insert(label);
+			
 		// Count of pixels belonging to the label
 		labelCount[label] = 1;
 		labelPrevCount[label] = 0;
@@ -102,9 +150,10 @@ void update_label_stats (int x, int y, int label, PixIntens intensity)
 		labelM4[label] = 0;
 
 		// Median. Cache intensity values per label for the median calculation
-		std::shared_ptr<std::unordered_set<PixIntens>> ptr = std::make_shared <std::unordered_set<PixIntens>>();
-		ptr->insert(intensity);
-		labelValues[label] = ptr;
+		std::shared_ptr<std::unordered_set<PixIntens>> ptrUS = std::make_shared <std::unordered_set<PixIntens>>();
+		ptrUS->reserve(N2R_2);
+		ptrUS->insert(intensity);
+		labelValues[label] = ptrUS;
 
         // Energy
         labelMassEnergy[label] = intensity;
@@ -121,6 +170,11 @@ void update_label_stats (int x, int y, int label, PixIntens intensity)
 		// Weighted centroids x and y. 1-based for compatibility with Matlab and WNDCHRM
 		labelCentroid_x [label] = StatsReal(x) + 1;
 		labelCentroid_y [label] = StatsReal (y) + 1;
+
+		// Histogram
+		std::shared_ptr<Histo> ptrH = std::make_shared <Histo>();
+		ptrH->add_observation(intensity);
+		labelHistogram[label] = ptrH;
     }
 	else
 	{
@@ -177,6 +231,10 @@ void update_label_stats (int x, int y, int label, PixIntens intensity)
 		// Weighted centroids x and y. 1-based for compatibility with Matlab and WNDCHRM
 		labelCentroid_x[label] = labelCentroid_x[label] + StatsReal(x) + 1;
 		labelCentroid_y[label] = labelCentroid_y[label] + StatsReal(y) + 1;
+
+		// Histogram
+		auto ptrH = labelHistogram[label];
+		ptrH->add_observation(intensity);
 		
 		// Previous intensity for succeeding iterations
         labelPrevIntens[label] = intensity;
@@ -194,11 +252,18 @@ void do_partial_stats_reduction()
 	for (auto& lv : labelValues)
 	{
 		auto l = lv.first;
-		// Sort unique intensities
+		
+		auto n = labelCount [l];	// Cardinality of the label value set
+
+		// Standard deviations
+		labelStddev[l] = sqrt (labelVariance[l]);
+
+		// Medians
+		// --Sort unique intensities
 		std::vector<int> A{ lv.second->begin(), lv.second->end() };
 		std::sort (A.begin(), A.end());
 
-		// Pick the median
+		// --Pick the median
 		if (A.size() % 2 != 0)
 		{
 			int median = A[A.size() / 2];
@@ -213,10 +278,61 @@ void do_partial_stats_reduction()
 		}
 
 		// Skewness
-		labelSkewness[l] = labelM3[l] / pow(labelM2[l], 1.5);
+		labelSkewness[l] = labelM3[l] / std::pow(labelM2[l], 1.5);
 
 		// Kurtosis
 		labelKurtosis[l] = labelM4[l] / labelM2[l] * labelM2[l] - 3.0;
+		
+		// Root of mean squared
+		labelRMS[l] = sqrt (labelMassEnergy[l] / n);
+
+		// P10, 25, 75, 90
+		auto ptrH = labelHistogram[l];
+		float percentPerBin = 100.f / float(N_HISTO_BINS),
+			p10 = 0.f,
+			p25 = 0.f,
+			p75 = 0.f,
+			p90 = 0.f,
+			entropy = 0.f,
+			mode = ptrH->getBinStats (0), 
+			uniformity = 0.f, 
+			rmad = ptrH->getEstRMAD (10, 90);
+
+		for (int i = 0; i < N_HISTO_BINS; i++)
+		{
+			// %-tile
+			auto bs = ptrH->getBinStats(i);
+			if (float(i) * percentPerBin <= 10)
+				p10 += bs;
+			if (float(i) * percentPerBin <= 25)
+				p25 += bs;
+			if (float(i) * percentPerBin <= 75)
+				p75 += bs;
+			if (float(i) * percentPerBin <= 90)
+				p90 += bs;
+
+			// entropy
+			double binEntry = bs / n;
+			if (fabs(binEntry) < 1e-15) 
+				continue;
+			entropy -= binEntry * log2(binEntry);  //if bin is not empty
+
+			// uniformity
+			uniformity += binEntry * binEntry;
+
+			// mode
+			if (bs > mode)
+				mode = bs;
+		}
+		labelP10[l] = p10;
+		labelP25[l] = p25;
+		labelP75[l] = p75;
+		labelP90[l] = p90;
+		labelIQR[l] = (StatsReal) p75 - p25;
+		labelRMAD[l] = rmad;
+		labelEntropy[l] = entropy;
+		labelMode[l] = mode;
+		labelUniformity[l] = uniformity;
 	}
 }
 

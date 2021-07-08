@@ -7,8 +7,14 @@
 #include "virtual_file_tile_channel_loader.h"
 
 // Sanity
+#ifndef __unix
 #include<windows.h>
+#endif
+
+// Timing
 #include <chrono>
+double totalTileLoadTime = 0.0, totalPixStatsCalcTime = 0.0;
+
 
 int ingestDataset1 (std::vector<std::string> &intensFiles, std::vector<std::string> &labelFiles, int numFastloaderThreads)
 {
@@ -35,7 +41,7 @@ int ingestDataset1 (std::vector<std::string> &intensFiles, std::vector<std::stri
 
 bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpath, int num_threads)
 {
-	std::cout << std::endl << "Processing pair " << intens_fpath << " -- " << label_fpath << std::endl;
+	std::cout << std::endl << "Processing pair " << intens_fpath << " -- " << label_fpath << " with " << num_threads << " threads" << std::endl;
 
 	int lvl = 0;
 
@@ -83,8 +89,6 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 		for (int col = 0; col < ntw; col++)
 		{
 			std::cout << "\tt." << row * ntw + col + 1 << "/" << nth * ntw;
-			if (cnt++ % 4 == 0)
-				std::cout << std::endl;
 
 			// --Timing
 			std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -107,6 +111,11 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 			for (unsigned long i = 0; i < tileSize; i++)
 			{
 				auto label = dataL[i];
+
+#ifdef SINGLE_ROI_TEST
+				label = 1;
+#endif
+
 				if (label != 0)
 				{
 					int y = i / tw,
@@ -118,7 +127,13 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 			// --Timing
 			end = std::chrono::system_clock::now();
 			std::chrono::duration<double> elapsed2 = end - start;
-			std::cout << "\tTiming loadTile vs featureScan [s]: " << elapsed1.count() << " / " << elapsed2.count() << " = " << elapsed2.count()/elapsed1.count() << " x" << std::endl;
+			std::cout << "\tT(featureScan) vs T(loadTile) [s]: " << elapsed2.count() << " / " << elapsed1.count() << " = " << elapsed2.count()/elapsed1.count() << " x" << std::endl;
+			totalTileLoadTime += elapsed1.count();
+			totalPixStatsCalcTime += elapsed2.count();
+
+			if (cnt++ % 4 == 0)
+				std::cout << std::endl;
+
 		}
 
 	return true;
@@ -128,6 +143,9 @@ int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::strin
 {
 	// Sanity
 	std::chrono::time_point<std::chrono::system_clock> start, end;
+
+	// Timing
+	totalPixStatsCalcTime = totalTileLoadTime = 0.0;
 	start = std::chrono::system_clock::now();
 
 	bool ok = true;
@@ -157,6 +175,7 @@ int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::strin
 		end = std::chrono::system_clock::now();
 		std::chrono::duration<double> elapsed2 = end - start;
 		std::cout << "\tTiming of sensemaker::reduce [s] " << elapsed2.count() << std::endl;
+		totalPixStatsCalcTime += elapsed2.count();
 
 		// Sanity check
 		//---	print_label_stats();
@@ -167,10 +186,11 @@ int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::strin
 			return 2;
 	}
 
-	// Sanity
+	// Timing
 	end = std::chrono::system_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end - start;
 	std::cout << "Elapsed time (s) " << elapsed_seconds.count() << std::endl;
+	std::cout << "tot tile load time = " << totalTileLoadTime << " . tot pixel stats calc = " << totalPixStatsCalcTime << std::endl;
 
 	return 0; // success
 }
@@ -248,6 +268,7 @@ bool scanViaFastloader (const std::string & fpath, int num_threads)
 bool TraverseViaFastloader1 (const std::string & fpath, int num_threads)
 {
 	// Sanity
+#ifndef __unix
 	MEMORYSTATUSEX statex;
 	statex.dwLength = sizeof (statex);
 	GlobalMemoryStatusEx (&statex);
@@ -255,6 +276,7 @@ bool TraverseViaFastloader1 (const std::string & fpath, int num_threads)
 		<< "\ntotal physical memory, Mb=" << statex.ullTotalPhys / 1048576
 		<< "\ntotal available meory, Mb=" << statex.ullAvailPhys / 1048576
 		<< std::endl;
+#endif
 
 	// Get the TIFF file info
 	GrayscaleTiffTileLoader<uint32_t> gfl(num_threads, fpath);
@@ -317,6 +339,7 @@ bool TraverseViaFastloader1 (const std::string & fpath, int num_threads)
 bool TraverseViaFastloader2 (const std::string & fpath, int num_threads)
 {
 	// Sanity
+#ifndef __unix
 	MEMORYSTATUSEX statex;
 	statex.dwLength = sizeof (statex);
 	GlobalMemoryStatusEx (&statex);
@@ -324,6 +347,7 @@ bool TraverseViaFastloader2 (const std::string & fpath, int num_threads)
 		<< "\ntotal physical memory, Mb=" << statex.ullTotalPhys / 1048576
 		<< "\ntotal available meory, Mb=" << statex.ullAvailPhys / 1048576
 		<< std::endl;
+#endif
 
 	// Get the TIFF file info
 	GrayscaleTiffTileLoader<int> gfl(num_threads, fpath);
@@ -407,7 +431,7 @@ bool TraverseViaFastloader2 (const std::string & fpath, int num_threads)
 }
 
 
-/* --- This code is pending a descussion with FastLoader people ---
+/* --- This code is pending a descussion with FastLoader team ---
 bool TraverseViaFastloader3 (const std::string& fpath, int num_threads)
 {
 	// Sanity

@@ -1,10 +1,19 @@
+#include <memory>
 #include <unordered_map>
 #include <unordered_set> 
 #include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "sensemaker.h"
+
+#ifdef __unix
+#define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),(mode)))==NULL
+#endif
 
 void print_by_label(const char* featureName, std::unordered_map<int, StatsInt> L, int numColumns)
 {
@@ -60,6 +69,9 @@ void print_label_stats()
 
 bool save_features (std::string inputFpath, std::string outputDir)
 {
+	// Research
+	std::cout << "intensityMin = " << intensityMin << " intensityMax = " << intensityMax << std::endl;
+	
 	// Sort the labels
 	std::vector<int> L { uniqueLabels.begin(), uniqueLabels.end() };
 	std::sort (L.begin(), L.end());
@@ -90,28 +102,38 @@ bool save_features (std::string inputFpath, std::string outputDir)
 	}
 	
 	// -- Header
-	fprintf (fp, "# , label , min , max , range , mean , median , energy , stddev , skewness , kurtosis , mad , weighted_centroid_x , weighted_centroid_y\n");
+	fprintf (fp, "# , label , min , max , range , mean , median , energy , stddev , skewness , kurtosis , mad , rms , weighted_centroid_x , weighted_centroid_y , entropy , P10 , P25 , P75 , P90 , IQR , RMAD , mode , uniformity\n");
 
 	// -- Dump numbers
 	int cnt = 1; 
-	for (auto lab : L)
+	for (auto l : L)
 	{
 		std::stringstream ss;
 
-		auto _min = labelMins[lab];
-		auto _max = labelMaxs[lab];
+		auto _min = labelMins[l];
+		auto _max = labelMaxs[l];
 		auto _range = _max - _min;
-		auto _mean = labelMeans[lab];
-		auto _median = labelMedians[lab];
-		auto _energy = labelMassEnergy [lab];
-		auto _stdev = sqrt (labelVariance[lab]);
-		auto _skew = labelSkewness[lab];
-		auto _kurt = labelKurtosis[lab];
-		auto _mad = labelMAD[lab];
-		auto _wcx = labelCentroid_x[lab], 
-			_wcy = labelCentroid_y[lab];
+		auto _mean = labelMeans[l];
+		auto _median = labelMedians[l];
+		auto _energy = labelMassEnergy [l];
+		auto _stdev = labelStddev[l];
+		auto _skew = labelSkewness[l];
+		auto _kurt = labelKurtosis[l];
+		auto _mad = labelMAD[l];
+		auto _rms = labelRMS[l];
+		auto _wcx = labelCentroid_x[l], 
+			_wcy = labelCentroid_y[l];
+		auto _entro = labelEntropy[l];
+		auto _p10 = labelP10[l], 
+			_p25 = labelP25[l], 
+			_p75 = labelP75[l], 
+			_p90 = labelP90[l], 
+			_iqr = labelIQR[l], 
+			_rmad = labelRMAD[l],
+			_mode = labelMode[l], 
+			_unifo = labelUniformity[l];
 
-		ss << lab		<< " , " 
+		ss << l		<< " , " 
 			<< _min		<< " , " 
 			<< _max		<< " , " 
 			<< _range	<< " , "
@@ -122,10 +144,19 @@ bool save_features (std::string inputFpath, std::string outputDir)
 			<< _skew	<< " , "
 			<< _kurt	<< " , "
 			<< _mad		<< " , "
+			<< _rms		<< " , "
 			<< _wcx		<< " , "
-			<< _wcy 
-			<< std::endl;
-		fprintf (fp, "%s", ss.str().c_str());
+			<< _wcy		<< " , "
+			<< _entro	<< " , "
+			<< _p10		<< " , "
+			<< _p25		<< " , "
+			<< _p75		<< " , " 
+			<< _p90		<< " , "
+			<< _iqr		<< " , "
+			<< _rmad	<< " , "
+			<< _mode	<< " , "
+			<< _unifo;
+		fprintf (fp, "%s\n", ss.str().c_str());
 	}
 	std::fclose(fp);
 

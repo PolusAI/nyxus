@@ -1,9 +1,12 @@
 #pragma once
 
+#define SINGLE_ROI_TEST
+
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include "histogram.h"
 
 bool datasetDirsOK (std::string & dirIntens, std::string & dirLab, std::string & dirOut);
 bool directoryExists (const std::string & dir);
@@ -23,7 +26,9 @@ int checkAndReadDataset(
 using PixIntens = unsigned int;
 using StatsInt = unsigned long;
 using StatsReal = double;
+using Histo = OnlineHistogram<PixIntens>;
 
+void init_feature_buffers();
 void update_label_stats (int x, int y, int label, PixIntens intensity);
 void print_label_stats();
 void print_by_label(const char* featureName, std::unordered_map<int, StatsInt> L, int numColumns = 8); 
@@ -42,6 +47,7 @@ extern std::unordered_map <int, StatsInt> labelMins;
 extern std::unordered_map <int, StatsInt> labelMaxs;
 extern std::unordered_map <int, StatsInt> labelMassEnergy;
 extern std::unordered_map <int, StatsReal> labelVariance;
+extern std::unordered_map <int, StatsReal> labelStddev;	// Is calculated from 'lavelVariance' in Reduce()
 extern std::unordered_map <int, StatsReal> labelCentroid_x;
 extern std::unordered_map <int, StatsReal> labelCentroid_y;
 extern std::unordered_map <int, StatsReal> labelM2;
@@ -50,4 +56,20 @@ extern std::unordered_map <int, StatsReal> labelM4;
 extern std::unordered_map <int, StatsReal> labelSkewness;
 extern std::unordered_map <int, StatsReal> labelKurtosis;
 extern std::unordered_map <int, StatsReal> labelMAD;
+extern std::unordered_map <int, StatsReal> labelRMS;
+extern std::unordered_map <int, std::shared_ptr<Histo>> labelHistogram;
+extern std::unordered_map <int, StatsReal> labelP10;
+extern std::unordered_map <int, StatsReal> labelP25;
+extern std::unordered_map <int, StatsReal> labelP75;
+extern std::unordered_map <int, StatsReal> labelP90;
+extern std::unordered_map <int, StatsReal> labelIQR;
+extern std::unordered_map <int, StatsReal> labelEntropy;
+extern std::unordered_map <int, StatsReal> labelMode;
+extern std::unordered_map <int, StatsReal> labelUniformity;
+extern std::unordered_map <int, StatsReal> labelRMAD;
 
+// Research
+extern StatsReal intensityMin, intensityMax;
+
+// Timing
+extern double totalTileLoadTime, totalPixStatsCalcTime;
