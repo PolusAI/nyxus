@@ -12,6 +12,14 @@
 
 int main (int argc, char** argv)
 {
+	/*
+	// Sanity check:
+	auto elap1 = test_containers1();
+	auto elap2 = test_containers2();
+	std::cout << elap1 / elap2 << " X" << std::endl;
+	return 0;
+	*/
+
 	std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021 Axle Informatics" << std::endl;
 
 	// Check the command line (it's primitive now)
@@ -22,11 +30,14 @@ int main (int argc, char** argv)
 	}
 
 	std::string dirIntens = argv[1], dirLabels = argv[2], dirOut = argv[3];
+	int n_tlt = 1 /*# of FastLoader threads*/, n_fct = 8 /*# Sensemaker threads*/;
 
     std::cout << 
 		"Using" << std::endl << "\t<intensity data directory> = " << dirIntens << std::endl << 
 		"\t<labels data directory> = " << dirLabels << std::endl <<
-		"\t<output directory> = " << dirOut << std::endl; 
+		"\t<output directory> = " << dirOut << std::endl <<
+		"\t" << n_tlt << " tile loader threads" << std::endl <<
+		"\t" << n_fct << " feature calculation threads" << std::endl ;
 
 	#ifdef SINGLE_ROI_TEST
 	std::cout << std::endl << "Attention! Running the single-ROI test" << std::endl;
@@ -45,7 +56,7 @@ int main (int argc, char** argv)
 	init_feature_buffers();
 
 	// Process the image sdata
-	errorCode = ingestDataset (intensFiles, labelFiles, 1 /*# of FastLoader threads*/, dirOut);
+	errorCode = ingestDataset (intensFiles, labelFiles, n_tlt /*# of FastLoader threads*/, n_fct /*# Sensemaker threads*/, dirOut);
 
 	// Check the error code 
 	switch (errorCode)

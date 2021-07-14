@@ -1,11 +1,12 @@
 #pragma once
 
-#define SINGLE_ROI_TEST
+//---	#define SINGLE_ROI_TEST
 
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <mutex>
 #include "histogram.h"
 
 bool datasetDirsOK (std::string & dirIntens, std::string & dirLab, std::string & dirOut);
@@ -14,7 +15,7 @@ void readDirectoryFiles (const std::string & dir, std::vector<std::string> & fil
 bool scanViaFastloader (const std::string & fpath, int num_threads);
 bool TraverseViaFastloader1 (const std::string& fpath, int num_threads);
 std::string getPureFname(std::string fpath);
-int ingestDataset (std::vector<std::string> & intensFiles, std::vector<std::string> & labelFiles, int numFastloaderThreads, std::string outputDir);
+int ingestDataset (std::vector<std::string> & intensFiles, std::vector<std::string> & labelFiles, int numFastloaderThreads, int numSensemakerThreads, std::string outputDir);
 bool save_features (std::string inputFpath, std::string outputDir);
 void showCmdlineHelp();
 int checkAndReadDataset(
@@ -30,6 +31,7 @@ using Histo = OnlineHistogram<PixIntens>;
 
 void init_feature_buffers();
 void update_label_stats (int x, int y, int label, PixIntens intensity);
+void update_label_stats_parallel (int x, int y, int label, PixIntens intensity);
 void print_label_stats();
 void print_by_label(const char* featureName, std::unordered_map<int, StatsInt> L, int numColumns = 8); 
 void print_by_label(const char* featureName, std::unordered_map<int, StatsReal> L, int numColumns = 4);
@@ -37,39 +39,51 @@ void clearLabelStats();
 void do_partial_stats_reduction();
 
 // The following label data relates to a single intensity-label file pair
-extern std::unordered_set<int> uniqueLabels;
-extern std::unordered_map <int, StatsInt> labelCount;
-extern std::unordered_map <int, StatsInt> labelPrevIntens;
-extern std::unordered_map <int, StatsReal> labelMeans;
-extern std::unordered_map <int, std::shared_ptr<std::unordered_set<PixIntens>>> labelValues;
-extern std::unordered_map <int, StatsInt> labelMedians;
-extern std::unordered_map <int, StatsInt> labelMins;
-extern std::unordered_map <int, StatsInt> labelMaxs;
-extern std::unordered_map <int, StatsInt> labelMassEnergy;
-extern std::unordered_map <int, StatsReal> labelVariance;
-extern std::unordered_map <int, StatsReal> labelStddev;	// Is calculated from 'lavelVariance' in Reduce()
-extern std::unordered_map <int, StatsReal> labelCentroid_x;
-extern std::unordered_map <int, StatsReal> labelCentroid_y;
-extern std::unordered_map <int, StatsReal> labelM2;
-extern std::unordered_map <int, StatsReal> labelM3;
-extern std::unordered_map <int, StatsReal> labelM4;
-extern std::unordered_map <int, StatsReal> labelSkewness;
-extern std::unordered_map <int, StatsReal> labelKurtosis;
-extern std::unordered_map <int, StatsReal> labelMAD;
-extern std::unordered_map <int, StatsReal> labelRMS;
-extern std::unordered_map <int, std::shared_ptr<Histo>> labelHistogram;
-extern std::unordered_map <int, StatsReal> labelP10;
-extern std::unordered_map <int, StatsReal> labelP25;
-extern std::unordered_map <int, StatsReal> labelP75;
-extern std::unordered_map <int, StatsReal> labelP90;
-extern std::unordered_map <int, StatsReal> labelIQR;
-extern std::unordered_map <int, StatsReal> labelEntropy;
-extern std::unordered_map <int, StatsReal> labelMode;
-extern std::unordered_map <int, StatsReal> labelUniformity;
-extern std::unordered_map <int, StatsReal> labelRMAD;
+extern std::unordered_set <int> uniqueLabels;
+
+
+//--- New
+struct LR
+{
+	StatsInt labelCount;
+	StatsInt labelPrevCount;
+	StatsInt labelPrevIntens;
+	StatsReal labelMeans;
+	std::shared_ptr<std::unordered_set<PixIntens>> labelValues;
+	StatsInt labelMedians;
+	StatsInt labelMins;
+	StatsInt labelMaxs;
+	StatsInt labelMassEnergy;
+	StatsReal labelVariance;
+	StatsReal labelStddev;	
+	StatsReal labelCentroid_x;
+	StatsReal labelCentroid_y;
+	StatsReal labelM2;
+	StatsReal labelM3;
+	StatsReal labelM4;
+	StatsReal labelSkewness;
+	StatsReal labelKurtosis;
+	StatsReal labelMAD;
+	StatsReal labelRMS;
+	std::shared_ptr<Histo> labelHistogram;
+	StatsReal labelP10;
+	StatsReal labelP25;
+	StatsReal labelP75;
+	StatsReal labelP90;
+	StatsReal labelIQR;
+	StatsReal labelEntropy;
+	StatsReal labelMode;
+	StatsReal labelUniformity;
+	StatsReal labelRMAD;
+};
+extern std::unordered_map <int, LR> labelData;
+
+extern std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
 
 // Research
 extern StatsReal intensityMin, intensityMax;
 
 // Timing
 extern double totalTileLoadTime, totalPixStatsCalcTime;
+double test_containers1();
+double test_containers2();

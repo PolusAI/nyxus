@@ -15,7 +15,11 @@
 #include <chrono>
 double totalTileLoadTime = 0.0, totalPixStatsCalcTime = 0.0;
 
+// Parallelism
+#include <future>
 
+
+/*XXX
 int ingestDataset1 (std::vector<std::string> &intensFiles, std::vector<std::string> &labelFiles, int numFastloaderThreads)
 {
 	bool ok = true;
@@ -38,12 +42,15 @@ int ingestDataset1 (std::vector<std::string> &intensFiles, std::vector<std::stri
 
 	return 0; // success
 }
+*/
 
 bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpath, int num_threads)
 {
 	std::cout << std::endl << "Processing pair " << intens_fpath << " -- " << label_fpath << " with " << num_threads << " threads" << std::endl;
 
-	int lvl = 0;
+	int lvl = 0;	// Pyramid level
+
+	std::vector<std::future<void>> futures;
 
 	// File #1 (intensity)
 	GrayscaleTiffTileLoader<uint32_t> I (num_threads, intens_fpath);
@@ -112,9 +119,9 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 			{
 				auto label = dataL[i];
 
-#ifdef SINGLE_ROI_TEST
+				#ifdef SINGLE_ROI_TEST
 				label = 1;
-#endif
+				#endif
 
 				if (label != 0)
 				{
@@ -133,13 +140,175 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 
 			if (cnt++ % 4 == 0)
 				std::cout << std::endl;
-
 		}
 
 	return true;
 }
 
-int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::string>& labelFiles, int numFastloaderThreads, std::string outputDir)
+void processPixels (unsigned int start_idx_inclusive, unsigned int end_idx_exclusive, std::vector<uint32_t> * dataL, std::vector<uint32_t> * dataI, unsigned int tw)
+{
+	for (unsigned long i = start_idx_inclusive; i < end_idx_exclusive; i++)
+	{
+		auto label = (*dataL)[i];
+
+		#ifdef SINGLE_ROI_TEST
+		label = 1;
+		#endif
+
+		if (label != 0)
+		{
+			int y = i / tw,
+				x = i % tw;
+			update_label_stats_parallel (x, y, label, (*dataI)[i]);
+		}
+	}
+}
+
+bool scanFilePairParallel2 (const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads)
+{
+	std::cout << std::endl << "Processing pair " << intens_fpath << " -- " << label_fpath << " with " << num_fastloader_threads << " threads" << std::endl;
+
+	int lvl = 0;	// Pyramid level
+
+	std::vector<std::future<void>> futures;
+
+	// File #1 (intensity)
+	GrayscaleTiffTileLoader<uint32_t> I(num_fastloader_threads, intens_fpath);
+
+	auto th = I.tileHeight(lvl),
+		tw = I.tileWidth(lvl),
+		td = I.tileDepth(lvl);
+	auto tileSize = th * tw;
+
+	auto fh = I.fullHeight(lvl);
+	auto fw = I.fullWidth(lvl);
+	auto fd = I.fullDepth(lvl);
+
+	auto ntw = I.numberTileWidth(lvl);
+	auto nth = I.numberTileHeight(lvl);
+	auto ntd = I.numberTileDepth(lvl);
+
+	// File #2 (labels)
+	GrayscaleTiffTileLoader<uint32_t> L(num_fastloader_threads, label_fpath);
+
+	// -- check whole file consistency
+	if (fh != L.fullHeight(lvl) || fw != L.fullWidth(lvl) || fd != L.fullDepth(lvl))
+	{
+		std::cout << "\terror: mismatch in full height, width, or depth";
+		return false;
+	}
+
+	// -- check tile consistency
+	if (th != L.tileHeight(lvl) || tw != L.tileWidth(lvl) || td != L.tileDepth(lvl))
+	{
+		std::cout << "\terror: mismatch in tile height, width, or depth";
+		return false;
+	}
+
+	// Read the TIFF tile by tile 
+	// 
+	// -- allocate the tile buffer
+	std::shared_ptr<std::vector<uint32_t>> ptrI = std::make_shared<std::vector<uint32_t>>(tileSize);
+	std::shared_ptr<std::vector<uint32_t>> ptrL = std::make_shared<std::vector<uint32_t>>(tileSize);
+
+	int cnt = 1;
+	for (int row = 0; row < nth; row++)
+		for (int col = 0; col < ntw; col++)
+		{
+			std::cout << "\tt." << row * ntw + col + 1 << "/" << nth * ntw;
+
+			// --Timing
+			std::chrono::time_point<std::chrono::system_clock> start, end;
+			start = std::chrono::system_clock::now();
+
+			I.loadTileFromFile(ptrI, row, col, 0 /*layer*/, lvl);
+			L.loadTileFromFile(ptrL, row, col, 0 /*layer*/, lvl);
+			auto& dataI = *ptrI;
+			auto& dataL = *ptrL;
+
+			// --Timing
+			end = std::chrono::system_clock::now();
+			std::chrono::duration<double> elapsed1 = end - start;
+
+			// Calculate features
+
+			// --Timing
+			start = std::chrono::system_clock::now();
+
+			/* The following sequential code fragment is implemented in a parallel way:
+			* 
+			* 
+			for (unsigned long i = 0; i < tileSize; i++)
+			{
+				auto label = dataL[i];
+
+				#ifdef SINGLE_ROI_TEST
+				label = 1;
+				#endif
+
+				if (label != 0)
+				{
+					int y = i / tw,
+						x = i % tw;
+					update_label_stats(x, y, label, dataI[i]);
+				}
+			}
+			*
+			*
+			*/
+			{
+				/*
+				//--- just 2 threads
+				auto fu1 = std::async(std::launch::async, processPixels,
+					0, tileSize / 2,
+					&dataL, &dataI, tw);
+				auto fu2 = std::async(std::launch::async, processPixels,
+					tileSize / 2, tileSize,
+					&dataL, &dataI, tw);
+				*/
+
+				/*-- - 4 threads(for extremely large tiles)-- -
+				auto fu1 = std::async(std::launch::async, processPixels, 
+					0, tileSize/4, 
+					&dataL, &dataI, tw);
+				auto fu2 = std::async(std::launch::async, processPixels, 
+					tileSize/4, tileSize/2,
+					&dataL, &dataI, tw);
+				auto fu3 = std::async(std::launch::async, processPixels, 
+					tileSize/2, tileSize/2 + tileSize/4,
+					&dataL, &dataI, tw);
+				auto fu4 = std::async(std::launch::async, processPixels, 
+					tileSize/2 + tileSize/4, tileSize,
+					&dataL, &dataI, tw);
+				---*/
+
+				int workPerThread = tileSize / num_sensemaker_threads;
+				std::vector<std::future<void>> T;
+				for (int t = 0; t < num_sensemaker_threads; t++)
+				{
+					int idxS = t * workPerThread,
+						idxE = idxS + workPerThread;
+					if (t == num_sensemaker_threads - 1)
+						idxE = tileSize; // include the roundoff tail
+					T.push_back (std::async (std::launch::async, processPixels, 0, tileSize / 4, &dataL, &dataI, tw));
+				}
+			}
+			// --Timing
+			end = std::chrono::system_clock::now();
+			std::chrono::duration<double> elapsed2 = end - start;
+			std::cout << "\tT(featureScan) vs T(loadTile) [s]: " << elapsed2.count() << " / " << elapsed1.count() << " = " << elapsed2.count() / elapsed1.count() << " x" << std::endl;
+			totalTileLoadTime += elapsed1.count();
+			totalPixStatsCalcTime += elapsed2.count();
+
+			if (cnt++ % 4 == 0)
+				std::cout << std::endl;
+		}
+
+	return true;
+}
+
+
+int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, std::string outputDir)
 {
 	// Sanity
 	std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -160,7 +329,8 @@ int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::strin
 			&lfp = labelFiles[i];
 
 		// Scan a label-intensity pair and calculate features
-		ok = scanFilePair (ifp, lfp, numFastloaderThreads);
+		//---Option--- ok = scanFilePair (ifp, lfp, numFastloaderThreads);	// Sequential
+		ok = scanFilePairParallel2 (ifp, lfp, numFastloaderThreads, numSensemakerThreads);	// Parallel
 		if (ok == false)
 			return 1;
 

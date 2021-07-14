@@ -36,4 +36,5 @@ bool test_histogram()
 	h->add_observation(61);
 	h->print();
 	h->reset();
+	return true;
 }

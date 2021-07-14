@@ -18,7 +18,7 @@ export INCLU
 BUILDDIR=./build
 export BUILDDIR
 
-OPTS='-w -c -std=c++17'
+OPTS='-w -c -std=c++17 -O2'
 export OPTS
 
 #=== Prepare the build output directory
@@ -32,6 +32,7 @@ $CXX $OPTS $INCLU ../features.cpp
 $CXX $OPTS $INCLU ../main.cpp  
 $CXX $OPTS $INCLU ../output.cpp  
 $CXX $OPTS $INCLU ../scan_fastloader_way.cpp  
+$CXX $OPTS $INCLU ../test_cxx_containers.cpp  
 
 $GXX \
 dirs_and_files.o \
@@ -39,6 +40,7 @@ features.o  \
 main.o  \
 output.o  \
 scan_fastloader_way.o  \
+test_cxx_containers.o \
 -lm -ltiff -lfftw3 \
 -lpthread \
 -static-libstdc++ \

@@ -55,15 +55,17 @@ void print_by_label(const char* featureName, std::unordered_map<int, StatsReal> 
 
 void print_label_stats()
 {
-	std::cout << "\tFeatures by label. Number of processed labels " << labelMeans.size() << std::endl;
+	std::cout << "\tFeatures by label. Number of processed labels " << uniqueLabels.size() << std::endl;
 
 	// Print stats by label
+	/*
 	print_by_label("Min", labelMins);
 	print_by_label("Max", labelMaxs);
 	print_by_label("Mean", labelMeans);
 	print_by_label("Median", labelMedians);
 	print_by_label("Energy", labelMassEnergy);
 	print_by_label("Variance", labelVariance);
+	*/
 }
 
 
@@ -102,14 +104,15 @@ bool save_features (std::string inputFpath, std::string outputDir)
 	}
 	
 	// -- Header
-	fprintf (fp, "# , label , min , max , range , mean , median , energy , stddev , skewness , kurtosis , mad , rms , weighted_centroid_x , weighted_centroid_y , entropy , P10 , P25 , P75 , P90 , IQR , RMAD , mode , uniformity\n");
+	fprintf (fp, "# , label , pixelCount, min , max , range , mean , median , energy , stddev , skewness , kurtosis , mad , rms , weighted_centroid_x , weighted_centroid_y , entropy , P10 , P25 , P75 , P90 , IQR , RMAD , mode , uniformity\n");
 
 	// -- Dump numbers
 	int cnt = 1; 
 	for (auto l : L)
 	{
 		std::stringstream ss;
-
+		
+		/*
 		auto _min = labelMins[l];
 		auto _max = labelMaxs[l];
 		auto _range = _max - _min;
@@ -132,8 +135,36 @@ bool save_features (std::string inputFpath, std::string outputDir)
 			_rmad = labelRMAD[l],
 			_mode = labelMode[l], 
 			_unifo = labelUniformity[l];
+		*/
+		//--- New
+		LR& lr = labelData[l];
+		auto _pixCnt = lr.labelCount;
+		auto _min = lr.labelMins;
+		auto _max = lr.labelMaxs;
+		auto _range = _max - _min;
+		auto _mean = lr.labelMeans;
+		auto _median = lr.labelMedians;
+		auto _energy = lr.labelMassEnergy;
+		auto _stdev = lr.labelStddev;
+		auto _skew = lr.labelSkewness;
+		auto _kurt = lr.labelKurtosis;
+		auto _mad = lr.labelMAD;
+		auto _rms = lr.labelRMS;
+		auto _wcx = lr.labelCentroid_x,
+			_wcy = lr.labelCentroid_y;
+		auto _entro = lr.labelEntropy;
+		auto _p10 = lr.labelP10,
+			_p25 = lr.labelP25,
+			_p75 = lr.labelP75,
+			_p90 = lr.labelP90,
+			_iqr = lr.labelIQR,
+			_rmad = lr.labelRMAD,
+			_mode = lr.labelMode,
+			_unifo = lr.labelUniformity;
+
 
 		ss << l		<< " , " 
+			<< _pixCnt	<< " , "
 			<< _min		<< " , " 
 			<< _max		<< " , " 
 			<< _range	<< " , "

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <math.h>
 #include <vector>
 
 #define N_HISTO_BINS 20	// Max number of histogram channels
@@ -217,7 +218,7 @@ protected:
 		throw std::exception();
 		return -3;
 	}
-	double RoundN(double x)
+	inline double RoundN(double x)
 	{
 		const double roundFactor = 1000.0;
 		auto retval = std::round(x * roundFactor) / roundFactor;
