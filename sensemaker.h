@@ -77,7 +77,12 @@ struct LR
 	StatsReal labelMode;
 	StatsReal labelUniformity;
 	StatsReal labelRMAD;
+
+	std::vector<PixIntens> raw_intensities;
 };
+
+void init_label_record(LR& lr, int x, int y, int label, PixIntens intensity);
+void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity);
 
 extern std::unordered_map <int, LR> labelData;
 

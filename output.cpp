@@ -11,47 +11,10 @@
 
 #include "sensemaker.h"
 
+// Macro to make some file i/o calls platform-independent
 #ifdef __unix
 #define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),(mode)))==NULL
 #endif
-
-void print_by_label(const char* featureName, std::unordered_map<int, StatsInt> L, int numColumns)
-{
-	std::stringstream ss;
-
-	std::cout << std::endl << featureName << std::endl;
-	
-	int i = 1;
-	for (auto& x : L)
-	{
-		ss << 'L' << x.first << ':' << x.second;
-		std::cout << std::setw(10) << ss.str();
-		ss.str (std::string()); // Clear ss
-
-		if (i++ % numColumns == 0)
-			std::cout << std::endl;
-	}
-
-}
-
-void print_by_label(const char* featureName, std::unordered_map<int, StatsReal> L, int numColumns)
-{
-	std::stringstream ss;
-
-	std::cout << std::endl << featureName << std::endl;
-
-	int i = 1;
-	for (auto& x : L)
-	{
-		ss << 'L' << x.first << ':' << x.second;
-		std::cout << std::setw(30) << ss.str();
-		ss.str(std::string()); // Clear ss
-
-		if (i++ % numColumns == 0)
-			std::cout << std::endl;
-	}
-
-}
 
 void print_label_stats()
 {
@@ -68,12 +31,9 @@ void print_label_stats()
 	*/
 }
 
-
+// Saves the result of image scanning and feature calculation. Must be called after the reduction phase.
 bool save_features (std::string inputFpath, std::string outputDir)
 {
-	// Research
-	std::cout << "intensityMin = " << intensityMin << " intensityMax = " << intensityMax << std::endl;
-	
 	// Sort the labels
 	std::vector<int> L { uniqueLabels.begin(), uniqueLabels.end() };
 	std::sort (L.begin(), L.end());
@@ -103,7 +63,29 @@ bool save_features (std::string inputFpath, std::string outputDir)
 	}
 	
 	// -- Header
-	fprintf(fp, "label , pixelCount, mean, median , min , max , range , stddev , skewness , kurtosis , mad , energy , rms , entropy , mode , uniformity , P10 , P25 , P75 , P90 , IQR , RMAD , weighted_centroid_y , weighted_centroid_x\n");
+	fprintf (fp, 
+		"label , "
+		"mean, "
+		"median , "
+		"min , "
+		"max , "
+		"range , "
+		"standard_deviation , "
+		"skewness , "
+		"kurtosis , "
+		"mean_absolute_deviation , "
+		"energy , "
+		"root_mean_squared , "
+		"entropy , "
+		"mode , "
+		"uniformity , "
+		"P10 , P25 , P75 , P90 , "
+		"interquartile_range , "
+		"robust_mean_absolute_deviation , "
+		"weighted_centroid_y , "
+		"weighted_centroid_x , "
+		"pixelCount"
+		"\n");
 
 	// -- Dump numbers
 	int cnt = 1; 
@@ -111,7 +93,6 @@ bool save_features (std::string inputFpath, std::string outputDir)
 	{
 		std::stringstream ss;
 		
-		//--- New
 		LR& lr = labelData[l];
 		auto _pixCnt = lr.labelCount;
 		auto _min = lr.labelMins;
@@ -139,7 +120,6 @@ bool save_features (std::string inputFpath, std::string outputDir)
 
 
 		ss	<< l		<< " , " 
-			<< _pixCnt	<< " , "
 			<< _mean	<< " , " 
 			<< _median	<< " , " 			
 			<< _min		<< " , " 
@@ -148,14 +128,12 @@ bool save_features (std::string inputFpath, std::string outputDir)
 			<< _stdev	<< " , "
 			<< _skew	<< " , "
 			<< _kurt	<< " , "
-
 			<< _mad		<< " , "			
 			<< _energy	<< " , " 
 			<< _rms		<< " , "
 			<< _entro	<< " , "
 			<< _mode	<< " , "
 			<< _unifo	<< " , "
-
 			<< _p10		<< " , "
 			<< _p25		<< " , "
 			<< _p75		<< " , " 
@@ -163,13 +141,89 @@ bool save_features (std::string inputFpath, std::string outputDir)
 			<< _iqr		<< " , "
 			<< _rmad	<< " , "
 			<< _wcy		<< " , "
-			<< _wcx		<< " , ";
+			<< _wcx		<< " , "
+			<< _pixCnt	<< " , ";
 
 		fprintf (fp, "%s\n", ss.str().c_str());
 	}
 	std::fflush(fp);
 	std::fclose(fp);
 
+	#ifdef SANITY_CHECK_INTENSITIES
+	// Output label's intensities for debug
+	for (auto l : L)
+	{
+		std::stringstream ss;
+
+		LR& lr = labelData[l];
+		auto & I = lr.raw_intensities;
+		if (I.size() == 0)
+			continue;
+		
+		ss << outputDir << "/" << "intensities_label_" << l << ".txt";
+		fullPath = ss.str();	
+		std::cout << "Dumping intensities of label " << l << " to file " << fullPath << std::endl;
+
+
+		fopen_s(&fp, fullPath.c_str(), "w");
+		if (fp)
+		{
+				
+			ss << "I_" << l << " = [\n";
+			fprintf (fp, "%s\n", ss.str().c_str());
+			for (auto w : I)
+			{
+
+				ss << "\t" << w << ", \n";
+				fprintf (fp, "%s\n", ss.str().c_str());
+			}
+			ss << "\; \n";
+			fprintf (fp, "%s\n", ss.str().c_str());
+			std::fclose(fp);
+		}		
+	}
+	#endif
+
 	return true;
 }
 
+
+// Diagnostic function
+void print_by_label(const char* featureName, std::unordered_map<int, StatsInt> L, int numColumns)
+{
+	std::stringstream ss;
+
+	std::cout << std::endl << featureName << std::endl;
+	
+	int i = 1;
+	for (auto& x : L)
+	{
+		ss << 'L' << x.first << ':' << x.second;
+		std::cout << std::setw(10) << ss.str();
+		ss.str (std::string()); // Clear ss
+
+		if (i++ % numColumns == 0)
+			std::cout << std::endl;
+	}
+
+}
+
+// Another diagnostic function
+void print_by_label(const char* featureName, std::unordered_map<int, StatsReal> L, int numColumns)
+{
+	std::stringstream ss;
+
+	std::cout << std::endl << featureName << std::endl;
+
+	int i = 1;
+	for (auto& x : L)
+	{
+		ss << 'L' << x.first << ':' << x.second;
+		std::cout << std::setw(30) << ss.str();
+		ss.str(std::string()); // Clear ss
+
+		if (i++ % numColumns == 0)
+			std::cout << std::endl;
+	}
+
+}

@@ -1,3 +1,7 @@
+//
+// Part of future G-test of Sensemaker
+//
+
 #include <iostream>
 #include <memory>
 #include <string>

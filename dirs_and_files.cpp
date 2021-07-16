@@ -1,7 +1,12 @@
+//
+// Helper functions for manipulating directories and files
+//
+
 #include <string>
 #include <filesystem>
 #include <vector>
 #include <iostream>
+
 
 bool directoryExists(const std::string & dir)
 {

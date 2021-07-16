@@ -1,3 +1,7 @@
+//
+// This file is a collection of drivers of tiled TIFF file scanning from the FastLoader side
+//
+
 #include <string>
 #include <vector>
 #include <fast_loader/specialised_tile_loader/grayscale_tiff_tile_loader.h>
@@ -181,7 +185,6 @@ int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::strin
 
 	return 0; // success
 }
-
 
 bool scanViaFastloader (const std::string & fpath, int num_threads)
 {
@@ -469,7 +472,7 @@ bool TraverseViaFastloader3 (const std::string& fpath, int num_threads)
 		numberChannels);
 
 	// Create the Fast Loader configuration
-	auto options = std::make_unique<fl::FastLoaderConfiguration<fl::DefaultView<uint32_t>>>(tl);
+	auto options = std::make_shared<fl::FastLoaderConfiguration<fl::DefaultView<uint32_t>>>(tl);
 	// Set the configuration
 	options->radius(radiusDepth, radiusHeight, radiusWidth);
 	options->ordered(true);

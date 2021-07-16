@@ -3,7 +3,7 @@
 #include <math.h>
 #include <vector>
 
-#define N_HISTO_BINS 20	// Max number of histogram channels
+#define N_HISTO_BINS 20	// Max number of histogram channels. 5% step.
 
 template <class PixIntens>
 class OnlineHistogram
@@ -17,6 +17,7 @@ public:
 		counts.reserve(N_HISTO_BINS);
 		counts2.reserve(N_HISTO_BINS);
 	}
+	
 	void reset()
 	{
 		numObs = 0;
@@ -26,6 +27,8 @@ public:
 		left_bounds.clear();
 		right_bounds.clear();
 	}
+	
+	// Diagnostic output
 	void print(std::string remark = "")
 	{
 		unsigned int totAllBins = 0;
@@ -38,6 +41,8 @@ public:
 			std::cout << '[' << i << "]\t" << left_bounds[i] << " -- " << right_bounds[i] << "\t\t" << counts[i] << std::endl;
 		}
 	}
+
+	// Appends a value to the histogram
 	void add_observation (PixIntens x)
 	{
 		// Count observations for the sanity check
@@ -153,19 +158,21 @@ public:
 			}
 		}
 	}
+
+	// Returns bin's number of items 
 	double getBinStats(int binIdx)
 	{
 		return counts[binIdx];
 	}
+
+	// Returns bin's central value 
 	double getBinValue(int binIdx)
 	{
 		double val = (left_bounds[binIdx] + right_bounds[binIdx]) / 2.0;
 		return val;
 	}
 
-	/*
-	*	Returns estimated robust mean absolute deviation
-	*/
+	// Returns estimated robust mean absolute deviation
 	double getEstRMAD (int lbound = 10, int rbound = 90)
 	{
 		if (lbound < 0 || lbound >= 50)
@@ -208,7 +215,9 @@ public:
 		double robMAD = robSum / robCount;
 		return robMAD;
 	}
+
 protected:
+	// Returns the bin index for the value 'x'. In case of an error, returns an (illegal) negative bin index
 	int findBinIndex(PixIntens x)
 	{
 		// x is to the left from the current histogram?
@@ -228,18 +237,20 @@ protected:
 		throw std::exception();
 		return -3;
 	}
+
+	// Helper function
 	inline double RoundN(double x)
 	{
 		const double roundFactor = 1000.0;
 		auto retval = std::round(x * roundFactor) / roundFactor;
 		return retval;
 	}
+
+	// Buffers and state variables
 	unsigned int numObs;
 	std::vector <float> counts, counts2;
 	bool useCounts2;
 	std::vector <double> left_bounds, right_bounds;
-
-
 };
 
 

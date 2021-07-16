@@ -15,19 +15,18 @@
 #include <fast_loader/specialised_tile_loader/grayscale_tiff_tile_loader.h>
 //#include <map>
 
-
-// Sanity
 #ifndef __unix
 #define NOMINMAX	// Prevent converting std::min(), max(), ... into macros
 #include<windows.h>
 #endif
 
 
+// Global mutex locking requests to per-label mutexes
 std::mutex glock;
 
+// Parallel version of update_label_stats() 
 void update_label_stats_parallel(int x, int y, int label, PixIntens intensity)
 {
-	// Create a mutex
 	std::mutex* mux;
 	{
 		std::lock_guard<std::mutex> lg(glock);
@@ -36,7 +35,7 @@ void update_label_stats_parallel(int x, int y, int label, PixIntens intensity)
 		if (itm == labelMutexes.end())
 		{
 			//=== Create a label-specific mutex
-			itm = labelMutexes.emplace(label, std::make_unique <std::mutex>()).first;
+			itm = labelMutexes.emplace(label, std::make_shared <std::mutex>()).first;
 
 			//=== Create a label record
 			auto it = uniqueLabels.find(label);
@@ -46,141 +45,46 @@ void update_label_stats_parallel(int x, int y, int label, PixIntens intensity)
 			// Remember this label
 			uniqueLabels.insert(label);
 
-			//--- New
+			// Initialize the label record
 			LR lr;
-
-			lr.labelCount = 1;
-			lr.labelPrevCount = 0;
-			// Min
-			lr.labelMins = intensity;
-			// Max
-			lr.labelMaxs = intensity;
-			// Moments
-			lr.labelMeans = intensity;
-			lr.labelM2 = 0;
-			lr.labelM3 = 0;
-			lr.labelM4 = 0;
-			// Median. Cache intensity values per label for the median calculation
-			std::shared_ptr<std::unordered_set<PixIntens>> ptrUS = std::make_shared <std::unordered_set<PixIntens>>();
-			//---time consuming---	ptrUS->reserve(N2R_2);
-			ptrUS->insert(intensity);
-			lr.labelUniqueIntensityValues = ptrUS;
-			// Energy
-			lr.labelMassEnergy = intensity;
-			// Variance and standard deviation
-			lr.labelVariance = 0.0;
-			// Mean absolute deviation
-			lr.labelMAD = 0;
-			// Previous intensity
-			lr.labelPrevIntens = intensity;
-			// Weighted centroids x and y. 1-based for compatibility with Matlab and WNDCHRM
-			lr.labelCentroid_x = StatsReal(x) + 1;
-			lr.labelCentroid_y = StatsReal(y) + 1;
-			// Histogram
-			std::shared_ptr<Histo> ptrH = std::make_shared <Histo>();
-			ptrH->add_observation(intensity);
-			lr.labelHistogram = ptrH;
-			//
+			init_label_record (lr, x, y, label, intensity);
 			labelData[label] = lr;
+			
+			// We're done processing the very first pixel of a label, return
+			return;
 		}
-
+		
+		// No need to create a mutex for this label. Let's consume the existing one:
 		mux = itm->second.get();
 	}
 
-
-	// Research
-	if (intensityMin == -999.0 || intensityMin > intensity)
-		intensityMin = intensity;
-	if (intensityMax == -999.0 || intensityMax < intensity)
-		intensityMax = intensity;
-
 	// Calculate features updates for this "iteration"
-
-	//else
 	{
+		// Lock guarding the call of function update_label_record()
 		std::lock_guard<std::mutex> lock(*mux);
 
-#ifdef SIMULATE_WORKLOAD_FACTOR
+		#ifdef SIMULATE_WORKLOAD_FACTOR
 		// Simulate a chunk of processing. 1K iterations cost ~300 mks
 		for (long tmp = 0; tmp < SIMULATE_WORKLOAD_FACTOR * 1000; tmp++)
 			auto start = std::chrono::system_clock::now();
-#endif
+		#endif
 
-		//--- New
+		// Update label's stats
 		LR& lr = labelData[label];
-		// Count of pixels belonging to the label
-		auto prev_n = lr.labelCount;	// Previous count
-		lr.labelPrevCount = prev_n;
-		auto n = prev_n + 1;	// New count
-		lr.labelCount = n;
-
-		// Cumulants for moments calculation
-		auto prev_mean = lr.labelMeans;
-		auto delta = intensity - prev_mean;
-		auto delta_n = delta / n;
-		auto delta_n2 = delta_n * delta_n;
-		auto term1 = delta * delta_n * prev_n;
-
-		// Mean
-		auto mean = prev_mean + delta_n;
-		lr.labelMeans = mean;
-
-		// Moments
-		lr.labelM4 = lr.labelM4 + term1 * delta_n2 * (n * n - 3 * n + 3) + 6 * delta_n2 * lr.labelM2 - 4 * delta_n * lr.labelM3;
-		lr.labelM3 = lr.labelM3 + term1 * delta_n * (n - 2) - 3 * delta_n * lr.labelM2;
-		lr.labelM2 = lr.labelM2 + term1;
-
-		// Median
-		auto ptr = lr.labelUniqueIntensityValues;
-		ptr->insert(intensity);
-
-		// Min 
-		auto tmp = std::min (1, 2);
-		lr.labelMins = std::min(lr.labelMins, (StatsInt)intensity);
-
-		// Max
-		lr.labelMaxs = std::min(lr.labelMins, (StatsInt)intensity);
-
-		// Energy
-		lr.labelMassEnergy = lr.labelMassEnergy + intensity;
-
-		// Variance and standard deviation
-		if (n >= 2)
-		{
-			double s_prev = lr.labelVariance,
-				diff = double(intensity) - prev_mean,
-				diff2 = diff * diff;
-			lr.labelVariance = (n - 2) * s_prev / (n - 1) + diff2 / n;
-		}
-		else
-			lr.labelVariance = 0;
-
-		// Mean absolute deviation
-		lr.labelM2 = lr.labelM2 + sqrt(delta * (intensity - mean));
-		lr.labelMAD = lr.labelM2 / n;
-
-		// Weighted centroids x and y. 1-based for compatibility with Matlab and WNDCHRM
-		lr.labelCentroid_x = lr.labelCentroid_x + StatsReal(x) + 1;
-		lr.labelCentroid_y = lr.labelCentroid_y + StatsReal(y) + 1;
-
-		// Histogram
-		auto ptrH = lr.labelHistogram;
-		ptrH->add_observation(intensity);
-
-		// Previous intensity for succeeding iterations
-		lr.labelPrevIntens = intensity;
+		update_label_record (lr, x, y, label, intensity);
 	}
 }
 
-void processPixels(unsigned int start_idx_inclusive, unsigned int end_idx_exclusive, std::vector<uint32_t>* dataL, std::vector<uint32_t>* dataI, unsigned int tw)
+// High-level handler of pixel features update. (update_label_stats_parallel() is the low-level handler.)
+void processPixels (unsigned int start_idx_inclusive, unsigned int end_idx_exclusive, std::vector<uint32_t>* dataL, std::vector<uint32_t>* dataI, unsigned int tw)
 {
 	for (unsigned long i = start_idx_inclusive; i < end_idx_exclusive; i++)
 	{
 		auto label = (*dataL)[i];
 
-#ifdef SINGLE_ROI_TEST
+		#ifdef SINGLE_ROI_TEST
 		label = 1;
-#endif
+		#endif
 
 		if (label != 0)
 		{
@@ -191,6 +95,7 @@ void processPixels(unsigned int start_idx_inclusive, unsigned int end_idx_exclus
 	}
 }
 
+// Function driving tiled processing a file pair - intensity and its mask
 bool scanFilePairParallel (const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads)
 {
 	std::cout << std::endl << "Processing pair " << intens_fpath << " -- " << label_fpath << " with " << num_fastloader_threads << " threads" << std::endl;
@@ -264,7 +169,7 @@ bool scanFilePairParallel (const std::string& intens_fpath, const std::string& l
 
 			{
 				/*
-				//--- just 2 threads
+				//--- Experimental: just 2 threads
 				auto fu1 = std::async(std::launch::async, processPixels,
 					0, tileSize / 2,
 					&dataL, &dataI, tw);

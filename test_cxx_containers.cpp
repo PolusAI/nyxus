@@ -1,3 +1,7 @@
+//
+// Quick & dirty test of containers. Part of future G-test of Sensemaker
+//
+
 #include <chrono>
 #include <cmath>
 #include <memory>
