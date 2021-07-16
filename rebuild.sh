@@ -31,16 +31,20 @@ $CXX $OPTS $INCLU ../dirs_and_files.cpp
 $CXX $OPTS $INCLU ../features.cpp  
 $CXX $OPTS $INCLU ../main.cpp  
 $CXX $OPTS $INCLU ../output.cpp  
+$CXX $OPTS $INCLU ../parallel.cpp  
 $CXX $OPTS $INCLU ../scan_fastloader_way.cpp  
 $CXX $OPTS $INCLU ../test_cxx_containers.cpp  
+$CXX $OPTS $INCLU ../test_histogram.cpp  
 
 $GXX \
 dirs_and_files.o \
 features.o  \
 main.o  \
 output.o  \
+parallel.o \
 scan_fastloader_way.o  \
 test_cxx_containers.o \
+test_histogram.o \
 -lm -ltiff -lfftw3 \
 -lpthread \
 -static-libstdc++ \

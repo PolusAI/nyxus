@@ -78,7 +78,6 @@ bool save_features (std::string inputFpath, std::string outputDir)
 	std::vector<int> L { uniqueLabels.begin(), uniqueLabels.end() };
 	std::sort (L.begin(), L.end());
 
-
 	// Tear off the directory part of 'inputPath', we don't need it
 	std::string fullPath = outputDir + "/" + getPureFname(inputFpath) + ".csv";
 
@@ -104,7 +103,7 @@ bool save_features (std::string inputFpath, std::string outputDir)
 	}
 	
 	// -- Header
-	fprintf (fp, "# , label , pixelCount, min , max , range , mean , median , energy , stddev , skewness , kurtosis , mad , rms , weighted_centroid_x , weighted_centroid_y , entropy , P10 , P25 , P75 , P90 , IQR , RMAD , mode , uniformity\n");
+	fprintf(fp, "label , pixelCount, mean, median , min , max , range , stddev , skewness , kurtosis , mad , energy , rms , entropy , mode , uniformity , P10 , P25 , P75 , P90 , IQR , RMAD , weighted_centroid_y , weighted_centroid_x\n");
 
 	// -- Dump numbers
 	int cnt = 1; 
@@ -112,30 +111,6 @@ bool save_features (std::string inputFpath, std::string outputDir)
 	{
 		std::stringstream ss;
 		
-		/*
-		auto _min = labelMins[l];
-		auto _max = labelMaxs[l];
-		auto _range = _max - _min;
-		auto _mean = labelMeans[l];
-		auto _median = labelMedians[l];
-		auto _energy = labelMassEnergy [l];
-		auto _stdev = labelStddev[l];
-		auto _skew = labelSkewness[l];
-		auto _kurt = labelKurtosis[l];
-		auto _mad = labelMAD[l];
-		auto _rms = labelRMS[l];
-		auto _wcx = labelCentroid_x[l], 
-			_wcy = labelCentroid_y[l];
-		auto _entro = labelEntropy[l];
-		auto _p10 = labelP10[l], 
-			_p25 = labelP25[l], 
-			_p75 = labelP75[l], 
-			_p90 = labelP90[l], 
-			_iqr = labelIQR[l], 
-			_rmad = labelRMAD[l],
-			_mode = labelMode[l], 
-			_unifo = labelUniformity[l];
-		*/
 		//--- New
 		LR& lr = labelData[l];
 		auto _pixCnt = lr.labelCount;
@@ -163,32 +138,36 @@ bool save_features (std::string inputFpath, std::string outputDir)
 			_unifo = lr.labelUniformity;
 
 
-		ss << l		<< " , " 
+		ss	<< l		<< " , " 
 			<< _pixCnt	<< " , "
+			<< _mean	<< " , " 
+			<< _median	<< " , " 			
 			<< _min		<< " , " 
 			<< _max		<< " , " 
 			<< _range	<< " , "
-			<< _mean	<< " , " 
-			<< _median	<< " , " 
-			<< _energy	<< " , " 
 			<< _stdev	<< " , "
 			<< _skew	<< " , "
 			<< _kurt	<< " , "
-			<< _mad		<< " , "
+
+			<< _mad		<< " , "			
+			<< _energy	<< " , " 
 			<< _rms		<< " , "
-			<< _wcx		<< " , "
-			<< _wcy		<< " , "
 			<< _entro	<< " , "
+			<< _mode	<< " , "
+			<< _unifo	<< " , "
+
 			<< _p10		<< " , "
 			<< _p25		<< " , "
 			<< _p75		<< " , " 
 			<< _p90		<< " , "
 			<< _iqr		<< " , "
 			<< _rmad	<< " , "
-			<< _mode	<< " , "
-			<< _unifo;
+			<< _wcy		<< " , "
+			<< _wcx		<< " , ";
+
 		fprintf (fp, "%s\n", ss.str().c_str());
 	}
+	std::fflush(fp);
 	std::fclose(fp);
 
 	return true;

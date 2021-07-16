@@ -157,6 +157,11 @@ public:
 	{
 		return counts[binIdx];
 	}
+	double getBinValue(int binIdx)
+	{
+		double val = (left_bounds[binIdx] + right_bounds[binIdx]) / 2.0;
+		return val;
+	}
 
 	/*
 	*	Returns estimated robust mean absolute deviation
@@ -179,10 +184,15 @@ public:
 			double binSlice = percentPerBin * i;
 			if (binSlice >= lbound && binSlice <= rbound)
 			{
-				robSum += (left_bounds[i] + right_bounds[i]) / 2.0;
+				robSum += getBinValue(i);
 				robCount += counts[i];
 			}
 		}
+
+		// Empty histogram?
+		if (robCount == 0)
+			return 0.0;
+
 		double robMean = robSum / robCount;
 
 		// Calculate robust MAD
@@ -192,7 +202,7 @@ public:
 			double binSlice = percentPerBin * i;
 			if (binSlice >= lbound && binSlice <= rbound)
 			{
-				robSum += std::abs ((left_bounds[i] + right_bounds[i]) / 2.0 - robMean);
+				robSum += std::abs (getBinValue(i) - robMean);
 			}
 		}
 		double robMAD = robSum / robCount;

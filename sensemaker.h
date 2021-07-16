@@ -13,6 +13,8 @@ bool datasetDirsOK (std::string & dirIntens, std::string & dirLab, std::string &
 bool directoryExists (const std::string & dir);
 void readDirectoryFiles (const std::string & dir, std::vector<std::string> & files);
 bool scanViaFastloader (const std::string & fpath, int num_threads);
+bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads);
+bool scanFilePairParallel (const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads);
 bool TraverseViaFastloader1 (const std::string& fpath, int num_threads);
 std::string getPureFname(std::string fpath);
 int ingestDataset (std::vector<std::string> & intensFiles, std::vector<std::string> & labelFiles, int numFastloaderThreads, int numSensemakerThreads, std::string outputDir);
@@ -42,14 +44,14 @@ void do_partial_stats_reduction();
 extern std::unordered_set <int> uniqueLabels;
 
 
-//--- New
+// Label record - structure aggregating label's running statistics and sums
 struct LR
 {
 	StatsInt labelCount;
 	StatsInt labelPrevCount;
 	StatsInt labelPrevIntens;
 	StatsReal labelMeans;
-	std::shared_ptr<std::unordered_set<PixIntens>> labelValues;
+	std::shared_ptr<std::unordered_set<PixIntens>> labelUniqueIntensityValues;
 	StatsInt labelMedians;
 	StatsInt labelMins;
 	StatsInt labelMaxs;
@@ -76,6 +78,7 @@ struct LR
 	StatsReal labelUniformity;
 	StatsReal labelRMAD;
 };
+
 extern std::unordered_map <int, LR> labelData;
 
 extern std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
