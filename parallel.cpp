@@ -186,7 +186,7 @@ bool scanFilePairParallel (const std::string& intens_fpath, const std::string& l
 						idxE = idxS + workPerThread;
 					if (t == num_sensemaker_threads - 1)
 						idxE = tileSize; // include the roundoff tail
-					T.push_back(std::async(std::launch::async, processPixels, 0, tileSize / 4, &dataL, &dataI, tw));
+					T.push_back(std::async(std::launch::async, processPixels, idxS, idxE, &dataL, &dataI, tw));
 				}
 			}
 			// --Timing
