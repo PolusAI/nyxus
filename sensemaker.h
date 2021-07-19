@@ -40,10 +40,6 @@ void print_by_label(const char* featureName, std::unordered_map<int, StatsReal> 
 void clearLabelStats();
 void do_partial_stats_reduction();
 
-// The following label data relates to a single intensity-label file pair
-extern std::unordered_set <int> uniqueLabels;
-
-
 // Label record - structure aggregating label's running statistics and sums
 struct LR
 {
@@ -51,7 +47,7 @@ struct LR
 	StatsInt labelPrevCount;
 	StatsInt labelPrevIntens;
 	StatsReal labelMeans;
-	std::shared_ptr<std::unordered_set<PixIntens>> labelUniqueIntensityValues;
+	//std::shared_ptr<std::unordered_set<PixIntens>> labelUniqueIntensityValues;
 	StatsInt labelMedians;
 	StatsInt labelMins;
 	StatsInt labelMaxs;
@@ -85,8 +81,10 @@ void init_label_record(LR& lr, int x, int y, int label, PixIntens intensity);
 void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity);
 
 extern std::unordered_map <int, LR> labelData;
-
 extern std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
+
+// The following label data relates to a single intensity-label file pair
+extern std::unordered_set <int> uniqueLabels;
 
 // Research
 extern StatsReal intensityMin, intensityMax;
@@ -95,3 +93,4 @@ extern StatsReal intensityMin, intensityMax;
 extern double totalTileLoadTime, totalPixStatsCalcTime;
 double test_containers1();
 double test_containers2();
+bool test_histogram();

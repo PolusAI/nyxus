@@ -67,8 +67,8 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 	std::shared_ptr<std::vector<uint32_t>> ptrL = std::make_shared<std::vector<uint32_t>> (tileSize);
 
 	int cnt = 1;
-	for (int row = 0; row < nth; row++)
-		for (int col = 0; col < ntw; col++)
+	for (unsigned int row = 0; row < nth; row++)
+		for (unsigned int col = 0; col < ntw; col++)
 		{
 			std::cout << "\tt." << row * ntw + col + 1 << "/" << nth * ntw;
 
@@ -215,8 +215,8 @@ bool scanViaFastloader (const std::string & fpath, int num_threads)
 	// Allocate the tile buffer
 	std::shared_ptr<std::vector<uint32_t>> data = std::make_shared<std::vector<uint32_t>>(tileSize);
 
-	for (int row=0; row<nth; row++)
-		for (int col = 0; col < ntw; col++)
+	for (unsigned int row=0; row<nth; row++)
+		for (unsigned int col = 0; col < ntw; col++)
 		{
 			std::cout << "\tt." << row*ntw+col+1 << " of " << nth*ntw << std::endl;
 			fl.loadTileFromFile (data, row, col, 0 /*layer*/, 0 /*level*/);
@@ -400,7 +400,7 @@ bool TraverseViaFastloader2 (const std::string & fpath, int num_threads)
 
 		// Do stuff #2
 		// Get information on the tile and looping through it 
-		for (int32_t y = 0; y < view->tileHeight(); y++) 
+		for (uint32_t y = 0; y < view->tileHeight(); y++) 
 		{
 			for (int32_t x = 0; x < view->tileWidth(); x++) 
 			{

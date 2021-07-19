@@ -12,6 +12,10 @@
 
 int main (int argc, char** argv)
 {
+	// Quick tests:
+	//		bool hOK = test_histogram();
+	//		return 0;
+
 	std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021 Axle Informatics" << std::endl;
 
 	// Check the command line (it's primitive now)
@@ -56,7 +60,11 @@ int main (int argc, char** argv)
 		"\t" << n_fct << " feature calculation threads" << std::endl ;
 
 	#ifdef SINGLE_ROI_TEST
-	std::cout << std::endl << "Attention! Running the single-ROI test" << std::endl;
+	std::cout << std::endl << "Attention! Running the single-ROI test, otherwise undefine SINGLE_ROI_TEST" << std::endl;
+	#endif
+
+	#ifdef SANITY_CHECK_INTENSITIES_FOR_LABEL
+	std::cout << std::endl << "Attention! Will dump intensioities for label " << SANITY_CHECK_INTENSITIES_FOR_LABEL << ", otherwise undefine SANITY_CHECK_INTENSITIES_FOR_LABEL" << std::endl;
 	#endif
 
 	// Scan file names

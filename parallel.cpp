@@ -144,8 +144,8 @@ bool scanFilePairParallel (const std::string& intens_fpath, const std::string& l
 	std::shared_ptr<std::vector<uint32_t>> ptrL = std::make_shared<std::vector<uint32_t>>(tileSize);
 
 	int cnt = 1;
-	for (int row = 0; row < nth; row++)
-		for (int col = 0; col < ntw; col++)
+	for (unsigned int row = 0; row < nth; row++)
+		for (unsigned int col = 0; col < ntw; col++)
 		{
 			std::cout << "\tt." << row * ntw + col + 1 << "/" << nth * ntw;
 

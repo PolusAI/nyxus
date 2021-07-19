@@ -46,11 +46,6 @@ void init_label_record (LR& lr, int x, int y, int label, PixIntens intensity)
 	lr.labelM2 = 0;
 	lr.labelM3 = 0;
 	lr.labelM4 = 0;
-	// Median. Cache intensity values per label for the median calculation
-	std::shared_ptr<std::unordered_set<PixIntens>> ptrUS = std::make_shared <std::unordered_set<PixIntens>>();
-	//---time consuming---	ptrUS->reserve(N2R_2);
-	ptrUS->insert(intensity);
-	lr.labelUniqueIntensityValues = ptrUS;
 	// Energy
 	lr.labelMassEnergy = intensity * intensity;
 	// Variance and standard deviation
@@ -79,9 +74,9 @@ void init_label_record (LR& lr, int x, int y, int label, PixIntens intensity)
 	lr.labelUniformity = 0;
 	lr.labelRMAD = 0;
 
-	#ifdef SANITY_CHECK_INTENSITIES
+	#ifdef SANITY_CHECK_INTENSITIES_FOR_LABEL
 	// Dump intensities for testing
-	if (label == 1)	// Put your label code of interest
+	if (label == SANITY_CHECK_INTENSITIES_FOR_LABEL)	// Put your label code of interest
 		lr.raw_intensities.push_back(intensity);
 	#endif
 
@@ -111,10 +106,6 @@ void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity)
 	lr.labelM4 = lr.labelM4 + term1 * delta_n2 * (n * n - 3 * n + 3) + 6 * delta_n2 * lr.labelM2 - 4 * delta_n * lr.labelM3;
 	lr.labelM3 = lr.labelM3 + term1 * delta_n * (n - 2) - 3 * delta_n * lr.labelM2;
 	lr.labelM2 = lr.labelM2 + term1;
-
-	// Median
-	auto ptr = lr.labelUniqueIntensityValues;
-	ptr->insert(intensity);
 
 	// Min 
 	lr.labelMins = std::min(lr.labelMins, (StatsInt)intensity);
@@ -150,9 +141,9 @@ void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity)
 	// Previous intensity for succeeding iterations
 	lr.labelPrevIntens = intensity;
 
-	#ifdef SANITY_CHECK_INTENSITIES
+	#ifdef SANITY_CHECK_INTENSITIES_FOR_LABEL
 	// Dump intensities for testing
-	if (label == 1)	// Put the label code you're tracking
+	if (label == SANITY_CHECK_INTENSITIES_FOR_LABEL)	// Put the label code you're tracking
 		lr.raw_intensities.push_back(intensity);
 	#endif
 }
@@ -192,7 +183,6 @@ void do_partial_stats_reduction()
 	{
 		auto l = ld.first;		// Label code
 		auto& lr = ld.second;	// Label record
-		auto lv = lr.labelUniqueIntensityValues;	// Label's unique intensities 
 
 		auto n = lr.labelCount;	// Cardinality of the label value set
 
@@ -202,81 +192,30 @@ void do_partial_stats_reduction()
 		// Standard deviations
 		lr.labelStddev = sqrt(lr.labelVariance);
 
-		// Medians
-		// --Sort unique intensities
-		std::vector<int> A{ lv->begin(), lv->end() };
-		std::sort(A.begin(), A.end());
-
-		// --Pick the median
-		if (A.size() % 2 != 0)
-		{
-			int median = A[A.size() / 2];
-			lr.labelMedians = median;
-		}
-		else
-		{
-			int right = A[A.size() / 2],
-				left = A[A.size() / 2 - 1],	// Middle left and right values
-				ave = (right + left) / 2;
-			lr.labelMedians = ave;
-		}
-
 		// Skewness
-		lr.labelSkewness = std::sqrt(double(lr.labelCount)) * lr.labelM3 / std::pow(lr.labelM2, 1.5);	// skewness = sqrt(length(data)) * m3 / (m2^1.5);
+		lr.labelSkewness = std::sqrt(double(lr.labelCount)) * lr.labelM3 / std::pow(lr.labelM2, 1.5);	
 
 		// Kurtosis
-		lr.labelKurtosis = double(lr.labelCount) * lr.labelM4 / (lr.labelM2 * lr.labelM2) - 3.0;	// kurtosis = (n * m4) / (m2 * m2) - 3;
+		lr.labelKurtosis = double(lr.labelCount) * lr.labelM4 / (lr.labelM2 * lr.labelM2) - 3.0;	
 
 		// Root of mean squared
 		lr.labelRMS = sqrt(lr.labelMassEnergy / n);
 
 		// P10, 25, 75, 90
 		auto ptrH = lr.labelHistogram;
-		float percentPerBin = 100.f / float(N_HISTO_BINS),
-			entropy = 0.f,
-			mode = ptrH->getBinStats(0),
-			uniformity = 0.f,
-			rmad = ptrH->getEstRMAD(10, 90);
-		int idxP10 = -1, idxP25 = -1, idxP75 = -1, idxP90 = -1;
-		int modeIdx = 0;
-		for (int i = 0; i < N_HISTO_BINS; i++)
-		{
-			// %-tile
-			auto bs = ptrH->getBinStats(i);
-			if (percentPerBin * i <= 10)
-				idxP10 = i;
-			if (percentPerBin * i <= 25)
-				idxP25 = i;
-			if (percentPerBin * i <= 75)
-				idxP75 = i;
-			if (percentPerBin * i <= 90)
-				idxP90 = i;
+		ptrH->build_histogram();
+		auto [mean_, mode_, p10_, p25_, p75_, p90_, iqr_, rmad_, entropy_, uniformity_] = ptrH->get_stats();
 
-			// entropy
-			double binEntry = bs / n;
-			if (fabs(binEntry) < 1e-15)
-				continue;
-			entropy -= binEntry * log2(binEntry);  //if bin is not empty
-
-			// uniformity
-			uniformity += binEntry * binEntry;
-
-			// mode
-			if (bs > mode)
-			{
-				mode = bs;
-				modeIdx = i;
-			}
-		}
-		lr.labelP10 = ptrH->getBinValue(idxP10);
-		lr.labelP25 = ptrH->getBinValue(idxP25);
-		lr.labelP75 = ptrH->getBinValue(idxP75);
-		lr.labelP90 = ptrH->getBinValue(idxP90);
-		lr.labelIQR = lr.labelP75 - lr.labelP25;
-		lr.labelRMAD = rmad;
-		lr.labelEntropy = entropy;
-		lr.labelMode = ptrH->getBinValue(modeIdx); //mode;
-		lr.labelUniformity = uniformity;
+		lr.labelMedians = mean_;
+		lr.labelP10 = p10_; 
+		lr.labelP25 = p25_; 
+		lr.labelP75 = p75_; 
+		lr.labelP90 = p90_; 
+		lr.labelIQR = iqr_; 
+		lr.labelRMAD = rmad_;
+		lr.labelEntropy = entropy_;
+		lr.labelMode = mode_; 
+		lr.labelUniformity = uniformity_;
 
 		// Weighted centroids
 		lr.labelCentroid_x = lr.labelCentroid_x / lr.labelCount;

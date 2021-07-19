@@ -149,17 +149,16 @@ bool save_features (std::string inputFpath, std::string outputDir)
 	std::fflush(fp);
 	std::fclose(fp);
 
-	#ifdef SANITY_CHECK_INTENSITIES
+	#ifdef SANITY_CHECK_INTENSITIES_FOR_LABEL
 	// Output label's intensities for debug
 	for (auto l : L)
 	{
-		std::stringstream ss;
-
-		LR& lr = labelData[l];
-		auto & I = lr.raw_intensities;
-		if (I.size() == 0)
+		if (l != SANITY_CHECK_INTENSITIES_FOR_LABEL)
 			continue;
 		
+		std::stringstream ss;
+		LR& lr = labelData[l];
+		auto& I = lr.raw_intensities;
 		ss << outputDir << "/" << "intensities_label_" << l << ".txt";
 		fullPath = ss.str();	
 		std::cout << "Dumping intensities of label " << l << " to file " << fullPath << std::endl;
@@ -168,16 +167,11 @@ bool save_features (std::string inputFpath, std::string outputDir)
 		fopen_s(&fp, fullPath.c_str(), "w");
 		if (fp)
 		{
-				
+			ss.clear();
 			ss << "I_" << l << " = [\n";
-			fprintf (fp, "%s\n", ss.str().c_str());
 			for (auto w : I)
-			{
-
 				ss << "\t" << w << ", \n";
-				fprintf (fp, "%s\n", ss.str().c_str());
-			}
-			ss << "\; \n";
+			ss << "\t]; \n";
 			fprintf (fp, "%s\n", ss.str().c_str());
 			std::fclose(fp);
 		}		
