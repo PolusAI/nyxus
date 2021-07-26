@@ -157,7 +157,7 @@ int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::strin
 		start = std::chrono::system_clock::now();
 
 		// Execute calculations requiring reduction
-		do_partial_stats_reduction();
+		reduce_all_labels ();
 
 		// --Timing
 		end = std::chrono::system_clock::now();

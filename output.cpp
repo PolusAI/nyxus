@@ -84,7 +84,42 @@ bool save_features (std::string inputFpath, std::string outputDir)
 		"robust_mean_absolute_deviation , "
 		"weighted_centroid_y , "
 		"weighted_centroid_x , "
-		"pixelCount"
+		"area , "	// aka pixelCount
+		"centroid_x , "
+		"centroid_y , "
+		"bbox_ymin , "
+		"bbox_xmin , "	
+		"bbox_height , "
+		"bbox_width , "
+
+		"major_axis_length , "
+		"minor_axis_length , "
+		"eccentricity , "
+		"orientation , "
+		"neighbors , "
+		"extent , "
+		"aspect_ratio , "
+
+		"equivalent_diameter , "
+		"convex_hull_area , "
+		"solidity , "
+		"perimeter , "
+		"circularity , "
+
+		"extremaP1_x , extremaP1_y , "
+		"extremaP2_x , extremaP2_y , "
+		"extremaP3_x , extremaP3_y , "
+		"extremaP4_x , extremaP4_y , "
+		"extremaP5_x , extremaP5_y , "
+		"extremaP6_x , extremaP6_y , "
+		"extremaP7_x , extremaP7_y , "
+		"extremaP8_x , extremaP8_y "
+
+		"minFeretDiameter , "
+		"maxFeretDiameter , "
+		"minFeretAngle , "
+		"maxFeretAngle"
+
 		"\n");
 
 	// -- Dump numbers
@@ -94,7 +129,7 @@ bool save_features (std::string inputFpath, std::string outputDir)
 		std::stringstream ss;
 		
 		LR& lr = labelData[l];
-		auto _pixCnt = lr.labelCount;
+		auto _pixCnt = lr.pixelCount;
 		auto _min = lr.labelMins;
 		auto _max = lr.labelMaxs;
 		auto _range = _max - _min;
@@ -106,8 +141,8 @@ bool save_features (std::string inputFpath, std::string outputDir)
 		auto _kurt = lr.labelKurtosis;
 		auto _mad = lr.labelMAD;
 		auto _rms = lr.labelRMS;
-		auto _wcx = lr.labelCentroid_x,
-			_wcy = lr.labelCentroid_y;
+		auto _wcx = lr.centroid_x,
+			_wcy = lr.centroid_y;
 		auto _entro = lr.labelEntropy;
 		auto _p10 = lr.labelP10,
 			_p25 = lr.labelP25,
@@ -118,8 +153,28 @@ bool save_features (std::string inputFpath, std::string outputDir)
 			_mode = lr.labelMode,
 			_unifo = lr.labelUniformity;
 
+		auto _bbox_ymin = lr.aabb_ymin,
+			_bbox_xmin = lr.aabb_xmin,
+			_bbox_height = lr.aabb_ymax - lr.aabb_ymin,
+			_bbox_width = lr.aabb_xmax - lr.aabb_xmin;
+
+		auto _maj_axis = lr.major_axis_length, 
+			_min_axis = lr.minor_axis_length,
+			_eccentricity = lr.eccentricity, 
+			_orientation = lr.orientation;
+
+		auto _num_neigs = lr.num_neighbors;
+		auto _extent = lr.extent;
+		auto _asp_rat = lr.aspectRatio;
+
+		auto _equiv_diam = lr.equivDiam;
+		auto _convHullArea = lr.convHullArea;
+		auto _solidity = lr.solidity;
+		auto _perim = lr.perimeter;
+		auto _circ = lr.circularity;
 
 		ss	<< l		<< " , " 
+			// pixel intensity stats
 			<< _mean	<< " , " 
 			<< _median	<< " , " 			
 			<< _min		<< " , " 
@@ -142,7 +197,43 @@ bool save_features (std::string inputFpath, std::string outputDir)
 			<< _rmad	<< " , "
 			<< _wcy		<< " , "
 			<< _wcx		<< " , "
-			<< _pixCnt	<< " , ";
+			// morphology
+			<< _pixCnt	<< " , "
+			<< _wcx		<< " , "
+			<< _wcy		<< " , "
+			<< _bbox_ymin	<< " , "
+			<< _bbox_xmin	<< " , "
+			<< _bbox_height	<< " , "
+			<< _bbox_width	<< " , "
+
+			<< _maj_axis <<		" , "
+			<< _min_axis <<		" , "
+			<< _eccentricity <<	" , "
+			<< _orientation <<	" , "
+		
+			<< _num_neigs	<< " , "
+			<< _extent		<< " , " 
+			<< _asp_rat		<< " , "
+			<< _equiv_diam	<< " , "
+			<< _convHullArea	<< " , "
+			<< _solidity	<< " , "
+			<< _perim	<< " , "
+			<< _circ	<< " , "
+			
+			<< lr.extremaP1x	<< " , "	<< lr.extremaP1y	<< " , "
+			<< lr.extremaP2x	<< " , "	<< lr.extremaP2y	<< " , "
+			<< lr.extremaP3x	<< " , "	<< lr.extremaP3y	<< " , "
+			<< lr.extremaP4x	<< " , "	<< lr.extremaP4y	<< " , "
+			<< lr.extremaP5x	<< " , "	<< lr.extremaP5y	<< " , "
+			<< lr.extremaP6x	<< " , "	<< lr.extremaP6y	<< " , "
+			<< lr.extremaP7x	<< " , "	<< lr.extremaP7y	<< " , "
+			<< lr.extremaP8x	<< " , "	<< lr.extremaP8y
+
+			<< lr.minFeretDiameter	<< " , "
+			<< lr.maxFeretDiameter	<< " , "
+			<< lr.minFeretAngle << " , "
+			<< lr.maxFeretAngle 
+			;
 
 		fprintf (fp, "%s\n", ss.str().c_str());
 	}

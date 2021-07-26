@@ -22,7 +22,7 @@ double test_containers1()
 {
 	std::cout << "test_containers1 (" << N << ") begins..." << std::endl;
 
-	std::unordered_map <int, StatsInt> labelCount;
+	std::unordered_map <int, StatsInt> pixelCount;
 	std::unordered_map <int, StatsInt> labelPrevCount;
 	std::unordered_map <int, StatsInt> labelPrevIntens;
 	std::unordered_map <int, StatsReal> labelMeans;
@@ -33,8 +33,8 @@ double test_containers1()
 	std::unordered_map <int, StatsInt> labelMassEnergy;
 	std::unordered_map <int, StatsReal> labelVariance;
 	std::unordered_map <int, StatsReal> labelStddev;	// Is calculated from 'lavelVariance' in Reduce()
-	std::unordered_map <int, StatsReal> labelCentroid_x;
-	std::unordered_map <int, StatsReal> labelCentroid_y;
+	std::unordered_map <int, StatsReal> centroid_x;
+	std::unordered_map <int, StatsReal> centroid_y;
 	std::unordered_map <int, StatsReal> labelM2;
 	std::unordered_map <int, StatsReal> labelM3;
 	std::unordered_map <int, StatsReal> labelM4;
@@ -61,7 +61,7 @@ double test_containers1()
 	{
 		int p = i % M;	// position
 
-		labelCount[p] = labelCount[p] + i;
+		pixelCount[p] = pixelCount[p] + i;
 		labelPrevCount[p] = i;
 		labelPrevIntens[p] = i;
 		labelMeans[p] = i;
@@ -72,8 +72,8 @@ double test_containers1()
 		labelMassEnergy[p] = i;
 		labelVariance[p] = i;
 		labelStddev[p] = i;
-		labelCentroid_x[p] = i;
-		labelCentroid_y[p] = i;
+		centroid_x[p] = i;
+		centroid_y[p] = i;
 		labelM2[p] = i;
 		labelM3[p] = i;
 		labelM4[p] = i;
@@ -111,7 +111,7 @@ double test_containers2()
 
 	using Tup = std::tuple <
 
-		StatsInt, //std::unordered_map <int, StatsInt> labelCount;
+		StatsInt, //std::unordered_map <int, StatsInt> pixelCount;
 		StatsInt, //std::unordered_map <int, StatsInt> labelPrevCount;
 		StatsInt, //std::unordered_map <int, StatsInt> labelPrevIntens;
 		StatsReal, //std::unordered_map <int, StatsReal> labelMeans;
@@ -122,8 +122,8 @@ double test_containers2()
 		StatsInt, //std::unordered_map <int, StatsInt> labelMassEnergy;
 		StatsReal, //std::unordered_map <int, StatsReal> labelVariance;
 		StatsReal, //std::unordered_map <int, StatsReal> labelStddev;	// Is calculated from 'lavelVariance' in Reduce()
-		StatsReal, //std::unordered_map <int, StatsReal> labelCentroid_x;
-		StatsReal, //std::unordered_map <int, StatsReal> labelCentroid_y;
+		StatsReal, //std::unordered_map <int, StatsReal> centroid_x;
+		StatsReal, //std::unordered_map <int, StatsReal> centroid_y;
 		StatsReal, //std::unordered_map <int, StatsReal> labelM2;
 		StatsReal, //std::unordered_map <int, StatsReal> labelM3;
 		StatsReal, //std::unordered_map <int, StatsReal> labelM4;

@@ -1,3 +1,4 @@
+#define _USE_MATH_DEFINES
 #include <cmath>
 #include <memory>
 #include <unordered_map>
@@ -35,7 +36,10 @@ void clearLabelStats()
 // Label Record (structure 'LR') is where the state of label's pixels scanning and feature calculations is maintained. This function initializes an LR instance for the 1st pixel.
 void init_label_record (LR& lr, int x, int y, int label, PixIntens intensity)
 {
-	lr.labelCount = 1;
+	// Save the pixel
+	lr.raw_pixels.push_back(Pixel2(x, y, intensity));
+
+	lr.pixelCount = 1;
 	lr.labelPrevCount = 0;
 	// Min
 	lr.labelMins = intensity;
@@ -55,8 +59,8 @@ void init_label_record (LR& lr, int x, int y, int label, PixIntens intensity)
 	// Previous intensity
 	lr.labelPrevIntens = intensity;
 	// Weighted centroids x and y. 1-based for compatibility with Matlab and WNDCHRM
-	lr.labelCentroid_x = StatsReal(x) + 1;
-	lr.labelCentroid_y = StatsReal(y) + 1;
+	lr.centroid_x = StatsReal(x) + 1;
+	lr.centroid_y = StatsReal(y) + 1;
 	// Histogram
 	std::shared_ptr<Histo> ptrH = std::make_shared <Histo>();
 	ptrH->add_observation(intensity);
@@ -74,6 +78,9 @@ void init_label_record (LR& lr, int x, int y, int label, PixIntens intensity)
 	lr.labelUniformity = 0;
 	lr.labelRMAD = 0;
 
+	//==== Morphology
+	lr.init_aabb (x, y);
+
 	#ifdef SANITY_CHECK_INTENSITIES_FOR_LABEL
 	// Dump intensities for testing
 	if (label == SANITY_CHECK_INTENSITIES_FOR_LABEL)	// Put your label code of interest
@@ -85,11 +92,14 @@ void init_label_record (LR& lr, int x, int y, int label, PixIntens intensity)
 // This function 'digests' the 2nd and the following pixel of a label and updates the label's feature calculation state - the instance of structure 'LR'
 void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity)
 {
+	// Save the pixel
+	lr.raw_pixels.push_back(Pixel2(x, y, intensity));
+	
 	// Count of pixels belonging to the label
-	auto prev_n = lr.labelCount;	// Previous count
+	auto prev_n = lr.pixelCount;	// Previous count
 	lr.labelPrevCount = prev_n;
 	auto n = prev_n + 1;	// New count
-	lr.labelCount = n;
+	lr.pixelCount = n;
 
 	// Cumulants for moments calculation
 	auto prev_mean = lr.labelMeans;
@@ -130,9 +140,9 @@ void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity)
 	// Mean absolute deviation
 	lr.labelMAD = lr.labelMAD + std::abs(intensity - mean);
 
-	// Weighted centroids. Do we need to make them 1-based for compatibility with Matlab and WNDCHRM?
-	lr.labelCentroid_x = lr.labelCentroid_x + StatsReal(x);
-	lr.labelCentroid_y = lr.labelCentroid_y + StatsReal(y);
+	// Weighted centroids. Needs reduction. Do we need to make them 1-based for compatibility with Matlab and WNDCHRM?
+	lr.centroid_x = lr.centroid_x + StatsReal(x);
+	lr.centroid_y = lr.centroid_y + StatsReal(y);
 
 	// Histogram
 	auto ptrH = lr.labelHistogram;
@@ -140,6 +150,9 @@ void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity)
 
 	// Previous intensity for succeeding iterations
 	lr.labelPrevIntens = intensity;
+
+	//==== Morphology
+	lr.update_aabb (x, y);
 
 	#ifdef SANITY_CHECK_INTENSITIES_FOR_LABEL
 	// Dump intensities for testing
@@ -176,15 +189,93 @@ void update_label_stats(int x, int y, int label, PixIntens intensity)
 	}
 }
 
+//=== Convex hull related
+
+// Sort criterion: points are sorted with respect to their x-coordinate.
+//                 If two points have the same x-coordinate then we compare
+//                 their y-coordinates
+bool sortPoints(const Pixel2& lhs, const Pixel2& rhs)
+{
+	return (lhs.x < rhs.x) || (lhs.x == rhs.x && lhs.y < rhs.y);
+}
+
+// Check if three points make a right turn using cross product
+bool right_turn(const Pixel2& P1, const Pixel2& P2, const Pixel2& P3)
+{
+	return ((P3.x - P1.x) * (P2.y - P1.y) - (P3.y - P1.y) * (P2.x - P1.x)) > 0;
+}
+
+void buildConvHull(
+	// in
+	std::vector<Pixel2> point_cloud,
+	// out
+	std::vector<Pixel2>& CH)
+{
+	CH.clear();
+
+	std::vector<Pixel2>& upperCH = CH;
+	std::vector<Pixel2> lowerCH;
+
+	int n = point_cloud.size();
+
+	//Sorting points
+	sort(point_cloud.begin(), point_cloud.end(), sortPoints);
+
+	//Computing upper convex hull
+	upperCH.push_back(point_cloud[0]);
+	upperCH.push_back(point_cloud[1]);
+
+	for (int i = 2; i < n; i++)
+	{
+		while (upperCH.size() > 1 and (!right_turn(upperCH[upperCH.size() - 2], upperCH[upperCH.size() - 1], point_cloud[i])))
+			upperCH.pop_back();
+		upperCH.push_back(point_cloud[i]);
+	}
+
+	//Computing lower convex hull
+	lowerCH.push_back(point_cloud[n - 1]);
+	lowerCH.push_back(point_cloud[n - 2]);
+
+	for (int i = 2; i < n; i++)
+	{
+		while (lowerCH.size() > 1 and (!right_turn(lowerCH[lowerCH.size() - 2], lowerCH[lowerCH.size() - 1], point_cloud[n - i - 1])))
+			lowerCH.pop_back();
+		lowerCH.push_back(point_cloud[n - i - 1]);
+	}
+
+	// We could use 
+	//  upperCH.insert (upperCH.end(), lowerCH.begin(), lowerCH.end());
+	// but we don't need duplicate points in the result contour
+	for (auto& p : lowerCH)
+		if (std::find(upperCH.begin(), upperCH.end(), p) == upperCH.end())
+			upperCH.push_back(p);
+}
+
+double getPolygonArea(std::vector<Pixel2>& vertices)
+{
+	double area = 0.0;
+	int n = vertices.size();
+	for (int i = 0; i < n - 1; i++)
+	{
+		Pixel2& p_i = vertices[i], & p_ii = vertices[i + 1];
+		area += p_i.x * p_ii.y - p_i.y * p_ii.x;
+	}
+	area += vertices[n - 1].x * vertices[0].y - vertices[0].x * vertices[n - 1].y;
+	area = std::abs(area) / 2.0;
+	return area;
+}
+
+//==== 
+
 // This function should be called once after a file pair processing is finished.
-void do_partial_stats_reduction()
+void reduce_all_labels ()
 {
 	for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
 	{
 		auto l = ld.first;		// Label code
 		auto& lr = ld.second;	// Label record
 
-		auto n = lr.labelCount;	// Cardinality of the label value set
+		auto n = lr.pixelCount;	// Cardinality of the label value set
 
 		// Mean absolute deviation
 		lr.labelMAD = lr.labelMAD / n;
@@ -193,10 +284,10 @@ void do_partial_stats_reduction()
 		lr.labelStddev = sqrt(lr.labelVariance);
 
 		// Skewness
-		lr.labelSkewness = std::sqrt(double(lr.labelCount)) * lr.labelM3 / std::pow(lr.labelM2, 1.5);	
+		lr.labelSkewness = std::sqrt(double(lr.pixelCount)) * lr.labelM3 / std::pow(lr.labelM2, 1.5);	
 
 		// Kurtosis
-		lr.labelKurtosis = double(lr.labelCount) * lr.labelM4 / (lr.labelM2 * lr.labelM2) - 3.0;	
+		lr.labelKurtosis = double(lr.pixelCount) * lr.labelM4 / (lr.labelM2 * lr.labelM2) - 3.0;	
 
 		// Root of mean squared
 		lr.labelRMS = sqrt(lr.labelMassEnergy / n);
@@ -218,11 +309,406 @@ void do_partial_stats_reduction()
 		lr.labelUniformity = uniformity_;
 
 		// Weighted centroids
-		lr.labelCentroid_x = lr.labelCentroid_x / lr.labelCount;
-		lr.labelCentroid_y = lr.labelCentroid_y / lr.labelCount;
+		lr.centroid_x = lr.centroid_x / lr.pixelCount;
+		lr.centroid_y = lr.centroid_y / lr.pixelCount;
+
+		//==== Morphology
+		double bbArea = (lr.aabb_xmax - lr.aabb_xmin) * (lr.aabb_ymax - lr.aabb_ymin);
+		lr.extent = (double)lr.pixelCount / (double)bbArea;
+	}
+
+	//==== Morphology
+	reduce_neighbors (5 /*collision radius*/);
+
+	// ---Fitting an ellipse
+	// 
+	//Reference: https://www.mathworks.com/matlabcentral/mlc-downloads/downloads/submissions/19028/versions/1/previews/regiondata.m/index.html
+	//
+
+	// Calculate normalized second central moments for the region.
+	// 1/12 is the normalized second central moment of a pixel with unit length.
+	for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
+	{
+		auto& r = ld.second;	// Label record
+
+		double XSquaredTmp = 0, YSquaredTmp = 0, XYSquaredTmp = 0;
+		for (auto& pix : r.raw_pixels)
+		{
+			auto diffX = r.centroid_x - pix.x, diffY = r.centroid_y - pix.y;
+			XSquaredTmp += diffX * diffX; //(double(x) - (xCentroid - Im.ROIWidthBeg)) * (double(x) - (xCentroid - Im.ROIWidthBeg));
+			YSquaredTmp += diffY * diffY; //(-double(y) + (yCentroid - Im.ROIHeightBeg)) * (-double(y) + (yCentroid - Im.ROIHeightBeg));
+			XYSquaredTmp += diffX * diffY; //(double(x) - (xCentroid - Im.ROIWidthBeg)) * (-double(y) + (yCentroid - Im.ROIHeightBeg));
+		}
+
+		double uxx = XSquaredTmp / r.pixelCount + 1.0 / 12.0;
+		double uyy = YSquaredTmp / r.pixelCount + 1.0 / 12.0;
+		double uxy = XYSquaredTmp / r.pixelCount;
+
+		// Calculate major axis length, minor axis length, and eccentricity.
+		double common = sqrt((uxx - uyy) * (uxx - uyy) + 4 * uxy * uxy);
+		double MajorAxisLength = 2 * sqrt(2) * sqrt(uxx + uyy + common);
+		double MinorAxisLength = 2 * sqrt(2) * sqrt(uxx + uyy - common);
+		double Eccentricity = 2 * sqrt((MajorAxisLength / 2) * (MajorAxisLength / 2) - (MinorAxisLength / 2) * (MinorAxisLength / 2)) / MajorAxisLength;
+
+		// Calculate orientation [-90,90]
+		double num, den, Orientation;
+		if (uyy > uxx) {
+			num = uyy - uxx + sqrt((uyy - uxx) * (uyy - uxx) + 4 * uxy * uxy);
+			den = 2 * uxy;
+		}
+		else {
+			num = 2 * uxy;
+			den = uxx - uyy + sqrt((uxx - uyy) * (uxx - uyy) + 4 * uxy * uxy);
+		}
+		if (num == 0 && den == 0) 
+			Orientation = 0;
+		else 
+			Orientation = (180.0 / M_PI) * atan(num / den);
+
+		// Save feature values
+		r.major_axis_length = MajorAxisLength;
+		r.minor_axis_length = MinorAxisLength;
+		r.eccentricity = Eccentricity;
+		r.orientation = Orientation;
+
+		//==== Aspect ratio
+		double width = r.aabb_xmax-r.aabb_xmin, 
+			height = r.aabb_ymax - r.aabb_ymin, 
+			aspRat = width / height;
+		r.aspectRatio = aspRat;
+	}
+
+	//==== Contours
+	for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
+	{
+		auto& r = ld.second;	// Label record
+
+		std::vector<Pixel2> C;
+		for (auto& pix : r.raw_pixels)
+		{
+			// check if x-1 exists
+			bool found = false;
+			for (auto& pix2 : r.raw_pixels)
+				if (pix2.y == pix.y && pix2.x == pix.x - 1)
+				{
+					found = true;
+					break;
+				}
+			if (!found)
+			{
+				C.push_back(pix);	// Register a contour pixel
+				continue;	// No need to check other neighboring pixels of this pixel, we've known that it lives on the contour
+			}
+
+			// check if x+1 exists
+			found = false;
+			for (auto& pix2 : r.raw_pixels)
+				if (pix2.y == pix.y && pix2.x == pix.x + 1)
+				{
+					found = true;
+					break;
+				}
+			if (!found)
+			{
+				C.push_back(pix);	// Register a contour pixel
+				continue;	// No need to check other neighboring pixels of this pixel, we've known that it lives on the contour
+			}
+
+			// check if y-1 exists
+			found = false;
+			for (auto& pix2 : r.raw_pixels)
+				if (pix2.x == pix.x && pix2.y == pix.y - 1)
+				{
+					found = true;
+					break;
+				}
+			if (!found)
+			{
+				C.push_back(pix);	// Register a contour pixel
+				continue;	// No need to check other neighboring pixels of this pixel, we've known that it lives on the contour
+			}
+
+			// check if y+1 exists
+			found = false;
+			for (auto& pix2 : r.raw_pixels)
+				if (pix2.x == pix.x && pix2.y == pix.y + 1)
+				{
+					found = true;
+					break;
+				}
+			if (!found)
+			{
+				C.push_back(pix);	// Register a contour pixel
+				continue;	// No need to check other neighboring pixels of this pixel, we've known that it lives on the contour
+			}
+		}
+
+		//==== Convex hull and solidity
+		std::vector <Pixel2> CH;
+		buildConvHull(r.raw_pixels, CH);
+		r.convHullArea = getPolygonArea(CH);
+		r.solidity = r.pixelCount / r.convHullArea;
+
+
+		//==== Equivalent diameter
+		r.equivDiam = sqrt (4.0 / M_PI * r.pixelCount);
+
+		//==== Perimeter
+		r.perimeter = C.size();
+
+		//==== Circularity
+		r.circularity = 4.0 * M_PI * r.pixelCount / (r.perimeter * r.perimeter);
+
+		//==== Extrema
+		int TopMostIndex = -1; 
+		int LowestIndex = -1; 
+		int LeftMostIndex = -1; 
+		int RightMostIndex = -1; 
+
+		for (auto& pix : r.raw_pixels)
+		{
+			if (TopMostIndex ==-1 || pix.y < TopMostIndex)
+				TopMostIndex = pix.y;
+			if (LowestIndex ==-1 || pix.y > LowestIndex)
+				LowestIndex = pix.y;
+
+			if (LeftMostIndex ==-1 || pix.x < LeftMostIndex)
+				LeftMostIndex = pix.x;
+			if (RightMostIndex ==-1 || pix.x > RightMostIndex)
+				RightMostIndex = pix.x;
+		}
+
+		int TopMost_MostLeftIndex = -1;
+		int TopMost_MostRightIndex = -1;
+		int Lowest_MostLeftIndex = -1;
+		int Lowest_MostRightIndex = -1;
+		int LeftMost_Top = -1;
+		int LeftMost_Bottom = -1;
+		int RightMost_Top = -1;
+		int RightMost_Bottom = -1;
+
+		for (auto& pix : r.raw_pixels)
+		{
+			// Find leftmost and rightmost x-pixels of the top 
+			if (pix.y == TopMostIndex && (TopMost_MostLeftIndex ==-1 || pix.x < TopMost_MostLeftIndex))
+				TopMost_MostLeftIndex = pix.x;
+			if (pix.y == TopMostIndex && (TopMost_MostRightIndex == -1 || pix.x > TopMost_MostRightIndex))
+				TopMost_MostRightIndex = pix.x;
+
+			// Find leftmost and rightmost x-pixels of the bottom
+			if (pix.y == LowestIndex && (Lowest_MostLeftIndex ==-1 || pix.x < Lowest_MostLeftIndex))
+				Lowest_MostLeftIndex = pix.x;
+			if (pix.y == LowestIndex && (Lowest_MostRightIndex == -1 || pix.x > Lowest_MostRightIndex))
+				Lowest_MostRightIndex = pix.x;
+
+			// Find top and bottom y-pixels of the leftmost
+			if (pix.x == LeftMostIndex && (LeftMost_Top == -1 || pix.y < LeftMost_Top))
+				LeftMost_Top = pix.y;
+			if (pix.x == LeftMostIndex && (LeftMost_Bottom == -1 || pix.y > LeftMost_Bottom))
+				LeftMost_Bottom = pix.y;
+
+			// Find top and bottom y-pixels of the rightmost
+			if (pix.x == RightMostIndex && (RightMost_Top == -1 || pix.y < RightMost_Top))
+				RightMost_Top = pix.y;
+			if (pix.x == RightMostIndex && (RightMost_Bottom == -1 || pix.y > RightMost_Bottom))
+				RightMost_Bottom = pix.y;		
+		}
+
+		r.extremaP1y = TopMostIndex; // -0.5 + Im.ROIHeightBeg;
+		r.extremaP1x = TopMost_MostLeftIndex; // -0.5 + Im.ROIWidthBeg;
+
+		r.extremaP2y = TopMostIndex; // -0.5 + Im.ROIHeightBeg;
+		r.extremaP2x = TopMost_MostRightIndex; // +0.5 + Im.ROIWidthBeg;
+
+		r.extremaP3y = RightMost_Top; // -0.5 + Im.ROIHeightBeg;//
+		r.extremaP3x = RightMostIndex; // +0.5 + Im.ROIWidthBeg;
+
+		r.extremaP4y = RightMost_Bottom; // +0.5 + Im.ROIHeightBeg;
+		r.extremaP4x = RightMostIndex; // +0.5 + Im.ROIWidthBeg;
+
+		r.extremaP5y = LowestIndex; // +0.5 + Im.ROIHeightBeg;
+		r.extremaP5x = Lowest_MostRightIndex; // +0.5 + Im.ROIWidthBeg;
+
+		r.extremaP6y = LowestIndex; // +0.5 + Im.ROIHeightBeg;
+		r.extremaP6x = Lowest_MostLeftIndex; // -0.5 + Im.ROIWidthBeg;
+
+		r.extremaP7y = LeftMost_Bottom; // +0.5 + Im.ROIHeightBeg;
+		r.extremaP7x = LeftMostIndex; // -0.5 + Im.ROIWidthBeg;
+
+		r.extremaP8y = LeftMost_Top; // -0.5 + Im.ROIHeightBeg;
+		r.extremaP8x = LeftMostIndex; // -0.5 + Im.ROIWidthBeg;
+
+		//==== Feret diameters and angles
+	//---------------------Min/Max Feret Diameter/Angle-----------------------
+		std::vector <double> MaxDistanceArray (180, 0.0);
+		std::vector <double> FeretDiameterAll;
+
+		for (int i = 0; i < 180; ++i) 
+		{
+			float theta = i * M_PI / 180;
+			double MaxXCoord = -999999; // -INF;
+			double MinXCoord = 999999; // INF;
+			int MaxIndex = -1;
+			int MinIndex = -1;
+
+			for (int j = 0; j < CH.size(); j++) 
+			{
+				float rotatedX = std::cos(theta) * (CH[j].x) - std::sin(theta) * (CH[j].y);
+				if (rotatedX > MaxXCoord) 
+				{ 
+					MaxXCoord = rotatedX; 
+					MaxIndex = j; 
+				}
+				if (rotatedX < MinXCoord) 
+				{ 
+					MinXCoord = rotatedX; 
+					MinIndex = j; 
+				}
+			}
+
+			if (MaxIndex == -1 || MinIndex == -1) 
+				std::cout << "Something Went Wrong in Feret diameter/angle calculation!" << std::endl;
+
+			//1 (2x0.5) was added in the below line for consistency with MATLAB as the side of the pixel is 0.5 off from the center.
+			MaxDistanceArray[i] = MaxXCoord - MinXCoord + 1;
+			FeretDiameterAll.push_back(MaxXCoord - MinXCoord + 1);
+		}
+
+		double MaxFeretDiameter = 0;
+		double MinFeretDiameter = 999999; // INF;
+		int MaxFeretAngle = -1;
+		int MinFeretAngle = -1;
+
+		for (int i = 0; i < 180; ++i) {
+			if (MaxDistanceArray[i] > MaxFeretDiameter) 
+			{ 
+				MaxFeretDiameter = MaxDistanceArray[i]; 
+				MaxFeretAngle = i; 
+			}
+			if (MaxDistanceArray[i] < MinFeretDiameter) 
+			{ 
+				MinFeretDiameter = MaxDistanceArray[i]; 
+				MinFeretAngle = i; 
+			}
+		}
+
+		r.maxFeretDiameter = MaxFeretDiameter;
+		r.maxFeretAngle = MaxFeretAngle; //The angle is between 0 to 180. MATLAB reports -180 to 180 instead.
+
+		r.minFeretDiameter = MinFeretDiameter;
+		r.minFeretAngle = MinFeretAngle; //The angle is between 0 to 180. MATLAB reports -180 to 180 instead.
+	}
+	
+}
+
+void reduce_neighbors (int radius)
+{
+	/*==== Collision detection, method 1 (best with GPGPU)
+	//  Calculate collisions into a triangular matrix
+	int nul = uniqueLabels.size();
+	std::vector <char> CM (nul*nul, false);	// collision matrix
+	// --this loop can be parallel
+	for (auto l1 : uniqueLabels)
+	{
+		LR & r1 = labelData[l1];
+		for (auto l2 : uniqueLabels)
+		{
+			if (l1 == l2)
+				continue;	// Trivial - diagonal element
+			if (l1 > l2)
+				continue;	// No need to check the upper triangle
+
+			LR& r2 = labelData[l2];
+			bool noOverlap = r2.aabb_xmin > r1.aabb_xmax+radius || r2.aabb_xmax < r1.aabb_xmin-radius 
+				|| r2.aabb_ymin > r1.aabb_ymax+radius || r2.aabb_ymax < r1.aabb_ymin-radius;
+			if (!noOverlap)
+			{
+				unsigned int idx = l1 * nul + l2;	
+				CM[idx] = true;
+			}
+		}
+	}
+
+	// Harvest collision pairs
+	for (auto l1 : uniqueLabels)
+	{
+		LR& r1 = labelData[l1];
+		for (auto l2 : uniqueLabels)
+		{
+			if (l1 == l2)
+				continue;	// Trivial - diagonal element
+			if (l1 > l2)
+				continue;	// No need to check the upper triangle
+
+			unsigned int idx = l1 * nul + l2;
+			if (CM[idx] == true)
+			{
+				LR& r2 = labelData[l2];
+				r1.num_neighbors++;
+				r2.num_neighbors++;
+			}
+		}
+	}
+	====*/
+
+	//==== Collision detection, method 2
+	int m = 10000;
+	std::vector <std::vector<int>> HT (m);	// hash table
+	for (auto l : uniqueLabels)
+	{
+		LR& r = labelData [l];
+		auto h1 = spat_hash_2d (r.aabb_xmin, r.aabb_ymin, m),
+			h2 = spat_hash_2d (r.aabb_xmin, r.aabb_ymax, m),
+			h3 = spat_hash_2d (r.aabb_xmax, r.aabb_ymin, m),
+			h4 = spat_hash_2d (r.aabb_xmax, r.aabb_ymax, m);
+		HT[h1].push_back(l);
+		HT[h2].push_back(l);
+		HT[h3].push_back(l);
+		HT[h4].push_back(l);
+	}
+
+	// Broad phase of collision detection
+	for (auto& bin : HT)
+	{
+		// No need to bother about not colliding labels
+		if (bin.size() <= 1)
+			continue;
+
+		// Perform the N^2 check
+		for (auto& l1 : bin)
+		{
+			LR& r1 = labelData[l1];
+
+			for (auto& l2 : bin)
+			{
+				if (l1 < l2)	// Lower triangle 
+				{
+					LR & r2 = labelData[l2];
+					bool overlap = ! aabbNoOverlap (r1, r2, radius);
+					if (overlap)
+					{
+						r1.num_neighbors++;
+						r2.num_neighbors++;
+					}
+				}
+			}
+		}
 	}
 }
 
+void LR::init_aabb (StatsInt x, StatsInt y)
+{
+	aabb_xmin = aabb_xmax = x;
+	aabb_ymin = aabb_ymax = y;
+	num_neighbors = 0;
+}
 
+void LR::update_aabb (StatsInt x, StatsInt y)
+{
+	aabb_xmin = std::min (aabb_xmin, x);
+	aabb_xmax = std::max (aabb_xmax, x);
+	aabb_ymin = std::min (aabb_ymin, y);
+	aabb_ymax = std::max (aabb_ymax, y);
+}
 
 
