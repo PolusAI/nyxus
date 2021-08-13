@@ -109,7 +109,7 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 			// --Timing
 			end = std::chrono::system_clock::now();
 			std::chrono::duration<double> elapsed2 = end - start;
-			std::cout << "\tT(featureCalc) vs T(loadTile) [s]: " << elapsed2.count() << " / " << elapsed1.count() << " = " << elapsed2.count()/elapsed1.count() << " x" << std::endl;
+			std::cout << " T(feature) vs T(tile) [s]: " << elapsed2.count() << " / " << elapsed1.count() << " = " << elapsed2.count()/elapsed1.count() << " x" << std::endl;
 			totalTileLoadTime += elapsed1.count();
 			totalPixStatsCalcTime += elapsed2.count();
 
@@ -120,7 +120,7 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 	return true;
 }
 
-int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, std::string outputDir)
+int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int min_online_roi_size, std::string outputDir)
 {
 	// Sanity
 	std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -157,7 +157,7 @@ int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::strin
 		start = std::chrono::system_clock::now();
 
 		// Execute calculations requiring reduction
-		reduce_all_labels ();
+		reduce_all_labels (min_online_roi_size);
 
 		// --Timing
 		end = std::chrono::system_clock::now();

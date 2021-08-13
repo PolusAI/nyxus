@@ -1,4 +1,4 @@
-#define _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES	// For M_PI, etc.
 #include <cmath>
 #include <memory>
 #include <unordered_map>
@@ -216,7 +216,7 @@ void buildConvHull(
 	std::vector<Pixel2>& upperCH = CH;
 	std::vector<Pixel2> lowerCH;
 
-	int n = point_cloud.size();
+	int n = (int) point_cloud.size();
 
 	//Sorting points
 	sort(point_cloud.begin(), point_cloud.end(), sortPoints);
@@ -254,7 +254,7 @@ void buildConvHull(
 double getPolygonArea(std::vector<Pixel2>& vertices)
 {
 	double area = 0.0;
-	int n = vertices.size();
+	int n = (int) vertices.size();
 	for (int i = 0; i < n - 1; i++)
 	{
 		Pixel2& p_i = vertices[i], & p_ii = vertices[i + 1];
@@ -268,8 +268,12 @@ double getPolygonArea(std::vector<Pixel2>& vertices)
 //==== 
 
 // This function should be called once after a file pair processing is finished.
-void reduce_all_labels ()
+void reduce_all_labels (int min_online_roi_size)
 {
+	//==== Pixel intensity stats
+
+	std::cout << "\treducing intensity stats" << std::endl;
+
 	for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
 	{
 		auto l = ld.first;		// Label code
@@ -312,18 +316,53 @@ void reduce_all_labels ()
 		lr.centroid_x = lr.centroid_x / lr.pixelCount;
 		lr.centroid_y = lr.centroid_y / lr.pixelCount;
 
+		//==== Calculate pixel intensity stats directly rather than online
+		if (min_online_roi_size > 0)
+		{
+			// -- Standard deviation
+			StatsReal sumM2 = 0.0, 
+				sumM3 = 0.0, 
+				sumM4 = 0.0,
+				absSum = 0.0, 
+				sumEnergy = 0.0;
+			for (auto& pix : lr.raw_pixels)
+			{
+				auto diff = pix.inten - lr.labelMeans;
+				sumM2 += diff * diff;
+				sumM3 += diff * diff * diff;
+				sumM4 += diff * diff * diff * diff;
+				absSum += abs(diff);
+				sumEnergy += pix.inten * pix.inten;
+			}
+			double m2 = sumM2 / (n - 1), 
+				m3 = sumM3 / n,
+				m4 = sumM4 / n;
+			lr.labelVariance = sumM2 / (n - 1);
+			lr.labelStddev = sqrt (lr.labelVariance);
+			lr.labelMAD = absSum / n;	// Biased
+			lr.labelRMS = sqrt (sumEnergy / n);
+			lr.labelSkewness = m3 / pow(m2, 1.5);
+			lr.labelKurtosis = m4 / (m2 * m2) - 3;
+			//
+		}
+
 		//==== Morphology
 		double bbArea = (lr.aabb_xmax - lr.aabb_xmin) * (lr.aabb_ymax - lr.aabb_ymin);
 		lr.extent = (double)lr.pixelCount / (double)bbArea;
+
 	}
 
 	//==== Morphology
+	std::cout << "\treducing morphology / neighbors" << std::endl;
+
 	reduce_neighbors (5 /*collision radius*/);
 
 	// ---Fitting an ellipse
 	// 
 	//Reference: https://www.mathworks.com/matlabcentral/mlc-downloads/downloads/submissions/19028/versions/1/previews/regiondata.m/index.html
 	//
+
+	std::cout << "\treducing morphology / ellipticity" << std::endl;
 
 	// Calculate normalized second central moments for the region.
 	// 1/12 is the normalized second central moment of a pixel with unit length.
@@ -378,10 +417,14 @@ void reduce_all_labels ()
 		r.aspectRatio = aspRat;
 	}
 
-	//==== Contours
+	std::cout << "\treducing morphology / contours, hulls, and everything else" << std::endl;
+
 	for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
 	{
 		auto& r = ld.second;	// Label record
+
+		//==== Contours
+		//xxx std::cout << "c ";
 
 		std::vector<Pixel2> C;
 		for (auto& pix : r.raw_pixels)
@@ -444,37 +487,39 @@ void reduce_all_labels ()
 		}
 
 		//==== Convex hull and solidity
+		//xxx std::cout << "h ";
+
 		std::vector <Pixel2> CH;
 		buildConvHull(r.raw_pixels, CH);
 		r.convHullArea = getPolygonArea(CH);
 		r.solidity = r.pixelCount / r.convHullArea;
 
-
 		//==== Equivalent diameter
-		r.equivDiam = sqrt (4.0 / M_PI * r.pixelCount);
+		r.equivDiam = sqrt(4.0 / M_PI * r.pixelCount);
 
 		//==== Perimeter
-		r.perimeter = C.size();
+		r.perimeter = (StatsInt)C.size();
 
 		//==== Circularity
 		r.circularity = 4.0 * M_PI * r.pixelCount / (r.perimeter * r.perimeter);
 
 		//==== Extrema
-		int TopMostIndex = -1; 
-		int LowestIndex = -1; 
-		int LeftMostIndex = -1; 
-		int RightMostIndex = -1; 
+		//xxx std::cout << "e ";
+		int TopMostIndex = -1;
+		int LowestIndex = -1;
+		int LeftMostIndex = -1;
+		int RightMostIndex = -1;
 
 		for (auto& pix : r.raw_pixels)
 		{
-			if (TopMostIndex ==-1 || pix.y < TopMostIndex)
+			if (TopMostIndex == -1 || pix.y < (StatsInt)TopMostIndex)
 				TopMostIndex = pix.y;
-			if (LowestIndex ==-1 || pix.y > LowestIndex)
+			if (LowestIndex == -1 || pix.y > (StatsInt)LowestIndex)
 				LowestIndex = pix.y;
 
-			if (LeftMostIndex ==-1 || pix.x < LeftMostIndex)
+			if (LeftMostIndex == -1 || pix.x < (StatsInt)LeftMostIndex)
 				LeftMostIndex = pix.x;
-			if (RightMostIndex ==-1 || pix.x > RightMostIndex)
+			if (RightMostIndex == -1 || pix.x > (StatsInt)RightMostIndex)
 				RightMostIndex = pix.x;
 		}
 
@@ -490,28 +535,28 @@ void reduce_all_labels ()
 		for (auto& pix : r.raw_pixels)
 		{
 			// Find leftmost and rightmost x-pixels of the top 
-			if (pix.y == TopMostIndex && (TopMost_MostLeftIndex ==-1 || pix.x < TopMost_MostLeftIndex))
+			if (pix.y == TopMostIndex && (TopMost_MostLeftIndex == -1 || pix.x < (StatsInt)TopMost_MostLeftIndex))
 				TopMost_MostLeftIndex = pix.x;
-			if (pix.y == TopMostIndex && (TopMost_MostRightIndex == -1 || pix.x > TopMost_MostRightIndex))
+			if (pix.y == TopMostIndex && (TopMost_MostRightIndex == -1 || pix.x > (StatsInt)TopMost_MostRightIndex))
 				TopMost_MostRightIndex = pix.x;
 
 			// Find leftmost and rightmost x-pixels of the bottom
-			if (pix.y == LowestIndex && (Lowest_MostLeftIndex ==-1 || pix.x < Lowest_MostLeftIndex))
+			if (pix.y == LowestIndex && (Lowest_MostLeftIndex == -1 || pix.x < (StatsInt)Lowest_MostLeftIndex))
 				Lowest_MostLeftIndex = pix.x;
-			if (pix.y == LowestIndex && (Lowest_MostRightIndex == -1 || pix.x > Lowest_MostRightIndex))
+			if (pix.y == LowestIndex && (Lowest_MostRightIndex == -1 || pix.x > (StatsInt)Lowest_MostRightIndex))
 				Lowest_MostRightIndex = pix.x;
 
 			// Find top and bottom y-pixels of the leftmost
-			if (pix.x == LeftMostIndex && (LeftMost_Top == -1 || pix.y < LeftMost_Top))
+			if (pix.x == LeftMostIndex && (LeftMost_Top == -1 || pix.y < (StatsInt)LeftMost_Top))
 				LeftMost_Top = pix.y;
-			if (pix.x == LeftMostIndex && (LeftMost_Bottom == -1 || pix.y > LeftMost_Bottom))
+			if (pix.x == LeftMostIndex && (LeftMost_Bottom == -1 || pix.y > (StatsInt)LeftMost_Bottom))
 				LeftMost_Bottom = pix.y;
 
 			// Find top and bottom y-pixels of the rightmost
-			if (pix.x == RightMostIndex && (RightMost_Top == -1 || pix.y < RightMost_Top))
+			if (pix.x == RightMostIndex && (RightMost_Top == -1 || pix.y < (StatsInt)RightMost_Top))
 				RightMost_Top = pix.y;
-			if (pix.x == RightMostIndex && (RightMost_Bottom == -1 || pix.y > RightMost_Bottom))
-				RightMost_Bottom = pix.y;		
+			if (pix.x == RightMostIndex && (RightMost_Bottom == -1 || pix.y > (StatsInt)RightMost_Bottom))
+				RightMost_Bottom = pix.y;
 		}
 
 		r.extremaP1y = TopMostIndex; // -0.5 + Im.ROIHeightBeg;
@@ -538,67 +583,58 @@ void reduce_all_labels ()
 		r.extremaP8y = LeftMost_Top; // -0.5 + Im.ROIHeightBeg;
 		r.extremaP8x = LeftMostIndex; // -0.5 + Im.ROIWidthBeg;
 
+		//==== Euler number
+		EulerNumber eu(r.raw_pixels, r.aabb_xmin, r.aabb_ymin, r.aabb_xmax, r.aabb_ymax, 8);	// Using mode=8 following to WNDCHRM example
+		r.euler_number = eu.euler_number;
+
 		//==== Feret diameters and angles
-	//---------------------Min/Max Feret Diameter/Angle-----------------------
-		std::vector <double> MaxDistanceArray (180, 0.0);
-		std::vector <double> FeretDiameterAll;
+		ParticleMetrics pm(CH);
+		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
+		pm.calc_ferret(
+			r.maxFeretDiameter,
+			r.maxFeretAngle,
+			r.minFeretDiameter,
+			r.minFeretAngle,
+			allD
+			);
+		Statistics structStat;
+		structStat = ComputeCommonStatistics2 (allD);
+		r.feretStats_minDiameter = (double)structStat.min;	// ratios[59]
+		r.feretStats_maxDiameter = (double)structStat.max;	// ratios[60]
+		r.feretStats_meanDiameter = structStat.mean;	// ratios[61]
+		r.feretStats_medianDiameter = structStat.median;	// ratios[62]
+		r.feretStats_stdDiameter = structStat.stdev;	// ratios[63]
+		r.feretStats_modeDiameter = (double)structStat.mode;	// ratios[64]
 
-		for (int i = 0; i < 180; ++i) 
-		{
-			float theta = i * M_PI / 180;
-			double MaxXCoord = -999999; // -INF;
-			double MinXCoord = 999999; // INF;
-			int MaxIndex = -1;
-			int MinIndex = -1;
+		//==== Martin diameters
+		pm.calc_martin (allD);
+		structStat = ComputeCommonStatistics2 (allD);
+		r.martinStats_minDiameter = (double)structStat.min;	
+		r.martinStats_maxDiameter = (double)structStat.max;
+		r.martinStats_meanDiameter = structStat.mean;
+		r.martinStats_medianDiameter = structStat.median;
+		r.martinStats_stdDiameter = structStat.stdev;
+		r.martinStats_modeDiameter = (double)structStat.mode;
 
-			for (int j = 0; j < CH.size(); j++) 
-			{
-				float rotatedX = std::cos(theta) * (CH[j].x) - std::sin(theta) * (CH[j].y);
-				if (rotatedX > MaxXCoord) 
-				{ 
-					MaxXCoord = rotatedX; 
-					MaxIndex = j; 
-				}
-				if (rotatedX < MinXCoord) 
-				{ 
-					MinXCoord = rotatedX; 
-					MinIndex = j; 
-				}
-			}
+		//==== Nassenstein diameters
+		pm.calc_nassenstein (allD);
+		structStat = ComputeCommonStatistics2 (allD);
+		r.nassStats_minDiameter = (double)structStat.min;	
+		r.nassStats_maxDiameter = (double)structStat.max;	
+		r.nassStats_meanDiameter = structStat.mean;	
+		r.nassStats_medianDiameter = structStat.median;
+		r.nassStats_stdDiameter = structStat.stdev;
+		r.nassStats_modeDiameter = (double)structStat.mode;
 
-			if (MaxIndex == -1 || MinIndex == -1) 
-				std::cout << "Something Went Wrong in Feret diameter/angle calculation!" << std::endl;
-
-			//1 (2x0.5) was added in the below line for consistency with MATLAB as the side of the pixel is 0.5 off from the center.
-			MaxDistanceArray[i] = MaxXCoord - MinXCoord + 1;
-			FeretDiameterAll.push_back(MaxXCoord - MinXCoord + 1);
-		}
-
-		double MaxFeretDiameter = 0;
-		double MinFeretDiameter = 999999; // INF;
-		int MaxFeretAngle = -1;
-		int MinFeretAngle = -1;
-
-		for (int i = 0; i < 180; ++i) {
-			if (MaxDistanceArray[i] > MaxFeretDiameter) 
-			{ 
-				MaxFeretDiameter = MaxDistanceArray[i]; 
-				MaxFeretAngle = i; 
-			}
-			if (MaxDistanceArray[i] < MinFeretDiameter) 
-			{ 
-				MinFeretDiameter = MaxDistanceArray[i]; 
-				MinFeretAngle = i; 
-			}
-		}
-
-		r.maxFeretDiameter = MaxFeretDiameter;
-		r.maxFeretAngle = MaxFeretAngle; //The angle is between 0 to 180. MATLAB reports -180 to 180 instead.
-
-		r.minFeretDiameter = MinFeretDiameter;
-		r.minFeretAngle = MinFeretAngle; //The angle is between 0 to 180. MATLAB reports -180 to 180 instead.
+		//==== Hexagonality and polygonality
+		Hexagonality_and_Polygonality hp;
+		auto [polyAve, hexAve, hexSd] = hp.calculate(r.num_neighbors, r.pixelCount, r.perimeter, r.convHullArea, r.minFeretDiameter, r.maxFeretDiameter);
+		r.polygonality_ave = polyAve;
+		r.hexagonality_ave = hexAve;
+		r.hexagonality_stddev = hexSd;
 	}
 	
+
 }
 
 void reduce_neighbors (int radius)

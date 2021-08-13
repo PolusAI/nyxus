@@ -17,7 +17,7 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 bool scanFilePairParallel (const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads);
 bool TraverseViaFastloader1 (const std::string& fpath, int num_threads);
 std::string getPureFname(std::string fpath);
-int ingestDataset (std::vector<std::string> & intensFiles, std::vector<std::string> & labelFiles, int numFastloaderThreads, int numSensemakerThreads, std::string outputDir);
+int ingestDataset (std::vector<std::string> & intensFiles, std::vector<std::string> & labelFiles, int numFastloaderThreads, int numSensemakerThreads, int min_online_roi_size, std::string outputDir);
 bool save_features (std::string inputFpath, std::string outputDir);
 void showCmdlineHelp();
 int checkAndReadDataset(
@@ -27,7 +27,7 @@ int checkAndReadDataset(
 	std::vector<std::string>& intensFiles, std::vector<std::string>& labelFiles);
 
 using PixIntens = unsigned int;
-using StatsInt = unsigned long;
+using StatsInt = long;
 using StatsReal = double;
 using Histo = OnlineHistogram<PixIntens>;
 
@@ -38,24 +38,139 @@ void print_label_stats();
 void print_by_label(const char* featureName, std::unordered_map<int, StatsInt> L, int numColumns = 8); 
 void print_by_label(const char* featureName, std::unordered_map<int, StatsReal> L, int numColumns = 4);
 void clearLabelStats();
-void reduce_all_labels();
+void reduce_all_labels(int min_online_roi_size);
 
-struct Pixel2
+template <typename T>
+struct Point2
 {
-	StatsInt x, y;
+	T x, y;
+	Point2 (T x_, T y_): x(x_), y(y_) {}
+	Point2(): x(0), y(0) {}
+	Point2 operator - ()
+	{
+		Point2 p2(-(this->x), -(this->y));
+		return p2;
+	}
+	Point2 operator - (const Point2 & v)
+	{
+		Point2 p2(this->x - v.x, this->y - v.y);
+		return p2;
+	}
+	double norm() const { return sqrt(x*x+y*y); }
+};
+
+using Point2i = Point2<StatsInt>;
+using Point2f = Point2<float>;
+inline double norm(const Point2f& p) { return p.norm(); }
+
+struct Pixel2: public Point2i
+{
 	PixIntens inten;
-	Pixel2(StatsInt x_, StatsInt y_, PixIntens i_): x(x_), y(y_), inten(i_) {}
+	Pixel2(StatsInt x_, StatsInt y_, PixIntens i_): Point2(x_, y_), inten(i_) {}
 	bool operator == (const Pixel2& p2)
 	{
 		return this->x == p2.x && this->y == p2.y;
 	}
+
 };
+
+// Inherited from WNDCHRM, used for Feret and Martin statistics calculation
+struct Statistics 
+{
+	int min, max, mode;
+	double mean, median, stdev;
+};
+
+Statistics ComputeCommonStatistics2 (std::vector<double>& Data);
+
+class Hexagonality_and_Polygonality
+{
+public:
+	Hexagonality_and_Polygonality() {}
+	std::tuple<double, double, double> calculate(int num_neighbors, int roi_area, int roi_perimeter, double convhull_area, double min_feret_diam, double max_feret_diam);
+
+};
+
+// Longest chord, Feret, Martin, Nassenstein diameters
+class ParticleMetrics
+{
+public:
+	ParticleMetrics(std::vector<Pixel2>& _convex_hull);
+
+	void calc_ferret(
+		// output:
+		double& minFeretDiameter,
+		double& minFeretAngle,
+		double& maxFeretDiameter,
+		double& maxFeretAngle,
+		std::vector<double>& all_D);
+	void calc_martin (std::vector<double>& D);
+	void calc_nassenstein (std::vector<double>& D);
+	const int NY = 10;
+	const int rot_angle_increment = 10;	// degrees
+protected:
+	std::tuple<StatsInt, StatsInt, StatsInt, StatsInt> get_pixelcloud_bounds (std::vector<Pixel2> & pixels);	// Returns minX, minY, maxX, maxY
+	void rotate_pixels(
+		// in 
+		float angle_deg,
+		std::vector<Pixel2> & P, 
+		// out
+		std::vector<Pixel2>& P_rot);
+
+	std::vector<Pixel2>& convex_hull;
+};
+
+class EulerNumber
+{
+public:
+	long euler_number;
+	EulerNumber (std::vector<Pixel2>& P, StatsInt min_x, StatsInt  min_y, StatsInt max_x, StatsInt max_y, int mode);
+protected:
+	long calculate (std::vector<unsigned char>& I, int height, int width, int mode);
+};
+
+class MinEnclosingCircle
+{
+public:
+	MinEnclosingCircle() {}
+	
+	double calculate_diam (std::vector<Pixel2> & Contour)
+	{
+		//------------------------Minimum enclosing circle------------------------------------------
+		//https://git.rwth-aachen.de/ants/sensorlab/imea/-/blob/master/imea/measure_2d/macro.py#L166
+		// Find the minimum enclosing circle of an object
+		Point2f center;
+		float radius = 0;
+		minEnclosingCircle (Contour, center, radius);
+		//Diameter of the minimum circumference of the projection area.
+		double diameter_min_enclosing_circle = 2 * radius;
+		return diameter_min_enclosing_circle; // ratios[45] = diameter_min_enclosing_circle;
+	}
+
+	const float EPS = 1.0e-4f;
+
+protected:
+	void minEnclosingCircle (
+		// in:
+		std::vector<Pixel2> & Contour, 
+		// out:
+		Point2f &center, 
+		float &radius);
+	void findMinEnclosingCircle (const std::vector<Pixel2>& pts, int count, Point2f& center, float& radius);
+	void findSecondPoint (const std::vector<Pixel2>& pts, int i, Point2f& center, float& radius);
+	void findThirdPoint (const std::vector<Pixel2>& pts, int i, int j, Point2f& center, float& radius);
+	void findCircle3pts (const std::vector<Pixel2>& pts, Point2f& center, float& radius);
+};
+
 
 // Label record - structure aggregating label's running statistics and sums
 struct LR
 {
+	std::vector <Pixel2> raw_pixels;	
+	
 	//==== Pixel intensity statistics
-	StatsInt pixelCount;
+
+	StatsInt pixelCount;	// Area
 	StatsInt labelPrevCount;
 	StatsInt labelPrevIntens;
 	StatsReal labelMeans;
@@ -74,7 +189,7 @@ struct LR
 	StatsReal labelSkewness;
 	StatsReal labelKurtosis;
 	StatsReal labelMAD;
-	StatsReal labelRMS;
+	StatsReal labelRMS;		// Root Mean Squared (RMS) is the square-root of the mean of all the squared intensity values. It is another measure of the magnitude of the image values.
 	std::shared_ptr<Histo> labelHistogram;
 	StatsReal labelP10;
 	StatsReal labelP25;
@@ -121,12 +236,39 @@ struct LR
 		extremaP8y, extremaP8x;
 
 	// --Feret
-	StatsReal	maxFeretDiameter;
-	StatsReal	maxFeretAngle;
-	StatsReal	minFeretDiameter;
-	StatsReal	minFeretAngle; 
+	StatsReal	maxFeretDiameter,
+		maxFeretAngle,
+		minFeretDiameter,
+		minFeretAngle,
+		feretStats_minDiameter,	// ratios[59]
+		feretStats_maxDiameter,	// ratios[60]
+		feretStats_meanDiameter,	// ratios[61]
+		feretStats_medianDiameter,	// ratios[62]
+		feretStats_stdDiameter,	// ratios[63]
+		feretStats_modeDiameter;	// ratios[64]
 
-	std::vector <Pixel2> raw_pixels;
+	// --Martin
+	StatsReal	
+		martinStats_minDiameter,	// ratios[59]
+		martinStats_maxDiameter,	// ratios[60]
+		martinStats_meanDiameter,	// ratios[61]
+		martinStats_medianDiameter,	// ratios[62]
+		martinStats_stdDiameter,	// ratios[63]
+		martinStats_modeDiameter;	// ratios[64]
+
+	// --Nassenstein
+	StatsReal
+		nassStats_minDiameter,	// ratios[59]
+		nassStats_maxDiameter,	// ratios[60]
+		nassStats_meanDiameter,	// ratios[61]
+		nassStats_medianDiameter,	// ratios[62]
+		nassStats_stdDiameter,	// ratios[63]
+		nassStats_modeDiameter;	// ratios[64]
+
+	long euler_number;
+
+	// --hexagonality & polygonality
+	double polygonality_ave, hexagonality_ave, hexagonality_stddev;
 };
 
 void init_label_record(LR& lr, int x, int y, int label, PixIntens intensity);
@@ -162,12 +304,12 @@ inline bool aabbNoOverlap (LR & r1, LR & r2, int radius)
 	return retval;
 }
 
-inline int spat_hash_2d (StatsInt x, StatsInt y, int m)
+inline unsigned long spat_hash_2d (StatsInt x, StatsInt y, int m)
 {
-	auto h = x * 73856093;
+	unsigned long h = x * 73856093;
 	h = h ^ y * 19349663;
 	// hash   hash  z × 83492791	// For the future
 	// hash   hash  l × 67867979
-	auto retval = h % m;
+	unsigned long retval = h % m;
 	return retval;
 }

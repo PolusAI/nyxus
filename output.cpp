@@ -63,7 +63,8 @@ bool save_features (std::string inputFpath, std::string outputDir)
 	}
 	
 	// -- Header
-	fprintf (fp, 
+	fprintf (fp,
+		// Intensity stats:
 		"label , "
 		"mean, "
 		"median , "
@@ -84,7 +85,9 @@ bool save_features (std::string inputFpath, std::string outputDir)
 		"robust_mean_absolute_deviation , "
 		"weighted_centroid_y , "
 		"weighted_centroid_x , "
-		"area , "	// aka pixelCount
+
+		// Morphology:
+		"area , "	// aka pixels count
 		"centroid_x , "
 		"centroid_y , "
 		"bbox_ymin , "
@@ -118,7 +121,33 @@ bool save_features (std::string inputFpath, std::string outputDir)
 		"minFeretDiameter , "
 		"maxFeretDiameter , "
 		"minFeretAngle , "
-		"maxFeretAngle"
+		"maxFeretAngle , "
+		"stat_feretDiam_min , "
+		"stat_feretDiam_max , "
+		"stat_feretDiam_mean , "
+		"stat_feretDiam_median , "
+		"stat_feretDiam_stddev , "
+		"stat_feretDiam_mode , "
+
+		"stat_martinDiam_min , "
+		"stat_martinDiam_max , "
+		"stat_martinDiam_mean , "
+		"stat_martinDiam_median , "
+		"stat_martinDiam_stddev , "
+		"stat_martinDiam_mode , "
+
+		"stat_nassensteinDiam_min , "
+		"stat_nassensteinDiam_max , "
+		"stat_nassensteinDiam_mean , "
+		"stat_nassensteinDiam_median , "
+		"stat_nassensteinDiam_stddev , "
+		"stat_nassensteinDiam_mode , "
+
+		"euler_nuber, "
+
+		"polygonality_ave , "
+		"hexagonality_ave , "
+		"hexagonality_stddev"
 
 		"\n");
 
@@ -128,50 +157,50 @@ bool save_features (std::string inputFpath, std::string outputDir)
 	{
 		std::stringstream ss;
 		
-		LR& lr = labelData[l];
-		auto _pixCnt = lr.pixelCount;
-		auto _min = lr.labelMins;
-		auto _max = lr.labelMaxs;
+		LR& r = labelData[l];
+		auto _pixCnt = r.pixelCount;
+		auto _min = r.labelMins;
+		auto _max = r.labelMaxs;
 		auto _range = _max - _min;
-		auto _mean = lr.labelMeans;
-		auto _median = lr.labelMedians;
-		auto _energy = lr.labelMassEnergy;
-		auto _stdev = lr.labelStddev;
-		auto _skew = lr.labelSkewness;
-		auto _kurt = lr.labelKurtosis;
-		auto _mad = lr.labelMAD;
-		auto _rms = lr.labelRMS;
-		auto _wcx = lr.centroid_x,
-			_wcy = lr.centroid_y;
-		auto _entro = lr.labelEntropy;
-		auto _p10 = lr.labelP10,
-			_p25 = lr.labelP25,
-			_p75 = lr.labelP75,
-			_p90 = lr.labelP90,
-			_iqr = lr.labelIQR,
-			_rmad = lr.labelRMAD,
-			_mode = lr.labelMode,
-			_unifo = lr.labelUniformity;
+		auto _mean = r.labelMeans;
+		auto _median = r.labelMedians;
+		auto _energy = r.labelMassEnergy;
+		auto _stdev = r.labelStddev;
+		auto _skew = r.labelSkewness;
+		auto _kurt = r.labelKurtosis;
+		auto _mad = r.labelMAD;
+		auto _rms = r.labelRMS;
+		auto _wcx = r.centroid_x,
+			_wcy = r.centroid_y;
+		auto _entro = r.labelEntropy;
+		auto _p10 = r.labelP10,
+			_p25 = r.labelP25,
+			_p75 = r.labelP75,
+			_p90 = r.labelP90,
+			_iqr = r.labelIQR,
+			_rmad = r.labelRMAD,
+			_mode = r.labelMode,
+			_unifo = r.labelUniformity;
 
-		auto _bbox_ymin = lr.aabb_ymin,
-			_bbox_xmin = lr.aabb_xmin,
-			_bbox_height = lr.aabb_ymax - lr.aabb_ymin,
-			_bbox_width = lr.aabb_xmax - lr.aabb_xmin;
+		auto _bbox_ymin = r.aabb_ymin,
+			_bbox_xmin = r.aabb_xmin,
+			_bbox_height = r.aabb_ymax - r.aabb_ymin,
+			_bbox_width = r.aabb_xmax - r.aabb_xmin;
 
-		auto _maj_axis = lr.major_axis_length, 
-			_min_axis = lr.minor_axis_length,
-			_eccentricity = lr.eccentricity, 
-			_orientation = lr.orientation;
+		auto _maj_axis = r.major_axis_length, 
+			_min_axis = r.minor_axis_length,
+			_eccentricity = r.eccentricity, 
+			_orientation = r.orientation;
 
-		auto _num_neigs = lr.num_neighbors;
-		auto _extent = lr.extent;
-		auto _asp_rat = lr.aspectRatio;
+		auto _num_neigs = r.num_neighbors;
+		auto _extent = r.extent;
+		auto _asp_rat = r.aspectRatio;
 
-		auto _equiv_diam = lr.equivDiam;
-		auto _convHullArea = lr.convHullArea;
-		auto _solidity = lr.solidity;
-		auto _perim = lr.perimeter;
-		auto _circ = lr.circularity;
+		auto _equiv_diam = r.equivDiam;
+		auto _convHullArea = r.convHullArea;
+		auto _solidity = r.solidity;
+		auto _perim = r.perimeter;
+		auto _circ = r.circularity;
 
 		ss	<< l		<< " , " 
 			// pixel intensity stats
@@ -220,19 +249,43 @@ bool save_features (std::string inputFpath, std::string outputDir)
 			<< _perim	<< " , "
 			<< _circ	<< " , "
 			
-			<< lr.extremaP1x	<< " , "	<< lr.extremaP1y	<< " , "
-			<< lr.extremaP2x	<< " , "	<< lr.extremaP2y	<< " , "
-			<< lr.extremaP3x	<< " , "	<< lr.extremaP3y	<< " , "
-			<< lr.extremaP4x	<< " , "	<< lr.extremaP4y	<< " , "
-			<< lr.extremaP5x	<< " , "	<< lr.extremaP5y	<< " , "
-			<< lr.extremaP6x	<< " , "	<< lr.extremaP6y	<< " , "
-			<< lr.extremaP7x	<< " , "	<< lr.extremaP7y	<< " , "
-			<< lr.extremaP8x	<< " , "	<< lr.extremaP8y
+			<< r.extremaP1x	<< " , "	<< r.extremaP1y	<< " , "
+			<< r.extremaP2x	<< " , "	<< r.extremaP2y	<< " , "
+			<< r.extremaP3x	<< " , "	<< r.extremaP3y	<< " , "
+			<< r.extremaP4x	<< " , "	<< r.extremaP4y	<< " , "
+			<< r.extremaP5x	<< " , "	<< r.extremaP5y	<< " , "
+			<< r.extremaP6x	<< " , "	<< r.extremaP6y	<< " , "
+			<< r.extremaP7x	<< " , "	<< r.extremaP7y	<< " , "
+			<< r.extremaP8x	<< " , "	<< r.extremaP8y
 
-			<< lr.minFeretDiameter	<< " , "
-			<< lr.maxFeretDiameter	<< " , "
-			<< lr.minFeretAngle << " , "
-			<< lr.maxFeretAngle 
+			<< r.minFeretDiameter	<< " , "
+			<< r.maxFeretDiameter	<< " , "
+			<< r.minFeretAngle << " , "
+			<< r.maxFeretAngle << " , "
+			<< r.feretStats_minDiameter << " , "
+			<< r.feretStats_maxDiameter << " , "
+			<< r.feretStats_meanDiameter << " , "
+			<< r.feretStats_medianDiameter << " , "
+			<< r.feretStats_stdDiameter << " , "
+			<< r.feretStats_modeDiameter << " , "
+
+			<< r.martinStats_minDiameter << " , "
+			<< r.martinStats_maxDiameter << " , "
+			<< r.martinStats_meanDiameter << " , "
+			<< r.martinStats_medianDiameter << " , "
+			<< r.martinStats_stdDiameter << " , "
+			<< r.martinStats_modeDiameter << " , "
+
+			<< r.nassStats_minDiameter << " , "
+			<< r.nassStats_maxDiameter << " , "
+			<< r.nassStats_meanDiameter << " , "
+			<< r.nassStats_medianDiameter << " , "
+			<< r.nassStats_stdDiameter << " , "
+			<< r.nassStats_modeDiameter << " , "
+			<< r.euler_number << " , "
+			<< r.polygonality_ave << " , "
+			<< r.hexagonality_ave << " , "
+			<< r.hexagonality_stddev 
 			;
 
 		fprintf (fp, "%s\n", ss.str().c_str());

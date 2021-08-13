@@ -19,7 +19,7 @@ int main (int argc, char** argv)
 	std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021 Axle Informatics" << std::endl;
 
 	// Check the command line (it's primitive now)
-	if (! (argc == 4 || argc == 6))
+	if (! (argc == 4 || argc == 7)) // 4 - only directories, 7 - threads info and threads info
 	{
 		showCmdlineHelp();
 		return 1;
@@ -30,9 +30,18 @@ int main (int argc, char** argv)
 		dirLabels = argv[2], 
 		dirOut = argv[3];
 
-	int n_tlt = 1 /*# of tile loader threads*/, n_fct = 1 /*# Sensemaker threads*/;	// Default values
-	if (argc == 6)
+	int n_tlt = 1 /*# of tile loader threads*/, n_fct = 1 /*# Sensemaker threads*/, min_online_roi_size = 0;	// Default values
+
+	if (argc == 7)
 	{
+		/*
+		if (strcmp(argv[4], CMDLN_OPT_THREADS) != 0)
+		{
+			std::cout << "Expecting " << argv[4] << " to be " << CMDLN_OPT_THREADS << std::endl;
+			return 1;
+		}
+		*/
+
 		char* stopPtr;
 
 		// --parse the # of fastloader threads
@@ -50,6 +59,14 @@ int main (int argc, char** argv)
 			std::cout << "Command line error: expecting '" << argv[5] << "' to be a positive integer constant. Stopping" << std::endl;
 			return 1;
 		}
+
+		// --parse the min online ROI size
+		min_online_roi_size = strtol(argv[6], &stopPtr, 10);
+		if (*stopPtr || min_online_roi_size <= 0)
+		{
+			std::cout << "Command line error: expecting '" << argv[6] << "' to be a positive integer constant. Stopping" << std::endl;
+			return 1;
+		}
 	}
 
     std::cout << 
@@ -57,7 +74,8 @@ int main (int argc, char** argv)
 		"\t<labels data directory> = " << dirLabels << std::endl <<
 		"\t<output directory> = " << dirOut << std::endl <<
 		"\t" << n_tlt << " tile loader (currently FastLoader) threads" << std::endl <<
-		"\t" << n_fct << " feature calculation threads" << std::endl ;
+		"\t" << n_fct << " feature calculation threads" << std::endl << 
+		"\t" << min_online_roi_size << " min online ROI size" << std::endl ;
 
 	#ifdef SINGLE_ROI_TEST
 	std::cout << std::endl << "Attention! Running the single-ROI test, otherwise undefine SINGLE_ROI_TEST" << std::endl;
@@ -80,7 +98,7 @@ int main (int argc, char** argv)
 	init_feature_buffers();
 
 	// Process the image sdata
-	errorCode = ingestDataset (intensFiles, labelFiles, n_tlt /*# of FastLoader threads*/, n_fct /*# Sensemaker threads*/, dirOut);
+	errorCode = ingestDataset (intensFiles, labelFiles, n_tlt /*# of FastLoader threads*/, n_fct /*# Sensemaker threads*/, min_online_roi_size, dirOut);
 
 	// Check the error code 
 	switch (errorCode)
@@ -109,7 +127,7 @@ void showCmdlineHelp()
 {
 	std::cout 
 		<< "Command line format:" << std::endl 
-		<< "\t" << PROJECT_NAME << " <intensity directory> <label directory> <output directory> [<# of FastLoader threads> <# of feature calculation threads>]" << std::endl;
+		<< "\t" << PROJECT_NAME << " <intensity directory> <label directory> <output directory> [--minOnlineROI <# of pixels>] [--threads <# of FastLoader threads> <# of feature calculation threads>]" << std::endl;
 }
 
 
