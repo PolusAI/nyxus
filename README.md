@@ -1,1 +1,1 @@
-# mosaic microscopy slide sensemaker
+# maker sense of mosaic microscopy slides
