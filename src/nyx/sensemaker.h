@@ -112,12 +112,6 @@ struct Pixel2: public Point2i
 	operator Point2f () const { Point2f p(this->x, this->y); return p; }
 };
 
-//Pixel2 operator + (const Pixel2& v1, const Pixel2& v2)
-//{
-//	Pixel2 p2(v1.x + v2.x, v1.y + v2.y, (v1.inten+v2.inten)/2);
-//	return p2;
-//}
-
 // Inherited from WNDCHRM, used for Feret and Martin statistics calculation
 struct Statistics 
 {
@@ -126,6 +120,27 @@ struct Statistics
 };
 
 Statistics ComputeCommonStatistics2 (std::vector<double>& Data);
+
+class Contour
+{
+public:
+	Contour() {}
+	void calculate(std::vector<Pixel2> rawPixels);
+	std::vector<Pixel2> theContour;
+	StatsInt get_roi_perimeter();
+	StatsReal get_diameter_equal_perimeter();
+protected:
+};
+
+class ConvexHull
+{
+public:
+	ConvexHull() {}
+	void calculate (std::vector<Pixel2> & rawPixels);
+	double getSolidity();
+	double getArea();
+	std::vector<Pixel2> CH;
+};
 
 class Hexagonality_and_Polygonality
 {
@@ -193,6 +208,21 @@ protected:
 	void findCircle3pts (const std::vector<Pixel2>& pts, Point2f& center, float& radius);
 };
 
+class InscribingCircumscribingCircle
+{
+public:
+	std::tuple <double, double> calculateInsCir (std::vector<Pixel2>& contours, double xCentroid, double yCentroid);
+};
+
+class GeodeticLength_and_Thickness
+{
+public:
+	GeodeticLength_and_Thickness() {}
+	std::tuple<double, double> calculate(StatsInt roiArea, StatsInt roiPerimeter);
+
+protected:
+};
+
 
 // Label record - structure aggregating label's running statistics and sums
 struct LR
@@ -250,7 +280,7 @@ struct LR
 
 	StatsReal	aspectRatio;
 	StatsReal	equivDiam;
-	StatsInt	perimeter;
+	StatsInt	roiPerimeter;
 	StatsReal	circularity;
 	StatsReal	convHullArea;
 	StatsReal	solidity;
@@ -303,7 +333,12 @@ struct LR
 	double polygonality_ave, hexagonality_ave, hexagonality_stddev;
 
 	// --Circle fitting
-	double diameter_min_enclosing_circle;
+	double diameter_min_enclosing_circle,	// ratios[45]
+		diameter_circumscribing_circle,		//ratios[46] 
+		diameter_inscribing_circle;			// ratios[47] 
+
+	double geodeticLength,	// ratios[53] 
+		thickness;			// ratios[54]
 };
 
 void init_label_record(LR& lr, int x, int y, int label, PixIntens intensity);
