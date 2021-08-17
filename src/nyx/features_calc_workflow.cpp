@@ -353,12 +353,6 @@ void reduce_all_labels (int min_online_roi_size)
 		r.equivDiam = cntr.get_diameter_equal_perimeter();
 
 		//==== Convex hull and solidity
-		/*
-		std::vector <Pixel2> CH;
-		buildConvHull(r.raw_pixels, CH);
-		r.convHullArea = getPolygonArea(CH);
-		r.solidity = r.pixelCount / r.convHullArea;
-		*/
 		ConvexHull convHull;
 		convHull.calculate (r.raw_pixels);
 		r.convHullArea = convHull.getArea();

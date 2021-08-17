@@ -149,7 +149,11 @@ bool save_features (std::string inputFpath, std::string outputDir)
 		"hexagonality_ave , "
 		"hexagonality_stddev , "
 
-		"diameter_min_enclosing_circle"
+		"diameter_min_enclosing_circle , "
+		"diameter_circumscribing_circle , "
+		"diameter_inscribing_circle , "
+		"geodeticLength , "
+		"thickness"
 
 		"\n");
 
@@ -201,7 +205,6 @@ bool save_features (std::string inputFpath, std::string outputDir)
 		auto _equiv_diam = r.equivDiam;
 		auto _convHullArea = r.convHullArea;
 		auto _solidity = r.solidity;
-		auto _perim = r.perimeter;
 		auto _circ = r.circularity;
 
 		ss	<< l		<< " , " 
@@ -248,7 +251,7 @@ bool save_features (std::string inputFpath, std::string outputDir)
 			<< _equiv_diam	<< " , "
 			<< _convHullArea	<< " , "
 			<< _solidity	<< " , "
-			<< _perim	<< " , "
+			<< r.roiPerimeter << " , "
 			<< _circ	<< " , "
 			
 			<< r.extremaP1x	<< " , "	<< r.extremaP1y	<< " , "
@@ -288,7 +291,11 @@ bool save_features (std::string inputFpath, std::string outputDir)
 			<< r.polygonality_ave << " , "
 			<< r.hexagonality_ave << " , "
 			<< r.hexagonality_stddev	<< " , "
-			<< r.diameter_min_enclosing_circle
+			<< r.diameter_min_enclosing_circle	<< " , "
+			<< r.diameter_circumscribing_circle	<< " , "
+			<< r.diameter_inscribing_circle	<<	" , "
+			<< r.geodeticLength	<< " , "
+			<< r.thickness
 			;
 
 		fprintf (fp, "%s\n", ss.str().c_str());

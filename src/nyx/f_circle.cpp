@@ -258,6 +258,33 @@ void MinEnclosingCircle::minEnclosingCircle(
         break;
     }
     }
-
-
 }
+
+
+std::tuple <double, double> InscribingCircumscribingCircle::calculateInsCir (std::vector<Pixel2> & contours, double xCentroid, double yCentroid)
+{
+    //-----------------circumscribing and inscribing circle ---------------------------
+    //https://git.rwth-aachen.de/ants/sensorlab/imea/-/blob/master/imea/measure_2d/macro.py#L199
+
+    double yCentroid2 = yCentroid - 1;
+    double xCentroid2 = xCentroid - 1;
+    std::vector <double> distances;
+
+    for (size_t j = 0; j < contours.size(); j++) {
+        double tmpx = (contours[j].x - xCentroid2);
+        double tmpy = (contours[j].y - yCentroid2);
+        double distance = sqrt(tmpx * tmpx + tmpy * tmpy);
+        distances.push_back(distance);
+    }
+
+    double radius_circumscribing_circle = *std::max_element(distances.begin(), distances.end());
+    double radius_inscribing_circle = *std::min_element(distances.begin(), distances.end());
+
+    double diameter_circumscribing_circle = 2 * radius_circumscribing_circle;
+    double diameter_inscribing_circle = 2 * radius_inscribing_circle;
+
+    //ratios[46] = diameter_circumscribing_circle;
+    //ratios[47] = diameter_inscribing_circle;
+    return { diameter_inscribing_circle, diameter_circumscribing_circle };
+}
+
