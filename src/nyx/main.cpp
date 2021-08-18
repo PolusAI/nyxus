@@ -98,7 +98,7 @@ int main (int argc, char** argv)
 	init_feature_buffers();
 
 	// Process the image sdata
-	errorCode = ingestDataset (intensFiles, labelFiles, n_tlt /*# of FastLoader threads*/, n_fct /*# Sensemaker threads*/, min_online_roi_size, dirOut);
+	errorCode = ingestDataset (intensFiles, labelFiles, n_tlt /*# of FastLoader threads*/, n_fct /*# Sensemaker threads*/, min_online_roi_size, true, dirOut);
 
 	// Check the error code 
 	switch (errorCode)

@@ -1,4 +1,5 @@
 #include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
 
 #define _USE_MATH_DEFINES	// For M_PI, etc.
 #include <cmath>
@@ -26,37 +27,46 @@ PYBIND11_MODULE(backend, m)
 {
 	m.def("calc_pixel_intensity_stats", [] (const std::string &label_path, const std::string &intensity_path) 
 		{
-				std::cout << "calc_pixel_intensity_stats (" << label_path << "," << intensity_path << std::endl;
-				
-				//... actual feature calculation ...
-				
-				return std::make_tuple(
-					0, //Mean
-					1, //Median
-					2, //Min
-					3, //Max
-					4, //Range
-					5, //Standard Deviation
-					6, //Skewness
-					7, //Kurtosis
-					8, //Mean Absolute Deviation
-					9, //Energy
-					10, //Root Mean Squared
-					11, //Entropy
-					12, //Mode
-					13, //Uniformity
-					14, //10th Percentile
-					15, //25th Percentile
-					16, //75th Percentile
-					17, //90th Percentile
-					18, //Interquartile Range
-					19, //Robust Mean Absolute Deviation
-					20, //Weighted Centroid in y direction
-					21 //Weighted Centroid in x direction
-					);
-		}
-	);
+			std::vector <std::string> intensFiles, labelFiles;
+			readDirectoryFiles(intensity_path, intensFiles);
+			readDirectoryFiles(label_path, labelFiles);
 
+			// One-time initialization
+			init_feature_buffers();
+
+			// Process the image sdata
+			int errorCode = ingestDataset(
+				intensFiles, 
+				labelFiles, 
+				2, // of FastLoader threads 
+				1, // # feature scanner threads
+				100, // min_online_roi_size
+				true, ""	// csv output directory
+			);
+
+			// Allocate and initialize some data; make this big so
+			// we can see the impact on the process memory use:
+			size_t size = uniqueLabels.size() * numFeaturesCalculated;
+			double* foo = new double[size];
+			for (size_t i = 0; i < size; i++) {
+				foo[i] = (double)i;
+			}
+
+			// Create a Python object that will free the allocated
+			// memory when destroyed:
+			py::capsule free_when_done(foo, [](void* f) {
+				double* foo = reinterpret_cast<double*>(f);
+				std::cerr << "Element [0] = " << foo[0] << "\n";
+				std::cerr << "freeing memory @ " << f << "\n";
+				delete[] foo;
+				});
+
+			return py::array_t<double>(
+				{ uniqueLabels.size(), numFeaturesCalculated }, // shape
+				{ uniqueLabels.size() * 8 * 8, numFeaturesCalculated * 8 }, // C-style contiguous strides for double
+				foo, // the data pointer
+				free_when_done); // numpy array references this parent
+			});
 }
 
 

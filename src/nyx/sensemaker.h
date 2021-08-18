@@ -17,8 +17,8 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 bool scanFilePairParallel (const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads);
 bool TraverseViaFastloader1 (const std::string& fpath, int num_threads);
 std::string getPureFname(std::string fpath);
-int ingestDataset (std::vector<std::string> & intensFiles, std::vector<std::string> & labelFiles, int numFastloaderThreads, int numSensemakerThreads, int min_online_roi_size, std::string outputDir);
-bool save_features (std::string inputFpath, std::string outputDir);
+int ingestDataset (std::vector<std::string> & intensFiles, std::vector<std::string> & labelFiles, int numFastloaderThreads, int numSensemakerThreads, int min_online_roi_size, bool save2csv, std::string csvOutputDir);
+bool save_features_2_csv(std::string inputFpath, std::string outputDir);
 void showCmdlineHelp();
 int checkAndReadDataset(
 	// input
@@ -383,3 +383,10 @@ inline unsigned long spat_hash_2d (StatsInt x, StatsInt y, int m)
 	unsigned long retval = h % m;
 	return retval;
 }
+
+// Label data
+extern std::unordered_set<int> uniqueLabels;
+extern std::unordered_map <int, LR> labelData;
+extern std::vector <std::vector<double>> lumpFeatureValues;	// [# of labels X # of features]
+extern int numFeaturesCalculated;
+

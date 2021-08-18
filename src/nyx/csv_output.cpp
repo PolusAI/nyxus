@@ -32,8 +32,11 @@ void print_label_stats()
 }
 
 // Saves the result of image scanning and feature calculation. Must be called after the reduction phase.
-bool save_features (std::string inputFpath, std::string outputDir)
+bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 {
+	// How many features are available?
+	numFeaturesCalculated = 82;
+
 	// Sort the labels
 	std::vector<int> L { uniqueLabels.begin(), uniqueLabels.end() };
 	std::sort (L.begin(), L.end());

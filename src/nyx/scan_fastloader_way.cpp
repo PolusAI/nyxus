@@ -120,7 +120,7 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 	return true;
 }
 
-int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int min_online_roi_size, std::string outputDir)
+int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int min_online_roi_size, bool save2csv, std::string csvOutputDir)
 {
 	// Sanity
 	std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -165,14 +165,13 @@ int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::strin
 		std::cout << "\tTiming of sensemaker::reduce [s] " << elapsed2.count() << std::endl;
 		totalPixStatsCalcTime += elapsed2.count();
 
-		// Sanity check
-		//---	print_label_stats();
-
 		// Save the result for this intensity-label file pair
-		ok = save_features (ifp, outputDir);
+		if (save2csv == false)
+			continue;
+		ok = save_features_2_csv(ifp, csvOutputDir);
 		if (ok == false)
 		{
-			std::cout << "save_features() returned an error code" << std::endl;
+			std::cout << "save_features_2_csv() returned an error code" << std::endl;
 			return 2;
 		}
 	}
