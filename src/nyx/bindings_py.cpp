@@ -14,7 +14,6 @@
 #include <array>
 #include "sensemaker.h"
 
-
 #ifndef __unix
 #define NOMINMAX	// Prevent converting std::min(), max(), ... into macros
 #include<windows.h>
@@ -34,7 +33,7 @@ PYBIND11_MODULE(backend, m)
 			// One-time initialization
 			init_feature_buffers();
 
-			// Process the image sdata
+			// Process the image data
 			int errorCode = ingestDataset(
 				intensFiles, 
 				labelFiles, 
@@ -44,27 +43,28 @@ PYBIND11_MODULE(backend, m)
 				true, ""	// csv output directory
 			);
 
-			// Allocate and initialize some data; make this big so
-			// we can see the impact on the process memory use:
-			size_t size = uniqueLabels.size() * numFeaturesCalculated;
-			double* foo = new double[size];
-			for (size_t i = 0; i < size; i++) {
-				foo[i] = (double)i;
-			}
+			// Allocate and initialize the return data buffer - [a matrix n_labels X n_features]:
+			// (Background knowledge - https://stackoverflow.com/questions/54876346/pybind11-and-stdvector-how-to-free-data-using-capsules)
+			size_t ny = uniqueLabels.size(),
+				nx = numFeaturesCalculated,
+				len = ny * nx;
+			double* retbuf = new double[len];
+			for (size_t i = 0; i < len; i++) 
+				retbuf[i] = 0.0;
 
 			// Create a Python object that will free the allocated
 			// memory when destroyed:
-			py::capsule free_when_done(foo, [](void* f) {
+			py::capsule free_when_done (retbuf, [](void* f) {
 				double* foo = reinterpret_cast<double*>(f);
 				std::cerr << "Element [0] = " << foo[0] << "\n";
 				std::cerr << "freeing memory @ " << f << "\n";
 				delete[] foo;
 				});
 
-			return py::array_t<double>(
-				{ uniqueLabels.size(), numFeaturesCalculated }, // shape
-				{ uniqueLabels.size() * 8 * 8, numFeaturesCalculated * 8 }, // C-style contiguous strides for double
-				foo, // the data pointer
+			return py::array_t<double> (
+				{ ny, nx }, // shape
+				{ ny * nx * 8, nx * 8 }, // C-style contiguous strides for double
+				retbuf, // the data pointer
 				free_when_done); // numpy array references this parent
 			});
 }

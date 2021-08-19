@@ -10,8 +10,6 @@
 #include "sensemaker.h"
 
 
-
-
 Statistics ComputeCommonStatistics2 (std::vector<double> & Data) {
 
     Statistics output;

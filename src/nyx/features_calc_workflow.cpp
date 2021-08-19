@@ -10,11 +10,7 @@
 #include "sensemaker.h"
 
 
-std::unordered_set<int> uniqueLabels;
-std::unordered_map <int, LR> labelData;
-std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
-int numFeaturesCalculated = 0;
-std::vector <std::vector<double>> lumpFeatureValues;	
+
 
 constexpr int N2R = 50 * 1000;
 constexpr int N2R_2 = 50 * 1000;

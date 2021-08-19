@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <mutex>
+#include "featureset.h"
 #include "histogram.h"
 
 bool datasetDirsOK (std::string & dirIntens, std::string & dirLab, std::string & dirOut);
@@ -44,7 +45,7 @@ template <typename T>
 struct Point2
 {
 	T x, y;
-	Point2 (T x_, T y_): x(x_), y(y_) {}
+	Point2 (const T x_, const T y_): x(x_), y(y_) {}
 	Point2(): x(0), y(0) {}
 
 	double normL2() const { return sqrt(x*x+y*y); }
@@ -101,12 +102,12 @@ struct Pixel2: public Point2i
 	}
 	Pixel2 operator / (float k) const
 	{
-		Pixel2 p2(this->x / k, this->y / k, this->inten);
+		Pixel2 p2(StatsInt(this->x / k), StatsInt(this->y / k), this->inten);
 		return p2;
 	}
 	Pixel2 operator * (float k) const
 	{
-		Pixel2 p2(this->x * k, this->y * k, this->inten);
+		Pixel2 p2(StatsInt(this->x * k), StatsInt(this->y * k), this->inten);
 		return p2;
 	}
 	operator Point2f () const { Point2f p(this->x, this->y); return p; }
@@ -223,8 +224,9 @@ public:
 protected:
 };
 
+extern FeatureSet featureSet;
 
-// Label record - structure aggregating label's running statistics and sums
+// Label record - structure aggregating label's cached data and calculated features
 struct LR
 {
 	std::vector <Pixel2> raw_pixels;	
