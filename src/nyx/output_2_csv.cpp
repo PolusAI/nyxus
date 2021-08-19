@@ -5,10 +5,8 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
-
 #include <stdlib.h>
 #include <stdio.h>
-
 #include "sensemaker.h"
 
 // Macro to make some file i/o calls platform-independent
@@ -24,7 +22,7 @@ void print_label_stats()
 	/*
 	print_by_label("Min", labelMins);
 	print_by_label("Max", labelMaxs);
-	print_by_label("Mean", labelMeans);
+	print_by_label("Mean", mean);
 	print_by_label("Median", labelMedians);
 	print_by_label("Energy", labelMassEnergy);
 	print_by_label("Variance", labelVariance);
@@ -34,9 +32,6 @@ void print_label_stats()
 // Saves the result of image scanning and feature calculation. Must be called after the reduction phase.
 bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 {
-	// How many features are available?
-	numFeaturesCalculated = 82;
-
 	// Sort the labels
 	std::vector<int> L { uniqueLabels.begin(), uniqueLabels.end() };
 	std::sort (L.begin(), L.end());
@@ -161,7 +156,7 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 		"\n");
 
 	// -- Dump numbers
-	int cnt = 1; 
+	unsigned int cnt = 1; 
 	for (auto l : L)
 	{
 		std::stringstream ss;
@@ -171,7 +166,7 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 		auto _min = r.labelMins;
 		auto _max = r.labelMaxs;
 		auto _range = _max - _min;
-		auto _mean = r.labelMeans;
+		auto _mean = r.mean;
 		auto _median = r.labelMedians;
 		auto _energy = r.labelMassEnergy;
 		auto _stdev = r.labelStddev;
@@ -274,21 +269,21 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 			<< r.feretStats_maxDiameter << " , "
 			<< r.feretStats_meanDiameter << " , "
 			<< r.feretStats_medianDiameter << " , "
-			<< r.feretStats_stdDiameter << " , "
+			<< r.feretStats_stddevDiameter << " , "
 			<< r.feretStats_modeDiameter << " , "
 
 			<< r.martinStats_minDiameter << " , "
 			<< r.martinStats_maxDiameter << " , "
 			<< r.martinStats_meanDiameter << " , "
 			<< r.martinStats_medianDiameter << " , "
-			<< r.martinStats_stdDiameter << " , "
+			<< r.martinStats_stddevDiameter << " , "
 			<< r.martinStats_modeDiameter << " , "
 
 			<< r.nassStats_minDiameter << " , "
 			<< r.nassStats_maxDiameter << " , "
 			<< r.nassStats_meanDiameter << " , "
 			<< r.nassStats_medianDiameter << " , "
-			<< r.nassStats_stdDiameter << " , "
+			<< r.nassStats_stddevDiameter << " , "
 			<< r.nassStats_modeDiameter << " , "
 			<< r.euler_number << " , "
 			<< r.polygonality_ave << " , "

@@ -44,7 +44,7 @@ void init_label_record (LR& lr, int x, int y, int label, PixIntens intensity)
 	// Max
 	lr.labelMaxs = intensity;
 	// Moments
-	lr.labelMeans = intensity;
+	lr.mean = intensity;
 	lr.labelM2 = 0;
 	lr.labelM3 = 0;
 	lr.labelM4 = 0;
@@ -100,7 +100,7 @@ void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity)
 	lr.pixelCount = n;
 
 	// Cumulants for moments calculation
-	auto prev_mean = lr.labelMeans;
+	auto prev_mean = lr.mean;
 	auto delta = intensity - prev_mean;
 	auto delta_n = delta / n;
 	auto delta_n2 = delta_n * delta_n;
@@ -108,7 +108,7 @@ void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity)
 
 	// Mean
 	auto mean = prev_mean + delta_n;
-	lr.labelMeans = mean;
+	lr.mean = mean;
 
 	// Moments
 	lr.labelM4 = lr.labelM4 + term1 * delta_n2 * (n * n - 3 * n + 3) + 6 * delta_n2 * lr.labelM2 - 4 * delta_n * lr.labelM3;
@@ -247,7 +247,7 @@ void reduce_all_labels (int min_online_roi_size)
 				sumEnergy = 0.0;
 			for (auto& pix : lr.raw_pixels)
 			{
-				auto diff = pix.inten - lr.labelMeans;
+				auto diff = pix.inten - lr.mean;
 				sumM2 += diff * diff;
 				sumM3 += diff * diff * diff;
 				sumM4 += diff * diff * diff * diff;
@@ -459,7 +459,7 @@ void reduce_all_labels (int min_online_roi_size)
 		r.feretStats_maxDiameter = (double)structStat.max;	// ratios[60]
 		r.feretStats_meanDiameter = structStat.mean;	// ratios[61]
 		r.feretStats_medianDiameter = structStat.median;	// ratios[62]
-		r.feretStats_stdDiameter = structStat.stdev;	// ratios[63]
+		r.feretStats_stddevDiameter = structStat.stdev;	// ratios[63]
 		r.feretStats_modeDiameter = (double)structStat.mode;	// ratios[64]
 
 		//==== Martin diameters
@@ -469,7 +469,7 @@ void reduce_all_labels (int min_online_roi_size)
 		r.martinStats_maxDiameter = (double)structStat.max;
 		r.martinStats_meanDiameter = structStat.mean;
 		r.martinStats_medianDiameter = structStat.median;
-		r.martinStats_stdDiameter = structStat.stdev;
+		r.martinStats_stddevDiameter = structStat.stdev;
 		r.martinStats_modeDiameter = (double)structStat.mode;
 
 		//==== Nassenstein diameters
@@ -479,7 +479,7 @@ void reduce_all_labels (int min_online_roi_size)
 		r.nassStats_maxDiameter = (double)structStat.max;	
 		r.nassStats_meanDiameter = structStat.mean;	
 		r.nassStats_medianDiameter = structStat.median;
-		r.nassStats_stdDiameter = structStat.stdev;
+		r.nassStats_stddevDiameter = structStat.stdev;
 		r.nassStats_modeDiameter = (double)structStat.mode;
 
 		//==== Hexagonality and polygonality

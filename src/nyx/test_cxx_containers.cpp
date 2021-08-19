@@ -25,7 +25,7 @@ double test_containers1()
 	std::unordered_map <int, StatsInt> pixelCount;
 	std::unordered_map <int, StatsInt> labelPrevCount;
 	std::unordered_map <int, StatsInt> labelPrevIntens;
-	std::unordered_map <int, StatsReal> labelMeans;
+	std::unordered_map <int, StatsReal> mean;
 	std::unordered_map <int, std::shared_ptr<std::unordered_set<PixIntens>>> labelValues;
 	std::unordered_map <int, StatsInt> labelMedians;
 	std::unordered_map <int, StatsInt> labelMins;
@@ -64,7 +64,7 @@ double test_containers1()
 		pixelCount[p] = pixelCount[p] + i;
 		labelPrevCount[p] = i;
 		labelPrevIntens[p] = i;
-		labelMeans[p] = i;
+		mean[p] = i;
 		//std::unordered_map <int, std::shared_ptr<std::unordered_set<PixIntens>>> labelValues;
 		labelMedians[p] = i;
 		labelMins[p] = i;
@@ -114,7 +114,7 @@ double test_containers2()
 		StatsInt, //std::unordered_map <int, StatsInt> pixelCount;
 		StatsInt, //std::unordered_map <int, StatsInt> labelPrevCount;
 		StatsInt, //std::unordered_map <int, StatsInt> labelPrevIntens;
-		StatsReal, //std::unordered_map <int, StatsReal> labelMeans;
+		StatsReal, //std::unordered_map <int, StatsReal> mean;
 		//---std::unordered_map <int, std::shared_ptr<std::unordered_set<PixIntens>>> labelValues;
 		StatsInt, //std::unordered_map <int, StatsInt> labelMedians;
 		StatsInt, //std::unordered_map <int, StatsInt> labelMins;

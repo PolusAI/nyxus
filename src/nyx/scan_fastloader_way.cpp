@@ -166,9 +166,10 @@ int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::strin
 		totalPixStatsCalcTime += elapsed2.count();
 
 		// Save the result for this intensity-label file pair
-		if (save2csv == false)
-			continue;
-		ok = save_features_2_csv(ifp, csvOutputDir);
+		if (save2csv)
+			ok = save_features_2_csv (ifp, csvOutputDir);
+		else
+			ok = save_features_2_buffer (calcResultBuf);
 		if (ok == false)
 		{
 			std::cout << "save_features_2_csv() returned an error code" << std::endl;

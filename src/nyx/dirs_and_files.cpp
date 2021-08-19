@@ -20,7 +20,7 @@ void readDirectoryFiles(const std::string & dir, std::vector<std::string> & file
 		files.push_back (entry.path().string());
 }
 
-int datasetDirsOK (std::string & dirIntens, std::string & dirLabels, std::string & dirOut)
+int datasetDirsOK (const std::string & dirIntens, const std::string & dirLabels, const std::string & dirOut, bool mustCheckDirOut)
 {
 	if (!directoryExists(dirIntens))
 	{
@@ -34,7 +34,7 @@ int datasetDirsOK (std::string & dirIntens, std::string & dirLabels, std::string
 		return 2;
 	}
 
-	if (!directoryExists(dirOut))
+	if (mustCheckDirOut && !directoryExists(dirOut))
 	{
 		std::cout << "Error: " << dirOut << " is not a directory" << std::endl;
 		return 3;
@@ -44,12 +44,12 @@ int datasetDirsOK (std::string & dirIntens, std::string & dirLabels, std::string
 
 int checkAndReadDataset(
 	// input
-	std::string& dirIntens, std::string& dirLabels, std::string& dirOut,
+	const std::string& dirIntens, const std::string& dirLabels, const std::string& dirOut, bool mustCheckDirOut, 
 	// output
 	std::vector <std::string>& intensFiles, std::vector <std::string>& labelFiles)
 {
 	// Check the directories
-	if (datasetDirsOK(dirIntens, dirLabels, dirOut) != 0)
+	if (datasetDirsOK(dirIntens, dirLabels, dirOut, mustCheckDirOut) != 0)
 		return 1;	// No need to issue console messages here, datasetDirsOK() does that
 
 	readDirectoryFiles(dirIntens, intensFiles);

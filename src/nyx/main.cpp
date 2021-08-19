@@ -87,7 +87,7 @@ int main (int argc, char** argv)
 
 	// Scan file names
 	std::vector <std::string> intensFiles, labelFiles;
-	int errorCode = checkAndReadDataset (dirIntens, dirLabels, dirOut, intensFiles, labelFiles);
+	int errorCode = checkAndReadDataset (dirIntens, dirLabels, dirOut, true, intensFiles, labelFiles);
 	if (errorCode)
 	{
 		std::cout << std::endl << "Dataset structure error" << std::endl;

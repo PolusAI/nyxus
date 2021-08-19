@@ -99,12 +99,57 @@ class FeatureSet
 {
 public:
 	FeatureSet() { enableAll(true); }
-	void enableAll(bool newStatus) 
-	{
-		for (int i = 0; i < AvailableFeatures::_COUNT_; i++)
-			enabledFeatures[i] = newStatus;	
+	void enableAll(bool newStatus) { for (int i = 0; i < AvailableFeatures::_COUNT_; i++) m_enabledFeatures[i] = newStatus;	}
+	void enablePixelIntenStats() {
+		enableAll(false);
+		m_enabledFeatures[MEAN] =
+		m_enabledFeatures[MEDIAN] =
+		m_enabledFeatures[MIN] =
+		m_enabledFeatures[MAX] =
+		m_enabledFeatures[RANGE] =
+		m_enabledFeatures[STANDARD_DEVIATION] =
+		m_enabledFeatures[SKEWNESS] =
+		m_enabledFeatures[KURTOSIS] =
+		m_enabledFeatures[MEAN_ABSOLUTE_DEVIATION] =
+		m_enabledFeatures[ENERGY] =
+		m_enabledFeatures[ROOT_MEAN_SQUARED] =
+		m_enabledFeatures[ENTROPY] =
+		m_enabledFeatures[MODE] =
+		m_enabledFeatures[UNIFORMITY] =
+		m_enabledFeatures[P10] = m_enabledFeatures[P25] = m_enabledFeatures[P75] = m_enabledFeatures[P90] =
+		m_enabledFeatures[INTERQUARTILE_RANGE] =
+		m_enabledFeatures[ROBUST_MEAN_ABSOLUTE_DEVIATION] =
+		m_enabledFeatures[WEIGHTED_CENTROID_Y] =
+		m_enabledFeatures[WEIGHTED_CENTROID_X] = true;
 	}
-	bool isEnabled (int fc) { return fc < AvailableFeatures::_COUNT_ ? enabledFeatures[fc] : false; }
+	void enableBoundingBox() {
+		enableAll(false);
+		m_enabledFeatures[BBOX_YMIN] = 
+		m_enabledFeatures[BBOX_XMIN] = 
+		m_enabledFeatures[BBOX_HEIGHT] = 
+		m_enabledFeatures[BBOX_WIDTH] = true;
+	}
+	void enableFeret() {
+		enableAll(false);
+		m_enabledFeatures[MIN_FERET_DIAMETER] =
+		m_enabledFeatures[MAX_FERET_DIAMETER] =
+		m_enabledFeatures[MIN_FERET_ANGLE] =
+		m_enabledFeatures[MAX_FERET_ANGLE] =
+		m_enabledFeatures[STAT_FERET_DIAM_MIN] =
+		m_enabledFeatures[STAT_FERET_DIAM_MAX] =
+		m_enabledFeatures[STAT_FERET_DIAM_MEAN] =
+		m_enabledFeatures[STAT_FERET_DIAM_MEDIAN] =
+		m_enabledFeatures[STAT_FERET_DIAM_STDDEV] =
+		m_enabledFeatures[STAT_FERET_DIAM_MODE] = true;
+	}
+	bool isEnabled (int fc) { return fc < AvailableFeatures::_COUNT_ ? m_enabledFeatures[fc] : false; }
+	int numEnabled() { 
+		int cnt = 0; 
+		for (int i = 0; i < AvailableFeatures::_COUNT_; i++) 
+			if (m_enabledFeatures[i]) 
+				cnt++; 
+		return cnt;  
+	}
 protected:
-	bool enabledFeatures [AvailableFeatures::_COUNT_];
+	bool m_enabledFeatures [AvailableFeatures::_COUNT_];
 };

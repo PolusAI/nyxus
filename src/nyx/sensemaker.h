@@ -9,8 +9,9 @@
 #include <mutex>
 #include "featureset.h"
 #include "histogram.h"
+#include "pixel.h"
 
-bool datasetDirsOK (std::string & dirIntens, std::string & dirLab, std::string & dirOut);
+bool datasetDirsOK (const std::string & dirIntens, const std::string & dirLab, const std::string & dirOut, bool mustCheckDirOut);
 bool directoryExists (const std::string & dir);
 void readDirectoryFiles (const std::string & dir, std::vector<std::string> & files);
 bool scanViaFastloader (const std::string & fpath, int num_threads);
@@ -19,17 +20,18 @@ bool scanFilePairParallel (const std::string& intens_fpath, const std::string& l
 bool TraverseViaFastloader1 (const std::string& fpath, int num_threads);
 std::string getPureFname(std::string fpath);
 int ingestDataset (std::vector<std::string> & intensFiles, std::vector<std::string> & labelFiles, int numFastloaderThreads, int numSensemakerThreads, int min_online_roi_size, bool save2csv, std::string csvOutputDir);
-bool save_features_2_csv(std::string inputFpath, std::string outputDir);
+
+// 2 scenarios of saving a result of feature calculation of a label-intensity file pair: saving to a CSV-file and saving to a matrix to be later consumed by a Python endpoint
+bool save_features_2_csv (std::string inputFpath, std::string outputDir);
+bool save_features_2_buffer (std::vector<double> & resultMatrix);
+
 void showCmdlineHelp();
 int checkAndReadDataset(
 	// input
-	std::string& dirIntens, std::string& dirLabels, std::string& dirOut,
+	const std::string& dirIntens, const std::string& dirLabels, const std::string& dirOut, bool mustCheckDirOut, 
 	// output
 	std::vector<std::string>& intensFiles, std::vector<std::string>& labelFiles);
 
-using PixIntens = unsigned int;
-using StatsInt = long;
-using StatsReal = double;
 using Histo = OnlineHistogram<PixIntens>;
 
 void init_feature_buffers();
@@ -40,78 +42,6 @@ void print_by_label(const char* featureName, std::unordered_map<int, StatsInt> L
 void print_by_label(const char* featureName, std::unordered_map<int, StatsReal> L, int numColumns = 4);
 void clearLabelStats();
 void reduce_all_labels(int min_online_roi_size);
-
-template <typename T>
-struct Point2
-{
-	T x, y;
-	Point2 (const T x_, const T y_): x(x_), y(y_) {}
-	Point2(): x(0), y(0) {}
-
-	double normL2() const { return sqrt(x*x+y*y); }
-
-	Point2 operator - ()
-	{
-		Point2 p2(-(this->x), -(this->y));
-		return p2;
-	}
-	Point2 operator - (const Point2& v)
-	{
-		Point2 p2(this->x - v.x, this->y - v.y);
-		return p2;
-	}
-	Point2 operator + (const Point2& v)
-	{
-		Point2 p2(this->x + v.x, this->y + v.y);
-		return p2;
-	}
-	Point2 operator / (float k)
-	{
-		Point2 p2(this->x / k, this->y / k);
-		return p2;
-	}
-};
-
-using Point2i = Point2<StatsInt>;
-using Point2f = Point2<float>;
-inline double normL2(const Point2f& p) { return p.normL2(); }
-
-struct Pixel2: public Point2i
-{
-	PixIntens inten;
-	Pixel2(StatsInt x_, StatsInt y_, PixIntens i_): Point2(x_, y_), inten(i_) {}
-	
-	bool operator == (const Pixel2& p2)
-	{
-		return this->x == p2.x && this->y == p2.y;
-	}
-	Pixel2 operator - ()
-	{
-		Pixel2 p2(-(this->x), -(this->y), this->inten);
-		return p2;
-	}
-	Pixel2 operator - (const Pixel2& v) const
-	{
-		Pixel2 p2(this->x - v.x, this->y - v.y, this->inten);
-		return p2;
-	}
-	Pixel2 operator + (const Pixel2& v) const
-	{
-		Pixel2 p2(this->x + v.x, this->y + v.y, this->inten);
-		return p2;
-	}
-	Pixel2 operator / (float k) const
-	{
-		Pixel2 p2(StatsInt(this->x / k), StatsInt(this->y / k), this->inten);
-		return p2;
-	}
-	Pixel2 operator * (float k) const
-	{
-		Pixel2 p2(StatsInt(this->x * k), StatsInt(this->y * k), this->inten);
-		return p2;
-	}
-	operator Point2f () const { Point2f p(this->x, this->y); return p; }
-};
 
 // Inherited from WNDCHRM, used for Feret and Martin statistics calculation
 struct Statistics 
@@ -236,7 +166,7 @@ struct LR
 	StatsInt pixelCount;	// Area
 	StatsInt labelPrevCount;
 	StatsInt labelPrevIntens;
-	StatsReal labelMeans;
+	StatsReal mean;
 	//std::shared_ptr<std::unordered_set<PixIntens>> labelUniqueIntensityValues;
 	StatsInt labelMedians;
 	StatsInt labelMins;
@@ -307,7 +237,7 @@ struct LR
 		feretStats_maxDiameter,	// ratios[60]
 		feretStats_meanDiameter,	// ratios[61]
 		feretStats_medianDiameter,	// ratios[62]
-		feretStats_stdDiameter,	// ratios[63]
+		feretStats_stddevDiameter,	// ratios[63]
 		feretStats_modeDiameter;	// ratios[64]
 
 	// --Martin
@@ -316,7 +246,7 @@ struct LR
 		martinStats_maxDiameter,	// ratios[60]
 		martinStats_meanDiameter,	// ratios[61]
 		martinStats_medianDiameter,	// ratios[62]
-		martinStats_stdDiameter,	// ratios[63]
+		martinStats_stddevDiameter,	// ratios[63]
 		martinStats_modeDiameter;	// ratios[64]
 
 	// --Nassenstein
@@ -325,7 +255,7 @@ struct LR
 		nassStats_maxDiameter,	// ratios[60]
 		nassStats_meanDiameter,	// ratios[61]
 		nassStats_medianDiameter,	// ratios[62]
-		nassStats_stdDiameter,	// ratios[63]
+		nassStats_stddevDiameter,	// ratios[63]
 		nassStats_modeDiameter;	// ratios[64]
 
 	// --Euler
@@ -341,15 +271,13 @@ struct LR
 
 	double geodeticLength,	// ratios[53] 
 		thickness;			// ratios[54]
+	double getValue(AvailableFeatures f);
 };
 
 void init_label_record(LR& lr, int x, int y, int label, PixIntens intensity);
 void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity);
 void reduce_neighbors (int labels_collision_radius);
 
-extern std::unordered_map <int, LR> labelData;
-extern std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
-extern std::unordered_set <int> uniqueLabels; // Relates to a single intensity-label file pair
 
 
 // Timing
@@ -389,6 +317,5 @@ inline unsigned long spat_hash_2d (StatsInt x, StatsInt y, int m)
 // Label data
 extern std::unordered_set<int> uniqueLabels;
 extern std::unordered_map <int, LR> labelData;
-extern std::vector <std::vector<double>> lumpFeatureValues;	// [# of labels X # of features]
-extern int numFeaturesCalculated;
-
+extern std::vector<double> calcResultBuf;	// [# of labels X # of features]
+extern std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
