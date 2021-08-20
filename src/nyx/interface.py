@@ -1,15 +1,15 @@
 import sys
 import numpy as np
 
-def is_nyx_alive():
-	print ("is_nyx_alive responded")
+def isalive():
+	print ("Responding")
 	return True
 	
-def is_nyx_alive2(arg):
-	print ("is_nyx_alive2 received " + str(arg))
+def isalive2(arg):
+	print ("isalive2 received " + str(arg))
 	return True	
 	
-def pixel_intensity_stats(label_dir, intensity_dir):
+def pixel_intensity_stats (label_dir, intensity_dir):
     """Calculate mean, median, min, max, range, standard_deviation, skewness, kurtosis, 
     mean_absolute_deviation, energy, root_mean_squared, entropy, mode, uniformity, 
     P10, P25, P75, P90, interquartile_range, robust_mean_absolute_deviation, 
@@ -39,7 +39,7 @@ def pixel_intensity_stats(label_dir, intensity_dir):
 
     return f
 
-def bounding_box(label_dir, intensity_dir):
+def bounding_box (label_dir, intensity_dir):
     """Calculate ROIs' bounding box x, y, width, and height  
 
     Parameters
@@ -61,7 +61,7 @@ def bounding_box(label_dir, intensity_dir):
     return f
 
 
-def feret(label_dir, intensity_dir):
+def feret (label_dir, intensity_dir):
     """Calculate ROIs' Feret diameters, angles, and statistics  
 
     Parameters
@@ -89,5 +89,5 @@ def feret(label_dir, intensity_dir):
     assert (bool(label_dir and not label_dir.isspace()))
     assert (bool(intensity_dir and not intensity_dir.isspace()))
 
-    f = calc_bounding_feret (label_dir, intensity_dir)
+    f = calc_feret (label_dir, intensity_dir)
     return f

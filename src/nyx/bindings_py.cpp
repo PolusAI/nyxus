@@ -136,7 +136,7 @@ PYBIND11_MODULE(backend, m)
 				free_when_done); // numpy array references this parent
 		});
 
-	m.def("calc_bounding_feret", [](const std::string& label_path, const std::string& intensity_path)
+	m.def("calc_feret", [](const std::string& label_path, const std::string& intensity_path)
 		{
 			//==== Calculate features
 			// 
