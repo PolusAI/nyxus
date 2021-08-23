@@ -46,7 +46,7 @@ double getPolygonArea(std::vector<Pixel2>& vertices)
 	return area;
 }
 
-void ConvexHull::calculate(std::vector<Pixel2> & point_cloud)
+void ConvexHull::calculate(std::vector<Pixel2> & point_cloud) 
 {
 	CH.clear();
 
