@@ -64,7 +64,7 @@ void ConvexHull::calculate(std::vector<Pixel2> & point_cloud)
 
 	for (int i = 2; i < n; i++)
 	{
-		while (upperCH.size() > 1 and (!right_turn(upperCH[upperCH.size() - 2], upperCH[upperCH.size() - 1], point_cloud[i])))
+		while (upperCH.size() > 1 && (!right_turn(upperCH[upperCH.size() - 2], upperCH[upperCH.size() - 1], point_cloud[i])))
 			upperCH.pop_back();
 		upperCH.push_back(point_cloud[i]);
 	}
@@ -75,7 +75,7 @@ void ConvexHull::calculate(std::vector<Pixel2> & point_cloud)
 
 	for (int i = 2; i < n; i++)
 	{
-		while (lowerCH.size() > 1 and (!right_turn(lowerCH[lowerCH.size() - 2], lowerCH[lowerCH.size() - 1], point_cloud[n - i - 1])))
+		while (lowerCH.size() > 1 && (!right_turn(lowerCH[lowerCH.size() - 2], lowerCH[lowerCH.size() - 1], point_cloud[n - i - 1])))
 			lowerCH.pop_back();
 		lowerCH.push_back(point_cloud[n - i - 1]);
 	}
