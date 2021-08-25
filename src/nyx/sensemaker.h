@@ -46,7 +46,7 @@ void reduce_all_labels(int min_online_roi_size);
 // Inherited from WNDCHRM, used for Feret and Martin statistics calculation
 struct Statistics 
 {
-	int min, max, mode;
+	double min, max, mode;
 	double mean, median, stdev;
 };
 

@@ -8,7 +8,7 @@ template <typename T>
 struct Point2
 {
 	T x, y;
-	Point2(const T x_, const T y_) : x(x_), y(y_) {}
+	Point2(T x_, T y_) : x(x_), y(y_) {}
 	Point2() : x(0), y(0) {}
 
 	double normL2() const { return sqrt(x * x + y * y); }

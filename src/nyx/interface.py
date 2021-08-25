@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+from . import nyx_backend
 
 def isalive():
 	print ("Responding")
@@ -8,7 +9,20 @@ def isalive():
 def isalive2(arg):
 	print ("isalive2 received " + str(arg))
 	return True	
-	
+
+def isalive3():
+	print ("Responding with a numpy array:")
+    f = np.array([[1,2,3], [4,2,5]])
+    return f	
+
+def backend_is_alive (label_dir, intensity_dir):
+    assert (bool(label_dir and not label_dir.isspace()))
+    assert (bool(intensity_dir and not intensity_dir.isspace()))
+    f = nyx_backend.backend_is_alive_imp (label_dir, intensity_dir)
+    print (type(f))
+    print(f)    
+    return f
+
 def pixel_intensity_stats (label_dir, intensity_dir):
     """Calculate mean, median, min, max, range, standard_deviation, skewness, kurtosis, 
     mean_absolute_deviation, energy, root_mean_squared, entropy, mode, uniformity, 
@@ -27,16 +41,9 @@ def pixel_intensity_stats (label_dir, intensity_dir):
         `[[f1, f2, ... fN], [f1, f2, ... fN], ... [f1, f2, ... fN]]`.
     """
 
-    """
     assert (bool(label_dir and not label_dir.isspace()))
     assert (bool(intensity_dir and not intensity_dir.isspace()))
-
-    f = calc_pixel_intensity_stats (label_dir, intensity_dir)
-    """
-
-    f = np.array( [[ 1, 2, 3],
-                 [ 4, 2, 5]] )
-
+    f = nyx_backend.calc_pixel_intensity_stats (label_dir, intensity_dir)
     return f
 
 def bounding_box (label_dir, intensity_dir):
@@ -56,8 +63,7 @@ def bounding_box (label_dir, intensity_dir):
 
     assert (bool(label_dir and not label_dir.isspace()))
     assert (bool(intensity_dir and not intensity_dir.isspace()))
-
-    f = calc_bounding_box (label_dir, intensity_dir)
+    f = nyx_backend.calc_bounding_box (label_dir, intensity_dir)
     return f
 
 
@@ -88,6 +94,5 @@ def feret (label_dir, intensity_dir):
 
     assert (bool(label_dir and not label_dir.isspace()))
     assert (bool(intensity_dir and not intensity_dir.isspace()))
-
-    f = calc_feret (label_dir, intensity_dir)
+    f = nyx_backend.calc_feret (label_dir, intensity_dir)
     return f
