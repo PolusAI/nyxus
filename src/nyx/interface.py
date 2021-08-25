@@ -3,17 +3,17 @@ import numpy as np
 from . import nyx_backend
 
 def isalive():
-	print ("Responding")
-	return True
-	
+    print ("Responding")
+    return True
+    
 def isalive2(arg):
-	print ("isalive2 received " + str(arg))
-	return True	
+    print ("isalive2 received " + str(arg))
+    return True    
 
 def isalive3():
-	print ("Responding with a numpy array:")
+    print ("Responding with a numpy array:")
     f = np.array([[1,2,3], [4,2,5]])
-    return f	
+    return f    
 
 def backend_is_alive (label_dir, intensity_dir):
     assert (bool(label_dir and not label_dir.isspace()))
@@ -78,16 +78,16 @@ def feret (label_dir, intensity_dir):
     Returns
     -------
     numpy.ndarray, type float - 2-dimensional array of N calculated features 
-    	    MIN_FERET_DIAMETER
-		    MAX_FERET_DIAMETER
-		    MIN_FERET_ANGLE
-		    MAX_FERET_ANGLE
-		    STAT_FERET_DIAM_MIN
-		    STAT_FERET_DIAM_MAX
-		    STAT_FERET_DIAM_MEAN
-		    STAT_FERET_DIAM_MEDIAN
-		    STAT_FERET_DIAM_STDDEV
-		    STAT_FERET_DIAM_MODE
+            MIN_FERET_DIAMETER
+            MAX_FERET_DIAMETER
+            MIN_FERET_ANGLE
+            MAX_FERET_ANGLE
+            STAT_FERET_DIAM_MIN
+            STAT_FERET_DIAM_MAX
+            STAT_FERET_DIAM_MEAN
+            STAT_FERET_DIAM_MEDIAN
+            STAT_FERET_DIAM_STDDEV
+            STAT_FERET_DIAM_MODE
         for each of L unique labels in shape 
         `[[f1, f2, ... fN], [f1, f2, ... fN], ... [f1, f2, ... fN]]`.
     """
