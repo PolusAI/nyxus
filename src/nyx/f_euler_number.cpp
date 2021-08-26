@@ -71,7 +71,7 @@ long EulerNumber::calculate (std::vector<unsigned char> & arr, int height, int w
 		// Pattern match counters
 		long C1 = 0, C3 = 0, Cd = 0;
 
-		unsigned long x, y;
+		int x, y;
 		size_t i;
 
 		// update pattern counters by scanning the image.

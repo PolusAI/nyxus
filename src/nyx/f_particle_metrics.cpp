@@ -36,7 +36,7 @@ void ParticleMetrics::calc_ferret(
 
 	// Rotate and calculate the diameter
 	all_D.clear();
-	for (int theta = 0; theta < 180; theta += rot_angle_increment)
+	for (float theta = 0.f; theta < 180.f; theta += rot_angle_increment)
 	{
 		rotate_pixels(theta, convex_hull, CH_rot);
 		auto [minX, minY, maxX, maxY] = get_pixelcloud_bounds(CH_rot);
@@ -45,7 +45,7 @@ void ParticleMetrics::calc_ferret(
 		std::vector<float> DA;	// Diameters at this angle
 
 		// Iterate y-grid
-		double stepY = (maxY - minY) / double(NY);
+		float stepY = (maxY - minY) / float(NY);
 		for (int iy = 1; iy <= NY; iy++)
 		{
 			float chord_y = minY + iy * stepY;
@@ -81,8 +81,8 @@ void ParticleMetrics::calc_ferret(
 			{
 				// for N segments
 				auto compareFunc = [](const std::pair<float, float>& p1, const std::pair<float, float>& p2) { return p1.first < p2.first; };
-				int idx_minX = std::distance(X.begin(), std::min_element(X.begin(), X.end(), compareFunc));	//get_min_x_vertex(chordEnds)
-				int idx_maxX = std::distance(X.begin(), std::max_element(X.begin(), X.end(), compareFunc));	//get_max_x_vertex(IP);
+				auto idx_minX = std::distance(X.begin(), std::min_element(X.begin(), X.end(), compareFunc));	
+				auto idx_maxX = std::distance(X.begin(), std::max_element(X.begin(), X.end(), compareFunc));	
 				// left X and right X segments
 				auto &e1 = X[idx_minX], &e2 = X[idx_maxX];
 				auto x1 = e1.first, y1 = e1.second, x2 = e2.first, y2 = e2.second;
@@ -120,9 +120,9 @@ void ParticleMetrics::calc_ferret(
 
 	// Angles
 	auto idxMin = std::distance (all_D.begin(), itr_min_d);
-	minFeretAngle = idxMin / 2;
+	minFeretAngle = (double)idxMin / 2;
 	auto idxMax = std::distance (all_D.begin(), itr_max_d);
-	maxFeretAngle = idxMax / 2;
+	maxFeretAngle = (double)idxMax / 2;
 }
 
 // D - diameters at angles 0..180 degrees
@@ -130,7 +130,7 @@ void ParticleMetrics::calc_martin (std::vector<double> & D)
 {
 	// Calculate unrotated convex hull's area in 'area'
 	auto [minX, minY, maxX, maxY] = get_pixelcloud_bounds(convex_hull);
-	double stepY = (maxY - minY) / double(NY);
+	float stepY = (maxY - minY) / float(NY);
 	float halfArea = 0;
 	for (int iy = 1; iy <= NY; iy++)
 	{
@@ -160,8 +160,8 @@ void ParticleMetrics::calc_martin (std::vector<double> & D)
 		{
 			// for N segments
 			auto compareFunc = [](const std::pair<float, float>& p1, const std::pair<float, float>& p2) { return p1.first < p2.first; };
-			int idx_minX = std::distance(X.begin(), std::min_element(X.begin(), X.end(), compareFunc));	//get_min_x_vertex(chordEnds)
-			int idx_maxX = std::distance(X.begin(), std::max_element(X.begin(), X.end(), compareFunc));	//get_max_x_vertex(IP);
+			auto idx_minX = std::distance(X.begin(), std::min_element(X.begin(), X.end(), compareFunc));	//get_min_x_vertex(chordEnds)
+			auto idx_maxX = std::distance(X.begin(), std::max_element(X.begin(), X.end(), compareFunc));	//get_max_x_vertex(IP);
 			// left X and right X segments
 			auto& e1 = X[idx_minX], & e2 = X[idx_maxX];
 			auto x1 = e1.first, y1 = e1.second, x2 = e2.first, y2 = e2.second;
@@ -178,7 +178,7 @@ void ParticleMetrics::calc_martin (std::vector<double> & D)
 
 	// Rotate and calculate the diameter
 	D.clear();	
-	for (int theta = 0; theta < 180; theta += rot_angle_increment)
+	for (float theta = 0.f; theta < 180.f; theta += rot_angle_increment)
 	{
 		rotate_pixels (theta, convex_hull, CH_rot);
 		auto [minX, minY, maxX, maxY] = get_pixelcloud_bounds (CH_rot);
@@ -188,7 +188,7 @@ void ParticleMetrics::calc_martin (std::vector<double> & D)
 		std::vector<float> chordLengths;
 
 		// Iterate y-grid
-		double stepY = (maxY - minY) / double(NY);
+		float stepY = (maxY - minY) / float(NY);
 		for (int iy = 1; iy <= NY; iy++)
 		{
 			float chord_y = minY + iy * stepY;
@@ -217,8 +217,8 @@ void ParticleMetrics::calc_martin (std::vector<double> & D)
 			{
 				// for N segments
 				auto compareFunc = [](const std::pair<float, float>& p1, const std::pair<float, float>& p2) { return p1.first < p2.first; };
-				int idx_minX = std::distance(X.begin(), std::min_element(X.begin(), X.end(), compareFunc));	//get_min_x_vertex(chordEnds)
-				int idx_maxX = std::distance(X.begin(), std::max_element(X.begin(), X.end(), compareFunc));	//get_max_x_vertex(IP);
+				auto idx_minX = std::distance(X.begin(), std::min_element(X.begin(), X.end(), compareFunc));	//get_min_x_vertex(chordEnds)
+				auto idx_maxX = std::distance(X.begin(), std::max_element(X.begin(), X.end(), compareFunc));	//get_max_x_vertex(IP);
 				// left X and right X segments
 				auto& e1 = X[idx_minX], & e2 = X[idx_maxX];
 				auto x1 = e1.first, y1 = e1.second, x2 = e2.first, y2 = e2.second;
@@ -253,7 +253,7 @@ void ParticleMetrics::calc_nassenstein (std::vector<double>& all_D)
 
 	// Rotate and calculate the diameter
 	all_D.clear();
-	for (int theta = 0; theta < 180; theta += rot_angle_increment)
+	for (float theta = 0.f; theta < 180.f; theta += rot_angle_increment)
 	{
 		rotate_pixels(theta, convex_hull, CH_rot);
 		auto [minX, minY, maxX, maxY] = get_pixelcloud_bounds(CH_rot);
@@ -262,7 +262,7 @@ void ParticleMetrics::calc_nassenstein (std::vector<double>& all_D)
 		std::vector<float> DA;	// Diameters at this angle
 
 		// Iterate y-grid
-		double stepY = (maxY - minY) / double(NY);
+		float stepY = (maxY - minY) / float(NY);
 		for (int iy = 1; iy <= NY; iy++)
 		{
 			float chord_y = minY + iy * stepY;
@@ -291,8 +291,8 @@ void ParticleMetrics::calc_nassenstein (std::vector<double>& all_D)
 			{
 				// for N segments
 				auto compareFunc = [](const std::pair<float, float>& p1, const std::pair<float, float>& p2) { return p1.first < p2.first; };
-				int idx_minX = std::distance(X.begin(), std::min_element(X.begin(), X.end(), compareFunc));	//get_min_x_vertex(chordEnds)
-				int idx_maxX = std::distance(X.begin(), std::max_element(X.begin(), X.end(), compareFunc));	//get_max_x_vertex(IP);
+				auto idx_minX = std::distance(X.begin(), std::min_element(X.begin(), X.end(), compareFunc));	
+				auto idx_maxX = std::distance(X.begin(), std::max_element(X.begin(), X.end(), compareFunc));	
 				// left X and right X segments
 				auto& e1 = X[idx_minX], & e2 = X[idx_maxX];
 				auto x1 = e1.first, y1 = e1.second, x2 = e2.first, y2 = e2.second;
@@ -353,7 +353,7 @@ void ParticleMetrics::rotate_pixels(
 {
 	P_rot.clear();
 
-	float theta = angle_deg * M_PI / 180.f;	// Angle in radians
+	float theta = angle_deg * float(M_PI) / 180.f;	// Angle in radians
 	for (auto& p : P)
 	{
 		float x_ = float(p.x) * cos(theta) - float(p.y) * sin(theta),

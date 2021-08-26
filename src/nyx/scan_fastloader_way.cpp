@@ -131,7 +131,7 @@ int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::strin
 
 	bool ok = true;
 
-	int nf = intensFiles.size();
+	auto nf = intensFiles.size();
 	for (int i = 0; i < nf; i++)
 	{
 		// Clear label stats buffers
@@ -236,7 +236,7 @@ bool scanViaFastloader (const std::string & fpath, int num_threads)
 				else
 				{
 					// The pixel value is previously known, increment its counter
-					int index = iter - histo.begin();
+					auto index = iter - histo.begin();
 					counts[index] = counts[index] + 1;
 				}
 			}
@@ -323,102 +323,6 @@ bool TraverseViaFastloader1 (const std::string & fpath, int num_threads)
 
 	return true;
 }
-
-
-bool TraverseViaFastloader2 (const std::string & fpath, int num_threads)
-{
-	// Sanity
-#ifndef __unix
-	MEMORYSTATUSEX statex;
-	statex.dwLength = sizeof (statex);
-	GlobalMemoryStatusEx (&statex);
-	std::cout << "memory load, %=" << statex.dwMemoryLoad
-		<< "\ntotal physical memory, Mb=" << statex.ullTotalPhys / 1048576
-		<< "\ntotal available meory, Mb=" << statex.ullAvailPhys / 1048576
-		<< std::endl;
-#endif
-
-	// Get the TIFF file info
-	GrayscaleTiffTileLoader<int> gfl(num_threads, fpath);
-
-	auto th = gfl.tileHeight(0),
-		tw = gfl.tileWidth(0),
-		td = gfl.tileDepth(0);
-	auto tileSize = th * tw;
-
-	// Just for information
-	auto fh = gfl.fullHeight(0);
-	auto fw = gfl.fullWidth(0);
-	auto fd = gfl.fullDepth(0);
-
-	// Read the TIFF tile by tile
-	auto ntw = gfl.numberTileWidth(0);
-	auto nth = gfl.numberTileHeight(0);
-	auto ntd = gfl.numberTileDepth(0);
-
-	uint16_t fileHeight = fh, //10,
-		fileWidth = fw, //10,
-		fileDepth = 1, //10,
-		tileHeight = th, //2,
-		tileWidth = tw, //2,
-		tileDepth = 1, //2,
-		numberChannels = 1;
-
-	uint32_t radiusDepth = 1,
-		radiusHeight = 1,
-		radiusWidth = 1;
-
-	uint32_t numberThreads = 1; // 5;
-
-	// Instanciate a Tile loader
-	auto tl = std::make_shared<VirtualFileTileChannelLoader>(
-		numberThreads,
-		fileHeight, fileWidth, fileDepth,
-		tileHeight, tileWidth, tileDepth,
-		numberChannels);
-
-	// Create the Fast Loader configuration
-	auto options = std::make_unique<fl::FastLoaderConfiguration<fl::DefaultView<int>>>(tl);
-	// Set the configuration
-	options->radius(radiusDepth, radiusHeight, radiusWidth);
-	options->ordered(true);
-	options->borderCreatorConstant(0);
-
-	// Create the Fast Loader Graph
-	auto fl = fl::FastLoaderGraph<fl::DefaultView<int>>(std::move(options));
-	// Execute the graph
-	fl.executeGraph();
-	// Request all the views in the graph
-	fl.requestAllViews();
-	// Indicate no other view will be requested
-	fl.finishRequestingViews();
-
-	// For each of the view
-	while (auto view = fl.getBlockingResult()) {
-		// Do stuff
-		//std::cout << *view << std::endl;
-
-		// Do stuff #2
-		// Get information on the tile and looping through it 
-		for (uint32_t y = 0; y < view->tileHeight(); y++) 
-		{
-			for (int32_t x = 0; x < view->tileWidth(); x++) 
-			{
-				// Get a pixel within the tile
-				//---	uint32_t pixel = view->getPixelValue (y,x);
-				//---	std::cout << pixel << std::endl;
-			}
-		}
-
-		// Return the view to the Fast Loader Graph
-		view->returnToMemoryManager();
-	}
-	// Wait for the graph to terminate
-	fl.waitForTermination();
-
-	return true;
-}
-
 
 /* --- This code is pending a descussion with FastLoader team ---
 bool TraverseViaFastloader3 (const std::string& fpath, int num_threads)

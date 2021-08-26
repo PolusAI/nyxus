@@ -11,7 +11,7 @@ struct Point2
 	Point2(T x_, T y_) : x(x_), y(y_) {}
 	Point2() : x(0), y(0) {}
 
-	double normL2() const { return sqrt(x * x + y * y); }
+	float normL2() const { return sqrt(x * x + y * y); }
 
 	Point2 operator - ()
 	{
@@ -37,12 +37,14 @@ struct Point2
 
 using Point2i = Point2<StatsInt>;
 using Point2f = Point2<float>;
-inline double normL2(const Point2f& p) { return p.normL2(); }
+inline float normL2(const Point2f& p) { return p.normL2(); }
 
 struct Pixel2 : public Point2i
 {
 	PixIntens inten;
-	Pixel2(StatsInt x_, StatsInt y_, PixIntens i_) : Point2(x_, y_), inten(i_) {}
+	Pixel2 (StatsInt x_, StatsInt y_, PixIntens i_) : Point2(x_, y_), inten(i_) {}
+	Pixel2 (int x_, int y_, PixIntens i_) : Point2(x_, y_), inten(i_) {}
+	Pixel2 (float x_, float y_, PixIntens i_) : Point2((StatsInt)x_, (StatsInt)y_), inten(i_) {}
 
 	bool operator == (const Pixel2& p2)
 	{

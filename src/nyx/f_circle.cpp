@@ -33,14 +33,14 @@ double MinEnclosingCircle::calculate_diam(std::vector<Pixel2>& Contour)
 void MinEnclosingCircle::findCircle3pts (const std::vector<Pixel2>& pts, Point2f& center, float& radius)
 {
     // two edges of the triangle v1, v2
-    Pixel2 v1 = pts[1] - pts[0];
-    Pixel2 v2 = pts[2] - pts[0];
+    Point2f v1 = pts[1] - pts[0],
+        v2 = pts[2] - pts[0];
 
     // center is intersection of midperpendicular lines of the two edges v1, v2
     // a1*x + b1*y = c1 where a1 = v1.x, b1 = v1.y
     // a2*x + b2*y = c2 where a2 = v2.x, b2 = v2.y
 
-    auto midPoint1 = (pts[0] + pts[1]) / 2.0f;
+    Point2f midPoint1 = (pts[0] + pts[1]) / 2.0f;
     float c1 = midPoint1.x * v1.x + midPoint1.y * v1.y;
     Point2f midPoint2 = (pts[0] + pts[2]) / 2.0f;
     float c2 = midPoint2.x * v2.x + midPoint2.y * v2.y;
@@ -203,14 +203,14 @@ void MinEnclosingCircle::minEnclosingCircle(
     {
     case 1:
     {
-        _center = Point2f (Contour[0].x, Contour[0].y);   //(is_float) ? ptsf[0] : Point2f((float)ptsi[0].x, (float)ptsi[0].y);
+        _center = Point2f ((float)Contour[0].x, (float)Contour[0].y);   //(is_float) ? ptsf[0] : Point2f((float)ptsi[0].x, (float)ptsi[0].y);
         _radius = EPS;
         break;
     }
     case 2:
     {
-        Point2f p1 = Point2f (Contour[0].x, Contour[0].y);   //(is_float) ? ptsf[0] : Point2f((float)ptsi[0].x, (float)ptsi[0].y);
-        Point2f p2 = Point2f (Contour[1].x, Contour[1].y);    //(is_float) ? ptsf[1] : Point2f((float)ptsi[1].x, (float)ptsi[1].y);
+        Point2f p1 = Point2f ((float)Contour[0].x, (float)Contour[0].y);   //(is_float) ? ptsf[0] : Point2f((float)ptsi[0].x, (float)ptsi[0].y);
+        Point2f p2 = Point2f ((float)Contour[1].x, (float)Contour[1].y);    //(is_float) ? ptsf[1] : Point2f((float)ptsi[1].x, (float)ptsi[1].y);
         _center.x = (p1.x + p2.x) / 2.0f;
         _center.y = (p1.y + p2.y) / 2.0f;
         _radius = (float)(normL2(p1 - p2) / 2.0) + EPS;
@@ -252,7 +252,7 @@ void MinEnclosingCircle::minEnclosingCircle(
 #endif
         }
 #endif//andre
-        findMinEnclosingCircle (Contour, count, center, radius);
+        findMinEnclosingCircle (Contour, (int)count, center, radius);
         _center = center;
         _radius = radius;
         break;
