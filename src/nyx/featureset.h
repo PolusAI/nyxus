@@ -100,6 +100,11 @@ class FeatureSet
 public:
 	FeatureSet() { enableAll(true); }
 	void enableAll(bool newStatus) { for (int i = 0; i < AvailableFeatures::_COUNT_; i++) m_enabledFeatures[i] = newStatus;	}
+	void enableFeatures(std::vector<AvailableFeatures>& desiredFeatures) {
+		enableAll(false);
+		for (auto f : desiredFeatures)
+			m_enabledFeatures[f] = true;
+	}
 	void enablePixelIntenStats() {
 		enableAll(false);
 		m_enabledFeatures[MEAN] =
