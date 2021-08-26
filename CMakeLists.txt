@@ -1,3 +1,4 @@
+project(SensemakerPythonLibrary)
 cmake_minimum_required(VERSION 3.4...3.18)
 
 #==== Compiler Options
@@ -5,19 +6,22 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive- ")
 
-project(SensemakerPythonLibrary)
-
+#==== Pybind11
 add_subdirectory(lib/pybind11)
 
+#==== Include directories. Note: libtiff (required by FastLoader) is 
+#	the only dependency needing manual preparation - unzip, cmake-install 
+#	it, and put its headers in lib/libtiff/include, and 
+#	its library - in lib/libtiff/lib
 include_directories(
 	lib/pybind11/include/
 	lib/fastloader/
 	lib/hedgehog/
 	lib/libtiff
 	lib/libtiff/include
-	"C:/ProgramData/Anaconda3/include"
 	)
 
+#==== Source files
 pybind11_add_module(nyx_backend 
 	src/nyx/bindings_py.cpp 
 	src/nyx/globals.cpp 
@@ -43,6 +47,7 @@ pybind11_add_module(nyx_backend
 # EXAMPLE_VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
 target_compile_definitions(nyx_backend PRIVATE VERSION_INFO=${EXAMPLE_VERSION_INFO})
 
+#==== Separate link instruction for libtiff. See libtiff's deployment instrunction above
 find_library(LIBTIFF_LIBRARY libTiff_x64 lib/libtiff/lib)
 target_link_libraries(nyx_backend PRIVATE ${LIBTIFF_LIBRARY})
 
