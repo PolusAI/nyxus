@@ -2,6 +2,7 @@
 
 //---	#define SINGLE_ROI_TEST
 
+#include <climits>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -10,6 +11,8 @@
 #include "featureset.h"
 #include "histogram.h"
 #include "pixel.h"
+
+#define INF 10E200	// Cautious infinity
 
 bool datasetDirsOK (const std::string & dirIntens, const std::string & dirLab, const std::string & dirOut, bool mustCheckDirOut);
 bool directoryExists (const std::string & dir);
@@ -42,6 +45,34 @@ void print_by_label(const char* featureName, std::unordered_map<int, StatsInt> L
 void print_by_label(const char* featureName, std::unordered_map<int, StatsReal> L, int numColumns = 4);
 void clearLabelStats();
 void reduce_all_labels(int min_online_roi_size);
+
+class AABB
+{
+public:
+	AABB() {}
+	void init_x (StatsInt x) { xmin = xmax = x; }
+	void init_y (StatsInt y) { ymin = ymax = y; }
+	void update_x(StatsInt x)
+	{
+		xmin = std::min(xmin, x);
+		xmax = std::max(xmax, x);
+	}
+	void update_y(StatsInt y)
+	{
+		ymin = std::min(ymin, y);
+		ymax = std::max(ymax, y);
+	}
+	StatsInt get_height() { return ymax - ymin + 1; }
+	StatsInt get_width() { return xmax - xmin + 1; }
+	StatsInt get_area() { return get_width() * get_height(); }
+	inline StatsInt get_xmin() { return xmin; }
+	inline StatsInt get_xmax() { return xmax; }
+	inline StatsInt get_ymin() { return ymin; }
+	inline StatsInt get_ymax() { return ymax; }
+
+protected:
+	StatsInt xmin = INT32_MAX, xmax = INT32_MIN, ymin = INT32_MAX, ymax = INT32_MIN;
+};
 
 // Inherited from WNDCHRM, used for Feret and Martin statistics calculation
 struct Statistics 
@@ -154,13 +185,38 @@ public:
 protected:
 };
 
+void haralick2D(
+	// in
+	std::vector <Pixel2>& nonzero_intensity_pixels,
+	AABB & aabb,
+	double distance,
+	// out
+	std::vector<double>& Texture_Feature_Angles,
+	std::vector<double>& Texture_AngularSecondMoments,
+	std::vector<double>& Texture_Contrast,
+	std::vector<double>& Texture_Correlation,
+	std::vector<double>& Texture_Variance,
+	std::vector<double>& Texture_InverseDifferenceMoment,
+	std::vector<double>& Texture_SumAverage,
+	std::vector<double>& Texture_SumVariance,
+	std::vector<double>& Texture_SumEntropy,
+	std::vector<double>& Texture_Entropy,
+	std::vector<double>& Texture_DifferenceVariance,
+	std::vector<double>& Texture_DifferenceEntropy,
+	std::vector<double>& Texture_InfoMeas1,
+	std::vector<double>& Texture_InfoMeas2);
+
 extern FeatureSet featureSet;
 
 // Label record - structure aggregating label's cached data and calculated features
 struct LR
 {
+	// Helper objects
 	std::vector <Pixel2> raw_pixels;	
-	
+	AABB aabb;	
+	ConvexHull convHull;
+	Contour cntr;
+
 	//==== Pixel intensity statistics
 
 	StatsInt pixelCount;	// Area
@@ -195,10 +251,7 @@ struct LR
 	StatsReal labelRMAD;
 
 	//==== Morphology
-	StatsInt aabb_xmin;
-	StatsInt aabb_xmax;
-	StatsInt aabb_ymin;
-	StatsInt aabb_ymax;
+
 	int num_neighbors;
 	void init_aabb (StatsInt x, StatsInt y);
 	void update_aabb (StatsInt x, StatsInt y);
@@ -271,14 +324,94 @@ struct LR
 
 	double geodeticLength,	// ratios[53] 
 		thickness;			// ratios[54]
+
+	// --Haralick 2D aka CellProfiler_*
+	double Texture_AngularSecondMoment_0,
+		Texture_AngularSecondMoment_135,
+		Texture_AngularSecondMoment_45,
+		Texture_AngularSecondMoment_90,
+
+		Texture_Contrast_0,
+		Texture_Contrast_135,
+		Texture_Contrast_45,
+		Texture_Contrast_90,
+
+		Texture_Correlation_0,
+		Texture_Correlation_135,
+		Texture_Correlation_45,
+		Texture_Correlation_90,
+
+		Texture_DifferenceEntropy_0,
+		Texture_DifferenceEntropy_135,
+		Texture_DifferenceEntropy_45,
+		Texture_DifferenceEntropy_90,
+
+		Texture_DifferenceVariance_0,
+		Texture_DifferenceVariance_135,
+		Texture_DifferenceVariance_45,
+		Texture_DifferenceVariance_90,
+
+		Texture_Entropy_0,
+		Texture_Entropy_135,
+		Texture_Entropy_45,
+		Texture_Entropy_90,
+
+		Texture_InfoMeas1_0,
+		Texture_InfoMeas1_135,
+		Texture_InfoMeas1_45,
+		Texture_InfoMeas1_90,
+
+		Texture_InfoMeas2_0,
+		Texture_InfoMeas2_135,
+		Texture_InfoMeas2_45,
+		Texture_InfoMeas2_90,
+
+		Texture_InverseDifferenceMoment_0,
+		Texture_InverseDifferenceMoment_135,
+		Texture_InverseDifferenceMoment_45,
+		Texture_InverseDifferenceMoment_90,
+
+		Texture_SumAverage_0,
+		Texture_SumAverage_135,
+		Texture_SumAverage_45,
+		Texture_SumAverage_90,
+
+		Texture_SumEntropy_0,
+		Texture_SumEntropy_135,
+		Texture_SumEntropy_45,
+		Texture_SumEntropy_90,
+
+		Texture_SumVariance_0,
+		Texture_SumVariance_135,
+		Texture_SumVariance_45,
+		Texture_SumVariance_90,
+
+		Texture_Variance_0,
+		Texture_Variance_135,
+		Texture_Variance_45,
+		Texture_Variance_90;
+
+	std::vector<double> Texture_Feature_Angles,	// (auxiliary field) angles e.g. 0, 45, 90, 135, etc.
+		Texture_AngularSecondMoments, // Angular Second Moment
+		Texture_Contrast, // Contrast
+		Texture_Correlation, // Correlation
+		Texture_Variance, // Variance
+		Texture_InverseDifferenceMoment, // Inverse Diffenence Moment
+		Texture_SumAverage, // Sum Average
+		Texture_SumVariance, // Sum Variance
+		Texture_SumEntropy, // Sum Entropy
+		Texture_Entropy, // Entropy
+		Texture_DifferenceVariance, // Difference Variance
+		Texture_DifferenceEntropy, // Diffenence Entropy
+		Texture_InfoMeas1, // Measure of Correlation 1
+		Texture_InfoMeas2; // Measure of Correlation 2
+
 	double getValue(AvailableFeatures f);
 };
 
 void init_label_record(LR& lr, int x, int y, int label, PixIntens intensity);
 void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity);
 void reduce_neighbors (int labels_collision_radius);
-
-
 
 // Timing
 extern double totalTileLoadTime, totalPixStatsCalcTime;
@@ -299,8 +432,8 @@ inline bool aabbNoOverlap (
 
 inline bool aabbNoOverlap (LR & r1, LR & r2, int radius)
 {
-	bool retval = aabbNoOverlap(r1.aabb_xmin, r1.aabb_xmax, r1.aabb_ymin, r1.aabb_ymax,
-		r2.aabb_xmin, r2.aabb_xmax, r2.aabb_ymin, r2.aabb_ymax, radius); 
+	bool retval = aabbNoOverlap(r1.aabb.get_xmin(), r1.aabb.get_xmax(), r1.aabb.get_ymin(), r1.aabb.get_ymax(),
+		r2.aabb.get_xmin(), r2.aabb.get_xmax(), r2.aabb.get_ymin(), r2.aabb.get_ymax(), radius);
 	return retval;
 }
 

@@ -91,6 +91,9 @@ enum AvailableFeatures
 	DIAMETER_INSCRIBING_CIRCLE,  
 	GEODETIC_LENGTH,  
 	THICKNESS,
+
+	// Texture:
+
 	_COUNT_
 };
 

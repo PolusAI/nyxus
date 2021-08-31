@@ -53,10 +53,10 @@ double LR::getValue (AvailableFeatures f)
 		case AREA_PIXELS_COUNT: v=this->pixelCount; break;
 		case CENTROID_X: v=this->centroid_x; break;
 		case CENTROID_Y: v=this->centroid_y; break;
-		case BBOX_YMIN: v=this->aabb_ymin; break;
-		case BBOX_XMIN: v=this->aabb_xmin; break;
-		case BBOX_HEIGHT: v=this->aabb_ymax-this->aabb_ymin; break;
-		case BBOX_WIDTH: v=this->aabb_xmax-this->aabb_xmin; break;
+		case BBOX_YMIN: v=this->aabb.get_ymin(); break;
+		case BBOX_XMIN: v=this->aabb.get_xmin(); break;
+		case BBOX_HEIGHT: v=this->aabb.get_height(); break;
+		case BBOX_WIDTH: v=this->aabb.get_width(); break;
 
 		case MAJOR_AXIS_LENGTH: v=this->major_axis_length; break;
 		case MINOR_AXIS_LENGTH: v=this->minor_axis_length; break;

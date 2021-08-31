@@ -19,7 +19,6 @@
 #include<windows.h>
 #endif
 
-
 int options_n_tlt = 2, // # of FastLoader threads
 options_n_fct = 1; // # feature scanner threads
 
@@ -105,7 +104,6 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::vec
 	// Success, return the result
 	return { 0, "", nx, ny, retbuf };
 }
-
 
 namespace py = pybind11;
 

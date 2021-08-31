@@ -9,9 +9,6 @@
 #include <thread>
 #include "sensemaker.h"
 
-
-
-
 constexpr int N2R = 50 * 1000;
 constexpr int N2R_2 = 50 * 1000;
 
@@ -267,7 +264,7 @@ void reduce_all_labels (int min_online_roi_size)
 		}
 
 		//==== Morphology
-		double bbArea = (lr.aabb_xmax - lr.aabb_xmin) * (lr.aabb_ymax - lr.aabb_ymin);
+		double bbArea = lr.aabb.get_area();
 		lr.extent = (double)lr.pixelCount / (double)bbArea;
 
 	}
@@ -331,36 +328,35 @@ void reduce_all_labels (int min_online_roi_size)
 		r.orientation = Orientation;
 
 		//==== Aspect ratio
-		double width = r.aabb_xmax-r.aabb_xmin, 
-			height = r.aabb_ymax - r.aabb_ymin, 
-			aspRat = width / height;
-		r.aspectRatio = aspRat;
+		r.aspectRatio = r.aabb.get_width() / r.aabb.get_height();
 	}
 
 	std::cout << "\treducing morphology / contours, hulls, and everything else" << std::endl;
-
 	for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
 	{
 		auto& r = ld.second;	// Label record
 
 		//==== Contour, ROI perimeter, equivalent circle diameter
 
-		Contour cntr;
-		cntr.calculate(r.raw_pixels);
-		r.roiPerimeter = (StatsInt)cntr.get_roi_perimeter();
-		r.equivDiam = cntr.get_diameter_equal_perimeter();
+		r.cntr.calculate(r.raw_pixels);
+		r.roiPerimeter = (StatsInt)r.cntr.get_roi_perimeter();
+		r.equivDiam = r.cntr.get_diameter_equal_perimeter();
 
 		//==== Convex hull and solidity
-		ConvexHull convHull;
-		convHull.calculate (r.raw_pixels);
-		r.convHullArea = convHull.getArea();
+		r.convHull.calculate(r.raw_pixels);
+		r.convHullArea = r.convHull.getArea();
 		r.solidity = r.pixelCount / r.convHullArea;
 
 		//==== Circularity
 		r.circularity = 4.0 * M_PI * r.pixelCount / (r.roiPerimeter * r.roiPerimeter);
+	}
+
+	std::cout << "\treducing extrema and Euler\n";
+	for (auto& ld : labelData)
+	{
+		auto& r = ld.second;
 
 		//==== Extrema
-		//xxx std::cout << "e ";
 		int TopMostIndex = -1;
 		int LowestIndex = -1;
 		int LeftMostIndex = -1;
@@ -438,13 +434,19 @@ void reduce_all_labels (int min_online_roi_size)
 
 		r.extremaP8y = LeftMost_Top; // -0.5 + Im.ROIHeightBeg;
 		r.extremaP8x = LeftMostIndex; // -0.5 + Im.ROIWidthBeg;
-
+	
 		//==== Euler number
-		EulerNumber eu(r.raw_pixels, r.aabb_xmin, r.aabb_ymin, r.aabb_xmax, r.aabb_ymax, 8);	// Using mode=8 following to WNDCHRM example
-		r.euler_number = eu.euler_number;
+		EulerNumber eu(r.raw_pixels, r.aabb.get_xmin(), r.aabb.get_ymin(), r.aabb.get_xmax(), r.aabb.get_ymax(), 8);	// Using mode=8 following to WNDCHRM example
+		r.euler_number = eu.euler_number;	
+	}
+
+	std::cout << "\treducing Feret, Martin, Nassenstein, hexagonality, polygonality, enclosing circle, geodetic length & thickness\n";
+	for (auto& ld : labelData)
+	{
+		auto& r = ld.second;
 
 		//==== Feret diameters and angles
-		ParticleMetrics pm (convHull.CH);
+		ParticleMetrics pm (r.convHull.CH);
 		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
 		pm.calc_ferret(
 			r.maxFeretDiameter,
@@ -491,15 +493,45 @@ void reduce_all_labels (int min_online_roi_size)
 
 		//==== Enclosing circle
 		MinEnclosingCircle cir1;
-		r.diameter_min_enclosing_circle = cir1.calculate_diam (cntr.theContour);
+		r.diameter_min_enclosing_circle = cir1.calculate_diam (r.cntr.theContour);
 		InscribingCircumscribingCircle cir2;
-		auto [diamIns, diamCir] = cir2.calculateInsCir (cntr.theContour, r.centroid_x, r.centroid_y);
+		auto [diamIns, diamCir] = cir2.calculateInsCir (r.cntr.theContour, r.centroid_x, r.centroid_y);
 		r.diameter_inscribing_circle = diamIns;
 		r.diameter_circumscribing_circle = diamCir;
 
 		//==== Geodetic length thickness
 		GeodeticLength_and_Thickness glt;
 		auto [geoLen, thick] = glt.calculate(r.pixelCount, r.roiPerimeter);
+	}
+
+	std::cout << "\treducing Haralick 2D\n";
+	for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
+	{
+		// Get ahold of the label's data:
+		auto& r = ld.second;	
+	
+		//==== Haralick 2D 
+		std::vector<double> H2;
+		haralick2D(
+			// in
+			r.raw_pixels,	// nonzero_intensity_pixels,
+			r.aabb,			// AABB info not to calculate it again from 'raw_pixels' in the function
+			0.0,			// distance,
+			// out
+			r.Texture_Feature_Angles,
+			r.Texture_AngularSecondMoments,
+			r.Texture_Contrast,
+			r.Texture_Correlation,
+			r.Texture_Variance,
+			r.Texture_InverseDifferenceMoment,
+			r.Texture_SumAverage,
+			r.Texture_SumVariance,
+			r.Texture_SumEntropy,
+			r.Texture_Entropy,
+			r.Texture_DifferenceVariance,
+			r.Texture_DifferenceEntropy,
+			r.Texture_InfoMeas1,
+			r.Texture_InfoMeas2);
 	}
 	
 }
@@ -523,8 +555,8 @@ void reduce_neighbors (int radius)
 				continue;	// No need to check the upper triangle
 
 			LR& r2 = labelData[l2];
-			bool noOverlap = r2.aabb_xmin > r1.aabb_xmax+radius || r2.aabb_xmax < r1.aabb_xmin-radius 
-				|| r2.aabb_ymin > r1.aabb_ymax+radius || r2.aabb_ymax < r1.aabb_ymin-radius;
+			bool noOverlap = r2.aabb.get_xmin() > r1.aabb.get_xmax()+radius || r2.aabb.get_xmax() < r1.aabb.get_xmin()-radius 
+				|| r2.aabb.get_ymin() > r1.aabb.get_ymax()+radius || r2.aabb.get_ymax() < r1.aabb.get_ymin()-radius;
 			if (!noOverlap)
 			{
 				unsigned int idx = l1 * nul + l2;	
@@ -561,10 +593,10 @@ void reduce_neighbors (int radius)
 	for (auto l : uniqueLabels)
 	{
 		LR& r = labelData [l];
-		auto h1 = spat_hash_2d (r.aabb_xmin, r.aabb_ymin, m),
-			h2 = spat_hash_2d (r.aabb_xmin, r.aabb_ymax, m),
-			h3 = spat_hash_2d (r.aabb_xmax, r.aabb_ymin, m),
-			h4 = spat_hash_2d (r.aabb_xmax, r.aabb_ymax, m);
+		auto h1 = spat_hash_2d (r.aabb.get_xmin(), r.aabb.get_ymin(), m),
+			h2 = spat_hash_2d (r.aabb.get_xmin(), r.aabb.get_ymax(), m),
+			h3 = spat_hash_2d (r.aabb.get_xmax(), r.aabb.get_ymin(), m),
+			h4 = spat_hash_2d (r.aabb.get_xmax(), r.aabb.get_ymax(), m);
 		HT[h1].push_back(l);
 		HT[h2].push_back(l);
 		HT[h3].push_back(l);
@@ -602,17 +634,15 @@ void reduce_neighbors (int radius)
 
 void LR::init_aabb (StatsInt x, StatsInt y)
 {
-	aabb_xmin = aabb_xmax = x;
-	aabb_ymin = aabb_ymax = y;
+	aabb.init_x(x); 
+	aabb.init_y(y);
 	num_neighbors = 0;
 }
 
 void LR::update_aabb (StatsInt x, StatsInt y)
 {
-	aabb_xmin = std::min (aabb_xmin, x);
-	aabb_xmax = std::max (aabb_xmax, x);
-	aabb_ymin = std::min (aabb_ymin, y);
-	aabb_ymax = std::max (aabb_ymax, y);
+	aabb.update_x(x);
+	aabb.update_y(y);
 }
 
 

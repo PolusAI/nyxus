@@ -63,96 +63,161 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 	// -- Header
 	fprintf (fp,
 		// Intensity stats:
-		"label , "
-		"mean, "
-		"median , "
-		"min , "
-		"max , "
-		"range , "
-		"standard_deviation , "
-		"skewness , "
-		"kurtosis , "
-		"mean_absolute_deviation , "
-		"energy , "
-		"root_mean_squared , "
-		"entropy , "
-		"mode , "
-		"uniformity , "
-		"P10 , P25 , P75 , P90 , "
-		"interquartile_range , "
-		"robust_mean_absolute_deviation , "
-		"weighted_centroid_y , "
-		"weighted_centroid_x , "
+		"label"
+		",mean"
+		",median"
+		",min"
+		",max"
+		",range"
+		",standard_deviation"
+		",skewness"
+		",kurtosis"
+		",mean_absolute_deviation"
+		",energy"
+		",root_mean_squared"
+		",entropy"
+		",mode"
+		",uniformity"
+		",P10,P25,P75,P90"
+		",interquartile_range"
+		",robust_mean_absolute_deviation"
+		",weighted_centroid_y"
+		",weighted_centroid_x"
 
 		// Morphology:
-		"area , "	// aka pixels count
-		"centroid_x , "
-		"centroid_y , "
-		"bbox_ymin , "
-		"bbox_xmin , "	
-		"bbox_height , "
-		"bbox_width , "
+		",area"	// aka pixels count
+		",centroid_x"
+		",centroid_y"
+		",bbox_ymin"
+		",bbox_xmin"	
+		",bbox_height"
+		",bbox_width"
 
-		"major_axis_length , "
-		"minor_axis_length , "
-		"eccentricity , "
-		"orientation , "
-		"neighbors , "
-		"extent , "
-		"aspect_ratio , "
+		",major_axis_length"
+		",minor_axis_length"
+		",eccentricity"
+		",orientation"
+		",neighbors"
+		",extent"
+		",aspect_ratio"
 
-		"equivalent_diameter , "
-		"convex_hull_area , "
-		"solidity , "
-		"perimeter , "
-		"circularity , "
+		",equivalent_diameter"
+		",convex_hull_area"
+		",solidity"
+		",perimeter"
+		",circularity"
 
-		"extremaP1_x , extremaP1_y , "
-		"extremaP2_x , extremaP2_y , "
-		"extremaP3_x , extremaP3_y , "
-		"extremaP4_x , extremaP4_y , "
-		"extremaP5_x , extremaP5_y , "
-		"extremaP6_x , extremaP6_y , "
-		"extremaP7_x , extremaP7_y , "
-		"extremaP8_x , extremaP8_y "
+		",extremaP1_x , extremaP1_y"
+		",extremaP2_x , extremaP2_y"
+		",extremaP3_x , extremaP3_y"
+		",extremaP4_x , extremaP4_y"
+		",extremaP5_x , extremaP5_y"
+		",extremaP6_x , extremaP6_y"
+		",extremaP7_x , extremaP7_y"
+		",extremaP8_x , extremaP8_y"
 
-		"minFeretDiameter , "
-		"maxFeretDiameter , "
-		"minFeretAngle , "
-		"maxFeretAngle , "
-		"stat_feretDiam_min , "
-		"stat_feretDiam_max , "
-		"stat_feretDiam_mean , "
-		"stat_feretDiam_median , "
-		"stat_feretDiam_stddev , "
-		"stat_feretDiam_mode , "
+		",minFeretDiameter"
+		",maxFeretDiameter"
+		",minFeretAngle"
+		",maxFeretAngle"
+		",stat_feretDiam_min"
+		",stat_feretDiam_max"
+		",stat_feretDiam_mean"
+		",stat_feretDiam_median"
+		",stat_feretDiam_stddev"
+		",stat_feretDiam_mode"
 
-		"stat_martinDiam_min , "
-		"stat_martinDiam_max , "
-		"stat_martinDiam_mean , "
-		"stat_martinDiam_median , "
-		"stat_martinDiam_stddev , "
-		"stat_martinDiam_mode , "
+		",stat_martinDiam_min"
+		",stat_martinDiam_max"
+		",stat_martinDiam_mean"
+		",stat_martinDiam_median"
+		",stat_martinDiam_stddev"
+		",stat_martinDiam_mode"
 
-		"stat_nassensteinDiam_min , "
-		"stat_nassensteinDiam_max , "
-		"stat_nassensteinDiam_mean , "
-		"stat_nassensteinDiam_median , "
-		"stat_nassensteinDiam_stddev , "
-		"stat_nassensteinDiam_mode , "
+		",stat_nassensteinDiam_min"
+		",stat_nassensteinDiam_max"
+		",stat_nassensteinDiam_mean"
+		",stat_nassensteinDiam_median"
+		",stat_nassensteinDiam_stddev"
+		",stat_nassensteinDiam_mode"
 
-		"euler_nuber, "
+		",euler_nuber"
 
-		"polygonality_ave , "
-		"hexagonality_ave , "
-		"hexagonality_stddev , "
+		",polygonality_ave"
+		",hexagonality_ave"
+		",hexagonality_stddev"
 
-		"diameter_min_enclosing_circle , "
-		"diameter_circumscribing_circle , "
-		"diameter_inscribing_circle , "
-		"geodeticLength , "
-		"thickness"
+		",diameter_min_enclosing_circle"
+		",diameter_circumscribing_circle"
+		",diameter_inscribing_circle"
+		",geodeticLength"
+		",thickness"
 
+		",Texture_AngularSecondMoment_0"
+		",Texture_AngularSecondMoment_135"
+		",Texture_AngularSecondMoment_45"
+		",Texture_AngularSecondMoment_90"
+
+		",Texture_Contrast_0"
+		",Texture_Contrast_135"
+		",Texture_Contrast_45"
+		",Texture_Contrast_90"
+
+		",Texture_Correlation_0"
+		",Texture_Correlation_135"
+		",Texture_Correlation_45"
+		",Texture_Correlation_90"
+
+		",Texture_Variance_0"
+		",Texture_Variance_135"
+		",Texture_Variance_45"
+		",Texture_Variance_90"
+			
+		",Texture_InverseDifferenceMoment_0"
+		",Texture_InverseDifferenceMoment_135"
+		",Texture_InverseDifferenceMoment_45"
+		",Texture_InverseDifferenceMoment_90"
+
+		",Texture_SumAverage_0"
+		",Texture_SumAverage_135"
+		",Texture_SumAverage_45"
+		",Texture_SumAverage_90"
+
+		",Texture_SumVariance_0"
+		",Texture_SumVariance_135"
+		",Texture_SumVariance_45"
+		",Texture_SumVariance_90"
+
+		",Texture_SumEntropy_0"
+		",Texture_SumEntropy_135"
+		",Texture_SumEntropy_45"
+		",Texture_SumEntropy_90"
+			
+		",Texture_Entropy_0"
+		",Texture_Entropy_135"
+		",Texture_Entropy_45"
+		",Texture_Entropy_90"
+
+		",Texture_DifferenceVariance_0"
+		",Texture_DifferenceVariance_135"
+		",Texture_DifferenceVariance_45"
+		",Texture_DifferenceVariance_90"
+
+		",Texture_DifferenceEntropy_0"
+		",Texture_DifferenceEntropy_135"
+		",Texture_DifferenceEntropy_45"
+		",Texture_DifferenceEntropy_90"
+			
+		",Texture_InfoMeas1_0"
+		",Texture_InfoMeas1_135"
+		",Texture_InfoMeas1_45"
+		",Texture_InfoMeas1_90"
+
+		",Texture_InfoMeas2_0"
+		",Texture_InfoMeas2_135"
+		",Texture_InfoMeas2_45"
+		",Texture_InfoMeas2_90"
+	
 		"\n");
 
 	// -- Dump numbers
@@ -186,10 +251,10 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 			_mode = r.labelMode,
 			_unifo = r.labelUniformity;
 
-		auto _bbox_ymin = r.aabb_ymin,
-			_bbox_xmin = r.aabb_xmin,
-			_bbox_height = r.aabb_ymax - r.aabb_ymin,
-			_bbox_width = r.aabb_xmax - r.aabb_xmin;
+		auto _bbox_ymin = r.aabb.get_ymin(),
+			_bbox_xmin = r.aabb.get_xmin(),
+			_bbox_height = r.aabb.get_height(),
+			_bbox_width = r.aabb.get_width();
 
 		auto _maj_axis = r.major_axis_length, 
 			_min_axis = r.minor_axis_length,
@@ -205,64 +270,64 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 		auto _solidity = r.solidity;
 		auto _circ = r.circularity;
 
-		ss	<< l		<< " , " 
+		ss << l << " , "
 			// pixel intensity stats
-			<< _mean	<< " , " 
-			<< _median	<< " , " 			
-			<< _min		<< " , " 
-			<< _max		<< " , " 
-			<< _range	<< " , "
-			<< _stdev	<< " , "
-			<< _skew	<< " , "
-			<< _kurt	<< " , "
-			<< _mad		<< " , "			
-			<< _energy	<< " , " 
-			<< _rms		<< " , "
-			<< _entro	<< " , "
-			<< _mode	<< " , "
-			<< _unifo	<< " , "
-			<< _p10		<< " , "
-			<< _p25		<< " , "
-			<< _p75		<< " , " 
-			<< _p90		<< " , "
-			<< _iqr		<< " , "
-			<< _rmad	<< " , "
-			<< _wcy		<< " , "
-			<< _wcx		<< " , "
+			<< _mean << " , "
+			<< _median << " , "
+			<< _min << " , "
+			<< _max << " , "
+			<< _range << " , "
+			<< _stdev << " , "
+			<< _skew << " , "
+			<< _kurt << " , "
+			<< _mad << " , "
+			<< _energy << " , "
+			<< _rms << " , "
+			<< _entro << " , "
+			<< _mode << " , "
+			<< _unifo << " , "
+			<< _p10 << " , "
+			<< _p25 << " , "
+			<< _p75 << " , "
+			<< _p90 << " , "
+			<< _iqr << " , "
+			<< _rmad << " , "
+			<< _wcy << " , "
+			<< _wcx << " , "
 			// morphology
-			<< _pixCnt	<< " , "
-			<< _wcx		<< " , "
-			<< _wcy		<< " , "
-			<< _bbox_ymin	<< " , "
-			<< _bbox_xmin	<< " , "
-			<< _bbox_height	<< " , "
-			<< _bbox_width	<< " , "
+			<< _pixCnt << " , "
+			<< _wcx << " , "
+			<< _wcy << " , "
+			<< _bbox_ymin << " , "
+			<< _bbox_xmin << " , "
+			<< _bbox_height << " , "
+			<< _bbox_width << " , "
 
-			<< _maj_axis <<		" , "
-			<< _min_axis <<		" , "
-			<< _eccentricity <<	" , "
-			<< _orientation <<	" , "
-		
-			<< _num_neigs	<< " , "
-			<< _extent		<< " , " 
-			<< _asp_rat		<< " , "
-			<< _equiv_diam	<< " , "
-			<< _convHullArea	<< " , "
-			<< _solidity	<< " , "
+			<< _maj_axis << " , "
+			<< _min_axis << " , "
+			<< _eccentricity << " , "
+			<< _orientation << " , "
+
+			<< _num_neigs << " , "
+			<< _extent << " , "
+			<< _asp_rat << " , "
+			<< _equiv_diam << " , "
+			<< _convHullArea << " , "
+			<< _solidity << " , "
 			<< r.roiPerimeter << " , "
-			<< _circ	<< " , "
-			
-			<< r.extremaP1x	<< " , "	<< r.extremaP1y	<< " , "
-			<< r.extremaP2x	<< " , "	<< r.extremaP2y	<< " , "
-			<< r.extremaP3x	<< " , "	<< r.extremaP3y	<< " , "
-			<< r.extremaP4x	<< " , "	<< r.extremaP4y	<< " , "
-			<< r.extremaP5x	<< " , "	<< r.extremaP5y	<< " , "
-			<< r.extremaP6x	<< " , "	<< r.extremaP6y	<< " , "
-			<< r.extremaP7x	<< " , "	<< r.extremaP7y	<< " , "
-			<< r.extremaP8x	<< " , "	<< r.extremaP8y
+			<< _circ << " , "
 
-			<< r.minFeretDiameter	<< " , "
-			<< r.maxFeretDiameter	<< " , "
+			<< r.extremaP1x << " , " << r.extremaP1y << " , "
+			<< r.extremaP2x << " , " << r.extremaP2y << " , "
+			<< r.extremaP3x << " , " << r.extremaP3y << " , "
+			<< r.extremaP4x << " , " << r.extremaP4y << " , "
+			<< r.extremaP5x << " , " << r.extremaP5y << " , "
+			<< r.extremaP6x << " , " << r.extremaP6y << " , "
+			<< r.extremaP7x << " , " << r.extremaP7y << " , "
+			<< r.extremaP8x << " , " << r.extremaP8y
+
+			<< r.minFeretDiameter << " , "
+			<< r.maxFeretDiameter << " , "
 			<< r.minFeretAngle << " , "
 			<< r.maxFeretAngle << " , "
 			<< r.feretStats_minDiameter << " , "
@@ -288,13 +353,40 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 			<< r.euler_number << " , "
 			<< r.polygonality_ave << " , "
 			<< r.hexagonality_ave << " , "
-			<< r.hexagonality_stddev	<< " , "
-			<< r.diameter_min_enclosing_circle	<< " , "
-			<< r.diameter_circumscribing_circle	<< " , "
-			<< r.diameter_inscribing_circle	<<	" , "
-			<< r.geodeticLength	<< " , "
-			<< r.thickness
-			;
+			<< r.hexagonality_stddev << " , "
+			<< r.diameter_min_enclosing_circle << " , "
+			<< r.diameter_circumscribing_circle << " , "
+			<< r.diameter_inscribing_circle << " , "
+			<< r.geodeticLength << " , "
+			<< r.thickness;
+
+			// assuming r.Texture_* contains items for 0, 45, 90, and 135 degrees to match the header, otherwise we need to adjust the header
+			for (auto f : r.Texture_AngularSecondMoments)
+				ss << "," << f;
+			for (auto f : r.Texture_Contrast)
+				ss << "," << f;
+			for (auto f : r.Texture_Correlation)
+				ss << "," << f;
+			for (auto f : r.Texture_Variance)
+				ss << "," << f;
+			for (auto f : r.Texture_InverseDifferenceMoment)
+				ss << "," << f;
+			for (auto f : r.Texture_SumAverage)
+				ss << "," << f;
+			for (auto f : r.Texture_SumVariance)
+				ss << "," << f;
+			for (auto f : r.Texture_SumEntropy)
+				ss << "," << f;
+			for (auto f : r.Texture_Entropy)
+				ss << "," << f;
+			for (auto f : r.Texture_DifferenceVariance)
+				ss << "," << f;
+			for (auto f : r.Texture_DifferenceEntropy)
+				ss << "," << f;
+			for (auto f : r.Texture_InfoMeas1)
+				ss << "," << f;
+			for (auto f : r.Texture_InfoMeas2)
+				ss << "," << f;
 
 		fprintf (fp, "%s\n", ss.str().c_str());
 	}
