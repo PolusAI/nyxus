@@ -187,16 +187,18 @@ void update_label_stats(int x, int y, int label, PixIntens intensity)
 // This function should be called once after a file pair processing is finished.
 void reduce_all_labels (int min_online_roi_size)
 {
-	//==== Pixel intensity stats
 
 	std::cout << "\treducing intensity stats" << std::endl;
 
+	//==== Scan pixels. This will be followed by the Reduce step
 	for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
 	{
 		auto l = ld.first;		// Label code
 		auto& lr = ld.second;	// Label record
 
 		auto n = lr.pixelCount;	// Cardinality of the label value set
+
+		//==== Pixel intensity stats
 
 		// Mean absolute deviation
 		lr.labelMAD = lr.labelMAD / n;
@@ -269,69 +271,72 @@ void reduce_all_labels (int min_online_roi_size)
 
 	}
 
-	//==== Morphology
-	std::cout << "\treducing morphology / neighbors" << std::endl;
-
-	reduce_neighbors (5 /*collision radius*/);
-
-	// ---Fitting an ellipse
-	// 
-	//Reference: https://www.mathworks.com/matlabcentral/mlc-downloads/downloads/submissions/19028/versions/1/previews/regiondata.m/index.html
-	//
-
-	std::cout << "\treducing morphology / ellipticity" << std::endl;
-
-	// Calculate normalized second central moments for the region.
-	// 1/12 is the normalized second central moment of a pixel with unit length.
-	for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
+	//==== Neighbors
+	if (featureSet.isEnabled(NUM_NEIGHBORS))
 	{
-		auto& r = ld.second;	// Label record
-
-		double XSquaredTmp = 0, YSquaredTmp = 0, XYSquaredTmp = 0;
-		for (auto& pix : r.raw_pixels)
-		{
-			auto diffX = r.centroid_x - pix.x, diffY = r.centroid_y - pix.y;
-			XSquaredTmp += diffX * diffX; //(double(x) - (xCentroid - Im.ROIWidthBeg)) * (double(x) - (xCentroid - Im.ROIWidthBeg));
-			YSquaredTmp += diffY * diffY; //(-double(y) + (yCentroid - Im.ROIHeightBeg)) * (-double(y) + (yCentroid - Im.ROIHeightBeg));
-			XYSquaredTmp += diffX * diffY; //(double(x) - (xCentroid - Im.ROIWidthBeg)) * (-double(y) + (yCentroid - Im.ROIHeightBeg));
-		}
-
-		double uxx = XSquaredTmp / r.pixelCount + 1.0 / 12.0;
-		double uyy = YSquaredTmp / r.pixelCount + 1.0 / 12.0;
-		double uxy = XYSquaredTmp / r.pixelCount;
-
-		// Calculate major axis length, minor axis length, and eccentricity.
-		double common = sqrt((uxx - uyy) * (uxx - uyy) + 4 * uxy * uxy);
-		double MajorAxisLength = 2 * sqrt(2) * sqrt(uxx + uyy + common);
-		double MinorAxisLength = 2 * sqrt(2) * sqrt(uxx + uyy - common);
-		double Eccentricity = 2 * sqrt((MajorAxisLength / 2) * (MajorAxisLength / 2) - (MinorAxisLength / 2) * (MinorAxisLength / 2)) / MajorAxisLength;
-
-		// Calculate orientation [-90,90]
-		double num, den, Orientation;
-		if (uyy > uxx) {
-			num = uyy - uxx + sqrt((uyy - uxx) * (uyy - uxx) + 4 * uxy * uxy);
-			den = 2 * uxy;
-		}
-		else {
-			num = 2 * uxy;
-			den = uxx - uyy + sqrt((uxx - uyy) * (uxx - uyy) + 4 * uxy * uxy);
-		}
-		if (num == 0 && den == 0) 
-			Orientation = 0;
-		else 
-			Orientation = (180.0 / M_PI) * atan(num / den);
-
-		// Save feature values
-		r.major_axis_length = MajorAxisLength;
-		r.minor_axis_length = MinorAxisLength;
-		r.eccentricity = Eccentricity;
-		r.orientation = Orientation;
-
-		//==== Aspect ratio
-		r.aspectRatio = r.aabb.get_width() / r.aabb.get_height();
+		std::cout << "\treducing neighbors" << std::endl;
+		reduce_neighbors (5 /*collision radius*/);
 	}
 
-	std::cout << "\treducing morphology / contours, hulls, and everything else" << std::endl;
+	//==== Fitting an ellipse
+	if (featureSet.anyEnabled({MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION}))
+	{
+		// 
+		//Reference: https://www.mathworks.com/matlabcentral/mlc-downloads/downloads/submissions/19028/versions/1/previews/regiondata.m/index.html
+		//		
+		std::cout << "\treducing ellipticity (major, minor axes, eccentricity, orientation)" << std::endl;
+
+		// Calculate normalized second central moments for the region.
+		// 1/12 is the normalized second central moment of a pixel with unit length.
+		for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
+		{
+			auto& r = ld.second;	// Label record
+
+			double XSquaredTmp = 0, YSquaredTmp = 0, XYSquaredTmp = 0;
+			for (auto& pix : r.raw_pixels)
+			{
+				auto diffX = r.centroid_x - pix.x, diffY = r.centroid_y - pix.y;
+				XSquaredTmp += diffX * diffX; //(double(x) - (xCentroid - Im.ROIWidthBeg)) * (double(x) - (xCentroid - Im.ROIWidthBeg));
+				YSquaredTmp += diffY * diffY; //(-double(y) + (yCentroid - Im.ROIHeightBeg)) * (-double(y) + (yCentroid - Im.ROIHeightBeg));
+				XYSquaredTmp += diffX * diffY; //(double(x) - (xCentroid - Im.ROIWidthBeg)) * (-double(y) + (yCentroid - Im.ROIHeightBeg));
+			}
+
+			double uxx = XSquaredTmp / r.pixelCount + 1.0 / 12.0;
+			double uyy = YSquaredTmp / r.pixelCount + 1.0 / 12.0;
+			double uxy = XYSquaredTmp / r.pixelCount;
+
+			// Calculate major axis length, minor axis length, and eccentricity.
+			double common = sqrt((uxx - uyy) * (uxx - uyy) + 4 * uxy * uxy);
+			double MajorAxisLength = 2 * sqrt(2) * sqrt(uxx + uyy + common);
+			double MinorAxisLength = 2 * sqrt(2) * sqrt(uxx + uyy - common);
+			double Eccentricity = 2 * sqrt((MajorAxisLength / 2) * (MajorAxisLength / 2) - (MinorAxisLength / 2) * (MinorAxisLength / 2)) / MajorAxisLength;
+
+			// Calculate orientation [-90,90]
+			double num, den, Orientation;
+			if (uyy > uxx) {
+				num = uyy - uxx + sqrt((uyy - uxx) * (uyy - uxx) + 4 * uxy * uxy);
+				den = 2 * uxy;
+			}
+			else {
+				num = 2 * uxy;
+				den = uxx - uyy + sqrt((uxx - uyy) * (uxx - uyy) + 4 * uxy * uxy);
+			}
+			if (num == 0 && den == 0)
+				Orientation = 0;
+			else
+				Orientation = (180.0 / M_PI) * atan(num / den);
+
+			r.major_axis_length = MajorAxisLength;
+			r.minor_axis_length = MinorAxisLength;
+			r.eccentricity = Eccentricity;
+			r.orientation = Orientation;
+
+			//==== Aspect ratio
+			r.aspectRatio = r.aabb.get_width() / r.aabb.get_height();
+		}
+	}
+
+	std::cout << "\treducing contours, hulls, and related (circularity, solidity, ...)" << std::endl;
 	for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
 	{
 		auto& r = ld.second;	// Label record
@@ -351,6 +356,7 @@ void reduce_all_labels (int min_online_roi_size)
 		r.circularity = 4.0 * M_PI * r.pixelCount / (r.roiPerimeter * r.roiPerimeter);
 	}
 
+	//==== Extrema and Euler number
 	std::cout << "\treducing extrema and Euler\n";
 	for (auto& ld : labelData)
 	{
@@ -440,49 +446,99 @@ void reduce_all_labels (int min_online_roi_size)
 		r.euler_number = eu.euler_number;	
 	}
 
-	std::cout << "\treducing Feret, Martin, Nassenstein, hexagonality, polygonality, enclosing circle, geodetic length & thickness\n";
+	//==== Feret diameters and angles
+	if (featureSet.anyEnabled ({MIN_FERET_DIAMETER, MAX_FERET_DIAMETER, MIN_FERET_ANGLE, MAX_FERET_ANGLE}) ||
+		featureSet.anyEnabled({ 
+			STAT_FERET_DIAM_MIN,
+			STAT_FERET_DIAM_MAX,
+			STAT_FERET_DIAM_MEAN,
+			STAT_FERET_DIAM_MEDIAN,
+			STAT_FERET_DIAM_STDDEV,
+			STAT_FERET_DIAM_MODE }))
+	{
+		std::cout << "\treducing Feret diameter, angle, and stats\n";
+		for (auto& ld : labelData)
+		{
+			auto& r = ld.second;
+
+			ParticleMetrics pm(r.convHull.CH);
+			std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
+			pm.calc_ferret(
+				r.maxFeretDiameter,
+				r.maxFeretAngle,
+				r.minFeretDiameter,
+				r.minFeretAngle,
+				allD
+			);
+
+			auto structStat = ComputeCommonStatistics2(allD);
+			r.feretStats_minDiameter = (double)structStat.min;	// ratios[59]
+			r.feretStats_maxDiameter = (double)structStat.max;	// ratios[60]
+			r.feretStats_meanDiameter = structStat.mean;	// ratios[61]
+			r.feretStats_medianDiameter = structStat.median;	// ratios[62]
+			r.feretStats_stddevDiameter = structStat.stdev;	// ratios[63]
+			r.feretStats_modeDiameter = (double)structStat.mode;	// ratios[64]		
+		}
+	}
+
+	//==== Martin diameters
+	if (featureSet.anyEnabled({ STAT_MARTIN_DIAM_MIN,
+		STAT_MARTIN_DIAM_MAX,
+		STAT_MARTIN_DIAM_MEAN,
+		STAT_MARTIN_DIAM_MEDIAN,
+		STAT_MARTIN_DIAM_STDDEV,
+		STAT_MARTIN_DIAM_MODE }))
+	{
+		std::cout << "\treducing Martin stats\n";
+		for (auto& ld : labelData)
+		{
+			auto& r = ld.second;
+
+
+			ParticleMetrics pm(r.convHull.CH);
+			std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
+			pm.calc_martin(allD);
+			auto structStat = ComputeCommonStatistics2(allD);
+			r.martinStats_minDiameter = (double)structStat.min;
+			r.martinStats_maxDiameter = (double)structStat.max;
+			r.martinStats_meanDiameter = structStat.mean;
+			r.martinStats_medianDiameter = structStat.median;
+			r.martinStats_stddevDiameter = structStat.stdev;
+			r.martinStats_modeDiameter = (double)structStat.mode;
+		}
+	}
+
+	//==== Nassenstein diameters
+	if (featureSet.anyEnabled({ STAT_NASSENSTEIN_DIAM_MIN,
+		STAT_NASSENSTEIN_DIAM_MAX,
+		STAT_NASSENSTEIN_DIAM_MEAN,
+		STAT_NASSENSTEIN_DIAM_MEDIAN,
+		STAT_NASSENSTEIN_DIAM_STDDEV,
+		STAT_NASSENSTEIN_DIAM_MODE }))
+	{
+		std::cout << "\treducing Nassenstein stats\n";
+		for (auto& ld : labelData)
+		{
+			auto& r = ld.second;
+
+
+			ParticleMetrics pm(r.convHull.CH);
+			std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
+			pm.calc_nassenstein(allD);
+			auto structStat = ComputeCommonStatistics2(allD);
+			r.nassStats_minDiameter = (double)structStat.min;
+			r.nassStats_maxDiameter = (double)structStat.max;
+			r.nassStats_meanDiameter = structStat.mean;
+			r.nassStats_medianDiameter = structStat.median;
+			r.nassStats_stddevDiameter = structStat.stdev;
+			r.nassStats_modeDiameter = (double)structStat.mode;
+		}
+	}
+
+	std::cout << "\treducing hexagonality, polygonality, enclosing circle, geodetic length & thickness\n";
 	for (auto& ld : labelData)
 	{
 		auto& r = ld.second;
-
-		//==== Feret diameters and angles
-		ParticleMetrics pm (r.convHull.CH);
-		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
-		pm.calc_ferret(
-			r.maxFeretDiameter,
-			r.maxFeretAngle,
-			r.minFeretDiameter,
-			r.minFeretAngle,
-			allD
-			);
-		Statistics structStat;
-		structStat = ComputeCommonStatistics2 (allD);
-		r.feretStats_minDiameter = (double)structStat.min;	// ratios[59]
-		r.feretStats_maxDiameter = (double)structStat.max;	// ratios[60]
-		r.feretStats_meanDiameter = structStat.mean;	// ratios[61]
-		r.feretStats_medianDiameter = structStat.median;	// ratios[62]
-		r.feretStats_stddevDiameter = structStat.stdev;	// ratios[63]
-		r.feretStats_modeDiameter = (double)structStat.mode;	// ratios[64]
-
-		//==== Martin diameters
-		pm.calc_martin (allD);
-		structStat = ComputeCommonStatistics2 (allD);
-		r.martinStats_minDiameter = (double)structStat.min;	
-		r.martinStats_maxDiameter = (double)structStat.max;
-		r.martinStats_meanDiameter = structStat.mean;
-		r.martinStats_medianDiameter = structStat.median;
-		r.martinStats_stddevDiameter = structStat.stdev;
-		r.martinStats_modeDiameter = (double)structStat.mode;
-
-		//==== Nassenstein diameters
-		pm.calc_nassenstein (allD);
-		structStat = ComputeCommonStatistics2 (allD);
-		r.nassStats_minDiameter = (double)structStat.min;	
-		r.nassStats_maxDiameter = (double)structStat.max;	
-		r.nassStats_meanDiameter = structStat.mean;	
-		r.nassStats_medianDiameter = structStat.median;
-		r.nassStats_stddevDiameter = structStat.stdev;
-		r.nassStats_modeDiameter = (double)structStat.mode;
 
 		//==== Hexagonality and polygonality
 		Hexagonality_and_Polygonality hp;
@@ -504,34 +560,54 @@ void reduce_all_labels (int min_online_roi_size)
 		auto [geoLen, thick] = glt.calculate(r.pixelCount, r.roiPerimeter);
 	}
 
-	std::cout << "\treducing Haralick 2D\n";
-	for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
+	//==== Haralick 2D 
+	if (featureSet.isEnabled(TEXTURE_HARALICK2D))
 	{
-		// Get ahold of the label's data:
-		auto& r = ld.second;	
-	
-		//==== Haralick 2D 
-		std::vector<double> H2;
-		haralick2D(
-			// in
-			r.raw_pixels,	// nonzero_intensity_pixels,
-			r.aabb,			// AABB info not to calculate it again from 'raw_pixels' in the function
-			0.0,			// distance,
-			// out
-			r.Texture_Feature_Angles,
-			r.Texture_AngularSecondMoments,
-			r.Texture_Contrast,
-			r.Texture_Correlation,
-			r.Texture_Variance,
-			r.Texture_InverseDifferenceMoment,
-			r.Texture_SumAverage,
-			r.Texture_SumVariance,
-			r.Texture_SumEntropy,
-			r.Texture_Entropy,
-			r.Texture_DifferenceVariance,
-			r.Texture_DifferenceEntropy,
-			r.Texture_InfoMeas1,
-			r.Texture_InfoMeas2);
+		std::cout << "\treducing Haralick 2D\n";
+		for (auto& ld : labelData)
+		{
+			// Get ahold of the label's data:
+			auto& r = ld.second;
+
+			haralick2D(
+				// in
+				r.raw_pixels,	// nonzero_intensity_pixels,
+				r.aabb,			// AABB info not to calculate it again from 'raw_pixels' in the function
+				0.0,			// distance,
+				// out
+				r.Texture_Feature_Angles,
+				r.Texture_AngularSecondMoments,
+				r.Texture_Contrast,
+				r.Texture_Correlation,
+				r.Texture_Variance,
+				r.Texture_InverseDifferenceMoment,
+				r.Texture_SumAverage,
+				r.Texture_SumVariance,
+				r.Texture_SumEntropy,
+				r.Texture_Entropy,
+				r.Texture_DifferenceVariance,
+				r.Texture_DifferenceEntropy,
+				r.Texture_InfoMeas1,
+				r.Texture_InfoMeas2);
+		}
+	}
+
+	//==== Zernike 2D 
+	std::cout << "\treducing Zernike 2D\n";
+	if (featureSet.isEnabled(TEXTURE_ZERNIKE2D))
+	{
+		for (auto& ld : labelData) 
+		{
+			// Get ahold of the label's data:
+			auto& r = ld.second;	
+
+			zernike2D(
+				// in
+				r.raw_pixels,	// nonzero_intensity_pixels,
+				r.aabb,			// AABB info not to calculate it again from 'raw_pixels' in the function
+				// out
+				r.Zernike2D);
+		}	
 	}
 	
 }

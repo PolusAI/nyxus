@@ -32,11 +32,13 @@ enum AvailableFeatures
 	BBOX_HEIGHT,  
 	BBOX_WIDTH,  
 
-	MAJOR_AXIS_LENGTH,  
-	MINOR_AXIS_LENGTH,  
-	ECCENTRICITY,  
-	ORIENTATION,  
+	MAJOR_AXIS_LENGTH,	// ellipticity  
+	MINOR_AXIS_LENGTH,  // ellipticity
+	ECCENTRICITY,		// ellipticity
+	ORIENTATION,		// ellipticity
+
 	NUM_NEIGHBORS,  
+	
 	EXTENT,  
 	ASPECT_RATIO,  
 
@@ -59,6 +61,7 @@ enum AvailableFeatures
 	MAX_FERET_DIAMETER,  
 	MIN_FERET_ANGLE,  
 	MAX_FERET_ANGLE,  
+
 	STAT_FERET_DIAM_MIN,  
 	STAT_FERET_DIAM_MAX,  
 	STAT_FERET_DIAM_MEAN,  
@@ -93,6 +96,8 @@ enum AvailableFeatures
 	THICKNESS,
 
 	// Texture:
+	TEXTURE_HARALICK2D, 
+	TEXTURE_ZERNIKE2D,
 
 	_COUNT_
 };
@@ -104,6 +109,11 @@ public:
 	FeatureSet() { enableAll(true); }
 	void enableAll(bool newStatus) { for (int i = 0; i < AvailableFeatures::_COUNT_; i++) m_enabledFeatures[i] = newStatus;	}
 	void enableFeatures(std::vector<AvailableFeatures>& desiredFeatures) {
+		enableAll(false);
+		for (auto f : desiredFeatures)
+			m_enabledFeatures[f] = true;
+	}
+	void enableFeatures(std::initializer_list<AvailableFeatures>& desiredFeatures) {
 		enableAll(false);
 		for (auto f : desiredFeatures)
 			m_enabledFeatures[f] = true;
@@ -151,7 +161,14 @@ public:
 		m_enabledFeatures[STAT_FERET_DIAM_MODE] = true;
 	}
 	bool isEnabled (int fc) { return fc < AvailableFeatures::_COUNT_ ? m_enabledFeatures[fc] : false; }
-	int numEnabled() { 
+	bool anyEnabled (std::initializer_list<int> F)
+	{
+		for (auto f : F)
+			if (m_enabledFeatures[f])
+				return true;
+		return false;
+	}
+	int numOfEnabled() { 
 		int cnt = 0; 
 		for (int i = 0; i < AvailableFeatures::_COUNT_; i++) 
 			if (m_enabledFeatures[i]) 

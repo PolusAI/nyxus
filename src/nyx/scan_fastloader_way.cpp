@@ -120,7 +120,7 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 	return true;
 }
 
-int ingestDataset (std::vector<std::string>& intensFiles, std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int min_online_roi_size, bool save2csv, std::string csvOutputDir)
+int processDataset (std::vector<std::string>& intensFiles, std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int min_online_roi_size, bool save2csv, std::string csvOutputDir)
 {
 	// Sanity
 	std::chrono::time_point<std::chrono::system_clock> start, end;

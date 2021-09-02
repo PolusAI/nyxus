@@ -49,7 +49,7 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::vec
 	init_feature_buffers();
 
 	// Process the image sdata. Upon return, global buffer 'calcResultBuf' will be filled with result data
-	errorCode = ingestDataset(
+	errorCode = processDataset(
 		intensFiles,
 		labelFiles,
 		options_n_tlt /*# of FastLoader threads*/,
@@ -66,7 +66,7 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::vec
 	// Allocate and initialize the return data buffer - [a matrix n_labels X n_features]:
 	// (Background knowledge - https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11 and https://stackoverflow.com/questions/54876346/pybind11-and-stdvector-how-to-free-data-using-capsules)
 	size_t ny = uniqueLabels.size(), 
-		nx = featureSet.numEnabled(),
+		nx = featureSet.numOfEnabled(),
 		len = ny * nx;
 
 	// Check for error
@@ -76,13 +76,13 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::vec
 		return { 4, "No features were calculated", 0, 0, nullptr };
 
 	//DEBUG diagnostic output:
-	std::cout << "Result shape: ny=uniqueLabels.size()=" << ny << " X nx=" << featureSet.numEnabled() << " = " << len << ", element[0]=" << calcResultBuf[0] << std::endl;
+	std::cout << "Result shape: ny=uniqueLabels.size()=" << ny << " X nx=" << featureSet.numOfEnabled() << " = " << len << ", element[0]=" << calcResultBuf[0] << std::endl;
 
 	// Check for error: calcResultBuf is expected to have exavtly 'len' elements
 	if (len != calcResultBuf.size())
 	{
 		std::stringstream ss;
-		ss << "ERROR: Result shape [ny=uniqueLabels.size()=" << ny << " X nx=" << featureSet.numEnabled() << " = " << len << "] mismatches with the result buffer size " << calcResultBuf.size() << " in " << __FILE__ << ":" << __LINE__;
+		ss << "ERROR: Result shape [ny=uniqueLabels.size()=" << ny << " X nx=" << featureSet.numOfEnabled() << " = " << len << "] mismatches with the result buffer size " << calcResultBuf.size() << " in " << __FILE__ << ":" << __LINE__;
 		return { 5, ss.str(), 0, 0, nullptr };
 	}
 
@@ -125,21 +125,6 @@ PYBIND11_MODULE(nyx_backend, m)
 				//return 1;
 			}
 
-			//==== We skip any actual data processing in 'backend_is_alive_imp()'
-			#if 0
-			// One-time initialization
-			init_feature_buffers();
-
-			// Process the image sdata
-			errorCode = ingestDataset(
-				intensFiles,
-				labelFiles,
-				options_n_tlt /*# of FastLoader threads*/,
-				options_n_fct /*# Sensemaker threads*/,
-				100,	// min_online_roi_size
-				false, "unused_dirOut");
-			#endif
-
 			//==== Mock returned results
 			// 
 			// Allocate and initialize the return data buffer - [a matrix n_labels X n_features]:
@@ -156,7 +141,7 @@ PYBIND11_MODULE(nyx_backend, m)
 
 			// calcResultBuf is expected to have exavtly 'len' elements
 			if (len != calcResultBuf.size())
-				std::cerr << "ERROR: Result shape [ny=uniqueLabels.size()=" << ny << " X nx=" << featureSet.numEnabled() << " = " << len << "] mismatches with the result buffer size " << calcResultBuf.size() << " in " << __FILE__ << ":" << __LINE__ << std::endl;
+				std::cerr << "ERROR: Result shape [ny=uniqueLabels.size()=" << ny << " X nx=" << featureSet.numOfEnabled() << " = " << len << "] mismatches with the result buffer size " << calcResultBuf.size() << " in " << __FILE__ << ":" << __LINE__ << std::endl;
 
 			double* retbuf = new double[len];
 			if (retbuf == nullptr)

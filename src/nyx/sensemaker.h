@@ -11,6 +11,8 @@
 #include "featureset.h"
 #include "histogram.h"
 #include "pixel.h"
+#include "aabb.h"
+#include "image_matrix.h"
 
 #define INF 10E200	// Cautious infinity
 
@@ -22,7 +24,7 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 bool scanFilePairParallel (const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads);
 bool TraverseViaFastloader1 (const std::string& fpath, int num_threads);
 std::string getPureFname(std::string fpath);
-int ingestDataset (std::vector<std::string> & intensFiles, std::vector<std::string> & labelFiles, int numFastloaderThreads, int numSensemakerThreads, int min_online_roi_size, bool save2csv, std::string csvOutputDir);
+int processDataset (std::vector<std::string> & intensFiles, std::vector<std::string> & labelFiles, int numFastloaderThreads, int numSensemakerThreads, int min_online_roi_size, bool save2csv, std::string csvOutputDir);
 
 // 2 scenarios of saving a result of feature calculation of a label-intensity file pair: saving to a CSV-file and saving to a matrix to be later consumed by a Python endpoint
 bool save_features_2_csv (std::string inputFpath, std::string outputDir);
@@ -45,34 +47,6 @@ void print_by_label(const char* featureName, std::unordered_map<int, StatsInt> L
 void print_by_label(const char* featureName, std::unordered_map<int, StatsReal> L, int numColumns = 4);
 void clearLabelStats();
 void reduce_all_labels(int min_online_roi_size);
-
-class AABB
-{
-public:
-	AABB() {}
-	void init_x (StatsInt x) { xmin = xmax = x; }
-	void init_y (StatsInt y) { ymin = ymax = y; }
-	void update_x(StatsInt x)
-	{
-		xmin = std::min(xmin, x);
-		xmax = std::max(xmax, x);
-	}
-	void update_y(StatsInt y)
-	{
-		ymin = std::min(ymin, y);
-		ymax = std::max(ymax, y);
-	}
-	StatsInt get_height() { return ymax - ymin + 1; }
-	StatsInt get_width() { return xmax - xmin + 1; }
-	StatsInt get_area() { return get_width() * get_height(); }
-	inline StatsInt get_xmin() { return xmin; }
-	inline StatsInt get_xmax() { return xmax; }
-	inline StatsInt get_ymin() { return ymin; }
-	inline StatsInt get_ymax() { return ymax; }
-
-protected:
-	StatsInt xmin = INT32_MAX, xmax = INT32_MIN, ymin = INT32_MAX, ymax = INT32_MIN;
-};
 
 // Inherited from WNDCHRM, used for Feret and Martin statistics calculation
 struct Statistics 
@@ -206,6 +180,13 @@ void haralick2D(
 	std::vector<double>& Texture_InfoMeas1,
 	std::vector<double>& Texture_InfoMeas2);
 
+void zernike2D(
+	// in
+	std::vector <Pixel2>& nonzero_intensity_pixels,
+	AABB& aabb,
+	// out
+	std::vector<double>& Z_values);
+
 extern FeatureSet featureSet;
 
 // Label record - structure aggregating label's cached data and calculated features
@@ -325,72 +306,9 @@ struct LR
 	double geodeticLength,	// ratios[53] 
 		thickness;			// ratios[54]
 
+	//==== Texture
+
 	// --Haralick 2D aka CellProfiler_*
-	double Texture_AngularSecondMoment_0,
-		Texture_AngularSecondMoment_135,
-		Texture_AngularSecondMoment_45,
-		Texture_AngularSecondMoment_90,
-
-		Texture_Contrast_0,
-		Texture_Contrast_135,
-		Texture_Contrast_45,
-		Texture_Contrast_90,
-
-		Texture_Correlation_0,
-		Texture_Correlation_135,
-		Texture_Correlation_45,
-		Texture_Correlation_90,
-
-		Texture_DifferenceEntropy_0,
-		Texture_DifferenceEntropy_135,
-		Texture_DifferenceEntropy_45,
-		Texture_DifferenceEntropy_90,
-
-		Texture_DifferenceVariance_0,
-		Texture_DifferenceVariance_135,
-		Texture_DifferenceVariance_45,
-		Texture_DifferenceVariance_90,
-
-		Texture_Entropy_0,
-		Texture_Entropy_135,
-		Texture_Entropy_45,
-		Texture_Entropy_90,
-
-		Texture_InfoMeas1_0,
-		Texture_InfoMeas1_135,
-		Texture_InfoMeas1_45,
-		Texture_InfoMeas1_90,
-
-		Texture_InfoMeas2_0,
-		Texture_InfoMeas2_135,
-		Texture_InfoMeas2_45,
-		Texture_InfoMeas2_90,
-
-		Texture_InverseDifferenceMoment_0,
-		Texture_InverseDifferenceMoment_135,
-		Texture_InverseDifferenceMoment_45,
-		Texture_InverseDifferenceMoment_90,
-
-		Texture_SumAverage_0,
-		Texture_SumAverage_135,
-		Texture_SumAverage_45,
-		Texture_SumAverage_90,
-
-		Texture_SumEntropy_0,
-		Texture_SumEntropy_135,
-		Texture_SumEntropy_45,
-		Texture_SumEntropy_90,
-
-		Texture_SumVariance_0,
-		Texture_SumVariance_135,
-		Texture_SumVariance_45,
-		Texture_SumVariance_90,
-
-		Texture_Variance_0,
-		Texture_Variance_135,
-		Texture_Variance_45,
-		Texture_Variance_90;
-
 	std::vector<double> Texture_Feature_Angles,	// (auxiliary field) angles e.g. 0, 45, 90, 135, etc.
 		Texture_AngularSecondMoments, // Angular Second Moment
 		Texture_Contrast, // Contrast
@@ -405,6 +323,11 @@ struct LR
 		Texture_DifferenceEntropy, // Diffenence Entropy
 		Texture_InfoMeas1, // Measure of Correlation 1
 		Texture_InfoMeas2; // Measure of Correlation 2
+	
+	// Zernike calculator may put an arbitrary number of Z_a^b terms 
+	// but we output only 'NUM_ZERNIKE_COEFFS_2_OUTPUT' of them 
+	static const short NUM_ZERNIKE_COEFFS_2_OUTPUT = 20;
+	std::vector<double> Zernike2D;	
 
 	double getValue(AvailableFeatures f);
 };

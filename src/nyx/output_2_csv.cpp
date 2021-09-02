@@ -216,9 +216,20 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 		",Texture_InfoMeas2_0"
 		",Texture_InfoMeas2_135"
 		",Texture_InfoMeas2_45"
-		",Texture_InfoMeas2_90"
+		",Texture_InfoMeas2_90");
+
+	// Zernike 2D
+	for (int i = 0; i < LR::NUM_ZERNIKE_COEFFS_2_OUTPUT; i++)
+	{
+		if (i % 2)
+			for (int j = 1; j <= i; j += 2)
+				fprintf(fp, ",Z_%d_%d", i, j);
+		else
+			for (int j = 0; j <= i; j += 2)
+				fprintf(fp, ",Z_%d_%d", i, j);
+	}
 	
-		"\n");
+	fprintf(fp, "\n");
 
 	// -- Dump numbers
 	unsigned int cnt = 1; 
@@ -388,6 +399,18 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 			for (auto f : r.Texture_InfoMeas2)
 				ss << "," << f;
 
+			// Zernike 2D
+			int zIdx = 0;
+			for (int i = 0; i < LR::NUM_ZERNIKE_COEFFS_2_OUTPUT; i++)
+			{
+				if (i % 2)
+					for (int j = 1; j <= i; j += 2)
+						ss << "," << r.Zernike2D[zIdx++];
+				else
+					for (int j = 0; j <= i; j += 2)
+						ss << "," << r.Zernike2D[zIdx++];
+			}
+			
 		fprintf (fp, "%s\n", ss.str().c_str());
 	}
 	std::fflush(fp);

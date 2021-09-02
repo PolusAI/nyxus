@@ -12,7 +12,7 @@
 bool save_features_2_buffer (std::vector<double> & resultBuf)
 {
 	resultBuf.clear();
-	size_t bufLen = uniqueLabels.size() * featureSet.numEnabled();
+	size_t bufLen = uniqueLabels.size() * featureSet.numOfEnabled();
 	resultBuf.reserve(bufLen);
 
 	// Sort the labels

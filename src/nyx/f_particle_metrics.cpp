@@ -100,12 +100,6 @@ void ParticleMetrics::calc_ferret(
 				min_ = sqrt(minD2), 
 				max_ = sqrt(maxD2);
 
-			//? Debug
-			if (isnan(min_) || isnan(max_))
-			{
-				bool debugBreak = true;
-			}
-
 			// Save them
 			all_D.push_back(min_);
 			all_D.push_back(max_);
