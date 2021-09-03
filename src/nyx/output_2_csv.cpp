@@ -106,6 +106,11 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 		",solidity"
 		",perimeter"
 		",circularity"
+		",integratedIntensityEdge"	// CellProfiler edge {...
+		",maxIntensityEdge"
+		",minIntensityEdge"
+		",meanIntensityEdge"
+		",stddevIntensityEdge"		// ...}
 
 		",extremaP1_x , extremaP1_y"
 		",extremaP2_x , extremaP2_y"
@@ -301,7 +306,13 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 			<< _convHullArea << " , "
 			<< _solidity << " , "
 			<< r.roiPerimeter << " , "
-			<< _circ << " , "
+			<< _circ
+
+			<< "," << r.CellProfiler_Intensity_IntegratedIntensityEdge
+			<< "," << r.CellProfiler_Intensity_MaxIntensityEdge
+			<< "," << r.CellProfiler_Intensity_MinIntensityEdge
+			<< "," << r.CellProfiler_Intensity_MeanIntensityEdge
+			<< "," << r.CellProfiler_Intensity_StddevIntensityEdge
 
 			<< r.extremaP1x << " , " << r.extremaP1y << " , "
 			<< r.extremaP2x << " , " << r.extremaP2y << " , "

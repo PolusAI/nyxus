@@ -29,57 +29,63 @@ void clearLabelStats()
 }
 
 // Label Record (structure 'LR') is where the state of label's pixels scanning and feature calculations is maintained. This function initializes an LR instance for the 1st pixel.
-void init_label_record (LR& lr, int x, int y, int label, PixIntens intensity)
+void init_label_record (LR& r, int x, int y, int label, PixIntens intensity)
 {
 	// Save the pixel
-	lr.raw_pixels.push_back(Pixel2(x, y, intensity));
+	r.raw_pixels.push_back(Pixel2(x, y, intensity));
 
-	lr.pixelCountRoiArea = 1;
-	lr.aux_PrevCount = 0;
+	r.pixelCountRoiArea = 1;
+	r.aux_PrevCount = 0;
 	// Min
-	lr.min = intensity;
+	r.min = intensity;
 	// Max
-	lr.max = intensity;
+	r.max = intensity;
 	// Moments
-	lr.mean = intensity;
-	lr.aux_M2 = 0;
-	lr.aux_M3 = 0;
-	lr.aux_M4 = 0;
+	r.mean = intensity;
+	r.aux_M2 = 0;
+	r.aux_M3 = 0;
+	r.aux_M4 = 0;
 	// Energy
-	lr.massEnergy = intensity * intensity;
+	r.massEnergy = intensity * intensity;
 	// Variance and standard deviation
-	lr.variance = 0.0;
+	r.variance = 0.0;
 	// Mean absolute deviation
-	lr.MAD = 0;
+	r.MAD = 0;
 	// Previous intensity
-	lr.aux_PrevIntens = intensity;
+	r.aux_PrevIntens = intensity;
 	// Weighted centroids x and y. 1-based for compatibility with Matlab and WNDCHRM
-	lr.centroid_x = StatsReal(x) + 1;
-	lr.centroid_y = StatsReal(y) + 1;
+	r.centroid_x = StatsReal(x) + 1;
+	r.centroid_y = StatsReal(y) + 1;
 	// Histogram
 	std::shared_ptr<Histo> ptrH = std::make_shared <Histo>();
 	ptrH->add_observation(intensity);
-	lr.aux_Histogram = ptrH;
+	r.aux_Histogram = ptrH;
 	// Other fields
-	lr.median = 0;
-	lr.stddev = 0;
-	lr.skewness = 0;
-	lr.kurtosis = 0;
-	lr.RMS = 0;
-	lr.p10 = lr.p25 = lr.p75 = lr.p90 = 0;
-	lr.IQR = 0;
-	lr.entropy = 0;
-	lr.mode = 0;
-	lr.uniformity = 0;
-	lr.RMAD = 0;
+	r.median = 0;
+	r.stddev = 0;
+	r.skewness = 0;
+	r.kurtosis = 0;
+	r.RMS = 0;
+	r.p10 = r.p25 = r.p75 = r.p90 = 0;
+	r.IQR = 0;
+	r.entropy = 0;
+	r.mode = 0;
+	r.uniformity = 0;
+	r.RMAD = 0;
+	// CellProfiler	
+	r.CellProfiler_Intensity_IntegratedIntensityEdge = 
+	r.CellProfiler_Intensity_MaxIntensityEdge = 
+	r.CellProfiler_Intensity_MeanIntensityEdge = 
+	r.CellProfiler_Intensity_MinIntensityEdge = 
+	r.CellProfiler_Intensity_StddevIntensityEdge = 0;
 
 	//==== Morphology
-	lr.init_aabb (x, y);
+	r.init_aabb (x, y);
 
 	#ifdef SANITY_CHECK_INTENSITIES_FOR_LABEL
 	// Dump intensities for testing
 	if (label == SANITY_CHECK_INTENSITIES_FOR_LABEL)	// Put your label code of interest
-		lr.raw_intensities.push_back(intensity);
+		r.raw_intensities.push_back(intensity);
 	#endif
 
 }
@@ -354,6 +360,9 @@ void reduce_all_labels (int min_online_roi_size)
 
 		//==== Circularity
 		r.circularity = 4.0 * M_PI * r.pixelCountRoiArea / (r.roiPerimeter * r.roiPerimeter);
+
+		//==== IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
+		r.reduce_edge_intensity_features();
 	}
 
 	//==== Extrema and Euler number

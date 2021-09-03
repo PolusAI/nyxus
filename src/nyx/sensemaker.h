@@ -200,6 +200,10 @@ struct LR
 	AABB aabb;	
 	ConvexHull convHull;
 	Contour contour;
+	std::shared_ptr<Histo> aux_Histogram;
+	StatsInt
+		aux_PrevCount,
+		aux_PrevIntens;
 
 	//==== Pixel intensity statistics
 
@@ -232,10 +236,13 @@ struct LR
 		uniformity,
 		RMAD;
 
-	std::shared_ptr<Histo> aux_Histogram;
-	StatsInt 
-		aux_PrevCount,
-		aux_PrevIntens;
+	// --CellProfiler features that need reduction [http://cellprofiler-manual.s3.amazonaws.com/CellProfiler-3.0.0/modules/measurement.html]
+	StatsReal 
+		CellProfiler_Intensity_IntegratedIntensityEdge	= DFLT0,	// Sum of the edge pixel intensities
+		CellProfiler_Intensity_MaxIntensityEdge		= DFLT0,		// Maximal edge pixel intensity
+		CellProfiler_Intensity_MeanIntensityEdge	= DFLT0,		// Average edge pixel intensity
+		CellProfiler_Intensity_MinIntensityEdge		= DFLT0,		// Minimal edge pixel intensity
+		CellProfiler_Intensity_StddevIntensityEdge	= DFLT0;		// Standard deviation of the edge pixel intensities
 
 	//==== Morphology
 
@@ -354,6 +361,7 @@ struct LR
 	std::vector<double> Zernike2D;	
 
 	double getValue (AvailableFeatures f);
+	void reduce_edge_intensity_features();
 };
 
 void init_label_record(LR& lr, int x, int y, int label, PixIntens intensity);
