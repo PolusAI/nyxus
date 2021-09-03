@@ -191,8 +191,8 @@ bool scanFilePairParallel (const std::string& intens_fpath, const std::string& l
 			}
 			// --Timing
 			end = std::chrono::system_clock::now();
-			std::chrono::duration<double> elapsed2 = end - start;
-			std::cout << " T(feature) vs T(tile) [s]: " << elapsed2.count() << " / " << elapsed1.count() << " = " << elapsed2.count() / elapsed1.count() << " x" << std::endl;
+			std::chrono::duration<double, std::milli> elapsed2 = end - start;
+			std::cout << " F/T: " << elapsed2.count() << " / " << elapsed1.count() << " = " << elapsed2.count() / elapsed1.count() << " x" << std::endl;
 			totalTileLoadTime += elapsed1.count();
 			totalPixStatsCalcTime += elapsed2.count();
 

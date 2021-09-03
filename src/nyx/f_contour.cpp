@@ -32,7 +32,7 @@ void Contour::calculate(std::vector<Pixel2> rawPixels)
             }
         if (!found)
         {
-            theContour.push_back(pix);	// Register a contour pixel
+            contour_pixels.push_back(pix);	// Register a contour pixel
             continue;	// No need to check other neighboring pixels of this pixel, we've known that it lives on the contour
         }
 
@@ -46,7 +46,7 @@ void Contour::calculate(std::vector<Pixel2> rawPixels)
             }
         if (!found)
         {
-            theContour.push_back(pix);	// Register a contour pixel
+            contour_pixels.push_back(pix);	// Register a contour pixel
             continue;	// No need to check other neighboring pixels of this pixel, we've known that it lives on the contour
         }
 
@@ -60,7 +60,7 @@ void Contour::calculate(std::vector<Pixel2> rawPixels)
             }
         if (!found)
         {
-            theContour.push_back(pix);	// Register a contour pixel
+            contour_pixels.push_back(pix);	// Register a contour pixel
             continue;	// No need to check other neighboring pixels of this pixel, we've known that it lives on the contour
         }
 
@@ -74,7 +74,7 @@ void Contour::calculate(std::vector<Pixel2> rawPixels)
             }
         if (!found)
         {
-            theContour.push_back(pix);	// Register a contour pixel
+            contour_pixels.push_back(pix);	// Register a contour pixel
             continue;	// No need to check other neighboring pixels of this pixel, we've known that it lives on the contour
         }
     }
@@ -82,7 +82,7 @@ void Contour::calculate(std::vector<Pixel2> rawPixels)
 
 StatsInt Contour::get_roi_perimeter()
 {
-    return (StatsInt)theContour.size();
+    return (StatsInt)contour_pixels.size();
 }
 
 StatsReal Contour::get_diameter_equal_perimeter()

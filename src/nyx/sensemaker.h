@@ -62,7 +62,7 @@ class Contour
 public:
 	Contour() {}
 	void calculate(std::vector<Pixel2> rawPixels);
-	std::vector<Pixel2> theContour;
+	std::vector<Pixel2> contour_pixels;
 	StatsInt get_roi_perimeter();
 	StatsReal get_diameter_equal_perimeter();
 protected:
@@ -199,7 +199,7 @@ struct LR
 	std::vector <Pixel2> raw_pixels;	
 	AABB aabb;	
 	ConvexHull convHull;
-	Contour cntr;
+	Contour contour;
 
 	//==== Pixel intensity statistics
 
@@ -311,7 +311,7 @@ struct LR
 		nassStats_modeD		= DFLT0;
 
 	// --Euler
-	long euler_number		= DFLT0;
+	long euler_number		= DFLT0i;
 
 	// --hexagonality & polygonality
 	StatsReal 

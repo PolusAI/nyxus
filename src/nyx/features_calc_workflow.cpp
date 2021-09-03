@@ -343,9 +343,9 @@ void reduce_all_labels (int min_online_roi_size)
 
 		//==== Contour, ROI perimeter, equivalent circle diameter
 
-		r.cntr.calculate(r.raw_pixels);
-		r.roiPerimeter = (StatsInt)r.cntr.get_roi_perimeter();
-		r.equivDiam = r.cntr.get_diameter_equal_perimeter();
+		r.contour.calculate(r.raw_pixels);
+		r.roiPerimeter = (StatsInt)r.contour.get_roi_perimeter();
+		r.equivDiam = r.contour.get_diameter_equal_perimeter();
 
 		//==== Convex hull and solidity
 		r.convHull.calculate(r.raw_pixels);
@@ -540,6 +540,10 @@ void reduce_all_labels (int min_online_roi_size)
 	{
 		auto& r = ld.second;
 
+		// Skip if the contour, convex hull, and neighbors are unavailable, otherwise the related features will be == NAN. Those feature will be equal to the default unassigned value.
+		if (r.contour.contour_pixels.size() == 0 || r.convHull.CH.size() == 0 || r.num_neighbors == 0)
+			continue;
+
 		//==== Hexagonality and polygonality
 		Hexagonality_and_Polygonality hp;
 		auto [polyAve, hexAve, hexSd] = hp.calculate(r.num_neighbors, r.pixelCountRoiArea, r.roiPerimeter, r.convHullArea, r.minFeretDiameter, r.maxFeretDiameter);
@@ -549,15 +553,17 @@ void reduce_all_labels (int min_online_roi_size)
 
 		//==== Enclosing circle
 		MinEnclosingCircle cir1;
-		r.diameter_min_enclosing_circle = cir1.calculate_diam (r.cntr.theContour);
+		r.diameter_min_enclosing_circle = cir1.calculate_diam (r.contour.contour_pixels);
 		InscribingCircumscribingCircle cir2;
-		auto [diamIns, diamCir] = cir2.calculateInsCir (r.cntr.theContour, r.centroid_x, r.centroid_y);
+		auto [diamIns, diamCir] = cir2.calculateInsCir (r.contour.contour_pixels, r.centroid_x, r.centroid_y);
 		r.diameter_inscribing_circle = diamIns;
 		r.diameter_circumscribing_circle = diamCir;
 
 		//==== Geodetic length thickness
 		GeodeticLength_and_Thickness glt;
 		auto [geoLen, thick] = glt.calculate(r.pixelCountRoiArea, r.roiPerimeter);
+		r.geodeticLength = geoLen;
+		r.thickness = thick;
 	}
 
 	//==== Haralick 2D 
