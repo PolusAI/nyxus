@@ -184,12 +184,15 @@ void zernike2D(
 	// in
 	std::vector <Pixel2>& nonzero_intensity_pixels,
 	AABB& aabb,
+	int order,
 	// out
 	std::vector<double>& Z_values);
 
 extern FeatureSet featureSet;
 
 // Label record - structure aggregating label's cached data and calculated features
+#define DFLT0 -0.0	// default unassigned value
+#define DFLT0i -0	// default unassigned value
 struct LR
 {
 	// Helper objects
@@ -200,136 +203,157 @@ struct LR
 
 	//==== Pixel intensity statistics
 
-	StatsInt pixelCount;	// Area
-	StatsInt labelPrevCount;
-	StatsInt labelPrevIntens;
-	StatsReal mean;
-	//std::shared_ptr<std::unordered_set<PixIntens>> labelUniqueIntensityValues;
-	StatsInt labelMedians;
-	StatsInt labelMins;
-	StatsInt labelMaxs;
-	StatsInt labelMassEnergy;
-	StatsReal labelVariance;
-	StatsReal labelStddev;	
-	StatsReal centroid_x;
-	StatsReal centroid_y;
-	StatsReal labelM2;
-	StatsReal labelM3;
-	StatsReal labelM4;
-	StatsReal labelSkewness;
-	StatsReal labelKurtosis;
-	StatsReal labelMAD;
-	StatsReal labelRMS;		// Root Mean Squared (RMS) is the square-root of the mean of all the squared intensity values. It is another measure of the magnitude of the image values.
-	std::shared_ptr<Histo> labelHistogram;
-	StatsReal labelP10;
-	StatsReal labelP25;
-	StatsReal labelP75;
-	StatsReal labelP90;
-	StatsReal labelIQR;
-	StatsReal labelEntropy;
-	StatsReal labelMode;
-	StatsReal labelUniformity;
-	StatsReal labelRMAD;
+	StatsInt 
+		pixelCountRoiArea,	
+		median,
+		min,
+		max,
+		massEnergy;
+	StatsReal 
+		mean,
+		variance,
+		stddev,
+		centroid_x,
+		centroid_y,
+		aux_M2,
+		aux_M3,
+		aux_M4,
+		skewness,
+		kurtosis,
+		MAD,
+		RMS,		// Root Mean Squared (RMS) is the square-root of the mean of all the squared intensity values. It is another measure of the magnitude of the image values.
+		p10,
+		p25,
+		p75,
+		p90,
+		IQR,
+		entropy,
+		mode,
+		uniformity,
+		RMAD;
+
+	std::shared_ptr<Histo> aux_Histogram;
+	StatsInt 
+		aux_PrevCount,
+		aux_PrevIntens;
 
 	//==== Morphology
 
-	int num_neighbors;
 	void init_aabb (StatsInt x, StatsInt y);
 	void update_aabb (StatsInt x, StatsInt y);
-	StatsReal extent;	// Calculated in reduce(), not accumulated online
+	int num_neighbors		= DFLT0i;
+	StatsReal extent		= DFLT0;	// Calculated in reduce(), not accumulated online
 
 	// --ellipse related
-	StatsReal major_axis_length;
-	StatsReal minor_axis_length;
-	StatsReal eccentricity;
-	StatsReal orientation;
+	StatsReal 
+		major_axis_length	= DFLT0,
+		minor_axis_length	= DFLT0,
+		eccentricity		= DFLT0,
+		orientation			= DFLT0;
 
-	StatsReal	aspectRatio;
-	StatsReal	equivDiam;
-	StatsInt	roiPerimeter;
-	StatsReal	circularity;
-	StatsReal	convHullArea;
-	StatsReal	solidity;
+	// --contour and convex hull related
+	StatsInt roiPerimeter	= DFLT0i;
+	StatsReal 
+		aspectRatio			= DFLT0,
+		equivDiam			= DFLT0,
+		circularity			= DFLT0,
+		convHullArea		= DFLT0,
+		solidity			= DFLT0;
 
 	// --extrema
 	StatsReal	
-		extremaP1y, extremaP1x,
-		extremaP2y, extremaP2x,
-		extremaP3y, extremaP3x,
-		extremaP4y, extremaP4x,
-		extremaP5y, extremaP5x,
-		extremaP6y, extremaP6x,
-		extremaP7y, extremaP7x,
-		extremaP8y, extremaP8x;
+		extremaP1y			= DFLT0, 
+		extremaP1x			= DFLT0,
+		extremaP2y			= DFLT0, 
+		extremaP2x			= DFLT0,
+		extremaP3y			= DFLT0, 
+		extremaP3x			= DFLT0,
+		extremaP4y			= DFLT0, 
+		extremaP4x			= DFLT0,
+		extremaP5y			= DFLT0, 
+		extremaP5x			= DFLT0,
+		extremaP6y			= DFLT0, 
+		extremaP6x			= DFLT0,
+		extremaP7y			= DFLT0, 
+		extremaP7x			= DFLT0,
+		extremaP8y			= DFLT0, 
+		extremaP8x			= DFLT0;
 
 	// --Feret
-	StatsReal	maxFeretDiameter,
-		maxFeretAngle,
-		minFeretDiameter,
-		minFeretAngle,
-		feretStats_minDiameter,	// ratios[59]
-		feretStats_maxDiameter,	// ratios[60]
-		feretStats_meanDiameter,	// ratios[61]
-		feretStats_medianDiameter,	// ratios[62]
-		feretStats_stddevDiameter,	// ratios[63]
-		feretStats_modeDiameter;	// ratios[64]
+	StatsReal	
+		maxFeretDiameter	= DFLT0,
+		maxFeretAngle		= DFLT0,
+		minFeretDiameter	= DFLT0,
+		minFeretAngle		= DFLT0,
+		feretStats_minD		= DFLT0,
+		feretStats_maxD		= DFLT0,
+		feretStats_meanD	= DFLT0,
+		feretStats_medianD	= DFLT0,
+		feretStats_stddevD	= DFLT0,
+		feretStats_modeD	= DFLT0;
 
 	// --Martin
 	StatsReal	
-		martinStats_minDiameter,	// ratios[59]
-		martinStats_maxDiameter,	// ratios[60]
-		martinStats_meanDiameter,	// ratios[61]
-		martinStats_medianDiameter,	// ratios[62]
-		martinStats_stddevDiameter,	// ratios[63]
-		martinStats_modeDiameter;	// ratios[64]
+		martinStats_minD	= DFLT0,
+		martinStats_maxD	= DFLT0,
+		martinStats_meanD	= DFLT0,
+		martinStats_medianD	= DFLT0,
+		martinStats_stddevD	= DFLT0,
+		martinStats_modeD	= DFLT0;
 
 	// --Nassenstein
 	StatsReal
-		nassStats_minDiameter,	// ratios[59]
-		nassStats_maxDiameter,	// ratios[60]
-		nassStats_meanDiameter,	// ratios[61]
-		nassStats_medianDiameter,	// ratios[62]
-		nassStats_stddevDiameter,	// ratios[63]
-		nassStats_modeDiameter;	// ratios[64]
+		nassStats_minD		= DFLT0,
+		nassStats_maxD		= DFLT0,
+		nassStats_meanD		= DFLT0,
+		nassStats_medianD	= DFLT0,
+		nassStats_stddevD	= DFLT0,
+		nassStats_modeD		= DFLT0;
 
 	// --Euler
-	long euler_number;
+	long euler_number		= DFLT0;
 
 	// --hexagonality & polygonality
-	double polygonality_ave, hexagonality_ave, hexagonality_stddev;
+	StatsReal 
+		polygonality_ave	= DFLT0, 
+		hexagonality_ave	= DFLT0, 
+		hexagonality_stddev	= DFLT0;
 
 	// --Circle fitting
-	double diameter_min_enclosing_circle,	// ratios[45]
-		diameter_circumscribing_circle,		//ratios[46] 
-		diameter_inscribing_circle;			// ratios[47] 
+	StatsReal
+		diameter_min_enclosing_circle	= DFLT0,
+		diameter_circumscribing_circle	= DFLT0,
+		diameter_inscribing_circle		= DFLT0;
 
-	double geodeticLength,	// ratios[53] 
-		thickness;			// ratios[54]
+	StatsReal 
+		geodeticLength		= DFLT0,
+		thickness			= DFLT0;
 
 	//==== Texture
 
 	// --Haralick 2D aka CellProfiler_*
-	std::vector<double> Texture_Feature_Angles,	// (auxiliary field) angles e.g. 0, 45, 90, 135, etc.
-		Texture_AngularSecondMoments, // Angular Second Moment
-		Texture_Contrast, // Contrast
-		Texture_Correlation, // Correlation
-		Texture_Variance, // Variance
-		Texture_InverseDifferenceMoment, // Inverse Diffenence Moment
-		Texture_SumAverage, // Sum Average
-		Texture_SumVariance, // Sum Variance
-		Texture_SumEntropy, // Sum Entropy
-		Texture_Entropy, // Entropy
-		Texture_DifferenceVariance, // Difference Variance
-		Texture_DifferenceEntropy, // Diffenence Entropy
-		Texture_InfoMeas1, // Measure of Correlation 1
-		Texture_InfoMeas2; // Measure of Correlation 2
+	std::vector<double> 
+		texture_Feature_Angles,	// (auxiliary field) angles e.g. 0, 45, 90, 135, etc.
+		texture_AngularSecondMoments, // Angular Second Moment
+		texture_Contrast, // Contrast
+		texture_Correlation, // Correlation
+		texture_Variance, // Variance
+		texture_InverseDifferenceMoment, // Inverse Diffenence Moment
+		texture_SumAverage, // Sum Average
+		texture_SumVariance, // Sum Variance
+		texture_SumEntropy, // Sum Entropy
+		texture_Entropy, // Entropy
+		texture_DifferenceVariance, // Difference Variance
+		texture_DifferenceEntropy, // Diffenence Entropy
+		texture_InfoMeas1, // Measure of Correlation 1
+		texture_InfoMeas2; // Measure of Correlation 2
 	
 	// Zernike calculator may put an arbitrary number of Z_a^b terms 
 	// but we output only 'NUM_ZERNIKE_COEFFS_2_OUTPUT' of them 
-	static const short NUM_ZERNIKE_COEFFS_2_OUTPUT = 20;
+	static const short aux_ZERNIKE2D_ORDER = 9, aux_ZERNIKE2D_NUM_COEFS = 30;	// z00, z11, z20, z22, z31, z33, z40, z42, z44, ... ,z97, z99 - 30 items altogether 
 	std::vector<double> Zernike2D;	
 
-	double getValue(AvailableFeatures f);
+	double getValue (AvailableFeatures f);
 };
 
 void init_label_record(LR& lr, int x, int y, int label, PixIntens intensity);

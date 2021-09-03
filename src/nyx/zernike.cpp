@@ -352,6 +352,7 @@ void zernike2D(
 	// in
 	std::vector <Pixel2>& nonzero_intensity_pixels,
 	AABB& aabb,
+	int order, 
 	// out
 	std::vector<double>& Z_values)
 {
@@ -362,7 +363,7 @@ void zernike2D(
 	std::vector<double> coeffs;
 	coeffs.resize (72, 0);
 	long output_size;   // output size is normally 72
-	mb_zernike2D (I, 0, 0, coeffs.data(), &output_size); //double D, double R, double* zvalues, long* output_size);
+	mb_zernike2D (I, order, 0/*rad*/, coeffs.data(), &output_size); 
 
 	// Save
 	Z_values.clear();

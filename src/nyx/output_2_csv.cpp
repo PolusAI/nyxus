@@ -20,12 +20,12 @@ void print_label_stats()
 
 	// Print stats by label
 	/*
-	print_by_label("Min", labelMins);
-	print_by_label("Max", labelMaxs);
+	print_by_label("Min", min);
+	print_by_label("Max", max);
 	print_by_label("Mean", mean);
-	print_by_label("Median", labelMedians);
-	print_by_label("Energy", labelMassEnergy);
-	print_by_label("Variance", labelVariance);
+	print_by_label("Median", median);
+	print_by_label("Energy", massEnergy);
+	print_by_label("Variance", variance);
 	*/
 }
 
@@ -61,7 +61,7 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 	}
 	
 	// -- Header
-	fprintf (fp,
+	fprintf(fp,
 		// Intensity stats:
 		"label"
 		",mean"
@@ -89,7 +89,7 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 		",centroid_x"
 		",centroid_y"
 		",bbox_ymin"
-		",bbox_xmin"	
+		",bbox_xmin"
 		",bbox_height"
 		",bbox_width"
 
@@ -151,83 +151,58 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 		",diameter_circumscribing_circle"
 		",diameter_inscribing_circle"
 		",geodeticLength"
-		",thickness"
+		",thickness");
 
-		",Texture_AngularSecondMoment_0"
-		",Texture_AngularSecondMoment_135"
-		",Texture_AngularSecondMoment_45"
-		",Texture_AngularSecondMoment_90"
+	// Haralick 2D
+	auto l = L.begin();
+	LR & r = labelData[*l];
+	for (auto a : r.texture_Feature_Angles)
+		fprintf(fp, ",Texture_AngularSecondMoment_%f", a);
 
-		",Texture_Contrast_0"
-		",Texture_Contrast_135"
-		",Texture_Contrast_45"
-		",Texture_Contrast_90"
+	for (auto a : r.texture_Feature_Angles)
+		fprintf(fp, ",Texture_Contrast_%f", a);
 
-		",Texture_Correlation_0"
-		",Texture_Correlation_135"
-		",Texture_Correlation_45"
-		",Texture_Correlation_90"
+	for (auto a : r.texture_Feature_Angles)
+		fprintf(fp, ",Texture_Correlation_%f", a);
 
-		",Texture_Variance_0"
-		",Texture_Variance_135"
-		",Texture_Variance_45"
-		",Texture_Variance_90"
+	for (auto a : r.texture_Feature_Angles)
+		fprintf(fp, ",Texture_Variance_%f", a);
 			
-		",Texture_InverseDifferenceMoment_0"
-		",Texture_InverseDifferenceMoment_135"
-		",Texture_InverseDifferenceMoment_45"
-		",Texture_InverseDifferenceMoment_90"
+	for (auto a : r.texture_Feature_Angles)
+		fprintf(fp, ",Texture_InverseDifferenceMoment_%f", a);
 
-		",Texture_SumAverage_0"
-		",Texture_SumAverage_135"
-		",Texture_SumAverage_45"
-		",Texture_SumAverage_90"
+	for (auto a : r.texture_Feature_Angles)
+		fprintf(fp, ",Texture_SumAverage_%f", a);
 
-		",Texture_SumVariance_0"
-		",Texture_SumVariance_135"
-		",Texture_SumVariance_45"
-		",Texture_SumVariance_90"
+	for (auto a : r.texture_Feature_Angles)
+		fprintf(fp, ",Texture_SumVariance_%f", a);
 
-		",Texture_SumEntropy_0"
-		",Texture_SumEntropy_135"
-		",Texture_SumEntropy_45"
-		",Texture_SumEntropy_90"
+	for (auto a : r.texture_Feature_Angles)
+		fprintf(fp, ",Texture_SumEntropy_%f", a);
 			
-		",Texture_Entropy_0"
-		",Texture_Entropy_135"
-		",Texture_Entropy_45"
-		",Texture_Entropy_90"
+	for (auto a : r.texture_Feature_Angles)
+		fprintf(fp, ",Texture_Entropy_%f", a);
 
-		",Texture_DifferenceVariance_0"
-		",Texture_DifferenceVariance_135"
-		",Texture_DifferenceVariance_45"
-		",Texture_DifferenceVariance_90"
+	for (auto a : r.texture_Feature_Angles)
+		fprintf(fp, ",Texture_DifferenceVariance_%f", a);
 
-		",Texture_DifferenceEntropy_0"
-		",Texture_DifferenceEntropy_135"
-		",Texture_DifferenceEntropy_45"
-		",Texture_DifferenceEntropy_90"
+	for (auto a : r.texture_Feature_Angles)
+		fprintf(fp, ",Texture_DifferenceEntropy_%f", a);
 			
-		",Texture_InfoMeas1_0"
-		",Texture_InfoMeas1_135"
-		",Texture_InfoMeas1_45"
-		",Texture_InfoMeas1_90"
+	for (auto a : r.texture_Feature_Angles)
+		fprintf(fp, ",Texture_InfoMeas1_%f", a);
 
-		",Texture_InfoMeas2_0"
-		",Texture_InfoMeas2_135"
-		",Texture_InfoMeas2_45"
-		",Texture_InfoMeas2_90");
+	for (auto a : r.texture_Feature_Angles)
+		fprintf(fp, ",Texture_InfoMeas2_%f", a);
 
 	// Zernike 2D
-	for (int i = 0; i < LR::NUM_ZERNIKE_COEFFS_2_OUTPUT; i++)
-	{
+	for (int i = 0; i <= LR::aux_ZERNIKE2D_ORDER; i++)
 		if (i % 2)
 			for (int j = 1; j <= i; j += 2)
 				fprintf(fp, ",Z_%d_%d", i, j);
 		else
 			for (int j = 0; j <= i; j += 2)
 				fprintf(fp, ",Z_%d_%d", i, j);
-	}
 	
 	fprintf(fp, "\n");
 
@@ -238,29 +213,29 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 		std::stringstream ss;
 		
 		LR& r = labelData[l];
-		auto _pixCnt = r.pixelCount;
-		auto _min = r.labelMins;
-		auto _max = r.labelMaxs;
+		auto _pixCnt = r.pixelCountRoiArea;
+		auto _min = r.min;
+		auto _max = r.max;
 		auto _range = _max - _min;
 		auto _mean = r.mean;
-		auto _median = r.labelMedians;
-		auto _energy = r.labelMassEnergy;
-		auto _stdev = r.labelStddev;
-		auto _skew = r.labelSkewness;
-		auto _kurt = r.labelKurtosis;
-		auto _mad = r.labelMAD;
-		auto _rms = r.labelRMS;
+		auto _median = r.median;
+		auto _energy = r.massEnergy;
+		auto _stdev = r.stddev;
+		auto _skew = r.skewness;
+		auto _kurt = r.kurtosis;
+		auto _mad = r.MAD;
+		auto _rms = r.RMS;
 		auto _wcx = r.centroid_x,
 			_wcy = r.centroid_y;
-		auto _entro = r.labelEntropy;
-		auto _p10 = r.labelP10,
-			_p25 = r.labelP25,
-			_p75 = r.labelP75,
-			_p90 = r.labelP90,
-			_iqr = r.labelIQR,
-			_rmad = r.labelRMAD,
-			_mode = r.labelMode,
-			_unifo = r.labelUniformity;
+		auto _entro = r.entropy;
+		auto _p10 = r.p10,
+			_p25 = r.p25,
+			_p75 = r.p75,
+			_p90 = r.p90,
+			_iqr = r.IQR,
+			_rmad = r.RMAD,
+			_mode = r.mode,
+			_unifo = r.uniformity;
 
 		auto _bbox_ymin = r.aabb.get_ymin(),
 			_bbox_xmin = r.aabb.get_xmin(),
@@ -335,32 +310,32 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 			<< r.extremaP5x << " , " << r.extremaP5y << " , "
 			<< r.extremaP6x << " , " << r.extremaP6y << " , "
 			<< r.extremaP7x << " , " << r.extremaP7y << " , "
-			<< r.extremaP8x << " , " << r.extremaP8y
+			<< r.extremaP8x << " , " << r.extremaP8y << " , "
 
 			<< r.minFeretDiameter << " , "
 			<< r.maxFeretDiameter << " , "
 			<< r.minFeretAngle << " , "
 			<< r.maxFeretAngle << " , "
-			<< r.feretStats_minDiameter << " , "
-			<< r.feretStats_maxDiameter << " , "
-			<< r.feretStats_meanDiameter << " , "
-			<< r.feretStats_medianDiameter << " , "
-			<< r.feretStats_stddevDiameter << " , "
-			<< r.feretStats_modeDiameter << " , "
+			<< r.feretStats_minD << " , "
+			<< r.feretStats_maxD << " , "
+			<< r.feretStats_meanD << " , "
+			<< r.feretStats_medianD << " , "
+			<< r.feretStats_stddevD << " , "
+			<< r.feretStats_modeD << " , "
 
-			<< r.martinStats_minDiameter << " , "
-			<< r.martinStats_maxDiameter << " , "
-			<< r.martinStats_meanDiameter << " , "
-			<< r.martinStats_medianDiameter << " , "
-			<< r.martinStats_stddevDiameter << " , "
-			<< r.martinStats_modeDiameter << " , "
+			<< r.martinStats_minD << " , "
+			<< r.martinStats_maxD << " , "
+			<< r.martinStats_meanD << " , "
+			<< r.martinStats_medianD << " , "
+			<< r.martinStats_stddevD << " , "
+			<< r.martinStats_modeD << " , "
 
-			<< r.nassStats_minDiameter << " , "
-			<< r.nassStats_maxDiameter << " , "
-			<< r.nassStats_meanDiameter << " , "
-			<< r.nassStats_medianDiameter << " , "
-			<< r.nassStats_stddevDiameter << " , "
-			<< r.nassStats_modeDiameter << " , "
+			<< r.nassStats_minD << " , "
+			<< r.nassStats_maxD << " , "
+			<< r.nassStats_meanD << " , "
+			<< r.nassStats_medianD << " , "
+			<< r.nassStats_stddevD << " , "
+			<< r.nassStats_modeD << " , "
 			<< r.euler_number << " , "
 			<< r.polygonality_ave << " , "
 			<< r.hexagonality_ave << " , "
@@ -371,45 +346,61 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 			<< r.geodeticLength << " , "
 			<< r.thickness;
 
-			// assuming r.Texture_* contains items for 0, 45, 90, and 135 degrees to match the header, otherwise we need to adjust the header
-			for (auto f : r.Texture_AngularSecondMoments)
+			// assuming r.texture_* contains items for 0, 45, 90, and 135 degrees to match the header, otherwise we need to adjust the header
+			for (auto f : r.texture_AngularSecondMoments)
 				ss << "," << f;
-			for (auto f : r.Texture_Contrast)
+			for (auto f : r.texture_Contrast)
 				ss << "," << f;
-			for (auto f : r.Texture_Correlation)
+			for (auto f : r.texture_Correlation)
 				ss << "," << f;
-			for (auto f : r.Texture_Variance)
+			for (auto f : r.texture_Variance)
 				ss << "," << f;
-			for (auto f : r.Texture_InverseDifferenceMoment)
+			for (auto f : r.texture_InverseDifferenceMoment)
 				ss << "," << f;
-			for (auto f : r.Texture_SumAverage)
+			for (auto f : r.texture_SumAverage)
 				ss << "," << f;
-			for (auto f : r.Texture_SumVariance)
+			for (auto f : r.texture_SumVariance)
 				ss << "," << f;
-			for (auto f : r.Texture_SumEntropy)
+			for (auto f : r.texture_SumEntropy)
 				ss << "," << f;
-			for (auto f : r.Texture_Entropy)
+			for (auto f : r.texture_Entropy)
 				ss << "," << f;
-			for (auto f : r.Texture_DifferenceVariance)
+			for (auto f : r.texture_DifferenceVariance)
 				ss << "," << f;
-			for (auto f : r.Texture_DifferenceEntropy)
+			for (auto f : r.texture_DifferenceEntropy)
 				ss << "," << f;
-			for (auto f : r.Texture_InfoMeas1)
+			for (auto f : r.texture_InfoMeas1)
 				ss << "," << f;
-			for (auto f : r.Texture_InfoMeas2)
+			for (auto f : r.texture_InfoMeas2)
 				ss << "," << f;
 
 			// Zernike 2D
 			int zIdx = 0;
-			for (int i = 0; i < LR::NUM_ZERNIKE_COEFFS_2_OUTPUT; i++)
-			{
+			for (int i = 0; i <= LR::aux_ZERNIKE2D_ORDER; i++)
 				if (i % 2)
 					for (int j = 1; j <= i; j += 2)
-						ss << "," << r.Zernike2D[zIdx++];
+					{
+						ss << "," << r.Zernike2D [zIdx++];
+						
+						#if 0
+						// Debug:
+						auto z = r.Zernike2D[zIdx++];
+						std::cout << " z[" << zIdx << "]_" << i << "," << j << " = " << z;
+						ss << "," << z;
+						#endif
+					}
 				else
 					for (int j = 0; j <= i; j += 2)
-						ss << "," << r.Zernike2D[zIdx++];
-			}
+					{
+						ss << "," << r.Zernike2D [zIdx++];
+						
+						#if 0
+						// Debug:
+						auto z = r.Zernike2D[zIdx++];
+						std::cout << " z[" << zIdx << "]_" << i << "," << j << " = " << z;
+						ss << "," << z;
+						#endif
+					}
 			
 		fprintf (fp, "%s\n", ss.str().c_str());
 	}

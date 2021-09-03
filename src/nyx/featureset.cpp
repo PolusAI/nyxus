@@ -27,30 +27,30 @@ double LR::getValue (AvailableFeatures f)
 	{
 		// Pixel intensity stats
 		case MEAN: v = this->mean; break;
-		case MEDIAN: v=this->labelMedians; break;
-		case MIN: v=this->labelMins; break;
-		case MAX: v=this->labelMaxs; break;
-		case RANGE: v=this->labelMaxs-this->labelMins; break;
-		case STANDARD_DEVIATION: v=this->labelStddev; break;
-		case SKEWNESS: v=this->labelSkewness; break;
-		case KURTOSIS: v=this->labelKurtosis; break;
-		case MEAN_ABSOLUTE_DEVIATION: v=this->labelMAD; break;
-		case ENERGY: v=this->labelMassEnergy; break;
-		case ROOT_MEAN_SQUARED: v=this->labelRMS; break;
-		case ENTROPY: v=this->labelEntropy; break;
-		case MODE: v=this->labelMode; break;
-		case UNIFORMITY: v=this->labelUniformity; break;
-		case P10: v=this->labelP10; break; 
-		case P25: v=this->labelP25; break; 
-		case P75: v=this->labelP75; break; 
-		case P90: v=this->labelP90; break;
-		case INTERQUARTILE_RANGE: v=this->labelIQR; break;
-		case ROBUST_MEAN_ABSOLUTE_DEVIATION: v=this->labelMAD; break;
+		case MEDIAN: v=this->median; break;
+		case MIN: v=this->min; break;
+		case MAX: v=this->max; break;
+		case RANGE: v=this->max-this->min; break;
+		case STANDARD_DEVIATION: v=this->stddev; break;
+		case SKEWNESS: v=this->skewness; break;
+		case KURTOSIS: v=this->kurtosis; break;
+		case MEAN_ABSOLUTE_DEVIATION: v=this->MAD; break;
+		case ENERGY: v=this->massEnergy; break;
+		case ROOT_MEAN_SQUARED: v=this->RMS; break;
+		case ENTROPY: v=this->entropy; break;
+		case MODE: v=this->mode; break;
+		case UNIFORMITY: v=this->uniformity; break;
+		case P10: v=this->p10; break; 
+		case P25: v=this->p25; break; 
+		case P75: v=this->p75; break; 
+		case P90: v=this->p90; break;
+		case INTERQUARTILE_RANGE: v=this->IQR; break;
+		case ROBUST_MEAN_ABSOLUTE_DEVIATION: v=this->MAD; break;
 		case WEIGHTED_CENTROID_Y: v=this->centroid_y; break;
 		case WEIGHTED_CENTROID_X: v=this->centroid_x; break;
 
 		// Morphology: v=this->; break;
-		case AREA_PIXELS_COUNT: v=this->pixelCount; break;
+		case AREA_PIXELS_COUNT: v=this->pixelCountRoiArea; break;
 		case CENTROID_X: v=this->centroid_x; break;
 		case CENTROID_Y: v=this->centroid_y; break;
 		case BBOX_YMIN: v=this->aabb.get_ymin(); break;
@@ -93,26 +93,26 @@ double LR::getValue (AvailableFeatures f)
 		case MAX_FERET_DIAMETER: v=this->maxFeretDiameter; break;
 		case MIN_FERET_ANGLE: v=this->minFeretAngle; break;
 		case MAX_FERET_ANGLE: v=this->maxFeretAngle; break;
-		case STAT_FERET_DIAM_MIN: v=this->feretStats_minDiameter; break;
-		case STAT_FERET_DIAM_MAX: v=this->feretStats_maxDiameter; break;
-		case STAT_FERET_DIAM_MEAN: v=this->feretStats_meanDiameter; break;
-		case STAT_FERET_DIAM_MEDIAN: v=this->feretStats_medianDiameter; break;
-		case STAT_FERET_DIAM_STDDEV: v=this->feretStats_stddevDiameter; break;
-		case STAT_FERET_DIAM_MODE: v=this->feretStats_modeDiameter; break;
+		case STAT_FERET_DIAM_MIN: v=this->feretStats_minD; break;
+		case STAT_FERET_DIAM_MAX: v=this->feretStats_maxD; break;
+		case STAT_FERET_DIAM_MEAN: v=this->feretStats_meanD; break;
+		case STAT_FERET_DIAM_MEDIAN: v=this->feretStats_medianD; break;
+		case STAT_FERET_DIAM_STDDEV: v=this->feretStats_stddevD; break;
+		case STAT_FERET_DIAM_MODE: v=this->feretStats_modeD; break;
 
-		case STAT_MARTIN_DIAM_MIN: v=this->martinStats_minDiameter; break;
-		case STAT_MARTIN_DIAM_MAX: v=this->martinStats_maxDiameter; break;
-		case STAT_MARTIN_DIAM_MEAN: v=this->martinStats_meanDiameter; break;
-		case STAT_MARTIN_DIAM_MEDIAN: v=this->martinStats_medianDiameter; break;
-		case STAT_MARTIN_DIAM_STDDEV: v=this->martinStats_stddevDiameter; break;
-		case STAT_MARTIN_DIAM_MODE: v=this->martinStats_modeDiameter; break;
+		case STAT_MARTIN_DIAM_MIN: v=this->martinStats_minD; break;
+		case STAT_MARTIN_DIAM_MAX: v=this->martinStats_maxD; break;
+		case STAT_MARTIN_DIAM_MEAN: v=this->martinStats_meanD; break;
+		case STAT_MARTIN_DIAM_MEDIAN: v=this->martinStats_medianD; break;
+		case STAT_MARTIN_DIAM_STDDEV: v=this->martinStats_stddevD; break;
+		case STAT_MARTIN_DIAM_MODE: v=this->martinStats_modeD; break;
 
-		case STAT_NASSENSTEIN_DIAM_MIN: v=this->nassStats_minDiameter; break;
-		case STAT_NASSENSTEIN_DIAM_MAX: v=this->nassStats_maxDiameter; break;
-		case STAT_NASSENSTEIN_DIAM_MEAN: v=this->nassStats_meanDiameter; break;
-		case STAT_NASSENSTEIN_DIAM_MEDIAN: v=this->nassStats_medianDiameter; break;
-		case STAT_NASSENSTEIN_DIAM_STDDEV: v=this->nassStats_stddevDiameter; break;
-		case STAT_NASSENSTEIN_DIAM_MODE: v=this->nassStats_modeDiameter; break;
+		case STAT_NASSENSTEIN_DIAM_MIN: v=this->nassStats_minD; break;
+		case STAT_NASSENSTEIN_DIAM_MAX: v=this->nassStats_maxD; break;
+		case STAT_NASSENSTEIN_DIAM_MEAN: v=this->nassStats_meanD; break;
+		case STAT_NASSENSTEIN_DIAM_MEDIAN: v=this->nassStats_medianD; break;
+		case STAT_NASSENSTEIN_DIAM_STDDEV: v=this->nassStats_stddevD; break;
+		case STAT_NASSENSTEIN_DIAM_MODE: v=this->nassStats_modeD; break;
 
 		case EULER_NUBER: v=this->euler_number; break;
 

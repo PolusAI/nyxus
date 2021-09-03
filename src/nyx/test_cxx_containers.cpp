@@ -22,36 +22,36 @@ double test_containers1()
 {
 	std::cout << "test_containers1 (" << N << ") begins..." << std::endl;
 
-	std::unordered_map <int, StatsInt> pixelCount;
-	std::unordered_map <int, StatsInt> labelPrevCount;
-	std::unordered_map <int, StatsInt> labelPrevIntens;
+	std::unordered_map <int, StatsInt> pixelCountRoiArea;
+	std::unordered_map <int, StatsInt> aux_PrevCount;
+	std::unordered_map <int, StatsInt> aux_PrevIntens;
 	std::unordered_map <int, StatsReal> mean;
 	std::unordered_map <int, std::shared_ptr<std::unordered_set<PixIntens>>> labelValues;
-	std::unordered_map <int, StatsInt> labelMedians;
-	std::unordered_map <int, StatsInt> labelMins;
-	std::unordered_map <int, StatsInt> labelMaxs;
-	std::unordered_map <int, StatsInt> labelMassEnergy;
-	std::unordered_map <int, StatsReal> labelVariance;
-	std::unordered_map <int, StatsReal> labelStddev;	// Is calculated from 'lavelVariance' in Reduce()
+	std::unordered_map <int, StatsInt> median;
+	std::unordered_map <int, StatsInt> min;
+	std::unordered_map <int, StatsInt> max;
+	std::unordered_map <int, StatsInt> massEnergy;
+	std::unordered_map <int, StatsReal> variance;
+	std::unordered_map <int, StatsReal> stddev;	// Is calculated from 'lavelVariance' in Reduce()
 	std::unordered_map <int, StatsReal> centroid_x;
 	std::unordered_map <int, StatsReal> centroid_y;
-	std::unordered_map <int, StatsReal> labelM2;
-	std::unordered_map <int, StatsReal> labelM3;
-	std::unordered_map <int, StatsReal> labelM4;
-	std::unordered_map <int, StatsReal> labelSkewness;
-	std::unordered_map <int, StatsReal> labelKurtosis;
-	std::unordered_map <int, StatsReal> labelMAD;
-	std::unordered_map <int, StatsReal> labelRMS;
-	std::unordered_map <int, std::shared_ptr<Histo>> labelHistogram;
-	std::unordered_map <int, StatsReal> labelP10;
-	std::unordered_map <int, StatsReal> labelP25;
-	std::unordered_map <int, StatsReal> labelP75;
-	std::unordered_map <int, StatsReal> labelP90;
-	std::unordered_map <int, StatsReal> labelIQR;
-	std::unordered_map <int, StatsReal> labelEntropy;
-	std::unordered_map <int, StatsReal> labelMode;
-	std::unordered_map <int, StatsReal> labelUniformity;
-	std::unordered_map <int, StatsReal> labelRMAD;
+	std::unordered_map <int, StatsReal> aux_M2;
+	std::unordered_map <int, StatsReal> aux_M3;
+	std::unordered_map <int, StatsReal> aux_M4;
+	std::unordered_map <int, StatsReal> skewness;
+	std::unordered_map <int, StatsReal> kurtosis;
+	std::unordered_map <int, StatsReal> MAD;
+	std::unordered_map <int, StatsReal> RMS;
+	std::unordered_map <int, std::shared_ptr<Histo>> aux_Histogram;
+	std::unordered_map <int, StatsReal> p10;
+	std::unordered_map <int, StatsReal> p25;
+	std::unordered_map <int, StatsReal> p75;
+	std::unordered_map <int, StatsReal> p90;
+	std::unordered_map <int, StatsReal> IQR;
+	std::unordered_map <int, StatsReal> entropy;
+	std::unordered_map <int, StatsReal> mode;
+	std::unordered_map <int, StatsReal> uniformity;
+	std::unordered_map <int, StatsReal> RMAD;
 
 	// --Timing
 	std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -61,36 +61,36 @@ double test_containers1()
 	{
 		int p = i % M;	// position
 
-		pixelCount[p] = pixelCount[p] + i;
-		labelPrevCount[p] = i;
-		labelPrevIntens[p] = i;
+		pixelCountRoiArea[p] = pixelCountRoiArea[p] + i;
+		aux_PrevCount[p] = i;
+		aux_PrevIntens[p] = i;
 		mean[p] = i;
 		//std::unordered_map <int, std::shared_ptr<std::unordered_set<PixIntens>>> labelValues;
-		labelMedians[p] = i;
-		labelMins[p] = i;
-		labelMaxs[p] = i;
-		labelMassEnergy[p] = i;
-		labelVariance[p] = i;
-		labelStddev[p] = i;
+		median[p] = i;
+		min[p] = i;
+		max[p] = i;
+		massEnergy[p] = i;
+		variance[p] = i;
+		stddev[p] = i;
 		centroid_x[p] = i;
 		centroid_y[p] = i;
-		labelM2[p] = i;
-		labelM3[p] = i;
-		labelM4[p] = i;
-		labelSkewness[p] = i;
-		labelKurtosis[p] = i;
-		labelMAD[p] = i;
-		labelRMS[p] = i;
-		//std::unordered_map <int, std::shared_ptr<Histo>> labelHistogram;
-		labelP10[p] = i;
-		labelP25[p] = i;
-		labelP75[p] = i;
-		labelP90[p] = i;
-		labelIQR[p] = i;
-		labelEntropy[p] = i;
-		labelMode[p] = i;
-		labelUniformity[p] = i;
-		labelRMAD[p] = i;
+		aux_M2[p] = i;
+		aux_M3[p] = i;
+		aux_M4[p] = i;
+		skewness[p] = i;
+		kurtosis[p] = i;
+		MAD[p] = i;
+		RMS[p] = i;
+		//std::unordered_map <int, std::shared_ptr<Histo>> aux_Histogram;
+		p10[p] = i;
+		p25[p] = i;
+		p75[p] = i;
+		p90[p] = i;
+		IQR[p] = i;
+		entropy[p] = i;
+		mode[p] = i;
+		uniformity[p] = i;
+		RMAD[p] = i;
 	}
 
 	// --Timing
@@ -111,36 +111,36 @@ double test_containers2()
 
 	using Tup = std::tuple <
 
-		StatsInt, //std::unordered_map <int, StatsInt> pixelCount;
-		StatsInt, //std::unordered_map <int, StatsInt> labelPrevCount;
-		StatsInt, //std::unordered_map <int, StatsInt> labelPrevIntens;
+		StatsInt, //std::unordered_map <int, StatsInt> pixelCountRoiArea;
+		StatsInt, //std::unordered_map <int, StatsInt> aux_PrevCount;
+		StatsInt, //std::unordered_map <int, StatsInt> aux_PrevIntens;
 		StatsReal, //std::unordered_map <int, StatsReal> mean;
 		//---std::unordered_map <int, std::shared_ptr<std::unordered_set<PixIntens>>> labelValues;
-		StatsInt, //std::unordered_map <int, StatsInt> labelMedians;
-		StatsInt, //std::unordered_map <int, StatsInt> labelMins;
-		StatsInt, //std::unordered_map <int, StatsInt> labelMaxs;
-		StatsInt, //std::unordered_map <int, StatsInt> labelMassEnergy;
-		StatsReal, //std::unordered_map <int, StatsReal> labelVariance;
-		StatsReal, //std::unordered_map <int, StatsReal> labelStddev;	// Is calculated from 'lavelVariance' in Reduce()
+		StatsInt, //std::unordered_map <int, StatsInt> median;
+		StatsInt, //std::unordered_map <int, StatsInt> min;
+		StatsInt, //std::unordered_map <int, StatsInt> max;
+		StatsInt, //std::unordered_map <int, StatsInt> massEnergy;
+		StatsReal, //std::unordered_map <int, StatsReal> variance;
+		StatsReal, //std::unordered_map <int, StatsReal> stddev;	// Is calculated from 'lavelVariance' in Reduce()
 		StatsReal, //std::unordered_map <int, StatsReal> centroid_x;
 		StatsReal, //std::unordered_map <int, StatsReal> centroid_y;
-		StatsReal, //std::unordered_map <int, StatsReal> labelM2;
-		StatsReal, //std::unordered_map <int, StatsReal> labelM3;
-		StatsReal, //std::unordered_map <int, StatsReal> labelM4;
-		StatsReal, //std::unordered_map <int, StatsReal> labelSkewness;
-		StatsReal, //std::unordered_map <int, StatsReal> labelKurtosis;
-		StatsReal, //std::unordered_map <int, StatsReal> labelMAD;
-		StatsReal, //std::unordered_map <int, StatsReal> labelRMS;
-	//---std::unordered_map <int, std::shared_ptr<Histo>> labelHistogram;
-		StatsReal, //std::unordered_map <int, StatsReal> labelP10;
-		StatsReal, //std::unordered_map <int, StatsReal> labelP25;
-		StatsReal, //std::unordered_map <int, StatsReal> labelP75;
-		StatsReal, //std::unordered_map <int, StatsReal> labelP90;
-		StatsReal, //std::unordered_map <int, StatsReal> labelIQR;
-		StatsReal, //std::unordered_map <int, StatsReal> labelEntropy;
-		StatsReal, //std::unordered_map <int, StatsReal> labelMode;
-		StatsReal, //std::unordered_map <int, StatsReal> labelUniformity;
-		StatsReal //std::unordered_map <int, StatsReal> labelRMAD;
+		StatsReal, //std::unordered_map <int, StatsReal> aux_M2;
+		StatsReal, //std::unordered_map <int, StatsReal> aux_M3;
+		StatsReal, //std::unordered_map <int, StatsReal> aux_M4;
+		StatsReal, //std::unordered_map <int, StatsReal> skewness;
+		StatsReal, //std::unordered_map <int, StatsReal> kurtosis;
+		StatsReal, //std::unordered_map <int, StatsReal> MAD;
+		StatsReal, //std::unordered_map <int, StatsReal> RMS;
+	//---std::unordered_map <int, std::shared_ptr<Histo>> aux_Histogram;
+		StatsReal, //std::unordered_map <int, StatsReal> p10;
+		StatsReal, //std::unordered_map <int, StatsReal> p25;
+		StatsReal, //std::unordered_map <int, StatsReal> p75;
+		StatsReal, //std::unordered_map <int, StatsReal> p90;
+		StatsReal, //std::unordered_map <int, StatsReal> IQR;
+		StatsReal, //std::unordered_map <int, StatsReal> entropy;
+		StatsReal, //std::unordered_map <int, StatsReal> mode;
+		StatsReal, //std::unordered_map <int, StatsReal> uniformity;
+		StatsReal //std::unordered_map <int, StatsReal> RMAD;
 	> ;
 
 	std::unordered_map <int, Tup> label;
