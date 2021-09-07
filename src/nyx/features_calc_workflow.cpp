@@ -7,8 +7,9 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <future>
 #include "sensemaker.h"
-
+#include "timing.h"
 constexpr int N2R = 50 * 1000;
 constexpr int N2R_2 = 50 * 1000;
 
@@ -31,6 +32,9 @@ void clearLabelStats()
 // Label Record (structure 'LR') is where the state of label's pixels scanning and feature calculations is maintained. This function initializes an LR instance for the 1st pixel.
 void init_label_record (LR& r, int x, int y, int label, PixIntens intensity)
 {
+	// Awareness
+	r.label = label;
+
 	// Save the pixel
 	r.raw_pixels.push_back(Pixel2(x, y, intensity));
 
@@ -95,71 +99,6 @@ void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity)
 {
 	// Save the pixel
 	lr.raw_pixels.push_back(Pixel2(x, y, intensity));
-	
-	// Count of pixels belonging to the label
-	auto prev_n = lr.pixelCountRoiArea;	// Previous count
-	lr.aux_PrevCount = prev_n;
-	auto n = prev_n + 1;	// New count
-	lr.pixelCountRoiArea = n;
-
-	// Cumulants for moments calculation
-	auto prev_mean = lr.mean;
-	auto delta = intensity - prev_mean;
-	auto delta_n = delta / n;
-	auto delta_n2 = delta_n * delta_n;
-	auto term1 = delta * delta_n * prev_n;
-
-	// Mean
-	auto mean = prev_mean + delta_n;
-	lr.mean = mean;
-
-	// Moments
-	lr.aux_M4 = lr.aux_M4 + term1 * delta_n2 * (n * n - 3 * n + 3) + 6 * delta_n2 * lr.aux_M2 - 4 * delta_n * lr.aux_M3;
-	lr.aux_M3 = lr.aux_M3 + term1 * delta_n * (n - 2) - 3 * delta_n * lr.aux_M2;
-	lr.aux_M2 = lr.aux_M2 + term1;
-
-	// Min 
-	lr.min = std::min(lr.min, (StatsInt)intensity);
-
-	// Max
-	lr.max = std::max(lr.max, (StatsInt)intensity);
-
-	// Energy
-	lr.massEnergy = lr.massEnergy + intensity * intensity;
-
-	// Variance and standard deviation
-	if (n >= 2)
-	{
-		double s_prev = lr.variance,
-			diff = double(intensity) - prev_mean,
-			diff2 = diff * diff;
-		lr.variance = (n - 2) * s_prev / (n - 1) + diff2 / n;
-	}
-	else
-		lr.variance = 0;
-
-	// Mean absolute deviation
-	lr.MAD = lr.MAD + std::abs(intensity - mean);
-
-	// Weighted centroids. Needs reduction. Do we need to make them 1-based for compatibility with Matlab and WNDCHRM?
-	lr.centroid_x = lr.centroid_x + StatsReal(x);
-	lr.centroid_y = lr.centroid_y + StatsReal(y);
-
-	// Histogram
-	auto ptrH = lr.aux_Histogram;
-	ptrH->add_observation(intensity);
-
-	// Previous intensity for succeeding iterations
-	lr.aux_PrevIntens = intensity;
-
-	//==== Morphology
-	lr.update_aabb (x, y);
-
-	#ifdef SANITY_CHECK_INTENSITIES_FOR_LABEL
-	// Dump intensities for testing
-	if (label == SANITY_CHECK_INTENSITIES_FOR_LABEL)	// Put the label code you're tracking
-		lr.raw_intensities.push_back(intensity);
-	#endif
 }
 
 // The root function of handling a pixel being scanned
@@ -190,17 +129,15 @@ void update_label_stats(int x, int y, int label, PixIntens intensity)
 	}
 }
 
-// This function should be called once after a file pair processing is finished.
-void reduce_all_labels (int min_online_roi_size)
+void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * ptrLabels, std::unordered_map <int,LR> * ptrLabelData)
 {
-
-	std::cout << "\treducing intensity stats" << std::endl;
-
-	//==== Scan pixels. This will be followed by the Reduce step
-	for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
+	for (auto i = start; i < end; i++)
 	{
-		auto l = ld.first;		// Label code
-		auto& lr = ld.second;	// Label record
+		int lab = (*ptrLabels) [i];
+		LR& lr = (*ptrLabelData) [lab];
+
+		//==== Reduce pixel intensity #1
+		lr.reduce_pixel_intensity_features();
 
 		auto n = lr.pixelCountRoiArea;	// Cardinality of the label value set
 
@@ -213,10 +150,10 @@ void reduce_all_labels (int min_online_roi_size)
 		lr.stddev = sqrt(lr.variance);
 
 		// Skewness
-		lr.skewness = std::sqrt(double(lr.pixelCountRoiArea)) * lr.aux_M3 / std::pow(lr.aux_M2, 1.5);	
+		lr.skewness = std::sqrt(double(lr.pixelCountRoiArea)) * lr.aux_M3 / std::pow(lr.aux_M2, 1.5);
 
 		// Kurtosis
-		lr.kurtosis = double(lr.pixelCountRoiArea) * lr.aux_M4 / (lr.aux_M2 * lr.aux_M2) - 3.0;	
+		lr.kurtosis = double(lr.pixelCountRoiArea) * lr.aux_M4 / (lr.aux_M2 * lr.aux_M2) - 3.0;
 
 		// Root of mean squared
 		lr.RMS = sqrt(lr.massEnergy / n);
@@ -227,14 +164,14 @@ void reduce_all_labels (int min_online_roi_size)
 		auto [mean_, mode_, p10_, p25_, p75_, p90_, iqr_, rmad_, entropy_, uniformity_] = ptrH->get_stats();
 
 		lr.median = mean_;
-		lr.p10 = p10_; 
-		lr.p25 = p25_; 
-		lr.p75 = p75_; 
-		lr.p90 = p90_; 
-		lr.IQR = iqr_; 
+		lr.p10 = p10_;
+		lr.p25 = p25_;
+		lr.p75 = p75_;
+		lr.p90 = p90_;
+		lr.IQR = iqr_;
 		lr.RMAD = rmad_;
 		lr.entropy = entropy_;
-		lr.mode = mode_; 
+		lr.mode = mode_;
 		lr.uniformity = uniformity_;
 
 		// Weighted centroids
@@ -242,13 +179,14 @@ void reduce_all_labels (int min_online_roi_size)
 		lr.centroid_y = lr.centroid_y / lr.pixelCountRoiArea;
 
 		//==== Calculate pixel intensity stats directly rather than online
+		int min_online_roi_size = 100;
 		if (min_online_roi_size > 0)
 		{
 			// -- Standard deviation
-			StatsReal sumM2 = 0.0, 
-				sumM3 = 0.0, 
+			StatsReal sumM2 = 0.0,
+				sumM3 = 0.0,
 				sumM4 = 0.0,
-				absSum = 0.0, 
+				absSum = 0.0,
 				sumEnergy = 0.0;
 			for (auto& pix : lr.raw_pixels)
 			{
@@ -259,29 +197,303 @@ void reduce_all_labels (int min_online_roi_size)
 				absSum += abs(diff);
 				sumEnergy += pix.inten * pix.inten;
 			}
-			double m2 = sumM2 / (n - 1), 
+			double m2 = sumM2 / (n - 1),
 				m3 = sumM3 / n,
 				m4 = sumM4 / n;
 			lr.variance = sumM2 / (n - 1);
-			lr.stddev = sqrt (lr.variance);
+			lr.stddev = sqrt(lr.variance);
 			lr.MAD = absSum / n;	// Biased
-			lr.RMS = sqrt (sumEnergy / n);
+			lr.RMS = sqrt(sumEnergy / n);
 			lr.skewness = m3 / pow(m2, 1.5);
 			lr.kurtosis = m4 / (m2 * m2) - 3;
 			//
 		}
 
-		//==== Morphology
+		//==== Extent
 		double bbArea = lr.aabb.get_area();
 		lr.extent = (double)lr.pixelCountRoiArea / (double)bbArea;
 
+		//==== Aspect ratio
+		lr.aspectRatio = lr.aabb.get_width() / lr.aabb.get_height();
+
+	}
+}
+
+void parallelReduceConvHullContour(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{	
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR& r = (*ptrLabelData)[lab];
+
+		//==== Contour, ROI perimeter, equivalent circle diameter
+		r.contour.calculate(r.raw_pixels);
+		r.roiPerimeter = (StatsInt)r.contour.get_roi_perimeter();
+		r.equivDiam = r.contour.get_diameter_equal_perimeter();
+
+		//==== Convex hull and solidity
+		r.convHull.calculate(r.raw_pixels);
+		r.convHullArea = r.convHull.getArea();
+		r.solidity = r.pixelCountRoiArea / r.convHullArea;
+
+		//==== Circularity
+		r.circularity = 4.0 * M_PI * r.pixelCountRoiArea / (r.roiPerimeter * r.roiPerimeter);
+
+		//==== IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
+		r.reduce_edge_intensity_features();
+	}
+}
+
+void parallelReduceFeret (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR& r = (*ptrLabelData)[lab];
+
+		ParticleMetrics pm(r.convHull.CH);
+		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
+		pm.calc_ferret(
+			r.maxFeretDiameter,
+			r.maxFeretAngle,
+			r.minFeretDiameter,
+			r.minFeretAngle,
+			allD
+		);
+
+		auto structStat = ComputeCommonStatistics2(allD);
+		r.feretStats_minD = (double)structStat.min;	// ratios[59]
+		r.feretStats_maxD = (double)structStat.max;	// ratios[60]
+		r.feretStats_meanD = structStat.mean;	// ratios[61]
+		r.feretStats_medianD = structStat.median;	// ratios[62]
+		r.feretStats_stddevD = structStat.stdev;	// ratios[63]
+		r.feretStats_modeD = (double)structStat.mode;	// ratios[64]		
+	}
+}
+
+void parallelReduceMartin (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR & r = (*ptrLabelData)[lab];
+
+		ParticleMetrics pm(r.convHull.CH);
+		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
+		pm.calc_martin(allD);
+		auto structStat = ComputeCommonStatistics2(allD);
+		r.martinStats_minD = (double)structStat.min;
+		r.martinStats_maxD = (double)structStat.max;
+		r.martinStats_meanD = structStat.mean;
+		r.martinStats_medianD = structStat.median;
+		r.martinStats_stddevD = structStat.stdev;
+		r.martinStats_modeD = (double)structStat.mode;
+	}
+}
+
+void parallelReduceNassenstein (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR & r = (*ptrLabelData)[lab];
+
+		ParticleMetrics pm(r.convHull.CH);
+		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
+		pm.calc_nassenstein(allD);
+		auto s = ComputeCommonStatistics2(allD);
+		r.nassStats_minD = s.min;
+		r.nassStats_maxD = s.max;
+		r.nassStats_meanD = s.mean;
+		r.nassStats_medianD = s.median;
+		r.nassStats_stddevD = s.stdev;
+		r.nassStats_modeD = s.mode;
+	}
+}
+
+void parallelReduceHaralick2D (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR & r = (*ptrLabelData)[lab];
+
+		haralick2D(
+			// in
+			r.raw_pixels,	// nonzero_intensity_pixels,
+			r.aabb,			// AABB info not to calculate it again from 'raw_pixels' in the function
+			0.0,			// distance,
+			// out
+			r.texture_Feature_Angles,
+			r.texture_AngularSecondMoments,
+			r.texture_Contrast,
+			r.texture_Correlation,
+			r.texture_Variance,
+			r.texture_InverseDifferenceMoment,
+			r.texture_SumAverage,
+			r.texture_SumVariance,
+			r.texture_SumEntropy,
+			r.texture_Entropy,
+			r.texture_DifferenceVariance,
+			r.texture_DifferenceEntropy,
+			r.texture_InfoMeas1,
+			r.texture_InfoMeas2);
+	}
+}
+
+void parallelReduceZernike2D (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR & r = (*ptrLabelData)[lab];
+
+		zernike2D(
+			// in
+			r.raw_pixels,	// nonzero_intensity_pixels,
+			r.aabb,			// AABB info not to calculate it again from 'raw_pixels' in the function
+			r.aux_ZERNIKE2D_ORDER,
+			// out
+			r.Zernike2D);
+	}
+}
+
+typedef void (*functype) (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+
+void runParallel (functype f, int nThr, size_t workPerThread, size_t datasetSize, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	std::vector<std::future<void>> T;
+	for (int t = 0; t < nThr; t++)
+	{
+		size_t idxS = t * workPerThread,
+			idxE = idxS + workPerThread;
+		if (t == nThr - 1)
+			idxE = datasetSize; // include the tail
+		// Example:	T.push_back(std::async(std::launch::async, parallelReduceIntensityStats, idxS, idxE, &sortedUniqueLabels, &labelData));
+		T.push_back (std::async(std::launch::async, f, idxS, idxE, &sortedUniqueLabels, &labelData));
+	}
+}
+
+
+// This function should be called once after a file pair processing is finished.
+void reduce (int min_online_roi_size)
+{
+	//=== Sort the labels 
+	// We do this for 2 purposes: (1) being able to iterate them in equal chunks that in turn requires [indexed] access; (2) later, output the results by sorted labels
+	// Implementing the following --> std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
+	sortedUniqueLabels.clear();
+	for (auto l : uniqueLabels)
+		sortedUniqueLabels.push_back(l);
+	//std::sort(sortedUniqueLabels.begin(), sortedUniqueLabels.end());
+	
+	//==== 	Parallel execution parameters 
+	int nThr = 8;
+	size_t tileSize = sortedUniqueLabels.size(),
+		workPerThread = tileSize / nThr;
+
+	//==== Pixel intensity stats 
+	{
+		STOPWATCH("Reduced intensity stats");
+
+#if 0 // Sequential 
+	//==== Scan pixels. This will be followed by the Reduce step
+		for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
+		{
+			auto l = ld.first;		// Label code
+			auto& lr = ld.second;	// Label record
+
+			// Reduce pixel intensity #1
+			lr.reduce_pixel_intensity_features();
+
+			auto n = lr.pixelCountRoiArea;	// Cardinality of the label value set
+
+			//==== Pixel intensity stats
+
+			// Mean absolute deviation
+			lr.MAD = lr.MAD / n;
+
+			// Standard deviations
+			lr.stddev = sqrt(lr.variance);
+
+			// Skewness
+			lr.skewness = std::sqrt(double(lr.pixelCountRoiArea)) * lr.aux_M3 / std::pow(lr.aux_M2, 1.5);
+
+			// Kurtosis
+			lr.kurtosis = double(lr.pixelCountRoiArea) * lr.aux_M4 / (lr.aux_M2 * lr.aux_M2) - 3.0;
+
+			// Root of mean squared
+			lr.RMS = sqrt(lr.massEnergy / n);
+
+			// P10, 25, 75, 90
+			auto ptrH = lr.aux_Histogram;
+			ptrH->build_histogram();
+			auto [mean_, mode_, p10_, p25_, p75_, p90_, iqr_, rmad_, entropy_, uniformity_] = ptrH->get_stats();
+
+			lr.median = mean_;
+			lr.p10 = p10_;
+			lr.p25 = p25_;
+			lr.p75 = p75_;
+			lr.p90 = p90_;
+			lr.IQR = iqr_;
+			lr.RMAD = rmad_;
+			lr.entropy = entropy_;
+			lr.mode = mode_;
+			lr.uniformity = uniformity_;
+
+			// Weighted centroids
+			lr.centroid_x = lr.centroid_x / lr.pixelCountRoiArea;
+			lr.centroid_y = lr.centroid_y / lr.pixelCountRoiArea;
+
+			//==== Calculate pixel intensity stats directly rather than online
+			if (min_online_roi_size > 0)
+			{
+				// -- Standard deviation
+				StatsReal sumM2 = 0.0,
+					sumM3 = 0.0,
+					sumM4 = 0.0,
+					absSum = 0.0,
+					sumEnergy = 0.0;
+				for (auto& pix : lr.raw_pixels)
+				{
+					auto diff = pix.inten - lr.mean;
+					sumM2 += diff * diff;
+					sumM3 += diff * diff * diff;
+					sumM4 += diff * diff * diff * diff;
+					absSum += abs(diff);
+					sumEnergy += pix.inten * pix.inten;
+				}
+				double m2 = sumM2 / (n - 1),
+					m3 = sumM3 / n,
+					m4 = sumM4 / n;
+				lr.variance = sumM2 / (n - 1);
+				lr.stddev = sqrt(lr.variance);
+				lr.MAD = absSum / n;	// Biased
+				lr.RMS = sqrt(sumEnergy / n);
+				lr.skewness = m3 / pow(m2, 1.5);
+				lr.kurtosis = m4 / (m2 * m2) - 3;
+				//
+			}
+
+			//==== Extent
+			double bbArea = lr.aabb.get_area();
+			lr.extent = (double)lr.pixelCountRoiArea / (double)bbArea;
+
+			//==== Aspect ratio
+			r.aspectRatio = r.aabb.get_width() / r.aabb.get_height();
+		} // 
+#endif
+		//Parallel
+		runParallel(parallelReduceIntensityStats, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Neighbors
-	if (featureSet.isEnabled(NUM_NEIGHBORS))
 	{
-		std::cout << "\treducing neighbors" << std::endl;
-		reduce_neighbors (5 /*collision radius*/);
+		STOPWATCH("Reduced Neighbors");
+		if (featureSet.isEnabled(NUM_NEIGHBORS))
+		{
+			std::cout << "\treducing neighbors" << std::endl;
+			reduce_neighbors(5 /*collision radius*/);
+		}
 	}
 
 	//==== Fitting an ellipse
@@ -296,7 +508,7 @@ void reduce_all_labels (int min_online_roi_size)
 		// 1/12 is the normalized second central moment of a pixel with unit length.
 		for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
 		{
-			auto& r = ld.second;	// Label record
+			auto& r = ld.second;
 
 			double XSquaredTmp = 0, YSquaredTmp = 0, XYSquaredTmp = 0;
 			for (auto& pix : r.raw_pixels)
@@ -336,33 +548,36 @@ void reduce_all_labels (int min_online_roi_size)
 			r.minor_axis_length = MinorAxisLength;
 			r.eccentricity = Eccentricity;
 			r.orientation = Orientation;
-
-			//==== Aspect ratio
-			r.aspectRatio = r.aabb.get_width() / r.aabb.get_height();
 		}
 	}
 
-	std::cout << "\treducing contours, hulls, and related (circularity, solidity, ...)" << std::endl;
-	for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
+	//==== Contour, ROI perimeter, equivalent circle diameter; Convex hull and solidity; Circularity, IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
 	{
-		auto& r = ld.second;	// Label record
+		STOPWATCH("Reduced contours, hulls, and related (circularity, solidity, ...)");
+#if 0 // Serial
+		for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
+		{
+			auto& r = ld.second;	// Label record
 
-		//==== Contour, ROI perimeter, equivalent circle diameter
+			//==== Contour, ROI perimeter, equivalent circle diameter
+			r.contour.calculate(r.raw_pixels);
+			r.roiPerimeter = (StatsInt)r.contour.get_roi_perimeter();
+			r.equivDiam = r.contour.get_diameter_equal_perimeter();
 
-		r.contour.calculate(r.raw_pixels);
-		r.roiPerimeter = (StatsInt)r.contour.get_roi_perimeter();
-		r.equivDiam = r.contour.get_diameter_equal_perimeter();
+			//==== Convex hull and solidity
+			r.convHull.calculate(r.raw_pixels);
+			r.convHullArea = r.convHull.getArea();
+			r.solidity = r.pixelCountRoiArea / r.convHullArea;
 
-		//==== Convex hull and solidity
-		r.convHull.calculate(r.raw_pixels);
-		r.convHullArea = r.convHull.getArea();
-		r.solidity = r.pixelCountRoiArea / r.convHullArea;
+			//==== Circularity
+			r.circularity = 4.0 * M_PI * r.pixelCountRoiArea / (r.roiPerimeter * r.roiPerimeter);
 
-		//==== Circularity
-		r.circularity = 4.0 * M_PI * r.pixelCountRoiArea / (r.roiPerimeter * r.roiPerimeter);
-
-		//==== IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
-		r.reduce_edge_intensity_features();
+			//==== IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
+			r.reduce_edge_intensity_features();
+		}
+#endif
+		// Parallel
+		runParallel (parallelReduceConvHullContour, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Extrema and Euler number
@@ -465,7 +680,8 @@ void reduce_all_labels (int min_online_roi_size)
 			STAT_FERET_DIAM_STDDEV,
 			STAT_FERET_DIAM_MODE }))
 	{
-		std::cout << "\treducing Feret diameter, angle, and stats\n";
+		STOPWATCH("Reduced Feret");
+#if 0 // Sequential
 		for (auto& ld : labelData)
 		{
 			auto& r = ld.second;
@@ -488,6 +704,9 @@ void reduce_all_labels (int min_online_roi_size)
 			r.feretStats_stddevD = structStat.stdev;	// ratios[63]
 			r.feretStats_modeD = (double)structStat.mode;	// ratios[64]		
 		}
+#endif
+		// Parallel
+		runParallel(parallelReduceFeret, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Martin diameters
@@ -498,11 +717,11 @@ void reduce_all_labels (int min_online_roi_size)
 		STAT_MARTIN_DIAM_STDDEV,
 		STAT_MARTIN_DIAM_MODE }))
 	{
-		std::cout << "\treducing Martin stats\n";
+		STOPWATCH("Reduced Martin");
+#if 0 // Sequential
 		for (auto& ld : labelData)
 		{
 			auto& r = ld.second;
-
 
 			ParticleMetrics pm(r.convHull.CH);
 			std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
@@ -515,6 +734,9 @@ void reduce_all_labels (int min_online_roi_size)
 			r.martinStats_stddevD = structStat.stdev;
 			r.martinStats_modeD = (double)structStat.mode;
 		}
+#endif
+		// Parallel
+		runParallel(parallelReduceMartin, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Nassenstein diameters
@@ -525,11 +747,11 @@ void reduce_all_labels (int min_online_roi_size)
 		STAT_NASSENSTEIN_DIAM_STDDEV,
 		STAT_NASSENSTEIN_DIAM_MODE }))
 	{
-		std::cout << "\treducing Nassenstein stats\n";
+		STOPWATCH("Reduced Nassenstein");
+#if 0 // Sequential
 		for (auto& ld : labelData)
 		{
 			auto& r = ld.second;
-
 
 			ParticleMetrics pm(r.convHull.CH);
 			std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
@@ -542,6 +764,9 @@ void reduce_all_labels (int min_online_roi_size)
 			r.nassStats_stddevD = s.stdev;
 			r.nassStats_modeD = s.mode;
 		}
+#endif
+		// Parallel
+		runParallel(parallelReduceNassenstein, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	std::cout << "\treducing hexagonality, polygonality, enclosing circle, geodetic length & thickness\n";
@@ -578,7 +803,8 @@ void reduce_all_labels (int min_online_roi_size)
 	//==== Haralick 2D 
 	if (featureSet.isEnabled(TEXTURE_HARALICK2D))
 	{
-		std::cout << "\treducing Haralick 2D\n";
+		STOPWATCH("Reduced Haralick2D");
+#if 0 // Sequential
 		for (auto& ld : labelData)
 		{
 			// Get ahold of the label's data:
@@ -605,13 +831,17 @@ void reduce_all_labels (int min_online_roi_size)
 				r.texture_InfoMeas1,
 				r.texture_InfoMeas2);
 		}
+#endif
+		// Parallel
+		runParallel(parallelReduceHaralick2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Zernike 2D 
-	std::cout << "\treducing Zernike 2D\n";
 	if (featureSet.isEnabled(TEXTURE_ZERNIKE2D))
 	{
-		for (auto& ld : labelData) 
+		STOPWATCH("Reduced Zernike2D");
+#if 0 // Serial
+		for (auto& ld : labelData)
 		{
 			// Get ahold of the label's data:
 			auto& r = ld.second;	
@@ -623,120 +853,13 @@ void reduce_all_labels (int min_online_roi_size)
 				r.aux_ZERNIKE2D_ORDER,
 				// out
 				r.Zernike2D);
-
-			bool bdgstop = true;
 		}	
+#endif
+		// Parallel
+		runParallel(parallelReduceZernike2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 	
 }
 
-void reduce_neighbors (int radius)
-{
-	#if 0	// Leaving the greedy implementation just for the record and the time when we want to run it on a GPU
-	//==== Collision detection, method 1 (best with GPGPU)
-	//  Calculate collisions into a triangular matrix
-	int nul = uniqueLabels.size();
-	std::vector <char> CM (nul*nul, false);	// collision matrix
-	// --this loop can be parallel
-	for (auto l1 : uniqueLabels)
-	{
-		LR & r1 = labelData[l1];
-		for (auto l2 : uniqueLabels)
-		{
-			if (l1 == l2)
-				continue;	// Trivial - diagonal element
-			if (l1 > l2)
-				continue;	// No need to check the upper triangle
-
-			LR& r2 = labelData[l2];
-			bool noOverlap = r2.aabb.get_xmin() > r1.aabb.get_xmax()+radius || r2.aabb.get_xmax() < r1.aabb.get_xmin()-radius 
-				|| r2.aabb.get_ymin() > r1.aabb.get_ymax()+radius || r2.aabb.get_ymax() < r1.aabb.get_ymin()-radius;
-			if (!noOverlap)
-			{
-				unsigned int idx = l1 * nul + l2;	
-				CM[idx] = true;
-			}
-		}
-	}
-
-	// Harvest collision pairs
-	for (auto l1 : uniqueLabels)
-	{
-		LR& r1 = labelData[l1];
-		for (auto l2 : uniqueLabels)
-		{
-			if (l1 == l2)
-				continue;	// Trivial - diagonal element
-			if (l1 > l2)
-				continue;	// No need to check the upper triangle
-
-			unsigned int idx = l1 * nul + l2;
-			if (CM[idx] == true)
-			{
-				LR& r2 = labelData[l2];
-				r1.num_neighbors++;
-				r2.num_neighbors++;
-			}
-		}
-	}
-	#endif
-
-	//==== Collision detection, method 2
-	int m = 10000;
-	std::vector <std::vector<int>> HT (m);	// hash table
-	for (auto l : uniqueLabels)
-	{
-		LR& r = labelData [l];
-		auto h1 = spat_hash_2d (r.aabb.get_xmin(), r.aabb.get_ymin(), m),
-			h2 = spat_hash_2d (r.aabb.get_xmin(), r.aabb.get_ymax(), m),
-			h3 = spat_hash_2d (r.aabb.get_xmax(), r.aabb.get_ymin(), m),
-			h4 = spat_hash_2d (r.aabb.get_xmax(), r.aabb.get_ymax(), m);
-		HT[h1].push_back(l);
-		HT[h2].push_back(l);
-		HT[h3].push_back(l);
-		HT[h4].push_back(l);
-	}
-
-	// Broad phase of collision detection
-	for (auto& bin : HT)
-	{
-		// No need to bother about not colliding labels
-		if (bin.size() <= 1)
-			continue;
-
-		// Perform the N^2 check
-		for (auto& l1 : bin)
-		{
-			LR& r1 = labelData[l1];
-
-			for (auto& l2 : bin)
-			{
-				if (l1 < l2)	// Lower triangle 
-				{
-					LR & r2 = labelData[l2];
-					bool overlap = ! aabbNoOverlap (r1, r2, radius);
-					if (overlap)
-					{
-						r1.num_neighbors++;
-						r2.num_neighbors++;
-					}
-				}
-			}
-		}
-	}
-}
-
-void LR::init_aabb (StatsInt x, StatsInt y)
-{
-	aabb.init_x(x); 
-	aabb.init_y(y);
-	num_neighbors = 0;
-}
-
-void LR::update_aabb (StatsInt x, StatsInt y)
-{
-	aabb.update_x(x);
-	aabb.update_y(y);
-}
 
 

@@ -46,7 +46,7 @@ void print_label_stats();
 void print_by_label(const char* featureName, std::unordered_map<int, StatsInt> L, int numColumns = 8); 
 void print_by_label(const char* featureName, std::unordered_map<int, StatsReal> L, int numColumns = 4);
 void clearLabelStats();
-void reduce_all_labels(int min_online_roi_size);
+void reduce (int min_online_roi_size);
 
 // Inherited from WNDCHRM, used for Feret and Martin statistics calculation
 struct Statistics 
@@ -195,6 +195,8 @@ extern FeatureSet featureSet;
 #define DFLT0i -0	// default unassigned value
 struct LR
 {
+	int label;
+
 	// Helper objects
 	std::vector <Pixel2> raw_pixels;	
 	AABB aabb;	
@@ -225,7 +227,7 @@ struct LR
 		skewness,
 		kurtosis,
 		MAD,
-		RMS,		// Root Mean Squared (RMS) is the square-root of the mean of all the squared intensity values. It is another measure of the magnitude of the image values.
+		RMS,
 		p10,
 		p25,
 		p75,
@@ -361,6 +363,7 @@ struct LR
 	std::vector<double> Zernike2D;	
 
 	double getValue (AvailableFeatures f);
+	void reduce_pixel_intensity_features();
 	void reduce_edge_intensity_features();
 };
 
@@ -374,36 +377,9 @@ double test_containers1();
 double test_containers2();
 bool test_histogram();
 
-// Spatial hashing
-inline bool aabbNoOverlap (
-	StatsInt xmin1, StatsInt xmax1, StatsInt ymin1, StatsInt ymax1, 
-	StatsInt xmin2, StatsInt xmax2, StatsInt ymin2, StatsInt ymax2,
-	int R)
-{
-	bool retval = xmin2 - R > xmax1 + R || xmax2 + R < xmin1 - R
-		|| ymin2 - R > ymax1 + R || ymax2 + R < ymin1 - R;
-	return retval;
-}
-
-inline bool aabbNoOverlap (LR & r1, LR & r2, int radius)
-{
-	bool retval = aabbNoOverlap(r1.aabb.get_xmin(), r1.aabb.get_xmax(), r1.aabb.get_ymin(), r1.aabb.get_ymax(),
-		r2.aabb.get_xmin(), r2.aabb.get_xmax(), r2.aabb.get_ymin(), r2.aabb.get_ymax(), radius);
-	return retval;
-}
-
-inline unsigned long spat_hash_2d (StatsInt x, StatsInt y, int m)
-{
-	unsigned long h = x * 73856093;
-	h = h ^ y * 19349663;
-	// hash   hash  z × 83492791	// For the future
-	// hash   hash  l × 67867979
-	unsigned long retval = h % m;
-	return retval;
-}
-
 // Label data
 extern std::unordered_set<int> uniqueLabels;
+extern std::vector<int> sortedUniqueLabels;	// Populated in reduce()
 extern std::unordered_map <int, LR> labelData;
 extern std::vector<double> calcResultBuf;	// [# of labels X # of features]
 extern std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;

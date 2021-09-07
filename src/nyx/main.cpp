@@ -13,8 +13,9 @@
 int main (int argc, char** argv)
 {
 	//??? DEBUG
-	auto F = { TEXTURE_ZERNIKE2D };
-	featureSet.enableFeatures (F);
+	auto F = { TEXTURE_HARALICK2D };
+	featureSet.enableAll();
+	featureSet.disableFeatures (F);
 	//
 
 

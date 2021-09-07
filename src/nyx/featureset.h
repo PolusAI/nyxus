@@ -107,14 +107,13 @@ class FeatureSet
 {
 public:
 	FeatureSet() { enableAll(true); }
-	void enableAll(bool newStatus) { for (int i = 0; i < AvailableFeatures::_COUNT_; i++) m_enabledFeatures[i] = newStatus;	}
-	void enableFeatures(std::vector<AvailableFeatures>& desiredFeatures) {
-		enableAll(false);
+	void enableAll(bool newStatus=true) { for (int i = 0; i < AvailableFeatures::_COUNT_; i++) m_enabledFeatures[i] = newStatus;	}
+	void disableFeatures(std::initializer_list<AvailableFeatures>& desiredFeatures)
+	{
 		for (auto f : desiredFeatures)
-			m_enabledFeatures[f] = true;
+			m_enabledFeatures[f] = false;
 	}
 	void enableFeatures(std::initializer_list<AvailableFeatures>& desiredFeatures) {
-		enableAll(false);
 		for (auto f : desiredFeatures)
 			m_enabledFeatures[f] = true;
 	}

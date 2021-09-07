@@ -83,7 +83,7 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 
 			// --Timing
 			end = std::chrono::system_clock::now();
-			std::chrono::duration<double> elapsed1 = end - start;
+			std::chrono::duration<double, std::milli> elapsedTile = end - start;
 
 			// Calculate features
 			
@@ -108,10 +108,11 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 
 			// --Timing
 			end = std::chrono::system_clock::now();
-			std::chrono::duration<double, std::milli> elapsed2 = end - start;
-			std::cout << " F/T: " << elapsed2.count() << " / " << elapsed1.count() << " = " << elapsed2.count()/elapsed1.count() << " x " << std::endl;
-			totalTileLoadTime += elapsed1.count();
-			totalPixStatsCalcTime += elapsed2.count();
+			std::chrono::duration<double, std::milli> elapsedCalc = end - start;
+			// --Time ratio
+			std::cout << " F/T: " << elapsedCalc.count() << " / " << elapsedTile.count() << " = " << elapsedCalc.count() / elapsedTile.count() << " x " << std::endl;
+			totalTileLoadTime += elapsedTile.count();
+			totalPixStatsCalcTime += elapsedCalc.count();
 
 			if (cnt++ % 4 == 0)
 				std::cout << std::endl;
@@ -157,7 +158,7 @@ int processDataset (std::vector<std::string>& intensFiles, std::vector<std::stri
 		start = std::chrono::system_clock::now();
 
 		// Execute calculations requiring reduction
-		reduce_all_labels (min_online_roi_size);
+		reduce (min_online_roi_size);
 
 		// --Timing
 		end = std::chrono::system_clock::now();

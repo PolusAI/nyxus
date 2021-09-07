@@ -106,11 +106,11 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 		",solidity"
 		",perimeter"
 		",circularity"
-		",integratedIntensityEdge"	// CellProfiler edge {...
+		",integratedIntensityEdge"	
 		",maxIntensityEdge"
 		",minIntensityEdge"
 		",meanIntensityEdge"
-		",stddevIntensityEdge"		// ...}
+		",stddevIntensityEdge"
 
 		",extremaP1_x , extremaP1_y"
 		",extremaP2_x , extremaP2_y"

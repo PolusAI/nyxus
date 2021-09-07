@@ -30,11 +30,12 @@ options_n_fct = 1; // # feature scanner threads
 // [3] - number of unique ROI labels (ny)
 // [4] - data buffer [nx X ny] requiring further deallocation
 //
-std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::vector<AvailableFeatures> & desiredFeatures, const std::string& label_path, const std::string& intensity_path)
+std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::initializer_list<AvailableFeatures>& desiredFeatures, const std::string& label_path, const std::string& intensity_path)
 {
 	double* retbuf = nullptr;
 
 	//==== Calculate features
+	featureSet.enableAll();
 	featureSet.enableFeatures (desiredFeatures); 
 
 	// Try to reach data files at directories 'label_path' and 'intensity_path'
@@ -170,7 +171,7 @@ PYBIND11_MODULE(nyx_backend, m)
 		m.def("calc_pixel_intensity_stats", [](const std::string& label_path, const std::string& intensity_path)
 			{
 				// Calculate features
-				std::vector<AvailableFeatures> desiredFeatures{
+				auto desiredFeatures = {
 					MEAN,
 					MEDIAN,
 					MIN,
@@ -217,7 +218,7 @@ PYBIND11_MODULE(nyx_backend, m)
 	m.def("calc_bounding_box", [](const std::string& label_path, const std::string& intensity_path)
 		{
 			// Calculate features
-			std::vector<AvailableFeatures> desiredFeatures { BBOX_YMIN, BBOX_XMIN, BBOX_HEIGHT, BBOX_WIDTH };
+			auto desiredFeatures = { BBOX_YMIN, BBOX_XMIN, BBOX_HEIGHT, BBOX_WIDTH };
 			auto [errorCode, errorDetails, nx, ny, retbuf] = featureSetInvoker(desiredFeatures, label_path, intensity_path);
 
 			// Check for errors
@@ -246,7 +247,7 @@ PYBIND11_MODULE(nyx_backend, m)
 	m.def("calc_feret", [](const std::string& label_path, const std::string& intensity_path)
 		{
 			// Calculate features
-			std::vector<AvailableFeatures> desiredFeatures{ 
+			auto desiredFeatures = { 
 				MIN_FERET_DIAMETER, 
 				MAX_FERET_DIAMETER, 
 				MIN_FERET_ANGLE, 
