@@ -39,7 +39,7 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 	// Tear off the directory part of 'inputPath', we don't need it
 	std::string fullPath = outputDir + "/" + getPureFname(inputFpath) + ".csv";
 
-	std::cout << "Creating file " << fullPath << std::endl;
+	std::cout << "\t--> " << fullPath << std::endl;
 
 	//fullPath.replace("//", "/");
 	//fullPath.replace("\\\\", "\\");

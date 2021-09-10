@@ -487,22 +487,19 @@ void reduce (int min_online_roi_size)
 	}
 
 	//==== Neighbors
+	if (featureSet.isEnabled(NUM_NEIGHBORS))
 	{
-		STOPWATCH("Reduced Neighbors");
-		if (featureSet.isEnabled(NUM_NEIGHBORS))
-		{
-			std::cout << "\treducing neighbors" << std::endl;
-			reduce_neighbors(5 /*collision radius*/);
-		}
+		STOPWATCH("Reduced neighbors");
+		reduce_neighbors (5 /* collision radius [pixels] */);
 	}
 
 	//==== Fitting an ellipse
 	if (featureSet.anyEnabled({MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION}))
 	{
+		STOPWATCH("Reduced ellipticity - MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION");
 		// 
 		//Reference: https://www.mathworks.com/matlabcentral/mlc-downloads/downloads/submissions/19028/versions/1/previews/regiondata.m/index.html
 		//		
-		std::cout << "\treducing ellipticity (major, minor axes, eccentricity, orientation)" << std::endl;
 
 		// Calculate normalized second central moments for the region.
 		// 1/12 is the normalized second central moment of a pixel with unit length.
@@ -581,95 +578,96 @@ void reduce (int min_online_roi_size)
 	}
 
 	//==== Extrema and Euler number
-	std::cout << "\treducing extrema and Euler\n";
-	for (auto& ld : labelData)
 	{
-		auto& r = ld.second;
-
-		//==== Extrema
-		int TopMostIndex = -1;
-		int LowestIndex = -1;
-		int LeftMostIndex = -1;
-		int RightMostIndex = -1;
-
-		for (auto& pix : r.raw_pixels)
+		STOPWATCH("Reduced extrema and Euler");
+		for (auto& ld : labelData)
 		{
-			if (TopMostIndex == -1 || pix.y < (StatsInt)TopMostIndex)
-				TopMostIndex = pix.y;
-			if (LowestIndex == -1 || pix.y > (StatsInt)LowestIndex)
-				LowestIndex = pix.y;
+			auto& r = ld.second;
 
-			if (LeftMostIndex == -1 || pix.x < (StatsInt)LeftMostIndex)
-				LeftMostIndex = pix.x;
-			if (RightMostIndex == -1 || pix.x > (StatsInt)RightMostIndex)
-				RightMostIndex = pix.x;
+			//==== Extrema
+			int TopMostIndex = -1;
+			int LowestIndex = -1;
+			int LeftMostIndex = -1;
+			int RightMostIndex = -1;
+
+			for (auto& pix : r.raw_pixels)
+			{
+				if (TopMostIndex == -1 || pix.y < (StatsInt)TopMostIndex)
+					TopMostIndex = pix.y;
+				if (LowestIndex == -1 || pix.y > (StatsInt)LowestIndex)
+					LowestIndex = pix.y;
+
+				if (LeftMostIndex == -1 || pix.x < (StatsInt)LeftMostIndex)
+					LeftMostIndex = pix.x;
+				if (RightMostIndex == -1 || pix.x > (StatsInt)RightMostIndex)
+					RightMostIndex = pix.x;
+			}
+
+			int TopMost_MostLeftIndex = -1;
+			int TopMost_MostRightIndex = -1;
+			int Lowest_MostLeftIndex = -1;
+			int Lowest_MostRightIndex = -1;
+			int LeftMost_Top = -1;
+			int LeftMost_Bottom = -1;
+			int RightMost_Top = -1;
+			int RightMost_Bottom = -1;
+
+			for (auto& pix : r.raw_pixels)
+			{
+				// Find leftmost and rightmost x-pixels of the top 
+				if (pix.y == TopMostIndex && (TopMost_MostLeftIndex == -1 || pix.x < (StatsInt)TopMost_MostLeftIndex))
+					TopMost_MostLeftIndex = pix.x;
+				if (pix.y == TopMostIndex && (TopMost_MostRightIndex == -1 || pix.x > (StatsInt)TopMost_MostRightIndex))
+					TopMost_MostRightIndex = pix.x;
+
+				// Find leftmost and rightmost x-pixels of the bottom
+				if (pix.y == LowestIndex && (Lowest_MostLeftIndex == -1 || pix.x < (StatsInt)Lowest_MostLeftIndex))
+					Lowest_MostLeftIndex = pix.x;
+				if (pix.y == LowestIndex && (Lowest_MostRightIndex == -1 || pix.x > (StatsInt)Lowest_MostRightIndex))
+					Lowest_MostRightIndex = pix.x;
+
+				// Find top and bottom y-pixels of the leftmost
+				if (pix.x == LeftMostIndex && (LeftMost_Top == -1 || pix.y < (StatsInt)LeftMost_Top))
+					LeftMost_Top = pix.y;
+				if (pix.x == LeftMostIndex && (LeftMost_Bottom == -1 || pix.y > (StatsInt)LeftMost_Bottom))
+					LeftMost_Bottom = pix.y;
+
+				// Find top and bottom y-pixels of the rightmost
+				if (pix.x == RightMostIndex && (RightMost_Top == -1 || pix.y < (StatsInt)RightMost_Top))
+					RightMost_Top = pix.y;
+				if (pix.x == RightMostIndex && (RightMost_Bottom == -1 || pix.y > (StatsInt)RightMost_Bottom))
+					RightMost_Bottom = pix.y;
+			}
+
+			r.extremaP1y = TopMostIndex; // -0.5 + Im.ROIHeightBeg;
+			r.extremaP1x = TopMost_MostLeftIndex; // -0.5 + Im.ROIWidthBeg;
+
+			r.extremaP2y = TopMostIndex; // -0.5 + Im.ROIHeightBeg;
+			r.extremaP2x = TopMost_MostRightIndex; // +0.5 + Im.ROIWidthBeg;
+
+			r.extremaP3y = RightMost_Top; // -0.5 + Im.ROIHeightBeg;//
+			r.extremaP3x = RightMostIndex; // +0.5 + Im.ROIWidthBeg;
+
+			r.extremaP4y = RightMost_Bottom; // +0.5 + Im.ROIHeightBeg;
+			r.extremaP4x = RightMostIndex; // +0.5 + Im.ROIWidthBeg;
+
+			r.extremaP5y = LowestIndex; // +0.5 + Im.ROIHeightBeg;
+			r.extremaP5x = Lowest_MostRightIndex; // +0.5 + Im.ROIWidthBeg;
+
+			r.extremaP6y = LowestIndex; // +0.5 + Im.ROIHeightBeg;
+			r.extremaP6x = Lowest_MostLeftIndex; // -0.5 + Im.ROIWidthBeg;
+
+			r.extremaP7y = LeftMost_Bottom; // +0.5 + Im.ROIHeightBeg;
+			r.extremaP7x = LeftMostIndex; // -0.5 + Im.ROIWidthBeg;
+
+			r.extremaP8y = LeftMost_Top; // -0.5 + Im.ROIHeightBeg;
+			r.extremaP8x = LeftMostIndex; // -0.5 + Im.ROIWidthBeg;
+
+			//==== Euler number
+			EulerNumber eu(r.raw_pixels, r.aabb.get_xmin(), r.aabb.get_ymin(), r.aabb.get_xmax(), r.aabb.get_ymax(), 8);	// Using mode=8 following to WNDCHRM example
+			r.euler_number = eu.euler_number;
 		}
-
-		int TopMost_MostLeftIndex = -1;
-		int TopMost_MostRightIndex = -1;
-		int Lowest_MostLeftIndex = -1;
-		int Lowest_MostRightIndex = -1;
-		int LeftMost_Top = -1;
-		int LeftMost_Bottom = -1;
-		int RightMost_Top = -1;
-		int RightMost_Bottom = -1;
-
-		for (auto& pix : r.raw_pixels)
-		{
-			// Find leftmost and rightmost x-pixels of the top 
-			if (pix.y == TopMostIndex && (TopMost_MostLeftIndex == -1 || pix.x < (StatsInt)TopMost_MostLeftIndex))
-				TopMost_MostLeftIndex = pix.x;
-			if (pix.y == TopMostIndex && (TopMost_MostRightIndex == -1 || pix.x > (StatsInt)TopMost_MostRightIndex))
-				TopMost_MostRightIndex = pix.x;
-
-			// Find leftmost and rightmost x-pixels of the bottom
-			if (pix.y == LowestIndex && (Lowest_MostLeftIndex == -1 || pix.x < (StatsInt)Lowest_MostLeftIndex))
-				Lowest_MostLeftIndex = pix.x;
-			if (pix.y == LowestIndex && (Lowest_MostRightIndex == -1 || pix.x > (StatsInt)Lowest_MostRightIndex))
-				Lowest_MostRightIndex = pix.x;
-
-			// Find top and bottom y-pixels of the leftmost
-			if (pix.x == LeftMostIndex && (LeftMost_Top == -1 || pix.y < (StatsInt)LeftMost_Top))
-				LeftMost_Top = pix.y;
-			if (pix.x == LeftMostIndex && (LeftMost_Bottom == -1 || pix.y > (StatsInt)LeftMost_Bottom))
-				LeftMost_Bottom = pix.y;
-
-			// Find top and bottom y-pixels of the rightmost
-			if (pix.x == RightMostIndex && (RightMost_Top == -1 || pix.y < (StatsInt)RightMost_Top))
-				RightMost_Top = pix.y;
-			if (pix.x == RightMostIndex && (RightMost_Bottom == -1 || pix.y > (StatsInt)RightMost_Bottom))
-				RightMost_Bottom = pix.y;
-		}
-
-		r.extremaP1y = TopMostIndex; // -0.5 + Im.ROIHeightBeg;
-		r.extremaP1x = TopMost_MostLeftIndex; // -0.5 + Im.ROIWidthBeg;
-
-		r.extremaP2y = TopMostIndex; // -0.5 + Im.ROIHeightBeg;
-		r.extremaP2x = TopMost_MostRightIndex; // +0.5 + Im.ROIWidthBeg;
-
-		r.extremaP3y = RightMost_Top; // -0.5 + Im.ROIHeightBeg;//
-		r.extremaP3x = RightMostIndex; // +0.5 + Im.ROIWidthBeg;
-
-		r.extremaP4y = RightMost_Bottom; // +0.5 + Im.ROIHeightBeg;
-		r.extremaP4x = RightMostIndex; // +0.5 + Im.ROIWidthBeg;
-
-		r.extremaP5y = LowestIndex; // +0.5 + Im.ROIHeightBeg;
-		r.extremaP5x = Lowest_MostRightIndex; // +0.5 + Im.ROIWidthBeg;
-
-		r.extremaP6y = LowestIndex; // +0.5 + Im.ROIHeightBeg;
-		r.extremaP6x = Lowest_MostLeftIndex; // -0.5 + Im.ROIWidthBeg;
-
-		r.extremaP7y = LeftMost_Bottom; // +0.5 + Im.ROIHeightBeg;
-		r.extremaP7x = LeftMostIndex; // -0.5 + Im.ROIWidthBeg;
-
-		r.extremaP8y = LeftMost_Top; // -0.5 + Im.ROIHeightBeg;
-		r.extremaP8x = LeftMostIndex; // -0.5 + Im.ROIWidthBeg;
-	
-		//==== Euler number
-		EulerNumber eu(r.raw_pixels, r.aabb.get_xmin(), r.aabb.get_ymin(), r.aabb.get_xmax(), r.aabb.get_ymax(), 8);	// Using mode=8 following to WNDCHRM example
-		r.euler_number = eu.euler_number;	
 	}
-
 	//==== Feret diameters and angles
 	if (featureSet.anyEnabled ({MIN_FERET_DIAMETER, MAX_FERET_DIAMETER, MIN_FERET_ANGLE, MAX_FERET_ANGLE}) ||
 		featureSet.anyEnabled({ 
@@ -769,35 +767,37 @@ void reduce (int min_online_roi_size)
 		runParallel(parallelReduceNassenstein, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
-	std::cout << "\treducing hexagonality, polygonality, enclosing circle, geodetic length & thickness\n";
-	for (auto& ld : labelData)
 	{
-		auto& r = ld.second;
+		STOPWATCH("Reduced hexagonality, polygonality, enclosing circle, geodetic length & thickness");
+		for (auto& ld : labelData)
+		{
+			auto& r = ld.second;
 
-		// Skip if the contour, convex hull, and neighbors are unavailable, otherwise the related features will be == NAN. Those feature will be equal to the default unassigned value.
-		if (r.contour.contour_pixels.size() == 0 || r.convHull.CH.size() == 0 || r.num_neighbors == 0)
-			continue;
+			// Skip if the contour, convex hull, and neighbors are unavailable, otherwise the related features will be == NAN. Those feature will be equal to the default unassigned value.
+			if (r.contour.contour_pixels.size() == 0 || r.convHull.CH.size() == 0 || r.num_neighbors == 0)
+				continue;
 
-		//==== Hexagonality and polygonality
-		Hexagonality_and_Polygonality hp;
-		auto [polyAve, hexAve, hexSd] = hp.calculate(r.num_neighbors, r.pixelCountRoiArea, r.roiPerimeter, r.convHullArea, r.minFeretDiameter, r.maxFeretDiameter);
-		r.polygonality_ave = polyAve;
-		r.hexagonality_ave = hexAve;
-		r.hexagonality_stddev = hexSd;
+			//==== Hexagonality and polygonality
+			Hexagonality_and_Polygonality hp;
+			auto [polyAve, hexAve, hexSd] = hp.calculate(r.num_neighbors, r.pixelCountRoiArea, r.roiPerimeter, r.convHullArea, r.minFeretDiameter, r.maxFeretDiameter);
+			r.polygonality_ave = polyAve;
+			r.hexagonality_ave = hexAve;
+			r.hexagonality_stddev = hexSd;
 
-		//==== Enclosing circle
-		MinEnclosingCircle cir1;
-		r.diameter_min_enclosing_circle = cir1.calculate_diam (r.contour.contour_pixels);
-		InscribingCircumscribingCircle cir2;
-		auto [diamIns, diamCir] = cir2.calculateInsCir (r.contour.contour_pixels, r.centroid_x, r.centroid_y);
-		r.diameter_inscribing_circle = diamIns;
-		r.diameter_circumscribing_circle = diamCir;
+			//==== Enclosing circle
+			MinEnclosingCircle cir1;
+			r.diameter_min_enclosing_circle = cir1.calculate_diam(r.contour.contour_pixels);
+			InscribingCircumscribingCircle cir2;
+			auto [diamIns, diamCir] = cir2.calculateInsCir(r.contour.contour_pixels, r.centroid_x, r.centroid_y);
+			r.diameter_inscribing_circle = diamIns;
+			r.diameter_circumscribing_circle = diamCir;
 
-		//==== Geodetic length thickness
-		GeodeticLength_and_Thickness glt;
-		auto [geoLen, thick] = glt.calculate(r.pixelCountRoiArea, r.roiPerimeter);
-		r.geodeticLength = geoLen;
-		r.thickness = thick;
+			//==== Geodetic length thickness
+			GeodeticLength_and_Thickness glt;
+			auto [geoLen, thick] = glt.calculate(r.pixelCountRoiArea, r.roiPerimeter);
+			r.geodeticLength = geoLen;
+			r.thickness = thick;
+		}
 	}
 
 	//==== Haralick 2D 

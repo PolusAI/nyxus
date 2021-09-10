@@ -373,7 +373,7 @@ void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity);
 void reduce_neighbors (int labels_collision_radius);
 
 // Timing
-extern double totalTileLoadTime, totalPixStatsCalcTime;
+extern double totalTileLoadTime, totalFeatureReduceTime;
 double test_containers1();
 double test_containers2();
 bool test_histogram();

@@ -18,12 +18,16 @@
 
 // Timing
 #include <chrono>
-double totalTileLoadTime = 0.0, totalPixStatsCalcTime = 0.0;
+double totalTileLoadTime = 0.0, totalFeatureReduceTime = 0.0;
 
 
 bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpath, int num_threads)
 {
-	std::cout << std::endl << "Processing pair " << intens_fpath << " -- " << label_fpath << " with " << num_threads << " threads" << std::endl;
+	std::cout << "Processing pair " << intens_fpath << " -- " << label_fpath 
+		#ifdef DEBUG
+		<< " with " << num_threads << " threads" 
+		#endif
+		<< std::endl;
 
 	int lvl = 0;	// Pyramid level
 
@@ -70,7 +74,9 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 	for (unsigned int row = 0; row < nth; row++)
 		for (unsigned int col = 0; col < ntw; col++)
 		{
+			#ifdef CHECKTIMING
 			std::cout << "\tt." << row * ntw + col + 1 << "/" << nth * ntw;
+			#endif	
 
 			// --Timing
 			std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -109,10 +115,14 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 			// --Timing
 			end = std::chrono::system_clock::now();
 			std::chrono::duration<double, std::milli> elapsedCalc = end - start;
+			
 			// --Time ratio
+			#ifdef CHECKTIMING
 			std::cout << " F/T: " << elapsedCalc.count() << " / " << elapsedTile.count() << " = " << elapsedCalc.count() / elapsedTile.count() << " x " << std::endl;
+			#endif
+
 			totalTileLoadTime += elapsedTile.count();
-			totalPixStatsCalcTime += elapsedCalc.count();
+			totalFeatureReduceTime += elapsedCalc.count();
 
 			if (cnt++ % 4 == 0)
 				std::cout << std::endl;
@@ -127,7 +137,7 @@ int processDataset (std::vector<std::string>& intensFiles, std::vector<std::stri
 	std::chrono::time_point<std::chrono::system_clock> start, end;
 
 	// Timing
-	totalPixStatsCalcTime = totalTileLoadTime = 0.0;
+	totalFeatureReduceTime = totalTileLoadTime = 0.0;
 	start = std::chrono::system_clock::now();
 
 	bool ok = true;
@@ -163,8 +173,12 @@ int processDataset (std::vector<std::string>& intensFiles, std::vector<std::stri
 		// --Timing
 		end = std::chrono::system_clock::now();
 		std::chrono::duration<double> elapsed2 = end - start;
+		
+		#ifdef CHECKTIMING
 		std::cout << "\tTiming of sensemaker::reduce [s] " << elapsed2.count() << std::endl;
-		totalPixStatsCalcTime += elapsed2.count();
+		#endif
+
+		totalFeatureReduceTime += elapsed2.count();
 
 		// Save the result for this intensity-label file pair
 		if (save2csv)
@@ -182,7 +196,11 @@ int processDataset (std::vector<std::string>& intensFiles, std::vector<std::stri
 	end = std::chrono::system_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end - start;
 	std::cout << "Elapsed time (s) " << elapsed_seconds.count() << std::endl;
-	std::cout << "tot tile load time = " << totalTileLoadTime << " . tot pixel stats calc = " << totalPixStatsCalcTime << std::endl;
+	std::cout 
+		<< "Total tile load time [s]: " << totalTileLoadTime 
+		<< "\n+\n Total feature calc time [s]: " << totalFeatureReduceTime 
+		<< "\n=\n Total time [s]: " << totalTileLoadTime + totalFeatureReduceTime 
+		<< std::endl;
 
 	return 0; // success
 }

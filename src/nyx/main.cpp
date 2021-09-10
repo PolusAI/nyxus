@@ -12,7 +12,7 @@
 
 int main (int argc, char** argv)
 {
-	//??? DEBUG
+	// Temporarily disabled Haralick while I'm fixing its speed
 	auto F = { TEXTURE_HARALICK2D };
 	featureSet.enableAll();
 	featureSet.disableFeatures (F);
@@ -134,7 +134,7 @@ void showCmdlineHelp()
 {
 	std::cout 
 		<< "Command line format:" << std::endl 
-		<< "\t" << PROJECT_NAME << " <intensity directory> <label directory> <output directory> [--minOnlineROI <# of pixels>] [--threads <# of FastLoader threads> <# of feature calculation threads>]" << std::endl;
+		<< "\t" << PROJECT_NAME << " <label directory> <intensity directory> <output directory> [--minOnlineROI <# of pixels>] [--threads <# of FastLoader threads> <# of feature calculation threads>]" << std::endl;
 }
 
 

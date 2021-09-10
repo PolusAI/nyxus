@@ -98,7 +98,7 @@ void processPixels (unsigned int start_idx_inclusive, unsigned int end_idx_exclu
 // Function driving tiled processing a file pair - intensity and its mask
 bool scanFilePairParallel (const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads)
 {
-	std::cout << std::endl << "Processing pair " << intens_fpath << " -- " << label_fpath << " with " << num_fastloader_threads << " threads" << std::endl;
+	std::cout << "Processing pair " << intens_fpath << " -- " << label_fpath << " with " << num_fastloader_threads << " threads" << std::endl;
 
 	int lvl = 0;	// Pyramid level
 
@@ -194,7 +194,7 @@ bool scanFilePairParallel (const std::string& intens_fpath, const std::string& l
 			std::chrono::duration<double, std::milli> elapsed2 = end - start;
 			std::cout << " F/T: " << elapsed2.count() << " / " << elapsed1.count() << " = " << elapsed2.count() / elapsed1.count() << " x" << std::endl;
 			totalTileLoadTime += elapsed1.count();
-			totalPixStatsCalcTime += elapsed2.count();
+			totalFeatureReduceTime += elapsed2.count();
 
 			if (cnt++ % 4 == 0)
 				std::cout << std::endl;

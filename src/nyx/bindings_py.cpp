@@ -35,7 +35,7 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::ini
 	double* retbuf = nullptr;
 
 	//==== Calculate features
-	featureSet.enableAll();
+	featureSet.enableAll (false);
 	featureSet.enableFeatures (desiredFeatures); 
 
 	// Try to reach data files at directories 'label_path' and 'intensity_path'
