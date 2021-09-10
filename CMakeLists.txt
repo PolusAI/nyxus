@@ -4,7 +4,10 @@ cmake_minimum_required(VERSION 3.4...3.18)
 #==== Compiler Options
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive- ")
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive- ")
+endif()
 
 #==== Pybind11
 add_subdirectory(lib/pybind11)
@@ -17,9 +20,22 @@ include_directories(
 	lib/pybind11/include/
 	lib/fastloader/
 	lib/hedgehog/
-	lib/libtiff
-	lib/libtiff/include
+)
+
+# Search for libtiff. If it's found then great. If not then we expect 
+# manual preparation. unzip, cmake-install it, and put its headers in 
+# lib/libtiff/include, and its library - in lib/libtiff/lib
+find_package(TIFF)
+
+if(TIFF_FOUND)
+	include_directories(${TIFF_INCLUDE_DIR})
+else()
+	include_directories(
+		lib/libtiff
+		lib/libtiff/include
 	)
+endif()
+
 
 #==== Source files
 pybind11_add_module(nyx_backend 
@@ -48,6 +64,10 @@ pybind11_add_module(nyx_backend
 target_compile_definitions(nyx_backend PRIVATE VERSION_INFO=${EXAMPLE_VERSION_INFO})
 
 #==== Separate link instruction for libtiff. See libtiff's deployment instrunction above
-find_library(LIBTIFF_LIBRARY libTiff_x64 lib/libtiff/lib)
-target_link_libraries(nyx_backend PRIVATE ${LIBTIFF_LIBRARY})
+if(TIFF_FOUND)
+	target_link_libraries(nyx_backend PRIVATE ${TIFF_LIBRARIES})
+else()
+	find_library(LIBTIFF_LIBRARY libTiff_x64 lib/libtiff/lib)
+	target_link_libraries(nyx_backend PRIVATE ${LIBTIFF_LIBRARY})
+endif()
 
