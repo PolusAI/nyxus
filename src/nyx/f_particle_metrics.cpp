@@ -65,13 +65,6 @@ void ParticleMetrics::calc_ferret(
 						(b.x - a.x) * (chord_y - a.y) / (b.y - a.y) + a.x  
 						: (b.y + a.y) / 2;	
 					auto tup = std::make_pair(chord_x, chord_y);
-
-					//? Debug
-					if (isnan(chord_x) || isnan(chord_y))
-					{
-						bool debugBreak = true;
-					}
-
 					X.push_back(tup);
 				}
 			}
