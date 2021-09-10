@@ -14,6 +14,15 @@ Statistics ComputeCommonStatistics2 (std::vector<double> & Data) {
 
     Statistics output;
 
+    //==== Do we have a degenerate case?
+    if (Data.size() == 0)
+    {
+        output.max = output.min = output.mean = output.median = output.mode = output.stdev = 0.0;
+        return output;
+    }
+
+    //==== Process a benign case
+
     output.max = *max_element(Data.begin(), Data.end());
     output.min = *min_element(Data.begin(), Data.end());
 

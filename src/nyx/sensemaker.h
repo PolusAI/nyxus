@@ -3,11 +3,12 @@
 //---	#define SINGLE_ROI_TEST
 
 #include <climits>
+#include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
-#include <mutex>
 #include "featureset.h"
 #include "histogram.h"
 #include "pixel.h"

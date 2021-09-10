@@ -95,7 +95,7 @@ void ParticleMetrics::calc_ferret(
 		if (DA.size() > 0)
 		{
 			// Find the shortest and longest chords (diameters)
-			auto minD2 = *std::min_element (DA.begin(), DA.end()),
+			double minD2 = *std::min_element (DA.begin(), DA.end()),
 				maxD2 = *std::max_element (DA.begin(), DA.end()), 
 				min_ = sqrt(minD2), 
 				max_ = sqrt(maxD2);
@@ -106,17 +106,29 @@ void ParticleMetrics::calc_ferret(
 		}
 	}
 
-	// Min and max
-	auto itr_min_d = std::min_element(all_D.begin(), all_D.end());
-	auto itr_max_d = std::max_element(all_D.begin(), all_D.end());	
-	minFeretDiameter = *itr_min_d;
-	maxFeretDiameter = *itr_max_d;
+	// Check if we have a degenerate case
+	if (all_D.size() > 0)
+	{
+		// Min and max
+		auto itr_min_d = std::min_element(all_D.begin(), all_D.end());
+		auto itr_max_d = std::max_element(all_D.begin(), all_D.end());
+		minFeretDiameter = *itr_min_d;
+		maxFeretDiameter = *itr_max_d;
 
-	// Angles
-	auto idxMin = std::distance (all_D.begin(), itr_min_d);
-	minFeretAngle = (double)idxMin / 2;
-	auto idxMax = std::distance (all_D.begin(), itr_max_d);
-	maxFeretAngle = (double)idxMax / 2;
+		// Angles
+		auto idxMin = std::distance(all_D.begin(), itr_min_d);
+		minFeretAngle = (double)idxMin / 2;
+		auto idxMax = std::distance(all_D.begin(), itr_max_d);
+		maxFeretAngle = (double)idxMax / 2;
+	}
+	else
+	{
+		minFeretDiameter =
+		maxFeretDiameter =
+		minFeretAngle =
+		maxFeretAngle = 0.0;
+	}
+
 }
 
 // D - diameters at angles 0..180 degrees
@@ -299,16 +311,10 @@ void ParticleMetrics::calc_nassenstein (std::vector<double>& all_D)
 		if (DA.size() > 0)
 		{
 			// Find the shortest and longest chords (diameters)
-			auto minD2 = *std::min_element(DA.begin(), DA.end()),
+			double minD2 = *std::min_element(DA.begin(), DA.end()),
 				maxD2 = *std::max_element(DA.begin(), DA.end()),
 				min_ = sqrt(minD2),
 				max_ = sqrt(maxD2);
-
-			//? Debug
-			if (isnan(min_) || isnan(max_))
-			{
-				bool debugBreak = true;
-			}
 
 			// Save them
 			all_D.push_back(min_);

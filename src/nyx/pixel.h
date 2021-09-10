@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 using PixIntens = unsigned int;
 using StatsInt = long;
 using StatsReal = double;

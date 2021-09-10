@@ -38,7 +38,7 @@ EulerNumber::EulerNumber(std::vector<Pixel2>& P, StatsInt min_x, StatsInt  min_y
 long EulerNumber::calculate (std::vector<unsigned char> & arr, int height, int width, int mode)
 	{
 	if ( !(mode == 4 || mode == 8))
-		throw std::exception("Calling EulerNumber with mode other than 4 or 8");
+		throw std::runtime_error("Calling EulerNumber with mode other than 4 or 8");
 	
 		// quad-pixel match patterns
 		constexpr unsigned char Px[] = { //MM: 0 or 1 in the left side of << represent binary pixel values

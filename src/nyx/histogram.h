@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm> 
+#include <cmath>
 #include <iostream>
 #include <vector>
 #include <unordered_set>
@@ -83,7 +84,7 @@ public:
 		// Fix max to prevent index overflow
 		max_ += 1;
 
-		binW = (max_ - min_) / N_HISTO_BINS;
+		binW = (max_ - min_) / double(N_HISTO_BINS);
 
 		// Zero bin counts
 		for (int i = 0; i < N_HISTO_BINS; i++)
@@ -193,6 +194,11 @@ public:
 				mean += x * cnt;
 				n += cnt;
 			}
+
+		// Correction for the case where no items fall into the 10-90% range 
+		if (n == 0)
+			n = 1;
+
 		mean /= n;
 
 		double sum = 0.0;
