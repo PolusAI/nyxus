@@ -18,7 +18,7 @@
 #endif
 
 
-void Contour::calculate(std::vector<Pixel2> rawPixels)
+void Contour::calculate (const std::vector<Pixel2> & rawPixels)
 {
     for (auto& pix : rawPixels)
     {

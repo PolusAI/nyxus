@@ -25,7 +25,7 @@
 std::mutex glock;
 
 // Parallel version of update_label_stats() 
-void update_label_stats_parallel(int x, int y, int label, PixIntens intensity)
+void update_label_parallel (int x, int y, int label, PixIntens intensity)
 {
 	std::mutex* mux;
 	{
@@ -75,7 +75,7 @@ void update_label_stats_parallel(int x, int y, int label, PixIntens intensity)
 	}
 }
 
-// High-level handler of pixel features update. (update_label_stats_parallel() is the low-level handler.)
+// High-level handler of pixel features update. (update_label_parallel() is the low-level handler.)
 void processPixels (unsigned int start_idx_inclusive, unsigned int end_idx_exclusive, std::vector<uint32_t>* dataL, std::vector<uint32_t>* dataI, unsigned int tw)
 {
 	for (unsigned long i = start_idx_inclusive; i < end_idx_exclusive; i++)
@@ -90,7 +90,7 @@ void processPixels (unsigned int start_idx_inclusive, unsigned int end_idx_exclu
 		{
 			int y = i / tw,
 				x = i % tw;
-			update_label_stats_parallel(x, y, label, (*dataI)[i]);
+			update_label_parallel (x, y, label, (*dataI)[i]);
 		}
 	}
 }

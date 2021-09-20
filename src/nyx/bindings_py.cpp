@@ -12,15 +12,13 @@
 #include <thread>
 #include <future>
 #include <array>
+#include "environment.h"
 #include "sensemaker.h"
 
 #ifndef __unix
 #define NOMINMAX	// Prevent converting std::min(), max(), ... into macros
 #include<windows.h>
 #endif
-
-int options_n_tlt = 2, // # of FastLoader threads
-options_n_fct = 1; // # feature scanner threads
 
 //
 // Returns:
@@ -53,10 +51,12 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::ini
 	errorCode = processDataset(
 		intensFiles,
 		labelFiles,
-		options_n_tlt /*# of FastLoader threads*/,
-		options_n_fct /*# Sensemaker threads*/,
+		theEnvironment.n_loader_threads,
+		theEnvironment.n_pixel_scan_threads,
+		theEnvironment.n_reduce_threads,
 		100,	// min_online_roi_size
-		false, "unused_dirOut");
+		false, 
+		"unused_dirOut");
 
 	// Check for error
 	if (errorCode)

@@ -25,7 +25,7 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 bool scanFilePairParallel (const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads);
 bool TraverseViaFastloader1 (const std::string& fpath, int num_threads);
 std::string getPureFname(std::string fpath);
-int processDataset (std::vector<std::string> & intensFiles, std::vector<std::string> & labelFiles, int numFastloaderThreads, int numSensemakerThreads, int min_online_roi_size, bool save2csv, std::string csvOutputDir);
+int processDataset (const std::vector<std::string> & intensFiles, const std::vector<std::string> & labelFiles, int numFastloaderThreads, int numSensemakerThreads, int numReduceThreads, int min_online_roi_size, bool save2csv, const std::string & csvOutputDir);
 
 // 2 scenarios of saving a result of feature calculation of a label-intensity file pair: saving to a CSV-file and saving to a matrix to be later consumed by a Python endpoint
 bool save_features_2_csv (std::string inputFpath, std::string outputDir);
@@ -41,13 +41,13 @@ int checkAndReadDataset(
 using Histo = OnlineHistogram<PixIntens>;
 
 void init_feature_buffers();
-void update_label_stats (int x, int y, int label, PixIntens intensity);
-void update_label_stats_parallel (int x, int y, int label, PixIntens intensity);
+void update_label (int x, int y, int label, PixIntens intensity);
+void update_label_parallel (int x, int y, int label, PixIntens intensity);
 void print_label_stats();
 void print_by_label(const char* featureName, std::unordered_map<int, StatsInt> L, int numColumns = 8); 
 void print_by_label(const char* featureName, std::unordered_map<int, StatsReal> L, int numColumns = 4);
 void clearLabelStats();
-void reduce (int min_online_roi_size);
+void reduce (int nThr, int min_online_roi_size);
 
 // Inherited from WNDCHRM, used for Feret and Martin statistics calculation
 struct Statistics 
@@ -61,8 +61,11 @@ Statistics ComputeCommonStatistics2 (std::vector<double>& Data);
 class Contour
 {
 public:
-	Contour() {}
-	void calculate(std::vector<Pixel2> rawPixels);
+	Contour() 
+	{ 
+		contour_pixels.reserve(100);
+	}
+	void calculate (const std::vector<Pixel2> & rawPixels);
 	std::vector<Pixel2> contour_pixels;
 	StatsInt get_roi_perimeter();
 	StatsReal get_diameter_equal_perimeter();
@@ -105,14 +108,6 @@ public:
 	const int NY = 10;
 	const int rot_angle_increment = 10;	// degrees
 protected:
-	std::tuple<StatsInt, StatsInt, StatsInt, StatsInt> get_pixelcloud_bounds (std::vector<Pixel2> & pixels);	// Returns minX, minY, maxX, maxY
-	void rotate_pixels(
-		// in 
-		float angle_deg,
-		std::vector<Pixel2> & P, 
-		// out
-		std::vector<Pixel2>& P_rot);
-
 	std::vector<Pixel2>& convex_hull;
 };
 
@@ -197,6 +192,8 @@ extern FeatureSet featureSet;
 struct LR
 {
 	int label;
+
+	bool roi_disabled = false;
 
 	// Helper objects
 	std::vector <Pixel2> raw_pixels;	

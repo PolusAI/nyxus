@@ -39,7 +39,7 @@ bool test_histogram()
 	for (auto x : data)
 		h->add_observation(x);
 	h->build_histogram();
-	h->print();
+	h->print(true, "");
 	auto [mean_, mode_, p10_, p25_, p75_, p90_, iqr_, rmad_, entropy_, uniformity_] = h->get_stats();
 	return true;
 }

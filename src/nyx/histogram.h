@@ -37,17 +37,21 @@ public:
 	}
 
 	// Diagnostic output
-	void print(std::string remark = "")
+	void print(bool logScale, std::string header_text)
 	{
+		std::cout << header_text << "\n";
+		if (logScale)
+			std::cout << "\tLogarithmic scale\n";
 		for (int i = 0; i <= N_HISTO_BINS; i++)
 		{
-			std::cout << "\t[" << i << "] " << binEdges[i];
-			std::cout << " = " << binCounts[i] << "\t";
+			std::cout << "\t[" << i << "]\t" << binEdges[i];
+			std::cout << " = " << binCounts[i] << "\t\t";
 
-			for (int k = 0; k < binCounts[i]; k++)
+			int binCnt = logScale ? int(10 * std::log(binCounts[i])+0.5) : binCounts[i];
+			for (int k = 0; k < binCnt; k++)
 				std::cout << '*';
 
-			std::cout << std::endl;
+			std::cout << "\n";
 		}
 	}
 

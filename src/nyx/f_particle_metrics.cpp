@@ -9,6 +9,7 @@
 #include <thread>
 #include <future>
 #include <array>
+#include "rotation.h"
 #include "sensemaker.h"
 
 
@@ -32,14 +33,14 @@ void ParticleMetrics::calc_ferret(
 {
 	// Rotated convex hull
 	std::vector<Pixel2> CH_rot;
-	CH_rot.reserve(convex_hull.size());
+	CH_rot.reserve (convex_hull.size());
 
 	// Rotate and calculate the diameter
 	all_D.clear();
 	for (float theta = 0.f; theta < 180.f; theta += rot_angle_increment)
 	{
-		rotate_pixels(theta, convex_hull, CH_rot);
-		auto [minX, minY, maxX, maxY] = get_pixelcloud_bounds(CH_rot);
+		Rotation::rotate_around_center (convex_hull, theta, CH_rot);
+		auto [minX, minY, maxX, maxY] = AABB::from_pixelcloud (CH_rot);
 
 		//
 		std::vector<float> DA;	// Diameters at this angle
@@ -128,7 +129,8 @@ void ParticleMetrics::calc_ferret(
 void ParticleMetrics::calc_martin (std::vector<double> & D)
 {
 	// Calculate unrotated convex hull's area in 'area'
-	auto [minX, minY, maxX, maxY] = get_pixelcloud_bounds(convex_hull);
+	auto [minX, minY, maxX, maxY] = AABB::from_pixelcloud(convex_hull);
+
 	float stepY = (maxY - minY) / float(NY);
 	float halfArea = 0;
 	for (int iy = 1; iy <= NY; iy++)
@@ -179,8 +181,8 @@ void ParticleMetrics::calc_martin (std::vector<double> & D)
 	D.clear();	
 	for (float theta = 0.f; theta < 180.f; theta += rot_angle_increment)
 	{
-		rotate_pixels (theta, convex_hull, CH_rot);
-		auto [minX, minY, maxX, maxY] = get_pixelcloud_bounds (CH_rot);
+		Rotation::rotate_around_center (convex_hull, theta, CH_rot);
+		auto [minX, minY, maxX, maxY] = AABB::from_pixelcloud(CH_rot);
 
 		float runSumArea = 0.f;
 		std::vector<float> distFromHalfarea;
@@ -254,8 +256,8 @@ void ParticleMetrics::calc_nassenstein (std::vector<double>& all_D)
 	all_D.clear();
 	for (float theta = 0.f; theta < 180.f; theta += rot_angle_increment)
 	{
-		rotate_pixels(theta, convex_hull, CH_rot);
-		auto [minX, minY, maxX, maxY] = get_pixelcloud_bounds(CH_rot);
+		Rotation::rotate_around_center (convex_hull, theta, CH_rot);
+		auto [minX, minY, maxX, maxY] = AABB::from_pixelcloud(CH_rot);
 
 		//
 		std::vector<float> DA;	// Diameters at this angle
@@ -316,43 +318,3 @@ void ParticleMetrics::calc_nassenstein (std::vector<double>& all_D)
 	}
 }
 
-// Returns minX, minY, maxX, maxY
-std::tuple<StatsInt, StatsInt, StatsInt, StatsInt> ParticleMetrics::get_pixelcloud_bounds (std::vector<Pixel2> & P)
-{
-	StatsInt minX, minY, maxX, maxY;
-	minX = minY = maxX = maxY = 0;	
-	bool uninitialized = true;
-	for (auto& p : P)
-	{
-		if (uninitialized || minX > p.x)
-			minX = p.x;
-		if (uninitialized || minY > p.y)
-			minY = p.y;
-		if (uninitialized || maxX < p.x)
-			maxX = p.x;
-		if (uninitialized || maxY < p.y)
-			maxY = p.y;
-		uninitialized = false;
-	}
-	return { minX, minY, maxX, maxY };
-}
-
-void ParticleMetrics::rotate_pixels(
-	// in 
-	float angle_deg,	
-	std::vector<Pixel2> & P,
-	// out
-	std::vector<Pixel2> & P_rot)
-{
-	P_rot.clear();
-
-	float theta = angle_deg * float(M_PI) / 180.f;	// Angle in radians
-	for (auto& p : P)
-	{
-		float x_ = float(p.x) * cos(theta) - float(p.y) * sin(theta),
-			y_ = float(p.x) * sin(theta) + float(p.y) * cos(theta);
-		Pixel2 p_(x_, y_, p.inten);
-
-		P_rot.push_back (p_);
-	}
-}

@@ -102,7 +102,7 @@ void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity)
 }
 
 // The root function of handling a pixel being scanned
-void update_label_stats(int x, int y, int label, PixIntens intensity)
+void update_label (int x, int y, int label, PixIntens intensity)
 {
 	auto it = uniqueLabels.find(label);
 	if (it == uniqueLabels.end())
@@ -135,6 +135,12 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 	{
 		int lab = (*ptrLabels) [i];
 		LR& lr = (*ptrLabelData) [lab];
+
+		if (lr.raw_pixels.size() < 0)
+		{
+			lr.roi_disabled = true;
+			continue;
+		}
 
 		//==== Reduce pixel intensity #1
 		lr.reduce_pixel_intensity_features();
@@ -219,17 +225,29 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 	}
 }
 
-void parallelReduceConvHullContour(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
-{	
+void parallelReduceContour (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
+		if (r.roi_disabled)
+			continue;
+
 		//==== Contour, ROI perimeter, equivalent circle diameter
-		r.contour.calculate(r.raw_pixels);
+		r.contour.calculate (r.raw_pixels);
 		r.roiPerimeter = (StatsInt)r.contour.get_roi_perimeter();
 		r.equivDiam = r.contour.get_diameter_equal_perimeter();
+	}
+}
+
+void parallelReduceConvHull (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{	
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR& r = (*ptrLabelData)[lab];
 
 		//==== Convex hull and solidity
 		r.convHull.calculate(r.raw_pixels);
@@ -376,8 +394,21 @@ void runParallel (functype f, int nThr, size_t workPerThread, size_t datasetSize
 
 
 // This function should be called once after a file pair processing is finished.
-void reduce (int min_online_roi_size)
+void reduce (int nThr, int min_online_roi_size)
 {
+	// Build ROI size histogram
+	OnlineHistogram<size_t> hist;
+	for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
+	{
+		auto l = ld.first;		// Label code
+		auto& lr = ld.second;	// Label record
+
+		hist.add_observation(lr.raw_pixels.size());
+	}
+	hist.build_histogram();
+	hist.print(true, "\nHistogram of ROI size:");
+
+
 	//=== Sort the labels 
 	// We do this for 2 purposes: (1) being able to iterate them in equal chunks that in turn requires [indexed] access; (2) later, output the results by sorted labels
 	// Implementing the following --> std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
@@ -387,13 +418,12 @@ void reduce (int min_online_roi_size)
 	//std::sort(sortedUniqueLabels.begin(), sortedUniqueLabels.end());
 	
 	//==== 	Parallel execution parameters 
-	int nThr = 8;
 	size_t tileSize = sortedUniqueLabels.size(),
 		workPerThread = tileSize / nThr;
 
 	//==== Pixel intensity stats 
 	{
-		STOPWATCH("Reduced intensity stats");
+		STOPWATCH("Intensity stats ...", "\tReduced intensity stats");
 
 #if 0 // Sequential 
 	//==== Scan pixels. This will be followed by the Reduce step
@@ -489,14 +519,14 @@ void reduce (int min_online_roi_size)
 	//==== Neighbors
 	if (featureSet.isEnabled(NUM_NEIGHBORS))
 	{
-		STOPWATCH("Reduced neighbors");
+		STOPWATCH("Neighbors ...", "\tReduced neighbors");
 		reduce_neighbors (5 /* collision radius [pixels] */);
 	}
 
 	//==== Fitting an ellipse
 	if (featureSet.anyEnabled({MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION}))
 	{
-		STOPWATCH("Reduced ellipticity - MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION");
+		STOPWATCH("Ellipticity et al ...", "\tReduced ellipticity - MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION");
 		// 
 		//Reference: https://www.mathworks.com/matlabcentral/mlc-downloads/downloads/submissions/19028/versions/1/previews/regiondata.m/index.html
 		//		
@@ -506,6 +536,9 @@ void reduce (int min_online_roi_size)
 		for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
 		{
 			auto& r = ld.second;
+
+			if (r.roi_disabled)
+				continue;
 
 			double XSquaredTmp = 0, YSquaredTmp = 0, XYSquaredTmp = 0;
 			for (auto& pix : r.raw_pixels)
@@ -548,9 +581,9 @@ void reduce (int min_online_roi_size)
 		}
 	}
 
-	//==== Contour, ROI perimeter, equivalent circle diameter; Convex hull and solidity; Circularity, IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
+	//==== Contour, ROI perimeter, equivalent circle diameter
 	{
-		STOPWATCH("Reduced contours, hulls, and related (circularity, solidity, ...)");
+		STOPWATCH("Contour, ROI perimeter, equivalent circle diameter ...", "\tReduced contour, ROI perimeter, equivalent circle diameter");
 #if 0 // Serial
 		for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
 		{
@@ -574,15 +607,47 @@ void reduce (int min_online_roi_size)
 		}
 #endif
 		// Parallel
-		runParallel (parallelReduceConvHullContour, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
+		runParallel (parallelReduceContour, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
+	}
+
+	//==== Convex hull and solidity; Circularity, IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
+	{
+		STOPWATCH("Hulls, and related (circularity, solidity, etc) ...", "\tReduced hulls, and related (circularity, solidity, etc)");
+#if 0 // Serial
+		for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
+		{
+			auto& r = ld.second;	// Label record
+
+			//==== Contour, ROI perimeter, equivalent circle diameter
+			r.contour.calculate(r.raw_pixels);
+			r.roiPerimeter = (StatsInt)r.contour.get_roi_perimeter();
+			r.equivDiam = r.contour.get_diameter_equal_perimeter();
+
+			//==== Convex hull and solidity
+			r.convHull.calculate(r.raw_pixels);
+			r.convHullArea = r.convHull.getArea();
+			r.solidity = r.pixelCountRoiArea / r.convHullArea;
+
+			//==== Circularity
+			r.circularity = 4.0 * M_PI * r.pixelCountRoiArea / (r.roiPerimeter * r.roiPerimeter);
+
+			//==== IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
+			r.reduce_edge_intensity_features();
+		}
+#endif
+		// Parallel
+		runParallel(parallelReduceConvHull, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Extrema and Euler number
 	{
-		STOPWATCH("Reduced extrema and Euler");
+		STOPWATCH("Extrema and Euler ...", "\tReduced extrema and Euler");
 		for (auto& ld : labelData)
 		{
 			auto& r = ld.second;
+
+			if (r.roi_disabled)
+				continue;
 
 			//==== Extrema
 			int TopMostIndex = -1;
@@ -678,7 +743,7 @@ void reduce (int min_online_roi_size)
 			STAT_FERET_DIAM_STDDEV,
 			STAT_FERET_DIAM_MODE }))
 	{
-		STOPWATCH("Reduced Feret");
+		STOPWATCH("Feret ...", "\tReduced Feret");
 #if 0 // Sequential
 		for (auto& ld : labelData)
 		{
@@ -715,7 +780,7 @@ void reduce (int min_online_roi_size)
 		STAT_MARTIN_DIAM_STDDEV,
 		STAT_MARTIN_DIAM_MODE }))
 	{
-		STOPWATCH("Reduced Martin");
+		STOPWATCH("Matrin ...", "\tReduced Martin");
 #if 0 // Sequential
 		for (auto& ld : labelData)
 		{
@@ -745,7 +810,7 @@ void reduce (int min_online_roi_size)
 		STAT_NASSENSTEIN_DIAM_STDDEV,
 		STAT_NASSENSTEIN_DIAM_MODE }))
 	{
-		STOPWATCH("Reduced Nassenstein");
+		STOPWATCH("Nassenstein ...", "\tReduced Nassenstein");
 #if 0 // Sequential
 		for (auto& ld : labelData)
 		{
@@ -768,7 +833,7 @@ void reduce (int min_online_roi_size)
 	}
 
 	{
-		STOPWATCH("Reduced hexagonality, polygonality, enclosing circle, geodetic length & thickness");
+		STOPWATCH("Hexagonality, polygonality, enclosing circle, geodetic length & thickness ...", "\tReduced hexagonality, polygonality, enclosing circle, geodetic length & thickness");
 		for (auto& ld : labelData)
 		{
 			auto& r = ld.second;
@@ -803,7 +868,7 @@ void reduce (int min_online_roi_size)
 	//==== Haralick 2D 
 	if (featureSet.isEnabled(TEXTURE_HARALICK2D))
 	{
-		STOPWATCH("Reduced Haralick2D");
+		STOPWATCH("Haralick2D ...", "\tReduced Haralick2D");
 #if 0 // Sequential
 		for (auto& ld : labelData)
 		{
@@ -839,7 +904,7 @@ void reduce (int min_online_roi_size)
 	//==== Zernike 2D 
 	if (featureSet.isEnabled(TEXTURE_ZERNIKE2D))
 	{
-		STOPWATCH("Reduced Zernike2D");
+		STOPWATCH("Zernike2D ...", "\tReduced Zernike2D");
 #if 0 // Serial
 		for (auto& ld : labelData)
 		{

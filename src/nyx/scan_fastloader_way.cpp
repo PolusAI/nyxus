@@ -108,7 +108,7 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 				{
 					int y = i / tw,
 						x = i % tw;
-					update_label_stats (x, y, label, dataI[i]);
+					update_label (x, y, label, dataI[i]);
 				}
 			}
 
@@ -121,17 +121,37 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 			std::cout << " F/T: " << elapsedCalc.count() << " / " << elapsedTile.count() << " = " << elapsedCalc.count() / elapsedTile.count() << " x " << std::endl;
 			#endif
 
+			// Show stayalive progress info
+			if (cnt++ % 4 == 0)
+				std::cout << "\t" 
+					<< "\033[1;33m"	// begin colored format
+					<< int((row * nth + col) * 100 / float(nth * ntw) *100) / 100. << "%\t" << uniqueLabels.size() << " ULs"
+					<< "\033[0m"	// end colored format
+					<< "\n";
+
 			totalTileLoadTime += elapsedTile.count();
 			totalFeatureReduceTime += elapsedCalc.count();
-
-			if (cnt++ % 4 == 0)
-				std::cout << std::endl;
 		}
+
+	// Show stayalive progress info
+	std::cout << "\t" 
+		<< "\033[1;33m"	// begin colored format
+		<< "100%\t" << uniqueLabels.size() << " ULs"
+		<< "\033[0m"	// end colored format
+		<< "\n";
 
 	return true;
 }
 
-int processDataset (std::vector<std::string>& intensFiles, std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int min_online_roi_size, bool save2csv, std::string csvOutputDir)
+int processDataset (
+	const std::vector<std::string>& intensFiles, 
+	const std::vector<std::string>& labelFiles, 
+	int numFastloaderThreads, 
+	int numSensemakerThreads, 
+	int numReduceThreads, 
+	int min_online_roi_size, 
+	bool save2csv, 
+	const std::string& csvOutputDir)
 {
 	// Sanity
 	std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -168,7 +188,7 @@ int processDataset (std::vector<std::string>& intensFiles, std::vector<std::stri
 		start = std::chrono::system_clock::now();
 
 		// Execute calculations requiring reduction
-		reduce (min_online_roi_size);
+		reduce (numReduceThreads, min_online_roi_size);
 
 		// --Timing
 		end = std::chrono::system_clock::now();
@@ -198,8 +218,8 @@ int processDataset (std::vector<std::string>& intensFiles, std::vector<std::stri
 	std::cout << "Elapsed time (s) " << elapsed_seconds.count() << std::endl;
 	std::cout 
 		<< "Total tile load time [s]: " << totalTileLoadTime 
-		<< "\n+\n Total feature calc time [s]: " << totalFeatureReduceTime 
-		<< "\n=\n Total time [s]: " << totalTileLoadTime + totalFeatureReduceTime 
+		<< "\n\t+\nTotal feature calc time [s]: " << totalFeatureReduceTime 
+		<< "\n\t=\nTotal time [s]: " << totalTileLoadTime + totalFeatureReduceTime 
 		<< std::endl;
 
 	return 0; // success

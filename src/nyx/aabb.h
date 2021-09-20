@@ -1,5 +1,6 @@
 #pragma once
 
+#include <tuple>
 #include <utility>
 #include "pixel.h"
 
@@ -26,7 +27,16 @@ public:
 	inline StatsInt get_xmax() { return xmax; }
 	inline StatsInt get_ymin() { return ymin; }
 	inline StatsInt get_ymax() { return ymax; }
-
+	static std::tuple<StatsInt, StatsInt, StatsInt, StatsInt> from_pixelcloud (const std::vector<Pixel2>& P)
+	{
+		AABB bb;
+		for (auto& p : P)
+		{
+			bb.update_x(p.x);
+			bb.update_y(p.y);
+		}
+		return {bb.get_xmin(), bb.get_ymin(), bb.get_xmax(), bb.get_ymax()};
+	}
 protected:
 	StatsInt xmin = INT32_MAX, xmax = INT32_MIN, ymin = INT32_MAX, ymax = INT32_MIN;
 };
