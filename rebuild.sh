@@ -15,7 +15,7 @@ export GXX
 INCLU='-I /home/ec2-user/work/prep-fastloader/FastLoader-main -I /home/ec2-user/work/prep-hedgehog/hedgehog-master -I /home/ec2-user/work/sensemaker4-nyx/lib/pybind11/include -I /home/ec2-user/gcc_install/gcc-9.4.0/isl-0.18/interface '
 export INCLU
 
-BUILDDIR=./rebuild
+BUILDDIR=./build-4-linux
 export BUILDDIR
 
 OPTS='-w -c -std=c++17 -O2'
@@ -52,6 +52,8 @@ $CXX $OPTS $INCLU ../src/nyx/output_2_csv.cpp
 $CXX $OPTS $INCLU ../src/nyx/scan_fastloader_way.cpp  
 $CXX $OPTS $INCLU ../src/nyx/test_histogram.cpp
 $CXX $OPTS $INCLU ../src/nyx/histogram.cpp
+$CXX $OPTS $INCLU ../src/nyx/environment.cpp
+$CXX $OPTS $INCLU ../src/nyx/rotation.cpp
 
 
 $GXX \
@@ -80,6 +82,8 @@ output_2_csv.o \
 scan_fastloader_way.o \
 test_histogram.o \
 histogram.o \
+environment.o \
+rotation.o \
 -lm -ltiff -lfftw3 \
 -lpthread \
 -static-libstdc++ \

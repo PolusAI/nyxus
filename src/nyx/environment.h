@@ -17,6 +17,10 @@
 #define ROTATIONS	"--rotations"	// Environment :: rotAngles
 #define VERBOSITY	"--verbosity"	// Environment :: verbosity_level	-- Example: --verbosity=3
 
+// Verbosity levels (combinable via binary and)
+#define VERBOSITY_TIMING	2
+#define VERBOSITY_ROI_INFO	4
+
 class Environment
 {
 public:

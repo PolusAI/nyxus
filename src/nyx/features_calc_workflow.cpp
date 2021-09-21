@@ -8,6 +8,7 @@
 #include <chrono>
 #include <thread>
 #include <future>
+#include "environment.h"
 #include "sensemaker.h"
 #include "timing.h"
 constexpr int N2R = 50 * 1000;
@@ -397,17 +398,19 @@ void runParallel (functype f, int nThr, size_t workPerThread, size_t datasetSize
 void reduce (int nThr, int min_online_roi_size)
 {
 	// Build ROI size histogram
-	OnlineHistogram hist;
-	for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
+	if (theEnvironment.verbosity_level & VERBOSITY_ROI_INFO)
 	{
-		auto l = ld.first;		// Label code
-		auto& lr = ld.second;	// Label record
+		OnlineHistogram hist;
+		for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
+		{
+			auto l = ld.first;		// Label code
+			auto& lr = ld.second;	// Label record
 
-		hist.add_observation ((HistoItem)lr.raw_pixels.size());
+			hist.add_observation((HistoItem)lr.raw_pixels.size());
+		}
+		hist.build_histogram();
+		hist.print(true, "\nHistogram of ROI size:");
 	}
-	hist.build_histogram();
-	hist.print(true, "\nHistogram of ROI size:");
-
 
 	//=== Sort the labels 
 	// We do this for 2 purposes: (1) being able to iterate them in equal chunks that in turn requires [indexed] access; (2) later, output the results by sorted labels
