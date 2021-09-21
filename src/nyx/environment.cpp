@@ -8,6 +8,7 @@
 
 void parse_delimited_string_list(const std::string& rawString, std::vector<std::string>& result)
 {
+
     result.clear();
 
     std::vector<std::string> S;
@@ -35,6 +36,10 @@ bool parse_as_float(std::string raw, float& result)
 
 bool parse_delimited_string_list_to_floats(const std::string& rawString, std::vector<float>& result)
 {
+    // It's legal to not have rotation angles specified
+    if (rawString.length() == 0)
+        return true;
+
     bool retval = true;
     std::vector<std::string> strings;
     parse_delimited_string_list (rawString, strings);
@@ -74,7 +79,7 @@ void Environment::show_help()
             << " [" << VERBOSITY << " <vl>]\n"
             << " [" << ROTATIONS << " <al>]\n"
 
-        << "\tWhere\n"
+        << "Where\n"
         << "\t<fp> - file pattern e.g. *, *.tif, etc [default = *]\n"
         << "\t<csv> - 'separatecsv'[default] or 'singlecsv' \n"
         << "\t<sd> - directory of segmentation images \n"
@@ -93,7 +98,7 @@ void Environment::show_help()
 void Environment::show_summary (const std::string & head, const std::string & tail)
 {
     std::cout << head;
-    std::cout << "Using\n" 
+    std::cout << "Using:\n" 
         << "\tlabels\t" << labels_dir << "\n"
         << "\tintensities\t" << intensity_dir << "\n"
         << "\toutput\t" << output_dir << "\n"
@@ -104,7 +109,7 @@ void Environment::show_summary (const std::string & head, const std::string & ta
         << "\t# of image loader threads\t" << n_loader_threads << "\n"
         << "\t# of pixel scanner threads\t" << n_pixel_scan_threads << "\n"
         << "\t# of post-processing threads\t" << n_reduce_threads << "\n"
-        << "\tverbosity\t" << verbosity_level << "\n"
+        << "\tverbosity level\t" << verbosity_level << "\n"
         << "\tangles of rotational features\t";
     for (auto ang : rotAngles)
     {
@@ -181,6 +186,10 @@ bool Environment::find_int_argument (std::vector<std::string>::iterator& i, cons
 // "--features=kurtosis", "--filePattern=.*", "--csvfile=singlecsv", "--intDir=C:/WORK/AXLE/data/tissuenet/tissuenet-test-intensity", "--segDir=C:/WORK/AXLE/data/mesmer-untrained/labels", "--outDir=C:/WORK/AXLE/polus-feature-extraction-plugin/outputdir", "--embeddedpixelsize=true"
 int Environment::parse_cmdline(int argc, char** argv)
 {
+    // Program being run without any flags and options?
+    if (argc == 1)
+        return 1;
+
     std::vector <std::string> args(argv + 1, argv + argc);
 
     //==== Gather raw data

@@ -38,7 +38,7 @@ int checkAndReadDataset(
 	// output
 	std::vector<std::string>& intensFiles, std::vector<std::string>& labelFiles);
 
-using Histo = OnlineHistogram<PixIntens>;
+using Histo = OnlineHistogram;
 
 void init_feature_buffers();
 void update_label (int x, int y, int label, PixIntens intensity);

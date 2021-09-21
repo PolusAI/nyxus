@@ -397,13 +397,13 @@ void runParallel (functype f, int nThr, size_t workPerThread, size_t datasetSize
 void reduce (int nThr, int min_online_roi_size)
 {
 	// Build ROI size histogram
-	OnlineHistogram<size_t> hist;
+	OnlineHistogram hist;
 	for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
 	{
 		auto l = ld.first;		// Label code
 		auto& lr = ld.second;	// Label record
 
-		hist.add_observation(lr.raw_pixels.size());
+		hist.add_observation ((HistoItem)lr.raw_pixels.size());
 	}
 	hist.build_histogram();
 	hist.print(true, "\nHistogram of ROI size:");

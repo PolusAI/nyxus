@@ -51,6 +51,7 @@ $CXX $OPTS $INCLU ../src/nyx/globals.cpp
 $CXX $OPTS $INCLU ../src/nyx/output_2_csv.cpp     
 $CXX $OPTS $INCLU ../src/nyx/scan_fastloader_way.cpp  
 $CXX $OPTS $INCLU ../src/nyx/test_histogram.cpp
+$CXX $OPTS $INCLU ../src/nyx/histogram.cpp
 
 
 $GXX \
@@ -78,6 +79,7 @@ globals.o \
 output_2_csv.o \
 scan_fastloader_way.o \
 test_histogram.o \
+histogram.o \
 -lm -ltiff -lfftw3 \
 -lpthread \
 -static-libstdc++ \

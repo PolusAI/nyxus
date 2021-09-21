@@ -33,7 +33,7 @@ bool test_histogram()
 			277,	266,	205,	205,	208
 	};
 
-	using Histo2 = OnlineHistogram <PixIntens>;
+	using Histo2 = OnlineHistogram;
 
 	auto h = std::make_shared <Histo2>();
 	for (auto x : data)
