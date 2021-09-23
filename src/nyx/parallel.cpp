@@ -47,7 +47,7 @@ void update_label_parallel (int x, int y, int label, PixIntens intensity)
 
 			// Initialize the label record
 			LR lr;
-			init_label_record (lr, x, y, label, intensity);
+			init_label_record (lr, theSegFname, theIntFname, x, y, label, intensity);
 			labelData[label] = lr;
 			
 			// We're done processing the very first pixel of a label, return

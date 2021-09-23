@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <stdlib.h>
 #include <stdio.h>
+#include "environment.h"
 #include "sensemaker.h"
 
 // Macro to make some file i/o calls platform-independent
@@ -39,10 +40,7 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 	// Tear off the directory part of 'inputPath', we don't need it
 	std::string fullPath = outputDir + "/" + getPureFname(inputFpath) + ".csv";
 
-	std::cout << "\t--> " << fullPath << std::endl;
-
-	//fullPath.replace("//", "/");
-	//fullPath.replace("\\\\", "\\");
+	std::cout << "\t--> " << fullPath << "\n";
 
 	// Output label data
 	// -- Create a file
@@ -61,157 +59,159 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 	}
 	
 	// -- Header
-	fprintf(fp,
-		// Intensity stats:
-		"label"
-		",mean"
-		",median"
-		",min"
-		",max"
-		",range"
-		",standard_deviation"
-		",skewness"
-		",kurtosis"
-		",mean_absolute_deviation"
-		",energy"
-		",root_mean_squared"
-		",entropy"
-		",mode"
-		",uniformity"
-		",P10,P25,P75,P90"
-		",interquartile_range"
-		",robust_mean_absolute_deviation"
-		",weighted_centroid_y"
-		",weighted_centroid_x"
+	std::stringstream ssHead;
 
-		// Morphology:
-		",area"	// aka pixels count
-		",centroid_x"
-		",centroid_y"
-		",bbox_ymin"
-		",bbox_xmin"
-		",bbox_height"
-		",bbox_width"
+	ssHead << "mask_image,intensity_image";
 
-		",major_axis_length"
-		",minor_axis_length"
-		",eccentricity"
-		",orientation"
-		",neighbors"
-		",extent"
-		",aspect_ratio"
+	std::vector<std::tuple<std::string, AvailableFeatures>> F = theFeatureSet.getEnabledFeatures(); 
+	for (auto& enabdF : F)
+	{
+		// Columns already exist to the left => comma
+		ssHead << ",";
 
-		",equivalent_diameter"
-		",convex_hull_area"
-		",solidity"
-		",perimeter"
-		",circularity"
-		",integratedIntensityEdge"	
-		",maxIntensityEdge"
-		",minIntensityEdge"
-		",meanIntensityEdge"
-		",stddevIntensityEdge"
+		auto fname = std::get<0>(enabdF);
+		auto fcode = std::get<1>(enabdF);
 
-		",extremaP1_x , extremaP1_y"
-		",extremaP2_x , extremaP2_y"
-		",extremaP3_x , extremaP3_y"
-		",extremaP4_x , extremaP4_y"
-		",extremaP5_x , extremaP5_y"
-		",extremaP6_x , extremaP6_y"
-		",extremaP7_x , extremaP7_y"
-		",extremaP8_x , extremaP8_y"
+		// Parameterized feature
+		// --Texture family
+		bool textureFeature =
+			fcode == TEXTURE_ANGULAR2NDMOMENT ||
+			fcode == TEXTURE_CONTRAST ||
+			fcode == TEXTURE_CORRELATION ||
+			fcode == TEXTURE_VARIANCE ||
+			fcode == TEXTURE_INVERSEDIFFERENCEMOMENT ||
+			fcode == TEXTURE_SUMAVERAGE ||
+			fcode == TEXTURE_SUMVARIANCE ||
+			fcode == TEXTURE_SUMENTROPY ||
+			fcode == TEXTURE_ENTROPY ||
+			fcode == TEXTURE_DIFFERENCEVARIANCE ||
+			fcode == TEXTURE_DIFFERENCEENTROPY ||
+			fcode == TEXTURE_INFOMEAS1 ||
+			fcode == TEXTURE_INFOMEAS2;
+		if (textureFeature)
+		{
+			// Polulate with angles
+			for (auto ang : theEnvironment.rotAngles)
+			{
+				// CSV separator
+				if (ang != theEnvironment.rotAngles[0])
+					ssHead << ",";
+				ssHead << fname << "_" << ang;
+			}
+			// Proceed with other features
+			continue;
+		}
+		// --Zernike family
+		if (fcode == TEXTURE_ZERNIKE2D)
+		{
+			// Populate with indices
+			for (int i = 0; i <= LR::aux_ZERNIKE2D_ORDER; i++)
+				if (i % 2)
+					for (int j=1; j<=i; j+=2)
+					{
+						// CSV separator
+						if (j>1)
+							ssHead << ",";
+						ssHead << fname << "_" << i << "_" << j;
+					}
+				else
+					for (int j = 0; j <= i; j += 2)
+					{
+						// CSV separator
+						if (j > 1)
+							ssHead << ",";
+						ssHead << fname << "_" << i << "_" << j;
+					}
 
-		",minFeretDiameter"
-		",maxFeretDiameter"
-		",minFeretAngle"
-		",maxFeretAngle"
-		",stat_feretDiam_min"
-		",stat_feretDiam_max"
-		",stat_feretDiam_mean"
-		",stat_feretDiam_median"
-		",stat_feretDiam_stddev"
-		",stat_feretDiam_mode"
+			// Proceed with other features
+			continue;
+		}
+				
+		// Regular feature
+		ssHead << fname;
+	}
+	fprintf(fp, "%s\n", ssHead.str().c_str());
 
-		",stat_martinDiam_min"
-		",stat_martinDiam_max"
-		",stat_martinDiam_mean"
-		",stat_martinDiam_median"
-		",stat_martinDiam_stddev"
-		",stat_martinDiam_mode"
+	// -- Values
+	for (auto l : L)
+	{
+		std::stringstream ssVals;
 
-		",stat_nassensteinDiam_min"
-		",stat_nassensteinDiam_max"
-		",stat_nassensteinDiam_mean"
-		",stat_nassensteinDiam_median"
-		",stat_nassensteinDiam_stddev"
-		",stat_nassensteinDiam_mode"
+		LR& r = labelData[l];
 
-		",euler_nuber"
-
-		",polygonality_ave"
-		",hexagonality_ave"
-		",hexagonality_stddev"
-
-		",diameter_min_enclosing_circle"
-		",diameter_circumscribing_circle"
-		",diameter_inscribing_circle"
-		",geodeticLength"
-		",thickness");
-
-	// Haralick 2D
-	auto l = L.begin();
-	LR & r = labelData[*l];
-	for (auto a : r.texture_Feature_Angles)
-		fprintf(fp, ",Texture_AngularSecondMoment_%f", a);
-
-	for (auto a : r.texture_Feature_Angles)
-		fprintf(fp, ",Texture_Contrast_%f", a);
-
-	for (auto a : r.texture_Feature_Angles)
-		fprintf(fp, ",Texture_Correlation_%f", a);
-
-	for (auto a : r.texture_Feature_Angles)
-		fprintf(fp, ",Texture_Variance_%f", a);
+		ssVals << r.segFname << "," << r.intFname;
 			
-	for (auto a : r.texture_Feature_Angles)
-		fprintf(fp, ",Texture_InverseDifferenceMoment_%f", a);
+		for (auto& enabdF : F)
+		{
+			auto fcode = std::get<1> (enabdF);
+			auto vv = r.getFeatureValues (fcode);
 
-	for (auto a : r.texture_Feature_Angles)
-		fprintf(fp, ",Texture_SumAverage_%f", a);
+			// 2 cells to the left already => comma
+			ssVals << ",";		
 
-	for (auto a : r.texture_Feature_Angles)
-		fprintf(fp, ",Texture_SumVariance_%f", a);
+			// Parameterized feature
+			// --Texture family
+			bool textureFeature =
+				fcode == TEXTURE_ANGULAR2NDMOMENT ||
+				fcode == TEXTURE_CONTRAST ||
+				fcode == TEXTURE_CORRELATION ||
+				fcode == TEXTURE_VARIANCE ||
+				fcode == TEXTURE_INVERSEDIFFERENCEMOMENT ||
+				fcode == TEXTURE_SUMAVERAGE ||
+				fcode == TEXTURE_SUMVARIANCE ||
+				fcode == TEXTURE_SUMENTROPY ||
+				fcode == TEXTURE_ENTROPY ||
+				fcode == TEXTURE_DIFFERENCEVARIANCE ||
+				fcode == TEXTURE_DIFFERENCEENTROPY ||
+				fcode == TEXTURE_INFOMEAS1 ||
+				fcode == TEXTURE_INFOMEAS2;
+			if (textureFeature)
+			{
+				// Polulate with angles
+				for (int i=0; i<theEnvironment.rotAngles.size(); i++)
+				{
+					// CSV separator
+					if (i>0)
+						ssVals << ",";
+					ssVals << vv[i];
+				}
+				// Proceed with other features
+				continue;
+			}
+			// --Zernike family
+			if (fcode == TEXTURE_ZERNIKE2D)
+			{
+				int zIdx = 0;
+				for (int i = 0; i <= LR::aux_ZERNIKE2D_ORDER; i++)
+					if (i % 2)
+						for (int j = 1; j <= i; j += 2)
+						{
+							// CSV separator
+							if (j > 1)
+								ssVals << ",";
+							ssVals << vv[zIdx++]; // former r.Zernike2D[zIdx++];
+						}
+					else
+						for (int j = 0; j <= i; j += 2)
+						{
+							// CSV separator
+							if (j > 1)
+								ssVals << ",";
+							ssVals << vv[zIdx++]; // former r.Zernike2D[zIdx++];
+						}
 
-	for (auto a : r.texture_Feature_Angles)
-		fprintf(fp, ",Texture_SumEntropy_%f", a);
-			
-	for (auto a : r.texture_Feature_Angles)
-		fprintf(fp, ",Texture_Entropy_%f", a);
+				// Proceed with other features
+				continue;
+			}
 
-	for (auto a : r.texture_Feature_Angles)
-		fprintf(fp, ",Texture_DifferenceVariance_%f", a);
+			// Regular feature
+			ssVals << vv[0];
+		}
 
-	for (auto a : r.texture_Feature_Angles)
-		fprintf(fp, ",Texture_DifferenceEntropy_%f", a);
-			
-	for (auto a : r.texture_Feature_Angles)
-		fprintf(fp, ",Texture_InfoMeas1_%f", a);
+		fprintf(fp, "%s\n", ssVals.str().c_str());
+	}
 
-	for (auto a : r.texture_Feature_Angles)
-		fprintf(fp, ",Texture_InfoMeas2_%f", a);
-
-	// Zernike 2D
-	for (int i = 0; i <= LR::aux_ZERNIKE2D_ORDER; i++)
-		if (i % 2)
-			for (int j = 1; j <= i; j += 2)
-				fprintf(fp, ",Z_%d_%d", i, j);
-		else
-			for (int j = 0; j <= i; j += 2)
-				fprintf(fp, ",Z_%d_%d", i, j);
-	
-	fprintf(fp, "\n");
-
-	// -- Dump numbers
+	/*
 	unsigned int cnt = 1; 
 	for (auto l : L)
 	{
@@ -386,35 +386,39 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 				ss << "," << f;
 
 			// Zernike 2D
-			int zIdx = 0;
-			for (int i = 0; i <= LR::aux_ZERNIKE2D_ORDER; i++)
-				if (i % 2)
-					for (int j = 1; j <= i; j += 2)
-					{
-						ss << "," << r.Zernike2D [zIdx++];
+			if (r.Zernike2D.size() > 0)
+			{
+				int zIdx = 0;
+				for (int i = 0; i <= LR::aux_ZERNIKE2D_ORDER; i++)
+					if (i % 2)
+						for (int j = 1; j <= i; j += 2)
+						{
+							ss << "," << r.Zernike2D [zIdx++];
 						
-						#if 0
-						// Debug:
-						auto z = r.Zernike2D[zIdx++];
-						std::cout << " z[" << zIdx << "]_" << i << "," << j << " = " << z;
-						ss << "," << z;
-						#endif
-					}
-				else
-					for (int j = 0; j <= i; j += 2)
-					{
-						ss << "," << r.Zernike2D [zIdx++];
+							#if 0
+							// Debug:
+							auto z = r.Zernike2D[zIdx++];
+							std::cout << " z[" << zIdx << "]_" << i << "," << j << " = " << z;
+							ss << "," << z;
+							#endif
+						}
+					else
+						for (int j = 0; j <= i; j += 2)
+						{
+							ss << "," << r.Zernike2D [zIdx++];
 						
-						#if 0
-						// Debug:
-						auto z = r.Zernike2D[zIdx++];
-						std::cout << " z[" << zIdx << "]_" << i << "," << j << " = " << z;
-						ss << "," << z;
-						#endif
-					}
+							#if 0
+							// Debug:
+							auto z = r.Zernike2D[zIdx++];
+							std::cout << " z[" << zIdx << "]_" << i << "," << j << " = " << z;
+							ss << "," << z;
+							#endif
+						}
+			}
 			
 		fprintf (fp, "%s\n", ss.str().c_str());
 	}
+	*/
 	std::fflush(fp);
 	std::fclose(fp);
 

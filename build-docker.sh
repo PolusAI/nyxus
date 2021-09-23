@@ -1,4 +1,4 @@
 #!/bin/bash
 
 version=$(<VERSION)
-docker build . -t labshare/polus-feature-extraction-plugin-nyxus:${version}
+docker build . -t labshare/nyxus:${version}

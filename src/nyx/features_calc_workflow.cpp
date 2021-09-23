@@ -31,60 +31,64 @@ void clearLabelStats()
 }
 
 // Label Record (structure 'LR') is where the state of label's pixels scanning and feature calculations is maintained. This function initializes an LR instance for the 1st pixel.
-void init_label_record (LR& r, int x, int y, int label, PixIntens intensity)
+void init_label_record (LR& r, const std::string & segFile, const std::string & intFile, int x, int y, int label, PixIntens intensity)
 {
-	// Awareness
+	r.segFname = segFile;
+	r.intFname = intFile;
+
+	// Allocate the value matrix
+	for (int i = 0; i < AvailableFeatures::_COUNT_; i++)
+	{
+		std::vector<StatsReal> row{0.0};	// One value initialy. More values can be added for Haralick and Zernike type methods
+		r.fvals.push_back(row);
+	}
+
 	r.label = label;
 
 	// Save the pixel
 	r.raw_pixels.push_back(Pixel2(x, y, intensity));
 
-	r.pixelCountRoiArea = 1;
+	r.fvals[AREA_PIXELS_COUNT][0] = r.pixelCountRoiArea = 1;
 	r.aux_PrevCount = 0;
 	// Min
-	r.min = intensity;
+	r.fvals[MIN][0] = intensity; // r.min = intensity;
 	// Max
-	r.max = intensity;
+	r.fvals[MAX][0] = intensity; // r.max = intensity;
 	// Moments
-	r.mean = intensity;
+	r.fvals[MEAN][0] = intensity; // r.mean = intensity;
 	r.aux_M2 = 0;
 	r.aux_M3 = 0;
 	r.aux_M4 = 0;
-	// Energy
-	r.massEnergy = intensity * intensity;
-	// Variance and standard deviation
-	r.variance = 0.0;
-	// Mean absolute deviation
-	r.MAD = 0;
-	// Previous intensity
-	r.aux_PrevIntens = intensity;
+	r.fvals[ENERGY][0] = intensity * intensity; // r.massEnergy = intensity * intensity;
+	r.aux_variance = 0.0;
+	r.fvals[MEAN_ABSOLUTE_DEVIATION][0] = 0.0; // r.MAD = 0;
+	r.aux_PrevIntens = intensity; // Previous intensity
 	// Weighted centroids x and y. 1-based for compatibility with Matlab and WNDCHRM
-	r.centroid_x = StatsReal(x) + 1;
-	r.centroid_y = StatsReal(y) + 1;
+	r.fvals[CENTROID_X][0] = StatsReal(x) + 1; // r.centroid_x = StatsReal(x) + 1;
+	r.fvals[CENTROID_Y][0] = StatsReal(y) + 1; // r.centroid_y = StatsReal(y) + 1;
 	// Histogram
 	std::shared_ptr<Histo> ptrH = std::make_shared <Histo>();
 	ptrH->add_observation(intensity);
 	r.aux_Histogram = ptrH;
 	// Other fields
-	r.median = 0;
-	r.stddev = 0;
-	r.skewness = 0;
-	r.kurtosis = 0;
-	r.RMS = 0;
-	r.p10 = r.p25 = r.p75 = r.p90 = 0;
-	r.IQR = 0;
-	r.entropy = 0;
-	r.mode = 0;
-	r.uniformity = 0;
-	r.RMAD = 0;
+	r.fvals[MEDIAN][0] = 0; // r.median = 0;
+	r.fvals[STANDARD_DEVIATION][0] = 0; // r.stddev = 0;
+	r.fvals[SKEWNESS][0] = 0; // r.skewness = 0;
+	r.fvals[KURTOSIS][0] = 0; // r.kurtosis = 0;
+	r.fvals[ROOT_MEAN_SQUARED][0] = 0; // r.RMS = 0;
+	r.fvals[P10][0] = r.fvals[P25][0] = r.fvals[P75][0] = r.fvals[90][0] = 0; // r.p10 = r.p25 = r.p75 = r.p90 = 0;
+	r.fvals[INTERQUARTILE_RANGE][0] = 0; // r.IQR = 0;
+	r.fvals[ENTROPY][0] = 0; // r.entropy = 0;
+	r.fvals[MODE][0] = 0; // r.mode = 0;
+	r.fvals[UNIFORMITY][0] = 0; // r.uniformity = 0;
+	r.fvals[ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = 0; // r.RMAD = 0;
 	// CellProfiler	
-	r.CellProfiler_Intensity_IntegratedIntensityEdge = 
-	r.CellProfiler_Intensity_MaxIntensityEdge = 
-	r.CellProfiler_Intensity_MeanIntensityEdge = 
-	r.CellProfiler_Intensity_MinIntensityEdge = 
-	r.CellProfiler_Intensity_StddevIntensityEdge = 0;
-
-	//==== Morphology
+	r.fvals[CELLPROFILER_INTENSITY_INTEGRATEDINTENSITYEDGE][0] = // r.CellProfiler_Intensity_IntegratedIntensityEdge = 
+	r.fvals[CELLPROFILER_INTENSITY_MAXINTENSITYEDGE][0] = // r.CellProfiler_Intensity_MaxIntensityEdge = 
+	r.fvals[CELLPROFILER_INTENSITY_MEANINTENSITYEDGE][0] = // r.CellProfiler_Intensity_MeanIntensityEdge = 
+	r.fvals[CELLPROFILER_INTENSITY_MININTENSITYEDGE][0] = // r.CellProfiler_Intensity_MinIntensityEdge = 
+	r.fvals[CELLPROFILER_INTENSITY_STDDEVINTENSITYEDGE][0] = 0; // r.CellProfiler_Intensity_StddevIntensityEdge = 0;
+	
 	r.init_aabb (x, y);
 
 	#ifdef SANITY_CHECK_INTENSITIES_FOR_LABEL
@@ -113,7 +117,7 @@ void update_label (int x, int y, int label, PixIntens intensity)
 
 		// Initialize the label record
 		LR lr;
-		init_label_record (lr, x, y, label, intensity);
+		init_label_record (lr, theSegFname, theIntFname, x, y, label, intensity);
 		labelData[label] = lr;
 	}
 	else
@@ -151,39 +155,41 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		//==== Pixel intensity stats
 
 		// Mean absolute deviation
-		lr.MAD = lr.MAD / n;
+		lr.fvals[MEAN_ABSOLUTE_DEVIATION][0] /= n; // lr.MAD = lr.MAD / n;
 
 		// Standard deviations
-		lr.stddev = sqrt(lr.variance);
+		lr.fvals[STANDARD_DEVIATION][0] = sqrt(lr.aux_variance); // lr.stddev = sqrt(lr.aux_variance);
 
 		// Skewness
-		lr.skewness = std::sqrt(double(lr.pixelCountRoiArea)) * lr.aux_M3 / std::pow(lr.aux_M2, 1.5);
+		lr.fvals[SKEWNESS][0] // lr.skewness 
+			= std::sqrt(double(lr.pixelCountRoiArea)) * lr.aux_M3 / std::pow(lr.aux_M2, 1.5);
 
 		// Kurtosis
-		lr.kurtosis = double(lr.pixelCountRoiArea) * lr.aux_M4 / (lr.aux_M2 * lr.aux_M2) - 3.0;
+		lr.fvals[KURTOSIS][0] // lr.kurtosis 
+			= double(lr.pixelCountRoiArea) * lr.aux_M4 / (lr.aux_M2 * lr.aux_M2) - 3.0;
 
 		// Root of mean squared
-		lr.RMS = sqrt(lr.massEnergy / n);
+		lr.fvals[ROOT_MEAN_SQUARED][0] = sqrt(lr.fvals[ENERGY][0] / n); // lr.RMS = sqrt(lr.massEnergy / n);
 
 		// P10, 25, 75, 90
 		auto ptrH = lr.aux_Histogram;
 		ptrH->build_histogram();
 		auto [mean_, mode_, p10_, p25_, p75_, p90_, iqr_, rmad_, entropy_, uniformity_] = ptrH->get_stats();
 
-		lr.median = mean_;
-		lr.p10 = p10_;
-		lr.p25 = p25_;
-		lr.p75 = p75_;
-		lr.p90 = p90_;
-		lr.IQR = iqr_;
-		lr.RMAD = rmad_;
-		lr.entropy = entropy_;
-		lr.mode = mode_;
-		lr.uniformity = uniformity_;
+		lr.fvals[MEDIAN][0] = mean_; // lr.median = mean_;
+		lr.fvals[P10][0] = p10_; // lr.p10 = p10_;
+		lr.fvals[P25][0] = p25_; // lr.p25 = p25_;
+		lr.fvals[P75][0] = p75_; // lr.p75 = p75_;
+		lr.fvals[P90][0] = p90_; // lr.p90 = p90_;
+		lr.fvals[INTERQUARTILE_RANGE][0] = iqr_; // lr.IQR = iqr_;
+		lr.fvals[ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = rmad_; // lr.RMAD = rmad_;
+		lr.fvals[ENTROPY][0] = entropy_; // lr.entropy = entropy_;
+		lr.fvals[MODE][0] = mode_; // lr.mode = mode_;
+		lr.fvals[UNIFORMITY][0] = uniformity_; // lr.uniformity = uniformity_;
 
 		// Weighted centroids
-		lr.centroid_x = lr.centroid_x / lr.pixelCountRoiArea;
-		lr.centroid_y = lr.centroid_y / lr.pixelCountRoiArea;
+		lr.fvals[CENTROID_X][0] /= lr.pixelCountRoiArea; // lr.centroid_x = lr.centroid_x / lr.pixelCountRoiArea;
+		lr.fvals[CENTROID_Y][0] /= lr.pixelCountRoiArea; // lr.centroid_y = lr.centroid_y / lr.pixelCountRoiArea;
 
 		//==== Calculate pixel intensity stats directly rather than online
 		int min_online_roi_size = 100;
@@ -197,7 +203,7 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 				sumEnergy = 0.0;
 			for (auto& pix : lr.raw_pixels)
 			{
-				auto diff = pix.inten - lr.mean;
+				auto diff = pix.inten - lr.fvals[MEAN][0]; // lr.mean
 				sumM2 += diff * diff;
 				sumM3 += diff * diff * diff;
 				sumM4 += diff * diff * diff * diff;
@@ -207,21 +213,21 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 			double m2 = sumM2 / (n - 1),
 				m3 = sumM3 / n,
 				m4 = sumM4 / n;
-			lr.variance = sumM2 / (n - 1);
-			lr.stddev = sqrt(lr.variance);
-			lr.MAD = absSum / n;	// Biased
-			lr.RMS = sqrt(sumEnergy / n);
-			lr.skewness = m3 / pow(m2, 1.5);
-			lr.kurtosis = m4 / (m2 * m2) - 3;
+			lr.aux_variance = sumM2 / (n - 1);
+			lr.fvals[STANDARD_DEVIATION][0] = sqrt(lr.aux_variance);	// .stddev
+			lr.fvals[MEAN_ABSOLUTE_DEVIATION][0] = absSum / n;	// .MAD
+			lr.fvals[ROOT_MEAN_SQUARED][0] = sqrt(sumEnergy / n);	// .RMS
+			lr.fvals[SKEWNESS][0] = m3 / pow(m2, 1.5);
+			lr.fvals[KURTOSIS][0] = m4 / (m2 * m2) - 3;
 			//
 		}
 
 		//==== Extent
 		double bbArea = lr.aabb.get_area();
-		lr.extent = (double)lr.pixelCountRoiArea / (double)bbArea;
+		lr.fvals[EXTENT][0] = (double)lr.pixelCountRoiArea / (double)bbArea;
 
 		//==== Aspect ratio
-		lr.aspectRatio = lr.aabb.get_width() / lr.aabb.get_height();
+		lr.fvals[ASPECT_RATIO][0] = lr.aabb.get_width() / lr.aabb.get_height();	// .aspectRatio
 
 	}
 }
@@ -238,8 +244,8 @@ void parallelReduceContour (size_t start, size_t end, std::vector<int>* ptrLabel
 
 		//==== Contour, ROI perimeter, equivalent circle diameter
 		r.contour.calculate (r.raw_pixels);
-		r.roiPerimeter = (StatsInt)r.contour.get_roi_perimeter();
-		r.equivDiam = r.contour.get_diameter_equal_perimeter();
+		r.fvals[PERIMETER][0] = (StatsInt)r.contour.get_roi_perimeter();	// .roiPerimeter
+		r.fvals[EQUIVALENT_DIAMETER][0] = r.contour.get_diameter_equal_perimeter();	// .equivDiam
 	}
 }
 
@@ -252,11 +258,11 @@ void parallelReduceConvHull (size_t start, size_t end, std::vector<int>* ptrLabe
 
 		//==== Convex hull and solidity
 		r.convHull.calculate(r.raw_pixels);
-		r.convHullArea = r.convHull.getArea();
-		r.solidity = r.pixelCountRoiArea / r.convHullArea;
+		r.fvals[CONVEX_HULL_AREA][0] = r.convHull.getArea();	// .convHullArea
+		r.fvals[SOLIDITY][0] = r.pixelCountRoiArea / r.fvals[CONVEX_HULL_AREA][0];	// .solidity
 
 		//==== Circularity
-		r.circularity = 4.0 * M_PI * r.pixelCountRoiArea / (r.roiPerimeter * r.roiPerimeter);
+		r.fvals[CIRCULARITY][0] = 4.0 * M_PI * r.pixelCountRoiArea / (r.fvals[PERIMETER][0] * r.fvals[PERIMETER][0]); // r.circularity = 4.0 * M_PI * r.pixelCountRoiArea / (r.roiPerimeter * r.roiPerimeter);
 
 		//==== IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
 		r.reduce_edge_intensity_features();
@@ -273,20 +279,26 @@ void parallelReduceFeret (size_t start, size_t end, std::vector<int>* ptrLabels,
 		ParticleMetrics pm(r.convHull.CH);
 		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
 		pm.calc_ferret(
-			r.maxFeretDiameter,
-			r.maxFeretAngle,
-			r.minFeretDiameter,
-			r.minFeretAngle,
+			r.fvals[MAX_FERET_DIAMETER][0],	// .maxFeretDiameter
+			r.fvals[MAX_FERET_ANGLE][0], // .maxFeretAngle
+			r.fvals[MIN_FERET_DIAMETER][0], // .minFeretDiameter
+			r.fvals[MIN_FERET_ANGLE][0], // .minFeretAngle
 			allD
 		);
 
 		auto structStat = ComputeCommonStatistics2(allD);
-		r.feretStats_minD = (double)structStat.min;	// ratios[59]
-		r.feretStats_maxD = (double)structStat.max;	// ratios[60]
-		r.feretStats_meanD = structStat.mean;	// ratios[61]
-		r.feretStats_medianD = structStat.median;	// ratios[62]
-		r.feretStats_stddevD = structStat.stdev;	// ratios[63]
-		r.feretStats_modeD = (double)structStat.mode;	// ratios[64]		
+		r.fvals[STAT_FERET_DIAM_MIN][0] // .feretStats_minD 
+			= (double)structStat.min;	// ratios[59]
+		r.fvals[STAT_FERET_DIAM_MAX][0] // .feretStats_maxD 
+			= (double)structStat.max;	// ratios[60]
+		r.fvals[STAT_FERET_DIAM_MEAN][0] // .feretStats_meanD 
+			= structStat.mean;	// ratios[61]
+		r.fvals[STAT_FERET_DIAM_MEDIAN][0] // .feretStats_medianD 
+			= structStat.median;	// ratios[62]
+		r.fvals[STAT_FERET_DIAM_STDDEV][0] // .feretStats_stddevD 
+			= structStat.stdev;	// ratios[63]
+		r.fvals[STAT_FERET_DIAM_MODE][0] // .feretStats_modeD 
+			= (double)structStat.mode;	// ratios[64]		
 	}
 }
 
@@ -301,12 +313,12 @@ void parallelReduceMartin (size_t start, size_t end, std::vector<int>* ptrLabels
 		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
 		pm.calc_martin(allD);
 		auto structStat = ComputeCommonStatistics2(allD);
-		r.martinStats_minD = (double)structStat.min;
-		r.martinStats_maxD = (double)structStat.max;
-		r.martinStats_meanD = structStat.mean;
-		r.martinStats_medianD = structStat.median;
-		r.martinStats_stddevD = structStat.stdev;
-		r.martinStats_modeD = (double)structStat.mode;
+		r.fvals[STAT_MARTIN_DIAM_MIN][0] = (double)structStat.min;	// .martinStats_minD, martinStats_maxD, martinStats_meanD, martinStats_medianD, martinStats_stddevD, martinStats_modeD
+		r.fvals[STAT_MARTIN_DIAM_MAX][0] = (double)structStat.max;	
+		r.fvals[STAT_MARTIN_DIAM_MEAN][0] = structStat.mean;	
+		r.fvals[STAT_MARTIN_DIAM_MEDIAN][0] = structStat.median;	
+		r.fvals[STAT_MARTIN_DIAM_STDDEV][0]	= structStat.stdev;	
+		r.fvals[STAT_MARTIN_DIAM_MODE][0] = (double)structStat.mode;	
 	}
 }
 
@@ -321,12 +333,12 @@ void parallelReduceNassenstein (size_t start, size_t end, std::vector<int>* ptrL
 		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
 		pm.calc_nassenstein(allD);
 		auto s = ComputeCommonStatistics2(allD);
-		r.nassStats_minD = s.min;
-		r.nassStats_maxD = s.max;
-		r.nassStats_meanD = s.mean;
-		r.nassStats_medianD = s.median;
-		r.nassStats_stddevD = s.stdev;
-		r.nassStats_modeD = s.mode;
+		r.fvals[STAT_NASSENSTEIN_DIAM_MIN][0] = (double)s.min;	// nassStats_minD, nassStats_maxD, nassStats_meanD, nassStats_medianD, nassStats_stddevD, nassStats_modeD
+		r.fvals[STAT_NASSENSTEIN_DIAM_MAX][0] = (double)s.max;
+		r.fvals[STAT_NASSENSTEIN_DIAM_MEAN][0] = s.mean;
+		r.fvals[STAT_NASSENSTEIN_DIAM_MEDIAN][0] = s.median;
+		r.fvals[STAT_NASSENSTEIN_DIAM_STDDEV][0] = s.stdev;
+		r.fvals[STAT_NASSENSTEIN_DIAM_MODE][0] = (double)s.mode;
 	}
 }
 
@@ -337,26 +349,27 @@ void parallelReduceHaralick2D (size_t start, size_t end, std::vector<int>* ptrLa
 		int lab = (*ptrLabels)[i];
 		LR & r = (*ptrLabelData)[lab];
 
+		std::vector<double> texture_Feature_Angles;
 		haralick2D(
 			// in
 			r.raw_pixels,	// nonzero_intensity_pixels,
 			r.aabb,			// AABB info not to calculate it again from 'raw_pixels' in the function
 			0.0,			// distance,
 			// out
-			r.texture_Feature_Angles,
-			r.texture_AngularSecondMoments,
-			r.texture_Contrast,
-			r.texture_Correlation,
-			r.texture_Variance,
-			r.texture_InverseDifferenceMoment,
-			r.texture_SumAverage,
-			r.texture_SumVariance,
-			r.texture_SumEntropy,
-			r.texture_Entropy,
-			r.texture_DifferenceVariance,
-			r.texture_DifferenceEntropy,
-			r.texture_InfoMeas1,
-			r.texture_InfoMeas2);
+			texture_Feature_Angles,
+			r.fvals[TEXTURE_ANGULAR2NDMOMENT], // .texture_AngularSecondMoments,
+			r.fvals[TEXTURE_CONTRAST], // .texture_Contrast,
+			r.fvals[TEXTURE_CORRELATION], // .texture_Correlation,
+			r.fvals[TEXTURE_VARIANCE], // .texture_Variance,
+			r.fvals[TEXTURE_INVERSEDIFFERENCEMOMENT], // .texture_InverseDifferenceMoment,
+			r.fvals[TEXTURE_SUMAVERAGE], // .texture_SumAverage,
+			r.fvals[TEXTURE_SUMVARIANCE], // .texture_SumVariance,
+			r.fvals[TEXTURE_SUMENTROPY], // .texture_SumEntropy,
+			r.fvals[TEXTURE_ENTROPY], // .texture_Entropy,
+			r.fvals[TEXTURE_DIFFERENCEVARIANCE], // .texture_DifferenceVariance,
+			r.fvals[TEXTURE_DIFFERENCEENTROPY], // .texture_DifferenceEntropy,
+			r.fvals[TEXTURE_INFOMEAS1], // .texture_InfoMeas1,
+			r.fvals[TEXTURE_INFOMEAS2]); // .texture_InfoMeas2);
 	}
 }
 
@@ -373,7 +386,7 @@ void parallelReduceZernike2D (size_t start, size_t end, std::vector<int>* ptrLab
 			r.aabb,			// AABB info not to calculate it again from 'raw_pixels' in the function
 			r.aux_ZERNIKE2D_ORDER,
 			// out
-			r.Zernike2D);
+			r.fvals[TEXTURE_ZERNIKE2D]);	// .Zernike2D
 	}
 }
 
@@ -425,109 +438,47 @@ void reduce (int nThr, int min_online_roi_size)
 		workPerThread = tileSize / nThr;
 
 	//==== Pixel intensity stats 
+	#if 0
+	if (theFeatureSet.anyEnabled({ 
+		// directly
+		MEAN,
+		MEDIAN,
+		MIN,
+		MAX,
+		RANGE,
+		STANDARD_DEVIATION,
+		SKEWNESS,
+		KURTOSIS,
+		MEAN_ABSOLUTE_DEVIATION,
+		ENERGY,
+		ROOT_MEAN_SQUARED,
+		ENTROPY,
+		MODE,
+		UNIFORMITY,
+		P10, P25, P75, P90,
+		INTERQUARTILE_RANGE,
+		ROBUST_MEAN_ABSOLUTE_DEVIATION,
+		WEIGHTED_CENTROID_Y,
+		WEIGHTED_CENTROID_X,
+		// indirectly
+		NUM_NEIGHBORS, // aabb
+		MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION, // centroid_x|y, pixelCountArea
+		}))
+	#endif
 	{
 		STOPWATCH("Intensity stats ...", "\tReduced intensity stats");
-
-#if 0 // Sequential 
-	//==== Scan pixels. This will be followed by the Reduce step
-		for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
-		{
-			auto l = ld.first;		// Label code
-			auto& lr = ld.second;	// Label record
-
-			// Reduce pixel intensity #1
-			lr.reduce_pixel_intensity_features();
-
-			auto n = lr.pixelCountRoiArea;	// Cardinality of the label value set
-
-			//==== Pixel intensity stats
-
-			// Mean absolute deviation
-			lr.MAD = lr.MAD / n;
-
-			// Standard deviations
-			lr.stddev = sqrt(lr.variance);
-
-			// Skewness
-			lr.skewness = std::sqrt(double(lr.pixelCountRoiArea)) * lr.aux_M3 / std::pow(lr.aux_M2, 1.5);
-
-			// Kurtosis
-			lr.kurtosis = double(lr.pixelCountRoiArea) * lr.aux_M4 / (lr.aux_M2 * lr.aux_M2) - 3.0;
-
-			// Root of mean squared
-			lr.RMS = sqrt(lr.massEnergy / n);
-
-			// P10, 25, 75, 90
-			auto ptrH = lr.aux_Histogram;
-			ptrH->build_histogram();
-			auto [mean_, mode_, p10_, p25_, p75_, p90_, iqr_, rmad_, entropy_, uniformity_] = ptrH->get_stats();
-
-			lr.median = mean_;
-			lr.p10 = p10_;
-			lr.p25 = p25_;
-			lr.p75 = p75_;
-			lr.p90 = p90_;
-			lr.IQR = iqr_;
-			lr.RMAD = rmad_;
-			lr.entropy = entropy_;
-			lr.mode = mode_;
-			lr.uniformity = uniformity_;
-
-			// Weighted centroids
-			lr.centroid_x = lr.centroid_x / lr.pixelCountRoiArea;
-			lr.centroid_y = lr.centroid_y / lr.pixelCountRoiArea;
-
-			//==== Calculate pixel intensity stats directly rather than online
-			if (min_online_roi_size > 0)
-			{
-				// -- Standard deviation
-				StatsReal sumM2 = 0.0,
-					sumM3 = 0.0,
-					sumM4 = 0.0,
-					absSum = 0.0,
-					sumEnergy = 0.0;
-				for (auto& pix : lr.raw_pixels)
-				{
-					auto diff = pix.inten - lr.mean;
-					sumM2 += diff * diff;
-					sumM3 += diff * diff * diff;
-					sumM4 += diff * diff * diff * diff;
-					absSum += abs(diff);
-					sumEnergy += pix.inten * pix.inten;
-				}
-				double m2 = sumM2 / (n - 1),
-					m3 = sumM3 / n,
-					m4 = sumM4 / n;
-				lr.variance = sumM2 / (n - 1);
-				lr.stddev = sqrt(lr.variance);
-				lr.MAD = absSum / n;	// Biased
-				lr.RMS = sqrt(sumEnergy / n);
-				lr.skewness = m3 / pow(m2, 1.5);
-				lr.kurtosis = m4 / (m2 * m2) - 3;
-				//
-			}
-
-			//==== Extent
-			double bbArea = lr.aabb.get_area();
-			lr.extent = (double)lr.pixelCountRoiArea / (double)bbArea;
-
-			//==== Aspect ratio
-			r.aspectRatio = r.aabb.get_width() / r.aabb.get_height();
-		} // 
-#endif
-		//Parallel
 		runParallel(parallelReduceIntensityStats, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Neighbors
-	if (featureSet.isEnabled(NUM_NEIGHBORS))
+	if (theFeatureSet.isEnabled(NUM_NEIGHBORS))
 	{
 		STOPWATCH("Neighbors ...", "\tReduced neighbors");
 		reduce_neighbors (5 /* collision radius [pixels] */);
 	}
 
 	//==== Fitting an ellipse
-	if (featureSet.anyEnabled({MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION}))
+	//if (theFeatureSet.anyEnabled({MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION}))
 	{
 		STOPWATCH("Ellipticity et al ...", "\tReduced ellipticity - MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION");
 		// 
@@ -546,7 +497,8 @@ void reduce (int nThr, int min_online_roi_size)
 			double XSquaredTmp = 0, YSquaredTmp = 0, XYSquaredTmp = 0;
 			for (auto& pix : r.raw_pixels)
 			{
-				auto diffX = r.centroid_x - pix.x, diffY = r.centroid_y - pix.y;
+				auto diffX = r.fvals[CENTROID_X][0] - pix.x,
+					diffY = r.fvals[CENTROID_Y][0] - pix.y;
 				XSquaredTmp += diffX * diffX; //(double(x) - (xCentroid - Im.ROIWidthBeg)) * (double(x) - (xCentroid - Im.ROIWidthBeg));
 				YSquaredTmp += diffY * diffY; //(-double(y) + (yCentroid - Im.ROIHeightBeg)) * (-double(y) + (yCentroid - Im.ROIHeightBeg));
 				XYSquaredTmp += diffX * diffY; //(double(x) - (xCentroid - Im.ROIWidthBeg)) * (-double(y) + (yCentroid - Im.ROIHeightBeg));
@@ -577,69 +529,24 @@ void reduce (int nThr, int min_online_roi_size)
 			else
 				Orientation = (180.0 / M_PI) * atan(num / den);
 
-			r.major_axis_length = MajorAxisLength;
-			r.minor_axis_length = MinorAxisLength;
-			r.eccentricity = Eccentricity;
-			r.orientation = Orientation;
+			r.fvals[MAJOR_AXIS_LENGTH][0] = MajorAxisLength;
+			r.fvals[MINOR_AXIS_LENGTH][0] = MinorAxisLength;
+			r.fvals[ECCENTRICITY][0] = Eccentricity;
+			r.fvals[ORIENTATION][0] = Orientation;
 		}
 	}
 
-	//==== Contour, ROI perimeter, equivalent circle diameter
+	//==== Contour-related ROI perimeter, equivalent circle diameter
+	if (theFeatureSet.anyEnabled({ EQUIVALENT_DIAMETER, PERIMETER }))
 	{
 		STOPWATCH("Contour, ROI perimeter, equivalent circle diameter ...", "\tReduced contour, ROI perimeter, equivalent circle diameter");
-#if 0 // Serial
-		for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
-		{
-			auto& r = ld.second;	// Label record
-
-			//==== Contour, ROI perimeter, equivalent circle diameter
-			r.contour.calculate(r.raw_pixels);
-			r.roiPerimeter = (StatsInt)r.contour.get_roi_perimeter();
-			r.equivDiam = r.contour.get_diameter_equal_perimeter();
-
-			//==== Convex hull and solidity
-			r.convHull.calculate(r.raw_pixels);
-			r.convHullArea = r.convHull.getArea();
-			r.solidity = r.pixelCountRoiArea / r.convHullArea;
-
-			//==== Circularity
-			r.circularity = 4.0 * M_PI * r.pixelCountRoiArea / (r.roiPerimeter * r.roiPerimeter);
-
-			//==== IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
-			r.reduce_edge_intensity_features();
-		}
-#endif
-		// Parallel
 		runParallel (parallelReduceContour, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
-	//==== Convex hull and solidity; Circularity, IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
+	//==== Convex hull related Solidity, Circularity, IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
 	{
 		STOPWATCH("Hulls, and related (circularity, solidity, etc) ...", "\tReduced hulls, and related (circularity, solidity, etc)");
-#if 0 // Serial
-		for (auto& ld : labelData) // for (auto& lv : labelUniqueIntensityValues)
-		{
-			auto& r = ld.second;	// Label record
-
-			//==== Contour, ROI perimeter, equivalent circle diameter
-			r.contour.calculate(r.raw_pixels);
-			r.roiPerimeter = (StatsInt)r.contour.get_roi_perimeter();
-			r.equivDiam = r.contour.get_diameter_equal_perimeter();
-
-			//==== Convex hull and solidity
-			r.convHull.calculate(r.raw_pixels);
-			r.convHullArea = r.convHull.getArea();
-			r.solidity = r.pixelCountRoiArea / r.convHullArea;
-
-			//==== Circularity
-			r.circularity = 4.0 * M_PI * r.pixelCountRoiArea / (r.roiPerimeter * r.roiPerimeter);
-
-			//==== IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
-			r.reduce_edge_intensity_features();
-		}
-#endif
-		// Parallel
-		runParallel(parallelReduceConvHull, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
+		runParallel (parallelReduceConvHull, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Extrema and Euler number
@@ -707,38 +614,38 @@ void reduce (int nThr, int min_online_roi_size)
 					RightMost_Bottom = pix.y;
 			}
 
-			r.extremaP1y = TopMostIndex; // -0.5 + Im.ROIHeightBeg;
-			r.extremaP1x = TopMost_MostLeftIndex; // -0.5 + Im.ROIWidthBeg;
+			r.fvals[EXTREMA_P1_Y][0] = TopMostIndex; // -0.5 + Im.ROIHeightBeg;	// .extremaP1y
+			r.fvals[EXTREMA_P1_X][0] = TopMost_MostLeftIndex; // -0.5 + Im.ROIWidthBeg;	// .extremaP1x
 
-			r.extremaP2y = TopMostIndex; // -0.5 + Im.ROIHeightBeg;
-			r.extremaP2x = TopMost_MostRightIndex; // +0.5 + Im.ROIWidthBeg;
+			r.fvals[EXTREMA_P2_Y][0] = TopMostIndex; // -0.5 + Im.ROIHeightBeg;	// .extremaP2y
+			r.fvals[EXTREMA_P2_X][0] = TopMost_MostRightIndex; // +0.5 + Im.ROIWidthBeg;	// .extremaP2x
 
-			r.extremaP3y = RightMost_Top; // -0.5 + Im.ROIHeightBeg;//
-			r.extremaP3x = RightMostIndex; // +0.5 + Im.ROIWidthBeg;
+			r.fvals[EXTREMA_P3_Y][0] = RightMost_Top; // -0.5 + Im.ROIHeightBeg;	// .extremaP3y
+			r.fvals[EXTREMA_P3_X][0] = RightMostIndex; // +0.5 + Im.ROIWidthBeg;	// .extremaP3x
 
-			r.extremaP4y = RightMost_Bottom; // +0.5 + Im.ROIHeightBeg;
-			r.extremaP4x = RightMostIndex; // +0.5 + Im.ROIWidthBeg;
+			r.fvals[EXTREMA_P4_Y][0] = RightMost_Bottom; // +0.5 + Im.ROIHeightBeg;	// .extremaP4y
+			r.fvals[EXTREMA_P4_X][0] = RightMostIndex; // +0.5 + Im.ROIWidthBeg;	// .extremaP4x
 
-			r.extremaP5y = LowestIndex; // +0.5 + Im.ROIHeightBeg;
-			r.extremaP5x = Lowest_MostRightIndex; // +0.5 + Im.ROIWidthBeg;
+			r.fvals[EXTREMA_P5_Y][0] = LowestIndex; // +0.5 + Im.ROIHeightBeg;	//.extremaP5y
+			r.fvals[EXTREMA_P5_X][0] = Lowest_MostRightIndex; // +0.5 + Im.ROIWidthBeg;	//.extremaP5x
 
-			r.extremaP6y = LowestIndex; // +0.5 + Im.ROIHeightBeg;
-			r.extremaP6x = Lowest_MostLeftIndex; // -0.5 + Im.ROIWidthBeg;
+			r.fvals[EXTREMA_P6_Y][0] = LowestIndex; // +0.5 + Im.ROIHeightBeg;	//.extremaP6y
+			r.fvals[EXTREMA_P6_X][0] = Lowest_MostLeftIndex; // -0.5 + Im.ROIWidthBeg;	//.extremaP6x
 
-			r.extremaP7y = LeftMost_Bottom; // +0.5 + Im.ROIHeightBeg;
-			r.extremaP7x = LeftMostIndex; // -0.5 + Im.ROIWidthBeg;
+			r.fvals[EXTREMA_P7_Y][0] = LeftMost_Bottom; // +0.5 + Im.ROIHeightBeg;	//.extremaP7y
+			r.fvals[EXTREMA_P7_X][0] = LeftMostIndex; // -0.5 + Im.ROIWidthBeg;	//.extremaP7x
 
-			r.extremaP8y = LeftMost_Top; // -0.5 + Im.ROIHeightBeg;
-			r.extremaP8x = LeftMostIndex; // -0.5 + Im.ROIWidthBeg;
+			r.fvals[EXTREMA_P8_Y][0] = LeftMost_Top; // -0.5 + Im.ROIHeightBeg;	//.extremaP8y
+			r.fvals[EXTREMA_P8_X][0] = LeftMostIndex; // -0.5 + Im.ROIWidthBeg;	//.extremaP8x
 
 			//==== Euler number
 			EulerNumber eu(r.raw_pixels, r.aabb.get_xmin(), r.aabb.get_ymin(), r.aabb.get_xmax(), r.aabb.get_ymax(), 8);	// Using mode=8 following to WNDCHRM example
-			r.euler_number = eu.euler_number;
+			r.fvals[EULER_NUBER][0] = eu.euler_number;	// .euler_number
 		}
 	}
 	//==== Feret diameters and angles
-	if (featureSet.anyEnabled ({MIN_FERET_DIAMETER, MAX_FERET_DIAMETER, MIN_FERET_ANGLE, MAX_FERET_ANGLE}) ||
-		featureSet.anyEnabled({ 
+	if (theFeatureSet.anyEnabled ({MIN_FERET_DIAMETER, MAX_FERET_DIAMETER, MIN_FERET_ANGLE, MAX_FERET_ANGLE}) ||
+		theFeatureSet.anyEnabled({ 
 			STAT_FERET_DIAM_MIN,
 			STAT_FERET_DIAM_MAX,
 			STAT_FERET_DIAM_MEAN,
@@ -747,36 +654,11 @@ void reduce (int nThr, int min_online_roi_size)
 			STAT_FERET_DIAM_MODE }))
 	{
 		STOPWATCH("Feret ...", "\tReduced Feret");
-#if 0 // Sequential
-		for (auto& ld : labelData)
-		{
-			auto& r = ld.second;
-
-			ParticleMetrics pm(r.convHull.CH);
-			std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
-			pm.calc_ferret(
-				r.maxFeretDiameter,
-				r.maxFeretAngle,
-				r.minFeretDiameter,
-				r.minFeretAngle,
-				allD
-			);
-
-			auto structStat = ComputeCommonStatistics2(allD);
-			r.feretStats_minD = (double)structStat.min;	// ratios[59]
-			r.feretStats_maxD = (double)structStat.max;	// ratios[60]
-			r.feretStats_meanD = structStat.mean;	// ratios[61]
-			r.feretStats_medianD = structStat.median;	// ratios[62]
-			r.feretStats_stddevD = structStat.stdev;	// ratios[63]
-			r.feretStats_modeD = (double)structStat.mode;	// ratios[64]		
-		}
-#endif
-		// Parallel
 		runParallel(parallelReduceFeret, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Martin diameters
-	if (featureSet.anyEnabled({ STAT_MARTIN_DIAM_MIN,
+	if (theFeatureSet.anyEnabled({ STAT_MARTIN_DIAM_MIN,
 		STAT_MARTIN_DIAM_MAX,
 		STAT_MARTIN_DIAM_MEAN,
 		STAT_MARTIN_DIAM_MEDIAN,
@@ -784,29 +666,11 @@ void reduce (int nThr, int min_online_roi_size)
 		STAT_MARTIN_DIAM_MODE }))
 	{
 		STOPWATCH("Matrin ...", "\tReduced Martin");
-#if 0 // Sequential
-		for (auto& ld : labelData)
-		{
-			auto& r = ld.second;
-
-			ParticleMetrics pm(r.convHull.CH);
-			std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
-			pm.calc_martin(allD);
-			auto structStat = ComputeCommonStatistics2(allD);
-			r.martinStats_minD = (double)structStat.min;
-			r.martinStats_maxD = (double)structStat.max;
-			r.martinStats_meanD = structStat.mean;
-			r.martinStats_medianD = structStat.median;
-			r.martinStats_stddevD = structStat.stdev;
-			r.martinStats_modeD = (double)structStat.mode;
-		}
-#endif
-		// Parallel
 		runParallel(parallelReduceMartin, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Nassenstein diameters
-	if (featureSet.anyEnabled({ STAT_NASSENSTEIN_DIAM_MIN,
+	if (theFeatureSet.anyEnabled({ STAT_NASSENSTEIN_DIAM_MIN,
 		STAT_NASSENSTEIN_DIAM_MAX,
 		STAT_NASSENSTEIN_DIAM_MEAN,
 		STAT_NASSENSTEIN_DIAM_MEDIAN,
@@ -814,24 +678,6 @@ void reduce (int nThr, int min_online_roi_size)
 		STAT_NASSENSTEIN_DIAM_MODE }))
 	{
 		STOPWATCH("Nassenstein ...", "\tReduced Nassenstein");
-#if 0 // Sequential
-		for (auto& ld : labelData)
-		{
-			auto& r = ld.second;
-
-			ParticleMetrics pm(r.convHull.CH);
-			std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
-			pm.calc_nassenstein(allD);
-			auto s = ComputeCommonStatistics2 (allD);
-			r.nassStats_minD = s.min;
-			r.nassStats_maxD = s.max;
-			r.nassStats_meanD = s.mean;
-			r.nassStats_medianD = s.median;
-			r.nassStats_stddevD = s.stdev;
-			r.nassStats_modeD = s.mode;
-		}
-#endif
-		// Parallel
 		runParallel(parallelReduceNassenstein, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
@@ -842,88 +688,56 @@ void reduce (int nThr, int min_online_roi_size)
 			auto& r = ld.second;
 
 			// Skip if the contour, convex hull, and neighbors are unavailable, otherwise the related features will be == NAN. Those feature will be equal to the default unassigned value.
-			if (r.contour.contour_pixels.size() == 0 || r.convHull.CH.size() == 0 || r.num_neighbors == 0)
+			if (r.contour.contour_pixels.size() == 0 || r.convHull.CH.size() == 0 || r.fvals[NUM_NEIGHBORS][0] == 0)
 				continue;
 
 			//==== Hexagonality and polygonality
 			Hexagonality_and_Polygonality hp;
-			auto [polyAve, hexAve, hexSd] = hp.calculate(r.num_neighbors, r.pixelCountRoiArea, r.roiPerimeter, r.convHullArea, r.minFeretDiameter, r.maxFeretDiameter);
-			r.polygonality_ave = polyAve;
-			r.hexagonality_ave = hexAve;
-			r.hexagonality_stddev = hexSd;
+			auto [polyAve, hexAve, hexSd] = hp.calculate(r.fvals[NUM_NEIGHBORS][0], r.pixelCountRoiArea, r.fvals[PERIMETER][0], r.fvals[CONVEX_HULL_AREA][0], r.fvals[MIN_FERET_DIAMETER][0], r.fvals[MAX_FERET_DIAMETER][0]);
+			r.fvals[POLYGONALITY_AVE][0] = polyAve;
+			r.fvals[HEXAGONALITY_AVE][0] = hexAve;
+			r.fvals[HEXAGONALITY_STDDEV][0] = hexSd;
 
 			//==== Enclosing circle
 			MinEnclosingCircle cir1;
-			r.diameter_min_enclosing_circle = cir1.calculate_diam(r.contour.contour_pixels);
+			r.fvals[DIAMETER_MIN_ENCLOSING_CIRCLE][0] = cir1.calculate_diam(r.contour.contour_pixels);
 			InscribingCircumscribingCircle cir2;
-			auto [diamIns, diamCir] = cir2.calculateInsCir(r.contour.contour_pixels, r.centroid_x, r.centroid_y);
-			r.diameter_inscribing_circle = diamIns;
-			r.diameter_circumscribing_circle = diamCir;
+			auto [diamIns, diamCir] = cir2.calculateInsCir(r.contour.contour_pixels, r.fvals[CENTROID_X][0], r.fvals[CENTROID_Y][0]);
+			r.fvals[DIAMETER_INSCRIBING_CIRCLE][0] = diamIns;
+			r.fvals[DIAMETER_CIRCUMSCRIBING_CIRCLE][0] = diamCir;
 
 			//==== Geodetic length thickness
 			GeodeticLength_and_Thickness glt;
-			auto [geoLen, thick] = glt.calculate(r.pixelCountRoiArea, r.roiPerimeter);
-			r.geodeticLength = geoLen;
-			r.thickness = thick;
+			auto [geoLen, thick] = glt.calculate(r.pixelCountRoiArea, r.fvals[PERIMETER][0]);
+			r.fvals[GEODETIC_LENGTH][0] = geoLen;
+			r.fvals[THICKNESS][0] = thick;
 		}
 	}
 
 	//==== Haralick 2D 
-	if (featureSet.isEnabled(TEXTURE_HARALICK2D))
+	if (theFeatureSet.anyEnabled({ 
+		TEXTURE_ANGULAR2NDMOMENT,
+		TEXTURE_CONTRAST,
+		TEXTURE_CORRELATION,
+		TEXTURE_VARIANCE,
+		TEXTURE_INVERSEDIFFERENCEMOMENT,
+		TEXTURE_SUMAVERAGE,
+		TEXTURE_SUMVARIANCE,
+		TEXTURE_SUMENTROPY,
+		TEXTURE_ENTROPY,
+		TEXTURE_DIFFERENCEVARIANCE,
+		TEXTURE_DIFFERENCEENTROPY,
+		TEXTURE_INFOMEAS1,
+		TEXTURE_INFOMEAS2 }))
 	{
 		STOPWATCH("Haralick2D ...", "\tReduced Haralick2D");
-#if 0 // Sequential
-		for (auto& ld : labelData)
-		{
-			// Get ahold of the label's data:
-			auto& r = ld.second;
-
-			haralick2D(
-				// in
-				r.raw_pixels,	// nonzero_intensity_pixels,
-				r.aabb,			// AABB info not to calculate it again from 'raw_pixels' in the function
-				0.0,			// distance,
-				// out
-				r.texture_Feature_Angles,
-				r.texture_AngularSecondMoments,
-				r.texture_Contrast,
-				r.texture_Correlation,
-				r.texture_Variance,
-				r.texture_InverseDifferenceMoment,
-				r.texture_SumAverage,
-				r.texture_SumVariance,
-				r.texture_SumEntropy,
-				r.texture_Entropy,
-				r.texture_DifferenceVariance,
-				r.texture_DifferenceEntropy,
-				r.texture_InfoMeas1,
-				r.texture_InfoMeas2);
-		}
-#endif
-		// Parallel
 		runParallel(parallelReduceHaralick2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Zernike 2D 
-	if (featureSet.isEnabled(TEXTURE_ZERNIKE2D))
+	if (theFeatureSet.isEnabled(TEXTURE_ZERNIKE2D))
 	{
 		STOPWATCH("Zernike2D ...", "\tReduced Zernike2D");
-#if 0 // Serial
-		for (auto& ld : labelData)
-		{
-			// Get ahold of the label's data:
-			auto& r = ld.second;	
-
-			zernike2D(
-				// in
-				r.raw_pixels,	// nonzero_intensity_pixels,
-				r.aabb,			// AABB info not to calculate it again from 'raw_pixels' in the function
-				r.aux_ZERNIKE2D_ORDER,
-				// out
-				r.Zernike2D);
-		}	
-#endif
-		// Parallel
 		runParallel(parallelReduceZernike2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 	

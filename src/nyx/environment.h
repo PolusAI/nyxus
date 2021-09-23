@@ -16,6 +16,7 @@
 #define REDUCETHREADS	"--reduceThreads"	// Environment :: n_reduce_threads
 #define ROTATIONS	"--rotations"	// Environment :: rotAngles
 #define VERBOSITY	"--verbosity"	// Environment :: verbosity_level	-- Example: --verbosity=3
+#define ONLINESTATSTHRESH	"--onlineStatsThresh"	// Environment :: onlineStatsThreshold	-- Example: --onlineStatsThresh=150
 
 // Verbosity levels (combinable via binary and)
 #define VERBOSITY_TIMING	2
@@ -33,10 +34,13 @@ public:
 	std::string labels_dir = "",
 		intensity_dir = "",
 		output_dir = "",
-		features = "all",
 		file_pattern = "",
 		embedded_pixel_size = "",
 		csv_file = "separatecsv";
+
+	std::string features;
+	std::vector<std::string> desiredFeatures;
+	std::string featureFileName = "";
 
 	std::string loader_threads = "";
 	int n_loader_threads = 1;
@@ -52,6 +56,9 @@ public:
 
 	std::string verbosity = "";
 	int verbosity_level = 0;	// 0 = silent
+
+	std::string rawOnlineStatsThresh = "";
+	int onlineStatsTreshold = 0;
 
 protected:
 

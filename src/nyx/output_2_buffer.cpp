@@ -12,7 +12,7 @@
 bool save_features_2_buffer (std::vector<double> & resultBuf)
 {
 	resultBuf.clear();
-	size_t bufLen = uniqueLabels.size() * featureSet.numOfEnabled();
+	size_t bufLen = uniqueLabels.size() * theFeatureSet.numOfEnabled();
 	resultBuf.reserve(bufLen);
 
 	// Sort the labels
@@ -25,7 +25,7 @@ bool save_features_2_buffer (std::vector<double> & resultBuf)
 		LR& r = labelData[l];
 		for (int i = 0; i < AvailableFeatures::_COUNT_; i++)
 		{
-			if (featureSet.isEnabled(i))
+			if (theFeatureSet.isEnabled(i))
 			{
 				auto fval = r.getValue((AvailableFeatures)i);
 				resultBuf.push_back(fval);

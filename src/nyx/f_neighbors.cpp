@@ -125,8 +125,8 @@ void reduce_neighbors (int radius)
 					bool overlap = !aabbNoOverlap(r1, r2, radius);
 					if (overlap)
 					{
-						r1.num_neighbors++;
-						r2.num_neighbors++;
+						r1.fvals[NUM_NEIGHBORS][0]++; // r1.num_neighbors++;
+						r2.fvals[NUM_NEIGHBORS][0]++; // r2.num_neighbors++;
 					}
 				}
 			}

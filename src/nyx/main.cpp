@@ -20,12 +20,6 @@ int main (int argc, char** argv)
 		return parseRes;
 	theEnvironment.show_summary ("\n"/*head*/, "\n"/*tail*/);
 
-	// Temporarily disabled Haralick while I'm fixing its speed
-	auto F = { TEXTURE_HARALICK2D };
-	featureSet.enableAll();
-	featureSet.disableFeatures (F);
-	//
-
 	#ifdef SINGLE_ROI_TEST
 	std::cout << std::endl << "Attention! Running the single-ROI test, otherwise undefine SINGLE_ROI_TEST" << std::endl;
 	#endif

@@ -1,10 +1,14 @@
 #define _CRT_SECURE_NO_WARNINGS
 
+#include <fstream>
 #include <iostream>
 #include <tuple>
 #include <vector>
 #include "environment.h"
+#include "featureset.h"
 #include "version.h"
+
+bool directoryExists(const std::string&);
 
 void parse_delimited_string_list(const std::string& rawString, std::vector<std::string>& result)
 {
@@ -58,6 +62,57 @@ bool parse_delimited_string_list_to_floats(const std::string& rawString, std::ve
     return retval;
 }
 
+std::string toupper (const std::string& s)
+{
+    auto s_uppr = s;
+    for (auto& c : s_uppr)
+        c = toupper(c);
+    return s_uppr;
+}
+
+bool parse_delimited_string_list_to_features (const std::string& rawString, std::vector<std::string>& result)
+{
+    result.clear();
+
+    if (rawString.length() == 0)
+    {
+        std::cout << "Warning: no features specified, defaulting to ALL\n";
+        result.push_back("ALL");
+        return true;
+    }
+
+    bool retval = true;
+    std::vector<std::string> strings;
+    parse_delimited_string_list (rawString, strings);
+
+    // Check individual features
+    for (const auto &s : strings)
+    {
+        auto s_uppr = toupper(s);
+        if (s_uppr == "ALL")
+        {
+            result.push_back(s_uppr);
+            continue;
+        }
+
+        AvailableFeatures af;
+        bool fnameExists = theFeatureSet.findFeatureByString(s_uppr, af);
+        if (!fnameExists)
+        {
+            retval = false;
+            std::cout << "Error: expecting '" << s << "' to be a proper feature name. \n";
+        }
+        else
+            result.push_back(s_uppr);
+    }
+
+    // Show help on available features if necessary
+    if (!retval)
+        theFeatureSet.show_help();
+
+    return retval;
+}
+
 void Environment::show_help()
 {
     std::cout
@@ -78,6 +133,7 @@ void Environment::show_help()
             << " [" << REDUCETHREADS << " <rt>]\n"
             << " [" << VERBOSITY << " <vl>]\n"
             << " [" << ROTATIONS << " <al>]\n"
+            << " [" << VERBOSITY << " <verbo>]\n"
 
         << "Where\n"
         << "\t<fp> - file pattern e.g. *, *.tif, etc [default = *]\n"
@@ -92,25 +148,37 @@ void Environment::show_help()
         << "\t<rt> - number of feature reduction threads [default = 1] \n"
         << "\t<vl> - verbosity level [default = 0] \n"
         << "\t<al> - comma separated rotation angles [default = 0,45,90,135] \n"
+        << "\t<verbo> - levels of verbosity 0 (silence), 2 (timing), 4 (roi diagnostics), 8 (granular diagnostics) [default = 0] \n"
         ;
 }
 
 void Environment::show_summary (const std::string & head, const std::string & tail)
 {
     std::cout << head;
-    std::cout << "Using:\n" 
+    std::cout << "Work plan:\n"
         << "\tlabels\t" << labels_dir << "\n"
         << "\tintensities\t" << intensity_dir << "\n"
         << "\toutput\t" << output_dir << "\n"
-        << "\tfeatures\t" << features << "\n"
         << "\tfile pattern\t" << file_pattern << "\n"
         << "\tembedded pixel size\t" << embedded_pixel_size << "\n"
         << "\tcsv file\t" << csv_file << "\n"
         << "\t# of image loader threads\t" << n_loader_threads << "\n"
         << "\t# of pixel scanner threads\t" << n_pixel_scan_threads << "\n"
         << "\t# of post-processing threads\t" << n_reduce_threads << "\n"
-        << "\tverbosity level\t" << verbosity_level << "\n"
-        << "\tangles of rotational features\t";
+        << "\tverbosity level\t" << verbosity_level << "\n";
+
+    // Features
+    std::cout << "\tfeatures\t";
+    for (auto f : desiredFeatures)
+    {
+        if (f != desiredFeatures[0])
+            std::cout << ", ";
+        std::cout << f;
+    }
+    std::cout << "\n";
+
+    // Rotation angles
+    std::cout << "\tangles of rotational features\t";
     for (auto ang : rotAngles)
     {
         if (ang != rotAngles[0])
@@ -118,12 +186,13 @@ void Environment::show_summary (const std::string & head, const std::string & ta
         std::cout << ang;
     }
     std::cout << "\n";
+
     std::cout << tail;
 }
 
 void Environment::show_memory(const std::string& head, const std::string& tail)
 {
-    std::cout << head << "Received arguments and their values:\n";
+    std::cout << head << "Command line summary:\n";
     for (auto& m : memory)
     {
         std::cout << "\t" << std::get<0>(m) << " : " << std::get<1>(m) << "\n";
@@ -216,32 +285,37 @@ int Environment::parse_cmdline(int argc, char** argv)
     }
 
     //==== Report
-    show_memory("\n","");
+    show_memory("\n","\n");
 
     //==== Check mandatory parameters
     if (labels_dir == "")
     {
-        std::cout << "Error: Missing argument of " << SEGDIR << "\n";
+        std::cout << "Error: Missing argument " << SEGDIR << "\n";
         return 1;
     }
     if (intensity_dir == "")
     {
-        std::cout << "Error: Missing argument of " << INTDIR << "\n";
+        std::cout << "Error: Missing argument " << INTDIR << "\n";
         return 1;
     }
     if (output_dir == "")
     {
-        std::cout << "Error: Missing argument of " << OUTDIR << "\n";
+        std::cout << "Error: Missing argument " << OUTDIR << "\n";
         return 1;
     }
     if (file_pattern == "")
     {
-        std::cout << "Error: Missing argument of " << FILEPATTERN << "\n";
+        std::cout << "Error: Missing argument " << FILEPATTERN << "\n";
         return 1;
     }
     if (csv_file == "")
     {
-        std::cout << "Error: Missing argument of " << CSVFILE << "\n";
+        std::cout << "Error: Missing argument " << CSVFILE << "\n";
+        return 1;
+    }
+    if (features == "")
+    {
+        std::cout << "Error: Missing argument " << FEATURES << "\n";
         return 1;
     }
 
@@ -286,10 +360,58 @@ int Environment::parse_cmdline(int argc, char** argv)
         }
     }
 
-    //==== Parse list parameters
+    //==== Parse rotations
     if (!parse_delimited_string_list_to_floats (rotations, rotAngles))
     {
         return 1;
+    }
+
+    //==== Parse desired features
+    
+    // --Try to read a feature file
+    if (features.length() >0 && directoryExists(features))
+    {
+
+        std::ifstream file(features);
+        std::string ln, fileText;
+        while (std::getline(file, ln))
+        {
+            if (fileText.length() > 0)
+                fileText += ",";
+            fileText += ln;
+        }
+
+        // Modify the input string
+        features = fileText;
+
+        std::cout << "Using features [" << fileText << "] from file " << features << "\n";
+    }
+
+    // --Make sure all the feature names are legal and cast to uppercase (class FeatureSet understands uppercase names)
+    if (!parse_delimited_string_list_to_features (features, desiredFeatures)) 
+    {
+        return 1;
+    }
+
+    // --Feature names are ok, set the flags
+    theFeatureSet.enableAll(false); // First, disable all
+    for (auto& s : desiredFeatures) // Second, iterate uppercased feature names
+    {
+        // Check if all the features are requested
+        if (s == "ALL")
+        {
+            theFeatureSet.enableAll();
+            break;  // No need to bother of others
+        }
+
+        AvailableFeatures af;
+        if (!theFeatureSet.findFeatureByString(s, af))
+        {
+            std::cout << "Error: expecting '" << s << "' to be a proper feature name. \n";
+            return 1;
+        }
+
+        theFeatureSet.enableFeature(af);
     }
 
     // Success

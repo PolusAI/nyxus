@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+
 enum AvailableFeatures
 {
 	// Pixel intensity stats
@@ -47,6 +49,13 @@ enum AvailableFeatures
 	SOLIDITY,  
 	PERIMETER,  
 	CIRCULARITY,  
+
+	// CellProfiler features [http://cellprofiler-manual.s3.amazonaws.com/CellProfiler-3.0.0/modules/measurement.html]
+	CELLPROFILER_INTENSITY_INTEGRATEDINTENSITYEDGE,	// Sum of the edge pixel intensities
+	CELLPROFILER_INTENSITY_MAXINTENSITYEDGE,		// Maximal edge pixel intensity
+	CELLPROFILER_INTENSITY_MEANINTENSITYEDGE,		// Average edge pixel intensity
+	CELLPROFILER_INTENSITY_MININTENSITYEDGE,		// Minimal edge pixel intensity
+	CELLPROFILER_INTENSITY_STDDEVINTENSITYEDGE,		// Standard deviation of the edge pixel intensities
 
 	EXTREMA_P1_X, EXTREMA_P1_Y,  
 	EXTREMA_P2_X, EXTREMA_P2_Y,  
@@ -96,17 +105,29 @@ enum AvailableFeatures
 	THICKNESS,
 
 	// Texture:
-	TEXTURE_HARALICK2D, 
+	TEXTURE_ANGULAR2NDMOMENT,
+	TEXTURE_CONTRAST,
+	TEXTURE_CORRELATION,
+	TEXTURE_VARIANCE,
+	TEXTURE_INVERSEDIFFERENCEMOMENT,
+	TEXTURE_SUMAVERAGE,
+	TEXTURE_SUMVARIANCE,
+	TEXTURE_SUMENTROPY,
+	TEXTURE_ENTROPY,
+	TEXTURE_DIFFERENCEVARIANCE,
+	TEXTURE_DIFFERENCEENTROPY,
+	TEXTURE_INFOMEAS1,
+	TEXTURE_INFOMEAS2,
+
 	TEXTURE_ZERNIKE2D,
 
 	_COUNT_
 };
 
-
 class FeatureSet
 {
 public:
-	FeatureSet() { enableAll(true); }
+	FeatureSet();
 	void enableAll(bool newStatus=true) { for (int i = 0; i < AvailableFeatures::_COUNT_; i++) m_enabledFeatures[i] = newStatus;	}
 	void disableFeatures(std::initializer_list<AvailableFeatures>& desiredFeatures)
 	{
@@ -116,6 +137,9 @@ public:
 	void enableFeatures(std::initializer_list<AvailableFeatures>& desiredFeatures) {
 		for (auto f : desiredFeatures)
 			m_enabledFeatures[f] = true;
+	}
+	void enableFeature(AvailableFeatures f) {
+		m_enabledFeatures[f] = true;
 	}
 	void enablePixelIntenStats() {
 		enableAll(false);
@@ -174,6 +198,15 @@ public:
 				cnt++; 
 		return cnt;  
 	}
+	bool findFeatureByString (const std::string& featureName, AvailableFeatures& f);
+	void show_help();
+
+	// Relying on RVO rather than std::move
+	std::vector<std::tuple<std::string, AvailableFeatures>> getEnabledFeatures();
+
 protected:
 	bool m_enabledFeatures [AvailableFeatures::_COUNT_];
+	std::map<AvailableFeatures, std::string> m_featureNames; // initialized in constructor from featureset.cpp/UserFacingFeatureNames
 };
+
+extern FeatureSet theFeatureSet;

@@ -23,11 +23,7 @@ double totalTileLoadTime = 0.0, totalFeatureReduceTime = 0.0;
 
 bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpath, int num_threads)
 {
-	std::cout << "Processing pair " << intens_fpath << " -- " << label_fpath 
-		#ifdef DEBUG
-		<< " with " << num_threads << " threads" 
-		#endif
-		<< std::endl;
+	std::cout << "Processing pair " << intens_fpath << " -- " << label_fpath << "\n";
 
 	int lvl = 0;	// Pyramid level
 
@@ -153,6 +149,11 @@ int processDataset (
 	bool save2csv, 
 	const std::string& csvOutputDir)
 {
+	// Temporarily disabled Haralick while I'm fixing its speed
+	//		auto F = { TEXTURE_HARALICK2D };
+	//		theFeatureSet.disableFeatures(F);
+	//
+
 	// Sanity
 	std::chrono::time_point<std::chrono::system_clock> start, end;
 
@@ -170,6 +171,11 @@ int processDataset (
 
 		auto &ifp = intensFiles[i], 
 			&lfp = labelFiles[i];
+
+		// Cache the file names to be picked up by labels to know their file origin
+		std::filesystem::path p_int (ifp), p_seg (lfp);
+		theSegFname = p_seg.filename().string();
+		theIntFname = p_int.filename().string();
 
 		// Scan a label-intensity pair and calculate features
 		//---Option--- 
@@ -362,98 +368,3 @@ bool TraverseViaFastloader1 (const std::string & fpath, int num_threads)
 
 	return true;
 }
-
-/* --- This code is pending a descussion with FastLoader team ---
-bool TraverseViaFastloader3 (const std::string& fpath, int num_threads)
-{
-	// Sanity
-	MEMORYSTATUSEX statex;
-	statex.dwLength = sizeof(statex);
-	GlobalMemoryStatusEx(&statex);
-	std::cout << "memory load, %=" << statex.dwMemoryLoad
-		<< "\ntotal physical memory, Mb=" << statex.ullTotalPhys / 1048576
-		<< "\ntotal available meory, Mb=" << statex.ullAvailPhys / 1048576
-		<< std::endl;
-
-	// Get the TIFF file info
-	GrayscaleTiffTileLoader<uint32_t> gfl(num_threads, fpath);
-
-	auto th = gfl.tileHeight(0),
-		tw = gfl.tileWidth(0),
-		td = gfl.tileDepth(0);
-	auto tileSize = th * tw;
-
-	// Just for information
-	auto fh = gfl.fullHeight(0);
-	auto fw = gfl.fullWidth(0);
-	auto fd = gfl.fullDepth(0);
-
-	// Read the TIFF tile by tile
-	auto ntw = gfl.numberTileWidth(0);
-	auto nth = gfl.numberTileHeight(0);
-	auto ntd = gfl.numberTileDepth(0);
-
-	uint16_t fileHeight = fh, //10,
-		fileWidth = fw, //10,
-		fileDepth = 1, //10,
-		tileHeight = th, //2,
-		tileWidth = tw, //2,
-		tileDepth = 1, //2,
-		numberChannels = 1;
-
-	uint32_t radiusDepth = 1,
-		radiusHeight = 1,
-		radiusWidth = 1;
-
-	uint32_t numberThreads = 1; // 5;
-
-	// Instanciate a Tile loader
-	auto tl = std::make_shared<VirtualFileTileChannelLoader>(
-		numberThreads,
-		fileHeight, fileWidth, fileDepth,
-		tileHeight, tileWidth, tileDepth,
-		numberChannels);
-
-	// Create the Fast Loader configuration
-	auto options = std::make_shared<fl::FastLoaderConfiguration<fl::DefaultView<uint32_t>>>(tl);
-	// Set the configuration
-	options->radius(radiusDepth, radiusHeight, radiusWidth);
-	options->ordered(true);
-	options->borderCreatorConstant(0);
-
-	// Create the Fast Loader Graph
-	auto fl = fl::FastLoaderGraph<fl::DefaultView<uint32_t>>(std::move(options));
-	// Execute the graph
-	fl.executeGraph();
-	// Request all the views in the graph
-	fl.requestAllViews();
-	// Indicate no other view will be requested
-	fl.finishRequestingViews();
-
-	// Show pixel values on the whole image diagonal
-	if (fileHeight == fileWidth) // Make sure we deal with a square image
-		for (uint32_t i = 0; i < fileHeight; i++) // Iterate diagonal elements
-		{
-			// Global pixel position
-			uint32_t globalRow = i, 
-				globalCol = i;
-
-			// Get the view containing the pixel with global coordinates. The corresponding tile data is taken from cache or loaded via file i/o
-			auto view = fl.getContainingView (globalRow, globalCol);
-
-			// Learn the corresponding position local within the view/tile
-			auto [localRow, localCol] = view->castGlobalPosition (globalRow, globalCol);
-			
-			// Finally, read the pixel value
-			uint32_t pixel = view->getPixelValue (localRow, localCol);
-		}
-
-		// Return the view to the Fast Loader Graph
-		view->returnToMemoryManager();
-	}
-	// Wait for the graph to terminate
-	fl.waitForTermination();
-
-	return true;
-}
-*/

@@ -1,8 +1,8 @@
 #include "environment.h"
 #include "sensemaker.h"
 
-FeatureSet featureSet;
-
+FeatureSet theFeatureSet;
+std::string theSegFname, theIntFname;	
 std::unordered_set <int> uniqueLabels;
 std::vector<int> sortedUniqueLabels;	// Populated in reduce()
 std::unordered_map <int, LR> labelData;

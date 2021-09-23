@@ -11,6 +11,7 @@
 #include <array>
 #include "sensemaker.h"
 #include "image_matrix.h"
+#include "environment.h"
 
 #ifndef __unix
 #define NOMINMAX	// Prevent converting std::min(), max(), ... into macros
@@ -709,6 +710,14 @@ void haralick2D_imp (
 	Texture_DifferenceEntropy.clear();
 	Texture_InfoMeas1.clear();
 	Texture_InfoMeas2.clear();
+
+	// Conflict. Make standard angles at leat appear in the output
+	//for (auto angle : theEnvironment.rotAngles) 
+	theEnvironment.rotAngles.clear();
+	theEnvironment.rotAngles.push_back(0);
+	theEnvironment.rotAngles.push_back(45);
+	theEnvironment.rotAngles.push_back(90);
+	theEnvironment.rotAngles.push_back(135);
 
 	for (angle = 0; angle <= 135; angle = angle + 45) 
 	{

@@ -33,8 +33,8 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::ini
 	double* retbuf = nullptr;
 
 	//==== Calculate features
-	featureSet.enableAll (false);
-	featureSet.enableFeatures (desiredFeatures); 
+	theFeatureSet.enableAll (false);
+	theFeatureSet.enableFeatures (desiredFeatures); 
 
 	// Try to reach data files at directories 'label_path' and 'intensity_path'
 	std::vector <std::string> intensFiles, labelFiles;
@@ -67,7 +67,7 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::ini
 	// Allocate and initialize the return data buffer - [a matrix n_labels X n_features]:
 	// (Background knowledge - https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11 and https://stackoverflow.com/questions/54876346/pybind11-and-stdvector-how-to-free-data-using-capsules)
 	size_t ny = uniqueLabels.size(), 
-		nx = featureSet.numOfEnabled(),
+		nx = theFeatureSet.numOfEnabled(),
 		len = ny * nx;
 
 	// Check for error
@@ -77,13 +77,13 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::ini
 		return { 4, "No features were calculated", 0, 0, nullptr };
 
 	//DEBUG diagnostic output:
-	std::cout << "Result shape: ny=uniqueLabels.size()=" << ny << " X nx=" << featureSet.numOfEnabled() << " = " << len << ", element[0]=" << calcResultBuf[0] << std::endl;
+	std::cout << "Result shape: ny=uniqueLabels.size()=" << ny << " X nx=" << theFeatureSet.numOfEnabled() << " = " << len << ", element[0]=" << calcResultBuf[0] << std::endl;
 
 	// Check for error: calcResultBuf is expected to have exavtly 'len' elements
 	if (len != calcResultBuf.size())
 	{
 		std::stringstream ss;
-		ss << "ERROR: Result shape [ny=uniqueLabels.size()=" << ny << " X nx=" << featureSet.numOfEnabled() << " = " << len << "] mismatches with the result buffer size " << calcResultBuf.size() << " in " << __FILE__ << ":" << __LINE__;
+		ss << "ERROR: Result shape [ny=uniqueLabels.size()=" << ny << " X nx=" << theFeatureSet.numOfEnabled() << " = " << len << "] mismatches with the result buffer size " << calcResultBuf.size() << " in " << __FILE__ << ":" << __LINE__;
 		return { 5, ss.str(), 0, 0, nullptr };
 	}
 
@@ -115,7 +115,7 @@ PYBIND11_MODULE(nyx_backend, m)
 			//==== Calculate features
 			// 
 			// Request the features that we want to calculate
-			featureSet.enableBoundingBox();
+			theFeatureSet.enableBoundingBox();
 
 			// Try to reach data files at directories 'label_path' and 'intensity_path'
 			std::vector <std::string> intensFiles, labelFiles;
@@ -142,7 +142,7 @@ PYBIND11_MODULE(nyx_backend, m)
 
 			// calcResultBuf is expected to have exavtly 'len' elements
 			if (len != calcResultBuf.size())
-				std::cerr << "ERROR: Result shape [ny=uniqueLabels.size()=" << ny << " X nx=" << featureSet.numOfEnabled() << " = " << len << "] mismatches with the result buffer size " << calcResultBuf.size() << " in " << __FILE__ << ":" << __LINE__ << std::endl;
+				std::cerr << "ERROR: Result shape [ny=uniqueLabels.size()=" << ny << " X nx=" << theFeatureSet.numOfEnabled() << " = " << len << "] mismatches with the result buffer size " << calcResultBuf.size() << " in " << __FILE__ << ":" << __LINE__ << std::endl;
 
 			double* retbuf = new double[len];
 			if (retbuf == nullptr)
