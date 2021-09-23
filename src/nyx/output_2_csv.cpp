@@ -37,15 +37,24 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 	std::vector<int> L { uniqueLabels.begin(), uniqueLabels.end() };
 	std::sort (L.begin(), L.end());
 
-	// Tear off the directory part of 'inputPath', we don't need it
-	std::string fullPath = outputDir + "/" + getPureFname(inputFpath) + ".csv";
-
-	std::cout << "\t--> " << fullPath << "\n";
-
-	// Output label data
-	// -- Create a file
 	FILE* fp = nullptr;
-	fopen_s(&fp, fullPath.c_str(), "w");
+
+	static bool mustRenderHeader = true;	// This can be flipped to 'false' in 'singlecsv' scenario
+
+	if (theEnvironment.separateCsv)
+	{
+		std::string fullPath = outputDir + "/" + getPureFname(inputFpath) + ".csv";
+		std::cout << "\t--> " << fullPath << "\n";
+		fopen_s(&fp, fullPath.c_str(), "w");
+	}
+	else
+	{
+		std::string fullPath = outputDir + "/" + "NyxusFeatures.csv";
+		std::cout << "\t--> " << fullPath << "\n";
+		auto mode = mustRenderHeader ? "w" : "a";
+		fopen_s(&fp, fullPath.c_str(), mode);
+	}
+	
 	if (!fp) 
 	{
 		std::perror("fopen failed"); 
@@ -57,80 +66,89 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 		std::perror("setvbuf failed"); 
 		return false;
 	}
-	
+
+	// Learn what features need to be displayed
+	std::vector<std::tuple<std::string, AvailableFeatures>> F = theFeatureSet.getEnabledFeatures();
+
 	// -- Header
-	std::stringstream ssHead;
-
-	ssHead << "mask_image,intensity_image";
-
-	std::vector<std::tuple<std::string, AvailableFeatures>> F = theFeatureSet.getEnabledFeatures(); 
-	for (auto& enabdF : F)
+	if (mustRenderHeader)
 	{
-		// Columns already exist to the left => comma
-		ssHead << ",";
+		std::stringstream ssHead;
 
-		auto fname = std::get<0>(enabdF);
-		auto fcode = std::get<1>(enabdF);
+		ssHead << "mask_image,intensity_image,label";
 
-		// Parameterized feature
-		// --Texture family
-		bool textureFeature =
-			fcode == TEXTURE_ANGULAR2NDMOMENT ||
-			fcode == TEXTURE_CONTRAST ||
-			fcode == TEXTURE_CORRELATION ||
-			fcode == TEXTURE_VARIANCE ||
-			fcode == TEXTURE_INVERSEDIFFERENCEMOMENT ||
-			fcode == TEXTURE_SUMAVERAGE ||
-			fcode == TEXTURE_SUMVARIANCE ||
-			fcode == TEXTURE_SUMENTROPY ||
-			fcode == TEXTURE_ENTROPY ||
-			fcode == TEXTURE_DIFFERENCEVARIANCE ||
-			fcode == TEXTURE_DIFFERENCEENTROPY ||
-			fcode == TEXTURE_INFOMEAS1 ||
-			fcode == TEXTURE_INFOMEAS2;
-		if (textureFeature)
+		for (auto& enabdF : F)
 		{
-			// Polulate with angles
-			for (auto ang : theEnvironment.rotAngles)
+			// Columns already exist to the left => comma
+			ssHead << ",";
+
+			auto fname = std::get<0>(enabdF);
+			auto fcode = std::get<1>(enabdF);
+
+			// Parameterized feature
+			// --Texture family
+			bool textureFeature =
+				fcode == TEXTURE_ANGULAR2NDMOMENT ||
+				fcode == TEXTURE_CONTRAST ||
+				fcode == TEXTURE_CORRELATION ||
+				fcode == TEXTURE_VARIANCE ||
+				fcode == TEXTURE_INVERSEDIFFERENCEMOMENT ||
+				fcode == TEXTURE_SUMAVERAGE ||
+				fcode == TEXTURE_SUMVARIANCE ||
+				fcode == TEXTURE_SUMENTROPY ||
+				fcode == TEXTURE_ENTROPY ||
+				fcode == TEXTURE_DIFFERENCEVARIANCE ||
+				fcode == TEXTURE_DIFFERENCEENTROPY ||
+				fcode == TEXTURE_INFOMEAS1 ||
+				fcode == TEXTURE_INFOMEAS2;
+			if (textureFeature)
 			{
-				// CSV separator
-				if (ang != theEnvironment.rotAngles[0])
-					ssHead << ",";
-				ssHead << fname << "_" << ang;
+				// Polulate with angles
+				for (auto ang : theEnvironment.rotAngles)
+				{
+					// CSV separator
+					if (ang != theEnvironment.rotAngles[0])
+						ssHead << ",";
+					ssHead << fname << "_" << ang;
+				}
+				// Proceed with other features
+				continue;
 			}
-			// Proceed with other features
-			continue;
-		}
-		// --Zernike family
-		if (fcode == TEXTURE_ZERNIKE2D)
-		{
-			// Populate with indices
-			for (int i = 0; i <= LR::aux_ZERNIKE2D_ORDER; i++)
-				if (i % 2)
-					for (int j=1; j<=i; j+=2)
-					{
-						// CSV separator
-						if (j>1)
-							ssHead << ",";
-						ssHead << fname << "_" << i << "_" << j;
-					}
-				else
-					for (int j = 0; j <= i; j += 2)
-					{
-						// CSV separator
-						if (j > 1)
-							ssHead << ",";
-						ssHead << fname << "_" << i << "_" << j;
-					}
+			// --Zernike family
+			if (fcode == TEXTURE_ZERNIKE2D)
+			{
+				// Populate with indices
+				for (int i = 0; i <= LR::aux_ZERNIKE2D_ORDER; i++)
+					if (i % 2)
+						for (int j = 1; j <= i; j += 2)
+						{
+							// CSV separator
+							if (j > 1)
+								ssHead << ",";
+							ssHead << fname << "_" << i << "_" << j;
+						}
+					else
+						for (int j = 0; j <= i; j += 2)
+						{
+							// CSV separator
+							if (j > 1)
+								ssHead << ",";
+							ssHead << fname << "_" << i << "_" << j;
+						}
 
-			// Proceed with other features
-			continue;
+				// Proceed with other features
+				continue;
+			}
+
+			// Regular feature
+			ssHead << fname;
 		}
-				
-		// Regular feature
-		ssHead << fname;
+		fprintf(fp, "%s\n", ssHead.str().c_str());
+
+		// Prevent rendering the header again for another image's portion of labels
+		if (theEnvironment.separateCsv == false)
+			mustRenderHeader = false;
 	}
-	fprintf(fp, "%s\n", ssHead.str().c_str());
 
 	// -- Values
 	for (auto l : L)
@@ -139,7 +157,7 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 
 		LR& r = labelData[l];
 
-		ssVals << r.segFname << "," << r.intFname;
+		ssVals << r.segFname << "," << r.intFname << "," << l;
 			
 		for (auto& enabdF : F)
 		{
@@ -453,7 +471,6 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 
 	return true;
 }
-
 
 // Diagnostic function
 void print_by_label(const char* featureName, std::unordered_map<int, StatsInt> L, int numColumns)

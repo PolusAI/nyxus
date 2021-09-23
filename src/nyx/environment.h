@@ -9,7 +9,7 @@
 #define OUTDIR	"--outDir"	// Environment :: output_dir
 #define FEATURES	"--features"	// Environment :: features	-- Example: (1) --features=area,kurtosis,neighbors (2) --features=featurefile.txt
 #define FILEPATTERN	"--filePattern"	// Environment :: file_pattern
-#define CSVFILE	"--outputType"	// Environment :: csv_file
+#define OUTPUTTYPE	"--csvFile"	// Environment :: bool separateCsv <= valid values "separatecsv" or "singlecsv" 
 #define EMBPIXSZ	"--embeddedpixelsize"	// Environment :: embedded_pixel_size
 #define LOADERTHREADS	"--loaderThreads"	// Environment :: n_loader_threads
 #define PXLSCANTHREADS	"--pxlscanThreads"	// Environment :: n_pixel_scan_threads
@@ -17,6 +17,10 @@
 #define ROTATIONS	"--rotations"	// Environment :: rotAngles
 #define VERBOSITY	"--verbosity"	// Environment :: verbosity_level	-- Example: --verbosity=3
 #define ONLINESTATSTHRESH	"--onlineStatsThresh"	// Environment :: onlineStatsThreshold	-- Example: --onlineStatsThresh=150
+
+// Valid values of 'OUTPUTTYPE'
+#define OT_SEPCSV "separatecsv"
+#define OT_SINGLECSV "singlecsv"
 
 // Verbosity levels (combinable via binary and)
 #define VERBOSITY_TIMING	2
@@ -35,8 +39,7 @@ public:
 		intensity_dir = "",
 		output_dir = "",
 		file_pattern = "",
-		embedded_pixel_size = "",
-		csv_file = "separatecsv";
+		embedded_pixel_size = "";
 
 	std::string features;
 	std::vector<std::string> desiredFeatures;
@@ -59,6 +62,9 @@ public:
 
 	std::string rawOnlineStatsThresh = "";
 	int onlineStatsTreshold = 0;
+
+	std::string rawOutpType = "separatecsv";	// Valid values: "separatecsv" or "singlecsv"
+	bool separateCsv = true;
 
 protected:
 

@@ -122,7 +122,7 @@ void Environment::show_help()
         << "\t" << PROJECT_NAME << " --help\tDisplay help info\n"
         << "\t" << PROJECT_NAME 
             << FILEPATTERN << " <fp> " 
-            << CSVFILE << " <csv> " 
+            << OUTPUTTYPE << " <csv> " 
             << SEGDIR << " <sd> " 
             << INTDIR << " <id> " 
             << OUTDIR << " <od> "
@@ -161,7 +161,7 @@ void Environment::show_summary (const std::string & head, const std::string & ta
         << "\toutput\t" << output_dir << "\n"
         << "\tfile pattern\t" << file_pattern << "\n"
         << "\tembedded pixel size\t" << embedded_pixel_size << "\n"
-        << "\tcsv file\t" << csv_file << "\n"
+        << "\toutput type\t" << rawOutpType << "\n"
         << "\t# of image loader threads\t" << n_loader_threads << "\n"
         << "\t# of pixel scanner threads\t" << n_pixel_scan_threads << "\n"
         << "\t# of post-processing threads\t" << n_reduce_threads << "\n"
@@ -275,7 +275,7 @@ int Environment::parse_cmdline(int argc, char** argv)
         find_string_argument (i, OUTDIR, output_dir);
         find_string_argument (i, FEATURES, features);
         find_string_argument (i, FILEPATTERN, file_pattern);
-        find_string_argument (i, CSVFILE, csv_file);
+        find_string_argument (i, OUTPUTTYPE, rawOutpType);
         find_string_argument (i, EMBPIXSZ, embedded_pixel_size);
         find_string_argument (i, LOADERTHREADS, loader_threads);
         find_string_argument (i, PXLSCANTHREADS, pixel_scan_threads);
@@ -308,9 +308,9 @@ int Environment::parse_cmdline(int argc, char** argv)
         std::cout << "Error: Missing argument " << FILEPATTERN << "\n";
         return 1;
     }
-    if (csv_file == "")
+    if (rawOutpType == "")
     {
-        std::cout << "Error: Missing argument " << CSVFILE << "\n";
+        std::cout << "Error: Missing argument " << OUTPUTTYPE << "\n";
         return 1;
     }
     if (features == "")
@@ -318,6 +318,16 @@ int Environment::parse_cmdline(int argc, char** argv)
         std::cout << "Error: Missing argument " << FEATURES << "\n";
         return 1;
     }
+
+    //==== Output type
+    auto rawOutpTypeUC = toupper(rawOutpType);
+    if (rawOutpTypeUC != toupper(OT_SINGLECSV) && rawOutpTypeUC != toupper(OT_SEPCSV))
+    {
+            std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << " or " << OT_SINGLECSV << "\n";
+            return 1;    
+    }
+    separateCsv = rawOutpTypeUC == OT_SEPCSV;
+        
 
     //==== Check numeric parameters
     if (! loader_threads.empty())
