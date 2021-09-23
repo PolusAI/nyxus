@@ -221,6 +221,7 @@ struct LR
 
 	double getValue (AvailableFeatures f);
 	void reduce_pixel_intensity_features();
+	bool intensitiesAllZero();
 	void reduce_edge_intensity_features();
 };
 

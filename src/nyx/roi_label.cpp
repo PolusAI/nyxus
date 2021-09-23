@@ -127,5 +127,11 @@ void LR::reduce_pixel_intensity_features()
 	}
 }
 
+bool LR::intensitiesAllZero()
+{
+	bool bad = (fvals[MIN][0] == 0.0 && fvals[MAX][0] == 0.0);
+	return bad;
+}
+
 
 

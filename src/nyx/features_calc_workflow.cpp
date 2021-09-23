@@ -147,8 +147,12 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 			continue;
 		}
 
-		//==== Reduce pixel intensity #1
+		//==== Reduce pixel intensity #1, including MIN and MAX
 		lr.reduce_pixel_intensity_features();
+
+		//==== Do not calculate features of all-blank intensities (to avoid NANs)
+		if (lr.intensitiesAllZero())
+			continue;
 
 		auto n = lr.pixelCountRoiArea;	// Cardinality of the label value set
 
@@ -163,6 +167,11 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		// Skewness
 		lr.fvals[SKEWNESS][0] // lr.skewness 
 			= std::sqrt(double(lr.pixelCountRoiArea)) * lr.aux_M3 / std::pow(lr.aux_M2, 1.5);
+
+		if (isnan(lr.fvals[SKEWNESS][0]))
+		{
+			bool debugbreak = true;
+		}
 
 		// Kurtosis
 		lr.fvals[KURTOSIS][0] // lr.kurtosis 
@@ -370,6 +379,27 @@ void parallelReduceHaralick2D (size_t start, size_t end, std::vector<int>* ptrLa
 			r.fvals[TEXTURE_DIFFERENCEENTROPY], // .texture_DifferenceEntropy,
 			r.fvals[TEXTURE_INFOMEAS1], // .texture_InfoMeas1,
 			r.fvals[TEXTURE_INFOMEAS2]); // .texture_InfoMeas2);
+
+		// Fix calculated feature values due to all-0 intensity labels to avoid NANs in the output
+		if (r.intensitiesAllZero())
+		{
+			for (int i = 0; i < texture_Feature_Angles.size(); i++)
+			{
+				r.fvals[TEXTURE_ANGULAR2NDMOMENT][i] =
+					r.fvals[TEXTURE_CONTRAST][i] =
+					r.fvals[TEXTURE_CORRELATION][i] =
+					r.fvals[TEXTURE_VARIANCE][i] =
+					r.fvals[TEXTURE_INVERSEDIFFERENCEMOMENT][i] =
+					r.fvals[TEXTURE_SUMAVERAGE][i] =
+					r.fvals[TEXTURE_SUMVARIANCE][i] =
+					r.fvals[TEXTURE_SUMENTROPY][i] =
+					r.fvals[TEXTURE_ENTROPY][i] =
+					r.fvals[TEXTURE_DIFFERENCEVARIANCE][i] =
+					r.fvals[TEXTURE_DIFFERENCEENTROPY][i] =
+					r.fvals[TEXTURE_INFOMEAS1][i] =
+					r.fvals[TEXTURE_INFOMEAS2][i] = 0.0;
+			}
+		}
 	}
 }
 
@@ -387,6 +417,13 @@ void parallelReduceZernike2D (size_t start, size_t end, std::vector<int>* ptrLab
 			r.aux_ZERNIKE2D_ORDER,
 			// out
 			r.fvals[TEXTURE_ZERNIKE2D]);	// .Zernike2D
+
+		// Fix calculated feature values due to all-0 intensity labels to avoid NANs in the output
+		if (r.intensitiesAllZero())
+		{
+			for (int i = 0; i < r.fvals[TEXTURE_ZERNIKE2D].size(); i++)
+				r.fvals[TEXTURE_ZERNIKE2D][i] = 0.0;
+		}
 	}
 }
 

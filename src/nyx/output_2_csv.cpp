@@ -79,9 +79,6 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 
 		for (auto& enabdF : F)
 		{
-			// Columns already exist to the left => comma
-			ssHead << ",";
-
 			auto fname = std::get<0>(enabdF);
 			auto fcode = std::get<1>(enabdF);
 
@@ -107,9 +104,9 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 				for (auto ang : theEnvironment.rotAngles)
 				{
 					// CSV separator
-					if (ang != theEnvironment.rotAngles[0])
-						ssHead << ",";
-					ssHead << fname << "_" << ang;
+					//if (ang != theEnvironment.rotAngles[0])
+					//	ssHead << ",";
+					ssHead << "," << fname << "_" << ang;
 				}
 				// Proceed with other features
 				continue;
@@ -123,17 +120,17 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 						for (int j = 1; j <= i; j += 2)
 						{
 							// CSV separator
-							if (j > 1)
-								ssHead << ",";
-							ssHead << fname << "_" << i << "_" << j;
+							//if (j > 1)
+							//	ssHead << ",";
+							ssHead << "," << fname << "_" << i << "_" << j;
 						}
 					else
 						for (int j = 0; j <= i; j += 2)
 						{
 							// CSV separator
-							if (j > 1)
-								ssHead << ",";
-							ssHead << fname << "_" << i << "_" << j;
+							//if (j > 1)
+							//	ssHead << ",";
+							ssHead << "," << fname << "_" << i << "_" << j;
 						}
 
 				// Proceed with other features
@@ -141,7 +138,7 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 			}
 
 			// Regular feature
-			ssHead << fname;
+			ssHead << "," << fname;
 		}
 		fprintf(fp, "%s\n", ssHead.str().c_str());
 
@@ -163,9 +160,6 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 		{
 			auto fcode = std::get<1> (enabdF);
 			auto vv = r.getFeatureValues (fcode);
-
-			// 2 cells to the left already => comma
-			ssVals << ",";		
 
 			// Parameterized feature
 			// --Texture family
@@ -189,9 +183,9 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 				for (int i=0; i<theEnvironment.rotAngles.size(); i++)
 				{
 					// CSV separator
-					if (i>0)
-						ssVals << ",";
-					ssVals << vv[i];
+					//if (i>0)
+					//	ssVals << ",";
+					ssVals << "," << vv[i];
 				}
 				// Proceed with other features
 				continue;
@@ -205,17 +199,17 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 						for (int j = 1; j <= i; j += 2)
 						{
 							// CSV separator
-							if (j > 1)
-								ssVals << ",";
-							ssVals << vv[zIdx++]; // former r.Zernike2D[zIdx++];
+							//if (j > 1)
+							//	ssVals << ",";
+							ssVals << "," << vv[zIdx++]; // former r.Zernike2D[zIdx++];
 						}
 					else
 						for (int j = 0; j <= i; j += 2)
 						{
 							// CSV separator
-							if (j > 1)
-								ssVals << ",";
-							ssVals << vv[zIdx++]; // former r.Zernike2D[zIdx++];
+							//if (j > 1)
+							//	ssVals << ",";
+							ssVals << "," << vv[zIdx++]; // former r.Zernike2D[zIdx++];
 						}
 
 				// Proceed with other features
@@ -223,7 +217,7 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 			}
 
 			// Regular feature
-			ssVals << vv[0];
+			ssVals << "," << vv[0];
 		}
 
 		fprintf(fp, "%s\n", ssVals.str().c_str());
