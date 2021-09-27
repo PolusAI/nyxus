@@ -583,8 +583,10 @@ void free_matrix(double** matrix, int nrh)
 // Depends:
 #define PGM_MAXMAXVAL 255
 // 
-TEXTURE* Extract_Texture_Features(int distance, int angle,
-	u_int8_t** grays, unsigned int nrows, unsigned int ncols)
+void Extract_Texture_Features(int distance, int angle,
+	u_int8_t** grays, unsigned int nrows, unsigned int ncols, 
+	// output
+	TEXTURE & Texture)
 {
 	int tone_LUT[PGM_MAXMAXVAL + 1]; /* LUT mapping gray tone(0-255) to matrix indicies */
 	int tone_count = 0; /* number of tones actually in the img. atleast 1 less than 255 */
@@ -592,12 +594,13 @@ TEXTURE* Extract_Texture_Features(int distance, int angle,
 	int row, col, rows = nrows, cols = ncols;
 	double** P_matrix;
 	double sum_entropy;
-	TEXTURE* Texture;
-	Texture = (TEXTURE*)calloc(1, sizeof(TEXTURE));
-	if (!Texture) {
-		printf("\nERROR in TEXTURE structure allocate\n");
-		exit(1);
-	}
+
+	//xxx	TEXTURE* Texture;
+	//xxx	Texture = (TEXTURE*)calloc(1, sizeof(TEXTURE));
+	//xxx	if (!Texture) {
+	//xxx		printf("\nERROR in TEXTURE structure allocate\n");
+	//xxx		exit(1);
+	//xxx	}
 
 	/* Determine the number of different gray tones (not maxval) */
 	for (row = PGM_MAXMAXVAL; row >= 0; --row)
@@ -626,30 +629,30 @@ TEXTURE* Extract_Texture_Features(int distance, int angle,
 		P_matrix = CoOcMat_Angle_135(distance, grays, rows, cols, tone_LUT, tone_count);
 	else {
 		fprintf(stderr, "Cannot created co-occurence matrix for angle %d. Unsupported angle.\n", angle);
-		return NULL;
+		return; //xxx NULL;
 	}
 
 	/* compute the statistics for the spatial dependence matrix */
-	Texture->ASM = f1_asm(P_matrix, tone_count);
-	Texture->contrast = f2_contrast(P_matrix, tone_count);
-	Texture->correlation = f3_corr(P_matrix, tone_count);
-	Texture->variance = f4_var(P_matrix, tone_count);
-	Texture->IDM = f5_idm(P_matrix, tone_count);
-	Texture->sum_avg = f6_savg(P_matrix, tone_count);
+	Texture.ASM = f1_asm(P_matrix, tone_count);
+	Texture.contrast = f2_contrast(P_matrix, tone_count);
+	Texture.correlation = f3_corr(P_matrix, tone_count);
+	Texture.variance = f4_var(P_matrix, tone_count);
+	Texture.IDM = f5_idm(P_matrix, tone_count);
+	Texture.sum_avg = f6_savg(P_matrix, tone_count);
 
 	/* T.J.M watch below the cast from float to double */
 	sum_entropy = f8_sentropy(P_matrix, tone_count);
-	Texture->sum_entropy = sum_entropy;
-	Texture->sum_var = f7_svar(P_matrix, tone_count, sum_entropy);
+	Texture.sum_entropy = sum_entropy;
+	Texture.sum_var = f7_svar(P_matrix, tone_count, sum_entropy);
 
-	Texture->entropy = f9_entropy(P_matrix, tone_count);
-	Texture->diff_var = f10_dvar(P_matrix, tone_count);
-	Texture->diff_entropy = f11_dentropy(P_matrix, tone_count);
-	Texture->meas_corr1 = f12_icorr(P_matrix, tone_count);
-	Texture->meas_corr2 = f13_icorr(P_matrix, tone_count);
+	Texture.entropy = f9_entropy(P_matrix, tone_count);
+	Texture.diff_var = f10_dvar(P_matrix, tone_count);
+	Texture.diff_entropy = f11_dentropy(P_matrix, tone_count);
+	Texture.meas_corr1 = f12_icorr(P_matrix, tone_count);
+	Texture.meas_corr2 = f13_icorr(P_matrix, tone_count);
 
 	free_matrix(P_matrix, tone_count);
-	return (Texture);
+	//xxx	return (Texture);
 }
 
 void haralick2D_imp (
@@ -672,7 +675,7 @@ void haralick2D_imp (
 	std::vector<double>& Texture_InfoMeas2)
 {
 	unsigned char** p_gray;
-	TEXTURE* features;
+	TEXTURE TF = {}; //xxx TEXTURE* features;
 	int angle;
 	double min_value, max_value;
 	double scale255;
@@ -721,24 +724,24 @@ void haralick2D_imp (
 
 	for (angle = 0; angle <= 135; angle = angle + 45) 
 	{
-		features = Extract_Texture_Features ((int)distance, angle, p_gray, Im.height, Im.width);
+		Extract_Texture_Features((int)distance, angle, p_gray, Im.height, Im.width, TF); //xxx features = Extract_Texture_Features ((int)distance, angle, p_gray, Im.height, Im.width);
 
 		Texture_Feature_Angles.push_back(angle);
-		Texture_AngularSecondMoments.push_back(features->ASM);
-		Texture_Contrast.push_back(features->contrast);
-		Texture_Correlation.push_back(features->correlation);
-		Texture_Variance.push_back(features->variance);
-		Texture_InverseDifferenceMoment.push_back(features->IDM);
-		Texture_SumAverage.push_back(features->sum_avg);
-		Texture_SumVariance.push_back(features->sum_var);
-		Texture_SumEntropy.push_back(features->sum_entropy);
-		Texture_Entropy.push_back(features->entropy);
-		Texture_DifferenceVariance.push_back(features->diff_var);
-		Texture_DifferenceEntropy.push_back(features->diff_entropy);
-		Texture_InfoMeas1.push_back(features->meas_corr1);
-		Texture_InfoMeas2.push_back(features->meas_corr2);
+		Texture_AngularSecondMoments.push_back (TF.ASM);
+		Texture_Contrast.push_back (TF.contrast);
+		Texture_Correlation.push_back (TF.correlation);
+		Texture_Variance.push_back (TF.variance);
+		Texture_InverseDifferenceMoment.push_back (TF.IDM);
+		Texture_SumAverage.push_back (TF.sum_avg);
+		Texture_SumVariance.push_back (TF.sum_var);
+		Texture_SumEntropy.push_back (TF.sum_entropy);
+		Texture_Entropy.push_back (TF.entropy);
+		Texture_DifferenceVariance.push_back (TF.diff_var);
+		Texture_DifferenceEntropy.push_back (TF.diff_entropy);
+		Texture_InfoMeas1.push_back (TF.meas_corr1);
+		Texture_InfoMeas2.push_back (TF.meas_corr2);
 
-		free(features);
+		//xxx free(features);
 	}
 
 	for (auto y = 0; y < Im.height; y++)

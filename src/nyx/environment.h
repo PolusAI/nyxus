@@ -37,8 +37,11 @@ public:
 
 	std::string labels_dir = "",
 		intensity_dir = "",
-		output_dir = "",
-		file_pattern = "",
+		output_dir = "";
+
+	bool singleROI = false;	// is set to 'true' parse_cmdline() if labels_dir==intensity_dir
+
+	std::string file_pattern = "",
 		embedded_pixel_size = "";
 
 	std::string features;

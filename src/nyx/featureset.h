@@ -34,10 +34,11 @@ enum AvailableFeatures
 	BBOX_HEIGHT,  
 	BBOX_WIDTH,  
 
-	MAJOR_AXIS_LENGTH,	// ellipticity  
-	MINOR_AXIS_LENGTH,  // ellipticity
-	ECCENTRICITY,		// ellipticity
-	ORIENTATION,		// ellipticity
+	// -- ellipticity related
+	MAJOR_AXIS_LENGTH,
+	MINOR_AXIS_LENGTH,
+	ECCENTRICITY,
+	ORIENTATION,
 
 	NUM_NEIGHBORS,  
 	

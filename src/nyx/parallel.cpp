@@ -9,6 +9,7 @@
 #include <future>
 #include <array>
 #include "virtual_file_tile_channel_loader.h"
+#include "environment.h"
 #include "sensemaker.h"
 
 #include <string>
@@ -81,15 +82,15 @@ void processPixels (unsigned int start_idx_inclusive, unsigned int end_idx_exclu
 	for (unsigned long i = start_idx_inclusive; i < end_idx_exclusive; i++)
 	{
 		auto label = (*dataL)[i];
-
-		#ifdef SINGLE_ROI_TEST
-		label = 1;
-		#endif
-
 		if (label != 0)
 		{
 			int y = i / tw,
 				x = i % tw;
+
+			// Collapse all the labels to one if single-ROI mde is requested
+			if (theEnvironment.singleROI)
+				label = 1;
+			
 			update_label_parallel (x, y, label, (*dataI)[i]);
 		}
 	}

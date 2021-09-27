@@ -76,8 +76,9 @@ class ImageMatrix
 {
 public:
 
-	ImageMatrix(const std::vector <Pixel2>& labels_raw_pixels, AABB & aabb)
-		:_pix_plane(aabb.get_width(), aabb.get_height())
+	ImageMatrix(const std::vector <Pixel2>& labels_raw_pixels, AABB & aabb) :
+		original_aabb (aabb),
+		_pix_plane(aabb.get_width(), aabb.get_height())
 	{
 		// Dimensions
 		width = aabb.get_width();
@@ -111,6 +112,7 @@ public:
 	}
 
 	StatsInt height = 0, width = 0;
+	AABB original_aabb;
 	
 	//std::vector<PixIntens> _pix_plane;	// [ height * width ]
 	pixData _pix_plane;

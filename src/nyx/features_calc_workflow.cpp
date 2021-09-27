@@ -168,11 +168,6 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		lr.fvals[SKEWNESS][0] // lr.skewness 
 			= std::sqrt(double(lr.pixelCountRoiArea)) * lr.aux_M3 / std::pow(lr.aux_M2, 1.5);
 
-		if (isnan(lr.fvals[SKEWNESS][0]))
-		{
-			bool debugbreak = true;
-		}
-
 		// Kurtosis
 		lr.fvals[KURTOSIS][0] // lr.kurtosis 
 			= double(lr.pixelCountRoiArea) * lr.aux_M4 / (lr.aux_M2 * lr.aux_M2) - 3.0;
@@ -252,9 +247,17 @@ void parallelReduceContour (size_t start, size_t end, std::vector<int>* ptrLabel
 			continue;
 
 		//==== Contour, ROI perimeter, equivalent circle diameter
-		r.contour.calculate (r.raw_pixels);
-		r.fvals[PERIMETER][0] = (StatsInt)r.contour.get_roi_perimeter();	// .roiPerimeter
-		r.fvals[EQUIVALENT_DIAMETER][0] = r.contour.get_diameter_equal_perimeter();	// .equivDiam
+		ImageMatrix im (r.raw_pixels, r.aabb);
+
+		if (theEnvironment.verbosity_level & 8)
+			std::cout << "Calculating contour for ROI '" << lab << "' of " << r.raw_pixels.size() << " pixels, equivalent matrix " << im.height << " x " << im.width << "\n";
+
+		r.contour.calculate (im);
+		r.fvals[PERIMETER][0] = r.contour.get_roi_perimeter();	
+		r.fvals[EQUIVALENT_DIAMETER][0] = r.contour.get_diameter_equal_perimeter();	
+
+		if (theEnvironment.verbosity_level & 8)
+			std::cout << "\tContour length=" << r.contour.contour_pixels.size() << " ROI perimeter=" << r.fvals[PERIMETER][0] << " diameter_equal_perimeter=" << r.fvals[EQUIVALENT_DIAMETER][0]  << "\n";
 	}
 }
 

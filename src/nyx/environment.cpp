@@ -319,6 +319,18 @@ int Environment::parse_cmdline(int argc, char** argv)
         return 1;
     }
 
+    //==== Single ROI?
+    if (toupper(labels_dir) == toupper(intensity_dir))
+    {
+        singleROI = true;
+        std::cout << 
+            "+------------------------------+\n"
+            "|                              |\n"
+            "+  Activating single-ROI mode  +\n"
+            "|                              |\n"
+            "+------------------------------+\n";
+    }
+
     //==== Output type
     auto rawOutpTypeUC = toupper(rawOutpType);
     if (rawOutpTypeUC != toupper(OT_SINGLECSV) && rawOutpTypeUC != toupper(OT_SEPCSV))

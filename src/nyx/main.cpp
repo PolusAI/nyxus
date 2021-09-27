@@ -20,10 +20,6 @@ int main (int argc, char** argv)
 		return parseRes;
 	theEnvironment.show_summary ("\n"/*head*/, "\n"/*tail*/);
 
-	#ifdef SINGLE_ROI_TEST
-	std::cout << std::endl << "Attention! Running the single-ROI test, otherwise undefine SINGLE_ROI_TEST" << std::endl;
-	#endif
-
 	#ifdef SANITY_CHECK_INTENSITIES_FOR_LABEL
 	std::cout << std::endl << "Attention! Will dump intensioities for label " << SANITY_CHECK_INTENSITIES_FOR_LABEL << ", otherwise undefine SANITY_CHECK_INTENSITIES_FOR_LABEL" << std::endl;
 	#endif

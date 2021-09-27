@@ -1,7 +1,5 @@
 #pragma once
 
-//---	#define SINGLE_ROI_TEST
-
 #include <climits>
 #include <memory>
 #include <mutex>
@@ -65,7 +63,8 @@ public:
 	{ 
 		contour_pixels.reserve(100);
 	}
-	void calculate (const std::vector<Pixel2> & rawPixels);
+	//void calculate (const std::vector<Pixel2> & rawPixels);
+	void calculate (const ImageMatrix& im);	// Leaves result in 'contour_pixels'
 	std::vector<Pixel2> contour_pixels;
 	StatsInt get_roi_perimeter();
 	StatsReal get_diameter_equal_perimeter();
