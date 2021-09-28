@@ -18,6 +18,12 @@
 #define VERBOSITY	"--verbosity"	// Environment :: verbosity_level	-- Example: --verbosity=3
 #define ONLINESTATSTHRESH	"--onlineStatsThresh"	// Environment :: onlineStatsThreshold	-- Example: --onlineStatsThresh=150
 
+// Feature group nicknames
+#define FEA_NICK_ALL "*ALL*"
+#define FEA_NICK_ALL_INTENSITY "*ALL_INTENSITY*"
+#define FEA_NICK_ALL_MORPHOLOGY "*ALL_MORPHOLOGY*"
+#define FEA_NICK_ALL_GLCM "*ALL_GLCM*"
+
 // Valid values of 'OUTPUTTYPE'
 #define OT_SEPCSV "separatecsv"
 #define OT_SINGLECSV "singlecsv"
@@ -25,6 +31,7 @@
 // Verbosity levels (combinable via binary and)
 #define VERBOSITY_TIMING	2
 #define VERBOSITY_ROI_INFO	4
+#define VERBOSITY_DETAILED	8
 
 class Environment
 {
@@ -49,13 +56,13 @@ public:
 	std::string featureFileName = "";
 
 	std::string loader_threads = "";
-	int n_loader_threads = 1;
+	int n_loader_threads = 2;
 
 	std::string pixel_scan_threads = "";
 	int n_pixel_scan_threads = 1;
 
 	std::string reduce_threads = "";
-	int n_reduce_threads = 1;
+	int n_reduce_threads = 16;
 
 	std::string rotations = "";
 	std::vector<float> rotAngles = {0, 45, 90, 135};

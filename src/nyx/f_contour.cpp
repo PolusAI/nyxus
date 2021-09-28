@@ -31,44 +31,38 @@ void Contour::calculate (const ImageMatrix & im)
 
 	int paddingColor = 0;
 	std::vector<PixIntens> paddedImage((height + 2) * (width + 2), paddingColor);
-		for (int x = 0; x < width + 2; x++)
+	for (int x = 0; x < width + 2; x++)
+		for (int y = 0; y < height + 2; y++)
 		{
-			for (int y = 0; y < height + 2; y++)
+			if (x == 0 || y == 0 || x == width + 1 || y == height + 1)
 			{
-				if (x == 0 || y == 0 || x == width + 1 || y == height + 1)
-				{
-					paddedImage[x + y * (width + 2)] = paddingColor;
-				}
-				else
-				{
-					paddedImage[x + y * (width + 2)] = image[x - 1 + (y - 1) * width];
-				}
+				paddedImage[x + y * (width + 2)] = paddingColor;
+			}
+			else
+			{
+				paddedImage[x + y * (width + 2)] = image[x - 1 + (y - 1) * width];
 			}
 		}
 
 	const int WHITE = 0;
-
 	contour_pixels.clear();
 
-		bool inside = false;
-		int pos = 0;
+	bool inside = false;
+	int pos = 0;
 
 	//==== Prepare the contour image
 	std::vector<PixIntens> borderImage ((height + 2) * (width + 2), 0);
 
 	// Set entire image to WHITE
 	for (int y = 0; y < (height + 2); y++)
-	{
 		for (int x = 0; x < (width + 2); x++)
 		{
 			borderImage [x + y * (width + 2)] = WHITE;
 		}
-	}
 
 
 	//==== Scan 
 	for (int y = 0; y < (height + 2); y++)
-	{
 		for (int x = 0; x < (width + 2); x++)
 		{
 			pos = x + y * (width + 2);
@@ -87,9 +81,7 @@ void Contour::calculate (const ImageMatrix & im)
 			{
 				inside = false;
 			}
-			else
-					
-				if (paddedImage[pos] != 0 /*paddedImage[pos] == BLACK*/ && !inside)	// Undiscovered border point
+			else if (paddedImage[pos] != 0 /*paddedImage[pos] == BLACK*/ && !inside)	// Undiscovered border point
 				{
 					borderImage[pos] = paddedImage[pos]; /*BLACK*/
 
@@ -157,7 +149,6 @@ void Contour::calculate (const ImageMatrix & im)
 				}
 			}
 		}
-	}
 
 	//==== Remove padding and save the countour image as a vector of contour-onlu pixels
 	AABB bb = im.original_aabb;

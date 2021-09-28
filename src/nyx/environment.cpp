@@ -77,7 +77,7 @@ bool parse_delimited_string_list_to_features (const std::string& rawString, std:
     if (rawString.length() == 0)
     {
         std::cout << "Warning: no features specified, defaulting to ALL\n";
-        result.push_back("ALL");
+        result.push_back(FEA_NICK_ALL);
         return true;
     }
 
@@ -89,7 +89,7 @@ bool parse_delimited_string_list_to_features (const std::string& rawString, std:
     for (const auto &s : strings)
     {
         auto s_uppr = toupper(s);
-        if (s_uppr == "ALL")
+        if (s_uppr == FEA_NICK_ALL || s_uppr == FEA_NICK_ALL_INTENSITY || s_uppr == FEA_NICK_ALL_MORPHOLOGY || s_uppr == FEA_NICK_ALL_GLCM)
         {
             result.push_back(s_uppr);
             continue;
@@ -419,13 +419,83 @@ int Environment::parse_cmdline(int argc, char** argv)
     theFeatureSet.enableAll(false); // First, disable all
     for (auto& s : desiredFeatures) // Second, iterate uppercased feature names
     {
-        // Check if all the features are requested
-        if (s == "ALL")
+        // Check if features are requested via a group nickname
+        if (s == FEA_NICK_ALL)
         {
             theFeatureSet.enableAll();
             break;  // No need to bother of others
         }
+        if (s == FEA_NICK_ALL_INTENSITY)
+        {
+            auto F = {
+                MEAN,
+                MEDIAN,
+                MIN,
+                MAX,
+                RANGE,
+                STANDARD_DEVIATION,
+                SKEWNESS,
+                KURTOSIS,
+                MEAN_ABSOLUTE_DEVIATION,
+                ENERGY,
+                ROOT_MEAN_SQUARED,
+                ENTROPY,
+                MODE,
+                UNIFORMITY,
+                P10, P25, P75, P90,
+                INTERQUARTILE_RANGE,
+                ROBUST_MEAN_ABSOLUTE_DEVIATION,
+                WEIGHTED_CENTROID_Y,
+                WEIGHTED_CENTROID_X
+            };
+            theFeatureSet.enableFeatures(F);
+        }
+        if (s == FEA_NICK_ALL_MORPHOLOGY)
+        {
+            auto F = {
+                AREA_PIXELS_COUNT,
+                CENTROID_X,
+                CENTROID_Y,
+                BBOX_YMIN,
+                BBOX_XMIN,
+                BBOX_HEIGHT,
+                BBOX_WIDTH,
+                MAJOR_AXIS_LENGTH,
+                MINOR_AXIS_LENGTH,
+                ECCENTRICITY,
+                ORIENTATION,
+                NUM_NEIGHBORS,
+                EXTENT,
+                ASPECT_RATIO,
+                EQUIVALENT_DIAMETER,
+                CONVEX_HULL_AREA,
+                SOLIDITY,
+                PERIMETER,
+                CIRCULARITY
+            };
+            theFeatureSet.enableFeatures(F);
+        }
+        if (s == FEA_NICK_ALL_GLCM)
+        {
+            auto F = {
+                TEXTURE_ANGULAR2NDMOMENT,
+                TEXTURE_CONTRAST,
+                TEXTURE_CORRELATION,
+                TEXTURE_VARIANCE,
+                TEXTURE_INVERSEDIFFERENCEMOMENT,
+                TEXTURE_SUMAVERAGE,
+                TEXTURE_SUMVARIANCE,
+                TEXTURE_SUMENTROPY,
+                TEXTURE_ENTROPY,
+                TEXTURE_DIFFERENCEVARIANCE,
+                TEXTURE_DIFFERENCEENTROPY,
+                TEXTURE_INFOMEAS1,
+                TEXTURE_INFOMEAS2 
+            };
+            theFeatureSet.enableFeatures (F);
+        }
 
+        // Process features individually
         AvailableFeatures af;
         if (!theFeatureSet.findFeatureByString(s, af))
         {

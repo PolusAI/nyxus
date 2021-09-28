@@ -122,9 +122,9 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 			// Show stayalive progress info
 			if (cnt++ % 4 == 0)
 				std::cout << "\t" 
-					<< BEGINFORMAT_RED	// begin colored format
+					<< BEGINFORMAT_RED	
 					<< int((row * nth + col) * 100 / float(nth * ntw) *100) / 100. << "%\t" << uniqueLabels.size() << " ULs"
-					<< ENDFORMAT	// end colored format
+					<< ENDFORMAT	
 					<< "\n";
 
 			totalTileLoadTime += elapsedTile.count();
@@ -134,9 +134,9 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 
 	// Show stayalive progress info
 	std::cout << "\t" 
-		<< "\033[1;33m"	// begin colored format
+		<< BEGINFORMAT_RED
 		<< "100%\t" << uniqueLabels.size() << " ULs"
-		<< "\033[0m"	// end colored format
+		<< ENDFORMAT
 		<< "\n";
 
 	return true;

@@ -699,7 +699,7 @@ void haralick2D_imp (
 		for (auto x = 0; x < Im.width; x++)
 			p_gray[y][x] = (unsigned char)((pix_plane(y, x) - min_value) * scale255);
 
-	Texture_Feature_Angles.clear();
+	Texture_Feature_Angles.clear();	// Actual angles used, just for verification
 	Texture_AngularSecondMoments.clear(); 
 	Texture_Contrast.clear();
 	Texture_Correlation.clear();

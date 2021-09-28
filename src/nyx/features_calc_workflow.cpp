@@ -249,15 +249,15 @@ void parallelReduceContour (size_t start, size_t end, std::vector<int>* ptrLabel
 		//==== Contour, ROI perimeter, equivalent circle diameter
 		ImageMatrix im (r.raw_pixels, r.aabb);
 
-		if (theEnvironment.verbosity_level & 8)
-			std::cout << "Calculating contour for ROI '" << lab << "' of " << r.raw_pixels.size() << " pixels, equivalent matrix " << im.height << " x " << im.width << "\n";
+		if (theEnvironment.verbosity_level & VERBOSITY_DETAILED)
+			std::cout << "Contour for ROI " << lab << " of " << r.raw_pixels.size() << " pixels, equivalent matrix " << im.height << " x " << im.width << " - calculating\n";
 
 		r.contour.calculate (im);
 		r.fvals[PERIMETER][0] = r.contour.get_roi_perimeter();	
 		r.fvals[EQUIVALENT_DIAMETER][0] = r.contour.get_diameter_equal_perimeter();	
 
 		if (theEnvironment.verbosity_level & 8)
-			std::cout << "\tContour length=" << r.contour.contour_pixels.size() << " ROI perimeter=" << r.fvals[PERIMETER][0] << " diameter_equal_perimeter=" << r.fvals[EQUIVALENT_DIAMETER][0]  << "\n";
+			std::cout << "Contour for ROI " << lab << " length=" << r.contour.contour_pixels.size() << " ROI perimeter=" << r.fvals[PERIMETER][0] << " diameter_equal_perimeter=" << r.fvals[EQUIVALENT_DIAMETER][0]  << "\n";
 	}
 }
 
@@ -518,7 +518,7 @@ void reduce (int nThr, int min_online_roi_size)
 	}
 
 	//==== Fitting an ellipse
-	//if (theFeatureSet.anyEnabled({MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION}))
+	if (theFeatureSet.anyEnabled({ MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION } ))
 	{
 		STOPWATCH("Ellipticity et al ...", "\tReduced ellipticity - MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION");
 		// 
@@ -577,19 +577,47 @@ void reduce (int nThr, int min_online_roi_size)
 	}
 
 	//==== Contour-related ROI perimeter, equivalent circle diameter
-	if (theFeatureSet.anyEnabled({ EQUIVALENT_DIAMETER, PERIMETER }))
+	if (theFeatureSet.anyEnabled({ EQUIVALENT_DIAMETER, PERIMETER,
+			CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY, // depend on PERIMETER
+			CELLPROFILER_INTENSITY_INTEGRATEDINTENSITYEDGE,
+			CELLPROFILER_INTENSITY_MAXINTENSITYEDGE,
+			CELLPROFILER_INTENSITY_MININTENSITYEDGE,
+			CELLPROFILER_INTENSITY_MEANINTENSITYEDGE,
+			CELLPROFILER_INTENSITY_STDDEVINTENSITYEDGE // depend on contour and PERIMETER
+		}))
 	{
-		STOPWATCH("Contour, ROI perimeter, equivalent circle diameter ...", "\tReduced contour, ROI perimeter, equivalent circle diameter");
-		runParallel (parallelReduceContour, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
-	}
-
-	//==== Convex hull related Solidity, Circularity, IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
-	{
-		STOPWATCH("Hulls, and related (circularity, solidity, etc) ...", "\tReduced hulls, and related (circularity, solidity, etc)");
-		runParallel (parallelReduceConvHull, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
+		{
+			STOPWATCH("Contour, ROI perimeter, equivalent circle diameter ...", "\tReduced contour, ROI perimeter, equivalent circle diameter");
+			runParallel (parallelReduceContour, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
+		}
+		//==== Convex hull related Solidity, Circularity, IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
+		{
+			// CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY // depends on PERIMETER
+			STOPWATCH("Hulls, and related (circularity, solidity, etc) ...", "\tReduced hulls, and related (circularity, solidity, etc)");
+			runParallel (parallelReduceConvHull, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
+		}	
 	}
 
 	//==== Extrema and Euler number
+	if (theFeatureSet.anyEnabled({ 
+		EXTREMA_P1_Y,
+		EXTREMA_P1_X,
+		EXTREMA_P2_Y,
+		EXTREMA_P2_X,
+		EXTREMA_P3_Y,
+		EXTREMA_P3_X,
+		EXTREMA_P4_Y,
+		EXTREMA_P4_X,
+		EXTREMA_P5_Y,
+		EXTREMA_P5_X,
+		EXTREMA_P6_Y,
+		EXTREMA_P6_X,
+		EXTREMA_P7_Y,
+		EXTREMA_P7_X,
+		EXTREMA_P8_Y,
+		EXTREMA_P8_X, 
+		EULER_NUBER }))
+		
 	{
 		STOPWATCH("Extrema and Euler ...", "\tReduced extrema and Euler");
 		for (auto& ld : labelData)
