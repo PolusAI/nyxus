@@ -201,7 +201,7 @@ int processDataset (
 
 		// --Timing
 		end = std::chrono::system_clock::now();
-		std::chrono::duration<double> elapsed2 = end - start;
+		std::chrono::duration<double, std::milli> elapsed2 = end - start;
 		
 		#ifdef CHECKTIMING
 		std::cout << "\tTiming of sensemaker::reduce [s] " << elapsed2.count() << std::endl;
@@ -223,8 +223,9 @@ int processDataset (
 
 	// Timing
 	end = std::chrono::system_clock::now();
-	std::chrono::duration<double> elapsed_seconds = end - start;
-	std::cout << "Elapsed time (s) " << elapsed_seconds.count() << std::endl;
+	std::chrono::duration<double, std::milli> elapsed = end - start;
+	double elapsed_sec = elapsed.count() / 1000.;
+	std::cout << "Elapsed time (s) " << elapsed.count() << std::endl;
 	std::cout 
 		<< "Total tile load time [s]: " << totalTileLoadTime 
 		<< "\n\t+\nTotal feature calc time [s]: " << totalFeatureReduceTime 

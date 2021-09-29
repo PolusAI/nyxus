@@ -449,6 +449,7 @@ int Environment::parse_cmdline(int argc, char** argv)
                 WEIGHTED_CENTROID_X
             };
             theFeatureSet.enableFeatures(F);
+            continue;
         }
         if (s == FEA_NICK_ALL_MORPHOLOGY)
         {
@@ -474,6 +475,7 @@ int Environment::parse_cmdline(int argc, char** argv)
                 CIRCULARITY
             };
             theFeatureSet.enableFeatures(F);
+            continue;
         }
         if (s == FEA_NICK_ALL_GLCM)
         {
@@ -493,6 +495,7 @@ int Environment::parse_cmdline(int argc, char** argv)
                 TEXTURE_INFOMEAS2 
             };
             theFeatureSet.enableFeatures (F);
+            continue;
         }
 
         // Process features individually

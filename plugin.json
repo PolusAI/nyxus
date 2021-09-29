@@ -1,6 +1,6 @@
 {
   "name": "Nyxus",
-  "version": "0.0.6",
+  "version": "0.1.0",
   "title": "Nyxus feature extraction",
   "description": "Test of Nyxus feature extractor",
   "author": "friskluft + hsidky",
@@ -8,7 +8,7 @@
   "repository": "https://github.com/friskluft/nyxus",
   "website": "https://github.com/friskluft/nyxus",
   "citation": "",
-  "containerId": "polusai/nyxus:0.0.6",
+  "containerId": "polusai/nyxus:0.1.0",
   "inputs": [
     {
       "name": "segDir",
@@ -45,439 +45,435 @@
           "oneOf": [
             {
               "description": "All",
-              "enum": ["*all*"]
-            },
-            {
-              "description": "All pixel intensity features",
-              "enum": ["*all_intensity*"]
+              "enum": [ "*ALL*" ]
             },
             {
               "description": "MEAN",
-              "enum": ["MEAN"]
+              "enum": [ "MEAN" ]
             },
             {
               "description": "MEDIAN",
-              "enum": ["MEDIAN"]
+              "enum": [ "MEDIAN" ]
             },
             {
               "description": "MIN",
-              "enum": ["MIN"]
+              "enum": [ "MIN" ]
             },
             {
               "description": "MAX",
-              "enum": ["MAX"]
+              "enum": [ "MAX" ]
             },
             {
               "description": "RANGE",
-              "enum": ["RANGE"]
+              "enum": [ "RANGE" ]
             },
             {
               "description": "STANDARD_DEVIATION",
-              "enum": ["STANDARD_DEVIATION"]
+              "enum": [ "STANDARD_DEVIATION" ]
             },
             {
               "description": "SKEWNESS",
-              "enum": ["SKEWNESS"]
+              "enum": [ "SKEWNESS" ]
             },
             {
               "description": "KURTOSIS",
-              "enum": ["KURTOSIS"]
+              "enum": [ "KURTOSIS" ]
             },
             {
               "description": "MEAN_ABSOLUTE_DEVIATION",
-              "enum": ["MEAN_ABSOLUTE_DEVIATION"]
+              "enum": [ "MEAN_ABSOLUTE_DEVIATION" ]
             },
             {
               "description": "ENERGY",
-              "enum": ["ENERGY"]
+              "enum": [ "ENERGY" ]
             },
             {
               "description": "ROOT_MEAN_SQUARED",
-              "enum": ["ROOT_MEAN_SQUARED"]
+              "enum": [ "ROOT_MEAN_SQUARED" ]
             },
             {
               "description": "ENTROPY",
-              "enum": ["ENTROPY"]
+              "enum": [ "ENTROPY" ]
             },
             {
               "description": "MODE",
-              "enum": ["MODE"]
+              "enum": [ "MODE" ]
             },
             {
               "description": "UNIFORMITY",
-              "enum": ["UNIFORMITY"]
+              "enum": [ "UNIFORMITY" ]
             },
             {
               "description": "P10",
-              "enum": ["P10"]
+              "enum": [ "P10" ]
             },
             {
               "description": "P25",
-              "enum": ["P25"]
+              "enum": [ "P25" ]
             },
             {
               "description": "P75",
-              "enum": ["P75"]
+              "enum": [ "P75" ]
             },
             {
               "description": "P90",
-              "enum": ["P90"]
+              "enum": [ "P90" ]
             },
             {
               "description": "INTERQUARTILE_RANGE",
-              "enum": ["INTERQUARTILE_RANGE"]
+              "enum": [ "INTERQUARTILE_RANGE" ]
             },
             {
               "description": "ROBUST_MEAN_ABSOLUTE_DEVIATION",
-              "enum": ["ROBUST_MEAN_ABSOLUTE_DEVIATION"]
+              "enum": [ "ROBUST_MEAN_ABSOLUTE_DEVIATION" ]
             },
             {
               "description": "WEIGHTED_CENTROID_Y",
-              "enum": ["WEIGHTED_CENTROID_Y"]
+              "enum": [ "WEIGHTED_CENTROID_Y" ]
             },
             {
               "description": "WEIGHTED_CENTROID_X",
-              "enum": ["WEIGHTED_CENTROID_X"]
+              "enum": [ "WEIGHTED_CENTROID_X" ]
             },
             {
               "description": "AREA_PIXELS_COUNT",
-              "enum": ["AREA_PIXELS_COUNT"]
+              "enum": [ "AREA_PIXELS_COUNT" ]
             },
             {
               "description": "CENTROID_X",
-              "enum": ["CENTROID_X"]
+              "enum": [ "CENTROID_X" ]
             },
             {
               "description": "CENTROID_Y",
-              "enum": ["CENTROID_Y"]
+              "enum": [ "CENTROID_Y" ]
             },
             {
               "description": "BBOX_YMIN",
-              "enum": ["BBOX_YMIN"]
+              "enum": [ "BBOX_YMIN" ]
             },
             {
               "description": "BBOX_XMIN",
-              "enum": ["BBOX_XMIN"]
+              "enum": [ "BBOX_XMIN" ]
             },
             {
               "description": "BBOX_HEIGHT",
-              "enum": ["BBOX_HEIGHT"]
+              "enum": [ "BBOX_HEIGHT" ]
             },
             {
               "description": "BBOX_WIDTH",
-              "enum": ["BBOX_WIDTH"]
+              "enum": [ "BBOX_WIDTH" ]
             },
             {
               "description": "MAJOR_AXIS_LENGTH",
-              "enum": ["MAJOR_AXIS_LENGTH"]
+              "enum": [ "MAJOR_AXIS_LENGTH" ]
             },
             {
               "description": "MINOR_AXIS_LENGTH",
-              "enum": ["MINOR_AXIS_LENGTH"]
+              "enum": [ "MINOR_AXIS_LENGTH" ]
             },
             {
               "description": "ECCENTRICITY",
-              "enum": ["ECCENTRICITY"]
+              "enum": [ "ECCENTRICITY" ]
             },
             {
               "description": "ORIENTATION",
-              "enum": ["ORIENTATION"]
+              "enum": [ "ORIENTATION" ]
             },
             {
               "description": "NUM_NEIGHBORS",
-              "enum": ["NUM_NEIGHBORS"]
+              "enum": [ "NUM_NEIGHBORS" ]
             },
             {
               "description": "EXTENT",
-              "enum": ["EXTENT"]
+              "enum": [ "EXTENT" ]
             },
             {
               "description": "ASPECT_RATIO",
-              "enum": ["ASPECT_RATIO"]
+              "enum": [ "ASPECT_RATIO" ]
             },
             {
               "description": "EQUIVALENT_DIAMETER",
-              "enum": ["EQUIVALENT_DIAMETER"]
+              "enum": [ "EQUIVALENT_DIAMETER" ]
             },
             {
               "description": "CONVEX_HULL_AREA",
-              "enum": ["CONVEX_HULL_AREA"]
+              "enum": [ "CONVEX_HULL_AREA" ]
             },
             {
               "description": "SOLIDITY",
-              "enum": ["SOLIDITY"]
+              "enum": [ "SOLIDITY" ]
             },
             {
               "description": "PERIMETER",
-              "enum": ["PERIMETER"]
+              "enum": [ "PERIMETER" ]
             },
             {
               "description": "CIRCULARITY",
-              "enum": ["CIRCULARITY"]
+              "enum": [ "CIRCULARITY" ]
             },
             {
               "description": "CELLPROFILER_INTENSITY_INTEGRATEDINTENSITYEDGE",
-              "enum": ["CELLPROFILER_INTENSITY_INTEGRATEDINTENSITYEDGE"]
+              "enum": [ "CELLPROFILER_INTENSITY_INTEGRATEDINTENSITYEDGE" ]
             },
             {
               "description": "CELLPROFILER_INTENSITY_MAXINTENSITYEDGE",
-              "enum": ["CELLPROFILER_INTENSITY_MAXINTENSITYEDGE"]
+              "enum": [ "CELLPROFILER_INTENSITY_MAXINTENSITYEDGE" ]
             },
             {
               "description": "CELLPROFILER_INTENSITY_MEANINTENSITYEDGE",
-              "enum": ["CELLPROFILER_INTENSITY_MEANINTENSITYEDGE"]
+              "enum": [ "CELLPROFILER_INTENSITY_MEANINTENSITYEDGE" ]
             },
             {
               "description": "CELLPROFILER_INTENSITY_MININTENSITYEDGE",
-              "enum": ["CELLPROFILER_INTENSITY_MININTENSITYEDGE"]
+              "enum": [ "CELLPROFILER_INTENSITY_MININTENSITYEDGE" ]
             },
             {
               "description": "CELLPROFILER_INTENSITY_STDDEVINTENSITYEDGE",
-              "enum": ["CELLPROFILER_INTENSITY_STDDEVINTENSITYEDGE"]
+              "enum": [ "CELLPROFILER_INTENSITY_STDDEVINTENSITYEDGE" ]
             },
             {
               "description": "EXTREMA_P1_X",
-              "enum": ["EXTREMA_P1_X"]
+              "enum": [ "EXTREMA_P1_X" ]
             },
             {
               "description": "EXTREMA_P1_Y",
-              "enum": ["EXTREMA_P1_Y"]
+              "enum": [ "EXTREMA_P1_Y" ]
             },
             {
               "description": "EXTREMA_P2_X",
-              "enum": ["EXTREMA_P2_X"]
+              "enum": [ "EXTREMA_P2_X" ]
             },
             {
               "description": "EXTREMA_P2_Y",
-              "enum": ["EXTREMA_P2_Y"]
+              "enum": [ "EXTREMA_P2_Y" ]
             },
             {
               "description": "EXTREMA_P3_X",
-              "enum": ["EXTREMA_P3_X"]
+              "enum": [ "EXTREMA_P3_X" ]
             },
             {
               "description": "EXTREMA_P3_Y",
-              "enum": ["EXTREMA_P3_Y"]
+              "enum": [ "EXTREMA_P3_Y" ]
             },
             {
               "description": "EXTREMA_P4_X",
-              "enum": ["EXTREMA_P4_X"]
+              "enum": [ "EXTREMA_P4_X" ]
             },
             {
               "description": "EXTREMA_P4_Y",
-              "enum": ["EXTREMA_P4_Y"]
+              "enum": [ "EXTREMA_P4_Y" ]
             },
             {
               "description": "EXTREMA_P5_X",
-              "enum": ["EXTREMA_P5_X"]
+              "enum": [ "EXTREMA_P5_X" ]
             },
             {
               "description": "EXTREMA_P5_Y",
-              "enum": ["EXTREMA_P5_Y"]
+              "enum": [ "EXTREMA_P5_Y" ]
             },
             {
               "description": "EXTREMA_P6_X",
-              "enum": ["EXTREMA_P6_X"]
+              "enum": [ "EXTREMA_P6_X" ]
             },
             {
               "description": "EXTREMA_P6_Y",
-              "enum": ["EXTREMA_P6_Y"]
+              "enum": [ "EXTREMA_P6_Y" ]
             },
             {
               "description": "EXTREMA_P7_X",
-              "enum": ["EXTREMA_P7_X"]
+              "enum": [ "EXTREMA_P7_X" ]
             },
             {
               "description": "EXTREMA_P7_Y",
-              "enum": ["EXTREMA_P7_Y"]
+              "enum": [ "EXTREMA_P7_Y" ]
             },
             {
               "description": "EXTREMA_P8_X",
-              "enum": ["EXTREMA_P8_X"]
+              "enum": [ "EXTREMA_P8_X" ]
             },
             {
               "description": "EXTREMA_P8_Y",
-              "enum": ["EXTREMA_P8_Y"]
+              "enum": [ "EXTREMA_P8_Y" ]
             },
             {
               "description": "MIN_FERET_DIAMETER",
-              "enum": ["MIN_FERET_DIAMETER"]
+              "enum": [ "MIN_FERET_DIAMETER" ]
             },
             {
               "description": "MAX_FERET_DIAMETER",
-              "enum": ["MAX_FERET_DIAMETER"]
+              "enum": [ "MAX_FERET_DIAMETER" ]
             },
             {
               "description": "MIN_FERET_ANGLE",
-              "enum": ["MIN_FERET_ANGLE"]
+              "enum": [ "MIN_FERET_ANGLE" ]
             },
             {
               "description": "MAX_FERET_ANGLE",
-              "enum": ["MAX_FERET_ANGLE"]
+              "enum": [ "MAX_FERET_ANGLE" ]
             },
             {
               "description": "STAT_FERET_DIAM_MIN",
-              "enum": ["STAT_FERET_DIAM_MIN"]
+              "enum": [ "STAT_FERET_DIAM_MIN" ]
             },
             {
               "description": "STAT_FERET_DIAM_MAX",
-              "enum": ["STAT_FERET_DIAM_MAX"]
+              "enum": [ "STAT_FERET_DIAM_MAX" ]
             },
             {
               "description": "STAT_FERET_DIAM_MEAN",
-              "enum": ["STAT_FERET_DIAM_MEAN"]
+              "enum": [ "STAT_FERET_DIAM_MEAN" ]
             },
             {
               "description": "STAT_FERET_DIAM_MEDIAN",
-              "enum": ["STAT_FERET_DIAM_MEDIAN"]
+              "enum": [ "STAT_FERET_DIAM_MEDIAN" ]
             },
             {
               "description": "STAT_FERET_DIAM_STDDEV",
-              "enum": ["STAT_FERET_DIAM_STDDEV"]
+              "enum": [ "STAT_FERET_DIAM_STDDEV" ]
             },
             {
               "description": "STAT_FERET_DIAM_MODE",
-              "enum": ["STAT_FERET_DIAM_MODE"]
+              "enum": [ "STAT_FERET_DIAM_MODE" ]
             },
             {
               "description": "STAT_MARTIN_DIAM_MIN",
-              "enum": ["STAT_MARTIN_DIAM_MIN"]
+              "enum": [ "STAT_MARTIN_DIAM_MIN" ]
             },
             {
               "description": "STAT_MARTIN_DIAM_MAX",
-              "enum": ["STAT_MARTIN_DIAM_MAX"]
+              "enum": [ "STAT_MARTIN_DIAM_MAX" ]
             },
             {
               "description": "STAT_MARTIN_DIAM_MEAN",
-              "enum": ["STAT_MARTIN_DIAM_MEAN"]
+              "enum": [ "STAT_MARTIN_DIAM_MEAN" ]
             },
             {
               "description": "STAT_MARTIN_DIAM_MEDIAN",
-              "enum": ["STAT_MARTIN_DIAM_MEDIAN"]
+              "enum": [ "STAT_MARTIN_DIAM_MEDIAN" ]
             },
             {
               "description": "STAT_MARTIN_DIAM_STDDEV",
-              "enum": ["STAT_MARTIN_DIAM_STDDEV"]
+              "enum": [ "STAT_MARTIN_DIAM_STDDEV" ]
             },
             {
               "description": "STAT_MARTIN_DIAM_MODE",
-              "enum": ["STAT_MARTIN_DIAM_MODE"]
+              "enum": [ "STAT_MARTIN_DIAM_MODE" ]
             },
             {
               "description": "STAT_NASSENSTEIN_DIAM_MIN",
-              "enum": ["STAT_NASSENSTEIN_DIAM_MIN"]
+              "enum": [ "STAT_NASSENSTEIN_DIAM_MIN" ]
             },
             {
               "description": "STAT_NASSENSTEIN_DIAM_MAX",
-              "enum": ["STAT_NASSENSTEIN_DIAM_MAX"]
+              "enum": [ "STAT_NASSENSTEIN_DIAM_MAX" ]
             },
             {
               "description": "STAT_NASSENSTEIN_DIAM_MEAN",
-              "enum": ["STAT_NASSENSTEIN_DIAM_MEAN"]
+              "enum": [ "STAT_NASSENSTEIN_DIAM_MEAN" ]
             },
             {
               "description": "STAT_NASSENSTEIN_DIAM_MEDIAN",
-              "enum": ["STAT_NASSENSTEIN_DIAM_MEDIAN"]
+              "enum": [ "STAT_NASSENSTEIN_DIAM_MEDIAN" ]
             },
             {
               "description": "STAT_NASSENSTEIN_DIAM_STDDEV",
-              "enum": ["STAT_NASSENSTEIN_DIAM_STDDEV"]
+              "enum": [ "STAT_NASSENSTEIN_DIAM_STDDEV" ]
             },
             {
               "description": "STAT_NASSENSTEIN_DIAM_MODE",
-              "enum": ["STAT_NASSENSTEIN_DIAM_MODE"]
+              "enum": [ "STAT_NASSENSTEIN_DIAM_MODE" ]
             },
             {
-              "description": "EULER_NUBER",
-              "enum": ["EULER_NUBER"]
+              "description": "EULER_NUMBER",
+              "enum": [ "EULER_NUMBER" ]
             },
             {
               "description": "POLYGONALITY_AVE",
-              "enum": ["POLYGONALITY_AVE"]
+              "enum": [ "POLYGONALITY_AVE" ]
             },
             {
               "description": "HEXAGONALITY_AVE",
-              "enum": ["HEXAGONALITY_AVE"]
+              "enum": [ "HEXAGONALITY_AVE" ]
             },
             {
               "description": "HEXAGONALITY_STDDEV",
-              "enum": ["HEXAGONALITY_STDDEV"]
+              "enum": [ "HEXAGONALITY_STDDEV" ]
             },
             {
               "description": "DIAMETER_MIN_ENCLOSING_CIRCLE",
-              "enum": ["DIAMETER_MIN_ENCLOSING_CIRCLE"]
+              "enum": [ "DIAMETER_MIN_ENCLOSING_CIRCLE" ]
             },
             {
               "description": "DIAMETER_CIRCUMSCRIBING_CIRCLE",
-              "enum": ["DIAMETER_CIRCUMSCRIBING_CIRCLE"]
+              "enum": [ "DIAMETER_CIRCUMSCRIBING_CIRCLE" ]
             },
             {
               "description": "DIAMETER_INSCRIBING_CIRCLE",
-              "enum": ["DIAMETER_INSCRIBING_CIRCLE"]
+              "enum": [ "DIAMETER_INSCRIBING_CIRCLE" ]
             },
             {
               "description": "GEODETIC_LENGTH",
-              "enum": ["GEODETIC_LENGTH"]
+              "enum": [ "GEODETIC_LENGTH" ]
             },
             {
               "description": "THICKNESS",
-              "enum": ["THICKNESS"]
+              "enum": [ "THICKNESS" ]
             },
             {
               "description": "TEXTURE_ANGULAR2NDMOMENT",
-              "enum": ["TEXTURE_ANGULAR2NDMOMENT"]
+              "enum": [ "TEXTURE_ANGULAR2NDMOMENT" ]
             },
             {
               "description": "TEXTURE_CONTRAST",
-              "enum": ["TEXTURE_CONTRAST"]
+              "enum": [ "TEXTURE_CONTRAST" ]
             },
             {
               "description": "TEXTURE_CORRELATION",
-              "enum": ["TEXTURE_CORRELATION"]
+              "enum": [ "TEXTURE_CORRELATION" ]
             },
             {
               "description": "TEXTURE_VARIANCE",
-              "enum": ["TEXTURE_VARIANCE"]
+              "enum": [ "TEXTURE_VARIANCE" ]
             },
             {
               "description": "TEXTURE_INVERSEDIFFERENCEMOMENT",
-              "enum": ["TEXTURE_INVERSEDIFFERENCEMOMENT"]
+              "enum": [ "TEXTURE_INVERSEDIFFERENCEMOMENT" ]
             },
             {
               "description": "TEXTURE_SUMAVERAGE",
-              "enum": ["TEXTURE_SUMAVERAGE"]
+              "enum": [ "TEXTURE_SUMAVERAGE" ]
             },
             {
               "description": "TEXTURE_SUMVARIANCE",
-              "enum": ["TEXTURE_SUMVARIANCE"]
+              "enum": [ "TEXTURE_SUMVARIANCE" ]
             },
             {
               "description": "TEXTURE_SUMENTROPY",
-              "enum": ["\tTEXTURE_SUMENTROPY"]
+              "enum": [ "\tTEXTURE_SUMENTROPY" ]
             },
             {
               "description": "TEXTURE_ENTROPY",
-              "enum": ["TEXTURE_ENTROPY"]
+              "enum": [ "TEXTURE_ENTROPY" ]
             },
             {
               "description": "TEXTURE_DIFFERENCEVARIANCE",
-              "enum": ["TEXTURE_DIFFERENCEVARIANCE"]
+              "enum": [ "TEXTURE_DIFFERENCEVARIANCE" ]
             },
             {
               "description": "TEXTURE_DIFFERENCEENTROPY",
-              "enum": ["TEXTURE_DIFFERENCEENTROPY"]
+              "enum": [ "TEXTURE_DIFFERENCEENTROPY" ]
             },
             {
               "description": "TEXTURE_INFOMEAS1",
-              "enum": ["TEXTURE_INFOMEAS1"]
+              "enum": [ "TEXTURE_INFOMEAS1" ]
             },
             {
               "description": "TEXTURE_INFOMEAS2",
-              "enum": ["TEXTURE_INFOMEAS2"]
+              "enum": [ "TEXTURE_INFOMEAS2" ]
             },
             {
               "description": "TEXTURE_ZERNIKE2D",
-              "enum": ["TEXTURE_ZERNIKE2D"]
+              "enum": [ "TEXTURE_ZERNIKE2D" ]
             }
           ],
           "default": "Area",
@@ -501,12 +497,11 @@
       "description": "csvfile : singlecsv for saving values in one csv file and separate csv to save values for each image in separate csv file"
     },
     {
-      "name": "verbosity",
-      "type": "integer",
-      "description": "Level of verbosity, combinable as powers of 2 (0 - silent, 1 - milestones, 2 - timing, 4 - ROI info, 8 - deep diagnostics). Default: 0",
+      "name": "embeddedpixelsize",
+      "type": "boolean",
+      "description": "Use embedded pixel size",
       "required": "false"
     },
-
     {
       "name": "unitLength",
       "type": "string",

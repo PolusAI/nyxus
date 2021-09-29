@@ -11,8 +11,10 @@
 #include "environment.h"
 #include "sensemaker.h"
 #include "timing.h"
-constexpr int N2R = 50 * 1000;
-constexpr int N2R_2 = 50 * 1000;
+
+constexpr int N2R = 100 * 1000;
+constexpr int N2R_2 = 100 * 1000;
+constexpr int smallestROI = 10;
 
 // Preallocates the intensely accessed main containers
 void init_feature_buffers()
@@ -141,7 +143,7 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		int lab = (*ptrLabels) [i];
 		LR& lr = (*ptrLabelData) [lab];
 
-		if (lr.raw_pixels.size() < 0)
+		if (lr.raw_pixels.size() < smallestROI)
 		{
 			lr.roi_disabled = true;
 			continue;
@@ -179,6 +181,8 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		auto ptrH = lr.aux_Histogram;
 		ptrH->build_histogram();
 		auto [mean_, mode_, p10_, p25_, p75_, p90_, iqr_, rmad_, entropy_, uniformity_] = ptrH->get_stats();
+		ptrH->reset();
+
 
 		lr.fvals[MEDIAN][0] = mean_; // lr.median = mean_;
 		lr.fvals[P10][0] = p10_; // lr.p10 = p10_;
@@ -249,15 +253,15 @@ void parallelReduceContour (size_t start, size_t end, std::vector<int>* ptrLabel
 		//==== Contour, ROI perimeter, equivalent circle diameter
 		ImageMatrix im (r.raw_pixels, r.aabb);
 
-		if (theEnvironment.verbosity_level & VERBOSITY_DETAILED)
-			std::cout << "Contour for ROI " << lab << " of " << r.raw_pixels.size() << " pixels, equivalent matrix " << im.height << " x " << im.width << " - calculating\n";
+		//if (theEnvironment.verbosity_level & VERBOSITY_DETAILED)
+		//	std::cout << "Contour for ROI " << lab << " of " << r.raw_pixels.size() << " pixels, equivalent matrix " << im.height << " x " << im.width << " - calculating\n";
 
 		r.contour.calculate (im);
 		r.fvals[PERIMETER][0] = r.contour.get_roi_perimeter();	
 		r.fvals[EQUIVALENT_DIAMETER][0] = r.contour.get_diameter_equal_perimeter();	
 
-		if (theEnvironment.verbosity_level & 8)
-			std::cout << "Contour for ROI " << lab << " length=" << r.contour.contour_pixels.size() << " ROI perimeter=" << r.fvals[PERIMETER][0] << " diameter_equal_perimeter=" << r.fvals[EQUIVALENT_DIAMETER][0]  << "\n";
+		//	if (theEnvironment.verbosity_level & VERBOSITY_DETAILED)
+		//		std::cout << "Contour for ROI " << lab << " length=" << r.contour.contour_pixels.size() << " ROI perimeter=" << r.fvals[PERIMETER][0] << " diameter_equal_perimeter=" << r.fvals[EQUIVALENT_DIAMETER][0]  << "\n";
 	}
 }
 
@@ -616,7 +620,7 @@ void reduce (int nThr, int min_online_roi_size)
 		EXTREMA_P7_X,
 		EXTREMA_P8_Y,
 		EXTREMA_P8_X, 
-		EULER_NUBER }))
+		EULER_NUMBER }))
 		
 	{
 		STOPWATCH("Extrema and Euler ...", "\tReduced extrema and Euler");
@@ -708,7 +712,7 @@ void reduce (int nThr, int min_online_roi_size)
 
 			//==== Euler number
 			EulerNumber eu(r.raw_pixels, r.aabb.get_xmin(), r.aabb.get_ymin(), r.aabb.get_xmax(), r.aabb.get_ymax(), 8);	// Using mode=8 following to WNDCHRM example
-			r.fvals[EULER_NUBER][0] = eu.euler_number;	// .euler_number
+			r.fvals[EULER_NUMBER][0] = eu.euler_number;	
 		}
 	}
 	//==== Feret diameters and angles

@@ -40,33 +40,6 @@ long EulerNumber::calculate (std::vector<unsigned char> & arr, int height, int w
 	if ( !(mode == 4 || mode == 8))
 		throw std::runtime_error("Calling EulerNumber with mode other than 4 or 8");
 	
-		// quad-pixel match patterns
-		constexpr unsigned char Px[] = { //MM: 0 or 1 in the left side of << represent binary pixel values
-			// P1 - single pixel  8/4/2/1
-			(1 << 3) | (0 << 2) |
-			(0 << 1) | (0 << 0),
-			(0 << 3) | (1 << 2) |
-			(0 << 1) | (0 << 0),
-			(0 << 3) | (0 << 2) |
-			(1 << 1) | (0 << 0),
-			(0 << 3) | (0 << 2) |
-			(0 << 1) | (1 << 0),
-			// P3 - 3-pixel   7/11/13/14
-			(0 << 3) | (1 << 2) |
-			(1 << 1) | (1 << 0),
-			(1 << 3) | (0 << 2) |
-			(1 << 1) | (1 << 0),
-			(1 << 3) | (1 << 2) |
-			(0 << 1) | (1 << 0),
-			(1 << 3) | (1 << 2) |
-			(1 << 1) | (0 << 0),
-			// Pd - diagonals  9/6
-			(1 << 3) | (0 << 2) |
-			(0 << 1) | (1 << 0),
-			(0 << 3) | (1 << 2) |
-			(1 << 1) | (0 << 0)
-		};
-
 		unsigned char Imq;
 		// Pattern match counters
 		long C1 = 0, C3 = 0, Cd = 0;
@@ -75,26 +48,37 @@ long EulerNumber::calculate (std::vector<unsigned char> & arr, int height, int w
 		size_t i;
 
 		// update pattern counters by scanning the image.
-		for (y = 1; y < height; y++) {
-			for (x = 1; x < width; x++) {
+		for (y = 1; y < height; y++) 
+		{
+			for (x = 1; x < width; x++) 
+			{
 				// Get the quad-pixel at this image location
 				Imq = 0;
-				if (arr[(y - 1) * width + x - 1] > 0) Imq |= (1 << 3);
-				if (arr[(y - 1) * width + x] > 0) Imq |= (1 << 2);
-				if (arr[y * width + x - 1] > 0) Imq |= (1 << 1);
-				if (arr[y * width + x] > 0) Imq |= (1 << 0);
+				if (arr[(y - 1) * width + x - 1] > 0) 
+					Imq |= (1 << 3);
+				if (arr[(y - 1) * width + x] > 0) 
+					Imq |= (1 << 2);
+				if (arr[y * width + x - 1] > 0) 
+					Imq |= (1 << 1);
+				if (arr[y * width + x] > 0) 
+					Imq |= (1 << 0);
 
 				// find the matching pattern
-				for (i = 0; i < 10; i++) if (Imq == Px[i]) break;
+				for (i = 0; i < 10; i++) 
+					if (Imq == Px[i]) 
+						break;
 				// unsigned i always >= 0
 				// if      (i >= 0 && i <= 3) C1++;
-				if (i <= 3) C1++;
-				else if (i >= 4 && i <= 7) {
-					C3++;
-				}
-				else if (i == 8 && i == 9) {  //  ||??
-					Cd++;
-				}
+				if (i <= 3) 
+					C1++;
+				else 
+					if (i >= 4 && i <= 7) {
+						C3++;
+					}
+					else 
+						if (i == 8 && i == 9) { 
+							Cd++;
+						}
 			}
 		}
 

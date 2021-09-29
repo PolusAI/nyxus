@@ -10,6 +10,18 @@
 #include "version.h"
 #include "environment.h"
 
+#if 0
+//#define _CRT_SECURE_NO_WARNINGS
+#include <ctime>
+
+std::string getTimeStr() {
+	std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+
+	std::string s(30, '\0');
+	std::strftime(&s[0], s.size(), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
+	return s;
+}
+#endif
 
 int main (int argc, char** argv)
 {
@@ -35,6 +47,15 @@ int main (int argc, char** argv)
 
 	// One-time initialization
 	init_feature_buffers();
+
+	// Current time #1
+
+		// declaring argument of time()
+	time_t my_time = time(NULL);
+	// ctime() used to give the present time
+	printf("Started at %s", ctime(&my_time));
+
+	//std::cout << "Started at " << getTimeStr() << "\n";
 
 	// Process the image sdata
 	int min_online_roi_size = 0;
@@ -66,6 +87,12 @@ int main (int argc, char** argv)
 		std::cout << std::endl << "Error #" << errorCode << std::endl;
 		break;
 	}
+
+	// Current time #2
+	//std::cout << "Ended at " << getTimeStr() << "\n";
+	time_t my_time2 = time(NULL);
+	// ctime() used to give the present time
+	printf("Ended at %s", ctime(&my_time2));
 
 	int exitCode = errorCode;
 	return exitCode;
