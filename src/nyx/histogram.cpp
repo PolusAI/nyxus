@@ -1,3 +1,4 @@
+#include <iomanip>
 #include "histogram.h"
 
 OnlineHistogram::OnlineHistogram()
@@ -26,11 +27,10 @@ void OnlineHistogram::print(bool logScale, std::string header_text)
 {
 	std::cout << header_text << "\n";
 	if (logScale)
-		std::cout << "\tLogarithmic scale\n";
+		std::cout << "\tBars in logarithmic scale\n";
 	for (int i = 0; i <= N_HISTO_BINS; i++)
 	{
-		std::cout << "\t[" << i << "]\t" << binEdges[i];
-		std::cout << " = " << binCounts[i] << "\t\t";
+		std::cout << "\t[" << std::left << std::setw(2) << i << "] " << std::setw(10) << binEdges[i] << " = " << std::setw(10) << binCounts[i] << "\t|";
 
 		int binCnt = logScale ? int(10 * std::log(binCounts[i]) + 0.5) : binCounts[i];
 		for (int k = 0; k < binCnt; k++)

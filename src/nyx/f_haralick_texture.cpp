@@ -35,6 +35,8 @@ typedef struct {
 	double max_corr_coef; /* (14) Maximal Correlation Coefficient */
 } TEXTURE;
 
+double f14_maxcorr(double** P, int Ng);
+
 // allocate_matrix() is depends for CoOcMat_Angle_KKK()
 /* Allocates a double matrix with range [nrl..nrh][ncl..nch] */
 double** allocate_matrix(int nrl, int nrh, int ncl, int nch)
@@ -650,6 +652,8 @@ void Extract_Texture_Features(int distance, int angle,
 	Texture.diff_entropy = f11_dentropy(P_matrix, tone_count);
 	Texture.meas_corr1 = f12_icorr(P_matrix, tone_count);
 	Texture.meas_corr2 = f13_icorr(P_matrix, tone_count);
+
+	Texture.max_corr_coef = 0.0; // f14_maxcorr(P_matrix, tone_count);
 
 	free_matrix(P_matrix, tone_count);
 	//xxx	return (Texture);

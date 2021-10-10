@@ -45,28 +45,102 @@ public:
 	void momentVector(double* z) const { z[0] = mean(); z[1] = std(); }
 };
 
+template <class T>
+class SimpleMatrix : public std::vector<T>
+{
+public:
+	SimpleMatrix(int _w, int _h) : W(_w), H(_h) 
+	{ 
+		this.resize (W*H, 0);
+	}
 
-//typedef std::vector<PixIntens> pixData;
+	SimpleMatrix() {}
+
+	void allocate(int _w, int _h)
+	{
+		W = _w;
+		H = _h;
+		this->resize (W*H, 0);
+	}
+
+	T& operator() (int x, int y)
+	{
+		if (x >= W || y >= H)
+		{
+			throw "subscript out of bounds";
+		}
+		return this->at(W * y + x);
+	}
+	T operator() (int x, int y) const
+	{
+		if (x >= W || y >= H)
+		{
+			throw "subscript out of bounds";
+			return -1;	// Special value indicating invalid intensity
+		}
+		T val = this->at(W * y + x);
+		return val;
+	}
+
+	// 1-based x and y
+	T matlab (int y, int x) const
+	{
+		T t = operator() (x-1,y-1);
+		return t;
+	}
+
+	bool safe(int x, int y)
+	{
+		if (x >= W || y >= H)
+			return false;
+		else
+			return true;
+	}
+
+	int width() { return W; }
+	int height() { return H; }
+
+	void print (const std::string& head, const std::string& tail);
+
+protected:
+	int W = 0, H = 0;
+};
+
 
 class pixData : public std::vector<PixIntens>
 {
 public:
-	pixData(int _w, int _h) : w(_w), h(_h) {}
-	PixIntens & operator() (int x, int y)
+	pixData(int _w, int _h) : W(_w), H(_h) {}
+
+	PixIntens & operator() (int y, int x)
 	{
-	if (x >= w || y >= h)
-		throw "subscript out of bounds";
-	return this->at (w * y + x);	
+		if (x >= W || y >= H)
+		{
+			throw "subscript out of bounds";
+		}
+		return this->at(W * y + x);
 	}
 	PixIntens operator() (int y, int x) const
 	{
-		if (x >= w || y >= h)
+		if (x >= W || y >= H)
+		{
 			throw "subscript out of bounds";
-		PixIntens val = this->at(w * y + x);
+			return -1;	// Special value indicating invalid intensity
+		}
+		PixIntens val = this->at (W * y + x);
 		return val;
 	}
+	
+	bool safe (int y, int x)
+	{
+		if (x >= W || y >= H)
+			return false;
+		else
+			return true;
+	}
+
 protected:
-	int w, h;
+	int W, H;
 };
 
 typedef const pixData& readOnlyPixels;
@@ -107,7 +181,13 @@ public:
 			moments2.add(intens);
 	}
 
-	inline readOnlyPixels ReadablePixels() const {
+	inline readOnlyPixels ReadablePixels() const 
+	{
+		return _pix_plane;
+	}
+
+	inline pixData& MutablePixels()
+	{
 		return _pix_plane;
 	}
 
@@ -116,4 +196,6 @@ public:
 	
 	//std::vector<PixIntens> _pix_plane;	// [ height * width ]
 	pixData _pix_plane;
+
+	void print(const std::string& head = "", const std::string& tail = "");
 };

@@ -109,9 +109,11 @@ void LR::reduce_pixel_intensity_features()
 		lr.fvals[CENTROID_X][0] = lr.fvals[CENTROID_X][0] + StatsReal(x); // lr.centroid_x = lr.centroid_x + StatsReal(x);
 		lr.fvals[CENTROID_Y][0] = lr.fvals[CENTROID_Y][0] + StatsReal(y); // lr.centroid_y = lr.centroid_y + StatsReal(y);
 
+		#if 0	// Replaced with a faster version (class TrivialHistogram)
 		// Histogram
 		auto ptrH = lr.aux_Histogram;
 		ptrH->add_observation(intensity);
+		#endif
 
 		// Previous intensity for succeeding iterations
 		lr.aux_PrevIntens = intensity;

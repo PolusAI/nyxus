@@ -122,6 +122,26 @@ enum AvailableFeatures
 
 	TEXTURE_ZERNIKE2D,
 
+	// GLRLM:
+	 
+	// GLSZM:
+	GLSZM_SAE,	// Small Area Emphasis
+	GLSZM_LAE,	// Large Area Emphasis
+	GLSZM_GLN,	// Gray Level Non - Uniformity
+	GLSZM_GLNN,	// Gray Level Non - Uniformity Normalized
+	GLSZM_SZN,	// Size - Zone Non - Uniformity
+	GLSZM_SZNN,	// Size - Zone Non - Uniformity Normalized
+	GLSZM_ZP,	// Zone Percentage
+	GLSZM_GLV,	// Gray Level Variance
+	GLSZM_ZV,	// Zone Variance
+	GLSZM_ZE,	// Zone Entropy
+	GLSZM_LGLZE,	// Low Gray Level Zone Emphasis
+	GLSZM_HGLZE,	// High Gray Level Zone Emphasis
+	GLSZM_SALGLE,	// Small Area Low Gray Level Emphasis
+	GLSZM_SAHGLE,	// Small Area High Gray Level Emphasis
+	GLSZM_LALGLE,	// Large Area Low Gray Level Emphasis
+	GLSZM_LAHGLE,	// Large Area High Gray Level Emphasis
+
 	_COUNT_
 };
 

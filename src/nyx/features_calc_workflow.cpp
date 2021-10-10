@@ -10,7 +10,9 @@
 #include <future>
 #include "environment.h"
 #include "sensemaker.h"
+#include "glszm.h"
 #include "timing.h"
+
 
 constexpr int N2R = 100 * 1000;
 constexpr int N2R_2 = 100 * 1000;
@@ -68,10 +70,14 @@ void init_label_record (LR& r, const std::string & segFile, const std::string & 
 	// Weighted centroids x and y. 1-based for compatibility with Matlab and WNDCHRM
 	r.fvals[CENTROID_X][0] = StatsReal(x) + 1; // r.centroid_x = StatsReal(x) + 1;
 	r.fvals[CENTROID_Y][0] = StatsReal(y) + 1; // r.centroid_y = StatsReal(y) + 1;
+	
+	#if 0 // Replaced with a faster version (class TrivialHistogram)
 	// Histogram
 	std::shared_ptr<Histo> ptrH = std::make_shared <Histo>();
 	ptrH->add_observation(intensity);
 	r.aux_Histogram = ptrH;
+	#endif
+
 	// Other fields
 	r.fvals[MEDIAN][0] = 0; // r.median = 0;
 	r.fvals[STANDARD_DEVIATION][0] = 0; // r.stddev = 0;
@@ -177,12 +183,17 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		// Root of mean squared
 		lr.fvals[ROOT_MEAN_SQUARED][0] = sqrt(lr.fvals[ENERGY][0] / n); // lr.RMS = sqrt(lr.massEnergy / n);
 
-		// P10, 25, 75, 90
+		// P10, 25, 75, 90, IQR, RMAD, entropy, uniformity
+		#if 0	// Replaced with a faster version (class TrivialHistogram) 
 		auto ptrH = lr.aux_Histogram;
 		ptrH->build_histogram();
 		auto [mean_, mode_, p10_, p25_, p75_, p90_, iqr_, rmad_, entropy_, uniformity_] = ptrH->get_stats();
 		ptrH->reset();
-
+		#endif
+		// Faster version
+		TrivialHistogram H;
+		H.initialize (lr.fvals[MIN][0], lr.fvals[MAX][0], lr.raw_pixels);
+		auto [mean_, mode_, p10_, p25_, p75_, p90_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
 
 		lr.fvals[MEDIAN][0] = mean_; // lr.median = mean_;
 		lr.fvals[P10][0] = p10_; // lr.p10 = p10_;
@@ -511,7 +522,7 @@ void reduce (int nThr, int min_online_roi_size)
 	#endif
 	{
 		STOPWATCH("Intensity stats ...", "\tReduced intensity stats");
-		runParallel(parallelReduceIntensityStats, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
+		runParallel (parallelReduceIntensityStats, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Neighbors
@@ -803,16 +814,61 @@ void reduce (int nThr, int min_online_roi_size)
 		TEXTURE_INFOMEAS2 }))
 	{
 		STOPWATCH("Haralick2D ...", "\tReduced Haralick2D");
-		runParallel(parallelReduceHaralick2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
+		runParallel (parallelReduceHaralick2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Zernike 2D 
 	if (theFeatureSet.isEnabled(TEXTURE_ZERNIKE2D))
 	{
 		STOPWATCH("Zernike2D ...", "\tReduced Zernike2D");
-		runParallel(parallelReduceZernike2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
+		runParallel (parallelReduceZernike2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 	
+	//==== GLSZM
+	if (theFeatureSet.anyEnabled({
+		GLSZM_SAE,
+		GLSZM_LAE,
+		GLSZM_GLN,
+		GLSZM_GLNN,
+		GLSZM_SZN,
+		GLSZM_SZNN,
+		GLSZM_ZP,
+		GLSZM_GLV,
+		GLSZM_ZV,
+		GLSZM_ZE,
+		GLSZM_LGLZE,
+		GLSZM_HGLZE,
+		GLSZM_SALGLE,
+		GLSZM_SAHGLE,
+		GLSZM_LALGLE,
+		GLSZM_LAHGLE
+		}))
+	{
+		STOPWATCH("GLSZM ...", "\tReduced GLSZM");
+		for (auto& ld : labelData)
+		{
+			auto& r = ld.second;
+			ImageMatrix im(r.raw_pixels, r.aabb);
+			GLSZM_features glszm;
+			glszm.initialize ((int) r.fvals[MIN][0], (int) r.fvals[MAX][0], im);
+			r.fvals[GLSZM_SAE][0] = glszm.calc_SAE();
+			r.fvals[GLSZM_LAE][0] = glszm.calc_LAE();
+			r.fvals[GLSZM_GLN][0] = glszm.calc_GLN();
+			r.fvals[GLSZM_GLNN][0] = glszm.calc_GLNN();
+			r.fvals[GLSZM_SZN][0] = glszm.calc_SZN();
+			r.fvals[GLSZM_SZNN][0] = glszm.calc_SZNN();
+			r.fvals[GLSZM_ZP][0] = glszm.calc_ZP();
+			r.fvals[GLSZM_GLV][0] = glszm.calc_GLV();
+			r.fvals[GLSZM_ZV][0] = glszm.calc_ZV();
+			r.fvals[GLSZM_ZE][0] = glszm.calc_ZE();
+			r.fvals[GLSZM_LGLZE][0] = glszm.calc_LGLZE();
+			r.fvals[GLSZM_HGLZE][0] = glszm.calc_HGLZE();
+			r.fvals[GLSZM_SALGLE][0] = glszm.calc_SALGLE();
+			r.fvals[GLSZM_SAHGLE][0] = glszm.calc_SAHGLE();
+			r.fvals[GLSZM_LALGLE][0] = glszm.calc_LALGLE();
+			r.fvals[GLSZM_LAHGLE][0] = glszm.calc_LAHGLE();
+		}
+	}
 }
 
 

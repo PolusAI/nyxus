@@ -42,7 +42,7 @@ double test_containers1()
 	std::unordered_map <int, StatsReal> kurtosis;
 	std::unordered_map <int, StatsReal> MAD;
 	std::unordered_map <int, StatsReal> RMS;
-	std::unordered_map <int, std::shared_ptr<Histo>> aux_Histogram;
+	// Replaced with a faster version (class TrivialHistogram)	std::unordered_map <int, std::shared_ptr<Histo>> aux_Histogram;
 	std::unordered_map <int, StatsReal> p10;
 	std::unordered_map <int, StatsReal> p25;
 	std::unordered_map <int, StatsReal> p75;
@@ -131,7 +131,7 @@ double test_containers2()
 		StatsReal, //std::unordered_map <int, StatsReal> kurtosis;
 		StatsReal, //std::unordered_map <int, StatsReal> MAD;
 		StatsReal, //std::unordered_map <int, StatsReal> RMS;
-	//---std::unordered_map <int, std::shared_ptr<Histo>> aux_Histogram;
+		//---std::unordered_map <int, std::shared_ptr<Histo>> aux_Histogram;
 		StatsReal, //std::unordered_map <int, StatsReal> p10;
 		StatsReal, //std::unordered_map <int, StatsReal> p25;
 		StatsReal, //std::unordered_map <int, StatsReal> p75;

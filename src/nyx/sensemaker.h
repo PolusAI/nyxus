@@ -223,7 +223,9 @@ struct LR
 	AABB aabb;	
 	ConvexHull convHull;
 	Contour contour;
-	std::shared_ptr<Histo> aux_Histogram;
+
+	// Replaced with a faster version (class TrivialHistogram)	std::shared_ptr<Histo> aux_Histogram;
+	
 	StatsInt
 		aux_PrevCount,
 		aux_PrevIntens;

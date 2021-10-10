@@ -23,6 +23,7 @@
 #define FEA_NICK_ALL_INTENSITY "*ALL_INTENSITY*"
 #define FEA_NICK_ALL_MORPHOLOGY "*ALL_MORPHOLOGY*"
 #define FEA_NICK_ALL_GLCM "*ALL_GLCM*"
+#define FEA_NICK_ALL_GLSZM "*ALL_GLSZM*"
 
 // Valid values of 'OUTPUTTYPE'
 #define OT_SEPCSV "separatecsv"

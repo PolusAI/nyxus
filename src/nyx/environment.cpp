@@ -70,7 +70,7 @@ std::string toupper (const std::string& s)
     return s_uppr;
 }
 
-bool parse_delimited_string_list_to_features (const std::string& rawString, std::vector<std::string>& result)
+bool parse_delimited_string_list_to_features(const std::string& rawString, std::vector<std::string>& result)
 {
     result.clear();
 
@@ -83,13 +83,13 @@ bool parse_delimited_string_list_to_features (const std::string& rawString, std:
 
     bool retval = true;
     std::vector<std::string> strings;
-    parse_delimited_string_list (rawString, strings);
+    parse_delimited_string_list(rawString, strings);
 
     // Check individual features
-    for (const auto &s : strings)
+    for (const auto& s : strings)
     {
         auto s_uppr = toupper(s);
-        if (s_uppr == FEA_NICK_ALL || s_uppr == FEA_NICK_ALL_INTENSITY || s_uppr == FEA_NICK_ALL_MORPHOLOGY || s_uppr == FEA_NICK_ALL_GLCM)
+        if (s_uppr == FEA_NICK_ALL || s_uppr == FEA_NICK_ALL_INTENSITY || s_uppr == FEA_NICK_ALL_MORPHOLOGY || s_uppr == FEA_NICK_ALL_GLCM || s_uppr == FEA_NICK_ALL_GLSZM)
         {
             result.push_back(s_uppr);
             continue;
@@ -493,6 +493,29 @@ int Environment::parse_cmdline(int argc, char** argv)
                 TEXTURE_DIFFERENCEENTROPY,
                 TEXTURE_INFOMEAS1,
                 TEXTURE_INFOMEAS2 
+            };
+            theFeatureSet.enableFeatures (F);
+            continue;
+        }
+        if (s == FEA_NICK_ALL_GLSZM)
+        {
+            auto F = {
+                GLSZM_SAE,
+                GLSZM_LAE,
+                GLSZM_GLN,
+                GLSZM_GLNN,
+                GLSZM_SZN,
+                GLSZM_SZNN,
+                GLSZM_ZP,
+                GLSZM_GLV,
+                GLSZM_ZV,
+                GLSZM_ZE,
+                GLSZM_LGLZE,
+                GLSZM_HGLZE,
+                GLSZM_SALGLE,
+                GLSZM_SAHGLE,
+                GLSZM_LALGLE,
+                GLSZM_LAHGLE 
             };
             theFeatureSet.enableFeatures (F);
             continue;
