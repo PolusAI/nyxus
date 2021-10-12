@@ -89,7 +89,7 @@ bool parse_delimited_string_list_to_features(const std::string& rawString, std::
     for (const auto& s : strings)
     {
         auto s_uppr = toupper(s);
-        if (s_uppr == FEA_NICK_ALL || s_uppr == FEA_NICK_ALL_INTENSITY || s_uppr == FEA_NICK_ALL_MORPHOLOGY || s_uppr == FEA_NICK_ALL_GLCM || s_uppr == FEA_NICK_ALL_GLSZM)
+        if (s_uppr == FEA_NICK_ALL || s_uppr == FEA_NICK_ALL_INTENSITY || s_uppr == FEA_NICK_ALL_MORPHOLOGY || s_uppr == FEA_NICK_ALL_GLCM || s_uppr == FEA_NICK_ALL_GLSZM || s_uppr == FEA_NICK_ALL_GLRLM)
         {
             result.push_back(s_uppr);
             continue;
@@ -495,6 +495,29 @@ int Environment::parse_cmdline(int argc, char** argv)
                 TEXTURE_INFOMEAS2 
             };
             theFeatureSet.enableFeatures (F);
+            continue;
+        }
+        if (s == FEA_NICK_ALL_GLRLM)
+        {
+            auto F = {
+                GLRLM_SRE,
+                GLRLM_LRE,
+                GLRLM_GLN,
+                GLRLM_GLNN,
+                GLRLM_RLN,
+                GLRLM_RLNN,
+                GLRLM_RP,
+                GLRLM_GLV,
+                GLRLM_RV,
+                GLRLM_RE,
+                GLRLM_LGLRE,
+                GLRLM_HGLRE,
+                GLRLM_SRLGLE,
+                GLRLM_SRHGLE,
+                GLRLM_LRLGLE,
+                GLRLM_LRHGLE
+            };
+            theFeatureSet.enableFeatures(F);
             continue;
         }
         if (s == FEA_NICK_ALL_GLSZM)

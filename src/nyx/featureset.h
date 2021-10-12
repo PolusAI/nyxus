@@ -123,7 +123,23 @@ enum AvailableFeatures
 	TEXTURE_ZERNIKE2D,
 
 	// GLRLM:
-	 
+	GLRLM_SRE,	// Short Run Emphasis 
+	GLRLM_LRE,	// Long Run Emphasis 
+	GLRLM_GLN,	// Gray Level Non-Uniformity 
+	GLRLM_GLNN,	// Gray Level Non-Uniformity Normalized 
+	GLRLM_RLN,	// Run Length Non-Uniformity
+	GLRLM_RLNN,	// Run Length Non-Uniformity Normalized 
+	GLRLM_RP,	// Run Percentage
+	GLRLM_GLV,	// Gray Level Variance 
+	GLRLM_RV,	// Run Variance 
+	GLRLM_RE,	// Run Entropy 
+	GLRLM_LGLRE,	// Low Gray Level Run Emphasis 
+	GLRLM_HGLRE,	// High Gray Level Run Emphasis 
+	GLRLM_SRLGLE,	// Short Run Low Gray Level Emphasis 
+	GLRLM_SRHGLE,	// Short Run High Gray Level Emphasis 
+	GLRLM_LRLGLE,	// Long Run Low Gray Level Emphasis 
+	GLRLM_LRHGLE,	// Long Run High Gray Level Emphasis 
+
 	// GLSZM:
 	GLSZM_SAE,	// Small Area Emphasis
 	GLSZM_LAE,	// Large Area Emphasis

@@ -10,6 +10,7 @@
 #include <future>
 #include "environment.h"
 #include "sensemaker.h"
+#include "glrlm.h"
 #include "glszm.h"
 #include "timing.h"
 
@@ -823,7 +824,53 @@ void reduce (int nThr, int min_online_roi_size)
 		STOPWATCH("Zernike2D ...", "\tReduced Zernike2D");
 		runParallel (parallelReduceZernike2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
-	
+
+	//==== GLRLM
+	if (theFeatureSet.anyEnabled({
+		GLRLM_SRE,
+		GLRLM_LRE,
+		GLRLM_GLN,
+		GLRLM_GLNN,
+		GLRLM_RLN,
+		GLRLM_RLNN,
+		GLRLM_RP,
+		GLRLM_GLV,
+		GLRLM_RV,
+		GLRLM_RE,
+		GLRLM_LGLRE,
+		GLRLM_HGLRE,
+		GLRLM_SRLGLE,
+		GLRLM_SRHGLE,
+		GLRLM_LRLGLE,
+		GLRLM_LRHGLE
+		}))
+	{
+		STOPWATCH("GLRLM ...", "\tReduced GLRLM");
+		for (auto& ld : labelData)
+		{
+			auto& r = ld.second;
+			ImageMatrix im (r.raw_pixels, r.aabb);
+			GLRLM_features glrlm;
+			glrlm.initialize ((int) r.fvals[MIN][0], (int) r.fvals[MAX][0], im);
+			glrlm.calc_SRE (r.fvals [GLRLM_SRE]);
+			glrlm.calc_LRE (r.fvals [GLRLM_LRE]);
+			glrlm.calc_GLN (r.fvals [GLRLM_GLN]);
+			glrlm.calc_GLNN (r.fvals [GLRLM_GLNN]);
+			glrlm.calc_RLN (r.fvals [GLRLM_RLN]);
+			glrlm.calc_RLNN (r.fvals [GLRLM_RLNN]);
+			glrlm.calc_RP (r.fvals [GLRLM_RP]);
+			glrlm.calc_GLV (r.fvals [GLRLM_GLV]);
+			glrlm.calc_RV (r.fvals [GLRLM_RV]);
+			glrlm.calc_RE (r.fvals [GLRLM_RE]);
+			glrlm.calc_LGLRE (r.fvals [GLRLM_LGLRE]);
+			glrlm.calc_HGLRE (r.fvals [GLRLM_HGLRE]);
+			glrlm.calc_SRLGLE (r.fvals [GLRLM_SRLGLE]);
+			glrlm.calc_SRHGLE (r.fvals [GLRLM_SRHGLE]);
+			glrlm.calc_LRLGLE (r.fvals [GLRLM_LRLGLE]);
+			glrlm.calc_LRHGLE (r.fvals [GLRLM_LRHGLE]);
+		}
+	}	
+
 	//==== GLSZM
 	if (theFeatureSet.anyEnabled({
 		GLSZM_SAE,

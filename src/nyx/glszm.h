@@ -63,6 +63,5 @@ protected:
 	int Ns = 0; // number of discreet zone sizes in the image
 	int Np = 0; // number of voxels in the image
 	int Nz = 0; // number of zones in the ROI, 1<=Nz<=Np
-	//??? std::vector<int> P;	// size zone matrix [ Ng * Ns ]
 	SimpleMatrix<int> P;
 };
