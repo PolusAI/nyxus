@@ -25,6 +25,8 @@
 #define FEA_NICK_ALL_GLCM "*ALL_GLCM*"
 #define FEA_NICK_ALL_GLRLM "*ALL_GLRLM*"
 #define FEA_NICK_ALL_GLSZM "*ALL_GLSZM*"
+#define FEA_NICK_ALL_GLDM "*ALL_GLDM*"
+#define FEA_NICK_ALL_NGTDM "*ALL_NGTDM*"
 
 // Valid values of 'OUTPUTTYPE'
 #define OT_SEPCSV "separatecsv"

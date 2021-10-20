@@ -1,7 +1,7 @@
 {
   "name": "Nyxus",
-  "version": "0.1.3",
-  "containerId": "polusai/nyxus:0.1.3",
+  "version": "0.1.4",
+  "containerId": "polusai/nyxus:0.1.4",
   "title": "Nyxus feature extraction",
   "description": "Test of Nyxus feature extractor",
   "author": "friskluft + hsidky",
@@ -57,6 +57,30 @@
               "description": "ALL_INTENSITY",
               "enum": [
                 "*ALL_INTENSITY*"
+              ]
+            },
+            {
+              "description": "ALL_MORPHOLOGY",
+              "enum": [
+                "*ALL_MORPHOLOGY*"
+              ]
+            },
+            {
+              "description": "ALL_GLCM",
+              "enum": [
+                "*ALL_GLCM*"
+              ]
+            },
+            {
+              "description": "ALL_GLRLM",
+              "enum": [
+                "*ALL_GLRLM*"
+              ]
+            },
+            {
+              "description": "ALL_GLSZM",
+              "enum": [
+                "*ALL_GLSZM*"
               ]
             },
             {
@@ -695,6 +719,38 @@
                 "TEXTURE_INFOMEAS2"
               ]
             },
+            { "description": "GLRLM_SRE", "enum": ["GLRLM_SRE"] },
+            { "description": "GLRLM_LRE", "enum": ["GLRLM_LRE"] },
+            { "description": "GLRLM_GLN", "enum": ["GLRLM_GLN"] },
+            { "description": "GLRLM_GLNN", "enum": ["GLRLM_GLNN"] },
+            { "description": "GLRLM_RLN", "enum": ["GLRLM_RLN"] },
+            { "description": "GLRLM_RLNN", "enum": ["GLRLM_RLNN"] },
+            { "description": "GLRLM_RP", "enum": ["GLRLM_RP"] },
+            { "description": "GLRLM_GLV", "enum": ["GLRLM_GLV"] },
+            { "description": "GLRLM_RV", "enum": ["GLRLM_RV"] },
+            { "description": "GLRLM_RE", "enum": ["GLRLM_RE"] },
+            { "description": "GLRLM_LGLRE", "enum": ["GLRLM_LGLRE"] },
+            { "description": "GLRLM_HGLRE", "enum": ["GLRLM_HGLRE"] },
+            { "description": "GLRLM_SRLGLE", "enum": ["GLRLM_SRLGLE"] },
+            { "description": "GLRLM_SRHGLE", "enum": ["GLRLM_SRHGLE"] },
+            { "description": "GLRLM_LRLGLE", "enum": ["GLRLM_LRLGLE"] },
+            { "description": "GLRLM_LRHGLE", "enum": ["GLRLM_LRHGLE"] },
+            { "description": "GLSZM_SAE", "enum": ["GLSZM_SAE"] },
+            { "description": "GLSZM_LAE", "enum": ["GLSZM_LAE"] },
+            { "description": "GLSZM_GLN", "enum": ["GLSZM_GLN"] },
+            { "description": "GLSZM_GLNN", "enum": ["GLSZM_GLNN"] },
+            { "description": "GLSZM_SZN", "enum": ["GLSZM_SZN"] },
+            { "description": "GLSZM_SZNN", "enum": ["GLSZM_SZNN"] },
+            { "description": "GLSZM_ZP", "enum": ["GLSZM_ZP"] },
+            { "description": "GLSZM_GLV", "enum": ["GLSZM_GLV"] },
+            { "description": "GLSZM_ZV", "enum": ["GLSZM_ZV"] },
+            { "description": "GLSZM_ZE", "enum": ["GLSZM_ZE"] },
+            { "description": "GLSZM_LGLZE", "enum": ["GLSZM_LGLZE"] },
+            { "description": "GLSZM_HGLZE", "enum": ["GLSZM_HGLZE"] },
+            { "description": "GLSZM_SALGLE", "enum": ["GLSZM_SALGLE"] },
+            { "description": "GLSZM_SAHGLE", "enum": ["GLSZM_SAHGLE"] },
+            { "description": "GLSZM_LALGLE", "enum": ["GLSZM_LALGLE"] },
+            { "description": "GLSZM_LAHGLE", "enum": ["GLSZM_LAHGLE"] },
             {
               "description": "TEXTURE_ZERNIKE2D",
               "enum": [

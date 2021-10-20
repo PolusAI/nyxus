@@ -12,7 +12,10 @@
 #include "sensemaker.h"
 #include "glrlm.h"
 #include "glszm.h"
+#include "gldm.h"
+#include "ngtdm.h"
 #include "timing.h"
+#include "moments.h"
 
 
 constexpr int N2R = 100 * 1000;
@@ -53,12 +56,12 @@ void init_label_record (LR& r, const std::string & segFile, const std::string & 
 	// Save the pixel
 	r.raw_pixels.push_back(Pixel2(x, y, intensity));
 
-	r.fvals[AREA_PIXELS_COUNT][0] = r.pixelCountRoiArea = 1;
+	r.fvals[AREA_PIXELS_COUNT][0] = 1;
 	r.aux_PrevCount = 0;
 	// Min
-	r.fvals[MIN][0] = intensity; // r.min = intensity;
+	r.fvals[MIN][0] = r.aux_min = intensity; // r.min = intensity;
 	// Max
-	r.fvals[MAX][0] = intensity; // r.max = intensity;
+	r.fvals[MAX][0] = r.aux_max = intensity; // r.max = intensity;
 	// Moments
 	r.fvals[MEAN][0] = intensity; // r.mean = intensity;
 	r.aux_M2 = 0;
@@ -80,23 +83,23 @@ void init_label_record (LR& r, const std::string & segFile, const std::string & 
 	#endif
 
 	// Other fields
-	r.fvals[MEDIAN][0] = 0; // r.median = 0;
-	r.fvals[STANDARD_DEVIATION][0] = 0; // r.stddev = 0;
-	r.fvals[SKEWNESS][0] = 0; // r.skewness = 0;
-	r.fvals[KURTOSIS][0] = 0; // r.kurtosis = 0;
-	r.fvals[ROOT_MEAN_SQUARED][0] = 0; // r.RMS = 0;
-	r.fvals[P10][0] = r.fvals[P25][0] = r.fvals[P75][0] = r.fvals[90][0] = 0; // r.p10 = r.p25 = r.p75 = r.p90 = 0;
-	r.fvals[INTERQUARTILE_RANGE][0] = 0; // r.IQR = 0;
-	r.fvals[ENTROPY][0] = 0; // r.entropy = 0;
-	r.fvals[MODE][0] = 0; // r.mode = 0;
-	r.fvals[UNIFORMITY][0] = 0; // r.uniformity = 0;
-	r.fvals[ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = 0; // r.RMAD = 0;
+	r.fvals[MEDIAN][0] = 0; 
+	r.fvals[STANDARD_DEVIATION][0] = 0; 
+	r.fvals[SKEWNESS][0] = 0; 
+	r.fvals[KURTOSIS][0] = 0; 
+	r.fvals[ROOT_MEAN_SQUARED][0] = 0;
+	r.fvals[P10][0] = r.fvals[P25][0] = r.fvals[P75][0] = r.fvals[90][0] = 0; 
+	r.fvals[INTERQUARTILE_RANGE][0] = 0; 
+	r.fvals[ENTROPY][0] = 0;
+	r.fvals[MODE][0] = 0; 
+	r.fvals[UNIFORMITY][0] = 0; 
+	r.fvals[ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = 0; 
 	// CellProfiler	
-	r.fvals[CELLPROFILER_INTENSITY_INTEGRATEDINTENSITYEDGE][0] = // r.CellProfiler_Intensity_IntegratedIntensityEdge = 
-	r.fvals[CELLPROFILER_INTENSITY_MAXINTENSITYEDGE][0] = // r.CellProfiler_Intensity_MaxIntensityEdge = 
-	r.fvals[CELLPROFILER_INTENSITY_MEANINTENSITYEDGE][0] = // r.CellProfiler_Intensity_MeanIntensityEdge = 
-	r.fvals[CELLPROFILER_INTENSITY_MININTENSITYEDGE][0] = // r.CellProfiler_Intensity_MinIntensityEdge = 
-	r.fvals[CELLPROFILER_INTENSITY_STDDEVINTENSITYEDGE][0] = 0; // r.CellProfiler_Intensity_StddevIntensityEdge = 0;
+	r.fvals[CELLPROFILER_INTENSITY_INTEGRATEDINTENSITYEDGE][0] = 
+	r.fvals[CELLPROFILER_INTENSITY_MAXINTENSITYEDGE][0] = 
+	r.fvals[CELLPROFILER_INTENSITY_MEANINTENSITYEDGE][0] = 
+	r.fvals[CELLPROFILER_INTENSITY_MININTENSITYEDGE][0] = 
+	r.fvals[CELLPROFILER_INTENSITY_STDDEVINTENSITYEDGE][0] = 0; 
 	
 	r.init_aabb (x, y);
 
@@ -113,6 +116,13 @@ void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity)
 {
 	// Save the pixel
 	lr.raw_pixels.push_back(Pixel2(x, y, intensity));
+
+	// Update ROI intensity range
+	lr.aux_min = std::min (lr.aux_min, intensity);
+	lr.aux_max = std::max (lr.aux_max, intensity);
+
+	// Update ROI bounds
+	lr.update_aabb(x, y);
 }
 
 // The root function of handling a pixel being scanned
@@ -157,32 +167,51 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		}
 
 		//==== Reduce pixel intensity #1, including MIN and MAX
-		lr.reduce_pixel_intensity_features();
+		//XXX--not using online approach any more--		lr.reduce_pixel_intensity_features();
+		// --MIN, MAX
+		lr.fvals[MIN][0] = lr.aux_min;
+		lr.fvals[MAX][0] = lr.aux_max;
+
+		double n = lr.raw_pixels.size();
+
+		// --AREA
+		lr.fvals[AREA_PIXELS_COUNT][0] = n;
+
+		// --MEAN, ENERGY, CENTROID_XY
+		double mean_ = 0.0;
+		double energy = 0.0;
+		double cen_x = 0.0, 
+			cen_y = 0.0;
+		for (auto& px : lr.raw_pixels)
+		{
+			mean_ += px.inten;
+			energy += px.inten * px.inten;
+			cen_x += px.x;
+			cen_y += px.y;
+		}
+		mean_ /= n;
+		lr.fvals[MEAN][0] = mean_;
+		lr.fvals[ENERGY][0] = energy;
+		lr.fvals[ROOT_MEAN_SQUARED][0] = sqrt (lr.fvals[ENERGY][0] / n);
+		lr.fvals[CENTROID_X][0] = cen_x;
+		lr.fvals[CENTROID_Y][0] = cen_y;
+
+		// --MAD, VARIANCE, STDDEV
+		double mad = 0.0,
+			var = 0.0;
+		for (auto& px : lr.raw_pixels)
+		{
+			mad += std::abs(px.inten - mean_);
+			var += (px.inten - mean_) * (px.inten - mean_);
+		}
+		lr.fvals[MEAN_ABSOLUTE_DEVIATION][0] = mad / n;
+		var /= n;
+		double stddev = sqrt(var);
+		lr.fvals[STANDARD_DEVIATION][0] = stddev; 
 
 		//==== Do not calculate features of all-blank intensities (to avoid NANs)
 		if (lr.intensitiesAllZero())
 			continue;
-
-		auto n = lr.pixelCountRoiArea;	// Cardinality of the label value set
-
-		//==== Pixel intensity stats
-
-		// Mean absolute deviation
-		lr.fvals[MEAN_ABSOLUTE_DEVIATION][0] /= n; // lr.MAD = lr.MAD / n;
-
-		// Standard deviations
-		lr.fvals[STANDARD_DEVIATION][0] = sqrt(lr.aux_variance); // lr.stddev = sqrt(lr.aux_variance);
-
-		// Skewness
-		lr.fvals[SKEWNESS][0] // lr.skewness 
-			= std::sqrt(double(lr.pixelCountRoiArea)) * lr.aux_M3 / std::pow(lr.aux_M2, 1.5);
-
-		// Kurtosis
-		lr.fvals[KURTOSIS][0] // lr.kurtosis 
-			= double(lr.pixelCountRoiArea) * lr.aux_M4 / (lr.aux_M2 * lr.aux_M2) - 3.0;
-
-		// Root of mean squared
-		lr.fvals[ROOT_MEAN_SQUARED][0] = sqrt(lr.fvals[ENERGY][0] / n); // lr.RMS = sqrt(lr.massEnergy / n);
 
 		// P10, 25, 75, 90, IQR, RMAD, entropy, uniformity
 		#if 0	// Replaced with a faster version (class TrivialHistogram) 
@@ -192,63 +221,85 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		ptrH->reset();
 		#endif
 		// Faster version
+#ifdef TESTING
+		std::cout << "\n---Test data---\nraw_pixels_label_" << lab << " = [";
+		for (int ix=0; ix<lr.raw_pixels.size(); ix++)
+		{
+			if (ix > 0)
+				std::cout << ", ";
+			std::cout << lr.raw_pixels[ix].inten;
+		}
+		std::cout << "]\n\n";
+#endif
 		TrivialHistogram H;
 		H.initialize (lr.fvals[MIN][0], lr.fvals[MAX][0], lr.raw_pixels);
-		auto [mean_, mode_, p10_, p25_, p75_, p90_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
+		auto [median_, mode_, p10_, p25_, p75_, p90_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
 
-		lr.fvals[MEDIAN][0] = mean_; // lr.median = mean_;
-		lr.fvals[P10][0] = p10_; // lr.p10 = p10_;
-		lr.fvals[P25][0] = p25_; // lr.p25 = p25_;
-		lr.fvals[P75][0] = p75_; // lr.p75 = p75_;
-		lr.fvals[P90][0] = p90_; // lr.p90 = p90_;
-		lr.fvals[INTERQUARTILE_RANGE][0] = iqr_; // lr.IQR = iqr_;
-		lr.fvals[ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = rmad_; // lr.RMAD = rmad_;
-		lr.fvals[ENTROPY][0] = entropy_; // lr.entropy = entropy_;
-		lr.fvals[MODE][0] = mode_; // lr.mode = mode_;
-		lr.fvals[UNIFORMITY][0] = uniformity_; // lr.uniformity = uniformity_;
+		lr.fvals[MEDIAN][0] = median_; 
+		lr.fvals[P10][0] = p10_; 
+		lr.fvals[P25][0] = p25_; 
+		lr.fvals[P75][0] = p75_; 
+		lr.fvals[P90][0] = p90_; 
+		lr.fvals[INTERQUARTILE_RANGE][0] = iqr_; 
+		lr.fvals[ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = rmad_; 
+		lr.fvals[ENTROPY][0] = entropy_; 
+		lr.fvals[MODE][0] = mode_; 
+		lr.fvals[UNIFORMITY][0] = uniformity_; 
 
-		// Weighted centroids
-		lr.fvals[CENTROID_X][0] /= lr.pixelCountRoiArea; // lr.centroid_x = lr.centroid_x / lr.pixelCountRoiArea;
-		lr.fvals[CENTROID_Y][0] /= lr.pixelCountRoiArea; // lr.centroid_y = lr.centroid_y / lr.pixelCountRoiArea;
+		// Skewness
+		//--Formula 1--	lr.fvals[SKEWNESS][0] = std::sqrt(n) * lr.aux_M3 / std::pow(lr.aux_M2, 1.5);
+		//--Formula 2-- skewness = 3 * (mean - median) / stddev
+		Moments4 mom;
+		for (auto& px : lr.raw_pixels)
+			mom.add(px.inten);
+		lr.fvals[SKEWNESS][0] = mom.skewness();
 
-		//==== Calculate pixel intensity stats directly rather than online
-		int min_online_roi_size = 100;
-		if (min_online_roi_size > 0)
+		// Kurtosis
+		//--Formula-- k1 = mean((x - mean(x)). ^ 4) / std(x). ^ 4
+		lr.fvals[KURTOSIS][0] = mom.kurtosis();
+
+		//==== Bounding box
+		lr.fvals[BBOX_XMIN][0] = lr.aabb.get_xmin();
+		lr.fvals[BBOX_YMIN][0] = lr.aabb.get_ymin();
+		lr.fvals[BBOX_WIDTH][0] = lr.aabb.get_width();
+		lr.fvals[BBOX_HEIGHT][0] = lr.aabb.get_height();
+		
+		//==== Centroids
+		lr.fvals[CENTROID_X][0] = lr.fvals[CENTROID_Y][0] = 0.0;
+		for (auto& px : lr.raw_pixels)
 		{
-			// -- Standard deviation
-			StatsReal sumM2 = 0.0,
-				sumM3 = 0.0,
-				sumM4 = 0.0,
-				absSum = 0.0,
-				sumEnergy = 0.0;
-			for (auto& pix : lr.raw_pixels)
-			{
-				auto diff = pix.inten - lr.fvals[MEAN][0]; // lr.mean
-				sumM2 += diff * diff;
-				sumM3 += diff * diff * diff;
-				sumM4 += diff * diff * diff * diff;
-				absSum += abs(diff);
-				sumEnergy += pix.inten * pix.inten;
-			}
-			double m2 = sumM2 / (n - 1),
-				m3 = sumM3 / n,
-				m4 = sumM4 / n;
-			lr.aux_variance = sumM2 / (n - 1);
-			lr.fvals[STANDARD_DEVIATION][0] = sqrt(lr.aux_variance);	// .stddev
-			lr.fvals[MEAN_ABSOLUTE_DEVIATION][0] = absSum / n;	// .MAD
-			lr.fvals[ROOT_MEAN_SQUARED][0] = sqrt(sumEnergy / n);	// .RMS
-			lr.fvals[SKEWNESS][0] = m3 / pow(m2, 1.5);
-			lr.fvals[KURTOSIS][0] = m4 / (m2 * m2) - 3;
-			//
+			lr.fvals[CENTROID_X][0] += px.x;
+			lr.fvals[CENTROID_Y][0] += px.y;
+		}
+		lr.fvals[CENTROID_X][0] /= n; 
+		lr.fvals[CENTROID_Y][0] /= n; 
+
+		//==== Weighted centroids
+		double x_mass = 0, y_mass = 0, mass = 0;
+
+		for (auto& px : lr.raw_pixels)
+		{
+			x_mass = x_mass + (px.x + 1) * px.inten;    /* the "+1" is only for compatability with matlab code (where index starts from 1) */
+			y_mass = y_mass + (px.y + 1) * px.inten;    /* the "+1" is only for compatability with matlab code (where index starts from 1) */
+			mass += px.inten;
+		}
+
+		if (mass > 0) 
+		{
+			lr.fvals[WEIGHTED_CENTROID_X][0] = x_mass / mass;
+			lr.fvals[WEIGHTED_CENTROID_Y][0] = y_mass / mass;
+		}
+		else
+		{
+			lr.fvals[WEIGHTED_CENTROID_X][0] = 0.0;
+			lr.fvals[WEIGHTED_CENTROID_Y][0] = 0.0;
 		}
 
 		//==== Extent
-		double bbArea = lr.aabb.get_area();
-		lr.fvals[EXTENT][0] = (double)lr.pixelCountRoiArea / (double)bbArea;
+		lr.fvals[EXTENT][0] = n / lr.aabb.get_area();
 
 		//==== Aspect ratio
-		lr.fvals[ASPECT_RATIO][0] = lr.aabb.get_width() / lr.aabb.get_height();	// .aspectRatio
-
+		lr.fvals[ASPECT_RATIO][0] = lr.aabb.get_width() / lr.aabb.get_height();	
 	}
 }
 
@@ -287,10 +338,10 @@ void parallelReduceConvHull (size_t start, size_t end, std::vector<int>* ptrLabe
 		//==== Convex hull and solidity
 		r.convHull.calculate(r.raw_pixels);
 		r.fvals[CONVEX_HULL_AREA][0] = r.convHull.getArea();	// .convHullArea
-		r.fvals[SOLIDITY][0] = r.pixelCountRoiArea / r.fvals[CONVEX_HULL_AREA][0];	// .solidity
+		r.fvals[SOLIDITY][0] = r.raw_pixels.size() / r.fvals[CONVEX_HULL_AREA][0];	// .solidity
 
 		//==== Circularity
-		r.fvals[CIRCULARITY][0] = 4.0 * M_PI * r.pixelCountRoiArea / (r.fvals[PERIMETER][0] * r.fvals[PERIMETER][0]); // r.circularity = 4.0 * M_PI * r.pixelCountRoiArea / (r.roiPerimeter * r.roiPerimeter);
+		r.fvals[CIRCULARITY][0] = 4.0 * M_PI * r.raw_pixels.size() / (r.fvals[PERIMETER][0] * r.fvals[PERIMETER][0]); // r.circularity = 4.0 * M_PI * r.pixelCountRoiArea / (r.roiPerimeter * r.roiPerimeter);
 
 		//==== IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
 		r.reduce_edge_intensity_features();
@@ -560,9 +611,9 @@ void reduce (int nThr, int min_online_roi_size)
 				XYSquaredTmp += diffX * diffY; //(double(x) - (xCentroid - Im.ROIWidthBeg)) * (-double(y) + (yCentroid - Im.ROIHeightBeg));
 			}
 
-			double uxx = XSquaredTmp / r.pixelCountRoiArea + 1.0 / 12.0;
-			double uyy = YSquaredTmp / r.pixelCountRoiArea + 1.0 / 12.0;
-			double uxy = XYSquaredTmp / r.pixelCountRoiArea;
+			double uxx = XSquaredTmp / r.raw_pixels.size() + 1.0 / 12.0;
+			double uyy = YSquaredTmp / r.raw_pixels.size() + 1.0 / 12.0;
+			double uxy = XYSquaredTmp / r.raw_pixels.size();
 
 			// Calculate major axis length, minor axis length, and eccentricity.
 			double common = sqrt((uxx - uyy) * (uxx - uyy) + 4 * uxy * uxy);
@@ -777,7 +828,7 @@ void reduce (int nThr, int min_online_roi_size)
 
 			//==== Hexagonality and polygonality
 			Hexagonality_and_Polygonality hp;
-			auto [polyAve, hexAve, hexSd] = hp.calculate(r.fvals[NUM_NEIGHBORS][0], r.pixelCountRoiArea, r.fvals[PERIMETER][0], r.fvals[CONVEX_HULL_AREA][0], r.fvals[MIN_FERET_DIAMETER][0], r.fvals[MAX_FERET_DIAMETER][0]);
+			auto [polyAve, hexAve, hexSd] = hp.calculate(r.fvals[NUM_NEIGHBORS][0], r.raw_pixels.size(), r.fvals[PERIMETER][0], r.fvals[CONVEX_HULL_AREA][0], r.fvals[MIN_FERET_DIAMETER][0], r.fvals[MAX_FERET_DIAMETER][0]);
 			r.fvals[POLYGONALITY_AVE][0] = polyAve;
 			r.fvals[HEXAGONALITY_AVE][0] = hexAve;
 			r.fvals[HEXAGONALITY_STDDEV][0] = hexSd;
@@ -792,7 +843,7 @@ void reduce (int nThr, int min_online_roi_size)
 
 			//==== Geodetic length thickness
 			GeodeticLength_and_Thickness glt;
-			auto [geoLen, thick] = glt.calculate(r.pixelCountRoiArea, r.fvals[PERIMETER][0]);
+			auto [geoLen, thick] = glt.calculate(r.raw_pixels.size(), (StatsInt)r.fvals[PERIMETER][0]);
 			r.fvals[GEODETIC_LENGTH][0] = geoLen;
 			r.fvals[THICKNESS][0] = thick;
 		}
@@ -914,6 +965,74 @@ void reduce (int nThr, int min_online_roi_size)
 			r.fvals[GLSZM_SAHGLE][0] = glszm.calc_SAHGLE();
 			r.fvals[GLSZM_LALGLE][0] = glszm.calc_LALGLE();
 			r.fvals[GLSZM_LAHGLE][0] = glszm.calc_LAHGLE();
+		}
+	}
+
+	//==== GLDM
+	if (theFeatureSet.anyEnabled({ 
+		GLDM_SDE,
+		GLDM_LDE,
+		GLDM_GLN,
+		GLDM_DN,
+		GLDM_DNN,
+		GLDM_GLV,
+		GLDM_DV,
+		GLDM_DE,
+		GLDM_LGLE,
+		GLDM_HGLE,
+		GLDM_SDLGLE,
+		GLDM_SDHGLE,
+		GLDM_LDLGLE,
+		GLDM_LDHGLE 
+		}))
+	{
+		STOPWATCH("GLDM ...", "\tReduced GLDM");
+		for (auto& ld : labelData)
+		{
+			auto& r = ld.second;
+			ImageMatrix im(r.raw_pixels, r.aabb);
+			GLDM_features gldm;
+			gldm.initialize ((int) r.fvals[MIN][0], (int) r.fvals[MAX][0], im);
+			r.fvals[GLSZM_SAE][0] = gldm.calc_SDE();
+			r.fvals[GLSZM_LAE][0] = gldm.calc_LDE();
+			r.fvals[GLSZM_GLN][0] = gldm.calc_GLN();
+			r.fvals[GLSZM_GLNN][0] = gldm.calc_DN();
+			r.fvals[GLSZM_SZN][0] = gldm.calc_DNN();
+			r.fvals[GLSZM_SZNN][0] = gldm.calc_GLV();
+			r.fvals[GLSZM_ZP][0] = gldm.calc_DV();
+			r.fvals[GLSZM_GLV][0] = gldm.calc_DE();
+			r.fvals[GLSZM_ZV][0] = gldm.calc_LGLE();
+			r.fvals[GLSZM_ZE][0] = gldm.calc_HGLE();
+			r.fvals[GLSZM_LGLZE][0] = gldm.calc_SDLGLE();
+			r.fvals[GLSZM_SALGLE][0] = gldm.calc_SDHGLE();
+			r.fvals[GLSZM_SAHGLE][0] = gldm.calc_LDLGLE();
+			r.fvals[GLSZM_LALGLE][0] = gldm.calc_LDHGLE();
+		}
+	}
+
+	//==== NGTDM
+	if (theFeatureSet.anyEnabled({ 
+	NGTDM_COARSENESS,
+	NGTDM_CONTRAST,
+	NGTDM_BUSYNESS,
+	NGTDM_COMPLEXITY,
+	NGTDM_STRENGTH
+		}))
+	{
+		STOPWATCH("NGTDM ...", "\tReduced NGTDM");
+		for (auto& ld : labelData)
+		{
+			auto& r = ld.second;
+			ImageMatrix im(r.raw_pixels, r.aabb);
+			NGTDM_features ngtdm;
+			ngtdm.initialize ((int) r.fvals[MIN][0], (int) r.fvals[MAX][0], im);
+
+			r.fvals[NGTDM_COARSENESS][0] = ngtdm.calc_Coarseness();
+			r.fvals[NGTDM_CONTRAST][0] = ngtdm.calc_Contrast();
+			r.fvals[NGTDM_BUSYNESS][0] = ngtdm.calc_Busyness();
+			r.fvals[NGTDM_COMPLEXITY][0] = ngtdm.calc_Complexity();
+			r.fvals[NGTDM_STRENGTH][0] = ngtdm.calc_Strength();
+				
 		}
 	}
 }

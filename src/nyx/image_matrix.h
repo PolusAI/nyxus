@@ -131,13 +131,16 @@ public:
 		return val;
 	}
 	
-	bool safe (int y, int x)
+	bool safe (int y, int x) const
 	{
-		if (x >= W || y >= H)
+		if (x < 0 || x >= W || y < 0 || y >= H)
 			return false;
 		else
 			return true;
 	}
+
+	int width() const { return W; }
+	int height() const { return H; }
 
 protected:
 	int W, H;

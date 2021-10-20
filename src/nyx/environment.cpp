@@ -89,7 +89,14 @@ bool parse_delimited_string_list_to_features(const std::string& rawString, std::
     for (const auto& s : strings)
     {
         auto s_uppr = toupper(s);
-        if (s_uppr == FEA_NICK_ALL || s_uppr == FEA_NICK_ALL_INTENSITY || s_uppr == FEA_NICK_ALL_MORPHOLOGY || s_uppr == FEA_NICK_ALL_GLCM || s_uppr == FEA_NICK_ALL_GLSZM || s_uppr == FEA_NICK_ALL_GLRLM)
+        if (s_uppr == FEA_NICK_ALL || 
+            s_uppr == FEA_NICK_ALL_INTENSITY || 
+            s_uppr == FEA_NICK_ALL_MORPHOLOGY || 
+            s_uppr == FEA_NICK_ALL_GLCM || 
+            s_uppr == FEA_NICK_ALL_GLRLM ||
+            s_uppr == FEA_NICK_ALL_GLSZM ||
+            s_uppr == FEA_NICK_ALL_GLDM ||
+            s_uppr == FEA_NICK_ALL_NGTDM )
         {
             result.push_back(s_uppr);
             continue;
@@ -338,7 +345,7 @@ int Environment::parse_cmdline(int argc, char** argv)
             std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << " or " << OT_SINGLECSV << "\n";
             return 1;    
     }
-    separateCsv = rawOutpTypeUC == OT_SEPCSV;
+    separateCsv = rawOutpTypeUC == toupper(OT_SEPCSV);
         
 
     //==== Check numeric parameters
@@ -541,6 +548,39 @@ int Environment::parse_cmdline(int argc, char** argv)
                 GLSZM_LAHGLE 
             };
             theFeatureSet.enableFeatures (F);
+            continue;
+        }
+        if (s == FEA_NICK_ALL_GLDM)
+        {
+            auto F = {
+                GLDM_SDE,
+                GLDM_LDE,
+                GLDM_GLN,
+                GLDM_DN,
+                GLDM_DNN,
+                GLDM_GLV,
+                GLDM_DV,
+                GLDM_DE,
+                GLDM_LGLE,
+                GLDM_HGLE,
+                GLDM_SDLGLE,
+                GLDM_SDHGLE,
+                GLDM_LDLGLE,
+                GLDM_LDHGLE
+            };
+            theFeatureSet.enableFeatures(F);
+            continue;
+        }
+        if (s == FEA_NICK_ALL_NGTDM)
+        {
+            auto F = {
+                NGTDM_COARSENESS,
+                NGTDM_CONTRAST,
+                NGTDM_BUSYNESS,
+                NGTDM_COMPLEXITY,
+                NGTDM_STRENGTH
+            };
+            theFeatureSet.enableFeatures(F);
             continue;
         }
 

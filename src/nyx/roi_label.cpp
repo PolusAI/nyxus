@@ -61,10 +61,10 @@ void LR::reduce_pixel_intensity_features()
 		auto x = pxl.x, y = pxl.y;
 
 		// Count of pixels belonging to the label
-		auto prev_n = lr.pixelCountRoiArea;	// Previous count
+		auto prev_n = lr.raw_pixels.size();	// Previous count
 		lr.aux_PrevCount = prev_n;
 		auto n = prev_n + 1;	// New count
-		lr.pixelCountRoiArea = n;
+		//lr.pixelCountRoiArea = n;
 
 		// Cumulants for moments calculation
 		auto prev_mean = lr.fvals[MEAN][0]; //lr.mean;
@@ -75,7 +75,7 @@ void LR::reduce_pixel_intensity_features()
 
 		// Mean
 		auto mean = prev_mean + delta_n;
-		lr.fvals[MEAN][0] = mean; // lr.mean = mean;
+		//XXX	lr.fvals[MEAN][0] = mean; // lr.mean = mean;
 
 		// Moments
 		lr.aux_M4 = lr.aux_M4 + term1 * delta_n2 * (n * n - 3 * n + 3) + 6 * delta_n2 * lr.aux_M2 - 4 * delta_n * lr.aux_M3;
@@ -117,15 +117,6 @@ void LR::reduce_pixel_intensity_features()
 
 		// Previous intensity for succeeding iterations
 		lr.aux_PrevIntens = intensity;
-
-		//==== Morphology
-		lr.update_aabb(x, y);
-
-	#ifdef SANITY_CHECK_INTENSITIES_FOR_LABEL
-		// Dump intensities for testing
-		if (label == SANITY_CHECK_INTENSITIES_FOR_LABEL)	// Put the label code you're tracking
-			lr.raw_intensities.push_back(intensity);
-	#endif
 	}
 }
 

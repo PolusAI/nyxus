@@ -219,7 +219,8 @@ struct LR
 	bool roi_disabled = false;
 
 	// Helper objects
-	std::vector <Pixel2> raw_pixels;	
+	std::vector <Pixel2> raw_pixels;
+	PixIntens aux_min, aux_max;
 	AABB aabb;	
 	ConvexHull convHull;
 	Contour contour;
@@ -236,7 +237,6 @@ struct LR
 	std::vector<std::vector<StatsReal>> fvals;
 	std::vector<StatsReal> getFeatureValues (AvailableFeatures af) { return fvals [af]; }
 
-	StatsInt pixelCountRoiArea;
 	StatsReal aux_M2,
 		aux_M3,
 		aux_M4, 

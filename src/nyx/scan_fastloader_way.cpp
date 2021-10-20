@@ -21,13 +21,13 @@
 #include <chrono>
 double totalTileLoadTime = 0.0, totalFeatureReduceTime = 0.0;
 
-#define BEGINFORMAT_RED "\033[1;34m" 
-#define ENDFORMAT "\033[0m"
+//--Harmful in Python output scenarios-- #define BEGINFORMAT_RED "\033[1;34m" 
+//--Harmful in Python output scenarios-- #define ENDFORMAT "\033[0m"
 
 
 bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpath, int num_threads)
 {
-	std::cout << "Processing pair " << intens_fpath << " -- " << label_fpath << "\n";
+	std::cout << intens_fpath << "\n";
 
 	int lvl = 0;	// Pyramid level
 
@@ -122,9 +122,9 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 			// Show stayalive progress info
 			if (cnt++ % 4 == 0)
 				std::cout << "\t" 
-					<< BEGINFORMAT_RED	
+					//--Harmful in Python output scenarios-- << BEGINFORMAT_RED	
 					<< int((row * nth + col) * 100 / float(nth * ntw) *100) / 100. << "%\t" << uniqueLabels.size() << " ULs"
-					<< ENDFORMAT	
+					//--Harmful in Python output scenarios-- << ENDFORMAT	
 					<< "\n";
 
 			totalTileLoadTime += elapsedTile.count();
@@ -134,9 +134,9 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 
 	// Show stayalive progress info
 	std::cout << "\t" 
-		<< BEGINFORMAT_RED
+		//--Harmful in Python output scenarios-- << BEGINFORMAT_RED
 		<< "100%\t" << uniqueLabels.size() << " ULs"
-		<< ENDFORMAT
+		//--Harmful in Python output scenarios-- << ENDFORMAT
 		<< "\n";
 
 	return true;

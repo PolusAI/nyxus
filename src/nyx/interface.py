@@ -96,3 +96,39 @@ def feret (label_dir, intensity_dir):
     assert (bool(intensity_dir and not intensity_dir.isspace()))
     f = nyx_backend.calc_feret (label_dir, intensity_dir)
     return f
+
+def glrlm (label_dir, intensity_dir):
+    """Calculate ROIs' GLRLM features  
+
+    Parameters
+    ----------
+    label_dir : path to the label images directory, type string
+    intensity_dir : path to the intensity images directory, type string
+
+    Returns
+    -------
+    numpy.ndarray, type float - 2-dimensional array of N calculated features 
+	        GLRLM_SRE,
+	        GLRLM_LRE,
+	        GLRLM_GLN,
+	        GLRLM_GLNN,
+	        GLRLM_RLN,
+	        GLRLM_RLNN,
+	        GLRLM_RP,
+	        GLRLM_GLV,
+	        GLRLM_RV,
+	        GLRLM_RE,
+	        GLRLM_LGLRE,
+	        GLRLM_HGLRE,
+	        GLRLM_SRLGLE,
+	        GLRLM_SRHGLE,
+	        GLRLM_LRLGLE,
+	        GLRLM_LRHGLE
+        for each of L unique labels in shape 
+        `[[f1, f2, ... fN], [f1, f2, ... fN], ... [f1, f2, ... fN]]`.
+    """
+
+    assert (bool(label_dir and not label_dir.isspace()))
+    assert (bool(intensity_dir and not intensity_dir.isspace()))
+    f = nyx_backend.calc_glrlm (label_dir, intensity_dir)
+    return f

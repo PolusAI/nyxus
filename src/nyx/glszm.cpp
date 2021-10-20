@@ -178,11 +178,6 @@ double GLSZM_features::calc_SAE()
 	}
 	double retval = f / double(Nz);
 
-	if (isnan(retval))
-	{
-		P.print("Causing ASE == NAN", "");
-	}
-
 	return retval;
 }
 
@@ -281,8 +276,7 @@ double GLSZM_features::calc_SZNN()
 		double sum = 0.0;
 		for (int j = 1; j <= Ng; j++)
 		{
-			unsigned long idx = i * Ns + j;
-			sum += P.matlab(j,i); // P[idx];
+			sum += P.matlab(j,i); 
 		}
 		f += sum * sum;
 	}
@@ -408,8 +402,7 @@ double GLSZM_features::calc_HGLZE()
 	{
 		for (int j = 1; j <= Ns; j++)
 		{
-			unsigned long idx = i * Ns + j;
-			f += P.matlab(i,j) * double(i * i);
+			f += P.matlab(i,j) * double(i*i);
 		}
 	}
 	double retval = f / double(Nz);

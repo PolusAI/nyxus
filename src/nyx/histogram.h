@@ -58,21 +58,24 @@ public:
 
 	void initialize (HistoItem min_value, HistoItem max_value, std::vector<Pixel2> raw_data)
 	{
+		// Cache min/max
 		minVal = min_value;
 		maxVal = max_value;
-		binW = double(minVal - maxVal) / double(N_HISTO_BINS);
-		
-		// 2 tasks: (1) build the histogram; (2) gather unique values
-		for (auto s : raw_data) 
+
+		// Build the histogram
+		binW = double(maxVal - minVal) / double(N_HISTO_BINS);
+		for (auto s : raw_data)
 		{
 			HistoItem h = s.inten;
 			// 1
-			int idx = int(double(h - minVal) / binW);
-			bins [idx]++;
+			double realIdx = double(h - minVal) / binW;
+			int idx = std::isnan(realIdx) ? 0 : int(realIdx);
+			(bins [idx]) ++;
 
 			// 2
-			U.insert (h);
+			U.push_back(h); //XXX	U.insert (h);
 		}
+
 	}
 
 	// Returns
@@ -83,10 +86,10 @@ public:
 	//	[7] RMAD
 	//	[8] entropy
 	//	[9] uniformity
-	std::tuple<HistoItem, HistoItem, double, double, double, double, double, double, double, double> get_stats()
+	std::tuple<double, HistoItem, double, double, double, double, double, double, double, double> get_stats()
 	{
-		HistoItem median = get_median(U);
-		HistoItem mode = get_mode();
+		double median = get_median (U); //xxx	 get_median(U);
+		HistoItem mode = get_mode(U);
 
 		double p10 = 0, p25 = 0, p75 = 0, p90 = 0, iqr = 0, rmad = 0, entropy = 0, uniformity = 0;
 
@@ -149,7 +152,7 @@ public:
 		for (int i=0; i<N_HISTO_BINS; i++)
 		{
 			auto cnt = bins[i];
-			double binEntry = cnt / n;
+			double binEntry = double(cnt) / double(n);
 			if (fabs(binEntry) < 1e-15)
 				continue;
 
@@ -167,9 +170,10 @@ public:
 	protected:
 
 		HistoItem minVal, maxVal;
+		double medianVal;
 		double binW;
 		int bins[N_HISTO_BINS + 1] = { 0 };
-		std::unordered_set <HistoItem> U;
+		std::vector <HistoItem> U;	//xxx	std::unordered_set <HistoItem> U;
 
 		HistoItem get_median(const std::unordered_set<HistoItem>& uniqueValues)
 		{
@@ -193,7 +197,29 @@ public:
 			}
 		}
 
-		HistoItem get_mode()
+		// 'raw_I' is passed as non-const and gets sorted
+		double get_median (std::vector<HistoItem> & raw_I)
+		{
+			// Sort unique intensities
+			std::sort (raw_I.begin(), raw_I.end());
+
+			// Pick the median
+			auto n = raw_I.size();
+			if (n % 2 != 0)
+			{
+				HistoItem median = raw_I[n / 2];
+				return (double) median;
+			}
+			else
+			{
+				HistoItem right = raw_I[n / 2],
+					left = raw_I[n / 2 - 1];	// Middle left and right values
+				double ave = double(right + left) / 2.0;
+				return ave;
+			}
+		}
+
+		double get_max_bin_item ()
 		{
 			// Find the heaviest bin
 			int maxIdx = 0,
@@ -208,8 +234,26 @@ public:
 			// Find bin enges and their average
 			double edgeL = minVal + maxIdx * binW,
 				edgeR = edgeL + binW;
-			HistoItem mode = HistoItem((edgeL + edgeR) / 2.f);
-			return mode;
+			double biggest = HistoItem((edgeL + edgeR) / 2.0);
+			return biggest;
+		}
+
+		HistoItem get_mode(std::vector<HistoItem>& raw_I)
+		{
+			auto n = maxVal - minVal;
+
+			// Degenerate case?
+			if (n == 0)
+				return minVal;
+
+			std::vector<int> histogram (n+1, 0);
+			for (int i = 0; i < raw_I.size(); ++i)
+			{
+				auto k = raw_I[i] - minVal;
+				++histogram [k];
+			}
+			HistoItem maxel = std::max_element (histogram.begin(), histogram.end()) - histogram.begin();
+			return maxel + minVal;
 		}
 };
 

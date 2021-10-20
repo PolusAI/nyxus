@@ -158,6 +158,29 @@ enum AvailableFeatures
 	GLSZM_LALGLE,	// Large Area Low Gray Level Emphasis
 	GLSZM_LAHGLE,	// Large Area High Gray Level Emphasis
 
+	// GLDM:
+	GLDM_SDE,	// Small Dependence Emphasis(SDE)
+	GLDM_LDE,	// Large Dependence Emphasis (LDE)
+	GLDM_GLN,	// Gray Level Non-Uniformity (GLN)
+	GLDM_DN,	// Dependence Non-Uniformity (DN)
+	GLDM_DNN,	// Dependence Non-Uniformity Normalized (DNN)
+	GLDM_GLV,	// Gray Level Variance (GLV)
+	GLDM_DV,	// Dependence Variance (DV)
+	GLDM_DE,	// Dependence Entropy (DE)
+	GLDM_LGLE,	// Low Gray Level Emphasis (LGLE)
+	GLDM_HGLE,	// High Gray Level Emphasis (HGLE)
+	GLDM_SDLGLE,	// Small Dependence Low Gray Level Emphasis (SDLGLE)
+	GLDM_SDHGLE,	// Small Dependence High Gray Level Emphasis (SDHGLE)
+	GLDM_LDLGLE,	// Large Dependence Low Gray Level Emphasis (LDLGLE)
+	GLDM_LDHGLE,	// Large Dependence High Gray Level Emphasis (LDHGLE)
+
+	// NGTDM:
+	NGTDM_COARSENESS,
+	NGTDM_CONTRAST,
+	NGTDM_BUSYNESS,
+	NGTDM_COMPLEXITY,
+	NGTDM_STRENGTH,
+
 	_COUNT_
 };
 

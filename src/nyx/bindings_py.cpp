@@ -283,6 +283,51 @@ PYBIND11_MODULE(nyx_backend, m)
 				free_when_done); // numpy array references this parent
 		});
 
+	m.def("calc_glrlm", [](const std::string& label_path, const std::string& intensity_path)
+		{
+			// Calculate features
+			auto desiredFeatures = {
+				GLRLM_SRE,
+				GLRLM_LRE,
+				GLRLM_GLN,
+				GLRLM_GLNN,
+				GLRLM_RLN,
+				GLRLM_RLNN,
+				GLRLM_RP,
+				GLRLM_GLV,
+				GLRLM_RV,
+				GLRLM_RE,
+				GLRLM_LGLRE,
+				GLRLM_HGLRE,
+				GLRLM_SRLGLE,
+				GLRLM_SRHGLE,
+				GLRLM_LRLGLE,
+				GLRLM_LRHGLE };
+			auto [errorCode, errorDetails, nx, ny, retbuf] = featureSetInvoker(desiredFeatures, label_path, intensity_path);
+
+			// Check for errors
+			if (errorCode)
+			{
+				std::cerr << "featureSetInvoker failed with error " << errorCode << "\n";
+				PyErr_SetString(PyExc_RuntimeError, errorDetails.c_str());
+			}
+
+			// Create a Python object that will free the allocated
+			// memory when destroyed:
+			py::capsule free_when_done(retbuf, [](void* f) {
+				double* foo = reinterpret_cast<double*>(f);
+				std::cerr << "Element [0] = " << foo[0] << "\n";
+				std::cerr << "freeing memory @ " << f << "\n";
+				delete[] foo;
+				});
+
+			return py::array_t<double>(
+				{ ny, nx }, // shape
+				{ ny * nx * 8, nx * 8 }, // C-style contiguous strides for double
+				retbuf, // the data pointer
+				free_when_done); // numpy array references this parent
+		});
+
 }
 
 

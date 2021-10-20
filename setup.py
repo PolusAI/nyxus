@@ -81,11 +81,11 @@ with open('README.md', 'r') as fh:
 
 
 setup(
-    name='sensemaker_nyx',
-    version='0.0.9',
+    name='nyxus',
+    version='0.0.10',
     author='Andriy Kharchenko',
     author_email='andriy.kharchenko@axleinfo.com',
-	url = 'https://github.com/friskluft/nyx',
+	url = 'https://github.com/friskluft/nyxus',
     description='Library for calculating features from intensity-label TIFF image data',
     long_description=long_description,
     long_description_content_type='text/markdown',
