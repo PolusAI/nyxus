@@ -52,7 +52,7 @@ public:
 
 	bool singleROI = false;	// is set to 'true' parse_cmdline() if labels_dir==intensity_dir
 
-	std::string file_pattern = "",
+	std::string file_pattern = ".*",
 		embedded_pixel_size = "";
 
 	std::string features;
@@ -81,6 +81,8 @@ public:
 	bool separateCsv = true;
 
 protected:
+
+	bool check_file_pattern (const std::string & pat);
 
 	std::vector<std::tuple<std::string, std::string>> memory;
 	void show_memory(const std::string& head, const std::string& tail);

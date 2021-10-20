@@ -1,7 +1,7 @@
 {
   "name": "Nyxus",
-  "version": "0.1.4",
-  "containerId": "polusai/nyxus:0.1.4",
+  "version": "0.1.5",
+  "containerId": "polusai/nyxus:0.1.5",
   "title": "Nyxus feature extraction",
   "description": "Test of Nyxus feature extractor",
   "author": "friskluft + hsidky",
@@ -26,7 +26,7 @@
     },
     {
       "name": "filePattern",
-      "description": "To match intensity and labeled/segmented image",
+      "description": "Regular expression to filter file names",
       "type": "string",
       "options": null,
       "required": true
@@ -47,42 +47,14 @@
           "type": "string",
           "title": "Select feature",
           "oneOf": [
-            {
-              "description": "All",
-              "enum": [
-                "*ALL*"
-              ]
-            },
-            {
-              "description": "ALL_INTENSITY",
-              "enum": [
-                "*ALL_INTENSITY*"
-              ]
-            },
-            {
-              "description": "ALL_MORPHOLOGY",
-              "enum": [
-                "*ALL_MORPHOLOGY*"
-              ]
-            },
-            {
-              "description": "ALL_GLCM",
-              "enum": [
-                "*ALL_GLCM*"
-              ]
-            },
-            {
-              "description": "ALL_GLRLM",
-              "enum": [
-                "*ALL_GLRLM*"
-              ]
-            },
-            {
-              "description": "ALL_GLSZM",
-              "enum": [
-                "*ALL_GLSZM*"
-              ]
-            },
+            { "description": "All", "enum": ["*ALL*"] },
+            { "description": "ALL_INTENSITY", "enum": ["*ALL_INTENSITY*"] },
+            { "description": "ALL_MORPHOLOGY", "enum": ["*ALL_MORPHOLOGY*"] },
+            { "description": "ALL_GLCM", "enum": ["*ALL_GLCM*"] },
+            { "description": "ALL_GLRLM", "enum": ["*ALL_GLRLM*"] },
+            { "description": "ALL_GLSZM", "enum": ["*ALL_GLSZM*"] },
+            { "description": "ALL_GLDM", "enum": ["*ALL_GLDM*"] },
+            { "description": "ALL_NGTDM", "enum": ["*ALL_NGTDM*"] },
             {
               "description": "MEAN",
               "enum": [

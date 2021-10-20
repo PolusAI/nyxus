@@ -200,6 +200,13 @@ std::map <std::string, AvailableFeatures> UserFacingFeatureNames =
 	{ "NGTDM_COMPLEXITY", NGTDM_COMPLEXITY },
 	{ "NGTDM_STRENGTH", NGTDM_STRENGTH },
 
+	{ "HU_M1", HU_M1 },
+	{ "HU_M2", HU_M2 },
+	{ "HU_M3", HU_M3},
+	{ "HU_M4", HU_M4},
+	{ "HU_M5", HU_M5},
+	{ "HU_M6", HU_M6},
+	{ "HU_M7", HU_M7},
 };
 
 FeatureSet::FeatureSet()

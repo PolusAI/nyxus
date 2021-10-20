@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cfloat>
+#include <string>
 #include <vector>
 #include "pixel.h"
 #include "aabb.h"

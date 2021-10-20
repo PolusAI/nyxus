@@ -2,6 +2,8 @@
 
 #include <fstream>
 #include <iostream>
+#include <regex>
+#include <sstream>
 #include <tuple>
 #include <vector>
 #include "environment.h"
@@ -143,7 +145,7 @@ void Environment::show_help()
             << " [" << VERBOSITY << " <verbo>]\n"
 
         << "Where\n"
-        << "\t<fp> - file pattern e.g. *, *.tif, etc [default = *]\n"
+        << "\t<fp> - file pattern regular expression e.g. .*, *.tif, etc [default = .*]\n"
         << "\t<csv> - 'separatecsv'[default] or 'singlecsv' \n"
         << "\t<sd> - directory of segmentation images \n"
         << "\t<id> - directory of intensity images \n"
@@ -257,6 +259,20 @@ bool Environment::find_int_argument (std::vector<std::string>::iterator& i, cons
     return true;
 }
 
+bool Environment::check_file_pattern (const std::string & pat)
+{
+    try
+    {
+        std::regex re(pat);
+    }
+    catch(...)
+    {
+        return false;
+    }
+
+    return true;
+}
+
 // Examples:
 // C:\WORK\AXLE\data\tissuenet\tissuenet-test-intensity C:\WORK\AXLE\data\tissuenet\tissuenet-test-labels C:\WORK\AXLE\data\output  
 // "--features=kurtosis", "--filePattern=.*", "--csvfile=singlecsv", "--intDir=C:/WORK/AXLE/data/tissuenet/tissuenet-test-intensity", "--segDir=C:/WORK/AXLE/data/mesmer-untrained/labels", "--outDir=C:/WORK/AXLE/polus-feature-extraction-plugin/outputdir", "--embeddedpixelsize=true"
@@ -292,9 +308,23 @@ int Environment::parse_cmdline(int argc, char** argv)
     }
 
     //==== Report
-    show_memory("\n","\n");
+    
+    // --include the raw command line
+    std::stringstream rawCL;
+    rawCL << "\nRaw command line:\n" << argv[0] << " ";
+    std::copy (args.begin(), args.end(), std::ostream_iterator<std::string> (rawCL, " "));  // vector of strings -> string
+    rawCL << "\n\n";
+
+    // --display how the command line was parsed
+    show_memory (rawCL.str().c_str(), "\n");
 
     //==== Check mandatory parameters
+    if (check_file_pattern(file_pattern) == false)
+    {
+        std::cout << "Error: file pattern '" << file_pattern << "' is an invalid regular expression\n";
+        return 1;
+    }
+
     if (labels_dir == "")
     {
         std::cout << "Error: Missing argument " << SEGDIR << "\n";

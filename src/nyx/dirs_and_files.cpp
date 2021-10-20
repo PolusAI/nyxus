@@ -6,6 +6,8 @@
 #include <filesystem>
 #include <vector>
 #include <iostream>
+#include <regex>
+#include "environment.h"
 
 
 bool directoryExists(const std::string & dir)
@@ -16,8 +18,17 @@ bool directoryExists(const std::string & dir)
 
 void readDirectoryFiles(const std::string & dir, std::vector<std::string> & files)
 {
+	std::regex re(theEnvironment.file_pattern);
+
 	for (auto& entry : std::filesystem::directory_iterator(dir))
-		files.push_back (entry.path().string());
+	{
+		std::string fp = entry.path().string();
+		if (std::regex_match(fp, re))
+			files.push_back(fp);
+		else
+			std::cout << "Skipping file " << fp << " as not matching file pattern " << theEnvironment.file_pattern << "\n";
+	}
+
 }
 
 int datasetDirsOK (const std::string & dirIntens, const std::string & dirLabels, const std::string & dirOut, bool mustCheckDirOut)

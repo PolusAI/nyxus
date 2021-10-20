@@ -14,6 +14,7 @@
 #include "glszm.h"
 #include "gldm.h"
 #include "ngtdm.h"
+#include "hu.h"
 #include "timing.h"
 #include "moments.h"
 
@@ -1032,7 +1033,35 @@ void reduce (int nThr, int min_online_roi_size)
 			r.fvals[NGTDM_BUSYNESS][0] = ngtdm.calc_Busyness();
 			r.fvals[NGTDM_COMPLEXITY][0] = ngtdm.calc_Complexity();
 			r.fvals[NGTDM_STRENGTH][0] = ngtdm.calc_Strength();
-				
+ 		}
+	}
+
+	//==== Hu's moments
+	if (theFeatureSet.anyEnabled({ 
+		HU_M1,
+		HU_M2,
+		HU_M3,
+		HU_M4,
+		HU_M5,
+		HU_M6,
+		HU_M7
+		}))
+	{
+		STOPWATCH("Hu moments ...", "\tReduced Hu moments");
+		for (auto& ld : labelData)
+		{
+			auto& r = ld.second;
+			ImageMatrix im(r.raw_pixels, r.aabb);
+			HuMoments hu;
+			hu.initialize ((int) r.fvals[MIN][0], (int) r.fvals[MAX][0], im);
+			auto [m1, m2, m3, m4, m5, m6, m7] = hu.getMoments();
+			r.fvals[HU_M1][0] = m1;
+			r.fvals[HU_M2][0] = m2;
+			r.fvals[HU_M3][0] = m3;
+			r.fvals[HU_M4][0] = m4;
+			r.fvals[HU_M5][0] = m5;
+			r.fvals[HU_M6][0] = m6;
+			r.fvals[HU_M7][0] = m7;
 		}
 	}
 }

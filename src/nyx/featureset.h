@@ -181,6 +181,15 @@ enum AvailableFeatures
 	NGTDM_COMPLEXITY,
 	NGTDM_STRENGTH,
 
+	// Hu's moments 1-7 
+	HU_M1, 
+	HU_M2, 
+	HU_M3, 
+	HU_M4, 
+	HU_M5, 
+	HU_M6, 
+	HU_M7,
+
 	_COUNT_
 };
 
