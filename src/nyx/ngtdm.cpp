@@ -156,7 +156,7 @@ double NGTDM_features::calc_Contrast()
 	for (int i=0; i<Ng; i++)
 		for (int j = 0; j < Ng; j++)
 		{
-			double tmp = P[i] * P[j] * (i-j)*(i-j);
+			double tmp = P[i] * P[j] * ((i+1) - (j+1)) * ((i+1) - (j+1));
 			sum += tmp;
 		}
 	int Ngp_p2 = Ngp > 1 ? Ngp * (Ngp - 1) : Ngp;
@@ -212,12 +212,12 @@ double NGTDM_features::calc_Complexity()
 	for (int i = 0; i < Ng; i++)
 		for (int j = 0; j < Ng; j++)
 		{
-			double tmp = std::abs(i-j) * (P[i]*S[i] + P[j]*S[j]) / (P[i]+P[j]) ;
+			double tmp = std::abs((i+1)-(j+1)) * (P[i]*S[i] + P[j]*S[j]) / (P[i]+P[j]) ;
 			sum += tmp;
 		}
 
 	double retval = sum / double(Nvp);
-	return 0.0;
+	return retval;
 }
 
 // Strength
@@ -232,7 +232,7 @@ double NGTDM_features::calc_Strength()
 	for (int i = 0; i < Ng; i++)
 		for (int j = 0; j < Ng; j++)
 		{
-			double tmp = (P[i] + P[j]) * (i - j) * (i - j);
+			double tmp = (P[i] + P[j]) * ((i+1) - (j+1)) * ((i+1) - (j+1));
 			sum1 += tmp;
 		}
 
@@ -241,5 +241,5 @@ double NGTDM_features::calc_Strength()
 		sum2 += S[i];
 
 	double retval = sum1 / sum2;
-	return 0.0;
+	return retval;
 }

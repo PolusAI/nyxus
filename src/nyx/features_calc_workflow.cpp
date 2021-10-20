@@ -993,20 +993,20 @@ void reduce (int nThr, int min_online_roi_size)
 			ImageMatrix im(r.raw_pixels, r.aabb);
 			GLDM_features gldm;
 			gldm.initialize ((int) r.fvals[MIN][0], (int) r.fvals[MAX][0], im);
-			r.fvals[GLSZM_SAE][0] = gldm.calc_SDE();
-			r.fvals[GLSZM_LAE][0] = gldm.calc_LDE();
-			r.fvals[GLSZM_GLN][0] = gldm.calc_GLN();
-			r.fvals[GLSZM_GLNN][0] = gldm.calc_DN();
-			r.fvals[GLSZM_SZN][0] = gldm.calc_DNN();
-			r.fvals[GLSZM_SZNN][0] = gldm.calc_GLV();
-			r.fvals[GLSZM_ZP][0] = gldm.calc_DV();
-			r.fvals[GLSZM_GLV][0] = gldm.calc_DE();
-			r.fvals[GLSZM_ZV][0] = gldm.calc_LGLE();
-			r.fvals[GLSZM_ZE][0] = gldm.calc_HGLE();
-			r.fvals[GLSZM_LGLZE][0] = gldm.calc_SDLGLE();
-			r.fvals[GLSZM_SALGLE][0] = gldm.calc_SDHGLE();
-			r.fvals[GLSZM_SAHGLE][0] = gldm.calc_LDLGLE();
-			r.fvals[GLSZM_LALGLE][0] = gldm.calc_LDHGLE();
+			r.fvals[GLDM_SDE][0] = gldm.calc_SDE();
+			r.fvals[GLDM_LDE][0] = gldm.calc_LDE();
+			r.fvals[GLDM_GLN][0] = gldm.calc_GLN();
+			r.fvals[GLDM_DN][0] = gldm.calc_DN();
+			r.fvals[GLDM_DNN][0] = gldm.calc_DNN();
+			r.fvals[GLDM_GLV][0] = gldm.calc_GLV();
+			r.fvals[GLDM_DV][0] = gldm.calc_DV();
+			r.fvals[GLDM_DE][0] = gldm.calc_DE();
+			r.fvals[GLDM_LGLE][0] = gldm.calc_LGLE();
+			r.fvals[GLDM_HGLE][0] = gldm.calc_HGLE();
+			r.fvals[GLDM_SDLGLE][0] = gldm.calc_SDLGLE();
+			r.fvals[GLDM_SDHGLE][0] = gldm.calc_SDHGLE();
+			r.fvals[GLDM_LDLGLE][0] = gldm.calc_LDLGLE();
+			r.fvals[GLDM_LDHGLE][0] = gldm.calc_LDHGLE();
 		}
 	}
 
