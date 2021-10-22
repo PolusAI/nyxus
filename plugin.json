@@ -1,7 +1,7 @@
 {
   "name": "Nyxus",
-  "version": "0.1.5",
-  "containerId": "polusai/nyxus:0.1.5",
+  "version": "0.1.8",
+  "containerId": "polusai/nyxus:0.1.8",
   "title": "Nyxus feature extraction",
   "description": "Test of Nyxus feature extractor",
   "author": "friskluft + hsidky",
@@ -26,7 +26,7 @@
     },
     {
       "name": "filePattern",
-      "description": "Regular expression to filter file names",
+      "description": "Regular expression to filter file names. Examples: (1) all the files - .* (2) files ending in c0.ome.tif - .*c0\\.ome\\.tif",
       "type": "string",
       "options": null,
       "required": true
@@ -47,14 +47,54 @@
           "type": "string",
           "title": "Select feature",
           "oneOf": [
-            { "description": "All", "enum": ["*ALL*"] },
-            { "description": "ALL_INTENSITY", "enum": ["*ALL_INTENSITY*"] },
-            { "description": "ALL_MORPHOLOGY", "enum": ["*ALL_MORPHOLOGY*"] },
-            { "description": "ALL_GLCM", "enum": ["*ALL_GLCM*"] },
-            { "description": "ALL_GLRLM", "enum": ["*ALL_GLRLM*"] },
-            { "description": "ALL_GLSZM", "enum": ["*ALL_GLSZM*"] },
-            { "description": "ALL_GLDM", "enum": ["*ALL_GLDM*"] },
-            { "description": "ALL_NGTDM", "enum": ["*ALL_NGTDM*"] },
+            {
+              "description": "All",
+              "enum": [
+                "*ALL*"
+              ]
+            },
+            {
+              "description": "ALL_INTENSITY",
+              "enum": [
+                "*ALL_INTENSITY*"
+              ]
+            },
+            {
+              "description": "ALL_MORPHOLOGY",
+              "enum": [
+                "*ALL_MORPHOLOGY*"
+              ]
+            },
+            {
+              "description": "ALL_GLCM",
+              "enum": [
+                "*ALL_GLCM*"
+              ]
+            },
+            {
+              "description": "ALL_GLRLM",
+              "enum": [
+                "*ALL_GLRLM*"
+              ]
+            },
+            {
+              "description": "ALL_GLSZM",
+              "enum": [
+                "*ALL_GLSZM*"
+              ]
+            },
+            {
+              "description": "ALL_GLDM",
+              "enum": [
+                "*ALL_GLDM*"
+              ]
+            },
+            {
+              "description": "ALL_NGTDM",
+              "enum": [
+                "*ALL_NGTDM*"
+              ]
+            },
             {
               "description": "MEAN",
               "enum": [
@@ -691,38 +731,354 @@
                 "TEXTURE_INFOMEAS2"
               ]
             },
-            { "description": "GLRLM_SRE", "enum": ["GLRLM_SRE"] },
-            { "description": "GLRLM_LRE", "enum": ["GLRLM_LRE"] },
-            { "description": "GLRLM_GLN", "enum": ["GLRLM_GLN"] },
-            { "description": "GLRLM_GLNN", "enum": ["GLRLM_GLNN"] },
-            { "description": "GLRLM_RLN", "enum": ["GLRLM_RLN"] },
-            { "description": "GLRLM_RLNN", "enum": ["GLRLM_RLNN"] },
-            { "description": "GLRLM_RP", "enum": ["GLRLM_RP"] },
-            { "description": "GLRLM_GLV", "enum": ["GLRLM_GLV"] },
-            { "description": "GLRLM_RV", "enum": ["GLRLM_RV"] },
-            { "description": "GLRLM_RE", "enum": ["GLRLM_RE"] },
-            { "description": "GLRLM_LGLRE", "enum": ["GLRLM_LGLRE"] },
-            { "description": "GLRLM_HGLRE", "enum": ["GLRLM_HGLRE"] },
-            { "description": "GLRLM_SRLGLE", "enum": ["GLRLM_SRLGLE"] },
-            { "description": "GLRLM_SRHGLE", "enum": ["GLRLM_SRHGLE"] },
-            { "description": "GLRLM_LRLGLE", "enum": ["GLRLM_LRLGLE"] },
-            { "description": "GLRLM_LRHGLE", "enum": ["GLRLM_LRHGLE"] },
-            { "description": "GLSZM_SAE", "enum": ["GLSZM_SAE"] },
-            { "description": "GLSZM_LAE", "enum": ["GLSZM_LAE"] },
-            { "description": "GLSZM_GLN", "enum": ["GLSZM_GLN"] },
-            { "description": "GLSZM_GLNN", "enum": ["GLSZM_GLNN"] },
-            { "description": "GLSZM_SZN", "enum": ["GLSZM_SZN"] },
-            { "description": "GLSZM_SZNN", "enum": ["GLSZM_SZNN"] },
-            { "description": "GLSZM_ZP", "enum": ["GLSZM_ZP"] },
-            { "description": "GLSZM_GLV", "enum": ["GLSZM_GLV"] },
-            { "description": "GLSZM_ZV", "enum": ["GLSZM_ZV"] },
-            { "description": "GLSZM_ZE", "enum": ["GLSZM_ZE"] },
-            { "description": "GLSZM_LGLZE", "enum": ["GLSZM_LGLZE"] },
-            { "description": "GLSZM_HGLZE", "enum": ["GLSZM_HGLZE"] },
-            { "description": "GLSZM_SALGLE", "enum": ["GLSZM_SALGLE"] },
-            { "description": "GLSZM_SAHGLE", "enum": ["GLSZM_SAHGLE"] },
-            { "description": "GLSZM_LALGLE", "enum": ["GLSZM_LALGLE"] },
-            { "description": "GLSZM_LAHGLE", "enum": ["GLSZM_LAHGLE"] },
+            {
+              "description": "GLRLM_SRE",
+              "enum": [
+                "GLRLM_SRE"
+              ]
+            },
+            {
+              "description": "GLRLM_LRE",
+              "enum": [
+                "GLRLM_LRE"
+              ]
+            },
+            {
+              "description": "GLRLM_GLN",
+              "enum": [
+                "GLRLM_GLN"
+              ]
+            },
+            {
+              "description": "GLRLM_GLNN",
+              "enum": [
+                "GLRLM_GLNN"
+              ]
+            },
+            {
+              "description": "GLRLM_RLN",
+              "enum": [
+                "GLRLM_RLN"
+              ]
+            },
+            {
+              "description": "GLRLM_RLNN",
+              "enum": [
+                "GLRLM_RLNN"
+              ]
+            },
+            {
+              "description": "GLRLM_RP",
+              "enum": [
+                "GLRLM_RP"
+              ]
+            },
+            {
+              "description": "GLRLM_GLV",
+              "enum": [
+                "GLRLM_GLV"
+              ]
+            },
+            {
+              "description": "GLRLM_RV",
+              "enum": [
+                "GLRLM_RV"
+              ]
+            },
+            {
+              "description": "GLRLM_RE",
+              "enum": [
+                "GLRLM_RE"
+              ]
+            },
+            {
+              "description": "GLRLM_LGLRE",
+              "enum": [
+                "GLRLM_LGLRE"
+              ]
+            },
+            {
+              "description": "GLRLM_HGLRE",
+              "enum": [
+                "GLRLM_HGLRE"
+              ]
+            },
+            {
+              "description": "GLRLM_SRLGLE",
+              "enum": [
+                "GLRLM_SRLGLE"
+              ]
+            },
+            {
+              "description": "GLRLM_SRHGLE",
+              "enum": [
+                "GLRLM_SRHGLE"
+              ]
+            },
+            {
+              "description": "GLRLM_LRLGLE",
+              "enum": [
+                "GLRLM_LRLGLE"
+              ]
+            },
+            {
+              "description": "GLRLM_LRHGLE",
+              "enum": [
+                "GLRLM_LRHGLE"
+              ]
+            },
+            {
+              "description": "GLSZM_SAE",
+              "enum": [
+                "GLSZM_SAE"
+              ]
+            },
+            {
+              "description": "GLSZM_LAE",
+              "enum": [
+                "GLSZM_LAE"
+              ]
+            },
+            {
+              "description": "GLSZM_GLN",
+              "enum": [
+                "GLSZM_GLN"
+              ]
+            },
+            {
+              "description": "GLSZM_GLNN",
+              "enum": [
+                "GLSZM_GLNN"
+              ]
+            },
+            {
+              "description": "GLSZM_SZN",
+              "enum": [
+                "GLSZM_SZN"
+              ]
+            },
+            {
+              "description": "GLSZM_SZNN",
+              "enum": [
+                "GLSZM_SZNN"
+              ]
+            },
+            {
+              "description": "GLSZM_ZP",
+              "enum": [
+                "GLSZM_ZP"
+              ]
+            },
+            {
+              "description": "GLSZM_GLV",
+              "enum": [
+                "GLSZM_GLV"
+              ]
+            },
+            {
+              "description": "GLSZM_ZV",
+              "enum": [
+                "GLSZM_ZV"
+              ]
+            },
+            {
+              "description": "GLSZM_ZE",
+              "enum": [
+                "GLSZM_ZE"
+              ]
+            },
+            {
+              "description": "GLSZM_LGLZE",
+              "enum": [
+                "GLSZM_LGLZE"
+              ]
+            },
+            {
+              "description": "GLSZM_HGLZE",
+              "enum": [
+                "GLSZM_HGLZE"
+              ]
+            },
+            {
+              "description": "GLSZM_SALGLE",
+              "enum": [
+                "GLSZM_SALGLE"
+              ]
+            },
+            {
+              "description": "GLSZM_SAHGLE",
+              "enum": [
+                "GLSZM_SAHGLE"
+              ]
+            },
+            {
+              "description": "GLSZM_LALGLE",
+              "enum": [
+                "GLSZM_LALGLE"
+              ]
+            },
+            {
+              "description": "GLSZM_LAHGLE",
+              "enum": [
+                "GLSZM_LAHGLE"
+              ]
+            },
+            {
+              "description": "GLDM_SDE",
+              "enum": [
+                "GLDM_SDE"
+              ]
+            },
+            {
+              "description": "GLDM_LDE",
+              "enum": [
+                "GLDM_LDE"
+              ]
+            },
+            {
+              "description": "GLDM_GLN",
+              "enum": [
+                "GLDM_GLN"
+              ]
+            },
+            {
+              "description": "GLDM_DN",
+              "enum": [
+                "GLDM_DN"
+              ]
+            },
+            {
+              "description": "GLDM_DNN",
+              "enum": [
+                "GLDM_DNN"
+              ]
+            },
+            {
+              "description": "GLDM_GLV",
+              "enum": [
+                "GLDM_GLV"
+              ]
+            },
+            {
+              "description": "GLDM_DV",
+              "enum": [
+                "GLDM_DV"
+              ]
+            },
+            {
+              "description": "GLDM_DE",
+              "enum": [
+                "GLDM_DE"
+              ]
+            },
+            {
+              "description": "GLDM_LGLE",
+              "enum": [
+                "GLDM_LGLE"
+              ]
+            },
+            {
+              "description": "GLDM_HGLE",
+              "enum": [
+                "GLDM_HGLE"
+              ]
+            },
+            {
+              "description": "GLDM_SDLGLE",
+              "enum": [
+                "GLDM_SDLGLE"
+              ]
+            },
+            {
+              "description": "GLDM_SDHGLE",
+              "enum": [
+                "GLDM_SDHGLE"
+              ]
+            },
+            {
+              "description": "GLDM_LDLGLE",
+              "enum": [
+                "GLDM_LDLGLE"
+              ]
+            },
+            {
+              "description": "GLDM_LDHGLE",
+              "enum": [
+                "GLDM_LDHGLE"
+              ]
+            },
+            {
+              "description": "NGTDM_COARSENESS",
+              "enum": [
+                "NGTDM_COARSENESS"
+              ]
+            },
+            {
+              "description": "NGTDM_CONTRAST",
+              "enum": [
+                "NGTDM_CONTRAST"
+              ]
+            },
+            {
+              "description": "NGTDM_BUSYNESS",
+              "enum": [
+                "NGTDM_BUSYNESS"
+              ]
+            },
+            {
+              "description": "NGTDM_COMPLEXITY",
+              "enum": [
+                "NGTDM_COMPLEXITY"
+              ]
+            },
+            {
+              "description": "NGTDM_STRENGTH",
+              "enum": [
+                "NGTDM_STRENGTH"
+              ]
+            },
+            {
+              "description": "HU_M1",
+              "enum": [
+                "HU_M1"
+              ]
+            },
+            {
+              "description": "HU_M2",
+              "enum": [
+                "HU_M2"
+              ]
+            },
+            {
+              "description": "HU_M3",
+              "enum": [
+                "HU_M3"
+              ]
+            },
+            {
+              "description": "HU_M4",
+              "enum": [
+                "HU_M4"
+              ]
+            },
+            {
+              "description": "HU_M5",
+              "enum": [
+                "HU_M5"
+              ]
+            },
+            {
+              "description": "HU_M6",
+              "enum": [
+                "HU_M6"
+              ]
+            },
+            {
+              "description": "HU_M7",
+              "enum": [
+                "HU_M7"
+              ]
+            },
             {
               "description": "TEXTURE_ZERNIKE2D",
               "enum": [
@@ -740,7 +1096,7 @@
       "required": true
     },
     {
-      "name": "csvfile",
+      "name": "csvFile",
       "description": "csvfile : singlecsv for saving values in one csv file and separate csv to save values for each image in separate csv file",
       "type": "enum",
       "options": {
@@ -801,7 +1157,8 @@
     {
       "key": "inputs.pixelDistance",
       "title": "Pixel Distance",
-      "description": "Pixel distance to calculate the neighbors touching cells"
+      "description": "Pixel distance to calculate the neighbors touching cells",
+	  "default": "5"
     },
     {
       "key": "inputs.features",
@@ -809,9 +1166,9 @@
       "description": "Select features"
     },
     {
-      "key": "inputs.csvfile",
+      "key": "inputs.csvFile",
       "title": "Output csv file",
-      "description": "Save csv file separately for each image or one csv for all images"
+      "description": "Save csv file separately for each image or one csv file for all images"
     },
     {
       "key": "inputs.embeddedpixelsize",

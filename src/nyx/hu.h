@@ -2,19 +2,11 @@
 
 #include "image_matrix.h"
 
-/*
- * Hu Moments and Digit Recognition Algorithm:
- * http://www.wseas.us/e-library/conferences/2013/CambridgeUK/AISE/AISE-15.pdf
- *
- * Example
- * arr is an array of object and arr must be binary image
- * width and height is integer
- * HuMoments obj1(arr,width,height);
- * obj1.calcOrgins();
- * obj1.calcInvariantMoments();
- * float moments[7];
- * float *moments = obj1.getInvariantMoments();
- */
+// Inspired by Yavuz Unver
+// 
+// Hu Moments and Digit Recognition Algorithm:
+// http://www.wseas.us/e-library/conferences/2013/CambridgeUK/AISE/AISE-15.pdf
+//
 
 #ifndef HUMOMENTS_H
 #define HUMOMENTS_H

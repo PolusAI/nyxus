@@ -97,10 +97,10 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 			for (unsigned long i = 0; i < tileSize; i++)
 			{
 				auto label = dataL[i];
-				if (label != 0)
+				if (label != 0 && dataI[i] != 0)
 				{
-					int y = i / tw,
-						x = i % tw;
+					int y = row * th + i / tw,
+						x = col * tw + i % tw;
 
 					// Collapse all the labels to one if single-ROI mde is requested
 					if (theEnvironment.singleROI)

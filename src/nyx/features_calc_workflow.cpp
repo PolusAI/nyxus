@@ -1,4 +1,5 @@
 #define _USE_MATH_DEFINES	// For M_PI, etc.
+#include <algorithm>
 #include <cmath>
 #include <memory>
 #include <unordered_map>

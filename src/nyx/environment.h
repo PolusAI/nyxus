@@ -52,8 +52,8 @@ public:
 
 	bool singleROI = false;	// is set to 'true' parse_cmdline() if labels_dir==intensity_dir
 
-	std::string file_pattern = ".*",
-		embedded_pixel_size = "";
+	std::string file_pattern = ".*";
+	std::string embedded_pixel_size = "";
 
 	std::string features;
 	std::vector<std::string> desiredFeatures;
@@ -77,7 +77,7 @@ public:
 	std::string rawOnlineStatsThresh = "";
 	int onlineStatsTreshold = 0;
 
-	std::string rawOutpType = "separatecsv";	// Valid values: "separatecsv" or "singlecsv"
+	std::string rawOutpType = "";	// Valid values: "separatecsv" or "singlecsv"
 	bool separateCsv = true;
 
 protected:
@@ -87,7 +87,7 @@ protected:
 	std::vector<std::tuple<std::string, std::string>> memory;
 	void show_memory(const std::string& head, const std::string& tail);
 
-	void find_string_argument (std::vector<std::string>::iterator& i, const char* arg, std::string& arg_value);
+	bool find_string_argument (std::vector<std::string>::iterator& i, const char* arg, std::string& arg_value);
 	bool find_int_argument (std::vector<std::string>::iterator& i, const char* arg, int& arg_value);
 };
 

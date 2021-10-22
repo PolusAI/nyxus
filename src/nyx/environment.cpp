@@ -209,26 +209,33 @@ void Environment::show_memory(const std::string& head, const std::string& tail)
     std::cout << tail;
 }
 
-void Environment::find_string_argument (std::vector<std::string>::iterator& i, const char* arg, std::string& arg_value)
+bool Environment::find_string_argument (std::vector<std::string>::iterator& i, const char* arg, std::string& arg_value)
 {
-    // Syntax #1
+    std::string actualArgName = *i;
+
+    // Syntax #1 <arg> <value>
     std::string a = arg;
-    if (*i == a)
+    if (actualArgName == a)
     {
         arg_value = *++i;
-        memory.push_back({ a, arg_value });
+        memory.push_back ({ a, arg_value });
+        return true;
     }
     else
     {
-        // Syntax #2
+        // Syntax #2 <arg>=<value>
         a.append("=");
-        auto pos = (*i).find(a);
+        auto pos = actualArgName.find(a);
         if (pos != std::string::npos)
         {
-            arg_value = (*i).substr(a.length());
-            memory.push_back({ a, arg_value });
+            arg_value = actualArgName.substr(a.length());
+            memory.push_back ({ a, arg_value });
+            return true;
         }
     }
+     
+    // Argument was not recognized
+    return false;
 }
 
 bool Environment::find_int_argument (std::vector<std::string>::iterator& i, const char* arg, int& arg_value)
@@ -240,7 +247,7 @@ bool Environment::find_int_argument (std::vector<std::string>::iterator& i, cons
         std::string val = *++i;
         // string -> integer
         if (sscanf(val.c_str(), "%d", &arg_value) != 1)
-            return false;
+            return true;
     }
     else
     {
@@ -252,11 +259,12 @@ bool Environment::find_int_argument (std::vector<std::string>::iterator& i, cons
             std::string val = (*i).substr(a.length());
             // string -> integer
             if (sscanf(val.c_str(), "%d", &arg_value) != 1)
-                return false;
+                return true;
         }
     }
 
-    return true;
+    // Argument was not recognized
+    return false;
 }
 
 bool Environment::check_file_pattern (const std::string & pat)
@@ -283,6 +291,7 @@ int Environment::parse_cmdline(int argc, char** argv)
         return 1;
 
     std::vector <std::string> args(argv + 1, argv + argc);
+    std::vector <std::string> unrecognized;
 
     //==== Gather raw data
     for (auto i = args.begin(); i != args.end(); ++i)
@@ -293,18 +302,21 @@ int Environment::parse_cmdline(int argc, char** argv)
             return 1;
         }
 
-        find_string_argument (i, INTDIR, intensity_dir);
-        find_string_argument (i, SEGDIR, labels_dir);
-        find_string_argument (i, OUTDIR, output_dir);
-        find_string_argument (i, FEATURES, features);
-        find_string_argument (i, FILEPATTERN, file_pattern);
-        find_string_argument (i, OUTPUTTYPE, rawOutpType);
-        find_string_argument (i, EMBPIXSZ, embedded_pixel_size);
-        find_string_argument (i, LOADERTHREADS, loader_threads);
-        find_string_argument (i, PXLSCANTHREADS, pixel_scan_threads);
-        find_string_argument (i, REDUCETHREADS, reduce_threads);
-        find_string_argument (i, ROTATIONS, rotations);
-        find_string_argument (i, VERBOSITY, verbosity);
+        if (!(
+            find_string_argument(i, INTDIR, intensity_dir) ||
+            find_string_argument(i, SEGDIR, labels_dir) ||
+            find_string_argument(i, OUTDIR, output_dir) ||
+            find_string_argument(i, FEATURES, features) ||
+            find_string_argument(i, FILEPATTERN, file_pattern) ||
+            find_string_argument(i, OUTPUTTYPE, rawOutpType) ||
+            find_string_argument(i, EMBPIXSZ, embedded_pixel_size) ||
+            find_string_argument(i, LOADERTHREADS, loader_threads) ||
+            find_string_argument(i, PXLSCANTHREADS, pixel_scan_threads) ||
+            find_string_argument(i, REDUCETHREADS, reduce_threads) ||
+            find_string_argument(i, ROTATIONS, rotations) ||
+            find_string_argument(i, VERBOSITY, verbosity)
+            ))
+            unrecognized.push_back(*i);
     }
 
     //==== Report
@@ -318,7 +330,22 @@ int Environment::parse_cmdline(int argc, char** argv)
     // --display how the command line was parsed
     show_memory (rawCL.str().c_str(), "\n");
 
+    // --what's not recognized?
+    if (unrecognized.size() > 0)
+    {
+        std::cout << "\nUnrecognized arguments:\n";
+        for (auto& u : unrecognized)
+            std::cout << "\t" << u << "\n";
+    }
+    std::cout << "\n";
+
     //==== Check mandatory parameters
+
+    if (file_pattern == "")
+    {
+        std::cout << "Error: Missing argument " << FILEPATTERN << "\n";
+        return 1;
+    }
     if (check_file_pattern(file_pattern) == false)
     {
         std::cout << "Error: file pattern '" << file_pattern << "' is an invalid regular expression\n";
@@ -340,16 +367,13 @@ int Environment::parse_cmdline(int argc, char** argv)
         std::cout << "Error: Missing argument " << OUTDIR << "\n";
         return 1;
     }
-    if (file_pattern == "")
-    {
-        std::cout << "Error: Missing argument " << FILEPATTERN << "\n";
-        return 1;
-    }
+
     if (rawOutpType == "")
     {
         std::cout << "Error: Missing argument " << OUTPUTTYPE << "\n";
         return 1;
     }
+
     if (features == "")
     {
         std::cout << "Error: Missing argument " << FEATURES << "\n";
