@@ -1,9 +1,9 @@
 {
   "name": "Nyxus",
-  "version": "0.1.8",
-  "containerId": "polusai/nyxus:0.1.8",
+  "version": "0.1.21",
+  "containerId": "polusai/nyxus:0.1.21",
   "title": "Nyxus feature extraction",
-  "description": "Test of Nyxus feature extractor",
+  "description": "Nyxus feature extractor",
   "author": "friskluft + hsidky",
   "institution": "Axle Informatics",
   "repository": "https://github.com/friskluft/nyxus",
@@ -1152,7 +1152,8 @@
     {
       "key": "inputs.filePattern",
       "title": "File pattern",
-      "description": "To match intensity and labeled/segmented images"
+      "description": "To match intensity and segmented image files",
+	  "default": ".*"
     },
     {
       "key": "inputs.pixelDistance",

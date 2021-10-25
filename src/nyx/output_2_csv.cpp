@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "environment.h"
+#include "gabor.h"
 #include "glrlm.h"
 #include "sensemaker.h"
 
@@ -142,6 +143,18 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 				continue;
 			}
 
+			// --Gabor
+			if (fcode == GABOR)
+			{
+				for (auto i = 0; i < GaborFeatures::num_features; i++)
+				{
+					ssHead << "," << fname << "_" << i;
+				}
+
+				// Proceed with other features
+				continue;
+			}
+
 			// --Zernike family
 			if (fcode == TEXTURE_ZERNIKE2D)
 			{
@@ -244,6 +257,18 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 				{
 					ssVals << "," << vv[i];
 				}
+				// Proceed with other features
+				continue;
+			}
+
+			// --Gabor
+			if (fcode == GABOR)
+			{
+				for (auto i = 0; i < GaborFeatures::num_features; i++)
+				{
+					ssVals << "," << vv[i];
+				}
+
 				// Proceed with other features
 				continue;
 			}

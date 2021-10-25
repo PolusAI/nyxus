@@ -207,6 +207,8 @@ std::map <std::string, AvailableFeatures> UserFacingFeatureNames =
 	{ "HU_M5", HU_M5},
 	{ "HU_M6", HU_M6},
 	{ "HU_M7", HU_M7},
+
+	{ "GABOR", GABOR },
 };
 
 FeatureSet::FeatureSet()

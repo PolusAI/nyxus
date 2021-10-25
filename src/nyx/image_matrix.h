@@ -46,6 +46,19 @@ public:
 	void momentVector(double* z) const { z[0] = mean(); z[1] = std(); }
 };
 
+// functor to call add on a reference using the () operator
+// for example, using Eigen: ReadablePixels().unaryExpr (Moments4func(stats)).sum();
+// N.B.: The sum() in the expression above is to force evaluation of all of the coefficients.
+// The return value of Eigen's unaryExpr is a unaryExpr, which doesn't actually do anything until its assigned to something.
+class Moments2func {
+	Moments2& moments;
+public:
+	Moments2func(Moments2& in_moments) : moments(in_moments) { in_moments.reset(); }
+	const double operator()(const double& x) const {
+		return (moments.add(x));
+	}
+};
+
 template <class T>
 class SimpleMatrix : public std::vector<T>
 {
@@ -113,6 +126,13 @@ class pixData : public std::vector<PixIntens>
 public:
 	pixData(int _w, int _h) : W(_w), H(_h) {}
 
+	void resize (int width, int height, PixIntens val)
+	{
+		W = width;
+		H = height;
+		std::vector<PixIntens>::resize (width * height, val);
+	}
+
 	PixIntens & operator() (int y, int x)
 	{
 		if (x >= W || y >= H)
@@ -147,12 +167,13 @@ protected:
 	int W, H;
 };
 
-typedef const pixData& readOnlyPixels;
-
+typedef const pixData & readOnlyPixels;
+typedef pixData & writeablePixels;
 
 class ImageMatrix
 {
 public:
+	ImageMatrix(): _pix_plane(0,0) {}
 
 	ImageMatrix(const std::vector <Pixel2>& labels_raw_pixels, AABB & aabb) :
 		original_aabb (aabb),
@@ -177,6 +198,13 @@ public:
 		}
 	}
 
+	void allocate(int w, int h)
+	{
+		width = w;
+		height = h;
+		_pix_plane.resize (width, height, 0);
+	}
+
 	void GetStats(Moments2& moments2) const
 	{
 		// Feed all the image pixels into the Moments2 object:
@@ -185,15 +213,27 @@ public:
 			moments2.add(intens);
 	}
 
-	inline readOnlyPixels ReadablePixels() const 
+	inline const pixData& /*readOnlyPixels*/ ReadablePixels() const
 	{
 		return _pix_plane;
 	}
 
-	inline pixData& MutablePixels()
+	inline pixData& WriteablePixels()
 	{
 		return _pix_plane;
 	}
+
+	PixIntens* writable_data_ptr() { return _pix_plane.data(); }
+
+	// by default, based on computed min and max
+	void histogram(double* bins, unsigned short nbins, bool imhist = false, const Moments2& in_stats = Moments2()) const; 
+
+	// Otsu grey threshold
+	double Otsu (bool dynamic_range = true) const;
+
+	// min, max, mean, std computed in single pass, median in separate pass
+	Moments2 stats;
+
 
 	StatsInt height = 0, width = 0;
 	AABB original_aabb;

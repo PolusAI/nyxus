@@ -29,7 +29,7 @@ void GLSZM_features::initialize(int minI, int maxI, const ImageMatrix& im)
 
 	// Copy the image matrix
 	auto M = im;
-	pixData& D = M.MutablePixels();
+	pixData& D = M.WriteablePixels();
 
 	//M.print("initial\n");
 

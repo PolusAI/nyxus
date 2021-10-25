@@ -190,6 +190,8 @@ enum AvailableFeatures
 	HU_M6, 
 	HU_M7,
 
+	GABOR, 
+
 	_COUNT_
 };
 

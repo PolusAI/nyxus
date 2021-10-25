@@ -2,7 +2,7 @@
 #define VERSIONH_INCLUDED
 
 #define PROJECT_NAME "Nyxus"
-#define PROJECT_VER  "1.1.0"
+#define PROJECT_VER  "0.1.20"
 #define PROJECT_VER_MAJOR "1"
 #define PROJECT_VER_MINOR "1"
 #define PTOJECT_VER_PATCH "0"

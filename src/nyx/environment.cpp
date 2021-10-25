@@ -376,8 +376,8 @@ int Environment::parse_cmdline(int argc, char** argv)
 
     if (features == "")
     {
-        std::cout << "Error: Missing argument " << FEATURES << "\n";
-        return 1;
+        std::cout << "Warning: " << FEATURES << "=<empty string>, defaulting to " << FEA_NICK_ALL << "\n";
+        features = FEA_NICK_ALL;
     }
 
     //==== Single ROI?

@@ -44,7 +44,7 @@ void GLRLM_features::initialize (int minI, int maxI, const ImageMatrix& im)
 
 		// Copy the image matrix. We'll use it to maintain state of cluster scanning 
 		auto M = im;
-		pixData& D = M.MutablePixels();
+		pixData& D = M.WriteablePixels();
 
 		// Number of zones
 		const int VISITED = -1;

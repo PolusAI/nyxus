@@ -55,7 +55,7 @@ public:
 	std::string file_pattern = ".*";
 	std::string embedded_pixel_size = "";
 
-	std::string features = FEA_NICK_ALL;
+	std::string features;
 	std::vector<std::string> desiredFeatures;
 	std::string featureFileName = "";
 

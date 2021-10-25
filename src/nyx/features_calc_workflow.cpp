@@ -11,6 +11,7 @@
 #include <future>
 #include "environment.h"
 #include "sensemaker.h"
+#include "gabor.h"
 #include "glrlm.h"
 #include "glszm.h"
 #include "gldm.h"
@@ -496,6 +497,26 @@ void parallelReduceZernike2D (size_t start, size_t end, std::vector<int>* ptrLab
 			for (int i = 0; i < r.fvals[TEXTURE_ZERNIKE2D].size(); i++)
 				r.fvals[TEXTURE_ZERNIKE2D][i] = 0.0;
 		}
+	}
+}
+
+void parallelGabor (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR & r = (*ptrLabelData)[lab];
+
+		GaborFeatures gf;
+
+		// Skip calculation in case of bad data
+		if ((int)r.fvals[MIN][0] == (int)r.fvals[MAX][0])
+			continue;
+		
+		// Calculate Gabor
+		ImageMatrix im(r.raw_pixels, r.aabb);
+		gf.calc_GaborTextureFilters2D(im, r.fvals[GABOR]);	// r.fvals[GABOR] will contain GaborFeatures::num_features items upon return
+
 	}
 }
 
@@ -1064,6 +1085,13 @@ void reduce (int nThr, int min_online_roi_size)
 			r.fvals[HU_M6][0] = m6;
 			r.fvals[HU_M7][0] = m7;
 		}
+	}
+
+	//==== Gabor features
+	if (theFeatureSet.anyEnabled({GABOR}))
+	{
+		STOPWATCH("Gabor features ...", "\tGabor features");
+		runParallel (parallelGabor, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 }
 
