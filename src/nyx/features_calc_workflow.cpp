@@ -11,6 +11,7 @@
 #include <future>
 #include "environment.h"
 #include "sensemaker.h"
+#include "f_erosion_pixels.h"
 #include "gabor.h"
 #include "glrlm.h"
 #include "glszm.h"
@@ -348,6 +349,24 @@ void parallelReduceConvHull (size_t start, size_t end, std::vector<int>* ptrLabe
 
 		//==== IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
 		r.reduce_edge_intensity_features();
+	}
+}
+
+void parallelReduceErosionPixels (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR & r = (*ptrLabelData)[lab];
+
+		// Skip calculation in case of bad data
+		if ((int)r.fvals[MIN][0] == (int)r.fvals[MAX][0])
+			continue;
+
+		// Calculate feature
+		ImageMatrix im(r.raw_pixels, r.aabb);
+		ErosionPixels epix;
+		r.fvals[EROSION_PIXELS][0] = epix.calc_feature(im);
 	}
 }
 
@@ -871,6 +890,13 @@ void reduce (int nThr, int min_online_roi_size)
 			r.fvals[THICKNESS][0] = thick;
 		}
 	}
+
+	//==== Erosion pixels
+	if (theFeatureSet.isEnabled(EROSION_PIXELS))
+	{
+		STOPWATCH("EROSION_PIXELS ...", "\tReduced EROSION_PIXELS");
+		runParallel (parallelReduceErosionPixels, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
+	}	
 
 	//==== Haralick 2D 
 	if (theFeatureSet.anyEnabled({ 

@@ -1,19 +1,13 @@
-/home/ec2-user/work/data_polus_tissuenet/intensity
-
 #!/bin/bash 
 
 #=== Request echoing of each command executed 
 set -x
 
-cd rebuild
-rm -r output-tissuenet/*
-mkdir -p output-tissuenet
+cd build-4-linux
 
-date > timing.txt
+rm -r OUTPUT-ratbrain/*
+mkdir -p OUTPUT-ratbrain
 
-./nyxus.exe --intDir=/home/ec2-user/work/data-ratbrain/int --segDir=/home/ec2-user/work/data-ratbrain/seg --outDir=/home/ec2-user/work/data-ratbrain --filePattern=* --csvFile=singlecsv --rotations=15,30,45,67.8,77 --loaderThreads=4 --reduceThreads=16 
+./nyxus.exe --verbosity=12 --features=*all* --intDir=/home/ec2-user/work/data-ratbrain/int --segDir=/home/ec2-user/work/data-ratbrain/seg --outDir=/home/ec2-user/work/data-ratbrain/OUTPUT-ratbrain --filePattern=.* --csvFile=singlecsv --rotations=15,30,45,67.8,77 --loaderThreads=2 --reduceThreads=4 
 
-date >> timing.txt
-
-ls -l output-tissuenet
 cd ..

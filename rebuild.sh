@@ -18,7 +18,7 @@ export INCLU
 BUILDDIR=./build-4-linux
 export BUILDDIR
 
-OPTS='-w -c -std=c++17 -O2'
+OPTS='-w -c -std=c++17 -O2 '
 export OPTS
 
 #=== Prepare the build output directory
@@ -27,7 +27,7 @@ rm $BUILDDIR/*
 cd $BUILDDIR
 
 #=== We're in the 'build' directory so all the source files are in '../'
-$CXX $OPTS $INCLU ../src/nyx/f_cellprofiler_texture.cpp  
+$CXX $OPTS $INCLU ../src/nyx/f_haralick_texture.cpp           
 $CXX $OPTS $INCLU ../src/nyx/f_convex_hull.cpp           
 $CXX $OPTS $INCLU ../src/nyx/f_euler_number.cpp               
 $CXX $OPTS $INCLU ../src/nyx/f_neighbors.cpp         
@@ -54,10 +54,17 @@ $CXX $OPTS $INCLU ../src/nyx/test_histogram.cpp
 $CXX $OPTS $INCLU ../src/nyx/histogram.cpp
 $CXX $OPTS $INCLU ../src/nyx/environment.cpp
 $CXX $OPTS $INCLU ../src/nyx/rotation.cpp
-
+$CXX $OPTS $INCLU ../src/nyx/glrlm.cpp
+$CXX $OPTS $INCLU ../src/nyx/glszm.cpp
+$CXX $OPTS $INCLU ../src/nyx/gldm.cpp
+$CXX $OPTS $INCLU ../src/nyx/ngtdm.cpp
+$CXX $OPTS $INCLU ../src/nyx/hu.cpp
+$CXX $OPTS $INCLU ../src/nyx/gabor.cpp
+$CXX $OPTS $INCLU ../src/nyx/f_erosion_pixels.cpp
+$CXX $OPTS $INCLU ../src/nyx/image_matrix.cpp
 
 $GXX \
-f_cellprofiler_texture.o \
+f_haralick_texture.o \
 f_convex_hull.o \
 f_euler_number.o \
 f_neighbors.o \
@@ -84,11 +91,20 @@ test_histogram.o \
 histogram.o \
 environment.o \
 rotation.o \
+glrlm.o \
+glszm.o \
+gldm.o \
+ngtdm.o \
+hu.o \
+gabor.o \
+f_erosion_pixels.o \
+image_matrix.o \
 -lm -ltiff -lfftw3 \
 -lpthread \
 -static-libstdc++ \
--o sensemaker.exe
+-o nyxus.exe
 
 cd .. # Leave BUILDDIR
 
-ls -la $BUILDDIR
+ls -la $BUILDDIR | grep nyxus.exe 
+

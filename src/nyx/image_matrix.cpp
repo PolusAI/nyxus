@@ -177,3 +177,4 @@ void ImageMatrix::histogram(double* bins, unsigned short nbins, bool imhist, con
 
 	return;
 }
+

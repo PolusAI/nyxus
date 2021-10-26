@@ -175,6 +175,12 @@ class ImageMatrix
 public:
 	ImageMatrix(): _pix_plane(0,0) {}
 
+	ImageMatrix(const ImageMatrix & I): _pix_plane(0,0) 
+	{
+		this->allocate(I.width, I.height);
+		this->_pix_plane = I._pix_plane;
+	}
+
 	ImageMatrix(const std::vector <Pixel2>& labels_raw_pixels, AABB & aabb) :
 		original_aabb (aabb),
 		_pix_plane(aabb.get_width(), aabb.get_height())
@@ -230,6 +236,8 @@ public:
 
 	// Otsu grey threshold
 	double Otsu (bool dynamic_range = true) const;
+
+	void erode();
 
 	// min, max, mean, std computed in single pass, median in separate pass
 	Moments2 stats;

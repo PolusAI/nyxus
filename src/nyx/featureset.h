@@ -49,7 +49,9 @@ enum AvailableFeatures
 	CONVEX_HULL_AREA,  
 	SOLIDITY,  
 	PERIMETER,  
-	CIRCULARITY,  
+	CIRCULARITY,
+
+	EROSION_PIXELS,
 
 	// CellProfiler features [http://cellprofiler-manual.s3.amazonaws.com/CellProfiler-3.0.0/modules/measurement.html]
 	CELLPROFILER_INTENSITY_INTEGRATEDINTENSITYEDGE,	// Sum of the edge pixel intensities
