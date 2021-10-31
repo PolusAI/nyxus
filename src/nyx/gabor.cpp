@@ -15,7 +15,7 @@ void GaborFeatures::calc_GaborTextureFilters2D (const ImageMatrix& Im0, std::vec
     double f0[7] = { 1,2,3,4,5,6,7 };       // frequencies for several HP Gabor filters
     double f0LP = 0.1;     // frequencies for one LP Gabor filter
     double theta = 3.14159265 / 2;
-    unsigned int ii;
+    int ii;
     unsigned long originalScore = 0;
 
     readOnlyPixels in_plane = Im0.ReadablePixels();
@@ -124,19 +124,20 @@ void GaborFeatures::calc_GaborTextureFilters2D (const ImageMatrix& Im0, std::vec
     }
 }
 
-//  conv2comp - conv2 when the smaller matrix is of complex numbers
-
-//    DOUBLE *c;	/* Result matrix (ma+mb-1)-by-(na+nb-1) */
-//    DOUBLE *a;	/* Larger matrix */
-//    DOUBLE *b;	/* Smaller matrix */
-//    INT ma;		/* Row size of a */
-//    INT na;		/* Column size of a */
-//    INT mb;		/* Row size of b */
-//    INT nb;		/* Column size of b */
-//    INT plusminus;	/* add or subtract from result */
-//    int *flopcnt;	/* flop count */
-
-void GaborFeatures::conv2comp(double* c, double* a, double* b, int na, int ma, int nb, int mb) 
+//  conv
+//
+//    double *c;	Result matrix (ma+mb-1)-by-(na+nb-1)
+//    double *a;	Larger matrix 
+//    double *b;	Smaller matrix 
+//    int ma;		Row size of a 
+//    int na;		Column size of a 
+//    int mb;		Row size of b 
+//    int nb;		Column size of b 
+void GaborFeatures::conv(
+    double* c, 
+    double* a, 
+    double* b, 
+    int na, int ma, int nb, int mb) 
 {
     //	double *p,*q;	/* Pointer to elements in 'a' and 'c' matrices */
     //	double wr,wi;     	/* Imaginary and real weights from matrix b    */
@@ -171,38 +172,54 @@ void GaborFeatures::conv2comp(double* c, double* a, double* b, int na, int ma, i
     //		}
     //	}
 
-#pragma omp parallel
+//--- #pragma omp parallel
     {
-        double* cThread = new double[mc * nc];
+        //---double* cThread = new double[mc * nc];
+        std::vector<double> cThread (mc*nc);
 
-        for (int aa = 0; aa < mc * nc; aa++) cThread[aa] = std::numeric_limits<double>::quiet_NaN();
+        for (int aa = 0; aa < mc * nc; aa++) 
+            cThread[aa] = std::numeric_limits<double>::quiet_NaN();
 
-#pragma omp for schedule(dynamic)
-        for (int j = 0; j < mb; ++j) {    /* For each element in b */
-            for (int i = 0; i < nb; ++i) {
+//--- #pragma omp for schedule(dynamic)
+        for (int j = 0; j < mb; ++j) 
+        {    /* For each element in b */
+            for (int i = 0; i < nb; ++i) 
+            {
                 double* r = b + (j * nb + i) * 2;
                 double wr = *(r++);			/* Get weight from b matrix */
                 double wi = *(r);
-                double* p = cThread + j * nc + i * 2;                 /* Start at first row of a in c. */
+                
+                //--- double* p = cThread + j * nc + i * 2;                 /* Start at first row of a in c. */
+                int p = j * nc + i * 2;
+
                 double* q = a;
-                for (int l = 0; l < ma; l++) {               /* For each row of a ... */
-                    for (int k = 0; k < na; k++) {
+                for (int l = 0; l < ma; l++) 
+                {               
+                    /* For each row of a ... */
+                    for (int k = 0; k < na; k++) 
+                    {
 
                         //MM *(p++) += *(q) * wr;	        /* multiply by the real weight and add.      */
                         //MM *(p++) += *(q++) * wi;       /* multiply by the imaginary weight and add. */
                         //MM:
-                        if (!std::isnan(*q)) {
-                            if (std::isnan(*p))
+                        if (!std::isnan(*q)) 
+                        {
+                            if (std::isnan(cThread[p]))//--- if (std::isnan(*p))
                             {
-                                *(p++) = *(q)*wr;	        /* multiply by the real weight and add.      */
-                                *(p++) = *(q++) * wi;       /* multiply by the imaginary weight and add. */
+                                cThread[p++] = *(q)*wr; //--- *(p++) = *(q)*wr;	        /* multiply by the real weight and add.      */
+                                cThread[p++] = *(q++) * wi; //--- *(p++) = *(q++) * wi;       /* multiply by the imaginary weight and add. */
                             }
-                            else {
-                                *(p++) += *(q)*wr;	        /* multiply by the real weight and add.      */
-                                *(p++) += *(q++) * wi;       /* multiply by the imaginary weight and add. */
+                            else 
+                            {
+                                cThread[p++] += *(q)*wr; //--- *(p++) += *(q)*wr;	        /* multiply by the real weight and add.      */
+                                cThread[p++] += *(q++) * wi; //--- *(p++) += *(q++) * wi;       /* multiply by the imaginary weight and add. */
                             }
                         }
-                        else { q++; p = p + 2; }
+                        else 
+                        { 
+                            q++; 
+                            p = p + 2; 
+                        }
 
 
                     }
@@ -211,59 +228,19 @@ void GaborFeatures::conv2comp(double* c, double* a, double* b, int na, int ma, i
                 }
             }
         }
-#pragma omp critical
+//--- #pragma omp critical
         {
+            int p = 0; // index in cThread
             for (int j = 0; j < mc; ++j) {    /* For each element in b */
-                for (int i = 0; i < nc; ++i) {
-                    c[j * nc + i] += *(cThread++);
+                for (int i = 0; i < nc; ++i) 
+                {
+                    c[j * nc + i] += cThread[p++]; //--- c[j * nc + i] += *(cThread++);
                 }
             }
         }
+
     }
-}
 
-
-//  conv2 - the conv2 matlab function
-
-//    DOUBLE *c;	/* Result matrix (ma+mb-1)-by-(na+nb-1) */
-//    DOUBLE *a;	/* Larger matrix */
-//    DOUBLE *b;	/* Smaller matrix */
-//    INT ma;		/* Row size of a */
-//    INT na;		/* Column size of a */
-//    INT mb;		/* Row size of b */
-//    INT nb;		/* Column size of b */
-//    INT plusminus;	/* add or subtract from result */
-//    int *flopcnt;	/* flop count */
-
-void GaborFeatures::conv2(double* c, double* a, double* b, int ma, int na, int mb, int nb, int plusminus)
-{
-    double* p, * q;	/* Pointer to elements in 'a' and 'c' matrices */
-    double w;		/* Weight (element of 'b' matrix) */
-    int mc, nc;
-    int k, l, i, j;
-    double* r;				/* Pointer to elements in 'b' matrix */
-
-    mc = ma + mb - 1;
-    nc = na + nb - 1;
-
-    /* Perform convolution */
-
-    r = b;
-    for (j = 0; j < nb; ++j) {			/* For each non-zero element in b */
-        for (i = 0; i < mb; ++i) {
-            w = *(r++);				/* Get weight from b matrix */
-            if (w != 0.0) {
-                p = c + i + j * mc;	/* Start at first column of a in c. */
-                for (l = 0, q = a; l < na; l++) {		/* For each column of a ... */
-                    for (k = 0; k < ma; k++) {
-                        *(p++) += *(q++) * w * plusminus;	/* multiply by weight and add. */
-                    }
-                    p += mb - 1;	/* Jump to next column position of a in c */
-                }
-                //		*flopcnt += 2*ma*na;
-            } /* end if */
-        }
-    }
 }
 
 
@@ -274,7 +251,7 @@ Creates a non-normalized Gabor filter
 //function Gex = Gabor(f0,sig2lam,gamma,theta,fi,n),
 double* GaborFeatures::Gabor(double f0, double sig2lam, double gamma, double theta, double fi, int n) 
 {
-    double* tx, * ty;
+    //double* tx, * ty;
     double lambda = 2 * M_PI / f0;
     double cos_theta = cos(theta), sin_theta = sin(theta);
     double sig = sig2lam * lambda;
@@ -283,8 +260,10 @@ double* GaborFeatures::Gabor(double f0, double sig2lam, double gamma, double the
     int x, y;
     int nx = n;
     int ny = n;
-    tx = new double[nx + 1];
-    ty = new double[ny + 1];
+    //tx = new double[nx + 1];
+    std::vector<double> tx (nx + 1);
+    //ty = new double[ny + 1];
+    std::vector<double> ty (nx + 1);
 
     if (nx % 2 > 0) {
         tx[0] = -((nx - 1) / 2);
@@ -330,8 +309,8 @@ double* GaborFeatures::Gabor(double f0, double sig2lam, double gamma, double the
         for (x = 0; x < n * 2; x += 1)
             Gex[y * n * 2 + x] = Gex[y * n * 2 + x] / sum;
 
-    delete[] tx;
-    delete[] ty;
+    //delete[] tx;
+    //delete[] ty;
 
     return(Gex);
 }
@@ -346,15 +325,18 @@ PixIntens* /*double**/ GaborFeatures::GaborEnergy(const ImageMatrix& Im, PixInte
     readOnlyPixels pix_plane = Im.ReadablePixels();
 
     c = new double[(Im.width + n - 1) * (Im.height + n - 1) * 2];
+    //std::vector<double> c ((Im.width + n - 1) * (Im.height + n - 1) * 2);
 
     for (int i = 0; i < (Im.width + n - 1) * (Im.height + n - 1) * 2; i++) { c[i] = 0; } //MM
 
     image = new double[Im.width * Im.height];
+    //std::vector<double> image(Im.width * Im.height);
+
     for (auto y = 0; y < Im.height; y++)
         for (auto x = 0; x < Im.width; x++)
             image[y * Im.width + x] = pix_plane(y, x);
 
-    conv2comp(c, image, Gexp, Im.width, Im.height, n, n);
+    conv (c, image, Gexp, Im.width, Im.height, n, n);
 
     decltype(Im.height) b = 0;
     for (auto y = (int)ceil((double)n / 2); b < Im.height; y++) 

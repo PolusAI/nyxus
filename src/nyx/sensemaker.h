@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "featureset.h"
+#include "f_convex_hull.h"
 #include "histogram.h"
 #include "pixel.h"
 #include "aabb.h"
@@ -19,8 +20,8 @@ bool datasetDirsOK (const std::string & dirIntens, const std::string & dirLab, c
 bool directoryExists (const std::string & dir);
 void readDirectoryFiles (const std::string & dir, std::vector<std::string> & files);
 bool scanViaFastloader (const std::string & fpath, int num_threads);
-bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads);
-bool scanFilePairParallel (const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads);
+bool scanFilePair(const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, int filepair_index, int tot_num_filepairs);
+bool scanFilePairParallel (const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads, int filepair_index, int tot_num_filepairs);
 bool TraverseViaFastloader1 (const std::string& fpath, int num_threads);
 std::string getPureFname(std::string fpath);
 int processDataset (const std::vector<std::string> & intensFiles, const std::vector<std::string> & labelFiles, int numFastloaderThreads, int numSensemakerThreads, int numReduceThreads, int min_online_roi_size, bool save2csv, const std::string & csvOutputDir);
@@ -69,16 +70,6 @@ public:
 	StatsInt get_roi_perimeter();
 	StatsReal get_diameter_equal_perimeter();
 protected:
-};
-
-class ConvexHull
-{
-public:
-	ConvexHull() {}
-	void calculate (std::vector<Pixel2> & rawPixels);
-	double getSolidity();
-	double getArea();
-	std::vector<Pixel2> CH;
 };
 
 class Hexagonality_and_Polygonality
@@ -268,3 +259,6 @@ extern std::vector<int> sortedUniqueLabels;	// Populated in reduce()
 extern std::unordered_map <int, LR> labelData;
 extern std::vector<double> calcResultBuf;	// [# of labels X # of features]
 extern std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
+
+// System resources
+unsigned long long getAvailPhysMemory();

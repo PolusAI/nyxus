@@ -122,7 +122,10 @@ enum AvailableFeatures
 	TEXTURE_INFOMEAS1,
 	TEXTURE_INFOMEAS2,
 
-	TEXTURE_ZERNIKE2D,
+	ZERNIKE2D,
+	FRAC_AT_D, 
+	MEAN_FRAC, 
+	RADIAL_CV, 
 
 	// GLRLM:
 	GLRLM_SRE,	// Short Run Emphasis 

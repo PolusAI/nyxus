@@ -204,6 +204,30 @@ public:
 		}
 	}
 
+	ImageMatrix(const std::vector <Pixel2>& labels_raw_pixels):
+		original_aabb(labels_raw_pixels), 
+		_pix_plane(original_aabb.get_width(), original_aabb.get_height())
+	{
+
+		// Dimensions
+		width = original_aabb.get_width();
+		height = original_aabb.get_height();
+		auto n = height * width;
+
+		// Zero the matrix
+		_pix_plane.reserve(n);
+		for (auto i = 0; i < n; i++)
+			_pix_plane.push_back(0);
+
+		// Read pixels
+		for (auto& pxl : labels_raw_pixels)
+		{
+			auto x = pxl.x - original_aabb.get_xmin(),
+				y = pxl.y - original_aabb.get_ymin();
+			_pix_plane[y * width + x] = pxl.inten;
+		}
+	}
+
 	void allocate(int w, int h)
 	{
 		width = w;
@@ -249,5 +273,7 @@ public:
 	//std::vector<PixIntens> _pix_plane;	// [ height * width ]
 	pixData _pix_plane;
 
-	void print(const std::string& head = "", const std::string& tail = "");
+	// hilight_x|y = -1 means no gilight
+	using PrintablePoint = std::tuple<int, int, std::string>;
+	void print(const std::string& head = "", const std::string& tail = "", std::vector<PrintablePoint> special_points = {});
 };

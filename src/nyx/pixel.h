@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <vector>
 
 using PixIntens = unsigned int;
 using StatsInt = long;
@@ -78,5 +79,82 @@ struct Pixel2 : public Point2i
 		return p2;
 	}
 	operator Point2f () const { Point2f p((float)this->x, (float)this->y); return p; }
+
+	double sqdist(const Pixel2 & px) const
+	{
+		double dx = (double)px.x - double(this->x),
+			dy = (double)px.y - double(this->y);
+		double retval = dx * dx + dy * dy;
+		return retval;
+	}
+
+	double sum_sqdist(const std::vector<Pixel2>& cloud) const
+	{
+		double retval = 0.0;
+		for (auto& px : cloud)
+		{
+			double sqd = this->sqdist(px);
+			retval += sqd;
+		}
+		return retval;
+	}
+
+	double sqdist_to_segment (const Pixel2 & p1, const Pixel2 & p2) const
+	{
+		double x21 = p2.x - p1.x,
+			y21 = p2.y - p1.y;
+		double retval = (x21 * (p1.y-this->y) - (p1.x-this->x) * y21) / std::sqrt(x21*x21 + y21*y21);
+		return std::abs(retval);
+	}
+
+	bool colocating(const Pixel2& other) const
+	{
+		return this->x == other.x && this->y == other.y;
+	}
+
+	bool belongs_to(const std::vector<Pixel2> & cloud) const
+	{
+		for (auto& px : cloud)
+			if (this->colocating(px) && this->inten == px.inten)
+				return true;
+		return false;
+	}
+
+	// Returns an index in argument 'cloud'
+	static int find_center (const std::vector<Pixel2> & cloud, const std::vector<Pixel2> & contour)
+	{
+		int idxMinDif = 0;
+		auto minmaxDist = cloud[idxMinDif].min_max_dist(contour);
+		double minDif = minmaxDist.second - minmaxDist.first;
+		for (int i = 1; i < cloud.size(); i++)
+		{
+			//double dist = cloud[i].sum_sqdist(contour);
+			auto minmaxDist = cloud[i].min_max_dist(contour);
+			double dif = minmaxDist.second - minmaxDist.first;
+			if (dif < minDif)
+			{
+				minDif = dif;
+				idxMinDif = i;
+			}
+		}
+		return idxMinDif;
+	}
+
+	std::pair<double, double> min_max_dist (const std::vector<Pixel2>& cloud) const
+	{
+		auto mind = sqdist(cloud[0]), 
+			maxd = mind;
+
+		for (int i = 1; i < cloud.size(); i++)
+		{
+			auto dist = sqdist(cloud[i]);
+			if (dist < mind)
+				mind = dist;
+			if (dist > maxd)
+				maxd = dist;
+		}
+		return { mind, maxd };
+	}
+
 };
 

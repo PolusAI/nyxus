@@ -9,13 +9,7 @@
 #include <thread>
 #include <future>
 #include <array>
-#include "sensemaker.h"
-
-
-#ifndef __unix
-#define NOMINMAX	// Prevent converting std::min(), max(), ... into macros
-#include<windows.h>
-#endif
+#include "f_convex_hull.h"
 
 
 // Sort criterion: points are sorted with respect to their x-coordinate.

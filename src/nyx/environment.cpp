@@ -94,11 +94,14 @@ bool parse_delimited_string_list_to_features(const std::string& rawString, std::
         if (s_uppr == FEA_NICK_ALL || 
             s_uppr == FEA_NICK_ALL_INTENSITY || 
             s_uppr == FEA_NICK_ALL_MORPHOLOGY || 
+            s_uppr == FEA_NICK_BASIC_MORPHOLOGY || 
             s_uppr == FEA_NICK_ALL_GLCM || 
             s_uppr == FEA_NICK_ALL_GLRLM ||
             s_uppr == FEA_NICK_ALL_GLSZM ||
             s_uppr == FEA_NICK_ALL_GLDM ||
-            s_uppr == FEA_NICK_ALL_NGTDM )
+            s_uppr == FEA_NICK_ALL_NGTDM ||
+            s_uppr == FEA_NICK_ALL_BUT_GABOR ||
+            s_uppr == FEA_NICK_ALL_BUT_GLCM)
         {
             result.push_back(s_uppr);
             continue;
@@ -486,6 +489,33 @@ int Environment::parse_cmdline(int argc, char** argv)
             theFeatureSet.enableAll();
             break;  // No need to bother of others
         }
+        if (s == FEA_NICK_ALL_BUT_GABOR)
+        {
+            theFeatureSet.enableAll();
+            auto F = {GABOR};
+            theFeatureSet.disableFeatures(F);
+            break;  // No need to bother of others
+        }
+        if (s == FEA_NICK_ALL_BUT_GLCM)
+        {
+            theFeatureSet.enableAll();
+            auto F = {
+                TEXTURE_ANGULAR2NDMOMENT,
+                TEXTURE_CONTRAST,
+                TEXTURE_CORRELATION,
+                TEXTURE_VARIANCE,
+                TEXTURE_INVERSEDIFFERENCEMOMENT,
+                TEXTURE_SUMAVERAGE,
+                TEXTURE_SUMVARIANCE,
+                TEXTURE_SUMENTROPY,
+                TEXTURE_ENTROPY,
+                TEXTURE_DIFFERENCEVARIANCE,
+                TEXTURE_DIFFERENCEENTROPY,
+                TEXTURE_INFOMEAS1,
+                TEXTURE_INFOMEAS2 };
+            theFeatureSet.disableFeatures(F);
+            break;  // No need to bother of others
+        }
         if (s == FEA_NICK_ALL_INTENSITY)
         {
             auto F = {
@@ -534,6 +564,20 @@ int Environment::parse_cmdline(int argc, char** argv)
                 SOLIDITY,
                 PERIMETER,
                 CIRCULARITY
+            };
+            theFeatureSet.enableFeatures(F);
+            continue;
+        }
+        if (s == FEA_NICK_BASIC_MORPHOLOGY)
+        {
+            auto F = {
+                AREA_PIXELS_COUNT,
+                CENTROID_X,
+                CENTROID_Y,
+                BBOX_YMIN,
+                BBOX_XMIN,
+                BBOX_HEIGHT,
+                BBOX_WIDTH
             };
             theFeatureSet.enableFeatures(F);
             continue;

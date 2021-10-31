@@ -1,6 +1,7 @@
 // sensemaker1.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -30,7 +31,7 @@ std::string getTimeStr (const std::string & head = "", const std::string& tail =
 
 int main (int argc, char** argv)
 {
-	std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021 Axle Informatics\n";
+	std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021 Axle Informatics\n" << "Build of " << __TIMESTAMP__ << "\n";
 
 	int parseRes = theEnvironment.parse_cmdline (argc, argv);
 	if (parseRes)
@@ -49,6 +50,23 @@ int main (int argc, char** argv)
 		std::cout << std::endl << "Dataset structure error" << std::endl;
 		return 1; 
 	}
+
+	// Sort the dataset
+	std::sort (intensFiles.begin(), intensFiles.end());
+	std::sort (labelFiles.begin(), labelFiles.end());
+
+	// Print the image file pairs for reproducibility
+	std::cout << "\n\n=== Check the dataset:\n";
+	for (int i = 0; i < intensFiles.size(); i++)
+	{
+		// Display (1) dataset progress info and (2) file pair info
+		int filepair_index = i, tot_num_filepairs = intensFiles.size();
+
+		int digits = 2, k = std::pow(10.f, digits);
+		float perCent = float(filepair_index * 100 * k / tot_num_filepairs) / float(k);
+		std::cout << "plan [" << i << "/" << intensFiles.size() << "] [" << std::setw(digits + 2) << perCent << "%]\t" << intensFiles[i] << " == = " << labelFiles[i] << "\n";
+	}
+	std::cout << "===\n\n";
 
 	// One-time initialization
 	init_feature_buffers();

@@ -9,9 +9,11 @@
 #include <chrono>
 #include <thread>
 #include <future>
+#include <sstream>
 #include "environment.h"
 #include "sensemaker.h"
 #include "f_erosion_pixels.h"
+#include "f_radial_distribution.h"
 #include "gabor.h"
 #include "glrlm.h"
 #include "glszm.h"
@@ -112,7 +114,6 @@ void init_label_record (LR& r, const std::string & segFile, const std::string & 
 	if (label == SANITY_CHECK_INTENSITIES_FOR_LABEL)	// Put your label code of interest
 		r.raw_intensities.push_back(intensity);
 	#endif
-
 }
 
 // This function 'digests' the 2nd and the following pixel of a label and updates the label's feature calculation state - the instance of structure 'LR'
@@ -262,13 +263,13 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		//--Formula-- k1 = mean((x - mean(x)). ^ 4) / std(x). ^ 4
 		lr.fvals[KURTOSIS][0] = mom.kurtosis();
 
-		//==== Bounding box
+		//==== Basic morphology :: Bounding box
 		lr.fvals[BBOX_XMIN][0] = lr.aabb.get_xmin();
 		lr.fvals[BBOX_YMIN][0] = lr.aabb.get_ymin();
 		lr.fvals[BBOX_WIDTH][0] = lr.aabb.get_width();
 		lr.fvals[BBOX_HEIGHT][0] = lr.aabb.get_height();
 		
-		//==== Centroids
+		//==== Basic morphology :: Centroids
 		lr.fvals[CENTROID_X][0] = lr.fvals[CENTROID_Y][0] = 0.0;
 		for (auto& px : lr.raw_pixels)
 		{
@@ -278,7 +279,7 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		lr.fvals[CENTROID_X][0] /= n; 
 		lr.fvals[CENTROID_Y][0] /= n; 
 
-		//==== Weighted centroids
+		//==== Basic morphology :: Weighted centroids
 		double x_mass = 0, y_mass = 0, mass = 0;
 
 		for (auto& px : lr.raw_pixels)
@@ -299,10 +300,10 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 			lr.fvals[WEIGHTED_CENTROID_Y][0] = 0.0;
 		}
 
-		//==== Extent
+		//==== Basic morphology :: Extent
 		lr.fvals[EXTENT][0] = n / lr.aabb.get_area();
 
-		//==== Aspect ratio
+		//==== Basic morphology :: Aspect ratio
 		lr.fvals[ASPECT_RATIO][0] = lr.aabb.get_width() / lr.aabb.get_height();	
 	}
 }
@@ -508,13 +509,13 @@ void parallelReduceZernike2D (size_t start, size_t end, std::vector<int>* ptrLab
 			r.aabb,			// AABB info not to calculate it again from 'raw_pixels' in the function
 			r.aux_ZERNIKE2D_ORDER,
 			// out
-			r.fvals[TEXTURE_ZERNIKE2D]);	// .Zernike2D
+			r.fvals[ZERNIKE2D]);	// .Zernike2D
 
 		// Fix calculated feature values due to all-0 intensity labels to avoid NANs in the output
 		if (r.intensitiesAllZero())
 		{
-			for (int i = 0; i < r.fvals[TEXTURE_ZERNIKE2D].size(); i++)
-				r.fvals[TEXTURE_ZERNIKE2D][i] = 0.0;
+			for (int i = 0; i < r.fvals[ZERNIKE2D].size(); i++)
+				r.fvals[ZERNIKE2D][i] = 0.0;
 		}
 	}
 }
@@ -898,7 +899,7 @@ void reduce (int nThr, int min_online_roi_size)
 		runParallel (parallelReduceErosionPixels, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}	
 
-	//==== Haralick 2D 
+	//==== GLCM aka Haralick 2D 
 	if (theFeatureSet.anyEnabled({ 
 		TEXTURE_ANGULAR2NDMOMENT,
 		TEXTURE_CONTRAST,
@@ -916,13 +917,6 @@ void reduce (int nThr, int min_online_roi_size)
 	{
 		STOPWATCH("Haralick2D ...", "\tReduced Haralick2D");
 		runParallel (parallelReduceHaralick2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
-	}
-
-	//==== Zernike 2D 
-	if (theFeatureSet.isEnabled(TEXTURE_ZERNIKE2D))
-	{
-		STOPWATCH("Zernike2D ...", "\tReduced Zernike2D");
-		runParallel (parallelReduceZernike2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== GLRLM
@@ -1114,11 +1108,56 @@ void reduce (int nThr, int min_online_roi_size)
 	}
 
 	//==== Gabor features
-	if (theFeatureSet.anyEnabled({GABOR}))
+	if (theFeatureSet.isEnabled(GABOR))
 	{
 		STOPWATCH("Gabor features ...", "\tGabor features");
 		runParallel (parallelGabor, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
+
+	//==== Radial distribution / Zernike 2D 
+	if (theFeatureSet.isEnabled(ZERNIKE2D))
+	{
+		STOPWATCH("Zernike2D ...", "\tReduced Zernike2D");
+		runParallel(parallelReduceZernike2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
+	}
+
+	//==== Radial distribution / FracAtD, MeanFraq, and RadialCV
+	if (theFeatureSet.anyEnabled({FRAC_AT_D, MEAN_FRAC, RADIAL_CV}))
+	{
+		STOPWATCH("Radial distribution ...", "\tReduced radial distribution");
+		for (auto& ld : labelData)
+		{
+			auto& r = ld.second;
+
+			// Prepare the contour if necessary
+			if (r.contour.contour_pixels.size() == 0)
+			{
+				ImageMatrix im(r.raw_pixels, r.aabb);
+				r.contour.calculate(im);
+
+				#if 0	// Debug
+				int idxCtr = Pixel2::find_center(r.raw_pixels, r.contour.contour_pixels);
+
+				int cx = r.raw_pixels[idxCtr].x, cy = r.raw_pixels[idxCtr].y;
+				std::stringstream ss;
+				ss << theIntFname << " Label " << ld.first;
+				im.print(ss.str(), "", cx, cy, "(*)", { {cx, cy, "(*)"} });
+
+				r.contour.calculate(im);
+				ImageMatrix imContour(r.contour.contour_pixels, r.aabb);
+				imContour.print("Contour", "", cx, cy, "(o)", { {cx, cy, "(o)"} });
+				#endif		
+			}
+
+			// Calculate the radial distributions
+			RadialDistribution rd;
+			rd.initialize (r.raw_pixels, r.contour.contour_pixels);
+			r.fvals[FRAC_AT_D] = rd.get_FracAtD();
+			r.fvals[MEAN_FRAC] = rd.get_MeanFrac();
+			r.fvals[RADIAL_CV] = rd.get_RadialCV();
+		}
+	}
+
 }
 
 

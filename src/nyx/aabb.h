@@ -2,12 +2,21 @@
 
 #include <tuple>
 #include <utility>
+#include <vector>
 #include "pixel.h"
 
 class AABB
 {
 public:
 	AABB() {}
+	AABB(const std::vector<Pixel2> & cloud) 
+	{
+		for (auto& px : cloud)
+		{
+			update_x(px.x);
+			update_y(px.y);
+		}
+	}
 	void init_x(StatsInt x) { xmin = xmax = x; }
 	void init_y(StatsInt y) { ymin = ymax = y; }
 	void update_x(StatsInt x)

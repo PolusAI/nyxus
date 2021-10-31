@@ -25,14 +25,25 @@ double totalTileLoadTime = 0.0, totalFeatureReduceTime = 0.0;
 //--Harmful in Python output scenarios-- #define ENDFORMAT "\033[0m"
 
 
-bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpath, int num_threads)
+bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, int filepair_index, int tot_num_filepairs)
 {
-	std::cout << intens_fpath << "\n";
+	// Report the amount of free RAM
+	unsigned long long freeRamAmt = getAvailPhysMemory();
+	static unsigned long long initial_freeRamAmt = 0; 
+	if (initial_freeRamAmt == 0)
+		initial_freeRamAmt = freeRamAmt;
+	double memDiff = double(freeRamAmt) - double(initial_freeRamAmt);
+	std::cout << std::setw(15) << freeRamAmt << " bytes free (" << "consumed=" << memDiff << ") ";
+
+	// Display (1) dataset progress info and (2) file pair info
+	int digits = 2, k = std::pow(10.f, digits);
+	float perCent = float(filepair_index * 100 * k / tot_num_filepairs) / float(k);
+	std::cout << "[ " << std::setw(digits+2) << perCent << "% ]\t" << intens_fpath << "\n";
 
 	int lvl = 0;	// Pyramid level
 
 	// File #1 (intensity)
-	GrayscaleTiffTileLoader<uint32_t> I (num_threads, intens_fpath);
+	GrayscaleTiffTileLoader<uint32_t> I (num_FL_threads, intens_fpath);
 
 	auto th = I.tileHeight(lvl),
 		tw = I.tileWidth(lvl),
@@ -48,7 +59,7 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 	auto ntd = I.numberTileDepth(lvl);
 
 	// File #2 (labels)
-	GrayscaleTiffTileLoader<uint32_t> L(num_threads, label_fpath);
+	GrayscaleTiffTileLoader<uint32_t> L(num_FL_threads, label_fpath);
 
 	// -- check whole file consistency
 	if (fh != L.fullHeight(lvl) || fw != L.fullWidth(lvl) || fd != L.fullDepth(lvl))
@@ -133,11 +144,7 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 		}
 
 	// Show stayalive progress info
-	std::cout << "\t" 
-		//--Harmful in Python output scenarios-- << BEGINFORMAT_RED
-		<< "100%\t" << uniqueLabels.size() << " ULs"
-		//--Harmful in Python output scenarios-- << ENDFORMAT
-		<< "\n";
+	std::cout << "\t" << "100%\t" << uniqueLabels.size() << " ULs\n";
 
 	return true;
 }
@@ -180,12 +187,21 @@ int processDataset (
 		theSegFname = p_seg.filename().string();
 		theIntFname = p_int.filename().string();
 
-		// Scan a label-intensity pair and calculate features
-		//---Option--- 
+#if 0
+		//??? Figure out what's wrong with one file in Hamda's dataset /home/ec2-user/work/data/hamda-deep2498 (C:\WORK\AXLE\data\hamda-deep2498)
+		std::string file2catch = "p3_y2_r9_c0.ome.tif";
+		if (file2catch != theIntFname)
+		{
+			std::cout << "\nSkipping file " << theIntFname << "\n";
+			continue;
+		}
+#endif
+
+		// Scan one label-intensity pair 
 		if (numSensemakerThreads == 1)
-			ok = scanFilePair (ifp, lfp, numFastloaderThreads);	// Sequential
+			ok = scanFilePair (ifp, lfp, numFastloaderThreads, i, nf);	// Sequential
 		else
-			ok = scanFilePairParallel (ifp, lfp, numFastloaderThreads, numSensemakerThreads);	// Parallel
+			ok = scanFilePairParallel (ifp, lfp, numFastloaderThreads, numSensemakerThreads, i, nf);	// Parallel
 		if (ok == false)
 		{
 			std::cout << "scanFilePair() returned an error code while processing file pair " << ifp << " and " << lfp << std::endl;

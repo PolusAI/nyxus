@@ -3,6 +3,7 @@
 #include "image_matrix.h"
 #include "sensemaker.h"
 
+template <>
 void SimpleMatrix<int>::print(const std::string& head, const std::string& tail)
 {
 	const int Wd = 6;	// data
@@ -38,7 +39,7 @@ void SimpleMatrix<int>::print(const std::string& head, const std::string& tail)
 	std::cout << tail;
 }
 
-void ImageMatrix::print (const std::string& head, const std::string& tail)
+void ImageMatrix::print (const std::string& head, const std::string& tail, std::vector<PrintablePoint> special_points)
 {
 	const int Wd = 6;	// data
 	const int Wi = 5;	// index
@@ -51,7 +52,7 @@ void ImageMatrix::print (const std::string& head, const std::string& tail)
 
 	for (int row = 0; row < this->height; row++)
 	{
-		// Hdr
+		// Header
 		if (row == 0)
 		{
 			std::cout << std::setw(Wi + 2) << "";	// Wi+2 because '[' + Wi + ']'
@@ -66,7 +67,50 @@ void ImageMatrix::print (const std::string& head, const std::string& tail)
 		std::cout << "[" << std::setw(Wi) << row << "]";
 		for (int col = 0; col < this->width; col++)
 		{
-			std::cout << std::setw(Wd) << (int)D(row,col);
+			/*--- Hilighted pixel v.1
+			// Print a regular or highlighted pixel
+			if (col == local_hilight_x && row == local_hilight_y)
+			{
+				// Highlighted pixel
+				std::cout << std::setw(Wd) << hilight_text;
+			}
+			else
+			{
+				// Regular pixel
+				auto I = D(row, col);
+				if (I == 0)
+					std::cout << std::setw(Wd) << '.';
+				else
+					std::cout << std::setw(Wd) << I;
+			}
+			*/
+
+			//--- Hilighted pixel v.2
+			// Any special pixel at location () ?
+			bool haveSpecPix = false;
+			for (auto& p : special_points)
+			{
+				int x = std::get<0>(p),
+					y = std::get<1>(p);
+				int loc_x = x - original_aabb.get_xmin(),
+					loc_y = y - original_aabb.get_ymin();
+				if (col == loc_x && row == loc_y)
+				{
+					haveSpecPix = true;
+					std::string txt = std::get<2>(p);
+					std::cout << std::setw(Wd) << txt;
+					break;	// No need to consider other special pixels -- the rule is to have only 1 pixel per location
+				}
+			}
+			if (haveSpecPix)
+				continue;
+
+			// Regular pixel
+			auto I = D(row, col);
+			if (I == 0)
+				std::cout << std::setw(Wd) << '.';
+			else
+				std::cout << std::setw(Wd) << I;
 		}
 		std::cout << "\n";
 	}
@@ -164,12 +208,14 @@ void ImageMatrix::histogram(double* bins, unsigned short nbins, bool imhist, con
 	else h_scale = 0;
 
 	// initialize the bins
-	memset(bins, 0, nbins * sizeof(double));
+	//memset(bins, 0, nbins * sizeof(double));
+	for (int i = 0; i < nbins; i++)
+		bins[i] = 0.0;
 
 	// build the histogram
 	for (a = 0; a < num; a++) {
 		val = pix_plane[a];  // pix_plane.array().coeff(a);
-		if (isnan(val)) continue; //MM
+		if (std::isnan(val)) continue; //MM
 		bin = (unsigned long)(((val - h_min) * h_scale));
 		if (bin >= nbins) bin = nbins - 1;
 		bins[bin] += 1.0;

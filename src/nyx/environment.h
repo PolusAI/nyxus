@@ -22,11 +22,14 @@
 #define FEA_NICK_ALL "*ALL*"
 #define FEA_NICK_ALL_INTENSITY "*ALL_INTENSITY*"
 #define FEA_NICK_ALL_MORPHOLOGY "*ALL_MORPHOLOGY*"
+#define FEA_NICK_BASIC_MORPHOLOGY "*BASIC_MORPHOLOGY*"
 #define FEA_NICK_ALL_GLCM "*ALL_GLCM*"
 #define FEA_NICK_ALL_GLRLM "*ALL_GLRLM*"
 #define FEA_NICK_ALL_GLSZM "*ALL_GLSZM*"
 #define FEA_NICK_ALL_GLDM "*ALL_GLDM*"
 #define FEA_NICK_ALL_NGTDM "*ALL_NGTDM*"
+#define FEA_NICK_ALL_BUT_GABOR "*ALL_BUT_GABOR*"
+#define FEA_NICK_ALL_BUT_GLCM "*ALL_BUT_GLCM*"
 
 // Valid values of 'OUTPUTTYPE'
 #define OT_SEPCSV "separatecsv"
@@ -60,13 +63,13 @@ public:
 	std::string featureFileName = "";
 
 	std::string loader_threads = "";
-	int n_loader_threads = 2;
+	int n_loader_threads = 1;
 
 	std::string pixel_scan_threads = "";
 	int n_pixel_scan_threads = 1;
 
 	std::string reduce_threads = "";
-	int n_reduce_threads = 16;
+	int n_reduce_threads = 4;
 
 	std::string rotations = "";
 	std::vector<float> rotAngles = {0, 45, 90, 135};

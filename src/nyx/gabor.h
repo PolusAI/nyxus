@@ -19,34 +19,7 @@ public:
 
 protected:
 
-    //  conv2comp - conv2 when the smaller matrix is of complex numbers
-
-    //    DOUBLE *c;	/* Result matrix (ma+mb-1)-by-(na+nb-1) */
-    //    DOUBLE *a;	/* Larger matrix */
-    //    DOUBLE *b;	/* Smaller matrix */
-    //    INT ma;		/* Row size of a */
-    //    INT na;		/* Column size of a */
-    //    INT mb;		/* Row size of b */
-    //    INT nb;		/* Column size of b */
-    //    INT plusminus;	/* add or subtract from result */
-    //    int *flopcnt;	/* flop count */
-
-    void conv2comp(double* c, double* a, double* b, int na, int ma, int nb, int mb);
-
-
-    //  conv2 - the conv2 matlab function
-
-    //    DOUBLE *c;	/* Result matrix (ma+mb-1)-by-(na+nb-1) */
-    //    DOUBLE *a;	/* Larger matrix */
-    //    DOUBLE *b;	/* Smaller matrix */
-    //    INT ma;		/* Row size of a */
-    //    INT na;		/* Column size of a */
-    //    INT mb;		/* Row size of b */
-    //    INT nb;		/* Column size of b */
-    //    INT plusminus;	/* add or subtract from result */
-    //    int *flopcnt;	/* flop count */
-
-    void conv2(double* c, double* a, double* b, int ma, int na, int mb, int nb, int plusminus);
+    void conv(double* c, double* a, double* b, int na, int ma, int nb, int mb);
 
     /*
     Creates a non-normalized Gabor filter

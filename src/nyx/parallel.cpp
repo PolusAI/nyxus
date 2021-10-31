@@ -97,9 +97,12 @@ void processPixels (unsigned int start_idx_inclusive, unsigned int end_idx_exclu
 }
 
 // Function driving tiled processing a file pair - intensity and its mask
-bool scanFilePairParallel (const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads)
+bool scanFilePairParallel (const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads, int filepair_index, int tot_num_filepairs)
 {
-	std::cout << intens_fpath << " with " << num_fastloader_threads << " threads" << std::endl;
+	// Display (1) dataset progress info and (2) file pair info
+	int digits = 2, k = std::pow(10.f, digits);
+	float perCent = float(filepair_index * 100 * k / tot_num_filepairs) / float(k);
+	std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << intens_fpath << "\n";
 
 	int lvl = 0;	// Pyramid level
 

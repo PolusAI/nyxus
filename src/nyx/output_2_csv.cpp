@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "environment.h"
+#include "f_radial_distribution.h"
 #include "gabor.h"
 #include "glrlm.h"
 #include "sensemaker.h"
@@ -146,17 +147,46 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 			// --Gabor
 			if (fcode == GABOR)
 			{
+				// Generate the feature value list
 				for (auto i = 0; i < GaborFeatures::num_features; i++)
-				{
 					ssHead << "," << fname << "_" << i;
-				}
+
+				// Proceed with other features
+				continue;
+			}
+
+			if (fcode == FRAC_AT_D)
+			{
+				// Generate the feature value list
+				for (auto i = 0; i < RadialDistribution::num_features_FracAtD; i++)
+					ssHead << "," << fname << "_" << i;
+
+				// Proceed with other features
+				continue;
+			}
+
+			if (fcode == MEAN_FRAC)
+			{
+				// Generate the feature value list
+				for (auto i = 0; i < RadialDistribution::num_features_MeanFrac; i++)
+					ssHead << "," << fname << "_" << i;
+
+				// Proceed with other features
+				continue;
+			}
+
+			if (fcode == RADIAL_CV)
+			{
+				// Generate the feature value list
+				for (auto i = 0; i < RadialDistribution::num_features_RadialCV; i++)
+					ssHead << "," << fname << "_" << i;
 
 				// Proceed with other features
 				continue;
 			}
 
 			// --Zernike family
-			if (fcode == TEXTURE_ZERNIKE2D)
+			if (fcode == ZERNIKE2D)
 			{
 				// Populate with indices
 				for (int i = 0; i <= LR::aux_ZERNIKE2D_ORDER; i++)
@@ -274,7 +304,7 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 			}
 
 			// --Zernike family
-			if (fcode == TEXTURE_ZERNIKE2D)
+			if (fcode == ZERNIKE2D)
 			{
 				int zIdx = 0;
 				for (int i = 0; i <= LR::aux_ZERNIKE2D_ORDER; i++)
