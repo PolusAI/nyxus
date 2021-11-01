@@ -563,6 +563,10 @@ int Environment::parse_cmdline(int argc, char** argv)
                 CONVEX_HULL_AREA,
                 SOLIDITY,
                 PERIMETER,
+                EDGE_MEAN_INTENSITY,
+                EDGE_STDDEV_INTENSITY,
+                EDGE_MAX_INTENSITY,
+                EDGE_MIN_INTENSITY,
                 CIRCULARITY
             };
             theFeatureSet.enableFeatures(F);

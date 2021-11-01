@@ -10,7 +10,7 @@
 #include <future>
 #include <array>
 #include "sensemaker.h"
-
+#include "moments.h"
 
 #ifndef __unix
 #define NOMINMAX	// Prevent converting std::min(), max(), ... into macros
@@ -183,5 +183,20 @@ StatsReal Contour::get_diameter_equal_perimeter()
     return retval;
 }
 
+std::tuple<StatsReal, StatsReal, StatsReal, StatsReal> Contour::get_min_max_mean_stddev_intensity()
+{
+	Moments4 m;
+	for (auto px : contour_pixels)
+	{
+		m.add(px.inten);
+	}
+
+	StatsReal min_ = m.min__(),
+		max_ = m.max__(),
+		mean_ = m.mean(),
+		stddev_ = m.std();
+
+	return {min_, max_, mean_, stddev_};
+}
 
 

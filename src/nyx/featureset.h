@@ -34,7 +34,7 @@ enum AvailableFeatures
 	BBOX_HEIGHT,  
 	BBOX_WIDTH,  
 
-	// -- ellipticity related
+	// --ellipticity related
 	MAJOR_AXIS_LENGTH,
 	MINOR_AXIS_LENGTH,
 	ECCENTRICITY,
@@ -45,10 +45,17 @@ enum AvailableFeatures
 	EXTENT,  
 	ASPECT_RATIO,  
 
-	EQUIVALENT_DIAMETER,  
 	CONVEX_HULL_AREA,  
 	SOLIDITY,  
+
+	// --contour related
 	PERIMETER,  
+	EQUIVALENT_DIAMETER,
+	EDGE_MEAN_INTENSITY,
+	EDGE_STDDEV_INTENSITY, 
+	EDGE_MAX_INTENSITY, 
+	EDGE_MIN_INTENSITY, 
+
 	CIRCULARITY,
 
 	EROSION_PIXELS,

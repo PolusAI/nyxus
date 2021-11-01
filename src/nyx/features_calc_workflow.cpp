@@ -327,6 +327,11 @@ void parallelReduceContour (size_t start, size_t end, std::vector<int>* ptrLabel
 		r.contour.calculate (im);
 		r.fvals[PERIMETER][0] = r.contour.get_roi_perimeter();	
 		r.fvals[EQUIVALENT_DIAMETER][0] = r.contour.get_diameter_equal_perimeter();	
+		auto [cmin, cmax, cmean, cstddev] = r.contour.get_min_max_mean_stddev_intensity();
+		r.fvals[EDGE_MEAN_INTENSITY][0] = cmean;
+		r.fvals[EDGE_STDDEV_INTENSITY][0] = cstddev;
+		r.fvals[EDGE_MAX_INTENSITY][0] = cmax;
+		r.fvals[EDGE_MIN_INTENSITY][0] = cmin;
 
 		//	if (theEnvironment.verbosity_level & VERBOSITY_DETAILED)
 		//		std::cout << "Contour for ROI " << lab << " length=" << r.contour.contour_pixels.size() << " ROI perimeter=" << r.fvals[PERIMETER][0] << " diameter_equal_perimeter=" << r.fvals[EQUIVALENT_DIAMETER][0]  << "\n";
