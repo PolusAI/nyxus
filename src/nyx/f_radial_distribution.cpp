@@ -61,7 +61,7 @@ void RadialDistribution::initialize(const std::vector<Pixel2>& raw_pixels, const
 		// Distance contour to pixel
 		double dstAC = std::sqrt (pxContour.sqdist(pxA));
 
-		//??? Intercept an error or weird condition
+		// Intercept an error or weird condition
 		if (dstOC < dstAC || dstOC < dstOA)
 		{
 			// Show A

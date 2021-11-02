@@ -55,6 +55,7 @@ int main (int argc, char** argv)
 	std::sort (intensFiles.begin(), intensFiles.end());
 	std::sort (labelFiles.begin(), labelFiles.end());
 
+	#if 0	// Diagnostics
 	// Print the image file pairs for reproducibility
 	std::cout << "\n\n=== Check the dataset:\n";
 	for (int i = 0; i < intensFiles.size(); i++)
@@ -67,6 +68,7 @@ int main (int argc, char** argv)
 		std::cout << "plan [" << i << "/" << intensFiles.size() << "] [" << std::setw(digits + 2) << perCent << "%]\t" << intensFiles[i] << " == = " << labelFiles[i] << "\n";
 	}
 	std::cout << "===\n\n";
+	#endif	
 
 	// One-time initialization
 	init_feature_buffers();

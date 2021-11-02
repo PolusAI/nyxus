@@ -26,7 +26,6 @@
 
 constexpr int N2R = 100 * 1000;
 constexpr int N2R_2 = 100 * 1000;
-constexpr int smallestROI = 10;
 
 // Preallocates the intensely accessed main containers
 void init_feature_buffers()
@@ -165,11 +164,13 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		int lab = (*ptrLabels) [i];
 		LR& lr = (*ptrLabelData) [lab];
 
+		#if 0	// Condition is too strict
 		if (lr.raw_pixels.size() < smallestROI)
 		{
 			lr.roi_disabled = true;
 			continue;
 		}
+		#endif
 
 		//==== Reduce pixel intensity #1, including MIN and MAX
 		//XXX--not using online approach any more--		lr.reduce_pixel_intensity_features();
@@ -264,11 +265,12 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		lr.fvals[KURTOSIS][0] = mom.kurtosis();
 
 		//==== Basic morphology :: Bounding box
+		// --
 		lr.fvals[BBOX_XMIN][0] = lr.aabb.get_xmin();
 		lr.fvals[BBOX_YMIN][0] = lr.aabb.get_ymin();
 		lr.fvals[BBOX_WIDTH][0] = lr.aabb.get_width();
 		lr.fvals[BBOX_HEIGHT][0] = lr.aabb.get_height();
-		
+
 		//==== Basic morphology :: Centroids
 		lr.fvals[CENTROID_X][0] = lr.fvals[CENTROID_Y][0] = 0.0;
 		for (auto& px : lr.raw_pixels)

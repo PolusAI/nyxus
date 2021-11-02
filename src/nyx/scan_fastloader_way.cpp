@@ -188,7 +188,7 @@ int processDataset (
 		theIntFname = p_int.filename().string();
 
 #if 0
-		//??? Figure out what's wrong with one file in Hamda's dataset /home/ec2-user/work/data/hamda-deep2498 (C:\WORK\AXLE\data\hamda-deep2498)
+		// Figure out what's wrong with one file in Hamda's dataset /home/ec2-user/work/data/hamda-deep2498 (C:\WORK\AXLE\data\hamda-deep2498)
 		std::string file2catch = "p3_y2_r9_c0.ome.tif";
 		if (file2catch != theIntFname)
 		{
