@@ -1,9 +1,9 @@
 {
   "name": "Nyxus",
-  "version": "0.1.21",
-  "containerId": "polusai/nyxus:0.1.21",
+  "version": "0.1.28",
+  "containerId": "polusai/nyxus:0.1.28",
   "title": "Nyxus feature extraction",
-  "description": "Nyxus feature extractor",
+  "description": "Nyxus feature extractor (build of 10/28/2021)",
   "author": "friskluft + hsidky",
   "institution": "Axle Informatics",
   "repository": "https://github.com/friskluft/nyxus",
@@ -66,6 +66,12 @@
               ]
             },
             {
+              "description": "BASIC_MORPHOLOGY (BBOX_YMIN, BBOX_XMIN, BBOX_HEIGHT, BBOX_WIDTH, AREA_PIXELS_COUNT, CENTROID_X, CENTROID_Y)",
+              "enum": [
+                "*BASIC_MORPHOLOGY*"
+              ]
+            },
+            {
               "description": "ALL_GLCM",
               "enum": [
                 "*ALL_GLCM*"
@@ -93,6 +99,18 @@
               "description": "ALL_NGTDM",
               "enum": [
                 "*ALL_NGTDM*"
+              ]
+            },
+            {
+              "description": "ALL_BUT_GABOR",
+              "enum": [
+                "*ALL_BUT_GABOR*"
+              ]
+            },
+            {
+              "description": "ALL_BUT_GLCM",
+              "enum": [
+                "*ALL_BUT_GLCM*"
               ]
             },
             {
@@ -1080,13 +1098,25 @@
               ]
             },
             {
-              "description": "TEXTURE_ZERNIKE2D",
+              "description": "ZERNIKE2D",
               "enum": [
-                "TEXTURE_ZERNIKE2D"
+                "ZERNIKE2D"
+              ]
+            },
+            {
+              "description": "Gabor",
+              "enum": [
+                "GABOR"
+              ]
+            },
+            {
+              "description": "EROSION_PIXELS",
+              "enum": [
+                "EROSION_PIXELS"
               ]
             }
           ],
-          "default": "Area",
+          "default": "ALL_INTENSITY",
           "widget": "select",
           "minItems": 1,
           "uniqueItems": "true"

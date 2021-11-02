@@ -320,10 +320,6 @@ void parallelReduceContour (size_t start, size_t end, std::vector<int>* ptrLabel
 
 		//==== Contour, ROI perimeter, equivalent circle diameter
 		ImageMatrix im (r.raw_pixels, r.aabb);
-
-		//if (theEnvironment.verbosity_level & VERBOSITY_DETAILED)
-		//	std::cout << "Contour for ROI " << lab << " of " << r.raw_pixels.size() << " pixels, equivalent matrix " << im.height << " x " << im.width << " - calculating\n";
-
 		r.contour.calculate (im);
 		r.fvals[PERIMETER][0] = r.contour.get_roi_perimeter();	
 		r.fvals[EQUIVALENT_DIAMETER][0] = r.contour.get_diameter_equal_perimeter();	
@@ -332,9 +328,6 @@ void parallelReduceContour (size_t start, size_t end, std::vector<int>* ptrLabel
 		r.fvals[EDGE_STDDEV_INTENSITY][0] = cstddev;
 		r.fvals[EDGE_MAX_INTENSITY][0] = cmax;
 		r.fvals[EDGE_MIN_INTENSITY][0] = cmin;
-
-		//	if (theEnvironment.verbosity_level & VERBOSITY_DETAILED)
-		//		std::cout << "Contour for ROI " << lab << " length=" << r.contour.contour_pixels.size() << " ROI perimeter=" << r.fvals[PERIMETER][0] << " diameter_equal_perimeter=" << r.fvals[EQUIVALENT_DIAMETER][0]  << "\n";
 	}
 }
 
@@ -1083,25 +1076,92 @@ void reduce (int nThr, int min_online_roi_size)
  		}
 	}
 
-	//==== Hu's moments
+	//==== Moments
 	if (theFeatureSet.anyEnabled({ 
+		SPAT_MOMENT_00,
+		SPAT_MOMENT_01,
+		SPAT_MOMENT_02,
+		SPAT_MOMENT_03,
+		SPAT_MOMENT_10,
+		SPAT_MOMENT_11,
+		SPAT_MOMENT_12,
+		SPAT_MOMENT_20,
+		SPAT_MOMENT_21,
+		SPAT_MOMENT_30,
+	
+		CENTRAL_MOMENT_02,
+		CENTRAL_MOMENT_03,
+		CENTRAL_MOMENT_11,
+		CENTRAL_MOMENT_12,
+		CENTRAL_MOMENT_20,
+		CENTRAL_MOMENT_21,
+		CENTRAL_MOMENT_30,
+
+		NORM_CENTRAL_MOMENT_02,
+		NORM_CENTRAL_MOMENT_03,
+		NORM_CENTRAL_MOMENT_11,
+		NORM_CENTRAL_MOMENT_12,
+		NORM_CENTRAL_MOMENT_20,
+		NORM_CENTRAL_MOMENT_21,
+		NORM_CENTRAL_MOMENT_30,
+
 		HU_M1,
 		HU_M2,
 		HU_M3,
 		HU_M4,
 		HU_M5,
 		HU_M6,
-		HU_M7
-		}))
+		HU_M7 }))
 	{
-		STOPWATCH("Hu moments ...", "\tReduced Hu moments");
+		STOPWATCH("Moments ...", "\tReduced moments");
 		for (auto& ld : labelData)
 		{
 			auto& r = ld.second;
 			ImageMatrix im(r.raw_pixels, r.aabb);
 			HuMoments hu;
 			hu.initialize ((int) r.fvals[MIN][0], (int) r.fvals[MAX][0], im);
-			auto [m1, m2, m3, m4, m5, m6, m7] = hu.getMoments();
+
+			double m1, m2, m3, m4, m5, m6, m7, m8, m9, m10;
+			std::tie (m1, m2, m3, m4, m5, m6, m7, m8, m9, m10) = hu.getSpatialMoments();
+			r.fvals[SPAT_MOMENT_00][0] = m1;
+			r.fvals[SPAT_MOMENT_01][0] = m2;
+			r.fvals[SPAT_MOMENT_02][0] = m3;
+			r.fvals[SPAT_MOMENT_03][0] = m4;
+			r.fvals[SPAT_MOMENT_10][0] = m5; 
+			r.fvals[SPAT_MOMENT_11][0] = m6; 
+			r.fvals[SPAT_MOMENT_12][0] = m7;
+			r.fvals[SPAT_MOMENT_20][0] = m8;
+			r.fvals[SPAT_MOMENT_21][0] = m9;
+			r.fvals[SPAT_MOMENT_30][0] = m10;
+
+			std::tie (m1, m2, m3, m4, m5, m6, m7) = hu.getCentralMoments();
+			r.fvals[CENTRAL_MOMENT_02][0] = m1;
+			r.fvals[CENTRAL_MOMENT_03][0] = m2;
+			r.fvals[CENTRAL_MOMENT_11][0] = m3;
+			r.fvals[CENTRAL_MOMENT_12][0] = m4;
+			r.fvals[CENTRAL_MOMENT_20][0] = m5;
+			r.fvals[CENTRAL_MOMENT_21][0] = m6;
+			r.fvals[CENTRAL_MOMENT_30][0] = m7;
+			
+			std::tie (m1, m2, m3, m4, m5, m6, m7) = hu.getNormCentralMoments();
+			r.fvals[NORM_CENTRAL_MOMENT_02][0] = m1;
+			r.fvals[NORM_CENTRAL_MOMENT_03][0] = m2;
+			r.fvals[NORM_CENTRAL_MOMENT_11][0] = m3;
+			r.fvals[NORM_CENTRAL_MOMENT_12][0] = m4;
+			r.fvals[NORM_CENTRAL_MOMENT_20][0] = m5;
+			r.fvals[NORM_CENTRAL_MOMENT_21][0] = m6;
+			r.fvals[NORM_CENTRAL_MOMENT_30][0] = m7;
+
+			std::tie(m1, m2, m3, m4, m5, m6, m7) = hu.getNormSpatialMoments();
+			r.fvals[NORM_SPAT_MOMENT_00][0] = m1;
+			r.fvals[NORM_SPAT_MOMENT_01][0] = m2;
+			r.fvals[NORM_SPAT_MOMENT_02][0] = m3;
+			r.fvals[NORM_SPAT_MOMENT_03][0] = m4;
+			r.fvals[NORM_SPAT_MOMENT_10][0] = m5;
+			r.fvals[NORM_SPAT_MOMENT_20][0] = m6;
+			r.fvals[NORM_SPAT_MOMENT_30][0] = m7;
+
+			std::tie (m1, m2, m3, m4, m5, m6, m7) = hu.getHuMoments();
 			r.fvals[HU_M1][0] = m1;
 			r.fvals[HU_M2][0] = m2;
 			r.fvals[HU_M3][0] = m3;

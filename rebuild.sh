@@ -26,11 +26,15 @@ mkdir -p $BUILDDIR
 rm $BUILDDIR/*
 cd $BUILDDIR
 
+#=== Touch main.cpp to advance the build timestamp
+touch ../src/nyx/main.cpp
+
 #=== We're in the 'build' directory so all the source files are in '../'
+$CXX $OPTS $INCLU ../src/nyx/image_matrix.cpp
 $CXX $OPTS $INCLU ../src/nyx/f_haralick_texture.cpp           
 $CXX $OPTS $INCLU ../src/nyx/f_convex_hull.cpp           
 $CXX $OPTS $INCLU ../src/nyx/f_euler_number.cpp               
-$CXX $OPTS $INCLU ../src/nyx/f_neighbors.cpp         
+$CXX $OPTS $INCLU ../src/nyx/f_neighbors.cpp  
 $CXX $OPTS $INCLU ../src/nyx/main.cpp             
 $CXX $OPTS $INCLU ../src/nyx/parallel.cpp             
 $CXX $OPTS $INCLU ../src/nyx/specfunc.cpp             
@@ -61,9 +65,11 @@ $CXX $OPTS $INCLU ../src/nyx/ngtdm.cpp
 $CXX $OPTS $INCLU ../src/nyx/hu.cpp
 $CXX $OPTS $INCLU ../src/nyx/gabor.cpp
 $CXX $OPTS $INCLU ../src/nyx/f_erosion_pixels.cpp
-$CXX $OPTS $INCLU ../src/nyx/image_matrix.cpp
+$CXX $OPTS $INCLU ../src/nyx/f_radial_distribution.cpp       
+$CXX $OPTS $INCLU ../src/nyx/system_resource.cpp
 
 $GXX \
+image_matrix.o \
 f_haralick_texture.o \
 f_convex_hull.o \
 f_euler_number.o \
@@ -98,7 +104,8 @@ ngtdm.o \
 hu.o \
 gabor.o \
 f_erosion_pixels.o \
-image_matrix.o \
+f_radial_distribution.o \
+system_resource.o \
 -lm -ltiff -lfftw3 \
 -lpthread \
 -static-libstdc++ \
