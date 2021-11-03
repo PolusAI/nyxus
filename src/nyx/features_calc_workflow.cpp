@@ -202,6 +202,16 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		lr.fvals[CENTROID_X][0] = cen_x;
 		lr.fvals[CENTROID_Y][0] = cen_y;
 
+		// --Compactness
+		Moments2 mom2;
+		for (auto& px : lr.raw_pixels)
+		{
+			double dst = std::sqrt(px.sqdist(cen_x, cen_y));
+			mom2.add(dst);
+		}
+		double compa = mom2.std() / n;
+		lr.fvals[COMPACTNESS][0] = compa;
+
 		// --MAD, VARIANCE, STDDEV
 		double mad = 0.0,
 			var = 0.0;

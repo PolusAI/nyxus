@@ -28,6 +28,10 @@ bool right_turn(const Pixel2& P1, const Pixel2& P2, const Pixel2& P3)
 
 double getPolygonArea(std::vector<Pixel2>& vertices)
 {
+	// Is ROI large enough?
+	if (vertices.size() == 0)
+		return 0.0;
+
 	double area = 0.0;
 	int n = (int)vertices.size();
 	for (int i = 0; i < n - 1; i++)
@@ -42,6 +46,10 @@ double getPolygonArea(std::vector<Pixel2>& vertices)
 
 void ConvexHull::calculate(std::vector<Pixel2> & point_cloud) 
 {
+	// Skip calculation if the ROI is too small
+	if (point_cloud.size() < 2)
+		return;
+
 	CH.clear();
 
 	std::vector<Pixel2>& upperCH = CH;

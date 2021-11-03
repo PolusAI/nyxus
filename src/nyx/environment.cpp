@@ -548,6 +548,7 @@ int Environment::parse_cmdline(int argc, char** argv)
                 AREA_PIXELS_COUNT,
                 CENTROID_X,
                 CENTROID_Y,
+                COMPACTNESS,
                 BBOX_YMIN,
                 BBOX_XMIN,
                 BBOX_HEIGHT,
