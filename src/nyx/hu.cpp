@@ -1,14 +1,20 @@
 #include "hu.h"
 
-void HuMoments::initialize (int minI, int maxI, const ImageMatrix& im)
+void HuMoments::initialize (int minI, int maxI, const ImageMatrix& im, const ImageMatrix& weighted_im)
 {
-    const pixData& D = im.ReadablePixels();
-    calcOrigins(D);
-    calcSpatialMoments(D);
-    calcCentralMoments(D);
-    calcNormCentralMoments(D);
-    calcNormSpatialMoments(D);
-    calcHuInvariantMoments(D);
+    const pixData& I = im.ReadablePixels();
+    calcOrigins(I);
+    calcSpatialMoments(I);
+    calcCentralMoments(I);
+    calcNormCentralMoments(I);
+    calcNormSpatialMoments(I);
+    calcHuInvariants(I);
+
+    const pixData& W = weighted_im.ReadablePixels();
+    calcOrigins (W);
+    calcWeightedSpatialMoments (W);
+    calcWeightedCentralMoments(W);
+    calcWeightedHuInvariants(W);
 }
 
 double HuMoments::Moment (const pixData& D, int p, int q)
@@ -63,27 +69,37 @@ double HuMoments::NormCentralMom(const pixData& D, int p, int q)
     return retval;
 }
 
-void HuMoments::calcHuInvariantMoments(const pixData& D)
+std::tuple<double, double, double, double, double, double, double> HuMoments::calcHuInvariants_imp (const pixData& D)
 {
     // calculate 7 invariant moments
-    hm1 = NormCentralMom(D, 2, 0) + NormCentralMom(D, 0, 2);
-    hm2 = pow((NormCentralMom(D, 2, 0) - NormCentralMom(D, 0, 2)), 2) + 4 * (pow(NormCentralMom(D, 1, 1), 2));
-    hm3 = pow((NormCentralMom(D, 3, 0) - 3 * NormCentralMom(D, 1, 2)), 2) +
+    double h1 = NormCentralMom(D, 2, 0) + NormCentralMom(D, 0, 2);
+    double h2 = pow((NormCentralMom(D, 2, 0) - NormCentralMom(D, 0, 2)), 2) + 4 * (pow(NormCentralMom(D, 1, 1), 2));
+    double h3 = pow((NormCentralMom(D, 3, 0) - 3 * NormCentralMom(D, 1, 2)), 2) +
         pow((3 * NormCentralMom(D, 2, 1) - NormCentralMom(D, 0, 3)), 2);
-    hm4 = pow((NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2)), 2) +
+    double h4 = pow((NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2)), 2) +
         pow((NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3)), 2);
-    hm5 = (NormCentralMom(D, 3, 0) - 3 * NormCentralMom(D, 1, 2)) *
+    double h5 = (NormCentralMom(D, 3, 0) - 3 * NormCentralMom(D, 1, 2)) *
         (NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2)) *
         (pow(NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2), 2) - 3 * pow(NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3), 2)) +
         (3 * NormCentralMom(D, 2, 1) - NormCentralMom(D, 0, 3)) * (NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3)) *
         (pow(3 * (NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2)), 2) - pow(NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3), 2));
-    hm6 = (NormCentralMom(D, 2, 0) - NormCentralMom(D, 0, 2)) * (pow(NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2), 2) -
+    double h6 = (NormCentralMom(D, 2, 0) - NormCentralMom(D, 0, 2)) * (pow(NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2), 2) -
         pow(NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3), 2)) + (4 * NormCentralMom(D, 1, 1) * (NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2)) *
             NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3));
-    hm7 = (3 * NormCentralMom(D, 2, 1) - NormCentralMom(D, 0, 3)) * (NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2)) * (pow(NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2), 2) -
+    double h7 = (3 * NormCentralMom(D, 2, 1) - NormCentralMom(D, 0, 3)) * (NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2)) * (pow(NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2), 2) -
         3 * pow(NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3), 2)) - (NormCentralMom(D, 3, 0) - 3 * NormCentralMom(D, 1, 2)) * (NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3)) *
         (3 * pow(NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2), 2) - pow(NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3), 2));
+    return {h1, h2, h3, h4, h5, h6, h7};
+}
 
+void HuMoments::calcHuInvariants (const pixData& D)
+{
+    std::tie(hm1, hm2, hm3, hm4, hm5, hm6, hm7) = calcHuInvariants_imp(D);
+}
+
+void HuMoments::calcWeightedHuInvariants (const pixData& D)
+{
+    std::tie(whm1, whm2, whm3, whm4, whm5, whm6, whm7) = calcHuInvariants_imp(D);
 }
 
 void HuMoments::calcSpatialMoments (const pixData& D)
@@ -100,6 +116,20 @@ void HuMoments::calcSpatialMoments (const pixData& D)
     m30 = Moment(D, 3, 0);
 }
 
+void HuMoments::calcWeightedSpatialMoments (const pixData& D)
+{
+    wm00 = Moment (D, 0, 0);
+    wm01 = Moment (D, 0, 1);
+    wm02 = Moment (D, 0, 2);
+    wm03 = Moment (D, 0, 3);
+    wm10 = Moment (D, 1, 0);
+    wm11 = Moment (D, 1, 1);
+    wm12 = Moment (D, 1, 2);
+    wm20 = Moment (D, 2, 0);
+    wm21 = Moment (D, 2, 1);
+    wm30 = Moment (D, 3, 0);
+}
+
 void HuMoments::calcCentralMoments(const pixData& D)
 {
     mu02 = CentralMom(D, 0, 2);
@@ -109,6 +139,17 @@ void HuMoments::calcCentralMoments(const pixData& D)
     mu20 = CentralMom(D, 2, 0);
     mu21 = CentralMom(D, 2, 1);
     mu30 = CentralMom(D, 3, 0);
+}
+
+void HuMoments::calcWeightedCentralMoments(const pixData& D)
+{
+    wmu02 = CentralMom(D, 0, 2);
+    wmu03 = CentralMom(D, 0, 3);
+    wmu11 = CentralMom(D, 1, 1);
+    wmu12 = CentralMom(D, 1, 2);
+    wmu20 = CentralMom(D, 2, 0);
+    wmu21 = CentralMom(D, 2, 1);
+    wmu30 = CentralMom(D, 3, 0);
 }
 
 void HuMoments::calcNormCentralMoments (const pixData& D)
@@ -138,6 +179,11 @@ std::tuple<double, double, double, double, double, double, double, double, doubl
     return { m00, m01, m02, m03, m10, m11, m12, m20, m21, m30 };
 }
 
+std::tuple<double, double, double, double, double, double, double, double, double, double> HuMoments::getWeightedSpatialMoments()
+{
+    return { wm00, wm01, wm02, wm03, wm10, wm11, wm12, wm20, wm21, wm30 };
+}
+
 std::tuple<double, double, double, double, double, double, double> HuMoments::getNormSpatialMoments()
 {
     return { w00, w01, w02, w03, w10, w20, w30 };
@@ -148,6 +194,11 @@ std::tuple<double, double, double, double, double, double, double> HuMoments::ge
     return { mu02, mu03, mu11, mu12, mu20, mu21, mu30 };
 }
 
+std::tuple<double, double, double, double, double, double, double> HuMoments::getWeightedCentralMoments()
+{
+    return { wmu02, wmu03, wmu11, wmu12, wmu20, wmu21, wmu30 };
+}
+
 std::tuple<double, double, double, double, double, double, double> HuMoments::getNormCentralMoments()
 {
     return { nu02, nu03, nu11, nu12, nu20, nu21, nu30 };
@@ -156,4 +207,9 @@ std::tuple<double, double, double, double, double, double, double> HuMoments::ge
 std::tuple<double, double, double, double, double, double, double> HuMoments::getHuMoments()
 {
     return { hm1, hm2, hm3, hm4, hm5, hm6, hm7 };
+}
+
+std::tuple<double, double, double, double, double, double, double> HuMoments::getWeightedHuMoments()
+{
+    return { whm1, whm2, whm3, whm4, whm5, whm6, whm7 };
 }

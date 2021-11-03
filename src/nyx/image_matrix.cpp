@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include "image_matrix.h"
+#include "moments.h"
 #include "sensemaker.h"
 
 template <>
@@ -224,3 +225,21 @@ void ImageMatrix::histogram(double* bins, unsigned short nbins, bool imhist, con
 	return;
 }
 
+void ImageMatrix::apply_distance_to_contour_weights (const std::vector<Pixel2>& raw_pixels, const std::vector<Pixel2>& contour_pixels)
+{
+	double epsilon = 0.1;
+
+	for (auto& p : raw_pixels)
+	{
+		auto [mind, maxd] = p.min_max_sqdist(contour_pixels);
+		double dist = std::sqrt (mind);
+
+		auto c = p.x - original_aabb.get_xmin(),
+			r = p.y - original_aabb.get_ymin();
+		
+		// Weighted intensity
+		PixIntens wi = _pix_plane(r, c) / (dist + epsilon) + 0.5/*rounding*/;
+		
+		_pix_plane(r,c) = wi;
+	}
+}

@@ -533,7 +533,7 @@ int Environment::parse_cmdline(int argc, char** argv)
                 ENTROPY,
                 MODE,
                 UNIFORMITY,
-                P10, P25, P75, P90,
+                P01, P10, P25, P75, P90, P99,
                 INTERQUARTILE_RANGE,
                 ROBUST_MEAN_ABSOLUTE_DEVIATION,
                 WEIGHTED_CENTROID_Y,

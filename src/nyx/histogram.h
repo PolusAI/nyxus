@@ -9,7 +9,7 @@
 #include <tuple>
 #include "pixel.h"
 
-#define N_HISTO_BINS 20	// Max number of histogram channels. 5% step.
+#define N_HISTO_BINS 100	// Max number of histogram channels. 5% step.
 
 using HistoItem = unsigned int;
 
@@ -86,17 +86,19 @@ public:
 	//	[7] RMAD
 	//	[8] entropy
 	//	[9] uniformity
-	std::tuple<double, HistoItem, double, double, double, double, double, double, double, double> get_stats()
+	std::tuple<double, HistoItem, double, double, double, double, double, double, double, double, double, double> get_stats()
 	{
 		double median = get_median (U); //xxx	 get_median(U);
 		HistoItem mode = get_mode(U);
 
-		double p10 = 0, p25 = 0, p75 = 0, p90 = 0, iqr = 0, rmad = 0, entropy = 0, uniformity = 0;
+		double p1 = 0, p10 = 0, p25 = 0, p75 = 0, p90 = 0, p99 = 0, iqr = 0, rmad = 0, entropy = 0, uniformity = 0;
 
 		// %
 		auto ppb = 100.0 / N_HISTO_BINS;
 		for (int i = 0; i < N_HISTO_BINS; i++)
 		{
+			if (ppb * i <= 1)
+				p1 += bins[i];
 			if (ppb * i <= 10)
 				p10 += bins[i];
 			if (ppb * i <= 25)
@@ -105,6 +107,8 @@ public:
 				p75 += bins[i];
 			if (ppb * i <= 90)
 				p90 += bins[i];
+			if (ppb * i <= 99)
+				p99 += bins[i];
 		}
 
 		// IQR
@@ -164,7 +168,7 @@ public:
 		}
 
 		// Finally
-		return { median, mode, p10, p25, p75, p90, iqr, rmad, entropy, uniformity };
+		return { median, mode, p1, p10, p25, p75, p90, p99, iqr, rmad, entropy, uniformity };
 	}
 
 	protected:

@@ -5,46 +5,7 @@
 #include <vector>
 #include "pixel.h"
 #include "aabb.h"
-
-// Depends:
-#define MIN_VAL -FLT_MAX
-#define MAX_VAL FLT_MAX
-//
-class Moments2 {
-private:
-	double _min, _max, _mean, M2;
-	size_t _n;
-
-public:
-	Moments2() { reset(); }
-	void reset() { _mean = M2 = 0.0; _min = DBL_MAX; _max = -DBL_MAX; _n = 0; }
-	inline double add(const double x) {
-		size_t n1;
-		double delta, delta_n, term1;
-		if (std::isnan(x) || x > MAX_VAL || x < MIN_VAL) 
-			return (x);
-
-		n1 = _n;
-		_n = _n + 1;
-		delta = x - _mean;
-		delta_n = delta / _n;
-		term1 = delta * delta_n * n1;
-		_mean = _mean + delta_n;
-		M2 += term1;
-
-		if (x > _max) _max = x;
-		if (x < _min) _min = x;
-		return (x);
-	}
-
-	size_t n()    const { return _n; }
-	double min__()  const { return _min; }
-	double max__()  const { return _max; }
-	double mean() const { return _mean; }
-	double std() const { return (_n > 2 ? sqrt(M2 / (_n - 1)) : 0.0); }
-	double var() const { return (_n > 2 ? (M2 / (_n - 1)) : 0.0); }
-	void momentVector(double* z) const { z[0] = mean(); z[1] = std(); }
-};
+#include "moments.h"
 
 // functor to call add on a reference using the () operator
 // for example, using Eigen: ReadablePixels().unaryExpr (Moments4func(stats)).sum();
@@ -70,11 +31,11 @@ public:
 
 	SimpleMatrix() {}
 
-	void allocate(int _w, int _h)
+	void allocate(int _w, int _h, T inival=0)
 	{
 		W = _w;
 		H = _h;
-		this->resize (W*H, 0);
+		this->resize (W*H, inival);
 	}
 
 	T& operator() (int x, int y)
@@ -103,7 +64,7 @@ public:
 		return t;
 	}
 
-	bool safe(int x, int y)
+	bool safe(int x, int y) const
 	{
 		if (x >= W || y >= H)
 			return false;
@@ -262,6 +223,9 @@ public:
 	double Otsu (bool dynamic_range = true) const;
 
 	void erode();
+
+	// Based on X.Shu, Q.Zhang, J.Shi and Y.Qi - "A Comparative Study on Weighted Central Moment and Its Application in 2D Shape Retrieval" (2016) https://pdfs.semanticscholar.org/8927/2bef7ba9496c59081ae102925ebc0134bceb.pdf
+	void apply_distance_to_contour_weights(const std::vector<Pixel2>& raw_pixels, const std::vector<Pixel2>& contour_pixels);
 
 	// min, max, mean, std computed in single pass, median in separate pass
 	Moments2 stats;

@@ -11,11 +11,8 @@
 #include <array>
 #include "sensemaker.h"
 #include "moments.h"
+#include "contour.h"
 
-#ifndef __unix
-#define NOMINMAX	// Prevent converting std::min(), max(), ... into macros
-#include<windows.h>
-#endif
 
 //
 // Uses Moore's algorithm

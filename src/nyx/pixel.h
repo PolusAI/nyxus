@@ -80,11 +80,17 @@ struct Pixel2 : public Point2i
 	}
 	operator Point2f () const { Point2f p((float)this->x, (float)this->y); return p; }
 
+	double sqdist(int x, int y) const
+	{
+		double dx = (double)x - double(this->x),
+			dy = (double)y - double(this->y);
+		double retval = dx * dx + dy * dy;
+		return retval;
+	}
+
 	double sqdist(const Pixel2 & px) const
 	{
-		double dx = (double)px.x - double(this->x),
-			dy = (double)px.y - double(this->y);
-		double retval = dx * dx + dy * dy;
+		double retval = sqdist(px.x, px.y);
 		return retval;
 	}
 
@@ -124,12 +130,12 @@ struct Pixel2 : public Point2i
 	static int find_center (const std::vector<Pixel2> & cloud, const std::vector<Pixel2> & contour)
 	{
 		int idxMinDif = 0;
-		auto minmaxDist = cloud[idxMinDif].min_max_dist(contour);
+		auto minmaxDist = cloud[idxMinDif].min_max_sqdist(contour);
 		double minDif = minmaxDist.second - minmaxDist.first;
 		for (int i = 1; i < cloud.size(); i++)
 		{
 			//double dist = cloud[i].sum_sqdist(contour);
-			auto minmaxDist = cloud[i].min_max_dist(contour);
+			auto minmaxDist = cloud[i].min_max_sqdist(contour);
 			double dif = minmaxDist.second - minmaxDist.first;
 			if (dif < minDif)
 			{
@@ -140,7 +146,7 @@ struct Pixel2 : public Point2i
 		return idxMinDif;
 	}
 
-	std::pair<double, double> min_max_dist (const std::vector<Pixel2>& cloud) const
+	std::pair<double, double> min_max_sqdist (const std::vector<Pixel2>& cloud) const
 	{
 		auto mind = sqdist(cloud[0]), 
 			maxd = mind;

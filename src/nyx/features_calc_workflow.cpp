@@ -239,14 +239,16 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 #endif
 		TrivialHistogram H;
 		H.initialize (lr.fvals[MIN][0], lr.fvals[MAX][0], lr.raw_pixels);
-		auto [median_, mode_, p10_, p25_, p75_, p90_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
+		auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
 
 		lr.fvals[MEDIAN][0] = median_; 
-		lr.fvals[P10][0] = p10_; 
+		lr.fvals[P01][0] = p01_;
+		lr.fvals[P10][0] = p10_;
 		lr.fvals[P25][0] = p25_; 
 		lr.fvals[P75][0] = p75_; 
 		lr.fvals[P90][0] = p90_; 
-		lr.fvals[INTERQUARTILE_RANGE][0] = iqr_; 
+		lr.fvals[P99][0] = p99_;
+		lr.fvals[INTERQUARTILE_RANGE][0] = iqr_;
 		lr.fvals[ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = rmad_; 
 		lr.fvals[ENTROPY][0] = entropy_; 
 		lr.fvals[MODE][0] = mode_; 
@@ -1113,15 +1115,30 @@ void reduce (int nThr, int min_online_roi_size)
 		HU_M4,
 		HU_M5,
 		HU_M6,
-		HU_M7 }))
+		HU_M7, 
+		
+		WEIGHTED_HU_M1,
+		WEIGHTED_HU_M2,
+		WEIGHTED_HU_M3,
+		WEIGHTED_HU_M4,
+		WEIGHTED_HU_M5,
+		WEIGHTED_HU_M6,
+		WEIGHTED_HU_M7 }))
 	{
 		STOPWATCH("Moments ...", "\tReduced moments");
 		for (auto& ld : labelData)
 		{
 			auto& r = ld.second;
-			ImageMatrix im(r.raw_pixels, r.aabb);
+			ImageMatrix im (r.raw_pixels, r.aabb);
+
+			// Prepare the contour if necessary
+			if (r.contour.contour_pixels.size() == 0)
+				r.contour.calculate(im);
+
+			ImageMatrix weighted_im(r.raw_pixels, r.aabb);
+			weighted_im.apply_distance_to_contour_weights (r.raw_pixels, r.contour.contour_pixels);
 			HuMoments hu;
-			hu.initialize ((int) r.fvals[MIN][0], (int) r.fvals[MAX][0], im);
+			hu.initialize ((int) r.fvals[MIN][0], (int) r.fvals[MAX][0], im, weighted_im);
 
 			double m1, m2, m3, m4, m5, m6, m7, m8, m9, m10;
 			std::tie (m1, m2, m3, m4, m5, m6, m7, m8, m9, m10) = hu.getSpatialMoments();
@@ -1136,6 +1153,18 @@ void reduce (int nThr, int min_online_roi_size)
 			r.fvals[SPAT_MOMENT_21][0] = m9;
 			r.fvals[SPAT_MOMENT_30][0] = m10;
 
+			std::tie (m1, m2, m3, m4, m5, m6, m7, m8, m9, m10) = hu.getWeightedSpatialMoments();
+			r.fvals[WEIGHTED_SPAT_MOMENT_00][0] = m1;
+			r.fvals[WEIGHTED_SPAT_MOMENT_01][0] = m2;
+			r.fvals[WEIGHTED_SPAT_MOMENT_02][0] = m3;
+			r.fvals[WEIGHTED_SPAT_MOMENT_03][0] = m4;
+			r.fvals[WEIGHTED_SPAT_MOMENT_10][0] = m5;
+			r.fvals[WEIGHTED_SPAT_MOMENT_11][0] = m6;
+			r.fvals[WEIGHTED_SPAT_MOMENT_12][0] = m7;
+			r.fvals[WEIGHTED_SPAT_MOMENT_20][0] = m8;
+			r.fvals[WEIGHTED_SPAT_MOMENT_21][0] = m9;
+			r.fvals[WEIGHTED_SPAT_MOMENT_30][0] = m10;
+
 			std::tie (m1, m2, m3, m4, m5, m6, m7) = hu.getCentralMoments();
 			r.fvals[CENTRAL_MOMENT_02][0] = m1;
 			r.fvals[CENTRAL_MOMENT_03][0] = m2;
@@ -1145,6 +1174,15 @@ void reduce (int nThr, int min_online_roi_size)
 			r.fvals[CENTRAL_MOMENT_21][0] = m6;
 			r.fvals[CENTRAL_MOMENT_30][0] = m7;
 			
+			std::tie(m1, m2, m3, m4, m5, m6, m7) = hu.getWeightedCentralMoments();
+			r.fvals[WEIGHTED_CENTRAL_MOMENT_02][0] = m1;
+			r.fvals[WEIGHTED_CENTRAL_MOMENT_03][0] = m2;
+			r.fvals[WEIGHTED_CENTRAL_MOMENT_11][0] = m3;
+			r.fvals[WEIGHTED_CENTRAL_MOMENT_12][0] = m4;
+			r.fvals[WEIGHTED_CENTRAL_MOMENT_20][0] = m5;
+			r.fvals[WEIGHTED_CENTRAL_MOMENT_21][0] = m6;
+			r.fvals[WEIGHTED_CENTRAL_MOMENT_30][0] = m7;
+
 			std::tie (m1, m2, m3, m4, m5, m6, m7) = hu.getNormCentralMoments();
 			r.fvals[NORM_CENTRAL_MOMENT_02][0] = m1;
 			r.fvals[NORM_CENTRAL_MOMENT_03][0] = m2;
@@ -1171,6 +1209,15 @@ void reduce (int nThr, int min_online_roi_size)
 			r.fvals[HU_M5][0] = m5;
 			r.fvals[HU_M6][0] = m6;
 			r.fvals[HU_M7][0] = m7;
+
+			std::tie (m1, m2, m3, m4, m5, m6, m7) = hu.getWeightedHuMoments();
+			r.fvals[WEIGHTED_HU_M1][0] = m1;
+			r.fvals[WEIGHTED_HU_M2][0] = m2;
+			r.fvals[WEIGHTED_HU_M3][0] = m3;
+			r.fvals[WEIGHTED_HU_M4][0] = m4;
+			r.fvals[WEIGHTED_HU_M5][0] = m5;
+			r.fvals[WEIGHTED_HU_M6][0] = m6;
+			r.fvals[WEIGHTED_HU_M7][0] = m7;
 		}
 	}
 
