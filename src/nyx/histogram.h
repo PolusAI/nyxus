@@ -73,9 +73,28 @@ public:
 			(bins [idx]) ++;
 
 			// 2
-			U.push_back(h); //XXX	U.insert (h);
+			U.push_back(h); 
 		}
+	}
 
+	void initialize(HistoItem min_value, HistoItem max_value, std::vector<HistoItem> raw_data)
+	{
+		// Cache min/max
+		minVal = min_value;
+		maxVal = max_value;
+
+		// Build the histogram
+		binW = double(maxVal - minVal) / double(N_HISTO_BINS);
+		for (auto h : raw_data)
+		{
+			// 1
+			double realIdx = double(h - minVal) / binW;
+			int idx = std::isnan(realIdx) ? 0 : int(realIdx);
+			(bins[idx])++;
+
+			// 2
+			U.push_back(h); 
+		}
 	}
 
 	// Returns

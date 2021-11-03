@@ -22,6 +22,7 @@
 #include "hu.h"
 #include "timing.h"
 #include "moments.h"
+#include "RoiRadius.h"
 
 
 constexpr int N2R = 100 * 1000;
@@ -187,13 +188,15 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		double mean_ = 0.0;
 		double energy = 0.0;
 		double cen_x = 0.0, 
-			cen_y = 0.0;
+			cen_y = 0.0, 
+			integInten = 0.0;
 		for (auto& px : lr.raw_pixels)
 		{
 			mean_ += px.inten;
 			energy += px.inten * px.inten;
 			cen_x += px.x;
 			cen_y += px.y;
+			integInten += px.inten;
 		}
 		mean_ /= n;
 		lr.fvals[MEAN][0] = mean_;
@@ -201,6 +204,7 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		lr.fvals[ROOT_MEAN_SQUARED][0] = sqrt (lr.fvals[ENERGY][0] / n);
 		lr.fvals[CENTROID_X][0] = cen_x;
 		lr.fvals[CENTROID_Y][0] = cen_y;
+		lr.fvals[INTEGRATED_INTENSITY][0] = integInten;
 
 		// --Compactness
 		Moments2 mom2;
@@ -224,6 +228,9 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		var /= n;
 		double stddev = sqrt(var);
 		lr.fvals[STANDARD_DEVIATION][0] = stddev; 
+
+		// --Standard error
+		lr.fvals[STANDARD_ERROR][0] = stddev / sqrt(n);
 
 		//==== Do not calculate features of all-blank intensities (to avoid NANs)
 		if (lr.intensitiesAllZero())
@@ -264,6 +271,10 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		lr.fvals[MODE][0] = mode_; 
 		lr.fvals[UNIFORMITY][0] = uniformity_; 
 
+		// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
+		double piu = (1.0 - double(lr.aux_max - lr.aux_min) / double(lr.aux_max + lr.aux_min)) * 100.0;
+		lr.fvals[UNIFORMITY_PIU][0] = piu;
+
 		// Skewness
 		//--Formula 1--	lr.fvals[SKEWNESS][0] = std::sqrt(n) * lr.aux_M3 / std::pow(lr.aux_M2, 1.5);
 		//--Formula 2-- skewness = 3 * (mean - median) / stddev
@@ -275,6 +286,12 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		// Kurtosis
 		//--Formula-- k1 = mean((x - mean(x)). ^ 4) / std(x). ^ 4
 		lr.fvals[KURTOSIS][0] = mom.kurtosis();
+
+		// Hyperskewness hs = E[x-mean].^5 / std(x).^5
+		lr.fvals[HYPERSKEWNESS][0] = mom.hyperskewness ();
+
+		// Hyperflatness hf = E[x-mean].^6 / std(x).^6
+		lr.fvals[HYPERFLATNESS][0] = mom.hyperflatness ();
 
 		//==== Basic morphology :: Bounding box
 		// --
@@ -313,6 +330,12 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 			lr.fvals[WEIGHTED_CENTROID_X][0] = 0.0;
 			lr.fvals[WEIGHTED_CENTROID_Y][0] = 0.0;
 		}
+
+		// --Mass displacement (The distance between the centers of gravity in the gray-level representation of the object and the binary representation of the object.)
+		double dx = lr.fvals[WEIGHTED_CENTROID_X][0] - lr.fvals[CENTROID_X][0],
+			dy = lr.fvals[WEIGHTED_CENTROID_Y][0] - lr.fvals[CENTROID_Y][0], 
+			dist = std::sqrt (dx*dx + dy*dy);
+		lr.fvals[MASS_DISPLACEMENT][0] = dist;
 
 		//==== Basic morphology :: Extent
 		lr.fvals[EXTENT][0] = n / lr.aabb.get_area();
@@ -901,6 +924,34 @@ void reduce (int nThr, int min_online_roi_size)
 			auto [geoLen, thick] = glt.calculate(r.raw_pixels.size(), (StatsInt)r.fvals[PERIMETER][0]);
 			r.fvals[GEODETIC_LENGTH][0] = geoLen;
 			r.fvals[THICKNESS][0] = thick;
+		}
+	}
+
+	//==== ROI radius
+	if (theFeatureSet.anyEnabled({
+		ROI_RADIUS_MEAN,
+		ROI_RADIUS_MAX,
+		ROI_RADIUS_MEDIAN
+		}))
+	{
+		STOPWATCH("ROI radius min/max/median ...", "\tROI radius");
+		for (auto& ld : labelData)
+		{
+			auto& r = ld.second;
+			// Prepare the contour if necessary
+			if (r.contour.contour_pixels.size() == 0)
+			{
+				ImageMatrix im(r.raw_pixels, r.aabb);
+				r.contour.calculate(im);
+			}
+
+			RoiRadius roir;
+			roir.initialize (r.raw_pixels, r.contour.contour_pixels);
+			auto [mean_r, max_r, median_r] = roir.get_min_max_median_radius();
+
+			r.fvals[ROI_RADIUS_MEAN][0] = mean_r;
+			r.fvals[ROI_RADIUS_MAX][0] = max_r;
+			r.fvals[ROI_RADIUS_MEDIAN][0] = median_r;
 		}
 	}
 

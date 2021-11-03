@@ -9,7 +9,7 @@
 
 class Moments4 {
 private:
-    double _min, _max, _mean, M2, M3, M4;
+    double _min, _max, _mean, M2, M3, M4, M5, M6;
     size_t _n;
 
 public:
@@ -30,6 +30,8 @@ public:
         M4 = M4 + term1 * delta_n2 * (_n * _n - 3 * _n + 3) + 6 * delta_n2 * M2 - 4 * delta_n * M3;
         M3 = M3 + term1 * delta_n * (_n - 2) - 3 * delta_n * M2;
         M2 = M2 + term1;
+        M5 = M4 * delta;
+        M6 = M4 * delta;
 
         if (x > _max) _max = x;
         if (x < _min) _min = x;
@@ -45,6 +47,8 @@ public:
     double skewness() const { return (_n > 3 ? (sqrt(_n) * M3) / pow(M2, 1.5) : 0.0); }
     double kurtosis() const { return (_n > 4 ? (_n * M4) / (M2 * M2) : 0.0); } // matlab does not subtract 3
     void momentVector(double* z) { z[0] = mean(); z[1] = std(); z[2] = skewness(); z[3] = kurtosis(); }
+    double hyperskewness() const { return (_n > 5 ? (_n * M4) / (pow(M2, 5./2.)) : 0.0); }
+    double hyperflatness() const { return (_n > 6 ? (_n * M5) / (M2*M2*M2) : 0.0); }
 };
 
 class Moments2 {

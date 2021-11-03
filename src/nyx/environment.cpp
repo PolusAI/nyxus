@@ -519,14 +519,19 @@ int Environment::parse_cmdline(int argc, char** argv)
         if (s == FEA_NICK_ALL_INTENSITY)
         {
             auto F = {
+                INTEGRATED_INTENSITY, 
                 MEAN,
                 MEDIAN,
                 MIN,
                 MAX,
                 RANGE,
                 STANDARD_DEVIATION,
+                STANDARD_ERROR,
+                UNIFORMITY,
                 SKEWNESS,
                 KURTOSIS,
+                HYPERSKEWNESS, 
+                HYPERFLATNESS, 
                 MEAN_ABSOLUTE_DEVIATION,
                 ENERGY,
                 ROOT_MEAN_SQUARED,
@@ -537,7 +542,8 @@ int Environment::parse_cmdline(int argc, char** argv)
                 INTERQUARTILE_RANGE,
                 ROBUST_MEAN_ABSOLUTE_DEVIATION,
                 WEIGHTED_CENTROID_Y,
-                WEIGHTED_CENTROID_X
+                WEIGHTED_CENTROID_X, 
+                MASS_DISPLACEMENT
             };
             theFeatureSet.enableFeatures(F);
             continue;

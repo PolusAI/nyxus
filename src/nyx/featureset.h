@@ -5,25 +5,31 @@
 enum AvailableFeatures
 {
 	// Pixel intensity stats
-	MEAN = 0, 
+	INTEGRATED_INTENSITY = 0,
+	MEAN, 
 	MEDIAN,  
 	MIN,  
 	MAX,  
 	RANGE,  
 	STANDARD_DEVIATION,  
+	STANDARD_ERROR,
 	SKEWNESS,  
 	KURTOSIS,  
+	HYPERSKEWNESS, 
+	HYPERFLATNESS, 
 	MEAN_ABSOLUTE_DEVIATION,  
 	ENERGY,  
 	ROOT_MEAN_SQUARED,  
 	ENTROPY,  
 	MODE,  
 	UNIFORMITY,  
-	P01, P10, P25, P75, P90, P99, 
+	UNIFORMITY_PIU,
+	P01, P10, P25, P75, P90, P99,
 	INTERQUARTILE_RANGE,   
 	ROBUST_MEAN_ABSOLUTE_DEVIATION,   
 	WEIGHTED_CENTROID_Y,   
 	WEIGHTED_CENTROID_X,  
+	MASS_DISPLACEMENT,
 
 	// Morphology:
 	AREA_PIXELS_COUNT,
@@ -114,6 +120,10 @@ enum AvailableFeatures
 	DIAMETER_INSCRIBING_CIRCLE,  
 	GEODETIC_LENGTH,  
 	THICKNESS,
+
+	ROI_RADIUS_MEAN,
+	ROI_RADIUS_MAX,
+	ROI_RADIUS_MEDIAN,
 
 	// GLCM:
 	TEXTURE_ANGULAR2NDMOMENT,
@@ -314,7 +324,8 @@ public:
 		m_enabledFeatures[INTERQUARTILE_RANGE] =
 		m_enabledFeatures[ROBUST_MEAN_ABSOLUTE_DEVIATION] =
 		m_enabledFeatures[WEIGHTED_CENTROID_Y] =
-		m_enabledFeatures[WEIGHTED_CENTROID_X] = true;
+		m_enabledFeatures[WEIGHTED_CENTROID_X] = 
+		m_enabledFeatures[MASS_DISPLACEMENT] = true;
 	}
 	void enableBoundingBox() {
 		enableAll(false);
