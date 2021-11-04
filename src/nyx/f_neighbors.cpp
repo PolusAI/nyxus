@@ -108,7 +108,7 @@ void reduce_neighbors (int radius)
 	// Broad phase of collision detection
 	for (auto& bin : HT)
 	{
-		// No need to bother about not colliding labels
+		// No need to bother about not colliding ROIs
 		if (bin.size() <= 1)
 			continue;
 
@@ -125,12 +125,106 @@ void reduce_neighbors (int radius)
 					bool overlap = !aabbNoOverlap(r1, r2, radius);
 					if (overlap)
 					{
-						r1.fvals[NUM_NEIGHBORS][0]++; // r1.num_neighbors++;
-						r2.fvals[NUM_NEIGHBORS][0]++; // r2.num_neighbors++;
+						// l1's neighbors
+						r1.fvals [NUM_NEIGHBORS][0]++; 
+						r1.aux_neighboring_labels.push_back(l2);
+
+						// l2's neighbors
+						r2.fvals [NUM_NEIGHBORS][0]++; 
+						r2.aux_neighboring_labels.push_back(l1);
 					}
 				}
 			}
 		}
+	}
+
+	// Closest neighbors
+	for (auto l : uniqueLabels)
+	{
+		LR& r = labelData[l];
+		int n_neigs = int(r.fvals[NUM_NEIGHBORS][0]);
+
+		// Any neighbors of this ROI ?
+		if (n_neigs == 0)
+			continue;
+
+		double cenx = r.fvals[CENTROID_X][0],
+			ceny = r.fvals[CENTROID_Y][0];
+		
+		std::vector<double> dists;
+		for (auto l_neig : r.aux_neighboring_labels)
+		{
+			LR& r_neig = labelData[l_neig];
+			double cenx_n = r_neig.fvals[CENTROID_X][0],
+				ceny_n = r_neig.fvals[CENTROID_Y][0],
+				dx = cenx - cenx_n,
+				dy = ceny - ceny_n,
+				dist = dx * dx + dy * dy;
+			dists.push_back(dist);
+		}
+
+		// Find idx of minimum
+		auto ite1st = std::min_element (dists.begin(), dists.end());
+		auto closest_1_idx = std::distance (dists.begin(), ite1st);
+		auto closest1label = r.aux_neighboring_labels [closest_1_idx];
+
+		// Save distance to neighbor #1
+		r.fvals[CLOSEST_NEIGHBOR1_DIST][0] = dists[closest_1_idx];
+
+		// Save angle with neighbor #1
+		LR& r1 = labelData[closest1label];
+		r.fvals[CLOSEST_NEIGHBOR1_ANG][0] = angle(cenx, ceny, r1.fvals[CENTROID_X][0], r1.fvals[CENTROID_X][0]);
+
+		// Find idx of 2nd minimum
+		if (n_neigs > 1)
+		{
+			auto lambSkip1st = [&ite1st](double a, double b) 
+			{ 
+				return ((b != (*ite1st)) && (a > b)); 
+			};
+			auto ite2nd = std::min_element (dists.begin(), dists.end(), lambSkip1st);
+			auto closest_2_idx = std::distance(dists.begin(), ite2nd);
+			auto closest2label = r.aux_neighboring_labels[closest_2_idx];
+		
+			// Save distance to neighbor #2
+			r.fvals[CLOSEST_NEIGHBOR2_DIST][0] = dists[closest_2_idx];
+
+			// Save angle with neighbor #2
+			LR& r2 = labelData[closest2label];
+			r.fvals[CLOSEST_NEIGHBOR2_ANG][0] = angle(cenx, ceny, r2.fvals[CENTROID_X][0], r2.fvals[CENTROID_X][0]);
+		}
+	}
+
+	// Angle between neigbors
+	Moments2 mom2;
+	std::vector<int> anglesRounded;
+	for (auto l : uniqueLabels)
+	{
+		LR& r = labelData[l];
+		int n_neigs = int(r.fvals[NUM_NEIGHBORS][0]);
+
+		// Any neighbors of this ROI ?
+		if (n_neigs == 0)
+			continue;
+
+		double cenx = r.fvals[CENTROID_X][0],
+			ceny = r.fvals[CENTROID_Y][0];
+
+		// Iterate all the neighbors
+		for (auto l_neig : r.aux_neighboring_labels)
+		{
+			LR& r_neig = labelData[l_neig];
+			double cenx_n = r_neig.fvals[CENTROID_X][0],
+				ceny_n = r_neig.fvals[CENTROID_Y][0];
+
+			double ang = angle(cenx, ceny, cenx_n, ceny_n);
+			mom2.add(ang);
+			anglesRounded.push_back ((int)ang);
+		}
+
+		r.fvals[ANG_BW_NEIGHBORS_MEAN][0] = mom2.mean();
+		r.fvals[ANG_BW_NEIGHBORS_STDDEV][0] = mom2.std();
+		r.fvals[ANG_BW_NEIGHBORS_MODE][0] = mode(anglesRounded);
 	}
 }
 

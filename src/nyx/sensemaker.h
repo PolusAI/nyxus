@@ -219,6 +219,8 @@ struct LR
 		aux_M4, 
 		aux_variance;
 
+	std::vector<int> aux_neighboring_labels;
+
 	void init_aabb (StatsInt x, StatsInt y);
 	void update_aabb (StatsInt x, StatsInt y);
 
@@ -248,3 +250,45 @@ extern std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
 
 // System resources
 unsigned long long getAvailPhysMemory();
+
+// Geometry
+inline double angle (const double x1, const double y1, double x2, const double y2)
+{
+	double dotProd = x1*x2 + y1*y2,
+		magThis = std::sqrt(x1*x1 + y1*y1),
+		magOther = std::sqrt(x2*x2 + y2*y2),
+		cosVal = dotProd / (magThis * magOther),
+		ang = std::acos(cosVal);
+	return ang;
+}
+
+
+// Statistics
+inline int mode(const std::vector<int> & v)
+{
+	int max = v.back();
+	int min = v.front();
+	int prev = max;
+	int mode;
+	int maxcount = 0;
+	int currcount = 0;
+	for (const auto n : v) 
+	{
+		if (n == prev) 
+		{
+			++currcount;
+			if (currcount > maxcount) 
+			{
+				maxcount = currcount;
+				mode = n;
+			}
+		}
+		else 
+		{
+			currcount = 1;
+		}
+		prev = n;
+	}
+
+	return mode;
+}

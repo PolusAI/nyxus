@@ -656,14 +656,14 @@ void reduce (int nThr, int min_online_roi_size)
 	}
 
 	//==== Neighbors
-	if (theFeatureSet.isEnabled(NUM_NEIGHBORS))
+	if (theFeatureSet.anyEnabled({ NUM_NEIGHBORS, CLOSEST_NEIGHBOR1_DIST, CLOSEST_NEIGHBOR2_DIST }))
 	{
 		STOPWATCH("Neighbors ...", "\tReduced neighbors");
 		reduce_neighbors (5 /* collision radius [pixels] */);
 	}
 
 	//==== Fitting an ellipse
-	if (theFeatureSet.anyEnabled({ MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION } ))
+	if (theFeatureSet.anyEnabled({ MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION, ROUNDNESS } ))
 	{
 		STOPWATCH("Ellipticity et al ...", "\tReduced ellipticity - MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION");
 		// 
@@ -718,6 +718,7 @@ void reduce (int nThr, int min_online_roi_size)
 			r.fvals[MINOR_AXIS_LENGTH][0] = MinorAxisLength;
 			r.fvals[ECCENTRICITY][0] = Eccentricity;
 			r.fvals[ORIENTATION][0] = Orientation;
+			r.fvals[ROUNDNESS][0] = (4 * r.fvals[AREA_PIXELS_COUNT][0]) / (M_PI * MajorAxisLength);
 		}
 	}
 

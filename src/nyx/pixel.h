@@ -162,5 +162,14 @@ struct Pixel2 : public Point2i
 		return { mind, maxd };
 	}
 
+	double angle(const Pixel2& other) const
+	{
+		double dotProd = double(this->x * other.x) + double(this->y * other.y),
+			magThis = std::sqrt(this->x * this->x + this->y * this->y),
+			magOther = std::sqrt(other.x * other.x + other.y * other.y),
+			cosVal = dotProd / (magThis * magOther),
+			ang = std::acos(cosVal);
+		return ang;
+	}
 };
 
