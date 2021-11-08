@@ -500,19 +500,19 @@ int Environment::parse_cmdline(int argc, char** argv)
         {
             theFeatureSet.enableAll();
             auto F = {
-                TEXTURE_ANGULAR2NDMOMENT,
-                TEXTURE_CONTRAST,
-                TEXTURE_CORRELATION,
-                TEXTURE_VARIANCE,
-                TEXTURE_INVERSEDIFFERENCEMOMENT,
-                TEXTURE_SUMAVERAGE,
-                TEXTURE_SUMVARIANCE,
-                TEXTURE_SUMENTROPY,
-                TEXTURE_ENTROPY,
-                TEXTURE_DIFFERENCEVARIANCE,
-                TEXTURE_DIFFERENCEENTROPY,
-                TEXTURE_INFOMEAS1,
-                TEXTURE_INFOMEAS2 };
+                GLCM_ANGULAR2NDMOMENT,
+                GLCM_CONTRAST,
+                GLCM_CORRELATION,
+                GLCM_VARIANCE,
+                GLCM_INVERSEDIFFERENCEMOMENT,
+                GLCM_SUMAVERAGE,
+                GLCM_SUMVARIANCE,
+                GLCM_SUMENTROPY,
+                GLCM_ENTROPY,
+                GLCM_DIFFERENCEVARIANCE,
+                GLCM_DIFFERENCEENTROPY,
+                GLCM_INFOMEAS1,
+                GLCM_INFOMEAS2 };
             theFeatureSet.disableFeatures(F);
             break;  // No need to bother of others
         }
@@ -596,19 +596,19 @@ int Environment::parse_cmdline(int argc, char** argv)
         if (s == FEA_NICK_ALL_GLCM)
         {
             auto F = {
-                TEXTURE_ANGULAR2NDMOMENT,
-                TEXTURE_CONTRAST,
-                TEXTURE_CORRELATION,
-                TEXTURE_VARIANCE,
-                TEXTURE_INVERSEDIFFERENCEMOMENT,
-                TEXTURE_SUMAVERAGE,
-                TEXTURE_SUMVARIANCE,
-                TEXTURE_SUMENTROPY,
-                TEXTURE_ENTROPY,
-                TEXTURE_DIFFERENCEVARIANCE,
-                TEXTURE_DIFFERENCEENTROPY,
-                TEXTURE_INFOMEAS1,
-                TEXTURE_INFOMEAS2 
+                GLCM_ANGULAR2NDMOMENT,
+                GLCM_CONTRAST,
+                GLCM_CORRELATION,
+                GLCM_VARIANCE,
+                GLCM_INVERSEDIFFERENCEMOMENT,
+                GLCM_SUMAVERAGE,
+                GLCM_SUMVARIANCE,
+                GLCM_SUMENTROPY,
+                GLCM_ENTROPY,
+                GLCM_DIFFERENCEVARIANCE,
+                GLCM_DIFFERENCEENTROPY,
+                GLCM_INFOMEAS1,
+                GLCM_INFOMEAS2 
             };
             theFeatureSet.enableFeatures (F);
             continue;

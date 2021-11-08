@@ -10,6 +10,7 @@
 #include "virtual_file_tile_channel_loader.h"
 #include "environment.h"
 #include "sensemaker.h"
+#include "timing.h"
 
 
 // Sanity
@@ -221,6 +222,8 @@ int processDataset (
 		
 		#ifdef CHECKTIMING
 		std::cout << "\tTiming of sensemaker::reduce [s] " << elapsed2.count() << std::endl;
+
+		Stopwatch::print_totals();
 		#endif
 
 		totalFeatureReduceTime += elapsed2.count();

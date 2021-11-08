@@ -3,13 +3,19 @@
 #include <chrono>
 #include <iostream>
 #include <string>
+#include <map>
 
 class Stopwatch
 {
 public:
-	Stopwatch (const std::string& header, const std::string & tail)
+	Stopwatch (const std::string& header_, const std::string & tail_)
 	{
-		summary_text = tail;
+		header = header_;
+		tail = tail_;
+
+		if (totals.find(header) == totals.end())
+			totals[header] = 0.0;
+
 		start = std::chrono::system_clock::now();
 		if (header.length() > 0)
 			std::cout << header << "\n";
@@ -18,11 +24,20 @@ public:
 	{
 		end = std::chrono::system_clock::now();
 		std::chrono::duration<double, std::micro> elap = end - start;
-		std::cout << summary_text << " " << elap.count() << " us\n";
+		std::cout << tail << " " << elap.count() << " us\n";
+		totals[header] = totals[header] + elap.count();
+	}
+	static void print_totals()
+	{
+		std::cout << "Totals\n" << "--------\n";
+		for (auto& t : totals)
+			std::cout << t.first << " : " << t.second << "\n";
+		std::cout << "--------\n";
 	}
 protected:
-	std::string summary_text;
+	std::string header, tail;
 	std::chrono::time_point<std::chrono::system_clock> start, end;
+	static std::map <std::string, double> totals;
 };
 
 #ifdef CHECKTIMING

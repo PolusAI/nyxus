@@ -107,7 +107,11 @@ public:
 	//	[9] uniformity
 	std::tuple<double, HistoItem, double, double, double, double, double, double, double, double, double, double> get_stats()
 	{
-		double median = get_median (U); //xxx	 get_median(U);
+		// Do we have a trivial dataset?
+		if (U.size() == 0)
+			return {0., 0, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.};
+
+		double median = get_median (U); 
 		HistoItem mode = get_mode(U);
 
 		double p1 = 0, p10 = 0, p25 = 0, p75 = 0, p90 = 0, p99 = 0, iqr = 0, rmad = 0, entropy = 0, uniformity = 0;

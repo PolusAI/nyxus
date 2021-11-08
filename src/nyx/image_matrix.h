@@ -6,6 +6,7 @@
 #include "pixel.h"
 #include "aabb.h"
 #include "moments.h"
+#include "helpers.h"
 
 // functor to call add on a reference using the () operator
 // for example, using Eigen: ReadablePixels().unaryExpr (Moments4func(stats)).sum();
@@ -227,6 +228,12 @@ public:
 	// Based on X.Shu, Q.Zhang, J.Shi and Y.Qi - "A Comparative Study on Weighted Central Moment and Its Application in 2D Shape Retrieval" (2016) https://pdfs.semanticscholar.org/8927/2bef7ba9496c59081ae102925ebc0134bceb.pdf
 	void apply_distance_to_contour_weights(const std::vector<Pixel2>& raw_pixels, const std::vector<Pixel2>& contour_pixels);
 
+	// Returns chord length at x
+	int get_chlen(int col);
+
+	// Support of fractal dimension calculation
+	bool tile_contains_signal (int tile_row, int tile_col, int tile_side);
+
 	// min, max, mean, std computed in single pass, median in separate pass
 	Moments2 stats;
 
@@ -240,4 +247,31 @@ public:
 	// hilight_x|y = -1 means no gilight
 	using PrintablePoint = std::tuple<int, int, std::string>;
 	void print(const std::string& head = "", const std::string& tail = "", std::vector<PrintablePoint> special_points = {});
+};
+
+class Power2PaddedImageMatrix : public ImageMatrix
+{
+public:
+	Power2PaddedImageMatrix(const std::vector <Pixel2>& labels_raw_pixels, const AABB& aabb):
+		ImageMatrix ()
+	{
+		original_aabb = aabb;
+
+		int bigSide = std::max(aabb.get_width(), aabb.get_height());
+		StatsInt paddedSide = closest_pow2 (bigSide);
+		allocate (paddedSide, paddedSide);
+
+		int padOffsetX = (paddedSide - original_aabb.get_width()) / 2;
+		int padOffsetY = (paddedSide - original_aabb.get_height()) / 2;
+
+		// Read pixels
+		for (auto& pxl : labels_raw_pixels)
+		{
+			auto x = pxl.x - original_aabb.get_xmin() + padOffsetX,
+				y = pxl.y - original_aabb.get_ymin() + padOffsetY;
+			_pix_plane[y * width + x] = pxl.inten;
+		}
+	}
+protected:
+
 };

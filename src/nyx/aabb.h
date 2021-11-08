@@ -29,8 +29,8 @@ public:
 		ymin = std::min(ymin, y);
 		ymax = std::max(ymax, y);
 	}
-	StatsInt get_height() { return ymax - ymin + 1; }
-	StatsInt get_width() { return xmax - xmin + 1; }
+	StatsInt get_height() const { return ymax - ymin + 1; }
+	StatsInt get_width() const { return xmax - xmin + 1; }
 	StatsInt get_area() { return get_width() * get_height(); }
 	inline StatsInt get_xmin() { return xmin; }
 	inline StatsInt get_xmax() { return xmax; }

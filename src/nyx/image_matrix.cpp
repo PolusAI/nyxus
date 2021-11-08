@@ -243,3 +243,50 @@ void ImageMatrix::apply_distance_to_contour_weights (const std::vector<Pixel2>& 
 		_pix_plane(r,c) = wi;
 	}
 }
+
+// Returns chord length at x
+int ImageMatrix::get_chlen (int col)
+{
+	bool noSignal = true;
+	int chlen = 0, maxChlen = 0;
+
+	for (int row = 0; row < height; row++)
+	{
+		if (noSignal)
+		{
+			if (_pix_plane(row, col) != 0)
+			{
+				// begin tracking a new chord
+				noSignal = false;
+				chlen = 1;
+			}
+		}
+		else // in progress tracking a signal
+		{
+			if (_pix_plane(row, col) != 0)
+				chlen++;	// signal continues
+			else
+			{
+				// signal has ended
+				maxChlen = std::max(maxChlen, chlen);
+				chlen = 0;
+				noSignal = true;
+			}
+		}
+	}
+
+	return maxChlen;
+}
+
+bool ImageMatrix::tile_contains_signal (int tile_row, int tile_col, int tile_side)
+{
+	int r1 = tile_row * tile_side,
+		r2 = r1 + tile_side,
+		c1 = tile_col * tile_side,
+		c2 = c1 + tile_side;
+	for (int r = r1; r < r2; r++)
+		for (int c = c1; c < c2; c++)
+			if (_pix_plane(r, c) != 0)
+				return true;
+	return false;
+}

@@ -10,7 +10,9 @@
 #include <thread>
 #include <future>
 #include <sstream>
+#include "chords.h"
 #include "environment.h"
+#include "fractal_dim.h"
 #include "sensemaker.h"
 #include "f_erosion_pixels.h"
 #include "f_radial_distribution.h"
@@ -23,6 +25,7 @@
 #include "timing.h"
 #include "moments.h"
 #include "RoiRadius.h"
+
 
 
 constexpr int N2R = 100 * 1000;
@@ -388,7 +391,7 @@ void parallelReduceConvHull (size_t start, size_t end, std::vector<int>* ptrLabe
 	}
 }
 
-void parallelReduceErosionPixels (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void parallelReduceErosions (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -402,7 +405,26 @@ void parallelReduceErosionPixels (size_t start, size_t end, std::vector<int>* pt
 		// Calculate feature
 		ImageMatrix im(r.raw_pixels, r.aabb);
 		ErosionPixels epix;
-		r.fvals[EROSION_PIXELS][0] = epix.calc_feature(im);
+		r.fvals[EROSIONS_2_VANISH][0] = epix.calc_feature(im);
+	}
+}
+
+void parallelReduceFractalDimension (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR & r = (*ptrLabelData)[lab];
+
+		// Skip calculation in case of bad data
+		if ((int)r.fvals[MIN][0] == (int)r.fvals[MAX][0])
+			continue;
+
+		// Calculate feature
+		FractalDimension fd;
+		fd.initialize(r.raw_pixels, r.aabb);
+		r.fvals[FRACT_DIM_BOXCOUNT][0] = fd.get_box_count_fd();
+		r.fvals[FRACT_DIM_PERIMETER][0] = fd.get_perimeter_fd();
 	}
 }
 
@@ -479,6 +501,50 @@ void parallelReduceNassenstein (size_t start, size_t end, std::vector<int>* ptrL
 	}
 }
 
+void parallelReduceChords (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR & r = (*ptrLabelData)[lab];
+
+		Chords chords;
+		double cenx = r.fvals[CENTROID_X][0],
+			ceny = r.fvals[CENTROID_Y][0];
+		chords.initialize(r.raw_pixels, r.aabb, cenx, ceny);
+
+		double
+			_max = 0,
+			_min = 0,
+			_median = 0,
+			_mean = 0,
+			_mode = 0,
+			_stddev = 0,
+			_min_angle = 0,
+			_max_angle = 0;
+
+		std::tie (_max, _min, _median, _mean, _mode, _stddev, _min_angle, _max_angle) = chords.get_maxchords_stats();
+		r.fvals[MAXCHORDS_MAX][0] = _max;
+		r.fvals[MAXCHORDS_MAX_ANG][0] = _max_angle;
+		r.fvals[MAXCHORDS_MIN][0] = _min;
+		r.fvals[MAXCHORDS_MIN_ANG][0] = _min_angle;
+		r.fvals[MAXCHORDS_MEDIAN][0] = _median;
+		r.fvals[MAXCHORDS_MEAN][0] = _mean;
+		r.fvals[MAXCHORDS_MODE][0] = _mode;
+		r.fvals[MAXCHORDS_STDDEV][0] = _stddev;
+
+		std::tie(_max, _min, _median, _mean, _mode, _stddev, _min_angle, _max_angle) = chords.get_allchords_stats();
+		r.fvals[ALLCHORDS_MAX][0] = _max;
+		r.fvals[ALLCHORDS_MAX_ANG][0] = _max_angle;
+		r.fvals[ALLCHORDS_MIN][0] = _min;
+		r.fvals[ALLCHORDS_MIN_ANG][0] = _min_angle;
+		r.fvals[ALLCHORDS_MEDIAN][0] = _median;
+		r.fvals[ALLCHORDS_MEAN][0] = _mean;
+		r.fvals[ALLCHORDS_MODE][0] = _mode;
+		r.fvals[ALLCHORDS_STDDEV][0] = _stddev;
+	}
+}
+
 void parallelReduceHaralick2D (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
@@ -494,38 +560,38 @@ void parallelReduceHaralick2D (size_t start, size_t end, std::vector<int>* ptrLa
 			0.0,			// distance,
 			// out
 			texture_Feature_Angles,
-			r.fvals[TEXTURE_ANGULAR2NDMOMENT], // .texture_AngularSecondMoments,
-			r.fvals[TEXTURE_CONTRAST], // .texture_Contrast,
-			r.fvals[TEXTURE_CORRELATION], // .texture_Correlation,
-			r.fvals[TEXTURE_VARIANCE], // .texture_Variance,
-			r.fvals[TEXTURE_INVERSEDIFFERENCEMOMENT], // .texture_InverseDifferenceMoment,
-			r.fvals[TEXTURE_SUMAVERAGE], // .texture_SumAverage,
-			r.fvals[TEXTURE_SUMVARIANCE], // .texture_SumVariance,
-			r.fvals[TEXTURE_SUMENTROPY], // .texture_SumEntropy,
-			r.fvals[TEXTURE_ENTROPY], // .texture_Entropy,
-			r.fvals[TEXTURE_DIFFERENCEVARIANCE], // .texture_DifferenceVariance,
-			r.fvals[TEXTURE_DIFFERENCEENTROPY], // .texture_DifferenceEntropy,
-			r.fvals[TEXTURE_INFOMEAS1], // .texture_InfoMeas1,
-			r.fvals[TEXTURE_INFOMEAS2]); // .texture_InfoMeas2);
+			r.fvals[GLCM_ANGULAR2NDMOMENT], 
+			r.fvals[GLCM_CONTRAST], 
+			r.fvals[GLCM_CORRELATION], 
+			r.fvals[GLCM_VARIANCE], 
+			r.fvals[GLCM_INVERSEDIFFERENCEMOMENT], 
+			r.fvals[GLCM_SUMAVERAGE], 
+			r.fvals[GLCM_SUMVARIANCE], 
+			r.fvals[GLCM_SUMENTROPY], 
+			r.fvals[GLCM_ENTROPY], 
+			r.fvals[GLCM_DIFFERENCEVARIANCE], 
+			r.fvals[GLCM_DIFFERENCEENTROPY], 
+			r.fvals[GLCM_INFOMEAS1], 
+			r.fvals[GLCM_INFOMEAS2]); 
 
 		// Fix calculated feature values due to all-0 intensity labels to avoid NANs in the output
 		if (r.intensitiesAllZero())
 		{
 			for (int i = 0; i < texture_Feature_Angles.size(); i++)
 			{
-				r.fvals[TEXTURE_ANGULAR2NDMOMENT][i] =
-					r.fvals[TEXTURE_CONTRAST][i] =
-					r.fvals[TEXTURE_CORRELATION][i] =
-					r.fvals[TEXTURE_VARIANCE][i] =
-					r.fvals[TEXTURE_INVERSEDIFFERENCEMOMENT][i] =
-					r.fvals[TEXTURE_SUMAVERAGE][i] =
-					r.fvals[TEXTURE_SUMVARIANCE][i] =
-					r.fvals[TEXTURE_SUMENTROPY][i] =
-					r.fvals[TEXTURE_ENTROPY][i] =
-					r.fvals[TEXTURE_DIFFERENCEVARIANCE][i] =
-					r.fvals[TEXTURE_DIFFERENCEENTROPY][i] =
-					r.fvals[TEXTURE_INFOMEAS1][i] =
-					r.fvals[TEXTURE_INFOMEAS2][i] = 0.0;
+				r.fvals[GLCM_ANGULAR2NDMOMENT][i] =
+					r.fvals[GLCM_CONTRAST][i] =
+					r.fvals[GLCM_CORRELATION][i] =
+					r.fvals[GLCM_VARIANCE][i] =
+					r.fvals[GLCM_INVERSEDIFFERENCEMOMENT][i] =
+					r.fvals[GLCM_SUMAVERAGE][i] =
+					r.fvals[GLCM_SUMVARIANCE][i] =
+					r.fvals[GLCM_SUMENTROPY][i] =
+					r.fvals[GLCM_ENTROPY][i] =
+					r.fvals[GLCM_DIFFERENCEVARIANCE][i] =
+					r.fvals[GLCM_DIFFERENCEENTROPY][i] =
+					r.fvals[GLCM_INFOMEAS1][i] =
+					r.fvals[GLCM_INFOMEAS2][i] = 0.0;
 			}
 		}
 	}
@@ -895,6 +961,29 @@ void reduce (int nThr, int min_online_roi_size)
 		runParallel(parallelReduceNassenstein, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
+	//==== Chords
+	if (theFeatureSet.anyEnabled({ 
+		MAXCHORDS_MAX,
+		MAXCHORDS_MAX_ANG,
+		MAXCHORDS_MIN,
+		MAXCHORDS_MIN_ANG,
+		MAXCHORDS_MEDIAN,
+		MAXCHORDS_MEAN,
+		MAXCHORDS_MODE,
+		MAXCHORDS_STDDEV,
+		ALLCHORDS_MAX,
+		ALLCHORDS_MAX_ANG,
+		ALLCHORDS_MIN,
+		ALLCHORDS_MIN_ANG,
+		ALLCHORDS_MEDIAN,
+		ALLCHORDS_MEAN,
+		ALLCHORDS_MODE,
+		ALLCHORDS_STDDEV, }))
+	{
+		STOPWATCH("Chords ...", "\tReduced chords");
+		runParallel(parallelReduceChords, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
+	}
+
 	{
 		STOPWATCH("Hexagonality, polygonality, enclosing circle, geodetic length & thickness ...", "\tReduced hexagonality, polygonality, enclosing circle, geodetic length & thickness");
 		for (auto& ld : labelData)
@@ -957,27 +1046,34 @@ void reduce (int nThr, int min_online_roi_size)
 	}
 
 	//==== Erosion pixels
-	if (theFeatureSet.isEnabled(EROSION_PIXELS))
+	if (theFeatureSet.anyEnabled({ EROSIONS_2_VANISH, EROSIONS_2_VANISH_COMPLEMENT }))
 	{
-		STOPWATCH("EROSION_PIXELS ...", "\tReduced EROSION_PIXELS");
-		runParallel (parallelReduceErosionPixels, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
+		STOPWATCH("Erosions...", "\tReduced Erosions");
+		runParallel (parallelReduceErosions, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}	
+
+	//==== Fractal dimension
+	if (theFeatureSet.anyEnabled({ FRACT_DIM_BOXCOUNT, FRACT_DIM_PERIMETER }))
+	{
+		STOPWATCH("Fractal dimension...", "\tReduced Fractal dimension");
+		runParallel (parallelReduceFractalDimension, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
+	}
 
 	//==== GLCM aka Haralick 2D 
 	if (theFeatureSet.anyEnabled({ 
-		TEXTURE_ANGULAR2NDMOMENT,
-		TEXTURE_CONTRAST,
-		TEXTURE_CORRELATION,
-		TEXTURE_VARIANCE,
-		TEXTURE_INVERSEDIFFERENCEMOMENT,
-		TEXTURE_SUMAVERAGE,
-		TEXTURE_SUMVARIANCE,
-		TEXTURE_SUMENTROPY,
-		TEXTURE_ENTROPY,
-		TEXTURE_DIFFERENCEVARIANCE,
-		TEXTURE_DIFFERENCEENTROPY,
-		TEXTURE_INFOMEAS1,
-		TEXTURE_INFOMEAS2 }))
+		GLCM_ANGULAR2NDMOMENT,
+		GLCM_CONTRAST,
+		GLCM_CORRELATION,
+		GLCM_VARIANCE,
+		GLCM_INVERSEDIFFERENCEMOMENT,
+		GLCM_SUMAVERAGE,
+		GLCM_SUMVARIANCE,
+		GLCM_SUMENTROPY,
+		GLCM_ENTROPY,
+		GLCM_DIFFERENCEVARIANCE,
+		GLCM_DIFFERENCEENTROPY,
+		GLCM_INFOMEAS1,
+		GLCM_INFOMEAS2 }))
 	{
 		STOPWATCH("Haralick2D ...", "\tReduced Haralick2D");
 		runParallel (parallelReduceHaralick2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);

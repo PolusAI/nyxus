@@ -88,19 +88,19 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 			// Parameterized feature
 			// --Texture family
 			bool textureFeature =
-				fcode == TEXTURE_ANGULAR2NDMOMENT ||
-				fcode == TEXTURE_CONTRAST ||
-				fcode == TEXTURE_CORRELATION ||
-				fcode == TEXTURE_VARIANCE ||
-				fcode == TEXTURE_INVERSEDIFFERENCEMOMENT ||
-				fcode == TEXTURE_SUMAVERAGE ||
-				fcode == TEXTURE_SUMVARIANCE ||
-				fcode == TEXTURE_SUMENTROPY ||
-				fcode == TEXTURE_ENTROPY ||
-				fcode == TEXTURE_DIFFERENCEVARIANCE ||
-				fcode == TEXTURE_DIFFERENCEENTROPY ||
-				fcode == TEXTURE_INFOMEAS1 ||
-				fcode == TEXTURE_INFOMEAS2;
+				fcode == GLCM_ANGULAR2NDMOMENT ||
+				fcode == GLCM_CONTRAST ||
+				fcode == GLCM_CORRELATION ||
+				fcode == GLCM_VARIANCE ||
+				fcode == GLCM_INVERSEDIFFERENCEMOMENT ||
+				fcode == GLCM_SUMAVERAGE ||
+				fcode == GLCM_SUMVARIANCE ||
+				fcode == GLCM_SUMENTROPY ||
+				fcode == GLCM_ENTROPY ||
+				fcode == GLCM_DIFFERENCEVARIANCE ||
+				fcode == GLCM_DIFFERENCEENTROPY ||
+				fcode == GLCM_INFOMEAS1 ||
+				fcode == GLCM_INFOMEAS2;
 			if (textureFeature)
 			{
 				// Polulate with angles
@@ -238,19 +238,19 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 			// Parameterized feature
 			// --Texture family
 			bool textureFeature =
-				fcode == TEXTURE_ANGULAR2NDMOMENT ||
-				fcode == TEXTURE_CONTRAST ||
-				fcode == TEXTURE_CORRELATION ||
-				fcode == TEXTURE_VARIANCE ||
-				fcode == TEXTURE_INVERSEDIFFERENCEMOMENT ||
-				fcode == TEXTURE_SUMAVERAGE ||
-				fcode == TEXTURE_SUMVARIANCE ||
-				fcode == TEXTURE_SUMENTROPY ||
-				fcode == TEXTURE_ENTROPY ||
-				fcode == TEXTURE_DIFFERENCEVARIANCE ||
-				fcode == TEXTURE_DIFFERENCEENTROPY ||
-				fcode == TEXTURE_INFOMEAS1 ||
-				fcode == TEXTURE_INFOMEAS2;
+				fcode == GLCM_ANGULAR2NDMOMENT ||
+				fcode == GLCM_CONTRAST ||
+				fcode == GLCM_CORRELATION ||
+				fcode == GLCM_VARIANCE ||
+				fcode == GLCM_INVERSEDIFFERENCEMOMENT ||
+				fcode == GLCM_SUMAVERAGE ||
+				fcode == GLCM_SUMVARIANCE ||
+				fcode == GLCM_SUMENTROPY ||
+				fcode == GLCM_ENTROPY ||
+				fcode == GLCM_DIFFERENCEVARIANCE ||
+				fcode == GLCM_DIFFERENCEENTROPY ||
+				fcode == GLCM_INFOMEAS1 ||
+				fcode == GLCM_INFOMEAS2;
 			if (textureFeature)
 			{
 				// Polulate with angles
