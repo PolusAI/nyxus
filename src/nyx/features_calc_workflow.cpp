@@ -205,11 +205,12 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 		lr.fvals[MEAN][0] = mean_;
 		lr.fvals[ENERGY][0] = energy;
 		lr.fvals[ROOT_MEAN_SQUARED][0] = sqrt (lr.fvals[ENERGY][0] / n);
-		lr.fvals[CENTROID_X][0] = cen_x;
-		lr.fvals[CENTROID_Y][0] = cen_y;
 		lr.fvals[INTEGRATED_INTENSITY][0] = integInten;
 
-		// --Compactness
+		// --Centroid and Compactness
+		lr.fvals[CENTROID_X][0] = cen_x;
+		lr.fvals[CENTROID_Y][0] = cen_y;
+
 		Moments2 mom2;
 		for (auto& px : lr.raw_pixels)
 		{
@@ -628,16 +629,115 @@ void parallelGabor (size_t start, size_t end, std::vector<int>* ptrLabels, std::
 		int lab = (*ptrLabels)[i];
 		LR & r = (*ptrLabelData)[lab];
 
-		GaborFeatures gf;
-
 		// Skip calculation in case of bad data
 		if ((int)r.fvals[MIN][0] == (int)r.fvals[MAX][0])
 			continue;
+
+		GaborFeatures gf;
 		
 		// Calculate Gabor
-		ImageMatrix im(r.raw_pixels, r.aabb);
-		gf.calc_GaborTextureFilters2D(im, r.fvals[GABOR]);	// r.fvals[GABOR] will contain GaborFeatures::num_features items upon return
+		ImageMatrix im (r.raw_pixels, r.aabb);
+		gf.calc_GaborTextureFilters2D (im, r.fvals[GABOR]);	// r.fvals[GABOR] will contain GaborFeatures::num_features items upon return
 
+	}
+}
+
+void parallelMoments (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR & r = (*ptrLabelData)[lab];
+
+		ImageMatrix im(r.raw_pixels, r.aabb);
+
+		// Prepare the contour if necessary
+		if (r.contour.contour_pixels.size() == 0)
+			r.contour.calculate(im);
+
+		ImageMatrix weighted_im(r.raw_pixels, r.aabb);
+		weighted_im.apply_distance_to_contour_weights(r.raw_pixels, r.contour.contour_pixels);
+		HuMoments hu;
+		hu.initialize((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], im, weighted_im);
+
+		double m1, m2, m3, m4, m5, m6, m7, m8, m9, m10;
+		std::tie(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10) = hu.getSpatialMoments();
+		r.fvals[SPAT_MOMENT_00][0] = m1;
+		r.fvals[SPAT_MOMENT_01][0] = m2;
+		r.fvals[SPAT_MOMENT_02][0] = m3;
+		r.fvals[SPAT_MOMENT_03][0] = m4;
+		r.fvals[SPAT_MOMENT_10][0] = m5;
+		r.fvals[SPAT_MOMENT_11][0] = m6;
+		r.fvals[SPAT_MOMENT_12][0] = m7;
+		r.fvals[SPAT_MOMENT_20][0] = m8;
+		r.fvals[SPAT_MOMENT_21][0] = m9;
+		r.fvals[SPAT_MOMENT_30][0] = m10;
+
+		std::tie(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10) = hu.getWeightedSpatialMoments();
+		r.fvals[WEIGHTED_SPAT_MOMENT_00][0] = m1;
+		r.fvals[WEIGHTED_SPAT_MOMENT_01][0] = m2;
+		r.fvals[WEIGHTED_SPAT_MOMENT_02][0] = m3;
+		r.fvals[WEIGHTED_SPAT_MOMENT_03][0] = m4;
+		r.fvals[WEIGHTED_SPAT_MOMENT_10][0] = m5;
+		r.fvals[WEIGHTED_SPAT_MOMENT_11][0] = m6;
+		r.fvals[WEIGHTED_SPAT_MOMENT_12][0] = m7;
+		r.fvals[WEIGHTED_SPAT_MOMENT_20][0] = m8;
+		r.fvals[WEIGHTED_SPAT_MOMENT_21][0] = m9;
+		r.fvals[WEIGHTED_SPAT_MOMENT_30][0] = m10;
+
+		std::tie(m1, m2, m3, m4, m5, m6, m7) = hu.getCentralMoments();
+		r.fvals[CENTRAL_MOMENT_02][0] = m1;
+		r.fvals[CENTRAL_MOMENT_03][0] = m2;
+		r.fvals[CENTRAL_MOMENT_11][0] = m3;
+		r.fvals[CENTRAL_MOMENT_12][0] = m4;
+		r.fvals[CENTRAL_MOMENT_20][0] = m5;
+		r.fvals[CENTRAL_MOMENT_21][0] = m6;
+		r.fvals[CENTRAL_MOMENT_30][0] = m7;
+
+		std::tie(m1, m2, m3, m4, m5, m6, m7) = hu.getWeightedCentralMoments();
+		r.fvals[WEIGHTED_CENTRAL_MOMENT_02][0] = m1;
+		r.fvals[WEIGHTED_CENTRAL_MOMENT_03][0] = m2;
+		r.fvals[WEIGHTED_CENTRAL_MOMENT_11][0] = m3;
+		r.fvals[WEIGHTED_CENTRAL_MOMENT_12][0] = m4;
+		r.fvals[WEIGHTED_CENTRAL_MOMENT_20][0] = m5;
+		r.fvals[WEIGHTED_CENTRAL_MOMENT_21][0] = m6;
+		r.fvals[WEIGHTED_CENTRAL_MOMENT_30][0] = m7;
+
+		std::tie(m1, m2, m3, m4, m5, m6, m7) = hu.getNormCentralMoments();
+		r.fvals[NORM_CENTRAL_MOMENT_02][0] = m1;
+		r.fvals[NORM_CENTRAL_MOMENT_03][0] = m2;
+		r.fvals[NORM_CENTRAL_MOMENT_11][0] = m3;
+		r.fvals[NORM_CENTRAL_MOMENT_12][0] = m4;
+		r.fvals[NORM_CENTRAL_MOMENT_20][0] = m5;
+		r.fvals[NORM_CENTRAL_MOMENT_21][0] = m6;
+		r.fvals[NORM_CENTRAL_MOMENT_30][0] = m7;
+
+		std::tie(m1, m2, m3, m4, m5, m6, m7) = hu.getNormSpatialMoments();
+		r.fvals[NORM_SPAT_MOMENT_00][0] = m1;
+		r.fvals[NORM_SPAT_MOMENT_01][0] = m2;
+		r.fvals[NORM_SPAT_MOMENT_02][0] = m3;
+		r.fvals[NORM_SPAT_MOMENT_03][0] = m4;
+		r.fvals[NORM_SPAT_MOMENT_10][0] = m5;
+		r.fvals[NORM_SPAT_MOMENT_20][0] = m6;
+		r.fvals[NORM_SPAT_MOMENT_30][0] = m7;
+
+		std::tie(m1, m2, m3, m4, m5, m6, m7) = hu.getHuMoments();
+		r.fvals[HU_M1][0] = m1;
+		r.fvals[HU_M2][0] = m2;
+		r.fvals[HU_M3][0] = m3;
+		r.fvals[HU_M4][0] = m4;
+		r.fvals[HU_M5][0] = m5;
+		r.fvals[HU_M6][0] = m6;
+		r.fvals[HU_M7][0] = m7;
+
+		std::tie(m1, m2, m3, m4, m5, m6, m7) = hu.getWeightedHuMoments();
+		r.fvals[WEIGHTED_HU_M1][0] = m1;
+		r.fvals[WEIGHTED_HU_M2][0] = m2;
+		r.fvals[WEIGHTED_HU_M3][0] = m3;
+		r.fvals[WEIGHTED_HU_M4][0] = m4;
+		r.fvals[WEIGHTED_HU_M5][0] = m5;
+		r.fvals[WEIGHTED_HU_M6][0] = m6;
+		r.fvals[WEIGHTED_HU_M7][0] = m7;
 	}
 }
 
@@ -717,21 +817,21 @@ void reduce (int nThr, int min_online_roi_size)
 		}))
 	#endif
 	{
-		STOPWATCH("Intensity stats ...", "\tReduced intensity stats");
+		STOPWATCH("Intensity/Intensity/I/#FFFF00", "\t=");
 		runParallel (parallelReduceIntensityStats, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Neighbors
 	if (theFeatureSet.anyEnabled({ NUM_NEIGHBORS, CLOSEST_NEIGHBOR1_DIST, CLOSEST_NEIGHBOR2_DIST }))
 	{
-		STOPWATCH("Neighbors ...", "\tReduced neighbors");
+		STOPWATCH("Neighbors/Neighbors/N/#FF69B4", "\t=");
 		reduce_neighbors (5 /* collision radius [pixels] */);
 	}
 
 	//==== Fitting an ellipse
 	if (theFeatureSet.anyEnabled({ MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION, ROUNDNESS } ))
 	{
-		STOPWATCH("Ellipticity et al ...", "\tReduced ellipticity - MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION");
+		STOPWATCH("Morphology/Ellipticity/E/#4aaaea", "\t=");
 		// 
 		//Reference: https://www.mathworks.com/matlabcentral/mlc-downloads/downloads/submissions/19028/versions/1/previews/regiondata.m/index.html
 		//		
@@ -750,9 +850,9 @@ void reduce (int nThr, int min_online_roi_size)
 			{
 				auto diffX = r.fvals[CENTROID_X][0] - pix.x,
 					diffY = r.fvals[CENTROID_Y][0] - pix.y;
-				XSquaredTmp += diffX * diffX; //(double(x) - (xCentroid - Im.ROIWidthBeg)) * (double(x) - (xCentroid - Im.ROIWidthBeg));
-				YSquaredTmp += diffY * diffY; //(-double(y) + (yCentroid - Im.ROIHeightBeg)) * (-double(y) + (yCentroid - Im.ROIHeightBeg));
-				XYSquaredTmp += diffX * diffY; //(double(x) - (xCentroid - Im.ROIWidthBeg)) * (-double(y) + (yCentroid - Im.ROIHeightBeg));
+				XSquaredTmp += diffX * diffX; 
+				YSquaredTmp += diffY * diffY; 
+				XYSquaredTmp += diffX * diffY; 
 			}
 
 			double uxx = XSquaredTmp / r.raw_pixels.size() + 1.0 / 12.0;
@@ -799,13 +899,13 @@ void reduce (int nThr, int min_online_roi_size)
 		}))
 	{
 		{
-			STOPWATCH("Contour, ROI perimeter, equivalent circle diameter ...", "\tReduced contour, ROI perimeter, equivalent circle diameter");
+			STOPWATCH("Morphology/Contour/C/#4aaaea", "\t=");
 			runParallel (parallelReduceContour, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 		}
 		//==== Convex hull related Solidity, Circularity, IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
 		{
 			// CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY // depends on PERIMETER
-			STOPWATCH("Hulls, and related (circularity, solidity, etc) ...", "\tReduced hulls, and related (circularity, solidity, etc)");
+			STOPWATCH("Morphology/Hull/H/#4aaaea", "\t=");
 			runParallel (parallelReduceConvHull, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 		}	
 	}
@@ -831,7 +931,7 @@ void reduce (int nThr, int min_online_roi_size)
 		EULER_NUMBER }))
 		
 	{
-		STOPWATCH("Extrema and Euler ...", "\tReduced extrema and Euler");
+		STOPWATCH("Morphology/Euler+Extrema/E/#4aaaea", "\t=");
 		for (auto& ld : labelData)
 		{
 			auto& r = ld.second;
@@ -894,29 +994,29 @@ void reduce (int nThr, int min_online_roi_size)
 					RightMost_Bottom = pix.y;
 			}
 
-			r.fvals[EXTREMA_P1_Y][0] = TopMostIndex; // -0.5 + Im.ROIHeightBeg;	// .extremaP1y
-			r.fvals[EXTREMA_P1_X][0] = TopMost_MostLeftIndex; // -0.5 + Im.ROIWidthBeg;	// .extremaP1x
+			r.fvals[EXTREMA_P1_Y][0] = TopMostIndex;
+			r.fvals[EXTREMA_P1_X][0] = TopMost_MostLeftIndex; 
 
-			r.fvals[EXTREMA_P2_Y][0] = TopMostIndex; // -0.5 + Im.ROIHeightBeg;	// .extremaP2y
-			r.fvals[EXTREMA_P2_X][0] = TopMost_MostRightIndex; // +0.5 + Im.ROIWidthBeg;	// .extremaP2x
+			r.fvals[EXTREMA_P2_Y][0] = TopMostIndex; 
+			r.fvals[EXTREMA_P2_X][0] = TopMost_MostRightIndex; 
 
-			r.fvals[EXTREMA_P3_Y][0] = RightMost_Top; // -0.5 + Im.ROIHeightBeg;	// .extremaP3y
-			r.fvals[EXTREMA_P3_X][0] = RightMostIndex; // +0.5 + Im.ROIWidthBeg;	// .extremaP3x
+			r.fvals[EXTREMA_P3_Y][0] = RightMost_Top; 
+			r.fvals[EXTREMA_P3_X][0] = RightMostIndex; 
 
-			r.fvals[EXTREMA_P4_Y][0] = RightMost_Bottom; // +0.5 + Im.ROIHeightBeg;	// .extremaP4y
-			r.fvals[EXTREMA_P4_X][0] = RightMostIndex; // +0.5 + Im.ROIWidthBeg;	// .extremaP4x
+			r.fvals[EXTREMA_P4_Y][0] = RightMost_Bottom; 
+			r.fvals[EXTREMA_P4_X][0] = RightMostIndex; 
 
-			r.fvals[EXTREMA_P5_Y][0] = LowestIndex; // +0.5 + Im.ROIHeightBeg;	//.extremaP5y
-			r.fvals[EXTREMA_P5_X][0] = Lowest_MostRightIndex; // +0.5 + Im.ROIWidthBeg;	//.extremaP5x
+			r.fvals[EXTREMA_P5_Y][0] = LowestIndex; 
+			r.fvals[EXTREMA_P5_X][0] = Lowest_MostRightIndex; 
 
-			r.fvals[EXTREMA_P6_Y][0] = LowestIndex; // +0.5 + Im.ROIHeightBeg;	//.extremaP6y
-			r.fvals[EXTREMA_P6_X][0] = Lowest_MostLeftIndex; // -0.5 + Im.ROIWidthBeg;	//.extremaP6x
+			r.fvals[EXTREMA_P6_Y][0] = LowestIndex; 
+			r.fvals[EXTREMA_P6_X][0] = Lowest_MostLeftIndex; 
 
-			r.fvals[EXTREMA_P7_Y][0] = LeftMost_Bottom; // +0.5 + Im.ROIHeightBeg;	//.extremaP7y
-			r.fvals[EXTREMA_P7_X][0] = LeftMostIndex; // -0.5 + Im.ROIWidthBeg;	//.extremaP7x
+			r.fvals[EXTREMA_P7_Y][0] = LeftMost_Bottom; 
+			r.fvals[EXTREMA_P7_X][0] = LeftMostIndex; 
 
-			r.fvals[EXTREMA_P8_Y][0] = LeftMost_Top; // -0.5 + Im.ROIHeightBeg;	//.extremaP8y
-			r.fvals[EXTREMA_P8_X][0] = LeftMostIndex; // -0.5 + Im.ROIWidthBeg;	//.extremaP8x
+			r.fvals[EXTREMA_P8_Y][0] = LeftMost_Top; 
+			r.fvals[EXTREMA_P8_X][0] = LeftMostIndex; 
 
 			//==== Euler number
 			EulerNumber eu(r.raw_pixels, r.aabb.get_xmin(), r.aabb.get_ymin(), r.aabb.get_xmax(), r.aabb.get_ymax(), 8);	// Using mode=8 following to WNDCHRM example
@@ -933,7 +1033,7 @@ void reduce (int nThr, int min_online_roi_size)
 			STAT_FERET_DIAM_STDDEV,
 			STAT_FERET_DIAM_MODE }))
 	{
-		STOPWATCH("Feret ...", "\tReduced Feret");
+		STOPWATCH("Morphology/Feret/F/#4aaaea", "\t=");
 		runParallel(parallelReduceFeret, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
@@ -945,7 +1045,7 @@ void reduce (int nThr, int min_online_roi_size)
 		STAT_MARTIN_DIAM_STDDEV,
 		STAT_MARTIN_DIAM_MODE }))
 	{
-		STOPWATCH("Matrin ...", "\tReduced Martin");
+		STOPWATCH("Morphology/Martin/M/#4aaaea", "\t=");
 		runParallel(parallelReduceMartin, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
@@ -957,7 +1057,7 @@ void reduce (int nThr, int min_online_roi_size)
 		STAT_NASSENSTEIN_DIAM_STDDEV,
 		STAT_NASSENSTEIN_DIAM_MODE }))
 	{
-		STOPWATCH("Nassenstein ...", "\tReduced Nassenstein");
+		STOPWATCH("Morphology/Nassenstein/N/#4aaaea", "\t=");
 		runParallel(parallelReduceNassenstein, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
@@ -980,12 +1080,12 @@ void reduce (int nThr, int min_online_roi_size)
 		ALLCHORDS_MODE,
 		ALLCHORDS_STDDEV, }))
 	{
-		STOPWATCH("Chords ...", "\tReduced chords");
+		STOPWATCH("Morphology/Chords/Ch/#4aaaea", "\t=");
 		runParallel(parallelReduceChords, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	{
-		STOPWATCH("Hexagonality, polygonality, enclosing circle, geodetic length & thickness ...", "\tReduced hexagonality, polygonality, enclosing circle, geodetic length & thickness");
+		STOPWATCH("Morphology/HexPolygEncloInsCircleGeodetLenThickness/HP/#4aaaea", "\t=");
 		for (auto& ld : labelData)
 		{
 			auto& r = ld.second;
@@ -1024,7 +1124,7 @@ void reduce (int nThr, int min_online_roi_size)
 		ROI_RADIUS_MEDIAN
 		}))
 	{
-		STOPWATCH("ROI radius min/max/median ...", "\tROI radius");
+		STOPWATCH("Morphology/RoiR/R/#4aaaea", "\t=");
 		for (auto& ld : labelData)
 		{
 			auto& r = ld.second;
@@ -1048,14 +1148,14 @@ void reduce (int nThr, int min_online_roi_size)
 	//==== Erosion pixels
 	if (theFeatureSet.anyEnabled({ EROSIONS_2_VANISH, EROSIONS_2_VANISH_COMPLEMENT }))
 	{
-		STOPWATCH("Erosions...", "\tReduced Erosions");
+		STOPWATCH("Morphology/Erosion/Er/#4aaaea", "\t=");
 		runParallel (parallelReduceErosions, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}	
 
 	//==== Fractal dimension
 	if (theFeatureSet.anyEnabled({ FRACT_DIM_BOXCOUNT, FRACT_DIM_PERIMETER }))
 	{
-		STOPWATCH("Fractal dimension...", "\tReduced Fractal dimension");
+		STOPWATCH("Morphology/Fractal dimension/Fd/#4aaaea", "\t=");
 		runParallel (parallelReduceFractalDimension, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
@@ -1075,7 +1175,7 @@ void reduce (int nThr, int min_online_roi_size)
 		GLCM_INFOMEAS1,
 		GLCM_INFOMEAS2 }))
 	{
-		STOPWATCH("Haralick2D ...", "\tReduced Haralick2D");
+		STOPWATCH("Texture/GLCM/C/#bbbbbb", "\t=");
 		runParallel (parallelReduceHaralick2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
@@ -1099,7 +1199,7 @@ void reduce (int nThr, int min_online_roi_size)
 		GLRLM_LRHGLE
 		}))
 	{
-		STOPWATCH("GLRLM ...", "\tReduced GLRLM");
+		STOPWATCH("Texture/GLRLM/RL/#bbbbbb", "\t=");
 		for (auto& ld : labelData)
 		{
 			auto& r = ld.second;
@@ -1145,7 +1245,7 @@ void reduce (int nThr, int min_online_roi_size)
 		GLSZM_LAHGLE
 		}))
 	{
-		STOPWATCH("GLSZM ...", "\tReduced GLSZM");
+		STOPWATCH("Texture/GLSZM/SZ/#bbbbbb", "\t=");
 		for (auto& ld : labelData)
 		{
 			auto& r = ld.second;
@@ -1189,7 +1289,7 @@ void reduce (int nThr, int min_online_roi_size)
 		GLDM_LDHGLE 
 		}))
 	{
-		STOPWATCH("GLDM ...", "\tReduced GLDM");
+		STOPWATCH("Texture/GLDM/D/#bbbbbb", "\t=");
 		for (auto& ld : labelData)
 		{
 			auto& r = ld.second;
@@ -1222,7 +1322,7 @@ void reduce (int nThr, int min_online_roi_size)
 	NGTDM_STRENGTH
 		}))
 	{
-		STOPWATCH("NGTDM ...", "\tReduced NGTDM");
+		STOPWATCH("Texture/NGTDM/NG/#bbbbbb", "\t=");
 		for (auto& ld : labelData)
 		{
 			auto& r = ld.second;
@@ -1283,120 +1383,28 @@ void reduce (int nThr, int min_online_roi_size)
 		WEIGHTED_HU_M6,
 		WEIGHTED_HU_M7 }))
 	{
-		STOPWATCH("Moments ...", "\tReduced moments");
-		for (auto& ld : labelData)
-		{
-			auto& r = ld.second;
-			ImageMatrix im (r.raw_pixels, r.aabb);
-
-			// Prepare the contour if necessary
-			if (r.contour.contour_pixels.size() == 0)
-				r.contour.calculate(im);
-
-			ImageMatrix weighted_im(r.raw_pixels, r.aabb);
-			weighted_im.apply_distance_to_contour_weights (r.raw_pixels, r.contour.contour_pixels);
-			HuMoments hu;
-			hu.initialize ((int) r.fvals[MIN][0], (int) r.fvals[MAX][0], im, weighted_im);
-
-			double m1, m2, m3, m4, m5, m6, m7, m8, m9, m10;
-			std::tie (m1, m2, m3, m4, m5, m6, m7, m8, m9, m10) = hu.getSpatialMoments();
-			r.fvals[SPAT_MOMENT_00][0] = m1;
-			r.fvals[SPAT_MOMENT_01][0] = m2;
-			r.fvals[SPAT_MOMENT_02][0] = m3;
-			r.fvals[SPAT_MOMENT_03][0] = m4;
-			r.fvals[SPAT_MOMENT_10][0] = m5; 
-			r.fvals[SPAT_MOMENT_11][0] = m6; 
-			r.fvals[SPAT_MOMENT_12][0] = m7;
-			r.fvals[SPAT_MOMENT_20][0] = m8;
-			r.fvals[SPAT_MOMENT_21][0] = m9;
-			r.fvals[SPAT_MOMENT_30][0] = m10;
-
-			std::tie (m1, m2, m3, m4, m5, m6, m7, m8, m9, m10) = hu.getWeightedSpatialMoments();
-			r.fvals[WEIGHTED_SPAT_MOMENT_00][0] = m1;
-			r.fvals[WEIGHTED_SPAT_MOMENT_01][0] = m2;
-			r.fvals[WEIGHTED_SPAT_MOMENT_02][0] = m3;
-			r.fvals[WEIGHTED_SPAT_MOMENT_03][0] = m4;
-			r.fvals[WEIGHTED_SPAT_MOMENT_10][0] = m5;
-			r.fvals[WEIGHTED_SPAT_MOMENT_11][0] = m6;
-			r.fvals[WEIGHTED_SPAT_MOMENT_12][0] = m7;
-			r.fvals[WEIGHTED_SPAT_MOMENT_20][0] = m8;
-			r.fvals[WEIGHTED_SPAT_MOMENT_21][0] = m9;
-			r.fvals[WEIGHTED_SPAT_MOMENT_30][0] = m10;
-
-			std::tie (m1, m2, m3, m4, m5, m6, m7) = hu.getCentralMoments();
-			r.fvals[CENTRAL_MOMENT_02][0] = m1;
-			r.fvals[CENTRAL_MOMENT_03][0] = m2;
-			r.fvals[CENTRAL_MOMENT_11][0] = m3;
-			r.fvals[CENTRAL_MOMENT_12][0] = m4;
-			r.fvals[CENTRAL_MOMENT_20][0] = m5;
-			r.fvals[CENTRAL_MOMENT_21][0] = m6;
-			r.fvals[CENTRAL_MOMENT_30][0] = m7;
-			
-			std::tie(m1, m2, m3, m4, m5, m6, m7) = hu.getWeightedCentralMoments();
-			r.fvals[WEIGHTED_CENTRAL_MOMENT_02][0] = m1;
-			r.fvals[WEIGHTED_CENTRAL_MOMENT_03][0] = m2;
-			r.fvals[WEIGHTED_CENTRAL_MOMENT_11][0] = m3;
-			r.fvals[WEIGHTED_CENTRAL_MOMENT_12][0] = m4;
-			r.fvals[WEIGHTED_CENTRAL_MOMENT_20][0] = m5;
-			r.fvals[WEIGHTED_CENTRAL_MOMENT_21][0] = m6;
-			r.fvals[WEIGHTED_CENTRAL_MOMENT_30][0] = m7;
-
-			std::tie (m1, m2, m3, m4, m5, m6, m7) = hu.getNormCentralMoments();
-			r.fvals[NORM_CENTRAL_MOMENT_02][0] = m1;
-			r.fvals[NORM_CENTRAL_MOMENT_03][0] = m2;
-			r.fvals[NORM_CENTRAL_MOMENT_11][0] = m3;
-			r.fvals[NORM_CENTRAL_MOMENT_12][0] = m4;
-			r.fvals[NORM_CENTRAL_MOMENT_20][0] = m5;
-			r.fvals[NORM_CENTRAL_MOMENT_21][0] = m6;
-			r.fvals[NORM_CENTRAL_MOMENT_30][0] = m7;
-
-			std::tie(m1, m2, m3, m4, m5, m6, m7) = hu.getNormSpatialMoments();
-			r.fvals[NORM_SPAT_MOMENT_00][0] = m1;
-			r.fvals[NORM_SPAT_MOMENT_01][0] = m2;
-			r.fvals[NORM_SPAT_MOMENT_02][0] = m3;
-			r.fvals[NORM_SPAT_MOMENT_03][0] = m4;
-			r.fvals[NORM_SPAT_MOMENT_10][0] = m5;
-			r.fvals[NORM_SPAT_MOMENT_20][0] = m6;
-			r.fvals[NORM_SPAT_MOMENT_30][0] = m7;
-
-			std::tie (m1, m2, m3, m4, m5, m6, m7) = hu.getHuMoments();
-			r.fvals[HU_M1][0] = m1;
-			r.fvals[HU_M2][0] = m2;
-			r.fvals[HU_M3][0] = m3;
-			r.fvals[HU_M4][0] = m4;
-			r.fvals[HU_M5][0] = m5;
-			r.fvals[HU_M6][0] = m6;
-			r.fvals[HU_M7][0] = m7;
-
-			std::tie (m1, m2, m3, m4, m5, m6, m7) = hu.getWeightedHuMoments();
-			r.fvals[WEIGHTED_HU_M1][0] = m1;
-			r.fvals[WEIGHTED_HU_M2][0] = m2;
-			r.fvals[WEIGHTED_HU_M3][0] = m3;
-			r.fvals[WEIGHTED_HU_M4][0] = m4;
-			r.fvals[WEIGHTED_HU_M5][0] = m5;
-			r.fvals[WEIGHTED_HU_M6][0] = m6;
-			r.fvals[WEIGHTED_HU_M7][0] = m7;
-		}
+		STOPWATCH("Moments/Moments/M/#FFFACD", "\t=");
+		runParallel (parallelMoments, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Gabor features
 	if (theFeatureSet.isEnabled(GABOR))
 	{
-		STOPWATCH("Gabor features ...", "\tGabor features");
+		STOPWATCH("Gabor/Gabor/G/#f58231", "\t=");
 		runParallel (parallelGabor, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Radial distribution / Zernike 2D 
 	if (theFeatureSet.isEnabled(ZERNIKE2D))
 	{
-		STOPWATCH("Zernike2D ...", "\tReduced Zernike2D");
+		STOPWATCH("RDistribution/Zernike/Rz/#00FFFF", "\t=");
 		runParallel(parallelReduceZernike2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Radial distribution / FracAtD, MeanFraq, and RadialCV
 	if (theFeatureSet.anyEnabled({FRAC_AT_D, MEAN_FRAC, RADIAL_CV}))
 	{
-		STOPWATCH("Radial distribution ...", "\tReduced radial distribution");
+		STOPWATCH("RDistribution/Rdist/Rd/#00FFFF", "\t=");
 		for (auto& ld : labelData)
 		{
 			auto& r = ld.second;

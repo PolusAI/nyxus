@@ -8,29 +8,10 @@
 #include <vector>
 #include "environment.h"
 #include "featureset.h"
+#include "helpers.h"
 #include "version.h"
 
 bool directoryExists(const std::string&);
-
-void parse_delimited_string_list(const std::string& rawString, std::vector<std::string>& result)
-{
-
-    result.clear();
-
-    std::vector<std::string> S;
-
-    std::string raw = rawString;    // a safe copy
-    std::string delim = ",";
-    size_t pos = 0;
-    std::string token;
-    while ((pos = raw.find(delim)) != std::string::npos)
-    {
-        token = raw.substr(0, pos);
-        result.push_back(token); // std::cout << token << std::endl;
-        raw.erase(0, pos + delim.length());
-    }
-    result.push_back(raw); // std::cout << raw << std::endl;
-}
 
 bool parse_as_float(std::string raw, float& result)
 {
@@ -48,7 +29,7 @@ bool parse_delimited_string_list_to_floats(const std::string& rawString, std::ve
 
     bool retval = true;
     std::vector<std::string> strings;
-    parse_delimited_string_list (rawString, strings);
+    parse_delimited_string (rawString, ",", strings);
     result.clear();
     for (auto& s : strings)
     {
@@ -85,7 +66,7 @@ bool parse_delimited_string_list_to_features(const std::string& rawString, std::
 
     bool retval = true;
     std::vector<std::string> strings;
-    parse_delimited_string_list(rawString, strings);
+    parse_delimited_string(rawString, ",", strings);
 
     // Check individual features
     for (const auto& s : strings)

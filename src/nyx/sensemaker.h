@@ -250,5 +250,3 @@ extern std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
 
 // System resources
 unsigned long long getAvailPhysMemory();
-
-

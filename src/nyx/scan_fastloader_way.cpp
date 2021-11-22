@@ -222,8 +222,6 @@ int processDataset (
 		
 		#ifdef CHECKTIMING
 		std::cout << "\tTiming of sensemaker::reduce [s] " << elapsed2.count() << std::endl;
-
-		Stopwatch::print_totals();
 		#endif
 
 		totalFeatureReduceTime += elapsed2.count();
@@ -239,6 +237,12 @@ int processDataset (
 			return 2;
 		}
 	}
+
+	// Detailed timing
+#ifdef CHECKTIMING
+	Stopwatch::print_stats();
+	Stopwatch::save_stats(theEnvironment.output_dir + "/nyxus_timing.csv");
+#endif
 
 	// Timing
 	end = std::chrono::system_clock::now();

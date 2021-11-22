@@ -1,6 +1,27 @@
 #pragma once
 
 #include <iostream>
+#include <string>
+#include <vector>
+
+// String manipulation
+inline void parse_delimited_string(const std::string& rawString, const std::string& delim, std::vector<std::string>& result)
+{
+	result.clear();
+
+	std::vector<std::string> S;
+
+	std::string raw = rawString;    // a safe copy
+	size_t pos = 0;
+	std::string token;
+	while ((pos = raw.find(delim)) != std::string::npos)
+	{
+		token = raw.substr(0, pos);
+		result.push_back(token);
+		raw.erase(0, pos + delim.length());
+	}
+	result.push_back(raw);
+}
 
 // Geometry
 inline double angle(const double x1, const double y1, double x2, const double y2)
@@ -12,7 +33,6 @@ inline double angle(const double x1, const double y1, double x2, const double y2
 		ang = std::acos(cosVal);
 	return ang;
 }
-
 
 // Statistics
 inline int mode(const std::vector<int>& v)
@@ -45,6 +65,12 @@ inline int mode(const std::vector<int>& v)
 }
 
 // General helpers
+
+inline double round2(const double a)
+{
+	double retval = std::round(a * 100.0) / 100.0;
+	return retval;
+}
 
 inline int closest_pow2(const int a)
 {

@@ -27,13 +27,9 @@ public:
 		std::cout << tail << " " << elap.count() << " us\n";
 		totals[header] = totals[header] + elap.count();
 	}
-	static void print_totals()
-	{
-		std::cout << "Totals\n" << "--------\n";
-		for (auto& t : totals)
-			std::cout << t.first << " : " << t.second << "\n";
-		std::cout << "--------\n";
-	}
+	static void print_stats();
+	static void save_stats(const std::string & fpath);
+
 protected:
 	std::string header, tail;
 	std::chrono::time_point<std::chrono::system_clock> start, end;
