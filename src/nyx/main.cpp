@@ -74,7 +74,8 @@ int main (int argc, char** argv)
 	init_feature_buffers();
 
 	// Current time stamp #1
-	std::cout << "\n>>> STARTING >>> " << getTimeStr() << "\n";
+	auto startTS = getTimeStr();
+	std::cout << "\n>>> STARTING >>> " << startTS << "\n";
 
 	//std::cout << "Started at " << getTimeStr() << "\n";
 
@@ -110,7 +111,7 @@ int main (int argc, char** argv)
 	}
 
 	// Current time stamp #2
-	std::cout << "\n>>> ENDING >>> " << getTimeStr() << "\n";
+	std::cout << "\n>>> STARTED >>>\t" << startTS << "\n>>> ENDING >>>\t" << getTimeStr() << "\n";
 
 	int exitCode = errorCode;
 	return exitCode;

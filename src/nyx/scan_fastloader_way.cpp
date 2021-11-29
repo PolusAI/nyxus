@@ -18,14 +18,6 @@
 #include<windows.h>
 #endif
 
-// Timing
-#include <chrono>
-double totalTileLoadTime = 0.0, totalFeatureReduceTime = 0.0;
-
-//--Harmful in Python output scenarios-- #define BEGINFORMAT_RED "\033[1;34m" 
-//--Harmful in Python output scenarios-- #define ENDFORMAT "\033[0m"
-
-
 bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, int filepair_index, int tot_num_filepairs)
 {
 	// Report the amount of free RAM
@@ -101,7 +93,7 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 
 			// --Timing
 			end = std::chrono::system_clock::now();
-			std::chrono::duration<double, std::milli> elapsedTile = end - start;
+			std::chrono::duration<double, std::micro> elapsedTile = end - start;
 			
 			// --Timing
 			start = std::chrono::system_clock::now();
@@ -124,7 +116,7 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 
 			// --Timing
 			end = std::chrono::system_clock::now();
-			std::chrono::duration<double, std::milli> elapsedCalc = end - start;
+			std::chrono::duration<double, std::micro> elapsedCalc = end - start;
 			
 			// --Time ratio
 			#ifdef CHECKTIMING
@@ -139,7 +131,7 @@ bool scanFilePair (const std::string& intens_fpath, const std::string& label_fpa
 					//--Harmful in Python output scenarios-- << ENDFORMAT	
 					<< "\n";
 
-			totalTileLoadTime += elapsedTile.count();
+			totalImgScanTime += elapsedTile.count();
 			totalFeatureReduceTime += elapsedCalc.count();
 
 		}
@@ -160,18 +152,6 @@ int processDataset (
 	bool save2csv, 
 	const std::string& csvOutputDir)
 {
-	// Temporarily disabled Haralick while I'm fixing its speed
-	//		auto F = { TEXTURE_HARALICK2D };
-	//		theFeatureSet.disableFeatures(F);
-	//
-
-	// Sanity
-	std::chrono::time_point<std::chrono::system_clock> start, end;
-
-	// Timing
-	totalFeatureReduceTime = totalTileLoadTime = 0.0;
-	start = std::chrono::system_clock::now();
-
 	bool ok = true;
 
 	auto nf = intensFiles.size();
@@ -188,21 +168,28 @@ int processDataset (
 		theSegFname = p_seg.filename().string();
 		theIntFname = p_int.filename().string();
 
-#if 0
-		// Figure out what's wrong with one file in Hamda's dataset /home/ec2-user/work/data/hamda-deep2498 (C:\WORK\AXLE\data\hamda-deep2498)
+		#if 0
+		// Debug-stop at a specific file. For example, figure out what's wrong with one file in Hamda's dataset /home/ec2-user/work/data/hamda-deep2498 (C:\WORK\AXLE\data\hamda-deep2498)
 		std::string file2catch = "p3_y2_r9_c0.ome.tif";
 		if (file2catch != theIntFname)
 		{
 			std::cout << "\nSkipping file " << theIntFname << "\n";
 			continue;
 		}
-#endif
+		#endif
 
 		// Scan one label-intensity pair 
 		if (numSensemakerThreads == 1)
+		{
+			STOPWATCH("Image scan/ImgScan/Scan/lightsteelblue", "\t=");
 			ok = scanFilePair (ifp, lfp, numFastloaderThreads, i, nf);	// Sequential
+		}
 		else
+		{
+			STOPWATCH("Image scan/ImgScan/Scan/lightsteelblue", "\t=");
 			ok = scanFilePairParallel (ifp, lfp, numFastloaderThreads, numSensemakerThreads, i, nf);	// Parallel
+		}
+
 		if (ok == false)
 		{
 			std::cout << "scanFilePair() returned an error code while processing file pair " << ifp << " and " << lfp << std::endl;
@@ -210,21 +197,16 @@ int processDataset (
 		}
 
 		// --Timing
-		std::chrono::time_point<std::chrono::system_clock> start, end;
-		start = std::chrono::system_clock::now();
+		std::chrono::time_point<std::chrono::system_clock> startRed, endRed;
+		startRed = std::chrono::system_clock::now();
 
 		// Execute calculations requiring reduction
 		reduce (numReduceThreads, min_online_roi_size);
 
 		// --Timing
-		end = std::chrono::system_clock::now();
-		std::chrono::duration<double, std::milli> elapsed2 = end - start;
-		
-		#ifdef CHECKTIMING
-		std::cout << "\tTiming of sensemaker::reduce [s] " << elapsed2.count() << std::endl;
-		#endif
-
-		totalFeatureReduceTime += elapsed2.count();
+		endRed = std::chrono::system_clock::now();
+		std::chrono::duration<double, Stopwatch::Unit> elapsedRed = endRed - startRed;
+		totalFeatureReduceTime += elapsedRed.count();
 
 		// Save the result for this intensity-label file pair
 		if (save2csv)
@@ -238,22 +220,23 @@ int processDataset (
 		}
 	}
 
-	// Detailed timing
 #ifdef CHECKTIMING
+	// General timing
+	//---	end = std::chrono::system_clock::now();
+	//---	std::chrono::duration<double, std::micro> elapsed = end - start;
+	//---	double secs = elapsed.count() / 1e6;
+	//---	std::cout << "Elapsed time (s) " << secs << std::endl;
+	std::cout
+		<< "Total image scan time [" << Stopwatch::UnitString << "]: " << totalImgScanTime 
+		<< "\n\t+\nTotal feature reduce time [" << Stopwatch::UnitString << "]: " << totalFeatureReduceTime
+		<< "\n\t=\nScan to reduce ratio: " << totalImgScanTime / totalFeatureReduceTime
+		<< std::endl;
+
+	// Detailed timing
 	Stopwatch::print_stats();
 	Stopwatch::save_stats(theEnvironment.output_dir + "/nyxus_timing.csv");
 #endif
 
-	// Timing
-	end = std::chrono::system_clock::now();
-	std::chrono::duration<double, std::milli> elapsed = end - start;
-	double elapsed_sec = elapsed.count() / 1000.;
-	std::cout << "Elapsed time (s) " << elapsed.count() << std::endl;
-	std::cout 
-		<< "Total tile load time [s]: " << totalTileLoadTime 
-		<< "\n\t+\nTotal feature calc time [s]: " << totalFeatureReduceTime 
-		<< "\n\t=\nTotal time [s]: " << totalTileLoadTime + totalFeatureReduceTime 
-		<< std::endl;
 
 	return 0; // success
 }

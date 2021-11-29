@@ -8,6 +8,9 @@
 class Stopwatch
 {
 public:
+	using Unit = std::micro;
+	static constexpr const char* UnitString = "micro-second";
+
 	Stopwatch (const std::string& header_, const std::string & tail_)
 	{
 		header = header_;
@@ -23,9 +26,13 @@ public:
 	~Stopwatch()
 	{
 		end = std::chrono::system_clock::now();
-		std::chrono::duration<double, std::micro> elap = end - start;
+		std::chrono::duration<double, Unit> elap = end - start;
 		std::cout << tail << " " << elap.count() << " us\n";
 		totals[header] = totals[header] + elap.count();
+	}
+	static void add_measurement_once(const std::string& measurement_name, double value) 
+	{ 
+		totals[measurement_name] = value; 
 	}
 	static void print_stats();
 	static void save_stats(const std::string & fpath);

@@ -27,7 +27,7 @@ class SimpleMatrix : public std::vector<T>
 public:
 	SimpleMatrix(int _w, int _h) : W(_w), H(_h) 
 	{ 
-		this.resize (W*H, 0);
+		this->resize (W*H, 0);
 	}
 
 	SimpleMatrix() {}
@@ -38,7 +38,7 @@ public:
 		H = _h;
 		this->resize (W*H, inival);
 	}
-
+	// X,Y operator
 	T& operator() (int x, int y)
 	{
 		if (x >= W || y >= H)
@@ -47,6 +47,7 @@ public:
 		}
 		return this->at(W * y + x);
 	}
+	// X,y operator
 	T operator() (int x, int y) const
 	{
 		if (x >= W || y >= H)
@@ -57,7 +58,7 @@ public:
 		T val = this->at(W * y + x);
 		return val;
 	}
-
+	
 	// 1-based x and y
 	T matlab (int y, int x) const
 	{
@@ -73,8 +74,15 @@ public:
 			return true;
 	}
 
-	int width() { return W; }
-	int height() { return H; }
+	void fill (T val)
+	{
+		auto n = W * H;
+		for (int i = 0; i < n; i++)
+			this->at(i) = val;
+	}
+
+	int width() const { return W; }
+	int height() const { return H; }
 
 	void print (const std::string& head, const std::string& tail);
 
@@ -186,6 +194,28 @@ public:
 		{
 			auto x = pxl.x - original_aabb.get_xmin(),
 				y = pxl.y - original_aabb.get_ymin();
+			_pix_plane[y * width + x] = pxl.inten;
+		}
+	}
+
+	void use_roi (const std::vector <Pixel2>& labels_raw_pixels, const AABB& aabb)
+	{
+		original_aabb = aabb;
+
+		// Dimensions
+		width = original_aabb.get_width();
+		height = original_aabb.get_height();
+
+		// Zero the matrix
+		_pix_plane.resize (width, height, 0);
+
+		// Read pixels
+		auto xmin = original_aabb.get_xmin(),
+			ymin = original_aabb.get_ymin();
+		for (auto& pxl : labels_raw_pixels)
+		{
+			auto x = pxl.x - xmin,
+				y = pxl.y - ymin;
 			_pix_plane[y * width + x] = pxl.inten;
 		}
 	}

@@ -10,18 +10,18 @@ void Stopwatch::print_stats()
 	for (auto& t : totals)
 		total += t.second;
 
-	std::cout << "Totals\n" << "--------\n";
+	std::cout << "--------------------\nTotal time of all feature groups = " << total/1e6 << "\nBreak-down:\n--------------------\n";
 
 	for (auto& t : totals)
 	{
 		double perc = t.second * 100.0 / total;
-		std::cout << t.first << " : " << perc << "\n";
+		std::cout << t.first << "\t" << round2(perc) << "%\t" << t.second << "\n";
 	}
 
-	std::cout << "--------\n";
+	std::cout << "--------------------\n";
 }
 
-void Stopwatch::save_stats(const std::string& fpath)
+void Stopwatch::save_stats (const std::string& fpath)
 {
 	double total = 0.0;
 	for (auto& t : totals)
@@ -30,7 +30,7 @@ void Stopwatch::save_stats(const std::string& fpath)
 	std::ofstream f (fpath);
 	
 	// header
-	f << "\"h1\", \"h2\", \"h3\", \"weight\", \"color\", \"codes\", \"rawtime\", \"totalReduceTime\", \"numReduceThreads\" \n";	
+	f << "\"h1\", \"h2\", \"h3\", \"weight\", \"color\", \"codes\", \"rawtime\", \"totalTime\", \"numReduceThreads\" \n";	
 	// body
 	for (auto& t : totals)
 	{
@@ -50,7 +50,12 @@ void Stopwatch::save_stats(const std::string& fpath)
 			fcolor = nameParts.size() >= 4 ? nameParts[3] : "#112233";
 
 		double perc = t.second * 100.0 / total;
-		f << "\"Total\",\"" << fcateg << "\",\"" << fname << "\"," << perc << ",\"" << fcolor << "\",\"" << facro << " " << round2(perc) << "%\"," << t.second 
+		f << "\"Total\",\"" 
+			<< fcateg << "\",\"" 
+			<< fname << "\"," 
+			<< perc << ",\"" 
+			<< fcolor << "\",\"" << facro << " " << round2(perc) << "%\","
+			<< t.second 
 			<< "," << total
 			<< "," << theEnvironment.n_reduce_threads 
 			<< "\n";

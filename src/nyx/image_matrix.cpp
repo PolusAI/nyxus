@@ -31,7 +31,7 @@ void SimpleMatrix<int>::print(const std::string& head, const std::string& tail)
 		std::cout << "[" << std::setw(Wi) << row << "]";
 		for (int col = 0; col < this->width(); col++)
 		{
-			std::cout << std::setw(Wd) << (int) this->operator()(row, col);
+			std::cout << std::setw(Wd) << (int) this->operator()(col, row);
 		}
 		std::cout << "\n";
 	}

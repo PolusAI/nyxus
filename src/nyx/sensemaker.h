@@ -221,6 +221,8 @@ struct LR
 
 	std::vector<int> aux_neighboring_labels;
 
+	ImageMatrix aux_image_matrix;	// Needed by Contour, Erosions, GLCM, GLRLM, GLSZM, GLDM, NGTDM, Radial distribution(via Contour), Gabor, Moments, ROI radius(via Contour)
+
 	void init_aabb (StatsInt x, StatsInt y);
 	void update_aabb (StatsInt x, StatsInt y);
 
@@ -235,7 +237,7 @@ void update_label_record (LR& lr, int x, int y, int label, PixIntens intensity);
 void reduce_neighbors (int labels_collision_radius);
 
 // Timing
-extern double totalTileLoadTime, totalFeatureReduceTime;
+extern double totalImgScanTime, totalFeatureReduceTime;
 double test_containers1();
 double test_containers2();
 bool test_histogram();

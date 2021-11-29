@@ -17,6 +17,7 @@
 #include "f_erosion_pixels.h"
 #include "f_radial_distribution.h"
 #include "gabor.h"
+#include "glcm.h"
 #include "glrlm.h"
 #include "glszm.h"
 #include "gldm.h"
@@ -359,9 +360,12 @@ void parallelReduceContour (size_t start, size_t end, std::vector<int>* ptrLabel
 		if (r.roi_disabled)
 			continue;
 
+		//==== Calculate ROI's image matrix
+		r.aux_image_matrix.use_roi (r.raw_pixels, r.aabb);
+
 		//==== Contour, ROI perimeter, equivalent circle diameter
-		ImageMatrix im (r.raw_pixels, r.aabb);
-		r.contour.calculate (im);
+		//---	ImageMatrix im (r.raw_pixels, r.aabb);
+		r.contour.calculate (r.aux_image_matrix);
 		r.fvals[PERIMETER][0] = r.contour.get_roi_perimeter();	
 		r.fvals[EQUIVALENT_DIAMETER][0] = r.contour.get_diameter_equal_perimeter();	
 		auto [cmin, cmax, cmean, cstddev] = r.contour.get_min_max_mean_stddev_intensity();
@@ -404,9 +408,9 @@ void parallelReduceErosions (size_t start, size_t end, std::vector<int>* ptrLabe
 			continue;
 
 		// Calculate feature
-		ImageMatrix im(r.raw_pixels, r.aabb);
+		//---	ImageMatrix im(r.raw_pixels, r.aabb);
 		ErosionPixels epix;
-		r.fvals[EROSIONS_2_VANISH][0] = epix.calc_feature(im);
+		r.fvals[EROSIONS_2_VANISH][0] = epix.calc_feature(r.aux_image_matrix);
 	}
 }
 
@@ -553,6 +557,49 @@ void parallelReduceHaralick2D (size_t start, size_t end, std::vector<int>* ptrLa
 		int lab = (*ptrLabels)[i];
 		LR & r = (*ptrLabelData)[lab];
 
+		//=== GLCM version 2
+		// Skip calculation in case of bad data
+		int minI = (int)r.fvals[MIN][0],
+			maxI = (int)r.fvals[MAX][0];
+		if (minI == maxI)
+		{
+			// Dfault values for all 4 standard angles
+			r.fvals[GLCM_ANGULAR2NDMOMENT].resize(4, 0);
+			r.fvals[GLCM_CONTRAST].resize(4, 0);
+			r.fvals[GLCM_CORRELATION].resize(4, 0);
+			r.fvals[GLCM_VARIANCE].resize(4, 0);
+			r.fvals[GLCM_INVERSEDIFFERENCEMOMENT].resize(4, 0);
+			r.fvals[GLCM_SUMAVERAGE].resize(4, 0);
+			r.fvals[GLCM_SUMVARIANCE].resize(4, 0);
+			r.fvals[GLCM_SUMENTROPY].resize(4, 0);
+			r.fvals[GLCM_ENTROPY].resize(4, 0);
+			r.fvals[GLCM_DIFFERENCEVARIANCE].resize(4, 0);
+			r.fvals[GLCM_DIFFERENCEENTROPY].resize(4, 0);
+			r.fvals[GLCM_INFOMEAS1].resize(4, 0);
+			r.fvals[GLCM_INFOMEAS2].resize(4, 0);
+			continue;
+		}
+
+		//---	ImageMatrix im(r.raw_pixels, r.aabb);
+		GLCM_features f;
+		f.initialize(minI, maxI, r.aux_image_matrix, 5);
+		f.get_AngularSecondMoments(r.fvals[GLCM_ANGULAR2NDMOMENT]);
+		f.get_Contrast(r.fvals[GLCM_CONTRAST]);
+		f.get_Correlation(r.fvals[GLCM_CORRELATION]);
+		f.get_Variance(r.fvals[GLCM_VARIANCE]);
+		f.get_InverseDifferenceMoment(r.fvals[GLCM_INVERSEDIFFERENCEMOMENT]);
+		f.get_SumAverage(r.fvals[GLCM_SUMAVERAGE]);
+		f.get_SumVariance(r.fvals[GLCM_SUMVARIANCE]);
+		f.get_SumEntropy(r.fvals[GLCM_SUMENTROPY]);
+		f.get_Entropy(r.fvals[GLCM_ENTROPY]);
+		f.get_DifferenceVariance(r.fvals[GLCM_DIFFERENCEVARIANCE]);
+		f.get_DifferenceEntropy(r.fvals[GLCM_DIFFERENCEENTROPY]);
+		f.get_InfoMeas1(r.fvals[GLCM_INFOMEAS1]);
+		f.get_InfoMeas2(r.fvals[GLCM_INFOMEAS2]);
+
+
+		#if 0
+		//=== GLCM version 1
 		std::vector<double> texture_Feature_Angles;
 		haralick2D(
 			// in
@@ -595,6 +642,110 @@ void parallelReduceHaralick2D (size_t start, size_t end, std::vector<int>* ptrLa
 					r.fvals[GLCM_INFOMEAS2][i] = 0.0;
 			}
 		}
+		#endif
+	}
+}
+
+void parallelReduceGLRLM (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR & r = (*ptrLabelData)[lab];
+
+		//---	ImageMatrix im (r.raw_pixels, r.aabb);
+		GLRLM_features glrlm;
+		glrlm.initialize((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
+		glrlm.calc_SRE(r.fvals[GLRLM_SRE]);
+		glrlm.calc_LRE(r.fvals[GLRLM_LRE]);
+		glrlm.calc_GLN(r.fvals[GLRLM_GLN]);
+		glrlm.calc_GLNN(r.fvals[GLRLM_GLNN]);
+		glrlm.calc_RLN(r.fvals[GLRLM_RLN]);
+		glrlm.calc_RLNN(r.fvals[GLRLM_RLNN]);
+		glrlm.calc_RP(r.fvals[GLRLM_RP]);
+		glrlm.calc_GLV(r.fvals[GLRLM_GLV]);
+		glrlm.calc_RV(r.fvals[GLRLM_RV]);
+		glrlm.calc_RE(r.fvals[GLRLM_RE]);
+		glrlm.calc_LGLRE(r.fvals[GLRLM_LGLRE]);
+		glrlm.calc_HGLRE(r.fvals[GLRLM_HGLRE]);
+		glrlm.calc_SRLGLE(r.fvals[GLRLM_SRLGLE]);
+		glrlm.calc_SRHGLE(r.fvals[GLRLM_SRHGLE]);
+		glrlm.calc_LRLGLE(r.fvals[GLRLM_LRLGLE]);
+		glrlm.calc_LRHGLE(r.fvals[GLRLM_LRHGLE]);
+	}
+}
+
+void parallelReduceGLSZM (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR & r = (*ptrLabelData)[lab];
+
+		//---	ImageMatrix im(r.raw_pixels, r.aabb);
+		GLSZM_features glszm;
+		glszm.initialize((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
+		r.fvals[GLSZM_SAE][0] = glszm.calc_SAE();
+		r.fvals[GLSZM_LAE][0] = glszm.calc_LAE();
+		r.fvals[GLSZM_GLN][0] = glszm.calc_GLN();
+		r.fvals[GLSZM_GLNN][0] = glszm.calc_GLNN();
+		r.fvals[GLSZM_SZN][0] = glszm.calc_SZN();
+		r.fvals[GLSZM_SZNN][0] = glszm.calc_SZNN();
+		r.fvals[GLSZM_ZP][0] = glszm.calc_ZP();
+		r.fvals[GLSZM_GLV][0] = glszm.calc_GLV();
+		r.fvals[GLSZM_ZV][0] = glszm.calc_ZV();
+		r.fvals[GLSZM_ZE][0] = glszm.calc_ZE();
+		r.fvals[GLSZM_LGLZE][0] = glszm.calc_LGLZE();
+		r.fvals[GLSZM_HGLZE][0] = glszm.calc_HGLZE();
+		r.fvals[GLSZM_SALGLE][0] = glszm.calc_SALGLE();
+		r.fvals[GLSZM_SAHGLE][0] = glszm.calc_SAHGLE();
+		r.fvals[GLSZM_LALGLE][0] = glszm.calc_LALGLE();
+		r.fvals[GLSZM_LAHGLE][0] = glszm.calc_LAHGLE();
+	}
+}
+
+void parallelReduceGLDM (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR & r = (*ptrLabelData)[lab];
+
+		//---	ImageMatrix im(r.raw_pixels, r.aabb);
+		GLDM_features gldm;
+		gldm.initialize((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
+		r.fvals[GLDM_SDE][0] = gldm.calc_SDE();
+		r.fvals[GLDM_LDE][0] = gldm.calc_LDE();
+		r.fvals[GLDM_GLN][0] = gldm.calc_GLN();
+		r.fvals[GLDM_DN][0] = gldm.calc_DN();
+		r.fvals[GLDM_DNN][0] = gldm.calc_DNN();
+		r.fvals[GLDM_GLV][0] = gldm.calc_GLV();
+		r.fvals[GLDM_DV][0] = gldm.calc_DV();
+		r.fvals[GLDM_DE][0] = gldm.calc_DE();
+		r.fvals[GLDM_LGLE][0] = gldm.calc_LGLE();
+		r.fvals[GLDM_HGLE][0] = gldm.calc_HGLE();
+		r.fvals[GLDM_SDLGLE][0] = gldm.calc_SDLGLE();
+		r.fvals[GLDM_SDHGLE][0] = gldm.calc_SDHGLE();
+		r.fvals[GLDM_LDLGLE][0] = gldm.calc_LDLGLE();
+		r.fvals[GLDM_LDHGLE][0] = gldm.calc_LDHGLE();
+	}
+}
+
+void parallelReduceNGTDM (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR & r = (*ptrLabelData)[lab];
+
+		//---	ImageMatrix im(r.raw_pixels, r.aabb);
+		NGTDM_features ngtdm;
+		ngtdm.initialize((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
+		r.fvals[NGTDM_COARSENESS][0] = ngtdm.calc_Coarseness();
+		r.fvals[NGTDM_CONTRAST][0] = ngtdm.calc_Contrast();
+		r.fvals[NGTDM_BUSYNESS][0] = ngtdm.calc_Busyness();
+		r.fvals[NGTDM_COMPLEXITY][0] = ngtdm.calc_Complexity();
+		r.fvals[NGTDM_STRENGTH][0] = ngtdm.calc_Strength();
 	}
 }
 
@@ -622,6 +773,42 @@ void parallelReduceZernike2D (size_t start, size_t end, std::vector<int>* ptrLab
 	}
 }
 
+void parallelReduceRadialDistribution (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR & r = (*ptrLabelData)[lab];
+
+		// Prepare the contour if necessary
+		if (r.contour.contour_pixels.size() == 0)
+		{
+			//---	ImageMatrix im(r.raw_pixels, r.aabb);
+			r.contour.calculate(r.aux_image_matrix);
+
+			#if 0	// Debug
+			int idxCtr = Pixel2::find_center(r.raw_pixels, r.contour.contour_pixels);
+
+			int cx = r.raw_pixels[idxCtr].x, cy = r.raw_pixels[idxCtr].y;
+			std::stringstream ss;
+			ss << theIntFname << " Label " << ld.first;
+			im.print(ss.str(), "", cx, cy, "(*)", { {cx, cy, "(*)"} });
+
+			r.contour.calculate(im);
+			ImageMatrix imContour(r.contour.contour_pixels, r.aabb);
+			imContour.print("Contour", "", cx, cy, "(o)", { {cx, cy, "(o)"} });
+			#endif		
+		}
+
+		// Calculate the radial distribution
+		RadialDistribution rd;
+		rd.initialize(r.raw_pixels, r.contour.contour_pixels);
+		r.fvals[FRAC_AT_D] = rd.get_FracAtD();
+		r.fvals[MEAN_FRAC] = rd.get_MeanFrac();
+		r.fvals[RADIAL_CV] = rd.get_RadialCV();
+	}
+}
+
 void parallelGabor (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
@@ -631,13 +818,17 @@ void parallelGabor (size_t start, size_t end, std::vector<int>* ptrLabels, std::
 
 		// Skip calculation in case of bad data
 		if ((int)r.fvals[MIN][0] == (int)r.fvals[MAX][0])
+		{
+			r.fvals[GABOR].resize (GaborFeatures::num_features, 0.0);
 			continue;
+		}
+
 
 		GaborFeatures gf;
 		
 		// Calculate Gabor
-		ImageMatrix im (r.raw_pixels, r.aabb);
-		gf.calc_GaborTextureFilters2D (im, r.fvals[GABOR]);	// r.fvals[GABOR] will contain GaborFeatures::num_features items upon return
+		//---	ImageMatrix im (r.raw_pixels, r.aabb);
+		gf.calc_GaborTextureFilters2D (r.aux_image_matrix, r.fvals[GABOR]);	// r.fvals[GABOR] will contain GaborFeatures::num_features items upon return
 
 	}
 }
@@ -649,16 +840,16 @@ void parallelMoments (size_t start, size_t end, std::vector<int>* ptrLabels, std
 		int lab = (*ptrLabels)[i];
 		LR & r = (*ptrLabelData)[lab];
 
-		ImageMatrix im(r.raw_pixels, r.aabb);
+		//---	ImageMatrix im(r.raw_pixels, r.aabb);
 
 		// Prepare the contour if necessary
 		if (r.contour.contour_pixels.size() == 0)
-			r.contour.calculate(im);
+			r.contour.calculate(r.aux_image_matrix);
 
 		ImageMatrix weighted_im(r.raw_pixels, r.aabb);
 		weighted_im.apply_distance_to_contour_weights(r.raw_pixels, r.contour.contour_pixels);
 		HuMoments hu;
-		hu.initialize((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], im, weighted_im);
+		hu.initialize((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix, weighted_im);
 
 		double m1, m2, m3, m4, m5, m6, m7, m8, m9, m10;
 		std::tie(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10) = hu.getSpatialMoments();
@@ -1131,8 +1322,8 @@ void reduce (int nThr, int min_online_roi_size)
 			// Prepare the contour if necessary
 			if (r.contour.contour_pixels.size() == 0)
 			{
-				ImageMatrix im(r.raw_pixels, r.aabb);
-				r.contour.calculate(im);
+				//---	ImageMatrix im(r.raw_pixels, r.aabb);
+				r.contour.calculate (r.aux_image_matrix);
 			}
 
 			RoiRadius roir;
@@ -1200,29 +1391,7 @@ void reduce (int nThr, int min_online_roi_size)
 		}))
 	{
 		STOPWATCH("Texture/GLRLM/RL/#bbbbbb", "\t=");
-		for (auto& ld : labelData)
-		{
-			auto& r = ld.second;
-			ImageMatrix im (r.raw_pixels, r.aabb);
-			GLRLM_features glrlm;
-			glrlm.initialize ((int) r.fvals[MIN][0], (int) r.fvals[MAX][0], im);
-			glrlm.calc_SRE (r.fvals [GLRLM_SRE]);
-			glrlm.calc_LRE (r.fvals [GLRLM_LRE]);
-			glrlm.calc_GLN (r.fvals [GLRLM_GLN]);
-			glrlm.calc_GLNN (r.fvals [GLRLM_GLNN]);
-			glrlm.calc_RLN (r.fvals [GLRLM_RLN]);
-			glrlm.calc_RLNN (r.fvals [GLRLM_RLNN]);
-			glrlm.calc_RP (r.fvals [GLRLM_RP]);
-			glrlm.calc_GLV (r.fvals [GLRLM_GLV]);
-			glrlm.calc_RV (r.fvals [GLRLM_RV]);
-			glrlm.calc_RE (r.fvals [GLRLM_RE]);
-			glrlm.calc_LGLRE (r.fvals [GLRLM_LGLRE]);
-			glrlm.calc_HGLRE (r.fvals [GLRLM_HGLRE]);
-			glrlm.calc_SRLGLE (r.fvals [GLRLM_SRLGLE]);
-			glrlm.calc_SRHGLE (r.fvals [GLRLM_SRHGLE]);
-			glrlm.calc_LRLGLE (r.fvals [GLRLM_LRLGLE]);
-			glrlm.calc_LRHGLE (r.fvals [GLRLM_LRHGLE]);
-		}
+		runParallel (parallelReduceGLRLM, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}	
 
 	//==== GLSZM
@@ -1246,29 +1415,7 @@ void reduce (int nThr, int min_online_roi_size)
 		}))
 	{
 		STOPWATCH("Texture/GLSZM/SZ/#bbbbbb", "\t=");
-		for (auto& ld : labelData)
-		{
-			auto& r = ld.second;
-			ImageMatrix im(r.raw_pixels, r.aabb);
-			GLSZM_features glszm;
-			glszm.initialize ((int) r.fvals[MIN][0], (int) r.fvals[MAX][0], im);
-			r.fvals[GLSZM_SAE][0] = glszm.calc_SAE();
-			r.fvals[GLSZM_LAE][0] = glszm.calc_LAE();
-			r.fvals[GLSZM_GLN][0] = glszm.calc_GLN();
-			r.fvals[GLSZM_GLNN][0] = glszm.calc_GLNN();
-			r.fvals[GLSZM_SZN][0] = glszm.calc_SZN();
-			r.fvals[GLSZM_SZNN][0] = glszm.calc_SZNN();
-			r.fvals[GLSZM_ZP][0] = glszm.calc_ZP();
-			r.fvals[GLSZM_GLV][0] = glszm.calc_GLV();
-			r.fvals[GLSZM_ZV][0] = glszm.calc_ZV();
-			r.fvals[GLSZM_ZE][0] = glszm.calc_ZE();
-			r.fvals[GLSZM_LGLZE][0] = glszm.calc_LGLZE();
-			r.fvals[GLSZM_HGLZE][0] = glszm.calc_HGLZE();
-			r.fvals[GLSZM_SALGLE][0] = glszm.calc_SALGLE();
-			r.fvals[GLSZM_SAHGLE][0] = glszm.calc_SAHGLE();
-			r.fvals[GLSZM_LALGLE][0] = glszm.calc_LALGLE();
-			r.fvals[GLSZM_LAHGLE][0] = glszm.calc_LAHGLE();
-		}
+		runParallel (parallelReduceGLSZM, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== GLDM
@@ -1290,27 +1437,7 @@ void reduce (int nThr, int min_online_roi_size)
 		}))
 	{
 		STOPWATCH("Texture/GLDM/D/#bbbbbb", "\t=");
-		for (auto& ld : labelData)
-		{
-			auto& r = ld.second;
-			ImageMatrix im(r.raw_pixels, r.aabb);
-			GLDM_features gldm;
-			gldm.initialize ((int) r.fvals[MIN][0], (int) r.fvals[MAX][0], im);
-			r.fvals[GLDM_SDE][0] = gldm.calc_SDE();
-			r.fvals[GLDM_LDE][0] = gldm.calc_LDE();
-			r.fvals[GLDM_GLN][0] = gldm.calc_GLN();
-			r.fvals[GLDM_DN][0] = gldm.calc_DN();
-			r.fvals[GLDM_DNN][0] = gldm.calc_DNN();
-			r.fvals[GLDM_GLV][0] = gldm.calc_GLV();
-			r.fvals[GLDM_DV][0] = gldm.calc_DV();
-			r.fvals[GLDM_DE][0] = gldm.calc_DE();
-			r.fvals[GLDM_LGLE][0] = gldm.calc_LGLE();
-			r.fvals[GLDM_HGLE][0] = gldm.calc_HGLE();
-			r.fvals[GLDM_SDLGLE][0] = gldm.calc_SDLGLE();
-			r.fvals[GLDM_SDHGLE][0] = gldm.calc_SDHGLE();
-			r.fvals[GLDM_LDLGLE][0] = gldm.calc_LDLGLE();
-			r.fvals[GLDM_LDHGLE][0] = gldm.calc_LDHGLE();
-		}
+		runParallel(parallelReduceGLDM, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== NGTDM
@@ -1323,19 +1450,7 @@ void reduce (int nThr, int min_online_roi_size)
 		}))
 	{
 		STOPWATCH("Texture/NGTDM/NG/#bbbbbb", "\t=");
-		for (auto& ld : labelData)
-		{
-			auto& r = ld.second;
-			ImageMatrix im(r.raw_pixels, r.aabb);
-			NGTDM_features ngtdm;
-			ngtdm.initialize ((int) r.fvals[MIN][0], (int) r.fvals[MAX][0], im);
-
-			r.fvals[NGTDM_COARSENESS][0] = ngtdm.calc_Coarseness();
-			r.fvals[NGTDM_CONTRAST][0] = ngtdm.calc_Contrast();
-			r.fvals[NGTDM_BUSYNESS][0] = ngtdm.calc_Busyness();
-			r.fvals[NGTDM_COMPLEXITY][0] = ngtdm.calc_Complexity();
-			r.fvals[NGTDM_STRENGTH][0] = ngtdm.calc_Strength();
- 		}
+		runParallel(parallelReduceNGTDM, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Moments
@@ -1398,44 +1513,14 @@ void reduce (int nThr, int min_online_roi_size)
 	if (theFeatureSet.isEnabled(ZERNIKE2D))
 	{
 		STOPWATCH("RDistribution/Zernike/Rz/#00FFFF", "\t=");
-		runParallel(parallelReduceZernike2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
+		runParallel (parallelReduceZernike2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Radial distribution / FracAtD, MeanFraq, and RadialCV
 	if (theFeatureSet.anyEnabled({FRAC_AT_D, MEAN_FRAC, RADIAL_CV}))
 	{
 		STOPWATCH("RDistribution/Rdist/Rd/#00FFFF", "\t=");
-		for (auto& ld : labelData)
-		{
-			auto& r = ld.second;
-
-			// Prepare the contour if necessary
-			if (r.contour.contour_pixels.size() == 0)
-			{
-				ImageMatrix im(r.raw_pixels, r.aabb);
-				r.contour.calculate(im);
-
-				#if 0	// Debug
-				int idxCtr = Pixel2::find_center(r.raw_pixels, r.contour.contour_pixels);
-
-				int cx = r.raw_pixels[idxCtr].x, cy = r.raw_pixels[idxCtr].y;
-				std::stringstream ss;
-				ss << theIntFname << " Label " << ld.first;
-				im.print(ss.str(), "", cx, cy, "(*)", { {cx, cy, "(*)"} });
-
-				r.contour.calculate(im);
-				ImageMatrix imContour(r.contour.contour_pixels, r.aabb);
-				imContour.print("Contour", "", cx, cy, "(o)", { {cx, cy, "(o)"} });
-				#endif		
-			}
-
-			// Calculate the radial distributions
-			RadialDistribution rd;
-			rd.initialize (r.raw_pixels, r.contour.contour_pixels);
-			r.fvals[FRAC_AT_D] = rd.get_FracAtD();
-			r.fvals[MEAN_FRAC] = rd.get_MeanFrac();
-			r.fvals[RADIAL_CV] = rd.get_RadialCV();
-		}
+		runParallel (parallelReduceRadialDistribution, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 }

@@ -11,4 +11,6 @@ std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
 std::vector<double> calcResultBuf;
 Environment theEnvironment;
 
+// Timing
+double totalImgScanTime = 0.0, totalFeatureReduceTime = 0.0;	// Time counters external to class 'Stopwatch'
 std::map <std::string, double> Stopwatch::totals;
