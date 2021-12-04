@@ -20,6 +20,7 @@ protected:
     void conv_ddd (double* c, double* a, double* b, int na, int ma, int nb, int mb);
     void conv_dud (double* c, const unsigned int* a, double* b, int na, int ma, int nb, int mb);
     void conv_parallel (double* c, double* a, double* b, int na, int ma, int nb, int mb);
+    void conv_parallel_dud (double* c, const unsigned int* a, double* b, int na, int ma, int nb, int mb);
 
     // Creates a non-normalized Gabor filter
     void Gabor (

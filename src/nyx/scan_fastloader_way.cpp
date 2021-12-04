@@ -237,7 +237,6 @@ int processDataset (
 	Stopwatch::save_stats(theEnvironment.output_dir + "/nyxus_timing.csv");
 #endif
 
-
 	return 0; // success
 }
 

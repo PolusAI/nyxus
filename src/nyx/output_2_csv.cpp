@@ -233,6 +233,7 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 		for (auto& enabdF : F)
 		{
 			auto fcode = std::get<1> (enabdF);
+			auto fname = std::get<0>(enabdF);	// debug
 			auto vv = r.getFeatureValues (fcode);
 
 			// Parameterized feature
@@ -257,6 +258,7 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 				for (int i=0; i<theEnvironment.rotAngles.size(); i++)
 				{
 					ssVals << "," << vv[i];
+					//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[i];	
 				}
 				// Proceed with other features
 				continue;
@@ -286,6 +288,7 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 				for (int i=0; i<GLRLM_features::rotAngles.size(); i++)
 				{
 					ssVals << "," << vv[i];
+					//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[i];	
 				}
 				// Proceed with other features
 				continue;
@@ -297,6 +300,7 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 				for (auto i = 0; i < GaborFeatures::num_features; i++)
 				{
 					ssVals << "," << vv[i];
+					//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[i];	
 				}
 
 				// Proceed with other features
@@ -311,26 +315,55 @@ bool save_features_2_csv (std::string inputFpath, std::string outputDir)
 					if (i % 2)
 						for (int j = 1; j <= i; j += 2)
 						{
-							// CSV separator
-							//if (j > 1)
-							//	ssVals << ",";
 							ssVals << "," << vv[zIdx++]; // former r.Zernike2D[zIdx++];
+							//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[zIdx++];
 						}
 					else
 						for (int j = 0; j <= i; j += 2)
 						{
-							// CSV separator
-							//if (j > 1)
-							//	ssVals << ",";
 							ssVals << "," << vv[zIdx++]; // former r.Zernike2D[zIdx++];
+							//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[zIdx++];
 						}
 
 				// Proceed with other features
 				continue;
 			}
 
+			// --Radial distribution features
+			if (fcode == FRAC_AT_D)
+			{
+				for (auto i = 0; i < RadialDistribution::num_features_FracAtD; i++)
+				{
+					ssVals << "," << vv[i];
+					//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[i];	
+				}
+				// Proceed with other features
+				continue;
+			}
+			if (fcode == MEAN_FRAC)
+			{
+				for (auto i = 0; i < RadialDistribution::num_features_MeanFrac; i++)
+				{
+					ssVals << "," << vv[i];
+					//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[i];	
+				}
+				// Proceed with other features
+				continue;
+			}
+			if (fcode == RADIAL_CV)
+			{
+				for (auto i = 0; i < RadialDistribution::num_features_RadialCV; i++)
+				{
+					ssVals << "," << vv[i];
+					//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[i];	
+				}
+				// Proceed with other features
+				continue;
+			}
+
 			// Regular feature
 			ssVals << "," << vv[0];
+			//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[0];	
 		}
 
 		fprintf(fp, "%s\n", ssVals.str().c_str());

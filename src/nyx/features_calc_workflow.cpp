@@ -967,13 +967,10 @@ void reduce (int nThr, int min_online_roi_size)
 		hist.print(true, "\nHistogram of ROI size:");
 	}
 
-	//=== Sort the labels 
-	// We do this for 2 purposes: (1) being able to iterate them in equal chunks that in turn requires [indexed] access; (2) later, output the results by sorted labels
-	// Implementing the following --> std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
+	//=== Make ROI labels indexable 
 	sortedUniqueLabels.clear();
 	for (auto l : uniqueLabels)
 		sortedUniqueLabels.push_back(l);
-	//std::sort(sortedUniqueLabels.begin(), sortedUniqueLabels.end());
 	
 	//==== 	Parallel execution parameters 
 	size_t tileSize = sortedUniqueLabels.size(),
@@ -1366,7 +1363,7 @@ void reduce (int nThr, int min_online_roi_size)
 		GLCM_INFOMEAS1,
 		GLCM_INFOMEAS2 }))
 	{
-		STOPWATCH("Texture/GLCM/C/#bbbbbb", "\t=");
+		STOPWATCH("Texture/GLCM texture/GLCM/#bbbbbb", "\t=");
 		runParallel (parallelReduceHaralick2D, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
@@ -1498,14 +1495,14 @@ void reduce (int nThr, int min_online_roi_size)
 		WEIGHTED_HU_M6,
 		WEIGHTED_HU_M7 }))
 	{
-		STOPWATCH("Moments/Moments/M/#FFFACD", "\t=");
+		STOPWATCH("Moments/Moments/2D moms/#FFFACD", "\t=");
 		runParallel (parallelMoments, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Gabor features
 	if (theFeatureSet.isEnabled(GABOR))
 	{
-		STOPWATCH("Gabor/Gabor/G/#f58231", "\t=");
+		STOPWATCH("Gabor/Gabor/Gabor/#f58231", "\t=");
 		runParallel (parallelGabor, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 

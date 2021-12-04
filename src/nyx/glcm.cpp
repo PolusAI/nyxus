@@ -367,9 +367,6 @@ void GLCM_features::get_InfoMeas2(AngledFeatures& af)
 	af.assign (fvals_meas_corr2.begin(), fvals_meas_corr2.end());
 }
 
-
-
-
 /* Angular Second Moment
 *
 * The angular second-moment feature (ASM) f1 is a measure of homogeneity
@@ -446,8 +443,9 @@ double GLCM_features::f3_corr (const SimpleMatrix<double>& P, int Ng, std::vecto
 	double meanx = 0, meany = 0, stddevx, stddevy;
 
 	//---	double *px = allocate_vector(0, Ng);
-	for (i = 0; i < Ng; ++i)
-		px[i] = 0;
+	//		for (i = 0; i < Ng; ++i)
+	//			px[i] = 0;
+	std::fill(px.begin(), px.end(), 0.0);
 
 	/*
 	* px[i] is the (i-1)th entry in the marginal probability matrix obtained
@@ -522,9 +520,9 @@ double GLCM_features::f6_savg(const SimpleMatrix<double>& P, int Ng, std::vector
 	int i, j;
 	double savg = 0;
 	//---	double* Pxpy = allocate_vector(0, 2 * Ng);
-
-	for (i = 0; i <= 2 * Ng; ++i)
-		Pxpy[i] = 0;
+	//		for (i = 0; i <= 2 * Ng; ++i)
+	//			Pxpy[i] = 0;
+	std::fill(Pxpy.begin(), Pxpy.end(), 0.0);
 
 	for (i = 0; i < Ng; ++i)
 		for (j = 0; j < Ng; ++j)
@@ -547,9 +545,9 @@ double GLCM_features::f7_svar(const SimpleMatrix<double>& P, int Ng, double S, s
 	int i, j;
 	double var = 0;
 	//---	double* Pxpy = allocate_vector(0, 2 * Ng);
-
-	for (i = 0; i <= 2 * Ng; ++i)
-		Pxpy[i] = 0;
+	//		for (i = 0; i <= 2 * Ng; ++i)
+	//			Pxpy[i] = 0;
+	std::fill(Pxpy.begin(), Pxpy.end(), 0.0);
 
 	for (i = 0; i < Ng; ++i)
 		for (j = 0; j < Ng; ++j)
@@ -575,15 +573,15 @@ double GLCM_features::f8_sentropy(const SimpleMatrix<double>& P, int Ng, std::ve
 	int i, j;
 	double sentropy = 0;
 	//---	double* Pxpy = allocate_vector(0, 2 * Ng);
+	//		for (i = 0; i <= 2 * Ng; ++i)
+	//			Pxpy[i] = 0;
+	std::fill(Pxpy.begin(), Pxpy.end(), 0.0);
 
-	for (i = 0; i <= 2 * Ng; ++i)
-		Pxpy[i] = 0;
-
-	for (i = 0; i < Ng; ++i)
-		for (j = 0; j < Ng; ++j)
+	for (i = 0; i < Ng-1; ++i)
+		for (j = 0; j < Ng-1; ++j)
 			Pxpy[i + j + 2] += P(i, j);
 
-	for (i = 2; i <= 2 * Ng; ++i)
+	for (i = 2; i < 2 * Ng; ++i)
 		/*  M. Boland  sentropy -= Pxpy[i] * log10 (Pxpy[i] + EPSILON); */
 		sentropy -= Pxpy[i] * log10(Pxpy[i] + EPSILON) / log10(2.0);
 
@@ -612,9 +610,9 @@ double GLCM_features::f10_dvar(const SimpleMatrix<double>& P, int Ng, std::vecto
 	int i, j;
 	double sum = 0, sum_sqr = 0, var = 0;
 	//---	double* Pxpy = allocate_vector(0, 2 * Ng);
-
-	for (i = 0; i <= 2 * Ng; ++i)
-		Pxpy[i] = 0;
+	//		for (i = 0; i <= 2 * Ng; ++i)
+	//			Pxpy[i] = 0;
+	std::fill(Pxpy.begin(), Pxpy.end(), 0.0);
 
 	for (i = 0; i < Ng; ++i)
 		for (j = 0; j < Ng; ++j)
@@ -643,9 +641,9 @@ double GLCM_features::f11_dentropy(const SimpleMatrix<double>& P, int Ng, std::v
 	int i, j;
 	double sum = 0;
 	//---	double* Pxpy = allocate_vector(0, 2 * Ng);
-
-	for (i = 0; i <= 2 * Ng; ++i)
-		Pxpy[i] = 0;
+	//		for (i = 0; i <= 2 * Ng; ++i)
+	//			Pxpy[i] = 0;
+	std::fill(Pxpy.begin(), Pxpy.end(), 0.0);
 
 	for (i = 0; i < Ng; ++i)
 		for (j = 0; j < Ng; ++j)
