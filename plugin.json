@@ -1,9 +1,9 @@
 {
   "name": "Nyxus",
-  "version": "0.1.30",
-  "containerId": "polusai/nyxus:0.1.30",
+  "version": "0.2.3",
+  "containerId": "polusai/nyxus:0.2.3",
   "title": "Nyxus feature extraction",
-  "description": "Nyxus feature extractor (build of 11/02/2021)",
+  "description": "Nyxus feature extractor (build of 12/01/2021)",
   "author": "friskluft + hsidky",
   "institution": "Axle Informatics",
   "repository": "https://github.com/friskluft/nyxus",
@@ -360,33 +360,33 @@
               ]
             },
             {
-              "description": "CELLPROFILER_INTENSITY_INTEGRATEDINTENSITYEDGE",
+              "description": "EDGE_INTEGRATEDINTENSITY",
               "enum": [
-                "CELLPROFILER_INTENSITY_INTEGRATEDINTENSITYEDGE"
+                "EDGE_INTEGRATEDINTENSITY"
               ]
             },
             {
-              "description": "CELLPROFILER_INTENSITY_MAXINTENSITYEDGE",
+              "description": "EDGE_MAXINTENSITY",
               "enum": [
-                "CELLPROFILER_INTENSITY_MAXINTENSITYEDGE"
+                "EDGE_MAXINTENSITY"
               ]
             },
             {
-              "description": "CELLPROFILER_INTENSITY_MEANINTENSITYEDGE",
+              "description": "EDGE_MEANINTENSITY",
               "enum": [
-                "CELLPROFILER_INTENSITY_MEANINTENSITYEDGE"
+                "EDGE_MEANINTENSITY"
               ]
             },
             {
-              "description": "CELLPROFILER_INTENSITY_MININTENSITYEDGE",
+              "description": "EDGE_MININTENSITY",
               "enum": [
-                "CELLPROFILER_INTENSITY_MININTENSITYEDGE"
+                "EDGE_MININTENSITY"
               ]
             },
             {
-              "description": "CELLPROFILER_INTENSITY_STDDEVINTENSITYEDGE",
+              "description": "EDGE_STDDEVINTENSITY",
               "enum": [
-                "CELLPROFILER_INTENSITY_STDDEVINTENSITYEDGE"
+                "EDGE_STDDEVINTENSITY"
               ]
             },
             {

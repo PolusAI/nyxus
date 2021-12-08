@@ -81,11 +81,11 @@ enum AvailableFeatures
 
 
 	// CellProfiler features [http://cellprofiler-manual.s3.amazonaws.com/CellProfiler-3.0.0/modules/measurement.html]
-	CELLPROFILER_INTENSITY_INTEGRATEDINTENSITYEDGE,	// Sum of the edge pixel intensities
-	CELLPROFILER_INTENSITY_MAXINTENSITYEDGE,		// Maximal edge pixel intensity
-	CELLPROFILER_INTENSITY_MEANINTENSITYEDGE,		// Average edge pixel intensity
-	CELLPROFILER_INTENSITY_MININTENSITYEDGE,		// Minimal edge pixel intensity
-	CELLPROFILER_INTENSITY_STDDEVINTENSITYEDGE,		// Standard deviation of the edge pixel intensities
+	EDGE_INTEGRATEDINTENSITY,	// Sum of the edge pixel intensities
+	EDGE_MAXINTENSITY,		// Maximal edge pixel intensity
+	EDGE_MEANINTENSITY,		// Average edge pixel intensity
+	EDGE_MININTENSITY,		// Minimal edge pixel intensity
+	EDGE_STDDEVINTENSITY,		// Standard deviation of the edge pixel intensities
 
 	MIN_FERET_DIAMETER,  
 	MAX_FERET_DIAMETER,  

@@ -45,11 +45,11 @@ void LR::reduce_edge_intensity_features()
 	stddevI = std::sqrt(stddevI / n);
 
 	// Save
-	fvals[CELLPROFILER_INTENSITY_INTEGRATEDINTENSITYEDGE][0] = sumI; // CellProfiler_Intensity_IntegratedIntensityEdge = sumI;
-	fvals[CELLPROFILER_INTENSITY_MAXINTENSITYEDGE][0] = maxI; // CellProfiler_Intensity_MaxIntensityEdge = maxI;
-	fvals[CELLPROFILER_INTENSITY_MININTENSITYEDGE][0] = minI; // CellProfiler_Intensity_MinIntensityEdge = minI;
-	fvals[CELLPROFILER_INTENSITY_MEANINTENSITYEDGE][0] = meanI; // CellProfiler_Intensity_MeanIntensityEdge = meanI;
-	fvals[CELLPROFILER_INTENSITY_STDDEVINTENSITYEDGE][0] = stddevI; // CellProfiler_Intensity_StddevIntensityEdge = stddevI;	
+	fvals[EDGE_INTEGRATEDINTENSITY][0] = sumI; 
+	fvals[EDGE_MAXINTENSITY][0] = maxI; 
+	fvals[EDGE_MININTENSITY][0] = minI; 
+	fvals[EDGE_MEANINTENSITY][0] = meanI; 
+	fvals[EDGE_STDDEVINTENSITY][0] = stddevI; 
 }
 
 void LR::reduce_pixel_intensity_features()

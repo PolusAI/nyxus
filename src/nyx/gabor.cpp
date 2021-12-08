@@ -405,7 +405,7 @@ void GaborFeatures::conv_parallel_dud(
     }
 }
 
-// Creates a non-normalized Gabor filter
+// Creates a normalized Gabor filter
 void GaborFeatures::Gabor (double* Gex, double f0, double sig2lam, double gamma, double theta, double fi, int n)
 {
     //double* tx, * ty;
@@ -417,9 +417,9 @@ void GaborFeatures::Gabor (double* Gex, double f0, double sig2lam, double gamma,
     int x, y;
     int nx = n;
     int ny = n;
-    //tx = new double[nx + 1];
+    //A tx = new double[nx + 1];
     std::vector<double> tx (nx + 1);
-    //ty = new double[ny + 1];
+    //A ty = new double[ny + 1];
     std::vector<double> ty (nx + 1);
 
     if (nx % 2 > 0) {
@@ -481,8 +481,10 @@ void GaborFeatures::GaborEnergy (
     double theta, 
     int n) 
 {
+    int n_gab = n;
+
     double fi = 0;
-    Gabor (Gexp, f0, sig2lam, gamma, theta, fi, n);
+    Gabor (Gexp, f0, sig2lam, gamma, theta, fi, n_gab);
 
     readOnlyPixels pix_plane = Im.ReadablePixels();
 
@@ -509,7 +511,7 @@ void GaborFeatures::GaborEnergy (
     #endif
 
     //=== Version 2
-    conv_dud (auxC, pix_plane.data(), Gexp, Im.width, Im.height, n, n);
+    conv_dud (auxC, pix_plane.data(), Gexp, Im.width, Im.height, n_gab, n_gab);
 
     decltype(Im.height) b = 0;
     for (auto y = (int)ceil((double)n / 2); b < Im.height; y++) 
@@ -519,12 +521,12 @@ void GaborFeatures::GaborEnergy (
         {
             if (std::isnan(auxC[y * 2 * (Im.width + n - 1) + x * 2]) || std::isnan(auxC[y * 2 * (Im.width + n - 1) + x * 2 + 1])) 
             {
-                out[b * Im.width + a] = std::numeric_limits<double>::quiet_NaN();
+                out[b * Im.width + a] = (PixIntens) std::numeric_limits<double>::quiet_NaN();
                 a++;
                 continue;
             }
 
-            out[b * Im.width + a] = sqrt(pow(auxC[y * 2 * (Im.width + n - 1) + x * 2], 2) + pow(auxC[y * 2 * (Im.width + n - 1) + x * 2 + 1], 2));
+            out[b * Im.width + a] = (PixIntens) sqrt(pow(auxC[y * 2 * (Im.width + n - 1) + x * 2], 2) + pow(auxC[y * 2 * (Im.width + n - 1) + x * 2 + 1], 2));
             a++;
         }
         b++;
