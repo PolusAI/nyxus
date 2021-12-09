@@ -32,7 +32,8 @@ enum AvailableFeatures
 	MASS_DISPLACEMENT,
 
 	// Morphology:
-	AREA_PIXELS_COUNT,
+	AREA_PIXELS_COUNT,	
+	AREA_UM2,
 	CENTROID_X,  
 	CENTROID_Y,  
 	COMPACTNESS,

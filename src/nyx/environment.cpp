@@ -119,12 +119,12 @@ void Environment::show_help()
             << SEGDIR << " <sd> " 
             << INTDIR << " <id> " 
             << OUTDIR << " <od> "
-            << " [" << FEATURES " <f>] "
+            << " [" << FEATURES << " <f>] \n"
+            << " [" << XYRESOLUTION << " <res> \n"
             << " [" << EMBPIXSZ << " <eps>]\n"
             << " [" << LOADERTHREADS << " <lt>]\n"
             << " [" << PXLSCANTHREADS << " <st>]\n"
             << " [" << REDUCETHREADS << " <rt>]\n"
-            << " [" << VERBOSITY << " <vl>]\n"
             << " [" << ROTATIONS << " <al>]\n"
             << " [" << VERBOSITY << " <verbo>]\n"
 
@@ -134,12 +134,12 @@ void Environment::show_help()
         << "\t<sd> - directory of segmentation images \n"
         << "\t<id> - directory of intensity images \n"
         << "\t<od> - output directory \n"
-        << "\t<f> - a specific feature or 'all' [default = 'all']\n"
+        << "\t<f> - specific feature or 'all' [default = 'all']\n"
+        << "\t<res> - number of pixels per centimeter, an integer or floating point number \n"
         << "\t<eps> - [default = 0] \n"
         << "\t<lt> - number of image loader threads [default = 1] \n"
         << "\t<st> - number of pixel scanner threads within a TIFF tile [default = 1] \n"
         << "\t<rt> - number of feature reduction threads [default = 1] \n"
-        << "\t<vl> - verbosity level [default = 0] \n"
         << "\t<al> - comma separated rotation angles [default = 0,45,90,135] \n"
         << "\t<verbo> - levels of verbosity 0 (silence), 2 (timing), 4 (roi diagnostics), 8 (granular diagnostics) [default = 0] \n"
         ;
@@ -169,6 +169,10 @@ void Environment::show_summary (const std::string & head, const std::string & ta
         std::cout << f;
     }
     std::cout << "\n";
+
+    // Resolution
+    if (xyRes > 0.0)
+        std::cout << "\tXY-resolution " << xyRes << "\n";
 
     // Rotation angles
     std::cout << "\tangles of rotational features\t";
@@ -291,6 +295,7 @@ int Environment::parse_cmdline(int argc, char** argv)
             find_string_argument(i, SEGDIR, labels_dir) ||
             find_string_argument(i, OUTDIR, output_dir) ||
             find_string_argument(i, FEATURES, features) ||
+            find_string_argument(i, XYRESOLUTION, rawXYRes) ||
             find_string_argument(i, FILEPATTERN, file_pattern) ||
             find_string_argument(i, OUTPUTTYPE, rawOutpType) ||
             find_string_argument(i, EMBPIXSZ, embedded_pixel_size) ||
@@ -303,7 +308,7 @@ int Environment::parse_cmdline(int argc, char** argv)
             unrecognized.push_back(*i);
     }
 
-    //==== Report
+    //==== Show the user recognized and unrecognized command line elements
     
     // --include the raw command line
     std::stringstream rawCL;
@@ -533,6 +538,7 @@ int Environment::parse_cmdline(int argc, char** argv)
         {
             auto F = {
                 AREA_PIXELS_COUNT,
+                AREA_UM2, 
                 CENTROID_X,
                 CENTROID_Y,
                 COMPACTNESS,
@@ -564,6 +570,7 @@ int Environment::parse_cmdline(int argc, char** argv)
         {
             auto F = {
                 AREA_PIXELS_COUNT,
+                AREA_UM2,
                 CENTROID_X,
                 CENTROID_Y,
                 BBOX_YMIN,
@@ -684,6 +691,20 @@ int Environment::parse_cmdline(int argc, char** argv)
 
         theFeatureSet.enableFeature(af);
     }
+
+    //==== Parse resolution
+    if (rawXYRes.length() > 0)
+    {
+        // string -> number
+        if (sscanf(rawXYRes.c_str(), "%f", &xyRes) != 1 || xyRes <= 0)
+        {
+            std::cout << "Error: " << XYRESOLUTION << "=" << xyRes << ": expecting a positive numeric constant\n";
+            return 1;
+        }
+        // pixel size
+        pixelSizeUm = 1e-2 / xyRes / 1e-6;	// 1 cm in meters / pixels per cm / micrometers
+    }
+
 
     // Success
     return 0;

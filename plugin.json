@@ -1,9 +1,9 @@
 {
   "name": "Nyxus",
-  "version": "0.2.3",
-  "containerId": "polusai/nyxus:0.2.3",
+  "version": "0.2.4",
+  "containerId": "polusai/nyxus:0.2.4",
   "title": "Nyxus feature extraction",
-  "description": "Nyxus feature extractor (build of 12/01/2021)",
+  "description": "Nyxus feature extractor (build of 12/08/2021)",
   "author": "friskluft + hsidky",
   "institution": "Axle Informatics",
   "repository": "https://github.com/friskluft/nyxus",
@@ -239,18 +239,9 @@
                 "WEIGHTED_CENTROID_Y"
               ]
             },
-            {
-              "description": "WEIGHTED_CENTROID_X",
-              "enum": [
-                "WEIGHTED_CENTROID_X"
-              ]
-            },
-            {
-              "description": "AREA_PIXELS_COUNT",
-              "enum": [
-                "AREA_PIXELS_COUNT"
-              ]
-            },
+            { "description": "WEIGHTED_CENTROID_X", "enum": ["WEIGHTED_CENTROID_X"] },
+            { "description": "AREA_PIXELS_COUNT", "enum": ["AREA_PIXELS_COUNT"] },
+            { "description": "AREA_UM2", "enum": ["AREA_UM2"] },
             {
               "description": "CENTROID_X",
               "enum": [
@@ -1145,15 +1136,8 @@
       "required": false
     },
     {
-      "name": "unitLength",
-      "description": "Unit name",
-      "type": "string",
-      "options": null,
-      "required": false
-    },
-    {
-      "name": "pixelsPerunit",
-      "description": "Enter the number of pixels per unit of the metric",
+      "name": "pixelsPerCentimeter",
+      "description": "Enter the number of pixels per centimeter",
       "type": "number",
       "options": null,
       "required": false
@@ -1208,15 +1192,9 @@
       "default": true
     },
     {
-      "key": "inputs.unitLength",
-      "title": "Length of unit",
-      "description": "Unit name",
-      "condition": "model.inputs.embeddedpixelsize==false"
-    },
-    {
-      "key": "inputs.pixelsPerunit",
-      "title": "Pixels per unit",
-      "description": "Enter the number of pixels per unit of the metric",
+      "key": "inputs.pixelsPerCentimeter",
+      "title": "Pixels per centimeter",
+      "description": "Enter the number of pixels per centimeter",
       "condition": "model.inputs.embeddedpixelsize==false"
     }
   ],

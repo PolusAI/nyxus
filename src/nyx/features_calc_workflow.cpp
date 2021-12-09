@@ -67,6 +67,11 @@ void init_label_record (LR& r, const std::string & segFile, const std::string & 
 	r.raw_pixels.push_back(Pixel2(x, y, intensity));
 
 	r.fvals[AREA_PIXELS_COUNT][0] = 1;
+	if (theEnvironment.xyRes == 0.0)
+		r.fvals[AREA_UM2][0] = 0;
+	else
+		r.fvals[AREA_UM2][0] = std::pow (theEnvironment.pixelSizeUm, 2);
+
 	r.aux_PrevCount = 0;
 	// Min
 	r.fvals[MIN][0] = r.aux_min = intensity; // r.min = intensity;
@@ -187,6 +192,8 @@ void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int> * 
 
 		// --AREA
 		lr.fvals[AREA_PIXELS_COUNT][0] = n;
+		if (theEnvironment.xyRes > 0.0)
+			lr.fvals[AREA_UM2][0] = n * std::pow (theEnvironment.pixelSizeUm, 2);
 
 		// --MEAN, ENERGY, CENTROID_XY
 		double mean_ = 0.0;

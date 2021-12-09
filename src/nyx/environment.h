@@ -17,6 +17,7 @@
 #define ROTATIONS	"--rotations"	// Environment :: rotAngles
 #define VERBOSITY	"--verbosity"	// Environment :: verbosity_level	-- Example: --verbosity=3
 #define ONLINESTATSTHRESH	"--onlineStatsThresh"	// Environment :: onlineStatsThreshold	-- Example: --onlineStatsThresh=150
+#define XYRESOLUTION "--pixelsPerCentimeter"	// pixels per centimeter
 
 // Feature group nicknames
 #define FEA_NICK_ALL "*ALL*"
@@ -82,6 +83,11 @@ public:
 
 	std::string rawOutpType = "";	// Valid values: "separatecsv" or "singlecsv"
 	bool separateCsv = true;
+
+	// x- and y- resolution in pixels per centimeter
+	std::string rawXYRes = "";
+	float xyRes = 0.0, 
+		pixelSizeUm = 0.0;
 
 protected:
 
