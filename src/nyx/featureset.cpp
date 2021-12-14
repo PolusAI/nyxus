@@ -1,20 +1,7 @@
-#define _USE_MATH_DEFINES	// For M_PI, etc.
-#include <cmath>
-#include <memory>
-#include <unordered_map>
-#include <unordered_set> 
-#include <algorithm>
-#include <iostream>
-#include <chrono>
-#include <thread>
-#include <future>
-#include <array>
-#include "sensemaker.h"
-
-#ifndef __unix
-#define NOMINMAX	// Prevent converting std::min(), max(), ... into macros
-#include<windows.h>
-#endif
+#include <map>
+#include <string>
+#include "featureset.h"
+#include "roi_data.h"
 
 std::map <std::string, AvailableFeatures> UserFacingFeatureNames =
 {
@@ -100,10 +87,10 @@ std::map <std::string, AvailableFeatures> UserFacingFeatureNames =
 	{"FRACT_DIM_PERIMETER", FRACT_DIM_PERIMETER},
 
 	{"EDGE_INTEGRATEDINTENSITY", EDGE_INTEGRATEDINTENSITY},	// Sum of the edge pixel intensities
-	{"EDGE_MAXINTENSITY", EDGE_MAXINTENSITY},		// Maximal edge pixel intensity
-	{"EDGE_MEANINTENSITY", EDGE_MEANINTENSITY},		// Average edge pixel intensity
-	{"EDGE_MININTENSITY", EDGE_MININTENSITY},		// Minimal edge pixel intensity
-	{"EDGE_STDDEVINTENSITY", EDGE_STDDEVINTENSITY},		// Standard deviation of the edge pixel intensities
+	{"EDGE_MAXINTENSITY", EDGE_MAXINTENSITY},				// Max edge pixel intensity
+	{"EDGE_MEANINTENSITY", EDGE_MEANINTENSITY},				// Average edge pixel intensity
+	{"EDGE_MININTENSITY", EDGE_MININTENSITY},				// Min edge pixel intensity
+	{"EDGE_STDDEVINTENSITY", EDGE_STDDEVINTENSITY},			// Standard deviation of the edge pixel intensities
 
 	{"EXTREMA_P1_X", EXTREMA_P1_X},
 	{"EXTREMA_P1_Y",EXTREMA_P1_Y},

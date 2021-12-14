@@ -1,6 +1,6 @@
 #include "environment.h"
-#include "sensemaker.h"
-#include "timing.h"
+#include "globals.h"
+#include "helpers/timing.h"
 
 FeatureSet theFeatureSet;
 std::string theSegFname, theIntFname;	

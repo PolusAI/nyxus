@@ -8,7 +8,7 @@
 #include <vector>
 #include "environment.h"
 #include "featureset.h"
-#include "helpers.h"
+#include "helpers/helpers.h"
 #include "version.h"
 
 bool directoryExists(const std::string&);

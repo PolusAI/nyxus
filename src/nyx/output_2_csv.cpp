@@ -8,10 +8,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "environment.h"
-#include "f_radial_distribution.h"
-#include "gabor.h"
-#include "glrlm.h"
-#include "sensemaker.h"
+#include "features/f_radial_distribution.h"
+#include "features/gabor.h"
+#include "features/glrlm.h"
+#include "globals.h"
 
 // Macro to make some file i/o calls platform-independent
 #ifdef __unix

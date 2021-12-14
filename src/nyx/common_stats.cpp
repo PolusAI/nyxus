@@ -1,14 +1,5 @@
-#define _USE_MATH_DEFINES
-#include <cmath>
-#include <memory>
-#include <unordered_map>
-#include <unordered_set> 
 #include <algorithm>
-#include <iostream>
-#include <chrono>
-#include <thread>
-#include "sensemaker.h"
-
+#include "helpers/helpers.h"
 
 Statistics ComputeCommonStatistics2 (std::vector<double> & Data) {
 

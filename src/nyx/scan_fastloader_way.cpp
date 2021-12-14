@@ -9,8 +9,8 @@
 #include <array>
 #include "virtual_file_tile_channel_loader.h"
 #include "environment.h"
-#include "sensemaker.h"
-#include "timing.h"
+#include "globals.h"
+#include "helpers/timing.h"
 
 
 // Sanity

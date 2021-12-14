@@ -7,7 +7,7 @@
 #include <iomanip>
 #include <stdlib.h>
 #include <stdio.h>
-#include "sensemaker.h"
+#include "globals.h"
 
 bool save_features_2_buffer (std::vector<double> & resultBuf)
 {
