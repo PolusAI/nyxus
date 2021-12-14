@@ -1,5 +1,5 @@
 #include <algorithm>
-#include "f_erosion_pixels.h"
+#include "erosion.h"
 
 int ErosionPixels::calc_feature (ImageMatrix & I)
 {

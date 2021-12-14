@@ -18,8 +18,8 @@
 #include "features/circle.h"
 #include "features/extrema.h"
 #include "features/fractal_dim.h"
-#include "features/f_erosion_pixels.h"
-#include "features/f_radial_distribution.h"
+#include "features/erosion.h"
+#include "features/radial_distribution.h"
 #include "features/gabor.h"
 #include "features/geodetic_len_thickness.h"
 #include "features/glcm.h"
@@ -355,7 +355,6 @@ void parallelReduceContour (size_t start, size_t end, std::vector<int>* ptrLabel
 		r.aux_image_matrix.use_roi (r.raw_pixels, r.aabb);
 
 		//==== Contour, ROI perimeter, equivalent circle diameter
-		//---	ImageMatrix im (r.raw_pixels, r.aabb);
 		r.contour.calculate (r.aux_image_matrix);
 		r.fvals[PERIMETER][0] = r.contour.get_roi_perimeter();	
 		r.fvals[EQUIVALENT_DIAMETER][0] = r.contour.get_diameter_equal_perimeter();	
@@ -364,6 +363,10 @@ void parallelReduceContour (size_t start, size_t end, std::vector<int>* ptrLabel
 		r.fvals[EDGE_STDDEV_INTENSITY][0] = cstddev;
 		r.fvals[EDGE_MAX_INTENSITY][0] = cmax;
 		r.fvals[EDGE_MIN_INTENSITY][0] = cmin;
+
+
+		//==== IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc (namely - EDGE_INTEGRATEDINTENSITY, EDGE_MAXINTENSITY, EDGE_MININTENSITY, EDGE_MEANINTENSITY, EDGE_STDDEVINTENSITY)
+		r.reduce_edge_intensity_features();
 	}
 }
 
@@ -381,9 +384,6 @@ void parallelReduceConvHull (size_t start, size_t end, std::vector<int>* ptrLabe
 
 		//==== Circularity
 		r.fvals[CIRCULARITY][0] = 4.0 * M_PI * r.raw_pixels.size() / (r.fvals[PERIMETER][0] * r.fvals[PERIMETER][0]); // r.circularity = 4.0 * M_PI * r.pixelCountRoiArea / (r.roiPerimeter * r.roiPerimeter);
-
-		//==== IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
-		r.reduce_edge_intensity_features();
 	}
 }
 
@@ -545,7 +545,6 @@ void runParallel (functype f, int nThr, size_t workPerThread, size_t datasetSize
 	}
 }
 
-
 // This function should be called once after a file pair processing is finished.
 void reduce (int nThr, int min_online_roi_size)
 {
@@ -621,25 +620,28 @@ void reduce (int nThr, int min_online_roi_size)
 	}
 
 	//==== Contour-related ROI perimeter, equivalent circle diameter
-	if (theFeatureSet.anyEnabled({ EQUIVALENT_DIAMETER, PERIMETER,
-			CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY, // depend on PERIMETER
+	if (theFeatureSet.anyEnabled ({ 
+			PERIMETER,
+			EQUIVALENT_DIAMETER,
 			EDGE_INTEGRATEDINTENSITY,
 			EDGE_MAXINTENSITY,
 			EDGE_MININTENSITY,
 			EDGE_MEANINTENSITY,
-			EDGE_STDDEVINTENSITY // depend on contour and PERIMETER
-		}))
+			EDGE_STDDEVINTENSITY, 
+			// dependencies:
+			CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY
+			}))
 	{
-		{
-			STOPWATCH("Morphology/Contour/C/#4aaaea", "\t=");
-			runParallel (parallelReduceContour, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
-		}
-		//==== Convex hull related Solidity, Circularity, IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc
-		{
-			// CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY // depends on PERIMETER
-			STOPWATCH("Morphology/Hull/H/#4aaaea", "\t=");
-			runParallel (parallelReduceConvHull, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
-		}	
+		STOPWATCH("Morphology/Contour/C/#4aaaea", "\t=");
+		runParallel (parallelReduceContour, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
+	}
+
+	//==== Convex hull related solidity, circularity
+	if (theFeatureSet.anyEnabled({ CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY }))
+	{
+		// CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY // depends on PERIMETER
+		STOPWATCH("Morphology/Hull/H/#4aaaea", "\t=");
+		runParallel (parallelReduceConvHull, nThr, workPerThread, tileSize, &sortedUniqueLabels, &labelData);
 	}
 
 	//==== Extrema 
@@ -871,11 +873,11 @@ void reduce (int nThr, int min_online_roi_size)
 
 	//==== NGTDM
 	if (theFeatureSet.anyEnabled({ 
-	NGTDM_COARSENESS,
-	NGTDM_CONTRAST,
-	NGTDM_BUSYNESS,
-	NGTDM_COMPLEXITY,
-	NGTDM_STRENGTH
+		NGTDM_COARSENESS,
+		NGTDM_CONTRAST,
+		NGTDM_BUSYNESS,
+		NGTDM_COMPLEXITY,
+		NGTDM_STRENGTH
 		}))
 	{
 		STOPWATCH("Texture/NGTDM/NG/#bbbbbb", "\t=");

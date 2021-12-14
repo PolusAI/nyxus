@@ -3,7 +3,7 @@
 #define _USE_MATH_DEFINES	// For M_PI, etc.
 #include <cmath>
 
-#include "f_radial_distribution.h"
+#include "radial_distribution.h"
 #include "image_matrix.h"
 #include "../globals.h"
 

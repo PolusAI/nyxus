@@ -3,7 +3,7 @@
 #include <vector>
 #include <unordered_map>
 #include "../roi_data.h"
-#include "f_convex_hull.h"
+#include "convex_hull.h"
 #include "pixel.h"
 
 class RadialDistribution

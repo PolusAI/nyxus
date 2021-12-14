@@ -1,5 +1,4 @@
 #pragma once
-
 #include <vector>
 #include "pixel.h"
 
@@ -10,5 +9,6 @@ public:
 	void calculate(std::vector<Pixel2>& rawPixels);
 	double getSolidity();
 	double getArea();
+
 	std::vector<Pixel2> CH;
 };

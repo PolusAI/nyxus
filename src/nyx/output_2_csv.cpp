@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "environment.h"
-#include "features/f_radial_distribution.h"
+#include "features/radial_distribution.h"
 #include "features/gabor.h"
 #include "features/glrlm.h"
 #include "globals.h"

@@ -12,6 +12,10 @@
 #include "moments.h"
 #include "contour.h"
 
+Contour::Contour()
+{
+	contour_pixels.reserve(100);
+}
 
 //
 // Uses Moore's algorithm
@@ -194,5 +198,4 @@ std::tuple<StatsReal, StatsReal, StatsReal, StatsReal> Contour::get_min_max_mean
 
 	return {min_, max_, mean_, stddev_};
 }
-
 

@@ -9,7 +9,7 @@
 #include <thread>
 #include <future>
 #include <array>
-#include "f_convex_hull.h"
+#include "convex_hull.h"
 
 
 // Sort criterion: points are sorted with respect to their x-coordinate.

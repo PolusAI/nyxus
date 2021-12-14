@@ -17,7 +17,7 @@ public:
 	int calc_feature (ImageMatrix & );
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
-protected:
+private:
 
 	const int SANITY_MAX_NUM_EROSIONS = 1000;	// Prevent infinite erosions
 
