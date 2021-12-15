@@ -1,4 +1,5 @@
 #pragma once
+
 #include "image_matrix.h"
 
 class Contour
@@ -9,7 +10,7 @@ public:
 	StatsInt get_roi_perimeter();
 	StatsReal get_diameter_equal_perimeter();
 	std::tuple<StatsReal, StatsReal, StatsReal, StatsReal> get_min_max_mean_stddev_intensity();
-
+	
 	std::vector<Pixel2> contour_pixels;
 };
 

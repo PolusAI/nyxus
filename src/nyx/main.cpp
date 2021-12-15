@@ -3,6 +3,8 @@
 #include "environment.h"
 #include "globals.h"
 
+using namespace Nyxus;
+
 int main (int argc, char** argv)
 {
 	std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021 Axle Informatics\n" << "Build of " << __TIMESTAMP__ << "\n";

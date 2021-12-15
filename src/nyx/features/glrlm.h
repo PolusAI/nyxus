@@ -1,4 +1,5 @@
 #pragma once
+
 #include <unordered_map>
 #include "../roi_data.h"
 #include "image_matrix.h"
@@ -50,7 +51,7 @@ public:
 
 	static std::vector<double> rotAngles;
 
-protected:
+private:
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
 	std::vector<int> angles_Ng;	// number of discreet intensity values in the image
 	std::vector<int> angles_Nr; // number of discreet run lengths in the image

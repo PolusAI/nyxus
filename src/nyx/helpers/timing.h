@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 
+/// @brief A timer providing categorized accumulatable time measurements
 class Stopwatch
 {
 public:

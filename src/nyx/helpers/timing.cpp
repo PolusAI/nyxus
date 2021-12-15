@@ -3,7 +3,6 @@
 #include "helpers.h"
 #include "timing.h"
 
-
 void Stopwatch::print_stats()
 {
 	double total = 0.0;
@@ -57,7 +56,7 @@ void Stopwatch::save_stats (const std::string& fpath)
 			<< fcolor << "\",\"" << facro << " " << round2(perc) << "%\","
 			<< t.second 
 			<< "," << total
-			<< "," << theEnvironment.n_reduce_threads 
+			<< "," << Nyxus::theEnvironment.n_reduce_threads 
 			<< "\n";
 	}
 

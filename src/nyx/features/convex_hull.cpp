@@ -11,6 +11,8 @@
 #include <array>
 #include "convex_hull.h"
 
+// Required by the reduction function
+#include "../roi_data.h"
 
 // Sort criterion: points are sorted with respect to their x-coordinate.
 //                 If two points have the same x-coordinate then we compare
@@ -93,5 +95,25 @@ void ConvexHull::calculate(std::vector<Pixel2> & point_cloud)
 double ConvexHull::getArea ()
 {
 	return getPolygonArea(CH);
+}
+
+namespace Nyxus
+{
+	void parallelReduceConvHull(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+	{
+		for (auto i = start; i < end; i++)
+		{
+			int lab = (*ptrLabels)[i];
+			LR& r = (*ptrLabelData)[lab];
+
+			//==== Convex hull and solidity
+			r.convHull.calculate(r.raw_pixels);
+			r.fvals[CONVEX_HULL_AREA][0] = r.convHull.getArea();
+			r.fvals[SOLIDITY][0] = r.raw_pixels.size() / r.fvals[CONVEX_HULL_AREA][0];	
+
+			//==== Circularity
+			r.fvals[CIRCULARITY][0] = 4.0 * M_PI * r.raw_pixels.size() / (r.fvals[PERIMETER][0] * r.fvals[PERIMETER][0]);
+		}
+	}
 }
 

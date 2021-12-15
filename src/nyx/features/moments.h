@@ -1,4 +1,5 @@
 #pragma once
+
 #include <stddef.h>
 #include <cfloat> // DBL_MAX
 #include <cmath>

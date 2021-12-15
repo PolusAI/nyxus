@@ -9,29 +9,33 @@
 #include <stdio.h>
 #include "globals.h"
 
-bool save_features_2_buffer (std::vector<double> & resultBuf)
+namespace Nyxus
 {
-	resultBuf.clear();
-	size_t bufLen = uniqueLabels.size() * theFeatureSet.numOfEnabled();
-	resultBuf.reserve(bufLen);
-
-	// Sort the labels
-	std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
-	std::sort(L.begin(), L.end());
-
-	unsigned int labelIdx = 0;
-	for (auto l : L)
+	bool save_features_2_buffer(std::vector<double>& resultBuf)
 	{
-		LR& r = labelData[l];
-		for (int i = 0; i < AvailableFeatures::_COUNT_; i++)
+		resultBuf.clear();
+		size_t bufLen = uniqueLabels.size() * theFeatureSet.numOfEnabled();
+		resultBuf.reserve(bufLen);
+
+		// Sort the labels
+		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
+		std::sort(L.begin(), L.end());
+
+		unsigned int labelIdx = 0;
+		for (auto l : L)
 		{
-			if (theFeatureSet.isEnabled(i))
+			LR& r = labelData[l];
+			for (int i = 0; i < AvailableFeatures::_COUNT_; i++)
 			{
-				auto fval = r.getValue((AvailableFeatures)i);
-				resultBuf.push_back(fval);
+				if (theFeatureSet.isEnabled(i))
+				{
+					auto fval = r.getValue((AvailableFeatures)i);
+					resultBuf.push_back(fval);
+				}
 			}
 		}
+
+		return true;
 	}
 
-	return true;
 }

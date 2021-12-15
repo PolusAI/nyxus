@@ -4,6 +4,11 @@
 #include "aabb.h"
 #include "pixel.h"
 
+/// @brief 
+/// @param nonzero_intensity_pixels 
+/// @param aabb 
+/// @param order 
+/// @param Z_values 
 void zernike2D(
 	// in
 	std::vector <Pixel2>& nonzero_intensity_pixels,
@@ -11,3 +16,5 @@ void zernike2D(
 	int order,
 	// out
 	std::vector<double>& Z_values);
+
+void parallelReduceZernike2D(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);

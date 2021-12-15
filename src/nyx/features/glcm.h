@@ -1,4 +1,5 @@
 #pragma once
+
 #include <unordered_map>
 #include "../roi_data.h"
 #include "image_matrix.h"
@@ -46,8 +47,7 @@ public:
 
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
-protected:
-
+private:
 	SimpleMatrix<int> P;	// colocation matrix
 	
 	//std::vector <Haralick_feature_values> fvals = { {}, {}, {}, {} };	// 4 angles

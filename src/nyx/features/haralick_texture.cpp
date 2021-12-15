@@ -764,11 +764,11 @@ void haralick2D_imp (
 
 	// Conflict. Make standard angles at leat appear in the output
 	//for (auto angle : theEnvironment.rotAngles) 
-	theEnvironment.rotAngles.clear();
-	theEnvironment.rotAngles.push_back(0);
-	theEnvironment.rotAngles.push_back(45);
-	theEnvironment.rotAngles.push_back(90);
-	theEnvironment.rotAngles.push_back(135);
+	Nyxus::theEnvironment.rotAngles.clear();
+	Nyxus::theEnvironment.rotAngles.push_back(0);
+	Nyxus::theEnvironment.rotAngles.push_back(45);
+	Nyxus::theEnvironment.rotAngles.push_back(90);
+	Nyxus::theEnvironment.rotAngles.push_back(135);
 
 
 

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <unordered_map>
 #include "../roi_data.h"
 #include "image_matrix.h"
@@ -60,7 +61,7 @@ public:
 
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
-protected:
+private:
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
 	int Ng = 0;	// number of discreet intensity values in the image
 	int Ns = 0; // number of discreet zone sizes in the image

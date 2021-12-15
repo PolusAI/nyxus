@@ -5,6 +5,7 @@
 #include <vector>
 #include "pixel.h"
 
+/// @brief Class encapsulating ROI axis aligned bounding box
 class AABB
 {
 public:
@@ -46,6 +47,7 @@ public:
 		}
 		return {bb.get_xmin(), bb.get_ymin(), bb.get_xmax(), bb.get_ymax()};
 	}
-protected:
+
+private:
 	StatsInt xmin = INT32_MAX, xmax = INT32_MIN, ymin = INT32_MAX, ymax = INT32_MIN;
 };

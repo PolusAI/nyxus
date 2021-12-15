@@ -86,10 +86,12 @@ public:
 
 	// x- and y- resolution in pixels per centimeter
 	std::string rawXYRes = "";
-	float xyRes = 0.0, 
+	float xyRes = 0.0,
 		pixelSizeUm = 0.0;
 
-protected:
+	int pixelDistance = 5;
+
+private:
 
 	bool check_file_pattern (const std::string & pat);
 
@@ -100,4 +102,7 @@ protected:
 	bool find_int_argument (std::vector<std::string>::iterator& i, const char* arg, int& arg_value);
 };
 
-extern Environment theEnvironment;
+namespace Nyxus
+{
+	extern Environment theEnvironment;
+}

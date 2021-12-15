@@ -1,4 +1,5 @@
 #pragma once
+
 #include <vector>
 #include <unordered_map>
 #include "../roi_data.h"
@@ -14,6 +15,6 @@ public:
 	std::tuple<double, double, double> get_min_max_median_radius();
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
-protected:
+private:
 	double max_r = 0, mean_r = 0, median_r = 0;
 };

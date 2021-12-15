@@ -1,4 +1,5 @@
 #pragma once
+
 #include <vector>
 #include <unordered_map>
 #include "../roi_data.h"
@@ -17,6 +18,6 @@ public:
 
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
-protected:
+private:
 	double box_count_fd = 0, perim_fd = 0;
 };

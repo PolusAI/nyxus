@@ -12,6 +12,9 @@
 #include "moments.h"
 #include "contour.h"
 
+// Required by the reduction function
+#include "../roi_data.h"
+
 Contour::Contour()
 {
 	contour_pixels.reserve(100);
@@ -197,5 +200,36 @@ std::tuple<StatsReal, StatsReal, StatsReal, StatsReal> Contour::get_min_max_mean
 		stddev_ = m.std();
 
 	return {min_, max_, mean_, stddev_};
+}
+
+namespace Nyxus
+{
+	void parallelReduceContour (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+	{
+		for (auto i = start; i < end; i++)
+		{
+			int lab = (*ptrLabels)[i];
+			LR& r = (*ptrLabelData)[lab];
+
+			if (r.roi_disabled)
+				continue;
+
+			//==== Calculate ROI's image matrix
+			r.aux_image_matrix.use_roi(r.raw_pixels, r.aabb);
+
+			//==== Contour, ROI perimeter, equivalent circle diameter
+			r.contour.calculate(r.aux_image_matrix);
+			r.fvals[PERIMETER][0] = r.contour.get_roi_perimeter();
+			r.fvals[EQUIVALENT_DIAMETER][0] = r.contour.get_diameter_equal_perimeter();
+			auto [cmin, cmax, cmean, cstddev] = r.contour.get_min_max_mean_stddev_intensity();
+			r.fvals[EDGE_MEAN_INTENSITY][0] = cmean;
+			r.fvals[EDGE_STDDEV_INTENSITY][0] = cstddev;
+			r.fvals[EDGE_MAX_INTENSITY][0] = cmax;
+			r.fvals[EDGE_MIN_INTENSITY][0] = cmin;
+
+			//==== IntegratedIntensityEdge, MaxIntensityEdge, MinIntensityEdge, etc (namely - EDGE_INTEGRATEDINTENSITY, EDGE_MAXINTENSITY, EDGE_MININTENSITY, EDGE_MEANINTENSITY, EDGE_STDDEVINTENSITY)
+			r.reduce_edge_intensity_features();
+		}
+	}
 }
 

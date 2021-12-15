@@ -42,7 +42,7 @@ public:
 	//	[9] uniformity
 	std::tuple<HistoItem, HistoItem, double, double, double, double, double, double, double, double> get_stats();
 
-protected:
+private:
 	std::unordered_set <HistoItem> uniqIntensities;
 	std::unordered_map <HistoItem, int> intensityCounts;
 	std::vector <int> binCounts; // Populated in build_histogram(). Always has size N_HISTO_BINS
@@ -194,8 +194,7 @@ public:
 		return { median, mode, p1, p10, p25, p75, p90, p99, iqr, rmad, entropy, uniformity };
 	}
 
-	protected:
-
+	private:
 		HistoItem minVal, maxVal;
 		double medianVal;
 		double binW;
@@ -279,7 +278,7 @@ public:
 				auto k = raw_I[i] - minVal;
 				++histogram [k];
 			}
-			HistoItem maxel = std::max_element (histogram.begin(), histogram.end()) - histogram.begin();
+			HistoItem maxel = HistoItem (std::max_element (histogram.begin(), histogram.end()) - histogram.begin());
 			return maxel + minVal;
 		}
 };

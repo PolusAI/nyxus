@@ -86,7 +86,7 @@ public:
 
 	void print (const std::string& head, const std::string& tail);
 
-protected:
+private:
 	int W = 0, H = 0;
 };
 
@@ -133,7 +133,7 @@ public:
 	int width() const { return W; }
 	int height() const { return H; }
 
-protected:
+private:
 	int W, H;
 };
 
@@ -302,6 +302,4 @@ public:
 			_pix_plane[y * width + x] = pxl.inten;
 		}
 	}
-protected:
-
 };

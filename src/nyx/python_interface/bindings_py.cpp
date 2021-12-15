@@ -38,22 +38,22 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::ini
 
 	// Try to reach data files at directories 'label_path' and 'intensity_path'
 	std::vector <std::string> intensFiles, labelFiles;
-	int errorCode = checkAndReadDataset(intensity_path, label_path, "outputPath", false, intensFiles, labelFiles);
+	int errorCode = Nyxus::checkAndReadDataset(intensity_path, label_path, "outputPath", false, intensFiles, labelFiles);
 
 	// Check for error
 	if (errorCode)
 		return { 1, "Dataset structure error", 0, 0, nullptr };
 
 	// One-time initialization
-	init_feature_buffers();
+	Nyxus::init_feature_buffers();
 
 	// Process the image sdata. Upon return, global buffer 'calcResultBuf' will be filled with result data
-	errorCode = processDataset(
+	errorCode = Nyxus::processDataset(
 		intensFiles,
 		labelFiles,
-		theEnvironment.n_loader_threads,
-		theEnvironment.n_pixel_scan_threads,
-		theEnvironment.n_reduce_threads,
+		Nyxus::theEnvironment.n_loader_threads,
+		Nyxus::theEnvironment.n_pixel_scan_threads,
+		Nyxus::theEnvironment.n_reduce_threads,
 		100,	// min_online_roi_size
 		false, 
 		"unused_dirOut");
@@ -66,7 +66,7 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::ini
 	// 
 	// Allocate and initialize the return data buffer - [a matrix n_labels X n_features]:
 	// (Background knowledge - https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11 and https://stackoverflow.com/questions/54876346/pybind11-and-stdvector-how-to-free-data-using-capsules)
-	size_t ny = uniqueLabels.size(), 
+	size_t ny = Nyxus::uniqueLabels.size(),
 		nx = theFeatureSet.numOfEnabled(),
 		len = ny * nx;
 
@@ -77,13 +77,13 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::ini
 		return { 4, "No features were calculated", 0, 0, nullptr };
 
 	//DEBUG diagnostic output:
-	std::cout << "Result shape: ny=uniqueLabels.size()=" << ny << " X nx=" << theFeatureSet.numOfEnabled() << " = " << len << ", element[0]=" << calcResultBuf[0] << std::endl;
+	std::cout << "Result shape: ny=uniqueLabels.size()=" << ny << " X nx=" << theFeatureSet.numOfEnabled() << " = " << len << ", element[0]=" << Nyxus::calcResultBuf[0] << std::endl;
 
 	// Check for error: calcResultBuf is expected to have exavtly 'len' elements
-	if (len != calcResultBuf.size())
+	if (len != Nyxus::calcResultBuf.size())
 	{
 		std::stringstream ss;
-		ss << "ERROR: Result shape [ny=uniqueLabels.size()=" << ny << " X nx=" << theFeatureSet.numOfEnabled() << " = " << len << "] mismatches with the result buffer size " << calcResultBuf.size() << " in " << __FILE__ << ":" << __LINE__;
+		ss << "ERROR: Result shape [ny=uniqueLabels.size()=" << ny << " X nx=" << theFeatureSet.numOfEnabled() << " = " << len << "] mismatches with the result buffer size " << Nyxus::calcResultBuf.size() << " in " << __FILE__ << ":" << __LINE__;
 		return { 5, ss.str(), 0, 0, nullptr };
 	}
 
@@ -100,7 +100,7 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::ini
 
 	// calcResultBuf is expected to have exavtly 'len' elements
 	for (size_t i = 0; i < len; i++)
-		retbuf[i] = calcResultBuf[i];
+		retbuf[i] = Nyxus::calcResultBuf[i];
 
 	// Success, return the result
 	return { 0, "", nx, ny, retbuf };
@@ -119,7 +119,7 @@ PYBIND11_MODULE(nyx_backend, m)
 
 			// Try to reach data files at directories 'label_path' and 'intensity_path'
 			std::vector <std::string> intensFiles, labelFiles;
-			int errorCode = checkAndReadDataset(intensity_path, label_path, "outputPath", false, intensFiles, labelFiles);
+			int errorCode = Nyxus::checkAndReadDataset(intensity_path, label_path, "outputPath", false, intensFiles, labelFiles);
 			if (errorCode)
 			{
 				std::cout << std::endl << "Dataset structure error" << std::endl;
@@ -133,16 +133,16 @@ PYBIND11_MODULE(nyx_backend, m)
 			size_t ny = 4,	// # unique ROI
 				nx = 3,		// # features
 				len = ny * nx;
-			calcResultBuf.clear();
+			Nyxus::calcResultBuf.clear();
 			for (int i = 0; i < len; i++)
-				calcResultBuf.push_back (i + 1);	// +1 is a seed
+				Nyxus::calcResultBuf.push_back (i + 1);	// +1 is a seed
 
 			//DEBUG diagnostic output:
-			std::cout << "Result shape: ny=uniqueLabels.size()=" << ny << " X nx=" << nx << " = " << len << ", element[0]=" << calcResultBuf[0] << std::endl;
+			std::cout << "Result shape: ny=uniqueLabels.size()=" << ny << " X nx=" << nx << " = " << len << ", element[0]=" << Nyxus::calcResultBuf[0] << std::endl;
 
 			// calcResultBuf is expected to have exavtly 'len' elements
-			if (len != calcResultBuf.size())
-				std::cerr << "ERROR: Result shape [ny=uniqueLabels.size()=" << ny << " X nx=" << theFeatureSet.numOfEnabled() << " = " << len << "] mismatches with the result buffer size " << calcResultBuf.size() << " in " << __FILE__ << ":" << __LINE__ << std::endl;
+			if (len != Nyxus::calcResultBuf.size())
+				std::cerr << "ERROR: Result shape [ny=uniqueLabels.size()=" << ny << " X nx=" << theFeatureSet.numOfEnabled() << " = " << len << "] mismatches with the result buffer size " << Nyxus::calcResultBuf.size() << " in " << __FILE__ << ":" << __LINE__ << std::endl;
 
 			double* retbuf = new double[len];
 			if (retbuf == nullptr)
@@ -150,7 +150,7 @@ PYBIND11_MODULE(nyx_backend, m)
 
 			// calcResultBuf is expected to have exavtly 'len' elements
 			for (size_t i = 0; i < len; i++)
-				retbuf[i] = calcResultBuf[i];
+				retbuf[i] = Nyxus::calcResultBuf[i];
 
 			// Create a Python object that will free the allocated
 			// memory when destroyed:

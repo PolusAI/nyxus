@@ -1,4 +1,5 @@
 #pragma once
+
 #include <unordered_map>
 #include "../roi_data.h"
 #include "contour.h"
@@ -65,7 +66,6 @@ protected:
 class HuMoments
 {
 public:
-
     HuMoments() {}
     void initialize (int minI, int maxI, const ImageMatrix& im, const ImageMatrix& weighted_im);
     std::tuple<double, double, double, double, double, double, double, double, double, double> getSpatialMoments();
@@ -78,8 +78,7 @@ public:
     std::tuple<double, double, double, double, double, double, double> getWeightedHuMoments();
     static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
-protected:
-
+private:
     double Moment (const pixData& D, int p, int q);
     void calcOrigins (const pixData& D);
     double CentralMom (const pixData& D, int p, int q);

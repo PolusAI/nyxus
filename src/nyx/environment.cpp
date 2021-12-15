@@ -1,5 +1,3 @@
-#define _CRT_SECURE_NO_WARNINGS
-
 #include <fstream>
 #include <iostream>
 #include <regex>
@@ -11,99 +9,102 @@
 #include "helpers/helpers.h"
 #include "version.h"
 
-bool directoryExists(const std::string&);
-
-bool parse_as_float(std::string raw, float& result)
+namespace Nyxus
 {
-    if (sscanf(raw.c_str(), "%f", &result) != 1)
-        return false;
-    else
-        return true;
-}
+    bool directoryExists(const std::string&);
 
-bool parse_delimited_string_list_to_floats(const std::string& rawString, std::vector<float>& result)
-{
-    // It's legal to not have rotation angles specified
-    if (rawString.length() == 0)
-        return true;
-
-    bool retval = true;
-    std::vector<std::string> strings;
-    parse_delimited_string (rawString, ",", strings);
-    result.clear();
-    for (auto& s : strings)
+    bool parse_as_float(std::string raw, float& result)
     {
-        float v;
-        if (!parse_as_float(s, v))
-        {
-            retval = false;
-            std::cout << "Error: in '" << rawString << "' expecting '" << s << "' to be a floating point number\n";
-        }
+        if (sscanf(raw.c_str(), "%f", &result) != 1)
+            return false;
         else
-            result.push_back(v);
-    }
-    return retval;
-}
-
-std::string toupper (const std::string& s)
-{
-    auto s_uppr = s;
-    for (auto& c : s_uppr)
-        c = toupper(c);
-    return s_uppr;
-}
-
-bool parse_delimited_string_list_to_features(const std::string& rawString, std::vector<std::string>& result)
-{
-    result.clear();
-
-    if (rawString.length() == 0)
-    {
-        std::cout << "Warning: no features specified, defaulting to ALL\n";
-        result.push_back(FEA_NICK_ALL);
-        return true;
+            return true;
     }
 
-    bool retval = true;
-    std::vector<std::string> strings;
-    parse_delimited_string(rawString, ",", strings);
-
-    // Check individual features
-    for (const auto& s : strings)
+    bool parse_delimited_string_list_to_floats(const std::string& rawString, std::vector<float>& result)
     {
-        auto s_uppr = toupper(s);
-        if (s_uppr == FEA_NICK_ALL || 
-            s_uppr == FEA_NICK_ALL_INTENSITY || 
-            s_uppr == FEA_NICK_ALL_MORPHOLOGY || 
-            s_uppr == FEA_NICK_BASIC_MORPHOLOGY || 
-            s_uppr == FEA_NICK_ALL_GLCM || 
-            s_uppr == FEA_NICK_ALL_GLRLM ||
-            s_uppr == FEA_NICK_ALL_GLSZM ||
-            s_uppr == FEA_NICK_ALL_GLDM ||
-            s_uppr == FEA_NICK_ALL_NGTDM ||
-            s_uppr == FEA_NICK_ALL_BUT_GABOR ||
-            s_uppr == FEA_NICK_ALL_BUT_GLCM)
+        // It's legal to not have rotation angles specified
+        if (rawString.length() == 0)
+            return true;
+
+        bool retval = true;
+        std::vector<std::string> strings;
+        parse_delimited_string(rawString, ",", strings);
+        result.clear();
+        for (auto& s : strings)
         {
-            result.push_back(s_uppr);
-            continue;
+            float v;
+            if (!parse_as_float(s, v))
+            {
+                retval = false;
+                std::cout << "Error: in '" << rawString << "' expecting '" << s << "' to be a floating point number\n";
+            }
+            else
+                result.push_back(v);
+        }
+        return retval;
+    }
+
+    std::string toupper(const std::string& s)
+    {
+        auto s_uppr = s;
+        for (auto& c : s_uppr)
+            c = ::toupper(c);
+        return s_uppr;
+    }
+
+    bool parse_delimited_string_list_to_features(const std::string& rawString, std::vector<std::string>& result)
+    {
+        result.clear();
+
+        if (rawString.length() == 0)
+        {
+            std::cout << "Warning: no features specified, defaulting to ALL\n";
+            result.push_back(FEA_NICK_ALL);
+            return true;
         }
 
-        AvailableFeatures af;
-        bool fnameExists = theFeatureSet.findFeatureByString(s_uppr, af);
-        if (!fnameExists)
+        bool retval = true;
+        std::vector<std::string> strings;
+        parse_delimited_string(rawString, ",", strings);
+
+        // Check individual features
+        for (const auto& s : strings)
         {
-            retval = false;
-            std::cout << "Error: expecting '" << s << "' to be a proper feature name. \n";
+            auto s_uppr = toupper(s);
+            if (s_uppr == FEA_NICK_ALL ||
+                s_uppr == FEA_NICK_ALL_INTENSITY ||
+                s_uppr == FEA_NICK_ALL_MORPHOLOGY ||
+                s_uppr == FEA_NICK_BASIC_MORPHOLOGY ||
+                s_uppr == FEA_NICK_ALL_GLCM ||
+                s_uppr == FEA_NICK_ALL_GLRLM ||
+                s_uppr == FEA_NICK_ALL_GLSZM ||
+                s_uppr == FEA_NICK_ALL_GLDM ||
+                s_uppr == FEA_NICK_ALL_NGTDM ||
+                s_uppr == FEA_NICK_ALL_BUT_GABOR ||
+                s_uppr == FEA_NICK_ALL_BUT_GLCM)
+            {
+                result.push_back(s_uppr);
+                continue;
+            }
+
+            AvailableFeatures af;
+            bool fnameExists = theFeatureSet.findFeatureByString(s_uppr, af);
+            if (!fnameExists)
+            {
+                retval = false;
+                std::cout << "Error: expecting '" << s << "' to be a proper feature name. \n";
+            }
+            else
+                result.push_back(s_uppr);
         }
-        else
-            result.push_back(s_uppr);
+
+        // Show help on available features if necessary
+        if (!retval)
+            theFeatureSet.show_help();
+
+        return retval;
     }
-
-    // Show help on available features if necessary
-    if (!retval)
-        theFeatureSet.show_help();
-
-    return retval;
 }
 
 void Environment::show_help()
@@ -113,20 +114,20 @@ void Environment::show_help()
         << "Command line format:\n"
         << "\t" << PROJECT_NAME << " -h\tDisplay help info\n"
         << "\t" << PROJECT_NAME << " --help\tDisplay help info\n"
-        << "\t" << PROJECT_NAME 
-            << FILEPATTERN << " <fp> " 
-            << OUTPUTTYPE << " <csv> " 
-            << SEGDIR << " <sd> " 
-            << INTDIR << " <id> " 
-            << OUTDIR << " <od> "
-            << " [" << FEATURES << " <f>] \n"
-            << " [" << XYRESOLUTION << " <res> \n"
-            << " [" << EMBPIXSZ << " <eps>]\n"
-            << " [" << LOADERTHREADS << " <lt>]\n"
-            << " [" << PXLSCANTHREADS << " <st>]\n"
-            << " [" << REDUCETHREADS << " <rt>]\n"
-            << " [" << ROTATIONS << " <al>]\n"
-            << " [" << VERBOSITY << " <verbo>]\n"
+        << "\t" << PROJECT_NAME
+        << FILEPATTERN << " <fp> "
+        << OUTPUTTYPE << " <csv> "
+        << SEGDIR << " <sd> "
+        << INTDIR << " <id> "
+        << OUTDIR << " <od> "
+        << " [" << FEATURES << " <f>] \n"
+        << " [" << XYRESOLUTION << " <res> \n"
+        << " [" << EMBPIXSZ << " <eps>]\n"
+        << " [" << LOADERTHREADS << " <lt>]\n"
+        << " [" << PXLSCANTHREADS << " <st>]\n"
+        << " [" << REDUCETHREADS << " <rt>]\n"
+        << " [" << ROTATIONS << " <al>]\n"
+        << " [" << VERBOSITY << " <verbo>]\n"
 
         << "Where\n"
         << "\t<fp> - file pattern regular expression e.g. .*, *.tif, etc [default = .*]\n"
@@ -145,7 +146,7 @@ void Environment::show_help()
         ;
 }
 
-void Environment::show_summary (const std::string & head, const std::string & tail)
+void Environment::show_summary(const std::string& head, const std::string& tail)
 {
     std::cout << head;
     std::cout << "Work plan:\n"
@@ -197,7 +198,7 @@ void Environment::show_memory(const std::string& head, const std::string& tail)
     std::cout << tail;
 }
 
-bool Environment::find_string_argument (std::vector<std::string>::iterator& i, const char* arg, std::string& arg_value)
+bool Environment::find_string_argument(std::vector<std::string>::iterator& i, const char* arg, std::string& arg_value)
 {
     std::string actualArgName = *i;
 
@@ -206,7 +207,7 @@ bool Environment::find_string_argument (std::vector<std::string>::iterator& i, c
     if (actualArgName == a)
     {
         arg_value = *++i;
-        memory.push_back ({ a, arg_value });
+        memory.push_back({ a, arg_value });
         return true;
     }
     else
@@ -217,16 +218,16 @@ bool Environment::find_string_argument (std::vector<std::string>::iterator& i, c
         if (pos != std::string::npos)
         {
             arg_value = actualArgName.substr(a.length());
-            memory.push_back ({ a, arg_value });
+            memory.push_back({ a, arg_value });
             return true;
         }
     }
-     
+
     // Argument was not recognized
     return false;
 }
 
-bool Environment::find_int_argument (std::vector<std::string>::iterator& i, const char* arg, int& arg_value)
+bool Environment::find_int_argument(std::vector<std::string>::iterator& i, const char* arg, int& arg_value)
 {
     // Syntax #1
     std::string a = arg;
@@ -255,13 +256,13 @@ bool Environment::find_int_argument (std::vector<std::string>::iterator& i, cons
     return false;
 }
 
-bool Environment::check_file_pattern (const std::string & pat)
+bool Environment::check_file_pattern(const std::string& pat)
 {
     try
     {
         std::regex re(pat);
     }
-    catch(...)
+    catch (...)
     {
         return false;
     }
@@ -309,15 +310,15 @@ int Environment::parse_cmdline(int argc, char** argv)
     }
 
     //==== Show the user recognized and unrecognized command line elements
-    
+
     // --include the raw command line
     std::stringstream rawCL;
     rawCL << "\nRaw command line:\n" << argv[0] << " ";
-    std::copy (args.begin(), args.end(), std::ostream_iterator<std::string> (rawCL, " "));  // vector of strings -> string
+    std::copy(args.begin(), args.end(), std::ostream_iterator<std::string>(rawCL, " "));  // vector of strings -> string
     rawCL << "\n\n";
 
     // --display how the command line was parsed
-    show_memory (rawCL.str().c_str(), "\n");
+    show_memory(rawCL.str().c_str(), "\n");
 
     // --what's not recognized?
     if (unrecognized.size() > 0)
@@ -370,10 +371,10 @@ int Environment::parse_cmdline(int argc, char** argv)
     }
 
     //==== Single ROI?
-    if (toupper(labels_dir) == toupper(intensity_dir))
+    if (Nyxus::toupper(labels_dir) == Nyxus::toupper(intensity_dir))
     {
         singleROI = true;
-        std::cout << 
+        std::cout <<
             "+------------------------------+\n"
             "|                              |\n"
             "+  Activating single-ROI mode  +\n"
@@ -382,17 +383,17 @@ int Environment::parse_cmdline(int argc, char** argv)
     }
 
     //==== Output type
-    auto rawOutpTypeUC = toupper(rawOutpType);
-    if (rawOutpTypeUC != toupper(OT_SINGLECSV) && rawOutpTypeUC != toupper(OT_SEPCSV))
+    auto rawOutpTypeUC = Nyxus::toupper(rawOutpType);
+    if (rawOutpTypeUC != Nyxus::toupper(OT_SINGLECSV) && rawOutpTypeUC != Nyxus::toupper(OT_SEPCSV))
     {
-            std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << " or " << OT_SINGLECSV << "\n";
-            return 1;    
+        std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << " or " << OT_SINGLECSV << "\n";
+        return 1;
     }
-    separateCsv = rawOutpTypeUC == toupper(OT_SEPCSV);
-        
+    separateCsv = rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV);
+
 
     //==== Check numeric parameters
-    if (! loader_threads.empty())
+    if (!loader_threads.empty())
     {
         // string -> integer
         if (sscanf(loader_threads.c_str(), "%d", &n_loader_threads) != 1 || n_loader_threads <= 0)
@@ -402,7 +403,7 @@ int Environment::parse_cmdline(int argc, char** argv)
         }
     }
 
-    if (! pixel_scan_threads.empty())
+    if (!pixel_scan_threads.empty())
     {
         // string -> integer
         if (sscanf(pixel_scan_threads.c_str(), "%d", &n_pixel_scan_threads) != 1 || n_pixel_scan_threads <= 0)
@@ -412,7 +413,7 @@ int Environment::parse_cmdline(int argc, char** argv)
         }
     }
 
-    if (! reduce_threads.empty())
+    if (!reduce_threads.empty())
     {
         // string -> integer
         if (sscanf(reduce_threads.c_str(), "%d", &n_reduce_threads) != 1 || n_reduce_threads <= 0)
@@ -433,15 +434,15 @@ int Environment::parse_cmdline(int argc, char** argv)
     }
 
     //==== Parse rotations
-    if (!parse_delimited_string_list_to_floats (rotations, rotAngles))
+    if (! Nyxus::parse_delimited_string_list_to_floats(rotations, rotAngles))
     {
         return 1;
     }
 
     //==== Parse desired features
-    
+
     // --Try to read a feature file
-    if (features.length() >0 && directoryExists(features))
+    if (features.length() > 0 && Nyxus::directoryExists(features))
     {
 
         std::ifstream file(features);
@@ -460,7 +461,7 @@ int Environment::parse_cmdline(int argc, char** argv)
     }
 
     // --Make sure all the feature names are legal and cast to uppercase (class FeatureSet understands uppercase names)
-    if (!parse_delimited_string_list_to_features (features, desiredFeatures)) 
+    if (! Nyxus::parse_delimited_string_list_to_features(features, desiredFeatures))
     {
         return 1;
     }
@@ -478,7 +479,7 @@ int Environment::parse_cmdline(int argc, char** argv)
         if (s == FEA_NICK_ALL_BUT_GABOR)
         {
             theFeatureSet.enableAll();
-            auto F = {GABOR};
+            auto F = { GABOR };
             theFeatureSet.disableFeatures(F);
             break;  // No need to bother of others
         }
@@ -505,7 +506,7 @@ int Environment::parse_cmdline(int argc, char** argv)
         if (s == FEA_NICK_ALL_INTENSITY)
         {
             auto F = {
-                INTEGRATED_INTENSITY, 
+                INTEGRATED_INTENSITY,
                 MEAN,
                 MEDIAN,
                 MIN,
@@ -516,8 +517,8 @@ int Environment::parse_cmdline(int argc, char** argv)
                 UNIFORMITY,
                 SKEWNESS,
                 KURTOSIS,
-                HYPERSKEWNESS, 
-                HYPERFLATNESS, 
+                HYPERSKEWNESS,
+                HYPERFLATNESS,
                 MEAN_ABSOLUTE_DEVIATION,
                 ENERGY,
                 ROOT_MEAN_SQUARED,
@@ -528,7 +529,7 @@ int Environment::parse_cmdline(int argc, char** argv)
                 INTERQUARTILE_RANGE,
                 ROBUST_MEAN_ABSOLUTE_DEVIATION,
                 WEIGHTED_CENTROID_Y,
-                WEIGHTED_CENTROID_X, 
+                WEIGHTED_CENTROID_X,
                 MASS_DISPLACEMENT
             };
             theFeatureSet.enableFeatures(F);
@@ -538,7 +539,7 @@ int Environment::parse_cmdline(int argc, char** argv)
         {
             auto F = {
                 AREA_PIXELS_COUNT,
-                AREA_UM2, 
+                AREA_UM2,
                 CENTROID_X,
                 CENTROID_Y,
                 COMPACTNESS,
@@ -596,9 +597,9 @@ int Environment::parse_cmdline(int argc, char** argv)
                 GLCM_DIFFERENCEVARIANCE,
                 GLCM_DIFFERENCEENTROPY,
                 GLCM_INFOMEAS1,
-                GLCM_INFOMEAS2 
+                GLCM_INFOMEAS2
             };
-            theFeatureSet.enableFeatures (F);
+            theFeatureSet.enableFeatures(F);
             continue;
         }
         if (s == FEA_NICK_ALL_GLRLM)
@@ -642,9 +643,9 @@ int Environment::parse_cmdline(int argc, char** argv)
                 GLSZM_SALGLE,
                 GLSZM_SAHGLE,
                 GLSZM_LALGLE,
-                GLSZM_LAHGLE 
+                GLSZM_LAHGLE
             };
-            theFeatureSet.enableFeatures (F);
+            theFeatureSet.enableFeatures(F);
             continue;
         }
         if (s == FEA_NICK_ALL_GLDM)
@@ -705,11 +706,6 @@ int Environment::parse_cmdline(int argc, char** argv)
         pixelSizeUm = 1e-2 / xyRes / 1e-6;	// 1 cm in meters / pixels per cm / micrometers
     }
 
-
     // Success
     return 0;
 }
-
-
-
-

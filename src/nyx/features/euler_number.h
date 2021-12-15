@@ -14,8 +14,7 @@ public:
 	
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
-
-protected:
+private:
 	long calculate(std::vector<unsigned char>& I, int height, int width, int mode);
 	static constexpr unsigned char Px[10] = { //MM: 0 or 1 in the left side of << represent binary pixel values
 	// P1 - single pixel  8/4/2/1

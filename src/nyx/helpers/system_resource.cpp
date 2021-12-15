@@ -1,3 +1,5 @@
+namespace Nyxus
+{
 
 #ifdef __APPLE__
     #include <stdio.h>
@@ -5,7 +7,7 @@
     #include <sys/types.h>
     #include <sys/sysctl.h>
 
-    int main(void)
+    unsigned long long getAvailPhysMemory()
     {
         int mib[2] = { CTL_HW, HW_MEMSIZE };
         u_int namelen = sizeof(mib) / sizeof(mib[0]);
@@ -16,11 +18,11 @@
         {
             perror("sysctl");
         }
-        else
-        {
-            printf("HW.HW_MEMSIZE = %llu bytes\n", size);
-        }
-        return 0;
+        // else
+        // {
+        //     printf("HW.HW_MEMSIZE = %llu bytes\n", size);
+        // }
+        return size;
     }
 #endif
 
@@ -47,3 +49,4 @@
     }
 #endif
 
+} // namespace Nyxus

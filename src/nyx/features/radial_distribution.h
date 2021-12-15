@@ -40,8 +40,7 @@ public:
 
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
-protected:
-
+private:
 	std::vector<double> values_FracAtD,
 		values_MeanFrac,
 		values_RadialCV;

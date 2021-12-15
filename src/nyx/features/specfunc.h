@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef __SPECFUNC_H__
-#define __SPECFUNC_H__
-
 int gsl_sf_choose(unsigned int n, unsigned int m, double* result);
 int gsl_sf_gamma(const double x, double* result);
 double gsl_sf_fact(const int n);
@@ -46,4 +43,3 @@ enum {
 };
 
 
-#endif // __SPECFUNC_H__

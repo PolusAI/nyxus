@@ -1,4 +1,5 @@
 #pragma once
+
 #include <unordered_map>
 #include "../roi_data.h"
 #include <tuple>
@@ -15,7 +16,7 @@ public:
 
 	const float EPS = 1.0e-4f;
 
-protected:
+private:
 	void minEnclosingCircle(
 		// in:
 		std::vector<Pixel2>& Contour,

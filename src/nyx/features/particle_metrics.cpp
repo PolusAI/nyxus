@@ -303,3 +303,72 @@ void ParticleMetrics::calc_nassenstein (std::vector<double>& all_D)
 	}
 }
 
+void ParticleMetrics::reduce_feret (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR& r = (*ptrLabelData)[lab];
+
+		ParticleMetrics pm(r.convHull.CH);
+		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
+		pm.calc_ferret(
+			r.fvals[MAX_FERET_DIAMETER][0],
+			r.fvals[MAX_FERET_ANGLE][0],
+			r.fvals[MIN_FERET_DIAMETER][0],
+			r.fvals[MIN_FERET_ANGLE][0],
+			allD
+		);
+
+		auto structStat = ComputeCommonStatistics2(allD);
+		r.fvals[STAT_FERET_DIAM_MIN][0]	= (double)structStat.min;
+		r.fvals[STAT_FERET_DIAM_MAX][0]	= (double)structStat.max;
+		r.fvals[STAT_FERET_DIAM_MEAN][0] = structStat.mean;
+		r.fvals[STAT_FERET_DIAM_MEDIAN][0] = structStat.median;
+		r.fvals[STAT_FERET_DIAM_STDDEV][0] = structStat.stdev;
+		r.fvals[STAT_FERET_DIAM_MODE][0] = (double)structStat.mode;
+	}
+}
+
+void ParticleMetrics::reduce_martin (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR& r = (*ptrLabelData)[lab];
+
+		ParticleMetrics pm(r.convHull.CH);
+		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
+		pm.calc_martin(allD);
+
+		auto structStat = ComputeCommonStatistics2(allD);
+		r.fvals[STAT_MARTIN_DIAM_MIN][0] = (double)structStat.min;
+		r.fvals[STAT_MARTIN_DIAM_MAX][0] = (double)structStat.max;
+		r.fvals[STAT_MARTIN_DIAM_MEAN][0] = structStat.mean;
+		r.fvals[STAT_MARTIN_DIAM_MEDIAN][0] = structStat.median;
+		r.fvals[STAT_MARTIN_DIAM_STDDEV][0] = structStat.stdev;
+		r.fvals[STAT_MARTIN_DIAM_MODE][0] = (double)structStat.mode;
+	}
+}
+
+void ParticleMetrics::reduce_nassenstein (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR& r = (*ptrLabelData)[lab];
+
+		ParticleMetrics pm(r.convHull.CH);
+		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
+		pm.calc_nassenstein(allD);
+
+		auto s = ComputeCommonStatistics2(allD);
+		r.fvals[STAT_NASSENSTEIN_DIAM_MIN][0] = (double)s.min;	
+		r.fvals[STAT_NASSENSTEIN_DIAM_MAX][0] = (double)s.max;
+		r.fvals[STAT_NASSENSTEIN_DIAM_MEAN][0] = s.mean;
+		r.fvals[STAT_NASSENSTEIN_DIAM_MEDIAN][0] = s.median;
+		r.fvals[STAT_NASSENSTEIN_DIAM_STDDEV][0] = s.stdev;
+		r.fvals[STAT_NASSENSTEIN_DIAM_MODE][0] = (double)s.mode;
+	}
+}
+
