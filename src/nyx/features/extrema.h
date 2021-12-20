@@ -9,8 +9,27 @@
 class ExtremaFeatures
 {
 public:
-	ExtremaFeatures();
-	void initialize (const std::vector<Pixel2> & roi_pixels);
+	static bool required(const FeatureSet& fs) 
+	{
+		return fs.anyEnabled({
+			EXTREMA_P1_Y,
+			EXTREMA_P1_X,
+			EXTREMA_P2_Y,
+			EXTREMA_P2_X,
+			EXTREMA_P3_Y,
+			EXTREMA_P3_X,
+			EXTREMA_P4_Y,
+			EXTREMA_P4_X,
+			EXTREMA_P5_Y,
+			EXTREMA_P5_X,
+			EXTREMA_P6_Y,
+			EXTREMA_P6_X,
+			EXTREMA_P7_Y,
+			EXTREMA_P7_X,
+			EXTREMA_P8_Y,
+			EXTREMA_P8_X });
+	}
+	ExtremaFeatures (const std::vector<Pixel2> & roi_pixels);
 	std::tuple<int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int> get_values();
 	static void reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 

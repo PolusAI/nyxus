@@ -1,7 +1,7 @@
 #include <iostream>
 #include "geodetic_len_thickness.h"
 
-std::tuple<double, double> GeodeticLength_and_Thickness::calculate(StatsInt roiArea, StatsInt roiPerimeter)
+GeodeticLength_and_Thickness::GeodeticLength_and_Thickness (size_t roiArea, StatsInt roiPerimeter)
 {
 	//------------------------------Geodetic Length and Thickness------------
 	//https://git.rwth-aachen.de/ants/sensorlab/imea/-/blob/master/imea/measure_2d/macro.py#L244
@@ -23,13 +23,11 @@ std::tuple<double, double> GeodeticLength_and_Thickness::calculate(StatsInt roiA
 	if (roiPerimeter <= 0)
 	{
 		std::cout << " Perimeter should be a positive value greater than zero" << std::endl;
-		return { 0,0 };
 	}
 
 	if (roiArea <= 0)
 	{
 		std::cout << " Area should be a positive value greater than zero" << std::endl;
-		return { 0,0 };
 	}
 
 	double SqRootTmp = roiPerimeter * roiPerimeter / 16 - (double)roiArea;
@@ -38,13 +36,22 @@ std::tuple<double, double> GeodeticLength_and_Thickness::calculate(StatsInt roiA
 	if (SqRootTmp < 0) SqRootTmp = 0;
 
 	//Calcuate geodetic_length with pq-formula (see above):
-	double geodetic_length = roiPerimeter / 4 + sqrt(SqRootTmp);
+	geodetic_length = roiPerimeter / 4 + sqrt(SqRootTmp);
 
 	//Calculate thickness by rewriting Equation (2):
-	double thickness = roiPerimeter / 2 - geodetic_length;
-
-	return { geodetic_length, thickness };
+	thickness = roiPerimeter / 2 - geodetic_length;
 }
+
+double GeodeticLength_and_Thickness::get_geodetic_length()
+{
+	return geodetic_length;
+}
+
+double GeodeticLength_and_Thickness::get_thickness()
+{
+	return thickness;
+}
+
 
 void GeodeticLength_and_Thickness::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
@@ -57,10 +64,9 @@ void GeodeticLength_and_Thickness::reduce(size_t start, size_t end, std::vector<
 		if (r.contour.contour_pixels.size() == 0 || r.convHull.CH.size() == 0 || r.fvals[NUM_NEIGHBORS][0] == 0)
 			continue;
 
-		GeodeticLength_and_Thickness glt;
-		auto [geoLen, thick] = glt.calculate(r.raw_pixels.size(), (StatsInt)r.fvals[PERIMETER][0]);
-		r.fvals[GEODETIC_LENGTH][0] = geoLen;
-		r.fvals[THICKNESS][0] = thick;
+		GeodeticLength_and_Thickness glt (r.raw_pixels.size(), (StatsInt)r.fvals[PERIMETER][0]);
+		r.fvals[GEODETIC_LENGTH][0] = glt.get_geodetic_length();
+		r.fvals[THICKNESS][0] = glt.get_thickness();
 	}
 }
 

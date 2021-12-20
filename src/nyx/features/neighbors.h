@@ -10,8 +10,8 @@
 class NeighborFeatures
 {
 public:
+	static bool required(const FeatureSet& fs) { return fs.anyEnabled({ NUM_NEIGHBORS, CLOSEST_NEIGHBOR1_DIST, CLOSEST_NEIGHBOR2_DIST }); }
 	NeighborFeatures();
-	void initialize();
 	static void reduce(int radius);
 
 private:

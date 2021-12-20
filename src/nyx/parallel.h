@@ -16,7 +16,7 @@ namespace Nyxus
 	/// @param datasetSize Total of ROIs
 	/// @param ptrLabels ROI labels "dictionary"
 	/// @param ptrLabelData ROI data
-	inline void runParallel(functype f, int nThr, size_t workPerThread, size_t datasetSize, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+	inline void runParallel (functype f, int nThr, size_t workPerThread, size_t datasetSize, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 	{
 		std::vector<std::future<void>> T;
 		for (int t = 0; t < nThr; t++)
@@ -31,6 +31,8 @@ namespace Nyxus
 	}
 
 	void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+	void calcRoiIntensityFeatures (LR& lr);
+	void calcRoiContour(LR& r);
 	void parallelReduceContour (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 	void parallelReduceConvHull (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 }

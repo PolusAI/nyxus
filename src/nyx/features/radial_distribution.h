@@ -9,20 +9,11 @@
 class RadialDistribution
 {
 public:
-
-	RadialDistribution() 
-	{ 
-		radial_count_bins.resize (RadialDistribution::num_bins, 0); 
-		radial_intensity_bins.resize (RadialDistribution::num_bins, 0.0);
-		angular_bins.resize (RadialDistribution::num_bins, 0);
-		band_pixels.resize (RadialDistribution::num_bins);
-
-		values_FracAtD.resize (RadialDistribution::num_bins, 0);
-		values_MeanFrac.resize (RadialDistribution::num_bins, 0);
-		values_RadialCV.resize (RadialDistribution::num_bins, 0);
+	static bool required(const FeatureSet& fs) {
+		return fs.anyEnabled({ FRAC_AT_D, MEAN_FRAC, RADIAL_CV });
 	}
 
-	void initialize (const std::vector<Pixel2>& raw_pixels, const std::vector<Pixel2>& contour_pixels);
+	RadialDistribution (const std::vector<Pixel2>& raw_pixels, const std::vector<Pixel2>& contour_pixels);
 
 	// Fraction of total stain in an object at a given radius
 	const std::vector<double>& get_FracAtD();
@@ -33,12 +24,13 @@ public:
 	// Coefficient of variation of intensity within a ring, calculated over 8 slices
 	const std::vector<double> & get_RadialCV();
 
-	const static int num_bins = 8,
-		num_features_FracAtD = 8, 
-		num_features_MeanFrac = 8, 
-		num_features_RadialCV = 8;
-
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+
+	// Used in the output
+	const static int num_bins = 8,
+		num_features_FracAtD = 8,
+		num_features_MeanFrac = 8,
+		num_features_RadialCV = 8;
 
 private:
 	std::vector<double> values_FracAtD,

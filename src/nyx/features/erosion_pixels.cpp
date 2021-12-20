@@ -1,7 +1,7 @@
 #include <algorithm>
 #include "erosion.h"
 
-int ErosionPixels::calc_feature (ImageMatrix & I)
+ErosionPixels::ErosionPixels (const ImageMatrix & I)
 {
 	//[rows, columns, numberOfColorChannels] = size(grayImage);
 	int rows = I.height,
@@ -18,7 +18,7 @@ int ErosionPixels::calc_feature (ImageMatrix & I)
 	//localMinImage = zeros(size(grayImage), class(grayImage));
 	ImageMatrix I1, I2(I);
 
-	int numErosions = 0;	// The feature value
+	numErosions = 0;	
 	for (; numErosions < SANITY_MAX_NUM_EROSIONS; numErosions++)
 	{
 		// Copy the matrix from previous iteration
@@ -81,7 +81,10 @@ int ErosionPixels::calc_feature (ImageMatrix & I)
 		if (numNon0 == 0)
 			break;
 	}
+}
 
+int ErosionPixels::get_feature_value()
+{
 	return numErosions;
 }
 
@@ -92,14 +95,13 @@ void ErosionPixels::reduce (size_t start, size_t end, std::vector<int>* ptrLabel
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
-		// Skip calculation in case of bad data
+		// Check if data is good
 		if ((int)r.fvals[MIN][0] == (int)r.fvals[MAX][0])
 			continue;
 
 		// Calculate feature
-		//---	ImageMatrix im(r.raw_pixels, r.aabb);
-		ErosionPixels epix;
-		r.fvals[EROSIONS_2_VANISH][0] = epix.calc_feature(r.aux_image_matrix);
+		ErosionPixels epix (r.aux_image_matrix);
+		r.fvals[EROSIONS_2_VANISH][0] = epix.get_feature_value();
 	}
 }
 

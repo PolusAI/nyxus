@@ -4,10 +4,7 @@
 
 // Inspired by https://www.mathworks.com/matlabcentral/mlc-downloads/downloads/submissions/19028/versions/1/previews/regiondata.m/index.html
 
-EllipseFittingFeatures::EllipseFittingFeatures()
-{}
-
-void EllipseFittingFeatures::initialize (const std::vector<Pixel2>& roi_pixels, double centroid_x, double centroid_y, double area)
+EllipseFittingFeatures::EllipseFittingFeatures (const std::vector<Pixel2>& roi_pixels, double centroid_x, double centroid_y, double area)
 {
 	// Idea: calculate normalized second central moments for the region. 1/12 is the normalized second central moment of a pixel with unit length.
 
@@ -34,7 +31,7 @@ void EllipseFittingFeatures::initialize (const std::vector<Pixel2>& roi_pixels, 
 	majorAxisLength = 2. * sqrt(2.) * sqrt(uxx + uyy + common);
 	minorAxisLength = 2. * sqrt(2.) * sqrt(uxx + uyy - common);
 	eccentricity = 2. * sqrt((majorAxisLength / 2.) * (majorAxisLength / 2.) - (minorAxisLength / 2.) * (minorAxisLength / 2.)) / majorAxisLength;
-	roundness = (4. * area) / (M_PI * majorAxisLength);
+	roundness = (4. * area) / (M_PI * majorAxisLength * majorAxisLength);
 
 	// Calculate orientation [-90,90]
 	double num, den;
@@ -87,8 +84,7 @@ void EllipseFittingFeatures::reduce (size_t start, size_t end, std::vector<int>*
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
-		EllipseFittingFeatures f;
-		f.initialize (r.raw_pixels, r.fvals[CENTROID_X][0], r.fvals[CENTROID_Y][0], r.fvals[AREA_PIXELS_COUNT][0]);
+		EllipseFittingFeatures f (r.raw_pixels, r.fvals[CENTROID_X][0], r.fvals[CENTROID_Y][0], r.fvals[AREA_PIXELS_COUNT][0]);
 		r.fvals[MAJOR_AXIS_LENGTH][0] = f.get_major_axis_length();
 		r.fvals[MINOR_AXIS_LENGTH][0] = f.get_minor_axis_length();
 		r.fvals[ECCENTRICITY][0] = f.get_eccentricity();

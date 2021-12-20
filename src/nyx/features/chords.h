@@ -7,13 +7,36 @@
 #include "pixel.h"
 #include "../roi_data.h"
 
-/// @brief Class encapsulating calculating "allchords" and "maxchors" features
+/// @brief Class encapsulating calculating "allchords" and "maxchors" features. 
+/// An "all chord" refers to all the chords for all ROI rotations. 
+/// A max chord is the max of all chords for one ROI rotation. 
+/// 
+ 
 class Chords
 {
 public:
-	Chords();
+	static bool required(const FeatureSet& fs)
+	{
+		return fs.anyEnabled({
+				MAXCHORDS_MAX,
+				MAXCHORDS_MAX_ANG,
+				MAXCHORDS_MIN,
+				MAXCHORDS_MIN_ANG,
+				MAXCHORDS_MEDIAN,
+				MAXCHORDS_MEAN,
+				MAXCHORDS_MODE,
+				MAXCHORDS_STDDEV,
+				ALLCHORDS_MAX,
+				ALLCHORDS_MAX_ANG,
+				ALLCHORDS_MIN,
+				ALLCHORDS_MIN_ANG,
+				ALLCHORDS_MEDIAN,
+				ALLCHORDS_MEAN,
+				ALLCHORDS_MODE,
+				ALLCHORDS_STDDEV, });
+	}
 
-	void initialize(const std::vector<Pixel2> & raw_pixels, const AABB & bb, const double cenx, const double ceny);
+	Chords (const std::vector<Pixel2> & raw_pixels, const AABB & bb, const double cenx, const double ceny);
 
 	/// @brief Calculated maxchords statistics
 	/// @return Tupple of [0] max, [1] min, [2] median, [3] mean, [4] mode, [5] std, [6] min_angle, [7] max_angle

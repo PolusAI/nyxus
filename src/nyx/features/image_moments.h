@@ -63,11 +63,57 @@ protected:
 
 #include <math.h>
 
-class HuMoments
+class ImageMoments
 {
 public:
-    HuMoments() {}
-    void initialize (int minI, int maxI, const ImageMatrix& im, const ImageMatrix& weighted_im);
+    static bool required(const FeatureSet& fs)
+    {
+        return fs.anyEnabled({
+                SPAT_MOMENT_00,
+                SPAT_MOMENT_01,
+                SPAT_MOMENT_02,
+                SPAT_MOMENT_03,
+                SPAT_MOMENT_10,
+                SPAT_MOMENT_11,
+                SPAT_MOMENT_12,
+                SPAT_MOMENT_20,
+                SPAT_MOMENT_21,
+                SPAT_MOMENT_30,
+
+                CENTRAL_MOMENT_02,
+                CENTRAL_MOMENT_03,
+                CENTRAL_MOMENT_11,
+                CENTRAL_MOMENT_12,
+                CENTRAL_MOMENT_20,
+                CENTRAL_MOMENT_21,
+                CENTRAL_MOMENT_30,
+
+                NORM_CENTRAL_MOMENT_02,
+                NORM_CENTRAL_MOMENT_03,
+                NORM_CENTRAL_MOMENT_11,
+                NORM_CENTRAL_MOMENT_12,
+                NORM_CENTRAL_MOMENT_20,
+                NORM_CENTRAL_MOMENT_21,
+                NORM_CENTRAL_MOMENT_30,
+
+                HU_M1,
+                HU_M2,
+                HU_M3,
+                HU_M4,
+                HU_M5,
+                HU_M6,
+                HU_M7,
+
+                WEIGHTED_HU_M1,
+                WEIGHTED_HU_M2,
+                WEIGHTED_HU_M3,
+                WEIGHTED_HU_M4,
+                WEIGHTED_HU_M5,
+                WEIGHTED_HU_M6,
+                WEIGHTED_HU_M7 });
+    }
+
+    ImageMoments (int minI, int maxI, const ImageMatrix& im, const ImageMatrix& weighted_im);
     std::tuple<double, double, double, double, double, double, double, double, double, double> getSpatialMoments();
     std::tuple<double, double, double, double, double, double, double, double, double, double> getWeightedSpatialMoments();
     std::tuple<double, double, double, double, double, double, double> getNormSpatialMoments();
@@ -104,8 +150,6 @@ private:
     double wmu02 = 0, wmu03 = 0, wmu11 = 0, wmu12 = 0, wmu20 = 0, wmu21 = 0, wmu30 = 0;    // weighted central moments
     double hm1 = 0, hm2 = 0, hm3 = 0, hm4 = 0, hm5 = 0, hm6 = 0, hm7 = 0;   // Hu invariants
     double whm1 = 0, whm2 = 0, whm3 = 0, whm4 = 0, whm5 = 0, whm6 = 0, whm7 = 0;    // weighted Hu invariants
-
-
 };
 
 #endif // HUMOMENTS_H

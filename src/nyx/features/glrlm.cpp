@@ -5,12 +5,7 @@
 #include <unordered_set>
 #include "glrlm.h"
 
-const double EPS = 2.2e-16;
-const double BAD_ROI_FVAL = 0.0;
-
-std::vector<double> GLRLM_features::rotAngles = {0, 45, 90, 135};
-
-void GLRLM_features::initialize (int minI, int maxI, const ImageMatrix& im)
+GLRLM_features::GLRLM_features (int minI, int maxI, const ImageMatrix& im)
 {
 	//==== Check if the ROI is degenerate (equal intensity)
 	if (minI == maxI)
@@ -759,8 +754,7 @@ void GLRLM_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabe
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
-		GLRLM_features glrlm;
-		glrlm.initialize((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
+		GLRLM_features glrlm ((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
 		glrlm.calc_SRE(r.fvals[GLRLM_SRE]);
 		glrlm.calc_LRE(r.fvals[GLRLM_LRE]);
 		glrlm.calc_GLN(r.fvals[GLRLM_GLN]);

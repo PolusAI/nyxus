@@ -5,10 +5,7 @@
 #include <unordered_set>
 #include "gldm.h"
 
-const double BAD_ROI_FVAL = 0.0;
-const double EPS = 2.2e-16;
-
-void GLDM_features::initialize(int minI, int maxI, const ImageMatrix& im)
+GLDM_features::GLDM_features (int minI, int maxI, const ImageMatrix& im)
 {
 	//==== Check if the ROI is degenerate (equal intensity)
 	if (minI == maxI)
@@ -387,9 +384,7 @@ void GLDM_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabel
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
-		//---	ImageMatrix im(r.raw_pixels, r.aabb);
-		GLDM_features gldm;
-		gldm.initialize((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
+		GLDM_features gldm ((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
 		r.fvals[GLDM_SDE][0] = gldm.calc_SDE();
 		r.fvals[GLDM_LDE][0] = gldm.calc_LDE();
 		r.fvals[GLDM_GLN][0] = gldm.calc_GLN();

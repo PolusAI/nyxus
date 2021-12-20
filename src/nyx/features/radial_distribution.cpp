@@ -7,8 +7,17 @@
 #include "image_matrix.h"
 #include "../globals.h"
 
-void RadialDistribution::initialize(const std::vector<Pixel2>& raw_pixels, const std::vector<Pixel2>& contour_pixels)
+RadialDistribution::RadialDistribution (const std::vector<Pixel2>& raw_pixels, const std::vector<Pixel2>& contour_pixels)
 {
+	radial_count_bins.resize(RadialDistribution::num_bins, 0);
+	radial_intensity_bins.resize(RadialDistribution::num_bins, 0.0);
+	angular_bins.resize(RadialDistribution::num_bins, 0);
+	band_pixels.resize(RadialDistribution::num_bins);
+
+	values_FracAtD.resize(RadialDistribution::num_bins, 0);
+	values_MeanFrac.resize(RadialDistribution::num_bins, 0);
+	values_RadialCV.resize(RadialDistribution::num_bins, 0);
+
 	// Cache the pixels count
 	this->cached_num_pixels = raw_pixels.size();
 
@@ -168,8 +177,7 @@ void RadialDistribution::reduce (size_t start, size_t end, std::vector<int>* ptr
 		}
 
 		// Calculate the radial distribution
-		RadialDistribution rd;
-		rd.initialize(r.raw_pixels, r.contour.contour_pixels);
+		RadialDistribution rd (r.raw_pixels, r.contour.contour_pixels);
 		r.fvals[FRAC_AT_D] = rd.get_FracAtD();
 		r.fvals[MEAN_FRAC] = rd.get_MeanFrac();
 		r.fvals[RADIAL_CV] = rd.get_RadialCV();

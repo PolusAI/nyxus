@@ -4,12 +4,38 @@
 #include "../roi_data.h"
 #include "image_matrix.h"
 
+/// @brief Gray Level Size Zone(GLSZM) features
+/// Gray Level Size Zone(GLSZM) quantifies gray level zones in an image.A gray level zone is defined as a the number
+/// of connected voxels that share the same gray level intensity.A voxel is considered connected if the distance is 1
+/// according to the infinity norm(26 - connected region in a 3D, 8 - connected region in 2D).
+/// In a gray level size zone matrix : math:`P(i, j)` the :math:`(i, j)^ {\text{ th }}` element equals the number of zones
+/// with gray level : math:`i`and size :math:`j` appear in image.Contrary to GLCMand GLRLM, the GLSZM is rotation
+/// independent, with only one matrix calculated for all directions in the ROI.
+
 class GLSZM_features
 {
 public:
-	GLSZM_features() {}
-
-	void initialize (int minI, int maxI, const ImageMatrix & );
+	static bool required(const FeatureSet& fs) {
+		return fs.anyEnabled({
+			GLSZM_SAE,
+			GLSZM_LAE,
+			GLSZM_GLN,
+			GLSZM_GLNN,
+			GLSZM_SZN,
+			GLSZM_SZNN,
+			GLSZM_ZP,
+			GLSZM_GLV,
+			GLSZM_ZV,
+			GLSZM_ZE,
+			GLSZM_LGLZE,
+			GLSZM_HGLZE,
+			GLSZM_SALGLE,
+			GLSZM_SAHGLE,
+			GLSZM_LALGLE,
+			GLSZM_LAHGLE
+			});
+	}
+	GLSZM_features (int minI, int maxI, const ImageMatrix & );
 
 	// Small Area Emphasis
 	double calc_SAE();
@@ -68,4 +94,7 @@ private:
 	int Np = 0; // number of voxels in the image
 	int Nz = 0; // number of zones in the ROI, 1<=Nz<=Np
 	SimpleMatrix<int> P;
+
+	const double EPS = 2.2e-16;
+	const double BAD_ROI_FVAL = 0.0;
 };

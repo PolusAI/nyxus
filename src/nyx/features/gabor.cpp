@@ -3,9 +3,8 @@
 #include <omp.h>
 #include "gabor.h"
 
-int GaborFeatures::num_features = 7;
 
-void GaborFeatures::calc_GaborTextureFilters2D (const ImageMatrix& Im0, std::vector<double> & ratios)
+GaborFeatures::GaborFeatures (const ImageMatrix& Im0)
 {
     double GRAYthr;
     /* parameters set up in complience with the paper */
@@ -51,7 +50,9 @@ void GaborFeatures::calc_GaborTextureFilters2D (const ImageMatrix& Im0, std::vec
             cnt++;
     originalScore = cnt;
 
-    ratios.resize (8, 0.0);
+    if (fvals.size() != GaborFeatures::num_features)
+        fvals.resize (GaborFeatures::num_features, 0.0);
+
     for (ii = 0; ii < GaborFeatures::num_features; ii++) 
     {
         unsigned long afterGaborScore = 0;
@@ -76,8 +77,19 @@ void GaborFeatures::calc_GaborTextureFilters2D (const ImageMatrix& Im0, std::vec
             if (double(a)/max_val > GRAYthr)
                 afterGaborScore++;
 
-        ratios[ii] = (double)afterGaborScore / (double)originalScore;
+        fvals[ii] = (double)afterGaborScore / (double)originalScore;
     }
+}
+
+void GaborFeatures::get_feature_values (std::vector<double> & cusotmerFacingFvals)
+{
+    // Reserve enough space for the result
+    if (cusotmerFacingFvals.size() < GaborFeatures::num_features)
+        cusotmerFacingFvals.resize(GaborFeatures::num_features);
+
+    // Store it
+    for (int i = 0; i < GaborFeatures::num_features; i++)
+        cusotmerFacingFvals[i] = fvals[i];
 }
 
 //  conv
@@ -467,8 +479,7 @@ void GaborFeatures::Gabor (double* Gex, double f0, double sig2lam, double gamma,
 
 }
 
-/* Computes Gabor energy */
-//Function [e2] = GaborEnergy(Im,f0,sig2lam,gamma,theta,n),
+// Computes Gabor energy
 void GaborFeatures::GaborEnergy (
     const ImageMatrix& Im, 
     PixIntens* /* double* */ out, 
@@ -504,9 +515,6 @@ void GaborFeatures::GaborEnergy (
     conv (c, image, Gexp, Im.width, Im.height, n, n);
 
     delete[] image;
-
-
-
     #endif
 
     //=== Version 2
@@ -546,11 +554,7 @@ void GaborFeatures::reduce (size_t start, size_t end, std::vector<int>* ptrLabel
             continue;
         }
 
-        GaborFeatures gf;
-
-        // Calculate Gabor
-        //---	ImageMatrix im (r.raw_pixels, r.aabb);
-        gf.calc_GaborTextureFilters2D(r.aux_image_matrix, r.fvals[GABOR]);	// r.fvals[GABOR] will contain GaborFeatures::num_features items upon return
-
+        GaborFeatures gf (r.aux_image_matrix);	
+        gf.get_feature_values (r.fvals[GABOR]);
     }
 }

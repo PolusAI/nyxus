@@ -10,9 +10,17 @@
 class RoiRadius
 {
 public:
-	RoiRadius();
-	void initialize (const std::vector<Pixel2>& cloud, const std::vector<Pixel2>& contour);
-	std::tuple<double, double, double> get_min_max_median_radius();
+	static bool required(const FeatureSet& fs) {
+		return fs.anyEnabled({
+			ROI_RADIUS_MEAN,
+			ROI_RADIUS_MAX,
+			ROI_RADIUS_MEDIAN
+			});
+	}
+	RoiRadius (const std::vector<Pixel2>& cloud, const std::vector<Pixel2>& contour);
+	double get_mean_radius();
+	double get_max_radius();
+	double get_median_radius();
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 private:

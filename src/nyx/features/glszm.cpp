@@ -5,11 +5,7 @@
 #include <unordered_set>
 #include "glszm.h"
 
-const double EPS = 2.2e-16;
-const double BAD_ROI_FVAL = 0.0;
-
-
-void GLSZM_features::initialize(int minI, int maxI, const ImageMatrix& im)
+GLSZM_features::GLSZM_features (int minI, int maxI, const ImageMatrix& im)
 {
 	//==== Check if the ROI is degenerate (equal intensity)
 	if (minI == maxI)
@@ -492,9 +488,7 @@ void GLSZM_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabe
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
-		//---	ImageMatrix im(r.raw_pixels, r.aabb);
-		GLSZM_features glszm;
-		glszm.initialize((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
+		GLSZM_features glszm ((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
 		r.fvals[GLSZM_SAE][0] = glszm.calc_SAE();
 		r.fvals[GLSZM_LAE][0] = glszm.calc_LAE();
 		r.fvals[GLSZM_GLN][0] = glszm.calc_GLN();

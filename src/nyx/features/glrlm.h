@@ -4,15 +4,40 @@
 #include "../roi_data.h"
 #include "image_matrix.h"
 
+/// @brief Gray Level Run Length Matrix(GLRLM) features
+/// Gray Level Run Length Matrix(GLRLM) quantifies gray level runs, which are defined as the length in number of
+/// pixels, of consecutive pixels that have the same gray level value.In a gray level run length matrix
+/// 	: math:`\textbf{ P }(i, j | \theta)`, the :math:`(i, j)^ {\text{ th }}` element describes the number of runs with gray level
+/// 	: math:`i`and length :math:`j` occur in the image(ROI) along angle : math:`\theta`.
+/// 
+
 class GLRLM_features
 {
 	using P_matrix = SimpleMatrix<int>;
 	using AngledFtrs = std::vector<double>;
 
 public:
-
-	GLRLM_features() {}
-	void initialize(int minI, int maxI, const ImageMatrix& im);
+	static int required(const FeatureSet& fs) {
+		return fs.anyEnabled({
+				GLRLM_SRE,
+				GLRLM_LRE,
+				GLRLM_GLN,
+				GLRLM_GLNN,
+				GLRLM_RLN,
+				GLRLM_RLNN,
+				GLRLM_RP,
+				GLRLM_GLV,
+				GLRLM_RV,
+				GLRLM_RE,
+				GLRLM_LGLRE,
+				GLRLM_HGLRE,
+				GLRLM_SRLGLE,
+				GLRLM_SRHGLE,
+				GLRLM_LRLGLE,
+				GLRLM_LRHGLE
+			});
+	}
+	GLRLM_features (int minI, int maxI, const ImageMatrix& im);
 
 	// 1. Short Run Emphasis 
 	void calc_SRE (AngledFtrs& af);
@@ -49,13 +74,15 @@ public:
 
 	static void reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
-	static std::vector<double> rotAngles;
+	constexpr static int rotAngles [] = {0, 45, 90, 135};
 
 private:
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
 	std::vector<int> angles_Ng;	// number of discreet intensity values in the image
 	std::vector<int> angles_Nr; // number of discreet run lengths in the image
 	std::vector<int> angles_Np; // number of voxels in the image
-	//XXX int Nz = 0; // number of zones in the ROI, 1<=Nz<=Np
 	std::vector<P_matrix> angles_P;
+
+	const double EPS = 2.2e-16;
+	const double BAD_ROI_FVAL = 0.0;
 };

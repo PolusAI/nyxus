@@ -15,10 +15,6 @@ NeighborFeatures::NeighborFeatures()
 {
 }
 
-void NeighborFeatures::initialize()
-{
-}
-
 // Spatial hashing
 inline bool NeighborFeatures::aabbNoOverlap(
 	StatsInt xmin1, StatsInt xmax1, StatsInt ymin1, StatsInt ymax1,

@@ -373,27 +373,31 @@ void zernike2D(
 		Z_values.push_back(f);
 }
 
-void parallelReduceZernike2D(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void calcRoiZernike(LR& r)
+{
+	zernike2D(
+		// in
+		r.raw_pixels,	// nonzero_intensity_pixels,
+		r.aabb,			// AABB info not to calculate it again from 'raw_pixels' in the function
+		r.aux_ZERNIKE2D_ORDER,
+		// out
+		r.fvals[ZERNIKE2D]);	// .Zernike2D
+
+	// Fix calculated feature values due to all-0 intensity labels to avoid NANs in the output
+	if (r.intensitiesAllZero())
+	{
+		for (int i = 0; i < r.fvals[ZERNIKE2D].size(); i++)
+			r.fvals[ZERNIKE2D][i] = 0.0;
+	}
+}
+
+void parallelReduceZernike2D (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-
-		zernike2D(
-			// in
-			r.raw_pixels,	// nonzero_intensity_pixels,
-			r.aabb,			// AABB info not to calculate it again from 'raw_pixels' in the function
-			r.aux_ZERNIKE2D_ORDER,
-			// out
-			r.fvals[ZERNIKE2D]);	// .Zernike2D
-
-		// Fix calculated feature values due to all-0 intensity labels to avoid NANs in the output
-		if (r.intensitiesAllZero())
-		{
-			for (int i = 0; i < r.fvals[ZERNIKE2D].size(); i++)
-				r.fvals[ZERNIKE2D][i] = 0.0;
-		}
+		calcRoiZernike(r);
 	}
 }
 

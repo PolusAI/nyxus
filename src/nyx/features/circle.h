@@ -6,9 +6,15 @@
 #include <vector>
 #include "pixel.h"
 
+/// @brief Class encapsulating circularity features of a ROI
+
 class EnclosingInscribingCircumscribingCircle
 {
 public:
+	static bool required(const FeatureSet& fs) {
+		return fs.anyEnabled({ DIAMETER_MIN_ENCLOSING_CIRCLE, DIAMETER_INSCRIBING_CIRCLE, DIAMETER_CIRCUMSCRIBING_CIRCLE });
+	}
+
 	EnclosingInscribingCircumscribingCircle() {}
 	double calculate_min_enclosing_circle_diam (std::vector<Pixel2>& Contour);
 	std::tuple <double, double> calculate_inscribing_circumscribing_circle (std::vector<Pixel2>& contours, double xCentroid, double yCentroid);

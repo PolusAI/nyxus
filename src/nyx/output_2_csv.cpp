@@ -288,7 +288,8 @@ namespace Nyxus
 				if (glrlmFeature)
 				{
 					// Polulate with angles
-					for (int i = 0; i < GLRLM_features::rotAngles.size(); i++)
+					auto nAng = 4; // sizeof(GLRLM_features::rotAngles) / sizeof(GLRLM_features::rotAngles[0]);
+					for (int i = 0; i < nAng; i++)
 					{
 						ssVals << "," << vv[i];
 						//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[i];	

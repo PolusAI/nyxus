@@ -1,6 +1,6 @@
-#include "hu.h"
+#include "image_moments.h"
 
-void HuMoments::initialize (int minI, int maxI, const ImageMatrix& im, const ImageMatrix& weighted_im)
+ImageMoments::ImageMoments (int minI, int maxI, const ImageMatrix& im, const ImageMatrix& weighted_im)
 {
     const pixData& I = im.ReadablePixels();
     calcOrigins(I);
@@ -17,7 +17,7 @@ void HuMoments::initialize (int minI, int maxI, const ImageMatrix& im, const Ima
     calcWeightedHuInvariants(W);
 }
 
-double HuMoments::Moment (const pixData& D, int p, int q)
+double ImageMoments::Moment (const pixData& D, int p, int q)
 {
     // calc (p+q)th moment of object
     double sum = 0;
@@ -31,14 +31,14 @@ double HuMoments::Moment (const pixData& D, int p, int q)
     return sum;
 }
 
-void HuMoments::calcOrigins(const pixData& D)
+void ImageMoments::calcOrigins(const pixData& D)
 {
     // calc orgins
     originOfX = Moment (D, 1, 0) / Moment (D, 0, 0);
     originOfY = Moment (D, 0, 1) / Moment (D, 0, 0);
 }
 
-double HuMoments::CentralMom(const pixData& D, int p, int q)
+double ImageMoments::CentralMom(const pixData& D, int p, int q)
 {
     // calculate central moment
     double sum = 0;
@@ -53,7 +53,7 @@ double HuMoments::CentralMom(const pixData& D, int p, int q)
 }
 
 // https://handwiki.org/wiki/Standardized_moment
-double HuMoments::NormSpatMom(const pixData& D, int p, int q)
+double ImageMoments::NormSpatMom(const pixData& D, int p, int q)
 {
     double stddev = CentralMom(D, 2, 2);
     int w = std::max(q, p);
@@ -62,14 +62,14 @@ double HuMoments::NormSpatMom(const pixData& D, int p, int q)
     return retval;
 }
 
-double HuMoments::NormCentralMom(const pixData& D, int p, int q)
+double ImageMoments::NormCentralMom(const pixData& D, int p, int q)
 {
     double temp = ((double(p) + double(q)) / 2.0) + 1.0;
     double retval = CentralMom(D, p, q) / pow(Moment(D, 0, 0), temp);
     return retval;
 }
 
-std::tuple<double, double, double, double, double, double, double> HuMoments::calcHuInvariants_imp (const pixData& D)
+std::tuple<double, double, double, double, double, double, double> ImageMoments::calcHuInvariants_imp (const pixData& D)
 {
     // calculate 7 invariant moments
     double h1 = NormCentralMom(D, 2, 0) + NormCentralMom(D, 0, 2);
@@ -92,17 +92,17 @@ std::tuple<double, double, double, double, double, double, double> HuMoments::ca
     return {h1, h2, h3, h4, h5, h6, h7};
 }
 
-void HuMoments::calcHuInvariants (const pixData& D)
+void ImageMoments::calcHuInvariants (const pixData& D)
 {
     std::tie(hm1, hm2, hm3, hm4, hm5, hm6, hm7) = calcHuInvariants_imp(D);
 }
 
-void HuMoments::calcWeightedHuInvariants (const pixData& D)
+void ImageMoments::calcWeightedHuInvariants (const pixData& D)
 {
     std::tie(whm1, whm2, whm3, whm4, whm5, whm6, whm7) = calcHuInvariants_imp(D);
 }
 
-void HuMoments::calcSpatialMoments (const pixData& D)
+void ImageMoments::calcSpatialMoments (const pixData& D)
 {
     m00 = Moment (D, 0, 0);
     m01 = Moment (D, 0, 1);
@@ -111,12 +111,12 @@ void HuMoments::calcSpatialMoments (const pixData& D)
     m10 = Moment (D, 1, 0);
     m11 = Moment (D, 1, 1);
     m12 = Moment (D, 1, 2);
-    m20 = Moment(D, 2, 0);
-    m21 = Moment(D, 2, 1);
-    m30 = Moment(D, 3, 0);
+    m20 = Moment (D, 2, 0);
+    m21 = Moment (D, 2, 1);
+    m30 = Moment (D, 3, 0);
 }
 
-void HuMoments::calcWeightedSpatialMoments (const pixData& D)
+void ImageMoments::calcWeightedSpatialMoments (const pixData& D)
 {
     wm00 = Moment (D, 0, 0);
     wm01 = Moment (D, 0, 1);
@@ -130,7 +130,7 @@ void HuMoments::calcWeightedSpatialMoments (const pixData& D)
     wm30 = Moment (D, 3, 0);
 }
 
-void HuMoments::calcCentralMoments(const pixData& D)
+void ImageMoments::calcCentralMoments(const pixData& D)
 {
     mu02 = CentralMom(D, 0, 2);
     mu03 = CentralMom(D, 0, 3);
@@ -141,7 +141,7 @@ void HuMoments::calcCentralMoments(const pixData& D)
     mu30 = CentralMom(D, 3, 0);
 }
 
-void HuMoments::calcWeightedCentralMoments(const pixData& D)
+void ImageMoments::calcWeightedCentralMoments(const pixData& D)
 {
     wmu02 = CentralMom(D, 0, 2);
     wmu03 = CentralMom(D, 0, 3);
@@ -152,7 +152,7 @@ void HuMoments::calcWeightedCentralMoments(const pixData& D)
     wmu30 = CentralMom(D, 3, 0);
 }
 
-void HuMoments::calcNormCentralMoments (const pixData& D)
+void ImageMoments::calcNormCentralMoments (const pixData& D)
 {
     nu02 = NormCentralMom(D, 0, 2);
     nu03 = NormCentralMom(D, 0, 3);
@@ -163,7 +163,7 @@ void HuMoments::calcNormCentralMoments (const pixData& D)
     nu30 = NormCentralMom(D, 3, 0);
 }
 
-void HuMoments::calcNormSpatialMoments (const pixData& D)
+void ImageMoments::calcNormSpatialMoments (const pixData& D)
 {
     w00 = NormSpatMom (D, 0, 0);
     w01 = NormSpatMom (D, 0, 1);
@@ -174,47 +174,47 @@ void HuMoments::calcNormSpatialMoments (const pixData& D)
     w30 = NormSpatMom (D, 3, 0);
 }
 
-std::tuple<double, double, double, double, double, double, double, double, double, double> HuMoments::getSpatialMoments()
+std::tuple<double, double, double, double, double, double, double, double, double, double> ImageMoments::getSpatialMoments()
 {
     return { m00, m01, m02, m03, m10, m11, m12, m20, m21, m30 };
 }
 
-std::tuple<double, double, double, double, double, double, double, double, double, double> HuMoments::getWeightedSpatialMoments()
+std::tuple<double, double, double, double, double, double, double, double, double, double> ImageMoments::getWeightedSpatialMoments()
 {
     return { wm00, wm01, wm02, wm03, wm10, wm11, wm12, wm20, wm21, wm30 };
 }
 
-std::tuple<double, double, double, double, double, double, double> HuMoments::getNormSpatialMoments()
+std::tuple<double, double, double, double, double, double, double> ImageMoments::getNormSpatialMoments()
 {
     return { w00, w01, w02, w03, w10, w20, w30 };
 }
 
-std::tuple<double, double, double, double, double, double, double> HuMoments::getCentralMoments()
+std::tuple<double, double, double, double, double, double, double> ImageMoments::getCentralMoments()
 {
     return { mu02, mu03, mu11, mu12, mu20, mu21, mu30 };
 }
 
-std::tuple<double, double, double, double, double, double, double> HuMoments::getWeightedCentralMoments()
+std::tuple<double, double, double, double, double, double, double> ImageMoments::getWeightedCentralMoments()
 {
     return { wmu02, wmu03, wmu11, wmu12, wmu20, wmu21, wmu30 };
 }
 
-std::tuple<double, double, double, double, double, double, double> HuMoments::getNormCentralMoments()
+std::tuple<double, double, double, double, double, double, double> ImageMoments::getNormCentralMoments()
 {
     return { nu02, nu03, nu11, nu12, nu20, nu21, nu30 };
 }
 
-std::tuple<double, double, double, double, double, double, double> HuMoments::getHuMoments()
+std::tuple<double, double, double, double, double, double, double> ImageMoments::getHuMoments()
 {
     return { hm1, hm2, hm3, hm4, hm5, hm6, hm7 };
 }
 
-std::tuple<double, double, double, double, double, double, double> HuMoments::getWeightedHuMoments()
+std::tuple<double, double, double, double, double, double, double> ImageMoments::getWeightedHuMoments()
 {
     return { whm1, whm2, whm3, whm4, whm5, whm6, whm7 };
 }
 
-void HuMoments::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void ImageMoments::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
     for (auto i = start; i < end; i++)
     {
@@ -227,11 +227,10 @@ void HuMoments::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, s
 
         ImageMatrix weighted_im(r.raw_pixels, r.aabb);
         weighted_im.apply_distance_to_contour_weights(r.raw_pixels, r.contour.contour_pixels);
-        HuMoments hu;
-        hu.initialize((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix, weighted_im);
+        ImageMoments immo ((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix, weighted_im);
 
         double m1, m2, m3, m4, m5, m6, m7, m8, m9, m10;
-        std::tie(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10) = hu.getSpatialMoments();
+        std::tie(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10) = immo.getSpatialMoments();
         r.fvals[SPAT_MOMENT_00][0] = m1;
         r.fvals[SPAT_MOMENT_01][0] = m2;
         r.fvals[SPAT_MOMENT_02][0] = m3;
@@ -243,7 +242,7 @@ void HuMoments::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, s
         r.fvals[SPAT_MOMENT_21][0] = m9;
         r.fvals[SPAT_MOMENT_30][0] = m10;
 
-        std::tie(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10) = hu.getWeightedSpatialMoments();
+        std::tie(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10) = immo.getWeightedSpatialMoments();
         r.fvals[WEIGHTED_SPAT_MOMENT_00][0] = m1;
         r.fvals[WEIGHTED_SPAT_MOMENT_01][0] = m2;
         r.fvals[WEIGHTED_SPAT_MOMENT_02][0] = m3;
@@ -255,7 +254,7 @@ void HuMoments::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, s
         r.fvals[WEIGHTED_SPAT_MOMENT_21][0] = m9;
         r.fvals[WEIGHTED_SPAT_MOMENT_30][0] = m10;
 
-        std::tie(m1, m2, m3, m4, m5, m6, m7) = hu.getCentralMoments();
+        std::tie(m1, m2, m3, m4, m5, m6, m7) = immo.getCentralMoments();
         r.fvals[CENTRAL_MOMENT_02][0] = m1;
         r.fvals[CENTRAL_MOMENT_03][0] = m2;
         r.fvals[CENTRAL_MOMENT_11][0] = m3;
@@ -264,7 +263,7 @@ void HuMoments::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, s
         r.fvals[CENTRAL_MOMENT_21][0] = m6;
         r.fvals[CENTRAL_MOMENT_30][0] = m7;
 
-        std::tie(m1, m2, m3, m4, m5, m6, m7) = hu.getWeightedCentralMoments();
+        std::tie(m1, m2, m3, m4, m5, m6, m7) = immo.getWeightedCentralMoments();
         r.fvals[WEIGHTED_CENTRAL_MOMENT_02][0] = m1;
         r.fvals[WEIGHTED_CENTRAL_MOMENT_03][0] = m2;
         r.fvals[WEIGHTED_CENTRAL_MOMENT_11][0] = m3;
@@ -273,7 +272,7 @@ void HuMoments::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, s
         r.fvals[WEIGHTED_CENTRAL_MOMENT_21][0] = m6;
         r.fvals[WEIGHTED_CENTRAL_MOMENT_30][0] = m7;
 
-        std::tie(m1, m2, m3, m4, m5, m6, m7) = hu.getNormCentralMoments();
+        std::tie(m1, m2, m3, m4, m5, m6, m7) = immo.getNormCentralMoments();
         r.fvals[NORM_CENTRAL_MOMENT_02][0] = m1;
         r.fvals[NORM_CENTRAL_MOMENT_03][0] = m2;
         r.fvals[NORM_CENTRAL_MOMENT_11][0] = m3;
@@ -282,7 +281,7 @@ void HuMoments::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, s
         r.fvals[NORM_CENTRAL_MOMENT_21][0] = m6;
         r.fvals[NORM_CENTRAL_MOMENT_30][0] = m7;
 
-        std::tie(m1, m2, m3, m4, m5, m6, m7) = hu.getNormSpatialMoments();
+        std::tie(m1, m2, m3, m4, m5, m6, m7) = immo.getNormSpatialMoments();
         r.fvals[NORM_SPAT_MOMENT_00][0] = m1;
         r.fvals[NORM_SPAT_MOMENT_01][0] = m2;
         r.fvals[NORM_SPAT_MOMENT_02][0] = m3;
@@ -291,7 +290,7 @@ void HuMoments::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, s
         r.fvals[NORM_SPAT_MOMENT_20][0] = m6;
         r.fvals[NORM_SPAT_MOMENT_30][0] = m7;
 
-        std::tie(m1, m2, m3, m4, m5, m6, m7) = hu.getHuMoments();
+        std::tie(m1, m2, m3, m4, m5, m6, m7) = immo.getHuMoments();
         r.fvals[HU_M1][0] = m1;
         r.fvals[HU_M2][0] = m2;
         r.fvals[HU_M3][0] = m3;
@@ -300,7 +299,7 @@ void HuMoments::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, s
         r.fvals[HU_M6][0] = m6;
         r.fvals[HU_M7][0] = m7;
 
-        std::tie(m1, m2, m3, m4, m5, m6, m7) = hu.getWeightedHuMoments();
+        std::tie(m1, m2, m3, m4, m5, m6, m7) = immo.getWeightedHuMoments();
         r.fvals[WEIGHTED_HU_M1][0] = m1;
         r.fvals[WEIGHTED_HU_M2][0] = m2;
         r.fvals[WEIGHTED_HU_M3][0] = m3;

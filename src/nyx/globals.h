@@ -40,7 +40,8 @@ namespace Nyxus
 	void print_by_label(const char* featureName, std::unordered_map<int, StatsInt> L, int numColumns = 8);
 	void print_by_label(const char* featureName, std::unordered_map<int, StatsReal> L, int numColumns = 4);
 	void clearLabelStats();
-	void reduce(int nThr, int min_online_roi_size);
+	void reduce_by_feature (int nThr, int min_online_roi_size);
+	void reduce_by_roi (int nThr, int min_online_roi_size);
 
 	void init_label_record(LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity);
 	void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity);

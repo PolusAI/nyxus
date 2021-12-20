@@ -5,10 +5,7 @@
 #include <unordered_set>
 #include "ngtdm.h"
 
-const double BAD_ROI_FVAL = 0.0;
-const double EPS = 2.2e-16;
-
-void NGTDM_features::initialize(int minI, int maxI, const ImageMatrix& im)
+NGTDM_features::NGTDM_features (int minI, int maxI, const ImageMatrix& im)
 {
 	//==== Check if the ROI is degenerate (equal intensity)
 	if (minI == maxI)
@@ -111,7 +108,7 @@ void NGTDM_features::initialize(int minI, int maxI, const ImageMatrix& im)
 		auto iter = std::find(I.begin(), I.end(), z.first);
 		int row = int(iter - I.begin());
 		// col
-		int col = z.second;	// 1-based
+		int col = (int) z.second;	// 1-based
 		// increment
 		N[row]++;
 		// --S
@@ -251,9 +248,7 @@ void NGTDM_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabe
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
-		//---	ImageMatrix im(r.raw_pixels, r.aabb);
-		NGTDM_features ngtdm;
-		ngtdm.initialize((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
+		NGTDM_features ngtdm ((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
 		r.fvals[NGTDM_COARSENESS][0] = ngtdm.calc_Coarseness();
 		r.fvals[NGTDM_CONTRAST][0] = ngtdm.calc_Contrast();
 		r.fvals[NGTDM_BUSYNESS][0] = ngtdm.calc_Busyness();

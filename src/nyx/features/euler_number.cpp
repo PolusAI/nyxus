@@ -1,8 +1,13 @@
 #include <iostream>
 #include "euler_number.h"
 
-EulerNumber::EulerNumber(std::vector<Pixel2>& P, StatsInt min_x, StatsInt  min_y, StatsInt max_x, StatsInt max_y, int mode)
+EulerNumber::EulerNumber (const std::vector<Pixel2>& P, const AABB& aabb, int mode)
 {
+	StatsInt min_x = aabb.get_xmin(), 
+		min_y = aabb.get_ymin(), 
+		max_x = aabb.get_xmax(), 
+		max_y = aabb.get_ymax();
+
 	// Create the image mask matrix
 	int ny = max_y - min_y + 1,
 		nx = max_x - min_x + 1,
@@ -75,6 +80,11 @@ long EulerNumber::calculate (std::vector<unsigned char> & arr, int height, int w
 		return ((C1 - C3 - (2 * Cd)) / 4);
 }
 
+long EulerNumber::get_feature_value()
+{
+	return euler_number;
+}
+
 void EulerNumber::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
@@ -82,7 +92,7 @@ void EulerNumber::reduce (size_t start, size_t end, std::vector<int>* ptrLabels,
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
-		EulerNumber eu(r.raw_pixels, r.aabb.get_xmin(), r.aabb.get_ymin(), r.aabb.get_xmax(), r.aabb.get_ymax(), 8); // Using mode=8 following to WNDCHRM example
+		EulerNumber eu (r.raw_pixels, r.aabb); 
 		r.fvals[EULER_NUMBER][0] = eu.euler_number;
 	}
 }

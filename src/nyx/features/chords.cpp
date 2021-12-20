@@ -7,9 +7,7 @@
 #include "image_matrix.h"
 #include "rotation.h"
 
-Chords::Chords() {}
-
-void Chords::initialize(const std::vector<Pixel2>& raw_pixels, const AABB& bb, const double cenx, const double ceny)
+Chords::Chords (const std::vector<Pixel2>& raw_pixels, const AABB& bb, const double cenx, const double ceny)
 {
 	auto n = raw_pixels.size();
 	std::vector<Pixel2> R;	// raw_pixels rotated 
@@ -127,10 +125,9 @@ void Chords::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std:
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
-		Chords chords;
 		double cenx = r.fvals[CENTROID_X][0],
 			ceny = r.fvals[CENTROID_Y][0];
-		chords.initialize(r.raw_pixels, r.aabb, cenx, ceny);
+		Chords cho (r.raw_pixels, r.aabb, cenx, ceny);
 
 		double
 			_max = 0,
@@ -142,7 +139,7 @@ void Chords::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std:
 			_min_angle = 0,
 			_max_angle = 0;
 
-		std::tie(_max, _min, _median, _mean, _mode, _stddev, _min_angle, _max_angle) = chords.get_maxchords_stats();
+		std::tie(_max, _min, _median, _mean, _mode, _stddev, _min_angle, _max_angle) = cho.get_maxchords_stats();
 		r.fvals[MAXCHORDS_MAX][0] = _max;
 		r.fvals[MAXCHORDS_MAX_ANG][0] = _max_angle;
 		r.fvals[MAXCHORDS_MIN][0] = _min;
@@ -152,7 +149,7 @@ void Chords::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std:
 		r.fvals[MAXCHORDS_MODE][0] = _mode;
 		r.fvals[MAXCHORDS_STDDEV][0] = _stddev;
 
-		std::tie(_max, _min, _median, _mean, _mode, _stddev, _min_angle, _max_angle) = chords.get_allchords_stats();
+		std::tie(_max, _min, _median, _mean, _mode, _stddev, _min_angle, _max_angle) = cho.get_allchords_stats();
 		r.fvals[ALLCHORDS_MAX][0] = _max;
 		r.fvals[ALLCHORDS_MAX_ANG][0] = _max_angle;
 		r.fvals[ALLCHORDS_MIN][0] = _min;

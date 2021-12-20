@@ -387,8 +387,8 @@ public:
 			m_enabledFeatures[STAT_FERET_DIAM_STDDEV] =
 			m_enabledFeatures[STAT_FERET_DIAM_MODE] = true;
 	}
-	bool isEnabled(int fc) { return fc < AvailableFeatures::_COUNT_ ? m_enabledFeatures[fc] : false; }
-	bool anyEnabled(std::initializer_list<int> F)
+	bool isEnabled(int fc) const { return fc < AvailableFeatures::_COUNT_ ? m_enabledFeatures[fc] : false; }
+	bool anyEnabled(std::initializer_list<int> F) const
 	{
 		for (auto f : F)
 			if (m_enabledFeatures[f])

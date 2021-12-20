@@ -1,9 +1,6 @@
 #include "roi_radius.h"
 
-RoiRadius::RoiRadius() 
-{}
-
-void RoiRadius::initialize (const std::vector<Pixel2>& cloud, const std::vector<Pixel2>& contour)
+RoiRadius::RoiRadius (const std::vector<Pixel2>& cloud, const std::vector<Pixel2>& contour)
 {
 	Moments2 mom2;
 	std::vector<HistoItem> dists;
@@ -27,9 +24,19 @@ void RoiRadius::initialize (const std::vector<Pixel2>& cloud, const std::vector<
 	median_r = median_;
 }
 
-std::tuple<double, double, double> RoiRadius::get_min_max_median_radius()
+double RoiRadius::get_mean_radius()
 {
-	return { mean_r, max_r, median_r };
+	return mean_r;
+}
+
+double RoiRadius::get_max_radius()
+{
+	return max_r;
+}
+
+double RoiRadius::get_median_radius()
+{
+	return median_r;
 }
 
 void RoiRadius::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
@@ -41,17 +48,11 @@ void RoiRadius::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, s
 
 		// Prepare the contour if necessary
 		if (r.contour.contour_pixels.size() == 0)
-		{
-			//---	ImageMatrix im(r.raw_pixels, r.aabb);
 			r.contour.calculate(r.aux_image_matrix);
-		}
 
-		RoiRadius roir;
-		roir.initialize(r.raw_pixels, r.contour.contour_pixels);
-		auto [mean_r, max_r, median_r] = roir.get_min_max_median_radius();
-
-		r.fvals[ROI_RADIUS_MEAN][0] = mean_r;
-		r.fvals[ROI_RADIUS_MAX][0] = max_r;
-		r.fvals[ROI_RADIUS_MEDIAN][0] = median_r;
+		RoiRadius roir (r.raw_pixels, r.contour.contour_pixels);
+		r.fvals[ROI_RADIUS_MEAN][0] = roir.get_mean_radius();
+		r.fvals[ROI_RADIUS_MAX][0] = roir.get_max_radius();
+		r.fvals[ROI_RADIUS_MEDIAN][0] = roir.get_median_radius();
 	}
 }

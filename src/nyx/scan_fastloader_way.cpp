@@ -169,7 +169,7 @@ namespace Nyxus
 			theSegFname = p_seg.filename().string();
 			theIntFname = p_int.filename().string();
 
-#if 0
+			#if 0
 			// Debug-stop at a specific file. For example, figure out what's wrong with one file in Hamda's dataset /home/ec2-user/work/data/hamda-deep2498 (C:\WORK\AXLE\data\hamda-deep2498)
 			std::string file2catch = "p3_y2_r9_c0.ome.tif";
 			if (file2catch != theIntFname)
@@ -177,7 +177,7 @@ namespace Nyxus
 				std::cout << "\nSkipping file " << theIntFname << "\n";
 				continue;
 			}
-#endif
+			#endif
 
 			// Scan one label-intensity pair 
 			if (numSensemakerThreads == 1)
@@ -202,7 +202,9 @@ namespace Nyxus
 			startRed = std::chrono::system_clock::now();
 
 			// Execute calculations requiring reduction
-			reduce(numReduceThreads, min_online_roi_size);
+			//--Disabled--	reduce_by_feature (numReduceThreads, min_online_roi_size);	// Option 1/2
+			reduce_by_roi (numReduceThreads, min_online_roi_size);						// Option 2/2
+
 
 			// --Timing
 			endRed = std::chrono::system_clock::now();

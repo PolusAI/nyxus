@@ -13,9 +13,9 @@
 class ErosionPixels
 {
 public:
-
-	ErosionPixels() {}
-	int calc_feature (ImageMatrix & );
+	static bool required(FeatureSet& fs) { return fs.anyEnabled({ EROSIONS_2_VANISH, EROSIONS_2_VANISH_COMPLEMENT }); }
+	ErosionPixels (const ImageMatrix & im);
+	int get_feature_value();
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 private:
@@ -24,5 +24,8 @@ private:
 
 	static const int SE_R = 3,	// rows
 		SE_C = 3;	// columns
+	
 	int strucElem [SE_R][SE_C] = { {0,1,0}, {1,1,1}, {0,1,0} };
+
+	int numErosions = 0;	// Feature value
 };

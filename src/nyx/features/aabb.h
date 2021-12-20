@@ -30,13 +30,14 @@ public:
 		ymin = std::min(ymin, y);
 		ymax = std::max(ymax, y);
 	}
-	StatsInt get_height() const { return ymax - ymin + 1; }
-	StatsInt get_width() const { return xmax - xmin + 1; }
-	StatsInt get_area() { return get_width() * get_height(); }
-	inline StatsInt get_xmin() { return xmin; }
-	inline StatsInt get_xmax() { return xmax; }
-	inline StatsInt get_ymin() { return ymin; }
-	inline StatsInt get_ymax() { return ymax; }
+	inline StatsInt get_height() const { return ymax - ymin + 1; }
+	inline StatsInt get_width() const { return xmax - xmin + 1; }
+	inline StatsInt get_area() const { return get_width() * get_height(); }
+	inline StatsInt get_xmin() const { return xmin; }
+	inline StatsInt get_xmax() const { return xmax; }
+	inline StatsInt get_ymin() const { return ymin; }
+	inline StatsInt get_ymax() const { return ymax; }
+
 	static std::tuple<StatsInt, StatsInt, StatsInt, StatsInt> from_pixelcloud (const std::vector<Pixel2>& P)
 	{
 		AABB bb;

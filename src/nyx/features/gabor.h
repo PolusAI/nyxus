@@ -12,9 +12,10 @@
 class GaborFeatures
 {
 public:
-    GaborFeatures() {}
-    static int num_features;
-    void calc_GaborTextureFilters2D(const ImageMatrix& Im0, std::vector<double>& ratios);
+    static bool required(const FeatureSet& fs) { return fs.isEnabled(GABOR); }
+    static const int num_features = 7;
+    GaborFeatures (const ImageMatrix& Im0);
+    void get_feature_values (std::vector<double>& fvals);
     static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 private:
@@ -44,5 +45,8 @@ private:
         double gamma, 
         double theta, 
         int n);
+
+    // Result cache
+    std::vector<double> fvals;
 };
 

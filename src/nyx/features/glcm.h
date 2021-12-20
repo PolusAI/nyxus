@@ -22,14 +22,40 @@ typedef struct
 	double max_corr_coef; /* (14) Maximal Correlation Coefficient */
 } Haralick_feature_values;
 
+/// @brief Gray Level Cooccurrence Matrix(GLCM) features
+/// Gray Level Cooccurrence Matrix(GLCM) of size : math:`N_g \times N_g` describes the second - order joint probability
+///	function of an image region constrained by the mask and is defined as : math:`\textbf{ P }(i, j | \delta, \theta)`.
+/// The :math:`(i, j)^ {\text{ th }}` element of this matrix represents the number of times the combination of
+/// levels : math:`i`and :math:`j` occur in two pixels in the image, that are separated by a distance of : math:`\delta`
+/// pixels along angle : math:`\theta`.
+/// The distance : math:`\delta` from the center voxel is defined as the distance according to the infinity norm.
+/// For :math:`\delta = 1`, this results in 2 neighbors for each of 13 angles in 3D(26 - connectivity) and for
+/// 	:math:`\delta = 2` a 98 - connectivity(49 unique angles).
+/// 
+
 class GLCM_features
 {
 	using C_matrix = SimpleMatrix<int>;
 	using AngledFeatures = std::vector<double>;
 
 public:
-	GLCM_features() {}
-	void initialize (int minI, int maxI, const ImageMatrix& im, double distance);
+	static bool required(const FeatureSet& fs) { 
+		return fs.anyEnabled({
+				GLCM_ANGULAR2NDMOMENT,
+				GLCM_CONTRAST,
+				GLCM_CORRELATION,
+				GLCM_VARIANCE,
+				GLCM_INVERSEDIFFERENCEMOMENT,
+				GLCM_SUMAVERAGE,
+				GLCM_SUMVARIANCE,
+				GLCM_SUMENTROPY,
+				GLCM_ENTROPY,
+				GLCM_DIFFERENCEVARIANCE,
+				GLCM_DIFFERENCEENTROPY,
+				GLCM_INFOMEAS1,
+				GLCM_INFOMEAS2 });
+	}
+	GLCM_features (int minI, int maxI, const ImageMatrix& im, double distance);
 
 	void get_AngularSecondMoments (AngledFeatures& af);
 	void get_Contrast (AngledFeatures& af);

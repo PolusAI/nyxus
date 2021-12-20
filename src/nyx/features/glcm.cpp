@@ -14,7 +14,7 @@ void GLCM_features::calculate_graytones (SimpleMatrix<uint8_t>& G, int minI, int
 			G(x,y) = (uint8_t)((I(y, x) - minI) * scale255);
 }
 
-void GLCM_features::initialize (int minI, int maxI, const ImageMatrix& im, double distance)
+GLCM_features::GLCM_features (int minI, int maxI, const ImageMatrix& im, double distance)
 {
 	//const pixData& I = im.ReadablePixels();
 
@@ -771,8 +771,7 @@ void GLCM_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabel
 		}
 
 		//---	ImageMatrix im(r.raw_pixels, r.aabb);
-		GLCM_features f;
-		f.initialize(minI, maxI, r.aux_image_matrix, 5);
+		GLCM_features f (minI, maxI, r.aux_image_matrix, 5);
 		f.get_AngularSecondMoments(r.fvals[GLCM_ANGULAR2NDMOMENT]);
 		f.get_Contrast(r.fvals[GLCM_CONTRAST]);
 		f.get_Correlation(r.fvals[GLCM_CORRELATION]);
@@ -786,53 +785,6 @@ void GLCM_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabel
 		f.get_DifferenceEntropy(r.fvals[GLCM_DIFFERENCEENTROPY]);
 		f.get_InfoMeas1(r.fvals[GLCM_INFOMEAS1]);
 		f.get_InfoMeas2(r.fvals[GLCM_INFOMEAS2]);
-
-
-#if 0
-		//=== GLCM version 1
-		std::vector<double> texture_Feature_Angles;
-		haralick2D(
-			// in
-			r.raw_pixels,	// nonzero_intensity_pixels,
-			r.aabb,			// AABB info not to calculate it again from 'raw_pixels' in the function
-			0.0,			// distance,
-			// out
-			texture_Feature_Angles,
-			r.fvals[GLCM_ANGULAR2NDMOMENT],
-			r.fvals[GLCM_CONTRAST],
-			r.fvals[GLCM_CORRELATION],
-			r.fvals[GLCM_VARIANCE],
-			r.fvals[GLCM_INVERSEDIFFERENCEMOMENT],
-			r.fvals[GLCM_SUMAVERAGE],
-			r.fvals[GLCM_SUMVARIANCE],
-			r.fvals[GLCM_SUMENTROPY],
-			r.fvals[GLCM_ENTROPY],
-			r.fvals[GLCM_DIFFERENCEVARIANCE],
-			r.fvals[GLCM_DIFFERENCEENTROPY],
-			r.fvals[GLCM_INFOMEAS1],
-			r.fvals[GLCM_INFOMEAS2]);
-
-		// Fix calculated feature values due to all-0 intensity labels to avoid NANs in the output
-		if (r.intensitiesAllZero())
-		{
-			for (int i = 0; i < texture_Feature_Angles.size(); i++)
-			{
-				r.fvals[GLCM_ANGULAR2NDMOMENT][i] =
-					r.fvals[GLCM_CONTRAST][i] =
-					r.fvals[GLCM_CORRELATION][i] =
-					r.fvals[GLCM_VARIANCE][i] =
-					r.fvals[GLCM_INVERSEDIFFERENCEMOMENT][i] =
-					r.fvals[GLCM_SUMAVERAGE][i] =
-					r.fvals[GLCM_SUMVARIANCE][i] =
-					r.fvals[GLCM_SUMENTROPY][i] =
-					r.fvals[GLCM_ENTROPY][i] =
-					r.fvals[GLCM_DIFFERENCEVARIANCE][i] =
-					r.fvals[GLCM_DIFFERENCEENTROPY][i] =
-					r.fvals[GLCM_INFOMEAS1][i] =
-					r.fvals[GLCM_INFOMEAS2][i] = 0.0;
-			}
-		}
-#endif
 	}
 }
 

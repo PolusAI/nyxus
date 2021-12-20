@@ -7,14 +7,42 @@
 // Inspired by 
 //		https://stackoverflow.com/questions/25019840/neighboring-gray-level-dependence-matrix-ngldm-in-matlab?fbclid=IwAR14fT0kpmjmOXRhKcguFMH3tCg0G4ubDLRxyHZoXdpKdbPxF7Zuq-WKE8o
 //		https://qiita.com/tatsunidas/items/fd49ef6ac7c3deb141e0
+//
+
+/// @brief Gray Level Dependence Matrix (GLDM) features
+/// Gray Level Dependence Matrix (GLDM) quantifies gray level dependencies in an image.
+///	A gray level dependency is defined as a the number of connected voxels within distance : math:`\delta` that are
+///	dependent on the center voxel.
+///	A neighbouring voxel with gray level : math:`j` is considered dependent on center voxel with gray level : math:`i`
+///	if :math:`|i - j | \le\alpha`. In a gray level dependence matrix : math:`\textbf{ P }(i, j)` the :math:`(i, j)`\ :sup:`th`
+///	element describes the number of times a voxel with gray level : math:`i` with : math : `j` dependent voxels
+///	in its neighbourhood appears in image.
+/// 
 
 class GLDM_features
 {
 	using P_matrix = SimpleMatrix<int>;
 
 public:
-	GLDM_features() {}
-	void initialize(int minI, int maxI, const ImageMatrix& im);
+	static bool required(const FeatureSet& fs) {
+		return fs.anyEnabled({
+			GLDM_SDE,
+			GLDM_LDE,
+			GLDM_GLN,
+			GLDM_DN,
+			GLDM_DNN,
+			GLDM_GLV,
+			GLDM_DV,
+			GLDM_DE,
+			GLDM_LGLE,
+			GLDM_HGLE,
+			GLDM_SDLGLE,
+			GLDM_SDHGLE,
+			GLDM_LDLGLE,
+			GLDM_LDHGLE
+			});
+	}
+	GLDM_features (int minI, int maxI, const ImageMatrix& im);
 
 	// 1. Small Dependence Emphasis(SDE)
 	double calc_SDE();
@@ -52,6 +80,10 @@ private:
 	int Ng = 0;	// number of discreet intensity values in the image
 	int Nd = 0; // number of discreet dependency sizes in the image
 	int Nz = 0; // number of dependency zones in the ROI, Nz = sum(sum(P[i,j]))
+
 	SimpleMatrix<int> P;	// dependence matrix
+
+	const double BAD_ROI_FVAL = 0.0;
+	const double EPS = 2.2e-16;
 };
 

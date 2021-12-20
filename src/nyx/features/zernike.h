@@ -17,4 +17,11 @@ void zernike2D(
 	// out
 	std::vector<double>& Z_values);
 
-void parallelReduceZernike2D(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+void calcRoiZernike (LR& r);
+void parallelReduceZernike2D (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+
+class ZernikeFeatures
+{
+public:
+	static bool required(const FeatureSet& fs) { return fs.isEnabled(ZERNIKE2D);  }
+};
