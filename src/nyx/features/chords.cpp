@@ -2,12 +2,13 @@
 #include <cmath>
 
 #include <algorithm>
+#include "aabb.h"
 #include "chords.h"
 #include "histogram.h"
 #include "image_matrix.h"
 #include "rotation.h"
 
-Chords::Chords (const std::vector<Pixel2>& raw_pixels, const AABB& bb, const double cenx, const double ceny)
+Chords_feature::Chords_feature (const std::vector<Pixel2>& raw_pixels, const AABB& bb, const double cenx, const double ceny)
 {
 	auto n = raw_pixels.size();
 	std::vector<Pixel2> R;	// raw_pixels rotated 
@@ -94,7 +95,7 @@ Chords::Chords (const std::vector<Pixel2>& raw_pixels, const AABB& bb, const dou
 	allchords_max_angle = ACang[idxmax];
 }
 
-std::tuple<double, double, double, double, double, double, double, double> Chords::get_maxchords_stats()
+std::tuple<double, double, double, double, double, double, double, double> Chords_feature::get_maxchords_stats()
 {
 	return { maxchords_max,
 		maxchords_min,
@@ -106,7 +107,7 @@ std::tuple<double, double, double, double, double, double, double, double> Chord
 		maxchords_max_angle };
 }
 
-std::tuple<double, double, double, double, double, double, double, double> Chords::get_allchords_stats()
+std::tuple<double, double, double, double, double, double, double, double> Chords_feature::get_allchords_stats()
 {
 	return { allchords_max,
 		allchords_min,
@@ -118,16 +119,19 @@ std::tuple<double, double, double, double, double, double, double, double> Chord
 		allchords_max_angle };
 }
 
-void Chords::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void Chords_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
+		if (r.has_bad_data())
+			continue;
+
 		double cenx = r.fvals[CENTROID_X][0],
 			ceny = r.fvals[CENTROID_Y][0];
-		Chords cho (r.raw_pixels, r.aabb, cenx, ceny);
+		Chords_feature cho (r.raw_pixels, r.aabb, cenx, ceny);
 
 		double
 			_max = 0,

@@ -14,7 +14,7 @@ void Stopwatch::print_stats()
 	for (auto& t : totals)
 	{
 		double perc = t.second * 100.0 / total;
-		std::cout << t.first << "\t" << round2(perc) << "%\t" << t.second << "\n";
+		std::cout << t.first << "\t" << Nyxus::round2(perc) << "%\t" << t.second << "\n";
 	}
 
 	std::cout << "--------------------\n";
@@ -41,7 +41,7 @@ void Stopwatch::save_stats (const std::string& fpath)
 		// Expecting the following feature caption format: category/name/acronym/color e.g. "Moments/Spatial/Ms/#ffaabb"
 		// Color paltte reference: https://www.rapidtables.com/web/color/RGB_Color.html
 		std::vector<std::string> nameParts;
-		parse_delimited_string(t.first, "/", nameParts);
+		Nyxus::parse_delimited_string(t.first, "/", nameParts);
 		std::string root = "Total",
 			fcateg = nameParts.size() >= 4 ? nameParts[0] : "category",
 			fname = nameParts.size() >= 4 ? nameParts[1] : "feature",
@@ -53,28 +53,30 @@ void Stopwatch::save_stats (const std::string& fpath)
 			<< fcateg << "\",\"" 
 			<< fname << "\"," 
 			<< perc << ",\"" 
-			<< fcolor << "\",\"" << facro << " " << round2(perc) << "%\","
+			<< fcolor << "\",\"" << facro << " " << Nyxus::round2(perc) << "%\","
 			<< t.second 
 			<< "," << total
 			<< "," << Nyxus::theEnvironment.n_reduce_threads 
 			<< "\n";
 	}
-
 }
 
-// Requires:
-//		#define _CRT_SECURE_NO_WARNINGS
-//		#include <ctime>
-//
-// Old-school equivalent:
-//		time_t my_time = time(NULL);
-//		printf("Started at %s", ctime(&my_time));
-//
-std::string getTimeStr(const std::string& head /*= ""*/, const std::string& tail /*= ""*/)
+namespace Nyxus
 {
-	std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	// Requires:
+	//		#define _CRT_SECURE_NO_WARNINGS
+	//		#include <ctime>
+	//
+	// Old-school equivalent:
+	//		time_t my_time = time(NULL);
+	//		printf("Started at %s", ctime(&my_time));
+	//
+	std::string getTimeStr(const std::string& head /*= ""*/, const std::string& tail /*= ""*/)
+	{
+		std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
-	std::string s(30, '\0');
-	std::strftime(&s[0], s.size(), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
-	return s;
-}
+		std::string s(30, '\0');
+		std::strftime(&s[0], s.size(), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
+		return s;
+	}
+} // Nyxus

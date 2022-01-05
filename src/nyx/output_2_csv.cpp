@@ -37,7 +37,7 @@ namespace Nyxus
 	}
 
 	// Saves the result of image scanning and feature calculation. Must be called after the reduction phase.
-	bool save_features_2_csv(std::string inputFpath, std::string outputDir)
+	bool save_features_2_csv (std::string intFpath, std::string segFpath, std::string outputDir)
 	{
 		// Sort the labels
 		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
@@ -49,7 +49,7 @@ namespace Nyxus
 
 		if (theEnvironment.separateCsv)
 		{
-			std::string fullPath = outputDir + "/" + getPureFname(inputFpath) + ".csv";
+			std::string fullPath = outputDir + "/_INT_" + getPureFname(intFpath) + "_SEG_" + getPureFname(segFpath) + ".csv";
 			std::cout << "\t--> " << fullPath << "\n";
 			fopen_s(&fp, fullPath.c_str(), "w");
 		}
@@ -85,25 +85,33 @@ namespace Nyxus
 
 			for (auto& enabdF : F)
 			{
-				auto fname = std::get<0>(enabdF);
-				auto fcode = std::get<1>(enabdF);
+				auto fn = std::get<0>(enabdF);	// feature name
+				auto fc = std::get<1>(enabdF);	// feature code
+
+				// Handle missing feature name (which is a significant issue!) in order to at least be able to trace back to the feature code
+				if (fn.empty())
+				{
+					std::stringstream temp;
+					temp << "feature" << fc;
+					fn = temp.str();
+				}
 
 				// Parameterized feature
 				// --Texture family
 				bool textureFeature =
-					fcode == GLCM_ANGULAR2NDMOMENT ||
-					fcode == GLCM_CONTRAST ||
-					fcode == GLCM_CORRELATION ||
-					fcode == GLCM_VARIANCE ||
-					fcode == GLCM_INVERSEDIFFERENCEMOMENT ||
-					fcode == GLCM_SUMAVERAGE ||
-					fcode == GLCM_SUMVARIANCE ||
-					fcode == GLCM_SUMENTROPY ||
-					fcode == GLCM_ENTROPY ||
-					fcode == GLCM_DIFFERENCEVARIANCE ||
-					fcode == GLCM_DIFFERENCEENTROPY ||
-					fcode == GLCM_INFOMEAS1 ||
-					fcode == GLCM_INFOMEAS2;
+					fc == GLCM_ANGULAR2NDMOMENT ||
+					fc == GLCM_CONTRAST ||
+					fc == GLCM_CORRELATION ||
+					fc == GLCM_VARIANCE ||
+					fc == GLCM_INVERSEDIFFERENCEMOMENT ||
+					fc == GLCM_SUMAVERAGE ||
+					fc == GLCM_SUMVARIANCE ||
+					fc == GLCM_SUMENTROPY ||
+					fc == GLCM_ENTROPY ||
+					fc == GLCM_DIFFERENCEVARIANCE ||
+					fc == GLCM_DIFFERENCEENTROPY ||
+					fc == GLCM_INFOMEAS1 ||
+					fc == GLCM_INFOMEAS2;
 				if (textureFeature)
 				{
 					// Polulate with angles
@@ -112,7 +120,7 @@ namespace Nyxus
 						// CSV separator
 						//if (ang != theEnvironment.rotAngles[0])
 						//	ssHead << ",";
-						ssHead << "," << fname << "_" << ang;
+						ssHead << "," << fn << "_" << ang;
 					}
 					// Proceed with other features
 					continue;
@@ -120,76 +128,76 @@ namespace Nyxus
 
 				// --GLRLM family
 				bool glrlmFeature =
-					fcode == GLRLM_SRE ||
-					fcode == GLRLM_LRE ||
-					fcode == GLRLM_GLN ||
-					fcode == GLRLM_GLNN ||
-					fcode == GLRLM_RLN ||
-					fcode == GLRLM_RLNN ||
-					fcode == GLRLM_RP ||
-					fcode == GLRLM_GLV ||
-					fcode == GLRLM_RV ||
-					fcode == GLRLM_RE ||
-					fcode == GLRLM_LGLRE ||
-					fcode == GLRLM_HGLRE ||
-					fcode == GLRLM_SRLGLE ||
-					fcode == GLRLM_SRHGLE ||
-					fcode == GLRLM_LRLGLE ||
-					fcode == GLRLM_LRHGLE;
+					fc == GLRLM_SRE ||
+					fc == GLRLM_LRE ||
+					fc == GLRLM_GLN ||
+					fc == GLRLM_GLNN ||
+					fc == GLRLM_RLN ||
+					fc == GLRLM_RLNN ||
+					fc == GLRLM_RP ||
+					fc == GLRLM_GLV ||
+					fc == GLRLM_RV ||
+					fc == GLRLM_RE ||
+					fc == GLRLM_LGLRE ||
+					fc == GLRLM_HGLRE ||
+					fc == GLRLM_SRLGLE ||
+					fc == GLRLM_SRHGLE ||
+					fc == GLRLM_LRLGLE ||
+					fc == GLRLM_LRHGLE;
 				if (glrlmFeature)
 				{
 					// Polulate with angles
 					for (auto ang : GLRLM_features::rotAngles)
 					{
-						ssHead << "," << fname << "_" << ang;
+						ssHead << "," << fn << "_" << ang;
 					}
 					// Proceed with other features
 					continue;
 				}
 
 				// --Gabor
-				if (fcode == GABOR)
+				if (fc == GABOR)
 				{
 					// Generate the feature value list
-					for (auto i = 0; i < GaborFeatures::num_features; i++)
-						ssHead << "," << fname << "_" << i;
+					for (auto i = 0; i < Gabor_features::num_features; i++)
+						ssHead << "," << fn << "_" << i;
 
 					// Proceed with other features
 					continue;
 				}
 
-				if (fcode == FRAC_AT_D)
+				if (fc == FRAC_AT_D)
 				{
 					// Generate the feature value list
-					for (auto i = 0; i < RadialDistribution::num_features_FracAtD; i++)
-						ssHead << "," << fname << "_" << i;
+					for (auto i = 0; i < RadialDistribution_features::num_features_FracAtD; i++)
+						ssHead << "," << fn << "_" << i;
 
 					// Proceed with other features
 					continue;
 				}
 
-				if (fcode == MEAN_FRAC)
+				if (fc == MEAN_FRAC)
 				{
 					// Generate the feature value list
-					for (auto i = 0; i < RadialDistribution::num_features_MeanFrac; i++)
-						ssHead << "," << fname << "_" << i;
+					for (auto i = 0; i < RadialDistribution_features::num_features_MeanFrac; i++)
+						ssHead << "," << fn << "_" << i;
 
 					// Proceed with other features
 					continue;
 				}
 
-				if (fcode == RADIAL_CV)
+				if (fc == RADIAL_CV)
 				{
 					// Generate the feature value list
-					for (auto i = 0; i < RadialDistribution::num_features_RadialCV; i++)
-						ssHead << "," << fname << "_" << i;
+					for (auto i = 0; i < RadialDistribution_features::num_features_RadialCV; i++)
+						ssHead << "," << fn << "_" << i;
 
 					// Proceed with other features
 					continue;
 				}
 
 				// --Zernike family
-				if (fcode == ZERNIKE2D)
+				if (fc == ZERNIKE2D)
 				{
 					// Populate with indices
 					for (int i = 0; i <= LR::aux_ZERNIKE2D_ORDER; i++)
@@ -199,7 +207,7 @@ namespace Nyxus
 								// CSV separator
 								//if (j > 1)
 								//	ssHead << ",";
-								ssHead << "," << fname << "_" << i << "_" << j;
+								ssHead << "," << fn << "_" << i << "_" << j;
 							}
 						else
 							for (int j = 0; j <= i; j += 2)
@@ -207,7 +215,7 @@ namespace Nyxus
 								// CSV separator
 								//if (j > 1)
 								//	ssHead << ",";
-								ssHead << "," << fname << "_" << i << "_" << j;
+								ssHead << "," << fn << "_" << i << "_" << j;
 							}
 
 					// Proceed with other features
@@ -215,7 +223,7 @@ namespace Nyxus
 				}
 
 				// Regular feature
-				ssHead << "," << fname;
+				ssHead << "," << fn;
 			}
 			fprintf(fp, "%s\n", ssHead.str().c_str());
 
@@ -229,39 +237,39 @@ namespace Nyxus
 		{
 			std::stringstream ssVals;
 
-			LR& r = labelData[l];
+			LR& r = roiData[l];
 
 			ssVals << r.segFname << "," << r.intFname << "," << l;
 
 			for (auto& enabdF : F)
 			{
-				auto fcode = std::get<1>(enabdF);
-				auto fname = std::get<0>(enabdF);	// debug
-				auto vv = r.getFeatureValues(fcode);
+				auto fc = std::get<1>(enabdF);
+				auto fn = std::get<0>(enabdF);	// debug
+				auto vv = r.getFeatureValues(fc);
 
 				// Parameterized feature
 				// --Texture family
 				bool textureFeature =
-					fcode == GLCM_ANGULAR2NDMOMENT ||
-					fcode == GLCM_CONTRAST ||
-					fcode == GLCM_CORRELATION ||
-					fcode == GLCM_VARIANCE ||
-					fcode == GLCM_INVERSEDIFFERENCEMOMENT ||
-					fcode == GLCM_SUMAVERAGE ||
-					fcode == GLCM_SUMVARIANCE ||
-					fcode == GLCM_SUMENTROPY ||
-					fcode == GLCM_ENTROPY ||
-					fcode == GLCM_DIFFERENCEVARIANCE ||
-					fcode == GLCM_DIFFERENCEENTROPY ||
-					fcode == GLCM_INFOMEAS1 ||
-					fcode == GLCM_INFOMEAS2;
+					fc == GLCM_ANGULAR2NDMOMENT ||
+					fc == GLCM_CONTRAST ||
+					fc == GLCM_CORRELATION ||
+					fc == GLCM_VARIANCE ||
+					fc == GLCM_INVERSEDIFFERENCEMOMENT ||
+					fc == GLCM_SUMAVERAGE ||
+					fc == GLCM_SUMVARIANCE ||
+					fc == GLCM_SUMENTROPY ||
+					fc == GLCM_ENTROPY ||
+					fc == GLCM_DIFFERENCEVARIANCE ||
+					fc == GLCM_DIFFERENCEENTROPY ||
+					fc == GLCM_INFOMEAS1 ||
+					fc == GLCM_INFOMEAS2;
 				if (textureFeature)
 				{
 					// Polulate with angles
 					for (int i = 0; i < theEnvironment.rotAngles.size(); i++)
 					{
 						ssVals << "," << vv[i];
-						//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[i];	
+						//--diagnoze misalignment-- ssVals << "," << fn << "-" << vv[i];	
 					}
 					// Proceed with other features
 					continue;
@@ -269,22 +277,22 @@ namespace Nyxus
 
 				// --GLRLM family
 				bool glrlmFeature =
-					fcode == GLRLM_SRE ||
-					fcode == GLRLM_LRE ||
-					fcode == GLRLM_GLN ||
-					fcode == GLRLM_GLNN ||
-					fcode == GLRLM_RLN ||
-					fcode == GLRLM_RLNN ||
-					fcode == GLRLM_RP ||
-					fcode == GLRLM_GLV ||
-					fcode == GLRLM_RV ||
-					fcode == GLRLM_RE ||
-					fcode == GLRLM_LGLRE ||
-					fcode == GLRLM_HGLRE ||
-					fcode == GLRLM_SRLGLE ||
-					fcode == GLRLM_SRHGLE ||
-					fcode == GLRLM_LRLGLE ||
-					fcode == GLRLM_LRHGLE;
+					fc == GLRLM_SRE ||
+					fc == GLRLM_LRE ||
+					fc == GLRLM_GLN ||
+					fc == GLRLM_GLNN ||
+					fc == GLRLM_RLN ||
+					fc == GLRLM_RLNN ||
+					fc == GLRLM_RP ||
+					fc == GLRLM_GLV ||
+					fc == GLRLM_RV ||
+					fc == GLRLM_RE ||
+					fc == GLRLM_LGLRE ||
+					fc == GLRLM_HGLRE ||
+					fc == GLRLM_SRLGLE ||
+					fc == GLRLM_SRHGLE ||
+					fc == GLRLM_LRLGLE ||
+					fc == GLRLM_LRHGLE;
 				if (glrlmFeature)
 				{
 					// Polulate with angles
@@ -292,19 +300,19 @@ namespace Nyxus
 					for (int i = 0; i < nAng; i++)
 					{
 						ssVals << "," << vv[i];
-						//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[i];	
+						//--diagnoze misalignment-- ssVals << "," << fn << "-" << vv[i];	
 					}
 					// Proceed with other features
 					continue;
 				}
 
 				// --Gabor
-				if (fcode == GABOR)
+				if (fc == GABOR)
 				{
-					for (auto i = 0; i < GaborFeatures::num_features; i++)
+					for (auto i = 0; i < Gabor_features::num_features; i++)
 					{
 						ssVals << "," << vv[i];
-						//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[i];	
+						//--diagnoze misalignment-- ssVals << "," << fn << "-" << vv[i];	
 					}
 
 					// Proceed with other features
@@ -312,7 +320,7 @@ namespace Nyxus
 				}
 
 				// --Zernike family
-				if (fcode == ZERNIKE2D)
+				if (fc == ZERNIKE2D)
 				{
 					int zIdx = 0;
 					for (int i = 0; i <= LR::aux_ZERNIKE2D_ORDER; i++)
@@ -320,13 +328,13 @@ namespace Nyxus
 							for (int j = 1; j <= i; j += 2)
 							{
 								ssVals << "," << vv[zIdx++]; // former r.Zernike2D[zIdx++];
-								//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[zIdx++];
+								//--diagnoze misalignment-- ssVals << "," << fn << "-" << vv[zIdx++];
 							}
 						else
 							for (int j = 0; j <= i; j += 2)
 							{
 								ssVals << "," << vv[zIdx++]; // former r.Zernike2D[zIdx++];
-								//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[zIdx++];
+								//--diagnoze misalignment-- ssVals << "," << fn << "-" << vv[zIdx++];
 							}
 
 					// Proceed with other features
@@ -334,32 +342,32 @@ namespace Nyxus
 				}
 
 				// --Radial distribution features
-				if (fcode == FRAC_AT_D)
+				if (fc == FRAC_AT_D)
 				{
-					for (auto i = 0; i < RadialDistribution::num_features_FracAtD; i++)
+					for (auto i = 0; i < RadialDistribution_features::num_features_FracAtD; i++)
 					{
 						ssVals << "," << vv[i];
-						//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[i];	
+						//--diagnoze misalignment-- ssVals << "," << fn << "-" << vv[i];	
 					}
 					// Proceed with other features
 					continue;
 				}
-				if (fcode == MEAN_FRAC)
+				if (fc == MEAN_FRAC)
 				{
-					for (auto i = 0; i < RadialDistribution::num_features_MeanFrac; i++)
+					for (auto i = 0; i < RadialDistribution_features::num_features_MeanFrac; i++)
 					{
 						ssVals << "," << vv[i];
-						//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[i];	
+						//--diagnoze misalignment-- ssVals << "," << fn << "-" << vv[i];	
 					}
 					// Proceed with other features
 					continue;
 				}
-				if (fcode == RADIAL_CV)
+				if (fc == RADIAL_CV)
 				{
-					for (auto i = 0; i < RadialDistribution::num_features_RadialCV; i++)
+					for (auto i = 0; i < RadialDistribution_features::num_features_RadialCV; i++)
 					{
 						ssVals << "," << vv[i];
-						//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[i];	
+						//--diagnoze misalignment-- ssVals << "," << fn << "-" << vv[i];	
 					}
 					// Proceed with other features
 					continue;
@@ -367,7 +375,7 @@ namespace Nyxus
 
 				// Regular feature
 				ssVals << "," << vv[0];
-				//--diagnoze misalignment-- ssVals << "," << fname << "-" << vv[0];	
+				//--diagnoze misalignment-- ssVals << "," << fn << "-" << vv[0];	
 			}
 
 			fprintf(fp, "%s\n", ssVals.str().c_str());
@@ -384,7 +392,7 @@ namespace Nyxus
 				continue;
 
 			std::stringstream ss;
-			LR& lr = labelData[l];
+			LR& lr = roiData[l];
 			auto& I = lr.raw_intensities;
 			ss << outputDir << "/" << "intensities_label_" << l << ".txt";
 			fullPath = ss.str();

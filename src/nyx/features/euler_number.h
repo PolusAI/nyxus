@@ -1,18 +1,19 @@
 #pragma once
 
 #include <unordered_map>
-#include "../roi_data.h"
+#include "../roi_cache.h"
 
 #include <vector>
 #include "pixel.h"
 #include "aabb.h"
 
-class EulerNumber
+/// @brief The Euler characteristic of a ROI. Equal to the number of 'objects' in the image minus the number of holes in those objects. For modules built to date, the number of 'objects' in the image is always 1.
+class EulerNumber_feature
 {
 public:
 	static bool required(const FeatureSet& fs) { return fs.isEnabled(EULER_NUMBER); }
 	// Using mode=8 following WNDCHRM example
-	EulerNumber (const std::vector<Pixel2>& P, const AABB& aabb, int mode = 8);
+	EulerNumber_feature (const std::vector<Pixel2>& P, const AABB& aabb, int mode = 8);
 
 	long get_feature_value();
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);

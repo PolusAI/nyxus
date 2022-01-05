@@ -12,6 +12,7 @@ public:
 	void calculate(std::vector<Pixel2>& rawPixels);
 	double getSolidity();
 	double getArea();
+	void clear() { CH.clear(); }
 
 	std::vector<Pixel2> CH;
 };

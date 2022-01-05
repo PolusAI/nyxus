@@ -1,7 +1,7 @@
 #include <algorithm>
 #include "circle.h"
 
-double EnclosingInscribingCircumscribingCircle::calculate_min_enclosing_circle_diam (std::vector<Pixel2>& Contour)
+double EnclosingInscribingCircumscribingCircle_features::calculate_min_enclosing_circle_diam (std::vector<Pixel2>& Contour)
 {
     //------------------------Minimum enclosing circle------------------------------------------
     //https://git.rwth-aachen.de/ants/sensorlab/imea/-/blob/master/imea/measure_2d/macro.py#L166
@@ -14,7 +14,7 @@ double EnclosingInscribingCircumscribingCircle::calculate_min_enclosing_circle_d
     return diameter_min_enclosing_circle; // ratios[45] = diameter_min_enclosing_circle;
 }
 
-void EnclosingInscribingCircumscribingCircle::findCircle3pts (const std::vector<Pixel2>& pts, Point2f& center, float& radius)
+void EnclosingInscribingCircumscribingCircle_features::findCircle3pts (const std::vector<Pixel2>& pts, Point2f& center, float& radius)
 {
     // two edges of the triangle v1, v2
     Point2f v1 = pts[1] - pts[0],
@@ -61,7 +61,7 @@ void EnclosingInscribingCircumscribingCircle::findCircle3pts (const std::vector<
     radius = (float)(std::sqrt(cx * cx + cy * cy)) + EPS;
 }
 
-void EnclosingInscribingCircumscribingCircle::findThirdPoint (const std::vector<Pixel2>& pts, int i, int j, Point2f& center, float& radius)
+void EnclosingInscribingCircumscribingCircle_features::findThirdPoint (const std::vector<Pixel2>& pts, int i, int j, Point2f& center, float& radius)
 {
     center.x = (float)(pts[j].x + pts[i].x) / 2.0f;
     center.y = (float)(pts[j].y + pts[i].y) / 2.0f;
@@ -94,7 +94,7 @@ void EnclosingInscribingCircumscribingCircle::findThirdPoint (const std::vector<
     }
 }
 
-void EnclosingInscribingCircumscribingCircle::findSecondPoint (const std::vector<Pixel2>& pts, int i, Point2f& center, float& radius)
+void EnclosingInscribingCircumscribingCircle_features::findSecondPoint (const std::vector<Pixel2>& pts, int i, Point2f& center, float& radius)
 {
     center.x = (float)(pts[0].x + pts[i].x) / 2.0f;
     center.y = (float)(pts[0].y + pts[i].y) / 2.0f;
@@ -124,7 +124,7 @@ void EnclosingInscribingCircumscribingCircle::findSecondPoint (const std::vector
 }
 
 
-void EnclosingInscribingCircumscribingCircle::findMinEnclosingCircle (const std::vector<Pixel2>& pts, int count, Point2f& center, float& radius)
+void EnclosingInscribingCircumscribingCircle_features::findMinEnclosingCircle (const std::vector<Pixel2>& pts, int count, Point2f& center, float& radius)
 {
     center.x = (float)(pts[0].x + pts[1].x) / 2.0f;
     center.y = (float)(pts[0].y + pts[1].y) / 2.0f;
@@ -155,7 +155,7 @@ void EnclosingInscribingCircumscribingCircle::findMinEnclosingCircle (const std:
 }
 
 // see Welzl, Emo. Smallest enclosing disks (balls and ellipsoids). Springer Berlin Heidelberg, 1991.
-void EnclosingInscribingCircumscribingCircle::minEnclosingCircle(
+void EnclosingInscribingCircumscribingCircle_features::minEnclosingCircle(
 	// in:
 	std::vector<Pixel2>& Contour,
 	// out:
@@ -245,7 +245,7 @@ void EnclosingInscribingCircumscribingCircle::minEnclosingCircle(
 }
 
 
-std::tuple <double, double> EnclosingInscribingCircumscribingCircle::calculate_inscribing_circumscribing_circle (std::vector<Pixel2> & contours, double xCentroid, double yCentroid)
+std::tuple <double, double> EnclosingInscribingCircumscribingCircle_features::calculate_inscribing_circumscribing_circle (std::vector<Pixel2> & contours, double xCentroid, double yCentroid)
 {
     //-----------------circumscribing and inscribing circle ---------------------------
     //https://git.rwth-aachen.de/ants/sensorlab/imea/-/blob/master/imea/measure_2d/macro.py#L199
@@ -272,18 +272,21 @@ std::tuple <double, double> EnclosingInscribingCircumscribingCircle::calculate_i
     return { diameter_inscribing_circle, diameter_circumscribing_circle };
 }
 
-void EnclosingInscribingCircumscribingCircle::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void EnclosingInscribingCircumscribingCircle_features::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
     for (auto i = start; i < end; i++)
     {
         int lab = (*ptrLabels)[i];
         LR& r = (*ptrLabelData)[lab];
 
+        if (r.has_bad_data())
+            continue;
+
         // Skip if the contour, convex hull, and neighbors are unavailable, otherwise the related features will be == NAN. Those feature will be equal to the default unassigned value.
         if (r.contour.contour_pixels.size() == 0 || r.convHull.CH.size() == 0 || r.fvals[NUM_NEIGHBORS][0] == 0)
             continue;
 
-        EnclosingInscribingCircumscribingCircle cir;
+        EnclosingInscribingCircumscribingCircle_features cir;
         r.fvals[DIAMETER_MIN_ENCLOSING_CIRCLE][0] = cir.calculate_min_enclosing_circle_diam (r.contour.contour_pixels);
 
         auto [diamIns, diamCir] = cir.calculate_inscribing_circumscribing_circle (r.contour.contour_pixels, r.fvals[CENTROID_X][0], r.fvals[CENTROID_Y][0]);

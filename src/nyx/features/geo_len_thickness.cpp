@@ -1,23 +1,22 @@
 #include <iostream>
 #include "geodetic_len_thickness.h"
 
-GeodeticLength_and_Thickness::GeodeticLength_and_Thickness (size_t roiArea, StatsInt roiPerimeter)
+GeodeticLength_and_Thickness_features::GeodeticLength_and_Thickness_features (size_t roiArea, StatsInt roiPerimeter)
 {
-	//------------------------------Geodetic Length and Thickness------------
-	//https://git.rwth-aachen.de/ants/sensorlab/imea/-/blob/master/imea/measure_2d/macro.py#L244
 	/*
-	* Accroding to imea code: https://git.rwth-aachen.de/ants/sensorlab/imea/-/blob/master/imea/measure_2d/macro.py#L244
-	* the definitions of Geodetic Length and Thickness are as follows.
+	Accroding to imea code: https://git.rwth-aachen.de/ants/sensorlab/imea/-/blob/master/imea/measure_2d/macro.py#L244
+	the definitions of Geodetic Length and Thickness are as follows.
 	The geodetic lengths and thickness are approximated by a rectangle
 	with the same area and perimeter:
-	(1) `area = geodeticlength * thickness`
-	(2) `perimeter = 2 * (geodetic_length + thickness)`
 
-	# White the help of Equation (1) we can rewrite Equation (2) to:
-	# `geodetic_length**2 - 0.5 * perimeter * geodetic_length + area = 0`
-	# Which we can solve with the pq-formula:
-	# `geodetic_length = perimeter/4 +- sqrt((perimeter/4)**2 - area)`
-	# since only the positive solution makes sense in our application
+		area = geodeticlength * thickness		(1)
+		perimeter = 2 * (geodetic_length + thickness)		(2)
+
+	White the help of Equation (1) we can rewrite Equation (2) to:
+	geodetic_length**2 - 0.5 * perimeter * geodetic_length + area = 0
+	Which we can solve with the pq-formula:
+	geodetic_length = perimeter/4 +- sqrt((perimeter/4)**2 - area)
+	since only the positive solution makes sense in our application
 	*/
 
 	if (roiPerimeter <= 0)
@@ -42,29 +41,32 @@ GeodeticLength_and_Thickness::GeodeticLength_and_Thickness (size_t roiArea, Stat
 	thickness = roiPerimeter / 2 - geodetic_length;
 }
 
-double GeodeticLength_and_Thickness::get_geodetic_length()
+double GeodeticLength_and_Thickness_features::get_geodetic_length()
 {
 	return geodetic_length;
 }
 
-double GeodeticLength_and_Thickness::get_thickness()
+double GeodeticLength_and_Thickness_features::get_thickness()
 {
 	return thickness;
 }
 
 
-void GeodeticLength_and_Thickness::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void GeodeticLength_and_Thickness_features::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
+		if (r.has_bad_data())
+			continue;
+
 		// Skip if the contour, convex hull, and neighbors are unavailable, otherwise the related features will be == NAN. Those feature will be equal to the default unassigned value.
 		if (r.contour.contour_pixels.size() == 0 || r.convHull.CH.size() == 0 || r.fvals[NUM_NEIGHBORS][0] == 0)
 			continue;
 
-		GeodeticLength_and_Thickness glt (r.raw_pixels.size(), (StatsInt)r.fvals[PERIMETER][0]);
+		GeodeticLength_and_Thickness_features glt (r.raw_pixels.size(), (StatsInt)r.fvals[PERIMETER][0]);
 		r.fvals[GEODETIC_LENGTH][0] = glt.get_geodetic_length();
 		r.fvals[THICKNESS][0] = glt.get_thickness();
 	}

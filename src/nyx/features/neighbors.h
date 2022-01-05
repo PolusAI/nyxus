@@ -5,13 +5,26 @@
 #include <vector>
 #include "aabb.h"
 #include "pixel.h"
-#include "../roi_data.h"
+#include "../roi_cache.h"
 
-class NeighborFeatures
+/// @brief Number of neighboring ROIs within specified radius, distance to the closest neighboring ROI, distance to the second closest neighboring ROI.
+class Neighbor_features
 {
 public:
-	static bool required(const FeatureSet& fs) { return fs.anyEnabled({ NUM_NEIGHBORS, CLOSEST_NEIGHBOR1_DIST, CLOSEST_NEIGHBOR2_DIST }); }
-	NeighborFeatures();
+	static bool required(const FeatureSet& fs) 
+	{ 
+		return fs.anyEnabled ({ 
+			NUM_NEIGHBORS,
+			PERCENT_TOUCHING,
+			CLOSEST_NEIGHBOR1_DIST,
+			CLOSEST_NEIGHBOR1_ANG,
+			CLOSEST_NEIGHBOR2_DIST,
+			CLOSEST_NEIGHBOR2_ANG,
+			ANG_BW_NEIGHBORS_MEAN,
+			ANG_BW_NEIGHBORS_STDDEV,
+			ANG_BW_NEIGHBORS_MODE	}); 
+	}
+	Neighbor_features();
 	static void reduce(int radius);
 
 private:

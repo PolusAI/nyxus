@@ -8,7 +8,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "featureset.h"
-#include "roi_data.h"
+#include "feature_method.h"
+#include "roi_cache.h"
 
 namespace Nyxus
 {
@@ -23,28 +24,39 @@ namespace Nyxus
 	int processDataset(const std::vector<std::string>& intensFiles, const std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int numReduceThreads, int min_online_roi_size, bool save2csv, const std::string& csvOutputDir);
 
 	// 2 scenarios of saving a result of feature calculation of a label-intensity file pair: saving to a CSV-file and saving to a matrix to be later consumed by a Python endpoint
-	bool save_features_2_csv(std::string inputFpath, std::string outputDir);
-	bool save_features_2_buffer(std::vector<double>& resultMatrix);
+	bool save_features_2_csv (std::string intFpath, std::string segFpath, std::string outputDir);
+	bool save_features_2_buffer (std::vector<double>& resultMatrix);
 
 	void showCmdlineHelp();
-	int checkAndReadDataset(
+	int read_dataset (
 		// input
-		const std::string& dirIntens, const std::string& dirLabels, const std::string& dirOut, bool mustCheckDirOut,
+		const std::string& dirIntens, 
+		const std::string& dirLabels, 
+		const std::string& dirOut, 
+		const std::string& intLabMappingDir,
+		const std::string& intLabMappingFile,		
+		bool mustCheckDirOut,
 		// output
 		std::vector<std::string>& intensFiles, std::vector<std::string>& labelFiles);
 
 	void init_feature_buffers();
+	
 	void update_label(int x, int y, int label, PixIntens intensity);
 	void update_label_parallel(int x, int y, int label, PixIntens intensity);
+
 	void print_label_stats();
 	void print_by_label(const char* featureName, std::unordered_map<int, StatsInt> L, int numColumns = 8);
 	void print_by_label(const char* featureName, std::unordered_map<int, StatsReal> L, int numColumns = 4);
 	void clearLabelStats();
 	void reduce_by_feature (int nThr, int min_online_roi_size);
 	void reduce_by_roi (int nThr, int min_online_roi_size);
+	void reduce_trivial_rois (std::vector<int>& PendingRoisLabels);
+	void reduce_neighbors();
 
 	void init_label_record(LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity);
+	void init_label_record_2(LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity, unsigned int tile_index);
 	void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity);
+	void update_label_record_2(LR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index);
 	void reduce_neighbors(int labels_collision_radius);
 
 	// Timing
@@ -53,9 +65,12 @@ namespace Nyxus
 	// Label data
 	extern std::string theSegFname, theIntFname;	// Cached file names while iterating a dataset
 	extern std::unordered_set<int> uniqueLabels;
-	extern std::unordered_map <int, LR> labelData;
+	extern std::unordered_map <int, LR> roiData;
 	extern std::vector<double> calcResultBuf;	// [# of labels X # of features]
 	extern std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
+
+	// Feature manager
+	extern FeatureMgr theFeatureMgr;
 
 	// System resources
 	unsigned long long getAvailPhysMemory();

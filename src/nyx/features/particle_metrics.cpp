@@ -3,12 +3,12 @@
 #include "particle_metrics.h"
 #include "rotation.h"
 
-ParticleMetrics::ParticleMetrics (std::vector<Pixel2>& _convex_hull) :
+ParticleMetrics_features::ParticleMetrics_features (std::vector<Pixel2>& _convex_hull) :
 		convex_hull(_convex_hull)
 {
 }
 
-void ParticleMetrics::calc_ferret(
+void ParticleMetrics_features::calc_ferret(
 	// output:
 	double & minFeretDiameter,
 	double & minFeretAngle,
@@ -111,7 +111,7 @@ void ParticleMetrics::calc_ferret(
 }
 
 // D - diameters at angles 0..180 degrees
-void ParticleMetrics::calc_martin (std::vector<double> & D)
+void ParticleMetrics_features::calc_martin (std::vector<double> & D)
 {
 	// Calculate unrotated convex hull's area in 'area'
 	auto [minX, minY, maxX, maxY] = AABB::from_pixelcloud(convex_hull);
@@ -231,7 +231,7 @@ void ParticleMetrics::calc_martin (std::vector<double> & D)
 	}
 }
 
-void ParticleMetrics::calc_nassenstein (std::vector<double>& all_D)
+void ParticleMetrics_features::calc_nassenstein (std::vector<double>& all_D)
 {
 	// Rotated convex hull
 	std::vector<Pixel2> CH_rot;
@@ -303,14 +303,17 @@ void ParticleMetrics::calc_nassenstein (std::vector<double>& all_D)
 	}
 }
 
-void ParticleMetrics::reduce_feret (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void ParticleMetrics_features::reduce_feret (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
-		ParticleMetrics pm(r.convHull.CH);
+		if (r.has_bad_data())
+			continue;
+
+		ParticleMetrics_features pm(r.convHull.CH);
 		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
 		pm.calc_ferret(
 			r.fvals[MAX_FERET_DIAMETER][0],
@@ -330,14 +333,17 @@ void ParticleMetrics::reduce_feret (size_t start, size_t end, std::vector<int>* 
 	}
 }
 
-void ParticleMetrics::reduce_martin (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void ParticleMetrics_features::reduce_martin (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
-		ParticleMetrics pm(r.convHull.CH);
+		if (r.has_bad_data())
+			continue;
+
+		ParticleMetrics_features pm(r.convHull.CH);
 		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
 		pm.calc_martin(allD);
 
@@ -351,14 +357,17 @@ void ParticleMetrics::reduce_martin (size_t start, size_t end, std::vector<int>*
 	}
 }
 
-void ParticleMetrics::reduce_nassenstein (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void ParticleMetrics_features::reduce_nassenstein (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
-		ParticleMetrics pm(r.convHull.CH);
+		if (r.has_bad_data())
+			continue;
+
+		ParticleMetrics_features pm(r.convHull.CH);
 		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
 		pm.calc_nassenstein(allD);
 

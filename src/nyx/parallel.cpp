@@ -50,7 +50,7 @@ namespace Nyxus
 				// Initialize the label record
 				LR lr;
 				init_label_record(lr, theSegFname, theIntFname, x, y, label, intensity);
-				labelData[label] = lr;
+				roiData[label] = lr;
 
 				// We're done processing the very first pixel of a label, return
 				return;
@@ -72,7 +72,7 @@ namespace Nyxus
 #endif
 
 			// Update label's stats
-			LR& lr = labelData[label];
+			LR& lr = roiData[label];
 			update_label_record(lr, x, y, label, intensity);
 		}
 	}

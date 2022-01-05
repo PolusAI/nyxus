@@ -38,7 +38,7 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::ini
 
 	// Try to reach data files at directories 'label_path' and 'intensity_path'
 	std::vector <std::string> intensFiles, labelFiles;
-	int errorCode = Nyxus::checkAndReadDataset(intensity_path, label_path, "outputPath", false, intensFiles, labelFiles);
+	int errorCode = Nyxus::read_dataset (intensity_path, label_path, "outputPath", "", "", false, intensFiles, labelFiles);
 
 	// Check for error
 	if (errorCode)
@@ -119,7 +119,7 @@ PYBIND11_MODULE(nyx_backend, m)
 
 			// Try to reach data files at directories 'label_path' and 'intensity_path'
 			std::vector <std::string> intensFiles, labelFiles;
-			int errorCode = Nyxus::checkAndReadDataset(intensity_path, label_path, "outputPath", false, intensFiles, labelFiles);
+			int errorCode = Nyxus::read_dataset (intensity_path, label_path, "outputPath", "", "", false, intensFiles, labelFiles);
 			if (errorCode)
 			{
 				std::cout << std::endl << "Dataset structure error" << std::endl;

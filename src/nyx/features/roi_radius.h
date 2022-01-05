@@ -2,12 +2,13 @@
 
 #include <vector>
 #include <unordered_map>
-#include "../roi_data.h"
+#include "../roi_cache.h"
 #include "histogram.h"
 #include "moments.h"
 #include "pixel.h"
 
-class RoiRadius
+/// @brief Statistics of ROI pixels' distance to the edge.
+class RoiRadius_features
 {
 public:
 	static bool required(const FeatureSet& fs) {
@@ -17,7 +18,7 @@ public:
 			ROI_RADIUS_MEDIAN
 			});
 	}
-	RoiRadius (const std::vector<Pixel2>& cloud, const std::vector<Pixel2>& contour);
+	RoiRadius_features (const std::vector<Pixel2>& cloud, const std::vector<Pixel2>& contour);
 	double get_mean_radius();
 	double get_max_radius();
 	double get_median_radius();

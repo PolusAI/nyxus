@@ -754,6 +754,9 @@ void GLRLM_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabe
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
+		if (r.has_bad_data())
+			continue;
+
 		GLRLM_features glrlm ((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
 		glrlm.calc_SRE(r.fvals[GLRLM_SRE]);
 		glrlm.calc_LRE(r.fvals[GLRLM_LRE]);

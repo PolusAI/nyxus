@@ -20,7 +20,9 @@ void zernike2D(
 void calcRoiZernike (LR& r);
 void parallelReduceZernike2D (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
-class ZernikeFeatures
+/// @brief Zernike features characterize the distribution of intensity across the object.
+
+class Zernike_features
 {
 public:
 	static bool required(const FeatureSet& fs) { return fs.isEnabled(ZERNIKE2D);  }

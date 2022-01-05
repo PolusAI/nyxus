@@ -47,7 +47,7 @@ namespace Nyxus
 	void init_feature_buffers()
 	{
 		uniqueLabels.reserve(N2R);
-		labelData.reserve(N2R);
+		roiData.reserve(N2R);
 		labelMutexes.reserve(N2R);
 	}
 
@@ -55,7 +55,7 @@ namespace Nyxus
 	void clearLabelStats()
 	{
 		uniqueLabels.clear();
-		labelData.clear();
+		roiData.clear();
 		labelMutexes.clear();
 	}
 
@@ -125,11 +125,90 @@ namespace Nyxus
 		r.init_aabb(x, y);
 	}
 
+	void init_label_record_2 (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity, unsigned int tile_index)
+	{
+		// Cache the host tile's index
+		r.host_tiles.insert (tile_index);
+
+		// Initialize basic counters
+		r.aux_area = 1;
+		r.aux_min = r.aux_max = intensity;
+		r.init_aabb (x,y);
+
+		// Cache the ROI label
+		r.label = label;
+
+		// File names
+		r.segFname = segFile;
+		r.intFname = intFile;
+	}
+
+	void allocate_label_record_buffers (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity) 
+	{
+		// Allocate the value matrix
+		for (int i = 0; i < AvailableFeatures::_COUNT_; i++)
+		{
+			std::vector<StatsReal> row{ 0.0 };	// One value initialy. More values can be added for Haralick and Zernike type methods
+			r.fvals.push_back(row);
+		}
+
+		r.fvals[AREA_PIXELS_COUNT][0] = 1;
+		if (theEnvironment.xyRes == 0.0)
+			r.fvals[AREA_UM2][0] = 0;
+		else
+			r.fvals[AREA_UM2][0] = std::pow(theEnvironment.pixelSizeUm, 2);
+
+		r.aux_PrevCount = 0;
+
+		// Min
+		r.fvals[MIN][0] = r.aux_min = intensity;
+		// Max
+		r.fvals[MAX][0] = r.aux_max = intensity;
+		// Moments
+		r.fvals[MEAN][0] = intensity;
+		r.aux_M2 = 0;
+		r.aux_M3 = 0;
+		r.aux_M4 = 0;
+		r.fvals[ENERGY][0] = intensity * intensity;
+		r.aux_variance = 0.0;
+		r.fvals[MEAN_ABSOLUTE_DEVIATION][0] = 0.0;
+		r.aux_PrevIntens = intensity; // Previous intensity
+		// Weighted centroids x and y. 1-based for compatibility with Matlab and WNDCHRM
+		r.fvals[CENTROID_X][0] = StatsReal(x) + 1;
+		r.fvals[CENTROID_Y][0] = StatsReal(y) + 1;
+
+#if 0 // Replaced with a faster version (class TrivialHistogram)
+		// Histogram
+		std::shared_ptr<Histo> ptrH = std::make_shared <Histo>();
+		ptrH->add_observation(intensity);
+		r.aux_Histogram = ptrH;
+#endif
+
+		// Other fields
+		r.fvals[MEDIAN][0] = 0;
+		r.fvals[STANDARD_DEVIATION][0] = 0;
+		r.fvals[SKEWNESS][0] = 0;
+		r.fvals[KURTOSIS][0] = 0;
+		r.fvals[ROOT_MEAN_SQUARED][0] = 0;
+		r.fvals[P10][0] = r.fvals[P25][0] = r.fvals[P75][0] = r.fvals[90][0] = 0;
+		r.fvals[INTERQUARTILE_RANGE][0] = 0;
+		r.fvals[ENTROPY][0] = 0;
+		r.fvals[MODE][0] = 0;
+		r.fvals[UNIFORMITY][0] = 0;
+		r.fvals[ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = 0;
+		r.fvals[NUM_NEIGHBORS][0] = 0;
+
+	}
+
+
 	// This function 'digests' the 2nd and the following pixel of a label and updates the label's feature calculation state - the instance of structure 'LR'
 	void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity)
 	{
 		// Save the pixel
-		lr.raw_pixels.push_back(Pixel2(x, y, intensity));
+		if (lr.caching_permitted())
+			lr.raw_pixels.push_back(Pixel2(x, y, intensity));
+		else
+			lr.clear_pixels_cache();
 
 		// Update ROI intensity range
 		lr.aux_min = std::min(lr.aux_min, intensity);
@@ -137,6 +216,18 @@ namespace Nyxus
 
 		// Update ROI bounds
 		lr.update_aabb(x, y);
+	}
+
+	void update_label_record_2 (LR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index)
+	{
+		// Cache the host tile's index
+		lr.host_tiles.insert(tile_index);
+
+		// Initialize basic counters
+		lr.aux_area++;
+		lr.aux_min = std::min(lr.aux_min, intensity);
+		lr.aux_max = std::max(lr.aux_max, intensity);
+		lr.update_aabb (x,y);
 	}
 
 	// The root function of handling a pixel being scanned
@@ -151,13 +242,13 @@ namespace Nyxus
 			// Initialize the label record
 			LR lr;
 			init_label_record(lr, theSegFname, theIntFname, x, y, label, intensity);
-			labelData[label] = lr;
+			roiData[label] = lr;
 		}
 		else
 		{
 			// Update label's stats
-			LR& lr = labelData[label];
-			update_label_record(lr, x, y, label, intensity);
+			LR& lr = roiData[label];
+			update_label_record (lr, x, y, label, intensity);
 		}
 	}
 

@@ -248,6 +248,9 @@ void NGTDM_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabe
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
+		if (r.has_bad_data())
+			continue;
+
 		NGTDM_features ngtdm ((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
 		r.fvals[NGTDM_COARSENESS][0] = ngtdm.calc_Coarseness();
 		r.fvals[NGTDM_CONTRAST][0] = ngtdm.calc_Contrast();

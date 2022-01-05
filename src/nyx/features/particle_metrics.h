@@ -2,11 +2,11 @@
 
 #include <unordered_map>
 #include <vector>
-#include "../roi_data.h"
+#include "../roi_cache.h"
 #include "pixel.h"
 
-// Longest chord, Feret, Martin, Nassenstein diameters
-class ParticleMetrics
+/// @brief Longest chord. Feret, Martin, Nassenstein diameters.
+class ParticleMetrics_features
 {
 public:
 	static bool feret_required(const FeatureSet& fs)
@@ -40,7 +40,7 @@ public:
 				STAT_NASSENSTEIN_DIAM_MODE });
 	}
 
-	ParticleMetrics(std::vector<Pixel2>& _convex_hull);
+	ParticleMetrics_features(std::vector<Pixel2>& _convex_hull);
 
 	void calc_ferret(
 		// output:

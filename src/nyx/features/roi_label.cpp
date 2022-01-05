@@ -1,10 +1,9 @@
-#include "../roi_data.h"
+#include "../roi_cache.h"
 
 void LR::init_aabb(StatsInt x, StatsInt y)
 {
 	aabb.init_x(x);
 	aabb.init_y(y);
-	fvals[NUM_NEIGHBORS][0] = 0; // num_neighbors = 0;
 }
 
 void LR::update_aabb(StatsInt x, StatsInt y)

@@ -384,6 +384,9 @@ void GLDM_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabel
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
+		if (r.has_bad_data())
+			continue;
+
 		GLDM_features gldm ((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
 		r.fvals[GLDM_SDE][0] = gldm.calc_SDE();
 		r.fvals[GLDM_LDE][0] = gldm.calc_LDE();

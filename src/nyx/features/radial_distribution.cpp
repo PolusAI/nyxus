@@ -7,16 +7,16 @@
 #include "image_matrix.h"
 #include "../globals.h"
 
-RadialDistribution::RadialDistribution (const std::vector<Pixel2>& raw_pixels, const std::vector<Pixel2>& contour_pixels)
+RadialDistribution_features::RadialDistribution_features (const std::vector<Pixel2>& raw_pixels, const std::vector<Pixel2>& contour_pixels)
 {
-	radial_count_bins.resize(RadialDistribution::num_bins, 0);
-	radial_intensity_bins.resize(RadialDistribution::num_bins, 0.0);
-	angular_bins.resize(RadialDistribution::num_bins, 0);
-	band_pixels.resize(RadialDistribution::num_bins);
+	radial_count_bins.resize(RadialDistribution_features::num_bins, 0);
+	radial_intensity_bins.resize(RadialDistribution_features::num_bins, 0.0);
+	angular_bins.resize(RadialDistribution_features::num_bins, 0);
+	band_pixels.resize(RadialDistribution_features::num_bins);
 
-	values_FracAtD.resize(RadialDistribution::num_bins, 0);
-	values_MeanFrac.resize(RadialDistribution::num_bins, 0);
-	values_RadialCV.resize(RadialDistribution::num_bins, 0);
+	values_FracAtD.resize(RadialDistribution_features::num_bins, 0);
+	values_MeanFrac.resize(RadialDistribution_features::num_bins, 0);
+	values_RadialCV.resize(RadialDistribution_features::num_bins, 0);
 
 	// Cache the pixels count
 	this->cached_num_pixels = raw_pixels.size();
@@ -59,6 +59,11 @@ RadialDistribution::RadialDistribution (const std::vector<Pixel2>& raw_pixels, c
 				distToRadius = dA_OC;
 			}
 		}
+
+		// Was the contour point found? I may sometimes not be found due to some degeneracy of the contour itself, for instance, the ROI or its island is so small that it consists of the contour
+		if (idxCont < 0)
+			continue;
+
 		const Pixel2& pxContour = contour_pixels[idxCont];
 
 		// Distance center to cloud pixel
@@ -94,28 +99,28 @@ RadialDistribution::RadialDistribution (const std::vector<Pixel2>& raw_pixels, c
 	}
 }
 
-const std::vector<double>& RadialDistribution::get_FracAtD()
+const std::vector<double>& RadialDistribution_features::get_FracAtD()
 {
 	for (int i = 0; i < num_bins; i++)
 		values_FracAtD[i] = double(radial_count_bins[i]) / double(this->cached_num_pixels);
 	return values_FracAtD;
 }
 
-const std::vector<double>& RadialDistribution::get_MeanFrac()
+const std::vector<double>& RadialDistribution_features::get_MeanFrac()
 {
 	for (int i = 0; i < num_bins; i++)
 		values_MeanFrac[i] = radial_intensity_bins[i] / double(radial_count_bins[i]);
 	return values_MeanFrac;
 }
 
-const std::vector<double>& RadialDistribution::get_RadialCV()
+const std::vector<double>& RadialDistribution_features::get_RadialCV()
 {
 	for (int i=0; i<band_pixels.size(); i++)
 	{
 		auto& band = band_pixels[i];
 
 		std::vector<double> wedges;
-		wedges.resize(RadialDistribution::num_bins, 0.0);
+		wedges.resize(RadialDistribution_features::num_bins, 0.0);
 
 		for (auto& px : band)
 		{
@@ -133,13 +138,13 @@ const std::vector<double>& RadialDistribution::get_RadialCV()
 		double sum = 0.0;
 		for (auto& w : wedges)
 			sum += w;
-		double mean = sum / double(RadialDistribution::num_bins);
+		double mean = sum / double(RadialDistribution_features::num_bins);
 
 		// Sigma
 		sum = 0;
 		for (auto& w : wedges)
 			sum += (w - mean)*(w - mean);
-		double var = sum / double(RadialDistribution::num_bins);
+		double var = sum / double(RadialDistribution_features::num_bins);
 		double stddev = std::sqrt(var);
 		double cv = stddev / mean;
 
@@ -150,12 +155,15 @@ const std::vector<double>& RadialDistribution::get_RadialCV()
 	return values_RadialCV;
 }
 
-void RadialDistribution::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void RadialDistribution_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
+
+		if (r.has_bad_data())
+			continue;
 
 		// Prepare the contour if necessary
 		if (r.contour.contour_pixels.size() == 0)
@@ -177,7 +185,7 @@ void RadialDistribution::reduce (size_t start, size_t end, std::vector<int>* ptr
 		}
 
 		// Calculate the radial distribution
-		RadialDistribution rd (r.raw_pixels, r.contour.contour_pixels);
+		RadialDistribution_features rd (r.raw_pixels, r.contour.contour_pixels);
 		r.fvals[FRAC_AT_D] = rd.get_FracAtD();
 		r.fvals[MEAN_FRAC] = rd.get_MeanFrac();
 		r.fvals[RADIAL_CV] = rd.get_RadialCV();

@@ -1,8 +1,10 @@
 #include <algorithm>
 #include "helpers/helpers.h"
 
-Statistics ComputeCommonStatistics2 (std::vector<double> & Data) {
-
+namespace Nyxus
+{
+Statistics ComputeCommonStatistics2 (std::vector<double> & Data) 
+{
     Statistics output;
 
     //==== Do we have a degenerate case?
@@ -65,3 +67,5 @@ Statistics ComputeCommonStatistics2 (std::vector<double> & Data) {
 
     return output;
 }
+
+} // Nyxus

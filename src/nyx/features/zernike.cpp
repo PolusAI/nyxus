@@ -1,3 +1,4 @@
+
 /****************************************************************************/
 /*                                                                          */
 /*                                                                          */
@@ -34,7 +35,7 @@
 #include "image_matrix.h" //--- cmatrix.h"
 
 #include <unordered_map>
-#include "../roi_data.h"
+#include "../roi_cache.h"
 
 
 #define PI 3.14159265358979323846264338328
@@ -397,6 +398,10 @@ void parallelReduceZernike2D (size_t start, size_t end, std::vector<int>* ptrLab
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
+
+		if (r.has_bad_data())
+			continue;
+
 		calcRoiZernike(r);
 	}
 }

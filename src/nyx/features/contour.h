@@ -11,6 +11,10 @@ public:
 	StatsInt get_roi_perimeter();
 	StatsReal get_diameter_equal_perimeter();
 	std::tuple<StatsReal, StatsReal, StatsReal, StatsReal> get_min_max_mean_stddev_intensity();
+	void clear()
+	{
+		contour_pixels.clear();
+	}
 	
 	std::vector<Pixel2> contour_pixels;
 
@@ -26,7 +30,7 @@ public:
 			EDGE_STDDEVINTENSITY,
 			// dependencies:
 			CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY
-						});
+			});
 	}
 };
 

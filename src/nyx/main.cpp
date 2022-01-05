@@ -16,16 +16,19 @@ int main (int argc, char** argv)
 
 	// Scan file names
 	std::vector <std::string> intensFiles, labelFiles;
-	int errorCode = checkAndReadDataset (theEnvironment.intensity_dir, theEnvironment.labels_dir, theEnvironment.output_dir, true, intensFiles, labelFiles);
+	int errorCode = Nyxus::read_dataset (
+		theEnvironment.intensity_dir, 
+		theEnvironment.labels_dir, 
+		theEnvironment.output_dir, 
+		theEnvironment.intSegMapDir, 
+		theEnvironment.intSegMapFile, 
+		true, 
+		intensFiles, labelFiles);
 	if (errorCode)
 	{
 		std::cout << std::endl << "Dataset structure error" << std::endl;
 		return 1; 
 	}
-
-	// Sort the dataset
-	std::sort (intensFiles.begin(), intensFiles.end());
-	std::sort (labelFiles.begin(), labelFiles.end());
 
 	// One-time initialization
 	init_feature_buffers();

@@ -24,7 +24,7 @@ namespace Nyxus
 		unsigned int labelIdx = 0;
 		for (auto l : L)
 		{
-			LR& r = labelData[l];
+			LR& r = roiData[l];
 			for (int i = 0; i < AvailableFeatures::_COUNT_; i++)
 			{
 				if (theFeatureSet.isEnabled(i))

@@ -2,18 +2,19 @@
 
 #include <vector>
 #include <unordered_map>
-#include "../roi_data.h"
+#include "../roi_cache.h"
 #include "convex_hull.h"
 #include "pixel.h"
 
-class RadialDistribution
+/// @brief Features describing the radial intensity distribution within a ROI - fraction of total stain in an object at a given radius, mean fractional intensity at a given radius, coefficient of variation of intensity within a ring.
+class RadialDistribution_features
 {
 public:
 	static bool required(const FeatureSet& fs) {
 		return fs.anyEnabled({ FRAC_AT_D, MEAN_FRAC, RADIAL_CV });
 	}
 
-	RadialDistribution (const std::vector<Pixel2>& raw_pixels, const std::vector<Pixel2>& contour_pixels);
+	RadialDistribution_features (const std::vector<Pixel2>& raw_pixels, const std::vector<Pixel2>& contour_pixels);
 
 	// Fraction of total stain in an object at a given radius
 	const std::vector<double>& get_FracAtD();

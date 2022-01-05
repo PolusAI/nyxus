@@ -15,7 +15,7 @@
 #include "contour.h"
 
 // Required by the reduction function
-#include "../roi_data.h"
+#include "../roi_cache.h"
 
 namespace Nyxus
 {
@@ -193,6 +193,8 @@ namespace Nyxus
 		{
 			int lab = (*ptrLabels)[i];
 			LR& lr = (*ptrLabelData)[lab];
+			if (lr.has_bad_data())
+				continue;
 			calcRoiIntensityFeatures(lr);
 		}
 	}

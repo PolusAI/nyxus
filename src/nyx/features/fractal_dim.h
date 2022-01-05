@@ -2,15 +2,16 @@
 
 #include <vector>
 #include <unordered_map>
-#include "../roi_data.h"
+#include "../roi_cache.h"
 #include "aabb.h"
 #include "pixel.h"
 
-class FractalDimension
+/// @brief Fractal dimension determined by the box counting and the perimeter methods according to DIN ISO 9276-6 (evenly structured gait).
+class FractalDimension_feature
 {
 public:
 	static bool required(const FeatureSet& fs) { return fs.anyEnabled({ FRACT_DIM_BOXCOUNT, FRACT_DIM_PERIMETER }); }
-	FractalDimension (const std::vector<Pixel2>& cloud, const AABB& aabb);
+	FractalDimension_feature (const std::vector<Pixel2>& cloud, const AABB& aabb);
 	double get_box_count_fd();
 	double get_perimeter_fd();
 

@@ -1,7 +1,7 @@
 #include "fractal_dim.h"
 #include "image_matrix.h"
 
-FractalDimension::FractalDimension (const std::vector<Pixel2>& cloud, const AABB& aabb)
+FractalDimension_feature::FractalDimension_feature (const std::vector<Pixel2>& cloud, const AABB& aabb)
 {
 	Power2PaddedImageMatrix pim (cloud, aabb);
 	
@@ -51,29 +51,32 @@ FractalDimension::FractalDimension (const std::vector<Pixel2>& cloud, const AABB
 	// print_curve(curve, "fd_curve");
 }
 
-double FractalDimension::get_box_count_fd() 
+double FractalDimension_feature::get_box_count_fd() 
 { 
 	return box_count_fd; 
 }
 
-double FractalDimension::get_perimeter_fd() 
+double FractalDimension_feature::get_perimeter_fd() 
 { 
 	return perim_fd; 
 }
 
-void FractalDimension::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void FractalDimension_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
+		if (r.has_bad_data())
+			continue;
+
 		// Skip calculation in case of bad data
 		if ((int)r.fvals[MIN][0] == (int)r.fvals[MAX][0])
 			continue;
 
 		// Calculate feature
-		FractalDimension fd (r.raw_pixels, r.aabb);
+		FractalDimension_feature fd (r.raw_pixels, r.aabb);
 		r.fvals[FRACT_DIM_BOXCOUNT][0] = fd.get_box_count_fd();
 		r.fvals[FRACT_DIM_PERIMETER][0] = fd.get_perimeter_fd();
 	}

@@ -11,12 +11,12 @@
 #include "../globals.h"
 #include "neighbors.h"
 
-NeighborFeatures::NeighborFeatures()
+Neighbor_features::Neighbor_features()
 {
 }
 
 // Spatial hashing
-inline bool NeighborFeatures::aabbNoOverlap(
+inline bool Neighbor_features::aabbNoOverlap(
 	StatsInt xmin1, StatsInt xmax1, StatsInt ymin1, StatsInt ymax1,
 	StatsInt xmin2, StatsInt xmax2, StatsInt ymin2, StatsInt ymax2,
 	int R)
@@ -26,14 +26,14 @@ inline bool NeighborFeatures::aabbNoOverlap(
 	return retval;
 }
 
-inline bool NeighborFeatures::aabbNoOverlap (LR& r1, LR& r2, int radius)
+inline bool Neighbor_features::aabbNoOverlap (LR& r1, LR& r2, int radius)
 {
 	bool retval = aabbNoOverlap(r1.aabb.get_xmin(), r1.aabb.get_xmax(), r1.aabb.get_ymin(), r1.aabb.get_ymax(),
 		r2.aabb.get_xmin(), r2.aabb.get_xmax(), r2.aabb.get_ymin(), r2.aabb.get_ymax(), radius);
 	return retval;
 }
 
-inline unsigned long NeighborFeatures::spat_hash_2d(StatsInt x, StatsInt y, int m)
+inline unsigned long Neighbor_features::spat_hash_2d(StatsInt x, StatsInt y, int m)
 {
 	unsigned long h = x * 73856093;
 	h = h ^ y * 19349663;
@@ -43,7 +43,7 @@ inline unsigned long NeighborFeatures::spat_hash_2d(StatsInt x, StatsInt y, int 
 	return retval;
 }
 
-void NeighborFeatures::reduce (int radius)
+void Neighbor_features::reduce (int radius)
 {
 #if 0	// Leaving the greedy implementation just for the record and the time when we want to run it on a GPU
 	//==== Collision detection, method 1 (best with GPGPU)
@@ -53,7 +53,7 @@ void NeighborFeatures::reduce (int radius)
 	// --this loop can be parallel
 	for (auto l1 : uniqueLabels)
 	{
-		LR& r1 = labelData[l1];
+		LR& r1 = roiData[l1];
 		for (auto l2 : uniqueLabels)
 		{
 			if (l1 == l2)
@@ -61,7 +61,7 @@ void NeighborFeatures::reduce (int radius)
 			if (l1 > l2)
 				continue;	// No need to check the upper triangle
 
-			LR& r2 = labelData[l2];
+			LR& r2 = roiData[l2];
 			bool noOverlap = r2.aabb.get_xmin() > r1.aabb.get_xmax() + radius || r2.aabb.get_xmax() < r1.aabb.get_xmin() - radius
 				|| r2.aabb.get_ymin() > r1.aabb.get_ymax() + radius || r2.aabb.get_ymax() < r1.aabb.get_ymin() - radius;
 			if (!noOverlap)
@@ -75,7 +75,7 @@ void NeighborFeatures::reduce (int radius)
 	// Harvest collision pairs
 	for (auto l1 : uniqueLabels)
 	{
-		LR& r1 = labelData[l1];
+		LR& r1 = roiData[l1];
 		for (auto l2 : uniqueLabels)
 		{
 			if (l1 == l2)
@@ -86,7 +86,7 @@ void NeighborFeatures::reduce (int radius)
 			unsigned int idx = l1 * nul + l2;
 			if (CM[idx] == true)
 			{
-				LR& r2 = labelData[l2];
+				LR& r2 = roiData[l2];
 				r1.num_neighbors++;
 				r2.num_neighbors++;
 			}
@@ -99,7 +99,7 @@ void NeighborFeatures::reduce (int radius)
 	std::vector <std::vector<int>> HT(m);	// hash table
 	for (auto l : Nyxus::uniqueLabels)
 	{
-		LR& r = Nyxus::labelData[l];
+		LR& r = Nyxus::roiData[l];
 
 		auto h1 = spat_hash_2d(r.aabb.get_xmin(), r.aabb.get_ymin(), m),
 			h2 = spat_hash_2d(r.aabb.get_xmin(), r.aabb.get_ymax(), m),
@@ -121,13 +121,13 @@ void NeighborFeatures::reduce (int radius)
 		// Perform the N^2 check
 		for (auto& l1 : bin)
 		{
-			LR& r1 = Nyxus::labelData[l1];
+			LR& r1 = Nyxus::roiData[l1];
 
 			for (auto& l2 : bin)
 			{
 				if (l1 < l2)	// Lower triangle 
 				{
-					LR& r2 = Nyxus::labelData[l2];
+					LR& r2 = Nyxus::roiData[l2];
 					bool overlap = !aabbNoOverlap(r1, r2, radius);
 					if (overlap)
 					{
@@ -147,7 +147,7 @@ void NeighborFeatures::reduce (int radius)
 	// Closest neighbors
 	for (auto l : Nyxus::uniqueLabels)
 	{
-		LR& r = Nyxus::labelData[l];
+		LR& r = Nyxus::roiData[l];
 		int n_neigs = int(r.fvals[NUM_NEIGHBORS][0]);
 
 		// Any neighbors of this ROI ?
@@ -160,7 +160,7 @@ void NeighborFeatures::reduce (int radius)
 		std::vector<double> dists;
 		for (auto l_neig : r.aux_neighboring_labels)
 		{
-			LR& r_neig = Nyxus::labelData[l_neig];
+			LR& r_neig = Nyxus::roiData[l_neig];
 			double cenx_n = r_neig.fvals[CENTROID_X][0],
 				ceny_n = r_neig.fvals[CENTROID_Y][0],
 				dx = cenx - cenx_n,
@@ -178,7 +178,7 @@ void NeighborFeatures::reduce (int radius)
 		r.fvals[CLOSEST_NEIGHBOR1_DIST][0] = dists[closest_1_idx];
 
 		// Save angle with neighbor #1
-		LR& r1 = Nyxus::labelData[closest1label];
+		LR& r1 = Nyxus::roiData[closest1label];
 		r.fvals[CLOSEST_NEIGHBOR1_ANG][0] = angle(cenx, ceny, r1.fvals[CENTROID_X][0], r1.fvals[CENTROID_X][0]);
 
 		// Find idx of 2nd minimum
@@ -196,7 +196,7 @@ void NeighborFeatures::reduce (int radius)
 			r.fvals[CLOSEST_NEIGHBOR2_DIST][0] = dists[closest_2_idx];
 
 			// Save angle with neighbor #2
-			LR& r2 = Nyxus::labelData[closest2label];
+			LR& r2 = Nyxus::roiData[closest2label];
 			r.fvals[CLOSEST_NEIGHBOR2_ANG][0] = angle(cenx, ceny, r2.fvals[CENTROID_X][0], r2.fvals[CENTROID_X][0]);
 		}
 	}
@@ -206,7 +206,7 @@ void NeighborFeatures::reduce (int radius)
 	std::vector<int> anglesRounded;
 	for (auto l : Nyxus::uniqueLabels)
 	{
-		LR& r = Nyxus::labelData[l];
+		LR& r = Nyxus::roiData[l];
 		int n_neigs = int(r.fvals[NUM_NEIGHBORS][0]);
 
 		// Any neighbors of this ROI ?
@@ -219,7 +219,7 @@ void NeighborFeatures::reduce (int radius)
 		// Iterate all the neighbors
 		for (auto l_neig : r.aux_neighboring_labels)
 		{
-			LR& r_neig = Nyxus::labelData[l_neig];
+			LR& r_neig = Nyxus::roiData[l_neig];
 			double cenx_n = r_neig.fvals[CENTROID_X][0],
 				ceny_n = r_neig.fvals[CENTROID_Y][0];
 

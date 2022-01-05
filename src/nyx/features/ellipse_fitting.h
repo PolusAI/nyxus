@@ -2,14 +2,14 @@
 
 #include <unordered_map>
 #include "../featureset.h"
-#include "../roi_data.h"
+#include "../roi_cache.h"
 #include "pixel.h"
 
 /// @brief Class encapsulating Legendre's ellipse of inertia of ROI pixels (ellipse that has the same normalized second central moments as the particle shape).
-class EllipseFittingFeatures
+class EllipseFitting_features
 {
 public:
-	EllipseFittingFeatures(const std::vector<Pixel2> & roi_pixels, double centroid_x, double centroid_y, double area);
+	EllipseFitting_features(const std::vector<Pixel2> & roi_pixels, double centroid_x, double centroid_y, double area);
 
 	/// @brief Major axis length of Legendre's ellipse of inertia
 	/// @return 

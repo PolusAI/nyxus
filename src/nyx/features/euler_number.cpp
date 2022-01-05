@@ -1,7 +1,7 @@
 #include <iostream>
 #include "euler_number.h"
 
-EulerNumber::EulerNumber (const std::vector<Pixel2>& P, const AABB& aabb, int mode)
+EulerNumber_feature::EulerNumber_feature (const std::vector<Pixel2>& P, const AABB& aabb, int mode)
 {
 	StatsInt min_x = aabb.get_xmin(), 
 		min_y = aabb.get_ymin(), 
@@ -24,11 +24,11 @@ EulerNumber::EulerNumber (const std::vector<Pixel2>& P, const AABB& aabb, int mo
 	euler_number = calculate(I, ny, nx, mode);
 }
 
-long EulerNumber::calculate (std::vector<unsigned char> & arr, int height, int width, int mode)
+long EulerNumber_feature::calculate (std::vector<unsigned char> & arr, int height, int width, int mode)
 {
 	if (!(mode == 4 || mode == 8))
 	{
-		std::cout << "Error! Calling EulerNumber with mode other than 4 or 8 \n";
+		std::cout << "Error! Calling EulerNumber_feature with mode other than 4 or 8 \n";
 		return 0;
 	}
 	
@@ -80,19 +80,22 @@ long EulerNumber::calculate (std::vector<unsigned char> & arr, int height, int w
 		return ((C1 - C3 - (2 * Cd)) / 4);
 }
 
-long EulerNumber::get_feature_value()
+long EulerNumber_feature::get_feature_value()
 {
 	return euler_number;
 }
 
-void EulerNumber::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void EulerNumber_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
-		EulerNumber eu (r.raw_pixels, r.aabb); 
+		if (r.has_bad_data())
+			continue;
+
+		EulerNumber_feature eu (r.raw_pixels, r.aabb); 
 		r.fvals[EULER_NUMBER][0] = eu.euler_number;
 	}
 }

@@ -83,7 +83,6 @@ namespace Nyxus
 		FRACT_DIM_BOXCOUNT,
 		FRACT_DIM_PERIMETER,
 
-
 		// CellProfiler features [http://cellprofiler-manual.s3.amazonaws.com/CellProfiler-3.0.0/modules/measurement.html]
 		EDGE_INTEGRATEDINTENSITY,	// Sum of the edge pixel intensities
 		EDGE_MAXINTENSITY,		// Maximal edge pixel intensity
@@ -327,12 +326,13 @@ namespace Nyxus
 
 using namespace Nyxus;
 
+/// @brief Helper class to set and access user feature selection made via the command line or Python interface.
 class FeatureSet
 {
 public:
 	FeatureSet();
-	void enableAll(bool newStatus = true) { for (int i = 0; i < AvailableFeatures::_COUNT_; i++) m_enabledFeatures[i] = newStatus; }
-	void disableFeatures(std::initializer_list<AvailableFeatures>& desiredFeatures)
+	void enableAll (bool newStatus = true) { for (int i = 0; i < AvailableFeatures::_COUNT_; i++) m_enabledFeatures[i] = newStatus; }
+	void disableFeatures (std::initializer_list<AvailableFeatures>& desiredFeatures)
 	{
 		for (auto f : desiredFeatures)
 			m_enabledFeatures[f] = false;
@@ -410,7 +410,6 @@ public:
 
 private:
 	bool m_enabledFeatures[AvailableFeatures::_COUNT_];
-	std::map<AvailableFeatures, std::string> m_featureNames; // initialized in constructor from featureset.cpp/UserFacingFeatureNames
 };
 
 namespace Nyxus

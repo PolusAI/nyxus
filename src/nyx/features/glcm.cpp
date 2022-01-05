@@ -1,5 +1,3 @@
-#pragma once
-
 #include "glcm.h"
 
 #define PGM_MAXMAXVAL 255
@@ -746,6 +744,9 @@ void GLCM_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabel
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
+
+		if (r.has_bad_data())
+			continue;
 
 		//=== GLCM version 2
 		// Skip calculation in case of bad data

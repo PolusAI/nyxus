@@ -1,20 +1,15 @@
 #pragma once
 
 #include <unordered_map>
-#include "../roi_data.h"
+#include "../roi_cache.h"
 #include "image_matrix.h"
 
-// Determine number of erosions that are necessary to fully erase all the pixels in a binary image[1].
-// [1] Deutsches Institut für Normung e.V. (2012).DIN ISO 9276 - 6 -
-// Darstellung der Ergebnisse von Par - tikelgrößenanalysen:
-// Teil 6 : Deskriptive und quantitative Darstellung der Form
-// und Morphologie von Partikeln.
-
-class ErosionPixels
+/// @brief Determine number of erosions that are necessary to fully erase all the pixels in a binary image.
+class ErosionPixels_feature
 {
 public:
 	static bool required(FeatureSet& fs) { return fs.anyEnabled({ EROSIONS_2_VANISH, EROSIONS_2_VANISH_COMPLEMENT }); }
-	ErosionPixels (const ImageMatrix & im);
+	ErosionPixels_feature (const ImageMatrix & im);
 	int get_feature_value();
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 

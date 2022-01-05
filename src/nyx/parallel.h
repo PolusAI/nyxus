@@ -25,7 +25,7 @@ namespace Nyxus
 				idxE = idxS + workPerThread;
 			if (t == nThr - 1)
 				idxE = datasetSize; // include the tail
-			// Example:	T.push_back(std::async(std::launch::async, parallelReduceIntensityStats, idxS, idxE, &roiLabelsVector, &labelData));
+			// Example:	T.push_back(std::async(std::launch::async, parallelReduceIntensityStats, idxS, idxE, &roiLabelsVector, &roiData));
 			T.push_back(std::async(std::launch::async, f, idxS, idxE, ptrLabels, ptrLabelData));
 		}
 	}

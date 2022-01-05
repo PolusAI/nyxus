@@ -1,56 +1,9 @@
 #pragma once
 
 #include <unordered_map>
-#include "../roi_data.h"
+#include "../roi_cache.h"
 #include "contour.h"
 #include "image_matrix.h"
-
-/*
-class Dist2edgeMatrix
-{
-public:
-
-    Dist2edgeMatrix (const std::vector <Pixel2>& labels_raw_pixels, const Contour& cont, AABB& aabb) :
-        original_aabb(aabb)
-    {
-        _pix_plane.allocate(aabb.get_width(), aabb.get_height(), -1);
-
-        // Dimensions
-        auto width = aabb.get_width();
-        auto height = aabb.get_height();
-        auto n = height * width;
-
-        // Zero the matrix
-        _pix_plane.reserve(n);
-        for (auto i = 0; i < n; i++)
-            _pix_plane.push_back(0);
-
-        // Read pixels
-        for (auto& pxl : labels_raw_pixels)
-        {
-            double dist = cont.get_dist_to_contour(pxl.x, pxl.y);
-            auto c = pxl.x - aabb.get_xmin(),
-                r = pxl.y - aabb.get_ymin();
-            _pix_plane[r * width + c] = dist;
-        }
-    }
-
-    double operator() (int y, int x) const
-    {
-        double val = this->_pix_plane(y, x);
-        return val;
-    }
-
-    bool safe(int y, int x) const
-    {
-        return this->_pix_plane.safe(y, x);
-    }
-
-protected:
-    SimpleMatrix<double> _pix_plane;
-    AABB original_aabb;
-};
-*/
 
 // Inspired by Yavuz Unver
 // 
@@ -58,12 +11,8 @@ protected:
 // http://www.wseas.us/e-library/conferences/2013/CambridgeUK/AISE/AISE-15.pdf
 //
 
-#ifndef HUMOMENTS_H
-#define HUMOMENTS_H
-
-#include <math.h>
-
-class ImageMoments
+/// @brief Hu invariants, weighted Hu invariants, spatial , central, and normalized central moments.
+class ImageMoments_features
 {
 public:
     static bool required(const FeatureSet& fs)
@@ -113,7 +62,7 @@ public:
                 WEIGHTED_HU_M7 });
     }
 
-    ImageMoments (int minI, int maxI, const ImageMatrix& im, const ImageMatrix& weighted_im);
+    ImageMoments_features (int minI, int maxI, const ImageMatrix& im, const ImageMatrix& weighted_im);
     std::tuple<double, double, double, double, double, double, double, double, double, double> getSpatialMoments();
     std::tuple<double, double, double, double, double, double, double, double, double, double> getWeightedSpatialMoments();
     std::tuple<double, double, double, double, double, double, double> getNormSpatialMoments();
@@ -152,4 +101,3 @@ private:
     double whm1 = 0, whm2 = 0, whm3 = 0, whm4 = 0, whm5 = 0, whm6 = 0, whm7 = 0;    // weighted Hu invariants
 };
 
-#endif // HUMOMENTS_H

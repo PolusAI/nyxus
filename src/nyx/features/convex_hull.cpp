@@ -12,7 +12,7 @@
 #include "convex_hull.h"
 
 // Required by the reduction function
-#include "../roi_data.h"
+#include "../roi_cache.h"
 
 // Sort criterion: points are sorted with respect to their x-coordinate.
 //                 If two points have the same x-coordinate then we compare
@@ -105,6 +105,9 @@ namespace Nyxus
 		{
 			int lab = (*ptrLabels)[i];
 			LR& r = (*ptrLabelData)[lab];
+
+			if (r.has_bad_data())
+				continue;
 
 			//==== Convex hull and solidity
 			r.convHull.calculate(r.raw_pixels);

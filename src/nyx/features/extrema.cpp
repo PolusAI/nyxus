@@ -104,6 +104,9 @@ void ExtremaFeatures::reduce (size_t start, size_t end, std::vector<int>* ptrLab
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
+		if (r.has_bad_data())
+			continue;
+
 		ExtremaFeatures ef (r.raw_pixels);
 		auto [x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6, x7, y7, x8, y8] = ef.get_values();
 		r.fvals[EXTREMA_P1_Y][0] = y1;

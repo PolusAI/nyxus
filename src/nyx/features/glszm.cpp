@@ -488,6 +488,9 @@ void GLSZM_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabe
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
+		if (r.has_bad_data())
+			continue;
+
 		GLSZM_features glszm ((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
 		r.fvals[GLSZM_SAE][0] = glszm.calc_SAE();
 		r.fvals[GLSZM_LAE][0] = glszm.calc_LAE();

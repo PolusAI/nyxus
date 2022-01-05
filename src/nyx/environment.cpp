@@ -7,6 +7,7 @@
 #include "environment.h"
 #include "featureset.h"
 #include "helpers/helpers.h"
+#include "globals.h"
 #include "version.h"
 
 namespace Nyxus
@@ -107,6 +108,22 @@ namespace Nyxus
     }
 }
 
+Environment::Environment()
+{
+    unsigned long long availMem = Nyxus::getAvailPhysMemory();
+    ram_limit = availMem / 2;
+}
+
+size_t Environment::get_ram_limit()
+{
+    return ram_limit;
+}
+
+int Environment::get_pixel_distance()
+{
+    return pixelDistance;
+}
+
 void Environment::show_help()
 {
     std::cout
@@ -149,9 +166,12 @@ void Environment::show_help()
 void Environment::show_summary(const std::string& head, const std::string& tail)
 {
     std::cout << head;
+    std::cout << "Using " << get_ram_limit() << " bytes of memory\n\n";
     std::cout << "Work plan:\n"
         << "\tlabels\t" << labels_dir << "\n"
         << "\tintensities\t" << intensity_dir << "\n"
+        << "\tintensities-to-segmentation map directory\t" << intSegMapDir<< "\n"
+        << "\tintensities-to-segmentation map file\t" << intSegMapFile << "\n"
         << "\toutput\t" << output_dir << "\n"
         << "\tfile pattern\t" << file_pattern << "\n"
         << "\tembedded pixel size\t" << embedded_pixel_size << "\n"
@@ -295,6 +315,8 @@ int Environment::parse_cmdline(int argc, char** argv)
             find_string_argument(i, INTDIR, intensity_dir) ||
             find_string_argument(i, SEGDIR, labels_dir) ||
             find_string_argument(i, OUTDIR, output_dir) ||
+            find_string_argument(i, INTSEGMAPDIR, intSegMapDir) ||
+            find_string_argument(i, INTSEGMAPFILE, intSegMapFile) ||
             find_string_argument(i, FEATURES, features) ||
             find_string_argument(i, XYRESOLUTION, rawXYRes) ||
             find_string_argument(i, FILEPATTERN, file_pattern) ||

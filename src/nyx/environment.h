@@ -7,6 +7,8 @@
 #define SEGDIR	"--segDir"	// Environment :: labels_dir
 #define INTDIR	"--intDir"	// Environment :: intensity_dir
 #define OUTDIR	"--outDir"	// Environment :: output_dir
+#define INTSEGMAPDIR "--intSegMapDir"		// get_int_seg_map_dir()
+#define INTSEGMAPFILE "--intSegMapFile"		// get_int_seg_map_file()
 #define FEATURES	"--features"	// Environment :: features	-- Example: (1) --features=area,kurtosis,neighbors (2) --features=featurefile.txt
 #define FILEPATTERN	"--filePattern"	// Environment :: file_pattern
 #define OUTPUTTYPE	"--csvFile"	// Environment :: bool separateCsv <= valid values "separatecsv" or "singlecsv" 
@@ -41,18 +43,21 @@
 #define VERBOSITY_ROI_INFO	4
 #define VERBOSITY_DETAILED	8
 
+/// @brief Class encapsulating the the feature extraction environment - command line option values, default values, etc. Use it to add a parseable command line parameter.
 class Environment
 {
 public:
 
-	Environment() {}
+	Environment();
 	int parse_cmdline (int argc, char** argv);
 	void show_help();
 	void show_summary(const std::string& head, const std::string& tail);
 
 	std::string labels_dir = "",
 		intensity_dir = "",
-		output_dir = "";
+		output_dir = "", 
+		intSegMapDir = "", 
+		intSegMapFile = "";
 
 	bool singleROI = false;	// is set to 'true' parse_cmdline() if labels_dir==intensity_dir
 
@@ -89,7 +94,8 @@ public:
 	float xyRes = 0.0,
 		pixelSizeUm = 0.0;
 
-	int pixelDistance = 5;
+	int get_pixel_distance();
+	size_t get_ram_limit();
 
 private:
 
@@ -100,6 +106,10 @@ private:
 
 	bool find_string_argument (std::vector<std::string>::iterator& i, const char* arg, std::string& arg_value);
 	bool find_int_argument (std::vector<std::string>::iterator& i, const char* arg, int& arg_value);
+
+	int pixelDistance = 5;
+	size_t ram_limit = 1024L * 1024L * 1024L;	// bytes
+
 };
 
 namespace Nyxus

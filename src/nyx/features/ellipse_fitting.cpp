@@ -4,7 +4,7 @@
 
 // Inspired by https://www.mathworks.com/matlabcentral/mlc-downloads/downloads/submissions/19028/versions/1/previews/regiondata.m/index.html
 
-EllipseFittingFeatures::EllipseFittingFeatures (const std::vector<Pixel2>& roi_pixels, double centroid_x, double centroid_y, double area)
+EllipseFitting_features::EllipseFitting_features (const std::vector<Pixel2>& roi_pixels, double centroid_x, double centroid_y, double area)
 {
 	// Idea: calculate normalized second central moments for the region. 1/12 is the normalized second central moment of a pixel with unit length.
 
@@ -52,39 +52,40 @@ EllipseFittingFeatures::EllipseFittingFeatures (const std::vector<Pixel2>& roi_p
 		orientation = (180.0 / M_PI) * atan(num / den);
 }
 
-double EllipseFittingFeatures::get_major_axis_length()
+double EllipseFitting_features::get_major_axis_length()
 {
 	return majorAxisLength;
 }
 
-double EllipseFittingFeatures::get_minor_axis_length()
+double EllipseFitting_features::get_minor_axis_length()
 {
 	return minorAxisLength;
 }
 
-double EllipseFittingFeatures::get_eccentricity()
+double EllipseFitting_features::get_eccentricity()
 {
 	return eccentricity;
 }
 
-double EllipseFittingFeatures::get_orientation()
+double EllipseFitting_features::get_orientation()
 {
 	return orientation;
 }
 
-double EllipseFittingFeatures::get_roundness()
+double EllipseFitting_features::get_roundness()
 {
 	return roundness;
 }
 
-void EllipseFittingFeatures::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void EllipseFitting_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-
-		EllipseFittingFeatures f (r.raw_pixels, r.fvals[CENTROID_X][0], r.fvals[CENTROID_Y][0], r.fvals[AREA_PIXELS_COUNT][0]);
+		if (r.has_bad_data())
+			continue;
+		EllipseFitting_features f (r.raw_pixels, r.fvals[CENTROID_X][0], r.fvals[CENTROID_Y][0], r.fvals[AREA_PIXELS_COUNT][0]);
 		r.fvals[MAJOR_AXIS_LENGTH][0] = f.get_major_axis_length();
 		r.fvals[MINOR_AXIS_LENGTH][0] = f.get_minor_axis_length();
 		r.fvals[ECCENTRICITY][0] = f.get_eccentricity();

@@ -227,6 +227,12 @@ public:
 		_pix_plane.resize (width, height, 0);
 	}
 
+	void clear()
+	{
+		_pix_plane.clear();
+		width = height = 0;
+	}
+
 	void GetStats(Moments2& moments2) const
 	{
 		// Feed all the image pixels into the Moments2 object:
@@ -288,7 +294,7 @@ public:
 		original_aabb = aabb;
 
 		int bigSide = std::max(aabb.get_width(), aabb.get_height());
-		StatsInt paddedSide = closest_pow2 (bigSide);
+		StatsInt paddedSide = Nyxus::closest_pow2 (bigSide);
 		allocate (paddedSide, paddedSide);
 
 		int padOffsetX = (paddedSide - original_aabb.get_width()) / 2;

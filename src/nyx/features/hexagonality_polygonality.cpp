@@ -3,12 +3,13 @@
 #include <vector>
 #include "hexagonality_and_polygonality.h"
 
+
 // Returns  tuple {polyAve, hexAve, hexSd} :
 //      polyAve - polygonality score
 //      hexAve - hexagonality score
 //      hexSd - dispersion of hexagonality score relative to its mean
 //
-std::tuple<double, double, double> Hexagonality_and_Polygonality::calculate (int num_neighbors, int roi_area, int roi_perimeter, double convhull_area, double min_feret_diam, double max_feret_diam)
+std::tuple<double, double, double> Hexagonality_and_Polygonality_features::calculate (int num_neighbors, int roi_area, int roi_perimeter, double convhull_area, double min_feret_diam, double max_feret_diam)
 {
     double polyAve = 0,    // wndchrm ratios[37]
         hexAve = 0,        // ratios[38]
@@ -153,18 +154,21 @@ std::tuple<double, double, double> Hexagonality_and_Polygonality::calculate (int
     return { polyAve, hexAve, hexSd };
 }
 
-void Hexagonality_and_Polygonality::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void Hexagonality_and_Polygonality_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
     for (auto i = start; i < end; i++)
     {
         int lab = (*ptrLabels)[i];
         LR& r = (*ptrLabelData)[lab];
 
+        if (r.has_bad_data())
+            continue;
+
         // Skip if the contour, convex hull, and neighbors are unavailable, otherwise the related features will be == NAN. Those feature will be equal to the default unassigned value.
         if (r.contour.contour_pixels.size() == 0 || r.convHull.CH.size() == 0 || r.fvals[NUM_NEIGHBORS][0] == 0)
             continue;
 
-        Hexagonality_and_Polygonality hp;
+        Hexagonality_and_Polygonality_features hp;
         auto [polyAve, hexAve, hexSd] = hp.calculate (r.fvals[NUM_NEIGHBORS][0], r.raw_pixels.size(), r.fvals[PERIMETER][0], r.fvals[CONVEX_HULL_AREA][0], r.fvals[MIN_FERET_DIAMETER][0], r.fvals[MAX_FERET_DIAMETER][0]);
         r.fvals[POLYGONALITY_AVE][0] = polyAve;
         r.fvals[HEXAGONALITY_AVE][0] = hexAve;

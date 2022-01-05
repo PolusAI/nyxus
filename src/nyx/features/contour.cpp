@@ -13,7 +13,7 @@
 #include "contour.h"
 
 // Required by the reduction function
-#include "../roi_data.h"
+#include "../roi_cache.h"
 
 Contour::Contour()
 {
@@ -232,6 +232,8 @@ namespace Nyxus
 		{
 			int lab = (*ptrLabels)[i];
 			LR& r = (*ptrLabelData)[lab];
+			if (r.has_bad_data())
+				continue;
 			calcRoiContour(r);
 		}
 	}

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <unordered_map>
-#include "../roi_data.h"
+#include "../roi_cache.h"
 #include "image_matrix.h"
 
 #define _USE_MATH_DEFINES	// For M_PI, etc.
@@ -9,12 +9,13 @@
 #include "gabor.h"
 #include <omp.h>
 
-class GaborFeatures
+/// @brief Extract face feature based on gabor filtering.
+class Gabor_features
 {
 public:
     static bool required(const FeatureSet& fs) { return fs.isEnabled(GABOR); }
     static const int num_features = 7;
-    GaborFeatures (const ImageMatrix& Im0);
+    Gabor_features (const ImageMatrix& Im0);
     void get_feature_values (std::vector<double>& fvals);
     static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 

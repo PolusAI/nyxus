@@ -1,7 +1,7 @@
 #include <map>
 #include <string>
 #include "featureset.h"
-#include "roi_data.h"
+#include "roi_cache.h"
 
 namespace Nyxus
 {
@@ -70,7 +70,12 @@ namespace Nyxus
 		{"EXTENT",EXTENT},
 		{"ASPECT_RATIO",ASPECT_RATIO},
 
-		{"EQUIVALENT_DIAMETER",EQUIVALENT_DIAMETER},
+		{"EQUIVALENT_DIAMETER",EQUIVALENT_DIAMETER },
+		{"EDGE_MEAN_INTENSITY", EDGE_MEAN_INTENSITY },
+		{"EDGE_STDDEV_INTENSITY", EDGE_STDDEV_INTENSITY},
+		{"EDGE_MAX_INTENSITY", EDGE_MAX_INTENSITY},
+		{"EDGE_MIN_INTENSITY", EDGE_MIN_INTENSITY},
+
 		{"CONVEX_HULL_AREA",CONVEX_HULL_AREA},
 		{"SOLIDITY",SOLIDITY},
 
@@ -321,12 +326,6 @@ namespace Nyxus
 FeatureSet::FeatureSet()
 {
 	enableAll(true);
-	
-	// Populate the feature code-2-name map
-	for (auto& f : Nyxus::UserFacingFeatureNames)
-	{
-		m_featureNames[f.second] = f.first;
-	}
 }
 
 double LR::getValue (AvailableFeatures f)
@@ -360,7 +359,19 @@ std::vector<std::tuple<std::string, AvailableFeatures>> FeatureSet::getEnabledFe
 	{
 		if (m_enabledFeatures[i])
 		{
-			std::tuple<std::string, AvailableFeatures> f (m_featureNames[(AvailableFeatures)i], (AvailableFeatures)i);
+			// Find feature i's name
+			std::string fname = "feature";
+			for (const auto& f : Nyxus::UserFacingFeatureNames)
+			{
+				if (f.second == i)
+				{
+					fname = f.first;
+					break;
+				}
+			}
+
+			// Save the pair
+			std::tuple<std::string, AvailableFeatures> f(fname, (AvailableFeatures)i); 
 			F.push_back(f);
 		}
 	}

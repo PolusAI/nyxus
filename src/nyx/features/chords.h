@@ -5,14 +5,14 @@
 #include <vector>
 #include "aabb.h"
 #include "pixel.h"
-#include "../roi_data.h"
+#include "../roi_cache.h"
 
 /// @brief Class encapsulating calculating "allchords" and "maxchors" features. 
 /// An "all chord" refers to all the chords for all ROI rotations. 
 /// A max chord is the max of all chords for one ROI rotation. 
 /// 
  
-class Chords
+class Chords_feature
 {
 public:
 	static bool required(const FeatureSet& fs)
@@ -36,7 +36,7 @@ public:
 				ALLCHORDS_STDDEV, });
 	}
 
-	Chords (const std::vector<Pixel2> & raw_pixels, const AABB & bb, const double cenx, const double ceny);
+	Chords_feature (const std::vector<Pixel2> & raw_pixels, const AABB & bb, const double cenx, const double ceny);
 
 	/// @brief Calculated maxchords statistics
 	/// @return Tupple of [0] max, [1] min, [2] median, [3] mean, [4] mode, [5] std, [6] min_angle, [7] max_angle
