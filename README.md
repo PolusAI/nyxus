@@ -262,46 +262,7 @@ __Table 1 - Command line parameters__
 
 Input type __*collection*__ is a WIPP's image collection browsable at WIPP web application/Data/Images Collections. Output type __*csvCollection*__ indicates that result of the successfully run plugin will be available to a user as CSV-files. To access the result in WIPP, navigate to WIPP web application/Workflows, choose the task, expand drop-down list 'Ouputs', and navigate to the URL leading to a WIPP data collection. Input type __*enum*__ is a single-selection list of options. Input type __*array*__ is a multi-selection list of options. Input types __*boolean*__ is represented with a check-box in WIPP's user interface. There are 2 parameters referring input type __*string*__ - the file pattern applied to image file names in collections defined by parameters __*intDir*__ and __*segDir*__, and the name of the measurement unit defined by optional parameters __*embeddedpixelsize*__ and __*pixelsPerunit*__. The file pattern parameter is mandatory. Its valid values are regular expression style wildcards to filter file names, for example, .\* to select all the files or .\*c1\\.ome\\.tif to select just files ending in "c1.ome.tif". Input type __*integer*__ is a positive integer value or zero. Input type __*number*__ used in parameter __*pixelsPerunit*__ is a positive real value defining the number of pixels in the measurement unit defined by parameter __*unitLength*__. 
 
-Parameter __*features*__ defines a set of desired features to be calculated. Valid string literal to feature correspondence is listed in Table 2.
-
-__Table 2 - Feature selection keys for parameter '--features'__
-
------------------------------------------
-| Key | Feature |
---------|--------------------------------
-| area | ROI area |
-| bbox_xmin | Minimum X coordinate of ROI's bounding box |
-| bbox_ymin | Minimum Y coordinate of ROI's bounding box |
-| bbox_width | Width of ROI's bounding box |
-| bbox_height | Width of ROI's bounding box |
-| centroid_x | X-coordinate of ROI's centroid |
-| centroid_y | Y-coordinate of ROI's centroid |
-| convex_area | Area of ROI's convex hull |
-| eccentricity | Eccentricity of ROI's inertia ellipse |
-| entropy | ROI pixels intensity entropy |
-| equivalent_diameter | Diameter of ROI's equivalent circle |
-| euler_number | Euler characteristic of ROI |
-| hexagonality_score | ROI shape's haxagonality |
-| hexagonality_sd | Standard deviation of ROI's hexagonality |
-| kurtosis | Skewness of ROI pixels intensity distribution |
-| major_axis_length | Length of the major axis of ROI's inertia ellipse |
-| minor_axis_length | Length of the minor axis of ROI's inertia ellipse  |
-| max_intensity | Maximum intensity of ROI pixels |
-| min_intensity | Minimum intensity of ROI pixels |
-| mean_intensity | Mean intensity of ROI pixels |
-| median | Median intensity of ROI pixels |
-| mode | Mode of ROI pixels' intensity |
-| maxferet | Maximum of Feret diameter |
-| minferet | Minimum Feret diameter |
-| neighbors | Number of ROI's neighbors with respect to parameter "pixelDistance" |
-| orientation | Angle between the x-axis and the major axis of ROI's inertia ellipse |
-| perimeter | Perimeter of ROI's contour |
-| polygonality_score | ROI shape's polygonality |
-| skewness | Skewness of ROI pixels intensity distribution |
-| solidity | ROI solidity (fraction of ROI pixels shared with its convex hull) |
-| standard_deviation | Standard deviation of ROI pixels |
-| all | All the features |
------------------------------------------
+Parameter __*features*__ defines a set of desired features to be calculated. Valid string literal to feature correspondence is listed in the feature table above.
 
 The following command line is an example of running the dockerized feature extractor (image hash 87f3b560bbf2) with only intensity features selected:
 ```
