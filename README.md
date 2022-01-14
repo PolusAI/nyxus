@@ -139,14 +139,14 @@ __Morphology features:__
 | EXTREMA_P7_Y  | |
 | EXTREMA_P8_X | X-ccordinate of ROI's axis aligned bounding box extremum point #8 |
 | EXTREMA_P8_Y  | |
-| POLYGONALITY_AVE | The score ranges from $-\infty$ to 10. Score 10 indicates the object shape is polygon and score $-\infty$ indicates the ROI shape is not polygon |
-| HEXAGONALITY_AVE | The score ranges from $-\infty$ to 10. Score 10 indicates the object shape is hexagon and score $-\infty$ indicates the ROI shape is not hexagon |
+| POLYGONALITY_AVE | The score ranges from $ -\infty $ to 10. Score 10 indicates the object shape is polygon and score $ -\infty $ indicates the ROI shape is not polygon |
+| HEXAGONALITY_AVE | The score ranges from $ -\infty $ to 10. Score 10 indicates the object shape is hexagon and score $ -\infty $ indicates the ROI shape is not hexagon |
 | HEXAGONALITY_STDDEV | Standard deviation of hexagonality_score relative to its mean |
 | DIAMETER_MIN_ENCLOSING_CIRCLE | Diameter of the minimum enclosing circle |
 | DIAMETER_CIRCUMSCRIBING_CIRCLE | Diameter of the circumscribing circle |
 | DIAMETER_INSCRIBING_CIRCLE | Diameter of inscribing circle |
-| GEODETIC_LENGTH | Geodetic length approximated by a rectangle with the same area and perimeter: $area = geodeticlength * thickness$; $perimeter = 2 * (geodetic_length + thickness)$ |
-| THICKNESS | Thickness approximated by a rectangle with the same area and perimeter: $area = geodeticlength * thickness$; $perimeter = 2 * (geodetic_length + thickness)$ |
+| GEODETIC_LENGTH | Geodetic length approximated by a rectangle with the same area and perimeter: $ area = geodeticlength * thickness$; $perimeter = 2 * (geodetic_length + thickness) $ |
+| THICKNESS | Thickness approximated by a rectangle with the same area and perimeter: $ area = geodeticlength * thickness$; $perimeter = 2 * (geodetic_length + thickness) $ |
 | ROI_RADIUS_MEAN | Mean centroid to edge distance  |
 | ROI_RADIUS_MAX | Maximum of centroid to edge distances |
 | ROI_RADIUS_MEDIAN | Median value of centroid to edge distances |
@@ -310,6 +310,27 @@ __2D image moments:__
 | WEIGHTED_HU_M6 | Weighted Hu's moment 6
 | WEIGHTED_HU_M7 | Weighted Hu's moment 7
 
+## Feature groups
+
+Apart from defining your feature set by explicitly specifying comma-separated feature code, Nyxus lets a user specify popular feature groups. Supported feature groups are:
+
+------------------------------------
+| Group code | Belonging features |
+|--------------------|-------------|
+| \*all_intensity\* | integrated_intensity, mean, median, min, max, range, standard_deviation, standard_error, uniformity, skewness, kurtosis, hyperskewness, hyperflatness, mean_absolute_deviation, energy, root_mean_squared, entropy, mode, uniformity, p01, p10, p25, p75, p90, p99, interquartile_range, robust_mean_absolute_deviation, mass_displacement
+| \*all_morphology\* | area_pixels_count, area_um2, centroid_x, centroid_y, weighted_centroid_y, weighted_centroid_x, compactness, bbox_ymin, bbox_xmin, bbox_height, bbox_width, major_axis_length, minor_axis_length, eccentricity, orientation, num_neighbors, extent, aspect_ratio, equivalent_diameter, convex_hull_area, solidity, perimeter, edge_mean_intensity, edge_stddev_intensity, edge_max_intensity, edge_min_intensity, circularity
+| \*basic_morphology\* | area_pixels_count, area_um2, centroid_x, centroid_y, bbox_ymin, bbox_xmin, bbox_height, bbox_width
+| \*all_glcm\* | glcm_angular2ndmoment, glcm_contrast, glcm_correlation, glcm_variance, glcm_inversedifferencemoment, glcm_sumaverage, glcm_sumvariance, glcm_sumentropy, glcm_entropy, glcm_differencevariance, glcm_differenceentropy, glcm_infomeas1, glcm_infomeas2
+| \*all_glrlm\* | glrlm_sre, glrlm_lre, glrlm_gln, glrlm_glnn, glrlm_rln, glrlm_rlnn, glrlm_rp, glrlm_glv, glrlm_rv, glrlm_re, glrlm_lglre, glrlm_hglre, glrlm_srlgle, glrlm_srhgle, glrlm_lrlgle, glrlm_lrhgle
+| \*all_glszm\* | glszm_sae, glszm_lae, glszm_gln, glszm_glnn, glszm_szn, glszm_sznn, glszm_zp, glszm_glv, glszm_zv, glszm_ze, glszm_lglze, glszm_hglze, glszm_salgle, glszm_sahgle, glszm_lalgle, glszm_lahgle
+| \*all_gldm\* | gldm_sde, gldm_lde, gldm_gln, gldm_dn, gldm_dnn, gldm_glv, gldm_dv, gldm_de, gldm_lgle, gldm_hgle, gldm_sdlgle, gldm_sdhgle, gldm_ldlgle, gldm_ldhgle
+| \*all_ngtdm\* | ngtdm_coarseness, ngtdm_contrast, ngtdm_busyness, ngtdm_complexity, ngtdm_strength
+| \*all\* | All the features 
+
+### Example: running Nyxus to extract only intensity and basic morphology features
+```
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/OUTPUT-ratbrain --filePattern=.* --csvFile=singlecsv 
+```
 
 ## Installation
 Nyxus can be installed as a Python package, as a Docker image, or be compiled from source
@@ -437,4 +458,3 @@ or its undockerized equivalent:
 ```
 python main.py --intDir=/images/collections/c1/int --segDir=/images/collections/c1/seg --outDir=/temp_fe/output --filePattern=.* --csvfile=separatecsv --features=entropy,kurtosis,skewness,max_intensity,mean_intensity,min_intensity,median,mode,standard_deviation
 ```
-
