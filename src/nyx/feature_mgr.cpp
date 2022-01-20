@@ -22,6 +22,7 @@ bool FeatureManager::compile()
 	}
 
 	build_requested_set();
+	return true;
 }
 
 // After compiling, returns the number of user-requested features

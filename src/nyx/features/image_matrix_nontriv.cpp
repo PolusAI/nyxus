@@ -3,8 +3,6 @@
 #include <sstream>
 #include "image_matrix_nontriv.h"
 
-#pragma once
-
 OutOfRamPixelCloud::OutOfRamPixelCloud()
 {
 }

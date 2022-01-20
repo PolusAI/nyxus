@@ -143,11 +143,6 @@ namespace Nyxus
 		return true;
 	}
 
-
-
-
-
-
 	bool processIntSegImagePair (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, int filepair_index, int tot_num_filepairs)
 	{
 		// Report the amount of free RAM
@@ -201,8 +196,8 @@ namespace Nyxus
 
 			// Cache the file names to be picked up by labels to know their file origin
 			std::filesystem::path p_int(ifp), p_seg(lfp);
-			theSegFname = p_seg.filename().string();
-			theIntFname = p_int.filename().string();
+			theSegFname = p_seg.string(); 
+			theIntFname = p_int.string(); 
 
 			// Scan one label-intensity pair 
 			theImLoader.open (theIntFname, theSegFname);

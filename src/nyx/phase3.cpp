@@ -18,7 +18,7 @@ namespace Nyxus
 			LR& r = roiData[lab];
 
 			// Skip trivial ROI
-			if (r.nontrivial_roi(memory_limit) == false)
+			//if (r.nontrivial_roi(memory_limit) == false)
 				continue;
 
 			//=== Features permitting raster scan
