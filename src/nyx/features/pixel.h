@@ -45,6 +45,7 @@ inline float normL2(const Point2f& p) { return p.normL2(); }
 struct Pixel2 : public Point2i
 {
 	PixIntens inten;
+	Pixel2() : Point2(0, 0), inten(0) {}
 	Pixel2 (StatsInt x_, StatsInt y_, PixIntens i_) : Point2(x_, y_), inten(i_) {}
 	Pixel2 (int x_, int y_, PixIntens i_) : Point2(x_, y_), inten(i_) {}
 	Pixel2 (float x_, float y_, PixIntens i_) : Point2((StatsInt)x_, (StatsInt)y_), inten(i_) {}

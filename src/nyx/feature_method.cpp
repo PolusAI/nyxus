@@ -4,29 +4,21 @@ FeatureMethod::FeatureMethod()
 {
 }
 
-bool FeatureMethod::pending()
+void FeatureMethod::provide_features (const std::initializer_list<Nyxus::AvailableFeatures>& F)
 {
-	return pending_calculation;
+	for (auto f : F)
+		provided_features.push_back(f);
 }
 
-FeatureMgr::FeatureMgr()
-{}
-
-void FeatureMgr::sort_by_num_dependencies()
+void FeatureMethod::add_dependencies (const std::initializer_list<Nyxus::AvailableFeatures>& F)
 {
+	for (auto f : F)
+		dependencies.push_back(f);
 }
 
-bool FeatureMgr::roi_cache_item_needed (RoiDataCacheItem item)
+void FeatureMethod::osized_scan_whole_image (LR& r, ImageLoader& imloader)
 {
-	for (const auto f : Methods)
-		if (f->pending() && f->roi_cache_item_needed(item))
-			return true;
-	return false;
+	this->osized_calculate (r, imloader);
+	this->save_value (r.fvals);
 }
-
-const std::vector<FeatureMethod*>& FeatureMgr::get_requested_features() const
-{
-	return Methods;
-}
-
 

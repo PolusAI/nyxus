@@ -85,7 +85,7 @@ namespace Nyxus
 		lr.fvals[STANDARD_ERROR][0] = stddev / sqrt(n);
 
 		//==== Do not calculate features of all-blank intensities (to avoid NANs)
-		if (lr.intensitiesAllZero())
+		if (lr.has_bad_data())
 			return;
 
 		// P10, 25, 75, 90, IQR, RMAD, entropy, uniformity

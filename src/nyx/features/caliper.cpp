@@ -1,6 +1,6 @@
 #include <algorithm>
 #include "aabb.h"
-#include "particle_metrics.h"
+#include "caliper.h"
 #include "rotation.h"
 
 ParticleMetrics_features::ParticleMetrics_features (std::vector<Pixel2>& _convex_hull) :
@@ -313,7 +313,7 @@ void ParticleMetrics_features::reduce_feret (size_t start, size_t end, std::vect
 		if (r.has_bad_data())
 			continue;
 
-		ParticleMetrics_features pm(r.convHull.CH);
+		ParticleMetrics_features pm(r.convHull_CH);
 		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
 		pm.calc_ferret(
 			r.fvals[MAX_FERET_DIAMETER][0],
@@ -343,7 +343,7 @@ void ParticleMetrics_features::reduce_martin (size_t start, size_t end, std::vec
 		if (r.has_bad_data())
 			continue;
 
-		ParticleMetrics_features pm(r.convHull.CH);
+		ParticleMetrics_features pm(r.convHull_CH);
 		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
 		pm.calc_martin(allD);
 
@@ -367,7 +367,7 @@ void ParticleMetrics_features::reduce_nassenstein (size_t start, size_t end, std
 		if (r.has_bad_data())
 			continue;
 
-		ParticleMetrics_features pm(r.convHull.CH);
+		ParticleMetrics_features pm(r.convHull_CH);
 		std::vector<double> allD;	// all the diameters at 0-180 degrees rotation
 		pm.calc_nassenstein(allD);
 

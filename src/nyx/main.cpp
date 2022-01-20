@@ -3,7 +3,7 @@
 #include "environment.h"
 #include "globals.h"
 
-using namespace Nyxus;
+//using namespace Nyxus;
 
 int main (int argc, char** argv)
 {
@@ -13,6 +13,9 @@ int main (int argc, char** argv)
 	if (parseRes)
 		return parseRes;
 	theEnvironment.show_summary ("\n"/*head*/, "\n"/*tail*/);
+
+	// Have the feature manager prepare the feature toolset reflecting user's selection
+	theFeatureMgr.apply_user_selection();
 
 	// Scan file names
 	std::vector <std::string> intensFiles, labelFiles;

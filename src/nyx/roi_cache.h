@@ -4,9 +4,8 @@
 #include <unordered_set>
 #include <vector>
 #include "features/aabb.h"
-#include "features/contour.h"
-#include "features/convex_hull.h"
 #include "features/image_matrix.h"
+#include "features/image_matrix_nontriv.h"
 #include "features/pixel.h"
 #include "featureset.h"
 
@@ -23,13 +22,14 @@ enum RoiDataCacheItem
 	NEIGHBOR_ROI_LABELS
 };
 
+
 class LR
 {
 public:
 	static constexpr const RoiDataCacheItem CachedObjects[] = { RAW_PIXELS,	CONTOUR, CONVEX_HULL, IMAGE_MATRIX, NEIGHBOR_ROI_LABELS };
 
 	LR();
-	bool nontrivial_roi();
+	bool nontrivial_roi (size_t memory_limit);
 	bool has_bad_data();
 	size_t get_ram_footprint_estimate();
 	void recycle_aux_obj (RoiDataCacheItem itm);
@@ -44,11 +44,12 @@ public:
 
 	// Helper objects
 	std::vector <Pixel2> raw_pixels;
+	OutOfRamPixelCloud osized_pixel_cloud;
 	unsigned int aux_area;
 	PixIntens aux_min, aux_max;
 	AABB aabb;
-	Contour contour;
-	ConvexHull convHull;
+	std::vector<Pixel2> contour;	// Contour contour;
+	std::vector<Pixel2> convHull_CH; // ConvexHull convHull;
 
 	// Replaced with a faster version (class TrivialHistogram)	std::shared_ptr<Histo> aux_Histogram;
 	StatsInt
@@ -76,7 +77,6 @@ public:
 
 	double getValue (AvailableFeatures f);
 	void reduce_pixel_intensity_features();
-	bool intensitiesAllZero();
 	void reduce_edge_intensity_features();
 };
 

@@ -248,7 +248,7 @@ void ImageMatrix::apply_distance_to_contour_weights (const std::vector<Pixel2>& 
 int ImageMatrix::get_chlen (int col)
 {
 	bool noSignal = true;
-	int chlen = 0, maxChlen = 0;
+	int chlen = 0, maxChlen = 0;	// We will find the maximum chord in case ROI has holes
 
 	for (int row = 0; row < height; row++)
 	{

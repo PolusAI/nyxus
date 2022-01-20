@@ -165,7 +165,7 @@ void Hexagonality_and_Polygonality_features::reduce (size_t start, size_t end, s
             continue;
 
         // Skip if the contour, convex hull, and neighbors are unavailable, otherwise the related features will be == NAN. Those feature will be equal to the default unassigned value.
-        if (r.contour.contour_pixels.size() == 0 || r.convHull.CH.size() == 0 || r.fvals[NUM_NEIGHBORS][0] == 0)
+        if (r.contour.size() == 0 || r.convHull_CH.size() == 0 || r.fvals[NUM_NEIGHBORS][0] == 0)
             continue;
 
         Hexagonality_and_Polygonality_features hp;

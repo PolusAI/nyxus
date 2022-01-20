@@ -108,7 +108,7 @@ private:
 	bool find_int_argument (std::vector<std::string>::iterator& i, const char* arg, int& arg_value);
 
 	int pixelDistance = 5;
-	size_t ram_limit = 1024L * 1024L * 1024L;	// bytes
+	size_t ram_limit = 1024L * 1024L * 1024L;	// [bytes] - default RAM limit affecting Phase 2's batch size. (Purpose of Phase 2 is calculating trivial ROIs.) 
 
 };
 

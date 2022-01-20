@@ -49,11 +49,7 @@ void RoiRadius_features::reduce (size_t start, size_t end, std::vector<int>* ptr
 		if (r.has_bad_data())
 			continue;
 
-		// Prepare the contour if necessary
-		if (r.contour.contour_pixels.size() == 0)
-			r.contour.calculate(r.aux_image_matrix);
-
-		RoiRadius_features roir (r.raw_pixels, r.contour.contour_pixels);
+		RoiRadius_features roir (r.raw_pixels, r.contour);
 		r.fvals[ROI_RADIUS_MEAN][0] = roir.get_mean_radius();
 		r.fvals[ROI_RADIUS_MAX][0] = roir.get_max_radius();
 		r.fvals[ROI_RADIUS_MEDIAN][0] = roir.get_median_radius();

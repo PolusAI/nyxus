@@ -385,7 +385,7 @@ void calcRoiZernike(LR& r)
 		r.fvals[ZERNIKE2D]);	// .Zernike2D
 
 	// Fix calculated feature values due to all-0 intensity labels to avoid NANs in the output
-	if (r.intensitiesAllZero())
+	if (r.has_bad_data())
 	{
 		for (int i = 0; i < r.fvals[ZERNIKE2D].size(); i++)
 			r.fvals[ZERNIKE2D][i] = 0.0;

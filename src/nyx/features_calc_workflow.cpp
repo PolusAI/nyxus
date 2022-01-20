@@ -31,7 +31,7 @@
 #include "features/image_moments.h"
 #include "features/moments.h"
 #include "features/neighbors.h"
-#include "features/particle_metrics.h"
+#include "features/caliper.h"
 #include "features/roi_radius.h"
 #include "features/zernike.h"
 #include "helpers/timing.h"
@@ -52,7 +52,7 @@ namespace Nyxus
 	}
 
 	// Resets the main containers
-	void clearLabelStats()
+	void clear_feature_buffers()
 	{
 		uniqueLabels.clear();
 		roiData.clear();

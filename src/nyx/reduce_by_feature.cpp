@@ -13,6 +13,7 @@
 #include "environment.h"
 #include "globals.h"
 #include "features/chords.h"
+#include "features/convex_hull.h"
 #include "features/ellipse_fitting.h"
 #include "features/euler_number.h"
 #include "features/circle.h"
@@ -31,7 +32,7 @@
 #include "features/image_moments.h"
 #include "features/moments.h"
 #include "features/neighbors.h"
-#include "features/particle_metrics.h"
+#include "features/caliper.h"
 #include "features/roi_radius.h"
 #include "features/zernike.h"
 #include "helpers/timing.h"
@@ -65,21 +66,23 @@ namespace Nyxus
 		}
 
 		//==== Fitting an ellipse
-		if (EllipseFitting_features::required(theFeatureSet)) 
+		if (EllipseFittingFeature::required(theFeatureSet)) 
 		{
 			STOPWATCH("Morphology/Ellipticity/E/#4aaaea", "\t=");
-			runParallel(EllipseFitting_features::reduce, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
+			runParallel(EllipseFittingFeature::reduce, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
 		}
 
 		//==== Contour-related ROI perimeter, equivalent circle diameter
-		if (Contour::required(theFeatureSet)) 
+		if (ContourFeature::required(theFeatureSet)) 
 		{
 			STOPWATCH("Morphology/Contour/C/#4aaaea", "\t=");
-			runParallel(parallelReduceContour, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
+			runParallel(
+				ContourFeature::ContourFeature::parallel_process_1_batch, // parallelReduceContour,
+				nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
 		}
 
 		//==== Convex hull related solidity, circularity
-		if (ConvexHull::required(theFeatureSet))
+		if (ConvexHullFeature::required(theFeatureSet))
 		{
 			// CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY // depends on PERIMETER
 			STOPWATCH("Morphology/Hull/H/#4aaaea", "\t=");
@@ -87,17 +90,17 @@ namespace Nyxus
 		}
 
 		//==== Extrema 
-		if (ExtremaFeatures::required(theFeatureSet))
+		if (ExtremaFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Extrema/Ex/#4aaaea", "\t=");
-			runParallel(ExtremaFeatures::reduce, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
+			runParallel(ExtremaFeature::reduce, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
 		}
 
 		//==== Euler 
-		if (EulerNumber_feature::required(theFeatureSet))
+		if (EulerNumberFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Euler/Eu/#4aaaea", "\t=");
-			runParallel(EulerNumber_feature::reduce, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
+			runParallel(EulerNumberFeature::reduce, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
 		}
 
 		//==== Feret diameters and angles
@@ -122,10 +125,10 @@ namespace Nyxus
 		}
 
 		//==== Chords
-		if (Chords_feature::required(theFeatureSet))
+		if (ChordsFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Chords/Ch/#4aaaea", "\t=");
-			runParallel(Chords_feature::reduce, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
+			runParallel(ChordsFeature::process_1_batch, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
 		}
 
 		//==== Hexagonality and polygonality
@@ -213,10 +216,10 @@ namespace Nyxus
 		}
 
 		//==== Gabor features
-		if (Gabor_features::required(theFeatureSet))
+		if (GaborFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Gabor/Gabor/Gabor/#f58231", "\t=");
-			runParallel(Gabor_features::reduce, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
+			runParallel(GaborFeature::reduce, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
 		}
 
 		//==== Radial distribution / Zernike 2D 

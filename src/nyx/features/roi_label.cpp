@@ -12,45 +12,6 @@ void LR::update_aabb(StatsInt x, StatsInt y)
 	aabb.update_y(y);
 }
 
-// Prerequisite: availability of 'contour'
-void LR::reduce_edge_intensity_features()
-{
-	StatsReal 
-		sumI = 0.0, 
-		maxI = -INF, 
-		minI = INF, 
-		meanI = 0.0, 
-		stddevI = 0.0, 
-		n = contour.contour_pixels.size();
-
-	// sum, min, max
-	for (auto pxl : contour.contour_pixels)
-	{
-		StatsReal I = pxl.inten;	// cast inten to result type here
-		sumI += I;
-		maxI = std::max(maxI, I);
-		minI = std::min(minI, I);
-	}
-
-	// mean
-	meanI = sumI / n;
-
-	// stddev
-	for (auto pxl : contour.contour_pixels)
-	{
-		StatsReal I = pxl.inten;	// cast inten to result type here
-		stddevI += (I - meanI) * (I - meanI);
-	}
-	stddevI = std::sqrt(stddevI / n);
-
-	// Save
-	fvals[EDGE_INTEGRATEDINTENSITY][0] = sumI; 
-	fvals[EDGE_MAXINTENSITY][0] = maxI; 
-	fvals[EDGE_MININTENSITY][0] = minI; 
-	fvals[EDGE_MEANINTENSITY][0] = meanI; 
-	fvals[EDGE_STDDEVINTENSITY][0] = stddevI; 
-}
-
 void LR::reduce_pixel_intensity_features()
 {
 	LR& lr = *this;
@@ -117,12 +78,6 @@ void LR::reduce_pixel_intensity_features()
 		// Previous intensity for succeeding iterations
 		lr.aux_PrevIntens = intensity;
 	}
-}
-
-bool LR::intensitiesAllZero()
-{
-	bool bad = (fvals[MIN][0] == 0.0 && fvals[MAX][0] == 0.0);
-	return bad;
 }
 
 

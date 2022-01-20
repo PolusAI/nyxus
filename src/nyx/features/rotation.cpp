@@ -52,14 +52,43 @@ void Rotation::rotate_cloud (
 
 	for (auto& p : P)
 	{
-		// Physics coordinate system
-		//	x_rot = ((x - cx) * cos(theta)) - ((y - cy) * sin(theta)) + cx;
-		//	y_rot = ((x - cx) * sin(theta)) + ((y - cy) * cos(theta)) + cy;
+		// Physics coordinate system:
+		//		x_rot = ((x - cx) * cos(theta)) - ((y - cy) * sin(theta)) + cx;
+		//		y_rot = ((x - cx) * sin(theta)) + ((y - cy) * cos(theta)) + cy;
 
-		// Screen coordinate system
+		// Screen coordinate system:
 		double x_rot = ((p.x - cx) * cos(theta)) - ((cy - p.y) * sin(theta)) + cx;
 		double y_rot = cy - ((cy - p.y) * cos(theta)) + ((p.x - cx) * sin(theta));
 		Pixel2 p_rot ((int)x_rot, (int)y_rot, p.inten);
 		P_rot.push_back (p_rot);
 	}
 }
+
+void Rotation::rotate_cloud(
+	// [in]
+	const OutOfRamPixelCloud& cloud,
+	const double cx,
+	const double cy,
+	float theta_radians,
+	// [out]
+	OutOfRamPixelCloud& rotated_cloud,
+	AABB& rotated_aabb)
+{
+	for (size_t i=0; i<cloud.get_size(); i++)
+	{
+		const Pixel2 p = cloud.get_at(i);
+
+		// Background:
+		//		x_rot = ((x - cx) * cos(theta)) - ((y - cy) * sin(theta)) + cx;
+		//		y_rot = ((x - cx) * sin(theta)) + ((y - cy) * cos(theta)) + cy;
+
+		// Screen coordinate system:
+		double x_rot = ((p.x - cx) * cos(theta_radians)) - ((cy - p.y) * sin(theta_radians)) + cx;
+		double y_rot = cy - ((cy - p.y) * cos(theta_radians)) + ((p.x - cx) * sin(theta_radians));
+
+		Pixel2 p_rot((int)x_rot, (int)y_rot, p.inten);
+
+		rotated_cloud.add_pixel (p_rot);
+	}
+}
+

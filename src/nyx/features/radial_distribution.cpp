@@ -165,27 +165,8 @@ void RadialDistribution_features::reduce (size_t start, size_t end, std::vector<
 		if (r.has_bad_data())
 			continue;
 
-		// Prepare the contour if necessary
-		if (r.contour.contour_pixels.size() == 0)
-		{
-			r.contour.calculate(r.aux_image_matrix);
-
-			#if 0	// Debug
-			int idxCtr = Pixel2::find_center(r.raw_pixels, r.contour.contour_pixels);
-
-			int cx = r.raw_pixels[idxCtr].x, cy = r.raw_pixels[idxCtr].y;
-			std::stringstream ss;
-			ss << theIntFname << " Label " << ld.first;
-			im.print(ss.str(), "", cx, cy, "(*)", { {cx, cy, "(*)"} });
-
-			r.contour.calculate(im);
-			ImageMatrix imContour(r.contour.contour_pixels, r.aabb);
-			imContour.print("Contour", "", cx, cy, "(o)", { {cx, cy, "(o)"} });
-			#endif		
-		}
-
 		// Calculate the radial distribution
-		RadialDistribution_features rd (r.raw_pixels, r.contour.contour_pixels);
+		RadialDistribution_features rd (r.raw_pixels, r.contour);
 		r.fvals[FRAC_AT_D] = rd.get_FracAtD();
 		r.fvals[MEAN_FRAC] = rd.get_MeanFrac();
 		r.fvals[RADIAL_CV] = rd.get_RadialCV();

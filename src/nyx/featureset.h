@@ -176,11 +176,6 @@ namespace Nyxus
 		GLCM_INFOMEAS1,
 		GLCM_INFOMEAS2,
 
-		ZERNIKE2D,
-		FRAC_AT_D,
-		MEAN_FRAC,
-		RADIAL_CV,
-
 		// GLRLM:
 		GLRLM_SRE,	// Short Run Emphasis 
 		GLRLM_LRE,	// Long Run Emphasis 
@@ -240,6 +235,12 @@ namespace Nyxus
 		NGTDM_COMPLEXITY,
 		NGTDM_STRENGTH,
 
+		// Radial intensity distribution:
+		ZERNIKE2D,
+		FRAC_AT_D,
+		MEAN_FRAC,
+		RADIAL_CV,
+			
 		// Spatial (raw) moments
 		SPAT_MOMENT_00,
 		SPAT_MOMENT_01,

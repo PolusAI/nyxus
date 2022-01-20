@@ -225,12 +225,8 @@ void ImageMoments_features::reduce (size_t start, size_t end, std::vector<int>* 
             continue;
 
 
-        // Prepare the contour if necessary
-        if (r.contour.contour_pixels.size() == 0)
-            r.contour.calculate(r.aux_image_matrix);
-
         ImageMatrix weighted_im(r.raw_pixels, r.aabb);
-        weighted_im.apply_distance_to_contour_weights(r.raw_pixels, r.contour.contour_pixels);
+        weighted_im.apply_distance_to_contour_weights(r.raw_pixels, r.contour);
         ImageMoments_features immo ((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix, weighted_im);
 
         double m1, m2, m3, m4, m5, m6, m7, m8, m9, m10;

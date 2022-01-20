@@ -8,8 +8,13 @@
 #include "image_matrix.h"
 #include "rotation.h"
 
-Chords_feature::Chords_feature (const std::vector<Pixel2>& raw_pixels, const AABB& bb, const double cenx, const double ceny)
+void ChordsFeature::calculate (LR & r)
 {
+	const std::vector<Pixel2>& raw_pixels = r.raw_pixels;
+	const AABB& bb = r.aabb;
+	double cenx = (bb.get_xmin() + bb.get_xmax()) / 2.0,
+		ceny = (bb.get_ymin() + bb.get_ymax()) / 2.0;
+
 	auto n = raw_pixels.size();
 	std::vector<Pixel2> R;	// raw_pixels rotated 
 	R.resize(n, {0,0,0});
@@ -18,7 +23,7 @@ Chords_feature::Chords_feature (const std::vector<Pixel2>& raw_pixels, const AAB
 	std::vector<double> ACang, MCang; // corresponding angles
 
 	// Gather chord lengths at various angles
-	double angStep = M_PI / 20.;
+	double angStep = M_PI / 20.0;
 	for (double ang = 0; ang < M_PI; ang += angStep)
 	{
 		std::vector<int> TC; // chords at angle theta
@@ -95,31 +100,7 @@ Chords_feature::Chords_feature (const std::vector<Pixel2>& raw_pixels, const AAB
 	allchords_max_angle = ACang[idxmax];
 }
 
-std::tuple<double, double, double, double, double, double, double, double> Chords_feature::get_maxchords_stats()
-{
-	return { maxchords_max,
-		maxchords_min,
-		maxchords_median,
-		maxchords_mean,
-		maxchords_mode,
-		maxchords_stddev,
-		maxchords_min_angle,
-		maxchords_max_angle };
-}
-
-std::tuple<double, double, double, double, double, double, double, double> Chords_feature::get_allchords_stats()
-{
-	return { allchords_max,
-		allchords_min,
-		allchords_median,
-		allchords_mean,
-		allchords_mode,
-		allchords_stddev,
-		allchords_min_angle,
-		allchords_max_angle };
-}
-
-void Chords_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void ChordsFeature::process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -129,39 +110,9 @@ void Chords_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabe
 		if (r.has_bad_data())
 			continue;
 
-		double cenx = r.fvals[CENTROID_X][0],
-			ceny = r.fvals[CENTROID_Y][0];
-		Chords_feature cho (r.raw_pixels, r.aabb, cenx, ceny);
-
-		double
-			_max = 0,
-			_min = 0,
-			_median = 0,
-			_mean = 0,
-			_mode = 0,
-			_stddev = 0,
-			_min_angle = 0,
-			_max_angle = 0;
-
-		std::tie(_max, _min, _median, _mean, _mode, _stddev, _min_angle, _max_angle) = cho.get_maxchords_stats();
-		r.fvals[MAXCHORDS_MAX][0] = _max;
-		r.fvals[MAXCHORDS_MAX_ANG][0] = _max_angle;
-		r.fvals[MAXCHORDS_MIN][0] = _min;
-		r.fvals[MAXCHORDS_MIN_ANG][0] = _min_angle;
-		r.fvals[MAXCHORDS_MEDIAN][0] = _median;
-		r.fvals[MAXCHORDS_MEAN][0] = _mean;
-		r.fvals[MAXCHORDS_MODE][0] = _mode;
-		r.fvals[MAXCHORDS_STDDEV][0] = _stddev;
-
-		std::tie(_max, _min, _median, _mean, _mode, _stddev, _min_angle, _max_angle) = cho.get_allchords_stats();
-		r.fvals[ALLCHORDS_MAX][0] = _max;
-		r.fvals[ALLCHORDS_MAX_ANG][0] = _max_angle;
-		r.fvals[ALLCHORDS_MIN][0] = _min;
-		r.fvals[ALLCHORDS_MIN_ANG][0] = _min_angle;
-		r.fvals[ALLCHORDS_MEDIAN][0] = _median;
-		r.fvals[ALLCHORDS_MEAN][0] = _mean;
-		r.fvals[ALLCHORDS_MODE][0] = _mode;
-		r.fvals[ALLCHORDS_STDDEV][0] = _stddev;
+		ChordsFeature f;
+		f.calculate(r);
+		f.save_value(r.fvals);
 	}
 }
 

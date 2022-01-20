@@ -1,14 +1,27 @@
 #pragma once
 
-#include <unordered_map>
-#include "../roi_cache.h"
 #include <tuple>
 #include <vector>
+#include <unordered_map>
+#include "../feature_method.h"
+#include "../roi_cache.h"
 #include "pixel.h"
 
-class ExtremaFeatures
+class ExtremaFeature: public FeatureMethod
 {
 public:
+	ExtremaFeature();
+
+	// Trivial ROI
+	void calculate(LR& r);
+
+	// Non-trivial ROI
+	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
+	void osized_calculate (LR& r, ImageLoader& imloader);
+
+	// Result saver
+	void save_value(std::vector<std::vector<double>>& feature_vals);
+
 	static bool required(const FeatureSet& fs) 
 	{
 		return fs.anyEnabled({
@@ -29,7 +42,6 @@ public:
 			EXTREMA_P8_Y,
 			EXTREMA_P8_X });
 	}
-	ExtremaFeatures (const std::vector<Pixel2> & roi_pixels);
 	std::tuple<int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int> get_values();
 	static void reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 

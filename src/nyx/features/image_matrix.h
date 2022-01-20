@@ -178,7 +178,6 @@ public:
 		original_aabb(labels_raw_pixels), 
 		_pix_plane(original_aabb.get_width(), original_aabb.get_height())
 	{
-
 		// Dimensions
 		width = original_aabb.get_width();
 		height = original_aabb.get_height();

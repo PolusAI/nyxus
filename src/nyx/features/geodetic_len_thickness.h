@@ -5,7 +5,7 @@
 #include <tuple>
 #include "pixel.h"
 
-/// @brief The geodetic lengths and thickness are approximated by a rectangle with the same areaand perimeter: area = geodeticlength * thickness; perimeter = 2 * (geodetic_length + thickness).
+/// @brief The geodetic lengths and thickness are approximated by a rectangle with the same area and perimeter: area = geodeticlength * thickness; perimeter = 2 * (geodetic_length + thickness).
 class GeodeticLength_and_Thickness_features
 {
 public:

@@ -3,9 +3,10 @@
 #include <omp.h>
 #include "gabor.h"
 
-
-Gabor_features::Gabor_features (const ImageMatrix& Im0)
+void GaborFeature::calculate (LR& r)
 {
+    const ImageMatrix& Im0 = r.aux_image_matrix;
+
     double GRAYthr;
     /* parameters set up in complience with the paper */
     double gamma = 0.5, sig2lam = 0.56;
@@ -50,10 +51,10 @@ Gabor_features::Gabor_features (const ImageMatrix& Im0)
             cnt++;
     originalScore = cnt;
 
-    if (fvals.size() != Gabor_features::num_features)
-        fvals.resize (Gabor_features::num_features, 0.0);
+    if (fvals.size() != GaborFeature::num_features)
+        fvals.resize (GaborFeature::num_features, 0.0);
 
-    for (ii = 0; ii < Gabor_features::num_features; ii++) 
+    for (ii = 0; ii < GaborFeature::num_features; ii++)
     {
         unsigned long afterGaborScore = 0;
         writeablePixels e2_pix_plane = e2img.WriteablePixels();
@@ -81,15 +82,11 @@ Gabor_features::Gabor_features (const ImageMatrix& Im0)
     }
 }
 
-void Gabor_features::get_feature_values (std::vector<double> & cusotmerFacingFvals)
+void GaborFeature::save_value(std::vector<std::vector<double>>& feature_vals)
 {
-    // Reserve enough space for the result
-    if (cusotmerFacingFvals.size() < Gabor_features::num_features)
-        cusotmerFacingFvals.resize(Gabor_features::num_features);
-
-    // Store it
-    for (int i = 0; i < Gabor_features::num_features; i++)
-        cusotmerFacingFvals[i] = fvals[i];
+    feature_vals[GABOR].resize(fvals.size());
+    for (int i = 0; i < fvals.size(); i++)
+        feature_vals[GABOR][i] = fvals[i];
 }
 
 //  conv
@@ -101,7 +98,7 @@ void Gabor_features::get_feature_values (std::vector<double> & cusotmerFacingFva
 //    int na;		Column size of a 
 //    int mb;		Row size of b 
 //    int nb;		Column size of b 
-void Gabor_features::conv_ddd (
+void GaborFeature::conv_ddd (
     double* c, 
     double* a, 
     double* b, 
@@ -141,7 +138,7 @@ void Gabor_features::conv_ddd (
     	}
 }
 
-void Gabor_features::conv_dud(
+void GaborFeature::conv_dud(
     double* C,  // must be zeroed before call
     const unsigned int* A,
     double* B,
@@ -200,7 +197,7 @@ void Gabor_features::conv_dud(
     }
 }
 
-void Gabor_features::conv_parallel (
+void GaborFeature::conv_parallel (
     double* c,
     double* a,
     double* b,
@@ -308,7 +305,7 @@ void Gabor_features::conv_parallel (
     }
 }
 
-void Gabor_features::conv_parallel_dud(
+void GaborFeature::conv_parallel_dud(
     double* c,
     const unsigned int* a,
     double* b,
@@ -417,7 +414,7 @@ void Gabor_features::conv_parallel_dud(
 }
 
 // Creates a normalized Gabor filter
-void Gabor_features::Gabor (double* Gex, double f0, double sig2lam, double gamma, double theta, double fi, int n)
+void GaborFeature::Gabor (double* Gex, double f0, double sig2lam, double gamma, double theta, double fi, int n)
 {
     //double* tx, * ty;
     double lambda = 2 * M_PI / f0;
@@ -480,7 +477,7 @@ void Gabor_features::Gabor (double* Gex, double f0, double sig2lam, double gamma
 }
 
 // Computes Gabor energy
-void Gabor_features::GaborEnergy (
+void GaborFeature::GaborEnergy (
     const ImageMatrix& Im, 
     PixIntens* /* double* */ out, 
     double* auxC, 
@@ -540,7 +537,7 @@ void Gabor_features::GaborEnergy (
     }
 }
 
-void Gabor_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void GaborFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
     for (auto i = start; i < end; i++)
     {
@@ -553,11 +550,14 @@ void Gabor_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabe
         // Skip calculation in case of bad data
         if ((int)r.fvals[MIN][0] == (int)r.fvals[MAX][0])
         {
-            r.fvals[GABOR].resize(Gabor_features::num_features, 0.0);
+            r.fvals[GABOR].resize(GaborFeature::num_features, 0.0);
             continue;
         }
 
-        Gabor_features gf (r.aux_image_matrix);	
-        gf.get_feature_values (r.fvals[GABOR]);
+        GaborFeature gf;
+        gf.calculate (r);
+        gf.save_value (r.fvals);
     }
 }
+
+

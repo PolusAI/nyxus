@@ -13,6 +13,7 @@
 #include "environment.h"
 #include "globals.h"
 #include "features/chords.h"
+#include "features/convex_hull.h"
 #include "features/ellipse_fitting.h"
 #include "features/euler_number.h"
 #include "features/circle.h"
@@ -31,7 +32,7 @@
 #include "features/image_moments.h"
 #include "features/moments.h"
 #include "features/neighbors.h"
-#include "features/particle_metrics.h"
+#include "features/caliper.h"
 #include "features/roi_radius.h"
 #include "features/zernike.h"
 #include "helpers/timing.h"
@@ -39,23 +40,24 @@
 
 namespace Nyxus
 {
-	// This function should be called once after a file pair processing is finished.
-	void reduce_trivial_rois (std::vector<int> & PendingRoisLabels)
+	// Calculating features in parallel with automatic feature order
+	void reduce_trivial_rois (std::vector<int>& PendingRoisLabels)
+	{
+		int nrf = theFeatureMgr.get_num_requested_features();
+		for (int i = 0; i < nrf; i++)
+		{
+			auto feature = theFeatureMgr.get_feature_method(i);
+			feature->parallel_process (PendingRoisLabels, roiData, theEnvironment.n_reduce_threads);
+		}
+	}
+
+	// Calculating features in parallel with hard-coded feature order. This function should be called once after a file pair processing is finished.
+	void reduce_trivial_rois_manual (std::vector<int> & PendingRoisLabels)
 	{
 		//==== 	Parallel execution parameters 
 		int n_reduce_threads = theEnvironment.n_reduce_threads;		
 		size_t jobSize = PendingRoisLabels.size(),
 			workPerThread = jobSize / n_reduce_threads;
-		/*
-		-------------------------
-		2 do:
-		1) route each reduce() via PendingRois
-		2) explore features inter-dependencies and put them in order
-		3) use preallocated helpers, do not allocate them in features
-		4) move NEIGHBORS reduction to the very end of the reduce sweeps
-		5) CONST std::vector<int> & PendingRoisLabels
-		-------------------------
-		*/
 
 		//==== Pixel intensity stats. Calculate these basic features unconditionally
 		{
@@ -64,21 +66,21 @@ namespace Nyxus
 		}
 
 		//==== Fitting an ellipse
-		if (EllipseFitting_features::required(theFeatureSet))
+		if (EllipseFittingFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Ellipticity/E/#4aaaea", "\t=");
-			runParallel(EllipseFitting_features::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(EllipseFittingFeature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Contour-related ROI perimeter, equivalent circle diameter
-		if (Contour::required(theFeatureSet))
+		if (ContourFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Contour/C/#4aaaea", "\t=");
 			runParallel(parallelReduceContour, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Convex hull related solidity, circularity
-		if (ConvexHull::required(theFeatureSet))
+		if (ConvexHullFeature::required(theFeatureSet))
 		{
 			// CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY // depends on PERIMETER
 			STOPWATCH("Morphology/Hull/H/#4aaaea", "\t=");
@@ -86,45 +88,47 @@ namespace Nyxus
 		}
 
 		//==== Extrema 
-		if (ExtremaFeatures::required(theFeatureSet))
+		if (ExtremaFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Extrema/Ex/#4aaaea", "\t=");
-			runParallel(ExtremaFeatures::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(ExtremaFeature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Euler 
-		if (EulerNumber_feature::required(theFeatureSet))
+		if (EulerNumberFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Euler/Eu/#4aaaea", "\t=");
-			runParallel(EulerNumber_feature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(EulerNumberFeature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
+#if 0 // Temporarily disabled 
 		//==== Feret diameters and angles
-		if (ParticleMetrics_features::feret_required(theFeatureSet))
+		if (CaliperFeretFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Feret/F/#4aaaea", "\t=");
-			runParallel(ParticleMetrics_features::reduce_feret, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(CaliperFeretFeature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Martin diameters
-		if (ParticleMetrics_features::martin_required(theFeatureSet))
+		if (CaliperMartinFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Martin/M/#4aaaea", "\t=");
-			runParallel(ParticleMetrics_features::reduce_martin, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(CaliperMartinFeature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
+#endif
 
 		//==== Nassenstein diameters
-		if (ParticleMetrics_features::nassenstein_required(theFeatureSet))
+		if (CaliperNassensteinFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Nassenstein/N/#4aaaea", "\t=");
-			runParallel(ParticleMetrics_features::reduce_nassenstein, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(CaliperNassensteinFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Chords
-		if (Chords_feature::required(theFeatureSet))
+		if (ChordsFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Chords/Ch/#4aaaea", "\t=");
-			runParallel(Chords_feature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(ChordsFeature::process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Hexagonality and polygonality
@@ -212,10 +216,10 @@ namespace Nyxus
 		}
 
 		//==== Gabor features
-		if (Gabor_features::required(theFeatureSet))
+		if (GaborFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Gabor/Gabor/Gabor/#f58231", "\t=");
-			runParallel(Gabor_features::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(GaborFeature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Radial distribution / Zernike 2D 

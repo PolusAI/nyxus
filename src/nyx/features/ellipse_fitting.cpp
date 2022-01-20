@@ -1,18 +1,25 @@
-#define _USE_MATH_DEFINES	// for M_PI, etc
+#define _USE_MATH_DEFINES	
 #include <cmath>
 #include "ellipse_fitting.h"
 
 // Inspired by https://www.mathworks.com/matlabcentral/mlc-downloads/downloads/submissions/19028/versions/1/previews/regiondata.m/index.html
 
-EllipseFitting_features::EllipseFitting_features (const std::vector<Pixel2>& roi_pixels, double centroid_x, double centroid_y, double area)
+EllipseFittingFeature::EllipseFittingFeature() {}
+
+//EllipseFittingFeature::EllipseFittingFeature(const std::vector<Pixel2>& roi_pixels, double centroid_x, double centroid_y, double area)
+void EllipseFittingFeature::calculate (LR& r)
 {
 	// Idea: calculate normalized second central moments for the region. 1/12 is the normalized second central moment of a pixel with unit length.
+
+	double centroid_x = r.fvals[CENTROID_X][0],
+		centroid_y = r.fvals[CENTROID_Y][0], 
+		area = r.fvals[AREA_PIXELS_COUNT][0];
 
 	double xSquaredTmp = 0, 
 		ySquaredTmp = 0, 
 		xySquaredTmp = 0;
 
-	for (auto& pix : roi_pixels)
+	for (const auto& pix : r.raw_pixels)
 	{
 		auto diffX = centroid_x - pix.x,
 			diffY = centroid_y - pix.y;
@@ -21,7 +28,7 @@ EllipseFitting_features::EllipseFitting_features (const std::vector<Pixel2>& roi
 		xySquaredTmp += diffX * diffY;
 	}
 
-	double n = (double) roi_pixels.size();
+	double n = (double) r.raw_pixels.size();
 	double uxx = xSquaredTmp / n + 1. / 12.;
 	double uyy = ySquaredTmp / n + 1. / 12.;
 	double uxy = xySquaredTmp / n;
@@ -52,32 +59,32 @@ EllipseFitting_features::EllipseFitting_features (const std::vector<Pixel2>& roi
 		orientation = (180.0 / M_PI) * atan(num / den);
 }
 
-double EllipseFitting_features::get_major_axis_length()
+double EllipseFittingFeature::get_major_axis_length()
 {
 	return majorAxisLength;
 }
 
-double EllipseFitting_features::get_minor_axis_length()
+double EllipseFittingFeature::get_minor_axis_length()
 {
 	return minorAxisLength;
 }
 
-double EllipseFitting_features::get_eccentricity()
+double EllipseFittingFeature::get_eccentricity()
 {
 	return eccentricity;
 }
 
-double EllipseFitting_features::get_orientation()
+double EllipseFittingFeature::get_orientation()
 {
 	return orientation;
 }
 
-double EllipseFitting_features::get_roundness()
+double EllipseFittingFeature::get_roundness()
 {
 	return roundness;
 }
 
-void EllipseFitting_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void EllipseFittingFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -85,7 +92,9 @@ void EllipseFitting_features::reduce (size_t start, size_t end, std::vector<int>
 		LR& r = (*ptrLabelData)[lab];
 		if (r.has_bad_data())
 			continue;
-		EllipseFitting_features f (r.raw_pixels, r.fvals[CENTROID_X][0], r.fvals[CENTROID_Y][0], r.fvals[AREA_PIXELS_COUNT][0]);
+		//EllipseFittingFeature f (r.raw_pixels, r.fvals[CENTROID_X][0], r.fvals[CENTROID_Y][0], r.fvals[AREA_PIXELS_COUNT][0]);
+		EllipseFittingFeature f;
+		f.calculate(r);
 		r.fvals[MAJOR_AXIS_LENGTH][0] = f.get_major_axis_length();
 		r.fvals[MINOR_AXIS_LENGTH][0] = f.get_minor_axis_length();
 		r.fvals[ECCENTRICITY][0] = f.get_eccentricity();
@@ -93,3 +102,9 @@ void EllipseFitting_features::reduce (size_t start, size_t end, std::vector<int>
 		r.fvals[ROUNDNESS][0] = f.get_roundness();
 	}
 }
+
+void EllipseFittingFeature::osized_calculate (LR& r, ImageLoader& imloader)
+{}
+
+void EllipseFittingFeature::save_value (std::vector<std::vector<double>>& feature_vals)
+{}

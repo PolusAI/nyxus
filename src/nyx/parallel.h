@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <thread>
 #include <future>
+#include "roi_cache.h"
 
 namespace Nyxus
 {

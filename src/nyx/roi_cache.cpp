@@ -4,9 +4,11 @@
 LR::LR()
 {}
 
-bool LR::nontrivial_roi() 
+bool LR::nontrivial_roi (size_t memory_limit) 
 { 
-	return aux_area > 1e6; 
+	size_t footprint = get_ram_footprint_estimate();
+	bool nonTriv = footprint >= memory_limit;
+	return nonTriv; 
 }
 
 size_t LR::get_ram_footprint_estimate()
@@ -41,7 +43,7 @@ void LR::recycle_aux_obj (RoiDataCacheItem itm)
 		contour.clear();
 		break;
 	case CONVEX_HULL:
-		convHull.clear();
+		convHull_CH.clear();
 		break;
 	case IMAGE_MATRIX:
 		aux_image_matrix.clear();

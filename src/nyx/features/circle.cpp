@@ -283,13 +283,13 @@ void EnclosingInscribingCircumscribingCircle_features::reduce(size_t start, size
             continue;
 
         // Skip if the contour, convex hull, and neighbors are unavailable, otherwise the related features will be == NAN. Those feature will be equal to the default unassigned value.
-        if (r.contour.contour_pixels.size() == 0 || r.convHull.CH.size() == 0 || r.fvals[NUM_NEIGHBORS][0] == 0)
+        if (r.contour.size() == 0 || r.convHull_CH.size() == 0 || r.fvals[NUM_NEIGHBORS][0] == 0)
             continue;
 
         EnclosingInscribingCircumscribingCircle_features cir;
-        r.fvals[DIAMETER_MIN_ENCLOSING_CIRCLE][0] = cir.calculate_min_enclosing_circle_diam (r.contour.contour_pixels);
+        r.fvals[DIAMETER_MIN_ENCLOSING_CIRCLE][0] = cir.calculate_min_enclosing_circle_diam (r.contour);
 
-        auto [diamIns, diamCir] = cir.calculate_inscribing_circumscribing_circle (r.contour.contour_pixels, r.fvals[CENTROID_X][0], r.fvals[CENTROID_Y][0]);
+        auto [diamIns, diamCir] = cir.calculate_inscribing_circumscribing_circle (r.contour, r.fvals[CENTROID_X][0], r.fvals[CENTROID_Y][0]);
         r.fvals[DIAMETER_INSCRIBING_CIRCLE][0] = diamIns;
         r.fvals[DIAMETER_CIRCUMSCRIBING_CIRCLE][0] = diamCir;
     }

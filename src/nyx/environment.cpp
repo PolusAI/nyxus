@@ -290,9 +290,6 @@ bool Environment::check_file_pattern(const std::string& pat)
     return true;
 }
 
-// Examples:
-// C:\WORK\AXLE\data\tissuenet\tissuenet-test-intensity C:\WORK\AXLE\data\tissuenet\tissuenet-test-labels C:\WORK\AXLE\data\output  
-// "--features=kurtosis", "--filePattern=.*", "--csvfile=singlecsv", "--intDir=C:/WORK/AXLE/data/tissuenet/tissuenet-test-intensity", "--segDir=C:/WORK/AXLE/data/mesmer-untrained/labels", "--outDir=C:/WORK/AXLE/polus-feature-extraction-plugin/outputdir", "--embeddedpixelsize=true"
 int Environment::parse_cmdline(int argc, char** argv)
 {
     // Program being run without any flags and options?
@@ -550,8 +547,6 @@ int Environment::parse_cmdline(int argc, char** argv)
                 P01, P10, P25, P75, P90, P99,
                 INTERQUARTILE_RANGE,
                 ROBUST_MEAN_ABSOLUTE_DEVIATION,
-                WEIGHTED_CENTROID_Y,
-                WEIGHTED_CENTROID_X,
                 MASS_DISPLACEMENT
             };
             theFeatureSet.enableFeatures(F);
@@ -564,6 +559,8 @@ int Environment::parse_cmdline(int argc, char** argv)
                 AREA_UM2,
                 CENTROID_X,
                 CENTROID_Y,
+                WEIGHTED_CENTROID_Y,
+                WEIGHTED_CENTROID_X,
                 COMPACTNESS,
                 BBOX_YMIN,
                 BBOX_XMIN,
