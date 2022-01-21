@@ -78,10 +78,11 @@ void FeatureManager::apply_user_selection()
 
 void FeatureManager::clear()
 {
+	for (auto f : full_featureset)
+		delete f;
 	full_featureset.clear();
 
-	for (; user_requested_features.size(); )
-		user_requested_features.pop_back();
+	user_requested_features.clear();
 }
 
 bool FeatureManager::check_11_correspondence()
