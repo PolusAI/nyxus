@@ -435,11 +435,13 @@ __Table 1 - Command line parameters__
 | Parameter | Description | I/O | Type |
 |------|-------------|------|----|
 --intDir|Intensity image collection|Input|collection|
---pixelDistance|Pixel distance to calculate the neighbors touching cells|Input|integer|
---filePattern|To match intensity and labeled/segmented images|Input|string
 --segDir|Labeled image collection|Input|collection
+--intSegMapDir | Data collection of the ad-hoc intensity-to-mask file mapping | Input | Collection
+--intSegMapFile | Name of the text file containing an ad-hoc intensity-to-mask file mapping. The files are assumed to reside in corresponding intensity and label collections | Input | string
 --features|Select intensity and shape features required|Input|array
+--filePattern|To match intensity and labeled/segmented images|Input|string
 --csvfile|Save csv file as one csv file for all images or separate csv file for each image|Input|enum
+--pixelDistance|Pixel distance to calculate the neighbors touching cells|Input|integer|
 --embeddedpixelsize|Consider the unit embedded in metadata, if present|Input|boolean
 --unitLength|Enter the metric for unit conversion|Input|string
 --pixelsPerunit|Enter the number of pixels per unit of the metric|Input|number
