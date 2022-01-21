@@ -160,15 +160,15 @@ namespace Nyxus
 
 		// Phase 1: gather ROI metrics
 		std::cout << "Gathering ROI metrics\n";
-		gatherRoisMetrics (label_fpath, intens_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
+		gatherRoisMetrics (intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
 
 		// Phase 2: process trivial-sized ROIs
 		std::cout << "Processing trivial ROIs\n";
-		processTrivialRois (label_fpath, intens_fpath, num_FL_threads, theEnvironment.get_ram_limit());
+		processTrivialRois (intens_fpath, label_fpath, num_FL_threads, theEnvironment.get_ram_limit());
 
 		// Phase 3: process nontrivial (oversized) ROIs, if any
 		std::cout << "Processing oversized ROIs\n";
-		processNontrivialRois (label_fpath, intens_fpath, num_FL_threads, theEnvironment.get_ram_limit());
+		processNontrivialRois (intens_fpath, label_fpath, num_FL_threads, theEnvironment.get_ram_limit());
 
 		return true;
 	}

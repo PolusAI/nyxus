@@ -12,6 +12,7 @@
 #include <sstream>
 #include "environment.h"
 #include "globals.h"
+#include "features/basic_morphology.h"
 #include "features/chords.h"
 #include "features/convex_hull.h"
 #include "features/ellipse_fitting.h"
@@ -63,6 +64,13 @@ namespace Nyxus
 		{
 			STOPWATCH("Intensity/Intensity/Int/#FFFF00", "\t=");
 			runParallel (parallelReduceIntensityStats, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+		}
+
+		//==== Fitting an ellipse
+		if (BasicMorphologyFeatures::required(theFeatureSet))
+		{
+			STOPWATCH("Morphology/Basic/E/#4aaaea", "\t=");
+			runParallel(BasicMorphologyFeatures::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Fitting an ellipse

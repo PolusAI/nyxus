@@ -1,4 +1,5 @@
 #include "feature_mgr.h"
+#include "features/basic_morphology.h"
 #include "features/caliper.h"
 #include "features/chords.h"
 #include "features/convex_hull.h"
@@ -28,6 +29,7 @@
 FeatureManager::FeatureManager()
 {
 	register_feature(new PixelIntensityFeatures());
+	register_feature(new BasicMorphologyFeatures());
 	register_feature(new ContourFeature());
 	register_feature(new ConvexHullFeature());
 	register_feature(new EllipseFittingFeature());
