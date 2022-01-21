@@ -18,34 +18,28 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 #==== Pybind11
 add_subdirectory(lib/pybind11)
 
+include_directories(
+	lib/pybind11/include/
+)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake-modules")
+
 #==== Include directories. Note: libtiff (required by FastLoader) is 
 #	the only dependency needing manual preparation - unzip, cmake-install 
 #	it, and put its headers in lib/libtiff/include, and 
 #	its library - in lib/libtiff/lib
-include_directories(
-	lib/pybind11/include/
-	lib/fastloader/
-	lib/hedgehog/
-)
+find_package(FastLoader)
 
-# Search for libtiff. If it's found then great. If not then we expect 
-# manual preparation. unzip, cmake-install it, and put its headers in 
-# lib/libtiff/include, and its library - in lib/libtiff/lib
-find_package(TIFF)
-
-if(TIFF_FOUND)
-	include_directories(${TIFF_INCLUDE_DIR})
+if(FastLoader_FOUND)
+	list(APPEND Nyxus_LIBRARIES ${FastLoader_LIBRARIES})
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FastLoader_CXX_FLAGS}")
+	include_directories(${FastLoader_INCLUDE_DIR})
 else()
-	include_directories(
-		lib/libtiff
-		lib/libtiff/include
-	)
+	message(FATAL_ERROR "Unable to find FastLoader which is required for Nyxus.")
 endif()
 
-
 #==== Source files
-pybind11_add_module(nyx_backend 
-	src/nyx/bindings_py.cpp 
+set(SOURCE
 	src/nyx/features/caliper.cpp
 	src/nyx/features/caliper_nassenstein.cpp
 	src/nyx/features/chords.cpp
@@ -82,7 +76,6 @@ pybind11_add_module(nyx_backend
 	src/nyx/features/zernike.cpp
 	src/nyx/helpers/system_resource.cpp
 	src/nyx/helpers/timing.cpp
-	src/nyx/python_interface/bindings_py.cpp
 	src/nyx/common_stats.cpp
 	src/nyx/dirs_and_files.cpp
 	src/nyx/environment.cpp
@@ -104,20 +97,33 @@ pybind11_add_module(nyx_backend
 	src/nyx/reduce_trivial_rois.cpp
 	src/nyx/roi_cache.cpp
 	src/nyx/scan_fastloader_way.cpp
-	)
+)
+
+# CLI
+if(BUILD_CLI)
+	add_executable(nyxus ${SOURCE} src/nyx/main.cpp)
+endif()
+
+# Python bindings.
+pybind11_add_module(nyx_backend 
+	${SOURCE}
+	src/nyx/python_interface/bindings_py.cpp
+)
 
 # EXAMPLE_VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
 target_compile_definitions(nyx_backend PRIVATE VERSION_INFO=${EXAMPLE_VERSION_INFO})
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	target_link_libraries(nyx_backend PRIVATE stdc++fs)
+	
+	if(BUILD_CLI)
+		target_link_libraries(nyxus PRIVATE stdc++fs)
+	endif()
 endif()
 
-#==== Separate link instruction for libtiff. See libtiff's deployment instrunction above
-if(TIFF_FOUND)
-	target_link_libraries(nyx_backend PRIVATE ${TIFF_LIBRARIES})
-else()
-	find_library(LIBTIFF_LIBRARY libTiff_x64 lib/libtiff/lib)
-	target_link_libraries(nyx_backend PRIVATE ${LIBTIFF_LIBRARY})
+target_link_libraries(nyx_backend PRIVATE ${Nyxus_LIBRARIES})
+
+if(BUILD_CLI)
+	target_link_libraries(nyxus PRIVATE ${Nyxus_LIBRARIES})
 endif()
 

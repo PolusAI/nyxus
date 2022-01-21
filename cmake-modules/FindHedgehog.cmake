@@ -27,6 +27,7 @@ endif (MSVC)
 SET(Hedgehog_FOUND ON)
 
 FIND_PATH(Hedgehog_INCLUDE_DIR hedgehog.h
+        lib/hedgehog/hedgehog
         /usr/include/hedgehog
         /usr/local/include/hedgehog
         )
