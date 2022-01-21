@@ -17,7 +17,7 @@ namespace Nyxus
 {
 
 	// Macro to make some file i/o calls platform-independent
-#ifdef __unix
+#ifndef _WIN32
 #define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),(mode)))==NULL
 #endif
 

@@ -16,7 +16,7 @@
 #include <fast_loader/specialised_tile_loader/grayscale_tiff_tile_loader.h>
 //#include <map>
 
-#ifndef __unix
+#ifdef _WIN32
 #define NOMINMAX	// Prevent converting std::min(), max(), ... into macros
 #include<windows.h>
 #endif

@@ -1,5 +1,5 @@
+cmake_minimum_required(VERSION 3.4)
 project(SensemakerPythonLibrary)
-cmake_minimum_required(VERSION 3.4...3.18)
 
 #==== Compiler Options
 set(CMAKE_CXX_STANDARD 17)
@@ -22,6 +22,8 @@ include_directories(
 	lib/pybind11/include/
 )
 
+find_package(OpenMP COMPONENTS C CXX)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake-modules")
 
 #==== Include directories. Note: libtiff (required by FastLoader) is 
@@ -40,6 +42,7 @@ endif()
 
 #==== Source files
 set(SOURCE
+	src/nyx/features/basic_morphology.cpp
 	src/nyx/features/caliper.cpp
 	src/nyx/features/caliper_nassenstein.cpp
 	src/nyx/features/chords.cpp

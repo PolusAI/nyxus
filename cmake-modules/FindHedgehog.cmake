@@ -26,10 +26,10 @@ endif (MSVC)
 # Try to found Hedgehog
 SET(Hedgehog_FOUND ON)
 
-FIND_PATH(Hedgehog_INCLUDE_DIR hedgehog.h
-        lib/hedgehog/hedgehog
-        /usr/include/hedgehog
-        /usr/local/include/hedgehog
+FIND_PATH(Hedgehog_INCLUDE_DIR hedgehog/hedgehog.h
+        lib/hedgehog
+        /usr/include
+        /usr/local/include
         )
 
 

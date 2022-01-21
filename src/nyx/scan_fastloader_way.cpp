@@ -13,7 +13,7 @@
 #include "helpers/timing.h"
 
 // Sanity
-#ifndef __unix
+#ifdef _WIN32
 #include<windows.h>
 #endif
 
