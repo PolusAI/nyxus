@@ -77,7 +77,6 @@ set(SOURCE
 	src/nyx/features/rotation.cpp
 	src/nyx/features/specfunc.cpp
 	src/nyx/features/zernike.cpp
-	src/nyx/helpers/system_resource.cpp
 	src/nyx/helpers/timing.cpp
 	src/nyx/common_stats.cpp
 	src/nyx/dirs_and_files.cpp
@@ -108,23 +107,23 @@ if(BUILD_CLI)
 endif()
 
 # Python bindings.
-pybind11_add_module(nyx_backend 
+pybind11_add_module(backend 
 	${SOURCE}
-	src/nyx/python_interface/bindings_py.cpp
+	src/nyx/python/new_bindings_py.cpp
 )
 
 # EXAMPLE_VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
-target_compile_definitions(nyx_backend PRIVATE VERSION_INFO=${EXAMPLE_VERSION_INFO})
+target_compile_definitions(backend PRIVATE VERSION_INFO=${EXAMPLE_VERSION_INFO})
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	target_link_libraries(nyx_backend PRIVATE stdc++fs)
+	target_link_libraries(backend PRIVATE stdc++fs)
 	
 	if(BUILD_CLI)
 		target_link_libraries(nyxus PRIVATE stdc++fs)
 	endif()
 endif()
 
-target_link_libraries(nyx_backend PRIVATE ${Nyxus_LIBRARIES})
+target_link_libraries(backend PRIVATE ${Nyxus_LIBRARIES})
 
 if(BUILD_CLI)
 	target_link_libraries(nyxus PRIVATE ${Nyxus_LIBRARIES})

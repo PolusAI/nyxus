@@ -96,10 +96,11 @@ public:
 
 	int get_pixel_distance();
 	size_t get_ram_limit();
+	bool check_file_pattern (const std::string & pat);
+	void process_feature_list();
 
 private:
 
-	bool check_file_pattern (const std::string & pat);
 
 	std::vector<std::tuple<std::string, std::string>> memory;
 	void show_memory(const std::string& head, const std::string& tail);

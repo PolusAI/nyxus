@@ -226,7 +226,7 @@ namespace Nyxus
 			if (save2csv)
 				ok = save_features_2_csv (ifp, lfp, csvOutputDir);
 			else
-				ok = save_features_2_buffer(calcResultBuf);
+				ok = save_features_2_buffer(headerBuf, calcResultBuf, stringColBuf);
 			if (ok == false)
 			{
 				std::cout << "save_features_2_csv() returned an error code" << std::endl;

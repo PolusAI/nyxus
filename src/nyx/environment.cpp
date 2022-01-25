@@ -4,17 +4,18 @@
 #include <sstream>
 #include <tuple>
 #include <vector>
+#include <exception>
 #include "environment.h"
 #include "featureset.h"
 #include "helpers/helpers.h"
-#include "globals.h"
+#include "helpers/system_resource.h"
 #include "version.h"
 
 namespace Nyxus
 {
-    bool directoryExists(const std::string&);
+    bool directoryExists(const std::string &);
 
-    bool parse_as_float(std::string raw, float& result)
+    bool parse_as_float(std::string raw, float &result)
     {
         if (sscanf(raw.c_str(), "%f", &result) != 1)
             return false;
@@ -22,7 +23,7 @@ namespace Nyxus
             return true;
     }
 
-    bool parse_delimited_string_list_to_floats(const std::string& rawString, std::vector<float>& result)
+    bool parse_delimited_string_list_to_floats(const std::string &rawString, std::vector<float> &result)
     {
         // It's legal to not have rotation angles specified
         if (rawString.length() == 0)
@@ -32,7 +33,7 @@ namespace Nyxus
         std::vector<std::string> strings;
         parse_delimited_string(rawString, ",", strings);
         result.clear();
-        for (auto& s : strings)
+        for (auto &s : strings)
         {
             float v;
             if (!parse_as_float(s, v))
@@ -46,15 +47,15 @@ namespace Nyxus
         return retval;
     }
 
-    std::string toupper(const std::string& s)
+    std::string toupper(const std::string &s)
     {
         auto s_uppr = s;
-        for (auto& c : s_uppr)
+        for (auto &c : s_uppr)
             c = ::toupper(c);
         return s_uppr;
     }
 
-    bool parse_delimited_string_list_to_features(const std::string& rawString, std::vector<std::string>& result)
+    bool parse_delimited_string_list_to_features(const std::string &rawString, std::vector<std::string> &result)
     {
         result.clear();
 
@@ -70,7 +71,7 @@ namespace Nyxus
         parse_delimited_string(rawString, ",", strings);
 
         // Check individual features
-        for (const auto& s : strings)
+        for (const auto &s : strings)
         {
             auto s_uppr = toupper(s);
             if (s_uppr == FEA_NICK_ALL ||
@@ -159,27 +160,26 @@ void Environment::show_help()
         << "\t<st> - number of pixel scanner threads within a TIFF tile [default = 1] \n"
         << "\t<rt> - number of feature reduction threads [default = 1] \n"
         << "\t<al> - comma separated rotation angles [default = 0,45,90,135] \n"
-        << "\t<verbo> - levels of verbosity 0 (silence), 2 (timing), 4 (roi diagnostics), 8 (granular diagnostics) [default = 0] \n"
-        ;
+        << "\t<verbo> - levels of verbosity 0 (silence), 2 (timing), 4 (roi diagnostics), 8 (granular diagnostics) [default = 0] \n";
 }
 
-void Environment::show_summary(const std::string& head, const std::string& tail)
+void Environment::show_summary(const std::string &head, const std::string &tail)
 {
     std::cout << head;
     std::cout << "Using " << get_ram_limit() << " bytes of memory\n\n";
     std::cout << "Work plan:\n"
-        << "\tlabels\t" << labels_dir << "\n"
-        << "\tintensities\t" << intensity_dir << "\n"
-        << "\tintensities-to-segmentation map directory\t" << intSegMapDir<< "\n"
-        << "\tintensities-to-segmentation map file\t" << intSegMapFile << "\n"
-        << "\toutput\t" << output_dir << "\n"
-        << "\tfile pattern\t" << file_pattern << "\n"
-        << "\tembedded pixel size\t" << embedded_pixel_size << "\n"
-        << "\toutput type\t" << rawOutpType << "\n"
-        << "\t# of image loader threads\t" << n_loader_threads << "\n"
-        << "\t# of pixel scanner threads\t" << n_pixel_scan_threads << "\n"
-        << "\t# of post-processing threads\t" << n_reduce_threads << "\n"
-        << "\tverbosity level\t" << verbosity_level << "\n";
+              << "\tlabels\t" << labels_dir << "\n"
+              << "\tintensities\t" << intensity_dir << "\n"
+              << "\tintensities-to-segmentation map directory\t" << intSegMapDir << "\n"
+              << "\tintensities-to-segmentation map file\t" << intSegMapFile << "\n"
+              << "\toutput\t" << output_dir << "\n"
+              << "\tfile pattern\t" << file_pattern << "\n"
+              << "\tembedded pixel size\t" << embedded_pixel_size << "\n"
+              << "\toutput type\t" << rawOutpType << "\n"
+              << "\t# of image loader threads\t" << n_loader_threads << "\n"
+              << "\t# of pixel scanner threads\t" << n_pixel_scan_threads << "\n"
+              << "\t# of post-processing threads\t" << n_reduce_threads << "\n"
+              << "\tverbosity level\t" << verbosity_level << "\n";
 
     // Features
     std::cout << "\tfeatures\t";
@@ -208,17 +208,17 @@ void Environment::show_summary(const std::string& head, const std::string& tail)
     std::cout << tail;
 }
 
-void Environment::show_memory(const std::string& head, const std::string& tail)
+void Environment::show_memory(const std::string &head, const std::string &tail)
 {
     std::cout << head << "Command line summary:\n";
-    for (auto& m : memory)
+    for (auto &m : memory)
     {
         std::cout << "\t" << std::get<0>(m) << " : " << std::get<1>(m) << "\n";
     }
     std::cout << tail;
 }
 
-bool Environment::find_string_argument(std::vector<std::string>::iterator& i, const char* arg, std::string& arg_value)
+bool Environment::find_string_argument(std::vector<std::string>::iterator &i, const char *arg, std::string &arg_value)
 {
     std::string actualArgName = *i;
 
@@ -227,7 +227,7 @@ bool Environment::find_string_argument(std::vector<std::string>::iterator& i, co
     if (actualArgName == a)
     {
         arg_value = *++i;
-        memory.push_back({ a, arg_value });
+        memory.push_back({a, arg_value});
         return true;
     }
     else
@@ -238,7 +238,7 @@ bool Environment::find_string_argument(std::vector<std::string>::iterator& i, co
         if (pos != std::string::npos)
         {
             arg_value = actualArgName.substr(a.length());
-            memory.push_back({ a, arg_value });
+            memory.push_back({a, arg_value});
             return true;
         }
     }
@@ -247,7 +247,7 @@ bool Environment::find_string_argument(std::vector<std::string>::iterator& i, co
     return false;
 }
 
-bool Environment::find_int_argument(std::vector<std::string>::iterator& i, const char* arg, int& arg_value)
+bool Environment::find_int_argument(std::vector<std::string>::iterator &i, const char *arg, int &arg_value)
 {
     // Syntax #1
     std::string a = arg;
@@ -276,7 +276,7 @@ bool Environment::find_int_argument(std::vector<std::string>::iterator& i, const
     return false;
 }
 
-bool Environment::check_file_pattern(const std::string& pat)
+bool Environment::check_file_pattern(const std::string &pat)
 {
     try
     {
@@ -290,14 +290,234 @@ bool Environment::check_file_pattern(const std::string& pat)
     return true;
 }
 
-int Environment::parse_cmdline(int argc, char** argv)
+void Environment::process_feature_list()
+{
+    theFeatureSet.enableAll(false); // First, disable all
+    for (auto &s : desiredFeatures) // Second, iterate uppercased feature names
+    {
+        // Check if features are requested via a group nickname
+        if (s == FEA_NICK_ALL)
+        {
+            theFeatureSet.enableAll();
+            break; // No need to bother of others
+        }
+        if (s == FEA_NICK_ALL_BUT_GABOR)
+        {
+            theFeatureSet.enableAll();
+            auto F = {GABOR};
+            theFeatureSet.disableFeatures(F);
+            break; // No need to bother of others
+        }
+        if (s == FEA_NICK_ALL_BUT_GLCM)
+        {
+            theFeatureSet.enableAll();
+            auto F = {
+                GLCM_ANGULAR2NDMOMENT,
+                GLCM_CONTRAST,
+                GLCM_CORRELATION,
+                GLCM_VARIANCE,
+                GLCM_INVERSEDIFFERENCEMOMENT,
+                GLCM_SUMAVERAGE,
+                GLCM_SUMVARIANCE,
+                GLCM_SUMENTROPY,
+                GLCM_ENTROPY,
+                GLCM_DIFFERENCEVARIANCE,
+                GLCM_DIFFERENCEENTROPY,
+                GLCM_INFOMEAS1,
+                GLCM_INFOMEAS2};
+            theFeatureSet.disableFeatures(F);
+            break; // No need to bother of others
+        }
+        if (s == FEA_NICK_ALL_INTENSITY)
+        {
+            auto F = {
+                INTEGRATED_INTENSITY,
+                MEAN,
+                MEDIAN,
+                MIN,
+                MAX,
+                RANGE,
+                STANDARD_DEVIATION,
+                STANDARD_ERROR,
+                UNIFORMITY,
+                SKEWNESS,
+                KURTOSIS,
+                HYPERSKEWNESS,
+                HYPERFLATNESS,
+                MEAN_ABSOLUTE_DEVIATION,
+                ENERGY,
+                ROOT_MEAN_SQUARED,
+                ENTROPY,
+                MODE,
+                UNIFORMITY,
+                P01, P10, P25, P75, P90, P99,
+                INTERQUARTILE_RANGE,
+                ROBUST_MEAN_ABSOLUTE_DEVIATION,
+                MASS_DISPLACEMENT};
+            theFeatureSet.enableFeatures(F);
+            continue;
+        }
+        if (s == FEA_NICK_ALL_MORPHOLOGY)
+        {
+            auto F = {
+                AREA_PIXELS_COUNT,
+                AREA_UM2,
+                CENTROID_X,
+                CENTROID_Y,
+                WEIGHTED_CENTROID_Y,
+                WEIGHTED_CENTROID_X,
+                COMPACTNESS,
+                BBOX_YMIN,
+                BBOX_XMIN,
+                BBOX_HEIGHT,
+                BBOX_WIDTH,
+                MAJOR_AXIS_LENGTH,
+                MINOR_AXIS_LENGTH,
+                ECCENTRICITY,
+                ORIENTATION,
+                NUM_NEIGHBORS,
+                EXTENT,
+                ASPECT_RATIO,
+                EQUIVALENT_DIAMETER,
+                CONVEX_HULL_AREA,
+                SOLIDITY,
+                PERIMETER,
+                EDGE_MEAN_INTENSITY,
+                EDGE_STDDEV_INTENSITY,
+                EDGE_MAX_INTENSITY,
+                EDGE_MIN_INTENSITY,
+                CIRCULARITY};
+            theFeatureSet.enableFeatures(F);
+            continue;
+        }
+        if (s == FEA_NICK_BASIC_MORPHOLOGY)
+        {
+            auto F = {
+                AREA_PIXELS_COUNT,
+                AREA_UM2,
+                CENTROID_X,
+                CENTROID_Y,
+                BBOX_YMIN,
+                BBOX_XMIN,
+                BBOX_HEIGHT,
+                BBOX_WIDTH};
+            theFeatureSet.enableFeatures(F);
+            continue;
+        }
+        if (s == FEA_NICK_ALL_GLCM)
+        {
+            auto F = {
+                GLCM_ANGULAR2NDMOMENT,
+                GLCM_CONTRAST,
+                GLCM_CORRELATION,
+                GLCM_VARIANCE,
+                GLCM_INVERSEDIFFERENCEMOMENT,
+                GLCM_SUMAVERAGE,
+                GLCM_SUMVARIANCE,
+                GLCM_SUMENTROPY,
+                GLCM_ENTROPY,
+                GLCM_DIFFERENCEVARIANCE,
+                GLCM_DIFFERENCEENTROPY,
+                GLCM_INFOMEAS1,
+                GLCM_INFOMEAS2};
+            theFeatureSet.enableFeatures(F);
+            continue;
+        }
+        if (s == FEA_NICK_ALL_GLRLM)
+        {
+            auto F = {
+                GLRLM_SRE,
+                GLRLM_LRE,
+                GLRLM_GLN,
+                GLRLM_GLNN,
+                GLRLM_RLN,
+                GLRLM_RLNN,
+                GLRLM_RP,
+                GLRLM_GLV,
+                GLRLM_RV,
+                GLRLM_RE,
+                GLRLM_LGLRE,
+                GLRLM_HGLRE,
+                GLRLM_SRLGLE,
+                GLRLM_SRHGLE,
+                GLRLM_LRLGLE,
+                GLRLM_LRHGLE};
+            theFeatureSet.enableFeatures(F);
+            continue;
+        }
+        if (s == FEA_NICK_ALL_GLSZM)
+        {
+            auto F = {
+                GLSZM_SAE,
+                GLSZM_LAE,
+                GLSZM_GLN,
+                GLSZM_GLNN,
+                GLSZM_SZN,
+                GLSZM_SZNN,
+                GLSZM_ZP,
+                GLSZM_GLV,
+                GLSZM_ZV,
+                GLSZM_ZE,
+                GLSZM_LGLZE,
+                GLSZM_HGLZE,
+                GLSZM_SALGLE,
+                GLSZM_SAHGLE,
+                GLSZM_LALGLE,
+                GLSZM_LAHGLE};
+            theFeatureSet.enableFeatures(F);
+            continue;
+        }
+        if (s == FEA_NICK_ALL_GLDM)
+        {
+            auto F = {
+                GLDM_SDE,
+                GLDM_LDE,
+                GLDM_GLN,
+                GLDM_DN,
+                GLDM_DNN,
+                GLDM_GLV,
+                GLDM_DV,
+                GLDM_DE,
+                GLDM_LGLE,
+                GLDM_HGLE,
+                GLDM_SDLGLE,
+                GLDM_SDHGLE,
+                GLDM_LDLGLE,
+                GLDM_LDHGLE};
+            theFeatureSet.enableFeatures(F);
+            continue;
+        }
+        if (s == FEA_NICK_ALL_NGTDM)
+        {
+            auto F = {
+                NGTDM_COARSENESS,
+                NGTDM_CONTRAST,
+                NGTDM_BUSYNESS,
+                NGTDM_COMPLEXITY,
+                NGTDM_STRENGTH};
+            theFeatureSet.enableFeatures(F);
+            continue;
+        }
+
+        // Process features individually
+        AvailableFeatures af;
+        if (!theFeatureSet.findFeatureByString(s, af))
+        {
+            throw std::invalid_argument("Error: '" + s + "' is not a valid feature name. \n");
+        }
+
+        theFeatureSet.enableFeature(af);
+    }
+}
+
+int Environment::parse_cmdline(int argc, char **argv)
 {
     // Program being run without any flags and options?
     if (argc == 1)
         return 1;
 
-    std::vector <std::string> args(argv + 1, argv + argc);
-    std::vector <std::string> unrecognized;
+    std::vector<std::string> args(argv + 1, argv + argc);
+    std::vector<std::string> unrecognized;
 
     //==== Gather raw data
     for (auto i = args.begin(); i != args.end(); ++i)
@@ -309,22 +529,21 @@ int Environment::parse_cmdline(int argc, char** argv)
         }
 
         if (!(
-            find_string_argument(i, INTDIR, intensity_dir) ||
-            find_string_argument(i, SEGDIR, labels_dir) ||
-            find_string_argument(i, OUTDIR, output_dir) ||
-            find_string_argument(i, INTSEGMAPDIR, intSegMapDir) ||
-            find_string_argument(i, INTSEGMAPFILE, intSegMapFile) ||
-            find_string_argument(i, FEATURES, features) ||
-            find_string_argument(i, XYRESOLUTION, rawXYRes) ||
-            find_string_argument(i, FILEPATTERN, file_pattern) ||
-            find_string_argument(i, OUTPUTTYPE, rawOutpType) ||
-            find_string_argument(i, EMBPIXSZ, embedded_pixel_size) ||
-            find_string_argument(i, LOADERTHREADS, loader_threads) ||
-            find_string_argument(i, PXLSCANTHREADS, pixel_scan_threads) ||
-            find_string_argument(i, REDUCETHREADS, reduce_threads) ||
-            find_string_argument(i, ROTATIONS, rotations) ||
-            find_string_argument(i, VERBOSITY, verbosity)
-            ))
+                find_string_argument(i, INTDIR, intensity_dir) ||
+                find_string_argument(i, SEGDIR, labels_dir) ||
+                find_string_argument(i, OUTDIR, output_dir) ||
+                find_string_argument(i, INTSEGMAPDIR, intSegMapDir) ||
+                find_string_argument(i, INTSEGMAPFILE, intSegMapFile) ||
+                find_string_argument(i, FEATURES, features) ||
+                find_string_argument(i, XYRESOLUTION, rawXYRes) ||
+                find_string_argument(i, FILEPATTERN, file_pattern) ||
+                find_string_argument(i, OUTPUTTYPE, rawOutpType) ||
+                find_string_argument(i, EMBPIXSZ, embedded_pixel_size) ||
+                find_string_argument(i, LOADERTHREADS, loader_threads) ||
+                find_string_argument(i, PXLSCANTHREADS, pixel_scan_threads) ||
+                find_string_argument(i, REDUCETHREADS, reduce_threads) ||
+                find_string_argument(i, ROTATIONS, rotations) ||
+                find_string_argument(i, VERBOSITY, verbosity)))
             unrecognized.push_back(*i);
     }
 
@@ -332,8 +551,9 @@ int Environment::parse_cmdline(int argc, char** argv)
 
     // --include the raw command line
     std::stringstream rawCL;
-    rawCL << "\nRaw command line:\n" << argv[0] << " ";
-    std::copy(args.begin(), args.end(), std::ostream_iterator<std::string>(rawCL, " "));  // vector of strings -> string
+    rawCL << "\nRaw command line:\n"
+          << argv[0] << " ";
+    std::copy(args.begin(), args.end(), std::ostream_iterator<std::string>(rawCL, " ")); // vector of strings -> string
     rawCL << "\n\n";
 
     // --display how the command line was parsed
@@ -343,7 +563,7 @@ int Environment::parse_cmdline(int argc, char** argv)
     if (unrecognized.size() > 0)
     {
         std::cout << "\nUnrecognized arguments:\n";
-        for (auto& u : unrecognized)
+        for (auto &u : unrecognized)
             std::cout << "\t" << u << "\n";
     }
     std::cout << "\n";
@@ -393,12 +613,11 @@ int Environment::parse_cmdline(int argc, char** argv)
     if (Nyxus::toupper(labels_dir) == Nyxus::toupper(intensity_dir))
     {
         singleROI = true;
-        std::cout <<
-            "+------------------------------+\n"
-            "|                              |\n"
-            "+  Activating single-ROI mode  +\n"
-            "|                              |\n"
-            "+------------------------------+\n";
+        std::cout << "+------------------------------+\n"
+                     "|                              |\n"
+                     "+  Activating single-ROI mode  +\n"
+                     "|                              |\n"
+                     "+------------------------------+\n";
     }
 
     //==== Output type
@@ -409,7 +628,6 @@ int Environment::parse_cmdline(int argc, char** argv)
         return 1;
     }
     separateCsv = rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV);
-
 
     //==== Check numeric parameters
     if (!loader_threads.empty())
@@ -453,7 +671,7 @@ int Environment::parse_cmdline(int argc, char** argv)
     }
 
     //==== Parse rotations
-    if (! Nyxus::parse_delimited_string_list_to_floats(rotations, rotAngles))
+    if (!Nyxus::parse_delimited_string_list_to_floats(rotations, rotAngles))
     {
         return 1;
     }
@@ -480,236 +698,20 @@ int Environment::parse_cmdline(int argc, char** argv)
     }
 
     // --Make sure all the feature names are legal and cast to uppercase (class FeatureSet understands uppercase names)
-    if (! Nyxus::parse_delimited_string_list_to_features(features, desiredFeatures))
+    if (!Nyxus::parse_delimited_string_list_to_features(features, desiredFeatures))
     {
         return 1;
     }
 
     // --Feature names are ok, set the flags
-    theFeatureSet.enableAll(false); // First, disable all
-    for (auto& s : desiredFeatures) // Second, iterate uppercased feature names
+    try
     {
-        // Check if features are requested via a group nickname
-        if (s == FEA_NICK_ALL)
-        {
-            theFeatureSet.enableAll();
-            break;  // No need to bother of others
-        }
-        if (s == FEA_NICK_ALL_BUT_GABOR)
-        {
-            theFeatureSet.enableAll();
-            auto F = { GABOR };
-            theFeatureSet.disableFeatures(F);
-            break;  // No need to bother of others
-        }
-        if (s == FEA_NICK_ALL_BUT_GLCM)
-        {
-            theFeatureSet.enableAll();
-            auto F = {
-                GLCM_ANGULAR2NDMOMENT,
-                GLCM_CONTRAST,
-                GLCM_CORRELATION,
-                GLCM_VARIANCE,
-                GLCM_INVERSEDIFFERENCEMOMENT,
-                GLCM_SUMAVERAGE,
-                GLCM_SUMVARIANCE,
-                GLCM_SUMENTROPY,
-                GLCM_ENTROPY,
-                GLCM_DIFFERENCEVARIANCE,
-                GLCM_DIFFERENCEENTROPY,
-                GLCM_INFOMEAS1,
-                GLCM_INFOMEAS2 };
-            theFeatureSet.disableFeatures(F);
-            break;  // No need to bother of others
-        }
-        if (s == FEA_NICK_ALL_INTENSITY)
-        {
-            auto F = {
-                INTEGRATED_INTENSITY,
-                MEAN,
-                MEDIAN,
-                MIN,
-                MAX,
-                RANGE,
-                STANDARD_DEVIATION,
-                STANDARD_ERROR,
-                UNIFORMITY,
-                SKEWNESS,
-                KURTOSIS,
-                HYPERSKEWNESS,
-                HYPERFLATNESS,
-                MEAN_ABSOLUTE_DEVIATION,
-                ENERGY,
-                ROOT_MEAN_SQUARED,
-                ENTROPY,
-                MODE,
-                UNIFORMITY,
-                P01, P10, P25, P75, P90, P99,
-                INTERQUARTILE_RANGE,
-                ROBUST_MEAN_ABSOLUTE_DEVIATION,
-                MASS_DISPLACEMENT
-            };
-            theFeatureSet.enableFeatures(F);
-            continue;
-        }
-        if (s == FEA_NICK_ALL_MORPHOLOGY)
-        {
-            auto F = {
-                AREA_PIXELS_COUNT,
-                AREA_UM2,
-                CENTROID_X,
-                CENTROID_Y,
-                WEIGHTED_CENTROID_Y,
-                WEIGHTED_CENTROID_X,
-                COMPACTNESS,
-                BBOX_YMIN,
-                BBOX_XMIN,
-                BBOX_HEIGHT,
-                BBOX_WIDTH,
-                MAJOR_AXIS_LENGTH,
-                MINOR_AXIS_LENGTH,
-                ECCENTRICITY,
-                ORIENTATION,
-                NUM_NEIGHBORS,
-                EXTENT,
-                ASPECT_RATIO,
-                EQUIVALENT_DIAMETER,
-                CONVEX_HULL_AREA,
-                SOLIDITY,
-                PERIMETER,
-                EDGE_MEAN_INTENSITY,
-                EDGE_STDDEV_INTENSITY,
-                EDGE_MAX_INTENSITY,
-                EDGE_MIN_INTENSITY,
-                CIRCULARITY
-            };
-            theFeatureSet.enableFeatures(F);
-            continue;
-        }
-        if (s == FEA_NICK_BASIC_MORPHOLOGY)
-        {
-            auto F = {
-                AREA_PIXELS_COUNT,
-                AREA_UM2,
-                CENTROID_X,
-                CENTROID_Y,
-                BBOX_YMIN,
-                BBOX_XMIN,
-                BBOX_HEIGHT,
-                BBOX_WIDTH
-            };
-            theFeatureSet.enableFeatures(F);
-            continue;
-        }
-        if (s == FEA_NICK_ALL_GLCM)
-        {
-            auto F = {
-                GLCM_ANGULAR2NDMOMENT,
-                GLCM_CONTRAST,
-                GLCM_CORRELATION,
-                GLCM_VARIANCE,
-                GLCM_INVERSEDIFFERENCEMOMENT,
-                GLCM_SUMAVERAGE,
-                GLCM_SUMVARIANCE,
-                GLCM_SUMENTROPY,
-                GLCM_ENTROPY,
-                GLCM_DIFFERENCEVARIANCE,
-                GLCM_DIFFERENCEENTROPY,
-                GLCM_INFOMEAS1,
-                GLCM_INFOMEAS2
-            };
-            theFeatureSet.enableFeatures(F);
-            continue;
-        }
-        if (s == FEA_NICK_ALL_GLRLM)
-        {
-            auto F = {
-                GLRLM_SRE,
-                GLRLM_LRE,
-                GLRLM_GLN,
-                GLRLM_GLNN,
-                GLRLM_RLN,
-                GLRLM_RLNN,
-                GLRLM_RP,
-                GLRLM_GLV,
-                GLRLM_RV,
-                GLRLM_RE,
-                GLRLM_LGLRE,
-                GLRLM_HGLRE,
-                GLRLM_SRLGLE,
-                GLRLM_SRHGLE,
-                GLRLM_LRLGLE,
-                GLRLM_LRHGLE
-            };
-            theFeatureSet.enableFeatures(F);
-            continue;
-        }
-        if (s == FEA_NICK_ALL_GLSZM)
-        {
-            auto F = {
-                GLSZM_SAE,
-                GLSZM_LAE,
-                GLSZM_GLN,
-                GLSZM_GLNN,
-                GLSZM_SZN,
-                GLSZM_SZNN,
-                GLSZM_ZP,
-                GLSZM_GLV,
-                GLSZM_ZV,
-                GLSZM_ZE,
-                GLSZM_LGLZE,
-                GLSZM_HGLZE,
-                GLSZM_SALGLE,
-                GLSZM_SAHGLE,
-                GLSZM_LALGLE,
-                GLSZM_LAHGLE
-            };
-            theFeatureSet.enableFeatures(F);
-            continue;
-        }
-        if (s == FEA_NICK_ALL_GLDM)
-        {
-            auto F = {
-                GLDM_SDE,
-                GLDM_LDE,
-                GLDM_GLN,
-                GLDM_DN,
-                GLDM_DNN,
-                GLDM_GLV,
-                GLDM_DV,
-                GLDM_DE,
-                GLDM_LGLE,
-                GLDM_HGLE,
-                GLDM_SDLGLE,
-                GLDM_SDHGLE,
-                GLDM_LDLGLE,
-                GLDM_LDHGLE
-            };
-            theFeatureSet.enableFeatures(F);
-            continue;
-        }
-        if (s == FEA_NICK_ALL_NGTDM)
-        {
-            auto F = {
-                NGTDM_COARSENESS,
-                NGTDM_CONTRAST,
-                NGTDM_BUSYNESS,
-                NGTDM_COMPLEXITY,
-                NGTDM_STRENGTH
-            };
-            theFeatureSet.enableFeatures(F);
-            continue;
-        }
-
-        // Process features individually
-        AvailableFeatures af;
-        if (!theFeatureSet.findFeatureByString(s, af))
-        {
-            std::cout << "Error: expecting '" << s << "' to be a proper feature name. \n";
-            return 1;
-        }
-
-        theFeatureSet.enableFeature(af);
+        process_feature_list();
+    }
+    catch (std::exception &e)
+    {
+        std::cerr << e.what();
+        return 1;
     }
 
     //==== Parse resolution
@@ -722,7 +724,7 @@ int Environment::parse_cmdline(int argc, char** argv)
             return 1;
         }
         // pixel size
-        pixelSizeUm = 1e-2 / xyRes / 1e-6;	// 1 cm in meters / pixels per cm / micrometers
+        pixelSizeUm = 1e-2 / xyRes / 1e-6; // 1 cm in meters / pixels per cm / micrometers
     }
 
     // Success

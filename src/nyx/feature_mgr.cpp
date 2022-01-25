@@ -1,3 +1,4 @@
+#include <string>
 #include "feature_mgr.h"
 #include "featureset.h"
 
@@ -67,7 +68,7 @@ void FeatureManager::apply_user_selection()
 
 			// Sanity check
 			if (foundFM == nullptr)
-				std::cout << "Error: feature " << i << " is not provided by any feature method\n";
+				throw std::invalid_argument("Error: feature " + std::to_string(i) + " is not provided by any feature method\n");
 			else
 			{
 				user_requested_features.push_back (foundFM);
