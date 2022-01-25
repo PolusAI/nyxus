@@ -3,6 +3,9 @@
 #include <fast_loader/specialised_tile_loader/grayscale_tiff_tile_loader.h>
 #include <map>
 #include <array>
+#ifdef WITH_PYTHON_H
+#include <pybind11/pybind11.h>
+#endif 
 #include "virtual_file_tile_channel_loader.h"
 #include "environment.h"
 #include "globals.h"
@@ -107,6 +110,11 @@ namespace Nyxus
 						feed_pixel_2_metrics(x, y, label, dataI[i], tileIdx);	// Updates 'uniqueLabels' and 'roiData'
 					}
 				}
+
+				#ifdef WITH_PYTHON_H
+				if (PyErr_CheckSignals() != 0)
+                	throw pybind11::error_already_set();
+				#endif
 
 				// Show stayalive progress info
 				if (cnt++ % 4 == 0)
