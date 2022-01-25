@@ -1,8 +1,9 @@
+from multiprocessing.sharedctypes import Value
 from .backend import initialize_environment, process_data
 import os
 import numpy as np
 import pandas as pd
-from typing import List, Optional
+from typing import Optional, List
 
 
 class Nyxus:
@@ -27,10 +28,48 @@ class Nyxus:
             *ALL_BUT_GABOR*
             *ALL_BUT_GLCM*
         Both individual features and feature groups are case sensitive.
+    neighbor_distance: float (optional, default 5.0)
+        Any two objects separated by a Euclidean distance (pixel units) greater than this
+        value will not be be considered neighbors. This cutoff is used by all features which
+        rely on neighbor identification.
+    pixels_per_micron: float (optional, default 1.0)
+        Specify the image resolution in terms of pixels per micron for unit conversion
+        of non-unitless features.
+    n_feature_calc_threads: int (optional, default 4)
+        Number of threads to use for feature calculation parallelization purposes.
+    n_loader_threads: int (optional, default 1)
+        Number of threads to use for loading image tiles from disk. Note: image loading
+        multithreading is very memory intensive. You should consider optimizing
+        `n_feature_calc_threads` before increasing `n_loader_threads`.
     """
 
-    def __init__(self, features: List[str]):
-        initialize_environment(features)
+    def __init__(
+        self,
+        features: List[str],
+        neighbor_distance: float = 5.0,
+        pixels_per_micron: float = 1.0,
+        n_feature_calc_threads: int = 4,
+        n_loader_threads: int = 1,
+    ):
+        if neighbor_distance <= 0:
+            raise ValueError("Neighbor distance must be greater than zero.")
+
+        if pixels_per_micron <= 0:
+            raise ValueError("Pixels per micron must be greater than zero.")
+
+        if n_feature_calc_threads < 1:
+            raise ValueError("There must be at least one feature calculation thread.")
+
+        if n_loader_threads < 1:
+            raise ValueError("There must be at least one loader thread.")
+
+        initialize_environment(
+            features,
+            neighbor_distance,
+            pixels_per_micron,
+            n_feature_calc_threads,
+            n_loader_threads,
+        )
 
     def featurize(
         self,

@@ -125,6 +125,11 @@ int Environment::get_pixel_distance()
     return pixelDistance;
 }
 
+void Environment::set_pixel_distance(int pixelDistance)
+{
+    this->pixelDistance = pixelDistance;
+}
+
 void Environment::show_help()
 {
     std::cout

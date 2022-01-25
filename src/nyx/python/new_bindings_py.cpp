@@ -24,10 +24,18 @@ inline py::array_t<typename Sequence::value_type> as_pyarray(Sequence &&seq)
 }
 
 void initialize_environment(
-    const std::vector<std::string> &features)
+    const std::vector<std::string> &features,
+    float neighbor_distance,
+    float pixels_per_micron,
+    uint n_reduce_threads,
+    uint n_loader_threads)
 {
     theEnvironment.desiredFeatures = features;
+    theEnvironment.set_pixel_distance(static_cast<int>(neighbor_distance));
     theEnvironment.verbosity_level = 0;
+    theEnvironment.xyRes = theEnvironment.pixelSizeUm = pixels_per_micron;
+    theEnvironment.n_reduce_threads = n_reduce_threads;
+    theEnvironment.n_loader_threads = n_loader_threads;
 
     // Throws exception if invalid feature is supplied.
     theEnvironment.process_feature_list();
