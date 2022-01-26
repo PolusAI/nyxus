@@ -4,7 +4,7 @@
 #include "basic_morphology.h"
 #include "pixel.h"
 
-BasicMorphologyFeatures::BasicMorphologyFeatures()
+BasicMorphologyFeatures::BasicMorphologyFeatures(): FeatureMethod("BasicMorphologyFeatures")
 {
 	provide_features({
 		AREA_PIXELS_COUNT,

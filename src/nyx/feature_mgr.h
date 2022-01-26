@@ -26,16 +26,21 @@ private:
 	// This test checks if there exists a feature code in Nyxus::AvailableFeatures implemented by multiple feature methods
 	bool check_11_correspondence();
 
-	// This test checks for cyclic feature dependencies
-	bool check_cycles();
+	// This test checks for cyclic feature dependencies and populates 'xdeps' 
+	bool gather_dependencies();
 
-	// Builds the requested set by copying items of 'featureset' requested via the command line into 'requested_features'
-	void build_requested_set();
+	int get_num_fmethods_dependencies(FeatureMethod* fm, std::vector<Nyxus::AvailableFeatures> & parent_dependencies);
+
+	// Builds the requested set by copying items of 'featureset' requested via the command line into 'user_requested_features' along with their depended feature methods
+	void build_user_requested_set();
 
 	void external_test_init();
 	void clear();
 	std::vector<FeatureMethod*> full_featureset;
-	std::vector<FeatureMethod*> user_requested_features;
+	std::vector<FeatureMethod*> user_requested_features;	// Ordered set of FMs implementing user's feature selection
+
+	std::vector<std::vector<Nyxus::AvailableFeatures>> xdeps;	// Vector of 'full_featureset' items' extended dependencies (as feature codes)
+
 };
 
 namespace Nyxus

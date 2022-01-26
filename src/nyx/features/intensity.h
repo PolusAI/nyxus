@@ -36,6 +36,5 @@ private:
 		val_UNIFORMITY_PIU = 0,
 		val_P01 = 0, val_P10 = 0, val_P25 = 0, val_P75 = 0, val_P90 = 0, val_P99 = 0,
 		val_INTERQUARTILE_RANGE = 0,
-		val_ROBUST_MEAN_ABSOLUTE_DEVIATION = 0,
-		val_MASS_DISPLACEMENT = 0;
+		val_ROBUST_MEAN_ABSOLUTE_DEVIATION = 0;
 };

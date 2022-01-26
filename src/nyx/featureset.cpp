@@ -84,6 +84,7 @@ namespace Nyxus
 		{"EDGE_STDDEV_INTENSITY",PERIMETER},
 		{"EDGE_MAX_INTENSITY",PERIMETER},
 		{"EDGE_MIN_INTENSITY",PERIMETER},
+		{"EDGE_INTEGRATEDINTENSITY", EDGE_INTEGRATEDINTENSITY},	// Sum of the edge pixel intensities
 
 		{"CIRCULARITY",CIRCULARITY},
 
@@ -92,12 +93,6 @@ namespace Nyxus
 
 		{"FRACT_DIM_BOXCOUNT", FRACT_DIM_BOXCOUNT},
 		{"FRACT_DIM_PERIMETER", FRACT_DIM_PERIMETER},
-
-		{"EDGE_INTEGRATEDINTENSITY", EDGE_INTEGRATEDINTENSITY},	// Sum of the edge pixel intensities
-		{"EDGE_MAXINTENSITY", EDGE_MAXINTENSITY},				// Max edge pixel intensity
-		{"EDGE_MEANINTENSITY", EDGE_MEANINTENSITY},				// Average edge pixel intensity
-		{"EDGE_MININTENSITY", EDGE_MININTENSITY},				// Min edge pixel intensity
-		{"EDGE_STDDEVINTENSITY", EDGE_STDDEVINTENSITY},			// Standard deviation of the edge pixel intensities
 
 		{"EXTREMA_P1_X", EXTREMA_P1_X},
 		{"EXTREMA_P1_Y",EXTREMA_P1_Y},
@@ -340,6 +335,23 @@ bool FeatureSet::findFeatureByString(const std::string& featureName, AvailableFe
 
 	f = Nyxus::UserFacingFeatureNames[featureName];
 	return true;
+}
+
+std::string FeatureSet::findFeatureNameByCode(AvailableFeatures fcode)
+{
+	// Search
+	auto result = std::find_if(
+		Nyxus::UserFacingFeatureNames.begin(),
+		Nyxus::UserFacingFeatureNames.end(),
+		[fcode](const auto& finfo) 
+		{ return finfo.second == fcode; });
+
+	// Return the feature name if found
+	if (result != Nyxus::UserFacingFeatureNames.end())
+		return result->first;
+
+	// Nothing is found
+	return "[UNNAMED FEATURE]";
 }
 
 void FeatureSet::show_help()

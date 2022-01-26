@@ -4,7 +4,7 @@
 #include "image_matrix_nontriv.h"
 #include "convex_hull.h"
 
-ConvexHullFeature::ConvexHullFeature() 
+ConvexHullFeature::ConvexHullFeature() : FeatureMethod("ConvexHullFeature")
 {
 	provide_features ({CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY});
 }

@@ -5,8 +5,21 @@
 #include <unordered_set>
 #include "ngtdm.h"
 
-NGTDM_features::NGTDM_features (int minI, int maxI, const ImageMatrix& im)
+NGTDMFeature::NGTDMFeature(): FeatureMethod("NGTDMFeature")
 {
+	provide_features({
+		NGTDM_COARSENESS,
+		NGTDM_CONTRAST,
+		NGTDM_BUSYNESS,
+		NGTDM_COMPLEXITY,
+		NGTDM_STRENGTH });
+}
+
+void NGTDMFeature::calculate (LR& r)
+{
+	auto minI = r.aux_min, maxI = r.aux_max;
+	const ImageMatrix& im = r.aux_image_matrix;
+
 	//==== Check if the ROI is degenerate (equal intensity)
 	if (minI == maxI)
 	{
@@ -123,10 +136,32 @@ NGTDM_features::NGTDM_features (int minI, int maxI, const ImageMatrix& im)
 	// --Calculate P
 	for (int i = 0; i < Ng; i++)
 		P[i] = double(Ng) / (im.height * im.width);
+
+	//=== Calculate features
+	_coarseness = calc_Coarseness();
+	_contrast = calc_Contrast();
+	_busyness = calc_Busyness();
+	_complexity = calc_Complexity();
+	_strength = calc_Strength();
+}
+
+void NGTDMFeature::save_value(std::vector<std::vector<double>>& fvals)
+{
+	fvals[NGTDM_COARSENESS][0] = _coarseness;
+	fvals[NGTDM_CONTRAST][0] = _contrast;
+	fvals[NGTDM_BUSYNESS][0] = _busyness;
+	fvals[NGTDM_COMPLEXITY][0] = _complexity;
+	fvals[NGTDM_STRENGTH][0] = _strength;
+}
+
+void NGTDMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
+
+void NGTDMFeature::osized_calculate (LR& r, ImageLoader& imloader)
+{
 }
 
 // Coarseness
-double NGTDM_features::calc_Coarseness()
+double NGTDMFeature::calc_Coarseness()
 {
 	// Prevent using bad data 
 	if (bad_roi_data)
@@ -141,7 +176,7 @@ double NGTDM_features::calc_Coarseness()
 }
 
 // Contrast
-double NGTDM_features::calc_Contrast()
+double NGTDMFeature::calc_Contrast()
 {
 	// Prevent using bad data 
 	if (bad_roi_data)
@@ -170,7 +205,7 @@ double NGTDM_features::calc_Contrast()
 }
 
 // Busyness
-double NGTDM_features::calc_Busyness()
+double NGTDMFeature::calc_Busyness()
 {
 	// Prevent using bad data 
 	if (bad_roi_data)
@@ -198,7 +233,7 @@ double NGTDM_features::calc_Busyness()
 }
 
 // Complexity
-double NGTDM_features::calc_Complexity()
+double NGTDMFeature::calc_Complexity()
 {
 	// Prevent using bad data 
 	if (bad_roi_data)
@@ -218,7 +253,7 @@ double NGTDM_features::calc_Complexity()
 }
 
 // Strength
-double NGTDM_features::calc_Strength()
+double NGTDMFeature::calc_Strength()
 {
 	// Prevent using bad data 
 	if (bad_roi_data)
@@ -241,7 +276,7 @@ double NGTDM_features::calc_Strength()
 	return retval;
 }
 
-void NGTDM_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void NGTDMFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -251,12 +286,9 @@ void NGTDM_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabe
 		if (r.has_bad_data())
 			continue;
 
-		NGTDM_features ngtdm ((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
-		r.fvals[NGTDM_COARSENESS][0] = ngtdm.calc_Coarseness();
-		r.fvals[NGTDM_CONTRAST][0] = ngtdm.calc_Contrast();
-		r.fvals[NGTDM_BUSYNESS][0] = ngtdm.calc_Busyness();
-		r.fvals[NGTDM_COMPLEXITY][0] = ngtdm.calc_Complexity();
-		r.fvals[NGTDM_STRENGTH][0] = ngtdm.calc_Strength();
+		NGTDMFeature f;
+		f.calculate(r);
+		f.save_value(r.fvals);
 	}
 }
 

@@ -6,7 +6,26 @@
 #include "image_matrix_nontriv.h"
 #include "rotation.h"
 
-ChordsFeature::ChordsFeature() {}
+ChordsFeature::ChordsFeature() : FeatureMethod("ChordsFeature")
+{
+	provide_features({ 
+		MAXCHORDS_MAX,
+		MAXCHORDS_MAX_ANG,
+		MAXCHORDS_MIN,
+		MAXCHORDS_MIN_ANG,
+		MAXCHORDS_MEDIAN,
+		MAXCHORDS_MEAN,
+		MAXCHORDS_MODE,
+		MAXCHORDS_STDDEV,
+		ALLCHORDS_MAX,
+		ALLCHORDS_MAX_ANG,
+		ALLCHORDS_MIN,
+		ALLCHORDS_MIN_ANG,
+		ALLCHORDS_MEDIAN,
+		ALLCHORDS_MEAN,
+		ALLCHORDS_MODE,
+		ALLCHORDS_STDDEV });
+}
 
 void ChordsFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {

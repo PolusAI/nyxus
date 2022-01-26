@@ -147,7 +147,7 @@ namespace Nyxus
 				if (glrlmFeature)
 				{
 					// Polulate with angles
-					for (auto ang : GLRLM_features::rotAngles)
+					for (auto ang : GLRLMFeature::rotAngles)
 					{
 						ssHead << "," << fn << "_" << ang;
 					}
@@ -169,7 +169,7 @@ namespace Nyxus
 				if (fc == FRAC_AT_D)
 				{
 					// Generate the feature value list
-					for (auto i = 0; i < RadialDistribution_features::num_features_FracAtD; i++)
+					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
 						ssHead << "," << fn << "_" << i;
 
 					// Proceed with other features
@@ -179,7 +179,7 @@ namespace Nyxus
 				if (fc == MEAN_FRAC)
 				{
 					// Generate the feature value list
-					for (auto i = 0; i < RadialDistribution_features::num_features_MeanFrac; i++)
+					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
 						ssHead << "," << fn << "_" << i;
 
 					// Proceed with other features
@@ -189,7 +189,7 @@ namespace Nyxus
 				if (fc == RADIAL_CV)
 				{
 					// Generate the feature value list
-					for (auto i = 0; i < RadialDistribution_features::num_features_RadialCV; i++)
+					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
 						ssHead << "," << fn << "_" << i;
 
 					// Proceed with other features
@@ -296,7 +296,7 @@ namespace Nyxus
 				if (glrlmFeature)
 				{
 					// Polulate with angles
-					auto nAng = 4; // sizeof(GLRLM_features::rotAngles) / sizeof(GLRLM_features::rotAngles[0]);
+					auto nAng = 4; // sizeof(GLRLMFeature::rotAngles) / sizeof(GLRLMFeature::rotAngles[0]);
 					for (int i = 0; i < nAng; i++)
 					{
 						ssVals << "," << vv[i];
@@ -344,7 +344,7 @@ namespace Nyxus
 				// --Radial distribution features
 				if (fc == FRAC_AT_D)
 				{
-					for (auto i = 0; i < RadialDistribution_features::num_features_FracAtD; i++)
+					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
 					{
 						ssVals << "," << vv[i];
 						//--diagnoze misalignment-- ssVals << "," << fn << "-" << vv[i];	
@@ -354,7 +354,7 @@ namespace Nyxus
 				}
 				if (fc == MEAN_FRAC)
 				{
-					for (auto i = 0; i < RadialDistribution_features::num_features_MeanFrac; i++)
+					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
 					{
 						ssVals << "," << vv[i];
 						//--diagnoze misalignment-- ssVals << "," << fn << "-" << vv[i];	
@@ -364,7 +364,7 @@ namespace Nyxus
 				}
 				if (fc == RADIAL_CV)
 				{
-					for (auto i = 0; i < RadialDistribution_features::num_features_RadialCV; i++)
+					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
 					{
 						ssVals << "," << vv[i];
 						//--diagnoze misalignment-- ssVals << "," << fn << "-" << vv[i];	

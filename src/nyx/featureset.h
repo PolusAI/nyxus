@@ -85,10 +85,10 @@ namespace Nyxus
 
 		// CellProfiler features [http://cellprofiler-manual.s3.amazonaws.com/CellProfiler-3.0.0/modules/measurement.html]
 		EDGE_INTEGRATEDINTENSITY,	// Sum of the edge pixel intensities
-		EDGE_MAXINTENSITY,		// Maximal edge pixel intensity
-		EDGE_MEANINTENSITY,		// Average edge pixel intensity
-		EDGE_MININTENSITY,		// Minimal edge pixel intensity
-		EDGE_STDDEVINTENSITY,		// Standard deviation of the edge pixel intensities
+		//EDGE_MAXINTENSITY,		// Maximal edge pixel intensity
+		//EDGE_MEANINTENSITY,		// Average edge pixel intensity
+		//EDGE_MININTENSITY,		// Minimal edge pixel intensity
+		//EDGE_STDDEVINTENSITY,		// Standard deviation of the edge pixel intensities
 
 		MIN_FERET_DIAMETER,
 		MAX_FERET_DIAMETER,
@@ -403,7 +403,8 @@ public:
 				cnt++;
 		return cnt;
 	}
-	bool findFeatureByString(const std::string& featureName, AvailableFeatures& f);
+	bool findFeatureByString (const std::string& featureName, AvailableFeatures& fcode);
+	std::string findFeatureNameByCode (AvailableFeatures fcode);
 	void show_help();
 
 	// Relying on RVO rather than std::move

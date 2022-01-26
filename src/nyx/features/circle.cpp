@@ -1,28 +1,48 @@
 #include <algorithm>
 #include "circle.h"
 
-double EnclosingInscribingCircumscribingCircle_features::calculate_min_enclosing_circle_diam (std::vector<Pixel2>& Contour)
+EnclosingInscribingCircumscribingCircleFeature::EnclosingInscribingCircumscribingCircleFeature() : FeatureMethod("EnclosingInscribingCircumscribingCircleFeature")
 {
-    //------------------------Minimum enclosing circle------------------------------------------
-    //https://git.rwth-aachen.de/ants/sensorlab/imea/-/blob/master/imea/measure_2d/macro.py#L166
+    provide_features({ DIAMETER_MIN_ENCLOSING_CIRCLE, DIAMETER_INSCRIBING_CIRCLE, DIAMETER_CIRCUMSCRIBING_CIRCLE });
+    add_dependencies({ PERIMETER, CONVEX_HULL_AREA, NUM_NEIGHBORS });
+}
+
+void EnclosingInscribingCircumscribingCircleFeature::calculate(LR& r)
+{
+    d_minEnclo = calculate_min_enclosing_circle_diam (r.contour);
+    std::tie(d_inscr, d_circum) = calculate_inscribing_circumscribing_circle (r.contour, r.fvals[CENTROID_X][0], r.fvals[CENTROID_Y][0]);
+}
+
+void EnclosingInscribingCircumscribingCircleFeature::save_value(std::vector<std::vector<double>>& fvals)
+{
+    fvals[DIAMETER_MIN_ENCLOSING_CIRCLE][0] = d_minEnclo;
+    fvals[DIAMETER_INSCRIBING_CIRCLE][0] = d_inscr;
+    fvals[DIAMETER_CIRCUMSCRIBING_CIRCLE][0] = d_circum;
+}
+
+double EnclosingInscribingCircumscribingCircleFeature::calculate_min_enclosing_circle_diam (std::vector<Pixel2>& Contour)
+{
+    // Inspired by https://git.rwth-aachen.de/ants/sensorlab/imea/-/blob/master/imea/measure_2d/macro.py#L166
+    
     // Find the minimum enclosing circle of an object
     Point2f center;
     float radius = 0;
     minEnclosingCircle(Contour, center, radius);
+
     //Diameter of the minimum circumference of the projection area.
     double diameter_min_enclosing_circle = 2 * radius;
     return diameter_min_enclosing_circle; // ratios[45] = diameter_min_enclosing_circle;
 }
 
-void EnclosingInscribingCircumscribingCircle_features::findCircle3pts (const std::vector<Pixel2>& pts, Point2f& center, float& radius)
+void EnclosingInscribingCircumscribingCircleFeature::findCircle3pts (const std::vector<Pixel2>& pts, Point2f& center, float& radius)
 {
-    // two edges of the triangle v1, v2
+    // 2 edges of the triangle v1, v2
     Point2f v1 = pts[1] - pts[0],
         v2 = pts[2] - pts[0];
 
-    // center is intersection of midperpendicular lines of the two edges v1, v2
-    // a1*x + b1*y = c1 where a1 = v1.x, b1 = v1.y
-    // a2*x + b2*y = c2 where a2 = v2.x, b2 = v2.y
+    // Center is intersection of midperpendicular lines of the two edges v1, v2
+    //      a1*x + b1*y = c1 where a1 = v1.x, b1 = v1.y
+    //      a2*x + b2*y = c2 where a2 = v2.x, b2 = v2.y
 
     Point2f midPoint1 = (pts[0] + pts[1]) / 2.0f;
     float c1 = midPoint1.x * v1.x + midPoint1.y * v1.y;
@@ -47,7 +67,6 @@ void EnclosingInscribingCircumscribingCircle_features::findCircle3pts (const std
         }
         else
         {
-            //CV_DbgAssert(d3 >= d1 && d3 >= d2);
             center = (pts[1] + pts[2]) * 0.5f;
         }
         return;
@@ -61,7 +80,7 @@ void EnclosingInscribingCircumscribingCircle_features::findCircle3pts (const std
     radius = (float)(std::sqrt(cx * cx + cy * cy)) + EPS;
 }
 
-void EnclosingInscribingCircumscribingCircle_features::findThirdPoint (const std::vector<Pixel2>& pts, int i, int j, Point2f& center, float& radius)
+void EnclosingInscribingCircumscribingCircleFeature::findThirdPoint (const std::vector<Pixel2>& pts, int i, int j, Point2f& center, float& radius)
 {
     center.x = (float)(pts[j].x + pts[i].x) / 2.0f;
     center.y = (float)(pts[j].y + pts[i].y) / 2.0f;
@@ -79,10 +98,10 @@ void EnclosingInscribingCircumscribingCircle_features::findThirdPoint (const std
         }
         else
         {
-            std::vector<Pixel2> ptsf;   //Point2f ptsf[3];
-            ptsf.push_back (Pixel2(pts[i].x, pts[i].y, 0));    //(Point2f)pts[i];
-            ptsf.push_back(Pixel2(pts[j].x, pts[j].y, 0));   //(Point2f)pts[j];
-            ptsf.push_back(Pixel2(pts[k].x, pts[k].y, 0));  //(Point2f)pts[k];
+            std::vector<Pixel2> ptsf;   
+            ptsf.push_back (Pixel2(pts[i].x, pts[i].y, 0));   
+            ptsf.push_back(Pixel2(pts[j].x, pts[j].y, 0));   
+            ptsf.push_back(Pixel2(pts[k].x, pts[k].y, 0));  
             Point2f new_center; float new_radius = 0;
             findCircle3pts(ptsf, new_center, new_radius);
             if (new_radius > 0)
@@ -94,7 +113,7 @@ void EnclosingInscribingCircumscribingCircle_features::findThirdPoint (const std
     }
 }
 
-void EnclosingInscribingCircumscribingCircle_features::findSecondPoint (const std::vector<Pixel2>& pts, int i, Point2f& center, float& radius)
+void EnclosingInscribingCircumscribingCircleFeature::findSecondPoint (const std::vector<Pixel2>& pts, int i, Point2f& center, float& radius)
 {
     center.x = (float)(pts[0].x + pts[i].x) / 2.0f;
     center.y = (float)(pts[0].y + pts[i].y) / 2.0f;
@@ -123,8 +142,7 @@ void EnclosingInscribingCircumscribingCircle_features::findSecondPoint (const st
     }
 }
 
-
-void EnclosingInscribingCircumscribingCircle_features::findMinEnclosingCircle (const std::vector<Pixel2>& pts, int count, Point2f& center, float& radius)
+void EnclosingInscribingCircumscribingCircleFeature::findMinEnclosingCircle (const std::vector<Pixel2>& pts, int count, Point2f& center, float& radius)
 {
     center.x = (float)(pts[0].x + pts[1].x) / 2.0f;
     center.y = (float)(pts[0].y + pts[1].y) / 2.0f;
@@ -154,34 +172,19 @@ void EnclosingInscribingCircumscribingCircle_features::findMinEnclosingCircle (c
     }
 }
 
-// see Welzl, Emo. Smallest enclosing disks (balls and ellipsoids). Springer Berlin Heidelberg, 1991.
-void EnclosingInscribingCircumscribingCircle_features::minEnclosingCircle(
+// See Welzl, Emo. Smallest enclosing disks (balls and ellipsoids). Springer Berlin Heidelberg, 1991.
+void EnclosingInscribingCircumscribingCircleFeature::minEnclosingCircle(
 	// in:
 	std::vector<Pixel2>& Contour,
 	// out:
 	Point2f & _center, float& _radius)
 {
-#if 0
-    CV_INSTRUMENT_REGION();
-
-    Mat points = _points.getMat();
-    int count = points.checkVector(2);
-    int depth = points.depth();
-    CV_Assert(count >= 0 && (depth == CV_32F || depth == CV_32S));
-#endif
-
-
     _center.x = _center.y = 0.f;
     _radius = 0.f;
     auto count = Contour.size();
 
     if (count == 0)
         return;
-
-
-    //bool is_float = depth == CV_32F;
-    //const Point* ptsi = points.ptr<Point>();
-    //const Point2f* ptsf = points.ptr<Point2f>();
 
     switch (count)
     {
@@ -204,38 +207,7 @@ void EnclosingInscribingCircumscribingCircle_features::minEnclosingCircle(
     {
         Point2f center;
         float radius = 0.f;
-#if 0//andre
-        if (is_float)
-        {
-            findMinEnclosingCircle<Point2f>(ptsf, count, center, radius);
-#if 0
-            for (size_t m = 0; m < count; ++m)
-            {
-                float d = (float)norm(ptsf[m] - center);
-                if (d > radius)
-                {
-                    printf("error!\n");
-                }
-            }
-#endif
-        }
-        else
-        {
-            findMinEnclosingCircle<Point>(ptsi, count, center, radius);
-#if 0
-            for (size_t m = 0; m < count; ++m)
-            {
-                double dx = ptsi[m].x - center.x;
-                double dy = ptsi[m].y - center.y;
-                double d = std::sqrt(dx * dx + dy * dy);
-                if (d > radius)
-                {
-                    printf("error!\n");
-                }
-            }
-#endif
-        }
-#endif//andre
+
         findMinEnclosingCircle (Contour, (int)count, center, radius);
         _center = center;
         _radius = radius;
@@ -245,7 +217,7 @@ void EnclosingInscribingCircumscribingCircle_features::minEnclosingCircle(
 }
 
 
-std::tuple <double, double> EnclosingInscribingCircumscribingCircle_features::calculate_inscribing_circumscribing_circle (std::vector<Pixel2> & contours, double xCentroid, double yCentroid)
+std::tuple <double, double> EnclosingInscribingCircumscribingCircleFeature::calculate_inscribing_circumscribing_circle (std::vector<Pixel2> & contours, double xCentroid, double yCentroid)
 {
     //-----------------circumscribing and inscribing circle ---------------------------
     //https://git.rwth-aachen.de/ants/sensorlab/imea/-/blob/master/imea/measure_2d/macro.py#L199
@@ -267,12 +239,10 @@ std::tuple <double, double> EnclosingInscribingCircumscribingCircle_features::ca
     double diameter_circumscribing_circle = 2 * radius_circumscribing_circle;
     double diameter_inscribing_circle = 2 * radius_inscribing_circle;
 
-    //ratios[46] = diameter_circumscribing_circle;
-    //ratios[47] = diameter_inscribing_circle;
     return { diameter_inscribing_circle, diameter_circumscribing_circle };
 }
 
-void EnclosingInscribingCircumscribingCircle_features::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void EnclosingInscribingCircumscribingCircleFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
     for (auto i = start; i < end; i++)
     {
@@ -286,11 +256,15 @@ void EnclosingInscribingCircumscribingCircle_features::reduce(size_t start, size
         if (r.contour.size() == 0 || r.convHull_CH.size() == 0 || r.fvals[NUM_NEIGHBORS][0] == 0)
             continue;
 
-        EnclosingInscribingCircumscribingCircle_features cir;
-        r.fvals[DIAMETER_MIN_ENCLOSING_CIRCLE][0] = cir.calculate_min_enclosing_circle_diam (r.contour);
-
-        auto [diamIns, diamCir] = cir.calculate_inscribing_circumscribing_circle (r.contour, r.fvals[CENTROID_X][0], r.fvals[CENTROID_Y][0]);
-        r.fvals[DIAMETER_INSCRIBING_CIRCLE][0] = diamIns;
-        r.fvals[DIAMETER_CIRCUMSCRIBING_CIRCLE][0] = diamCir;
+        EnclosingInscribingCircumscribingCircleFeature cir;
+        cir.calculate(r);
+        cir.save_value(r.fvals);
     }
+}
+
+// Not using the online mode for this feature
+void EnclosingInscribingCircumscribingCircleFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
+
+void EnclosingInscribingCircumscribingCircleFeature::osized_calculate(LR& r, ImageLoader& imloader)
+{
 }

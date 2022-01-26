@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include "../roi_cache.h"
 #include "image_matrix.h"
+#include "../feature_method.h"
 
 /// @brief Gray Level Size Zone(GLSZM) features
 /// Gray Level Size Zone(GLSZM) quantifies gray level zones in an image.A gray level zone is defined as a the number
@@ -12,9 +13,18 @@
 /// with gray level : math:`i`and size :math:`j` appear in image.Contrary to GLCMand GLRLM, the GLSZM is rotation
 /// independent, with only one matrix calculated for all directions in the ROI.
 
-class GLSZM_features
+class GLSZMFeature: public FeatureMethod
 {
 public:
+	GLSZMFeature ();
+
+	void calculate(LR& r);
+	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
+	void osized_calculate(LR& r, ImageLoader& imloader);
+	void save_value(std::vector<std::vector<double>>& feature_vals);
+	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+
+	// Compatibility with the manual reduce
 	static bool required(const FeatureSet& fs) {
 		return fs.anyEnabled({
 			GLSZM_SAE,
@@ -35,7 +45,6 @@ public:
 			GLSZM_LAHGLE
 			});
 	}
-	GLSZM_features (int minI, int maxI, const ImageMatrix & );
 
 	// Small Area Emphasis
 	double calc_SAE();
@@ -84,8 +93,6 @@ public:
 
 	// Large Area High Gray Level Emphasis
 	double calc_LAHGLE();
-
-	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 private:
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs

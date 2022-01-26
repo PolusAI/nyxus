@@ -26,7 +26,7 @@
 #include "features/glrlm.h"
 #include "features/glszm.h"
 #include "features/gldm.h"
-#include "features/hexagonality_and_polygonality.h"
+#include "features/hexagonality_polygonality.h"
 #include "features/ngtdm.h"
 #include "features/image_moments.h"
 #include "features/moments.h"

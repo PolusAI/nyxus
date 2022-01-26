@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include "../roi_cache.h"
 #include "image_matrix.h"
+#include "../feature_method.h"
 
 // Inspired by 
 //		https://stackoverflow.com/questions/25019840/neighboring-gray-level-dependence-matrix-ngldm-in-matlab?fbclid=IwAR14fT0kpmjmOXRhKcguFMH3tCg0G4ubDLRxyHZoXdpKdbPxF7Zuq-WKE8o
@@ -19,7 +20,7 @@
 ///	in its neighbourhood appears in image.
 /// 
 
-class GLDM_features
+class GLDMFeature: public FeatureMethod
 {
 	using P_matrix = SimpleMatrix<int>;
 
@@ -42,7 +43,14 @@ public:
 			GLDM_LDHGLE
 			});
 	}
-	GLDM_features (int minI, int maxI, const ImageMatrix& im);
+
+	GLDMFeature ();
+
+	void calculate (LR& r);
+	void osized_add_online_pixel (size_t x, size_t y, uint32_t intensity);
+	void osized_calculate (LR& r, ImageLoader& imloader);
+	void save_value (std::vector<std::vector<double>>& feature_vals);
+	static void parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 	// 1. Small Dependence Emphasis(SDE)
 	double calc_SDE();
@@ -72,8 +80,6 @@ public:
 	double calc_LDLGLE();
 	// 14. Large Dependence High Gray Level Emphasis (LDHGLE)
 	double calc_LDHGLE();
-
-	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 private:
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs

@@ -4,7 +4,15 @@
 
 // Inspired by https://www.mathworks.com/matlabcentral/mlc-downloads/downloads/submissions/19028/versions/1/previews/regiondata.m/index.html
 
-EllipseFittingFeature::EllipseFittingFeature() {}
+EllipseFittingFeature::EllipseFittingFeature() : FeatureMethod("EllipseFittingFeature") 
+{
+	provide_features({
+		MAJOR_AXIS_LENGTH, 
+		MINOR_AXIS_LENGTH, 
+		ECCENTRICITY, 
+		ORIENTATION, 
+		ROUNDNESS });
+}
 
 //EllipseFittingFeature::EllipseFittingFeature(const std::vector<Pixel2>& roi_pixels, double centroid_x, double centroid_y, double area)
 void EllipseFittingFeature::calculate (LR& r)
@@ -90,21 +98,24 @@ void EllipseFittingFeature::reduce (size_t start, size_t end, std::vector<int>* 
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
+
 		if (r.has_bad_data())
 			continue;
-		//EllipseFittingFeature f (r.raw_pixels, r.fvals[CENTROID_X][0], r.fvals[CENTROID_Y][0], r.fvals[AREA_PIXELS_COUNT][0]);
+
 		EllipseFittingFeature f;
-		f.calculate(r);
-		r.fvals[MAJOR_AXIS_LENGTH][0] = f.get_major_axis_length();
-		r.fvals[MINOR_AXIS_LENGTH][0] = f.get_minor_axis_length();
-		r.fvals[ECCENTRICITY][0] = f.get_eccentricity();
-		r.fvals[ORIENTATION][0] = f.get_orientation();
-		r.fvals[ROUNDNESS][0] = f.get_roundness();
+		f.calculate (r);
+		f.save_value (r.fvals);
 	}
 }
 
 void EllipseFittingFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {}
 
-void EllipseFittingFeature::save_value (std::vector<std::vector<double>>& feature_vals)
-{}
+void EllipseFittingFeature::save_value (std::vector<std::vector<double>>& fvals)
+{
+	fvals[MAJOR_AXIS_LENGTH][0] = get_major_axis_length();
+	fvals[MINOR_AXIS_LENGTH][0] = get_minor_axis_length();
+	fvals[ECCENTRICITY][0] = get_eccentricity();
+	fvals[ORIENTATION][0] = get_orientation();
+	fvals[ROUNDNESS][0] = get_roundness();
+}

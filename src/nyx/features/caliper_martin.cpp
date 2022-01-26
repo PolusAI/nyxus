@@ -2,24 +2,25 @@
 #include "../parallel.h"
 #include "rotation.h"
 
-CaliperNassensteinFeature::CaliperNassensteinFeature() : FeatureMethod("CaliperNassensteinFeature")
+CaliperMartinFeature::CaliperMartinFeature() : FeatureMethod("CaliperMartinFeature")
 {
 	// Letting the feature dependency manager know
-	provide_features({ STAT_NASSENSTEIN_DIAM_MIN,
-			STAT_NASSENSTEIN_DIAM_MAX,
-			STAT_NASSENSTEIN_DIAM_MEAN,
-			STAT_NASSENSTEIN_DIAM_MEDIAN,
-			STAT_NASSENSTEIN_DIAM_STDDEV,
-			STAT_NASSENSTEIN_DIAM_MODE });
+	provide_features({
+			STAT_MARTIN_DIAM_MIN,
+			STAT_MARTIN_DIAM_MAX,
+			STAT_MARTIN_DIAM_MEAN,
+			STAT_MARTIN_DIAM_MEDIAN,
+			STAT_MARTIN_DIAM_STDDEV,
+			STAT_MARTIN_DIAM_MODE });
 }
 
-void CaliperNassensteinFeature::calculate (LR& r)
+void CaliperMartinFeature::calculate(LR& r)
 {
 	if (r.has_bad_data())
 		return;
 
 	std::vector<double> allD;	// Diameters at 0-180 degrees rotation
-	calculate_imp (r.convHull_CH, allD);
+	calculate_imp(r.convHull_CH, allD);
 
 	auto s = ComputeCommonStatistics2(allD);
 
@@ -31,7 +32,7 @@ void CaliperNassensteinFeature::calculate (LR& r)
 	_mode = (double)s.mode;
 }
 
-void CaliperNassensteinFeature::save_value (std::vector<std::vector<double>>& fvals)
+void CaliperMartinFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
 	fvals[STAT_NASSENSTEIN_DIAM_MIN][0] = _min;
 	fvals[STAT_NASSENSTEIN_DIAM_MAX][0] = _max;
@@ -41,7 +42,7 @@ void CaliperNassensteinFeature::save_value (std::vector<std::vector<double>>& fv
 	fvals[STAT_NASSENSTEIN_DIAM_MODE][0] = _mode;
 }
 
-void CaliperNassensteinFeature::calculate_imp (const std::vector<Pixel2>& convex_hull, std::vector<double>& all_D)
+void CaliperMartinFeature::calculate_imp(const std::vector<Pixel2>& convex_hull, std::vector<double>& all_D)
 {
 	// Rotated convex hull
 	std::vector<Pixel2> CH_rot;
@@ -113,11 +114,11 @@ void CaliperNassensteinFeature::calculate_imp (const std::vector<Pixel2>& convex
 	}
 }
 
-void CaliperNassensteinFeature::osized_calculate (LR& r, ImageLoader&)
+void CaliperMartinFeature::osized_calculate(LR& r, ImageLoader&)
 {
 	// Rotated convex hull
 	std::vector<Pixel2> CH_rot;
-	CH_rot.reserve (r.convHull_CH.size());
+	CH_rot.reserve(r.convHull_CH.size());
 
 	// Rotate and calculate the diameter
 	std::vector<double> all_D;
@@ -184,7 +185,7 @@ void CaliperNassensteinFeature::osized_calculate (LR& r, ImageLoader&)
 	}
 
 	// Process the stats
-	auto s = ComputeCommonStatistics2 (all_D);
+	auto s = ComputeCommonStatistics2(all_D);
 
 	_min = (double)s.min;
 	_max = (double)s.max;
@@ -194,29 +195,29 @@ void CaliperNassensteinFeature::osized_calculate (LR& r, ImageLoader&)
 	_mode = (double)s.mode;
 }
 
-void CaliperNassensteinFeature::parallel_process (std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
+void CaliperMartinFeature::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
 {
 	size_t jobSize = roi_labels.size(),
 		workPerThread = jobSize / n_threads;
 
-	runParallel(CaliperNassensteinFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
+	runParallel(CaliperMartinFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
 }
 
-void CaliperNassensteinFeature::parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void CaliperMartinFeature::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	// Calculate the feature for each batch ROI item 
 	for (auto i = firstitem; i < lastitem; i++)
 	{
 		// Get ahold of ROI's label and cache
-		int roiLabel = (*ptrLabels) [i];
-		LR& r = (*ptrLabelData) [roiLabel];
+		int roiLabel = (*ptrLabels)[i];
+		LR& r = (*ptrLabelData)[roiLabel];
 
 		// Skip the ROI if its data is invalid to prevent nans and infs in the output
 		if (r.has_bad_data())
 			continue;
 
 		// Calculate the feature and save it in ROI's csv-friendly buffer 'fvals'
-		CaliperNassensteinFeature f;
+		CaliperMartinFeature f;
 		f.calculate(r);
 		f.save_value(r.fvals);
 	}

@@ -24,41 +24,61 @@
 /*    are as good or better than mb_zernike2D                               */
 /****************************************************************************/
 
-
+#define _USE_MATH_DEFINES	// For M_PI, etc.
 #include <complex>
 #include <cmath>
 #include <cfloat> // Has definition of DBL_EPSILON
 #include <assert.h>
 #include <stdio.h>
-#include "specfunc.h" //---	#include "gsl/specfunc.h"
+#include "specfunc.h" 
 
-#include "image_matrix.h" //--- cmatrix.h"
+#include "image_matrix.h" 
 
 #include <unordered_map>
 #include "../roi_cache.h"
+#include "zernike.h"
 
 
-#define PI 3.14159265358979323846264338328
+//#define PI 3.14159265358979323846264338328
 #define MAX_L 32
 
 // This sets the maximum D parameter (15)
 // The D parameter has to match MAX_D. See mb_Znl() below.
 #define MAX_D 15
+
 // This is based on the maximum D parameter being 15, which sets the number of returned values.
 #define MAX_Z 72
+
 // This is also based on the maximum D parameter - contains pre-computed factorials
 #define MAX_LUT 240
 
 
-//---------------------------------------------------------------------------
+ZernikeFeature::ZernikeFeature() : FeatureMethod("ZernikeFeature")
+{
+	provide_features ({ ZERNIKE2D });
+}
 
-/* mb_Znl
-  Zernike moment generating function.  The moment of degree n and
-  angular dependence l for the pixels defined by coordinate vectors
-  X and Y and intensity vector P.  X, Y, and P must have the same
-  length
+void ZernikeFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity)
+{}
+
+void ZernikeFeature::osized_calculate (LR& r, ImageLoader& imloader)
+{}
+
+void ZernikeFeature::save_value (std::vector<std::vector<double>>& fvals)
+{
+	fvals[ZERNIKE2D].clear();
+	for (auto f : coeffs)
+		fvals[ZERNIKE2D].push_back(f);
+}
+
+
+/*  
+	Zernike moment generating function.  The moment of degree n and
+	angular dependence l for the pixels defined by coordinate vectors
+	X and Y and intensity vector P.  X, Y, and P must have the same length
 */
-void mb_Znl(double* X, double* Y, double* P, int size, double D, double m10_m00, double m01_m00, double R, double psum, double* zvalues, long* output_size) {
+void ZernikeFeature::mb_Znl (double* X, double* Y, double* P, int size, double D, double m10_m00, double m01_m00, double R, double psum, double* zvalues, long* output_size)
+{
 	static double LUT[MAX_LUT];
 	static int n_s[MAX_Z], l_s[MAX_Z];
 	static char init_lut = 0;
@@ -133,7 +153,7 @@ void mb_Znl(double* X, double* Y, double* P, int size, double D, double m10_m00,
 
 	double preal, pimag;
 	for (theZ = 0; theZ < numZ; theZ++) {
-		sum[theZ] *= ((n_s[theZ] + 1) / PI);
+		sum[theZ] *= ((n_s[theZ] + 1) / M_PI);
 		preal = real(sum[theZ]);
 		pimag = imag(sum[theZ]);
 		//printf ("[%d][%d] = (%g,%g)\n",n_s[theZ],l_s[theZ],real ( sum [theZ] ),imag ( sum [theZ] ));
@@ -141,56 +161,6 @@ void mb_Znl(double* X, double* Y, double* P, int size, double D, double m10_m00,
 	}
 
 	*output_size = numZ;
-}
-
-
-void mb_zernike2D_OLD(const ImageMatrix& Im, double D, double R, double* zvalues, long* output_size) {
-	double* Y, * X, * P, psum;
-	double intensity;
-	int x, y, size;
-
-	*output_size = 0;
-	int rows = Im.height, cols = Im.width;
-	if (D <= 0) D = 15;
-	if (R <= 0) R = rows / 2;
-
-	Y = new double[rows * cols];
-	X = new double[rows * cols];
-	P = new double[rows * cols];
-
-	readOnlyPixels I_pix_plane = Im.ReadablePixels();
-	/* Find all non-zero pixel coordinates and values */
-	size = 0;
-	psum = 0;
-	double moment10 = 0.0, moment00 = 0.0, moment01 = 0.0;
-	for (y = 0; y < rows; y++)
-		for (x = 0; x < cols; x++) {
-			intensity = I_pix_plane(y, x);
-			if (intensity != 0) {
-				Y[size] = y + 1;
-				X[size] = x + 1;
-				P[size] = intensity;
-				psum += intensity;
-				size++;
-			}
-			// moments
-			moment10 += (x + 1) * intensity;
-			moment00 += intensity;
-			moment01 += (y + 1) * intensity;
-			// if (x < 10 && y < 10) printf ("(%d,%d) = %g\n",x,y,intensity);
-		}
-
-	/* Normalize the coordinates to the center of mass and normalize
-	   pixel distances using the maximum radius argument (R) */
-
-	double m10_m00 = moment10 / moment00;
-	double m01_m00 = moment01 / moment00;
-	mb_Znl(X, Y, P, size, D, m10_m00, m01_m00, R, psum, zvalues, output_size);
-
-	delete Y;
-	delete X;
-	delete P;
-
 }
 
 /*
@@ -207,7 +177,8 @@ void mb_zernike2D_OLD(const ImageMatrix& Im, double D, double R, double* zvalues
   better on average than the previous version, and they produce better classification in problems
   where zernike features are useful.
 */
-void mb_zernike2D(const ImageMatrix& Im, double order, double rad, double* zvalues, long* output_size) {
+void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double rad, double* zvalues, long* output_size) 
+{
 	int L, N, D;
 
 	// N is the smaller of Im.width and Im.height
@@ -276,7 +247,7 @@ void mb_zernike2D(const ImageMatrix& Im, double order, double rad, double* zvalu
 		}
 	}
 
-	area = PI * rad * rad;
+	area = M_PI * rad * rad;
 	for (i = 0; i < cols; i++) {
 		// In the paper, the center of the unit circle was the center of the image
 		//	x = (double)(2*i+1-N)/(double)D;
@@ -311,7 +282,7 @@ void mb_zernike2D(const ImageMatrix& Im, double order, double rad, double* zvalu
 			for (n = 0; n <= L; n++) {
 				// In the paper, this was divided by the area in pixels
 				// seemed that pi was supposed to be the area of a unit circle.
-				const_t = (n + 1) * f / PI;
+				const_t = (n + 1) * f / M_PI;
 				Rn = R[n];
 				if (n >= 2) Rnm2 = R[n - 2];
 				for (m = n; m >= 0; m -= 2) {
@@ -351,50 +322,40 @@ void mb_zernike2D(const ImageMatrix& Im, double order, double rad, double* zvalu
 
 }
 
-void zernike2D(
+void ZernikeFeature::zernike2D(
 	// in
 	std::vector <Pixel2>& nonzero_intensity_pixels,
 	AABB& aabb,
-	int order, 
-	// out
-	std::vector<double>& Z_values)
+	int order)
 {
 	// Create a temp image matrix from label's pixels
 	ImageMatrix I (nonzero_intensity_pixels, aabb);
 
+	coeffs.resize(72, 0);
+
 	// Calculate features
-	std::vector<double> coeffs;
-	coeffs.resize (72, 0);
 	long output_size;   // output size is normally 72
 	mb_zernike2D (I, order, 0/*rad*/, coeffs.data(), &output_size); 
-
-	// Save
-	Z_values.clear();
-	for (auto f : coeffs)
-		Z_values.push_back(f);
 }
 
-void calcRoiZernike(LR& r)
+void ZernikeFeature::calculate (LR& r)
 {
 	zernike2D(
-		// in
 		r.raw_pixels,	// nonzero_intensity_pixels,
 		r.aabb,			// AABB info not to calculate it again from 'raw_pixels' in the function
-		r.aux_ZERNIKE2D_ORDER,
-		// out
-		r.fvals[ZERNIKE2D]);	// .Zernike2D
+		r.aux_ZERNIKE2D_ORDER);	
 
 	// Fix calculated feature values due to all-0 intensity labels to avoid NANs in the output
 	if (r.has_bad_data())
 	{
-		for (int i = 0; i < r.fvals[ZERNIKE2D].size(); i++)
-			r.fvals[ZERNIKE2D][i] = 0.0;
+		for (int i = 0; i < coeffs.size(); i++)
+			coeffs[i] = 0.0;
 	}
 }
 
-void parallelReduceZernike2D (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void ZernikeFeature::parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
-	for (auto i = start; i < end; i++)
+	for (auto i = firstitem; i < lastitem; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
@@ -402,8 +363,9 @@ void parallelReduceZernike2D (size_t start, size_t end, std::vector<int>* ptrLab
 		if (r.has_bad_data())
 			continue;
 
-		calcRoiZernike(r);
+		ZernikeFeature f;
+		f.calculate (r);
+		f.save_value(r.fvals);
 	}
 }
-
 

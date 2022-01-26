@@ -2,36 +2,65 @@
 #include "../parallel.h"
 #include "rotation.h"
 
-CaliperNassensteinFeature::CaliperNassensteinFeature() : FeatureMethod("CaliperNassensteinFeature")
+CaliperFeretFeature::CaliperFeretFeature() : FeatureMethod("CaliperFeretFeature")
 {
-	// Letting the feature dependency manager know
-	provide_features({ STAT_NASSENSTEIN_DIAM_MIN,
-			STAT_NASSENSTEIN_DIAM_MAX,
-			STAT_NASSENSTEIN_DIAM_MEAN,
-			STAT_NASSENSTEIN_DIAM_MEDIAN,
-			STAT_NASSENSTEIN_DIAM_STDDEV,
-			STAT_NASSENSTEIN_DIAM_MODE });
+	// Letting the feature dependency manager know 
+	provide_features({
+			MIN_FERET_DIAMETER,
+			MAX_FERET_DIAMETER,
+			MIN_FERET_ANGLE,
+			MAX_FERET_ANGLE,
+			STAT_FERET_DIAM_MIN,
+			STAT_FERET_DIAM_MAX,
+			STAT_FERET_DIAM_MEAN,
+			STAT_FERET_DIAM_MEDIAN,
+			STAT_FERET_DIAM_STDDEV,
+			STAT_FERET_DIAM_MODE});
 }
 
-void CaliperNassensteinFeature::calculate (LR& r)
+void CaliperFeretFeature::calculate(LR& r)
 {
 	if (r.has_bad_data())
 		return;
 
 	std::vector<double> allD;	// Diameters at 0-180 degrees rotation
-	calculate_imp (r.convHull_CH, allD);
+	calculate_imp(r.convHull_CH, allD);
 
+	// Calculate statistics of diameters
 	auto s = ComputeCommonStatistics2(allD);
-
 	_min = (double)s.min;
 	_max = (double)s.max;
 	_mean = s.mean;
 	_median = s.median;
 	_stdev = s.stdev;
 	_mode = (double)s.mode;
+
+	// Calculate angles at min- and max- diameter
+	if (allD.size() > 0)
+	{
+		// Min and max
+		auto itr_min_d = std::min_element(allD.begin(), allD.end());
+		auto itr_max_d = std::max_element(allD.begin(), allD.end());
+		minFeretDiameter = *itr_min_d;
+		maxFeretDiameter = *itr_max_d;
+
+		// Angles
+		auto idxMin = std::distance(allD.begin(), itr_min_d);
+		minFeretAngle = (double)idxMin / 2.0;
+		auto idxMax = std::distance(allD.begin(), itr_max_d);
+		maxFeretAngle = (double)idxMax / 2.0;
+	}
+	else
+	{
+		// Degenerate case
+		minFeretDiameter =
+		maxFeretDiameter =
+		minFeretAngle =
+		maxFeretAngle = 0.0;
+	}
 }
 
-void CaliperNassensteinFeature::save_value (std::vector<std::vector<double>>& fvals)
+void CaliperFeretFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
 	fvals[STAT_NASSENSTEIN_DIAM_MIN][0] = _min;
 	fvals[STAT_NASSENSTEIN_DIAM_MAX][0] = _max;
@@ -39,9 +68,14 @@ void CaliperNassensteinFeature::save_value (std::vector<std::vector<double>>& fv
 	fvals[STAT_NASSENSTEIN_DIAM_MEDIAN][0] = _median;
 	fvals[STAT_NASSENSTEIN_DIAM_STDDEV][0] = _stdev;
 	fvals[STAT_NASSENSTEIN_DIAM_MODE][0] = _mode;
+
+	fvals[MIN_FERET_DIAMETER][0] = minFeretDiameter;
+	fvals[MAX_FERET_DIAMETER][0] = maxFeretDiameter;
+	fvals[MIN_FERET_ANGLE][0] = minFeretAngle;
+	fvals[MAX_FERET_ANGLE][0] = maxFeretAngle;
 }
 
-void CaliperNassensteinFeature::calculate_imp (const std::vector<Pixel2>& convex_hull, std::vector<double>& all_D)
+void CaliperFeretFeature::calculate_imp(const std::vector<Pixel2>& convex_hull, std::vector<double>& all_D)
 {
 	// Rotated convex hull
 	std::vector<Pixel2> CH_rot;
@@ -54,10 +88,10 @@ void CaliperNassensteinFeature::calculate_imp (const std::vector<Pixel2>& convex
 		Rotation::rotate_around_center(convex_hull, theta, CH_rot);
 		auto [minX, minY, maxX, maxY] = AABB::from_pixelcloud(CH_rot);
 
-		//
-		std::vector<float> DA;	// Diameters at this angle
+		// Diameters at this angle
+		std::vector<float> DA;
 
-		// Iterate y-grid
+		// Iterate the y-grid
 		float stepY = (maxY - minY) / float(n_steps);
 		for (int iy = 1; iy <= n_steps; iy++)
 		{
@@ -113,11 +147,11 @@ void CaliperNassensteinFeature::calculate_imp (const std::vector<Pixel2>& convex
 	}
 }
 
-void CaliperNassensteinFeature::osized_calculate (LR& r, ImageLoader&)
+void CaliperFeretFeature::osized_calculate(LR& r, ImageLoader&)
 {
 	// Rotated convex hull
 	std::vector<Pixel2> CH_rot;
-	CH_rot.reserve (r.convHull_CH.size());
+	CH_rot.reserve(r.convHull_CH.size());
 
 	// Rotate and calculate the diameter
 	std::vector<double> all_D;
@@ -183,40 +217,63 @@ void CaliperNassensteinFeature::osized_calculate (LR& r, ImageLoader&)
 		}
 	}
 
-	// Process the stats
-	auto s = ComputeCommonStatistics2 (all_D);
-
+	// Calculate statistics of diameters
+	auto s = ComputeCommonStatistics2(all_D);
 	_min = (double)s.min;
 	_max = (double)s.max;
 	_mean = s.mean;
 	_median = s.median;
 	_stdev = s.stdev;
 	_mode = (double)s.mode;
+
+	// Calculate angles at min- and max- diameter
+	if (all_D.size() > 0)
+	{
+		// Min and max
+		auto itr_min_d = std::min_element(all_D.begin(), all_D.end());
+		auto itr_max_d = std::max_element(all_D.begin(), all_D.end());
+		minFeretDiameter = *itr_min_d;
+		maxFeretDiameter = *itr_max_d;
+
+		// Angles
+		auto idxMin = std::distance(all_D.begin(), itr_min_d);
+		minFeretAngle = (double)idxMin / 2.0;
+		auto idxMax = std::distance(all_D.begin(), itr_max_d);
+		maxFeretAngle = (double)idxMax / 2.0;
+	}
+	else
+	{
+		// Degenerate case
+		minFeretDiameter =
+		maxFeretDiameter =
+		minFeretAngle =
+		maxFeretAngle = 0.0;
+	}
 }
 
-void CaliperNassensteinFeature::parallel_process (std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
+void CaliperFeretFeature::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
 {
 	size_t jobSize = roi_labels.size(),
 		workPerThread = jobSize / n_threads;
 
-	runParallel(CaliperNassensteinFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
+	runParallel(CaliperFeretFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
 }
 
-void CaliperNassensteinFeature::parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void CaliperFeretFeature::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	// Calculate the feature for each batch ROI item 
 	for (auto i = firstitem; i < lastitem; i++)
 	{
 		// Get ahold of ROI's label and cache
-		int roiLabel = (*ptrLabels) [i];
-		LR& r = (*ptrLabelData) [roiLabel];
+		int roiLabel = (*ptrLabels)[i];
+		LR& r = (*ptrLabelData)[roiLabel];
 
 		// Skip the ROI if its data is invalid to prevent nans and infs in the output
 		if (r.has_bad_data())
 			continue;
 
 		// Calculate the feature and save it in ROI's csv-friendly buffer 'fvals'
-		CaliperNassensteinFeature f;
+		CaliperFeretFeature f;
 		f.calculate(r);
 		f.save_value(r.fvals);
 	}

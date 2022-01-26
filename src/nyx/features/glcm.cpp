@@ -2,7 +2,99 @@
 
 #define PGM_MAXMAXVAL 255
 
-void GLCM_features::calculate_graytones (SimpleMatrix<uint8_t>& G, int minI, int maxI, const ImageMatrix& Im)
+GLCMFeature::GLCMFeature() : FeatureMethod("GLCMFeature")
+{
+	provide_features({
+		GLCM_ANGULAR2NDMOMENT,
+		GLCM_CONTRAST,
+		GLCM_CORRELATION,
+		GLCM_VARIANCE,
+		GLCM_INVERSEDIFFERENCEMOMENT,
+		GLCM_SUMAVERAGE,
+		GLCM_SUMVARIANCE,
+		GLCM_SUMENTROPY,
+		GLCM_ENTROPY,
+		GLCM_DIFFERENCEVARIANCE,
+		GLCM_DIFFERENCEENTROPY,
+		GLCM_INFOMEAS1,
+		GLCM_INFOMEAS2
+			});
+}
+
+void GLCMFeature::calculate(LR& r)
+{
+	SimpleMatrix<uint8_t> G;
+	calculate_graytones(G, r.aux_min, r.aux_max, r.aux_image_matrix);
+
+	int Angles[] = { 0, 45, 90, 135 },
+		n = sizeof(Angles) / sizeof(Angles[0]);
+	for (int i = 0; i < n; i++)
+		Extract_Texture_Features (distance_parameter, Angles[i], G);
+}
+
+void GLCMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
+{}
+
+void GLCMFeature::osized_calculate(LR& r, ImageLoader& imloader)
+{}
+
+void GLCMFeature::save_value (std::vector<std::vector<double>>& fvals)
+{
+	get_AngularSecondMoments(fvals[GLCM_ANGULAR2NDMOMENT]);
+	get_Contrast(fvals[GLCM_CONTRAST]);
+	get_Correlation(fvals[GLCM_CORRELATION]);
+	get_Variance(fvals[GLCM_VARIANCE]);
+	get_InverseDifferenceMoment(fvals[GLCM_INVERSEDIFFERENCEMOMENT]);
+	get_SumAverage(fvals[GLCM_SUMAVERAGE]);
+	get_SumVariance(fvals[GLCM_SUMVARIANCE]);
+	get_SumEntropy(fvals[GLCM_SUMENTROPY]);
+	get_Entropy(fvals[GLCM_ENTROPY]);
+	get_DifferenceVariance(fvals[GLCM_DIFFERENCEVARIANCE]);
+	get_DifferenceEntropy(fvals[GLCM_DIFFERENCEENTROPY]);
+	get_InfoMeas1(fvals[GLCM_INFOMEAS1]);
+	get_InfoMeas2(fvals[GLCM_INFOMEAS2]);
+}
+
+void GLCMFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR& r = (*ptrLabelData)[lab];
+
+		if (r.has_bad_data())
+			continue;
+
+		//=== GLCM version 2
+		// Skip calculation in case of bad data
+		int minI = (int)r.fvals[MIN][0],
+			maxI = (int)r.fvals[MAX][0];
+		if (minI == maxI)
+		{
+			// Dfault values for all 4 standard angles
+			r.fvals[GLCM_ANGULAR2NDMOMENT].resize(4, 0);
+			r.fvals[GLCM_CONTRAST].resize(4, 0);
+			r.fvals[GLCM_CORRELATION].resize(4, 0);
+			r.fvals[GLCM_VARIANCE].resize(4, 0);
+			r.fvals[GLCM_INVERSEDIFFERENCEMOMENT].resize(4, 0);
+			r.fvals[GLCM_SUMAVERAGE].resize(4, 0);
+			r.fvals[GLCM_SUMVARIANCE].resize(4, 0);
+			r.fvals[GLCM_SUMENTROPY].resize(4, 0);
+			r.fvals[GLCM_ENTROPY].resize(4, 0);
+			r.fvals[GLCM_DIFFERENCEVARIANCE].resize(4, 0);
+			r.fvals[GLCM_DIFFERENCEENTROPY].resize(4, 0);
+			r.fvals[GLCM_INFOMEAS1].resize(4, 0);
+			r.fvals[GLCM_INFOMEAS2].resize(4, 0);
+			continue;
+		}
+
+		GLCMFeature f; 
+		f.calculate(r);
+		f.save_value(r.fvals);
+	}
+}
+
+void GLCMFeature::calculate_graytones (SimpleMatrix<uint8_t>& G, int minI, int maxI, const ImageMatrix& Im)
 {
 	const pixData& I = Im.ReadablePixels();
 	G.allocate(I.width(), I.height(), 0);
@@ -12,20 +104,7 @@ void GLCM_features::calculate_graytones (SimpleMatrix<uint8_t>& G, int minI, int
 			G(x,y) = (uint8_t)((I(y, x) - minI) * scale255);
 }
 
-GLCM_features::GLCM_features (int minI, int maxI, const ImageMatrix& im, double distance)
-{
-	//const pixData& I = im.ReadablePixels();
-
-	SimpleMatrix<uint8_t> G;
-	calculate_graytones (G, minI, maxI, im);
-
-	int Angles[] = {0, 45, 90, 135}, 
-		n = sizeof(Angles) / sizeof(Angles[0]);
-	for (int i = 0; i < n; i++)
-		Extract_Texture_Features ((int)distance, Angles[i], G);
-}
-
-void GLCM_features::Extract_Texture_Features (
+void GLCMFeature::Extract_Texture_Features (
 	int distance, 
 	int angle, 
 	const SimpleMatrix<uint8_t>& grays)	// 'grays' is 0-255 grays 
@@ -91,7 +170,7 @@ void GLCM_features::Extract_Texture_Features (
 }
 
 /* Compute gray-tone spatial dependence matrix */
-void GLCM_features::CoOcMat_Angle_0 (
+void GLCMFeature::CoOcMat_Angle_0 (
 	// out
 	SimpleMatrix<double>& matrix, 
 	// in
@@ -138,7 +217,7 @@ void GLCM_features::CoOcMat_Angle_0 (
 				matrix(itone, jtone) /= count;	
 }
 
-void GLCM_features::CoOcMat_Angle_90(
+void GLCMFeature::CoOcMat_Angle_90(
 	// out
 	SimpleMatrix<double>& matrix,
 	// in
@@ -192,7 +271,7 @@ void GLCM_features::CoOcMat_Angle_90(
 	//A		return matrix;
 }
 
-void GLCM_features::CoOcMat_Angle_45(
+void GLCMFeature::CoOcMat_Angle_45(
 	// out
 	SimpleMatrix<double>& matrix,
 	// in
@@ -246,7 +325,7 @@ void GLCM_features::CoOcMat_Angle_45(
 	//A		return matrix;
 }
 
-void GLCM_features::CoOcMat_Angle_135(
+void GLCMFeature::CoOcMat_Angle_135(
 	// out
 	SimpleMatrix<double>& matrix,
 	// in
@@ -300,67 +379,67 @@ void GLCM_features::CoOcMat_Angle_135(
 	//A		return matrix;
 }
 
-void GLCM_features::get_AngularSecondMoments(AngledFeatures& af)
+void GLCMFeature::get_AngularSecondMoments(AngledFeatures& af)
 {
 	af.assign (fvals_ASM.begin(), fvals_ASM.end());
 }
 
-void GLCM_features::get_Contrast(AngledFeatures& af)
+void GLCMFeature::get_Contrast(AngledFeatures& af)
 {
 	af.assign (fvals_contrast.begin(), fvals_contrast.end());
 }
 
-void GLCM_features::get_Correlation(AngledFeatures& af)
+void GLCMFeature::get_Correlation(AngledFeatures& af)
 {
 	af.assign (fvals_correlation.begin(), fvals_correlation.end());
 }
 
-void GLCM_features::get_Variance(AngledFeatures& af)
+void GLCMFeature::get_Variance(AngledFeatures& af)
 {
 	af.assign (fvals_variance.begin(), fvals_variance.end());
 }
 
-void GLCM_features::get_InverseDifferenceMoment(AngledFeatures& af)
+void GLCMFeature::get_InverseDifferenceMoment(AngledFeatures& af)
 {
 	af.assign (fvals_IDM.begin(), fvals_IDM.end());
 }
 
-void GLCM_features::get_SumAverage(AngledFeatures& af)
+void GLCMFeature::get_SumAverage(AngledFeatures& af)
 {
 	af.assign (fvals_sum_avg.begin(), fvals_sum_avg.end());
 }
 
-void GLCM_features::get_SumVariance(AngledFeatures& af)
+void GLCMFeature::get_SumVariance(AngledFeatures& af)
 {
 	af.assign (fvals_sum_var.begin(), fvals_sum_var.end());
 }
 
-void GLCM_features::get_SumEntropy(AngledFeatures& af)
+void GLCMFeature::get_SumEntropy(AngledFeatures& af)
 {
 	af.assign (fvals_sum_entropy.begin(), fvals_sum_entropy.end());
 }
 
-void GLCM_features::get_Entropy(AngledFeatures& af)
+void GLCMFeature::get_Entropy(AngledFeatures& af)
 {
 	af.assign (fvals_entropy.begin(), fvals_entropy.end());
 }
 
-void GLCM_features::get_DifferenceVariance(AngledFeatures& af)
+void GLCMFeature::get_DifferenceVariance(AngledFeatures& af)
 {
 	af.assign (fvals_diff_var.begin(), fvals_diff_var.end());
 }
 
-void GLCM_features::get_DifferenceEntropy(AngledFeatures& af)
+void GLCMFeature::get_DifferenceEntropy(AngledFeatures& af)
 {
 	af.assign (fvals_diff_entropy.begin(), fvals_diff_entropy.end());
 }
 
-void GLCM_features::get_InfoMeas1(AngledFeatures& af)
+void GLCMFeature::get_InfoMeas1(AngledFeatures& af)
 {
 	af.assign (fvals_meas_corr1.begin(), fvals_meas_corr1.end());
 }
 
-void GLCM_features::get_InfoMeas2(AngledFeatures& af)
+void GLCMFeature::get_InfoMeas2(AngledFeatures& af)
 {
 	af.assign (fvals_meas_corr2.begin(), fvals_meas_corr2.end());
 }
@@ -372,7 +451,7 @@ void GLCM_features::get_InfoMeas2(AngledFeatures& af)
 * gray-tone transitions. Hence the P matrix for such an image will have
 * fewer entries of large magnitude.
 */
-double GLCM_features::f1_asm (const SimpleMatrix<double>& P, int Ng)
+double GLCMFeature::f1_asm (const SimpleMatrix<double>& P, int Ng)
 {
 	int i, j;
 	double sum = 0;
@@ -390,7 +469,7 @@ double GLCM_features::f1_asm (const SimpleMatrix<double>& P, int Ng)
 * measure of the contrast or the amount of local variations present in an
 * image.
 */
-double GLCM_features::f2_contrast (const SimpleMatrix<double>& P, int Ng)
+double GLCMFeature::f2_contrast (const SimpleMatrix<double>& P, int Ng)
 {
 	//=== W-C:
 	//int i, j, n;
@@ -434,7 +513,7 @@ double* GLCM_features::allocate_vector(int nl, int nh) {
 * This correlation feature is a measure of gray-tone linear-dependencies
 * in the image.
 */
-double GLCM_features::f3_corr (const SimpleMatrix<double>& P, int Ng, std::vector<double> & px)
+double GLCMFeature::f3_corr (const SimpleMatrix<double>& P, int Ng, std::vector<double> & px)
 {
 	int i, j;
 	double sum_sqrx = 0, tmp;
@@ -481,7 +560,7 @@ double GLCM_features::f3_corr (const SimpleMatrix<double>& P, int Ng, std::vecto
 }
 
 /* Sum of Squares: Variance */
-double GLCM_features::f4_var(const SimpleMatrix<double>& P, int Ng) {
+double GLCMFeature::f4_var(const SimpleMatrix<double>& P, int Ng) {
 	int i, j;
 	double mean = 0, var = 0;
 
@@ -502,7 +581,7 @@ double GLCM_features::f4_var(const SimpleMatrix<double>& P, int Ng) {
 }
 
 /* Inverse Difference Moment */
-double GLCM_features::f5_idm(const SimpleMatrix<double>& P, int Ng) {
+double GLCMFeature::f5_idm(const SimpleMatrix<double>& P, int Ng) {
 	int i, j;
 	double idm = 0;
 
@@ -514,7 +593,7 @@ double GLCM_features::f5_idm(const SimpleMatrix<double>& P, int Ng) {
 }
 
 /* Sum Average */
-double GLCM_features::f6_savg(const SimpleMatrix<double>& P, int Ng, std::vector<double>& Pxpy) {
+double GLCMFeature::f6_savg(const SimpleMatrix<double>& P, int Ng, std::vector<double>& Pxpy) {
 	int i, j;
 	double savg = 0;
 	//---	double* Pxpy = allocate_vector(0, 2 * Ng);
@@ -539,7 +618,7 @@ double GLCM_features::f6_savg(const SimpleMatrix<double>& P, int Ng, std::vector
 }
 
 /* Sum Variance */
-double GLCM_features::f7_svar(const SimpleMatrix<double>& P, int Ng, double S, std::vector<double>& Pxpy) {
+double GLCMFeature::f7_svar(const SimpleMatrix<double>& P, int Ng, double S, std::vector<double>& Pxpy) {
 	int i, j;
 	double var = 0;
 	//---	double* Pxpy = allocate_vector(0, 2 * Ng);
@@ -566,7 +645,7 @@ double GLCM_features::f7_svar(const SimpleMatrix<double>& P, int Ng, double S, s
 #define EPSILON 0.000000001
 
 /* Sum Entropy */
-double GLCM_features::f8_sentropy(const SimpleMatrix<double>& P, int Ng, std::vector<double>& Pxpy)
+double GLCMFeature::f8_sentropy(const SimpleMatrix<double>& P, int Ng, std::vector<double>& Pxpy)
 {
 	int i, j;
 	double sentropy = 0;
@@ -589,7 +668,7 @@ double GLCM_features::f8_sentropy(const SimpleMatrix<double>& P, int Ng, std::ve
 }
 
 /* Entropy */
-double GLCM_features::f9_entropy(const SimpleMatrix<double>& P, int Ng)
+double GLCMFeature::f9_entropy(const SimpleMatrix<double>& P, int Ng)
 {
 	int i, j;
 	double entropy = 0;
@@ -603,7 +682,7 @@ double GLCM_features::f9_entropy(const SimpleMatrix<double>& P, int Ng)
 }
 
 /* Difference Variance */
-double GLCM_features::f10_dvar(const SimpleMatrix<double>& P, int Ng, std::vector<double>& Pxpy)
+double GLCMFeature::f10_dvar(const SimpleMatrix<double>& P, int Ng, std::vector<double>& Pxpy)
 {
 	int i, j;
 	double sum = 0, sum_sqr = 0, var = 0;
@@ -635,7 +714,7 @@ double GLCM_features::f10_dvar(const SimpleMatrix<double>& P, int Ng, std::vecto
 }
 
 /* Difference Entropy */
-double GLCM_features::f11_dentropy(const SimpleMatrix<double>& P, int Ng, std::vector<double>& Pxpy) {
+double GLCMFeature::f11_dentropy(const SimpleMatrix<double>& P, int Ng, std::vector<double>& Pxpy) {
 	int i, j;
 	double sum = 0;
 	//---	double* Pxpy = allocate_vector(0, 2 * Ng);
@@ -657,7 +736,7 @@ double GLCM_features::f11_dentropy(const SimpleMatrix<double>& P, int Ng, std::v
 }
 
 /* Information Measures of Correlation */
-double GLCM_features::f12_icorr(const SimpleMatrix<double>& P, int Ng, std::vector<double>& px, std::vector<double>& py) {
+double GLCMFeature::f12_icorr(const SimpleMatrix<double>& P, int Ng, std::vector<double>& px, std::vector<double>& py) {
 	int i, j;
 	double hx = 0, hy = 0, hxy = 0, hxy1 = 0, hxy2 = 0;
 
@@ -698,7 +777,7 @@ double GLCM_features::f12_icorr(const SimpleMatrix<double>& P, int Ng, std::vect
 }
 
 /* Information Measures of Correlation */
-double GLCM_features::f13_icorr(const SimpleMatrix<double>& P, int Ng, std::vector<double>& px, std::vector<double>& py) {
+double GLCMFeature::f13_icorr(const SimpleMatrix<double>& P, int Ng, std::vector<double>& px, std::vector<double>& py) {
 	int i, j;
 	double hx = 0, hy = 0, hxy = 0, hxy1 = 0, hxy2 = 0;
 
@@ -738,55 +817,6 @@ double GLCM_features::f13_icorr(const SimpleMatrix<double>& P, int Ng, std::vect
 	return (sqrt(fabs(1 - exp(-2.0 * (hxy2 - hxy)))));
 }
 
-void GLCM_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
-{
-	for (auto i = start; i < end; i++)
-	{
-		int lab = (*ptrLabels)[i];
-		LR& r = (*ptrLabelData)[lab];
 
-		if (r.has_bad_data())
-			continue;
-
-		//=== GLCM version 2
-		// Skip calculation in case of bad data
-		int minI = (int)r.fvals[MIN][0],
-			maxI = (int)r.fvals[MAX][0];
-		if (minI == maxI)
-		{
-			// Dfault values for all 4 standard angles
-			r.fvals[GLCM_ANGULAR2NDMOMENT].resize(4, 0);
-			r.fvals[GLCM_CONTRAST].resize(4, 0);
-			r.fvals[GLCM_CORRELATION].resize(4, 0);
-			r.fvals[GLCM_VARIANCE].resize(4, 0);
-			r.fvals[GLCM_INVERSEDIFFERENCEMOMENT].resize(4, 0);
-			r.fvals[GLCM_SUMAVERAGE].resize(4, 0);
-			r.fvals[GLCM_SUMVARIANCE].resize(4, 0);
-			r.fvals[GLCM_SUMENTROPY].resize(4, 0);
-			r.fvals[GLCM_ENTROPY].resize(4, 0);
-			r.fvals[GLCM_DIFFERENCEVARIANCE].resize(4, 0);
-			r.fvals[GLCM_DIFFERENCEENTROPY].resize(4, 0);
-			r.fvals[GLCM_INFOMEAS1].resize(4, 0);
-			r.fvals[GLCM_INFOMEAS2].resize(4, 0);
-			continue;
-		}
-
-		//---	ImageMatrix im(r.raw_pixels, r.aabb);
-		GLCM_features f (minI, maxI, r.aux_image_matrix, 5);
-		f.get_AngularSecondMoments(r.fvals[GLCM_ANGULAR2NDMOMENT]);
-		f.get_Contrast(r.fvals[GLCM_CONTRAST]);
-		f.get_Correlation(r.fvals[GLCM_CORRELATION]);
-		f.get_Variance(r.fvals[GLCM_VARIANCE]);
-		f.get_InverseDifferenceMoment(r.fvals[GLCM_INVERSEDIFFERENCEMOMENT]);
-		f.get_SumAverage(r.fvals[GLCM_SUMAVERAGE]);
-		f.get_SumVariance(r.fvals[GLCM_SUMVARIANCE]);
-		f.get_SumEntropy(r.fvals[GLCM_SUMENTROPY]);
-		f.get_Entropy(r.fvals[GLCM_ENTROPY]);
-		f.get_DifferenceVariance(r.fvals[GLCM_DIFFERENCEVARIANCE]);
-		f.get_DifferenceEntropy(r.fvals[GLCM_DIFFERENCEENTROPY]);
-		f.get_InfoMeas1(r.fvals[GLCM_INFOMEAS1]);
-		f.get_InfoMeas2(r.fvals[GLCM_INFOMEAS2]);
-	}
-}
 
 

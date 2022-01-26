@@ -1,7 +1,8 @@
 #include "feature_method.h"
 
-FeatureMethod::FeatureMethod() 
+FeatureMethod::FeatureMethod(const std::string& _featureinfo = __FILE__)
 {
+	feature_info = _featureinfo;
 }
 
 void FeatureMethod::provide_features (const std::initializer_list<Nyxus::AvailableFeatures>& F)
@@ -20,5 +21,15 @@ void FeatureMethod::osized_scan_whole_image (LR& r, ImageLoader& imloader)
 {
 	this->osized_calculate (r, imloader);
 	this->save_value (r.fvals);
+}
+
+bool FeatureMethod::provides (Nyxus::AvailableFeatures fcode)
+{
+	return std::find (provided_features.begin(), provided_features.end(), fcode) != provided_features.end();
+}
+
+bool FeatureMethod::depends (Nyxus::AvailableFeatures fcode)	
+{
+	return std::find (dependencies.begin(), dependencies.end(), fcode) != dependencies.end();
 }
 

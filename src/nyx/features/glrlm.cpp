@@ -5,8 +5,33 @@
 #include <unordered_set>
 #include "glrlm.h"
 
-GLRLM_features::GLRLM_features (int minI, int maxI, const ImageMatrix& im)
+GLRLMFeature::GLRLMFeature() : FeatureMethod("GLRLMFeature")
 {
+	provide_features({
+		GLRLM_SRE,
+		GLRLM_LRE,
+		GLRLM_GLN,
+		GLRLM_GLNN,
+		GLRLM_RLN,
+		GLRLM_RLNN,
+		GLRLM_RP,
+		GLRLM_GLV,
+		GLRLM_RV,
+		GLRLM_RE,
+		GLRLM_LGLRE,
+		GLRLM_HGLRE,
+		GLRLM_SRLGLE,
+		GLRLM_SRHGLE,
+		GLRLM_LRLGLE,
+		GLRLM_LRHGLE });
+}
+
+void GLRLMFeature::calculate (LR& r)
+{
+	auto minI = r.aux_min,
+		maxI = r.aux_max;
+	const ImageMatrix& im = r.aux_image_matrix;
+
 	//==== Check if the ROI is degenerate (equal intensity)
 	if (minI == maxI)
 	{
@@ -185,12 +210,54 @@ GLRLM_features::GLRLM_features (int minI, int maxI, const ImageMatrix& im)
 		//--unnec-- angles_U.push_back (U);
 		//--unnec-- angles_Z.push_back (Z);
 	}
+
+	calc_SRE (angled_SRE);
+	calc_LRE (angled_LRE);
+	calc_GLN (angled_GLN);
+	calc_GLNN (angled_GLNN);
+	calc_RLN (angled_RLN);
+	calc_RLNN (angled_RLNN);
+	calc_RP (angled_RP);
+	calc_GLV (angled_GLV);
+	calc_RV (angled_RV);
+	calc_RE (angled_RE);
+	calc_LGLRE (angled_LGLRE);
+	calc_HGLRE (angled_HGLRE);
+	calc_SRLGLE (angled_SRLGLE);
+	calc_SRHGLE (angled_SRHGLE);
+	calc_LRLGLE (angled_LRLGLE);
+	calc_LRHGLE (angled_LRHGLE);
+}
+
+// Not supporting the online mode
+void GLRLMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
+
+void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
+{}
+
+void GLRLMFeature::save_value(std::vector<std::vector<double>>& fvals)
+{
+	fvals[GLRLM_LRE] = angled_LRE;
+	fvals[GLRLM_GLN] = angled_GLN;
+	fvals[GLRLM_GLNN] = angled_GLNN;
+	fvals[GLRLM_RLN] = angled_RLN;
+	fvals[GLRLM_RLNN] = angled_RLNN;
+	fvals[GLRLM_RP] = angled_RP;
+	fvals[GLRLM_GLV] = angled_GLV;
+	fvals[GLRLM_RV] = angled_RV;
+	fvals[GLRLM_RE] = angled_RE;
+	fvals[GLRLM_LGLRE] = angled_LGLRE;
+	fvals[GLRLM_HGLRE] = angled_HGLRE;
+	fvals[GLRLM_SRLGLE] = angled_SRLGLE;
+	fvals[GLRLM_SRHGLE] = angled_SRHGLE;
+	fvals[GLRLM_LRLGLE] = angled_LRLGLE;
+	fvals[GLRLM_LRHGLE] = angled_LRHGLE;
 }
 
 
 // 1. Short Run Emphasis 
 // ai - angle index
-void GLRLM_features::calc_SRE (AngledFtrs& af)
+void GLRLMFeature::calc_SRE (AngledFtrs& af)
 {
 	af.clear();
 
@@ -224,7 +291,7 @@ void GLRLM_features::calc_SRE (AngledFtrs& af)
 }
 
 // 2. Long Run Emphasis 
-void GLRLM_features::calc_LRE (AngledFtrs& af)
+void GLRLMFeature::calc_LRE (AngledFtrs& af)
 {
 	af.clear();
 
@@ -258,7 +325,7 @@ void GLRLM_features::calc_LRE (AngledFtrs& af)
 }
 
 // 3. Gray Level Non-Uniformity 
-void GLRLM_features::calc_GLN (AngledFtrs& af)
+void GLRLMFeature::calc_GLN (AngledFtrs& af)
 {
 	af.clear();
 
@@ -294,7 +361,7 @@ void GLRLM_features::calc_GLN (AngledFtrs& af)
 }
 
 // 4. Gray Level Non-Uniformity Normalized 
-void GLRLM_features::calc_GLNN (AngledFtrs& af)
+void GLRLMFeature::calc_GLNN (AngledFtrs& af)
 {
 	af.clear();
 
@@ -330,7 +397,7 @@ void GLRLM_features::calc_GLNN (AngledFtrs& af)
 }
 
 // 5. Run Length Non-Uniformity
-void GLRLM_features::calc_RLN (AngledFtrs& af)
+void GLRLMFeature::calc_RLN (AngledFtrs& af)
 {
 	af.clear();
 
@@ -366,7 +433,7 @@ void GLRLM_features::calc_RLN (AngledFtrs& af)
 }
 
 // 6. Run Length Non-Uniformity Normalized 
-void GLRLM_features::calc_RLNN (AngledFtrs& af)
+void GLRLMFeature::calc_RLNN (AngledFtrs& af)
 {
 	af.clear();
 
@@ -402,7 +469,7 @@ void GLRLM_features::calc_RLNN (AngledFtrs& af)
 }
 
 // 7. Run Percentage
-void GLRLM_features::calc_RP (AngledFtrs& af)
+void GLRLMFeature::calc_RP (AngledFtrs& af)
 {
 	af.clear();
 
@@ -425,7 +492,7 @@ void GLRLM_features::calc_RP (AngledFtrs& af)
 }
 
 // 8. Gray Level Variance 
-void GLRLM_features::calc_GLV (AngledFtrs& af)
+void GLRLMFeature::calc_GLV (AngledFtrs& af)
 {
 	af.clear();
 
@@ -467,7 +534,7 @@ void GLRLM_features::calc_GLV (AngledFtrs& af)
 }
 
 // 9. Run Variance 
-void GLRLM_features::calc_RV (AngledFtrs& af)
+void GLRLMFeature::calc_RV (AngledFtrs& af)
 {
 	af.clear();
 
@@ -516,7 +583,7 @@ void GLRLM_features::calc_RV (AngledFtrs& af)
 }
 
 // 10. Run Entropy 
-void GLRLM_features::calc_RE (AngledFtrs& af)
+void GLRLMFeature::calc_RE (AngledFtrs& af)
 {
 	af.clear();
 
@@ -550,7 +617,7 @@ void GLRLM_features::calc_RE (AngledFtrs& af)
 }
 
 // 11. Low Gray Level Run Emphasis 
-void GLRLM_features::calc_LGLRE (AngledFtrs& af)
+void GLRLMFeature::calc_LGLRE (AngledFtrs& af)
 {
 	af.clear();
 
@@ -583,7 +650,7 @@ void GLRLM_features::calc_LGLRE (AngledFtrs& af)
 }
 
 // 12. High Gray Level Run Emphasis 
-void GLRLM_features::calc_HGLRE (AngledFtrs& af)
+void GLRLMFeature::calc_HGLRE (AngledFtrs& af)
 {
 	af.clear();
 
@@ -616,7 +683,7 @@ void GLRLM_features::calc_HGLRE (AngledFtrs& af)
 }
 
 // 13. Short Run Low Gray Level Emphasis 
-void GLRLM_features::calc_SRLGLE (AngledFtrs& af)
+void GLRLMFeature::calc_SRLGLE (AngledFtrs& af)
 {
 	af.clear();
 
@@ -649,7 +716,7 @@ void GLRLM_features::calc_SRLGLE (AngledFtrs& af)
 }
 
 // 14. Short Run High Gray Level Emphasis 
-void GLRLM_features::calc_SRHGLE (AngledFtrs& af)
+void GLRLMFeature::calc_SRHGLE (AngledFtrs& af)
 {
 	af.clear();
 
@@ -682,7 +749,7 @@ void GLRLM_features::calc_SRHGLE (AngledFtrs& af)
 }
 
 // 15. Long Run Low Gray Level Emphasis 
-void GLRLM_features::calc_LRLGLE (AngledFtrs& af)
+void GLRLMFeature::calc_LRLGLE (AngledFtrs& af)
 {
 	af.clear();
 
@@ -715,7 +782,7 @@ void GLRLM_features::calc_LRLGLE (AngledFtrs& af)
 }
 
 // 16. Long Run High Gray Level Emphasis 
-void GLRLM_features::calc_LRHGLE (AngledFtrs& af)
+void GLRLMFeature::calc_LRHGLE (AngledFtrs& af)
 {
 	af.clear();
 
@@ -747,7 +814,7 @@ void GLRLM_features::calc_LRHGLE (AngledFtrs& af)
 	}
 }
 
-void GLRLM_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void GLRLMFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -757,23 +824,9 @@ void GLRLM_features::reduce (size_t start, size_t end, std::vector<int>* ptrLabe
 		if (r.has_bad_data())
 			continue;
 
-		GLRLM_features glrlm ((int)r.fvals[MIN][0], (int)r.fvals[MAX][0], r.aux_image_matrix);
-		glrlm.calc_SRE(r.fvals[GLRLM_SRE]);
-		glrlm.calc_LRE(r.fvals[GLRLM_LRE]);
-		glrlm.calc_GLN(r.fvals[GLRLM_GLN]);
-		glrlm.calc_GLNN(r.fvals[GLRLM_GLNN]);
-		glrlm.calc_RLN(r.fvals[GLRLM_RLN]);
-		glrlm.calc_RLNN(r.fvals[GLRLM_RLNN]);
-		glrlm.calc_RP(r.fvals[GLRLM_RP]);
-		glrlm.calc_GLV(r.fvals[GLRLM_GLV]);
-		glrlm.calc_RV(r.fvals[GLRLM_RV]);
-		glrlm.calc_RE(r.fvals[GLRLM_RE]);
-		glrlm.calc_LGLRE(r.fvals[GLRLM_LGLRE]);
-		glrlm.calc_HGLRE(r.fvals[GLRLM_HGLRE]);
-		glrlm.calc_SRLGLE(r.fvals[GLRLM_SRLGLE]);
-		glrlm.calc_SRHGLE(r.fvals[GLRLM_SRHGLE]);
-		glrlm.calc_LRLGLE(r.fvals[GLRLM_LRLGLE]);
-		glrlm.calc_LRHGLE(r.fvals[GLRLM_LRHGLE]);
+		GLRLMFeature glrlm;
+		glrlm.calculate(r);
+		glrlm.save_value(r.fvals);
 	}
 }
 

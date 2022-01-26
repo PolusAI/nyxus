@@ -28,7 +28,7 @@
 #include "features/glrlm.h"
 #include "features/glszm.h"
 #include "features/gldm.h"
-#include "features/hexagonality_and_polygonality.h"
+#include "features/hexagonality_polygonality.h"
 #include "features/ngtdm.h"
 #include "features/image_moments.h"
 #include "features/moments.h"
@@ -140,87 +140,87 @@ namespace Nyxus
 		}
 
 		//==== Hexagonality and polygonality
-		if (Hexagonality_and_Polygonality_features::required(theFeatureSet))
+		if (HexagonalityPolygonalityFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/HexPolygEncloInsCircleGeodetLenThickness/HP/#4aaaea", "\t=");
-			runParallel(Hexagonality_and_Polygonality_features::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(HexagonalityPolygonalityFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Enclosing, inscribing, and circumscribing circle
-		if (EnclosingInscribingCircumscribingCircle_features::required(theFeatureSet))
+		if (EnclosingInscribingCircumscribingCircleFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/HexPolygEncloInsCircleGeodetLenThickness/HP/#4aaaea", "\t=");
-			runParallel(EnclosingInscribingCircumscribingCircle_features::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(EnclosingInscribingCircumscribingCircleFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Geodetic length and thickness
-		if (GeodeticLength_and_Thickness_features::required(theFeatureSet))
+		if (GeodeticLengthThicknessFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/HexPolygEncloInsCircleGeodetLenThickness/HP/#4aaaea", "\t=");
-			runParallel(GeodeticLength_and_Thickness_features::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(GeodeticLengthThicknessFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== ROI radius
-		if (RoiRadius_features::required(theFeatureSet))
+		if (RoiRadiusFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/RoiR/R/#4aaaea", "\t=");
-			runParallel(RoiRadius_features::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(RoiRadiusFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Erosion pixels
-		if (ErosionPixels_feature::required(theFeatureSet))
+		if (ErosionPixelsFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Erosion/Er/#4aaaea", "\t=");
-			runParallel(ErosionPixels_feature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(ErosionPixelsFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Fractal dimension
-		if (FractalDimension_feature::required(theFeatureSet))
+		if (FractalDimensionFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Fractal dimension/Fd/#4aaaea", "\t=");
-			runParallel(FractalDimension_feature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(FractalDimensionFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== GLCM aka Haralick 2D 
-		if (GLCM_features::required(theFeatureSet))
+		if (GLCMFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Texture/GLCM texture/GLCM/#bbbbbb", "\t=");
-			runParallel(GLCM_features::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(GLCMFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== GLRLM
-		if (GLRLM_features::required(theFeatureSet))
+		if (GLRLMFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Texture/GLRLM/RL/#bbbbbb", "\t=");
-			runParallel(GLRLM_features::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(GLRLMFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== GLSZM
-		if (GLSZM_features::required(theFeatureSet))
+		if (GLSZMFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Texture/GLSZM/SZ/#bbbbbb", "\t=");
-			runParallel(GLSZM_features::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(GLSZMFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== GLDM
-		if (GLDM_features::required(theFeatureSet))
+		if (GLDMFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Texture/GLDM/D/#bbbbbb", "\t=");
-			runParallel(GLDM_features::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(GLDMFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== NGTDM
-		if (NGTDM_features::required(theFeatureSet))
+		if (NGTDMFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Texture/NGTDM/NG/#bbbbbb", "\t=");
-			runParallel(NGTDM_features::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(NGTDMFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Moments
-		if (ImageMoments_features::required(theFeatureSet))
+		if (ImageMomentsFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Moments/Moments/2D moms/#FFFACD", "\t=");
-			runParallel(ImageMoments_features::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(ImageMomentsFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Gabor features
@@ -231,29 +231,28 @@ namespace Nyxus
 		}
 
 		//==== Radial distribution / Zernike 2D 
-		if (Zernike_features::required(theFeatureSet))
+		if (ZernikeFeature::required(theFeatureSet))
 		{
 			STOPWATCH("RDistribution/Zernike/Rz/#00FFFF", "\t=");
-			runParallel(parallelReduceZernike2D, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(ZernikeFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Radial distribution / FracAtD, MeanFraq, and RadialCV
-		if (RadialDistribution_features::required(theFeatureSet))
+		if (RadialDistributionFeature::required(theFeatureSet))
 		{
 			STOPWATCH("RDistribution/Rdist/Rd/#00FFFF", "\t=");
-			runParallel(RadialDistribution_features::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(RadialDistributionFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 	}
 
 	void reduce_neighbors()
 	{
-		if (Neighbor_features::required(theFeatureSet))
+		if (NeighborsFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Neighbors/Neighbors/N/#FF69B4", "\t=");
-			Neighbor_features::reduce(theEnvironment.get_pixel_distance());
+			NeighborsFeature::manual_reduce();
 		}
 	}
-
 
 }
 
