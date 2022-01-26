@@ -19,7 +19,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 find_package(Python COMPONENTS Interpreter Development)
 add_subdirectory(lib/pybind11)
 
-if (Python_FOUND)
+if (Python_FOUND OR Python_INCLUDE_DIRS)
 	add_compile_definitions(WITH_PYTHON_H)
 endif()
 
@@ -132,6 +132,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	endif()
 endif()
 
+target_link_libraries(backend PRIVATE -static-libgcc -static-libstdc++)
 target_link_libraries(backend PRIVATE ${Nyxus_LIBRARIES})
 target_link_libraries(backend PRIVATE ${Python_LIBRARIES})
 

@@ -69,10 +69,15 @@ class CMakeBuild(build_ext):
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(
             env.get("CXXFLAGS", ""), self.distribution.get_version()
         )
+
+        if len(os.environ.get("CMAKE_ARGS", "")):
+            cmake_args += os.environ.get("CMAKE_ARGS", "").split(" ")
+
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
         print("--------------- cmake_args=" + str(cmake_args))
         print("--------------- build_args=" + str(build_args))
+
         subprocess.check_call(
             ["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env
         )
@@ -102,5 +107,5 @@ setup(
     test_suite="tests",
     zip_safe=False,
     python_requires=">=3.6",
-    install_requires=["numpy>=1.20.1", "pandas>=1.30"],
+    install_requires=["numpy>=1.20.1", "pandas>=1.2.0"],
 )
