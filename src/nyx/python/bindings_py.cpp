@@ -15,7 +15,7 @@
 #include "../environment.h"
 #include "../globals.h"
 
-#ifndef __unix
+#ifdef _WIN32
 #define NOMINMAX	// Prevent converting std::min(), max(), ... into macros
 #include<windows.h>
 #endif

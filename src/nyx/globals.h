@@ -13,6 +13,7 @@
 #include "image_loader.h"
 #include "roi_cache.h"
 
+
 namespace Nyxus
 {
 	extern FeatureManager theFeatureMgr;
@@ -31,7 +32,7 @@ namespace Nyxus
 
 	// 2 scenarios of saving a result of feature calculation of a label-intensity file pair: saving to a CSV-file and saving to a matrix to be later consumed by a Python endpoint
 	bool save_features_2_csv (std::string intFpath, std::string segFpath, std::string outputDir);
-	bool save_features_2_buffer (std::vector<double>& resultMatrix);
+	bool save_features_2_buffer (std::vector<std::string>& headerBuf, std::vector<double>& resultMatrix, std::vector<std::string>& stringColBuf);
 
 	int read_dataset (
 		// input
@@ -75,6 +76,10 @@ namespace Nyxus
 	extern std::unordered_map <int, LR> roiData;
 	extern std::vector<double> calcResultBuf;	// [# of labels X # of features]
 	extern std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
+
+	// Ugly hack fix me.
+	extern std::vector<std::string> stringColBuf, headerBuf;
+	extern size_t totalNumFeatures, totalNumLabels;
 
 	// System resources
 	unsigned long long getAvailPhysMemory();

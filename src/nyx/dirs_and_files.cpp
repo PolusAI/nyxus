@@ -28,8 +28,8 @@ namespace Nyxus
 			std::string fp = entry.path().string();
 			if (std::regex_match(fp, re))
 				files.push_back(fp);
-			else
-				std::cout << "Skipping file " << fp << " as not matching file pattern " << theEnvironment.file_pattern << "\n";
+			// else
+			// 	std::cout << "Skipping file " << fp << " as not matching file pattern " << theEnvironment.file_pattern << "\n";
 		}
 	}
 

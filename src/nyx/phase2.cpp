@@ -3,6 +3,9 @@
 #include <fast_loader/specialised_tile_loader/grayscale_tiff_tile_loader.h>
 #include <map>
 #include <array>
+#ifdef WITH_PYTHON_H
+#include <pybind11/pybind11.h>
+#endif
 #include "virtual_file_tile_channel_loader.h"
 #include "environment.h"
 #include "globals.h"
@@ -189,6 +192,10 @@ namespace Nyxus
 				// Advance the batch counter
 				roiBatchNo++;
 			}
+
+			// Allow heyboard interrupt.
+			if (PyErr_CheckSignals() != 0)
+                throw pybind11::error_already_set();
 		}
 
 		// Process what's remaining pending
@@ -214,6 +221,12 @@ namespace Nyxus
 			// Free memory
 			std::cout << "\tfreeing ROI buffers\n";
 			freeTrivialRoisBuffers(Pending);
+
+			#ifdef WITH_PYTHON_H
+			// Allow heyboard interrupt.
+			if (PyErr_CheckSignals() != 0)
+                throw pybind11::error_already_set();
+			#endif
 		}
 
 		// Neighbors
