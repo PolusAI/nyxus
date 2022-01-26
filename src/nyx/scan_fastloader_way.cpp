@@ -7,13 +7,16 @@
 #include <fast_loader/specialised_tile_loader/grayscale_tiff_tile_loader.h>
 #include <map>
 #include <array>
+#ifdef WITH_PYTHON_H
+#include <pybind11/pybind11.h>
+#endif
 #include "virtual_file_tile_channel_loader.h"
 #include "environment.h"
 #include "globals.h"
 #include "helpers/timing.h"
 
 // Sanity
-#ifndef __unix
+#ifdef _WIN32
 #include<windows.h>
 #endif
 
@@ -226,7 +229,7 @@ namespace Nyxus
 			if (save2csv)
 				ok = save_features_2_csv (ifp, lfp, csvOutputDir);
 			else
-				ok = save_features_2_buffer(calcResultBuf);
+				ok = save_features_2_buffer(headerBuf, calcResultBuf, stringColBuf);
 			if (ok == false)
 			{
 				std::cout << "save_features_2_csv() returned an error code" << std::endl;
@@ -234,6 +237,12 @@ namespace Nyxus
 			}
 
 			theImLoader.close();
+
+			#ifdef WITH_PYTHON_H
+			// Allow heyboard interrupt.
+			if (PyErr_CheckSignals() != 0)
+                throw pybind11::error_already_set();
+			#endif
 		}
 
 #ifdef CHECKTIMING

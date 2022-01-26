@@ -1,5 +1,5 @@
+cmake_minimum_required(VERSION 3.12)
 project(SensemakerPythonLibrary)
-cmake_minimum_required(VERSION 3.4...3.18)
 
 #==== Compiler Options
 set(CMAKE_CXX_STANDARD 17)
@@ -16,36 +16,42 @@ endif()
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 #==== Pybind11
+find_package(Python COMPONENTS Interpreter Development)
 add_subdirectory(lib/pybind11)
+
+if (Python_FOUND)
+	add_compile_definitions(WITH_PYTHON_H)
+endif()
+
+
+include_directories(
+	lib/pybind11/include/
+	${Python_INCLUDE_DIRS}
+)
+
+message(STATUS "PYTHON HEADERS: ${Python_INCLUDE_DIRS}")
+
+find_package(OpenMP COMPONENTS C CXX)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake-modules")
 
 #==== Include directories. Note: libtiff (required by FastLoader) is 
 #	the only dependency needing manual preparation - unzip, cmake-install 
 #	it, and put its headers in lib/libtiff/include, and 
 #	its library - in lib/libtiff/lib
-include_directories(
-	lib/pybind11/include/
-	lib/fastloader/
-	lib/hedgehog/
-)
+find_package(FastLoader)
 
-# Search for libtiff. If it's found then great. If not then we expect 
-# manual preparation. unzip, cmake-install it, and put its headers in 
-# lib/libtiff/include, and its library - in lib/libtiff/lib
-find_package(TIFF)
-
-if(TIFF_FOUND)
-	include_directories(${TIFF_INCLUDE_DIR})
+if(FastLoader_FOUND)
+	list(APPEND Nyxus_LIBRARIES ${FastLoader_LIBRARIES})
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FastLoader_CXX_FLAGS}")
+	include_directories(${FastLoader_INCLUDE_DIR})
 else()
-	include_directories(
-		lib/libtiff
-		lib/libtiff/include
-	)
+	message(FATAL_ERROR "Unable to find FastLoader which is required for Nyxus.")
 endif()
 
-
 #==== Source files
-pybind11_add_module(nyx_backend 
-	src/nyx/bindings_py.cpp 
+set(SOURCE
+	src/nyx/features/basic_morphology.cpp
 	src/nyx/features/caliper.cpp
 	src/nyx/features/caliper_nassenstein.cpp
 	src/nyx/features/chords.cpp
@@ -80,9 +86,7 @@ pybind11_add_module(nyx_backend
 	src/nyx/features/rotation.cpp
 	src/nyx/features/specfunc.cpp
 	src/nyx/features/zernike.cpp
-	src/nyx/helpers/system_resource.cpp
 	src/nyx/helpers/timing.cpp
-	src/nyx/python_interface/bindings_py.cpp
 	src/nyx/common_stats.cpp
 	src/nyx/dirs_and_files.cpp
 	src/nyx/environment.cpp
@@ -104,20 +108,35 @@ pybind11_add_module(nyx_backend
 	src/nyx/reduce_trivial_rois.cpp
 	src/nyx/roi_cache.cpp
 	src/nyx/scan_fastloader_way.cpp
-	)
+)
 
-# EXAMPLE_VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
-target_compile_definitions(nyx_backend PRIVATE VERSION_INFO=${EXAMPLE_VERSION_INFO})
-
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	target_link_libraries(nyx_backend PRIVATE stdc++fs)
+# CLI
+if(BUILD_CLI)
+	add_executable(nyxus ${SOURCE} src/nyx/main.cpp)
 endif()
 
-#==== Separate link instruction for libtiff. See libtiff's deployment instrunction above
-if(TIFF_FOUND)
-	target_link_libraries(nyx_backend PRIVATE ${TIFF_LIBRARIES})
-else()
-	find_library(LIBTIFF_LIBRARY libTiff_x64 lib/libtiff/lib)
-	target_link_libraries(nyx_backend PRIVATE ${LIBTIFF_LIBRARY})
+# Python bindings.
+pybind11_add_module(backend 
+	${SOURCE}
+	src/nyx/python/new_bindings_py.cpp
+)
+
+# EXAMPLE_VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
+target_compile_definitions(backend PRIVATE VERSION_INFO=${EXAMPLE_VERSION_INFO})
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	target_link_libraries(backend PRIVATE stdc++fs)
+	
+	if(BUILD_CLI)
+		target_link_libraries(nyxus PRIVATE stdc++fs)
+	endif()
+endif()
+
+target_link_libraries(backend PRIVATE ${Nyxus_LIBRARIES})
+target_link_libraries(backend PRIVATE ${Python_LIBRARIES})
+
+if(BUILD_CLI)
+	target_link_libraries(nyxus PRIVATE ${Nyxus_LIBRARIES})
+	target_link_libraries(nyxus PRIVATE ${Python_LIBRARIES})
 endif()
 

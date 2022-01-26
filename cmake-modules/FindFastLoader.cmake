@@ -32,7 +32,7 @@ if (FastLoader_FIND_QUIETLY)
 	if (Hedgehog_FOUND)
 		set(FastLoader_LIBRARIES "${FastLoader_LIBRARIES} ${Hedgehog_LIBRARIES}")
 		set(FastLoader_CXX_FLAGS "${FastLoader_CXX_FLAGS} ${Hedgehog_CXX_FLAGS}")
-		set(FastLoader_INCLUDE_DIR "${FastLoader_INCLUDE_DIR} ${Hedgehog_INCLUDE_DIR}")
+		set(FastLoader_INCLUDE_DIR "${FastLoader_INCLUDE_DIR}" "${Hedgehog_INCLUDE_DIR}")
 	else ()
 		message(STATUS "Hedgehog library has not been found, please install it to use FastLoader.")
 		SET(FastLoader_FOUND OFF)
@@ -70,13 +70,17 @@ else ()
 endif (FastLoader_FIND_QUIETLY)
 
 # Check include files
-FIND_PATH(FastLoader_INCLUDE_DIR fast_loader/fast_loader.h
+FIND_PATH(FastLoader_base_INCLUDE_DIR fast_loader/fast_loader.h
+		lib/fastloader
 		/usr/include
 		/usr/local/include
 		)
-IF (NOT FastLoader_INCLUDE_DIR)
+
+IF (NOT FastLoader_base_INCLUDE_DIR)
 	SET(FastLoader_FOUND OFF)
 	MESSAGE(STATUS "Could not find FastLoader includes. FastLoader_FOUND now off")
+ELSE ()
+	set(FastLoader_INCLUDE_DIR "${FastLoader_INCLUDE_DIR}" "${FastLoader_base_INCLUDE_DIR}")
 ENDIF ()
 
 IF (FastLoader_FOUND)
