@@ -121,8 +121,8 @@ pybind11_add_module(backend
 	src/nyx/python/new_bindings_py.cpp
 )
 
-# EXAMPLE_VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
-target_compile_definitions(backend PRIVATE VERSION_INFO=${EXAMPLE_VERSION_INFO})
+# VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
+target_compile_definitions(backend PRIVATE VERSION_INFO=${VERSION_INFO})
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	target_link_libraries(backend PRIVATE stdc++fs)

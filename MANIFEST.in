@@ -1,0 +1,2 @@
+include versioneer.py
+include src/nyx/python/nyxus/_version.py
