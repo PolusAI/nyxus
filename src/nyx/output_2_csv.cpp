@@ -11,6 +11,7 @@
 #include "features/radial_distribution.h"
 #include "features/gabor.h"
 #include "features/glrlm.h"
+#include "features/zernike.h"
 #include "globals.h"
 
 namespace Nyxus
@@ -200,23 +201,8 @@ namespace Nyxus
 				if (fc == ZERNIKE2D)
 				{
 					// Populate with indices
-					for (int i = 0; i <= LR::aux_ZERNIKE2D_ORDER; i++)
-						if (i % 2)
-							for (int j = 1; j <= i; j += 2)
-							{
-								// CSV separator
-								//if (j > 1)
-								//	ssHead << ",";
-								ssHead << "," << fn << "_" << i << "_" << j;
-							}
-						else
-							for (int j = 0; j <= i; j += 2)
-							{
-								// CSV separator
-								//if (j > 1)
-								//	ssHead << ",";
-								ssHead << "," << fn << "_" << i << "_" << j;
-							}
+					for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
+						ssHead << "," << fn << "_" << i;						
 
 					// Proceed with other features
 					continue;
@@ -322,20 +308,8 @@ namespace Nyxus
 				// --Zernike family
 				if (fc == ZERNIKE2D)
 				{
-					int zIdx = 0;
-					for (int i = 0; i <= LR::aux_ZERNIKE2D_ORDER; i++)
-						if (i % 2)
-							for (int j = 1; j <= i; j += 2)
-							{
-								ssVals << "," << vv[zIdx++]; // former r.Zernike2D[zIdx++];
-								//--diagnoze misalignment-- ssVals << "," << fn << "-" << vv[zIdx++];
-							}
-						else
-							for (int j = 0; j <= i; j += 2)
-							{
-								ssVals << "," << vv[zIdx++]; // former r.Zernike2D[zIdx++];
-								//--diagnoze misalignment-- ssVals << "," << fn << "-" << vv[zIdx++];
-							}
+					for (int i=0; i <ZernikeFeature::NUM_FEATURE_VALS; i++)
+						ssVals << "," << vv[i]; 
 
 					// Proceed with other features
 					continue;

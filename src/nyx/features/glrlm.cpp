@@ -32,9 +32,27 @@ void GLRLMFeature::calculate (LR& r)
 		maxI = r.aux_max;
 	const ImageMatrix& im = r.aux_image_matrix;
 
-	//==== Check if the ROI is degenerate (equal intensity)
+	//==== Check if the ROI is degenerate (equal intensity => no texture)
 	if (minI == maxI)
 	{
+		// insert zero for all 4 angles to make the output expecting 4-angled values happy
+		angled_SRE.resize(4, 0);	
+		angled_LRE.resize(4, 0);
+		angled_GLN.resize(4, 0);
+		angled_GLNN.resize(4, 0);
+		angled_RLN.resize(4, 0);
+		angled_RLNN.resize(4, 0);
+		angled_RP.resize(4, 0);
+		angled_GLV.resize(4, 0);
+		angled_RV.resize(4, 0);
+		angled_RE.resize(4, 0);
+		angled_LGLRE.resize(4, 0);
+		angled_HGLRE.resize(4, 0);
+		angled_SRLGLE.resize(4, 0);
+		angled_SRHGLE.resize(4, 0);
+		angled_LRLGLE.resize(4, 0);
+		angled_LRHGLE.resize(4, 0);
+
 		bad_roi_data = true;
 		return;
 	}
@@ -237,6 +255,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 
 void GLRLMFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
+	fvals[GLRLM_SRE] = angled_SRE;
 	fvals[GLRLM_LRE] = angled_LRE;
 	fvals[GLRLM_GLN] = angled_GLN;
 	fvals[GLRLM_GLNN] = angled_GLNN;
@@ -820,9 +839,6 @@ void GLRLMFeature::parallel_process_1_batch (size_t start, size_t end, std::vect
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-
-		if (r.has_bad_data())
-			continue;
 
 		GLRLMFeature glrlm;
 		glrlm.calculate(r);

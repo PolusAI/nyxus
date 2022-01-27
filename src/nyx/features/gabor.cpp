@@ -5,6 +5,13 @@
 
 void GaborFeature::calculate (LR& r)
 {
+    // Skip calculation in case of bad data
+    if ((int)r.fvals[MIN][0] == (int)r.fvals[MAX][0])
+    {
+        fvals.resize (GaborFeature::num_features, 0);   // 'fvals' will then be picked up by save_values()
+        return;
+    }
+
     const ImageMatrix& Im0 = r.aux_image_matrix;
 
     double GRAYthr;
@@ -543,16 +550,6 @@ void GaborFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels
     {
         int lab = (*ptrLabels)[i];
         LR& r = (*ptrLabelData)[lab];
-
-        if (r.has_bad_data())
-            continue;
-
-        // Skip calculation in case of bad data
-        if ((int)r.fvals[MIN][0] == (int)r.fvals[MAX][0])
-        {
-            r.fvals[GABOR].resize(GaborFeature::num_features, 0.0);
-            continue;
-        }
 
         GaborFeature gf;
         gf.calculate (r);

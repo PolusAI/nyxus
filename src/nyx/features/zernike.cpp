@@ -331,10 +331,10 @@ void ZernikeFeature::zernike2D(
 	// Create a temp image matrix from label's pixels
 	ImageMatrix I (nonzero_intensity_pixels, aabb);
 
-	coeffs.resize(72, 0);
+	coeffs.resize(ZernikeFeature::NUM_FEATURE_VALS, 0);
 
 	// Calculate features
-	long output_size;   // output size is normally 72
+	long output_size;   // output size is normally 72 (NUM_FEATURE_VALS)
 	mb_zernike2D (I, order, 0/*rad*/, coeffs.data(), &output_size); 
 }
 
@@ -343,7 +343,7 @@ void ZernikeFeature::calculate (LR& r)
 	zernike2D(
 		r.raw_pixels,	// nonzero_intensity_pixels,
 		r.aabb,			// AABB info not to calculate it again from 'raw_pixels' in the function
-		r.aux_ZERNIKE2D_ORDER);	
+		ZernikeFeature::ZERNIKE2D_ORDER);	
 
 	// Fix calculated feature values due to all-0 intensity labels to avoid NANs in the output
 	if (r.has_bad_data())
@@ -359,9 +359,6 @@ void ZernikeFeature::parallel_process_1_batch (size_t firstitem, size_t lastitem
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-
-		if (r.has_bad_data())
-			continue;
 
 		ZernikeFeature f;
 		f.calculate (r);

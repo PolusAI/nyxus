@@ -12,6 +12,7 @@
 #include "features/radial_distribution.h"
 #include "features/gabor.h"
 #include "features/glrlm.h"
+#include "features/zernike.h"
 
 namespace Nyxus
 {
@@ -89,7 +90,7 @@ namespace Nyxus
 				if (glrlmFeature)
 				{
 					// Polulate with angles
-					for (auto ang : GLRLM_features::rotAngles)
+					for (auto ang : GLRLMFeature::rotAngles)
 						headerBuf.push_back(fn + "_" + std::to_string(ang));
 					
 					// Proceed with other features
@@ -110,7 +111,7 @@ namespace Nyxus
 				if (fc == FRAC_AT_D)
 				{
 					// Generate the feature value list
-					for (auto i = 0; i < RadialDistribution_features::num_features_FracAtD; i++)
+					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
 						headerBuf.push_back(fn + "_" + std::to_string(i));
 
 					// Proceed with other features
@@ -120,7 +121,7 @@ namespace Nyxus
 				if (fc == MEAN_FRAC)
 				{
 					// Generate the feature value list
-					for (auto i = 0; i < RadialDistribution_features::num_features_MeanFrac; i++)
+					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
 						headerBuf.push_back(fn + "_" + std::to_string(i));
 
 					// Proceed with other features
@@ -130,7 +131,7 @@ namespace Nyxus
 				if (fc == RADIAL_CV)
 				{
 					// Generate the feature value list
-					for (auto i = 0; i < RadialDistribution_features::num_features_RadialCV; i++)
+					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
 						headerBuf.push_back(fn + "_" + std::to_string(i));
 
 					// Proceed with other features
@@ -141,13 +142,8 @@ namespace Nyxus
 				if (fc == ZERNIKE2D)
 				{
 					// Populate with indices
-					for (int i = 0; i <= LR::aux_ZERNIKE2D_ORDER; i++)
-						if (i % 2)
-							for (int j = 1; j <= i; j += 2)
-								headerBuf.push_back(fn + "_" + std::to_string(i) + "_" + std::to_string(j));
-						else
-							for (int j = 0; j <= i; j += 2)
-								headerBuf.push_back(fn + "_" + std::to_string(i) + "_" + std::to_string(j));
+					for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
+						headerBuf.push_back (fn + "_" + std::to_string(i));
 
 					// Proceed with other features
 					continue;
@@ -243,14 +239,8 @@ namespace Nyxus
 				// --Zernike family
 				if (fc == ZERNIKE2D)
 				{
-					int zIdx = 0;
-					for (int i = 0; i <= LR::aux_ZERNIKE2D_ORDER; i++)
-						if (i % 2)
-							for (int j = 1; j <= i; j += 2)
-								resultBuf.push_back(vv[zIdx++]); // former r.Zernike2D[zIdx++]);
-						else
-							for (int j = 0; j <= i; j += 2)
-								resultBuf.push_back(vv[zIdx++]); // former r.Zernike2D[zIdx++]);
+					for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
+						resultBuf.push_back(vv[i]); 
 
 					// Proceed with other features
 					continue;
@@ -259,7 +249,7 @@ namespace Nyxus
 				// --Radial distribution features
 				if (fc == FRAC_AT_D)
 				{
-					for (auto i = 0; i < RadialDistribution_features::num_features_FracAtD; i++)
+					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
 						resultBuf.push_back(vv[i]);
 					
 					// Proceed with other features
@@ -267,7 +257,7 @@ namespace Nyxus
 				}
 				if (fc == MEAN_FRAC)
 				{
-					for (auto i = 0; i < RadialDistribution_features::num_features_MeanFrac; i++)
+					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
 						resultBuf.push_back(vv[i]);
 					
 					// Proceed with other features
@@ -275,7 +265,7 @@ namespace Nyxus
 				}
 				if (fc == RADIAL_CV)
 				{
-					for (auto i = 0; i < RadialDistribution_features::num_features_RadialCV; i++)
+					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
 						resultBuf.push_back(vv[i]);
 					
 					// Proceed with other features

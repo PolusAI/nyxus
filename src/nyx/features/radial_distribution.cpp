@@ -15,9 +15,6 @@ RadialDistributionFeature::RadialDistributionFeature() : FeatureMethod("RadialDi
 
 void RadialDistributionFeature::calculate(LR& r)
 {
-	auto& raw_pixels = r.raw_pixels;
-	auto& contour_pixels = r.contour;
-
 	radial_count_bins.resize (RadialDistributionFeature::num_bins, 0);
 	radial_intensity_bins.resize (RadialDistributionFeature::num_bins, 0.0);
 	angular_bins.resize (RadialDistributionFeature::num_bins, 0);
@@ -26,6 +23,13 @@ void RadialDistributionFeature::calculate(LR& r)
 	values_FracAtD.resize (RadialDistributionFeature::num_bins, 0);
 	values_MeanFrac.resize (RadialDistributionFeature::num_bins, 0);
 	values_RadialCV.resize (RadialDistributionFeature::num_bins, 0);
+
+	auto& raw_pixels = r.raw_pixels;
+	auto& contour_pixels = r.contour;
+
+	// Skip calculation if we have insofficient informative data 
+	if (raw_pixels.size() == 0 || contour_pixels.size() == 0)
+		return;
 
 	// Cache the pixels count
 	this->cached_num_pixels = raw_pixels.size();
@@ -128,9 +132,6 @@ void RadialDistributionFeature::parallel_process_1_batch(size_t start, size_t en
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-
-		if (r.has_bad_data())
-			continue;
 
 		// Calculate the radial distribution
 		RadialDistributionFeature rdf;

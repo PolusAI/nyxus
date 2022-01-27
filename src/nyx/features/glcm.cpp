@@ -63,7 +63,23 @@ void GLCMFeature::parallel_process_1_batch (size_t start, size_t end, std::vecto
 		LR& r = (*ptrLabelData)[lab];
 
 		if (r.has_bad_data())
+		{
+			// Dfault values for all 4 standard angles
+			r.fvals[GLCM_ANGULAR2NDMOMENT].resize(4, 0);
+			r.fvals[GLCM_CONTRAST].resize(4, 0);
+			r.fvals[GLCM_CORRELATION].resize(4, 0);
+			r.fvals[GLCM_VARIANCE].resize(4, 0);
+			r.fvals[GLCM_INVERSEDIFFERENCEMOMENT].resize(4, 0);
+			r.fvals[GLCM_SUMAVERAGE].resize(4, 0);
+			r.fvals[GLCM_SUMVARIANCE].resize(4, 0);
+			r.fvals[GLCM_SUMENTROPY].resize(4, 0);
+			r.fvals[GLCM_ENTROPY].resize(4, 0);
+			r.fvals[GLCM_DIFFERENCEVARIANCE].resize(4, 0);
+			r.fvals[GLCM_DIFFERENCEENTROPY].resize(4, 0);
+			r.fvals[GLCM_INFOMEAS1].resize(4, 0);
+			r.fvals[GLCM_INFOMEAS2].resize(4, 0);
 			continue;
+		}
 
 		//=== GLCM version 2
 		// Skip calculation in case of bad data
