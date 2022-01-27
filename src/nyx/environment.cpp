@@ -556,13 +556,12 @@ int Environment::parse_cmdline(int argc, char **argv)
 
     // --include the raw command line
     std::stringstream rawCL;
-    rawCL << "\nRaw command line:\n"
-          << argv[0] << " ";
+    rawCL << "\nCommand line:\n" << argv[0] << " ";
     std::copy(args.begin(), args.end(), std::ostream_iterator<std::string>(rawCL, " ")); // vector of strings -> string
     rawCL << "\n\n";
 
     // --display how the command line was parsed
-    show_memory(rawCL.str().c_str(), "\n");
+    PROFUSE(show_memory(rawCL.str().c_str(), "\n");)
 
     // --what's not recognized?
     if (unrecognized.size() > 0)

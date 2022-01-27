@@ -7,12 +7,13 @@
 
 int main (int argc, char** argv)
 {
-	std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021 Axle Informatics\n" << "Build of " << __TIMESTAMP__ << "\n";
+	PROFUSE(std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021 Axle Informatics\t" << "Build of " << __TIMESTAMP__ << "\n";)
 
 	int parseRes = theEnvironment.parse_cmdline (argc, argv);
 	if (parseRes)
 		return parseRes;
-	theEnvironment.show_summary ("\n"/*head*/, "\n"/*tail*/);
+
+	PROFUSE(theEnvironment.show_summary ("\n"/*head*/, "\n"/*tail*/);)
 
 	// Have the feature manager prepare the feature toolset reflecting user's selection
 	if (!theFeatureMgr.compile())
@@ -43,7 +44,7 @@ int main (int argc, char** argv)
 
 	// Current time stamp #1
 	auto startTS = getTimeStr();
-	std::cout << "\n>>> STARTING >>> " << startTS << "\n";
+	PROFUSE(std::cout << "\n>>> STARTING >>> " << startTS << "\n";)
 
 	// Process the image sdata
 	int min_online_roi_size = 0;
@@ -77,7 +78,7 @@ int main (int argc, char** argv)
 	}
 
 	// Current time stamp #2
-	std::cout << "\n>>> STARTED >>>\t" << startTS << "\n>>> ENDING >>>\t" << getTimeStr() << "\n";
+	PROFUSE(std::cout << "\n>>> STARTED >>>\t" << startTS << "\n>>> ENDING >>>\t" << getTimeStr() << "\n";)
 
 	int exitCode = errorCode;
 	return exitCode;

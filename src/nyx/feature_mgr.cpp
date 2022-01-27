@@ -3,7 +3,6 @@
 #include "featureset.h"
 #include "environment.h"
 
-
 void FeatureManager::register_feature (FeatureMethod* fm)
 {
 	full_featureset.push_back(fm);
@@ -143,15 +142,14 @@ bool FeatureManager::gather_dependencies()
 			continue;
 		}
 
-		// Feature method instance is good
-		if (theEnvironment.verbosity_level)
+		PROFUSE(
+			// Feature method instance is good
 			std::cout << fm->feature_info << ": " << n_deps << " depends\n";
 
-		// Show the user method's extended dependencies 
-		for (auto fcode : extendedDependencies)
-		{
-			std::cout << "\t" << theFeatureSet.findFeatureNameByCode(fcode) << "\n";
-		}
+			// Show the user method's extended dependencies 
+			for (auto fcode : extendedDependencies)
+				std::cout << "\t" << theFeatureSet.findFeatureNameByCode(fcode) << "\n";
+		)
 
 		// Bind 'fm' to feature methods implementing fm's extended dependency set
 		xdeps.push_back (extendedDependencies);
@@ -262,13 +260,13 @@ void FeatureManager::build_user_requested_set()
 		}
 	}
 
-	// List
-	if (theEnvironment.verbosity_level)
-	{
+	// List unsorted
+	PROFUSE
+		(
 		std::cout << "Unsorted:\n";
 		for (auto& oneD : requestedWithDepths)
 			std::cout << std::get<0>(oneD)->feature_info << " " << std::get<1>(oneD) << " deps \n";
-	}
+		)
 
 	// Sort by independence
 	std::sort(requestedWithDepths.begin(), requestedWithDepths.end(),
@@ -277,13 +275,14 @@ void FeatureManager::build_user_requested_set()
 			return std::get<1>(a) < std::get<1>(b);
 		});
 
-	if (theEnvironment.verbosity_level)
-	{
+	// List sorted
+	PROFUSE
+		(
 		// List
 		std::cout << "Sorted:\n";
 		for (auto& oneD : requestedWithDepths)
 			std::cout << std::get<0>(oneD)->feature_info << " " << std::get<1>(oneD) << " deps \n";
-	}
+		)
 }
 
 #if 0

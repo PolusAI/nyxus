@@ -100,9 +100,9 @@ namespace Nyxus
 
 				// Show stayalive progress info
 				if (cnt++ % 4 == 0)
-					std::cout << "\t"
+					PROFUSE(std::cout << "\t"
 					<< int((row * nth + col) * 100 / float(nth * ntw) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs"
-					<< "\n";
+					<< "\n";)
 			}
 
 		return true;
@@ -147,7 +147,7 @@ namespace Nyxus
 			// Skip non-trivial ROI
 			if (itemFootprint >= memory_limit)
 			{
-				std::cout << ">>> Skipping non-trivial ROI " << lab << " (area=" << r.aux_area << " px, footprint=" << itemFootprint << " b)\n";
+				PROFUSE(std::cout << ">>> Skipping non-trivial ROI " << lab << " (area=" << r.aux_area << " px, footprint=" << itemFootprint << " b)\n";)
 				continue;
 			}
 
@@ -160,16 +160,16 @@ namespace Nyxus
 			else
 			{
 				// Scan pixels of pending trivial ROIs 
-				std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";
-				std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
+				PROFUSE(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";)
+				PROFUSE(std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";)
 				scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
 
 				// Allocate memory
-				std::cout << "\tallocating ROI buffers\n";
+				PROFUSE(std::cout << "\tallocating ROI buffers\n";)
 				allocateTrivialRoisBuffers(Pending);
 
 				// Reduce them
-				std::cout << "\treducing ROIs\n";
+				PROFUSE(std::cout << "\treducing ROIs\n";)
 				// reduce_trivial_rois(Pending);	
 				reduce_trivial_rois_manual(Pending);
 
@@ -177,7 +177,7 @@ namespace Nyxus
 				//outputRoisFeatures (Pending);
 
 				// Free memory
-				std::cout << "\tfreeing ROI buffers\n";
+				PROFUSE(std::cout << "\tfreeing ROI buffers\n";)
 				freeTrivialRoisBuffers(Pending);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
 
 				// Reset the RAM footprint accumulator
@@ -205,16 +205,16 @@ namespace Nyxus
 		if (Pending.size() > 0)
 		{
 			// Scan pixels of pending trivial ROIs 
-			std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";
-			std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
+			PROFUSE(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";)
+			PROFUSE(std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";)
 			scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
 
 			// Allocate memory
-			std::cout << "\tallocating ROI buffers\n";
+			PROFUSE(std::cout << "\tallocating ROI buffers\n";)
 			allocateTrivialRoisBuffers(Pending);
 
 			// Reduce them
-			std::cout << "\treducing ROIs\n";
+			PROFUSE(std::cout << "\treducing ROIs\n";)
 			//reduce_trivial_rois(Pending);	
 			reduce_trivial_rois_manual(Pending);
 
@@ -222,7 +222,7 @@ namespace Nyxus
 			//outputRoisFeatures(Pending);
 
 			// Free memory
-			std::cout << "\tfreeing ROI buffers\n";
+			PROFUSE(std::cout << "\tfreeing ROI buffers\n";)
 			freeTrivialRoisBuffers(Pending);
 
 			#ifdef WITH_PYTHON_H

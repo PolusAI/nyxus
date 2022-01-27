@@ -12,25 +12,8 @@ public:
 	using Unit = std::micro;
 	static constexpr const char* UnitString = "micro-second";
 
-	Stopwatch (const std::string& header_, const std::string & tail_)
-	{
-		header = header_;
-		tail = tail_;
-
-		if (totals.find(header) == totals.end())
-			totals[header] = 0.0;
-
-		start = std::chrono::system_clock::now();
-		if (header.length() > 0)
-			std::cout << header << "\n";
-	}
-	~Stopwatch()
-	{
-		end = std::chrono::system_clock::now();
-		std::chrono::duration<double, Unit> elap = end - start;
-		std::cout << tail << " " << elap.count() << " us\n";
-		totals[header] = totals[header] + elap.count();
-	}
+	Stopwatch(const std::string& header_, const std::string& tail_);
+	~Stopwatch();
 	static void add_measurement_once(const std::string& measurement_name, double value) 
 	{ 
 		totals[measurement_name] = value; 
