@@ -104,7 +104,7 @@ bool FeatureManager::gather_dependencies()
 			continue;
 		}
 
-		PROFUSE(
+		VERBOSLVL2(
 			// Feature method instance is good
 			std::cout << fm->feature_info << ": " << n_deps << " depends\n";
 
@@ -223,11 +223,11 @@ void FeatureManager::build_user_requested_set()
 	}
 
 	// List unsorted
-	PROFUSE
+	VERBOSLVL2
 		(
-		std::cout << "Unsorted:\n";
-		for (auto& oneD : requestedWithDeps)
-			std::cout << std::get<0>(oneD)->feature_info << " " << std::get<1>(oneD) << " deps \n";
+			std::cout << "Unsorted:\n";
+			for (auto& oneD : requestedWithDeps)
+				std::cout << std::get<0>(oneD)->feature_info << " " << std::get<1>(oneD) << " deps \n";
 		)
 
 	// Sort by independence
@@ -238,12 +238,11 @@ void FeatureManager::build_user_requested_set()
 		});
 
 	// List sorted
-	PROFUSE
+		VERBOSLVL2
 		(
-		// List
-		std::cout << "Sorted:\n";
-		for (auto& oneD : requestedWithDeps)
-			std::cout << std::get<0>(oneD)->feature_info << " " << std::get<1>(oneD) << " deps \n";
+			std::cout << "Sorted:\n";
+			for (auto& oneD : requestedWithDeps)
+				std::cout << std::get<0>(oneD)->feature_info << " " << std::get<1>(oneD) << " deps \n";
 		)
 
 	// Fill the user-facing 'user_requested_features'

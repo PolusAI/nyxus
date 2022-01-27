@@ -154,23 +154,23 @@ namespace Nyxus
 		if (initial_freeRamAmt == 0)
 			initial_freeRamAmt = freeRamAmt;
 		double memDiff = double(freeRamAmt) - double(initial_freeRamAmt);
-		PROFUSE(std::cout << std::setw(15) << freeRamAmt << " bytes free (" << "consumed=" << memDiff << ") ";)
+		VERBOSLVL1(std::cout << std::setw(15) << freeRamAmt << " bytes free (" << "consumed=" << memDiff << ") ";)
 
 		// Display (1) dataset progress info and (2) file pair info
 		int digits = 2, k = std::pow(10.f, digits);
 		float perCent = float(filepair_index * 100 * k / tot_num_filepairs) / float(k);
-		PROFUSE(std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << intens_fpath << " SEG: " << label_fpath << "\n";)
+		VERBOSLVL1(std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << intens_fpath << " SEG: " << label_fpath << "\n";)
 
 		// Phase 1: gather ROI metrics
-		PROFUSE(std::cout << "Gathering ROI metrics\n";)
+		VERBOSLVL1(std::cout << "Gathering ROI metrics\n";)
 		gatherRoisMetrics (intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
 
 		// Phase 2: process trivial-sized ROIs
-		PROFUSE(std::cout << "Processing trivial ROIs\n";)
+		VERBOSLVL1(std::cout << "Processing trivial ROIs\n";)
 		processTrivialRois (intens_fpath, label_fpath, num_FL_threads, theEnvironment.get_ram_limit());
 
 		// Phase 3: process nontrivial (oversized) ROIs, if any
-		PROFUSE(std::cout << "Processing oversized ROIs\n";)
+		VERBOSLVL1(std::cout << "Processing oversized ROIs\n";)
 		processNontrivialRois (intens_fpath, label_fpath, num_FL_threads, theEnvironment.get_ram_limit());
 
 		return true;
@@ -247,15 +247,15 @@ namespace Nyxus
 
 #ifdef CHECKTIMING
 		// General timing
-		PROFUSE(std::cout
+		VERBOSLVL1(std::cout
 			<< "Total image scan time [" << Stopwatch::UnitString << "]: " << totalImgScanTime
 			<< "\n\t+\nTotal feature reduce time [" << Stopwatch::UnitString << "]: " << totalFeatureReduceTime
 			<< "\n\t=\nScan to reduce ratio: " << totalImgScanTime / totalFeatureReduceTime
 			<< std::endl;)
 
 		// Detailed timing
-		PROFUSE(Stopwatch::print_stats();)
-		PROFUSE(Stopwatch::save_stats(theEnvironment.output_dir + "/nyxus_timing.csv");)
+		VERBOSLVL1(Stopwatch::print_stats();)
+		VERBOSLVL1(Stopwatch::save_stats(theEnvironment.output_dir + "/nyxus_timing.csv");)
 #endif
 
 		return 0; // success

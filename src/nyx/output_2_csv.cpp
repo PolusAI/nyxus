@@ -51,13 +51,13 @@ namespace Nyxus
 		if (theEnvironment.separateCsv)
 		{
 			std::string fullPath = outputDir + "/_INT_" + getPureFname(intFpath) + "_SEG_" + getPureFname(segFpath) + ".csv";
-			PROFUSE(std::cout << "\t--> " << fullPath << "\n";)
+			VERBOSLVL1(std::cout << "\t--> " << fullPath << "\n";)
 			fopen_s(&fp, fullPath.c_str(), "w");
 		}
 		else
 		{
 			std::string fullPath = outputDir + "/" + "NyxusFeatures.csv";
-			PROFUSE(std::cout << "\t--> " << fullPath << "\n";)
+			VERBOSLVL1(std::cout << "\t--> " << fullPath << "\n";)
 			auto mode = mustRenderHeader ? "w" : "a";
 			fopen_s(&fp, fullPath.c_str(), mode);
 		}

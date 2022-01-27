@@ -561,7 +561,7 @@ int Environment::parse_cmdline(int argc, char **argv)
     rawCL << "\n\n";
 
     // --display how the command line was parsed
-    PROFUSE(show_memory(rawCL.str().c_str(), "\n");)
+    VERBOSLVL1(show_memory(rawCL.str().c_str(), "\n");)
 
     // --what's not recognized?
     if (unrecognized.size() > 0)

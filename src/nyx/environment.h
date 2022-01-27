@@ -115,4 +115,8 @@ namespace Nyxus
 	extern Environment theEnvironment;
 }
 
-#define PROFUSE(stmt) if(Nyxus::theEnvironment.verbosity_level){stmt;}
+#define VERBOSLVL1(stmt) if(Nyxus::theEnvironment.verbosity_level>=1){stmt;}
+#define VERBOSLVL2(stmt) if(Nyxus::theEnvironment.verbosity_level>=2){stmt;}
+
+
+

@@ -7,13 +7,13 @@
 
 int main (int argc, char** argv)
 {
-	PROFUSE(std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021 Axle Informatics\t" << "Build of " << __TIMESTAMP__ << "\n";)
+	VERBOSLVL1(std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021 Axle Informatics\t" << "Build of " << __TIMESTAMP__ << "\n";)
 
 	int parseRes = theEnvironment.parse_cmdline (argc, argv);
 	if (parseRes)
 		return parseRes;
 
-	PROFUSE(theEnvironment.show_summary ("\n"/*head*/, "\n"/*tail*/);)
+	VERBOSLVL1(theEnvironment.show_summary ("\n"/*head*/, "\n"/*tail*/);)
 
 	// Have the feature manager prepare the feature toolset reflecting user's selection
 	if (!theFeatureMgr.compile())
@@ -44,7 +44,7 @@ int main (int argc, char** argv)
 
 	// Current time stamp #1
 	auto startTS = getTimeStr();
-	PROFUSE(std::cout << "\n>>> STARTING >>> " << startTS << "\n";)
+	VERBOSLVL1(std::cout << "\n>>> STARTING >>> " << startTS << "\n";)
 
 	// Process the image sdata
 	int min_online_roi_size = 0;
@@ -78,7 +78,7 @@ int main (int argc, char** argv)
 	}
 
 	// Current time stamp #2
-	PROFUSE(std::cout << "\n>>> STARTED >>>\t" << startTS << "\n>>> ENDING >>>\t" << getTimeStr() << "\n";)
+	VERBOSLVL1(std::cout << "\n>>> STARTED >>>\t" << startTS << "\n>>> ENDING >>>\t" << getTimeStr() << "\n";)
 
 	int exitCode = errorCode;
 	return exitCode;

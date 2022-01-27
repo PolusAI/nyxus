@@ -13,14 +13,14 @@ Stopwatch::Stopwatch (const std::string& header_, const std::string& tail_)
 
 	start = std::chrono::system_clock::now();
 	if (header.length() > 0)
-		PROFUSE(std::cout << header << "\n";)
+		VERBOSLVL1(std::cout << header << "\n";)
 }
 
 Stopwatch::~Stopwatch()
 {
 	end = std::chrono::system_clock::now();
 	std::chrono::duration<double, Unit> elap = end - start;
-	PROFUSE(std::cout << tail << " " << elap.count() << " us\n"; )
+	VERBOSLVL1(std::cout << tail << " " << elap.count() << " us\n"; )
 		totals[header] = totals[header] + elap.count();
 }
 
