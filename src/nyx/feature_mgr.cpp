@@ -39,44 +39,6 @@ FeatureMethod* FeatureManager::get_feature_method(int idx)
 
 void FeatureManager::apply_user_selection()
 {
-	/*
-	user_requested_features.clear();
-	for (int i=0; i< Nyxus::AvailableFeatures::_COUNT_; i++)
-		if (theFeatureSet.isEnabled(i))
-		{
-			// Iterate ALL the feature methods looking for one that provides user-requested feature [i]
-			FeatureMethod* foundFM = nullptr;
-			for (FeatureMethod* m : full_featureset)
-			{
-				// Iterate the 
-				bool found = false;		// feature is found to be provided by this feature method
-				for (Nyxus::AvailableFeatures pf : m->provided_features)
-				{
-					if (pf == (Nyxus::AvailableFeatures)i)
-					{
-						found = true;
-						break;
-					}
-				}
-
-				if (found)
-				{
-					foundFM = m;
-					break;
-				}
-			}
-
-			// Sanity check
-			if (foundFM == nullptr)
-				throw std::invalid_argument("Error: feature " + std::to_string(i) + " is not provided by any feature method\n");
-			else
-			{
-				user_requested_features.push_back (foundFM);
-				break;
-			}
-		}
-	*/
-
 	build_user_requested_set();	// The result is 'user_requested_features'
 }
 
@@ -217,7 +179,7 @@ void FeatureManager::build_user_requested_set()
 {
 	user_requested_features.clear();
 
-	std::vector<std::tuple<FeatureMethod*, int>> requestedWithDepths;
+	std::vector<std::tuple<FeatureMethod*, int>> requestedWithDeps;
 
 	// iterate FMs
 	for (int i = 0; i < full_featureset.size(); i++)
@@ -235,13 +197,13 @@ void FeatureManager::build_user_requested_set()
 				break;
 			}
 
-		// add requested FM to the execute-list 'requestedWithDepths'
+		// add requested FM to the execute-list 'requestedWithDeps'
 		if (fmRequested)
 		{
 			auto& deps = xdeps[i];
 			std::tuple<FeatureMethod*, int> oneD = { fm, deps.size() };
-			if (std::find(requestedWithDepths.begin(), requestedWithDepths.end(), oneD) == requestedWithDepths.end())
-				requestedWithDepths.push_back(oneD);
+			if (std::find(requestedWithDeps.begin(), requestedWithDeps.end(), oneD) == requestedWithDeps.end())
+				requestedWithDeps.push_back(oneD);
 
 			// iterate dependency FCodes and add corresponding FMs to the execute list
 			for (auto dfc : fm->dependencies)
@@ -252,8 +214,8 @@ void FeatureManager::build_user_requested_set()
 					auto provFM = full_featureset[k];
 					auto& provDeps = xdeps[k];
 					oneD = { provFM, provDeps.size() };
-					if (std::find(requestedWithDepths.begin(), requestedWithDepths.end(), oneD) == requestedWithDepths.end())
-						requestedWithDepths.push_back(oneD);
+					if (std::find(requestedWithDeps.begin(), requestedWithDeps.end(), oneD) == requestedWithDeps.end())
+						requestedWithDeps.push_back(oneD);
 					break;	// stop searching the provider, proceed to the next dependency-fcode
 				}
 			}
@@ -264,12 +226,12 @@ void FeatureManager::build_user_requested_set()
 	PROFUSE
 		(
 		std::cout << "Unsorted:\n";
-		for (auto& oneD : requestedWithDepths)
+		for (auto& oneD : requestedWithDeps)
 			std::cout << std::get<0>(oneD)->feature_info << " " << std::get<1>(oneD) << " deps \n";
 		)
 
 	// Sort by independence
-	std::sort(requestedWithDepths.begin(), requestedWithDepths.end(),
+	std::sort(requestedWithDeps.begin(), requestedWithDeps.end(),
 		[](const std::tuple<FeatureMethod*, int>& a, const std::tuple<FeatureMethod*, int>& b)
 		{
 			return std::get<1>(a) < std::get<1>(b);
@@ -280,9 +242,17 @@ void FeatureManager::build_user_requested_set()
 		(
 		// List
 		std::cout << "Sorted:\n";
-		for (auto& oneD : requestedWithDepths)
+		for (auto& oneD : requestedWithDeps)
 			std::cout << std::get<0>(oneD)->feature_info << " " << std::get<1>(oneD) << " deps \n";
 		)
+
+	// Fill the user-facing 'user_requested_features'
+	user_requested_features.clear();
+	for (auto fmd : requestedWithDeps)
+	{
+		FeatureMethod* fm = std::get<0>(fmd);
+		user_requested_features.push_back(fm);
+	}
 }
 
 #if 0
