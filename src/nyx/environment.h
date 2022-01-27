@@ -80,7 +80,7 @@ public:
 	std::vector<float> rotAngles = {0, 45, 90, 135};
 
 	std::string verbosity = "";
-	int verbosity_level = 0; // 0 = silent
+	int verbosity_level = 1; // 0 = silent
 
 	std::string rawOnlineStatsThresh = "";
 	int onlineStatsTreshold = 0;
