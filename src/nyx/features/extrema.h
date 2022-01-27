@@ -22,6 +22,7 @@ public:
 	// Result saver
 	void save_value(std::vector<std::vector<double>>& feature_vals);
 
+	// Compatibility with manual
 	static bool required(const FeatureSet& fs) 
 	{
 		return fs.anyEnabled({
@@ -46,5 +47,5 @@ public:
 	static void reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 private:
-	int x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6, x7, y7, x8, y8;
+	int x1 =0, y1 =0, x2 =0, y2 =0, x3 =0, y3 =0, x4 =0, y4 =0, x5 =0, y5 =0, x6 =0, y6 =0, x7 =0, y7 =0, x8 =0, y8 =0;
 };

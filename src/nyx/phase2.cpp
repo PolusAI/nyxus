@@ -194,10 +194,11 @@ namespace Nyxus
 			}
 
 			// Allow heyboard interrupt.
-			#ifdef WITH_PYTHON_H
+
+#ifdef WITH_PYTHON_H
 			if (PyErr_CheckSignals() != 0)
                 throw pybind11::error_already_set();
-			#endif
+#endif
 		}
 
 		// Process what's remaining pending

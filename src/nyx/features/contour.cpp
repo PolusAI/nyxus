@@ -17,8 +17,18 @@
 
 #include "../parallel.h"
 
-ContourFeature::ContourFeature()
-{}
+ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
+{
+	provide_features({ 
+		PERIMETER,
+		EQUIVALENT_DIAMETER,
+		EDGE_INTEGRATEDINTENSITY,
+		EDGE_MAX_INTENSITY,
+		EDGE_MIN_INTENSITY,
+		EDGE_MEAN_INTENSITY,
+		EDGE_STDDEV_INTENSITY 
+		});
+}
 
 void ContourFeature::calculate(LR& r)
 {
@@ -177,42 +187,6 @@ void ContourFeature::calculate(LR& r)
 	fval_EDGE_STDDEV_INTENSITY = cstddev;
 	fval_EDGE_MAX_INTENSITY  = cmax;
 	fval_EDGE_MIN_INTENSITY = cmin;
-
-	//=== Edge satts features
-		StatsReal
-			sumI = 0.0,
-			maxI = -INF,
-			minI = INF,
-			meanI = 0.0,
-			stddevI = 0.0,
-			n = r.contour.size();
-
-	// sum, min, max
-	for (const auto & pxl : r.contour)
-	{
-		StatsReal I = pxl.inten;	// cast inten to result type here
-		sumI += I;
-		maxI = std::max(maxI, I);
-		minI = std::min(minI, I);
-	}
-
-	// mean
-	meanI = sumI / n;
-
-	// stddev
-	for (const auto & pxl : r.contour)
-	{
-		StatsReal I = pxl.inten;	// cast inten to result type here
-		stddevI += (I - meanI) * (I - meanI);
-	}
-	stddevI = std::sqrt(stddevI / n);
-
-	// Save
-	fval_EDGE_INTEGRATEDINTENSITY = sumI;
-	fval_EDGE_MAXINTENSITY = maxI;
-	fval_EDGE_MININTENSITY = minI;
-	fval_EDGE_MEANINTENSITY = meanI;
-	fval_EDGE_STDDEVINTENSITY = stddevI;
 }
 
 void ContourFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
@@ -230,10 +204,6 @@ void ContourFeature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[EDGE_MAX_INTENSITY][0] = fval_EDGE_MAX_INTENSITY;
 	fvals[EDGE_MIN_INTENSITY][0] = fval_EDGE_MIN_INTENSITY;
 	fvals[EDGE_INTEGRATEDINTENSITY][0] = fval_EDGE_INTEGRATEDINTENSITY;
-	fvals[EDGE_MAXINTENSITY][0] = fval_EDGE_MAXINTENSITY;
-	fvals[EDGE_MININTENSITY][0] = fval_EDGE_MININTENSITY;
-	fvals[EDGE_MEANINTENSITY][0] = fval_EDGE_MEANINTENSITY;
-	fvals[EDGE_STDDEVINTENSITY][0] = fval_EDGE_STDDEVINTENSITY;
 }
 
 void ContourFeature::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)

@@ -4,6 +4,7 @@
 #include "../roi_cache.h"
 #include "contour.h"
 #include "image_matrix.h"
+#include "../feature_method.h"
 
 // Inspired by Yavuz Unver
 // 
@@ -12,9 +13,18 @@
 //
 
 /// @brief Hu invariants, weighted Hu invariants, spatial , central, and normalized central moments.
-class ImageMoments_features
+class ImageMomentsFeature: public FeatureMethod
 {
 public:
+    ImageMomentsFeature(); 
+
+    void calculate(LR& r);
+    void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
+    void osized_calculate(LR& r, ImageLoader& imloader);
+    void save_value(std::vector<std::vector<double>>& feature_vals);
+    static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+
+    // Compatibility with manual reduce
     static bool required(const FeatureSet& fs)
     {
         return fs.anyEnabled({
@@ -62,17 +72,6 @@ public:
                 WEIGHTED_HU_M7 });
     }
 
-    ImageMoments_features (int minI, int maxI, const ImageMatrix& im, const ImageMatrix& weighted_im);
-    std::tuple<double, double, double, double, double, double, double, double, double, double> getSpatialMoments();
-    std::tuple<double, double, double, double, double, double, double, double, double, double> getWeightedSpatialMoments();
-    std::tuple<double, double, double, double, double, double, double> getNormSpatialMoments();
-    std::tuple<double, double, double, double, double, double, double> getCentralMoments();
-    std::tuple<double, double, double, double, double, double, double> getWeightedCentralMoments();
-    std::tuple<double, double, double, double, double, double, double> getNormCentralMoments();
-    std::tuple<double, double, double, double, double, double, double> getHuMoments();
-    std::tuple<double, double, double, double, double, double, double> getWeightedHuMoments();
-    static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
-
 private:
     double Moment (const pixData& D, int p, int q);
     void calcOrigins (const pixData& D);
@@ -94,7 +93,7 @@ private:
     double m00 = 0, m01 = 0, m02 = 0, m03 = 0, m10 = 0, m11 = 0, m12 = 0, m20 = 0, m21 = 0, m30 = 0;    // spatial moments
     double wm00 = 0, wm01 = 0, wm02 = 0, wm03 = 0, wm10 = 0, wm11 = 0, wm12 = 0, wm20 = 0, wm21 = 0, wm30 = 0;    // weighted spatial moments
     double w00 = 0, w01 = 0, w02 = 0, w03 = 0, w10 = 0, w20 = 0, w30 = 0;   // normalized spatial moments
-    double nu02 = 0, nu03 = 0, nu11 = 0, nu12 = 0, nu20 = 0, nu21 = 0, nu30 = 0;
+    double nu02 = 0, nu03 = 0, nu11 = 0, nu12 = 0, nu20 = 0, nu21 = 0, nu30 = 0;    // normalized central moments
     double mu02 = 0, mu03 = 0, mu11 = 0, mu12 = 0, mu20 = 0, mu21 = 0, mu30 = 0;    // central moments
     double wmu02 = 0, wmu03 = 0, wmu11 = 0, wmu12 = 0, wmu20 = 0, wmu21 = 0, wmu30 = 0;    // weighted central moments
     double hm1 = 0, hm2 = 0, hm3 = 0, hm4 = 0, hm5 = 0, hm6 = 0, hm7 = 0;   // Hu invariants

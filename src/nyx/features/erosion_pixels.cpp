@@ -1,8 +1,16 @@
 #include <algorithm>
 #include "erosion.h"
 
-ErosionPixels_feature::ErosionPixels_feature (const ImageMatrix & I)
+ErosionPixelsFeature::ErosionPixelsFeature() : FeatureMethod("ErosionPixelsFeature")
 {
+	provide_features({ EROSIONS_2_VANISH, EROSIONS_2_VANISH_COMPLEMENT });
+	add_dependencies({ PERIMETER });
+}
+
+void ErosionPixelsFeature::calculate(LR& r)
+{
+	auto& I = r.aux_image_matrix;
+
 	//[rows, columns, numberOfColorChannels] = size(grayImage);
 	int rows = I.height,
 		cols = I.width;
@@ -11,14 +19,14 @@ ErosionPixels_feature::ErosionPixels_feature (const ImageMatrix & I)
 	//se = logical([0 1 0; 1 1 1; 0 1 0]);
 	//[p, q] = size(se);
 
-	auto halfHeight = (int) floor(SE_R / 2);
-	auto halfWidth = (int) floor(SE_C / 2);
-	
+	auto halfHeight = (int)floor(SE_R / 2);
+	auto halfWidth = (int)floor(SE_C / 2);
+
 	//% Initialize output image
 	//localMinImage = zeros(size(grayImage), class(grayImage));
 	ImageMatrix I1, I2(I);
 
-	numErosions = 0;	
+	numErosions = 0;
 	for (; numErosions < SANITY_MAX_NUM_EROSIONS; numErosions++)
 	{
 		// Copy the matrix from previous iteration
@@ -44,9 +52,9 @@ ErosionPixels_feature::ErosionPixels_feature (const ImageMatrix & I)
 				for (int r = row1; r <= row2; r++)
 					for (int c = col1; c <= col2; c++)
 					{
-						N[r-row1][c-col1] = I1p(r, c);
+						N[r - row1][c - col1] = I1p(r, c);
 
-						if (N[r-row1][c-col1])
+						if (N[r - row1][c - col1])
 							all0 = false;
 					}
 
@@ -65,7 +73,7 @@ ErosionPixels_feature::ErosionPixels_feature (const ImageMatrix & I)
 					{
 						int s = strucElem[r][c];
 						if (s)
-							Nv.push_back (N[r][c]);
+							Nv.push_back(N[r][c]);
 					}
 
 				//localMinImage(row, col) = min(pixelsInSE);
@@ -81,14 +89,21 @@ ErosionPixels_feature::ErosionPixels_feature (const ImageMatrix & I)
 		if (numNon0 == 0)
 			break;
 	}
+
 }
 
-int ErosionPixels_feature::get_feature_value()
+void ErosionPixelsFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
+
+void ErosionPixelsFeature::osized_calculate(LR& r, ImageLoader& imloader)
 {
-	return numErosions;
 }
 
-void ErosionPixels_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void ErosionPixelsFeature::save_value(std::vector<std::vector<double>>& fvals)
+{
+	fvals[EROSIONS_2_VANISH][0] = numErosions;
+}
+
+void ErosionPixelsFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -103,8 +118,9 @@ void ErosionPixels_feature::reduce (size_t start, size_t end, std::vector<int>* 
 			continue;
 
 		// Calculate feature
-		ErosionPixels_feature epix (r.aux_image_matrix);
-		r.fvals[EROSIONS_2_VANISH][0] = epix.get_feature_value();
+		ErosionPixelsFeature epix;
+		epix.calculate(r);
+		epix.save_value(r.fvals);
 	}
 }
 

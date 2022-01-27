@@ -5,7 +5,7 @@
 #include "pixel.h"
 
 
-PixelIntensityFeatures::PixelIntensityFeatures()
+PixelIntensityFeatures::PixelIntensityFeatures() : FeatureMethod("PixelIntensityFeatures")
 {
 	provide_features({ 
 		INTEGRATED_INTENSITY,
@@ -29,8 +29,7 @@ PixelIntensityFeatures::PixelIntensityFeatures()
 		UNIFORMITY_PIU,
 		P01, P10, P25, P75, P90, P99,
 		INTERQUARTILE_RANGE,
-		ROBUST_MEAN_ABSOLUTE_DEVIATION,
-		MASS_DISPLACEMENT
+		ROBUST_MEAN_ABSOLUTE_DEVIATION
 		});
 }
 
@@ -313,7 +312,6 @@ void PixelIntensityFeatures::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[P99][0] = val_P99;
 	fvals[INTERQUARTILE_RANGE][0] = val_INTERQUARTILE_RANGE;
 	fvals[ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = val_ROBUST_MEAN_ABSOLUTE_DEVIATION;
-	fvals[MASS_DISPLACEMENT][0] = val_MASS_DISPLACEMENT;
 }
 
 void PixelIntensityFeatures::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
@@ -367,7 +365,6 @@ void PixelIntensityFeatures::cleanup_instance()
 		val_UNIFORMITY_PIU = 0,
 		val_P01 = 0, val_P10 = 0, val_P25 = 0, val_P75 = 0, val_P90 = 0, val_P99 = 0,
 		val_INTERQUARTILE_RANGE = 0,
-		val_ROBUST_MEAN_ABSOLUTE_DEVIATION = 0,
-		val_MASS_DISPLACEMENT = 0;
+		val_ROBUST_MEAN_ABSOLUTE_DEVIATION = 0;
 }
 

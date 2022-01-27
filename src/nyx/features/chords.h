@@ -109,7 +109,7 @@ public:
 				ALLCHORDS_MEDIAN,
 				ALLCHORDS_MEAN,
 				ALLCHORDS_MODE,
-				ALLCHORDS_STDDEV, });
+				ALLCHORDS_STDDEV });
 	}
 
 private:

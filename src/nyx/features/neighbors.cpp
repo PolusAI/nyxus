@@ -9,43 +9,55 @@
 #include <thread>
 #include <future>
 #include "../globals.h"
+#include "../environment.h"
 #include "neighbors.h"
 
-Neighbor_features::Neighbor_features()
+NeighborsFeature::NeighborsFeature(): FeatureMethod("NeighborsFeature")
 {
+	provide_features({
+		NUM_NEIGHBORS,
+		PERCENT_TOUCHING,
+		CLOSEST_NEIGHBOR1_DIST,
+		CLOSEST_NEIGHBOR1_ANG,
+		CLOSEST_NEIGHBOR2_DIST,
+		CLOSEST_NEIGHBOR2_ANG,
+		ANG_BW_NEIGHBORS_MEAN,
+		ANG_BW_NEIGHBORS_STDDEV,
+		ANG_BW_NEIGHBORS_MODE
+		});
 }
 
-// Spatial hashing
-inline bool Neighbor_features::aabbNoOverlap(
-	StatsInt xmin1, StatsInt xmax1, StatsInt ymin1, StatsInt ymax1,
-	StatsInt xmin2, StatsInt xmax2, StatsInt ymin2, StatsInt ymax2,
-	int R)
+void NeighborsFeature::calculate(LR& r)
+{}
+
+void NeighborsFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} 
+
+void NeighborsFeature::osized_calculate(LR& r, ImageLoader& imloader)
 {
-	bool retval = xmin2 - R > xmax1 + R || xmax2 + R < xmin1 - R
-		|| ymin2 - R > ymax1 + R || ymax2 + R < ymin1 - R;
-	return retval;
+	calculate(r);
 }
 
-inline bool Neighbor_features::aabbNoOverlap (LR& r1, LR& r2, int radius)
+/// @brief All the logic is in parallel_process()
+/// @param feature_vals 
+void NeighborsFeature::save_value(std::vector<std::vector<double>>& feature_vals) {}
+
+/// @brief All the logic is in parallel_process()
+/// @param start 
+/// @param end 
+/// @param ptrLabels 
+/// @param ptrLabelData 
+void NeighborsFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData) {}
+
+// Calculates the features using spatial hashing approach (indirectly)
+void NeighborsFeature::parallel_process (std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
 {
-	bool retval = aabbNoOverlap(r1.aabb.get_xmin(), r1.aabb.get_xmax(), r1.aabb.get_ymin(), r1.aabb.get_ymax(),
-		r2.aabb.get_xmin(), r2.aabb.get_xmax(), r2.aabb.get_ymin(), r2.aabb.get_ymax(), radius);
-	return retval;
+	manual_reduce();
 }
 
-inline unsigned long Neighbor_features::spat_hash_2d(StatsInt x, StatsInt y, int m)
+// Calculates the features using spatial hashing approach
+void NeighborsFeature::manual_reduce()
 {
-	unsigned long h = x * 73856093;
-	h = h ^ y * 19349663;
-	// hash   hash  z × 83492791	// For the future
-	// hash   hash  l × 67867979
-	unsigned long retval = h % m;
-	return retval;
-}
-
-void Neighbor_features::reduce (int radius)
-{
-#if 0	// Leaving the greedy implementation just for the record and the time when we want to run it on a GPU
+#if 0	// Keeping the commented out greedy implementation just for the record and the time when we want to run it on a GPU
 	//==== Collision detection, method 1 (best with GPGPU)
 	//  Calculate collisions into a triangular matrix
 	int nul = uniqueLabels.size();
@@ -95,8 +107,13 @@ void Neighbor_features::reduce (int radius)
 #endif
 
 	//==== Collision detection, method 2
+
+	int radius = theEnvironment.get_pixel_distance();
+
+	// Hash table
 	int m = 10000;
-	std::vector <std::vector<int>> HT(m);	// hash table
+	std::vector <std::vector<int>> HT(m);
+
 	for (auto l : Nyxus::uniqueLabels)
 	{
 		LR& r = Nyxus::roiData[l];
@@ -132,11 +149,11 @@ void Neighbor_features::reduce (int radius)
 					if (overlap)
 					{
 						// l1's neighbors
-						r1.fvals [NUM_NEIGHBORS][0]++; 
+						r1.fvals[NUM_NEIGHBORS][0]++;
 						r1.aux_neighboring_labels.push_back(l2);
 
 						// l2's neighbors
-						r2.fvals [NUM_NEIGHBORS][0]++; 
+						r2.fvals[NUM_NEIGHBORS][0]++;
 						r2.aux_neighboring_labels.push_back(l1);
 					}
 				}
@@ -156,7 +173,7 @@ void Neighbor_features::reduce (int radius)
 
 		double cenx = r.fvals[CENTROID_X][0],
 			ceny = r.fvals[CENTROID_Y][0];
-		
+
 		std::vector<double> dists;
 		for (auto l_neig : r.aux_neighboring_labels)
 		{
@@ -170,9 +187,9 @@ void Neighbor_features::reduce (int radius)
 		}
 
 		// Find idx of minimum
-		auto ite1st = std::min_element (dists.begin(), dists.end());
-		auto closest_1_idx = std::distance (dists.begin(), ite1st);
-		auto closest1label = r.aux_neighboring_labels [closest_1_idx];
+		auto ite1st = std::min_element(dists.begin(), dists.end());
+		auto closest_1_idx = std::distance(dists.begin(), ite1st);
+		auto closest1label = r.aux_neighboring_labels[closest_1_idx];
 
 		// Save distance to neighbor #1
 		r.fvals[CLOSEST_NEIGHBOR1_DIST][0] = dists[closest_1_idx];
@@ -184,14 +201,14 @@ void Neighbor_features::reduce (int radius)
 		// Find idx of 2nd minimum
 		if (n_neigs > 1)
 		{
-			auto lambSkip1st = [&ite1st](double a, double b) 
-			{ 
-				return ((b != (*ite1st)) && (a > b)); 
+			auto lambSkip1st = [&ite1st](double a, double b)
+			{
+				return ((b != (*ite1st)) && (a > b));
 			};
-			auto ite2nd = std::min_element (dists.begin(), dists.end(), lambSkip1st);
+			auto ite2nd = std::min_element(dists.begin(), dists.end(), lambSkip1st);
 			auto closest_2_idx = std::distance(dists.begin(), ite2nd);
 			auto closest2label = r.aux_neighboring_labels[closest_2_idx];
-		
+
 			// Save distance to neighbor #2
 			r.fvals[CLOSEST_NEIGHBOR2_DIST][0] = dists[closest_2_idx];
 
@@ -225,7 +242,7 @@ void Neighbor_features::reduce (int radius)
 
 			double ang = angle(cenx, ceny, cenx_n, ceny_n);
 			mom2.add(ang);
-			anglesRounded.push_back ((int)ang);
+			anglesRounded.push_back((int)ang);
 		}
 
 		r.fvals[ANG_BW_NEIGHBORS_MEAN][0] = mom2.mean();
@@ -233,4 +250,33 @@ void Neighbor_features::reduce (int radius)
 		r.fvals[ANG_BW_NEIGHBORS_MODE][0] = mode(anglesRounded);
 	}
 }
+
+// Spatial hashing
+inline bool NeighborsFeature::aabbNoOverlap(
+	StatsInt xmin1, StatsInt xmax1, StatsInt ymin1, StatsInt ymax1,
+	StatsInt xmin2, StatsInt xmax2, StatsInt ymin2, StatsInt ymax2,
+	int R)
+{
+	bool retval = xmin2 - R > xmax1 + R || xmax2 + R < xmin1 - R
+		|| ymin2 - R > ymax1 + R || ymax2 + R < ymin1 - R;
+	return retval;
+}
+
+inline bool NeighborsFeature::aabbNoOverlap (LR& r1, LR& r2, int radius)
+{
+	bool retval = aabbNoOverlap(r1.aabb.get_xmin(), r1.aabb.get_xmax(), r1.aabb.get_ymin(), r1.aabb.get_ymax(),
+		r2.aabb.get_xmin(), r2.aabb.get_xmax(), r2.aabb.get_ymin(), r2.aabb.get_ymax(), radius);
+	return retval;
+}
+
+inline unsigned long NeighborsFeature::spat_hash_2d(StatsInt x, StatsInt y, int m)
+{
+	unsigned long h = x * 73856093;
+	h = h ^ y * 19349663;
+	// hash   hash  z × 83492791	// For the future
+	// hash   hash  l × 67867979
+	unsigned long retval = h % m;
+	return retval;
+}
+
 

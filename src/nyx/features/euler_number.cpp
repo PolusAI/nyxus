@@ -1,8 +1,10 @@
 #include <iostream>
 #include "euler_number.h"
 
-EulerNumberFeature::EulerNumberFeature()
-{}
+EulerNumberFeature::EulerNumberFeature() : FeatureMethod("EulerNumberFeature")
+{
+	provide_features({ EULER_NUMBER });
+}
 
 void EulerNumberFeature::calculate (LR& r)
 {

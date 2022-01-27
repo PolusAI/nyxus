@@ -1,19 +1,17 @@
 #pragma once
 
-#include <vector>
 #include <unordered_map>
 #include "../roi_cache.h"
-#include "histogram.h"
-#include "moments.h"
-#include "pixel.h"
-#include "../feature_method.h"
+#include <tuple>
+# include "../feature_method.h"
 
-/// @brief Statistics of ROI pixels' distance to the edge.
-class RoiRadiusFeature: public FeatureMethod
+/// @brief Estimates ROI's proximity to a hexagon and polygon.
+
+class HexagonalityPolygonalityFeature: public FeatureMethod
 {
 public:
+	HexagonalityPolygonalityFeature();
 
-	RoiRadiusFeature();
 	void calculate(LR& r);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
 	void osized_calculate(LR& r, ImageLoader& imloader);
@@ -21,15 +19,9 @@ public:
 	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 	// Compatibility with manual reduce
-	static bool required (const FeatureSet& fs) 
-	{
-		return fs.anyEnabled({
-			ROI_RADIUS_MEAN,
-			ROI_RADIUS_MAX,
-			ROI_RADIUS_MEDIAN
-			});
-	}
+	static bool required (const FeatureSet& fs) { return fs.anyEnabled({ POLYGONALITY_AVE, HEXAGONALITY_AVE, HEXAGONALITY_STDDEV }); }
 
 private:
-	double max_r = 0, mean_r = 0, median_r = 0;
+	double polyAve = 0, hexAve = 0, hexSd = 0;
 };
+

@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include "../roi_cache.h"
 #include "image_matrix.h"
+#include "../feature_method.h"
 
 typedef struct
 {
@@ -33,7 +34,7 @@ typedef struct
 /// 	:math:`\delta = 2` a 98 - connectivity(49 unique angles).
 /// 
 
-class GLCM_features
+class GLCMFeature: public FeatureMethod
 {
 	using C_matrix = SimpleMatrix<int>;
 	using AngledFeatures = std::vector<double>;
@@ -55,7 +56,13 @@ public:
 				GLCM_INFOMEAS1,
 				GLCM_INFOMEAS2 });
 	}
-	GLCM_features (int minI, int maxI, const ImageMatrix& im, double distance);
+
+	GLCMFeature();
+	void calculate(LR& r);
+	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
+	void osized_calculate(LR& r, ImageLoader& imloader);
+	void save_value(std::vector<std::vector<double>>& feature_vals);
+	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 	void get_AngularSecondMoments (AngledFeatures& af);
 	void get_Contrast (AngledFeatures& af);
@@ -71,7 +78,7 @@ public:
 	void get_InfoMeas1 (AngledFeatures& af);
 	void get_InfoMeas2 (AngledFeatures& af);
 
-	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+	const static int distance_parameter = 5;
 
 private:
 	SimpleMatrix<int> P;	// colocation matrix

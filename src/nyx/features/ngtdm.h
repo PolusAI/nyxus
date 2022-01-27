@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include "../roi_cache.h"
+#include "../feature_method.h"
 #include "image_matrix.h"
 
 // Inspired by https://qiita.com/tatsunidas/items/50f4bee7236eb0392aaf
@@ -19,23 +20,17 @@
 /// 	\displaystyle\sum_{ k_z = -\delta }^ {\delta} {x_{ gl }(j_x + k_x, j_y + k_y, j_z + k_z)}, \\
 /// 		& \mbox{ where }(k_x, k_y, k_z)\neq(0, 0, 0)\mbox{ and } x_{ gl }(j_x + k_x, j_y + k_y, j_z + k_z) \in \textbf{ X }_{ gl }
 
-class NGTDM_features
+class NGTDMFeature: public FeatureMethod
 {
 	using P_matrix = SimpleMatrix<int>;
 
 public:
-	static bool required(const FeatureSet& fs) 
-	{
-		return fs.anyEnabled({
-			NGTDM_COARSENESS,
-			NGTDM_CONTRAST,
-			NGTDM_BUSYNESS,
-			NGTDM_COMPLEXITY,
-			NGTDM_STRENGTH
-			});
-	}
 
-	NGTDM_features (int minI, int maxI, const ImageMatrix& im);
+	NGTDMFeature(); 
+	void calculate(LR& r);
+	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
+	void osized_calculate(LR& r, ImageLoader& imloader);
+	void save_value(std::vector<std::vector<double>>& feature_vals);
 
 	// Coarseness
 	double calc_Coarseness();
@@ -48,7 +43,19 @@ public:
 	// Strength
 	double calc_Strength();
 
-	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+	static void parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+
+	// Comaptibility with manual reduce
+	static bool required(const FeatureSet& fs) 
+	{
+		return fs.anyEnabled({
+			NGTDM_COARSENESS,
+			NGTDM_CONTRAST,
+			NGTDM_BUSYNESS,
+			NGTDM_COMPLEXITY,
+			NGTDM_STRENGTH
+			});
+	}
 
 private:
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
@@ -62,4 +69,10 @@ private:
 
 	const double BAD_ROI_FVAL = 0.0;
 	const double EPS = 2.2e-16;
+
+	double _coarseness = 0, 
+		_contrast = 0, 
+		_busyness = 0, 
+		_complexity = 0, 
+		_strength = 0;
 };

@@ -114,3 +114,4 @@ namespace Nyxus
 {
 	extern Environment theEnvironment;
 }
+

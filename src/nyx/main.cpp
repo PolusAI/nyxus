@@ -15,6 +15,11 @@ int main (int argc, char** argv)
 	theEnvironment.show_summary ("\n"/*head*/, "\n"/*tail*/);
 
 	// Have the feature manager prepare the feature toolset reflecting user's selection
+	if (!theFeatureMgr.compile())
+	{
+		std::cout << "Error: compiling feature methods failed\n";
+		return 1;
+	}
 	theFeatureMgr.apply_user_selection();
 
 	// Scan file names

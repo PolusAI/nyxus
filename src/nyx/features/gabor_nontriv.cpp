@@ -4,7 +4,10 @@
 #include "image_matrix_nontriv.h"
 
 
-GaborFeature::GaborFeature() {}
+GaborFeature::GaborFeature() : FeatureMethod("GaborFeature") 
+{
+    provide_features ({ GABOR });
+}
 
 void GaborFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {

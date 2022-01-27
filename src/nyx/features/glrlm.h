@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include "../roi_cache.h"
+#include "../feature_method.h"
 #include "image_matrix.h"
 
 /// @brief Gray Level Run Length Matrix(GLRLM) features
@@ -11,33 +12,41 @@
 /// 	: math:`i`and length :math:`j` occur in the image(ROI) along angle : math:`\theta`.
 /// 
 
-class GLRLM_features
+class GLRLMFeature: public FeatureMethod
 {
 	using P_matrix = SimpleMatrix<int>;
 	using AngledFtrs = std::vector<double>;
 
 public:
+	GLRLMFeature(); //(int minI, int maxI, const ImageMatrix& im);
+
+	void calculate(LR& r);
+	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
+	void osized_calculate(LR& r, ImageLoader& imloader);
+	void save_value(std::vector<std::vector<double>>& feature_vals);
+	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+
+	// Compatibility with the manual reduce
 	static int required(const FeatureSet& fs) {
 		return fs.anyEnabled({
-				GLRLM_SRE,
-				GLRLM_LRE,
-				GLRLM_GLN,
-				GLRLM_GLNN,
-				GLRLM_RLN,
-				GLRLM_RLNN,
-				GLRLM_RP,
-				GLRLM_GLV,
-				GLRLM_RV,
-				GLRLM_RE,
-				GLRLM_LGLRE,
-				GLRLM_HGLRE,
-				GLRLM_SRLGLE,
-				GLRLM_SRHGLE,
-				GLRLM_LRLGLE,
-				GLRLM_LRHGLE
-			});
+			GLRLM_SRE,
+			GLRLM_LRE,
+			GLRLM_GLN,
+			GLRLM_GLNN,
+			GLRLM_RLN,
+			GLRLM_RLNN,
+			GLRLM_RP,
+			GLRLM_GLV,
+			GLRLM_RV,
+			GLRLM_RE,
+			GLRLM_LGLRE,
+			GLRLM_HGLRE,
+			GLRLM_SRLGLE,
+			GLRLM_SRHGLE,
+			GLRLM_LRLGLE,
+			GLRLM_LRHGLE
+		});
 	}
-	GLRLM_features (int minI, int maxI, const ImageMatrix& im);
 
 	// 1. Short Run Emphasis 
 	void calc_SRE (AngledFtrs& af);
@@ -72,11 +81,26 @@ public:
 	// 16. Long Run High Gray Level Emphasis 
 	void calc_LRHGLE (AngledFtrs& af);
 
-	static void reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
-
 	constexpr static int rotAngles [] = {0, 45, 90, 135};
 
 private:
+	std::vector<double> angled_SRE, 
+		angled_LRE,
+		angled_GLN,
+		angled_GLNN,
+		angled_RLN,
+		angled_RLNN,
+		angled_RP,
+		angled_GLV,
+		angled_RV,
+		angled_RE,
+		angled_LGLRE,
+		angled_HGLRE,
+		angled_SRLGLE,
+		angled_SRHGLE,
+		angled_LRLGLE,
+		angled_LRHGLE;
+
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
 	std::vector<int> angles_Ng;	// number of discreet intensity values in the image
 	std::vector<int> angles_Nr; // number of discreet run lengths in the image
