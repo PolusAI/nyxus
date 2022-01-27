@@ -18,7 +18,7 @@ void GaborFeature::calculate (LR& r)
     /* parameters set up in complience with the paper */
     double gamma = 0.5, sig2lam = 0.56;
     int n = 38;
-    double f0[7] = { 1,2,3,4,5,6,7 };       // frequencies for several HP Gabor filters
+    double f0[7] = { 1, 2, 3, 4, 5, 6, 7 };       // frequencies for several HP Gabor filters
     double f0LP = 0.1;     // frequencies for one LP Gabor filter
     double theta = 3.14159265 / 2;
     int ii;
