@@ -19,7 +19,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 find_package(Python COMPONENTS Interpreter Development)
 add_subdirectory(lib/pybind11)
 
-if (Python_FOUND)
+if (Python_FOUND OR Python_INCLUDE_DIRS)
 	add_compile_definitions(WITH_PYTHON_H)
 endif()
 
@@ -121,8 +121,8 @@ pybind11_add_module(backend
 	src/nyx/python/new_bindings_py.cpp
 )
 
-# EXAMPLE_VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
-target_compile_definitions(backend PRIVATE VERSION_INFO=${EXAMPLE_VERSION_INFO})
+# VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
+target_compile_definitions(backend PRIVATE VERSION_INFO=${VERSION_INFO})
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	target_link_libraries(backend PRIVATE stdc++fs)
@@ -132,6 +132,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	endif()
 endif()
 
+target_link_libraries(backend PRIVATE -static-libgcc -static-libstdc++)
 target_link_libraries(backend PRIVATE ${Nyxus_LIBRARIES})
 target_link_libraries(backend PRIVATE ${Python_LIBRARIES})
 

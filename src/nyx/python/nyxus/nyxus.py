@@ -1,4 +1,3 @@
-from multiprocessing.sharedctypes import Value
 from .backend import initialize_environment, process_data
 import os
 import numpy as np
