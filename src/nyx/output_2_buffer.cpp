@@ -160,8 +160,13 @@ namespace Nyxus
 			LR& r = roiData[l];
 			totalNumLabels++;
 
-			stringColBuf.push_back(r.segFname);
-			stringColBuf.push_back(r.intFname);
+			// Tear off pure file names from segment and intensity file paths
+			std::filesystem::path pseg(r.segFname), pint(r.intFname);
+			std::string segfname = pseg.filename().string(),
+				intfname = pint.filename().string();
+
+			stringColBuf.push_back(segfname);
+			stringColBuf.push_back(intfname);
 			resultBuf.push_back(l);
 			totalNumFeatures = 1;
 			for (auto& enabdF : F)

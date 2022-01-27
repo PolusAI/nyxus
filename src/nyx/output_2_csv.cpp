@@ -225,7 +225,9 @@ namespace Nyxus
 
 			LR& r = roiData[l];
 
-			ssVals << r.segFname << "," << r.intFname << "," << l;
+			// Tear off pure file names from segment and intensity file paths
+			std::filesystem::path pseg(r.segFname), pint(r.intFname);
+			ssVals << pseg.filename() << "," << pint.filename() << "," << l;
 
 			for (auto& enabdF : F)
 			{
