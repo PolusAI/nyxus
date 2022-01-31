@@ -25,7 +25,7 @@ namespace Nyxus
 
 		for (auto& entry : std::filesystem::directory_iterator(dir))
 		{
-			std::string fp = entry.path().string();
+			std::string fp = entry.path().filename().string();
 			if (std::regex_match(fp, re))
 				files.push_back(fp);
 			// else
