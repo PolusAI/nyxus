@@ -8,14 +8,30 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 {
 	int n_threads = 1;
 
-	segFL = new GrayscaleTiffTileLoader<uint32_t>(n_threads, seg_fpath);
-	if (segFL == nullptr)
+	try {
+		intFL = new GrayscaleTiffTileLoader<uint32_t>(n_threads, int_fpath);
+	}
+	catch (std::exception const& e)	
+	{
+		std::cout << "Error while initializing the image loader for intensity image file " << int_fpath << ": " << e.what() << "\n";
 		return false;
-	
-	intFL = new GrayscaleTiffTileLoader<uint32_t>(n_threads, int_fpath);
+	}
+
 	if (intFL == nullptr)
 		return false;
 
+	try {
+		segFL = new GrayscaleTiffTileLoader<uint32_t>(n_threads, seg_fpath);
+	}
+	catch (std::exception const& e)	
+	{
+		std::cout << "Error while initializing the image loader for mask image file " <<  seg_fpath << ": " << e.what() << "\n";
+		return false;
+	}
+
+	if (segFL == nullptr)
+		return false;
+	
 	// File #1 (intensity)
 	th = intFL->tileHeight(lvl);
 	tw = intFL->tileWidth(lvl);

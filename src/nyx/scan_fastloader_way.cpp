@@ -79,7 +79,12 @@ namespace Nyxus
 			theIntFname = p_int.string(); 
 
 			// Scan one label-intensity pair 
-			theImLoader.open (theIntFname, theSegFname);
+			ok = theImLoader.open (theIntFname, theSegFname);
+			if (ok == false)
+			{
+				std::cout << "Terminating\n";
+				return 1;
+			}
 
 			{				
 				STOPWATCH("Image scan/ImgScan/Scan/lightsteelblue", "\t=");
