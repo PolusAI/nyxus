@@ -25,9 +25,10 @@ namespace Nyxus
 
 		for (auto& entry : std::filesystem::directory_iterator(dir))
 		{
-			std::string fp = entry.path().filename().string();
-			if (std::regex_match(fp, re))
-				files.push_back(fp);
+			std::string fullPath = entry.path().string(), 
+				pureFname = entry.path().filename().string();	// The file name that should participate in the filepattern check
+			if (std::regex_match(pureFname, re))
+				files.push_back(fullPath);
 			// else
 			// 	std::cout << "Skipping file " << fp << " as not matching file pattern " << theEnvironment.file_pattern << "\n";
 		}
