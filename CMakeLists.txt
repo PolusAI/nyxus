@@ -52,7 +52,8 @@ endif()
 #==== Source files
 set(SOURCE
 	src/nyx/features/basic_morphology.cpp
-	src/nyx/features/caliper.cpp
+	src/nyx/features/caliper_feret.cpp
+	src/nyx/features/caliper_martin.cpp
 	src/nyx/features/caliper_nassenstein.cpp
 	src/nyx/features/chords.cpp
 	src/nyx/features/chords_nontriv.cpp
@@ -138,6 +139,7 @@ target_link_libraries(backend PRIVATE ${Nyxus_LIBRARIES})
 target_link_libraries(backend PRIVATE ${Python_LIBRARIES})
 
 if(BUILD_CLI)
+	target_link_libraries(nyxus PRIVATE -static-libgcc -static-libstdc++)
 	target_link_libraries(nyxus PRIVATE ${Nyxus_LIBRARIES})
 	target_link_libraries(nyxus PRIVATE ${Python_LIBRARIES})
 endif()

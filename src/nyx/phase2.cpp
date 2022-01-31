@@ -160,6 +160,7 @@ namespace Nyxus
 			else
 			{
 				// Scan pixels of pending trivial ROIs 
+				std::sort (Pending.begin(), Pending.end());
 				VERBOSLVL1(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";)
 				VERBOSLVL1(
 					if (Pending.size() ==1)					
@@ -210,6 +211,7 @@ namespace Nyxus
 		if (Pending.size() > 0)
 		{
 			// Scan pixels of pending trivial ROIs 
+			std::sort (Pending.begin(), Pending.end());
 			VERBOSLVL1(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";)
 			VERBOSLVL1(
 				if (Pending.size() == 1)
