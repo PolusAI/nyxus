@@ -23,6 +23,35 @@ private:
 	size_t item_size = sizeof(Pixel2::x) + sizeof(Pixel2::y) + sizeof(Pixel2::inten);
 };
 
+/// @brief Readable out of RAM version of class ImageMatrix
+class ReadImageMatrix_nontriv
+{
+public:
+	ReadImageMatrix_nontriv (const AABB & aabb);
+	~ReadImageMatrix_nontriv();
+	double get_at (ImageLoader& imloader, size_t row, size_t col);
+	double get_at (ImageLoader& imloader, size_t idx);
+	size_t get_width() const;
+	size_t get_height() const;
+	size_t get_size() const;
+
+	/// @brief Helps constructing a Pixel2 instance at index 'idx' in intensity matrix scenarios
+	/// 
+	/// Example:
+	/// 	auto [y0, x0] = matrix.idx_2_rc(idx);
+	/// 	double inten = matrix.get_at(imlo, idx);
+	/// 	Pixel2 p0(x0, y0, inten);
+	/// 
+	/// @param idx 0-based pixel index
+	/// @return 0-based row and column 
+	std::tuple<size_t, size_t> idx_2_rc (size_t idx) const;
+
+	bool safe(size_t x, size_t y) const;
+
+private:
+	AABB aabb;
+};
+
 /// @brief Writable out of RAM version of class ImageMatrix
 class WriteImageMatrix_nontriv
 {
@@ -33,6 +62,8 @@ public:
 	// Initialization
 	void allocate (int w, int h=1, double ini_value=0.0);
 	void init_with_cloud (const OutOfRamPixelCloud& cloud, const AABB& aabb);
+	void init_with_cloud_distance_to_contour_weights (const OutOfRamPixelCloud& cloud, const AABB& aabb, std::vector<Pixel2>& contour);
+	void copy(WriteImageMatrix_nontriv & other);
 
 	void set_at(int row, int col, double val);
 	void set_at(size_t idx,  double val);
@@ -43,26 +74,14 @@ public:
 	size_t get_width();
 	size_t get_height();
 	size_t get_chlen(size_t x);
+	bool safe(size_t x, size_t y) const;
 
 private:
 	std::string filepath;
 	FILE* pF = nullptr;
 	int width, height;
 	size_t item_size = sizeof(double);
+	AABB original_aabb;
 };
 
 
-/// @brief Readable out of RAM version of class ImageMatrix
-class ReadImageMatrix_nontriv
-{
-public:
-	ReadImageMatrix_nontriv (const AABB & aabb);
-	~ReadImageMatrix_nontriv();
-	double get_at (ImageLoader& imloader, size_t row, size_t col);
-	double get_at (ImageLoader& imloader, size_t idx);
-	int get_width();
-	int get_height();
-
-private:
-	AABB aabb;
-};

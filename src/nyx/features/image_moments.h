@@ -73,6 +73,8 @@ public:
     }
 
 private:
+    // Trivial ROI
+
     double Moment (const pixData& D, int p, int q);
     void calcOrigins (const pixData& D);
     double CentralMom (const pixData& D, int p, int q);
@@ -89,7 +91,30 @@ private:
     void calcSpatialMoments(const pixData& D);
     void calcWeightedSpatialMoments(const pixData& D);
 
-    double originOfX = 0, originOfY = 0;
+    // Non-trivial (oversized) ROI
+
+    double Moment_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I, int p, int q);
+    double Moment_nontriv (WriteImageMatrix_nontriv& I, int p, int q);
+    void calcOrigins_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I);
+    void calcOrigins_nontriv (WriteImageMatrix_nontriv& I);
+    double CentralMom_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I, int p, int q);
+    double CentralMom_nontriv (WriteImageMatrix_nontriv& W, int p, int q);
+    double NormSpatMom_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I, int p, int q);
+    double NormCentralMom_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I, int p, int q);
+    double NormCentralMom_nontriv (WriteImageMatrix_nontriv& W, int p, int q);
+
+    std::tuple<double, double, double, double, double, double, double> calcHuInvariants_imp_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I);
+    std::tuple<double, double, double, double, double, double, double> calcHuInvariants_imp_nontriv (WriteImageMatrix_nontriv& I);
+    void calcHuInvariants_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I);
+    void calcWeightedHuInvariants_nontriv (WriteImageMatrix_nontriv& W);
+    void calcNormCentralMoments_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I);
+    void calcNormSpatialMoments_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I);
+    void calcCentralMoments_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I);
+    void calcWeightedCentralMoments_nontriv (WriteImageMatrix_nontriv& W);
+    void calcSpatialMoments_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I);
+    void calcWeightedSpatialMoments_nontriv (WriteImageMatrix_nontriv& W);
+
+    double originOfX = 0, originOfY = 0; // origins
     double m00 = 0, m01 = 0, m02 = 0, m03 = 0, m10 = 0, m11 = 0, m12 = 0, m20 = 0, m21 = 0, m30 = 0;    // spatial moments
     double wm00 = 0, wm01 = 0, wm02 = 0, wm03 = 0, wm10 = 0, wm11 = 0, wm12 = 0, wm20 = 0, wm21 = 0, wm30 = 0;    // weighted spatial moments
     double w00 = 0, w01 = 0, w02 = 0, w03 = 0, w10 = 0, w20 = 0, w30 = 0;   // normalized spatial moments

@@ -194,12 +194,6 @@ namespace Nyxus
 						T.push_back(std::async(std::launch::async, processPixels, idxS, idxE, &dataL, &dataI, tw));
 					}
 				}
-				// --Timing
-				end = std::chrono::system_clock::now();
-				std::chrono::duration<double, std::micro> elapsed2 = end - start;
-				std::cout << " F/T: " << elapsed2.count() << " / " << elapsed1.count() << " = " << elapsed2.count() / elapsed1.count() << " x" << std::endl;
-				totalImgScanTime += elapsed1.count();
-				totalFeatureReduceTime += elapsed2.count();
 
 				if (cnt++ % 4 == 0)
 					std::cout << std::endl;

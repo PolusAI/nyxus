@@ -26,10 +26,155 @@ GLSZMFeature::GLSZMFeature() : FeatureMethod("GLSZMFeature")
 		GLSZM_LAHGLE });
 }
 
-void GLSZMFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {}
+void GLSZMFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {} // Not suporting
 
 void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {
+	//==== Check if the ROI is degenerate (equal intensity)
+	if (r.aux_min == r.aux_max)
+		return;
+
+	//==== Make a list of intensity clusters (zones)
+	using ACluster = std::pair<PixIntens, int>;
+	std::vector<ACluster> Z;
+
+	//==== While scanning clusters, learn unique intensities 
+	std::unordered_set<PixIntens> U;
+
+	int maxZoneArea = 0;
+
+	// Copy the image matrix
+	ReadImageMatrix_nontriv M(r.aabb);	//-- auto M = r.aux_image_matrix;
+
+	WriteImageMatrix_nontriv D("GLSZMFeature_osized_calculate_D", r.label);	//-- pixData& D = M.WriteablePixels();
+	D.allocate (r.aabb.get_width(), r.aabb.get_height());
+
+	//M.print("initial\n");
+
+	// Number of zones
+	const int VISITED = -1;
+	for (int row = 0; row < M.get_height(); row++)
+		for (int col = 0; col < M.get_width(); col++)
+		{
+			// Find a non-blank pixel
+			auto pi = D.get_at (row, col);
+			if (pi == 0 || int(pi) == VISITED)
+				continue;
+
+			// Found a gray pixel. Find same-intensity neighbourhood of it.
+			std::vector<std::tuple<int, int>> history;
+			int x = col, y = row;
+			int zoneArea = 1;
+			D.set_at(y, x, VISITED);
+			// 
+			for (;;)
+			{
+				if (D.safe(y, x + 1) && D.get_at(y, x + 1) == pi)
+				{
+					D.set_at(y, x + 1, VISITED);
+					zoneArea++;
+
+					//M.print("After x+1,y");
+
+					// Remember this pixel
+					history.push_back({ x,y });
+					// Advance 
+					x = x + 1;
+					// Proceed
+					continue;
+				}
+				if (D.safe(y + 1, x + 1) && D.get_at(y + 1, x + 1) == pi)
+				{
+					D.set_at(y + 1, x + 1, VISITED);
+					zoneArea++;
+
+					//M.print("After x+1,y+1");
+
+					history.push_back({ x,y });
+					x = x + 1;
+					y = y + 1;
+					continue;
+				}
+				if (D.safe(y + 1, x) && D.get_at(y + 1, x) == pi)
+				{
+					D.set_at(y + 1, x, VISITED);
+					zoneArea++;
+
+					//M.print("After x,y+1");
+
+					history.push_back({ x,y });
+					y = y + 1;
+					continue;
+				}
+				if (D.safe(y + 1, x - 1) && D.get_at(y + 1, x - 1) == pi)
+				{
+					D.set_at(y + 1, x - 1, VISITED);
+					zoneArea++;
+
+					//M.print("After x-1,y+1");
+
+					history.push_back({ x,y });
+					x = x - 1;
+					y = y + 1;
+					continue;
+				}
+
+				// Return from the branch
+				if (history.size() > 0)
+				{
+					// Recollect the coordinate where we diverted from
+					std::tuple<int, int> prev = history[history.size() - 1];
+					history.pop_back();
+				}
+
+				// We are done exploring this cluster
+				break;
+			}
+
+			// Done scanning a cluster. Perform 3 actions:
+			// --1
+			U.insert(pi);
+
+			// --2
+			maxZoneArea = std::max(maxZoneArea, zoneArea);
+
+			//std::stringstream ss;
+			//ss << "End of cluster " << x << "," << y;
+			//M.print (ss.str());
+
+			// --3
+			ACluster clu = { pi, zoneArea };
+			Z.push_back(clu);
+		}
+
+	//M.print("finished");
+
+
+	//==== Fill the SZ-matrix
+
+	Ng = (decltype(Ng))U.size();
+	Ns = maxZoneArea;
+	Nz = (decltype(Nz))Z.size();
+	Np = 1;
+
+	// --Set to vector to be able to know each intensity's index
+	std::vector<PixIntens> I(U.begin(), U.end());
+	std::sort(I.begin(), I.end());	// Optional
+
+	// --allocate the matrix
+	P.allocate(Ns, Ng);
+
+	// --iterate zones and fill the matrix
+	for (auto& z : Z)
+	{
+		// row
+		auto iter = std::find(I.begin(), I.end(), z.first);
+		int row = int(iter - I.begin());
+		// col
+		int col = z.second - 1;	// 0-based => -1
+		auto& k = P(col, row);
+		k++;
+	}
 }
 
 void GLSZMFeature::calculate(LR& r)

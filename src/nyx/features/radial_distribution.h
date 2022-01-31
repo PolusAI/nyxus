@@ -30,13 +30,16 @@ public:
 
 private:
 	// Fraction of total stain in an object at a given radius
-	const std::vector<double>& get_FracAtD();
+	void get_FracAtD();
 
 	// Mean fractional intensity at a given radius (Fraction of total intensity normalized by fraction of pixels at a given radius)
-	const std::vector<double>& get_MeanFrac();
+	void get_MeanFrac();
 
 	// Coefficient of variation of intensity within a ring, calculated over 8 slices
-	const std::vector<double> & get_RadialCV();
+	void get_RadialCV();
+
+	// Returns the index of the pixel in parameter 'cloud' having maximum distance from 'contour'
+	size_t find_osized_cloud_center (OutOfRamPixelCloud& cloud, std::vector<Pixel2>& contour);
 
 	std::vector<double> values_FracAtD,
 		values_MeanFrac,

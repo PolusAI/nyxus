@@ -71,9 +71,6 @@ ImageMomentsFeature::ImageMomentsFeature() : FeatureMethod("ImageMomentsFeature"
 
 void ImageMomentsFeature::calculate (LR& r)
 {
-    ImageMatrix weighted_im (r.raw_pixels, r.aabb);
-    weighted_im.apply_distance_to_contour_weights (r.raw_pixels, r.contour);
-
     const ImageMatrix& im = r.aux_image_matrix;
 
     const pixData& I = im.ReadablePixels();
@@ -84,6 +81,9 @@ void ImageMomentsFeature::calculate (LR& r)
     calcNormSpatialMoments(I);
     calcHuInvariants(I);
 
+    ImageMatrix weighted_im(r.raw_pixels, r.aabb);
+    weighted_im.apply_distance_to_contour_weights(r.raw_pixels, r.contour);
+
     const pixData& W = weighted_im.ReadablePixels();
     calcOrigins (W);
     calcWeightedSpatialMoments (W);
@@ -91,11 +91,7 @@ void ImageMomentsFeature::calculate (LR& r)
     calcWeightedHuInvariants(W);
 }
 
-void ImageMomentsFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
-
-void ImageMomentsFeature::osized_calculate(LR& r, ImageLoader& imloader)
-{
-}
+void ImageMomentsFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {} // Not supporting online for image moments
 
 void ImageMomentsFeature::save_value(std::vector<std::vector<double>>& fvals)
 {

@@ -104,6 +104,73 @@ void WriteImageMatrix_nontriv::init_with_cloud (const OutOfRamPixelCloud & cloud
 	fflush(pF);
 }
 
+void WriteImageMatrix_nontriv::init_with_cloud_distance_to_contour_weights (const OutOfRamPixelCloud& cloud, const AABB& aabb, std::vector<Pixel2>& contour_pixels)
+{
+	double epsilon = 0.1;
+
+	// Cache some parameters
+	original_aabb = aabb;
+
+	// Allocate space
+	allocate(aabb.get_width(), aabb.get_height());
+
+	// Fill it with cloud pixels 
+	for (size_t i = 0; i < cloud.get_size(); i++)
+	{
+		const Pixel2 p = cloud.get_at(i);
+
+		auto [mind, maxd] = p.min_max_sqdist (contour_pixels);
+		double dist = std::sqrt (mind);
+
+		auto y = p.y - aabb.get_ymin(),
+			x = p.x - aabb.get_xmin();
+
+		// Weighted intensity		
+		PixIntens wi = p.inten / (dist + epsilon) + 0.5/*rounding*/;
+		set_at (y, x, p.inten);
+	}
+
+	// Flush the buffer
+	fflush(pF);
+}
+
+void WriteImageMatrix_nontriv::copy (WriteImageMatrix_nontriv& other)
+{
+	std::filesystem::path p (filepath);
+	std::filesystem::remove (p);
+
+	original_aabb = other.original_aabb;
+	allocate (original_aabb.get_width(), original_aabb.get_height(), 0.0);
+
+	for (size_t idx = 0; idx < other.size(); idx++)
+	{
+		double val = other.get_at(idx);
+		set_at(idx, val);
+	}
+
+	fflush(pF);
+}
+
+/*
+void WriteImageMatrix_nontriv::init_with_matrix (ImageLoader& imloader, ReadImageMatrix_nontriv& rim)
+{
+	// Allocate space
+	allocate (rim.get_width(), rim.get_height());
+	
+	// Fill it with cloud pixels 
+	for (size_t i = 0; i < rim.get_size(); i++)
+	{
+		auto p = rim.get_at (imloader, i);
+		auto y = p.y - rim.aabb.get_ymin(),
+			x = p.x - aabb.get_xmin();
+		set_at (y, x, p.inten);
+	}
+
+	// Flush the buffer
+	fflush(pF);	
+}
+*/
+
 void WriteImageMatrix_nontriv::set_at(size_t idx, double val)
 {
 	size_t offs = idx * item_size;
@@ -204,6 +271,13 @@ size_t WriteImageMatrix_nontriv::get_chlen (size_t col)
 	return maxChlen;
 }
 
+bool WriteImageMatrix_nontriv::safe(size_t x, size_t y) const
+{
+	if (x >= width || y >= height)
+		return false;
+	else
+		return true;
+}
 
 ReadImageMatrix_nontriv::ReadImageMatrix_nontriv (const AABB & _aabb)
 {
@@ -231,16 +305,36 @@ double ReadImageMatrix_nontriv::get_at (ImageLoader& imloader, size_t idx)
 	return retval;
 }
 
-int ReadImageMatrix_nontriv::get_width()
+size_t ReadImageMatrix_nontriv::get_width() const
 {
 	return aabb.get_width();
 }
 
-int ReadImageMatrix_nontriv::get_height()
+size_t ReadImageMatrix_nontriv::get_height() const
 {
 	return aabb.get_height();
 }
 
+size_t ReadImageMatrix_nontriv::get_size() const
+{
+	return get_width() * get_height();
+}
+
+std::tuple<size_t, size_t> ReadImageMatrix_nontriv::idx_2_rc (size_t idx) const
+{
+	auto width = get_width();
+	size_t row = idx % width,
+		col = idx / width;
+	return {row, col};
+}
+
+bool ReadImageMatrix_nontriv::safe(size_t x, size_t y) const
+{
+	if (x >= aabb.get_width() || y >= aabb.get_height())
+		return false;
+	else
+		return true;
+}
 
 
 

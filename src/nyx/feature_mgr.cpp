@@ -143,8 +143,7 @@ int FeatureManager::get_num_fmethods_dependencies (FeatureMethod * fm, std::vect
 
 
 		// Add dependency fcode to the dependency list to be checked
-		//?	std::vector<Nyxus::AvailableFeatures> parent_deps2 = parent_dependencies;
-		parent_dependencies.push_back(fcode); //? parent_deps2.push_back(fcode);
+		parent_dependencies.push_back(fcode); 
 
 
 		// Find the feature method providing the dependency fcode (the child feature method)
@@ -167,7 +166,7 @@ int FeatureManager::get_num_fmethods_dependencies (FeatureMethod * fm, std::vect
 		// Analyze the child
 		int n_child_deps = get_num_fmethods_dependencies(
 			providerFM,
-			parent_dependencies); //? parent_deps2);
+			parent_dependencies); 
 		n_deps += n_child_deps;
 	}
 

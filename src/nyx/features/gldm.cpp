@@ -102,8 +102,82 @@ void GLDMFeature::calculate(LR& r)
 
 void GLDMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
 
-void GLDMFeature::osized_calculate(LR& r, ImageLoader& imloader)
-{}
+void GLDMFeature::osized_calculate (LR& r, ImageLoader& imloader)
+{
+	if (r.aux_min == r.aux_max)
+		return;
+
+	//==== Make a list of intensity clusters (zones)
+	using ACluster = std::pair<PixIntens, int>;	// Pairs of (intensity,number_of_neighbors)
+	std::vector<ACluster> Z;
+
+	//==== While scanning clusters, learn unique intensities 
+	std::unordered_set<PixIntens> U;
+
+	ReadImageMatrix_nontriv D(r.aabb); //-- const pixData& D = r.aux_image_matrix.ReadablePixels();
+
+	// Gather zones
+	for (int row = 1; row < D.get_height() - 1; row++)
+		for (int col = 1; col < D.get_width() - 1; col++)
+		{
+			// Find a non-blank pixel
+			PixIntens pi = D.get_at(imloader, row, col);
+			if (pi == 0)
+				continue;
+
+			// Count dependencies
+			int nd = 0;	// Number of dependencies
+			if (D.safe(row-1, col) && D.get_at(imloader, row - 1, col) == pi)	// North
+				nd++;
+			if (D.safe(row-1, col + 1) && D.get_at(imloader, row - 1, col + 1) == pi)	// North-East
+				nd++;
+			if (D.safe(row, col+1) && D.get_at(imloader, row, col + 1) == pi)	// East
+				nd++;
+			if (D.safe(row+1, col+1) && D.get_at(imloader, row + 1, col + 1) == pi)	// South-East
+				nd++;
+			if (D.safe(row+1, col) && D.get_at(imloader, row + 1, col) == pi)	// South
+				nd++;
+			if (D.safe(row+1, col-1) && D.get_at(imloader, row + 1, col - 1) == pi)	// South-West
+				nd++;
+			if (D.safe(row, col-1) && D.get_at(imloader, row, col - 1) == pi)	// West
+				nd++;
+			if (D.safe(row-1, col-1) && D.get_at(imloader, row - 1, col - 1) == pi)	// North-West
+				nd++;
+
+			// Save the intensity's dependency
+			ACluster clu = { pi, nd };
+			Z.push_back(clu);
+
+			// Update unique intensities
+			U.insert(pi);
+		}
+
+	//==== Fill the matrix
+
+	Ng = (decltype(Ng))U.size();
+	Nd = 8 + 1;	// N, NE, E, SE, S, SW, W, NW + zero
+	Nz = (decltype(Nz))Z.size();
+
+	// --allocate the matrix
+	P.allocate(Nd, Ng);
+
+	// --Set to vector to be able to know each intensity's index
+	std::vector<PixIntens> I(U.begin(), U.end());
+	std::sort(I.begin(), I.end());	// Optional
+
+	// --iterate zones and fill the matrix
+	for (auto& z : Z)
+	{
+		// row
+		auto iter = std::find(I.begin(), I.end(), z.first);
+		int row = int(iter - I.begin());
+		// col
+		int col = z.second;	// 1-based
+		// increment
+		auto& k = P(col, row);
+		k++;
+	}
+}
 
 void GLDMFeature::save_value(std::vector<std::vector<double>>& fvals)
 {

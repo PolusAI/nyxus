@@ -55,7 +55,7 @@ namespace Nyxus
 	// Calculating features in parallel with hard-coded feature order. This function should be called once after a file pair processing is finished.
 	void reduce_trivial_rois_manual (std::vector<int> & PendingRoisLabels)
 	{
-		//==== 	Parallel execution parameters 
+		//==== Parallel execution parameters 
 		int n_reduce_threads = theEnvironment.n_reduce_threads;		
 		size_t jobSize = PendingRoisLabels.size(),
 			workPerThread = jobSize / n_reduce_threads;
@@ -66,7 +66,7 @@ namespace Nyxus
 			runParallel (parallelReduceIntensityStats, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
-		//==== Fitting an ellipse
+		//==== Basic morphology
 		if (BasicMorphologyFeatures::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Basic/E/#4aaaea", "\t=");
@@ -109,21 +109,19 @@ namespace Nyxus
 			runParallel(EulerNumberFeature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
-#if 0 // Temporarily disabled 
 		//==== Feret diameters and angles
 		if (CaliperFeretFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Feret/F/#4aaaea", "\t=");
-			runParallel(CaliperFeretFeature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(CaliperFeretFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Martin diameters
 		if (CaliperMartinFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Martin/M/#4aaaea", "\t=");
-			runParallel(CaliperMartinFeature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(CaliperMartinFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
-#endif
 
 		//==== Nassenstein diameters
 		if (CaliperNassensteinFeature::required(theFeatureSet))

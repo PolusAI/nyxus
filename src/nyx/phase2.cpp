@@ -161,7 +161,12 @@ namespace Nyxus
 			{
 				// Scan pixels of pending trivial ROIs 
 				VERBOSLVL1(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";)
-				VERBOSLVL1(std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";)
+				VERBOSLVL1(
+					if (Pending.size() ==1)					
+						std::cout << ">>> (single ROI " << Pending[0] << ")\n";
+					else
+						std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
+					)
 				scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
 
 				// Allocate memory
@@ -206,7 +211,12 @@ namespace Nyxus
 		{
 			// Scan pixels of pending trivial ROIs 
 			VERBOSLVL1(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";)
-			VERBOSLVL1(std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";)
+			VERBOSLVL1(
+				if (Pending.size() == 1)
+					std::cout << ">>> (single ROI " << Pending[0] << ")\n";
+				else
+					std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
+				)
 			scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
 
 			// Allocate memory
@@ -231,9 +241,6 @@ namespace Nyxus
                 throw pybind11::error_already_set();
 			#endif
 		}
-
-		// Neighbors
-		reduce_neighbors();
 
 		return true;
 	}

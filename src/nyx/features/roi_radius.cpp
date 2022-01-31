@@ -77,9 +77,6 @@ void RoiRadiusFeature::parallel_process_1_batch (size_t start, size_t end, std::
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
-		if (r.has_bad_data())
-			continue;
-
 		RoiRadiusFeature rrf;
 		rrf.calculate(r);
 		rrf.save_value(r.fvals);

@@ -22,7 +22,6 @@ namespace Nyxus
 	bool datasetDirsOK(const std::string& dirIntens, const std::string& dirLab, const std::string& dirOut, bool mustCheckDirOut);
 	bool directoryExists(const std::string& dir);
 	void readDirectoryFiles(const std::string& dir, std::vector<std::string>& files);
-	bool scanFilePair(const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, int filepair_index, int tot_num_filepairs);
 	bool scanFilePairParallel(const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads, int filepair_index, int tot_num_filepairs);
 	std::string getPureFname(std::string fpath);
 	int processDataset(const std::vector<std::string>& intensFiles, const std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int numReduceThreads, int min_online_roi_size, bool save2csv, const std::string& csvOutputDir);
@@ -66,9 +65,6 @@ namespace Nyxus
 	void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity);
 	void update_label_record_2(LR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index);
 	void reduce_neighbors(int labels_collision_radius);
-
-	// Timing
-	extern double totalImgScanTime, totalFeatureReduceTime;
 
 	// Label data
 	extern std::string theSegFname, theIntFname;	// Cached file names while iterating a dataset

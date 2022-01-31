@@ -28,8 +28,8 @@ bool LR::have_oversize_roi()
 
 bool LR::has_bad_data()
 {
-	bool bad = aux_min == aux_max;
-	return bad;
+	bool bad = (aux_min == aux_max);
+	return false; //<-- Permitting nans and infs-- bad;
 }
 
 void LR::recycle_aux_obj (RoiDataCacheItem itm)

@@ -46,8 +46,17 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 		return false;
 	}
 
+#if 0 // Tests
 	ptrI = std::make_shared<std::vector<uint32_t>>(tileSize);
+	// Experiment
 	ptrL = std::make_shared<std::vector<uint32_t>>(tileSize);
+	segFL->loadTileFromFile(ptrL, 
+		0, //row, 
+		0, //col, 
+		0, //lyr, 
+		0); // lvl);
+	auto& dataL = *ptrL;
+#endif
 
 	return true;
 }

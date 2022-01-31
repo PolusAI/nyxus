@@ -105,8 +105,7 @@ void BasicMorphologyFeatures::calculate(LR& r)
 	val_ASPECT_RATIO = r.aabb.get_width() / r.aabb.get_height();
 }
 
-void BasicMorphologyFeatures::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
-{}
+void BasicMorphologyFeatures::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} // Not providing online calculation for these group of features
 
 void BasicMorphologyFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 {
@@ -230,8 +229,8 @@ void BasicMorphologyFeatures::parallel_process_1_batch(size_t firstitem, size_t 
 		LR& r = (*ptrLabelData)[roiLabel];
 
 		// Skip the ROI if its data is invalid to prevent nans and infs in the output
-		if (r.has_bad_data())
-			continue;
+		//if (r.has_bad_data())
+		//	continue;
 
 		// Calculate the feature and save it in ROI's csv-friendly buffer 'fvals'
 		BasicMorphologyFeatures f;

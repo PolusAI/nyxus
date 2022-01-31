@@ -49,6 +49,7 @@ struct Pixel2 : public Point2i
 	Pixel2 (StatsInt x_, StatsInt y_, PixIntens i_) : Point2(x_, y_), inten(i_) {}
 	Pixel2 (int x_, int y_, PixIntens i_) : Point2(x_, y_), inten(i_) {}
 	Pixel2 (float x_, float y_, PixIntens i_) : Point2((StatsInt)x_, (StatsInt)y_), inten(i_) {}
+	Pixel2 (size_t x_, size_t y_, double i_) : Point2(x_, y_), inten(i_) {}
 
 	bool operator == (const Pixel2& p2)
 	{

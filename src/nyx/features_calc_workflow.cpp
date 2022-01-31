@@ -177,13 +177,6 @@ namespace Nyxus
 		r.fvals[CENTROID_X][0] = StatsReal(x) + 1;
 		r.fvals[CENTROID_Y][0] = StatsReal(y) + 1;
 
-#if 0 // Replaced with a faster version (class TrivialHistogram)
-		// Histogram
-		std::shared_ptr<Histo> ptrH = std::make_shared <Histo>();
-		ptrH->add_observation(intensity);
-		r.aux_Histogram = ptrH;
-#endif
-
 		// Other fields
 		r.fvals[MEDIAN][0] = 0;
 		r.fvals[STANDARD_DEVIATION][0] = 0;
@@ -228,28 +221,6 @@ namespace Nyxus
 		lr.aux_min = std::min(lr.aux_min, intensity);
 		lr.aux_max = std::max(lr.aux_max, intensity);
 		lr.update_aabb (x,y);
-	}
-
-	// The root function of handling a pixel being scanned
-	void update_label(int x, int y, int label, PixIntens intensity)
-	{
-		auto it = uniqueLabels.find(label);
-		if (it == uniqueLabels.end())
-		{
-			// Remember this label
-			uniqueLabels.insert(label);
-
-			// Initialize the label record
-			LR lr;
-			init_label_record(lr, theSegFname, theIntFname, x, y, label, intensity);
-			roiData[label] = lr;
-		}
-		else
-		{
-			// Update label's stats
-			LR& lr = roiData[label];
-			update_label_record (lr, x, y, label, intensity);
-		}
 	}
 
 }

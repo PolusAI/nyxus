@@ -22,9 +22,6 @@ namespace Nyxus
 	size_t totalNumFeatures = 0, totalNumLabels = 0;
 	std::vector<std::string> stringColBuf, headerBuf;
 
-	// Timing
-	double totalImgScanTime = 0.0, totalFeatureReduceTime = 0.0;	// Time counters external to class 'Stopwatch'
-
 	// Features
 	FeatureSet theFeatureSet;
 	FeatureManager theFeatureMgr;

@@ -263,8 +263,9 @@ void EnclosingInscribingCircumscribingCircleFeature::parallel_process_1_batch (s
 }
 
 // Not using the online mode for this feature
-void EnclosingInscribingCircumscribingCircleFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
+void EnclosingInscribingCircumscribingCircleFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} // Not supporting the online mode for this class
 
-void EnclosingInscribingCircumscribingCircleFeature::osized_calculate(LR& r, ImageLoader& imloader)
+void EnclosingInscribingCircumscribingCircleFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {
+        calculate(r);
 }
