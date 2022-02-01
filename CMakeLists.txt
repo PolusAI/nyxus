@@ -69,6 +69,7 @@ set(SOURCE
 	src/nyx/features/gabor_nontriv.cpp
 	src/nyx/features/geo_len_thickness.cpp
 	src/nyx/features/glcm.cpp
+	src/nyx/features/glcm_nontriv.cpp
 	src/nyx/features/gldm.cpp
 	src/nyx/features/glrlm.cpp
 	src/nyx/features/glszm.cpp
@@ -88,6 +89,7 @@ set(SOURCE
 	src/nyx/features/rotation.cpp
 	src/nyx/features/specfunc.cpp
 	src/nyx/features/zernike.cpp
+	src/nyx/features/zernike_nontriv.cpp
 	src/nyx/helpers/timing.cpp
 	src/nyx/common_stats.cpp
 	src/nyx/dirs_and_files.cpp
