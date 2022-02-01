@@ -1,6 +1,7 @@
 #include <filesystem>
 #include <iostream>
 #include <sstream>
+#include "../environment.h"
 #include "image_matrix_nontriv.h"
 
 OutOfRamPixelCloud::OutOfRamPixelCloud()
@@ -10,7 +11,7 @@ OutOfRamPixelCloud::OutOfRamPixelCloud()
 void OutOfRamPixelCloud::init (unsigned int _roi_label, std::string name)
 {
 	std::stringstream ssPath;
-	ssPath << std::filesystem::temp_directory_path() << "/" << name << _roi_label;
+	ssPath << Nyxus::theEnvironment.get_temp_dir_path() << name << _roi_label;
 	filepath = ssPath.str();
 	pF = fopen(filepath.c_str(), "w+b");
 

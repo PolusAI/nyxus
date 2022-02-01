@@ -74,6 +74,9 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 	auto& dataL = *ptrL;
 #endif
 
+	ptrI = std::make_shared<std::vector<uint32_t>>(tileSize);
+	ptrL = std::make_shared<std::vector<uint32_t>>(tileSize);
+
 	return true;
 }
 

@@ -41,13 +41,43 @@ namespace Nyxus
 		VERBOSLVL1(std::cout << "Gathering ROI metrics\n";)
 		gatherRoisMetrics (intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
 
+		// Phase 0: allocate each ROI's feature value buffer
+		for (auto lab : uniqueLabels)
+		{
+			LR& r = roiData[lab];
+			r.fvals.resize(AvailableFeatures::_COUNT_);
+			for (auto& valVec : r.fvals)
+				valVec.push_back(0.0);
+		}		
+		
+		// Distribute ROIs among phases
+		std::vector<int> trivRoiLabels, nontrivRoiLabels;
+		for (auto lab : uniqueLabels)
+		{
+			LR& r = roiData[lab];
+			size_t footprint = r.get_ram_footprint_estimate();
+			if (footprint >= theEnvironment.get_ram_limit())
+			{
+				VERBOSLVL2(std::cout << ">>> Skipping non-trivial ROI " << lab << " (area=" << r.aux_area << " px, footprint=" << footprint << " b)\n";)
+					nontrivRoiLabels.push_back(lab);
+			}
+			else
+				trivRoiLabels.push_back(lab);
+		}
+
 		// Phase 2: process trivial-sized ROIs
-		VERBOSLVL1(std::cout << "Processing trivial ROIs\n";)
-		processTrivialRois (intens_fpath, label_fpath, num_FL_threads, theEnvironment.get_ram_limit());
+		if (trivRoiLabels.size())
+		{
+			VERBOSLVL1(std::cout << "Processing trivial ROIs\n";)
+			processTrivialRois (trivRoiLabels, intens_fpath, label_fpath, num_FL_threads, theEnvironment.get_ram_limit());
+		}
 
 		// Phase 3: process nontrivial (oversized) ROIs, if any
-		VERBOSLVL1(std::cout << "Processing oversized ROIs\n";)
-		processNontrivialRois (intens_fpath, label_fpath, num_FL_threads, theEnvironment.get_ram_limit());
+		if (nontrivRoiLabels.size())
+		{
+			VERBOSLVL1(std::cout << "Processing oversized ROIs\n";)
+			processNontrivialRois (nontrivRoiLabels, intens_fpath, label_fpath, num_FL_threads);
+		}
 
 		return true;
 	}

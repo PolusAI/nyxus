@@ -114,11 +114,6 @@ namespace Nyxus
 		{
 			LR& r = roiData[lab];
 			r.aux_image_matrix.use_roi(r.raw_pixels, r.aabb);
-
-			// 2-step procedure
-			r.fvals.resize(AvailableFeatures::_COUNT_);
-			for (auto& valVec : r.fvals)
-				valVec.push_back(0.0);
 		}
 	}
 
@@ -132,24 +127,17 @@ namespace Nyxus
 		}
 	}
 
-	bool processTrivialRois(const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit)
+	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit)
 	{
 		std::vector<int> Pending;
 		size_t batchDemand = 0;
 		int roiBatchNo = 1;
 
-		for (auto lab : uniqueLabels)
+		for (auto lab : trivRoiLabels)
 		{
 			LR& r = roiData[lab];
 
 			size_t itemFootprint = r.get_ram_footprint_estimate();
-
-			// Skip non-trivial ROI
-			if (itemFootprint >= memory_limit)
-			{
-				VERBOSLVL1(std::cout << ">>> Skipping non-trivial ROI " << lab << " (area=" << r.aux_area << " px, footprint=" << itemFootprint << " b)\n";)
-				continue;
-			}
 
 			// Sheck if we are good to accumulate this ROI in the current batch or should close the batch and reduce it
 			if (batchDemand + itemFootprint < memory_limit)

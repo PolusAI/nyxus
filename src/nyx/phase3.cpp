@@ -13,29 +13,41 @@
 
 namespace Nyxus
 {
-
-	bool processNontrivialRois(const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit)
+	/// @brief Processes so called nontrivial i.e. oversized ROIs - those exceeding certain memory limit
+	/// @param intens_fpath Intensity image path
+	/// @param label_fpath Mask image path
+	/// @param num_FL_threads Number of threads of FastLoader based TIFF tile browser
+	/// @param memory_limit RAM limit in bytes
+	/// @return Success status
+	/// 
+	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads)
 	{
-		for (auto lab : uniqueLabels)
+		for (auto lab : nontrivRoiLabels)
 		{
 			LR& r = roiData[lab];
 
-			// Skip trivial ROI
-			//if (r.nontrivial_roi(memory_limit) == false)
-				continue;
+			VERBOSLVL1(std::cout << "Processing oversized ROI " << lab << "\n");
 
+			// Scan one label-intensity pair 
+			bool ok = theImLoader.open(intens_fpath, label_fpath);
+			if (ok == false)
+			{
+				std::cout << "Terminating\n";
+				return false;
+			}
+			
 			//=== Features permitting raster scan
 
-			auto& dataI = theImLoader.get_int_tile_buffer();
-			auto& dataL = theImLoader.get_seg_tile_buffer();
 
 			// Initialize ROI's pixel cache
-			r.osized_pixel_cloud.init(r.label, "r_oor_pixel_cloud");
+			r.osized_pixel_cloud.init (r.label, "r_oor_pixel_cloud");
 
 			// Iterate ROI's tiles and scan pixels
 			for (auto tileIdx : r.host_tiles)
 			{
 				theImLoader.load_tile(tileIdx);
+				auto& dataI = theImLoader.get_int_tile_buffer();
+				auto& dataL = theImLoader.get_seg_tile_buffer();
 				for (unsigned long i = 0; i < theImLoader.get_tile_size(); i++)
 				{
 					auto pixLabel = dataL[i];
@@ -86,7 +98,16 @@ namespace Nyxus
 			for (int i = 0; i < nrf; i++)
 			{
 				auto feature = theFeatureMgr.get_feature_method(i);
-				feature->osized_scan_whole_image (r, theImLoader);
+
+				try
+				{
+					feature->osized_scan_whole_image (r, theImLoader);
+				}
+				catch (std::exception const& e)
+				{
+					std::cout << "Error while computing feature " << feature->feature_info << " over oversized ROI " << r.label << " : " << e.what() << "\n";
+				}
+
 				feature->cleanup_instance();
 			}
 

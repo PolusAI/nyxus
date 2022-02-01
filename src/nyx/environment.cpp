@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <regex>
@@ -113,6 +114,9 @@ Environment::Environment()
 {
     unsigned long long availMem = Nyxus::getAvailPhysMemory();
     ram_limit = availMem / 2;
+
+    // Initialize the path to temp directory
+    temp_dir_path = "E:/NYXUS/"; //??? std::filesystem::temp_directory_path().string();
 }
 
 size_t Environment::get_ram_limit()
@@ -733,4 +737,9 @@ int Environment::parse_cmdline(int argc, char **argv)
 
     // Success
     return 0;
+}
+
+std::string Environment::get_temp_dir_path() const
+{
+    return temp_dir_path;
 }

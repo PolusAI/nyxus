@@ -99,6 +99,10 @@ public:
 	bool check_file_pattern(const std::string &pat);
 	void process_feature_list();
 
+	/// @brief Slash-terminated application-wide temp directory path
+	/// @return 
+	std::string get_temp_dir_path() const;
+
 private:
 	std::vector<std::tuple<std::string, std::string>> memory;
 	void show_memory(const std::string &head, const std::string &tail);
@@ -108,6 +112,8 @@ private:
 
 	int pixelDistance = 5;
 	size_t ram_limit = 1024L * 1024L * 1024L; // [bytes] - default RAM limit affecting Phase 2's batch size. (Purpose of Phase 2 is calculating trivial ROIs.)
+
+	std::string temp_dir_path;
 };
 
 namespace Nyxus
