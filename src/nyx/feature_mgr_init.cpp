@@ -46,7 +46,7 @@ FeatureManager::FeatureManager()
 	register_feature (new RoiRadiusFeature());
 	register_feature (new ErosionPixelsFeature());	
 	register_feature (new FractalDimensionFeature());
-	register_feature (new GLCMFeature());	//! needs 2nd-day review
+	register_feature (new GLCMFeature());	
 	register_feature (new GLRLMFeature());	
 	register_feature (new GLSZMFeature());	
 	register_feature (new GLDMFeature());
