@@ -23,6 +23,8 @@ typedef struct
 	double max_corr_coef; /* (14) Maximal Correlation Coefficient */
 } Haralick_feature_values;
 
+#define PGM_MAXMAXVAL 255
+
 /// @brief Gray Level Cooccurrence Matrix(GLCM) features
 /// Gray Level Cooccurrence Matrix(GLCM) of size : math:`N_g \times N_g` describes the second - order joint probability
 ///	function of an image region constrained by the mask and is defined as : math:`\textbf{ P }(i, j | \delta, \theta)`.
@@ -81,10 +83,45 @@ public:
 	const static int distance_parameter = 5;
 
 private:
+	void Extract_Texture_Features_nontriv(
+		int distance,
+		int angle,
+		const OOR_ReadMatrix& grays);
+	void CoOcMat_Angle_0_nontriv (
+		// out
+		SimpleMatrix<double>& matrix,
+		// in
+		int distance,
+		const OOR_ReadMatrix& grays,
+		const int* tone_LUT,
+		int tone_count);
+	void CoOcMat_Angle_45_nontriv (
+		// out
+		SimpleMatrix<double>& matrix,
+		// in
+		int distance,
+		const OOR_ReadMatrix& grays,
+		const int* tone_LUT,
+		int tone_count);
+	void CoOcMat_Angle_90_nontriv (
+		// out
+		SimpleMatrix<double>& matrix,
+		// in
+		int distance,
+		const OOR_ReadMatrix& grays,
+		const int* tone_LUT,
+		int tone_count);
+	void CoOcMat_Angle_135_nontriv (
+		// out
+		SimpleMatrix<double>& matrix,
+		// in
+		int distance,
+		const OOR_ReadMatrix& grays,
+		const int* tone_LUT,
+		int tone_count);
+
 	SimpleMatrix<int> P;	// colocation matrix
 	
-	//std::vector <Haralick_feature_values> fvals = { {}, {}, {}, {} };	// 4 angles
-
 	std::vector<double> fvals_ASM,          /*  (1) Angular Second Moment */
 		fvals_contrast,     /*  (2) Contrast */
 		fvals_correlation,  /*  (3) Correlation */
@@ -105,7 +142,8 @@ private:
 		int angle,
 		const SimpleMatrix<uint8_t>& grays);	// 'grays' is 0-255 grays 
 
-	void calculate_graytones (SimpleMatrix<uint8_t>& G, int minI, int maxI, const ImageMatrix& Im);
+	void calculate_normalized_graytone_matrix (SimpleMatrix<uint8_t>& G, int minI, int maxI, const ImageMatrix& Im);
+	void calculate_normalized_graytone_matrix (OOR_ReadMatrix& G, int minI, int maxI, const ImageMatrix& Im);
 
 	void CoOcMat_Angle_0(
 		// out
@@ -153,8 +191,5 @@ private:
 	double f11_dentropy (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
 	double f12_icorr (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px, std::vector<double>& py);
 	double f13_icorr (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px, std::vector<double>& py);
-
-	//---	double* allocate_vector (int nl, int nh);
-
 };
 

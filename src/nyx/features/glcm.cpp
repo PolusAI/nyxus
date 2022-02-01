@@ -1,7 +1,5 @@
 #include "glcm.h"
 
-#define PGM_MAXMAXVAL 255
-
 GLCMFeature::GLCMFeature() : FeatureMethod("GLCMFeature")
 {
 	provide_features({
@@ -21,22 +19,18 @@ GLCMFeature::GLCMFeature() : FeatureMethod("GLCMFeature")
 			});
 }
 
-void GLCMFeature::calculate(LR& r)
+void GLCMFeature::calculate (LR& r)
 {
 	SimpleMatrix<uint8_t> G;
-	calculate_graytones(G, r.aux_min, r.aux_max, r.aux_image_matrix);
+	calculate_normalized_graytone_matrix (G, r.aux_min, r.aux_max, r.aux_image_matrix);
 
 	int Angles[] = { 0, 45, 90, 135 },
-		n = sizeof(Angles) / sizeof(Angles[0]);
-	for (int i = 0; i < n; i++)
+		nAngs = sizeof(Angles) / sizeof(Angles[0]);
+	for (int i = 0; i < nAngs; i++)
 		Extract_Texture_Features (distance_parameter, Angles[i], G);
 }
 
-void GLCMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
-{}
-
-void GLCMFeature::osized_calculate(LR& r, ImageLoader& imloader)
-{}
+void GLCMFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {}		// Not supporting the online mode for this feature method
 
 void GLCMFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
@@ -61,25 +55,6 @@ void GLCMFeature::parallel_process_1_batch (size_t start, size_t end, std::vecto
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-
-		if (r.has_bad_data())
-		{
-			// Dfault values for all 4 standard angles
-			r.fvals[GLCM_ANGULAR2NDMOMENT].resize(4, 0);
-			r.fvals[GLCM_CONTRAST].resize(4, 0);
-			r.fvals[GLCM_CORRELATION].resize(4, 0);
-			r.fvals[GLCM_VARIANCE].resize(4, 0);
-			r.fvals[GLCM_INVERSEDIFFERENCEMOMENT].resize(4, 0);
-			r.fvals[GLCM_SUMAVERAGE].resize(4, 0);
-			r.fvals[GLCM_SUMVARIANCE].resize(4, 0);
-			r.fvals[GLCM_SUMENTROPY].resize(4, 0);
-			r.fvals[GLCM_ENTROPY].resize(4, 0);
-			r.fvals[GLCM_DIFFERENCEVARIANCE].resize(4, 0);
-			r.fvals[GLCM_DIFFERENCEENTROPY].resize(4, 0);
-			r.fvals[GLCM_INFOMEAS1].resize(4, 0);
-			r.fvals[GLCM_INFOMEAS2].resize(4, 0);
-			continue;
-		}
 
 		//=== GLCM version 2
 		// Skip calculation in case of bad data
@@ -110,20 +85,20 @@ void GLCMFeature::parallel_process_1_batch (size_t start, size_t end, std::vecto
 	}
 }
 
-void GLCMFeature::calculate_graytones (SimpleMatrix<uint8_t>& G, int minI, int maxI, const ImageMatrix& Im)
+void GLCMFeature::calculate_normalized_graytone_matrix (SimpleMatrix<uint8_t>& G, int minI, int maxI, const ImageMatrix& Im)
 {
 	const pixData& I = Im.ReadablePixels();
-	G.allocate(I.width(), I.height(), 0);
-	double scale255 = 255.0 / double(maxI-minI);
+	G.allocate (I.width(), I.height(), 0);
+	double scale255 = 255.0 / double(maxI - minI);
 	for (auto y = 0; y < I.height(); y++)
 		for (auto x = 0; x < I.width(); x++)
-			G(x,y) = (uint8_t)((I(y, x) - minI) * scale255);
+			G(x,y) = (uint8_t) ((I(y, x) - minI) * scale255);
 }
 
 void GLCMFeature::Extract_Texture_Features (
 	int distance, 
 	int angle, 
-	const SimpleMatrix<uint8_t>& grays)	// 'grays' is 0-255 grays 
+	const SimpleMatrix<uint8_t>& grays)
 {
 	int nrows = grays.height();
 	int ncols = grays.width();
@@ -166,23 +141,22 @@ void GLCMFeature::Extract_Texture_Features (
 		return; 
 	}
 
-	/* compute the statistics for the spatial dependence matrix */
-	fvals_ASM.push_back (f1_asm (P_matrix, tone_count));	// 2.6%
-	fvals_contrast.push_back (f2_contrast (P_matrix, tone_count));	// heavy!	-> 13.42% after fix 4%
+	// compute the statistics for the spatial dependence matrix
+	fvals_ASM.push_back (f1_asm (P_matrix, tone_count));	
+	fvals_contrast.push_back (f2_contrast (P_matrix, tone_count));
 	fvals_correlation.push_back (f3_corr (P_matrix, tone_count, Px));
 	fvals_variance.push_back (f4_var (P_matrix, tone_count));
 	fvals_IDM.push_back (f5_idm (P_matrix, tone_count));
-	fvals_sum_avg.push_back (f6_savg (P_matrix, tone_count, Px));	// allocation!
+	fvals_sum_avg.push_back (f6_savg (P_matrix, tone_count, Px));
 	double se = f8_sentropy(P_matrix, tone_count, Px);
-	fvals_sum_entropy.push_back (se);	// allocation! but fast +1%
+	fvals_sum_entropy.push_back (se);	
 	fvals_sum_var.push_back (f7_svar (P_matrix, tone_count, se, Px));
-	fvals_entropy.push_back (f9_entropy (P_matrix, tone_count));	// +3 ! heavy!
-	fvals_diff_var.push_back (f10_dvar (P_matrix, tone_count, Px));	// allocation	-> 6.7%
-	fvals_diff_entropy.push_back (f11_dentropy (P_matrix, tone_count, Px));	// allocation	-> 7.1%
-	fvals_meas_corr1.push_back (f12_icorr (P_matrix, tone_count, Px, Py));	// allocation -> 9.2%
-	fvals_meas_corr2.push_back (f13_icorr (P_matrix, tone_count, Px, Py));	// allocation -> 13.2%
+	fvals_entropy.push_back (f9_entropy (P_matrix, tone_count));	
+	fvals_diff_var.push_back (f10_dvar (P_matrix, tone_count, Px));	
+	fvals_diff_entropy.push_back (f11_dentropy (P_matrix, tone_count, Px));	
+	fvals_meas_corr1.push_back (f12_icorr (P_matrix, tone_count, Px, Py));
+	fvals_meas_corr2.push_back (f13_icorr (P_matrix, tone_count, Px, Py));	
 	fvals_max_corr_coef.push_back (0.0); // f14_maxcorr(P_matrix, tone_count);
-
 }
 
 /* Compute gray-tone spatial dependence matrix */

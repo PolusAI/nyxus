@@ -279,12 +279,60 @@ bool WriteImageMatrix_nontriv::safe(size_t x, size_t y) const
 		return true;
 }
 
+double OOR_ReadMatrix::get_at (size_t pixel_row, size_t pixel_col) const
+{
+	size_t tile_x = imloader.get_tile_x(pixel_col),
+		tile_y = imloader.get_tile_y(pixel_row);
+	imloader.load_tile(tile_y, tile_x);
+	auto& dataI = imloader.get_int_tile_buffer();
+	size_t idx = imloader.get_within_tile_idx(pixel_row, pixel_col);
+	auto val = dataI[idx];
+	return (double)val;
+}
+
+double OOR_ReadMatrix::get_at(size_t idx) const
+{
+	auto y = aabb.get_ymin() + idx / aabb.get_width(),
+		x = aabb.get_xmin() + idx % aabb.get_width();
+	double retval = get_at(y, x);
+	return retval;
+}
+
+size_t OOR_ReadMatrix::get_width() const
+{
+	return aabb.get_width();
+}
+
+size_t OOR_ReadMatrix::get_height() const
+{
+	return aabb.get_height();
+}
+
+size_t OOR_ReadMatrix::get_size() const
+{
+	return get_width() * get_height();
+}
+
+std::tuple<size_t, size_t> OOR_ReadMatrix::idx_2_rc(size_t idx) const
+{
+	auto width = get_width();
+	size_t row = idx % width,
+		col = idx / width;
+	return { row, col };
+}
+
+bool OOR_ReadMatrix::safe(size_t x, size_t y) const
+{
+	if (x >= aabb.get_width() || y >= aabb.get_height())
+		return false;
+	else
+		return true;
+}
+
 ReadImageMatrix_nontriv::ReadImageMatrix_nontriv (const AABB & _aabb)
 {
 	aabb = _aabb;
 }
-
-ReadImageMatrix_nontriv::~ReadImageMatrix_nontriv() {}
 
 double ReadImageMatrix_nontriv::get_at (ImageLoader& imloader, size_t pixel_row, size_t pixel_col)
 {

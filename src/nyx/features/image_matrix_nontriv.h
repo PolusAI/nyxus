@@ -23,12 +23,53 @@ private:
 	size_t item_size = sizeof(Pixel2::x) + sizeof(Pixel2::y) + sizeof(Pixel2::inten);
 };
 
+class OOR_ReadMatrix
+{
+public:
+	OOR_ReadMatrix (ImageLoader& _imloader, const AABB& _aabb) : imloader(_imloader), aabb(_aabb) {}
+	size_t get_width() const;
+	size_t get_height() const;
+	size_t get_size() const;
+	bool safe(size_t x, size_t y) const;
+
+	/// @brief Helps constructing a Pixel2 instance at index 'idx' in intensity matrix scenarios
+	/// 
+	/// Example:
+	/// 	auto [y0, x0] = matrix.idx_2_rc(idx);
+	/// 	double inten = matrix.get_at(imlo, idx);
+	/// 	Pixel2 p0(x0, y0, inten);
+	/// 
+	/// @param idx 0-based pixel index
+	/// @return 0-based row and column 
+	std::tuple<size_t, size_t> idx_2_rc (size_t idx) const;
+
+	double get_at (size_t row, size_t col) const;
+	double get_at (size_t idx) const;
+
+	// Normalization
+	void apply_normalizing_range (double _minval, double _maxval, double _normalization_ceil) 
+	{ 
+		minval = _minval; 
+		maxval = _maxval; 
+		normalization_ceil = _normalization_ceil;
+		scale = normalization_ceil * (maxval - minval);
+	}
+	double get_normed_at(size_t row, size_t col) const { return (get_at(row, col) - minval)* scale;  }
+	double get_normed_at(size_t idx) const { return (get_at(idx) - minval) * scale; }
+
+private:
+	ImageLoader& imloader;
+	AABB aabb;
+
+	// Retrieving normalized elements
+	double normalization_ceil = 255.0, minval = 0.0, maxval = 1.0, scale = 255.0;
+};
+
 /// @brief Readable out of RAM version of class ImageMatrix
 class ReadImageMatrix_nontriv
 {
 public:
 	ReadImageMatrix_nontriv (const AABB & aabb);
-	~ReadImageMatrix_nontriv();
 	double get_at (ImageLoader& imloader, size_t row, size_t col);
 	double get_at (ImageLoader& imloader, size_t idx);
 	size_t get_width() const;
