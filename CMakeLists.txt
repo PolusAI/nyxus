@@ -19,11 +19,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 find_package(Python COMPONENTS Interpreter Development)
 add_subdirectory(lib/pybind11)
 
-if (Python_FOUND OR Python_INCLUDE_DIRS)
-	add_compile_definitions(WITH_PYTHON_H)
-endif()
-
-
 include_directories(
 	lib/pybind11/include/
 	${Python_INCLUDE_DIRS}
@@ -124,6 +119,8 @@ pybind11_add_module(backend
 	${SOURCE}
 	src/nyx/python/new_bindings_py.cpp
 )
+
+target_compile_definitions(backend PRIVATE WITH_PYTHON_H)
 
 # VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
 target_compile_definitions(backend PRIVATE VERSION_INFO=${VERSION_INFO})
