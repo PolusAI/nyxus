@@ -136,7 +136,13 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 target_link_libraries(backend PRIVATE ${Nyxus_LIBRARIES})
-target_link_libraries(backend PRIVATE ${Python_LIBRARIES})
+
+if (NOT APPLE)
+	target_link_libraries(backend PRIVATE ${Python_LIBRARIES})
+else ()
+	set_target_properties(backend PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+endif()
+
 
 if(BUILD_CLI)
 	target_link_libraries(nyxus PRIVATE ${Nyxus_LIBRARIES})
