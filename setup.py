@@ -97,7 +97,7 @@ setup(
     cmdclass=versioneer.get_cmdclass(dict(build_ext=CMakeBuild)),
     author="Andriy Kharchenko",
     author_email="andriy.kharchenko@axleinfo.com",
-    url="https://github.com/friskluft/nyxus",
+    url="https://github.com/PolusAI/nyxus",
     description="Scalable library for calculating features from intensity-label image data",
     long_description=long_description,
     long_description_content_type="text/markdown",
