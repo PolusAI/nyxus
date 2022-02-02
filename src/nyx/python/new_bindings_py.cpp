@@ -39,6 +39,7 @@ void initialize_environment(
 
     // Throws exception if invalid feature is supplied.
     theEnvironment.process_feature_list();
+    theFeatureMgr.compile();
     theFeatureMgr.apply_user_selection();
 }
 
