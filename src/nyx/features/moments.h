@@ -6,9 +6,9 @@
 #define MIN_VAL -FLT_MAX
 #define MAX_VAL FLT_MAX
 
-class Moments2 {
-
-
+/// @brief Helper class for 2nd order moments calculation 
+class Moments2 
+{
 public:
     Moments2() { reset(); }
     void reset() { _mean = M2 = 0.0; _min = DBL_MAX; _max = -DBL_MAX; _n = 0; }
@@ -44,6 +44,7 @@ private:
     size_t _n;
 };
 
+/// @brief Helper class for 4-th order moments calculation 
 class Moments4 {
 
 public:

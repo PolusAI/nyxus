@@ -5,6 +5,7 @@
 #include "pixel.h"
 #include "image_matrix_nontriv.h"
 
+/// @brief Helper class for rotation calculations
 class Rotation
 {
 public:

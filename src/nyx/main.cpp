@@ -3,11 +3,9 @@
 #include "environment.h"
 #include "globals.h"
 
-//using namespace Nyxus;
-
 int main (int argc, char** argv)
 {
-	VERBOSLVL1(std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021 Axle Informatics\t" << "Build of " << __TIMESTAMP__ << "\n";)
+	VERBOSLVL1(std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021-2022 Axle Informatics\t" << "Build of " << __TIMESTAMP__ << "\n";)
 
 	int parseRes = theEnvironment.parse_cmdline (argc, argv);
 	if (parseRes)

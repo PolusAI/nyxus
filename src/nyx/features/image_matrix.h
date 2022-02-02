@@ -21,6 +21,8 @@ public:
 	}
 };
 
+/// @brief Generic pixel matrix class
+/// @tparam T - pixel intensity class (int, uint, float, etc)
 template <class T>
 class SimpleMatrix : public std::vector<T>
 {
@@ -90,7 +92,7 @@ private:
 	int W = 0, H = 0;
 };
 
-
+/// @brief Pixel plane of image matrices
 class pixData : public std::vector<PixIntens>
 {
 public:
@@ -140,6 +142,7 @@ private:
 typedef const pixData & readOnlyPixels;
 typedef pixData & writeablePixels;
 
+/// @brief General purpose matrix of single-channel pixel intensities
 class ImageMatrix
 {
 public:
@@ -284,6 +287,7 @@ public:
 	void print(const std::string& head = "", const std::string& tail = "", std::vector<PrintablePoint> special_points = {});
 };
 
+/// @brief Padded image matrix
 class Power2PaddedImageMatrix : public ImageMatrix
 {
 public:

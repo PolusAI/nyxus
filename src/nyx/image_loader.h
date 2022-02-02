@@ -52,6 +52,5 @@ private:
 
 	int lvl = 0,	// Pyramid level
 		lyr = 0;	//	Layer
-
 };
 

@@ -22,7 +22,7 @@ enum RoiDataCacheItem
 	NEIGHBOR_ROI_LABELS
 };
 
-
+/// @brief Encapsulates data cached per each ROI
 class LR
 {
 public:
@@ -75,6 +75,5 @@ public:
 
 	double getValue (AvailableFeatures f);
 	void reduce_pixel_intensity_features();
-	void reduce_edge_intensity_features();
 };
 

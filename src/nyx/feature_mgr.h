@@ -3,6 +3,7 @@
 #include <vector>
 #include "feature_method.h"
 
+/// @brief Dispatcher of feature calculation in the order of their mutual dependence
 class FeatureManager
 {
 public:

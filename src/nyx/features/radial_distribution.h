@@ -15,7 +15,7 @@ public:
 		return fs.anyEnabled({ FRAC_AT_D, MEAN_FRAC, RADIAL_CV });
 	}
 
-	RadialDistributionFeature(); // RadialDistribution_features(const std::vector<Pixel2>& raw_pixels, const std::vector<Pixel2>& contour_pixels);
+	RadialDistributionFeature(); 
 	void calculate(LR& r);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
 	void osized_calculate(LR& r, ImageLoader& imloader);

@@ -24,8 +24,9 @@
 #ifndef INC_3DFASTLOADER_VIRTUAL_FILE_TILE_CHANNEL_LOADER_H
 #define INC_3DFASTLOADER_VIRTUAL_FILE_TILE_CHANNEL_LOADER_H
 
-#include <fast_loader/fast_loader.h> //AK "../../fast_loader/fast_loader.h"
+#include <fast_loader/fast_loader.h> 
 
+/// @brief Encapsulates a FastLoader-based browser of a multi-tile TIFF image
 class VirtualFileTileChannelLoader : public fl::AbstractTileLoader<fl::DefaultView<int>> {
 	uint16_t const
 		fileHeight_ = 0,
@@ -40,7 +41,6 @@ class VirtualFileTileChannelLoader : public fl::AbstractTileLoader<fl::DefaultVi
 		file_{};
 
 public:
-
 	VirtualFileTileChannelLoader(size_t numberThreads,
 		uint16_t const fileHeight,
 		uint16_t const fileWidth,

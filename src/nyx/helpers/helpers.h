@@ -116,7 +116,7 @@ namespace Nyxus
 
 	Statistics ComputeCommonStatistics2(std::vector<double>& Data);
 
-	// 
+	// Reserved for later
 	//	auto operator ""_MB(unsigned long long const x) -> unsigned long long
 	//	{
 	//		return 1024L * 1024L * x;

@@ -5,6 +5,7 @@
 
 namespace Nyxus
 {
+	/// @brief Feature codes
 	enum AvailableFeatures
 	{
 		// Pixel intensity stats

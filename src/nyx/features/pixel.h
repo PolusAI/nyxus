@@ -7,6 +7,8 @@ using PixIntens = unsigned int;
 using StatsInt = long;
 using StatsReal = double;
 
+/// @brief Geneal purpose class encapsulating a 2D Cartesian vector
+/// @tparam T 
 template <typename T>
 struct Point2
 {
@@ -42,6 +44,7 @@ using Point2i = Point2<StatsInt>;
 using Point2f = Point2<float>;
 inline float normL2(const Point2f& p) { return p.normL2(); }
 
+/// @brief Class encapsulating a 2D pixel
 struct Pixel2 : public Point2i
 {
 	PixIntens inten;

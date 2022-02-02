@@ -5,7 +5,7 @@
 #include "pixel.h"
 #include "../image_loader.h"
 
-
+/// @brief Writeable out of memory pixel cloud
 class OutOfRamPixelCloud
 {
 public:
@@ -23,6 +23,7 @@ private:
 	size_t item_size = sizeof(Pixel2::x) + sizeof(Pixel2::y) + sizeof(Pixel2::inten);
 };
 
+/// @brief Read-only out of memory pixel matrix browsable via ImageLoader
 class OOR_ReadMatrix
 {
 public:
