@@ -11,7 +11,7 @@ public:
 	/// @brief User-facing feature name info displayed by class FeatureManager in case of dependency errors
 	std::string feature_info;
 
-	FeatureMethod (const std::string& _featureinfo);
+	FeatureMethod (const std::string& _featureinfo = __FILE__);
 
 	//=== Trivial ROI
 	// Calculate the feature for one ROI using cached data and probably caching data

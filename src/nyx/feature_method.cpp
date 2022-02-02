@@ -1,6 +1,6 @@
 #include "feature_method.h"
 
-FeatureMethod::FeatureMethod(const std::string& _featureinfo = __FILE__)
+FeatureMethod::FeatureMethod(const std::string& _featureinfo)
 {
 	feature_info = _featureinfo;
 }

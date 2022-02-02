@@ -127,18 +127,18 @@ target_compile_definitions(backend PRIVATE VERSION_INFO=${VERSION_INFO})
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	target_link_libraries(backend PRIVATE stdc++fs)
+	target_link_libraries(backend PRIVATE -static-libgcc -static-libstdc++)
 	
 	if(BUILD_CLI)
+		target_link_libraries(nyxus PRIVATE -static-libgcc -static-libstdc++)
 		target_link_libraries(nyxus PRIVATE stdc++fs)
 	endif()
 endif()
 
-target_link_libraries(backend PRIVATE -static-libgcc -static-libstdc++)
 target_link_libraries(backend PRIVATE ${Nyxus_LIBRARIES})
 target_link_libraries(backend PRIVATE ${Python_LIBRARIES})
 
 if(BUILD_CLI)
-	target_link_libraries(nyxus PRIVATE -static-libgcc -static-libstdc++)
 	target_link_libraries(nyxus PRIVATE ${Nyxus_LIBRARIES})
 	target_link_libraries(nyxus PRIVATE ${Python_LIBRARIES})
 endif()
