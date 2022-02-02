@@ -22,14 +22,14 @@ enum AvailableFeatures
 edit the integer to string feature identifier mapping in mapping UserFacingFeatureNames in file featureset.cpp. For example, if we want to give features MYFEATURE1, MYFEATURE2, MYFEATURE3 which so far are just numeric constants user-facing names MY_FEATURE_1, MY_FEATURE_2, and MY_FEATURE_3 that can be used in the command line, we need to edit UserFacingFeatureNames the following way
 
 ```
-	std::map <std::string, AvailableFeatures> UserFacingFeatureNames =
-	{
-		...
-		{"MY_FEATURE_1", MYFEATURE1},
-		{"MY_FEATURE_2", MYFEATURE2},
-		{"MY_FEATURE_3", MYFEATURE3 },
-		...
-	};
+std::map <std::string, AvailableFeatures> UserFacingFeatureNames =
+{
+	...
+	{"MY_FEATURE_1", MYFEATURE1},
+	{"MY_FEATURE_2", MYFEATURE2},
+	{"MY_FEATURE_3", MYFEATURE3 },
+	...
+};
 ```
 
 ### Step 3 - create a feature method class
