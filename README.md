@@ -1,10 +1,52 @@
 # Nyxus
-<br>
-A scalable feature extractor 
-<br>
-<br>
+
+A scalable library for calculating features from intensity-label image data
 
 ## Overview
+Nyxus is a feature-rich, highly optimized, Python/C++ application capable of analyzing images of arbitrary size and assembling complex regions of interest (ROIs) split across multiple image tiles and files. This accomplished through multi-threaded tile prefetching and a three phase analysis pipeline shown below. 
+
+![](docs/nyxus_workflow.jpg)
+
+Nyxus can be used via Python or command line and is available in containerized form for reproducible execution. Nyxus computes over 450 combined intensity, texture, and morphological features at the ROI or whole image level with more in development. Key features that make Nyxus unique among other image feature extraction applications is its ability to operate at any scale, its highly validated algorithms, and its modular nature that makes the addition of new features straightforward.
+
+## Getting started 
+
+For use in python, the latest version of Nyxus can be installed via the [Pip package manager](https://pypi.org/project/pip):
+
+```
+pip install nyxus
+```
+
+Usage is very straightforward. Given `intensities` and `labels` folders, Nyxus pairs up intensity-label pairs and extracts features from them. A summary of the avaialble feature are [listed below](#available-features).
+
+```python 
+from nyxus import Nyxus
+
+intensity_path = "/path/to/images/intensities/"
+labels_path = "/path/to/images/labels/"
+
+nyx = Nyxus(["*ALL*"])
+
+features = nyx.featurize(intensity_path, labels_path)
+```
+
+The `features` variable is a Pandas dataframe similar to what is shown below.
+
+|     | mask_image           | intensity_image      |   label |    MEAN |   MEDIAN |...|    GABOR_6 |
+|----:|:---------------------|:---------------------|--------:|--------:|---------:|--:|-----------:|
+|   0 | p1_y2_r51_c0.ome.tif | p1_y2_r51_c0.ome.tif |       1 | 45366.9 |  46887   |...|   0.873016 |
+|   1 | p1_y2_r51_c0.ome.tif | p1_y2_r51_c0.ome.tif |       2 | 27122.8 |  27124.5 |...|   1.000000 |
+|   2 | p1_y2_r51_c0.ome.tif | p1_y2_r51_c0.ome.tif |       3 | 34777.4 |  33659   |...|   0.942857 |
+|   3 | p1_y2_r51_c0.ome.tif | p1_y2_r51_c0.ome.tif |       4 | 35808.2 |  36924   |...|   0.824074 |
+|   4 | p1_y2_r51_c0.ome.tif | p1_y2_r51_c0.ome.tif |       5 | 36739.7 |  37798   |...|   0.854067 |
+| ... | ...                  | ...                  |     ... | ...     |  ...     |...|   ...      |
+| 734 | p5_y0_r51_c0.ome.tif | p5_y0_r51_c0.ome.tif |     223 | 54573.3 |  54573.3 |...|   0.980769 |
+
+For more information on all of the available options and features, check out [the documentation](#).
+
+Nyxus can also be [built from source](#building-from-source) and used from the command line, or via a pre-built Docker container. 
+
+## Available features 
 The feature extraction plugin extracts morphology and intensity based features from pairs of intensity/binary mask images and produces a csv file output. The input image should be in tiled [OME TIFF format](https://docs.openmicroscopy.org/ome-model/6.2.0/ome-tiff/specification.html).  The plugin extracts the following features:
 
 Nyxus provides a set of pixel intensity, morphology, texture, intensity distribution features, digital filter based features and image moments
@@ -70,67 +112,102 @@ Apart from defining your feature set by explicitly specifying comma-separated fe
 | \*all_ngtdm\* | ngtdm_coarseness, ngtdm_contrast, ngtdm_busyness, ngtdm_complexity, ngtdm_strength
 | \*all\* | All the features 
 
-### Example: running Nyxus to extract only intensity and basic morphology features
+## Command line usage
+
+Assuming you [built the Nyxus binary](#building-from-source) as outlined below, the following parameters are available for the CLI:
+
+| Parameter | Description | I/O | Type |
+|------|-------------|------|----|
+--intDir|Intensity image collection|Input|collection|
+--segDir|Labeled image collection|Input|collection
+--intSegMapDir | Data collection of the ad-hoc intensity-to-mask file mapping | Input | Collection
+--intSegMapFile | Name of the text file containing an ad-hoc intensity-to-mask file mapping. The files are assumed to reside in corresponding intensity and label collections | Input | string
+--features|Select intensity and shape features required|Input|array
+--filePattern|To match intensity and labeled/segmented images|Input|string
+--csvfile|Save csv file as one csv file for all images or separate csv file for each image|Input|enum
+--pixelDistance|Pixel distance to calculate the neighbors touching cells|Input|integer|
+--embeddedpixelsize|Consider the unit embedded in metadata, if present|Input|boolean
+--unitLength|Enter the metric for unit conversion|Input|string
+--pixelsPerunit|Enter the number of pixels per unit of the metric|Input|number
+--outDir|Output collection|Output|csvCollection
+---
+
+
+### Example: Running Nyxus to extract only intensity and basic morphology features
+
 ```
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/OUTPUT-ratbrain --filePattern=.* --csvFile=singlecsv 
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/output-ratbrain --filePattern=.* --csvFile=singlecsv 
 ```
 
-## Installation
-Nyxus can be installed as a Python package, as a Docker image, or be compiled from source
-
-### Install with pip
-You can install Nyxus using [pip package manager](https://pypi.org/project/pip):
-```
-pip install nyxus 
-```
-### Install from sources
-Another option is cloning the Nyxus repository and installing it manually:
+## Building from source
+To build Nyxus from source, make sure you clone the Github repository with the `--recurse-submodules` option to clone all the necessary dependencies.
 
 ```
-git clone https://github.com/friskluft/nyxus.git
+git clone --recurse-submodules https://github.com/PolusAI/nyxus.git
+```
+
+Nyxus relies on [libTIFF](http://www.libtiff.org) as an external dependency which is readily available on most Unix-based OSs via the system package manager. 
+
+For Debian-based distros, such as Ubuntu, this can be installed via:
+
+```bash
+sudo apt install libtiff-dev
+```
+
+For CentOS:
+```bash
+sudo yum install libtiff-devel
+```
+
+For Mac OSX (via [Homebrew](https://brew.sh/)):
+```bash
+brew install libtiff
+```
+
+Nyxus uses a CMake build system.
+```bash
 cd nyxus
-cmake . 
+mkdir build
+cd build
+cmake -DBUILD_CLI=ON ..
+make -j4
 ```
+
+Note that `-DBUILD_CLI=ON` tells Nyxus to build the command line interface as well. 
+
+## Running via Docker 
+
+
+docker pull container and run command. 
+ANDRIY: FILL ME IN
+
+The following command line is an example of running the dockerized feature extractor (image hash 87f3b560bbf2) with only intensity features selected:
+```
+docker run -it --mount type=bind,source=/images/collections,target=/data 87f3b560bbf2 --intDir=/data/c1/int --segDir=/data/c1/seg --outDir=/data/output --filePattern=.* --csvfile=separatecsv --features=entropy,kurtosis,skewness,max_intensity,mean_intensity,min_intensity,median,mode,standard_deviation
+```
+
+
 
 ### Install from sources and package into a Docker image
-The 3rd option alternative to running Nyxus as a Python library or a standalone executable program is making a POLUS plugin of it by packaging it into a Docker image. The latter requires advancing the plugin version number in file VERSION, building the Docker image, uploading it to POLUS repository, and registering the plugin. To build an image, run 
+
+If you want to build your own Nyxus Docker container we provide a convenient shell script:
 
 ```
 ./build-docker.sh
 ```
 
-This feature extractor is designed to be run on POLUS WIPP platform but dry-running it on a local machine before deployment to WIPP after code change is a good idea  
-
-__Example - testing docker image with local data__ 
-
-Assuming the Docker image's hash is \<hash\>, the root of the data directory on the test machine is /images/collections, and intensity and segmentation mask image collections are in subdirectories /images/collections/c1/int and /images/collections/c1/seg respectively, the image can be test-run with command
-```
-docker run -it --mount type=bind,source=/images/collections,target=/data <hash> --intDir=/data/c1/int --segDir=/data/c1/seg --outDir=/data/output --filePattern=.* --csvfile=separatecsv --features=all
-```
-
-Assuming the built image's version as displayed by command 
-```
-docker images
-```
-is "labshare/polus-feature-extraction-plugin:1.2.3", the image can be pushed to POLUS organization repository at Docker image cloud with the following 2 commands. The first command 
-```
-docker tag labshare/polus-feature-extraction-plugin:1.2.3 polusai/polus-feature-extraction-plugin:1.2.3
-```
-aliases the labshare organization image in a different organization - polusai - permitting image's registering as a POLUS WIPP plugin. The second command 
-```
-docker push polusai/polus-feature-extraction-plugin:1.2.3
-```
-uploads the image to the repository of WIPP plugin images. Lastly, to register the plugin in WIPP, edit the text file of plugin's manifest (file __*plugin.json*__) to ensure that the manifest keys __*version*__ and __*containerId*__ refer to the uploaded Docker image version, navigate to WIPP web application's plugins page, and add a new plugin by uploading the updated manifest file.
 
 ## Dependencies
-Nyxus is tested with Python 3.7+. Building Nyxus from sources requires the following packages:
+Nyxus is tested with Python 3.6+. Nyxus relies on the the following packages, which are all included as submodules except for LibTIFF:
 
 [NIST Hedgehog](https://github.com/usnistgov/hedgehog) >= 1.0.16 <br>
 [NIST Fastloader](https://github.com/usnistgov/FastLoader) >= 2.1.4 <br>
 [pybind11](https://github.com/pybind/pybind11) >= 2.8.1 <br>
 [libTIFF](http://www.libtiff.org) >= 3.6.1 <br>
 
-## Plugin inputs
+## WIPP Usage
+
+Nyxus is available as plugin for [WIPP](https://isg.nist.gov/deepzoomweb/software/wipp). 
 
 __Label image collection:__
 The input should be a labeled image in tiled OME TIFF format (.ome.tif). Extracting morphology features, Feret diameter statistics, neighbors, hexagonality and polygonality scores requires the segmentation labels image. If extracting morphological features is not required, the label image collection can be not specified.
@@ -167,39 +244,3 @@ The output is a csv file containing the value of features required.
 
 For more information on WIPP, visit the [official WIPP page](https://github.com/usnistgov/WIPP/tree/master/user-guide).
 
-
-
-## Plugin command line parameters
-Running the WIPP feature extraction plugin is controlled via nine named input arguments and one output argument that are passed by WIPP web application to plugin's Docker image - see Table 1.
-
-__Table 1 - Command line parameters__
-
-------
-| Parameter | Description | I/O | Type |
-|------|-------------|------|----|
---intDir|Intensity image collection|Input|collection|
---segDir|Labeled image collection|Input|collection
---intSegMapDir | Data collection of the ad-hoc intensity-to-mask file mapping | Input | Collection
---intSegMapFile | Name of the text file containing an ad-hoc intensity-to-mask file mapping. The files are assumed to reside in corresponding intensity and label collections | Input | string
---features|Select intensity and shape features required|Input|array
---filePattern|To match intensity and labeled/segmented images|Input|string
---csvfile|Save csv file as one csv file for all images or separate csv file for each image|Input|enum
---pixelDistance|Pixel distance to calculate the neighbors touching cells|Input|integer|
---embeddedpixelsize|Consider the unit embedded in metadata, if present|Input|boolean
---unitLength|Enter the metric for unit conversion|Input|string
---pixelsPerunit|Enter the number of pixels per unit of the metric|Input|number
---outDir|Output collection|Output|csvCollection
----
-
-Input type __*collection*__ is a WIPP's image collection browsable at WIPP web application/Data/Images Collections. Output type __*csvCollection*__ indicates that result of the successfully run plugin will be available to a user as CSV-files. To access the result in WIPP, navigate to WIPP web application/Workflows, choose the task, expand drop-down list 'Ouputs', and navigate to the URL leading to a WIPP data collection. Input type __*enum*__ is a single-selection list of options. Input type __*array*__ is a multi-selection list of options. Input types __*boolean*__ is represented with a check-box in WIPP's user interface. There are 2 parameters referring input type __*string*__ - the file pattern applied to image file names in collections defined by parameters __*intDir*__ and __*segDir*__, and the name of the measurement unit defined by optional parameters __*embeddedpixelsize*__ and __*pixelsPerunit*__. The file pattern parameter is mandatory. Its valid values are regular expression style wildcards to filter file names, for example, .\* to select all the files or .\*c1\\.ome\\.tif to select just files ending in "c1.ome.tif". Input type __*integer*__ is a positive integer value or zero. Input type __*number*__ used in parameter __*pixelsPerunit*__ is a positive real value defining the number of pixels in the measurement unit defined by parameter __*unitLength*__. 
-
-Parameter __*features*__ defines a set of desired features to be calculated. Valid string literal to feature correspondence is listed in the feature table above.
-
-The following command line is an example of running the dockerized feature extractor (image hash 87f3b560bbf2) with only intensity features selected:
-```
-docker run -it --mount type=bind,source=/images/collections,target=/data 87f3b560bbf2 --intDir=/data/c1/int --segDir=/data/c1/seg --outDir=/data/output --filePattern=.* --csvfile=separatecsv --features=entropy,kurtosis,skewness,max_intensity,mean_intensity,min_intensity,median,mode,standard_deviation
-```
-or its undockerized equivalent:
-```
-python main.py --intDir=/images/collections/c1/int --segDir=/images/collections/c1/seg --outDir=/temp_fe/output --filePattern=.* --csvfile=separatecsv --features=entropy,kurtosis,skewness,max_intensity,mean_intensity,min_intensity,median,mode,standard_deviation
-```
