@@ -22,7 +22,7 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 			size_t tw = std::min({tileDims->data()[0], defaultWidthtSize});
 			size_t th = std::min({tileDims->data()[1], defaultHeightSize});
 			size_t td = std::min({tileDims->data()[2], defaultDepthSize});;
-			// since file is not Tiled, we request a tile size
+			// since file is not Tiled, we can choose a tile size
 			intFL = new GrayscaleTiffStripLoader<uint32_t>(n_threads, int_fpath, tw, th, td);
 		}
 	}
