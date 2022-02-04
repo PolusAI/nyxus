@@ -1,11 +1,11 @@
 #pragma once
 
-#include <map>
 #include <array>
+#include <algorithm>
 #include <string>
 #include <vector>
 #include <fast_loader/specialised_tile_loader/grayscale_tiff_tile_loader.h>
-#include "virtual_file_tile_channel_loader.h"
+#include <fast_loader/specialised_tile_loader/grayscale_tiff_strip_loader.h>
 
 /// @brief Incapsulates access to an intensity and mask image file pair
 class ImageLoader
@@ -26,12 +26,12 @@ public:
 	size_t get_tile_x (size_t pixel_col);
 	size_t get_tile_y (size_t pixel_row);
 	size_t get_within_tile_idx (size_t pixel_row, size_t pixel_col);
-
+	bool checkTileStatus(const std::string& filePath);
+	std::unique_ptr<std::vector<size_t>>  getImageDimensions(const std::string& filePath);
 private:
-	GrayscaleTiffTileLoader<uint32_t> *segFL = nullptr, *intFL = nullptr; 
+	fl::AbstractTileLoader<fl::DefaultView<uint32_t>> *segFL = nullptr, *intFL = nullptr; 
 	std::shared_ptr<std::vector<uint32_t>> ptrI = nullptr; 
 	std::shared_ptr<std::vector<uint32_t>> ptrL = nullptr; 
-
 	// Tile height, width, and depth
 	size_t th,
 		tw,
