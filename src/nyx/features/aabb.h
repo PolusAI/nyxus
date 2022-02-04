@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <tuple>
 #include <utility>
 #include <vector>
