@@ -15,13 +15,13 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 		} 
 		else 
 		{
-			auto tileDims = getImageDimensions(int_fpath); //vector of (tw, th, td)
-			size_t defaultWidthtSize = 1024;
+			auto imageDims = getImageDimensions(int_fpath); //vector of (tw, th, td)
+			size_t defaultWidthSize = 1024;
 			size_t defaultHeightSize = 1024;
 			size_t defaultDepthSize = 1;
-			size_t tw = std::min({tileDims->data()[0], defaultWidthtSize});
-			size_t th = std::min({tileDims->data()[1], defaultHeightSize});
-			size_t td = std::min({tileDims->data()[2], defaultDepthSize});;
+			size_t tw = std::min({imageDims->data()[0], defaultWidthSize});
+			size_t th = std::min({imageDims->data()[1], defaultHeightSize});
+			size_t td = std::min({imageDims->data()[2], defaultDepthSize});;
 			// since file is not Tiled, we can choose a tile size
 			intFL = new GrayscaleTiffStripLoader<uint32_t>(n_threads, int_fpath, tw, th, td);
 		}
@@ -42,13 +42,13 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 		} 
 		else 
 		{
-			auto tileDims = getImageDimensions(seg_fpath); //vector of (tw, th, td)
-			size_t defaultWidthtSize = 1024;
+			auto imageDims = getImageDimensions(seg_fpath); //vector of (tw, th, td)
+			size_t defaultWidthSize = 1024;
 			size_t defaultHeightSize = 1024;
 			size_t defaultDepthSize = 1;
-			size_t twSegFL = std::min({tileDims->data()[0], defaultWidthSize});
-			size_t thSegFL = std::min({tileDims->data()[1], defaultHeightSize});
-			size_t tdSegFL = std::min({tileDims->data()[2], defaultDepthSize});;
+			size_t twSegFL = std::min({imageDims->data()[0], defaultWidthSize});
+			size_t thSegFL = std::min({imageDims->data()[1], defaultHeightSize});
+			size_t tdSegFL = std::min({imageDims->data()[2], defaultDepthSize});;
 			// since file is not Tiled, we request a tile size
 			segFL = new GrayscaleTiffStripLoader<uint32_t>(n_threads, seg_fpath, twSegFL, thSegFL, tdSegFL);
 		}
@@ -226,14 +226,14 @@ bool ImageLoader::checkTileStatus(const std::string& filePath)
 	TIFF *tiff_ = TIFFOpen(filePath.c_str(), "r");
 	if (tiff_ != nullptr) 
 	{
-		std::unique_ptr<std::vector<size_t>> tileDims = std::make_unique<std::vector<size_t>>(0);
+		std::unique_ptr<std::vector<size_t>> imageDims = std::make_unique<std::vector<size_t>>(0);
 		size_t tmp = 0;
 		TIFFGetField(tiff_, TIFFTAG_IMAGEWIDTH, &tmp);
-		tileDims->push_back(tmp);
+		imageDims->push_back(tmp);
       	TIFFGetField(tiff_, TIFFTAG_IMAGELENGTH, &tmp);
-		tileDims->push_back(tmp);
-		tileDims->push_back(TIFFNumberOfDirectories(tiff_));
+		imageDims->push_back(tmp);
+		imageDims->push_back(TIFFNumberOfDirectories(tiff_));
 	   	TIFFClose(tiff_);
-	  	return std::move(tileDims);	
+	  	return std::move(imageDims);	
 	} else { throw (std::runtime_error("Tile Loader ERROR: The file can not be opened.")); }
 }
