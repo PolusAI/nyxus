@@ -123,7 +123,7 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 --intSegMapDir | Data collection of the ad-hoc intensity-to-mask file mapping | Input | Collection
 --intSegMapFile | Name of the text file containing an ad-hoc intensity-to-mask file mapping. The files are assumed to reside in corresponding intensity and label collections | Input | string
 --features|Select intensity and shape features required|Input|array
---filePattern|To match intensity and labeled/segmented images|Input|string
+--filePattern|To match intensity and labeled/segmented images |Input|string
 --csvfile|Save csv file as one csv file for all images or separate csv file for each image|Input|enum
 --pixelDistance|Pixel distance to calculate the neighbors touching cells|Input|integer|
 --embeddedpixelsize|Consider the unit embedded in metadata, if present|Input|boolean
@@ -132,6 +132,18 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 --outDir|Output collection|Output|csvCollection
 ---
 
+### Example: Running Nyxus to process images of specific image channel
+
+Suppose we need to process intensity/mask images of channel 1 :
+```
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/output-ratbrain --filePattern=.*_c1\.ome\.tif --csvFile=singlecsv 
+```
+### Example: Running Nyxus to process specific image 
+
+Suppose we need to process intensity/mask file p1_y2_r68_c1.ome.tif :
+```
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/output-ratbrain --filePattern=p1_y2_r68_c1\.ome\.tif --csvFile=singlecsv 
+```
 
 ### Example: Running Nyxus to extract only intensity and basic morphology features
 
@@ -176,10 +188,16 @@ make -j4
 Note that `-DBUILD_CLI=ON` tells Nyxus to build the command line interface as well. 
 
 ## Running via Docker 
+Running Nyxus from a local directory freshly made Docker container is a good idea. It allows one to test-run conteinerized Nyxus before it reaches Docker cloud deployment.
 
-
-docker pull container and run command. 
-ANDRIY: FILL ME IN
+To search available Nyxus images run command 
+```
+docker search nyxus
+```
+and you'll be shown that it's available at least via organization 'polusai'. To pull it, run
+```
+docker pull polusai/nyxus
+``` 
 
 The following command line is an example of running the dockerized feature extractor (image hash 87f3b560bbf2) with only intensity features selected:
 ```
