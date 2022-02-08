@@ -49,6 +49,9 @@ namespace Nyxus
 			for (auto& valVec : r.fvals)
 				valVec.push_back(0.0);
 		}		
+
+		// Dump ROI metrics 
+		VERBOSLVL2(dump_roi_metrics();)	// dumps to file in the output directory
 		
 		// Distribute ROIs among phases
 		std::vector<int> trivRoiLabels, nontrivRoiLabels;
@@ -58,7 +61,9 @@ namespace Nyxus
 			size_t footprint = r.get_ram_footprint_estimate();
 			if (footprint >= theEnvironment.get_ram_limit())
 			{
-				VERBOSLVL2(std::cout << ">>> Skipping non-trivial ROI " << lab << " (area=" << r.aux_area << " px, footprint=" << footprint << " b)\n";)
+				VERBOSLVL2(std::cout << ">>> Skipping non-trivial ROI " << lab << " (area=" << r.aux_area << " px, footprint=" << footprint << " b" 
+					<< " w=" << r.aabb.get_width() << " h=" << r.aabb.get_height() << " sz_Pixel2=" << sizeof(Pixel2)
+					<< ")\n";)
 					nontrivRoiLabels.push_back(lab);
 			}
 			else
@@ -112,7 +117,7 @@ namespace Nyxus
 			ok = theImLoader.open (theIntFname, theSegFname);
 			if (ok == false)
 			{
-				std::cout << "Terminating\n";
+				std::cerr << "Terminating\n";	// Python exception, if any, is thrown by this point in .open()
 				return 1;
 			}
 
@@ -123,7 +128,12 @@ namespace Nyxus
 
 			if (ok == false)
 			{
-				std::cout << "processIntSegImagePair() returned an error code while processing file pair " << ifp << " and " << lfp << std::endl;
+				std::stringstream ss;
+				ss << "Error: processIntSegImagePair() returned an error code while processing file pair " << ifp << " and " << lfp;
+				#ifdef WITH_PYTHON_H
+					throw ss.str();
+				#endif
+				std::cerr << ss.str() << std::endl;
 				return 1;
 			}
 
@@ -134,7 +144,10 @@ namespace Nyxus
 				ok = save_features_2_buffer(headerBuf, calcResultBuf, stringColBuf);
 			if (ok == false)
 			{
-				std::cout << "save_features_2_csv() returned an error code" << std::endl;
+				#ifdef WITH_PYTHON_H
+					throw "Error: save_features_2_csv() returned an error code";
+				#endif				
+				std::cerr << "Error: save_features_2_csv() returned an error code \n";
 				return 2;
 			}
 
@@ -154,6 +167,43 @@ namespace Nyxus
 #endif
 
 		return 0; // success
+	}
+
+
+	void dump_roi_metrics()
+	{
+		std::string fpath = theEnvironment.output_dir + "/roi_metrics.csv";
+		std::cout << "Dumping ROI metrics to " << fpath << " ...\n";
+
+		std::ofstream f (fpath);
+
+		// header
+		f << "label, minx, miny, maxx, maxy, width, height, min_intens, max_intens, size_bytes, oversize \n";
+
+		// sort labels
+		std::vector<int>  sortedLabs { uniqueLabels.begin(), uniqueLabels.end() };
+		std::sort(sortedLabs.begin(), sortedLabs.end());
+		// body
+		for (auto lab : sortedLabs)
+		{
+			LR& r = roiData[lab];
+			auto szb = r.get_ram_footprint_estimate();
+			std::string ovsz = szb < theEnvironment.get_ram_limit() ? "" : "oversize";
+			f << lab << ", " 
+				<< r.aabb.get_xmin() << ", "
+				<< r.aabb.get_ymin() << ", "
+				<< r.aabb.get_xmax() << ", "
+				<< r.aabb.get_ymax() << ", "
+				<< r.aabb.get_width() << ", "
+				<< r.aabb.get_height() << ", "
+				<< r.aux_min << ", "
+				<< r.aux_max << ", "
+				<< szb << ", "
+				<< ovsz << "\n";
+		}
+
+		f.flush();
+		std::cout << "... done\n";
 	}
 
 } // namespace Nyxus

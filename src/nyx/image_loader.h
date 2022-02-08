@@ -33,22 +33,22 @@ private:
 	std::shared_ptr<std::vector<uint32_t>> ptrL = nullptr; 
 
 	// Tile height, width, and depth
-	size_t th,
-		tw,
-		td;
+	size_t th = 0,
+		tw = 0,
+		td = 0;
 
 	// 2D tile size
-	size_t tileSize;	
+	size_t tileSize = 0;	
 
 	// Full height, width, and depth
-	size_t fh,
-		fw,
-		fd;
+	size_t fh = 0,
+		fw = 0,
+		fd = 0;
 
 	// Number of tiles along width, height, and depth
-	size_t ntw,
-		nth,
-		ntd;
+	size_t ntw = 0,
+		nth = 0,
+		ntd = 0;
 
 	int lvl = 0,	// Pyramid level
 		lyr = 0;	//	Layer

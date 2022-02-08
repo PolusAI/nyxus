@@ -58,7 +58,12 @@ void GLCMFeature::Extract_Texture_Features_nontriv (
 		CoOcMat_Angle_135_nontriv (P_matrix, distance, grays, tone_LUT, tone_count);
 	else 
 	{
-		std::cout << "Error: Cannot create co-occurence matrix for unsupported angle " << angle << "\n";
+		std::stringstream ss;
+		ss << "Error: Cannot create co-occurence matrix for unsupported angle " << angle;
+		#ifdef WITH_PYTHON_H
+			throw ss.str().c_str();
+		#endif
+		std::cerr << ss.str() << std::endl;
 		return;
 	}
 

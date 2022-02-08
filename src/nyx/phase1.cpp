@@ -53,9 +53,9 @@ namespace Nyxus
 			 td = I.tileDepth(lvl),
 			 tileSize = th * tw,
 
-			 fh = I.fullHeight(lvl),
-			 fw = I.fullWidth(lvl),
-			 fd = I.fullDepth(lvl),
+			 fh_int = I.fullHeight(lvl),
+			 fw_int = I.fullWidth(lvl),
+			 fd_int = I.fullDepth(lvl),
 
 			 ntw = I.numberTileWidth(lvl),
 			 nth = I.numberTileHeight(lvl),
@@ -63,18 +63,29 @@ namespace Nyxus
 
 		// File #2 (labels)
 		GrayscaleTiffTileLoader<uint32_t> L(num_FL_threads, label_fpath);
+		auto fh_lab = L.fullHeight(lvl),
+			fw_lab = L.fullWidth(lvl), 
+			fd_lab = L.fullDepth(lvl);
+
+		VERBOSLVL1(std::cout << "\tINT: " << intens_fpath << " [" << fw_int << "w x " << fh_int << "h] SEG: " << label_fpath << " [" << fw_int << "w x " << fh_int << "h]\n");
 
 		// -- check whole file consistency
-		if (fh != L.fullHeight(lvl) || fw != L.fullWidth(lvl) || fd != L.fullDepth(lvl))
+		if (fh_int != fh_lab || fw_int != fw_lab || fd_int != fd_lab)
 		{
-			std::cout << "\terror: mismatch in full height, width, or depth";
+			#ifdef WITH_PYTHON_H
+				throw "Error: mismatch in full height, width, or depth between the mask and intensity images";
+			#endif
+			std::cerr << "Error: mismatch in full height, width, or depth between the mask and intensity images \n";
 			return false;
 		}
 
 		// -- check tile consistency
 		if (th != L.tileHeight(lvl) || tw != L.tileWidth(lvl) || td != L.tileDepth(lvl))
 		{
-			std::cout << "\terror: mismatch in tile height, width, or depth";
+			#ifdef WITH_PYTHON_H
+				throw "Error: mismatch in tile height, width, or depth between the mask and intensity images";
+			#endif			
+			std::cerr << "Error: mismatch in tile height, width, or depth between the mask and intensity images \n";
 			return false;
 		}
 
@@ -88,7 +99,7 @@ namespace Nyxus
 		for (unsigned int row = 0; row < nth; row++)
 			for (unsigned int col = 0; col < ntw; col++)
 			{
-				auto tileIdx = row * fw + col;
+				auto tileIdx = row * fw_int + col;
 				I.loadTileFromFile(ptrI, row, col, lyr, lvl);
 				L.loadTileFromFile(ptrL, row, col, lyr, lvl);
 				auto &dataI = *ptrI;
@@ -117,9 +128,9 @@ namespace Nyxus
 #endif
 
 				// Show stayalive progress info
-				if (cnt++ % 4 == 0)
-					std::cout << "\t"
-							  << int((row * nth + col) * 100 / float(nth * ntw) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs"
+				if (cnt++ % 10 == 0)
+					std::cout << "\tgathered "
+							  << int((row * nth + col) * 100 / float(nth * ntw) * 100) / 100. << "% image\t found " << uniqueLabels.size() << " ROIs"
 							  << "\n";
 			}
 

@@ -13,7 +13,13 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 	}
 	catch (std::exception const& e)	
 	{
-		std::cout << "Error while initializing the image loader for intensity image file " << int_fpath << ": " << e.what() << "\n";
+		std::stringstream ss;
+		ss << "Error while initializing the image loader for intensity image file " << int_fpath << ": " << e.what();
+		#ifdef WITH_PYTHON_H
+			throw ss.str().c_str();
+		#endif
+		std::cerr << ss.str() << std::endl;
+
 		return false;
 	}
 
@@ -25,7 +31,13 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 	}
 	catch (std::exception const& e)	
 	{
-		std::cout << "Error while initializing the image loader for mask image file " <<  seg_fpath << ": " << e.what() << "\n";
+		std::stringstream ss;
+		ss << "Error while initializing the image loader for mask image file " << seg_fpath << ": " << e.what();
+		#ifdef WITH_PYTHON_H
+			throw ss.str().c_str();
+		#endif
+		std::cerr << ss.str() << std::endl;
+
 		return false;
 	}
 
@@ -51,28 +63,22 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 	// -- check whole file consistency
 	if (fh != segFL->fullHeight(lvl) || fw != segFL->fullWidth(lvl) || fd != segFL->fullDepth(lvl))
 	{
-		std::cout << "\terror: mismatch in full height, width, or depth";
+		#ifdef WITH_PYTHON_H
+			throw "Error: mismatch in full height, width, or depth";
+		#endif
+		std::cerr << "Error: mismatch in full height, width, or depth\n";
 		return false;
 	}
 
 	// -- check tile consistency
 	if (th != segFL->tileHeight(lvl) || tw != segFL->tileWidth(lvl) || td != segFL->tileDepth(lvl))
 	{
-		std::cout << "\terror: mismatch in tile height, width, or depth";
+		#ifdef WITH_PYTHON_H
+			throw "Error: mismatch in tile height, width, or depth";
+		#endif
+		std::cerr << "Error: mismatch in tile height, width, or depth\n";
 		return false;
 	}
-
-#if 0 // Tests
-	ptrI = std::make_shared<std::vector<uint32_t>>(tileSize);
-	// Experiment
-	ptrL = std::make_shared<std::vector<uint32_t>>(tileSize);
-	segFL->loadTileFromFile(ptrL, 
-		0, //row, 
-		0, //col, 
-		0, //lyr, 
-		0); // lvl);
-	auto& dataL = *ptrL;
-#endif
 
 	ptrI = std::make_shared<std::vector<uint32_t>>(tileSize);
 	ptrL = std::make_shared<std::vector<uint32_t>>(tileSize);
