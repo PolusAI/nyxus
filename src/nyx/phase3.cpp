@@ -22,6 +22,8 @@ namespace Nyxus
 	/// 
 	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads)
 	{
+		return true;
+
 		for (auto lab : nontrivRoiLabels)
 		{
 			LR& r = roiData[lab];
@@ -105,7 +107,12 @@ namespace Nyxus
 				}
 				catch (std::exception const& e)
 				{
-					std::cout << "Error while computing feature " << feature->feature_info << " over oversized ROI " << r.label << " : " << e.what() << "\n";
+					std::stringstream ss;
+					ss << "Error while computing feature " << feature->feature_info << " over oversized ROI " << r.label << " : " << e.what();
+					#ifdef WITH_PYTHON_H
+						throw ss.str();
+					#endif
+					std::cerr << ss.str() << "\n";
 				}
 
 				feature->cleanup_instance();

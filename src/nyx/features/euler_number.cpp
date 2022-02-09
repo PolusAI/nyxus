@@ -8,9 +8,13 @@ EulerNumberFeature::EulerNumberFeature() : FeatureMethod("EulerNumberFeature")
 
 void EulerNumberFeature::calculate (LR& r)
 {
-	if (!(mode == 4 || mode == 8))
+	if (! (mode == 4 || mode == 8))
 	{
-		std::cout << "Error! Calling EulerNumberFeature with mode other than 4 or 8 \n";
+		#ifdef WITH_PYTHON_H
+			throw "Error! Calling EulerNumberFeature with mode other than 4 or 8";
+		#endif
+		std::cerr << "Error! Calling EulerNumberFeature with mode other than 4 or 8 \n";
+
 		euler_number = 0;
 		return;
 	}
@@ -43,7 +47,10 @@ long EulerNumberFeature::calculate_euler (std::vector<unsigned char> & arr, int 
 {
 	if (!(mode == 4 || mode == 8))
 	{
-		std::cout << "Error! Calling EulerNumberFeature with mode other than 4 or 8 \n";
+		#ifdef WITH_PYTHON_H
+			throw "Error! Calling EulerNumberFeature with mode other than 4 or 8";
+		#endif
+		std::cerr << "Error! Calling EulerNumberFeature with mode other than 4 or 8 \n";
 		return 0;
 	}
 	
@@ -120,7 +127,10 @@ void EulerNumberFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {
 	if (!(mode == 4 || mode == 8))
 	{
-		std::cout << "Error! Calling EulerNumberFeature with mode other than 4 or 8 \n";
+		#ifdef WITH_PYTHON_H
+			throw "Error! Calling EulerNumberFeature with mode other than 4 or 8";
+		#endif
+		std::cerr << "Error! Calling EulerNumberFeature with mode other than 4 or 8 \n";
 		euler_number = 0;
 		return;
 	}

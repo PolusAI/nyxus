@@ -42,7 +42,7 @@ namespace Nyxus
 				//=== Create a label record
 				auto it = uniqueLabels.find(label);
 				if (it != uniqueLabels.end())
-					std::cout << "\n\tERROR\n";
+					std::cerr << "\n\tError: expecting an empty set on " << __FILE__ << ":" << __LINE__ << "\n";
 
 				// Remember this label
 				uniqueLabels.insert(label);
@@ -131,14 +131,14 @@ namespace Nyxus
 		// -- check whole file consistency
 		if (fh != L.fullHeight(lvl) || fw != L.fullWidth(lvl) || fd != L.fullDepth(lvl))
 		{
-			std::cout << "\terror: mismatch in full height, width, or depth";
+			std::cerr << "Error: mismatch in full height, width, or depth \n";
 			return false;
 		}
 
 		// -- check tile consistency
 		if (th != L.tileHeight(lvl) || tw != L.tileWidth(lvl) || td != L.tileDepth(lvl))
 		{
-			std::cout << "\terror: mismatch in tile height, width, or depth";
+			std::cerr << "Error: mismatch in tile height, width, or depth \n";
 			return false;
 		}
 

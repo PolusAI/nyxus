@@ -12,13 +12,19 @@ bool FeatureManager::compile()
 {
 	if (! check_11_correspondence())
 	{
-		std::cout << "Error compiling features: the 1:1 correspondence check failed\n";
+		#ifdef WITH_PYTHON_H
+			throw "Error compiling features: the 1:1 correspondence check failed";
+		#endif
+		std::cerr << "Error compiling features: the 1:1 correspondence check failed \n";
 		return false;
 	}
 
 	if (!gather_dependencies())	// The result will be in 'xdeps'
 	{
-		std::cout << "Error compiling features: the cycle check failed\n";
+		#ifdef WITH_PYTHON_H
+			throw "Error compiling features: the cycle check failed";
+		#endif		
+		std::cerr << "Error compiling features: the cycle check failed\n";
 		return false;
 	}
 
@@ -71,13 +77,25 @@ bool FeatureManager::check_11_correspondence()
 		else
 			if (nProviders > 1)	// error - ambiguous provider
 			{
+				std::stringstream ss;
+				ss << "Error: ambiguous provider of feature " << theFeatureSet.findFeatureNameByCode((AvailableFeatures)i_fcode) << " (code " << i_fcode << ").  (Feature is provided by multiple feature methods.)";
+				#ifdef WITH_PYTHON_H
+					throw ss.str().c_str();
+				#endif
+				std::cerr << ss.str() << std::endl;
+
 				success = false;
-				std::cout << "Error: ambiguous provider of feature " << theFeatureSet.findFeatureNameByCode((AvailableFeatures)i_fcode) << " (code " << i_fcode << ").  (Feature is provided by multiple feature methods.) \n";
 			}
 			else	// error - no providers
 			{
-				success = false;
-				std::cout << "Error: feature " << theFeatureSet.findFeatureNameByCode((AvailableFeatures)i_fcode) << " (code " << i_fcode << ") is not provided by any feature method \n";
+				std::stringstream ss;
+				ss <<"Error: feature " << theFeatureSet.findFeatureNameByCode((AvailableFeatures)i_fcode) << " (code " << i_fcode << ") is not provided by any feature method";
+				#ifdef WITH_PYTHON_H
+					throw ss.str().c_str();
+				#endif
+				std::cerr << ss.str() << std::endl;
+
+				success = false;			
 			}
 	}
 
@@ -99,7 +117,13 @@ bool FeatureManager::gather_dependencies()
 		// Any cycle (negative number of depends) ?
 		if (n_deps < 0)
 		{
-			std::cout << "Error: feature method " << fm->feature_info << " has a cyclic dependency \n";
+			std::stringstream ss;
+			ss << "Error: feature method " << fm->feature_info << " has a cyclic dependency";
+			#ifdef WITH_PYTHON_H
+				throw ss.str().c_str();
+			#endif
+			std::cerr << ss.str() << std::endl;
+
 			success = false;
 			continue;
 		}
@@ -125,7 +149,10 @@ int FeatureManager::get_num_fmethods_dependencies (FeatureMethod * fm, std::vect
 	// Sanity check
 	if (fm == nullptr)
 	{
-		std::cout << "Invalid feature method passed to FeatureManager::get_num_fmethods_dependencies()\n";
+		#ifdef WITH_PYTHON_H
+			throw "Invalid feature method passed to FeatureManager::get_num_fmethods_dependencies()";
+		#endif
+		std::cerr << "Invalid feature method passed to FeatureManager::get_num_fmethods_dependencies()\n";
 		return 0;
 	}
 
@@ -160,7 +187,12 @@ int FeatureManager::get_num_fmethods_dependencies (FeatureMethod * fm, std::vect
 		// No provider?
 		if (providerFM == nullptr)
 		{
-			std::cout << "Error: no registered provider for feature " << fcode << " referenced as dependency by feature method " << fm->feature_info << "\n";
+			std::stringstream ss;
+			ss << "Error: no registered provider for feature " << fcode << " referenced as dependency by feature method " << fm->feature_info;
+			#ifdef WITH_PYTHON_H
+				throw ss.str().c_str();
+			#endif
+			std::cerr << ss.str() << std::endl;
 		}
 
 		// Analyze the child
@@ -253,35 +285,3 @@ void FeatureManager::build_user_requested_set()
 	}
 }
 
-#if 0
-void FeatureManager::external_test_init()
-{
-	pixelIntensityFeatures = new PixelIntensityFeatures();
-	contourFeature = new ContourFeature();
-	convhullFeature = new ConvexHullFeature();
-	ellipsefitFeature = new EllipseFittingFeature();
-	extremaFeature = new ExtremaFeature();
-	eulerNumberFeature = new EulerNumberFeature();
-	caliperNassensteinFeature = new CaliperNassensteinFeature();
-	caliperFeretFeature = new CaliperFeretFeature();
-	caliperMartinFeature = new CaliperMartinFeature();
-	chordsFeature = new ChordsFeature();
-	gaborFeature = new GaborFeature();
-}
-
-namespace Nyxus
-{
-	FeatureMethod* pixelIntensityFeatures,
-		* contourFeature,
-		* convhullFeature,
-		* ellipsefitFeature,
-		* extremaFeature,
-		* eulerNumberFeature, 		
-		* chordsFeature,
-		* caliperNassensteinFeature, 
-		* caliperFeretFeature, 
-		* caliperMartinFeature,
-		* gaborFeature;
-}
-
-#endif

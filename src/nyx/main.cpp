@@ -16,7 +16,7 @@ int main (int argc, char** argv)
 	// Have the feature manager prepare the feature toolset reflecting user's selection
 	if (!theFeatureMgr.compile())
 	{
-		std::cout << "Error: compiling feature methods failed\n";
+		std::cerr << "Error: compiling feature methods failed\n";
 		return 1;
 	}
 	theFeatureMgr.apply_user_selection();
@@ -33,7 +33,7 @@ int main (int argc, char** argv)
 		intensFiles, labelFiles);
 	if (errorCode)
 	{
-		std::cout << std::endl << "Dataset structure error" << std::endl;
+		std::cerr << std::endl << "Dataset structure error" << std::endl;
 		return 1; 
 	}
 
@@ -62,16 +62,16 @@ int main (int argc, char** argv)
 	case 0:		// Success
 		break;
 	case 1:		// Dataset structure error e.g. intensity-label file name mismatch
-		std::cout << std::endl << "Dataset structure error" << std::endl;
+		std::cerr << std::endl << "Dataset structure error" << std::endl;
 		break;
 	case 2:		// Internal FastLoader error e.g. TIFF access error
-		std::cout << std::endl << "Dataset structure error" << std::endl;
+		std::cerr << std::endl << "Dataset structure error" << std::endl;
 		break;
 	case 3:		// Memory error
-		std::cout << std::endl << "Dataset structure error" << std::endl;
+		std::cerr << std::endl << "Dataset structure error" << std::endl;
 		break;
 	default:	// Any other error
-		std::cout << std::endl << "Error #" << errorCode << std::endl;
+		std::cerr << std::endl << "Error #" << errorCode << std::endl;
 		break;
 	}
 

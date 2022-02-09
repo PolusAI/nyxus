@@ -38,19 +38,34 @@ namespace Nyxus
 	{
 		if (!directoryExists(dirIntens))
 		{
-			std::cout << "Error: " << dirIntens << " is not a directory" << std::endl;
+			std::stringstream ss;
+			ss << "Error: " << dirIntens << " is not a directory";
+			#ifdef WITH_PYTHON_H
+				throw ss.str().c_str();
+			#endif
+			std::cerr << ss.str() << std::endl;
 			return 1;
 		}
 
 		if (!directoryExists(dirLabels))
 		{
-			std::cout << "Error: " << dirLabels << " is not a directory" << std::endl;
+			std::stringstream ss;
+			ss << "Error: " << dirLabels << " is not a directory";
+			#ifdef WITH_PYTHON_H
+				throw ss.str().c_str();
+			#endif
+			std::cerr << ss.str() << std::endl;
 			return 2;
 		}
 
 		if (mustCheckDirOut && !directoryExists(dirOut))
 		{
-			std::cout << "Error: " << dirOut << " is not a directory" << std::endl;
+			std::stringstream ss;
+			ss << "Error: " << dirOut << " is not a directory";
+			#ifdef WITH_PYTHON_H
+				throw ss.str().c_str();
+			#endif
+			std::cerr << ss.str() << std::endl;
 			return 3;
 		}
 		return 0; // success
@@ -74,17 +89,32 @@ namespace Nyxus
 
 		if (!directoryExists(dirIntens))
 		{
-			std::cout << "Error: nonexisting directory " << dirIntens << std::endl;
+			std::stringstream ss;
+			ss << "Error: nonexisting directory " << dirIntens;
+			#ifdef WITH_PYTHON_H
+				throw ss.str().c_str();
+			#endif
+			std::cerr << ss.str() << std::endl;
 			return 1;
 		}
 		if (!directoryExists(dirLabels))
 		{
-			std::cout << "Error: nonexisting directory " << dirLabels << std::endl;
+			std::stringstream ss;
+			ss << "Error: nonexisting directory " << dirLabels;
+			#ifdef WITH_PYTHON_H
+			throw ss.str().c_str();
+			#endif
+			std::cerr << ss.str() << std::endl;
 			return 1;
 		}
 		if (!directoryExists(dirOut))
 		{
-			std::cout << "Error: nonexisting directory " << dirOut << std::endl;
+			std::stringstream ss;
+			ss << "Error: nonexisting directory " << dirOut;
+			#ifdef WITH_PYTHON_H
+				throw ss.str().c_str();
+			#endif
+			std::cerr << ss.str() << std::endl;
 			return 1;
 		}
 
@@ -97,12 +127,21 @@ namespace Nyxus
 			// Check if the dataset is meaningful
 			if (intensFiles.size() == 0 || labelFiles.size() == 0)
 			{
-				std::cout << "No intensity and/or label files to process" << std::endl;
+				#ifdef WITH_PYTHON_H
+					throw "Error: no intensity and/or label files to process";
+				#endif
+				std::cerr << "Error: no intensity and/or label files to process \n";
 				return 2;
 			}
 			if (intensFiles.size() != labelFiles.size())
 			{
-				std::cout << "The number of intensity directory files (" << intensFiles.size() << ") should match the number of label directory files (" << labelFiles.size() << ")" << std::endl;
+				std::stringstream ss;
+				ss << "Error: the number of intensity directory files (" << intensFiles.size() << ") should match the number of label directory files (" << labelFiles.size() << ")";
+				#ifdef WITH_PYTHON_H
+					throw ss.str().c_str();
+				#endif
+				std::cerr << ss.str() << std::endl;
+
 				return 3;
 			}
 
@@ -115,14 +154,24 @@ namespace Nyxus
 			// Special case - using intensity and label file pairs defined with the mapping file
 			if (!directoryExists(intLabMappingDir))
 			{
-				std::cout << "Error: nonexisting directory " << intLabMappingDir << std::endl;
+				std::stringstream ss;
+				ss << "Error: nonexisting directory " << intLabMappingDir;
+				#ifdef WITH_PYTHON_H
+					throw ss.str().c_str();
+				#endif
+				std::cerr << ss.str() << std::endl;
 				return 1;
 			}
 
 			std::string mapPath = intLabMappingDir + "/" + intLabMappingFile;
 			if (!directoryExists(mapPath))
 			{
-				std::cout << "Error: nonexisting file " << mapPath << std::endl;
+				std::stringstream ss;
+				ss << "Error: nonexisting file " << mapPath;
+				#ifdef WITH_PYTHON_H
+					throw ss.str().c_str();
+				#endif
+				std::cerr << ss.str() << std::endl;
 				return 1;
 			}		
 
@@ -137,7 +186,12 @@ namespace Nyxus
 				bool pairOk = ss >> intFname && ss >> segFname;
 				if (!pairOk)
 				{
-					std::cout << "Error: cannot recognize a file name pair in line #" << lineNo << " - " << ln << std::endl;
+					std::stringstream ss;
+					ss << "Error: cannot recognize a file name pair in line #" << lineNo << " - " << ln;
+					#ifdef WITH_PYTHON_H
+						throw ss.str().c_str();
+					#endif
+					std::cerr << ss.str() << std::endl;
 					return 1;
 				}
 
@@ -146,14 +200,24 @@ namespace Nyxus
 				std::string intFpath = dirIntens + "/" + intFname;
 				if (!directoryExists(intFpath))
 				{
-					std::cout << "Error: nonexisting file " << intFpath << std::endl;
+					std::stringstream ss;
+					ss << "Error: nonexisting file " << intFpath;
+					#ifdef WITH_PYTHON_H
+						throw ss.str().c_str();
+					#endif
+					std::cerr << ss.str() << std::endl;
 					return 1;
 				}
 
 				std::string segFpath = dirLabels + "/" + segFname;
 				if (!directoryExists(intFpath))
 				{
-					std::cout << "Error: nonexisting file " << intFpath << std::endl;
+					std::stringstream ss;
+					ss << "Error: nonexisting file " << intFpath;
+					#ifdef WITH_PYTHON_H
+						throw ss.str().c_str();
+					#endif
+					std::cerr << ss.str() << std::endl;
 					return 1;
 				}
 
@@ -165,12 +229,17 @@ namespace Nyxus
 			// Check if we have pairs to process
 			if (intensFiles.size() == 0)
 			{
-				std::cout << "Special mapping " << mapPath << " produced no intensity-label file pairs" << std::endl;
+				std::stringstream ss;
+				ss << "Error: special mapping " << mapPath << " produced no intensity-label file pairs";
+				#ifdef WITH_PYTHON_H
+					throw ss.str().c_str();
+				#endif
+				std::cerr << ss.str() << std::endl;
 				return 1;
 			}
 
 			// Inform the user
-			std::cout << "Using special mapped intensity-label pairs:" << std::endl;
+			std::cout << "Error: using special mapped intensity-label pairs:" << std::endl;
 			for (int i = 0; i < intensFiles.size(); i++)
 				std::cout << "\tintensity: " << intensFiles[i] << "\tlabels: " << labelFiles[i] << std::endl;
 		}

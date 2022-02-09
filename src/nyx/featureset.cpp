@@ -354,15 +354,6 @@ std::string FeatureSet::findFeatureNameByCode(AvailableFeatures fcode)
 	return "[UNNAMED FEATURE]";
 }
 
-void FeatureSet::show_help()
-{
-	std::cout << "Names of available features:\n";
-	for (auto itr = Nyxus::UserFacingFeatureNames.begin(); itr != Nyxus::UserFacingFeatureNames.end(); ++itr)
-	{
-		std::cout << '\t' << itr->first << '\n';
-	}
-}
-
 // Relying on RVO rather than std::move
 std::vector<std::tuple<std::string, AvailableFeatures>> FeatureSet::getEnabledFeatures()
 {

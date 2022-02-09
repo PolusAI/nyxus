@@ -6,10 +6,8 @@ void GLCMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	OOR_ReadMatrix G (imloader, r.aabb); 
 	G.apply_normalizing_range (r.aux_min, r.aux_max, 255.0); 
 
-	int Angles[] = { 0, 45, 90, 135 },
-		nAngs = sizeof(Angles) / sizeof(Angles[0]);
-	for (int i = 0; i < nAngs; i++)
-		Extract_Texture_Features_nontriv (distance_parameter, Angles[i], G);
+	for (auto ang : angles)
+		Extract_Texture_Features_nontriv (distance_parameter, ang, G);
 }
 
 void GLCMFeature::Extract_Texture_Features_nontriv (
@@ -58,7 +56,12 @@ void GLCMFeature::Extract_Texture_Features_nontriv (
 		CoOcMat_Angle_135_nontriv (P_matrix, distance, grays, tone_LUT, tone_count);
 	else 
 	{
-		std::cout << "Error: Cannot create co-occurence matrix for unsupported angle " << angle << "\n";
+		std::stringstream ss;
+		ss << "Error: Cannot create co-occurence matrix for unsupported angle " << angle;
+		#ifdef WITH_PYTHON_H
+			throw ss.str().c_str();
+		#endif
+		std::cerr << ss.str() << std::endl;
 		return;
 	}
 

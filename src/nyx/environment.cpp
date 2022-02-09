@@ -39,8 +39,14 @@ namespace Nyxus
             float v;
             if (!parse_as_float(s, v))
             {
+                std::stringstream ss;
+                ss <<  "Error: in '" << rawString << "' expecting '" << s << "' to be a floating point number";
+                #ifdef WITH_PYTHON_H
+                    throw ss.str();
+                #endif
+                std::cerr << ss.str() << "\n";
+
                 retval = false;
-                std::cout << "Error: in '" << rawString << "' expecting '" << s << "' to be a floating point number\n";
             }
             else
                 result.push_back(v);
@@ -62,7 +68,7 @@ namespace Nyxus
 
         if (rawString.length() == 0)
         {
-            std::cout << "Warning: no features specified, defaulting to ALL\n";
+            std::cout <<  "Warning: no features specified, defaulting to " << FEA_NICK_ALL << "\n";
             result.push_back(FEA_NICK_ALL);
             return true;
         }
@@ -95,8 +101,13 @@ namespace Nyxus
             bool fnameExists = theFeatureSet.findFeatureByString(s_uppr, af);
             if (!fnameExists)
             {
-                retval = false;
-                std::cout << "Error: expecting '" << s << "' to be a proper feature name. \n";
+                std::stringstream ss;
+                ss << "Error: expecting '" << s << "' to be a proper feature name";
+                #ifdef WITH_PYTHON_H
+                    throw ss.str();
+                #endif
+                std::cerr << ss.str() << "\n";
+                retval = false;            
             }
             else
                 result.push_back(s_uppr);
@@ -104,7 +115,7 @@ namespace Nyxus
 
         // Show help on available features if necessary
         if (!retval)
-            theFeatureSet.show_help();
+           theEnvironment.show_featureset_help();
 
         return retval;
     }
@@ -113,7 +124,7 @@ namespace Nyxus
 Environment::Environment()
 {
     unsigned long long availMem = Nyxus::getAvailPhysMemory();
-    ram_limit = availMem / 2;
+    ram_limit = availMem / 4;
 
     // Initialize the path to temp directory
     temp_dir_path = std::filesystem::temp_directory_path().string();
@@ -134,7 +145,7 @@ void Environment::set_pixel_distance(int pixelDistance)
     this->pixelDistance = pixelDistance;
 }
 
-void Environment::show_help()
+void Environment::show_cmdline_help()
 {
     std::cout
         << PROJECT_NAME << " " << PROJECT_VER << "\nCopyright Axle Informatics 2021\n"
@@ -213,6 +224,9 @@ void Environment::show_summary(const std::string &head, const std::string &tail)
         std::cout << ang;
     }
     std::cout << "\n";
+
+    // Oversized ROI limit
+    std::cout << "\toversized ROI lower limit " << theEnvironment.get_ram_limit() << " bytes\n";
 
     std::cout << tail;
 }
@@ -293,6 +307,7 @@ bool Environment::check_file_pattern(const std::string &pat)
     }
     catch (...)
     {
+        std::cerr << "Exception checking file pattern " << pat << "\n";
         return false;
     }
 
@@ -512,6 +527,7 @@ void Environment::process_feature_list()
         AvailableFeatures af;
         if (!theFeatureSet.findFeatureByString(s, af))
         {
+            // Throwing both for Python and CLI
             throw std::invalid_argument("Error: '" + s + "' is not a valid feature name. \n");
         }
 
@@ -533,7 +549,7 @@ int Environment::parse_cmdline(int argc, char **argv)
     {
         if (*i == "-h" || *i == "--help")
         {
-            show_help();
+            show_cmdline_help();
             return 1;
         }
 
@@ -570,50 +586,50 @@ int Environment::parse_cmdline(int argc, char **argv)
     // --what's not recognized?
     if (unrecognized.size() > 0)
     {
-        std::cout << "\nUnrecognized arguments:\n";
+        std::cerr << "\nUnrecognized arguments:\n";
         for (auto &u : unrecognized)
-            std::cout << "\t" << u << "\n";
+            std::cerr << "\t" << u << "\n";
     }
-    std::cout << "\n";
+    std::cerr << "\n";
 
     //==== Check mandatory parameters
 
     if (file_pattern == "")
     {
-        std::cout << "Error: Missing argument " << FILEPATTERN << "\n";
+        std::cerr << "Error: Missing argument " << FILEPATTERN << "\n";
         return 1;
     }
     if (check_file_pattern(file_pattern) == false)
     {
-        std::cout << "Error: file pattern '" << file_pattern << "' is an invalid regular expression\n";
+        std::cerr << "Error: file pattern '" << file_pattern << "' is an invalid regular expression\n";
         return 1;
     }
 
     if (labels_dir == "")
     {
-        std::cout << "Error: Missing argument " << SEGDIR << "\n";
+        std::cerr<< "Error: Missing argument " << SEGDIR << "\n";
         return 1;
     }
     if (intensity_dir == "")
     {
-        std::cout << "Error: Missing argument " << INTDIR << "\n";
+        std::cerr << "Error: Missing argument " << INTDIR << "\n";
         return 1;
     }
     if (output_dir == "")
     {
-        std::cout << "Error: Missing argument " << OUTDIR << "\n";
+        std::cerr << "Error: Missing argument " << OUTDIR << "\n";
         return 1;
     }
 
     if (rawOutpType == "")
     {
-        std::cout << "Error: Missing argument " << OUTPUTTYPE << "\n";
+        std::cerr << "Error: Missing argument " << OUTPUTTYPE << "\n";
         return 1;
     }
 
     if (features == "")
     {
-        std::cout << "Warning: " << FEATURES << "=<empty string>, defaulting to " << FEA_NICK_ALL << "\n";
+        std::cerr << "Warning: " << FEATURES << "=<empty string>, defaulting to " << FEA_NICK_ALL << "\n";
         features = FEA_NICK_ALL;
     }
 
@@ -632,7 +648,7 @@ int Environment::parse_cmdline(int argc, char **argv)
     auto rawOutpTypeUC = Nyxus::toupper(rawOutpType);
     if (rawOutpTypeUC != Nyxus::toupper(OT_SINGLECSV) && rawOutpTypeUC != Nyxus::toupper(OT_SEPCSV))
     {
-        std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << " or " << OT_SINGLECSV << "\n";
+        std::cerr << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << " or " << OT_SINGLECSV << "\n";
         return 1;
     }
     separateCsv = rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV);
@@ -643,7 +659,7 @@ int Environment::parse_cmdline(int argc, char **argv)
         // string -> integer
         if (sscanf(loader_threads.c_str(), "%d", &n_loader_threads) != 1 || n_loader_threads <= 0)
         {
-            std::cout << "Error: " << LOADERTHREADS << "=" << loader_threads << ": expecting a positive integer constant\n";
+            std::cerr << "Error: " << LOADERTHREADS << "=" << loader_threads << ": expecting a positive integer constant\n";
             return 1;
         }
     }
@@ -653,7 +669,7 @@ int Environment::parse_cmdline(int argc, char **argv)
         // string -> integer
         if (sscanf(pixel_scan_threads.c_str(), "%d", &n_pixel_scan_threads) != 1 || n_pixel_scan_threads <= 0)
         {
-            std::cout << "Error: " << PXLSCANTHREADS << "=" << pixel_scan_threads << ": expecting a positive integer constant\n";
+            std::cerr << "Error: " << PXLSCANTHREADS << "=" << pixel_scan_threads << ": expecting a positive integer constant\n";
             return 1;
         }
     }
@@ -663,7 +679,7 @@ int Environment::parse_cmdline(int argc, char **argv)
         // string -> integer
         if (sscanf(reduce_threads.c_str(), "%d", &n_reduce_threads) != 1 || n_reduce_threads <= 0)
         {
-            std::cout << "Error: " << REDUCETHREADS << "=" << reduce_threads << ": expecting a positive integer constant\n";
+            std::cerr << "Error: " << REDUCETHREADS << "=" << reduce_threads << ": expecting a positive integer constant\n";
             return 1;
         }
     }
@@ -673,7 +689,7 @@ int Environment::parse_cmdline(int argc, char **argv)
         // string -> integer
         if (sscanf(verbosity.c_str(), "%d", &verbosity_level) != 1 || verbosity_level < 0)
         {
-            std::cout << "Error: " << VERBOSITY << "=" << reduce_threads << ": expecting a positive integer constant\n";
+            std::cerr << "Error: " << VERBOSITY << "=" << reduce_threads << ": expecting a positive integer constant\n";
             return 1;
         }
     }
@@ -708,6 +724,7 @@ int Environment::parse_cmdline(int argc, char **argv)
     // --Make sure all the feature names are legal and cast to uppercase (class FeatureSet understands uppercase names)
     if (!Nyxus::parse_delimited_string_list_to_features(features, desiredFeatures))
     {
+        std::cerr << "Stopping due to errors while parsing user requested features\n";
         return 1;
     }
 
@@ -728,7 +745,7 @@ int Environment::parse_cmdline(int argc, char **argv)
         // string -> number
         if (sscanf(rawXYRes.c_str(), "%f", &xyRes) != 1 || xyRes <= 0)
         {
-            std::cout << "Error: " << XYRESOLUTION << "=" << xyRes << ": expecting a positive numeric constant\n";
+            std::cerr << "Error: " << XYRESOLUTION << "=" << xyRes << ": expecting a positive numeric constant\n";
             return 1;
         }
         // pixel size
@@ -742,4 +759,38 @@ int Environment::parse_cmdline(int argc, char **argv)
 std::string Environment::get_temp_dir_path() const
 {
     return temp_dir_path;
+}
+
+void Environment::show_featureset_help()
+{
+    const int W = 40;   // width
+
+    std::cout << "\nAvailable features:\n";
+    for (auto f = Nyxus::UserFacingFeatureNames.begin(); f != Nyxus::UserFacingFeatureNames.end(); ++f) // (const auto& f : Nyxus::UserFacingFeatureNames)
+    {
+        auto idx = std::distance (Nyxus::UserFacingFeatureNames.begin(), f);
+
+        std::cout << std::setw(W) << f->first << " ";
+        if ((idx + 1) % 4 == 0)
+            std::cout << "\n";
+    }
+
+    std::vector<std::string> fgroups =
+    {
+        FEA_NICK_ALL,
+        FEA_NICK_ALL_INTENSITY,
+        FEA_NICK_ALL_MORPHOLOGY,
+        FEA_NICK_BASIC_MORPHOLOGY,
+        FEA_NICK_ALL_GLCM,
+        FEA_NICK_ALL_GLRLM,
+        FEA_NICK_ALL_GLSZM,
+        FEA_NICK_ALL_GLDM,
+        FEA_NICK_ALL_NGTDM,
+        FEA_NICK_ALL_BUT_GABOR,
+        FEA_NICK_ALL_BUT_GLCM,
+    };
+
+    std::cout << "\nAvailable feature groups:\n";
+    for (const auto& f : fgroups)
+        std::cout << std::setw(W) << f << "\n";
 }

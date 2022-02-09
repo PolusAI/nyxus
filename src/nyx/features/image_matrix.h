@@ -45,7 +45,9 @@ public:
 	{
 		if (x >= W || y >= H)
 		{
+			#ifdef WITH_PYTHON_H
 			throw "subscript out of bounds";
+			#endif	
 		}
 		return this->at(W * y + x);
 	}
@@ -54,7 +56,9 @@ public:
 	{
 		if (x >= W || y >= H)
 		{
+			#ifdef WITH_PYTHON_H
 			throw "subscript out of bounds";
+			#endif
 			return -1;	// Special value indicating invalid intensity
 		}
 		T val = this->at(W * y + x);
@@ -109,7 +113,9 @@ public:
 	{
 		if (x >= W || y >= H)
 		{
+			#ifdef WITH_PYTHON_H
 			throw "subscript out of bounds";
+			#endif	
 		}
 		return this->at(W * y + x);
 	}
@@ -117,7 +123,9 @@ public:
 	{
 		if (x >= W || y >= H)
 		{
+			#ifdef WITH_PYTHON_H
 			throw "subscript out of bounds";
+			#endif	
 			return -1;	// Special value indicating invalid intensity
 		}
 		PixIntens val = this->at (W * y + x);

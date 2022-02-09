@@ -418,4 +418,5 @@ private:
 namespace Nyxus
 {
 	extern FeatureSet theFeatureSet;
+	extern std::map <std::string, AvailableFeatures> UserFacingFeatureNames;
 }

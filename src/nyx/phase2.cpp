@@ -11,7 +11,6 @@
 #include "globals.h"
 #include "helpers/timing.h"
 
-
 namespace Nyxus
 {
 
@@ -49,14 +48,21 @@ namespace Nyxus
 		// -- check whole file consistency
 		if (fh != L.fullHeight(lvl) || fw != L.fullWidth(lvl) || fd != L.fullDepth(lvl))
 		{
-			std::cout << "\terror: mismatch in full height, width, or depth";
+			#ifdef WITH_PYTHON_H
+				throw "Error: mismatch in full height, width, or depth";
+			#endif
+			std::cerr << "Error: mismatch in full height, width, or depth \n";
+
 			return false;
 		}
 
 		// -- check tile consistency
 		if (th != L.tileHeight(lvl) || tw != L.tileWidth(lvl) || td != L.tileDepth(lvl))
 		{
-			std::cout << "\terror: mismatch in tile height, width, or depth";
+			#ifdef WITH_PYTHON_H
+				throw "Error: mismatch in tile height, width, or depth";
+			#endif			
+			std::cerr << "Error: mismatch in tile height, width, or depth \n";
 			return false;
 		}
 
@@ -100,8 +106,8 @@ namespace Nyxus
 
 				// Show stayalive progress info
 				if (cnt++ % 4 == 0)
-					VERBOSLVL1(std::cout << "\t"
-					<< int((row * nth + col) * 100 / float(nth * ntw) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs"
+					VERBOSLVL1(std::cout << "\tscantriv "
+					<< int((row * nth + col) * 100 / float(nth * ntw) * 100) / 100. << "%\tof " << PendingRoiLabels.size() << " batch ROIs"
 					<< "\n";)
 			}
 
