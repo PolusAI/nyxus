@@ -81,7 +81,7 @@ public:
 	void get_InfoMeas2 (AngledFeatures& af);
 
 	const static int distance_parameter = 5;
-
+	static std::vector<int> angles; // default values are 0, 45, 90, 135 
 private:
 	void Extract_Texture_Features_nontriv(
 		int distance,

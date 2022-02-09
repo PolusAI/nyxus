@@ -1,5 +1,8 @@
 #include "glcm.h"
 
+// Default angles (publicly accessible)
+std::vector <int> GLCMFeature::angles = { 0, 45, 90, 135 };
+
 GLCMFeature::GLCMFeature() : FeatureMethod("GLCMFeature")
 {
 	provide_features({
@@ -24,10 +27,8 @@ void GLCMFeature::calculate (LR& r)
 	SimpleMatrix<uint8_t> G;
 	calculate_normalized_graytone_matrix (G, r.aux_min, r.aux_max, r.aux_image_matrix);
 
-	int Angles[] = { 0, 45, 90, 135 },
-		nAngs = sizeof(Angles) / sizeof(Angles[0]);
-	for (int i = 0; i < nAngs; i++)
-		Extract_Texture_Features (distance_parameter, Angles[i], G);
+	for (auto ang : angles)
+		Extract_Texture_Features (distance_parameter, ang, G);
 }
 
 void GLCMFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {}		// Not supporting the online mode for this feature method
