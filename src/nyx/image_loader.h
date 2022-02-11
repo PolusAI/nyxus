@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+
+using uint32 = unsigned int;	// (Temporary) eliminate situation of unknown uint32
 #include <fast_loader/specialised_tile_loader/grayscale_tiff_tile_loader.h>
 #include <fast_loader/specialised_tile_loader/grayscale_tiff_strip_loader.h>
 
@@ -26,8 +28,8 @@ public:
 	size_t get_tile_x (size_t pixel_col);
 	size_t get_tile_y (size_t pixel_row);
 	size_t get_within_tile_idx (size_t pixel_row, size_t pixel_col);
-	std::unique_ptr<std::vector<size_t>>  getImageDimensions(const std::string& filePath);
-    std::unique_ptr<std::vector<size_t>>  calculateTileDimensions(const std::string& filePath);
+	std::tuple<uint32_t, uint32_t, uint32_t>  get_image_dimensions (const std::string& filePath); 
+	std::tuple<uint32_t, uint32_t, uint32_t>  calculate_tile_dimensions (const std::string& filePath);
 	bool checkTileStatus(const std::string& filePath);
 private:
 	fl::AbstractTileLoader<fl::DefaultView<uint32_t>> *segFL = nullptr, *intFL = nullptr; 
@@ -54,4 +56,3 @@ private:
 	int lvl = 0,	// Pyramid level
 		lyr = 0;	//	Layer
 };
-

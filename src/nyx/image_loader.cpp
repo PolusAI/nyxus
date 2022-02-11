@@ -16,8 +16,8 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 		else 
 		{
 			// since the file is not tiled, we provide the tile dimensions
-			auto tileDims = calculateTileDimensions(int_fpath); //vector of (tw, th, td)
-			intFL = new GrayscaleTiffStripLoader<uint32_t>(n_threads, int_fpath,  tileDims->at(0), tileDims->at(1), tileDims->at(2));
+			auto [tw, th, td] = calculate_tile_dimensions (int_fpath);
+			intFL = new GrayscaleTiffStripLoader<uint32_t>(n_threads, int_fpath, tw, th, td);
 		}
 	}
 	catch (std::exception const& e)	
@@ -37,8 +37,8 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 		else 
 		{
 			// since the file is not tiled, we provide the tile dimensions
-			auto tileDims = calculateTileDimensions(seg_fpath); //vector of (tw, th, td)
-			segFL = new GrayscaleTiffStripLoader<uint32_t>(n_threads, seg_fpath,  tileDims->at(0), tileDims->at(1), tileDims->at(2));
+			auto [tw, th, td] = calculate_tile_dimensions(seg_fpath); 
+			segFL = new GrayscaleTiffStripLoader<uint32_t>(n_threads, seg_fpath, tw, th, td);
 		}
 
 	}
@@ -209,31 +209,32 @@ bool ImageLoader::checkTileStatus(const std::string& filePath)
 	} else { throw (std::runtime_error("Tile Loader ERROR: The file can not be opened.")); }
 }
 
-std::unique_ptr<std::vector<size_t>>  ImageLoader::getImageDimensions(const std::string& filePath)
+std::tuple<uint32_t, uint32_t, uint32_t>  ImageLoader::get_image_dimensions (const std::string& filePath)
 {
-	TIFF *tiff_ = TIFFOpen(filePath.c_str(), "r");
-	if (tiff_ != nullptr) 
+	TIFF* tiff_ = TIFFOpen(filePath.c_str(), "r");
+	if (tiff_ != nullptr)
 	{
-		std::unique_ptr<std::vector<size_t>> imageDims = std::make_unique<std::vector<size_t>>(0);
-		size_t tmp = 0;
-		TIFFGetField(tiff_, TIFFTAG_IMAGEWIDTH, &tmp);
-		imageDims->push_back(tmp);
-      	TIFFGetField(tiff_, TIFFTAG_IMAGELENGTH, &tmp);
-		imageDims->push_back(tmp);
-		imageDims->push_back(TIFFNumberOfDirectories(tiff_));
-	   	TIFFClose(tiff_);
-	  	return std::move(imageDims);	
-	} else { throw (std::runtime_error("Tile Loader ERROR: The file can not be opened.")); }
+		uint32_t w, l, ndirs;
+		TIFFGetField(tiff_, TIFFTAG_IMAGEWIDTH, &w);
+		TIFFGetField(tiff_, TIFFTAG_IMAGELENGTH, &l);
+		ndirs = TIFFNumberOfDirectories(tiff_);
+		TIFFClose(tiff_);
+		return {w, l, ndirs};
+	}
+	else 
+	{ 
+		throw (std::runtime_error("Tile Loader ERROR: The file can not be opened.")); 
+	}
 }
 
-std::unique_ptr<std::vector<size_t>>  ImageLoader::calculateTileDimensions(const std::string& filePath)
+std::tuple<uint32_t, uint32_t, uint32_t>  ImageLoader::calculate_tile_dimensions (const std::string& filePath)
 {
-	auto imageDims = getImageDimensions(filePath);
-	size_t defaultWidthSize = 1024;
-	size_t defaultHeightSize = 1024;
-	size_t defaultDepthSize = 1;
-	imageDims->at(0) = std::min({imageDims->at(0), defaultWidthSize});
-	imageDims->at(1) = std::min({imageDims->at(1), defaultHeightSize});
-	imageDims->at(2) = std::min({imageDims->at(2), defaultDepthSize});
-	return std::move(imageDims);
+	auto [w, h, d] = get_image_dimensions (filePath);
+	uint32_t defaultWidthSize = 1024;
+	uint32_t defaultHeightSize = 1024;
+	uint32_t defaultDepthSize = 1;
+	w = std::min ({ w, defaultWidthSize });
+	h = std::min ({ h, defaultHeightSize });
+	d = std::min ({ d, defaultDepthSize });
+	return {w, h, d};
 }
