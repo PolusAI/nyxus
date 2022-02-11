@@ -22,68 +22,65 @@ namespace Nyxus
 		r.raw_pixels.push_back(Pixel2(x, y, intensity));
 	}
 
-	bool scanTrivialRois(const std::vector<int>& PendingRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads)
+	bool scanTrivialRois (const std::vector<int>& PendingRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads)
 	{
 		int lvl = 0,	// Pyramid level
 			lyr = 0;	//	Layer
 
-		// File #1 (intensity)
-		GrayscaleTiffTileLoader<uint32_t> I(num_FL_threads, intens_fpath);
-
-		auto th = I.tileHeight(lvl),
-			tw = I.tileWidth(lvl),
-			td = I.tileDepth(lvl),
-			tileSize = th * tw,
-
-			fh = I.fullHeight(lvl),
-			fw = I.fullWidth(lvl),
-			fd = I.fullDepth(lvl),
-
-			ntw = I.numberTileWidth(lvl),
-			nth = I.numberTileHeight(lvl),
-			ntd = I.numberTileDepth(lvl);
-
-		// File #2 (labels)
-		GrayscaleTiffTileLoader<uint32_t> L(num_FL_threads, label_fpath);
-
-		// -- check whole file consistency
-		if (fh != L.fullHeight(lvl) || fw != L.fullWidth(lvl) || fd != L.fullDepth(lvl))
+		// Open an image pair
+		ImageLoader imlo;
+		bool ok = imlo.open(intens_fpath, label_fpath);
+		if (!ok)
 		{
-			std::cout << "\terror: mismatch in full height, width, or depth";
+			std::stringstream ss;
+			ss << "Error opening file pair " << intens_fpath << " : " << label_fpath;
+			#ifdef WITH_PYTHON_H
+				throw ss.str();
+			#endif	
+			std::cerr << ss.str() << "\n";
 			return false;
 		}
 
-		// -- check tile consistency
-		if (th != L.tileHeight(lvl) || tw != L.tileWidth(lvl) || td != L.tileDepth(lvl))
-		{
-			std::cout << "\terror: mismatch in tile height, width, or depth";
-			return false;
-		}
-
-		// Read the TIFF tile by tile 
-		// 
-		// -- allocate the tile buffer
-		std::shared_ptr<std::vector<uint32_t>> ptrI = std::make_shared<std::vector<uint32_t>>(tileSize);
-		std::shared_ptr<std::vector<uint32_t>> ptrL = std::make_shared<std::vector<uint32_t>>(tileSize);
+		// Read the tiffs
+		size_t nth = imlo.get_num_tiles_hor(),
+			ntv = imlo.get_num_tiles_vert(),
+			fw = imlo.get_tile_width(),
+			th = imlo.get_tile_height(),
+			tw = imlo.get_tile_width(),
+			tileSize = imlo.get_tile_size();
 
 		int cnt = 1;
 		for (unsigned int row = 0; row < nth; row++)
-			for (unsigned int col = 0; col < ntw; col++)
+			for (unsigned int col = 0; col < ntv; col++)
 			{
-				auto tileIdx = row * fw + col;
-				I.loadTileFromFile(ptrI, row, col, lyr, lvl);
-				L.loadTileFromFile(ptrL, row, col, lyr, lvl);
-				auto& dataI = *ptrI;
-				auto& dataL = *ptrL;
+				// Fetch the tile 
+				ok = imlo.load_tile(row, col);
+				if (!ok)
+				{
+					std::stringstream ss;
+					ss << "Error fetching tile row=" << row << " col=" << col;
+					#ifdef WITH_PYTHON_H
+						throw ss.str();
+					#endif	
+					std::cerr << ss.str() << "\n";
+					return false;
+				}
 
+				// Get ahold of tile's pixel buffer
+				auto tileIdx = row * fw + col;
+				auto dataI = imlo.get_int_tile_buffer(),
+					dataL = imlo.get_seg_tile_buffer();
+
+				// Iterate pixels
 				for (unsigned long i = 0; i < tileSize; i++)
 				{
 					auto label = dataL[i];
 
 					// Skip this ROI if it's label isn't in the pending set
-					if (std::find(PendingRoiLabels.begin(), PendingRoiLabels.end(), label) == PendingRoiLabels.end())
+					if (std::find(PendingRoiLabels.begin(), PendingRoiLabels.end(), label) == PendingRoiLabels.end())	// This will be further optimized [A.]
 						continue;
 
+					// Skip non-mask pixels
 					auto inten = dataI[i];
 					if (label != 0)
 					{
@@ -94,15 +91,14 @@ namespace Nyxus
 						if (theEnvironment.singleROI)
 							label = 1;
 
-						feed_pixel_2_cache(x, y, label, dataI[i], tileIdx);
+						// Cache this pixel 
+						feed_pixel_2_cache (x, y, label, dataI[i], tileIdx);
 					}
 				}
 
 				// Show stayalive progress info
 				if (cnt++ % 4 == 0)
-					VERBOSLVL1(std::cout << "\t"
-					<< int((row * nth + col) * 100 / float(nth * ntw) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs"
-					<< "\n";)
+					VERBOSLVL1(std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n";)
 			}
 
 		return true;
