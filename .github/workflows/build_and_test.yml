@@ -1,7 +1,8 @@
-name: CMake
+name: Build And Run Test
 
 on:
   push:
+    branches: [ main ]
   pull_request: 
 
 env:
