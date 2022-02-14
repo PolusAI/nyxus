@@ -1,8 +1,9 @@
-name: CMake
+name: Build And Run Test
 
 on:
   push:
-  pull_request:
+    branches: [ main ]
+  pull_request: 
 
 env:
   BUILD_TYPE: Release
@@ -31,9 +32,9 @@ jobs:
       # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    #- name: Test
-      #working-directory: ${{github.workspace}}/build
+    - name: Test
+      working-directory: ${{github.workspace}}/build
       # Execute tests defined by the CMake configuration.  
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-     # run: ctest -C ${{env.BUILD_TYPE}}
+      run: ./tests/runAllTests  -C ${{env.BUILD_TYPE}}
       
