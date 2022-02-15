@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 void test_dummy_function()
 {
-    int tmp = 6;
+    int tmp = 5;
     ASSERT_TRUE(tmp==6);
 }
