@@ -52,10 +52,6 @@ jobs:
     - name: Install Pandas
       run: pipenv install pandas
 
-    - name: Start virual env
-      working-directory: ${{github.workspace}}
-      run: pipenv shell
-
     - name: Install Nyxus
       working-directory: ${{github.workspace}}
       run: python3 setup.py install
