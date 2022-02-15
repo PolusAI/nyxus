@@ -20,16 +20,16 @@ jobs:
     - name: Install LibTiff
       run: sudo apt install libtiff-dev
       
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON
+    # - name: Configure CMake
+    #   run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON
 
-    - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+    # - name: Build
+    #   run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    - name: Run GTest Suite
-      working-directory: ${{github.workspace}}/build
-      # Execute tests.  
-      run: ./tests/runAllTests  -C ${{env.BUILD_TYPE}}
+    # - name: Run GTest Suite
+    #   working-directory: ${{github.workspace}}/build
+    #   # Execute tests.  
+    #   run: ./tests/runAllTests  -C ${{env.BUILD_TYPE}}
       
 
     # Setup Python for PyTest
@@ -52,6 +52,10 @@ jobs:
     - name: Install Pandas
       run: pipenv install pandas
 
-    - name: Run Python test suite
-      working-directory: ${{github.workspace}}/build
+    - name: Start virual env
+      working-directory: ${{github.workspace}}
+      run: pipenv shell
+
+    - name: Install Nyxus
+      working-directory: ${{github.workspace}}
       run: python3 setup.py install
