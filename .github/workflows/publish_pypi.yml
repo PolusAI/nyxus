@@ -27,5 +27,5 @@ jobs:
       run: python -m twine upload dist/*
       env:
         TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrects.TWINE_API_KEY}}
+        TWINE_PASSWORD: ${{ secrets.TWINE_API_KEY}}
         TWINE_REPOSITORY_URL: testpypi
