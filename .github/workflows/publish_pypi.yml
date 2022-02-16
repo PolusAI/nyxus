@@ -28,4 +28,4 @@ jobs:
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.TWINE_API_KEY }}
-        TWINE_REPOSITORY_URL: testpypi
+        TWINE_REPOSITORY: testpypi
