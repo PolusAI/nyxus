@@ -1,6 +1,6 @@
 name: Publish to PyPi
 
-if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+if: github.event_name == 'push'
 
 env:
   BUILD_TYPE: Release
