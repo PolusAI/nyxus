@@ -1,0 +1,23 @@
+name: Publish to PyPi
+
+on:
+  push:
+  pull_request: 
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  Publish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive      
+
+    - name: Create ManyLinux Docker
+      run: docker build . -f LinuxWheelBuilder  -t linuxbuilder
+
+    - name: Build ManyLinux Wheels 
+      run: docker run -v $(pwd):/io  linuxbuilder:latest

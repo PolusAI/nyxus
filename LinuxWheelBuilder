@@ -1,0 +1,8 @@
+FROM quay.io/pypa/manylinux2010_x86_64
+RUN yum -y install libtiff-devel
+RUN mkdir /io
+COPY * /io/
+WORKDIR  /io
+RUN ls
+RUN chmod +x build-wheels.sh
+CMD sh build-wheels.sh

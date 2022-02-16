@@ -1,3 +1,5 @@
+#!/bin/bash
+
 PYTHON_VERSIONS=("cp36-cp36m" "cp37-cp37m" "cp38-cp38" "cp39-cp39")
 
 for PYTHON_VERSION in ${PYTHON_VERSIONS[@]}; do
