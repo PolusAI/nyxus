@@ -92,7 +92,7 @@ with open("README.md", "r") as fh:
 
 
 setup(
-    name="nyxus",
+    name="nyxus_test_samee",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(dict(build_ext=CMakeBuild)),
     author="Andriy Kharchenko",
