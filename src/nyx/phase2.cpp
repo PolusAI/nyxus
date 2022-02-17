@@ -15,7 +15,7 @@
 namespace Nyxus
 {
 
-	void feed_pixel_2_cache(int x, int y, int label, PixIntens intensity, unsigned int tile_index)
+	void feed_pixel_2_cache(int x, int y, int label, PixIntens intensity)
 	{
 		// Update basic ROI info (info that doesn't require costly calculations)
 		LR& r = roiData[label];
@@ -71,7 +71,6 @@ namespace Nyxus
 				}
 
 				// Get ahold of tile's pixel buffer
-				auto tileIdx = row * fw + col;
 				auto dataI = imlo.get_int_tile_buffer(),
 					dataL = imlo.get_seg_tile_buffer();
 
@@ -90,18 +89,15 @@ namespace Nyxus
 
 					// Skip non-mask pixels
 					auto inten = dataI[i];
-					if (label != 0)
-					{
-						int y = row * th + i / tw,
-							x = col * tw + i % tw;
+					int y = row * th + i / tw,
+						x = col * tw + i % tw;
 
-						// Collapse all the labels to one if single-ROI mde is requested
-						if (theEnvironment.singleROI)
-							label = 1;
+					// Collapse all the labels to one if single-ROI mde is requested
+					if (theEnvironment.singleROI)
+						label = 1;
 
-						// Cache this pixel 
-						feed_pixel_2_cache (x, y, label, dataI[i], tileIdx);
-					}
+					// Cache this pixel 
+					feed_pixel_2_cache (x, y, label, dataI[i]);
 				}
 
 				// Show stayalive progress info

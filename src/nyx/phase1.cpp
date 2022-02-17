@@ -85,7 +85,7 @@ namespace Nyxus
 				}
 
 				// Get ahold of tile's pixel buffer
-				auto tileIdx = row * fw + col;
+				auto tileIdx = row * nth + col;
 				auto dataI = imlo.get_int_tile_buffer(),
 					dataL = imlo.get_seg_tile_buffer();
 
