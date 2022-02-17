@@ -3,6 +3,7 @@
 #include <algorithm> 
 #include <cmath>
 #include <iostream>
+#include <map>
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
@@ -199,7 +200,7 @@ public:
 		double medianVal;
 		double binW;
 		int bins[N_HISTO_BINS + 1] = { 0 };
-		std::vector <HistoItem> U;	//xxx	std::unordered_set <HistoItem> U;
+		std::vector <HistoItem> U;	
 
 		HistoItem get_median(const std::unordered_set<HistoItem>& uniqueValues)
 		{
@@ -266,20 +267,24 @@ public:
 
 		HistoItem get_mode(std::vector<HistoItem>& raw_I)
 		{
-			auto n = maxVal - minVal;
+			// Populate the frequency map
+			std::map<HistoItem, std::size_t> freqMap;
+			for (int v : raw_I)
+				++freqMap[v];
+			
+			// Iterator to the highest frequency item
+			auto highestFreqIter = freqMap.begin(); 
 
-			// Degenerate case?
-			if (n == 0)
-				return minVal;
-
-			std::vector<int> histogram (n+1, 0);
-			for (int i = 0; i < raw_I.size(); ++i)
+			// Iterate the map updating 'highestFreqIter'
+			for (auto iter = freqMap.begin(); iter != freqMap.end(); ++iter)
 			{
-				auto k = raw_I[i] - minVal;
-				++histogram [k];
+				if (highestFreqIter->second < iter->second)
+					highestFreqIter = iter;
 			}
-			HistoItem maxel = HistoItem (std::max_element (histogram.begin(), histogram.end()) - histogram.begin());
-			return maxel + minVal;
+			
+			// Return the result
+			auto mo = highestFreqIter->first;
+			return mo;
 		}
 };
 
