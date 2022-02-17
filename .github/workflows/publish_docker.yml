@@ -1,8 +1,6 @@
 name: Publish Docker image
 
-on:
-  push:
-  pull_request: 
+if: github.event_name == 'release' && github.event.action == 'created'
 
 env:
   BUILD_TYPE: Release

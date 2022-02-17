@@ -1,6 +1,6 @@
 name: Publish to PyPi
 
-on: push
+if: github.event_name == 'release' && github.event.action == 'created'
 
 env:
   BUILD_TYPE: Release
@@ -15,7 +15,7 @@ jobs:
         submodules: recursive      
 
     - name: Create ManyLinux Docker
-      run: docker build . -f LinuxWheelBuilder  -t linuxbuilder
+      run: docker build . -f .github/LinuxWheelBuilder  -t linuxbuilder
 
     - name: Build ManyLinux Wheels 
       run: docker run -v $(pwd):/io  linuxbuilder:latest
