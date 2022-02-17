@@ -47,9 +47,12 @@ jobs:
         images: sameeul/testrepo
     
     - name: Build and push Docker image
+      env:
+        DOCKER_REPO: testrepo
       uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
       with:
         context: .
         push: true
-        tags: ${{ env.VERSION  }}
+
+        tags: ${{ secrets.DOCKER_USERNAME }}/${{ env.DOCKER_REPO }}:${{ env.VERSION  }}
         labels: ${{ steps.meta.outputs.labels }}
