@@ -28,7 +28,12 @@ jobs:
 
     - name: Create Version File
       run: python setup.py --version| grep -v init > VERSION
-      
+    
+    - name: Set variable
+      run: |
+        VER=$(cat VERSION)
+        echo "VERSION=$VER" >> $GITHUB_ENV
+
     - name: Log in to Docker Hub
       uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
       with:
@@ -46,5 +51,5 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
+        tags: ${{ env.VERSION  }}
         labels: ${{ steps.meta.outputs.labels }}
