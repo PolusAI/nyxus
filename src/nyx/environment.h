@@ -123,6 +123,7 @@ namespace Nyxus
 
 #define VERBOSLVL1(stmt) if(Nyxus::theEnvironment.verbosity_level>=1){stmt;}
 #define VERBOSLVL2(stmt) if(Nyxus::theEnvironment.verbosity_level>=2){stmt;}
+#define VERBOSLVL3(stmt) if(Nyxus::theEnvironment.verbosity_level>=3){stmt;}
 
 
 
