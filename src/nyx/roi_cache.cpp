@@ -15,7 +15,7 @@ size_t LR::get_ram_footprint_estimate()
 {
 	size_t sz =
 		Nyxus::AvailableFeatures::_COUNT_ * 10 * sizeof(double) + // feature values (approximately 10 each)
-		aabb.get_width() * aabb.get_height() * sizeof(PixIntens) +	// image matrix
+		aabb.get_width() * aabb.get_height() * sizeof(Pixel2) +	// image matrix
 		aux_area * sizeof(Pixel2) +	// raw pixels
 		(uniqueLabels.size() - 1) * sizeof(int);	// neighbors
 	return sz;
