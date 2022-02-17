@@ -1,6 +1,8 @@
 name: Publish to PyPi
 
-if: github.event_name == 'release' && github.event.action == 'created'
+on:
+  push:
+  pull_request: 
 
 env:
   BUILD_TYPE: Release
