@@ -22,8 +22,12 @@ namespace Nyxus
 		r.raw_pixels.push_back(Pixel2(x, y, intensity));
 	}
 
-	bool scanTrivialRois (const std::vector<int>& PendingRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads)
+	bool scanTrivialRois (const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads)
 	{
+		// Sort the batch's labels to enable binary searching in it
+		std::vector<int> whiteList = batch_labels;
+		std::sort (whiteList.begin(), whiteList.end());
+
 		int lvl = 0,	// Pyramid level
 			lyr = 0;	//	Layer
 
@@ -76,8 +80,12 @@ namespace Nyxus
 				{
 					auto label = dataL[i];
 
+					// Skip non-sigment pixels
+					if (! label)
+						continue;
+
 					// Skip this ROI if it's label isn't in the pending set
-					if (std::find(PendingRoiLabels.begin(), PendingRoiLabels.end(), label) == PendingRoiLabels.end())	// This will be further optimized [A.]
+					if (! std::binary_search(whiteList.begin(), whiteList.end(), label)) //--slow-- if (std::find(PendingRoiLabels.begin(), PendingRoiLabels.end(), label) == PendingRoiLabels.end())
 						continue;
 
 					// Skip non-mask pixels
@@ -98,7 +106,7 @@ namespace Nyxus
 
 				// Show stayalive progress info
 				if (cnt++ % 4 == 0)
-					VERBOSLVL1(std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n";)
+					VERBOSLVL1(std::cout << "\tscan trivial " << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "% of image scanned \n";)
 			}
 
 		imlo.close();
