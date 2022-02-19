@@ -3,6 +3,15 @@
 #include "featureset.h"
 #include "environment.h"
 
+FeatureManager::~FeatureManager()
+{
+	for (auto f : full_featureset)
+		delete f;
+	full_featureset.clear();
+
+	user_requested_features.clear();
+}
+
 void FeatureManager::register_feature (FeatureMethod* fm)
 {
 	full_featureset.push_back(fm);
@@ -40,15 +49,6 @@ FeatureMethod* FeatureManager::get_feature_method(int idx)
 void FeatureManager::apply_user_selection()
 {
 	build_user_requested_set();	// The result is 'user_requested_features'
-}
-
-void FeatureManager::clear()
-{
-	for (auto f : full_featureset)
-		delete f;
-	full_featureset.clear();
-
-	user_requested_features.clear();
 }
 
 // This test checks every feature code 

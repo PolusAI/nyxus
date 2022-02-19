@@ -113,8 +113,8 @@ namespace Nyxus
 	{
 		for (auto lab : Pending)
 		{
-			LR& r = roiData[lab];
-			r.aux_image_matrix.use_roi(r.raw_pixels, r.aabb);
+			LR& r = roiData [lab];
+			r.aux_image_matrix.use_roi (r.raw_pixels, r.aabb);
 		}
 	}
 
@@ -123,8 +123,11 @@ namespace Nyxus
 		for (auto lab : Pending)
 		{
 			LR& r = roiData[lab];
+			
 			r.raw_pixels.clear();
-			r.aux_image_matrix.clear();
+			r.raw_pixels.shrink_to_fit();
+
+			r.aux_image_matrix.clear();		// clear() calls then std::vector::shrink_to_fit()
 		}
 	}
 
@@ -161,7 +164,7 @@ namespace Nyxus
 
 				// Allocate memory
 				VERBOSLVL1(std::cout << "\tallocating ROI buffers\n";)
-				allocateTrivialRoisBuffers(Pending);
+				allocateTrivialRoisBuffers (Pending);
 
 				// Reduce them
 				VERBOSLVL1(std::cout << "\treducing ROIs\n";)
@@ -173,7 +176,7 @@ namespace Nyxus
 
 				// Free memory
 				VERBOSLVL1(std::cout << "\tfreeing ROI buffers\n";)
-				freeTrivialRoisBuffers(Pending);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
+				freeTrivialRoisBuffers (Pending);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
 
 				// Reset the RAM footprint accumulator
 				batchDemand = 0;
