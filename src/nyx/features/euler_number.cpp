@@ -139,12 +139,10 @@ void EulerNumberFeature::osized_calculate (LR& r, ImageLoader& imloader)
 		width = max_x - min_x + 1,
 		n = width * height;
 
-	//???
 	//std::vector<unsigned char> I(n, 0);
 	WriteImageMatrix_nontriv I ("I", r.label);
 	I.allocate (n);	
 
-	//???
 	//for (auto& p : cloud)
 	//{
 	//	int col = p.x - min_x,
@@ -161,7 +159,6 @@ void EulerNumberFeature::osized_calculate (LR& r, ImageLoader& imloader)
 		I.set_at (idx, 1);
 	}
 
-	//???
 	//euler_number = calculate_euler(I, ny, nx, mode);
 
 	unsigned char Imq;

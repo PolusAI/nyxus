@@ -127,7 +127,7 @@ void ImageMatrix::print (const std::string& head, const std::string& tail, std::
 double ImageMatrix::Otsu(bool dynamic_range) const {
 	/* binarization by Otsu's method
 	based on maximization of inter-class variance */
-#define OTSU_LEVELS 256	//??? 2011-11-30 1024
+#define OTSU_LEVELS 256	
 	double hist[OTSU_LEVELS];
 	double omega[OTSU_LEVELS];
 	double myu[OTSU_LEVELS];

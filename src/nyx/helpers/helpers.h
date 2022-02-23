@@ -125,11 +125,11 @@ namespace Nyxus
 
 	inline double fast_log10 (double _x)  // compute log2(x) by reducing x to [0.75, 1.5)
 	{
-		float x = _x;
+		float x = (float)_x;
 
 		// a*(x-1)^2 + b*(x-1) approximates log2(x) when 0.75 <= x < 1.5
-		const float a = -.6296735;
-		const float b = 1.466967;
+		const float a = -.6296735f;
+		const float b = 1.466967f;
 		float signif, fexp;
 		int exp;
 		float lg2;
