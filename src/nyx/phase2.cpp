@@ -81,8 +81,8 @@ namespace Nyxus
 					if (! label)
 						continue;
 
-					// Skip this ROI if it's label isn't in the pending set
-					if (! std::binary_search(whiteList.begin(), whiteList.end(), label)) //--slow-- if (std::find(PendingRoiLabels.begin(), PendingRoiLabels.end(), label) == PendingRoiLabels.end())
+					// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
+					if (! theEnvironment.singleROI && ! std::binary_search(whiteList.begin(), whiteList.end(), label)) //--slow-- if (std::find(PendingRoiLabels.begin(), PendingRoiLabels.end(), label) == PendingRoiLabels.end())
 						continue;
 
 					// Skip non-mask pixels
