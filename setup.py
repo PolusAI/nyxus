@@ -67,7 +67,7 @@ class CMakeBuild(build_ext):
 
         env = os.environ.copy()
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(
-            env.get("CXXFLAGS", ""), self.distribution.get_version()
+            env.get("CXXFLAGS", ""), versioneer.get_version()
         )
 
         if len(os.environ.get("CMAKE_ARGS", "")):
@@ -92,7 +92,7 @@ with open("README.md", "r") as fh:
 
 
 setup(
-    name="nyxus_test_samee",
+    name="nyxus",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(dict(build_ext=CMakeBuild)),
     author="Andriy Kharchenko",
