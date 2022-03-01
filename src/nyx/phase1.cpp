@@ -117,6 +117,7 @@ namespace Nyxus
 					std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n";
 			}
 
+		imlo.close();
 		return true;
 	}
 
