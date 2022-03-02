@@ -232,6 +232,7 @@ public:
 	void clear()
 	{
 		_pix_plane.clear();
+		_pix_plane.shrink_to_fit();
 		width = height = 0;
 	}
 

@@ -68,16 +68,22 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 	// File #2 (labels)
 
 	// -- check whole file consistency
-	if (fh != segFL->fullHeight(lvl) || fw != segFL->fullWidth(lvl) || fd != segFL->fullDepth(lvl))
+	auto fh_seg = segFL->fullHeight(lvl),
+		fw_seg = segFL->fullWidth(lvl), 
+		fd_seg = segFL->fullDepth(lvl);
+	if (fh != fh_seg || fw != fw_seg || fd != fd_seg)
 	{
-		std::cout << "\terror: mismatch in full height, width, or depth";
+		std::cout << "\terror: INT: " << int_fpath << " SEG: " << seg_fpath << " :  mismatch in full height, width, or depth FH " << fh << ":" << fh_seg << " FW " << fw << ":" << fw_seg << " FD " << fd << ":" << fd_seg << "\n";
 		return false;
 	}
 
 	// -- check tile consistency
+	auto th_seg = segFL->tileHeight(lvl),
+		tw_seg = segFL->tileWidth(lvl),
+		td_seg = segFL->tileDepth(lvl);
 	if (th != segFL->tileHeight(lvl) || tw != segFL->tileWidth(lvl) || td != segFL->tileDepth(lvl))
 	{
-		std::cout << "\terror: mismatch in tile height, width, or depth";
+		std::cout << "\terror: INT: " << int_fpath << " SEG: " << seg_fpath << " :  mismatch in tile height, width, or depth TH " << th << ":" << th_seg << " TW " << tw << ":" << tw_seg << " TD " << td << ":" << td_seg << "\n";
 		return false;
 	}
 

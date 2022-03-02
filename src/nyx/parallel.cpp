@@ -8,12 +8,10 @@
 #include <thread>
 #include <future>
 #include <array>
-#include "virtual_file_tile_channel_loader.h"
 #include "environment.h"
 #include "globals.h"
 
 #include <string>
-#include <fast_loader/specialised_tile_loader/grayscale_tiff_tile_loader.h>
 //#include <map>
 
 #ifdef _WIN32

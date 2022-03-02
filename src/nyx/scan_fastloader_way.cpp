@@ -4,13 +4,11 @@
 
 #include <string>
 #include <vector>
-#include <fast_loader/specialised_tile_loader/grayscale_tiff_tile_loader.h>
 #include <map>
 #include <array>
 #ifdef WITH_PYTHON_H
 #include <pybind11/pybind11.h>
 #endif
-#include "virtual_file_tile_channel_loader.h"
 #include "environment.h"
 #include "globals.h"
 #include "helpers/timing.h"
@@ -49,6 +47,9 @@ namespace Nyxus
 			for (auto& valVec : r.fvals)
 				valVec.push_back(0.0);
 		}		
+
+		// Dump ROI metrics 
+		VERBOSLVL3(dump_roi_metrics(label_fpath);)	// dumps to file in the output directory
 		
 		// Distribute ROIs among phases
 		std::vector<int> trivRoiLabels, nontrivRoiLabels;
@@ -58,7 +59,9 @@ namespace Nyxus
 			size_t footprint = r.get_ram_footprint_estimate();
 			if (footprint >= theEnvironment.get_ram_limit())
 			{
-				VERBOSLVL2(std::cout << ">>> Skipping non-trivial ROI " << lab << " (area=" << r.aux_area << " px, footprint=" << footprint << " b)\n";)
+				VERBOSLVL2(std::cout << ">>> Skipping non-trivial ROI " << lab << " (area=" << r.aux_area << " px, footprint=" << footprint << " b" 
+					<< " w=" << r.aabb.get_width() << " h=" << r.aabb.get_height() << " sz_Pixel2=" << sizeof(Pixel2)
+					<< ")\n";)
 					nontrivRoiLabels.push_back(lab);
 			}
 			else
@@ -154,6 +157,53 @@ namespace Nyxus
 #endif
 
 		return 0; // success
+	}
+
+	void dump_roi_metrics(const std::string & label_fpath)
+	{
+		std::filesystem::path pseg (label_fpath);
+		std::string fpath = theEnvironment.output_dir + "/roi_metrics_" + pseg.stem().string() + ".csv";
+		std::cout << "Dumping ROI metrics to " << fpath << " ...\n";
+
+		std::ofstream f (fpath);
+
+		// header
+		f << "label, area, minx, miny, maxx, maxy, width, height, min_intens, max_intens, size_bytes, size_class, host_tiles \n";
+
+		// sort labels
+		std::vector<int>  sortedLabs { uniqueLabels.begin(), uniqueLabels.end() };
+		std::sort(sortedLabs.begin(), sortedLabs.end());
+		// body
+		for (auto lab : sortedLabs)
+		{
+			LR& r = roiData[lab];
+			auto szb = r.get_ram_footprint_estimate();
+			std::string ovsz = szb < theEnvironment.get_ram_limit() ? "T" : "OVERSIZE";
+			f << lab << ", "
+				<< r.aux_area << ", "
+				<< r.aabb.get_xmin() << ", "
+				<< r.aabb.get_ymin() << ", "
+				<< r.aabb.get_xmax() << ", "
+				<< r.aabb.get_ymax() << ", "
+				<< r.aabb.get_width() << ", "
+				<< r.aabb.get_height() << ", "
+				<< r.aux_min << ", "
+				<< r.aux_max << ", "
+				<< szb << ", "
+				<< ovsz << ", ";
+			// host tile indices
+			int ti = 0;
+			for (auto tIdx : r.host_tiles)
+			{
+				if (ti++)
+					f << "|";
+				f << tIdx;
+			}
+			f << "\n";
+		}
+
+		f.flush();
+		std::cout << "... done\n";
 	}
 
 } // namespace Nyxus

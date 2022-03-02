@@ -1,12 +1,10 @@
 #include <string>
 #include <vector>
-#include <fast_loader/specialised_tile_loader/grayscale_tiff_tile_loader.h>
 #include <map>
 #include <array>
 #ifdef WITH_PYTHON_H
 #include <pybind11/pybind11.h>
 #endif
-#include "virtual_file_tile_channel_loader.h"
 #include "environment.h"
 #include "globals.h"
 #include "helpers/timing.h"
@@ -15,15 +13,19 @@
 namespace Nyxus
 {
 
-	void feed_pixel_2_cache(int x, int y, int label, PixIntens intensity, unsigned int tile_index)
+	void feed_pixel_2_cache(int x, int y, int label, PixIntens intensity)
 	{
 		// Update basic ROI info (info that doesn't require costly calculations)
 		LR& r = roiData[label];
 		r.raw_pixels.push_back(Pixel2(x, y, intensity));
 	}
 
-	bool scanTrivialRois (const std::vector<int>& PendingRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads)
+	bool scanTrivialRois (const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads)
 	{
+		// Sort the batch's labels to enable binary searching in it
+		std::vector<int> whiteList = batch_labels;
+		std::sort (whiteList.begin(), whiteList.end());
+
 		int lvl = 0,	// Pyramid level
 			lyr = 0;	//	Layer
 
@@ -67,7 +69,6 @@ namespace Nyxus
 				}
 
 				// Get ahold of tile's pixel buffer
-				auto tileIdx = row * fw + col;
 				auto dataI = imlo.get_int_tile_buffer(),
 					dataL = imlo.get_seg_tile_buffer();
 
@@ -76,30 +77,32 @@ namespace Nyxus
 				{
 					auto label = dataL[i];
 
-					// Skip this ROI if it's label isn't in the pending set
-					if (std::find(PendingRoiLabels.begin(), PendingRoiLabels.end(), label) == PendingRoiLabels.end())	// This will be further optimized [A.]
+					// Skip non-sigment pixels
+					if (! label)
+						continue;
+
+					// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
+					if (! theEnvironment.singleROI && ! std::binary_search(whiteList.begin(), whiteList.end(), label)) //--slow-- if (std::find(PendingRoiLabels.begin(), PendingRoiLabels.end(), label) == PendingRoiLabels.end())
 						continue;
 
 					// Skip non-mask pixels
 					auto inten = dataI[i];
-					if (label != 0)
-					{
-						int y = row * th + i / tw,
-							x = col * tw + i % tw;
+					int y = row * th + i / tw,
+						x = col * tw + i % tw;
 
-						// Collapse all the labels to one if single-ROI mde is requested
-						if (theEnvironment.singleROI)
-							label = 1;
+					// Collapse all the labels to one if single-ROI mde is requested
+					if (theEnvironment.singleROI)
+						label = 1;
 
-						// Cache this pixel 
-						feed_pixel_2_cache (x, y, label, dataI[i], tileIdx);
-					}
+					// Cache this pixel 
+					feed_pixel_2_cache (x, y, label, dataI[i]);
 				}
 
 				// Show stayalive progress info
 				if (cnt++ % 4 == 0)
-					VERBOSLVL1(std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n";)
+					VERBOSLVL1(std::cout << "\tscan trivial " << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "% of image scanned \n";)
 			}
+
 		imlo.close();
 		return true;
 	}
@@ -108,8 +111,8 @@ namespace Nyxus
 	{
 		for (auto lab : Pending)
 		{
-			LR& r = roiData[lab];
-			r.aux_image_matrix.use_roi(r.raw_pixels, r.aabb);
+			LR& r = roiData [lab];
+			r.aux_image_matrix.use_roi (r.raw_pixels, r.aabb);
 		}
 	}
 
@@ -118,8 +121,11 @@ namespace Nyxus
 		for (auto lab : Pending)
 		{
 			LR& r = roiData[lab];
+			
 			r.raw_pixels.clear();
-			r.aux_image_matrix.clear();
+			r.raw_pixels.shrink_to_fit();
+
+			r.aux_image_matrix.clear();		// clear() calls then std::vector::shrink_to_fit()
 		}
 	}
 
@@ -156,7 +162,7 @@ namespace Nyxus
 
 				// Allocate memory
 				VERBOSLVL1(std::cout << "\tallocating ROI buffers\n";)
-				allocateTrivialRoisBuffers(Pending);
+				allocateTrivialRoisBuffers (Pending);
 
 				// Reduce them
 				VERBOSLVL1(std::cout << "\treducing ROIs\n";)
@@ -168,7 +174,7 @@ namespace Nyxus
 
 				// Free memory
 				VERBOSLVL1(std::cout << "\tfreeing ROI buffers\n";)
-				freeTrivialRoisBuffers(Pending);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
+				freeTrivialRoisBuffers (Pending);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
 
 				// Reset the RAM footprint accumulator
 				batchDemand = 0;

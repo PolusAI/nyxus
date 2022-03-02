@@ -62,7 +62,7 @@ namespace Nyxus
 
         if (rawString.length() == 0)
         {
-            std::cout << "Warning: no features specified, defaulting to ALL\n";
+            std::cout <<  "Warning: no features specified, defaulting to " << FEA_NICK_ALL << "\n";
             result.push_back(FEA_NICK_ALL);
             return true;
         }
@@ -85,7 +85,8 @@ namespace Nyxus
                 s_uppr == FEA_NICK_ALL_GLDM ||
                 s_uppr == FEA_NICK_ALL_NGTDM ||
                 s_uppr == FEA_NICK_ALL_BUT_GABOR ||
-                s_uppr == FEA_NICK_ALL_BUT_GLCM)
+                s_uppr == FEA_NICK_ALL_BUT_GLCM || 
+                s_uppr == FEA_ALL_EASY)
             {
                 result.push_back(s_uppr);
                 continue;
@@ -104,7 +105,7 @@ namespace Nyxus
 
         // Show help on available features if necessary
         if (!retval)
-            theFeatureSet.show_help();
+           theEnvironment.show_featureset_help();
 
         return retval;
     }
@@ -134,7 +135,7 @@ void Environment::set_pixel_distance(int pixelDistance)
     this->pixelDistance = pixelDistance;
 }
 
-void Environment::show_help()
+void Environment::show_cmdline_help()
 {
     std::cout
         << PROJECT_NAME << " " << PROJECT_VER << "\nCopyright Axle Informatics 2021\n"
@@ -213,6 +214,9 @@ void Environment::show_summary(const std::string &head, const std::string &tail)
         std::cout << ang;
     }
     std::cout << "\n";
+
+    // Oversized ROI limit
+    std::cout << "\tbatch and oversized ROI lower limit " << theEnvironment.get_ram_limit() << " bytes\n";
 
     std::cout << tail;
 }
@@ -293,6 +297,7 @@ bool Environment::check_file_pattern(const std::string &pat)
     }
     catch (...)
     {
+        std::cerr << "Exception checking file pattern " << pat << "\n";
         return false;
     }
 
@@ -337,6 +342,117 @@ void Environment::process_feature_list()
             theFeatureSet.disableFeatures(F);
             break; // No need to bother of others
         }
+
+        if (s == FEA_ALL_EASY)
+        {
+            theFeatureSet.enableAll();
+            auto F = {
+                //=== Gabor
+                GABOR,
+
+                //=== GLCM
+                GLCM_ANGULAR2NDMOMENT,
+                GLCM_CONTRAST,
+                GLCM_CORRELATION,
+                GLCM_VARIANCE,
+                GLCM_INVERSEDIFFERENCEMOMENT,
+                GLCM_SUMAVERAGE,
+                GLCM_SUMVARIANCE,
+                GLCM_SUMENTROPY,
+                GLCM_ENTROPY,
+                GLCM_DIFFERENCEVARIANCE,
+                GLCM_DIFFERENCEENTROPY,
+                GLCM_INFOMEAS1,
+                GLCM_INFOMEAS2,
+
+                //=== 2D moments
+                
+                // Spatial (raw) moments
+                SPAT_MOMENT_00,
+                SPAT_MOMENT_01,
+                SPAT_MOMENT_02,
+                SPAT_MOMENT_03,
+                SPAT_MOMENT_10,
+                SPAT_MOMENT_11,
+                SPAT_MOMENT_12,
+                SPAT_MOMENT_20,
+                SPAT_MOMENT_21,
+                SPAT_MOMENT_30,
+
+                // Weighted spatial moments
+                WEIGHTED_SPAT_MOMENT_00,
+                WEIGHTED_SPAT_MOMENT_01,
+                WEIGHTED_SPAT_MOMENT_02,
+                WEIGHTED_SPAT_MOMENT_03,
+                WEIGHTED_SPAT_MOMENT_10,
+                WEIGHTED_SPAT_MOMENT_11,
+                WEIGHTED_SPAT_MOMENT_12,
+                WEIGHTED_SPAT_MOMENT_20,
+                WEIGHTED_SPAT_MOMENT_21,
+                WEIGHTED_SPAT_MOMENT_30,
+
+                // Central moments
+                CENTRAL_MOMENT_02,
+                CENTRAL_MOMENT_03,
+                CENTRAL_MOMENT_11,
+                CENTRAL_MOMENT_12,
+                CENTRAL_MOMENT_20,
+                CENTRAL_MOMENT_21,
+                CENTRAL_MOMENT_30,
+
+                // Weighted central moments
+                WEIGHTED_CENTRAL_MOMENT_02,
+                WEIGHTED_CENTRAL_MOMENT_03,
+                WEIGHTED_CENTRAL_MOMENT_11,
+                WEIGHTED_CENTRAL_MOMENT_12,
+                WEIGHTED_CENTRAL_MOMENT_20,
+                WEIGHTED_CENTRAL_MOMENT_21,
+                WEIGHTED_CENTRAL_MOMENT_30,
+
+                // Normalized central moments
+                NORM_CENTRAL_MOMENT_02,
+                NORM_CENTRAL_MOMENT_03,
+                NORM_CENTRAL_MOMENT_11,
+                NORM_CENTRAL_MOMENT_12,
+                NORM_CENTRAL_MOMENT_20,
+                NORM_CENTRAL_MOMENT_21,
+                NORM_CENTRAL_MOMENT_30,
+
+                // Normalized (standardized) spatial moments
+                NORM_SPAT_MOMENT_00,
+                NORM_SPAT_MOMENT_01,
+                NORM_SPAT_MOMENT_02,
+                NORM_SPAT_MOMENT_03,
+                NORM_SPAT_MOMENT_10,
+                NORM_SPAT_MOMENT_20,
+                NORM_SPAT_MOMENT_30,
+
+                // Hu's moments 1-7 
+                HU_M1,
+                HU_M2,
+                HU_M3,
+                HU_M4,
+                HU_M5,
+                HU_M6,
+                HU_M7,
+
+                // Weighted Hu's moments 1-7 
+                WEIGHTED_HU_M1,
+                WEIGHTED_HU_M2,
+                WEIGHTED_HU_M3,
+                WEIGHTED_HU_M4,
+                WEIGHTED_HU_M5,
+                WEIGHTED_HU_M6,
+                WEIGHTED_HU_M7
+            };
+
+            theFeatureSet.disableFeatures(F);
+
+            break; // No need to bother of others
+        }
+
+
+
         if (s == FEA_NICK_ALL_INTENSITY)
         {
             auto F = {
@@ -533,7 +649,7 @@ int Environment::parse_cmdline(int argc, char **argv)
     {
         if (*i == "-h" || *i == "--help")
         {
-            show_help();
+            show_cmdline_help();
             return 1;
         }
 
@@ -708,6 +824,7 @@ int Environment::parse_cmdline(int argc, char **argv)
     // --Make sure all the feature names are legal and cast to uppercase (class FeatureSet understands uppercase names)
     if (!Nyxus::parse_delimited_string_list_to_features(features, desiredFeatures))
     {
+        std::cerr << "Stopping due to errors while parsing user requested features\n";
         return 1;
     }
 
@@ -732,7 +849,7 @@ int Environment::parse_cmdline(int argc, char **argv)
             return 1;
         }
         // pixel size
-        pixelSizeUm = 1e-2 / xyRes / 1e-6; // 1 cm in meters / pixels per cm / micrometers
+        pixelSizeUm = 1e-2f / xyRes / 1e-6f; // 1 cm in meters / pixels per cm / micrometers
     }
 
     // Success
@@ -742,4 +859,46 @@ int Environment::parse_cmdline(int argc, char **argv)
 std::string Environment::get_temp_dir_path() const
 {
     return temp_dir_path;
+}
+
+void Environment::show_featureset_help()
+{
+    const int W = 40;   // width
+
+    std::cout << "\n" << 
+        "Available features : " << "\n" << 
+        "-------------------- " <<
+        "\n";
+    for (auto f = Nyxus::UserFacingFeatureNames.begin(); f != Nyxus::UserFacingFeatureNames.end(); ++f) // (const auto& f : Nyxus::UserFacingFeatureNames)
+    {
+        auto idx = std::distance (Nyxus::UserFacingFeatureNames.begin(), f);
+
+        std::cout << std::setw(W) << f->first << " ";
+        if ((idx + 1) % 4 == 0)
+            std::cout << "\n";
+    }
+    std::cout << "\n";
+
+    std::vector<std::string> fgroups =
+    {
+        FEA_NICK_ALL,
+        FEA_ALL_EASY,
+        FEA_NICK_ALL_INTENSITY,
+        FEA_NICK_ALL_MORPHOLOGY,
+        FEA_NICK_BASIC_MORPHOLOGY,
+        FEA_NICK_ALL_GLCM,
+        FEA_NICK_ALL_GLRLM,
+        FEA_NICK_ALL_GLSZM,
+        FEA_NICK_ALL_GLDM,
+        FEA_NICK_ALL_NGTDM,
+        FEA_NICK_ALL_BUT_GABOR,
+        FEA_NICK_ALL_BUT_GLCM,
+    };
+
+    std::cout << "\n" << 
+        "Available feature groups :" << "\n" <<
+        "--------------------------" << "\n";
+    for (const auto& f : fgroups)
+        std::cout << std::setw(W) << f << "\n";
+    std::cout << "\n";
 }

@@ -191,5 +191,7 @@ private:
 	double f11_dentropy (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
 	double f12_icorr (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px, std::vector<double>& py);
 	double f13_icorr (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px, std::vector<double>& py);
+
+	const double LOG10_2 = 0.30102999566;	// precalculated log 2 base 10
 };
 
