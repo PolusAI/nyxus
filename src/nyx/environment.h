@@ -33,6 +33,7 @@
 #define FEA_NICK_ALL_NGTDM "*ALL_NGTDM*"
 #define FEA_NICK_ALL_BUT_GABOR "*ALL_BUT_GABOR*"
 #define FEA_NICK_ALL_BUT_GLCM "*ALL_BUT_GLCM*"
+#define FEA_ALL_EASY "*ALL_EASY*"	// Equivalent to *ALL* minus GABOR, GLCM, and 2D moments
 
 // Valid values of 'OUTPUTTYPE'
 #define OT_SEPCSV "separatecsv"
@@ -49,7 +50,8 @@ class Environment
 public:
 	Environment();
 	int parse_cmdline(int argc, char **argv);
-	void show_help();
+	void show_cmdline_help();
+	void show_featureset_help();
 	void show_summary(const std::string &head, const std::string &tail);
 
 	std::string labels_dir = "",
@@ -123,6 +125,7 @@ namespace Nyxus
 
 #define VERBOSLVL1(stmt) if(Nyxus::theEnvironment.verbosity_level>=1){stmt;}
 #define VERBOSLVL2(stmt) if(Nyxus::theEnvironment.verbosity_level>=2){stmt;}
+#define VERBOSLVL3(stmt) if(Nyxus::theEnvironment.verbosity_level>=3){stmt;}
 
 
 

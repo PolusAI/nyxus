@@ -1,4 +1,5 @@
 #include "glcm.h"
+#include "../helpers/helpers.h"
 
 GLCMFeature::GLCMFeature() : FeatureMethod("GLCMFeature")
 {
@@ -650,7 +651,7 @@ double GLCMFeature::f8_sentropy(const SimpleMatrix<double>& P, int Ng, std::vect
 
 	for (i = 2; i < 2 * Ng; ++i)
 		/*  M. Boland  sentropy -= Pxpy[i] * log10 (Pxpy[i] + EPSILON); */
-		sentropy -= Pxpy[i] * log10(Pxpy[i] + EPSILON) / log10(2.0);
+		sentropy -= Pxpy[i] * fast_log10(Pxpy[i] + EPSILON) / LOG10_2;
 
 	//---	free(Pxpy);
 
@@ -666,7 +667,7 @@ double GLCMFeature::f9_entropy(const SimpleMatrix<double>& P, int Ng)
 	for (i = 0; i < Ng; ++i)
 		for (j = 0; j < Ng; ++j)
 			/*      entropy += P[i][j] * log10 (P[i][j] + EPSILON); */
-			entropy += P(i, j) * log10(P(i, j) + EPSILON) / log10(2.0);
+			entropy += P(i, j) * fast_log10(P(i, j) + EPSILON) / LOG10_2;
 
 	return -entropy;
 }
@@ -718,7 +719,7 @@ double GLCMFeature::f11_dentropy(const SimpleMatrix<double>& P, int Ng, std::vec
 
 	for (i = 0; i < Ng; ++i)
 		/*    sum += Pxpy[i] * log10 (Pxpy[i] + EPSILON); */
-		sum += Pxpy[i] * log10(Pxpy[i] + EPSILON) / log10(2.0);
+		sum += Pxpy[i] * fast_log10(Pxpy[i] + EPSILON) / LOG10_2;
 
 	//---	free(Pxpy);
 
@@ -747,15 +748,15 @@ double GLCMFeature::f12_icorr(const SimpleMatrix<double>& P, int Ng, std::vector
 
 	for (i = 0; i < Ng; ++i)
 		for (j = 0; j < Ng; ++j) {
-			hxy1 -= P(i, j) * log10(px[i] * py[j] + EPSILON) / log10(2.0);
-			hxy2 -= px[i] * py[j] * log10(px[i] * py[j] + EPSILON) / log10(2.0);
-			hxy -= P(i, j) * log10(P(i, j) + EPSILON) / log10(2.0);
+			hxy1 -= P(i, j) * fast_log10(px[i] * py[j] + EPSILON) / LOG10_2;
+			hxy2 -= px[i] * py[j] * fast_log10(px[i] * py[j] + EPSILON) / LOG10_2;
+			hxy -= P(i, j) * fast_log10(P(i, j) + EPSILON) / LOG10_2;
 		}
 
 	/* Calculate entropies of px and py - is this right? */
 	for (i = 0; i < Ng; ++i) {
-		hx -= px[i] * log10(px[i] + EPSILON) / log10(2.0);
-		hy -= py[i] * log10(py[i] + EPSILON) / log10(2.0);
+		hx -= px[i] * fast_log10(px[i] + EPSILON) / LOG10_2;
+		hy -= py[i] * fast_log10(py[i] + EPSILON) / LOG10_2;
 	}
 
 	//---	free(px);
@@ -790,15 +791,15 @@ double GLCMFeature::f13_icorr(const SimpleMatrix<double>& P, int Ng, std::vector
 	for (i = 0; i < Ng; ++i)
 		for (j = 0; j < Ng; ++j)
 		{
-			hxy1 -= P(i, j) * log10(px[i] * py[j] + EPSILON) / log10(2.0);
-			hxy2 -= px[i] * py[j] * log10(px[i] * py[j] + EPSILON) / log10(2.0);
-			hxy -= P(i, j) * log10(P(i, j) + EPSILON) / log10(2.0);
+			hxy1 -= P(i, j) * fast_log10(px[i] * py[j] + EPSILON) / LOG10_2;
+			hxy2 -= px[i] * py[j] * fast_log10(px[i] * py[j] + EPSILON) / LOG10_2;
+			hxy -= P(i, j) * fast_log10(P(i, j) + EPSILON) / LOG10_2;
 		}
 
 	/* Calculate entropies of px and py */
 	for (i = 0; i < Ng; ++i) {
-		hx -= px[i] * log10(px[i] + EPSILON) / log10(2.0);
-		hy -= py[i] * log10(py[i] + EPSILON) / log10(2.0);
+		hx -= px[i] * fast_log10(px[i] + EPSILON) / LOG10_2;
+		hy -= py[i] * fast_log10(py[i] + EPSILON) / LOG10_2;
 	}
 
 	//---	free(px);

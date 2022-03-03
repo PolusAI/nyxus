@@ -1,5 +1,4 @@
 message(STATUS "Build tests")
-set(CMAKE_VERBOSE_MAKEFILE ON)
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 

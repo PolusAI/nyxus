@@ -8,6 +8,7 @@ class FeatureManager
 {
 public:
 	FeatureManager();
+	~FeatureManager();
 
 	// Registers a feature method
 	void register_feature (FeatureMethod*);
@@ -36,7 +37,6 @@ private:
 	void build_user_requested_set();
 
 	void external_test_init();
-	void clear();
 	std::vector<FeatureMethod*> full_featureset;
 	std::vector<FeatureMethod*> user_requested_features;	// Ordered set of FMs implementing user's feature selection
 
