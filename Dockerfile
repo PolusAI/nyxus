@@ -15,8 +15,8 @@ RUN mkdir -p ${EXEC_DIR} \
 
 #Copy executable
 COPY build-4-linux ${EXEC_DIR}/
-RUN chmod +x ${EXEC_DIR}/nyxus.exe
+RUN chmod +x ${EXEC_DIR}/nyxus
 
 WORKDIR ${EXEC_DIR}
 
-ENTRYPOINT ["/opt/executables/nyxus.exe"]
+ENTRYPOINT ["/opt/executables/nyxus"]
