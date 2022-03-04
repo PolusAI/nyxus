@@ -1,0 +1,25 @@
+name: Build Wheels
+
+on:
+  push:
+    branches: [ main ]  
+  
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  Build_Wheels:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive      
+
+    - name: Create ManyLinux Docker
+      run: docker build . -f .github/LinuxWheelBuilder  -t linuxbuilder
+
+    - name: Build ManyLinux Wheels 
+      run: docker run -v $(pwd):/io  linuxbuilder:latest
