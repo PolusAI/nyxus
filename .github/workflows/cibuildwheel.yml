@@ -90,7 +90,6 @@ jobs:
           PIP_USE_FEATURE: in-tree-build
         if: false && matrix.cibw_archs != 'aarch64'
 
-      - name: Upload to PyPi
       - uses: actions/upload-artifact@v2
         with:
           name: wheels
