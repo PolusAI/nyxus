@@ -4,20 +4,32 @@ on:
   push:
     branches: [ main ]
   pull_request: 
+  workflow_dispatch:
 
 env:
   BUILD_TYPE: Release
 
 jobs:
   build_and_run_GTest:
-    runs-on: ubuntu-latest
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-10.15]
+        cibw_archs: ["auto"]
+
 
     steps:
     - uses: actions/checkout@v2
       with:
         submodules: recursive
         
-    - name: Install LibTiff
+    if: matrix.os == 'macos-10.15'    
+    - name: Install Prerequisite
+      run: brew install libtiff llvm libomp
+
+    if: matrix.os == 'ubuntu-latest'    
+    - name: Install Prerequisite
       run: sudo apt install libtiff-dev
       
     - name: Configure CMake
@@ -33,16 +45,26 @@ jobs:
       
 
   build_and_run_PyTest:
-    runs-on: ubuntu-latest
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-10.15]
+        cibw_archs: ["auto"]
 
     steps:
     - uses: actions/checkout@v2
       with:
         submodules: recursive
-        
-    - name: Install LibTiff
+
+    if: matrix.os == 'macos-10.15'    
+    - name: Install Prerequisite
+      run: brew install libtiff llvm libomp
+
+    if: matrix.os == 'ubuntu-latest'    
+    - name: Install Prerequisite
       run: sudo apt install libtiff-dev
-      
+
     # Setup Python for PyTest
     - name: Setup Python
       uses: actions/setup-python@v2
@@ -50,7 +72,7 @@ jobs:
         python-version: "3.x"
 
     - name: Install Dependencies
-      run: python -m pip install --upgrade wheel numpy pandas pytest
+      run: python3 -m pip install --upgrade wheel numpy pandas pytest
 
     - name: Install Nyxus
       working-directory: ${{github.workspace}}
@@ -58,4 +80,4 @@ jobs:
 
     - name: Run PyTest
       working-directory: ${{github.workspace}}
-      run: pytest tests/python/
+      run: python3 -m pytest tests/python/
