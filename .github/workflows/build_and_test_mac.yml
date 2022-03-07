@@ -8,7 +8,6 @@ on:
 
 env:
   BUILD_TYPE: Release
-  PATH: $(brew --prefix llvm)/bin:$PATH 
   COMPILER: /usr/local/opt/llvm/bin/clang++
   CFLAGS: -I /usr/local/include -I/usr/local/opt/llvm/include 
   CXXFLAGS: -I /usr/local/include -I/usr/local/opt/llvm/include 
