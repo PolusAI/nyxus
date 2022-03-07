@@ -19,7 +19,7 @@ jobs:
         submodules: recursive
         
     - name: Install PreReq
-      run: brew install libtiff llvm libomp
+      run: brew install libtiff clang-omp libomp
       
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON
@@ -42,7 +42,7 @@ jobs:
         submodules: recursive
         
     - name: Install PreReq
-      run: brew install libtiff llvm libomp
+      run: brew install libtiff clang-omp libomp
       
     # Setup Python for PyTest
     - name: Setup Python
