@@ -1,0 +1,62 @@
+name: Build And Run Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request: 
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build_and_run_GTest:
+    runs-on: macos-10.15
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        
+    - name: Install PreReq
+      run: brew install libtiff llvm libomp
+      
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel 2
+
+    - name: Run GTest Suite
+      working-directory: ${{github.workspace}}/build
+      # Execute tests.  
+      run: ./tests/runAllTests  -C ${{env.BUILD_TYPE}}
+      
+
+  build_and_run_PyTest:
+    runs-on: macos-10.15
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        
+    - name: Install PreReq
+      run: brew install libtiff llvm libomp
+      
+    # Setup Python for PyTest
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: "3.x"
+
+    - name: Install Dependencies
+      run: python3 -m pip install --upgrade wheel numpy pandas pytest
+
+    - name: Install Nyxus
+      working-directory: ${{github.workspace}}
+      run: python3 setup.py install
+
+    - name: Run PyTest
+      working-directory: ${{github.workspace}}
+      run: python3 -m pytest tests/python/
