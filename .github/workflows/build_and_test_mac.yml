@@ -9,10 +9,12 @@ on:
 env:
   BUILD_TYPE: Release
   PATH: $(brew --prefix llvm)/bin:$PATH 
+  COMPILER: /usr/local/opt/llvm/bin/clang++
   CFLAGS: -I /usr/local/include -I/usr/local/opt/llvm/include 
   CXXFLAGS: -I /usr/local/include -I/usr/local/opt/llvm/include 
   LDFLAGS: -L /usr/local/lib -L/usr/local/opt/llvm/lib 
-  CXX: ${COMPILER}
+  CXX: /usr/local/opt/llvm/bin/clang++
+
 
 jobs:
   build_and_run_GTest:
@@ -25,7 +27,11 @@ jobs:
         
     - name: Install PreReq
       run: brew install libtiff clang-omp libomp
-      
+
+    - name: Update Path
+      run: |
+        echo "brew --prefix llvm)/bin" >> $GITHUB_PATH
+
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON
 
@@ -48,7 +54,11 @@ jobs:
         
     - name: Install PreReq
       run: brew install libtiff libomp
-      
+
+    - name: Update Path
+      run: |
+        echo "brew --prefix llvm)/bin" >> $GITHUB_PATH
+
     # Setup Python for PyTest
     - name: Setup Python
       uses: actions/setup-python@v2
