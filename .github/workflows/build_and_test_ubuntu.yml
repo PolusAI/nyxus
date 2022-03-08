@@ -1,4 +1,4 @@
-name: Build And Run Test
+name: Build And Run Test on Ubuntu
 
 on:
   push:
@@ -10,7 +10,7 @@ env:
   BUILD_TYPE: Release
 
 jobs:
-  build_and_run_GTest:
+  Build and Run GTest:
     runs-on: ubuntu-latest
 
     steps:
@@ -33,7 +33,7 @@ jobs:
       run: ./tests/runAllTests  -C ${{env.BUILD_TYPE}}
       
 
-  build_and_run_PyTest:
+  Build and Run PyTest:
     runs-on: ubuntu-latest
 
     steps:
