@@ -5,6 +5,8 @@ FeatureMethod::FeatureMethod(const std::string& _featureinfo)
 	feature_info = _featureinfo;
 }
 
+FeatureMethod::~FeatureMethod(){}
+
 void FeatureMethod::provide_features (const std::initializer_list<Nyxus::AvailableFeatures>& F)
 {
 	for (auto f : F)
