@@ -1,0 +1,77 @@
+name: Build And Run Test on Mac
+
+on:
+  push:
+    branches: [ main ]
+  pull_request: 
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: Release
+  COMPILER: /usr/local/opt/llvm/bin/clang++
+  CFLAGS: -I /usr/local/include -I/usr/local/opt/llvm/include 
+  CXXFLAGS: -I /usr/local/include -I/usr/local/opt/llvm/include 
+  LDFLAGS: -L /usr/local/lib -L/usr/local/opt/llvm/lib 
+  CXX: /usr/local/opt/llvm/bin/clang++
+
+
+jobs:
+  Build_and_Run_GTest:
+    name: Build and Run GoogleTest
+    runs-on: macos-10.15
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        
+    - name: Install PreReq
+      run: brew install libtiff libomp
+
+    - name: Update Path
+      run: |
+        echo "brew --prefix llvm)/bin" >> $GITHUB_PATH
+
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel 2
+
+    - name: Run GTest Suite
+      working-directory: ${{github.workspace}}/build
+      # Execute tests.  
+      run: ./tests/runAllTests  -C ${{env.BUILD_TYPE}}
+      
+
+  Build_And_Run_UnitTest:
+    name: Build and Run Unit Tests
+    runs-on: macos-10.15
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        
+    - name: Install PreReq
+      run: brew install libtiff libomp
+
+    - name: Update Path
+      run: |
+        echo "brew --prefix llvm)/bin" >> $GITHUB_PATH
+
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: "3.x"
+
+    - name: Install Dependencies
+      run: python3 -m pip install --upgrade wheel numpy pandas
+
+    - name: Install Nyxus
+      working-directory: ${{github.workspace}}
+      run: python3 setup.py install
+
+    - name: Run Unit Tests
+      working-directory: ${{github.workspace}}
+      run: python3 -m unittest tests/python/test_nyxus.py 

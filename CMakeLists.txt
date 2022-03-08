@@ -20,15 +20,11 @@ option(RUN_GTEST "Downloads google unit test API and runs google test scripts to
 set(RUN_GTEST ON)
 
 #==== Pybind11
-#find_package(Python COMPONENTS Interpreter Development)
 add_subdirectory(lib/pybind11)
 
 include_directories(
 	lib/pybind11/include/
-	#${Python_INCLUDE_DIRS}
 )
-
-message(STATUS "PYTHON HEADERS: ${Python_INCLUDE_DIRS}")
 
 find_package(OpenMP COMPONENTS C CXX)
 
@@ -141,16 +137,13 @@ endif()
 
 target_link_libraries(backend PRIVATE ${Nyxus_LIBRARIES})
 
-if (NOT APPLE)
-	#target_link_libraries(backend PRIVATE ${Python_LIBRARIES})
-else ()
+if (APPLE)
 	set_target_properties(backend PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
 endif()
 
 
 if(BUILD_CLI)
 	target_link_libraries(nyxus PRIVATE ${Nyxus_LIBRARIES})
-	#target_link_libraries(nyxus PRIVATE ${Python_LIBRARIES})
 endif()
 
 ## Running Tests
