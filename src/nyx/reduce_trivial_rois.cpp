@@ -73,6 +73,8 @@ namespace Nyxus
 			runParallel(BasicMorphologyFeatures::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
+		reduce_neighbors();	// STOPWATCH("Neighbors... ") is done from there
+
 		//==== Fitting an ellipse
 		if (EllipseFittingFeature::required(theFeatureSet))
 		{

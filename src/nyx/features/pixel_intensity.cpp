@@ -27,6 +27,7 @@ namespace Nyxus
 		// --MIN, MAX
 		lr.fvals[MIN][0] = lr.aux_min;
 		lr.fvals[MAX][0] = lr.aux_max;
+		lr.fvals[RANGE][0] = lr.aux_max - lr.aux_min;
 
 		double n = lr.raw_pixels.size();
 

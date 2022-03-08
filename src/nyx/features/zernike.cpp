@@ -32,6 +32,8 @@
 #include "../roi_cache.h"
 #include "zernike.h"
 
+int ZernikeFeature::num_feature_values_calculated = 0;
+
 ZernikeFeature::ZernikeFeature() : FeatureMethod("ZernikeFeature")
 {
 	provide_features ({ ZERNIKE2D });
@@ -42,8 +44,11 @@ void ZernikeFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t inten
 void ZernikeFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
 	fvals[ZERNIKE2D].clear();
-	for (auto f : coeffs)
+	for (int i=0; i<ZernikeFeature::num_feature_values_calculated; i++)
+	{
+		auto f = coeffs[i];
 		fvals[ZERNIKE2D].push_back(f);
+	}
 }
 
 /*  
@@ -346,6 +351,7 @@ void ZernikeFeature::zernike2D(
 	// Calculate features
 	long output_size;   // output size is normally 72 (NUM_FEATURE_VALS)
 	mb_zernike2D (I, order, 0/*rad*/, coeffs.data(), &output_size); 
+	ZernikeFeature::num_feature_values_calculated = output_size;
 }
 
 void ZernikeFeature::calculate (LR& r)

@@ -62,17 +62,16 @@ void CaliperFeretFeature::calculate(LR& r)
 
 void CaliperFeretFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[STAT_NASSENSTEIN_DIAM_MIN][0] = _min;
-	fvals[STAT_NASSENSTEIN_DIAM_MAX][0] = _max;
-	fvals[STAT_NASSENSTEIN_DIAM_MEAN][0] = _mean;
-	fvals[STAT_NASSENSTEIN_DIAM_MEDIAN][0] = _median;
-	fvals[STAT_NASSENSTEIN_DIAM_STDDEV][0] = _stdev;
-	fvals[STAT_NASSENSTEIN_DIAM_MODE][0] = _mode;
-
 	fvals[MIN_FERET_DIAMETER][0] = minFeretDiameter;
 	fvals[MAX_FERET_DIAMETER][0] = maxFeretDiameter;
 	fvals[MIN_FERET_ANGLE][0] = minFeretAngle;
 	fvals[MAX_FERET_ANGLE][0] = maxFeretAngle;
+	fvals[STAT_FERET_DIAM_MIN][0] = _min;
+	fvals[STAT_FERET_DIAM_MAX][0] = _max;
+	fvals[STAT_FERET_DIAM_MEAN][0] = _mean;
+	fvals[STAT_FERET_DIAM_MEDIAN][0] = _median;
+	fvals[STAT_FERET_DIAM_STDDEV][0] = _stdev;
+	fvals[STAT_FERET_DIAM_MODE][0] = _mode;
 }
 
 void CaliperFeretFeature::calculate_imp(const std::vector<Pixel2>& convex_hull, std::vector<double>& all_D)
