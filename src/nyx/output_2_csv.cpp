@@ -196,12 +196,12 @@ namespace Nyxus
 					continue;
 				}
 
-				// --Zernike family
+				// --Zernike features header 
 				if (fc == ZERNIKE2D)
 				{
 					// Populate with indices
-					for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
-						ssHead << "," << fn << "_" << i;						
+					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
+						ssHead << "," << fn << "_Z" << i;						
 
 					// Proceed with other features
 					continue;
@@ -210,6 +210,7 @@ namespace Nyxus
 				// Regular feature
 				ssHead << "," << fn;
 			}
+
 			fprintf(fp, "%s\n", ssHead.str().c_str());
 
 			// Prevent rendering the header again for another image's portion of labels
@@ -306,10 +307,10 @@ namespace Nyxus
 					continue;
 				}
 
-				// --Zernike family
+				// --Zernike feature values
 				if (fc == ZERNIKE2D)
 				{
-					for (int i=0; i <ZernikeFeature::NUM_FEATURE_VALS; i++)
+					for (int i=0; i <ZernikeFeature::num_feature_values_calculated; i++)
 						ssVals << "," << vv[i]; 
 
 					// Proceed with other features
