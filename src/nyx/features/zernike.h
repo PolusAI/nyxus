@@ -20,6 +20,7 @@ public:
 	static void parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 	static const short ZERNIKE2D_ORDER = 9, NUM_FEATURE_VALS = 72;
+	static int num_feature_values_calculated;
 
 	// Compatibility with manual reduce
 	static bool required(const FeatureSet& fs) { return fs.isEnabled(ZERNIKE2D); }
