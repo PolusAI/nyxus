@@ -11,6 +11,7 @@ env:
 
 jobs:
   Build_and_Run_GTest:
+    name: Build and Run GoogleTest
     runs-on: ubuntu-latest
 
     steps:
@@ -33,7 +34,8 @@ jobs:
       run: ./tests/runAllTests  -C ${{env.BUILD_TYPE}}
       
 
-  Build_and_Run_PyTest:
+  Build_and_Run_UnitTest:
+    name: Build and Run Unit Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -44,19 +46,18 @@ jobs:
     - name: Install LibTiff
       run: sudo apt install libtiff-dev
       
-    # Setup Python for PyTest
     - name: Setup Python
       uses: actions/setup-python@v2
       with:
         python-version: "3.x"
 
     - name: Install Dependencies
-      run: python -m pip install --upgrade wheel numpy pandas pytest
+      run: python -m pip install --upgrade wheel numpy pandas unittest
 
     - name: Install Nyxus
       working-directory: ${{github.workspace}}
       run: python3 setup.py install
 
-    - name: Run PyTest
+    - name: Run Unit Tests
       working-directory: ${{github.workspace}}
-      run: pytest tests/python/
+      run: python3 -m unittest tests/test_nyxus.py

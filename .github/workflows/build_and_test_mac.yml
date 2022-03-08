@@ -17,6 +17,7 @@ env:
 
 jobs:
   Build_and_Run_GTest:
+    name: Build and Run GoogleTest
     runs-on: macos-10.15
 
     steps:
@@ -43,7 +44,8 @@ jobs:
       run: ./tests/runAllTests  -C ${{env.BUILD_TYPE}}
       
 
-  Build_And_Run_PyTest:
+  Build_And_Run_UnitTest:
+    name: Build and Run Unit Tests
     runs-on: macos-10.15
 
     steps:
@@ -58,19 +60,18 @@ jobs:
       run: |
         echo "brew --prefix llvm)/bin" >> $GITHUB_PATH
 
-    # Setup Python for PyTest
     - name: Setup Python
       uses: actions/setup-python@v2
       with:
         python-version: "3.x"
 
     - name: Install Dependencies
-      run: python3 -m pip install --upgrade wheel numpy pandas pytest
+      run: python3 -m pip install --upgrade wheel numpy pandas unittest
 
     - name: Install Nyxus
       working-directory: ${{github.workspace}}
       run: python3 setup.py install
 
-    - name: Run PyTest
+    - name: Run Unit Tests
       working-directory: ${{github.workspace}}
-      run: python3 -m pytest tests/python/
+      run: python3 -m unittest tests/test_nyxus.py
