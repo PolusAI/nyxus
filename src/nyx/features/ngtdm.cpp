@@ -42,7 +42,7 @@ void NGTDMFeature::calculate (LR& r)
 		for (int col = 0; col < D.width(); col++)
 		{
 			// Find a non-blank pixel
-			PixIntens pi = D(row, col);
+			PixIntens pi = D.yx(row, col);
 			if (pi == 0)
 				continue;
 
@@ -53,42 +53,42 @@ void NGTDMFeature::calculate (LR& r)
 
 			if (D.safe(row - 1, col))	// North
 			{
-				neigsI += D(row - 1, col);
+				neigsI += D.yx(row - 1, col);
 				nd++;
 			}
 			if (D.safe(row - 1, col + 1))	// North-East
 			{
-				neigsI += D(row - 1, col + 1);
+				neigsI += D.yx(row - 1, col + 1);
 				nd++;
 			}
 			if (D.safe(row, col + 1))	// East
 			{
-				neigsI += D(row, col + 1);
+				neigsI += D.yx(row, col + 1);
 				nd++;
 			}
 			if (D.safe(row + 1, col + 1))	// South-East
 			{
-				neigsI += D(row + 1, col + 1);
+				neigsI += D.yx(row + 1, col + 1);
 				nd++;
 			}
 			if (D.safe(row + 1, col))	// South
 			{
-				neigsI += D(row + 1, col);
+				neigsI += D.yx(row + 1, col);
 				nd++;
 			}
 			if (D.safe(row + 1, col - 1))	// South-West
 			{
-				neigsI += D(row + 1, col - 1);
+				neigsI += D.yx(row + 1, col - 1);
 				nd++;
 			}
 			if (D.safe(row, col - 1))	// West
 			{
-				neigsI += D(row, col - 1);
+				neigsI += D.yx(row, col - 1);
 				nd++;
 			}
 			if (D.safe(row - 1, col - 1))	// North-West
 			{
-				neigsI += D(row - 1, col - 1);
+				neigsI += D.yx(row - 1, col - 1);
 				nd++;
 			}
 

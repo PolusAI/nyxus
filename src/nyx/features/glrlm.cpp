@@ -92,7 +92,7 @@ void GLRLMFeature::calculate (LR& r)
 			for (int col = 0; col < M.width; col++)
 			{
 				// Find a non-blank pixel
-				auto pi = D(row, col);
+				auto pi = D.yx(row, col);
 				if (pi == 0 || int(pi) == VISITED)
 					continue;
 
@@ -100,15 +100,15 @@ void GLRLMFeature::calculate (LR& r)
 				std::vector<std::tuple<int, int>> history;
 				int x = col, y = row;
 				int zoneArea = 1;
-				D(y,x) = VISITED;
+				D.yx(y,x) = VISITED;
 
 				// State machine scanning the rest of the cluster
 				for (;;)
 				{
 					// angleIdx==0 === 0 degrees
-					if (angleIdx==0 && D.safe(y, x + 1) && D(y, x + 1) == pi)
+					if (angleIdx==0 && D.safe(y, x + 1) && D.yx(y, x + 1) == pi)
 					{
-						D(y, x + 1) = VISITED;
+						D.yx(y, x + 1) = VISITED;
 						zoneArea++;
 
 						//--debug-- M.print("After x+1,y");
@@ -122,9 +122,9 @@ void GLRLMFeature::calculate (LR& r)
 					}
 
 					// angleIdx==1 === 45 degrees
-					if (D.safe(y + 1, x + 1) && D(y + 1, x + 1) == pi)
+					if (D.safe(y + 1, x + 1) && D.yx(y + 1, x + 1) == pi)
 					{
-						D(y + 1, x + 1) = VISITED;
+						D.yx(y + 1, x + 1) = VISITED;
 						zoneArea++;
 
 						//--debug-- M.print("After x+1,y+1");
@@ -136,9 +136,9 @@ void GLRLMFeature::calculate (LR& r)
 					}
 
 					// angleIdx==2 === 90 degrees
-					if (D.safe(y + 1, x) && D(y + 1, x) == pi)
+					if (D.safe(y + 1, x) && D.yx(y + 1, x) == pi)
 					{
-						D(y + 1, x) = VISITED;
+						D.yx(y + 1, x) = VISITED;
 						zoneArea++;
 
 						//--debug-- M.print("After x,y+1");
@@ -149,9 +149,9 @@ void GLRLMFeature::calculate (LR& r)
 					}
 
 					// angleIdx==3 === 135 degrees
-					if (D.safe(y + 1, x - 1) && D(y + 1, x - 1) == pi)
+					if (D.safe(y + 1, x - 1) && D.yx(y + 1, x - 1) == pi)
 					{
-						D(y + 1, x - 1) = VISITED;
+						D.yx(y + 1, x - 1) = VISITED;
 						zoneArea++;
 
 						//--debug-- M.print("After x-1,y+1");
@@ -216,7 +216,7 @@ void GLRLMFeature::calculate (LR& r)
 			// col
 			int col = z.second - 1;	// 0-based => -1
 			// update the matrix
-			auto& k = P(col, row);
+			auto& k = P.xy(col, row);
 			k++;
 		}
 
@@ -444,7 +444,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 			// col
 			int col = z.second - 1;	// 0-based => -1
 			// update the matrix
-			auto& k = P(col, row);
+			auto& k = P.xy(col, row);
 			k++;
 		}
 

@@ -210,9 +210,9 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 	for (i = 0; i < cols; i++)
 		for (j = 0; j < rows; j++) 
 		{
-			if (std::isnan((double)I_pix_plane(j, i))) 
+			if (std::isnan((double)I_pix_plane.yx(j, i))) 
 				continue; //MM
-			intensity = I_pix_plane(j, i);
+			intensity = I_pix_plane.yx(j, i);
 			sum += intensity;
 			moment10 += (i + 1) * intensity;
 			moment00 += intensity;
@@ -256,7 +256,7 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 		x = (i + 1 - m10_m00) / rad;
 		for (j = 0; j < rows; j++) 
 		{
-			if (std::isnan((double)I_pix_plane(j, i))) 
+			if (std::isnan((double)I_pix_plane.yx(j, i))) 
 				continue; //MM
 
 		// In the paper, the center of the unit circle was the center of the image
@@ -282,7 +282,7 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 			// compute contribution to Zernike moments for all 
 			// orders and repetitions by the pixel at (i,j)
 			// In the paper, the intensity was the raw image intensity
-			f = I_pix_plane(j, i) / sum;
+			f = I_pix_plane.yx(j, i) / sum;
 
 			Rnmp2 = Rnm2 = 0;
 			for (n = 0; n <= L; n++) 

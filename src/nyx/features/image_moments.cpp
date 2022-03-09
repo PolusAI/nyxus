@@ -174,7 +174,7 @@ double ImageMomentsFeature::Moment (const pixData& D, int p, int q)
     {
         for (int y = 0; y < D.height(); y++)
         {
-            sum += D(y,x) * pow(x, p) * pow(y, q);
+            sum += D.yx(y,x) * pow(x, p) * pow(y, q);
         }
     }
     return sum;
@@ -195,7 +195,7 @@ double ImageMomentsFeature::CentralMom(const pixData& D, int p, int q)
     {
         for (int y = 0; y < D.height(); y++)
         {
-            sum += D(y,x) * pow((double(x) - originOfX), p) * pow((double(y) - originOfY), q);
+            sum += D.yx(y,x) * pow((double(x) - originOfX), p) * pow((double(y) - originOfY), q);
         }
     }
     return sum;

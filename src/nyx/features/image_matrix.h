@@ -40,8 +40,9 @@ public:
 		H = _h;
 		this->resize (W*H, inival);
 	}
-	// X,Y operator
-	T& operator() (int x, int y)
+
+	// = W * y + x
+	inline T& xy (int x, int y)	//	T& operator() (int x, int y)
 	{
 		if (x >= W || y >= H)
 		{
@@ -49,8 +50,8 @@ public:
 		}
 		return this->at(W * y + x);
 	}
-	// X,y operator
-	T operator() (int x, int y) const
+	// = W * y + x
+	inline T xy (int x, int y) const // T operator() (int x, int y) const
 	{
 		if (x >= W || y >= H)
 		{
@@ -60,11 +61,11 @@ public:
 		T val = this->at(W * y + x);
 		return val;
 	}
-	
-	// 1-based x and y
+
+	// y - strided index, x - nonstrided; 1-based x and y
 	T matlab (int y, int x) const
 	{
-		T t = operator() (x-1,y-1);
+		T t = xy(x-1,y-1);		//--formerly--> operator() (x-1,y-1);
 		return t;
 	}
 
@@ -104,8 +105,8 @@ public:
 		H = height;
 		std::vector<PixIntens>::resize (width * height, val);
 	}
-
-	PixIntens & operator() (int y, int x)
+	// = W * y + x
+	inline PixIntens & yx /*operator()*/ (int y, int x)
 	{
 		if (x >= W || y >= H)
 		{
@@ -113,7 +114,8 @@ public:
 		}
 		return this->at(W * y + x);
 	}
-	PixIntens operator() (int y, int x) const
+	// = W * y + x
+	inline PixIntens yx /*operator()*/ (int y, int x) const
 	{
 		if (x >= W || y >= H)
 		{

@@ -46,7 +46,7 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	// Copy the image matrix
 	ReadImageMatrix_nontriv M(r.aabb);	//-- auto M = r.aux_image_matrix;
 
-	WriteImageMatrix_nontriv D("GLSZMFeature_osized_calculate_D", r.label);	//-- pixData& D = M.WriteablePixels();
+	WriteImageMatrix_nontriv D ("GLSZMFeature_osized_calculate_D", r.label);	//-- pixData& D = M.WriteablePixels();
 	D.allocate (r.aabb.get_width(), r.aabb.get_height());
 
 	//M.print("initial\n");
@@ -172,7 +172,7 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 		int row = int(iter - I.begin());
 		// col
 		int col = z.second - 1;	// 0-based => -1
-		auto& k = P(col, row);
+		auto& k = P.xy(col, row);
 		k++;
 	}
 }
@@ -204,7 +204,7 @@ void GLSZMFeature::calculate(LR& r)
 		for (int col = 0; col < M.width; col++)
 		{
 			// Find a non-blank pixel
-			auto pi = D(row, col);
+			auto pi = D.yx(row, col);
 			if (pi == 0 || int(pi)==VISITED)
 				continue;
 
@@ -212,13 +212,13 @@ void GLSZMFeature::calculate(LR& r)
 			std::vector<std::tuple<int, int>> history;
 			int x = col, y = row;
 			int zoneArea = 1;
-			D(y,x) = VISITED;
+			D.yx(y,x) = VISITED;
 			// 
 			for(;;)
 			{
-				if (D.safe(y,x+1) && D(y,x+1) == pi)
+				if (D.safe(y,x+1) && D.yx(y,x+1) == pi)
 				{
-					D(y,x+1) = VISITED;
+					D.yx(y,x+1) = VISITED;
 					zoneArea++;
 
 					//M.print("After x+1,y");
@@ -230,9 +230,9 @@ void GLSZMFeature::calculate(LR& r)
 					// Proceed
 					continue;
 				}
-				if (D.safe(y + 1, x + 1) && D(y + 1, x+1) == pi)
+				if (D.safe(y + 1, x + 1) && D.yx(y + 1, x+1) == pi)
 				{
-					D(y + 1, x+1) = VISITED;
+					D.yx(y + 1, x+1) = VISITED;
 					zoneArea++;
 
 					//M.print("After x+1,y+1");
@@ -242,9 +242,9 @@ void GLSZMFeature::calculate(LR& r)
 					y = y + 1;
 					continue;
 				}
-				if (D.safe(y + 1, x) && D(y + 1, x) == pi)
+				if (D.safe(y + 1, x) && D.yx(y + 1, x) == pi)
 				{
-					D(y + 1, x) = VISITED;
+					D.yx(y + 1, x) = VISITED;
 					zoneArea++;
 
 					//M.print("After x,y+1");
@@ -253,9 +253,9 @@ void GLSZMFeature::calculate(LR& r)
 					y = y + 1;
 					continue;
 				}
-				if (D.safe(y + 1, x - 1) && D(y + 1, x-1) == pi)
+				if (D.safe(y + 1, x - 1) && D.yx(y + 1, x-1) == pi)
 				{
-					D(y + 1, x-1) = VISITED;
+					D.yx(y + 1, x-1) = VISITED;
 					zoneArea++;
 
 					//M.print("After x-1,y+1");
@@ -320,7 +320,7 @@ void GLSZMFeature::calculate(LR& r)
 		int row = int (iter - I.begin());
 		// col
 		int col = z.second - 1;	// 0-based => -1
-		auto & k = P(col, row);
+		auto & k = P.xy(col, row);
 		k++;
 	}
 }

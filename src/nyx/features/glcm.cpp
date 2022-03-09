@@ -17,23 +17,23 @@ GLCMFeature::GLCMFeature() : FeatureMethod("GLCMFeature")
 		GLCM_DIFFERENCEENTROPY,
 		GLCM_INFOMEAS1,
 		GLCM_INFOMEAS2
-			});
+		});
 }
 
-void GLCMFeature::calculate (LR& r)
+void GLCMFeature::calculate(LR& r)
 {
 	SimpleMatrix<uint8_t> G;
-	calculate_normalized_graytone_matrix (G, r.aux_min, r.aux_max, r.aux_image_matrix);
+	calculate_normalized_graytone_matrix(G, r.aux_min, r.aux_max, r.aux_image_matrix);
 
 	int Angles[] = { 0, 45, 90, 135 },
 		nAngs = sizeof(Angles) / sizeof(Angles[0]);
 	for (int i = 0; i < nAngs; i++)
-		Extract_Texture_Features (distance_parameter, Angles[i], G);
+		Extract_Texture_Features(distance_parameter, Angles[i], G);
 }
 
-void GLCMFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {}		// Not supporting the online mode for this feature method
+void GLCMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}		// Not supporting the online mode for this feature method
 
-void GLCMFeature::save_value (std::vector<std::vector<double>>& fvals)
+void GLCMFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
 	get_AngularSecondMoments(fvals[GLCM_ANGULAR2NDMOMENT]);
 	get_Contrast(fvals[GLCM_CONTRAST]);
@@ -50,7 +50,7 @@ void GLCMFeature::save_value (std::vector<std::vector<double>>& fvals)
 	get_InfoMeas2(fvals[GLCM_INFOMEAS2]);
 }
 
-void GLCMFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void GLCMFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -80,31 +80,31 @@ void GLCMFeature::parallel_process_1_batch (size_t start, size_t end, std::vecto
 			continue;
 		}
 
-		GLCMFeature f; 
+		GLCMFeature f;
 		f.calculate(r);
 		f.save_value(r.fvals);
 	}
 }
 
-void GLCMFeature::calculate_normalized_graytone_matrix (SimpleMatrix<uint8_t>& G, int minI, int maxI, const ImageMatrix& Im)
+void GLCMFeature::calculate_normalized_graytone_matrix(SimpleMatrix<uint8_t>& G, int minI, int maxI, const ImageMatrix& Im)
 {
 	const pixData& I = Im.ReadablePixels();
-	G.allocate (I.width(), I.height(), 0);
+	G.allocate(I.width(), I.height(), 0);
 	double scale255 = 255.0 / double(maxI - minI);
 	for (auto y = 0; y < I.height(); y++)
 		for (auto x = 0; x < I.width(); x++)
-			G(x,y) = (uint8_t) ((I(y, x) - minI) * scale255);
+			G.xy(x, y) = (uint8_t)((I.yx(y, x) - minI) * scale255);
 }
 
-void GLCMFeature::Extract_Texture_Features (
-	int distance, 
-	int angle, 
+void GLCMFeature::Extract_Texture_Features(
+	int distance,
+	int angle,
 	const SimpleMatrix<uint8_t>& grays)
 {
 	int nrows = grays.height();
 	int ncols = grays.width();
 
-	int tone_LUT [PGM_MAXMAXVAL + 1]; /* LUT mapping gray tone(0-255) to matrix indicies */
+	int tone_LUT[PGM_MAXMAXVAL + 1]; /* LUT mapping gray tone(0-255) to matrix indicies */
 	int tone_count = 0; /* number of tones actually in the img. atleast 1 less than 255 */
 
 	/* Determine the number of different gray tones (not maxval) */
@@ -112,7 +112,7 @@ void GLCMFeature::Extract_Texture_Features (
 		tone_LUT[row] = -1;
 	for (int row = nrows - 1; row >= 0; --row)
 		for (int col = 0; col < ncols; ++col)
-			tone_LUT[grays(col,row)] = grays(col,row);
+			tone_LUT[grays.xy(col, row)] = grays.xy(col, row);
 
 	for (int row = PGM_MAXMAXVAL; row >= 0; --row)
 		if (tone_LUT[row] != -1)
@@ -127,47 +127,47 @@ void GLCMFeature::Extract_Texture_Features (
 	std::vector<double> Px(tone_count * 2), Py(tone_count);
 
 	/* compute gray-tone spatial dependence matrix */
-	SimpleMatrix<double> P_matrix (tone_count, tone_count);
+	SimpleMatrix<double> P_matrix(tone_count, tone_count);
 
 	if (angle == 0)
-		CoOcMat_Angle_0 (P_matrix, distance, grays, tone_LUT, tone_count);
+		CoOcMat_Angle_0(P_matrix, distance, grays, tone_LUT, tone_count);
 	else if (angle == 45)
-		CoOcMat_Angle_45 (P_matrix, distance, grays, tone_LUT, tone_count);
+		CoOcMat_Angle_45(P_matrix, distance, grays, tone_LUT, tone_count);
 	else if (angle == 90)
-		CoOcMat_Angle_90 (P_matrix, distance, grays, tone_LUT, tone_count);
+		CoOcMat_Angle_90(P_matrix, distance, grays, tone_LUT, tone_count);
 	else if (angle == 135)
-		CoOcMat_Angle_135 (P_matrix, distance, grays, tone_LUT, tone_count);
+		CoOcMat_Angle_135(P_matrix, distance, grays, tone_LUT, tone_count);
 	else {
 		fprintf(stderr, "Cannot create co-occurence matrix for angle %d. Unsupported angle.\n", angle);
-		return; 
+		return;
 	}
 
 	// compute the statistics for the spatial dependence matrix
-	fvals_ASM.push_back (f1_asm (P_matrix, tone_count));	
-	fvals_contrast.push_back (f2_contrast (P_matrix, tone_count));
-	fvals_correlation.push_back (f3_corr (P_matrix, tone_count, Px));
-	fvals_variance.push_back (f4_var (P_matrix, tone_count));
-	fvals_IDM.push_back (f5_idm (P_matrix, tone_count));
-	fvals_sum_avg.push_back (f6_savg (P_matrix, tone_count, Px));
+	fvals_ASM.push_back(f1_asm(P_matrix, tone_count));
+	fvals_contrast.push_back(f2_contrast(P_matrix, tone_count));
+	fvals_correlation.push_back(f3_corr(P_matrix, tone_count, Px));
+	fvals_variance.push_back(f4_var(P_matrix, tone_count));
+	fvals_IDM.push_back(f5_idm(P_matrix, tone_count));
+	fvals_sum_avg.push_back(f6_savg(P_matrix, tone_count, Px));
 	double se = f8_sentropy(P_matrix, tone_count, Px);
-	fvals_sum_entropy.push_back (se);	
-	fvals_sum_var.push_back (f7_svar (P_matrix, tone_count, se, Px));
-	fvals_entropy.push_back (f9_entropy (P_matrix, tone_count));	
-	fvals_diff_var.push_back (f10_dvar (P_matrix, tone_count, Px));	
-	fvals_diff_entropy.push_back (f11_dentropy (P_matrix, tone_count, Px));	
-	fvals_meas_corr1.push_back (f12_icorr (P_matrix, tone_count, Px, Py));
-	fvals_meas_corr2.push_back (f13_icorr (P_matrix, tone_count, Px, Py));	
-	fvals_max_corr_coef.push_back (0.0); // f14_maxcorr(P_matrix, tone_count);
+	fvals_sum_entropy.push_back(se);
+	fvals_sum_var.push_back(f7_svar(P_matrix, tone_count, se, Px));
+	fvals_entropy.push_back(f9_entropy(P_matrix, tone_count));
+	fvals_diff_var.push_back(f10_dvar(P_matrix, tone_count, Px));
+	fvals_diff_entropy.push_back(f11_dentropy(P_matrix, tone_count, Px));
+	fvals_meas_corr1.push_back(f12_icorr(P_matrix, tone_count, Px, Py));
+	fvals_meas_corr2.push_back(f13_icorr(P_matrix, tone_count, Px, Py));
+	fvals_max_corr_coef.push_back(0.0); // f14_maxcorr(P_matrix, tone_count);
 }
 
 /* Compute gray-tone spatial dependence matrix */
-void GLCMFeature::CoOcMat_Angle_0 (
+void GLCMFeature::CoOcMat_Angle_0(
 	// out
-	SimpleMatrix<double>& matrix, 
+	SimpleMatrix<double>& matrix,
 	// in
-	int distance, 
-	const SimpleMatrix<uint8_t>& grays, 
-	const int* tone_LUT, 
+	int distance,
+	const SimpleMatrix<uint8_t>& grays,
+	const int* tone_LUT,
 	int tone_count)
 {
 	int d = distance;
@@ -176,36 +176,36 @@ void GLCMFeature::CoOcMat_Angle_0 (
 	int count = 0; /* normalizing factor */
 
 	/* zero out matrix */
-	matrix.fill (0.0);
+	matrix.fill(0.0);
 
 	int rows = grays.height(),
-		cols = grays.width();	
-	
+		cols = grays.width();
+
 	for (row = 0; row < rows; ++row)
-		for (col = 0; col < cols; ++col) 
+		for (col = 0; col < cols; ++col)
 		{
 			/* only non-zero values count*/
-			if (grays(col,row) == 0)
+			if (grays.xy(col, row) == 0)
 				continue;
 
 			/* find x tone */
-			if (col + d < cols && grays(col+d, row)) 
+			if (col + d < cols && grays.xy(col + d, row))
 			{
-				x = tone_LUT[grays(col, row)];
-				y = tone_LUT[grays(col + d, row)];
-				matrix(x, y)++;		
-				matrix(y, x)++;		
+				x = tone_LUT[grays.xy(col, row)];
+				y = tone_LUT[grays.xy(col + d, row)];
+				matrix.xy(x, y)++;
+				matrix.xy(y, x)++;
 				count += 2;
 			}
 		}
 
 	/* normalize matrix */
-	for (itone = 0; itone < tone_count; ++itone)
-		for (jtone = 0; jtone < tone_count; ++jtone)
+	for (jtone = 0; jtone < tone_count; ++jtone)	//OPT	for (itone = 0; itone < tone_count; ++itone)
+		for (itone = 0; itone < tone_count; ++itone)	//OPT	for (jtone = 0; jtone < tone_count; ++jtone)
 			if (count == 0)   /* protect from error */
-				matrix(itone, jtone) = 0;	
+				matrix.xy(itone, jtone) = 0;
 			else
-				matrix(itone, jtone) /= count;	
+				matrix.xy(itone, jtone) /= count;
 }
 
 void GLCMFeature::CoOcMat_Angle_90(
@@ -222,14 +222,7 @@ void GLCMFeature::CoOcMat_Angle_90(
 	int row, col, itone, jtone;
 	int count = 0; /* normalizing factor */
 
-	//A		double** matrix = allocate_matrix(0, tone_count, 0, tone_count);
-
 	/* zero out matrix */
-	/*
-	for (itone = 0; itone < tone_count; ++itone)
-		for (jtone = 0; jtone < tone_count; ++jtone)
-			matrix(itone, jtone) = 0;	//A		matrix[itone][jtone] = 0;
-			*/
 	matrix.fill(0.0);
 
 	int rows = grays.height(),
@@ -238,28 +231,27 @@ void GLCMFeature::CoOcMat_Angle_90(
 	for (row = 0; row < rows; ++row)
 		for (col = 0; col < cols; ++col) {
 			/* only non-zero values count*/
-			if (grays(col, row) == 0)
+			if (grays.xy(col, row) == 0)
 				continue;
 
 			/* find x tone */
-			if (row + d < rows && grays(col, row + d)) {
-				x = tone_LUT[grays(col,row)];
-				y = tone_LUT[grays(col,row + d)];
-				matrix(x, y)++;		//A		matrix[x][y]++;
-				matrix(y, x)++;		//A		matrix[y][x]++;
+			if (row + d < rows && grays.xy(col, row + d)) 
+			{
+				x = tone_LUT[grays.xy(col, row)];
+				y = tone_LUT[grays.xy(col, row + d)];
+				matrix.xy(x, y)++;		
+				matrix.xy(y, x)++;		
 				count += 2;
 			}
 		}
 
 	/* normalize matrix */
-	for (itone = 0; itone < tone_count; ++itone)
-		for (jtone = 0; jtone < tone_count; ++jtone)
+	for (jtone = 0; jtone < tone_count; ++jtone)	//OPT	for (itone = 0; itone < tone_count; ++itone)
+		for (itone = 0; itone < tone_count; ++itone)	//OPT	for (jtone = 0; jtone < tone_count; ++jtone)
 			if (count == 0)
-				matrix(itone, jtone) = 0;	//A		matrix[itone][jtone] = 0;
+				matrix.xy(itone, jtone) = 0;	
 			else
-				matrix(itone, jtone) /= count;	//A		matrix[itone][jtone] /= count;
-
-	//A		return matrix;
+				matrix.xy(itone, jtone) /= count;	
 }
 
 void GLCMFeature::CoOcMat_Angle_45(
@@ -276,44 +268,37 @@ void GLCMFeature::CoOcMat_Angle_45(
 	int row, col, itone, jtone;
 	int count = 0; /* normalizing factor */
 
-	//A		double** matrix = allocate_matrix(0, tone_count, 0, tone_count);
-
 	/* zero out matrix */
-	/*
-	for (itone = 0; itone < tone_count; ++itone)
-		for (jtone = 0; jtone < tone_count; ++jtone)
-			matrix(itone, jtone) = 0;	//A		matrix[itone][jtone] = 0;
-	*/
 	matrix.fill(0.0);
 
 	int rows = grays.height(),
 		cols = grays.width();
 
 	for (row = 0; row < rows; ++row)
-		for (col = 0; col < cols; ++col) {
+		for (col = 0; col < cols; ++col)
+		{
 			/* only non-zero values count*/
-			if (grays(col,row) == 0)
+			if (grays.xy(col, row) == 0)
 				continue;
 
 			/* find x tone */
-			if (row + d < rows && col - d >= 0 && grays(col - d, row + d)) {
-				x = tone_LUT[grays(col - d, row)];
-				y = tone_LUT[grays(col - d, row + d)];
-				matrix(x, y)++;		//A		matrix[x][y]++;
-				matrix(y, x)++;		//A		matrix[y][x]++;
+			if (row + d < rows && col - d >= 0 && grays.xy(col - d, row + d)) 
+			{
+				x = tone_LUT[grays.xy(col - d, row)];
+				y = tone_LUT[grays.xy(col - d, row + d)];
+				matrix.xy(x, y)++;	
+				matrix.xy(y, x)++;
 				count += 2;
 			}
 		}
 
 	/* normalize matrix */
-	for (itone = 0; itone < tone_count; ++itone)
-		for (jtone = 0; jtone < tone_count; ++jtone)
+	for (jtone = 0; jtone < tone_count; ++jtone)	//OPT	for (itone = 0; itone < tone_count; ++itone)
+		for (itone = 0; itone < tone_count; ++itone)	//OPT	for (jtone = 0; jtone < tone_count; ++jtone)
 			if (count == 0)
-				matrix(itone, jtone) = 0;	//A		matrix[itone][jtone] = 0;       /* protect from error */
+				matrix.xy(itone, jtone) = 0;	// protect from error 
 			else
-				matrix(itone, jtone) /= count;	//A		matrix[itone][jtone] /= count;
-
-	//A		return matrix;
+				matrix.xy(itone, jtone) /= count;
 }
 
 void GLCMFeature::CoOcMat_Angle_135(
@@ -330,109 +315,101 @@ void GLCMFeature::CoOcMat_Angle_135(
 	int row, col, itone, jtone;
 	int count = 0; /* normalizing factor */
 
-	//A		double** matrix = allocate_matrix(0, tone_count, 0, tone_count);
-
-	/* zero out matrix */
-	/*
-	for (itone = 0; itone < tone_count; ++itone)
-		for (jtone = 0; jtone < tone_count; ++jtone)
-			matrix(itone, jtone) = 0;	//A		matrix[itone][jtone] = 0;
-	*/
 	matrix.fill(0.0);
 
 	int rows = grays.height(),
 		cols = grays.width();
 
 	for (row = 0; row < rows; ++row)
-		for (col = 0; col < cols; ++col) {
+		for (col = 0; col < cols; ++col)
+		{
 			/* only non-zero values count*/
-			if (grays(col,row) == 0)
+			if (grays.xy(col, row) == 0)
 				continue;
 
 			/* find x tone */
-			if (row + d < rows && col + d < cols && grays(col + d, row + d)) {
-				x = tone_LUT[grays(col, row)];
-				y = tone_LUT[grays(col + d, row + d)];
-				matrix(x, y)++;	//A		matrix[x][y]++;
-				matrix(y, x)++;	//A		matrix[y][x]++;
+			if (row + d < rows && col + d < cols && grays.xy(col + d, row + d)) 
+			{
+				x = tone_LUT[grays.xy(col, row)];
+				y = tone_LUT[grays.xy(col + d, row + d)];
+				matrix.xy(x, y)++;	
+				matrix.xy(y, x)++;	
 				count += 2;
 			}
 		}
 
 	/* normalize matrix */
-	for (itone = 0; itone < tone_count; ++itone)
-		for (jtone = 0; jtone < tone_count; ++jtone)
+	for (jtone = 0; jtone < tone_count; ++jtone)	//OPT	for (itone = 0; itone < tone_count; ++itone)
+		for (itone = 0; itone < tone_count; ++itone)	//OPT	for (jtone = 0; jtone < tone_count; ++jtone)
 			if (count == 0)
-				matrix(itone, jtone) = 0;	//A		matrix[itone][jtone] = 0;   /* protect from error */
+				matrix.xy(itone, jtone) = 0;	// protect from error 
 			else
-				matrix(itone, jtone) /= count;	//A		matrix[itone][jtone] /= count;
-
-	//A		return matrix;
+				matrix.xy(itone, jtone) /= count;	
 }
 
 void GLCMFeature::get_AngularSecondMoments(AngledFeatures& af)
 {
-	af.assign (fvals_ASM.begin(), fvals_ASM.end());
+	af.assign(fvals_ASM.begin(), fvals_ASM.end());
 }
 
 void GLCMFeature::get_Contrast(AngledFeatures& af)
 {
-	af.assign (fvals_contrast.begin(), fvals_contrast.end());
+	af.assign(fvals_contrast.begin(), fvals_contrast.end());
 }
 
 void GLCMFeature::get_Correlation(AngledFeatures& af)
 {
-	af.assign (fvals_correlation.begin(), fvals_correlation.end());
+	af.assign(fvals_correlation.begin(), fvals_correlation.end());
 }
 
 void GLCMFeature::get_Variance(AngledFeatures& af)
 {
-	af.assign (fvals_variance.begin(), fvals_variance.end());
+	af.assign(fvals_variance.begin(), fvals_variance.end());
 }
 
 void GLCMFeature::get_InverseDifferenceMoment(AngledFeatures& af)
 {
-	af.assign (fvals_IDM.begin(), fvals_IDM.end());
+	af.assign(fvals_IDM.begin(), fvals_IDM.end());
 }
 
 void GLCMFeature::get_SumAverage(AngledFeatures& af)
 {
-	af.assign (fvals_sum_avg.begin(), fvals_sum_avg.end());
+	af.assign(fvals_sum_avg.begin(), fvals_sum_avg.end());
 }
 
 void GLCMFeature::get_SumVariance(AngledFeatures& af)
 {
-	af.assign (fvals_sum_var.begin(), fvals_sum_var.end());
+	af.assign(fvals_sum_var.begin(), fvals_sum_var.end());
 }
 
 void GLCMFeature::get_SumEntropy(AngledFeatures& af)
 {
-	af.assign (fvals_sum_entropy.begin(), fvals_sum_entropy.end());
+	af.assign(fvals_sum_entropy.begin(), fvals_sum_entropy.end());
 }
 
 void GLCMFeature::get_Entropy(AngledFeatures& af)
 {
-	af.assign (fvals_entropy.begin(), fvals_entropy.end());
+	af.assign(fvals_entropy.begin(), fvals_entropy.end());
 }
 
 void GLCMFeature::get_DifferenceVariance(AngledFeatures& af)
 {
-	af.assign (fvals_diff_var.begin(), fvals_diff_var.end());
+	af.assign(fvals_diff_var.begin(), fvals_diff_var.end());
 }
 
 void GLCMFeature::get_DifferenceEntropy(AngledFeatures& af)
 {
-	af.assign (fvals_diff_entropy.begin(), fvals_diff_entropy.end());
+	af.assign(fvals_diff_entropy.begin(), fvals_diff_entropy.end());
 }
 
 void GLCMFeature::get_InfoMeas1(AngledFeatures& af)
 {
-	af.assign (fvals_meas_corr1.begin(), fvals_meas_corr1.end());
+	af.assign(fvals_meas_corr1.begin(), fvals_meas_corr1.end());
 }
 
 void GLCMFeature::get_InfoMeas2(AngledFeatures& af)
 {
-	af.assign (fvals_meas_corr2.begin(), fvals_meas_corr2.end());
+	af.assign(fvals_meas_corr2.begin(), fvals_meas_corr2.end());
 }
 
 /* Angular Second Moment
@@ -442,14 +419,14 @@ void GLCMFeature::get_InfoMeas2(AngledFeatures& af)
 * gray-tone transitions. Hence the P matrix for such an image will have
 * fewer entries of large magnitude.
 */
-double GLCMFeature::f1_asm (const SimpleMatrix<double>& P, int Ng)
+double GLCMFeature::f1_asm(const SimpleMatrix<double>& P, int Ng)
 {
 	int i, j;
 	double sum = 0;
 
-	for (i = 0; i < Ng; ++i)
-		for (j = 0; j < Ng; ++j)
-			sum += P(i, j) * P(i, j);
+	for (j = 0; j < Ng; ++j)	//OPT	for (i = 0; i < Ng; ++i)
+		for (i = 0; i < Ng; ++i)	//OPT	for (j = 0; j < Ng; ++j)
+			sum += P.xy(i, j) * P.xy(i, j);
 
 	return sum;
 }
@@ -460,7 +437,7 @@ double GLCMFeature::f1_asm (const SimpleMatrix<double>& P, int Ng)
 * measure of the contrast or the amount of local variations present in an
 * image.
 */
-double GLCMFeature::f2_contrast (const SimpleMatrix<double>& P, int Ng)
+double GLCMFeature::f2_contrast(const SimpleMatrix<double>& P, int Ng)
 {
 	//=== W-C:
 	//int i, j, n;
@@ -482,9 +459,9 @@ double GLCMFeature::f2_contrast (const SimpleMatrix<double>& P, int Ng)
 	//
 
 	double sum = 0;
-	for (int i = 0; i < Ng; i++)
-		for (int j = 0; j < Ng; j++)
-			sum += P(i, j) * (j - i) * (i - j);
+	for (int j = 0; j < Ng; j++)		//OPT	for (int i = 0; i < Ng; i++)
+		for (int i = 0; i < Ng; i++)	//OPT	for (int j = 0; j < Ng; j++)
+			sum += P.xy(i, j) * (j - i) * (i - j);
 	return sum;
 }
 
@@ -504,7 +481,7 @@ double* GLCM_features::allocate_vector(int nl, int nh) {
 * This correlation feature is a measure of gray-tone linear-dependencies
 * in the image.
 */
-double GLCMFeature::f3_corr (const SimpleMatrix<double>& P, int Ng, std::vector<double> & px)
+double GLCMFeature::f3_corr(const SimpleMatrix<double>& P, int Ng, std::vector<double>& px)
 {
 	int i, j;
 	double sum_sqrx = 0, tmp;
@@ -519,9 +496,9 @@ double GLCMFeature::f3_corr (const SimpleMatrix<double>& P, int Ng, std::vector<
 	* px[i] is the (i-1)th entry in the marginal probability matrix obtained
 	* by summing the rows of p[i][j]
 	*/
-	for (i = 0; i < Ng; ++i)
-		for (j = 0; j < Ng; ++j)
-			px[i] += P(i, j);
+	for (int j = 0; j < Ng; j++)		//OPT	for (int i = 0; i < Ng; i++)
+		for (int i = 0; i < Ng; i++)	//OPT	for (int j = 0; j < Ng; j++)
+			px[i] += P.xy(i, j);
 
 
 	/* Now calculate the means and standard deviations of px and py */
@@ -540,9 +517,10 @@ double GLCMFeature::f3_corr (const SimpleMatrix<double>& P, int Ng, std::vector<
 	stddevy = stddevx;
 
 	/* Finally, the correlation ... */
-	for (tmp = 0, i = 0; i < Ng; ++i)
-		for (j = 0; j < Ng; ++j)
-			tmp += i * j * P(i, j);
+	tmp = 0;
+	for (j = 0; j < Ng; j++)		//OPT	for (int i = 0; i < Ng; i++)
+		for (i = 0; i < Ng; i++)	//OPT	for (int j = 0; j < Ng; j++)
+			tmp += i * j * P.xy(i, j);
 
 	//---	free(px);
 
@@ -559,26 +537,25 @@ double GLCMFeature::f4_var(const SimpleMatrix<double>& P, int Ng) {
 	*  calculates the mean intensity level instead of the mean of
 	*  cooccurrence matrix elements
 	*/
-	for (i = 0; i < Ng; ++i)
-		for (j = 0; j < Ng; ++j)
-			mean += i * P(i, j);
+	for (j = 0; j < Ng; j++)		//OPT	for (int i = 0; i < Ng; i++)
+		for (i = 0; i < Ng; i++)	//OPT	for (int j = 0; j < Ng; j++)
+			mean += i * P.xy(i, j);
 
-	for (i = 0; i < Ng; ++i)
-		for (j = 0; j < Ng; ++j)
+	for (j = 0; j < Ng; j++)		//OPT	for (int i = 0; i < Ng; i++)
+		for (i = 0; i < Ng; i++)	//OPT	for (int j = 0; j < Ng; j++)
 			/*  M. Boland - var += (i + 1 - mean) * (i + 1 - mean) * P[i][j]; */
-			var += (i - mean) * (i - mean) * P(i, j);
+			var += (i - mean) * (i - mean) * P.xy(i, j);
 
 	return var;
 }
 
 /* Inverse Difference Moment */
 double GLCMFeature::f5_idm(const SimpleMatrix<double>& P, int Ng) {
-	int i, j;
 	double idm = 0;
 
-	for (i = 0; i < Ng; ++i)
-		for (j = 0; j < Ng; ++j)
-			idm += P(i, j) / (1 + (i - j) * (i - j));
+	for (int j = 0; j < Ng; j++)		//OPT	for (int i = 0; i < Ng; i++)
+		for (int i = 0; i < Ng; i++)	//OPT	for (int j = 0; j < Ng; j++)
+			idm += P.xy(i, j) / (1 + (i - j) * (i - j));
 
 	return idm;
 }
@@ -592,11 +569,11 @@ double GLCMFeature::f6_savg(const SimpleMatrix<double>& P, int Ng, std::vector<d
 	//			Pxpy[i] = 0;
 	std::fill(Pxpy.begin(), Pxpy.end(), 0.0);
 
-	for (i = 0; i < Ng; ++i)
-		for (j = 0; j < Ng; ++j)
+	for (j = 0; j < Ng; j++)		//OPT	for (int i = 0; i < Ng; i++)
+		for (i = 0; i < Ng; i++)	//OPT	for (int j = 0; j < Ng; j++)
 			/* M. Boland Pxpy[i + j + 2] += P[i][j]; */
 			/* Indexing from 2 instead of 0 is inconsistent with rest of code*/
-			Pxpy[i + j] += P(i, j);
+			Pxpy[i + j] += P.xy(i, j);
 
 	/* M. Boland for (i = 2; i <= 2 * Ng; ++i) */
 	/* Indexing from 2 instead of 0 is inconsistent with rest of code*/
@@ -617,11 +594,11 @@ double GLCMFeature::f7_svar(const SimpleMatrix<double>& P, int Ng, double S, std
 	//			Pxpy[i] = 0;
 	std::fill(Pxpy.begin(), Pxpy.end(), 0.0);
 
-	for (i = 0; i < Ng; ++i)
-		for (j = 0; j < Ng; ++j)
+	for (j = 0; j < Ng; j++)		//OPT	for (int i = 0; i < Ng; i++)
+		for (i = 0; i < Ng; i++)	//OPT	for (int j = 0; j < Ng; j++)
 			/* M. Boland Pxpy[i + j + 2] += P[i][j]; */
 			/* Indexing from 2 instead of 0 is inconsistent with rest of code*/
-			Pxpy[i + j] += P(i, j);
+			Pxpy[i + j] += P.xy(i, j);
 
 	/*  M. Boland for (i = 2; i <= 2 * Ng; ++i) */
 	/* Indexing from 2 instead of 0 is inconsistent with rest of code*/
@@ -645,9 +622,9 @@ double GLCMFeature::f8_sentropy(const SimpleMatrix<double>& P, int Ng, std::vect
 	//			Pxpy[i] = 0;
 	std::fill(Pxpy.begin(), Pxpy.end(), 0.0);
 
-	for (i = 0; i < Ng-1; ++i)
-		for (j = 0; j < Ng-1; ++j)
-			Pxpy[i + j + 2] += P(i, j);
+	for (j = 0; j < Ng - 1; ++j)	//OPT	for (i = 0; i < Ng - 1; ++i)
+		for (i = 0; i < Ng - 1; ++i)		//OPT	for (j = 0; j < Ng - 1; ++j)
+			Pxpy[i + j + 2] += P.xy(i, j);
 
 	for (i = 2; i < 2 * Ng; ++i)
 		/*  M. Boland  sentropy -= Pxpy[i] * log10 (Pxpy[i] + EPSILON); */
@@ -664,10 +641,10 @@ double GLCMFeature::f9_entropy(const SimpleMatrix<double>& P, int Ng)
 	int i, j;
 	double entropy = 0;
 
-	for (i = 0; i < Ng; ++i)
-		for (j = 0; j < Ng; ++j)
+	for (j = 0; j < Ng; j++)		//OPT	for (int i = 0; i < Ng; i++)
+		for (i = 0; i < Ng; i++)	//OPT	for (int j = 0; j < Ng; j++)
 			/*      entropy += P[i][j] * log10 (P[i][j] + EPSILON); */
-			entropy += P(i, j) * fast_log10(P(i, j) + EPSILON) / LOG10_2;
+			entropy += P.xy(i, j) * fast_log10(P.xy(i, j) + EPSILON) / LOG10_2;
 
 	return -entropy;
 }
@@ -682,9 +659,9 @@ double GLCMFeature::f10_dvar(const SimpleMatrix<double>& P, int Ng, std::vector<
 	//			Pxpy[i] = 0;
 	std::fill(Pxpy.begin(), Pxpy.end(), 0.0);
 
-	for (i = 0; i < Ng; ++i)
-		for (j = 0; j < Ng; ++j)
-			Pxpy[abs(i - j)] += P(i, j);
+	for (j = 0; j < Ng; j++)		//OPT	for (int i = 0; i < Ng; i++)
+		for (i = 0; i < Ng; i++)	//OPT	for (int j = 0; j < Ng; j++)
+			Pxpy[abs(i - j)] += P.xy(i, j);
 
 	/* Now calculate the variance of Pxpy (Px-y) */
 	for (i = 0; i < Ng; ++i) {
@@ -713,9 +690,9 @@ double GLCMFeature::f11_dentropy(const SimpleMatrix<double>& P, int Ng, std::vec
 	//			Pxpy[i] = 0;
 	std::fill(Pxpy.begin(), Pxpy.end(), 0.0);
 
-	for (i = 0; i < Ng; ++i)
-		for (j = 0; j < Ng; ++j)
-			Pxpy[abs(i - j)] += P(i, j);
+	for (j = 0; j < Ng; j++)		//OPT	for (int i = 0; i < Ng; i++)
+		for (i = 0; i < Ng; i++)	//OPT	for (int j = 0; j < Ng; j++)
+			Pxpy[abs(i - j)] += P.xy(i, j);
 
 	for (i = 0; i < Ng; ++i)
 		/*    sum += Pxpy[i] * log10 (Pxpy[i] + EPSILON); */
@@ -739,18 +716,21 @@ double GLCMFeature::f12_icorr(const SimpleMatrix<double>& P, int Ng, std::vector
 	* px[i] is the (i-1)th entry in the marginal probability matrix obtained
 	* by summing the rows of p[i][j]
 	*/
-	for (i = 0; i < Ng; ++i) {
-		for (j = 0; j < Ng; ++j) {
-			px[i] += P(i, j);
-			py[j] += P(i, j);
+	for (j = 0; j < Ng; ++j)		//OPT	for (i = 0; i < Ng; ++i) 
+	{
+		for (i = 0; i < Ng; ++i)		//OPT	for (j = 0; j < Ng; ++j) 
+		{
+			px[i] += P.xy(i, j);
+			py[j] += P.xy(i, j);
 		}
 	}
 
-	for (i = 0; i < Ng; ++i)
-		for (j = 0; j < Ng; ++j) {
-			hxy1 -= P(i, j) * fast_log10(px[i] * py[j] + EPSILON) / LOG10_2;
+	for (j = 0; j < Ng; j++)		//OPT	for (int i = 0; i < Ng; i++)
+		for (i = 0; i < Ng; i++)	//OPT	for (int j = 0; j < Ng; j++)
+		{
+			hxy1 -= P.xy(i, j) * fast_log10(px[i] * py[j] + EPSILON) / LOG10_2;
 			hxy2 -= px[i] * py[j] * fast_log10(px[i] * py[j] + EPSILON) / LOG10_2;
-			hxy -= P(i, j) * fast_log10(P(i, j) + EPSILON) / LOG10_2;
+			hxy -= P.xy(i, j) * fast_log10(P.xy(i, j) + EPSILON) / LOG10_2;
 		}
 
 	/* Calculate entropies of px and py - is this right? */
@@ -781,19 +761,21 @@ double GLCMFeature::f13_icorr(const SimpleMatrix<double>& P, int Ng, std::vector
 	* px[i] is the (i-1)th entry in the marginal probability matrix obtained
 	* by summing the rows of p[i][j]
 	*/
-	for (i = 0; i < Ng; ++i) {
-		for (j = 0; j < Ng; ++j) {
-			px[i] += P(i, j);
-			py[j] += P(i, j);
+	for (j = 0; j < Ng; j++)		//OPT	for (int i = 0; i < Ng; i++)
+	{
+		for (i = 0; i < Ng; i++)	//OPT	for (int j = 0; j < Ng; j++)
+		{
+			px[i] += P.xy(i, j);
+			py[j] += P.xy(i, j);
 		}
 	}
 
-	for (i = 0; i < Ng; ++i)
-		for (j = 0; j < Ng; ++j)
+	for (j = 0; j < Ng; j++)		//OPT	for (int i = 0; i < Ng; i++)
+		for (i = 0; i < Ng; i++)	//OPT	for (int j = 0; j < Ng; j++)
 		{
-			hxy1 -= P(i, j) * fast_log10(px[i] * py[j] + EPSILON) / LOG10_2;
+			hxy1 -= P.xy(i, j) * fast_log10(px[i] * py[j] + EPSILON) / LOG10_2;
 			hxy2 -= px[i] * py[j] * fast_log10(px[i] * py[j] + EPSILON) / LOG10_2;
-			hxy -= P(i, j) * fast_log10(P(i, j) + EPSILON) / LOG10_2;
+			hxy -= P.xy(i, j) * fast_log10(P.xy(i, j) + EPSILON) / LOG10_2;
 		}
 
 	/* Calculate entropies of px and py */
@@ -807,7 +789,6 @@ double GLCMFeature::f13_icorr(const SimpleMatrix<double>& P, int Ng, std::vector
 
 	return (sqrt(fabs(1 - exp(-2.0 * (hxy2 - hxy)))));
 }
-
 
 
 
