@@ -1,6 +1,8 @@
 #include "glcm.h"
 #include "../helpers/helpers.h"
 
+#define EPSILON 0.000000001
+
 GLCMFeature::GLCMFeature() : FeatureMethod("GLCMFeature")
 {
 	provide_features({
@@ -202,10 +204,11 @@ void GLCMFeature::CoOcMat_Angle_0(
 	/* normalize matrix */
 	for (jtone = 0; jtone < tone_count; ++jtone)	//OPT	for (itone = 0; itone < tone_count; ++itone)
 		for (itone = 0; itone < tone_count; ++itone)	//OPT	for (jtone = 0; jtone < tone_count; ++jtone)
-			if (count == 0)   /* protect from error */
-				matrix.xy(itone, jtone) = 0;
-			else
-				matrix.xy(itone, jtone) /= count;
+			//	if (count == 0)   /* protect from error */
+			//		matrix.xy(itone, jtone) = 0;
+			//	else
+			//		matrix.xy(itone, jtone) /= count;
+			matrix.xy(itone, jtone) /= (count + EPSILON);
 }
 
 void GLCMFeature::CoOcMat_Angle_90(
@@ -248,10 +251,12 @@ void GLCMFeature::CoOcMat_Angle_90(
 	/* normalize matrix */
 	for (jtone = 0; jtone < tone_count; ++jtone)	//OPT	for (itone = 0; itone < tone_count; ++itone)
 		for (itone = 0; itone < tone_count; ++itone)	//OPT	for (jtone = 0; jtone < tone_count; ++jtone)
-			if (count == 0)
-				matrix.xy(itone, jtone) = 0;	
-			else
-				matrix.xy(itone, jtone) /= count;	
+			//	if (count == 0)
+			//		matrix.xy(itone, jtone) = 0;	
+			//	else
+			//		matrix.xy(itone, jtone) /= count;	
+			//--OPT2--
+			matrix.xy(itone, jtone) /= (count + 0.001);
 }
 
 void GLCMFeature::CoOcMat_Angle_45(
@@ -295,10 +300,12 @@ void GLCMFeature::CoOcMat_Angle_45(
 	/* normalize matrix */
 	for (jtone = 0; jtone < tone_count; ++jtone)	//OPT	for (itone = 0; itone < tone_count; ++itone)
 		for (itone = 0; itone < tone_count; ++itone)	//OPT	for (jtone = 0; jtone < tone_count; ++jtone)
-			if (count == 0)
-				matrix.xy(itone, jtone) = 0;	// protect from error 
-			else
-				matrix.xy(itone, jtone) /= count;
+			//if (count == 0)
+			//	matrix.xy(itone, jtone) = 0;	// protect from error 
+			//else
+			//	matrix.xy(itone, jtone) /= count;
+			//--OPT2--
+			matrix.xy(itone, jtone) /= (count + EPSILON);
 }
 
 void GLCMFeature::CoOcMat_Angle_135(
@@ -341,10 +348,12 @@ void GLCMFeature::CoOcMat_Angle_135(
 	/* normalize matrix */
 	for (jtone = 0; jtone < tone_count; ++jtone)	//OPT	for (itone = 0; itone < tone_count; ++itone)
 		for (itone = 0; itone < tone_count; ++itone)	//OPT	for (jtone = 0; jtone < tone_count; ++jtone)
-			if (count == 0)
-				matrix.xy(itone, jtone) = 0;	// protect from error 
-			else
-				matrix.xy(itone, jtone) /= count;	
+			//if (count == 0)
+			//	matrix.xy(itone, jtone) = 0;	// protect from error 
+			//else
+			//	matrix.xy(itone, jtone) /= count;	
+			//--OPT2--
+			matrix.xy(itone, jtone) /= (count + 0.001);
 }
 
 void GLCMFeature::get_AngularSecondMoments(AngledFeatures& af)
@@ -609,8 +618,6 @@ double GLCMFeature::f7_svar(const SimpleMatrix<double>& P, int Ng, double S, std
 
 	return var;
 }
-
-#define EPSILON 0.000000001
 
 /* Sum Entropy */
 double GLCMFeature::f8_sentropy(const SimpleMatrix<double>& P, int Ng, std::vector<double>& Pxpy)
