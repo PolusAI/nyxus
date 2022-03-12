@@ -73,8 +73,6 @@ namespace Nyxus
 			runParallel(BasicMorphologyFeatures::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
-		reduce_neighbors();	// STOPWATCH("Neighbors... ") is done from there
-
 		//==== Fitting an ellipse
 		if (EllipseFittingFeature::required(theFeatureSet))
 		{
@@ -83,11 +81,14 @@ namespace Nyxus
 		}
 
 		//==== Contour-related ROI perimeter, equivalent circle diameter
-		if (ContourFeature::required(theFeatureSet))
+		if (ContourFeature::required(theFeatureSet) || NeighborsFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Contour/C/#4aaaea", "\t=");
 			runParallel(parallelReduceContour, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
+
+		//==== Neighbors
+		reduce_neighbors();	// STOPWATCH("Neighbors... ") is done from there
 
 		//==== Convex hull related solidity, circularity
 		if (ConvexHullFeature::required(theFeatureSet))

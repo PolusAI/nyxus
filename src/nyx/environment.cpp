@@ -86,7 +86,8 @@ namespace Nyxus
                 s_uppr == FEA_NICK_ALL_NGTDM ||
                 s_uppr == FEA_NICK_ALL_BUT_GABOR ||
                 s_uppr == FEA_NICK_ALL_BUT_GLCM || 
-                s_uppr == FEA_ALL_EASY)
+                s_uppr == FEA_NICK_ALL_EASY ||
+                s_uppr == FEA_NICK_ALL_NEIG)
             {
                 result.push_back(s_uppr);
                 continue;
@@ -343,116 +344,6 @@ void Environment::process_feature_list()
             break; // No need to bother of others
         }
 
-        if (s == FEA_ALL_EASY)
-        {
-            theFeatureSet.enableAll();
-            auto F = {
-                //=== Gabor
-                GABOR,
-
-                //=== GLCM
-                GLCM_ANGULAR2NDMOMENT,
-                GLCM_CONTRAST,
-                GLCM_CORRELATION,
-                GLCM_VARIANCE,
-                GLCM_INVERSEDIFFERENCEMOMENT,
-                GLCM_SUMAVERAGE,
-                GLCM_SUMVARIANCE,
-                GLCM_SUMENTROPY,
-                GLCM_ENTROPY,
-                GLCM_DIFFERENCEVARIANCE,
-                GLCM_DIFFERENCEENTROPY,
-                GLCM_INFOMEAS1,
-                GLCM_INFOMEAS2,
-
-                //=== 2D moments
-                
-                // Spatial (raw) moments
-                SPAT_MOMENT_00,
-                SPAT_MOMENT_01,
-                SPAT_MOMENT_02,
-                SPAT_MOMENT_03,
-                SPAT_MOMENT_10,
-                SPAT_MOMENT_11,
-                SPAT_MOMENT_12,
-                SPAT_MOMENT_20,
-                SPAT_MOMENT_21,
-                SPAT_MOMENT_30,
-
-                // Weighted spatial moments
-                WEIGHTED_SPAT_MOMENT_00,
-                WEIGHTED_SPAT_MOMENT_01,
-                WEIGHTED_SPAT_MOMENT_02,
-                WEIGHTED_SPAT_MOMENT_03,
-                WEIGHTED_SPAT_MOMENT_10,
-                WEIGHTED_SPAT_MOMENT_11,
-                WEIGHTED_SPAT_MOMENT_12,
-                WEIGHTED_SPAT_MOMENT_20,
-                WEIGHTED_SPAT_MOMENT_21,
-                WEIGHTED_SPAT_MOMENT_30,
-
-                // Central moments
-                CENTRAL_MOMENT_02,
-                CENTRAL_MOMENT_03,
-                CENTRAL_MOMENT_11,
-                CENTRAL_MOMENT_12,
-                CENTRAL_MOMENT_20,
-                CENTRAL_MOMENT_21,
-                CENTRAL_MOMENT_30,
-
-                // Weighted central moments
-                WEIGHTED_CENTRAL_MOMENT_02,
-                WEIGHTED_CENTRAL_MOMENT_03,
-                WEIGHTED_CENTRAL_MOMENT_11,
-                WEIGHTED_CENTRAL_MOMENT_12,
-                WEIGHTED_CENTRAL_MOMENT_20,
-                WEIGHTED_CENTRAL_MOMENT_21,
-                WEIGHTED_CENTRAL_MOMENT_30,
-
-                // Normalized central moments
-                NORM_CENTRAL_MOMENT_02,
-                NORM_CENTRAL_MOMENT_03,
-                NORM_CENTRAL_MOMENT_11,
-                NORM_CENTRAL_MOMENT_12,
-                NORM_CENTRAL_MOMENT_20,
-                NORM_CENTRAL_MOMENT_21,
-                NORM_CENTRAL_MOMENT_30,
-
-                // Normalized (standardized) spatial moments
-                NORM_SPAT_MOMENT_00,
-                NORM_SPAT_MOMENT_01,
-                NORM_SPAT_MOMENT_02,
-                NORM_SPAT_MOMENT_03,
-                NORM_SPAT_MOMENT_10,
-                NORM_SPAT_MOMENT_20,
-                NORM_SPAT_MOMENT_30,
-
-                // Hu's moments 1-7 
-                HU_M1,
-                HU_M2,
-                HU_M3,
-                HU_M4,
-                HU_M5,
-                HU_M6,
-                HU_M7,
-
-                // Weighted Hu's moments 1-7 
-                WEIGHTED_HU_M1,
-                WEIGHTED_HU_M2,
-                WEIGHTED_HU_M3,
-                WEIGHTED_HU_M4,
-                WEIGHTED_HU_M5,
-                WEIGHTED_HU_M6,
-                WEIGHTED_HU_M7
-            };
-
-            theFeatureSet.disableFeatures(F);
-
-            break; // No need to bother of others
-        }
-
-
-
         if (s == FEA_NICK_ALL_INTENSITY)
         {
             auto F = {
@@ -624,6 +515,129 @@ void Environment::process_feature_list()
             continue;
         }
 
+        if (s == FEA_NICK_ALL_EASY)
+        {
+            theFeatureSet.enableAll();
+            auto F = {
+                //=== Gabor
+                GABOR,
+
+                //=== GLCM
+                GLCM_ANGULAR2NDMOMENT,
+                GLCM_CONTRAST,
+                GLCM_CORRELATION,
+                GLCM_VARIANCE,
+                GLCM_INVERSEDIFFERENCEMOMENT,
+                GLCM_SUMAVERAGE,
+                GLCM_SUMVARIANCE,
+                GLCM_SUMENTROPY,
+                GLCM_ENTROPY,
+                GLCM_DIFFERENCEVARIANCE,
+                GLCM_DIFFERENCEENTROPY,
+                GLCM_INFOMEAS1,
+                GLCM_INFOMEAS2,
+
+                //=== 2D moments
+
+                // Spatial (raw) moments
+                SPAT_MOMENT_00,
+                SPAT_MOMENT_01,
+                SPAT_MOMENT_02,
+                SPAT_MOMENT_03,
+                SPAT_MOMENT_10,
+                SPAT_MOMENT_11,
+                SPAT_MOMENT_12,
+                SPAT_MOMENT_20,
+                SPAT_MOMENT_21,
+                SPAT_MOMENT_30,
+
+                // Weighted spatial moments
+                WEIGHTED_SPAT_MOMENT_00,
+                WEIGHTED_SPAT_MOMENT_01,
+                WEIGHTED_SPAT_MOMENT_02,
+                WEIGHTED_SPAT_MOMENT_03,
+                WEIGHTED_SPAT_MOMENT_10,
+                WEIGHTED_SPAT_MOMENT_11,
+                WEIGHTED_SPAT_MOMENT_12,
+                WEIGHTED_SPAT_MOMENT_20,
+                WEIGHTED_SPAT_MOMENT_21,
+                WEIGHTED_SPAT_MOMENT_30,
+
+                // Central moments
+                CENTRAL_MOMENT_02,
+                CENTRAL_MOMENT_03,
+                CENTRAL_MOMENT_11,
+                CENTRAL_MOMENT_12,
+                CENTRAL_MOMENT_20,
+                CENTRAL_MOMENT_21,
+                CENTRAL_MOMENT_30,
+
+                // Weighted central moments
+                WEIGHTED_CENTRAL_MOMENT_02,
+                WEIGHTED_CENTRAL_MOMENT_03,
+                WEIGHTED_CENTRAL_MOMENT_11,
+                WEIGHTED_CENTRAL_MOMENT_12,
+                WEIGHTED_CENTRAL_MOMENT_20,
+                WEIGHTED_CENTRAL_MOMENT_21,
+                WEIGHTED_CENTRAL_MOMENT_30,
+
+                // Normalized central moments
+                NORM_CENTRAL_MOMENT_02,
+                NORM_CENTRAL_MOMENT_03,
+                NORM_CENTRAL_MOMENT_11,
+                NORM_CENTRAL_MOMENT_12,
+                NORM_CENTRAL_MOMENT_20,
+                NORM_CENTRAL_MOMENT_21,
+                NORM_CENTRAL_MOMENT_30,
+
+                // Normalized (standardized) spatial moments
+                NORM_SPAT_MOMENT_00,
+                NORM_SPAT_MOMENT_01,
+                NORM_SPAT_MOMENT_02,
+                NORM_SPAT_MOMENT_03,
+                NORM_SPAT_MOMENT_10,
+                NORM_SPAT_MOMENT_20,
+                NORM_SPAT_MOMENT_30,
+
+                // Hu's moments 1-7 
+                HU_M1,
+                HU_M2,
+                HU_M3,
+                HU_M4,
+                HU_M5,
+                HU_M6,
+                HU_M7,
+
+                // Weighted Hu's moments 1-7 
+                WEIGHTED_HU_M1,
+                WEIGHTED_HU_M2,
+                WEIGHTED_HU_M3,
+                WEIGHTED_HU_M4,
+                WEIGHTED_HU_M5,
+                WEIGHTED_HU_M6,
+                WEIGHTED_HU_M7
+            };
+
+            theFeatureSet.disableFeatures(F);
+
+            break; // No need to bother of others
+        }
+
+        if (s == FEA_NICK_ALL_NEIG)
+        {
+            auto F = {
+                NUM_NEIGHBORS,
+                PERCENT_TOUCHING,
+                CLOSEST_NEIGHBOR1_DIST,
+                CLOSEST_NEIGHBOR1_ANG,
+                CLOSEST_NEIGHBOR2_DIST,
+                CLOSEST_NEIGHBOR2_ANG,
+                ANG_BW_NEIGHBORS_MEAN,
+                ANG_BW_NEIGHBORS_STDDEV,
+                ANG_BW_NEIGHBORS_MODE };
+            theFeatureSet.enableFeatures(F);
+            break; // No need to bother of others
+        }
         // Process features individually
         AvailableFeatures af;
         if (!theFeatureSet.findFeatureByString(s, af))
@@ -882,7 +896,7 @@ void Environment::show_featureset_help()
     std::vector<std::string> fgroups =
     {
         FEA_NICK_ALL,
-        FEA_ALL_EASY,
+        FEA_NICK_ALL_EASY,
         FEA_NICK_ALL_INTENSITY,
         FEA_NICK_ALL_MORPHOLOGY,
         FEA_NICK_BASIC_MORPHOLOGY,
@@ -893,6 +907,7 @@ void Environment::show_featureset_help()
         FEA_NICK_ALL_NGTDM,
         FEA_NICK_ALL_BUT_GABOR,
         FEA_NICK_ALL_BUT_GLCM,
+        FEA_NICK_ALL_NEIG
     };
 
     std::cout << "\n" << 

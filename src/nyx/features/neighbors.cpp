@@ -57,11 +57,13 @@ void NeighborsFeature::parallel_process (std::vector<int>& roi_labels, std::unor
 // Calculates the features using spatial hashing approach
 void NeighborsFeature::manual_reduce()
 {
-#if 0	// Keeping the commented out greedy implementation just for the record and the time when we want to run it on a GPU
+	int radius = theEnvironment.get_pixel_distance();
+
+	// Keeping the commented out greedy implementation just for the record and the time when we want to run it on a GPU
 	//==== Collision detection, method 1 (best with GPGPU)
 	//  Calculate collisions into a triangular matrix
 	int nul = uniqueLabels.size();
-	std::vector <char> CM(nul * nul, false);	// collision matrix
+	std::vector <char> CM ((nul+1) * (nul+1), false);	// collision matrix
 	// --this loop can be parallel
 	for (auto l1 : uniqueLabels)
 	{
@@ -74,9 +76,9 @@ void NeighborsFeature::manual_reduce()
 				continue;	// No need to check the upper triangle
 
 			LR& r2 = roiData[l2];
-			bool noOverlap = r2.aabb.get_xmin() > r1.aabb.get_xmax() + radius || r2.aabb.get_xmax() < r1.aabb.get_xmin() - radius
-				|| r2.aabb.get_ymin() > r1.aabb.get_ymax() + radius || r2.aabb.get_ymax() < r1.aabb.get_ymin() - radius;
-			if (!noOverlap)
+			bool noOverlap = r2.aabb.get_xmin() > r1.aabb.get_xmax() || r2.aabb.get_xmax() < r1.aabb.get_xmin() 
+				|| r2.aabb.get_ymin() > r1.aabb.get_ymax() || r2.aabb.get_ymax() < r1.aabb.get_ymin() ;
+			if (! noOverlap)
 			{
 				unsigned int idx = l1 * nul + l2;
 				CM[idx] = true;
@@ -85,9 +87,11 @@ void NeighborsFeature::manual_reduce()
 	}
 
 	// Harvest collision pairs
+	size_t radius2 = radius * radius;
 	for (auto l1 : uniqueLabels)
 	{
 		LR& r1 = roiData[l1];
+
 		for (auto l2 : uniqueLabels)
 		{
 			if (l1 == l2)
@@ -98,26 +102,55 @@ void NeighborsFeature::manual_reduce()
 			unsigned int idx = l1 * nul + l2;
 			if (CM[idx] == true)
 			{
+				// Check if these labels are close enough
 				LR& r2 = roiData[l2];
-				r1.num_neighbors++;
-				r2.num_neighbors++;
+
+				// Iterate r1's contour pixels
+				auto [mind, maxd] = r1.contour[0].min_max_sqdist(r2.contour);
+				size_t n_touchingContourPixels = 0;
+				for (auto& cp : r1.contour)
+				{
+					auto [minD, maxD] = cp.min_max_sqdist(r2.contour);
+					mind = std::min(mind, minD);
+
+					//--We aren't interested in max distance-->	maxd = std::max(maxd, maxD);
+
+					// Maintain touching pixels stats
+					if (minD == 0) // (minD <= radius2)
+						n_touchingContourPixels++;
+				}
+
+				// Check versus the radius
+				if (mind > radius2)
+					continue;
+
+				// Save partial statis of r1's touching pixel stats
+				r1.fvals[PERCENT_TOUCHING][0] += n_touchingContourPixels;
+
+				// Definitely neigbors
+				r1.fvals[NUM_NEIGHBORS][0]++;
+				r2.fvals[NUM_NEIGHBORS][0]++;
+				r1.aux_neighboring_labels.push_back (l2);
+				r2.aux_neighboring_labels.push_back (l1);
 			}
 		}
-	}
-#endif
 
+		// Finalize the % touching calculation
+		r1.fvals[PERCENT_TOUCHING][0] = double(r1.fvals[PERCENT_TOUCHING][0]) / double(r1.contour.size());
+	}
+
+#if 0
 	//==== Collision detection, method 2
 
-	int radius = theEnvironment.get_pixel_distance();
-
 	// Hash table
-	int m = 10000;
+	int m = 100;
 	std::vector <std::vector<int>> HT(m);
 
 	for (auto l : Nyxus::uniqueLabels)
 	{
 		LR& r = Nyxus::roiData[l];
 
+		/*
 		auto h1 = spat_hash_2d(r.aabb.get_xmin(), r.aabb.get_ymin(), m),
 			h2 = spat_hash_2d(r.aabb.get_xmin(), r.aabb.get_ymax(), m),
 			h3 = spat_hash_2d(r.aabb.get_xmax(), r.aabb.get_ymin(), m),
@@ -126,6 +159,55 @@ void NeighborsFeature::manual_reduce()
 		HT[h2].push_back(l);
 		HT[h3].push_back(l);
 		HT[h4].push_back(l);
+		*/
+
+		long x, y, x1, x2, y1, y2, ns = 10, step;
+		// horizontal 1
+		y = r.aabb.get_ymin();
+		x1 = r.aabb.get_xmin();
+		x2 = r.aabb.get_xmax();
+		step = (x2 - x1) / ns;
+		for (int i = 0; i < ns; i++)
+		{
+			x = x1 + i * step;
+			auto h = spat_hash_2d(x, y, m);
+			HT [h].push_back(l);
+		}
+
+		// horizontal 2
+		y = r.aabb.get_ymax();
+		x1 = r.aabb.get_xmin();
+		x2 = r.aabb.get_xmax();
+		step = (x2 - x1) / ns;
+		for (int i = 0; i < ns; i++)
+		{
+			x = x1 + i * step;
+			auto h = spat_hash_2d(x, y, m);
+			HT[h].push_back(l);
+		}
+
+		// vertical 1
+		x = r.aabb.get_xmin();
+		y1 = r.aabb.get_ymin(), y2 = r.aabb.get_ymax();
+		ns = 10;
+		step = (y2 - y1) / ns;
+		for (int i = 0; i < ns; i++)
+		{
+			y = y1 + i * step;
+			auto h = spat_hash_2d (x, y, m);
+			HT[h].push_back(l);
+		}
+
+		// vertical 2
+		x = r.aabb.get_xmax();
+		y1 = r.aabb.get_ymin(), y2 = r.aabb.get_ymax();
+		step = (y2 - y1) / ns;
+		for (int i = 0; i < ns; i++)
+		{
+			y = y1 + i * step;
+			auto h = spat_hash_2d(x, y, m);
+			HT[h].push_back(l);
+		}
 	}
 
 	// Broad phase of collision detection
@@ -160,6 +242,7 @@ void NeighborsFeature::manual_reduce()
 			}
 		}
 	}
+#endif
 
 	// Closest neighbors
 	for (auto l : Nyxus::uniqueLabels)
