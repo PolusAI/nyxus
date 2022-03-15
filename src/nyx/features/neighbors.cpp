@@ -323,9 +323,10 @@ void NeighborsFeature::manual_reduce()
 			double cenx_n = r_neig.fvals[CENTROID_X][0],
 				ceny_n = r_neig.fvals[CENTROID_Y][0];
 
-			double ang = angle(cenx, ceny, cenx_n, ceny_n);
+			double ang = angle (cenx, ceny, cenx_n, ceny_n);	// radians
+			ang = ang * 180.0;	// degrees because we will later need angles' mode
 			mom2.add(ang);
-			anglesRounded.push_back((int)ang);
+			anglesRounded.push_back(ang);
 		}
 
 		r.fvals[ANG_BW_NEIGHBORS_MEAN][0] = mom2.mean();
