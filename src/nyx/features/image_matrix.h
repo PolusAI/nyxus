@@ -44,20 +44,26 @@ public:
 	// = W * y + x
 	inline T& xy (int x, int y)	//	T& operator() (int x, int y)
 	{
+		#ifdef NYX_CHECK_BUFFER_BOUNDS
 		if (x >= W || y >= H)
 		{
 			throw "subscript out of bounds";
 		}
+		#endif
+
 		return this->at(W * y + x);
 	}
 	// = W * y + x
 	inline T xy (int x, int y) const // T operator() (int x, int y) const
 	{
+		#ifdef NYX_CHECK_BUFFER_BOUNDS
 		if (x >= W || y >= H)
 		{
 			throw "subscript out of bounds";
 			return -1;	// Special value indicating invalid intensity
 		}
+		#endif
+
 		T val = this->at(W * y + x);
 		return val;
 	}
@@ -108,20 +114,26 @@ public:
 	// = W * y + x
 	inline PixIntens & yx /*operator()*/ (int y, int x)
 	{
+		#ifdef NYX_CHECK_BUFFER_BOUNDS
 		if (x >= W || y >= H)
 		{
 			throw "subscript out of bounds";
 		}
+		#endif
+
 		return this->at(W * y + x);
 	}
 	// = W * y + x
 	inline PixIntens yx /*operator()*/ (int y, int x) const
 	{
+		#ifdef NYX_CHECK_BUFFER_BOUNDS
 		if (x >= W || y >= H)
 		{
 			throw "subscript out of bounds";
 			return -1;	// Special value indicating invalid intensity
 		}
+		#endif
+
 		PixIntens val = this->at (W * y + x);
 		return val;
 	}
