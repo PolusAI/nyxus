@@ -8,8 +8,9 @@ on:
 
 env:
   BUILD_TYPE: Release
-  TIFF_LIBRARY_RELEASE: C:/Program Files (x86)/tiff/lib/tiff.lib
-  TIFF_INCLUDE_DIR: C:/Program Files (x86)/tiff/include
+  TIFF_LIBRARY_RELEASE: ${{ProgramFiles(x86)}}/tiff/lib/tiff.lib
+  TIFF_INCLUDE_DIR: ${{ProgramFiles(x86)}}/tiff/include
+
 
 jobs:
   Build_and_Run_GTest:
@@ -22,14 +23,9 @@ jobs:
         submodules: recursive
         
     - name: Install LibTiff
-
       working-directory: ${{github.workspace}}
       shell: cmd
       run: install_win_prereq.bat
-
-    - name: Set environment variable
-      run: |
-        echo "${{TIFF_INCLUDE_DIR}}"
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON
@@ -64,10 +60,6 @@ jobs:
       working-directory: ${{github.workspace}}
       shell: cmd
       run: install_win_prereq.bat
-
-    - name: Set environment variable
-      run: |
-        echo "${{TIFF_INCLUDE_DIR}}"
 
     - name: Install Nyxus
       working-directory: ${{github.workspace}}
