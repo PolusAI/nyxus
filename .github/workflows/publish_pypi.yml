@@ -14,7 +14,7 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-10.15]
+        os: [ubuntu-latest, macos-10.15, windows-latest]
         cibw_archs: ["auto"]
 
     steps:
@@ -44,6 +44,9 @@ jobs:
           CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp
           CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
           CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel
+          CIBW_ARCHS_WINDOWS: "auto64"
+          CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib"
+          CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
       - name: Build wheels for CPython 3.8
@@ -56,6 +59,9 @@ jobs:
           CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp
           CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
           CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel
+          CIBW_ARCHS_WINDOWS: "auto64"
+          CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib"
+          CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
       - name: Build wheels for CPython 3.7
@@ -68,6 +74,9 @@ jobs:
           CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp
           CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
           CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel
+          CIBW_ARCHS_WINDOWS: "auto64"
+          CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib"
+          CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
       - name: Build wheels for CPython 3.6
@@ -80,6 +89,9 @@ jobs:
           CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp
           CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
           CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel
+          CIBW_ARCHS_WINDOWS: "auto64"
+          CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib"
+          CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
       - name: Install Dependencies
