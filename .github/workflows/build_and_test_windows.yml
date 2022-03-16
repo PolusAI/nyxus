@@ -8,8 +8,8 @@ on:
 
 env:
   BUILD_TYPE: Release
-  TIFF_LIBRARY_RELEASE: ${{ProgramFiles(x86)}}/tiff/lib/tiff.lib
-  TIFF_INCLUDE_DIR: ${{ProgramFiles(x86)}}/tiff/include
+  TIFF_LIBRARY_RELEASE: ${{SystemDrive}}/Program Files (x86)/tiff/lib/tiff.lib
+  TIFF_INCLUDE_DIR: ${{SystemDrive}}/Program Files (x86)/tiff/include
 
 
 jobs:
