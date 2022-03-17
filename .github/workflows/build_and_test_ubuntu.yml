@@ -34,8 +34,8 @@ jobs:
       run: ./tests/runAllTests  -C ${{env.BUILD_TYPE}}
       
 
-  Build_and_Run_UnitTest:
-    name: Build and Run Unit Tests
+  Build_and_Run_PyTest:
+    name: Build and Run PyTest
     runs-on: ubuntu-latest
 
     steps:
@@ -58,6 +58,6 @@ jobs:
       working-directory: ${{github.workspace}}
       run: python3 setup.py install
 
-    - name: Run Unit Tests
+    - name: Run PyTest
       working-directory: ${{github.workspace}}
       run: python3 -m pytest tests/python/
