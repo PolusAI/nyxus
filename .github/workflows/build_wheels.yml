@@ -12,7 +12,7 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-10.15]
+        os: [ubuntu-latest, macos-10.15, windows-latest]
         cibw_archs: ["auto"]
 
     steps:
@@ -30,7 +30,7 @@ jobs:
 
       - name: Install cibuildwheel
         run: |
-          python -m pip install cibuildwheel==2.1.1
+          python -m pip install cibuildwheel==2.1.1 delvewheel
 
       - name: Build wheels for CPython 3.9
         run: |
@@ -42,6 +42,10 @@ jobs:
           CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp
           CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
           CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel
+          CIBW_ARCHS_WINDOWS: "auto64"
+          CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib" PATH="C:\\Program Files (x86)\\tiff\\bin;$PATH"
+          CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
       - name: Build wheels for CPython 3.8
@@ -54,6 +58,10 @@ jobs:
           CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp
           CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
           CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel
+          CIBW_ARCHS_WINDOWS: "auto64"
+          CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib" PATH="C:\\Program Files (x86)\\tiff\\bin;$PATH"
+          CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
       - name: Build wheels for CPython 3.7
@@ -66,6 +74,10 @@ jobs:
           CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp
           CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
           CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel
+          CIBW_ARCHS_WINDOWS: "auto64"
+          CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib" PATH="C:\\Program Files (x86)\\tiff\\bin;$PATH"
+          CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
       - name: Build wheels for CPython 3.6
@@ -78,4 +90,8 @@ jobs:
           CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp
           CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
           CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel
+          CIBW_ARCHS_WINDOWS: "auto64"
+          CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib" PATH="C:\\Program Files (x86)\\tiff\\bin;$PATH"
+          CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}

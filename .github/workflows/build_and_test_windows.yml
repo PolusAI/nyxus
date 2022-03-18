@@ -1,4 +1,4 @@
-name: Build And Run Test on Mac
+name: Build And Run Test on Windows
 
 on:
   push:
@@ -8,30 +8,27 @@ on:
 
 env:
   BUILD_TYPE: Release
-  COMPILER: /usr/local/opt/llvm/bin/clang++
-  CFLAGS: -I /usr/local/include -I/usr/local/opt/llvm/include 
-  CXXFLAGS: -I /usr/local/include -I/usr/local/opt/llvm/include 
-  LDFLAGS: -L /usr/local/lib -L/usr/local/opt/llvm/lib 
-  CXX: /usr/local/opt/llvm/bin/clang++
-
 
 jobs:
   Build_and_Run_GTest:
     name: Build and Run GoogleTest
-    runs-on: macos-10.15
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v2
       with:
         submodules: recursive
         
-    - name: Install PreReq
-      run: brew install libtiff libomp
+    - name: Install LibTiff
+      working-directory: ${{github.workspace}}
+      shell: cmd
+      run: install_win_prereq.bat
 
-    - name: Update Path
+    - name: Set variable
       run: |
-        echo "$(brew --prefix llvm)/bin" >> $GITHUB_PATH
-
+        echo "TIFF_INCLUDE_DIR=C:/Program Files (x86)/tiff/include" >> $env:GITHUB_ENV
+        echo "TIFF_LIBRARY_RELEASE=C:/Program Files (x86)/tiff/lib/tiff.lib" >> $env:GITHUB_ENV
+ 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON
 
@@ -41,36 +38,41 @@ jobs:
     - name: Run GTest Suite
       working-directory: ${{github.workspace}}/build
       # Execute tests.  
-      run: ./tests/runAllTests  -C ${{env.BUILD_TYPE}}
+      run: ./tests/${{env.BUILD_TYPE}}/runAllTests.exe
       
 
   Build_and_Run_PyTest:
     name: Build and Run PyTest
-    runs-on: macos-10.15
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v2
       with:
         submodules: recursive
-        
-    - name: Install PreReq
-      run: brew install libtiff libomp
-
-    - name: Update Path
-      run: |
-        echo "$(brew --prefix llvm)/bin" >> $GITHUB_PATH
-
+              
     - name: Setup Python
       uses: actions/setup-python@v2
       with:
         python-version: "3.x"
 
     - name: Install Dependencies
-      run: python3 -m pip install --upgrade wheel numpy pandas pytest
+      run: python -m pip install --upgrade wheel numpy pandas pytest delvewheel
 
+    - name: Install LibTiff
+      working-directory: ${{github.workspace}}
+      shell: cmd
+      run: install_win_prereq.bat
+
+    - name: Set variable
+      run: |
+        echo "TIFF_INCLUDE_DIR=C:/Program Files (x86)/tiff/include" >> $env:GITHUB_ENV
+        echo "TIFF_LIBRARY_RELEASE=C:/Program Files (x86)/tiff/lib/tiff.lib" >> $env:GITHUB_ENV
+        echo "C:/Program Files (x86)/tiff/bin" >> $env:GITHUB_PATH
+ 
     - name: Install Nyxus
       working-directory: ${{github.workspace}}
-      run: python3 setup.py install
+      shell: cmd
+      run: install_win_nyxus.bat
 
     - name: Run PyTest
       working-directory: ${{github.workspace}}
