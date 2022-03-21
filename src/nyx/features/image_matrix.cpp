@@ -31,7 +31,7 @@ void SimpleMatrix<int>::print(const std::string& head, const std::string& tail)
 		std::cout << "[" << std::setw(Wi) << row << "]";
 		for (int col = 0; col < this->width(); col++)
 		{
-			std::cout << std::setw(Wd) << (int) this->operator()(col, row);
+			std::cout << std::setw(Wd) << (int) this->xy(col, row);
 		}
 		std::cout << "\n";
 	}
@@ -107,7 +107,7 @@ void ImageMatrix::print (const std::string& head, const std::string& tail, std::
 				continue;
 
 			// Regular pixel
-			auto I = D(row, col);
+			auto I = D.yx (row, col);
 			if (I == 0)
 				std::cout << std::setw(Wd) << '.';
 			else
@@ -238,9 +238,9 @@ void ImageMatrix::apply_distance_to_contour_weights (const std::vector<Pixel2>& 
 			r = p.y - original_aabb.get_ymin();
 		
 		// Weighted intensity
-		PixIntens wi = _pix_plane(r, c) / (dist + epsilon) + 0.5/*rounding*/;
+		PixIntens wi = _pix_plane.yx(r, c) / (dist + epsilon) + 0.5/*rounding*/;
 		
-		_pix_plane(r,c) = wi;
+		_pix_plane.yx(r,c) = wi;
 	}
 }
 
@@ -254,7 +254,7 @@ int ImageMatrix::get_chlen (int col)
 	{
 		if (noSignal)
 		{
-			if (_pix_plane(row, col) != 0)
+			if (_pix_plane.yx(row, col) != 0)
 			{
 				// begin tracking a new chord
 				noSignal = false;
@@ -263,7 +263,7 @@ int ImageMatrix::get_chlen (int col)
 		}
 		else // in progress tracking a signal
 		{
-			if (_pix_plane(row, col) != 0)
+			if (_pix_plane.yx(row, col) != 0)
 				chlen++;	// signal continues
 			else
 			{
@@ -286,7 +286,7 @@ bool ImageMatrix::tile_contains_signal (int tile_row, int tile_col, int tile_sid
 		c2 = c1 + tile_side;
 	for (int r = r1; r < r2; r++)
 		for (int c = c1; c < c2; c++)
-			if (_pix_plane(r, c) != 0)
+			if (_pix_plane.yx(r, c) != 0)
 				return true;
 	return false;
 }

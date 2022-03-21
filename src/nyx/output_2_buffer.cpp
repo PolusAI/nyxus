@@ -244,7 +244,7 @@ namespace Nyxus
 				// --Zernike family
 				if (fc == ZERNIKE2D)
 				{
-					for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
+					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
 						resultBuf.push_back(vv[i]); 
 
 					// Proceed with other features

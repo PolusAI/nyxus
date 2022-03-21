@@ -113,8 +113,8 @@ void GLCMFeature::CoOcMat_Angle_0_nontriv (
 			{
 				x = tone_LUT[(int)grays.get_normed_at(row,col)];
 				y = tone_LUT[(int)grays.get_normed_at(row, col + d)];
-				matrix(x, y)++;
-				matrix(y, x)++;
+				matrix.xy(x, y)++;
+				matrix.xy(y, x)++;
 				count += 2;
 			}
 		}
@@ -123,9 +123,9 @@ void GLCMFeature::CoOcMat_Angle_0_nontriv (
 	for (itone = 0; itone < tone_count; ++itone)
 		for (jtone = 0; jtone < tone_count; ++jtone)
 			if (count == 0)   // protect from error 
-				matrix(itone, jtone) = 0;
+				matrix.xy(itone, jtone) = 0;
 			else
-				matrix(itone, jtone) /= count;
+				matrix.xy(itone, jtone) /= count;
 }
 
 void GLCMFeature::CoOcMat_Angle_90_nontriv (
@@ -157,8 +157,8 @@ void GLCMFeature::CoOcMat_Angle_90_nontriv (
 			if (row + d < rows && grays.get_normed_at(row + d, col)) {
 				x = tone_LUT[(int)grays.get_normed_at(row, col)];
 				y = tone_LUT[(int)grays.get_normed_at(row + d, col)];
-				matrix(x, y)++;		
-				matrix(y, x)++;		
+				matrix.xy(x, y)++;		
+				matrix.xy(y, x)++;		
 				count += 2;
 			}
 		}
@@ -167,9 +167,9 @@ void GLCMFeature::CoOcMat_Angle_90_nontriv (
 	for (itone = 0; itone < tone_count; ++itone)
 		for (jtone = 0; jtone < tone_count; ++jtone)
 			if (count == 0)
-				matrix(itone, jtone) = 0;	
+				matrix.xy(itone, jtone) = 0;	
 			else
-				matrix(itone, jtone) /= count;
+				matrix.xy(itone, jtone) /= count;
 }
 
 void GLCMFeature::CoOcMat_Angle_45_nontriv (
@@ -201,8 +201,8 @@ void GLCMFeature::CoOcMat_Angle_45_nontriv (
 			if (row + d < rows && col - d >= 0 && grays.get_normed_at(row + d, col - d)) {
 				x = tone_LUT[(int)grays.get_normed_at(row, col - d)];
 				y = tone_LUT[(int)grays.get_normed_at(row + d, col - d)];
-				matrix(x, y)++;		
-				matrix(y, x)++;		
+				matrix.xy(x, y)++;		
+				matrix.xy(y, x)++;		
 				count += 2;
 			}
 		}
@@ -211,9 +211,9 @@ void GLCMFeature::CoOcMat_Angle_45_nontriv (
 	for (itone = 0; itone < tone_count; ++itone)
 		for (jtone = 0; jtone < tone_count; ++jtone)
 			if (count == 0)
-				matrix(itone, jtone) = 0;	// protect from error
+				matrix.xy(itone, jtone) = 0;	// protect from error
 			else
-				matrix(itone, jtone) /= count;	
+				matrix.xy(itone, jtone) /= count;	
 }
 
 void GLCMFeature::CoOcMat_Angle_135_nontriv (
@@ -246,8 +246,8 @@ void GLCMFeature::CoOcMat_Angle_135_nontriv (
 			{
 				x = tone_LUT[(int)grays.get_normed_at(row, col)];
 				y = tone_LUT[(int)grays.get_normed_at(row + d, col + d)];
-				matrix(x, y)++;	
-				matrix(y, x)++;	
+				matrix.xy(x, y)++;		//NONOPT
+				matrix.xy(y, x)++;	
 				count += 2;
 			}
 		}
@@ -256,8 +256,8 @@ void GLCMFeature::CoOcMat_Angle_135_nontriv (
 	for (itone = 0; itone < tone_count; ++itone)
 		for (jtone = 0; jtone < tone_count; ++jtone)
 			if (count == 0)
-				matrix(itone, jtone) = 0;	// protect from error
+				matrix.xy(itone, jtone) = 0;	// protect from error
 			else
-				matrix(itone, jtone) /= count;	
+				matrix.xy(itone, jtone) /= count;	
 }
 

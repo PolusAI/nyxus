@@ -42,27 +42,27 @@ void GLDMFeature::calculate(LR& r)
 		for (int col = 1; col < D.width() - 1; col++)
 		{
 			// Find a non-blank pixel
-			PixIntens pi = D(row, col);
+			PixIntens pi = D.yx(row, col);
 			if (pi == 0)
 				continue;
 
 			// Count dependencies
 			int nd = 0;	// Number of dependencies
-			if (D(row - 1, col) == pi)	// North
+			if (D.yx(row - 1, col) == pi)	// North
 				nd++;
-			if (D(row - 1, col + 1) == pi)	// North-East
+			if (D.yx(row - 1, col + 1) == pi)	// North-East
 				nd++;
-			if (D(row, col + 1) == pi)	// East
+			if (D.yx(row, col + 1) == pi)	// East
 				nd++;
-			if (D(row + 1, col + 1) == pi)	// South-East
+			if (D.yx(row + 1, col + 1) == pi)	// South-East
 				nd++;
-			if (D(row + 1, col) == pi)	// South
+			if (D.yx(row + 1, col) == pi)	// South
 				nd++;
-			if (D(row + 1, col - 1) == pi)	// South-West
+			if (D.yx(row + 1, col - 1) == pi)	// South-West
 				nd++;
-			if (D(row, col - 1) == pi)	// West
+			if (D.yx(row, col - 1) == pi)	// West
 				nd++;
-			if (D(row - 1, col - 1) == pi)	// North-West
+			if (D.yx(row - 1, col - 1) == pi)	// North-West
 				nd++;
 
 			// Save the intensity's dependency
@@ -95,7 +95,7 @@ void GLDMFeature::calculate(LR& r)
 		// col
 		int col = z.second;	// 1-based
 		// increment
-		auto& k = P(col, row);
+		auto& k = P.xy(col, row);
 		k++;
 	}
 }
@@ -129,7 +129,7 @@ void GLDMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 			int nd = 0;	// Number of dependencies
 			if (D.safe(row-1, col) && D.get_at(imloader, row - 1, col) == pi)	// North
 				nd++;
-			if (D.safe(row-1, col + 1) && D.get_at(imloader, row - 1, col + 1) == pi)	// North-East
+			if (D.safe(row-1, col+1) && D.get_at(imloader, row - 1, col + 1) == pi)	// North-East
 				nd++;
 			if (D.safe(row, col+1) && D.get_at(imloader, row, col + 1) == pi)	// East
 				nd++;
@@ -174,7 +174,7 @@ void GLDMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 		// col
 		int col = z.second;	// 1-based
 		// increment
-		auto& k = P(col, row);
+		auto& k = P.xy(col, row);
 		k++;
 	}
 }
@@ -264,10 +264,10 @@ double GLDMFeature::calc_DN()
 		return BAD_ROI_FVAL;
 
 	double f = 0.0;
-	for (int i = 1; i <= Nd; i++)
+	for (int j = 1; j <= Ng; j++)	//OPT	for (int i = 1; i <= Nd; i++)
 	{
 		double sum = 0.0;
-		for (int j = 1; j <= Ng; j++)
+		for (int i = 1; i <= Nd; i++)	//OPT	for (int j = 1; j <= Ng; j++)
 		{
 			sum += P.matlab(j, i);
 		}
@@ -284,10 +284,10 @@ double GLDMFeature::calc_DNN()
 		return BAD_ROI_FVAL;
 
 	double f = 0.0;
-	for (int i = 1; i <= Nd; i++)
+	for (int j = 1; j <= Ng; j++)	//OPT	for (int i = 1; i <= Nd; i++)
 	{
 		double sum = 0.0;
-		for (int j = 1; j <= Ng; j++)
+		for (int i = 1; i <= Nd; i++)	//OPT	for (int j = 1; j <= Ng; j++)
 		{
 			sum += P.matlab(j, i); 
 		}

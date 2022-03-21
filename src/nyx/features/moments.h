@@ -79,11 +79,39 @@ public:
     double mean()      const { return _mean; }
     double std()      const { return (_n > 2 ? sqrt(M2 / (_n - 1)) : 0.0); }
     double var()      const { return (_n > 2 ? M2 / (_n - 1) : 0.0); }
-    double skewness() const { return (_n > 3 ? (sqrt(_n) * M3) / pow(M2, 1.5) : 0.0); }
-    double kurtosis() const { return (_n > 4 ? (_n * M4) / (M2 * M2) : 0.0); } // matlab does not subtract 3
+    double skewness() const 
+    { 
+        // Intercept an overflow result
+        if (M2 == 0.0)
+            return 0.0;
+
+        return (_n > 3 ? (sqrt(_n) * M3) / pow(M2, 1.5) : 0.0);
+    }
+    double kurtosis() const 
+    { 
+        // Intercept an overflow result
+        if (M2 == 0.0)
+            return 0.0;
+
+        return (_n > 4 ? (_n * M4) / (M2 * M2) : 0.0); // matlab does not subtract 3
+    } 
     void momentVector(double* z) { z[0] = mean(); z[1] = std(); z[2] = skewness(); z[3] = kurtosis(); }
-    double hyperskewness() const { return (_n > 5 ? (_n * M4) / (pow(M2, 5./2.)) : 0.0); }
-    double hyperflatness() const { return (_n > 6 ? (_n * M5) / (M2*M2*M2) : 0.0); }
+    double hyperskewness() const 
+    { 
+        // Intercept an overflow result
+        if (M2 == 0.0)
+            return 0.0;
+
+        return (_n > 5 ? (_n * M4) / (pow(M2, 5./2.)) : 0.0);
+    }
+    double hyperflatness() const 
+    { 
+        // Intercept an overflow result
+        if (M2 == 0.0)
+            return 0.0;
+
+        return (_n > 6 ? (_n * M5) / (M2*M2*M2) : 0.0);
+    }
 
 private:
     double _min, _max, _mean, M2, M3, M4, M5, M6;

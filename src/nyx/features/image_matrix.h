@@ -40,31 +40,50 @@ public:
 		H = _h;
 		this->resize (W*H, inival);
 	}
-	// X,Y operator
-	T& operator() (int x, int y)
+
+	// = W * y + x
+	inline T& xy(int x, int y)
 	{
+		#ifdef NYX_CHECK_BUFFER_BOUNDS
 		if (x >= W || y >= H)
 		{
-			throw "subscript out of bounds";
+			std::string msg = "index ";
+			msg += std::to_string(x) + ",";
+			msg += std::to_string(y) + " is out of range ";
+			msg += std::to_string(W) + ",";
+			msg += std::to_string(H) + " at ";
+			msg += __FILE__ ":" + std::to_string(__LINE__);
+			throw std::out_of_range(msg.c_str());
 		}
+		#endif
+
 		return this->at(W * y + x);
 	}
-	// X,y operator
-	T operator() (int x, int y) const
+	// = W * y + x
+	inline T xy (int x, int y) const
 	{
+		#ifdef NYX_CHECK_BUFFER_BOUNDS
 		if (x >= W || y >= H)
 		{
-			throw "subscript out of bounds";
+			std::string msg = "index ";
+			msg += std::to_string(x) + ",";
+			msg += std::to_string(y) + " is out of range ";
+			msg += std::to_string(W) + ",";
+			msg += std::to_string(H) + " at ";
+			msg += __FILE__ ":" + std::to_string(__LINE__);
+			throw std::out_of_range(msg.c_str());
 			return -1;	// Special value indicating invalid intensity
 		}
+		#endif
+
 		T val = this->at(W * y + x);
 		return val;
 	}
-	
-	// 1-based x and y
+
+	// y - strided index, x - nonstrided; 1-based x and y
 	T matlab (int y, int x) const
 	{
-		T t = operator() (x-1,y-1);
+		T t = xy(x-1,y-1);		//--formerly--> operator() (x-1,y-1);
 		return t;
 	}
 
@@ -104,22 +123,41 @@ public:
 		H = height;
 		std::vector<PixIntens>::resize (width * height, val);
 	}
-
-	PixIntens & operator() (int y, int x)
+	// = W * y + x
+	inline PixIntens & yx /*operator()*/ (int y, int x)
 	{
+		#ifdef NYX_CHECK_BUFFER_BOUNDS
 		if (x >= W || y >= H)
 		{
-			throw "subscript out of bounds";
+			std::string msg = "index ";
+			msg += std::to_string(x) + ",";
+			msg += std::to_string(y) + " is out of range ";
+			msg += std::to_string(W) + ",";
+			msg += std::to_string(H) + " at ";
+			msg += __FILE__ ":" + std::to_string(__LINE__);
+			throw std::out_of_range(msg.c_str());
 		}
+		#endif
+
 		return this->at(W * y + x);
 	}
-	PixIntens operator() (int y, int x) const
+	// = W * y + x
+	inline PixIntens yx /*operator()*/ (int y, int x) const
 	{
+		#ifdef NYX_CHECK_BUFFER_BOUNDS
 		if (x >= W || y >= H)
 		{
-			throw "subscript out of bounds";
+			std::string msg = "index ";
+			msg += std::to_string(x) + ",";
+			msg += std::to_string(y) + " is out of range ";
+			msg += std::to_string(W) + ",";
+			msg += std::to_string(H) + " at ";
+			msg += __FILE__ ":" + std::to_string(__LINE__);
+			throw std::out_of_range(msg.c_str());
 			return -1;	// Special value indicating invalid intensity
 		}
+		#endif
+
 		PixIntens val = this->at (W * y + x);
 		return val;
 	}

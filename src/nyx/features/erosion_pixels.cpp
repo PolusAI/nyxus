@@ -52,7 +52,7 @@ void ErosionPixelsFeature::calculate(LR& r)
 				for (int r = row1; r <= row2; r++)
 					for (int c = col1; c <= col2; c++)
 					{
-						N[r - row1][c - col1] = I1p(r, c);
+						N[r - row1][c - col1] = I1p.yx(r, c);
 
 						if (N[r - row1][c - col1])
 							all0 = false;
@@ -61,7 +61,7 @@ void ErosionPixelsFeature::calculate(LR& r)
 				// Skip finding minimum if we have all-zeros
 				if (all0)
 				{
-					I2p(row, col) = 0;
+					I2p.yx(row, col) = 0;
 					continue;
 				}
 
@@ -78,7 +78,7 @@ void ErosionPixelsFeature::calculate(LR& r)
 
 				//localMinImage(row, col) = min(pixelsInSE);
 				PixIntens minPixel = *std::min_element(Nv.begin(), Nv.end());
-				I2p(row, col) = minPixel;
+				I2p.yx(row, col) = minPixel;
 
 				// Count non-0 pixels
 				if (minPixel > 0)
