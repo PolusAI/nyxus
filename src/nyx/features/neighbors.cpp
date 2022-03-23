@@ -70,12 +70,12 @@ void NeighborsFeature::manual_reduce()
 
 	std::vector <char> CM ((nul+1) * (nul+1), false);	// collision matrix
 	// --this loop can be parallel
-	for (size_t i1 = 0; i1 < nul; i1++) // for (auto l1 : uniqueLabels)
+	for (size_t i1 = 0; i1 < nul; i1++) 
 	{
 		auto l1 = LabsVec[i1];
 		LR& r1 = roiData[l1];
 
-		for (size_t i2 = 0; i2 < nul; i2++) // for (auto l2 : uniqueLabels)
+		for (size_t i2 = 0; i2 < nul; i2++) 
 		{
 			auto l2 = LabsVec[i1];
 			if (l1 == l2)
@@ -96,7 +96,7 @@ void NeighborsFeature::manual_reduce()
 
 	// Harvest collision pairs
 	size_t radius2 = radius * radius;
-	for (size_t i1 = 0; i1 < nul; i1++) // for (auto l1 : uniqueLabels)
+	for (size_t i1 = 0; i1 < nul; i1++) 
 	{
 		auto l1 = LabsVec[i1];
 		LR& r1 = roiData[l1];
