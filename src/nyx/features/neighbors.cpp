@@ -63,13 +63,21 @@ void NeighborsFeature::manual_reduce()
 	//==== Collision detection, method 1 (best with GPGPU)
 	//  Calculate collisions into a triangular matrix
 	int nul = uniqueLabels.size();
+	
+	std::vector <int> LabsVec;
+	LabsVec.reserve (uniqueLabels.size());
+	LabsVec.insert (LabsVec.end(), uniqueLabels.begin(), uniqueLabels.end());
+
 	std::vector <char> CM ((nul+1) * (nul+1), false);	// collision matrix
 	// --this loop can be parallel
-	for (auto l1 : uniqueLabels)
+	for (size_t i1 = 0; i1 < nul; i1++) 
 	{
+		auto l1 = LabsVec[i1];
 		LR& r1 = roiData[l1];
-		for (auto l2 : uniqueLabels)
+
+		for (size_t i2 = 0; i2 < nul; i2++) 
 		{
+			auto l2 = LabsVec[i1];
 			if (l1 == l2)
 				continue;	// Trivial - diagonal element
 			if (l1 > l2)
@@ -88,12 +96,14 @@ void NeighborsFeature::manual_reduce()
 
 	// Harvest collision pairs
 	size_t radius2 = radius * radius;
-	for (auto l1 : uniqueLabels)
+	for (size_t i1 = 0; i1 < nul; i1++) 
 	{
+		auto l1 = LabsVec[i1];
 		LR& r1 = roiData[l1];
 
-		for (auto l2 : uniqueLabels)
+		for (size_t i2 = 0; i2 < nul; i2++) // for (auto l2 : uniqueLabels)
 		{
+			auto l2 = LabsVec[i1];			
 			if (l1 == l2)
 				continue;	// Trivial - diagonal element
 			if (l1 > l2)
