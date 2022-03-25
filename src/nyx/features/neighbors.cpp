@@ -78,9 +78,9 @@ void NeighborsFeature::manual_reduce()
 		for (size_t i2 = 0; i2 < nul; i2++) 
 		{
 			auto l2 = LabsVec[i1];
-			if (l1 == l2)
+			if (i1 == i2) 
 				continue;	// Trivial - diagonal element
-			if (l1 > l2)
+			if (i1 > i2) 
 				continue;	// No need to check the upper triangle
 
 			LR& r2 = roiData[l2];
@@ -88,7 +88,7 @@ void NeighborsFeature::manual_reduce()
 				|| r2.aabb.get_ymin() > r1.aabb.get_ymax() || r2.aabb.get_ymax() < r1.aabb.get_ymin() ;
 			if (! noOverlap)
 			{
-				unsigned int idx = l1 * nul + l2;
+				unsigned int idx = i1 * nul + i2; 
 				CM[idx] = true;
 			}
 		}
@@ -101,18 +101,18 @@ void NeighborsFeature::manual_reduce()
 		auto l1 = LabsVec[i1];
 		LR& r1 = roiData[l1];
 
-		for (size_t i2 = 0; i2 < nul; i2++) // for (auto l2 : uniqueLabels)
+		for (size_t i2 = 0; i2 < nul; i2++) 
 		{
-			auto l2 = LabsVec[i1];			
-			if (l1 == l2)
+			if (i1 == i2) 
 				continue;	// Trivial - diagonal element
-			if (l1 > l2)
+			if (i1 > i2) 
 				continue;	// No need to check the upper triangle
 
-			unsigned int idx = l1 * nul + l2;
+			unsigned int idx = i1 * nul + i2; 
 			if (CM[idx] == true)
 			{
 				// Check if these labels are close enough
+				auto l2 = LabsVec[i2];
 				LR& r2 = roiData[l2];
 
 				// Iterate r1's contour pixels
@@ -121,9 +121,7 @@ void NeighborsFeature::manual_reduce()
 				for (auto& cp : r1.contour)
 				{
 					auto [minD, maxD] = cp.min_max_sqdist(r2.contour);
-					mind = std::min(mind, minD);
-
-					//--We aren't interested in max distance-->	maxd = std::max(maxd, maxD);
+					mind = std::min(mind, minD);		//--We aren't interested in max distance-->	maxd = std::max(maxd, maxD);
 
 					// Maintain touching pixels stats
 					if (minD == 0) // (minD <= radius2)
@@ -146,7 +144,7 @@ void NeighborsFeature::manual_reduce()
 		}
 
 		// Finalize the % touching calculation
-		r1.fvals[PERCENT_TOUCHING][0] = double(r1.fvals[PERCENT_TOUCHING][0]) / double(r1.contour.size());
+		r1.fvals[PERCENT_TOUCHING][0] = 100.0 * double(r1.fvals[PERCENT_TOUCHING][0]) / double(r1.contour.size());
 	}
 
 #if 0
@@ -268,6 +266,7 @@ void NeighborsFeature::manual_reduce()
 			ceny = r.fvals[CENTROID_Y][0];
 
 		std::vector<double> dists;
+		dists.reserve(r.aux_neighboring_labels.size());
 		for (auto l_neig : r.aux_neighboring_labels)
 		{
 			LR& r_neig = Nyxus::roiData[l_neig];
@@ -289,7 +288,7 @@ void NeighborsFeature::manual_reduce()
 
 		// Save angle with neighbor #1
 		LR& r1 = Nyxus::roiData[closest1label];
-		r.fvals[CLOSEST_NEIGHBOR1_ANG][0] = angle(cenx, ceny, r1.fvals[CENTROID_X][0], r1.fvals[CENTROID_X][0]);
+		r.fvals[CLOSEST_NEIGHBOR1_ANG][0] = 180.0 * angle(cenx, ceny, r1.fvals[CENTROID_X][0], r1.fvals[CENTROID_X][0]);
 
 		// Find idx of 2nd minimum
 		if (n_neigs > 1)
@@ -307,7 +306,7 @@ void NeighborsFeature::manual_reduce()
 
 			// Save angle with neighbor #2
 			LR& r2 = Nyxus::roiData[closest2label];
-			r.fvals[CLOSEST_NEIGHBOR2_ANG][0] = angle(cenx, ceny, r2.fvals[CENTROID_X][0], r2.fvals[CENTROID_X][0]);
+			r.fvals[CLOSEST_NEIGHBOR2_ANG][0] = 180.0 * angle(cenx, ceny, r2.fvals[CENTROID_X][0], r2.fvals[CENTROID_X][0]); 
 		}
 	}
 
@@ -333,8 +332,7 @@ void NeighborsFeature::manual_reduce()
 			double cenx_n = r_neig.fvals[CENTROID_X][0],
 				ceny_n = r_neig.fvals[CENTROID_Y][0];
 
-			double ang = angle (cenx, ceny, cenx_n, ceny_n);	// radians
-			ang = ang * 180.0;	// degrees because we will later need angles' mode
+			double ang = 180.0 * angle (cenx, ceny, cenx_n, ceny_n);	
 			mom2.add(ang);
 			anglesRounded.push_back(ang);
 		}
