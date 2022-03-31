@@ -132,7 +132,7 @@ pybind11_add_module(backend
 	src/nyx/python/new_bindings_py.cpp
 )
 
-#target_compile_definitions(backend PRIVATE WITH_PYTHON_H)
+target_compile_definitions(backend PRIVATE WITH_PYTHON_H)
 
 # VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
 target_compile_definitions(backend PRIVATE VERSION_INFO=${VERSION_INFO})
