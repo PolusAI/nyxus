@@ -20,6 +20,7 @@
 #define VERBOSITY "--verbosity"					// Environment :: verbosity_level	-- Example: --verbosity=3
 #define ONLINESTATSTHRESH "--onlineStatsThresh" // Environment :: onlineStatsThreshold	-- Example: --onlineStatsThresh=150
 #define XYRESOLUTION "--pixelsPerCentimeter"	// pixels per centimeter
+#define PXLDIST "--pixelDistance"		// used in neighbor features
 
 // Feature group nicknames
 #define FEA_NICK_ALL "*ALL*"
@@ -79,6 +80,9 @@ public:
 	std::string reduce_threads = "";
 	int n_reduce_threads = 4;
 
+	std::string pixel_distance = "";
+	int n_pixel_distance = 5;
+
 	std::string rotations = "";
 	std::vector<float> rotAngles = {0, 45, 90, 135};
 
@@ -113,7 +117,6 @@ private:
 	bool find_string_argument(std::vector<std::string>::iterator &i, const char *arg, std::string &arg_value);
 	bool find_int_argument(std::vector<std::string>::iterator &i, const char *arg, int &arg_value);
 
-	int pixelDistance = 5;
 	size_t ram_limit = 1024L * 1024L * 1024L; // [bytes] - default RAM limit affecting Phase 2's batch size. (Purpose of Phase 2 is calculating trivial ROIs.)
 
 	std::string temp_dir_path;

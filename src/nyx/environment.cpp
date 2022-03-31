@@ -128,12 +128,12 @@ size_t Environment::get_ram_limit()
 
 int Environment::get_pixel_distance()
 {
-    return pixelDistance;
+    return n_pixel_distance;
 }
 
 void Environment::set_pixel_distance(int pixelDistance)
 {
-    this->pixelDistance = pixelDistance;
+    this->n_pixel_distance = pixelDistance;
 }
 
 void Environment::show_cmdline_help()
@@ -155,6 +155,7 @@ void Environment::show_cmdline_help()
         << " [" << LOADERTHREADS << " <lt>]\n"
         << " [" << PXLSCANTHREADS << " <st>]\n"
         << " [" << REDUCETHREADS << " <rt>]\n"
+        << " [" << PXLDIST << " <pxd>]\n"
         << " [" << ROTATIONS << " <al>]\n"
         << " [" << VERBOSITY << " <verbo>]\n"
 
@@ -170,6 +171,7 @@ void Environment::show_cmdline_help()
         << "\t<lt> - number of image loader threads [default = 1] \n"
         << "\t<st> - number of pixel scanner threads within a TIFF tile [default = 1] \n"
         << "\t<rt> - number of feature reduction threads [default = 1] \n"
+        << "\t<pxd> - number of pixels as neighbor features radius [default = 5] \n"
         << "\t<al> - comma separated rotation angles [default = 0,45,90,135] \n"
         << "\t<verbo> - levels of verbosity 0 (silence), 2 (timing), 4 (roi diagnostics), 8 (granular diagnostics) [default = 0] \n";
 }
@@ -190,6 +192,7 @@ void Environment::show_summary(const std::string &head, const std::string &tail)
               << "\t# of image loader threads\t" << n_loader_threads << "\n"
               << "\t# of pixel scanner threads\t" << n_pixel_scan_threads << "\n"
               << "\t# of post-processing threads\t" << n_reduce_threads << "\n"
+              << "\tpixel distance\t" << n_pixel_distance << "\n"
               << "\tverbosity level\t" << verbosity_level << "\n";
 
     // Features
@@ -682,6 +685,7 @@ int Environment::parse_cmdline(int argc, char **argv)
                 find_string_argument(i, PXLSCANTHREADS, pixel_scan_threads) ||
                 find_string_argument(i, REDUCETHREADS, reduce_threads) ||
                 find_string_argument(i, ROTATIONS, rotations) ||
+                find_string_argument(i, PXLDIST, pixel_distance) ||
                 find_string_argument(i, VERBOSITY, verbosity)))
             unrecognized.push_back(*i);
     }
@@ -794,6 +798,16 @@ int Environment::parse_cmdline(int argc, char **argv)
         if (sscanf(reduce_threads.c_str(), "%d", &n_reduce_threads) != 1 || n_reduce_threads <= 0)
         {
             std::cout << "Error: " << REDUCETHREADS << "=" << reduce_threads << ": expecting a positive integer constant\n";
+            return 1;
+        }
+    }
+
+    if (!pixel_distance.empty())
+    {
+        // string -> integer
+        if (sscanf(pixel_distance.c_str(), "%d", &n_pixel_distance) != 1 || n_pixel_distance <= 0)
+        {
+            std::cout << "Error: " << PXLDIST << "=" << pixel_distance << ": expecting a positive integer constant\n";
             return 1;
         }
     }

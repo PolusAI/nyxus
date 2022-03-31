@@ -171,16 +171,6 @@ namespace Nyxus
 				start = std::chrono::system_clock::now();
 
 				{
-					/*
-					//--- Experimental: just 2 threads
-					auto fu1 = std::async(std::launch::async, processPixels,
-						0, tileSize / 2,
-						&dataL, &dataI, tw);
-					auto fu2 = std::async(std::launch::async, processPixels,
-						tileSize / 2, tileSize,
-						&dataL, &dataI, tw);
-					*/
-
 					int workPerThread = tileSize / num_sensemaker_threads;
 					std::vector<std::future<void>> T;
 					for (int t = 0; t < num_sensemaker_threads; t++)

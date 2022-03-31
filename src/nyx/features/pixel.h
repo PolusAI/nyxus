@@ -167,6 +167,20 @@ struct Pixel2 : public Point2i
 		return { mind, maxd };
 	}
 
+	double min_sqdist (const std::vector<Pixel2>& cloud) const
+	{
+		auto mind = sqdist (cloud[0]);
+
+		for (int i = 1; i < cloud.size(); i++)
+		{
+			auto dist = sqdist(cloud[i]);
+			if (dist < mind)
+				mind = dist;
+		}
+		return mind;
+	}
+
+
 	double angle(const Pixel2& other) const
 	{
 		double dotProd = double(this->x * other.x) + double(this->y * other.y),
