@@ -6,8 +6,8 @@
 #include <vector>
 
 using uint32 = unsigned int;	// (Temporary) eliminate situation of unknown uint32
-#include <fast_loader/specialised_tile_loader/grayscale_tiff_tile_loader.h>
-#include <fast_loader/specialised_tile_loader/grayscale_tiff_strip_loader.h>
+
+#include "grayscale_tiff.h"
 
 /// @brief Incapsulates access to an intensity and mask image file pair
 class ImageLoader

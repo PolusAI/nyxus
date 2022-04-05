@@ -1,23 +1,22 @@
 #include "image_loader.h"
 
-ImageLoader::ImageLoader()
-{
-}
+ImageLoader::ImageLoader() {}
 
 bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpath)
 {
 	int n_threads = 1;
 
-	try {
+	try 
+	{
 		if (checkTileStatus(int_fpath))
 		{
-			intFL = new GrayscaleTiffTileLoader<uint32_t>(n_threads, int_fpath);
+			intFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(n_threads, int_fpath);
 		} 
 		else 
 		{
 			// since the file is not tiled, we provide the tile dimensions
 			auto [tw, th, td] = calculate_tile_dimensions (int_fpath);
-			intFL = new GrayscaleTiffStripLoader<uint32_t>(n_threads, int_fpath, tw, th, td);
+			intFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, int_fpath, tw, th, td);
 		}
 	}
 	catch (std::exception const& e)	
@@ -32,13 +31,13 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 	try {
 		if (checkTileStatus(seg_fpath))
 		{
-			segFL = new GrayscaleTiffTileLoader<uint32_t>(n_threads, seg_fpath);
+			segFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(n_threads, seg_fpath);
 		} 
 		else 
 		{
 			// since the file is not tiled, we provide the tile dimensions
 			auto [tw, th, td] = calculate_tile_dimensions(seg_fpath); 
-			segFL = new GrayscaleTiffStripLoader<uint32_t>(n_threads, seg_fpath, tw, th, td);
+			segFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, seg_fpath, tw, th, td);
 		}
 
 	}
