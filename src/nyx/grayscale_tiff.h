@@ -48,12 +48,17 @@ public:
                 throw (std::runtime_error("Tile Loader ERROR: The file is not tiled.")); 
             }
             // Load/parse header
+            uint32_t temp;  // Using this variable to correctly read 'uint32_t' TIFF field values into 'size_t' variables
             uint16_t compression;
             TIFFGetField(tiff_, TIFFTAG_COMPRESSION, &compression);
-            TIFFGetField(tiff_, TIFFTAG_IMAGEWIDTH, &(this->fullWidth_));
-            TIFFGetField(tiff_, TIFFTAG_IMAGELENGTH, &(this->fullHeight_));
-            TIFFGetField(tiff_, TIFFTAG_TILEWIDTH, &this->tileWidth_);
-            TIFFGetField(tiff_, TIFFTAG_TILELENGTH, &this->tileHeight_);
+            TIFFGetField(tiff_, TIFFTAG_IMAGEWIDTH, &temp);
+            this->fullWidth_ = temp;
+            TIFFGetField(tiff_, TIFFTAG_IMAGELENGTH, &temp);
+            this->fullHeight_ = temp;
+            TIFFGetField(tiff_, TIFFTAG_TILEWIDTH, &temp);
+            this->tileWidth_ = temp;
+            TIFFGetField(tiff_, TIFFTAG_TILELENGTH, &temp);
+            this->tileHeight_ = temp;
             TIFFGetField(tiff_, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
             TIFFGetField(tiff_, TIFFTAG_BITSPERSAMPLE, &(this->bitsPerSample_));
             TIFFGetField(tiff_, TIFFTAG_SAMPLEFORMAT, &(this->sampleFormat_));
