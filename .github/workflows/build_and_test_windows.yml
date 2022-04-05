@@ -59,10 +59,8 @@ jobs:
     - name: Install Dependencies
       run: python -m pip install --upgrade wheel numpy pandas pytest delvewheel
 
-    - name: Preparing nmake    
-        uses: ilammy/msvc-dev-cmd@v1
-    
     - name: Install LibTiff
+      uses: ilammy/msvc-dev-cmd@v1
       working-directory: ${{github.workspace}}
       shell: cmd
       run: install_win_prereq.bat
