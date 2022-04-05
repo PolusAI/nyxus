@@ -110,18 +110,17 @@ namespace Nyxus
 		// File #1 (intensity)
 		NyxusGrayscaleTiffTileLoader<uint32_t> I(num_fastloader_threads, intens_fpath);
 
-		auto th = I.tileHeight(lvl),
+		size_t th = I.tileHeight(lvl),
 			tw = I.tileWidth(lvl),
 			td = I.tileDepth(lvl);
-		auto tileSize = th * tw;
+		size_t tileSize = th * tw;
 
-		auto fh = I.fullHeight(lvl);
-		auto fw = I.fullWidth(lvl);
-		auto fd = I.fullDepth(lvl);
-
-		auto ntw = I.numberTileWidth(lvl);
-		auto nth = I.numberTileHeight(lvl);
-		auto ntd = I.numberTileDepth(lvl);
+		size_t fh = I.fullHeight(lvl),
+			fw = I.fullWidth(lvl),
+			fd = I.fullDepth(lvl),
+			ntw = I.numberTileWidth(lvl),
+			nth = I.numberTileHeight(lvl), 
+			ntd = I.numberTileDepth(lvl);
 
 		// File #2 (labels)
 		NyxusGrayscaleTiffTileLoader<uint32_t> L(num_fastloader_threads, label_fpath);

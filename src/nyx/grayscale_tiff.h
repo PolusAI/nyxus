@@ -93,12 +93,11 @@ public:
     /// @param indexColGlobalTile Tile column index
      /// @param indexLayerGlobalTile Tile layer index
     /// @param level Tile's level
-    void loadTileFromFile(
-        std::shared_ptr<std::vector<DataType>> tile,
-        size_t indexRowGlobalTile, 
-        size_t indexColGlobalTile, 
-        [[maybe_unused]] size_t indexLayerGlobalTile,
-        [[maybe_unused]] size_t level) override 
+    void loadTileFromFile(std::shared_ptr<std::vector<DataType>> tile,
+        size_t indexRowGlobalTile,
+        size_t indexColGlobalTile,
+        size_t indexLayerGlobalTile,
+        size_t level) override
     {
         tdata_t tiffTile = nullptr;
         auto t_szb = TIFFTileSize(tiff_);
