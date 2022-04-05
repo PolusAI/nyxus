@@ -28,5 +28,6 @@ popd
 cmake -DDeflate_INCLUDE_DIR=./libdeflate -DDeflate_LIBRARY_RELEASE=./libdeflate/libdeflate.lib ..
 cmake --build . --config Release
 cmake --install . 
+copy libdeflate/libdeflate.dll "C:/Program Files (x86)/tiff/bin" /y
 popd
 popd
