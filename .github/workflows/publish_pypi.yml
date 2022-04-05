@@ -39,9 +39,9 @@ jobs:
           CIBW_BUILD: "cp39-*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2010
           CIBW_MANYLINUX_I686_IMAGE: manylinux2010
-          CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp
+          CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp libdeflate
           CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
-          CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel
+          CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate
           CIBW_ARCHS_WINDOWS: "auto64"
           CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib" PATH="C:\\Program Files (x86)\\tiff\\bin;$PATH"
           CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
@@ -55,9 +55,9 @@ jobs:
           CIBW_BUILD: "cp38-*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2010
           CIBW_MANYLINUX_I686_IMAGE: manylinux2010
-          CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp
+          CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp libdeflate
           CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
-          CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel
+          CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate
           CIBW_ARCHS_WINDOWS: "auto64"
           CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib" PATH="C:\\Program Files (x86)\\tiff\\bin;$PATH"
           CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
@@ -71,9 +71,9 @@ jobs:
           CIBW_BUILD: "cp37-*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2010
           CIBW_MANYLINUX_I686_IMAGE: manylinux2010
-          CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp
+          CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp libdeflate
           CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
-          CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel
+          CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate
           CIBW_ARCHS_WINDOWS: "auto64"
           CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib" PATH="C:\\Program Files (x86)\\tiff\\bin;$PATH"
           CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
@@ -87,9 +87,9 @@ jobs:
           CIBW_BUILD: "cp36-*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2010
           CIBW_MANYLINUX_I686_IMAGE: manylinux2010
-          CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp
+          CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp libdeflate
           CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
-          CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel
+          CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate
           CIBW_ARCHS_WINDOWS: "auto64"
           CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib" PATH="C:\\Program Files (x86)\\tiff\\bin;$PATH"
           CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
