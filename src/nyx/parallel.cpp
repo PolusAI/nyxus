@@ -108,23 +108,23 @@ namespace Nyxus
 		std::vector<std::future<void>> futures;
 
 		// File #1 (intensity)
-		GrayscaleTiffTileLoader<uint32_t> I(num_fastloader_threads, intens_fpath);
+		NyxusGrayscaleTiffTileLoader<uint32_t> I(num_fastloader_threads, intens_fpath);
 
-		auto th = I.tileHeight(lvl),
+		size_t th = I.tileHeight(lvl),
 			tw = I.tileWidth(lvl),
 			td = I.tileDepth(lvl);
-		auto tileSize = th * tw;
+		size_t tileSize = th * tw;
 
-		auto fh = I.fullHeight(lvl);
-		auto fw = I.fullWidth(lvl);
-		auto fd = I.fullDepth(lvl);
+		size_t fh = I.fullHeight(lvl);
+		size_t fw = I.fullWidth(lvl);
+		size_t fd = I.fullDepth(lvl);
 
-		auto ntw = I.numberTileWidth(lvl);
-		auto nth = I.numberTileHeight(lvl);
-		auto ntd = I.numberTileDepth(lvl);
+		size_t ntw = I.numberTileWidth(lvl);
+		size_t nth = I.numberTileHeight(lvl);
+		size_t ntd = I.numberTileDepth(lvl);
 
 		// File #2 (labels)
-		GrayscaleTiffTileLoader<uint32_t> L(num_fastloader_threads, label_fpath);
+		NyxusGrayscaleTiffTileLoader<uint32_t> L(num_fastloader_threads, label_fpath);
 
 		// -- check whole file consistency
 		if (fh != L.fullHeight(lvl) || fw != L.fullWidth(lvl) || fd != L.fullDepth(lvl))
