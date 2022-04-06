@@ -27,8 +27,8 @@ void initialize_environment(
     const std::vector<std::string> &features,
     float neighbor_distance,
     float pixels_per_micron,
-    uint n_reduce_threads,
-    uint n_loader_threads)
+    uint32_t n_reduce_threads,
+    uint32_t n_loader_threads)
 {
     theEnvironment.desiredFeatures = features;
     theEnvironment.set_pixel_distance(static_cast<int>(neighbor_distance));

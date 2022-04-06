@@ -7,7 +7,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive- ")
+	#==== Explicit check for LibTiff, needed for Windows
+	if (NOT DEFINED ${TIFF_INCLUDE_DIR})
+		set (TIFF_INCLUDE_DIR $ENV{TIFF_INCLUDE_DIR})
+		message(STATUS "TIFF_INCLUDE_DIR " ${TIFF_INCLUDE_DIR})
+	endif()
+
+	if (NOT DEFINED ${TIFF_LIBRARY_RELEASE})
+		set (TIFF_LIBRARY_RELEASE $ENV{TIFF_LIBRARY_RELEASE})
+		message(STATUS "TIFF_LIBRARY_RELEASE " ${TIFF_LIBRARY_RELEASE})
+	endif()
 endif()
+
+
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -15,16 +27,16 @@ endif()
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
+#== GTest 
+option(RUN_GTEST "Downloads google unit test API and runs google test scripts to test Nyxus" OFF)
+set(RUN_GTEST ON)
+
 #==== Pybind11
-find_package(Python COMPONENTS Interpreter Development)
 add_subdirectory(lib/pybind11)
 
 include_directories(
 	lib/pybind11/include/
-	${Python_INCLUDE_DIRS}
 )
-
-message(STATUS "PYTHON HEADERS: ${Python_INCLUDE_DIRS}")
 
 find_package(OpenMP COMPONENTS C CXX)
 
@@ -137,15 +149,41 @@ endif()
 
 target_link_libraries(backend PRIVATE ${Nyxus_LIBRARIES})
 
-if (NOT APPLE)
-	target_link_libraries(backend PRIVATE ${Python_LIBRARIES})
-else ()
+if (APPLE)
 	set_target_properties(backend PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
 endif()
 
 
 if(BUILD_CLI)
 	target_link_libraries(nyxus PRIVATE ${Nyxus_LIBRARIES})
-	target_link_libraries(nyxus PRIVATE ${Python_LIBRARIES})
 endif()
 
+## Running Tests
+if (RUN_GTEST)
+	# Download and unpack googletest at configure time
+	configure_file(tests/CMakeLists.txt.gtest googletest-download/CMakeLists.txt)
+	execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download)
+	execute_process(COMMAND ${CMAKE_COMMAND} --build .
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download)
+
+	# Prevent GoogleTest from overriding our compiler/linker options
+	# when building with Visual Studio
+	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+	# Add googletest directly to our build. This adds
+	# the following targets: gtest, gtest_main, gmock
+	# and gmock_main
+	add_subdirectory(${CMAKE_BINARY_DIR}/googletest-src
+			${CMAKE_BINARY_DIR}/googletest-build)
+
+	# The gtest/gmock targets carry header search path
+	# dependencies automatically when using CMake 2.8.11 or
+	# later. Otherwise we have to add them here ourselves.
+	if (CMAKE_VERSION VERSION_LESS 2.8.11)
+		include_directories("${gtest_SOURCE_DIR}/include")
+	endif ()
+	#	enable_testing()
+	add_subdirectory(tests)
+	message(STATUS "GTEST downloaded and imported")
+endif (RUN_GTEST)
