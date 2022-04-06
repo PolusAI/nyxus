@@ -1,5 +1,5 @@
 echo off
-set PATH=C:/Program Files (x86)/tiff/bin;%PATH%
+set PATH=C:/Program Files (x86)/tiff/bin;C:/Program Files (x86)/zlib/bin;%PATH%
 set TIFF_INCLUDE_DIR=C:/Program Files (x86)/tiff/include
 set TIFF_LIBRARY_RELEASE=C:/Program Files (x86)/tiff/lib/tiff.lib
 python -m pip install delvewheel

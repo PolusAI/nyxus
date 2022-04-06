@@ -20,7 +20,7 @@ jobs:
         submodules: recursive
         
     - name: Install LibTiff
-      run: sudo apt install libtiff-dev
+      run: sudo apt install libtiff-dev libdeflate-dev
       
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON
@@ -44,7 +44,7 @@ jobs:
         submodules: recursive
         
     - name: Install LibTiff
-      run: sudo apt install libtiff-dev
+      run: sudo apt install libtiff-dev libdeflate-dev
       
     - name: Setup Python
       uses: actions/setup-python@v2
