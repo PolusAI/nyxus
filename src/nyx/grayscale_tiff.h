@@ -17,18 +17,6 @@
 template<class DataType>
 class NyxusGrayscaleTiffTileLoader : public fl::AbstractTileLoader<fl::DefaultView<DataType>> 
 {
-    TIFF*
-        tiff_ = nullptr;             ///< Tiff file pointer
-
-    size_t
-        fullHeight_ = 0,           ///< Full height in pixel
-        fullWidth_ = 0,            ///< Full width in pixel
-        tileHeight_ = 0,            ///< Tile height
-        tileWidth_ = 0;             ///< Tile width
-
-    short
-        sampleFormat_ = 0,          ///< Sample format as defined by libtiff
-        bitsPerSample_ = 0;         ///< Bit Per Sample as defined by libtiff
 public:
 
     /// @brief NyxusGrayscaleTiffTileLoader unique constructor
@@ -212,6 +200,7 @@ public:
     [[nodiscard]] size_t numberPyramidLevels() const override { return 1; }
 
 private:
+
     /// @brief Private function to copy and cast the values
     /// @tparam FileType Type inside the file
     /// @param src Piece of memory coming from libtiff
@@ -230,6 +219,20 @@ private:
                 dest->data()[i] = (DataType)0;  // Zero-fill gaps
         }
     }
+
+    TIFF*
+        tiff_ = nullptr;             ///< Tiff file pointer
+
+    size_t
+        fullHeight_ = 0,           ///< Full height in pixel
+        fullWidth_ = 0,            ///< Full width in pixel
+        tileHeight_ = 0,            ///< Tile height
+        tileWidth_ = 0;             ///< Tile width
+
+    short
+        sampleFormat_ = 0,          ///< Sample format as defined by libtiff
+        bitsPerSample_ = 0;         ///< Bit Per Sample as defined by libtiff
+
 };
 
 /// @brief Tile Loader for 3D Grayscale tiff files encoded in strips
@@ -237,21 +240,8 @@ private:
 template<class DataType>
 class NyxusGrayscaleTiffStripLoader : public fl::AbstractTileLoader<fl::DefaultView<DataType>> 
 {
-    TIFF*
-        tiff_ = nullptr;             ///< Tiff file pointer
-
-    size_t
-        fullHeight_ = 0,          ///< Full height in pixel
-        fullWidth_ = 0,           ///< Full width in pixel
-        fullDepth_ = 0,           ///< Full depth in pixel
-        tileWidth_ = 0,           ///< Tile width
-        tileHeight_ = 0,          ///< Tile height
-        tileDepth_ = 0;           ///< Tile depth
-
-    short
-        sampleFormat_ = 0,        ///< Sample format as defined by libtiff
-        bitsPerSample_ = 0;       ///< Bit Per Sample as defined by libtiff
 public:
+
     /// @brief NyxusGrayscaleTiffTileLoader constructor
     /// @param numberThreads Number of threads associated
     /// @param filePath Path of tiff file
@@ -450,6 +440,7 @@ public:
     [[nodiscard]] size_t numberPyramidLevels() const override { return 1; }
 
 private:
+
     /// @brief Private function to copy and cast the values
     /// @tparam FileType Type inside the file
     /// @param src Piece of memory coming from libtiff
@@ -464,7 +455,8 @@ private:
         size_t layer,
         size_t row,
         size_t startCol,
-        size_t endCol) {
+        size_t endCol) 
+    {
         for (size_t col = startCol; col < endCol; col++) 
         {
             // Logic to prevent "noise" in images whose dimensions are smaller than the default tile buffer size 1024x1024
@@ -481,4 +473,20 @@ private:
                     + col - startCol] = dataItem;
         }
     }
+
+    TIFF*
+        tiff_ = nullptr;             ///< Tiff file pointer
+
+    size_t
+        fullHeight_ = 0,          ///< Full height in pixel
+        fullWidth_ = 0,           ///< Full width in pixel
+        fullDepth_ = 0,           ///< Full depth in pixel
+        tileWidth_ = 0,           ///< Tile width
+        tileHeight_ = 0,          ///< Tile height
+        tileDepth_ = 0;           ///< Tile depth
+
+    short
+        sampleFormat_ = 0,        ///< Sample format as defined by libtiff
+        bitsPerSample_ = 0;       ///< Bit Per Sample as defined by libtiff
+
 };
