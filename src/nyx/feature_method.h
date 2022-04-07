@@ -13,6 +13,8 @@ public:
 
 	FeatureMethod (const std::string& _featureinfo = __FILE__);
 
+	virtual ~FeatureMethod();
+	
 	//=== Trivial ROI
 	// Calculate the feature for one ROI using cached data and probably caching data
 	virtual void calculate (LR& r) = 0;
