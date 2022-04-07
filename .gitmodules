@@ -7,9 +7,3 @@
 [submodule "lib/fastloader"]
 	path = lib/fastloader
 	url = https://github.com/usnistgov/FastLoader.git
-[submodule "lib/libdeflate"]
-	path = lib/libdeflate
-	url = https://github.com/ebiggers/libdeflate.git
-[submodule "lib/libtiff"]
-	path = lib/libtiff
-	url = https://gitlab.com/libtiff/libtiff.git
