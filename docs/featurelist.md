@@ -50,15 +50,6 @@ __Morphology features:__
 | ECCENTRICITY | Ratio of ROI's inertia ellipse focal distance over the major axis length |
 | ORIENTATION | Angle between the 0th axis and the major axis of the ellipse that has same second moments as the region |
 | ROUNDNESS | Represents how similar a ROI's inertia ellipse is to circle. Calculated based on the major and minor exis lengths |
-| NUM_NEIGHBORS | The number of neighbors bordering the ROI's perimeter. Algorithmically calculating this feature invilves solving the nearest neighbors search problem that in turn involves the proximity measure and the proximity threshold. Particularly, this plugin uses the $L_2$ norm measure over Cartesian space of pixel coordinates and parameter _--pixelDistance_. |
-| PERCENT_TOUCHING | Percent of ROI's contour pixels touching neighbor ROIs |
-| CLOSEST_NEIGHBOR1_DIST | Distance from ROI's centroid to the nearest neighboring ROI's centroid |
-| CLOSEST_NEIGHBOR1_ANG | Angle between ROI's centroid and its nearest neighboring ROI's centroid |
-| CLOSEST_NEIGHBOR2_DIST | Distance from ROI's centroid to the second nearest neighboring ROI's centroid |
-| CLOSEST_NEIGHBOR2_ANG | Angle between ROI's centroid and its second nearest neighboring ROI's centroid |
-| ANG_BW_NEIGHBORS_MEAN | Mean angle between ROI's centroid and centroids of its neighboring ROIs |
-| ANG_BW_NEIGHBORS_STDDEV | Standard deviation of angles between ROI's centroid and centroids of its neighboring ROIs |
-| ANG_BW_NEIGHBORS_MODE | Mode value of angles between ROI's centroid and centroids of its neighboring ROIs |
 | EXTENT | Proportion of the pixels (2D) or voxels (3D) in the bounding box that are also in the region. Computed as the area/volume of the object divided by the area/volume of the bounding box |
 | ASPECT_RATIO | The ratio of the major axis to the minor axis of ROI's inertia ellipse |
 | CONVEX_HULL_AREA | Area of ROI's convex hull |
@@ -301,3 +292,18 @@ __2D image moments:__
 | WEIGHTED_HU_M5 | Weighted Hu's moment 5
 | WEIGHTED_HU_M6 | Weighted Hu's moment 6
 | WEIGHTED_HU_M7 | Weighted Hu's moment 7
+
+__Neighbor features:__
+
+------------------------------------
+| Nyxus feature code | Description |
+|--------------------|-------------|
+| NUM_NEIGHBORS | The number of neighbors bordering the ROI's perimeter within proximity radius specified by command line argument --pixelDistance. (Default value of --pixelDistance is 5.) Algorithmically calculating this feature invilves solving the nearest neighbors search problem that in turn involves the proximity measure and the proximity threshold. Particularly, this plugin uses the $L_2$ norm measure over Cartesian space of pixel coordinates and parameter _--pixelDistance_ |
+| PERCENT_TOUCHING | Percent of ROI's contour pixels located at distance 0 from neighboring other ROIs's contour |
+| CLOSEST_NEIGHBOR1_DIST | Distance in pixels from ROI's centroid to the nearest neighboring ROI's centroid |
+| CLOSEST_NEIGHBOR1_ANG | Angle in degrees between ROI's centroid and its nearest neighboring ROI's centroid |
+| CLOSEST_NEIGHBOR2_DIST | Distance in pixels from ROI's centroid to the second nearest neighboring ROI's centroid |
+| CLOSEST_NEIGHBOR2_ANG | Angle in degrees between ROI's centroid and its second nearest neighboring ROI's centroid |
+| ANG_BW_NEIGHBORS_MEAN | Mean angle in degrees between ROI's centroid and centroids of its neighboring ROIs |
+| ANG_BW_NEIGHBORS_STDDEV | Standard deviation in degrees of angles between ROI's centroid and centroids of its neighboring ROIs |
+| ANG_BW_NEIGHBORS_MODE | Mode value in degrees of angles between ROI's centroid and centroids of its neighboring ROIs |

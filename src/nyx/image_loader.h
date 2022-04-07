@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 
-using uint32 = unsigned int;	// (Temporary) eliminate situation of unknown uint32
 #include "grayscale_tiff.h"
 
 /// @brief Incapsulates access to an intensity and mask image file pair

@@ -1,14 +1,13 @@
 #include "image_loader.h"
 
-ImageLoader::ImageLoader()
-{
-}
+ImageLoader::ImageLoader() {}
 
 bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpath)
 {
 	int n_threads = 1;
 
-	try {
+	try 
+	{
 		if (checkTileStatus(int_fpath))
 		{
 			intFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(n_threads, int_fpath);

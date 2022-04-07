@@ -115,13 +115,12 @@ namespace Nyxus
 			td = I.tileDepth(lvl);
 		size_t tileSize = th * tw;
 
-		size_t fh = I.fullHeight(lvl);
-		size_t fw = I.fullWidth(lvl);
-		size_t fd = I.fullDepth(lvl);
-
-		size_t ntw = I.numberTileWidth(lvl);
-		size_t nth = I.numberTileHeight(lvl);
-		size_t ntd = I.numberTileDepth(lvl);
+		size_t fh = I.fullHeight(lvl),
+			fw = I.fullWidth(lvl),
+			fd = I.fullDepth(lvl),
+			ntw = I.numberTileWidth(lvl),
+			nth = I.numberTileHeight(lvl), 
+			ntd = I.numberTileDepth(lvl);
 
 		// File #2 (labels)
 		NyxusGrayscaleTiffTileLoader<uint32_t> L(num_fastloader_threads, label_fpath);
@@ -171,16 +170,6 @@ namespace Nyxus
 				start = std::chrono::system_clock::now();
 
 				{
-					/*
-					//--- Experimental: just 2 threads
-					auto fu1 = std::async(std::launch::async, processPixels,
-						0, tileSize / 2,
-						&dataL, &dataI, tw);
-					auto fu2 = std::async(std::launch::async, processPixels,
-						tileSize / 2, tileSize,
-						&dataL, &dataI, tw);
-					*/
-
 					int workPerThread = tileSize / num_sensemaker_threads;
 					std::vector<std::future<void>> T;
 					for (int t = 0; t < num_sensemaker_threads; t++)

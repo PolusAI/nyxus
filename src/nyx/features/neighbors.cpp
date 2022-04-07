@@ -46,7 +46,9 @@ void NeighborsFeature::save_value(std::vector<std::vector<double>>& feature_vals
 /// @param end 
 /// @param ptrLabels 
 /// @param ptrLabelData 
-void NeighborsFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData) {}
+void NeighborsFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData) 
+{
+}
 
 // Calculates the features using spatial hashing approach (indirectly)
 void NeighborsFeature::parallel_process (std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
@@ -54,22 +56,80 @@ void NeighborsFeature::parallel_process (std::vector<int>& roi_labels, std::unor
 	manual_reduce();
 }
 
+/// @brief Implements the narrow phase
+/// @param start 
+/// @param end 
+/// @param ptrLabels 
+/// @param ptrLabelData 
+void parallel_process_1_batch_of_collision_pairs (size_t start, size_t end, std::vector<std::pair<int, int>>* ptrCollisionPairsVec, std::unordered_map <int, LR>* ptrLabelData)
+{
+	int radius = theEnvironment.get_pixel_distance();
+
+	size_t radius2 = radius * radius;	// We will compare radius with L2 distances
+
+	for (auto i = start; i < end; i++)
+	{
+		auto colpair = (*ptrCollisionPairsVec)[i];
+		auto l1 = colpair.first;
+		auto l2 = colpair.second;
+		LR& r1 = roiData[l1];
+		LR& r2 = roiData[l2];
+
+		// Make sure that segment's outer pixels are available
+		if (r1.contour.size() == 0)
+			continue;
+
+		// Iterate r1's outer pixels
+		double mind = r1.contour[0].min_sqdist(r2.contour);
+		size_t n_touchingOuterPixels = 0;
+		for (auto& cp : r1.contour)
+		{
+			double minD = cp.min_sqdist(r2.contour);
+			mind = std::min(mind, minD);		//--We aren't interested in max distance-->	maxd = std::max(maxd, maxD);
+
+			// Maintain touching pixels stats
+			if (minD == 0) // (minD <= radius2)
+				n_touchingOuterPixels++;
+		}
+
+		// Check versus the radius
+		if (mind > radius2)
+			continue;
+
+		// Save partial statis of r1's touching pixel stats
+		r1.fvals[PERCENT_TOUCHING][0] += n_touchingOuterPixels;
+
+		// Definitely neigbors
+		r1.fvals[NUM_NEIGHBORS][0]++;
+		r1.aux_neighboring_labels.push_back(l2);
+	}
+}
+
 // Calculates the features using spatial hashing approach
 void NeighborsFeature::manual_reduce()
 {
 	int radius = theEnvironment.get_pixel_distance();
+	int n_threads = 1; 
 
 	// Keeping the commented out greedy implementation just for the record and the time when we want to run it on a GPU
 	//==== Collision detection, method 1 (best with GPGPU)
 	//  Calculate collisions into a triangular matrix
-	int nul = uniqueLabels.size();
+	auto nul = uniqueLabels.size();
 	
 	std::vector <int> LabsVec;
 	LabsVec.reserve (uniqueLabels.size());
 	LabsVec.insert (LabsVec.end(), uniqueLabels.begin(), uniqueLabels.end());
 
-	std::vector <char> CM ((nul+1) * (nul+1), false);	// collision matrix
-	// --this loop can be parallel
+	//std::vector <char> CM ((nul+1) * (nul+1), false);	// collision matrix
+	std::vector <std::pair<int, int>> CM2;
+	CM2.reserve (nul * nul / 4);	// estimate: 25% of the segment population
+
+	//DEBUG
+	//	int n_aabb_collis = 0;
+
+	//DEBUG
+	//	auto startTime = std::chrono::system_clock::now();
+
 	for (size_t i1 = 0; i1 < nul; i1++) 
 	{
 		auto l1 = LabsVec[i1];
@@ -77,57 +137,65 @@ void NeighborsFeature::manual_reduce()
 
 		for (size_t i2 = 0; i2 < nul; i2++) 
 		{
-			auto l2 = LabsVec[i1];
-			if (l1 == l2)
+			auto l2 = LabsVec[i2];
+			if (i1 == i2) 
 				continue;	// Trivial - diagonal element
-			if (l1 > l2)
-				continue;	// No need to check the upper triangle
+			if (n_threads==1 && i1 > i2) 
+				continue;	// No need to check the upper triangle for single-threaded runs. Multi-threaded runs require the upper triangle for thread-safe results.
 
 			LR& r2 = roiData[l2];
 			bool noOverlap = r2.aabb.get_xmin() > r1.aabb.get_xmax() || r2.aabb.get_xmax() < r1.aabb.get_xmin() 
 				|| r2.aabb.get_ymin() > r1.aabb.get_ymax() || r2.aabb.get_ymax() < r1.aabb.get_ymin() ;
 			if (! noOverlap)
 			{
-				unsigned int idx = l1 * nul + l2;
-				CM[idx] = true;
+				CM2.push_back( {l1, l2});
+
+				//DEBUG
+				//	n_aabb_collis++;
 			}
 		}
 	}
 
-	// Harvest collision pairs
-	size_t radius2 = radius * radius;
+	//DEBUG
+	//	double pcAabbCollis = 100.0 * double(n_aabb_collis) / double(nul* nul);
+
+	//DEBUG
+	//	auto broPhaseTime = std::chrono::system_clock::now();
+
+
+	// Harvest collision pairs v #1
+#if 0
+	size_t radius2 = radius * radius;	// We will compare radius with L2 distances
 	for (size_t i1 = 0; i1 < nul; i1++) 
 	{
 		auto l1 = LabsVec[i1];
 		LR& r1 = roiData[l1];
 
-		for (size_t i2 = 0; i2 < nul; i2++) // for (auto l2 : uniqueLabels)
+		for (size_t i2 = 0; i2 < nul; i2++) 
 		{
-			auto l2 = LabsVec[i1];			
-			if (l1 == l2)
+			if (i1 == i2) 
 				continue;	// Trivial - diagonal element
-			if (l1 > l2)
+			if (i1 > i2) 
 				continue;	// No need to check the upper triangle
 
-			unsigned int idx = l1 * nul + l2;
+			unsigned int idx = i1 * nul + i2; 
 			if (CM[idx] == true)
 			{
 				// Check if these labels are close enough
+				auto l2 = LabsVec[i2];
 				LR& r2 = roiData[l2];
 
 				// Iterate r1's contour pixels
-				auto [mind, maxd] = r1.contour[0].min_max_sqdist(r2.contour);
-				size_t n_touchingContourPixels = 0;
+				double mind = r1.contour[0].min_sqdist (r2.contour);
+				size_t n_touchingOuterPixels = 0;
 				for (auto& cp : r1.contour)
 				{
-					auto [minD, maxD] = cp.min_max_sqdist(r2.contour);
-					mind = std::min(mind, minD);
-
-					//--We aren't interested in max distance-->	maxd = std::max(maxd, maxD);
+					double minD = cp.min_sqdist (r2.contour);
+					mind = std::min (mind, minD);		//--We aren't interested in max distance-->	maxd = std::max(maxd, maxD);
 
 					// Maintain touching pixels stats
 					if (minD == 0) // (minD <= radius2)
-						n_touchingContourPixels++;
+						n_touchingOuterPixels++;
 				}
 
 				// Check versus the radius
@@ -135,7 +203,7 @@ void NeighborsFeature::manual_reduce()
 					continue;
 
 				// Save partial statis of r1's touching pixel stats
-				r1.fvals[PERCENT_TOUCHING][0] += n_touchingContourPixels;
+				r1.fvals[PERCENT_TOUCHING][0] += n_touchingOuterPixels;
 
 				// Definitely neigbors
 				r1.fvals[NUM_NEIGHBORS][0]++;
@@ -146,10 +214,85 @@ void NeighborsFeature::manual_reduce()
 		}
 
 		// Finalize the % touching calculation
-		r1.fvals[PERCENT_TOUCHING][0] = double(r1.fvals[PERCENT_TOUCHING][0]) / double(r1.contour.size());
+		r1.fvals[PERCENT_TOUCHING][0] = 100.0 * double(r1.fvals[PERCENT_TOUCHING][0]) / double(r1.contour.size());
+	}
+#endif
+
+	// Harvest collision pairs v #2
+	
+	if (n_threads == 1)
+	{
+		// single thread
+		size_t radius2 = radius * radius;	// We will compare radius with L2 distances
+		for (auto pa : CM2)
+		{
+			auto l1 = pa.first;
+			auto l2 = pa.second;
+			LR& r1 = roiData[l1];
+			LR& r2 = roiData[l2];
+
+			// Make sure that segment's outer pixels are available
+			if (r1.contour.size() == 0)
+				continue;
+
+			// Iterate r1's outer pixels
+			double mind = r1.contour[0].min_sqdist(r2.contour);
+			size_t n_touchingOuterPixels = 0;
+			for (auto& cp : r1.contour)
+			{
+				double minD = cp.min_sqdist(r2.contour);
+				mind = std::min(mind, minD);		//--We aren't interested in max distance-->	maxd = std::max(maxd, maxD);
+
+				// Maintain touching pixels stats
+				if (minD == 0) // (minD <= radius2)
+					n_touchingOuterPixels++;
+			}
+
+			// Check versus the radius
+			if (mind > radius2)
+				continue;
+
+			// Save partial statis of r1's touching pixel stats
+			r1.fvals[PERCENT_TOUCHING][0] += n_touchingOuterPixels;
+
+			// Definitely neigbors
+			r1.fvals[NUM_NEIGHBORS][0]++;
+			r1.aux_neighboring_labels.push_back(l2);
+
+			// We're single-threaded here so it's safe to update both r1 and r2
+			r2.fvals[NUM_NEIGHBORS][0]++;	
+			r2.aux_neighboring_labels.push_back(l1);
+		}
+		for (auto pa : CM2)
+		{
+			auto l1 = pa.first;
+			LR& r1 = roiData[l1];
+			// Finalize the % touching calculation
+			r1.fvals[PERCENT_TOUCHING][0] = 100.0 * double(r1.fvals[PERCENT_TOUCHING][0]) / double(r1.contour.size());
+		}
+	}
+	else
+	{
+		// multi-threading
+		size_t jobSize = CM2.size(),
+			workPerThread = jobSize / n_threads;
+
+		std::vector<std::future<void>> T;
+		for (int t = 0; t < n_threads; t++)
+		{
+			size_t idxS = t * workPerThread,
+				idxE = idxS + workPerThread;
+			if (t == n_threads - 1)
+				idxE = jobSize; // include the tail
+			T.push_back (std::async(std::launch::async, parallel_process_1_batch_of_collision_pairs, idxS, idxE, &CM2, &roiData));
+		}
 	}
 
-#if 0
+	//DEBUG
+	//auto narPhaseTime = std::chrono::system_clock::now();
+
+// Collision detection method #1 (kept for the record)
+#if 0 
 	//==== Collision detection, method 2
 
 	// Hash table
@@ -268,6 +411,7 @@ void NeighborsFeature::manual_reduce()
 			ceny = r.fvals[CENTROID_Y][0];
 
 		std::vector<double> dists;
+		dists.reserve(r.aux_neighboring_labels.size());
 		for (auto l_neig : r.aux_neighboring_labels)
 		{
 			LR& r_neig = Nyxus::roiData[l_neig];
@@ -289,7 +433,7 @@ void NeighborsFeature::manual_reduce()
 
 		// Save angle with neighbor #1
 		LR& r1 = Nyxus::roiData[closest1label];
-		r.fvals[CLOSEST_NEIGHBOR1_ANG][0] = angle(cenx, ceny, r1.fvals[CENTROID_X][0], r1.fvals[CENTROID_X][0]);
+		r.fvals[CLOSEST_NEIGHBOR1_ANG][0] = 180.0 * angle(cenx, ceny, r1.fvals[CENTROID_X][0], r1.fvals[CENTROID_X][0]);
 
 		// Find idx of 2nd minimum
 		if (n_neigs > 1)
@@ -307,7 +451,7 @@ void NeighborsFeature::manual_reduce()
 
 			// Save angle with neighbor #2
 			LR& r2 = Nyxus::roiData[closest2label];
-			r.fvals[CLOSEST_NEIGHBOR2_ANG][0] = angle(cenx, ceny, r2.fvals[CENTROID_X][0], r2.fvals[CENTROID_X][0]);
+			r.fvals[CLOSEST_NEIGHBOR2_ANG][0] = 180.0 * angle(cenx, ceny, r2.fvals[CENTROID_X][0], r2.fvals[CENTROID_X][0]); 
 		}
 	}
 
@@ -333,8 +477,7 @@ void NeighborsFeature::manual_reduce()
 			double cenx_n = r_neig.fvals[CENTROID_X][0],
 				ceny_n = r_neig.fvals[CENTROID_Y][0];
 
-			double ang = angle (cenx, ceny, cenx_n, ceny_n);	// radians
-			ang = ang * 180.0;	// degrees because we will later need angles' mode
+			double ang = 180.0 * angle (cenx, ceny, cenx_n, ceny_n);	
 			mom2.add(ang);
 			anglesRounded.push_back(ang);
 		}
@@ -343,6 +486,17 @@ void NeighborsFeature::manual_reduce()
 		r.fvals[ANG_BW_NEIGHBORS_STDDEV][0] = mom2.std();
 		r.fvals[ANG_BW_NEIGHBORS_MODE][0] = mode(anglesRounded);
 	}
+
+	//DEBUG
+	//	auto endTime = std::chrono::system_clock::now();
+	//	std::chrono::duration<double, std::micro> elap1 = broPhaseTime - startTime;
+	//	std::chrono::duration<double, std::micro> elap2 = narPhaseTime - broPhaseTime;
+	//	std::chrono::duration<double, std::micro> elap3 = endTime - narPhaseTime;
+	//	auto totElap = elap1.count() + elap2.count() + elap3.count();
+	//	std::cout << "=== neighbor features broadPhase x" << n_threads << "_threads  = " << elap1.count() << " us " << round2(elap1.count() / totElap *100.) << "%\n";
+	//	std::cout << "=== neighbor features narrowPhase x" << n_threads << "_threads  = " << elap2.count() << " us " << round2(elap2.count() / totElap * 100.) << "%\n";
+	//	std::cout << "=== neighbor features angles x" << n_threads << "_threads  = " << elap3.count() << " us " << round2(elap3.count() / totElap * 100.) << "%\n";
+	//
 }
 
 // Spatial hashing
