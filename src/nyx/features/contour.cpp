@@ -12,10 +12,10 @@
 #include "moments.h"
 #include "contour.h"
 
-// Required by the reduction function
-#include "../roi_cache.h"
-
+#include "../roi_cache.h"	// Required by the reduction function
 #include "../parallel.h"
+
+#include "../environment.h"		// regular or whole slide mode
 
 ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 {
@@ -30,7 +30,7 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 		});
 }
 
-void ContourFeature::calculate(LR& r)
+void ContourFeature::buildRegularContour(LR& r)
 {
 	//==== Pad the image
 
@@ -177,6 +177,27 @@ void ContourFeature::calculate(LR& r)
 			}
 		}
 	}
+}
+
+void ContourFeature::buildWholeSlideContour(LR& r)
+{
+	// Push the 4 slide vertices of dummy intensity 999
+	Pixel2 tl (r.aabb.get_xmin(), r.aabb.get_ymin(), 999),
+		tr (r.aabb.get_xmax(), r.aabb.get_ymin(), 999), 
+		bl (r.aabb.get_xmin(), r.aabb.get_ymax(), 999), 
+		br (r.aabb.get_xmax(), r.aabb.get_ymax(), 999);
+	r.contour.push_back(tl);
+	r.contour.push_back(tr);
+	r.contour.push_back(br);
+	r.contour.push_back(bl);
+}
+
+void ContourFeature::calculate(LR& r)
+{
+	if (Nyxus::theEnvironment.singleROI)
+		buildWholeSlideContour(r);
+	else
+		buildRegularContour(r);
 
 	//=== Calculate the features
 	fval_PERIMETER = (StatsInt)r.contour.size();

@@ -26,6 +26,20 @@ void ErosionPixelsFeature::calculate(LR& r)
 	//localMinImage = zeros(size(grayImage), class(grayImage));
 	ImageMatrix I1, I2(I);
 
+	//??? Discretize
+#if 0
+	writeablePixels I2wp = I2.WriteablePixels();
+	for (size_t i = 0; i < I2wp.size(); i++)
+	{
+		PixIntens& pi = I2wp[i];
+		if (pi != 0)
+			pi = 1;
+	}
+#endif
+
+	std::vector<PixIntens> Nv;
+	Nv.reserve(SE_R*SE_C/2);	// Reserving the nnz(struc elem matrix), roughly equal to the 50% of the SE matrix size
+	
 	numErosions = 0;
 	for (; numErosions < SANITY_MAX_NUM_EROSIONS; numErosions++)
 	{
@@ -40,21 +54,21 @@ void ErosionPixelsFeature::calculate(LR& r)
 		for (int col = (halfWidth + 1); col < (cols - halfWidth); col++)
 			for (int row = (halfHeight + 1); row < (rows - halfHeight); row++)
 			{
-				//% Get the 3x3 neighborhood
+				//% Get the 3x3 (or in general, NxN) neighborhood
 				int row1 = row - halfHeight;
 				int row2 = row + halfHeight;
 				int col1 = col - halfWidth;
 				int col2 = col + halfWidth;
 
-				//thisNeighborhood = grayImage (row1:row2, col1 : col2);
 				bool all0 = true;
 				int N[SE_R][SE_C];
 				for (int r = row1; r <= row2; r++)
 					for (int c = col1; c <= col2; c++)
 					{
-						N[r - row1][c - col1] = I1p.yx(r, c);
+						auto pi = I1p.yx(r, c);
+						N[r - row1][c - col1] = pi;
 
-						if (N[r - row1][c - col1])
+						if (pi)
 							all0 = false;
 					}
 
@@ -66,8 +80,7 @@ void ErosionPixelsFeature::calculate(LR& r)
 				}
 
 				// Apply the structuring element
-				//pixelsInSE = thisNeighborhood(se);
-				std::vector<PixIntens> Nv;
+				Nv.clear();
 				for (int r = 0; r < SE_R; r++)
 					for (int c = 0; c < SE_C; c++)
 					{
@@ -76,7 +89,6 @@ void ErosionPixelsFeature::calculate(LR& r)
 							Nv.push_back(N[r][c]);
 					}
 
-				//localMinImage(row, col) = min(pixelsInSE);
 				PixIntens minPixel = *std::min_element(Nv.begin(), Nv.end());
 				I2p.yx(row, col) = minPixel;
 
