@@ -22,20 +22,19 @@ void ErosionPixelsFeature::calculate(LR& r)
 	auto halfHeight = (int)floor(SE_R / 2);
 	auto halfWidth = (int)floor(SE_C / 2);
 
-	//% Initialize output image
-	//localMinImage = zeros(size(grayImage), class(grayImage));
+	// Initialize output image
 	ImageMatrix I1, I2(I);
 
-	//??? Discretize
-#if 0
-	writeablePixels I2wp = I2.WriteablePixels();
-	for (size_t i = 0; i < I2wp.size(); i++)
-	{
-		PixIntens& pi = I2wp[i];
-		if (pi != 0)
-			pi = 1;
-	}
-#endif
+	// Discretize
+	#if 0
+		writeablePixels I2wp = I2.WriteablePixels();
+		for (size_t i = 0; i < I2wp.size(); i++)
+		{
+			PixIntens& pi = I2wp[i];
+			if (pi != 0)
+				pi = 1;
+		}
+	#endif
 
 	std::vector<PixIntens> Nv;
 	Nv.reserve(SE_R*SE_C/2);	// Reserving the nnz(struc elem matrix), roughly equal to the 50% of the SE matrix size
