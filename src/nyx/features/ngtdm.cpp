@@ -28,7 +28,7 @@ void NGTDMFeature::calculate (LR& r)
 		return;
 	}
 
-	// Prepare ROI's intensity range
+	// Prepare ROI's intensity range for normalize_I()
 	PixIntens piRange = r.aux_max - r.aux_min;
 
 	//==== Make a list of intensity clusters (zones)

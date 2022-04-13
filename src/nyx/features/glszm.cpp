@@ -196,7 +196,15 @@ void GLSZMFeature::calculate(LR& r)
 	auto M = r.aux_image_matrix;
 	pixData& D = M.WriteablePixels();
 
-	//M.print("initial\n");
+	// Squeeze the intensity range
+	PixIntens piRange = r.aux_max - r.aux_min;		// Prepare ROI's intensity range
+	for (size_t i = 0; i < D.size(); i++)
+	{
+		PixIntens pi = Nyxus::normalize_I (D[i], r.aux_min, piRange);
+		D[i] = pi;
+	}
+
+	// Diagnostic: M.print("initial\n");
 
 	// Number of zones
 	const int VISITED = -1;

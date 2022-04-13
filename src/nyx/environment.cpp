@@ -871,7 +871,8 @@ int Environment::parse_cmdline(int argc, char **argv)
         
         auto F = {
             EROSIONS_2_VANISH,
-            EROSIONS_2_VANISH_COMPLEMENT 
+            EROSIONS_2_VANISH_COMPLEMENT, 
+            GABOR
         };
         theFeatureSet.disableFeatures (F);
     }
