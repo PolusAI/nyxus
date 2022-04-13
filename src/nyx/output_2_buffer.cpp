@@ -142,7 +142,7 @@ namespace Nyxus
 				if (fc == ZERNIKE2D)
 				{
 					// Populate with indices
-					for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
+					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
 						headerBuf.push_back (fn + "_" + std::to_string(i));
 
 					// Proceed with other features

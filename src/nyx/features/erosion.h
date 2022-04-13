@@ -23,10 +23,54 @@ private:
 
 	const int SANITY_MAX_NUM_EROSIONS = 1000;	// Prevent infinite erosions
 
-	static const int SE_R = 3,	// rows
-		SE_C = 3;	// columns
-	
+	// Structuring element definition:
+	static const int SE_R = 3, SE_C = 3; 	// rows, columns
 	int strucElem [SE_R][SE_C] = { {0,1,0}, {1,1,1}, {0,1,0} };
+
+#if 0
+	// 5x5
+	static const int SE_R = 5, SE_C = 5;	 // rows, columns
+	int strucElem[SE_R][SE_C] = {
+		{0,     0,     1,     0,     0},
+		{0,     1,     1,     1,     0},
+		{1,     1,     1,     1,     1},
+		{0,     1,     1,     1,     0},
+		{0,     0,     1,     0,     0}
+	};
+#endif
+
+#if 0
+	// 7x7
+	static const int SE_R = 7, SE_C = 7;		// rows, columns
+
+	int strucElem[SE_R][SE_C] = {
+		{0,     0,     0,     1,     0,     0,     0}, 
+		{0,     0,     1,     1,     1,     0,     0}, 
+		{0,     1,      1,      1,      1,      1,      0}, 
+		{1,     1,      1,      1,      1,      1,      1}, 
+		{0,     1,      1,      1,      1,      1,      0}, 
+		{0,     0,      1,      1,      1,      0,      0}, 
+		{0,     0,      0,      1,      0,      0,      0}
+	};
+#endif
+
+#if 0
+	// 11x11
+	static const int SE_R = 11, SE_C = 11;		// rows, columns
+	int strucElem[SE_R][SE_C] = {
+		{0,     0,     0,     0,     0,     1,     0,     0,     0,     0,     0},
+		{0,     0,     0,     0,     1,     1,     1,     0,     0,     0,     0}, 
+		{0,     0,     0,     1,     1,     1,     1,     1,     0,     0,     0}, 
+		{0,     0,     1,     1,     1,     1,     1,     1,     1,     0,     0}, 
+		{0,     1,     1,     1,     1,     1,     1,     1,     1,     1,     0}, 
+		{1,     1,     1,     1,     1,     1,     1,     1,     1,     1,     1}, 
+		{0,     1,     1,     1,     1,     1,     1,     1,     1,     1,     0}, 
+		{0,     0,     1,     1,     1,     1,     1,     1,     1,     0,     0}, 
+		{0,     0,     0,     1,     1,     1,     1,     1,     0,     0,     0}, 
+		{0,     0,     0,     0,     1,     1,     1,     0,     0,     0,     0}, 
+		{0,     0,     0,     0,     0,     1,     0,     0,     0,     0,     0}
+	};
+#endif
 
 	int numErosions = 0;	// Feature value
 };

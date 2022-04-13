@@ -15,7 +15,7 @@ void RoiRadiusFeature::calculate (LR& r)
 	std::vector<HistoItem> dists;
 	for (auto& pxA : cloud)
 	{
-		auto [minSD, maxSD] = pxA.min_max_sqdist(contour);
+		auto minSD = pxA.min_sqdist(contour);
 		mom2.add(minSD);
 		dists.push_back(minSD);
 	}

@@ -68,6 +68,9 @@ void GLRLMFeature::calculate (LR& r)
 	using AngleUniqInte = std::unordered_set<PixIntens>;
 	//--unnec--	std::vector<AngleUniqInte>  angles_U;
 
+	// Prepare ROI's intensity range
+	PixIntens piRange = r.aux_max - r.aux_min;
+
 	//==== Iterate angles 0,45,90,135
 	for (int angleIdx = 0; angleIdx < 4; angleIdx++)
 	{
@@ -83,6 +86,13 @@ void GLRLMFeature::calculate (LR& r)
 		// Copy the image matrix. We'll use it to maintain state of cluster scanning 
 		auto M = im;
 		pixData& D = M.WriteablePixels();
+
+		// Squeeze the intensity range
+		for (size_t i = 0; i < D.size(); i++)
+		{
+			PixIntens pi = Nyxus::normalize_I(D[i], r.aux_min, piRange);
+			D[i] = pi;
+		}
 
 		// Number of zones
 		const int VISITED = -1;

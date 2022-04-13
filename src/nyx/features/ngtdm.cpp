@@ -28,6 +28,9 @@ void NGTDMFeature::calculate (LR& r)
 		return;
 	}
 
+	// Prepare ROI's intensity range for normalize_I()
+	PixIntens piRange = r.aux_max - r.aux_min;
+
 	//==== Make a list of intensity clusters (zones)
 	using AveNeighborhoodInte = std::pair<PixIntens, double>;	// Pairs of (intensity, average intensity of all 8 neighbors)
 	std::vector<AveNeighborhoodInte> Z;
@@ -42,9 +45,12 @@ void NGTDMFeature::calculate (LR& r)
 		for (int col = 0; col < D.width(); col++)
 		{
 			// Find a non-blank pixel
-			PixIntens pi = D.yx(row, col);
+			PixIntens pi = Nyxus::normalize_I(D.yx(row, col), r.aux_min, piRange); // = D.yx(row, col);
 			if (pi == 0)
 				continue;
+
+			// Update unique intensities
+			U.insert(pi);
 
 			// Evaluate the neighborhood
 			PixIntens neigsI = 0;
@@ -53,42 +59,42 @@ void NGTDMFeature::calculate (LR& r)
 
 			if (D.safe(row - 1, col))	// North
 			{
-				neigsI += D.yx(row - 1, col);
+				neigsI += Nyxus::normalize_I(D.yx(row-1, col), r.aux_min, piRange); // = D.yx(row - 1, col);
 				nd++;
 			}
 			if (D.safe(row - 1, col + 1))	// North-East
 			{
-				neigsI += D.yx(row - 1, col + 1);
+				neigsI += Nyxus::normalize_I(D.yx(row-1, col+1), r.aux_min, piRange); // = D.yx(row - 1, col + 1);
 				nd++;
 			}
 			if (D.safe(row, col + 1))	// East
 			{
-				neigsI += D.yx(row, col + 1);
+				neigsI += Nyxus::normalize_I(D.yx(row, col+1), r.aux_min, piRange); // = D.yx(row, col + 1);
 				nd++;
 			}
 			if (D.safe(row + 1, col + 1))	// South-East
 			{
-				neigsI += D.yx(row + 1, col + 1);
+				neigsI += Nyxus::normalize_I(D.yx(row+1, col+1), r.aux_min, piRange); // = D.yx(row + 1, col + 1);
 				nd++;
 			}
 			if (D.safe(row + 1, col))	// South
 			{
-				neigsI += D.yx(row + 1, col);
+				neigsI += Nyxus::normalize_I(D.yx(row+1, col), r.aux_min, piRange); // = D.yx(row + 1, col);
 				nd++;
 			}
 			if (D.safe(row + 1, col - 1))	// South-West
 			{
-				neigsI += D.yx(row + 1, col - 1);
+				neigsI += Nyxus::normalize_I(D.yx(row+1, col-1), r.aux_min, piRange); // = D.yx(row + 1, col - 1);
 				nd++;
 			}
 			if (D.safe(row, col - 1))	// West
 			{
-				neigsI += D.yx(row, col - 1);
+				neigsI += Nyxus::normalize_I(D.yx(row, col-1), r.aux_min, piRange); // = D.yx(row, col - 1);
 				nd++;
 			}
 			if (D.safe(row - 1, col - 1))	// North-West
 			{
-				neigsI += D.yx(row - 1, col - 1);
+				neigsI += Nyxus::normalize_I(D.yx(row-1, col-1), r.aux_min, piRange);  // = D.yx(row - 1, col - 1);
 				nd++;
 			}
 
@@ -96,9 +102,6 @@ void NGTDMFeature::calculate (LR& r)
 			neigsI /= nd;
 			AveNeighborhoodInte z = { pi, neigsI };
 			Z.push_back(z);
-
-			// Update unique intensities
-			U.insert(pi);
 		}
 
 	//==== Fill the matrix

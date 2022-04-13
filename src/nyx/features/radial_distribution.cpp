@@ -89,6 +89,7 @@ void RadialDistributionFeature::calculate(LR& r)
 		double dstAC = std::sqrt(pxContour.sqdist(pxA));
 
 		// Intercept an error or weird condition
+#if 0
 		if (dstOC < dstAC || dstOC < dstOA)
 		{
 			// Show A
@@ -100,6 +101,7 @@ void RadialDistributionFeature::calculate(LR& r)
 			ImageMatrix imCont(contour_pixels);
 			imCont.print(ss.str(), "", { {pxO.x, pxO.y, "(O)"},  {pxA.x, pxA.y, "(A)"}, {pxContour.x, pxContour.y, "(C)"} });
 		}
+#endif
 
 		// Ratio and bin
 		double rat = dstOA / dstOC;

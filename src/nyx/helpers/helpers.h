@@ -172,5 +172,16 @@ namespace Nyxus
 		return lg2 * 0.30102999566;	// log2 to log10
 	}
 
+	/// @brief Squeezes the intensity range
+	/// @param pi Source pixel intensity
+	/// @param min_ Minimum ROI's intensity
+	/// @param ran_ ROI-s intensity range (= max-min)
+	/// @return Squeezed intensity within range (0, ran_)
+	inline unsigned int normalize_I (unsigned int pi, unsigned int min_, unsigned int ran_)
+	{
+		unsigned int new_pi = double(pi - min_) / double(ran_) * 512.0;
+		return new_pi;
+	}
+
 }
 

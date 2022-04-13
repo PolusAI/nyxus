@@ -37,32 +37,44 @@ void GLDMFeature::calculate(LR& r)
 
 	const pixData& D = r.aux_image_matrix.ReadablePixels();
 
+	// Prepare ROI's intensity range for normalize_I()
+	PixIntens piRange = r.aux_max - r.aux_min;
+
 	// Gather zones
 	for (int row = 1; row < D.height() - 1; row++)
 		for (int col = 1; col < D.width() - 1; col++)
 		{
 			// Find a non-blank pixel
-			PixIntens pi = D.yx(row, col);
+			PixIntens pi = Nyxus::normalize_I (D.yx(row, col), r.aux_min, piRange); // = D.yx(row, col);
 			if (pi == 0)
 				continue;
 
 			// Count dependencies
 			int nd = 0;	// Number of dependencies
-			if (D.yx(row - 1, col) == pi)	// North
+			PixIntens piQ; // Pixel intensity of question
+			piQ = Nyxus::normalize_I (D.yx(row - 1, col), r.aux_min, piRange);	// North
+			if (piQ == pi)
 				nd++;
-			if (D.yx(row - 1, col + 1) == pi)	// North-East
+			piQ = Nyxus::normalize_I(D.yx(row - 1, col + 1), r.aux_min, piRange);	// North-East
+			if (piQ == pi)
 				nd++;
-			if (D.yx(row, col + 1) == pi)	// East
+			piQ = Nyxus::normalize_I(D.yx(row, col + 1), r.aux_min, piRange);	// East
+			if (piQ == pi)
 				nd++;
-			if (D.yx(row + 1, col + 1) == pi)	// South-East
+			piQ = Nyxus::normalize_I(D.yx(row + 1, col + 1), r.aux_min, piRange);	// South-East
+			if (piQ == pi)
 				nd++;
-			if (D.yx(row + 1, col) == pi)	// South
+			piQ = Nyxus::normalize_I(D.yx(row + 1, col), r.aux_min, piRange);		// South
+			if (piQ == pi)
 				nd++;
-			if (D.yx(row + 1, col - 1) == pi)	// South-West
+			piQ = Nyxus::normalize_I(D.yx(row + 1, col - 1), r.aux_min, piRange);	// South-West
+			if (piQ == pi)
 				nd++;
-			if (D.yx(row, col - 1) == pi)	// West
+			piQ = Nyxus::normalize_I(D.yx(row, col - 1), r.aux_min, piRange);		// West
+			if (piQ == pi)
 				nd++;
-			if (D.yx(row - 1, col - 1) == pi)	// North-West
+			piQ = Nyxus::normalize_I(D.yx(row - 1, col - 1), r.aux_min, piRange);	// North-West
+			if (piQ == pi)
 				nd++;
 
 			// Save the intensity's dependency

@@ -752,17 +752,6 @@ int Environment::parse_cmdline(int argc, char **argv)
         features = FEA_NICK_ALL;
     }
 
-    //==== Single ROI?
-    if (Nyxus::toupper(labels_dir) == Nyxus::toupper(intensity_dir))
-    {
-        singleROI = true;
-        std::cout << "+------------------------------+\n"
-                     "|                              |\n"
-                     "+  Activating single-ROI mode  +\n"
-                     "|                              |\n"
-                     "+------------------------------+\n";
-    }
-
     //==== Output type
     auto rawOutpTypeUC = Nyxus::toupper(rawOutpType);
     if (rawOutpTypeUC != Nyxus::toupper(OT_SINGLECSV) && rawOutpTypeUC != Nyxus::toupper(OT_SEPCSV))
@@ -866,6 +855,26 @@ int Environment::parse_cmdline(int argc, char **argv)
     {
         std::cerr << e.what();
         return 1;
+    }
+
+    // --Handle the whole-slide mode
+    if (Nyxus::toupper(labels_dir) == Nyxus::toupper(intensity_dir))
+    {
+        singleROI = true;
+        std::cout << 
+            "+-----------------------------------------------------------+\n"
+            "|                                                           |\n"
+            "|  Activating whole slide (aka single-ROI) mode             |\n"
+            "|  ATTENTION: disabling time-sonsuming erosions features    |\n"
+            "|                                                           |\n"
+            "+-----------------------------------------------------------+\n" ;
+        
+        auto F = {
+            EROSIONS_2_VANISH,
+            EROSIONS_2_VANISH_COMPLEMENT, 
+            GABOR
+        };
+        theFeatureSet.disableFeatures (F);
     }
 
     //==== Parse resolution
