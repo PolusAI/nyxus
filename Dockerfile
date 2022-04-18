@@ -1,9 +1,9 @@
-FROM labshare/polus-bfio-util:2.0.4-slim-buster
+FROM debian:bullseye-slim
 
 COPY VERSION /
 		
 RUN apt-get update
-RUN apt-get install -y libtiff5-dev
+RUN apt-get install -y libtiff5-dev libtiff-dev libdeflate-dev
 
 ARG EXEC_DIR="/opt/executables"
 ARG DATA_DIR="/data"
