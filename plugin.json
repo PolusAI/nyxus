@@ -1,13 +1,13 @@
 {
   "name": "Nyxus",
-  "version": "0.2.4",
-  "containerId": "polusai/nyxus:0.2.4",
+  "version": "0.2.9",
+  "containerId": "polusai/nyxus:0.2.9",
   "title": "Nyxus feature extraction",
-  "description": "Nyxus feature extractor (build of 12/08/2021)",
+  "description": "Nyxus feature extractor (build of 5/10/2022)",
   "author": "friskluft + hsidky",
   "institution": "Axle Informatics",
-  "repository": "https://github.com/friskluft/nyxus",
-  "website": "https://github.com/friskluft/nyxus",
+  "repository": "https://github.com/PolusAI/nyxus",
+  "website": "https://github.com/PolusAI/nyxus",
   "citation": "",
   "inputs": [
     {
@@ -111,6 +111,12 @@
               "description": "ALL_BUT_GLCM",
               "enum": [
                 "*ALL_BUT_GLCM*"
+              ]
+            },
+            {
+              "description": "ALL_EASY = ALL except GABOR,GLCM, and 2D moments",
+              "enum": [
+                "*ALL_EASY*"
               ]
             },
             {
