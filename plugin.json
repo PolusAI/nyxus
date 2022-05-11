@@ -1,7 +1,7 @@
 {
   "name": "Nyxus",
-  "version": "0.2.9",
-  "containerId": "polusai/nyxus:0.2.9",
+  "version": "0.2.2",
+  "containerId": "polusai/nyxus:0.2.2",
   "title": "Nyxus feature extraction",
   "description": "Nyxus feature extractor (build of 5/10/2022)",
   "author": "friskluft + hsidky",
