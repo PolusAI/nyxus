@@ -130,6 +130,8 @@ endif()
 pybind11_add_module(backend 
 	${SOURCE}
 	src/nyx/python/new_bindings_py.cpp
+	src/nyx/python/nested_roi_py.cpp
+	src/nyx/image_loader1x.cpp
 )
 
 target_compile_definitions(backend PRIVATE WITH_PYTHON_H)
