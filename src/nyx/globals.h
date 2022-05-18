@@ -21,6 +21,7 @@ namespace Nyxus
 	bool datasetDirsOK(const std::string& dirIntens, const std::string& dirLab, const std::string& dirOut, bool mustCheckDirOut);
 	bool directoryExists(const std::string& dir);
 	void readDirectoryFiles(const std::string& dir, std::vector<std::string>& files);
+	void readDirectoryFiles(const std::string& dir, const std::string& file_pattern, std::vector<std::string>& files);
 	bool scanFilePairParallel(const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads, int filepair_index, int tot_num_filepairs);
 	std::string getPureFname(std::string fpath);
 	int processDataset(const std::vector<std::string>& intensFiles, const std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int numReduceThreads, int min_online_roi_size, bool save2csv, const std::string& csvOutputDir);

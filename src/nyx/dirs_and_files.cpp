@@ -29,8 +29,19 @@ namespace Nyxus
 				pureFname = entry.path().filename().string();	// The file name that should participate in the filepattern check
 			if (std::regex_match(pureFname, re))
 				files.push_back(fullPath);
-			// else
-			// 	std::cout << "Skipping file " << fp << " as not matching file pattern " << theEnvironment.file_pattern << "\n";
+		}
+	}
+
+	void readDirectoryFiles(const std::string& dir, const std::string& file_pattern, std::vector<std::string>& files)
+	{
+		std::regex re(file_pattern);
+
+		for (auto& entry : std::filesystem::directory_iterator(dir))
+		{
+			std::string fullPath = entry.path().string(),
+				pureFname = entry.path().filename().string();	// The file name that should participate in the filepattern check
+			if (std::regex_match(pureFname, re))
+				files.push_back(fullPath);
 		}
 	}
 
@@ -97,7 +108,7 @@ namespace Nyxus
 			// Check if the dataset is meaningful
 			if (intensFiles.size() == 0 || labelFiles.size() == 0)
 			{
-				std::cout << "No intensity and/or label files to process" << std::endl;
+				std::cout << "No intensity and/or label files to process, probably due to file pattern " << theEnvironment.file_pattern << std::endl;
 				return 2;
 			}
 			if (intensFiles.size() != labelFiles.size())
