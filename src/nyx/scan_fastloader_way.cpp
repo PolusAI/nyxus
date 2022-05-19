@@ -55,7 +55,7 @@ namespace Nyxus
 			}
 
 			// Dump ROI metrics
-			VERBOSLVL4(dump_roi_metrics(label_fpath);)	// dumps to file in the output directory
+			VERBOSLVL4(dump_roi_metrics(label_fpath))	// dumps to file in the output directory
 
 			// Distribute ROIs among phases
 			for (auto lab : uniqueLabels)
