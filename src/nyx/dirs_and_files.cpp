@@ -19,19 +19,6 @@ namespace Nyxus
 		return std::filesystem::exists(p);
 	}
 
-	void readDirectoryFiles(const std::string& dir, std::vector<std::string>& files)
-	{
-		std::regex re(theEnvironment.file_pattern);
-
-		for (auto& entry : std::filesystem::directory_iterator(dir))
-		{
-			std::string fullPath = entry.path().string(), 
-				pureFname = entry.path().filename().string();	// The file name that should participate in the filepattern check
-			if (std::regex_match(pureFname, re))
-				files.push_back(fullPath);
-		}
-	}
-
 	void readDirectoryFiles(const std::string& dir, const std::string& file_pattern, std::vector<std::string>& files)
 	{
 		std::regex re(file_pattern);
@@ -102,8 +89,8 @@ namespace Nyxus
 		if (intLabMappingFile.empty())
 		{
 			// Common case - no ad hoc intensity-label file mapping, 1-to-1 correspondence instead
-			readDirectoryFiles(dirIntens, intensFiles);
-			readDirectoryFiles(dirLabels, labelFiles);
+			readDirectoryFiles(dirIntens, theEnvironment.file_pattern, intensFiles);
+			readDirectoryFiles(dirLabels, theEnvironment.file_pattern, labelFiles);
 
 			// Check if the dataset is meaningful
 			if (intensFiles.size() == 0 || labelFiles.size() == 0)

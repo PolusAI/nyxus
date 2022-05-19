@@ -22,50 +22,56 @@ namespace Nyxus
 {
 	bool processIntSegImagePair (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, int filepair_index, int tot_num_filepairs)
 	{
-		// Report the amount of free RAM
-		unsigned long long freeRamAmt = getAvailPhysMemory();
-		static unsigned long long initial_freeRamAmt = 0;
-		if (initial_freeRamAmt == 0)
-			initial_freeRamAmt = freeRamAmt;
-		double memDiff = double(freeRamAmt) - double(initial_freeRamAmt);
-		VERBOSLVL1(std::cout << std::setw(15) << freeRamAmt << " bytes free (" << "consumed=" << memDiff << ") ";)
-
-		// Display (1) dataset progress info and (2) file pair info
-		int digits = 2, k = std::pow(10.f, digits);
-		float perCent = float(filepair_index * 100 * k / tot_num_filepairs) / float(k);
-		VERBOSLVL1(std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << intens_fpath << " SEG: " << label_fpath << "\n";)
-
-		// Phase 1: gather ROI metrics
-		VERBOSLVL1(std::cout << "Gathering ROI metrics\n";)
-		gatherRoisMetrics (intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
-
-		// Phase 0: allocate each ROI's feature value buffer
-		for (auto lab : uniqueLabels)
-		{
-			LR& r = roiData[lab];
-			r.fvals.resize(AvailableFeatures::_COUNT_);
-			for (auto& valVec : r.fvals)
-				valVec.push_back(0.0);
-		}		
-
-		// Dump ROI metrics 
-		VERBOSLVL3(dump_roi_metrics(label_fpath);)	// dumps to file in the output directory
-		
-		// Distribute ROIs among phases
 		std::vector<int> trivRoiLabels, nontrivRoiLabels;
-		for (auto lab : uniqueLabels)
+
+		// Timing block (image scanning)
 		{
-			LR& r = roiData[lab];
-			size_t footprint = r.get_ram_footprint_estimate();
-			if (footprint >= theEnvironment.get_ram_limit())
+			STOPWATCH("Image scan/ImgScan/Scan/lightsteelblue", "\t=");
+
+			// Report the amount of free RAM
+			unsigned long long freeRamAmt = getAvailPhysMemory();
+			static unsigned long long initial_freeRamAmt = 0;
+			if (initial_freeRamAmt == 0)
+				initial_freeRamAmt = freeRamAmt;
+			double memDiff = double(freeRamAmt) - double(initial_freeRamAmt);
+			VERBOSLVL1(std::cout << std::setw(15) << freeRamAmt << " bytes free (" << "consumed=" << memDiff << ") ";)
+
+				// Display (1) dataset progress info and (2) file pair info
+				int digits = 2, k = std::pow(10.f, digits);
+			float perCent = float(filepair_index * 100 * k / tot_num_filepairs) / float(k);
+			VERBOSLVL1(std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << intens_fpath << " SEG: " << label_fpath << "\n";)
+
+				// Phase 1: gather ROI metrics
+				VERBOSLVL1(std::cout << "Gathering ROI metrics\n";)
+				gatherRoisMetrics(intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
+
+				// Phase 0: allocate each ROI's feature value buffer
+			for (auto lab : uniqueLabels)
 			{
-				VERBOSLVL2(std::cout << ">>> Skipping non-trivial ROI " << lab << " (area=" << r.aux_area << " px, footprint=" << footprint << " b" 
-					<< " w=" << r.aabb.get_width() << " h=" << r.aabb.get_height() << " sz_Pixel2=" << sizeof(Pixel2)
-					<< ")\n";)
-					nontrivRoiLabels.push_back(lab);
+				LR& r = roiData[lab];
+				r.fvals.resize(AvailableFeatures::_COUNT_);
+				for (auto& valVec : r.fvals)
+					valVec.push_back(0.0);
 			}
-			else
-				trivRoiLabels.push_back(lab);
+
+			// Dump ROI metrics
+			VERBOSLVL4(dump_roi_metrics(label_fpath);)	// dumps to file in the output directory
+
+			// Distribute ROIs among phases
+			for (auto lab : uniqueLabels)
+			{
+				LR& r = roiData[lab];
+				size_t footprint = r.get_ram_footprint_estimate();
+				if (footprint >= theEnvironment.get_ram_limit())
+				{
+					VERBOSLVL2(std::cout << ">>> Skipping non-trivial ROI " << lab << " (area=" << r.aux_area << " px, footprint=" << footprint << " b"
+						<< " w=" << r.aabb.get_width() << " h=" << r.aabb.get_height() << " sz_Pixel2=" << sizeof(Pixel2)
+						<< ")\n";)
+						nontrivRoiLabels.push_back(lab);
+				}
+				else
+					trivRoiLabels.push_back(lab);
+			}
 		}
 
 		// Phase 2: process trivial-sized ROIs
@@ -119,10 +125,7 @@ namespace Nyxus
 				return 1;
 			}
 
-			{				
-				STOPWATCH("Image scan/ImgScan/Scan/lightsteelblue", "\t=");
-				ok = processIntSegImagePair (ifp, lfp, numFastloaderThreads, i, nf);		// Phased processing
-			}
+			ok = processIntSegImagePair (ifp, lfp, numFastloaderThreads, i, nf);		// Phased processing
 
 			if (ok == false)
 			{
@@ -134,7 +137,7 @@ namespace Nyxus
 			if (save2csv)
 				ok = save_features_2_csv (ifp, lfp, csvOutputDir);
 			else
-				ok = save_features_2_buffer (headerBuf, calcResultBuf, stringColBuf);
+				ok = save_features_2_buffer(theResultsCache);
 			if (ok == false)
 			{
 				std::cout << "save_features_2_csv() returned an error code" << std::endl;

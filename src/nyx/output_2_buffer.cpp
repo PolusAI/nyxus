@@ -16,7 +16,8 @@
 
 namespace Nyxus
 {
-	bool save_features_2_buffer(std::vector<std::string>& headerBuf, std::vector<double>& resultBuf, std::vector<std::string>& stringColBuf)
+	/// @brief Copies ROIs' feature values into a ResultsCache structure that will then shape them as a table
+	bool save_features_2_buffer (ResultsCache& rescache)
 	{
 		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
 		std::sort(L.begin(), L.end());
@@ -24,15 +25,12 @@ namespace Nyxus
 
 		// We only fill in the header once.
 		// We depend on the caller to manage headerBuf contents and clear it appropriately...
-		bool fill_header = headerBuf.size() == 0;
+		bool fill_header = rescache.get_calcResultBuf().size() == 0;
 
 		// -- Header
 		if (fill_header)
 		{
-
-			headerBuf.push_back("mask_image");
-			headerBuf.push_back("intensity_image");
-			headerBuf.push_back("label");
+			rescache.add_to_header({"mask_image", "intensity_image", "label"});
 
 			for (auto& enabdF : F)
 			{
@@ -63,8 +61,11 @@ namespace Nyxus
 				{
 					// Polulate with angles
 					for (auto ang : theEnvironment.rotAngles)
-						headerBuf.push_back(fn + "_" + std::to_string(ang));
-					
+					{
+						std::string col = fn + "_" + std::to_string(ang);
+						rescache.add_to_header(col);	
+					}
+
 					// Proceed with other features
 					continue;
 				}
@@ -91,7 +92,10 @@ namespace Nyxus
 				{
 					// Polulate with angles
 					for (auto ang : GLRLMFeature::rotAngles)
-						headerBuf.push_back(fn + "_" + std::to_string(ang));
+					{
+						std::string col = fn + "_" + std::to_string(ang);
+						rescache.add_to_header(col);	
+					}
 					
 					// Proceed with other features
 					continue;
@@ -102,7 +106,10 @@ namespace Nyxus
 				{
 					// Generate the feature value list
 					for (auto i = 0; i < GaborFeature::num_features; i++)
-						headerBuf.push_back(fn + "_" + std::to_string(i));
+					{
+						std::string col = fn + "_" + std::to_string(i);
+						rescache.add_to_header(col);	
+					}
 
 					// Proceed with other features
 					continue;
@@ -112,7 +119,10 @@ namespace Nyxus
 				{
 					// Generate the feature value list
 					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
-						headerBuf.push_back(fn + "_" + std::to_string(i));
+					{
+						std::string col = fn + "_" + std::to_string(i);
+						rescache.add_to_header(col);
+					}
 
 					// Proceed with other features
 					continue;
@@ -122,7 +132,10 @@ namespace Nyxus
 				{
 					// Generate the feature value list
 					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
-						headerBuf.push_back(fn + "_" + std::to_string(i));
+					{
+						std::string col = fn + "_" + std::to_string(i);
+						rescache.add_to_header(col);
+					}
 
 					// Proceed with other features
 					continue;
@@ -132,7 +145,10 @@ namespace Nyxus
 				{
 					// Generate the feature value list
 					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
-						headerBuf.push_back(fn + "_" + std::to_string(i));
+					{
+						std::string col = fn + "_" + std::to_string(i);
+						rescache.add_to_header(col);
+					}
 
 					// Proceed with other features
 					continue;
@@ -143,14 +159,17 @@ namespace Nyxus
 				{
 					// Populate with indices
 					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
-						headerBuf.push_back (fn + "_" + std::to_string(i));
+					{
+						std::string col = fn + "_" + std::to_string(i);
+						rescache.add_to_header(col);
+					}
 
 					// Proceed with other features
 					continue;
 				}
 
 				// Regular feature
-				headerBuf.push_back(fn);
+				rescache.add_to_header(fn);	
 			}
 		}
 
@@ -158,24 +177,21 @@ namespace Nyxus
 		for (auto l : L)
 		{
 			LR& r = roiData[l];
-			totalNumLabels++;
+			rescache.inc_num_rows();	
 
 			// Tear off pure file names from segment and intensity file paths
 			std::filesystem::path pseg(r.segFname), pint(r.intFname);
 			std::string segfname = pseg.filename().string(),
 				intfname = pint.filename().string();
 
-			stringColBuf.push_back(segfname);
-			stringColBuf.push_back(intfname);
-			resultBuf.push_back(l);
-			totalNumFeatures = 1;
+			rescache.add_string(segfname);	
+			rescache.add_string(intfname);	
+			rescache.add_numeric(l); 
 			for (auto& enabdF : F)
 			{
 				auto fc = std::get<1>(enabdF);
 				auto fn = std::get<0>(enabdF);	// debug
 				auto vv = r.getFeatureValues(fc);
-
-				totalNumFeatures += vv.size();
 
 				// Parameterized feature
 				// --Texture family
@@ -197,7 +213,7 @@ namespace Nyxus
 				{
 					// Polulate with angles
 					for (int i = 0; i < theEnvironment.rotAngles.size(); i++)
-						resultBuf.push_back(vv[i]);
+						rescache.add_numeric(vv[i]);		
 					
 					// Proceed with other features
 					continue;
@@ -226,7 +242,7 @@ namespace Nyxus
 					// Polulate with angles
 					auto nAng = 4; // sizeof(GLRLM_features::rotAngles) / sizeof(GLRLM_features::rotAngles[0]);
 					for (int i = 0; i < nAng; i++)
-						resultBuf.push_back(vv[i]);
+						rescache.add_numeric(vv[i]);		
 					
 					continue;
 				}
@@ -235,7 +251,7 @@ namespace Nyxus
 				if (fc == GABOR)
 				{
 					for (auto i = 0; i < GaborFeature::num_features; i++)
-						resultBuf.push_back(vv[i]);
+						rescache.add_numeric(vv[i]);		
 
 					// Proceed with other features
 					continue;
@@ -245,7 +261,7 @@ namespace Nyxus
 				if (fc == ZERNIKE2D)
 				{
 					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
-						resultBuf.push_back(vv[i]); 
+						rescache.add_numeric(vv[i]);		
 
 					// Proceed with other features
 					continue;
@@ -255,7 +271,7 @@ namespace Nyxus
 				if (fc == FRAC_AT_D)
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
-						resultBuf.push_back(vv[i]);
+						rescache.add_numeric(vv[i]);		
 					
 					// Proceed with other features
 					continue;
@@ -263,7 +279,7 @@ namespace Nyxus
 				if (fc == MEAN_FRAC)
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
-						resultBuf.push_back(vv[i]);
+						rescache.add_numeric(vv[i]);		
 					
 					// Proceed with other features
 					continue;
@@ -271,14 +287,14 @@ namespace Nyxus
 				if (fc == RADIAL_CV)
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
-						resultBuf.push_back(vv[i]);
+						rescache.add_numeric(vv[i]);		
 					
 					// Proceed with other features
 					continue;
 				}
 
 				// Regular feature
-				resultBuf.push_back(vv[0]);
+				rescache.add_numeric(vv[0]);		
 			}
 		}
 

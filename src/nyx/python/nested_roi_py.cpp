@@ -10,6 +10,7 @@
 #include "../environment.h"
 #include "../globals.h"
 #include "../image_loader1x.h"
+#include "../results_cache.h"
 #include "../roi_cache.h"
 
 /// @brief Segment data cache for finding segment hierarchies 
@@ -235,9 +236,7 @@ bool find_hierarchy (std::vector<int>& P, const std::string& par_fname, const st
 
 bool 	output_roi_relational_table (
 	const std::vector<int>& P, 
-	size_t& num_rows,
-	std::vector<std::string>& string_col_buf, 
-	std::vector<double>& results_buf)
+	ResultsCache& rescache)
 {
 	// Anything to do at all?
 	if (P.size() == 0)
@@ -249,10 +248,10 @@ bool 	output_roi_relational_table (
 		HieLR& r = Nyxus::roiData1[l_par];
 		for (auto l_chi : r.child_segs)
 		{
-			string_col_buf.push_back(r.segFname);
-			results_buf.push_back(l_par);
-			results_buf.push_back(l_chi);
-			num_rows++;
+			rescache.add_string(r.segFname);	
+			rescache.add_numeric(l_par); 
+			rescache.add_numeric(l_chi); 
+			rescache.inc_num_rows(); 
 		}
 	}
 
@@ -339,15 +338,10 @@ int mine_segment_relations (const std::string& label_dir, const std::string& fil
 
 	// Prepare the buffers. 
 	// 'totalNumLabels', 'stringColBuf', and 'calcResultBuf' will be updated with every call of output_roi_relational_table()
-	headerBuf.clear();
-	stringColBuf.clear();
-	calcResultBuf.clear();
-	totalNumLabels = 0;	
+	theResultsCache.clear();
 
 	// Prepare the header
-	headerBuf.push_back("Image");
-	headerBuf.push_back("Parent_Label");
-	headerBuf.push_back("Child_Label");
+	theResultsCache.add_to_header({ "Image", "Parent_Label", "Child_Label" });
 
 	// Mine parent-child relations 
 	for (auto& parStemInfo : Stems)
@@ -380,7 +374,10 @@ int mine_segment_relations (const std::string& label_dir, const std::string& fil
 		}
 
 		// Output the relational table
-		ok = output_roi_relational_table (P, Nyxus::totalNumLabels, Nyxus::stringColBuf, Nyxus::calcResultBuf);
+		ok = output_roi_relational_table (
+			P, 
+			theResultsCache
+			);
 		if (!ok)
 		{
 			throw std::runtime_error("Cannot produce the output: somethig is wrong with data. Quitting");

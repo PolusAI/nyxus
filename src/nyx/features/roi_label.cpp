@@ -35,7 +35,6 @@ void LR::reduce_pixel_intensity_features()
 
 		// Mean
 		auto mean = prev_mean + delta_n;
-		//XXX	lr.fvals[MEAN][0] = mean; // lr.mean = mean;
 
 		// Moments
 		lr.aux_M4 = lr.aux_M4 + term1 * delta_n2 * (n * n - 3 * n + 3) + 6 * delta_n2 * lr.aux_M2 - 4 * delta_n * lr.aux_M3;

@@ -73,11 +73,7 @@ py::tuple process_data(
 
     init_feature_buffers();
 
-    totalNumFeatures = 0;
-    totalNumLabels = 0;
-    headerBuf.clear();
-    stringColBuf.clear();
-    calcResultBuf.clear();
+    theResultsCache.clear();
 
     // Process the image sdata
     int min_online_roi_size = 0;
@@ -94,12 +90,12 @@ py::tuple process_data(
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing.");
 
-    auto pyHeader = py::array(py::cast(headerBuf));
-    auto pyStrData = py::array(py::cast(stringColBuf));
-    auto pyNumData = as_pyarray(std::move(calcResultBuf));
-
-    pyStrData = pyStrData.reshape({totalNumLabels, pyStrData.size() / totalNumLabels});
-    pyNumData = pyNumData.reshape({totalNumLabels, pyNumData.size() / totalNumLabels});
+    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
+    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
+    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+    auto nRows = theResultsCache.get_num_rows();
+    pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
+    pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
 
     return py::make_tuple(pyHeader, pyStrData, pyNumData);
 }
@@ -123,10 +119,7 @@ py::tuple findrelations_imp(
     if (sscanf(child_channel.c_str(), "%d", &n_child_channel) != 1)
         throw std::runtime_error("Error parsing the child channel number");
 
-    headerBuf.clear();
-    stringColBuf.clear();
-    calcResultBuf.clear();
-    totalNumLabels = 0;
+    theResultsCache.clear();
 
     // Result -> headerBuf, stringColBuf, calcResultBuf
     int errorCode = mine_segment_relations (label_dir, file_pattern, channel_signature, n_parent_channel, n_child_channel);
@@ -134,12 +127,12 @@ py::tuple findrelations_imp(
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing.");
 
-    auto pyHeader = py::array(py::cast(headerBuf)); // Column names
-    auto pyStrData = py::array(py::cast(stringColBuf)); // String cells of first n columns
-    auto pyNumData = as_pyarray(std::move(calcResultBuf));  // Numeric data
-
-    pyStrData = pyStrData.reshape({ totalNumLabels, pyStrData.size() / totalNumLabels });
-    pyNumData = pyNumData.reshape({ totalNumLabels, pyNumData.size() / totalNumLabels });
+    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf())); // Column names
+    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf())); // String cells of first n columns
+    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));  // Numeric data
+    auto nRows = theResultsCache.get_num_rows();
+    pyStrData = pyStrData.reshape({ nRows, pyStrData.size() / nRows });
+    pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
 
     return py::make_tuple(pyHeader, pyStrData, pyNumData);
 }
@@ -153,6 +146,14 @@ PYBIND11_MODULE(backend, m)
     m.def("findrelations_imp", &findrelations_imp, "Find relations in segmentation images");
 }
 
+///
+/// The following code block is a quick & simple manual test of the Python interface 
+/// invokable from from the command line. It lets you bypass building and installing the Python library.
+/// To use it, 
+///     #define TESTING_PY_INTERFACE, 
+///     exclude file main_nyxus.cpp from build, and 
+///     rebuild the CLI target.
+/// 
 #if TESTING_PY_INTERFACE
 //
 // Testing Python interface

@@ -11,6 +11,7 @@
 #include "feature_method.h"
 #include "feature_mgr.h"
 #include "image_loader.h"
+#include "results_cache.h"
 #include "roi_cache.h"
 
 namespace Nyxus
@@ -20,7 +21,6 @@ namespace Nyxus
 
 	bool datasetDirsOK(const std::string& dirIntens, const std::string& dirLab, const std::string& dirOut, bool mustCheckDirOut);
 	bool directoryExists(const std::string& dir);
-	void readDirectoryFiles(const std::string& dir, std::vector<std::string>& files);
 	void readDirectoryFiles(const std::string& dir, const std::string& file_pattern, std::vector<std::string>& files);
 	bool scanFilePairParallel(const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads, int filepair_index, int tot_num_filepairs);
 	std::string getPureFname(std::string fpath);
@@ -32,7 +32,7 @@ namespace Nyxus
 
 	// 2 scenarios of saving a result of feature calculation of a label-intensity file pair: saving to a CSV-file and saving to a matrix to be later consumed by a Python endpoint
 	bool save_features_2_csv (std::string intFpath, std::string segFpath, std::string outputDir);
-	bool save_features_2_buffer (std::vector<std::string>& headerBuf, std::vector<double>& resultMatrix, std::vector<std::string>& stringColBuf);
+	bool save_features_2_buffer (ResultsCache& results_cache);		
 
 	int read_dataset (
 		// input
@@ -71,13 +71,11 @@ namespace Nyxus
 	extern std::string theSegFname, theIntFname;	// Cached file names while iterating a dataset
 	extern std::unordered_set<int> uniqueLabels;
 	extern std::unordered_map <int, LR> roiData;
-	extern std::vector<double> calcResultBuf;	// [# of labels X # of features]
 	extern std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
 
-	// Ugly hack fix me.
-	extern std::vector<std::string> stringColBuf, headerBuf;
-	extern size_t totalNumFeatures, totalNumLabels;
-
+	// Global feature extraction results table
+	extern ResultsCache theResultsCache;
+	
 	// System resources
 	unsigned long long getAvailPhysMemory();
 
