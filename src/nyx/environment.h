@@ -110,6 +110,12 @@ public:
 	/// @return 
 	std::string get_temp_dir_path() const;
 
+	/// @brief Returns GPU device ID of choice
+	/// @return 0-based GPU device ID (default: 0) or -1 not to use GPU even if it is available
+	int get_gpu_device_choice();
+	void set_using_gpu(bool yes);
+	bool using_gpu();
+
 private:
 	std::vector<std::tuple<std::string, std::string>> memory;
 	void show_memory(const std::string &head, const std::string &tail);
@@ -120,6 +126,8 @@ private:
 	size_t ram_limit = 1024L * 1024L * 1024L; // [bytes] - default RAM limit affecting Phase 2's batch size. (Purpose of Phase 2 is calculating trivial ROIs.)
 
 	std::string temp_dir_path;
+
+	bool using_gpu_ = false;
 };
 
 namespace Nyxus
@@ -130,6 +138,7 @@ namespace Nyxus
 #define VERBOSLVL1(stmt) if(Nyxus::theEnvironment.verbosity_level>=1){stmt;}
 #define VERBOSLVL2(stmt) if(Nyxus::theEnvironment.verbosity_level>=2){stmt;}
 #define VERBOSLVL3(stmt) if(Nyxus::theEnvironment.verbosity_level>=3){stmt;}
+#define VERBOSLVL4(stmt) if(Nyxus::theEnvironment.verbosity_level>=4){stmt;}	
 
 
 
