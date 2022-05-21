@@ -9,10 +9,8 @@
 #include "globals.h"
 #include "helpers/timing.h"
 
-
 namespace Nyxus
 {
-
 	void feed_pixel_2_cache(int x, int y, int label, PixIntens intensity)
 	{
 		// Update basic ROI info (info that doesn't require costly calculations)
@@ -30,8 +28,8 @@ namespace Nyxus
 			lyr = 0;	//	Layer
 
 		// Open an image pair
-		ImageLoader imlo;
-		bool ok = imlo.open(intens_fpath, label_fpath);
+		ImageLoader & imlo = theImLoader;	//???	ImageLoader imlo;
+		bool ok = true;	//???	bool ok = imlo.open(intens_fpath, label_fpath);
 		if (!ok)
 		{
 			std::stringstream ss;
@@ -49,7 +47,9 @@ namespace Nyxus
 			fw = imlo.get_tile_width(),
 			th = imlo.get_tile_height(),
 			tw = imlo.get_tile_width(),
-			tileSize = imlo.get_tile_size();
+			tileSize = imlo.get_tile_size(), 
+			fullwidth = imlo.get_full_width(), 
+			fullheight = imlo.get_full_height();
 
 		int cnt = 1;
 		for (unsigned int row = 0; row < nth; row++)
@@ -75,9 +75,8 @@ namespace Nyxus
 				// Iterate pixels
 				for (unsigned long i = 0; i < tileSize; i++)
 				{
+					// Skip non-mask pixels
 					auto label = dataL[i];
-
-					// Skip non-sigment pixels
 					if (! label)
 						continue;
 
@@ -85,10 +84,13 @@ namespace Nyxus
 					if (! theEnvironment.singleROI && ! std::binary_search(whiteList.begin(), whiteList.end(), label)) //--slow-- if (std::find(PendingRoiLabels.begin(), PendingRoiLabels.end(), label) == PendingRoiLabels.end())
 						continue;
 
-					// Skip non-mask pixels
 					auto inten = dataI[i];
 					int y = row * th + i / tw,
 						x = col * tw + i % tw;
+
+					// Skip tile buffer pixels beyond the image's bounds
+					if (x >= fullwidth || y >= fullheight)
+						continue;
 
 					// Collapse all the labels to one if single-ROI mde is requested
 					if (theEnvironment.singleROI)
@@ -103,7 +105,7 @@ namespace Nyxus
 					VERBOSLVL1(std::cout << "\tscan trivial " << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "% of image scanned \n";)
 			}
 
-		imlo.close();
+		//??? imlo.close();
 		return true;
 	}
 

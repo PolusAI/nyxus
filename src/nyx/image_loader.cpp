@@ -197,6 +197,17 @@ size_t ImageLoader::get_tile_width()
 	return tw;
 }
 
+size_t ImageLoader::get_full_width()
+{
+	return fw;
+}
+
+size_t ImageLoader::get_full_height()
+{
+	return fh;
+}
+
+
 bool ImageLoader::checkTileStatus(const std::string& filePath)
 {
 	TIFF *tiff_ = TIFFOpen(filePath.c_str(), "r");

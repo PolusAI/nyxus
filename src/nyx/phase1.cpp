@@ -44,8 +44,9 @@ namespace Nyxus
 			lyr = 0; //	Layer
 
 		// Open an image pair
-		ImageLoader imlo;
-		bool ok = imlo.open (intens_fpath, label_fpath);
+		ImageLoader & imlo = theImLoader;	//???	ImageLoader imlo;
+		bool ok = true;	//???	bool ok = imlo.open (intens_fpath, label_fpath);
+
 		if (!ok)
 		{
 			std::stringstream ss;
@@ -63,7 +64,9 @@ namespace Nyxus
 			fw = imlo.get_tile_width(), 
 			th = imlo.get_tile_height(), 
 			tw = imlo.get_tile_width(),
-			tileSize = imlo.get_tile_size();
+			tileSize = imlo.get_tile_size(),
+			fullwidth = imlo.get_full_width(),
+			fullheight = imlo.get_full_height();
 
 		int cnt = 1;
 		for (unsigned int row = 0; row < nth; row++)
@@ -87,22 +90,27 @@ namespace Nyxus
 				auto dataI = imlo.get_int_tile_buffer(),
 					dataL = imlo.get_seg_tile_buffer();
 
+				// Iterate pixels
 				for (size_t i = 0; i < tileSize; i++)
 				{
 					// Skip non-mask pixels
 					auto label = dataL[i];
-					if (label != 0)
-					{
-						int y = row * th + i / tw,
-							x = col * tw + i % tw;
+					if (!label)
+						continue;
+
+					int y = row * th + i / tw,
+						x = col * tw + i % tw;
 					
-						// Collapse all the labels to one if single-ROI mde is requested
-						if (theEnvironment.singleROI)
-							label = 1;
+					// Skip tile buffer pixels beyond the image's bounds
+					if (x >= fullwidth || y >= fullheight)
+						continue;
+
+					// Collapse all the labels to one if single-ROI mde is requested
+					if (theEnvironment.singleROI)
+						label = 1;
 					
-						// Update pixel's ROI metrics
-						feed_pixel_2_metrics (x, y, label, dataI[i], tileIdx); // Updates 'uniqueLabels' and 'roiData'
-					}
+					// Update pixel's ROI metrics
+					feed_pixel_2_metrics (x, y, label, dataI[i], tileIdx); // Updates 'uniqueLabels' and 'roiData'
 				}
 
 #ifdef WITH_PYTHON_H
@@ -115,7 +123,7 @@ namespace Nyxus
 					std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n";
 			}
 
-		imlo.close();
+		//???	imlo.close();
 		return true;
 	}
 
