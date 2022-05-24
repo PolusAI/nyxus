@@ -3,7 +3,7 @@
   "version": "0.2.2",
   "containerId": "polusai/nyxus:0.2.2",
   "title": "Nyxus feature extraction",
-  "description": "Nyxus feature extractor (build of 5/10/2022)",
+  "description": "Nyxus feature extractor",
   "author": "friskluft + hsidky",
   "institution": "Axle Informatics",
   "repository": "https://github.com/PolusAI/nyxus",
