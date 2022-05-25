@@ -6,6 +6,7 @@
 #include <tuple>
 #include <vector>
 #include <exception>
+#include <iterator>
 #include "environment.h"
 #include "featureset.h"
 #include "helpers/helpers.h"
