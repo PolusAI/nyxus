@@ -1,17 +1,5 @@
 #include "../roi_cache.h"
 
-void LR::init_aabb(StatsInt x, StatsInt y)
-{
-	aabb.init_x(x);
-	aabb.init_y(y);
-}
-
-void LR::update_aabb(StatsInt x, StatsInt y)
-{
-	aabb.update_x(x);
-	aabb.update_y(y);
-}
-
 void LR::reduce_pixel_intensity_features()
 {
 	LR& lr = *this;

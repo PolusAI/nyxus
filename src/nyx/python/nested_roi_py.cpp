@@ -4,38 +4,28 @@
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
+
 #ifdef WITH_PYTHON_H
 	#include <pybind11/pybind11.h>
 #endif
-#include "../environment.h"
-#include "../globals.h"
+//#include "../environment.h"
+//#include "../globals.h"
+//#include "../image_loader1x.h"
+//#include "../results_cache.h"
+//#include "../roi_cache.h"
+
+#include "../nested_feature_aggregation.h"
+#include "../nested_roi.h"
+#include "../dirs_and_files.h"
 #include "../image_loader1x.h"
 #include "../results_cache.h"
-#include "../roi_cache.h"
-
-/// @brief Segment data cache for finding segment hierarchies 
-class HieLR : public LR
-{
-public:
-	std::vector<int> child_segs;
-};
+#include "../helpers/helpers.h"
 
 namespace Nyxus
 {
-	// Tables referring ROI labels to their cache per each parent-child image pair 
-	std::unordered_set <int> uniqueLabels1, uniqueLabels2;
-	std::unordered_map <int, HieLR> roiData1, roiData2;
-	std::string theParFname, theChiFname;
-
 	/// @brief ROI cache structure initializer for nested ROI functionality (Python class NyxusHie, nyxushie CLI)
 	void init_label_record_2 (HieLR& r, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity, unsigned int tile_index)
 	{
-		// Cache the host tile's index
-		r.host_tiles.insert(tile_index);
-
-		// Initialize basic counters
-		r.aux_area = 1;
-		r.aux_min = r.aux_max = intensity;
 		r.init_aabb(x, y);
 
 		// Cache the ROI label
@@ -43,19 +33,11 @@ namespace Nyxus
 
 		// File names
 		r.segFname = segFile;
-		r.intFname = intFile;
 	}
 
 	/// @brief ROI cache structure updater for nested ROI functionality (Python class NyxusHie, nyxushie CLI)
 	void update_label_record_2 (HieLR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index)
 	{
-		// Cache the host tile's index
-		lr.host_tiles.insert(tile_index);
-
-		// Initialize basic counters
-		lr.aux_area++;
-		lr.aux_min = std::min(lr.aux_min, intensity);
-		lr.aux_max = std::max(lr.aux_max, intensity);
 		lr.update_aabb(x, y);
 	}
 
@@ -156,8 +138,7 @@ bool gatherRoisMetrics_H(const std::string& fpath, std::unordered_set <int>& uni
 #endif
 
 			// Show stayalive progress info
-			if (cnt++ % 4 == 0)
-				VERBOSLVL1(std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n");
+			//--disabled for nested ROI cli and py-api-- if (cnt++ % 4 == 0) VERBOSLVL1(std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n");
 		}
 
 	imlo.close();
@@ -169,9 +150,10 @@ bool gatherRoisMetrics_H(const std::string& fpath, std::unordered_set <int>& uni
 /// @param par_fname Mask image of parent segments e.g. cell membrane
 /// @param chi_fname Mask image of child segments e.g. cell nuclei
 /// @return Vector of parent segment labels 'P'
-bool find_hierarchy (std::vector<int>& P, const std::string& par_fname, const std::string& chi_fname)
+bool find_hierarchy (std::vector<int>& P, const std::string& par_fname, const std::string& chi_fname, int verbosity_level)
 {
-	VERBOSLVL1(std::cout << "\nUsing \n\t" << par_fname << " as container (parent) segment provider, \n\t" << chi_fname << " as child segment provider\n";)
+	if (verbosity_level >= 1)
+		std::cout << "\nUsing \n\t" << par_fname << " as container (parent) segment provider, \n\t" << chi_fname << " as child segment provider\n";
 
 	// Cache the file names to be picked up by labels to know their file origin
 	std::filesystem::path parPath(par_fname), chiPath(chi_fname);
@@ -210,7 +192,8 @@ bool find_hierarchy (std::vector<int>& P, const std::string& par_fname, const st
 	}
 
 	// Build the parents set
-	VERBOSLVL1(std::cout << "Containers (parents):\n";)
+	if (verbosity_level >= 1)
+		std::cout << "Containers (parents):\n";
 	int ordn = 1;
 	for (auto l_par : Nyxus::uniqueLabels1)
 	{
@@ -229,12 +212,14 @@ bool find_hierarchy (std::vector<int>& P, const std::string& par_fname, const st
 		HieLR& r_par = Nyxus::roiData1[l_par];
 		max_n_children = std::max(max_n_children, r_par.child_segs.size());
 	}
-	VERBOSLVL1(std::cout << "\n# explained = " << n_non_orphans << "\n# orphans = " << n_orphans << "\nmax # children per container = " << max_n_children << "\n";)
+	if (verbosity_level >= 1)
+		std::cout << "\n# explained = " << n_non_orphans << "\n# orphans = " << n_orphans << "\nmax # children per container = " << max_n_children << "\n";
 
 	return true;
 }
 
-bool 	output_roi_relational_table (
+/// @brief Save results of one set of parents to the results cache
+bool 	output_roi_relational_table_2_rescache (
 	const std::vector<int>& P, 
 	ResultsCache& rescache)
 {
@@ -258,8 +243,270 @@ bool 	output_roi_relational_table (
 	return true;
 }
 
+/// @brief Save results of one set of parents to a csv-file
+bool 	output_roi_relational_table_2_csv (const std::vector<int>& P, const std::string& outdir)
+{
+	// Anything to do at all?
+	if (P.size() == 0)
+		return true;
+
+	// Make the relational table file name
+	auto& fullSegImgPath = Nyxus::roiData1[P[0]].segFname;
+	std::filesystem::path pSeg(fullSegImgPath);
+	auto segImgFname = pSeg.stem().string();
+	std::string fPath = outdir + "/" + segImgFname + "_nested_relations.csv";	// output file path
+
+	// Debug
+	std::cout << "\nWriting relational structure to file " << fPath << "\n";
+
+	// Output <-- parent header
+	std::ofstream ofile;
+	ofile.open(fPath);
+	ofile << "Image,Parent_Label,Child_Label\n";
+
+	// Process parents
+	for (auto l_par : P)
+	{
+		HieLR& r = Nyxus::roiData1[l_par];
+		for (auto l_chi : r.child_segs)
+		{
+			ofile << r.segFname << "," << l_par << "," << l_chi << "\n";
+		}
+	}
+
+	ofile.close();
+	std::cout << "\nCreated file " << fPath << "\n";
+
+	return true;
+}
+
+bool 	aggregate_features (const std::vector<int>& P, const std::string& outdir, const ChildFeatureAggregation& aggr)
+{
+	// Anything to do at all?
+	if (P.size() == 0)
+		return false;
+
+	// Find the max # of child segments to know how many children columns we have across the image
+	size_t max_n_children = 0;
+	for (auto l_par : Nyxus::uniqueLabels1)
+	{
+		HieLR& r_par = Nyxus::roiData1[l_par];
+		max_n_children = std::max(max_n_children, r_par.child_segs.size());
+	}
+
+	// Header
+	// -- Read any CSV file and extract its header, we'll need it multiple times
+	int lab_temp = P[0];
+	HieLR& r_temp = Nyxus::roiData1[lab_temp];
+	std::string csvFP = outdir + "/" + r_temp.get_output_csv_fname();
+
+	if (!directoryExists(csvFP))
+	{
+		std::cout << "Error: cannot access file " << csvFP << std::endl;
+		return false;
+	}
+
+	std::string csvWholeline;
+	std::vector<std::string> csvHeader, csvFields;
+	bool ok = find_csv_record (csvWholeline, csvHeader, csvFields, csvFP, lab_temp);
+	if (ok == false)
+	{
+		std::cout << "Cannot find record for parent " << lab_temp << " in " << csvFP << ". Quitting\n";
+		return false;	// pointless to continue if the very 1st parent is unavailable
+	}
+
+	// Make the output table file name
+	auto& fullSegImgPath = Nyxus::roiData1[P[0]].segFname;
+	std::filesystem::path pSeg(fullSegImgPath);
+	auto segImgFname = pSeg.stem().string();
+	std::string fPath = outdir + "/" + segImgFname + "_nested_features.csv";	// output file path
+
+	// Debug
+	std::cout << "\nWriting aligned nested features to file " << fPath << "\n";
+
+
+	// Output <-- parent header
+	std::string csvNFP = fPath; //---outdir + "/nested_features.csv";	// output file path
+	std::ofstream ofile;
+	ofile.open(csvNFP);
+	for (auto& field : csvHeader)
+		ofile << field << ",";
+	//--no line break now--	ofile << "\n";
+
+	// Iterate children
+	if (aggr.get_method() == aNONE)
+	{
+
+		// We are in the no-aggregation scenario
+		for (int iCh = 1; iCh <= max_n_children; iCh++)
+		{
+			// Output <-- child's header
+			for (auto& field : csvHeader)
+				ofile << "child_" << iCh << "_" << field << ",";
+		}
+	}
+	else
+	{
+		// We are in the AGGREGATION scenario
+		auto aggrS = aggr.get_method_string();		
+		// Output <-- child's header
+		for (auto& field : csvHeader)
+			ofile << "aggr_" << aggrS << "_" << field << ",";
+	}
+	ofile << "\n";
+
+	// Process parents
+	for (auto l_par : P)
+	{
+		HieLR& r = Nyxus::roiData1[l_par];
+		std::string csvFP = outdir + "/" + r.get_output_csv_fname();
+		//std::string csvWholeline;
+		//std::vector<std::string> csvHeader, csvFields;
+		bool ok = find_csv_record(csvWholeline, csvHeader, csvFields, csvFP, l_par);
+		if (ok == false)
+		{
+			std::cout << "Cannot find record for parent " << l_par << " in " << csvFP << "\n";
+			continue;
+		}
+
+		// Output <-- parent features 
+		for (auto& field : csvFields)
+			ofile << field << ",";
+		//-- don't break the line! children features will follow-- ofile << "\n";
+
+		if (aggr.get_method() == aNONE)
+		{
+			// write features of all the children without aggregation
+			int iCh = 1;
+			for (auto l_chi : r.child_segs)
+			{
+				HieLR& r_chi = Nyxus::roiData2[l_chi];
+				std::string csvFN_chi = r_chi.get_output_csv_fname();
+				std::string csvFP_chi = outdir + "/" + csvFN_chi;
+				std::string csvWholeline_chi;
+				bool ok = find_csv_record(csvWholeline_chi, csvHeader, csvFields, csvFP_chi, l_chi);
+				if (ok == false)
+				{
+					std::cout << "Cannot find record for child " << l_par << " in " << csvFP << "\n";
+					continue;
+				}
+
+				// Output <-- child features 
+
+				for (auto& field : csvFields)
+					ofile << field << ",";
+				//-- don't break the line either! more children features will follow-- ofile << "\n";
+
+				// childrens' count
+				iCh++;
+			}
+			// write empty cells if needed
+			if (iCh < max_n_children)
+			{
+				for (int iCh2 = iCh; iCh2 <= max_n_children; iCh2++)
+				{
+					for (auto& field : csvFields)
+						ofile << "0" << ",";	// blank cell
+				}
+			}
+		} // no aggregation
+		else
+		{
+			// read and aggregate
+			std::vector<std::vector<double>> aggrBuf;
+
+			int iCh = 1;
+			for (auto l_chi : r.child_segs)
+			{
+				HieLR& r_chi = Nyxus::roiData2[l_chi];
+				std::string csvFN_chi = r_chi.get_output_csv_fname();
+				std::string csvFP_chi = outdir + "/" + csvFN_chi;
+				std::string csvWholeline_chi;
+				bool ok = find_csv_record(csvWholeline_chi, csvHeader, csvFields, csvFP_chi, l_chi);
+				if (ok == false)
+				{
+					std::cout << "Cannot find record for child " << l_par << " in " << csvFP << "\n";
+					continue;
+				}
+
+				// Output <-- child features 
+				std::vector<double> childRow;
+				for (auto& field : csvFields)
+				{
+					// Parse a table cell value. (Difficulty - nans, infs, etc.)
+					float val = 0.0f;
+					parse_as_float(field, val);
+					childRow.push_back(val); //---  ofile << field << ","
+				}
+				aggrBuf.push_back(childRow);
+
+				// childrens' count
+				iCh++;
+			}
+
+			int n_chi = aggrBuf.size();
+
+			// write aggregated
+			//--first, aggregate
+			std::vector<double> feaAggregates;
+			for (int fea = 0; fea < csvFields.size(); fea++)
+			{
+				double aggResult = 0.0;
+				switch (aggr.get_method())
+				{
+				case aSUM:
+					for (int child = 0; child < n_chi; child++)
+						aggResult += aggrBuf[child][fea];
+					break;
+				case aMEAN:
+					for (int child = 0; child < n_chi; child++)
+						aggResult += aggrBuf[child][fea];
+					aggResult /= n_chi;
+					break;
+				case aMIN:
+					aggResult = aggrBuf[0][fea];
+					for (int child = 0; child < n_chi; child++)
+						aggResult = std::min(aggrBuf[child][fea], aggResult);
+					break;
+				case aMAX:
+					aggResult = aggrBuf[0][fea];
+					for (int child = 0; child < n_chi; child++)
+						aggResult = std::max(aggrBuf[child][fea], aggResult);
+					break;
+				default: // aWMA
+					for (int child = 0; child < n_chi; child++)
+						aggResult += aggrBuf[child][fea];
+					aggResult /= n_chi;
+					break;
+				}
+				feaAggregates.push_back(aggResult);
+			}
+			//--second, write
+			for (int fea = 0; fea < csvFields.size(); fea++)
+				ofile << feaAggregates[fea] << ",";
+		}
+
+		// Output <-- line break
+		ofile << "\n";
+	}
+
+	ofile.close();
+	std::cout << "\nCreated file " << csvNFP << "\n";
+
+	return true;
+}
+
 /// @brief Finds related (nested) segments and sets global variables 'pyHeader', 'pyStrData', and 'pyNumData' consumed by Python binding function findrelations_imp()
-int mine_segment_relations (const std::string& label_dir, const std::string& file_pattern, const std::string& channel_signature, const int parent_channel, const int child_channel)
+bool mine_segment_relations (
+	bool output2python, 
+	const std::string& label_dir, 
+	const std::string& file_pattern, 
+	const std::string& channel_signature, 
+	const int parent_channel, 
+	const int child_channel, 
+	const std::string& outdir, 
+	const ChildFeatureAggregation& aggr, 
+	int verbosity_level)
 {
 	std::vector<std::string> segFiles;
 	readDirectoryFiles(label_dir, file_pattern, segFiles);
@@ -354,8 +601,9 @@ int mine_segment_relations (const std::string& label_dir, const std::string& fil
 		ssParFname << parPath << "/" << stem << parent_channel << tail << ext;
 		ssChiFname << parPath << "/" << stem << child_channel << tail << ext;
 
-		// Debug
-		VERBOSLVL1(std::cout << stem << "\t" << parent_channel << ":" << child_channel << "\n";	)
+		// Diagnostic
+		if (verbosity_level >= 1)
+			std::cout << stem << "\t" << parent_channel << ":" << child_channel << "\n";	
 
 		// Clear reference tables
 		uniqueLabels1.clear();
@@ -365,7 +613,7 @@ int mine_segment_relations (const std::string& label_dir, const std::string& fil
 
 		// Analyze geometric relationships and recognize the hierarchy
 		std::vector<int> P;	// parents
-		bool ok = find_hierarchy(P, ssParFname.str(), ssChiFname.str());
+		bool ok = find_hierarchy(P, ssParFname.str(), ssChiFname.str(), verbosity_level);
 		if (!ok)
 		{
 			std::stringstream ss;
@@ -373,16 +621,33 @@ int mine_segment_relations (const std::string& label_dir, const std::string& fil
 			throw std::runtime_error(ss.str());
 		}
 
-		// Output the relational table
-		ok = output_roi_relational_table (
-			P, 
-			theResultsCache
-			);
-		if (!ok)
+		// Output the relational table to object 'theResultsCache'
+		if (output2python)
 		{
-			throw std::runtime_error("Cannot produce the output: somethig is wrong with data. Quitting");
+			ok = output_roi_relational_table_2_rescache (P, theResultsCache);
+			if (!ok)
+				throw std::runtime_error("Error creating relational table of segments");
 		}
+		else
+		{
+			ok = output_roi_relational_table_2_csv (P, outdir);
+			if (!ok)
+				throw std::runtime_error("Error creating relational table of segments");
+		}
+
+		// Aggregate features
+		if (output2python)
+		{
+			// Aggregating is implementing externally to this function
+		}
+		else
+		{
+			ok = aggregate_features (P, outdir, aggr);
+			if (!ok)
+				throw std::runtime_error ("Error aggregating features");
+		}
+
 	}
 
-	return 0;	// success
+	return true;	// success
 }

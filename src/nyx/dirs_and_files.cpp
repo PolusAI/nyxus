@@ -9,7 +9,6 @@
 #include <iostream>
 #include <regex>
 #include <sstream>
-#include "environment.h"
 
 namespace Nyxus
 {
@@ -58,6 +57,7 @@ namespace Nyxus
 		// input
 		const std::string& dirIntens, 
 		const std::string& dirLabels, 
+		const std::string& filePatt,
 		const std::string& dirOut, 
 		const std::string& intLabMappingDir, 
 		const std::string& intLabMappingFile,
@@ -89,13 +89,13 @@ namespace Nyxus
 		if (intLabMappingFile.empty())
 		{
 			// Common case - no ad hoc intensity-label file mapping, 1-to-1 correspondence instead
-			readDirectoryFiles(dirIntens, theEnvironment.file_pattern, intensFiles);
-			readDirectoryFiles(dirLabels, theEnvironment.file_pattern, labelFiles);
+			readDirectoryFiles(dirIntens, filePatt, intensFiles);
+			readDirectoryFiles(dirLabels, filePatt, labelFiles);
 
 			// Check if the dataset is meaningful
 			if (intensFiles.size() == 0 || labelFiles.size() == 0)
 			{
-				std::cout << "No intensity and/or label files to process, probably due to file pattern " << theEnvironment.file_pattern << std::endl;
+				std::cout << "No intensity and/or label files to process, probably due to file pattern " << filePatt << std::endl;
 				return 2;
 			}
 			if (intensFiles.size() != labelFiles.size())

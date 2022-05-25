@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include "environment_basic.h"
 
 // Command line arguments
 #define SEGDIR "--segDir"						// Environment :: labels_dir
@@ -47,7 +48,7 @@
 #define VERBOSITY_DETAILED 8
 
 /// @brief Class encapsulating the the feature extraction environment - command line option values, default values, etc. Use it to add a parseable command line parameter.
-class Environment
+class Environment: public BasicEnvironment
 {
 public:
 	Environment();
@@ -64,7 +65,6 @@ public:
 
 	bool singleROI = false; // is set to 'true' parse_cmdline() if labels_dir==intensity_dir
 
-	std::string file_pattern = ".*";
 	std::string embedded_pixel_size = "";
 
 	std::string features;
@@ -86,8 +86,7 @@ public:
 	std::string rotations = "";
 	std::vector<float> rotAngles = {0, 45, 90, 135};
 
-	std::string verbosity = "";
-	int verbosity_level = 1; // 0 = silent
+	std::string verbosity = "";	// 'verbosity_level' is inherited from BasicEnvironment
 
 	std::string rawOnlineStatsThresh = "";
 	int onlineStatsTreshold = 0;
@@ -103,7 +102,6 @@ public:
 	int get_pixel_distance();
 	void set_pixel_distance(int pixelDistance);
 	size_t get_ram_limit();
-	bool check_file_pattern(const std::string &pat);
 	void process_feature_list();
 
 	/// @brief Slash-terminated application-wide temp directory path
@@ -135,10 +133,7 @@ namespace Nyxus
 	extern Environment theEnvironment;
 }
 
-#define VERBOSLVL1(stmt) if(Nyxus::theEnvironment.verbosity_level>=1){stmt;}
-#define VERBOSLVL2(stmt) if(Nyxus::theEnvironment.verbosity_level>=2){stmt;}
-#define VERBOSLVL3(stmt) if(Nyxus::theEnvironment.verbosity_level>=3){stmt;}
-#define VERBOSLVL4(stmt) if(Nyxus::theEnvironment.verbosity_level>=4){stmt;}	
-
-
-
+#define VERBOSLVL1(stmt) if(Nyxus::theEnvironment.get_verbosity_level()>=1){stmt;}
+#define VERBOSLVL2(stmt) if(Nyxus::theEnvironment.get_verbosity_level()>=2){stmt;}
+#define VERBOSLVL3(stmt) if(Nyxus::theEnvironment.get_verbosity_level()>=3){stmt;}
+#define VERBOSLVL4(stmt) if(Nyxus::theEnvironment.get_verbosity_level()>=4){stmt;}	

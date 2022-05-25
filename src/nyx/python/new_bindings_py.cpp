@@ -6,13 +6,15 @@
 #include "../version.h"
 #include "../environment.h"
 #include "../feature_mgr.h"
+#include "../dirs_and_files.h"  
 #include "../globals.h"
+#include "../nested_feature_aggregation.h"
 
 namespace py = pybind11;
 using namespace Nyxus;
 
 // Defined in nested.cpp
-int mine_segment_relations (const std::string& label_dir, const std::string& file_pattern, const std::string& channel_signature, const int parent_channel, const int child_channel);
+bool mine_segment_relations(bool output2python, const std::string& label_dir, const std::string& file_pattern, const std::string& channel_signature, const int parent_channel, const int child_channel, const std::string& outdir, const ChildFeatureAggregation& aggr, int verbosity_level);
 
 template <typename Sequence>
 inline py::array_t<typename Sequence::value_type> as_pyarray(Sequence &&seq)
@@ -35,7 +37,7 @@ void initialize_environment(
 {
     theEnvironment.desiredFeatures = features;
     theEnvironment.set_pixel_distance(static_cast<int>(neighbor_distance));
-    theEnvironment.verbosity_level = 0;
+    theEnvironment.set_verbosity_level (0);
     theEnvironment.xyRes = theEnvironment.pixelSizeUm = pixels_per_micron;
     theEnvironment.n_reduce_threads = n_reduce_threads;
     theEnvironment.n_loader_threads = n_loader_threads;
@@ -53,7 +55,7 @@ py::tuple process_data(
 {
     theEnvironment.intensity_dir = intensity_dir;
     theEnvironment.labels_dir = labels_dir;
-    theEnvironment.file_pattern = file_pattern;
+    theEnvironment.set_file_pattern (file_pattern);
 
     if (!theEnvironment.check_file_pattern(file_pattern))
         throw std::invalid_argument("Filepattern provided is not valid.");
@@ -62,7 +64,8 @@ py::tuple process_data(
     int errorCode = Nyxus::read_dataset(
         intensity_dir,
         labels_dir,
-        "./",
+        theEnvironment.get_file_pattern(), 
+        "./",   // output directory
         theEnvironment.intSegMapDir,
         theEnvironment.intSegMapFile,
         true,
@@ -122,9 +125,10 @@ py::tuple findrelations_imp(
     theResultsCache.clear();
 
     // Result -> headerBuf, stringColBuf, calcResultBuf
-    int errorCode = mine_segment_relations (label_dir, file_pattern, channel_signature, n_parent_channel, n_child_channel);
+    ChildFeatureAggregation aggr;
+    bool mineOK = mine_segment_relations (true, label_dir, file_pattern, channel_signature, n_parent_channel, n_child_channel, ".", aggr, theEnvironment.get_verbosity_level());  // the 'outdir' parameter is not used if 'output2python' is true
 
-    if (errorCode)
+    if (mineOK)
         throw std::runtime_error("Error occurred during dataset processing.");
 
     auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf())); // Column names

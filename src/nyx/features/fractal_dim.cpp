@@ -42,6 +42,11 @@ void FractalDimensionFeature::calculate(LR& r)
 		X.push_back(std::log(curve[i].first));
 		Y.push_back(std::log(curve[i].second));
 	}
+
+	// Skip tiny ROIs
+	if (Y.size() < 2)
+		return;
+
 	// -- gradient
 	double y_0 = Y[1] - Y[0],
 		y_n = Y[curve.size() - 1] - Y[curve.size() - 2];

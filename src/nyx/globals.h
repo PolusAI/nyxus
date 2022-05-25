@@ -19,9 +19,6 @@ namespace Nyxus
 	extern FeatureManager theFeatureMgr;
 	extern ImageLoader theImLoader;
 
-	bool datasetDirsOK(const std::string& dirIntens, const std::string& dirLab, const std::string& dirOut, bool mustCheckDirOut);
-	bool directoryExists(const std::string& dir);
-	void readDirectoryFiles(const std::string& dir, const std::string& file_pattern, std::vector<std::string>& files);
 	bool scanFilePairParallel(const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads, int filepair_index, int tot_num_filepairs);
 	std::string getPureFname(std::string fpath);
 	int processDataset(const std::vector<std::string>& intensFiles, const std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int numReduceThreads, int min_online_roi_size, bool save2csv, const std::string& csvOutputDir);
@@ -33,17 +30,6 @@ namespace Nyxus
 	// 2 scenarios of saving a result of feature calculation of a label-intensity file pair: saving to a CSV-file and saving to a matrix to be later consumed by a Python endpoint
 	bool save_features_2_csv (std::string intFpath, std::string segFpath, std::string outputDir);
 	bool save_features_2_buffer (ResultsCache& results_cache);		
-
-	int read_dataset (
-		// input
-		const std::string& dirIntens, 
-		const std::string& dirLabels, 
-		const std::string& dirOut, 
-		const std::string& intLabMappingDir,
-		const std::string& intLabMappingFile,		
-		bool mustCheckDirOut,
-		// output
-		std::vector<std::string>& intensFiles, std::vector<std::string>& labelFiles);
 
 	void init_feature_buffers();
 	void clear_feature_buffers();	
@@ -73,9 +59,6 @@ namespace Nyxus
 	extern std::unordered_map <int, LR> roiData;
 	extern std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
 
-	// Global feature extraction results table
-	extern ResultsCache theResultsCache;
-	
 	// System resources
 	unsigned long long getAvailPhysMemory();
 

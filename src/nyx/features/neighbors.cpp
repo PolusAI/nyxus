@@ -108,21 +108,27 @@ void parallel_process_1_batch_of_collision_pairs (size_t start, size_t end, std:
 // Calculates the features using spatial hashing approach
 void NeighborsFeature::manual_reduce()
 {
+	//DEBUG - track possible weird collision candidates
+	//{
+	//	int lab2track = 3;
+	//	LR& r = roiData[lab2track];
+	//	ImageMatrix imCont (r.raw_pixels);
+	//	auto&& hdr = "ROI " + std::to_string(lab2track);
+	//	imCont.print (hdr, "t");
+	//}
+
 	int radius = theEnvironment.get_pixel_distance();
 	int n_threads = 1; 
 
-	// Keeping the commented out greedy implementation just for the record and the time when we want to run it on a GPU
-	//==== Collision detection, method 1 (best with GPGPU)
-	//  Calculate collisions into a triangular matrix
-	auto nul = uniqueLabels.size();
+	//==== Collision detection, method 1 (greedy)
+	auto n_ul = uniqueLabels.size();
 	
 	std::vector <int> LabsVec;
 	LabsVec.reserve (uniqueLabels.size());
 	LabsVec.insert (LabsVec.end(), uniqueLabels.begin(), uniqueLabels.end());
 
-	//std::vector <char> CM ((nul+1) * (nul+1), false);	// collision matrix
 	std::vector <std::pair<int, int>> CM2;
-	CM2.reserve (nul * nul / 4);	// estimate: 25% of the segment population
+	CM2.reserve (n_ul * n_ul / 4);	// estimate: 25% of the segment population
 
 	//DEBUG
 	//	int n_aabb_collis = 0;
@@ -130,12 +136,12 @@ void NeighborsFeature::manual_reduce()
 	//DEBUG
 	//	auto startTime = std::chrono::system_clock::now();
 
-	for (size_t i1 = 0; i1 < nul; i1++) 
+	for (size_t i1 = 0; i1 < n_ul; i1++) 
 	{
 		auto l1 = LabsVec[i1];
 		LR& r1 = roiData[l1];
 
-		for (size_t i2 = 0; i2 < nul; i2++) 
+		for (size_t i2 = 0; i2 < n_ul; i2++) 
 		{
 			auto l2 = LabsVec[i2];
 			if (i1 == i2) 
@@ -233,6 +239,10 @@ void NeighborsFeature::manual_reduce()
 
 			// Make sure that segment's outer pixels are available
 			if (r1.contour.size() == 0)
+				continue;
+
+			// Make sure that the other ROI's pixel cloud is non-empty
+			if (r2.contour.size() == 0)
 				continue;
 
 			// Iterate r1's outer pixels

@@ -183,5 +183,6 @@ namespace Nyxus
 		return new_pi;
 	}
 
+	bool parse_as_float(std::string raw, float& result);
 }
 
