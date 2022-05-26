@@ -19,8 +19,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	endif()
 endif()
 
-
-
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -133,6 +131,7 @@ pybind11_add_module(backend
 	${SOURCE}
 	src/nyx/python/new_bindings_py.cpp
 	src/nyx/python/nested_roi_py.cpp
+	src/nyx/nested_roi.cpp
 	src/nyx/image_loader1x.cpp
 )
 
