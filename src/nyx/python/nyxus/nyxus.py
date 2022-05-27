@@ -179,7 +179,7 @@ class NyxusHie:
             array of <parent label>,<child label> structure
         """
 
-        if label_dir is not None and not os.path.exists(label_dir):
+        if not os.path.exists(label_dir):
             raise IOError (f"Provided label image directory '{label_dir}' does not exist.")
 
         header, string_data, numeric_data = findrelations_imp (label_dir, file_pattern, channel_signature, parent_channel, child_channel)

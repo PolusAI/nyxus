@@ -128,8 +128,8 @@ py::tuple findrelations_imp(
     ChildFeatureAggregation aggr;
     bool mineOK = mine_segment_relations (true, label_dir, file_pattern, channel_signature, n_parent_channel, n_child_channel, ".", aggr, theEnvironment.get_verbosity_level());  // the 'outdir' parameter is not used if 'output2python' is true
 
-    if (mineOK)
-        throw std::runtime_error("Error occurred during dataset processing.");
+    if (! mineOK)
+        throw std::runtime_error("Error occurred during dataset processing: mine_segment_relations() returned false");
 
     auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf())); // Column names
     auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf())); // String cells of first n columns
@@ -158,7 +158,7 @@ PYBIND11_MODULE(backend, m)
 ///     exclude file main_nyxus.cpp from build, and 
 ///     rebuild the CLI target.
 /// 
-#if TESTING_PY_INTERFACE
+#ifdef TESTING_PY_INTERFACE
 //
 // Testing Python interface
 //
