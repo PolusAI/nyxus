@@ -179,10 +179,10 @@ namespace Nyxus
 	/// @return Squeezed intensity within range (0, ran_)
 	inline unsigned int normalize_I (unsigned int pi, unsigned int min_, unsigned int ran_)
 	{
-		unsigned int new_pi = double(pi - min_) / double(ran_) * 512.0;
+		unsigned int new_pi = (decltype(new_pi)) (double(pi - min_) / double(ran_) * 512.0);
 		return new_pi;
 	}
 
-	bool parse_as_float(std::string raw, float& result);
+	bool parse_as_float(const std::string& raw, float& result);
 }
 

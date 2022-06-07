@@ -49,6 +49,6 @@ private:
 		nth,
 		ntd;
 
-	int lvl = 0,	// Pyramid level
+	size_t lvl = 0,	// Pyramid level
 		lyr = 0;	//	Layer
 };

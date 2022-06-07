@@ -17,7 +17,7 @@ namespace Nyxus
 {
 	bool directoryExists(const std::string &);
 
-	bool parse_as_float(std::string raw, float &result)
+	bool parse_as_float(const std::string& raw, float &result)
 	{
 		if (sscanf(raw.c_str(), "%f", &result) != 1)
 			return false;

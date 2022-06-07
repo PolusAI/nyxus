@@ -10,9 +10,9 @@
 namespace Nyxus
 {
 	/// @brief Returns the pure file name
-	/// @param fpath 
-	/// @return 
-	std::string getPureFname(std::string fpath);
+	/// @param fpath File name possible having the directory part
+	/// @return File name with extension
+	std::string getPureFname(const std::string& fpath);
 
 	/// @brief Checks if a directory exists
 	/// @param dir 

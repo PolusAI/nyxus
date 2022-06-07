@@ -38,7 +38,7 @@ public:
 private:
 
 	std::vector<double> calcResultBuf_;
-	size_t totalNumFeatures_ = 0, totalNumLabels_ = 0;
+	size_t totalNumLabels_ = 0;
 	std::vector<std::string> stringColBuf_, headerBuf_;
 };
 

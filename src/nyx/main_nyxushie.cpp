@@ -55,7 +55,7 @@ bool 	output_relational_table (const std::vector<int>& P, const std::string& out
 	return true;
 }
 
-bool parse_as_float(std::string raw, float& result)
+bool parse_as_float(const std::string& raw, float& result)
 {
 	if (sscanf(raw.c_str(), "%f", &result) != 1)
 		return false;
@@ -291,7 +291,7 @@ int main (int argc, char** argv)
 	{
 		std::cout << "nyxushie <segment image collection dir> <file pattern> <channel signature> <parent channel> <child channel> <features dir> [" << OPTION_AGGREGATE << "=<aggregation method>]\n" 
 			<< "\t<aggregation method> is " << ChildFeatureAggregation::get_valid_options() << "\n";
-		std::cout << "Example: nyxushie ~/data/image-collection1/seg train_.*\\.tif 1 0 ~/results/result1 \n";
+		std::cout << "Example: nyxushie ~/data/image-collection1/seg train_.*\\.tif _ch 1 0 ~/results/result1 \n";
 		return 1;
 	}
 

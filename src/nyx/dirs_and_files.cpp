@@ -176,7 +176,7 @@ namespace Nyxus
 		return 0; // success
 	}
 
-	std::string getPureFname(std::string fpath)
+	std::string getPureFname(const std::string& fpath)
 	{
 		std::filesystem::path p(fpath);
 		return p.filename().string();
