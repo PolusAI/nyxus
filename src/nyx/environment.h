@@ -22,6 +22,7 @@
 #define ONLINESTATSTHRESH "--onlineStatsThresh" // Environment :: onlineStatsThreshold	-- Example: --onlineStatsThresh=150
 #define XYRESOLUTION "--pixelsPerCentimeter"	// pixels per centimeter
 #define PXLDIST "--pixelDistance"		// used in neighbor features
+#define USEGPU	"--useGpu"					// Environment::rawUseGpu, "true" or "false"
 
 // Feature group nicknames
 #define FEA_NICK_ALL "*ALL*"
@@ -111,8 +112,10 @@ public:
 	/// @brief Returns GPU device ID of choice
 	/// @return 0-based GPU device ID (default: 0) or -1 not to use GPU even if it is available
 	int get_gpu_device_choice();
-	void set_using_gpu(bool yes);
-	bool using_gpu();
+	void set_use_gpu(bool yes);
+	bool using_gpu();	
+
+	int get_floating_point_precision();
 
 private:
 	std::vector<std::tuple<std::string, std::string>> memory;
@@ -125,7 +128,10 @@ private:
 
 	std::string temp_dir_path;
 
-	bool using_gpu_ = false;
+	std::string rawUseGpu = "";
+	bool use_gpu_ = false;
+
+	int floating_point_precision = 10;	
 };
 
 namespace Nyxus

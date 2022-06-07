@@ -672,7 +672,8 @@ int Environment::parse_cmdline(int argc, char **argv)
 				find_string_argument(i, REDUCETHREADS, reduce_threads) ||
 				find_string_argument(i, ROTATIONS, rotations) ||
 				find_string_argument(i, PXLDIST, pixel_distance) ||
-				find_string_argument(i, VERBOSITY, verbosity)))
+				find_string_argument(i, VERBOSITY, verbosity) ||
+				find_string_argument(i, USEGPU, rawUseGpu)))
 			unrecognized.push_back(*i);
 	}
 
@@ -803,6 +804,26 @@ int Environment::parse_cmdline(int argc, char **argv)
 		return 1;
 	}
 
+	//==== Using GPU
+	#ifdef USE_GPU
+	auto rawUseGpuUC = Nyxus::toupper(rawUseGpu);
+	if (rawUseGpuUC.length() == 0)
+	{
+		use_gpu_ = false;
+		std::cout << "!\n! Not using GPU. To involve GPU, use command line option " << USEGPU << "=true\n!\n";
+	}
+	else
+	{
+		auto validUsegpu1 = Nyxus::toupper("true"), validUsegpu2 = Nyxus::toupper("false");
+		if (rawUseGpuUC != validUsegpu1 && rawUseGpuUC != validUsegpu2)
+		{
+			std::cerr << "Error: valid values of " << USEGPU << " are " << validUsegpu1 << " or " << validUsegpu2 << "\n";
+			return 1;
+		}
+		use_gpu_ = rawUseGpuUC == validUsegpu1;
+	}
+	#endif
+
 	//==== Parse desired features
 
 	// --Try to read a feature file
@@ -932,12 +953,17 @@ int Environment::get_gpu_device_choice()
 	return 0;   
 }
 
-void Environment::set_using_gpu (bool yes) 
+void Environment::set_use_gpu (bool yes) 
 { 
-	using_gpu_ = yes; 
+	use_gpu_ = yes; 
 }
 
 bool Environment::using_gpu() 
 { 
-	return using_gpu_; 
+	return use_gpu_; 
+}
+
+int Environment::get_floating_point_precision()
+{
+	return floating_point_precision;
 }
