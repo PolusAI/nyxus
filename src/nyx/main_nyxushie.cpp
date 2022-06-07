@@ -18,188 +18,6 @@ public:
 
 namespace Nyxus
 {
-#if 0 //xxx already defined for py-api
-	void feed_pixel_2_metrics_H (
-		std::unordered_set <int> & UL, // unique labels
-		std::unordered_map <int, LR> & RD,	// ROI data
-		int x, int y, int label, unsigned int tile_index)
-	{
-		if (UL.find(label) == UL.end())
-		{
-			// Remember this label
-			UL.insert(label);
-
-			// Initialize the ROI label record
-			LR newData;
-			init_label_record_2 (newData, theParFname, "no2ndfile", x, y, label, 999/*dummy intensity*/, tile_index);
-			RD[label] = newData;
-		}
-		else
-		{
-			// Update basic ROI info (info that doesn't require costly calculations)
-			LR& existingData = RD[label];
-			update_label_record_2 (existingData, x, y, label, 999/*dummy intensity*/, tile_index);
-		}
-	}
-
-	bool gatherRoisMetrics_H (const std::string& fpath, std::unordered_set <int> & uniqueLabels, std::unordered_map <int, LR> & roiData)
-	{
-		theParFname = fpath;
-
-		int lvl = 0, // Pyramid level
-			lyr = 0; //	Layer
-
-		// Open an image pair
-		ImageLoader1x imlo;
-		bool ok = imlo.open (fpath);
-		if (!ok)
-		{
-			std::stringstream ss;
-			ss << "Error opening file " << fpath;
-	#ifdef WITH_PYTHON_H
-			throw ss.str();
-	#endif	
-			std::cerr << ss.str() << "\n";
-			return false;
-		}
-
-		// Read the tiff
-		size_t nth = imlo.get_num_tiles_hor(),
-			ntv = imlo.get_num_tiles_vert(),
-			fw = imlo.get_tile_width(),
-			th = imlo.get_tile_height(),
-			tw = imlo.get_tile_width(),
-			tileSize = imlo.get_tile_size();
-
-		int cnt = 1;
-		for (unsigned int row = 0; row < nth; row++)
-			for (unsigned int col = 0; col < ntv; col++)
-			{
-				// Fetch the tile 
-				ok = imlo.load_tile(row, col);
-				if (!ok)
-				{
-					std::stringstream ss;
-					ss << "Error fetching tile row=" << row << " col=" << col;
-	#ifdef WITH_PYTHON_H
-					throw ss.str();
-	#endif	
-					std::cerr << ss.str() << "\n";
-					return false;
-				}
-
-				// Get ahold of tile's pixel buffer
-				auto tileIdx = row * nth + col;
-				auto data = imlo.get_tile_buffer();
-
-				// 1st image -> uniqueLabels1, roiData1
-				for (size_t i = 0; i < tileSize; i++)
-				{
-					// Skip non-mask pixels
-					auto label = data [i];
-					if (label != 0)
-					{
-						int y = row * th + i / tw,
-							x = col * tw + i % tw;
-
-						// Update pixel's ROI metrics
-						feed_pixel_2_metrics_H (uniqueLabels, roiData, x, y, label, tileIdx); // Updates 'uniqueLabels' and 'roiData'
-					}
-				}
-
-	#ifdef WITH_PYTHON_H
-				if (PyErr_CheckSignals() != 0)
-					throw pybind11::error_already_set();
-	#endif
-
-				// Show stayalive progress info
-				if (cnt++ % 4 == 0)
-					std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n";
-			}
-
-		imlo.close();
-		return true;
-	}
-
-bool find_hierarchy (std::vector<int>& P, const std::string & par_fname, const std::string & chi_fname)
-{
-	std::cout << "\nUsing \n\t" << par_fname << " as container (parent) segment provider, \n\t" << chi_fname << " as child segment provider\n";
-
-	// Cache the file names to be picked up by labels to know their file origin
-	std::filesystem::path parPath (par_fname), chiPath (chi_fname);
-
-	//---???---
-#if 0
-	// Scan one label-intensity pair 
-	bool ok = theImLoader.open (parPath.string(), chiPath.string());
-	if (ok == false)
-	{
-		std::cout << "Error opening ImLoader. Terminating\n";
-		return false;
-	}
-
-	theImLoader.close();
-#endif
-
-	// scan parent segments
-	gatherRoisMetrics_H (parPath.string(), uniqueLabels1, roiData1);
-
-	// scan child segments
-	gatherRoisMetrics_H (chiPath.string(), uniqueLabels2, roiData2);
-
-	size_t n_orphans = 0, n_non_orphans = 0;
-	for (auto l_chi : Nyxus::uniqueLabels2)
-	{
-		LR& r_chi = Nyxus::roiData2[l_chi];
-		const AABB& chiBB = r_chi.aabb;
-		bool parFound = false;
-		for (auto l2 : Nyxus::uniqueLabels1)
-		{
-			LR& r_par = Nyxus::roiData1[l2];
-			const AABB& parBB = r_par.aabb;
-
-			// Check the strict containment
-			if (parBB.get_xmin() <= chiBB.get_xmin() &&
-				parBB.get_xmax() >= chiBB.get_xmax() &&
-				parBB.get_ymin() <= chiBB.get_ymin() &&
-				parBB.get_ymax() >= chiBB.get_ymax())
-			{
-				r_par.child_segs.push_back(l_chi);
-				n_non_orphans++;
-				parFound = true;
-			}
-		}
-
-		if (parFound == false)
-			n_orphans++;
-	}
-
-	// Build the parents set
-	std::cout << "Containers (parents):\n";
-	int ordn = 1;
-	for (auto l_par : Nyxus::uniqueLabels1)
-	{
-		LR& r_par = Nyxus::roiData1 [l_par];
-		if (r_par.child_segs.size())
-		{
-			P.push_back(l_par);
-			//--Diagnostic--	std::cout << "\t(" << ordn++ << ")\t" << l_par << " : " << r_par.child_segs.size() << " ch\n";
-		}
-	}
-
-	// Optional - find the max # of child segments to know how many children columns we have across the image
-	size_t max_n_children = 0;
-	for (auto l_par : Nyxus::uniqueLabels1)
-	{
-		LR& r_par = Nyxus::roiData1[l_par];
-		max_n_children = std::max(max_n_children, r_par.child_segs.size());
-	}
-	std::cout << "\n# explained = " << n_non_orphans << "\n# orphans = " << n_orphans << "\nmax # children per container = " << max_n_children << "\n";
-
-	return true;
-}
-#endif // xxx
-
 
 bool 	output_relational_table (const std::vector<int>& P, const std::string& outdir)
 {
@@ -286,9 +104,8 @@ bool 	shape_all_parents (const std::vector<int> & P, const std::string & outdir,
 	auto segImgFname = pSeg.stem().string();
 	std::string fPath = outdir + "/" + segImgFname + "_nested_features.csv";	// output file path
 
-	// Debug
+	// --diagnostic--
 	std::cout << "\nWriting aligned nested features to file " << fPath << "\n";
-
 
 	// Output <-- parent header
 	std::string csvNFP = fPath; //---outdir + "/nested_features.csv";	// output file path
@@ -472,9 +289,9 @@ int main (int argc, char** argv)
 	// Process the command line: check the command line (straightforward way - strictly positional)
 	if (argc < 7)
 	{
-		std::cout << "nyxushie <segment image collection dir> <file pattern> <channel signature> <parent channel> <child channel> <features dir> [" << OPTION_AGGREGATE << "=<mathod>]\n" 
-			<< "\t<method> is " << ChildFeatureAggregation::get_valid_options() << "\n";
-		std::cout << "Example: nyxhie ~/data/image-collection1/seg train_.*\\.tif 1 0 ~/results/result1 \n";
+		std::cout << "nyxushie <segment image collection dir> <file pattern> <channel signature> <parent channel> <child channel> <features dir> [" << OPTION_AGGREGATE << "=<aggregation method>]\n" 
+			<< "\t<aggregation method> is " << ChildFeatureAggregation::get_valid_options() << "\n";
+		std::cout << "Example: nyxushie ~/data/image-collection1/seg train_.*\\.tif 1 0 ~/results/result1 \n";
 		return 1;
 	}
 

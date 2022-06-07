@@ -27,36 +27,22 @@ namespace Nyxus
 		int lvl = 0,	// Pyramid level
 			lyr = 0;	//	Layer
 
-		// Open an image pair
-		ImageLoader & imlo = theImLoader;	//???	ImageLoader imlo;
-		bool ok = true;	//???	bool ok = imlo.open(intens_fpath, label_fpath);
-		if (!ok)
-		{
-			std::stringstream ss;
-			ss << "Error opening file pair " << intens_fpath << " : " << label_fpath;
-			#ifdef WITH_PYTHON_H
-				throw ss.str();
-			#endif	
-			std::cerr << ss.str() << "\n";
-			return false;
-		}
-
 		// Read the tiffs
-		size_t nth = imlo.get_num_tiles_hor(),
-			ntv = imlo.get_num_tiles_vert(),
-			fw = imlo.get_tile_width(),
-			th = imlo.get_tile_height(),
-			tw = imlo.get_tile_width(),
-			tileSize = imlo.get_tile_size(), 
-			fullwidth = imlo.get_full_width(), 
-			fullheight = imlo.get_full_height();
+		size_t nth = theImLoader.get_num_tiles_hor(),
+			ntv = theImLoader.get_num_tiles_vert(),
+			fw = theImLoader.get_tile_width(),
+			th = theImLoader.get_tile_height(),
+			tw = theImLoader.get_tile_width(),
+			tileSize = theImLoader.get_tile_size(),
+			fullwidth = theImLoader.get_full_width(),
+			fullheight = theImLoader.get_full_height();
 
 		int cnt = 1;
 		for (unsigned int row = 0; row < nth; row++)
 			for (unsigned int col = 0; col < ntv; col++)
 			{
 				// Fetch the tile 
-				ok = imlo.load_tile(row, col);
+				bool ok = theImLoader.load_tile(row, col);
 				if (!ok)
 				{
 					std::stringstream ss;
@@ -69,8 +55,8 @@ namespace Nyxus
 				}
 
 				// Get ahold of tile's pixel buffer
-				auto dataI = imlo.get_int_tile_buffer(),
-					dataL = imlo.get_seg_tile_buffer();
+				auto dataI = theImLoader.get_int_tile_buffer(),
+					dataL = theImLoader.get_seg_tile_buffer();
 
 				// Iterate pixels
 				for (unsigned long i = 0; i < tileSize; i++)
@@ -105,7 +91,6 @@ namespace Nyxus
 					VERBOSLVL1(std::cout << "\tscan trivial " << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "% of image scanned \n";)
 			}
 
-		//??? imlo.close();
 		return true;
 	}
 

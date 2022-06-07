@@ -8,11 +8,6 @@
 #ifdef WITH_PYTHON_H
 	#include <pybind11/pybind11.h>
 #endif
-//#include "../environment.h"
-//#include "../globals.h"
-//#include "../image_loader1x.h"
-//#include "../results_cache.h"
-//#include "../roi_cache.h"
 
 #include "../nested_feature_aggregation.h"
 #include "../nested_roi.h"
@@ -256,7 +251,7 @@ bool 	output_roi_relational_table_2_csv (const std::vector<int>& P, const std::s
 	auto segImgFname = pSeg.stem().string();
 	std::string fPath = outdir + "/" + segImgFname + "_nested_relations.csv";	// output file path
 
-	// Debug
+	// --diagnostic--
 	std::cout << "\nWriting relational structure to file " << fPath << "\n";
 
 	// Output <-- parent header
@@ -280,6 +275,7 @@ bool 	output_roi_relational_table_2_csv (const std::vector<int>& P, const std::s
 	return true;
 }
 
+/// @brief Scans the feature database and aggregates features of labels in parameter "P" according to aggregation "aggrs", the output goes to directory "outdir" 
 bool 	aggregate_features (const std::vector<int>& P, const std::string& outdir, const ChildFeatureAggregation& aggr)
 {
 	// Anything to do at all?
@@ -360,8 +356,6 @@ bool 	aggregate_features (const std::vector<int>& P, const std::string& outdir, 
 	{
 		HieLR& r = Nyxus::roiData1[l_par];
 		std::string csvFP = outdir + "/" + r.get_output_csv_fname();
-		//std::string csvWholeline;
-		//std::vector<std::string> csvHeader, csvFields;
 		bool ok = find_csv_record(csvWholeline, csvHeader, csvFields, csvFP, l_par);
 		if (ok == false)
 		{
@@ -445,6 +439,11 @@ bool 	aggregate_features (const std::vector<int>& P, const std::string& outdir, 
 			}
 
 			int n_chi = aggrBuf.size();
+			if (n_chi == 0)
+			{
+				std::cout << "No children of parent " << l_par << " are available for aggregation\n";
+				continue;
+			}
 
 			// write aggregated
 			//--first, aggregate

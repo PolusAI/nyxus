@@ -9,14 +9,12 @@ bool ImageLoader1x::open(const std::string& fpath)
 	try
 	{
 		if (checkTileStatus(fpath))
-		{
-			FL = new NyxusGrayscaleTiffTileLoader<uint32_t>(n_threads, fpath);
-		}
+			FL = std::make_unique<NyxusGrayscaleTiffTileLoader<uint32_t>> (n_threads, fpath); 
 		else
 		{
 			// since the file is not tiled, we provide the tile dimensions
 			auto [tw, th, td] = calculate_tile_dimensions(fpath);
-			FL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, fpath, tw, th, td);
+			FL = std::make_unique<NyxusGrayscaleTiffStripLoader<uint32_t>> (n_threads, fpath, tw, th, td); 
 		}
 	}
 	catch (std::exception const& e)
@@ -51,7 +49,6 @@ void ImageLoader1x::close()
 {
 	if (FL)
 	{
-		delete FL;
 		FL = nullptr;
 	}
 }

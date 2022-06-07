@@ -130,19 +130,19 @@ class Nyxus:
 
         return df
 		
-class NyxusHie:
+class Nested:
     """Nyxus image feature extraction library / ROI hierarchy analyzer
 	
 	Example
 	-------
-	from nyxus import NyxusHie
-	nyx = NyxusHie()
+	from nyxus import Nested
+	nn = Nested()
 	segPath = '/home/data/6234838c6b123e21c8b736f5/tissuenet_tif/seg'
 	fPat = '.*'
 	cnlSig = '_c'
 	parCnl = '1'
 	chiCnl = '0'
-	rels = nyx.findrelations (segPath, fPat, cnlSig, parCnl, chiCnl)	
+	rels = nn.findrelations (segPath, fPat, cnlSig, parCnl, chiCnl)	
     """
 
     def __init__(self):

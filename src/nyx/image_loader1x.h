@@ -29,7 +29,7 @@ public:
 	std::tuple<uint32_t, uint32_t, uint32_t>  calculate_tile_dimensions(const std::string& filePath);
 	bool checkTileStatus(const std::string& filePath);
 private:
-	fl::AbstractTileLoader<fl::DefaultView<uint32_t>>* FL = nullptr;
+	std::unique_ptr<fl::AbstractTileLoader<fl::DefaultView<uint32_t>>> FL = nullptr;	
 	std::shared_ptr<std::vector<uint32_t>> ptr = nullptr;
 	// Tile height, width, and depth
 	size_t th,

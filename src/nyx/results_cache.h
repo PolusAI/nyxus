@@ -10,15 +10,15 @@ public:
 
 	void clear()
 	{
-		headerBuf.clear();
-		stringColBuf.clear();
-		calcResultBuf.clear();
-		totalNumLabels = 0;
+		headerBuf_.clear();
+		stringColBuf_.clear();
+		calcResultBuf_.clear();
+		totalNumLabels_ = 0;
 	}
 
-	std::vector<std::string>& get_headerBuf() { return headerBuf; }
-	std::vector<std::string>& get_stringColBuf() { return stringColBuf; }
-	std::vector<double>& get_calcResultBuf() { return calcResultBuf; }
+	std::vector<std::string>& get_headerBuf() { return headerBuf_; }
+	std::vector<std::string>& get_stringColBuf() { return stringColBuf_; }
+	std::vector<double>& get_calcResultBuf() { return calcResultBuf_; }
 
 	void add_to_header(std::initializer_list<std::string> cols)
 	{
@@ -27,19 +27,19 @@ public:
 	}
 	void add_to_header(std::string& col)
 	{
-		headerBuf.push_back(col);
+		headerBuf_.push_back(col);
 	}
 
-	void add_string (const std::string& s) { stringColBuf.push_back(s); }
-	void add_numeric(double n) { calcResultBuf.push_back(n); }
-	void inc_num_rows() { totalNumLabels++; }
-	size_t get_num_rows() { return totalNumLabels; }
+	void add_string (const std::string& s) { stringColBuf_.push_back(s); }
+	void add_numeric(double n) { calcResultBuf_.push_back(n); }
+	void inc_num_rows() { totalNumLabels_++; }
+	size_t get_num_rows() { return totalNumLabels_; }
 
 private:
 
-	std::vector<double> calcResultBuf;
-	size_t totalNumFeatures = 0, totalNumLabels = 0;
-	std::vector<std::string> stringColBuf, headerBuf;
+	std::vector<double> calcResultBuf_;
+	size_t totalNumFeatures_ = 0, totalNumLabels_ = 0;
+	std::vector<std::string> stringColBuf_, headerBuf_;
 };
 
 // Global feature extraction results table
