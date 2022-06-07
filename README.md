@@ -294,10 +294,10 @@ nyxushie ~/data/image-collection1/seg train_.*\\.tif _ch 1 0 ~/results/result1
 
 Using the hierarchical ROI Python API is illustrated in the following example:
 ```
-from nyxus import NyxusHie
-nyx = NyxusHie()
-segPath = 'C:\\WORK\\AXLE\\data\\h-6234838c6b123e21c8b736f5\\collection1\\seg'
-fPat = 'test_p0_y1_r1_c.*\.tif'
+from nyxus import Nested
+nyx = Nested()
+segPath = "d:\\data\\mini\\seg"
+fPat = '.*'
 cnlSig = '_c'
 parCnl = '1'
 chiCnl = '0'
