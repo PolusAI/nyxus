@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include "environment_basic.h"
 
 // Command line arguments
 #define SEGDIR "--segDir"						// Environment :: labels_dir
@@ -21,6 +22,7 @@
 #define ONLINESTATSTHRESH "--onlineStatsThresh" // Environment :: onlineStatsThreshold	-- Example: --onlineStatsThresh=150
 #define XYRESOLUTION "--pixelsPerCentimeter"	// pixels per centimeter
 #define PXLDIST "--pixelDistance"		// used in neighbor features
+#define USEGPU	"--useGpu"					// Environment::rawUseGpu, "true" or "false"
 
 // Feature group nicknames
 #define FEA_NICK_ALL "*ALL*"
@@ -47,7 +49,7 @@
 #define VERBOSITY_DETAILED 8
 
 /// @brief Class encapsulating the the feature extraction environment - command line option values, default values, etc. Use it to add a parseable command line parameter.
-class Environment
+class Environment: public BasicEnvironment
 {
 public:
 	Environment();
@@ -64,7 +66,6 @@ public:
 
 	bool singleROI = false; // is set to 'true' parse_cmdline() if labels_dir==intensity_dir
 
-	std::string file_pattern = ".*";
 	std::string embedded_pixel_size = "";
 
 	std::string features;
@@ -86,8 +87,7 @@ public:
 	std::string rotations = "";
 	std::vector<float> rotAngles = {0, 45, 90, 135};
 
-	std::string verbosity = "";
-	int verbosity_level = 1; // 0 = silent
+	std::string verbosity = "";	// 'verbosity_level' is inherited from BasicEnvironment
 
 	std::string rawOnlineStatsThresh = "";
 	int onlineStatsTreshold = 0;
@@ -103,12 +103,19 @@ public:
 	int get_pixel_distance();
 	void set_pixel_distance(int pixelDistance);
 	size_t get_ram_limit();
-	bool check_file_pattern(const std::string &pat);
 	void process_feature_list();
 
 	/// @brief Slash-terminated application-wide temp directory path
 	/// @return 
 	std::string get_temp_dir_path() const;
+
+	/// @brief Returns GPU device ID of choice
+	/// @return 0-based GPU device ID (default: 0) or -1 not to use GPU even if it is available
+	int get_gpu_device_choice();
+	void set_use_gpu(bool yes);
+	bool using_gpu();	
+
+	int get_floating_point_precision();
 
 private:
 	std::vector<std::tuple<std::string, std::string>> memory;
@@ -120,6 +127,11 @@ private:
 	size_t ram_limit = 1024L * 1024L * 1024L; // [bytes] - default RAM limit affecting Phase 2's batch size. (Purpose of Phase 2 is calculating trivial ROIs.)
 
 	std::string temp_dir_path;
+
+	std::string rawUseGpu = "";
+	bool use_gpu_ = false;
+
+	int floating_point_precision = 10;	
 };
 
 namespace Nyxus
@@ -127,9 +139,7 @@ namespace Nyxus
 	extern Environment theEnvironment;
 }
 
-#define VERBOSLVL1(stmt) if(Nyxus::theEnvironment.verbosity_level>=1){stmt;}
-#define VERBOSLVL2(stmt) if(Nyxus::theEnvironment.verbosity_level>=2){stmt;}
-#define VERBOSLVL3(stmt) if(Nyxus::theEnvironment.verbosity_level>=3){stmt;}
-
-
-
+#define VERBOSLVL1(stmt) if(Nyxus::theEnvironment.get_verbosity_level()>=1){stmt;}
+#define VERBOSLVL2(stmt) if(Nyxus::theEnvironment.get_verbosity_level()>=2){stmt;}
+#define VERBOSLVL3(stmt) if(Nyxus::theEnvironment.get_verbosity_level()>=3){stmt;}
+#define VERBOSLVL4(stmt) if(Nyxus::theEnvironment.get_verbosity_level()>=4){stmt;}	

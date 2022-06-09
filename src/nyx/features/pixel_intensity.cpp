@@ -23,7 +23,6 @@ namespace Nyxus
 	{
 
 		//==== Reduce pixel intensity #1, including MIN and MAX
-		//XXX--not using online approach any more--		lr.reduce_pixel_intensity_features();
 		// --MIN, MAX
 		lr.fvals[MIN][0] = lr.aux_min;
 		lr.fvals[MAX][0] = lr.aux_max;

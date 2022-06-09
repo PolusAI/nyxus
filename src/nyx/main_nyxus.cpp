@@ -1,7 +1,12 @@
 #include <algorithm>
 #include "version.h"
+#include "dirs_and_files.h"
 #include "environment.h"
 #include "globals.h"
+
+#ifdef USE_GPU
+	#include "gpu.h"
+#endif
 
 int main (int argc, char** argv)
 {
@@ -9,9 +14,24 @@ int main (int argc, char** argv)
 
 	int parseRes = theEnvironment.parse_cmdline (argc, argv);
 	if (parseRes)
+	{
+		std::cout << "\nError: missing command line arguments\n\n";
+		theEnvironment.show_cmdline_help();
 		return parseRes;
+	}
 
-	VERBOSLVL1(theEnvironment.show_summary ("\n"/*head*/, "\n"/*tail*/);)
+	VERBOSLVL1(theEnvironment.show_summary("\n"/*head*/, "\n"/*tail*/);)
+
+	// Handle GPU-related command line options 
+	#ifdef USE_GPU
+	int gpuDevNo = theEnvironment.get_gpu_device_choice();
+	if (gpuDevNo >= 0 && gpu_initialize(gpuDevNo) == false)
+	{
+		std::cout << "Error: cannot use GPU device ID " << gpuDevNo << "\n";
+		return 1;
+	}
+	theEnvironment.set_using_gpu(true);
+	#endif
 
 	// Have the feature manager prepare the feature toolset reflecting user's selection
 	if (!theFeatureMgr.compile())
@@ -26,6 +46,7 @@ int main (int argc, char** argv)
 	int errorCode = Nyxus::read_dataset (
 		theEnvironment.intensity_dir, 
 		theEnvironment.labels_dir, 
+		theEnvironment.get_file_pattern(),
 		theEnvironment.output_dir, 
 		theEnvironment.intSegMapDir, 
 		theEnvironment.intSegMapFile, 

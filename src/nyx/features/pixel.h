@@ -167,6 +167,9 @@ struct Pixel2 : public Point2i
 		return { mind, maxd };
 	}
 
+	/// @brief Returns the minimum squared distance squared distance from <this> pixel to the <cloud>
+	/// @param cloud Non-empty vector of pixels
+	/// @return Minimum squared distance 
 	double min_sqdist (const std::vector<Pixel2>& cloud) const
 	{
 		auto mind = sqdist (cloud[0]);
