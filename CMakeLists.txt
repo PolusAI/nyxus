@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(AxleNyxus)
 
-option(USEGPU "Use GPU" ON)
+option(USEGPU "Use GPU" OFF) 
 if(USEGPU)
     set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
     set(CMAKE_CUDA_HOST_LINK_LAUNCHER ${CMAKE_CXX_COMPILER})
