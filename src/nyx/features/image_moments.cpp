@@ -1,3 +1,4 @@
+#include "../environment.h"
 #include "image_moments.h"
 
 ImageMomentsFeature::ImageMomentsFeature() : FeatureMethod("ImageMomentsFeature")
@@ -71,24 +72,56 @@ ImageMomentsFeature::ImageMomentsFeature() : FeatureMethod("ImageMomentsFeature"
 
 void ImageMomentsFeature::calculate (LR& r)
 {
-    const ImageMatrix& im = r.aux_image_matrix;
+#ifdef USE_GPU
+    if (theEnvironment.using_gpu() == false)
+    {
+#endif
+        // CPU code. Executing it if GPU is unavailable or if it's available but the user opted not to use it via command line
+        const ImageMatrix& im = r.aux_image_matrix;
 
-    const pixData& I = im.ReadablePixels();
-    calcOrigins(I);
-    calcSpatialMoments(I);
-    calcCentralMoments(I);
-    calcNormCentralMoments(I);
-    calcNormSpatialMoments(I);
-    calcHuInvariants(I);
+        const pixData& I = im.ReadablePixels();
+        calcOrigins(I);
+        calcSpatialMoments(I);
+        calcCentralMoments(I);
+        calcNormCentralMoments(I);
+        calcNormSpatialMoments(I);
+        calcHuInvariants(I);
 
-    ImageMatrix weighted_im(r.raw_pixels, r.aabb);
-    weighted_im.apply_distance_to_contour_weights(r.raw_pixels, r.contour);
+        ImageMatrix weighted_im(r.raw_pixels, r.aabb);
+        weighted_im.apply_distance_to_contour_weights(r.raw_pixels, r.contour);
 
-    const pixData& W = weighted_im.ReadablePixels();
-    calcOrigins (W);
-    calcWeightedSpatialMoments (W);
-    calcWeightedCentralMoments(W);
-    calcWeightedHuInvariants(W);
+        const pixData& W = weighted_im.ReadablePixels();
+        calcOrigins (W);
+        calcWeightedSpatialMoments (W);
+        calcWeightedCentralMoments(W);
+        calcWeightedHuInvariants(W);   
+
+#ifdef USE_GPU
+    }
+    else
+    {
+        // GPU code
+        ImageMatrix& im = r.aux_image_matrix;
+        ImageMatrix weighted_im(im, r.aabb); // (r.raw_pixels, r.aabb);
+        weighted_im.apply_distance_to_contour_weights(r.raw_pixels, r.contour);
+
+        bool ok = ImageMomentsFeature_calculate (
+            m00, m01, m02, m03, m10, m11, m12, m20, m21, m30,   // spatial moments
+            mu02, mu03, mu11, mu12, mu20, mu21, mu30,   // central moments
+            nu02, nu03, nu11, nu12, nu20, nu21, nu30,    // normalized central moments
+            w00, w01, w02, w03, w10, w20, w30,   // normalized spatial moments
+            hm1, hm2, hm3, hm4, hm5, hm6, hm7,  // Hu moments
+            im, weighted_im,
+            wm00, wm01, wm02, wm03, wm10, wm11, wm12, wm20, wm21, wm30,   // weighted spatial moments
+            wmu02, wmu03, wmu11, wmu12, wmu20, wmu21, wmu30,   // weighted central moments
+            whm1, whm2, whm3, whm4, whm5, whm6, whm7    // weighted Hum moments
+            );
+        if (!ok)
+        {
+            std::cerr << "Error calculating image moments\n";
+        }
+    }
+#endif
 }
 
 void ImageMomentsFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {} // Not supporting online for image moments
@@ -96,7 +129,7 @@ void ImageMomentsFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t 
 void ImageMomentsFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
     fvals[SPAT_MOMENT_00][0] = m00;
-    fvals[SPAT_MOMENT_01][0] = m21;
+    fvals[SPAT_MOMENT_01][0] = m01;
     fvals[SPAT_MOMENT_02][0] = m02;
     fvals[SPAT_MOMENT_03][0] = m03;
     fvals[SPAT_MOMENT_10][0] = m10;
@@ -166,16 +199,17 @@ void ImageMomentsFeature::save_value(std::vector<std::vector<double>>& fvals)
     fvals[WEIGHTED_HU_M7][0] = whm7;
 }
 
+/// @brief Calculates the spatial 2D-moment of order q,p
 double ImageMomentsFeature::Moment (const pixData& D, int p, int q)
 {
-    // calc (p+q)th moment of object
-    double sum = 0;
-    for (int x = 0; x < D.width(); x++)
+    double q_ = q, 
+        p_ = p, 
+        sum = 0;
+    for (size_t x = 0; x < D.width(); x++)
     {
-        for (int y = 0; y < D.height(); y++)
-        {
-            sum += D.yx(y,x) * pow(x, p) * pow(y, q);
-        }
+        double powXP = pow((double)x, p_);
+        for (size_t y = 0; y < D.height(); y++)
+            sum += (double)D.yx(y, x) * powXP * pow((double)y, q_);
     }
     return sum;
 }
@@ -183,34 +217,79 @@ double ImageMomentsFeature::Moment (const pixData& D, int p, int q)
 void ImageMomentsFeature::calcOrigins(const pixData& D)
 {
     // calc orgins
-    originOfX = Moment (D, 1, 0) / Moment (D, 0, 0);
-    originOfY = Moment (D, 0, 1) / Moment (D, 0, 0);
+    double m00 = Moment(D, 0, 0);
+    originOfX = Moment (D, 1, 0) / m00;
+    originOfY = Moment (D, 0, 1) / m00;
 }
 
+/// @brief Calculates the central 2D-moment of order q,p
 double ImageMomentsFeature::CentralMom(const pixData& D, int p, int q)
 {
-    // calculate central moment
-    double sum = 0;
-    for (int x = 0; x < D.width(); x++)
+    double p_ = (double)p,
+        q_ = (double)q,
+        sum = 0.;
+    size_t nx = D.width(), ny = D.height();
+
+//#if 0
+    size_t i = 0;
+    for (size_t y = 0; y < ny; y++)
     {
-        for (int y = 0; y < D.height(); y++)
+        for (size_t x = 0; x < nx; x++)
         {
-            sum += D.yx(y,x) * pow((double(x) - originOfX), p) * pow((double(y) - originOfY), q);
+            double powXP = pow((double(x) - originOfX), p_);
+            double powYQ = pow((double(y) - originOfY), q_);
+            double a = double(D.yx(y, x)) * powXP * powYQ;
+
+            //experimental x,y
+            size_t yi = i / nx;
+            size_t xi = i % nx;
+            i++;
+            double powXP_e = pow((double(xi) - originOfX), p_);
+            double powYQ_e = pow((double(yi) - originOfY), q_);
+            double b = double(D.yx(yi, xi)) * powXP_e * powYQ_e;
+            if (a != b)
+            {
+                bool breakpoint = true;
+            }
+
+            sum += a;
         }
     }
+//#endif
+
+#if 0
+    size_t i = 0;
+    for (size_t x = 0; x < nx; x++)
+    {
+        for (size_t y = 0; y < ny; y++)
+        {
+            //experimental x,y
+            size_t yi = i / nx;
+            size_t xi = i % nx;
+            i++;
+            //
+            double powXP = pow((double(xi) - originOfX), p_);
+            double powYQ = pow((double(yi) - originOfY), q_);
+            sum += pow(double(xi), p_) * pow(double(yi), q_);  // double(D.yx(yi, xi)) * powXP * powYQ;
+        }
+    }
+#endif
+
     return sum;
 }
 
-// https://handwiki.org/wiki/Standardized_moment
+/// @brief Calculates the normalized spatial 2D-moment of order q,p [https://handwiki.org/wiki/Standardized_moment]
 double ImageMomentsFeature::NormSpatMom(const pixData& D, int p, int q)
 {
     double stddev = CentralMom(D, 2, 2);
     int w = std::max(q, p);
-    double normCoef = pow(stddev, w);
-    double retval = CentralMom(D, p, q) / normCoef;
+    double normCoef = pow(stddev, (double)w);
+    double cmPQ = CentralMom(D, p, q);
+    double retval = cmPQ / normCoef;
     return retval;
 }
 
+/// @brief Calculates the normalized central 2D-moment of order q,p
 double ImageMomentsFeature::NormCentralMom(const pixData& D, int p, int q)
 {
     double temp = ((double(p) + double(q)) / 2.0) + 1.0;
