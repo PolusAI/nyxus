@@ -7,6 +7,9 @@ if(USEGPU)
     set(CMAKE_CUDA_HOST_LINK_LAUNCHER ${CMAKE_CXX_COMPILER})
     enable_language("CUDA")
     add_definitions(-DUSE_GPU)
+
+    #---Additionally, the architecture can be set manually eg sm_37 for K80--- 
+    #	set(CMAKE_CUDA_ARCHITECTURES 37 CACHE STRING "CUDA architectures" FORCE)
 endif()
 
 #==== Compiler Options
@@ -224,3 +227,4 @@ if (RUN_GTEST)
 	add_subdirectory(tests)
 	message(STATUS "GTEST downloaded and imported")
 endif (RUN_GTEST)
+
