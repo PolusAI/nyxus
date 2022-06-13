@@ -72,11 +72,6 @@ ImageMomentsFeature::ImageMomentsFeature() : FeatureMethod("ImageMomentsFeature"
 
 void ImageMomentsFeature::calculate (LR& r)
 {
-#ifdef USE_GPU
-    if (theEnvironment.using_gpu() == false)
-    {
-#endif
-        // CPU code. Executing it if GPU is unavailable or if it's available but the user opted not to use it via command line
         const ImageMatrix& im = r.aux_image_matrix;
 
         const pixData& I = im.ReadablePixels();
@@ -95,34 +90,32 @@ void ImageMomentsFeature::calculate (LR& r)
         calcWeightedSpatialMoments (W);
         calcWeightedCentralMoments(W);
         calcWeightedHuInvariants(W);   
+}
 
 #ifdef USE_GPU
-    }
-    else
-    {
-        // GPU code
-        ImageMatrix& im = r.aux_image_matrix;
-        ImageMatrix weighted_im(im, r.aabb); // (r.raw_pixels, r.aabb);
-        weighted_im.apply_distance_to_contour_weights(r.raw_pixels, r.contour);
+void ImageMomentsFeature::calculate_via_gpu (LR& r)
+{
+    ImageMatrix& im = r.aux_image_matrix;
+    ImageMatrix weighted_im(im, r.aabb); // (r.raw_pixels, r.aabb);
+    weighted_im.apply_distance_to_contour_weights(r.raw_pixels, r.contour);
 
-        bool ok = ImageMomentsFeature_calculate (
-            m00, m01, m02, m03, m10, m11, m12, m20, m21, m30,   // spatial moments
-            mu02, mu03, mu11, mu12, mu20, mu21, mu30,   // central moments
-            nu02, nu03, nu11, nu12, nu20, nu21, nu30,    // normalized central moments
-            w00, w01, w02, w03, w10, w20, w30,   // normalized spatial moments
-            hm1, hm2, hm3, hm4, hm5, hm6, hm7,  // Hu moments
-            im, weighted_im,
-            wm00, wm01, wm02, wm03, wm10, wm11, wm12, wm20, wm21, wm30,   // weighted spatial moments
-            wmu02, wmu03, wmu11, wmu12, wmu20, wmu21, wmu30,   // weighted central moments
-            whm1, whm2, whm3, whm4, whm5, whm6, whm7    // weighted Hum moments
-            );
-        if (!ok)
-        {
-            std::cerr << "Error calculating image moments\n";
-        }
+    bool ok = ImageMomentsFeature_calculate(
+        m00, m01, m02, m03, m10, m11, m12, m20, m21, m30,   // spatial moments
+        mu02, mu03, mu11, mu12, mu20, mu21, mu30,   // central moments
+        nu02, nu03, nu11, nu12, nu20, nu21, nu30,    // normalized central moments
+        w00, w01, w02, w03, w10, w20, w30,   // normalized spatial moments
+        hm1, hm2, hm3, hm4, hm5, hm6, hm7,  // Hu moments
+        im, weighted_im,
+        wm00, wm01, wm02, wm03, wm10, wm11, wm12, wm20, wm21, wm30,   // weighted spatial moments
+        wmu02, wmu03, wmu11, wmu12, wmu20, wmu21, wmu30,   // weighted central moments
+        whm1, whm2, whm3, whm4, whm5, whm6, whm7    // weighted Hum moments
+    );
+    if (!ok)
+    {
+        std::cerr << "Error calculating image moments\n";
     }
-#endif
 }
+#endif
 
 void ImageMomentsFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {} // Not supporting online for image moments
 
@@ -402,6 +395,11 @@ void ImageMomentsFeature::calcNormSpatialMoments (const pixData& D)
     w30 = NormSpatMom (D, 3, 0);
 }
 
+/// @brief Calculates the features for a subset of ROIs in a thread-safe way with other ROI subsets
+/// @param start Start index of the ROI label vector
+/// @param end End index of the ROI label vector
+/// @param ptrLabels ROI label vector
+/// @param ptrLabelData ROI data
 void ImageMomentsFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
     for (auto i = start; i < end; i++)
@@ -417,4 +415,24 @@ void ImageMomentsFeature::parallel_process_1_batch (size_t start, size_t end, st
         imf.save_value(r.fvals);
     }
 }
+
+#ifdef USE_GPU
+/// @brief Calculates the features for all the ROIs in a single thread (for calculating via GPU) 
+/// @param ptrLabels ROI label vector
+/// @param ptrLabelData ROI data
+void ImageMomentsFeature::gpu_process_all_rois (const std::vector<int> & Labels, std::unordered_map <int, LR>& RoiData)
+{
+    for (int lab : Labels)
+    {
+        LR& r = RoiData[lab];
+
+        if (r.has_bad_data())
+            continue;
+
+        ImageMomentsFeature imf;
+        imf.calculate_via_gpu (r);
+        imf.save_value(r.fvals);
+    }
+}
+#endif
 
