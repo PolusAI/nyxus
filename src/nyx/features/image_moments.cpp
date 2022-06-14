@@ -242,34 +242,6 @@ double ImageMomentsFeature::CentralMom(const pixData& D, int p, int q)
         sum = 0.;
     size_t nx = D.width(), ny = D.height();
 
-//#if 0
-    size_t i = 0;
-    for (size_t y = 0; y < ny; y++)
-    {
-        for (size_t x = 0; x < nx; x++)
-        {
-            double powXP = pow((double(x) - originOfX), p_);
-            double powYQ = pow((double(y) - originOfY), q_);
-            double a = double(D.yx(y, x)) * powXP * powYQ;
-
-            //experimental x,y
-            size_t yi = i / nx;
-            size_t xi = i % nx;
-            i++;
-            double powXP_e = pow((double(xi) - originOfX), p_);
-            double powYQ_e = pow((double(yi) - originOfY), q_);
-            double b = double(D.yx(yi, xi)) * powXP_e * powYQ_e;
-            if (a != b)
-            {
-                bool breakpoint = true;
-            }
-
-            sum += a;
-        }
-    }
-//#endif
-
-#if 0
     size_t i = 0;
     for (size_t x = 0; x < nx; x++)
     {
@@ -285,7 +257,6 @@ double ImageMomentsFeature::CentralMom(const pixData& D, int p, int q)
             sum += pow(double(xi), p_) * pow(double(yi), q_);  // double(D.yx(yi, xi)) * powXP * powYQ;
         }
     }
-#endif
 
     return sum;
 }
