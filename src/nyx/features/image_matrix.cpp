@@ -227,7 +227,7 @@ void ImageMatrix::histogram(double* bins, unsigned short nbins, bool imhist, con
 
 void ImageMatrix::apply_distance_to_contour_weights (const std::vector<Pixel2>& raw_pixels, const std::vector<Pixel2>& contour_pixels)
 {
-	double epsilon = 0.1;
+	const double epsilon = 0.1;
 
 	for (auto& p : raw_pixels)
 	{

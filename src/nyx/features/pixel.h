@@ -183,7 +183,6 @@ struct Pixel2 : public Point2i
 		return mind;
 	}
 
-
 	double angle(const Pixel2& other) const
 	{
 		double dotProd = double(this->x * other.x) + double(this->y * other.y),
