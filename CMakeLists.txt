@@ -19,8 +19,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	endif()
 endif()
 
-
-
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -101,6 +99,7 @@ set(SOURCE
 	src/nyx/common_stats.cpp
 	src/nyx/dirs_and_files.cpp
 	src/nyx/environment.cpp
+	src/nyx/environment_basic.cpp
 	src/nyx/feature_method.cpp
 	src/nyx/feature_mgr.cpp
 	src/nyx/feature_mgr_init.cpp
@@ -108,7 +107,6 @@ set(SOURCE
 	src/nyx/featureset.cpp
 	src/nyx/globals.cpp
 	src/nyx/image_loader.cpp
-	src/nyx/main.cpp
 	src/nyx/output_2_buffer.cpp
 	src/nyx/output_2_csv.cpp
 	src/nyx/parallel.cpp
@@ -118,18 +116,23 @@ set(SOURCE
 	src/nyx/reduce_by_feature.cpp
 	src/nyx/reduce_trivial_rois.cpp
 	src/nyx/roi_cache.cpp
+	src/nyx/roi_cache_basic.cpp
 	src/nyx/scan_fastloader_way.cpp
 )
 
 # CLI
 if(BUILD_CLI)
-	add_executable(nyxus ${SOURCE} src/nyx/main.cpp)
+	add_executable(nyxus ${SOURCE} src/nyx/main_nyxus.cpp)
+	add_executable(nyxushie src/nyx/dirs_and_files.cpp src/nyx/environment_basic.cpp src/nyx/image_loader1x.cpp src/nyx/main_nyxushie.cpp src/nyx/nested_roi.cpp src/nyx/python/nested_roi_py.cpp src/nyx/roi_cache_basic.cpp)
 endif()
 
 # Python bindings.
 pybind11_add_module(backend 
 	${SOURCE}
 	src/nyx/python/new_bindings_py.cpp
+	src/nyx/python/nested_roi_py.cpp
+	src/nyx/nested_roi.cpp
+	src/nyx/image_loader1x.cpp
 )
 
 target_compile_definitions(backend PRIVATE WITH_PYTHON_H)
@@ -144,6 +147,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	if(BUILD_CLI)
 		target_link_libraries(nyxus PRIVATE -static-libgcc -static-libstdc++)
 		target_link_libraries(nyxus PRIVATE stdc++fs)
+		target_link_libraries(nyxushie PRIVATE -static-libgcc -static-libstdc++)
+		target_link_libraries(nyxushie PRIVATE stdc++fs)
 	endif()
 endif()
 
@@ -156,6 +161,7 @@ endif()
 
 if(BUILD_CLI)
 	target_link_libraries(nyxus PRIVATE ${Nyxus_LIBRARIES})
+	target_link_libraries(nyxushie PRIVATE ${Nyxus_LIBRARIES})
 endif()
 
 ## Running Tests

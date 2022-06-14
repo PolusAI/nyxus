@@ -8,6 +8,7 @@
 #include "features/image_matrix_nontriv.h"
 #include "features/pixel.h"
 #include "featureset.h"
+#include "roi_cache_basic.h"
 
 // Label record - structure aggregating label's cached data and calculated features
 #define DFLT0 -0.0	// default unassigned value
@@ -23,7 +24,7 @@ enum RoiDataCacheItem
 };
 
 /// @brief Encapsulates data cached per each ROI
-class LR
+class LR: public BasicLR
 {
 public:
 	static constexpr const RoiDataCacheItem CachedObjects[] = { RAW_PIXELS,	CONTOUR, CONVEX_HULL, IMAGE_MATRIX, NEIGHBOR_ROI_LABELS };
@@ -37,7 +38,6 @@ public:
 	bool caching_permitted();
 	void clear_pixels_cache();
 
-	int label;
 	std::string segFname, intFname;
 
 	bool roi_disabled = false;
@@ -47,7 +47,6 @@ public:
 	OutOfRamPixelCloud osized_pixel_cloud;
 	unsigned int aux_area;
 	PixIntens aux_min, aux_max;
-	AABB aabb;
 	std::vector<Pixel2> contour;	// Contour contour;
 	std::vector<Pixel2> convHull_CH; // ConvexHull convHull;
 
@@ -69,9 +68,6 @@ public:
 	ImageMatrix aux_image_matrix;	// Needed by Contour, Erosions, GLCM, GLRLM, GLSZM, GLDM, NGTDM, Radial distribution(via Contour), Gabor, Moments, ROI radius(via Contour)
 
 	std::unordered_set <unsigned int> host_tiles;
-
-	void init_aabb(StatsInt x, StatsInt y);
-	void update_aabb(StatsInt x, StatsInt y);
 
 	double getValue (AvailableFeatures f);
 	void reduce_pixel_intensity_features();

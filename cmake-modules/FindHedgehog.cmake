@@ -32,17 +32,17 @@ FIND_PATH(Hedgehog_INCLUDE_DIR hedgehog/hedgehog.h
         /usr/local/include
         )
 
+#find_package(CUDA)
+#if (CUDA_FOUND)
+#    set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+#    set(CUDA_NVCC_FLAGS_RELEASE -O3; -DNDEBUG)
+#    add_definitions(-DHH_USE_CUDA)
+#    list(APPEND Hedgehog_LIBRARIES ${CUDA_LIBRARIES})
+#    list(APPEND Hedgehog_INCLUDE_DIR ${CUDA_INCLUDE_DIRS})
+#else ()
+#    message(STATUS "Unable to find CUDA. All CUDA features will not be available.")
+#endif ()
 
-find_package(CUDA)
-if (CUDA_FOUND)
-    set(CUDA_PROPAGATE_HOST_FLAGS OFF)
-    set(CUDA_NVCC_FLAGS_RELEASE -O3; -DNDEBUG)
-    add_definitions(-DHH_USE_CUDA)
-    list(APPEND Hedgehog_LIBRARIES ${CUDA_LIBRARIES})
-    list(APPEND Hedgehog_INCLUDE_DIR ${CUDA_INCLUDE_DIRS})
-else ()
-    message(STATUS "Unable to find CUDA. All CUDA features will not be available.")
-endif ()
 
 IF (NOT Hedgehog_INCLUDE_DIR)
     SET(Hedgehog_FOUND OFF)

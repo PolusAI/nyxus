@@ -263,3 +263,43 @@ The output is a csv file containing the value of features required.
 
 For more information on WIPP, visit the [official WIPP page](https://github.com/usnistgov/WIPP/tree/master/user-guide).
 
+## Nested features 
+
+A separate command line executable "nyxushie" for the hierarchical ROI analysis by finding nested ROIs and aggregating features of child ROIs within corresponding parent features is available. Its command line format is:
+```
+nyxushie <segment image collection dir> <file pattern> <channel signature> <parent channel> <child channel> <features dir> [-aggregate=<aggregation method>]
+```
+where 
+
+*\<segment image collection dir\>* is directory of the segment images collection ;
+
+*\<file pattern\>* is a regular expression to filter files in \<segment image collection dir\> ;
+
+*\<channel signature\>* is a signature of the channel part in an image file name ;
+
+*\<parent channel\>* is an integer channel number where parent ROIs are expected ;
+
+*\<child channel\>* is an integer channel number where child ROIs are expected ;
+
+*\<features dir\>* is a directory used as the output of parent-child ROI relations and, if aggregation is requested, where CSV files of Nyxus features produced with Nyxus command line option --csvfile=separatecsv is located ;
+
+(optional) *\<aggregation method\>* is a method instructing how to aggregate child ROI features under a parent ROI. 
+
+Valid aggregation method options are: SUM, MEAN, MIN, MAX, or WMA (weighted mean average).
+
+__Example__: we need to process collection of mask images located in directory "\~/data/image-collection1/seg" considering only images named "train_.*\\.tif" whose channel information begins with characters "\_ch" (\_ch0, \_ch1, etc.) telling Nyxushie to treat channel 1 images as source of parent ROIs and channel 0 images as source of child ROIs. The output directory needs to be "\~/results/result1". The command line will be
+```
+nyxushie ~/data/image-collection1/seg train_.*\\.tif _ch 1 0 ~/results/result1
+```
+
+Using the hierarchical ROI Python API is illustrated in the following example:
+```
+from nyxus import Nested
+nyx = Nested()
+segPath = "d:\\data\\mini\\seg"
+fPat = '.*'
+cnlSig = '_c'
+parCnl = '1'
+chiCnl = '0'
+rels = nyx.findrelations (segPath, fPat, cnlSig, parCnl, chiCnl)
+```

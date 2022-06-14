@@ -1,4 +1,4 @@
-from .backend import initialize_environment, process_data
+from .backend import initialize_environment, process_data, findrelations_imp
 import os
 import numpy as np
 import pandas as pd
@@ -129,3 +129,72 @@ class Nyxus:
             df["label"] = df.label.astype(np.uint32)
 
         return df
+		
+class Nested:
+    """Nyxus image feature extraction library / ROI hierarchy analyzer
+	
+	Example
+	-------
+	from nyxus import Nested
+	nn = Nested()
+	segPath = '/home/data/6234838c6b123e21c8b736f5/tissuenet_tif/seg'
+	fPat = '.*'
+	cnlSig = '_c'
+	parCnl = '1'
+	chiCnl = '0'
+	rels = nn.findrelations (segPath, fPat, cnlSig, parCnl, chiCnl)	
+    """
+
+    def __init__(self):
+        pass
+
+    def findrelations(
+        self,
+        label_dir: str,
+        file_pattern: str, 
+        channel_signature: str, 
+        parent_channel: str, 
+        child_channel: str):
+        """Finds parent-child relationships.
+
+        Find parent-child relationships assuming that images ending <channel_signature><parent_channel> 
+        contain parent ROIs and images ending <channel_signature><child_channel> contain child ROIs.
+
+        Parameters
+        ----------
+        label_dir : str 
+            Path to directory containing label images.
+        file_pattern: str 
+            Regular expression used to filter the images present in `label_dir`.
+        channel_signature : str
+            Characters preceding the channel identifier e.g. "_c". 
+        parent_channel : str
+            Identifier of the parent channel e.g. "1".
+        child_channel : str
+            Identifier of the child channel e.g. "0".
+
+        Returns
+        -------
+        rel : array
+            array of <parent label>,<child label> structure
+        """
+
+        if not os.path.exists(label_dir):
+            raise IOError (f"Provided label image directory '{label_dir}' does not exist.")
+
+        header, string_data, numeric_data = findrelations_imp (label_dir, file_pattern, channel_signature, parent_channel, child_channel)
+
+        df = pd.concat(
+            [
+                pd.DataFrame(string_data, columns=header[: string_data.shape[1]]),
+                pd.DataFrame(numeric_data, columns=header[string_data.shape[1] :]),
+            ],
+            axis=1,
+        )
+
+        # Labels should always be uint.
+        if "label" in df.columns:
+            df["label"] = df.label.astype(np.uint32)
+
+        return df
+		

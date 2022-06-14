@@ -21,6 +21,29 @@ namespace Nyxus
 #define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),(mode)))==NULL
 #endif
 
+	double auto_precision (std::stringstream& ss, double x)
+	{
+		if (std::abs(x) >= 1.0)
+			ss << std::setprecision(theEnvironment.get_floating_point_precision());
+		else
+			if (x == 0.0)
+				ss << std::setprecision(1);
+			else
+			{
+				// int n = int(std::abs(std::log10(x)) + 0.5);
+
+				double tmp1 = std::abs(x),
+					tmp2 = std::log10(tmp1),
+					tmp3 = std::abs(tmp2), 
+					tmp4 = tmp3 + 0.5;
+				int n = int(tmp4);
+
+				ss << std::setprecision(theEnvironment.get_floating_point_precision() + n);
+			}
+
+		return x;
+	}
+
 	// Saves the result of image scanning and feature calculation. Must be called after the reduction phase.
 	bool save_features_2_csv (std::string intFpath, std::string segFpath, std::string outputDir)
 	{
@@ -208,6 +231,9 @@ namespace Nyxus
 		{
 			std::stringstream ssVals;
 
+			// Floating point precision
+			ssVals << std::fixed;
+
 			LR& r = roiData[l];
 
 			// Tear off pure file names from segment and intensity file paths
@@ -367,7 +393,7 @@ namespace Nyxus
 
 				// Regular feature
 				#ifndef DIAGNOSE_NYXUS_OUTPUT
-					ssVals << "," << vv[0];
+					ssVals << "," << auto_precision (ssVals, vv[0]);
 				#else
 					//--diagnoze misalignment-- 
 					ssVals << "," << fn << "-" << vv[0];	

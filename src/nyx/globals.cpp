@@ -17,13 +17,11 @@ namespace Nyxus
 	std::unordered_set <int> uniqueLabels;
 	std::unordered_map <int, LR> roiData;
 	std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
-	std::vector<double> calcResultBuf;
-
-	size_t totalNumFeatures = 0, totalNumLabels = 0;
-	std::vector<std::string> stringColBuf, headerBuf;
 
 	// Features
 	FeatureSet theFeatureSet;
 	FeatureManager theFeatureMgr;
 
+	// Results cache serving Nyxus' CLI & Python API, NyxusHie's CLI & Python API
+	ResultsCache theResultsCache;
 }

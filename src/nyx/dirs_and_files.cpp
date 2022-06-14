@@ -9,7 +9,6 @@
 #include <iostream>
 #include <regex>
 #include <sstream>
-#include "environment.h"
 
 namespace Nyxus
 {
@@ -19,18 +18,16 @@ namespace Nyxus
 		return std::filesystem::exists(p);
 	}
 
-	void readDirectoryFiles(const std::string& dir, std::vector<std::string>& files)
+	void readDirectoryFiles(const std::string& dir, const std::string& file_pattern, std::vector<std::string>& files)
 	{
-		std::regex re(theEnvironment.file_pattern);
+		std::regex re(file_pattern);
 
 		for (auto& entry : std::filesystem::directory_iterator(dir))
 		{
-			std::string fullPath = entry.path().string(), 
+			std::string fullPath = entry.path().string(),
 				pureFname = entry.path().filename().string();	// The file name that should participate in the filepattern check
 			if (std::regex_match(pureFname, re))
 				files.push_back(fullPath);
-			// else
-			// 	std::cout << "Skipping file " << fp << " as not matching file pattern " << theEnvironment.file_pattern << "\n";
 		}
 	}
 
@@ -60,6 +57,7 @@ namespace Nyxus
 		// input
 		const std::string& dirIntens, 
 		const std::string& dirLabels, 
+		const std::string& filePatt,
 		const std::string& dirOut, 
 		const std::string& intLabMappingDir, 
 		const std::string& intLabMappingFile,
@@ -91,13 +89,13 @@ namespace Nyxus
 		if (intLabMappingFile.empty())
 		{
 			// Common case - no ad hoc intensity-label file mapping, 1-to-1 correspondence instead
-			readDirectoryFiles(dirIntens, intensFiles);
-			readDirectoryFiles(dirLabels, labelFiles);
+			readDirectoryFiles(dirIntens, filePatt, intensFiles);
+			readDirectoryFiles(dirLabels, filePatt, labelFiles);
 
 			// Check if the dataset is meaningful
 			if (intensFiles.size() == 0 || labelFiles.size() == 0)
 			{
-				std::cout << "No intensity and/or label files to process" << std::endl;
+				std::cout << "No intensity and/or label files to process, probably due to file pattern " << filePatt << std::endl;
 				return 2;
 			}
 			if (intensFiles.size() != labelFiles.size())
@@ -178,7 +176,7 @@ namespace Nyxus
 		return 0; // success
 	}
 
-	std::string getPureFname(std::string fpath)
+	std::string getPureFname(const std::string& fpath)
 	{
 		std::filesystem::path p(fpath);
 		return p.filename().string();
