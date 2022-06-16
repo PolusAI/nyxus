@@ -30,7 +30,6 @@ __Pixel intensity features:__
 | ROBUST_MEAN_ABSOLUTE_DEVIATION  | Robust mean absolute deviation | 
 | MASS_DISPLACEMENT  | ROI mass displacement | 
 
-[More on pixel intensity features](docs/f_pixel_intensity.md)
 
 __Morphology features:__
 
@@ -206,7 +205,6 @@ __Texture features:__
 | NGTDM_COMPLEXITY | NGTDM, Complexity |
 | NGTDM_STRENGTH | NGTDM, Strength |
 
-More on [GLCM](docs/f_glcm.md), [NGTDM](docs/f_ngtdm.md) features.
 
 __Radial intensity distribution features:__
 
