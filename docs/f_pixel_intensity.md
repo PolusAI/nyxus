@@ -6,17 +6,17 @@ the pixel intensity features are calculated as:
 
 INTEGRATED_INTENSITY $= \sum _x\sum_y I_{x,y}$
 
-MEAN  $= \mu = \frac{1}{n}\sum _x\sum_y I_{x,y}$
+MEAN $\gets \mu = \frac{1}{n}\sum _x\sum_y I_{x,y}$
 
 MEDIAN - the value such that an equal number of samples are less than and greater than the value (for an odd sample size), or the average of the two central values (for an even sample size)
 
-MIN $= min \textrm I$ treating $I$ as a set $I = \{I_{x,y}\}^n$ of positive values,
+MIN $= min \: \textrm I$ treating $I$ as a set $I = \{I_{x,y}\}^n$ of positive values,
 
-MAX $= max \textrm I$
+MAX $= max \: \textrm I$
 
-RANGE $= max \textrm I - min \textrm I$,
+RANGE $= max \: \textrm I - min \: \textrm I$,
 
-STANDARD_DEVIATION $ = \sigma = \left[\frac{1}{n}\sum _x\sum_y (I_{x,y}-\mu)^2\right]^{\frac {1}{2}}$
+STANDARD_DEVIATION $ \gets \sigma = \left[\frac{1}{n}\sum _x\sum_y (I_{x,y}-\mu)^2\right]^{\frac {1}{2}}$
 
 STANDARD_ERROR $ = \frac{\sigma}{\sqrt{n}}$, 
 
@@ -30,7 +30,7 @@ HYPERFLATNESS $= \frac {n M_5} {M_2^3}$ if $n>6$ and $M_2 \neq 0$, otherwise $=0
 
 MEAN_ABSOLUTE_DEVIATION $ = \sigma = \frac{1}{n} \sum _x\sum_y \left| I_{x,y}-\mu\right| $ where $\mu$ is the mean
 
-ENERGY $ = E = \sum _x \sum _y I_{x,y}^2$
+ENERGY $ \gets E = \sum _x \sum _y I_{x,y}^2$
 
 ROOT_MEAN_SQUARED $= \frac {\sqrt E} {n} $, where $E$ is the energy
 

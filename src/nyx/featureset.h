@@ -45,51 +45,38 @@ namespace Nyxus
 		BBOX_XMIN,
 		BBOX_HEIGHT,
 		BBOX_WIDTH,
-
-		// --ellipticity related
-		MAJOR_AXIS_LENGTH,
-		MINOR_AXIS_LENGTH,
-		ECCENTRICITY,
-		ORIENTATION,
-		ROUNDNESS,
-
-		NUM_NEIGHBORS,
-		PERCENT_TOUCHING,
-		CLOSEST_NEIGHBOR1_DIST,
-		CLOSEST_NEIGHBOR1_ANG,
-		CLOSEST_NEIGHBOR2_DIST,
-		CLOSEST_NEIGHBOR2_ANG,
-		ANG_BW_NEIGHBORS_MEAN,
-		ANG_BW_NEIGHBORS_STDDEV,
-		ANG_BW_NEIGHBORS_MODE,
-
 		EXTENT,
 		ASPECT_RATIO,
 
-		CONVEX_HULL_AREA,
-		SOLIDITY,
+		// -- ellipticity related
+		MAJOR_AXIS_LENGTH,
+		MINOR_AXIS_LENGTH,
+		ECCENTRICITY,
+		ELONGATION,
+		ORIENTATION,
+		ROUNDNESS,
 
-		// --contour related
+		// -- contour related
 		PERIMETER,
 		EQUIVALENT_DIAMETER,
 		EDGE_MEAN_INTENSITY,
 		EDGE_STDDEV_INTENSITY,
 		EDGE_MAX_INTENSITY,
 		EDGE_MIN_INTENSITY,
-
+		EDGE_INTEGRATEDINTENSITY,	
 		CIRCULARITY,
 
+		// -- convex hull related
+		CONVEX_HULL_AREA,
+		SOLIDITY,
+
+		// -- erosions
 		EROSIONS_2_VANISH,
 		EROSIONS_2_VANISH_COMPLEMENT,
+
+		// -- fractal dimension
 		FRACT_DIM_BOXCOUNT,
 		FRACT_DIM_PERIMETER,
-
-		// CellProfiler features [http://cellprofiler-manual.s3.amazonaws.com/CellProfiler-3.0.0/modules/measurement.html]
-		EDGE_INTEGRATEDINTENSITY,	// Sum of the edge pixel intensities
-		//EDGE_MAXINTENSITY,		// Maximal edge pixel intensity
-		//EDGE_MEANINTENSITY,		// Average edge pixel intensity
-		//EDGE_MININTENSITY,		// Minimal edge pixel intensity
-		//EDGE_STDDEVINTENSITY,		// Standard deviation of the edge pixel intensities
 
 		MIN_FERET_DIAMETER,
 		MAX_FERET_DIAMETER,
@@ -136,6 +123,7 @@ namespace Nyxus
 		ALLCHORDS_STDDEV,
 
 		EULER_NUMBER,
+
 		EXTREMA_P1_X, EXTREMA_P1_Y,
 		EXTREMA_P2_X, EXTREMA_P2_Y,
 		EXTREMA_P3_X, EXTREMA_P3_Y,
@@ -145,7 +133,7 @@ namespace Nyxus
 		EXTREMA_P7_X, EXTREMA_P7_Y,
 		EXTREMA_P8_X, EXTREMA_P8_Y,
 
-		// 
+		// -- polygonal representation
 		POLYGONALITY_AVE,
 		HEXAGONALITY_AVE,
 		HEXAGONALITY_STDDEV,
@@ -157,10 +145,21 @@ namespace Nyxus
 		GEODETIC_LENGTH,
 		THICKNESS,
 
-		// 
+		// -- ROI radius features
 		ROI_RADIUS_MEAN,
 		ROI_RADIUS_MAX,
 		ROI_RADIUS_MEDIAN,
+
+		// -- neighboring ROI features
+		NUM_NEIGHBORS,
+		PERCENT_TOUCHING,
+		CLOSEST_NEIGHBOR1_DIST,
+		CLOSEST_NEIGHBOR1_ANG,
+		CLOSEST_NEIGHBOR2_DIST,
+		CLOSEST_NEIGHBOR2_ANG,
+		ANG_BW_NEIGHBORS_MEAN,
+		ANG_BW_NEIGHBORS_STDDEV,
+		ANG_BW_NEIGHBORS_MODE,
 
 		// GLCM:
 		GLCM_ANGULAR2NDMOMENT,

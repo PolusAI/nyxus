@@ -48,18 +48,20 @@ __Morphology features:__
 | MAJOR_AXIS_LENGTH | Length (in pixels) of the major axis of the ellipse that has the same normalized second central moments as the region |
 | MINOR_AXIS_LENGTH | Length (in pixels) of the minor axis of the ellipse that has the same normalized second central moments as the region |
 | ECCENTRICITY | Ratio of ROI's inertia ellipse focal distance over the major axis length |
+| ELONGATION | Ratio of the minor to major axis lengths |
 | ORIENTATION | Angle between the 0th axis and the major axis of the ellipse that has same second moments as the region |
 | ROUNDNESS | Represents how similar a ROI's inertia ellipse is to circle. Calculated based on the major and minor exis lengths |
-| EXTENT | Proportion of the pixels (2D) or voxels (3D) in the bounding box that are also in the region. Computed as the area/volume of the object divided by the area/volume of the bounding box |
-| ASPECT_RATIO | The ratio of the major axis to the minor axis of ROI's inertia ellipse |
+| EXTENT | Proportion of the pixels in the bounding box that are also in the region. Computed as the ROI area divided by the area of the bounding box |
+| ASPECT_RATIO | The ratio of the major to minor sides of ROI's axis aligned bounding box |
 | CONVEX_HULL_AREA | Area of ROI's convex hull |
 | SOLIDITY | Ratio of pixels in the ROI common with its convex hull image |
 | PERIMETER | Number of pixels in ROI's contour |
-| EQUIVALENT_DIAMETER | Diameter of a circle with the same area as the ROI |
+| EQUIVALENT_DIAMETER | Diameter of the circle having circumference equal to the ROI's perimeter |
 | EDGE_MEAN_INTENSITY | Mean intensity of ROI's contour pixels |
 | EDGE_STDDEV_INTENSITY | Standard deviation of ROI's contour pixels |
 | EDGE_MAX_INTENSITY | Maximum intensity of ROI's contour pixels |
 | EDGE_MIN_INTENSITY | Minimum intensity of ROI's contour pixels |
+| EDGE_INTEGRATEDINTENSITY | Sum of the edge pixel intensities |
 | CIRCULARITY | Represents how similar a shape is to circle. Clculated based on ROI's area and its convex perimeter |
 | EROSIONS_2_VANISH | Number of erosion operations for a ROI to vanish in its axis aligned bounding box |
 | EROSIONS_2_VANISH_COMPLEMENT | Number of erosion operations for a ROI to vanish in its convex hull |
