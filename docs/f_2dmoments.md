@@ -4,7 +4,7 @@
 
 Spatial moments $m_{ij}$ of a 2-dimensional greyscale image  I(x,y) are calculated by
 
-$$m_{{ij}}=\sum _{x}\sum _{y}x^{i}y^{j}I(x,y)\$$
+$$\displaystyle m_{{ij}}=\sum _{x}\sum _{y}x^{i}y^{j}I(x,y)\$$
 
 Spatial moment features are calculated as:
 SPAT_MOMENT_00 $=m_{00}$    
@@ -18,7 +18,7 @@ SPAT_MOMENT_20 $=m_{20}$
 SPAT_MOMENT_21 $=m_{21}$    
 SPAT_MOMENT_30 $=m_{30}$    
 
-## <a name="#cetralmoments">Central moments</a>
+## Central moments
 
 A central moment $\mu_{ij}$ is defined as 
 

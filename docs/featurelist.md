@@ -252,7 +252,7 @@ __2D image moments:__
 | WEIGHTED_SPAT_MOMENT_20 | |
 | WEIGHTED_SPAT_MOMENT_21 | |
 | WEIGHTED_SPAT_MOMENT_30 | |
-| CENTRAL_MOMENT_02 | [Central moments](f_2dmoments.md#cetralmoments)
+| CENTRAL_MOMENT_02 | [Central moments](f_2dmoments.md#central-moments)
 | CENTRAL_MOMENT_03 | |
 | CENTRAL_MOMENT_11 | |
 | CENTRAL_MOMENT_12 | |
