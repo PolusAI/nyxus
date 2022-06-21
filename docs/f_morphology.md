@@ -7,9 +7,9 @@ AREA_PIXELS_COUNT $= S = card(A)$
 
 AREA_UM2 $= card(A) s^2$ where $s$ is pixel size in micrometers 
 
-CENTROID_X $= \frac{1}{n} \sum _i ^n  A_{Xi} \to c_X$
+CENTROID_X $\gets c_X = \frac{1}{n} \sum _i ^n  A_{Xi} $
 
-CENTROID_Y $=  \frac{1}{n} \sum _i ^n  A_{Yi} \to c_Y$
+CENTROID_Y $\gets c_Y =  \frac{1}{n} \sum _i ^n  A_{Yi} $
 
 WEIGHTED_CENTROID_X $\gets w_X = \frac{1}{n} \sum _i ^n  A_i (A_{Xi}-c_X)$
 
@@ -149,3 +149,46 @@ ROI_RADIUS_MEAN $\displaystyle \gets \mu_r =\frac{1}{card(C)}\sum_i ||OC_i||$
 ROI_RADIUS_MAX $\displaystyle = \max OC_i$
 
 ROI_RADIUS_MEDIAN - median radius $OC_i$
+
+## Caliper features
+
+### Feret diameter
+<img src="./feret3.jpg" height=200>
+
+MIN_FERET_DIAMETER - minimum $X_{Fe}$ \
+MAX_FERET_DIAMETER - maximum $X_{Fe}$ \
+MIN_FERET_ANGLE - rotation angle delivering $\min X_{Fe}$ \
+MAX_FERET_ANGLE - rotation angle delivering $\max X_{Fe}$
+
+Statistics of Feret diameter at 0-90 degree rotation angles:
+STAT_FERET_DIAM_MIN\
+STAT_FERET_DIAM_MAX\
+STAT_FERET_DIAM_MEAN\
+STAT_FERET_DIAM_MEDIAN\
+STAT_FERET_DIAM_STDDEV\
+STAT_FERET_DIAM_MODE
+
+### Martin diameter
+
+<img src="./martin.jpg" height=200>
+
+Statistics of Martin diameter at 0-90 degree rotation angles:
+STAT_MARTIN_DIAM_MIN\
+STAT_MARTIN_DIAM_MAX\
+STAT_MARTIN_DIAM_MEAN\
+STAT_MARTIN_DIAM_MEDIAN\
+STAT_MARTIN_DIAM_STDDEV\
+STAT_MARTIN_DIAM_MODE
+
+### Nassenstein diameter
+
+<img src="./nassenstein.jpg" height=200>
+
+Statistics of Nassenstein diameter at 0-90 degree rotation angles:
+STAT_NASSENSTEIN_DIAM_MIN\
+STAT_NASSENSTEIN_DIAM_MAX\
+STAT_NASSENSTEIN_DIAM_MEAN\
+STAT_NASSENSTEIN_DIAM_MEDIAN\
+STAT_NASSENSTEIN_DIAM_STDDEV\
+STAT_NASSENSTEIN_DIAM_MODE
+
