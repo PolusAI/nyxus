@@ -132,9 +132,9 @@ __Morphology features:__
 | DIAMETER_INSCRIBING_CIRCLE | Diameter of inscribing circle |
 | GEODETIC_LENGTH | Geodetic length approximated by a rectangle with the same area and perimeter: $ area = geodeticlength * thickness$; $perimeter = 2 * (geodetic_length + thickness) $ |
 | THICKNESS | Thickness approximated by a rectangle with the same area and perimeter: $ area = geodeticlength * thickness$; $perimeter = 2 * (geodetic_length + thickness) $ |
-| ROI_RADIUS_MEAN | Mean centroid to edge distance  |
-| ROI_RADIUS_MAX | Maximum of centroid to edge distances |
-| ROI_RADIUS_MEDIAN | Median value of centroid to edge distances |
+| ROI_RADIUS_MEAN | Mean centroid to contour distance  |
+| ROI_RADIUS_MAX | Maximum of centroid to contour distances |
+| ROI_RADIUS_MEDIAN | Median value of centroid to contour distances |
 
 
 __Texture features:__

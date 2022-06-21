@@ -119,3 +119,33 @@ POLYGONALITY_AVE $\displaystyle = 5 (r_S + r_A)$ where $\displaystyle r_S = 1 - 
 HEXAGONALITY_AVE $\displaystyle = \sqrt {\frac {r_{\sigma A}^2 + r_{\sigma P}^2}{2} }$
 
 HEXAGONALITY_STDDEV $\displaystyle = 5 (r_{HS} + r_{HP})$
+
+## Other features
+
+DIAMETER_MIN_ENCLOSING_CIRCLE minimum diameter of a circle which completely covers the ROI
+
+DIAMETER_CIRCUMSCRIBING_CIRCLE the smallest circle centered at the ROI centroid that totally encloses the profile,
+
+DIAMETER_INSCRIBING_CIRCLE maximum diameter of a circle centered at the ROI centroid which fits inside the ROI
+
+Let $l_G$ - geodetic length, $t_G$ - thickness. Assuming
+$$\displaystyle 
+\left\{\begin{array}{cc} 
+S = l_G t_G \\
+P = 2(l_G+t_G)
+\end{array}\right.
+$$ 
+we can express the following features as:
+
+GEODETIC_LENGTH $\displaystyle \gets l_G = \frac{P}{4} + \sqrt{\max \left(\frac{P^2}{16}-S, 0\right)}$
+
+THICKNESS $\displaystyle \gets t_G = \frac{P}{2} - l_G$
+
+
+Let $O=o_X,o_Y$ be the ROI centroid and $OC_i$ - segment connecting centroid to an edge pixel $i$. Then
+
+ROI_RADIUS_MEAN $\displaystyle \gets \mu_r =\frac{1}{card(C)}\sum_i ||OC_i||$
+
+ROI_RADIUS_MAX $\displaystyle = \max OC_i$
+
+ROI_RADIUS_MEDIAN - median radius $OC_i$
