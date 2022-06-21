@@ -18,7 +18,7 @@ SPAT_MOMENT_20 $=m_{20}$
 SPAT_MOMENT_21 $=m_{21}$    
 SPAT_MOMENT_30 $=m_{30}$    
 
-## <a name="#abcde">Central moments</a>
+## <a name="#cetralmoments">Central moments</a>
 
 A central moment $\mu_{ij}$ is defined as 
 
