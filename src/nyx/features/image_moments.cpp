@@ -192,12 +192,8 @@ double ImageMomentsFeature::CentralMom(const pixData& D, int p, int q)
     // calculate central moment
     double sum = 0;
     for (int x = 0; x < D.width(); x++)
-    {
         for (int y = 0; y < D.height(); y++)
-        {
             sum += D.yx(y,x) * pow((double(x) - originOfX), p) * pow((double(y) - originOfY), q);
-        }
-    }
     return sum;
 }
 

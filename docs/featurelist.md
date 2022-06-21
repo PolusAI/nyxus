@@ -1,7 +1,7 @@
 # Nyxus provided features
 
-__Pixel intensity features:__
 
+[__Pixel intensity features:__](f_pixel_intensity.md)
 
 ------------------
 | Nyxus feature code | Description |
@@ -31,7 +31,7 @@ __Pixel intensity features:__
 | MASS_DISPLACEMENT  | ROI mass displacement | 
 
 
-__Morphology features:__
+[__Morphology features:__](f_morphology.md)
 
 ------------------------------------
 | Nyxus feature code | Description |
@@ -63,10 +63,6 @@ __Morphology features:__
 | EDGE_MIN_INTENSITY | Minimum intensity of ROI's contour pixels |
 | EDGE_INTEGRATEDINTENSITY | Sum of the edge pixel intensities |
 | CIRCULARITY | Represents how similar a shape is to circle. Clculated based on ROI's area and its convex perimeter |
-| EROSIONS_2_VANISH | Number of erosion operations for a ROI to vanish in its axis aligned bounding box |
-| EROSIONS_2_VANISH_COMPLEMENT | Number of erosion operations for a ROI to vanish in its convex hull |
-| FRACT_DIM_BOXCOUNT | Fractal dimension determined by the box counting method according to ISO 9276-6. If C is a fractal set, with fractal dimension DF < D, then the number N of boxes of size R needed to cover the set scales as R^(-DF). DF is known as the Hausdorf dimension, or Kolmogorov capacity, or Kolmogorov dimension, or simply box-counting dimension |
-| FRACT_DIM_PERIMETER | Fractal dimension determined by the perimeter method according to ISO 9276-6. If we approximate ROI's contour with rulers of length lambda, the perimeter based fractal dimension is the slope of the best fit line of log ROI perimeter versus log lambda, subtracted from 1 |
 | WEIGHTED_CENTROID_Y  | X-coordinate of centroid | 
 | WEIGHTED_CENTROID_X  | Y-coordinate of centroid | 
 | MIN_FERET_DIAMETER | Feret diameter (or maximum caliber diameter) is the longest distance between any two ROI points along the same (horizontal) direction. This feature is the minimum Feret diameter for angles ranging 0 to 180 degrees |
@@ -136,13 +132,25 @@ __Morphology features:__
 | ROI_RADIUS_MAX | Maximum of centroid to contour distances |
 | ROI_RADIUS_MEDIAN | Median value of centroid to contour distances |
 
-
-__Texture features:__
-
+[__Erosion features:__](f_erosion.md)
 ------------------------------------
 | Nyxus feature code | Description |
 |--------------------|-------------|
-| GLCM_ANGULAR2NDMOMENT | Gray Level Co-occurrence Matrix (GLCM) Features, 2nd angular moment |
+| EROSIONS_2_VANISH | Number of erosion operations for a ROI to vanish in its axis aligned bounding box |
+| EROSIONS_2_VANISH_COMPLEMENT | Number of erosion operations for a ROI to vanish in its convex hull |
+
+[__Fractal dimension features:__](f_fractal_dimension.md)
+------------------------------------
+| Nyxus feature code | Description |
+|--------------------|-------------|
+| FRACT_DIM_BOXCOUNT | Fractal dimension determined by the box counting method according to ISO 9276-6. If C is a fractal set, with fractal dimension DF < D, then the number N of boxes of size R needed to cover the set scales as R^(-DF). DF is known as the Hausdorf dimension, or Kolmogorov capacity, or Kolmogorov dimension, or simply box-counting dimension |
+| FRACT_DIM_PERIMETER | Fractal dimension determined by the perimeter method according to ISO 9276-6. If we approximate ROI's contour with rulers of length lambda, the perimeter based fractal dimension is the slope of the best fit line of log ROI perimeter versus log lambda, subtracted from 1 |
+
+__Texture features:__
+------------------------------------
+| Nyxus feature code | Description |
+|--------------------|-------------|
+| GLCM_ANGULAR2NDMOMENT | [Gray Level Co-occurrence Matrix (GLCM)](f_glcm.md) based features, 2nd angular moment |
 | GLCM_CONTRAST | GLCM, Contrast |
 | GLCM_CORRELATION | GLCM, Correlation |
 | GLCM_VARIANCE | GLCM, Variance |
@@ -155,7 +163,7 @@ __Texture features:__
 | GLCM_DIFFERENCEENTROPY | GLCM, Difference entropy |
 | GLCM_INFOMEAS1 | GLCM, Informational Measure of Correlation (IMC) 1 |
 | GLCM_INFOMEAS2 | GLCM, Informational Measure of Correlation (IMC) 2 |
-| GLRLM_SRE | Gray level run-length matrix (GLRLM) based feature, Short Run Emphasis 
+| GLRLM_SRE | [Gray level run-length matrix (GLRLM)](f_glrlm.md) based feature, Short Run Emphasis 
 | GLRLM_LRE | GLRLM, Long Run Emphasis 
 | GLRLM_GLN | GLRLM, Gray Level Non-Uniformity 
 | GLRLM_GLNN | GLRLM, Gray Level Non-Uniformity Normalized 
@@ -171,7 +179,7 @@ __Texture features:__
 | GLRLM_SRHGLE | GLRLM, Short Run High Gray Level Emphasis 
 | GLRLM_LRLGLE | GLRLM, Long Run Low Gray Level Emphasis 
 | GLRLM_LRHGLE | GLRLM, Long Run High Gray Level Emphasis 
-| GLSZM_SAE | Gray level size zone matrix (GLSZM) based feature, Small Area Emphasis
+| GLSZM_SAE | [Gray level size zone matrix (GLSZM)](f_glsz.md) based feature, Small Area Emphasis
 | GLSZM_LAE | Large Area Emphasis
 | GLSZM_GLN | Gray Level Non - Uniformity
 | GLSZM_GLNN | Gray Level Non - Uniformity Normalized
@@ -187,7 +195,7 @@ __Texture features:__
 | GLSZM_SAHGLE | Small Area High Gray Level Emphasis
 | GLSZM_LALGLE | Large Area Low Gray Level Emphasis
 | GLSZM_LAHGLE | Large Area High Gray Level Emphasis
-| GLDM_SDE | Gray level dependency matrix (GLDM) based feature, Small Dependence Emphasis(SDE)
+| GLDM_SDE | [Gray level dependency matrix (GLDM)](f_gldm.md) based feature, Small Dependence Emphasis(SDE)
 | GLDM_LDE | Large Dependence Emphasis (LDE)
 | GLDM_GLN | Gray Level Non-Uniformity (GLN)
 | GLDM_DN | Dependence Non-Uniformity (DN)
@@ -201,7 +209,7 @@ __Texture features:__
 | GLDM_SDHGLE | Small Dependence High Gray Level Emphasis (SDHGLE)
 | GLDM_LDLGLE | Large Dependence Low Gray Level Emphasis (LDLGLE)
 | GLDM_LDHGLE | Large Dependence High Gray Level Emphasis (LDHGLE)
-| NGTDM_COARSENESS | Neighbouring Gray Tone Difference Matrix (NGTDM) Features, Coarseness |
+| NGTDM_COARSENESS | [Neighbouring Gray Tone Difference Matrix (NGTDM)](f_ngtdm.md) based features, Coarseness |
 | NGTDM_CONTRAST | NGTDM, Contrast |
 | NGTDM_BUSYNESS | NGTDM, Busyness |
 | NGTDM_COMPLEXITY | NGTDM, Complexity |
@@ -232,7 +240,7 @@ __2D image moments:__
 ------------------------------------
 | Nyxus feature code | Description |
 |--------------------|-------------|
-| SPAT_MOMENT_00 | [Spatial moments](f_2dmoments.md#Spatial-moments)
+| SPAT_MOMENT_00 | [Raw moments](f_2dmoments.md#raw-moments)
 | SPAT_MOMENT_01 | of order 00, 01, 02, etc| 
 | SPAT_MOMENT_02 | |
 | SPAT_MOMENT_03 | |
@@ -242,7 +250,7 @@ __2D image moments:__
 | SPAT_MOMENT_20 | |
 | SPAT_MOMENT_21 | |
 | SPAT_MOMENT_30 | | 
-| WEIGHTED_SPAT_MOMENT_00 | Spatial moments weighted by pixel distance to ROI edge
+| WEIGHTED_SPAT_MOMENT_00 | [Weighted raw moments] (f_2dmoments.md#weighted-raw-moments)
 | WEIGHTED_SPAT_MOMENT_01 | |
 | WEIGHTED_SPAT_MOMENT_02 | |
 | WEIGHTED_SPAT_MOMENT_03 | |
@@ -259,41 +267,41 @@ __2D image moments:__
 | CENTRAL_MOMENT_20 | |
 | CENTRAL_MOMENT_21 | |
 | CENTRAL_MOMENT_30 | |
-| WEIGHTED_CENTRAL_MOMENT_02 | Central moments weighted by pixel distance to ROI edge
+| WEIGHTED_CENTRAL_MOMENT_02 | [Weighted central moments] (f_2dmoments.md#weighted-central-moments)
 | WEIGHTED_CENTRAL_MOMENT_03 | |
 | WEIGHTED_CENTRAL_MOMENT_11 | |
 | WEIGHTED_CENTRAL_MOMENT_12 | |
 | WEIGHTED_CENTRAL_MOMENT_20 | |
 | WEIGHTED_CENTRAL_MOMENT_21 | |
 | WEIGHTED_CENTRAL_MOMENT_30 | |
-| NORM_CENTRAL_MOMENT_02 | Normalized central moments
+| NORM_CENTRAL_MOMENT_02 | [Normalized central moments](f_2dmoments.md#normalized-central-moments)
 | NORM_CENTRAL_MOMENT_03 | |
 | NORM_CENTRAL_MOMENT_11 | |
 | NORM_CENTRAL_MOMENT_12 | |
 | NORM_CENTRAL_MOMENT_20 | |
 | NORM_CENTRAL_MOMENT_21 | |
 | NORM_CENTRAL_MOMENT_30 | |
-| NORM_SPAT_MOMENT_00 | Normalized (standardized) spatial moments
+| NORM_SPAT_MOMENT_00 | [Normalized raw moments] (f_2dmoments.md#normalized-raw-moments)
 | NORM_SPAT_MOMENT_01 | |
 | NORM_SPAT_MOMENT_02 | |
 | NORM_SPAT_MOMENT_03 | |
 | NORM_SPAT_MOMENT_10 | |
 | NORM_SPAT_MOMENT_20 | |
 | NORM_SPAT_MOMENT_30 | |
-| HU_M1 | Hu's moment 1
-| HU_M2 | Hu's moment 2
-| HU_M3 | Hu's moment 3
-| HU_M4 | Hu's moment 4
-| HU_M5 | Hu's moment 5
-| HU_M6 | Hu's moment 6
-| HU_M7 | Hu's moment 7
-| WEIGHTED_HU_M1 | Weighted Hu's moment 1
-| WEIGHTED_HU_M2 | Weighted Hu's moment 2
-| WEIGHTED_HU_M3 | Weighted Hu's moment 3
-| WEIGHTED_HU_M4 | Weighted Hu's moment 4
-| WEIGHTED_HU_M5 | Weighted Hu's moment 5
-| WEIGHTED_HU_M6 | Weighted Hu's moment 6
-| WEIGHTED_HU_M7 | Weighted Hu's moment 7
+| HU_M1 | [Hu's moments] (f_2dmoments.md#hu-moments)
+| HU_M2 | |
+| HU_M3 | |
+| HU_M4 | |
+| HU_M5 | |
+| HU_M6 | |
+| HU_M7 | |
+| WEIGHTED_HU_M1 | [Weighted Hu's moments] (f_2dmoments.md#weighted-hu-moments)
+| WEIGHTED_HU_M2 | |
+| WEIGHTED_HU_M3 | |
+| WEIGHTED_HU_M4 | |
+| WEIGHTED_HU_M5 | |
+| WEIGHTED_HU_M6 | |
+| WEIGHTED_HU_M7 | |
 
 __Neighbor features:__
 
