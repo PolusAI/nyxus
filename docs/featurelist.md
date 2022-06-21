@@ -232,7 +232,7 @@ __2D image moments:__
 ------------------------------------
 | Nyxus feature code | Description |
 |--------------------|-------------|
-| SPAT_MOMENT_00 | Spatial (raw) moments 
+| SPAT_MOMENT_00 | [Spatial moments](f_2dmoments.md#Spatial-moments)
 | SPAT_MOMENT_01 | of order 00, 01, 02, etc| 
 | SPAT_MOMENT_02 | |
 | SPAT_MOMENT_03 | |
@@ -252,7 +252,7 @@ __2D image moments:__
 | WEIGHTED_SPAT_MOMENT_20 | |
 | WEIGHTED_SPAT_MOMENT_21 | |
 | WEIGHTED_SPAT_MOMENT_30 | |
-| CENTRAL_MOMENT_02 | Central moments 
+| CENTRAL_MOMENT_02 | [Central moments](f_2dmoments.md#cetralmoments)
 | CENTRAL_MOMENT_03 | |
 | CENTRAL_MOMENT_11 | |
 | CENTRAL_MOMENT_12 | |

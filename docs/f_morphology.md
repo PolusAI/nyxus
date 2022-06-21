@@ -181,7 +181,6 @@ STAT_MARTIN_DIAM_STDDEV\
 STAT_MARTIN_DIAM_MODE
 
 ### Nassenstein diameter
-
 <img src="./nassenstein.jpg" height=200>
 
 Statistics of Nassenstein diameter at 0-90 degree rotation angles:
@@ -205,6 +204,7 @@ ALLCHORDS_MODE\
 ALLCHORDS_STDDEV
 
 ### Max-chord features
+
 MAXCHORDS_MAX\
 MAXCHORDS_MAX_ANG\
 MAXCHORDS_MIN\
