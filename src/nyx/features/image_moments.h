@@ -23,6 +23,7 @@ public:
     void osized_calculate(LR& r, ImageLoader& imloader);
     void save_value(std::vector<std::vector<double>>& feature_vals);
     static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+    static void gpu_process_all_rois (const std::vector<int>& ptrLabels, std::unordered_map <int, LR>& ptrLabelData);
 
     // Compatibility with manual reduce
     static bool required(const FeatureSet& fs)
@@ -91,6 +92,10 @@ private:
     void calcSpatialMoments(const pixData& D);
     void calcWeightedSpatialMoments(const pixData& D);
 
+    #ifdef USE_GPU
+        void calculate_via_gpu(LR& r, size_t roi_index);
+    #endif
+
     // Non-trivial (oversized) ROI
 
     double Moment_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I, int p, int q);
@@ -124,4 +129,23 @@ private:
     double hm1 = 0, hm2 = 0, hm3 = 0, hm4 = 0, hm5 = 0, hm6 = 0, hm7 = 0;   // Hu invariants
     double whm1 = 0, whm2 = 0, whm3 = 0, whm4 = 0, whm5 = 0, whm6 = 0, whm7 = 0;    // weighted Hu invariants
 };
+
+bool ImageMomentsFeature_calculate2 (
+    // output:
+    double& m00, double& m01, double& m02, double& m03, double& m10, double& m11, double& m12, double& m20, double& m21, double& m30,   // spatial moments
+    double& cm02, double& cm03, double& cm11, double& cm12, double& cm20, double& cm21, double& cm30,   // central moments
+    double& nu02, double& nu03, double& nu11, double& nu12, double& nu20, double& nu21, double& nu30,    // normalized central moments
+    double& w00, double& w01, double& w02, double& w03, double& w10, double& w20, double& w30,   // normalized spatial moments
+    double& hm1, double& hm2, double& hm3, double& hm4, double& hm5, double& hm6, double& hm7,  // Hu moments
+    double& wm00, double& wm01, double& wm02, double& wm03, double& wm10, double& wm11, double& wm12, double& wm20, double& wm21, double& wm30,   // weighted spatial moments
+    double& wmu02, double& wmu03, double& wmu11, double& wmu12, double& wmu20, double& wmu21, double& wmu30,   // weighted central moments
+    double& whm1, double& whm2, double& whm3, double& whm4, double& whm5, double& whm6, double& whm7,    // weighted Hum moments
+    // input:
+    const ImageMatrix& Im,
+    size_t roi_idx, 
+    StatsInt aabb_min_x, 
+    StatsInt aabb_min_y);
+
+bool send_contours_to_gpu (const std::vector<size_t> & hoIndices, const std::vector< StatsInt> & hoContourData);
+bool free_contour_data_on_gpu();
 

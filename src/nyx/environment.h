@@ -22,7 +22,10 @@
 #define ONLINESTATSTHRESH "--onlineStatsThresh" // Environment :: onlineStatsThreshold	-- Example: --onlineStatsThresh=150
 #define XYRESOLUTION "--pixelsPerCentimeter"	// pixels per centimeter
 #define PXLDIST "--pixelDistance"		// used in neighbor features
-#define USEGPU	"--useGpu"					// Environment::rawUseGpu, "true" or "false"
+#ifdef USE_GPU
+	#define USEGPU "--useGpu"					// Environment::rawUseGpu, "true" or "false"
+	#define GPUDEVICEID "--gpuDeviceID"		// Environment::rawGpuDeviceID
+#endif
 
 // Feature group nicknames
 #define FEA_NICK_ALL "*ALL*"
@@ -109,11 +112,13 @@ public:
 	/// @return 
 	std::string get_temp_dir_path() const;
 
+#ifdef USE_GPU
 	/// @brief Returns GPU device ID of choice
 	/// @return 0-based GPU device ID (default: 0) or -1 not to use GPU even if it is available
 	int get_gpu_device_choice();
 	void set_use_gpu(bool yes);
 	bool using_gpu();	
+#endif
 
 	int get_floating_point_precision();
 
@@ -128,8 +133,12 @@ private:
 
 	std::string temp_dir_path;
 
-	std::string rawUseGpu = "";
+#ifdef USE_GPU
+	std::string rawUseGpu = "";		// boolean
 	bool use_gpu_ = false;
+	std::string rawGpuDeviceID = "";		// integer
+	int gpu_device_id_ = -1;
+#endif
 
 	int floating_point_precision = 10;	
 };
