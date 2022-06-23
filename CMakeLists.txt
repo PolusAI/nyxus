@@ -1,9 +1,22 @@
-cmake_minimum_required(VERSION 3.12)
-project(SensemakerPythonLibrary)
+cmake_minimum_required(VERSION 3.20)
+project(AxleNyxus)
+
+option(USEGPU "Use GPU" OFF) 
+if(USEGPU)
+    set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
+    set(CMAKE_CUDA_HOST_LINK_LAUNCHER ${CMAKE_CXX_COMPILER})
+    enable_language("CUDA")
+    add_definitions(-DUSE_GPU)
+
+    #---Additionally, the architecture can be set manually eg sm_37 for K80--- 
+    #	set(CMAKE_CUDA_ARCHITECTURES 37 CACHE STRING "CUDA architectures" FORCE)
+endif()
 
 #==== Compiler Options
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CUDA_STANDARD 17)
+set(CMAKE_CUDA_STANDARD_REQUIRED True)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive- ")
@@ -120,6 +133,16 @@ set(SOURCE
 	src/nyx/scan_fastloader_way.cpp
 )
 
+if(USEGPU)
+	set(GPU_SOURCE_FILES
+		src/nyx/gpu/gpu_helpers.cu
+		src/nyx/gpu/image_moments.cu
+	)
+	add_library(nyxus_gpu ${GPU_SOURCE_FILES})
+	target_compile_options(nyxus_gpu PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
+endif()
+
+
 # CLI
 if(BUILD_CLI)
 	add_executable(nyxus ${SOURCE} src/nyx/main_nyxus.cpp)
@@ -135,12 +158,23 @@ pybind11_add_module(backend
 	src/nyx/image_loader1x.cpp
 )
 
+if(USEGPU)
+	target_link_libraries(backend PRIVATE nyxus_gpu)
+       	set_target_properties(backend PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
+	if(BUILD_CLI)
+		target_link_libraries(nyxus PRIVATE nyxus_gpu)
+        	set_target_properties(nyxus PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
+	endif()
+endif()
+
 target_compile_definitions(backend PRIVATE WITH_PYTHON_H)
 
 # VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
 target_compile_definitions(backend PRIVATE VERSION_INFO=${VERSION_INFO})
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
+
 	target_link_libraries(backend PRIVATE stdc++fs)
 	target_link_libraries(backend PRIVATE -static-libgcc -static-libstdc++)
 	
@@ -193,3 +227,4 @@ if (RUN_GTEST)
 	add_subdirectory(tests)
 	message(STATUS "GTEST downloaded and imported")
 endif (RUN_GTEST)
+

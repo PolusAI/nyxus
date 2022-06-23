@@ -144,7 +144,7 @@ void Environment::show_cmdline_help()
 		<< "Command line format:\n"
 		<< "\t" << PROJECT_NAME << " -h\tDisplay help info\n"
 		<< "\t" << PROJECT_NAME << " --help\tDisplay help info\n"
-		<< "\t" << PROJECT_NAME
+		<< "\t" << PROJECT_NAME << " "
 		<< FILEPATTERN << " <fp> "
 		<< OUTPUTTYPE << " <csv> "
 		<< SEGDIR << " <sd> "
@@ -158,8 +158,13 @@ void Environment::show_cmdline_help()
 		<< " [" << REDUCETHREADS << " <rt>]\n"
 		<< " [" << PXLDIST << " <pxd>]\n"
 		<< " [" << ROTATIONS << " <al>]\n"
-		<< " [" << VERBOSITY << " <verbo>]\n"
+		<< " [" << VERBOSITY << " <verbo>]\n";
 
+#ifdef USE_GPU
+	std::cout << " [" << USEGPU << "=<true or false>" << " [" << GPUDEVICEID << "=<valid GPU device ID>] ]\n";
+#endif
+
+	std::cout
 		<< "Where\n"
 		<< "\t<fp> - file pattern regular expression e.g. .*, *.tif, etc [default = .*]\n"
 		<< "\t<csv> - 'separatecsv'[default] or 'singlecsv' \n"
@@ -195,6 +200,12 @@ void Environment::show_summary(const std::string &head, const std::string &tail)
 			  << "\t# of post-processing threads\t" << n_reduce_threads << "\n"
 			  << "\tpixel distance\t" << n_pixel_distance << "\n"
 			  << "\tverbosity level\t" << verbosity_level << "\n";
+
+#ifdef USE_GPU
+	std::cout << "\tusing GPU\t" << (using_gpu() ? "yes" : "no") << "\n";
+	if (using_gpu())
+		std::cout << "\tGPU device ID \t" << get_gpu_device_choice() << "\n";
+#endif
 
 	// Features
 	std::cout << "\tfeatures\t";
@@ -672,8 +683,12 @@ int Environment::parse_cmdline(int argc, char **argv)
 				find_string_argument(i, REDUCETHREADS, reduce_threads) ||
 				find_string_argument(i, ROTATIONS, rotations) ||
 				find_string_argument(i, PXLDIST, pixel_distance) ||
-				find_string_argument(i, VERBOSITY, verbosity) ||
-				find_string_argument(i, USEGPU, rawUseGpu)))
+				find_string_argument(i, VERBOSITY, verbosity) 
+#ifdef USE_GPU
+				|| find_string_argument(i, USEGPU, rawUseGpu) 
+				|| find_string_argument(i, GPUDEVICEID, rawGpuDeviceID) 
+#endif
+			))
 			unrecognized.push_back(*i);
 	}
 
@@ -810,17 +825,34 @@ int Environment::parse_cmdline(int argc, char **argv)
 	if (rawUseGpuUC.length() == 0)
 	{
 		use_gpu_ = false;
-		std::cout << "!\n! Not using GPU. To involve GPU, use command line option " << USEGPU << "=true\n!\n";
+		std::cout << "\n!\n! Not using GPU. To involve GPU, use command line option " << USEGPU << "=true\n!\n\n";
 	}
 	else
 	{
-		auto validUsegpu1 = Nyxus::toupper("true"), validUsegpu2 = Nyxus::toupper("false");
+		auto validUsegpu1 = Nyxus::toupper("true"), 
+			validUsegpu2 = Nyxus::toupper("false");
 		if (rawUseGpuUC != validUsegpu1 && rawUseGpuUC != validUsegpu2)
 		{
 			std::cerr << "Error: valid values of " << USEGPU << " are " << validUsegpu1 << " or " << validUsegpu2 << "\n";
 			return 1;
 		}
 		use_gpu_ = rawUseGpuUC == validUsegpu1;
+
+		// Process user's GPU device choice
+		if (use_gpu_)
+		{
+			if (!rawGpuDeviceID.empty())
+			{
+				// string -> integer
+				if (sscanf(rawGpuDeviceID.c_str(), "%d", &gpu_device_id_) != 1 || gpu_device_id_ < 0)
+				{
+					std::cout << "Error: " << GPUDEVICEID << "=" << gpu_device_id_ << ": expecting 0 or positive integer constant\n";
+					return 1;
+				}
+			}
+			else
+				gpu_device_id_ = 0;	// Specific GPU device ID was not requested, defaulting to 0
+		}
 	}
 	#endif
 
@@ -948,22 +980,29 @@ void Environment::show_featureset_help()
 	std::cout << "\n";
 }
 
-int Environment::get_gpu_device_choice()
-{
-	return 0;   
-}
-
-void Environment::set_use_gpu (bool yes) 
-{ 
-	use_gpu_ = yes; 
-}
-
-bool Environment::using_gpu() 
-{ 
-	return use_gpu_; 
-}
-
 int Environment::get_floating_point_precision()
 {
 	return floating_point_precision;
 }
+
+#ifdef USE_GPU
+int Environment::get_gpu_device_choice()
+{
+	if (using_gpu())
+		return gpu_device_id_;
+	else
+		return -1;  // GPU was not requested so return an invalid device ID -1
+}
+
+void Environment::set_use_gpu(bool yes)
+{
+	use_gpu_ = yes;
+}
+
+bool Environment::using_gpu()
+{
+	return use_gpu_;
+}
+#endif
+
+
