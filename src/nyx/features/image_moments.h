@@ -130,21 +130,6 @@ private:
     double whm1 = 0, whm2 = 0, whm3 = 0, whm4 = 0, whm5 = 0, whm6 = 0, whm7 = 0;    // weighted Hu invariants
 };
 
-bool ImageMomentsFeature_calculate (
-    // output:
-    double& m00, double& m01, double& m02, double& m03, double& m10, double& m11, double& m12, double& m20, double& m21, double& m30,   // spatial moments
-    double& cm02, double& cm03, double& cm11, double& cm12, double& cm20, double& cm21, double& cm30,   // central moments
-    double& nu02, double& nu03, double& nu11, double& nu12, double& nu20, double& nu21, double& nu30,    // normalized central moments
-    double& w00, double& w01, double& w02, double& w03, double& w10, double& w20, double& w30,   // normalized spatial moments
-    double& hm1, double& hm2, double& hm3, double& hm4, double& hm5, double& hm6, double& hm7,  // Hu moments
-    // input:
-    const ImageMatrix& Im, 
-    const ImageMatrix& weighted_Im,
-    double& wm00, double& wm01, double& wm02, double& wm03, double& wm10, double& wm11, double& wm12, double& wm20, double& wm21, double& wm30,   // weighted spatial moments
-    double& wmu02, double& wmu03, double& wmu11, double& wmu12, double& wmu20, double& wmu21, double& wmu30,   // weighted central moments
-    double& whm1, double& whm2, double& whm3, double& whm4, double& whm5, double& whm6, double& whm7    // weighted Hum moments
-);
-
 bool ImageMomentsFeature_calculate2 (
     // output:
     double& m00, double& m01, double& m02, double& m03, double& m10, double& m11, double& m12, double& m20, double& m21, double& m30,   // spatial moments
@@ -152,11 +137,11 @@ bool ImageMomentsFeature_calculate2 (
     double& nu02, double& nu03, double& nu11, double& nu12, double& nu20, double& nu21, double& nu30,    // normalized central moments
     double& w00, double& w01, double& w02, double& w03, double& w10, double& w20, double& w30,   // normalized spatial moments
     double& hm1, double& hm2, double& hm3, double& hm4, double& hm5, double& hm6, double& hm7,  // Hu moments
-    // input:
-    const ImageMatrix& Im,
     double& wm00, double& wm01, double& wm02, double& wm03, double& wm10, double& wm11, double& wm12, double& wm20, double& wm21, double& wm30,   // weighted spatial moments
     double& wmu02, double& wmu03, double& wmu11, double& wmu12, double& wmu20, double& wmu21, double& wmu30,   // weighted central moments
     double& whm1, double& whm2, double& whm3, double& whm4, double& whm5, double& whm6, double& whm7,    // weighted Hum moments
+    // input:
+    const ImageMatrix& Im,
     size_t roi_idx, 
     StatsInt aabb_min_x, 
     StatsInt aabb_min_y);

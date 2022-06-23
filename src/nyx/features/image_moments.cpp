@@ -95,24 +95,6 @@ void ImageMomentsFeature::calculate (LR& r)
 #ifdef USE_GPU
 void ImageMomentsFeature::calculate_via_gpu (LR& r, size_t roi_idx)
 {
-#if 0
-    ImageMatrix& im = r.aux_image_matrix;
-    ImageMatrix weighted_im(im, r.aabb); // (r.raw_pixels, r.aabb);
-    weighted_im.apply_distance_to_contour_weights(r.raw_pixels, r.contour);
-
-    bool ok = ImageMomentsFeature_calculate(
-        m00, m01, m02, m03, m10, m11, m12, m20, m21, m30,   // spatial moments
-        mu02, mu03, mu11, mu12, mu20, mu21, mu30,   // central moments
-        nu02, nu03, nu11, nu12, nu20, nu21, nu30,    // normalized central moments
-        w00, w01, w02, w03, w10, w20, w30,   // normalized spatial moments
-        hm1, hm2, hm3, hm4, hm5, hm6, hm7,  // Hu moments
-        im, weighted_im,
-        wm00, wm01, wm02, wm03, wm10, wm11, wm12, wm20, wm21, wm30,   // weighted spatial moments
-        wmu02, wmu03, wmu11, wmu12, wmu20, wmu21, wmu30,   // weighted central moments
-        whm1, whm2, whm3, whm4, whm5, whm6, whm7    // weighted Hum moments
-    );
-#endif
-
     ImageMatrix& im = r.aux_image_matrix;
 
     bool ok = ImageMomentsFeature_calculate2(
@@ -121,10 +103,10 @@ void ImageMomentsFeature::calculate_via_gpu (LR& r, size_t roi_idx)
         nu02, nu03, nu11, nu12, nu20, nu21, nu30,    // normalized central moments
         w00, w01, w02, w03, w10, w20, w30,   // normalized spatial moments
         hm1, hm2, hm3, hm4, hm5, hm6, hm7,  // Hu moments
-        im, 
         wm00, wm01, wm02, wm03, wm10, wm11, wm12, wm20, wm21, wm30,   // weighted spatial moments
         wmu02, wmu03, wmu11, wmu12, wmu20, wmu21, wmu30,   // weighted central moments
         whm1, whm2, whm3, whm4, whm5, whm6, whm7,    // weighted Hum moments
+        im, 
         roi_idx,
         r.aabb.get_xmin(), 
         r.aabb.get_ymin());
