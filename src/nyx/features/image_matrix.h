@@ -16,7 +16,8 @@ class Moments2func {
 	Moments2& moments;
 public:
 	Moments2func(Moments2& in_moments) : moments(in_moments) { in_moments.reset(); }
-	const double operator()(const double& x) const {
+	double operator()(const double& x) const 
+	{
 		return (moments.add(x));
 	}
 };
@@ -186,7 +187,9 @@ class ImageMatrix
 public:
 	ImageMatrix(): _pix_plane(0,0) {}
 
-	ImageMatrix(const ImageMatrix & I): _pix_plane(0,0) 
+	ImageMatrix(const ImageMatrix & I, const AABB& aabb): 
+		original_aabb(aabb),
+		_pix_plane(0,0)
 	{
 		this->allocate(I.width, I.height);
 		this->_pix_plane = I._pix_plane;
