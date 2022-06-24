@@ -17,7 +17,7 @@ The regression slope $D$ of the straight line
 
 $$\log N(r)  = −D \log r + \log N0$$ 
 
-formed by plotting $\log N(r)$ against $log r$ indicates the degree of complexity, or fractal dimension, of the ROI. The feature is calculated as FRACT_DIM_BOXCOUNT $=D$.
+formed by plotting $\log N(r)$ against $\log r$ indicates the degree of complexity, or fractal dimension, of the ROI. The feature is calculated as FRACT_DIM_BOXCOUNT $=D$.
 
 
 ## FRACT_DIM_PERIMETER
