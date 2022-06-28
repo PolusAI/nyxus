@@ -220,8 +220,24 @@ namespace Nyxus
 		//==== Moments
 		if (ImageMomentsFeature::required(theFeatureSet))
 		{
-			STOPWATCH("Moments/Moments/2D moms/#FFFACD", "\t=");
-			runParallel(ImageMomentsFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			#ifndef USE_GPU
+				STOPWATCH("Moments/Moments/2D moms/#FFFACD", "\t=");
+				runParallel(ImageMomentsFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			#else
+				// Did the user opted out from using GPU?
+				if (theEnvironment.using_gpu() == false)
+				{				
+					// Route calculation via the regular CPU-multithreaded way
+					STOPWATCH("Moments/Moments/2D moms/#FFFACD", "\t=");
+					runParallel(ImageMomentsFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+				}
+				else
+				{
+					// Calculate the feature via GPU
+					STOPWATCH("GPU-Moments/GPU-Moments/2D moms/#FFFACD", "\t=");
+					ImageMomentsFeature::gpu_process_all_rois(PendingRoisLabels, roiData);
+				}
+			#endif
 		}
 
 		//==== Gabor features

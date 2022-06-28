@@ -79,7 +79,7 @@ Nyxus provides a set of pixel intensity, morphology, texture, intensity distribu
 | CONVEX_HULL_AREA | Area of ROI's convex hull |
 | SOLIDITY | Ratio of pixels in the ROI common with its convex hull image |
 | PERIMETER | Number of pixels in ROI's contour |
-| EQUIVALENT_DIAMETER | Diameter of a circle with the same area as the ROI |
+| EQUIVALENT_DIAMETER | Diameter of the circle having circumference equal to the ROI's perimeter |
 | EDGE_MEAN/MAX/MIN/STDDEV_INTENSITY | Intensity statistics of ROI's contour pixels |
 | CIRCULARITY | Represents how similar a shape is to circle. Clculated based on ROI's area and its convex perimeter |
 | EROSIONS_2_VANISH | Number of erosion operations for a ROI to vanish in its axis aligned bounding box |

@@ -227,13 +227,14 @@ void ImageMatrix::histogram(double* bins, unsigned short nbins, bool imhist, con
 
 void ImageMatrix::apply_distance_to_contour_weights (const std::vector<Pixel2>& raw_pixels, const std::vector<Pixel2>& contour_pixels)
 {
-	double epsilon = 0.1;
+	const double epsilon = 0.1;
 
 	for (auto& p : raw_pixels)
 	{
-		auto [mind, maxd] = p.min_max_sqdist(contour_pixels);
-		double dist = std::sqrt (mind);
+		auto mind = p.min_sqdist (contour_pixels);
+		double dist = std::sqrt(mind);
 
+		// (row, column) coordinates in the image matrix
 		auto c = p.x - original_aabb.get_xmin(),
 			r = p.y - original_aabb.get_ymin();
 		

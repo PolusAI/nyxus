@@ -36,6 +36,10 @@ public:
 	/// @return 
 	double get_eccentricity();
 
+	/// @brief Returns ellipse elongation=\frac{minor_axis_length}{major_axis_length} in the form of true inverse elongation 
+	/// @return Value of the ellipse elongation feature
+	double get_elongation();
+
 	/// @brief Orientation describes whather the ellipse is horizontal or vertical
 	/// @return 
 	double get_orientation();
@@ -52,6 +56,7 @@ private:
 	double majorAxisLength = 0,
 		minorAxisLength = 0,
 		eccentricity = 0,
+		elongation = 0, 
 		orientation = 0, 
 		roundness = 0;
 };

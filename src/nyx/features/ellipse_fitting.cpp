@@ -10,6 +10,7 @@ EllipseFittingFeature::EllipseFittingFeature() : FeatureMethod("EllipseFittingFe
 		MAJOR_AXIS_LENGTH, 
 		MINOR_AXIS_LENGTH, 
 		ECCENTRICITY, 
+		ELONGATION,
 		ORIENTATION, 
 		ROUNDNESS });
 }
@@ -45,7 +46,8 @@ void EllipseFittingFeature::calculate (LR& r)
 	double common = sqrt((uxx - uyy) * (uxx - uyy) + 4. * uxy * uxy);
 	majorAxisLength = 2. * sqrt(2.) * sqrt(uxx + uyy + common);
 	minorAxisLength = 2. * sqrt(2.) * sqrt(uxx + uyy - common);
-	eccentricity = 2. * sqrt((majorAxisLength / 2.) * (majorAxisLength / 2.) - (minorAxisLength / 2.) * (minorAxisLength / 2.)) / majorAxisLength;
+	eccentricity = sqrt(1.0 - majorAxisLength* majorAxisLength / (minorAxisLength* minorAxisLength)); 
+	elongation = sqrt(minorAxisLength/majorAxisLength);
 	roundness = (4. * area) / (M_PI * majorAxisLength * majorAxisLength);
 
 	// Calculate orientation [-90,90]
@@ -61,10 +63,15 @@ void EllipseFittingFeature::calculate (LR& r)
 		den = uxx - uyy + sqrt((uxx - uyy) * (uxx - uyy) + 4 * uxy * uxy);
 	}
 
-	if (num == 0 && den == 0)
-		orientation = 0;
+	if (uxy == 0.)
+	{
+		if (uxx >= uyy)
+			orientation = 0.;
+		else
+			orientation = 90.;
+	}
 	else
-		orientation = (180.0 / M_PI) * atan(num / den);
+		orientation = 180./M_PI * atan(num/den);
 }
 
 double EllipseFittingFeature::get_major_axis_length()
@@ -80,6 +87,11 @@ double EllipseFittingFeature::get_minor_axis_length()
 double EllipseFittingFeature::get_eccentricity()
 {
 	return eccentricity;
+}
+
+double EllipseFittingFeature::get_elongation()
+{
+	return elongation;
 }
 
 double EllipseFittingFeature::get_orientation()
@@ -116,6 +128,7 @@ void EllipseFittingFeature::save_value (std::vector<std::vector<double>>& fvals)
 	fvals[MAJOR_AXIS_LENGTH][0] = get_major_axis_length();
 	fvals[MINOR_AXIS_LENGTH][0] = get_minor_axis_length();
 	fvals[ECCENTRICITY][0] = get_eccentricity();
+	fvals[ELONGATION][0] = get_elongation();
 	fvals[ORIENTATION][0] = get_orientation();
 	fvals[ROUNDNESS][0] = get_roundness();
 }
