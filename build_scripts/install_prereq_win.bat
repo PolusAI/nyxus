@@ -88,3 +88,5 @@ copy libdeflate\libdeflate.dll ..\..\local_install\bin\
 copy libdeflate\*.lib ..\..\local_install\lib\
 popd
 popd
+
+if "%ON_GITHUB%"=="TRUE" xcopy /E /I /y local_install\bin %TEMP%\nyxus\bin
