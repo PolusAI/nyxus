@@ -8,6 +8,16 @@ call bootstrap.bat
 xcopy /E /I /y boost ..\local_install\include\boost
 popd
 
+
+git clone https://github.com/madler/zlib.git
+pushd zlib
+mkdir build_man
+pushd build_man
+cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
+cmake --build . --config Release --target install  
+popd
+popd
+
 git clone https://github.com/Blosc/c-blosc.git 
 pushd c-blosc 
 mkdir build_man
@@ -62,14 +72,6 @@ cmake --build . --config Release --target install
 popd
 popd
 
-git clone https://github.com/madler/zlib.git
-pushd zlib
-mkdir build_man
-pushd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
-cmake --build . --config Release --target install  
-popd
-popd
 
 curl https://download.osgeo.org/libtiff/tiff-4.3.0.zip -o libtiff.zip
 tar -xf libtiff.zip
