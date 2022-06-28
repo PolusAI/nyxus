@@ -3,7 +3,7 @@ set PATH=%LIB_PATH%;%PATH%
 echo %LIB_PATH%
 echo %PATH%
 python -m pip install delvewheel
-python setup.py bdist_wheel -d dist
+python setup.py bdist_wheel -d dist -b tmp
 pushd dist
 for %%j in (*.whl) do (
   delvewheel repair %%j
