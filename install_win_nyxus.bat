@@ -1,5 +1,5 @@
 echo on
-set PATH=%LIB_PATH%;%PATH%
+set PATH=D:/a/nyxus/nyxus/build/temp.win-amd64-3.10/Release/local_install/bin;%PATH%
 echo %LIB_PATH%
 echo %PATH%
 python -m pip install delvewheel
