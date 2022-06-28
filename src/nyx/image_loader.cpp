@@ -8,15 +8,22 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 
 	try 
 	{
-		if (checkTileStatus(int_fpath))
+		if 	(std::filesystem::path(int_fpath).extension() == ".zarr")
 		{
-			intFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(n_threads, int_fpath);
-		} 
+			intFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, int_fpath);
+		}
 		else 
 		{
-			// since the file is not tiled, we provide the tile dimensions
-			auto [tw, th, td] = calculate_tile_dimensions (int_fpath);
-			intFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, int_fpath, tw, th, td);
+			if (checkTileStatus(int_fpath))
+			{
+				intFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(n_threads, int_fpath);
+			} 
+			else 
+			{
+				// since the file is not tiled, we provide the tile dimensions
+				auto [tw, th, td] = calculate_tile_dimensions (int_fpath);
+				intFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, int_fpath, tw, th, td);
+			}
 		}
 	}
 	catch (std::exception const& e)	
@@ -29,16 +36,24 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 		return false;
 
 	try {
-		if (checkTileStatus(seg_fpath))
+		if 	(std::filesystem::path(seg_fpath).extension() == ".zarr")
 		{
-			segFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(n_threads, seg_fpath);
-		} 
-		else 
-		{
-			// since the file is not tiled, we provide the tile dimensions
-			auto [tw, th, td] = calculate_tile_dimensions(seg_fpath); 
-			segFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, seg_fpath, tw, th, td);
+			segFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, seg_fpath);
 		}
+		else
+		{
+			if (checkTileStatus(seg_fpath))
+			{
+				segFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(n_threads, seg_fpath);
+			} 
+			else 
+			{
+				// since the file is not tiled, we provide the tile dimensions
+				auto [tw, th, td] = calculate_tile_dimensions(seg_fpath); 
+				segFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, seg_fpath, tw, th, td);
+			}
+		}
+
 
 	}
 	catch (std::exception const& e)	
@@ -139,7 +154,6 @@ bool ImageLoader::load_tile (size_t tile_row, size_t tile_col)
 
 	intFL->loadTileFromFile (ptrI, tile_row, tile_col, lyr, lvl);
 	segFL->loadTileFromFile (ptrL, tile_row, tile_col, lyr, lvl);
-	
 	return true;
 }
 const std::vector<uint32_t>& ImageLoader::get_int_tile_buffer()

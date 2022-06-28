@@ -46,8 +46,7 @@ jobs:
           CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
           CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate-devel
           CIBW_ARCHS_WINDOWS: "auto64"
-          CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib" PATH="C:\\Program Files (x86)\\tiff\\bin;C:\\Program Files (x86)\\zlib\\bin;$PATH"
-          CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
+          CIBW_ENVIRONMENT_WINDOWS: ${{github.workspace}}/build/local_install/bin;$PATH"
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
@@ -62,8 +61,7 @@ jobs:
           CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
           CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate-devel
           CIBW_ARCHS_WINDOWS: "auto64"
-          CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib" PATH="C:\\Program Files (x86)\\tiff\\bin;C:\\Program Files (x86)\\zlib\\bin;$PATH"
-          CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
+          CIBW_ENVIRONMENT_WINDOWS: ${{github.workspace}}/build/local_install/bin;$PATH"
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
@@ -78,8 +76,7 @@ jobs:
           CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
           CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate-devel
           CIBW_ARCHS_WINDOWS: "auto64"
-          CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib" PATH="C:\\Program Files (x86)\\tiff\\bin;C:\\Program Files (x86)\\zlib\\bin;$PATH"
-          CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
+          CIBW_ENVIRONMENT_WINDOWS: ${{github.workspace}}/build/local_install/bin;$PATH"
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
@@ -94,7 +91,6 @@ jobs:
           CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
           CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate-devel
           CIBW_ARCHS_WINDOWS: "auto64"
-          CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib" PATH="C:\\Program Files (x86)\\tiff\\bin;C:\\Program Files (x86)\\zlib\\bin;$PATH"
-          CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
+          CIBW_ENVIRONMENT_WINDOWS: ${{github.workspace}}/build/local_install/bin;$PATH"
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}

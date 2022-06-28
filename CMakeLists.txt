@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.18)
 project(AxleNyxus)
 
 option(USEGPU "Use GPU" OFF) 
@@ -20,16 +20,6 @@ set(CMAKE_CUDA_STANDARD_REQUIRED True)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive- ")
-	#==== Explicit check for LibTiff, needed for Windows
-	if (NOT DEFINED ${TIFF_INCLUDE_DIR})
-		set (TIFF_INCLUDE_DIR $ENV{TIFF_INCLUDE_DIR})
-		message(STATUS "TIFF_INCLUDE_DIR " ${TIFF_INCLUDE_DIR})
-	endif()
-
-	if (NOT DEFINED ${TIFF_LIBRARY_RELEASE})
-		set (TIFF_LIBRARY_RELEASE $ENV{TIFF_LIBRARY_RELEASE})
-		message(STATUS "TIFF_LIBRARY_RELEASE " ${TIFF_LIBRARY_RELEASE})
-	endif()
 endif()
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -52,20 +42,6 @@ include_directories(
 find_package(OpenMP COMPONENTS C CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake-modules")
-
-#==== Include directories. Note: libtiff (required by FastLoader) is 
-#	the only dependency needing manual preparation - unzip, cmake-install 
-#	it, and put its headers in lib/libtiff/include, and 
-#	its library - in lib/libtiff/lib
-find_package(FastLoader)
-
-if(FastLoader_FOUND)
-	list(APPEND Nyxus_LIBRARIES ${FastLoader_LIBRARIES})
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FastLoader_CXX_FLAGS}")
-	include_directories(${FastLoader_INCLUDE_DIR})
-else()
-	message(FATAL_ERROR "Unable to find FastLoader which is required for Nyxus.")
-endif()
 
 #==== Source files
 set(SOURCE
@@ -149,6 +125,7 @@ if(BUILD_CLI)
 	add_executable(nyxushie src/nyx/dirs_and_files.cpp src/nyx/environment_basic.cpp src/nyx/image_loader1x.cpp src/nyx/main_nyxushie.cpp src/nyx/nested_roi.cpp src/nyx/python/nested_roi_py.cpp src/nyx/roi_cache_basic.cpp)
 endif()
 
+
 # Python bindings.
 pybind11_add_module(backend 
 	${SOURCE}
@@ -157,6 +134,42 @@ pybind11_add_module(backend
 	src/nyx/nested_roi.cpp
 	src/nyx/image_loader1x.cpp
 )
+
+#== Install OMEZarr PreReqs
+option(WITH_OMEZARR "Build with OMEZarr Support" ON)
+if(WITH_OMEZARR)
+	if(UNIX)
+		execute_process(COMMAND bash ${CMAKE_SOURCE_DIR}/build_scripts/install_prereq_linux.sh)
+	endif()
+	if(WIN32)
+		execute_process(COMMAND cmd /C ${CMAKE_SOURCE_DIR}/build_scripts/install_prereq_win.bat)
+	endif()
+	set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/local_install)
+	find_package(Boost REQUIRED)
+	if(Boost_FOUND)
+		include_directories(${Boost_INCLUDE_DIR})
+	endif()
+	find_package(BLOSC REQUIRED)
+	include_directories(${BLOSC_INCLUDE_DIR})
+	target_compile_definitions(backend PRIVATE -DWITH_BLOSC)
+	target_link_libraries(backend PRIVATE ${BLOSC_LIBRARIES} pthread)
+	if(BUILD_CLI)
+		target_compile_definitions(nyxus PRIVATE -DWITH_BLOSC)
+		target_compile_definitions(nyxushie PRIVATE -DWITH_BLOSC) 	
+		target_link_libraries(nyxus PRIVATE ${BLOSC_LIBRARIES} pthread)	
+		target_link_libraries(nyxushie PRIVATE ${BLOSC_LIBRARIES} pthread)	
+	endif()
+endif()
+
+find_package(FastLoader)
+
+if(FastLoader_FOUND)
+	list(APPEND Nyxus_LIBRARIES ${FastLoader_LIBRARIES})
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FastLoader_CXX_FLAGS}")
+	include_directories(${FastLoader_INCLUDE_DIR})
+else()
+	message(FATAL_ERROR "Unable to find FastLoader which is required for Nyxus.")
+endif()
 
 if(USEGPU)
 	target_link_libraries(backend PRIVATE nyxus_gpu)
