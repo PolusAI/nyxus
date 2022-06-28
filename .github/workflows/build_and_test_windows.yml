@@ -56,7 +56,7 @@ jobs:
 
     - name: Set variable
       run: |
-        echo ${{github.workspace}}/build/local_install/bin >> $env:GITHUB_PATH
+        echo ${{github.workspace}}/Release/local_install/bin >> $env:GITHUB_PATH
  
     - name: Install Nyxus
       working-directory: ${{github.workspace}}
