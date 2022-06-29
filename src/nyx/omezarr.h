@@ -21,16 +21,16 @@ class NyxusOmeZarrLoader : public fl::AbstractTileLoader<fl::DefaultView<DataTyp
 public:
 
     /// @brief NyxusOmeZarrLoader constructor
-    /// @param num_threads Number of threads associated
-    /// @param file_path Path of zarr file
+    /// @param numberThreads Number of threads associated
+    /// @param filePath Path of zarr file
     NyxusOmeZarrLoader(
-        size_t num_threads,
-        std::string const& file_path)
-        : fl::AbstractTileLoader<fl::DefaultView<DataType>>("NyxusOmeZarrLoader", num_threads, file_path)
+        size_t numberThreads,
+        std::string const& filePath)
+        : fl::AbstractTileLoader<fl::DefaultView<DataType>>("NyxusOmeZarrLoader", numberThreads, filePath)
     {
         short samplesPerPixel = 1;
         // Open the file
-        zarr_ptr_ = std::make_unique<z5::filesystem::handle::File>(file_path.c_str());
+        zarr_ptr_ = std::make_unique<z5::filesystem::handle::File>(filePath.c_str());
         nlohmann::json attributes;
         z5::readAttributes(*zarr_ptr_, attributes);
         
@@ -156,7 +156,7 @@ public:
     /// @return Return a copy of the current NyxusOmeZarrLoader
     std::shared_ptr<fl::AbstractTileLoader<fl::DefaultView<DataType>>> copyTileLoader() override 
     {
-        return std::make_shared<NyxusOmeZarrLoader<DataType>>(this->num_threads(),this->file_path());
+        return std::make_shared<NyxusOmeZarrLoader<DataType>>(this->numberThreads(),this->filePath());
     }
 
     /// @brief Tiff file height
