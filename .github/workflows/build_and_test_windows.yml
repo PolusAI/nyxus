@@ -56,7 +56,6 @@ jobs:
 
     - name: Set variable
       run: |
-        echo "LIB_PATH=${{github.workspace}}" >> $env:GITHUB_ENV
         echo "ON_GITHUB=TRUE" >> $env:GITHUB_ENV        
     - name: Install Nyxus
       working-directory: ${{github.workspace}}

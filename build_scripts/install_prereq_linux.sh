@@ -63,10 +63,7 @@ make install
 cd ../../
 
 if [ "$ON_GITHUB"=="TRUE" ]; then
-    echo "we are here"
     mkdir /tmp/nyxus/
-    ls local_install/lib64
-    ls local_install/lib
     cp -r local_install/lib64 /tmp/nyxus/lib/
     cp -r local_install/lib /tmp/nyxus/lib/
 fi

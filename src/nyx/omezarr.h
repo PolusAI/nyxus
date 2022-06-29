@@ -41,7 +41,6 @@ public:
         std::regex type_regex("Type=\\\\\"(\\w+)");
         std::smatch matches;
         if(std::regex_search(metadata, matches, type_regex)) {
-            std::cout<<matches[1].str()<<std::endl;
             if (matches[1].str() == "uint8") {data_format_=1;}
             else if (matches[1].str() == "uint16") {data_format_=2;}
             else if (matches[1].str() == "uint32") {data_format_=3;}

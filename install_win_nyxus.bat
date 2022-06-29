@@ -1,8 +1,5 @@
-echo on
-echo %TEMP%
-echo %TMP%
+echo off
 set PATH=%TEMP%/nyxus/bin;%PATH%
-echo %PATH%
 python -m pip install delvewheel
 python setup.py bdist_wheel -d dist
 pushd dist
