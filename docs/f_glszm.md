@@ -39,6 +39,3 @@ Let:
 - $\textbf{P}(i,j)$ be the size zone matrix
 - $p(i,j)$ be the normalized size zone matrix, defined as $p(i,j) = \frac{\textbf{P}(i,j)}{N_z}$
 
-## References
-
-Guillaume Thibault; Bernard Fertil; Claire Navarro; Sandrine Pereira; Pierre Cau; Nicolas Levy; Jean Sequeira; Jean-Luc Mari (2009). “Texture Indexes and Gray Level Size Zone Matrix. Application to Cell Nuclei Classification”. Pattern Recognition and Information Processing (PRIP): 140-145.
