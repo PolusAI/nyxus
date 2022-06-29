@@ -12,7 +12,7 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [macos-10.15]
         cibw_archs: ["auto"]
 
     steps:
@@ -45,7 +45,7 @@ jobs:
           CIBW_BUILD_VERBOSITY: 3
           CIBW_ENVIRONMENT: ON_GITHUB="TRUE"
           CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp libdeflate
-          CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:/tmp/nyxus/lib:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
+          CIBW_ENVIRONMENT_MACOS: LD_LIBRARY_PATH="/tmp/nyxus/lib:$LD_LIBRARY_PATH" ON_GITHUB="TRUE" PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
           CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus/lib:$LD_LIBRARY_PATH" ON_GITHUB="TRUE"
           CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate-devel zlib-devel
           CIBW_ARCHS_WINDOWS: "auto64"
