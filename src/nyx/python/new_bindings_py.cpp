@@ -141,6 +141,10 @@ py::tuple findrelations_imp(
     return py::make_tuple(pyHeader, pyStrData, pyNumData);
 }
 
+void use_gpu(bool yes){
+    theEnvironment.set_use_gpu(yes);
+}
+
 PYBIND11_MODULE(backend, m)
 {
     m.doc() = "Nyxus";
@@ -148,6 +152,9 @@ PYBIND11_MODULE(backend, m)
     m.def("initialize_environment", &initialize_environment, "Environment initialization");
     m.def("process_data", &process_data, "Process images, calculate features");
     m.def("findrelations_imp", &findrelations_imp, "Find relations in segmentation images");
+    m.def("gpu_available", &Environment::gpu_is_available, "Check if CUDA gpu is available");
+    m.def("get_gpu_props", &Environment::get_gpu_properties, "Get properties of CUDA gpu");
+    m.def("use_gpu", &use_gpu, "Enable/disable GPU features");
 }
 
 ///

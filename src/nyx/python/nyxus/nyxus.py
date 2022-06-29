@@ -129,6 +129,9 @@ class Nyxus:
             df["label"] = df.label.astype(np.uint32)
 
         return df
+    
+    def using_gpu(self, gpu_on: bool):
+        use_gpu(gpu_on)
 		
 class Nested:
     """Nyxus image feature extraction library / ROI hierarchy analyzer
