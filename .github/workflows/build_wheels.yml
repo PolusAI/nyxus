@@ -46,7 +46,7 @@ jobs:
           CIBW_ENVIRONMENT: ON_GITHUB="TRUE"
           CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp libdeflate
           CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:/tmp/nyxus/lib:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
-          CIBW_ENVIRONMENT_LINUX: PATH="/tmp/nyxus/lib:$PATH"
+          CIBW_ENVIRONMENT_LINUX: PATH="/tmp/nyxus/lib:$PATH" ON_GITHUB="TRUE"
           CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate-devel zlib-devel
           CIBW_ARCHS_WINDOWS: "auto64"
           CIBW_ENVIRONMENT_WINDOWS: PATH="$TEMP\\nyxus\\bin;$PATH"
