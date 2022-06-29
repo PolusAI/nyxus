@@ -11,7 +11,6 @@ env:
   CFLAGS: -I /usr/local/include -I/usr/local/opt/llvm/include 
   CXXFLAGS: -I /usr/local/include -I/usr/local/opt/llvm/include 
   LDFLAGS: -L /usr/local/lib -L/usr/local/opt/llvm/lib 
-  CXX: ${COMPILER}
 
 
 jobs:
