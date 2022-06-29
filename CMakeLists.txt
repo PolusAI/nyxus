@@ -160,7 +160,7 @@ if(WITH_OMEZARR)
 		target_link_libraries(nyxushie PRIVATE ${BLOSC_LIBRARIES})	
 	endif()
 endif()
-message(STATUS "PATH is $ENV{PATH}" )
+message(STATUS "LD_LIBRARY_PATH is $ENV{LD_LIBRARY_PATH}" )
 execute_process(COMMAND ls /tmp/nyxus/lib)
 find_package(FastLoader)
 
