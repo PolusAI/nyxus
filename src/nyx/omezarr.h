@@ -21,19 +21,16 @@ class NyxusOmeZarrLoader : public fl::AbstractTileLoader<fl::DefaultView<DataTyp
 public:
 
     /// @brief NyxusOmeZarrLoader constructor
-    /// @param numberThreads Number of threads associated
-    /// @param filePath Path of zar file
-    /// @param tileWidth Tile width requested
-    /// @param tileHeight Tile height requested
-    /// @param tileDepth Tile depth requested
+    /// @param num_threads Number of threads associated
+    /// @param file_path Path of zarr file
     NyxusOmeZarrLoader(
-        size_t numberThreads,
-        std::string const& filePath)
-        : fl::AbstractTileLoader<fl::DefaultView<DataType>>("NyxusOmeZarrLoader", numberThreads, filePath)
+        size_t num_threads,
+        std::string const& file_path)
+        : fl::AbstractTileLoader<fl::DefaultView<DataType>>("NyxusOmeZarrLoader", num_threads, file_path)
     {
         short samplesPerPixel = 1;
         // Open the file
-        zarr_ptr_ = std::make_unique<z5::filesystem::handle::File>(filePath.c_str());
+        zarr_ptr_ = std::make_unique<z5::filesystem::handle::File>(file_path.c_str());
         nlohmann::json attributes;
         z5::readAttributes(*zarr_ptr_, attributes);
         
@@ -58,16 +55,16 @@ public:
         std::regex size_regex("Size([X|Y|Z])=\\\\\"(\\d+)");
         
         while(std::regex_search(metadata, matches, size_regex)) {
-            if (matches[1].str() == "X") {fullWidth_ = stoi(matches[2].str());}
-            else if (matches[1].str() == "Y") {fullHeight_ = stoi(matches[2].str());}
-            else if (matches[1].str() == "Z") {fullDepth_ = stoi(matches[2].str());}
+            if (matches[1].str() == "X") {full_width_ = stoi(matches[2].str());}
+            else if (matches[1].str() == "Y") {full_height_ = stoi(matches[2].str());}
+            else if (matches[1].str() == "Z") {full_depth_ = stoi(matches[2].str());}
             else {continue;}
             metadata = matches.suffix().str();
         }
 
-        tileWidth_ = std::min(fullWidth_, size_t(1024));
-        tileHeight_ = std::min(fullHeight_, size_t(1024));
-        tileDepth_ = std::min(fullDepth_, size_t(1));
+        tile_width_ = std::min(full_width_, size_t(1024));
+        tile_height_ = std::min(full_height_, size_t(1024));
+        tile_depth_ = std::min(full_depth_, size_t(1));
     }
 
     /// @brief NyxusOmeZarrLoader destructor
@@ -88,9 +85,9 @@ public:
         size_t indexLayerGlobalTile,
         [[maybe_unused]] size_t level) override 
     {
-        size_t pixel_row_index = indexRowGlobalTile*tileHeight_;
-        size_t pixel_col_index = indexColGlobalTile*tileWidth_;
-        size_t pixel_layer_index = indexLayerGlobalTile*tileDepth_;
+        size_t pixel_row_index = indexRowGlobalTile*tile_height_;
+        size_t pixel_col_index = indexColGlobalTile*tile_width_;
+        size_t pixel_layer_index = indexLayerGlobalTile*tile_depth_;
 
         
         switch (data_format_)
@@ -137,9 +134,9 @@ public:
         zarr_ptr_->keys(datasets);
         auto ds = z5::openDataset(*zarr_ptr_, datasets[0]);
         
-        size_t data_height = tileHeight_, data_width = tileWidth_;
-        if (pixel_row_index + data_height > fullHeight_) {data_height = fullHeight_ - pixel_row_index;}
-        if (pixel_col_index + data_width > fullWidth_) {data_width = fullWidth_ - pixel_col_index;}
+        size_t data_height = tile_height_, data_width = tile_width_;
+        if (pixel_row_index + data_height > full_height_) {data_height = full_height_ - pixel_row_index;}
+        if (pixel_col_index + data_width > full_width_) {data_width = full_width_ - pixel_col_index;}
 
         typename xt::xarray<FileType>::shape_type shape = {1,1,1,data_height,data_width };
         z5::types::ShapeType offset = { 0,0,pixel_layer_index, pixel_row_index, pixel_col_index };
@@ -150,7 +147,7 @@ public:
         
         for (size_t k=0;k<data_height;++k)
         {
-            std::copy(tmp.begin()+ k*data_width, tmp.begin()+(k+1)*data_width, dest->begin()+k*tileWidth_);
+            std::copy(tmp.begin()+ k*data_width, tmp.begin()+(k+1)*data_width, dest->begin()+k*tile_width_);
         }
         //*dest = std::vector<DataType> (array.begin(), array.end());
     }
@@ -159,34 +156,34 @@ public:
     /// @return Return a copy of the current NyxusOmeZarrLoader
     std::shared_ptr<fl::AbstractTileLoader<fl::DefaultView<DataType>>> copyTileLoader() override 
     {
-        return std::make_shared<NyxusOmeZarrLoader<DataType>>(this->numberThreads(),this->filePath());
+        return std::make_shared<NyxusOmeZarrLoader<DataType>>(this->num_threads(),this->file_path());
     }
 
     /// @brief Tiff file height
     /// @param level Tiff level [not used]
     /// @return Full height
-    [[nodiscard]] size_t fullHeight([[maybe_unused]] size_t level) const override { return fullHeight_; }
+    [[nodiscard]] size_t fullHeight([[maybe_unused]] size_t level) const override { return full_height_; }
     /// @brief Tiff full width
     /// @param level Tiff level [not used]
     /// @return Full width
-    [[nodiscard]] size_t fullWidth([[maybe_unused]] size_t level) const override { return fullWidth_; }
+    [[nodiscard]] size_t fullWidth([[maybe_unused]] size_t level) const override { return full_width_; }
     /// @brief Tiff full depth
     /// @param level Tiff level [not used]
     /// @return Full Depth
-    [[nodiscard]] size_t fullDepth([[maybe_unused]] size_t level) const override { return fullDepth_; }
+    [[nodiscard]] size_t fullDepth([[maybe_unused]] size_t level) const override { return full_depth_; }
 
     /// @brief Tiff tile width
     /// @param level Tiff level [not used]
     /// @return Tile width
-    [[nodiscard]] size_t tileWidth([[maybe_unused]] size_t level) const override { return tileWidth_; }
+    [[nodiscard]] size_t tileWidth([[maybe_unused]] size_t level) const override { return tile_width_; }
     /// @brief Tiff tile height
     /// @param level Tiff level [not used]
     /// @return Tile height
-    [[nodiscard]] size_t tileHeight([[maybe_unused]] size_t level) const override { return tileHeight_; }
+    [[nodiscard]] size_t tileHeight([[maybe_unused]] size_t level) const override { return tile_height_; }
     /// @brief Tiff tile depth
     /// @param level Tiff level [not used]
     /// @return Tile depth
-    [[nodiscard]] size_t tileDepth([[maybe_unused]] size_t level) const override { return tileDepth_; }
+    [[nodiscard]] size_t tileDepth([[maybe_unused]] size_t level) const override { return tile_depth_; }
 
     /// @brief Tiff bits per sample
     /// @return Size of a sample in bits
@@ -198,12 +195,12 @@ public:
 private:
 
     size_t
-        fullHeight_ = 0,          ///< Full height in pixel
-        fullWidth_ = 0,           ///< Full width in pixel
-        fullDepth_ = 0,           ///< Full depth in pixel
-        tileWidth_ = 0,           ///< Tile width
-        tileHeight_ = 0,          ///< Tile height
-        tileDepth_ = 0;           ///< Tile depth
+        full_height_ = 0,          ///< Full height in pixel
+        full_width_ = 0,           ///< Full width in pixel
+        full_depth_ = 0,           ///< Full depth in pixel
+        tile_width_ = 0,           ///< Tile width
+        tile_height_ = 0,          ///< Tile height
+        tile_depth_ = 0;           ///< Tile depth
 
     short data_format_ = 0;
     std::unique_ptr<z5::filesystem::handle::File> zarr_ptr_;
