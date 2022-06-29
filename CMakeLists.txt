@@ -134,7 +134,6 @@ pybind11_add_module(backend
 	src/nyx/nested_roi.cpp
 	src/nyx/image_loader1x.cpp
 )
-
 #== Install OMEZarr PreReqs
 option(WITH_OMEZARR "Build with OMEZarr Support" ON)
 if(WITH_OMEZARR)
@@ -161,7 +160,8 @@ if(WITH_OMEZARR)
 		target_link_libraries(nyxushie PRIVATE ${BLOSC_LIBRARIES})	
 	endif()
 endif()
-
+message(STATUS "PATH is $ENV{PATH}" )
+execute_process(COMMAND ls /tmp/nyxus/lib)
 find_package(FastLoader)
 
 if(FastLoader_FOUND)
