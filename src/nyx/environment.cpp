@@ -1003,6 +1003,36 @@ bool Environment::using_gpu()
 {
 	return use_gpu_;
 }
+
+bool Environment::gpu_is_available() { 
+    return get_gpu_properties().size() > 0 ? true : false;
+}
+
+std::vector<std::map<std::string, std::string>> Environment::get_gpu_properties() {
+    int n_devices;
+    std::vector<std::map<std::string, std::string>> props;
+
+    cudaGetDeviceCount(&n_devices);
+
+    for(int i = 0; i < n_devices; ++i){
+        cudaDeviceProp prop;
+        cudaGetDeviceProperties(&prop, i);
+
+        std::map<std::string, std::string> temp;
+
+        temp["Device number"] =  std::to_string(i);
+        temp["Device name"] = prop.name;
+        temp["Memory"] = std::to_string(prop.totalGlobalMem/pow(10,9)) + " GB";
+        temp["Capability"] = std::to_string(prop.major) + std::to_string(prop.minor);
+
+        props.push_back(temp);
+    }
+
+    return props;
+}
+
+
+
 #endif
 
 

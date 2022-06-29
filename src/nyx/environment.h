@@ -118,6 +118,8 @@ public:
 	int get_gpu_device_choice();
 	void set_use_gpu(bool yes);
 	bool using_gpu();	
+	static bool gpu_is_available();
+	static std::vector<std::map<std::string, std::string>> get_gpu_properties();
 #endif
 
 	int get_floating_point_precision();
@@ -138,6 +140,7 @@ private:
 	bool use_gpu_ = false;
 	std::string rawGpuDeviceID = "";		// integer
 	int gpu_device_id_ = -1;
+	std::vector<std::map<std::string, std::string>> gpu_props_;
 #endif
 
 	int floating_point_precision = 10;	
