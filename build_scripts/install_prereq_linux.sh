@@ -60,5 +60,9 @@ mkdir build_man
 cd build_man/
 cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF ..
 make install
+cd ../../
 
-
+if [ "$ON_GITHUB"=="TRUE" ]; then
+    mkdir /tmp/nyxus/
+    cp -r local_install/lib /tmp/nyxus/lib/
+fi
