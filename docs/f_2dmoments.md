@@ -4,7 +4,7 @@
 
 Raw (spatial) moments $m_{ij}$ of a 2-dimensional greyscale image  $I(x,y)$ are calculated as
 
-$$\displaystyle m_{{ij}}=\sum _{x}\sum _{y}x^{i}y^{j}I(x,y)\$$
+$$ m_{{ij}}=\sum _{x}\sum _{y}x^{i}y^{j}I(x,y)\$$
 
 Spatial moment features are calculated as:\
 SPAT_MOMENT_00 $=m_{00}$    \
@@ -36,7 +36,7 @@ CENTRAL_MOMENT_30 $=\mu_{20}$
 ## Normalized raw moments
 Raw (spatial) moments $m_{ij}$ of a 2-dimensional greyscale image  I(x,y) are calculated by
 
-$$\displaystyle w_{{ij}} = \frac {\mu_{ij}}{\mu_{22}^ {max(i,j)} }$$
+$$ w_{{ij}} = \frac {\mu_{ij}}{\mu_{22}^ {max(i,j)} }$$
 
 Spatial moment features are calculated as:\
 NORM_SPAT_MOMENT_00 $=w_{00}$    \
@@ -78,7 +78,7 @@ HU_M7 $=(3\eta _{{21}}-\eta _{{03}})(\eta _{{30}}+\eta _{{12}})[(\eta _{{30}}+\e
 ## Weighted raw moments
 Let $W(x,y)$ be a 2-dimensional weighted greyscale image such that each pixel of $I$ is weighted with respect to its distance to the nearest contour pixel: $W(x,y) = \frac {I(x,y)} {\min_i d^2(x,y,C_i)}$ where C - set of 2-dimensional ROI contour pixels, $d^2(.)$ - Euclidean distance norm. Weighted raw moments $w_{Mij}$ are defined as
 
-$$\displaystyle w_{Mij}=\sum _{x}\sum _{y}x^{i}y^{j}W(x,y)\$$
+$$ w_{Mij}=\sum _{x}\sum _{y}x^{i}y^{j}W(x,y)\$$
 
 ## Weighted central moments
 

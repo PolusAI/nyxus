@@ -40,11 +40,11 @@ $$
   - $p(i,j)$ be the normalized dependence matrix, defined as $p(i,j) = \frac{\textbf{P}(i,j)}{N_z}$
 
 ## Small Dependence Emphasis 
-GLDM_SDE $=\displaystyle \frac{\sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{\frac{\textbf{P}(i,j)}{i^2}}}{N_z}$
+GLDM_SDE $= \frac{\sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{\frac{\textbf{P}(i,j)}{i^2}}}{N_z}$
 
 
 ## Large Dependence Emphasis 
-GLDM_LDE $=\displaystyle \frac{\sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{\textbf{P}(i,j)j^2}}{N_z}$
+GLDM_LDE $= \frac{\sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{\textbf{P}(i,j)j^2}}{N_z}$
 
 ## Gray Level Non-Uniformity 
 GLDM_GLN $= \frac{\sum^{N_g}_{i=1}\left(\sum^{N_d}_{j=1}{\textbf{P}(i,j)}\right)^2}{N_z}$
@@ -56,29 +56,29 @@ GLDM_DN $= \frac{\sum^{N_d}_{j=1}\left(\sum^{N_g}_{i=1}{\textbf{P}(i,j)}\right)^
 GLDM_DNN $= \frac{\sum^{N_d}_{j=1}\left(\sum^{N_g}_{i=1}{\textbf{P}(i,j)}\right)^2}{N_z^2}$
 
 ## Gray Level Variance 
-GLDM_GLV $= \displaystyle\sum^{N_g}_{i=1}\displaystyle\sum^{N_d}_{j=1}{p(i,j)(i - \mu)^2}$ where $\mu = \displaystyle\sum^{N_g}_{i=1}\displaystyle\sum^{N_d}_{j=1}{ip(i,j)}$
+GLDM_GLV $= \sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{p(i,j)(i - \mu)^2}$ where $\mu = \sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{ip(i,j)}$
 
 ## Dependence Variance 
-GLDM_DV $= \displaystyle\sum^{N_g}_{i=1}\displaystyle\sum^{N_d}_{j=1}{p(i,j)(j - \mu)^2}$ where $\mu = \displaystyle\sum^{N_g}_{i=1}\displaystyle\sum^{N_d}_{j=1}{jp(i,j)}$
+GLDM_DV $= \sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{p(i,j)(j - \mu)^2}$ where $\mu = \sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{jp(i,j)}$
 
 ## Dependence Entropy 
-GLDM_DE $= -\displaystyle\sum^{N_g}_{i=1}\displaystyle\sum^{N_d}_{j=1}{p(i,j)\log_{2}(p(i,j)+\epsilon)}$
+GLDM_DE $= -\sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{p(i,j)\log_{2}(p(i,j)+\epsilon)}$
 
 ## Low Gray Level Emphasis 
-GLDM_LGLE $= \displaystyle \frac{\sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{\frac{\textbf{P}(i,j)}{i^2}}}{N_z}$
+GLDM_LGLE $=  \frac{\sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{\frac{\textbf{P}(i,j)}{i^2}}}{N_z}$
 
 ## High Gray Level Emphasis 
-GLDM_HGLE $= \displaystyle \frac{\sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{\textbf{P}(i,j)i^2}}{N_z}$
+GLDM_HGLE $=  \frac{\sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{\textbf{P}(i,j)i^2}}{N_z}$
 
 ## Small Dependence Low Gray Level Emphasis 
-GLDM_SDLGLE $= \displaystyle \frac{\sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{\frac{\textbf{P}(i,j)}{i^2j^2}}}{N_z}$
+GLDM_SDLGLE $=  \frac{\sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{\frac{\textbf{P}(i,j)}{i^2j^2}}}{N_z}$
 
 ## Small Dependence High Gray Level Emphasis 
-GLDM_SDHGLE $= \displaystyle \frac{\sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{\frac{\textbf{P}(i,j)i^2}{j^2}}}{N_z}$
+GLDM_SDHGLE $=  \frac{\sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{\frac{\textbf{P}(i,j)i^2}{j^2}}}{N_z}$
 
 ## Large Dependence Low Gray Level Emphasis 
-GLDM_LDLGLE $= \displaystyle \frac{\sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{\frac{\textbf{P}(i,j)j^2}{i^2}}}{N_z}$
+GLDM_LDLGLE $=  \frac{\sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{\frac{\textbf{P}(i,j)j^2}{i^2}}}{N_z}$
 
 ## Large Dependence High Gray Level Emphasis 
-GLDM_LDHGLE $= \displaystyle \frac{\sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{\textbf{P}(i,j)i^2j^2}}{N_z}$
+GLDM_LDHGLE $=  \frac{\sum^{N_g}_{i=1}\sum^{N_d}_{j=1}{\textbf{P}(i,j)i^2j^2}}{N_z}$
 
