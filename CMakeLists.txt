@@ -43,8 +43,6 @@ endif()
 #==== Compiler Options
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CUDA_STANDARD 17)
-set(CMAKE_CUDA_STANDARD_REQUIRED True)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive- ")
@@ -161,6 +159,21 @@ set(SOURCE
 	src/nyx/scan_fastloader_way.cpp
 )
 
+# CLI
+if(BUILD_CLI)
+	add_executable(nyxus ${SOURCE} src/nyx/main_nyxus.cpp)
+	add_executable(nyxushie src/nyx/dirs_and_files.cpp src/nyx/environment_basic.cpp src/nyx/image_loader1x.cpp src/nyx/main_nyxushie.cpp src/nyx/nested_roi.cpp src/nyx/python/nested_roi_py.cpp src/nyx/roi_cache_basic.cpp)
+endif()
+
+# Python bindings.
+pybind11_add_module(backend 
+	${SOURCE}
+	src/nyx/python/new_bindings_py.cpp
+	src/nyx/python/nested_roi_py.cpp
+	src/nyx/nested_roi.cpp
+	src/nyx/image_loader1x.cpp
+)
+
 if(USEGPU)
 	set(GPU_SOURCE_FILES
 		src/nyx/gpu/gpu_helpers.cu
@@ -181,31 +194,6 @@ if(USEGPU)
 		#target_link_libraries(nyxus PRIVATE nyxus_gpu)
 		target_link_libraries(nyxus PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
 		set_target_properties(nyxus PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
-	endif()
-endif()
-
-
-# CLI
-if(BUILD_CLI)
-	add_executable(nyxus ${SOURCE} src/nyx/main_nyxus.cpp)
-	add_executable(nyxushie src/nyx/dirs_and_files.cpp src/nyx/environment_basic.cpp src/nyx/image_loader1x.cpp src/nyx/main_nyxushie.cpp src/nyx/nested_roi.cpp src/nyx/python/nested_roi_py.cpp src/nyx/roi_cache_basic.cpp)
-endif()
-
-# Python bindings.
-pybind11_add_module(backend 
-	${SOURCE}
-	src/nyx/python/new_bindings_py.cpp
-	src/nyx/python/nested_roi_py.cpp
-	src/nyx/nested_roi.cpp
-	src/nyx/image_loader1x.cpp
-)
-
-if(USEGPU)
-	target_link_libraries(backend PRIVATE nyxus_gpu)
-       	set_target_properties(backend PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
-	if(BUILD_CLI)
-		target_link_libraries(nyxus PRIVATE nyxus_gpu)
-        	set_target_properties(nyxus PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
 	endif()
 endif()
 
