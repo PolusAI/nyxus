@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <unordered_map>
 #include "../roi_cache.h"
 #include "image_matrix.h"
@@ -7,6 +8,12 @@
 #define _USE_MATH_DEFINES	// For M_PI, etc.
 #include <cmath>
 #include "../feature_method.h"
+#include "../environment.h"
+#ifdef USE_GPU
+    #include "../gpu/gabor.cuh"
+#endif
+
+const int MAX_SIZE = pow(2, 27);
 
 /// @brief Extract face feature based on gabor filtering
 class GaborFeature: public FeatureMethod

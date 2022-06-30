@@ -1,8 +1,12 @@
 #pragma once
 
+#include <map>
 #include <string>
 #include <vector>
 #include "environment_basic.h"
+#ifdef USE_GPU
+	#include <cuda_runtime.h>
+#endif
 
 // Command line arguments
 #define SEGDIR "--segDir"						// Environment :: labels_dir

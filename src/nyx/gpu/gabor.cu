@@ -4,6 +4,80 @@ using namespace std;
 
 namespace CuGabor {
     
+    __global__ void multiply(cufftDoubleComplex* A, int row_size, int col_size, cufftDoubleComplex* B, cufftDoubleComplex* result, int batch_size) {
+        int i = threadIdx.x + blockIdx.x * blockDim.x;
+        int j = threadIdx.y + blockIdx.y * blockDim.y;
+
+        int index = i*col_size*batch_size+j;
+        double a,b,c,d;
+        if (i < row_size && j < batch_size*col_size) {
+            a = A[index].x;
+            b = A[index].y;
+            c = B[index].x;
+            d = B[index].y;
+
+            result[index].x = a*c - b*d;
+            result[index].y = a*d + b*c;
+        }
+    }
+
+    void cmat_mult(cufftDoubleComplex* A, int row_size, int col_size, cufftDoubleComplex* B, cufftDoubleComplex* result, int batch_size){
+        int block = 16;
+        dim3 threadsPerBlock(block, block);
+        dim3 blocksPerGrid(ceil(row_size/block)+1, ceil(col_size*batch_size/block)+1);
+
+        multiply<<<blocksPerGrid, threadsPerBlock>>>(A, row_size, col_size, B, result, batch_size);
+
+        // Wait for device to finish all operation
+        cudaDeviceSynchronize();
+
+        // Check if kernel execution generated and error
+        //getLastCudaError("Kernel execution failed [ solvePoisson ]");
+        cudaError_t err = cudaGetLastError();   
+        if ( err != cudaSuccess ){
+                //fprintf(stderr, "Kernel execution failed [ solvePoisson ]\n");
+                printf("CUDA Error: %s\n", cudaGetErrorString(err));   
+                return;	
+        }
+    }
+
+    __global__ void multiply(CuComplex* A, int row_size, int col_size, CuComplex* B, CuComplex* result, int batch_size) {
+        int i = threadIdx.x + blockIdx.x * blockDim.x;
+        int j = threadIdx.y + blockIdx.y * blockDim.y;
+
+        int index = i*col_size*batch_size+j;
+        double a,b,c,d;
+        if (i < row_size && j < batch_size*col_size) {
+            a = A[index].x;
+            b = A[index].y;
+            c = B[index].x;
+            d = B[index].y;
+
+            result[index].x = a*c - b*d;
+            result[index].y = a*d + b*c;
+        }
+    }
+
+    void cmat_mult(CuComplex* A, int row_size, int col_size, CuComplex* B, CuComplex* result, int batch_size){
+        int block = 16;
+        dim3 threadsPerBlock(block, block);
+        dim3 blocksPerGrid(ceil(row_size/block)+1, ceil(col_size*batch_size/block)+1);
+
+        multiply<<<blocksPerGrid, threadsPerBlock>>>(A, row_size, col_size, B, result, batch_size);
+
+        // Wait for device to finish all operation
+        cudaDeviceSynchronize();
+
+        // Check if kernel execution generated and error
+        //getLastCudaError("Kernel execution failed [ solvePoisson ]");
+        cudaError_t err = cudaGetLastError();   
+        if ( err != cudaSuccess ){
+                //fprintf(stderr, "Kernel execution failed [ solvePoisson ]\n");
+                printf("CUDA Error: %s\n", cudaGetErrorString(err));   
+                return;	
+        }
+    }
+
     void conv_dud_gpu_fft(double* out, 
                             const unsigned int* image, 
                             double* kernel, 

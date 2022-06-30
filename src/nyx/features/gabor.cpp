@@ -3,6 +3,8 @@
 #include <omp.h>
 #include "gabor.h"
 
+using namespace std;
+
 void GaborFeature::calculate (LR& r)
 {
     // Skip calculation in case of bad data
@@ -908,7 +910,13 @@ void GaborFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels
         LR& r = (*ptrLabelData)[lab];
 
         GaborFeature gf;
-        gf.calculate (r);
+
+        if (theEnvironment.using_gpu()) {
+            gf.calculate_gpu_multi_filter(r);
+        } else {
+            gf.calculate (r);
+        }
+
         gf.save_value (r.fvals);
     }
 }

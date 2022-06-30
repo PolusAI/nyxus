@@ -1,4 +1,4 @@
-from .backend import initialize_environment, process_data, findrelations_imp
+from .backend import initialize_environment, process_data, findrelations_imp, use_gpu
 import os
 import numpy as np
 import pandas as pd
