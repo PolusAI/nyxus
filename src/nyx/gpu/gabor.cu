@@ -354,21 +354,21 @@ namespace CuGabor {
         int istride = 1;
         int ostride = 1;
 
-        if (cufftPlanMany(&plan, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_C2C, batch_size) != CUFFT_SUCCESS){
+        if (cufftPlanMany(&plan, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_Z2Z, batch_size) != CUFFT_SUCCESS){
             fprintf(stderr, "CUFFT Error: Unable to create plan\n");
             //return;	
         }
-        if (cufftPlanMany(&plan_k, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_C2C, batch_size) != CUFFT_SUCCESS){
+        if (cufftPlanMany(&plan_k, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_Z2Z, batch_size) != CUFFT_SUCCESS){
             fprintf(stderr, "CUFFT Error: Unable to create plan\n");
             //return;	
         }
 
-        if (cufftExecC2C(plan, d_image, d_image, CUFFT_FORWARD) != CUFFT_SUCCESS){
+        if (cufftExecZ2Z(plan, d_image, d_image, CUFFT_FORWARD) != CUFFT_SUCCESS){
             fprintf(stderr, "CUFFT Error: Unable to execute plan\n");
             //return;		
         }
 
-        if (cufftExecC2C(plan_k, d_kernel, d_kernel, CUFFT_FORWARD) != CUFFT_SUCCESS){
+        if (cufftExecZ2Z(plan_k, d_kernel, d_kernel, CUFFT_FORWARD) != CUFFT_SUCCESS){
             fprintf(stderr, "CUFFT Error: Unable to execute plan\n");
             //return;		
         }
@@ -382,7 +382,7 @@ namespace CuGabor {
         cmat_mult(d_image, row_size, col_size, d_kernel, d_result, batch_size);
 
         // transform out of fourier space
-        if (cufftExecC2C(plan, d_result, d_result, CUFFT_INVERSE) != CUFFT_SUCCESS){
+        if (cufftExecZ2Z(plan, d_result, d_result, CUFFT_INVERSE) != CUFFT_SUCCESS){
             fprintf(stderr, "CUFFT Error: Unable to execute plan\n");
             //return;		
         }
