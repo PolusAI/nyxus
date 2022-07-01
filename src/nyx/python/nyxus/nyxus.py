@@ -40,6 +40,10 @@ class Nyxus:
         Number of threads to use for loading image tiles from disk. Note: image loading
         multithreading is very memory intensive. You should consider optimizing
         `n_feature_calc_threads` before increasing `n_loader_threads`.
+    using_gpu: int (optional, default -1)
+        Id of the gpu to use. To find available gpus along with ids, using nyxus.get_gpu_properties().
+        The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
+        thread for feature calculation. 
     """
 
     def __init__(
@@ -49,6 +53,7 @@ class Nyxus:
         pixels_per_micron: float = 1.0,
         n_feature_calc_threads: int = 4,
         n_loader_threads: int = 1,
+        using_gpu: int = -1
     ):
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
@@ -61,6 +66,10 @@ class Nyxus:
 
         if n_loader_threads < 1:
             raise ValueError("There must be at least one loader thread.")
+        
+        if(using_gpu > -1 and n_feature_calc_threads is not 1):
+            print("Gpu features only support a single thread. Defaulting to one thread.")
+            n_feature_calc_threads = 1
 
         initialize_environment(
             features,
@@ -68,6 +77,7 @@ class Nyxus:
             pixels_per_micron,
             n_feature_calc_threads,
             n_loader_threads,
+            using_gpu
         )
 
     def featurize(

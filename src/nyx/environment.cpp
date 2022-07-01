@@ -996,6 +996,25 @@ bool Environment::gpu_is_available() {
 
 
 #ifdef USE_GPU
+
+void Environment::set_gpu_device_id(int choice){
+
+	int num_gpus = get_gpu_properties().size();
+
+	if(num_gpus == 0) {
+		cout << "No gpu available." << endl;
+		return;
+	}
+
+	if(choice > get_gpu_properties().size()-1) {
+		cout << "GPU choice out of range. Defaulting to device 0." << endl;
+		gpu_device_id_ = 0;
+		return;
+	}
+
+	gpu_device_id_ = choice;
+}
+
 int Environment::get_gpu_device_choice()
 {
 	if (using_gpu())

@@ -33,7 +33,8 @@ void initialize_environment(
     float neighbor_distance,
     float pixels_per_micron,
     uint32_t n_reduce_threads,
-    uint32_t n_loader_threads)
+    uint32_t n_loader_threads,
+    int using_gpu)
 {
     theEnvironment.desiredFeatures = features;
     theEnvironment.set_pixel_distance(static_cast<int>(neighbor_distance));
@@ -46,6 +47,18 @@ void initialize_environment(
     theEnvironment.process_feature_list();
     theFeatureMgr.compile();
     theFeatureMgr.apply_user_selection();
+
+    #ifdef USE_GPU
+        if(using_gpu == -1) {
+            theEnvironment.set_use_gpu(false);
+        } else {
+            theEnvironment.set_gpu_device_id(using_gpu);
+        }
+    #else 
+        if (using_gpu != -1) {
+            std::cout << "No gpu available." << std::endl;
+        }
+    #endif
 }
 
 py::tuple process_data(
