@@ -92,7 +92,6 @@ set(SOURCE
 	src/nyx/features/glrlm.cpp
 	src/nyx/features/glszm.cpp
 	src/nyx/features/hexagonality_polygonality.cpp
-	src/nyx/features/histogram.cpp
 	src/nyx/features/image_matrix.cpp
 	src/nyx/features/image_matrix_nontriv.cpp
 	src/nyx/features/image_moments.cpp

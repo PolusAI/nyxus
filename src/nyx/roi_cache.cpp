@@ -64,4 +64,16 @@ void LR::clear_pixels_cache()
 	recycle_aux_obj(RAW_PIXELS);
 }
 
+std::vector<StatsReal> LR::get_fvals(AvailableFeatures af)
+{
+	return fvals[af];
+}
+
+void LR::initialize_fvals()
+{
+	fvals.resize(AvailableFeatures::_COUNT_);
+	for (auto& valVec : fvals)
+		valVec.push_back(0.0);
+}
+
 
