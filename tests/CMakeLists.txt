@@ -19,7 +19,10 @@ set(TEST_SRC
 
 add_executable(runAllTests ${TEST_SRC})
 
-target_link_libraries(runAllTests stdc++fs)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	target_link_libraries(runAllTests stdc++fs)
+endif()
 
 target_include_directories(runAllTests PUBLIC ${GTEST_INCLUDE_DIRS})
 target_link_directories(runAllTests PUBLIC ${GTEST_LIBRARY_PATH})
