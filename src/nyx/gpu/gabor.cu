@@ -245,6 +245,9 @@ namespace CuGabor {
                             double* kernel, 
                             int image_n, int image_m, int kernel_n, int kernel_m, int batch_size){
         
+        typedef double2 Complex; // comment out to use float
+        typedef cufftDoubleComplex CuComplex; // comment out to use float
+
         // calculate new size of image based on padding size
         int row_size = image_m + kernel_m - 1;
         int col_size = image_n + kernel_n - 1;
