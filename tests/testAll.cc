@@ -10,7 +10,7 @@ TEST(TEST_NYXUS, DUMMY_TEST){
 
 TEST(TEST_GABOR_GPU, DSB2018){
   #ifdef USE_GPU
-    if(theEnvironment.using_gpu()) test_gabor_gpu_2018();
+    test_gabor_gpu_2018();
   #endif
 }
 
