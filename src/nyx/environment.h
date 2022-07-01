@@ -116,13 +116,14 @@ public:
 	/// @return 
 	std::string get_temp_dir_path() const;
 
+	static bool gpu_is_available();
+
 #ifdef USE_GPU
 	/// @brief Returns GPU device ID of choice
 	/// @return 0-based GPU device ID (default: 0) or -1 not to use GPU even if it is available
 	int get_gpu_device_choice();
 	void set_use_gpu(bool yes);
 	bool using_gpu();	
-	static bool gpu_is_available();
 	static std::vector<std::map<std::string, std::string>> get_gpu_properties();
 #endif
 

@@ -29,9 +29,10 @@ public:
     void calculate(LR& r);
 
     // Trivial ROI on GPU
-    void calculate_gpu(LR& r);
-
-    void calculate_gpu_multi_filter (LR& r);
+    #ifdef USE_GPU
+        void calculate_gpu(LR& r);
+        void calculate_gpu_multi_filter (LR& r);
+    #endif
 
     // Non-trivial
     void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
@@ -71,6 +72,7 @@ private:
         double theta, 
         int n);
 
+    #ifdef USE_GPU
     void GaborEnergyGPU (
         const ImageMatrix& Im, 
         PixIntens* /* double* */ out, 
@@ -93,6 +95,7 @@ private:
         double theta, 
         int n,
         int num_filters);
+    #endif
 
     // Nontrivial ROIs
     void osized_GaborEnergy(

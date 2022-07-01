@@ -91,6 +91,7 @@ void GaborFeature::calculate (LR& r)
     }
 }
 
+#ifdef USE_GPU
 void GaborFeature::calculate_gpu (LR& r)
 {
     // Skip calculation in case of bad data
@@ -298,6 +299,7 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r)
         }
     }
 }
+#endif
 
 void GaborFeature::save_value(std::vector<std::vector<double>>& feature_vals)
 {
@@ -753,7 +755,7 @@ void GaborFeature::GaborEnergy (
         b++;
     }
 }
-
+#ifdef USE_GPU
 void GaborFeature::GaborEnergyGPU (
     const ImageMatrix& Im, 
     PixIntens* /* double* */ out, 
@@ -901,6 +903,7 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
 
     //cout << "after free" << endl;
 }
+#endif
 
 void GaborFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
@@ -911,11 +914,16 @@ void GaborFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels
 
         GaborFeature gf;
 
-        if (theEnvironment.using_gpu()) {
-            gf.calculate_gpu_multi_filter(r);
-        } else {
+
+        #ifdef USE_GPU
+            if (theEnvironment.using_gpu()) {
+                gf.calculate_gpu_multi_filter(r);
+            } else {
+                gf.calculate (r);
+            }
+        #else 
             gf.calculate (r);
-        }
+        #endif
 
         gf.save_value (r.fvals);
     }

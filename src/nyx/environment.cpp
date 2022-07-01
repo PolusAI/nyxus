@@ -985,6 +985,16 @@ int Environment::get_floating_point_precision()
 	return floating_point_precision;
 }
 
+bool Environment::gpu_is_available() { 
+	#ifdef USE_GPU
+    	return get_gpu_properties().size() > 0 ? true : false;
+	#else
+		return false;
+	#endif
+
+}
+
+
 #ifdef USE_GPU
 int Environment::get_gpu_device_choice()
 {
@@ -1002,10 +1012,6 @@ void Environment::set_use_gpu(bool yes)
 bool Environment::using_gpu()
 {
 	return use_gpu_;
-}
-
-bool Environment::gpu_is_available() { 
-    return get_gpu_properties().size() > 0 ? true : false;
 }
 
 std::vector<std::map<std::string, std::string>> Environment::get_gpu_properties() {
