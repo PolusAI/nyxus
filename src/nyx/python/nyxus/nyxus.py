@@ -1,4 +1,4 @@
-from .backend import initialize_environment, process_data, findrelations_imp, use_gpu
+from .backend import initialize_environment, process_data, findrelations_imp, use_gpu, gpu_available
 import os
 import numpy as np
 import pandas as pd
@@ -70,6 +70,10 @@ class Nyxus:
         if(using_gpu > -1 and n_feature_calc_threads is not 1):
             print("Gpu features only support a single thread. Defaulting to one thread.")
             n_feature_calc_threads = 1
+            
+        if(using_gpu > -1 and not gpu_available()):
+            print("No gpu available.")
+            using_gpu = -1
 
         initialize_environment(
             features,
