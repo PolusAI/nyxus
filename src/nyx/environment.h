@@ -122,7 +122,7 @@ public:
 	/// @brief Returns GPU device ID of choice
 	/// @return 0-based GPU device ID (default: 0) or -1 not to use GPU even if it is available
 	int get_gpu_device_choice();
-	void set_gpu_device_id(int choice)
+	void set_gpu_device_id(int choice);
 	void set_use_gpu(bool yes);
 	bool using_gpu();	
 	static std::vector<std::map<std::string, std::string>> get_gpu_properties();
