@@ -1002,12 +1002,12 @@ void Environment::set_gpu_device_id(int choice){
 	int num_gpus = get_gpu_properties().size();
 
 	if(num_gpus == 0) {
-		cout << "No gpu available." << endl;
+		std::cout << "No gpu available." << std::endl;
 		return;
 	}
 
 	if(choice > get_gpu_properties().size()-1) {
-		cout << "GPU choice out of range. Defaulting to device 0." << endl;
+		std::cout << "GPU choice out of range. Defaulting to device 0." << std::endl;
 		gpu_device_id_ = 0;
 		return;
 	}
