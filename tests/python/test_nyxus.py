@@ -38,7 +38,7 @@ class TestNyxus():
 
                     if (nyxus.gpu_is_available()):
                         # gpu gabor
-                        gpu_nyx = nyxus.Nyxus(["GABOR"])
+                        gpu_nyx = nyxus.Nyxus(["GABOR"], using_gpu=0)
                         gpu_nyx.using_gpu(True)
                         gpu_features = gpu_nyx.featurize(intens, seg)
                         
