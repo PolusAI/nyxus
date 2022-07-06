@@ -6,7 +6,7 @@
 #include "../src/nyx/globals.h"
 
 TEST(TEST_NYXUS, DUMMY_TEST){
-  test_dummy_functiotestn();
+  test_dummy_function();
 }
 
 TEST(TEST_GABOR_GPU, DSB2018){
