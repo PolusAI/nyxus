@@ -16,9 +16,9 @@ to operate at any scale, its highly validated algorithms, and its modular nature
    :maxdepth: 1
    :caption: Contents:
 
-   devguide
    examples
    featurelist
    References
+   devguide
    Math
    
