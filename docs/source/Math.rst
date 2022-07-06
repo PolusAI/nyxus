@@ -1,5 +1,6 @@
-Math
-======
+Math Documentation
+==================
+
 Math formulas
 
 .. toctree::

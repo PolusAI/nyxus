@@ -20,5 +20,5 @@ to operate at any scale, its highly validated algorithms, and its modular nature
    examples
    featurelist
    References
-   Math Documentation
+   Math
    
