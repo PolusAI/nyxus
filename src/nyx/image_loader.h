@@ -2,12 +2,12 @@
 
 #include <array>
 #include <algorithm>
-#include <filesystem>
+#include <memory>
 #include <string>
 #include <vector>
 
-#include "grayscale_tiff.h"
-#include "omezarr.h"
+#include <fast_loader/fast_loader.h> 
+
 /// @brief Incapsulates access to an intensity and mask image file pair
 class ImageLoader
 {

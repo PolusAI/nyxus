@@ -1,4 +1,7 @@
+#include <filesystem>
 #include "image_loader.h"
+#include "grayscale_tiff.h"
+#include "omezarr.h"
 
 ImageLoader::ImageLoader() {}
 

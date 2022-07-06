@@ -1,3 +1,5 @@
+#pragma once
+
 #include <algorithm>
 #include <regex>
 
@@ -28,7 +30,6 @@ public:
         std::string const& filePath)
         : fl::AbstractTileLoader<fl::DefaultView<DataType>>("NyxusOmeZarrLoader", numberThreads, filePath)
     {
-        short samplesPerPixel = 1;
         // Open the file
         zarr_ptr_ = std::make_unique<z5::filesystem::handle::File>(filePath.c_str());
         nlohmann::json attributes;
