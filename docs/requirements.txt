@@ -1,5 +1,5 @@
 numpy==1.20.3
-cmake==3.13
+cmake==3.20
 setuptools-scm
 sphinx
 sphinx_rtd_theme
