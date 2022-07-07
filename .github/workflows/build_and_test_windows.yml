@@ -21,25 +21,15 @@ jobs:
 
     - uses: ilammy/msvc-dev-cmd@v1
       name: Add MSVS Path
-    
-    - name: Install LibTiff
-      working-directory: ${{github.workspace}}
-      shell: cmd
-      run: install_win_prereq.bat
-
-    - name: Set variable
-      run: |
-        echo "TIFF_INCLUDE_DIR=C:/Program Files (x86)/tiff/include" >> $env:GITHUB_ENV
-        echo "TIFF_LIBRARY_RELEASE=C:/Program Files (x86)/tiff/lib/tiff.lib" >> $env:GITHUB_ENV
  
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON
+      run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel 2
+      run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}} --parallel 2
 
     - name: Run GTest Suite
-      working-directory: ${{github.workspace}}/build
+      working-directory: ${{github.workspace}}
       # Execute tests.  
       run: ./tests/${{env.BUILD_TYPE}}/runAllTests.exe
       
@@ -64,17 +54,9 @@ jobs:
     - name: Install Dependencies
       run: python -m pip install --upgrade wheel numpy pandas pytest delvewheel
 
-    - name: Install LibTiff
-      working-directory: ${{github.workspace}}
-      shell: cmd
-      run: install_win_prereq.bat
-
     - name: Set variable
       run: |
-        echo "TIFF_INCLUDE_DIR=C:/Program Files (x86)/tiff/include" >> $env:GITHUB_ENV
-        echo "TIFF_LIBRARY_RELEASE=C:/Program Files (x86)/tiff/lib/tiff.lib" >> $env:GITHUB_ENV
-        echo "C:/Program Files (x86)/tiff/bin" >> $env:GITHUB_PATH
- 
+        echo "ON_GITHUB=TRUE" >> $env:GITHUB_ENV        
     - name: Install Nyxus
       working-directory: ${{github.workspace}}
       shell: cmd

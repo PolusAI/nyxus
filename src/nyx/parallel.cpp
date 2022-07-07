@@ -10,7 +10,7 @@
 #include <array>
 #include "environment.h"
 #include "globals.h"
-
+#include "grayscale_tiff.h"
 #include <string>
 //#include <map>
 
