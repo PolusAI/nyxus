@@ -62,6 +62,7 @@ public:
 	std::vector<int> aux_neighboring_labels;
 
 	ImageMatrix aux_image_matrix;	// Needed by Contour, Erosions, GLCM, GLRLM, GLSZM, GLDM, NGTDM, Radial distribution(via Contour), Gabor, Moments, ROI radius(via Contour)
+	size_t im_buffer_offset;
 
 	std::unordered_set <unsigned int> host_tiles;
 
