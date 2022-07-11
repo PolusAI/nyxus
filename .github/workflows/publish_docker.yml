@@ -53,5 +53,5 @@ jobs:
       with:
         context: .
         push: true
-        tags: polusai/${{ env.DOCKER_REPO }}:${{ env.VERSION  }}, polusai/${{ env.DOCKER_REPO }}:latest
+        tags: ${{ secrets.DOCKER_USERNAME }}/${{ env.DOCKER_REPO }}:${{ env.VERSION  }}
         labels: ${{ steps.meta.outputs.labels }}
