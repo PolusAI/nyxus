@@ -21,7 +21,7 @@ jobs:
       run: sudo apt install libtiff-dev libdeflate-dev
       
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}-DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON
+      run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON
 
     - name: Build
       run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}} --parallel 2
