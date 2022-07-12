@@ -11,12 +11,74 @@
 
 namespace Nyxus
 {
-	void feed_pixel_2_cache(int x, int y, int label, PixIntens intensity)
+	#define disable_DUMP_ALL_ROI
+	#ifdef DUMP_ALL_ROI
+	void dump_all_roi()
 	{
-		// Update basic ROI info (info that doesn't require costly calculations)
-		LR& r = roiData[label];
-		r.raw_pixels.push_back(Pixel2(x, y, intensity));
+		std::string fpath = theEnvironment.output_dir + "/all_roi.txt";
+		std::cout << "Dumping all the ROIs to " << fpath << " ...\n";
+
+		std::ofstream f(fpath);
+
+		for (auto lab : uniqueLabels)
+		{
+			auto& r = roiData[lab];
+			std::cout << "Dumping ROI " << lab << "\n";
+
+			r.aux_image_matrix.print(f);
+
+			f << "ROI " << lab << ": \n"
+				<< "xmin = " << r.aabb.get_xmin() << "; \n"
+				<< "width=" << r.aabb.get_width() << "; \n"
+				<< "ymin=" << r.aabb.get_ymin() << "; \n"
+				<< "height=" << r.aabb.get_height() << "; \n"
+				<< "area=" << r.aux_area << "; \n";
+
+			// C++ constant:
+			f << "// C:\n"
+				<< "struct NyxusPixel {\n"
+				<< "\tsize_t x, y; \n"
+				<< "\tunsigned int intensity; \n"
+				<< "}; \n"
+				<< "NyxusPixel testData[] = {\n";
+			for (auto i=0; i<r.raw_pixels.size(); i++)
+			{
+				auto& px = r.raw_pixels[i];
+				f << "\t{" << px.x-r.aabb.get_xmin() << ", " << px.y- r.aabb.get_ymin() << ", " << px.inten << "}, ";
+				if (i > 0 && i % 4 == 0)
+					f << "\n";
+			}
+			f << "}; \n";
+
+			// Matlab constant:
+			f << "// MATLAB:\n"
+				<< "%==== begin \n";
+			f << "pixelCloud = [ \n";
+			for (auto i = 0; i < r.raw_pixels.size(); i++)
+			{
+				auto& px = r.raw_pixels[i];
+				f << px.inten << "; % [" << i << "] \n";
+			}
+			f << "]; \n";
+
+			f << "testData = zeros(" << r.aabb.get_height() << "," << r.aabb.get_width() << ");\n";
+			for (auto i = 0; i < r.raw_pixels.size(); i++)
+			{
+				auto& px = r.raw_pixels[i];
+				f << "testData(" << (px.y - r.aabb.get_ymin() + 1) << "," << (px.x - r.aabb.get_xmin() + 1) << ")=" << px.inten << "; ";	// +1 due to 1-based nature of Matlab
+				if (i > 0 && i % 4 == 0)
+					f << "\n";
+			}
+			f << "\n";
+			f << "testVecZ = reshape(testData, 1, []); \n";
+			f << "testVecNZ = nonzeros(testData); \n";
+			f << "[mean(testVecNZ) mean(testVecZ) mean2(testData)] \n";
+			f << "%==== end \n";
+		}
+
+		f.flush();
 	}
+	#endif
 
 	bool scanTrivialRois (const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads)
 	{
@@ -83,7 +145,7 @@ namespace Nyxus
 						label = 1;
 
 					// Cache this pixel 
-					feed_pixel_2_cache (x, y, label, dataI[i]);
+					feed_pixel_2_cache (x, y, dataI[i], label);
 				}
 
 				// Show stayalive progress info
@@ -201,6 +263,11 @@ namespace Nyxus
 			// Allocate memory
 			VERBOSLVL1(std::cout << "\tallocating ROI buffers\n";)
 			allocateTrivialRoisBuffers(Pending);
+
+			// Dump ROIs for use in unit testing
+#ifdef DUMP_ALL_ROI
+			dump_all_roi();
+#endif
 
 			// Reduce them
 			VERBOSLVL1(std::cout << "\treducing ROIs\n";)

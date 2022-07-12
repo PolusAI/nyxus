@@ -68,7 +68,6 @@ set(SOURCE
 	src/nyx/features/glrlm.cpp
 	src/nyx/features/glszm.cpp
 	src/nyx/features/hexagonality_polygonality.cpp
-	src/nyx/features/histogram.cpp
 	src/nyx/features/image_matrix.cpp
 	src/nyx/features/image_matrix_nontriv.cpp
 	src/nyx/features/image_moments.cpp
@@ -102,6 +101,7 @@ set(SOURCE
 	src/nyx/phase1.cpp
 	src/nyx/phase2.cpp
 	src/nyx/phase3.cpp
+	src/nyx/pixel_feed.cpp
 	src/nyx/reduce_by_feature.cpp
 	src/nyx/reduce_trivial_rois.cpp
 	src/nyx/roi_cache.cpp

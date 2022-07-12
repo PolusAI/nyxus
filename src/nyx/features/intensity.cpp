@@ -38,13 +38,9 @@ void PixelIntensityFeatures::calculate(LR& r)
 	// --MIN, MAX
 	val_MIN  = r.aux_min;
 	val_MAX = r.aux_max;
+	val_RANGE = val_MAX - val_MIN;
 
 	double n = r.aux_area;
-
-	// --AREA
-	//val_AREA_PIXELS_COUNT = n;
-	//if (theEnvironment.xyRes > 0.0)
-	//		val_AREA_UM2  = n * std::pow(theEnvironment.pixelSizeUm, 2);
 
 	// --MEAN, ENERGY, CENTROID_XY
 	double mean_ = 0.0;
@@ -66,29 +62,17 @@ void PixelIntensityFeatures::calculate(LR& r)
 	val_ROOT_MEAN_SQUARED = sqrt(val_ENERGY / n);
 	val_INTEGRATED_INTENSITY = integInten;
 
-	// --Centroid and Compactness
-	//val_CENTROID_X = cen_x;
-	//val_CENTROID_Y = cen_y;
-	//
-	//Moments2 mom2;
-	//for (auto& px : lr.raw_pixels)
-	//{
-	//	double dst = std::sqrt(px.sqdist(cen_x, cen_y));
-	//	mom2.add(dst);
-	//}
-	//double compa = mom2.std() / n;
-	//val_COMPACTNESS = compa;
-
 	// --MAD, VARIANCE, STDDEV
 	double mad = 0.0,
 		var = 0.0;
 	for (auto& px : r.raw_pixels)
 	{
-		mad += std::abs(px.inten - mean_);
-		var += (px.inten - mean_) * (px.inten - mean_);
+		double diff = px.inten - mean_;
+		mad += std::abs(diff);
+		var += diff * diff;
 	}
 	val_MEAN_ABSOLUTE_DEVIATION = mad / n;
-	var /= n;
+	var /= (n-1);
 	double stddev = sqrt(var);
 	val_STANDARD_DEVIATION = stddev;
 
@@ -132,60 +116,23 @@ void PixelIntensityFeatures::calculate(LR& r)
 	//--Formula-- k1 = mean((x - mean(x)). ^ 4) / std(x). ^ 4
 	val_KURTOSIS = mom.kurtosis();
 
+	//--V1--
 	// Hyperskewness hs = E[x-mean].^5 / std(x).^5
-	val_HYPERSKEWNESS = mom.hyperskewness();
-
+	// val_HYPERSKEWNESS = mom.hyperskewness();
 	// Hyperflatness hf = E[x-mean].^6 / std(x).^6
-	val_HYPERFLATNESS = mom.hyperflatness();
-
-	//==== Basic morphology :: Bounding box
-	//	val_BBOX_XMIN = lr.aabb.get_xmin();
-	//	val_BBOX_YMIN = lr.aabb.get_ymin();
-	//	val_BBOX_WIDTH = lr.aabb.get_width();
-	//	val_BBOX_HEIGHT = lr.aabb.get_height();
-
-	//==== Basic morphology :: Centroids
-	//	lr.fvals[CENTROID_X][0] = lr.fvals[CENTROID_Y][0] = 0.0;
-	//	for (auto& px : lr.raw_pixels)
-	//	{
-	//			lr.fvals[CENTROID_X][0] += px.x;
-	//			lr.fvals[CENTROID_Y][0] += px.y;
-	//	}
-	//	lr.fvals[CENTROID_X][0] /= n;
-	//	lr.fvals[CENTROID_Y][0] /= n;
-
-	////==== Basic morphology :: Weighted centroids
-	//double x_mass = 0, y_mass = 0, mass = 0;
-
-	//for (auto& px : lr.raw_pixels)
-	//{
-	//	x_mass = x_mass + (px.x + 1) * px.inten;    // the "+1" is only for compatability with matlab code (where index starts from 1) 
-	//	y_mass = y_mass + (px.y + 1) * px.inten;    // the "+1" is only for compatability with matlab code (where index starts from 1) 
-	//	mass += px.inten;
-	//}
-
-	//if (mass > 0)
-	//{
-	//	lr.fvals[WEIGHTED_CENTROID_X][0] = x_mass / mass;
-	//	lr.fvals[WEIGHTED_CENTROID_Y][0] = y_mass / mass;
-	//}
-	//else
-	//{
-	//	lr.fvals[WEIGHTED_CENTROID_X][0] = 0.0;
-	//	lr.fvals[WEIGHTED_CENTROID_Y][0] = 0.0;
-	//}
-
-	//// --Mass displacement (The distance between the centers of gravity in the gray-level representation of the object and the binary representation of the object.)
-	//double dx = lr.fvals[WEIGHTED_CENTROID_X][0] - lr.fvals[CENTROID_X][0],
-	//	dy = lr.fvals[WEIGHTED_CENTROID_Y][0] - lr.fvals[CENTROID_Y][0],
-	//	dist = std::sqrt(dx * dx + dy * dy);
-	//lr.fvals[MASS_DISPLACEMENT][0] = dist;
-
-	////==== Basic morphology :: Extent
-	//lr.fvals[EXTENT][0] = n / lr.aabb.get_area();
-
-	////==== Basic morphology :: Aspect ratio
-	//lr.fvals[ASPECT_RATIO][0] = lr.aabb.get_width() / lr.aabb.get_height();
+	// val_HYPERFLATNESS = mom.hyperflatness();
+	//--V2--
+	double sumPow5 = 0, sumPow6 = 0;
+	for (auto& px : r.raw_pixels)
+	{
+		double diff = px.inten - mean_;
+		sumPow5 += std::pow(diff, 5.);
+		sumPow6 += std::pow(diff, 6.);
+	}
+	double denom = (n * std::pow(val_STANDARD_DEVIATION, 5.));
+	val_HYPERSKEWNESS = denom == 0. ? 0. : sumPow5/denom;
+	denom = (n * std::pow(val_STANDARD_DEVIATION, 6.));
+	val_HYPERFLATNESS = denom == 0. ? 0. : sumPow6 / denom;
 }
 
 void PixelIntensityFeatures::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
@@ -196,6 +143,7 @@ void PixelIntensityFeatures::osized_calculate (LR& r, ImageLoader& imloader)
 	// --MIN, MAX
 	val_MIN = r.aux_min;
 	val_MAX = r.aux_max;
+	val_RANGE = val_MAX - val_MIN;
 
 	double n = r.aux_area;
 
@@ -257,7 +205,9 @@ void PixelIntensityFeatures::osized_calculate (LR& r, ImageLoader& imloader)
 	val_MODE = mode_;
 	val_UNIFORMITY = uniformity_;
 
-	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
+	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image 
+	//	intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] 
+	//	and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
 	double piu = (1.0 - double(r.aux_max - r.aux_min) / double(r.aux_max + r.aux_min)) * 100.0;
 	val_UNIFORMITY_PIU = piu;
 

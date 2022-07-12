@@ -317,7 +317,6 @@ public:
 	// min, max, mean, std computed in single pass, median in separate pass
 	Moments2 stats;
 
-
 	StatsInt height = 0, width = 0;
 	AABB original_aabb;
 	
@@ -327,6 +326,7 @@ public:
 	// hilight_x|y = -1 means no gilight
 	using PrintablePoint = std::tuple<int, int, std::string>;
 	void print(const std::string& head = "", const std::string& tail = "", std::vector<PrintablePoint> special_points = {});
+	void print(std::ofstream& f, const std::string& head = "", const std::string& tail = "", std::vector<PrintablePoint> special_points = {});
 };
 
 /// @brief Padded image matrix

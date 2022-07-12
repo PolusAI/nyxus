@@ -11,33 +11,6 @@
 
 namespace Nyxus
 {
-
-	/// @brief Updates 'uniqueLabels' and 'roiData'
-	/// @param x
-	/// @param y
-	/// @param label
-	/// @param intensity
-	/// @param tile_index
-	void feed_pixel_2_metrics(int x, int y, int label, PixIntens intensity, unsigned int tile_index)
-	{
-		if (uniqueLabels.find(label) == uniqueLabels.end())
-		{
-			// Remember this label
-			uniqueLabels.insert(label);
-
-			// Initialize the ROI label record
-			LR newData;
-			init_label_record_2(newData, theSegFname, theIntFname, x, y, label, intensity, tile_index);
-			roiData[label] = newData;
-		}
-		else
-		{
-			// Update basic ROI info (info that doesn't require costly calculations)
-			LR &existingData = roiData[label];
-			update_label_record_2(existingData, x, y, label, intensity, tile_index);
-		}
-	}
-
 	bool gatherRoisMetrics (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads)
 	{
 		int lvl = 0, // Pyramid level
@@ -95,7 +68,7 @@ namespace Nyxus
 						label = 1;
 					
 					// Update pixel's ROI metrics
-					feed_pixel_2_metrics (x, y, label, dataI[i], tileIdx); // Updates 'uniqueLabels' and 'roiData'
+					feed_pixel_2_metrics (x, y, dataI[i], label, tileIdx); // Updates 'uniqueLabels' and 'roiData'
 				}
 
 #ifdef WITH_PYTHON_H
