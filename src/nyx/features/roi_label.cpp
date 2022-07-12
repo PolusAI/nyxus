@@ -10,7 +10,6 @@ void LR::reduce_pixel_intensity_features()
 
 		// Count of pixels belonging to the label
 		auto prev_n = lr.raw_pixels.size();	// Previous count
-		lr.aux_PrevCount = prev_n;
 		auto n = prev_n + 1;	// New count
 		//lr.pixelCountRoiArea = n;
 
@@ -55,15 +54,6 @@ void LR::reduce_pixel_intensity_features()
 		// Weighted centroids. Needs reduction. Do we need to make them 1-based for compatibility with Matlab and WNDCHRM?
 		lr.fvals[CENTROID_X][0] = lr.fvals[CENTROID_X][0] + StatsReal(x); // lr.centroid_x = lr.centroid_x + StatsReal(x);
 		lr.fvals[CENTROID_Y][0] = lr.fvals[CENTROID_Y][0] + StatsReal(y); // lr.centroid_y = lr.centroid_y + StatsReal(y);
-
-		#if 0	// Replaced with a faster version (class TrivialHistogram)
-		// Histogram
-		auto ptrH = lr.aux_Histogram;
-		ptrH->add_observation(intensity);
-		#endif
-
-		// Previous intensity for succeeding iterations
-		lr.aux_PrevIntens = intensity;
 	}
 }
 

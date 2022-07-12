@@ -45,18 +45,14 @@ public:
 	// Helper objects
 	std::vector <Pixel2> raw_pixels;
 	OutOfRamPixelCloud osized_pixel_cloud;
-	unsigned int aux_area;
+	unsigned int aux_area = 0;
 	PixIntens aux_min, aux_max;
-	std::vector<Pixel2> contour;	// Contour contour;
-	std::vector<Pixel2> convHull_CH; // ConvexHull convHull;
-
-	// Replaced with a faster version (class TrivialHistogram)	std::shared_ptr<Histo> aux_Histogram;
-	StatsInt
-		aux_PrevCount,
-		aux_PrevIntens;
+	std::vector<Pixel2> contour;	
+	std::vector<Pixel2> convHull_CH; 
 
 	std::vector<std::vector<StatsReal>> fvals;
-	std::vector<StatsReal> getFeatureValues(AvailableFeatures af) { return fvals[af]; }
+	std::vector<StatsReal> get_fvals(AvailableFeatures af);
+	void initialize_fvals();
 
 	StatsReal aux_M2,
 		aux_M3,
@@ -69,7 +65,6 @@ public:
 
 	std::unordered_set <unsigned int> host_tiles;
 
-	double getValue (AvailableFeatures f);
 	void reduce_pixel_intensity_features();
 };
 
