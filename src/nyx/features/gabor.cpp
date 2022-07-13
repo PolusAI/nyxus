@@ -811,9 +811,8 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
 {
     int n_gab = n;
 
-    //cout << "g filters" << endl;
-    double* g_filters;
-    g_filters = (double*)malloc(2 * n * n * num_filters * sizeof(double));
+    vector<double> g_filters;
+    g_filters.resize(2 * n * n * num_filters);
 
     double fi = 0;
 
@@ -830,51 +829,19 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
         idx += 2*n*n;
     }
 
-    //for(int i = 0; i < 2 * n *n; ++i){
-    //    cout << g_filters[i] << " ";
-    //}
-    //cout << endl;
-    
-
-    /*
-    for (int batch = 0; batch < 7; ++batch){
-        int idx = batch * 2 * n * n;
-        for(int i = 0; i < 2*n*n; ++i){
-                cout << g_filters[idx + i] << " ";
-        }
-        cout << endl;
-    }
-    cout << endl;
-    */
-
     readOnlyPixels pix_plane = Im.ReadablePixels();
-    //cout << "images" << endl;
-    //PixIntens* images;
-    //images = (PixIntens*)malloc(2 * num_filters * Im.height * Im.width * sizeof(PixIntens));
-
-    //cout << "after images " << endl; 
-    //int i,j;
-    //for (i = 0; i < num_filters; ++i){
-    //    for(j = 0; j < Im.height * Im.width; ++j){
-    //        images[in * Im.height * Im.width + j] = pix_plane[j];
-    //    }
-    //}
-
-    //cout << "before gpu" << endl;
+    
     //=== Version 2
-    CuGabor::conv_dud_gpu_fft_multi_filter (auxC, pix_plane.data(), g_filters, Im.width, Im.height, n_gab, n_gab, num_filters);
-    //cout << "after gpu" << endl;
-
-    //for(int i = 0; i < )
+    CuGabor::conv_dud_gpu_fft_multi_filter (auxC, pix_plane.data(), g_filters.data(), Im.width, Im.height, n_gab, n_gab, num_filters);
     
     for (int i = 0; i < num_filters; ++i){
         idx = 2 * i * (Im.width + n - 1) * (Im.height + n - 1);
         decltype(Im.height) b = 0;
-        //decltype(Im.height) b2 = i * Im.height * Im.width;
+        
         for (auto y = (int)ceil((double)n / 2); b < Im.height; y++) 
         {
             decltype(Im.width) a = 0;
-            //decltype(Im.width) a2 = i * Im.height * Im.width;
+
             for (auto x = (int)ceil((double)n / 2); a < Im.width; x++) 
             {
                 if (std::isnan(auxC[idx + (y * 2 * (Im.width + n - 1) + x * 2)]) || std::isnan(auxC[idx + (y * 2 * (Im.width + n - 1) + x * 2 + 1)])) 
