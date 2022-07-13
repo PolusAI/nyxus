@@ -35,7 +35,6 @@ namespace CuGabor {
         //getLastCudaError("Kernel execution failed [ solvePoisson ]");
         cudaError_t err = cudaGetLastError();   
         if ( err != cudaSuccess ){
-                //fprintf(stderr, "Kernel execution failed [ solvePoisson ]\n");
                 printf("CUDA Error: %s\n", cudaGetErrorString(err));   
                 return;	
         }

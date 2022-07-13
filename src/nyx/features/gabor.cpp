@@ -124,8 +124,6 @@ void GaborFeature::calculate_gpu (LR& r)
     ImageMatrix e2img;
     e2img.allocate (Im0.width, Im0.height);
 
-    //std::cout << "width: " << Im0.width << std::endl;
-    //std::cout << "height: " << Im0.height << std::endl;
 
     // --2
     std::vector<double> auxC ((Im0.width + n - 1) * (Im0.height + n - 1) * 2);
@@ -143,9 +141,6 @@ void GaborFeature::calculate_gpu (LR& r)
     e2img.GetStats(local_stats);
     double max_val = local_stats.max__();
 
-    //
-    //originalScore = (pix_plane.array() > max_val * 0.4).count();
-    //
     int cnt = 0;
     double cmp_a = max_val * 0.4;
     for (auto a : pix_plane)
@@ -159,19 +154,8 @@ void GaborFeature::calculate_gpu (LR& r)
         writeablePixels e2_pix_plane = e2img.WriteablePixels();
         GaborEnergyGPU (Im0, e2_pix_plane.data(), auxC.data(), auxG.data(), f0[ii], sig2lam, gamma, theta, n);
 
-        //
-        //Moments2 local_stats2;
-        //e2img.GetStats(local_stats2);
-        //double max_val2 = local_stats2.max__();
-        //
-        //e2_pix_plane.array() = (e2_pix_plane.array() / max_val2).unaryExpr(Moments2func(e2img.stats));
-        //
-
         GRAYthr = 0.25; // --Using simplified thresholding-- GRAYthr = e2img.Otsu();
 
-        //
-        //afterGaborScore = (e2_pix_plane.array() > GRAYthr).count();
-        //
         afterGaborScore = 0;
         for (auto a : e2_pix_plane)
             if (double(a)/max_val > GRAYthr)
@@ -202,22 +186,10 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r)
     int ii;
     unsigned long originalScore = 0;
     double max_val;
-    //int num_filters = 8;
     
-    //cout << "updated" << endl;
     readOnlyPixels im0_plane = Im0.ReadablePixels();
 
     long int cufft_size = 2 * ((Im0.width + n - 1) * (Im0.height + n - 1));
-
-    //cout << "cufft_size: " << cufft_size << endl;
-    //cout << "max_size: " << std::to_string(MAX_SIZE) << endl; 
-
-    // call CPU version if gpu cannot handle single image
-    //if(cufft_size > MAX_SIZE || (cufft_size * sizeof(CuComplex)) > (std::stoi(theEnvironment.gpu_props_[0]["Memory"]))) {
-    //    this->calculate(r);
-    //    return;
-    //}
-
 
     int step_size = ceil(cufft_size / MAX_SIZE);
     if(step_size == 0) step_size = 1;
@@ -235,7 +207,6 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r)
 
     //cout << "here" << endl;
     for(int i = 0; i < 8; i += num_filters){
-        //cout << "loop" << endl;
 
         // compute the original score before Gabor
         vector<vector<PixIntens>> e2_pix_plane_vec(num_filters, vector<PixIntens>(Im0.width * Im0.height));
@@ -286,9 +257,6 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r)
 
 
             GRAYthr = 0.25; // --Using simplified thresholding-- GRAYthr = e2img.Otsu();
-
-            
-            //afterGaborScore = (e2_pix_plane.array() > GRAYthr).count();
 
             afterGaborScore = 0;
             for (auto a : e2_pix_plane_temp)
@@ -831,7 +799,6 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
 
     readOnlyPixels pix_plane = Im.ReadablePixels();
     
-    //=== Version 2
     CuGabor::conv_dud_gpu_fft_multi_filter (auxC, pix_plane.data(), g_filters.data(), Im.width, Im.height, n_gab, n_gab, num_filters);
     
     for (int i = 0; i < num_filters; ++i){
@@ -848,27 +815,17 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
                 {
                     out[i][(b * Im.width + a)] = (PixIntens) std::numeric_limits<double>::quiet_NaN();
                     a++;
-                    //a2++;
                     continue;
                 }
                 out[i][(b * Im.width + a)] = (PixIntens) sqrt(pow(auxC[idx + (y * 2 * (Im.width + n - 1) + x * 2)], 2) + pow(auxC[idx + (y * 2 * (Im.width + n - 1) + x * 2 + 1)], 2));
                 a++;
-                //a2++;
             }
             b++;
-            //b2++;
         }
         
     }
 
-    
-    
-    //cout << "end" << endl;
-
     free(g_filters);
-    //free(images);
-
-    //cout << "after free" << endl;
 }
 #endif
 
