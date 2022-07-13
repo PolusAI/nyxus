@@ -13,7 +13,7 @@
     #include "../gpu/gabor.cuh"
 #endif
 
-const int MAX_SIZE = pow(2, 27);
+const int CUFFT_MAX_SIZE = pow(2, 27);
 
 /// @brief Extract face feature based on gabor filtering
 class GaborFeature: public FeatureMethod
