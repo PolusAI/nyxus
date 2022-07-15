@@ -17,10 +17,10 @@ if "%Z5_INSTALLED%"=="FALSE" (
         for /l %%x in (1, 1, 5) do (
             curl -L https://boostorg.jfrog.io/artifactory/main/release/1.79.0/source/boost_1_79_0.zip -o boost_1_79_0.zip
             if  exist boost_1_79_0.zip (
-                goto :continue
+                goto :continue_boost
             )
         )
-        :continue
+        :continue_boost
         tar  -xf boost_1_79_0.zip
         pushd boost_1_79_0 
         call bootstrap.bat 
@@ -89,7 +89,13 @@ if "%Z5_INSTALLED%"=="FALSE" (
 
 
 if "%TIFF_INSTALLED%"=="FALSE" (
-    curl https://download.osgeo.org/libtiff/tiff-4.3.0.zip -o libtiff.zip
+    for /l %%x in (1, 1, 5) do (
+        curl https://download.osgeo.org/libtiff/tiff-4.3.0.zip -o libtiff.zip
+        if  exist libtiff.zip (
+            goto :continue_tiff
+        )
+    )
+    :continue_tiff
     tar -xf libtiff.zip
     pushd tiff-4.3.0
     mkdir build_man
