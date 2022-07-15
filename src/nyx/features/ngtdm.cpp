@@ -45,7 +45,7 @@ void NGTDMFeature::calculate (LR& r)
 		for (int col = 0; col < D.width(); col++)
 		{
 			// Find a non-blank pixel
-			PixIntens pi = Nyxus::normalize_I(D.yx(row, col), r.aux_min, piRange); // = D.yx(row, col);
+			PixIntens pi = Nyxus::to_uint8 (D.yx(row, col), r.aux_min, piRange); 
 			if (pi == 0)
 				continue;
 
@@ -59,42 +59,42 @@ void NGTDMFeature::calculate (LR& r)
 
 			if (D.safe(row - 1, col))	// North
 			{
-				neigsI += Nyxus::normalize_I(D.yx(row-1, col), r.aux_min, piRange); // = D.yx(row - 1, col);
+				neigsI += Nyxus::to_uint8 (D.yx(row-1, col), r.aux_min, piRange);
 				nd++;
 			}
 			if (D.safe(row - 1, col + 1))	// North-East
 			{
-				neigsI += Nyxus::normalize_I(D.yx(row-1, col+1), r.aux_min, piRange); // = D.yx(row - 1, col + 1);
+				neigsI += Nyxus::to_uint8 (D.yx(row-1, col+1), r.aux_min, piRange);
 				nd++;
 			}
 			if (D.safe(row, col + 1))	// East
 			{
-				neigsI += Nyxus::normalize_I(D.yx(row, col+1), r.aux_min, piRange); // = D.yx(row, col + 1);
+				neigsI += Nyxus::to_uint8 (D.yx(row, col+1), r.aux_min, piRange);
 				nd++;
 			}
 			if (D.safe(row + 1, col + 1))	// South-East
 			{
-				neigsI += Nyxus::normalize_I(D.yx(row+1, col+1), r.aux_min, piRange); // = D.yx(row + 1, col + 1);
+				neigsI += Nyxus::to_uint8 (D.yx(row+1, col+1), r.aux_min, piRange);
 				nd++;
 			}
 			if (D.safe(row + 1, col))	// South
 			{
-				neigsI += Nyxus::normalize_I(D.yx(row+1, col), r.aux_min, piRange); // = D.yx(row + 1, col);
+				neigsI += Nyxus::to_uint8 (D.yx(row+1, col), r.aux_min, piRange);
 				nd++;
 			}
 			if (D.safe(row + 1, col - 1))	// South-West
 			{
-				neigsI += Nyxus::normalize_I(D.yx(row+1, col-1), r.aux_min, piRange); // = D.yx(row + 1, col - 1);
+				neigsI += Nyxus::to_uint8 (D.yx(row+1, col-1), r.aux_min, piRange);
 				nd++;
 			}
 			if (D.safe(row, col - 1))	// West
 			{
-				neigsI += Nyxus::normalize_I(D.yx(row, col-1), r.aux_min, piRange); // = D.yx(row, col - 1);
+				neigsI += Nyxus::to_uint8 (D.yx(row, col-1), r.aux_min, piRange);
 				nd++;
 			}
 			if (D.safe(row - 1, col - 1))	// North-West
 			{
-				neigsI += Nyxus::normalize_I(D.yx(row-1, col-1), r.aux_min, piRange);  // = D.yx(row - 1, col - 1);
+				neigsI += Nyxus::to_uint8 (D.yx(row-1, col-1), r.aux_min, piRange);
 				nd++;
 			}
 

@@ -178,6 +178,24 @@ namespace Nyxus
 		}
 	}
 
+	void adjustRoiIntensities(const std::vector<int>& roi_labels, int num_levels)
+	{
+		double newRange = double(num_levels - 1);	// E.g. if num_levels == 256, then adjusted values will distribute in [0,255] interval
+
+		// Convert pixel intensities to uint8
+		for (auto l : roi_labels)
+		{
+			LR& r = roiData[l];
+			auto minI = r.aux_min;
+			double rangeI = r.aux_max - r.aux_min;
+			for (auto pxl : r.raw_pixels)
+			{
+				double newI = double(pxl.inten - minI) * newRange / rangeI;
+				pxl.inten = decltype(pxl.inten) (newI);
+			}
+		}
+	}
+
 	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit)
 	{
 		std::vector<int> Pending;
@@ -217,9 +235,6 @@ namespace Nyxus
 				VERBOSLVL1(std::cout << "\treducing ROIs\n";)
 				// reduce_trivial_rois(Pending);	
 				reduce_trivial_rois_manual(Pending);
-
-				// Output results
-				//outputRoisFeatures (Pending);
 
 				// Free memory
 				VERBOSLVL1(std::cout << "\tfreeing ROI buffers\n";)
@@ -290,5 +305,4 @@ namespace Nyxus
 
 		return true;
 	}
-
 }

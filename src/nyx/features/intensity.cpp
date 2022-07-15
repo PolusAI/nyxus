@@ -85,7 +85,7 @@ void PixelIntensityFeatures::calculate(LR& r)
 
 	// P10, 25, 75, 90, IQR, RMAD, entropy, uniformity
 	TrivialHistogram H;
-	H.initialize (val_MIN, val_MAX, r.raw_pixels);
+	H.initialize (r.aux_min, r.aux_max, r.raw_pixels);
 	auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
 	val_MEDIAN = median_;
 	val_P01 = p01_;
@@ -105,23 +105,14 @@ void PixelIntensityFeatures::calculate(LR& r)
 	val_UNIFORMITY_PIU = piu;
 
 	// Skewness
-	//--Formula 1--	lr.fvals[SKEWNESS][0] = std::sqrt(n) * lr.aux_M3 / std::pow(lr.aux_M2, 1.5);
-	//--Formula 2-- skewness = 3 * (mean - median) / stddev
 	Moments4 mom;
 	for (auto& px : r.raw_pixels)
 		mom.add(px.inten);
 	val_SKEWNESS = mom.skewness();
 
 	// Kurtosis
-	//--Formula-- k1 = mean((x - mean(x)). ^ 4) / std(x). ^ 4
 	val_KURTOSIS = mom.kurtosis();
 
-	//--V1--
-	// Hyperskewness hs = E[x-mean].^5 / std(x).^5
-	// val_HYPERSKEWNESS = mom.hyperskewness();
-	// Hyperflatness hf = E[x-mean].^6 / std(x).^6
-	// val_HYPERFLATNESS = mom.hyperflatness();
-	//--V2--
 	double sumPow5 = 0, sumPow6 = 0;
 	for (auto& px : r.raw_pixels)
 	{
@@ -129,8 +120,12 @@ void PixelIntensityFeatures::calculate(LR& r)
 		sumPow5 += std::pow(diff, 5.);
 		sumPow6 += std::pow(diff, 6.);
 	}
+
+	// Hyperskewness
 	double denom = (n * std::pow(val_STANDARD_DEVIATION, 5.));
 	val_HYPERSKEWNESS = denom == 0. ? 0. : sumPow5/denom;
+
+	// Hyperflatness
 	denom = (n * std::pow(val_STANDARD_DEVIATION, 6.));
 	val_HYPERFLATNESS = denom == 0. ? 0. : sumPow6 / denom;
 }
@@ -190,7 +185,7 @@ void PixelIntensityFeatures::osized_calculate (LR& r, ImageLoader& imloader)
 
 	// P10, 25, 75, 90, IQR, RMAD, entropy, uniformity
 	TrivialHistogram H;
-	H.initialize(val_MIN, val_MAX, r.raw_pixels);
+	H.initialize(r.aux_min, r.aux_max, r.raw_pixels);
 	auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
 	val_MEDIAN = median_;
 	val_P01 = p01_;
@@ -286,6 +281,18 @@ void PixelIntensityFeatures::parallel_process_1_batch(size_t firstitem, size_t l
 			continue;
 
 		// Calculate the feature and save it in ROI's csv-friendly buffer 'fvals'
+		PixelIntensityFeatures f;
+		f.calculate(r);
+		f.save_value(r.fvals);
+	}
+}
+
+void PixelIntensityFeatures::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	for (auto i = start; i < end; i++)
+	{
+		int lab = (*ptrLabels)[i];
+		LR& r = (*ptrLabelData)[lab];
 		PixelIntensityFeatures f;
 		f.calculate(r);
 		f.save_value(r.fvals);

@@ -89,10 +89,7 @@ void GLRLMFeature::calculate (LR& r)
 
 		// Squeeze the intensity range
 		for (size_t i = 0; i < D.size(); i++)
-		{
-			PixIntens pi = Nyxus::normalize_I(D[i], r.aux_min, piRange);
-			D[i] = pi;
-		}
+			D[i] = Nyxus::to_uint8 (D[i], r.aux_min, piRange);
 
 		// Number of zones
 		const int VISITED = -1;
