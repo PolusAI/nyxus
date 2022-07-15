@@ -60,7 +60,7 @@ jobs:
     - name: Install Nyxus
       working-directory: ${{github.workspace}}
       shell: cmd
-      run: install_win_nyxus.bat
+      run: build_scripts/install_win_nyxus.bat
 
     - name: Run PyTest
       working-directory: ${{github.workspace}}
