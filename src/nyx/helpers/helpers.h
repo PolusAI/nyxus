@@ -179,7 +179,7 @@ namespace Nyxus
 	/// @return Squeezed intensity within range [0,255]
 	inline unsigned int to_uint8 (unsigned int i, unsigned int min_i, unsigned int i_range)
 	{
-		unsigned int new_pi = unsigned int((double(i - min_i) / double(i_range) * 255.0)) ;
+		unsigned int new_pi = (unsigned int) ((double(i-min_i) / double(i_range) * 255.0)) ;
 		return new_pi;
 	}
 
