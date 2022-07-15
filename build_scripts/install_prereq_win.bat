@@ -1,13 +1,12 @@
 mkdir %Z5_INSTALL_DIR%
 mkdir %Z5_INSTALL_DIR%\include
-set DCMAKE_INSTALL_PREFIX=%Z5_INSTALL_DIR%
 
 if "%ZLIB_INSTALLED%"=="FALSE" (
     git clone https://github.com/madler/zlib.git
     pushd zlib
     mkdir build_man
     pushd build_man
-    cmake ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
     cmake --build . --config Release --target install  
     popd
     popd
@@ -26,7 +25,7 @@ if "%Z5_INSTALLED%"=="FALSE" (
         pushd boost_1_79_0 
         call bootstrap.bat 
         .\b2 headers
-        xcopy /E /I /y boost ..\%Z5_INSTALL_DIR%\include\boost
+        xcopy /E /I /y boost ..\local_install\include\boost
         popd
     )
 
@@ -35,7 +34,7 @@ if "%Z5_INSTALLED%"=="FALSE" (
         pushd c-blosc 
         mkdir build_man
         pushd build_man
-        cmake ..   
+        cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..   
         cmake --build . --config Release --target install 
         popd
         popd
@@ -45,7 +44,7 @@ if "%Z5_INSTALLED%"=="FALSE" (
     pushd xtl 
     mkdir build_man
     pushd build_man
-    cmake ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
     cmake --build . --config Release --target install 
     popd
     popd
@@ -54,7 +53,7 @@ if "%Z5_INSTALLED%"=="FALSE" (
     pushd xtensor 
     mkdir build_man
     pushd build_man
-    cmake ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
     cmake --build . --config Release --target install 
     popd
     popd
@@ -63,7 +62,7 @@ if "%Z5_INSTALLED%"=="FALSE" (
     pushd xsimd 
     mkdir build_man
     pushd build_man
-    cmake ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
     cmake --build . --config Release --target install  
     popd
     popd
@@ -72,7 +71,7 @@ if "%Z5_INSTALLED%"=="FALSE" (
     pushd json
     mkdir build_man
     pushd build_man
-    cmake -DJSON_BuildTests=OFF ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ -DJSON_BuildTests=OFF ..  
     cmake --build . --config Release --target install 
     popd
     popd
@@ -105,12 +104,12 @@ if "%TIFF_INSTALLED%"=="FALSE" (
     pushd libdeflate
     nmake /f Makefile.msc
     popd
-    cmake -DDeflate_INCLUDE_DIR=./libdeflate -DDeflate_LIBRARY_RELEASE=./libdeflate/libdeflate.lib ..
+    cmake -DDeflate_INCLUDE_DIR=./libdeflate -DDeflate_LIBRARY_RELEASE=./libdeflate/libdeflate.lib -DCMAKE_INSTALL_PREFIX=../../local_install/ ..
     cmake --build . --config Release --target install
-    copy libdeflate\libdeflate.dll ..\..\%Z5_INSTALL_DIR%\bin\
-    copy libdeflate\*.lib ..\..\%Z5_INSTALL_DIR%\lib\
+    copy libdeflate\libdeflate.dll ..\..\local_install\bin\
+    copy libdeflate\*.lib ..\..\local_install\lib\
     popd
     popd
 )
 
-if "%ON_GITHUB%"=="TRUE" xcopy /E /I /y %Z5_INSTALL_DIR%\bin %TEMP%\nyxus\bin
+if "%ON_GITHUB%"=="TRUE" xcopy /E /I /y local_install\bin %TEMP%\nyxus\bin
