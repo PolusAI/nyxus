@@ -36,22 +36,20 @@ namespace Nyxus
 			double memDiff = double(freeRamAmt) - double(initial_freeRamAmt);
 			VERBOSLVL1(std::cout << std::setw(15) << freeRamAmt << " bytes free (" << "consumed=" << memDiff << ") ";)
 
-				// Display (1) dataset progress info and (2) file pair info
-				int digits = 2, k = std::pow(10.f, digits);
+			// Display (1) dataset progress info and (2) file pair info
+			int digits = 2, k = std::pow(10.f, digits);
 			float perCent = float(filepair_index * 100 * k / tot_num_filepairs) / float(k);
 			VERBOSLVL1(std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << intens_fpath << " SEG: " << label_fpath << "\n";)
 
-				// Phase 1: gather ROI metrics
-				VERBOSLVL1(std::cout << "Gathering ROI metrics\n";)
-				gatherRoisMetrics(intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
+			// Phase 1: gather ROI metrics
+			VERBOSLVL1(std::cout << "Gathering ROI metrics\n";)
+			gatherRoisMetrics(intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
 
-				// Phase 0: allocate each ROI's feature value buffer
+			// Allocate each ROI's feature value buffer
 			for (auto lab : uniqueLabels)
 			{
 				LR& r = roiData[lab];
-				r.fvals.resize(AvailableFeatures::_COUNT_);
-				for (auto& valVec : r.fvals)
-					valVec.push_back(0.0);
+				r.initialize_fvals();
 			}
 
 			// Dump ROI metrics

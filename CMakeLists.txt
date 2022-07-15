@@ -129,7 +129,7 @@ set(SOURCE
 	src/nyx/phase1.cpp
 	src/nyx/phase2.cpp
 	src/nyx/phase3.cpp
-    src/nyx/pixel_feed.cpp
+	src/nyx/pixel_feed.cpp
 	src/nyx/reduce_by_feature.cpp
 	src/nyx/reduce_trivial_rois.cpp
 	src/nyx/roi_cache.cpp
@@ -153,6 +153,40 @@ pybind11_add_module(backend
 	src/nyx/nested_roi.cpp
 	src/nyx/image_loader1x.cpp
 )
+#== Install OMEZarr PreReqs
+option(WITH_OMEZARR "Build with OMEZarr Support" ON)
+if(WITH_OMEZARR)
+	if(UNIX)
+		execute_process(COMMAND bash ${CMAKE_SOURCE_DIR}/build_scripts/install_prereq_linux.sh)
+	endif()
+	if(WIN32)
+		execute_process(COMMAND cmd /C ${CMAKE_SOURCE_DIR}/build_scripts/install_prereq_win.bat)
+	endif()
+	set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/local_install)
+	find_package(Boost REQUIRED)
+	if(Boost_FOUND)
+		include_directories(${Boost_INCLUDE_DIR})
+	endif()
+	find_package(BLOSC REQUIRED)
+	include_directories(${BLOSC_INCLUDE_DIR})
+	target_compile_definitions(backend PRIVATE -DWITH_BLOSC)
+	target_link_libraries(backend PRIVATE ${BLOSC_LIBRARIES})
+	if(BUILD_CLI)
+		target_compile_definitions(nyxus PRIVATE -DWITH_BLOSC)
+		target_compile_definitions(nyxushie PRIVATE -DWITH_BLOSC) 	
+		target_link_libraries(nyxus PRIVATE ${BLOSC_LIBRARIES})	
+		target_link_libraries(nyxushie PRIVATE ${BLOSC_LIBRARIES})	
+	endif()
+endif()
+
+find_package(FastLoader)
+if(FastLoader_FOUND)
+	list(APPEND Nyxus_LIBRARIES ${FastLoader_LIBRARIES})
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FastLoader_CXX_FLAGS}")
+	include_directories(${FastLoader_INCLUDE_DIR})
+else()
+	message(FATAL_ERROR "Unable to find FastLoader which is required for Nyxus.")
+endif()
 
 if(USEGPU)
 	set(GPU_SOURCE_FILES
