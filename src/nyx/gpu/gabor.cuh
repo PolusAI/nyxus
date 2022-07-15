@@ -1,12 +1,18 @@
 #include <cufftXt.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
+#include <builtin_types.h>
 #include <vector>
 #include <stdexcept>
 #include <iostream>
 
+#include "gpu.h"
+
 typedef float2 Complex;
 typedef cufftComplex CuComplex;
 
-#define CUFFT_MAX_SIZE 1 << 27
+#define CUFFT_MAX_SIZE pow(2,27)
 
 namespace CuGabor{
 
@@ -22,7 +28,7 @@ namespace CuGabor{
      * @brief Multiply two complex matrices
      * 
      */
-    void cmat_mult(
+    bool cmat_mult(
         CuComplex* A, 
         int row_size, 
         int col_size, 
@@ -34,7 +40,7 @@ namespace CuGabor{
      * @brief Multiply two complex matrices
      * 
      */
-    void cmat_mult(
+    bool cmat_mult(
         cufftDoubleComplex* A, 
         int row_size, 
         int col_size, 
@@ -53,7 +59,7 @@ namespace CuGabor{
      * @param kernel_n Width of kernel
      * @param kernel_m Heigh of image
      */
-    void conv_dud_gpu_fft(double* out, // must be zeroed
+    bool conv_dud_gpu_fft(double* out, // must be zeroed
                     const unsigned int* image, 
                     double* kernel, 
                     int image_n, int image_m, int kernel_n, int kernel_m);
@@ -72,7 +78,7 @@ namespace CuGabor{
      * @param kernel_m Height of kernels
      * @param batch_size Number of images
      */
-    void conv_dud_gpu_fft_multi_filter(double* out, 
+    bool conv_dud_gpu_fft_multi_filter(double* out, 
                     const unsigned int* image, 
                     double* kernel, 
                     int image_n, int image_m, int kernel_n, int kernel_m, int batch_size);

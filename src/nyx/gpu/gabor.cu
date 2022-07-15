@@ -1,4 +1,5 @@
 #include "gabor.cuh"
+#include <vector>
 
 using namespace std;
 
@@ -21,7 +22,7 @@ namespace CuGabor {
         }
     }
 
-    void cmat_mult(cufftDoubleComplex* A, int row_size, int col_size, cufftDoubleComplex* B, cufftDoubleComplex* result, int batch_size){
+    bool cmat_mult(cufftDoubleComplex* A, int row_size, int col_size, cufftDoubleComplex* B, cufftDoubleComplex* result, int batch_size){
         int block = 16;
         dim3 threadsPerBlock(block, block);
         dim3 blocksPerGrid(ceil(row_size/block)+1, ceil(col_size*batch_size/block)+1);
@@ -29,15 +30,14 @@ namespace CuGabor {
         multiply<<<blocksPerGrid, threadsPerBlock>>>(A, row_size, col_size, B, result, batch_size);
 
         // Wait for device to finish all operation
-        cudaDeviceSynchronize();
+        cudaError_t ok = cudaDeviceSynchronize();
+        CHECKERR(ok);
 
         // Check if kernel execution generated and error
-        //getLastCudaError("Kernel execution failed [ solvePoisson ]");
-        cudaError_t err = cudaGetLastError();   
-        if ( err != cudaSuccess ){
-                printf("CUDA Error: %s\n", cudaGetErrorString(err));   
-                return;	
-        }
+        ok = cudaGetLastError();   
+        CHECKERR(ok);
+
+        return true;
     }
 
     __global__ void multiply(CuComplex* A, int row_size, int col_size, CuComplex* B, CuComplex* result, int batch_size) {
@@ -57,7 +57,7 @@ namespace CuGabor {
         }
     }
 
-    void cmat_mult(CuComplex* A, int row_size, int col_size, CuComplex* B, CuComplex* result, int batch_size){
+    bool cmat_mult(CuComplex* A, int row_size, int col_size, CuComplex* B, CuComplex* result, int batch_size){
         int block = 16;
         dim3 threadsPerBlock(block, block);
         dim3 blocksPerGrid(ceil(row_size/block)+1, ceil(col_size*batch_size/block)+1);
@@ -65,19 +65,17 @@ namespace CuGabor {
         multiply<<<blocksPerGrid, threadsPerBlock>>>(A, row_size, col_size, B, result, batch_size);
 
         // Wait for device to finish all operation
-        cudaDeviceSynchronize();
+        cudaError_t ok = cudaDeviceSynchronize();
+        CHECKERR(ok);
 
         // Check if kernel execution generated and error
-        //getLastCudaError("Kernel execution failed [ solvePoisson ]");
-        cudaError_t err = cudaGetLastError();   
-        if ( err != cudaSuccess ){
-                //fprintf(stderr, "Kernel execution failed [ solvePoisson ]\n");
-                printf("CUDA Error: %s\n", cudaGetErrorString(err));   
-                return;	
-        }
+        ok = cudaGetLastError();   
+        CHECKERR(ok);
+
+        return true;
     }
 
-    void conv_dud_gpu_fft(double* out, 
+    bool conv_dud_gpu_fft(double* out, 
                             const unsigned int* image, 
                             double* kernel, 
                             int image_n, int image_m, int kernel_n, int kernel_m){
@@ -95,10 +93,9 @@ namespace CuGabor {
             throw invalid_argument("Batch of images is too large. The maximumum number of values in cuFFT is 2^27.");
         }
 
-        // allocate space for linear indexed arrays
-        Complex* linear_image = (Complex*)malloc(size * batch_size * sizeof(Complex));
-        Complex* result = (Complex*)malloc(size * batch_size * sizeof(Complex));
-        Complex* linear_kernel = (Complex*)malloc(size * batch_size * sizeof(Complex));
+        std::vector<Complex> linear_image(size * batch_size);
+        std::vector<Complex> result(size * batch_size);
+        std::vector<Complex> linear_kernel(size * batch_size);
 
         int index, index2;
         
@@ -140,37 +137,27 @@ namespace CuGabor {
             }
         }
 
-
         CuComplex* d_image;
         CuComplex* d_result;
         CuComplex* d_kernel;
 
         int n[2] = {row_size, col_size};
 
-        cudaMalloc((void**)&d_image, sizeof(CuComplex)*size*batch_size);
-        if (cudaGetLastError() != cudaSuccess){
-            fprintf(stderr, "Cuda error: Failed to allocate\n");	
-        }
+        auto ok = cudaMalloc((void**)&d_image, sizeof(CuComplex)*size*batch_size);
+        CHECKERR(ok);
 
-        cudaMalloc((void**)&d_result, sizeof(CuComplex)*size*batch_size);
-        if (cudaGetLastError() != cudaSuccess){
-            fprintf(stderr, "Cuda error: Failed to allocate\n");	
-        }
+        ok = cudaMalloc((void**)&d_result, sizeof(CuComplex)*size*batch_size);
+        CHECKERR(ok);
         
-        cudaMalloc((void**)&d_kernel, sizeof(CuComplex)*size*batch_size);
-        if (cudaGetLastError() != cudaSuccess){
-            fprintf(stderr, "Cuda error: Failed to allocate\n");	
-        }
+        ok = cudaMalloc((void**)&d_kernel, sizeof(CuComplex)*size*batch_size);  
+        CHECKERR(ok);
         
         // copy data to GPU
-        cudaMemcpy(d_image, linear_image, batch_size*size*sizeof(CuComplex), cudaMemcpyHostToDevice);
-        if (cudaGetLastError() != cudaSuccess){
-            fprintf(stderr, "Cuda error: Failed to allocate\n");	
-        }
-        cudaMemcpy(d_kernel, linear_kernel, batch_size*size*sizeof(CuComplex), cudaMemcpyHostToDevice);
-        if (cudaGetLastError() != cudaSuccess){
-            fprintf(stderr, "Cuda error: Failed to allocate\n");	
-        }
+        ok = cudaMemcpy(d_image, linear_image.data(), batch_size*size*sizeof(CuComplex), cudaMemcpyHostToDevice);
+        CHECKERR(ok);
+
+        ok = cudaMemcpy(d_kernel, linear_kernel.data(), batch_size*size*sizeof(CuComplex), cudaMemcpyHostToDevice);
+        CHECKERR(ok);
 
         cufftHandle plan;
         cufftHandle plan_k;
@@ -183,52 +170,41 @@ namespace CuGabor {
         int istride = 1;
         int ostride = 1;
 
-        if (cufftPlanMany(&plan, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_C2C, batch_size) != CUFFT_SUCCESS){
-            fprintf(stderr, "CUFFT Error: Unable to create plan\n");
-            //return;	
-        }
-        if (cufftPlanMany(&plan_k, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_C2C, batch_size) != CUFFT_SUCCESS){
-            fprintf(stderr, "CUFFT Error: Unable to create plan\n");
-            //return;	
-        }
+        auto call = cufftPlanMany(&plan, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_C2C, batch_size);
+        CHECKCUFFTERR(call);
+           
+        call = cufftPlanMany(&plan_k, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_C2C, batch_size);
+        CHECKCUFFTERR(call);
+        
 
-        if (cufftExecC2C(plan, d_image, d_image, CUFFT_FORWARD) != CUFFT_SUCCESS){
-            fprintf(stderr, "CUFFT Error: Unable to execute plan\n");
-            //return;		
-        }
+        call = cufftExecC2C(plan, d_image, d_image, CUFFT_FORWARD);
+        CHECKCUFFTERR(call);
 
-        if (cufftExecC2C(plan_k, d_kernel, d_kernel, CUFFT_FORWARD) != CUFFT_SUCCESS){
-            fprintf(stderr, "CUFFT Error: Unable to execute plan\n");
-            //return;		
-        }
+        call = cufftExecC2C(plan_k, d_kernel, d_kernel, CUFFT_FORWARD);
+        CHECKERR(ok);
 
-        if (cudaDeviceSynchronize() != cudaSuccess){
-            fprintf(stderr, "Cuda error: Failed to synchronize\n");
-            //return;
-        }
+        ok = cudaDeviceSynchronize();
+        CHECKERR(ok);
 
         // element-wise multiplication of the image and kernel
-        cmat_mult(d_image, row_size, col_size, d_kernel, d_result, batch_size);
-
-        // transform out of fourier space
-        if (cufftExecC2C(plan, d_result, d_result, CUFFT_INVERSE) != CUFFT_SUCCESS){
-            fprintf(stderr, "CUFFT Error: Unable to execute plan\n");
-            //return;		
+        bool success = cmat_mult(d_image, row_size, col_size, d_kernel, d_result, batch_size);
+        if(!success) {
+            return false;
         }
 
+        // transform out of fourier space
+        call = cufftExecC2C(plan, d_result, d_result, CUFFT_INVERSE);
+        CHECKCUFFTERR(call);
+
         // copy results from device to host
-        cudaMemcpy(result, d_result, batch_size*size*sizeof(CuComplex), cudaMemcpyDeviceToHost); 
+        ok = cudaMemcpy(result.data(), d_result, batch_size*size*sizeof(CuComplex), cudaMemcpyDeviceToHost); 
+        CHECKERR(ok);
 
         // transfer to output array 
         for(int i = 0; i < size; ++i) {
             out[2*i] = (result[i].x/(size));
             out[2*i + 1] = (result[i].y/(size));
         }
-        
-        // free host memory
-        free(linear_image);
-        free(result);
-        free(linear_kernel);
 
         // free device memory
         cufftDestroy(plan);
@@ -236,10 +212,11 @@ namespace CuGabor {
         cudaFree(d_image);
         cudaFree(d_result);
         cudaFree(d_kernel);
-                            
+
+        return true;                    
     }
 
-     void conv_dud_gpu_fft_multi_filter(double* out, 
+     bool conv_dud_gpu_fft_multi_filter(double* out, 
                             const unsigned int* image, 
                             double* kernel, 
                             int image_n, int image_m, int kernel_n, int kernel_m, int batch_size){
@@ -256,10 +233,9 @@ namespace CuGabor {
             throw invalid_argument("Batch of images is too large. The maximumum number of values in cuFFT is 2^27.");
         }
 
-        // allocate space for linear indexed arrays
-        Complex* linear_image = (Complex*)malloc(size * batch_size * sizeof(Complex));
-        Complex* result = (Complex*)malloc(size * batch_size * sizeof(Complex));
-        Complex* linear_kernel = (Complex*)malloc(size * batch_size * sizeof(Complex));
+        std::vector<Complex> linear_image(size * batch_size);
+        std::vector<Complex> result(size * batch_size);
+        std::vector<Complex> linear_kernel(size * batch_size);
 
         int index, index2;
         
@@ -316,30 +292,21 @@ namespace CuGabor {
 
         int n[2] = {row_size, col_size};
 
-        cudaMalloc((void**)&d_image, sizeof(CuComplex)*size*batch_size);
-        if (cudaGetLastError() != cudaSuccess){
-            fprintf(stderr, "Cuda error: Failed to allocate\n");	
-        }
+        auto ok = cudaMalloc((void**)&d_image, sizeof(CuComplex)*size*batch_size);
+        CHECKERR(ok);
 
-        cudaMalloc((void**)&d_result, sizeof(CuComplex)*size*batch_size);
-        if (cudaGetLastError() != cudaSuccess){
-            fprintf(stderr, "Cuda error: Failed to allocate\n");	
-        }
+        ok = cudaMalloc((void**)&d_result, sizeof(CuComplex)*size*batch_size);
+        CHECKERR(ok);
         
-        cudaMalloc((void**)&d_kernel, sizeof(CuComplex)*size*batch_size);
-        if (cudaGetLastError() != cudaSuccess){
-            fprintf(stderr, "Cuda error: Failed to allocate\n");	
-        }
+        ok = cudaMalloc((void**)&d_kernel, sizeof(CuComplex)*size*batch_size);
+        CHECKERR(ok);
         
         // copy data to GPU
-        cudaMemcpy(d_image, linear_image, batch_size*size*sizeof(CuComplex), cudaMemcpyHostToDevice);
-        if (cudaGetLastError() != cudaSuccess){
-            fprintf(stderr, "Cuda error: Failed to allocate\n");	
-        }
-        cudaMemcpy(d_kernel, linear_kernel, batch_size*size*sizeof(CuComplex), cudaMemcpyHostToDevice);
-        if (cudaGetLastError() != cudaSuccess){
-            fprintf(stderr, "Cuda error: Failed to allocate\n");	
-        }
+        ok = cudaMemcpy(d_image, linear_image.data(), batch_size*size*sizeof(CuComplex), cudaMemcpyHostToDevice);
+        CHECKERR(ok);
+        
+        ok = cudaMemcpy(d_kernel, linear_kernel.data(), batch_size*size*sizeof(CuComplex), cudaMemcpyHostToDevice);
+        CHECKERR(ok);
 
         cufftHandle plan;
         cufftHandle plan_k;
@@ -353,43 +320,36 @@ namespace CuGabor {
         int istride = 1;
         int ostride = 1;
 
-        if (cufftPlanMany(&plan, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_Z2Z, batch_size) != CUFFT_SUCCESS){
-            fprintf(stderr, "CUFFT Error: Unable to create plan\n");
-            //return;	
-        }
-        if (cufftPlanMany(&plan_k, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_Z2Z, batch_size) != CUFFT_SUCCESS){
-            fprintf(stderr, "CUFFT Error: Unable to create plan\n");
-            //return;	
-        }
+        auto call = cufftPlanMany(&plan, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_Z2Z, batch_size);
+        CHECKCUFFTERR(call);
 
-        if (cufftExecZ2Z(plan, d_image, d_image, CUFFT_FORWARD) != CUFFT_SUCCESS){
-            fprintf(stderr, "CUFFT Error: Unable to execute plan\n");
-            //return;		
-        }
+        call = cufftPlanMany(&plan_k, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_Z2Z, batch_size);
+        CHECKCUFFTERR(call);
 
-        if (cufftExecZ2Z(plan_k, d_kernel, d_kernel, CUFFT_FORWARD) != CUFFT_SUCCESS){
-            fprintf(stderr, "CUFFT Error: Unable to execute plan\n");
-            //return;		
-        }
+        call = cufftExecZ2Z(plan, d_image, d_image, CUFFT_FORWARD);
+        CHECKCUFFTERR(call);
 
-        if (cudaDeviceSynchronize() != cudaSuccess){
-            fprintf(stderr, "Cuda error: Failed to synchronize\n");
-            //return;
-        }
+        call = cufftExecZ2Z(plan_k, d_kernel, d_kernel, CUFFT_FORWARD);
+        CHECKCUFFTERR(call);
+
+        ok = cudaDeviceSynchronize();
+        CHECKERR(ok);
 
         // element-wise multiplication of the image and kernel
-        cmat_mult(d_image, row_size, col_size, d_kernel, d_result, batch_size);
+        bool success = cmat_mult(d_image, row_size, col_size, d_kernel, d_result, batch_size);
 
-        // transform out of fourier space
-        if (cufftExecZ2Z(plan, d_result, d_result, CUFFT_INVERSE) != CUFFT_SUCCESS){
-            fprintf(stderr, "CUFFT Error: Unable to execute plan\n");
-            //return;		
+        if(!success) {
+            return false;
         }
 
-        // copy results from device to host
-        cudaMemcpy(result, d_result, batch_size*size*sizeof(CuComplex), cudaMemcpyDeviceToHost); 
+        // transform out of fourier space
+        call = cufftExecZ2Z(plan, d_result, d_result, CUFFT_INVERSE);
+        CHECKCUFFTERR(call);
 
-        
+        // copy results from device to host
+        ok = cudaMemcpy(result.data(), d_result, batch_size*size*sizeof(CuComplex), cudaMemcpyDeviceToHost);
+        CHECKERR(ok); 
+
         // transfer to output array 
         for(int batch = 0; batch < batch_size; ++batch){
             batch_idx = batch*size;
@@ -399,19 +359,14 @@ namespace CuGabor {
             }
         }
         
-        
-        // free host memory
-        free(linear_image);
-        free(result);
-        free(linear_kernel);
-
         // free device memory
         cufftDestroy(plan);
         cufftDestroy(plan_k);
         cudaFree(d_image);
         cudaFree(d_result);
         cudaFree(d_kernel);
-                            
+
+        return true;                    
     }
 }
 

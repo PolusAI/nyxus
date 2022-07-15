@@ -13,8 +13,6 @@
     #include "../gpu/gabor.cuh"
 #endif
 
-const int CUFFT_MAX_SIZE = pow(2, 27);
-
 /// @brief Extract face feature based on gabor filtering
 class GaborFeature: public FeatureMethod
 {
@@ -32,6 +30,7 @@ public:
     #ifdef USE_GPU
         void calculate_gpu(LR& r);
         void calculate_gpu_multi_filter (LR& r);
+        static void gpu_process_all_rois( std::vector<int>& ptrLabels, std::unordered_map <int, LR>& ptrLabelData);
     #endif
 
     // Non-trivial

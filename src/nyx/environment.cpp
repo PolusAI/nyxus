@@ -1047,7 +1047,7 @@ std::vector<std::map<std::string, std::string>> Environment::get_gpu_properties(
 
         temp["Device number"] =  std::to_string(i);
         temp["Device name"] = prop.name;
-        temp["Memory"] = std::to_string(prop.totalGlobalMem/pow(10,9)) + " GB";
+        temp["Memory"] = std::to_string(prop.totalGlobalMem/pow(2,30)) + " GB";
         temp["Capability"] = std::to_string(prop.major) + std::to_string(prop.minor);
 
         props.push_back(temp);

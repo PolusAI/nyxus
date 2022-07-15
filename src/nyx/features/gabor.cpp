@@ -191,7 +191,7 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r)
 
     long int cufft_size = 2 * ((Im0.width + n - 1) * (Im0.height + n - 1));
 
-    int step_size = ceil(cufft_size / MAX_SIZE);
+    int step_size = ceil(cufft_size / CUFFT_MAX_SIZE);
     if(step_size == 0) step_size = 1;
     int num_filters = ceil(8/step_size);
 
@@ -743,7 +743,10 @@ void GaborFeature::GaborEnergyGPU (
     readOnlyPixels pix_plane = Im.ReadablePixels();
 
     //=== Version 2
-    CuGabor::conv_dud_gpu_fft (auxC, pix_plane.data(), Gexp, Im.width, Im.height, n_gab, n_gab);
+    bool success = CuGabor::conv_dud_gpu_fft (auxC, pix_plane.data(), Gexp, Im.width, Im.height, n_gab, n_gab);
+    if(!success) {
+        std::cerr << "Unable to calculate Gabor features on GPU." << endl;
+    }
 
     decltype(Im.height) b = 0;
     for (auto y = (int)ceil((double)n / 2); b < Im.height; y++) 
@@ -799,8 +802,11 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
 
     readOnlyPixels pix_plane = Im.ReadablePixels();
     
-    CuGabor::conv_dud_gpu_fft_multi_filter (auxC, pix_plane.data(), g_filters.data(), Im.width, Im.height, n_gab, n_gab, num_filters);
-    
+    bool success = CuGabor::conv_dud_gpu_fft_multi_filter (auxC, pix_plane.data(), g_filters.data(), Im.width, Im.height, n_gab, n_gab, num_filters);
+    if(!success) {
+        std::cerr << "Unable to calculate Gabor features on GPU." << endl;
+    }
+
     for (int i = 0; i < num_filters; ++i){
         idx = 2 * i * (Im.width + n - 1) * (Im.height + n - 1);
         decltype(Im.height) b = 0;
@@ -825,7 +831,6 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
         
     }
 
-    free(g_filters);
 }
 #endif
 
@@ -838,19 +843,25 @@ void GaborFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels
 
         GaborFeature gf;
 
-
-        #ifdef USE_GPU
-            if (theEnvironment.using_gpu()) {
-                gf.calculate_gpu_multi_filter(r);
-            } else {
-                gf.calculate (r);
-            }
-        #else 
-            gf.calculate (r);
-        #endif
+        gf.calculate (r);
 
         gf.save_value (r.fvals);
     }
 }
+
+#ifdef USE_GPU
+void GaborFeature::gpu_process_all_rois( std::vector<int>& ptrLabels, std::unordered_map <int, LR>& ptrLabelData) 
+{
+    for (auto& lab: ptrLabels) {
+        LR& r = ptrLabelData[lab];
+
+        GaborFeature gf;
+
+        gf.calculate_gpu_multi_filter(r);
+
+        gf.save_value (r.fvals);
+    }
+}
+#endif
 
 
