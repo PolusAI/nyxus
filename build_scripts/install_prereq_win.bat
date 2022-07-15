@@ -1,7 +1,7 @@
 mkdir %Z5_INSTALL_DIR%
 mkdir %Z5_INSTALL_DIR%\include
 
-if %ZLIB_INSTALLED% == "FALSE" (
+if "%ZLIB_INSTALLED%"=="FALSE" (
     git clone https://github.com/madler/zlib.git
     pushd zlib
     mkdir build_man
@@ -12,8 +12,8 @@ if %ZLIB_INSTALLED% == "FALSE" (
     popd
 )
 
-if %Z5_INSTALLED% == "FALSE" (
-    if %Boost_INSTALLED% == "FALSE" (
+if "%Z5_INSTALLED%"=="FALSE" (
+    if "%Boost_INSTALLED%"=="FALSE" (
         for /l %%x in (1, 1, 5) do (
             curl -L https://boostorg.jfrog.io/artifactory/main/release/1.79.0/source/boost_1_79_0.zip -o boost_1_79_0.zip
             if  exist boost_1_79_0.zip (
@@ -29,7 +29,7 @@ if %Z5_INSTALLED% == "FALSE" (
         popd
     )
 
-    if %BLOSC_INSTALLED% == "FALSE" (
+    if "%BLOSC_INSTALLED%"=="FALSE" (
         git clone https://github.com/Blosc/c-blosc.git 
         pushd c-blosc 
         mkdir build_man
@@ -88,7 +88,7 @@ if %Z5_INSTALLED% == "FALSE" (
 )
 
 
-if %TIFF_INSTALLED% == "FALSE" (
+if "%TIFF_INSTALLED%"=="FALSE" (
     curl https://download.osgeo.org/libtiff/tiff-4.3.0.zip -o libtiff.zip
     tar -xf libtiff.zip
     pushd tiff-4.3.0
