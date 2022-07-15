@@ -14,7 +14,7 @@ if [ "$Z5_INSTALLED" == "FALSE" ]; then
         cd boost_1_79_0 
         ./bootstrap.sh 
         ./b2 headers
-        cp -r boost ../local_install/include
+        cp -r boost ../$Z5_INSTALL_DIR/include
         cd ../
     fi
 
@@ -23,7 +23,7 @@ if [ "$Z5_INSTALLED" == "FALSE" ]; then
         cd c-blosc 
         mkdir build_man
         cd build_man
-        cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
+        cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/ ..  
         cmake --build . 
         cmake --build . --target install 
         cd ../../
@@ -33,7 +33,7 @@ if [ "$Z5_INSTALLED" == "FALSE" ]; then
     cd xtl 
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/ ..  
     cmake --build . 
     cmake --build . --target install 
     cd ../../
@@ -42,7 +42,7 @@ if [ "$Z5_INSTALLED" == "FALSE" ]; then
     cd xtensor 
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/ ..  
     cmake --build . 
     cmake --build . --target install 
     cd ../../
@@ -51,7 +51,7 @@ if [ "$Z5_INSTALLED" == "FALSE" ]; then
     cd xsimd 
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/ ..  
     cmake --build . 
     cmake --build . --target install 
     cd ../../
@@ -60,7 +60,7 @@ if [ "$Z5_INSTALLED" == "FALSE" ]; then
     cd json
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/ ..  
     make install/fast
     cd ../../
 
@@ -69,7 +69,7 @@ if [ "$Z5_INSTALLED" == "FALSE" ]; then
     cd z5
     mkdir build_man
     cd build_man/
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF ..
+    cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF ..
     make install
     cd ../../
 

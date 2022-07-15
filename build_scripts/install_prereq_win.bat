@@ -6,7 +6,7 @@ if "%ZLIB_INSTALLED%"=="FALSE" (
     pushd zlib
     mkdir build_man
     pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../%Z5_INSTALL_DIR%/ ..  
     cmake --build . --config Release --target install  
     popd
     popd
@@ -25,7 +25,7 @@ if "%Z5_INSTALLED%"=="FALSE" (
         pushd boost_1_79_0 
         call bootstrap.bat 
         .\b2 headers
-        xcopy /E /I /y boost ..\local_install\include\boost
+        xcopy /E /I /y boost ..\%Z5_INSTALL_DIR%\include\boost
         popd
     )
 
@@ -34,7 +34,7 @@ if "%Z5_INSTALLED%"=="FALSE" (
         pushd c-blosc 
         mkdir build_man
         pushd build_man
-        cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..   
+        cmake -DCMAKE_INSTALL_PREFIX=../../%Z5_INSTALL_DIR%/ ..   
         cmake --build . --config Release --target install 
         popd
         popd
@@ -44,7 +44,7 @@ if "%Z5_INSTALLED%"=="FALSE" (
     pushd xtl 
     mkdir build_man
     pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../%Z5_INSTALL_DIR%/ ..  
     cmake --build . --config Release --target install 
     popd
     popd
@@ -53,7 +53,7 @@ if "%Z5_INSTALLED%"=="FALSE" (
     pushd xtensor 
     mkdir build_man
     pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../%Z5_INSTALL_DIR%/ ..  
     cmake --build . --config Release --target install 
     popd
     popd
@@ -62,7 +62,7 @@ if "%Z5_INSTALLED%"=="FALSE" (
     pushd xsimd 
     mkdir build_man
     pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../%Z5_INSTALL_DIR%/ ..  
     cmake --build . --config Release --target install  
     popd
     popd
@@ -71,7 +71,7 @@ if "%Z5_INSTALLED%"=="FALSE" (
     pushd json
     mkdir build_man
     pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ -DJSON_BuildTests=OFF ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../%Z5_INSTALL_DIR%/ -DJSON_BuildTests=OFF ..  
     cmake --build . --config Release --target install 
     popd
     popd
@@ -80,7 +80,7 @@ if "%Z5_INSTALLED%"=="FALSE" (
     pushd z5
     mkdir build_man
     pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF ..
+    cmake -DCMAKE_INSTALL_PREFIX=../../%Z5_INSTALL_DIR%/   -DCMAKE_PREFIX_PATH=../../%Z5_INSTALL_DIR%/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF ..
     cmake --build . --config Release --target install  
     popd
     popd
@@ -104,9 +104,9 @@ if "%TIFF_INSTALLED%"=="FALSE" (
     pushd libdeflate
     nmake /f Makefile.msc
     popd
-    cmake -DDeflate_INCLUDE_DIR=./libdeflate -DDeflate_LIBRARY_RELEASE=./libdeflate/libdeflate.lib -DCMAKE_INSTALL_PREFIX=../../local_install/ ..
+    cmake -DDeflate_INCLUDE_DIR=./libdeflate -DDeflate_LIBRARY_RELEASE=./libdeflate/libdeflate.lib -DCMAKE_INSTALL_PREFIX=../../%Z5_INSTALL_DIR%/ ..
     cmake --build . --config Release --target install
-    copy libdeflate\libdeflate.dll ..\..\local_install\bin\
+    copy libdeflate\libdeflate.dll ..\..\%Z5_INSTALL_DIR%\bin\
     copy libdeflate\*.lib ..\..\local_install\lib\
     popd
     popd
