@@ -52,7 +52,7 @@ jobs:
         python-version: "3.x"
 
     - name: Install Dependencies
-      run: python -m pip install --upgrade wheel numpy pandas pytest delvewheel
+      run: python -m pip install --upgrade wheel numpy pandas pytest delvewheel requests zipfile
 
     - name: Set variable
       run: |
