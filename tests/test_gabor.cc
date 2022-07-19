@@ -19,12 +19,13 @@ void assert_gpu_results(const std::string cpu_dir, const std::string gpu_dir){
         getline(gpu_in, gpu);
         getline(cpu_in, cpu);
         
-        if(gpu == "" || cpu == "") break;
-
-        if(gpu != cpu){
-            cout << "gpu: " << gpu << endl;
-            cout << "cpu: " << cpu << endl;
-            continue;
+        if (gpu == "" || cpu == "") {
+            if (cpu == "" && gpu == "") {
+                break;
+            } else {
+                cout << "Error in GPU Gabor test." << endl;
+                FAIL();
+            }
         }
 
         ASSERT_EQ(gpu, cpu);
@@ -49,19 +50,29 @@ void test_gabor_gpu_2018(){
     fs::create_directory(gpu_out);
     fs::create_directory(cpu_out);
 
-    std::string args = "./nyxus --verbosity=0 --features=GABOR --intDir=tests/dsb2018/train/images --segDir=tests/dsb2018/train/masks --outDir=gpu_out --filePattern=.* --csvFile=singlecsv --loaderThreads=1 --reduceThreads=1 --useGpu=true";
+    std::string args = "./nyxus --verbosity=0 --features=GABOR --intDir=tests/python/data/dsb2018/train/images --segDir=tests/python/data/dsb2018/train/masks --outDir=gpu_out --filePattern=.* --csvFile=singlecsv --loaderThreads=1 --reduceThreads=1 --useGpu=true";
 
     args = "cd .. && " + args;
     const char* cmd = args.c_str();
 
-    system(cmd);
+    auto success = system(cmd);
 
-    args = "./nyxus --verbosity=0 --features=GABOR --intDir=tests/dsb2018/train/images --segDir=tests/dsb2018/train/masks --outDir=cpu_out --filePattern=.* --csvFile=singlecsv --loaderThreads=1 --reduceThreads=8 --useGpu=false";
+    if(success < 0) {
+        std::cout << "Error running GPU Gabor test." << std::endl;
+        FAIL();
+    }
+
+    args = "./nyxus --verbosity=0 --features=GABOR --intDir=tests/python/data/dsb2018/train/images --segDir=tests/python/data/dsb2018/train/masks --outDir=cpu_out --filePattern=.* --csvFile=singlecsv --loaderThreads=1 --reduceThreads=8 --useGpu=false";
     args = "cd .. && " + args;
 
     cmd = args.c_str();
 
-    system(cmd);
+    success = system(cmd);
+
+    if(success < 0) {
+        std::cout << "Error running GPU Gabor test." << std::endl;
+        FAIL();
+    }
 
     assert_gpu_results(cpu_out, gpu_out);
 }
