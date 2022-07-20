@@ -1,4 +1,8 @@
 message(STATUS "Build tests")
+#==== Compiler Options
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
@@ -74,12 +78,19 @@ set(TEST_SRC
 
 add_executable(runAllTests ${TEST_SRC})
 
-	find_package(TIFF REQUIRED)
-	if (TIFF_FOUND)
-		target_include_directories (runAllTests PUBLIC ${GTEST_INCLUDE_DIRS} ${TIFF_CXX_FLAGS})
-		target_link_directories (runAllTests PUBLIC ${GTEST_LIBRARY_PATH})
-		target_link_libraries (runAllTests gtest ${runAllTests_LIBRARIES}  ${TIFF_LIBRARIES})
-	else ()
-		message(FATAL_ERROR "libtiff library has not been found, please install it.")
-		SET(FastLoader_FOUND OFF)
-	endif (TIFF_FOUND)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	list(APPEND runAllTests_LIBRARIES "stdc++fs" )
+endif()
+
+find_package(TIFF REQUIRED)
+if (TIFF_FOUND)
+	list(APPEND runAllTests_LIBRARIES ${TIFF_LIBRARIES} )
+	target_include_directories (runAllTests PRIVATE ${TIFF_CXX_FLAGS})
+else ()
+	message(FATAL_ERROR "libtiff library has not been found, please install it.")
+	SET(FastLoader_FOUND OFF)
+endif (TIFF_FOUND)
+
+target_include_directories (runAllTests PUBLIC ${GTEST_INCLUDE_DIRS})
+target_link_directories (runAllTests PUBLIC ${GTEST_LIBRARY_PATH})
+target_link_libraries (runAllTests PUBLIC gtest ${runAllTests_LIBRARIES})
