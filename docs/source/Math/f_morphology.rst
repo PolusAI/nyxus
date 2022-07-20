@@ -5,16 +5,18 @@
 Morphology features
 ===================
 
-Let :math:`A` be a set of :math:`Np` pixels included in the ROI.
+Let :math:`A` be a set of :math:`n` pixels included in the ROI, 
+:math:`A_{Xi}` and :math:`A_{Yi}` - :math:`x` and 
+:math:`y` coordinates of pixel :math:`i`. Denote :math:`\mathbb{E}` the expectation operator.
 
 | AREA_PIXELS_COUNT :math:`= S = card(A)`
 | AREA_UM2 :math:`= card(A) s^2` where :math:`s` is pixel size in micrometers 
 | CENTROID_X :math:`\gets c_X = \frac{1}{n} \sum_i ^n  A_{Xi}`
 | CENTROID_Y :math:`\gets c_Y =  \frac{1}{n} \sum_i ^n  A_{Yi}`
 | WEIGHTED_CENTROID_X :math:`\gets w_X = \frac{1}{n} \sum _i ^n  A_i (A_{Xi}-c_X)`
-| WEIGHTED_CENTROID_Y :math:`= \frac{1}{n} \sum _i ^n  A_i (A_{Yi}-c_Y) \to w_Y`
+| WEIGHTED_CENTROID_Y :math:`\gets w_Y = \frac{1}{n} \sum _i ^n  A_i (A_{Yi}-c_Y)`
 | MASS_DISPLACEMENT :math:`= \sqrt {( w_X - c_X)^2 + ( w_Y - c_Y)^2}`
-| COMPACTNESS :math:`= \frac {1}{n}  {\sqrt {\operatorname {E} \left[(A-(c_X,c_Y)) )^{2}\right]}}`
+| COMPACTNESS :math:`= \frac {1}{n}  {\sqrt {\mathbb {E} \left[d((A,(c_X,c_Y)))^{2}\right]}}`
 | BBOX_YMIN :math:`\gets \epsilon_X = \operatorname {min}A_Y`
 | BBOX_XMIN :math:`\gets \epsilon_Y = \operatorname {min}A_X`
 | BBOX_HEIGHT :math:`\gets \epsilon_V = \operatorname {max}A_Y - \epsilon_Y`
@@ -95,6 +97,9 @@ POLYGONALITY_AVE = :math:`5 (r_S + r_A)` where :math:`r_S = 1 - \left|1-\frac{\f
 
 | HEXAGONALITY_AVE = :math:`\sqrt {\frac {r_{\sigma A}^2 + r_{\sigma P}^2}{2} }`
 | HEXAGONALITY_STDDEV = :math:`5 (r_{HS} + r_{HP})`
+
+References:
+Nishi O, Hanasaki K. Automated determination of polygonality of corneal endothelial cells. Cornea. 1989;8(1):54-7. PMID: 2924585.
 
 Other features
 --------------
