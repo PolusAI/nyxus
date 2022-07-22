@@ -10,11 +10,11 @@ if :math:`|i-j|\le\alpha`. In a gray level dependence matrix :math:`\textbf{P}(i
 element describes the number of times a voxel with gray level :math:`i` with :math:`j` dependent voxels
 in its neighbourhood appears in image.
 
-As an example, consider the following 5x5 image, with 5 gray levels:
+As an example, consider the following 5x5 ROI image having 5 gray levels:
 
 .. math::
 
-    \textbf{I} = \begin{bmatrix}
+    \textbf{G} = \begin{bmatrix}
     5 & 2 & 5 & 4 & 4\\
     3 & 3 & 3 & 1 & 3\\
     2 & 1 & 1 & 1 & 3\\

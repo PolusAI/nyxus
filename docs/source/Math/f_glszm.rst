@@ -9,11 +9,11 @@ In a gray level size zone matrix :math:`P(i,j)` the :math:`(i,j)^{\text{th}}` el
 with gray level :math:`i` and size :math:`j` appear in image. Contrary to GLCM and GLRLM, the GLSZM is rotation
 independent, with only one matrix calculated for all directions in the ROI.
 
-As an example, consider the following 5x5 image, with 5 discrete gray levels:
+As an example, consider the following 5x5 ROI image, with 5 discrete gray levels:
 
 .. math::
 
-    \textbf{I} = \begin{bmatrix}
+    \textbf{G} = \begin{bmatrix}
     5 & 2 & 5 & 4 & 4\\
     3 & 3 & 3 & 1 & 3\\
     2 & 1 & 1 & 1 & 3\\
