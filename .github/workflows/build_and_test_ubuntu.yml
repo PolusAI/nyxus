@@ -52,7 +52,7 @@ jobs:
         python-version: "3.x"
 
     - name: Install Dependencies
-      run: python -m pip install --upgrade wheel numpy pandas pytest
+      run: python -m pip install --upgrade wheel numpy pandas pytest requests
 
     - name: Install Nyxus
       working-directory: ${{github.workspace}}
