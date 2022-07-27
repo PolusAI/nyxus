@@ -2,7 +2,7 @@
 Texture features / GLCM
 =======================
 
-A Gray Level Co-occurrence Matrix (GLCM) of size :math:`N_g \times N_g` describes the second-order joint probability function of an image and is defined as :math:`\textbf{P}(i,j|\delta,\theta)`.
+A Gray Level Co-occurrence Matrix (GLCM) of size :math:`N_g \times N_g` describes the joint probability function of an image and is defined as :math:`\textbf{P}(i,j|\delta,\theta)`.
 The :math:`(i,j)`-th element of this matrix represents the number of times the combination of
 indices :math:`i` and :math:`j` occur in two pixels in the image, that are separated by a distance of :math:`\delta`
 pixels along angle :math:`\theta`.
@@ -10,12 +10,12 @@ The distance :math:`\delta` from the center pixel is defined as the distance acc
 For :math:`\delta=1`, this results in 2 neighbors for each of 13 angles in 3D (26-connectivity) and for
 :math:`\delta=2` a 98-connectivity (49 unique angles).
 
-As an example, let the following matrix :math:`\textbf{I}`` represent a 5x5 image, having 5 discrete
+As an example, let the following matrix represent a 5x5 ROI image having 5 discrete
 grey levels:
 
 .. math::
 
-  \textbf{I} = \begin{bmatrix}
+  \textbf{G} = \begin{bmatrix}
   1 & 2 & 5 & 2 & 3\\
   3 & 2 & 1 & 3 & 1\\
   1 & 3 & 5 & 5 & 2\\
@@ -107,10 +107,14 @@ Entropy
 
 GLCM_ENTROPY :math:`= -n \sum^{N_g}_{i=1}\sum^{N_g}_{j=1} {p_{ij}\log_2\big(p_{ij}+\epsilon\big)}`
 
+
 Difference variance
 -------------------
 
-GLCM_DIFFERENCEVARIANCE :math:`= \sum^{N_g-1}_{k=0}{(k-DA)^2p_{x-y}(k)}`
+GLCM_DIFFERENCEVARIANCE :math:`= \sum^{N_g-1}_{k=0}{(k-\mu_d)^2p_{x-y}(k)}` where the difference average :math:`\mu_d` is 
+
+.. math::
+  \mu_d = \displaystyle\sum^{N_g-1}_{k=0}{kp_{x-y}(k)}.
 
 Difference entropy
 ------------------

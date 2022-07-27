@@ -27,7 +27,7 @@ The regression slope :math:`D` of the straight line
 
 .. math::
 
-    \log N(r)  = −D \log r + \log N0
+    \log N(r)  = −D \log r + \log N_0
 
 formed by plotting :math:`\log(N(r))` against :math:`log(r)` indicates the degree of complexity, or fractal dimension, of the ROI. The feature is calculated as FRACT_DIM_BOXCOUNT :math:`=D`.
 
