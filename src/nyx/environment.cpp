@@ -985,7 +985,36 @@ int Environment::get_floating_point_precision()
 	return floating_point_precision;
 }
 
+bool Environment::gpu_is_available() { 
+	#ifdef USE_GPU
+    	return get_gpu_properties().size() > 0 ? true : false;
+	#else
+		return false;
+	#endif
+
+}
+
+
 #ifdef USE_GPU
+
+void Environment::set_gpu_device_id(int choice){
+
+	int num_gpus = get_gpu_properties().size();
+
+	if(num_gpus == 0) {
+		std::cout << "No gpu available." << std::endl;
+		return;
+	}
+
+	if(choice > get_gpu_properties().size()-1) {
+		std::cout << "GPU choice out of range. Defaulting to device 0." << std::endl;
+		gpu_device_id_ = 0;
+		return;
+	}
+
+	gpu_device_id_ = choice;
+}
+
 int Environment::get_gpu_device_choice()
 {
 	if (using_gpu())
@@ -1003,6 +1032,32 @@ bool Environment::using_gpu()
 {
 	return use_gpu_;
 }
+
+std::vector<std::map<std::string, std::string>> Environment::get_gpu_properties() {
+    int n_devices;
+    std::vector<std::map<std::string, std::string>> props;
+
+    cudaGetDeviceCount(&n_devices);
+
+    for(int i = 0; i < n_devices; ++i){
+        cudaDeviceProp prop;
+        cudaGetDeviceProperties(&prop, i);
+
+        std::map<std::string, std::string> temp;
+
+        temp["Device number"] =  std::to_string(i);
+        temp["Device name"] = prop.name;
+        temp["Memory"] = std::to_string(prop.totalGlobalMem/pow(2,30)) + " GB";
+        temp["Capability"] = std::to_string(prop.major) + std::to_string(prop.minor);
+
+        props.push_back(temp);
+    }
+
+    return props;
+}
+
+
+
 #endif
 
 

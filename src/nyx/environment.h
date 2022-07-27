@@ -1,8 +1,12 @@
 #pragma once
 
+#include <map>
 #include <string>
 #include <vector>
 #include "environment_basic.h"
+#ifdef USE_GPU
+	#include <cuda_runtime.h>
+#endif
 
 // Command line arguments
 #define SEGDIR "--segDir"						// Environment :: labels_dir
@@ -112,12 +116,16 @@ public:
 	/// @return 
 	std::string get_temp_dir_path() const;
 
+	static bool gpu_is_available();
+
 #ifdef USE_GPU
 	/// @brief Returns GPU device ID of choice
 	/// @return 0-based GPU device ID (default: 0) or -1 not to use GPU even if it is available
 	int get_gpu_device_choice();
+	void set_gpu_device_id(int choice);
 	void set_use_gpu(bool yes);
 	bool using_gpu();	
+	static std::vector<std::map<std::string, std::string>> get_gpu_properties();
 #endif
 
 	int get_floating_point_precision();
@@ -138,6 +146,7 @@ private:
 	bool use_gpu_ = false;
 	std::string rawGpuDeviceID = "";		// integer
 	int gpu_device_id_ = -1;
+	std::vector<std::map<std::string, std::string>> gpu_props_;
 #endif
 
 	int floating_point_precision = 10;	
