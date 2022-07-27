@@ -35,12 +35,20 @@ where
 
 Approximating the double integration for the discrete image function on the domain of size :math:`N \times N`, we get 
 
-.. math ::
+.. math::
     \hat Z_{nm} = \frac {n+1}{\pi} \sum _{i=0}^{N-1} \underset{x_i^2+y_j^2 \leqslant 1}{\sum _{j=0}^{N-1}} f(x_i,y_j)V_{nm}^* (x_i,y_j) \delta a
 
 where :math:`\delta A = dxdy` is an elemental area of the normalized square image in discrete form when a square image of 
 any size is mapped on the unit disk. If the image is square-shaped and :math:`R = \frac {N}{\sqrt{2}}` is the 
 enclosing circle radius, then :math:`\delta A = \frac{1}{R^2}`.
+
+Features
+--------
+A set of features with prefix ZERNIKE2D is calculated. In the source code, the order is controlled with class ZernikeFeature's member constant ZernikeFeature::ZERNIKE2D_ORDER (default value: 9), 
+and the number of repetitions :math:`m` is controlled via constant ZernikeFeature::NUM_FEATURE_VALS:
+
+ZernikeFeature::NUM_FEATURE_VALS :math:`=` ZernikeFeature::ZERNIKE2D_ORDER :math:`\times m`.
+
 
 
 References

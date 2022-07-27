@@ -24,6 +24,88 @@ Let :math:`A` be a set of :math:`n` pixels included in the ROI,
 | ASPECT_RATIO = :math:`\begin{array}{cc} \frac{\epsilon_V}{\epsilon_H} & \epsilon_V>=\epsilon_H \frac{\epsilon_H}{\epsilon_V} & \epsilon_V<\epsilon_H \end{array}.`
 | EXTENT :math:`= \frac {S}{S_{BB}}` where :math:`S_BB=\epsilon_H\epsilon_V`
 
+ROI's contour calculation
+-------------------------
+The problem of finding the set of contour pixels based on the ROI point set boils down to the concepts of pixel neighborhood and connectivity. 
+We say that a pixel set :math:`C` is connected (or a connected component) if for every pair of
+pixels :math:`p_i`, :math:`p_j` in :math:`C` there exists a sequence of pixels :math:`p_i,..., p_j` such that (1) it is contained in :math:`C` and (2)
+every pair of pixels adjacent in the sequence are neighbors of each other. Since we now have two different types
+of neighbors, we obtain two different types of connectivity. Accordingly, let :math:`C` be a set of "black" (i.e. of non-zero intensity) pixels. 
+We say that :math:`C` is 4-connected if for every pair of pixels :math:`p_i`, :math:`p_j` in :math:`C` there exists a sequence of pixels :math:`p_i,..., p_j` 
+such that (1) it is contained
+in :math:`C` and (2) every pair of pixels adjacent in the sequence are 4-neighbors of each other. Similarly,
+We say that :math:`C` is 8-connected (or an 8-connected component) if for every pair of pixels :math:`p_i`, :math:`p_j` in :math:`C`
+there exists a sequence of pixels :math:`p_i,..., p_j` such that (1) it is contained in :math:`C` and (2) every pair of pixels
+adjacent in the sequence are 8-neighbors of each other. Obviously a 4-connected pattern is an 8-
+connected pattern but not vice-versa. One method of finding and analyzing the connected components of image :math:`T` is to scan :math:`T` in some
+manner until a border pixel of a component :math:`C` is found and subsequently to trace the boundary of
+:math:`C` until the entire boundary is obtained. The boundary thus obtained can be stored as a doublylinked
+circular list of pixels or as a polygon of the boundary of the pixels in question. Such procedures
+are generally termed contour tracing. 
+
+There are two
+useful definitions of border points which are related to the boundary. We say that a
+"black" pixel of :math:`C` is a 4-border point if at least one of its 4-neighbors is "white". We say that a "black"
+pixel of :math:`C` is an 8-border point if at least one of its 8-neighbors is "white".
+
+More popular modifications of Algorithm Square-Tracing to handle 8-connected patterns
+discard the left-turn-right-turn rule altogether. One such procedure is known as Moore-neighborhood
+tracing [1]. The eight neighbors of a pixel shown in the following figure are also referred to in the literature as
+the Moore neighborhood of a pixel:
+
+.. figure:: contour_tracing_moore_algorithm_1.jpg
+    :width: 100
+    :align: center
+    :alt: Pixel neighbors in Moore's algorithm
+
+    Example: Pixel neighbors in Moore's algorithm
+
+In the Moore neighborhood tracing algorithm, when the current pixel :math:`p` is "black", 
+the Moore neighborhood of :math:`p` is examined in a clockwise manner starting with
+the pixel from which p was entered and advancing pixel by pixel until a new "black" pixel in :math:`C` is
+encountered as illustrated in the following figure:
+
+.. figure:: contour_tracing_moore_algorithm_2.jpg
+    :width: 100
+    :align: center
+    :alt: Searching for the next "black" contour pixel in Moore-neighborhood contour tracing
+
+    Example: Searching for the next "black" contour pixel in Moore-neighborhood contour tracing
+
+The following figure shows an example of how the square tracing algorithm starting at the pixel marked
+:math:`S` produces a sequence of boundary pixels in the case :math:`C` is 8-connected:
+
+.. figure:: contour_tracing_moore_algorithm_3.jpg
+    :width: 300
+    :align: center
+    :alt: Square tracing an 8-connected pattern
+
+    Example: Square tracing an 8-connected pattern
+
+The algorithm is presented below:
+
+| **Moore contour tracing algorithm:**
+| *Input:* An image :math:`T` containing a connected component :math:`C` of "black" cells.
+| *Output:* A sequence :math:`B(b1, b2,..., bk)` of boundary pixels.
+| **begin**
+|  *Step 1.* Initialization: find a pixel in :math:`C`, initialize :math:`B`, define :math:`M(p)` to be the Moore neighborhood of the current pixel :math:`p`.
+|  *Step 2.* Set :math:`B` to be empty.
+|  *Step 3.* From bottom to top and left to right scan the cells of :math:`T` until a pixel :math:`s` of :math:`C` is found 
+      (until the current pixel :math:`p=s` is a "black" pixel of :math:`C`), insert :math:`s` in :math:`B`. 
+      Let :math:`b` denote the current boundary point, i.e., :math:`b=s`.
+|  *Step 4.* Backtrack (move the current pixel to the pixel from which :math:`s` was entered) and advance the current pixel :math:`p` being examined to 
+      the next clockwise pixel in :math:`M(b)`.
+|    **while** (:math:`p \neq s`)
+|      **if** (:math:`p` is "black") 
+|         insert :math:`p` in :math:`B`;
+|         set :math:`b=p`;
+|         backtrack (move the current pixel to the pixel from which :math:`p=b` was entered);
+|      **else** 
+|         advance the current pixel :math:`p` to the next clockwise pixel in :math:`M(b)`;
+|    **end-while**
+| **end**
+
+
 Features related to ROI's contour
 ---------------------------------
 
@@ -209,3 +291,8 @@ Max-chord features
 | MAXCHORDS_MEAN
 | MAXCHORDS_MODE
 | MAXCHORDS_STDDEV
+
+References
+----------
+
+1. Rosenfeld, A., “Digital topology,” American Mathematical Monthly, vol. 86, 1979, pp. 621-630.

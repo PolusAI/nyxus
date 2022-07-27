@@ -67,7 +67,7 @@ By default, Nyxus uses the :math:`3 \times 3` structuring element in the erosion
 EROSIONS_2_VANISH
 -----------------
 
-This feature calculates the number of erosion operations on a ROI to vanish in its axis aligned bounding box in a sense that each pixel intensity becomes :math:`=0`.
+Feature EROSIONS_2_VANISH calculates the number of erosion operations on a ROI to vanish in its axis aligned bounding box in a sense that each pixel intensity becomes :math:`=0`.
 
 .. figure:: erosion2vanish.png
     :width: 500
