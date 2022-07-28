@@ -11,7 +11,7 @@ HexagonalityPolygonalityFeature::HexagonalityPolygonalityFeature() : FeatureMeth
 
 void HexagonalityPolygonalityFeature::calculate (LR& r)
 {
-    // The whole calculation is inspired by calculation of this feature in POLUs feature extraction plugin 
+    // The whole calculation is inspired by calculation of this feature in POLUS feature extraction plugin 
     // https://github.com/LabShare/polus-plugins/blob/master/polus-feature-extraction-plugin/src/main.py
 
     size_t neighbors = r.fvals[NUM_NEIGHBORS][0];

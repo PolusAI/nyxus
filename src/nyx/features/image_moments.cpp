@@ -235,26 +235,11 @@ void ImageMomentsFeature::calcOrigins(const pixData& D)
 /// @brief Calculates the central 2D-moment of order q,p
 double ImageMomentsFeature::CentralMom(const pixData& D, int p, int q)
 {
-    double p_ = (double)p,
-        q_ = (double)q,
-        sum = 0.;
-    size_t nx = D.width(), ny = D.height();
-
-    size_t i = 0;
-    for (size_t x = 0; x < nx; x++)
-    {
-        for (size_t y = 0; y < ny; y++)
-        {
-            //experimental x,y
-            size_t yi = i / nx;
-            size_t xi = i % nx;
-            i++;
-            //
-            double powXP = pow((double(xi) - originOfX), p_);
-            double powYQ = pow((double(yi) - originOfY), q_);
-            sum += pow(double(xi), p_) * pow(double(yi), q_);  // double(D.yx(yi, xi)) * powXP * powYQ;
-        }
-    }
+    // calculate central moment
+    double sum = 0;
+    for (int x = 0; x < D.width(); x++)
+        for (int y = 0; y < D.height(); y++)
+            sum += D.yx(y,x) * pow((double(x) - originOfX), p) * pow((double(y) - originOfY), q);
 
     return sum;
 }

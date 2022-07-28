@@ -1,15 +1,43 @@
 cmake_minimum_required(VERSION 3.20)
 project(AxleNyxus)
 
-option(USEGPU "Use GPU" OFF) 
+find_package(CUDA)
+if(CUDA_FOUND)
+    try_run(RUN_RESULT_VAR COMPILE_RESULT_VAR
+        ${CMAKE_BINARY_DIR} 
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/nyx/gpu/find_cuda_gpu.c
+        CMAKE_FLAGS 
+            -DINCLUDE_DIRECTORIES:STRING=${CUDA_TOOLKIT_INCLUDE}
+            -DLINK_LIBRARIES:STRING=${CUDA_CUDART_LIBRARY}
+        COMPILE_OUTPUT_VARIABLE COMPILE_OUTPUT_VAR
+        RUN_OUTPUT_VARIABLE RUN_OUTPUT_VAR)
+	message("---------${CUDA_TOOLKIT_INCLUDE}--------")
+    message("${RUN_OUTPUT_VAR}") # Display number of GPUs found
+    # COMPILE_RESULT_VAR is TRUE when compile succeeds
+    # RUN_RESULT_VAR is zero when a GPU is found
+    if(COMPILE_RESULT_VAR AND NOT RUN_RESULT_VAR)
+		option(USEGPU "Use GPU" ON) 
+    else()
+		option(USEGPU "Use GPU" OFF) 
+    endif()
+else()
+	option(USEGPU "Use GPU" OFF) 
+endif(CUDA_FOUND)
+
 if(USEGPU)
     set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
     set(CMAKE_CUDA_HOST_LINK_LAUNCHER ${CMAKE_CXX_COMPILER})
     enable_language("CUDA")
     add_definitions(-DUSE_GPU)
 
-    #---Additionally, the architecture can be set manually eg sm_37 for K80--- 
-    #	set(CMAKE_CUDA_ARCHITECTURES 37 CACHE STRING "CUDA architectures" FORCE)
+    include(FindCUDA/select_compute_arch)
+	CUDA_DETECT_INSTALLED_GPUS(INSTALLED_GPU_CCS_1)
+	string(STRIP "${INSTALLED_GPU_CCS_1}" INSTALLED_GPU_CCS_2)
+	string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
+	string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
+	SET(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
+	set_property(GLOBAL PROPERTY CUDA_ARCHITECTURES "${CUDA_ARCH_LIST}")
+	message("Found GPU with compute capability ${CUDA_ARCH_LIST}.")
 endif()
 
 #==== Compiler Options
@@ -20,16 +48,6 @@ set(CMAKE_CUDA_STANDARD_REQUIRED True)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive- ")
-	#==== Explicit check for LibTiff, needed for Windows
-	if (NOT DEFINED ${TIFF_INCLUDE_DIR})
-		set (TIFF_INCLUDE_DIR $ENV{TIFF_INCLUDE_DIR})
-		message(STATUS "TIFF_INCLUDE_DIR " ${TIFF_INCLUDE_DIR})
-	endif()
-
-	if (NOT DEFINED ${TIFF_LIBRARY_RELEASE})
-		set (TIFF_LIBRARY_RELEASE $ENV{TIFF_LIBRARY_RELEASE})
-		message(STATUS "TIFF_LIBRARY_RELEASE " ${TIFF_LIBRARY_RELEASE})
-	endif()
 endif()
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -52,20 +70,6 @@ include_directories(
 find_package(OpenMP COMPONENTS C CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake-modules")
-
-#==== Include directories. Note: libtiff (required by FastLoader) is 
-#	the only dependency needing manual preparation - unzip, cmake-install 
-#	it, and put its headers in lib/libtiff/include, and 
-#	its library - in lib/libtiff/lib
-find_package(FastLoader)
-
-if(FastLoader_FOUND)
-	list(APPEND Nyxus_LIBRARIES ${FastLoader_LIBRARIES})
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FastLoader_CXX_FLAGS}")
-	include_directories(${FastLoader_INCLUDE_DIR})
-else()
-	message(FATAL_ERROR "Unable to find FastLoader which is required for Nyxus.")
-endif()
 
 #==== Source files
 set(SOURCE
@@ -133,21 +137,13 @@ set(SOURCE
 	src/nyx/scan_fastloader_way.cpp
 )
 
-if(USEGPU)
-	set(GPU_SOURCE_FILES
-		src/nyx/gpu/gpu_helpers.cu
-		src/nyx/gpu/image_moments.cu
-	)
-	add_library(nyxus_gpu ${GPU_SOURCE_FILES})
-	target_compile_options(nyxus_gpu PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
-endif()
-
 
 # CLI
 if(BUILD_CLI)
 	add_executable(nyxus ${SOURCE} src/nyx/main_nyxus.cpp)
 	add_executable(nyxushie src/nyx/dirs_and_files.cpp src/nyx/environment_basic.cpp src/nyx/image_loader1x.cpp src/nyx/main_nyxushie.cpp src/nyx/nested_roi.cpp src/nyx/python/nested_roi_py.cpp src/nyx/roi_cache_basic.cpp)
 endif()
+
 
 # Python bindings.
 pybind11_add_module(backend 
@@ -157,13 +153,100 @@ pybind11_add_module(backend
 	src/nyx/nested_roi.cpp
 	src/nyx/image_loader1x.cpp
 )
+#== Install OMEZarr PreReqs
+option(WITH_OMEZARR "Build with OMEZarr Support" ON)
+if(WITH_OMEZARR)
+	set(ENV{Z5_INSTALL_DIR} "local_install")
+	set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/$ENV{Z5_INSTALL_DIR})
+	
+	find_package(Boost)
+	if(Boost_FOUND)
+		set(ENV{Boost_INSTALLED} "TRUE")
+	else()
+		set(ENV{Boost_INSTALLED} "FALSE")
+		message(STATUS "Boost will be downloaded and installed")
+	endif()
+	
+	find_package(BLOSC)
+	if(BLOSC_FOUND)
+		set(ENV{BLOSC_INSTALLED} "TRUE")
+	else()
+		set(ENV{BLOSC_INSTALLED} "FALSE")
+	endif()
+
+	find_package(ZLIB)
+	if(ZLIB_FOUND)
+		set(ENV{ZLIB_INSTALLED} "TRUE")
+	else()
+		set(ENV{ZLIB_INSTALLED} "FALSE")
+	endif()
+
+	find_package(TIFF)
+	if(TIFF_FOUND)
+		set(ENV{TIFF_INSTALLED} "TRUE")
+	else()
+		set(ENV{TIFF_INSTALLED} "FALSE")
+	endif()
+
+	find_file(Z5_Installed "z5/z5.hxx")
+	if(${Z5_Installed} STREQUAL "Z5_Installed-NOTFOUND")
+		set(ENV{Z5_INSTALLED} "FALSE")
+	else()
+		set(ENV{Z5_INSTALLED} "TRUE")
+		message(STATUS "Found Z5: ${Z5_Installed}")
+	endif()
+
+	if(UNIX)
+		execute_process(COMMAND bash ${CMAKE_SOURCE_DIR}/build_scripts/install_prereq_linux.sh)
+	endif()
+	if(WIN32)
+		execute_process(COMMAND cmd /C ${CMAKE_SOURCE_DIR}/build_scripts/install_prereq_win.bat)
+	endif()	
+
+	find_package(Boost REQUIRED)
+	if(Boost_FOUND)
+		include_directories(${Boost_INCLUDE_DIR})
+	endif()
+	find_package(BLOSC REQUIRED)
+	include_directories(${BLOSC_INCLUDE_DIR})
+	target_compile_definitions(backend PRIVATE -DWITH_BLOSC)
+	target_link_libraries(backend PRIVATE ${BLOSC_LIBRARIES})
+	if(BUILD_CLI)
+		target_compile_definitions(nyxus PRIVATE -DWITH_BLOSC)
+		target_compile_definitions(nyxushie PRIVATE -DWITH_BLOSC) 	
+		target_link_libraries(nyxus PRIVATE ${BLOSC_LIBRARIES})	
+		target_link_libraries(nyxushie PRIVATE ${BLOSC_LIBRARIES})	
+	endif()
+endif()
+
+find_package(FastLoader)
+if(FastLoader_FOUND)
+	list(APPEND Nyxus_LIBRARIES ${FastLoader_LIBRARIES})
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FastLoader_CXX_FLAGS}")
+	include_directories(${FastLoader_INCLUDE_DIR})
+else()
+	message(FATAL_ERROR "Unable to find FastLoader which is required for Nyxus.")
+endif()
 
 if(USEGPU)
+	set(GPU_SOURCE_FILES
+		src/nyx/gpu/gpu_helpers.cu
+		src/nyx/gpu/image_moments.cu
+        src/nyx/gpu/gabor.cu
+	)
+	add_library(nyxus_gpu ${GPU_SOURCE_FILES})
+	target_compile_options(nyxus_gpu PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
+
+    INCLUDE_DIRECTORIES(/usr/local/cuda-11.0/samples/common/inc  
+		${CUDA_TOOLKIT_INCLUDE})
+	target_link_libraries(backend PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
+	set_target_properties(backend PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
+
 	target_link_libraries(backend PRIVATE nyxus_gpu)
-       	set_target_properties(backend PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
 	if(BUILD_CLI)
 		target_link_libraries(nyxus PRIVATE nyxus_gpu)
-        	set_target_properties(nyxus PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
+		target_link_libraries(nyxus PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
+		set_target_properties(nyxus PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
 	endif()
 endif()
 
@@ -227,4 +310,3 @@ if (RUN_GTEST)
 	add_subdirectory(tests)
 	message(STATUS "GTEST downloaded and imported")
 endif (RUN_GTEST)
-
