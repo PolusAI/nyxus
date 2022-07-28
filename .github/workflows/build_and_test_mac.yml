@@ -16,7 +16,7 @@ env:
 jobs:
   Build_and_Run_GTest:
     name: Build and Run GoogleTest
-    runs-on: macos-10.15
+    runs-on: macos-11
 
     steps:
     - uses: actions/checkout@v2
@@ -44,7 +44,7 @@ jobs:
 
   Build_and_Run_PyTest:
     name: Build and Run PyTest
-    runs-on: macos-10.15
+    runs-on: macos-11
 
     steps:
     - uses: actions/checkout@v2
