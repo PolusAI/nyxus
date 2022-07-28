@@ -137,7 +137,6 @@ public:
 	{
 		W = width;
 		H = height;
-		//xxx	std::vector<PixIntens>::resize (width * height, val);
 		for (size_t n=W*H, i=0; i<n; i++)
 			at(i) = val;
 	}
@@ -296,7 +295,6 @@ public:
 	void clear()
 	{
 		_pix_plane.clear();
-		//??? _pix_plane.shrink_to_fit();
 		width = height = 0;
 	}
 
@@ -346,7 +344,7 @@ public:
 	//std::vector<PixIntens> _pix_plane;	// [ height * width ]
 	pixData _pix_plane;
 
-	// hilight_x|y = -1 means no gilight
+	/// Diagnostic methods not meant for performance
 	using PrintablePoint = std::tuple<int, int, std::string>;
 	void print(const std::string& head = "", const std::string& tail = "", std::vector<PrintablePoint> special_points = {});
 	void print(std::ofstream& f, const std::string& head = "", const std::string& tail = "", std::vector<PrintablePoint> special_points = {});

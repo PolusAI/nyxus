@@ -5,7 +5,6 @@
 #include "image_matrix.h"
 #include "moments.h"
 
-template <>
 void SimpleMatrix<int>::print(const std::string& head, const std::string& tail)
 {
 	const int Wd = 6;	// data
@@ -163,15 +162,9 @@ void ImageMatrix::print (std::ofstream& f, const std::string& head, const std::s
 	f << tail;
 }
 
-
-//-----------------------------------------------------------------------------------
-/* Otsu
-   Find otsu threshold
-*/
+// Binarization by Otsu's method based on maximization of inter-class variance 
 double ImageMatrix::Otsu(bool dynamic_range) const {
-	/* binarization by Otsu's method
-	based on maximization of inter-class variance */
-#define OTSU_LEVELS 256	
+	#define OTSU_LEVELS 256	
 	double hist[OTSU_LEVELS];
 	double omega[OTSU_LEVELS];
 	double myu[OTSU_LEVELS];
@@ -180,13 +173,15 @@ double ImageMatrix::Otsu(bool dynamic_range) const {
 	int threshold;
 	double min_val, max_val; // pixel range
 
-	if (!dynamic_range) {
+	if (!dynamic_range) 
+	{
 		histogram(hist, OTSU_LEVELS, true);
 		min_val = 0.0;
 		int bits = sizeof(PixIntens) * 8;
 		max_val = pow(2.0, bits) - 1;
 	}
-	else {
+	else 
+	{
 		// to keep this const method from modifying the object, we use GetStats on a local Moments2 object
 		Moments2 local_stats;
 		GetStats(local_stats);
@@ -196,13 +191,11 @@ double ImageMatrix::Otsu(bool dynamic_range) const {
 	}
 
 	// omega & myu generation
-	//MM omega[0] = hist[0] / (width * height);
 	omega[0] = hist[0] / stats.n();
 
 	myu[0] = 0.0;
-	for (i = 1; i < OTSU_LEVELS; i++) {
-		//MM  omega[i] = omega[i-1] + (hist[i] / (width * height));
-		//MM  myu[i] = myu[i-1] + i*(hist[i] / (width * height));
+	for (i = 1; i < OTSU_LEVELS; i++) 
+	{
 		omega[i] = omega[i - 1] + (hist[i] / stats.n());
 		myu[i] = myu[i - 1] + i * (hist[i] / stats.n());
 	}
@@ -210,13 +203,14 @@ double ImageMatrix::Otsu(bool dynamic_range) const {
 	// maximization of inter-class variance
 	threshold = 0;
 	max_sigma = 0.0;
-	for (i = 0; i < OTSU_LEVELS - 1; i++) {
+	for (i = 0; i < OTSU_LEVELS - 1; i++) 
+	{
 		if (omega[i] != 0.0 && omega[i] != 1.0)
-			sigma[i] = pow(myu[OTSU_LEVELS - 1] * omega[i] - myu[i], 2) /
-			(omega[i] * (1.0 - omega[i]));
+			sigma[i] = pow(myu[OTSU_LEVELS - 1] * omega[i] - myu[i], 2) / (omega[i] * (1.0 - omega[i]));
 		else
 			sigma[i] = 0.0;
-		if (sigma[i] > max_sigma) {
+		if (sigma[i] > max_sigma) 
+		{
 			max_sigma = sigma[i];
 			threshold = i;
 		}
@@ -226,23 +220,28 @@ double ImageMatrix::Otsu(bool dynamic_range) const {
 	return ((((double)threshold / (double)(OTSU_LEVELS - 1)) * (max_val - min_val)) + min_val);
 }
 
-/* get image histogram */
-void ImageMatrix::histogram(double* bins, unsigned short nbins, bool imhist, const Moments2& in_stats) const {
+// get image histogram 
+void ImageMatrix::histogram(double* bins, unsigned short nbins, bool imhist, const Moments2& in_stats) const 
+{
 	unsigned long a, bin, num = width * height;
 	double val, h_min = INF, h_max = -INF, h_scale;
 	readOnlyPixels pix_plane = ReadablePixels();
 
-	/* find the minimum and maximum */
-	if (imhist) {    /* similar to the Matlab imhist */
+	// find the minimum and maximum 
+	if (imhist) 
+	{
+		// similar to the Matlab imhist 
 		h_min = 0;
 		int bits = sizeof(PixIntens) * 8;
 		h_max = pow((double)2, bits) - 1;
 	}
-	else if (in_stats.n() > 0) {
+	else if (in_stats.n() > 0) 
+	{
 		h_min = in_stats.min__();
 		h_max = in_stats.max__();
 	}
-	else {
+	else 
+	{
 		// to keep this const method from modifying the object, we use GetStats on a local Moments2 object
 		Moments2 local_stats;
 		GetStats(local_stats);
@@ -252,15 +251,16 @@ void ImageMatrix::histogram(double* bins, unsigned short nbins, bool imhist, con
 	if (h_max - h_min > 0) h_scale = (double)nbins / double(h_max - h_min);
 	else h_scale = 0;
 
-	// initialize the bins
-	//memset(bins, 0, nbins * sizeof(double));
+	// initialize the bins, invicem "memset(bins, 0, nbins * sizeof(double))"
 	for (int i = 0; i < nbins; i++)
 		bins[i] = 0.0;
 
 	// build the histogram
-	for (a = 0; a < num; a++) {
-		val = pix_plane[a];  // pix_plane.array().coeff(a);
-		if (std::isnan(val)) continue; //MM
+	for (a = 0; a < num; a++) 
+	{
+		val = pix_plane[a];  
+		if (std::isnan(val)) 
+			continue;
 		bin = (unsigned long)(((val - h_min) * h_scale));
 		if (bin >= nbins) bin = nbins - 1;
 		bins[bin] += 1.0;
