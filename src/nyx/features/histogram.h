@@ -17,7 +17,7 @@ class TrivialHistogram
 public:
 	TrivialHistogram() {}
 
-	void initialize (HistoItem min_value, HistoItem max_value, std::vector<Pixel2> raw_data)
+	void initialize (HistoItem min_value, HistoItem max_value, const std::vector<Pixel2>& raw_data)
 	{
 		// Allocate 
 		// -- "binary"
@@ -75,7 +75,7 @@ public:
 		meanVal /= double(population); 
 	}
 
-	void initialize (HistoItem min_value, HistoItem max_value, std::vector<HistoItem> raw_data)
+	void initialize (HistoItem min_value, HistoItem max_value, const std::vector<HistoItem>& raw_data)
 	{
 		// Allocate 
 		population = raw_data.size();

@@ -266,7 +266,7 @@ namespace Nyxus
 			return;
 
 		//==== Calculate ROI's image matrix
-		r.aux_image_matrix.use_roi(r.raw_pixels, r.aabb);
+		r.aux_image_matrix.calculate_from_pixelcloud (r.raw_pixels, r.aabb);
 
 		//==== Contour, ROI perimeter, equivalent circle diameter
 		ContourFeature f;

@@ -95,9 +95,23 @@ void ImageMomentsFeature::calculate (LR& r)
 #ifdef USE_GPU
 void ImageMomentsFeature::calculate_via_gpu (LR& r, size_t roi_idx)
 {
-    ImageMatrix& im = r.aux_image_matrix;
+    //ImageMatrix& im = r.aux_image_matrix;
+    //
+    //bool ok = ImageMomentsFeature_calculate2(
+    //    m00, m01, m02, m03, m10, m11, m12, m20, m21, m30,   // spatial moments
+    //    mu02, mu03, mu11, mu12, mu20, mu21, mu30,   // central moments
+    //    nu02, nu03, nu11, nu12, nu20, nu21, nu30,    // normalized central moments
+    //    w00, w01, w02, w03, w10, w20, w30,   // normalized spatial moments
+    //    hm1, hm2, hm3, hm4, hm5, hm6, hm7,  // Hu moments
+    //    wm00, wm01, wm02, wm03, wm10, wm11, wm12, wm20, wm21, wm30,   // weighted spatial moments
+    //    wmu02, wmu03, wmu11, wmu12, wmu20, wmu21, wmu30,   // weighted central moments
+    //    whm1, whm2, whm3, whm4, whm5, whm6, whm7,    // weighted Hum moments
+    //    im, 
+    //    roi_idx,
+    //    r.aabb.get_xmin(), 
+    //    r.aabb.get_ymin());
 
-    bool ok = ImageMomentsFeature_calculate2(
+    bool ok = ImageMomentsFeature_calculate3(
         m00, m01, m02, m03, m10, m11, m12, m20, m21, m30,   // spatial moments
         mu02, mu03, mu11, mu12, mu20, mu21, mu30,   // central moments
         nu02, nu03, nu11, nu12, nu20, nu21, nu30,    // normalized central moments
@@ -106,10 +120,12 @@ void ImageMomentsFeature::calculate_via_gpu (LR& r, size_t roi_idx)
         wm00, wm01, wm02, wm03, wm10, wm11, wm12, wm20, wm21, wm30,   // weighted spatial moments
         wmu02, wmu03, wmu11, wmu12, wmu20, wmu21, wmu30,   // weighted central moments
         whm1, whm2, whm3, whm4, whm5, whm6, whm7,    // weighted Hum moments
-        im, 
+        r.im_buffer_offset, 
         roi_idx,
         r.aabb.get_xmin(), 
-        r.aabb.get_ymin());
+        r.aabb.get_ymin(), 
+        r.aabb.get_width(), 
+        r.aabb.get_height());
 
     if (!ok)
     {
@@ -379,23 +395,17 @@ void ImageMomentsFeature::parallel_process_1_batch (size_t start, size_t end, st
 /// @param ptrLabelData ROI data
 void ImageMomentsFeature::gpu_process_all_rois (const std::vector<int> & Labels, std::unordered_map <int, LR>& RoiData)
 {
-    //==== Prepare consolidated all-ROI contours for pixel weighting in weighted moments
+    // Send image matrices to GPU-side
+    bool ok = send_imgmatrices_to_gpu (ImageMatrixBuffer, imageMatrixBufferLen);
+
+    // Prepare consolidated all-ROI contours for pixel weighting in weighted moments
     std::vector<size_t> hoIndices;
 
-    // Data layout:
-    //  - ROI1's contour pixels count 
-    //  - x1 
-    //  - y1 
-    //  - x2 
-    //  - y2 
-    //  ...
-    //  - ROI 2's contour pixels count
-    //  - x1
-    //  - y1
-    //  - x2
-    //  - y2
-    //  ...
-    std::vector< StatsInt> hoContourData;    
+    // --data layout:
+    //      x1, y1, x2, y2, ... (ROI1's contour pixels count)
+    //      x1, y1, x2, y2, ... (ROI2's contour pixels count)
+    //      ...
+    std::vector< StatsInt> hoContourData;
     for (int lab : Labels)
     {
         size_t roiBase = hoContourData.size();
@@ -405,7 +415,7 @@ void ImageMomentsFeature::gpu_process_all_rois (const std::vector<int> & Labels,
         hoContourData.push_back(n);
     }
 
-    send_contours_to_gpu (hoIndices, hoContourData);
+    ok = send_contours_to_gpu (hoIndices, hoContourData);
 
     // Calculate features
     for (auto roiIdx=0; roiIdx<Labels.size(); roiIdx++)
@@ -421,7 +431,9 @@ void ImageMomentsFeature::gpu_process_all_rois (const std::vector<int> & Labels,
         imf.save_value(r.fvals);
     }
 
-    free_contour_data_on_gpu();
+    // Free image matrix data
+    ok = free_contour_data_on_gpu();
+    ok = free_imgmatrices_on_gpu();
 }
 #endif
 

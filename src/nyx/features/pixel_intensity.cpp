@@ -90,7 +90,7 @@ namespace Nyxus
 
 		// Percentiles, median, mode, entropy, uniformity, etc.
 		TrivialHistogram H;
-		H.initialize(lr.fvals[MIN][0], lr.fvals[MAX][0], lr.raw_pixels);
+		H.initialize((HistoItem)lr.fvals[MIN][0], (HistoItem)lr.fvals[MAX][0], lr.raw_pixels);
 		auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
 
 		lr.fvals[MEDIAN][0] = median_;

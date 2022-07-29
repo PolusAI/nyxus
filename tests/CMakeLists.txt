@@ -144,5 +144,5 @@ endif (TIFF_FOUND)
 
 target_include_directories (runAllTests PUBLIC ${GTEST_INCLUDE_DIRS})
 target_link_directories (runAllTests PUBLIC ${GTEST_LIBRARY_PATH})
-target_link_libraries (runAllTests PUBLIC gtest ${runAllTests_LIBRARIES})
 
+target_link_libraries (runAllTests PUBLIC gtest ${runAllTests_LIBRARIES})

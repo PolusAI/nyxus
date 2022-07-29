@@ -118,12 +118,29 @@ class pixData : public std::vector<PixIntens>
 public:
 	pixData(int _w, int _h) : W(_w), H(_h) {}
 
-	void resize (int width, int height, PixIntens val)
+	/// @brief The image matrix buffer consuming an externally allocated buffer
+	void allocate_via_external_buffer (PixIntens* start_ptr, PixIntens* end_ptr)
+	{
+		assign (start_ptr, end_ptr);
+	}
+
+	/// @brief Allocates and initializes
+	void allocate_and_initialize (int width, int height, PixIntens val)
 	{
 		W = width;
 		H = height;
 		std::vector<PixIntens>::resize (width * height, val);
 	}
+
+	/// @brief Only initializes the image matrix buffer but does not allocate it. 
+	void initialize_without_allocation (int width, int height, PixIntens val)
+	{
+		W = width;
+		H = height;
+		for (size_t n=W*H, i=0; i<n; i++)
+			at(i) = val;
+	}
+	
 	// = W * y + x
 	inline PixIntens & yx /*operator()*/ (int y, int x)
 	{
@@ -241,7 +258,12 @@ public:
 		}
 	}
 
-	void use_roi (const std::vector <Pixel2>& labels_raw_pixels, const AABB& aabb)
+	void bind_to_buffer (PixIntens* startitem_ptr, PixIntens* enditem_ptr)
+	{
+		_pix_plane.assign (startitem_ptr, enditem_ptr);
+	}
+
+	void calculate_from_pixelcloud (const std::vector <Pixel2>& labels_raw_pixels, const AABB& aabb)
 	{
 		original_aabb = aabb;
 
@@ -250,7 +272,7 @@ public:
 		height = original_aabb.get_height();
 
 		// Zero the matrix
-		_pix_plane.resize (width, height, 0);
+		_pix_plane.initialize_without_allocation (width, height, 0);
 
 		// Read pixels
 		auto xmin = original_aabb.get_xmin(),
@@ -267,13 +289,12 @@ public:
 	{
 		width = w;
 		height = h;
-		_pix_plane.resize (width, height, 0);
+		_pix_plane.allocate_and_initialize (width, height, 0);
 	}
 
 	void clear()
 	{
 		_pix_plane.clear();
-		_pix_plane.shrink_to_fit();
 		width = height = 0;
 	}
 
@@ -323,7 +344,7 @@ public:
 	//std::vector<PixIntens> _pix_plane;	// [ height * width ]
 	pixData _pix_plane;
 
-	// hilight_x|y = -1 means no gilight
+	/// Diagnostic methods not meant for performance
 	using PrintablePoint = std::tuple<int, int, std::string>;
 	void print(const std::string& head = "", const std::string& tail = "", std::vector<PrintablePoint> special_points = {});
 	void print(std::ofstream& f, const std::string& head = "", const std::string& tail = "", std::vector<PrintablePoint> special_points = {});
