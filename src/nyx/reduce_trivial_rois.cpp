@@ -31,6 +31,7 @@
 #include "features/hexagonality_polygonality.h"
 #include "features/ngtdm.h"
 #include "features/image_moments.h"
+#include "features/intensity.h"
 #include "features/moments.h"
 #include "features/neighbors.h"
 #include "features/caliper.h"
@@ -63,7 +64,7 @@ namespace Nyxus
 		//==== Pixel intensity stats. Calculate these basic features unconditionally
 		{
 			STOPWATCH("Intensity/Intensity/Int/#FFFF00", "\t=");
-			runParallel (parallelReduceIntensityStats, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(PixelIntensityFeatures::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Basic morphology

@@ -63,10 +63,9 @@ void ChordsFeature::calculate (LR & r)
 	maxchords_stddev = mom2.std();
 
 	TrivialHistogram histo;
-	histo.initialize ((HistoItem)maxchords_min, (HistoItem)maxchords_max, MC);
-	auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = histo.get_stats();
-	maxchords_mode = mode_;
-	maxchords_median = median_;
+	histo.initialize_uniques (MC);
+	maxchords_mode = histo.get_mode();
+	maxchords_median = histo.get_median();
 	
 	auto iteMin = std::min_element (MC.begin(), MC.end());
 	auto idxmin = std::distance (MC.begin(), iteMin);
@@ -86,10 +85,9 @@ void ChordsFeature::calculate (LR & r)
 	allchords_mean = mom2.mean();
 	allchords_stddev = mom2.std();
 
-	histo.initialize ((HistoItem)allchords_min, (HistoItem)allchords_max, MC);
-	std::tie(median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_) = histo.get_stats();
-	allchords_mode = mode_;
-	allchords_median = median_;
+	histo.initialize_uniques(MC); 
+	allchords_mode = histo.get_mode(); 
+	allchords_median = histo.get_median(); 
 
 	iteMin = std::min_element(AC.begin(), AC.end());
 	idxmin = std::distance(AC.begin(), iteMin);

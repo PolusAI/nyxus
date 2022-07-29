@@ -30,6 +30,7 @@
 #include "features/hexagonality_polygonality.h"
 #include "features/ngtdm.h"
 #include "features/image_moments.h"
+#include "features/intensity.h"
 #include "features/moments.h"
 #include "features/neighbors.h"
 #include "features/caliper.h"
@@ -55,7 +56,7 @@ namespace Nyxus
 		//==== Pixel intensity stats. Calculate these basic features unconditionally
 		{
 			STOPWATCH("Intensity/Intensity/Int/#FFFF00", "\t=");
-			runParallel(parallelReduceIntensityStats, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
+			runParallel(PixelIntensityFeatures::reduce, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
 		}
 
 		//==== Neighbors

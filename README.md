@@ -131,6 +131,7 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 --unitLength|Enter the metric for unit conversion|Input|string
 --pixelsPerunit|Enter the number of pixels per unit of the metric|Input|number
 --outDir|Output collection|Output|csvCollection
+--coarseGrayDepth|Custom number of levels in grayscale denoising used in texture features (default: 256)|Input|integer
 ---
 
 ### Example: Running Nyxus to process images of specific image channel

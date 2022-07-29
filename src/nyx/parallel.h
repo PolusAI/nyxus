@@ -26,12 +26,10 @@ namespace Nyxus
 				idxE = idxS + workPerThread;
 			if (t == nThr - 1)
 				idxE = datasetSize; // include the tail
-			// Example:	T.push_back(std::async(std::launch::async, parallelReduceIntensityStats, idxS, idxE, &roiLabelsVector, &roiData));
 			T.push_back(std::async(std::launch::async, f, idxS, idxE, ptrLabels, ptrLabelData));
 		}
 	}
 
-	void parallelReduceIntensityStats (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 	void calcRoiIntensityFeatures (LR& lr);
 	void calcRoiContour(LR& r);
 	void parallelReduceContour (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);

@@ -193,5 +193,13 @@ struct Pixel2 : public Point2i
 			ang = std::acos(cosVal);
 		return ang;
 	}
+
+	inline PixIntens discretize (PixIntens min_lvl, PixIntens max_lvl, PixIntens max_adjusted_level)
+	{
+		double rangeI = max_lvl - min_lvl;
+		double newI = double(inten - min_lvl) * double(max_adjusted_level) / rangeI;
+		PixIntens adjustedI = PixIntens(newI);
+		return adjustedI;
+	}
 };
 

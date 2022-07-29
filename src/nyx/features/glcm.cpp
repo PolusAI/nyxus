@@ -1,5 +1,6 @@
 #include "glcm.h"
 #include "../helpers/helpers.h"
+#include "../environment.h"
 
 #define EPSILON 0.000000001
 
@@ -90,12 +91,14 @@ void GLCMFeature::parallel_process_1_batch(size_t start, size_t end, std::vector
 
 void GLCMFeature::calculate_normalized_graytone_matrix(SimpleMatrix<uint8_t>& G, int minI, int maxI, const ImageMatrix& Im)
 {
+	// Allocate
 	const pixData& I = Im.ReadablePixels();
 	G.allocate(I.width(), I.height(), 0);
-	double scale255 = 255.0 / double(maxI - minI);
-	for (auto y = 0; y < I.height(); y++)
-		for (auto x = 0; x < I.width(); x++)
-			G.xy(x, y) = (uint8_t)((I.yx(y, x) - minI) * scale255);
+	// Normalize
+	auto rangeI = maxI - minI;
+	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+	for (int i = 0; i < I.size(); i++)
+		G[i] = Nyxus::to_grayscale (I[i], minI, rangeI, nGrays);
 }
 
 void GLCMFeature::Extract_Texture_Features(
