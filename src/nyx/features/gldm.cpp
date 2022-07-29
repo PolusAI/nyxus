@@ -4,6 +4,7 @@
 #include <sstream>
 #include <unordered_set>
 #include "gldm.h"
+#include "../environment.h"
 
 GLDMFeature::GLDMFeature() : FeatureMethod("GLDMFeature")
 {
@@ -40,40 +41,42 @@ void GLDMFeature::calculate(LR& r)
 	// Prepare ROI's intensity range for normalize_I()
 	PixIntens piRange = r.aux_max - r.aux_min;
 
+	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+
 	// Gather zones
 	for (int row = 1; row < D.height() - 1; row++)
 		for (int col = 1; col < D.width() - 1; col++)
 		{
 			// Find a non-blank pixel
-			PixIntens pi = Nyxus::to_uint8 (D.yx(row, col), r.aux_min, piRange);
+			PixIntens pi = Nyxus::to_grayscale (D.yx(row, col), r.aux_min, piRange, nGrays);
 			if (pi == 0)
 				continue;
 
 			// Count dependencies
 			int nd = 0;	// Number of dependencies
 			PixIntens piQ; // Pixel intensity of question
-			piQ = Nyxus::to_uint8 (D.yx(row - 1, col), r.aux_min, piRange);	// North
+			piQ = Nyxus::to_grayscale (D.yx(row - 1, col), r.aux_min, piRange, nGrays);	// North
 			if (piQ == pi)
 				nd++;
-			piQ = Nyxus::to_uint8 (D.yx(row - 1, col + 1), r.aux_min, piRange);	// North-East
+			piQ = Nyxus::to_grayscale (D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays);	// North-East
 			if (piQ == pi)
 				nd++;
-			piQ = Nyxus::to_uint8 (D.yx(row, col + 1), r.aux_min, piRange);	// East
+			piQ = Nyxus::to_grayscale (D.yx(row, col + 1), r.aux_min, piRange, nGrays);	// East
 			if (piQ == pi)
 				nd++;
-			piQ = Nyxus::to_uint8 (D.yx(row + 1, col + 1), r.aux_min, piRange);	// South-East
+			piQ = Nyxus::to_grayscale (D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays);	// South-East
 			if (piQ == pi)
 				nd++;
-			piQ = Nyxus::to_uint8 (D.yx(row + 1, col), r.aux_min, piRange);		// South
+			piQ = Nyxus::to_grayscale(D.yx(row + 1, col), r.aux_min, piRange, nGrays);		// South
 			if (piQ == pi)
 				nd++;
-			piQ = Nyxus::to_uint8 (D.yx(row + 1, col - 1), r.aux_min, piRange);	// South-West
+			piQ = Nyxus::to_grayscale (D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays);	// South-West
 			if (piQ == pi)
 				nd++;
-			piQ = Nyxus::to_uint8 (D.yx(row, col - 1), r.aux_min, piRange);		// West
+			piQ = Nyxus::to_grayscale (D.yx(row, col - 1), r.aux_min, piRange, nGrays);		// West
 			if (piQ == pi)
 				nd++;
-			piQ = Nyxus::to_uint8 (D.yx(row - 1, col - 1), r.aux_min, piRange);	// North-West
+			piQ = Nyxus::to_grayscale (D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays);	// North-West
 			if (piQ == pi)
 				nd++;
 

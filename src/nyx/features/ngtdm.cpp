@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include "ngtdm.h"
 #include "image_matrix_nontriv.h"
+#include "../environment.h"
 
 NGTDMFeature::NGTDMFeature(): FeatureMethod("NGTDMFeature")
 {
@@ -41,11 +42,12 @@ void NGTDMFeature::calculate (LR& r)
 	const pixData& D = im.ReadablePixels();
 
 	// Gather zones
+	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
 	for (int row = 0; row < D.height(); row++)
 		for (int col = 0; col < D.width(); col++)
 		{
-			// Find a non-blank pixel
-			PixIntens pi = Nyxus::to_uint8 (D.yx(row, col), r.aux_min, piRange); 
+			// Find a non-blank pixel 
+			PixIntens pi = Nyxus::to_grayscale (D.yx(row, col), r.aux_min, piRange, nGrays); 
 			if (pi == 0)
 				continue;
 
@@ -59,42 +61,42 @@ void NGTDMFeature::calculate (LR& r)
 
 			if (D.safe(row - 1, col))	// North
 			{
-				neigsI += Nyxus::to_uint8 (D.yx(row-1, col), r.aux_min, piRange);
+				neigsI += Nyxus::to_grayscale (D.yx(row-1, col), r.aux_min, piRange, nGrays);
 				nd++;
 			}
 			if (D.safe(row - 1, col + 1))	// North-East
 			{
-				neigsI += Nyxus::to_uint8 (D.yx(row-1, col+1), r.aux_min, piRange);
+				neigsI += Nyxus::to_grayscale (D.yx(row-1, col+1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
 			if (D.safe(row, col + 1))	// East
 			{
-				neigsI += Nyxus::to_uint8 (D.yx(row, col+1), r.aux_min, piRange);
+				neigsI += Nyxus::to_grayscale (D.yx(row, col+1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
 			if (D.safe(row + 1, col + 1))	// South-East
 			{
-				neigsI += Nyxus::to_uint8 (D.yx(row+1, col+1), r.aux_min, piRange);
+				neigsI += Nyxus::to_grayscale (D.yx(row+1, col+1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
 			if (D.safe(row + 1, col))	// South
 			{
-				neigsI += Nyxus::to_uint8 (D.yx(row+1, col), r.aux_min, piRange);
+				neigsI += Nyxus::to_grayscale (D.yx(row+1, col), r.aux_min, piRange, nGrays);
 				nd++;
 			}
 			if (D.safe(row + 1, col - 1))	// South-West
 			{
-				neigsI += Nyxus::to_uint8 (D.yx(row+1, col-1), r.aux_min, piRange);
+				neigsI += Nyxus::to_grayscale (D.yx(row+1, col-1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
 			if (D.safe(row, col - 1))	// West
 			{
-				neigsI += Nyxus::to_uint8 (D.yx(row, col-1), r.aux_min, piRange);
+				neigsI += Nyxus::to_grayscale (D.yx(row, col-1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
 			if (D.safe(row - 1, col - 1))	// North-West
 			{
-				neigsI += Nyxus::to_uint8 (D.yx(row-1, col-1), r.aux_min, piRange);
+				neigsI += Nyxus::to_grayscale (D.yx(row-1, col-1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
 
@@ -186,7 +188,7 @@ void NGTDMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 		for (size_t col = 0; col < Im.get_width(); col++)
 		{
 			// Find a non-blank pixel
-			PixIntens pi = Im.get_at(imloader, row, col);
+			PixIntens pi = (PixIntens) Im.get_at(imloader, row, col);
 			if (pi == 0)
 				continue;
 
@@ -197,42 +199,42 @@ void NGTDMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 
 			if (Im.safe(row - 1, col))	// North
 			{
-				neigsI += Im.get_at(imloader, row - 1, col);
+				neigsI += (PixIntens) Im.get_at(imloader, row - 1, col);
 				nd++;
 			}
 			if (Im.safe(row - 1, col + 1))	// North-East
 			{
-				neigsI += Im.get_at(imloader, row - 1, col + 1);
+				neigsI += (PixIntens) Im.get_at(imloader, row - 1, col + 1);
 				nd++;
 			}
 			if (Im.safe(row, col + 1))	// East
 			{
-				neigsI += Im.get_at(imloader, row, col + 1);
+				neigsI += (PixIntens) Im.get_at(imloader, row, col + 1);
 				nd++;
 			}
 			if (Im.safe(row + 1, col + 1))	// South-East
 			{
-				neigsI += Im.get_at(imloader, row + 1, col + 1);
+				neigsI += (PixIntens) Im.get_at(imloader, row + 1, col + 1);
 				nd++;
 			}
 			if (Im.safe(row + 1, col))	// South
 			{
-				neigsI += Im.get_at(imloader, row + 1, col);
+				neigsI += (PixIntens) Im.get_at(imloader, row + 1, col);
 				nd++;
 			}
 			if (Im.safe(row + 1, col - 1))	// South-West
 			{
-				neigsI += Im.get_at(imloader, row + 1, col - 1);
+				neigsI += (PixIntens)Im.get_at(imloader, row + 1, col - 1);
 				nd++;
 			}
 			if (Im.safe(row, col - 1))	// West
 			{
-				neigsI += Im.get_at(imloader, row, col - 1);
+				neigsI += (PixIntens) Im.get_at(imloader, row, col - 1);
 				nd++;
 			}
 			if (Im.safe(row - 1, col - 1))	// North-West
 			{
-				neigsI += Im.get_at(imloader, row - 1, col - 1);
+				neigsI += (PixIntens) Im.get_at(imloader, row - 1, col - 1);
 				nd++;
 			}
 

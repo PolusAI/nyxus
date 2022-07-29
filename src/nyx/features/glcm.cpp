@@ -1,5 +1,6 @@
 #include "glcm.h"
 #include "../helpers/helpers.h"
+#include "../environment.h"
 
 #define EPSILON 0.000000001
 
@@ -95,8 +96,9 @@ void GLCMFeature::calculate_normalized_graytone_matrix(SimpleMatrix<uint8_t>& G,
 	G.allocate(I.width(), I.height(), 0);
 	// Normalize
 	auto rangeI = maxI - minI;
+	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
 	for (int i = 0; i < I.size(); i++)
-		G[i] = to_uint8 (I[i], minI, rangeI);
+		G[i] = Nyxus::to_grayscale (I[i], minI, rangeI, nGrays);
 }
 
 void GLCMFeature::Extract_Texture_Features(

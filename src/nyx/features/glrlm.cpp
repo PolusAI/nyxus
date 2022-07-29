@@ -4,6 +4,7 @@
 #include <sstream>
 #include <unordered_set>
 #include "glrlm.h"
+#include "../environment.h"
 
 GLRLMFeature::GLRLMFeature() : FeatureMethod("GLRLMFeature")
 {
@@ -88,8 +89,9 @@ void GLRLMFeature::calculate (LR& r)
 		pixData& D = M.WriteablePixels();
 
 		// Squeeze the intensity range
+		unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
 		for (size_t i = 0; i < D.size(); i++)
-			D[i] = Nyxus::to_uint8 (D[i], r.aux_min, piRange);
+			D[i] = Nyxus::to_grayscale (D[i], r.aux_min, piRange, nGrays);
 
 		// Number of zones
 		const int VISITED = -1;

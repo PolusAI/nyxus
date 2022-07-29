@@ -4,6 +4,7 @@
 #include <sstream>
 #include <unordered_set>
 #include "glszm.h"
+#include "../environment.h"
 
 GLSZMFeature::GLSZMFeature() : FeatureMethod("GLSZMFeature")
 {
@@ -198,8 +199,9 @@ void GLSZMFeature::calculate(LR& r)
 
 	// Squeeze the intensity range
 	PixIntens piRange = r.aux_max - r.aux_min;		// Prepare ROI's intensity range
+	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
 	for (size_t i = 0; i < D.size(); i++)
-		D[i] = Nyxus::to_uint8 (D[i], r.aux_min, piRange);
+		D[i] = Nyxus::to_grayscale (D[i], r.aux_min, piRange, nGrays);
 
 	// Number of zones
 	const int VISITED = -1;

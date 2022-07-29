@@ -76,7 +76,7 @@ public:
 		binw256 = double(valRange) / 255.;
 		for (auto s : raw_data)
 		{
-			HistoItem h = Nyxus::to_uint8 (s.inten, minVal, valRange);
+			HistoItem h = Nyxus::to_grayscale (s.inten, minVal, valRange, 256);
 			bins256[h] = bins256[h] + 1;
 		}
 
