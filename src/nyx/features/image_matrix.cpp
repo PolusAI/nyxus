@@ -5,6 +5,7 @@
 #include "image_matrix.h"
 #include "moments.h"
 
+template<>
 void SimpleMatrix<int>::print(const std::string& head, const std::string& tail)
 {
 	const int Wd = 6;	// data
