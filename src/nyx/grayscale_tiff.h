@@ -12,6 +12,10 @@
 #include <tiffio.h>
 #endif
 
+constexpr size_t STRIP_TILE_HEIGHT = 1024;
+constexpr size_t STRIP_TILE_WIDTH = 1024;
+constexpr size_t STRIP_TILE_DEPTH = 1;
+
 /// @brief Tile Loader for 2D Grayscale tiff files
 /// @tparam DataType AbstractView's internal type
 template<class DataType>
@@ -245,15 +249,10 @@ public:
     /// @brief NyxusGrayscaleTiffTileLoader constructor
     /// @param numberThreads Number of threads associated
     /// @param filePath Path of tiff file
-    /// @param tileWidth Tile width requested
-    /// @param tileHeight Tile height requested
-    /// @param tileDepth Tile depth requested
     NyxusGrayscaleTiffStripLoader(
         size_t numberThreads,
-        std::string const& filePath,
-        size_t tileWidth, size_t tileHeight, size_t tileDepth)
-        : fl::AbstractTileLoader<fl::DefaultView<DataType>>("NyxusGrayscaleTiffStripLoader", numberThreads, filePath),
-        tileWidth_(tileWidth), tileHeight_(tileHeight), tileDepth_(tileDepth) 
+        std::string const& filePath)
+        : fl::AbstractTileLoader<fl::DefaultView<DataType>>("NyxusGrayscaleTiffStripLoader", numberThreads, filePath) 
     {
         short samplesPerPixel = 0;
 
@@ -269,6 +268,10 @@ public:
             TIFFGetField(tiff_, TIFFTAG_SAMPLEFORMAT, &(this->sampleFormat_));
 
             fullDepth_ = TIFFNumberOfDirectories(tiff_);
+
+            tileWidth_ = std::min(fullWidth_, STRIP_TILE_WIDTH);
+            tileHeight_ = std::min(fullHeight_, STRIP_TILE_HEIGHT);
+            tileDepth_ = std::min(fullDepth_, STRIP_TILE_DEPTH);
 
             // Test if the file is grayscale
             if (samplesPerPixel > 1) 
@@ -399,11 +402,7 @@ public:
     /// @return Return a copy of the current NyxusGrayscaleTiffTileLoader
     std::shared_ptr<fl::AbstractTileLoader<fl::DefaultView<DataType>>> copyTileLoader() override 
     {
-        return std::make_shared<NyxusGrayscaleTiffStripLoader<DataType>>(this->numberThreads(),
-            this->filePath(),
-            this->tileWidth_,
-            this->tileHeight_,
-            this->tileDepth_);
+        return std::make_shared<NyxusGrayscaleTiffStripLoader<DataType>>(this->numberThreads(), this->filePath());
     }
 
     /// @brief Tiff file height

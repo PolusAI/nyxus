@@ -46,4 +46,7 @@ namespace Nyxus
 		std::vector <std::string>& intensFiles,
 		std::vector <std::string>& labelFiles);
 
+	/// @brief checks if the Tiff file is tiled or not
+	/// @param filePath File name with complete path
+	bool check_tile_status(const std::string& filePath);
 } // namespace Nyxus

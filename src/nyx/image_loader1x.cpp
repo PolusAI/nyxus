@@ -2,6 +2,7 @@
 #include "image_loader1x.h"
 #include "grayscale_tiff.h"
 #include "omezarr.h"
+#include "dirs_and_files.h"
 
 ImageLoader1x::ImageLoader1x() {}
 
@@ -17,13 +18,11 @@ bool ImageLoader1x::open(const std::string& fpath)
 		}
 		else 
 		{
-			if (checkTileStatus(fpath))
+			if (Nyxus::check_tile_status(fpath))
 				FL = std::make_unique<NyxusGrayscaleTiffTileLoader<uint32_t>> (n_threads, fpath); 
 			else
 			{
-				// since the file is not tiled, we provide the tile dimensions
-				auto [tw, th, td] = calculate_tile_dimensions(fpath);
-				FL = std::make_unique<NyxusGrayscaleTiffStripLoader<uint32_t>> (n_threads, fpath, tw, th, td); 
+				FL = std::make_unique<NyxusGrayscaleTiffStripLoader<uint32_t>> (n_threads, fpath); 
 			}
 
 		}
@@ -135,53 +134,3 @@ size_t ImageLoader1x::get_tile_width()
 {
 	return tw;
 }
-
-bool ImageLoader1x::checkTileStatus(const std::string& filePath)
-{
-	TIFF* tiff_ = TIFFOpen(filePath.c_str(), "r");
-	if (tiff_ != nullptr)
-	{
-		if (TIFFIsTiled(tiff_) == 0)
-		{
-			TIFFClose(tiff_);
-			return false;
-		}
-		else
-		{
-			TIFFClose(tiff_);
-			return true;
-		}
-	}
-	else { throw (std::runtime_error("Tile Loader ERROR: The file can not be opened.")); }
-}
-
-std::tuple<uint32_t, uint32_t, uint32_t>  ImageLoader1x::get_image_dimensions(const std::string& filePath)
-{
-	TIFF* tiff_ = TIFFOpen(filePath.c_str(), "r");
-	if (tiff_ != nullptr)
-	{
-		uint32_t w, l, ndirs;
-		TIFFGetField(tiff_, TIFFTAG_IMAGEWIDTH, &w);
-		TIFFGetField(tiff_, TIFFTAG_IMAGELENGTH, &l);
-		ndirs = TIFFNumberOfDirectories(tiff_);
-		TIFFClose(tiff_);
-		return { w, l, ndirs };
-	}
-	else
-	{
-		throw (std::runtime_error("Tile Loader ERROR: The file can not be opened."));
-	}
-}
-
-std::tuple<uint32_t, uint32_t, uint32_t>  ImageLoader1x::calculate_tile_dimensions(const std::string& filePath)
-{
-	auto [w, h, d] = get_image_dimensions(filePath);
-	uint32_t defaultWidthSize = 1024;
-	uint32_t defaultHeightSize = 1024;
-	uint32_t defaultDepthSize = 1;
-	w = std::min({ w, defaultWidthSize });
-	h = std::min({ h, defaultHeightSize });
-	d = std::min({ d, defaultDepthSize });
-	return { w, h, d };
-}
-

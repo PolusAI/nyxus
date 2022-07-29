@@ -29,9 +29,6 @@ public:
 	size_t get_within_tile_idx (size_t pixel_row, size_t pixel_col);
 	size_t get_full_width();
 	size_t get_full_height();
-	std::tuple<uint32_t, uint32_t, uint32_t>  get_image_dimensions (const std::string& filePath); 
-	std::tuple<uint32_t, uint32_t, uint32_t>  calculate_tile_dimensions (const std::string& filePath);
-	bool checkTileStatus(const std::string& filePath);
 private:
 	fl::AbstractTileLoader<fl::DefaultView<uint32_t>> *segFL = nullptr, *intFL = nullptr; 
 	std::shared_ptr<std::vector<uint32_t>> ptrI = nullptr; 
