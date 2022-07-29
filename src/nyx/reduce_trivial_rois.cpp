@@ -244,8 +244,26 @@ namespace Nyxus
 		//==== Gabor features
 		if (GaborFeature::required(theFeatureSet))
 		{
-			STOPWATCH("Gabor/Gabor/Gabor/#f58231", "\t=");
-			runParallel(GaborFeature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			#ifndef USE_GPU
+
+				STOPWATCH("Gabor/Gabor/Gabor/#f58231", "\t=");
+				runParallel(GaborFeature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+				
+			#else 
+				
+				if (theEnvironment.using_gpu() == false) {
+
+					STOPWATCH("Gabor/Gabor/Gabor/#f58231", "\t=");
+					runParallel(GaborFeature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+
+				} else {
+
+					STOPWATCH("GPU-Gabor/GPU-Gabor/Gabor/#f58231", "\t=");
+					GaborFeature::gpu_process_all_rois(PendingRoisLabels, roiData);
+
+				}
+				
+			#endif
 		}
 
 		//==== Radial distribution / Zernike 2D 

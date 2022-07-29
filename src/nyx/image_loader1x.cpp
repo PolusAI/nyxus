@@ -1,4 +1,7 @@
+#include <filesystem>
 #include "image_loader1x.h"
+#include "grayscale_tiff.h"
+#include "omezarr.h"
 
 ImageLoader1x::ImageLoader1x() {}
 
@@ -8,13 +11,21 @@ bool ImageLoader1x::open(const std::string& fpath)
 
 	try
 	{
-		if (checkTileStatus(fpath))
-			FL = std::make_unique<NyxusGrayscaleTiffTileLoader<uint32_t>> (n_threads, fpath); 
-		else
+		if 	(std::filesystem::path(fpath).extension() == ".zarr")
 		{
-			// since the file is not tiled, we provide the tile dimensions
-			auto [tw, th, td] = calculate_tile_dimensions(fpath);
-			FL = std::make_unique<NyxusGrayscaleTiffStripLoader<uint32_t>> (n_threads, fpath, tw, th, td); 
+			FL = std::make_unique<NyxusOmeZarrLoader<uint32_t>>(n_threads, fpath);
+		}
+		else 
+		{
+			if (checkTileStatus(fpath))
+				FL = std::make_unique<NyxusGrayscaleTiffTileLoader<uint32_t>> (n_threads, fpath); 
+			else
+			{
+				// since the file is not tiled, we provide the tile dimensions
+				auto [tw, th, td] = calculate_tile_dimensions(fpath);
+				FL = std::make_unique<NyxusGrayscaleTiffStripLoader<uint32_t>> (n_threads, fpath, tw, th, td); 
+			}
+
 		}
 	}
 	catch (std::exception const& e)

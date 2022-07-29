@@ -142,27 +142,27 @@ void EnclosingInscribingCircumscribingCircleFeature::findSecondPoint (const std:
     }
 }
 
-void EnclosingInscribingCircumscribingCircleFeature::findMinEnclosingCircle (const std::vector<Pixel2>& pts, int count, Point2f& center, float& radius)
+void EnclosingInscribingCircumscribingCircleFeature::findMinEnclosingCircle (const std::vector<Pixel2>& contour, Point2f& center, float& radius)
 {
-    center.x = (float)(pts[0].x + pts[1].x) / 2.0f;
-    center.y = (float)(pts[0].y + pts[1].y) / 2.0f;
-    float dx = (float)(pts[0].x - pts[1].x);
-    float dy = (float)(pts[0].y - pts[1].y);
+    center.x = (float)(contour[0].x + contour[1].x) / 2.0f;
+    center.y = (float)(contour[0].y + contour[1].y) / 2.0f;
+    float dx = (float)(contour[0].x - contour[1].x);
+    float dy = (float)(contour[0].y - contour[1].y);
     radius = (float)normL2(Point2f(dx, dy)) / 2.0f + EPS;
 
-    for (int i = 2; i < count; ++i)
+    auto count = contour.size();
+    for (auto i = 2; i < count; ++i)
     {
-        dx = (float)pts[i].x - center.x;
-        dy = (float)pts[i].y - center.y;
+        dx = (float)contour[i].x - center.x;
+        dy = (float)contour[i].y - center.y;
         float d = (float)normL2(Point2f(dx, dy));
         if (d < radius)
-        {
             continue;
-        }
         else
         {
-            Point2f new_center; float new_radius = 0;
-            findSecondPoint(pts, i, new_center, new_radius);
+            Point2f new_center; 
+            float new_radius = 0;
+            findSecondPoint(contour, i, new_center, new_radius);
             if (new_radius > 0)
             {
                 radius = new_radius;
@@ -208,7 +208,7 @@ void EnclosingInscribingCircumscribingCircleFeature::minEnclosingCircle(
         Point2f center;
         float radius = 0.f;
 
-        findMinEnclosingCircle (Contour, (int)count, center, radius);
+        findMinEnclosingCircle (Contour, center, radius);
         _center = center;
         _radius = radius;
         break;
