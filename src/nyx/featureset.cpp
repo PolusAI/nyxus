@@ -324,11 +324,6 @@ FeatureSet::FeatureSet()
 	enableAll(true);
 }
 
-double LR::getValue (AvailableFeatures f)
-{
-	return fvals[f][0];
-}
-
 bool FeatureSet::findFeatureByString(const std::string& featureName, AvailableFeatures& f)
 {
 	if (Nyxus::UserFacingFeatureNames.find(featureName) == Nyxus::UserFacingFeatureNames.end())

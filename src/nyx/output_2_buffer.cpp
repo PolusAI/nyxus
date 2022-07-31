@@ -191,7 +191,7 @@ namespace Nyxus
 			{
 				auto fc = std::get<1>(enabdF);
 				auto fn = std::get<0>(enabdF);	// debug
-				auto vv = r.getFeatureValues(fc);
+				auto vv = r.get_fvals(fc);
 
 				// Parameterized feature
 				// --Texture family

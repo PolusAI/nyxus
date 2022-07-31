@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <unordered_map>
 #include "../roi_cache.h"
 #include "image_matrix.h"
@@ -7,6 +8,10 @@
 #define _USE_MATH_DEFINES	// For M_PI, etc.
 #include <cmath>
 #include "../feature_method.h"
+#include "../environment.h"
+#ifdef USE_GPU
+    #include "../gpu/gabor.cuh"
+#endif
 
 /// @brief Extract face feature based on gabor filtering
 class GaborFeature: public FeatureMethod
@@ -20,6 +25,13 @@ public:
     
     // Trivial ROI
     void calculate(LR& r);
+
+    // Trivial ROI on GPU
+    #ifdef USE_GPU
+        void calculate_gpu(LR& r);
+        void calculate_gpu_multi_filter (LR& r);
+        static void gpu_process_all_rois( std::vector<int>& ptrLabels, std::unordered_map <int, LR>& ptrLabelData);
+    #endif
 
     // Non-trivial
     void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
@@ -58,6 +70,31 @@ private:
         double gamma, 
         double theta, 
         int n);
+
+    #ifdef USE_GPU
+    void GaborEnergyGPU (
+        const ImageMatrix& Im, 
+        PixIntens* /* double* */ out, 
+        double* auxC, 
+        double* Gex, 
+        double f0, 
+        double sig2lam, 
+        double gamma, 
+        double theta, 
+        int n);
+
+    void GaborEnergyGPUMultiFilter (
+        const ImageMatrix& Im, 
+        std::vector<std::vector<PixIntens>>& /* double* */ out, 
+        double* auxC, 
+        double* Gexp,
+        double f[8], 
+        double sig2lam, 
+        double gamma, 
+        double theta, 
+        int n,
+        int num_filters);
+    #endif
 
     // Nontrivial ROIs
     void osized_GaborEnergy(
