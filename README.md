@@ -303,3 +303,98 @@ parCnl = '1'
 chiCnl = '0'
 rels = nyx.findrelations (segPath, fPat, cnlSig, parCnl, chiCnl)
 ```
+
+### Nested features Python API
+
+The nested features functionality can also be utilized in Python using the `Nested` class in `nyxus`. The `Nested` class
+contains two methods, `find_relations` and `featurize`. 
+
+The `find_relations` method takes in a path to the label files, along with a child 
+filepattern to identify the files in the child channel and a parent filepattern to match the files in the parent channel. The `find_relation` method 
+returns a Pandas DataFrame containing a mapping between parent ROIS and the respective child ROIs.
+
+The `featurize` method takes in the parent-child mapping along with the features of the ROIs in the child channel. If a list of aggregate functions
+is provided to the constructor, this method will return a pivoted DataFrame where the rows are the ROI labels and the columns are grouped by the features.
+
+
+__Example__: Using aggregate functions
+
+``` python
+
+from nyxus import Nyxus, Nested
+import numpy as np
+
+int_path = 'path/to/intensity'
+seg_path = 'path/to/segmentation'
+
+nyx = Nyxus(['GABOR'])
+
+child_features = nyx.featurize(int_path, seg_path, file_pattern='p[0-9]_y[0-9]_r[0-9]_c0\.ome\.tif')
+
+nest = Nested(['sum', 'mean', 'min', ('nanmean', lambda x: np.nanmean(x))])
+
+df = nest.find_relations(seg_path, 'p{r}_y{c}_r{z}_c1.ome.tif', 'p{r}_y{c}_r{z}_c0.ome.tif')
+
+df2 = nest.featurize(df, features)
+```
+
+The parent-child map is
+
+``` bash
+    Image              Parent_Label  Child_Label
+    0  /path/to/image          72             65
+    1  /path/to/image          71             66
+    2  /path/to/image          70             64
+    3  /path/to/image          68             61
+    4  /path/to/image          67             65
+
+```
+
+and the aggregated DataFrame is 
+
+``` bash
+            GABOR_0                                  GABOR_1                                  GABOR_2              ... 
+            sum        mean      min       nanmean    sum      mean       min       nanmean   sum      mean        ...
+    label                                                                                                          ...                                                                                                      
+     1      24.010227  0.666951  0.000000  0.666951  19.096262  0.530452  0.001645  0.530452  17.037345  0.473260  ... 
+     2      13.374170  0.445806  0.087339  0.445806   7.279187  0.242640  0.075000  0.242640   6.390529  0.213018  ...  
+     3       5.941783  0.198059  0.000000  0.198059   3.364149  0.112138  0.000000  0.112138   2.426409  0.080880  ...  
+     4      13.428773  0.559532  0.000000  0.559532  12.021938  0.500914  0.008772  0.500914   9.938915  0.414121  ...  
+     5       6.535722  0.181548  0.000000  0.181548   1.833463  0.050930  0.000000  0.050930   2.083023  0.057862  ...
+
+```
+
+__Example__: Without aggregate functions
+
+``` python
+
+from nyxus import Nyxus, Nested
+import numpy as np
+
+int_path = 'path/to/intensity'
+seg_path = 'path/to/segmentation'
+
+nyx = Nyxus(['GABOR'])
+
+child_features = nyx.featurize(int_path, seg_path, file_pattern='p[0-9]_y[0-9]_r[0-9]_c0\.ome\.tif')
+
+nest = Nested()
+
+df = nest.find_relations(seg_path, 'p{r}_y{c}_r{z}_c1.ome.tif', 'p{r}_y{c}_r{z}_c0.ome.tif')
+
+df2 = nest.featurize(df, features)
+```
+
+the parent-child map remains the same but the `featurize` result becomes
+
+``` bash
+                     GABOR_0                                                                ...    
+    Child_Label       1          2         3         4         5    6    7    8    9    10  ...    
+    label                                                                                   ...
+    1            0.666951       NaN       NaN       NaN       NaN  NaN  NaN  NaN  NaN  NaN  ...     
+    2                 NaN  0.445806       NaN       NaN       NaN  NaN  NaN  NaN  NaN  NaN  ...     
+    3                 NaN       NaN  0.198059       NaN       NaN  NaN  NaN  NaN  NaN  NaN  ...     
+    4                 NaN       NaN       NaN  0.559532       NaN  NaN  NaN  NaN  NaN  NaN  ...     
+    5                 NaN       NaN       NaN       NaN  0.181548  NaN  NaN  NaN  NaN  NaN  ...
+
+```
