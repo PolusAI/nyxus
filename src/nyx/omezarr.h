@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <regex>
 
 #include <fast_loader/fast_loader.h> 
 #include "nlohmann/json.hpp"
@@ -32,40 +31,35 @@ public:
     {
         // Open the file
         zarr_ptr_ = std::make_unique<z5::filesystem::handle::File>(filePath.c_str());
-        nlohmann::json attributes;
-        z5::readAttributes(*zarr_ptr_, attributes);
-        
-        std::string metadata = attributes["metadata"].dump();
-        std::regex type_regex("Type=\\\\\"(\\w+)");
-        std::smatch matches;
-        if(std::regex_search(metadata, matches, type_regex)) {
-            if (matches[1].str() == "uint8") {data_format_=1;}
-            else if (matches[1].str() == "uint16") {data_format_=2;}
-            else if (matches[1].str() == "uint32") {data_format_=3;}
-            else if (matches[1].str() == "uint64") {data_format_=4;}
-            else if (matches[1].str() == "int8") {data_format_=5;}
-            else if (matches[1].str() == "int16") {data_format_=6;}
-            else if (matches[1].str() == "int32") {data_format_=7;}
-            else if (matches[1].str() == "int64") {data_format_=8;}
-            else if (matches[1].str() == "float") {data_format_=9;}
-            else if (matches[1].str() == "double") {data_format_=10;}
-            else {data_format_=2;}
-        }
-    
+        nlohmann::json file_attributes, ds_attributes;
+        z5::readAttributes(*zarr_ptr_, file_attributes);
 
-        std::regex size_regex("Size([X|Y|Z])=\\\\\"(\\d+)");
+         // assume only one dataset is present
+        std::string ds_name = file_attributes["multiscales"][0]["datasets"][0]["path"].get<std::string>();
+        const auto ds_handle = z5::filesystem::handle::Dataset(*zarr_ptr_, ds_name);
+        fs::path metadata_path;
+        auto success = z5::filesystem::metadata_detail::getMetadataPath(ds_handle, metadata_path);
+        z5::filesystem::metadata_detail::readMetadata(metadata_path, ds_attributes);
         
-        while(std::regex_search(metadata, matches, size_regex)) {
-            if (matches[1].str() == "X") {full_width_ = stoi(matches[2].str());}
-            else if (matches[1].str() == "Y") {full_height_ = stoi(matches[2].str());}
-            else if (matches[1].str() == "Z") {full_depth_ = stoi(matches[2].str());}
-            else {continue;}
-            metadata = matches.suffix().str();
-        }
-
-        tile_width_ = std::min(full_width_, size_t(1024));
-        tile_height_ = std::min(full_height_, size_t(1024));
-        tile_depth_ = std::min(full_depth_, size_t(1));
+        full_depth_ = ds_attributes["shape"][2].get<size_t>();
+        full_height_ = ds_attributes["shape"][3].get<size_t>();
+        full_width_ = ds_attributes["shape"][4].get<size_t>();
+        tile_depth_ = ds_attributes["chunks"][2].get<size_t>();
+        tile_height_ = ds_attributes["chunks"][3].get<size_t>();
+        tile_width_ = ds_attributes["chunks"][4].get<size_t>();
+        std::string dtype_str = ds_attributes["dtype"].get<std::string>();
+        if      (dtype_str == "<u1") {data_format_=1;} //uint8_t
+        else if (dtype_str == "<u2") {data_format_=2;} //uint16_t
+        else if (dtype_str == "<u4") {data_format_=3;} //uint32_t
+        else if (dtype_str == "<u8") {data_format_=4;} //uint16_t
+        else if (dtype_str == "<i1") {data_format_=5;} //int8_t
+        else if (dtype_str == "<i2") {data_format_=6;} //int16_t
+        else if (dtype_str == "<i4") {data_format_=7;} //int32_t
+        else if (dtype_str == "<i8") {data_format_=8;} //int64_t
+        else if (dtype_str == "<f2") {data_format_=9;} //float
+        else if (dtype_str == "<f4") {data_format_=9;} //float
+        else if (dtype_str == "<f8") {data_format_=10;} //double
+        else {data_format_=2;} //uint16_t
     }
 
     /// @brief NyxusOmeZarrLoader destructor
