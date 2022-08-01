@@ -34,7 +34,7 @@ public:
         nlohmann::json file_attributes, ds_attributes;
         z5::readAttributes(*zarr_ptr_, file_attributes);
 
-         // assume only on dataset is present
+         // assume only one dataset is present
         std::string ds_name = file_attributes["multiscales"][0]["datasets"][0]["path"].get<std::string>();
         const auto ds_handle = z5::filesystem::handle::Dataset(*zarr_ptr_, ds_name);
         fs::path metadata_path;
