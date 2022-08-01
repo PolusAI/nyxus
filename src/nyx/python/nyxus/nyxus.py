@@ -34,6 +34,8 @@ class Nyxus:
     pixels_per_micron: float (optional, default 1.0)
         Specify the image resolution in terms of pixels per micron for unit conversion
         of non-unitless features.
+    coarse_gray_depth: int (optional, default 256)
+        Custom number of levels in grayscale denoising used in texture features.
     n_feature_calc_threads: int (optional, default 4)
         Number of threads to use for feature calculation parallelization purposes.
     n_loader_threads: int (optional, default 1)
