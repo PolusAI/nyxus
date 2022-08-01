@@ -498,90 +498,12 @@ bool 	aggregate_features (const std::vector<int>& P, const std::string& outdir, 
 /// @brief Finds related (nested) segments and sets global variables 'pyHeader', 'pyStrData', and 'pyNumData' consumed by Python binding function findrelations_imp()
 bool mine_segment_relations (
 	bool output2python, 
-	const std::string& label_dir, 
-	const std::string& file_pattern, 
-	const std::string& channel_signature, 
-	const int parent_channel, 
-	const int child_channel, 
+	const std::vector<std::string>& parent_files,
+	const std::vector<std::string>& child_files,
 	const std::string& outdir, 
 	const ChildFeatureAggregation& aggr, 
 	int verbosity_level)
 {
-	std::vector<std::string> segFiles;
-	readDirectoryFiles(label_dir, file_pattern, segFiles);
-
-	// Check if the dataset is meaningful
-	if (segFiles.size() == 0)
-	{
-		throw std::runtime_error("No label files to process");
-	}
-
-	// Reverse the signature before using
-	auto signRev = channel_signature;
-	std::reverse (signRev.begin(), signRev.end());
-
-	// Gather stems
-	std::vector<std::pair<std::string, std::string>> Stems;		// parent stems and tails; children are expected to have the same stem and tail differing only in the channel number
-	std::string parPath, ext;
-	for (auto& segf : segFiles)
-	{
-		std::filesystem::path p(segf);
-
-		// Store the extension once
-		if (ext.empty())
-		{
-			auto pExt = p.extension();
-			ext = pExt.string();		// store it
-		}
-
-		auto pParPath = p.parent_path();
-		parPath = pParPath.string();	// store it
-
-		auto pStem = p.stem();
-		std::string stem = pStem.string();
-		std::reverse(stem.begin(), stem.end());
-
-		auto loc = stem.find (signRev, 0);
-		std::string channel = stem.substr(0, loc);
-		std::string stemNoChannel = stem.substr(loc, stem.size() - loc);
-
-		// Tear off the non-numeric part
-		std::reverse(channel.begin(), channel.end());	// we need it in the natural way (numeric part first) now
-		int lenOfNumeric = -1;
-		for (int i = 0; i < channel.size(); i++)
-		{
-			auto ch = channel[i];
-			if (isdigit(ch))
-				lenOfNumeric = i + 1;
-			else
-				break;
-		}
-
-		if (lenOfNumeric <= 0)
-		{
-			std::stringstream ss;
-			ss << "Cannot find the numeric part in channel '" << channel;
-			throw std::runtime_error(ss.str());
-		}
-
-		std::string numericChannel = channel.substr(0, lenOfNumeric);
-		std::string tail = channel.substr(lenOfNumeric, channel.size());	
-
-		// String to int
-		int n_channel = std::atoi(numericChannel.c_str());
-
-		// Store only parent channels
-		if (n_channel == parent_channel)
-		{
-			// Flip the stem back to normal
-			std::reverse(stemNoChannel.begin(), stemNoChannel.end());
-			// Prepare a stem-tail pair
-			std::pair<std::string, std::string> stemtail = {stemNoChannel, tail};
-			// Store it
-			Stems.push_back (stemtail);
-		}
-	}
-
 	// Prepare the buffers. 
 	// 'totalNumLabels', 'stringColBuf', and 'calcResultBuf' will be updated with every call of output_roi_relational_table()
 	theResultsCache.clear();
@@ -590,19 +512,14 @@ bool mine_segment_relations (
 	theResultsCache.add_to_header({ "Image", "Parent_Label", "Child_Label" });
 
 	// Mine parent-child relations 
-	for (auto& parStemInfo : Stems)
+	for (int i = 0; i < parent_files.size(); ++i)
 	{
-		auto stem = parStemInfo.first, 
-			tail = parStemInfo.second;
-
-		// Form parent and child file names
-		std::stringstream ssParFname, ssChiFname;
-		ssParFname << parPath << "/" << stem << parent_channel << tail << ext;
-		ssChiFname << parPath << "/" << stem << child_channel << tail << ext;
+		auto parFname = parent_files[i];
+		auto chiFname = child_files[i];
 
 		// Diagnostic
-		if (verbosity_level >= 1)
-			std::cout << stem << "\t" << parent_channel << ":" << child_channel << "\n";	
+		//if (verbosity_level >= 1)
+		//	std::cout << stem << "\t" << parent_channel << ":" << child_channel << "\n";	
 
 		// Clear reference tables
 		uniqueLabels1.clear();
@@ -612,11 +529,11 @@ bool mine_segment_relations (
 
 		// Analyze geometric relationships and recognize the hierarchy
 		std::vector<int> P;	// parents
-		bool ok = find_hierarchy(P, ssParFname.str(), ssChiFname.str(), verbosity_level);
+		bool ok = find_hierarchy(P, parFname, chiFname, verbosity_level);
 		if (!ok)
 		{
 			std::stringstream ss;
-			ss << "Error finding hierarchy based on files " << ssParFname.str() << " as parent and " << ssChiFname.str() << " as children";
+			ss << "Error finding hierarchy based on files " << parFname << " as parent and " << chiFname << " as children";
 			throw std::runtime_error(ss.str());
 		}
 
