@@ -146,6 +146,31 @@ bool ImageMomentsFeature_calculate2 (
     StatsInt aabb_min_x, 
     StatsInt aabb_min_y);
 
-bool send_contours_to_gpu (const std::vector<size_t> & hoIndices, const std::vector< StatsInt> & hoContourData);
-bool free_contour_data_on_gpu();
+bool ImageMomentsFeature_calculate3(
+    // output:
+    double& m00, double& m01, double& m02, double& m03, double& m10, double& m11, double& m12, double& m20, double& m21, double& m30,   // spatial moments
+    double& cm02, double& cm03, double& cm11, double& cm12, double& cm20, double& cm21, double& cm30,   // central moments
+    double& nu02, double& nu03, double& nu11, double& nu12, double& nu20, double& nu21, double& nu30,    // normalized central moments
+    double& w00, double& w01, double& w02, double& w03, double& w10, double& w20, double& w30,   // normalized spatial moments
+    double& hm1, double& hm2, double& hm3, double& hm4, double& hm5, double& hm6, double& hm7,  // Hu moments
+    double& wm00, double& wm01, double& wm02, double& wm03, double& wm10, double& wm11, double& wm12, double& wm20, double& wm21, double& wm30,   // weighted spatial moments
+    double& wmu02, double& wmu03, double& wmu11, double& wmu12, double& wmu20, double& wmu21, double& wmu30,   // weighted central moments
+    double& whm1, double& whm2, double& whm3, double& whm4, double& whm5, double& whm6, double& whm7,    // weighted Hum moments
+    // input:
+    size_t im_buffer_offset,
+    size_t roi_idx,
+    StatsInt aabb_min_x,
+    StatsInt aabb_min_y,
+    StatsInt width,
+    StatsInt height);
 
+bool send_contours_to_gpu (const std::vector<size_t> & hoIndices, const std::vector<StatsInt> & hoContourData);
+bool free_contour_data_on_gpu();
+bool send_imgmatrices_to_gpu (PixIntens* hoImageMatrixBuffer, size_t buf_len);
+bool free_imgmatrices_on_gpu();
+
+namespace Nyxus
+{
+    extern PixIntens* ImageMatrixBuffer;
+    extern size_t imageMatrixBufferLen;
+}

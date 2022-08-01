@@ -156,44 +156,37 @@ namespace Nyxus
 		return true;
 	}
 
+	PixIntens* ImageMatrixBuffer = nullptr;
+	size_t imageMatrixBufferLen = 0;
+
 	void allocateTrivialRoisBuffers(const std::vector<int>& Pending)
 	{
+		// Calculate the total memory demand (in # of items) of all segments' image matrices
 		for (auto lab : Pending)
 		{
 			LR& r = roiData [lab];
-			r.aux_image_matrix.use_roi (r.raw_pixels, r.aabb);
+			imageMatrixBufferLen += r.aabb.get_width() * r.aabb.get_height();
+		}
+
+		ImageMatrixBuffer = new PixIntens [imageMatrixBufferLen];
+		
+		// Allocate image matrices and remember each ROI's image matrix offset in 'ImageMatrixBuffer'
+		size_t baseIdx = 0;
+		for (auto lab : Pending)
+		{
+			LR& r = roiData [lab];
+			// matrix data offset
+			r.im_buffer_offset = baseIdx;
+			// matrix data
+			size_t imgLen = r.aabb.get_width() * r.aabb.get_height();
+			r.aux_image_matrix.bind_to_buffer (ImageMatrixBuffer+baseIdx, ImageMatrixBuffer+baseIdx+imgLen); // r.aux_image_matrix.calculate_from_pixelcloud  (r.raw_pixels, r.aabb);
+			baseIdx += imgLen;
 		}
 	}
 
 	void freeTrivialRoisBuffers(const std::vector<int>& Pending)
 	{
-		for (auto lab : Pending)
-		{
-			LR& r = roiData[lab];
-			
-			r.raw_pixels.clear();
-			r.raw_pixels.shrink_to_fit();
-
-			r.aux_image_matrix.clear();		// clear() calls then std::vector::shrink_to_fit()
-		}
-	}
-
-	void adjustRoiIntensities(const std::vector<int>& roi_labels, int num_levels)
-	{
-		double newRange = double(num_levels - 1);	// E.g. if num_levels == 256, then adjusted values will distribute in [0,255] interval
-
-		// Convert pixel intensities to uint8
-		for (auto l : roi_labels)
-		{
-			LR& r = roiData[l];
-			auto minI = r.aux_min;
-			double rangeI = r.aux_max - r.aux_min;
-			for (auto pxl : r.raw_pixels)
-			{
-				double newI = double(pxl.inten - minI) * newRange / rangeI;
-				pxl.inten = decltype(pxl.inten) (newI);
-			}
-		}
+		delete ImageMatrixBuffer;
 	}
 
 	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit)

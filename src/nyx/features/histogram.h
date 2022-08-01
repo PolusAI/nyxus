@@ -18,7 +18,7 @@ class TrivialHistogram
 public:
 	TrivialHistogram() {}
 
-	void initialize (HistoItem min_value, HistoItem max_value, const std::vector<Pixel2> & raw_data)
+	void initialize (HistoItem min_value, HistoItem max_value, const std::vector<Pixel2>& raw_data)
 	{
 		// Allocate 
 		// -- "binary"

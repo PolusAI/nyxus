@@ -33,7 +33,8 @@ void initialize_environment(
     float neighbor_distance,
     float pixels_per_micron,
     uint32_t n_reduce_threads,
-    uint32_t n_loader_threads)
+    uint32_t n_loader_threads,
+    int using_gpu)
 {
     theEnvironment.desiredFeatures = features;
     theEnvironment.set_pixel_distance(static_cast<int>(neighbor_distance));
@@ -46,6 +47,18 @@ void initialize_environment(
     theEnvironment.process_feature_list();
     theFeatureMgr.compile();
     theFeatureMgr.apply_user_selection();
+
+    #ifdef USE_GPU
+        if(using_gpu == -1) {
+            theEnvironment.set_use_gpu(false);
+        } else {
+            theEnvironment.set_gpu_device_id(using_gpu);
+        }
+    #else 
+        if (using_gpu != -1) {
+            std::cout << "No gpu available." << std::endl;
+        }
+    #endif
 }
 
 py::tuple process_data(
@@ -141,6 +154,35 @@ py::tuple findrelations_imp(
     return py::make_tuple(pyHeader, pyStrData, pyNumData);
 }
 
+
+/**
+ * @brief Set whether to use the gpu for available gpu features
+ * 
+ * @param yes True to use gpu
+ */
+void use_gpu(bool yes){
+    #ifdef USE_GPU
+        theEnvironment.set_use_gpu(yes);
+    #else 
+        std::cout << "GPU is not available." << std::endl;
+    #endif
+}
+
+/**
+ * @brief Get the gpu properties. If gpu is not available, return an empty vector
+ * 
+ * @return std::vector<std::map<std::string, std::string>> Properties of gpu
+ */
+static std::vector<std::map<std::string, std::string>> get_gpu_properties() {
+    #ifdef USE_GPU
+        return theEnvironment.get_gpu_properties();
+    #else 
+        std::vector<std::map<std::string, std::string>> empty;
+        return empty;
+    #endif
+}
+
+
 PYBIND11_MODULE(backend, m)
 {
     m.doc() = "Nyxus";
@@ -148,6 +190,9 @@ PYBIND11_MODULE(backend, m)
     m.def("initialize_environment", &initialize_environment, "Environment initialization");
     m.def("process_data", &process_data, "Process images, calculate features");
     m.def("findrelations_imp", &findrelations_imp, "Find relations in segmentation images");
+    m.def("gpu_available", &Environment::gpu_is_available, "Check if CUDA gpu is available");
+    m.def("use_gpu", &use_gpu, "Enable/disable GPU features");
+    m.def("get_gpu_props", &get_gpu_properties, "Get properties of CUDA gpu");
 }
 
 ///

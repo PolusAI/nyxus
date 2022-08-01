@@ -14,7 +14,7 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-10.15, windows-latest]
+        os: [ubuntu-latest, macos-11, windows-latest]
         cibw_archs: ["auto"]
 
     steps:
@@ -43,11 +43,12 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2010
           CIBW_MANYLINUX_I686_IMAGE: manylinux2010
           CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp libdeflate
-          CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
-          CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate-devel
+          CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate-devel zlib-devel
+          CIBW_ENVIRONMENT_MACOS: REPAIR_LIBRARY_PATH="/tmp/nyxus/lib" ON_GITHUB="TRUE" PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
+          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus/lib:$LD_LIBRARY_PATH" ON_GITHUB="TRUE"
+          CIBW_ENVIRONMENT_WINDOWS: PATH="$TEMP\\nyxus\\bin;$PATH" ON_GITHUB="TRUE"
           CIBW_ARCHS_WINDOWS: "auto64"
-          CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib" PATH="C:\\Program Files (x86)\\tiff\\bin;C:\\Program Files (x86)\\zlib\\bin;$PATH"
-          CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
+          CIBW_REPAIR_WHEEL_COMMAND_MACOS: DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-listdeps {wheel} && DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
@@ -59,11 +60,12 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2010
           CIBW_MANYLINUX_I686_IMAGE: manylinux2010
           CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp libdeflate
-          CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
-          CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate-devel
+          CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate-devel zlib-devel
+          CIBW_ENVIRONMENT_MACOS: REPAIR_LIBRARY_PATH="/tmp/nyxus/lib" ON_GITHUB="TRUE" PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
+          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus/lib:$LD_LIBRARY_PATH" ON_GITHUB="TRUE"
+          CIBW_ENVIRONMENT_WINDOWS: PATH="$TEMP\\nyxus\\bin;$PATH" ON_GITHUB="TRUE"
           CIBW_ARCHS_WINDOWS: "auto64"
-          CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib" PATH="C:\\Program Files (x86)\\tiff\\bin;C:\\Program Files (x86)\\zlib\\bin;$PATH"
-          CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
+          CIBW_REPAIR_WHEEL_COMMAND_MACOS: DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-listdeps {wheel} && DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
@@ -75,11 +77,12 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2010
           CIBW_MANYLINUX_I686_IMAGE: manylinux2010
           CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp libdeflate
-          CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
-          CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate-devel
+          CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate-devel zlib-devel
+          CIBW_ENVIRONMENT_MACOS: REPAIR_LIBRARY_PATH="/tmp/nyxus/lib" ON_GITHUB="TRUE" PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
+          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus/lib:$LD_LIBRARY_PATH" ON_GITHUB="TRUE"
+          CIBW_ENVIRONMENT_WINDOWS: PATH="$TEMP\\nyxus\\bin;$PATH" ON_GITHUB="TRUE"
           CIBW_ARCHS_WINDOWS: "auto64"
-          CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib" PATH="C:\\Program Files (x86)\\tiff\\bin;C:\\Program Files (x86)\\zlib\\bin;$PATH"
-          CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
+          CIBW_REPAIR_WHEEL_COMMAND_MACOS: DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-listdeps {wheel} && DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
@@ -91,11 +94,12 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2010
           CIBW_MANYLINUX_I686_IMAGE: manylinux2010
           CIBW_BEFORE_BUILD_MACOS: brew install libtiff llvm libomp libdeflate
-          CIBW_ENVIRONMENT_MACOS: PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
-          CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate-devel
+          CIBW_BEFORE_BUILD_LINUX: yum -y install libtiff-devel libdeflate-devel zlib-devel
+          CIBW_ENVIRONMENT_MACOS: REPAIR_LIBRARY_PATH="/tmp/nyxus/lib" ON_GITHUB="TRUE" PATH="$(brew --prefix llvm)/bin:$PATH" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib" CXX=${COMPILER}
+          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus/lib:$LD_LIBRARY_PATH" ON_GITHUB="TRUE"
+          CIBW_ENVIRONMENT_WINDOWS: PATH="$TEMP\\nyxus\\bin;$PATH" ON_GITHUB="TRUE"
           CIBW_ARCHS_WINDOWS: "auto64"
-          CIBW_ENVIRONMENT_WINDOWS: TIFF_INCLUDE_DIR="C:/Program Files (x86)/tiff/include" TIFF_LIBRARY_RELEASE="C:/Program Files (x86)/tiff/lib/tiff.lib" PATH="C:\\Program Files (x86)\\tiff\\bin;C:\\Program Files (x86)\\zlib\\bin;$PATH"
-          CIBW_BEFORE_BUILD_WINDOWS: install_win_prereq.bat
+          CIBW_REPAIR_WHEEL_COMMAND_MACOS: DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-listdeps {wheel} && DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
@@ -107,4 +111,4 @@ jobs:
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.TWINE_API_KEY }}
-          TWINE_REPOSITORY: testpypi
+          TWINE_REPOSITORY: pypi

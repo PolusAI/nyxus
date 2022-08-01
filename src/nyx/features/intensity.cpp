@@ -72,7 +72,7 @@ void PixelIntensityFeatures::calculate(LR& r)
 		var += diff * diff;
 	}
 	val_MEAN_ABSOLUTE_DEVIATION = mad / n;
-	var /= (n-1);
+	var = n>1 ? var/(n-1) : 0.0;
 	double stddev = sqrt(var);
 	val_STANDARD_DEVIATION = stddev;
 

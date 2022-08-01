@@ -23,13 +23,16 @@ void ConvexHullFeature::cleanup_instance()
 
 void ConvexHullFeature::calculate (LR& r)
 {
+	// Build the convex hull
 	build_convex_hull(r.raw_pixels, r.convHull_CH);
+
+	// Calculate related features
 	double s_hull = polygon_area(r.convHull_CH),
 		s_roi = r.raw_pixels.size(), 
 		p = r.fvals[PERIMETER][0];
 	area = s_hull;
 	solidity = s_roi / s_hull;
-	circularity = 4.0 * M_PI * s_roi / (p*p);
+	circularity = sqrt(4.0 * M_PI * s_roi / (p*p));
 }
 
 void ConvexHullFeature::build_convex_hull (const std::vector<Pixel2>& roi_cloud, std::vector<Pixel2>& convhull)
@@ -101,13 +104,16 @@ double ConvexHullFeature::polygon_area (const std::vector<Pixel2>& vertices)
 
 	// Normal polygon
 	double area = 0.0;
-	int n = (int)vertices.size();
-	for (int i = 0; i < n - 1; i++)
+	size_t n = vertices.size();
+	for (size_t i = 0; i < n-1; i++)
 	{
-		const Pixel2& p_i = vertices[i], & p_ii = vertices[i + 1];
-		area += p_i.x * p_ii.y - p_i.y * p_ii.x;
+		const Pixel2 &p1 = vertices[i], 
+			&p2 = vertices[i+1];
+		area += p1.x * p2.y - p1.y * p2.x;
 	}
-	area += vertices[n - 1].x * vertices[0].y - vertices[0].x * vertices[n - 1].y;
+	const Pixel2& p1 = vertices[0],
+		& p2 = vertices[n-1];
+	area += p1.x * p2.y - p1.y * p2.x;
 	area = std::abs(area) / 2.0;
 	return area;
 }
