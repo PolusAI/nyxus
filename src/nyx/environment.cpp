@@ -1014,7 +1014,6 @@ bool Environment::gpu_is_available() {
 	#else
 		return false;
 	#endif
-
 }
 
 #ifdef USE_GPU
