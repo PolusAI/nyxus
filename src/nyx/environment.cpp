@@ -157,6 +157,7 @@ void Environment::show_cmdline_help()
 		<< " [" << PXLSCANTHREADS << " <st>]\n"
 		<< " [" << REDUCETHREADS << " <rt>]\n"
 		<< " [" << PXLDIST << " <pxd>]\n"
+		<< " [" << COARSEGRAYDEPTH << " <custom number of grayscale levels (default: 256)>]\n"
 		<< " [" << ROTATIONS << " <al>]\n"
 		<< " [" << VERBOSITY << " <verbo>]\n";
 
@@ -683,6 +684,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 				find_string_argument(i, REDUCETHREADS, reduce_threads) ||
 				find_string_argument(i, ROTATIONS, rotations) ||
 				find_string_argument(i, PXLDIST, pixel_distance) ||
+				find_string_argument(i, COARSEGRAYDEPTH, raw_coarse_grayscale_depth) ||
 				find_string_argument(i, VERBOSITY, verbosity) 
 #ifdef USE_GPU
 				|| find_string_argument(i, USEGPU, rawUseGpu) 
@@ -799,6 +801,17 @@ int Environment::parse_cmdline(int argc, char **argv)
 		if (sscanf(pixel_distance.c_str(), "%d", &n_pixel_distance) != 1 || n_pixel_distance <= 0)
 		{
 			std::cout << "Error: " << PXLDIST << "=" << pixel_distance << ": expecting a positive integer constant\n";
+			return 1;
+		}
+	}
+
+	// parse COARSEGRAYDEPTH
+	if (!raw_coarse_grayscale_depth.empty())
+	{
+		// string -> integer
+		if (sscanf(raw_coarse_grayscale_depth.c_str(), "%d", &coarse_grayscale_depth) != 1 || coarse_grayscale_depth <= 0)
+		{
+			std::cout << "Error: " << COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": expecting a positive integer constant\n";
 			return 1;
 		}
 	}
@@ -985,15 +998,23 @@ int Environment::get_floating_point_precision()
 	return floating_point_precision;
 }
 
+unsigned int Environment::get_coarse_gray_depth()
+{
+	return coarse_grayscale_depth;
+}
+
+void Environment::set_coarse_gray_depth (unsigned int new_depth)
+{
+	coarse_grayscale_depth = new_depth;
+}
+
 bool Environment::gpu_is_available() { 
 	#ifdef USE_GPU
     	return get_gpu_properties().size() > 0 ? true : false;
 	#else
 		return false;
 	#endif
-
 }
-
 
 #ifdef USE_GPU
 

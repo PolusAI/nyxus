@@ -26,6 +26,7 @@
 #define ONLINESTATSTHRESH "--onlineStatsThresh" // Environment :: onlineStatsThreshold	-- Example: --onlineStatsThresh=150
 #define XYRESOLUTION "--pixelsPerCentimeter"	// pixels per centimeter
 #define PXLDIST "--pixelDistance"		// used in neighbor features
+#define COARSEGRAYDEPTH "--coarseGrayDepth"
 #ifdef USE_GPU
 	#define USEGPU "--useGpu"					// Environment::rawUseGpu, "true" or "false"
 	#define GPUDEVICEID "--gpuDeviceID"		// Environment::rawGpuDeviceID
@@ -130,6 +131,9 @@ public:
 
 	int get_floating_point_precision();
 
+	unsigned int get_coarse_gray_depth();
+	void set_coarse_gray_depth(unsigned int new_depth);
+
 private:
 	std::vector<std::tuple<std::string, std::string>> memory;
 	void show_memory(const std::string &head, const std::string &tail);
@@ -150,6 +154,9 @@ private:
 #endif
 
 	int floating_point_precision = 10;	
+
+	unsigned int coarse_grayscale_depth = 256;
+	std::string raw_coarse_grayscale_depth = "";
 };
 
 namespace Nyxus
