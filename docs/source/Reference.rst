@@ -1,5 +1,8 @@
+Classes
+========
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   Reference/Classes
+   References/Classes
