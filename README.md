@@ -293,18 +293,6 @@ __Example__: we need to process collection of mask images located in directory "
 nyxushie ~/data/image-collection1/seg train_.*\\.tif _ch 1 0 ~/results/result1
 ```
 
-Using the hierarchical ROI Python API is illustrated in the following example:
-```
-from nyxus import Nested
-nyx = Nested()
-segPath = "d:\\data\\mini\\seg"
-fPat = '.*'
-cnlSig = '_c'
-parCnl = '1'
-chiCnl = '0'
-rels = nyx.findrelations (segPath, fPat, cnlSig, parCnl, chiCnl)
-```
-
 ### Nested features Python API
 
 The nested features functionality can also be utilized in Python using the `Nested` class in `nyxus`. The `Nested` class
