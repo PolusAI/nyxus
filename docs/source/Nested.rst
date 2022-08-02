@@ -1,4 +1,4 @@
-Nested 
+Nested Example
 =========
 
 The Nested class is the Python API of Nyxus identifies child-parent relations of ROIs in images with a child and parent channel.
