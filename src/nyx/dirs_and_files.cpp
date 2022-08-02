@@ -9,6 +9,7 @@
 #include <iostream>
 #include <regex>
 #include <sstream>
+#include <tiffio.h>
 
 namespace Nyxus
 {
@@ -180,6 +181,26 @@ namespace Nyxus
 	{
 		std::filesystem::path p(fpath);
 		return p.filename().string();
+	}
+
+	// Helper function to determine Tile Status
+	bool check_tile_status(const std::string& filePath)
+	{
+		TIFF* tiff_ = TIFFOpen(filePath.c_str(), "r");
+		if (tiff_ != nullptr)
+		{
+			if (TIFFIsTiled(tiff_) == 0)
+			{
+				TIFFClose(tiff_);
+				return false;
+			}
+			else
+			{
+				TIFFClose(tiff_);
+				return true;
+			}
+		}
+		else { throw (std::runtime_error("Tile Loader ERROR: The file can not be opened.")); }
 	}
 
 } // namespace Nyxus

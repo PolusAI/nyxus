@@ -38,6 +38,7 @@ void initialize_environment(
     const std::vector<std::string> &features,
     float neighbor_distance,
     float pixels_per_micron,
+    uint32_t coarse_gray_depth, 
     uint32_t n_reduce_threads,
     uint32_t n_loader_threads,
     int using_gpu)
@@ -46,6 +47,7 @@ void initialize_environment(
     theEnvironment.set_pixel_distance(static_cast<int>(neighbor_distance));
     theEnvironment.set_verbosity_level (0);
     theEnvironment.xyRes = theEnvironment.pixelSizeUm = pixels_per_micron;
+    theEnvironment.set_coarse_gray_depth(coarse_gray_depth);
     theEnvironment.n_reduce_threads = n_reduce_threads;
     theEnvironment.n_loader_threads = n_loader_threads;
 
@@ -203,6 +205,7 @@ void initialize_environment(
     const std::vector<std::string>& features,
     float neighbor_distance,
     float pixels_per_micron,
+    uint32_t coarse_gray_depth,
     uint32_t n_reduce_threads,
     uint32_t n_loader_threads);
 
