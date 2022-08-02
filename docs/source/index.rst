@@ -17,6 +17,7 @@ to operate at any scale, its highly validated algorithms, and its modular nature
    :caption: Contents:
 
    examples
+   Nested
    featurelist
    Reference
    devguide
