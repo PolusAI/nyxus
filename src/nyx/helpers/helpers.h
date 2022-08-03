@@ -172,14 +172,14 @@ namespace Nyxus
 		return lg2 * 0.30102999566;	// log2 to log10
 	}
 
-	/// @brief Squeezes the intensity range
-	/// @param pi Source pixel intensity
-	/// @param min_ Minimum ROI's intensity
-	/// @param ran_ ROI-s intensity range (= max-min)
-	/// @return Squeezed intensity within range (0, ran_)
-	inline unsigned int normalize_I (unsigned int pi, unsigned int min_, unsigned int ran_)
+	/// @brief Converts intensity to uint8
+	/// @param i Source pixel intensity
+	/// @param min_i Minimum ROI's intensity
+	/// @param i_range Precalculated ROI's intensity range (= max-min)
+	/// @return Squeezed intensity within range [0,255]
+	inline unsigned int to_grayscale (unsigned int i, unsigned int min_i, unsigned int i_range, unsigned int n_levels)
 	{
-		unsigned int new_pi = (decltype(new_pi)) (double(pi - min_) / double(ran_) * 512.0);
+		unsigned int new_pi = (unsigned int) ((double(i-min_i) / double(i_range) * double(n_levels))) ;
 		return new_pi;
 	}
 

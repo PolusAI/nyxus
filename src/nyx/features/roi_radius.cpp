@@ -27,10 +27,9 @@ void RoiRadiusFeature::calculate (LR& r)
 	max_r = mom2.max__();
 
 	// Median
-	TrivialHistogram H;
-	H.initialize(mom2.min__(), mom2.max__(), dists);
-	auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
-	median_r = median_;
+	TrivialHistogram h;
+	h.initialize_uniques(dists);
+	median_r = h.get_median(); 
 }
 
 void RoiRadiusFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
@@ -57,10 +56,9 @@ void RoiRadiusFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	max_r = mom2.max__();
 
 	// Median
-	TrivialHistogram H;
-	H.initialize(mom2.min__(), mom2.max__(), dists);
-	auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
-	median_r = median_;
+	TrivialHistogram h;
+	h.initialize_uniques(dists);
+	median_r = h.get_median();
 }
 
 void RoiRadiusFeature::save_value (std::vector<std::vector<double>>& fvals)

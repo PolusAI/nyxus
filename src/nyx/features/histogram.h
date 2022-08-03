@@ -8,6 +8,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <tuple>
+#include "../helpers/helpers.h"
 #include "pixel.h"
 
 using HistoItem = unsigned int;
@@ -22,7 +23,7 @@ public:
 		// Allocate 
 		// -- "binary"
 		population = raw_data.size();
-		n_bins = (1. + log2(population)) + 0.5;
+		n_bins = decltype(n_bins) ((1. + log2(population)) + 0.5);
 		bins.reserve(n_bins+1);
 		for (int i = 0; i < n_bins+1; i++)
 			bins.push_back(0);
@@ -30,24 +31,27 @@ public:
 		bins100.reserve(100);
 		for (int i = 0; i < 100+1; i++)
 			bins100.push_back(0);
+		// -- "uint8"
+		bins256.reserve(256);
+		for (int i = 0; i < 256+1; i++)
+			bins256.push_back(0);
 
 		// Cache min/max
 		minVal = min_value;
 		maxVal = max_value;
+		auto valRange = maxVal - minVal;
 
 		// Build the "binary" histogram
-		binW = double(maxVal-minVal) / double(n_bins);
+		binW = double(valRange) / double(n_bins);
 		for (auto s : raw_data)
 		{
 			HistoItem h = s.inten;
 
-			// 1
 			double realIdx = double(h-minVal) / binW;
 			int idx = std::isnan(realIdx) ? 0 : int(realIdx);
 			(bins [idx]) ++;
 
-			// 2
-			U.push_back(h); 
+			U.push_back(h); // Initialize the set for mode and median calculation
 		}
 
 		// -- Fix the special last bin
@@ -55,7 +59,7 @@ public:
 		bins[n_bins] = 0;
 		
 		// Build the "percentile" histogram
-		binW100 = double(maxVal-minVal) / 100.;
+		binW100 = double(valRange) / 100.;
 		for (auto s : raw_data)
 		{
 			HistoItem h = s.inten;
@@ -68,6 +72,18 @@ public:
 		bins100[100 - 1] += bins100[100];
 		bins100[100] = 0;
 
+		// Build the "uint8" histogram
+		binw256 = double(valRange) / 255.;
+		for (auto s : raw_data)
+		{
+			HistoItem h = Nyxus::to_grayscale (s.inten, minVal, valRange, 256);
+			bins256[h] = bins256[h] + 1;
+		}
+
+		// -- Fix the special last bin
+		bins256[256 - 1] += bins256[256];
+		bins256[256] = 0;
+
 		// Mean calculation
 		meanVal = 0; 
 		for (auto s : raw_data)
@@ -75,35 +91,10 @@ public:
 		meanVal /= double(population); 
 	}
 
-	void initialize (HistoItem min_value, HistoItem max_value, const std::vector<HistoItem>& raw_data)
+	void initialize_uniques (const std::vector<HistoItem> & raw_data)
 	{
-		// Allocate 
-		population = raw_data.size();
-		n_bins = (1. + log2(population)) + 0.5;
-		bins.reserve(n_bins + 1);
-		for (int i = 0; i < n_bins + 1; i++)
-			bins.push_back(0);
-
-		// Cache min/max
-		minVal = min_value;
-		maxVal = max_value;
-
-		// Build the histogram
-		binW = double(maxVal-minVal) / double(n_bins);
-		meanVal = 0; // Mean calculation
 		for (auto h : raw_data)
-		{
-			// 1
-			double realIdx = double(h - minVal) / binW;
-			int idx = std::isnan(realIdx) ? 0 : int(realIdx);
-			(bins[idx])++;
-
-			// 2
 			U.push_back(h); 
-			
-			meanVal += h; // Mean calculation
-		}
-		meanVal /= double(population); // Mean calculation
 	}
 
 	// Returns
@@ -120,18 +111,45 @@ public:
 		if (U.size() == 0)
 			return {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
+		// Median
 		double median = get_median (U); 
+
+		// Mode
 		HistoItem mode = get_mode (U);
 
-		double p1 = bin_center(1, binW100),
-			p10 = bin_center(10, binW100),
-			p25 = bin_center(25, binW100),
-			p75 = bin_center(75, binW100),
-			p90 = bin_center(90, binW100),
-			p99 = bin_center(99, binW100),
-			iqr = 0, rmad = 0, entropy = 0, uniformity = 0;
+		// Percentiles
+		double p1 = 0, p10 = 0, p25 = 0, p75 = 0, p90 = 0, p99 = 0;
+		double cnt_p1 = double(population) * 0.01 + 0.5,
+			cnt_p10 = double(population) * 0.1 + 0.5,
+			cnt_p25 = double(population) * 0.25 + 0.5,
+			cnt_p75 = double(population) * 0.75 + 0.5,
+			cnt_p90 = double(population) * 0.9 + 0.5,
+			cnt_p99 = double(population) * 0.99 + 0.5;
+		size_t runSum = 0;
+		for (int i = 0; i < 100; i++)
+		{
+			// interpolate
+			if (runSum <= cnt_p1 && cnt_p1 <= runSum + bins100[i])
+				p1 = (cnt_p1 - runSum) * binW100 / double(bins100[i]) + minVal + binW100 * i;
+			if (runSum <= cnt_p10 && cnt_p10 <= runSum + bins100[i])
+				p10 = (cnt_p10 - runSum) * binW100 / double(bins100[i]) + minVal + binW100 * i;
+			if (runSum <= cnt_p25 && cnt_p25 <= runSum + bins100[i])
+				p25 = (cnt_p25 - runSum) * binW100 / double(bins100[i]) + minVal + binW100 * i;
+			if (runSum <= cnt_p75 && cnt_p75 <= runSum + bins100[i])
+				p75 = (cnt_p75 - runSum) * binW100 / double(bins100[i]) + minVal + binW100 * i;
+			if (runSum <= cnt_p90 && cnt_p90 <= runSum + bins100[i])
+				p90 = (cnt_p90 - runSum) * binW100 / double(bins100[i]) + minVal + binW100 * i;
+			if (runSum <= cnt_p99 && cnt_p99 <= runSum + bins100[i])
+				p99 = (cnt_p99 - runSum) * binW100 / double(bins100[i]) + minVal + binW100 * i;
 
+			runSum += bins100[i];
+		}
+
+		// Interquartile range
+		double iqr = p75 - p25;
+		
 		// RMAD 10-90 %
+		double rmad = 0, entropy = 0, uniformity = 0;
 		double range = maxVal - minVal;
 		double lowBound = minVal + range * 0.1,
 			uprBound = minVal + range * 0.9;
@@ -170,9 +188,8 @@ public:
 			rmad = sum1090 / double(population1090);
 		}
 
-		// entropy & uniformity
+		// entropy
 		entropy = 0.0;
-		uniformity = 0.0;
 		for (int i=0; i<n_bins; i++)
 		{
 			auto cnt = bins[i];
@@ -190,20 +207,49 @@ public:
 
 			// entropy
 			entropy += p * log2(p);  
+		}
 
-			// uniformity
-			uniformity += std::pow (cnt, 2);
+		// uniformity
+		uniformity = 0.0;
+		for (int i = 0; i < 256; i++)
+		{
+			auto cnt = bins256[i];
+			uniformity += std::pow(cnt, 2);
 		}
 
 		return { median, mode, p1, p10, p25, p75, p90, p99, iqr, rmad, -entropy, uniformity };
+	}
+
+	HistoItem get_mode()
+	{
+		// Empty histogram?
+		if (U.size() == 0)
+			return 0;
+
+		// Mode
+		HistoItem mode = get_mode(U);
+
+		return mode;
+	}
+
+	double get_median()
+	{
+		// Empty histogram?
+		if (U.size() == 0)
+			return 0;
+
+		// Median
+		double median = get_median(U);
+
+		return median;
 	}
 
 	private:
 		size_t population = 0;
 		HistoItem minVal, maxVal;
 		double medianVal, meanVal;
-		double binW, binW100;
-		std::vector<HistoItem> bins, bins100; 
+		double binW, binW100, binw256;
+		std::vector<HistoItem> bins, bins100, bins256; 
 		int n_bins = 0;
 		std::vector<HistoItem> U;	
 
@@ -254,8 +300,8 @@ public:
 		double get_max_bin_item ()
 		{
 			// Find the heaviest bin
-			int maxIdx = 0,
-				maxCnt = bins[0];
+			int maxIdx = 0;
+			auto maxCnt = bins[0];
 			for (int i = 1; i < n_bins; i++)
 				if (maxCnt < bins[i])
 				{

@@ -34,6 +34,8 @@ class Nyxus:
     pixels_per_micron: float (optional, default 1.0)
         Specify the image resolution in terms of pixels per micron for unit conversion
         of non-unitless features.
+    coarse_gray_depth: int (optional, default 256)
+        Custom number of levels in grayscale denoising used in texture features.
     n_feature_calc_threads: int (optional, default 4)
         Number of threads to use for feature calculation parallelization purposes.
     n_loader_threads: int (optional, default 1)
@@ -51,6 +53,7 @@ class Nyxus:
         features: List[str],
         neighbor_distance: float = 5.0,
         pixels_per_micron: float = 1.0,
+        coarse_gray_depth: int = 256, 
         n_feature_calc_threads: int = 4,
         n_loader_threads: int = 1,
         using_gpu: int = -1
@@ -60,6 +63,9 @@ class Nyxus:
 
         if pixels_per_micron <= 0:
             raise ValueError("Pixels per micron must be greater than zero.")
+
+        if coarse_gray_depth <= 0:
+            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=256) must be non-negative.")
 
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
@@ -79,6 +85,7 @@ class Nyxus:
             features,
             neighbor_distance,
             pixels_per_micron,
+            coarse_gray_depth, 
             n_feature_calc_threads,
             n_loader_threads,
             using_gpu

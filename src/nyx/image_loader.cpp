@@ -2,6 +2,7 @@
 #include "image_loader.h"
 #include "grayscale_tiff.h"
 #include "omezarr.h"
+#include "dirs_and_files.h"
 
 ImageLoader::ImageLoader() {}
 
@@ -17,15 +18,13 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 		}
 		else 
 		{
-			if (checkTileStatus(int_fpath))
+			if (Nyxus::check_tile_status(int_fpath))
 			{
 				intFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(n_threads, int_fpath);
 			} 
 			else 
 			{
-				// since the file is not tiled, we provide the tile dimensions
-				auto [tw, th, td] = calculate_tile_dimensions (int_fpath);
-				intFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, int_fpath, tw, th, td);
+				intFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, int_fpath);
 			}
 		}
 	}
@@ -45,15 +44,13 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 		}
 		else
 		{
-			if (checkTileStatus(seg_fpath))
+			if (Nyxus::check_tile_status(seg_fpath))
 			{
 				segFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(n_threads, seg_fpath);
 			} 
 			else 
 			{
-				// since the file is not tiled, we provide the tile dimensions
-				auto [tw, th, td] = calculate_tile_dimensions(seg_fpath); 
-				segFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, seg_fpath, tw, th, td);
+				segFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, seg_fpath);
 			}
 		}
 
@@ -222,52 +219,4 @@ size_t ImageLoader::get_full_width()
 size_t ImageLoader::get_full_height()
 {
 	return fh;
-}
-
-
-bool ImageLoader::checkTileStatus(const std::string& filePath)
-{
-	TIFF *tiff_ = TIFFOpen(filePath.c_str(), "r");
-	if (tiff_ != nullptr) 
-	{
-		if (TIFFIsTiled(tiff_) == 0) 
-		{ 
-			TIFFClose(tiff_);
-			return false;
-			} else 
-			{
-			TIFFClose(tiff_);
-			return true;
-			}
-	} else { throw (std::runtime_error("Tile Loader ERROR: The file can not be opened.")); }
-}
-
-std::tuple<uint32_t, uint32_t, uint32_t>  ImageLoader::get_image_dimensions (const std::string& filePath)
-{
-	TIFF* tiff_ = TIFFOpen(filePath.c_str(), "r");
-	if (tiff_ != nullptr)
-	{
-		uint32_t w, l, ndirs;
-		TIFFGetField(tiff_, TIFFTAG_IMAGEWIDTH, &w);
-		TIFFGetField(tiff_, TIFFTAG_IMAGELENGTH, &l);
-		ndirs = TIFFNumberOfDirectories(tiff_);
-		TIFFClose(tiff_);
-		return {w, l, ndirs};
-	}
-	else 
-	{ 
-		throw (std::runtime_error("Tile Loader ERROR: The file can not be opened.")); 
-	}
-}
-
-std::tuple<uint32_t, uint32_t, uint32_t>  ImageLoader::calculate_tile_dimensions (const std::string& filePath)
-{
-	auto [w, h, d] = get_image_dimensions (filePath);
-	uint32_t defaultWidthSize = 1024;
-	uint32_t defaultHeightSize = 1024;
-	uint32_t defaultDepthSize = 1;
-	w = std::min ({ w, defaultWidthSize });
-	h = std::min ({ h, defaultHeightSize });
-	d = std::min ({ d, defaultDepthSize });
-	return {w, h, d};
 }

@@ -229,9 +229,6 @@ namespace Nyxus
 				// reduce_trivial_rois(Pending);	
 				reduce_trivial_rois_manual(Pending);
 
-				// Output results
-				//outputRoisFeatures (Pending);
-
 				// Free memory
 				VERBOSLVL1(std::cout << "\tfreeing ROI buffers\n";)
 				freeTrivialRoisBuffers (Pending);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
@@ -301,5 +298,4 @@ namespace Nyxus
 
 		return true;
 	}
-
 }
