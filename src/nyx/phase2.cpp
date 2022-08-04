@@ -164,23 +164,28 @@ namespace Nyxus
 		// Calculate the total memory demand (in # of items) of all segments' image matrices
 		for (auto lab : Pending)
 		{
-			LR& r = roiData [lab];
+			LR& r = roiData[lab];
 			imageMatrixBufferLen += r.aabb.get_width() * r.aabb.get_height();
 		}
 
-		ImageMatrixBuffer = new PixIntens [imageMatrixBufferLen];
-		
+		ImageMatrixBuffer = new PixIntens[imageMatrixBufferLen];
+
 		// Allocate image matrices and remember each ROI's image matrix offset in 'ImageMatrixBuffer'
 		size_t baseIdx = 0;
 		for (auto lab : Pending)
 		{
-			LR& r = roiData [lab];
+			LR& r = roiData[lab];
+
 			// matrix data offset
 			r.im_buffer_offset = baseIdx;
+
 			// matrix data
 			size_t imgLen = r.aabb.get_width() * r.aabb.get_height();
-			r.aux_image_matrix.bind_to_buffer (ImageMatrixBuffer+baseIdx, ImageMatrixBuffer+baseIdx+imgLen); // r.aux_image_matrix.calculate_from_pixelcloud  (r.raw_pixels, r.aabb);
+			r.aux_image_matrix.bind_to_buffer(ImageMatrixBuffer + baseIdx, ImageMatrixBuffer + baseIdx + imgLen);
 			baseIdx += imgLen;
+
+			// Calculate the image matrix
+			r.aux_image_matrix.calculate_from_pixelcloud(r.raw_pixels, r.aabb);
 		}
 	}
 
