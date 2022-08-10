@@ -44,6 +44,7 @@ set(TEST_SRC
 	test_data.h
 	test_gabor.cc
 	test_gabor.h
+	test_initialization.h
 	test_download_data.cc
 	test_download_data.h
 	../src/nyx/features/basic_morphology.cpp

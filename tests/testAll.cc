@@ -5,6 +5,7 @@
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
 #include "test_pixel_intensity_features.h"
+#include "test_initialization.h"
 
 TEST(TEST_NYXUS, DUMMY_TEST){
   test_dummy_function();
@@ -15,6 +16,11 @@ TEST(TEST_GABOR_GPU, DSB2018){
     get("https://github.com/stardist/stardist/releases/download/0.1.0/dsb2018.zip", "dsb2018");
     test_gabor_gpu_2018();
   #endif
+}
+
+TEST(TEST_NYXUS, TEST_INITIALIZATION) {
+	get("https://github.com/stardist/stardist/releases/download/0.1.0/dsb2018.zip", "dsb2018");
+	test_initialization();
 }
 
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_INTEGRATED_INTENSITY) 
