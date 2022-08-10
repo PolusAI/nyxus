@@ -107,3 +107,159 @@ and the file is passed to Nyxus via parameter --intSegMapFile, the mapping will 
    /home/ec2-user/data-ratbrain/int/image_2.ome.tif    /home/ec2-user/data-ratbrain/seg/image_A.ome.tif
    /home/ec2-user/data-ratbrain/int/image_3.ome.tif    /home/ec2-user/data-ratbrain/seg/image_A.ome.tif
    /home/ec2-user/data-ratbrain/int/image_4.ome.tif    /home/ec2-user/data-ratbrain/seg/image_B.ome.tif
+
+Nested Features Examples
+=======================
+
+The Nested class is the Python API of Nyxus identifies child-parent relations of ROIs in images with a child and parent channel.
+For example, consider the following intensity and segmentation images of the parent channel,
+
+.. list-table:: 
+
+    * - .. figure:: img/parent_int.png
+
+           Fig 1. Parent channel intensity 
+
+      - .. figure:: img/parent_seg.png
+
+           Fig 2. Parent channel segmentation
+
+With the child channel
+
+.. list-table:: 
+
+    * - .. figure:: img/child_int.png
+
+           Fig 3. Child channel intensity
+
+      - .. figure:: img/child_seg.png
+
+            Fig 4. Child channel segmentation
+
+
+As shown by the figures, there are ROIs in the child segmentation that are completely contained in the the ROIs of the parent channel.
+The purpose of the Nested class is to identify the child ROIs of the parent channel. The Nested class also contains functionality to 
+apply aggregate functions to the child features, as shown belong in the example.
+
+
+Example 
+---------
+
+To use the Nested class, first call the constructor with the optional argument `aggregate`. If `aggregate` is not passed, the 
+`find_relation` behavior will change (described later). Any aggregate function supported by Pandas is available, 
+such as `min`, `max`, `count`, and `mean`. Lambda functions can also be used, and named using a 2-tuple, where the first 
+element is the name and the second is the lambda function. This allows functions that are not supported by Pandas to be used,
+such as Numpy's `np.nanmean`. 
+
+To use the Nested class, first call Nyxus to get the features of all ROIs from the child channels. If the child channels are described 
+by a channel number in the filename, a filepattern can be used to filter down to only the child channehl. Consider a directory with the images
+
+.. code-block:: bash
+
+     p0_y1_r1_c0.ome.tif
+     p0_y1_r1_c1.ome.tif
+     p0_y1_r2_c0.ome.tif
+     p0_y1_r2_1.ome.tif
+     p0_y1_r3_c0.ome.tif
+     p0_y1_r3_c1.ome.tif
+     ...
+
+where the child channel is designated by `c0` and the parent channel is `c1`. We can filter down to only the child channel using the 
+`filepattern <https://filepattern.readthedocs.io/en/latest/>`_ `p{r}_y{c}_r{z}_c0.ome.tif` or the equivalent regex `p[0-9]_y[0-9]_r[0-9]_c0\.ome\.tif`.
+
+
+Next, we calculate the features for the child channel. For simplicity, we only use the Gabor features, but any or all features can be used. 
+
+.. code-block:: python 
+     
+     from nyxus import Nyxus, Nested
+     import numpy as np
+
+     int_path = 'path/to/intensity'
+     seg_path = 'path/to/segmentation'
+
+     nyx = Nyxus(['GABOR'])
+
+     child_features = nyx.featurize(int_path, seg_path, file_pattern='p[0-9]_y[0-9]_r[0-9]_c0\.ome\.tif') 
+
+     print(features.head())
+
+The result of this code is 
+
+.. code-block:: bash
+
+   mask_image                    intensity_image  label   GABOR_0   GABOR_1   GABOR_2   GABOR_3   GABOR_4   GABOR_5   GABOR_6
+   0    p0_y1_r1_c0.ome.tif  p0_y1_r1_c0.ome.tif      1  0.224206  0.172619  0.166667  0.730159  0.773810  0.767857  0.753968
+   1    p0_y1_r1_c0.ome.tif  p0_y1_r1_c0.ome.tif      2  1.000000  0.610000  0.540000  0.980000  0.990000  0.990000  0.970000
+   2    p0_y1_r1_c0.ome.tif  p0_y1_r1_c0.ome.tif      3  0.429864  0.217195  0.122172  0.877828  0.941176  0.936652  0.909502
+   3    p0_y1_r1_c0.ome.tif  p0_y1_r1_c0.ome.tif      4  0.846154  0.948718  0.717949  1.000000  1.000000  1.000000  1.000000
+   4    p0_y1_r1_c0.ome.tif  p0_y1_r1_c0.ome.tif      5  0.277778  0.021368  0.029915  0.794872  0.841880  0.841880  0.824786
+
+Next, the `find_relation` method is used to find the child-parent relations. This method takes in the segmentation path along with 
+filepatterns to distinguish the child channel from the parent channel.
+
+.. code-block:: python
+
+   nest = Nested(['sum', 'mean', 'min', ('nanmean', lambda x: np.nanmean(x))])
+
+   df = nest.find_relations(seg_path, 'p{r}_y{c}_r{z}_c1.ome.tif', 'p{r}_y{c}_r{z}_c0.ome.tif')
+   print(df.head())
+
+The result is 
+
+.. code-block:: bash 
+
+   Image              Parent_Label  Child_Label
+   0  /path/to/image          72.0         65.0
+   1  /path/to/image          71.0         66.0
+   2  /path/to/image          70.0         64.0
+   3  /path/to/image          68.0         61.0
+   4  /path/to/image          67.0         65.0
+
+The `featurize` method can then be used along with the child features to apply the aggregate functions. The `featurize` method 
+takes in the `features` DataFrame generated by Nyxus, which contains the features calculations for each ROI, along with the DataFrame 
+containing the parent-child relations from the `find_relations` method. The ouput of this method is a DataFrame containing 
+
+.. code-block:: python 
+
+     df = nest.featurize(df, features)
+     print(df.head())
+
+The result is
+
+.. code-block:: bash
+
+     GABOR_0                                  GABOR_1                                  GABOR_2            ...   GABOR_4              GABOR_5                                  GABOR_6                              
+             sum      mean       min   nanmean        sum      mean       min   nanmean        sum      mean  ...       min   nanmean        sum      mean       min   nanmean        sum      mean       min   nanmean
+     label                                                                                                         ...                                                                                                      
+     1      24.010227  0.666951  0.000000  0.666951  19.096262  0.530452  0.001645  0.530452  17.037345  0.473260  ...  0.773810  0.897924  32.060053  0.890557  0.767857  0.890557  31.643434  0.878984  0.753968  0.878984
+     2      13.374170  0.445806  0.087339  0.445806   7.279187  0.242640  0.075000  0.242640   6.390529  0.213018  ...  0.735000  0.885494  26.414860  0.880495  0.727500  0.880495  25.886468  0.862882  0.700000  0.862882
+     3       5.941783  0.198059  0.000000  0.198059   3.364149  0.112138  0.000000  0.112138   2.426409  0.080880  ...  0.858462  0.900500  26.836040  0.894535  0.858462  0.894535  26.172914  0.872430  0.829231  0.872430
+     4      13.428773  0.559532  0.000000  0.559532  12.021938  0.500914  0.008772  0.500914   9.938915  0.414121  ...  0.820175  0.945459  22.572913  0.940538  0.802632  0.940538  22.270382  0.927933  0.787281  0.927933
+     5       6.535722  0.181548  0.000000  0.181548   1.833463  0.050930  0.000000  0.050930   2.083023  0.057862  ...  0.697917  0.819318  29.094328  0.808176  0.693452  0.808176  28.427727  0.789659  0.675595  0.789659
+
+The other way to utilize the Nested class is to not pass any aggregate features to the constructor. In this case, the `featurize` method with create a 
+pivot table where the rows are the ROI labels and the columns are grouped by the features. 
+
+.. code-block:: python 
+
+     nest = Nested(['sum', 'mean', 'min', ('nanmean', lambda x: np.nanmean(x))])
+
+     df = nest.find_relations(seg_path, 'p{r}_y{c}_r{z}_c1.ome.tif', 'p{r}_y{c}_r{z}_c0.ome.tif')
+
+     df = nest.featurize(df, features)
+     print(df.head())
+
+
+The result is
+
+.. code-block:: bash 
+
+                   GABOR_0                                                                   ... GABOR_6                                             
+     Child_Label      1.0       2.0       3.0       4.0       5.0  6.0  7.0  8.0  9.0  10.0  ...    55.0 56.0 58.0 59.0 60.0 61.0 62.0 64.0 65.0 66.0
+     label                                                                                   ...                                                     
+     1            0.666951       NaN       NaN       NaN       NaN  NaN  NaN  NaN  NaN  NaN  ...     NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN
+     2                 NaN  0.445806       NaN       NaN       NaN  NaN  NaN  NaN  NaN  NaN  ...     NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN
+     3                 NaN       NaN  0.198059       NaN       NaN  NaN  NaN  NaN  NaN  NaN  ...     NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN 
+     4                 NaN       NaN       NaN  0.559532       NaN  NaN  NaN  NaN  NaN  NaN  ...     NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN
+     5                 NaN       NaN       NaN       NaN  0.181548  NaN  NaN  NaN  NaN  NaN  ...     NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN
