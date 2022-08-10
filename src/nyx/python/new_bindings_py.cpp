@@ -16,8 +16,9 @@ using namespace Nyxus;
 // Defined in nested.cpp
 bool mine_segment_relations (
 	bool output2python, 
-	const std::vector<std::string>& parent_files,
-	const std::vector<std::string>& child_files,
+	const std::string& label_dir,
+	const std::string& parent_file_pattern,
+	const std::string& child_file_pattern,
 	const std::string& outdir, 
 	const ChildFeatureAggregation& aggr, 
 	int verbosity_level);
@@ -125,15 +126,19 @@ py::tuple process_data(
 }
 
 py::tuple findrelations_imp(
-    std::vector<std::string>& parent_files, 
-    std::vector<std::string>& child_files 
+        std::string& label_dir,
+        std::string& parent_file_pattern,
+        std::string& child_file_pattern
     )
 {
+    if (! theEnvironment.check_file_pattern(parent_file_pattern) || ! theEnvironment.check_file_pattern(child_file_pattern))
+        throw std::invalid_argument("Filepattern provided is not valid.");
+
     theResultsCache.clear();
 
     // Result -> headerBuf, stringColBuf, calcResultBuf
     ChildFeatureAggregation aggr;
-    bool mineOK = mine_segment_relations (true, parent_files, child_files, ".", aggr, theEnvironment.get_verbosity_level());  // the 'outdir' parameter is not used if 'output2python' is true
+    bool mineOK = mine_segment_relations (true, label_dir, parent_file_pattern, child_file_pattern, ".", aggr, theEnvironment.get_verbosity_level());  // the 'outdir' parameter is not used if 'output2python' is true
 
     if (! mineOK)
         throw std::runtime_error("Error occurred during dataset processing: mine_segment_relations() returned false");

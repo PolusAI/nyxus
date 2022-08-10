@@ -211,9 +211,9 @@ class Nested:
         label_dir : str 
             Path to directory containing label images.
         parent_file_pattern: str 
-            filepattern to filter the parent files e.g. "p{r}_y{c}_r{z}_c1.ome.tif".
+            Regex filepattern to filter the parent files e.g. "p.*_c1\.ome\.tif".
         child_file_pattern : str
-            filepattern to filter the child files e.g. "p{r}_y{c}_r{z}_c0.ome.tif".
+            Regex filepattern to filter the child files e.g. "p.*_c0\.ome\.tif".
         Returns
         -------
         rel : array
@@ -223,24 +223,7 @@ class Nested:
         if not os.path.exists(label_dir):
             raise IOError (f"Provided label image directory '{label_dir}' does not exist.")
         
-        parent_files = []
-        child_files = []
-        
-        fp = filepattern.FilePattern(label_dir, parent_file_pattern)
-        for file in fp():
-            parent_files.append(str(file[0]['file']))
-        
-        fp = filepattern.FilePattern(label_dir, child_file_pattern)
-        for file in fp():
-            child_files.append(str(file[0]['file']))
-            
-        if (len(parent_files) is 0 or len(child_files) is 0):
-            raise ValueError("No files found.")
-            
-        if (len(parent_files) != len(child_files)):
-            raise ValueError("Number of files in parent channel does not match number of files in child channel.")
-        
-        header, string_data, numeric_data = findrelations_imp(parent_files, child_files)
+        header, string_data, numeric_data = findrelations_imp(label_dir, parent_file_pattern, child_file_pattern)
 
         df = pd.concat(
             [

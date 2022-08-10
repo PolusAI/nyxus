@@ -654,12 +654,36 @@ bool mine_segment_relations (
 /// @brief Finds related (nested) segments and sets global variables 'pyHeader', 'pyStrData', and 'pyNumData' consumed by Python binding function findrelations_imp()
 bool mine_segment_relations (
 	bool output2python, 
-	const std::vector<std::string>& parent_files,
-	const std::vector<std::string>& child_files,
+	const std::string& label_dir,
+	const std::string& parent_file_pattern,
+	const std::string& child_file_pattern,
 	const std::string& outdir, 
 	const ChildFeatureAggregation& aggr, 
 	int verbosity_level)
 {
+
+	std::vector<std::string> parentFiles;
+	readDirectoryFiles(label_dir, parent_file_pattern, parentFiles);
+
+	std::vector<std::string> childFiles;
+	readDirectoryFiles(label_dir, child_file_pattern, childFiles);
+
+	// Check if the dataset is meaningful
+	if (parentFiles.size() == 0)
+	{
+		throw std::runtime_error("No parent files to process");
+	}
+
+	if (childFiles.size() == 0)
+	{
+		throw std::runtime_error("No child files to process");
+	}
+
+	if(childFiles.size() != parentFiles.size())
+	{
+		throw std::runtime_error("Parent and child channels must have the same number of files");
+	}
+
 	// Prepare the buffers. 
 	// 'totalNumLabels', 'stringColBuf', and 'calcResultBuf' will be updated with every call of output_roi_relational_table()
 	theResultsCache.clear();
@@ -668,10 +692,10 @@ bool mine_segment_relations (
 	theResultsCache.add_to_header({ "Image", "Parent_Label", "Child_Label" });
 
 	// Mine parent-child relations 
-	for (int i = 0; i < parent_files.size(); ++i)
+	for (int i = 0; i < parentFiles.size(); ++i)
 	{
-		auto parFname = parent_files[i];
-		auto chiFname = child_files[i];
+		auto parFname = parentFiles[i];
+		auto chiFname = childFiles[i];
 
 		// Diagnostic
 		//if (verbosity_level >= 1)
