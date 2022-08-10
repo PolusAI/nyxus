@@ -2,7 +2,6 @@ from .backend import initialize_environment, process_data, findrelations_imp, us
 import os
 import numpy as np
 import pandas as pd
-import filepattern
 from typing import Optional, List
 
 
