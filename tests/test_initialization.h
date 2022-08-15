@@ -70,14 +70,14 @@ void test_initialization() {
     };
 
     for(auto& feature: features) {
-        
+
         std::string feature_arg = "--features=" + feature;
 
         argv = new char*[9];
         argv[0] = const_cast<char*>("./nyxus");
         argv[1] = const_cast<char*>(feature_arg.c_str());
-        argv[2] = const_cast<char*>("--intDir=../tests/python/data/dsb2018/train/images");
-        argv[3] = const_cast<char*>("--segDir=../tests/python/data/dsb2018/train/masks");
+        argv[2] = const_cast<char*>("--intDir=./tests/python/data/dsb2018/train/images");
+        argv[3] = const_cast<char*>("--segDir=./tests/python/data/dsb2018/train/masks");
         argv[4] = const_cast<char*>("--outDir=./out");
         argv[5] = const_cast<char*>( "--csvFile=singlecsv");
         argv[6] = const_cast<char*>("--filePattern=.*");

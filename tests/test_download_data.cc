@@ -10,7 +10,7 @@ int get(const string& url, const string& filename){
 
     system(cmd_ptr);
 
-    cmd = "cd ../tests/ && python3 download_data.py --url \"" + url + "\" --filename \"" + filename + "\"";
+    cmd = "cd tests/ && python3 download_data.py --url \"" + url + "\" --filename \"" + filename + "\"";
     
     cmd_ptr = cmd.c_str();
    
