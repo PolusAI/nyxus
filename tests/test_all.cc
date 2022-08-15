@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "testDummy.h"
+#include "test_dummy.h"
 #include "test_gabor.h"
 #include "test_download_data.h"
 #include "../src/nyx/environment.h"
@@ -13,13 +13,17 @@ TEST(TEST_NYXUS, DUMMY_TEST){
 
 TEST(TEST_GABOR_GPU, DSB2018){
   #ifdef USE_GPU
-    get("https://github.com/stardist/stardist/releases/download/0.1.0/dsb2018.zip", "dsb2018");
+    if (get("https://github.com/stardist/stardist/releases/download/0.1.0/dsb2018.zip", "dsb2018")) {
+		ADD_FAILURE_AT(__FILE__, __LINE__);
+	}
     test_gabor_gpu_2018();
   #endif
 }
 
 TEST(TEST_NYXUS, TEST_INITIALIZATION) {
-	get("https://github.com/stardist/stardist/releases/download/0.1.0/dsb2018.zip", "dsb2018");
+	if (get("https://github.com/stardist/stardist/releases/download/0.1.0/dsb2018.zip", "dsb2018")) {
+		ADD_FAILURE_AT(__FILE__, __LINE__);
+	}
 	test_initialization();
 }
 
