@@ -70,19 +70,21 @@ void test_initialization() {
     };
 
     for(auto& feature: features) {
-
+        
         std::string feature_arg = "--features=" + feature;
 
         argv = new char*[9];
-        argv[0] = "./nyxus";
+        argv[0] = const_cast<char*>("./nyxus");
         argv[1] = const_cast<char*>(feature_arg.c_str());
-        argv[2] = "--intDir=../tests/python/data/dsb2018/train/images";
-        argv[3] = "--segDir=../tests/python/data/dsb2018/train/masks";
-        argv[4] = "--outDir=./out";
-        argv[5] = "--csvFile=singlecsv";
-        argv[6] = "--filePattern=.*";
-        argv[7] = "--loaderThreads=1";
-        argv[8] = "--verbosity=4";
+        argv[2] = const_cast<char*>("--intDir=../tests/python/data/dsb2018/train/images");
+        argv[3] = const_cast<char*>("--segDir=../tests/python/data/dsb2018/train/masks");
+        argv[4] = const_cast<char*>("--outDir=./out");
+        argv[5] = const_cast<char*>( "--csvFile=singlecsv");
+        argv[6] = const_cast<char*>("--filePattern=.*");
+        argv[7] = const_cast<char*>("--loaderThreads=1");
+        argv[8] = const_cast<char*>("--verbosity=4");
+
+        std::cerr << "here" << std::endl;
 
         int parseRes = theEnvironment.parse_cmdline (argc, argv);
 
