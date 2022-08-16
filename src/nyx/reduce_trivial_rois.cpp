@@ -89,7 +89,11 @@ namespace Nyxus
 		}
 
 		//==== Neighbors
-		reduce_neighbors();	// STOPWATCH("Neighbors... ") is done from there
+		if (NeighborsFeature::required(theFeatureSet) || HexagonalityPolygonalityFeature::required(theFeatureSet) || EnclosingInscribingCircumscribingCircleFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Neighbors/Neighbors/N/#FF69B4", "\t=");
+			NeighborsFeature::manual_reduce();
+		}
 
 		//==== Convex hull related solidity, circularity
 		if (ConvexHullFeature::required(theFeatureSet))

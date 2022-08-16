@@ -96,6 +96,9 @@ public:
         size_t indexLayerGlobalTile,
         size_t level) override
     {
+        // Get ahold of the logical (feature extraction facing) tile buffer from its smart pointer
+        std::vector<DataType>& tileDataVec = *tile;
+
         tdata_t tiffTile = nullptr;
         auto t_szb = TIFFTileSize(tiff_);
         tiffTile = _TIFFmalloc(t_szb);
@@ -114,13 +117,17 @@ public:
         case 1:
             switch (bitsPerSample_) 
             {
-            case 8:loadTile<uint8_t>(tiffTile, tile);
+            case 8:
+                loadTile <uint8_t> (tiffTile, tileDataVec);
                 break;
-            case 16:loadTile<uint16_t>(tiffTile, tile);
+            case 16:
+                loadTile <uint16_t> (tiffTile, tileDataVec);    
                 break;
-            case 32:loadTile<size_t>(tiffTile, tile);
+            case 32:
+                loadTile <size_t> (tiffTile, tileDataVec);
                 break;
-            case 64:loadTile<uint64_t>(tiffTile, tile);
+            case 64:
+                loadTile <uint64_t> (tiffTile, tileDataVec);
                 break;
             default:
                 message
@@ -132,13 +139,17 @@ public:
         case 2:
             switch (bitsPerSample_) 
             {
-            case 8:loadTile<int8_t>(tiffTile, tile);
+            case 8:
+                loadTile<int8_t>(tiffTile, tileDataVec);
                 break;
-            case 16:loadTile<int16_t>(tiffTile, tile);
+            case 16:
+                loadTile<int16_t>(tiffTile, tileDataVec);
                 break;
-            case 32:loadTile<int32_t>(tiffTile, tile);
+            case 32:
+                loadTile<int32_t>(tiffTile, tileDataVec);
                 break;
-            case 64:loadTile<int64_t>(tiffTile, tile);
+            case 64:
+                loadTile<int64_t>(tiffTile, tileDataVec);
                 break;
             default:
                 message
@@ -153,10 +164,10 @@ public:
             case 8:
             case 16:
             case 32:
-                loadTile<float>(tiffTile, tile);
+                loadTile<float>(tiffTile, tileDataVec);
                 break;
             case 64:
-                loadTile<double>(tiffTile, tile);
+                loadTile<double>(tiffTile, tileDataVec);
                 break;
             default:
                 message
@@ -208,7 +219,8 @@ private:
     /// @brief Private function to copy and cast the values
     /// @tparam FileType Type inside the file
     /// @param src Piece of memory coming from libtiff
-    /// @param dest Piece of memory to fill
+    /// @param dest Feature extraction facing logical buffer to fill
+    /// 
     template<typename FileType>
     void loadTile(tdata_t src, std::shared_ptr<std::vector<DataType>>& dest)
     {
@@ -222,6 +234,43 @@ private:
             else
                 dest->data()[i] = (DataType)0;  // Zero-fill gaps
         }
+    }
+
+    /// @brief Private function to copy and cast the values
+    /// @tparam FileType Type inside the file
+    /// @param src Piece of memory coming from libtiff
+    /// @param dst_as_vector Feature extraction facing logical buffer to fill
+    /// 
+    template<typename FileType>
+    void loadTile(tdata_t src, std::vector<DataType>& dst_as_vector)
+    {
+        // Get ahold of the raw pointer
+        DataType* dest = dst_as_vector.data();
+
+        // Special case of tileWidth_ (e.g. 1024) > fullWidth_ (e.g. 256)
+        if (tileWidth_ > fullWidth_ && tileHeight_ > fullHeight_)
+        {
+            // Zero-prefill margins of the logical buffer 
+            size_t szb = tileHeight_ * tileWidth_ * sizeof(*dest); 
+            memset(dest, 0, szb);
+
+            // Copy pixels assuming the row-major layout both in the physical (TIFF) and logical (ROI scanner facing) buffers
+            for (size_t r = 0; r < fullHeight_; r++)
+                for (size_t c = 0; c < fullWidth_; c++)
+                {
+                    size_t logOffs = r * tileWidth_ + c,
+                        physOffs = r * tileWidth_ + c;
+                    *(dest+ logOffs) = (DataType) *(((FileType*)src) + physOffs);
+                }
+        }
+        else
+            // General case the logical buffer is same size (specifically, tile size) as the physical one even if tileWidth_ (e.g. 1024) < fullWidth_ (e.g. 1080)
+            {
+                size_t n = tileHeight_ * tileWidth_;
+                for (size_t i = 0; i < n; i++)
+                    *(dest + i) = (DataType) *(((FileType*)src) + i);
+            }
+
     }
 
     TIFF*
