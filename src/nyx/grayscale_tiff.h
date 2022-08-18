@@ -542,13 +542,13 @@ private:
         std::vector<DataType>& dest_as_vector,
         size_t layer,
         size_t row,
-        size_t startCol,
-        size_t endCol) 
+        size_t start_col,
+        size_t end_col) 
     {
         // Get ahold of the raw pointer
         DataType* dest = dest_as_vector.data();
 
-        for (size_t col = startCol; col < endCol; col++)
+        for (size_t col = start_col; col < end_col; col++)
         {
             // Logic to prevent "noise" in images whose dimensions are smaller than the default tile buffer size 1024x1024
             DataType dataItem = (DataType) 0;    // Zero-fill gaps
@@ -561,7 +561,7 @@ private:
             dest[
                 tileWidth_ * tileHeight_ * layer
                     + tileWidth_ * row
-                    + col - startCol] = dataItem;
+                    + col - start_col] = dataItem;
         }
     }
 
