@@ -216,6 +216,7 @@ public:
 
 private:
 
+    #if 0   // A faster implementation is available. Keeping this for records.
     /// @brief Private function to copy and cast the values
     /// @tparam FileType Type inside the file
     /// @param src Piece of memory coming from libtiff
@@ -235,6 +236,7 @@ private:
                 dest->data()[i] = (DataType)0;  // Zero-fill gaps
         }
     }
+    #endif
 
     /// @brief Private function to copy and cast the values
     /// @tparam FileType Type inside the file
@@ -260,7 +262,7 @@ private:
                 {
                     size_t logOffs = r * tileWidth_ + c,
                         physOffs = r * tileWidth_ + c;
-                    *(dest+ logOffs) = (DataType) *(((FileType*)src) + physOffs);
+                    *(dest + logOffs) = (DataType) *(((FileType*)src) + physOffs);
                 }
         }
         else
@@ -364,6 +366,9 @@ public:
         size_t indexLayerGlobalTile,
         [[maybe_unused]] size_t level) override 
     {
+        // Get ahold of the logical (feature extraction facing) tile buffer from its smart pointer
+        std::vector<DataType>& tileDataVec = *tile;
+
         tdata_t buf;
         uint32_t row, layer;
 
@@ -389,13 +394,13 @@ public:
                 case 1:
                     switch (bitsPerSample_) 
                     {
-                    case 8:copyRow<uint8_t>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 8:copyRow<uint8_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
-                    case 16:copyRow<uint16_t>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 16:copyRow<uint16_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
-                    case 32:copyRow<size_t>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 32:copyRow<size_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
-                    case 64:copyRow<uint64_t>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 64:copyRow<uint64_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
                     default:
                         message
@@ -407,13 +412,13 @@ public:
                 case 2:
                     switch (bitsPerSample_) 
                     {
-                    case 8:copyRow<int8_t>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 8:copyRow<int8_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
-                    case 16:copyRow<int16_t>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 16:copyRow<int16_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
-                    case 32:copyRow<int32_t>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 32:copyRow<int32_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
-                    case 64:copyRow<int64_t>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 64:copyRow<int64_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
                     default:
                         message
@@ -427,9 +432,9 @@ public:
                     {
                     case 8:
                     case 16:
-                    case 32:copyRow<float>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 32:copyRow<float>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
-                    case 64:copyRow<double>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 64:copyRow<double>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
                     default:
                         message
@@ -489,6 +494,7 @@ public:
 
 private:
 
+    #if 0   // A faster implementation is available. Keeping this for records.
     /// @brief Private function to copy and cast the values
     /// @tparam FileType Type inside the file
     /// @param src Piece of memory coming from libtiff
@@ -516,6 +522,43 @@ private:
             
             // - Save the informative or zero-filled value
             dest->data()[
+                tileWidth_ * tileHeight_ * layer
+                    + tileWidth_ * row
+                    + col - startCol] = dataItem;
+        }
+    }
+    #endif
+
+    /// @brief Private function to copy and cast the values
+    /// @tparam FileType Type inside the file
+    /// @param src Piece of memory coming from libtiff
+    /// @param dest_as_vector Feature extraction facing buffer to fill
+    /// @param layer Destination layer
+    /// @param row Destination row
+    /// @param startCol Starting column tile to copy
+    /// @param endCol End column tile to copy
+    template<typename FileType>
+    void copyRow(tdata_t src,
+        std::vector<DataType>& dest_as_vector,
+        size_t layer,
+        size_t row,
+        size_t startCol,
+        size_t endCol) 
+    {
+        // Get ahold of the raw pointer
+        DataType* dest = dest_as_vector.data();
+
+        for (size_t col = startCol; col < endCol; col++)
+        {
+            // Logic to prevent "noise" in images whose dimensions are smaller than the default tile buffer size 1024x1024
+            DataType dataItem = (DataType) 0;    // Zero-fill gaps
+
+            // - Informative zone of the strip
+            if (layer < fullDepth_ && row < fullHeight_ && col < fullWidth_)
+                dataItem = (DataType)((FileType*)(src))[col];
+            
+            // - Save the informative or zero-filled value
+            dest[
                 tileWidth_ * tileHeight_ * layer
                     + tileWidth_ * row
                     + col - startCol] = dataItem;
