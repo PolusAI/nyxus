@@ -96,6 +96,9 @@ public:
         size_t indexLayerGlobalTile,
         size_t level) override
     {
+        // Get ahold of the logical (feature extraction facing) tile buffer from its smart pointer
+        std::vector<DataType>& tileDataVec = *tile;
+
         tdata_t tiffTile = nullptr;
         auto t_szb = TIFFTileSize(tiff_);
         tiffTile = _TIFFmalloc(t_szb);
@@ -114,13 +117,17 @@ public:
         case 1:
             switch (bitsPerSample_) 
             {
-            case 8:loadTile<uint8_t>(tiffTile, tile);
+            case 8:
+                loadTile <uint8_t> (tiffTile, tileDataVec);
                 break;
-            case 16:loadTile<uint16_t>(tiffTile, tile);
+            case 16:
+                loadTile <uint16_t> (tiffTile, tileDataVec);    
                 break;
-            case 32:loadTile<size_t>(tiffTile, tile);
+            case 32:
+                loadTile <size_t> (tiffTile, tileDataVec);
                 break;
-            case 64:loadTile<uint64_t>(tiffTile, tile);
+            case 64:
+                loadTile <uint64_t> (tiffTile, tileDataVec);
                 break;
             default:
                 message
@@ -132,13 +139,17 @@ public:
         case 2:
             switch (bitsPerSample_) 
             {
-            case 8:loadTile<int8_t>(tiffTile, tile);
+            case 8:
+                loadTile<int8_t>(tiffTile, tileDataVec);
                 break;
-            case 16:loadTile<int16_t>(tiffTile, tile);
+            case 16:
+                loadTile<int16_t>(tiffTile, tileDataVec);
                 break;
-            case 32:loadTile<int32_t>(tiffTile, tile);
+            case 32:
+                loadTile<int32_t>(tiffTile, tileDataVec);
                 break;
-            case 64:loadTile<int64_t>(tiffTile, tile);
+            case 64:
+                loadTile<int64_t>(tiffTile, tileDataVec);
                 break;
             default:
                 message
@@ -153,10 +164,10 @@ public:
             case 8:
             case 16:
             case 32:
-                loadTile<float>(tiffTile, tile);
+                loadTile<float>(tiffTile, tileDataVec);
                 break;
             case 64:
-                loadTile<double>(tiffTile, tile);
+                loadTile<double>(tiffTile, tileDataVec);
                 break;
             default:
                 message
@@ -205,10 +216,12 @@ public:
 
 private:
 
+    #if 0   // A faster implementation is available. Keeping this for records.
     /// @brief Private function to copy and cast the values
     /// @tparam FileType Type inside the file
     /// @param src Piece of memory coming from libtiff
-    /// @param dest Piece of memory to fill
+    /// @param dest Feature extraction facing logical buffer to fill
+    /// 
     template<typename FileType>
     void loadTile(tdata_t src, std::shared_ptr<std::vector<DataType>>& dest)
     {
@@ -222,6 +235,44 @@ private:
             else
                 dest->data()[i] = (DataType)0;  // Zero-fill gaps
         }
+    }
+    #endif
+
+    /// @brief Private function to copy and cast the values
+    /// @tparam FileType Type inside the file
+    /// @param src Piece of memory coming from libtiff
+    /// @param dst_as_vector Feature extraction facing logical buffer to fill
+    /// 
+    template<typename FileType>
+    void loadTile(tdata_t src, std::vector<DataType>& dst_as_vector)
+    {
+        // Get ahold of the raw pointer
+        DataType* dest = dst_as_vector.data();
+
+        // Special case of tileWidth_ (e.g. 1024) > fullWidth_ (e.g. 256)
+        if (tileWidth_ > fullWidth_ && tileHeight_ > fullHeight_)
+        {
+            // Zero-prefill margins of the logical buffer 
+            size_t szb = tileHeight_ * tileWidth_ * sizeof(*dest); 
+            memset(dest, 0, szb);
+
+            // Copy pixels assuming the row-major layout both in the physical (TIFF) and logical (ROI scanner facing) buffers
+            for (size_t r = 0; r < fullHeight_; r++)
+                for (size_t c = 0; c < fullWidth_; c++)
+                {
+                    size_t logOffs = r * tileWidth_ + c,
+                        physOffs = r * tileWidth_ + c;
+                    *(dest + logOffs) = (DataType) *(((FileType*)src) + physOffs);
+                }
+        }
+        else
+            // General case the logical buffer is same size (specifically, tile size) as the physical one even if tileWidth_ (e.g. 1024) < fullWidth_ (e.g. 1080)
+            {
+                size_t n = tileHeight_ * tileWidth_;
+                for (size_t i = 0; i < n; i++)
+                    *(dest + i) = (DataType) *(((FileType*)src) + i);
+            }
+
     }
 
     TIFF*
@@ -315,6 +366,9 @@ public:
         size_t indexLayerGlobalTile,
         [[maybe_unused]] size_t level) override 
     {
+        // Get ahold of the logical (feature extraction facing) tile buffer from its smart pointer
+        std::vector<DataType>& tileDataVec = *tile;
+
         tdata_t buf;
         uint32_t row, layer;
 
@@ -340,13 +394,13 @@ public:
                 case 1:
                     switch (bitsPerSample_) 
                     {
-                    case 8:copyRow<uint8_t>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 8:copyRow<uint8_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
-                    case 16:copyRow<uint16_t>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 16:copyRow<uint16_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
-                    case 32:copyRow<size_t>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 32:copyRow<size_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
-                    case 64:copyRow<uint64_t>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 64:copyRow<uint64_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
                     default:
                         message
@@ -358,13 +412,13 @@ public:
                 case 2:
                     switch (bitsPerSample_) 
                     {
-                    case 8:copyRow<int8_t>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 8:copyRow<int8_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
-                    case 16:copyRow<int16_t>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 16:copyRow<int16_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
-                    case 32:copyRow<int32_t>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 32:copyRow<int32_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
-                    case 64:copyRow<int64_t>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 64:copyRow<int64_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
                     default:
                         message
@@ -378,9 +432,9 @@ public:
                     {
                     case 8:
                     case 16:
-                    case 32:copyRow<float>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 32:copyRow<float>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
-                    case 64:copyRow<double>(buf, tile, layer - startLayer, row - startRow, startCol, endCol);
+                    case 64:copyRow<double>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
                     default:
                         message
@@ -440,6 +494,7 @@ public:
 
 private:
 
+    #if 0   // A faster implementation is available. Keeping this for records.
     /// @brief Private function to copy and cast the values
     /// @tparam FileType Type inside the file
     /// @param src Piece of memory coming from libtiff
@@ -470,6 +525,43 @@ private:
                 tileWidth_ * tileHeight_ * layer
                     + tileWidth_ * row
                     + col - startCol] = dataItem;
+        }
+    }
+    #endif
+
+    /// @brief Private function to copy and cast the values
+    /// @tparam FileType Type inside the file
+    /// @param src Piece of memory coming from libtiff
+    /// @param dest_as_vector Feature extraction facing buffer to fill
+    /// @param layer Destination layer
+    /// @param row Destination row
+    /// @param startCol Starting column tile to copy
+    /// @param endCol End column tile to copy
+    template<typename FileType>
+    void copyRow(tdata_t src,
+        std::vector<DataType>& dest_as_vector,
+        size_t layer,
+        size_t row,
+        size_t start_col,
+        size_t end_col) 
+    {
+        // Get ahold of the raw pointer
+        DataType* dest = dest_as_vector.data();
+
+        for (size_t col = start_col; col < end_col; col++)
+        {
+            // Logic to prevent "noise" in images whose dimensions are smaller than the default tile buffer size 1024x1024
+            DataType dataItem = (DataType) 0;    // Zero-fill gaps
+
+            // - Informative zone of the strip
+            if (layer < fullDepth_ && row < fullHeight_ && col < fullWidth_)
+                dataItem = (DataType)((FileType*)(src))[col];
+            
+            // - Save the informative or zero-filled value
+            dest[
+                tileWidth_ * tileHeight_ * layer
+                    + tileWidth_ * row
+                    + col - start_col] = dataItem;
         }
     }
 
