@@ -1,0 +1,9 @@
+z5py 
+libtiff 
+boost 
+nlohmann_json 
+blosc 
+pybind11 
+xtensor 
+xsimd 
+compilers=1.1.1

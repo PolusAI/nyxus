@@ -112,7 +112,6 @@ __global__ void kerCentralMom(
     int gthIdx = thIdx + blockIdx.x * blockSize;
     const int gridSize = blockSize * gridDim.x;
     double sum = 0.;
-    double q_ = (double)q, p_ = (double)p;
     for (size_t i = gthIdx; i < arraySize; i += gridSize)
     {
         // Formula: sum += D.yx(y,x) * pow((double(x) - originOfX), p) * pow((double(y) - originOfY), q);

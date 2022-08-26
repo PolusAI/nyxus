@@ -131,7 +131,7 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 --intSegMapFile | Name of the text file containing an ad-hoc intensity-to-mask file mapping. The files are assumed to reside in corresponding intensity and label collections | Input | string
 --features|Select intensity and shape features required|Input|array
 --filePattern|To match intensity and labeled/segmented images |Input|string
---csvfile|Save csv file as one csv file for all images or separate csv file for each image|Input|enum
+--csvFile|Save csv file as one csv file for all images or separate csv file for each image|Input|enum
 --pixelDistance|Pixel distance to calculate the neighbors touching cells|Input|integer|
 --embeddedpixelsize|Consider the unit embedded in metadata, if present|Input|boolean
 --unitLength|Enter the metric for unit conversion|Input|string
@@ -160,40 +160,48 @@ Suppose we need to process intensity/mask file p1_y2_r68_c1.ome.tif :
 ```
 
 ## Building from source
-To build Nyxus from source, make sure you clone the Github repository with the `--recurse-submodules` option to clone all the necessary dependencies.
 
-```
+Nyxus can either be build inside a `conda` environment or independently outside of it. For the later case, we provide a script to make it easier to download and build all the necessary dependencies.
+
+### Inside Conda
+To build Nyxus from source, make sure you clone the Github repository with the `--recurse-submodules` option to clone FastLoader and Hedgehog, which are two necessary dependencies. Nyxus uses a CMake build system. Below is an example of how to build Nyxus inside a `conda` environment.
+
+```bash
 git clone --recurse-submodules https://github.com/PolusAI/nyxus.git
-```
-
-Nyxus relies on [libTIFF](http://www.libtiff.org) as an external dependency which is readily available on most Unix-based OSs via the system package manager. 
-
-For Debian-based distros, such as Ubuntu, this can be installed via:
-
-```bash
-sudo apt install libtiff-dev
-```
-
-For CentOS:
-```bash
-sudo yum install libtiff-devel
-```
-
-For Mac OSX (via [Homebrew](https://brew.sh/)):
-```bash
-brew install libtiff
-```
-
-Nyxus uses a CMake build system.
-```bash
-cd nyxus
+cd Nyxus
 mkdir build
 cd build
-cmake -DBUILD_CLI=ON ..
+conda install -y --file -c conda-forge ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_gpu.txt --file ci-utils/envs/conda_py.txt
+cmake -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX ..
 make -j4
 ```
 
-Note that `-DBUILD_CLI=ON` tells Nyxus to build the command line interface as well. 
+Note that `-DBUILD_CLI=ON` tells Nyxus to build the command line interface and `-DUSEGPU=ON` enables CUDA support if a CUDA supported device is avialable on the host. 
+
+To install the python package in the `conda` environment, use the following direction.
+```bash
+git clone --recurse-submodules https://github.com/PolusAI/nyxus.git
+cd Nyxus
+conda install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_gpu.txt --file ci-utils/envs/conda_py.txt
+CMAKE_ARGS=" -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX " python setup.py install
+```
+We also provide an example script that downloads `conda`, installs the necessary dependencies and then builds both the CLI and the python library. To run the script, do the follwoing.
+```bash
+git clone --recurse-submodules https://github.com/PolusAI/nyxus.git
+cd Nyxus/ci-utils
+./build_conda.sh ..
+```
+### Without Using Conda
+To build Nyxus outside of a `conda` environment, use the following example.
+```bash
+git clone --recurse-submodules https://github.com/PolusAI/nyxus.git
+cd Nyxus
+mkdir build
+cd build
+bash ../ci-utils/install_prereq_linux.sh
+cmake -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=./local_install -DCMAKE_INSTALL_PREFIX=./local_install ..
+make -j4
+```
 
 ## Running via Docker 
 Running Nyxus from a local directory freshly made Docker container is a good idea. It allows one to test-run conteinerized Nyxus before it reaches Docker cloud deployment.
@@ -209,17 +217,15 @@ docker pull polusai/nyxus
 
 The following command line is an example of running the dockerized feature extractor (image hash 87f3b560bbf2) with only intensity features selected:
 ```
-docker run -it --mount type=bind,source=/images/collections,target=/data 87f3b560bbf2 --intDir=/data/c1/int --segDir=/data/c1/seg --outDir=/data/output --filePattern=.* --csvfile=separatecsv --features=entropy,kurtosis,skewness,max_intensity,mean_intensity,min_intensity,median,mode,standard_deviation
+docker run -it [--gpus all] --mount type=bind,source=/images/collections,target=/data 87f3b560bbf2 --intDir=/data/c1/int --segDir=/data/c1/seg --outDir=/data/output --filePattern=.* --csvFile=separatecsv --features=entropy,kurtosis,skewness,max_intensity,mean_intensity,min_intensity,median,mode,standard_deviation
 ```
-
-
 
 ### Install from sources and package into a Docker image
 
 If you want to build your own Nyxus Docker container we provide a convenient shell script:
 
 ```
-./build-docker.sh
+./ci-utils/build-docker.sh
 ```
 
 
@@ -230,6 +236,8 @@ Nyxus is tested with Python 3.6+. Nyxus relies on the the following packages, wh
 [NIST Fastloader](https://github.com/usnistgov/FastLoader) >= 2.1.4 <br>
 [pybind11](https://github.com/pybind/pybind11) >= 2.8.1 <br>
 [libTIFF](http://www.libtiff.org) >= 3.6.1 <br>
+[Z5](https://github.com/constantinpape/z5) >=2.0.15 <br>
+Each of these dependencies also have hierarchical dependencies and so we recommend using the `conda` build system when building from source.
 
 ## WIPP Usage
 

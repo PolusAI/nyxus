@@ -88,7 +88,7 @@ private:
         std::vector<std::vector<PixIntens>>& /* double* */ out, 
         double* auxC, 
         double* Gexp,
-        double f[8], 
+        std::vector<double>& f, 
         double sig2lam, 
         double gamma, 
         double theta, 
