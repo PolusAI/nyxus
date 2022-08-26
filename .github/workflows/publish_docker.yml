@@ -48,7 +48,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
       with:
-        images: sameeul/nyxus
+        images: polusai/nyxus
     
     - name: Build and push Docker image
       env:
@@ -57,5 +57,5 @@ jobs:
       with:
         context: .
         push: true
-        tags: sameeul/${{ env.DOCKER_REPO }}:latest
+        tags: polusai/${{ env.DOCKER_REPO }}:${{ env.VERSION }}, polusai/${{ env.DOCKER_REPO }}:latest
         labels: ${{ steps.meta.outputs.labels }}
