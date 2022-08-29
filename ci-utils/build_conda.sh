@@ -46,8 +46,9 @@ function setup_miniconda() {
   conda create -y -n nyxus-$PYTHON -c conda-forge  \
         python=$PYTHON \
         --file ${SRC_ROOT}/ci-utils/envs/conda_cpp.txt \
+        --file ${SRC_ROOT}/ci-utils/envs/conda_linux_compiler.txt \
         --file ${SRC_ROOT}/ci-utils/envs/conda_py.txt \
-        --file ${SRC_ROOT}/ci-utils/envs/conda_gpu.txt 
+        --file ${SRC_ROOT}/ci-utils/envs/conda_linux_gpu.txt 
 
   export PATH=$LOCAL_PATH
 }

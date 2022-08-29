@@ -164,38 +164,44 @@ Suppose we need to process intensity/mask file p1_y2_r68_c1.ome.tif :
 Nyxus can either be build inside a `conda` environment or independently outside of it. For the later case, we provide a script to make it easier to download and build all the necessary dependencies.
 
 ### Inside Conda
-To build Nyxus from source, make sure you clone the Github repository with the `--recurse-submodules` option to clone FastLoader and Hedgehog, which are two necessary dependencies. Nyxus uses a CMake build system. Below is an example of how to build Nyxus inside a `conda` environment.
+To build Nyxus from source, make sure you clone the Github repository with the `--recurse-submodules` option to clone FastLoader and Hedgehog, which are two necessary dependencies. Nyxus uses a CMake build system. To build the command line interface, pass `-DBUILD_CLI=ON` in the `cmake` command. For building with GPU support, use `-DUSEGPU=ON` flag in the `cmake` command. Here are the few notes on building with GPU support.
+
+* Currently, GPU builds on Mac OS is not supported. 
+* Due to the limitation of CUDA Development toolkit, upto GCC 9.X versions can be used on Linux. 
+* On Windows, we assume the correct version of CUDA toolkit and compiler is installed that is compatible with the Microsoft Visual Studio C++ compiler. 
+
+Below is an example of how to build Nyxus inside a `conda` environment on Linux.
 
 ```bash
 git clone --recurse-submodules https://github.com/PolusAI/nyxus.git
-cd Nyxus
+cd nyxus
+conda install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_linux_compiler.txt --file ci-utils/envs/conda_py.txt --file ci-utils/envs/conda_linux_gpu.txt
 mkdir build
 cd build
-conda install -y --file -c conda-forge ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_gpu.txt --file ci-utils/envs/conda_py.txt
 cmake -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX ..
 make -j4
 ```
+If you are building on Mac or Windows, skip the dependencies from `ci-utils/envs/conda_linux_compiler.txt` and `ci-utils/envs/conda_linux_gpu.txt`
 
-Note that `-DBUILD_CLI=ON` tells Nyxus to build the command line interface and `-DUSEGPU=ON` enables CUDA support if a CUDA supported device is avialable on the host. 
-
-To install the python package in the `conda` environment, use the following direction.
+To install the python package in the `conda` environment on Linux, use the following direction.
 ```bash
 git clone --recurse-submodules https://github.com/PolusAI/nyxus.git
-cd Nyxus
-conda install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_gpu.txt --file ci-utils/envs/conda_py.txt
+cd nyxus
+conda install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_linux_compiler.txt --file ci-utils/envs/conda_linux_gpu.txt --file ci-utils/envs/conda_py.txt
 CMAKE_ARGS=" -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX " python setup.py install
 ```
-We also provide an example script that downloads `conda`, installs the necessary dependencies and then builds both the CLI and the python library. To run the script, do the follwoing.
+
+We also provide an example script that downloads `conda`, installs the necessary dependencies and then builds both the CLI and the python library on Linux. To run the script, do the follwoing.
 ```bash
 git clone --recurse-submodules https://github.com/PolusAI/nyxus.git
-cd Nyxus/ci-utils
+cd nyxus/ci-utils
 ./build_conda.sh ..
 ```
 ### Without Using Conda
 To build Nyxus outside of a `conda` environment, use the following example.
 ```bash
 git clone --recurse-submodules https://github.com/PolusAI/nyxus.git
-cd Nyxus
+cd nyxus
 mkdir build
 cd build
 bash ../ci-utils/install_prereq_linux.sh
