@@ -6,4 +6,4 @@ blosc
 pybind11 
 xtensor 
 xsimd 
-cmnake
+cmake
