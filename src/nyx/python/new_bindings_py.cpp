@@ -230,7 +230,22 @@ PYBIND11_MODULE(backend, m)
 
     m.def("initialize_environment", &initialize_environment, "Environment initialization");
     m.def("process_data", &process_data, "Process images, calculate features");
-    m.def("findrelations_imp", &findrelations_imp, "Find relations in segmentation images");
+    m.def("findrelations_imp", py::overload_cast<bool output2python, 
+                                                const std::string& label_dir, 
+                                                const std::string& file_pattern, 
+                                                const std::string& channel_signature, 
+                                                const int parent_channel, 
+                                                const int child_channel, 
+                                                const std::string& outdir, 
+                                                const ChildFeatureAggregation& aggr, 
+                                                int verbosity_level>(&findrelations_imp), "Find relations in segmentation images");
+    m.def("findrelations_imp", py::overload_cast<bool output2python, 
+                                                const std::string& label_dir,
+                                                const std::string& parent_file_pattern,
+                                                const std::string& child_file_pattern,
+                                                const std::string& outdir, 
+                                                const ChildFeatureAggregation& aggr, 
+                                                int verbosity_level>(&findrelations_imp), "Find relations in segmentation images");
     m.def("gpu_available", &Environment::gpu_is_available, "Check if CUDA gpu is available");
     m.def("use_gpu", &use_gpu, "Enable/disable GPU features");
     m.def("get_gpu_props", &get_gpu_properties, "Get properties of CUDA gpu");
