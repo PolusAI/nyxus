@@ -205,7 +205,6 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r)
     // --3
     std::vector<double> auxG (n * n * 2);
 
-    //cout << "here" << endl;
     for(int i = 0; i < 8; i += num_filters){
 
         // compute the original score before Gabor
