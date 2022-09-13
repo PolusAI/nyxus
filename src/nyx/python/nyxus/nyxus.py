@@ -156,47 +156,63 @@ class Nyxus:
 		
 class Nested:
     """Nyxus image feature extraction library / ROI hierarchy analyzer
+    
+    Valid aggregate functions are any functions available in pandas.DatFrame.aggregate,
+    e.g. min, max, count, std. Lambda functions can also be passed. To provide a name to
+    the aggregate function, pass in a list of tuples where the first element in the name
+    and the second is the function, e.g. aggregate=[('nanmean', lambda x: np.nanmean(x))]. 
+    
+    Parameters
+        ----------
+        aggregate : list
+            List of aggregate functions. Any aggregate function from Pandas can be used
+            along with lambda functions.
 	
 	Example
 	-------
-	from nyxus import Nested
+	from nyxus import Nested, Nyxus
+    
+    int_path = '/home/data/6234838c6b123e21c8b736f5/tissuenet_tif/int'
+    seg_path = '/home/data/6234838c6b123e21c8b736f5/tissuenet_tif/seg'
+    
+    nyx = Nyxus(["*ALL*"])
+    
+    features = nyx.featurize(int_path, seg_path, file_pattern='p[0-9]_y[0-9]_r[0-9]_c0\.ome\.tif')
+ 
 	nn = Nested()
-	segPath = '/home/data/6234838c6b123e21c8b736f5/tissuenet_tif/seg'
-	fPat = '.*'
-	cnlSig = '_c'
-	parCnl = '1'
-	chiCnl = '0'
-	rels = nn.findrelations (segPath, fPat, cnlSig, parCnl, chiCnl)	
+	
+	parent_filepattern = 'p{r}_y{c}_r{z}_c1.ome.tif'
+    child_filepattern = 'p{r}_y{c}_r{z}_c0.ome.tif'
+    
+	rels = nn.find_relations (seg_path, parent_filepattern, child_filepattern)
+ 
+    df = nn.featurize(rels, features)
     """
 
-    def __init__(self):
-        pass
-
-    def findrelations(
+    def __init__(self, aggregate: Optional[list] = []):
+        
+        self.aggregate = aggregate
+    
+    
+    def find_relations(
         self,
         label_dir: str,
-        file_pattern: str, 
-        channel_signature: str, 
-        parent_channel: str, 
-        child_channel: str):
+        parent_file_pattern: str, 
+        child_file_pattern: str):
+    
         """Finds parent-child relationships.
 
-        Find parent-child relationships assuming that images ending <channel_signature><parent_channel> 
-        contain parent ROIs and images ending <channel_signature><child_channel> contain child ROIs.
+        Find parent-child relationships of parent files matching the parent_file_pattern
+        and child files matching the child_file_pattern.
 
         Parameters
         ----------
         label_dir : str 
             Path to directory containing label images.
-        file_pattern: str 
-            Regular expression used to filter the images present in `label_dir`.
-        channel_signature : str
-            Characters preceding the channel identifier e.g. "_c". 
-        parent_channel : str
-            Identifier of the parent channel e.g. "1".
-        child_channel : str
-            Identifier of the child channel e.g. "0".
-
+        parent_file_pattern: str 
+            Regex filepattern to filter the parent files e.g. "p.*_c1\.ome\.tif".
+        child_file_pattern : str
+            Regex filepattern to filter the child files e.g. "p.*_c0\.ome\.tif".
         Returns
         -------
         rel : array
@@ -206,7 +222,7 @@ class Nested:
         if not os.path.exists(label_dir):
             raise IOError (f"Provided label image directory '{label_dir}' does not exist.")
 
-        header, string_data, numeric_data = findrelations_imp (label_dir, file_pattern, channel_signature, parent_channel, child_channel)
+        header, string_data, numeric_data = findrelations_imp(label_dir, parent_file_pattern, child_file_pattern)
 
         df = pd.concat(
             [
@@ -221,4 +237,42 @@ class Nested:
             df["label"] = df.label.astype(np.uint32)
 
         return df
-		
+	
+    def featurize(self, parent_child_map: pd.DataFrame, child_features: pd.DataFrame):
+        """Join child ROI features to the parent-child map.
+
+        Joins parent-child map from the find_relations method with the features from Nyxus. 
+        When aggregate functions are provided from the constructor this method will apply 
+        the aggregate functions to the joined DataFrame. When aggregate functions are not 
+        provided, this method will return a pivoted DataFrame where the columns are grouped by
+        the child labels and the rows are the ROI labels.
+
+        Parameters
+        ----------
+        parent_child_map : pd.DataFrame
+            Map of parent child relations from the find_relations method.
+        child_features: pd.DataFrame
+            Features of the child channel ROIs from Nyxus.find_relations method.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame containing aggregated features for each ROI when aggregate functions are provided.
+            Pivoted DataFrame containing features the child ROI for each label when no aggregate functions are provided.
+        """
+        
+        joined_df = parent_child_map.merge(child_features, left_on=['Child_Label'], right_on=['label'])
+        
+        feature_columns = list(joined_df.columns)[6:]
+
+        if(self.aggregate == []):
+            joined_df.apply(lambda x: x) # convert group_by object to dataframe
+        
+            return joined_df.pivot_table(index='label', columns='Child_Label', values=feature_columns)
+        
+        agg_features = {}
+        for col in feature_columns:
+            agg_features[col] = self.aggregate
+            
+        return joined_df.groupby(by='label').agg(agg_features)
+    

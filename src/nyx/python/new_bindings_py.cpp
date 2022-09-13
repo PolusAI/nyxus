@@ -157,6 +157,35 @@ py::tuple findrelations_imp(
 }
 
 
+py::tuple findrelations_imp(
+        std::string& label_dir,
+        std::string& parent_file_pattern,
+        std::string& child_file_pattern
+    )
+{
+    if (! theEnvironment.check_file_pattern(parent_file_pattern) || ! theEnvironment.check_file_pattern(child_file_pattern))
+        throw std::invalid_argument("Filepattern provided is not valid.");
+
+    theResultsCache.clear();
+
+    // Result -> headerBuf, stringColBuf, calcResultBuf
+    ChildFeatureAggregation aggr;
+    bool mineOK = mine_segment_relations (true, label_dir, parent_file_pattern, child_file_pattern, ".", aggr, theEnvironment.get_verbosity_level());  // the 'outdir' parameter is not used if 'output2python' is true
+
+    if (! mineOK)
+        throw std::runtime_error("Error occurred during dataset processing: mine_segment_relations() returned false");
+    
+    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf())); // Column names
+    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf())); // String cells of first n columns
+    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));  // Numeric data
+    auto nRows = theResultsCache.get_num_rows();
+    pyStrData = pyStrData.reshape({ nRows, pyStrData.size() / nRows });
+    pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+
+    return py::make_tuple(pyHeader, pyStrData, pyNumData);
+}
+
+
 /**
  * @brief Set whether to use the gpu for available gpu features
  * 

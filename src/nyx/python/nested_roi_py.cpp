@@ -650,3 +650,101 @@ bool mine_segment_relations (
 
 	return true;	// success
 }
+
+
+/// @brief Finds related (nested) segments and sets global variables 'pyHeader', 'pyStrData', and 'pyNumData' consumed by Python binding function findrelations_imp()
+bool mine_segment_relations (
+	bool output2python, 
+	const std::string& label_dir,
+	const std::string& parent_file_pattern,
+	const std::string& child_file_pattern,
+	const std::string& outdir, 
+	const ChildFeatureAggregation& aggr, 
+	int verbosity_level)
+{
+
+	std::vector<std::string> parentFiles;
+	readDirectoryFiles(label_dir, parent_file_pattern, parentFiles);
+
+	std::vector<std::string> childFiles;
+	readDirectoryFiles(label_dir, child_file_pattern, childFiles);
+
+	// Check if the dataset is meaningful
+	if (parentFiles.size() == 0)
+	{
+		throw std::runtime_error("No parent files to process");
+	}
+
+	if (childFiles.size() == 0)
+	{
+		throw std::runtime_error("No child files to process");
+	}
+
+	if(childFiles.size() != parentFiles.size())
+	{
+		throw std::runtime_error("Parent and child channels must have the same number of files");
+	}
+
+	// Prepare the buffers. 
+	// 'totalNumLabels', 'stringColBuf', and 'calcResultBuf' will be updated with every call of output_roi_relational_table()
+	theResultsCache.clear();
+
+	// Prepare the header
+	theResultsCache.add_to_header({ "Image", "Parent_Label", "Child_Label" });
+
+	// Mine parent-child relations 
+	for (int i = 0; i < parentFiles.size(); ++i)
+	{
+		auto parFname = parentFiles[i];
+		auto chiFname = childFiles[i];
+
+		// Diagnostic
+		//if (verbosity_level >= 1)
+		//	std::cout << stem << "\t" << parent_channel << ":" << child_channel << "\n";	
+
+		// Clear reference tables
+		uniqueLabels1.clear();
+		uniqueLabels2.clear();
+		roiData1.clear();
+		roiData2.clear();
+
+		// Analyze geometric relationships and recognize the hierarchy
+		std::vector<int> P;	// parents
+		bool ok = find_hierarchy(P, parFname, chiFname, verbosity_level);
+		if (!ok)
+		{
+			std::stringstream ss;
+			ss << "Error finding hierarchy based on files " << parFname << " as parent and " << chiFname << " as children";
+			throw std::runtime_error(ss.str());
+		}
+
+		// Output the relational table to object 'theResultsCache'
+		if (output2python)
+		{
+			ok = output_roi_relational_table_2_rescache (P, theResultsCache);
+			if (!ok)
+				throw std::runtime_error("Error creating relational table of segments");
+		}
+		else
+		{
+			ok = output_roi_relational_table_2_csv (P, outdir);
+			if (!ok)
+				throw std::runtime_error("Error creating relational table of segments");
+		}
+
+		// Aggregate features
+		if (output2python)
+		{
+			// Aggregating is implementing externally to this function
+		}
+		else
+		{
+			ok = aggregate_features (P, outdir, aggr);
+			if (!ok)
+				throw std::runtime_error ("Error aggregating features");
+		}
+
+	}
+
+	return true;	// success
+}
