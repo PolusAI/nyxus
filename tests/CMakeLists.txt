@@ -39,7 +39,6 @@ endif(CUDA_FOUND)
 
 set(TEST_SRC
 	test_all.cc
-	test_dummy.h
 	test_pixel_intensity_features.h
 	test_data.h
 	test_gabor.cc
