@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 3.20)
 project(AxleNyxus)
 
+# this is a workaround for GitHub Action for wheelbuiling
+if(DEFINED ENV{NYXUS_DEP_DIR})
+	set(CMAKE_PREFIX_PATH $ENV{NYXUS_DEP_DIR})
+endif()
+
 find_package(CUDA)
+option(USEGPU "Use GPU" OFF)
 if(CUDA_FOUND)
     try_run(RUN_RESULT_VAR COMPILE_RESULT_VAR
         ${CMAKE_BINARY_DIR} 
@@ -16,12 +22,12 @@ if(CUDA_FOUND)
     # COMPILE_RESULT_VAR is TRUE when compile succeeds
     # RUN_RESULT_VAR is zero when a GPU is found
     if(COMPILE_RESULT_VAR AND NOT RUN_RESULT_VAR)
-		option(USEGPU "Use GPU" ON) 
+		set(USEGPU ON)
     else()
-		option(USEGPU "Use GPU" OFF) 
+		set(USEGPU OFF) 
     endif()
 else()
-	option(USEGPU "Use GPU" OFF) 
+	set(USEGPU OFF) 
 endif(CUDA_FOUND)
 
 if(USEGPU)
@@ -47,7 +53,7 @@ set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED True)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive- ")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive- /EHsc /bigobj")
 endif()
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -61,11 +67,7 @@ option(RUN_GTEST "Downloads google unit test API and runs google test scripts to
 set(RUN_GTEST ON)
 
 #==== Pybind11
-add_subdirectory(lib/pybind11)
-
-include_directories(
-	lib/pybind11/include/
-)
+find_package(pybind11 CONFIG REQUIRED)
 
 find_package(OpenMP COMPONENTS C CXX)
 
@@ -152,62 +154,17 @@ pybind11_add_module(backend
 	src/nyx/nested_roi.cpp
 	src/nyx/image_loader1x.cpp
 )
-#== Install OMEZarr PreReqs
-option(WITH_OMEZARR "Build with OMEZarr Support" ON)
-if(WITH_OMEZARR)
-	set(ENV{Z5_INSTALL_DIR} "local_install")
-	set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/$ENV{Z5_INSTALL_DIR})
-	
-	find_package(Boost)
-	if(Boost_FOUND)
-		set(ENV{Boost_INSTALLED} "TRUE")
-	else()
-		set(ENV{Boost_INSTALLED} "FALSE")
-		message(STATUS "Boost will be downloaded and installed")
-	endif()
-	
-	find_package(BLOSC)
-	if(BLOSC_FOUND)
-		set(ENV{BLOSC_INSTALLED} "TRUE")
-	else()
-		set(ENV{BLOSC_INSTALLED} "FALSE")
-	endif()
 
-	find_package(ZLIB)
-	if(ZLIB_FOUND)
-		set(ENV{ZLIB_INSTALLED} "TRUE")
-	else()
-		set(ENV{ZLIB_INSTALLED} "FALSE")
-	endif()
+#== Required for OMETiff  
+find_package(TIFF REQUIRED)
+if (TIFF_FOUND)
+	list(APPEND Nyxus_LIBRARIES ${TIFF_LIBRARIES} )
+	include_directories (${TIFF_INCLUDE_DIR})
+endif (TIFF_FOUND)
 
-	find_package(TIFF)
-	if(TIFF_FOUND)
-		set(ENV{TIFF_INSTALLED} "TRUE")
-	else()
-		set(ENV{TIFF_INSTALLED} "FALSE")
-	endif()
-
-	find_file(Z5_Installed "z5/z5.hxx")
-	if(${Z5_Installed} STREQUAL "Z5_Installed-NOTFOUND")
-		set(ENV{Z5_INSTALLED} "FALSE")
-	else()
-		set(ENV{Z5_INSTALLED} "TRUE")
-		message(STATUS "Found Z5: ${Z5_Installed}")
-	endif()
-
-	if(UNIX)
-		execute_process(COMMAND bash ${CMAKE_SOURCE_DIR}/build_scripts/install_prereq_linux.sh)
-	endif()
-	if(WIN32)
-		execute_process(COMMAND cmd /C ${CMAKE_SOURCE_DIR}/build_scripts/install_prereq_win.bat)
-	endif()	
-
-	find_package(Boost REQUIRED)
-	if(Boost_FOUND)
-		include_directories(${Boost_INCLUDE_DIR})
-	endif()
-	find_package(BLOSC REQUIRED)
-	include_directories(${BLOSC_INCLUDE_DIR})
+#== Required for OMEZarr 
+find_package(BLOSC REQUIRED)
+if(BLOSC_FOUND)
 	target_compile_definitions(backend PRIVATE -DWITH_BLOSC)
 	target_link_libraries(backend PRIVATE ${BLOSC_LIBRARIES})
 	if(BUILD_CLI)
@@ -218,6 +175,20 @@ if(WITH_OMEZARR)
 	endif()
 endif()
 
+find_package(Boost REQUIRED)
+if(Boost_FOUND)
+	include_directories(${Boost_INCLUDE_DIR})
+endif()
+
+find_package(nlohmann_json REQUIRED)
+if(nlohmann_json_FOUND)
+	include_directories(${nlohmann_json_INCLUDE_DIR})
+endif()
+
+find_file(Z5 "z5/z5.hxx" REQUIRED)
+
+
+# FastLoaded - Will probably get removed
 find_package(FastLoader)
 if(FastLoader_FOUND)
 	list(APPEND Nyxus_LIBRARIES ${FastLoader_LIBRARIES})
@@ -234,7 +205,10 @@ if(USEGPU)
         src/nyx/gpu/gabor.cu
 	)
 	add_library(nyxus_gpu ${GPU_SOURCE_FILES})
-	target_compile_options(nyxus_gpu PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
+
+	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(nyxus_gpu PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
+	endif()
 
     INCLUDE_DIRECTORIES(/usr/local/cuda-11.0/samples/common/inc  
 		${CUDA_TOOLKIT_INCLUDE})
@@ -273,7 +247,6 @@ target_link_libraries(backend PRIVATE ${Nyxus_LIBRARIES})
 if (APPLE)
 	set_target_properties(backend PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
 endif()
-
 
 if(BUILD_CLI)
 	target_link_libraries(nyxus PRIVATE ${Nyxus_LIBRARIES})

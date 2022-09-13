@@ -55,7 +55,7 @@ int main (int argc, char** argv)
 		intensFiles, labelFiles);
 	if (errorCode)
 	{
-		std::cout << std::endl << "Dataset structure error" << std::endl;
+		std::cout << "Dataset structure error\n";
 		return 1; 
 	}
 
@@ -87,10 +87,10 @@ int main (int argc, char** argv)
 		std::cout << std::endl << "Dataset structure error" << std::endl;
 		break;
 	case 2:		// Internal FastLoader error e.g. TIFF access error
-		std::cout << std::endl << "Dataset structure error" << std::endl;
+		std::cout << std::endl << "Image access error" << std::endl;
 		break;
 	case 3:		// Memory error
-		std::cout << std::endl << "Dataset structure error" << std::endl;
+		std::cout << std::endl << "Memory error" << std::endl;
 		break;
 	default:	// Any other error
 		std::cout << std::endl << "Error #" << errorCode << std::endl;

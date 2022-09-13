@@ -1,10 +1,8 @@
-FROM debian:bullseye-slim
+FROM nvidia/cuda:11.0.3-runtime-ubuntu20.04
 
 COPY VERSION /
-		
-RUN apt-get update
-RUN apt-get install -y libtiff5-dev libtiff-dev libdeflate-dev
 
+ARG LIB_LOCATION="3rd_party_libs"
 ARG EXEC_DIR="/opt/executables"
 ARG DATA_DIR="/data"
 ARG LIB_DIR="/usr/lib/x86_64-linux-gnu"
@@ -15,7 +13,7 @@ RUN mkdir -p ${EXEC_DIR} \
     && mkdir -p ${DATA_DIR}/outputs
 
 # Copy Library
-COPY local_install/lib/libblosc.so* ${LIB_DIR}/
+COPY ${LIB_LOCATION}/*.so* ${LIB_DIR}/
 
 #Copy executable
 COPY nyxus ${EXEC_DIR}/

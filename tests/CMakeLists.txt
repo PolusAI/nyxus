@@ -10,9 +10,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
-set(CMAKE_EXE_LINKER_FLAGS "-v")
-
+option(USEGPU "Use GPU" OFF)
 find_package(CUDA)
+
 if(CUDA_FOUND)
 	get_filename_component(PARENT_DIR ../ ABSOLUTE)
 
@@ -29,12 +29,12 @@ if(CUDA_FOUND)
     # COMPILE_RESULT_VAR is TRUE when compile succeeds
     # RUN_RESULT_VAR is zero when a GPU is found
     if(COMPILE_RESULT_VAR AND NOT RUN_RESULT_VAR)
-		option(USEGPU "Use GPU" ON) 
+		set(USEGPU ON) 
     else()
-		option(USEGPU "Use GPU" OFF) 
+		set(USEGPU OFF) 
     endif()
 else()
-	option(USEGPU "Use GPU" OFF) 
+	set(USEGPU OFF) 
 endif(CUDA_FOUND)
 
 set(TEST_SRC
@@ -119,9 +119,12 @@ if(USEGPU)
 	)
 
 	target_sources(runAllTests PRIVATE ${GPU_SOURCE_FILES})
-	target_compile_options(runAllTests PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
-
-    INCLUDE_DIRECTORIES(/usr/local/cuda-11.0/samples/common/inc  
+	
+	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(runAllTests PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
+	endif()
+    
+	INCLUDE_DIRECTORIES(/usr/local/cuda-11.0/samples/common/inc  
 		${CUDA_TOOLKIT_INCLUDE})
 	target_link_libraries(runAllTests PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
 	set_target_properties(runAllTests PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
@@ -135,7 +138,7 @@ endif()
 find_package(TIFF REQUIRED)
 if (TIFF_FOUND)
 	list(APPEND runAllTests_LIBRARIES ${TIFF_LIBRARIES} )
-	target_include_directories (runAllTests PRIVATE ${TIFF_CXX_FLAGS})
+	include_directories (${TIFF_INCLUDE_DIR})
 else ()
 	message(FATAL_ERROR "libtiff library has not been found, please install it.")
 	SET(FastLoader_FOUND OFF)

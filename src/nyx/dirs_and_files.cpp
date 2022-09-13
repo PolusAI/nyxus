@@ -101,7 +101,7 @@ namespace Nyxus
 			}
 			if (intensFiles.size() != labelFiles.size())
 			{
-				std::cout << "The number of intensity directory files (" << intensFiles.size() << ") should match the number of label directory files (" << labelFiles.size() << ")" << std::endl;
+				std::cout << "Mismatch: " << intensFiles.size() << " intensity images vs " << labelFiles.size() << " mask images\n";
 				return 3;
 			}
 

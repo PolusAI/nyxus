@@ -1,13 +1,19 @@
 # Nyxus
 
+[![Documentation Status](https://readthedocs.org/projects/nyxus/badge/?version=latest)](https://nyxus.readthedocs.io/en/latest/)
+[![PyPI](https://img.shields.io/pypi/v/nyxus.svg)](https://pypi.org/project/nyxus/)
+[![Downloads](https://img.shields.io/pypi/dm/nyxus)](https://pypi.org/project/nyxus/)
+
 A scalable library for calculating features from intensity-label image data
 
 ## Overview
 Nyxus is a feature-rich, highly optimized, Python/C++ application capable of analyzing images of arbitrary size and assembling complex regions of interest (ROIs) split across multiple image tiles and files. This accomplished through multi-threaded tile prefetching and a three phase analysis pipeline shown below. 
 
-![](docs/nyxus_workflow.jpg)
+![](docs/source/nyxus_workflow.jpg)
 
 Nyxus can be used via Python or command line and is available in containerized form for reproducible execution. Nyxus computes over 450 combined intensity, texture, and morphological features at the ROI or whole image level with more in development. Key features that make Nyxus unique among other image feature extraction applications is its ability to operate at any scale, its highly validated algorithms, and its modular nature that makes the addition of new features straightforward.
+
+The docs can be found at [Read the Docs](https://nyxus.readthedocs.io/en/latest/).
 
 ## Getting started 
 
@@ -125,7 +131,7 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 --intSegMapFile | Name of the text file containing an ad-hoc intensity-to-mask file mapping. The files are assumed to reside in corresponding intensity and label collections | Input | string
 --features|Select intensity and shape features required|Input|array
 --filePattern|To match intensity and labeled/segmented images |Input|string
---csvfile|Save csv file as one csv file for all images or separate csv file for each image|Input|enum
+--csvFile|Save csv file as one csv file for all images or separate csv file for each image|Input|enum
 --pixelDistance|Pixel distance to calculate the neighbors touching cells|Input|integer|
 --embeddedpixelsize|Consider the unit embedded in metadata, if present|Input|boolean
 --unitLength|Enter the metric for unit conversion|Input|string
@@ -154,40 +160,54 @@ Suppose we need to process intensity/mask file p1_y2_r68_c1.ome.tif :
 ```
 
 ## Building from source
-To build Nyxus from source, make sure you clone the Github repository with the `--recurse-submodules` option to clone all the necessary dependencies.
 
-```
+Nyxus can either be build inside a `conda` environment or independently outside of it. For the later case, we provide a script to make it easier to download and build all the necessary dependencies.
+
+### Inside Conda
+To build Nyxus from source, make sure you clone the Github repository with the `--recurse-submodules` option to clone FastLoader and Hedgehog, which are two necessary dependencies. Nyxus uses a CMake build system. To build the command line interface, pass `-DBUILD_CLI=ON` in the `cmake` command. For building with GPU support, use `-DUSEGPU=ON` flag in the `cmake` command. Here are the few notes on building with GPU support.
+
+* Currently, GPU builds on Mac OS is not supported. 
+* Due to the limitation of CUDA Development toolkit, upto GCC 9.X versions can be used on Linux. 
+* On Windows, we assume the correct version of CUDA toolkit and compiler is installed that is compatible with the Microsoft Visual Studio C++ compiler. 
+
+Below is an example of how to build Nyxus inside a `conda` environment on Linux.
+
+```bash
 git clone --recurse-submodules https://github.com/PolusAI/nyxus.git
+cd nyxus
+conda install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_linux_compiler.txt --file ci-utils/envs/conda_py.txt --file ci-utils/envs/conda_linux_gpu.txt
+mkdir build
+cd build
+cmake -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX ..
+make -j4
+```
+If you are building on Mac or Windows, skip the dependencies from `ci-utils/envs/conda_linux_compiler.txt` and `ci-utils/envs/conda_linux_gpu.txt`
+
+To install the python package in the `conda` environment on Linux, use the following direction.
+```bash
+git clone --recurse-submodules https://github.com/PolusAI/nyxus.git
+cd nyxus
+conda install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_linux_compiler.txt --file ci-utils/envs/conda_linux_gpu.txt --file ci-utils/envs/conda_py.txt
+CMAKE_ARGS=" -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX " python setup.py install
 ```
 
-Nyxus relies on [libTIFF](http://www.libtiff.org) as an external dependency which is readily available on most Unix-based OSs via the system package manager. 
-
-For Debian-based distros, such as Ubuntu, this can be installed via:
-
+We also provide an example script that downloads `conda`, installs the necessary dependencies and then builds both the CLI and the python library on Linux. To run the script, do the follwoing.
 ```bash
-sudo apt install libtiff-dev
+git clone --recurse-submodules https://github.com/PolusAI/nyxus.git
+cd nyxus/ci-utils
+./build_conda.sh ..
 ```
-
-For CentOS:
+### Without Using Conda
+To build Nyxus outside of a `conda` environment, use the following example.
 ```bash
-sudo yum install libtiff-devel
-```
-
-For Mac OSX (via [Homebrew](https://brew.sh/)):
-```bash
-brew install libtiff
-```
-
-Nyxus uses a CMake build system.
-```bash
+git clone --recurse-submodules https://github.com/PolusAI/nyxus.git
 cd nyxus
 mkdir build
 cd build
-cmake -DBUILD_CLI=ON ..
+bash ../ci-utils/install_prereq_linux.sh
+cmake -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=./local_install -DCMAKE_INSTALL_PREFIX=./local_install ..
 make -j4
 ```
-
-Note that `-DBUILD_CLI=ON` tells Nyxus to build the command line interface as well. 
 
 ## Running via Docker 
 Running Nyxus from a local directory freshly made Docker container is a good idea. It allows one to test-run conteinerized Nyxus before it reaches Docker cloud deployment.
@@ -203,17 +223,15 @@ docker pull polusai/nyxus
 
 The following command line is an example of running the dockerized feature extractor (image hash 87f3b560bbf2) with only intensity features selected:
 ```
-docker run -it --mount type=bind,source=/images/collections,target=/data 87f3b560bbf2 --intDir=/data/c1/int --segDir=/data/c1/seg --outDir=/data/output --filePattern=.* --csvfile=separatecsv --features=entropy,kurtosis,skewness,max_intensity,mean_intensity,min_intensity,median,mode,standard_deviation
+docker run -it [--gpus all] --mount type=bind,source=/images/collections,target=/data 87f3b560bbf2 --intDir=/data/c1/int --segDir=/data/c1/seg --outDir=/data/output --filePattern=.* --csvFile=separatecsv --features=entropy,kurtosis,skewness,max_intensity,mean_intensity,min_intensity,median,mode,standard_deviation
 ```
-
-
 
 ### Install from sources and package into a Docker image
 
 If you want to build your own Nyxus Docker container we provide a convenient shell script:
 
 ```
-./build-docker.sh
+./ci-utils/build-docker.sh
 ```
 
 
@@ -224,6 +242,8 @@ Nyxus is tested with Python 3.6+. Nyxus relies on the the following packages, wh
 [NIST Fastloader](https://github.com/usnistgov/FastLoader) >= 2.1.4 <br>
 [pybind11](https://github.com/pybind/pybind11) >= 2.8.1 <br>
 [libTIFF](http://www.libtiff.org) >= 3.6.1 <br>
+[Z5](https://github.com/constantinpape/z5) >=2.0.15 <br>
+Each of these dependencies also have hierarchical dependencies and so we recommend using the `conda` build system when building from source.
 
 ## WIPP Usage
 

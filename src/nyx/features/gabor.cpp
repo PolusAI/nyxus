@@ -210,7 +210,7 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r)
         // compute the original score before Gabor
         vector<vector<PixIntens>> e2_pix_plane_vec(num_filters, vector<PixIntens>(Im0.width * Im0.height));
 
-        double f[num_filters];
+        std::vector<double> f(num_filters);
 
         for(int j = i; j < i + num_filters; j++) {
             if(j >= 8) break;
@@ -772,7 +772,7 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
     vector<vector<PixIntens>>& /* double* */ out, 
     double* auxC, 
     double* Gexp,
-    double f[8], 
+    std::vector<double>& f, 
     double sig2lam, 
     double gamma, 
     double theta, 
