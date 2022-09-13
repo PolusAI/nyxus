@@ -26,49 +26,64 @@ namespace Nyxus
 
 		// Timing block (image scanning)
 		{
-			STOPWATCH("Image scan/ImgScan/Scan/lightsteelblue", "\t=");
+			//______	STOPWATCH("Image scan/ImgScan/Scan/lightsteelblue", "\t=");
 
-			// Report the amount of free RAM
-			unsigned long long freeRamAmt = getAvailPhysMemory();
-			static unsigned long long initial_freeRamAmt = 0;
-			if (initial_freeRamAmt == 0)
-				initial_freeRamAmt = freeRamAmt;
-			double memDiff = double(freeRamAmt) - double(initial_freeRamAmt);
-			VERBOSLVL1(std::cout << std::setw(15) << freeRamAmt << " bytes free (" << "consumed=" << memDiff << ") ";)
+			{ STOPWATCH("Image scan1/ImgScan1/Scan1/lightsteelblue", "\t=");
 
-			// Display (1) dataset progress info and (2) file pair info
-			int digits = 2, k = std::pow(10.f, digits);
-			float perCent = float(filepair_index * 100 * k / tot_num_filepairs) / float(k);
-			VERBOSLVL1(std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << intens_fpath << " SEG: " << label_fpath << "\n";)
+				// Report the amount of free RAM
+				unsigned long long freeRamAmt = getAvailPhysMemory();
+				static unsigned long long initial_freeRamAmt = 0;
+				if (initial_freeRamAmt == 0)
+					initial_freeRamAmt = freeRamAmt;
+				double memDiff = double(freeRamAmt) - double(initial_freeRamAmt);
+				VERBOSLVL1(std::cout << std::setw(15) << freeRamAmt << " bytes free (" << "consumed=" << memDiff << ") ";)
+
+					// Display (1) dataset progress info and (2) file pair info
+					int digits = 2, k = std::pow(10.f, digits);
+				float perCent = float(filepair_index * 100 * k / tot_num_filepairs) / float(k);
+				VERBOSLVL1(std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << intens_fpath << " SEG: " << label_fpath << "\n";)
+
+			}
+
+			{ STOPWATCH("Image scan2a/ImgScan2a/Scan2a/lightsteelblue", "\t=");
 
 			// Phase 1: gather ROI metrics
 			VERBOSLVL1(std::cout << "Gathering ROI metrics\n";)
-			gatherRoisMetrics(intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
+				gatherRoisMetrics(intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
 
-			// Allocate each ROI's feature value buffer
-			for (auto lab : uniqueLabels)
-			{
-				LR& r = roiData[lab];
-				r.initialize_fvals();
 			}
 
-			// Dump ROI metrics
-			VERBOSLVL4(dump_roi_metrics(label_fpath))	// dumps to file in the output directory
+			{ STOPWATCH("Image scan2b/ImgScan2b/Scan2b/lightsteelblue", "\t=");
 
-			// Distribute ROIs among phases
-			for (auto lab : uniqueLabels)
-			{
-				LR& r = roiData[lab];
-				size_t footprint = r.get_ram_footprint_estimate();
-				if (footprint >= theEnvironment.get_ram_limit())
+					// Allocate each ROI's feature value buffer
+				for (auto lab : uniqueLabels)
 				{
-					VERBOSLVL2(std::cout << ">>> Skipping non-trivial ROI " << lab << " (area=" << r.aux_area << " px, footprint=" << footprint << " b"
-						<< " w=" << r.aabb.get_width() << " h=" << r.aabb.get_height() << " sz_Pixel2=" << sizeof(Pixel2)
-						<< ")\n";)
-						nontrivRoiLabels.push_back(lab);
+					LR& r = roiData[lab];
+					r.initialize_fvals();
 				}
-				else
-					trivRoiLabels.push_back(lab);
+
+				// Dump ROI metrics
+				VERBOSLVL4(dump_roi_metrics(label_fpath))	// dumps to file in the output directory
+
+			}
+
+			{ STOPWATCH("Image scan3/ImgScan3/Scan3/lightsteelblue", "\t=");
+
+				// Distribute ROIs among phases
+				for (auto lab : uniqueLabels)
+				{
+					LR& r = roiData[lab];
+					size_t footprint = r.get_ram_footprint_estimate();
+					if (footprint >= theEnvironment.get_ram_limit())
+					{
+						VERBOSLVL2(std::cout << ">>> Skipping non-trivial ROI " << lab << " (area=" << r.aux_area << " px, footprint=" << footprint << " b"
+							<< " w=" << r.aabb.get_width() << " h=" << r.aabb.get_height() << " sz_Pixel2=" << sizeof(Pixel2)
+							<< ")\n";)
+							nontrivRoiLabels.push_back(lab);
+					}
+					else
+						trivRoiLabels.push_back(lab);
+				}
 			}
 		}
 

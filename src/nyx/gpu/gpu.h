@@ -1,6 +1,6 @@
 #pragma once
 #include <cufft.h>
-#include <helper_cuda.h>
+#include "helper_cuda.h"
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 #include <builtin_types.h>
