@@ -129,45 +129,6 @@ py::tuple process_data(
 }
 
 py::tuple findrelations_imp(
-    const std::string& label_dir, 
-    const std::string& file_pattern, 
-    const std::string& channel_signature, 
-    const std::string& parent_channel, 
-    const std::string& child_channel)
-{
-    if (! theEnvironment.check_file_pattern(file_pattern))
-        throw std::invalid_argument("Filepattern provided is not valid.");
-
-    // check channel numbers
-    int n_parent_channel;
-    if (sscanf(parent_channel.c_str(), "%d", &n_parent_channel) != 1)
-        throw std::runtime_error("Error parsing the parent channel number");
-
-    int n_child_channel;
-    if (sscanf(child_channel.c_str(), "%d", &n_child_channel) != 1)
-        throw std::runtime_error("Error parsing the child channel number");
-
-    theResultsCache.clear();
-
-    // Result -> headerBuf, stringColBuf, calcResultBuf
-    ChildFeatureAggregation aggr;
-    bool mineOK = mine_segment_relations (true, label_dir, file_pattern, channel_signature, n_parent_channel, n_child_channel, ".", aggr, theEnvironment.get_verbosity_level());  // the 'outdir' parameter is not used if 'output2python' is true
-
-    if (! mineOK)
-        throw std::runtime_error("Error occurred during dataset processing: mine_segment_relations() returned false");
-
-    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf())); // Column names
-    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf())); // String cells of first n columns
-    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));  // Numeric data
-    auto nRows = theResultsCache.get_num_rows();
-    pyStrData = pyStrData.reshape({ nRows, pyStrData.size() / nRows });
-    pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
-
-    return py::make_tuple(pyHeader, pyStrData, pyNumData);
-}
-
-
-py::tuple findrelations_imp(
         std::string& label_dir,
         std::string& parent_file_pattern,
         std::string& child_file_pattern
@@ -230,22 +191,7 @@ PYBIND11_MODULE(backend, m)
 
     m.def("initialize_environment", &initialize_environment, "Environment initialization");
     m.def("process_data", &process_data, "Process images, calculate features");
-    m.def("findrelations_imp", py::overload_cast<bool output2python, 
-                                                const std::string& label_dir, 
-                                                const std::string& file_pattern, 
-                                                const std::string& channel_signature, 
-                                                const int parent_channel, 
-                                                const int child_channel, 
-                                                const std::string& outdir, 
-                                                const ChildFeatureAggregation& aggr, 
-                                                int verbosity_level>(&findrelations_imp), "Find relations in segmentation images");
-    m.def("findrelations_imp", py::overload_cast<bool output2python, 
-                                                const std::string& label_dir,
-                                                const std::string& parent_file_pattern,
-                                                const std::string& child_file_pattern,
-                                                const std::string& outdir, 
-                                                const ChildFeatureAggregation& aggr, 
-                                                int verbosity_level>(&findrelations_imp), "Find relations in segmentation images");
+    m.def("findrelations_imp", &findrelations_imp, "Find relations in segmentation images");
     m.def("gpu_available", &Environment::gpu_is_available, "Check if CUDA gpu is available");
     m.def("use_gpu", &use_gpu, "Enable/disable GPU features");
     m.def("get_gpu_props", &get_gpu_properties, "Get properties of CUDA gpu");
