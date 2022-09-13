@@ -1,15 +1,10 @@
 #include <gtest/gtest.h>
-#include "test_dummy.h"
 #include "test_gabor.h"
 #include "test_download_data.h"
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
 #include "test_pixel_intensity_features.h"
 #include "test_initialization.h"
-
-TEST(TEST_NYXUS, DUMMY_TEST){
-  test_dummy_function();
-}
 
 TEST(TEST_NYXUS, TEST_GABOR){
     test_gabor();
