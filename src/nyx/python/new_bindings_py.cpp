@@ -16,6 +16,16 @@ using namespace Nyxus;
 // Defined in nested.cpp
 bool mine_segment_relations(bool output2python, const std::string& label_dir, const std::string& file_pattern, const std::string& channel_signature, const int parent_channel, const int child_channel, const std::string& outdir, const ChildFeatureAggregation& aggr, int verbosity_level);
 
+// Defined in nested.cpp
+bool mine_segment_relations (
+	bool output2python, 
+	const std::string& label_dir,
+	const std::string& parent_file_pattern,
+	const std::string& child_file_pattern,
+	const std::string& outdir, 
+	const ChildFeatureAggregation& aggr, 
+	int verbosity_level);
+
 template <typename Sequence>
 inline py::array_t<typename Sequence::value_type> as_pyarray(Sequence &&seq)
 {
