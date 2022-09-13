@@ -11,19 +11,16 @@ TEST(TEST_NYXUS, DUMMY_TEST){
   test_dummy_function();
 }
 
-TEST(TEST_GABOR_GPU, DSB2018){
-  #ifdef USE_GPU
-    if (get("https://github.com/stardist/stardist/releases/download/0.1.0/dsb2018.zip", "dsb2018")) {
-		ADD_FAILURE_AT(__FILE__, __LINE__);
-	}
-    test_gabor_gpu_2018();
-  #endif
+TEST(TEST_NYXUS, TEST_GABOR){
+    test_gabor();
+	
+	#ifdef USE_GPU
+		test_gabor(true);
+	#endif
+	
 }
 
 TEST(TEST_NYXUS, TEST_INITIALIZATION) {
-	if (get("https://github.com/stardist/stardist/releases/download/0.1.0/dsb2018.zip", "dsb2018")) {
-		ADD_FAILURE_AT(__FILE__, __LINE__);
-	}
 	test_initialization();
 }
 
