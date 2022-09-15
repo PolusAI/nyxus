@@ -141,7 +141,6 @@ if (TIFF_FOUND)
 	include_directories (${TIFF_INCLUDE_DIR})
 else ()
 	message(FATAL_ERROR "libtiff library has not been found, please install it.")
-	SET(FastLoader_FOUND OFF)
 endif (TIFF_FOUND)
 
 target_include_directories (runAllTests PUBLIC ${GTEST_INCLUDE_DIRS})

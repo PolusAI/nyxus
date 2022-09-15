@@ -188,16 +188,6 @@ endif()
 find_file(Z5 "z5/z5.hxx" REQUIRED)
 
 
-# FastLoaded - Will probably get removed
-find_package(FastLoader)
-if(FastLoader_FOUND)
-	list(APPEND Nyxus_LIBRARIES ${FastLoader_LIBRARIES})
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FastLoader_CXX_FLAGS}")
-	include_directories(${FastLoader_INCLUDE_DIR})
-else()
-	message(FATAL_ERROR "Unable to find FastLoader which is required for Nyxus.")
-endif()
-
 if(USEGPU)
 	set(GPU_SOURCE_FILES
 		src/nyx/gpu/gpu_helpers.cu
