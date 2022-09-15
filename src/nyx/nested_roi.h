@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include "roi_cache.h"
 
 /// @brief Segment data cache for finding segment hierarchies 

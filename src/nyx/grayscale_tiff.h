@@ -1,6 +1,5 @@
 #pragma once
 #include "abs_tile_loader.h"
-#include <fast_loader/fast_loader.h> 
 
 #ifdef __APPLE__
 #define uint64 uint64_hack_
@@ -11,6 +10,8 @@
 #else
 #include <tiffio.h>
 #endif
+#include <cstring>
+#include <sstream>
 
 constexpr size_t STRIP_TILE_HEIGHT = 1024;
 constexpr size_t STRIP_TILE_WIDTH = 1024;

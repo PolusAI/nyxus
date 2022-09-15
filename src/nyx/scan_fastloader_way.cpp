@@ -1,7 +1,8 @@
 //
 // This file is a collection of drivers of tiled TIFF file scanning from the FastLoader side
 //
-
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include <vector>
 #include <map>

@@ -5,7 +5,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <fast_loader/fast_loader.h> 
 #include "abs_tile_loader.h"
 
 /// @brief Incapsulates access to an intensity and mask image file pair
