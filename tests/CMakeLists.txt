@@ -14,25 +14,7 @@ option(USEGPU "Use GPU" OFF)
 find_package(CUDA)
 
 if(CUDA_FOUND)
-	get_filename_component(PARENT_DIR ../ ABSOLUTE)
-
-    try_run(RUN_RESULT_VAR COMPILE_RESULT_VAR
-        ${CMAKE_BINARY_DIR} 
-        ${PARENT_DIR}/src/nyx/gpu/find_cuda_gpu.c
-        CMAKE_FLAGS 
-            -DINCLUDE_DIRECTORIES:STRING=${CUDA_TOOLKIT_INCLUDE}
-            -DLINK_LIBRARIES:STRING=${CUDA_CUDART_LIBRARY}
-        COMPILE_OUTPUT_VARIABLE COMPILE_OUTPUT_VAR
-        RUN_OUTPUT_VARIABLE RUN_OUTPUT_VAR)
-	message("---------${CUDA_TOOLKIT_INCLUDE}--------")
-    message("${RUN_OUTPUT_VAR}") # Display number of GPUs found
-    # COMPILE_RESULT_VAR is TRUE when compile succeeds
-    # RUN_RESULT_VAR is zero when a GPU is found
-    if(COMPILE_RESULT_VAR AND NOT RUN_RESULT_VAR)
-		set(USEGPU ON) 
-    else()
-		set(USEGPU OFF) 
-    endif()
+	set(USEGPU ON) 
 else()
 	set(USEGPU OFF) 
 endif(CUDA_FOUND)
@@ -124,7 +106,7 @@ if(USEGPU)
 		target_compile_options(runAllTests PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
 	endif()
 	target_link_libraries(runAllTests PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
-	set_target_properties(runAllTests PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
+	set_target_properties(runAllTests PROPERTIES CUDA_ARCHITECTURES "35;37;50;72;75;80;86")
 
 endif()
 

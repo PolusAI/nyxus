@@ -9,23 +9,7 @@ endif()
 find_package(CUDA)
 option(USEGPU "Use GPU" OFF)
 if(CUDA_FOUND)
-    try_run(RUN_RESULT_VAR COMPILE_RESULT_VAR
-        ${CMAKE_BINARY_DIR} 
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/nyx/gpu/find_cuda_gpu.c
-        CMAKE_FLAGS 
-            -DINCLUDE_DIRECTORIES:STRING=${CUDA_TOOLKIT_INCLUDE}
-            -DLINK_LIBRARIES:STRING=${CUDA_CUDART_LIBRARY}
-        COMPILE_OUTPUT_VARIABLE COMPILE_OUTPUT_VAR
-        RUN_OUTPUT_VARIABLE RUN_OUTPUT_VAR)
-	message("---------${CUDA_TOOLKIT_INCLUDE}--------")
-    message("${RUN_OUTPUT_VAR}") # Display number of GPUs found
-    # COMPILE_RESULT_VAR is TRUE when compile succeeds
-    # RUN_RESULT_VAR is zero when a GPU is found
-    if(COMPILE_RESULT_VAR AND NOT RUN_RESULT_VAR)
-		set(USEGPU ON)
-    else()
-		set(USEGPU OFF) 
-    endif()
+	set(USEGPU ON)
 else()
 	set(USEGPU OFF) 
 endif(CUDA_FOUND)
@@ -35,15 +19,6 @@ if(USEGPU)
     set(CMAKE_CUDA_HOST_LINK_LAUNCHER ${CMAKE_CXX_COMPILER})
     enable_language("CUDA")
     add_definitions(-DUSE_GPU)
-
-    include(FindCUDA/select_compute_arch)
-	CUDA_DETECT_INSTALLED_GPUS(INSTALLED_GPU_CCS_1)
-	string(STRIP "${INSTALLED_GPU_CCS_1}" INSTALLED_GPU_CCS_2)
-	string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
-	string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
-	SET(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
-	set_property(GLOBAL PROPERTY CUDA_ARCHITECTURES "${CUDA_ARCH_LIST}")
-	message("Found GPU with compute capability ${CUDA_ARCH_LIST}.")
 endif()
 
 #==== Compiler Options
@@ -210,13 +185,12 @@ if(USEGPU)
 	endif()
 
 	target_link_libraries(backend PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
-	set_target_properties(backend PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
-
+	set_target_properties(backend PROPERTIES CUDA_ARCHITECTURES "35;37;50;72;75;80;86")
 	target_link_libraries(backend PRIVATE nyxus_gpu)
 	if(BUILD_CLI)
 		target_link_libraries(nyxus PRIVATE nyxus_gpu)
 		target_link_libraries(nyxus PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
-		set_target_properties(nyxus PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
+		set_target_properties(nyxus PROPERTIES CUDA_ARCHITECTURES "35;37;50;72;75;80;86")
 	endif()
 endif()
 
