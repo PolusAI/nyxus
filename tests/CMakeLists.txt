@@ -110,6 +110,19 @@ set(TEST_SRC
 
 add_executable(runAllTests ${TEST_SRC})
 
+find_package(Threads QUIET)
+if (Threads_FOUND)
+    if (CMAKE_USE_PTHREADS_INIT)
+		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+    endif (CMAKE_USE_PTHREADS_INIT)
+    list(APPEND runAllTests_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+else ()
+	message(STATUS "Unable to find threads. Nyxus must have a threading library i.e. pthreads.")
+endif ()
+message(STATUS "FL FLAGS ${CMAKE_CXX_FLAGS}")
+message(STATUS "FL LIBS ${runAllTests_LIBRARIES}")
+
+
 if(USEGPU)
 
 	set(GPU_SOURCE_FILES
