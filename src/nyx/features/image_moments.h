@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <filesystem>
 #include "../roi_cache.h"
 #include "contour.h"
 #include "image_matrix.h"

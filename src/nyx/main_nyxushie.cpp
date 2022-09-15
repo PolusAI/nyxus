@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <fstream>
+#include <filesystem>
 #include "version.h"
 #include "dirs_and_files.h"
 #include "environment_basic.h" 

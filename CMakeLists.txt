@@ -200,8 +200,6 @@ if(USEGPU)
 		target_compile_options(nyxus_gpu PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
 	endif()
 
-    INCLUDE_DIRECTORIES(/usr/local/cuda-11.0/samples/common/inc  
-		${CUDA_TOOLKIT_INCLUDE})
 	target_link_libraries(backend PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
 	set_target_properties(backend PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
 

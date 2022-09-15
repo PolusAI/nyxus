@@ -123,9 +123,6 @@ if(USEGPU)
 	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		target_compile_options(runAllTests PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
 	endif()
-    
-	INCLUDE_DIRECTORIES(/usr/local/cuda-11.0/samples/common/inc  
-		${CUDA_TOOLKIT_INCLUDE})
 	target_link_libraries(runAllTests PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
 	set_target_properties(runAllTests PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
 
