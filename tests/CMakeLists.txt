@@ -95,9 +95,9 @@ add_executable(runAllTests ${TEST_SRC})
 if(USEGPU)
 
 	set(GPU_SOURCE_FILES
-		${PARENT_DIR}/src/nyx/gpu/gpu_helpers.cu
-		${PARENT_DIR}/src/nyx/gpu/image_moments.cu
-        ${PARENT_DIR}/src/nyx/gpu/gabor.cu
+		${CMAKE_SOURCE_DIR}/src/nyx/gpu/gpu_helpers.cu
+		${CMAKE_SOURCE_DIR}/src/nyx/gpu/image_moments.cu
+        ${CMAKE_SOURCE_DIR}/src/nyx/gpu/gabor.cu
 	)
 
 	target_sources(runAllTests PRIVATE ${GPU_SOURCE_FILES})
