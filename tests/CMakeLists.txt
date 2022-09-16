@@ -15,6 +15,13 @@ find_package(CUDA)
 
 if(CUDA_FOUND)
 	set(USEGPU ON) 
+	if (CUDA_VERSION_MAJOR STREQUAL "10")
+		set(CUDA_ARCH_LIST "35;37;50;72;75")
+	elseif (CUDA_VERSION_MAJOR STREQUAL "11" AND CUDA_VERSION_MINOR STREQUAL "0")
+		set(CUDA_ARCH_LIST "35;37;50;72;75")
+	elseif (CUDA_VERSION_MAJOR STREQUAL "11" AND CUDA_VERSION_MINOR STREQUAL "1")
+		set(CUDA_ARCH_LIST "35;37;50;72;75;80;86")
+	endif()
 else()
 	set(USEGPU OFF) 
 endif(CUDA_FOUND)
@@ -95,9 +102,9 @@ add_executable(runAllTests ${TEST_SRC})
 if(USEGPU)
 
 	set(GPU_SOURCE_FILES
-		${CMAKE_SOURCE_DIR}/src/nyx/gpu/gpu_helpers.cu
-		${CMAKE_SOURCE_DIR}/src/nyx/gpu/image_moments.cu
-        ${CMAKE_SOURCE_DIR}/src/nyx/gpu/gabor.cu
+		../src/nyx/gpu/gpu_helpers.cu
+		../src/nyx/gpu/image_moments.cu
+        ../src/nyx/gpu/gabor.cu
 	)
 
 	target_sources(runAllTests PRIVATE ${GPU_SOURCE_FILES})
@@ -106,7 +113,7 @@ if(USEGPU)
 		target_compile_options(runAllTests PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
 	endif()
 	target_link_libraries(runAllTests PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
-	set_target_properties(runAllTests PROPERTIES CUDA_ARCHITECTURES "35;37;50;72;75;80;86")
+	set_target_properties(runAllTests PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
 
 endif()
 
