@@ -103,7 +103,6 @@ set(TEST_SRC
 add_executable(runAllTests ${TEST_SRC})
 
 if(USEGPU)
-
 	set(GPU_SOURCE_FILES
 		../src/nyx/gpu/gpu_helpers.cu
 		../src/nyx/gpu/image_moments.cu
