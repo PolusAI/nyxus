@@ -1,4 +1,12 @@
-#include <filesystem>
+#if __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem> 
+  namespace fs = std::experimental::filesystem;
+#else
+  error "Missing the <filesystem> header."
+#endif
 #include "image_loader1x.h"
 #include "grayscale_tiff.h"
 #include "omezarr.h"
@@ -12,7 +20,7 @@ bool ImageLoader1x::open(const std::string& fpath)
 
 	try
 	{
-		if 	(std::filesystem::path(fpath).extension() == ".zarr")
+		if 	(fs::path(fpath).extension() == ".zarr")
 		{
 			FL = std::make_unique<NyxusOmeZarrLoader<uint32_t>>(n_threads, fpath);
 		}

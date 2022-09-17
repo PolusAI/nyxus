@@ -1,10 +1,17 @@
 #include <gtest/gtest.h>
-#include <filesystem>
+#if __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem> 
+  namespace fs = std::experimental::filesystem;
+#else
+  error "Missing the <filesystem> header."
+#endif
 #include <fstream>
 #include "test_gabor.h"
 #include "test_download_data.h"
 
-namespace fs = std::filesystem;
 
 using namespace std;
 

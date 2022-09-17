@@ -1,6 +1,14 @@
 #include <algorithm>
 #include <fstream>
-#include <filesystem>
+#if __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem> 
+  namespace fs = std::experimental::filesystem;
+#else
+  error "Missing the <filesystem> header."
+#endif
 #include "version.h"
 #include "dirs_and_files.h"
 #include "environment_basic.h" 
@@ -29,7 +37,7 @@ bool 	output_relational_table (const std::vector<int>& P, const std::string& out
 
 	// Make the relational table file name
 	auto & fullSegImgPath = Nyxus::roiData1[P[0]].segFname;
-	std::filesystem::path pSeg(fullSegImgPath);
+	fs::path pSeg(fullSegImgPath);
 	auto segImgFname = pSeg.stem().string();
 	std::string fPath = outdir + "/" + segImgFname + "_nested_relations.csv";	// output file path
 
@@ -102,7 +110,7 @@ bool 	shape_all_parents (const std::vector<int> & P, const std::string & outdir,
 
 	// Make the output table file name
 	auto& fullSegImgPath = Nyxus::roiData1[P[0]].segFname;
-	std::filesystem::path pSeg(fullSegImgPath);
+	fs::path pSeg(fullSegImgPath);
 	auto segImgFname = pSeg.stem().string();
 	std::string fPath = outdir + "/" + segImgFname + "_nested_features.csv";	// output file path
 

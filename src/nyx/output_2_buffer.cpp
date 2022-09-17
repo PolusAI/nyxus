@@ -2,7 +2,15 @@
 #include <unordered_map>
 #include <unordered_set> 
 #include <algorithm>
-#include <filesystem>
+#if __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem> 
+  namespace fs = std::experimental::filesystem;
+#else
+  error "Missing the <filesystem> header."
+#endif
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -181,7 +189,7 @@ namespace Nyxus
 			rescache.inc_num_rows();	
 
 			// Tear off pure file names from segment and intensity file paths
-			std::filesystem::path pseg(r.segFname), pint(r.intFname);
+			fs::path pseg(r.segFname), pint(r.intFname);
 			std::string segfname = pseg.filename().string(),
 				intfname = pint.filename().string();
 
