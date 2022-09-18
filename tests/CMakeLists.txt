@@ -10,10 +10,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
-option(USEGPU "Use GPU" OFF)
+option(USEGPU "Use GPU" ON)
 find_package(CUDA)
 
-if(CUDA_FOUND)
+if(CUDA_FOUND AND USEGPU)
 	set(USEGPU ON)
 	if (CUDA_VERSION_MAJOR STREQUAL "10")
 		set(CUDA_ARCH_LIST "35;37;50;72;75")
@@ -26,7 +26,7 @@ if(CUDA_FOUND)
 	endif()
 else()
 	set(USEGPU OFF) 
-endif(CUDA_FOUND)
+endif()
 
 
 set(TEST_SRC

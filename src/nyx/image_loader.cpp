@@ -7,6 +7,7 @@
 #else
   error "Missing the <filesystem> header."
 #endif
+#include <iostream>
 #include "image_loader.h"
 #include "grayscale_tiff.h"
 #include "omezarr.h"
@@ -22,7 +23,11 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 	{
 		if 	(fs::path(int_fpath).extension() == ".zarr")
 		{
+			#ifdef OMEZARR_SUPPORT
 			intFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, int_fpath);
+			#else
+			std::cout << "This version of Nyxus was not build with OmeZarr support." <<std::endl; 
+			#endif
 		}
 		else 
 		{
@@ -48,7 +53,11 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 	try {
 		if 	(fs::path(seg_fpath).extension() == ".zarr")
 		{
+			#ifdef OMEZARR_SUPPORT
 			segFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, seg_fpath);
+			#else
+			std::cout << "This version of Nyxus was not build with OmeZarr support." <<std::endl;
+			#endif
 		}
 		else
 		{

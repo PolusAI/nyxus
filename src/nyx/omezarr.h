@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef OMEZARR_SUPPORT
+
 #include <algorithm>
 #include "abs_tile_loader.h"
 #include "nlohmann/json.hpp"
@@ -192,3 +194,4 @@ private:
     short data_format_ = 0;
     std::unique_ptr<z5::filesystem::handle::File> zarr_ptr_;
 };
+#endif //OMEZARR_SUPPORT

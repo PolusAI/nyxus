@@ -7,8 +7,8 @@ if(DEFINED ENV{NYXUS_DEP_DIR})
 endif()
 
 find_package(CUDA)
-option(USEGPU "Use GPU" OFF)
-if(CUDA_FOUND)
+option(USEGPU "Use GPU" ON)
+if(CUDA_FOUND AND USEGPU)
 	set(USEGPU ON)
 	if (CUDA_VERSION_MAJOR STREQUAL "10")
 		set(CUDA_ARCH_LIST "35;37;50;72;75")
@@ -21,7 +21,7 @@ if(CUDA_FOUND)
 	endif()
 else()
 	set(USEGPU OFF) 
-endif(CUDA_FOUND)
+endif()
 
 
 #==== Compiler Options
@@ -38,6 +38,16 @@ if(USEGPU)
 	endif()
 	set(CMAKE_CUDA_STANDARD_REQUIRED ON)	
 endif()
+
+#since xtensor does not built with GCC 7.5 and lower
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.5) 
+		add_definitions(-DOMEZARR_SUPPORT)
+	endif()
+else()
+	add_definitions(-DOMEZARR_SUPPORT)
+endif()
+
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive- /EHsc /bigobj")
