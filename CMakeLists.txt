@@ -19,8 +19,11 @@ if(CUDA_FOUND AND USEGPU)
 			set(CUDA_ARCH_LIST "35;37;50;72;75;80;86")
 		endif()
 	endif()
+elseif((NOT CUDA_FOUND) AND USEGPU)
+	message(WARNING "CUDA not found. USEGPU flag will be ignored.")
+	set(USEGPU OFF)
 else()
-	set(USEGPU OFF) 
+	set(USEGPU OFF) # probably redundant fail-safe
 endif()
 
 

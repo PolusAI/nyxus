@@ -191,7 +191,7 @@ conda install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-uti
 CMAKE_ARGS=" -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX " python setup.py install
 ```
 
-We also provide an example script that downloads `conda`, installs the necessary dependencies and then builds both the CLI and the python library on Linux. To run the script, do the follwoing.
+We also provide an example script that downloads `conda`, installs the necessary dependencies and then builds both the CLI and the python library on Linux. To run the script, do the following.
 ```bash
 git clone https://github.com/PolusAI/nyxus.git
 cd nyxus/ci-utils
