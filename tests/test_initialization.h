@@ -11,6 +11,9 @@
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
 
+using Nyxus::allocateTrivialRoisBuffers;
+using Nyxus::freeTrivialRoisBuffers;
+
 void test_initialization() {
 
     std::vector<int> pending {0, 1, 2, 3};

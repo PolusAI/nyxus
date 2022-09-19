@@ -53,6 +53,9 @@ namespace Nyxus
 	void update_label_record_2(LR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index);
 	void reduce_neighbors(int labels_collision_radius);
 
+	void allocateTrivialRoisBuffers(const std::vector<int>& Pending);
+	void freeTrivialRoisBuffers(const std::vector<int>& Pending);
+
 	// Label data
 	extern std::string theSegFname, theIntFname;	// Cached file names while iterating a dataset
 	extern std::unordered_set<int> uniqueLabels;
