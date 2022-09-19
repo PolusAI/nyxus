@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include "test_gabor.h"
-#include "test_download_data.h"
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
 #include "test_pixel_intensity_features.h"

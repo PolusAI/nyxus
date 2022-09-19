@@ -4,7 +4,6 @@
 #include "../src/nyx/features/gabor.h"
 #include "../src/nyx/features/intensity.h"
 #include "test_gabor.h"
-#include "test_download_data.h"
 #include "test_gabor_truth.h"
 #include "test_main_nyxus.h"
 
