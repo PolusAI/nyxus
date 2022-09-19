@@ -10,6 +10,7 @@ namespace Nyxus
     extern void init_label_record_2(LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity, unsigned int tile_index);
     extern void update_label_record_2(LR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index);
     extern void allocateTrivialRoisBuffers(const std::vector<int>& Pending);
+    extern void freeTrivialRoisBuffers(const std::vector<int>& Pending);
 
     /// @brief Tests the agreement with ground truth up to the tolerance specified as a fraction of the ground truth
     static bool agrees_gt(double fval, double ground_truth, double frac_tolerance = 1000.)
@@ -69,10 +70,6 @@ namespace Nyxus
 
         if (allocate_IM)
             roidata.aux_image_matrix = ImageMatrix(roidata.raw_pixels);
-
-        //std::cout << "printing" << std::endl;
-        //roidata.aux_image_matrix.print();
-        //std::cout << "end printing" << std::endl;
 
     }
 }

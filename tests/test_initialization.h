@@ -34,5 +34,7 @@ void test_initialization() {
         ASSERT_TRUE(im.width > 0);
     }
 
+    freeTrivialRoisBuffers(pending);
+
 }
 
