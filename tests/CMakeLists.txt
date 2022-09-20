@@ -33,14 +33,12 @@ endif()
 
 
 set(TEST_SRC
-	testAll.cc
-	testDummy.h
+	test_all.cc
 	test_pixel_intensity_features.h
 	test_data.h
 	test_gabor.cc
 	test_gabor.h
-	test_download_data.cc
-	test_download_data.h
+	test_initialization.h
 	../src/nyx/features/basic_morphology.cpp
 	../src/nyx/features/caliper_feret.cpp
 	../src/nyx/features/caliper_martin.cpp

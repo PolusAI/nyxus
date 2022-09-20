@@ -9,77 +9,49 @@
   error "Missing the <filesystem> header."
 #endif
 #include <fstream>
+#include "../src/nyx/features/gabor.h"
+#include "../src/nyx/features/intensity.h"
 #include "test_gabor.h"
-#include "test_download_data.h"
-
+#include "test_gabor_truth.h"
+#include "test_main_nyxus.h"
 
 using namespace std;
 
-void assert_gpu_results(const std::string cpu_dir, const std::string gpu_dir){
-    ifstream gpu_in(gpu_dir + "/NyxusFeatures.csv");
-    ifstream cpu_in(cpu_dir + "/NyxusFeatures.csv");
-
-    std::string gpu, cpu;
-
-    int count = 0;
-    while(true) {
-        getline(gpu_in, gpu);
-        getline(cpu_in, cpu);
+void test_gabor(bool gpu){
+    // Feed data to the ROI
+    
+    for(int i = 0; i < dsb_data.size(); ++i) {
+        LR roidata;
         
-        if (gpu == "" || cpu == "") {
-            if (cpu == "" && gpu == "") {
-                break;
-            } else {
-                cout << "Error in GPU Gabor test." << endl;
-                FAIL();
-            }
-        }
+        load_test_roi_data(roidata, i);
 
-        ASSERT_EQ(gpu, cpu);
-    }
-}
+        PixelIntensityFeatures int_f;
 
-void test_gabor_gpu_2018(){
+        ASSERT_NO_THROW(int_f.calculate(roidata));
 
-    if (!fs::exists("dsb2018")) {
-        if (!fs::exists("dsb2018.zip")) {
-            get("https://github.com/stardist/stardist/releases/download/0.1.0/dsb2018.zip", "dsb2018.zip");
+        roidata.initialize_fvals();
+        int_f.save_value (roidata.fvals);
+
+        // Calculate features
+        GaborFeature f;
+
+        if(gpu) {
+            #ifdef USE_GPU
+                ASSERT_NO_THROW(f.calculate_gpu_multi_filter(roidata));
+            #else
+                std::cerr << "GPU build is not enabled. Defaulting to CPU version." << std::endl;
+                ASSERT_NO_THROW(f.calculate(roidata));
+            #endif
         } else {
-            system("unzip dsb2018.zip");
+            ASSERT_NO_THROW(f.calculate(roidata));
         }
-    } else {
-        cout << "found directory" << endl;
+
+        f.save_value (roidata.fvals);
+
+        ASSERT_TRUE(gabor_truth[i].size() == roidata.fvals[GABOR].size());
+
+        for(int j = 0; j < gabor_truth[i].size(); ++j) {
+            ASSERT_TRUE(agrees_gt(gabor_truth[i][j], roidata.fvals[GABOR][j]));
+        }
     }
-
-    std::string cpu_out = "../cpu_out";
-    std::string gpu_out = "../gpu_out";
-
-    fs::create_directory(gpu_out);
-    fs::create_directory(cpu_out);
-
-    std::string args = "./nyxus --verbosity=0 --features=GABOR --intDir=tests/python/data/dsb2018/train/images --segDir=tests/python/data/dsb2018/train/masks --outDir=gpu_out --filePattern=.* --csvFile=singlecsv --loaderThreads=1 --reduceThreads=1 --useGpu=true";
-
-    args = "cd .. && " + args;
-    const char* cmd = args.c_str();
-
-    auto success = system(cmd);
-
-    if(success < 0) {
-        std::cout << "Error running GPU Gabor test." << std::endl;
-        FAIL();
-    }
-
-    args = "./nyxus --verbosity=0 --features=GABOR --intDir=tests/python/data/dsb2018/train/images --segDir=tests/python/data/dsb2018/train/masks --outDir=cpu_out --filePattern=.* --csvFile=singlecsv --loaderThreads=1 --reduceThreads=8 --useGpu=false";
-    args = "cd .. && " + args;
-
-    cmd = args.c_str();
-
-    success = system(cmd);
-
-    if(success < 0) {
-        std::cout << "Error running GPU Gabor test." << std::endl;
-        FAIL();
-    }
-
-    assert_gpu_results(cpu_out, gpu_out);
 }
