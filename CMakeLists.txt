@@ -7,50 +7,52 @@ if(DEFINED ENV{NYXUS_DEP_DIR})
 endif()
 
 find_package(CUDA)
-option(USEGPU "Use GPU" OFF)
-if(CUDA_FOUND)
-    try_run(RUN_RESULT_VAR COMPILE_RESULT_VAR
-        ${CMAKE_BINARY_DIR} 
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/nyx/gpu/find_cuda_gpu.c
-        CMAKE_FLAGS 
-            -DINCLUDE_DIRECTORIES:STRING=${CUDA_TOOLKIT_INCLUDE}
-            -DLINK_LIBRARIES:STRING=${CUDA_CUDART_LIBRARY}
-        COMPILE_OUTPUT_VARIABLE COMPILE_OUTPUT_VAR
-        RUN_OUTPUT_VARIABLE RUN_OUTPUT_VAR)
-	message("---------${CUDA_TOOLKIT_INCLUDE}--------")
-    message("${RUN_OUTPUT_VAR}") # Display number of GPUs found
-    # COMPILE_RESULT_VAR is TRUE when compile succeeds
-    # RUN_RESULT_VAR is zero when a GPU is found
-    if(COMPILE_RESULT_VAR AND NOT RUN_RESULT_VAR)
-		set(USEGPU ON)
-    else()
-		set(USEGPU OFF) 
-    endif()
+option(USEGPU "Use GPU" ON)
+if(CUDA_FOUND AND USEGPU)
+	set(USEGPU ON)
+	if (CUDA_VERSION_MAJOR STREQUAL "10")
+		set(CUDA_ARCH_LIST "35;37;50;72;75")
+	elseif (CUDA_VERSION_MAJOR STREQUAL "11")
+		if(CUDA_VERSION_MINOR STREQUAL "0")
+			set(CUDA_ARCH_LIST "35;37;50;72;75")
+		elseif (CUDA_VERSION_MINOR STREQUAL "1" OR CUDA_VERSION_MINOR STREQUAL "2")
+			set(CUDA_ARCH_LIST "35;37;50;72;75;80;86")
+		endif()
+	endif()
+elseif((NOT CUDA_FOUND) AND USEGPU)
+	message(WARNING "CUDA not found. USEGPU flag will be ignored.")
+	set(USEGPU OFF)
 else()
-	set(USEGPU OFF) 
-endif(CUDA_FOUND)
-
-if(USEGPU)
-    set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
-    set(CMAKE_CUDA_HOST_LINK_LAUNCHER ${CMAKE_CXX_COMPILER})
-    enable_language("CUDA")
-    add_definitions(-DUSE_GPU)
-
-    include(FindCUDA/select_compute_arch)
-	CUDA_DETECT_INSTALLED_GPUS(INSTALLED_GPU_CCS_1)
-	string(STRIP "${INSTALLED_GPU_CCS_1}" INSTALLED_GPU_CCS_2)
-	string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
-	string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
-	SET(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
-	set_property(GLOBAL PROPERTY CUDA_ARCHITECTURES "${CUDA_ARCH_LIST}")
-	message("Found GPU with compute capability ${CUDA_ARCH_LIST}.")
+	set(USEGPU OFF) # probably redundant fail-safe
 endif()
+
 
 #==== Compiler Options
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CUDA_STANDARD 17)
-set(CMAKE_CUDA_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(USEGPU)
+    enable_language("CUDA")
+    add_definitions(-DUSE_GPU)
+	if (CUDA_VERSION_MAJOR STREQUAL "10")
+		set(CMAKE_CUDA_STANDARD 14)
+	elseif (CUDA_VERSION_MAJOR STREQUAL "11")
+		set(CMAKE_CUDA_STANDARD 17)
+	endif()
+	set(CMAKE_CUDA_STANDARD_REQUIRED ON)	
+endif()
+
+#since xtensor does not built with GCC 7.5 and lower
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.5) 
+		add_definitions(-DOMEZARR_SUPPORT)
+	else()
+		message(WARNING "OMEZarr support is not available with GCC 7.5 and older compiler.")
+	endif()
+else()
+	add_definitions(-DOMEZARR_SUPPORT)
+endif()
+
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive- /EHsc /bigobj")
@@ -187,16 +189,15 @@ endif()
 
 find_file(Z5 "z5/z5.hxx" REQUIRED)
 
-
-# FastLoaded - Will probably get removed
-find_package(FastLoader)
-if(FastLoader_FOUND)
-	list(APPEND Nyxus_LIBRARIES ${FastLoader_LIBRARIES})
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FastLoader_CXX_FLAGS}")
-	include_directories(${FastLoader_INCLUDE_DIR})
-else()
-	message(FATAL_ERROR "Unable to find FastLoader which is required for Nyxus.")
-endif()
+find_package(Threads QUIET)
+if (Threads_FOUND)
+    if (CMAKE_USE_PTHREADS_INIT)
+		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+    endif (CMAKE_USE_PTHREADS_INIT)
+    list(APPEND Nyxus_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+else ()
+	message(STATUS "Unable to find threads. Nyxus must have a threading library i.e. pthreads.")
+endif ()
 
 if(USEGPU)
 	set(GPU_SOURCE_FILES
@@ -210,16 +211,13 @@ if(USEGPU)
 		target_compile_options(nyxus_gpu PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
 	endif()
 
-    INCLUDE_DIRECTORIES(/usr/local/cuda-11.0/samples/common/inc  
-		${CUDA_TOOLKIT_INCLUDE})
 	target_link_libraries(backend PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
-	set_target_properties(backend PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
-
+	set_target_properties(backend PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
 	target_link_libraries(backend PRIVATE nyxus_gpu)
 	if(BUILD_CLI)
 		target_link_libraries(nyxus PRIVATE nyxus_gpu)
 		target_link_libraries(nyxus PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
-		set_target_properties(nyxus PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
+		set_target_properties(nyxus PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
 	endif()
 endif()
 

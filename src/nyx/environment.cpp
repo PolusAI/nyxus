@@ -1,4 +1,12 @@
-#include <filesystem>
+#if __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem> 
+  namespace fs = std::experimental::filesystem;
+#else
+  error "Missing the <filesystem> header."
+#endif
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -119,7 +127,7 @@ Environment::Environment(): BasicEnvironment()
 	ram_limit = availMem / 2;
 
 	// Initialize the path to temp directory
-	temp_dir_path = std::filesystem::temp_directory_path().string();
+	temp_dir_path = fs::temp_directory_path().string();
 }
 
 size_t Environment::get_ram_limit()

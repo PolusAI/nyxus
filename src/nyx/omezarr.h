@@ -1,8 +1,9 @@
 #pragma once
 
-#include <algorithm>
+#ifdef OMEZARR_SUPPORT
 
-#include <fast_loader/fast_loader.h> 
+#include <algorithm>
+#include "abs_tile_loader.h"
 #include "nlohmann/json.hpp"
 #include "xtensor/xarray.hpp"
 
@@ -17,7 +18,7 @@
 /// @brief Tile Loader for OMEZarr
 /// @tparam DataType AbstractView's internal type
 template<class DataType>
-class NyxusOmeZarrLoader : public fl::AbstractTileLoader<fl::DefaultView<DataType>> 
+class NyxusOmeZarrLoader : public AbstractTileLoader<DataType> 
 {
 public:
 
@@ -27,7 +28,7 @@ public:
     NyxusOmeZarrLoader(
         size_t numberThreads,
         std::string const& filePath)
-        : fl::AbstractTileLoader<fl::DefaultView<DataType>>("NyxusOmeZarrLoader", numberThreads, filePath)
+        : AbstractTileLoader<DataType>("NyxusOmeZarrLoader", numberThreads, filePath)
     {
         // Open the file
         zarr_ptr_ = std::make_unique<z5::filesystem::handle::File>(filePath.c_str());
@@ -147,13 +148,6 @@ public:
         //*dest = std::vector<DataType> (array.begin(), array.end());
     }
 
-    /// @brief Copy Method for the NyxusOmeZarrLoader
-    /// @return Return a copy of the current NyxusOmeZarrLoader
-    std::shared_ptr<fl::AbstractTileLoader<fl::DefaultView<DataType>>> copyTileLoader() override 
-    {
-        return std::make_shared<NyxusOmeZarrLoader<DataType>>(this->numberThreads(),this->filePath());
-    }
-
     /// @brief Tiff file height
     /// @param level Tiff level [not used]
     /// @return Full height
@@ -200,3 +194,4 @@ private:
     short data_format_ = 0;
     std::unique_ptr<z5::filesystem::handle::File> zarr_ptr_;
 };
+#endif //OMEZARR_SUPPORT

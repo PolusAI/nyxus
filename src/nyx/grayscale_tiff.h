@@ -1,6 +1,5 @@
 #pragma once
-
-#include <fast_loader/fast_loader.h> 
+#include "abs_tile_loader.h"
 
 #ifdef __APPLE__
 #define uint64 uint64_hack_
@@ -11,6 +10,8 @@
 #else
 #include <tiffio.h>
 #endif
+#include <cstring>
+#include <sstream>
 
 constexpr size_t STRIP_TILE_HEIGHT = 1024;
 constexpr size_t STRIP_TILE_WIDTH = 1024;
@@ -19,7 +20,7 @@ constexpr size_t STRIP_TILE_DEPTH = 1;
 /// @brief Tile Loader for 2D Grayscale tiff files
 /// @tparam DataType AbstractView's internal type
 template<class DataType>
-class NyxusGrayscaleTiffTileLoader : public fl::AbstractTileLoader<fl::DefaultView<DataType>> 
+class NyxusGrayscaleTiffTileLoader : public AbstractTileLoader<DataType> 
 {
 public:
 
@@ -27,7 +28,7 @@ public:
     /// @param numberThreads Number of threads associated
     /// @param filePath Path of tiff file
     NyxusGrayscaleTiffTileLoader(size_t numberThreads, std::string const& filePath)
-        : fl::AbstractTileLoader<fl::DefaultView<DataType>>("NyxusGrayscaleTiffTileLoader", numberThreads, filePath) 
+        : AbstractTileLoader<DataType>("NyxusGrayscaleTiffTileLoader", numberThreads, filePath) 
     {
         short samplesPerPixel = 0;
 
@@ -184,12 +185,6 @@ public:
         _TIFFfree(tiffTile);
     }
 
-    /// @brief Copy Method for the NyxusGrayscaleTiffTileLoader
-    /// @return Return a copy of the current NyxusGrayscaleTiffTileLoader
-    std::shared_ptr<fl::AbstractTileLoader<fl::DefaultView<DataType>>> copyTileLoader() override 
-    {
-        return std::make_shared<NyxusGrayscaleTiffTileLoader<DataType>>(this->numberThreads(), this->filePath());
-    }
 
     /// @brief Tiff file height
     /// @param level Tiff level [not used]
@@ -293,7 +288,7 @@ private:
 /// @brief Tile Loader for 3D Grayscale tiff files encoded in strips
 /// @tparam DataType AbstractView's internal type
 template<class DataType>
-class NyxusGrayscaleTiffStripLoader : public fl::AbstractTileLoader<fl::DefaultView<DataType>> 
+class NyxusGrayscaleTiffStripLoader : public AbstractTileLoader<DataType> 
 {
 public:
 
@@ -303,7 +298,7 @@ public:
     NyxusGrayscaleTiffStripLoader(
         size_t numberThreads,
         std::string const& filePath)
-        : fl::AbstractTileLoader<fl::DefaultView<DataType>>("NyxusGrayscaleTiffStripLoader", numberThreads, filePath) 
+        : AbstractTileLoader<DataType>("NyxusGrayscaleTiffStripLoader", numberThreads, filePath) 
     {
         short samplesPerPixel = 0;
 
@@ -452,12 +447,6 @@ public:
         _TIFFfree(buf);
     }
 
-    /// @brief Copy Method for the NyxusGrayscaleTiffTileLoader
-    /// @return Return a copy of the current NyxusGrayscaleTiffTileLoader
-    std::shared_ptr<fl::AbstractTileLoader<fl::DefaultView<DataType>>> copyTileLoader() override 
-    {
-        return std::make_shared<NyxusGrayscaleTiffStripLoader<DataType>>(this->numberThreads(), this->filePath());
-    }
 
     /// @brief Tiff file height
     /// @param level Tiff level [not used]

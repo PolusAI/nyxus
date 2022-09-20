@@ -5,8 +5,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-
-#include <fast_loader/fast_loader.h> 
+#include "abs_tile_loader.h"
 
 /// @brief Incapsulates access to an intensity and mask image file pair
 class ImageLoader
@@ -30,7 +29,7 @@ public:
 	size_t get_full_width();
 	size_t get_full_height();
 private:
-	fl::AbstractTileLoader<fl::DefaultView<uint32_t>> *segFL = nullptr, *intFL = nullptr; 
+	AbstractTileLoader<uint32_t> *segFL = nullptr, *intFL = nullptr; 
 	std::shared_ptr<std::vector<uint32_t>> ptrI = nullptr; 
 	std::shared_ptr<std::vector<uint32_t>> ptrL = nullptr; 
 	// Tile height, width, and depth

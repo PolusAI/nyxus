@@ -10,32 +10,27 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
-option(USEGPU "Use GPU" OFF)
+option(USEGPU "Use GPU" ON)
 find_package(CUDA)
 
-if(CUDA_FOUND)
-	get_filename_component(PARENT_DIR ../ ABSOLUTE)
-
-    try_run(RUN_RESULT_VAR COMPILE_RESULT_VAR
-        ${CMAKE_BINARY_DIR} 
-        ${PARENT_DIR}/src/nyx/gpu/find_cuda_gpu.c
-        CMAKE_FLAGS 
-            -DINCLUDE_DIRECTORIES:STRING=${CUDA_TOOLKIT_INCLUDE}
-            -DLINK_LIBRARIES:STRING=${CUDA_CUDART_LIBRARY}
-        COMPILE_OUTPUT_VARIABLE COMPILE_OUTPUT_VAR
-        RUN_OUTPUT_VARIABLE RUN_OUTPUT_VAR)
-	message("---------${CUDA_TOOLKIT_INCLUDE}--------")
-    message("${RUN_OUTPUT_VAR}") # Display number of GPUs found
-    # COMPILE_RESULT_VAR is TRUE when compile succeeds
-    # RUN_RESULT_VAR is zero when a GPU is found
-    if(COMPILE_RESULT_VAR AND NOT RUN_RESULT_VAR)
-		set(USEGPU ON) 
-    else()
-		set(USEGPU OFF) 
-    endif()
+if(CUDA_FOUND AND USEGPU)
+	set(USEGPU ON)
+	if (CUDA_VERSION_MAJOR STREQUAL "10")
+		set(CUDA_ARCH_LIST "35;37;50;72;75")
+	elseif (CUDA_VERSION_MAJOR STREQUAL "11")
+		if(CUDA_VERSION_MINOR STREQUAL "0")
+			set(CUDA_ARCH_LIST "35;37;50;72;75")
+		elseif (CUDA_VERSION_MINOR STREQUAL "1" OR CUDA_VERSION_MINOR STREQUAL "2")
+			set(CUDA_ARCH_LIST "35;37;50;72;75;80;86")
+		endif()
+	endif()
+elseif((NOT CUDA_FOUND) AND USEGPU)
+	message(WARNING "CUDA not found. USEGPU flag will be ignored.")
+	set(USEGPU OFF)
 else()
-	set(USEGPU OFF) 
-endif(CUDA_FOUND)
+	set(USEGPU OFF) # probably redundant fail-safe
+endif()
+
 
 set(TEST_SRC
 	test_all.cc
@@ -109,11 +104,10 @@ set(TEST_SRC
 add_executable(runAllTests ${TEST_SRC})
 
 if(USEGPU)
-
 	set(GPU_SOURCE_FILES
-		${PARENT_DIR}/src/nyx/gpu/gpu_helpers.cu
-		${PARENT_DIR}/src/nyx/gpu/image_moments.cu
-        ${PARENT_DIR}/src/nyx/gpu/gabor.cu
+		../src/nyx/gpu/gpu_helpers.cu
+		../src/nyx/gpu/image_moments.cu
+        ../src/nyx/gpu/gabor.cu
 	)
 
 	target_sources(runAllTests PRIVATE ${GPU_SOURCE_FILES})
@@ -121,11 +115,8 @@ if(USEGPU)
 	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		target_compile_options(runAllTests PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
 	endif()
-    
-	INCLUDE_DIRECTORIES(/usr/local/cuda-11.0/samples/common/inc  
-		${CUDA_TOOLKIT_INCLUDE})
 	target_link_libraries(runAllTests PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
-	set_target_properties(runAllTests PROPERTIES CUDA_ARCHITECTURES "35;37;50;72")
+	set_target_properties(runAllTests PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
 
 endif()
 
@@ -139,7 +130,6 @@ if (TIFF_FOUND)
 	include_directories (${TIFF_INCLUDE_DIR})
 else ()
 	message(FATAL_ERROR "libtiff library has not been found, please install it.")
-	SET(FastLoader_FOUND OFF)
 endif (TIFF_FOUND)
 
 target_include_directories (runAllTests PUBLIC ${GTEST_INCLUDE_DIRS})

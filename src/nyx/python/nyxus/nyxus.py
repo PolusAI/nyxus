@@ -73,7 +73,7 @@ class Nyxus:
         if n_loader_threads < 1:
             raise ValueError("There must be at least one loader thread.")
         
-        if(using_gpu > -1 and n_feature_calc_threads is not 1):
+        if(using_gpu > -1 and n_feature_calc_threads != 1):
             print("Gpu features only support a single thread. Defaulting to one thread.")
             n_feature_calc_threads = 1
             
