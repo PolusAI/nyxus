@@ -1,3 +1,5 @@
+#pragma once
+
 #include <gtest/gtest.h>
 
 #include "../src/nyx/roi_cache.h"
@@ -5,42 +7,9 @@
 #include "../src/nyx/features/intensity.h"
 #include "../src/nyx/features/pixel.h"
 #include "test_data.h"
+#include "test_main_nyxus.h"
 
 // ROI pixel accumulation routines implemented in Nyxus
-namespace Nyxus
-{
-    void init_label_record_2(LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity, unsigned int tile_index);
-    void update_label_record_2(LR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index);
-
-    /// @brief Tests the agreement with ground truth up to the tolerance specified as a fraction of the ground truth
-    bool agrees_gt(double fval, double ground_truth, double frac_tolerance = 1000.)
-    {
-        auto diff = fval - ground_truth;
-        auto tolerance = ground_truth / frac_tolerance;
-        bool good = std::abs(diff) <= std::abs(tolerance);
-        return good;
-    }
-
-    void load_test_roi_data(LR& roidata)
-    {
-        int dummyLabel = 100, dummyTile = 200;
-
-        // -- mocking gatherRoisMetrics():
-        for (auto& px : testData)
-        {
-            // -- mocking feed_pixel_2_metrics ():
-            if (roidata.aux_area == 0)
-                init_label_record_2(roidata, "theSegFname", "theIntFname", px.x, px.y, dummyLabel, px.intensity, dummyTile);
-            else
-                update_label_record_2(roidata, px.x, px.y, dummyLabel, px.intensity, dummyTile);
-        }
-
-        // -- mocking scanTrivialRois():
-        for (auto& px : testData)
-            // -- mocking feed_pixel_2_cache ():
-            roidata.raw_pixels.push_back(Pixel2(px.x, px.y, px.intensity));
-    }
-}
 
 void test_pixel_intensity_integrated_intensity()
 {
