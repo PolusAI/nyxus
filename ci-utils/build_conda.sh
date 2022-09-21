@@ -73,6 +73,3 @@ cmake -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
       $NYXUS_ROOT
 
 cmake --build . --parallel 4
-
-#Install Python Package
-CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DUSEGPU=ON " python $NYXUS_ROOT/setup.py install
