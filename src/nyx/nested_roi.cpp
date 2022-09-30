@@ -1,3 +1,5 @@
+#include <fstream>
+#include <sstream>
 #include "globals.h"
 #include "nested_roi.h"
 

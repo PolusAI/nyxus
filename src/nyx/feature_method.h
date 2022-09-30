@@ -1,4 +1,5 @@
 #pragma once
+#include <unordered_map>
 #include "roi_cache.h"
 #include "image_loader.h"
 #include "features/image_matrix_nontriv.h"

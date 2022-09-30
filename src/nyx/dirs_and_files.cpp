@@ -4,7 +4,15 @@
 
 #include <fstream>
 #include <string>
-#include <filesystem>
+#if __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem> 
+  namespace fs = std::experimental::filesystem;
+#else
+  error "Missing the <filesystem> header."
+#endif
 #include <vector>
 #include <iostream>
 #include <regex>
@@ -15,15 +23,15 @@ namespace Nyxus
 {
 	bool directoryExists(const std::string& dir)
 	{
-		std::filesystem::path p(dir);
-		return std::filesystem::exists(p);
+		fs::path p(dir);
+		return fs::exists(p);
 	}
 
 	void readDirectoryFiles(const std::string& dir, const std::string& file_pattern, std::vector<std::string>& files)
 	{
 		std::regex re(file_pattern);
 
-		for (auto& entry : std::filesystem::directory_iterator(dir))
+		for (auto& entry : fs::directory_iterator(dir))
 		{
 			std::string fullPath = entry.path().string(),
 				pureFname = entry.path().filename().string();	// The file name that should participate in the filepattern check
@@ -179,7 +187,7 @@ namespace Nyxus
 
 	std::string getPureFname(const std::string& fpath)
 	{
-		std::filesystem::path p(fpath);
+		fs::path p(fpath);
 		return p.filename().string();
 	}
 

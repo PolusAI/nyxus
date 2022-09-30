@@ -1,8 +1,18 @@
 //
 // This file is a collection of drivers of tiled TIFF file scanning from the FastLoader side
 //
-
+#if __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem> 
+  namespace fs = std::experimental::filesystem;
+#else
+  error "Missing the <filesystem> header."
+#endif
+#include <fstream>
 #include <string>
+#include <iomanip>
 #include <vector>
 #include <map>
 #include <array>
@@ -126,7 +136,7 @@ namespace Nyxus
 				& lfp = labelFiles[i];
 
 			// Cache the file names to be picked up by labels to know their file origin
-			std::filesystem::path p_int(ifp), p_seg(lfp);
+			fs::path p_int(ifp), p_seg(lfp);
 			theSegFname = p_seg.string(); 
 			theIntFname = p_int.string(); 
 
@@ -177,7 +187,7 @@ namespace Nyxus
 
 	void dump_roi_metrics(const std::string & label_fpath)
 	{
-		std::filesystem::path pseg (label_fpath);
+		fs::path pseg (label_fpath);
 		std::string fpath = theEnvironment.output_dir + "/roi_metrics_" + pseg.stem().string() + ".csv";
 		std::cout << "Dumping ROI metrics to " << fpath << " ...\n";
 

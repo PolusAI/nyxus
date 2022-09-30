@@ -1,4 +1,12 @@
-#include <filesystem>
+#if __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem> 
+  namespace fs = std::experimental::filesystem;
+#else
+  error "Missing the <filesystem> header."
+#endif
 #include <iostream>
 #include <sstream>
 #include "../environment.h"
@@ -25,7 +33,7 @@ void OutOfRamPixelCloud::clear()
 	{
 		fclose(pF);
 		pF = nullptr;
-		std::filesystem::remove (filepath);
+		fs::remove (filepath);
 	}
 }
 
@@ -56,7 +64,7 @@ Pixel2 OutOfRamPixelCloud::get_at(size_t idx) const
 WriteImageMatrix_nontriv::WriteImageMatrix_nontriv (const std::string& _name, unsigned int _roi_label)
 {
 	std::stringstream ssPath;
-	ssPath << std::filesystem::temp_directory_path() << "/imagematrix_nontriv" << _roi_label;
+	ssPath << fs::temp_directory_path() << "/imagematrix_nontriv" << _roi_label;
 	filepath = ssPath.str();
 	pF = fopen (filepath.c_str(), "w+b");
 
@@ -70,7 +78,7 @@ WriteImageMatrix_nontriv::~WriteImageMatrix_nontriv()
 	{
 		fclose(pF);
 		pF = nullptr;
-		std::filesystem::remove (filepath);
+		fs::remove (filepath);
 	}
 }
 
@@ -137,8 +145,8 @@ void WriteImageMatrix_nontriv::init_with_cloud_distance_to_contour_weights (cons
 
 void WriteImageMatrix_nontriv::copy (WriteImageMatrix_nontriv& other)
 {
-	std::filesystem::path p (filepath);
-	std::filesystem::remove (p);
+	fs::path p (filepath);
+	fs::remove (p);
 
 	original_aabb = other.original_aabb;
 	allocate (original_aabb.get_width(), original_aabb.get_height(), 0.0);

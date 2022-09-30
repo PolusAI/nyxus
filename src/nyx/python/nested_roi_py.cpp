@@ -1,5 +1,16 @@
-#include <filesystem>
+#if __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem> 
+  namespace fs = std::experimental::filesystem;
+#else
+  error "Missing the <filesystem> header."
+#endif
+#include <fstream>
+#include <sstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <unordered_set>
@@ -151,7 +162,7 @@ bool find_hierarchy (std::vector<int>& P, const std::string& par_fname, const st
 		std::cout << "\nUsing \n\t" << par_fname << " as container (parent) segment provider, \n\t" << chi_fname << " as child segment provider\n";
 
 	// Cache the file names to be picked up by labels to know their file origin
-	std::filesystem::path parPath(par_fname), chiPath(chi_fname);
+	fs::path parPath(par_fname), chiPath(chi_fname);
 
 	// scan parent segments
 	gatherRoisMetrics_H(parPath.string(), uniqueLabels1, roiData1);
@@ -247,7 +258,7 @@ bool 	output_roi_relational_table_2_csv (const std::vector<int>& P, const std::s
 
 	// Make the relational table file name
 	auto& fullSegImgPath = Nyxus::roiData1[P[0]].segFname;
-	std::filesystem::path pSeg(fullSegImgPath);
+	fs::path pSeg(fullSegImgPath);
 	auto segImgFname = pSeg.stem().string();
 	std::string fPath = outdir + "/" + segImgFname + "_nested_relations.csv";	// output file path
 
@@ -313,7 +324,7 @@ bool 	aggregate_features (const std::vector<int>& P, const std::string& outdir, 
 
 	// Make the output table file name
 	auto& fullSegImgPath = Nyxus::roiData1[P[0]].segFname;
-	std::filesystem::path pSeg(fullSegImgPath);
+	fs::path pSeg(fullSegImgPath);
 	auto segImgFname = pSeg.stem().string();
 	std::string fPath = outdir + "/" + segImgFname + "_nested_features.csv";	// output file path
 
@@ -525,7 +536,7 @@ bool mine_segment_relations (
 	std::string parPath, ext;
 	for (auto& segf : segFiles)
 	{
-		std::filesystem::path p(segf);
+		fs::path p(segf);
 
 		// Store the extension once
 		if (ext.empty())

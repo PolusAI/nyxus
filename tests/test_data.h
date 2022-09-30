@@ -4,7 +4,7 @@ struct NyxusPixel {
 	size_t x, y;
 	unsigned int intensity;
 };
-NyxusPixel testData[] = {
+const static NyxusPixel testData[] = {
 	{8, 0, 11079}, 	{9, 0, 13771}, 	{10, 0, 17664}, 	{11, 0, 19552}, 	{7, 1, 12955},
 	{8, 1, 16999}, 	{9, 1, 23426}, 	{10, 1, 27615}, 	{11, 1, 24075},
 	{6, 2, 13377}, 	{7, 2, 16329}, 	{8, 2, 23426}, 	{9, 2, 32845},

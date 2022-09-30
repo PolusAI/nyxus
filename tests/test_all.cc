@@ -1,20 +1,21 @@
 #include <gtest/gtest.h>
-#include "testDummy.h"
 #include "test_gabor.h"
-#include "test_download_data.h"
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
 #include "test_pixel_intensity_features.h"
+#include "test_initialization.h"
 
-TEST(TEST_NYXUS, DUMMY_TEST){
-  test_dummy_function();
+TEST(TEST_NYXUS, TEST_GABOR){
+    test_gabor();
+	
+	#ifdef USE_GPU
+		test_gabor(true);
+	#endif
+	
 }
 
-TEST(TEST_GABOR_GPU, DSB2018){
-  #ifdef USE_GPU
-    get("https://github.com/stardist/stardist/releases/download/0.1.0/dsb2018.zip", "dsb2018");
-    test_gabor_gpu_2018();
-  #endif
+TEST(TEST_NYXUS, TEST_INITIALIZATION) {
+	test_initialization();
 }
 
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_INTEGRATED_INTENSITY) 

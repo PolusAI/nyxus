@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cfloat>
+#include <fstream>
 #include <string>
 #include <vector>
 #include "pixel.h"

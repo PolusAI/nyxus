@@ -1,9 +1,0 @@
-[submodule "lib/pybind11"]
-	path = lib/pybind11
-	url = https://github.com/pybind/pybind11.git
-[submodule "lib/hedgehog"]
-	path = lib/hedgehog
-	url = https://github.com/usnistgov/hedgehog.git
-[submodule "lib/fastloader"]
-	path = lib/fastloader
-	url = https://github.com/usnistgov/FastLoader.git
