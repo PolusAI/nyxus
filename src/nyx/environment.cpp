@@ -17,6 +17,7 @@
 #include <iterator>
 #include "environment.h"
 #include "featureset.h"
+#include "features/glcm.h"
 #include "helpers/helpers.h"
 #include "helpers/system_resource.h"
 #include "version.h"
@@ -33,7 +34,15 @@ namespace Nyxus
 			return true;
 	}
 
-	bool parse_delimited_string_list_to_floats(const std::string &rawString, std::vector<float> &result)
+	bool parse_as_int(const std::string& raw, int& result)
+	{
+		if (sscanf(raw.c_str(), "%d", &result) != 1)
+			return false;
+		else
+			return true;
+	}
+
+	bool parse_delimited_string_list_to_ints (const std::string & rawString, std::vector<int> & result)
 	{
 		// It's legal to not have rotation angles specified
 		if (rawString.length() == 0)
@@ -45,11 +54,11 @@ namespace Nyxus
 		result.clear();
 		for (auto &s : strings)
 		{
-			float v;
-			if (!parse_as_float(s, v))
+			int v;
+			if (!parse_as_int(s, v))
 			{
 				retval = false;
-				std::cout << "Error: in '" << rawString << "' expecting '" << s << "' to be a floating point number\n";
+				std::cout << "Error: in '" << rawString << "' expecting '" << s << "' to be an integer number\n";
 			}
 			else
 				result.push_back(v);
@@ -153,12 +162,12 @@ void Environment::show_cmdline_help()
 		<< "\t" << PROJECT_NAME << " -h\tDisplay help info\n"
 		<< "\t" << PROJECT_NAME << " --help\tDisplay help info\n"
 		<< "\t" << PROJECT_NAME << " "
-		<< FILEPATTERN << " <fp> "
+		<< FILEPATTERN << " file pattern regular expression e.g. .*, *.tif, etc [default = .*] \n"
 		<< OUTPUTTYPE << " <csv> "
 		<< SEGDIR << " <sd> "
 		<< INTDIR << " <id> "
 		<< OUTDIR << " <od> "
-		<< " [" << FEATURES << " <f>] \n"
+		<< " [" << FEATURES << " specific feature or '*all*' (default = '*all*') ] \n"
 		<< " [" << XYRESOLUTION << " <res> \n"
 		<< " [" << EMBPIXSZ << " <eps>]\n"
 		<< " [" << LOADERTHREADS << " <lt>]\n"
@@ -166,7 +175,7 @@ void Environment::show_cmdline_help()
 		<< " [" << REDUCETHREADS << " <rt>]\n"
 		<< " [" << PXLDIST << " <pxd>]\n"
 		<< " [" << COARSEGRAYDEPTH << " <custom number of grayscale levels (default: 256)>]\n"
-		<< " [" << ROTATIONS << " <al>]\n"
+		<< " [" << GLCMANGLES << " one or more comma separated rotation angles from set {0, 45, 90, and 135}, default is " << GLCMANGLES << "0,45,90,135 \n"
 		<< " [" << VERBOSITY << " <verbo>]\n";
 
 #ifdef USE_GPU
@@ -175,19 +184,16 @@ void Environment::show_cmdline_help()
 
 	std::cout
 		<< "Where\n"
-		<< "\t<fp> - file pattern regular expression e.g. .*, *.tif, etc [default = .*]\n"
 		<< "\t<csv> - 'separatecsv'[default] or 'singlecsv' \n"
 		<< "\t<sd> - directory of segmentation images \n"
 		<< "\t<id> - directory of intensity images \n"
 		<< "\t<od> - output directory \n"
-		<< "\t<f> - specific feature or 'all' [default = 'all']\n"
 		<< "\t<res> - number of pixels per centimeter, an integer or floating point number \n"
 		<< "\t<eps> - [default = 0] \n"
 		<< "\t<lt> - number of image loader threads [default = 1] \n"
 		<< "\t<st> - number of pixel scanner threads within a TIFF tile [default = 1] \n"
 		<< "\t<rt> - number of feature reduction threads [default = 1] \n"
 		<< "\t<pxd> - number of pixels as neighbor features radius [default = 5] \n"
-		<< "\t<al> - comma separated rotation angles [default = 0,45,90,135] \n"
 		<< "\t<verbo> - levels of verbosity 0 (silence), 2 (timing), 4 (roi diagnostics), 8 (granular diagnostics) [default = 0] \n";
 }
 
@@ -230,15 +236,22 @@ void Environment::show_summary(const std::string &head, const std::string &tail)
 	if (xyRes > 0.0)
 		std::cout << "\tXY-resolution " << xyRes << "\n";
 
-	// Rotation angles
-	std::cout << "\tangles of rotational features\t";
-	for (auto ang : rotAngles)
+	// GLCM angles
+	std::cout << "\tGLCM angles\t";
+	for (auto ang : glcmAngles)
 	{
-		if (ang != rotAngles[0])
+		if (ang != glcmAngles[0])
 			std::cout << ", ";
 		std::cout << ang;
 	}
-	std::cout << "\n";
+	std::cout << "\tshould match GLCMFeature angles\t{";
+	for (auto ang : GLCMFeature::angles)
+	{
+		if (ang != GLCMFeature::angles[0])
+			std::cout << ", ";
+		std::cout << ang;
+	}
+	std::cout << "}\n";
 
 	// Oversized ROI limit
 	std::cout << "\tbatch and oversized ROI lower limit " << theEnvironment.get_ram_limit() << " bytes\n";
@@ -435,16 +448,19 @@ void Environment::process_feature_list()
 				GLCM_ANGULAR2NDMOMENT,
 				GLCM_CONTRAST,
 				GLCM_CORRELATION,
-				GLCM_VARIANCE,
+				GLCM_DIFFERENCEAVERAGE,
+				GLCM_DIFFERENCEENTROPY,
+				GLCM_DIFFERENCEVARIANCE,
+				GLCM_ENERGY,
+				GLCM_ENTROPY,
+				GLCM_HOMOGENEITY,
+				GLCM_INFOMEAS1,
+				GLCM_INFOMEAS2,
 				GLCM_INVERSEDIFFERENCEMOMENT,
 				GLCM_SUMAVERAGE,
-				GLCM_SUMVARIANCE,
 				GLCM_SUMENTROPY,
-				GLCM_ENTROPY,
-				GLCM_DIFFERENCEVARIANCE,
-				GLCM_DIFFERENCEENTROPY,
-				GLCM_INFOMEAS1,
-				GLCM_INFOMEAS2};
+				GLCM_SUMVARIANCE,
+				GLCM_VARIANCE };
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -690,7 +706,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 				find_string_argument(i, LOADERTHREADS, loader_threads) ||
 				find_string_argument(i, PXLSCANTHREADS, pixel_scan_threads) ||
 				find_string_argument(i, REDUCETHREADS, reduce_threads) ||
-				find_string_argument(i, ROTATIONS, rotations) ||
+				find_string_argument(i, GLCMANGLES, rawGlcmAngles) ||
 				find_string_argument(i, PXLDIST, pixel_distance) ||
 				find_string_argument(i, COARSEGRAYDEPTH, raw_coarse_grayscale_depth) ||
 				find_string_argument(i, VERBOSITY, verbosity) 
@@ -835,10 +851,18 @@ int Environment::parse_cmdline(int argc, char **argv)
 	}
 
 	//==== Parse rotations
-	if (!Nyxus::parse_delimited_string_list_to_floats(rotations, rotAngles))
+	if (!rawGlcmAngles.empty())
 	{
-		return 1;
+		if (!Nyxus::parse_delimited_string_list_to_ints (rawGlcmAngles, glcmAngles))
+		{
+			std::cout << "Error parsing a list of integers " << rawGlcmAngles << "\n";
+			return 1;
+		}
+
+		// The angle list parsed well, let's tell it to GLCMFeature 
+		GLCMFeature::angles = glcmAngles;
 	}
+
 
 	//==== Using GPU
 	#ifdef USE_GPU
