@@ -97,8 +97,16 @@ cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../
 make install
 cd ../../
 
-git clone  https://github.com/ebiggers/libdeflate.git
-cd libdeflate
+for i in {1..5}
+do
+    curl -L https://github.com/ebiggers/libdeflate/archive/refs/tags/v1.14.zip -o libdeflate.zip
+    if [ -f "libdeflate.zip" ] ; then
+        break
+    fi
+done
+
+unzip libdeflate.zip
+cd libdeflate-1.14
 PREFIX= LIBDIR=/lib64  DESTDIR=../$Z5_INSTALL_DIR/ make  install
 cd ../
 
@@ -111,7 +119,7 @@ do
 done
 
 unzip libtiff.zip
-cd libtiff
+cd tiff-4.4.0
 mkdir build_man
 cd build_man/
 cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/   ..

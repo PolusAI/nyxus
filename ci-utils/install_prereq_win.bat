@@ -99,8 +99,9 @@ tar -xf libtiff.zip
 pushd tiff-4.3.0
 mkdir build_man
 pushd build_man
-git clone https://github.com/ebiggers/libdeflate.git
-pushd libdeflate
+curl -L https://github.com/ebiggers/libdeflate/archive/refs/tags/v1.14.zip -o libdeflate.zip
+tar -xf libdeflate.zip
+pushd libdeflate-1.14
 nmake /f Makefile.msc
 popd
 cmake -DDeflate_INCLUDE_DIR=./libdeflate -DDeflate_LIBRARY_RELEASE=./libdeflate/libdeflate.lib -DCMAKE_INSTALL_PREFIX=../../local_install/ ..
