@@ -102,8 +102,15 @@ cd libdeflate
 PREFIX= LIBDIR=/lib64  DESTDIR=../$Z5_INSTALL_DIR/ make  install
 cd ../
 
+for i in {1..5}
+do
+    curl https://download.osgeo.org/libtiff/tiff-4.4.0.zip -o libtiff.zip 
+    if [ -f "libtiff.zip" ] ; then
+        break
+    fi
+done
 
-git clone https://gitlab.com/libtiff/libtiff.git
+unzip libtiff.zip
 cd libtiff
 mkdir build_man
 cd build_man/
