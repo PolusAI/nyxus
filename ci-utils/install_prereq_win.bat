@@ -104,10 +104,10 @@ tar -xf libdeflate.zip
 pushd libdeflate-1.14
 nmake /f Makefile.msc
 popd
-cmake -DDeflate_INCLUDE_DIR=./libdeflate -DDeflate_LIBRARY_RELEASE=./libdeflate/libdeflate.lib -DCMAKE_INSTALL_PREFIX=../../local_install/ ..
+cmake -DDeflate_INCLUDE_DIR=./libdeflate-1.14 -DDeflate_LIBRARY_RELEASE=./libdeflate-1.14/libdeflate.lib -DCMAKE_INSTALL_PREFIX=../../local_install/ ..
 cmake --build . --config Release --target install
-copy libdeflate\libdeflate.dll ..\..\local_install\bin\
-copy libdeflate\*.lib ..\..\local_install\lib\
+copy libdeflate-1.14\libdeflate.dll ..\..\local_install\bin\
+copy libdeflate-1.14\*.lib ..\..\local_install\lib\
 popd
 popd
 
