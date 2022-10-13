@@ -89,17 +89,23 @@ popd
 
 
 for /l %%x in (1, 1, 5) do (
-    curl https://download.osgeo.org/libtiff/tiff-4.3.0.zip -o libtiff.zip
+    curl https://download.osgeo.org/libtiff/tiff-4.4.0.zip -o libtiff.zip
     if  exist libtiff.zip (
         goto :continue_tiff
     )
 )
 :continue_tiff
 tar -xf libtiff.zip
-pushd tiff-4.3.0
+pushd tiff-4.4.0
 mkdir build_man
 pushd build_man
-curl -L https://github.com/ebiggers/libdeflate/archive/refs/tags/v1.14.zip -o libdeflate.zip
+for /l %%x in (1, 1, 5) do (
+    curl -L https://github.com/ebiggers/libdeflate/archive/refs/tags/v1.14.zip -o libdeflate.zip
+    if  exist libdeflate.zip (
+        goto :continue_libdeflate
+    )
+)
+:continue_libdeflate
 tar -xf libdeflate.zip
 pushd libdeflate-1.14
 nmake /f Makefile.msc
