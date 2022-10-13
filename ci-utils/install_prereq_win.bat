@@ -89,24 +89,31 @@ popd
 
 
 for /l %%x in (1, 1, 5) do (
-    curl https://download.osgeo.org/libtiff/tiff-4.3.0.zip -o libtiff.zip
+    curl https://download.osgeo.org/libtiff/tiff-4.4.0.zip -o libtiff.zip
     if  exist libtiff.zip (
         goto :continue_tiff
     )
 )
 :continue_tiff
 tar -xf libtiff.zip
-pushd tiff-4.3.0
+pushd tiff-4.4.0
 mkdir build_man
 pushd build_man
-git clone https://github.com/ebiggers/libdeflate.git
-pushd libdeflate
+for /l %%x in (1, 1, 5) do (
+    curl -L https://github.com/ebiggers/libdeflate/archive/refs/tags/v1.14.zip -o libdeflate.zip
+    if  exist libdeflate.zip (
+        goto :continue_libdeflate
+    )
+)
+:continue_libdeflate
+tar -xf libdeflate.zip
+pushd libdeflate-1.14
 nmake /f Makefile.msc
 popd
-cmake -DDeflate_INCLUDE_DIR=./libdeflate -DDeflate_LIBRARY_RELEASE=./libdeflate/libdeflate.lib -DCMAKE_INSTALL_PREFIX=../../local_install/ ..
+cmake -DDeflate_INCLUDE_DIR=./libdeflate-1.14 -DDeflate_LIBRARY_RELEASE=./libdeflate-1.14/libdeflate.lib -DCMAKE_INSTALL_PREFIX=../../local_install/ ..
 cmake --build . --config Release --target install
-copy libdeflate\libdeflate.dll ..\..\local_install\bin\
-copy libdeflate\*.lib ..\..\local_install\lib\
+copy libdeflate-1.14\libdeflate.dll ..\..\local_install\bin\
+copy libdeflate-1.14\*.lib ..\..\local_install\lib\
 popd
 popd
 
