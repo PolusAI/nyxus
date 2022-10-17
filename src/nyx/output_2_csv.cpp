@@ -19,6 +19,7 @@
 #include "environment.h"
 #include "features/radial_distribution.h"
 #include "features/gabor.h"
+#include "features/glcm.h"
 #include "features/glrlm.h"
 #include "features/zernike.h"
 #include "globals.h"
@@ -132,7 +133,7 @@ namespace Nyxus
 				if (textureFeature)
 				{
 					// Polulate with angles
-					for (auto ang : theEnvironment.rotAngles)
+					for (auto ang : theEnvironment.glcmAngles)
 					{
 						// CSV separator
 						//if (ang != theEnvironment.rotAngles[0])
@@ -273,8 +274,11 @@ namespace Nyxus
 					fc == GLCM_INFOMEAS2;
 				if (textureFeature)
 				{
-					// Polulate with angles
-					for (int i = 0; i < theEnvironment.rotAngles.size(); i++)
+					// Mock angled values if they haven't been calculated for some error reason
+					if (vv.size() < GLCMFeature::angles.size())
+						vv.resize(GLCMFeature::angles.size(), 0.0);
+					// Output the sub-values
+					for (int i = 0; i < GLCMFeature::angles.size(); i++) // theEnvironment.rotAngles.size(); i++)
 					{
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << vv[i];

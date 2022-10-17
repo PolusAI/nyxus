@@ -69,7 +69,7 @@ namespace Nyxus
 				if (textureFeature)
 				{
 					// Polulate with angles
-					for (auto ang : theEnvironment.rotAngles)
+					for (auto ang : theEnvironment.glcmAngles)
 					{
 						std::string col = fn + "_" + std::to_string(ang);
 						rescache.add_to_header(col);	
@@ -221,7 +221,7 @@ namespace Nyxus
 				if (textureFeature)
 				{
 					// Polulate with angles
-					for (int i = 0; i < theEnvironment.rotAngles.size(); i++)
+					for (int i = 0; i < theEnvironment.glcmAngles.size(); i++)
 						rescache.add_numeric(vv[i]);		
 					
 					// Proceed with other features
