@@ -5,24 +5,6 @@
 #include "image_matrix.h"
 #include "../feature_method.h"
 
-typedef struct
-{
-	double ASM;          /*  (1) Angular Second Moment */
-	double contrast;     /*  (2) Contrast */
-	double correlation;  /*  (3) Correlation */
-	double variance;     /*  (4) Variance */
-	double IDM;		    /*  (5) Inverse Diffenence Moment */
-	double sum_avg;	    /*  (6) Sum Average */
-	double sum_var;	    /*  (7) Sum Variance */
-	double sum_entropy;	/*  (8) Sum Entropy */
-	double entropy;	    /*  (9) Entropy */
-	double diff_var;	    /* (10) Difference Variance */
-	double diff_entropy;	/* (11) Diffenence Entropy */
-	double meas_corr1;	/* (12) Measure of Correlation 1 */
-	double meas_corr2;	/* (13) Measure of Correlation 2 */
-	double max_corr_coef; /* (14) Maximal Correlation Coefficient */
-} Haralick_feature_values;
-
 #define PGM_MAXMAXVAL 255
 
 /// @brief Gray Level Cooccurrence Matrix(GLCM) features
@@ -38,25 +20,34 @@ typedef struct
 
 class GLCMFeature: public FeatureMethod
 {
-	using C_matrix = SimpleMatrix<int>;
 	using AngledFeatures = std::vector<double>;
 
 public:
-	static bool required(const FeatureSet& fs) { 
-		return fs.anyEnabled({
+
+	static int offset;	// default value: 1
+	static int n_levels;	// default value: 8
+	static std::vector<int> angles;	// default value: {0,45,90,135} (the supreset)
+
+	static bool required(const FeatureSet& fs) 
+	{
+		return fs.anyEnabled( {
 				GLCM_ANGULAR2NDMOMENT,
 				GLCM_CONTRAST,
 				GLCM_CORRELATION,
-				GLCM_VARIANCE,
+				GLCM_DIFFERENCEAVERAGE,	
+				GLCM_DIFFERENCEVARIANCE,
+				GLCM_DIFFERENCEENTROPY,
+				GLCM_ENERGY, 
+				GLCM_ENTROPY,
+				GLCM_HOMOGENEITY,	
+				GLCM_INFOMEAS1,
+				GLCM_INFOMEAS2,
 				GLCM_INVERSEDIFFERENCEMOMENT,
 				GLCM_SUMAVERAGE,
 				GLCM_SUMVARIANCE,
 				GLCM_SUMENTROPY,
-				GLCM_ENTROPY,
-				GLCM_DIFFERENCEVARIANCE,
-				GLCM_DIFFERENCEENTROPY,
-				GLCM_INFOMEAS1,
-				GLCM_INFOMEAS2 });
+				GLCM_VARIANCE
+			});
 	}
 
 	GLCMFeature();
@@ -66,23 +57,8 @@ public:
 	void save_value(std::vector<std::vector<double>>& feature_vals);
 	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
-	void get_AngularSecondMoments (AngledFeatures& af);
-	void get_Contrast (AngledFeatures& af);
-	void get_Correlation (AngledFeatures& af);
-	void get_Variance (AngledFeatures& af);
-	void get_InverseDifferenceMoment (AngledFeatures& af);
-	void get_SumAverage (AngledFeatures& af);
-	void get_SumVariance (AngledFeatures& af);
-	void get_SumEntropy (AngledFeatures& af);
-	void get_Entropy (AngledFeatures& af);
-	void get_DifferenceVariance (AngledFeatures& af);
-	void get_DifferenceEntropy (AngledFeatures& af);
-	void get_InfoMeas1 (AngledFeatures& af);
-	void get_InfoMeas2 (AngledFeatures& af);
-
-	const static int distance_parameter = 5;
-
 private:
+
 	void Extract_Texture_Features_nontriv(
 		int distance,
 		int angle,
@@ -120,78 +96,78 @@ private:
 		const int* tone_LUT,
 		int tone_count);
 
-	SimpleMatrix<int> P;	// colocation matrix
-	
-	std::vector<double> fvals_ASM,          /*  (1) Angular Second Moment */
-		fvals_contrast,     /*  (2) Contrast */
-		fvals_correlation,  /*  (3) Correlation */
-		fvals_variance,     /*  (4) Variance */
-		fvals_IDM,		    /*  (5) Inverse Diffenence Moment */
-		fvals_sum_avg,	    /*  (6) Sum Average */
-		fvals_sum_var,	    /*  (7) Sum Variance */
-		fvals_sum_entropy,	/*  (8) Sum Entropy */
-		fvals_entropy,	    /*  (9) Entropy */
-		fvals_diff_var,	    /* (10) Difference Variance */
-		fvals_diff_entropy,	/* (11) Diffenence Entropy */
-		fvals_meas_corr1,	/* (12) Measure of Correlation 1 */
-		fvals_meas_corr2,	/* (13) Measure of Correlation 2 */
-		fvals_max_corr_coef; /* (14) Maximal Correlation Coefficient */
-
 	void Extract_Texture_Features(
 		int distance,
 		int angle,
 		const SimpleMatrix<uint8_t>& grays);	// 'grays' is 0-255 grays 
+	void Extract_Texture_Features2 (int angle, const ImageMatrix& grays, PixIntens min_val, PixIntens max_val);
 
 	void calculate_normalized_graytone_matrix (SimpleMatrix<uint8_t>& G, int minI, int maxI, const ImageMatrix& Im);
 	void calculate_normalized_graytone_matrix (OOR_ReadMatrix& G, int minI, int maxI, const ImageMatrix& Im);
 
-	void CoOcMat_Angle_0(
+	void calculateCoocMatAtAngle (
 		// out
-		SimpleMatrix<double>& matrix,
+		SimpleMatrix<double>& p_matrix,
 		// in
-		int distance,
-		const SimpleMatrix<uint8_t>& grays,
-		const int* tone_LUT,
-		int tone_count);
-	void CoOcMat_Angle_45(
-		// out
-		SimpleMatrix<double>& matrix,
-		// in
-		int distance,
-		const SimpleMatrix<uint8_t>& grays,
-		const int* tone_LUT,
-		int tone_count);
-	void CoOcMat_Angle_90(
-		// out
-		SimpleMatrix<double>& matrix,
-		// in
-		int distance,
-		const SimpleMatrix<uint8_t>& grays,
-		const int* tone_LUT,
-		int tone_count);
-	void CoOcMat_Angle_135(
-		// out
-		SimpleMatrix<double>& matrix,
-		// in
-		int distance,
-		const SimpleMatrix<uint8_t>& grays,
-		const int* tone_LUT,
-		int tone_count);
+		int dx, int dy,
+		const ImageMatrix& grays,
+		PixIntens min_val,
+		PixIntens max_val, 
+		bool normalize);
 
-	double f1_asm (const SimpleMatrix<double>& P_matrix, int tone_count);	
-	double f2_contrast (const SimpleMatrix<double>& P_matix, int tone_count);	
-	double f3_corr (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
-	double f4_var (const SimpleMatrix<double>& P_matrix, int tone_count);
-	double f5_idm (const SimpleMatrix<double>& P_matrix, int tone_count);
-	double f6_savg (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
-	double f8_sentropy (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
-	double f7_svar (const SimpleMatrix<double>& P_matrix, int tone_count, double sum_entropy, std::vector<double>& px);
-	double f9_entropy (const SimpleMatrix<double>& P_matrix, int tone_count);	
-	double f10_dvar (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
-	double f11_dentropy (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
-	double f12_icorr (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px, std::vector<double>& py);
-	double f13_icorr (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px, std::vector<double>& py);
+	void calculatePxpmy();
+
+	static inline int cast_to_range(PixIntens orig_I, PixIntens min_orig_I, PixIntens max_orig_I, int min_target_I, int max_target_I)
+	{
+		int target_I = (int)(double(orig_I - min_orig_I) / double(max_orig_I - min_orig_I) * double(max_target_I - min_target_I) + min_target_I);
+		return target_I;
+	}
+
+	double f_asm (const SimpleMatrix<double>& P_matrix, int tone_count);	
+	double f_contrast (const SimpleMatrix<double>& P_matix, int tone_count);	
+	double f_corr (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
+	double f_var (const SimpleMatrix<double>& P_matrix, int tone_count);
+	double f_idm (const SimpleMatrix<double>& P_matrix, int tone_count);
+	double f_savg (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
+	double f_sentropy (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
+	double f_svar (const SimpleMatrix<double>& P_matrix, int tone_count, double sum_entropy, std::vector<double>& px);
+	double f_entropy (const SimpleMatrix<double>& P_matrix, int tone_count);	
+	double f_dvar (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
+	double f_dentropy (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
+
+	void copyfvals(AngledFeatures& dst, const AngledFeatures& src);
+
+	std::vector<double> fvals_ASM,
+		fvals_contrast,
+		fvals_correlation,
+		fvals_energy,
+		fvals_homo,
+		fvals_variance,
+		fvals_IDM,
+		fvals_sum_avg,
+		fvals_sum_var,
+		fvals_sum_entropy,
+		fvals_entropy,
+		fvals_diff_avg,
+		fvals_diff_var,
+		fvals_diff_entropy,
+		fvals_meas_corr1,
+		fvals_meas_corr2,
+		fvals_max_corr_coef;
+
+	double hx = -1, hy = -1, hxy = -1, hxy1 = -1, hxy2 = -1;	// Entropies for f12/f13_icorr calculation
+	void calcH (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px, std::vector<double>& py);
+	double f_info_meas_corr1 (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px, std::vector<double>& py);
+	double f_info_meas_corr2 (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px, std::vector<double>& py);
+
+	double f_energy (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
+	double f_inv_difference (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
+	double f_homogeneity (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
+	double f_difference_avg (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
 
 	const double LOG10_2 = 0.30102999566;	// precalculated log 2 base 10
+	SimpleMatrix<double> P_matrix;
+	std::vector<double> Pxpy, Pxmy;
+
 };
 

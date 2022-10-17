@@ -21,7 +21,7 @@
 #define LOADERTHREADS "--loaderThreads"			// Environment :: n_loader_threads
 #define PXLSCANTHREADS "--pxlscanThreads"		// Environment :: n_pixel_scan_threads
 #define REDUCETHREADS "--reduceThreads"			// Environment :: n_reduce_threads
-#define ROTATIONS "--rotations"					// Environment :: rotAngles
+#define GLCMANGLES "--glcmAngles"					// Environment :: rotAngles
 #define VERBOSITY "--verbosity"					// Environment :: verbosity_level	-- Example: --verbosity=3
 #define ONLINESTATSTHRESH "--onlineStatsThresh" // Environment :: onlineStatsThreshold	-- Example: --onlineStatsThresh=150
 #define XYRESOLUTION "--pixelsPerCentimeter"	// pixels per centimeter
@@ -92,8 +92,8 @@ public:
 	std::string pixel_distance = "";
 	int n_pixel_distance = 5;
 
-	std::string rotations = "";
-	std::vector<float> rotAngles = {0, 45, 90, 135};
+	std::string rawGlcmAngles = "";
+	std::vector<int> glcmAngles = {0, 45, 90, 135};
 
 	std::string verbosity = "";	// 'verbosity_level' is inherited from BasicEnvironment
 
