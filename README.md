@@ -23,17 +23,30 @@ For use in python, the latest version of Nyxus can be installed via the [Pip pac
 pip install nyxus
 ```
 
-Usage is very straightforward. Given `intensities` and `labels` folders, Nyxus pairs up intensity-label pairs and extracts features from them. A summary of the avaialble feature are [listed below](#available-features).
+Usage is very straightforward. Given `intensities` and `labels` folders, Nyxus pairs up intensity-label pairs and extracts features from all of them them. A summary of the avaialble feature are [listed below](#available-features).
 
 ```python 
 from nyxus import Nyxus
-
-intensity_path = "/path/to/images/intensities/"
-labels_path = "/path/to/images/labels/"
-
 nyx = Nyxus(["*ALL*"])
+intensityDir = "/path/to/images/intensities/"
+maskDir = "/path/to/images/labels/"
+features = nyx.featurize_directory (intensityDir, maskDir)
+```
 
-features = nyx.featurize(intensity_path, labels_path)
+Alternatively to processing all the directory images, Nyxus can process explicitly defined pairs of intensity-mask images, for example image "i1" with mask "m1" and image "i2" with mask "m2":
+
+```python 
+from nyxus import Nyxus
+nyx = Nyxus(["*ALL*"])
+features = n.featurize(
+    [
+        "/path/to/images/intensities/i1.ome.tif", 
+        "/path/to/images/intensities/i2.ome.tif"
+    ], 
+    [
+        "/path/to/images/labels/m1.ome.tif", 
+        "/path/to/images/labels/m2.ome.tif"
+    ])
 ```
 
 The `features` variable is a Pandas dataframe similar to what is shown below.

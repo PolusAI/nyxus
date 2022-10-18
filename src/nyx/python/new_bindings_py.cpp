@@ -63,7 +63,7 @@ void initialize_environment(
     #endif
 }
 
-py::tuple process_data(
+py::tuple featurize_directory_imp (
     const std::string &intensity_dir,
     const std::string &labels_dir,
     const std::string &file_pattern)
@@ -105,6 +105,72 @@ py::tuple process_data(
         false, // 'true' to save to csv
         theEnvironment.output_dir);
 
+    if (errorCode)
+        throw std::runtime_error("Error occurred during dataset processing.");
+
+    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
+    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
+    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+    auto nRows = theResultsCache.get_num_rows();
+    pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
+    pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+
+    return py::make_tuple(pyHeader, pyStrData, pyNumData);
+}
+
+py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames)
+{
+    std::vector<std::string> intensFiles, labelFiles;
+    for (auto it = int_fnames.begin(); it != int_fnames.end(); ++it)
+    {
+        std::string fn = it->cast<std::string>();
+        intensFiles.push_back(fn);
+    }
+    for (auto it = seg_fnames.begin(); it != seg_fnames.end(); ++it)
+    {
+        std::string fn = it->cast<std::string>();
+        labelFiles.push_back(fn);
+    }
+
+    // Check the file names 
+    if (intensFiles.size() == 0)
+        throw std::runtime_error("Intensity file list is blank");
+    if (labelFiles.size() == 0)
+        throw std::runtime_error("Segmentation file list is blank");
+    if (intensFiles.size() != labelFiles.size())
+        throw std::runtime_error("Imbalanced intensity and segmentation file lists");
+    for (auto i = 0; i < intensFiles.size(); i++)
+    {
+        const std::string& i_fname = intensFiles[i];
+        const std::string& s_fname = labelFiles[i];
+
+        if (!directoryExists(i_fname))
+        {
+            std::cout << i_fname << "\n";
+            throw std::runtime_error("Non-existing file");
+        }
+        if (!directoryExists(s_fname))
+        {
+            std::cout << s_fname << "\n";
+            throw std::runtime_error("Non-existing file");
+        }    
+    }
+
+    init_feature_buffers();
+
+    theResultsCache.clear();
+
+    // Process the image sdata
+    int min_online_roi_size = 0;
+    int errorCode = processDataset(
+        intensFiles,
+        labelFiles,
+        theEnvironment.n_loader_threads,
+        theEnvironment.n_pixel_scan_threads,
+        theEnvironment.n_reduce_threads,
+        min_online_roi_size,
+        false, // 'true' to save to csv
+        theEnvironment.output_dir);
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing.");
 
@@ -190,7 +256,8 @@ PYBIND11_MODULE(backend, m)
     m.doc() = "Nyxus";
 
     m.def("initialize_environment", &initialize_environment, "Environment initialization");
-    m.def("process_data", &process_data, "Process images, calculate features");
+    m.def("featurize_directory_imp", &featurize_directory_imp, "Calculate features of images defined by intensity and mask image collection directories");
+    m.def("featurize_fname_lists_imp", &featurize_fname_lists_imp, "Calculate features of intensity-mask image pairs defined by lists of image file names");
     m.def("findrelations_imp", &findrelations_imp, "Find relations in segmentation images");
     m.def("gpu_available", &Environment::gpu_is_available, "Check if CUDA gpu is available");
     m.def("use_gpu", &use_gpu, "Enable/disable GPU features");
@@ -217,7 +284,7 @@ void initialize_environment(
     uint32_t n_reduce_threads,
     uint32_t n_loader_threads);
 
-py::tuple process_data(
+py::tuple featurize_directory_imp(
     const std::string& intensity_dir,
     const std::string& labels_dir,
     const std::string& file_pattern);
@@ -230,7 +297,7 @@ int main(int argc, char** argv)
     
     //  initialize_environment({ "*ALL*" }, 5, 120, 1, 1);
     //
-    //  py::tuple result = process_data(
+    //  py::tuple result = featurize_directory_imp(
     //      "C:\\WORK\\AXLE\\data\\mini\\int", // intensity_dir,
     //      "C:\\WORK\\AXLE\\data\\mini\\seg", // const std::string & labels_dir,
     //      "p0_y1_r1_c0\\.ome\\.tif"); // const std::string & file_pattern

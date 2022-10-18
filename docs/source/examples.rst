@@ -107,3 +107,24 @@ and the file is passed to Nyxus via parameter --intSegMapFile, the mapping will 
    /home/ec2-user/data-ratbrain/int/image_2.ome.tif    /home/ec2-user/data-ratbrain/seg/image_A.ome.tif
    /home/ec2-user/data-ratbrain/int/image_3.ome.tif    /home/ec2-user/data-ratbrain/seg/image_A.ome.tif
    /home/ec2-user/data-ratbrain/int/image_4.ome.tif    /home/ec2-user/data-ratbrain/seg/image_B.ome.tif
+
+7. Ad-hoc mapping between intensity and mask image files via Python interface
+-----------------------------------------------------------------------------
+
+Alternatively to processing all the directory images, Nyxus can process explicitly defined pairs of intensity-mask images, for example image "i1" with mask "m1" and image "i2" with mask "m2":
+
+```python 
+from nyxus import Nyxus
+nyx = Nyxus(["*ALL*"])
+features = n.featurize(
+    [
+        "/path/to/images/intensities/i1.ome.tif", 
+        "/path/to/images/intensities/i2.ome.tif"
+    ], 
+    [
+        "/path/to/images/labels/m1.ome.tif", 
+        "/path/to/images/labels/m2.ome.tif"
+    ])
+```
+
+
