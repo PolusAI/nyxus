@@ -34,13 +34,13 @@ class TestNyxus():
                     cpu_nyx = nyxus.Nyxus(["GABOR"])
                     if (nyxus.gpu_is_available()):
                         cpu_nyx.using_gpu(False)
-                    cpu_features = cpu_nyx.featurize(intens, seg)
+                    cpu_features = cpu_nyx.featurize_directory(intens, seg)
 
                     if (nyxus.gpu_is_available()):
                         # gpu gabor
                         gpu_nyx = nyxus.Nyxus(["GABOR"], using_gpu=0)
                         gpu_nyx.using_gpu(True)
-                        gpu_features = gpu_nyx.featurize(intens, seg)
+                        gpu_features = gpu_nyx.featurize_directory(intens, seg)
                         
                         assert gpu_features.equals(cpu_features)
                     else:
