@@ -144,16 +144,16 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
         const std::string& i_fname = intensFiles[i];
         const std::string& s_fname = labelFiles[i];
 
-        if (!directoryExists(i_fname))
+        if (!existsOnFilesystem(i_fname))
         {
-            std::cout << i_fname << "\n";
-            throw std::runtime_error("Non-existing file");
+            auto msg = "File does not exist: " + i_fname;
+            throw std::runtime_error(msg);
         }
-        if (!directoryExists(s_fname))
+        if (!existsOnFilesystem(s_fname))
         {
-            std::cout << s_fname << "\n";
-            throw std::runtime_error("Non-existing file");
-        }    
+            auto msg = "File does not exist: " + s_fname;
+            throw std::runtime_error(msg);
+        }
     }
 
     init_feature_buffers();

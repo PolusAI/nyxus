@@ -97,7 +97,7 @@ class Nyxus:
         label_dir: Optional[str] = None,
         file_pattern: Optional[str] = ".*",
     ):
-        """Extract features from provided images.
+        """Extract features from all the images satisfying the file pattern of provided image directories.
 
         Extracts all the requested features _at the image level_ from the images
         present in `intensity_dir`. If `label_dir` is specified, features will be
@@ -158,7 +158,9 @@ class Nyxus:
         seg_fnames: list):
         """Extract features from image file pairs passed as lists
 
-        Extract stoy
+        Extracts all the requested features _at the image level_ from the intensity images
+        present in list `int_fnames` with respect to region of interest masks presented in 
+        list `seg_fnames`. 
 
         Parameters
         ----------

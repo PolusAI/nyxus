@@ -111,12 +111,12 @@ and the file is passed to Nyxus via parameter --intSegMapFile, the mapping will 
 7. Ad-hoc mapping between intensity and mask image files via Python interface
 -----------------------------------------------------------------------------
 
-Alternatively to processing all the directory images, Nyxus can process explicitly defined pairs of intensity-mask images, for example image "i1" with mask "m1" and image "i2" with mask "m2":
+Alternatively, Nyxus can process explicitly defined pairs of intensity-mask images, for example image "i1" with mask "m1" and image "i2" with mask "m2":
 
 ```python 
 from nyxus import Nyxus
 nyx = Nyxus(["*ALL*"])
-features = n.featurize(
+features = nyx.featurize(
     [
         "/path/to/images/intensities/i1.ome.tif", 
         "/path/to/images/intensities/i2.ome.tif"

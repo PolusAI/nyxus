@@ -24,7 +24,7 @@
 
 namespace Nyxus
 {
-	bool directoryExists(const std::string &);
+	bool existsOnFilesystem(const std::string &);
 
 	bool parse_as_float(const std::string& raw, float &result)
 	{
@@ -904,7 +904,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 	//==== Parse desired features
 
 	// --Try to read a feature file
-	if (features.length() > 0 && Nyxus::directoryExists(features))
+	if (features.length() > 0 && Nyxus::existsOnFilesystem(features))
 	{
 
 		std::ifstream file(features);
