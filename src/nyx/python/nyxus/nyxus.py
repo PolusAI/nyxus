@@ -154,18 +154,18 @@ class Nyxus:
 
     def featurize (
         self,
-        int_fnames: list,
-        seg_fnames: list):
+        intensity_files: list,
+        mask_files: list):
         """Extract features from image file pairs passed as lists
 
         Extracts all the requested features _at the image level_ from the intensity images
-        present in list `int_fnames` with respect to region of interest masks presented in 
-        list `seg_fnames`. 
+        present in list `intensity_files` with respect to region of interest masks presented in 
+        list `mask_files`. Multiple 
 
         Parameters
         ----------
-        int_fnames : list of intensity image file paths
-        seg_fnames : list of mask image file paths
+        intensity_files : list of intensity image file paths
+        mask_files : list of mask image file paths
 
         Returns
         -------
@@ -174,13 +174,13 @@ class Nyxus:
             per image.
         """
 
-        if int_fnames is None:
+        if intensity_files is None:
             raise IOError ("The list of intensity file paths is empty")
 
-        if seg_fnames is None:
+        if mask_files is None:
             raise IOError ("The list of segment file paths is empty")
 
-        header, string_data, numeric_data = featurize_fname_lists_imp (int_fnames, seg_fnames)
+        header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files)
 
         df = pd.concat(
             [
