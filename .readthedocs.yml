@@ -12,7 +12,9 @@ build:
     python: "3.7"
   apt_packages:
     - cmake
-
+  jobs:
+    pre_install:
+      - bash ./ci-utils/install_prereq_linux.sh
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
    configuration: docs/source/conf.py
