@@ -17,7 +17,7 @@ namespace Nyxus
 	/// @brief Checks if a directory exists
 	/// @param dir 
 	/// @return 
-	bool directoryExists(const std::string& dir);
+	bool existsOnFilesystem(const std::string& dir);
 	
 	/// @brief Reads all the files in a directory with respect to a file pattern
 	/// @param dir 

@@ -1,4 +1,4 @@
-from .backend import initialize_environment, process_data, findrelations_imp, use_gpu, gpu_available
+from .backend import initialize_environment, featurize_directory_imp, featurize_fname_lists_imp, findrelations_imp, use_gpu, gpu_available 
 import os
 import numpy as np
 import pandas as pd
@@ -91,13 +91,13 @@ class Nyxus:
             using_gpu
         )
 
-    def featurize(
+    def featurize_directory(
         self,
         intensity_dir: str,
         label_dir: Optional[str] = None,
         file_pattern: Optional[str] = ".*",
     ):
-        """Extract features from provided images.
+        """Extract features from all the images satisfying the file pattern of provided image directories.
 
         Extracts all the requested features _at the image level_ from the images
         present in `intensity_dir`. If `label_dir` is specified, features will be
@@ -133,9 +133,7 @@ class Nyxus:
         if label_dir is None:
             label_dir = intensity_dir
 
-        header, string_data, numeric_data = process_data(
-            intensity_dir, label_dir, file_pattern
-        )
+        header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern)
 
         df = pd.concat(
             [
@@ -153,6 +151,50 @@ class Nyxus:
     
     def using_gpu(self, gpu_on: bool):
         use_gpu(gpu_on)
+
+    def featurize (
+        self,
+        intensity_files: list,
+        mask_files: list):
+        """Extract features from image file pairs passed as lists
+
+        Extracts all the requested features _at the image level_ from the intensity images
+        present in list `intensity_files` with respect to region of interest masks presented in 
+        list `mask_files`. Multiple 
+
+        Parameters
+        ----------
+        intensity_files : list of intensity image file paths
+        mask_files : list of mask image file paths
+
+        Returns
+        -------
+        df : pd.DataFrame
+            Pandas DataFrame containing the requested features with one row per label
+            per image.
+        """
+
+        if intensity_files is None:
+            raise IOError ("The list of intensity file paths is empty")
+
+        if mask_files is None:
+            raise IOError ("The list of segment file paths is empty")
+
+        header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files)
+
+        df = pd.concat(
+            [
+                pd.DataFrame(string_data, columns=header[: string_data.shape[1]]),
+                pd.DataFrame(numeric_data, columns=header[string_data.shape[1] :]),
+            ],
+            axis=1,
+        )
+
+        # Labels should always be uint.
+        if "label" in df.columns:
+            df["label"] = df.label.astype(np.uint32)
+
+        return df
 		
 class Nested:
     """Nyxus image feature extraction library / ROI hierarchy analyzer
