@@ -22,6 +22,8 @@ if(CUDA_FOUND AND USEGPU)
 			set(CUDA_ARCH_LIST "35;37;50;72;75")
 		elseif (CUDA_VERSION_MINOR STREQUAL "1" OR CUDA_VERSION_MINOR STREQUAL "2")
 			set(CUDA_ARCH_LIST "35;37;50;72;75;80;86")
+		else () # for now, we assume CUDA 11.2+ supports all these archs.
+			set(CUDA_ARCH_LIST "35;37;50;72;75;80;86")
 		endif()
 	endif()
 elseif((NOT CUDA_FOUND) AND USEGPU)
@@ -111,7 +113,7 @@ if(USEGPU)
 	)
 
 	target_sources(runAllTests PRIVATE ${GPU_SOURCE_FILES})
-	
+	include_directories("${CUDA_INCLUDE_DIRS}")
 	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		target_compile_options(runAllTests PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
 	endif()

@@ -17,6 +17,8 @@ if(CUDA_FOUND AND USEGPU)
 			set(CUDA_ARCH_LIST "35;37;50;72;75")
 		elseif (CUDA_VERSION_MINOR STREQUAL "1" OR CUDA_VERSION_MINOR STREQUAL "2")
 			set(CUDA_ARCH_LIST "35;37;50;72;75;80;86")
+		else () # for now, we assume CUDA 11.2+ supports all these archs.
+			set(CUDA_ARCH_LIST "35;37;50;72;75;80;86")
 		endif()
 	endif()
 elseif((NOT CUDA_FOUND) AND USEGPU)
@@ -33,6 +35,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(USEGPU)
     enable_language("CUDA")
+	SET(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
+	set_property(GLOBAL PROPERTY CUDA_ARCHITECTURES "${CUDA_ARCH_LIST}")
+	message("Building with compute capability for ${CUDA_ARCH_LIST}.")
     add_definitions(-DUSE_GPU)
 	if (CUDA_VERSION_MAJOR STREQUAL "10")
 		set(CMAKE_CUDA_STANDARD 14)
@@ -43,10 +48,12 @@ if(USEGPU)
 endif()
 
 #since xtensor does not built with GCC 7.5 and lower
+option(OMEZARR "Support OMEZarr" ON)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.5) 
 		add_definitions(-DOMEZARR_SUPPORT)
 	else()
+		set(OMEZARR OFF)
 		message(WARNING "OMEZarr support is not available with GCC 7.5 and older compiler.")
 	endif()
 else()
@@ -66,7 +73,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 #== GTest 
 option(RUN_GTEST "Downloads google unit test API and runs google test scripts to test Nyxus" OFF)
-set(RUN_GTEST ON)
+
 
 #==== Pybind11
 find_package(pybind11 CONFIG REQUIRED)
@@ -149,13 +156,15 @@ endif()
 
 
 # Python bindings.
-pybind11_add_module(backend 
-	${SOURCE}
-	src/nyx/python/new_bindings_py.cpp
-	src/nyx/python/nested_roi_py.cpp
-	src/nyx/nested_roi.cpp
-	src/nyx/image_loader1x.cpp
-)
+if(BUILD_LIB)
+	pybind11_add_module(backend 
+		${SOURCE}
+		src/nyx/python/new_bindings_py.cpp
+		src/nyx/python/nested_roi_py.cpp
+		src/nyx/nested_roi.cpp
+		src/nyx/image_loader1x.cpp
+	)
+endif()
 
 #== Required for OMETiff  
 find_package(TIFF REQUIRED)
@@ -165,29 +174,34 @@ if (TIFF_FOUND)
 endif (TIFF_FOUND)
 
 #== Required for OMEZarr 
-find_package(BLOSC REQUIRED)
-if(BLOSC_FOUND)
-	target_compile_definitions(backend PRIVATE -DWITH_BLOSC)
-	target_link_libraries(backend PRIVATE ${BLOSC_LIBRARIES})
-	if(BUILD_CLI)
-		target_compile_definitions(nyxus PRIVATE -DWITH_BLOSC)
-		target_compile_definitions(nyxushie PRIVATE -DWITH_BLOSC) 	
-		target_link_libraries(nyxus PRIVATE ${BLOSC_LIBRARIES})	
-		target_link_libraries(nyxushie PRIVATE ${BLOSC_LIBRARIES})	
+if(OMEZARR)
+	find_package(BLOSC REQUIRED)
+	if(BLOSC_FOUND)
+		if(BUILD_LIB)
+			target_compile_definitions(backend PRIVATE -DWITH_BLOSC)
+			target_link_libraries(backend PRIVATE ${BLOSC_LIBRARIES})
+		endif()
+		if(BUILD_CLI)
+			target_compile_definitions(nyxus PRIVATE -DWITH_BLOSC)
+			target_compile_definitions(nyxushie PRIVATE -DWITH_BLOSC) 	
+			target_link_libraries(nyxus PRIVATE ${BLOSC_LIBRARIES})	
+			target_link_libraries(nyxushie PRIVATE ${BLOSC_LIBRARIES})	
+		endif()
 	endif()
+
+	find_package(Boost REQUIRED)
+	if(Boost_FOUND)
+		include_directories(${Boost_INCLUDE_DIR})
+	endif()
+
+	find_package(nlohmann_json REQUIRED)
+	if(nlohmann_json_FOUND)
+		include_directories(${nlohmann_json_INCLUDE_DIR})
+	endif()
+
+	find_file(Z5 "z5/z5.hxx" REQUIRED)
 endif()
 
-find_package(Boost REQUIRED)
-if(Boost_FOUND)
-	include_directories(${Boost_INCLUDE_DIR})
-endif()
-
-find_package(nlohmann_json REQUIRED)
-if(nlohmann_json_FOUND)
-	include_directories(${nlohmann_json_INCLUDE_DIR})
-endif()
-
-find_file(Z5 "z5/z5.hxx" REQUIRED)
 
 find_package(Threads QUIET)
 if (Threads_FOUND)
@@ -200,6 +214,7 @@ else ()
 endif ()
 
 if(USEGPU)
+	include_directories("${CUDA_INCLUDE_DIRS}")
 	set(GPU_SOURCE_FILES
 		src/nyx/gpu/gpu_helpers.cu
 		src/nyx/gpu/image_moments.cu
@@ -211,9 +226,12 @@ if(USEGPU)
 		target_compile_options(nyxus_gpu PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
 	endif()
 
-	target_link_libraries(backend PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
-	set_target_properties(backend PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
-	target_link_libraries(backend PRIVATE nyxus_gpu)
+	if(BUILD_LIB)
+		target_link_libraries(backend PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
+		set_target_properties(backend PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
+		target_link_libraries(backend PRIVATE nyxus_gpu)
+	endif()
+
 	if(BUILD_CLI)
 		target_link_libraries(nyxus PRIVATE nyxus_gpu)
 		target_link_libraries(nyxus PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
@@ -221,17 +239,18 @@ if(USEGPU)
 	endif()
 endif()
 
-target_compile_definitions(backend PRIVATE WITH_PYTHON_H)
-
-# VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
-target_compile_definitions(backend PRIVATE VERSION_INFO=${VERSION_INFO})
+if(BUILD_LIB)
+	target_compile_definitions(backend PRIVATE WITH_PYTHON_H)
+	# VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
+	target_compile_definitions(backend PRIVATE VERSION_INFO=${VERSION_INFO})
+endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
-
-	target_link_libraries(backend PRIVATE stdc++fs)
-	target_link_libraries(backend PRIVATE -static-libgcc -static-libstdc++)
-	
+	if(BUILD_LIB)
+		target_link_libraries(backend PRIVATE stdc++fs)
+		target_link_libraries(backend PRIVATE -static-libgcc -static-libstdc++)
+	endif()
 	if(BUILD_CLI)
 		target_link_libraries(nyxus PRIVATE -static-libgcc -static-libstdc++)
 		target_link_libraries(nyxus PRIVATE stdc++fs)
@@ -240,9 +259,11 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	endif()
 endif()
 
-target_link_libraries(backend PRIVATE ${Nyxus_LIBRARIES})
+if(BUILD_LIB)
+	target_link_libraries(backend PRIVATE ${Nyxus_LIBRARIES})
+endif()
 
-if (APPLE)
+if (APPLE AND BUILD_LIB)
 	set_target_properties(backend PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
 endif()
 
