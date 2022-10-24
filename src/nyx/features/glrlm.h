@@ -82,6 +82,7 @@ public:
 	void calc_LRHGLE (AngledFtrs& af);
 
 	constexpr static int rotAngles [] = {0, 45, 90, 135};
+	const static int n_standard_angles = 4;
 
 private:
 	std::vector<double> angled_SRE, 

@@ -16,6 +16,7 @@ public:
 	void close();
 	bool load_tile (size_t tile_idx);
 	bool load_tile (size_t tile_row, size_t tile_col);
+	bool load_tile_3d (size_t tile_row, size_t tile_col, size_t z);
 	const std::vector<uint32_t>& get_int_tile_buffer();
 	const std::vector<uint32_t>& get_seg_tile_buffer();
 	size_t get_tile_size();
@@ -28,6 +29,9 @@ public:
 	size_t get_within_tile_idx (size_t pixel_row, size_t pixel_col);
 	size_t get_full_width();
 	size_t get_full_height();
+
+	bool image_is_3d();
+	int get_num_layers();
 private:
 	AbstractTileLoader<uint32_t> *segFL = nullptr, *intFL = nullptr; 
 	std::shared_ptr<std::vector<uint32_t>> ptrI = nullptr; 

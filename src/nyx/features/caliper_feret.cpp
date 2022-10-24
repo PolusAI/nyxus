@@ -85,7 +85,7 @@ void CaliperFeretFeature::calculate_imp(const std::vector<Pixel2>& convex_hull, 
 	for (float theta = 0.f; theta < 180.f; theta += rot_angle_increment)
 	{
 		Rotation::rotate_around_center(convex_hull, theta, CH_rot);
-		auto [minX, minY, maxX, maxY] = AABB::from_pixelcloud(CH_rot);
+		auto [minX, minY, minZ, maxX, maxY, maxZ] = AABB::from_pixelcloud (CH_rot);
 
 		// Diameters at this angle
 		std::vector<float> DA;
@@ -157,7 +157,7 @@ void CaliperFeretFeature::osized_calculate(LR& r, ImageLoader&)
 	for (float theta = 0.f; theta < 180.f; theta += rot_angle_increment)
 	{
 		Rotation::rotate_around_center(r.convHull_CH, theta, CH_rot);
-		auto [minX, minY, maxX, maxY] = AABB::from_pixelcloud(CH_rot);
+		auto [minX, minY, minZ, maxX, maxY, maxZ] = AABB::from_pixelcloud(CH_rot);
 
 		std::vector<float> DA;	// Diameters at this angle
 

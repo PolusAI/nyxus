@@ -17,10 +17,12 @@ public:
 		{
 			update_x(px.x);
 			update_y(px.y);
+			update_z(px.z);
 		}
 	}
 	void init_x(StatsInt x) { xmin = xmax = x; }
 	void init_y(StatsInt y) { ymin = ymax = y; }
+	void init_z(StatsInt z) { zmin = zmax = z; }
 	void update_x(StatsInt x)
 	{
 		xmin = std::min(xmin, x);
@@ -31,25 +33,33 @@ public:
 		ymin = std::min(ymin, y);
 		ymax = std::max(ymax, y);
 	}
+	void update_z(StatsInt z)
+	{
+		zmin = std::min(zmin, z);
+		zmax = std::max(zmax, z);
+	}
 	inline StatsInt get_height() const { return ymax - ymin + 1; }
 	inline StatsInt get_width() const { return xmax - xmin + 1; }
-	inline StatsInt get_area() const { return get_width() * get_height(); }
+	inline StatsInt get_2d_area() const { return get_width() * get_height(); }
 	inline StatsInt get_xmin() const { return xmin; }
 	inline StatsInt get_xmax() const { return xmax; }
 	inline StatsInt get_ymin() const { return ymin; }
 	inline StatsInt get_ymax() const { return ymax; }
+	inline StatsInt get_zmin() const { return zmin; }
+	inline StatsInt get_zmax() const { return zmax; }
 
-	static std::tuple<StatsInt, StatsInt, StatsInt, StatsInt> from_pixelcloud (const std::vector<Pixel2>& P)
+	static std::tuple<StatsInt, StatsInt, StatsInt, StatsInt, StatsInt, StatsInt> from_pixelcloud (const std::vector<Pixel2>& P)
 	{
 		AABB bb;
 		for (auto& p : P)
 		{
 			bb.update_x(p.x);
 			bb.update_y(p.y);
+			bb.update_z(p.z);
 		}
-		return {bb.get_xmin(), bb.get_ymin(), bb.get_xmax(), bb.get_ymax()};
+		return {bb.get_xmin(), bb.get_ymin(), bb.get_zmin(), bb.get_xmax(), bb.get_ymax(), bb.get_zmax()};
 	}
 
 private:
-	StatsInt xmin = INT32_MAX, xmax = INT32_MIN, ymin = INT32_MAX, ymax = INT32_MIN;
+	StatsInt xmin = INT32_MAX, xmax = INT32_MIN, ymin = INT32_MAX, ymax = INT32_MIN, zmin = INT32_MAX, zmax = INT32_MIN;
 };

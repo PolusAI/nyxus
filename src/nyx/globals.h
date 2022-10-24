@@ -22,8 +22,10 @@ namespace Nyxus
 	bool scanFilePairParallel(const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads, int filepair_index, int tot_num_filepairs);
 	std::string getPureFname(const std::string& fpath);
 	int processDataset(const std::vector<std::string>& intensFiles, const std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int numReduceThreads, int min_online_roi_size, bool save2csv, const std::string& csvOutputDir);
-	bool gatherRoisMetrics(const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads);
-	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit);
+	bool gatherRoisMetrics_2d (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, int z);
+	bool gatherRoisMetrics_3d (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads);
+	bool processTrivialRois_2d (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int z, size_t memory_limit);
+	bool processTrivialRois_3d (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit);
 	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads);
 	void dump_roi_metrics(const std::string & label_fpath);
 
@@ -35,7 +37,7 @@ namespace Nyxus
 	void clear_feature_buffers();	
 
 	void update_label(int x, int y, int label, PixIntens intensity);
-	void update_label_parallel(int x, int y, int label, PixIntens intensity);
+	void update_label_parallel(int x, int y, int z, int label, PixIntens intensity);
 
 	void print_label_stats();
 	void print_by_label(const char* featureName, std::unordered_map<int, StatsInt> L, int numColumns = 8);
@@ -44,13 +46,14 @@ namespace Nyxus
 	void reduce_by_feature (int nThr, int min_online_roi_size);
 	void reduce_by_roi (int nThr, int min_online_roi_size);
 	void reduce_trivial_rois (std::vector<int>& PendingRoisLabels);
-	void reduce_trivial_rois_manual (std::vector<int>& PendingRoisLabels);
+	void reduce_trivial_rois_manual_2d (std::vector<int>& PendingRoisLabels);	// Calculates 2D features of the user-requested features 
+	void reduce_trivial_rois_manual_3d (std::vector<int>& PendingRoisLabels);	// Calculates 3D features of the user-requested features 
 	void reduce_neighbors();
 
-	void init_label_record(LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity);
-	void init_label_record_2(LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity, unsigned int tile_index);
-	void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity);
-	void update_label_record_2(LR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index);
+	void init_label_record(LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int z, int label, PixIntens intensity);
+	void init_label_record_2(LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int z, int label, PixIntens intensity, unsigned int tile_index);
+	void update_label_record(LR& lr, int x, int y, int z, int label, PixIntens intensity);
+	void update_label_record_2(LR& lr, int x, int y, int z, int label, PixIntens intensity, unsigned int tile_index);
 	void reduce_neighbors(int labels_collision_radius);
 
 	void allocateTrivialRoisBuffers(const std::vector<int>& Pending);
@@ -68,14 +71,14 @@ namespace Nyxus
 	/// @param label -- label of pixel's segment 
 	/// @param intensity -- pixel's intensity
 	/// @param tile_index -- index of pixel's tile in the image
-	void feed_pixel_2_metrics(int x, int y, PixIntens intensity, int label, unsigned int tile_index);
+	void feed_pixel_2_metrics(int x, int y, unsigned int z, PixIntens intensity, int label, unsigned int tile_index);
 
 	/// @brief Copies a pixel to the ROI's cache. 
 	/// @param x -- x-coordinate of the pixel in the image
 	/// @param y -- y-coordinate of the pixel in the image
 	/// @param label -- label of pixel's segment 
 	/// @param intensity -- pixel's intensity
-	void feed_pixel_2_cache(int x, int y, PixIntens intensity, int label);
+	void feed_pixel_2_cache(int x, int y, int z, PixIntens intensity, int label);
 
 	// System resources
 	unsigned long long getAvailPhysMemory();

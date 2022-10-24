@@ -1,9 +1,9 @@
 #include <cmath>
+#include <iomanip>	
 #include <memory>
 #include <unordered_map>
 #include <unordered_set> 
 #include <algorithm>
-#include <iomanip>
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -26,7 +26,7 @@ namespace Nyxus
 	std::mutex glock;
 
 	// Parallel version of update_label_stats() 
-	void update_label_parallel(int x, int y, int label, PixIntens intensity)
+	void update_label_parallel(int x, int y, int z, int label, PixIntens intensity)
 	{
 		std::mutex* mux;
 		{
@@ -48,7 +48,7 @@ namespace Nyxus
 
 				// Initialize the label record
 				LR lr;
-				init_label_record(lr, theSegFname, theIntFname, x, y, label, intensity);
+				init_label_record(lr, theSegFname, theIntFname, x, y, z, label, intensity);
 				roiData[label] = lr;
 
 				// We're done processing the very first pixel of a label, return
@@ -72,7 +72,7 @@ namespace Nyxus
 
 			// Update label's stats
 			LR& lr = roiData[label];
-			update_label_record(lr, x, y, label, intensity);
+			update_label_record(lr, x, y, z, label, intensity);
 		}
 	}
 
@@ -91,7 +91,7 @@ namespace Nyxus
 				if (theEnvironment.singleROI)
 					label = 1;
 
-				update_label_parallel(x, y, label, (*dataI)[i]);
+				update_label_parallel(x, y, 0, label, (*dataI)[i]);
 			}
 		}
 	}

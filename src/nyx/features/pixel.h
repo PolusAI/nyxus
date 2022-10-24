@@ -12,9 +12,12 @@ using StatsReal = double;
 template <typename T>
 struct Point2
 {
-	T x, y;
-	Point2(T x_, T y_) : x(x_), y(y_) {}
-	Point2() : x(0), y(0) {}
+	T x, y, z;
+	Point2(T x_, T y_) : x(x_), y(y_), z(0) {}
+	Point2(T x_, T y_, T z_) : x(x_), y(y_), z(z_) {}
+	Point2() : x(0), y(0), z(0) {}
+
+	// 2D operations
 
 	float normL2() const { return sqrt(x * x + y * y); }
 
@@ -49,7 +52,7 @@ struct Pixel2 : public Point2i
 {
 	PixIntens inten;
 	Pixel2() : Point2(0, 0), inten(0) {}
-	Pixel2 (StatsInt x_, StatsInt y_, PixIntens i_) : Point2(x_, y_), inten(i_) {}
+	Pixel2 (StatsInt x_, StatsInt y_, StatsInt z_, PixIntens i_) : Point2(x_, y_, z_), inten(i_) {}
 	Pixel2 (int x_, int y_, PixIntens i_) : Point2(x_, y_), inten(i_) {}
 	Pixel2 (float x_, float y_, PixIntens i_) : Point2((StatsInt)x_, (StatsInt)y_), inten(i_) {}
 	Pixel2 (size_t x_, size_t y_, double i_) : Point2((StatsInt)x_, (StatsInt)y_), inten((PixIntens)i_) {}
@@ -61,27 +64,27 @@ struct Pixel2 : public Point2i
 	}
 	Pixel2 operator - ()
 	{
-		Pixel2 p2(-(this->x), -(this->y), this->inten);
+		Pixel2 p2(-(this->x), -(this->y), -(this->z), this->inten);
 		return p2;
 	}
 	Pixel2 operator - (const Pixel2& v) const
 	{
-		Pixel2 p2(this->x - v.x, this->y - v.y, this->inten);
+		Pixel2 p2(this->x - v.x, this->y - v.y, this->z - v.z, this->inten);
 		return p2;
 	}
 	Pixel2 operator + (const Pixel2& v) const
 	{
-		Pixel2 p2(this->x + v.x, this->y + v.y, this->inten);
+		Pixel2 p2(this->x + v.x, this->y + v.y, this->z + v.z, this->inten);
 		return p2;
 	}
 	Pixel2 operator / (float k) const
 	{
-		Pixel2 p2(StatsInt(this->x / k), StatsInt(this->y / k), this->inten);
+		Pixel2 p2(StatsInt(this->x / k), StatsInt(this->y / k), StatsInt(this->z / k), this->inten);
 		return p2;
 	}
 	Pixel2 operator * (float k) const
 	{
-		Pixel2 p2(StatsInt(this->x * k), StatsInt(this->y * k), this->inten);
+		Pixel2 p2(StatsInt(this->x * k), StatsInt(this->y * k), StatsInt(this->z * k), this->inten);
 		return p2;
 	}
 	operator Point2f () const { Point2f p((float)this->x, (float)this->y); return p; }

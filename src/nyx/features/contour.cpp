@@ -21,8 +21,8 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 {
 	provide_features({ 
 		PERIMETER,
-		EQUIVALENT_DIAMETER,
-		EDGE_INTEGRATEDINTENSITY,
+		DIAMETER_EQUAL_PERIMETER,
+		EDGE_INTEGRATED_INTENSITY,
 		EDGE_MAX_INTENSITY,
 		EDGE_MIN_INTENSITY,
 		EDGE_MEAN_INTENSITY,
@@ -182,10 +182,10 @@ void ContourFeature::buildRegularContour(LR& r)
 void ContourFeature::buildWholeSlideContour(LR& r)
 {
 	// Push the 4 slide vertices of dummy intensity 999
-	Pixel2 tl (r.aabb.get_xmin(), r.aabb.get_ymin(), 999),
-		tr (r.aabb.get_xmax(), r.aabb.get_ymin(), 999), 
-		bl (r.aabb.get_xmin(), r.aabb.get_ymax(), 999), 
-		br (r.aabb.get_xmax(), r.aabb.get_ymax(), 999);
+	Pixel2 tl (r.aabb.get_xmin(), r.aabb.get_ymin(), 0, 999),
+		tr (r.aabb.get_xmax(), r.aabb.get_ymin(), 0, 999), 
+		bl (r.aabb.get_xmin(), r.aabb.get_ymax(), 0, 999), 
+		br (r.aabb.get_xmax(), r.aabb.get_ymax(), 0, 999);
 	r.contour.push_back(tl);
 	r.contour.push_back(tr);
 	r.contour.push_back(br);
@@ -201,7 +201,7 @@ void ContourFeature::calculate(LR& r)
 
 	//=== Calculate the features
 	fval_PERIMETER = (StatsInt)r.contour.size();
-	fval_EQUIVALENT_DIAMETER = fval_PERIMETER / M_PI;
+	fval_DIAMETER_EQUAL_PERIMETER = fval_PERIMETER / M_PI;
 	auto [cmin, cmax, cmean, cstddev] = calc_min_max_mean_stddev_intensity (r.contour);
 	fval_EDGE_MEAN_INTENSITY = cmean;
 	fval_EDGE_STDDEV_INTENSITY = cstddev;
@@ -222,12 +222,12 @@ void ContourFeature::osized_calculate(LR& r, ImageLoader& imloader)
 void ContourFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
 	fvals[PERIMETER][0] = fval_PERIMETER;
-	fvals[EQUIVALENT_DIAMETER][0] = fval_EQUIVALENT_DIAMETER;
+	fvals[DIAMETER_EQUAL_PERIMETER][0] = fval_DIAMETER_EQUAL_PERIMETER;
 	fvals[EDGE_MEAN_INTENSITY][0] = fval_EDGE_MEAN_INTENSITY;
 	fvals[EDGE_STDDEV_INTENSITY][0] = fval_EDGE_STDDEV_INTENSITY;
 	fvals[EDGE_MAX_INTENSITY][0] = fval_EDGE_MAX_INTENSITY;
 	fvals[EDGE_MIN_INTENSITY][0] = fval_EDGE_MIN_INTENSITY;
-	fvals[EDGE_INTEGRATEDINTENSITY][0] = fval_EDGE_INTEGRATEDINTENSITY;
+	fvals[EDGE_INTEGRATED_INTENSITY][0] = fval_EDGE_INTEGRATEDINTENSITY;
 }
 
 void ContourFeature::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)

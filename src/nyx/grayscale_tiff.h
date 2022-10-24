@@ -2,13 +2,13 @@
 #include "abs_tile_loader.h"
 
 #ifdef __APPLE__
-#define uint64 uint64_hack_
-#define int64 int64_hack_
-#include <tiffio.h>
-#undef uint64
-#undef int64
+    #define uint64 uint64_hack_
+    #define int64 int64_hack_
+    #include <tiffio.h>
+    #undef uint64
+    #undef int64
 #else
-#include <tiffio.h>
+    #include <tiffio.h>
 #endif
 #include <cstring>
 #include <sstream>
@@ -37,9 +37,8 @@ public:
         if (tiff_ != nullptr) 
         {
             if (TIFFIsTiled(tiff_) == 0) 
-            { 
                 throw (std::runtime_error("Tile Loader ERROR: The file is not tiled.")); 
-            }
+
             // Load/parse header
             uint32_t temp;  // Using this variable to correctly read 'uint32_t' TIFF field values into 'size_t' variables
             uint16_t compression;
@@ -56,6 +55,8 @@ public:
             TIFFGetField(tiff_, TIFFTAG_BITSPERSAMPLE, &(this->bitsPerSample_));
             TIFFGetField(tiff_, TIFFTAG_SAMPLEFORMAT, &(this->sampleFormat_));
 
+            tile_depth_ = 1;
+
             // Test if the file is greyscale
             if (samplesPerPixel != 1) 
             {
@@ -70,9 +71,9 @@ public:
             }
         }
         else 
-        { 
             throw (std::runtime_error("Tile Loader ERROR: The file can not be opened.")); 
-        }
+
+        numDirs_ = TIFFNumberOfDirectories (tiff_);
     }
 
     /// @brief NyxusGrayscaleTiffTileLoader destructor
@@ -100,16 +101,29 @@ public:
         // Get ahold of the logical (feature extraction facing) tile buffer from its smart pointer
         std::vector<DataType>& tileDataVec = *tile;
 
-        tdata_t tiffTile = nullptr;
-        auto t_szb = TIFFTileSize(tiff_);
-        tiffTile = _TIFFmalloc(t_szb);
-        auto errcode = TIFFReadTile(tiff_, tiffTile, indexColGlobalTile * tileWidth_, indexRowGlobalTile * tileHeight_, 0, 0);
+        // Prepare to work with IDF directory #{indexLayerGlobalTile}
+        auto errcode = TIFFSetDirectory (tiff_, indexLayerGlobalTile);
         if (errcode < 0)
         {
             std::stringstream message;
-            message
-                << "Tile Loader ERROR: error reading tile data returning code "
-                << errcode;
+            message << "TIFFSetDirectory(" << indexLayerGlobalTile << ") returned error " << errcode;
+            throw (std::runtime_error(message.str()));
+        }
+
+        tdata_t tiffTile = nullptr;
+        auto t_szb = TIFFTileSize(tiff_);
+        tiffTile = _TIFFmalloc(t_szb);
+        errcode = TIFFReadTile(
+            tiff_, 
+            tiffTile, 
+            indexColGlobalTile * tileWidth_, 
+            indexRowGlobalTile * tileHeight_, 
+            0, 
+            0);
+        if (errcode < 0)
+        {
+            std::stringstream message;
+            message << "Tile Loader ERROR: error reading tile data returning code " << errcode;
             throw (std::runtime_error(message.str()));
         }
         std::stringstream message;
@@ -208,6 +222,10 @@ public:
     /// @brief Level accessor
     /// @return 1
     [[nodiscard]] size_t numberPyramidLevels() const override { return 1; }
+    [[nodiscard]] size_t tileDepth([[maybe_unused]] size_t level) const override { return tile_depth_; }
+
+    // 3D
+    size_t get_num_layers() { return numDirs_; }
 
 private:
 
@@ -277,7 +295,10 @@ private:
         fullHeight_ = 0,           ///< Full height in pixel
         fullWidth_ = 0,            ///< Full width in pixel
         tileHeight_ = 0,            ///< Tile height
-        tileWidth_ = 0;             ///< Tile width
+        tileWidth_ = 0,             ///< Tile width
+        tile_depth_ = 0;            // Tile Depth
+
+    int numDirs_ = 0;
 
     short
         sampleFormat_ = 0,          ///< Sample format as defined by libtiff

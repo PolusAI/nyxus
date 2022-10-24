@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cfloat>
-#include <fstream>
 #include <string>
 #include <vector>
 #include "pixel.h"
@@ -29,9 +28,9 @@ template <class T>
 class SimpleMatrix : public std::vector<T>
 {
 public:
-	SimpleMatrix(int _w, int _h) : W(_w), H(_h) 
+	SimpleMatrix(int _w, int _h)
 	{ 
-		this->resize (W*H, 0);
+		allocate(_w, _h, 0);
 	}
 
 	SimpleMatrix() {}
@@ -43,7 +42,6 @@ public:
 		this->resize (W*H, inival);
 	}
 
-	// = W * y + x
 	inline T& xy(int x, int y)
 	{
 		#ifdef NYX_CHECK_BUFFER_BOUNDS
@@ -59,9 +57,9 @@ public:
 		}
 		#endif
 
-		return this->at(W * y + x);
+		return this->operator[] (W * y + x);
 	}
-	// = W * y + x
+
 	inline T xy (int x, int y) const
 	{
 		#ifdef NYX_CHECK_BUFFER_BOUNDS
@@ -78,7 +76,7 @@ public:
 		}
 		#endif
 
-		T val = this->at(W * y + x);
+		T val = this->operator[] (W * y + x);
 		return val;
 	}
 
@@ -101,13 +99,13 @@ public:
 	{
 		auto n = W * H;
 		for (int i = 0; i < n; i++)
-			this->at(i) = val;
+			this->operator[](i) = val;
 	}
 
 	int width() const { return W; }
 	int height() const { return H; }
 
-	void print (const std::string& head, const std::string& tail);
+	void print(const std::string& head, const std::string& tail);
 
 private:
 	int W = 0, H = 0;
@@ -117,35 +115,40 @@ private:
 class pixData : public std::vector<PixIntens>
 {
 public:
-	pixData(int _w, int _h) : W(_w), H(_h) {}
-
-	/// @brief The image matrix buffer consuming an externally allocated buffer
-	void allocate_via_external_buffer (PixIntens* start_ptr, PixIntens* end_ptr)
+	pixData(int _w, int _h) 
 	{
-		assign (start_ptr, end_ptr);
+		set_dimensions (_w, _h);
+	}
+
+	void set_dimensions (int _w, int _h)
+	{
+		W = _w;
+		H = _h;
 	}
 
 	/// @brief Allocates and initializes
 	void allocate_and_initialize (int width, int height, PixIntens val)
 	{
-		W = width;
-		H = height;
+		set_dimensions(width, height);
 		std::vector<PixIntens>::resize (width * height, val);
 	}
 
 	/// @brief Only initializes the image matrix buffer but does not allocate it. 
 	void initialize_without_allocation (int width, int height, PixIntens val)
 	{
-		W = width;
-		H = height;
+		set_dimensions(width, height);	// sets W and H
 		for (size_t n=W*H, i=0; i<n; i++)
-			at(i) = val;
+			this->operator[](i) = val;
 	}
 	
 	// = W * y + x
 	inline PixIntens & yx /*operator()*/ (int y, int x)
 	{
 		#ifdef NYX_CHECK_BUFFER_BOUNDS
+		if (W>0 || H>0)
+		{
+			throw std::out_of_range("pixData::W or H is equal to 0");
+		}
 		if (x >= W || y >= H)
 		{
 			std::string msg = "index ";
@@ -158,12 +161,16 @@ public:
 		}
 		#endif
 
-		return this->at(W * y + x);
+		return this->operator[] (W * y + x);
 	}
 	// = W * y + x
 	inline PixIntens yx /*operator()*/ (int y, int x) const
 	{
 		#ifdef NYX_CHECK_BUFFER_BOUNDS
+		if (W > 0 || H > 0)
+		{
+			throw std::out_of_range("pixData::W or H is equal to 0");
+		}		
 		if (x >= W || y >= H)
 		{
 			std::string msg = "index ";
@@ -177,7 +184,7 @@ public:
 		}
 		#endif
 
-		PixIntens val = this->at (W * y + x);
+		PixIntens val = this->operator[] (W * y + x);
 		return val;
 	}
 	
@@ -259,9 +266,12 @@ public:
 		}
 	}
 
-	void bind_to_buffer (PixIntens* startitem_ptr, PixIntens* enditem_ptr)
+	void bind_to_buffer (PixIntens* startitem_ptr, PixIntens* enditem_ptr, int _width, int _height)
 	{
 		_pix_plane.assign (startitem_ptr, enditem_ptr);
+		_pix_plane.set_dimensions (_width, _height);
+		this->width = _width;
+		this->height = _height;
 	}
 
 	void calculate_from_pixelcloud (const std::vector <Pixel2>& labels_raw_pixels, const AABB& aabb)
