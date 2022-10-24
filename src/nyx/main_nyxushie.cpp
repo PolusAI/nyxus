@@ -182,7 +182,6 @@ bool 	shape_all_parents (const std::vector<int> & P, const std::string & outdir,
 				}
 
 				// Output <-- child features 
-
 				for (auto& field : csvFields)
 					ofile << field << ",";
 				//-- don't break the line either! more children features will follow-- ofile << "\n";
@@ -299,9 +298,9 @@ int main (int argc, char** argv)
 	// Process the command line: check the command line (straightforward way - strictly positional)
 	if (argc < 7)
 	{
-		std::cout << "nyxushie <segment image collection dir> <file pattern> <channel signature> <parent channel> <child channel> <features dir> [" << OPTION_AGGREGATE << "=<aggregation method>]\n" 
+		std::cout << "nyxushie <mask 2D images directory> <file pattern> <channel signature> <parent channel> <child channel> <features dir> [" << OPTION_AGGREGATE << "=<aggregation method>]\n" 
 			<< "\t<aggregation method> is " << ChildFeatureAggregation::get_valid_options() << "\n";
-		std::cout << "Example: nyxushie ~/data/image-collection1/seg train_.*\\.tif _ch 1 0 ~/results/result1 \n";
+		std::cout << "Example: nyxushie /path/to/mask/2d-images/directory train_.*\\.tif _ch 1 0 /path/to/result/directory \n";
 		return 1;
 	}
 
