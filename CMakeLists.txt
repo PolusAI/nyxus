@@ -110,8 +110,10 @@ set(SOURCE
 	src/nyx/features/image_matrix.cpp
 	src/nyx/features/image_matrix_nontriv.cpp
 	src/nyx/features/image_moments.cpp
+	src/nyx/features/image_moments_3d.cpp
 	src/nyx/features/image_moments_nontriv.cpp
 	src/nyx/features/intensity.cpp
+	src/nyx/features/intensity_3d.cpp
 	src/nyx/features/neighbors.cpp
 	src/nyx/features/ngtdm.cpp
 	src/nyx/features/radial_distribution.cpp
