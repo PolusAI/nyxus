@@ -108,8 +108,27 @@ and the file is passed to Nyxus via parameter --intSegMapFile, the mapping will 
    /home/ec2-user/data-ratbrain/int/image_3.ome.tif    /home/ec2-user/data-ratbrain/seg/image_A.ome.tif
    /home/ec2-user/data-ratbrain/int/image_4.ome.tif    /home/ec2-user/data-ratbrain/seg/image_B.ome.tif
 
-Nested Features Examples
-=======================
+7. Ad-hoc mapping between intensity and mask image files via Python interface
+-----------------------------------------------------------------------------
+
+Alternatively, Nyxus can process explicitly defined pairs of intensity-mask images, for example image "i1" with mask "m1" and image "i2" with mask "m2":
+
+```python 
+from nyxus import Nyxus
+nyx = Nyxus(["*ALL*"])
+features = nyx.featurize(
+    [
+        "/path/to/images/intensities/i1.ome.tif", 
+        "/path/to/images/intensities/i2.ome.tif"
+    ], 
+    [
+        "/path/to/images/labels/m1.ome.tif", 
+        "/path/to/images/labels/m2.ome.tif"
+    ])
+```
+
+8. Nested Features Examples
+-----------------------------------------------------------------------------
 
 The Nested class is the Python API of Nyxus identifies child-parent relations of ROIs in images with a child and parent channel.
 For example, consider the following intensity and segmentation images of the parent channel,
@@ -140,10 +159,6 @@ With the child channel
 As shown by the figures, there are ROIs in the child segmentation that are completely contained in the the ROIs of the parent channel.
 The purpose of the Nested class is to identify the child ROIs of the parent channel. The Nested class also contains functionality to 
 apply aggregate functions to the child features, as shown belong in the example.
-
-
-Example 
----------
 
 To use the Nested class, first call the constructor with the optional argument `aggregate`. If `aggregate` is not passed, the 
 `find_relation` behavior will change (described later). Any aggregate function supported by Pandas is available, 

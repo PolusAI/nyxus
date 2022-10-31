@@ -1,3 +1,5 @@
+Nyxus Classes
+================
 .. autosummary::
     :toctree: stubs 
 

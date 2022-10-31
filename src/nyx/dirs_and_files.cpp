@@ -21,7 +21,7 @@
 
 namespace Nyxus
 {
-	bool directoryExists(const std::string& dir)
+	bool existsOnFilesystem(const std::string& dir)
 	{
 		fs::path p(dir);
 		return fs::exists(p);
@@ -42,19 +42,19 @@ namespace Nyxus
 
 	int datasetDirsOK(const std::string& dirIntens, const std::string& dirLabels, const std::string& dirOut, bool mustCheckDirOut)
 	{
-		if (!directoryExists(dirIntens))
+		if (!existsOnFilesystem(dirIntens))
 		{
 			std::cout << "Error: " << dirIntens << " is not a directory" << std::endl;
 			return 1;
 		}
 
-		if (!directoryExists(dirLabels))
+		if (!existsOnFilesystem(dirLabels))
 		{
 			std::cout << "Error: " << dirLabels << " is not a directory" << std::endl;
 			return 2;
 		}
 
-		if (mustCheckDirOut && !directoryExists(dirOut))
+		if (mustCheckDirOut && !existsOnFilesystem(dirOut))
 		{
 			std::cout << "Error: " << dirOut << " is not a directory" << std::endl;
 			return 3;
@@ -79,17 +79,17 @@ namespace Nyxus
 		if (datasetDirsOK(dirIntens, dirLabels, dirOut, mustCheckDirOut) != 0)
 			return 1;	// No need to issue console messages here, datasetDirsOK() does that
 
-		if (!directoryExists(dirIntens))
+		if (!existsOnFilesystem(dirIntens))
 		{
 			std::cout << "Error: nonexisting directory " << dirIntens << std::endl;
 			return 1;
 		}
-		if (!directoryExists(dirLabels))
+		if (!existsOnFilesystem(dirLabels))
 		{
 			std::cout << "Error: nonexisting directory " << dirLabels << std::endl;
 			return 1;
 		}
-		if (!directoryExists(dirOut))
+		if (!existsOnFilesystem(dirOut))
 		{
 			std::cout << "Error: nonexisting directory " << dirOut << std::endl;
 			return 1;
@@ -120,14 +120,14 @@ namespace Nyxus
 		else
 		{
 			// Special case - using intensity and label file pairs defined with the mapping file
-			if (!directoryExists(intLabMappingDir))
+			if (!existsOnFilesystem(intLabMappingDir))
 			{
 				std::cout << "Error: nonexisting directory " << intLabMappingDir << std::endl;
 				return 1;
 			}
 
 			std::string mapPath = intLabMappingDir + "/" + intLabMappingFile;
-			if (!directoryExists(mapPath))
+			if (!existsOnFilesystem(mapPath))
 			{
 				std::cout << "Error: nonexisting file " << mapPath << std::endl;
 				return 1;
@@ -151,14 +151,14 @@ namespace Nyxus
 				// We have a pair of file names. Let's check if they exist
 				lineNo++;
 				std::string intFpath = dirIntens + "/" + intFname;
-				if (!directoryExists(intFpath))
+				if (!existsOnFilesystem(intFpath))
 				{
 					std::cout << "Error: nonexisting file " << intFpath << std::endl;
 					return 1;
 				}
 
 				std::string segFpath = dirLabels + "/" + segFname;
-				if (!directoryExists(intFpath))
+				if (!existsOnFilesystem(intFpath))
 				{
 					std::cout << "Error: nonexisting file " << intFpath << std::endl;
 					return 1;

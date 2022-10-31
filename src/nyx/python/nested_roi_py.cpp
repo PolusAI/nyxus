@@ -307,7 +307,7 @@ bool 	aggregate_features (const std::vector<int>& P, const std::string& outdir, 
 	HieLR& r_temp = Nyxus::roiData1[lab_temp];
 	std::string csvFP = outdir + "/" + r_temp.get_output_csv_fname();
 
-	if (!directoryExists(csvFP))
+	if (!existsOnFilesystem(csvFP))
 	{
 		std::cout << "Error: cannot access file " << csvFP << std::endl;
 		return false;
