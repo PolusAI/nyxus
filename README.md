@@ -331,7 +331,7 @@ contains two methods, `find_relations` and `featurize`.
 
 The `find_relations` method takes in a path to the label files, along with a child 
 filepattern to identify the files in the child channel and a parent filepattern to match the files in the parent channel. The `find_relation` method 
-returns a Pandas DataFrame containing a mapping between parent ROIS and the respective child ROIs.
+returns a Pandas DataFrame containing a mapping between parent ROIs and the respective child ROIs.
 
 The `featurize` method takes in the parent-child mapping along with the features of the ROIs in the child channel. If a list of aggregate functions
 is provided to the constructor, this method will return a pivoted DataFrame where the rows are the ROI labels and the columns are grouped by the features.
