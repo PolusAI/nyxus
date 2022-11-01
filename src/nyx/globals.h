@@ -28,6 +28,7 @@ namespace Nyxus
 	bool processTrivialRois_3d (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit);
 	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads);
 	void dump_roi_metrics(const std::string & label_fpath);
+	bool checkAdjustZindex (int& z);
 
 	// 2 scenarios of saving a result of feature calculation of a label-intensity file pair: saving to a CSV-file and saving to a matrix to be later consumed by a Python endpoint
 	bool save_features_2_csv (std::string intFpath, std::string segFpath, std::string outputDir);
