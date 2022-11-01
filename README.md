@@ -111,8 +111,23 @@ Nyxus provides a set of pixel intensity, morphology, texture, intensity distribu
 | NGTDM | Neighbouring gray tone difference matrix features
 | ZERNIKE2D, FRAC_AT_D, RADIAL_CV, MEAN_FRAC | Radial distribution features
 | GABOR | A set of Gabor filters of varying frequencies and orientations |
+| 3D_MEAN, 3D_MEDIAN, 3D_MIN, 3D_MAX, 3D_MODE | 3-dimensional mean, median, minimum, maximum, and mode |
+| 3D_STANDARD_DEVIATION, 3D_STANDARD_ERROR| 3-dimensional standard deviation and standard error |
+| 3D_SKEWNESS, 3D_KURTOSIS, 3D_HYPERSKEWNESS, 3D_HYPERFLATNESS | 3-dimensional higher standardized moments |
+| 3D_MEAN_ABSOLUTE_DEVIATION | 3-dimensional mean absolute deviation |
+| 3D_ENERGY, 3D_INTEGRATED_INTENSITY | 3-dimensional pixel intensity energy and integrated intensity |
+| 3D_ROOT_MEAN_SQUARED | 3-dimensional root mean squared pixel intensity |
+| 3D_ENTROPY | 3-dimensional pixel intensity entropy |
+| 3D_UNIFORMITY | 3-dimensional pixel intensity uniformity |
+| 3D_P01 ... 3D_P99, 3D_INTERQUARTILE_RANGE | 3-dimensional pixel intensity percentiles and interquartile range |
+| 3D_ROBUST_MEAN_ABSOLUTE_DEVIATION | 3-dimensional pixel intensity P10-90 robust mean absolute deviation |
+| 3D_RAW_MOMENT_*pqr* | a set of 3-dimensional raw moments of orders p,q,r |
+| 3D_NORM_RAW_MOMENT_*pqr* | a set of 3-dimensional normalized raw moments of orders p,q,r |
+| 3D_CENTRAL_MOMENT_*pqr* | a set of 3-dimensional central moments of orders p,q,r |
+| 3D_NORM_CENTRAL_MOMENT_*pqr* | a set of 3-dimensional normalized central moments of orders p,q,r |
 
-For the complete list of features see [Nyxus provided features](docs/featurelist.md)
+
+For the complete list of features see [Nyxus provided features](docs/source/featurelist.rst)
 
 ## Feature groups
 
@@ -151,25 +166,42 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 --pixelsPerunit|Enter the number of pixels per unit of the metric|Input|number
 --outDir|Output collection|Output|csvCollection
 --coarseGrayDepth|Custom number of levels in grayscale denoising used in texture features (default: 256)|Input|integer
+--z | Z-index of a layer. Used in processing 3D images, ignored for 2D images | Input | integer
 ---
 
-### Example: Running Nyxus to process images of specific image channel
+## 3D features
+
+TIFF images having multiple layers represented as a feature directory are treated as 3-dimensional images with the layer index as z-index in addition to regular x and y pixel indices. 3D features are automatically calculated for such images if feature group \*all\* is requested. Alternatively, specific 3D features can be requested from the full feature set [Nyxus provided features](docs/featurelist.md). Along with 3D features, Nyxus calculates regular 2D features for a specified layer or for the mid-layer otherwise. 
+
+### Example: running Nyxus to process images of specific image channel
 
 Suppose we need to process intensity/mask images of channel 1 :
 ```
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/output-ratbrain --filePattern=.*_c1\.ome\.tif --csvFile=singlecsv 
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/image_collection/intensity --segDir=/path/to/image_collection/segmentation --outDir=/path/to/output --filePattern=.*_c1\.ome\.tif --csvFile=singlecsv 
 ```
-### Example: Running Nyxus to process specific image 
+### Example: running Nyxus to process specific image 
 
 Suppose we need to process intensity/mask file p1_y2_r68_c1.ome.tif :
 ```
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/output-ratbrain --filePattern=p1_y2_r68_c1\.ome\.tif --csvFile=singlecsv 
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/image_collection/intensity --segDir=/path/to/image_collection/segmentation --outDir=/path/to/output --filePattern=p1_y2_r68_c1\.ome\.tif --csvFile=singlecsv 
 ```
 
-### Example: Running Nyxus to extract only intensity and basic morphology features
+### Example: running Nyxus to extract only intensity and basic morphology features
 
 ```
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/output-ratbrain --filePattern=.* --csvFile=singlecsv 
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/image_collection/intensity --segDir=/path/to/image_collection/segmentation --outDir=/path/to/output --filePattern=.* --csvFile=singlecsv 
+```
+
+### Example: running Nyxus to extract all the 3D features from a collection of 3-dimensional intensity and mask images and all 2D features from a specified layer 17 (zero-based index)
+
+```
+./nyxus --z=17 --features=*all* --intDir=/path/to/3d_collection/intensity --segDir=/path/to/3d_collection/segmentation --outDir=/path/to/3d_collection/output --filePattern=.* --csvFile=singlecsv 
+```
+
+### Example: assuming a collection of 3-dimensional 45-layer TIFF images, running Nyxus to extract all the 3D and 2D features from mid-layer 22 (45/2=22 integer zero-based index)
+
+```
+./nyxus --features=*all* --intDir=/path/to/3d_collection/intensity --segDir=/path/to/3d_collection/segmentation --outDir=/path/to/3d_collection/output --filePattern=.* --csvFile=singlecsv 
 ```
 
 ## Building from source

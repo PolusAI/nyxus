@@ -32,6 +32,11 @@ namespace Nyxus
 		std::sort(L.begin(), L.end());
 		std::vector<std::tuple<std::string, AvailableFeatures>> F = theFeatureSet.getEnabledFeatures();
 
+		// z-index
+		int zIndex = theEnvironment.layerZ;
+		if (theEnvironment.user_specified_z_index() == false)
+			zIndex = theImLoader.get_num_layers() / 2;	// Mid-layer of a 3D image or 1st layer of a 2D image
+
 		// We only fill in the header once.
 		// We depend on the caller to manage headerBuf contents and clear it appropriately...
 		bool fill_header = rescache.get_calcResultBuf().size() == 0;
@@ -45,6 +50,7 @@ namespace Nyxus
 			{
 				auto fn = std::get<0>(enabdF);	// feature name
 				auto fc = std::get<1>(enabdF);	// feature code
+				bool mustDisplaySliceZindex = theImLoader.get_num_layers() > 1 && theFeatureSet.is_2d(fc);
 
 				// Handle missing feature name (which is a significant issue!) in order to at least be able to trace back to the feature code
 				if (fn.empty())
@@ -73,6 +79,13 @@ namespace Nyxus
 					{
 						std::string col = fn + "_" + std::to_string(ang);
 						rescache.add_to_header(col);	
+
+						// 2D feature calculated on a layer of a 3D image
+						if (mustDisplaySliceZindex)
+						{
+							std::string s = "_z" + std::to_string(zIndex);
+							rescache.add_to_header(s);
+						}
 					}
 
 					// Proceed with other features
@@ -103,7 +116,14 @@ namespace Nyxus
 					for (auto ang : GLRLMFeature::rotAngles)
 					{
 						std::string col = fn + "_" + std::to_string(ang);
-						rescache.add_to_header(col);	
+						rescache.add_to_header(col);
+
+						// 2D feature calculated on a layer of a 3D image
+						if (mustDisplaySliceZindex)
+						{
+							std::string s = "_z" + std::to_string(zIndex);
+							rescache.add_to_header(s);
+						}
 					}
 					
 					// Proceed with other features
@@ -118,6 +138,13 @@ namespace Nyxus
 					{
 						std::string col = fn + "_" + std::to_string(i);
 						rescache.add_to_header(col);	
+
+						// 2D feature calculated on a layer of a 3D image
+						if (mustDisplaySliceZindex)
+						{
+							std::string s = "_z" + std::to_string(zIndex);
+							rescache.add_to_header(s);
+						}
 					}
 
 					// Proceed with other features
@@ -131,6 +158,13 @@ namespace Nyxus
 					{
 						std::string col = fn + "_" + std::to_string(i);
 						rescache.add_to_header(col);
+
+						// 2D feature calculated on a layer of a 3D image
+						if (mustDisplaySliceZindex)
+						{
+							std::string s = "_z" + std::to_string(zIndex);
+							rescache.add_to_header(s);
+						}
 					}
 
 					// Proceed with other features
@@ -144,6 +178,13 @@ namespace Nyxus
 					{
 						std::string col = fn + "_" + std::to_string(i);
 						rescache.add_to_header(col);
+
+						// 2D feature calculated on a layer of a 3D image
+						if (mustDisplaySliceZindex)
+						{
+							std::string s = "_z" + std::to_string(zIndex);
+							rescache.add_to_header(s);
+						}
 					}
 
 					// Proceed with other features
@@ -157,6 +198,13 @@ namespace Nyxus
 					{
 						std::string col = fn + "_" + std::to_string(i);
 						rescache.add_to_header(col);
+
+						// 2D feature calculated on a layer of a 3D image
+						if (mustDisplaySliceZindex)
+						{
+							std::string s = "_z" + std::to_string(zIndex);
+							rescache.add_to_header(s);
+						}
 					}
 
 					// Proceed with other features
@@ -171,6 +219,13 @@ namespace Nyxus
 					{
 						std::string col = fn + "_" + std::to_string(i);
 						rescache.add_to_header(col);
+
+						// 2D feature calculated on a layer of a 3D image
+						if (mustDisplaySliceZindex)
+						{
+							std::string s = "_z" + std::to_string(zIndex);
+							rescache.add_to_header(s);
+						}
 					}
 
 					// Proceed with other features
@@ -179,6 +234,13 @@ namespace Nyxus
 
 				// Regular feature
 				rescache.add_to_header(fn);	
+
+				// 2D feature calculated on a layer of a 3D image
+				if (mustDisplaySliceZindex)
+				{
+					std::string s = "_z" + std::to_string(zIndex);
+					rescache.add_to_header(s);
+				}
 			}
 		}
 
