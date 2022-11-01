@@ -1,3 +1,4 @@
+#define _USE_MATH_DEFINES	// For M_PI, etc.
 #include "../environment.h"
 #include "../parallel.h"
 #include "histogram.h"
@@ -20,7 +21,8 @@ BasicMorphologyFeatures::BasicMorphologyFeatures(): FeatureMethod("BasicMorpholo
 		EXTENT,
 		MASS_DISPLACEMENT,		
 		WEIGHTED_CENTROID_X,
-		WEIGHTED_CENTROID_Y
+		WEIGHTED_CENTROID_Y, 
+		DIAMETER_EQUAL_AREA
 		});
 }
 
@@ -32,6 +34,9 @@ void BasicMorphologyFeatures::calculate(LR& r)
 	val_AREA_PIXELS_COUNT = n;
 	if (theEnvironment.xyRes > 0.0)
 			val_AREA_UM2  = n * std::pow(theEnvironment.pixelSizeUm, 2);
+
+	// --DIAMETER_EQUAL_AREA
+	val_DIAMETER_EQUAL_AREA = double(val_AREA_PIXELS_COUNT) / M_PI * 4.0;
 
 	// --CENTROID_XY
 	double cen_x = 0.0,
@@ -99,7 +104,7 @@ void BasicMorphologyFeatures::calculate(LR& r)
 	val_MASS_DISPLACEMENT = dist;
 
 	//==== Basic morphology :: Extent
-	val_EXTENT = n / r.aabb.get_area();
+	val_EXTENT = n / r.aabb.get_2d_area();
 
 	//==== Basic morphology :: Aspect ratio
 	val_ASPECT_RATIO = r.aabb.get_width() / r.aabb.get_height();
@@ -116,6 +121,9 @@ void BasicMorphologyFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	if (theEnvironment.xyRes > 0.0)
 		val_AREA_UM2 = n * std::pow(theEnvironment.pixelSizeUm, 2);
 
+	// --DIAMETER_EQUAL_AREA
+	val_DIAMETER_EQUAL_AREA = double(val_AREA_PIXELS_COUNT) / M_PI * 4.0;
+
 	// --CENTROID_XY
 	double cen_x = 0.0,
 		cen_y = 0.0;
@@ -187,7 +195,7 @@ void BasicMorphologyFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	val_MASS_DISPLACEMENT = dist;
 
 	//==== Basic morphology :: Extent
-	val_EXTENT = n / r.aabb.get_area();
+	val_EXTENT = n / r.aabb.get_2d_area();
 
 	//==== Basic morphology :: Aspect ratio
 	val_ASPECT_RATIO = r.aabb.get_width() / r.aabb.get_height();
@@ -205,6 +213,7 @@ void BasicMorphologyFeatures::save_value(std::vector<std::vector<double>>& fvals
 	fvals[CENTROID_X][0] = val_CENTROID_X;
 	fvals[CENTROID_Y][0] = val_CENTROID_Y;
 	fvals[COMPACTNESS][0] = val_COMPACTNESS;
+	fvals[DIAMETER_EQUAL_AREA][0] = val_DIAMETER_EQUAL_AREA;
 	fvals[EXTENT][0] = val_EXTENT;
 	fvals[MASS_DISPLACEMENT][0] = val_MASS_DISPLACEMENT;
 	fvals[WEIGHTED_CENTROID_X][0] = val_WEIGHTED_CENTROID_X;
@@ -255,5 +264,6 @@ void BasicMorphologyFeatures::cleanup_instance()
 	val_MASS_DISPLACEMENT = 0;
 	val_EXTENT = 0;
 	val_ASPECT_RATIO = 0;
+	val_DIAMETER_EQUAL_AREA = 0;
 }
 

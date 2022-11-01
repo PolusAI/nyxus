@@ -94,6 +94,11 @@ namespace Nyxus
 		// Learn what features need to be displayed
 		std::vector<std::tuple<std::string, AvailableFeatures>> F = theFeatureSet.getEnabledFeatures();
 
+		// z-index
+		int zIndex = theEnvironment.layerZ; 
+		if (theEnvironment.user_specified_z_index() == false)
+			zIndex = theImLoader.get_num_layers() / 2;
+
 		// -- Header
 		if (mustRenderHeader)
 		{
@@ -105,6 +110,7 @@ namespace Nyxus
 			{
 				auto fn = std::get<0>(enabdF);	// feature name
 				auto fc = std::get<1>(enabdF);	// feature code
+				bool mustDisplaySliceZindex = theImLoader.get_num_layers() > 1 && theFeatureSet.is_2d(fc);	
 
 				// Handle missing feature name (which is a significant issue!) in order to at least be able to trace back to the feature code
 				if (fn.empty())
@@ -135,10 +141,11 @@ namespace Nyxus
 					// Polulate with angles
 					for (auto ang : theEnvironment.glcmAngles)
 					{
-						// CSV separator
-						//if (ang != theEnvironment.rotAngles[0])
-						//	ssHead << ",";
 						ssHead << "," << fn << "_" << ang;
+
+						// 2D feature calculated on a layer of a 3D image
+						if (mustDisplaySliceZindex)
+							ssHead << "_z" << zIndex;
 					}
 					// Proceed with other features
 					continue;
@@ -168,6 +175,10 @@ namespace Nyxus
 					for (auto ang : GLRLMFeature::rotAngles)
 					{
 						ssHead << "," << fn << "_" << ang;
+
+						// 2D feature calculated on a layer of a 3D image
+						if (mustDisplaySliceZindex)
+							ssHead << "_z" << zIndex;
 					}
 					// Proceed with other features
 					continue;
@@ -178,7 +189,13 @@ namespace Nyxus
 				{
 					// Generate the feature value list
 					for (auto i = 0; i < GaborFeature::num_features; i++)
+					{
 						ssHead << "," << fn << "_" << i;
+
+						// 2D feature calculated on a layer of a 3D image
+						if (mustDisplaySliceZindex)
+							ssHead << "_z" << zIndex;
+					}
 
 					// Proceed with other features
 					continue;
@@ -188,7 +205,13 @@ namespace Nyxus
 				{
 					// Generate the feature value list
 					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
+					{
 						ssHead << "," << fn << "_" << i;
+
+						// 2D feature calculated on a layer of a 3D image
+						if (mustDisplaySliceZindex)
+							ssHead << "_z" << zIndex;
+					}
 
 					// Proceed with other features
 					continue;
@@ -198,7 +221,13 @@ namespace Nyxus
 				{
 					// Generate the feature value list
 					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
+					{
 						ssHead << "," << fn << "_" << i;
+
+						// 2D feature calculated on a layer of a 3D image
+						if (mustDisplaySliceZindex)
+							ssHead << "_z" << zIndex;
+					}
 
 					// Proceed with other features
 					continue;
@@ -208,7 +237,13 @@ namespace Nyxus
 				{
 					// Generate the feature value list
 					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
+					{
 						ssHead << "," << fn << "_" << i;
+
+						// 2D feature calculated on a layer of a 3D image
+						if (mustDisplaySliceZindex)
+							ssHead << "_z" << zIndex;
+					}
 
 					// Proceed with other features
 					continue;
@@ -219,7 +254,13 @@ namespace Nyxus
 				{
 					// Populate with indices
 					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)	// i < ZernikeFeature::num_feature_values_calculated
-						ssHead << "," << fn << "_Z" << i;						
+					{
+						ssHead << "," << fn << "_Z" << i;
+
+						// 2D feature calculated on a layer of a 3D image
+						if (mustDisplaySliceZindex)
+							ssHead << "_z" << zIndex;
+					}
 
 					// Proceed with other features
 					continue;
@@ -227,6 +268,11 @@ namespace Nyxus
 
 				// Regular feature
 				ssHead << "," << fn;
+
+				// 2D feature calculated on a layer of a 3D image
+				if (mustDisplaySliceZindex)
+					ssHead << "_z" << zIndex;
+
 			}
 
 			fprintf(fp, "%s\n", ssHead.str().c_str());
@@ -255,6 +301,13 @@ namespace Nyxus
 				auto fc = std::get<1>(enabdF);
 				auto fn = std::get<0>(enabdF);	// debug
 				auto vv = r.get_fvals(fc);
+
+				// Suppress inf and nans
+				for (auto& fv : vv)
+				{
+					if (std::isfinite(fv) == false)
+						fv = 0.0;
+				}
 
 				// Parameterized feature
 				// --Texture family
@@ -311,9 +364,12 @@ namespace Nyxus
 					fc == GLRLM_LRHGLE;
 				if (glrlmFeature)
 				{
-					// Polulate with angles
-					auto nAng = 4; // sizeof(GLRLMFeature::rotAngles) / sizeof(GLRLMFeature::rotAngles[0]);
-					for (int i = 0; i < nAng; i++)
+					// Mock angled values if they haven't been calculated for some error reason
+					auto nsv = GLRLMFeature::n_standard_angles; 
+					if (vv.size() < nsv)
+						vv.resize(nsv, 0.0);
+					// Output the sub-values
+					for (int i = 0; i < nsv; i++)
 					{
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << vv[i];
@@ -329,7 +385,12 @@ namespace Nyxus
 				// --Gabor
 				if (fc == GABOR)
 				{
-					for (auto i = 0; i < GaborFeature::num_features; i++)
+					// Mock angled values if they haven't been calculated for some error reason
+					auto nsv = GaborFeature::num_features;
+					if (vv.size() < nsv)
+						vv.resize(nsv, 0.0);
+					// Output the subvalues
+					for (auto i = 0; i < nsv; i++)
 					{
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << vv[i];
@@ -346,7 +407,12 @@ namespace Nyxus
 				// --Zernike feature values
 				if (fc == ZERNIKE2D)
 				{
-					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
+					// Mock angled values if they haven't been calculated for some error reason
+					auto nsv = ZernikeFeature::num_feature_values_calculated;
+					if (vv.size() < nsv)
+						vv.resize(nsv, 0.0);
+					// Output the sub-values
+					for (int i = 0; i < nsv; i++)
 					{
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << vv[i];
@@ -363,7 +429,12 @@ namespace Nyxus
 				// --Radial distribution features
 				if (fc == FRAC_AT_D)
 				{
-					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
+					// Mock angled values if they haven't been calculated for some error reason
+					auto nsv = RadialDistributionFeature::num_features_FracAtD;
+					if (vv.size() < nsv)
+						vv.resize(nsv, 0.0);
+					// Output the sub-values
+					for (auto i = 0; i < nsv; i++)
 					{
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << vv[i];
@@ -377,7 +448,12 @@ namespace Nyxus
 				}
 				if (fc == MEAN_FRAC)
 				{
-					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
+					// Mock angled values if they haven't been calculated for some error reason
+					auto nsv = RadialDistributionFeature::num_features_MeanFrac;	// # of sub-values
+					if (vv.size() < nsv)
+						vv.resize(nsv, 0.0);
+					// Output the sub-values
+					for (auto i = 0; i < nsv; i++)
 					{
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << vv[i];
@@ -391,7 +467,12 @@ namespace Nyxus
 				}
 				if (fc == RADIAL_CV)
 				{
-					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
+					// Mock angled values if they haven't been calculated for some error reason
+					auto nsv = RadialDistributionFeature::num_features_RadialCV;	// # of sub-values
+					if (vv.size() < nsv)
+						vv.resize(nsv, 0.0);
+					// Output the sub-values
+					for (auto i = 0; i < nsv; i++)
 					{
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << vv[i];

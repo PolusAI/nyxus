@@ -104,7 +104,7 @@ bool FeatureManager::gather_dependencies()
 			continue;
 		}
 
-		VERBOSLVL2(
+		VERBOSLVL4(
 			// Feature method instance is good
 			std::cout << fm->feature_info << ": " << n_deps << " depends\n";
 
@@ -222,7 +222,7 @@ void FeatureManager::build_user_requested_set()
 	}
 
 	// List unsorted
-	VERBOSLVL2
+	VERBOSLVL4
 		(
 			std::cout << "Unsorted:\n";
 			for (auto& oneD : requestedWithDeps)
@@ -237,7 +237,7 @@ void FeatureManager::build_user_requested_set()
 		});
 
 	// List sorted
-		VERBOSLVL2
+		VERBOSLVL4
 		(
 			std::cout << "Sorted:\n";
 			for (auto& oneD : requestedWithDeps)
@@ -252,36 +252,3 @@ void FeatureManager::build_user_requested_set()
 		user_requested_features.push_back(fm);
 	}
 }
-
-#if 0
-void FeatureManager::external_test_init()
-{
-	pixelIntensityFeatures = new PixelIntensityFeatures();
-	contourFeature = new ContourFeature();
-	convhullFeature = new ConvexHullFeature();
-	ellipsefitFeature = new EllipseFittingFeature();
-	extremaFeature = new ExtremaFeature();
-	eulerNumberFeature = new EulerNumberFeature();
-	caliperNassensteinFeature = new CaliperNassensteinFeature();
-	caliperFeretFeature = new CaliperFeretFeature();
-	caliperMartinFeature = new CaliperMartinFeature();
-	chordsFeature = new ChordsFeature();
-	gaborFeature = new GaborFeature();
-}
-
-namespace Nyxus
-{
-	FeatureMethod* pixelIntensityFeatures,
-		* contourFeature,
-		* convhullFeature,
-		* ellipsefitFeature,
-		* extremaFeature,
-		* eulerNumberFeature, 		
-		* chordsFeature,
-		* caliperNassensteinFeature, 
-		* caliperFeretFeature, 
-		* caliperMartinFeature,
-		* gaborFeature;
-}
-
-#endif

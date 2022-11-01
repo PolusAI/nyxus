@@ -27,6 +27,7 @@
 #define XYRESOLUTION "--pixelsPerCentimeter"	// pixels per centimeter
 #define PXLDIST "--pixelDistance"		// used in neighbor features
 #define COARSEGRAYDEPTH "--coarseGrayDepth"
+#define IMAGE_LAYER_Z "--z"				// Z-index of a layer. Used in processing 2D images, ignored for 2D images
 #ifdef USE_GPU
 	#define USEGPU "--useGpu"					// Environment::rawUseGpu, "true" or "false"
 	#define GPUDEVICEID "--gpuDeviceID"		// Environment::rawGpuDeviceID
@@ -107,6 +108,11 @@ public:
 	std::string rawXYRes = "";
 	float xyRes = 0.0,
 		  pixelSizeUm = 0.0;
+
+	// Support of 3D features
+	std::string rawLayerZ = "";
+	int layerZ = -1;	// As a result of layerZ < 0, layerZ will be assigned the index of the middle image stack's layer 
+	bool user_specified_z_index() { return layerZ >= 0; }
 
 	int get_pixel_distance();
 	void set_pixel_distance(int pixelDistance);

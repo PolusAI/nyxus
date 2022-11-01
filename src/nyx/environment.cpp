@@ -157,7 +157,7 @@ void Environment::set_pixel_distance(int pixelDistance)
 void Environment::show_cmdline_help()
 {
 	std::cout
-		<< PROJECT_NAME << " " << PROJECT_VER << "\nCopyright Axle Informatics 2021\n"
+		<< PROJECT_NAME << " " << PROJECT_VER << "\nCopyright Axle Informatics 2021-2022\n"
 		<< "Command line format:\n"
 		<< "\t" << PROJECT_NAME << " -h\tDisplay help info\n"
 		<< "\t" << PROJECT_NAME << " --help\tDisplay help info\n"
@@ -176,7 +176,8 @@ void Environment::show_cmdline_help()
 		<< " [" << PXLDIST << " <pxd>]\n"
 		<< " [" << COARSEGRAYDEPTH << " <custom number of grayscale levels (default: 256)>]\n"
 		<< " [" << GLCMANGLES << " one or more comma separated rotation angles from set {0, 45, 90, and 135}, default is " << GLCMANGLES << "0,45,90,135 \n"
-		<< " [" << VERBOSITY << " <verbo>]\n";
+		<< " [" << VERBOSITY << " <verbo>]\n"
+		<< " [" << IMAGE_LAYER_Z << " <layer index of a 3D image to extract 2D features from>]\n";
 
 #ifdef USE_GPU
 	std::cout << " [" << USEGPU << "=<true or false>" << " [" << GPUDEVICEID << "=<valid GPU device ID>] ]\n";
@@ -402,6 +403,7 @@ void Environment::process_feature_list()
 				AREA_UM2,
 				CENTROID_X,
 				CENTROID_Y,
+				DIAMETER_EQUAL_AREA, 
 				WEIGHTED_CENTROID_Y,
 				WEIGHTED_CENTROID_X,
 				COMPACTNESS,
@@ -413,10 +415,9 @@ void Environment::process_feature_list()
 				MINOR_AXIS_LENGTH,
 				ECCENTRICITY,
 				ORIENTATION,
-				NUM_NEIGHBORS,
 				EXTENT,
 				ASPECT_RATIO,
-				EQUIVALENT_DIAMETER,
+				DIAMETER_EQUAL_PERIMETER,
 				CONVEX_HULL_AREA,
 				SOLIDITY,
 				PERIMETER,
@@ -460,7 +461,8 @@ void Environment::process_feature_list()
 				GLCM_SUMAVERAGE,
 				GLCM_SUMENTROPY,
 				GLCM_SUMVARIANCE,
-				GLCM_VARIANCE };
+				GLCM_VARIANCE
+			};
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -709,7 +711,8 @@ int Environment::parse_cmdline(int argc, char **argv)
 				find_string_argument(i, GLCMANGLES, rawGlcmAngles) ||
 				find_string_argument(i, PXLDIST, pixel_distance) ||
 				find_string_argument(i, COARSEGRAYDEPTH, raw_coarse_grayscale_depth) ||
-				find_string_argument(i, VERBOSITY, verbosity) 
+				find_string_argument(i, VERBOSITY, verbosity) ||
+				find_string_argument(i, IMAGE_LAYER_Z, rawLayerZ)
 #ifdef USE_GPU
 				|| find_string_argument(i, USEGPU, rawUseGpu) 
 				|| find_string_argument(i, GPUDEVICEID, rawGpuDeviceID) 
@@ -838,6 +841,20 @@ int Environment::parse_cmdline(int argc, char **argv)
 			std::cout << "Error: " << COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": expecting a positive integer constant\n";
 			return 1;
 		}
+	}
+
+	// parse IMAGE_LAYER_Z
+	if (!rawLayerZ.empty())
+	{
+		// string -> integer
+		if (sscanf(rawLayerZ.c_str(), "%d", &layerZ) != 1 || layerZ < 0)
+		{
+			std::cout << "Error: " << IMAGE_LAYER_Z << "=" << rawLayerZ << ": expecting a non-negative integer constant\n";
+			return 1;
+		}
+
+		// At this point, we cannot verify the value of z-index. It well may be greater than the 
+		// actual number of layers in an image.
 	}
 
 	if (!verbosity.empty())

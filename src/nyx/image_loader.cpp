@@ -118,18 +118,6 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 		return false;
 	}
 
-#if 0 // Tests
-	ptrI = std::make_shared<std::vector<uint32_t>>(tileSize);
-	// Experiment
-	ptrL = std::make_shared<std::vector<uint32_t>>(tileSize);
-	segFL->loadTileFromFile(ptrL, 
-		0, //row, 
-		0, //col, 
-		0, //lyr, 
-		0); // lvl);
-	auto& dataL = *ptrL;
-#endif
-
 	ptrI = std::make_shared<std::vector<uint32_t>>(tileSize);
 	ptrL = std::make_shared<std::vector<uint32_t>>(tileSize);
 
@@ -173,6 +161,17 @@ bool ImageLoader::load_tile (size_t tile_row, size_t tile_col)
 	segFL->loadTileFromFile (ptrL, tile_row, tile_col, lyr, lvl);
 	return true;
 }
+
+bool ImageLoader::load_tile_3d (size_t tile_row, size_t tile_col, size_t z)
+{
+	if (tile_row >= nth || tile_col >= ntw || z >= get_num_layers())
+		return false;
+
+	intFL->loadTileFromFile(ptrI, tile_row, tile_col, z, lvl);
+	segFL->loadTileFromFile(ptrL, tile_row, tile_col, z, lvl);
+	return true;
+}
+
 const std::vector<uint32_t>& ImageLoader::get_int_tile_buffer()
 {
 	return *ptrI;
@@ -237,3 +236,17 @@ size_t ImageLoader::get_full_height()
 {
 	return fh;
 }
+
+bool ImageLoader::image_is_3d()
+{
+	NyxusGrayscaleTiffTileLoader<uint32_t>* ptrLoader = (NyxusGrayscaleTiffTileLoader<uint32_t>*) intFL;
+	auto nz = ptrLoader->get_num_layers();
+	return nz > 1;
+}
+
+int ImageLoader::get_num_layers()
+{
+	NyxusGrayscaleTiffTileLoader<uint32_t>* ptrLoader = (NyxusGrayscaleTiffTileLoader<uint32_t>*) intFL;
+	return ptrLoader->get_num_layers();
+}
+

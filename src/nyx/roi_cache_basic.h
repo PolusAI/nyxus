@@ -5,8 +5,8 @@
 class BasicLR
 {
 public:
-	void init_aabb(StatsInt x, StatsInt y);
-	void update_aabb(StatsInt x, StatsInt y);
+	void init_aabb(StatsInt x, StatsInt y, StatsInt z);
+	void update_aabb(StatsInt x, StatsInt y, StatsInt z);
 
 	AABB aabb;
 	int label;

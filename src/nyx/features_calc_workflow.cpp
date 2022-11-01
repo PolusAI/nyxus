@@ -60,7 +60,7 @@ namespace Nyxus
 	}
 
 	// Label Record (structure 'LR') is where the state of label's pixels scanning and feature calculations is maintained. This function initializes an LR instance for the 1st pixel.
-	void init_label_record(LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity)
+	void init_label_record(LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int z, int label, PixIntens intensity)
 	{
 		r.segFname = segFile;
 		r.intFname = intFile;
@@ -75,10 +75,10 @@ namespace Nyxus
 		r.label = label;
 
 		// Initialize the AABB
-		r.init_aabb(x, y);
+		r.init_aabb(x, y, z);
 
 		// Save the pixel
-		r.raw_pixels.push_back(Pixel2(x, y, intensity));
+		r.raw_pixels.push_back(Pixel2(x, y, z, intensity));
 
 		r.fvals[AREA_PIXELS_COUNT][0] = 1;
 		if (theEnvironment.xyRes == 0.0)
@@ -116,7 +116,7 @@ namespace Nyxus
 		r.fvals[ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = 0;
 	}
 
-	void init_label_record_2 (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity, unsigned int tile_index)
+	void init_label_record_2 (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int z, int label, PixIntens intensity, unsigned int tile_index)
 	{
 		// Cache the host tile's index
 		r.host_tiles.insert (tile_index);
@@ -124,7 +124,7 @@ namespace Nyxus
 		// Initialize basic counters
 		r.aux_area = 1;
 		r.aux_min = r.aux_max = intensity;
-		r.init_aabb (x,y);
+		r.init_aabb (x, y, z);
 
 		// Cache the ROI label
 		r.label = label;
@@ -135,11 +135,11 @@ namespace Nyxus
 	}
 
 	// This function 'digests' the 2nd and the following pixel of a label and updates the label's feature calculation state - the instance of structure 'LR'
-	void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity)
+	void update_label_record(LR& lr, int x, int y, int z, int label, PixIntens intensity)
 	{
 		// Save the pixel
 		if (lr.caching_permitted())
-			lr.raw_pixels.push_back(Pixel2(x, y, intensity));
+			lr.raw_pixels.push_back(Pixel2(x, y, z, intensity));
 		else
 			lr.clear_pixels_cache();
 
@@ -148,10 +148,10 @@ namespace Nyxus
 		lr.aux_max = std::max(lr.aux_max, intensity);
 
 		// Update ROI bounds
-		lr.update_aabb(x, y);
+		lr.update_aabb(x, y, z);
 	}
 
-	void update_label_record_2 (LR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index)
+	void update_label_record_2 (LR& lr, int x, int y, int z, int label, PixIntens intensity, unsigned int tile_index)
 	{
 		// Cache the host tile's index
 		lr.host_tiles.insert(tile_index);
@@ -160,7 +160,7 @@ namespace Nyxus
 		lr.aux_area++;
 		lr.aux_min = std::min(lr.aux_min, intensity);
 		lr.aux_max = std::max(lr.aux_max, intensity);
-		lr.update_aabb (x,y);
+		lr.update_aabb (x, y, z);
 	}
 
 }

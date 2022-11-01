@@ -14,7 +14,37 @@ public:
 	static void reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 	void cleanup_instance();
 
-private:
+	// list dependencies of this class
+	static bool required (const FeatureSet& fs) 
+	{
+		return fs.anyEnabled(
+			{
+				INTEGRATED_INTENSITY,
+				MEAN,
+				MEDIAN,
+				MIN,
+				MAX,
+				RANGE,
+				STANDARD_DEVIATION,
+				STANDARD_ERROR,
+				SKEWNESS,
+				KURTOSIS,
+				HYPERSKEWNESS,
+				HYPERFLATNESS,
+				MEAN_ABSOLUTE_DEVIATION,
+				ENERGY,
+				ROOT_MEAN_SQUARED,
+				ENTROPY,
+				MODE,
+				UNIFORMITY,
+				UNIFORMITY_PIU,
+				P01, P10, P25, P75, P90, P99,
+				INTERQUARTILE_RANGE,
+				ROBUST_MEAN_ABSOLUTE_DEVIATION
+			});
+	}
+
+protected:
 	double
 		val_INTEGRATED_INTENSITY = 0,
 		val_MEAN = 0,

@@ -99,9 +99,9 @@ void EnclosingInscribingCircumscribingCircleFeature::findThirdPoint (const std::
         else
         {
             std::vector<Pixel2> ptsf;   
-            ptsf.push_back (Pixel2(pts[i].x, pts[i].y, 0));   
-            ptsf.push_back(Pixel2(pts[j].x, pts[j].y, 0));   
-            ptsf.push_back(Pixel2(pts[k].x, pts[k].y, 0));  
+            ptsf.push_back (Pixel2(pts[i].x, pts[i].y, 0, 0));
+            ptsf.push_back (Pixel2(pts[j].x, pts[j].y, 0, 0));   
+            ptsf.push_back (Pixel2(pts[k].x, pts[k].y, 0, 0));  
             Point2f new_center; float new_radius = 0;
             findCircle3pts(ptsf, new_center, new_radius);
             if (new_radius > 0)

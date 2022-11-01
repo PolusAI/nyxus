@@ -37,6 +37,8 @@
 #include "features/caliper.h"
 #include "features/roi_radius.h"
 #include "features/zernike.h"
+#include "features/intensity_3d.h"
+#include "features/image_moments_3d.h"
 #include "helpers/timing.h"
 #include "parallel.h"
 
@@ -54,7 +56,7 @@ namespace Nyxus
 	}
 
 	// Calculating features in parallel with hard-coded feature order. This function should be called once after a file pair processing is finished.
-	void reduce_trivial_rois_manual (std::vector<int> & PendingRoisLabels)
+	void reduce_trivial_rois_manual_2d (std::vector<int> & PendingRoisLabels)
 	{
 		//==== Parallel execution parameters 
 		int n_reduce_threads = theEnvironment.n_reduce_threads;		
@@ -62,11 +64,14 @@ namespace Nyxus
 			workPerThread = jobSize / n_reduce_threads;
 
 		//==== Pixel intensity stats. Calculate these basic features unconditionally
+		if (PixelIntensityFeatures::required(theFeatureSet))
 		{
 			STOPWATCH("Intensity/Intensity/Int/#FFFF00", "\t=");
 			runParallel(PixelIntensityFeatures::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
+		//*** Check if there are any 2D features requested
+			
 		//==== Basic morphology
 		if (BasicMorphologyFeatures::required(theFeatureSet))
 		{
@@ -283,6 +288,38 @@ namespace Nyxus
 			STOPWATCH("RDistribution/Rdist/Rd/#00FFFF", "\t=");
 			runParallel(RadialDistributionFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
+	}
+
+	// Calculating 3D features in parallel with hard-coded feature order. This function should be called once after a file pair processing is finished.
+	void reduce_trivial_rois_manual_3d (std::vector<int>& PendingRoisLabels)
+	{
+		//==== Parallel execution parameters 
+		int n_reduce_threads = theEnvironment.n_reduce_threads;
+		size_t jobSize = PendingRoisLabels.size(),
+			workPerThread = jobSize / n_reduce_threads;
+
+		if (PixelIntensityFeatures_3D::required(theFeatureSet))
+		{
+			STOPWATCH("Intensity3D/Intensity3D/Int3D/#FFFF00", "\t=");
+			runParallel(PixelIntensityFeatures_3D::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+		}
+
+		/*
+		if (BasicMorphologyFeatures_3D::required(theFeatureSet))
+		{
+			STOPWATCH("Morphology/Basic/E/#4aaaea", "\t=");
+			runParallel(BasicMorphologyFeatures::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+		}
+		*/
+
+		//==== Moments
+		if (ImageMomentsFeature::required(theFeatureSet))
+		{
+			// #ifndef USE_GPU: 
+			STOPWATCH("Moments3D/Moments3D/3D moms/#FFFACD", "\t=");
+			runParallel(VolumeMomentsFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+		}
+
 	}
 
 	void reduce_neighbors()

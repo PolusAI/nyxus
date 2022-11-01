@@ -28,8 +28,8 @@ public:
 	{
 		return theFeatureSet.anyEnabled({
 			PERIMETER,
-			EQUIVALENT_DIAMETER,
-			EDGE_INTEGRATEDINTENSITY,
+			DIAMETER_EQUAL_PERIMETER, 
+			EDGE_INTEGRATED_INTENSITY,
 			EDGE_MAX_INTENSITY,
 			EDGE_MIN_INTENSITY,
 			EDGE_MEAN_INTENSITY,
@@ -117,7 +117,7 @@ private:
 	std::tuple<double, double, double, double> calc_min_max_mean_stddev_intensity (const std::vector<Pixel2> & contour_pixels);
 	double
 		fval_PERIMETER = 0, 
-		fval_EQUIVALENT_DIAMETER = 0, 
+		fval_DIAMETER_EQUAL_PERIMETER = 0,
 		fval_EDGE_MEAN_INTENSITY = 0, 
 		fval_EDGE_STDDEV_INTENSITY = 0, 
 		fval_EDGE_MAX_INTENSITY = 0, 

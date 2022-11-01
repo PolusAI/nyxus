@@ -28,6 +28,12 @@ namespace Nyxus
 				idxE = datasetSize; // include the tail
 			T.push_back(std::async(std::launch::async, f, idxS, idxE, ptrLabels, ptrLabelData));
 		}
+		
+
+		// Single-threaded execution, dor debug
+		// 
+		//		f(0, datasetSize, ptrLabels, ptrLabelData);
+		//
 	}
 
 	void calcRoiIntensityFeatures (LR& lr);

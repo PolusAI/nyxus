@@ -30,9 +30,9 @@
 namespace Nyxus
 {
 	/// @brief ROI cache structure initializer for nested ROI functionality (Python class NyxusHie, nyxushie CLI)
-	void init_label_record_2 (HieLR& r, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity, unsigned int tile_index)
+	void init_label_record_2 (HieLR& r, const std::string& segFile, const std::string& intFile, int x, int y, int z, int label, PixIntens intensity, unsigned int tile_index)
 	{
-		r.init_aabb(x, y);
+		r.init_aabb(x, y, z);
 
 		// Cache the ROI label
 		r.label = label;
@@ -42,16 +42,16 @@ namespace Nyxus
 	}
 
 	/// @brief ROI cache structure updater for nested ROI functionality (Python class NyxusHie, nyxushie CLI)
-	void update_label_record_2 (HieLR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index)
+	void update_label_record_2 (HieLR& lr, int x, int y, int z, int label, PixIntens intensity, unsigned int tile_index)
 	{
-		lr.update_aabb(x, y);
+		lr.update_aabb(x, y, z);
 	}
 
 	/// @brief Pixel feeder for nested ROI functionality (Python class NyxusHie, nyxushie CLI)
 	void feed_pixel_2_metrics_H(
 		std::unordered_set <int>& UL, // unique labels
 		std::unordered_map <int, HieLR>& RD,	// ROI data
-		int x, int y, int label, unsigned int tile_index)
+		int x, int y, int z, int label, unsigned int tile_index)
 	{
 		if (UL.find(label) == UL.end())
 		{
@@ -60,14 +60,14 @@ namespace Nyxus
 
 			// Initialize the ROI label record
 			HieLR newData;
-			init_label_record_2(newData, theParFname, "no2ndfile", x, y, label, 999/*dummy intensity*/, tile_index);
+			init_label_record_2(newData, theParFname, "no2ndfile", x, y, z, label, 999/*dummy intensity*/, tile_index);
 			RD[label] = newData;
 		}
 		else
 		{
 			// Update basic ROI info (info that doesn't require costly calculations)
 			HieLR& existingData = RD[label];
-			update_label_record_2(existingData, x, y, label, 999/*dummy intensity*/, tile_index);
+			update_label_record_2(existingData, x, y, z, label, 999/*dummy intensity*/, tile_index);
 		}
 	}
 }
@@ -134,7 +134,7 @@ bool gatherRoisMetrics_H(const std::string& fpath, std::unordered_set <int>& uni
 						x = col * tw + i % tw;
 
 					// Update pixel's ROI metrics
-					feed_pixel_2_metrics_H(uniqueLabels, roiData, x, y, label, tileIdx); // Updates 'uniqueLabels' and 'roiData'
+					feed_pixel_2_metrics_H(uniqueLabels, roiData, x, y, 0, label, tileIdx); // Updates 'uniqueLabels' and 'roiData'
 				}
 			}
 
