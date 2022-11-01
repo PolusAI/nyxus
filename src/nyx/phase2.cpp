@@ -82,6 +82,35 @@ namespace Nyxus
 	}
 	#endif
 
+	/// @brief Checks z-index with respect to image's dimensionality and number of layers, and adjusts it
+	bool checkAdjustZindex (int & z)
+	{
+		int nz = theImLoader.get_num_layers();
+
+		// A middle layer of a 3D image is requested?
+		// (z can be ==-1 (constant -1 defined in class Environment) if the user did not specify z-index for 
+		// calculating 2D features of a layer of a 3D image.)
+		if (theEnvironment.user_specified_z_index() == false)
+			z = nz / 2;
+		else
+			// In a 2D image whose nz==1, just read its only layer at z-index 0
+			if (nz == 1)
+				z = 0;
+			else
+				// Otherwise, check validity of the z-index and throw an error 
+				if (z >= nz)
+				{
+					std::stringstream ss;
+					ss << "Error fetching image layer " << z << ": number of image layers = " << nz;
+#ifdef WITH_PYTHON_H
+					throw ss.str();
+#endif
+					std::cerr << ss.str() << "\n";
+					return false;
+				}
+		return true;
+	}
+
 	bool scanTrivialRois_2d (const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, int z)
 	{
 		// Sort the batch's labels to enable binary searching in it
@@ -101,22 +130,9 @@ namespace Nyxus
 			fullwidth = theImLoader.get_full_width(),
 			fullheight = theImLoader.get_full_height();
 		
-		// Check validity of the z-index 
-		int nz = theImLoader.get_num_layers();
-		if (z >= nz)
-		{
-			std::stringstream ss;
-			ss << "Error fetching image layer " << z << ": number of image layers = " << nz;
-			#ifdef WITH_PYTHON_H
-				throw ss.str();
-			#endif	
-			std::cerr << ss.str() << "\n";			
+		// Check if z-index value agrees the image dimensionality
+		if (checkAdjustZindex(z) == false)
 			return false;
-		}
-
-		// Middle section requested?
-		if (z < 0)
-			z = nz / 2;
 
 		// Scan all the tiles
 		int cnt = 1;
@@ -328,7 +344,12 @@ namespace Nyxus
 					else
 						std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				)
-				scanTrivialRois_2d (Pending, intens_fpath, label_fpath, z);
+				bool ok = scanTrivialRois_2d (Pending, intens_fpath, label_fpath, z);
+				if (!ok)
+				{
+					std::cout << "Scanning pair " << intens_fpath << " :: " << label_fpath << " failed\n";
+					return false;
+				}
 
 				// Allocate memory
 				VERBOSLVL1(std::cout << "\tallocating ROI buffers\n";)
@@ -375,7 +396,12 @@ namespace Nyxus
 				else
 					std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				)
-			scanTrivialRois_2d (Pending, intens_fpath, label_fpath, z);
+			bool ok = scanTrivialRois_2d (Pending, intens_fpath, label_fpath, z);
+			if (!ok)
+			{
+				std::cout << "Scanning pair " << intens_fpath << " :: " << label_fpath << " failed\n";
+				return false;
+			}
 
 			// Allocate memory
 			VERBOSLVL1(std::cout << "\tallocating ROI buffers\n";)

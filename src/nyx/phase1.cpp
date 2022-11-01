@@ -12,6 +12,7 @@
 
 namespace Nyxus
 {
+	// Gather metrics of ROIs in an 2D image or in a specified z-layer of a 3D image 
 	bool gatherRoisMetrics_2d (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, int z)
 	{
 		// Clear ROI pixels potentially existing as a result of previous 3D feature extraction
@@ -31,24 +32,9 @@ namespace Nyxus
 			fullwidth = theImLoader.get_full_width(),
 			fullheight = theImLoader.get_full_height();
 
-		// Check validity of the z-index 
-		int nz = theImLoader.get_num_layers();
-		if (z >= nz)
-		{
-			std::stringstream ss;
-			ss << "Error fetching image layer " << z << ": number of image layers = " << nz;
-			#ifdef WITH_PYTHON_H
-				throw ss.str();
-			#endif	
-			std::cerr << ss.str() << "\n";
+		// Check if z-index value agrees the image dimensionality
+		if (checkAdjustZindex(z) == false)
 			return false;
-		}
-
-		// Middle section requested?
-		// (z can be ==-1 (constant -1 defined in class Environment) if the user did not specify z-index for 
-		// calculating 2D features of a layer of a 3D image.)
-		if (theEnvironment.user_specified_z_index() == false)
-			z = nz / 2;
 
 		// Scan all the tiles
 		int cnt = 1;
