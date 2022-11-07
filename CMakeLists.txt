@@ -69,7 +69,7 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -march=native")
 
 #== GTest 
 option(RUN_GTEST "Downloads google unit test API and runs google test scripts to test Nyxus" OFF)
@@ -137,11 +137,13 @@ set(SOURCE
 	src/nyx/output_2_csv.cpp
 	src/nyx/parallel.cpp
 	src/nyx/phase1.cpp
+	src/nyx/phase1_fastloop.cpp
 	src/nyx/phase2.cpp
 	src/nyx/phase3.cpp
 	src/nyx/pixel_feed.cpp
 	src/nyx/reduce_by_feature.cpp
 	src/nyx/reduce_trivial_rois.cpp
+	src/nyx/rle.cpp
 	src/nyx/roi_cache.cpp
 	src/nyx/roi_cache_basic.cpp
 	src/nyx/scan_fastloader_way.cpp

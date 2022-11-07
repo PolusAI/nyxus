@@ -63,10 +63,11 @@ void initialize_environment(
     #endif
 }
 
-py::tuple featurize_directory_imp (
+py::tuple featurize_directory_imp_fast (
     const std::string &intensity_dir,
     const std::string &labels_dir,
-    const std::string &file_pattern)
+    const std::string &file_pattern,
+    bool use_fastloop)
 {
     theEnvironment.intensity_dir = intensity_dir;
     theEnvironment.labels_dir = labels_dir;
@@ -103,7 +104,8 @@ py::tuple featurize_directory_imp (
         theEnvironment.n_reduce_threads,
         min_online_roi_size,
         false, // 'true' to save to csv
-        theEnvironment.output_dir);
+        theEnvironment.output_dir,
+        use_fastloop);
 
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing.");
@@ -118,7 +120,19 @@ py::tuple featurize_directory_imp (
     return py::make_tuple(pyHeader, pyStrData, pyNumData);
 }
 
-py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames)
+py::tuple featurize_directory_imp (
+    const std::string &intensity_dir,
+    const std::string &labels_dir,
+    const std::string &file_pattern)
+{
+    return featurize_directory_imp_fast (
+    intensity_dir,
+    labels_dir,
+    file_pattern,
+    false);
+}
+
+py::tuple featurize_fname_lists_imp_fast (const py::list& int_fnames, const py::list & seg_fnames, bool use_fastloop)
 {
     std::vector<std::string> intensFiles, labelFiles;
     for (auto it = int_fnames.begin(); it != int_fnames.end(); ++it)
@@ -170,7 +184,8 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
         theEnvironment.n_reduce_threads,
         min_online_roi_size,
         false, // 'true' to save to csv
-        theEnvironment.output_dir);
+        theEnvironment.output_dir,
+        use_fastloop);
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing.");
 
@@ -182,6 +197,12 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
     pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
 
     return py::make_tuple(pyHeader, pyStrData, pyNumData);
+}
+
+
+py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames)
+{
+    return featurize_fname_lists_imp_fast (int_fnames, seg_fnames, false);
 }
 
 py::tuple findrelations_imp(
@@ -258,6 +279,8 @@ PYBIND11_MODULE(backend, m)
     m.def("initialize_environment", &initialize_environment, "Environment initialization");
     m.def("featurize_directory_imp", &featurize_directory_imp, "Calculate features of images defined by intensity and mask image collection directories");
     m.def("featurize_fname_lists_imp", &featurize_fname_lists_imp, "Calculate features of intensity-mask image pairs defined by lists of image file names");
+    m.def("featurize_directory_imp_fast", &featurize_directory_imp_fast, "Calculate features of images defined by intensity and mask image collection directories");
+    m.def("featurize_fname_lists_imp_fast", &featurize_fname_lists_imp_fast, "Calculate features of intensity-mask image pairs defined by lists of image file names");
     m.def("findrelations_imp", &findrelations_imp, "Find relations in segmentation images");
     m.def("gpu_available", &Environment::gpu_is_available, "Check if CUDA gpu is available");
     m.def("use_gpu", &use_gpu, "Enable/disable GPU features");

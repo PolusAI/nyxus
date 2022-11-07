@@ -37,6 +37,26 @@ namespace Nyxus
 		}
 	}
 
+	void feed_pixel_2_metrics_fast(int x1, int x2, int y, PixIntens maxInt, PixIntens minInt, int label, unsigned int tile_index)
+	{
+		if (uniqueLabels.find(label) == uniqueLabels.end())
+		{
+			// Remember this label
+			uniqueLabels.insert(label);
+
+			// Initialize the ROI label record
+			LR newData;
+			init_label_record_2_fast(newData, theSegFname, theIntFname, x1, x2, y, label, maxInt, minInt, tile_index);
+			roiData[label] = newData;
+		}
+		else
+		{
+			// Update basic ROI info (info that doesn't require costly calculations)
+			LR& existingData = roiData[label];
+			update_label_record_2_fast(existingData, x1, x2, y, label, maxInt, minInt, tile_index);
+		}
+	}
+
 	/// @brief Copies a pixel to the ROI's cache. 
 	/// @param x -- x-coordinate of the pixel in the image
 	/// @param y -- y-coordinate of the pixel in the image

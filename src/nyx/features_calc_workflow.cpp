@@ -134,6 +134,27 @@ namespace Nyxus
 		r.intFname = intFile;
 	}
 
+	void init_label_record_2_fast (LR& r, const std::string& segFile, const std::string& intFile, int x1, int x2, int y, int label, PixIntens maxInt, PixIntens minInt, unsigned int tile_index)
+	{
+		// Cache the host tile's index
+		r.host_tiles.insert (tile_index);
+
+		// Initialize basic counters
+		r.aux_area = x2-x1;
+		r.aux_min = minInt;
+		r.aux_max = maxInt;
+		r.aabb.init_y (y);
+		r.aabb.init_x(x1);
+		r.aabb.update_xmax(x2-1);
+
+		// Cache the ROI label
+		r.label = label;
+
+		// File names
+		r.segFname = segFile;
+		r.intFname = intFile;
+	}
+
 	// This function 'digests' the 2nd and the following pixel of a label and updates the label's feature calculation state - the instance of structure 'LR'
 	void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity)
 	{
@@ -161,6 +182,20 @@ namespace Nyxus
 		lr.aux_min = std::min(lr.aux_min, intensity);
 		lr.aux_max = std::max(lr.aux_max, intensity);
 		lr.update_aabb (x,y);
+	}
+
+	void update_label_record_2_fast (LR& lr, int x1, int x2, int y, int label, PixIntens maxInt, PixIntens minInt, unsigned int tile_index)
+	{
+		// Cache the host tile's index
+		lr.host_tiles.insert(tile_index);
+
+		// Initialize basic counters
+		lr.aux_area += x2-x1;
+		lr.aux_min = std::min(lr.aux_min, minInt);
+		lr.aux_max = std::max(lr.aux_max, maxInt);
+		lr.aabb.update_xmin (x1);
+		lr.aabb.update_xmax (x2-1);
+		lr.aabb.update_y (y);
 	}
 
 }

@@ -30,7 +30,7 @@
 
 namespace Nyxus
 {
-	bool processIntSegImagePair (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, int filepair_index, int tot_num_filepairs)
+	bool processIntSegImagePair (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, int filepair_index, int tot_num_filepairs, bool use_fast)
 	{
 		std::vector<int> trivRoiLabels, nontrivRoiLabels;
 
@@ -52,14 +52,17 @@ namespace Nyxus
 					int digits = 2, k = std::pow(10.f, digits);
 				float perCent = float(filepair_index * 100 * k / tot_num_filepairs) / float(k);
 				VERBOSLVL1(std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << intens_fpath << " SEG: " << label_fpath << "\n";)
-
 			}
 
 			{ STOPWATCH("Image scan2a/ImgScan2a/Scan2a/lightsteelblue", "\t=");
 
 			// Phase 1: gather ROI metrics
 			VERBOSLVL1(std::cout << "Gathering ROI metrics\n";)
-				gatherRoisMetrics(intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
+				if (use_fast) {
+					gatherRoisMetricsFast(intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
+				} else {
+					gatherRoisMetrics(intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
+				}
 
 			}
 
@@ -101,7 +104,7 @@ namespace Nyxus
 		if (trivRoiLabels.size())
 		{
 			VERBOSLVL1(std::cout << "Processing trivial ROIs\n";)
-			processTrivialRois (trivRoiLabels, intens_fpath, label_fpath, num_FL_threads, theEnvironment.get_ram_limit());
+			processTrivialRois (trivRoiLabels, intens_fpath, label_fpath, num_FL_threads, theEnvironment.get_ram_limit(), use_fast);
 		}
 
 		// Phase 3: process nontrivial (oversized) ROIs, if any
@@ -122,7 +125,8 @@ namespace Nyxus
 		int numReduceThreads,
 		int min_online_roi_size,
 		bool save2csv,
-		const std::string& csvOutputDir)
+		const std::string& csvOutputDir,
+		bool use_fastloop)
 	{
 		bool ok = true;
 
@@ -148,7 +152,7 @@ namespace Nyxus
 				return 1;
 			}
 
-			ok = processIntSegImagePair (ifp, lfp, numFastloaderThreads, i, nf);		// Phased processing
+			ok = processIntSegImagePair (ifp, lfp, numFastloaderThreads, i, nf, use_fastloop);		// Phased processing
 
 			if (ok == false)
 			{
@@ -184,6 +188,30 @@ namespace Nyxus
 
 		return 0; // success
 	}
+
+	int processDataset(
+		const std::vector<std::string>& intensFiles,
+		const std::vector<std::string>& labelFiles,
+		int numFastloaderThreads,
+		int numSensemakerThreads,
+		int numReduceThreads,
+		int min_online_roi_size,
+		bool save2csv,
+		const std::string& csvOutputDir) 
+		{
+			return processDataset(
+				intensFiles,
+				labelFiles,
+				numFastloaderThreads,
+				numSensemakerThreads,
+				numReduceThreads,
+				min_online_roi_size,
+				save2csv,
+				csvOutputDir,
+				false
+			);
+
+		}
 
 	void dump_roi_metrics(const std::string & label_fpath)
 	{

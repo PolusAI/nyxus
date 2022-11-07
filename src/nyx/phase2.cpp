@@ -10,6 +10,7 @@
 #include "environment.h"
 #include "globals.h"
 #include "helpers/timing.h"
+#include "rle.hpp"
 
 namespace Nyxus
 {
@@ -158,6 +159,121 @@ namespace Nyxus
 		return true;
 	}
 
+	bool scanTrivialRoisFast (const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads)
+	{
+		// Sort the batch's labels to enable binary searching in it
+		std::vector<int> whiteList = batch_labels;
+		std::sort (whiteList.begin(), whiteList.end());
+
+		int lvl = 0,	// Pyramid level
+			lyr = 0;	//	Layer
+
+		// Read the tiffs
+		size_t nth = theImLoader.get_num_tiles_hor(),
+			ntv = theImLoader.get_num_tiles_vert(),
+			fw = theImLoader.get_tile_width(),
+			th = theImLoader.get_tile_height(),
+			tw = theImLoader.get_tile_width(),
+			tileSize = theImLoader.get_tile_size(),
+			fullwidth = theImLoader.get_full_width(),
+			fullheight = theImLoader.get_full_height();
+
+		int cnt = 1;
+		for (unsigned int row = 0; row < nth; row++)
+			for (unsigned int col = 0; col < ntv; col++)
+		{
+			// Fetch the tile 
+			bool ok = theImLoader.load_tile(row, col);
+			if (!ok)
+			{
+				std::stringstream ss;
+				ss << "Error fetching tile row=" << row << " col=" << col;
+				#ifdef WITH_PYTHON_H
+					throw ss.str();
+				#endif	
+				std::cerr << ss.str() << "\n";
+				return false;
+			}
+
+			// Get ahold of tile's pixel buffer
+			auto dataI = theImLoader.get_int_tile_buffer(),
+				dataL = theImLoader.get_seg_tile_buffer();
+
+			// Iterate pixels
+			int y = 0;
+			int y_max = (fullheight < y+th) ? fullheight - row*th : th;
+			while (y < y_max)
+			{
+
+				size_t i = y*tw;
+				
+				int x = 0;
+				int x_max = (fullwidth < x+tw) ? fullwidth - col*tw : tw;
+				
+
+				int x_stream = 32 * (x_max / 32);
+
+				RLEStream<uint32_t, uint16_t> stream = rle_encode_long_stream_32(dataL.data()+i,x_stream);
+
+				unsigned int ind = 0;
+				while (ind+1 < stream.offsets.size()) {
+					uint16_t x1 = stream.offsets[ind++];
+					auto label = dataL[i+x1];
+
+					if (label > 0) {
+						uint16_t x2 = stream.offsets[ind];
+
+						if (! theEnvironment.singleROI && ! std::binary_search(whiteList.begin(), whiteList.end(), label)) //--slow-- if (std::find(PendingRoiLabels.begin(), PendingRoiLabels.end(), label) == PendingRoiLabels.end())
+						{
+							continue;
+						}
+
+						for (int xi=x1; xi<x2; xi++) {
+
+							feed_pixel_2_cache (xi, y, dataI[xi+i], label);
+
+						}
+					}
+				}
+
+				i += x_stream;
+				x = x_stream;
+
+				while (x < x_max) {
+					
+					// Skip non-mask pixels
+					auto label = dataL[i];
+					if (! label) {
+						++x, ++i;
+						continue;
+					}
+
+					// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
+					if (! theEnvironment.singleROI && ! std::binary_search(whiteList.begin(), whiteList.end(), label)) //--slow-- if (std::find(PendingRoiLabels.begin(), PendingRoiLabels.end(), label) == PendingRoiLabels.end())
+					{
+						++x, ++i;
+						continue;
+					}
+
+					// Collapse all the labels to one if single-ROI mde is requested
+					if (theEnvironment.singleROI){
+						label = 1;
+					}
+					feed_pixel_2_cache (x, y, dataI[i], label);
+					++x, ++i;
+				}
+
+				++y;
+			}
+
+			// Show stayalive progress info
+			if (cnt++ % 4 == 0)
+				VERBOSLVL1(std::cout << "\tscan trivial " << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "% of image scanned \n";)
+		}
+
+		return true;
+	}
+
 	PixIntens* ImageMatrixBuffer = nullptr;
 	size_t imageMatrixBufferLen = 0;
 
@@ -196,7 +312,7 @@ namespace Nyxus
 		delete ImageMatrixBuffer;
 	}
 
-	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit)
+	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit, bool use_fastloop)
 	{
 		std::vector<int> Pending;
 		size_t batchDemand = 0;
@@ -225,7 +341,11 @@ namespace Nyxus
 					else
 						std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 					)
-				scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
+				if (use_fastloop) {
+					scanTrivialRoisFast(Pending, intens_fpath, label_fpath, num_FL_threads);
+				} else {
+					scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
+				}
 
 				// Allocate memory
 				VERBOSLVL1(std::cout << "\tallocating ROI buffers\n";)
@@ -273,7 +393,11 @@ namespace Nyxus
 				else
 					std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				)
-			scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
+				if (use_fastloop) {
+					scanTrivialRoisFast(Pending, intens_fpath, label_fpath, num_FL_threads);
+				} else {
+					scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
+				}
 
 			// Allocate memory
 			VERBOSLVL1(std::cout << "\tallocating ROI buffers\n";)

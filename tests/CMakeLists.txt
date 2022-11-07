@@ -92,6 +92,7 @@ set(TEST_SRC
 	../src/nyx/output_2_buffer.cpp
 	../src/nyx/output_2_csv.cpp
 	../src/nyx/parallel.cpp
+	../src/nyx/phase1_fastloop.cpp
 	../src/nyx/phase1.cpp
 	../src/nyx/phase2.cpp
 	../src/nyx/phase3.cpp
