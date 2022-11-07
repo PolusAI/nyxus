@@ -2,6 +2,7 @@
 
 [![Documentation Status](https://readthedocs.org/projects/nyxus/badge/?version=latest)](https://nyxus.readthedocs.io/en/latest/)
 [![PyPI](https://img.shields.io/pypi/v/nyxus.svg)](https://pypi.org/project/nyxus/)
+[![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/nyxus.svg?label=Conda%20downloads)](https://anaconda.org/conda-forge/nyxus)
 [![Downloads](https://img.shields.io/pypi/dm/nyxus)](https://pypi.org/project/nyxus/)
 
 A scalable library for calculating features from intensity-label image data
@@ -17,10 +18,15 @@ The docs can be found at [Read the Docs](https://nyxus.readthedocs.io/en/latest/
 
 ## Getting started 
 
-For use in python, the latest version of Nyxus can be installed via the [Pip package manager](https://pypi.org/project/pip):
+For use in python, the latest version of Nyxus can be installed via the [Pip package manager](https://pypi.org/project/pip) or [conda package manager](https://docs.conda.io/en/latest/):
 
 ```
 pip install nyxus
+```
+
+or 
+```
+conda install nyxus -c conda-forge
 ```
 
 Usage is very straightforward. Given `intensities` and `labels` folders, Nyxus pairs up intensity-label pairs and extracts features from all of them. A summary of the avaialble feature are [listed below](#available-features).
@@ -172,129 +178,6 @@ Suppose we need to process intensity/mask file p1_y2_r68_c1.ome.tif :
 ./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/output-ratbrain --filePattern=.* --csvFile=singlecsv 
 ```
 
-## Building from source
-
-Nyxus can either be build inside a `conda` environment or independently outside of it. For the later case, we provide a script to make it easier to download and build all the necessary dependencies.
-
-### Inside Conda
-Nyxus uses a CMake build system. To build the command line interface, pass `-DBUILD_CLI=ON` in the `cmake` command. For building with GPU support, use `-DUSEGPU=ON` flag in the `cmake` command. Here are the few notes on building with GPU support.
-
-* Currently, GPU builds on Mac OS is not supported. 
-* Due to the limitation of CUDA Development toolkit, upto GCC 9.X versions can be used on Linux. 
-* On Windows, we assume the correct version of CUDA toolkit and compiler is installed that is compatible with the Microsoft Visual Studio C++ compiler. 
-
-Below is an example of how to build Nyxus inside a `conda` environment on Linux.
-
-```bash
-git clone https://github.com/PolusAI/nyxus.git
-cd nyxus
-conda install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_linux_compiler.txt --file ci-utils/envs/conda_py.txt --file ci-utils/envs/conda_linux_gpu.txt
-mkdir build
-cd build
-cmake -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX ..
-make -j4
-```
-If you are building on Mac or Windows, skip the dependencies from `ci-utils/envs/conda_linux_compiler.txt` and `ci-utils/envs/conda_linux_gpu.txt`
-
-To install the python package in the `conda` environment on Linux, use the following direction.
-```bash
-git clone https://github.com/PolusAI/nyxus.git
-cd nyxus
-conda install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_linux_compiler.txt --file ci-utils/envs/conda_linux_gpu.txt --file ci-utils/envs/conda_py.txt
-CMAKE_ARGS=" -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX " python setup.py install
-```
-
-We also provide an example script that downloads `conda`, installs the necessary dependencies and then builds both the CLI and the python library on Linux. To run the script, do the following.
-```bash
-git clone https://github.com/PolusAI/nyxus.git
-cd nyxus/ci-utils
-./build_conda.sh ..
-```
-### Without Using Conda
-To build Nyxus outside of a `conda` environment, use the following example.
-```bash
-git clone https://github.com/PolusAI/nyxus.git
-cd nyxus
-mkdir build
-cd build
-bash ../ci-utils/install_prereq_linux.sh
-cmake -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=./local_install -DCMAKE_INSTALL_PREFIX=./local_install ..
-make -j4
-```
-
-## Running via Docker 
-Running Nyxus from a local directory freshly made Docker container is a good idea. It allows one to test-run conteinerized Nyxus before it reaches Docker cloud deployment.
-
-To search available Nyxus images run command 
-```
-docker search nyxus
-```
-and you'll be shown that it's available at least via organization 'polusai'. To pull it, run
-```
-docker pull polusai/nyxus
-``` 
-
-The following command line is an example of running the dockerized feature extractor (image hash 87f3b560bbf2) with only intensity features selected:
-```
-docker run -it [--gpus all] --mount type=bind,source=/images/collections,target=/data 87f3b560bbf2 --intDir=/data/c1/int --segDir=/data/c1/seg --outDir=/data/output --filePattern=.* --csvFile=separatecsv --features=entropy,kurtosis,skewness,max_intensity,mean_intensity,min_intensity,median,mode,standard_deviation
-```
-
-### Install from sources and package into a Docker image
-
-If you want to build your own Nyxus Docker container we provide a convenient shell script:
-
-```
-./ci-utils/build-docker.sh
-```
-
-
-## Dependencies
-Nyxus is tested with Python 3.6+. Nyxus relies on the the following packages:
-
-[pybind11](https://github.com/pybind/pybind11) >= 2.8.1 <br>
-[libTIFF](http://www.libtiff.org) >= 3.6.1 <br>
-[Z5](https://github.com/constantinpape/z5) >=2.0.15 <br>
-Each of these dependencies also have hierarchical dependencies and so we recommend using the `conda` build system when building from source.
-
-## WIPP Usage
-
-Nyxus is available as plugin for [WIPP](https://isg.nist.gov/deepzoomweb/software/wipp). 
-
-__Label image collection:__
-The input should be a labeled image in tiled OME TIFF format (.ome.tif). Extracting morphology features, Feret diameter statistics, neighbors, hexagonality and polygonality scores requires the segmentation labels image. If extracting morphological features is not required, the label image collection can be not specified.
-
-__Intensity image collection:__
-Extracting intensity-based features requires intensity image in tiled OME TIFF format. This is an optional parameter - the input for this parameter is required only when intensity-based features needs to be extracted.
-
-__File pattern:__
-Enter file pattern to match the intensity and labeled/segmented images to extract features (https://pypi.org/project/filepattern/) Filepattern will sort and process files in the labeled and intensity image folders alphabetically if universal selector(.*.ome.tif) is used. If a more specific file pattern is mentioned as input, it will get matches from labeled image folder and intensity image folder based on the pattern implementation.
-
-__Pixel distance:__
-Enter value for this parameter if neighbors touching cells needs to be calculated. The default value is 5. This parameter is optional.
-
-__Features:__
-Comma separated list of features to be extracted. If all the features are required, then choose option __*all*__.
-
-__Csvfile:__
-There are 2 options available under this category. __*Separatecsv*__ - to save all the features extracted for each image in separate csv file. __*Singlecsv*__ - to save all the features extracted from all the images in the same csv file.
-
-__Embedded pixel size:__
-This is an optional parameter. Use this parameter only if units are present in the metadata and want to use those embedded units for the features extraction. If this option is selected, value for the length of unit and pixels per unit parameters are not required.
-
-__Length of unit:__
-Unit name for conversion. This is also an optional parameter. This parameter will be displayed in plugin's WIPP user interface only when embedded pixel size parameter is not selected (ckrresponding check box checked).
-
-__Pixels per unit:__
-If there is a metric mentioned in Length of unit, then Pixels per unit cannot be left blank and hence the scale per unit value must be mentioned in this parameter. This parameter will be displayed in plugin's user interface only when embedded pixel size parameter is not selected.
-
-__Note:__ If Embedded pixel size is not selected and values are entered in Length of unit and Pixels per unit, then the metric unit mentioned in length of unit will be considered.
-If Embedded pixel size, Length of unit and Pixels per unit is not selected and the unit and pixels per unit fields are left blank, the unit will be assumed to be pixels.
-
-__Output:__
-The output is a csv file containing the value of features required.
-
-For more information on WIPP, visit the [official WIPP page](https://github.com/usnistgov/WIPP/tree/master/user-guide).
-
 ## Nested features 
 
 A separate command line executable "nyxushie" for the hierarchical ROI analysis by finding nested ROIs and aggregating features of child ROIs within corresponding parent features is available. Its command line format is:
@@ -418,3 +301,127 @@ the parent-child map remains the same but the `featurize` result becomes
     5                 NaN       NaN       NaN       NaN  0.181548  NaN  NaN  NaN  NaN  NaN  ...
 
 ```
+
+## Building from source
+
+Nyxus can either be build inside a `conda` environment or independently outside of it. For the later case, we provide a script to make it easier to download and build all the necessary dependencies.
+
+### Inside Conda
+Nyxus uses a CMake build system. To build the command line interface, pass `-DBUILD_CLI=ON` in the `cmake` command. For building with GPU support, use `-DUSEGPU=ON` flag in the `cmake` command. Here are the few notes on building with GPU support.
+
+* Currently, GPU builds on Mac OS is not supported. 
+* Due to the limitation of CUDA Development toolkit, upto GCC 9.X versions can be used on Linux. 
+* On Windows, we assume the correct version of CUDA toolkit and compiler is installed that is compatible with the Microsoft Visual Studio C++ compiler. 
+
+Below is an example of how to build Nyxus inside a `conda` environment on Linux.
+
+```bash
+git clone https://github.com/PolusAI/nyxus.git
+cd nyxus
+conda install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_linux_compiler.txt --file ci-utils/envs/conda_py.txt --file ci-utils/envs/conda_linux_gpu.txt
+mkdir build
+cd build
+cmake -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX ..
+make -j4
+```
+If you are building on Mac or Windows, skip the dependencies from `ci-utils/envs/conda_linux_compiler.txt` and `ci-utils/envs/conda_linux_gpu.txt`
+
+To install the python package in the `conda` environment on Linux, use the following direction.
+```bash
+git clone https://github.com/PolusAI/nyxus.git
+cd nyxus
+conda install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_linux_compiler.txt --file ci-utils/envs/conda_linux_gpu.txt --file ci-utils/envs/conda_py.txt
+CMAKE_ARGS=" -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX " python setup.py install
+```
+
+We also provide an example script that downloads `conda`, installs the necessary dependencies and then builds both the CLI and the python library on Linux. To run the script, do the following.
+```bash
+git clone https://github.com/PolusAI/nyxus.git
+cd nyxus/ci-utils
+./build_conda.sh ..
+```
+### Without Using Conda
+To build Nyxus outside of a `conda` environment, use the following example.
+```bash
+git clone https://github.com/PolusAI/nyxus.git
+cd nyxus
+mkdir build
+cd build
+bash ../ci-utils/install_prereq_linux.sh
+cmake -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=./local_install -DCMAKE_INSTALL_PREFIX=./local_install ..
+make -j4
+```
+
+## Running via Docker 
+Running Nyxus from a local directory freshly made Docker container is a good idea. It allows one to test-run conteinerized Nyxus before it reaches Docker cloud deployment.
+
+To search available Nyxus images run command 
+```
+docker search nyxus
+```
+and you'll be shown that it's available at least via organization 'polusai'. To pull it, run
+```
+docker pull polusai/nyxus
+``` 
+
+The following command line is an example of running the dockerized feature extractor (image hash 87f3b560bbf2) with only intensity features selected:
+```
+docker run -it [--gpus all] --mount type=bind,source=/images/collections,target=/data 87f3b560bbf2 --intDir=/data/c1/int --segDir=/data/c1/seg --outDir=/data/output --filePattern=.* --csvFile=separatecsv --features=entropy,kurtosis,skewness,max_intensity,mean_intensity,min_intensity,median,mode,standard_deviation
+```
+
+### Install from sources and package into a Docker image
+
+If you want to build your own Nyxus Docker container we provide a convenient shell script:
+
+```
+./ci-utils/build-docker.sh
+```
+
+
+## Dependencies
+Nyxus is tested with Python 3.6+. Nyxus relies on the the following packages:
+
+[pybind11](https://github.com/pybind/pybind11) >= 2.8.1 <br>
+[libTIFF](http://www.libtiff.org) >= 3.6.1 <br>
+[Z5](https://github.com/constantinpape/z5) >=2.0.15 <br>
+Each of these dependencies also have hierarchical dependencies and so we recommend using the `conda` build system when building from source.
+
+## WIPP Usage
+
+Nyxus is available as plugin for [WIPP](https://isg.nist.gov/deepzoomweb/software/wipp). 
+
+__Label image collection:__
+The input should be a labeled image in tiled OME TIFF format (.ome.tif). Extracting morphology features, Feret diameter statistics, neighbors, hexagonality and polygonality scores requires the segmentation labels image. If extracting morphological features is not required, the label image collection can be not specified.
+
+__Intensity image collection:__
+Extracting intensity-based features requires intensity image in tiled OME TIFF format. This is an optional parameter - the input for this parameter is required only when intensity-based features needs to be extracted.
+
+__File pattern:__
+Enter file pattern to match the intensity and labeled/segmented images to extract features (https://pypi.org/project/filepattern/) Filepattern will sort and process files in the labeled and intensity image folders alphabetically if universal selector(.*.ome.tif) is used. If a more specific file pattern is mentioned as input, it will get matches from labeled image folder and intensity image folder based on the pattern implementation.
+
+__Pixel distance:__
+Enter value for this parameter if neighbors touching cells needs to be calculated. The default value is 5. This parameter is optional.
+
+__Features:__
+Comma separated list of features to be extracted. If all the features are required, then choose option __*all*__.
+
+__Csvfile:__
+There are 2 options available under this category. __*Separatecsv*__ - to save all the features extracted for each image in separate csv file. __*Singlecsv*__ - to save all the features extracted from all the images in the same csv file.
+
+__Embedded pixel size:__
+This is an optional parameter. Use this parameter only if units are present in the metadata and want to use those embedded units for the features extraction. If this option is selected, value for the length of unit and pixels per unit parameters are not required.
+
+__Length of unit:__
+Unit name for conversion. This is also an optional parameter. This parameter will be displayed in plugin's WIPP user interface only when embedded pixel size parameter is not selected (ckrresponding check box checked).
+
+__Pixels per unit:__
+If there is a metric mentioned in Length of unit, then Pixels per unit cannot be left blank and hence the scale per unit value must be mentioned in this parameter. This parameter will be displayed in plugin's user interface only when embedded pixel size parameter is not selected.
+
+__Note:__ If Embedded pixel size is not selected and values are entered in Length of unit and Pixels per unit, then the metric unit mentioned in length of unit will be considered.
+If Embedded pixel size, Length of unit and Pixels per unit is not selected and the unit and pixels per unit fields are left blank, the unit will be assumed to be pixels.
+
+__Output:__
+The output is a csv file containing the value of features required.
+
+For more information on WIPP, visit the [official WIPP page](https://github.com/usnistgov/WIPP/tree/master/user-guide).
+
