@@ -68,8 +68,9 @@ jobs:
         auto-activate-base: false
 
     - name: Install Conda Dependencies
+      working-directory: ${{github.workspace}}
       run: |
-        conda install pytest requests --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt --file ${{github.workspace}}/ci-utils/envs/conda_py.txt
+        conda install pytest requests --file ./ci-utils/envs/conda_cpp.txt --file ./ci-utils/envs/conda_py.txt
 
     - name: Install Nyxus
       working-directory: ${{github.workspace}}
