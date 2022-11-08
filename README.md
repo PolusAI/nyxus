@@ -2,8 +2,9 @@
 
 [![Documentation Status](https://readthedocs.org/projects/nyxus/badge/?version=latest)](https://nyxus.readthedocs.io/en/latest/)
 [![PyPI](https://img.shields.io/pypi/v/nyxus.svg)](https://pypi.org/project/nyxus/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/nyxus)](https://pypi.org/project/nyxus/)
 [![Conda](https://img.shields.io/conda/v/conda-forge/nyxus)](https://anaconda.org/conda-forge/nyxus)
-[![Downloads](https://img.shields.io/pypi/dm/nyxus)](https://pypi.org/project/nyxus/)
+[![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/nyxus)](https://anaconda.org/conda-forge/nyxus)
 
 A scalable library for calculating features from intensity-label image data
 
@@ -18,7 +19,7 @@ The docs can be found at [Read the Docs](https://nyxus.readthedocs.io/en/latest/
 
 ## Getting started 
 
-For use in python, the latest version of Nyxus can be installed via the [Pip package manager](https://pypi.org/project/pip) or [conda package manager](https://docs.conda.io/en/latest/):
+For use in python, the latest version of Nyxus can be installed via the [Pip package manager](https://pypi.org/project/pip) or [Conda package manager](https://docs.conda.io/en/latest/):
 
 ```
 pip install nyxus
