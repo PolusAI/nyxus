@@ -1,4 +1,4 @@
-from .backend import initialize_environment, featurize_directory_imp, featurize_fname_lists_imp, findrelations_imp, use_gpu, gpu_available 
+from .backend import initialize_environment, featurize_directory_imp, featurize_directory_imp_fast, featurize_fname_lists_imp, findrelations_imp, use_gpu, gpu_available 
 import os
 import numpy as np
 import pandas as pd
@@ -96,6 +96,7 @@ class Nyxus:
         intensity_dir: str,
         label_dir: Optional[str] = None,
         file_pattern: Optional[str] = ".*",
+        use_fastloop: bool = False
     ):
         """Extract features from all the images satisfying the file pattern of provided image directories.
 
@@ -133,7 +134,7 @@ class Nyxus:
         if label_dir is None:
             label_dir = intensity_dir
 
-        header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern)
+        header, string_data, numeric_data = featurize_directory_imp_fast (intensity_dir, label_dir, file_pattern, use_fastloop)
 
         df = pd.concat(
             [
