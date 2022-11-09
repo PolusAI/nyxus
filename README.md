@@ -2,9 +2,9 @@
 
 [![Documentation Status](https://readthedocs.org/projects/nyxus/badge/?version=latest)](https://nyxus.readthedocs.io/en/latest/)
 [![PyPI](https://img.shields.io/pypi/v/nyxus.svg)](https://pypi.org/project/nyxus/)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/nyxus)](https://pypi.org/project/nyxus/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/nyxus?label=PyPI%20downloads)](https://pypi.org/project/nyxus/)
 [![Conda](https://img.shields.io/conda/v/conda-forge/nyxus)](https://anaconda.org/conda-forge/nyxus)
-[![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/nyxus)](https://anaconda.org/conda-forge/nyxus)
+[![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/nyxus?label=Conda%20downloads)](https://anaconda.org/conda-forge/nyxus)
 
 A scalable library for calculating features from intensity-label image data
 
