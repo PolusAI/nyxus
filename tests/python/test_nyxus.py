@@ -61,7 +61,7 @@ class TestNyxus():
             seg = str(self.PATH/dset/"train/masks")
             
             # cpu gabor
-            cpu_nyx = nyxus.Nyxus(["*ALL_INTENSITY*"])
+            cpu_nyx = nyxus.Nyxus(["*ALL_MORPHOLOGY*"])
             cpu_nyx.featurize_directory
             cpu_features = benchmark(cpu_nyx.featurize_directory,intens, seg, ".*", use_fastloop)
             
@@ -78,8 +78,7 @@ class TestNyxus():
             seg = str(self.PATH/dset/"train/masks")
             
             # cpu gabor
-            cpu_nyx = nyxus.Nyxus(["*ALL_INTENSITY*"])
-            cpu_nyx.featurize_directory
+            cpu_nyx = nyxus.Nyxus(["*ALL_MORPHOLOGY*"])
             cpu_features = cpu_nyx.featurize_directory(intens, seg, ".*", False)
             
             fast_features = cpu_nyx.featurize_directory(intens, seg, ".*", True)

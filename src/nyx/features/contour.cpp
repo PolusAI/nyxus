@@ -1,3 +1,6 @@
+#include "pixel.h"
+#include <cstdint>
+#include <vector>
 #define _USE_MATH_DEFINES	// For M_PI, etc.
 #include <cmath>
 #include <memory>
@@ -30,8 +33,169 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 		});
 }
 
+void ContourFeature::buildRegularContourFast(LR& r)
+{
+
+	r.contour.clear();
+
+	// Order the RLE
+	std::vector<Pixel2> rle = r.rle_pixels;
+	std::sort (rle.begin(), rle.end(), compare_locations);
+
+	// Get starting points of each row
+	// Also merge overlapping RLE
+	std::vector<uint32_t> rows;
+	rows.push_back(0);
+	for (uint32_t i = 2; i < rle.size(); i+=2) {
+
+		// Finds row boundary
+		if (rle[i].y != rle[i-1].y) {
+			rows.push_back(i);
+			continue;
+		}
+
+		// Find overlapping RLE and merge them
+		if (rle[i].x-1 == rle[i-1].x) {
+			rle[i-1] = rle[i+1];
+			rle[i].x = rle[i+1].x+1;
+		}
+	}
+	rows.push_back(rle.size());
+
+	// The first row must be entirely on the edge, so store it in the contour
+	uint32_t pix_ind = 0;
+	for (uint32_t i = 0; i < rows[1]; i+=2) {
+		uint32_t n = rle[i+1].x - rle[i].x + 1;
+		for (uint32_t ind = pix_ind; ind < pix_ind + n; ++ind) {
+			Pixel2 p(r.raw_pixels[ind].x,r.raw_pixels[ind].y,r.raw_pixels[ind].inten);
+			r.contour.push_back(p);
+		}
+		pix_ind += n;
+	}
+
+	// Loop over rows from the 2nd row until the 2nd to last row
+	for (uint32_t p = 1; p < rows.size()-2; ++p) {
+		uint32_t prev = rows[p-1];
+		uint32_t prev_end = rows[p];
+		uint32_t next = rows[p+1];
+		uint32_t next_end = rows[p+2];
+
+		// Find the intersection of previous and next rows
+		std::vector<uint32_t> overlap;
+		while (prev < prev_end && next < next_end) {
+			if (rle[prev].x > rle[next+1].x) {
+				next += 2;
+				continue;
+			}
+			if (rle[next].x > rle[prev+1].x) {
+				prev += 2;
+				continue;
+			}
+
+			// If we get to this point, we have found overlap
+			overlap.push_back(std::max(rle[prev].x,rle[next].x));
+			overlap.push_back(std::min(rle[prev+1].x,rle[next+1].x));
+
+			// Determine whether to advance next or previous
+			if (rle[prev+1].x > rle[next+1].x) {
+				next += 2;
+			} else {
+				prev += 2;
+			}
+		}
+
+		// If there is no overlap, all pixels are edge pixels
+		if (overlap.empty()) {
+			for (uint32_t current = rows[p]; current < rows[p+1]; current+=2) {
+				uint32_t n = rle[current+1].x - rle[current].x + 1;
+				for (uint32_t ind = pix_ind; ind < pix_ind + n; ++ind) {
+					Pixel2 p(r.raw_pixels[ind].x,r.raw_pixels[ind].y,r.raw_pixels[ind].inten);
+					r.contour.push_back(p);
+				}
+				pix_ind += n;
+			}
+		} else {
+			// Add pixels to non-overlapping regions
+			uint32_t oind = 0;
+			uint32_t offset = 0;
+			std::vector<uint32_t> nonoverlap;
+			for (uint32_t current = rows[p]; current < rows[p+1]; current+=2) {
+
+				// skip over invalid rle
+				if (rle[current+1].x < rle[current].x) {
+					continue;
+				}
+				
+				// The first pixel is always on the edge
+				nonoverlap.push_back(offset);
+
+				uint32_t x_start = rle[current].x;
+
+				while (oind < overlap.size()) {
+
+					if (overlap[oind+1] < rle[current].x) {
+						oind += 2;
+						continue;
+					}
+					
+					if (overlap[oind] < rle[current+1].x) {
+						long end = std::max(rle[current].x + 1, (long) overlap[oind]);
+						long start = std::min(rle[current + 1].x, (long) overlap[oind + 1]+1);
+						nonoverlap.push_back(end - x_start + offset);
+						nonoverlap.push_back(start - x_start + offset);
+					}
+
+					if (overlap[oind+1] < rle[current+1].x) {
+						oind += 2;
+					} else {
+						break;
+					}
+				}
+
+				// The last pixel is always on the edge
+				// In the case of a single pixel gap, it might already be there
+				uint32_t last = rle[current+1].x - x_start + 1 + offset;
+				if (nonoverlap[nonoverlap.size()-2] == last) {
+					nonoverlap.pop_back();
+				} else {
+					nonoverlap.push_back(last);
+				}
+
+				offset += rle[current+1].x - rle[current].x + 1;
+			}
+
+			// Add pixels to the contour
+			for (uint32_t ind = 0; ind < nonoverlap.size(); ind += 2) {
+				for (uint32_t pind = nonoverlap[ind]; pind < nonoverlap[ind+1]; ++pind) {
+					Pixel2 p(r.raw_pixels[pix_ind+pind].x, r.raw_pixels[pix_ind+pind].y, r.raw_pixels[pix_ind+pind].inten);
+					r.contour.push_back(p);
+				}
+			}
+			pix_ind += offset;
+		}
+	}
+
+	// The last row must be entirely on the edge, so store it in the contour
+	pix_ind = r.raw_pixels.size();
+	for (uint32_t i = rows[rows.size()-2]; i < rows[rows.size()-1]; i+=2) {
+		uint32_t n = rle[i+1].x - rle[i].x + 1;
+		pix_ind -= n;
+		for (uint32_t ind = pix_ind; ind < pix_ind + n; ++ind) {
+			Pixel2 p(r.raw_pixels[ind].x,r.raw_pixels[ind].y,r.raw_pixels[ind].inten);
+			r.contour.push_back(p);
+		}
+	}
+}
+
 void ContourFeature::buildRegularContour(LR& r)
 {
+
+	// If RLE is present, use it
+	if (!r.rle_pixels.empty()) {
+		buildRegularContourFast(r);
+		return;
+	}
+
 	//==== Pad the image
 
 	int width = r.aux_image_matrix.width,
@@ -179,6 +343,11 @@ void ContourFeature::buildRegularContour(LR& r)
 	}
 }
 
+bool ContourFeature::compare_locations (const Pixel2& lhs, const Pixel2& rhs)
+{
+	return (lhs.y < rhs.y) || (lhs.y == rhs.y && lhs.x < rhs.x);
+}
+
 void ContourFeature::buildWholeSlideContour(LR& r)
 {
 	// Push the 4 slide vertices of dummy intensity 999
@@ -265,8 +434,10 @@ namespace Nyxus
 		if (r.roi_disabled)
 			return;
 
-		//==== Calculate ROI's image matrix
-		r.aux_image_matrix.calculate_from_pixelcloud (r.raw_pixels, r.aabb);
+		//==== Calculate ROI's image matrix if no RLE is present
+		if (r.rle_pixels.empty()) {
+			r.aux_image_matrix.calculate_from_pixelcloud (r.raw_pixels, r.aabb);
+		}
 
 		//==== Contour, ROI perimeter, equivalent circle diameter
 		ContourFeature f;

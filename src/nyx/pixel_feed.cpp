@@ -1,3 +1,4 @@
+#include "features/pixel.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -67,6 +68,14 @@ namespace Nyxus
 		// Update basic ROI info (info that doesn't require costly calculations)
 		LR& r = roiData[label];
 		r.raw_pixels.push_back(Pixel2(x, y, intensity));
+	}
+
+	void feed_rle_2_cache(int x1, int x2, PixIntens i1, PixIntens i2, int y, int label)
+	{
+		// Update basic ROI info (info that doesn't require costly calculations)
+		LR& r = roiData[label];
+		r.rle_pixels.push_back(Pixel2(x1, y, i1));
+		r.rle_pixels.push_back(Pixel2(x2-1, y, i2));
 	}
 
 }

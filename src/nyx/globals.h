@@ -7,6 +7,7 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include "features/pixel.h"
 #include "featureset.h"
 #include "feature_method.h"
 #include "feature_mgr.h"
@@ -82,6 +83,8 @@ namespace Nyxus
 	/// @param label -- label of pixel's segment 
 	/// @param intensity -- pixel's intensity
 	void feed_pixel_2_cache(int x, int y, PixIntens intensity, int label);
+	
+	void feed_rle_2_cache(int x1, int x2, PixIntens i1, PixIntens i2, int y, int label);
 
 	// System resources
 	unsigned long long getAvailPhysMemory();

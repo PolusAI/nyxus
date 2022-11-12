@@ -42,6 +42,7 @@ public:
 
 	bool roi_disabled = false;
 
+	std::vector <Pixel2> rle_pixels;
 	std::vector <Pixel2> raw_pixels;
 	OutOfRamPixelCloud osized_pixel_cloud;
 	unsigned int aux_area = 0;

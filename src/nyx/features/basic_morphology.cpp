@@ -36,10 +36,19 @@ void BasicMorphologyFeatures::calculate(LR& r)
 	// --CENTROID_XY
 	double cen_x = 0.0,
 		cen_y = 0.0;
-	for (auto& px : r.raw_pixels)
-	{
-		cen_x += px.x;
-		cen_y += px.y;
+	if (r.rle_pixels.empty()) {
+		for (auto& px : r.raw_pixels)
+		{
+			cen_x += px.x;
+			cen_y += px.y;
+		}
+	} else {
+		for (int i = 0; i < r.rle_pixels.size(); i+=2) {
+			double n = r.rle_pixels[i+1].x - r.rle_pixels[i].x + 1;
+			double s = r.rle_pixels[i+1].x + r.rle_pixels[i].x;
+			cen_x += n/2 * s;
+			cen_y += r.rle_pixels[i].y * n;
+		}
 	}
 
 	val_CENTROID_X = cen_x;
@@ -62,10 +71,19 @@ void BasicMorphologyFeatures::calculate(LR& r)
 
 	//==== Basic morphology :: Centroids
 	val_CENTROID_X = val_CENTROID_Y = 0;
-	for (auto& px : r.raw_pixels)
-	{
-		val_CENTROID_X += px.x;
-		val_CENTROID_Y += px.y;
+	if (r.rle_pixels.empty()) {
+		for (auto& px : r.raw_pixels)
+		{
+			val_CENTROID_X += px.x;
+			val_CENTROID_Y += px.y;
+		}
+	} else {
+		for (int i = 0; i < r.rle_pixels.size(); i+=2) {
+			double n = r.rle_pixels[i+1].x - r.rle_pixels[i].x + 1;
+			double s = r.rle_pixels[i+1].x + r.rle_pixels[i].x;
+			val_CENTROID_X += n/2 * s;
+			val_CENTROID_Y += r.rle_pixels[i].y * n;
+		}
 	}
 	val_CENTROID_X /= n;
 	val_CENTROID_Y /= n;

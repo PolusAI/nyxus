@@ -106,7 +106,6 @@ namespace Nyxus
 		for (unsigned int row = 0; row < nth; row++)
 			for (unsigned int col = 0; col < ntv; col++)
 			{
-				// Fetch the tile 
 				bool ok = theImLoader.load_tile(row, col);
 				if (!ok)
 				{
@@ -233,34 +232,37 @@ namespace Nyxus
 							feed_pixel_2_cache (xi, y, dataI[xi+i], label);
 
 						}
+
+						feed_rle_2_cache(x1, x2, dataI[x1+i], dataI[x2+i], y, label);
 					}
 				}
 
 				i += x_stream;
 				x = x_stream;
 
-				while (x < x_max) {
-					
-					// Skip non-mask pixels
-					auto label = dataL[i];
-					if (! label) {
-						++x, ++i;
-						continue;
-					}
+				stream = rle_encode_stream(dataL.data() + i, (uint16_t) (x_max - x_stream));
 
-					// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
-					if (! theEnvironment.singleROI && ! std::binary_search(whiteList.begin(), whiteList.end(), label)) //--slow-- if (std::find(PendingRoiLabels.begin(), PendingRoiLabels.end(), label) == PendingRoiLabels.end())
-					{
-						++x, ++i;
-						continue;
-					}
+				ind = 0;
+				while (ind+1 < stream.offsets.size()) {
+					uint16_t x1 = stream.offsets[ind++];
+					auto label = dataL[i+x1];
 
-					// Collapse all the labels to one if single-ROI mde is requested
-					if (theEnvironment.singleROI){
-						label = 1;
+					if (label > 0) {
+						uint16_t x2 = stream.offsets[ind];
+
+						if (! theEnvironment.singleROI && ! std::binary_search(whiteList.begin(), whiteList.end(), label)) //--slow-- if (std::find(PendingRoiLabels.begin(), PendingRoiLabels.end(), label) == PendingRoiLabels.end())
+						{
+							continue;
+						}
+
+						for (int xi=x1; xi<x2; xi++) {
+
+							feed_pixel_2_cache (xi+x, y, dataI[xi+i], label);
+
+						}
+
+						feed_rle_2_cache(x1+x, x2+x, dataI[x1+i], dataI[x2+i], y, label);
 					}
-					feed_pixel_2_cache (x, y, dataI[i], label);
-					++x, ++i;
 				}
 
 				++y;
