@@ -2,7 +2,9 @@
 
 [![Documentation Status](https://readthedocs.org/projects/nyxus/badge/?version=latest)](https://nyxus.readthedocs.io/en/latest/)
 [![PyPI](https://img.shields.io/pypi/v/nyxus.svg)](https://pypi.org/project/nyxus/)
-[![Downloads](https://img.shields.io/pypi/dm/nyxus)](https://pypi.org/project/nyxus/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/nyxus?label=PyPI%20downloads)](https://pypi.org/project/nyxus/)
+[![Conda](https://img.shields.io/conda/v/conda-forge/nyxus)](https://anaconda.org/conda-forge/nyxus)
+[![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/nyxus?label=Conda%20downloads)](https://anaconda.org/conda-forge/nyxus)
 
 A scalable library for calculating features from intensity-label image data
 
@@ -17,10 +19,15 @@ The docs can be found at [Read the Docs](https://nyxus.readthedocs.io/en/latest/
 
 ## Getting started 
 
-For use in python, the latest version of Nyxus can be installed via the [Pip package manager](https://pypi.org/project/pip):
+For use in python, the latest version of Nyxus can be installed via the [Pip package manager](https://pypi.org/project/pip) or [Conda package manager](https://docs.conda.io/en/latest/):
 
 ```
 pip install nyxus
+```
+
+or 
+```
+conda install nyxus -c conda-forge
 ```
 
 Usage is very straightforward. Given `intensities` and `labels` folders, Nyxus pairs up intensity-label pairs and extracts features from all of them. A summary of the avaialble feature are [listed below](#available-features).
@@ -87,7 +94,7 @@ Nyxus provides a set of pixel intensity, morphology, texture, intensity distribu
 | ROBUST_MEAN_ABSOLUTE_DEVIATION  | Robust mean absolute deviation | 
 | MASS_DISPLACEMENT  | ROI mass displacement | 
 | AREA_PIXELS_COUNT | ROI area in the number of pixels |
-| COMPACTNESS  | Mean squared distance of the ROI's pixels from the centroid divided by the area |
+| COMPACTNESS  | Mean squared distance of the object’s pixels from the centroid divided by the area |
 | BBOX_YMIN | Y-position and size of the smallest axis-aligned box containing the ROI |
 | BBOX_XMIN | X-position and size of the smallest axis-aligned box containing the ROI |
 | BBOX_HEIGHT | Height of the smallest axis-aligned box containing the ROI |
@@ -111,22 +118,8 @@ Nyxus provides a set of pixel intensity, morphology, texture, intensity distribu
 | NGTDM | Neighbouring gray tone difference matrix features
 | ZERNIKE2D, FRAC_AT_D, RADIAL_CV, MEAN_FRAC | Radial distribution features
 | GABOR | A set of Gabor filters of varying frequencies and orientations |
-| 3D_MEAN, 3D_MEDIAN, 3D_MIN, 3D_MAX, 3D_MODE | 3-dimensional mean, median, minimum, maximum, and mode |
-| 3D_STANDARD_DEVIATION, 3D_STANDARD_ERROR| 3-dimensional standard deviation and standard error |
-| 3D_SKEWNESS, 3D_KURTOSIS, 3D_HYPERSKEWNESS, 3D_HYPERFLATNESS | 3-dimensional higher standardized moments |
-| 3D_MEAN_ABSOLUTE_DEVIATION | 3-dimensional mean absolute deviation |
-| 3D_ENERGY, 3D_INTEGRATED_INTENSITY | 3-dimensional pixel intensity energy and integrated intensity |
-| 3D_ROOT_MEAN_SQUARED | 3-dimensional root mean squared pixel intensity |
-| 3D_ENTROPY | 3-dimensional pixel intensity entropy |
-| 3D_UNIFORMITY | 3-dimensional pixel intensity uniformity |
-| 3D_P01 ... 3D_P99, 3D_INTERQUARTILE_RANGE | 3-dimensional pixel intensity percentiles and interquartile range |
-| 3D_ROBUST_MEAN_ABSOLUTE_DEVIATION | 3-dimensional pixel intensity P10-90 robust mean absolute deviation |
-| 3D_RAW_MOMENT_*pqr* | a set of 3-dimensional raw moments of orders p,q,r |
-| 3D_NORM_RAW_MOMENT_*pqr* | a set of 3-dimensional normalized raw moments of orders p,q,r |
-| 3D_CENTRAL_MOMENT_*pqr* | a set of 3-dimensional central moments of orders p,q,r |
-| 3D_NORM_CENTRAL_MOMENT_*pqr* | a set of 3-dimensional normalized central moments of orders p,q,r |
 
-For the complete list of features see [Nyxus provided features](docs/source/featurelist.md)
+For the complete list of features see [Nyxus provided features](docs/featurelist.md)
 
 ## Feature groups
 
@@ -165,42 +158,149 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 --pixelsPerunit|Enter the number of pixels per unit of the metric|Input|number
 --outDir|Output collection|Output|csvCollection
 --coarseGrayDepth|Custom number of levels in grayscale denoising used in texture features (default: 256)|Input|integer
---z | Z-index of a layer. Used in processing 3D images, ignored for 2D images | Input | integer
 ---
 
-## 3D features
-
-TIFF images having multiple layers represented as a feature directory are treated as 3-dimensional images with the layer index as z-index in addition to regular x and y pixel indices. 3D features are automatically calculated for such images if feature group \*all\* is requested. Alternatively, specific 3D features can be requested from the full feature set [Nyxus provided features](docs/featurelist.md). Along with 3D features, Nyxus calculates regular 2D features for a specified layer or for the mid-layer otherwise. 
-
-### Example: running Nyxus to process images of specific image channel
+### Example: Running Nyxus to process images of specific image channel
 
 Suppose we need to process intensity/mask images of channel 1 :
 ```
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/image_collection/intensity --segDir=/path/to/image_collection/segmentation --outDir=/path/to/output --filePattern=.*_c1\.ome\.tif --csvFile=singlecsv 
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/output-ratbrain --filePattern=.*_c1\.ome\.tif --csvFile=singlecsv 
 ```
-### Example: running Nyxus to process specific image 
+### Example: Running Nyxus to process specific image 
 
 Suppose we need to process intensity/mask file p1_y2_r68_c1.ome.tif :
 ```
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/image_collection/intensity --segDir=/path/to/image_collection/segmentation --outDir=/path/to/output --filePattern=p1_y2_r68_c1\.ome\.tif --csvFile=singlecsv 
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/output-ratbrain --filePattern=p1_y2_r68_c1\.ome\.tif --csvFile=singlecsv 
 ```
 
-### Example: running Nyxus to extract only intensity and basic morphology features
+### Example: Running Nyxus to extract only intensity and basic morphology features
 
 ```
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/image_collection/intensity --segDir=/path/to/image_collection/segmentation --outDir=/path/to/output --filePattern=.* --csvFile=singlecsv 
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/output-ratbrain --filePattern=.* --csvFile=singlecsv 
 ```
 
-### Example: running Nyxus to extract all the 3D features from a collection of 3-dimensional intensity and mask images and all 2D features from a specified layer 17 (zero-based index)
+## Nested features 
+
+A separate command line executable "nyxushie" for the hierarchical ROI analysis by finding nested ROIs and aggregating features of child ROIs within corresponding parent features is available. Its command line format is:
+```
+nyxushie <segment image collection dir> <file pattern> <channel signature> <parent channel> <child channel> <features dir> [-aggregate=<aggregation method>]
+```
+where 
+
+*\<segment image collection dir\>* is directory of the segment images collection ;
+
+*\<file pattern\>* is a regular expression to filter files in \<segment image collection dir\> ;
+
+*\<channel signature\>* is a signature of the channel part in an image file name ;
+
+*\<parent channel\>* is an integer channel number where parent ROIs are expected ;
+
+*\<child channel\>* is an integer channel number where child ROIs are expected ;
+
+*\<features dir\>* is a directory used as the output of parent-child ROI relations and, if aggregation is requested, where CSV files of Nyxus features produced with Nyxus command line option --csvfile=separatecsv is located ;
+
+(optional) *\<aggregation method\>* is a method instructing how to aggregate child ROI features under a parent ROI. 
+
+Valid aggregation method options are: SUM, MEAN, MIN, MAX, or WMA (weighted mean average).
+
+__Example__: we need to process collection of mask images located in directory "\~/data/image-collection1/seg" considering only images named "train_.*\\.tif" whose channel information begins with characters "\_ch" (\_ch0, \_ch1, etc.) telling Nyxushie to treat channel 1 images as source of parent ROIs and channel 0 images as source of child ROIs. The output directory needs to be "\~/results/result1". The command line will be
+```
+nyxushie ~/data/image-collection1/seg train_.*\\.tif _ch 1 0 ~/results/result1
+```
+
+### Nested features Python API
+
+The nested features functionality can also be utilized in Python using the `Nested` class in `nyxus`. The `Nested` class
+contains two methods, `find_relations` and `featurize`. 
+
+The `find_relations` method takes in a path to the label files, along with a child 
+filepattern to identify the files in the child channel and a parent filepattern to match the files in the parent channel. The `find_relation` method 
+returns a Pandas DataFrame containing a mapping between parent ROIs and the respective child ROIs.
+
+The `featurize` method takes in the parent-child mapping along with the features of the ROIs in the child channel. If a list of aggregate functions
+is provided to the constructor, this method will return a pivoted DataFrame where the rows are the ROI labels and the columns are grouped by the features.
+
+
+__Example__: Using aggregate functions
+
+``` python
+
+from nyxus import Nyxus, Nested
+import numpy as np
+
+int_path = 'path/to/intensity'
+seg_path = 'path/to/segmentation'
+
+nyx = Nyxus(['GABOR'])
+
+child_features = nyx.featurize(int_path, seg_path, file_pattern='p[0-9]_y[0-9]_r[0-9]_c0\.ome\.tif')
+
+nest = Nested(['sum', 'mean', 'min', ('nanmean', lambda x: np.nanmean(x))])
+
+df = nest.find_relations(seg_path, 'p{r}_y{c}_r{z}_c1.ome.tif', 'p{r}_y{c}_r{z}_c0.ome.tif')
+
+df2 = nest.featurize(df, features)
+```
+
+The parent-child map is
+
+``` bash
+    Image              Parent_Label  Child_Label
+    0  /path/to/image          72             65
+    1  /path/to/image          71             66
+    2  /path/to/image          70             64
+    3  /path/to/image          68             61
+    4  /path/to/image          67             65
 
 ```
-./nyxus --z=17 --features=*all* --intDir=/path/to/3d_collection/intensity --segDir=/path/to/3d_collection/segmentation --outDir=/path/to/3d_collection/output --filePattern=.* --csvFile=singlecsv 
+
+and the aggregated DataFrame is 
+
+``` bash
+            GABOR_0                                  GABOR_1                                  GABOR_2              ... 
+            sum        mean      min       nanmean    sum      mean       min       nanmean   sum      mean        ...
+    label                                                                                                          ...                                                                                                      
+     1      24.010227  0.666951  0.000000  0.666951  19.096262  0.530452  0.001645  0.530452  17.037345  0.473260  ... 
+     2      13.374170  0.445806  0.087339  0.445806   7.279187  0.242640  0.075000  0.242640   6.390529  0.213018  ...  
+     3       5.941783  0.198059  0.000000  0.198059   3.364149  0.112138  0.000000  0.112138   2.426409  0.080880  ...  
+     4      13.428773  0.559532  0.000000  0.559532  12.021938  0.500914  0.008772  0.500914   9.938915  0.414121  ...  
+     5       6.535722  0.181548  0.000000  0.181548   1.833463  0.050930  0.000000  0.050930   2.083023  0.057862  ...
+
 ```
 
-### Example: assuming a collection of 3-dimensional 45-layer TIFF images, running Nyxus to extract all the 3D and 2D features from mid-layer 22 (45/2=22 integer zero-based index)
+__Example__: Without aggregate functions
 
+``` python
+
+from nyxus import Nyxus, Nested
+import numpy as np
+
+int_path = 'path/to/intensity'
+seg_path = 'path/to/segmentation'
+
+nyx = Nyxus(['GABOR'])
+
+child_features = nyx.featurize(int_path, seg_path, file_pattern='p[0-9]_y[0-9]_r[0-9]_c0\.ome\.tif')
+
+nest = Nested()
+
+df = nest.find_relations(seg_path, 'p{r}_y{c}_r{z}_c1.ome.tif', 'p{r}_y{c}_r{z}_c0.ome.tif')
+
+df2 = nest.featurize(df, features)
 ```
-./nyxus --features=*all* --intDir=/path/to/3d_collection/intensity --segDir=/path/to/3d_collection/segmentation --outDir=/path/to/3d_collection/output --filePattern=.* --csvFile=singlecsv 
+
+the parent-child map remains the same but the `featurize` result becomes
+
+``` bash
+                     GABOR_0                                                                ...    
+    Child_Label       1          2         3         4         5    6    7    8    9    10  ...    
+    label                                                                                   ...
+    1            0.666951       NaN       NaN       NaN       NaN  NaN  NaN  NaN  NaN  NaN  ...     
+    2                 NaN  0.445806       NaN       NaN       NaN  NaN  NaN  NaN  NaN  NaN  ...     
+    3                 NaN       NaN  0.198059       NaN       NaN  NaN  NaN  NaN  NaN  NaN  ...     
+    4                 NaN       NaN       NaN  0.559532       NaN  NaN  NaN  NaN  NaN  NaN  ...     
+    5                 NaN       NaN       NaN       NaN  0.181548  NaN  NaN  NaN  NaN  NaN  ...
+
 ```
 
 ## Building from source
@@ -326,126 +426,3 @@ The output is a csv file containing the value of features required.
 
 For more information on WIPP, visit the [official WIPP page](https://github.com/usnistgov/WIPP/tree/master/user-guide).
 
-## Nested features 
-
-A separate command line executable "nyxushie" for the hierarchical ROI analysis by finding nested ROIs and aggregating features of child ROIs within corresponding parent features is available. Its command line format is:
-```
-nyxushie <segment image collection dir> <file pattern> <channel signature> <parent channel> <child channel> <features dir> [-aggregate=<aggregation method>]
-```
-where 
-
-*\<segment image collection dir\>* is directory of the segment images collection ;
-
-*\<file pattern\>* is a regular expression to filter files in \<segment image collection dir\> ;
-
-*\<channel signature\>* is a signature of the channel part in an image file name ;
-
-*\<parent channel\>* is an integer channel number where parent ROIs are expected ;
-
-*\<child channel\>* is an integer channel number where child ROIs are expected ;
-
-*\<features dir\>* is a directory used as the output of parent-child ROI relations and, if aggregation is requested, where CSV files of Nyxus features produced with Nyxus command line option --csvfile=separatecsv is located ;
-
-(optional) *\<aggregation method\>* is a method instructing how to aggregate child ROI features under a parent ROI. 
-
-Valid aggregation method options are: SUM, MEAN, MIN, MAX, or WMA (weighted mean average).
-
-__Example__: we need to process collection of mask images located in directory "\~/data/image-collection1/seg" considering only images named "train_.*\\.tif" whose channel information begins with characters "\_ch" (\_ch0, \_ch1, etc.) telling Nyxushie to treat channel 1 images as source of parent ROIs and channel 0 images as source of child ROIs. The output directory needs to be "\~/results/result1". The command line will be
-```
-nyxushie ~/data/image-collection1/seg train_.*\\.tif _ch 1 0 ~/results/result1
-```
-
-### Nested features Python API
-
-The nested features functionality can also be utilized in Python using the `Nested` class in `nyxus`. The `Nested` class
-contains two methods, `find_relations` and `featurize`. 
-
-The `find_relations` method takes in a path to the label files, along with a child 
-filepattern to identify the files in the child channel and a parent filepattern to match the files in the parent channel. The `find_relation` method 
-returns a Pandas DataFrame containing a mapping between parent ROIs and the respective child ROIs.
-
-The `featurize` method takes in the parent-child mapping along with the features of the ROIs in the child channel. If a list of aggregate functions
-is provided to the constructor, this method will return a pivoted DataFrame where the rows are the ROI labels and the columns are grouped by the features.
-
-
-__Example__: Using aggregate functions
-
-``` python
-
-from nyxus import Nyxus, Nested
-import numpy as np
-
-int_path = 'path/to/intensity'
-seg_path = 'path/to/segmentation'
-
-nyx = Nyxus(['GABOR'])
-
-child_features = nyx.featurize(int_path, seg_path, file_pattern='p[0-9]_y[0-9]_r[0-9]_c0\.ome\.tif')
-
-nest = Nested(['sum', 'mean', 'min', ('nanmean', lambda x: np.nanmean(x))])
-
-df = nest.find_relations(seg_path, 'p{r}_y{c}_r{z}_c1.ome.tif', 'p{r}_y{c}_r{z}_c0.ome.tif')
-
-df2 = nest.featurize(df, features)
-```
-
-The parent-child map is
-
-``` bash
-    Image              Parent_Label  Child_Label
-    0  /path/to/image          72             65
-    1  /path/to/image          71             66
-    2  /path/to/image          70             64
-    3  /path/to/image          68             61
-    4  /path/to/image          67             65
-
-```
-
-and the aggregated DataFrame is 
-
-``` bash
-            GABOR_0                                  GABOR_1                                  GABOR_2              ... 
-            sum        mean      min       nanmean    sum      mean       min       nanmean   sum      mean        ...
-    label                                                                                                          ...                                                                                                      
-     1      24.010227  0.666951  0.000000  0.666951  19.096262  0.530452  0.001645  0.530452  17.037345  0.473260  ... 
-     2      13.374170  0.445806  0.087339  0.445806   7.279187  0.242640  0.075000  0.242640   6.390529  0.213018  ...  
-     3       5.941783  0.198059  0.000000  0.198059   3.364149  0.112138  0.000000  0.112138   2.426409  0.080880  ...  
-     4      13.428773  0.559532  0.000000  0.559532  12.021938  0.500914  0.008772  0.500914   9.938915  0.414121  ...  
-     5       6.535722  0.181548  0.000000  0.181548   1.833463  0.050930  0.000000  0.050930   2.083023  0.057862  ...
-
-```
-
-__Example__: Without aggregate functions
-
-``` python
-
-from nyxus import Nyxus, Nested
-import numpy as np
-
-int_path = 'path/to/intensity'
-seg_path = 'path/to/segmentation'
-
-nyx = Nyxus(['GABOR'])
-
-child_features = nyx.featurize(int_path, seg_path, file_pattern='p[0-9]_y[0-9]_r[0-9]_c0\.ome\.tif')
-
-nest = Nested()
-
-df = nest.find_relations(seg_path, 'p{r}_y{c}_r{z}_c1.ome.tif', 'p{r}_y{c}_r{z}_c0.ome.tif')
-
-df2 = nest.featurize(df, features)
-```
-
-the parent-child map remains the same but the `featurize` result becomes
-
-``` bash
-                     GABOR_0                                                                ...    
-    Child_Label       1          2         3         4         5    6    7    8    9    10  ...    
-    label                                                                                   ...
-    1            0.666951       NaN       NaN       NaN       NaN  NaN  NaN  NaN  NaN  NaN  ...     
-    2                 NaN  0.445806       NaN       NaN       NaN  NaN  NaN  NaN  NaN  NaN  ...     
-    3                 NaN       NaN  0.198059       NaN       NaN  NaN  NaN  NaN  NaN  NaN  ...     
-    4                 NaN       NaN       NaN  0.559532       NaN  NaN  NaN  NaN  NaN  NaN  ...     
-    5                 NaN       NaN       NaN       NaN  0.181548  NaN  NaN  NaN  NaN  NaN  ...
-
-```

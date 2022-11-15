@@ -20,6 +20,8 @@ if(CUDA_FOUND AND USEGPU)
 		else () # for now, we assume CUDA 11.2+ supports all these archs.
 			set(CUDA_ARCH_LIST "35;37;50;72;75;80;86")
 		endif()
+	else()
+		set(CUDA_ARCH_LIST "50")
 	endif()
 elseif((NOT CUDA_FOUND) AND USEGPU)
 	message(WARNING "CUDA not found. USEGPU flag will be ignored.")

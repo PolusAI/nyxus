@@ -25,6 +25,8 @@ if(CUDA_FOUND AND USEGPU)
 		else () # for now, we assume CUDA 11.2+ supports all these archs.
 			set(CUDA_ARCH_LIST "35;37;50;72;75;80;86")
 		endif()
+	else()
+		set(CUDA_ARCH_LIST "50")
 	endif()
 elseif((NOT CUDA_FOUND) AND USEGPU)
 	message(WARNING "CUDA not found. USEGPU flag will be ignored.")
@@ -32,7 +34,6 @@ elseif((NOT CUDA_FOUND) AND USEGPU)
 else()
 	set(USEGPU OFF) # probably redundant fail-safe
 endif()
-
 
 set(TEST_SRC
 	test_all.cc
@@ -67,10 +68,8 @@ set(TEST_SRC
 	../src/nyx/features/image_matrix.cpp
 	../src/nyx/features/image_matrix_nontriv.cpp
 	../src/nyx/features/image_moments.cpp
-	../src/nyx/features/image_moments_3d.cpp
 	../src/nyx/features/image_moments_nontriv.cpp
 	../src/nyx/features/intensity.cpp
-	../src/nyx/features/intensity_3d.cpp
 	../src/nyx/features/neighbors.cpp
 	../src/nyx/features/ngtdm.cpp
 	../src/nyx/features/radial_distribution.cpp
@@ -140,3 +139,4 @@ target_include_directories (runAllTests PUBLIC ${GTEST_INCLUDE_DIRS})
 target_link_directories (runAllTests PUBLIC ${GTEST_LIBRARY_PATH})
 
 target_link_libraries (runAllTests PUBLIC gtest ${runAllTests_LIBRARIES})
+
