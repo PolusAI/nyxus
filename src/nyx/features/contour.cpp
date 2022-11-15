@@ -168,9 +168,8 @@ void ContourFeature::buildRegularContour(LR& r)
 		for (int y = 0; y < height; y++)
 		{
 			size_t idx = x + 1 + (y + 1) * (width + 2);
-			// clippedBorderImage[x + y * width] = borderImage [idx];
 			auto inte = borderImage[idx];
-			//?if (inte)
+			if (inte)
 			{
 				Pixel2 p(x + base_x, y + base_y, inte);
 				r.contour.push_back(p);
