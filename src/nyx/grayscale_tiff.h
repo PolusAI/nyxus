@@ -125,7 +125,7 @@ public:
                 loadTile <uint16_t> (tiffTile, tileDataVec);    
                 break;
             case 32:
-                loadTile <size_t> (tiffTile, tileDataVec);
+                loadTile <uint32_t> (tiffTile, tileDataVec);
                 break;
             case 64:
                 loadTile <uint64_t> (tiffTile, tileDataVec);
