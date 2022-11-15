@@ -26,6 +26,14 @@ public:
 		xmin = std::min(xmin, x);
 		xmax = std::max(xmax, x);
 	}
+	void update_xmax(StatsInt x)
+	{
+		xmax = std::max(xmax, x);
+	}
+	void update_xmin(StatsInt x)
+	{
+		xmin = std::min(xmin, x);
+	}
 	void update_y(StatsInt y)
 	{
 		ymin = std::min(ymin, y);

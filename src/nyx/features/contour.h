@@ -113,6 +113,8 @@ public:
 
 private:
 	void buildRegularContour(LR& r);
+	void buildRegularContourFast(LR& r);
+	static bool compare_locations (const Pixel2& lhs, const Pixel2& rhs);
 	void buildWholeSlideContour(LR& r);
 	std::tuple<double, double, double, double> calc_min_max_mean_stddev_intensity (const std::vector<Pixel2> & contour_pixels);
 	double

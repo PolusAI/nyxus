@@ -24,7 +24,11 @@ void ConvexHullFeature::cleanup_instance()
 void ConvexHullFeature::calculate (LR& r)
 {
 	// Build the convex hull
-	build_convex_hull(r.raw_pixels, r.convHull_CH);
+	if (r.rle_pixels.empty()) {
+		build_convex_hull(r.raw_pixels, r.convHull_CH);
+	} else {
+		build_convex_hull(r.rle_pixels, r.convHull_CH);
+	}
 
 	// Calculate related features
 	double s_hull = polygon_area(r.convHull_CH),
