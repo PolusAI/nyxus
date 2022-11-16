@@ -105,6 +105,10 @@ The algorithm is presented below:
 |    **end-while**
 | **end**
 
+.. note::
+   1. Nyxus uses the region of interest mask, not intensity, image for contour tracing.
+   2. If a region of interest contains multiple contours, the outer contour is recognized with the contour tracing algorithm and used in calculation of contour-dependent features DIAMETER_MIN_ENCLOSING_CIRCLE, DIAMETER_INSCRIBING_CIRCLE, DIAMETER_CIRCUMSCRIBING_CIRCLE, POLYGONALITY_AVE, HEXAGONALITY_AVE, HEXAGONALITY_STDDEV, WEIGHTED_SPAT_MOMENT_pq, WEIGHTED_CENTRAL_MOMENT_pq, WEIGHTED_HU_M1-7, PERCENT_TOUCHING, FRAC_AT_D, MEAN_FRAC, and RADIAL_CV.
+
 
 Features related to ROI's contour
 ---------------------------------
