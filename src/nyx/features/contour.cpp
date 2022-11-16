@@ -32,26 +32,19 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 
 void ContourFeature::buildRegularContour(LR& r)
 {
-	//==== Pad the image with 2 pixels
-	int width = r.aux_image_matrix.width,
-		height = r.aux_image_matrix.height;
-
-	readOnlyPixels image = r.aux_image_matrix.ReadablePixels();
-
-	PixIntens padIntensity = 0;
-	std::vector<PixIntens> paddedImage((height + 2) * (width + 2), padIntensity);
-	for (int x = 0; x < width + 2; x++)
-		for (int y = 0; y < height + 2; y++)
-		{
-			if (x == 0 || y == 0 || x == width + 1 || y == height + 1)
-			{
-				paddedImage[x + y * (width + 2)] = padIntensity;
-			}
-			else
-			{
-				paddedImage[x + y * (width + 2)] = image[x - 1 + (y - 1) * width];
-			}
-		}
+	//==== Pad the mask image with 2 pixels
+	auto width = r.aabb.get_width(),
+		height = r.aabb.get_height(), 
+		minx = r.aabb.get_xmin(), 
+		miny = r.aabb.get_ymin();
+	int paddingColor = 0;
+	std::vector<PixIntens> paddedImage((height + 2) * (width + 2), paddingColor);
+	for (auto px : r.raw_pixels)
+	{
+		auto x = px.x - minx + 1, 
+			y = px.y - miny + 1;
+		paddedImage [x + y * (width + 2)] = px.inten;
+	}
 
 	const int BLANK = 0;
 	bool inside = false;
