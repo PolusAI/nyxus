@@ -33,7 +33,7 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 void ContourFeature::buildRegularContour(LR& r)
 {
 	//==== Pad the mask image with 2 pixels
-	auto width = r.aabb.get_width(),
+	int width = r.aabb.get_width(),
 		height = r.aabb.get_height(), 
 		minx = r.aabb.get_xmin(), 
 		miny = r.aabb.get_ymin();
