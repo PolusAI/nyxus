@@ -26,9 +26,9 @@ namespace Nyxus
             const NyxusPixel& px = testData[i];
             // -- mocking feed_pixel_2_metrics ():
             if (roidata.aux_area == 0)
-                init_label_record_2(roidata, "theSegFname", "theIntFname", px.x, px.y, 0, dummyLabel, px.intensity, dummyTile);
+                init_label_record_2(roidata, "theSegFname", "theIntFname", px.x, px.y, dummyLabel, px.intensity, dummyTile);
             else
-                update_label_record_2(roidata, px.x, px.y, 0, dummyLabel, px.intensity, dummyTile);
+                update_label_record_2(roidata, px.x, px.y, dummyLabel, px.intensity, dummyTile);
         }
 
         // -- mocking scanTrivialRois():
@@ -56,9 +56,9 @@ namespace Nyxus
             const NyxusPixel& px = intensityData[i];
             // -- mocking feed_pixel_2_metrics ():
             if (roidata.aux_area == 0)
-                init_label_record_2(roidata, "theSegFname", "theIntFname", px.x, px.y, 0, dummyLabel, px.intensity, dummyTile);
+                init_label_record_2(roidata, "theSegFname", "theIntFname", px.x, px.y, dummyLabel, px.intensity, dummyTile);
             else
-                update_label_record_2(roidata, px.x, px.y, 0, dummyLabel, px.intensity, dummyTile);
+                update_label_record_2(roidata, px.x, px.y, dummyLabel, px.intensity, dummyTile);
         }
 
         // -- mocking phase 2, scanTrivialRois():
@@ -88,9 +88,9 @@ namespace Nyxus
         {
             // -- mocking feed_pixel_2_metrics ():
             if (roidata.aux_area == 0)
-                init_label_record_2(roidata, "theSegFname", "theIntFname", i%w, i/w, 0, dummyLabel, px, dummyTile);
+                init_label_record_2(roidata, "theSegFname", "theIntFname", i%w, i/w, dummyLabel, px, dummyTile);
             else
-                update_label_record_2(roidata, i%w, i/w, 0, dummyLabel, px, dummyTile);
+                update_label_record_2(roidata, i%w, i/w, dummyLabel, px, dummyTile);
 
             ++i;
         }
