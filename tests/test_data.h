@@ -1,10 +1,16 @@
 #pragma once
 
-struct NyxusPixel {
+struct NyxusPixel 
+{
 	size_t x, y;
 	unsigned int intensity;
 };
-const static NyxusPixel testData[] = {
+
+//
+//==== Phantom for testing pixel intensity features
+//
+
+const static NyxusPixel pixelIntensityFeaturesTestData[] = {
 	{8, 0, 11079}, 	{9, 0, 13771}, 	{10, 0, 17664}, 	{11, 0, 19552}, 	{7, 1, 12955},
 	{8, 1, 16999}, 	{9, 1, 23426}, 	{10, 1, 27615}, 	{11, 1, 24075},
 	{6, 2, 13377}, 	{7, 2, 16329}, 	{8, 2, 23426}, 	{9, 2, 32845},
@@ -44,3 +50,115 @@ const static NyxusPixel testData[] = {
 	{3, 16, 36206}, 	{4, 16, 25078}, 	{5, 16, 20900}, 	{6, 16, 18635},
 	{7, 16, 16666}, 	{2, 17, 20563}, 	{3, 17, 17664}, 	{4, 17, 16666},
 	{5, 17, 16666}, };
+
+//
+//==== IBSI test data converted from https://github.com/theibsi/data_sets/tree/master/ibsi_1_digital_phantom/dicom
+//
+//
+// Conversion code:
+// 
+//	% -- intensity --
+//	inten_info = dicominfo('/path/to/ibsi_1_digital_phantom/image/phantom.dcm');
+//	I_dcm = dicomread(inten_info);
+//	sz_I = size(I_dcm);
+//	for (z = 1 : sz_I(4)) % slice index is size(4)
+//		fpath_I = ['/path/to/ibsi_1_digital_phantom_converted/image/phantom' sprintf('_z%d', z) '.tiff'];
+//		save2tif(fpath_I, I_dcm(:, : , 1, z));
+//
+//		% G - test friendly format :
+//		lineOfCode = sprintf('const static NyxusPixel ibsi_phantom_z%d_intensity[] = {\n', z);
+//		for y = 1:sz_I(2)
+//			for x = 1 : sz_I(1)
+//				lineOfCode = [lineOfCode sprintf('{/*x*/%d, /*y*/%d, %d}, ', x, y, I_dcm(x, y, 1, z))];
+//			end
+//			lineOfCode = [lineOfCode '\n'];
+//		end
+//		lineOfCode = [lineOfCode ' };\n\n'];
+//		fprintf(1, lineOfCode);
+//	end
+//
+//	% -- mask --
+//	mask_info = dicominfo('/path/to/ibsi_1_digital_phantom/mask/mask.dcm');
+//	M_dcm = dicomread(mask_info);
+//	sz_M = size(M_dcm);
+//	for (z = 1 : sz_M(4)) % slice index is size(4)
+//		fpath_M = ['/path/to/ibsi_1_digital_phantom_converted/mask/phantom' sprintf('_z%d', z) '.tiff'];
+//		save2tif(fpath_M, M_dcm(:, : , 1, z));
+//
+//		% G - test friendly format :
+//		lineOfCode = sprintf('const static NyxusPixel ibsi_phantom_z%d_mask[] = {\n', z);
+//		for y = 1:sz_M(2)
+//			for x = 1 : sz_M(1)
+//				lineOfCode = [lineOfCode sprintf('{/*x*/%d, /*y*/%d, %d}, ', x, y, M_dcm(x, y, 1, z))];
+//			end
+//			lineOfCode = [lineOfCode '\n'];
+//		end
+//		lineOfCode = [lineOfCode ' };\n\n'];
+//		fprintf(1, lineOfCode);
+//	end
+//
+
+
+const static NyxusPixel ibsi_phantom_z1_intensity[] = {
+{/*x*/1, /*y*/1, 4}, {/*x*/2, /*y*/1, 4}, {/*x*/3, /*y*/1, 1}, {/*x*/4, /*y*/1, 1},
+{/*x*/1, /*y*/2, 4}, {/*x*/2, /*y*/2, 4}, {/*x*/3, /*y*/2, 1}, {/*x*/4, /*y*/2, 1},
+{/*x*/1, /*y*/3, 6}, {/*x*/2, /*y*/3, 6}, {/*x*/3, /*y*/3, 6}, {/*x*/4, /*y*/3, 6},
+{/*x*/1, /*y*/4, 4}, {/*x*/2, /*y*/4, 1}, {/*x*/3, /*y*/4, 1}, {/*x*/4, /*y*/4, 1},
+{/*x*/1, /*y*/5, 1}, {/*x*/2, /*y*/5, 1}, {/*x*/3, /*y*/5, 1}, {/*x*/4, /*y*/5, 1},
+};
+
+const static NyxusPixel ibsi_phantom_z2_intensity[] = {
+{/*x*/1, /*y*/1, 4}, {/*x*/2, /*y*/1, 1}, {/*x*/3, /*y*/1, 1}, {/*x*/4, /*y*/1, 1},
+{/*x*/1, /*y*/2, 1}, {/*x*/2, /*y*/2, 1}, {/*x*/3, /*y*/2, 1}, {/*x*/4, /*y*/2, 1},
+{/*x*/1, /*y*/3, 6}, {/*x*/2, /*y*/3, 3}, {/*x*/3, /*y*/3, 9}, {/*x*/4, /*y*/3, 1},
+{/*x*/1, /*y*/4, 4}, {/*x*/2, /*y*/4, 1}, {/*x*/3, /*y*/4, 1}, {/*x*/4, /*y*/4, 1},
+{/*x*/1, /*y*/5, 1}, {/*x*/2, /*y*/5, 1}, {/*x*/3, /*y*/5, 1}, {/*x*/4, /*y*/5, 1},
+};
+
+const static NyxusPixel ibsi_phantom_z3_intensity[] = {
+{/*x*/1, /*y*/1, 1}, {/*x*/2, /*y*/1, 1}, {/*x*/3, /*y*/1, 1}, {/*x*/4, /*y*/1, 1},
+{/*x*/1, /*y*/2, 4}, {/*x*/2, /*y*/2, 1}, {/*x*/3, /*y*/2, 1}, {/*x*/4, /*y*/2, 1},
+{/*x*/1, /*y*/3, 6}, {/*x*/2, /*y*/3, 6}, {/*x*/3, /*y*/3, 1}, {/*x*/4, /*y*/3, 1},
+{/*x*/1, /*y*/4, 1}, {/*x*/2, /*y*/4, 1}, {/*x*/3, /*y*/4, 1}, {/*x*/4, /*y*/4, 1},
+{/*x*/1, /*y*/5, 1}, {/*x*/2, /*y*/5, 1}, {/*x*/3, /*y*/5, 1}, {/*x*/4, /*y*/5, 1},
+};
+
+const static NyxusPixel ibsi_phantom_z4_intensity[] = {
+{/*x*/1, /*y*/1, 1}, {/*x*/2, /*y*/1, 1}, {/*x*/3, /*y*/1, 1}, {/*x*/4, /*y*/1, 1},
+{/*x*/1, /*y*/2, 4}, {/*x*/2, /*y*/2, 4}, {/*x*/3, /*y*/2, 4}, {/*x*/4, /*y*/2, 4},
+{/*x*/1, /*y*/3, 4}, {/*x*/2, /*y*/3, 4}, {/*x*/3, /*y*/3, 4}, {/*x*/4, /*y*/3, 4},
+{/*x*/1, /*y*/4, 1}, {/*x*/2, /*y*/4, 1}, {/*x*/3, /*y*/4, 1}, {/*x*/4, /*y*/4, 1},
+{/*x*/1, /*y*/5, 1}, {/*x*/2, /*y*/5, 1}, {/*x*/3, /*y*/5, 1}, {/*x*/4, /*y*/5, 1},
+};
+
+const static NyxusPixel ibsi_phantom_z1_mask[] = {
+{/*x*/1, /*y*/1, 1}, {/*x*/2, /*y*/1, 1}, {/*x*/3, /*y*/1, 1}, {/*x*/4, /*y*/1, 1},
+{/*x*/1, /*y*/2, 1}, {/*x*/2, /*y*/2, 1}, {/*x*/3, /*y*/2, 1}, {/*x*/4, /*y*/2, 1},
+{/*x*/1, /*y*/3, 1}, {/*x*/2, /*y*/3, 1}, {/*x*/3, /*y*/3, 1}, {/*x*/4, /*y*/3, 1},
+{/*x*/1, /*y*/4, 1}, {/*x*/2, /*y*/4, 1}, {/*x*/3, /*y*/4, 1}, {/*x*/4, /*y*/4, 1},
+{/*x*/1, /*y*/5, 1}, {/*x*/2, /*y*/5, 1}, {/*x*/3, /*y*/5, 1}, {/*x*/4, /*y*/5, 1},
+};
+
+const static NyxusPixel ibsi_phantom_z2_mask[] = {
+{/*x*/1, /*y*/1, 1}, {/*x*/2, /*y*/1, 0}, {/*x*/3, /*y*/1, 1}, {/*x*/4, /*y*/1, 1},
+{/*x*/1, /*y*/2, 1}, {/*x*/2, /*y*/2, 1}, {/*x*/3, /*y*/2, 1}, {/*x*/4, /*y*/2, 1},
+{/*x*/1, /*y*/3, 1}, {/*x*/2, /*y*/3, 1}, {/*x*/3, /*y*/3, 0}, {/*x*/4, /*y*/3, 1},
+{/*x*/1, /*y*/4, 1}, {/*x*/2, /*y*/4, 1}, {/*x*/3, /*y*/4, 1}, {/*x*/4, /*y*/4, 1},
+{/*x*/1, /*y*/5, 1}, {/*x*/2, /*y*/5, 1}, {/*x*/3, /*y*/5, 1}, {/*x*/4, /*y*/5, 1},
+};
+
+const static NyxusPixel ibsi_phantom_z3_mask[] = {
+{/*x*/1, /*y*/1, 1}, {/*x*/2, /*y*/1, 1}, {/*x*/3, /*y*/1, 1}, {/*x*/4, /*y*/1, 1},
+{/*x*/1, /*y*/2, 1}, {/*x*/2, /*y*/2, 1}, {/*x*/3, /*y*/2, 1}, {/*x*/4, /*y*/2, 1},
+{/*x*/1, /*y*/3, 1}, {/*x*/2, /*y*/3, 1}, {/*x*/3, /*y*/3, 1}, {/*x*/4, /*y*/3, 1},
+{/*x*/1, /*y*/4, 1}, {/*x*/2, /*y*/4, 1}, {/*x*/3, /*y*/4, 1}, {/*x*/4, /*y*/4, 1},
+{/*x*/1, /*y*/5, 1}, {/*x*/2, /*y*/5, 1}, {/*x*/3, /*y*/5, 1}, {/*x*/4, /*y*/5, 1},
+};
+
+const static NyxusPixel ibsi_phantom_z4_mask[] = {
+{/*x*/1, /*y*/1, 1}, {/*x*/2, /*y*/1, 1}, {/*x*/3, /*y*/1, 1}, {/*x*/4, /*y*/1, 1},
+{/*x*/1, /*y*/2, 1}, {/*x*/2, /*y*/2, 1}, {/*x*/3, /*y*/2, 1}, {/*x*/4, /*y*/2, 1},
+{/*x*/1, /*y*/3, 1}, {/*x*/2, /*y*/3, 1}, {/*x*/3, /*y*/3, 1}, {/*x*/4, /*y*/3, 1},
+{/*x*/1, /*y*/4, 1}, {/*x*/2, /*y*/4, 1}, {/*x*/3, /*y*/4, 0}, {/*x*/4, /*y*/4, 0},
+{/*x*/1, /*y*/5, 1}, {/*x*/2, /*y*/5, 1}, {/*x*/3, /*y*/5, 0}, {/*x*/4, /*y*/5, 0},
+};
