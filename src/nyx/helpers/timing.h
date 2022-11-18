@@ -20,6 +20,7 @@ public:
 	}
 	static void print_stats();
 	static void save_stats(const std::string & fpath);
+	static void reset() { totals.clear(); }
 
 protected:
 	std::string header, tail;
