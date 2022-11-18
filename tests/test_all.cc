@@ -3,6 +3,7 @@
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
 #include "test_pixel_intensity_features.h"
+#include "test_ibsi.h"
 #include "test_initialization.h"
 
 TEST(TEST_NYXUS, TEST_GABOR){
@@ -17,6 +18,10 @@ TEST(TEST_NYXUS, TEST_GABOR){
 TEST(TEST_NYXUS, TEST_INITIALIZATION) {
 	test_initialization();
 }
+
+//
+//==== Pixel intensity features
+//
 
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_INTEGRATED_INTENSITY) 
 {
@@ -101,6 +106,15 @@ TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_UNIFORMITY)
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_UNIFORMITY_PIU) 
 {
 	ASSERT_NO_THROW(test_pixel_intensity_uniformity_piu());
+}
+
+//
+//==== IBSI tests
+//
+
+TEST(TEST_NYXUS, TEST_IBSI_INTENSITY1) 
+{
+	ASSERT_NO_THROW(test_ibsi_mean_intensity());
 }
 
 int main(int argc, char **argv) 

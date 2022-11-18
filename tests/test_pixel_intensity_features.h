@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "../src/nyx/roi_cache.h"
-#include <src/nyx/parallel.h>
+#include "../src/nyx/parallel.h"
 #include "../src/nyx/features/intensity.h"
 #include "../src/nyx/features/pixel.h"
 #include "test_data.h"
@@ -15,7 +15,7 @@ void test_pixel_intensity_integrated_intensity()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData)/sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -33,7 +33,7 @@ void test_pixel_intensity_min_max_range()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -53,7 +53,7 @@ void test_pixel_intensity_mean()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -71,7 +71,7 @@ void test_pixel_intensity_median()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -89,7 +89,7 @@ void test_pixel_intensity_mode()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -107,7 +107,7 @@ void test_pixel_intensity_standard_deviation()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -125,7 +125,7 @@ void test_pixel_intensity_skewness()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -143,7 +143,7 @@ void test_pixel_intensity_kurtosis()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -161,7 +161,7 @@ void test_pixel_intensity_hyperskewness()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -179,7 +179,7 @@ void test_pixel_intensity_hyperflatness()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -197,7 +197,7 @@ void test_pixel_intensity_mean_absolute_deviation()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -215,7 +215,7 @@ void test_pixel_intensity_robust_mean_absolute_deviation()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -233,7 +233,7 @@ void test_pixel_intensity_standard_error()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -251,7 +251,7 @@ void test_pixel_intensity_root_mean_squared()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -269,7 +269,7 @@ void test_pixel_intensity_entropy()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -287,7 +287,7 @@ void test_pixel_intensity_energy()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -305,7 +305,7 @@ void test_pixel_intensity_uniformity()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -323,7 +323,7 @@ void test_pixel_intensity_uniformity_piu()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -341,7 +341,7 @@ void test_pixel_intensity_percentiles_iqr()
 {
     // Feed data to the ROI
     LR roidata;
-    load_test_roi_data(roidata);
+    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
