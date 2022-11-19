@@ -177,7 +177,7 @@ namespace Nyxus
 		//==== GLCM aka Haralick 2D 
 		if (GLCMFeature::required(theFeatureSet))
 		{
-			STOPWATCH("Texture/GLCM texture/GLCM/#bbbbbb", "\t=");
+			STOPWATCH("Texture/GLCM/GLCM/#bbbbbb", "\t=");
 			runParallel(GLCMFeature::parallel_process_1_batch, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
 		}
 

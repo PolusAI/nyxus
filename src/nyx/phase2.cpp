@@ -150,9 +150,19 @@ namespace Nyxus
 					feed_pixel_2_cache (x, y, dataI[i], label);
 				}
 
-				// Show stayalive progress info
-				if (cnt++ % 4 == 0)
-					VERBOSLVL1(std::cout << "\tscan trivial " << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "% of image scanned \n";)
+				VERBOSLVL1(				
+					// Show stayalive progress info
+					if (cnt++ % 4 == 0)
+					{
+							static int prevIntPc = 0;
+							float pc = int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. ;
+							if (int(pc) != prevIntPc)
+							{
+								std::cout << "\t scan trivial " << int(pc) << " %\n";
+								prevIntPc = int(pc);
+							}
+					} 
+				)
 			}
 
 		return true;
@@ -254,7 +264,6 @@ namespace Nyxus
 			}
 
 			// Allow heyboard interrupt.
-
 #ifdef WITH_PYTHON_H
 			if (PyErr_CheckSignals() != 0)
                 throw pybind11::error_already_set();
@@ -289,9 +298,6 @@ namespace Nyxus
 			//reduce_trivial_rois(Pending);	
 			reduce_trivial_rois_manual(Pending);
 
-			// Output results
-			//outputRoisFeatures(Pending);
-
 			// Free memory
 			VERBOSLVL1(std::cout << "\tfreeing ROI buffers\n";)
 			freeTrivialRoisBuffers(Pending);
@@ -302,6 +308,9 @@ namespace Nyxus
                 throw pybind11::error_already_set();
 			#endif
 		}
+
+		VERBOSLVL1(std::cout << "\treducing neighbor features and their depends for all ROIs\n")
+		reduce_neighbors_and_dependencies_manual();
 
 		return true;
 	}

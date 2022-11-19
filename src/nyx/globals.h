@@ -45,13 +45,12 @@ namespace Nyxus
 	void reduce_by_roi (int nThr, int min_online_roi_size);
 	void reduce_trivial_rois (std::vector<int>& PendingRoisLabels);
 	void reduce_trivial_rois_manual (std::vector<int>& PendingRoisLabels);
-	void reduce_neighbors();
+	void reduce_neighbors_and_dependencies_manual ();
 
 	void init_label_record(LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity);
 	void init_label_record_2(LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity, unsigned int tile_index);
 	void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity);
 	void update_label_record_2(LR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index);
-	void reduce_neighbors(int labels_collision_radius);
 
 	void allocateTrivialRoisBuffers(const std::vector<int>& Pending);
 	void freeTrivialRoisBuffers(const std::vector<int>& Pending);
