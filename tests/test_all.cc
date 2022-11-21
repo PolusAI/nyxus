@@ -4,7 +4,6 @@
 #include "../src/nyx/globals.h"
 #include "test_pixel_intensity_features.h"
 #include "test_morphology_features.h"
-#include "test_ibsi.h"
 #include "test_initialization.h"
 
 TEST(TEST_NYXUS, TEST_GABOR){
@@ -116,15 +115,6 @@ TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_UNIFORMITY_PIU)
 TEST(TEST_NYXUS, TEST_MORPHOLOGY_PERIMETER) 
 {
 	ASSERT_NO_THROW(test_morphology_perimeter());
-}
-
-//
-//==== IBSI tests
-//
-
-TEST(TEST_NYXUS, TEST_IBSI_INTENSITY1) 
-{
-	ASSERT_NO_THROW(test_ibsi_mean_intensity());
 }
 
 int main(int argc, char **argv) 
