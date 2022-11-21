@@ -3,6 +3,16 @@
 #include "helpers.h"
 #include "timing.h"
 
+#if __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem> 
+  namespace fs = std::experimental::filesystem;
+#else
+  error "Missing the <filesystem> header."
+#endif
+
 Stopwatch::Stopwatch (const std::string& header_, const std::string& tail_)
 {
 	header = header_;
@@ -30,7 +40,7 @@ void Stopwatch::print_stats()
 	for (auto& t : totals)
 		total += t.second;
 
-	std::cout << "--------------------\nTotal time of all feature groups = " << total/1e6 << "\nBreak-down:\n--------------------\n";
+	std::cout << "--------------------\nTotal time of all feature groups [sec] = " << total/1e6 << "\nBreak-down:\n--------------------\n";
 
 	for (auto& t : totals)
 	{
@@ -41,23 +51,71 @@ void Stopwatch::print_stats()
 	std::cout << "--------------------\n";
 }
 
-void Stopwatch::save_stats (const std::string& fpath)
+void Stopwatch::save_stats (const std::string & fpath)
 {
-	double total = 0.0;
-	for (auto& t : totals)
-		total += t.second;
-
-	std::ofstream f (fpath);
+	// Any experiment info in the file name?
+	// (Example 1 - "someimage.csv" is a regular timing file without experimental metadata. 
+	// Example 2 - "p0_y1_r2_c1.ome.tif.csv" is also a regular timing file without experimental metadata. 
+	// Example 3 - "synthetic_nrois=10_roiarea=500_nyxustiming.csv" is a timing file containing 2 variable 
+	// values "nrois=10" and "roiarea=500" that will be reflected in the CSV file as additional columns 
+	// "nrois" and "roiarea" containing values 10 and 500 respectively.)
 	
-	// header
-	f << "\"h1\", \"h2\", \"h3\", \"weight\", \"color\", \"codes\", \"rawtime\", \"totalTime\", \"numReduceThreads\" \n";	
-	// body
+	std::vector<std::string> vars, vals;	// experiment variables and their values
+	std::filesystem::path fpa (fpath);
+	std::string stm = fpa.stem().string();
+	if (stm.find('=') != std::string::npos)
+	{
+		// Chop the stem presumably in the form part1_part2_part3_etc
+		std::vector<std::string> parts;
+		Nyxus::parse_delimited_string (stm, "_", parts);
+
+		// Skip non-informative chops
+		for (std::string & p : parts)
+		{
+			if (p.find('=') == std::string::npos)
+				continue;
+			// We have a variable name in 'p'
+			std::vector<std::string> sides;
+			Nyxus::parse_delimited_string (p, "=", sides);
+			vars.push_back (sides[0]);
+			vals.push_back (sides[1]);
+		}
+	}
+
+	// Save timing results
+	double totTime = 0.0;
+	for (auto& t : totals)
+		totTime += t.second;
+
+	// report header
+	std::ofstream f (fpath);
+
+	const char _quote_ = '\"', 
+		_comma_ = ','; 
+
+	// -- experiment info, if any
+	if (! vars.empty())
+		for (std::string & lhs : vars)
+			f << _quote_ << lhs << _quote_ << _comma_;
+
+	// -- regular columns
+	f << _quote_ << "h1" << _quote_ << _comma_
+		<< _quote_ << "h2" << _quote_ << _comma_
+		<< _quote_ << "h3" << _quote_ << _comma_
+		<< _quote_ << "share%" << _quote_ << _comma_
+		<< _quote_ << "color" << _quote_ << _comma_
+		<< _quote_ << "codes" << _quote_ << _comma_
+		<< _quote_ << "rawtime" << _quote_ << _comma_
+		<< _quote_ << "totalTime" << _quote_ << _comma_
+		<< _quote_ << "numReduceThreads" << _quote_ << "\n";	
+	
+	// report body
 	for (auto& t : totals)
 	{
-		// Template: 
-		//	"Total", "Intensity", "Intensity", "#f58321", 9.0, "I", "123"
-		//	"Total", "Moments", "Spatial", "#ffaabb", 33.3, "Ms", "456"
-		//	"Total", "Moments", "Central", "#ffaabb", 57.7, "Mc", "789"
+		// -- experiment info, if any
+		if (! vals.empty())
+			for (std::string & rhs : vals)
+				f << _quote_ << rhs << _quote_ << _comma_;		
 
 		// Expecting the following feature caption format: category/name/acronym/color e.g. "Moments/Spatial/Ms/#ffaabb"
 		// Color paltte reference: https://www.rapidtables.com/web/color/RGB_Color.html
@@ -69,17 +127,37 @@ void Stopwatch::save_stats (const std::string& fpath)
 			facro = nameParts.size() >= 4 ? nameParts[2] : "acronym",
 			fcolor = nameParts.size() >= 4 ? nameParts[3] : "#112233";
 
-		double perc = t.second * 100.0 / total;
-		f << "\"Total\",\"" 
-			<< fcateg << "\",\"" 
-			<< fname << "\"," 
-			<< perc << ",\"" 
-			<< fcolor << "\",\"" << facro << " " << Nyxus::round2(perc) << "%\","
-			<< t.second 
-			<< "," << total
-			<< "," << Nyxus::theEnvironment.n_reduce_threads 
+		double perc = t.second * 100.0 / totTime;
+
+		// -- regular timing data
+		f << _quote_ << "Total" << _quote_ << _comma_ 
+			<< _quote_ << fcateg << _quote_ << _comma_
+			<< _quote_ << fname << _quote_ << _comma_
+			<< _quote_ << perc << _quote_ << _comma_
+			<< _quote_ << fcolor << _quote_ << _comma_ 
+			<< _quote_ << facro << _quote_ << _comma_ //" " << Nyxus::round2(perc) << "%" << _quote_ << _comma_
+			<< _quote_ << t.second << _quote_ << _comma_
+			<< _quote_ << totTime << _quote_ << _comma_
+			<< _quote_ << Nyxus::theEnvironment.n_reduce_threads << _quote_
 			<< "\n";
 	}
+
+	// Combined time
+	// -- experiment info, if any
+	if (! vals.empty())
+		for (std::string & rhs : vals)
+			f << _quote_ << rhs << _quote_ << _comma_;		
+
+	f << _quote_ << "Total" << _quote_ << _comma_ 
+		<< _quote_ << "All" << _quote_ << _comma_
+		<< _quote_ << "All" << _quote_ << _comma_
+		<< _quote_ << "100" << _quote_ << _comma_
+		<< _quote_ << "#000000" << _quote_ << _comma_ 
+		<< _quote_ << "TOTL" << _quote_ << _comma_ //" " << Nyxus::round2(100) << "%" << _quote_ << _comma_
+		<< _quote_ << totTime << _quote_ << _comma_
+		<< _quote_ << totTime << _quote_ << _comma_
+		<< _quote_ << Nyxus::theEnvironment.n_reduce_threads << _quote_ 
+		<< "\n";
 }
 
 namespace Nyxus
@@ -100,4 +178,4 @@ namespace Nyxus
 		std::strftime(&s[0], s.size(), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
 		return s;
 	}
-} // Nyxus
+}

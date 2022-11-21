@@ -129,6 +129,10 @@ namespace Nyxus
 		auto nf = intensFiles.size();
 		for (int i = 0; i < nf; i++)
 		{
+			#ifdef CHECKTIMING
+			Stopwatch::reset();
+			#endif
+
 			// Clear ROI label list, ROI data, etc.
 			clear_feature_buffers();
 
@@ -172,15 +176,18 @@ namespace Nyxus
 			#ifdef WITH_PYTHON_H
 			// Allow heyboard interrupt.
 			if (PyErr_CheckSignals() != 0)
-                throw pybind11::error_already_set();
+                		throw pybind11::error_already_set();
+			#endif
+
+			#ifdef CHECKTIMING
+			// Detailed timing - on the screen
+			VERBOSLVL1(Stopwatch::print_stats();)
+				
+			// Details - also to a file
+			std::filesystem::path p (theSegFname);
+			VERBOSLVL1(Stopwatch::save_stats (theEnvironment.output_dir + "/" + p.stem().string() + "_nyxustiming.csv");)
 			#endif
 		}
-
-#ifdef CHECKTIMING
-		// Detailed timing
-		VERBOSLVL1(Stopwatch::print_stats();)
-		VERBOSLVL1(Stopwatch::save_stats(theEnvironment.output_dir + "/nyxus_timing.csv");)
-#endif
 
 		return 0; // success
 	}
@@ -232,4 +239,5 @@ namespace Nyxus
 		std::cout << "... done\n";
 	}
 
-} // namespace Nyxus
+} 
+

@@ -33,8 +33,16 @@ namespace Nyxus
 
 		for (auto& entry : fs::directory_iterator(dir))
 		{
+			// Skip hidden objects, e.g. directories '.DS_store' in OSX
+			if (entry.path().filename().string()[0] == '.')
+			{
+				std::cout << "Skipping " << entry.path().filename().string() << "\n";
+				continue; 
+			}
+
 			std::string fullPath = entry.path().string(),
-				pureFname = entry.path().filename().string();	// The file name that should participate in the filepattern check
+				pureFname = entry.path().filename().string();
+			
 			if (std::regex_match(pureFname, re))
 				files.push_back(fullPath);
 		}
