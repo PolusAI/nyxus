@@ -88,13 +88,6 @@ namespace Nyxus
 			runParallel(parallelReduceContour, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
-		//==== Neighbors
-		if (NeighborsFeature::required(theFeatureSet) || HexagonalityPolygonalityFeature::required(theFeatureSet) || EnclosingInscribingCircumscribingCircleFeature::required(theFeatureSet))
-		{
-			STOPWATCH("Neighbors/Neighbors/N/#FF69B4", "\t=");
-			NeighborsFeature::manual_reduce();
-		}
-
 		//==== Convex hull related solidity, circularity
 		if (ConvexHullFeature::required(theFeatureSet))
 		{
@@ -145,20 +138,6 @@ namespace Nyxus
 			runParallel(ChordsFeature::process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
-		//==== Hexagonality and polygonality
-		if (HexagonalityPolygonalityFeature::required(theFeatureSet))
-		{
-			STOPWATCH("Morphology/HexPolygEncloInsCircleGeodetLenThickness/HP/#4aaaea", "\t=");
-			runParallel(HexagonalityPolygonalityFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
-		}
-
-		//==== Enclosing, inscribing, and circumscribing circle
-		if (EnclosingInscribingCircumscribingCircleFeature::required(theFeatureSet))
-		{
-			STOPWATCH("Morphology/HexPolygEncloInsCircleGeodetLenThickness/HP/#4aaaea", "\t=");
-			runParallel(EnclosingInscribingCircumscribingCircleFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
-		}
-
 		//==== Geodetic length and thickness
 		if (GeodeticLengthThicknessFeature::required(theFeatureSet))
 		{
@@ -190,7 +169,7 @@ namespace Nyxus
 		//==== GLCM aka Haralick 2D 
 		if (GLCMFeature::required(theFeatureSet))
 		{
-			STOPWATCH("Texture/GLCM texture/GLCM/#bbbbbb", "\t=");
+			STOPWATCH("Texture/GLCM/GLCM/#bbbbbb", "\t=");
 			runParallel(GLCMFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
@@ -223,7 +202,7 @@ namespace Nyxus
 		}
 
 		//==== Moments
-		if (ImageMomentsFeature::required(theFeatureSet))
+		if (ImageMomentsFeature::required(theFeatureSet) && false)	//!!! disabled
 		{
 			#ifndef USE_GPU
 				STOPWATCH("Moments/Moments/2D moms/#FFFACD", "\t=");
@@ -278,19 +257,44 @@ namespace Nyxus
 		}
 
 		//==== Radial distribution / FracAtD, MeanFraq, and RadialCV
-		if (RadialDistributionFeature::required(theFeatureSet))
+		if (RadialDistributionFeature::required(theFeatureSet) && false)	//!!! disabled
 		{
 			STOPWATCH("RDistribution/Rdist/Rd/#00FFFF", "\t=");
 			runParallel(RadialDistributionFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 	}
 
-	void reduce_neighbors()
+	void reduce_neighbors_and_dependencies_manual ()
 	{
-		if (NeighborsFeature::required(theFeatureSet))
+		// A (ll) L (abels)
+		std::vector <int> AL;
+		AL.reserve (uniqueLabels.size());
+		AL.insert (AL.end(), uniqueLabels.begin(), uniqueLabels.end());
+
+		//==== Parallel execution parameters 
+		int n_reduce_threads = theEnvironment.n_reduce_threads;		
+		size_t jobSize = AL.size(),
+			workPerThread = jobSize / n_reduce_threads;
+
+		//==== Neighbors
+		if (NeighborsFeature::required(theFeatureSet) || HexagonalityPolygonalityFeature::required(theFeatureSet) || EnclosingInscribingCircumscribingCircleFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Neighbors/Neighbors/N/#FF69B4", "\t=");
 			NeighborsFeature::manual_reduce();
+		}
+
+		//==== Hexagonality and polygonality
+		if (HexagonalityPolygonalityFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Morphology/HexPolygEncloInsCircleGeodetLenThickness/HP/#4aaaea", "\t=");
+			runParallel(HexagonalityPolygonalityFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &AL, &roiData);
+		}
+
+		//==== Enclosing, inscribing, and circumscribing circle
+		if (EnclosingInscribingCircumscribingCircleFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Morphology/HexPolygEncloInsCircleGeodetLenThickness/HP/#4aaaea", "\t=");
+			runParallel(EnclosingInscribingCircumscribingCircleFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &AL, &roiData);
 		}
 	}
 
