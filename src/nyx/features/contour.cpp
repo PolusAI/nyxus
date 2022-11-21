@@ -32,66 +32,54 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 
 void ContourFeature::buildRegularContour(LR& r)
 {
-	//==== Pad the image
-
-	int width = r.aux_image_matrix.width,
-		height = r.aux_image_matrix.height;
-
-	readOnlyPixels image = r.aux_image_matrix.ReadablePixels();
-
+	//==== Pad the mask image with 2 pixels
+	int width = r.aabb.get_width(),
+		height = r.aabb.get_height(), 
+		minx = r.aabb.get_xmin(), 
+		miny = r.aabb.get_ymin();
 	int paddingColor = 0;
 	std::vector<PixIntens> paddedImage((height + 2) * (width + 2), paddingColor);
-	for (int x = 0; x < width + 2; x++)
-		for (int y = 0; y < height + 2; y++)
-		{
-			if (x == 0 || y == 0 || x == width + 1 || y == height + 1)
-			{
-				paddedImage[x + y * (width + 2)] = paddingColor;
-			}
-			else
-			{
-				paddedImage[x + y * (width + 2)] = image[x - 1 + (y - 1) * width];
-			}
-		}
+	for (auto px : r.raw_pixels)
+	{
+		auto x = px.x - minx + 1, 
+			y = px.y - miny + 1;
+		paddedImage [x + y * (width + 2)] = px.inten;
+	}
 
-	const int WHITE = 0;
-	r.contour.clear();
-
+	const int BLANK = 0;
 	bool inside = false;
 	int pos = 0;
 
-	//==== Prepare the contour image
+	//==== Prepare the contour ("border") image
 	std::vector<PixIntens> borderImage((height + 2) * (width + 2), 0);
 
-	// Set entire image to WHITE
+	// Initialize the entire image to blank
 	for (int y = 0; y < (height + 2); y++)
 		for (int x = 0; x < (width + 2); x++)
-		{
-			borderImage[x + y * (width + 2)] = WHITE;
-		}
+			borderImage[x + y * (width + 2)] = BLANK;
 
-	//==== Scan 
+	//==== Scan the padded image and fill the border one
 	for (int y = 0; y < (height + 2); y++)
 		for (int x = 0; x < (width + 2); x++)
 		{
 			pos = x + y * (width + 2);
 
-			// Scan for BLACK pixel
-			if (borderImage[pos] != 0 /*borderImage[pos] == BLACK*/ && !inside)		// Entering an already discovered border
+			// Scan for a non-blank pixel
+			if (borderImage[pos] != 0 && !inside)		// Entering an already discovered border
 			{
 				inside = true;
 			}
-			else if (paddedImage[pos] != 0 /*paddedImage[pos] == BLACK*/ && inside)	// Already discovered border point
+			else if (paddedImage[pos] != 0 && inside)	// Already discovered border point
 			{
 				continue;
 			}
-			else if (paddedImage[pos] == WHITE && inside)	// Leaving a border
+			else if (paddedImage[pos] == BLANK && inside)	// Leaving a border
 			{
 				inside = false;
 			}
-			else if (paddedImage[pos] != 0 /*paddedImage[pos] == BLACK*/ && !inside)	// Undiscovered border point
+			else if (paddedImage[pos] != 0 && !inside)	// Undiscovered border point
 			{
-				borderImage[pos] = paddedImage[pos]; /*BLACK*/
+				borderImage[pos] = paddedImage[pos];	// Non-blank
 
 				int checkLocationNr = 1;	// The neighbor number of the location we want to check for a new border point
 				int checkPosition;			// The corresponding absolute array address of checkLocationNr
@@ -112,13 +100,14 @@ void ContourFeature::buildRegularContour(LR& r)
 						{width + 2,5},
 						{1 + width,5}
 				};
+
 				// Trace around the neighborhood
 				while (true)
 				{
 					checkPosition = pos + neighborhood[checkLocationNr - 1][0];
 					newCheckLocationNr = neighborhood[checkLocationNr - 1][1];
 
-					if (paddedImage[checkPosition] != 0 /*paddedImage[checkPosition] == BLACK*/) // Next border point found
+					if (paddedImage[checkPosition] != 0) // Next border point found?
 					{
 						if (checkPosition == startPos)
 						{
@@ -136,7 +125,7 @@ void ContourFeature::buildRegularContour(LR& r)
 						checkLocationNr = newCheckLocationNr; // Update which neighborhood position we should check next
 						pos = checkPosition;
 						counter2 = 0; 						// Reset the counter that keeps track of how many neighbors we have visited
-						borderImage[checkPosition] = paddedImage[checkPosition]; /*BLACK*/
+						borderImage[checkPosition] = paddedImage[checkPosition]; // Non-blank
 					}
 					else
 					{
@@ -144,8 +133,8 @@ void ContourFeature::buildRegularContour(LR& r)
 						checkLocationNr = 1 + (checkLocationNr % 8);
 						if (counter2 > 8)
 						{
-							// If counter2 is above 8 we have traced around the neighborhood and
-							// therefor the border is a single black pixel and we can exit
+							// If counter2 is above 8, we have sought around the neighborhood and
+							// therefor the border is a single non-blank pixel, and we can exit
 							counter2 = 0;
 							break;
 						}
@@ -158,25 +147,22 @@ void ContourFeature::buildRegularContour(LR& r)
 			}
 		}
 
-	//==== Remove padding and save the countour image as a vector of contour-onlu pixels
+	//==== Remove padding and save the countour image as a vector of non-blank pixels
 	AABB bb = r.aux_image_matrix.original_aabb;
 	int base_x = bb.get_xmin(),
 		base_y = bb.get_ymin();
 	r.contour.clear();
 	for (int x = 0; x < width; x++)
-	{
 		for (int y = 0; y < height; y++)
 		{
 			size_t idx = x + 1 + (y + 1) * (width + 2);
-			// clippedBorderImage[x + y * width] = borderImage [idx];
 			auto inte = borderImage[idx];
-			//?if (inte)
+			if (inte)
 			{
 				Pixel2 p(x + base_x, y + base_y, inte);
 				r.contour.push_back(p);
 			}
 		}
-	}
 }
 
 void ContourFeature::buildWholeSlideContour(LR& r)
