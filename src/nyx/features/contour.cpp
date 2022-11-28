@@ -43,7 +43,7 @@ void ContourFeature::buildRegularContour(LR& r)
 	{
 		auto x = px.x - minx + 1, 
 			y = px.y - miny + 1;
-		paddedImage [x + y * (width + 2)] = px.inten;
+		paddedImage [x + y * (width + 2)] = 1;	// Building the contour around the whole ROI mask image
 	}
 
 	const int BLANK = 0;
