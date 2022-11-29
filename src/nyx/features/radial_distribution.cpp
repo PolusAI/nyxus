@@ -44,6 +44,11 @@ void RadialDistributionFeature::calculate(LR& r)
 	// Get ahold of the center pixel
 	const Pixel2& pxO = raw_pixels[idxO];
 
+	//
+	// **** Version 1 (slower and accurate)
+	//
+#if 0
+
 	// Distribute pixels into radial bins
 	double binWidth = 1.0 / double(num_bins - 1);
 	for (auto& pxA : raw_pixels)
@@ -113,6 +118,32 @@ void RadialDistributionFeature::calculate(LR& r)
 		band_pixels[bi].push_back(pxA);
 	}
 
+#endif
+
+	//
+	// **** Version 2
+	//
+	
+	// Max radius
+	double dstOC = std::sqrt (pxO.max_sqdist (contour_pixels)); //std::sqrt(pxContour.sqdist(pxO));
+
+	for (auto& pxA : raw_pixels)
+	{
+		// Distance center to cloud pixel
+		double dstOA = std::sqrt(pxA.sqdist(pxO));		
+		
+		// Find the radial bin index and update the bin counters
+		double rat = dstOA / dstOC;
+		int bi = int(rat * (num_bins-1));	// bin index
+		if (bi >= num_bins)
+			bi = num_bins - 1;
+		radial_count_bins[bi] ++;
+		radial_intensity_bins[bi] += pxA.inten;
+
+		// Cache this pixel's intensity for calculating the CV
+		band_pixels[bi].push_back(pxA);
+	}
+	
 	// Calculate the features (result - corresponding bin vectors)
 	get_FracAtD();
 	get_MeanFrac();

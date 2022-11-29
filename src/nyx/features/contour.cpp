@@ -9,6 +9,7 @@
 #include <thread>
 #include <future>
 #include <array>
+#include <list>
 #include "moments.h"
 #include "contour.h"
 
@@ -30,6 +31,13 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 		});
 }
 
+bool operator == (const Pixel2& p1, const Pixel2& p2)
+{
+	if (p1.x != p2.x || p1.y != p2.y || p1.inten != p1.inten)
+		return false;
+	return true;
+}
+
 void ContourFeature::buildRegularContour(LR& r)
 {
 	//==== Pad the mask image with 2 pixels
@@ -43,8 +51,33 @@ void ContourFeature::buildRegularContour(LR& r)
 	{
 		auto x = px.x - minx + 1, 
 			y = px.y - miny + 1;
-		paddedImage [x + y * (width + 2)] = px.inten;
+		paddedImage [x + y * (width + 2)] = 1;	// Building the contour around the whole ROI mask image
 	}
+
+	#if 0
+	//
+	//
+	//debug
+	//
+		std::cout << "\n\n\n" << "-- ContourFeature / buildRegularContour / Padded image --\n";
+		for (int y = 0; y < height+2; y++)
+		{
+			for (int x = 0; x < width+2; x++)
+			{
+				size_t idx = x + y * (width+2);
+				auto inte = paddedImage[idx];
+				if (inte)
+					std::cout << '*'; 
+				else
+					std::cout << '.'; 
+			}
+			std::cout << "\n";
+		}
+		std::cout << "\n\n\n";
+	//
+	//
+	//
+	#endif
 
 	const int BLANK = 0;
 	bool inside = false;
@@ -147,22 +180,153 @@ void ContourFeature::buildRegularContour(LR& r)
 			}
 		}
 
+	#if 0
+	//
+	//
+	//debug
+	//
+		std::cout << "\n\n\n" << "-- ContourFeature / buildRegularContour / Contour image --\n";
+		// header
+		std::cout << "\t";	// indent
+		for (int i = 0; i < width; i++)
+			if (i % 10 == 0)
+				std::cout << '|';
+			else
+				std::cout << '_';
+		std::cout << "\n";
+		//---
+		for (int y = 0; y < height + 2; y++)
+		{
+			std::cout << "y=" << y << "\t";
+			for (int x = 0; x < width + 2; x++)
+			{
+				size_t idx = x + y * (width + 2);
+				auto inte = borderImage[idx];
+				if (inte)
+					std::cout << ' '; 
+				else
+					std::cout << '+'; 
+			}
+			std::cout << "\n";
+		}
+		std::cout << "\n\n\n";
+	//
+	//
+	//
+	#endif
+
 	//==== Remove padding and save the countour image as a vector of non-blank pixels
-	AABB bb = r.aux_image_matrix.original_aabb;
+	AABB & bb = r.aabb; // r.aux_image_matrix.original_aabb;
 	int base_x = bb.get_xmin(),
 		base_y = bb.get_ymin();
 	r.contour.clear();
-	for (int x = 0; x < width; x++)
-		for (int y = 0; y < height; y++)
+
+	for (int y = 0; y < height+2; y++)
+		for (int x = 0; x < width+2; x++)
 		{
-			size_t idx = x + 1 + (y + 1) * (width + 2);
+			size_t idx = x + y * (width + 2);
 			auto inte = borderImage[idx];
 			if (inte)
 			{
-				Pixel2 p(x + base_x, y + base_y, inte);
+				Pixel2 p(x, y, inte);		
 				r.contour.push_back(p);
 			}
 		}
+
+
+	//==== Reorder
+	 
+	//	--containers for unordered (temp) and ordered (result) pixels
+	std::list<Pixel2> unordered(r.contour.begin(), r.contour.end());
+	std::vector<Pixel2> ordered;
+	ordered.reserve(unordered.size());
+
+	//	--initialize vector 'ordered' with 1st pixel of 'unordered'
+	auto itBeg = unordered.begin();
+	Pixel2& pxTip = *itBeg;
+	ordered.push_back(pxTip);
+	unordered.remove(pxTip);
+
+	//	--tip of the ordered contour
+	pxTip = ordered[0];
+
+	//	--harvest items of 'unordered' 
+	while (unordered.size())
+	{
+		//	--find the neighbor of the current tip pixel 
+		std::vector<Pixel2> cands;	// candidates
+		for (Pixel2& px : unordered)
+		{
+			//	--test for proximity and skip non-neighbors
+			auto dx = std::fabs((int)px.x - (int)pxTip.x),
+				dy = std::fabs((int)px.y - (int)pxTip.y);
+			if (dx > 1 || dy > 1)
+				continue;	// not a neighbor of pxTip
+
+			//	--we found the neighbor; grab it; make it the new tip pixel; quit this search loop 
+			cands.push_back(px);
+		}
+
+		//	--are there any tip's neighbr candidate?
+		if (!cands.empty())
+		{
+			int distMin = pxTip.sqdist(cands[0]);
+			int idxMin = 0;
+			for (int i = 1; i < cands.size(); i++)
+			{
+				Pixel2& px = cands[i];
+				int dist = pxTip.sqdist(cands[i]);
+				if (dist < distMin)
+				{
+					idxMin = i;
+					distMin = dist;
+				}
+			}
+			Pixel2& px = cands[idxMin];
+			// find the closest candidate to pxTip
+			ordered.push_back(px);
+			unordered.remove(px);
+			pxTip = ordered[ordered.size() - 1];
+		}
+		else //	--any gaps left by the contour algorithm?
+		{
+			// Most likely unavailability of an immediate neighboring pixel is due to 
+			// its sitting in the 'ordered' set already meaning that the contour is closed. 
+			// Sometimes a contour is closed despite 'unordered' set is nonempty - such a 
+			// redundancy is due to the Moore based algorithm above.
+			VERBOSLVL4(
+				std::cerr << "gap in contour!\n" << "tip pixel: " << pxTip.x << "," << pxTip.y << "\n";
+				std::cerr << "ordered:\n";
+				int i = 1;
+				for (auto& pxo : ordered)
+				{
+					std::cerr << "\t" << pxo.x << "," << pxo.y;
+					if (i++ % 10 == 0)
+						std::cerr << "\n";
+				}
+				std::cerr << "\n";
+
+				int neigR2 = 400;	// squared
+				std::cerr << "unordered around the tip (R^2=" << neigR2 << "):\n";
+				i = 1;
+				for (auto& pxu : unordered)
+				{
+					// filter out the far neighborhood
+					if (pxTip.sqdist(pxu) > neigR2)
+						continue;
+
+					std::cerr << "\t" << pxu.x << "," << pxu.y;
+					if (i++ % 10 == 0)
+						std::cerr << "\n";
+				}
+				std::cerr << "\n";
+			);
+			break;
+		}
+	}
+
+	// replace the unordered contour with ordered one
+	r.contour = ordered;
 }
 
 void ContourFeature::buildWholeSlideContour(LR& r)
