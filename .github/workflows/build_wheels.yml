@@ -16,7 +16,7 @@ jobs:
         cibw_archs: ["auto64"]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         name: Check out
         with:
           submodules: recursive    
@@ -24,7 +24,7 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         name: Add MSVS Path
 
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v4
         name: Install Python
         with:
           python-version: '3.8'
