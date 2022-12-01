@@ -89,14 +89,14 @@ popd
 
 
 for /l %%x in (1, 1, 5) do (
-    curl https://download.osgeo.org/libtiff/tiff-4.4.0.zip -o libtiff.zip
+    curl -L  https://github.com/sameeul/tiff_test/archive/refs/heads/master.zip -o libtiff.zip
     if  exist libtiff.zip (
         goto :continue_tiff
     )
 )
 :continue_tiff
 tar -xf libtiff.zip
-pushd tiff-4.4.0
+pushd tiff_test-master
 mkdir build_man
 pushd build_man
 for /l %%x in (1, 1, 5) do (
