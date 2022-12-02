@@ -33,7 +33,7 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 
 bool operator == (const Pixel2& p1, const Pixel2& p2)
 {
-	if (p1.x != p2.x || p1.y != p2.y || p1.inten != p1.inten)
+	if (p1.x != p2.x || p1.y != p2.y || p1.inten != p2.inten)
 		return false;
 	return true;
 }
@@ -54,11 +54,6 @@ void ContourFeature::buildRegularContour(LR& r)
 		paddedImage [x + y * (width + 2)] = 1;	// Building the contour around the whole ROI mask image
 	}
 
-
-	//
-	//
-	//debug
-	//
 	VERBOSLVL4(
 		std::cout << "\n\n\n" << "-- ContourFeature / buildRegularContour / Padded image --\n";
 		for (int y = 0; y < height+2; y++)
@@ -76,10 +71,6 @@ void ContourFeature::buildRegularContour(LR& r)
 		}
 		std::cout << "\n\n\n";
 	);	
-	//
-	//
-	//
-
 
 	const int BLANK = 0;
 	bool inside = false;
@@ -182,10 +173,6 @@ void ContourFeature::buildRegularContour(LR& r)
 			}
 		}
 
-	//
-	//
-	//debug
-	//
 	VERBOSLVL4(
 		std::cout << "\n\n\n" << "-- ContourFeature / buildRegularContour / Contour image --\n";
 		// header
@@ -213,9 +200,6 @@ void ContourFeature::buildRegularContour(LR& r)
 		}
 		std::cout << "\n\n\n";
 	);
-	//
-	//
-	//
 
 	//==== Remove padding and save the countour image as a vector of non-blank pixels
 	AABB & bb = r.aabb; // r.aux_image_matrix.original_aabb;
