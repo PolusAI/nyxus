@@ -230,7 +230,7 @@ void ContourFeature::buildRegularContour(LR& r)
 			auto inte = borderImage[idx];
 			if (inte)
 			{
-				Pixel2 p(x-1, y-1, inte);		
+				Pixel2 p(x, y, inte);		
 				r.contour.push_back(p);
 			}
 		}
