@@ -44,86 +44,6 @@ void RadialDistributionFeature::calculate(LR& r)
 	// Get ahold of the center pixel
 	const Pixel2& pxO = raw_pixels[idxO];
 
-	//
-	// **** Version 1 (slower and accurate)
-	//
-#if 0
-
-	// Distribute pixels into radial bins
-	double binWidth = 1.0 / double(num_bins - 1);
-	for (auto& pxA : raw_pixels)
-	{
-		// If 'px' is a contour point, skip it
-		if (pxA.belongs_to(contour_pixels))
-			continue;
-
-		// Find the contour point
-		int idxCont = -1; // Pixel2& pxContour = conv_hull.CH[0];
-		double distToRadius;
-
-		for (int i = 0; i < contour_pixels.size(); i++)
-		{
-			const Pixel2& pxC = contour_pixels[i];
-			double dAC = pxA.sqdist(pxC);
-			double dOC = pxO.sqdist(pxC);
-			double dOA = pxO.sqdist(pxA);
-			if (dOC < dAC || dOC < dOA)
-				continue;	// Perpendicular from A onto OC is situated beyond OC - skip this degenerate case
-
-			double dA_OC = pxA.sqdist_to_segment(pxC, pxO);
-			if (idxCont < 0 || dA_OC < distToRadius)
-			{
-				idxCont = i;
-				distToRadius = dA_OC;
-			}
-		}
-
-		// Was the contour point found? I may sometimes not be found due to some degeneracy of the contour itself, for instance, the ROI or its island is so small that it consists of the contour
-		if (idxCont < 0)
-			continue;
-
-		const Pixel2& pxContour = contour_pixels[idxCont];
-
-		// Distance center to cloud pixel
-		double dstOA = std::sqrt(pxA.sqdist(pxO));
-
-		// Distance center to contour
-		double dstOC = std::sqrt(pxContour.sqdist(pxO));
-
-		// Distance contour to pixel
-		double dstAC = std::sqrt(pxContour.sqdist(pxA));
-
-		// Intercept an error or weird condition
-#if 0
-		if (dstOC < dstAC || dstOC < dstOA)
-		{
-			// Show A
-			std::stringstream ss;
-			if (dstOC < dstAC)
-				ss << Nyxus::theIntFname << " Weird: OC=" << dstOC << " < AC=" << dstAC << ". Points O(" << pxO.x << "," << pxO.y << "), A(" << pxA.x << "," << pxA.y << "), and C(" << pxContour.x << "," << pxContour.y << ")";
-			if (dstOC < dstOA)
-				ss << Nyxus::theIntFname << " Weird: OC=" << dstOC << " < OA=" << dstOA << ". Points O(" << pxO.x << "," << pxO.y << "), A(" << pxA.x << "," << pxA.y << "), and C(" << pxContour.x << "," << pxContour.y << ")";
-			ImageMatrix imCont(contour_pixels);
-			imCont.print(ss.str(), "", { {pxO.x, pxO.y, "(O)"},  {pxA.x, pxA.y, "(A)"}, {pxContour.x, pxContour.y, "(C)"} });
-		}
-#endif
-
-		// Ratio and bin
-		double rat = dstOA / dstOC;
-		int bi = int(rat / binWidth);	// bin index
-		radial_count_bins[bi] ++;
-		radial_intensity_bins[bi] += pxA.inten;
-
-		// Cache this pixel's intensity for calculating the CV
-		band_pixels[bi].push_back(pxA);
-	}
-
-#endif
-
-	//
-	// **** Version 2
-	//
-	
 	// Max radius
 	double dstOC = std::sqrt (pxO.max_sqdist (contour_pixels)); //std::sqrt(pxContour.sqdist(pxO));
 
@@ -143,7 +63,7 @@ void RadialDistributionFeature::calculate(LR& r)
 		// Cache this pixel's intensity for calculating the CV
 		band_pixels[bi].push_back(pxA);
 	}
-	
+
 	// Calculate the features (result - corresponding bin vectors)
 	get_FracAtD();
 	get_MeanFrac();

@@ -54,11 +54,12 @@ void ContourFeature::buildRegularContour(LR& r)
 		paddedImage [x + y * (width + 2)] = 1;	// Building the contour around the whole ROI mask image
 	}
 
-	#if 0
+
 	//
 	//
 	//debug
 	//
+	VERBOSLVL4(
 		std::cout << "\n\n\n" << "-- ContourFeature / buildRegularContour / Padded image --\n";
 		for (int y = 0; y < height+2; y++)
 		{
@@ -74,10 +75,11 @@ void ContourFeature::buildRegularContour(LR& r)
 			std::cout << "\n";
 		}
 		std::cout << "\n\n\n";
+	);	
 	//
 	//
 	//
-	#endif
+
 
 	const int BLANK = 0;
 	bool inside = false;
@@ -180,11 +182,11 @@ void ContourFeature::buildRegularContour(LR& r)
 			}
 		}
 
-	#if 0
 	//
 	//
 	//debug
 	//
+	VERBOSLVL4(
 		std::cout << "\n\n\n" << "-- ContourFeature / buildRegularContour / Contour image --\n";
 		// header
 		std::cout << "\t";	// indent
@@ -210,10 +212,10 @@ void ContourFeature::buildRegularContour(LR& r)
 			std::cout << "\n";
 		}
 		std::cout << "\n\n\n";
+	);
 	//
 	//
 	//
-	#endif
 
 	//==== Remove padding and save the countour image as a vector of non-blank pixels
 	AABB & bb = r.aabb; // r.aux_image_matrix.original_aabb;
@@ -228,7 +230,7 @@ void ContourFeature::buildRegularContour(LR& r)
 			auto inte = borderImage[idx];
 			if (inte)
 			{
-				Pixel2 p(x, y, inte);		
+				Pixel2 p(x-1, y-1, inte);		
 				r.contour.push_back(p);
 			}
 		}
