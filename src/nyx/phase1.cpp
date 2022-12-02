@@ -78,8 +78,10 @@ namespace Nyxus
 #endif
 
 				// Show stayalive progress info
-				if (cnt++ % 4 == 0)
-					std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n";
+				VERBOSLVL2(
+					if (cnt++ % 4 == 0)
+						std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n";
+				);
 			}
 
 		return true;

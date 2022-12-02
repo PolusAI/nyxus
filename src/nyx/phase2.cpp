@@ -150,7 +150,7 @@ namespace Nyxus
 					feed_pixel_2_cache (x, y, dataI[i], label);
 				}
 
-				VERBOSLVL1(				
+				VERBOSLVL2(				
 					// Show stayalive progress info
 					if (cnt++ % 4 == 0)
 					{
