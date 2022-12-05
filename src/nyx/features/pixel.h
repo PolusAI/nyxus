@@ -48,6 +48,7 @@ inline float normL2(const Point2f& p) { return p.normL2(); }
 struct Pixel2 : public Point2i
 {
 	PixIntens inten;
+
 	Pixel2() : Point2(0, 0), inten(0) {}
 	Pixel2 (StatsInt x_, StatsInt y_, PixIntens i_) : Point2(x_, y_), inten(i_) {}
 	Pixel2 (int x_, int y_, PixIntens i_) : Point2(x_, y_), inten(i_) {}
@@ -84,122 +85,46 @@ struct Pixel2 : public Point2i
 		Pixel2 p2(StatsInt(this->x * k), StatsInt(this->y * k), this->inten);
 		return p2;
 	}
-	operator Point2f () const { Point2f p((float)this->x, (float)this->y); return p; }
-
-	double sqdist(int x, int y) const
-	{
-		double dx = (double)x - double(this->x),
-			dy = (double)y - double(this->y);
-		double retval = dx * dx + dy * dy;
-		return retval;
+	operator Point2f () const 
+	{ 
+		Point2f p((float)this->x, (float)this->y); 
+		return p; 
 	}
 
-	double sqdist(const Pixel2 & px) const
-	{
-		double retval = sqdist(px.x, px.y);
-		return retval;
-	}
+	/// @brief Returns squared distance between 'x' and 'y'
+	double sqdist(int x, int y) const;
 
-	double sum_sqdist(const std::vector<Pixel2>& cloud) const
-	{
-		double retval = 0.0;
-		for (auto& px : cloud)
-		{
-			double sqd = this->sqdist(px);
-			retval += sqd;
-		}
-		return retval;
-	}
+	/// @brief Returns the squared distance between this pixel and 'px'
+	double sqdist(const Pixel2& px) const;
 
-	double sqdist_to_segment (const Pixel2 & p1, const Pixel2 & p2) const
-	{
-		double x21 = p2.x - p1.x,
-			y21 = p2.y - p1.y;
-		double retval = (x21 * (p1.y-this->y) - (p1.x-this->x) * y21) / std::sqrt(x21*x21 + y21*y21);
-		return std::abs(retval);
-	}
+	/// @brief Returns the sum of squared distances from this pixel to each pixel of 'cloud'
+	double sum_sqdist(const std::vector<Pixel2>& cloud) const;
 
+	/// @brief Returns the squared distance from this pixel to segment 'p1,p2'
+	double sqdist_to_segment(const Pixel2& p1, const Pixel2& p2) const;
+
+	/// @brief Returns true if this and 'other' pixels share the same location
 	bool colocating(const Pixel2& other) const
 	{
 		return this->x == other.x && this->y == other.y;
 	}
 
-	bool belongs_to(const std::vector<Pixel2> & cloud) const
-	{
-		for (auto& px : cloud)
-			if (this->colocating(px) && this->inten == px.inten)
-				return true;
-		return false;
-	}
+	/// @brief Returns true if this pixel belongs to 'cloud'
+	bool belongs_to(const std::vector<Pixel2>& cloud) const;
 
-	// Returns an index in argument 'cloud'
-	static int find_center (const std::vector<Pixel2> & cloud, const std::vector<Pixel2> & contour)
-	{
-		int idxMinDif = 0;
-		auto minmaxDist = cloud[idxMinDif].min_max_sqdist(contour);
-		double minDif = minmaxDist.second - minmaxDist.first;
-		for (int i = 1; i < cloud.size(); i++)
-		{
-			//double dist = cloud[i].sum_sqdist(contour);
-			auto minmaxDist = cloud[i].min_max_sqdist(contour);
-			double dif = minmaxDist.second - minmaxDist.first;
-			if (dif < minDif)
-			{
-				minDif = dif;
-				idxMinDif = i;
-			}
-		}
-		return idxMinDif;
-	}
+	/// @brief Returns an index in argument 'cloud'
+	static int find_center(const std::vector<Pixel2>& cloud, const std::vector<Pixel2>& contour);
 
-	std::pair<double, double> min_max_sqdist (const std::vector<Pixel2>& cloud) const
-	{
-		auto mind = sqdist(cloud[0]), 
-			maxd = mind;
-
-		for (int i = 1; i < cloud.size(); i++)
-		{
-			auto dist = sqdist(cloud[i]);
-			if (dist < mind)
-				mind = dist;
-			if (dist > maxd)
-				maxd = dist;
-		}
-		return { mind, maxd };
-	}
+	std::pair<double, double> min_max_sqdist(const std::vector<Pixel2>& contour) const;
 
 	/// @brief Returns the minimum squared distance squared distance from <this> pixel to the <cloud>
-	/// @param cloud Non-empty vector of pixels
-	/// @return Minimum squared distance 
-	double min_sqdist (const std::vector<Pixel2>& cloud) const
-	{
-		auto mind = sqdist (cloud[0]);
+	double min_sqdist (const std::vector<Pixel2>& cloud) const;
 
-		for (int i = 1; i < cloud.size(); i++)
-		{
-			auto dist = sqdist(cloud[i]);
-			if (dist < mind)
-				mind = dist;
-		}
-		return mind;
-	}
+	/// @brief Returns the maximum squared distance squared distance from <this> pixel to the <cloud>
+	double max_sqdist (const std::vector<Pixel2>& cloud) const;
 
-	double angle(const Pixel2& other) const
-	{
-		double dotProd = double(this->x * other.x) + double(this->y * other.y),
-			magThis = std::sqrt(this->x * this->x + this->y * this->y),
-			magOther = std::sqrt(other.x * other.x + other.y * other.y),
-			cosVal = dotProd / (magThis * magOther),
-			ang = std::acos(cosVal);
-		return ang;
-	}
+	/// @brief Returns the angle in radians between this pixel and 'other' relative to the origin 
+	double angle(const Pixel2& other) const;
 
-	inline PixIntens discretize (PixIntens min_lvl, PixIntens max_lvl, PixIntens max_adjusted_level)
-	{
-		double rangeI = max_lvl - min_lvl;
-		double newI = double(inten - min_lvl) * double(max_adjusted_level) / rangeI;
-		PixIntens adjustedI = PixIntens(newI);
-		return adjustedI;
-	}
 };
 
