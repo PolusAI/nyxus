@@ -40,7 +40,7 @@ void ContourFeature::buildRegularContour(LR& r)
 {
 	//==== Pad the image
 
-	auto width = r.aabb.get_width(),
+	int width = r.aabb.get_width(),
 		height = r.aabb.get_height(), 
 		minx = r.aabb.get_xmin(), 
 		miny = r.aabb.get_ymin();
@@ -115,7 +115,7 @@ void ContourFeature::buildRegularContour(LR& r)
 
 				// Defines the neighborhood offset position from current position and the neighborhood
 				// position we want to check next if we find a new border at checkLocationNr
-				StatsInt neighborhood[8][2] = {
+				int neighborhood[8][2] = {
 						{-1,7},
 						{-3 - width,7},
 						{-width - 2,1},
@@ -375,7 +375,7 @@ void ContourFeature::buildRegularContour_nontriv(LR& r)
 {
 	//==== Pad the image
 
-	auto width = r.aabb.get_width(),
+	int width = r.aabb.get_width(),
 		height = r.aabb.get_height(),
 		minx = r.aabb.get_xmin(),
 		miny = r.aabb.get_ymin();
@@ -440,7 +440,7 @@ void ContourFeature::buildRegularContour_nontriv(LR& r)
 
 				// Defines the neighborhood offset position from current position and the neighborhood
 				// position we want to check next if we find a new border at checkLocationNr
-				StatsInt neighborhood[8][2] = {
+				int neighborhood[8][2] = {
 						{-1,7},
 						{-3 - width,7},
 						{-width - 2,1},
