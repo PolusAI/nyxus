@@ -162,7 +162,7 @@ void Environment::show_cmdline_help()
 		<< "\t\t[ " << COARSEGRAYDEPTH << " <custom number of grayscale levels (default: 256)> ] \n"
 		<< "\t\t[ " << GLCMANGLES << " <one or more comma separated rotation angles from set {0, 45, 90, and 135}, default is " << GLCMANGLES << "0,45,90,135> ] \n"
 		<< "\t\t[ " << VERBOSITY << " <levels of verbosity 0 (silence), 2 (timing), 4 (roi diagnostics), 8 (granular diagnostics) [default = 0]> ] \n"
-		<< "\t\t[ " << RAMLIMIT << " <bytes> ] \n"
+		<< "\t\t[ " << RAMLIMIT << " <megabytes> ] \n"
 		<< "\t\t[ " << TEMPDIR << " <slash-terminating path> ] \n"
 		<< "\n"
 		<< "\tnyxus -h\tDisplay help info\n"
@@ -849,12 +849,16 @@ int Environment::parse_cmdline(int argc, char **argv)
 	if (!rawRamLimit.empty())
 	{
 		// string -> integer
-		unsigned long value = 0;
-		if (sscanf(rawRamLimit.c_str(), "%d", &value) != 1 || value < 0)
+		size_t value = 0;
+		auto scanfResult = sscanf(rawRamLimit.c_str(), "%zu", &value);
+		if (scanfResult != 1 || value < 0)
 		{
-			std::cout << "Error: " << RAMLIMIT << "=" << rawRamLimit << ": expecting a non-negative integer constant\n";
+			std::cout << "Error: " << RAMLIMIT << "=" << rawRamLimit << ": expecting a non-negative integer constant (RAM limit in megabytes)\n";
 			return 1;
 		}
+
+		// To megabytes
+		value *= 1048576;
 
 		// The angle list parsed well, let's tell it to GLCMFeature 
 		ramLimit = value;

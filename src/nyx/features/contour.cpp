@@ -569,7 +569,7 @@ void ContourFeature::buildRegularContour_nontriv(LR& r)
 		else //	--any gaps left by the contour algorithm?
 		{
 			// Most likely cause is the closing pixel is in 'ordered' already and the pixels in 'unordered' are redundant due to the Moore based algorithm above
-			VERBOSLVL1(
+			VERBOSLVL4(
 				std::cerr << "gap in contour!\n" << "tip pixel: " << pxTip.x << "," << pxTip.y << "\n";
 			std::cerr << "ordered:\n";
 			int i = 1;

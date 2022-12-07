@@ -22,7 +22,7 @@
 #define PXLSCANTHREADS "--pxlscanThreads"		// Environment :: n_pixel_scan_threads
 #define REDUCETHREADS "--reduceThreads"			// Environment :: n_reduce_threads
 #define GLCMANGLES "--glcmAngles"					// Environment :: rotAngles
-#define VERBOSITY "--verbosity"					// Environment :: verbosity_level	-- Example: --verbosity=3
+#define VERBOSITY "--verbose"					// Environment :: verbosity_level	-- Example: --verbosity=3
 #define ONLINESTATSTHRESH "--onlineStatsThresh" // Environment :: onlineStatsThreshold	-- Example: --onlineStatsThresh=150
 #define XYRESOLUTION "--pixelsPerCentimeter"	// pixels per centimeter
 #define PXLDIST "--pixelDistance"				// used in neighbor features
