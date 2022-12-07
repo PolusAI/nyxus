@@ -115,7 +115,7 @@ void ContourFeature::buildRegularContour(LR& r)
 
 				// Defines the neighborhood offset position from current position and the neighborhood
 				// position we want to check next if we find a new border at checkLocationNr
-				int neighborhood[8][2] = {
+				StatsInt neighborhood[8][2] = {
 						{-1,7},
 						{-3 - width,7},
 						{-width - 2,1},
@@ -440,7 +440,7 @@ void ContourFeature::buildRegularContour_nontriv(LR& r)
 
 				// Defines the neighborhood offset position from current position and the neighborhood
 				// position we want to check next if we find a new border at checkLocationNr
-				int neighborhood[8][2] = {
+				StatsInt neighborhood[8][2] = {
 						{-1,7},
 						{-3 - width,7},
 						{-width - 2,1},
