@@ -7,33 +7,61 @@
 #else
   error "Missing the <filesystem> header."
 #endif
+
+#include <errno.h>
 #include <iostream>
 #include <sstream>
+#include <thread>
 #include "../environment.h"
 #include "image_matrix_nontriv.h"
 
-OutOfRamPixelCloud::OutOfRamPixelCloud()
+OutOfRamPixelCloud::OutOfRamPixelCloud() {}
+
+OutOfRamPixelCloud::~OutOfRamPixelCloud()
 {
+	if (pF)
+	{
+		fclose(pF);
+		pF = nullptr;
+		fs::remove(filepath);
+	}
 }
 
 void OutOfRamPixelCloud::init (unsigned int _roi_label, std::string name)
 {
+	n_items = 0;	
+	
+	auto tid = std::this_thread::get_id();
+
 	std::stringstream ssPath;
-	ssPath << Nyxus::theEnvironment.get_temp_dir_path() << name << _roi_label;
+	ssPath << Nyxus::theEnvironment.get_temp_dir_path() << name << "_roi" << _roi_label << "_tid" << tid << ".vec.nyxus";
 	filepath = ssPath.str();
+	
+	errno = 0;	
 	pF = fopen(filepath.c_str(), "w+b");
+	if (!pF)
+		throw (std::runtime_error("Error creating file " + filepath + " Error code:" + std::to_string(errno)));
 
 	if (std::setvbuf(pF, nullptr, _IOFBF, 32768) != 0)
 		std::cout << "setvbuf failed\n";
+}
+
+void OutOfRamPixelCloud::close()
+{
+	if (pF)
+	{
+		fclose(pF);
+		pF = nullptr;
+	}
 }
 
 void OutOfRamPixelCloud::clear()
 {
 	if (pF)
 	{
-		fclose(pF);
-		pF = nullptr;
+		close();
 		fs::remove (filepath);
+		n_items = 0;
 	}
 }
 
@@ -42,6 +70,8 @@ void OutOfRamPixelCloud::add_pixel(const Pixel2& p)
 	fwrite((const void*) &(p.x), sizeof(p.x), 1, pF);
 	fwrite((const void*)&(p.y), sizeof(p.y), 1, pF);
 	fwrite((const void*)&(p.inten), sizeof(p.inten), 1, pF);
+
+	n_items++;
 }
 
 size_t OutOfRamPixelCloud::get_size() const
@@ -60,13 +90,18 @@ Pixel2 OutOfRamPixelCloud::get_at(size_t idx) const
 	return px;
 }
 
-
 WriteImageMatrix_nontriv::WriteImageMatrix_nontriv (const std::string& _name, unsigned int _roi_label)
 {
+	auto tid = std::this_thread::get_id();
+
 	std::stringstream ssPath;
-	ssPath << fs::temp_directory_path() << "/imagematrix_nontriv" << _roi_label;
+	ssPath << Nyxus::theEnvironment.get_temp_dir_path() << _name << "_roi" << _roi_label << "_tid" << tid << ".mat.nyxus";
 	filepath = ssPath.str();
+
+	errno = 0;
 	pF = fopen (filepath.c_str(), "w+b");
+	if (!pF)
+		throw (std::runtime_error("Error creating file " + filepath + " Error code:" + std::to_string(errno)));
 
 	if (std::setvbuf (pF, nullptr, _IOFBF, 32768) != 0) 
 		std::cout << "setvbuf failed\n";
@@ -98,7 +133,7 @@ void WriteImageMatrix_nontriv::allocate (int w, int h, double ini_value)
 void WriteImageMatrix_nontriv::init_with_cloud (const OutOfRamPixelCloud & cloud, const AABB & aabb)
 {
 	// Allocate space
-	allocate(aabb.get_width(), aabb.get_height());
+	allocate(aabb.get_width(), aabb.get_height(), 0);
 	
 	// Fill it with cloud pixels 
 	for (size_t i = 0; i < cloud.get_size(); i++)
@@ -121,7 +156,7 @@ void WriteImageMatrix_nontriv::init_with_cloud_distance_to_contour_weights (cons
 	original_aabb = aabb;
 
 	// Allocate space
-	allocate(aabb.get_width(), aabb.get_height());
+	allocate(aabb.get_width(), aabb.get_height(), 0);
 
 	// Fill it with cloud pixels 
 	for (size_t i = 0; i < cloud.get_size(); i++)

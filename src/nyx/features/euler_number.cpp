@@ -127,7 +127,7 @@ void EulerNumberFeature::osized_calculate (LR& r, ImageLoader& imloader)
 
 	const AABB& aabb = r.aabb;
 
-	const auto& cloud = r.osized_pixel_cloud;
+	const auto& cloud = r.raw_pixels_NT;
 
 	auto min_x = aabb.get_xmin(),
 		min_y = aabb.get_ymin(),
@@ -141,7 +141,7 @@ void EulerNumberFeature::osized_calculate (LR& r, ImageLoader& imloader)
 
 	//std::vector<unsigned char> I(n, 0);
 	WriteImageMatrix_nontriv I ("I", r.label);
-	I.allocate (n);	
+	I.allocate (n, 1, 0);
 
 	//for (auto& p : cloud)
 	//{

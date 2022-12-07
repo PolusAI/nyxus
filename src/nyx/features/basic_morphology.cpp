@@ -1,3 +1,4 @@
+#define _USE_MATH_DEFINES	// For M_PI, etc.
 #include "../environment.h"
 #include "../parallel.h"
 #include "histogram.h"
@@ -20,7 +21,8 @@ BasicMorphologyFeatures::BasicMorphologyFeatures(): FeatureMethod("BasicMorpholo
 		EXTENT,
 		MASS_DISPLACEMENT,		
 		WEIGHTED_CENTROID_X,
-		WEIGHTED_CENTROID_Y
+		WEIGHTED_CENTROID_Y, 
+		DIAMETER_EQUAL_AREA
 		});
 }
 
@@ -32,6 +34,9 @@ void BasicMorphologyFeatures::calculate(LR& r)
 	val_AREA_PIXELS_COUNT = n;
 	if (theEnvironment.xyRes > 0.0)
 			val_AREA_UM2  = n * std::pow(theEnvironment.pixelSizeUm, 2);
+
+	// --DIAMETER_EQUAL_AREA
+	val_DIAMETER_EQUAL_AREA = double(val_AREA_PIXELS_COUNT) / M_PI * 4.0;
 
 	// --CENTROID_XY
 	double cen_x = 0.0,
@@ -116,13 +121,16 @@ void BasicMorphologyFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	if (theEnvironment.xyRes > 0.0)
 		val_AREA_UM2 = n * std::pow(theEnvironment.pixelSizeUm, 2);
 
+	// --DIAMETER_EQUAL_AREA
+	val_DIAMETER_EQUAL_AREA = double(val_AREA_PIXELS_COUNT) / M_PI * 4.0;
+
 	// --CENTROID_XY
 	double cen_x = 0.0,
 		cen_y = 0.0;
 	
-	for (size_t i = 0; i < r.osized_pixel_cloud.get_size(); i++)	// for (auto& px : r.raw_pixels)
+	for (size_t i = 0; i < r.raw_pixels_NT.get_size(); i++)	// for (auto& px : r.raw_pixels)
 	{
-		auto px = r.osized_pixel_cloud.get_at(i);
+		auto px = r.raw_pixels_NT.get_at(i);
 		cen_x += px.x;
 		cen_y += px.y;
 	}
@@ -132,9 +140,9 @@ void BasicMorphologyFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 
 	// --COMPACTNESS
 	Moments2 mom2;
-	for (size_t i = 0; i < r.osized_pixel_cloud.get_size(); i++)	// for (auto& px : r.raw_pixels)
+	for (size_t i = 0; i < r.raw_pixels_NT.get_size(); i++)	// for (auto& px : r.raw_pixels)
 	{
-		auto px = r.osized_pixel_cloud.get_at(i);
+		auto px = r.raw_pixels_NT.get_at(i);
 		double dst = std::sqrt(px.sqdist(cen_x, cen_y));
 		mom2.add(dst);
 	}
@@ -148,9 +156,9 @@ void BasicMorphologyFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 
 	//==== Basic morphology :: Centroids
 	val_CENTROID_X = val_CENTROID_Y = 0;
-	for (size_t i = 0; i < r.osized_pixel_cloud.get_size(); i++)	// for (auto& px : r.raw_pixels)
+	for (size_t i = 0; i < r.raw_pixels_NT.get_size(); i++)	// for (auto& px : r.raw_pixels)
 	{
-		auto px = r.osized_pixel_cloud.get_at(i);
+		auto px = r.raw_pixels_NT.get_at(i);
 		val_CENTROID_X += px.x;
 		val_CENTROID_Y += px.y;
 	}
@@ -160,9 +168,9 @@ void BasicMorphologyFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	//==== Basic morphology :: Weighted centroids
 	double x_mass = 0, y_mass = 0, mass = 0;
 
-	for (size_t i = 0; i < r.osized_pixel_cloud.get_size(); i++)	// for (auto& px : r.raw_pixels)
+	for (size_t i = 0; i < r.raw_pixels_NT.get_size(); i++)	// for (auto& px : r.raw_pixels)
 	{
-		auto px = r.osized_pixel_cloud.get_at(i);
+		auto px = r.raw_pixels_NT.get_at(i);
 		// the "+1" is only for compatability with matlab code (where index starts from 1) 
 		x_mass = x_mass + (px.x + 1) * px.inten;
 		y_mass = y_mass + (px.y + 1) * px.inten;
@@ -205,6 +213,7 @@ void BasicMorphologyFeatures::save_value(std::vector<std::vector<double>>& fvals
 	fvals[CENTROID_X][0] = val_CENTROID_X;
 	fvals[CENTROID_Y][0] = val_CENTROID_Y;
 	fvals[COMPACTNESS][0] = val_COMPACTNESS;
+	fvals[DIAMETER_EQUAL_AREA][0] = val_DIAMETER_EQUAL_AREA;
 	fvals[EXTENT][0] = val_EXTENT;
 	fvals[MASS_DISPLACEMENT][0] = val_MASS_DISPLACEMENT;
 	fvals[WEIGHTED_CENTROID_X][0] = val_WEIGHTED_CENTROID_X;
@@ -255,5 +264,6 @@ void BasicMorphologyFeatures::cleanup_instance()
 	val_MASS_DISPLACEMENT = 0;
 	val_EXTENT = 0;
 	val_ASPECT_RATIO = 0;
+	val_DIAMETER_EQUAL_AREA = 0;
 }
 

@@ -8,6 +8,8 @@ namespace Nyxus
 	/// @brief Feature codes
 	enum AvailableFeatures
 	{
+		//==== 2D features
+		
 		// Pixel intensity stats
 		INTEGRATED_INTENSITY = 0,
 		MEAN,
@@ -45,12 +47,13 @@ namespace Nyxus
 		BBOX_XMIN,
 		BBOX_HEIGHT,
 		BBOX_WIDTH,
+		DIAMETER_EQUAL_AREA,
 		EXTENT,
 		ASPECT_RATIO,
-
-		// -- ellipticity related
-		MAJOR_AXIS_LENGTH,
+		// -- Legendre inertia ellipse
+		MAJOR_AXIS_LENGTH,	
 		MINOR_AXIS_LENGTH,
+		// -- ellipticity related
 		ECCENTRICITY,
 		ELONGATION,
 		ORIENTATION,
@@ -58,12 +61,12 @@ namespace Nyxus
 
 		// --contour related
 		PERIMETER,
-		EQUIVALENT_DIAMETER,
+		DIAMETER_EQUAL_PERIMETER,
 		EDGE_MEAN_INTENSITY,
 		EDGE_STDDEV_INTENSITY,
 		EDGE_MAX_INTENSITY,
 		EDGE_MIN_INTENSITY,
-		EDGE_INTEGRATEDINTENSITY,	
+		EDGE_INTEGRATED_INTENSITY,	
 		CIRCULARITY,
 
 		// -- convex hull related
@@ -151,7 +154,7 @@ namespace Nyxus
 		ROI_RADIUS_MAX,
 		ROI_RADIUS_MEDIAN,
 
-		// -- neighboring ROI features
+		// Neighbor features
 		NUM_NEIGHBORS,
 		PERCENT_TOUCHING,
 		CLOSEST_NEIGHBOR1_DIST,

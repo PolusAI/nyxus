@@ -150,7 +150,7 @@ void PixelIntensityFeatures::osized_calculate (LR& r, ImageLoader& imloader)
 		integInten = 0.0;
 	for (size_t i = 0; i < n; i++) //--- for (auto& px : r.raw_pixels)
 	{
-		Pixel2 px = r.osized_pixel_cloud.get_at(i);
+		Pixel2 px = r.raw_pixels_NT.get_at(i);
 		mean_ += px.inten;
 		energy += px.inten * px.inten;
 		cen_x += px.x;
@@ -212,7 +212,7 @@ void PixelIntensityFeatures::osized_calculate (LR& r, ImageLoader& imloader)
 	Moments4 mom;
 	for (size_t i = 0; i < n; i++) //--- for (auto& px : r.raw_pixels)
 	{
-		Pixel2 px = r.osized_pixel_cloud.get_at(i);
+		Pixel2 px = r.raw_pixels_NT.get_at(i);
 		mom.add(px.inten);
 	}
 	val_SKEWNESS = mom.skewness();

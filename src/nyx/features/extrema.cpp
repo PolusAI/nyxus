@@ -99,9 +99,9 @@ void ExtremaFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	int RightMost_Top = -1;
 	int RightMost_Bottom = -1;
 
-	for (size_t i = 0; i < r.osized_pixel_cloud.get_size(); i++)
+	for (size_t i = 0; i < r.raw_pixels_NT.get_size(); i++)
 	{
-		Pixel2 p = r.osized_pixel_cloud.get_at(i);
+		Pixel2 p = r.raw_pixels_NT.get_at(i);
 
 		// Find leftmost and rightmost x-pixels of the top 
 		if (p.y == TopMost && (TopMost_MostLeft == -1 || p.x < (StatsInt)TopMost_MostLeft))

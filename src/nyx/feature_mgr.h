@@ -44,18 +44,3 @@ private:
 
 };
 
-namespace Nyxus
-{
-	extern FeatureMethod
-		* pixelIntensityFeatures,
-		* contourFeature,
-		* convhullFeature,
-		* ellipsefitFeature,
-		* extremaFeature,
-		* eulerNumberFeature, 
-		* caliperNassensteinFeature, 
-		* caliperFeretFeature, 
-		* caliperMartinFeature, 
-		* chordsFeature,
-		* gaborFeature;
-}

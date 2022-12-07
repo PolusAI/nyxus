@@ -122,7 +122,7 @@ void ConvexHullFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {
 	r.convHull_CH.clear();
 
-	size_t n = r.osized_pixel_cloud.get_size();
+	size_t n = r.raw_pixels_NT.get_size();
 
 	// Skip calculation if the ROI is too small
 	if (n < 2)
@@ -132,25 +132,25 @@ void ConvexHullFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	std::vector<Pixel2> lowerCH;
 
 	// Computing upper convex hull
-	upperCH.push_back(r.osized_pixel_cloud.get_at(0));
-	upperCH.push_back(r.osized_pixel_cloud.get_at(1));
+	upperCH.push_back(r.raw_pixels_NT.get_at(0));
+	upperCH.push_back(r.raw_pixels_NT.get_at(1));
 
 	for (size_t i = 2; i < n; i++)
 	{
-		while (upperCH.size() > 1 && (!right_turn(upperCH[upperCH.size() - 2], upperCH[upperCH.size() - 1], r.osized_pixel_cloud.get_at(i))))
+		while (upperCH.size() > 1 && (!right_turn(upperCH[upperCH.size() - 2], upperCH[upperCH.size() - 1], r.raw_pixels_NT.get_at(i))))
 			upperCH.pop_back();
-		upperCH.push_back(r.osized_pixel_cloud.get_at(i));
+		upperCH.push_back(r.raw_pixels_NT.get_at(i));
 	}
 
 	// Computing lower convex hull
-	lowerCH.push_back(r.osized_pixel_cloud.get_at(n - 1));
-	lowerCH.push_back(r.osized_pixel_cloud.get_at(n - 2));
+	lowerCH.push_back(r.raw_pixels_NT.get_at(n - 1));
+	lowerCH.push_back(r.raw_pixels_NT.get_at(n - 2));
 
 	for (size_t i = 2; i < n; i++)
 	{
-		while (lowerCH.size() > 1 && (!right_turn(lowerCH[lowerCH.size() - 2], lowerCH[lowerCH.size() - 1], r.osized_pixel_cloud.get_at(n - i - 1))))
+		while (lowerCH.size() > 1 && (!right_turn(lowerCH[lowerCH.size() - 2], lowerCH[lowerCH.size() - 1], r.raw_pixels_NT.get_at(n - i - 1))))
 			lowerCH.pop_back();
-		lowerCH.push_back(r.osized_pixel_cloud.get_at(n - i - 1));
+		lowerCH.push_back(r.raw_pixels_NT.get_at(n - i - 1));
 	}
 
 	// We could use 

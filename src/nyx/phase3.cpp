@@ -38,7 +38,7 @@ namespace Nyxus
 
 
 			// Initialize ROI's pixel cache
-			r.osized_pixel_cloud.init (r.label, "r_oor_pixel_cloud");
+			r.raw_pixels_NT.init (r.label, "raw_pixels_NT");
 
 			// Iterate ROI's tiles and scan pixels
 			for (auto tileIdx : r.host_tiles)
@@ -64,33 +64,12 @@ namespace Nyxus
 						x = col * tw + i % tw;
 
 					// Feed the pixel to online features and helper objects
-					r.osized_pixel_cloud.add_pixel(Pixel2(x, y, intens));
-
-					// Manual
-					//		pixelIntensityFeatures->osized_add_online_pixel(x, y, intens);
-					//
-
-					// Automatic
-					int nrf = theFeatureMgr.get_num_requested_features();
-					for (int i = 0; i < nrf; i++)
-					{
-						auto feature = theFeatureMgr.get_feature_method(i);
-						feature->osized_add_online_pixel (x, y, intens);
-					}
+					r.raw_pixels_NT.add_pixel(Pixel2(x, y, intens));
 				}
 			}
 
 			//=== Features requiring non-raster access to pixels
 			
-			// Manual
-			//		contourFeature->osized_scan_whole_image(r, theImLoader);
-			//		convhullFeature->osized_scan_whole_image(r, theImLoader);
-			//		ellipsefitFeature->osized_scan_whole_image(r, theImLoader);
-			//		extremaFeature->osized_scan_whole_image(r, theImLoader);
-			//		eulerNumberFeature->osized_scan_whole_image(r, theImLoader);
-			//		chordsFeature->osized_scan_whole_image(r, theImLoader);
-			//		gaborFeature->osized_scan_whole_image(r, theImLoader);
-
 			// Automatic
 			int nrf = theFeatureMgr.get_num_requested_features();
 			for (int i = 0; i < nrf; i++)
@@ -110,7 +89,7 @@ namespace Nyxus
 			}
 
 			//=== Clean the ROI's cache
-			r.osized_pixel_cloud.clear();
+			r.raw_pixels_NT.clear();
 
 			#ifdef WITH_PYTHON_H
 			// Allow heyboard interrupt.

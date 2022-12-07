@@ -48,7 +48,7 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	ReadImageMatrix_nontriv M(r.aabb);	//-- auto M = r.aux_image_matrix;
 
 	WriteImageMatrix_nontriv D ("GLSZMFeature_osized_calculate_D", r.label);	//-- pixData& D = M.WriteablePixels();
-	D.allocate (r.aabb.get_width(), r.aabb.get_height());
+	D.allocate (r.aabb.get_width(), r.aabb.get_height(), 0);
 
 	//M.print("initial\n");
 

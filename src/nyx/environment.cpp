@@ -1,12 +1,3 @@
-#if __has_include(<filesystem>)
-  #include <filesystem>
-  namespace fs = std::filesystem;
-#elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
-  namespace fs = std::experimental::filesystem;
-#else
-  error "Missing the <filesystem> header."
-#endif
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -133,15 +124,12 @@ namespace Nyxus
 Environment::Environment(): BasicEnvironment()
 {
 	unsigned long long availMem = Nyxus::getAvailPhysMemory();
-	ram_limit = availMem / 2;
-
-	// Initialize the path to temp directory
-	temp_dir_path = fs::temp_directory_path().string();
+	ramLimit = availMem / 2;
 }
 
 size_t Environment::get_ram_limit()
 {
-	return ram_limit;
+	return ramLimit;
 }
 
 int Environment::get_pixel_distance()
@@ -157,44 +145,32 @@ void Environment::set_pixel_distance(int pixelDistance)
 void Environment::show_cmdline_help()
 {
 	std::cout
-		<< PROJECT_NAME << " " << PROJECT_VER << "\nCopyright Axle Informatics 2021\n"
-		<< "Command line format:\n"
-		<< "\t" << PROJECT_NAME << " -h\tDisplay help info\n"
-		<< "\t" << PROJECT_NAME << " --help\tDisplay help info\n"
-		<< "\t" << PROJECT_NAME << " "
-		<< FILEPATTERN << " file pattern regular expression e.g. .*, *.tif, etc [default = .*] \n"
-		<< OUTPUTTYPE << " <csv> "
-		<< SEGDIR << " <sd> "
-		<< INTDIR << " <id> "
-		<< OUTDIR << " <od> "
-		<< " [" << FEATURES << " specific feature or '*all*' (default = '*all*') ] \n"
-		<< " [" << XYRESOLUTION << " <res> \n"
-		<< " [" << EMBPIXSZ << " <eps>]\n"
-		<< " [" << LOADERTHREADS << " <lt>]\n"
-		<< " [" << PXLSCANTHREADS << " <st>]\n"
-		<< " [" << REDUCETHREADS << " <rt>]\n"
-		<< " [" << PXLDIST << " <pxd>]\n"
-		<< " [" << COARSEGRAYDEPTH << " <custom number of grayscale levels (default: 256)>]\n"
-		<< " [" << GLCMANGLES << " one or more comma separated rotation angles from set {0, 45, 90, and 135}, default is " << GLCMANGLES << "0,45,90,135 \n"
-		<< " [" << VERBOSITY << " <verbo>]\n";
+		<< PROJECT_NAME << " " << PROJECT_VER << "\nCopyright Axle Informatics 2021-2022\n"
+		<< "Usage:\t" << "nyxus" 
+		<< "\t" << FILEPATTERN << " <file pattern regular expression e.g. .*, *.tif, etc (default = .*)> \n"
+		<< "\t\t" << OUTPUTTYPE << " <'separatecsv'[default] or 'singlecsv'> \n"
+		<< "\t\t" << SEGDIR << " <directory of segmentation images> \n"
+		<< "\t\t" << INTDIR << " <directory of intensity images> \n"
+		<< "\t\t" << OUTDIR << " <output directory> \n"
+		<< "\t\t[ " << FEATURES << " <specific feature or '*all*' (default = '*all*')> ] \n"
+		<< "\t\t[ " << XYRESOLUTION << " <number of pixels per centimeter, an integer or floating point number> ] \n"
+		<< "\t\t[ " << EMBPIXSZ << " <[default = 0]> ]\n"
+		<< "\t\t[ " << LOADERTHREADS << " <number of image loader threads [default = 1]> ] \n"
+		<< "\t\t[ " << PXLSCANTHREADS << " <number of pixel scanner threads within a TIFF tile (default = 1)> ] \n"
+		<< "\t\t[ " << REDUCETHREADS << " <number of feature reduction threads [default = 1]> ] \n"
+		<< "\t\t[ " << PXLDIST << " <number of pixels as neighbor features radius [default = 5]> ] \n"
+		<< "\t\t[ " << COARSEGRAYDEPTH << " <custom number of grayscale levels (default: 256)> ] \n"
+		<< "\t\t[ " << GLCMANGLES << " <one or more comma separated rotation angles from set {0, 45, 90, and 135}, default is " << GLCMANGLES << "0,45,90,135> ] \n"
+		<< "\t\t[ " << VERBOSITY << " <levels of verbosity 0 (silence), 2 (timing), 4 (roi diagnostics), 8 (granular diagnostics) [default = 0]> ] \n"
+		<< "\t\t[ " << RAMLIMIT << " <bytes> ] \n"
+		<< "\t\t[ " << TEMPDIR << " <slash-terminating path> ] \n"
+		<< "\n"
+		<< "\tnyxus -h\tDisplay help info\n"
+		<< "\tnyxus --help\tDisplay help info\n";
 
-#ifdef USE_GPU
-	std::cout << " [" << USEGPU << "=<true or false>" << " [" << GPUDEVICEID << "=<valid GPU device ID>] ]\n";
-#endif
-
-	std::cout
-		<< "Where\n"
-		<< "\t<csv> - 'separatecsv'[default] or 'singlecsv' \n"
-		<< "\t<sd> - directory of segmentation images \n"
-		<< "\t<id> - directory of intensity images \n"
-		<< "\t<od> - output directory \n"
-		<< "\t<res> - number of pixels per centimeter, an integer or floating point number \n"
-		<< "\t<eps> - [default = 0] \n"
-		<< "\t<lt> - number of image loader threads [default = 1] \n"
-		<< "\t<st> - number of pixel scanner threads within a TIFF tile [default = 1] \n"
-		<< "\t<rt> - number of feature reduction threads [default = 1] \n"
-		<< "\t<pxd> - number of pixels as neighbor features radius [default = 5] \n"
-		<< "\t<verbo> - levels of verbosity 0 (silence), 2 (timing), 4 (roi diagnostics), 8 (granular diagnostics) [default = 0] \n";
+	#ifdef USE_GPU
+		std::cout << " [" << USEGPU << "=<true or false>" << " [" << GPUDEVICEID << "=<valid GPU device ID>] ]\n";
+	#endif
 }
 
 void Environment::show_summary(const std::string &head, const std::string &tail)
@@ -255,6 +231,9 @@ void Environment::show_summary(const std::string &head, const std::string &tail)
 
 	// Oversized ROI limit
 	std::cout << "\tbatch and oversized ROI lower limit " << theEnvironment.get_ram_limit() << " bytes\n";
+
+	// Temp directory
+	std::cout << "\ttemp directory " << theEnvironment.get_temp_dir_path() << "\n";
 
 	std::cout << tail;
 }
@@ -402,6 +381,7 @@ void Environment::process_feature_list()
 				AREA_UM2,
 				CENTROID_X,
 				CENTROID_Y,
+				DIAMETER_EQUAL_AREA, 
 				WEIGHTED_CENTROID_Y,
 				WEIGHTED_CENTROID_X,
 				COMPACTNESS,
@@ -413,10 +393,9 @@ void Environment::process_feature_list()
 				MINOR_AXIS_LENGTH,
 				ECCENTRICITY,
 				ORIENTATION,
-				NUM_NEIGHBORS,
 				EXTENT,
 				ASPECT_RATIO,
-				EQUIVALENT_DIAMETER,
+				DIAMETER_EQUAL_PERIMETER,
 				CONVEX_HULL_AREA,
 				SOLIDITY,
 				PERIMETER,
@@ -460,7 +439,8 @@ void Environment::process_feature_list()
 				GLCM_SUMAVERAGE,
 				GLCM_SUMENTROPY,
 				GLCM_SUMVARIANCE,
-				GLCM_VARIANCE };
+				GLCM_VARIANCE
+			};
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -709,7 +689,9 @@ int Environment::parse_cmdline(int argc, char **argv)
 				find_string_argument(i, GLCMANGLES, rawGlcmAngles) ||
 				find_string_argument(i, PXLDIST, pixel_distance) ||
 				find_string_argument(i, COARSEGRAYDEPTH, raw_coarse_grayscale_depth) ||
-				find_string_argument(i, VERBOSITY, verbosity) 
+				find_string_argument(i, VERBOSITY, verbosity) ||
+				find_string_argument(i, RAMLIMIT, rawRamLimit) ||
+				find_string_argument(i, TEMPDIR, rawTempDir)
 #ifdef USE_GPU
 				|| find_string_argument(i, USEGPU, rawUseGpu) 
 				|| find_string_argument(i, GPUDEVICEID, rawGpuDeviceID) 
@@ -863,6 +845,34 @@ int Environment::parse_cmdline(int argc, char **argv)
 		GLCMFeature::angles = glcmAngles;
 	}
 
+	//==== Parse the RAM limit
+	if (!rawRamLimit.empty())
+	{
+		// string -> integer
+		unsigned long value = 0;
+		if (sscanf(rawRamLimit.c_str(), "%d", &value) != 1 || value < 0)
+		{
+			std::cout << "Error: " << RAMLIMIT << "=" << rawRamLimit << ": expecting a non-negative integer constant\n";
+			return 1;
+		}
+
+		// The angle list parsed well, let's tell it to GLCMFeature 
+		ramLimit = value;
+	}
+
+	//==== Parse the temp directory
+	if (!rawTempDir.empty())
+	{
+		// Check the path
+		if (!existsOnFilesystem(rawTempDir))
+		{
+			std::cout << "Error :" << TEMPDIR << "=" << rawTempDir << ": nonexisting directory\n";
+			return 1;
+		}
+		
+		// Modify the temp directory path
+		this->temp_dir_path = rawTempDir + "\\";
+	}
 
 	//==== Using GPU
 	#ifdef USE_GPU
@@ -975,11 +985,6 @@ int Environment::parse_cmdline(int argc, char **argv)
 
 	// Success
 	return 0;
-}
-
-std::string Environment::get_temp_dir_path() const
-{
-	return temp_dir_path;
 }
 
 void Environment::show_featureset_help()

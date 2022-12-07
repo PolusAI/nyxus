@@ -86,10 +86,12 @@ namespace Nyxus
 					size_t footprint = r.get_ram_footprint_estimate();
 					if (footprint >= theEnvironment.get_ram_limit())
 					{
-						VERBOSLVL2(std::cout << ">>> Skipping non-trivial ROI " << lab << " (area=" << r.aux_area << " px, footprint=" << footprint << " b"
-							<< " w=" << r.aabb.get_width() << " h=" << r.aabb.get_height() << " sz_Pixel2=" << sizeof(Pixel2)
-							<< ")\n";)
-							nontrivRoiLabels.push_back(lab);
+						VERBOSLVL2(
+							std::cout << ">>> Skipping non-trivial ROI " << lab << " (area=" << r.aux_area << " px, footprint=" << footprint << " b"
+								<< " w=" << r.aabb.get_width() << " h=" << r.aabb.get_height() << " sz_Pixel2=" << sizeof(Pixel2)
+								<< ")\n"
+						);
+						nontrivRoiLabels.push_back(lab);
 					}
 					else
 						trivRoiLabels.push_back(lab);

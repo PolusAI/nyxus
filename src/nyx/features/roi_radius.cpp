@@ -36,7 +36,7 @@ void RoiRadiusFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t inte
 
 void RoiRadiusFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {
-	const auto& cloud = r.osized_pixel_cloud; 
+	const auto& cloud = r.raw_pixels_NT; 
 	const std::vector<Pixel2>& contour = r.contour;
 
 	Moments2 mom2;

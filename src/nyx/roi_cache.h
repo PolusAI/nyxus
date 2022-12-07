@@ -43,7 +43,7 @@ public:
 	bool roi_disabled = false;
 
 	std::vector <Pixel2> raw_pixels;
-	OutOfRamPixelCloud osized_pixel_cloud;
+	OutOfRamPixelCloud raw_pixels_NT;
 	unsigned int aux_area = 0;
 	PixIntens aux_min, aux_max;
 	std::vector<Pixel2> contour;	

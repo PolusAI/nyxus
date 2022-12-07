@@ -128,3 +128,4 @@ struct Pixel2 : public Point2i
 
 };
 
+bool operator == (const Pixel2& p1, const Pixel2& p2);

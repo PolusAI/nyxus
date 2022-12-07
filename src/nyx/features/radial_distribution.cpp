@@ -112,7 +112,7 @@ void RadialDistributionFeature::osized_calculate (LR& r, ImageLoader& imlo)
 		return;
 
 	auto& contour = r.contour;
-	OutOfRamPixelCloud& cloud = r.osized_pixel_cloud;
+	OutOfRamPixelCloud& cloud = r.raw_pixels_NT;
 
 	// Cache the pixels count
 	this->cached_num_pixels = r.aux_area; 

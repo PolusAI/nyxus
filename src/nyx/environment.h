@@ -25,8 +25,11 @@
 #define VERBOSITY "--verbosity"					// Environment :: verbosity_level	-- Example: --verbosity=3
 #define ONLINESTATSTHRESH "--onlineStatsThresh" // Environment :: onlineStatsThreshold	-- Example: --onlineStatsThresh=150
 #define XYRESOLUTION "--pixelsPerCentimeter"	// pixels per centimeter
-#define PXLDIST "--pixelDistance"		// used in neighbor features
-#define COARSEGRAYDEPTH "--coarseGrayDepth"
+#define PXLDIST "--pixelDistance"				// used in neighbor features
+#define COARSEGRAYDEPTH "--coarseGrayDepth"		// Default - 8
+#define RAMLIMIT "--ramLimit"					// Optional. Limit for treating ROIs as non-trivial and for setting the batch size of trivial ROIs. Default - amount of available system RAM
+#define TEMPDIR "--tempDir"						// Optional. Used in processing non-trivial features. Default - system temp directory
+
 #ifdef USE_GPU
 	#define USEGPU "--useGpu"					// Environment::rawUseGpu, "true" or "false"
 	#define GPUDEVICEID "--gpuDeviceID"		// Environment::rawGpuDeviceID
@@ -113,10 +116,6 @@ public:
 	size_t get_ram_limit();
 	void process_feature_list();
 
-	/// @brief Slash-terminated application-wide temp directory path
-	/// @return 
-	std::string get_temp_dir_path() const;
-
 	static bool gpu_is_available();
 
 #ifdef USE_GPU
@@ -141,9 +140,7 @@ private:
 	bool find_string_argument(std::vector<std::string>::iterator &i, const char *arg, std::string &arg_value);
 	bool find_int_argument(std::vector<std::string>::iterator &i, const char *arg, int &arg_value);
 
-	size_t ram_limit = 1024L * 1024L * 1024L; // [bytes] - default RAM limit affecting Phase 2's batch size. (Purpose of Phase 2 is calculating trivial ROIs.)
-
-	std::string temp_dir_path;
+	std::string rawTempDirPath = "";
 
 #ifdef USE_GPU
 	std::string rawUseGpu = "";		// boolean
@@ -157,6 +154,13 @@ private:
 
 	unsigned int coarse_grayscale_depth = 256;
 	std::string raw_coarse_grayscale_depth = "";
+
+	// data members implementing RAMLIMIT
+	std::string rawRamLimit = "";
+	size_t ramLimit = 0;
+
+	// data members implementing TEMPDIR
+	std::string rawTempDir = "";
 };
 
 namespace Nyxus
