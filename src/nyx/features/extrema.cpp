@@ -99,7 +99,7 @@ void ExtremaFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	int RightMost_Top = -1;
 	int RightMost_Bottom = -1;
 
-	for (size_t i = 0; i < r.raw_pixels_NT.get_size(); i++)
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)
 	{
 		Pixel2 p = r.raw_pixels_NT.get_at(i);
 

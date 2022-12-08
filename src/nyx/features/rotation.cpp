@@ -74,7 +74,7 @@ void Rotation::rotate_cloud(
 	OutOfRamPixelCloud& rotated_cloud,
 	AABB& rotated_aabb)
 {
-	for (size_t i=0; i<cloud.get_size(); i++)
+	for (size_t i=0; i<cloud.size(); i++)
 	{
 		const Pixel2 p = cloud.get_at(i);
 

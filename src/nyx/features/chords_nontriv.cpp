@@ -29,7 +29,7 @@ ChordsFeature::ChordsFeature() : FeatureMethod("ChordsFeature")
 
 void ChordsFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {
-	if (r.raw_pixels_NT.get_size() == 0)
+	if (r.raw_pixels_NT.size() == 0)
 		return;
 
 	// The center that we'll rotate the ROI around

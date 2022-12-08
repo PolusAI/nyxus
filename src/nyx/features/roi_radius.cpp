@@ -41,7 +41,7 @@ void RoiRadiusFeature::osized_calculate (LR& r, ImageLoader& imloader)
 
 	Moments2 mom2;
 	std::vector<HistoItem> dists;
-	for (size_t i=0; i<cloud.get_size(); i++) 
+	for (size_t i=0; i<cloud.size(); i++) 
 	{
 		Pixel2 pxA = cloud.get_at(i);
 		auto [minSD, maxSD] = pxA.min_max_sqdist(contour);

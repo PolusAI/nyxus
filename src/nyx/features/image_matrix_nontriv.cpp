@@ -74,7 +74,7 @@ void OutOfRamPixelCloud::add_pixel(const Pixel2& p)
 	n_items++;
 }
 
-size_t OutOfRamPixelCloud::get_size() const
+size_t OutOfRamPixelCloud::size() const
 {
 	return n_items;
 }
@@ -136,7 +136,7 @@ void WriteImageMatrix_nontriv::init_with_cloud (const OutOfRamPixelCloud & cloud
 	allocate(aabb.get_width(), aabb.get_height(), 0);
 	
 	// Fill it with cloud pixels 
-	for (size_t i = 0; i < cloud.get_size(); i++)
+	for (size_t i = 0; i < cloud.size(); i++)
 	{
 		const Pixel2 p = cloud.get_at(i);
 		auto y = p.y - aabb.get_ymin(),
@@ -159,7 +159,7 @@ void WriteImageMatrix_nontriv::init_with_cloud_distance_to_contour_weights (cons
 	allocate(aabb.get_width(), aabb.get_height(), 0);
 
 	// Fill it with cloud pixels 
-	for (size_t i = 0; i < cloud.get_size(); i++)
+	for (size_t i = 0; i < cloud.size(); i++)
 	{
 		const Pixel2 p = cloud.get_at(i);
 

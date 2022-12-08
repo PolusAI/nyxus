@@ -61,27 +61,32 @@ namespace Nyxus
 		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
 		std::sort(L.begin(), L.end());
 
-		FILE* fp = nullptr;
 
 		static bool mustRenderHeader = true;	// This can be flipped to 'false' in 'singlecsv' scenario
 
+		// Make the file name and write mode
+		std::string fullPath;
+		const char* mode; // = "w";
 		if (theEnvironment.separateCsv)
 		{
-			std::string fullPath = outputDir + "/_INT_" + getPureFname(intFpath) + "_SEG_" + getPureFname(segFpath) + ".csv";
+			fullPath = outputDir + "/_INT_" + getPureFname(intFpath) + "_SEG_" + getPureFname(segFpath) + ".csv";
 			VERBOSLVL1(std::cout << "\t--> " << fullPath << "\n";)
-			fopen_s(&fp, fullPath.c_str(), "w");
 		}
 		else
 		{
-			std::string fullPath = outputDir + "/" + "NyxusFeatures.csv";
+			fullPath = outputDir + "/" + "NyxusFeatures.csv";
 			VERBOSLVL1(std::cout << "\t--> " << fullPath << "\n";)
-			auto mode = mustRenderHeader ? "w" : "a";
-			fopen_s(&fp, fullPath.c_str(), mode);
+			mode = mustRenderHeader ? "w" : "a";
 		}
+
+		// Open it
+		FILE* fp = nullptr;
+		fopen_s(&fp, fullPath.c_str(), mode);
 
 		if (!fp)
 		{
-			std::perror("fopen failed");
+			std::string errmsg = "Cannot open file " + getPureFname(intFpath) + " for writing";
+			std::perror (errmsg.c_str());
 			return false;
 		}
 

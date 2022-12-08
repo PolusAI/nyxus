@@ -122,7 +122,7 @@ void ConvexHullFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {
 	r.convHull_CH.clear();
 
-	size_t n = r.raw_pixels_NT.get_size();
+	size_t n = r.raw_pixels_NT.size();
 
 	// Skip calculation if the ROI is too small
 	if (n < 2)

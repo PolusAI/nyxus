@@ -61,7 +61,8 @@ namespace Nyxus
 		size_t jobSize = PendingRoisLabels.size(),
 			workPerThread = jobSize / n_reduce_threads;
 
-		//==== Pixel intensity stats. Calculate these basic features unconditionally
+		//==== Pixel intensity stats
+		if (PixelIntensityFeatures::required(theFeatureSet))
 		{
 			STOPWATCH("Intensity/Intensity/Int/#FFFF00", "\t=");
 			runParallel(PixelIntensityFeatures::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
@@ -202,7 +203,7 @@ namespace Nyxus
 		}
 
 		//==== Moments
-		if (ImageMomentsFeature::required(theFeatureSet) && false)	//!!! disabled
+		if (ImageMomentsFeature::required(theFeatureSet))
 		{
 			#ifndef USE_GPU
 				STOPWATCH("Moments/Moments/2D moms/#FFFACD", "\t=");
@@ -257,7 +258,7 @@ namespace Nyxus
 		}
 
 		//==== Radial distribution / FracAtD, MeanFraq, and RadialCV
-		if (RadialDistributionFeature::required(theFeatureSet) && false)	//!!! disabled
+		if (RadialDistributionFeature::required(theFeatureSet))
 		{
 			STOPWATCH("RDistribution/Rdist/Rd/#00FFFF", "\t=");
 			runParallel(RadialDistributionFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);

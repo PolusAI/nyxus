@@ -24,7 +24,7 @@ namespace Nyxus
 		{
 			LR& r = roiData[lab];
 
-			VERBOSLVL1(std::cout << "Processing oversized ROI " << lab << "\n");
+			VERBOSLVL1(std::cout << "processing oversized ROI " << lab << "\n");
 
 			// Scan one label-intensity pair 
 			bool ok = theImLoader.open(intens_fpath, label_fpath);

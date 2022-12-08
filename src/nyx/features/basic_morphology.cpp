@@ -128,7 +128,7 @@ void BasicMorphologyFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	double cen_x = 0.0,
 		cen_y = 0.0;
 	
-	for (size_t i = 0; i < r.raw_pixels_NT.get_size(); i++)	// for (auto& px : r.raw_pixels)
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)	// for (auto& px : r.raw_pixels)
 	{
 		auto px = r.raw_pixels_NT.get_at(i);
 		cen_x += px.x;
@@ -140,7 +140,7 @@ void BasicMorphologyFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 
 	// --COMPACTNESS
 	Moments2 mom2;
-	for (size_t i = 0; i < r.raw_pixels_NT.get_size(); i++)	// for (auto& px : r.raw_pixels)
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)	// for (auto& px : r.raw_pixels)
 	{
 		auto px = r.raw_pixels_NT.get_at(i);
 		double dst = std::sqrt(px.sqdist(cen_x, cen_y));
@@ -156,7 +156,7 @@ void BasicMorphologyFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 
 	//==== Basic morphology :: Centroids
 	val_CENTROID_X = val_CENTROID_Y = 0;
-	for (size_t i = 0; i < r.raw_pixels_NT.get_size(); i++)	// for (auto& px : r.raw_pixels)
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)	// for (auto& px : r.raw_pixels)
 	{
 		auto px = r.raw_pixels_NT.get_at(i);
 		val_CENTROID_X += px.x;
@@ -168,7 +168,7 @@ void BasicMorphologyFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	//==== Basic morphology :: Weighted centroids
 	double x_mass = 0, y_mass = 0, mass = 0;
 
-	for (size_t i = 0; i < r.raw_pixels_NT.get_size(); i++)	// for (auto& px : r.raw_pixels)
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)	// for (auto& px : r.raw_pixels)
 	{
 		auto px = r.raw_pixels_NT.get_at(i);
 		// the "+1" is only for compatability with matlab code (where index starts from 1) 

@@ -24,6 +24,9 @@ public:
 	// Returns the pointer to a feature method instance
 	FeatureMethod* get_feature_method (int idx);
 
+	// Returns a feature method pointer or null
+	FeatureMethod* get_feature_method_by_code(AvailableFeatures fcode);
+
 private:
 	// This test checks if there exists a feature code in Nyxus::AvailableFeatures implemented by multiple feature methods
 	bool check_11_correspondence();

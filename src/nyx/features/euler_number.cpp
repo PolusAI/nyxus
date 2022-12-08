@@ -150,7 +150,7 @@ void EulerNumberFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	//		idx = row * nx + col;
 	//	I[idx] = 1;
 	//}
-	for (auto i = 0; i < cloud.get_size(); i++)
+	for (auto i = 0; i < cloud.size(); i++)
 	{
 		const auto& p = cloud.get_at(i);
 		int col = p.x - min_x,

@@ -15,14 +15,14 @@ public:
 	void clear();
 	void add_pixel (const Pixel2& p);
 	void close();
-	size_t get_size() const;
+	size_t size() const;
 	Pixel2 get_at (size_t idx) const;
-	Pixel2 operator[] (size_t idx) { return get_at(idx); }
+	Pixel2 operator[] (size_t idx) const { return get_at(idx); }
 
 	struct iterator 
 	{
 		public:
-			iterator (OutOfRamPixelCloud& obj, std::size_t idx)
+			iterator (const OutOfRamPixelCloud& obj, std::size_t idx)
 				: m_object(obj), 
 				m_index(idx)
 			{}
@@ -48,16 +48,18 @@ public:
 				return *this;
 			}
 		private:
-			OutOfRamPixelCloud& m_object;
+			const OutOfRamPixelCloud& m_object;
 			std::size_t m_index;
 	};
 
-	iterator begin() {
+	iterator begin() const
+	{
 		return iterator(*this, 0);
 	}
 
-	iterator end() {
-		return iterator(*this, get_size());
+	iterator end() const
+	{
+		return iterator(*this, size());
 	}
 
 private:

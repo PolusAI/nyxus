@@ -2,9 +2,9 @@
 
 #include <vector>
 #include <unordered_map>
+#include "../feature_method.h"
 #include "../roi_cache.h"
 #include "pixel.h"
-#include "../feature_method.h"
 
 /// @brief Features describing the radial intensity distribution within a ROI - fraction of total stain in an object at a given radius, mean fractional intensity at a given radius, coefficient of variation of intensity within a ring.
 class RadialDistributionFeature: public FeatureMethod
@@ -39,18 +39,24 @@ private:
 	void get_RadialCV();
 
 	// Returns the index of the pixel in parameter 'cloud' having maximum distance from 'contour'
-	size_t find_osized_cloud_center (OutOfRamPixelCloud& cloud, std::vector<Pixel2>& contour);
+	size_t find_center_NT (const OutOfRamPixelCloud& cloud, const std::vector<Pixel2>& contour);
 
+	// Zeros the counters
+	void reset_buffers();
+
+	// Return-ready feature values
 	std::vector<double> values_FracAtD,
 		values_MeanFrac,
 		values_RadialCV;
 
+	// Counters
 	std::vector<int> radial_count_bins;
 	std::vector<double> radial_intensity_bins;
-	std::vector<int> angular_bins;
-	std::vector<std::vector<Pixel2>> band_pixels;
+	std::vector<std::vector<size_t>> banded_wedges;
+
+	// Helpers
 	int cached_center_x = -1, 
 		cached_center_y = -1;
-
 	int cached_num_pixels = 0;
+	const double epsilon = 0.000000001;
 };

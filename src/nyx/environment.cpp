@@ -124,7 +124,7 @@ namespace Nyxus
 Environment::Environment(): BasicEnvironment()
 {
 	unsigned long long availMem = Nyxus::getAvailPhysMemory();
-	ramLimit = availMem / 2;
+	ramLimit = availMem / 2;	// Safely require 50% of available memory
 }
 
 size_t Environment::get_ram_limit()
@@ -214,20 +214,13 @@ void Environment::show_summary(const std::string &head, const std::string &tail)
 
 	// GLCM angles
 	std::cout << "\tGLCM angles\t";
-	for (auto ang : glcmAngles)
-	{
-		if (ang != glcmAngles[0])
-			std::cout << ", ";
-		std::cout << ang;
-	}
-	std::cout << "\tshould match GLCMFeature angles\t{";
 	for (auto ang : GLCMFeature::angles)
 	{
 		if (ang != GLCMFeature::angles[0])
 			std::cout << ", ";
 		std::cout << ang;
 	}
-	std::cout << "}\n";
+	std::cout << "\n";
 
 	// Oversized ROI limit
 	std::cout << "\tbatch and oversized ROI lower limit " << theEnvironment.get_ram_limit() << " bytes\n";
@@ -235,16 +228,6 @@ void Environment::show_summary(const std::string &head, const std::string &tail)
 	// Temp directory
 	std::cout << "\ttemp directory " << theEnvironment.get_temp_dir_path() << "\n";
 
-	std::cout << tail;
-}
-
-void Environment::show_memory(const std::string &head, const std::string &tail)
-{
-	std::cout << head << "Command line summary:\n";
-	for (auto &m : memory)
-	{
-		std::cout << "\t" << std::get<0>(m) << " : " << std::get<1>(m) << "\n";
-	}
 	std::cout << tail;
 }
 
@@ -257,7 +240,7 @@ bool Environment::find_string_argument(std::vector<std::string>::iterator &i, co
 	if (actualArgName == a)
 	{
 		arg_value = *++i;
-		memory.push_back({a, arg_value});
+		recognizedArgs.push_back({a, arg_value});
 		return true;
 	}
 	else
@@ -268,7 +251,7 @@ bool Environment::find_string_argument(std::vector<std::string>::iterator &i, co
 		if (pos != std::string::npos)
 		{
 			arg_value = actualArgName.substr(a.length());
-			memory.push_back({a, arg_value});
+			recognizedArgs.push_back({a, arg_value});
 			return true;
 		}
 	}
@@ -661,7 +644,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 		return 1;
 
 	std::vector<std::string> args(argv + 1, argv + argc);
-	std::vector<std::string> unrecognized;
+	std::vector<std::string> unrecognizedArgs;
 
 	//==== Gather raw data
 	for (auto i = args.begin(); i != args.end(); ++i)
@@ -697,7 +680,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 				|| find_string_argument(i, GPUDEVICEID, rawGpuDeviceID) 
 #endif
 			))
-			unrecognized.push_back(*i);
+			unrecognizedArgs.push_back(*i);
 	}
 
 	//==== Show the user recognized and unrecognized command line elements
@@ -708,17 +691,17 @@ int Environment::parse_cmdline(int argc, char **argv)
 	std::copy(args.begin(), args.end(), std::ostream_iterator<std::string>(rawCL, " ")); // vector of strings -> string
 	rawCL << "\n\n";
 
-	// --display how the command line was parsed
-	VERBOSLVL1(show_memory(rawCL.str().c_str(), "\n");)
+	std::cout << "\nAccepted command line arguments:\n";
+	for (auto& m : recognizedArgs)
+		std::cout << "\t" << std::get<0>(m) << " : " << std::get<1>(m) << "\n";
 
 	// --what's not recognized?
-	if (unrecognized.size() > 0)
+	if (unrecognizedArgs.size() > 0)
 	{
-		std::cout << "\nUnrecognized arguments:\n";
-		for (auto &u : unrecognized)
+		std::cout << "Ignoring unrecognized arguments:\n";
+		for (auto &u : unrecognizedArgs)
 			std::cout << "\t" << u << "\n";
 	}
-	std::cout << "\n";
 
 	//==== Check mandatory parameters
 
@@ -859,6 +842,14 @@ int Environment::parse_cmdline(int argc, char **argv)
 
 		// To megabytes
 		value *= 1048576;
+
+		// Check if it over the actual limit
+		unsigned long long actualRam = Nyxus::getAvailPhysMemory();
+		if (value > actualRam)
+		{
+			std::cout << "Error: RAM limit " << value << " is over the actual amount of available RAM " << actualRam << "\n";
+			return 1;
+		}
 
 		// The angle list parsed well, let's tell it to GLCMFeature 
 		ramLimit = value;

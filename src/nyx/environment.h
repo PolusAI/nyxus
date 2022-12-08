@@ -134,8 +134,7 @@ public:
 	void set_coarse_gray_depth(unsigned int new_depth);
 
 private:
-	std::vector<std::tuple<std::string, std::string>> memory;
-	void show_memory(const std::string &head, const std::string &tail);
+	std::vector<std::tuple<std::string, std::string>> recognizedArgs;	// Accepted command line arguments
 
 	bool find_string_argument(std::vector<std::string>::iterator &i, const char *arg, std::string &arg_value);
 	bool find_int_argument(std::vector<std::string>::iterator &i, const char *arg, int &arg_value);
