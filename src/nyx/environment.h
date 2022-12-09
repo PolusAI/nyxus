@@ -76,9 +76,8 @@ public:
 
 	std::string embedded_pixel_size = "";
 
-	std::string features;
-	std::vector<std::string> desiredFeatures;
-	std::string featureFileName = "";
+	std::string rawFeatures;
+	std::vector<std::string> recognizedFeatureNames;
 
 	std::string loader_threads = "";
 	int n_loader_threads = 1;
