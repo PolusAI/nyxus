@@ -44,7 +44,7 @@ void initialize_environment(
     uint32_t n_loader_threads,
     int using_gpu)
 {
-    theEnvironment.desiredFeatures = features;
+    theEnvironment.recognizedFeatureNames = features;
     theEnvironment.set_pixel_distance(static_cast<int>(neighbor_distance));
     theEnvironment.set_verbosity_level (0);
     theEnvironment.xyRes = theEnvironment.pixelSizeUm = pixels_per_micron;
