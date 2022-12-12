@@ -92,6 +92,10 @@ namespace Nyxus
 		// Check individual features
 		for (const auto &s : strings)
 		{
+			// Forgive user's typos of consequtive commas e.g. MIN,MAX,,MEDIAN
+			if (s.empty())
+				continue;
+
 			auto s_uppr = toupper(s);
 			if (s_uppr == FEA_NICK_ALL ||
 				s_uppr == FEA_NICK_ALL_INTENSITY ||
@@ -127,6 +131,46 @@ namespace Nyxus
 		   theEnvironment.show_featureset_help();
 
 		return retval;
+	}
+
+	std::string strip_punctn_and_comment (const std::string& src)
+	{
+		std::string s = src;
+		bool commentState = false;
+		for (size_t i = 0; i < s.size(); i++)
+		{
+			if (s[i] == '#')
+			{
+				commentState = true;
+				s.erase(i, 1); // remove ith char from string
+				i--; // reduce i with one so you don't miss any char
+				continue;
+			}
+
+			if (commentState)
+			{
+				s.erase(i, 1); // remove ith char from string
+				i--; // reduce i with one so you don't miss any char
+				continue;
+			}
+
+			if (s[i] == '\n')
+			{
+				commentState = false;
+				s.erase(i, 1); // remove ith char from string
+				i--; // reduce i with one so you don't miss any char
+				continue;
+			}
+
+			if (!((std::isalnum(s[i]) || s[i] == '_') || s[i] == ','))
+			{
+				s.erase(i, 1); // remove ith char from string
+				i--; // reduce i with one so you don't miss any char
+				continue;
+			}
+		}
+
+		return s;
 	}
 }
 
@@ -224,9 +268,9 @@ void Environment::show_summary(const std::string &head, const std::string &tail)
 
 	// Features
 	std::cout << "\tfeatures\t";
-	for (auto f : desiredFeatures)
+	for (auto f : recognizedFeatureNames)
 	{
-		if (f != desiredFeatures[0])
+		if (f != recognizedFeatureNames[0])
 			std::cout << ", ";
 		std::cout << f;
 	}
@@ -330,7 +374,7 @@ bool Environment::find_int_argument(std::vector<std::string>::iterator &i, const
 void Environment::process_feature_list()
 {
 	theFeatureSet.enableAll(false); // First, disable all
-	for (auto &s : desiredFeatures) // Second, iterate uppercased feature names
+	for (auto &s : recognizedFeatureNames) // Second, iterate uppercased feature names
 	{
 		// Check if features are requested via a group nickname
 		if (s == FEA_NICK_ALL)
@@ -698,7 +742,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 				find_string_argument(i, OUTDIR, output_dir) ||
 				find_string_argument(i, INTSEGMAPDIR, intSegMapDir) ||
 				find_string_argument(i, INTSEGMAPFILE, intSegMapFile) ||
-				find_string_argument(i, FEATURES, features) ||
+				find_string_argument(i, FEATURES, rawFeatures) ||
 				find_string_argument(i, XYRESOLUTION, rawXYRes) ||
 				find_string_argument(i, FILEPATTERN, file_pattern) ||
 				find_string_argument(i, OUTPUTTYPE, rawOutpType) ||
@@ -773,10 +817,10 @@ int Environment::parse_cmdline(int argc, char **argv)
 		return 1;
 	}
 
-	if (features == "")
+	if (rawFeatures == "")
 	{
 		std::cout << "Warning: " << FEATURES << "=<empty string>, defaulting to " << FEA_NICK_ALL << "\n";
-		features = FEA_NICK_ALL;
+		rawFeatures = FEA_NICK_ALL;
 	}
 
 	//==== Output type
@@ -903,27 +947,37 @@ int Environment::parse_cmdline(int argc, char **argv)
 
 	//==== Parse desired features
 
-	// --Try to read a feature file
-	if (features.length() > 0 && Nyxus::existsOnFilesystem(features))
+	// --Try to pick up features from a file
+	if (rawFeatures.length() > 0 && Nyxus::existsOnFilesystem(rawFeatures))
 	{
-
-		std::ifstream file(features);
-		std::string ln, fileText;
+		std::ifstream file(rawFeatures);
+		std::string ln, featureList;
 		while (std::getline(file, ln))
 		{
-			if (fileText.length() > 0)
-				fileText += ",";
-			fileText += ln;
+			// Strip punctuation and comment text
+			std::string pureLn = strip_punctn_and_comment(ln);
+
+			// Skip empty strings
+			if (pureLn.length() == 0)
+				continue;
+
+			// Consume the purified feature name
+			// --insert comma after 1st item
+			if (featureList.length() > 0)
+				// --no need for inserted comma if the item came with its own comma
+				if (pureLn[pureLn.size()-1] != ',')
+					featureList += ",";
+			featureList += pureLn;
 		}
 
-		// Modify the input string
-		features = fileText;
+		std::cout << "Using features [" << featureList << "] from file " << rawFeatures << "\n";
 
-		std::cout << "Using features [" << fileText << "] from file " << features << "\n";
+		// Modify the input string
+		rawFeatures = featureList;
 	}
 
 	// --Make sure all the feature names are legal and cast to uppercase (class FeatureSet understands uppercase names)
-	if (!Nyxus::parse_delimited_string_list_to_features(features, desiredFeatures))
+	if (!Nyxus::parse_delimited_string_list_to_features(rawFeatures, recognizedFeatureNames))
 	{
 		std::cerr << "Stopping due to errors while parsing user requested features\n";
 		return 1;

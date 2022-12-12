@@ -229,7 +229,7 @@ void ContourFeature::buildRegularContour(LR& r)
 
 	//	--initialize vector 'ordered' with 1st pixel of 'unordered'
 	auto itBeg = unordered.begin();
-	Pixel2& pxTip = *itBeg;
+	Pixel2 pxTip = *itBeg;
 	ordered.push_back(pxTip);
 	unordered.remove(pxTip);
 
