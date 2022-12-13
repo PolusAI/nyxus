@@ -61,7 +61,7 @@ void Stopwatch::save_stats (const std::string & fpath)
 	// "nrois" and "roiarea" containing values 10 and 500 respectively.)
 	
 	std::vector<std::string> vars, vals;	// experiment variables and their values
-	std::filesystem::path fpa (fpath);
+	fs::path fpa (fpath);
 	std::string stm = fpa.stem().string();
 	if (stm.find('=') != std::string::npos)
 	{

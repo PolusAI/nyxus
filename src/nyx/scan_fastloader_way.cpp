@@ -184,7 +184,7 @@ namespace Nyxus
 			VERBOSLVL1(Stopwatch::print_stats();)
 				
 			// Details - also to a file
-			std::filesystem::path p (theSegFname);
+			fs::path p (theSegFname);
 			VERBOSLVL1(Stopwatch::save_stats (theEnvironment.output_dir + "/" + p.stem().string() + "_nyxustiming.csv");)
 			#endif
 		}
