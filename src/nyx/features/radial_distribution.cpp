@@ -10,19 +10,41 @@
 RadialDistributionFeature::RadialDistributionFeature() : FeatureMethod("RadialDistributionFeature")
 {
 	provide_features ({ FRAC_AT_D, MEAN_FRAC, RADIAL_CV });
-	add_dependencies ({PERIMETER});
+	add_dependencies ({PERIMETER});	// Actually we need the LR::contour object so we declare a dependency on feature 'PERIMETER' that in turn requires the LR::contour prerequisite
+}
+
+void RadialDistributionFeature::reset_buffers()
+{
+	// Clear
+	values_FracAtD.clear();
+	values_MeanFrac.clear();
+	values_RadialCV.clear();
+	radial_count_bins.clear();
+	radial_intensity_bins.clear();
+
+	for (auto& bw : banded_wedges)
+		bw.clear();
+	banded_wedges.clear();
+
+	// Reallocate
+	auto n = RadialDistributionFeature::num_bins;
+	radial_count_bins.resize(n, 0);
+	radial_intensity_bins.resize(n, 0.0);
+
+	banded_wedges.resize(n);
+	for (int i = 0; i < n; i++)
+		banded_wedges[i].resize(n, 0);
+
+	values_FracAtD.resize(n, 0);
+	values_MeanFrac.resize(n, 0);
+	values_RadialCV.resize(n, 0);
 }
 
 void RadialDistributionFeature::calculate(LR& r)
 {
-	radial_count_bins.resize (RadialDistributionFeature::num_bins, 0);
-	radial_intensity_bins.resize (RadialDistributionFeature::num_bins, 0.0);
-	angular_bins.resize (RadialDistributionFeature::num_bins, 0);
-	band_pixels.resize (RadialDistributionFeature::num_bins);
+	reset_buffers();
 
-	values_FracAtD.resize (RadialDistributionFeature::num_bins, 0);
-	values_MeanFrac.resize (RadialDistributionFeature::num_bins, 0);
-	values_RadialCV.resize (RadialDistributionFeature::num_bins, 0);
+	auto n = RadialDistributionFeature::num_bins;
 
 	auto& raw_pixels = r.raw_pixels;
 	auto& contour_pixels = r.contour;
@@ -52,19 +74,29 @@ void RadialDistributionFeature::calculate(LR& r)
 		// Distance center to cloud pixel
 		double dstOA = std::sqrt(pxA.sqdist(pxO));		
 		
-		// Find the radial bin index and update the bin counters
+		// Find the radial bin index
 		double rat = dstOA / dstOC;
-		int bi = int(rat * (num_bins-1));	// bin index
-		if (bi >= num_bins)
-			bi = num_bins - 1;
+		int bi = int(rat * (n-1));	// bin index
+		if (bi >= n)
+			bi = n - 1;
+
+		// Update the bin counters
 		radial_count_bins[bi] ++;
 		radial_intensity_bins[bi] += pxA.inten;
 
 		// Cache this pixel's intensity for calculating the CV
-		band_pixels[bi].push_back(pxA);
+		int dx = pxA.x - cached_center_x,
+			dy = pxA.y - cached_center_y;
+		double ang = std::atan2(dy, dx);
+		if (ang < 0)
+			ang = 2.0 * M_PI + ang;
+		double angW = 2.0 * M_PI / double(num_bins);
+		int w_bin = int(ang / angW);	// wedge bin
+
+		banded_wedges[bi][w_bin] += pxA.inten;
 	}
 
-	// Calculate the features (result - corresponding bin vectors)
+	// Calculate the features (result - bin vectors values_FracAtD, values_MeanFrac, and values_RadialCV)
 	get_FracAtD();
 	get_MeanFrac();
 	get_RadialCV();
@@ -72,129 +104,77 @@ void RadialDistributionFeature::calculate(LR& r)
 
 void RadialDistributionFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
 
-size_t RadialDistributionFeature::find_osized_cloud_center (OutOfRamPixelCloud& cloud, std::vector<Pixel2> & contour)
+size_t RadialDistributionFeature::find_center_NT (const OutOfRamPixelCloud& cloud, const std::vector<Pixel2>& contour)
 {
-	int idxMindiff = 0;	// initial pixel index 0
-	
-	auto minmaxDist = cloud.get_at(idxMindiff).min_max_sqdist (contour);	//--triv--> auto minmaxDist = cloud[idxMindiff].min_max_sqdist(contour);
+	int idxMinDif = 0;
+	auto minmaxDist = cloud[idxMinDif].min_max_sqdist(contour);
 	double minDif = minmaxDist.second - minmaxDist.first;
-
-	for (size_t i = 1; i < cloud.get_size(); i++)
+	for (size_t n = cloud.size(), i = 1; i < n; i++)
 	{
-		// Caclculate the difference of distances
-		minmaxDist = cloud.get_at(i).min_max_sqdist (contour);	//--triv--> auto minmaxDist = cloud[i].min_max_sqdist(contour);
-
-		// Update the minimum difference
+		auto minmaxDist = cloud[i].min_max_sqdist(contour);
 		double dif = minmaxDist.second - minmaxDist.first;
 		if (dif < minDif)
 		{
 			minDif = dif;
-			idxMindiff = i;
+			idxMinDif = i;
 		}
 	}
-
-	return idxMindiff;
+	return idxMinDif;
 }
 
-void RadialDistributionFeature::osized_calculate (LR& r, ImageLoader& imlo)
+void RadialDistributionFeature::osized_calculate(LR& r, ImageLoader& imlo)
 {
-	radial_count_bins.resize(RadialDistributionFeature::num_bins, 0);
-	radial_intensity_bins.resize(RadialDistributionFeature::num_bins, 0.0);
-	angular_bins.resize(RadialDistributionFeature::num_bins, 0);
-	band_pixels.resize(RadialDistributionFeature::num_bins);
+	reset_buffers();
 
-	values_FracAtD.resize(RadialDistributionFeature::num_bins, 0);
-	values_MeanFrac.resize(RadialDistributionFeature::num_bins, 0);
-	values_RadialCV.resize(RadialDistributionFeature::num_bins, 0);
+	auto n = RadialDistributionFeature::num_bins;
 
 	// Skip calculation if we have insofficient informative data 
-	if (r.aux_area == 0 || r.contour.size() == 0)
+	if (r.raw_pixels_NT.size() == 0 || r.contour.size() == 0)
 		return;
 
-	auto& contour = r.contour;
-	OutOfRamPixelCloud& cloud = r.osized_pixel_cloud;
-
 	// Cache the pixels count
-	this->cached_num_pixels = r.aux_area; 
+	this->cached_num_pixels = r.raw_pixels_NT.size();
 
 	// Find the center (most distant pixel from the edge)
-	size_t idxO = find_osized_cloud_center (cloud, contour);	//--triv--> int idxO = Pixel2::find_center(raw_pixels, contour);
+	int idxO = find_center_NT (r.raw_pixels_NT, r.contour);
 
-	// Cache the center
-	Pixel2 pxO = cloud.get_at(idxO);
-	this->cached_center_x = pxO.x;
-	this->cached_center_y = pxO.y;
+	// Cache it
+	this->cached_center_x = r.raw_pixels_NT[idxO].x;
+	this->cached_center_y = r.raw_pixels_NT[idxO].y;
 
-	// Distribute pixels into radial bins
-	double binWidth = 1.0 / double(num_bins - 1);
-	for (size_t i = 0; i < cloud.get_size(); i++)	//--triv--> for (auto& pxA : raw_pixels)
+	// Get ahold of the center pixel
+	const Pixel2 pxO = r.raw_pixels_NT[idxO];
+
+	// Max radius
+	double dstOC = std::sqrt(pxO.max_sqdist(r.contour)); 
+
+	for (auto pxA : r.raw_pixels_NT)
 	{
-		auto pxA = cloud.get_at(i);
-
-		// If 'px' is a contour point, skip it
-		if (pxA.belongs_to(contour))
-			continue;
-
-		// Find the contour point
-		int idxCont = -1; // Pixel2& pxContour = conv_hull.CH[0];
-		double distToRadius;
-
-		for (int i = 0; i < contour.size(); i++)
-		{
-			const Pixel2& pxC = contour[i];
-			double dAC = pxA.sqdist(pxC);
-			double dOC = pxO.sqdist(pxC);
-			double dOA = pxO.sqdist(pxA);
-			if (dOC < dAC || dOC < dOA)
-				continue;	// Perpendicular from A onto OC is situated beyond OC - skip this degenerate case
-
-			double dA_OC = pxA.sqdist_to_segment(pxC, pxO);
-			if (idxCont < 0 || dA_OC < distToRadius)
-			{
-				idxCont = i;
-				distToRadius = dA_OC;
-			}
-		}
-
-		// Was the contour point found? I may sometimes not be found due to some degeneracy of the contour itself, for instance, the ROI or its island is so small that it consists of the contour
-		if (idxCont < 0)
-			continue;
-
-		const Pixel2& pxContour = contour[idxCont];
-
 		// Distance center to cloud pixel
 		double dstOA = std::sqrt(pxA.sqdist(pxO));
 
-		// Distance center to contour
-		double dstOC = std::sqrt(pxContour.sqdist(pxO));
-
-		// Distance contour to pixel
-		double dstAC = std::sqrt(pxContour.sqdist(pxA));
-
-		// Intercept an error or weird condition
-		if (dstOC < dstAC || dstOC < dstOA)
-		{
-			// Show A
-			std::stringstream ss;
-			if (dstOC < dstAC)
-				ss << Nyxus::theIntFname << " Weird: OC=" << dstOC << " < AC=" << dstAC << ". Points O(" << pxO.x << "," << pxO.y << "), A(" << pxA.x << "," << pxA.y << "), and C(" << pxContour.x << "," << pxContour.y << ")";
-			if (dstOC < dstOA)
-				ss << Nyxus::theIntFname << " Weird: OC=" << dstOC << " < OA=" << dstOA << ". Points O(" << pxO.x << "," << pxO.y << "), A(" << pxA.x << "," << pxA.y << "), and C(" << pxContour.x << "," << pxContour.y << ")";
-			ImageMatrix imCont(contour);
-			imCont.print(ss.str(), "", { {pxO.x, pxO.y, "(O)"},  {pxA.x, pxA.y, "(A)"}, {pxContour.x, pxContour.y, "(C)"} });
-		}
-
-		// Ratio and bin
+		// Find the radial bin index 
 		double rat = dstOA / dstOC;
-		int bi = int(rat / binWidth);	// bin index
+		int bi = int(rat * (n - 1));	// bin index
+		if (bi >= n)
+			bi = n - 1;
+
+		// Update the bin counters
 		radial_count_bins[bi] ++;
 		radial_intensity_bins[bi] += pxA.inten;
 
-		// Cache this pixel's intensity for calculating the CV
-		band_pixels[bi].push_back(pxA);
+		int dx = pxA.x - cached_center_x,
+			dy = pxA.y - cached_center_y;
+		double ang = std::atan2(dy, dx);
+		if (ang < 0)
+			ang = 2.0 * M_PI + ang;
+		double angW = 2.0 * M_PI / double(num_bins);
+		int w_bin = int(ang / angW);	// wedge bin
+
+		banded_wedges[bi][w_bin] += pxA.inten;
 	}
 
-	// Calculate the features (result - corresponding bin vectors)
+	// Calculate the features (result - bin vectors values_FracAtD, values_MeanFrac, and values_RadialCV)
 	get_FracAtD();
 	get_MeanFrac();
 	get_RadialCV();
@@ -224,35 +204,20 @@ void RadialDistributionFeature::parallel_process_1_batch(size_t start, size_t en
 void RadialDistributionFeature::get_FracAtD()
 {
 	for (int i = 0; i < num_bins; i++)
-		values_FracAtD[i] = double(radial_count_bins[i]) / double(this->cached_num_pixels);
+		values_FracAtD[i] = double(radial_count_bins[i]) / (double(cached_num_pixels) + epsilon);
 }
 
 void RadialDistributionFeature::get_MeanFrac()
 {
 	for (int i = 0; i < num_bins; i++)
-		values_MeanFrac[i] = radial_intensity_bins[i] / double(radial_count_bins[i]);
+		values_MeanFrac[i] = radial_intensity_bins[i] / (double(radial_count_bins[i]) + epsilon);
 }
 
-void RadialDistributionFeature::get_RadialCV()
+void RadialDistributionFeature:: get_RadialCV()
 {
-	for (int i=0; i<band_pixels.size(); i++)
+	for (int i = 0; i < banded_wedges.size(); i++)
 	{
-		auto& band = band_pixels[i];
-
-		std::vector<double> wedges;
-		wedges.resize(RadialDistributionFeature::num_bins, 0.0);
-
-		for (auto& px : band)
-		{
-			int dx = px.x - cached_center_x,
-				dy = px.y - cached_center_y;
-			double ang = std::atan2(dy, dx);
-			if (ang < 0)
-				ang = 2.0 * M_PI + ang;
-			double angW = 2.0 * M_PI / double(num_bins);
-			int bin = ang / angW;
-			wedges[bin] += px.inten;
-		}
+		auto& wedges = banded_wedges[i];
 
 		// Mu
 		double sum = 0.0;
@@ -263,10 +228,10 @@ void RadialDistributionFeature::get_RadialCV()
 		// Sigma
 		sum = 0;
 		for (auto& w : wedges)
-			sum += (w - mean)*(w - mean);
+			sum += (w - mean) * (w - mean);
 		double var = sum / double(RadialDistributionFeature::num_bins);
 		double stddev = std::sqrt(var);
-		double cv = stddev / mean;
+		double cv = stddev / (mean + epsilon);
 
 		// Coefficient of variation
 		values_RadialCV[i] = cv;

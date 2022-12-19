@@ -13,7 +13,7 @@ void ImageMomentsFeature::osized_calculate(LR& r, ImageLoader& imlo)
     calcHuInvariants_nontriv (imlo, I);
 
     WriteImageMatrix_nontriv W ("ImageMomentsFeature_osized_calculate_W", r.label); 
-    W.init_with_cloud_distance_to_contour_weights (r.osized_pixel_cloud, r.aabb, r.contour);
+    W.init_with_cloud_distance_to_contour_weights (r.raw_pixels_NT, r.aabb, r.contour);
     calcOrigins_nontriv (W);
     calcWeightedSpatialMoments_nontriv (W);
     calcWeightedCentralMoments_nontriv (W);

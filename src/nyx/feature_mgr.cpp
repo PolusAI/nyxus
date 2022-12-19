@@ -173,115 +173,50 @@ int FeatureManager::get_num_fmethods_dependencies (FeatureMethod * fm, std::vect
 	return n_deps;
 }
 
+FeatureMethod* FeatureManager::get_feature_method_by_code (AvailableFeatures fcode)
+{
+	for (FeatureMethod* fm : full_featureset)
+	{
+		for (AvailableFeatures providedFcode : fm->provided_features)
+			if (providedFcode == fcode)
+				return fm;
+	}
+	return nullptr;
+}
+
 // Builds the requested set by copying items of 'featureset' requested via the command line into 'requested_features'
 void FeatureManager::build_user_requested_set()
 {
 	user_requested_features.clear();
 
-	std::vector<std::tuple<FeatureMethod*, int>> requestedWithDeps;
+	// Requested feature codes (as integer constants)
+	std::vector<std::tuple<std::string, AvailableFeatures>> rfc = theFeatureSet.getEnabledFeatures();
 
-	// iterate FMs
-	for (int i = 0; i < full_featureset.size(); i++)
+	// Find feature methods implementing them
+	for (auto f_info : rfc)
 	{
-		auto fm = full_featureset[i];
+		AvailableFeatures fc = std::get<1>(f_info);
+		FeatureMethod* fm = get_feature_method_by_code (fc);
 
-		// figure out if the FM is user-requested (that is, at least any of its FCodes is user-selected)
-		bool fmRequested = false;
+		if (fm == nullptr)
+			throw (std::runtime_error("Feature " + std::to_string(fc) + " is not provided by any feature method"));
 
-		// --iterate provided FCodes
-		for (auto fcode : fm->provided_features)
-			if (theFeatureSet.isEnabled(fcode))
-			{
-				fmRequested = true;
-				break;
-			}
-
-		// add requested FM to the execute-list 'requestedWithDeps'
-		if (fmRequested)
+		// first, save feature methods of fm's dependencies
+		for (auto depend_fc : fm->dependencies)
 		{
-			auto& deps = xdeps[i];
-			std::tuple<FeatureMethod*, int> oneD = { fm, deps.size() };
-			if (std::find(requestedWithDeps.begin(), requestedWithDeps.end(), oneD) == requestedWithDeps.end())
-				requestedWithDeps.push_back(oneD);
+			FeatureMethod* depend_fm = get_feature_method_by_code (depend_fc);
 
-			// iterate dependency FCodes and add corresponding FMs to the execute list
-			for (auto dfc : fm->dependencies)
-			{
-				// find the provider
-				for (int k = 0; k < full_featureset.size(); k++)
-				{
-					auto provFM = full_featureset[k];
-					auto& provDeps = xdeps[k];
-					oneD = { provFM, provDeps.size() };
-					if (std::find(requestedWithDeps.begin(), requestedWithDeps.end(), oneD) == requestedWithDeps.end())
-						requestedWithDeps.push_back(oneD);
-					break;	// stop searching the provider, proceed to the next dependency-fcode
-				}
-			}
+			if (depend_fm == nullptr)
+				throw (std::runtime_error("Feature " + std::to_string(depend_fc) + " is not provided by any feature method"));
+
+			// save this fm if it's not yet saved
+			if (std::find(user_requested_features.begin(), user_requested_features.end(), depend_fm) == user_requested_features.end())
+				user_requested_features.push_back(depend_fm);
 		}
-	}
 
-	// List unsorted
-	VERBOSLVL2
-		(
-			std::cout << "Unsorted:\n";
-			for (auto& oneD : requestedWithDeps)
-				std::cout << std::get<0>(oneD)->feature_info << " " << std::get<1>(oneD) << " deps \n";
-		)
-
-	// Sort by independence
-	std::sort(requestedWithDeps.begin(), requestedWithDeps.end(),
-		[](const std::tuple<FeatureMethod*, int>& a, const std::tuple<FeatureMethod*, int>& b)
-		{
-			return std::get<1>(a) < std::get<1>(b);
-		});
-
-	// List sorted
-		VERBOSLVL2
-		(
-			std::cout << "Sorted:\n";
-			for (auto& oneD : requestedWithDeps)
-				std::cout << std::get<0>(oneD)->feature_info << " " << std::get<1>(oneD) << " deps \n";
-		)
-
-	// Fill the user-facing 'user_requested_features'
-	user_requested_features.clear();
-	for (auto fmd : requestedWithDeps)
-	{
-		FeatureMethod* fm = std::get<0>(fmd);
-		user_requested_features.push_back(fm);
+		// second, save fm itself if it's not yet saved
+		if (std::find(user_requested_features.begin(), user_requested_features.end(), fm) == user_requested_features.end())
+			user_requested_features.push_back(fm);
 	}
 }
 
-#if 0
-void FeatureManager::external_test_init()
-{
-	pixelIntensityFeatures = new PixelIntensityFeatures();
-	contourFeature = new ContourFeature();
-	convhullFeature = new ConvexHullFeature();
-	ellipsefitFeature = new EllipseFittingFeature();
-	extremaFeature = new ExtremaFeature();
-	eulerNumberFeature = new EulerNumberFeature();
-	caliperNassensteinFeature = new CaliperNassensteinFeature();
-	caliperFeretFeature = new CaliperFeretFeature();
-	caliperMartinFeature = new CaliperMartinFeature();
-	chordsFeature = new ChordsFeature();
-	gaborFeature = new GaborFeature();
-}
-
-namespace Nyxus
-{
-	FeatureMethod* pixelIntensityFeatures,
-		* contourFeature,
-		* convhullFeature,
-		* ellipsefitFeature,
-		* extremaFeature,
-		* eulerNumberFeature, 		
-		* chordsFeature,
-		* caliperNassensteinFeature, 
-		* caliperFeretFeature, 
-		* caliperMartinFeature,
-		* gaborFeature;
-}
-
-#endif

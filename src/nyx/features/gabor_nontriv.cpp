@@ -29,12 +29,12 @@ void GaborFeature::osized_calculate (LR& r, ImageLoader& imloader)
     WriteImageMatrix_nontriv e2img ("e2img", r.label);
     auto roiWidth = r.aabb.get_width(),
         roiHeight = r.aabb.get_height();
-    e2img.allocate (roiWidth, roiHeight);
+    e2img.allocate (roiWidth, roiHeight, 0);
 
     // --2
     //---std::vector<double> auxC((Im0.width + n - 1) * (Im0.height + n - 1) * 2);
     WriteImageMatrix_nontriv auxC ("auxC", r.label);
-    auxC.allocate((roiWidth + n - 1) * (roiHeight + n - 1) * 2);
+    auxC.allocate((roiWidth+n-1), (roiHeight+n-1) * 2, 0);   
 
     // --3
     std::vector<double> auxG (n*n*2);

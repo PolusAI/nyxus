@@ -29,7 +29,7 @@ ChordsFeature::ChordsFeature() : FeatureMethod("ChordsFeature")
 
 void ChordsFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {
-	if (r.osized_pixel_cloud.get_size() == 0)
+	if (r.raw_pixels_NT.size() == 0)
 		return;
 
 	// The center that we'll rotate the ROI around
@@ -52,13 +52,13 @@ void ChordsFeature::osized_calculate (LR& r, ImageLoader& imloader)
 		AABB aabbRot;	//  bounding box of the rotated cloud
 		Rotation::rotate_cloud (
 			// inputs
-			r.osized_pixel_cloud, cenx, ceny, ang,
+			r.raw_pixels_NT, cenx, ceny, ang,
 			// outputs
 			R, aabbRot);
 
 		//ImageMatrix_nontriv im(R);
 		WriteImageMatrix_nontriv imRot ("imRot", r.label);
-		imRot.allocate (aabbRot.get_width(), aabbRot.get_height());
+		imRot.allocate (aabbRot.get_width(), aabbRot.get_height(), 0);
 		imRot.init_with_cloud (R, aabbRot);
 
 		for (int c = 0; c < imRot.get_width(); c++)

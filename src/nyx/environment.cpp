@@ -1,12 +1,3 @@
-#if __has_include(<filesystem>)
-  #include <filesystem>
-  namespace fs = std::filesystem;
-#elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
-  namespace fs = std::experimental::filesystem;
-#else
-  error "Missing the <filesystem> header."
-#endif
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -177,15 +168,12 @@ namespace Nyxus
 Environment::Environment(): BasicEnvironment()
 {
 	unsigned long long availMem = Nyxus::getAvailPhysMemory();
-	ram_limit = availMem / 2;
-
-	// Initialize the path to temp directory
-	temp_dir_path = fs::temp_directory_path().string();
+	ramLimit = availMem / 2;	// Safely require 50% of available memory
 }
 
 size_t Environment::get_ram_limit()
 {
-	return ram_limit;
+	return ramLimit;
 }
 
 int Environment::get_pixel_distance()
@@ -201,44 +189,32 @@ void Environment::set_pixel_distance(int pixelDistance)
 void Environment::show_cmdline_help()
 {
 	std::cout
-		<< PROJECT_NAME << " " << PROJECT_VER << "\nCopyright Axle Informatics 2021\n"
-		<< "Command line format:\n"
-		<< "\t" << PROJECT_NAME << " -h\tDisplay help info\n"
-		<< "\t" << PROJECT_NAME << " --help\tDisplay help info\n"
-		<< "\t" << PROJECT_NAME << " "
-		<< FILEPATTERN << " file pattern regular expression e.g. .*, *.tif, etc [default = .*] \n"
-		<< OUTPUTTYPE << " <csv> "
-		<< SEGDIR << " <sd> "
-		<< INTDIR << " <id> "
-		<< OUTDIR << " <od> "
-		<< " [" << FEATURES << " specific feature or '*all*' (default = '*all*') ] \n"
-		<< " [" << XYRESOLUTION << " <res> \n"
-		<< " [" << EMBPIXSZ << " <eps>]\n"
-		<< " [" << LOADERTHREADS << " <lt>]\n"
-		<< " [" << PXLSCANTHREADS << " <st>]\n"
-		<< " [" << REDUCETHREADS << " <rt>]\n"
-		<< " [" << PXLDIST << " <pxd>]\n"
-		<< " [" << COARSEGRAYDEPTH << " <custom number of grayscale levels (default: 256)>]\n"
-		<< " [" << GLCMANGLES << " one or more comma separated rotation angles from set {0, 45, 90, and 135}, default is " << GLCMANGLES << "0,45,90,135 \n"
-		<< " [" << VERBOSITY << " <verbo>]\n";
+		<< PROJECT_NAME << " " << PROJECT_VER << "\nCopyright Axle Informatics 2021-2022\n"
+		<< "Usage:\t" << "nyxus" 
+		<< "\t" << FILEPATTERN << " <file pattern regular expression e.g. .*, *.tif, etc (default = .*)> \n"
+		<< "\t\t" << OUTPUTTYPE << " <'separatecsv'[default] or 'singlecsv'> \n"
+		<< "\t\t" << SEGDIR << " <directory of segmentation images> \n"
+		<< "\t\t" << INTDIR << " <directory of intensity images> \n"
+		<< "\t\t" << OUTDIR << " <output directory> \n"
+		<< "\t\t[ " << FEATURES << " <specific feature or '*all*' (default = '*all*')> ] \n"
+		<< "\t\t[ " << XYRESOLUTION << " <number of pixels per centimeter, an integer or floating point number> ] \n"
+		<< "\t\t[ " << EMBPIXSZ << " <[default = 0]> ]\n"
+		<< "\t\t[ " << LOADERTHREADS << " <number of image loader threads [default = 1]> ] \n"
+		<< "\t\t[ " << PXLSCANTHREADS << " <number of pixel scanner threads within a TIFF tile (default = 1)> ] \n"
+		<< "\t\t[ " << REDUCETHREADS << " <number of feature reduction threads [default = 1]> ] \n"
+		<< "\t\t[ " << PXLDIST << " <number of pixels as neighbor features radius [default = 5]> ] \n"
+		<< "\t\t[ " << COARSEGRAYDEPTH << " <custom number of grayscale levels (default: 256)> ] \n"
+		<< "\t\t[ " << GLCMANGLES << " <one or more comma separated rotation angles from set {0, 45, 90, and 135}, default is " << GLCMANGLES << "0,45,90,135> ] \n"
+		<< "\t\t[ " << VERBOSITY << " <levels of verbosity 0 (silence), 2 (timing), 4 (roi diagnostics), 8 (granular diagnostics) [default = 0]> ] \n"
+		<< "\t\t[ " << RAMLIMIT << " <megabytes> ] \n"
+		<< "\t\t[ " << TEMPDIR << " <slash-terminating path> ] \n"
+		<< "\n"
+		<< "\tnyxus -h\tDisplay help info\n"
+		<< "\tnyxus --help\tDisplay help info\n";
 
-#ifdef USE_GPU
-	std::cout << " [" << USEGPU << "=<true or false>" << " [" << GPUDEVICEID << "=<valid GPU device ID>] ]\n";
-#endif
-
-	std::cout
-		<< "Where\n"
-		<< "\t<csv> - 'separatecsv'[default] or 'singlecsv' \n"
-		<< "\t<sd> - directory of segmentation images \n"
-		<< "\t<id> - directory of intensity images \n"
-		<< "\t<od> - output directory \n"
-		<< "\t<res> - number of pixels per centimeter, an integer or floating point number \n"
-		<< "\t<eps> - [default = 0] \n"
-		<< "\t<lt> - number of image loader threads [default = 1] \n"
-		<< "\t<st> - number of pixel scanner threads within a TIFF tile [default = 1] \n"
-		<< "\t<rt> - number of feature reduction threads [default = 1] \n"
-		<< "\t<pxd> - number of pixels as neighbor features radius [default = 5] \n"
-		<< "\t<verbo> - levels of verbosity 0 (silence), 2 (timing), 4 (roi diagnostics), 8 (granular diagnostics) [default = 0] \n";
+	#ifdef USE_GPU
+		std::cout << " [" << USEGPU << "=<true or false>" << " [" << GPUDEVICEID << "=<valid GPU device ID>] ]\n";
+	#endif
 }
 
 void Environment::show_summary(const std::string &head, const std::string &tail)
@@ -282,34 +258,20 @@ void Environment::show_summary(const std::string &head, const std::string &tail)
 
 	// GLCM angles
 	std::cout << "\tGLCM angles\t";
-	for (auto ang : glcmAngles)
-	{
-		if (ang != glcmAngles[0])
-			std::cout << ", ";
-		std::cout << ang;
-	}
-	std::cout << "\tshould match GLCMFeature angles\t{";
 	for (auto ang : GLCMFeature::angles)
 	{
 		if (ang != GLCMFeature::angles[0])
 			std::cout << ", ";
 		std::cout << ang;
 	}
-	std::cout << "}\n";
+	std::cout << "\n";
 
 	// Oversized ROI limit
 	std::cout << "\tbatch and oversized ROI lower limit " << theEnvironment.get_ram_limit() << " bytes\n";
 
-	std::cout << tail;
-}
+	// Temp directory
+	std::cout << "\ttemp directory " << theEnvironment.get_temp_dir_path() << "\n";
 
-void Environment::show_memory(const std::string &head, const std::string &tail)
-{
-	std::cout << head << "Command line summary:\n";
-	for (auto &m : memory)
-	{
-		std::cout << "\t" << std::get<0>(m) << " : " << std::get<1>(m) << "\n";
-	}
 	std::cout << tail;
 }
 
@@ -322,7 +284,7 @@ bool Environment::find_string_argument(std::vector<std::string>::iterator &i, co
 	if (actualArgName == a)
 	{
 		arg_value = *++i;
-		memory.push_back({a, arg_value});
+		recognizedArgs.push_back({a, arg_value});
 		return true;
 	}
 	else
@@ -333,7 +295,7 @@ bool Environment::find_string_argument(std::vector<std::string>::iterator &i, co
 		if (pos != std::string::npos)
 		{
 			arg_value = actualArgName.substr(a.length());
-			memory.push_back({a, arg_value});
+			recognizedArgs.push_back({a, arg_value});
 			return true;
 		}
 	}
@@ -446,6 +408,7 @@ void Environment::process_feature_list()
 				AREA_UM2,
 				CENTROID_X,
 				CENTROID_Y,
+				DIAMETER_EQUAL_AREA, 
 				WEIGHTED_CENTROID_Y,
 				WEIGHTED_CENTROID_X,
 				COMPACTNESS,
@@ -457,10 +420,9 @@ void Environment::process_feature_list()
 				MINOR_AXIS_LENGTH,
 				ECCENTRICITY,
 				ORIENTATION,
-				NUM_NEIGHBORS,
 				EXTENT,
 				ASPECT_RATIO,
-				EQUIVALENT_DIAMETER,
+				DIAMETER_EQUAL_PERIMETER,
 				CONVEX_HULL_AREA,
 				SOLIDITY,
 				PERIMETER,
@@ -504,7 +466,8 @@ void Environment::process_feature_list()
 				GLCM_SUMAVERAGE,
 				GLCM_SUMENTROPY,
 				GLCM_SUMVARIANCE,
-				GLCM_VARIANCE };
+				GLCM_VARIANCE
+			};
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -725,7 +688,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 		return 1;
 
 	std::vector<std::string> args(argv + 1, argv + argc);
-	std::vector<std::string> unrecognized;
+	std::vector<std::string> unrecognizedArgs;
 
 	//==== Gather raw data
 	for (auto i = args.begin(); i != args.end(); ++i)
@@ -753,13 +716,15 @@ int Environment::parse_cmdline(int argc, char **argv)
 				find_string_argument(i, GLCMANGLES, rawGlcmAngles) ||
 				find_string_argument(i, PXLDIST, pixel_distance) ||
 				find_string_argument(i, COARSEGRAYDEPTH, raw_coarse_grayscale_depth) ||
-				find_string_argument(i, VERBOSITY, verbosity) 
+				find_string_argument(i, VERBOSITY, verbosity) ||
+				find_string_argument(i, RAMLIMIT, rawRamLimit) ||
+				find_string_argument(i, TEMPDIR, rawTempDir)
 #ifdef USE_GPU
 				|| find_string_argument(i, USEGPU, rawUseGpu) 
 				|| find_string_argument(i, GPUDEVICEID, rawGpuDeviceID) 
 #endif
 			))
-			unrecognized.push_back(*i);
+			unrecognizedArgs.push_back(*i);
 	}
 
 	//==== Show the user recognized and unrecognized command line elements
@@ -770,17 +735,17 @@ int Environment::parse_cmdline(int argc, char **argv)
 	std::copy(args.begin(), args.end(), std::ostream_iterator<std::string>(rawCL, " ")); // vector of strings -> string
 	rawCL << "\n\n";
 
-	// --display how the command line was parsed
-	VERBOSLVL1(show_memory(rawCL.str().c_str(), "\n");)
+	std::cout << "\nAccepted command line arguments:\n";
+	for (auto& m : recognizedArgs)
+		std::cout << "\t" << std::get<0>(m) << " : " << std::get<1>(m) << "\n";
 
 	// --what's not recognized?
-	if (unrecognized.size() > 0)
+	if (unrecognizedArgs.size() > 0)
 	{
-		std::cout << "\nUnrecognized arguments:\n";
-		for (auto &u : unrecognized)
+		std::cout << "Ignoring unrecognized arguments:\n";
+		for (auto &u : unrecognizedArgs)
 			std::cout << "\t" << u << "\n";
 	}
-	std::cout << "\n";
 
 	//==== Check mandatory parameters
 
@@ -907,6 +872,46 @@ int Environment::parse_cmdline(int argc, char **argv)
 		GLCMFeature::angles = glcmAngles;
 	}
 
+	//==== Parse the RAM limit
+	if (!rawRamLimit.empty())
+	{
+		// string -> integer
+		size_t value = 0;
+		auto scanfResult = sscanf(rawRamLimit.c_str(), "%zu", &value);
+		if (scanfResult != 1 || value < 0)
+		{
+			std::cout << "Error: " << RAMLIMIT << "=" << rawRamLimit << ": expecting a non-negative integer constant (RAM limit in megabytes)\n";
+			return 1;
+		}
+
+		// To megabytes
+		value *= 1048576;
+
+		// Check if it over the actual limit
+		unsigned long long actualRam = Nyxus::getAvailPhysMemory();
+		if (value > actualRam)
+		{
+			std::cout << "Error: RAM limit " << value << " is over the actual amount of available RAM " << actualRam << "\n";
+			return 1;
+		}
+
+		// The angle list parsed well, let's tell it to GLCMFeature 
+		ramLimit = value;
+	}
+
+	//==== Parse the temp directory
+	if (!rawTempDir.empty())
+	{
+		// Check the path
+		if (!existsOnFilesystem(rawTempDir))
+		{
+			std::cout << "Error :" << TEMPDIR << "=" << rawTempDir << ": nonexisting directory\n";
+			return 1;
+		}
+		
+		// Modify the temp directory path
+		this->temp_dir_path = rawTempDir + "\\";
+	}
 
 	//==== Using GPU
 	#ifdef USE_GPU
@@ -1029,11 +1034,6 @@ int Environment::parse_cmdline(int argc, char **argv)
 
 	// Success
 	return 0;
-}
-
-std::string Environment::get_temp_dir_path() const
-{
-	return temp_dir_path;
 }
 
 void Environment::show_featureset_help()

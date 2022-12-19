@@ -319,7 +319,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 		//-- auto M = im;
 		//-- pixData& D = M.WriteablePixels();
 		WriteImageMatrix_nontriv D("GLRLMFeature_osized_calculate_D", r.label);
-		D.init_with_cloud(r.osized_pixel_cloud, r.aabb);
+		D.init_with_cloud(r.raw_pixels_NT, r.aabb);
 
 		// Number of zones
 		const int VISITED = -1;

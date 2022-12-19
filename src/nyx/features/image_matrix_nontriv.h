@@ -10,11 +10,57 @@ class OutOfRamPixelCloud
 {
 public:
 	OutOfRamPixelCloud();
+	~OutOfRamPixelCloud();
 	void init (unsigned int _roi_label, std::string name);
 	void clear();
 	void add_pixel (const Pixel2& p);
-	size_t get_size() const;
+	void close();
+	size_t size() const;
 	Pixel2 get_at (size_t idx) const;
+	Pixel2 operator[] (size_t idx) const { return get_at(idx); }
+
+	struct iterator 
+	{
+		public:
+			iterator (const OutOfRamPixelCloud& obj, std::size_t idx)
+				: m_object(obj), 
+				m_index(idx)
+			{}
+
+			Pixel2 operator * () const 
+			{
+				return m_object.get_at(m_index);
+			}
+
+			bool operator == (iterator const& it) const 
+			{
+				return (&m_object == &it.m_object) && (m_index == it.m_index);
+			}
+
+			bool operator != (iterator const& it) const 
+			{
+				return (&m_object != &it.m_object) || (m_index != it.m_index);
+			}
+
+			iterator& operator ++ () 
+			{
+				++m_index;
+				return *this;
+			}
+		private:
+			const OutOfRamPixelCloud& m_object;
+			std::size_t m_index;
+	};
+
+	iterator begin() const
+	{
+		return iterator(*this, 0);
+	}
+
+	iterator end() const
+	{
+		return iterator(*this, size());
+	}
 
 private:
 	size_t n_items = 0;
@@ -102,7 +148,7 @@ public:
 	~WriteImageMatrix_nontriv();
 	
 	// Initialization
-	void allocate (int w, int h=1, double ini_value=0.0);
+	void allocate (int w, int h, double ini_value);
 	void init_with_cloud (const OutOfRamPixelCloud& cloud, const AABB& aabb);
 	void init_with_cloud_distance_to_contour_weights (const OutOfRamPixelCloud& cloud, const AABB& aabb, std::vector<Pixel2>& contour);
 	void copy(WriteImageMatrix_nontriv & other);
@@ -117,6 +163,8 @@ public:
 	size_t get_height();
 	size_t get_chlen(size_t x);
 	bool safe(size_t x, size_t y) const;
+
+	PixIntens operator[] (size_t idx) { return (PixIntens) get_at(idx); }
 
 private:
 	std::string filepath;

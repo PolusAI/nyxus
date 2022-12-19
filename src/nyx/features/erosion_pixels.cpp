@@ -132,7 +132,7 @@ void ErosionPixelsFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	//-- ImageMatrix I1, I2(I);
 	WriteImageMatrix_nontriv I1 ("ErosionPixelsFeature::osized_calculate_I1", r.label), 
 		I2 ("ErosionPixelsFeature::osized_calculate_I2", r.label);
-	I2.init_with_cloud(r.osized_pixel_cloud, r.aabb);
+	I2.init_with_cloud(r.raw_pixels_NT, r.aabb);
 
 	numErosions = 0;
 	for (; numErosions < SANITY_MAX_NUM_EROSIONS; numErosions++)

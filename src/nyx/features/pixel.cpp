@@ -1,5 +1,12 @@
 #include "pixel.h"
 
+bool operator == (const Pixel2& p1, const Pixel2& p2)
+{
+	if (p1.x != p2.x || p1.y != p2.y || p1.inten != p2.inten)
+		return false;
+	return true;
+}
+
 double Pixel2::min_sqdist(const std::vector<Pixel2>& cloud) const
 {
 	#if 0	

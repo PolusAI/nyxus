@@ -61,7 +61,8 @@ namespace Nyxus
 		size_t jobSize = PendingRoisLabels.size(),
 			workPerThread = jobSize / n_reduce_threads;
 
-		//==== Pixel intensity stats. Calculate these basic features unconditionally
+		//==== Pixel intensity stats
+		if (PixelIntensityFeatures::required(theFeatureSet))
 		{
 			STOPWATCH("Intensity/Intensity/Int/#FFFF00", "\t=");
 			runParallel(PixelIntensityFeatures::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);

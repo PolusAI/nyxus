@@ -53,7 +53,7 @@ FeatureManager::FeatureManager()
 	register_feature (new NGTDMFeature());
 	register_feature (new ImageMomentsFeature());
 	register_feature (new GaborFeature());
-	register_feature (new ZernikeFeature());		//! needs 2nd-day review
+	register_feature (new ZernikeFeature());
 	register_feature (new RadialDistributionFeature());
 }
 
