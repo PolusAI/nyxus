@@ -7,7 +7,7 @@
 
 PixelIntensityFeatures::PixelIntensityFeatures() : FeatureMethod("PixelIntensityFeatures")
 {
-	provide_features({ 
+	provide_features({
 		INTEGRATED_INTENSITY,
 		MEAN,
 		MEDIAN,
@@ -36,7 +36,7 @@ PixelIntensityFeatures::PixelIntensityFeatures() : FeatureMethod("PixelIntensity
 void PixelIntensityFeatures::calculate(LR& r)
 {
 	// --MIN, MAX
-	val_MIN  = r.aux_min;
+	val_MIN = r.aux_min;
 	val_MAX = r.aux_max;
 	val_RANGE = val_MAX - val_MIN;
 
@@ -72,7 +72,7 @@ void PixelIntensityFeatures::calculate(LR& r)
 		var += diff * diff;
 	}
 	val_MEAN_ABSOLUTE_DEVIATION = mad / n;
-	var = n>1 ? var/(n-1) : 0.0;
+	var = n > 1 ? var / (n - 1) : 0.0;
 	double stddev = sqrt(var);
 	val_STANDARD_DEVIATION = stddev;
 
@@ -80,12 +80,12 @@ void PixelIntensityFeatures::calculate(LR& r)
 	val_STANDARD_ERROR = stddev / sqrt(n);
 
 	//==== Do not calculate features of all-blank intensities (to avoid NANs)
-	if (r.aux_min==0 && r.aux_max==0)
+	if (r.aux_min == 0 && r.aux_max == 0)
 		return;
 
 	// P10, 25, 75, 90, IQR, RMAD, entropy, uniformity
 	TrivialHistogram H;
-	H.initialize (r.aux_min, r.aux_max, r.raw_pixels);
+	H.initialize(r.aux_min, r.aux_max, r.raw_pixels);
 	auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
 	val_MEDIAN = median_;
 	val_P01 = p01_;
@@ -123,7 +123,7 @@ void PixelIntensityFeatures::calculate(LR& r)
 
 	// Hyperskewness
 	double denom = (n * std::pow(val_STANDARD_DEVIATION, 5.));
-	val_HYPERSKEWNESS = denom == 0. ? 0. : sumPow5/denom;
+	val_HYPERSKEWNESS = denom == 0. ? 0. : sumPow5 / denom;
 
 	// Hyperflatness
 	denom = (n * std::pow(val_STANDARD_DEVIATION, 6.));
@@ -133,7 +133,7 @@ void PixelIntensityFeatures::calculate(LR& r)
 void PixelIntensityFeatures::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
 {}
 
-void PixelIntensityFeatures::osized_calculate (LR& r, ImageLoader& imloader)
+void PixelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 {
 	// --MIN, MAX
 	val_MIN = r.aux_min;
@@ -148,9 +148,9 @@ void PixelIntensityFeatures::osized_calculate (LR& r, ImageLoader& imloader)
 	double cen_x = 0.0,
 		cen_y = 0.0,
 		integInten = 0.0;
-	for (size_t i = 0; i < n; i++) //--- for (auto& px : r.raw_pixels)
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)
 	{
-		Pixel2 px = r.raw_pixels_NT.get_at(i);
+		Pixel2 px = r.raw_pixels_NT[i];
 		mean_ += px.inten;
 		energy += px.inten * px.inten;
 		cen_x += px.x;
@@ -166,13 +166,15 @@ void PixelIntensityFeatures::osized_calculate (LR& r, ImageLoader& imloader)
 	// --MAD, VARIANCE, STDDEV
 	double mad = 0.0,
 		var = 0.0;
-	for (auto& px : r.raw_pixels)
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)
 	{
-		mad += std::abs(px.inten - mean_);
-		var += (px.inten - mean_) * (px.inten - mean_);
+		Pixel2 px = r.raw_pixels_NT[i];
+		double diff = px.inten - mean_;
+		mad += std::abs(diff);
+		var += diff * diff;
 	}
 	val_MEAN_ABSOLUTE_DEVIATION = mad / n;
-	var /= n;
+	var = n > 1 ? var / (n - 1) : 0.0;
 	double stddev = sqrt(var);
 	val_STANDARD_DEVIATION = stddev;
 
@@ -185,7 +187,7 @@ void PixelIntensityFeatures::osized_calculate (LR& r, ImageLoader& imloader)
 
 	// P10, 25, 75, 90, IQR, RMAD, entropy, uniformity
 	TrivialHistogram H;
-	H.initialize(r.aux_min, r.aux_max, r.raw_pixels);
+	H.initialize(r.aux_min, r.aux_max, r.raw_pixels_NT);
 	auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
 	val_MEDIAN = median_;
 	val_P01 = p01_;
@@ -200,37 +202,44 @@ void PixelIntensityFeatures::osized_calculate (LR& r, ImageLoader& imloader)
 	val_MODE = mode_;
 	val_UNIFORMITY = uniformity_;
 
-	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image 
-	//	intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] 
-	//	and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
+	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
 	double piu = (1.0 - double(r.aux_max - r.aux_min) / double(r.aux_max + r.aux_min)) * 100.0;
 	val_UNIFORMITY_PIU = piu;
 
 	// Skewness
-	//--Formula 1--	lr.fvals[SKEWNESS][0] = std::sqrt(n) * lr.aux_M3 / std::pow(lr.aux_M2, 1.5);
-	//--Formula 2-- skewness = 3 * (mean - median) / stddev
 	Moments4 mom;
-	for (size_t i = 0; i < n; i++) //--- for (auto& px : r.raw_pixels)
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)
 	{
-		Pixel2 px = r.raw_pixels_NT.get_at(i);
+		Pixel2 px = r.raw_pixels_NT[i];
 		mom.add(px.inten);
 	}
+
 	val_SKEWNESS = mom.skewness();
 
 	// Kurtosis
-	//--Formula-- k1 = mean((x - mean(x)). ^ 4) / std(x). ^ 4
 	val_KURTOSIS = mom.kurtosis();
 
-	// Hyperskewness hs = E[x-mean].^5 / std(x).^5
-	val_HYPERSKEWNESS = mom.hyperskewness();
+	double sumPow5 = 0, sumPow6 = 0;
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)
+	{
+		Pixel2 px = r.raw_pixels_NT[i];
+		double diff = px.inten - mean_;
+		sumPow5 += std::pow(diff, 5.);
+		sumPow6 += std::pow(diff, 6.);
+	}
 
-	// Hyperflatness hf = E[x-mean].^6 / std(x).^6
-	val_HYPERFLATNESS = mom.hyperflatness();
+	// Hyperskewness
+	double denom = (n * std::pow(val_STANDARD_DEVIATION, 5.));
+	val_HYPERSKEWNESS = denom == 0. ? 0. : sumPow5 / denom;
+
+	// Hyperflatness
+	denom = (n * std::pow(val_STANDARD_DEVIATION, 6.));
+	val_HYPERFLATNESS = denom == 0. ? 0. : sumPow6 / denom;
 }
 
 void PixelIntensityFeatures::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals [INTEGRATED_INTENSITY][0] = val_INTEGRATED_INTENSITY; 
+	fvals[INTEGRATED_INTENSITY][0] = val_INTEGRATED_INTENSITY;
 	fvals[MEAN][0] = val_MEAN;
 	fvals[MEDIAN][0] = val_MEDIAN;
 	fvals[MIN][0] = val_MIN;

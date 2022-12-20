@@ -10,6 +10,7 @@
 #include <tuple>
 #include "../helpers/helpers.h"
 #include "pixel.h"
+#include "image_matrix_nontriv.h"
 
 using HistoItem = unsigned int;
 
@@ -18,22 +19,22 @@ class TrivialHistogram
 public:
 	TrivialHistogram() {}
 
-	void initialize (HistoItem min_value, HistoItem max_value, const std::vector<Pixel2>& raw_data)
+	void initialize(HistoItem min_value, HistoItem max_value, const std::vector<Pixel2>& raw_data)
 	{
 		// Allocate 
 		// -- "binary"
 		population = raw_data.size();
 		n_bins = decltype(n_bins) ((1. + log2(population)) + 0.5);
-		bins.reserve(n_bins+1);
-		for (int i = 0; i < n_bins+1; i++)
+		bins.reserve(n_bins + 1);
+		for (int i = 0; i < n_bins + 1; i++)
 			bins.push_back(0);
 		// -- "percentile"
 		bins100.reserve(100);
-		for (int i = 0; i < 100+1; i++)
+		for (int i = 0; i < 100 + 1; i++)
 			bins100.push_back(0);
 		// -- "uint8"
 		bins256.reserve(256);
-		for (int i = 0; i < 256+1; i++)
+		for (int i = 0; i < 256 + 1; i++)
 			bins256.push_back(0);
 
 		// Cache min/max
@@ -47,9 +48,9 @@ public:
 		{
 			HistoItem h = s.inten;
 
-			double realIdx = double(h-minVal) / binW;
+			double realIdx = double(h - minVal) / binW;
 			int idx = std::isnan(realIdx) ? 0 : int(realIdx);
-			(bins [idx]) ++;
+			(bins[idx])++;
 
 			U.push_back(h); // Initialize the set for mode and median calculation
 		}
@@ -57,7 +58,7 @@ public:
 		// -- Fix the special last bin
 		bins[n_bins - 1] += bins[n_bins];
 		bins[n_bins] = 0;
-		
+
 		// Build the "percentile" histogram
 		binW100 = double(valRange) / 100.;
 		for (auto s : raw_data)
@@ -76,7 +77,7 @@ public:
 		binw256 = double(valRange) / 255.;
 		for (auto s : raw_data)
 		{
-			HistoItem h = Nyxus::to_grayscale (s.inten, minVal, valRange, 256);
+			HistoItem h = Nyxus::to_grayscale(s.inten, minVal, valRange, 256);
 			bins256[h] = bins256[h] + 1;
 		}
 
@@ -85,16 +86,89 @@ public:
 		bins256[256] = 0;
 
 		// Mean calculation
-		meanVal = 0; 
+		meanVal = 0;
 		for (auto s : raw_data)
-			meanVal += double(s.inten); 
-		meanVal /= double(population); 
+			meanVal += double(s.inten);
+		meanVal /= double(population);
 	}
 
-	void initialize_uniques (const std::vector<HistoItem> & raw_data)
+	void initialize(HistoItem min_value, HistoItem max_value, const OutOfRamPixelCloud& raw_data)
+	{
+		// Allocate 
+		// -- "binary"
+		population = raw_data.size();
+		n_bins = decltype(n_bins) ((1. + log2(population)) + 0.5);
+		bins.reserve(n_bins + 1);
+		for (int i = 0; i < n_bins + 1; i++)
+			bins.push_back(0);
+		// -- "percentile"
+		bins100.reserve(100);
+		for (int i = 0; i < 100 + 1; i++)
+			bins100.push_back(0);
+		// -- "uint8"
+		bins256.reserve(256);
+		for (int i = 0; i < 256 + 1; i++)
+			bins256.push_back(0);
+
+		// Cache min/max
+		minVal = min_value;
+		maxVal = max_value;
+		auto valRange = maxVal - minVal;
+
+		// Build the "binary" histogram
+		binW = double(valRange) / double(n_bins);
+		for (auto s : raw_data)
+		{
+			HistoItem h = s.inten;
+
+			double realIdx = double(h - minVal) / binW;
+			int idx = std::isnan(realIdx) ? 0 : int(realIdx);
+			(bins[idx])++;
+
+			U.push_back(h); // Initialize the set for mode and median calculation
+		}
+
+		// -- Fix the special last bin
+		bins[n_bins - 1] += bins[n_bins];
+		bins[n_bins] = 0;
+
+		// Build the "percentile" histogram
+		binW100 = double(valRange) / 100.;
+		for (auto s : raw_data)
+		{
+			HistoItem h = s.inten;
+			double realIdx = double(h - minVal) / binW100;
+			int idx = std::isnan(realIdx) ? 0 : int(realIdx);
+			(bins100[idx])++;
+		}
+
+		// -- Fix the special last bin
+		bins100[100 - 1] += bins100[100];
+		bins100[100] = 0;
+
+		// Build the "uint8" histogram
+		binw256 = double(valRange) / 255.;
+		for (auto s : raw_data)
+		{
+			HistoItem h = Nyxus::to_grayscale(s.inten, minVal, valRange, 256);
+			bins256[h] = bins256[h] + 1;
+		}
+
+		// -- Fix the special last bin
+		bins256[256 - 1] += bins256[256];
+		bins256[256] = 0;
+
+		// Mean calculation
+		meanVal = 0;
+		for (auto s : raw_data)
+			meanVal += double(s.inten);
+		meanVal /= double(population);
+	}
+
+	void initialize_uniques(const std::vector<HistoItem>& raw_data)
 	{
 		for (auto h : raw_data)
-			U.push_back(h); 
+			U.push_back(h);
 	}
 
 	// Returns
@@ -109,13 +183,13 @@ public:
 	{
 		// Empty histogram?
 		if (U.size() == 0)
-			return {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+			return { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 		// Median
-		double median = get_median (U); 
+		double median = get_median(U);
 
 		// Mode
-		HistoItem mode = get_mode (U);
+		HistoItem mode = get_mode(U);
 
 		// Percentiles
 		double p1 = 0, p10 = 0, p25 = 0, p75 = 0, p90 = 0, p99 = 0;
@@ -147,7 +221,7 @@ public:
 
 		// Interquartile range
 		double iqr = p75 - p25;
-		
+
 		// RMAD 10-90 %
 		double rmad = 0, entropy = 0, uniformity = 0;
 		double range = maxVal - minVal;
@@ -180,7 +254,7 @@ public:
 				double binC = (minVal + binW * i + minVal + binW * i + binW) / 2.f;	// Bin center
 				if (binC >= lowBound && binC <= uprBound)
 				{
-					double absDelta = std::abs (binC - mean1090);
+					double absDelta = std::abs(binC - mean1090);
 					sum1090 += absDelta;
 				}
 			}
@@ -190,14 +264,14 @@ public:
 
 		// entropy
 		entropy = 0.0;
-		for (int i=0; i<n_bins; i++)
+		for (int i = 0; i < n_bins; i++)
 		{
 			auto cnt = bins[i];
 
 			// skip empty bins (zero probabilities)
 			if (cnt == 0)
 				continue;
-			
+
 			// calculate the probability by normalizing the bin entry so that sum(normalized bin entries)==1
 			double p = double(cnt) / double(population);
 
@@ -206,7 +280,7 @@ public:
 				continue;
 
 			// entropy
-			entropy += p * log2(p);  
+			entropy += p * log2(p);
 		}
 
 		// uniformity
@@ -244,104 +318,103 @@ public:
 		return median;
 	}
 
-	private:
-		size_t population = 0;
-		HistoItem minVal, maxVal;
-		double medianVal, meanVal;
-		double binW, binW100, binw256;
-		std::vector<HistoItem> bins, bins100, bins256; 
-		int n_bins = 0;
-		std::vector<HistoItem> U;	
+private:
+	size_t population = 0;
+	HistoItem minVal, maxVal;
+	double medianVal, meanVal;
+	double binW, binW100, binw256;
+	std::vector<HistoItem> bins, bins100, bins256;
+	int n_bins = 0;
+	std::vector<HistoItem> U;
 
-		HistoItem get_median(const std::unordered_set<HistoItem>& uniqueValues)
+	HistoItem get_median(const std::unordered_set<HistoItem>& uniqueValues)
+	{
+		// Sort unique intensities
+		std::vector<HistoItem> A{ uniqueValues.begin(), uniqueValues.end() };
+		std::sort(A.begin(), A.end());
+
+		// Pick the median
+		auto n = A.size();
+		if (n % 2 != 0)
 		{
-			// Sort unique intensities
-			std::vector<HistoItem> A{ uniqueValues.begin(), uniqueValues.end() };
-			std::sort(A.begin(), A.end());
+			int median = A[n / 2];
+			return median;
+		}
+		else
+		{
+			HistoItem right = A[n / 2],
+				left = A[n / 2 - 1],	// Middle left and right values
+				ave = (right + left) / 2;
+			return ave;
+		}
+	}
 
-			// Pick the median
-			auto n = A.size();
-			if (n % 2 != 0)
+	// 'raw_I' is passed as non-const and gets sorted
+	double get_median(std::vector<HistoItem>& raw_I)
+	{
+		// Sort unique intensities
+		std::sort(raw_I.begin(), raw_I.end());
+
+		// Pick the median
+		auto n = raw_I.size();
+		if (n % 2 != 0)
+		{
+			HistoItem median = raw_I[n / 2];
+			return (double)median;
+		}
+		else
+		{
+			HistoItem right = raw_I[n / 2],
+				left = raw_I[n / 2 - 1];	// Middle left and right values
+			double ave = double(right + left) / 2.0;
+			return ave;
+		}
+	}
+
+	double get_max_bin_item()
+	{
+		// Find the heaviest bin
+		int maxIdx = 0;
+		auto maxCnt = bins[0];
+		for (int i = 1; i < n_bins; i++)
+			if (maxCnt < bins[i])
 			{
-				int median = A[n / 2];
-				return median;
+				maxCnt = bins[i];
+				maxIdx = i;
 			}
-			else
-			{
-				HistoItem right = A[n / 2],
-					left = A[n / 2 - 1],	// Middle left and right values
-					ave = (right + left) / 2;
-				return ave;
-			}
+
+		// Find bin enges and their average
+		double edgeL = minVal + maxIdx * binW,
+			edgeR = edgeL + binW;
+		double biggest = HistoItem((edgeL + edgeR) / 2.0);
+		return biggest;
+	}
+
+	HistoItem get_mode(std::vector<HistoItem>& raw_I)
+	{
+		// Populate the frequency map
+		std::map<HistoItem, std::size_t> freqMap;
+		for (int v : raw_I)
+			++freqMap[v];
+
+		// Iterator to the highest frequency item
+		auto highestFreqIter = freqMap.begin();
+
+		// Iterate the map updating 'highestFreqIter'
+		for (auto iter = freqMap.begin(); iter != freqMap.end(); ++iter)
+		{
+			if (highestFreqIter->second < iter->second)
+				highestFreqIter = iter;
 		}
 
-		// 'raw_I' is passed as non-const and gets sorted
-		double get_median (std::vector<HistoItem> & raw_I)
-		{
-			// Sort unique intensities
-			std::sort (raw_I.begin(), raw_I.end());
+		// Return the result
+		auto mo = highestFreqIter->first;
+		return mo;
+	}
 
-			// Pick the median
-			auto n = raw_I.size();
-			if (n % 2 != 0)
-			{
-				HistoItem median = raw_I[n / 2];
-				return (double) median;
-			}
-			else
-			{
-				HistoItem right = raw_I[n / 2],
-					left = raw_I[n / 2 - 1];	// Middle left and right values
-				double ave = double(right + left) / 2.0;
-				return ave;
-			}
-		}
-
-		double get_max_bin_item ()
-		{
-			// Find the heaviest bin
-			int maxIdx = 0;
-			auto maxCnt = bins[0];
-			for (int i = 1; i < n_bins; i++)
-				if (maxCnt < bins[i])
-				{
-					maxCnt = bins[i];
-					maxIdx = i;
-				}
-
-			// Find bin enges and their average
-			double edgeL = minVal + maxIdx * binW,
-				edgeR = edgeL + binW;
-			double biggest = HistoItem((edgeL + edgeR) / 2.0);
-			return biggest;
-		}
-
-		HistoItem get_mode(std::vector<HistoItem>& raw_I)
-		{
-			// Populate the frequency map
-			std::map<HistoItem, std::size_t> freqMap;
-			for (int v : raw_I)
-				++freqMap[v];
-			
-			// Iterator to the highest frequency item
-			auto highestFreqIter = freqMap.begin(); 
-
-			// Iterate the map updating 'highestFreqIter'
-			for (auto iter = freqMap.begin(); iter != freqMap.end(); ++iter)
-			{
-				if (highestFreqIter->second < iter->second)
-					highestFreqIter = iter;
-			}
-			
-			// Return the result
-			auto mo = highestFreqIter->first;
-			return mo;
-		}
-
-		double bin_center (size_t bin_idx, double bin_width)
-		{
-			return double(bin_idx) * bin_width * 1.5;
-		}
+	double bin_center(size_t bin_idx, double bin_width)
+	{
+		return double(bin_idx) * bin_width * 1.5;
+	}
 };
-
 
