@@ -420,6 +420,7 @@ void Environment::process_feature_list()
 				MINOR_AXIS_LENGTH,
 				ECCENTRICITY,
 				ORIENTATION,
+				ROUNDNESS,
 				EXTENT,
 				ASPECT_RATIO,
 				DIAMETER_EQUAL_PERIMETER,

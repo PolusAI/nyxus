@@ -90,7 +90,11 @@ namespace Nyxus
 		}
 
 		//==== Convex hull related solidity, circularity
-		if (ConvexHullFeature::required(theFeatureSet))
+		if (ConvexHullFeature::required(theFeatureSet) 
+			|| CaliperFeretFeature::required(theFeatureSet) 
+			|| CaliperMartinFeature::required(theFeatureSet) 
+			|| CaliperNassensteinFeature::required(theFeatureSet) 
+			|| HexagonalityPolygonalityFeature::required(theFeatureSet))
 		{
 			// CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY // depends on PERIMETER
 			STOPWATCH("Morphology/Hull/H/#4aaaea", "\t=");

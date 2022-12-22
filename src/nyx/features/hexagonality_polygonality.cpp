@@ -6,7 +6,7 @@
 HexagonalityPolygonalityFeature::HexagonalityPolygonalityFeature() : FeatureMethod("HexagonalityPolygonalityFeature")
 {
     provide_features({ POLYGONALITY_AVE, HEXAGONALITY_AVE, HEXAGONALITY_STDDEV });
-    add_dependencies({ NUM_NEIGHBORS, PERIMETER, CONVEX_HULL_AREA, MIN_FERET_DIAMETER });
+    add_dependencies({ NUM_NEIGHBORS, PERIMETER, CONVEX_HULL_AREA, MAX_FERET_DIAMETER, MIN_FERET_DIAMETER });
 }
 
 void HexagonalityPolygonalityFeature::calculate (LR& r)
@@ -26,8 +26,7 @@ void HexagonalityPolygonalityFeature::calculate (LR& r)
     if (neighbors == 0)
         perimeter_neighbors = std::numeric_limits<double>::quiet_NaN();
     else
-        if (neighbors > 0)
-            perimeter_neighbors = perimeter / neighbors;
+        perimeter_neighbors = perimeter / neighbors;
 
     // Polygonality metrics calculated based on the number of sides of the polygon
     if (neighbors > 2)
@@ -70,6 +69,11 @@ void HexagonalityPolygonalityFeature::calculate (LR& r)
             for (int ic = ib + 1; ic < list_area.size(); ++ic)
             {
                 double area_ratio = 1.0 - abs(1.0 - list_area[ib] / list_area[ic]);
+                
+                // skip NANs
+                if (!isfinite(area_ratio))
+                    continue;
+
                 area_array.push_back(area_ratio);
                 sum += area_ratio;
             }
