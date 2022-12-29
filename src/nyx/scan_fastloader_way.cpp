@@ -190,8 +190,10 @@ namespace Nyxus
 			VERBOSLVL1(Stopwatch::print_stats();)
 				
 			// Details - also to a file
-			fs::path p (theSegFname);
-			VERBOSLVL1(Stopwatch::save_stats (theEnvironment.output_dir + "/" + p.stem().string() + "_nyxustiming.csv");)
+			VERBOSLVL3(
+				fs::path p(theSegFname);
+				Stopwatch::save_stats(theEnvironment.output_dir + "/" + p.stem().string() + "_nyxustiming.csv");
+			);
 			#endif
 		}
 
@@ -207,8 +209,7 @@ namespace Nyxus
 		std::ofstream f (fpath);
 
 		// header
-		f << "label, area, minx, miny, maxx, maxy, width, height, min_intens, max_intens, size_bytes, size_class, host_tiles \n";
-
+		f << "label, area, minx, miny, maxx, maxy, width, height, min_intens, max_intens, size_bytes, size_class \n";
 		// sort labels
 		std::vector<int>  sortedLabs { uniqueLabels.begin(), uniqueLabels.end() };
 		std::sort(sortedLabs.begin(), sortedLabs.end());
@@ -230,14 +231,6 @@ namespace Nyxus
 				<< r.aux_max << ", "
 				<< szb << ", "
 				<< ovsz << ", ";
-			// host tile indices
-			int ti = 0;
-			for (auto tIdx : r.host_tiles)
-			{
-				if (ti++)
-					f << "|";
-				f << tIdx;
-			}
 			f << "\n";
 		}
 

@@ -367,7 +367,7 @@ void Environment::process_feature_list()
 				GLCM_DIFFERENCEVARIANCE,
 				GLCM_DIFFERENCEENTROPY,
 				GLCM_INFOMEAS1,
-				GLCM_INFOMEAS2};
+				GLCM_INFOMEAS2 };
 			theFeatureSet.disableFeatures(F);
 			break; // No need to bother of others
 		}
@@ -396,8 +396,7 @@ void Environment::process_feature_list()
 				UNIFORMITY,
 				P01, P10, P25, P75, P90, P99,
 				INTERQUARTILE_RANGE,
-				ROBUST_MEAN_ABSOLUTE_DEVIATION,
-				MASS_DISPLACEMENT};
+				ROBUST_MEAN_ABSOLUTE_DEVIATION };
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -431,7 +430,8 @@ void Environment::process_feature_list()
 				EDGE_STDDEV_INTENSITY,
 				EDGE_MAX_INTENSITY,
 				EDGE_MIN_INTENSITY,
-				CIRCULARITY};
+				CIRCULARITY, 
+				MASS_DISPLACEMENT };
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -445,7 +445,7 @@ void Environment::process_feature_list()
 				BBOX_YMIN,
 				BBOX_XMIN,
 				BBOX_HEIGHT,
-				BBOX_WIDTH};
+				BBOX_WIDTH };
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -467,8 +467,7 @@ void Environment::process_feature_list()
 				GLCM_SUMAVERAGE,
 				GLCM_SUMENTROPY,
 				GLCM_SUMVARIANCE,
-				GLCM_VARIANCE
-			};
+				GLCM_VARIANCE };
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -490,7 +489,7 @@ void Environment::process_feature_list()
 				GLRLM_SRLGLE,
 				GLRLM_SRHGLE,
 				GLRLM_LRLGLE,
-				GLRLM_LRHGLE};
+				GLRLM_LRHGLE };
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -512,7 +511,7 @@ void Environment::process_feature_list()
 				GLSZM_SALGLE,
 				GLSZM_SAHGLE,
 				GLSZM_LALGLE,
-				GLSZM_LAHGLE};
+				GLSZM_LAHGLE };
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -532,7 +531,7 @@ void Environment::process_feature_list()
 				GLDM_SDLGLE,
 				GLDM_SDHGLE,
 				GLDM_LDLGLE,
-				GLDM_LDHGLE};
+				GLDM_LDHGLE };
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -543,7 +542,7 @@ void Environment::process_feature_list()
 				NGTDM_CONTRAST,
 				NGTDM_BUSYNESS,
 				NGTDM_COMPLEXITY,
-				NGTDM_STRENGTH};
+				NGTDM_STRENGTH };
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -648,8 +647,7 @@ void Environment::process_feature_list()
 				WEIGHTED_HU_M4,
 				WEIGHTED_HU_M5,
 				WEIGHTED_HU_M6,
-				WEIGHTED_HU_M7
-			};
+				WEIGHTED_HU_M7 };
 
 			theFeatureSet.disableFeatures(F);
 
