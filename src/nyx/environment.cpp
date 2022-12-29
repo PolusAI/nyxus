@@ -165,6 +165,9 @@ namespace Nyxus
 	}
 }
 
+bool Environment::skip_binning = false;
+std::string Environment::skip_binning_input = ""; // string for input
+
 Environment::Environment(): BasicEnvironment()
 {
 	unsigned long long availMem = Nyxus::getAvailPhysMemory();
@@ -184,6 +187,10 @@ int Environment::get_pixel_distance()
 void Environment::set_pixel_distance(int pixelDistance)
 {
 	this->n_pixel_distance = pixelDistance;
+}
+
+void Environment::set_skip_binning(bool skip) {
+	this->skip_binning = skip;
 }
 
 void Environment::show_cmdline_help()
@@ -206,6 +213,7 @@ void Environment::show_cmdline_help()
 		<< "\t\t[ " << COARSEGRAYDEPTH << " <custom number of grayscale levels (default: 256)> ] \n"
 		<< "\t\t[ " << GLCMANGLES << " <one or more comma separated rotation angles from set {0, 45, 90, and 135}, default is " << GLCMANGLES << "0,45,90,135> ] \n"
 		<< "\t\t[ " << VERBOSITY << " <levels of verbosity 0 (silence), 2 (timing), 4 (roi diagnostics), 8 (granular diagnostics) [default = 0]> ] \n"
+		<< "\t\t[ " << SKIPBINNING << " skip binning for grayscale features ] \n"
 		<< "\t\t[ " << RAMLIMIT << " <megabytes> ] \n"
 		<< "\t\t[ " << TEMPDIR << " <slash-terminating path> ] \n"
 		<< "\n"
@@ -717,6 +725,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 				find_string_argument(i, PXLDIST, pixel_distance) ||
 				find_string_argument(i, COARSEGRAYDEPTH, raw_coarse_grayscale_depth) ||
 				find_string_argument(i, VERBOSITY, verbosity) ||
+				find_string_argument(i, SKIPBINNING, skip_binning_input) ||
 				find_string_argument(i, RAMLIMIT, rawRamLimit) ||
 				find_string_argument(i, TEMPDIR, rawTempDir)
 #ifdef USE_GPU
@@ -1030,6 +1039,13 @@ int Environment::parse_cmdline(int argc, char **argv)
 		}
 		// pixel size
 		pixelSizeUm = 1e-2f / xyRes / 1e-6f; // 1 cm in meters / pixels per cm / micrometers
+	}
+
+	std::transform(skip_binning_input.begin(), skip_binning_input.end(), skip_binning_input.begin(), ::tolower);
+	if (skip_binning_input == "true" || skip_binning_input == "1") {
+		skip_binning = true;
+	} else {
+		skip_binning = false;
 	}
 
 	// Success
