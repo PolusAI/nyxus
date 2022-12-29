@@ -26,6 +26,7 @@ public:
 
 	static int offset;	// default value: 1
 	static int n_levels;	// default value: 8
+	static int sum_p; // sum of P matrix for normalization
 	static std::vector<int> angles;	// default value: {0,45,90,135} (the supreset)
 
 	static bool required(const FeatureSet& fs) 

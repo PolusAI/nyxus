@@ -6,6 +6,7 @@
 
 int GLCMFeature::offset = 1;
 int GLCMFeature::n_levels = 8;
+int GLCMFeature::sum_p = 0;
 std::vector<int> GLCMFeature::angles = { 0, 45, 90, 135 };
 
 GLCMFeature::GLCMFeature() : FeatureMethod("GLCMFeature")
@@ -101,8 +102,13 @@ void GLCMFeature::parallel_process_1_batch(size_t start, size_t end, std::vector
 
 void GLCMFeature::Extract_Texture_Features2 (int angle, const ImageMatrix & grays, PixIntens min_val, PixIntens max_val)
 {
+
 	int nrows = grays.height;
 	int ncols = grays.width;
+
+	if (Environment::skip_binning) {
+		n_levels = *std::max_element(std::begin(grays.ReadablePixels()), std::end(grays.ReadablePixels()));
+	}
 
 	// Allocate Px and Py vectors
 	std::vector<double> Px (n_levels * 2), 
@@ -132,8 +138,9 @@ void GLCMFeature::Extract_Texture_Features2 (int angle, const ImageMatrix & gray
 			std::cerr << "Cannot create co-occurence matrix for angle " << angle << ": unsupported angle\n";
 			return;
 	}
+
 	calculateCoocMatAtAngle (P_matrix, dx, dy, grays, min_val, max_val, false);
-	calculatePxpmy ();
+	calculatePxpmy ();;
 
 	// Compute Haralick statistics 
 	double f;
@@ -201,6 +208,8 @@ void GLCMFeature::calculateCoocMatAtAngle(
 {
 	matrix.allocate(n_levels, n_levels, 0.0); 
 
+	std::fill(matrix.begin(), matrix.end(), 0.);
+
 	int d = GLCMFeature::offset;
 	int count = 0;	// normalizing factor 
 
@@ -224,9 +233,15 @@ void GLCMFeature::calculateCoocMatAtAngle(
 				if (raw_lvl_x == 0 || raw_lvl_y == 0)
 					continue;
 
+				int x = raw_lvl_x -1, 
+					y = raw_lvl_y -1;
+
 				// Cast intensities on the 1-n_levels scale
-				int x = GLCMFeature::cast_to_range (raw_lvl_x, min_val, max_val, 1, GLCMFeature::n_levels) -1, 
+				if (Environment::skip_binning == false)
+				{
+					x = GLCMFeature::cast_to_range (raw_lvl_x, min_val, max_val, 1, GLCMFeature::n_levels) -1, 
 					y = GLCMFeature::cast_to_range (raw_lvl_y, min_val, max_val, 1, GLCMFeature::n_levels) -1;
+				}
 
 				// Increment the symmetric count
 				count += 2;	
@@ -240,6 +255,12 @@ void GLCMFeature::calculateCoocMatAtAngle(
 				#endif
 			}
 		}
+
+	// calculate sum of P for feature calculations
+	sum_p = 0;
+	for (int i = 0; i < n_levels; ++i)
+		for (int j = 0; j < n_levels; ++j)
+			sum_p += matrix.xy(i, j);
 
 	// Normalize the matrix
 	if (normalize == false)
@@ -256,11 +277,16 @@ void GLCMFeature::calculatePxpmy()
 	Pxpy.resize (2 * n_levels - 1, 0.0);
 	Pxmy.resize (n_levels, 0.0);
 
+	std::fill(Pxpy.begin(), Pxpy.end(), 0.);
+	std::fill(Pxmy.begin(), Pxmy.end(), 0.);
+
+	if (sum_p == 0) throw std::runtime_error("Sum of GLC matrix is zero."); 
+
 	for (int x = 0; x < n_levels; x++) 
 		for (int y = 0; y < n_levels; y++) 
 		{
 			Pxpy[x + y] += P_matrix.xy(x,y);
-			Pxmy[std::abs(x - y)] += P_matrix.xy(x,y); 
+			Pxmy[std::abs(x - y)] += P_matrix.xy(x,y)/sum_p; // normalize matrix from IBSI definition
 		}
 }
 
@@ -278,7 +304,7 @@ double GLCMFeature::f_asm(const SimpleMatrix<double>& P, int Ng)
 
 	for (j = 0; j < Ng; ++j)
 		for (i = 0; i < Ng; ++i)
-			sum += P.xy(i, j) * P.xy(i, j);
+			sum += (P.xy(i, j)/sum_p) * (P.xy(i, j)/sum_p);
 
 	return sum;
 }
@@ -295,7 +321,7 @@ double GLCMFeature::f_contrast(const SimpleMatrix<double>& P, int Ng)
 
 	for (int j = 0; j < Ng; j++)
 		for (int i = 0; i < Ng; i++)
-			sum += P.xy(i, j) * (j - i) * (i - j);
+			sum += P.xy(i, j)/sum_p * (i - j) * (i - j);
 
 	return sum;
 }
@@ -319,7 +345,7 @@ double GLCMFeature::f_corr (const SimpleMatrix<double>& P, int Ng, std::vector<d
 	*/
 	for (int j = 0; j < Ng; j++)
 		for (int i = 0; i < Ng; i++)
-			px[i] += P.xy(i, j);
+			px[i] += P.xy(i, j)/sum_p;
 
 
 	/* Now calculate the means and standard deviations of px and py */
@@ -342,7 +368,7 @@ double GLCMFeature::f_corr (const SimpleMatrix<double>& P, int Ng, std::vector<d
 	tmp = 0;
 	for (j = 0; j < Ng; j++)
 		for (i = 0; i < Ng; i++)
-			tmp += i * j * P.xy(i, j);
+			tmp += i * j * (P.xy(i, j)/sum_p);
 
 	if (stddevx * stddevy == 0) 
 		return(1);  // protect from error
@@ -377,9 +403,9 @@ double GLCMFeature::f_idm(const SimpleMatrix<double>& P, int Ng)
 {
 	double idm = 0;
 
-	for (int j = 0; j < Ng; j++)
-		for (int i = 0; i < Ng; i++)
-			idm += P.xy(i, j) / (1 + (i - j) * (i - j));
+	for (int k = 0; k < n_levels; ++k) {
+		idm += Pxmy[k] / (1 + (k * k));
+	}
 
 	return idm;
 }
@@ -400,8 +426,8 @@ double GLCMFeature::f_savg(const SimpleMatrix<double>& P, int Ng, std::vector<do
 
 	/* M. Boland for (i = 2; i <= 2 * Ng; ++i) */
 	/* Indexing from 2 instead of 0 is inconsistent with rest of code*/
-	for (i = 0; i <= (2 * Ng - 2); ++i)
-		savg += i * Pxpy[i];
+	for (int i = 2; i <= (2 * Ng); ++i)
+	 	savg += i * Pxpy[i-2]/sum_p;
 
 	return savg;
 }
@@ -412,18 +438,21 @@ double GLCMFeature::f_svar(const SimpleMatrix<double>& P, int Ng, double S, std:
 	int i, j;
 	double var = 0;
 
-	std::fill(Pxpy.begin(), Pxpy.end(), 0.0);
+	std::vector<double> Px (n_levels * 2);
 
-	for (j = 0; j < Ng; j++)
-		for (i = 0; i < Ng; i++)
-			/* M. Boland Pxpy[i + j + 2] += P[i][j]; */
-			/* Indexing from 2 instead of 0 is inconsistent with rest of code*/
-			Pxpy[i + j] += P.xy(i, j);
+	double diffAvg = f_savg(P_matrix, n_levels, Px);
 
-	/*  M. Boland for (i = 2; i <= 2 * Ng; ++i) */
-	/* Indexing from 2 instead of 0 is inconsistent with rest of code*/
-	for (i = 0; i <= (2 * Ng - 2); ++i)
-		var += (double(i) - S) * (double(i) - S) * Pxpy[i];
+	std::vector<double> pxpy(2*n_levels, 0);
+
+	for (int i = 0; i < n_levels; ++i) {
+		for (int j = 0; j < n_levels; ++j) {
+			pxpy[i+j] += P.xy(i,j)/sum_p;
+		}
+	}
+	
+	for(int k = 2; k <= 2 * n_levels; ++k) {
+		var += (k-diffAvg) * (k-diffAvg) * pxpy[k-2];
+	}
 
 	return var;
 }
@@ -434,17 +463,22 @@ double GLCMFeature::f_sentropy(const SimpleMatrix<double>& P, int Ng, std::vecto
 	int i, j;
 	double sentropy = 0;
 
-	std::fill(Pxpy.begin(), Pxpy.end(), 0.0);
+	std::vector<double> pxpy(2*n_levels, 0);
 
-	for (j = 0; j < Ng - 1; ++j)
-		for (i = 0; i < Ng - 1; ++i)
-			Pxpy[i + j + 2] += P.xy(i, j);
+	for (int i = 0; i < n_levels; ++i) {
+		for (int j = 0; j < n_levels; ++j) {
+			pxpy[i+j] += P.xy(i,j)/sum_p;
+		}
+	}
+	
+	for(int k = 2; k <= 2 * n_levels; ++k) {
 
-	for (i = 2; i < 2 * Ng; ++i)
-		/*  M. Boland  sentropy -= Pxpy[i] * log10 (Pxpy[i] + EPSILON); */
-		sentropy -= Pxpy[i] * fast_log10(Pxpy[i] + EPSILON) / LOG10_2;
+		if (Pxpy[k-2] == 0) continue;
 
-	return sentropy;
+		sentropy += pxpy[k-2] * log2(pxpy[k-2]);
+	}
+
+	return -sentropy;
 }
 
 /* Entropy */
@@ -463,74 +497,62 @@ double GLCMFeature::f_entropy(const SimpleMatrix<double>& P, int Ng)
 /* Difference Variance */
 double GLCMFeature::f_dvar(const SimpleMatrix<double>& P, int Ng, std::vector<double>& Pxpy)
 {
-	int i, j;
-	double sum = 0, sum_sqr = 0, var = 0;
+	std::vector<double> Px (n_levels * 2);
+	double diffAvg = f_difference_avg(P_matrix, n_levels, Px);
+	std::vector<double> var(Pxmy.size(), 0);
 
-	std::fill(Pxpy.begin(), Pxpy.end(), 0.0);
-
-	for (j = 0; j < Ng; j++)
-		for (i = 0; i < Ng; i++)
-			Pxpy[abs(i - j)] += P.xy(i, j);
-
-	/* Now calculate the variance of Pxpy (Px-y) */
-	for (i = 0; i < Ng; ++i) {
-		sum += i * Pxpy[i];
-		sum_sqr += i * i * Pxpy[i];
-		/* M. Boland sum += Pxpy[i];
-		sum_sqr += Pxpy[i] * Pxpy[i];*/
+	for (int x = 0; x < Pxmy.size(); x++) {
+		for (int k = 0; k < Pxmy.size(); k++) {
+			var[k] += pow((k - diffAvg), 2) * Pxmy[k];
+		}
 	}
 
-	/*tmp = Ng * Ng ;  M. Boland - wrong anyway, should be Ng */
-	/*var = ((tmp * sum_sqr) - (sum * sum)) / (tmp * tmp); */
-
-	var = sum_sqr - sum * sum;
-
-	return var;
+	double sum = 0;
+	for (int x = 0; x < Pxmy.size(); x++)
+		sum += var[x];
+	
+	return sum/Pxmy.size();
 }
 
 /* Difference Entropy */
 double GLCMFeature::f_dentropy(const SimpleMatrix<double>& P, int Ng, std::vector<double>& Pxpy) 
 {
-	int i, j;
+	std::vector<double> entropy(n_levels, 0);
 	double sum = 0;
 
-	std::fill(Pxpy.begin(), Pxpy.end(), 0.0);
-
-	for (j = 0; j < Ng; j++)
-		for (i = 0; i < Ng; i++)
-			Pxpy[abs(i - j)] += P.xy(i, j);
-
-	for (i = 0; i < Ng; ++i)
-		/*    sum += Pxpy[i] * log10 (Pxpy[i] + EPSILON); */
-		sum += Pxpy[i] * fast_log10(Pxpy[i] + EPSILON) / LOG10_2;
+	for (int k = 0; k < n_levels; ++k) {
+		if (Pxmy[k] == 0) continue; // avoid NaN from log2 (note that Pxmy will never be negative)
+		sum += Pxmy[k] * log2(Pxmy[k]);
+	}
 
 	return -sum;
 }
 
 double GLCMFeature::f_difference_avg (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px)
 {
-	double diffAvg = 0.0;
+	std::vector<double> diffAvg(Pxmy.size(), 0.);
 
+	for (int x = 0; x < Pxmy.size(); x++) {
+		for (int k = 0; k < Pxmy.size(); k++) {
+			diffAvg[k] += k * Pxmy[k];
+		}
+	}
+
+	double sum = 0;
 	for (int x = 0; x < Pxmy.size(); x++)
-		diffAvg += x * Pxmy[x];
-
-	return diffAvg;
+		sum += diffAvg[x];
+	
+	return sum/Pxmy.size();
 }
 
 void GLCMFeature::calcH (const SimpleMatrix<double>& P, int Ng, std::vector<double>& px, std::vector<double>& py)
 {
 	hx = hy = hxy = hxy1 = hxy2 = 0;
 
-	/* All /log10(2.0) added by M. Boland */
-
-	/*
-	* px[i] is the (i-1)th entry in the marginal probability matrix obtained
-	* by summing the rows of p[i][j]
-	*/
 	for (int j = 0; j < Ng; j++)
 		for (int i = 0; i < Ng; i++)
 		{
-			auto p = P.xy(i, j);
+			auto p = P.xy(i, j)/sum_p;
 			px[i] += p;
 			py[j] += p;
 		}
@@ -541,51 +563,83 @@ void GLCMFeature::calcH (const SimpleMatrix<double>& P, int Ng, std::vector<doub
 
 		for (int i = 0; i < Ng; i++)
 		{
-			auto p = P.xy(i, j),
+			auto p = P.xy(i, j)/sum_p,
 				pxi = px[i];
-			auto log_pp = fast_log10(pxi * pyj + EPSILON) /*avoid /LOG10_2 */;
-			hxy1 -= p * log_pp;
-			hxy2 -= pxi * pyj * log_pp;
-			hxy -= p * fast_log10(p + EPSILON) /*avoid /LOG10_2 */;
+			double log_pp;
+			if (pxi == 0 || pyj == 0) {
+				log_pp = 0;
+			} else {
+				log_pp = log2(pxi * pyj) /*avoid /LOG10_2 */;
+			}
+			hxy1 += p * log_pp;
+			hxy2 += pxi * pyj * log_pp;
+			if (p > 0) 
+				hxy += p * log2(p) /*avoid /LOG10_2 */;
 		}
-		hxy1 /= LOG10_2;
-		hxy2 /= LOG10_2;
-		hxy /= LOG10_2;
 	}
 
 	/* Calculate entropies of px and py */
 	for (int i = 0; i < Ng; ++i)
-	{
-		hx -= px[i] * fast_log10(px[i] + EPSILON) /*avoid /LOG10_2 */;
-		hy -= py[i] * fast_log10(py[i] + EPSILON) /*avoid /LOG10_2 */;
+	{	
+		if (px[i] > 0) 
+			hx += px[i] * log2(px[i]) /*avoid /LOG10_2 */;
+		
+		
+		if(py[i] > 0)
+			hy += py[i] * log2(py[i]) /*avoid /LOG10_2 */;
 	}
-
-	hx /= LOG10_2;
-	hy /= LOG10_2;
 }
 
 double GLCMFeature::f_info_meas_corr1 (const SimpleMatrix<double>& P, int Ng, std::vector<double>& px, std::vector<double>& py)
 {
-	// Calculate the entropies if they aren't available yet
-	if (hxy < 0)
-		calcH(P, Ng, px, py);
+	double HX = 0, HXY = 0, HXY1 = 0;
 
-	// Calculate the feature
-	double maxHxy = std::max(hx, hy);
-	if (maxHxy == 0)
-		return(1);
-	else
-		return (hxy - hxy1) / maxHxy;
+	std::fill(px.begin(), px.end(), 0);
+	std::fill(py.begin(), py.end(), 0);
+
+	for (int i = 0; i < Ng; ++i) {
+		for (int j = 0; j < Ng; ++j) {
+			px[i] += P.xy(i,j)/sum_p;
+			py[j] += P.xy(i,j)/sum_p;
+		}	
+	}
+	
+	for (int i = 0; i < Ng; ++i) {
+		for (int j = 0; j < Ng; ++j) {
+			HXY += P.xy(i,j)/sum_p * log2(P.xy(i,j)/sum_p + EPSILON);
+			HXY1 += P.xy(i,j)/sum_p * log2(px[i] * py[j] + EPSILON);
+		}	
+	}
+	
+	for (int i = 0; i < Ng; ++i) {
+		HX += px[i] * log2(px[i] + EPSILON);
+	}
+
+	return (HXY - HXY1) / HX;
 }
 
 double GLCMFeature::f_info_meas_corr2 (const SimpleMatrix<double>& P, int Ng, std::vector<double>& px, std::vector<double>& py) 
 {
-	// Calculate the entropies if they aren't available yet
-	if (hxy < 0)
-		calcH(P, Ng, px, py);
+	double HX = 0, HXY = 0, HXY2 = 0;
 
-	// Calculate the feature
-	return sqrt(fabs(1.0 - exp(-2.0 * (hxy2 - hxy))));
+	std::fill(px.begin(), px.end(), 0);
+	std::fill(py.begin(), py.end(), 0);
+
+	for (int i = 0; i < Ng; ++i) {
+		for (int j = 0; j < Ng; ++j) {
+			px[i] += P.xy(i,j)/sum_p;
+			py[j] += P.xy(i,j)/sum_p;
+		}	
+	}
+	
+	for (int i = 0; i < Ng; ++i) {
+		for (int j = 0; j < Ng; ++j) {
+			HXY += P.xy(i,j)/sum_p * log2(P.xy(i,j)/sum_p + EPSILON);
+			HXY2 += px[i] * py[j] * log2(px[i] * py[j] + EPSILON);
+		}	
+	}
+	
+	return sqrt(fabs(1 - exp(-2 * (-HXY2 + HXY))));
 }
 
 double GLCMFeature::f_energy (const SimpleMatrix<double>& P_matrix, int n_levels, std::vector<double>& px)
