@@ -6,6 +6,7 @@
 #include "test_morphology_features.h"
 #include "test_ibsi.h"
 #include "test_initialization.h"
+#include "test_ibsi_glcm.h"
 
 TEST(TEST_NYXUS, TEST_GABOR){
     test_gabor();
@@ -122,10 +123,73 @@ TEST(TEST_NYXUS, TEST_MORPHOLOGY_PERIMETER)
 //==== IBSI tests
 //
 
-TEST(TEST_NYXUS, TEST_IBSI_INTENSITY1) 
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_DIFFERENCE_AVERAGE) 
 {
-	ASSERT_NO_THROW(test_ibsi_mean_intensity());
+	ASSERT_NO_THROW(test_ibsi_glcm_difference_average());
 }
+
+
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_DIFFERENCE_VARIANCE)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_difference_variance());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_DIFFERENCE_ENTROPY)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_difference_entropy());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_SUM_AVERAGE) 
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_sum_average());
+}
+
+
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_SUM_VARIANCE)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_sum_variance());
+}
+
+
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_SUM_ENTROPY)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_sum_entropy());
+}
+
+
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_ANGULAR_2D_MOMENT)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_angular_2d_moment());
+}
+
+
+TEST(TEST_NYXUS, TEST_IBSI_CONTRAST)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_contrast());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_INVERSED_DIFFERENCE_MOMENT)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_inversed_difference_moment());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_CORRELATION)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_correlation());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_INFOMEAS1)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_infomeas1());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_INFOMEAS2)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_infomeas2());
+}
+
+
+
 
 int main(int argc, char **argv) 
 {
