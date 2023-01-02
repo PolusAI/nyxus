@@ -85,7 +85,7 @@ namespace Nyxus
 
 		if (!fp)
 		{
-			std::string errmsg = "Cannot open file " + getPureFname(intFpath) + " for writing";
+			std::string errmsg = "Cannot open file " + fullPath + " for writing";
 			std::perror (errmsg.c_str());
 			return false;
 		}
