@@ -180,40 +180,17 @@ void WriteImageMatrix_nontriv::init_with_cloud_distance_to_contour_weights (cons
 
 void WriteImageMatrix_nontriv::copy (WriteImageMatrix_nontriv& other)
 {
-	fs::path p (filepath);
-	fs::remove (p);
+	if (this->height != other.height || this->width != other.width)
+		throw (std::runtime_error("Error: attempt to copy an instance of out-of-RAM image matrix to an instance of different dimensions"));
 
-	original_aabb = other.original_aabb;
-	allocate (original_aabb.get_width(), original_aabb.get_height(), 0.0);
-
-	for (size_t idx = 0; idx < other.size(); idx++)
+	for (size_t i = 0; i < this->size(); i++)
 	{
-		double val = other.get_at(idx);
-		set_at(idx, val);
+		auto val = other[i];
+		this->set_at(i, val);
 	}
 
 	fflush(pF);
 }
-
-/*
-void WriteImageMatrix_nontriv::init_with_matrix (ImageLoader& imloader, ReadImageMatrix_nontriv& rim)
-{
-	// Allocate space
-	allocate (rim.get_width(), rim.get_height());
-	
-	// Fill it with cloud pixels 
-	for (size_t i = 0; i < rim.get_size(); i++)
-	{
-		auto p = rim.get_at (imloader, i);
-		auto y = p.y - rim.aabb.get_ymin(),
-			x = p.x - aabb.get_xmin();
-		set_at (y, x, p.inten);
-	}
-
-	// Flush the buffer
-	fflush(pF);	
-}
-*/
 
 void WriteImageMatrix_nontriv::set_at(size_t idx, double val)
 {
