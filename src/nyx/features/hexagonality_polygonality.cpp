@@ -71,7 +71,7 @@ void HexagonalityPolygonalityFeature::calculate (LR& r)
                 double area_ratio = 1.0 - abs(1.0 - list_area[ib] / list_area[ic]);
                 
                 // skip NANs
-                if (!isfinite(area_ratio))
+                if (!std::isfinite(area_ratio))
                     continue;
 
                 area_array.push_back(area_ratio);
