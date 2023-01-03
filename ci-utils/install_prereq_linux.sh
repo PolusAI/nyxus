@@ -112,14 +112,14 @@ cd ../
 
 for i in {1..5}
 do
-    curl https://download.osgeo.org/libtiff/tiff-4.4.0.zip -o libtiff.zip 
+    curl https://download.osgeo.org/libtiff/tiff-4.5.0.zip -o libtiff.zip 
     if [ -f "libtiff.zip" ] ; then
         break
     fi
 done
 
 unzip libtiff.zip
-cd tiff-4.4.0
+cd tiff-4.5.0
 mkdir build_man
 cd build_man/
 cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/   ..
