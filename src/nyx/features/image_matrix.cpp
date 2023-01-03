@@ -335,3 +335,4 @@ bool ImageMatrix::tile_contains_signal (int tile_row, int tile_col, int tile_sid
 				return true;
 	return false;
 }
+

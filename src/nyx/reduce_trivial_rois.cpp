@@ -83,7 +83,7 @@ namespace Nyxus
 		}
 
 		//==== Contour-related ROI perimeter, equivalent circle diameter
-		if (ContourFeature::required(theFeatureSet) || NeighborsFeature::required(theFeatureSet))
+		if (ContourFeature::required(theFeatureSet) || FractalDimensionFeature::required(theFeatureSet) || NeighborsFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Contour/C/#4aaaea", "\t=");
 			runParallel(parallelReduceContour, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);

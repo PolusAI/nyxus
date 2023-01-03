@@ -166,7 +166,7 @@ public:
 
 	PixIntens operator[] (size_t idx) { return (PixIntens) get_at(idx); }
 
-private:
+protected:
 	std::string filepath;
 	FILE* pF = nullptr;
 	int width, height;
@@ -174,4 +174,18 @@ private:
 	AABB original_aabb;
 };
 
+/// @brief Padded image matrix
+class Power2PaddedImageMatrix_NT : public WriteImageMatrix_nontriv
+{
+public:
+	/// @brief Use base_level=0 and attenuation >0 and <1 e.g. 0.5 to build an imag of a specific intensity distribution. Or base_level=1 and attenuation 1 to build an image of the mask
+	/// @param labels_raw_pixels ROI pixel cloud
+	/// @param aabb ROI axis aligned bounding box
+	/// @param base_level Set {0,1}
+	/// @param attenuation Value in the interval (0,1]
+	Power2PaddedImageMatrix_NT (const std::string& _name, unsigned int _roi_label, const OutOfRamPixelCloud& raw_pixels, const AABB& aabb, PixIntens base_level, double attenuation);
+
+	// Support of erosion features
+	bool tile_contains_signal (int tile_row, int tile_col, int tile_side);
+};
 

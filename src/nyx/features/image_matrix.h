@@ -355,24 +355,31 @@ public:
 class Power2PaddedImageMatrix : public ImageMatrix
 {
 public:
-	Power2PaddedImageMatrix(const std::vector <Pixel2>& labels_raw_pixels, const AABB& aabb):
+	/// @brief Use base_level=0 and attenuation >0 and <1 e.g. 0.5 to build an imag of a specific intensity distribution. Or base_level=1 and attenuation 1 to build an image of the mask
+	/// @param labels_raw_pixels ROI pixel cloud
+	/// @param aabb ROI axis aligned bounding box
+	/// @param base_level Set {0,1}
+	/// @param attenuation Value in the interval (0,1]
+	Power2PaddedImageMatrix(const std::vector <Pixel2>& labels_raw_pixels, const AABB& aabb, PixIntens base_level, double attenuation):
 		ImageMatrix ()
 	{
+		// Cache AABB
 		original_aabb = aabb;
 
+		// Figure out the padded size and allocate
 		int bigSide = std::max(aabb.get_width(), aabb.get_height());
 		StatsInt paddedSide = Nyxus::closest_pow2 (bigSide);
 		allocate (paddedSide, paddedSide);
 
+		// Copy pixels
 		int padOffsetX = (paddedSide - original_aabb.get_width()) / 2;
 		int padOffsetY = (paddedSide - original_aabb.get_height()) / 2;
 
-		// Read pixels
 		for (auto& pxl : labels_raw_pixels)
 		{
 			auto x = pxl.x - original_aabb.get_xmin() + padOffsetX,
 				y = pxl.y - original_aabb.get_ymin() + padOffsetY;
-			_pix_plane[y * width + x] = pxl.inten;
+			_pix_plane[y * width + x] = pxl.inten * attenuation + base_level;
 		}
 	}
 };

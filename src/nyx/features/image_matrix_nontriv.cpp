@@ -13,6 +13,7 @@
 #include <sstream>
 #include <thread>
 #include "../environment.h"
+#include "../helpers/helpers.h"
 #include "image_matrix_nontriv.h"
 
 OutOfRamPixelCloud::OutOfRamPixelCloud() {}
@@ -405,5 +406,45 @@ bool ReadImageMatrix_nontriv::safe(size_t x, size_t y) const
 		return true;
 }
 
+/// @brief Use base_level=0 and attenuation >0 and <1 e.g. 0.5 to build an imag of a specific intensity distribution. Or base_level=1 and attenuation 1 to build an image of the mask
+/// @param labels_raw_pixels ROI pixel cloud
+/// @param aabb ROI axis aligned bounding box
+/// @param base_level Set {0,1}
+/// @param attenuation Value in the interval (0,1]
+Power2PaddedImageMatrix_NT::Power2PaddedImageMatrix_NT (const std::string& _name, unsigned int _roi_label, const OutOfRamPixelCloud& raw_pixels, const AABB& aabb, PixIntens base_level, double attenuation) :
+	WriteImageMatrix_nontriv(_name, _roi_label)
+{
+	// Cache AABB
+	original_aabb = aabb;
+
+	// Figure out the padded size and allocate
+	int bigSide = std::max(aabb.get_width(), aabb.get_height());
+	StatsInt paddedSide = Nyxus::closest_pow2(bigSide);
+	allocate(paddedSide, paddedSide, 0.0);
+
+	// Copy pixels
+	int padOffsetX = (paddedSide - original_aabb.get_width()) / 2;
+	int padOffsetY = (paddedSide - original_aabb.get_height()) / 2;
+
+	for (auto pxl : raw_pixels)
+	{
+		auto x = pxl.x - original_aabb.get_xmin() + padOffsetX,
+			y = pxl.y - original_aabb.get_ymin() + padOffsetY;
+		set_at(y * width + x, pxl.inten * attenuation + base_level);
+	}
+}
+
+bool Power2PaddedImageMatrix_NT::tile_contains_signal (int tile_row, int tile_col, int tile_side)
+{
+	int r1 = tile_row * tile_side,
+		r2 = r1 + tile_side,
+		c1 = tile_col * tile_side,
+		c2 = c1 + tile_side;
+	for (int r = r1; r < r2; r++)
+		for (int c = c1; c < c2; c++)
+			if (get_at(r, c) != 0)
+				return true;
+	return false;
+}
 
 
