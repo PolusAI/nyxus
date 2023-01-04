@@ -86,7 +86,8 @@ namespace Nyxus
 		if (ContourFeature::required(theFeatureSet) 
 			|| FractalDimensionFeature::required(theFeatureSet) 
 			|| GeodeticLengthThicknessFeature::required(theFeatureSet)
-			|| NeighborsFeature::required(theFeatureSet))
+			|| NeighborsFeature::required(theFeatureSet)
+			|| RoiRadiusFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Contour/C/#4aaaea", "\t=");
 			runParallel(parallelReduceContour, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);

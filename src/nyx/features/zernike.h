@@ -35,27 +35,12 @@ private:
 	/// @brief Algorithms for fast computation of Zernike momentsand their numerical stability
 	/// Chandan Singhand Ekta Walia, Imageand Vision Computing 29 (2011) 251–259 implemented from 
 	/// pseudo-code by Ilya Goldberg
-	void mb_zernike2D(const ImageMatrix& Im, double order, double rad, double* zvalues, long* output_size);
+	void mb_zernike2D (const ImageMatrix& Im, double order, double rad, double* zvalues, long* output_size);
 
-	/// @brief Driver function for Zernike feature calculation
-	/// @param nonzero_intensity_pixels 
-	/// @param aabb 
-	/// @param order 
-	void zernike2D(
-		std::vector <Pixel2>& nonzero_intensity_pixels,
-		AABB& aabb,
-		int order);
-
-	/// @brief Driver function for Zernike feature calculation
-	/// @param nonzero_intensity_pixels 
-	/// @param aabb 
-	/// @param order 
-	void zernike2D_nontriv (OOR_ReadMatrix& I, int order);
-	
 	/// @brief Algorithms for fast computation of Zernike momentsand their numerical stability
 	/// Chandan Singhand Ekta Walia, Imageand Vision Computing 29 (2011) 251–259 implemented from 
 	/// pseudo-code by Ilya Goldberg
-	void mb_zernike2D_nontriv (OOR_ReadMatrix& I, double order, double rad, double* zvalues, long* output_size);
+	void mb_zernike2D_nontriv (WriteImageMatrix_nontriv& I, double order, double rad, double* zvalues, long* output_size);
 
 	std::vector<double> coeffs;
 };

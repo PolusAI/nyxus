@@ -32,27 +32,26 @@
 #include "../roi_cache.h"
 #include "zernike.h"
 
-void ZernikeFeature::osized_calculate(LR& r, ImageLoader& imloader)
+void ZernikeFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {
-	OOR_ReadMatrix I (imloader, r.aabb);
-
-	zernike2D_nontriv (I, ZernikeFeature::ZERNIKE2D_ORDER);
-
-	// Fix calculated feature values due to all-0 intensity labels to avoid NANs in the output
-	if (r.has_bad_data())
+	// Prepare the image matrix
+	WriteImageMatrix_nontriv I ("ZernikeFeature-osized_calculate-I", r.label);
+	I.allocate (r.aabb.get_width(), r.aabb.get_height(), 0);
+	for (Pixel2 p : r.raw_pixels_NT)
 	{
-		for (int i = 0; i < coeffs.size(); i++)
-			coeffs[i] = 0.0;
+		int col = p.x - r.aabb.get_xmin(),
+			row = p.y - r.aabb.get_ymin(),
+			idx = row * r.aabb.get_width() + col;
+		I.set_at (idx, p.inten);
 	}
-}
 
-void ZernikeFeature::zernike2D_nontriv (OOR_ReadMatrix& I, int order)
-{
-	coeffs.resize (ZernikeFeature::NUM_FEATURE_VALS, 0);
+	// Allocate the results buffer
+	coeffs.resize(ZernikeFeature::NUM_FEATURE_VALS, 0);
 
 	// Calculate features
 	long output_size;   // output size is normally 72 (NUM_FEATURE_VALS)
-	mb_zernike2D_nontriv (I, order, 0/*rad*/, coeffs.data(), &output_size);
+	mb_zernike2D_nontriv (I, ZernikeFeature::ZERNIKE2D_ORDER, 0/*rad*/, coeffs.data(), &output_size);
+	ZernikeFeature::num_feature_values_calculated = output_size;
 }
 
 /*
@@ -70,8 +69,7 @@ void ZernikeFeature::zernike2D_nontriv (OOR_ReadMatrix& I, int order)
   where zernike features are useful.
 */
 
-
-void ZernikeFeature::mb_zernike2D_nontriv (OOR_ReadMatrix& I, double order, double rad, double* zvalues, long* output_size)
+void ZernikeFeature::mb_zernike2D_nontriv (WriteImageMatrix_nontriv& I, double order, double rad, double* zvalues, long* output_size)
 {
 	int cols = I.get_width();
 	int rows = I.get_height();
