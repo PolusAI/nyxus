@@ -18,6 +18,7 @@
 
 OutOfRamPixelCloud::OutOfRamPixelCloud() {}
 
+
 OutOfRamPixelCloud::~OutOfRamPixelCloud()
 {
 	if (pF)
@@ -446,5 +447,4 @@ bool Power2PaddedImageMatrix_NT::tile_contains_signal (int tile_row, int tile_co
 				return true;
 	return false;
 }
-
 

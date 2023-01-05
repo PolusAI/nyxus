@@ -111,7 +111,7 @@ namespace Nyxus
 			if (!fnameExists)
 			{
 				retval = false;
-				std::cout << "Error: expecting '" << s << "' to be a proper feature name. \n";
+				std::cout << "Error: expecting '" << s << "' to be a proper feature name or feature file path\n";
 			}
 			else
 				result.push_back(s_uppr);

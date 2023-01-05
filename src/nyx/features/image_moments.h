@@ -12,6 +12,9 @@
 // http://www.wseas.us/e-library/conferences/2013/CambridgeUK/AISE/AISE-15.pdf
 //
 
+using pixcloud = std::vector <Pixel2>;
+using pixcloud_NT = OutOfRamPixelCloud;
+
 /// @brief Hu invariants, weighted Hu invariants, spatial , central, and normalized central moments.
 class ImageMomentsFeature: public FeatureMethod
 {
@@ -75,51 +78,43 @@ public:
 
 private:
     // Trivial ROI
+    double moment (const pixcloud& cloud, int p, int q);
+    void calcOrigins (const pixcloud& cloud);
+    double centralMom (const pixcloud& c, int p, int q);
+    double normRawMom (const pixcloud& cloud, int p, int q);
+    double normCentralMom (const pixcloud& c, int p, int q);
+    std::tuple<double, double, double, double, double, double, double> calcHuInvariants_imp (const pixcloud& cloud);
+    void calcRawMoments (const pixcloud& cloud);
+    void calcNormRawMoments (const pixcloud& cloud);
+    void calcNormCentralMoments (const pixcloud& cloud);
+    void calcWeightedRawMoments (const pixcloud& cloud);
+    void calcCentralMoments (const pixcloud& cloud);
+    void calcWeightedCentralMoments (const pixcloud& cloud);
+    void calcHuInvariants (const pixcloud& cloud);
+    void calcWeightedHuInvariants (const pixcloud& cloud);
 
-    double Moment (const pixData& D, int p, int q);
-    void calcOrigins (const pixData& D);
-    double CentralMom (const pixData& D, int p, int q);
-    double NormSpatMom (const pixData& D, int p, int q);
-    double NormCentralMom (const pixData& D, int p, int q);
+    // Non-trivial ROI
+    double moment(const pixcloud_NT& cloud, int p, int q);
+    void calcOrigins(const pixcloud_NT& cloud);
+    double centralMom(const pixcloud_NT& c, int p, int q);
+    double normRawMom(const pixcloud_NT& cloud, int p, int q);
+    double normCentralMom(const pixcloud_NT& c, int p, int q);
+    std::tuple<double, double, double, double, double, double, double> calcHuInvariants_imp(const pixcloud_NT& cloud);
+    void calcRawMoments(const pixcloud_NT& cloud);
+    void calcNormRawMoments(const pixcloud_NT& cloud);
+    void calcNormCentralMoments(const pixcloud_NT& cloud);
+    void calcWeightedRawMoments(const pixcloud_NT& cloud);
+    void calcCentralMoments(const pixcloud_NT& cloud);
+    void calcWeightedCentralMoments(const pixcloud_NT& cloud);
+    void calcHuInvariants(const pixcloud_NT& cloud);
+    void calcWeightedHuInvariants(const pixcloud_NT& cloud);
 
-    std::tuple<double, double, double, double, double, double, double> calcHuInvariants_imp (const pixData& D);
-    void calcHuInvariants (const pixData& D);
-    void calcWeightedHuInvariants (const pixData& D);
-    void calcNormCentralMoments(const pixData& D);
-    void calcNormSpatialMoments(const pixData& D);
-    void calcCentralMoments(const pixData& D);
-    void calcWeightedCentralMoments(const pixData& D);
-    void calcSpatialMoments(const pixData& D);
-    void calcWeightedSpatialMoments(const pixData& D);
+#ifdef USE_GPU
+    void calculate_via_gpu(LR& r, size_t roi_index);
+#endif
 
-    #ifdef USE_GPU
-        void calculate_via_gpu(LR& r, size_t roi_index);
-    #endif
-
-    // Non-trivial (oversized) ROI
-
-    double Moment_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I, int p, int q);
-    double Moment_nontriv (WriteImageMatrix_nontriv& I, int p, int q);
-    void calcOrigins_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I);
-    void calcOrigins_nontriv (WriteImageMatrix_nontriv& I);
-    double CentralMom_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I, int p, int q);
-    double CentralMom_nontriv (WriteImageMatrix_nontriv& W, int p, int q);
-    double NormSpatMom_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I, int p, int q);
-    double NormCentralMom_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I, int p, int q);
-    double NormCentralMom_nontriv (WriteImageMatrix_nontriv& W, int p, int q);
-
-    std::tuple<double, double, double, double, double, double, double> calcHuInvariants_imp_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I);
-    std::tuple<double, double, double, double, double, double, double> calcHuInvariants_imp_nontriv (WriteImageMatrix_nontriv& I);
-    void calcHuInvariants_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I);
-    void calcWeightedHuInvariants_nontriv (WriteImageMatrix_nontriv& W);
-    void calcNormCentralMoments_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I);
-    void calcNormSpatialMoments_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I);
-    void calcCentralMoments_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I);
-    void calcWeightedCentralMoments_nontriv (WriteImageMatrix_nontriv& W);
-    void calcSpatialMoments_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I);
-    void calcWeightedSpatialMoments_nontriv (WriteImageMatrix_nontriv& W);
-
-    double originOfX = 0, originOfY = 0; // origins
+    StatsInt baseX = 0, baseY = 0; // cached min X and Y of the ROI. Reason - Pixel2's X and Y are absolute so we need to make them relative. Must be set in calculate() prior to calculating any 2D moment
+    double originOfX = 0, originOfY = 0; // centroids
     double m00 = 0, m01 = 0, m02 = 0, m03 = 0, m10 = 0, m11 = 0, m12 = 0, m20 = 0, m21 = 0, m30 = 0;    // spatial moments
     double wm00 = 0, wm01 = 0, wm02 = 0, wm03 = 0, wm10 = 0, wm11 = 0, wm12 = 0, wm20 = 0, wm21 = 0, wm30 = 0;    // weighted spatial moments
     double w00 = 0, w01 = 0, w02 = 0, w03 = 0, w10 = 0, w20 = 0, w30 = 0;   // normalized spatial moments
@@ -128,6 +123,8 @@ private:
     double wmu02 = 0, wmu03 = 0, wmu11 = 0, wmu12 = 0, wmu20 = 0, wmu21 = 0, wmu30 = 0;    // weighted central moments
     double hm1 = 0, hm2 = 0, hm3 = 0, hm4 = 0, hm5 = 0, hm6 = 0, hm7 = 0;   // Hu invariants
     double whm1 = 0, whm2 = 0, whm3 = 0, whm4 = 0, whm5 = 0, whm6 = 0, whm7 = 0;    // weighted Hu invariants
+
+    const double weighting_epsilon = 0.001;
 };
 
 bool ImageMomentsFeature_calculate2 (

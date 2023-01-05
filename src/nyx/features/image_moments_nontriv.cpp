@@ -1,247 +1,205 @@
 #include "image_moments.h"
 
-void ImageMomentsFeature::osized_calculate(LR& r, ImageLoader& imlo)
+void ImageMomentsFeature::osized_calculate(LR& r, ImageLoader&)
 {
-    const ImageMatrix& im = r.aux_image_matrix;
+    // Cache ROI frame of reference
+    baseX = r.aabb.get_xmin();
+    baseY = r.aabb.get_ymin();
 
-    ReadImageMatrix_nontriv I(r.aabb); 
-    calcOrigins_nontriv (imlo, I);
-    calcSpatialMoments_nontriv (imlo, I);
-    calcCentralMoments_nontriv (imlo, I);
-    calcNormCentralMoments_nontriv (imlo, I);
-    calcNormSpatialMoments_nontriv (imlo, I);
-    calcHuInvariants_nontriv (imlo, I);
+    // Calculate non-weighted moments
+    auto& c = r.raw_pixels_NT;
+    calcOrigins (c);
+    calcRawMoments (c);
+    calcCentralMoments (c);
+    calcNormRawMoments (c);
+    calcNormCentralMoments (c);
+    calcHuInvariants (c);
 
-    WriteImageMatrix_nontriv W ("ImageMomentsFeature_osized_calculate_W", r.label); 
-    W.init_with_cloud_distance_to_contour_weights (r.raw_pixels_NT, r.aabb, r.contour);
-    calcOrigins_nontriv (W);
-    calcWeightedSpatialMoments_nontriv (W);
-    calcWeightedCentralMoments_nontriv (W);
-    calcWeightedHuInvariants_nontriv (W);
+    // Prepare weighted pixel cloud
+    pixcloud_NT w;
+    w.init(r.label, "ImageMomentsFeature-osized_calculate-w");
+
+    // Implement apply_dist2contour_weighting (w, r.contour, weighting_epsilon) :
+    for (auto p : c)
+    {
+        // pixel distance
+        auto mind2 = p.min_sqdist(r.contour);
+        double dist = std::sqrt(mind2);
+
+        // adjusted intensity
+        PixIntens wi = PixIntens((double)p.inten / (dist + weighting_epsilon));
+
+        // save
+        Pixel2 p_weighted = p;
+        p_weighted.inten = wi;
+        w.add_pixel(p_weighted);
+    }
+
+    // Calculate weighted moments
+    calcOrigins (w);
+    calcWeightedRawMoments (w);
+    calcWeightedCentralMoments (w);
+    calcWeightedHuInvariants (w);
 }
 
-double ImageMomentsFeature::Moment_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I, int p, int q)
+/// @brief Calculates the spatial 2D moment of order q,p f ROI pixel cloud
+double ImageMomentsFeature::moment (const pixcloud_NT& cloud, int p, int q)
 {
-    // calc (p+q)th moment of object
-    double sum = 0;
-    for (size_t x = 0; x < I.get_width(); x++)
-    {
-        for (size_t y = 0; y < I.get_height(); y++)
-        {
-            sum += I.get_at(imlo, y, x) * pow(x, p) * pow(y, q);
-        }
-    }
+    double q_ = q, p_ = p, sum = 0;
+    for (auto pxl : cloud)
+        sum += double(pxl.inten) * pow(double(pxl.x - baseX), p_) * pow(double(pxl.y - baseY), q_);
     return sum;
 }
 
-double ImageMomentsFeature::Moment_nontriv (WriteImageMatrix_nontriv & I, int p, int q)
+void ImageMomentsFeature::calcOrigins(const pixcloud_NT& cloud)
 {
-    // calc (p+q)th moment of object
+    double m00 = moment(cloud, 0, 0);
+    originOfX = moment(cloud, 1, 0) / m00;
+    originOfY = moment(cloud, 0, 1) / m00;
+}
+
+/// @brief Calculates the central 2D moment of order q,p of ROI pixel cloud
+double ImageMomentsFeature::centralMom(const pixcloud_NT& cloud, int p, int q)
+{
     double sum = 0;
-    for (size_t x = 0; x < I.get_width(); x++)
-    {
-        for (size_t y = 0; y < I.get_height(); y++)
-        {
-            sum += I.get_at(y, x) * pow(x, p) * pow(y, q);
-        }
-    }
+    for (auto pxl : cloud)
+        sum += double(pxl.inten) * pow(double(pxl.x - baseX) - originOfX, p) * pow(double(pxl.y - baseY) - originOfY, q);
     return sum;
 }
 
-void ImageMomentsFeature::calcOrigins_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I)
+/// @brief Calculates the normalized spatial 2D moment of order q,p of ROI pixel cloud
+double ImageMomentsFeature::normRawMom(const pixcloud_NT& cloud, int p, int q)
 {
-    // calc orgins
-    double m00 = Moment_nontriv (imlo, I, 0, 0);
-    originOfX = Moment_nontriv (imlo, I, 1, 0) / m00;
-    originOfY = Moment_nontriv (imlo, I, 0, 1) / m00;
-}
-
-void ImageMomentsFeature::calcOrigins_nontriv (WriteImageMatrix_nontriv & I)
-{
-    // calc orgins
-    double m00 = Moment_nontriv (I, 0, 0);
-    originOfX = Moment_nontriv (I, 1, 0) / m00;
-    originOfY = Moment_nontriv (I, 0, 1) / m00;
-}
-
-double ImageMomentsFeature::CentralMom_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I, int p, int q)
-{
-    // calculate central moment
-    double sum = 0;
-    for (int x = 0; x < I.get_width(); x++)
-    {
-        for (int y = 0; y < I.get_height(); y++)
-        {
-            sum += I.get_at(imlo, y, x) * pow((double(x) - originOfX), p) * pow((double(y) - originOfY), q);
-        }
-    }
-    return sum;
-}
-
-double ImageMomentsFeature::CentralMom_nontriv (WriteImageMatrix_nontriv& W, int p, int q)
-{
-    // calculate central moment
-    double sum = 0;
-    for (int x = 0; x < W.get_width(); x++)
-    {
-        for (int y = 0; y < W.get_height(); y++)
-        {
-            sum += W.get_at (y, x) * pow((double(x) - originOfX), p) * pow((double(y) - originOfY), q);
-        }
-    }
-    return sum;
-}
-
-// https://handwiki.org/wiki/Standardized_moment
-double ImageMomentsFeature::NormSpatMom_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I, int p, int q)
-{
-    double stddev = CentralMom_nontriv (imlo, I, 2, 2);
+    double stddev = centralMom(cloud, 2, 2);
     int w = std::max(q, p);
-    double normCoef = pow(stddev, w);
-    double retval = CentralMom_nontriv(imlo, I, p, q) / normCoef;
+    double normCoef = pow(stddev, (double)w);
+    double cmPQ = centralMom(cloud, p, q);
+    double retval = cmPQ / normCoef;
     return retval;
 }
 
-double ImageMomentsFeature::NormCentralMom_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I, int p, int q)
+/// @brief Calculates the normalized central 2D moment of order q,p of ROI pixel cloud
+double ImageMomentsFeature::normCentralMom(const pixcloud_NT& cloud, int p, int q)
 {
     double temp = ((double(p) + double(q)) / 2.0) + 1.0;
-    double retval = CentralMom_nontriv (imlo, I, p, q) / pow(Moment_nontriv (imlo, I, 0, 0), temp);
+    double retval = centralMom(cloud, p, q) / pow(moment(cloud, 0, 0), temp);
     return retval;
 }
 
-double ImageMomentsFeature::NormCentralMom_nontriv (WriteImageMatrix_nontriv& W, int p, int q)
+std::tuple<double, double, double, double, double, double, double> ImageMomentsFeature::calcHuInvariants_imp(const pixcloud_NT& cloud)
 {
-    double temp = ((double(p) + double(q)) / 2.0) + 1.0;
-    double retval = CentralMom_nontriv (W, p, q) / pow(Moment_nontriv (W, 0, 0), temp);
-    return retval;
-}
+    // calculate the 7 Hu-1962 invariants
 
-void ImageMomentsFeature::calcSpatialMoments_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I)
-{
-    m00 = Moment_nontriv (imlo, I, 0, 0);
-    m01 = Moment_nontriv (imlo, I, 0, 1);
-    m02 = Moment_nontriv (imlo, I, 0, 2);
-    m03 = Moment_nontriv (imlo, I, 0, 3);
-    m10 = Moment_nontriv (imlo, I, 1, 0);
-    m11 = Moment_nontriv (imlo, I, 1, 1);
-    m12 = Moment_nontriv (imlo, I, 1, 2);
-    m20 = Moment_nontriv (imlo, I, 2, 0);
-    m21 = Moment_nontriv (imlo, I, 2, 1);
-    m30 = Moment_nontriv (imlo, I, 3, 0);
-}
+    auto _20 = normCentralMom(cloud, 2, 0),
+        _02 = normCentralMom(cloud, 0, 2),
+        _11 = normCentralMom(cloud, 1, 1),
+        _30 = normCentralMom(cloud, 3, 0),
+        _12 = normCentralMom(cloud, 1, 2),
+        _21 = normCentralMom(cloud, 2, 1),
+        _03 = normCentralMom(cloud, 0, 3);
 
-void ImageMomentsFeature::calcWeightedSpatialMoments_nontriv (WriteImageMatrix_nontriv& W)
-{
-    wm00 = Moment_nontriv (W, 0, 0);
-    wm01 = Moment_nontriv (W, 0, 1);
-    wm02 = Moment_nontriv (W, 0, 2);
-    wm03 = Moment_nontriv (W, 0, 3);
-    wm10 = Moment_nontriv (W, 1, 0);
-    wm11 = Moment_nontriv (W, 1, 1);
-    wm12 = Moment_nontriv (W, 1, 2);
-    wm20 = Moment_nontriv (W, 2, 0);
-    wm21 = Moment_nontriv (W, 2, 1);
-    wm30 = Moment_nontriv (W, 3, 0);
-}
+    double h1 = _20 + _02;
+    double h2 = pow((_20 - _02), 2) + 4 * (pow(_11, 2));
+    double h3 = pow((_30 - 3 * _12), 2) +
+        pow((3 * _21 - _03), 2);
+    double h4 = pow((_30 + _12), 2) +
+        pow((_21 + _03), 2);
+    double h5 = (_30 - 3 * _12) *
+        (_30 + _12) *
+        (pow(_30 + _12, 2) - 3 * pow(_21 + _03, 2)) +
+        (3 * _21 - _03) * (_21 + _03) *
+        (pow(3 * (_30 + _12), 2) - pow(_21 + _03, 2));
+    double h6 = (_20 - _02) * (pow(_30 + _12, 2) -
+        pow(_21 + _03, 2)) + (4 * _11 * (_30 + _12) *
+            _21 + _03);
+    double h7 = (3 * _21 - _03) * (_30 + _12) * (pow(_30 + _12, 2) -
+        3 * pow(_21 + _03, 2)) - (_30 - 3 * _12) * (_21 + _03) *
+        (3 * pow(_30 + _12, 2) - pow(_21 + _03, 2));
 
-void ImageMomentsFeature::calcCentralMoments_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I)
-{
-    mu02 = CentralMom_nontriv (imlo, I, 0, 2);
-    mu03 = CentralMom_nontriv (imlo, I, 0, 3);
-    mu11 = CentralMom_nontriv (imlo, I, 1, 1);
-    mu12 = CentralMom_nontriv (imlo, I, 1, 2);
-    mu20 = CentralMom_nontriv (imlo, I, 2, 0);
-    mu21 = CentralMom_nontriv (imlo, I, 2, 1);
-    mu30 = CentralMom_nontriv (imlo, I, 3, 0);
-}
-
-void ImageMomentsFeature::calcWeightedCentralMoments_nontriv (WriteImageMatrix_nontriv& W)
-{
-    wmu02 = CentralMom_nontriv (W, 0, 2);
-    wmu03 = CentralMom_nontriv (W, 0, 3);
-    wmu11 = CentralMom_nontriv (W, 1, 1);
-    wmu12 = CentralMom_nontriv (W, 1, 2);
-    wmu20 = CentralMom_nontriv (W, 2, 0);
-    wmu21 = CentralMom_nontriv (W, 2, 1);
-    wmu30 = CentralMom_nontriv (W, 3, 0);
-}
-
-void ImageMomentsFeature::calcNormCentralMoments_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I)
-{
-    nu02 = NormCentralMom_nontriv (imlo, I, 0, 2);
-    nu03 = NormCentralMom_nontriv (imlo, I, 0, 3);
-    nu11 = NormCentralMom_nontriv (imlo, I, 1, 1);
-    nu12 = NormCentralMom_nontriv (imlo, I, 1, 2);
-    nu20 = NormCentralMom_nontriv (imlo, I, 2, 0);
-    nu21 = NormCentralMom_nontriv (imlo, I, 2, 1);
-    nu30 = NormCentralMom_nontriv (imlo, I, 3, 0);
-}
-
-void ImageMomentsFeature::calcNormSpatialMoments_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I)
-{
-    w00 = NormSpatMom_nontriv (imlo, I, 0, 0);
-    w01 = NormSpatMom_nontriv (imlo, I, 0, 1);
-    w02 = NormSpatMom_nontriv (imlo, I, 0, 2);
-    w03 = NormSpatMom_nontriv (imlo, I, 0, 3);
-    w10 = NormSpatMom_nontriv (imlo, I, 1, 0);
-    w20 = NormSpatMom_nontriv (imlo, I, 2, 0);
-    w30 = NormSpatMom_nontriv (imlo, I, 3, 0);
-}
-
-std::tuple<double, double, double, double, double, double, double> ImageMomentsFeature::calcHuInvariants_imp_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I)
-{
-    // calculate 7 invariant moments
-    double h1 = NormCentralMom_nontriv (imlo, I, 2, 0) + NormCentralMom_nontriv (imlo, I, 0, 2);
-    double h2 = pow((NormCentralMom_nontriv (imlo, I, 2, 0) - NormCentralMom_nontriv (imlo, I, 0, 2)), 2) + 4 * (pow(NormCentralMom_nontriv (imlo, I, 1, 1), 2));
-    double h3 = pow((NormCentralMom_nontriv (imlo, I, 3, 0) - 3 * NormCentralMom_nontriv (imlo, I, 1, 2)), 2) +
-        pow((3 * NormCentralMom_nontriv (imlo, I, 2, 1) - NormCentralMom_nontriv (imlo, I, 0, 3)), 2);
-    double h4 = pow((NormCentralMom_nontriv (imlo, I, 3, 0) + NormCentralMom_nontriv (imlo, I, 1, 2)), 2) +
-        pow((NormCentralMom_nontriv (imlo, I, 2, 1) + NormCentralMom_nontriv (imlo, I, 0, 3)), 2);
-    double h5 = (NormCentralMom_nontriv (imlo, I, 3, 0) - 3 * NormCentralMom_nontriv (imlo, I, 1, 2)) *
-        (NormCentralMom_nontriv (imlo, I, 3, 0) + NormCentralMom_nontriv (imlo, I, 1, 2)) *
-        (pow(NormCentralMom_nontriv (imlo, I, 3, 0) + NormCentralMom_nontriv (imlo, I, 1, 2), 2) - 3 * pow(NormCentralMom_nontriv (imlo, I, 2, 1) + NormCentralMom_nontriv (imlo, I, 0, 3), 2)) +
-        (3 * NormCentralMom_nontriv (imlo, I, 2, 1) - NormCentralMom_nontriv (imlo, I, 0, 3)) * (NormCentralMom_nontriv (imlo, I, 2, 1) + NormCentralMom_nontriv (imlo, I, 0, 3)) *
-        (pow(3 * (NormCentralMom_nontriv (imlo, I, 3, 0) + NormCentralMom_nontriv (imlo, I, 1, 2)), 2) - pow(NormCentralMom_nontriv (imlo, I, 2, 1) + NormCentralMom_nontriv (imlo, I, 0, 3), 2));
-    double h6 = (NormCentralMom_nontriv (imlo, I, 2, 0) - NormCentralMom_nontriv (imlo, I, 0, 2)) * (pow(NormCentralMom_nontriv (imlo, I, 3, 0) + NormCentralMom_nontriv (imlo, I, 1, 2), 2) -
-        pow(NormCentralMom_nontriv (imlo, I, 2, 1) + NormCentralMom_nontriv (imlo, I, 0, 3), 2)) + (4 * NormCentralMom_nontriv (imlo, I, 1, 1) * (NormCentralMom_nontriv (imlo, I, 3, 0) + NormCentralMom_nontriv (imlo, I, 1, 2)) *
-            NormCentralMom_nontriv (imlo, I, 2, 1) + NormCentralMom_nontriv (imlo, I, 0, 3));
-    double h7 = (3 * NormCentralMom_nontriv (imlo, I, 2, 1) - NormCentralMom_nontriv (imlo, I, 0, 3)) * (NormCentralMom_nontriv (imlo, I, 3, 0) + NormCentralMom_nontriv (imlo, I, 1, 2)) * (pow(NormCentralMom_nontriv (imlo, I, 3, 0) + NormCentralMom_nontriv (imlo, I, 1, 2), 2) -
-        3 * pow(NormCentralMom_nontriv (imlo, I, 2, 1) + NormCentralMom_nontriv (imlo, I, 0, 3), 2)) - (NormCentralMom_nontriv (imlo, I, 3, 0) - 3 * NormCentralMom_nontriv (imlo, I, 1, 2)) * (NormCentralMom_nontriv (imlo, I, 2, 1) + NormCentralMom_nontriv (imlo, I, 0, 3)) *
-        (3 * pow(NormCentralMom_nontriv (imlo, I, 3, 0) + NormCentralMom_nontriv (imlo, I, 1, 2), 2) - pow(NormCentralMom_nontriv (imlo, I, 2, 1) + NormCentralMom_nontriv (imlo, I, 0, 3), 2));
     return { h1, h2, h3, h4, h5, h6, h7 };
 }
 
-std::tuple<double, double, double, double, double, double, double> ImageMomentsFeature::calcHuInvariants_imp_nontriv (WriteImageMatrix_nontriv& W)
+void ImageMomentsFeature::calcHuInvariants(const pixcloud_NT& cloud)
 {
-    // calculate 7 invariant moments
-    double h1 = NormCentralMom_nontriv (W, 2, 0) + NormCentralMom_nontriv (W, 0, 2);
-    double h2 = pow((NormCentralMom_nontriv (W, 2, 0) - NormCentralMom_nontriv (W, 0, 2)), 2) + 4 * (pow(NormCentralMom_nontriv (W, 1, 1), 2));
-    double h3 = pow((NormCentralMom_nontriv (W, 3, 0) - 3 * NormCentralMom_nontriv (W, 1, 2)), 2) +
-        pow((3 * NormCentralMom_nontriv (W, 2, 1) - NormCentralMom_nontriv (W, 0, 3)), 2);
-    double h4 = pow((NormCentralMom_nontriv (W, 3, 0) + NormCentralMom_nontriv (W, 1, 2)), 2) +
-        pow((NormCentralMom_nontriv (W, 2, 1) + NormCentralMom_nontriv (W, 0, 3)), 2);
-    double h5 = (NormCentralMom_nontriv (W, 3, 0) - 3 * NormCentralMom_nontriv (W, 1, 2)) *
-        (NormCentralMom_nontriv (W, 3, 0) + NormCentralMom_nontriv (W, 1, 2)) *
-        (pow(NormCentralMom_nontriv (W, 3, 0) + NormCentralMom_nontriv (W, 1, 2), 2) - 3 * pow(NormCentralMom_nontriv (W, 2, 1) + NormCentralMom_nontriv (W, 0, 3), 2)) +
-        (3 * NormCentralMom_nontriv (W, 2, 1) - NormCentralMom_nontriv (W, 0, 3)) * (NormCentralMom_nontriv (W, 2, 1) + NormCentralMom_nontriv (W, 0, 3)) *
-        (pow(3 * (NormCentralMom_nontriv (W, 3, 0) + NormCentralMom_nontriv (W, 1, 2)), 2) - pow(NormCentralMom_nontriv (W, 2, 1) + NormCentralMom_nontriv (W, 0, 3), 2));
-    double h6 = (NormCentralMom_nontriv (W, 2, 0) - NormCentralMom_nontriv (W, 0, 2)) * (pow(NormCentralMom_nontriv (W, 3, 0) + NormCentralMom_nontriv (W, 1, 2), 2) -
-        pow(NormCentralMom_nontriv (W, 2, 1) + NormCentralMom_nontriv (W, 0, 3), 2)) + (4 * NormCentralMom_nontriv (W, 1, 1) * (NormCentralMom_nontriv (W, 3, 0) + NormCentralMom_nontriv (W, 1, 2)) *
-            NormCentralMom_nontriv (W, 2, 1) + NormCentralMom_nontriv (W, 0, 3));
-    double h7 = (3 * NormCentralMom_nontriv (W, 2, 1) - NormCentralMom_nontriv (W, 0, 3)) * (NormCentralMom_nontriv (W, 3, 0) + NormCentralMom_nontriv (W, 1, 2)) * (pow(NormCentralMom_nontriv (W, 3, 0) + NormCentralMom_nontriv (W, 1, 2), 2) -
-        3 * pow(NormCentralMom_nontriv (W, 2, 1) + NormCentralMom_nontriv (W, 0, 3), 2)) - (NormCentralMom_nontriv (W, 3, 0) - 3 * NormCentralMom_nontriv (W, 1, 2)) * (NormCentralMom_nontriv (W, 2, 1) + NormCentralMom_nontriv (W, 0, 3)) *
-        (3 * pow(NormCentralMom_nontriv (W, 3, 0) + NormCentralMom_nontriv (W, 1, 2), 2) - pow(NormCentralMom_nontriv (W, 2, 1) + NormCentralMom_nontriv (W, 0, 3), 2));
-    return { h1, h2, h3, h4, h5, h6, h7 };
+    std::tie(hm1, hm2, hm3, hm4, hm5, hm6, hm7) = calcHuInvariants_imp(cloud);
 }
 
-void ImageMomentsFeature::calcHuInvariants_nontriv (ImageLoader& imlo, ReadImageMatrix_nontriv& I)
+void ImageMomentsFeature::calcWeightedHuInvariants(const pixcloud_NT& cloud)
 {
-    std::tie(hm1, hm2, hm3, hm4, hm5, hm6, hm7) = calcHuInvariants_imp_nontriv (imlo, I);
+    std::tie(whm1, whm2, whm3, whm4, whm5, whm6, whm7) = calcHuInvariants_imp(cloud);
 }
 
-void ImageMomentsFeature::calcWeightedHuInvariants_nontriv (WriteImageMatrix_nontriv& W)
+void ImageMomentsFeature::calcRawMoments(const pixcloud_NT& cloud)
 {
-    std::tie(whm1, whm2, whm3, whm4, whm5, whm6, whm7) = calcHuInvariants_imp_nontriv (W);
+    m00 = moment(cloud, 0, 0);
+    m01 = moment(cloud, 0, 1);
+    m02 = moment(cloud, 0, 2);
+    m03 = moment(cloud, 0, 3);
+    m10 = moment(cloud, 1, 0);
+    m11 = moment(cloud, 1, 1);
+    m12 = moment(cloud, 1, 2);
+    m20 = moment(cloud, 2, 0);
+    m21 = moment(cloud, 2, 1);
+    m30 = moment(cloud, 3, 0);
 }
 
+/// @brief 
+/// @param cloud Cloud of weighted ROI pixels
+void ImageMomentsFeature::calcWeightedRawMoments(const pixcloud_NT& cloud)
+{
+    wm00 = moment(cloud, 0, 0);
+    wm01 = moment(cloud, 0, 1);
+    wm02 = moment(cloud, 0, 2);
+    wm03 = moment(cloud, 0, 3);
+    wm10 = moment(cloud, 1, 0);
+    wm11 = moment(cloud, 1, 1);
+    wm12 = moment(cloud, 1, 2);
+    wm20 = moment(cloud, 2, 0);
+    wm21 = moment(cloud, 2, 1);
+    wm30 = moment(cloud, 3, 0);
+}
+
+void ImageMomentsFeature::calcCentralMoments(const pixcloud_NT& cloud)
+{
+    mu02 = centralMom(cloud, 0, 2);
+    mu03 = centralMom(cloud, 0, 3);
+    mu11 = centralMom(cloud, 1, 1);
+    mu12 = centralMom(cloud, 1, 2);
+    mu20 = centralMom(cloud, 2, 0);
+    mu21 = centralMom(cloud, 2, 1);
+    mu30 = centralMom(cloud, 3, 0);
+}
+
+void ImageMomentsFeature::calcWeightedCentralMoments(const pixcloud_NT& cloud)
+{
+    wmu02 = centralMom(cloud, 0, 2);
+    wmu03 = centralMom(cloud, 0, 3);
+    wmu11 = centralMom(cloud, 1, 1);
+    wmu12 = centralMom(cloud, 1, 2);
+    wmu20 = centralMom(cloud, 2, 0);
+    wmu21 = centralMom(cloud, 2, 1);
+    wmu30 = centralMom(cloud, 3, 0);
+}
+
+void ImageMomentsFeature::calcNormCentralMoments(const pixcloud_NT& cloud)
+{
+    nu02 = normCentralMom(cloud, 0, 2);
+    nu03 = normCentralMom(cloud, 0, 3);
+    nu11 = normCentralMom(cloud, 1, 1);
+    nu12 = normCentralMom(cloud, 1, 2);
+    nu20 = normCentralMom(cloud, 2, 0);
+    nu21 = normCentralMom(cloud, 2, 1);
+    nu30 = normCentralMom(cloud, 3, 0);
+}
+
+void ImageMomentsFeature::calcNormRawMoments(const pixcloud_NT& cloud)
+{
+    w00 = normRawMom(cloud, 0, 0);
+    w01 = normRawMom(cloud, 0, 1);
+    w02 = normRawMom(cloud, 0, 2);
+    w03 = normRawMom(cloud, 0, 3);
+    w10 = normRawMom(cloud, 1, 0);
+    w20 = normRawMom(cloud, 2, 0);
+    w30 = normRawMom(cloud, 3, 0);
+}
 

@@ -10,6 +10,7 @@ class OutOfRamPixelCloud
 {
 public:
 	OutOfRamPixelCloud();
+	OutOfRamPixelCloud(const OutOfRamPixelCloud&) = delete;	// Instead, use init() and copy()
 	~OutOfRamPixelCloud();
 	void init (unsigned int _roi_label, std::string name);
 	void clear();

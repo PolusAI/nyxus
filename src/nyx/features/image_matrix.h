@@ -379,7 +379,16 @@ public:
 		{
 			auto x = pxl.x - original_aabb.get_xmin() + padOffsetX,
 				y = pxl.y - original_aabb.get_ymin() + padOffsetY;
-			_pix_plane[y * width + x] = pxl.inten * attenuation + base_level;
+			_pix_plane[y * width + x] = PixIntens(double(pxl.inten) * attenuation + base_level);
 		}
 	}
 };
+
+/// @brief Applies to distance-to-contour weighting to intensities of pixel cloud 
+void apply_dist2contour_weighting(
+	// input & output
+	std::vector<Pixel2>& cloud,
+	// input
+	const std::vector<Pixel2>& contour,
+	const double epsilon);
+

@@ -283,7 +283,7 @@ void ImageMatrix::apply_distance_to_contour_weights (const std::vector<Pixel2>& 
 			r = p.y - original_aabb.get_ymin();
 		
 		// Weighted intensity
-		PixIntens wi = _pix_plane.yx(r, c) / (dist + epsilon) + 0.5/*rounding*/;
+		PixIntens wi = PixIntens((double)_pix_plane.yx(r, c) / (dist + epsilon));
 		
 		_pix_plane.yx(r,c) = wi;
 	}
@@ -334,5 +334,27 @@ bool ImageMatrix::tile_contains_signal (int tile_row, int tile_col, int tile_sid
 			if (_pix_plane.yx(r, c) != 0)
 				return true;
 	return false;
+}
+
+/// @brief Applies to distance-to-contour weighting to intensities of pixel cloud 
+void apply_dist2contour_weighting(
+	// input & output
+	std::vector<Pixel2>& cloud,
+	// input
+	const std::vector<Pixel2>& contour, 
+	const double epsilon)
+{
+	for (auto& p : cloud)
+	{
+		// pixel distance
+		auto mind2 = p.min_sqdist (contour);
+		double dist = std::sqrt(mind2);
+
+		// adjusted intensity
+		PixIntens wi = PixIntens((double)p.inten / (dist + epsilon));
+
+		// save
+		p.inten = wi;
+	}
 }
 
