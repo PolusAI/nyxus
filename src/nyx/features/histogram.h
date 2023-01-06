@@ -119,12 +119,12 @@ public:
 
 		// Percentiles
 		double p1 = 0, p10 = 0, p25 = 0, p75 = 0, p90 = 0, p99 = 0;
-		double cnt_p1 = double(population) * 0.01 + 0.5,
-			cnt_p10 = double(population) * 0.1 + 0.5,
-			cnt_p25 = double(population) * 0.25 + 0.5,
-			cnt_p75 = double(population) * 0.75 + 0.5,
-			cnt_p90 = double(population) * 0.9 + 0.5,
-			cnt_p99 = double(population) * 0.99 + 0.5;
+		double cnt_p1 = double(population) * 0.01,
+			cnt_p10 = double(population) * 0.1,
+			cnt_p25 = double(population) * 0.25,
+			cnt_p75 = double(population) * 0.75,
+			cnt_p90 = double(population) * 0.9,
+			cnt_p99 = double(population) * 0.99;
 		size_t runSum = 0;
 		for (int i = 0; i < 100; i++)
 		{

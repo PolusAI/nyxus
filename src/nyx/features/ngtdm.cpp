@@ -47,7 +47,9 @@ void NGTDMFeature::calculate (LR& r)
 		for (int col = 0; col < D.width(); col++)
 		{
 			// Find a non-blank pixel 
-			PixIntens pi = Nyxus::to_grayscale (D.yx(row, col), r.aux_min, piRange, nGrays); 
+			
+			PixIntens pi = (Environment::skip_binning) ?
+				D.yx(row,col) : Nyxus::to_grayscale (D.yx(row, col), r.aux_min, piRange, nGrays); 
 			if (pi == 0)
 				continue;
 
@@ -55,66 +57,82 @@ void NGTDMFeature::calculate (LR& r)
 			U.insert(pi);
 
 			// Evaluate the neighborhood
-			PixIntens neigsI = 0;
+			double neigsI = 0;
 
 			int nd = 0;	// Number of dependencies
 
-			if (D.safe(row - 1, col))	// North
+			if (D.safe(row - 1, col) && D.yx(row-1, col) != 0)	// North
 			{
-				neigsI += Nyxus::to_grayscale (D.yx(row-1, col), r.aux_min, piRange, nGrays);
+				neigsI += (Environment::skip_binning) ?
+					D.yx(row-1, col) : Nyxus::to_grayscale (D.yx(row-1, col), r.aux_min, piRange, nGrays);
 				nd++;
 			}
-			if (D.safe(row - 1, col + 1))	// North-East
+
+			if (D.safe(row - 1, col + 1) && D.yx(row-1, col+1) != 0)	// North-East
 			{
-				neigsI += Nyxus::to_grayscale (D.yx(row-1, col+1), r.aux_min, piRange, nGrays);
+				neigsI += (Environment::skip_binning) ? 
+					D.yx(row-1, col+1) : Nyxus::to_grayscale (D.yx(row-1, col+1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
-			if (D.safe(row, col + 1))	// East
+
+			if (D.safe(row, col + 1) && D.yx(row, col+1) != 0)	// East
 			{
-				neigsI += Nyxus::to_grayscale (D.yx(row, col+1), r.aux_min, piRange, nGrays);
+				neigsI += (Environment::skip_binning) ?
+					D.yx(row, col+1) : Nyxus::to_grayscale (D.yx(row, col+1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
-			if (D.safe(row + 1, col + 1))	// South-East
+			if (D.safe(row + 1, col + 1) && D.yx(row+1, col+1) != 0)	// South-East
 			{
-				neigsI += Nyxus::to_grayscale (D.yx(row+1, col+1), r.aux_min, piRange, nGrays);
+				neigsI += (Environment::skip_binning) ?
+					D.yx(row+1, col+1) : Nyxus::to_grayscale (D.yx(row+1, col+1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
-			if (D.safe(row + 1, col))	// South
+			if (D.safe(row + 1, col) && D.yx(row+1, col) != 0)	// South
 			{
-				neigsI += Nyxus::to_grayscale (D.yx(row+1, col), r.aux_min, piRange, nGrays);
+				neigsI += (Environment::skip_binning) ?
+					D.yx(row+1, col) : Nyxus::to_grayscale (D.yx(row+1, col), r.aux_min, piRange, nGrays);
 				nd++;
 			}
-			if (D.safe(row + 1, col - 1))	// South-West
+			if (D.safe(row + 1, col - 1) && D.yx(row+1, col-1) != 0)	// South-West
 			{
-				neigsI += Nyxus::to_grayscale (D.yx(row+1, col-1), r.aux_min, piRange, nGrays);
+				neigsI += (Environment::skip_binning) ?
+					D.yx(row+1, col-1) : Nyxus::to_grayscale (D.yx(row+1, col-1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
-			if (D.safe(row, col - 1))	// West
+			if (D.safe(row, col - 1) && D.yx(row, col-1) !=0)	// West
 			{
-				neigsI += Nyxus::to_grayscale (D.yx(row, col-1), r.aux_min, piRange, nGrays);
+				neigsI += (Environment::skip_binning) ?
+					D.yx(row, col-1) : Nyxus::to_grayscale (D.yx(row, col-1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
-			if (D.safe(row - 1, col - 1))	// North-West
+			if (D.safe(row - 1, col - 1) && D.yx(row-1, col-1) != 0)	// North-West
 			{
-				neigsI += Nyxus::to_grayscale (D.yx(row-1, col-1), r.aux_min, piRange, nGrays);
+				neigsI += (Environment::skip_binning) ?
+					D.yx(row-1, col-1) : Nyxus::to_grayscale (D.yx(row-1, col-1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
 
 			// Save the intensity's average neigborhood intensity
-			neigsI /= nd;
-			AveNeighborhoodInte z = { pi, neigsI };
-			Z.push_back(z);
+			if (nd > 0) {
+				//if(pi == 1) {
+				//	std::cerr << "neigsI: " << neigsI << ", nd: " << nd << std::endl;
+				//}
+				neigsI /= nd;
+				AveNeighborhoodInte z = { pi, neigsI };
+				Z.push_back(z);
+			}
 		}
 
 	//==== Fill the matrix
 
-	Ng = (decltype(Ng))U.size();
-	Ngp = Ng;
+	Ng = (Environment::skip_binning) ?
+		*std::max_element(std::begin(r.aux_image_matrix.ReadablePixels()), std::end(r.aux_image_matrix.ReadablePixels())) : (decltype(Ng))U.size();
+	Ngp = U.size();
 
 	// --allocate the matrix
-	P.resize(Ng, 0);
-	S.resize(Ng, 0);
-	N.resize(Ng, 0);
+	P.resize(Ng + 1, 0);
+	S.resize(Ng + 1, 0);
+	N.resize(Ng + 1, 0);
 
 	// --Set to vector to be able to know each intensity's index
 	std::vector<PixIntens> I(U.begin(), U.end());
@@ -125,7 +143,8 @@ void NGTDMFeature::calculate (LR& r)
 	{
 		// row
 		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = int(iter - I.begin());
+		int row = (Environment::skip_binning) ?
+			z.first : int(iter - I.begin());
 		// col
 		int col = (int) z.second;	// 1-based
 		// increment
@@ -139,9 +158,14 @@ void NGTDMFeature::calculate (LR& r)
 			Nvp++;
 	}
 
+	// --Calculate Nvc (sum of N)
+	Nvc = 0;
+	for (int i = 0; i < N.size(); i++) 
+		Nvc += N[i];
+
 	// --Calculate P
-	for (int i = 0; i < Ng; i++)
-		P[i] = double(Ng) / (im.height * im.width);
+	for (int i = 0; i < N.size(); i++)
+		P[i] = (double)N[i] / Nvc;
 
 	//=== Calculate features
 	_coarseness = calc_Coarseness();
@@ -301,7 +325,7 @@ double NGTDMFeature::calc_Coarseness()
 
 	// Calculate the feature
 	double sum = 0.0;
-	for (int i = 0; i < Ng; i++)
+	for (int i = 1; i <= Ng; i++)
 		sum += P[i] * S[i];
 	double retval = 1.0 / sum;
 	return retval;
@@ -317,10 +341,10 @@ double NGTDMFeature::calc_Contrast()
 	// Calculate the feature
 	// --term 1
 	double sum = 0.0;
-	for (int i=0; i<Ng; i++)
-		for (int j = 0; j < Ng; j++)
+	for (int i=1; i<=Ng; i++)
+		for (int j = 1; j <= Ng; j++)
 		{
-			double tmp = P[i] * P[j] * ((i+1) - (j+1)) * ((i+1) - (j+1));
+			double tmp = P[i] * P[j] * (i - j) * (i - j);
 			sum += tmp;
 		}
 	int Ngp_p2 = Ngp > 1 ? Ngp * (Ngp - 1) : Ngp;
@@ -328,9 +352,9 @@ double NGTDMFeature::calc_Contrast()
 
 	// --term 2
 	sum = 0.0;
-	for (int i = 0; i < Ng; i++)
+	for (int i = 1; i <= Ng; i++)
 		sum += S[i];
-	double term2 = sum / double(Ngp);
+	double term2 = sum / Nvc;
 
 	double retval = term1 * term2;
 	return retval;
@@ -349,15 +373,17 @@ double NGTDMFeature::calc_Busyness()
 
 	// Calculate the feature
 	double sum1 = 0.0;
-	for (int i = 0; i < Ng; i++)
+	for (int i = 1; i <= Ng; i++)
 		sum1 += P[i] * S[i];
 
 	double sum2 = 0.0;
-	for (int i = 0; i < Ng; i++)
-		for (int j = 0; j < Ng; j++)
+	for (int i = 1; i <= Ng; i++)
+		for (int j = 1; j <= Ng; j++)
 		{
-			double tmp = P[i] * double(i) - P[j] * double(j);
-			sum2 += std::abs (tmp);
+			if (P[i] != 0 && P[j] != 0) {
+				double tmp = P[i] * double(i) - P[j] * double(j);
+				sum2 += std::abs (tmp);
+			}
 		}
 
 	double retval = sum1 / sum2;
@@ -373,11 +399,12 @@ double NGTDMFeature::calc_Complexity()
 
 	// Calculate the feature
 	double sum = 0.0;
-	for (int i = 0; i < Ng; i++)
-		for (int j = 0; j < Ng; j++)
+	for (int i = 1; i <= Ng; i++)
+		for (int j = 1; j <= Ng; j++)
 		{
-			double tmp = std::abs((i+1)-(j+1)) * (P[i]*S[i] + P[j]*S[j]) / (P[i]+P[j]) ;
-			sum += tmp;
+			if (P[i] != 0 && P[j] != 0) {
+				sum += std::abs(i-j) * (P[i]*S[i] + P[j]*S[j]) / (P[i]+P[j]) ;
+			}
 		}
 
 	double retval = sum / double(Nvp);
@@ -393,15 +420,16 @@ double NGTDMFeature::calc_Strength()
 
 	// Calculate the feature
 	double sum1 = 0.0;
-	for (int i = 0; i < Ng; i++)
-		for (int j = 0; j < Ng; j++)
+	for (int i = 1; i <= Ng; i++)
+		for (int j = 1; j <= Ng; j++)
 		{
-			double tmp = (P[i] + P[j]) * ((i+1) - (j+1)) * ((i+1) - (j+1));
-			sum1 += tmp;
+			if (P[i] != 0 && P[j] != 0) {
+				sum1 += (P[i] + P[j]) * (i - j) * (i - j);
+			}
 		}
 
 	double sum2 = 0.0;
-	for (int i = 0; i < Ng; i++)
+	for (int i = 1; i <= Ng; i++)
 		sum2 += S[i];
 
 	double retval = sum1 / sum2;

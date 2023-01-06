@@ -25,7 +25,7 @@ GLDMFeature::GLDMFeature() : FeatureMethod("GLDMFeature")
 }
 
 void GLDMFeature::calculate(LR& r)
-{
+{	
 	if (r.aux_min == r.aux_max)
 		return;
 
@@ -44,41 +44,90 @@ void GLDMFeature::calculate(LR& r)
 	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
 
 	// Gather zones
-	for (int row = 1; row < D.height() - 1; row++)
-		for (int col = 1; col < D.width() - 1; col++)
+	for (int row = 0; row < D.height(); row++)
+		for (int col = 0; col < D.width(); col++)
 		{
 			// Find a non-blank pixel
-			PixIntens pi = Nyxus::to_grayscale (D.yx(row, col), r.aux_min, piRange, nGrays);
+			PixIntens pi = (Environment::skip_binning) ?
+				D.yx(row, col) : Nyxus::to_grayscale (D.yx(row, col), r.aux_min, piRange, nGrays);
+
 			if (pi == 0)
 				continue;
 
 			// Count dependencies
-			int nd = 0;	// Number of dependencies
-			PixIntens piQ; // Pixel intensity of question
-			piQ = Nyxus::to_grayscale (D.yx(row - 1, col), r.aux_min, piRange, nGrays);	// North
-			if (piQ == pi)
-				nd++;
-			piQ = Nyxus::to_grayscale (D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays);	// North-East
-			if (piQ == pi)
-				nd++;
-			piQ = Nyxus::to_grayscale (D.yx(row, col + 1), r.aux_min, piRange, nGrays);	// East
-			if (piQ == pi)
-				nd++;
-			piQ = Nyxus::to_grayscale (D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays);	// South-East
-			if (piQ == pi)
-				nd++;
-			piQ = Nyxus::to_grayscale(D.yx(row + 1, col), r.aux_min, piRange, nGrays);		// South
-			if (piQ == pi)
-				nd++;
-			piQ = Nyxus::to_grayscale (D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays);	// South-West
-			if (piQ == pi)
-				nd++;
-			piQ = Nyxus::to_grayscale (D.yx(row, col - 1), r.aux_min, piRange, nGrays);		// West
-			if (piQ == pi)
-				nd++;
-			piQ = Nyxus::to_grayscale (D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays);	// North-West
-			if (piQ == pi)
-				nd++;
+			int nd = 1;	// Number of dependencies
+			PixIntens piQ; // Pixel intensity of questionn
+			if (D.safe(row - 1, col)) {
+
+				piQ = (Environment::skip_binning) ?
+					D.yx(row - 1, col) : Nyxus::to_grayscale (D.yx(row - 1, col), r.aux_min, piRange, nGrays);	// North
+
+				if (piQ == pi)
+					nd++;
+			}
+
+			if (D.safe(row - 1, col + 1)) {
+
+				piQ = (Environment::skip_binning) ? 
+					D.yx(row - 1, col + 1) : Nyxus::to_grayscale (D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays);	// North-East
+
+				if (piQ == pi)
+					nd++;
+			}
+
+			if (D.safe(row, col + 1)) {
+
+				piQ = (Environment::skip_binning) ? 
+					D.yx(row, col + 1) : Nyxus::to_grayscale (D.yx(row, col + 1), r.aux_min, piRange, nGrays);	// East
+
+				if (piQ == pi)
+					nd++;
+			}
+
+			if (D.safe(row + 1, col + 1)) {
+
+				piQ = (Environment::skip_binning) ? 
+					D.yx(row + 1, col + 1) : Nyxus::to_grayscale (D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays);	// South-East
+
+				if (piQ == pi)
+					nd++;
+			}
+
+			if (D.safe(row + 1, col)) {
+
+				piQ = (Environment::skip_binning) ? 
+					D.yx(row + 1, col) : Nyxus::to_grayscale(D.yx(row + 1, col), r.aux_min, piRange, nGrays);		// South
+
+				if (piQ == pi)
+					nd++;
+			}
+
+			if (D.safe(row + 1, col - 1)) {
+				
+				piQ = (Environment::skip_binning) ?
+					D.yx(row + 1, col - 1) : Nyxus::to_grayscale (D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays);	// South-West
+
+				if (piQ == pi)
+					nd++;
+			}
+
+			if (D.safe(row, col - 1)) {
+
+				piQ = (Environment::skip_binning) ?
+					D.yx(row, col - 1) : Nyxus::to_grayscale (D.yx(row, col - 1), r.aux_min, piRange, nGrays);		// West
+
+				if (piQ == pi)
+					nd++;
+			}
+
+			if (D.safe(row - 1, col - 1)) {
+
+				piQ = (Environment::skip_binning) ? 
+					D.yx(row - 1, col - 1) : Nyxus::to_grayscale (D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays);	// North-West
+
+				if (piQ == pi)
+					nd++;
+			}
 
 			// Save the intensity's dependency
 			ACluster clu = { pi, nd };
@@ -90,12 +139,13 @@ void GLDMFeature::calculate(LR& r)
 
 	//==== Fill the matrix
 
-	Ng = (decltype(Ng))U.size();
+	//Ng = (decltype(Ng))U.size();
+	Ng = *std::max_element(std::begin(r.aux_image_matrix.ReadablePixels()), std::end(r.aux_image_matrix.ReadablePixels()));
 	Nd = 8 + 1;	// N, NE, E, SE, S, SW, W, NW + zero
 	Nz = (decltype(Nz))Z.size();
 
 	// --allocate the matrix
-	P.allocate(Nd, Ng);
+	P.allocate(Nd+1, Ng+1);
 
 	// --Set to vector to be able to know each intensity's index
 	std::vector<PixIntens> I(U.begin(), U.end());
@@ -106,12 +156,21 @@ void GLDMFeature::calculate(LR& r)
 	{
 		// row
 		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = int(iter - I.begin());
+		int row = (Environment::skip_binning) ? z.first-1 : int(iter - I.begin()) - 1;
 		// col
-		int col = z.second;	// 1-based
+		int col = z.second - 1;	// 1-based
 		// increment
 		auto& k = P.xy(col, row);
 		k++;
+	}
+
+	sum_p = 0;
+	for (int i = 1; i <= Ng; i++)
+	{
+		for (int j = 1; j <= Nd; j++)
+		{
+			sum_p += P.matlab(i,j);
+		}
 	}
 }
 
@@ -219,15 +278,23 @@ double GLDMFeature::calc_SDE()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double f = 0.0;
+	std::vector<double> sj(Nd+1, 0.);
 	for (int i = 1; i <= Ng; i++)
 	{
 		for (int j = 1; j <= Nd; j++)
 		{
-			f += P.matlab(i, j) / double(i*i);
+			sj[j-1] += P.matlab(i, j);
 		}
 	}
-	double retval = f / double(Nz);
+	
+
+	double f = 0.0;
+	for (int j = 1; j <= Nd; j++)
+	{
+		f +=  sj[j-1] / double(j*j);
+	}
+
+	double retval = f / double(sum_p);
 	return retval;
 }
 
@@ -238,36 +305,44 @@ double GLDMFeature::calc_LDE()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double f = 0.0;
+	std::vector<double> sj(Nd+1, 0.);
 	for (int i = 1; i <= Ng; i++)
 	{
 		for (int j = 1; j <= Nd; j++)
 		{
-			f += P.matlab(i, j) * double(j*j);
+			sj[j-1] += P.matlab(i, j);
 		}
 	}
-	double retval = f / double(Nz);
+	
+	double f = 0.0;
+	for (int j = 1; j <= Nd; j++)
+	{
+		f +=  sj[j-1] * double(j*j);
+	}
+
+	double retval = f / double(sum_p);
 	return retval;
 }
 
 // 3. Gray Level Non-Uniformity (GLN)
 double GLDMFeature::calc_GLN()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
+	std::vector<double> si(Ng+1, 0.);
+	for (int i = 1; i <= Ng; i++)
+	{
+		for (int j = 1; j <= Nd; j++)
+		{
+			si[i-1] += P.matlab(i, j);
+		}
+	}
 
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double sum = 0.0;
-		for (int j = 1; j <= Nd; j++)
-		{
-			sum += P.matlab(i, j);
-		}
-		f += sum * sum;
+		f += si[i-1] * si[i-1];
 	}
-	double retval = f / double(Nz);
+
+	double retval = f / double(sum_p);
 	return retval;
 }
 
@@ -278,17 +353,22 @@ double GLDMFeature::calc_DN()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double f = 0.0;
-	for (int j = 1; j <= Ng; j++)	//OPT	for (int i = 1; i <= Nd; i++)
+	std::vector<double> sj(Nd+1, 0.);
+	for (int i = 1; i <= Ng; i++)
 	{
-		double sum = 0.0;
-		for (int i = 1; i <= Nd; i++)	//OPT	for (int j = 1; j <= Ng; j++)
+		for (int j = 1; j <= Nd; j++)
 		{
-			sum += P.matlab(j, i);
+			sj[j-1] += P.matlab(i, j);
 		}
-		f += sum * sum;
 	}
-	double retval = f / double(Nz);
+
+	double f = 0.0;
+	for (int j = 1; j <= Nd; j++)
+	{
+		f += sj[j-1] * sj[j-1];
+	}
+
+	double retval = f / double(sum_p);
 	return retval;
 }
 // 5. Dependence Non-Uniformity Normalized (DNN)
@@ -298,17 +378,21 @@ double GLDMFeature::calc_DNN()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double f = 0.0;
-	for (int j = 1; j <= Ng; j++)	//OPT	for (int i = 1; i <= Nd; i++)
+	std::vector<double> sj(Nd+1, 0.);
+	for (int i = 1; i <= Ng; i++)
 	{
-		double sum = 0.0;
-		for (int i = 1; i <= Nd; i++)	//OPT	for (int j = 1; j <= Ng; j++)
+		for (int j = 1; j <= Nd; j++)
 		{
-			sum += P.matlab(j, i); 
+			sj[j-1] += P.matlab(i, j);
 		}
-		f += sum * sum;
 	}
-	double retval = f / double(Nz * Nz);
+
+	double f = 0.0;
+	for (int j = 1; j <= Nd; j++)
+	{
+		f += sj[j-1] * sj[j-1];
+	}
+	double retval = f / double(sum_p * sum_p);
 	return retval;
 }
 
@@ -324,7 +408,7 @@ double GLDMFeature::calc_GLV()
 	{
 		for (int j = 1; j <= Nd; j++)
 		{
-			mu += P.matlab(i, j) * i;
+			mu += P.matlab(i, j)/sum_p * i;
 		}
 	}
 
@@ -334,7 +418,7 @@ double GLDMFeature::calc_GLV()
 		for (int j = 1; j <= Nd; j++)
 		{
 			double mu2 = (i - mu) * (i - mu);
-			f += P.matlab(i, j) * mu2;
+			f += P.matlab(i, j)/sum_p * mu2;
 		}
 	}
 	return f;
@@ -352,7 +436,7 @@ double GLDMFeature::calc_DV()
 	{
 		for (int j = 1; j <= Nd; j++)
 		{
-			mu += P.matlab(i, j) * j;
+			mu += P.matlab(i, j)/sum_p * j;
 		}
 	}
 
@@ -362,7 +446,7 @@ double GLDMFeature::calc_DV()
 		for (int j = 1; j <= Nd; j++)
 		{
 			double mu2 = (j - mu) * (j - mu);
-			f += P.matlab(i, j) * mu2;
+			f += P.matlab(i, j)/sum_p * mu2;
 		}
 	}
 	return f;
@@ -380,8 +464,8 @@ double GLDMFeature::calc_DE()
 	{
 		for (int j = 1; j <= Nd; j++)
 		{
-			double entrTerm = log2(P.matlab(i, j) + EPS);
-			f += P.matlab(i, j) * entrTerm;
+			double entrTerm = log2(P.matlab(i, j)/sum_p + EPS);
+			f += P.matlab(i, j)/sum_p * entrTerm;
 		}
 	}
 	double retval = -f;
@@ -395,15 +479,22 @@ double GLDMFeature::calc_LGLE()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double f = 0.0;
+	std::vector<double> si(Ng+1, 0.);
 	for (int i = 1; i <= Ng; i++)
 	{
 		for (int j = 1; j <= Nd; j++)
 		{
-			f += P.matlab(i, j) / double(i*i);
+			si[i-1] += P.matlab(i, j);
 		}
 	}
-	double retval = f / double(Nz);
+
+	double f = 0.0;
+	for (int i = 1; i <= Ng; i++)
+	{
+		f +=  si[i-1] / double(i*i);
+	}
+
+	double retval = f / double(sum_p);
 	return retval;
 }
 
@@ -414,15 +505,23 @@ double GLDMFeature::calc_HGLE()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double f = 0.0;
+	std::vector<double> si(Ng+1, 0.);
 	for (int i = 1; i <= Ng; i++)
 	{
 		for (int j = 1; j <= Nd; j++)
 		{
-			f += P.matlab(i, j) * double(i*i);
+			si[i-1] += P.matlab(i, j);
 		}
 	}
-	double retval = f / double(Nz);
+	
+
+	double f = 0.0;
+	for (int i = 1; i <= Ng; i++)
+	{
+		f +=  si[i-1] * double(i*i);
+	}
+
+	double retval = f / double(sum_p);
 	return retval;
 }
 
@@ -441,7 +540,7 @@ double GLDMFeature::calc_SDLGLE()
 			f += P.matlab(i, j) / double(i*i * j*j);
 		}
 	}
-	double retval = f / double(Nz);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -453,14 +552,14 @@ double GLDMFeature::calc_SDHGLE()
 		return BAD_ROI_FVAL;
 
 	double f = 0.0;
-	for (int i = 1; i < Ng; i++)
+	for (int i = 1; i <= Ng; i++)
 	{
-		for (int j = 1; j < Nd; j++)
+		for (int j = 1; j <= Nd; j++)
 		{
 			f += P.matlab(i, j) * double(i*i) / double(j*j);
 		}
 	}
-	double retval = f / double(Nz);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -479,7 +578,7 @@ double GLDMFeature::calc_LDLGLE()
 			f += P.matlab(i, j) * double(j * j) / double(i * i);
 		}
 	}
-	double retval = f / double(Nz);
+	double retval = f / double(sum_p);
 	return retval;
 }
 
@@ -491,14 +590,14 @@ double GLDMFeature::calc_LDHGLE()
 		return BAD_ROI_FVAL;
 
 	double f = 0.0;
-	for (int i = 1; i < Ng; i++)
+	for (int i = 1; i <= Ng; i++)
 	{
-		for (int j = 1; j < Nd; j++)
+		for (int j = 1; j <= Nd; j++)
 		{
 			f += P.matlab(i, j) * double(i * i * j * j);
 		}
 	}
-	double retval = f / double(Nz);
+	double retval = f / double(sum_p);
 	return retval;
 }
 
