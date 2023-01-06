@@ -58,8 +58,7 @@ void ChordsFeature::osized_calculate (LR& r, ImageLoader& imloader)
 
 		//ImageMatrix_nontriv im(R);
 		WriteImageMatrix_nontriv imRot ("imRot", r.label);
-		imRot.allocate (aabbRot.get_width(), aabbRot.get_height(), 0);
-		imRot.init_with_cloud (R, aabbRot);
+		imRot.allocate_from_cloud (R, aabbRot, true);
 
 		for (int c = 0; c < imRot.get_width(); c++)
 		{

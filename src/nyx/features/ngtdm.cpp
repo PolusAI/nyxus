@@ -164,17 +164,21 @@ void NGTDMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensit
 
 void NGTDMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {
-	auto minI = r.aux_min, 
-		maxI = r.aux_max;
+	auto minI = r.aux_min, maxI = r.aux_max;
 	
+	//==== Prepare the image matrix
+	WriteImageMatrix_nontriv D ("NGTDMFeature-osized_calculate-I", r.label);
+	D.allocate_from_cloud (r.raw_pixels_NT, r.aabb, false);
+
 	//==== Check if the ROI is degenerate (equal intensity)
 	if (minI == maxI)
 	{
 		bad_roi_data = true;
 		return;
-	}	
-	
-	ReadImageMatrix_nontriv Im (r.aabb);
+	}
+
+	// Prepare ROI's intensity range for normalize_I()
+	PixIntens piRange = r.aux_max - r.aux_min;
 
 	//==== Make a list of intensity clusters (zones)
 	using AveNeighborhoodInte = std::pair<PixIntens, double>;	// Pairs of (intensity, average intensity of all 8 neighbors)
@@ -183,58 +187,64 @@ void NGTDMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	//==== While scanning clusters, learn unique intensities 
 	std::unordered_set<PixIntens> U;
 
+	//---	const pixData& D = im.ReadablePixels();
+
 	// Gather zones
-	for (size_t row = 0; row < Im.get_height(); row++)
-		for (size_t col = 0; col < Im.get_width(); col++)
+	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+	for (int row = 0; row < D.get_height(); row++)
+		for (int col = 0; col < D.get_width(); col++)
 		{
-			// Find a non-blank pixel
-			PixIntens pi = (PixIntens) Im.get_at(imloader, row, col);
+			// Find a non-blank pixel 
+			PixIntens pi = Nyxus::to_grayscale(D.yx(row, col), r.aux_min, piRange, nGrays);
 			if (pi == 0)
 				continue;
+
+			// Update unique intensities
+			U.insert(pi);
 
 			// Evaluate the neighborhood
 			PixIntens neigsI = 0;
 
 			int nd = 0;	// Number of dependencies
 
-			if (Im.safe(row - 1, col))	// North
+			if (D.safe(row - 1, col))	// North
 			{
-				neigsI += (PixIntens) Im.get_at(imloader, row - 1, col);
+				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col), r.aux_min, piRange, nGrays);
 				nd++;
 			}
-			if (Im.safe(row - 1, col + 1))	// North-East
+			if (D.safe(row - 1, col + 1))	// North-East
 			{
-				neigsI += (PixIntens) Im.get_at(imloader, row - 1, col + 1);
+				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
-			if (Im.safe(row, col + 1))	// East
+			if (D.safe(row, col + 1))	// East
 			{
-				neigsI += (PixIntens) Im.get_at(imloader, row, col + 1);
+				neigsI += Nyxus::to_grayscale(D.yx(row, col + 1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
-			if (Im.safe(row + 1, col + 1))	// South-East
+			if (D.safe(row + 1, col + 1))	// South-East
 			{
-				neigsI += (PixIntens) Im.get_at(imloader, row + 1, col + 1);
+				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
-			if (Im.safe(row + 1, col))	// South
+			if (D.safe(row + 1, col))	// South
 			{
-				neigsI += (PixIntens) Im.get_at(imloader, row + 1, col);
+				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col), r.aux_min, piRange, nGrays);
 				nd++;
 			}
-			if (Im.safe(row + 1, col - 1))	// South-West
+			if (D.safe(row + 1, col - 1))	// South-West
 			{
-				neigsI += (PixIntens)Im.get_at(imloader, row + 1, col - 1);
+				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
-			if (Im.safe(row, col - 1))	// West
+			if (D.safe(row, col - 1))	// West
 			{
-				neigsI += (PixIntens) Im.get_at(imloader, row, col - 1);
+				neigsI += Nyxus::to_grayscale(D.yx(row, col - 1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
-			if (Im.safe(row - 1, col - 1))	// North-West
+			if (D.safe(row - 1, col - 1))	// North-West
 			{
-				neigsI += (PixIntens) Im.get_at(imloader, row - 1, col - 1);
+				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays);
 				nd++;
 			}
 
@@ -242,9 +252,6 @@ void NGTDMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 			neigsI /= nd;
 			AveNeighborhoodInte z = { pi, neigsI };
 			Z.push_back(z);
-
-			// Update unique intensities
-			U.insert(pi);
 		}
 
 	//==== Fill the matrix
@@ -282,7 +289,7 @@ void NGTDMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 
 	// --Calculate P
 	for (int i = 0; i < Ng; i++)
-		P[i] = double(Ng) / (Im.get_height()*Im.get_width());
+		P[i] = double(Ng) / (r.aabb.get_height() * r.aabb.get_width());
 
 	//=== Calculate features
 	_coarseness = calc_Coarseness();
@@ -290,6 +297,7 @@ void NGTDMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	_busyness = calc_Busyness();
 	_complexity = calc_Complexity();
 	_strength = calc_Strength();
+
 }
 
 // Coarseness

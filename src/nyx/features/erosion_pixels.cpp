@@ -106,14 +106,7 @@ void ErosionPixelsFeature::osized_calculate (LR& r, ImageLoader& imloader)
 		miny = r.aabb.get_ymin();
 
 	WriteImageMatrix_nontriv I2("I2", r.label);
-	I2.allocate(width, height, 0);
-
-	for (auto px : r.raw_pixels_NT)
-	{
-		auto x = px.x - minx,
-			y = px.y - miny;
-		I2.set_at (y * width + x, px.inten + 1);	// '+1' does the job: wherever intensity pixels are defined (via raw_pixels), in the MIM we have at least 1 even if the intensity is 0
-	}
+	I2.allocate_from_cloud (r.raw_pixels_NT, r.aabb, true);
 
 	auto halfHeight = (int)floor(SE_R / 2);
 	auto halfWidth = (int)floor(SE_C / 2);

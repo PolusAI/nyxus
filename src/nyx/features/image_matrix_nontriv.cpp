@@ -92,12 +92,13 @@ Pixel2 OutOfRamPixelCloud::get_at(size_t idx) const
 	return px;
 }
 
-WriteImageMatrix_nontriv::WriteImageMatrix_nontriv (const std::string& _name, unsigned int _roi_label)
+WriteImageMatrix_nontriv::WriteImageMatrix_nontriv (const std::string& _name, unsigned int _roi_label):
+	name(_name)
 {
 	auto tid = std::this_thread::get_id();
 
 	std::stringstream ssPath;
-	ssPath << Nyxus::theEnvironment.get_temp_dir_path() << _name << "_roi" << _roi_label << "_tid" << tid << ".mat.nyxus";
+	ssPath << Nyxus::theEnvironment.get_temp_dir_path() << name << "_roi" << _roi_label << "_tid" << tid << ".mat.nyxus";
 	filepath = ssPath.str();
 
 	errno = 0;
@@ -132,10 +133,14 @@ void WriteImageMatrix_nontriv::allocate (int w, int h, double ini_value)
 	fflush(pF);
 }
 
-void WriteImageMatrix_nontriv::init_with_cloud (const OutOfRamPixelCloud & cloud, const AABB & aabb)
+void WriteImageMatrix_nontriv::allocate_from_cloud (const OutOfRamPixelCloud & cloud, const AABB & aabb, bool mask_image)
 {
 	// Allocate space
 	allocate(aabb.get_width(), aabb.get_height(), 0);
+
+	// '+1' does the job: wherever intensity pixels are defined in 'cloud', 
+	// in the image we will have at least 1 even if the pixel intensity is 0
+	int maskMagic = mask_image ? 1 : 0;
 	
 	// Fill it with cloud pixels 
 	for (size_t i = 0; i < cloud.size(); i++)
@@ -143,20 +148,15 @@ void WriteImageMatrix_nontriv::init_with_cloud (const OutOfRamPixelCloud & cloud
 		const Pixel2 p = cloud.get_at(i);
 		auto y = p.y - aabb.get_ymin(),
 			x = p.x - aabb.get_xmin();
-		set_at (y, x, p.inten);
+		set_at (y, x, p.inten + maskMagic);
 	}
 
 	// Flush the buffer
 	fflush(pF);
 }
 
-void WriteImageMatrix_nontriv::init_with_cloud_distance_to_contour_weights (const OutOfRamPixelCloud& cloud, const AABB& aabb, std::vector<Pixel2>& contour_pixels)
+void WriteImageMatrix_nontriv::allocate_from_cloud_coarser_grayscale (const OutOfRamPixelCloud& cloud, const AABB& aabb, PixIntens min_inten, PixIntens inten_range, unsigned int n_grays)
 {
-	double epsilon = 0.1;
-
-	// Cache some parameters
-	original_aabb = aabb;
-
 	// Allocate space
 	allocate(aabb.get_width(), aabb.get_height(), 0);
 
@@ -164,16 +164,10 @@ void WriteImageMatrix_nontriv::init_with_cloud_distance_to_contour_weights (cons
 	for (size_t i = 0; i < cloud.size(); i++)
 	{
 		const Pixel2 p = cloud.get_at(i);
-
-		auto [mind, maxd] = p.min_max_sqdist (contour_pixels);
-		double dist = std::sqrt (mind);
-
 		auto y = p.y - aabb.get_ymin(),
 			x = p.x - aabb.get_xmin();
-
-		// Weighted intensity		
-		PixIntens wi = p.inten / (dist + epsilon) + 0.5/*rounding*/;
-		set_at (y, x, p.inten);
+		PixIntens newI = Nyxus::to_grayscale (p.inten, min_inten, inten_range, n_grays);
+		set_at (y, x, newI);
 	}
 
 	// Flush the buffer
@@ -182,8 +176,14 @@ void WriteImageMatrix_nontriv::init_with_cloud_distance_to_contour_weights (cons
 
 void WriteImageMatrix_nontriv::copy (WriteImageMatrix_nontriv& other)
 {
+	this->check_non_empty();
+	other.check_non_empty();
+
 	if (this->height != other.height || this->width != other.width)
-		throw (std::runtime_error("Error: attempt to copy an instance of out-of-RAM image matrix to an instance of different dimensions"));
+	{
+		std::string msg = "Error: size mismatch while copying " + other.info() + " to " + this->info();
+		throw (std::runtime_error(msg));	
+	}
 
 	for (size_t i = 0; i < this->size(); i++)
 	{
@@ -217,7 +217,7 @@ double WriteImageMatrix_nontriv::get_at(size_t idx)
 	return val;
 }
 
-double WriteImageMatrix_nontriv::get_at (int row, int col)
+double WriteImageMatrix_nontriv::yx (size_t row, size_t col)
 {
 	size_t idx = row * width + col;
 	double val = get_at (idx);
@@ -270,7 +270,7 @@ size_t WriteImageMatrix_nontriv::get_chlen (size_t col)
 	{
 		if (noSignal)
 		{
-			if (get_at(row, col) != 0)
+			if (yx(row, col) != 0)
 			{
 				// begin tracking a new chord
 				noSignal = false;
@@ -279,7 +279,7 @@ size_t WriteImageMatrix_nontriv::get_chlen (size_t col)
 		}
 		else // in progress tracking a signal
 		{
-			if (get_at(row, col) != 0)
+			if (yx(row, col) != 0)
 				chlen++;	// signal continues
 			else
 			{
@@ -294,12 +294,27 @@ size_t WriteImageMatrix_nontriv::get_chlen (size_t col)
 	return maxChlen;
 }
 
-bool WriteImageMatrix_nontriv::safe(size_t x, size_t y) const
+bool WriteImageMatrix_nontriv::safe(size_t y, size_t x) const
 {
 	if (x >= width || y >= height)
 		return false;
 	else
 		return true;
+}
+
+void WriteImageMatrix_nontriv::check_non_empty()
+{
+	if (height == 0 || width == 0)
+	{
+		std::string msg = "Error: attempt to perform action on uninitialized " + this->name;
+		throw (std::runtime_error(msg));
+	}
+}
+
+std::string WriteImageMatrix_nontriv::info()
+{
+	std::string retval = this->name + " (width=" + std::to_string(width) + " height=" + std::to_string(height) + ")";
+	return retval;
 }
 
 double OOR_ReadMatrix::get_at (size_t pixel_row, size_t pixel_col) const
@@ -443,7 +458,7 @@ bool Power2PaddedImageMatrix_NT::tile_contains_signal (int tile_row, int tile_co
 		c2 = c1 + tile_side;
 	for (int r = r1; r < r2; r++)
 		for (int c = c1; c < c2; c++)
-			if (get_at(r, c) != 0)
+			if (yx(r, c) != 0)
 				return true;
 	return false;
 }

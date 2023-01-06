@@ -111,9 +111,9 @@ void ZernikeFeature::mb_zernike2D_nontriv (WriteImageMatrix_nontriv& I, double o
 	for (i = 0; i < cols; i++)
 		for (j = 0; j < rows; j++)
 		{
-			if (std::isnan(I.get_at(j, i)))
+			if (std::isnan(I.yx(j, i)))
 				continue; //MM
-			intensity = I.get_at(j, i);
+			intensity = I.yx(j, i);
 			sum += intensity;
 			moment10 += (i + 1) * intensity;
 			moment00 += intensity;
@@ -157,7 +157,7 @@ void ZernikeFeature::mb_zernike2D_nontriv (WriteImageMatrix_nontriv& I, double o
 		x = (i + 1 - m10_m00) / rad;
 		for (j = 0; j < rows; j++)
 		{
-			if (std::isnan(I.get_at(j, i)))
+			if (std::isnan(I.yx(j, i)))
 				continue; //MM
 
 		// In the paper, the center of the unit circle was the center of the image
@@ -183,7 +183,7 @@ void ZernikeFeature::mb_zernike2D_nontriv (WriteImageMatrix_nontriv& I, double o
 			// compute contribution to Zernike moments for all 
 			// orders and repetitions by the pixel at (i,j)
 			// In the paper, the intensity was the raw image intensity
-			f = I.get_at(j, i) / sum;
+			f = I.yx(j, i) / sum;
 
 			Rnmp2 = Rnm2 = 0;
 			for (n = 0; n <= L; n++)

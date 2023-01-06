@@ -261,8 +261,17 @@ void GLRLMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensit
 
 void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 {
+	// Helpful temps
 	auto minI = r.aux_min,
 		maxI = r.aux_max;
+	auto height = r.aabb.get_height(), 
+		width = r.aabb.get_width();
+	PixIntens piRange = r.aux_max - r.aux_min;
+
+	//==== Prepare the tone-binned image matrix
+	WriteImageMatrix_nontriv I ("GLRLMFeature-osized_calculate-I", r.label);
+	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+	I.allocate_from_cloud_coarser_grayscale(r.raw_pixels_NT, r.aabb, r.aux_min, piRange, nGrays);
 
 	//==== Check if the ROI is degenerate (equal intensity => no texture)
 	if (minI == maxI)
@@ -289,8 +298,6 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 		return;
 	}
 
-	ReadImageMatrix_nontriv im(r.aabb); //-- const ImageMatrix& im = r.aux_image_matrix;
-
 	//--debug-- im.print("initial ROI\n");
 
 	//==== Make a list of intensity clusters (zones)
@@ -302,7 +309,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 	using AngleUniqInte = std::unordered_set<PixIntens>;
 	//--unnec--	std::vector<AngleUniqInte>  angles_U;
 
-	//==== Iterate angles 0, 45, 90, 135
+	//==== Iterate angles 0,45,90,135
 	for (int angleIdx = 0; angleIdx < 4; angleIdx++)
 	{
 		// Clusters at angle 'angleIdx'
@@ -314,22 +321,20 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 		// We need it to estimate the x-dimension of matrix P
 		int maxZoneArea = 0;
 
-		// Copy the image matrix. We'll use it to maintain state of cluster scanning 
-		
-		//-- auto M = im;
-		//-- pixData& D = M.WriteablePixels();
-		WriteImageMatrix_nontriv D("GLRLMFeature_osized_calculate_D", r.label);
-		D.init_with_cloud(r.raw_pixels_NT, r.aabb);
+		// Clean-copy the image matrix. We'll use it to maintain state of cluster scanning 
+		WriteImageMatrix_nontriv D("GLRLMFeature-osized_calculate-D", r.label);
+		D.allocate_from_cloud_coarser_grayscale(r.raw_pixels_NT, r.aabb, minI, piRange, theEnvironment.get_coarse_gray_depth());
+		D.copy (I);
 
 		// Number of zones
 		const int VISITED = -1;
 
 		// Scan the image and check non-blank pixels' clusters
-		for (int row = 0; row < im.get_height(); row++)
-			for (int col = 0; col < im.get_width(); col++)
+		for (int row = 0; row < height; row++)
+			for (int col = 0; col < width; col++)
 			{
 				// Find a non-blank pixel
-				auto pi = D.get_at (row, col);
+				auto pi = D.yx(row, col);
 				if (pi == 0 || int(pi) == VISITED)
 					continue;
 
@@ -337,13 +342,13 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 				std::vector<std::tuple<int, int>> history;
 				int x = col, y = row;
 				int zoneArea = 1;
-				D.set_at (y, x, VISITED);
+				D.set_at(y, x, VISITED);
 
 				// State machine scanning the rest of the cluster
 				for (;;)
 				{
 					// angleIdx==0 === 0 degrees
-					if (angleIdx == 0 && D.safe(y, x + 1) && D.get_at(y, x + 1) == pi)
+					if (angleIdx == 0 && D.safe(y, x + 1) && D.yx(y, x + 1) == pi)
 					{
 						D.set_at(y, x + 1, VISITED);
 						zoneArea++;
@@ -359,7 +364,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 					}
 
 					// angleIdx==1 === 45 degrees
-					if (D.safe(y + 1, x + 1) && D.get_at(y + 1, x + 1) == pi)
+					if (D.safe(y + 1, x + 1) && D.yx(y + 1, x + 1) == pi)
 					{
 						D.set_at(y + 1, x + 1, VISITED);
 						zoneArea++;
@@ -373,7 +378,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 					}
 
 					// angleIdx==2 === 90 degrees
-					if (D.safe(y + 1, x) && D.get_at(y + 1, x) == pi)
+					if (D.safe(y + 1, x) && D.yx(y + 1, x) == pi)
 					{
 						D.set_at(y + 1, x, VISITED);
 						zoneArea++;
@@ -386,7 +391,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 					}
 
 					// angleIdx==3 === 135 degrees
-					if (D.safe(y + 1, x - 1) && D.get_at(y + 1, x - 1) == pi)
+					if (D.safe(y + 1, x - 1) && D.yx(y + 1, x - 1) == pi)
 					{
 						D.set_at(y + 1, x - 1, VISITED);
 						zoneArea++;

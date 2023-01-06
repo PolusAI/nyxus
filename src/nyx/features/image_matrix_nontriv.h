@@ -150,27 +150,28 @@ public:
 	
 	// Initialization
 	void allocate (int w, int h, double ini_value);
-	void init_with_cloud (const OutOfRamPixelCloud& cloud, const AABB& aabb);
-	void init_with_cloud_distance_to_contour_weights (const OutOfRamPixelCloud& cloud, const AABB& aabb, std::vector<Pixel2>& contour);
-	void copy(WriteImageMatrix_nontriv & other);
-
+	void allocate_from_cloud (const OutOfRamPixelCloud& cloud, const AABB& aabb, bool mask_image);
+	void allocate_from_cloud_coarser_grayscale (const OutOfRamPixelCloud& cloud, const AABB& aabb, PixIntens min_inten, PixIntens inten_range, unsigned int n_grays);
+	void copy (WriteImageMatrix_nontriv & other);
 	void set_at(int row, int col, double val);
 	void set_at(size_t idx,  double val);
-	double get_at(int row, int col);
-	double get_at(size_t idx);
+	double yx (size_t row, size_t col);
+	double get_at (size_t idx);
 	double get_max();
 	size_t size();
 	size_t get_width();
 	size_t get_height();
 	size_t get_chlen(size_t x);
-	bool safe(size_t x, size_t y) const;
-
+	bool safe(size_t y, size_t x) const;
 	PixIntens operator[] (size_t idx) { return (PixIntens) get_at(idx); }
+	void check_non_empty();
+	std::string info();
 
 protected:
+	std::string name;
 	std::string filepath;
 	FILE* pF = nullptr;
-	int width, height;
+	int width = 0, height = 0;
 	size_t item_size = sizeof(double);
 	AABB original_aabb;
 };

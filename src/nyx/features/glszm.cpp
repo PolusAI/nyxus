@@ -44,21 +44,23 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 
 	int maxZoneArea = 0;
 
-	// Copy the image matrix
-	ReadImageMatrix_nontriv M(r.aabb);	//-- auto M = r.aux_image_matrix;
+	//==== Prepare the tone-binned image matrix
+	WriteImageMatrix_nontriv D("GLSZMFeature-osized_calculate-D", r.label);
+	PixIntens piRange = r.aux_max - r.aux_min;		// Prepare ROI's intensity range
+	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+	D.allocate_from_cloud_coarser_grayscale (r.raw_pixels_NT, r.aabb, r.aux_min, piRange, nGrays);
 
-	WriteImageMatrix_nontriv D ("GLSZMFeature_osized_calculate_D", r.label);	//-- pixData& D = M.WriteablePixels();
-	D.allocate (r.aabb.get_width(), r.aabb.get_height(), 0);
-
-	//M.print("initial\n");
+	// Helpful temps
+	auto height = r.aabb.get_height(),
+		width = r.aabb.get_width();
 
 	// Number of zones
 	const int VISITED = -1;
-	for (int row = 0; row < M.get_height(); row++)
-		for (int col = 0; col < M.get_width(); col++)
+	for (int row = 0; row < height; row++)
+		for (int col = 0; col < width; col++)
 		{
 			// Find a non-blank pixel
-			auto pi = D.get_at (row, col);
+			auto pi = D.yx(row, col);
 			if (pi == 0 || int(pi) == VISITED)
 				continue;
 
@@ -66,13 +68,13 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 			std::vector<std::tuple<int, int>> history;
 			int x = col, y = row;
 			int zoneArea = 1;
-			D.set_at(y, x, VISITED);
+			D.set_at (y, x, VISITED);
 			// 
 			for (;;)
 			{
-				if (D.safe(y, x + 1) && D.get_at(y, x + 1) == pi)
+				if (D.safe(y, x + 1) && D.yx(y, x + 1) == pi)
 				{
-					D.set_at(y, x + 1, VISITED);
+					D.set_at (y, x + 1, VISITED);
 					zoneArea++;
 
 					//M.print("After x+1,y");
@@ -84,9 +86,9 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 					// Proceed
 					continue;
 				}
-				if (D.safe(y + 1, x + 1) && D.get_at(y + 1, x + 1) == pi)
+				if (D.safe(y + 1, x + 1) && D.yx(y + 1, x + 1) == pi)
 				{
-					D.set_at(y + 1, x + 1, VISITED);
+					D.set_at (y + 1, x + 1, VISITED);
 					zoneArea++;
 
 					//M.print("After x+1,y+1");
@@ -96,9 +98,9 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 					y = y + 1;
 					continue;
 				}
-				if (D.safe(y + 1, x) && D.get_at(y + 1, x) == pi)
+				if (D.safe(y + 1, x) && D.yx(y + 1, x) == pi)
 				{
-					D.set_at(y + 1, x, VISITED);
+					D.set_at (y + 1, x, VISITED);
 					zoneArea++;
 
 					//M.print("After x,y+1");
@@ -107,9 +109,9 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 					y = y + 1;
 					continue;
 				}
-				if (D.safe(y + 1, x - 1) && D.get_at(y + 1, x - 1) == pi)
+				if (D.safe(y + 1, x - 1) && D.yx(y + 1, x - 1) == pi)
 				{
-					D.set_at(y + 1, x - 1, VISITED);
+					D.set_at (y + 1, x - 1, VISITED);
 					zoneArea++;
 
 					//M.print("After x-1,y+1");
@@ -126,6 +128,7 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 					// Recollect the coordinate where we diverted from
 					std::tuple<int, int> prev = history[history.size() - 1];
 					history.pop_back();
+
 				}
 
 				// We are done exploring this cluster
@@ -149,7 +152,6 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 		}
 
 	//M.print("finished");
-
 
 	//==== Fill the SZ-matrix
 
