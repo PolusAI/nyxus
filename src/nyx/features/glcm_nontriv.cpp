@@ -6,8 +6,6 @@ void GLCMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 {
 	//==== Prepare the tone-binned image matrix
 	WriteImageMatrix_nontriv G ("GLCMFeature-osized_calculate-G", r.label);
-	PixIntens piRange = r.aux_max - r.aux_min;		// Prepare ROI's intensity range
-	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
 	G.allocate_from_cloud (r.raw_pixels_NT, r.aabb, false);
 
 	for (auto a : angles)

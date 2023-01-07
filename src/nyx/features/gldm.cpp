@@ -129,34 +129,49 @@ void GLDMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	//==== While scanning clusters, learn unique intensities 
 	std::unordered_set<PixIntens> U;
 
-	ReadImageMatrix_nontriv D(r.aabb); //-- const pixData& D = r.aux_image_matrix.ReadablePixels();
+	WriteImageMatrix_nontriv D ("GLDMFeature-osized_calculate-D", r.label);
+	D.allocate_from_cloud (r.raw_pixels_NT, r.aabb, false);
+
+	// Prepare ROI's intensity range for normalize_I()
+	PixIntens piRange = r.aux_max - r.aux_min;
+
+	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
 
 	// Gather zones
 	for (int row = 1; row < D.get_height() - 1; row++)
 		for (int col = 1; col < D.get_width() - 1; col++)
 		{
 			// Find a non-blank pixel
-			PixIntens pi = D.get_at(imloader, row, col);
+			PixIntens pi = Nyxus::to_grayscale(D.yx(row, col), r.aux_min, piRange, nGrays);
 			if (pi == 0)
 				continue;
 
 			// Count dependencies
 			int nd = 0;	// Number of dependencies
-			if (D.safe(row-1, col) && D.get_at(imloader, row - 1, col) == pi)	// North
+			PixIntens piQ; // Pixel intensity of question
+			piQ = Nyxus::to_grayscale(D.yx(row - 1, col), r.aux_min, piRange, nGrays);	// North
+			if (piQ == pi)
 				nd++;
-			if (D.safe(row-1, col+1) && D.get_at(imloader, row - 1, col + 1) == pi)	// North-East
+			piQ = Nyxus::to_grayscale(D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays);	// North-East
+			if (piQ == pi)
 				nd++;
-			if (D.safe(row, col+1) && D.get_at(imloader, row, col + 1) == pi)	// East
+			piQ = Nyxus::to_grayscale(D.yx(row, col + 1), r.aux_min, piRange, nGrays);	// East
+			if (piQ == pi)
 				nd++;
-			if (D.safe(row+1, col+1) && D.get_at(imloader, row + 1, col + 1) == pi)	// South-East
+			piQ = Nyxus::to_grayscale(D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays);	// South-East
+			if (piQ == pi)
 				nd++;
-			if (D.safe(row+1, col) && D.get_at(imloader, row + 1, col) == pi)	// South
+			piQ = Nyxus::to_grayscale(D.yx(row + 1, col), r.aux_min, piRange, nGrays);		// South
+			if (piQ == pi)
 				nd++;
-			if (D.safe(row+1, col-1) && D.get_at(imloader, row + 1, col - 1) == pi)	// South-West
+			piQ = Nyxus::to_grayscale(D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays);	// South-West
+			if (piQ == pi)
 				nd++;
-			if (D.safe(row, col-1) && D.get_at(imloader, row, col - 1) == pi)	// West
+			piQ = Nyxus::to_grayscale(D.yx(row, col - 1), r.aux_min, piRange, nGrays);		// West
+			if (piQ == pi)
 				nd++;
-			if (D.safe(row-1, col-1) && D.get_at(imloader, row - 1, col - 1) == pi)	// North-West
+			piQ = Nyxus::to_grayscale(D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays);	// North-West
+			if (piQ == pi)
 				nd++;
 
 			// Save the intensity's dependency
