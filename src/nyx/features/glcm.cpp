@@ -2,8 +2,6 @@
 #include "../helpers/helpers.h"
 #include "../environment.h"
 
-#define EPSILON 0.000000001
-
 int GLCMFeature::offset = 1;
 int GLCMFeature::n_levels = 8;
 std::vector<int> GLCMFeature::angles = { 0, 45, 90, 135 };
@@ -612,5 +610,4 @@ double GLCMFeature::f_homogeneity (const SimpleMatrix<double>& P_matrix, int n_l
 
 	return homogeneity;
 }
-
 

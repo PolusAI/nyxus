@@ -107,8 +107,6 @@ public:
 	int width() const { return W; }
 	int height() const { return H; }
 
-	void print (const std::string& head, const std::string& tail);
-
 private:
 	int W = 0, H = 0;
 };
@@ -321,11 +319,6 @@ public:
 
 	// by default, based on computed min and max
 	void histogram(double* bins, unsigned short nbins, bool imhist = false, const Moments2& in_stats = Moments2()) const; 
-
-	// Otsu grey threshold
-	double Otsu (bool dynamic_range = true) const;
-
-	void erode();
 
 	// Based on X.Shu, Q.Zhang, J.Shi and Y.Qi - "A Comparative Study on Weighted Central Moment and Its Application in 2D Shape Retrieval" (2016) https://pdfs.semanticscholar.org/8927/2bef7ba9496c59081ae102925ebc0134bceb.pdf
 	void apply_distance_to_contour_weights(const std::vector<Pixel2>& raw_pixels, const std::vector<Pixel2>& contour_pixels);

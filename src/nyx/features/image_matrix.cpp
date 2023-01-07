@@ -4,41 +4,7 @@
 #include "image_matrix.h"
 #include "moments.h"
 
-template<>
-void SimpleMatrix<int>::print(const std::string& head, const std::string& tail)
-{
-	const int Wd = 6;	// data
-	const int Wi = 5;		// index
 
-	std::cout << head << "\n";
-	std::cout << std::string(Wi + Wd * this->width(), '-') << std::endl;		// Upper solid line
-	std::cout << "w=" << this->width() << " h=" << this->height() << "\n";
-
-	for (int row = 0; row < this->height(); row++)
-	{
-		// Hdr
-		if (row == 0)
-		{
-			std::cout << std::setw(Wi + 2) << "";	// Wi+2 because '[' + Wi + ']'
-			for (int col = 0; col < this->width(); col++)
-			{
-				std::cout << std::setw(Wd) << col;
-			}
-			std::cout << "\n";
-		}
-
-		// Row
-		std::cout << "[" << std::setw(Wi) << row << "]";
-		for (int col = 0; col < this->width(); col++)
-		{
-			std::cout << std::setw(Wd) << (int) this->xy(col, row);
-		}
-		std::cout << "\n";
-	}
-
-	std::cout << std::string(Wi + Wd * this->width(), '-') << std::endl;	// Lower solid line
-	std::cout << tail;
-}
 
 void ImageMatrix::print (const std::string& head, const std::string& tail, std::vector<PrintablePoint> special_points)
 {
@@ -160,64 +126,6 @@ void ImageMatrix::print (std::ofstream& f, const std::string& head, const std::s
 
 	f << std::string(Wi + Wd * this->width, '-') << std::endl;	// Lower solid line
 	f << tail;
-}
-
-// Binarization by Otsu's method based on maximization of inter-class variance 
-double ImageMatrix::Otsu(bool dynamic_range) const {
-	#define OTSU_LEVELS 256	
-	double hist[OTSU_LEVELS];
-	double omega[OTSU_LEVELS];
-	double myu[OTSU_LEVELS];
-	double max_sigma, sigma[OTSU_LEVELS]; // inter-class variance
-	int i;
-	int threshold;
-	double min_val, max_val; // pixel range
-
-	if (!dynamic_range) 
-	{
-		histogram(hist, OTSU_LEVELS, true);
-		min_val = 0.0;
-		int bits = sizeof(PixIntens) * 8;
-		max_val = pow(2.0, bits) - 1;
-	}
-	else 
-	{
-		// to keep this const method from modifying the object, we use GetStats on a local Moments2 object
-		Moments2 local_stats;
-		GetStats(local_stats);
-		min_val = local_stats.min__();
-		max_val = local_stats.max__();
-		histogram(hist, OTSU_LEVELS, false);
-	}
-
-	// omega & myu generation
-	omega[0] = hist[0] / stats.n();
-
-	myu[0] = 0.0;
-	for (i = 1; i < OTSU_LEVELS; i++) 
-	{
-		omega[i] = omega[i - 1] + (hist[i] / stats.n());
-		myu[i] = myu[i - 1] + i * (hist[i] / stats.n());
-	}
-
-	// maximization of inter-class variance
-	threshold = 0;
-	max_sigma = 0.0;
-	for (i = 0; i < OTSU_LEVELS - 1; i++) 
-	{
-		if (omega[i] != 0.0 && omega[i] != 1.0)
-			sigma[i] = pow(myu[OTSU_LEVELS - 1] * omega[i] - myu[i], 2) / (omega[i] * (1.0 - omega[i]));
-		else
-			sigma[i] = 0.0;
-		if (sigma[i] > max_sigma) 
-		{
-			max_sigma = sigma[i];
-			threshold = i;
-		}
-	}
-
-	// threshold is a histogram index - needs to be scaled to a pixel value.
-	return ((((double)threshold / (double)(OTSU_LEVELS - 1)) * (max_val - min_val)) + min_val);
 }
 
 // get image histogram 

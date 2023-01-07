@@ -59,42 +59,17 @@ public:
 
 private:
 
-	void Extract_Texture_Features_nontriv(
-		int distance,
-		int angle,
-		const OOR_ReadMatrix& grays);
-	void CoOcMat_Angle_0_nontriv (
+	void Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nontriv& grays, PixIntens min_val, PixIntens max_val);
+	void calculateCoocMatAtAngle_NT(
 		// out
 		SimpleMatrix<double>& matrix,
 		// in
-		int distance,
-		const OOR_ReadMatrix& grays,
-		const int* tone_LUT,
-		int tone_count);
-	void CoOcMat_Angle_45_nontriv (
-		// out
-		SimpleMatrix<double>& matrix,
-		// in
-		int distance,
-		const OOR_ReadMatrix& grays,
-		const int* tone_LUT,
-		int tone_count);
-	void CoOcMat_Angle_90_nontriv (
-		// out
-		SimpleMatrix<double>& matrix,
-		// in
-		int distance,
-		const OOR_ReadMatrix& grays,
-		const int* tone_LUT,
-		int tone_count);
-	void CoOcMat_Angle_135_nontriv (
-		// out
-		SimpleMatrix<double>& matrix,
-		// in
-		int distance,
-		const OOR_ReadMatrix& grays,
-		const int* tone_LUT,
-		int tone_count);
+		int dx,
+		int dy,
+		WriteImageMatrix_nontriv& grays,
+		PixIntens min_val,
+		PixIntens max_val,
+		bool normalize);
 
 	void Extract_Texture_Features(
 		int distance,
@@ -168,6 +143,6 @@ private:
 	const double LOG10_2 = 0.30102999566;	// precalculated log 2 base 10
 	SimpleMatrix<double> P_matrix;
 	std::vector<double> Pxpy, Pxmy;
-
+	const double EPSILON = 0.000000001;
 };
 
