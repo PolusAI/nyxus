@@ -106,7 +106,7 @@ void GLCMFeature::Extract_Texture_Features2 (int angle, const ImageMatrix & gray
 	int nrows = grays.height;
 	int ncols = grays.width;
 
-	if (Environment::skip_binning) {
+	if (Environment::ibsi_compliance) {
 		n_levels = *std::max_element(std::begin(grays.ReadablePixels()), std::end(grays.ReadablePixels()));
 	}
 
@@ -237,7 +237,7 @@ void GLCMFeature::calculateCoocMatAtAngle(
 					y = raw_lvl_y -1;
 
 				// Cast intensities on the 1-n_levels scale
-				if (Environment::skip_binning == false)
+				if (Environment::ibsi_compliance == false)
 				{
 					x = GLCMFeature::cast_to_range (raw_lvl_x, min_val, max_val, 1, GLCMFeature::n_levels) -1, 
 					y = GLCMFeature::cast_to_range (raw_lvl_y, min_val, max_val, 1, GLCMFeature::n_levels) -1;

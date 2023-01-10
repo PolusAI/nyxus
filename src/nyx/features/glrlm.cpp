@@ -90,7 +90,7 @@ void GLRLMFeature::calculate (LR& r)
 
 		// Squeeze the intensity range
 		unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
-		if (!Environment::skip_binning) {
+		if (!Environment::ibsi_compliance) {
 			for (size_t i = 0; i < D.size(); i++)
 				D[i] = Nyxus::to_grayscale (D[i], r.aux_min, piRange, nGrays);
 		}
@@ -206,7 +206,7 @@ void GLRLMFeature::calculate (LR& r)
 
 		//==== Fill the zone matrix
 
-		int Ng = Environment::skip_binning ? 
+		int Ng = Environment::ibsi_compliance ? 
 			*std::max_element(std::begin(im.ReadablePixels()), std::end(im.ReadablePixels())) : (decltype(Ng))U.size();
 		int Nr = maxZoneArea;
 		int Nz = (decltype(Nz))Z.size();
@@ -225,7 +225,7 @@ void GLRLMFeature::calculate (LR& r)
 		{
 			// row
 			auto iter = std::find(I.begin(), I.end(), z.first);
-			int row = (Environment::skip_binning) ? z.first - 1 : int(iter - I.begin());
+			int row = (Environment::ibsi_compliance) ? z.first - 1 : int(iter - I.begin());
 			// col
 			int col = z.second - 1;	// 0-based => -1
 			// update the matrix

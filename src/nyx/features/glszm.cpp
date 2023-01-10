@@ -201,7 +201,7 @@ void GLSZMFeature::calculate(LR& r)
 	PixIntens piRange = r.aux_max - r.aux_min;		// Prepare ROI's intensity range
 	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
 
-	if (!Environment::skip_binning) {
+	if (!Environment::ibsi_compliance) {
 		for (size_t i = 0; i < D.size(); i++)
 			D[i] = Nyxus::to_grayscale (D[i], r.aux_min, piRange, nGrays);
 	}
@@ -306,7 +306,7 @@ void GLSZMFeature::calculate(LR& r)
 	auto height = M.height;
 	auto width = M.width;
 
-	Ng = (Environment::skip_binning) ?
+	Ng = (Environment::ibsi_compliance) ?
 		*std::max_element(std::begin(r.aux_image_matrix.ReadablePixels()), std::end(r.aux_image_matrix.ReadablePixels())) : (decltype(Ng)) U.size();
 	Ns = height*width;
 	Nz = (decltype(Nz)) Z.size();
@@ -325,7 +325,7 @@ void GLSZMFeature::calculate(LR& r)
 	{
 		// row
 		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = (Environment::skip_binning) ?
+		int row = (Environment::ibsi_compliance) ?
 			z.first-1 : int (iter - I.begin());
 		// col
 		int col = z.second - 1;	// 0-based => -1
