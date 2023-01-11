@@ -121,7 +121,62 @@ void EllipseFittingFeature::reduce (size_t start, size_t end, std::vector<int>* 
 }
 
 void EllipseFittingFeature::osized_calculate (LR& r, ImageLoader& imloader)
-{}
+{
+	// Idea: calculate normalized second central moments for the region. 1/12 is the normalized second central moment of a pixel with unit length.
+
+	double centroid_x = r.fvals[CENTROID_X][0],
+		centroid_y = r.fvals[CENTROID_Y][0], 
+		area = r.fvals[AREA_PIXELS_COUNT][0];
+
+	double xSquaredTmp = 0, 
+		ySquaredTmp = 0, 
+		xySquaredTmp = 0;
+
+	for (const auto& pix : r.raw_pixels_NT)
+	{
+		auto diffX = centroid_x - pix.x,
+			diffY = centroid_y - pix.y;
+		xSquaredTmp += diffX * diffX;
+		ySquaredTmp += diffY * diffY;
+		xySquaredTmp += diffX * diffY;
+	}
+
+	double n = (double) r.raw_pixels_NT.size();
+	double uxx = xSquaredTmp / n + 1. / 12.;
+	double uyy = ySquaredTmp / n + 1. / 12.;
+	double uxy = xySquaredTmp / n;
+
+	// Calculate major axis length, minor axis length, and eccentricity.
+	double common = sqrt((uxx - uyy) * (uxx - uyy) + 4. * uxy * uxy);
+	majorAxisLength = 2. * sqrt(2.) * sqrt(uxx + uyy + common);
+	minorAxisLength = 2. * sqrt(2.) * sqrt(uxx + uyy - common);
+	eccentricity = sqrt(1.0 - majorAxisLength* majorAxisLength / (minorAxisLength* minorAxisLength)); 
+	elongation = sqrt(minorAxisLength/majorAxisLength);
+	roundness = (4. * area) / (M_PI * majorAxisLength * majorAxisLength);
+
+	// Calculate orientation [-90,90]
+	double num, den;
+	if (uyy > uxx) 
+	{
+		num = uyy - uxx + sqrt((uyy - uxx) * (uyy - uxx) + 4 * uxy * uxy);
+		den = 2 * uxy;
+	}
+	else 
+	{
+		num = 2 * uxy;
+		den = uxx - uyy + sqrt((uxx - uyy) * (uxx - uyy) + 4 * uxy * uxy);
+	}
+
+	if (uxy == 0.)
+	{
+		if (uxx >= uyy)
+			orientation = 0.;
+		else
+			orientation = 90.;
+	}
+	else
+		orientation = 180./M_PI * atan(num/den);
+}
 
 void EllipseFittingFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
