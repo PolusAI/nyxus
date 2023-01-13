@@ -84,6 +84,7 @@ namespace Nyxus
 
 		//==== Contour-related ROI perimeter, equivalent circle diameter
 		if (ContourFeature::required(theFeatureSet) 
+			|| ConvexHullFeature::required(theFeatureSet)
 			|| FractalDimensionFeature::required(theFeatureSet) 
 			|| GeodeticLengthThicknessFeature::required(theFeatureSet)
 			|| NeighborsFeature::required(theFeatureSet)
