@@ -36,11 +36,11 @@ public:
 
 	SimpleMatrix() {}
 
-	void allocate(int _w, int _h, T inival=0)
+	void allocate(int _w, int _h)
 	{
 		W = _w;
 		H = _h;
-		this->resize (W*H, inival);
+		this->resize (W*H);
 	}
 
 	// = W * y + x
@@ -99,9 +99,7 @@ public:
 
 	void fill (T val)
 	{
-		auto n = W * H;
-		for (int i = 0; i < n; i++)
-			this->at(i) = val;
+		std::fill(this->begin(), this->end(), val);
 	}
 
 	int width() const { return W; }

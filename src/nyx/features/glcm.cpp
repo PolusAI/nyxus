@@ -197,7 +197,8 @@ void GLCMFeature::calculateCoocMatAtAngle(
 	PixIntens max_val, 
 	bool normalize)
 {
-	matrix.allocate(n_levels, n_levels, 0.0); 
+	matrix.allocate(n_levels, n_levels); 
+	matrix.fill(0.0);
 
 	int d = GLCMFeature::offset;
 	int count = 0;	// normalizing factor 
