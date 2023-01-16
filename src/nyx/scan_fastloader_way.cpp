@@ -57,10 +57,11 @@ namespace Nyxus
 
 			{ STOPWATCH("Image scan2a/ImgScan2a/Scan2a/lightsteelblue", "\t=");
 
-			// Phase 1: gather ROI metrics
-			VERBOSLVL1(std::cout << "Gathering ROI metrics\n";)
-				gatherRoisMetrics(intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
-
+				// Phase 1: gather ROI metrics
+				VERBOSLVL1(std::cout << "Gathering ROI metrics\n");
+				bool okGather = gatherRoisMetrics(intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
+				if (!okGather)
+					return false;
 			}
 
 			{ STOPWATCH("Image scan2b/ImgScan2b/Scan2b/lightsteelblue", "\t=");
