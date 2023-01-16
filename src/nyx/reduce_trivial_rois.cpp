@@ -91,7 +91,7 @@ namespace Nyxus
 			|| RoiRadiusFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Contour/C/#4aaaea", "\t=");
-			runParallel(parallelReduceContour, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			runParallel(ContourFeature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== Convex hull related solidity, circularity

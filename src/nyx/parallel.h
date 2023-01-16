@@ -31,7 +31,5 @@ namespace Nyxus
 	}
 
 	void calcRoiIntensityFeatures (LR& lr);
-	void calcRoiContour(LR& r);
-	void parallelReduceContour (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 	void parallelReduceConvHull (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 }

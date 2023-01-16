@@ -15,14 +15,7 @@ public:
 	void parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads);
 	static void parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 	void cleanup_instance();
-
-	#if 0
-	void calculate (const ImageMatrix& im);	// Leaves result in 'contour_pixels'
-	StatsInt get_roi_perimeter();
-	StatsReal get_diameter_equal_perimeter();
-	std::tuple<StatsReal, StatsReal, StatsReal, StatsReal> get_min_max_mean_stddev_intensity();
-	std::vector<Pixel2> contour_pixels;
-	#endif
+	static void reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 	static bool required(const FeatureSet& fs) 
 	{
@@ -123,11 +116,6 @@ private:
 		fval_EDGE_STDDEV_INTENSITY = 0, 
 		fval_EDGE_MAX_INTENSITY = 0, 
 		fval_EDGE_MIN_INTENSITY = 0,
-		fval_EDGE_INTEGRATEDINTENSITY = 0 
-		//,fval_EDGE_MAXINTENSITY = 0, 
-		//fval_EDGE_MININTENSITY = 0, 
-		//fval_EDGE_MEANINTENSITY = 0 
-		//,fval_EDGE_STDDEVINTENSITY = 0
-		;
+		fval_EDGE_INTEGRATEDINTENSITY = 0;
 };
 
