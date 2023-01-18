@@ -113,6 +113,8 @@ void test_glszm_feature(const AvailableFeatures& feature, const std::string& fea
 
     total += roidata3.fvals[feature][0];
 
+    std::cerr << "value: " << total/4 << std::endl;
+
     ASSERT_TRUE(agrees_gt(total/4, glszm_values[feature_name], 100.));
 
 }
