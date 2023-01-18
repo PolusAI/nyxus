@@ -138,8 +138,6 @@ void GLDMFeature::calculate(LR& r)
 		}
 
 	//==== Fill the matrix
-
-	//Ng = (decltype(Ng))U.size();
 	Ng = *std::max_element(std::begin(r.aux_image_matrix.ReadablePixels()), std::end(r.aux_image_matrix.ReadablePixels()));
 	Nd = 8 + 1;	// N, NE, E, SE, S, SW, W, NW + zero
 	Nz = (decltype(Nz))Z.size();
@@ -156,7 +154,7 @@ void GLDMFeature::calculate(LR& r)
 	{
 		// row
 		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = (Environment::ibsi_compliance) ? z.first-1 : int(iter - I.begin()) - 1;
+		int row = (Environment::ibsi_compliance) ? z.first-1 : int(iter - I.begin());
 		// col
 		int col = z.second - 1;	// 1-based
 		// increment
@@ -255,6 +253,26 @@ void GLDMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 
 void GLDMFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
+
+	if (sum_p == 0) {
+		double val = 0.0;
+
+		fvals[GLDM_SDE][0] = val;
+		fvals[GLDM_LDE][0] = val;
+		fvals[GLDM_GLN][0] = val;
+		fvals[GLDM_DN][0] = val;
+		fvals[GLDM_DNN][0] = val;
+		fvals[GLDM_GLV][0] = val;
+		fvals[GLDM_DV][0] = val;
+		fvals[GLDM_DE][0] = val;
+		fvals[GLDM_LGLE][0] = val;
+		fvals[GLDM_HGLE][0] = val;
+		fvals[GLDM_SDLGLE][0] = val;
+		fvals[GLDM_SDHGLE][0] = val;
+		fvals[GLDM_LDLGLE][0] = val;
+		fvals[GLDM_LDHGLE][0] = val;
+	}
+
 	fvals[GLDM_SDE][0] = calc_SDE();
 	fvals[GLDM_LDE][0] = calc_LDE();
 	fvals[GLDM_GLN][0] = calc_GLN();
@@ -294,7 +312,7 @@ double GLDMFeature::calc_SDE()
 		f +=  sj[j-1] / double(j*j);
 	}
 
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -320,7 +338,7 @@ double GLDMFeature::calc_LDE()
 		f +=  sj[j-1] * double(j*j);
 	}
 
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -342,7 +360,7 @@ double GLDMFeature::calc_GLN()
 		f += si[i-1] * si[i-1];
 	}
 
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -368,7 +386,7 @@ double GLDMFeature::calc_DN()
 		f += sj[j-1] * sj[j-1];
 	}
 
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 	return retval;
 }
 // 5. Dependence Non-Uniformity Normalized (DNN)
@@ -464,7 +482,7 @@ double GLDMFeature::calc_DE()
 	{
 		for (int j = 1; j <= Nd; j++)
 		{
-			double entrTerm = log2(P.matlab(i, j)/sum_p + EPS);
+			double entrTerm = fast_log10(P.matlab(i, j)/sum_p + EPS) / LOG10_2;
 			f += P.matlab(i, j)/sum_p * entrTerm;
 		}
 	}
@@ -494,7 +512,7 @@ double GLDMFeature::calc_LGLE()
 		f +=  si[i-1] / double(i*i);
 	}
 
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -521,7 +539,7 @@ double GLDMFeature::calc_HGLE()
 		f +=  si[i-1] * double(i*i);
 	}
 
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -578,7 +596,7 @@ double GLDMFeature::calc_LDLGLE()
 			f += P.matlab(i, j) * double(j * j) / double(i * i);
 		}
 	}
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -597,7 +615,7 @@ double GLDMFeature::calc_LDHGLE()
 			f += P.matlab(i, j) * double(i * i * j * j);
 		}
 	}
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 	return retval;
 }
 

@@ -6,7 +6,6 @@
 
 int GLCMFeature::offset = 1;
 int GLCMFeature::n_levels = 8;
-int GLCMFeature::sum_p = 0;
 std::vector<int> GLCMFeature::angles = { 0, 45, 90, 135 };
 
 GLCMFeature::GLCMFeature() : FeatureMethod("GLCMFeature")
@@ -140,7 +139,34 @@ void GLCMFeature::Extract_Texture_Features2 (int angle, const ImageMatrix & gray
 	}
 
 	calculateCoocMatAtAngle (P_matrix, dx, dy, grays, min_val, max_val, false);
-	calculatePxpmy ();;
+
+	// Zero all feature values for empty ROI
+	if (sum_p == 0) {
+
+		double f = 0.0;
+
+		fvals_ASM.push_back (f);
+		fvals_contrast.push_back (f);
+		fvals_correlation.push_back (f);
+		fvals_energy.push_back (f);
+		fvals_homo.push_back (f);
+		fvals_variance.push_back (f);
+		fvals_IDM.push_back (f);
+		fvals_sum_avg.push_back (f);
+		fvals_sum_entropy.push_back (f);
+		fvals_sum_var.push_back (f);
+		fvals_entropy.push_back (f);
+		fvals_diff_var.push_back (f);
+		fvals_diff_entropy.push_back (f);
+		fvals_diff_avg.push_back(f);
+		fvals_meas_corr1.push_back (f);
+		fvals_meas_corr2.push_back (f);
+		fvals_max_corr_coef.push_back (0.0);
+
+		return;
+	}
+
+	calculatePxpmy ();
 
 	// Compute Haralick statistics 
 	double f;
@@ -279,8 +305,6 @@ void GLCMFeature::calculatePxpmy()
 
 	std::fill(Pxpy.begin(), Pxpy.end(), 0.);
 	std::fill(Pxmy.begin(), Pxmy.end(), 0.);
-
-	if (sum_p == 0) throw std::runtime_error("Sum of GLC matrix is zero."); 
 
 	for (int x = 0; x < n_levels; x++) 
 		for (int y = 0; y < n_levels; y++) 
@@ -475,7 +499,7 @@ double GLCMFeature::f_sentropy(const SimpleMatrix<double>& P, int Ng, std::vecto
 
 		if (Pxpy[k-2] == 0) continue;
 
-		sentropy += pxpy[k-2] * log2(pxpy[k-2]);
+		sentropy += pxpy[k-2] * fast_log10(pxpy[k-2] + EPSILON) / LOG10_2;
 	}
 
 	return -sentropy;
@@ -522,7 +546,7 @@ double GLCMFeature::f_dentropy(const SimpleMatrix<double>& P, int Ng, std::vecto
 
 	for (int k = 0; k < n_levels; ++k) {
 		if (Pxmy[k] == 0) continue; // avoid NaN from log2 (note that Pxmy will never be negative)
-		sum += Pxmy[k] * log2(Pxmy[k]);
+		sum += Pxmy[k] * fast_log10(Pxmy[k] + EPSILON) / LOG10_2;
 	}
 
 	return -sum;
@@ -569,12 +593,13 @@ void GLCMFeature::calcH (const SimpleMatrix<double>& P, int Ng, std::vector<doub
 			if (pxi == 0 || pyj == 0) {
 				log_pp = 0;
 			} else {
-				log_pp = log2(pxi * pyj) /*avoid /LOG10_2 */;
+				log_pp = fast_log10(pxi * pyj + EPSILON) / LOG10_2 /*avoid /LOG10_2 */;
 			}
+			
 			hxy1 += p * log_pp;
 			hxy2 += pxi * pyj * log_pp;
 			if (p > 0) 
-				hxy += p * log2(p) /*avoid /LOG10_2 */;
+				hxy += p * fast_log10(p + EPSILON) / LOG10_2 /*avoid /LOG10_2 */;
 		}
 	}
 
@@ -582,11 +607,11 @@ void GLCMFeature::calcH (const SimpleMatrix<double>& P, int Ng, std::vector<doub
 	for (int i = 0; i < Ng; ++i)
 	{	
 		if (px[i] > 0) 
-			hx += px[i] * log2(px[i]) /*avoid /LOG10_2 */;
+			hx += px[i] * fast_log10(px[i] + EPSILON) / LOG10_2 /*avoid /LOG10_2 */;
 		
 		
 		if(py[i] > 0)
-			hy += py[i] * log2(py[i]) /*avoid /LOG10_2 */;
+			hy += py[i] * fast_log10(py[i] + EPSILON) / LOG10_2 /*avoid /LOG10_2 */;
 	}
 }
 
@@ -606,13 +631,15 @@ double GLCMFeature::f_info_meas_corr1 (const SimpleMatrix<double>& P, int Ng, st
 	
 	for (int i = 0; i < Ng; ++i) {
 		for (int j = 0; j < Ng; ++j) {
-			HXY += P.xy(i,j)/sum_p * log2(P.xy(i,j)/sum_p + EPSILON);
-			HXY1 += P.xy(i,j)/sum_p * log2(px[i] * py[j] + EPSILON);
+			HXY += P.xy(i,j)/sum_p * fast_log10(P.xy(i,j)/sum_p + EPSILON) / LOG10_2;
+			HXY1 += P.xy(i,j)/sum_p * fast_log10(px[i] * py[j] + EPSILON) / LOG10_2;
+			
 		}	
 	}
 	
 	for (int i = 0; i < Ng; ++i) {
-		HX += px[i] * log2(px[i] + EPSILON);
+		HX += px[i] * fast_log10(px[i] + EPSILON) / LOG10_2;
+		
 	}
 
 	return (HXY - HXY1) / HX;
@@ -634,8 +661,9 @@ double GLCMFeature::f_info_meas_corr2 (const SimpleMatrix<double>& P, int Ng, st
 	
 	for (int i = 0; i < Ng; ++i) {
 		for (int j = 0; j < Ng; ++j) {
-			HXY += P.xy(i,j)/sum_p * log2(P.xy(i,j)/sum_p + EPSILON);
-			HXY2 += px[i] * py[j] * log2(px[i] * py[j] + EPSILON);
+			HXY += P.xy(i,j)/sum_p * fast_log10(P.xy(i,j)/sum_p + EPSILON) / LOG10_2;
+			
+			HXY2 += px[i] * py[j] * fast_log10(px[i] * py[j] + EPSILON) / LOG10_2;
 		}	
 	}
 	

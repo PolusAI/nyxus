@@ -535,6 +535,11 @@ void GLRLMFeature::calc_SRE (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -571,6 +576,11 @@ void GLRLMFeature::calc_LRE (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -605,6 +615,11 @@ void GLRLMFeature::calc_GLN (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -641,6 +656,11 @@ void GLRLMFeature::calc_GLNN (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -677,6 +697,11 @@ void GLRLMFeature::calc_RLN (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -713,6 +738,11 @@ void GLRLMFeature::calc_RLNN (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -739,6 +769,7 @@ void GLRLMFeature::calc_RLNN (AngledFtrs& af)
 void GLRLMFeature::calc_RP (AngledFtrs& af)
 {
 	af.clear();
+	
 
 	// Prevent using bad data 
 	if (bad_roi_data)
@@ -749,6 +780,11 @@ void GLRLMFeature::calc_RP (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Np = angles_Np[ai];
 
@@ -771,6 +807,16 @@ void GLRLMFeature::calc_GLV (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -820,6 +866,11 @@ void GLRLMFeature::calc_RV (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -862,6 +913,11 @@ void GLRLMFeature::calc_RE (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -873,7 +929,7 @@ void GLRLMFeature::calc_RE (AngledFtrs& af)
 		{
 			for (int j = 1; j <= Nr; j++)
 			{
-				double entrTerm = log2(P.matlab(i, j)/sum_p[ai] + EPS);
+				double entrTerm = fast_log10(P.matlab(i, j)/sum_p[ai] + EPS) / LOG10_2;
 				f += P.matlab(i, j)/sum_p[ai] * entrTerm;
 			}
 		}
@@ -896,6 +952,11 @@ void GLRLMFeature::calc_LGLRE (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -929,6 +990,11 @@ void GLRLMFeature::calc_HGLRE (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -962,6 +1028,11 @@ void GLRLMFeature::calc_SRLGLE (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -995,6 +1066,11 @@ void GLRLMFeature::calc_SRHGLE (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -1028,6 +1104,11 @@ void GLRLMFeature::calc_LRLGLE (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -1061,6 +1142,11 @@ void GLRLMFeature::calc_LRHGLE (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+		
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];

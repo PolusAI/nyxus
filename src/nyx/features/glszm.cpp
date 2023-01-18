@@ -343,6 +343,31 @@ void GLSZMFeature::calculate(LR& r)
 
 void GLSZMFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
+
+	if (sum_p == 0) {
+
+		double val = 0;
+
+		fvals[GLSZM_SAE][0] = val;
+		fvals[GLSZM_LAE][0] = val;
+		fvals[GLSZM_GLN][0] = val;
+		fvals[GLSZM_GLNN][0] = val;
+		fvals[GLSZM_SZN][0] = val;
+		fvals[GLSZM_SZNN][0] = val;
+		fvals[GLSZM_ZP][0] = val;
+		fvals[GLSZM_GLV][0] = val;
+		fvals[GLSZM_ZV][0] = val;
+		fvals[GLSZM_ZE][0] = val;
+		fvals[GLSZM_LGLZE][0] = val;
+		fvals[GLSZM_HGLZE][0] = val;
+		fvals[GLSZM_SALGLE][0] = val;
+		fvals[GLSZM_SAHGLE][0] = val;
+		fvals[GLSZM_LALGLE][0] = val;
+		fvals[GLSZM_LAHGLE][0] = val;
+
+		return;
+	}
+
 	fvals[GLSZM_SAE][0] = calc_SAE();
 	fvals[GLSZM_LAE][0] = calc_LAE();
 	fvals[GLSZM_GLN][0] = calc_GLN();
@@ -380,7 +405,7 @@ double GLSZMFeature::calc_SAE()
 	{
 		f += sj[j] / (j * j);
 	}
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 
 	return retval;
 }
@@ -404,7 +429,7 @@ double GLSZMFeature::calc_LAE()
 	{
 		f += sj[j] * (j * j);
 	}
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -428,7 +453,7 @@ double GLSZMFeature::calc_GLN()
 		f += si[i] * si[i];
 	}
 
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -477,7 +502,7 @@ double GLSZMFeature::calc_SZN()
 		f += sj[j] * sj[j];
 	}
 
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -512,7 +537,7 @@ double GLSZMFeature::calc_ZP()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double retval = double(sum_p) / double(Np);
+	double retval = sum_p / double(Np);
 	return retval;
 }
 
@@ -584,7 +609,7 @@ double GLSZMFeature::calc_ZE()
 	{
 		for (int j = 1; j <= Ns; j++)
 		{
-			double entrTerm = log2(P.matlab(i,j)/sum_p + EPS);
+			double entrTerm = fast_log10(P.matlab(i,j)/sum_p + EPS) / LOG10_2;
 			f += P.matlab(i,j)/sum_p * entrTerm;
 		}
 	}
@@ -612,7 +637,7 @@ double GLSZMFeature::calc_LGLZE()
 		f += si[i] / (i * i);
 	}
 
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -636,7 +661,7 @@ double GLSZMFeature::calc_HGLZE()
 		f += si[i] * (i * i);
 	}
 
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 
 	return retval;
 }
@@ -656,7 +681,7 @@ double GLSZMFeature::calc_SALGLE()
 			f += P.matlab(i,j) / double(i * i * j * j);
 		}
 	}
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -675,7 +700,7 @@ double GLSZMFeature::calc_SAHGLE()
 			f += P.matlab(i,j) * double(i * i) / double(j * j);
 		}
 	}
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -694,7 +719,7 @@ double GLSZMFeature::calc_LALGLE()
 			f += P.matlab(i,j) * double(j * j) / double(i * i);
 		}
 	}
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -713,7 +738,7 @@ double GLSZMFeature::calc_LAHGLE()
 			f += P.matlab(i,j) * double(i * i * j * j);
 		}
 	}
-	double retval = f / double(sum_p);
+	double retval = f / sum_p;
 	return retval;
 }
 
