@@ -90,10 +90,10 @@ void GLRLMFeature::calculate (LR& r)
 
 		// Squeeze the intensity range
 		unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
-		if (!Environment::ibsi_compliance) {
-			for (size_t i = 0; i < D.size(); i++)
-				D[i] = Nyxus::to_grayscale (D[i], r.aux_min, piRange, nGrays);
-		}
+
+		for (size_t i = 0; i < D.size(); i++)
+			D[i] = Nyxus::to_grayscale (D[i], r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+		
 
 		// Number of zones
 		const int VISITED = -1;

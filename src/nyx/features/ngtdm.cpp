@@ -48,8 +48,7 @@ void NGTDMFeature::calculate (LR& r)
 		{
 			// Find a non-blank pixel 
 			
-			PixIntens pi = (Environment::ibsi_compliance) ?
-				D.yx(row,col) : Nyxus::to_grayscale (D.yx(row, col), r.aux_min, piRange, nGrays); 
+			PixIntens pi = Nyxus::to_grayscale (D.yx(row, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance); 
 			if (pi == 0)
 				continue;
 
@@ -63,52 +62,44 @@ void NGTDMFeature::calculate (LR& r)
 
 			if (D.safe(row - 1, col) && D.yx(row-1, col) != 0)	// North
 			{
-				neigsI += (Environment::ibsi_compliance) ?
-					D.yx(row-1, col) : Nyxus::to_grayscale (D.yx(row-1, col), r.aux_min, piRange, nGrays);
+				neigsI += Nyxus::to_grayscale (D.yx(row-1, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
 				nd++;
 			}
 
 			if (D.safe(row - 1, col + 1) && D.yx(row-1, col+1) != 0)	// North-East
 			{
-				neigsI += (Environment::ibsi_compliance) ? 
-					D.yx(row-1, col+1) : Nyxus::to_grayscale (D.yx(row-1, col+1), r.aux_min, piRange, nGrays);
+				neigsI += Nyxus::to_grayscale (D.yx(row-1, col+1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
 				nd++;
 			}
 
 			if (D.safe(row, col + 1) && D.yx(row, col+1) != 0)	// East
 			{
-				neigsI += (Environment::ibsi_compliance) ?
-					D.yx(row, col+1) : Nyxus::to_grayscale (D.yx(row, col+1), r.aux_min, piRange, nGrays);
+				neigsI += Nyxus::to_grayscale (D.yx(row, col+1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
 				nd++;
 			}
 			if (D.safe(row + 1, col + 1) && D.yx(row+1, col+1) != 0)	// South-East
 			{
-				neigsI += (Environment::ibsi_compliance) ?
-					D.yx(row+1, col+1) : Nyxus::to_grayscale (D.yx(row+1, col+1), r.aux_min, piRange, nGrays);
+				neigsI += Nyxus::to_grayscale (D.yx(row+1, col+1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
 				nd++;
 			}
 			if (D.safe(row + 1, col) && D.yx(row+1, col) != 0)	// South
 			{
-				neigsI += (Environment::ibsi_compliance) ?
-					D.yx(row+1, col) : Nyxus::to_grayscale (D.yx(row+1, col), r.aux_min, piRange, nGrays);
+				neigsI += Nyxus::to_grayscale (D.yx(row+1, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
 				nd++;
 			}
 			if (D.safe(row + 1, col - 1) && D.yx(row+1, col-1) != 0)	// South-West
 			{
-				neigsI += (Environment::ibsi_compliance) ?
-					D.yx(row+1, col-1) : Nyxus::to_grayscale (D.yx(row+1, col-1), r.aux_min, piRange, nGrays);
+				neigsI += Nyxus::to_grayscale (D.yx(row+1, col-1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
 				nd++;
 			}
 			if (D.safe(row, col - 1) && D.yx(row, col-1) !=0)	// West
 			{
-				neigsI += (Environment::ibsi_compliance) ?
-					D.yx(row, col-1) : Nyxus::to_grayscale (D.yx(row, col-1), r.aux_min, piRange, nGrays);
+				neigsI += Nyxus::to_grayscale (D.yx(row, col-1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
 				nd++;
 			}
 			if (D.safe(row - 1, col - 1) && D.yx(row-1, col-1) != 0)	// North-West
 			{
-				neigsI += (Environment::ibsi_compliance) ?
-					D.yx(row-1, col-1) : Nyxus::to_grayscale (D.yx(row-1, col-1), r.aux_min, piRange, nGrays);
+				neigsI += Nyxus::to_grayscale (D.yx(row-1, col-1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
 				nd++;
 			}
 

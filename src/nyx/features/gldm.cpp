@@ -48,8 +48,7 @@ void GLDMFeature::calculate(LR& r)
 		for (int col = 0; col < D.width(); col++)
 		{
 			// Find a non-blank pixel
-			PixIntens pi = (Environment::ibsi_compliance) ?
-				D.yx(row, col) : Nyxus::to_grayscale (D.yx(row, col), r.aux_min, piRange, nGrays);
+			PixIntens pi = Nyxus::to_grayscale (D.yx(row, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
 
 			if (pi == 0)
 				continue;
@@ -59,8 +58,7 @@ void GLDMFeature::calculate(LR& r)
 			PixIntens piQ; // Pixel intensity of questionn
 			if (D.safe(row - 1, col)) {
 
-				piQ = (Environment::ibsi_compliance) ?
-					D.yx(row - 1, col) : Nyxus::to_grayscale (D.yx(row - 1, col), r.aux_min, piRange, nGrays);	// North
+				piQ = Nyxus::to_grayscale (D.yx(row - 1, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// North
 
 				if (piQ == pi)
 					nd++;
@@ -68,8 +66,7 @@ void GLDMFeature::calculate(LR& r)
 
 			if (D.safe(row - 1, col + 1)) {
 
-				piQ = (Environment::ibsi_compliance) ? 
-					D.yx(row - 1, col + 1) : Nyxus::to_grayscale (D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays);	// North-East
+				piQ = Nyxus::to_grayscale (D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// North-East
 
 				if (piQ == pi)
 					nd++;
@@ -77,8 +74,7 @@ void GLDMFeature::calculate(LR& r)
 
 			if (D.safe(row, col + 1)) {
 
-				piQ = (Environment::ibsi_compliance) ? 
-					D.yx(row, col + 1) : Nyxus::to_grayscale (D.yx(row, col + 1), r.aux_min, piRange, nGrays);	// East
+				piQ = Nyxus::to_grayscale (D.yx(row, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// East
 
 				if (piQ == pi)
 					nd++;
@@ -86,8 +82,7 @@ void GLDMFeature::calculate(LR& r)
 
 			if (D.safe(row + 1, col + 1)) {
 
-				piQ = (Environment::ibsi_compliance) ? 
-					D.yx(row + 1, col + 1) : Nyxus::to_grayscale (D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays);	// South-East
+				piQ = Nyxus::to_grayscale (D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// South-East
 
 				if (piQ == pi)
 					nd++;
@@ -95,8 +90,7 @@ void GLDMFeature::calculate(LR& r)
 
 			if (D.safe(row + 1, col)) {
 
-				piQ = (Environment::ibsi_compliance) ? 
-					D.yx(row + 1, col) : Nyxus::to_grayscale(D.yx(row + 1, col), r.aux_min, piRange, nGrays);		// South
+				piQ = Nyxus::to_grayscale(D.yx(row + 1, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);		// South
 
 				if (piQ == pi)
 					nd++;
@@ -104,8 +98,7 @@ void GLDMFeature::calculate(LR& r)
 
 			if (D.safe(row + 1, col - 1)) {
 				
-				piQ = (Environment::ibsi_compliance) ?
-					D.yx(row + 1, col - 1) : Nyxus::to_grayscale (D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays);	// South-West
+				piQ = Nyxus::to_grayscale (D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// South-West
 
 				if (piQ == pi)
 					nd++;
@@ -113,8 +106,7 @@ void GLDMFeature::calculate(LR& r)
 
 			if (D.safe(row, col - 1)) {
 
-				piQ = (Environment::ibsi_compliance) ?
-					D.yx(row, col - 1) : Nyxus::to_grayscale (D.yx(row, col - 1), r.aux_min, piRange, nGrays);		// West
+				piQ = Nyxus::to_grayscale (D.yx(row, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);		// West
 
 				if (piQ == pi)
 					nd++;
@@ -122,8 +114,7 @@ void GLDMFeature::calculate(LR& r)
 
 			if (D.safe(row - 1, col - 1)) {
 
-				piQ = (Environment::ibsi_compliance) ? 
-					D.yx(row - 1, col - 1) : Nyxus::to_grayscale (D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays);	// North-West
+				piQ = Nyxus::to_grayscale (D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// North-West
 
 				if (piQ == pi)
 					nd++;
