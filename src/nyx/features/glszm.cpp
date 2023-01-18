@@ -306,8 +306,7 @@ void GLSZMFeature::calculate(LR& r)
 	auto height = M.height;
 	auto width = M.width;
 
-	Ng = (Environment::ibsi_compliance) ?
-		*std::max_element(std::begin(r.aux_image_matrix.ReadablePixels()), std::end(r.aux_image_matrix.ReadablePixels())) : (decltype(Ng)) U.size();
+	Ng = *std::max_element(std::begin(r.aux_image_matrix.ReadablePixels()), std::end(r.aux_image_matrix.ReadablePixels()));
 	Ns = height*width;
 	Nz = (decltype(Nz)) Z.size();
 	Np = count;	
