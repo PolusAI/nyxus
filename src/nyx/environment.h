@@ -29,7 +29,7 @@
 #define COARSEGRAYDEPTH "--coarseGrayDepth"		// Default - 8
 #define RAMLIMIT "--ramLimit"					// Optional. Limit for treating ROIs as non-trivial and for setting the batch size of trivial ROIs. Default - amount of available system RAM
 #define TEMPDIR "--tempDir"						// Optional. Used in processing non-trivial features. Default - system temp directory
-#define IBSICOMPLIANCE "--IBSICompliance" // skip binning for grey level and grey tone features
+#define IBSICOMPLIANCE "--ibsi" // skip binning for grey level and grey tone features
 
 #ifdef USE_GPU
 	#define USEGPU "--useGpu"					// Environment::rawUseGpu, "true" or "false"
