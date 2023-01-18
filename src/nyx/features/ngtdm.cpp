@@ -125,8 +125,10 @@ void NGTDMFeature::calculate (LR& r)
 
 	//==== Fill the matrix
 
-	Ng = (Environment::ibsi_compliance) ?
-		*std::max_element(std::begin(r.aux_image_matrix.ReadablePixels()), std::end(r.aux_image_matrix.ReadablePixels())) : (decltype(Ng))U.size();
+	//Ng = (Environment::ibsi_compliance) ?
+	//	*std::max_element(std::begin(r.aux_image_matrix.ReadablePixels()), std::end(r.aux_image_matrix.ReadablePixels())) : (decltype(Ng))U.size();
+	
+	Ng = *std::max_element(std::begin(r.aux_image_matrix.ReadablePixels()), std::end(r.aux_image_matrix.ReadablePixels()));
 	Ngp = U.size();
 
 	// --allocate the matrix
@@ -150,7 +152,7 @@ void NGTDMFeature::calculate (LR& r)
 		// increment
 		N[row]++;
 		// --S
-		PixIntens pi = z.first;
+		PixIntens pi = row;
 		double aveNeigI = z.second;
 		S[row] += std::abs(pi - aveNeigI);
 		// --Nvp
@@ -385,6 +387,8 @@ double NGTDMFeature::calc_Busyness()
 				sum2 += std::abs (tmp);
 			}
 		}
+	
+	if (sum2 == 0) return 0;
 
 	double retval = sum1 / sum2;
 	return retval;
