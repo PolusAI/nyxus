@@ -6,39 +6,40 @@
 #include "../src/nyx/parallel.h"
 #include "../src/nyx/features/glrlm.h"
 #include "../src/nyx/features/pixel.h"
+#include "../src/nyx/environment.h"
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
 #include <unordered_map> 
 
 // dig. phantom values for intensity based features
-static std::unordered_map<std::string, float> IBSI_glrlm_values {
-    {"GLRLM_SRE", 0.641},
-    {"GLRLM_LRE", 3.78},
-    {"GLRLM_LGLRE", 0.604},
-    {"GLRLM_HGLRE", 9.82},
-    {"GLRLM_SRLGLE", 0.294},
-    {"GLRLM_SRHGLE", 8.57},
-    {"GLRLM_LRLGLE", 3.14},
-    {"GLRLM_LRHGLE", 17.4},
-    {"GLRLM_GLN", 5.2},
-    {"GLRLM_GLNN", 0.46},
-    {"GLRLM_RLN", 6.12},
-    {"GLRLM_RLNN", 0.492}, 
-    {"GLRLM_RP", 0.627}, 
-    {"GLRLM_GLV", 3.35},
-    {"GLRLM_RV", 0.761},
-    {"GLRLM_RE", 2.17}
+static std::unordered_map<std::string, float> glrlm_values {
+    {"GLRLM_SRE", 0.875714},
+    {"GLRLM_LRE", 1.57431},
+    {"GLRLM_LGLRE", 0.493811},
+    {"GLRLM_HGLRE", 4.68802},
+    {"GLRLM_SRLGLE", 0.412494},
+    {"GLRLM_SRHGLE", 4.27033},
+    {"GLRLM_LRLGLE", 0.86152},
+    {"GLRLM_LRHGLE", 6.57483},
+    {"GLRLM_GLN", 2.80937},
+    {"GLRLM_GLNN", 0.417335},
+    {"GLRLM_RLN", 5.47778},
+    {"GLRLM_RLNN", 0.829799}, 
+    {"GLRLM_RP", 0.348317}, 
+    {"GLRLM_GLV", 0.630247},
+    {"GLRLM_RV", 0.114035},
+    {"GLRLM_RE", 1.58115}
 };
 
-void test_ibsi_glrlm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
+void test_glrlm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
 
     double total = 0;
     
     LR roidata;
     // Calculate features
     GLRLMFeature f;
-
+    Environment::ibsi_compliance = false; 
     // image 1
 
     load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
@@ -122,87 +123,87 @@ void test_ibsi_glrlm_feature(const AvailableFeatures& feature, const std::string
     total += roidata3.fvals[feature][2];
     total += roidata3.fvals[feature][3];
 
-    ASSERT_TRUE(agrees_gt(total/16, IBSI_glrlm_values[feature_name], 100.));
+    ASSERT_TRUE(agrees_gt(total/16, glrlm_values[feature_name], 100.));
 
 
 }
 
-void test_ibsi_glrlm_sre()
+void test_glrlm_sre()
 {
-    test_ibsi_glrlm_feature(GLRLM_SRE, "GLRLM_SRE");
+    test_glrlm_feature(GLRLM_SRE, "GLRLM_SRE");
 }
 
-void test_ibsi_glrlm_lre()
+void test_glrlm_lre()
 {
-    test_ibsi_glrlm_feature(GLRLM_LRE, "GLRLM_LRE");
+    test_glrlm_feature(GLRLM_LRE, "GLRLM_LRE");
 }
 
-void test_ibsi_glrlm_lglre()
+void test_glrlm_lglre()
 {
-    test_ibsi_glrlm_feature(GLRLM_LGLRE, "GLRLM_LGLRE");
+    test_glrlm_feature(GLRLM_LGLRE, "GLRLM_LGLRE");
 }
 
-void test_ibsi_glrlm_hglre()
+void test_glrlm_hglre()
 {
-    test_ibsi_glrlm_feature(GLRLM_HGLRE, "GLRLM_HGLRE");
+    test_glrlm_feature(GLRLM_HGLRE, "GLRLM_HGLRE");
 }   
 
-void test_ibsi_glrlm_srlgle()
+void test_glrlm_srlgle()
 {
-    test_ibsi_glrlm_feature(GLRLM_SRLGLE, "GLRLM_SRLGLE");
+    test_glrlm_feature(GLRLM_SRLGLE, "GLRLM_SRLGLE");
 }
 
-void test_ibsi_glrlm_srhgle()
+void test_glrlm_srhgle()
 {
-    test_ibsi_glrlm_feature(GLRLM_SRHGLE, "GLRLM_SRHGLE");
+    test_glrlm_feature(GLRLM_SRHGLE, "GLRLM_SRHGLE");
 }
 
-void test_ibsi_glrlm_lrlgle()
+void test_glrlm_lrlgle()
 {
-    test_ibsi_glrlm_feature(GLRLM_LRLGLE, "GLRLM_LRLGLE");
+    test_glrlm_feature(GLRLM_LRLGLE, "GLRLM_LRLGLE");
 }
 
-void test_ibsi_glrlm_lrhgle()
+void test_glrlm_lrhgle()
 {
-    test_ibsi_glrlm_feature(GLRLM_LRHGLE, "GLRLM_LRHGLE");
+    test_glrlm_feature(GLRLM_LRHGLE, "GLRLM_LRHGLE");
 }
 
-void test_ibsi_glrlm_gln()
+void test_glrlm_gln()
 {   
-    test_ibsi_glrlm_feature(GLRLM_GLN, "GLRLM_GLN");
+    test_glrlm_feature(GLRLM_GLN, "GLRLM_GLN");
 }
 
-void test_ibsi_glrlm_glnn()
+void test_glrlm_glnn()
 {
-    test_ibsi_glrlm_feature(GLRLM_GLNN, "GLRLM_GLNN");
+    test_glrlm_feature(GLRLM_GLNN, "GLRLM_GLNN");
 }
 
-void test_ibsi_glrlm_rln()
+void test_glrlm_rln()
 {
-    test_ibsi_glrlm_feature(GLRLM_RLN, "GLRLM_RLN");
+    test_glrlm_feature(GLRLM_RLN, "GLRLM_RLN");
 }
 
-void test_ibsi_glrlm_rlnn()
+void test_glrlm_rlnn()
 {
-    test_ibsi_glrlm_feature(GLRLM_RLNN, "GLRLM_RLNN");
+    test_glrlm_feature(GLRLM_RLNN, "GLRLM_RLNN");
 }
 
-void test_ibsi_glrlm_rp()
+void test_glrlm_rp()
 {
-    test_ibsi_glrlm_feature(GLRLM_RP, "GLRLM_RP");
+    test_glrlm_feature(GLRLM_RP, "GLRLM_RP");
 }
 
-void test_ibsi_glrlm_glv()
+void test_glrlm_glv()
 {
-    test_ibsi_glrlm_feature(GLRLM_GLV, "GLRLM_GLV");
+    test_glrlm_feature(GLRLM_GLV, "GLRLM_GLV");
 }
 
-void test_ibsi_glrlm_rv()
+void test_glrlm_rv()
 {
-    test_ibsi_glrlm_feature(GLRLM_RV, "GLRLM_RV");
+    test_glrlm_feature(GLRLM_RV, "GLRLM_RV");
 }
 
-void test_ibsi_glrlm_re()
+void test_glrlm_re()
 {
-    test_ibsi_glrlm_feature(GLRLM_RE, "GLRLM_RE");
+    test_glrlm_feature(GLRLM_RE, "GLRLM_RE");
 }
