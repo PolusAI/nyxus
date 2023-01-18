@@ -30,13 +30,13 @@ static std::unordered_map<std::string, float> IBSI_glcm_values {
 };
 
 
-void test_glcm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
+void test_ibsi_glcm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
     double total = 0;
     
     LR roidata;
     // Calculate features
     GLCMFeature f;
-    Environment::skip_binning = true; 
+    Environment::ibsi_compliance = true; 
     GLCMFeature::angles = {0, 45, 90, 135};
 
     // image 1
@@ -61,7 +61,7 @@ void test_glcm_feature(const AvailableFeatures& feature, const std::string& feat
     // Calculate features
     GLCMFeature f1;
     //GLCMFeature::n_levels = 6;
-    Environment::skip_binning = true; //<<< New!
+    Environment::ibsi_compliance = true; //<<< New!
     GLCMFeature::angles = {0, 45, 90, 135};
 
     load_masked_test_roi_data (roidata1, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask,  sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
@@ -87,7 +87,7 @@ void test_glcm_feature(const AvailableFeatures& feature, const std::string& feat
     // Calculate features
     GLCMFeature f2;
     //GLCMFeature::n_levels = 6;
-    Environment::skip_binning = true; //<<< New!
+    Environment::ibsi_compliance = true; //<<< New!
     GLCMFeature::angles = {0, 45, 90, 135};
 
     load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
@@ -111,7 +111,7 @@ void test_glcm_feature(const AvailableFeatures& feature, const std::string& feat
     LR roidata3;
     // Calculate features
     GLCMFeature f3;
-    Environment::skip_binning = true; 
+    Environment::ibsi_compliance = true; 
     GLCMFeature::angles = {0, 45, 90, 135};
 
     load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
@@ -136,61 +136,61 @@ void test_glcm_feature(const AvailableFeatures& feature, const std::string& feat
 
 void test_ibsi_glcm_difference_average()
 {
-    test_glcm_feature(GLCM_DIFFERENCEAVERAGE, "GLCM_DIFFERENCEAVERAGE");
+    test_ibsi_glcm_feature(GLCM_DIFFERENCEAVERAGE, "GLCM_DIFFERENCEAVERAGE");
 }
 
 
 void test_ibsi_glcm_difference_variance()
 {
-    test_glcm_feature(GLCM_DIFFERENCEVARIANCE, "GLCM_DIFFERENCEVARIANCE");
+    test_ibsi_glcm_feature(GLCM_DIFFERENCEVARIANCE, "GLCM_DIFFERENCEVARIANCE");
 }
 
 
 void test_ibsi_glcm_difference_entropy()
 {
-    test_glcm_feature(GLCM_DIFFERENCEENTROPY, "GLCM_DIFFERENCEENTROPY");
+    test_ibsi_glcm_feature(GLCM_DIFFERENCEENTROPY, "GLCM_DIFFERENCEENTROPY");
 }
 
 void test_ibsi_glcm_sum_average()
 {
-    test_glcm_feature(GLCM_SUMAVERAGE, "GLCM_SUMAVERAGE");
+    test_ibsi_glcm_feature(GLCM_SUMAVERAGE, "GLCM_SUMAVERAGE");
 }
 
 void test_ibsi_glcm_sum_variance()
 {
-    test_glcm_feature(GLCM_SUMVARIANCE, "GLCM_SUMVARIANCE");
+    test_ibsi_glcm_feature(GLCM_SUMVARIANCE, "GLCM_SUMVARIANCE");
 }
 
 void test_ibsi_glcm_sum_entropy()
 {
-   test_glcm_feature(GLCM_SUMENTROPY, "GLCM_SUMENTROPY");
+   test_ibsi_glcm_feature(GLCM_SUMENTROPY, "GLCM_SUMENTROPY");
 }
 
 void test_ibsi_glcm_angular_2d_moment()
 {
-    test_glcm_feature(GLCM_ANGULAR2NDMOMENT, "GLCM_ANGULAR2NDMOMENT");
+    test_ibsi_glcm_feature(GLCM_ANGULAR2NDMOMENT, "GLCM_ANGULAR2NDMOMENT");
 }
 
 void test_ibsi_glcm_contrast()
 {
-   test_glcm_feature(GLCM_CONTRAST, "GLCM_CONTRAST");
+   test_ibsi_glcm_feature(GLCM_CONTRAST, "GLCM_CONTRAST");
 }
 
 void test_ibsi_glcm_correlation()
 {
-    test_glcm_feature(GLCM_CORRELATION, "GLCM_CORRELATION");
+    test_ibsi_glcm_feature(GLCM_CORRELATION, "GLCM_CORRELATION");
 }
 
 void test_ibsi_glcm_infomeas1()
 {
-   test_glcm_feature(GLCM_INFOMEAS1, "GLCM_INFOMEAS1");
+   test_ibsi_glcm_feature(GLCM_INFOMEAS1, "GLCM_INFOMEAS1");
 }
 
 void test_ibsi_glcm_infomeas2()
 {
-   test_glcm_feature(GLCM_INFOMEAS2, "GLCM_INFOMEAS2");
+   test_ibsi_glcm_feature(GLCM_INFOMEAS2, "GLCM_INFOMEAS2");
 }
 
 void test_ibsi_glcm_inversed_difference_moment() {
-    test_glcm_feature(GLCM_INVERSEDIFFERENCEMOMENT, "GLCM_INVERSEDIFFERENCEMOMENT");
+    test_ibsi_glcm_feature(GLCM_INVERSEDIFFERENCEMOMENT, "GLCM_INVERSEDIFFERENCEMOMENT");
 }

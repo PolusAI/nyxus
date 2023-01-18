@@ -31,7 +31,7 @@ static std::unordered_map<std::string, float> IBSI_glszm_values {
     {"GLSZM_ZE", 1.93}
 };
 
-void test_glszm_feature(const AvailableFeatures& feature, const std::string& feature_name) 
+void test_ibsi_glszm_feature(const AvailableFeatures& feature, const std::string& feature_name) 
 {
 
     double total = 0;
@@ -39,7 +39,7 @@ void test_glszm_feature(const AvailableFeatures& feature, const std::string& fea
     LR roidata;
     // Calculate features
     GLSZMFeature f;
-    Environment::skip_binning = true;
+    Environment::ibsi_compliance = true;
 
     // image 1
     load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
@@ -58,7 +58,7 @@ void test_glszm_feature(const AvailableFeatures& feature, const std::string& fea
     LR roidata1;
     // Calculate features
     GLSZMFeature f1;
-    Environment::skip_binning = true;
+    Environment::ibsi_compliance = true;
 
     load_masked_test_roi_data (roidata1, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask,  sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
 
@@ -78,7 +78,7 @@ void test_glszm_feature(const AvailableFeatures& feature, const std::string& fea
     LR roidata2;
     // Calculate features
     GLSZMFeature f2;
-    Environment::skip_binning = true;
+    Environment::ibsi_compliance = true;
 
     load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
 
@@ -98,7 +98,7 @@ void test_glszm_feature(const AvailableFeatures& feature, const std::string& fea
     LR roidata3;
     // Calculate features
     GLSZMFeature f3;
-    Environment::skip_binning = true;
+    Environment::ibsi_compliance = true;
 
     load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
 
@@ -118,81 +118,81 @@ void test_glszm_feature(const AvailableFeatures& feature, const std::string& fea
 
 void test_ibsi_glszm_sae()
 {
-    test_glszm_feature(GLSZM_SAE, "GLSZM_SAE");
+    test_ibsi_glszm_feature(GLSZM_SAE, "GLSZM_SAE");
 }
 
 void test_ibsi_glszm_lae()
 {
-    test_glszm_feature(GLSZM_LAE, "GLSZM_LAE");
+    test_ibsi_glszm_feature(GLSZM_LAE, "GLSZM_LAE");
 }
 
 void test_ibsi_glszm_lglze()
 {
-    test_glszm_feature(GLSZM_LGLZE, "GLSZM_LGLZE");
+    test_ibsi_glszm_feature(GLSZM_LGLZE, "GLSZM_LGLZE");
 }
 
 
 void test_ibsi_glszm_hglze()
 {
-    test_glszm_feature(GLSZM_HGLZE, "GLSZM_HGLZE");
+    test_ibsi_glszm_feature(GLSZM_HGLZE, "GLSZM_HGLZE");
 }
 
 void test_ibsi_glszm_salgle()
 {
-    test_glszm_feature(GLSZM_SALGLE, "GLSZM_SALGLE");
+    test_ibsi_glszm_feature(GLSZM_SALGLE, "GLSZM_SALGLE");
 }
 
 void test_ibsi_glszm_sahgle()
 {  
-    test_glszm_feature(GLSZM_SAHGLE, "GLSZM_SAHGLE");
+    test_ibsi_glszm_feature(GLSZM_SAHGLE, "GLSZM_SAHGLE");
 }
 
 void test_ibsi_glszm_lalgle()
 {
-    test_glszm_feature(GLSZM_LALGLE, "GLSZM_LALGLE");
+    test_ibsi_glszm_feature(GLSZM_LALGLE, "GLSZM_LALGLE");
 }
 
 void test_ibsi_glszm_lahgle()
 {
-    test_glszm_feature(GLSZM_LAHGLE, "GLSZM_LAHGLE");
+    test_ibsi_glszm_feature(GLSZM_LAHGLE, "GLSZM_LAHGLE");
 }
 
 void test_ibsi_glszm_gln()
 {
-    test_glszm_feature(GLSZM_GLN, "GLSZM_GLN");
+    test_ibsi_glszm_feature(GLSZM_GLN, "GLSZM_GLN");
 }
 
 void test_ibsi_glszm_glnn()
 {
-    test_glszm_feature(GLSZM_GLNN, "GLSZM_GLNN");
+    test_ibsi_glszm_feature(GLSZM_GLNN, "GLSZM_GLNN");
 }
 
 void test_ibsi_glszm_szn()
 {
-    test_glszm_feature(GLSZM_SZN, "GLSZM_SZN");
+    test_ibsi_glszm_feature(GLSZM_SZN, "GLSZM_SZN");
 }
 
 void test_ibsi_glszm_sznn()
 {
-    test_glszm_feature(GLSZM_SZNN, "GLSZM_SZNN");
+    test_ibsi_glszm_feature(GLSZM_SZNN, "GLSZM_SZNN");
 }
 
 void test_ibsi_glszm_zp()
 {
-    test_glszm_feature(GLSZM_ZP, "GLSZM_ZP");
+    test_ibsi_glszm_feature(GLSZM_ZP, "GLSZM_ZP");
 }
 
 void test_ibsi_glszm_glv()
 {
-    test_glszm_feature(GLSZM_GLV, "GLSZM_GLV");
+    test_ibsi_glszm_feature(GLSZM_GLV, "GLSZM_GLV");
 }
 
 void test_ibsi_glszm_zv()
 {
-    test_glszm_feature(GLSZM_ZV, "GLSZM_ZV");
+    test_ibsi_glszm_feature(GLSZM_ZV, "GLSZM_ZV");
 }
 
 void test_ibsi_glszm_ze()
 {
-    test_glszm_feature(GLSZM_ZE, "GLSZM_ZE");
+    test_ibsi_glszm_feature(GLSZM_ZE, "GLSZM_ZE");
 }

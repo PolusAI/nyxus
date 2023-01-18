@@ -21,14 +21,14 @@ static std::unordered_map<std::string, float> IBSI_ngtdm_values {
     {"NGTDM_STRENGTH", 2.88}
 };
 
-void test_ngtdm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
+void test_ibsi_ngtdm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
 
     double total = 0;
     
     LR roidata;
     // Calculate features
     NGTDMFeature f;
-    Environment::skip_binning = true;
+    Environment::ibsi_compliance = true;
 
     // image 1
     load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
@@ -47,7 +47,7 @@ void test_ngtdm_feature(const AvailableFeatures& feature, const std::string& fea
     LR roidata1;
     // Calculate features
     NGTDMFeature f1;
-    Environment::skip_binning = true;
+    Environment::ibsi_compliance = true;
 
     load_masked_test_roi_data (roidata1, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask,  sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
 
@@ -67,7 +67,7 @@ void test_ngtdm_feature(const AvailableFeatures& feature, const std::string& fea
     LR roidata2;
     // Calculate features
     NGTDMFeature f2;
-    Environment::skip_binning = true;
+    Environment::ibsi_compliance = true;
 
     load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
 
@@ -87,7 +87,7 @@ void test_ngtdm_feature(const AvailableFeatures& feature, const std::string& fea
     LR roidata3;
     // Calculate features
     NGTDMFeature f3;
-    Environment::skip_binning = true;
+    Environment::ibsi_compliance = true;
 
     load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
 
@@ -107,25 +107,25 @@ void test_ngtdm_feature(const AvailableFeatures& feature, const std::string& fea
 
 void test_ibsi_ngtdm_coarseness()
 {
-    test_ngtdm_feature(NGTDM_COARSENESS, "NGTDM_COARSENESS");
+    test_ibsi_ngtdm_feature(NGTDM_COARSENESS, "NGTDM_COARSENESS");
 }
 
 void test_ibsi_ngtdm_contrast()
 {
-    test_ngtdm_feature(NGTDM_CONTRAST, "NGTDM_CONTRAST");
+    test_ibsi_ngtdm_feature(NGTDM_CONTRAST, "NGTDM_CONTRAST");
 }
 
 void test_ibsi_ngtdm_busyness()
 {
-    test_ngtdm_feature(NGTDM_BUSYNESS, "NGTDM_BUSYNESS");
+    test_ibsi_ngtdm_feature(NGTDM_BUSYNESS, "NGTDM_BUSYNESS");
 }
 
 void test_ibsi_ngtdm_complexity()
 {   
-    test_ngtdm_feature(NGTDM_COMPLEXITY, "NGTDM_COMPLEXITY");
+    test_ibsi_ngtdm_feature(NGTDM_COMPLEXITY, "NGTDM_COMPLEXITY");
 }
 
 void test_ibsi_ngtdm_strength()
 {
-    test_ngtdm_feature(NGTDM_STRENGTH, "NGTDM_STRENGTH");
+    test_ibsi_ngtdm_feature(NGTDM_STRENGTH, "NGTDM_STRENGTH");
 }
