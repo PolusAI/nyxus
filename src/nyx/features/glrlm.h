@@ -106,7 +106,9 @@ private:
 	std::vector<int> angles_Nr; // number of discreet run lengths in the image
 	std::vector<int> angles_Np; // number of voxels in the image
 	std::vector<P_matrix> angles_P;
+	std::vector<double> sum_p;
 
 	const double EPS = 2.2e-16;
 	const double BAD_ROI_FVAL = 0.0;
+	const double LOG10_2 = 0.30102999566;	// precalculated log 2 base 10
 };

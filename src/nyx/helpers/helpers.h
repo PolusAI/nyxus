@@ -177,8 +177,10 @@ namespace Nyxus
 	/// @param min_i Minimum ROI's intensity
 	/// @param i_range Precalculated ROI's intensity range (= max-min)
 	/// @return Squeezed intensity within range [0,255]
-	inline unsigned int to_grayscale (unsigned int i, unsigned int min_i, unsigned int i_range, unsigned int n_levels)
+	inline unsigned int to_grayscale (unsigned int i, unsigned int min_i, unsigned int i_range, unsigned int n_levels, bool disable_binning=false)
 	{
+		if (disable_binning) return i;
+		
 		unsigned int new_pi = (unsigned int) ((double(i-min_i) / double(i_range) * double(n_levels))) ;
 		return new_pi;
 	}

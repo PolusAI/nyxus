@@ -200,8 +200,11 @@ void GLSZMFeature::calculate(LR& r)
 	// Squeeze the intensity range
 	PixIntens piRange = r.aux_max - r.aux_min;		// Prepare ROI's intensity range
 	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+
+
 	for (size_t i = 0; i < D.size(); i++)
-		D[i] = Nyxus::to_grayscale (D[i], r.aux_min, piRange, nGrays);
+		D[i] = Nyxus::to_grayscale (D[i], r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+
 
 	// Number of zones
 	const int VISITED = -1;
@@ -221,49 +224,41 @@ void GLSZMFeature::calculate(LR& r)
 			// 
 			for(;;)
 			{
-				if (D.safe(y,x+1) && D.yx(y,x+1) == pi)
+				if (D.safe(y,x+1) && D.yx(y,x+1) != VISITED && D.yx(y,x+1) == pi)
 				{
 					D.yx(y,x+1) = VISITED;
 					zoneArea++;
 
-					//M.print("After x+1,y");
-
 					// Remember this pixel
 					history.push_back({x,y});
-					// Advance 
+					// Advance
 					x = x + 1;
 					// Proceed
 					continue;
 				}
-				if (D.safe(y + 1, x + 1) && D.yx(y + 1, x+1) == pi)
+				if (D.safe(y + 1, x + 1) && D.yx(y+1,x+1) != VISITED && D.yx(y + 1, x+1) == pi)
 				{
 					D.yx(y + 1, x+1) = VISITED;
 					zoneArea++;
-
-					//M.print("After x+1,y+1");
 
 					history.push_back({ x,y });
 					x = x + 1;
 					y = y + 1;
 					continue;
 				}
-				if (D.safe(y + 1, x) && D.yx(y + 1, x) == pi)
+				if (D.safe(y + 1, x) && D.yx(y+1,x) != VISITED && D.yx(y + 1, x) == pi)
 				{
 					D.yx(y + 1, x) = VISITED;
 					zoneArea++;
-
-					//M.print("After x,y+1");
 
 					history.push_back({ x,y });
 					y = y + 1;
 					continue;
 				}
-				if (D.safe(y + 1, x - 1) && D.yx(y + 1, x-1) == pi)
+				if (D.safe(y + 1, x - 1) && D.yx(y+1,x-1) != VISITED && D.yx(y + 1, x-1) == pi)
 				{
 					D.yx(y + 1, x-1) = VISITED;
 					zoneArea++;
-
-					//M.print("After x-1,y+1");
 
 					history.push_back({ x,y });
 					x = x - 1;
@@ -275,13 +270,16 @@ void GLSZMFeature::calculate(LR& r)
 				if (history.size() > 0)
 				{
 					// Recollect the coordinate where we diverted from
-					std::tuple<int, int> prev = history[history.size() - 1];
+					std::tuple<int, int> prev  = history[history.size() - 1];
+					x = std::get<0>(prev);
+					y = std::get<1>(prev);
 					history.pop_back();
-
+					continue;
 				}
 
 				// We are done exploring this cluster
 				break;
+			
 			}
 
 			// Done scanning a cluster. Perform 3 actions:
@@ -291,24 +289,27 @@ void GLSZMFeature::calculate(LR& r)
 			// --2
 			maxZoneArea = std::max(maxZoneArea, zoneArea);
 
-			//std::stringstream ss;
-			//ss << "End of cluster " << x << "," << y;
-			//M.print (ss.str());
-
 			// --3
 			ACluster clu = {pi, zoneArea};
 			Z.push_back (clu);
 		}
 
-	//M.print("finished");
+	// count non-zero pixels
+	int count = 0;
 
+	for (const auto& px: M.ReadablePixels()) {
+		if(px !=0) ++count;
+	}
 
 	//==== Fill the SZ-matrix
 
-	Ng = (decltype(Ng)) U.size();
-	Ns = maxZoneArea;
+	auto height = M.height;
+	auto width = M.width;
+
+	Ng = *std::max_element(std::begin(r.aux_image_matrix.ReadablePixels()), std::end(r.aux_image_matrix.ReadablePixels()));
+	Ns = height*width;
 	Nz = (decltype(Nz)) Z.size();
-	Np = 1;	
+	Np = count;	
 
 	// --Set to vector to be able to know each intensity's index
 	std::vector<PixIntens> I (U.begin(), U.end());
@@ -318,20 +319,54 @@ void GLSZMFeature::calculate(LR& r)
 	P.allocate (Ns, Ng);
 	
 	// --iterate zones and fill the matrix
+	int i = 0;
 	for (auto& z : Z)
 	{
 		// row
 		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = int (iter - I.begin());
+		int row = (Environment::ibsi_compliance) ?
+			z.first-1 : int (iter - I.begin());
 		// col
 		int col = z.second - 1;	// 0-based => -1
 		auto & k = P.xy(col, row);
 		k++;
 	}
+
+	sum_p = 0;
+	for (int i = 1; i <= Ng; ++i) {
+		for (int j = 1; j <= Ns; ++j) {
+			sum_p += P.matlab(i, j);
+		}
+	}
 }
 
 void GLSZMFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
+
+	if (sum_p == 0) {
+
+		double val = 0;
+
+		fvals[GLSZM_SAE][0] = val;
+		fvals[GLSZM_LAE][0] = val;
+		fvals[GLSZM_GLN][0] = val;
+		fvals[GLSZM_GLNN][0] = val;
+		fvals[GLSZM_SZN][0] = val;
+		fvals[GLSZM_SZNN][0] = val;
+		fvals[GLSZM_ZP][0] = val;
+		fvals[GLSZM_GLV][0] = val;
+		fvals[GLSZM_ZV][0] = val;
+		fvals[GLSZM_ZE][0] = val;
+		fvals[GLSZM_LGLZE][0] = val;
+		fvals[GLSZM_HGLZE][0] = val;
+		fvals[GLSZM_SALGLE][0] = val;
+		fvals[GLSZM_SAHGLE][0] = val;
+		fvals[GLSZM_LALGLE][0] = val;
+		fvals[GLSZM_LAHGLE][0] = val;
+
+		return;
+	}
+
 	fvals[GLSZM_SAE][0] = calc_SAE();
 	fvals[GLSZM_LAE][0] = calc_LAE();
 	fvals[GLSZM_GLN][0] = calc_GLN();
@@ -357,15 +392,19 @@ double GLSZMFeature::calc_SAE()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double f = 0.0;
-	for (int i=1; i<=Ng; i++)
-	{
-		for (int j = 1; j <= Ns; j++)
-		{
-			f += P.matlab(i,j) / (j * j);
+	std::vector<double> sj(Ns+1, 0);
+	for (int i = 1; i <= Ng; ++i) {
+		for (int j = 1; j <= Ns; ++j) {
+			sj[j] += P.matlab(i, j);
 		}
 	}
-	double retval = f / double(Nz);
+
+	double f = 0.0;
+	for (int j = 1; j <= Ns; j++)
+	{
+		f += sj[j] / (j * j);
+	}
+	double retval = f / sum_p;
 
 	return retval;
 }
@@ -377,15 +416,19 @@ double GLSZMFeature::calc_LAE()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double f = 0.0;
-	for (int i = 1; i <= Ng; i++)
-	{
-		for (int j = 1; j <= Ns; j++)
-		{
-			f += P.matlab(i, j) * double (j * j);
+	std::vector<double> sj(Ns+1, 0);
+	for (int i = 1; i <= Ng; ++i) {
+		for (int j = 1; j <= Ns; ++j) {
+			sj[j] += P.matlab(i, j);
 		}
 	}
-	double retval = f / double(Nz);
+
+	double f = 0.0;
+	for (int j = 1; j <= Ns; j++)
+	{
+		f += sj[j] * (j * j);
+	}
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -396,17 +439,20 @@ double GLSZMFeature::calc_GLN()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
+	std::vector<double> si(Ng+1, 0);
+	for (int i = 1; i <= Ng; ++i) {
+		for (int j = 1; j <= Ns; ++j) {
+			si[i] += P.matlab(i, j);
+		}
+	}
+
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double sum = 0.0;
-		for (int j = 1; j <= Ns; j++)
-		{
-			sum += P.matlab(i,j);
-		}
-		f += sum * sum;
+		f += si[i] * si[i];
 	}
-	double retval = f / double(Nz);
+
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -417,17 +463,21 @@ double GLSZMFeature::calc_GLNN()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
+	std::vector<double> si(Ng+1, 0);
+	for (int i = 1; i <= Ng; ++i) {
+		for (int j = 1; j <= Ns; ++j) {
+			si[i] += P.matlab(i, j);
+		}
+	}
+
 	double f = 0.0;
+
 	for (int i = 1; i <= Ng; i++)
 	{
-		double sum = 0.0;
-		for (int j = 1; j <= Ns; j++)
-		{
-			sum += P.matlab(i,j); 
-		}
-		f += sum * sum;
+		f += si[i] * si[i];
 	}
-	double retval = f / double(Nz * Nz);
+
+	double retval = f / double(sum_p * sum_p);
 	return retval;
 }
 
@@ -438,17 +488,20 @@ double GLSZMFeature::calc_SZN()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double f = 0.0;
-	for (int i = 1; i <= Ns; i++)
-	{
-		double sum = 0.0;
-		for (int j = 1; j <= Ng; j++)
-		{
-			sum += P.matlab(j,i); 
+	std::vector<double> sj(Ns+1, 0);
+	for (int i = 1; i <= Ng; ++i) {
+		for (int j = 1; j <= Ns; ++j) {
+			sj[j] += P.matlab(i, j);
 		}
-		f += sum * sum;
 	}
-	double retval = f / double(Nz);
+
+	double f = 0.0;
+	for (int j = 1; j <= Ns; j++)
+	{
+		f += sj[j] * sj[j];
+	}
+
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -459,17 +512,20 @@ double GLSZMFeature::calc_SZNN()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double f = 0.0;
-	for (int i = 1; i <= Ns; i++)
-	{
-		double sum = 0.0;
-		for (int j = 1; j <= Ng; j++)
-		{
-			sum += P.matlab(j,i); 
+	std::vector<double> sj(Ns+1, 0);
+	for (int i = 1; i <= Ng; ++i) {
+		for (int j = 1; j <= Ns; ++j) {
+			sj[j] += P.matlab(i, j);
 		}
-		f += sum * sum;
 	}
-	double retval = f / double(Nz * Nz);
+
+	double f = 0.0;
+	for (int j = 1; j <= Ns; j++)
+	{
+		f += sj[j] * sj[j];
+	}
+
+	double retval = f / double(sum_p * sum_p);
 	return retval;
 }
 
@@ -480,7 +536,7 @@ double GLSZMFeature::calc_ZP()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double retval = double(Nz) / double(Np);
+	double retval = sum_p / double(Np);
 	return retval;
 }
 
@@ -496,7 +552,7 @@ double GLSZMFeature::calc_GLV()
 	{
 		for (int j = 1; j <= Ns; j++)
 		{
-			mu += P.matlab(i, j) * i;  
+			mu += P.matlab(i, j)/sum_p * i;  
 		}
 	}
 
@@ -506,7 +562,7 @@ double GLSZMFeature::calc_GLV()
 		for (int j = 1; j <= Ns; j++)
 		{
 			double mu2 = (i - mu) * (i - mu);
-			f += P.matlab(i,j) * mu2;
+			f += P.matlab(i,j)/sum_p * mu2;
 		}
 	}
 	return f;
@@ -524,7 +580,7 @@ double GLSZMFeature::calc_ZV()
 	{
 		for (int j = 1; j <= Ns; j++)
 		{
-			mu += P.matlab(i,j) * double(j);
+			mu += P.matlab(i,j)/sum_p * double(j);
 		}
 	}
 
@@ -534,7 +590,7 @@ double GLSZMFeature::calc_ZV()
 		for (int j = 1; j <= Ns; j++)
 		{
 			double mu2 = (j - mu) * (j - mu);
-			f += P.matlab(i, j) * mu2;
+			f += P.matlab(i, j)/sum_p * mu2;
 		}
 	}
 	return f;
@@ -552,8 +608,8 @@ double GLSZMFeature::calc_ZE()
 	{
 		for (int j = 1; j <= Ns; j++)
 		{
-			double entrTerm = log2(P.matlab(i,j) + EPS);
-			f += P.matlab(i,j) * entrTerm;
+			double entrTerm = fast_log10(P.matlab(i,j)/sum_p + EPS) / LOG10_2;
+			f += P.matlab(i,j)/sum_p * entrTerm;
 		}
 	}
 	double retval = -f;
@@ -567,15 +623,20 @@ double GLSZMFeature::calc_LGLZE()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
+	std::vector<double> si(Ng+1, 0);
+	for (int i = 1; i <= Ng; ++i) {
+		for (int j = 1; j <= Ns; ++j) {
+			si[i] += P.matlab(i, j);
+		}
+	}
+
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		for (int j = 1; j <= Ns; j++)
-		{
-			f += P.matlab(i,j) / double(i*i);
-		}
+		f += si[i] / (i * i);
 	}
-	double retval = f / double(Nz);
+
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -586,15 +647,21 @@ double GLSZMFeature::calc_HGLZE()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
+	std::vector<double> si(Ng+1, 0);
+	for (int i = 1; i <= Ng; ++i) {
+		for (int j = 1; j <= Ns; ++j) {
+			si[i] += P.matlab(i, j);
+		}
+	}
+
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		for (int j = 1; j <= Ns; j++)
-		{
-			f += P.matlab(i,j) * double(i*i);
-		}
+		f += si[i] * (i * i);
 	}
-	double retval = f / double(Nz);
+
+	double retval = f / sum_p;
+
 	return retval;
 }
 
@@ -613,7 +680,7 @@ double GLSZMFeature::calc_SALGLE()
 			f += P.matlab(i,j) / double(i * i * j * j);
 		}
 	}
-	double retval = f / double(Nz);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -625,14 +692,14 @@ double GLSZMFeature::calc_SAHGLE()
 		return BAD_ROI_FVAL;
 
 	double f = 0.0;
-	for (int i = 1; i < Ng; i++)
+	for (int i = 1; i <= Ng; i++)
 	{
-		for (int j = 1; j < Ns; j++)
+		for (int j = 1; j <= Ns; j++)
 		{
 			f += P.matlab(i,j) * double(i * i) / double(j * j);
 		}
 	}
-	double retval = f / double(Nz);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -644,14 +711,14 @@ double GLSZMFeature::calc_LALGLE()
 		return BAD_ROI_FVAL;
 
 	double f = 0.0;
-	for (int i = 1; i < Ng; i++)
+	for (int i = 1; i <= Ng; i++)
 	{
-		for (int j = 1; j < Ns; j++)
+		for (int j = 1; j <= Ns; j++)
 		{
 			f += P.matlab(i,j) * double(j * j) / double(i * i);
 		}
 	}
-	double retval = f / double(Nz);
+	double retval = f / sum_p;
 	return retval;
 }
 
@@ -663,14 +730,14 @@ double GLSZMFeature::calc_LAHGLE()
 		return BAD_ROI_FVAL;
 
 	double f = 0.0;
-	for (int i = 1; i < Ng; i++)
+	for (int i = 1; i <= Ng; i++)
 	{
-		for (int j = 1; j < Ns; j++)
+		for (int j = 1; j <= Ns; j++)
 		{
 			f += P.matlab(i,j) * double(i * i * j * j);
 		}
 	}
-	double retval = f / double(Nz);
+	double retval = f / sum_p;
 	return retval;
 }
 
