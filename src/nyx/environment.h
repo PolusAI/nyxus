@@ -29,6 +29,7 @@
 #define COARSEGRAYDEPTH "--coarseGrayDepth"		// Default - 8
 #define RAMLIMIT "--ramLimit"					// Optional. Limit for treating ROIs as non-trivial and for setting the batch size of trivial ROIs. Default - amount of available system RAM
 #define TEMPDIR "--tempDir"						// Optional. Used in processing non-trivial features. Default - system temp directory
+#define IBSICOMPLIANCE "--ibsi" // skip binning for grey level and grey tone features
 
 #ifdef USE_GPU
 	#define USEGPU "--useGpu"					// Environment::rawUseGpu, "true" or "false"
@@ -116,6 +117,11 @@ public:
 	void process_feature_list();
 
 	static bool gpu_is_available();
+
+	static bool ibsi_compliance;
+	static std::string raw_ibsi_compliance; // string for input
+
+	void set_ibsi_compliance(bool skip);
 
 #ifdef USE_GPU
 	/// @brief Returns GPU device ID of choice

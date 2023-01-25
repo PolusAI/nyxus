@@ -26,6 +26,7 @@ public:
 
 	static int offset;	// default value: 1
 	static int n_levels;	// default value: 8
+	double sum_p = 0; // sum of P matrix for normalization
 	static std::vector<int> angles;	// default value: {0,45,90,135} (the supreset)
 
 	static bool required(const FeatureSet& fs) 
@@ -59,17 +60,42 @@ public:
 
 private:
 
-	void Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nontriv& grays, PixIntens min_val, PixIntens max_val);
-	void calculateCoocMatAtAngle_NT(
+	void Extract_Texture_Features_nontriv(
+		int distance,
+		int angle,
+		const OOR_ReadMatrix& grays);
+	void CoOcMat_Angle_0_nontriv (
 		// out
 		SimpleMatrix<double>& matrix,
 		// in
-		int dx,
-		int dy,
-		WriteImageMatrix_nontriv& grays,
-		PixIntens min_val,
-		PixIntens max_val,
-		bool normalize);
+		int distance,
+		const OOR_ReadMatrix& grays,
+		const int* tone_LUT,
+		int tone_count);
+	void CoOcMat_Angle_45_nontriv (
+		// out
+		SimpleMatrix<double>& matrix,
+		// in
+		int distance,
+		const OOR_ReadMatrix& grays,
+		const int* tone_LUT,
+		int tone_count);
+	void CoOcMat_Angle_90_nontriv (
+		// out
+		SimpleMatrix<double>& matrix,
+		// in
+		int distance,
+		const OOR_ReadMatrix& grays,
+		const int* tone_LUT,
+		int tone_count);
+	void CoOcMat_Angle_135_nontriv (
+		// out
+		SimpleMatrix<double>& matrix,
+		// in
+		int distance,
+		const OOR_ReadMatrix& grays,
+		const int* tone_LUT,
+		int tone_count);
 
 	void Extract_Texture_Features(
 		int distance,
@@ -143,6 +169,6 @@ private:
 	const double LOG10_2 = 0.30102999566;	// precalculated log 2 base 10
 	SimpleMatrix<double> P_matrix;
 	std::vector<double> Pxpy, Pxmy;
-	const double EPSILON = 0.000000001;
+
 };
 

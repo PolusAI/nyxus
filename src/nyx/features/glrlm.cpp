@@ -90,8 +90,10 @@ void GLRLMFeature::calculate (LR& r)
 
 		// Squeeze the intensity range
 		unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+
 		for (size_t i = 0; i < D.size(); i++)
-			D[i] = Nyxus::to_grayscale (D[i], r.aux_min, piRange, nGrays);
+			D[i] = Nyxus::to_grayscale (D[i], r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+		
 
 		// Number of zones
 		const int VISITED = -1;
@@ -131,7 +133,7 @@ void GLRLMFeature::calculate (LR& r)
 					}
 
 					// angleIdx==1 === 45 degrees
-					if (D.safe(y + 1, x + 1) && D.yx(y + 1, x + 1) == pi)
+					if (angleIdx==1 && D.safe(y + 1, x + 1) && D.yx(y + 1, x + 1) == pi)
 					{
 						D.yx(y + 1, x + 1) = VISITED;
 						zoneArea++;
@@ -145,7 +147,7 @@ void GLRLMFeature::calculate (LR& r)
 					}
 
 					// angleIdx==2 === 90 degrees
-					if (D.safe(y + 1, x) && D.yx(y + 1, x) == pi)
+					if (angleIdx==2 && D.safe(y + 1, x) && D.yx(y + 1, x) == pi)
 					{
 						D.yx(y + 1, x) = VISITED;
 						zoneArea++;
@@ -158,7 +160,7 @@ void GLRLMFeature::calculate (LR& r)
 					}
 
 					// angleIdx==3 === 135 degrees
-					if (D.safe(y + 1, x - 1) && D.yx(y + 1, x - 1) == pi)
+					if (angleIdx== 3 && D.safe(y + 1, x - 1) && D.yx(y + 1, x - 1) == pi)
 					{
 						D.yx(y + 1, x - 1) = VISITED;
 						zoneArea++;
@@ -190,23 +192,25 @@ void GLRLMFeature::calculate (LR& r)
 				// --2
 				maxZoneArea = std::max(maxZoneArea, zoneArea);
 
-				//std::stringstream ss;
-				//ss << "End of cluster " << x << "," << y;
-				//M.print (ss.str());
-
 				// --3
 				ACluster clu = { pi, zoneArea };
 				Z.push_back(clu);
 			}
 
-		//M.print("finished");
+		// count non-zero pixels
+		int count = 0;
+
+		for (const auto& px: im.ReadablePixels()) {
+			if(px !=0) ++count;
+		}
 
 		//==== Fill the zone matrix
 
-		int Ng = (decltype(Ng))U.size();
+		int Ng = Environment::ibsi_compliance ? 
+			*std::max_element(std::begin(im.ReadablePixels()), std::end(im.ReadablePixels())) : (decltype(Ng))U.size();
 		int Nr = maxZoneArea;
 		int Nz = (decltype(Nz))Z.size();
-		int Np = 1;
+		int Np = count;
 
 		// --Set to vector to be able to know each intensity's index
 		std::vector<PixIntens> I(U.begin(), U.end());
@@ -221,7 +225,7 @@ void GLRLMFeature::calculate (LR& r)
 		{
 			// row
 			auto iter = std::find(I.begin(), I.end(), z.first);
-			int row = int(iter - I.begin());
+			int row = (Environment::ibsi_compliance) ? z.first - 1 : int(iter - I.begin());
 			// col
 			int col = z.second - 1;	// 0-based => -1
 			// update the matrix
@@ -236,6 +240,15 @@ void GLRLMFeature::calculate (LR& r)
 		angles_Np.push_back (Np);
 		//--unnec-- angles_U.push_back (U);
 		//--unnec-- angles_Z.push_back (Z);
+
+		double sum = 0;
+		for (int i = 1; i <= Ng; ++i) {
+			for (int j = 1; j <= Nr; ++j) {
+				sum += P.matlab(i, j);
+			}	
+		}
+
+		sum_p.push_back(sum);
 	}
 
 	calc_SRE (angled_SRE);
@@ -261,17 +274,8 @@ void GLRLMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensit
 
 void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 {
-	// Helpful temps
 	auto minI = r.aux_min,
 		maxI = r.aux_max;
-	auto height = r.aabb.get_height(), 
-		width = r.aabb.get_width();
-	PixIntens piRange = r.aux_max - r.aux_min;
-
-	//==== Prepare the tone-binned image matrix
-	WriteImageMatrix_nontriv I ("GLRLMFeature-osized_calculate-I", r.label);
-	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
-	I.allocate_from_cloud_coarser_grayscale(r.raw_pixels_NT, r.aabb, r.aux_min, piRange, nGrays);
 
 	//==== Check if the ROI is degenerate (equal intensity => no texture)
 	if (minI == maxI)
@@ -298,6 +302,8 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 		return;
 	}
 
+	ReadImageMatrix_nontriv im(r.aabb); //-- const ImageMatrix& im = r.aux_image_matrix;
+
 	//--debug-- im.print("initial ROI\n");
 
 	//==== Make a list of intensity clusters (zones)
@@ -309,7 +315,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 	using AngleUniqInte = std::unordered_set<PixIntens>;
 	//--unnec--	std::vector<AngleUniqInte>  angles_U;
 
-	//==== Iterate angles 0,45,90,135
+	//==== Iterate angles 0, 45, 90, 135
 	for (int angleIdx = 0; angleIdx < 4; angleIdx++)
 	{
 		// Clusters at angle 'angleIdx'
@@ -321,20 +327,22 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 		// We need it to estimate the x-dimension of matrix P
 		int maxZoneArea = 0;
 
-		// Clean-copy the image matrix. We'll use it to maintain state of cluster scanning 
-		WriteImageMatrix_nontriv D("GLRLMFeature-osized_calculate-D", r.label);
-		D.allocate_from_cloud_coarser_grayscale(r.raw_pixels_NT, r.aabb, minI, piRange, theEnvironment.get_coarse_gray_depth());
-		D.copy (I);
+		// Copy the image matrix. We'll use it to maintain state of cluster scanning 
+		
+		//-- auto M = im;
+		//-- pixData& D = M.WriteablePixels();
+		WriteImageMatrix_nontriv D("GLRLMFeature_osized_calculate_D", r.label);
+		D.init_with_cloud(r.raw_pixels_NT, r.aabb);
 
 		// Number of zones
 		const int VISITED = -1;
 
 		// Scan the image and check non-blank pixels' clusters
-		for (int row = 0; row < height; row++)
-			for (int col = 0; col < width; col++)
+		for (int row = 0; row < im.get_height(); row++)
+			for (int col = 0; col < im.get_width(); col++)
 			{
 				// Find a non-blank pixel
-				auto pi = D.yx(row, col);
+				auto pi = D.get_at (row, col);
 				if (pi == 0 || int(pi) == VISITED)
 					continue;
 
@@ -342,13 +350,13 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 				std::vector<std::tuple<int, int>> history;
 				int x = col, y = row;
 				int zoneArea = 1;
-				D.set_at(y, x, VISITED);
+				D.set_at (y, x, VISITED);
 
 				// State machine scanning the rest of the cluster
 				for (;;)
 				{
 					// angleIdx==0 === 0 degrees
-					if (angleIdx == 0 && D.safe(y, x + 1) && D.yx(y, x + 1) == pi)
+					if (angleIdx == 0 && D.safe(y, x + 1) && D.get_at(y, x + 1) == pi)
 					{
 						D.set_at(y, x + 1, VISITED);
 						zoneArea++;
@@ -364,7 +372,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 					}
 
 					// angleIdx==1 === 45 degrees
-					if (D.safe(y + 1, x + 1) && D.yx(y + 1, x + 1) == pi)
+					if (D.safe(y + 1, x + 1) && D.get_at(y + 1, x + 1) == pi)
 					{
 						D.set_at(y + 1, x + 1, VISITED);
 						zoneArea++;
@@ -378,7 +386,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 					}
 
 					// angleIdx==2 === 90 degrees
-					if (D.safe(y + 1, x) && D.yx(y + 1, x) == pi)
+					if (D.safe(y + 1, x) && D.get_at(y + 1, x) == pi)
 					{
 						D.set_at(y + 1, x, VISITED);
 						zoneArea++;
@@ -391,7 +399,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 					}
 
 					// angleIdx==3 === 135 degrees
-					if (D.safe(y + 1, x - 1) && D.yx(y + 1, x - 1) == pi)
+					if (D.safe(y + 1, x - 1) && D.get_at(y + 1, x - 1) == pi)
 					{
 						D.set_at(y + 1, x - 1, VISITED);
 						zoneArea++;
@@ -469,6 +477,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 		angles_Np.push_back(Np);
 		//--unnec-- angles_U.push_back (U);
 		//--unnec-- angles_Z.push_back (Z);
+
 	}
 
 	calc_SRE(angled_SRE);
@@ -523,24 +532,32 @@ void GLRLMFeature::calc_SRE (AngledFtrs& af)
 		return;
 	}
 
+
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
 		const SimpleMatrix<int>& P = angles_P[ai];
 
-		// Calculate
-		double f = 0.0;
-		for (int i = 1; i <= Ng; i++)
-		{
-			for (int j = 1; j <= Nr; j++)
-			{
-				f += P.matlab(i, j) / (j * j);
+		double f = 0.;
+		std::vector<double> rj(Nr+1, 0.);
+		for (int i = 1; i <= Ng; ++i) {
+			for (int j = 1; j <= Nr; ++j) {
+				rj[j] += P.matlab(i, j);
 			}
 		}
 
-		double retval = f / double(Nr);
+		for (int j = 1; j <= Nr; ++j) {
+			f +=  rj[j] / (j * j);
+		}
+
+		double retval = f / double(sum_p[ai]);
 		af.push_back (retval);
 	}
 }
@@ -559,6 +576,11 @@ void GLRLMFeature::calc_LRE (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -574,7 +596,7 @@ void GLRLMFeature::calc_LRE (AngledFtrs& af)
 			}
 		}
 
-		double retval = f / double(Nr);
+		double retval = f / double(sum_p[ai]);
 		af.push_back(retval);
 	}
 }
@@ -593,6 +615,11 @@ void GLRLMFeature::calc_GLN (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -610,7 +637,7 @@ void GLRLMFeature::calc_GLN (AngledFtrs& af)
 			f += sum * sum;
 		}
 
-		double retval = f / double(Nr);
+		double retval = f / double(sum_p[ai]);
 		af.push_back(retval);
 	}
 }
@@ -629,6 +656,11 @@ void GLRLMFeature::calc_GLNN (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -646,7 +678,7 @@ void GLRLMFeature::calc_GLNN (AngledFtrs& af)
 			f += sum * sum;
 		}
 
-		double retval = f / double(Nr*Nr);
+		double retval = f / double(sum_p[ai]*sum_p[ai]);
 		af.push_back(retval);
 	}
 }
@@ -665,6 +697,11 @@ void GLRLMFeature::calc_RLN (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -682,7 +719,7 @@ void GLRLMFeature::calc_RLN (AngledFtrs& af)
 			f += sum * sum;
 		}
 
-		double retval = f / double(Nr);
+		double retval = f / double(sum_p[ai]);
 		af.push_back(retval);
 	}
 }
@@ -701,6 +738,11 @@ void GLRLMFeature::calc_RLNN (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -718,7 +760,7 @@ void GLRLMFeature::calc_RLNN (AngledFtrs& af)
 			f += sum * sum;
 		}
 
-		double retval = f / double(Nr*Nr);
+		double retval = f / double(sum_p[ai]*sum_p[ai]);
 		af.push_back(retval);
 	}
 }
@@ -727,6 +769,7 @@ void GLRLMFeature::calc_RLNN (AngledFtrs& af)
 void GLRLMFeature::calc_RP (AngledFtrs& af)
 {
 	af.clear();
+	
 
 	// Prevent using bad data 
 	if (bad_roi_data)
@@ -737,11 +780,15 @@ void GLRLMFeature::calc_RP (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
-		// Get ahold of the requested angle's matrix and its related N parameters 
-		int Np = angles_Np[ai],
-			Nr = angles_Nr[ai];
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
 
-		double retval = double(Nr / Np);
+		// Get ahold of the requested angle's matrix and its related N parameters 
+		int Np = angles_Np[ai];
+
+		double retval = double(sum_p[ai] / Np);
 		af.push_back(retval);
 	}
 }
@@ -760,6 +807,16 @@ void GLRLMFeature::calc_GLV (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -771,7 +828,7 @@ void GLRLMFeature::calc_GLV (AngledFtrs& af)
 		{
 			for (int j = 1; j <= Nr; j++)
 			{
-				mu += P.matlab(i, j) * i;
+				mu += P.matlab(i, j)/sum_p[ai] * i;
 			}
 		}
 
@@ -781,7 +838,7 @@ void GLRLMFeature::calc_GLV (AngledFtrs& af)
 			for (int j = 1; j <= Nr; j++)
 			{
 				double mu2 = (i - mu) * (i - mu);
-				f += P.matlab(i, j) * mu2;
+				f += P.matlab(i, j)/sum_p[ai] * mu2;
 			}
 		}
 		af.push_back (f);
@@ -809,6 +866,11 @@ void GLRLMFeature::calc_RV (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -820,7 +882,7 @@ void GLRLMFeature::calc_RV (AngledFtrs& af)
 		{
 			for (int j = 1; j <= Nr; j++)
 			{
-				mu += P.matlab(i, j) * j;
+				mu += P.matlab(i, j)/sum_p[ai] * j;
 			}
 		}
 
@@ -830,7 +892,7 @@ void GLRLMFeature::calc_RV (AngledFtrs& af)
 			for (int j = 1; j <= Nr; j++)
 			{
 				double mu2 = (j - mu) * (j - mu);
-				f += P.matlab(i, j) * mu2;
+				f += P.matlab(i, j)/sum_p[ai] * mu2;
 			}
 		}
 		af.push_back(f);
@@ -851,6 +913,11 @@ void GLRLMFeature::calc_RE (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -862,8 +929,8 @@ void GLRLMFeature::calc_RE (AngledFtrs& af)
 		{
 			for (int j = 1; j <= Nr; j++)
 			{
-				double entrTerm = log2(P.matlab(i, j) + EPS);
-				f += P.matlab(i, j) * entrTerm;
+				double entrTerm = fast_log10(P.matlab(i, j)/sum_p[ai] + EPS) / LOG10_2;
+				f += P.matlab(i, j)/sum_p[ai] * entrTerm;
 			}
 		}
 		double retval = -f;
@@ -885,6 +952,11 @@ void GLRLMFeature::calc_LGLRE (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -899,7 +971,7 @@ void GLRLMFeature::calc_LGLRE (AngledFtrs& af)
 				f += P.matlab(i, j) / double(i * i);
 			}
 		}
-		double retval = f / double(Nr);
+		double retval = f / double(sum_p[ai]);
 		af.push_back(retval);
 	}
 }
@@ -918,6 +990,11 @@ void GLRLMFeature::calc_HGLRE (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -932,7 +1009,7 @@ void GLRLMFeature::calc_HGLRE (AngledFtrs& af)
 				f += P.matlab(i, j) * double(i * i);
 			}
 		}
-		double retval = f / double(Nr);
+		double retval = f / double(sum_p[ai]);
 		af.push_back(retval);
 	}
 }
@@ -951,6 +1028,11 @@ void GLRLMFeature::calc_SRLGLE (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -965,7 +1047,7 @@ void GLRLMFeature::calc_SRLGLE (AngledFtrs& af)
 				f += P.matlab(i, j) / double(i * i * j * j);
 			}
 		}
-		double retval = f / double(Nr);
+		double retval = f / double(sum_p[ai]);
 		af.push_back(retval);
 	}
 }
@@ -984,6 +1066,11 @@ void GLRLMFeature::calc_SRHGLE (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -998,7 +1085,7 @@ void GLRLMFeature::calc_SRHGLE (AngledFtrs& af)
 				f += P.matlab(i, j) * double(i * i) / double(j * j);
 			}
 		}
-		double retval = f / double(Nr);
+		double retval = f / double(sum_p[ai]);
 		af.push_back(retval);
 	}
 }
@@ -1017,6 +1104,11 @@ void GLRLMFeature::calc_LRLGLE (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -1031,7 +1123,7 @@ void GLRLMFeature::calc_LRLGLE (AngledFtrs& af)
 				f += P.matlab(i, j) * double(j * j) / double(i * i);
 			}
 		}
-		double retval = f / double(Nr);
+		double retval = f / double(sum_p[ai]);
 		af.push_back(retval);
 	}
 }
@@ -1050,6 +1142,11 @@ void GLRLMFeature::calc_LRHGLE (AngledFtrs& af)
 
 	for (int ai = 0; ai < 4; ai++)
 	{
+		if (sum_p[ai] == 0) {
+			af.push_back(0.0);
+			continue;
+		}
+		
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -1064,7 +1161,7 @@ void GLRLMFeature::calc_LRHGLE (AngledFtrs& af)
 				f += P.matlab(i, j) * double(i * i * j * j);
 			}
 		}
-		double retval = f / double(Nr);
+		double retval = f / double(sum_p[ai]);
 		af.push_back(retval);
 	}
 }

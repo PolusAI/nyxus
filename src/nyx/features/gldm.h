@@ -87,9 +87,12 @@ private:
 	int Nd = 0; // number of discreet dependency sizes in the image
 	int Nz = 0; // number of dependency zones in the ROI, Nz = sum(sum(P[i,j]))
 
+	double sum_p = 0;
+
 	SimpleMatrix<int> P;	// dependence matrix
 
 	const double BAD_ROI_FVAL = 0.0;
 	const double EPS = 2.2e-16;
+	const double LOG10_2 = 0.30102999566;	// precalculated log 2 base 10
 };
 

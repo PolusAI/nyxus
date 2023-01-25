@@ -101,7 +101,9 @@ private:
 	int Np = 0; // number of voxels in the image
 	int Nz = 0; // number of zones in the ROI, 1<=Nz<=Np
 	SimpleMatrix<int> P;
+	double sum_p = 0;
 
 	const double EPS = 2.2e-16;
 	const double BAD_ROI_FVAL = 0.0;
+	const double LOG10_2 = 0.30102999566;	// precalculated log 2 base 10
 };

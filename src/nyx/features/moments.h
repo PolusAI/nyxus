@@ -93,7 +93,7 @@ public:
         if (M2 == 0.0)
             return 0.0;
 
-        return (_n > 4 ? (_n * M4) / (M2 * M2) : 0.0); // matlab does not subtract 3
+        return (_n > 4 ? (_n * M4) / (M2 * M2) - 3 : 0.0); // matlab does not subtract 3
     } 
     void momentVector(double* z) { z[0] = mean(); z[1] = std(); z[2] = skewness(); z[3] = kurtosis(); }
     double hyperskewness() const 

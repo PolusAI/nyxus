@@ -169,12 +169,11 @@ void PixelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)
 	{
 		Pixel2 px = r.raw_pixels_NT[i];
-		double diff = px.inten - mean_;
-		mad += std::abs(diff);
-		var += diff * diff;
+		mad += std::abs(px.inten - mean_);
+		var += (px.inten - mean_) * (px.inten - mean_);
 	}
 	val_MEAN_ABSOLUTE_DEVIATION = mad / n;
-	var = n > 1 ? var / (n - 1) : 0.0;
+	var /= n;
 	double stddev = sqrt(var);
 	val_STANDARD_DEVIATION = stddev;
 
@@ -202,7 +201,9 @@ void PixelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	val_MODE = mode_;
 	val_UNIFORMITY = uniformity_;
 
-	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
+	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image 
+	//	intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] 
+	//	and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
 	double piu = (1.0 - double(r.aux_max - r.aux_min) / double(r.aux_max + r.aux_min)) * 100.0;
 	val_UNIFORMITY_PIU = piu;
 
@@ -219,22 +220,11 @@ void PixelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	// Kurtosis
 	val_KURTOSIS = mom.kurtosis();
 
-	double sumPow5 = 0, sumPow6 = 0;
-	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)
-	{
-		Pixel2 px = r.raw_pixels_NT[i];
-		double diff = px.inten - mean_;
-		sumPow5 += std::pow(diff, 5.);
-		sumPow6 += std::pow(diff, 6.);
-	}
+	// Hyperskewness hs = E[x-mean].^5 / std(x).^5
+	val_HYPERSKEWNESS = mom.hyperskewness();
 
-	// Hyperskewness
-	double denom = (n * std::pow(val_STANDARD_DEVIATION, 5.));
-	val_HYPERSKEWNESS = denom == 0. ? 0. : sumPow5 / denom;
-
-	// Hyperflatness
-	denom = (n * std::pow(val_STANDARD_DEVIATION, 6.));
-	val_HYPERFLATNESS = denom == 0. ? 0. : sumPow6 / denom;
+	// Hyperflatness hf = E[x-mean].^6 / std(x).^6
+	val_HYPERFLATNESS = mom.hyperflatness();
 }
 
 void PixelIntensityFeatures::save_value(std::vector<std::vector<double>>& fvals)

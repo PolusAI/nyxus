@@ -64,6 +64,7 @@ private:
 	int Nvp = 0;	// number of "valid voxels" i.e. those voxels that have at least 1 neighbor
 	int Nd = 0; // number of discreet dependency sizes in the image
 	int Nz = 0; // number of dependency zones in the ROI, Nz = sum(sum(P[i,j]))
+	double Nvc = 0; // sum of N vector
 	std::vector <double> P, S;
 	std::vector<int> N;
 

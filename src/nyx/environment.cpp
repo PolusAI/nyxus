@@ -165,6 +165,9 @@ namespace Nyxus
 	}
 }
 
+bool Environment::ibsi_compliance = false;
+std::string Environment::raw_ibsi_compliance = ""; // string for input
+
 Environment::Environment(): BasicEnvironment()
 {
 	unsigned long long availMem = Nyxus::getAvailPhysMemory();
@@ -184,6 +187,10 @@ int Environment::get_pixel_distance()
 void Environment::set_pixel_distance(int pixelDistance)
 {
 	this->n_pixel_distance = pixelDistance;
+}
+
+void Environment::set_ibsi_compliance(bool skip) {
+	this->ibsi_compliance = skip;
 }
 
 void Environment::show_cmdline_help()
@@ -206,6 +213,7 @@ void Environment::show_cmdline_help()
 		<< "\t\t[ " << COARSEGRAYDEPTH << " <custom number of grayscale levels (default: 256)> ] \n"
 		<< "\t\t[ " << GLCMANGLES << " <one or more comma separated rotation angles from set {0, 45, 90, and 135}, default is " << GLCMANGLES << "0,45,90,135> ] \n"
 		<< "\t\t[ " << VERBOSITY << " <levels of verbosity 0 (silence), 2 (timing), 4 (roi diagnostics), 8 (granular diagnostics) [default = 0]> ] \n"
+		<< "\t\t[ " << IBSICOMPLIANCE << " skip binning for grayscale features to achieve IBSI compliance. Note that performance may be impacted by enabling this flag ] \n"
 		<< "\t\t[ " << RAMLIMIT << " <megabytes> ] \n"
 		<< "\t\t[ " << TEMPDIR << " <slash-terminating path> ] \n"
 		<< "\n"
@@ -367,7 +375,7 @@ void Environment::process_feature_list()
 				GLCM_DIFFERENCEVARIANCE,
 				GLCM_DIFFERENCEENTROPY,
 				GLCM_INFOMEAS1,
-				GLCM_INFOMEAS2 };
+				GLCM_INFOMEAS2};
 			theFeatureSet.disableFeatures(F);
 			break; // No need to bother of others
 		}
@@ -716,6 +724,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 				find_string_argument(i, PXLDIST, pixel_distance) ||
 				find_string_argument(i, COARSEGRAYDEPTH, raw_coarse_grayscale_depth) ||
 				find_string_argument(i, VERBOSITY, verbosity) ||
+				find_string_argument(i, IBSICOMPLIANCE, raw_ibsi_compliance) ||
 				find_string_argument(i, RAMLIMIT, rawRamLimit) ||
 				find_string_argument(i, TEMPDIR, rawTempDir)
 #ifdef USE_GPU
@@ -1029,6 +1038,13 @@ int Environment::parse_cmdline(int argc, char **argv)
 		}
 		// pixel size
 		pixelSizeUm = 1e-2f / xyRes / 1e-6f; // 1 cm in meters / pixels per cm / micrometers
+	}
+
+	std::transform(raw_ibsi_compliance.begin(), raw_ibsi_compliance.end(),raw_ibsi_compliance.begin(), ::tolower);
+	if (raw_ibsi_compliance == "true" || raw_ibsi_compliance == "1" || raw_ibsi_compliance == "on") {
+		ibsi_compliance = true;
+	} else {
+		ibsi_compliance = false;
 	}
 
 	// Success
