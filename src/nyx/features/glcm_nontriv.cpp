@@ -1,263 +1,200 @@
+#include "../environment.h"
 #include "glcm.h"
+#include "image_matrix_nontriv.h"
 
 void GLCMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 {
-	// Calculate normalized graytones
-	OOR_ReadMatrix G(imloader, r.aabb);
-	G.apply_normalizing_range(r.aux_min, r.aux_max, 255.0);
+	// Clear the feature values buffers
+	clear_result_buffers();
 
-	int Angles[] = { 0, 45, 90, 135 },
-		nAngs = sizeof(Angles) / sizeof(Angles[0]);
-	for (int i = 0; i < nAngs; i++)
-		Extract_Texture_Features_nontriv(offset, Angles[i], G);
+	// Prepare the tone-binned image matrix
+	WriteImageMatrix_nontriv G("GLCMFeature-osized_calculate-G", r.label);
+	G.allocate_from_cloud(r.raw_pixels_NT, r.aabb, false);
+
+	for (auto a : angles)
+		Extract_Texture_Features2_NT(a, G, r.aux_min, r.aux_max);
 }
 
-void GLCMFeature::Extract_Texture_Features_nontriv(
-	int distance,
-	int angle,
-	const OOR_ReadMatrix& grays)
+void GLCMFeature::Extract_Texture_Features2_NT(int angle, WriteImageMatrix_nontriv& grays, PixIntens min_val, PixIntens max_val)
 {
 	int nrows = grays.get_height();
 	int ncols = grays.get_width();
 
-	int tone_LUT[PGM_MAXMAXVAL + 1]; // LUT mapping gray tone(0-255) to matrix indicies 
-	int tone_count = 0; // number of tones actually in the img. atleast 1 less than 255 
-
-	// Determine the number of different gray tones (not maxval) 
-	for (int row = PGM_MAXMAXVAL; row >= 0; --row)
-		tone_LUT[row] = -1;
-	for (int row = nrows - 1; row >= 0; --row)
-		for (int col = 0; col < ncols; ++col)
-		{
-			size_t v = grays.get_normed_at(row, col);
-			tone_LUT[v] = v;
-		}
-
-	for (int row = PGM_MAXMAXVAL; row >= 0; --row)
-		if (tone_LUT[row] != -1)
-			tone_count++;
-
-	// Use the number of different tones to build LUT 
-	for (int row = 0, itone = 0; row <= PGM_MAXMAXVAL; row++)
-		if (tone_LUT[row] != -1)
-			tone_LUT[row] = itone++;
-
 	// Allocate Px and Py vectors
-	std::vector<double> Px(tone_count * 2), Py(tone_count);
+	std::vector<double> Px(n_levels * 2),
+		Py(n_levels);
 
-	// Compute gray-tone spatial dependence matrix 
-	SimpleMatrix<double> P_matrix(tone_count, tone_count);
-
-	if (angle == 0)
-		CoOcMat_Angle_0_nontriv(P_matrix, distance, grays, tone_LUT, tone_count);
-	else if (angle == 45)
-		CoOcMat_Angle_45_nontriv(P_matrix, distance, grays, tone_LUT, tone_count);
-	else if (angle == 90)
-		CoOcMat_Angle_90_nontriv(P_matrix, distance, grays, tone_LUT, tone_count);
-	else if (angle == 135)
-		CoOcMat_Angle_135_nontriv(P_matrix, distance, grays, tone_LUT, tone_count);
-	else
+	// Compute the gray-tone spatial dependence matrix 
+	int dx, dy;
+	switch (angle)
 	{
-		std::cout << "Error: Cannot create co-occurence matrix for unsupported angle " << angle << "\n";
+	case 0:
+		dx = offset;
+		dy = 0;
+		break;
+	case 45:
+		dx = offset;
+		dy = offset;
+		break;
+	case 90:
+		dx = 0;
+		dy = offset;
+		break;
+	case 135:
+		dx = -offset;
+		dy = offset;
+		break;
+	default:
+		std::cerr << "Cannot create co-occurence matrix for angle " << angle << ": unsupported angle\n";
 		return;
 	}
 
-	// Compute the statistics for the spatial dependence matrix
-	fvals_ASM.push_back(f_asm(P_matrix, tone_count));
-	fvals_contrast.push_back(f_contrast(P_matrix, tone_count));
-	fvals_correlation.push_back(f_corr(P_matrix, tone_count, Px));
-	fvals_variance.push_back(f_var(P_matrix, tone_count));
-	fvals_IDM.push_back(f_idm(P_matrix, tone_count));
-	fvals_sum_avg.push_back(f_savg(P_matrix, tone_count, Px));
-	double se = f_sentropy(P_matrix, tone_count, Px);
-	fvals_sum_entropy.push_back(se);
-	fvals_sum_var.push_back(f_svar(P_matrix, tone_count, se, Px));
-	fvals_entropy.push_back(f_entropy(P_matrix, tone_count));
-	fvals_diff_var.push_back(f_dvar(P_matrix, tone_count, Px));
-	fvals_diff_entropy.push_back(f_dentropy(P_matrix, tone_count, Px));
-	fvals_meas_corr1.push_back(f_info_meas_corr1(P_matrix, tone_count, Px, Py));
-	fvals_meas_corr2.push_back(f_info_meas_corr2(P_matrix, tone_count, Px, Py));
-	fvals_max_corr_coef.push_back(0.0); // f14_maxcorr(P_matrix, tone_count);
+	calculateCoocMatAtAngle_NT (P_matrix, dx, dy, grays, min_val, max_val, false);
+
+	// Zero all feature values for blank ROI
+	if (sum_p == 0) 
+	{
+		double f = 0.0;
+		fvals_ASM.push_back(f);
+		fvals_contrast.push_back(f);
+		fvals_correlation.push_back(f);
+		fvals_energy.push_back(f);
+		fvals_homo.push_back(f);
+		fvals_variance.push_back(f);
+		fvals_IDM.push_back(f);
+		fvals_sum_avg.push_back(f);
+		fvals_sum_entropy.push_back(f);
+		fvals_sum_var.push_back(f);
+		fvals_entropy.push_back(f);
+		fvals_diff_var.push_back(f);
+		fvals_diff_entropy.push_back(f);
+		fvals_diff_avg.push_back(f);
+		fvals_meas_corr1.push_back(f);
+		fvals_meas_corr2.push_back(f);
+		fvals_max_corr_coef.push_back(0.0);
+		return;
+	}
+
+	calculatePxpmy();
+
+	// Compute Haralick statistics 
+	double f;
+	f = theFeatureSet.isEnabled(GLCM_ANGULAR2NDMOMENT) ? f_asm(P_matrix, n_levels) : 0.0;
+	fvals_ASM.push_back(f);
+
+	f = theFeatureSet.isEnabled(GLCM_CONTRAST) ? f_contrast(P_matrix, n_levels) : 0.0;
+	fvals_contrast.push_back(f);
+
+	f = theFeatureSet.isEnabled(GLCM_CORRELATION) ? f_corr(P_matrix, n_levels, Px) : 0.0;
+	fvals_correlation.push_back(f);
+
+	f = theFeatureSet.isEnabled(GLCM_ENERGY) ? f_energy(P_matrix, n_levels, Px) : 0.0;
+	fvals_energy.push_back(f);
+
+	f = theFeatureSet.isEnabled(GLCM_HOMOGENEITY) ? f_homogeneity(P_matrix, n_levels, Px) : 0.0;
+	fvals_homo.push_back(f);
+
+	f = theFeatureSet.isEnabled(GLCM_VARIANCE) ? f_var(P_matrix, n_levels) : 0.0;
+	fvals_variance.push_back(f);
+
+	f = theFeatureSet.isEnabled(GLCM_INVERSEDIFFERENCEMOMENT) ? f_idm(P_matrix, n_levels) : 0.0;
+	fvals_IDM.push_back(f);
+
+	f = theFeatureSet.isEnabled(GLCM_SUMAVERAGE) ? f_savg(P_matrix, n_levels, Px) : 0.0;
+	fvals_sum_avg.push_back(f);
+
+	f = theFeatureSet.isEnabled(GLCM_SUMENTROPY) ? f_sentropy(P_matrix, n_levels, Px) : 0.0;
+	fvals_sum_entropy.push_back(f);
+
+	f = theFeatureSet.isEnabled(GLCM_SUMVARIANCE) ? f_svar(P_matrix, n_levels, f, Px) : 0.0;
+	fvals_sum_var.push_back(f);
+
+	f = theFeatureSet.isEnabled(GLCM_ENTROPY) ? f_entropy(P_matrix, n_levels) : 0.0;
+	fvals_entropy.push_back(f);
+
+	f = theFeatureSet.isEnabled(GLCM_DIFFERENCEVARIANCE) ? f_dvar(P_matrix, n_levels, Px) : 0.0;
+	fvals_diff_var.push_back(f);
+
+	f = theFeatureSet.isEnabled(GLCM_DIFFERENCEENTROPY) ? f_dentropy(P_matrix, n_levels, Px) : 0.0;
+	fvals_diff_entropy.push_back(f);
+
+	f = theFeatureSet.isEnabled(GLCM_DIFFERENCEAVERAGE) ? f_difference_avg(P_matrix, n_levels, Px) : 0.0;
+	fvals_diff_avg.push_back(f);
+
+	f = theFeatureSet.isEnabled(GLCM_INFOMEAS1) ? f_info_meas_corr1(P_matrix, n_levels, Px, Py) : 0.0;
+	fvals_meas_corr1.push_back(f);
+
+	f = theFeatureSet.isEnabled(GLCM_INFOMEAS2) ? f_info_meas_corr2(P_matrix, n_levels, Px, Py) : 0.0;
+	fvals_meas_corr2.push_back(f);
+
+	fvals_max_corr_coef.push_back(0.0);
 }
 
-// Compute gray-tone spatial dependence matrix 
-void GLCMFeature::CoOcMat_Angle_0_nontriv(
+void GLCMFeature::calculateCoocMatAtAngle_NT(
 	// out
 	SimpleMatrix<double>& matrix,
 	// in
-	int distance,
-	const OOR_ReadMatrix& grays,
-	const int* tone_LUT,
-	int tone_count)
+	int dx,
+	int dy,
+	WriteImageMatrix_nontriv& grays,
+	PixIntens min_val,
+	PixIntens max_val,
+	bool normalize)
 {
-	int d = distance;
-	int x, y;
-	int row, col, itone, jtone;
-	int count = 0; // normalizing factor 
-
-	// zero out matrix 
+	matrix.allocate(n_levels, n_levels);
 	matrix.fill(0.0);
+
+	int d = GLCMFeature::offset;
+	int count = 0;	// normalizing factor 
 
 	int rows = grays.get_height(),
 		cols = grays.get_width();
 
-	for (row = 0; row < rows; ++row)
-		for (col = 0; col < cols; ++col)
+	PixIntens range = max_val - min_val;
+
+	for (int row = 0; row < rows; row++)
+		for (int col = 0; col < cols; col++)
 		{
-			// only non-zero values count
-			if (grays.get_normed_at(row, col) == 0)
-				continue;
-
-			// find x tone 
-			if (col + d < cols && grays.get_normed_at(row, col + d))
+			if (row + dy >= 0 && row + dy < rows && col + dx >= 0 && col + dx < cols && grays.yx(row + dy, col + dx))
 			{
-				x = tone_LUT[(int)grays.get_normed_at(row, col)];
-				y = tone_LUT[(int)grays.get_normed_at(row, col + d)];
-				matrix.xy(x, y)++;
-				matrix.xy(y, x)++;
+				// Raw intensities
+				auto raw_lvl_y = grays.yx(row, col),
+					raw_lvl_x = grays.yx(row + dy, col + dx);
+
+				// Skip non-informative pixels
+				if (raw_lvl_x == 0 || raw_lvl_y == 0)
+					continue;
+
+				int x = raw_lvl_x - 1,
+					y = raw_lvl_y - 1;
+
+				// Cast intensities on the 1-n_levels scale
+				if (Environment::ibsi_compliance == false)
+				{
+					x = GLCMFeature::cast_to_range(raw_lvl_x, min_val, max_val, 1, GLCMFeature::n_levels) - 1;
+					y = GLCMFeature::cast_to_range(raw_lvl_y, min_val, max_val, 1, GLCMFeature::n_levels) - 1;
+				}
+
+				// Increment the symmetric count
 				count += 2;
+				matrix.xy(y,x)++;
+				matrix.xy(x,y)++;
 			}
 		}
 
-	// normalize matrix 
-	for (itone = 0; itone < tone_count; ++itone)
-		for (jtone = 0; jtone < tone_count; ++jtone)
-			if (count == 0)   // protect from error 
-				matrix.xy(itone, jtone) = 0;
-			else
-				matrix.xy(itone, jtone) /= count;
-}
+	// calculate sum of P for feature calculations
+	sum_p = 0;
+	for (int i = 0; i < n_levels; ++i)
+		for (int j = 0; j < n_levels; ++j)
+			sum_p += matrix.xy(i, j);
 
-void GLCMFeature::CoOcMat_Angle_90_nontriv(
-	// out
-	SimpleMatrix<double>& matrix,
-	// in
-	int distance,
-	const OOR_ReadMatrix& grays,
-	const int* tone_LUT,
-	int tone_count)
-{
-	int d = distance;
-	int x, y;
-	int row, col, itone, jtone;
-	int count = 0; // normalizing factor 
+	// Normalize the matrix
+	if (normalize == false)
+		return;
 
-	matrix.fill(0.0);
-
-	int rows = grays.get_height(),
-		cols = grays.get_width();
-
-	for (row = 0; row < rows; ++row)
-		for (col = 0; col < cols; ++col) {
-			// only non-zero values count
-			if (grays.get_normed_at(row, col) == 0)
-				continue;
-
-			// find x tone 
-			if (row + d < rows && grays.get_normed_at(row + d, col)) {
-				x = tone_LUT[(int)grays.get_normed_at(row, col)];
-				y = tone_LUT[(int)grays.get_normed_at(row + d, col)];
-				matrix.xy(x, y)++;
-				matrix.xy(y, x)++;
-				count += 2;
-			}
-		}
-
-	// normalize matrix 
-	for (itone = 0; itone < tone_count; ++itone)
-		for (jtone = 0; jtone < tone_count; ++jtone)
-			if (count == 0)
-				matrix.xy(itone, jtone) = 0;
-			else
-				matrix.xy(itone, jtone) /= count;
-}
-
-void GLCMFeature::CoOcMat_Angle_45_nontriv(
-	// out
-	SimpleMatrix<double>& matrix,
-	// in
-	int distance,
-	const OOR_ReadMatrix& grays,
-	const int* tone_LUT,
-	int tone_count)
-{
-	int d = distance;
-	int x, y;
-	int row, col, itone, jtone;
-	int count = 0; // normalizing factor 
-
-	matrix.fill(0.0);
-
-	int rows = grays.get_height(),
-		cols = grays.get_width();
-
-	for (row = 0; row < rows; ++row)
-		for (col = 0; col < cols; ++col) {
-			// only non-zero values count
-			if (grays.get_normed_at(row, col) == 0)
-				continue;
-
-			// find x tone
-			if (row + d < rows && col - d >= 0 && grays.get_normed_at(row + d, col - d)) {
-				x = tone_LUT[(int)grays.get_normed_at(row, col - d)];
-				y = tone_LUT[(int)grays.get_normed_at(row + d, col - d)];
-				matrix.xy(x, y)++;
-				matrix.xy(y, x)++;
-				count += 2;
-			}
-		}
-
-	/* normalize matrix */
-	for (itone = 0; itone < tone_count; ++itone)
-		for (jtone = 0; jtone < tone_count; ++jtone)
-			if (count == 0)
-				matrix.xy(itone, jtone) = 0;	// protect from error
-			else
-				matrix.xy(itone, jtone) /= count;
-}
-
-void GLCMFeature::CoOcMat_Angle_135_nontriv(
-	// out
-	SimpleMatrix<double>& matrix,
-	// in
-	int distance,
-	const OOR_ReadMatrix& grays,
-	const int* tone_LUT,
-	int tone_count)
-{
-	int d = distance;
-	int x, y;
-	int row, col, itone, jtone;
-	int count = 0; // normalizing factor 
-
-	matrix.fill(0.0);
-
-	int rows = grays.get_height(),
-		cols = grays.get_width();
-
-	for (row = 0; row < rows; ++row)
-		for (col = 0; col < cols; ++col) {
-			// only non-zero values count
-			if (grays.get_normed_at(row, col) == 0)
-				continue;
-
-			// find x tone 
-			if (row + d < rows && col + d < cols && grays.get_normed_at(row + d, col + d))
-			{
-				x = tone_LUT[(int)grays.get_normed_at(row, col)];
-				y = tone_LUT[(int)grays.get_normed_at(row + d, col + d)];
-				matrix.xy(x, y)++;		//NONOPT
-				matrix.xy(y, x)++;
-				count += 2;
-			}
-		}
-
-	// normalize matrix 
-	for (itone = 0; itone < tone_count; ++itone)
-		for (jtone = 0; jtone < tone_count; ++jtone)
-			if (count == 0)
-				matrix.xy(itone, jtone) = 0;	// protect from error
-			else
-				matrix.xy(itone, jtone) /= count;
+	double realCnt = count;
+	for (int i = 0; i < GLCMFeature::n_levels; i++)
+		for (int j = 0; j < GLCMFeature::n_levels; j++)
+			matrix.xy(i, j) /= (realCnt + EPSILON);
 }
 

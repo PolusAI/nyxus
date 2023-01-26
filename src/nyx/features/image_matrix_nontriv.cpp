@@ -227,16 +227,16 @@ double WriteImageMatrix_nontriv::yx (size_t row, size_t col)
 double WriteImageMatrix_nontriv::get_max()
 {
 	bool blank = true;
-	double retval;
+	double retval = NAN;
 
-	auto n = width * height;
+	auto n = size();
 	double buf = 0.0;
 	for (size_t i = 0; i < n; i++)
 	{
-		fread ((void*)&buf, sizeof(buf), 1, pF);
+		buf = get_at(i);
 		if (blank)
 		{
-			blank = true;
+			blank = false;
 			retval = buf;
 		}
 		else

@@ -58,7 +58,7 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 		for (int col = 0; col < M.get_width(); col++)
 		{
 			// Find a non-blank pixel
-			auto pi = D.get_at (row, col);
+			auto pi = D.yx (row, col);
 			if (pi == 0 || int(pi) == VISITED)
 				continue;
 
@@ -70,7 +70,7 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 			// 
 			for (;;)
 			{
-				if (D.safe(y, x + 1) && D.get_at(y, x + 1) == pi)
+				if (D.safe(y, x + 1) && D.yx(y, x + 1) == pi)
 				{
 					D.set_at(y, x + 1, VISITED);
 					zoneArea++;
@@ -84,7 +84,7 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 					// Proceed
 					continue;
 				}
-				if (D.safe(y + 1, x + 1) && D.get_at(y + 1, x + 1) == pi)
+				if (D.safe(y + 1, x + 1) && D.yx(y + 1, x + 1) == pi)
 				{
 					D.set_at(y + 1, x + 1, VISITED);
 					zoneArea++;
@@ -96,7 +96,7 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 					y = y + 1;
 					continue;
 				}
-				if (D.safe(y + 1, x) && D.get_at(y + 1, x) == pi)
+				if (D.safe(y + 1, x) && D.yx(y + 1, x) == pi)
 				{
 					D.set_at(y + 1, x, VISITED);
 					zoneArea++;
@@ -107,7 +107,7 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 					y = y + 1;
 					continue;
 				}
-				if (D.safe(y + 1, x - 1) && D.get_at(y + 1, x - 1) == pi)
+				if (D.safe(y + 1, x - 1) && D.yx(y + 1, x - 1) == pi)
 				{
 					D.set_at(y + 1, x - 1, VISITED);
 					zoneArea++;
