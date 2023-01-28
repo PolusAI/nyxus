@@ -258,6 +258,8 @@ void GLCMFeature::calculateCoocMatAtAngle(
 	matrix.allocate(n_levels, n_levels); 
 	std::fill(matrix.begin(), matrix.end(), 0.);
 
+	std::fill(matrix.begin(), matrix.end(), 0.);
+
 	int d = GLCMFeature::offset;
 	int count = 0;	// normalizing factor 
 
@@ -514,7 +516,6 @@ double GLCMFeature::f_sentropy(const SimpleMatrix<double>& P, int Ng, std::vecto
 	for(int k = 2; k <= 2 * n_levels; ++k) {
 
 		if (Pxpy[k-2] == 0) continue;
-
 		sentropy += pxpy[k-2] * fast_log10(pxpy[k-2] + EPSILON) / LOG10_2;
 	}
 

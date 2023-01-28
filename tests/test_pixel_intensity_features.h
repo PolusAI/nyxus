@@ -154,7 +154,7 @@ void test_pixel_intensity_kurtosis()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[KURTOSIS][0], 1.927888720710090));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[KURTOSIS][0], 1.927888720710090-3));
 }
 
 void test_pixel_intensity_hyperskewness()

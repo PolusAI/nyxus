@@ -520,8 +520,6 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 		angles_Ng.push_back(Ng);
 		angles_Nr.push_back(Nr);
 		angles_Np.push_back(Np);
-		//--unnec-- angles_U.push_back (U);
-		//--unnec-- angles_Z.push_back (Z);
 
 		double sum = 0;
 		for (int i = 1; i <= Ng; ++i) {
@@ -531,7 +529,6 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 		}
 
 		sum_p.push_back(sum);
-	}
 
 	calc_SRE(angled_SRE);
 	calc_LRE(angled_LRE);

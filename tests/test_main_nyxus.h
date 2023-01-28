@@ -43,7 +43,6 @@ namespace Nyxus
     static void load_masked_test_roi_data (LR& roidata, const NyxusPixel* intensityData, const NyxusPixel* maskData, size_t count)
     {
         int dummyLabel = 100, dummyTile = 200;
-
         // -- mocking phase 1, gatherRoisMetrics():
         for (auto i = 0; i < count; i++)
         {
@@ -51,7 +50,6 @@ namespace Nyxus
             const NyxusPixel& maskPixel = maskData[i];
             if (maskPixel.intensity == 0)
                 continue;   // Skip this pixel
-
             // Pixel [i] is within the ROI, feed it to ROI shape and intensity range examiner
             const NyxusPixel& px = intensityData[i];
             // -- mocking feed_pixel_2_metrics ():
@@ -60,7 +58,6 @@ namespace Nyxus
             else
                 update_label_record_2(roidata, px.x, px.y, dummyLabel, px.intensity, dummyTile);
         }
-
         // -- mocking phase 2, scanTrivialRois():
         for (auto i = 0; i < count; i++)
         {
@@ -68,12 +65,18 @@ namespace Nyxus
             const NyxusPixel& maskPixel = maskData[i];
             if (maskPixel.intensity == 0)
                 continue;   // Skip this pixel
-
             // Pixel [i] is within the ROI, feed it to ROI pixel accumulator
             const NyxusPixel& px = intensityData[i];
             // -- mocking feed_pixel_2_cache ():
             roidata.raw_pixels.push_back(Pixel2(px.x, px.y, px.intensity));
         }
+        // -- allocating the image matrix (roidata.aux_image_matrix)
+        //      (Phase 1 creates roidata.aabb giving us ROI's dimensions)
+        roidata.aux_image_matrix.allocate(
+            roidata.aabb.get_width(),
+            roidata.aabb.get_height());
+        // -- filling the image matrix
+        roidata.aux_image_matrix.calculate_from_pixelcloud (roidata.raw_pixels, roidata.aabb);
     }
 
     static void load_test_roi_data(LR& roidata, int data_idx, bool allocate_IM = true)
