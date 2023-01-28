@@ -29,6 +29,9 @@ GLRLMFeature::GLRLMFeature() : FeatureMethod("GLRLMFeature")
 
 void GLRLMFeature::calculate (LR& r)
 {
+	//==== Clear the feature values buffers
+	clear_buffers();
+
 	auto minI = r.aux_min,
 		maxI = r.aux_max;
 	const ImageMatrix& im = r.aux_image_matrix;
@@ -251,22 +254,49 @@ void GLRLMFeature::calculate (LR& r)
 		sum_p.push_back(sum);
 	}
 
-	calc_SRE (angled_SRE);
-	calc_LRE (angled_LRE);
-	calc_GLN (angled_GLN);
-	calc_GLNN (angled_GLNN);
-	calc_RLN (angled_RLN);
-	calc_RLNN (angled_RLNN);
-	calc_RP (angled_RP);
-	calc_GLV (angled_GLV);
-	calc_RV (angled_RV);
-	calc_RE (angled_RE);
-	calc_LGLRE (angled_LGLRE);
-	calc_HGLRE (angled_HGLRE);
-	calc_SRLGLE (angled_SRLGLE);
-	calc_SRHGLE (angled_SRHGLE);
-	calc_LRLGLE (angled_LRLGLE);
-	calc_LRHGLE (angled_LRHGLE);
+	calc_SRE(angled_SRE);
+	calc_LRE(angled_LRE);
+	calc_GLN(angled_GLN);
+	calc_GLNN(angled_GLNN);
+	calc_RLN(angled_RLN);
+	calc_RLNN(angled_RLNN);
+	calc_RP(angled_RP);
+	calc_GLV(angled_GLV);
+	calc_RV(angled_RV);
+	calc_RE(angled_RE);
+	calc_LGLRE(angled_LGLRE);
+	calc_HGLRE(angled_HGLRE);
+	calc_SRLGLE(angled_SRLGLE);
+	calc_SRHGLE(angled_SRHGLE);
+	calc_LRLGLE(angled_LRLGLE);
+	calc_LRHGLE(angled_LRHGLE);
+}
+
+void GLRLMFeature::clear_buffers()
+{
+	bad_roi_data = false;
+	angles_Ng.clear();
+	angles_Nr.clear();
+	angles_Np.clear();
+	angles_P.clear();
+	sum_p.clear();
+
+	angled_SRE.clear();
+	angled_LRE.clear();
+	angled_GLN.clear();
+	angled_GLNN.clear();
+	angled_RLN.clear();
+	angled_RLNN.clear();
+	angled_RP.clear();
+	angled_GLV.clear();
+	angled_RV.clear();
+	angled_RE.clear();
+	angled_LGLRE.clear();
+	angled_HGLRE.clear();
+	angled_SRLGLE.clear();
+	angled_SRHGLE.clear();
+	angled_LRLGLE.clear();
+	angled_LRHGLE.clear();
 }
 
 // Not supporting the online mode
@@ -274,8 +304,17 @@ void GLRLMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensit
 
 void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 {
+	//==== Clear the feature values buffers
+	clear_buffers();
+
+	auto minI = r.aux_min,
+		maxI = r.aux_max;
+
+	WriteImageMatrix_nontriv im("GLRLMFeature-osized_calculate-im", r.label);
+	im.allocate_from_cloud(r.raw_pixels_NT, r.aabb, false);
+
 	//==== Check if the ROI is degenerate (equal intensity => no texture)
-	if (r.aux_min == r.aux_max)
+	if (minI == maxI)
 	{
 		// insert zero for all 4 angles to make the output expecting 4-angled values happy
 		angled_SRE.resize(4, 0);
@@ -297,26 +336,21 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 
 		bad_roi_data = true;
 		return;
-	}	
-	
-	// Helpful temps
-	auto minI = r.aux_min,
-		maxI = r.aux_max;
-	auto height = r.aabb.get_height(),
-		width = r.aabb.get_width();
-	PixIntens piRange = r.aux_max - r.aux_min;
+	}
 
-	//==== Prepare the tone-binned image matrix
-	WriteImageMatrix_nontriv im ("GLRLMFeature-osized_calculate-I", r.label);
-	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
-	im.allocate_from_cloud_coarser_grayscale(r.raw_pixels_NT, r.aabb, r.aux_min, piRange, nGrays);
+	//--debug-- im.print("initial ROI\n");
 
 	//==== Make a list of intensity clusters (zones)
 	using ACluster = std::pair<PixIntens, int>;
 	using AngleZones = std::vector<ACluster>;
+	//--unnec--	std::vector<AngleZones> angles_Z;
 
 	//==== While scanning clusters, learn unique intensities 
 	using AngleUniqInte = std::unordered_set<PixIntens>;
+	//--unnec--	std::vector<AngleUniqInte>  angles_U;
+
+	// Prepare ROI's intensity range
+	PixIntens piRange = r.aux_max - r.aux_min;
 
 	//==== Iterate angles 0,45,90,135
 	for (int angleIdx = 0; angleIdx < 4; angleIdx++)
@@ -332,15 +366,21 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 
 		// Clean-copy the image matrix. We'll use it to maintain state of cluster scanning 
 		WriteImageMatrix_nontriv D("GLRLMFeature-osized_calculate-D", r.label);
-		D.allocate_from_cloud_coarser_grayscale(r.raw_pixels_NT, r.aabb, minI, piRange, theEnvironment.get_coarse_gray_depth());
+		D.allocate (r.aabb.get_width(), r.aabb.get_height(), 0.0);
 		D.copy(im);
+
+		// Squeeze the intensity range
+		unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+
+		for (size_t i = 0; i < D.size(); i++)
+			D.set_at (i, Nyxus::to_grayscale(D[i], r.aux_min, piRange, nGrays, Environment::ibsi_compliance));
 
 		// Number of zones
 		const int VISITED = -1;
 
 		// Scan the image and check non-blank pixels' clusters
-		for (int row = 0; row < height; row++)
-			for (int col = 0; col < width; col++)
+		for (int row = 0; row < D.get_height(); row++)
+			for (int col = 0; col < D.get_width(); col++)
 			{
 				// Find a non-blank pixel
 				auto pi = D.yx(row, col);
@@ -439,9 +479,10 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 
 		// count non-zero pixels
 		int count = 0;
+
 		for (size_t i=0; i<im.size(); i++) 
 		{
-			auto px = im[i];
+			auto px = im.get_at(i);
 			if (px != 0) 
 				++count;
 		}
@@ -543,7 +584,6 @@ void GLRLMFeature::calc_SRE (AngledFtrs& af)
 		af.resize(4, BAD_ROI_FVAL);
 		return;
 	}
-
 
 	for (int ai = 0; ai < 4; ai++)
 	{
