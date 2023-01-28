@@ -366,14 +366,14 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 
 		// Clean-copy the image matrix. We'll use it to maintain state of cluster scanning 
 		WriteImageMatrix_nontriv D("GLRLMFeature-osized_calculate-D", r.label);
-		D.allocate (r.aabb.get_width(), r.aabb.get_height(), 0.0);
+		D.allocate(r.aabb.get_width(), r.aabb.get_height(), 0.0);
 		D.copy(im);
 
 		// Squeeze the intensity range
 		unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
 
 		for (size_t i = 0; i < D.size(); i++)
-			D.set_at (i, Nyxus::to_grayscale(D[i], r.aux_min, piRange, nGrays, Environment::ibsi_compliance));
+			D.set_at(i, Nyxus::to_grayscale(D[i], r.aux_min, piRange, nGrays, Environment::ibsi_compliance));
 
 		// Number of zones
 		const int VISITED = -1;
@@ -391,7 +391,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 				std::vector<std::tuple<int, int>> history;
 				int x = col, y = row;
 				int zoneArea = 1;
-				D.set_at (y, x, VISITED);
+				D.set_at(y, x, VISITED);
 
 				// State machine scanning the rest of the cluster
 				for (;;)
@@ -399,7 +399,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 					// angleIdx==0 === 0 degrees
 					if (angleIdx == 0 && D.safe(y, x + 1) && D.yx(y, x + 1) == pi)
 					{
-						D.set_at (y, x + 1, VISITED);
+						D.set_at(y, x + 1, VISITED);
 						zoneArea++;
 
 						//--debug-- M.print("After x+1,y");
@@ -415,7 +415,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 					// angleIdx==1 === 45 degrees
 					if (angleIdx == 1 && D.safe(y + 1, x + 1) && D.yx(y + 1, x + 1) == pi)
 					{
-						D.set_at (y + 1, x + 1, VISITED);
+						D.set_at(y + 1, x + 1, VISITED);
 						zoneArea++;
 
 						//--debug-- M.print("After x+1,y+1");
@@ -429,7 +429,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 					// angleIdx==2 === 90 degrees
 					if (angleIdx == 2 && D.safe(y + 1, x) && D.yx(y + 1, x) == pi)
 					{
-						D.set_at (y + 1, x, VISITED);
+						D.set_at(y + 1, x, VISITED);
 						zoneArea++;
 
 						//--debug-- M.print("After x,y+1");
@@ -442,7 +442,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 					// angleIdx==3 === 135 degrees
 					if (angleIdx == 3 && D.safe(y + 1, x - 1) && D.yx(y + 1, x - 1) == pi)
 					{
-						D.set_at (y + 1, x - 1, VISITED);
+						D.set_at(y + 1, x - 1, VISITED);
 						zoneArea++;
 
 						//--debug-- M.print("After x-1,y+1");
@@ -480,10 +480,10 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 		// count non-zero pixels
 		int count = 0;
 
-		for (size_t i=0; i<im.size(); i++) 
+		for (size_t i = 0; i < im.size(); i++)
 		{
 			auto px = im.get_at(i);
-			if (px != 0) 
+			if (px != 0)
 				++count;
 		}
 
@@ -529,6 +529,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 		}
 
 		sum_p.push_back(sum);
+	}
 
 	calc_SRE(angled_SRE);
 	calc_LRE(angled_LRE);
