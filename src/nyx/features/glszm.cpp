@@ -29,7 +29,7 @@ GLSZMFeature::GLSZMFeature() : FeatureMethod("GLSZMFeature")
 
 void GLSZMFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {} // Not suporting
 
-void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
+void GLSZMFeature::osized_calculate (LR& r, ImageLoader&)
 {
 	//==== Check if the ROI is degenerate (equal intensity)
 	if (r.aux_min == r.aux_max)
@@ -44,21 +44,33 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 
 	int maxZoneArea = 0;
 
+	// Create an image matrix for this ROI
+	WriteImageMatrix_nontriv M ("GLSZMFeature-osized_calculate-M", r.label);
+	M.allocate_from_cloud (r.raw_pixels_NT, r.aabb, false);
+
+	// Helpful temps
+	auto height = M.get_height(), 
+		width = M.get_width();
+
 	// Copy the image matrix
-	ReadImageMatrix_nontriv M(r.aabb);	//-- auto M = r.aux_image_matrix;
+	WriteImageMatrix_nontriv D ("GLSZMFeature-osized_calculate-D", r.label);
+	D.allocate (M.get_width(), M.get_height(), 0);
+	D.copy (M);
 
-	WriteImageMatrix_nontriv D ("GLSZMFeature_osized_calculate_D", r.label);	//-- pixData& D = M.WriteablePixels();
-	D.allocate (r.aabb.get_width(), r.aabb.get_height(), 0);
+	// Squeeze the intensity range
+	PixIntens piRange = r.aux_max - r.aux_min;		// Prepare ROI's intensity range
+	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
 
-	//M.print("initial\n");
+	for (size_t i = 0; i < D.size(); i++)
+		D.set_at(i, Nyxus::to_grayscale(D[i], r.aux_min, piRange, nGrays, Environment::ibsi_compliance));
 
 	// Number of zones
 	const int VISITED = -1;
-	for (int row = 0; row < M.get_height(); row++)
-		for (int col = 0; col < M.get_width(); col++)
+	for (int row = 0; row < height; row++)
+		for (int col = 0; col < width; col++)
 		{
 			// Find a non-blank pixel
-			auto pi = D.yx (row, col);
+			auto pi = D.yx(row, col);
 			if (pi == 0 || int(pi) == VISITED)
 				continue;
 
@@ -67,52 +79,44 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 			int x = col, y = row;
 			int zoneArea = 1;
 			D.set_at(y, x, VISITED);
-			// 
+
 			for (;;)
 			{
-				if (D.safe(y, x + 1) && D.yx(y, x + 1) == pi)
+				if (D.safe(y, x + 1) && D.yx(y, x + 1) != VISITED && D.yx(y, x + 1) == pi)
 				{
 					D.set_at(y, x + 1, VISITED);
 					zoneArea++;
 
-					//M.print("After x+1,y");
-
 					// Remember this pixel
 					history.push_back({ x,y });
-					// Advance 
+					// Advance
 					x = x + 1;
 					// Proceed
 					continue;
 				}
-				if (D.safe(y + 1, x + 1) && D.yx(y + 1, x + 1) == pi)
+				if (D.safe(y + 1, x + 1) && D.yx(y + 1, x + 1) != VISITED && D.yx(y + 1, x + 1) == pi)
 				{
-					D.set_at(y + 1, x + 1, VISITED);
+					D.set_at (y + 1, x + 1, VISITED);
 					zoneArea++;
-
-					//M.print("After x+1,y+1");
 
 					history.push_back({ x,y });
 					x = x + 1;
 					y = y + 1;
 					continue;
 				}
-				if (D.safe(y + 1, x) && D.yx(y + 1, x) == pi)
+				if (D.safe(y + 1, x) && D.yx(y + 1, x) != VISITED && D.yx(y + 1, x) == pi)
 				{
-					D.set_at(y + 1, x, VISITED);
+					D.set_at (y + 1, x, VISITED);
 					zoneArea++;
-
-					//M.print("After x,y+1");
 
 					history.push_back({ x,y });
 					y = y + 1;
 					continue;
 				}
-				if (D.safe(y + 1, x - 1) && D.yx(y + 1, x - 1) == pi)
+				if (D.safe(y + 1, x - 1) && D.yx(y + 1, x - 1) != VISITED && D.yx(y + 1, x - 1) == pi)
 				{
-					D.set_at(y + 1, x - 1, VISITED);
+					D.set_at (y + 1, x - 1, VISITED);
 					zoneArea++;
-
-					//M.print("After x-1,y+1");
 
 					history.push_back({ x,y });
 					x = x - 1;
@@ -125,7 +129,10 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 				{
 					// Recollect the coordinate where we diverted from
 					std::tuple<int, int> prev = history[history.size() - 1];
+					x = std::get<0>(prev);
+					y = std::get<1>(prev);
 					history.pop_back();
+					continue;
 				}
 
 				// We are done exploring this cluster
@@ -139,24 +146,26 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 			// --2
 			maxZoneArea = std::max(maxZoneArea, zoneArea);
 
-			//std::stringstream ss;
-			//ss << "End of cluster " << x << "," << y;
-			//M.print (ss.str());
-
 			// --3
 			ACluster clu = { pi, zoneArea };
 			Z.push_back(clu);
 		}
 
-	//M.print("finished");
-
+	// count non-zero pixels
+	int count = 0;
+	for (auto i=0; i<M.size(); i++)
+	{
+		auto px = M[i];
+		if (px != 0)
+			++count;
+	}
 
 	//==== Fill the SZ-matrix
 
-	Ng = (decltype(Ng))U.size();
+	Ng = (int)U.size();
 	Ns = maxZoneArea;
-	Nz = (decltype(Nz))Z.size();
-	Np = 1;
+	Nz = (int)Z.size();
+	Np = count;
 
 	// --Set to vector to be able to know each intensity's index
 	std::vector<PixIntens> I(U.begin(), U.end());
@@ -166,16 +175,25 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	P.allocate(Ns, Ng);
 
 	// --iterate zones and fill the matrix
+	int i = 0;
 	for (auto& z : Z)
 	{
 		// row
 		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = int(iter - I.begin());
+		int row = (Environment::ibsi_compliance) ? z.first - 1 : int(iter - I.begin());
 		// col
 		int col = z.second - 1;	// 0-based => -1
 		auto& k = P.xy(col, row);
 		k++;
 	}
+
+	sum_p = 0;
+	for (int i = 1; i <= Ng; ++i) {
+		for (int j = 1; j <= Ns; ++j) {
+			sum_p += P.matlab(i, j);
+		}
+	}
+
 }
 
 void GLSZMFeature::calculate(LR& r)
@@ -201,10 +219,8 @@ void GLSZMFeature::calculate(LR& r)
 	PixIntens piRange = r.aux_max - r.aux_min;		// Prepare ROI's intensity range
 	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
 
-
 	for (size_t i = 0; i < D.size(); i++)
 		D[i] = Nyxus::to_grayscale (D[i], r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
-
 
 	// Number of zones
 	const int VISITED = -1;
@@ -221,7 +237,7 @@ void GLSZMFeature::calculate(LR& r)
 			int x = col, y = row;
 			int zoneArea = 1;
 			D.yx(y,x) = VISITED;
-			// 
+
 			for(;;)
 			{
 				if (D.safe(y,x+1) && D.yx(y,x+1) != VISITED && D.yx(y,x+1) == pi)
@@ -297,8 +313,10 @@ void GLSZMFeature::calculate(LR& r)
 	// count non-zero pixels
 	int count = 0;
 
-	for (const auto& px: M.ReadablePixels()) {
-		if(px !=0) ++count;
+	for (const auto& px: M.ReadablePixels()) 
+	{
+		if(px != 0) 
+			++count;
 	}
 
 	//==== Fill the SZ-matrix
@@ -306,9 +324,9 @@ void GLSZMFeature::calculate(LR& r)
 	auto height = M.height;
 	auto width = M.width;
 
-	Ng = *std::max_element(std::begin(r.aux_image_matrix.ReadablePixels()), std::end(r.aux_image_matrix.ReadablePixels()));
-	Ns = height*width;
-	Nz = (decltype(Nz)) Z.size();
+	Ng = (int) U.size();
+	Ns = maxZoneArea;
+	Nz = (int) Z.size();
 	Np = count;	
 
 	// --Set to vector to be able to know each intensity's index
@@ -324,8 +342,7 @@ void GLSZMFeature::calculate(LR& r)
 	{
 		// row
 		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = (Environment::ibsi_compliance) ?
-			z.first-1 : int (iter - I.begin());
+		int row = (Environment::ibsi_compliance) ? z.first-1 : int (iter - I.begin());
 		// col
 		int col = z.second - 1;	// 0-based => -1
 		auto & k = P.xy(col, row);
