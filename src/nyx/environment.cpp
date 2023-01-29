@@ -880,31 +880,31 @@ int Environment::parse_cmdline(int argc, char **argv)
 		GLCMFeature::angles = glcmAngles;
 	}
 
-	//==== Parse the RAM limit
+	//==== Parse the RAM limit (in megabytes)
 	if (!rawRamLimit.empty())
 	{
 		// string -> integer
-		size_t value = 0;
-		auto scanfResult = sscanf(rawRamLimit.c_str(), "%zu", &value);
+		int value = 0;
+		auto scanfResult = sscanf(rawRamLimit.c_str(), "%d", &value);
 		if (scanfResult != 1 || value < 0)
 		{
 			std::cout << "Error: " << RAMLIMIT << "=" << rawRamLimit << ": expecting a non-negative integer constant (RAM limit in megabytes)\n";
 			return 1;
 		}
 
-		// To megabytes
-		value *= 1048576;
+		// Megabytes to bytes
+		size_t requestedCeiling = (size_t)value * 1048576;
 
 		// Check if it over the actual limit
 		unsigned long long actualRam = Nyxus::getAvailPhysMemory();
-		if (value > actualRam)
+		if (requestedCeiling > actualRam)
 		{
-			std::cout << "Error: RAM limit " << value << " is over the actual amount of available RAM " << actualRam << "\n";
+			std::cout << "Error: RAM limit " << value << " megabytes (=" << requestedCeiling << " bytes) exceeds the actual amount of available RAM " << actualRam << " bytes\n";
 			return 1;
 		}
 
-		// The angle list parsed well, let's tell it to GLCMFeature 
-		ramLimit = value;
+		// Set the member variable
+		ramLimit = requestedCeiling;
 	}
 
 	//==== Parse the temp directory

@@ -26,6 +26,8 @@ GLDMFeature::GLDMFeature() : FeatureMethod("GLDMFeature")
 
 void GLDMFeature::calculate(LR& r)
 {	
+	clear_buffers();
+
 	if (r.aux_min == r.aux_max)
 		return;
 
@@ -163,10 +165,24 @@ void GLDMFeature::calculate(LR& r)
 	}
 }
 
+void GLDMFeature::clear_buffers()
+{
+	bad_roi_data = false;
+	int Ng = 0;
+	int Nd = 0;
+	int Nz = 0;
+
+	double sum_p = 0;
+
+	P.clear();
+}
+
 void GLDMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
 
-void GLDMFeature::osized_calculate (LR& r, ImageLoader& imloader)
+void GLDMFeature::osized_calculate (LR& r, ImageLoader&)
 {
+	clear_buffers();
+
 	if (r.aux_min == r.aux_max)
 		return;
 
@@ -177,35 +193,93 @@ void GLDMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	//==== While scanning clusters, learn unique intensities 
 	std::unordered_set<PixIntens> U;
 
-	ReadImageMatrix_nontriv D(r.aabb); //-- const pixData& D = r.aux_image_matrix.ReadablePixels();
+	WriteImageMatrix_nontriv D("GLDMFeature-osized_calculate-D", r.label);
+	D.allocate_from_cloud(r.raw_pixels_NT, r.aabb, false);
+
+	// Prepare ROI's intensity range for normalize_I()
+	PixIntens piRange = r.aux_max - r.aux_min;
+
+	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+
+	size_t height = D.get_height(),
+		width = D.get_width();
 
 	// Gather zones
-	for (int row = 1; row < D.get_height() - 1; row++)
-		for (int col = 1; col < D.get_width() - 1; col++)
+	for (size_t row = 0; row < height; row++)
+		for (size_t col = 0; col < width; col++)
 		{
 			// Find a non-blank pixel
-			PixIntens pi = D.get_at(imloader, row, col);
+			PixIntens pi = Nyxus::to_grayscale((unsigned int) D.yx(row, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+
 			if (pi == 0)
 				continue;
 
 			// Count dependencies
-			int nd = 0;	// Number of dependencies
-			if (D.safe(row-1, col) && D.get_at(imloader, row - 1, col) == pi)	// North
-				nd++;
-			if (D.safe(row-1, col+1) && D.get_at(imloader, row - 1, col + 1) == pi)	// North-East
-				nd++;
-			if (D.safe(row, col+1) && D.get_at(imloader, row, col + 1) == pi)	// East
-				nd++;
-			if (D.safe(row+1, col+1) && D.get_at(imloader, row + 1, col + 1) == pi)	// South-East
-				nd++;
-			if (D.safe(row+1, col) && D.get_at(imloader, row + 1, col) == pi)	// South
-				nd++;
-			if (D.safe(row+1, col-1) && D.get_at(imloader, row + 1, col - 1) == pi)	// South-West
-				nd++;
-			if (D.safe(row, col-1) && D.get_at(imloader, row, col - 1) == pi)	// West
-				nd++;
-			if (D.safe(row-1, col-1) && D.get_at(imloader, row - 1, col - 1) == pi)	// North-West
-				nd++;
+			int nd = 1;	// Number of dependencies
+			PixIntens piQ; // Pixel intensity of questionn
+			if (D.safe(row - 1, col)) {
+
+				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// North
+
+				if (piQ == pi)
+					nd++;
+			}
+
+			if (D.safe(row - 1, col + 1)) {
+
+				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// North-East
+
+				if (piQ == pi)
+					nd++;
+			}
+
+			if (D.safe(row, col + 1)) {
+
+				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// East
+
+				if (piQ == pi)
+					nd++;
+			}
+
+			if (D.safe(row + 1, col + 1)) {
+
+				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// South-East
+
+				if (piQ == pi)
+					nd++;
+			}
+
+			if (D.safe(row + 1, col)) {
+
+				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);		// South
+
+				if (piQ == pi)
+					nd++;
+			}
+
+			if (D.safe(row + 1, col - 1)) {
+
+				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// South-West
+
+				if (piQ == pi)
+					nd++;
+			}
+
+			if (D.safe(row, col - 1)) {
+
+				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);		// West
+
+				if (piQ == pi)
+					nd++;
+			}
+
+			if (D.safe(row - 1, col - 1)) {
+
+				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// North-West
+
+				if (piQ == pi)
+					nd++;
+			}
 
 			// Save the intensity's dependency
 			ACluster clu = { pi, nd };
@@ -216,13 +290,12 @@ void GLDMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 		}
 
 	//==== Fill the matrix
-
-	Ng = (decltype(Ng))U.size();
+	Ng = D.get_max();
 	Nd = 8 + 1;	// N, NE, E, SE, S, SW, W, NW + zero
 	Nz = (decltype(Nz))Z.size();
 
 	// --allocate the matrix
-	P.allocate(Nd, Ng);
+	P.allocate(Nd + 1, Ng + 1);
 
 	// --Set to vector to be able to know each intensity's index
 	std::vector<PixIntens> I(U.begin(), U.end());
@@ -233,12 +306,21 @@ void GLDMFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	{
 		// row
 		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = int(iter - I.begin());
+		int row = (Environment::ibsi_compliance) ? z.first - 1 : int(iter - I.begin());
 		// col
-		int col = z.second;	// 1-based
+		int col = z.second - 1;	// 1-based
 		// increment
 		auto& k = P.xy(col, row);
 		k++;
+	}
+
+	sum_p = 0;
+	for (int i = 1; i <= Ng; i++)
+	{
+		for (int j = 1; j <= Nd; j++)
+		{
+			sum_p += P.matlab(i, j);
+		}
 	}
 }
 
