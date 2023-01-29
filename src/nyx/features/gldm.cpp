@@ -8,7 +8,8 @@
 
 GLDMFeature::GLDMFeature() : FeatureMethod("GLDMFeature")
 {
-	provide_features({ GLDM_SDE,
+	provide_features({ 
+		GLDM_SDE,
 		GLDM_LDE,
 		GLDM_GLN,
 		GLDM_DN,
@@ -131,7 +132,7 @@ void GLDMFeature::calculate(LR& r)
 		}
 
 	//==== Fill the matrix
-	Ng = *std::max_element(std::begin(r.aux_image_matrix.ReadablePixels()), std::end(r.aux_image_matrix.ReadablePixels()));
+	Ng = (int) U.size();
 	Nd = 8 + 1;	// N, NE, E, SE, S, SW, W, NW + zero
 	Nz = (decltype(Nz))Z.size();
 
@@ -290,7 +291,7 @@ void GLDMFeature::osized_calculate (LR& r, ImageLoader&)
 		}
 
 	//==== Fill the matrix
-	Ng = D.get_max();
+	Ng = (int) U.size();
 	Nd = 8 + 1;	// N, NE, E, SE, S, SW, W, NW + zero
 	Nz = (decltype(Nz))Z.size();
 
