@@ -68,6 +68,8 @@ private:
 	std::vector <double> P, S;
 	std::vector<int> N;
 
+	void clear_buffers();
+
 	const double BAD_ROI_FVAL = 0.0;
 	const double EPS = 2.2e-16;
 
