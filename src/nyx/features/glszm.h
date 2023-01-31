@@ -103,6 +103,17 @@ private:
 	SimpleMatrix<int> P;
 	double sum_p = 0;
 
+	void clear_buffers()
+	{
+		bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
+		Ng = 0;	// number of discreet intensity values in the image
+		Ns = 0; // number of discreet zone sizes in the image
+		Np = 0; // number of voxels in the image
+		Nz = 0; // number of zones in the ROI, 1<=Nz<=Np
+		P.clear();
+		sum_p = 0;	
+	}
+
 	const double EPS = 2.2e-16;
 	const double BAD_ROI_FVAL = 0.0;
 	const double LOG10_2 = 0.30102999566;	// precalculated log 2 base 10

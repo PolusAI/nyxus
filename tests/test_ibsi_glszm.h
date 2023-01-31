@@ -51,7 +51,7 @@ void test_ibsi_glszm_feature(const AvailableFeatures& feature, const std::string
     // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
     f.save_value(roidata.fvals);
 
-    total += roidata.fvals[feature][0];;
+    total += roidata.fvals[feature][0];
     
     // image 2
     // Calculate features

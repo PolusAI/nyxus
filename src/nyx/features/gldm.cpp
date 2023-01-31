@@ -45,13 +45,14 @@ void GLDMFeature::calculate(LR& r)
 	PixIntens piRange = r.aux_max - r.aux_min;
 
 	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+	bool disableGrayBinning = Environment::ibsi_compliance || nGrays >= piRange;
 
 	// Gather zones
 	for (int row = 0; row < D.height(); row++)
 		for (int col = 0; col < D.width(); col++)
 		{
 			// Find a non-blank pixel
-			PixIntens pi = Nyxus::to_grayscale (D.yx(row, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+			PixIntens pi = Nyxus::to_grayscale (D.yx(row, col), r.aux_min, piRange, nGrays, disableGrayBinning);
 
 			if (pi == 0)
 				continue;
@@ -132,7 +133,7 @@ void GLDMFeature::calculate(LR& r)
 		}
 
 	//==== Fill the matrix
-	Ng = (int) U.size();
+	Ng = disableGrayBinning ? *std::max_element(std::begin(r.aux_image_matrix.ReadablePixels()), std::end(r.aux_image_matrix.ReadablePixels())) : (int)U.size();
 	Nd = 8 + 1;	// N, NE, E, SE, S, SW, W, NW + zero
 	Nz = (decltype(Nz))Z.size();
 
@@ -148,7 +149,7 @@ void GLDMFeature::calculate(LR& r)
 	{
 		// row
 		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = (Environment::ibsi_compliance) ? z.first-1 : int(iter - I.begin());
+		int row = disableGrayBinning ? z.first - 1 : int(iter - I.begin());
 		// col
 		int col = z.second - 1;	// 1-based
 		// increment

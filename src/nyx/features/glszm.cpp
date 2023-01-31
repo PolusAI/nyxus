@@ -31,6 +31,8 @@ void GLSZMFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensi
 
 void GLSZMFeature::osized_calculate (LR& r, ImageLoader&)
 {
+	clear_buffers();
+
 	//==== Check if the ROI is degenerate (equal intensity)
 	if (r.aux_min == r.aux_max)
 		return;
@@ -198,6 +200,8 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader&)
 
 void GLSZMFeature::calculate(LR& r)
 {
+	clear_buffers();
+
 	//==== Check if the ROI is degenerate (equal intensity)
 	if (r.aux_min == r.aux_max)
 		return;
@@ -324,8 +328,8 @@ void GLSZMFeature::calculate(LR& r)
 	auto height = M.height;
 	auto width = M.width;
 
-	Ng = (int) U.size();
-	Ns = maxZoneArea;
+	Ng = Environment::ibsi_compliance ? *std::max_element(std::begin(r.aux_image_matrix.ReadablePixels()), std::end(r.aux_image_matrix.ReadablePixels())) : (int)U.size();
+	Ns = height * width;
 	Nz = (int) Z.size();
 	Np = count;	
 

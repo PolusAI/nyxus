@@ -132,7 +132,7 @@ void NGTDMFeature::calculate (LR& r)
 
 	// Fill the matrix
 	// --dimensions
-	Ng = (int) U.size();
+	Ng = Environment::ibsi_compliance ? *std::max_element(std::begin(im.ReadablePixels()), std::end(im.ReadablePixels())) : (int) U.size();
 	Ngp = (int) U.size();
 
 	// --allocate the matrix

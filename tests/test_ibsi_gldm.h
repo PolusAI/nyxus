@@ -121,7 +121,6 @@ void test_ibsi_gldm_sde()
     test_ibsi_gldm_feature(GLDM_SDE, "GLDM_SDE");
 }
 
-
 void test_ibsi_gldm_lde()
 {
    test_ibsi_gldm_feature(GLDM_LDE, "GLDM_LDE");
