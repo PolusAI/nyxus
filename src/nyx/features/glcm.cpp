@@ -258,8 +258,6 @@ void GLCMFeature::calculateCoocMatAtAngle(
 	matrix.allocate(n_levels, n_levels); 
 	std::fill(matrix.begin(), matrix.end(), 0.);
 
-	std::fill(matrix.begin(), matrix.end(), 0.);
-
 	int d = GLCMFeature::offset;
 	int count = 0;	// normalizing factor 
 
