@@ -16,6 +16,8 @@ CaliperFeretFeature::CaliperFeretFeature() : FeatureMethod("CaliperFeretFeature"
 			STAT_FERET_DIAM_MEDIAN,
 			STAT_FERET_DIAM_STDDEV,
 			STAT_FERET_DIAM_MODE});
+
+	add_dependencies({ CONVEX_HULL_AREA });
 }
 
 void CaliperFeretFeature::calculate(LR& r)
@@ -104,6 +106,10 @@ void CaliperFeretFeature::calculate_imp(const std::vector<Pixel2>& convex_hull, 
 				auto& a = CH_rot[iH - 1],
 					& b = CH_rot[iH];
 
+				// Skip the case where starting and closing ends of the hull segment are the same point
+				if (a == b)
+					continue;
+
 				// Chord's Y is between segment AB's Ys ?
 				if ((a.y >= chord_y && b.y <= chord_y) || (b.y >= chord_y && a.y <= chord_y))
 				{
@@ -122,12 +128,17 @@ void CaliperFeretFeature::calculate_imp(const std::vector<Pixel2>& convex_hull, 
 				auto compareFunc = [](const std::pair<float, float>& p1, const std::pair<float, float>& p2) { return p1.first < p2.first; };
 				auto idx_minX = std::distance(X.begin(), std::min_element(X.begin(), X.end(), compareFunc));
 				auto idx_maxX = std::distance(X.begin(), std::max_element(X.begin(), X.end(), compareFunc));
-				// left X and right X segments
-				auto& e1 = X[idx_minX], & e2 = X[idx_maxX];
-				auto x1 = e1.first, y1 = e1.second, x2 = e2.first, y2 = e2.second;
-				// save this chord
-				auto dist = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);	// Squared distance
-				DA.push_back(dist);
+
+				// Only consider a good 2-point diameter
+				if (idx_minX != idx_maxX)
+				{
+					// left X and right X segments
+					auto& e1 = X[idx_minX], & e2 = X[idx_maxX];
+					auto x1 = e1.first, y1 = e1.second, x2 = e2.first, y2 = e2.second;
+					// save this chord
+					auto dist = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);	// Squared distance
+					DA.push_back(dist);
+				}
 			}
 		}
 
@@ -148,106 +159,9 @@ void CaliperFeretFeature::calculate_imp(const std::vector<Pixel2>& convex_hull, 
 
 void CaliperFeretFeature::osized_calculate(LR& r, ImageLoader&)
 {
-	// Rotated convex hull
-	std::vector<Pixel2> CH_rot;
-	CH_rot.reserve(r.convHull_CH.size());
-
-	// Rotate and calculate the diameter
-	std::vector<double> all_D;
-	for (float theta = 0.f; theta < 180.f; theta += rot_angle_increment)
-	{
-		Rotation::rotate_around_center(r.convHull_CH, theta, CH_rot);
-		auto [minX, minY, maxX, maxY] = AABB::from_pixelcloud(CH_rot);
-
-		std::vector<float> DA;	// Diameters at this angle
-
-		// Iterate y-grid
-		float stepY = (maxY - minY) / float(n_steps);
-		for (int iy = 1; iy <= n_steps; iy++)
-		{
-			float chord_y = minY + iy * stepY;
-
-			// Find convex hull segments intersecting 'y'
-			std::vector<std::pair<float, float>> X;	// intersection points
-			for (int iH = 1; iH < CH_rot.size(); iH++)
-			{
-				// The convex hull points are guaranteed to be consecutive
-				auto& a = CH_rot[iH - 1],
-					& b = CH_rot[iH];
-
-				// Chord's Y is between segment AB's Ys ?
-				if ((a.y >= chord_y && b.y <= chord_y) || (b.y >= chord_y && a.y <= chord_y))
-				{
-					auto chord_x = b.y != a.y ?
-						(b.x - a.x) * (chord_y - a.y) / (b.y - a.y) + a.x
-						: (b.y + a.y) / 2;
-					auto tup = std::make_pair(chord_x, chord_y);
-					X.push_back(tup);
-				}
-			}
-
-			// Save the length of this chord. There must be 2 items in 'chordEnds' because we don't allow uniformative chords of zero length
-			if (X.size() >= 2)
-			{
-				// for N segments
-				auto compareFunc = [](const std::pair<float, float>& p1, const std::pair<float, float>& p2) { return p1.first < p2.first; };
-				auto idx_minX = std::distance(X.begin(), std::min_element(X.begin(), X.end(), compareFunc));
-				auto idx_maxX = std::distance(X.begin(), std::max_element(X.begin(), X.end(), compareFunc));
-				// left X and right X segments
-				auto& e1 = X[idx_minX], & e2 = X[idx_maxX];
-				auto x1 = e1.first, y1 = e1.second, x2 = e2.first, y2 = e2.second;
-				// save this chord
-				auto dist = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);	// Squared distance
-				DA.push_back(dist);
-			}
-		}
-
-		if (DA.size() > 0)
-		{
-			// Find the shortest and longest chords (diameters)
-			double minD2 = *std::min_element(DA.begin(), DA.end()),
-				maxD2 = *std::max_element(DA.begin(), DA.end()),
-				min_ = sqrt(minD2),
-				max_ = sqrt(maxD2);
-
-			// Save them
-			all_D.push_back(min_);
-			all_D.push_back(max_);
-		}
-	}
-
-	// Calculate statistics of diameters
-	auto s = ComputeCommonStatistics2(all_D);
-	_min = (double)s.min;
-	_max = (double)s.max;
-	_mean = s.mean;
-	_median = s.median;
-	_stdev = s.stdev;
-	_mode = (double)s.mode;
-
-	// Calculate angles at min- and max- diameter
-	if (all_D.size() > 0)
-	{
-		// Min and max
-		auto itr_min_d = std::min_element(all_D.begin(), all_D.end());
-		auto itr_max_d = std::max_element(all_D.begin(), all_D.end());
-		minFeretDiameter = *itr_min_d;
-		maxFeretDiameter = *itr_max_d;
-
-		// Angles
-		auto idxMin = std::distance(all_D.begin(), itr_min_d);
-		minFeretAngle = (double)idxMin / 2.0;
-		auto idxMax = std::distance(all_D.begin(), itr_max_d);
-		maxFeretAngle = (double)idxMax / 2.0;
-	}
-	else
-	{
-		// Degenerate case
-		minFeretDiameter =
-		maxFeretDiameter =
-		minFeretAngle =
-		maxFeretAngle = 0.0;
-	}
+	// Calculating this feature does not require access to the massive ROI pixel cloud, 
+	// so we can reuse the trivial calculate()
+	calculate(r);
 }
 
 void CaliperFeretFeature::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)

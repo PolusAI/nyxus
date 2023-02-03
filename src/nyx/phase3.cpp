@@ -36,37 +36,40 @@ namespace Nyxus
 			
 			//=== Features permitting raster scan
 
-
 			// Initialize ROI's pixel cache
 			r.raw_pixels_NT.init (r.label, "raw_pixels_NT");
 
 			// Iterate ROI's tiles and scan pixels
-			for (auto tileIdx : r.host_tiles)
-			{
-				theImLoader.load_tile(tileIdx);
-				auto& dataI = theImLoader.get_int_tile_buffer();
-				auto& dataL = theImLoader.get_seg_tile_buffer();
-				for (unsigned long i = 0; i < theImLoader.get_tile_size(); i++)
+			size_t nth = theImLoader.get_num_tiles_hor(),
+				ntv = theImLoader.get_num_tiles_vert();
+			for (unsigned int row = 0; row < nth; row++)
+				for (unsigned int col = 0; col < ntv; col++)
 				{
-					auto pixLabel = dataL[i];
+					unsigned int tileIdx = row * ntv + col;
+					theImLoader.load_tile(tileIdx);
+					auto& dataI = theImLoader.get_int_tile_buffer();
+					auto& dataL = theImLoader.get_seg_tile_buffer();
+					for (unsigned long i = 0; i < theImLoader.get_tile_size(); i++)
+					{
+						auto pixLabel = dataL[i];
 
-					// Skip blanks and other ROI's pixel
-					if (pixLabel == 0 || pixLabel != r.label)
-						continue;
+						// Skip blanks and other ROI's pixel
+						if (pixLabel == 0 || pixLabel != r.label)
+							continue;
 
-					// Pixel intensity and global position
-					auto intens = dataI[i];
-					size_t row = tileIdx / theImLoader.get_num_tiles_hor(),
-						col = tileIdx / theImLoader.get_num_tiles_hor(),
-						th = theImLoader.get_tile_height(),
-						tw = theImLoader.get_tile_width();
-					int y = row * th + i / tw,
-						x = col * tw + i % tw;
+						// Pixel intensity and global position
+						auto intens = dataI[i];
+						size_t row = tileIdx / theImLoader.get_num_tiles_hor(),
+							col = tileIdx / theImLoader.get_num_tiles_hor(),
+							th = theImLoader.get_tile_height(),
+							tw = theImLoader.get_tile_width();
+						int y = row * th + i / tw,
+							x = col * tw + i % tw;
 
-					// Feed the pixel to online features and helper objects
-					r.raw_pixels_NT.add_pixel(Pixel2(x, y, intens));
+						// Feed the pixel to online features and helper objects
+						r.raw_pixels_NT.add_pixel(Pixel2(x, y, intens));
+					}
 				}
-			}
 
 			//=== Features requiring non-raster access to pixels
 			

@@ -36,11 +36,11 @@ public:
 
 	SimpleMatrix() {}
 
-	void allocate(int _w, int _h, T inival=0)
+	void allocate(int _w, int _h)
 	{
 		W = _w;
 		H = _h;
-		this->resize (W*H, inival);
+		this->resize (W*H);
 	}
 
 	// = W * y + x
@@ -99,15 +99,11 @@ public:
 
 	void fill (T val)
 	{
-		auto n = W * H;
-		for (int i = 0; i < n; i++)
-			this->at(i) = val;
+		std::fill(this->begin(), this->end(), val);
 	}
 
 	int width() const { return W; }
 	int height() const { return H; }
-
-	void print (const std::string& head, const std::string& tail);
 
 private:
 	int W = 0, H = 0;
@@ -322,11 +318,6 @@ public:
 	// by default, based on computed min and max
 	void histogram(double* bins, unsigned short nbins, bool imhist = false, const Moments2& in_stats = Moments2()) const; 
 
-	// Otsu grey threshold
-	double Otsu (bool dynamic_range = true) const;
-
-	void erode();
-
 	// Based on X.Shu, Q.Zhang, J.Shi and Y.Qi - "A Comparative Study on Weighted Central Moment and Its Application in 2D Shape Retrieval" (2016) https://pdfs.semanticscholar.org/8927/2bef7ba9496c59081ae102925ebc0134bceb.pdf
 	void apply_distance_to_contour_weights(const std::vector<Pixel2>& raw_pixels, const std::vector<Pixel2>& contour_pixels);
 
@@ -355,24 +346,40 @@ public:
 class Power2PaddedImageMatrix : public ImageMatrix
 {
 public:
-	Power2PaddedImageMatrix(const std::vector <Pixel2>& labels_raw_pixels, const AABB& aabb):
+	/// @brief Use base_level=0 and attenuation >0 and <1 e.g. 0.5 to build an imag of a specific intensity distribution. Or base_level=1 and attenuation 1 to build an image of the mask
+	/// @param labels_raw_pixels ROI pixel cloud
+	/// @param aabb ROI axis aligned bounding box
+	/// @param base_level Set {0,1}
+	/// @param attenuation Value in the interval (0,1]
+	Power2PaddedImageMatrix(const std::vector <Pixel2>& labels_raw_pixels, const AABB& aabb, PixIntens base_level, double attenuation):
 		ImageMatrix ()
 	{
+		// Cache AABB
 		original_aabb = aabb;
 
+		// Figure out the padded size and allocate
 		int bigSide = std::max(aabb.get_width(), aabb.get_height());
 		StatsInt paddedSide = Nyxus::closest_pow2 (bigSide);
 		allocate (paddedSide, paddedSide);
 
+		// Copy pixels
 		int padOffsetX = (paddedSide - original_aabb.get_width()) / 2;
 		int padOffsetY = (paddedSide - original_aabb.get_height()) / 2;
 
-		// Read pixels
 		for (auto& pxl : labels_raw_pixels)
 		{
 			auto x = pxl.x - original_aabb.get_xmin() + padOffsetX,
 				y = pxl.y - original_aabb.get_ymin() + padOffsetY;
-			_pix_plane[y * width + x] = pxl.inten;
+			_pix_plane[y * width + x] = PixIntens(double(pxl.inten) * attenuation + base_level);
 		}
 	}
 };
+
+/// @brief Applies to distance-to-contour weighting to intensities of pixel cloud 
+void apply_dist2contour_weighting(
+	// input & output
+	std::vector<Pixel2>& cloud,
+	// input
+	const std::vector<Pixel2>& contour,
+	const double epsilon);
+

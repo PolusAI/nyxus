@@ -166,7 +166,6 @@ void ZernikeFeature::mb_Znl (double* X, double* Y, double* P, int size, double D
   where zernike features are useful.
 */
 
-
 void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double rad, double* zvalues, long* output_size) 
 {
 	int cols = Im.width;
@@ -337,36 +336,15 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 	*output_size = numZ;
 }
 
-void ZernikeFeature::zernike2D(
-	// in
-	std::vector <Pixel2>& roi_cloud,
-	AABB& aabb,
-	int order)
+void ZernikeFeature::calculate (LR& r)
 {
-	// Create a temp image matrix from label's pixels
-	ImageMatrix I (roi_cloud, aabb);
-
+	// Allocate the results buffer
 	coeffs.resize (ZernikeFeature::NUM_FEATURE_VALS, 0);
 
 	// Calculate features
 	long output_size;   // output size is normally 72 (NUM_FEATURE_VALS)
-	mb_zernike2D (I, order, 0/*rad*/, coeffs.data(), &output_size); 
+	mb_zernike2D (r.aux_image_matrix, ZernikeFeature::ZERNIKE2D_ORDER, 0/*rad*/, coeffs.data(), &output_size);
 	ZernikeFeature::num_feature_values_calculated = output_size;
-}
-
-void ZernikeFeature::calculate (LR& r)
-{
-	zernike2D(
-		r.raw_pixels,	// nonzero_intensity_pixels,
-		r.aabb,			// AABB info not to calculate it again from 'raw_pixels' in the function
-		ZernikeFeature::ZERNIKE2D_ORDER);	
-
-	// Fix calculated feature values due to all-0 intensity labels to avoid NANs in the output
-	if (r.has_bad_data())
-	{
-		for (int i = 0; i < coeffs.size(); i++)
-			coeffs[i] = 0.0;
-	}
 }
 
 void ZernikeFeature::parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)

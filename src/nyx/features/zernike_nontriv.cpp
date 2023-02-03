@@ -32,27 +32,26 @@
 #include "../roi_cache.h"
 #include "zernike.h"
 
-void ZernikeFeature::osized_calculate(LR& r, ImageLoader& imloader)
+void ZernikeFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {
-	OOR_ReadMatrix I (imloader, r.aabb);
-
-	zernike2D_nontriv (I, ZernikeFeature::ZERNIKE2D_ORDER);
-
-	// Fix calculated feature values due to all-0 intensity labels to avoid NANs in the output
-	if (r.has_bad_data())
+	// Prepare the image matrix
+	WriteImageMatrix_nontriv I ("ZernikeFeature-osized_calculate-I", r.label);
+	I.allocate (r.aabb.get_width(), r.aabb.get_height(), 0);
+	for (Pixel2 p : r.raw_pixels_NT)
 	{
-		for (int i = 0; i < coeffs.size(); i++)
-			coeffs[i] = 0.0;
+		int col = p.x - r.aabb.get_xmin(),
+			row = p.y - r.aabb.get_ymin(),
+			idx = row * r.aabb.get_width() + col;
+		I.set_at (idx, p.inten);
 	}
-}
 
-void ZernikeFeature::zernike2D_nontriv (OOR_ReadMatrix& I, int order)
-{
-	coeffs.resize (ZernikeFeature::NUM_FEATURE_VALS, 0);
+	// Allocate the results buffer
+	coeffs.resize(ZernikeFeature::NUM_FEATURE_VALS, 0);
 
 	// Calculate features
 	long output_size;   // output size is normally 72 (NUM_FEATURE_VALS)
-	mb_zernike2D_nontriv (I, order, 0/*rad*/, coeffs.data(), &output_size);
+	mb_zernike2D_nontriv (I, ZernikeFeature::ZERNIKE2D_ORDER, 0/*rad*/, coeffs.data(), &output_size);
+	ZernikeFeature::num_feature_values_calculated = output_size;
 }
 
 /*
@@ -70,8 +69,7 @@ void ZernikeFeature::zernike2D_nontriv (OOR_ReadMatrix& I, int order)
   where zernike features are useful.
 */
 
-
-void ZernikeFeature::mb_zernike2D_nontriv (OOR_ReadMatrix& I, double order, double rad, double* zvalues, long* output_size)
+void ZernikeFeature::mb_zernike2D_nontriv (WriteImageMatrix_nontriv& I, double order, double rad, double* zvalues, long* output_size)
 {
 	int cols = I.get_width();
 	int rows = I.get_height();
@@ -113,9 +111,9 @@ void ZernikeFeature::mb_zernike2D_nontriv (OOR_ReadMatrix& I, double order, doub
 	for (i = 0; i < cols; i++)
 		for (j = 0; j < rows; j++)
 		{
-			if (std::isnan(I.get_at(j, i)))
+			if (std::isnan(I.yx(j, i)))
 				continue; //MM
-			intensity = I.get_at(j, i);
+			intensity = I.yx(j, i);
 			sum += intensity;
 			moment10 += (i + 1) * intensity;
 			moment00 += intensity;
@@ -159,7 +157,7 @@ void ZernikeFeature::mb_zernike2D_nontriv (OOR_ReadMatrix& I, double order, doub
 		x = (i + 1 - m10_m00) / rad;
 		for (j = 0; j < rows; j++)
 		{
-			if (std::isnan(I.get_at(j, i)))
+			if (std::isnan(I.yx(j, i)))
 				continue; //MM
 
 		// In the paper, the center of the unit circle was the center of the image
@@ -185,7 +183,7 @@ void ZernikeFeature::mb_zernike2D_nontriv (OOR_ReadMatrix& I, double order, doub
 			// compute contribution to Zernike moments for all 
 			// orders and repetitions by the pixel at (i,j)
 			// In the paper, the intensity was the raw image intensity
-			f = I.get_at(j, i) / sum;
+			f = I.yx(j, i) / sum;
 
 			Rnmp2 = Rnm2 = 0;
 			for (n = 0; n <= L; n++)

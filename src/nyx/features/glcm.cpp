@@ -2,8 +2,6 @@
 #include "../helpers/helpers.h"
 #include "../environment.h"
 
-#define EPSILON 0.000000001
-
 int GLCMFeature::offset = 1;
 int GLCMFeature::n_levels = 8;
 std::vector<int> GLCMFeature::angles = { 0, 45, 90, 135 };
@@ -32,8 +30,33 @@ GLCMFeature::GLCMFeature() : FeatureMethod("GLCMFeature")
 
 void GLCMFeature::calculate(LR& r)
 {
+	// Clear the feature values buffers
+	clear_result_buffers();
+
+	// Calculate features for all the directions
 	for (auto a: angles)
 		Extract_Texture_Features2 (a, r.aux_image_matrix, r.aux_min, r.aux_max); 
+}
+
+void GLCMFeature::clear_result_buffers()
+{
+	fvals_ASM.clear();
+	fvals_contrast.clear();
+	fvals_correlation.clear();
+	fvals_energy.clear();
+	fvals_homo.clear();
+	fvals_variance.clear();
+	fvals_IDM.clear();
+	fvals_sum_avg.clear();
+	fvals_sum_var.clear();
+	fvals_sum_entropy.clear();
+	fvals_entropy.clear();
+	fvals_diff_avg.clear();
+	fvals_diff_var.clear();
+	fvals_diff_entropy.clear();
+	fvals_meas_corr1.clear();
+	fvals_meas_corr2.clear();
+	fvals_max_corr_coef.clear();
 }
 
 void GLCMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}		// Not supporting the online mode for this feature method
@@ -140,7 +163,7 @@ void GLCMFeature::Extract_Texture_Features2 (int angle, const ImageMatrix & gray
 
 	calculateCoocMatAtAngle (P_matrix, dx, dy, grays, min_val, max_val, false);
 
-	// Zero all feature values for empty ROI
+	// Zero all feature values for blank ROI
 	if (sum_p == 0) {
 
 		double f = 0.0;
@@ -232,8 +255,7 @@ void GLCMFeature::calculateCoocMatAtAngle(
 	PixIntens max_val, 
 	bool normalize)
 {
-	matrix.allocate(n_levels, n_levels, 0.0); 
-
+	matrix.allocate(n_levels, n_levels); 
 	std::fill(matrix.begin(), matrix.end(), 0.);
 
 	int d = GLCMFeature::offset;
@@ -273,12 +295,6 @@ void GLCMFeature::calculateCoocMatAtAngle(
 				count += 2;	
 				matrix.xy(y,x)++;
 				matrix.xy(x,y)++;
-
-				#ifdef TEST_GLCM
-				std::stringstream ss;
-				ss << y << "," << x;
-				print_doubles_matrix(matrix, "after " + ss.str(), "");
-				#endif
 			}
 		}
 
@@ -498,7 +514,6 @@ double GLCMFeature::f_sentropy(const SimpleMatrix<double>& P, int Ng, std::vecto
 	for(int k = 2; k <= 2 * n_levels; ++k) {
 
 		if (Pxpy[k-2] == 0) continue;
-
 		sentropy += pxpy[k-2] * fast_log10(pxpy[k-2] + EPSILON) / LOG10_2;
 	}
 
@@ -694,5 +709,4 @@ double GLCMFeature::f_homogeneity (const SimpleMatrix<double>& P_matrix, int n_l
 
 	return homogeneity;
 }
-
 

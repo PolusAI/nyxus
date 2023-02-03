@@ -1,6 +1,8 @@
 #include "../environment.h"
 #include "image_moments.h"
 
+using pixelvector = std::vector<Pixel2>;
+
 ImageMomentsFeature::ImageMomentsFeature() : FeatureMethod("ImageMomentsFeature")
 {
     provide_features({
@@ -72,24 +74,28 @@ ImageMomentsFeature::ImageMomentsFeature() : FeatureMethod("ImageMomentsFeature"
 
 void ImageMomentsFeature::calculate (LR& r)
 {
-        const ImageMatrix& im = r.aux_image_matrix;
+    // Cache ROI frame of reference
+    baseX = r.aabb.get_xmin();
+    baseY = r.aabb.get_ymin();
 
-        const pixData& I = im.ReadablePixels();
-        calcOrigins(I);
-        calcSpatialMoments(I);
-        calcCentralMoments(I);
-        calcNormCentralMoments(I);
-        calcNormSpatialMoments(I);
-        calcHuInvariants(I);
+    // Calculate non-weighted moments
+    auto& c = r.raw_pixels;
+    calcOrigins (c);
+    calcRawMoments (c);
+    calcCentralMoments (c);
+    calcNormRawMoments (c);
+    calcNormCentralMoments (c);
+    calcHuInvariants (c);
 
-        ImageMatrix weighted_im(r.raw_pixels, r.aabb);
-        weighted_im.apply_distance_to_contour_weights(r.raw_pixels, r.contour);
+    // Prepare weighted pixel cloud
+    decltype(c) w = c;
+    apply_dist2contour_weighting (w, r.contour, weighting_epsilon);
 
-        const pixData& W = weighted_im.ReadablePixels();
-        calcOrigins (W);
-        calcWeightedSpatialMoments (W);
-        calcWeightedCentralMoments(W);
-        calcWeightedHuInvariants(W);   
+    // Calculate weighted moments
+    calcOrigins (w);
+    calcWeightedRawMoments (w);
+    calcWeightedCentralMoments (w);
+    calcWeightedHuInvariants (w);
 }
 
 #ifdef USE_GPU
@@ -209,163 +215,165 @@ void ImageMomentsFeature::save_value(std::vector<std::vector<double>>& fvals)
     fvals[WEIGHTED_HU_M7][0] = whm7;
 }
 
-/// @brief Calculates the spatial 2D-moment of order q,p
-double ImageMomentsFeature::Moment (const pixData& D, int p, int q)
+/// @brief Calculates the spatial 2D moment of order q,p f ROI pixel cloud
+double ImageMomentsFeature::moment (const pixcloud& cloud, int p, int q)
 {
-    double q_ = q, 
-        p_ = p, 
-        sum = 0;
-    for (size_t x = 0; x < D.width(); x++)
-    {
-        double powXP = pow((double)x, p_);
-        for (size_t y = 0; y < D.height(); y++)
-            sum += (double)D.yx(y, x) * powXP * pow((double)y, q_);
-    }
+    double q_ = q, p_ = p, sum = 0;
+    for (auto& pxl : cloud)
+        sum += double(pxl.inten) * pow(double(pxl.x-baseX), p_) * pow(double(pxl.y-baseY), q_);
     return sum;
 }
 
-void ImageMomentsFeature::calcOrigins(const pixData& D)
+void ImageMomentsFeature::calcOrigins (const std::vector<Pixel2>& cloud)
 {
-    // calc orgins
-    double m00 = Moment(D, 0, 0);
-    originOfX = Moment (D, 1, 0) / m00;
-    originOfY = Moment (D, 0, 1) / m00;
+    double m00 = moment (cloud, 0, 0);
+    originOfX = moment (cloud, 1, 0) / m00;
+    originOfY = moment (cloud, 0, 1) / m00;
 }
 
-/// @brief Calculates the central 2D-moment of order q,p
-double ImageMomentsFeature::CentralMom(const pixData& D, int p, int q)
+/// @brief Calculates the central 2D moment of order q,p of ROI pixel cloud
+double ImageMomentsFeature::centralMom (const std::vector<Pixel2>& cloud, int p, int q)
 {
-    // calculate central moment
     double sum = 0;
-    for (int x = 0; x < D.width(); x++)
-        for (int y = 0; y < D.height(); y++)
-            sum += D.yx(y,x) * pow((double(x) - originOfX), p) * pow((double(y) - originOfY), q);
-
+    for (auto& pxl : cloud)
+        sum += double(pxl.inten) * pow(double(pxl.x-baseX) - originOfX, p) * pow(double(pxl.y-baseY) - originOfY, q);
     return sum;
 }
 
-/// @brief Calculates the normalized spatial 2D-moment of order q,p [https://handwiki.org/wiki/Standardized_moment]
-double ImageMomentsFeature::NormSpatMom(const pixData& D, int p, int q)
+/// @brief Calculates the normalized spatial 2D moment of order q,p of ROI pixel cloud
+double ImageMomentsFeature::normRawMom (const std::vector <Pixel2>& cloud, int p, int q)
 {
-    double stddev = CentralMom(D, 2, 2);
+    double stddev = centralMom (cloud, 2, 2);
     int w = std::max(q, p);
     double normCoef = pow(stddev, (double)w);
-    double cmPQ = CentralMom(D, p, q);
+    double cmPQ = centralMom(cloud, p, q);
     double retval = cmPQ / normCoef;
     return retval;
 }
 
-/// @brief Calculates the normalized central 2D-moment of order q,p
-double ImageMomentsFeature::NormCentralMom(const pixData& D, int p, int q)
+/// @brief Calculates the normalized central 2D moment of order q,p of ROI pixel cloud
+double ImageMomentsFeature::normCentralMom (const std::vector<Pixel2>& cloud, int p, int q)
 {
     double temp = ((double(p) + double(q)) / 2.0) + 1.0;
-    double retval = CentralMom(D, p, q) / pow(Moment(D, 0, 0), temp);
+    double retval = centralMom(cloud, p, q) / pow(moment (cloud, 0, 0), temp);
     return retval;
 }
 
-std::tuple<double, double, double, double, double, double, double> ImageMomentsFeature::calcHuInvariants_imp (const pixData& D)
+std::tuple<double, double, double, double, double, double, double> ImageMomentsFeature::calcHuInvariants_imp (const std::vector<Pixel2>& cloud)
 {
-    // calculate 7 invariant moments
-    double h1 = NormCentralMom(D, 2, 0) + NormCentralMom(D, 0, 2);
-    double h2 = pow((NormCentralMom(D, 2, 0) - NormCentralMom(D, 0, 2)), 2) + 4 * (pow(NormCentralMom(D, 1, 1), 2));
-    double h3 = pow((NormCentralMom(D, 3, 0) - 3 * NormCentralMom(D, 1, 2)), 2) +
-        pow((3 * NormCentralMom(D, 2, 1) - NormCentralMom(D, 0, 3)), 2);
-    double h4 = pow((NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2)), 2) +
-        pow((NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3)), 2);
-    double h5 = (NormCentralMom(D, 3, 0) - 3 * NormCentralMom(D, 1, 2)) *
-        (NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2)) *
-        (pow(NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2), 2) - 3 * pow(NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3), 2)) +
-        (3 * NormCentralMom(D, 2, 1) - NormCentralMom(D, 0, 3)) * (NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3)) *
-        (pow(3 * (NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2)), 2) - pow(NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3), 2));
-    double h6 = (NormCentralMom(D, 2, 0) - NormCentralMom(D, 0, 2)) * (pow(NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2), 2) -
-        pow(NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3), 2)) + (4 * NormCentralMom(D, 1, 1) * (NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2)) *
-            NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3));
-    double h7 = (3 * NormCentralMom(D, 2, 1) - NormCentralMom(D, 0, 3)) * (NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2)) * (pow(NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2), 2) -
-        3 * pow(NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3), 2)) - (NormCentralMom(D, 3, 0) - 3 * NormCentralMom(D, 1, 2)) * (NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3)) *
-        (3 * pow(NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2), 2) - pow(NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3), 2));
-    return {h1, h2, h3, h4, h5, h6, h7};
+    // calculate the 7 Hu-1962 invariants
+
+    auto _20 = normCentralMom(cloud, 2, 0),
+        _02 = normCentralMom(cloud, 0, 2),
+        _11 = normCentralMom(cloud, 1, 1),
+        _30 = normCentralMom(cloud, 3, 0),
+        _12 = normCentralMom(cloud, 1, 2),
+        _21 = normCentralMom(cloud, 2, 1),
+        _03 = normCentralMom(cloud, 0, 3);
+
+    double h1 = _20 + _02;
+    double h2 = pow((_20 - _02), 2) + 4 * (pow(_11, 2));
+    double h3 = pow((_30 - 3 * _12), 2) +
+        pow((3 * _21 - _03), 2);
+    double h4 = pow((_30 + _12), 2) +
+        pow((_21 + _03), 2);
+    double h5 = (_30 - 3 * _12) *
+        (_30 + _12) *
+        (pow(_30 + _12, 2) - 3 * pow(_21 + _03, 2)) +
+        (3 * _21 - _03) * (_21 + _03) *
+        (pow(3 * (_30 + _12), 2) - pow(_21 + _03, 2));
+    double h6 = (_20 - _02) * (pow(_30 + _12, 2) -
+        pow(_21 + _03, 2)) + (4 * _11 * (_30 + _12) *
+            _21 + _03);
+    double h7 = (3 * _21 - _03) * (_30 + _12) * (pow(_30 + _12, 2) -
+        3 * pow(_21 + _03, 2)) - (_30 - 3 * _12) * (_21 + _03) *
+        (3 * pow(_30 + _12, 2) - pow(_21 + _03, 2));
+
+    return { h1, h2, h3, h4, h5, h6, h7 };
 }
 
-void ImageMomentsFeature::calcHuInvariants (const pixData& D)
+void ImageMomentsFeature::calcHuInvariants (const std::vector<Pixel2>& cloud)
 {
-    std::tie(hm1, hm2, hm3, hm4, hm5, hm6, hm7) = calcHuInvariants_imp(D);
+    std::tie(hm1, hm2, hm3, hm4, hm5, hm6, hm7) = calcHuInvariants_imp (cloud);
 }
 
-void ImageMomentsFeature::calcWeightedHuInvariants (const pixData& D)
+void ImageMomentsFeature::calcWeightedHuInvariants (const std::vector<Pixel2>& cloud)
 {
-    std::tie(whm1, whm2, whm3, whm4, whm5, whm6, whm7) = calcHuInvariants_imp(D);
+    std::tie(whm1, whm2, whm3, whm4, whm5, whm6, whm7) = calcHuInvariants_imp (cloud);
 }
 
-void ImageMomentsFeature::calcSpatialMoments (const pixData& D)
+void ImageMomentsFeature::calcRawMoments (const std::vector<Pixel2>& cloud)
 {
-    m00 = Moment (D, 0, 0);
-    m01 = Moment (D, 0, 1);
-    m02 = Moment (D, 0, 2);
-    m03 = Moment (D, 0, 3);
-    m10 = Moment (D, 1, 0);
-    m11 = Moment (D, 1, 1);
-    m12 = Moment (D, 1, 2);
-    m20 = Moment (D, 2, 0);
-    m21 = Moment (D, 2, 1);
-    m30 = Moment (D, 3, 0);
+    m00 = moment (cloud, 0, 0);
+    m01 = moment (cloud, 0, 1);
+    m02 = moment (cloud, 0, 2);
+    m03 = moment (cloud, 0, 3);
+    m10 = moment (cloud, 1, 0);
+    m11 = moment (cloud, 1, 1);
+    m12 = moment (cloud, 1, 2);
+    m20 = moment (cloud, 2, 0);
+    m21 = moment (cloud, 2, 1);
+    m30 = moment (cloud, 3, 0);
 }
 
-void ImageMomentsFeature::calcWeightedSpatialMoments (const pixData& D)
+/// @brief 
+/// @param cloud Cloud of weighted ROI pixels
+void ImageMomentsFeature::calcWeightedRawMoments (const std::vector<Pixel2>& cloud)
 {
-    wm00 = Moment (D, 0, 0);
-    wm01 = Moment (D, 0, 1);
-    wm02 = Moment (D, 0, 2);
-    wm03 = Moment (D, 0, 3);
-    wm10 = Moment (D, 1, 0);
-    wm11 = Moment (D, 1, 1);
-    wm12 = Moment (D, 1, 2);
-    wm20 = Moment (D, 2, 0);
-    wm21 = Moment (D, 2, 1);
-    wm30 = Moment (D, 3, 0);
+    wm00 = moment (cloud, 0, 0);
+    wm01 = moment (cloud, 0, 1);
+    wm02 = moment (cloud, 0, 2);
+    wm03 = moment (cloud, 0, 3);
+    wm10 = moment (cloud, 1, 0);
+    wm11 = moment (cloud, 1, 1);
+    wm12 = moment (cloud, 1, 2);
+    wm20 = moment (cloud, 2, 0);
+    wm21 = moment (cloud, 2, 1);
+    wm30 = moment (cloud, 3, 0);
 }
 
-void ImageMomentsFeature::calcCentralMoments(const pixData& D)
+void ImageMomentsFeature::calcCentralMoments (const std::vector<Pixel2>& cloud)
 {
-    mu02 = CentralMom(D, 0, 2);
-    mu03 = CentralMom(D, 0, 3);
-    mu11 = CentralMom(D, 1, 1);
-    mu12 = CentralMom(D, 1, 2);
-    mu20 = CentralMom(D, 2, 0);
-    mu21 = CentralMom(D, 2, 1);
-    mu30 = CentralMom(D, 3, 0);
+    mu02 = centralMom (cloud, 0, 2);
+    mu03 = centralMom (cloud, 0, 3);
+    mu11 = centralMom (cloud, 1, 1);
+    mu12 = centralMom (cloud, 1, 2);
+    mu20 = centralMom (cloud, 2, 0);
+    mu21 = centralMom (cloud, 2, 1);
+    mu30 = centralMom (cloud, 3, 0);
 }
 
-void ImageMomentsFeature::calcWeightedCentralMoments(const pixData& D)
+void ImageMomentsFeature::calcWeightedCentralMoments (const std::vector<Pixel2>& cloud)
 {
-    wmu02 = CentralMom(D, 0, 2);
-    wmu03 = CentralMom(D, 0, 3);
-    wmu11 = CentralMom(D, 1, 1);
-    wmu12 = CentralMom(D, 1, 2);
-    wmu20 = CentralMom(D, 2, 0);
-    wmu21 = CentralMom(D, 2, 1);
-    wmu30 = CentralMom(D, 3, 0);
+    wmu02 = centralMom (cloud, 0, 2);
+    wmu03 = centralMom (cloud, 0, 3);
+    wmu11 = centralMom (cloud, 1, 1);
+    wmu12 = centralMom (cloud, 1, 2);
+    wmu20 = centralMom (cloud, 2, 0);
+    wmu21 = centralMom (cloud, 2, 1);
+    wmu30 = centralMom (cloud, 3, 0);
 }
 
-void ImageMomentsFeature::calcNormCentralMoments (const pixData& D)
+void ImageMomentsFeature::calcNormCentralMoments (const std::vector<Pixel2>& cloud)
 {
-    nu02 = NormCentralMom(D, 0, 2);
-    nu03 = NormCentralMom(D, 0, 3);
-    nu11 = NormCentralMom(D, 1, 1);
-    nu12 = NormCentralMom(D, 1, 2);
-    nu20 = NormCentralMom(D, 2, 0);
-    nu21 = NormCentralMom(D, 2, 1);
-    nu30 = NormCentralMom(D, 3, 0);
+    nu02 = normCentralMom (cloud, 0, 2);
+    nu03 = normCentralMom (cloud, 0, 3);
+    nu11 = normCentralMom (cloud, 1, 1);
+    nu12 = normCentralMom (cloud, 1, 2);
+    nu20 = normCentralMom (cloud, 2, 0);
+    nu21 = normCentralMom (cloud, 2, 1);
+    nu30 = normCentralMom (cloud, 3, 0);
 }
 
-void ImageMomentsFeature::calcNormSpatialMoments (const pixData& D)
+void ImageMomentsFeature::calcNormRawMoments (const std::vector<Pixel2>& cloud)
 {
-    w00 = NormSpatMom (D, 0, 0);
-    w01 = NormSpatMom (D, 0, 1);
-    w02 = NormSpatMom (D, 0, 2);
-    w03 = NormSpatMom (D, 0, 3);
-    w10 = NormSpatMom (D, 1, 0);
-    w20 = NormSpatMom (D, 2, 0);
-    w30 = NormSpatMom (D, 3, 0);
+    w00 = normRawMom (cloud, 0, 0);
+    w01 = normRawMom (cloud, 0, 1);
+    w02 = normRawMom (cloud, 0, 2);
+    w03 = normRawMom (cloud, 0, 3);
+    w10 = normRawMom (cloud, 1, 0);
+    w20 = normRawMom (cloud, 2, 0);
+    w30 = normRawMom (cloud, 3, 0);
 }
 
 /// @brief Calculates the features for a subset of ROIs in a thread-safe way with other ROI subsets

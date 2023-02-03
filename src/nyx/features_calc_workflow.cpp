@@ -118,9 +118,6 @@ namespace Nyxus
 
 	void init_label_record_2 (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity, unsigned int tile_index)
 	{
-		// Cache the host tile's index
-		r.host_tiles.insert (tile_index);
-
 		// Initialize basic counters
 		r.aux_area = 1;
 		r.aux_min = r.aux_max = intensity;
@@ -153,9 +150,6 @@ namespace Nyxus
 
 	void update_label_record_2 (LR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index)
 	{
-		// Cache the host tile's index
-		lr.host_tiles.insert(tile_index);
-
 		// Initialize basic counters
 		lr.aux_area++;
 		lr.aux_min = std::min(lr.aux_min, intensity);

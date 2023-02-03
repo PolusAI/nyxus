@@ -699,33 +699,15 @@ std::tuple<double, double, double, double> ContourFeature::calc_min_max_mean_std
 	return { min_, max_, mean_, stddev_ };
 }
 
-namespace Nyxus
+void ContourFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
-	void calcRoiContour(LR& r)
+	for (auto i = start; i < end; i++)
 	{
-		if (r.roi_disabled)
-			return;
+		int lab = (*ptrLabels)[i];
+		LR& r = (*ptrLabelData)[lab];
 
-		//==== Calculate ROI's image matrix
-		r.aux_image_matrix.calculate_from_pixelcloud (r.raw_pixels, r.aabb);
-
-		//==== Contour, ROI perimeter, equivalent circle diameter
 		ContourFeature f;
-		f.calculate(r);	// Consumes LR::aux_image_matrix, leaves contour pixels in LR::contour
-		f.save_value(r.fvals);
-	}
-
-	void parallelReduceContour (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
-	{
-		for (auto i = start; i < end; i++)
-		{
-			int lab = (*ptrLabels)[i];
-			LR& r = (*ptrLabelData)[lab];
-			if (r.has_bad_data())
-				continue;
-			calcRoiContour(r);
-		}
+		f.calculate (r);
+		f.save_value (r.fvals);
 	}
 }
-
-

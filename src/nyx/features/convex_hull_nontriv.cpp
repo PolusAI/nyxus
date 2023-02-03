@@ -6,13 +6,14 @@
 
 ConvexHullFeature::ConvexHullFeature() : FeatureMethod("ConvexHullFeature")
 {
-	provide_features ({CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY});
+	provide_features ({ CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY });
+	add_dependencies ({ PERIMETER });
 }
 
 void ConvexHullFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
 	fvals [CONVEX_HULL_AREA][0] = area;
-	fvals[SOLIDITY][0] = solidity; 
+	fvals [SOLIDITY][0] = solidity; 
 	fvals [CIRCULARITY][0] = circularity;
 }
 
@@ -35,22 +36,23 @@ void ConvexHullFeature::calculate (LR& r)
 	circularity = sqrt(4.0 * M_PI * s_roi / (p*p));
 }
 
-void ConvexHullFeature::build_convex_hull (const std::vector<Pixel2>& roi_cloud, std::vector<Pixel2>& convhull)
+void ConvexHullFeature::build_convex_hull (const std::vector<Pixel2>& cloud, std::vector<Pixel2>& convhull)
 {
 	convhull.clear();
 
 	// Skip calculation if the ROI is too small
-	if (roi_cloud.size() < 2)
+	if (cloud.size() < 2)
 		return;
 
 	std::vector<Pixel2>& upperCH = convhull;
 	std::vector<Pixel2> lowerCH;
 
-	size_t n = roi_cloud.size();
-
-	// Sorting points
-	std::vector<Pixel2> cloud = roi_cloud;	// Safely copy the ROI for fear of changing the original pixels order
-	std::sort (cloud.begin(), cloud.end(), compare_locations);
+	size_t n = cloud.size();
+	
+	//	No need to sort pixels because we accumulate them in a raster pattern without multithreading//
+	//	std::vector<Pixel2> cloud = roi_cloud;	// Safely copy the ROI for fear of changing the original pixels order
+	//	std::sort (cloud.begin(), cloud.end(), compare_locations);
+	//
 
 	// Computing upper convex hull
 	upperCH.push_back (cloud[0]);
@@ -82,9 +84,57 @@ void ConvexHullFeature::build_convex_hull (const std::vector<Pixel2>& roi_cloud,
 			upperCH.push_back(p);
 }
 
+void ConvexHullFeature::build_convex_hull (const OutOfRamPixelCloud& cloud, std::vector<Pixel2>& convhull)
+{
+	convhull.clear();
+
+	// Skip calculation if the ROI is too small
+	if (cloud.size() < 2)
+		return;
+
+	std::vector<Pixel2>& upperCH = convhull;
+	std::vector<Pixel2> lowerCH;
+
+	size_t n = cloud.size();
+
+//
+//	No need to sort pixels because we accumulate them in a raster pattern without multithreading
+//	std::vector<Pixel2> cloud = roi_cloud;	// Safely copy the ROI for fear of changing the original pixels order
+//	std::sort(cloud.begin(), cloud.end(), compare_locations);
+//
+ 
+	// Computing upper convex hull
+	upperCH.push_back(cloud[0]);
+	upperCH.push_back(cloud[1]);
+
+	for (size_t i = 2; i < n; i++)
+	{
+		while (upperCH.size() > 1 && (!right_turn(upperCH[upperCH.size() - 2], upperCH[upperCH.size() - 1], cloud[i])))
+			upperCH.pop_back();
+		upperCH.push_back(cloud[i]);
+	}
+
+	// Computing lower convex hull
+	lowerCH.push_back(cloud[n-1]);
+	lowerCH.push_back(cloud[n-2]);
+
+	for (size_t i = 2; i < n; i++)
+	{
+		while (lowerCH.size() > 1 && (!right_turn(lowerCH[lowerCH.size() - 2], lowerCH[lowerCH.size() - 1], cloud[n - i - 1])))
+			lowerCH.pop_back();
+		lowerCH.push_back(cloud[n - i - 1]);
+	}
+
+	// We could use 
+	//		upperCH.insert (upperCH.end(), lowerCH.begin(), lowerCH.end());
+	// but we don't need duplicate points in the result contour
+	for (auto& p : lowerCH)
+		if (std::find(upperCH.begin(), upperCH.end(), p) == upperCH.end())
+			upperCH.push_back(p);
+}
+
 // Sort criterion: points are sorted with respect to their x-coordinate.
-//                 If two points have the same x-coordinate then we compare
-//                 their y-coordinates
+// If two points have the same x-coordinate then we compare their y-coordinates
 bool ConvexHullFeature::compare_locations (const Pixel2& lhs, const Pixel2& rhs)
 {
 	return (lhs.x < rhs.x) || (lhs.x == rhs.x && lhs.y < rhs.y);
@@ -120,47 +170,17 @@ double ConvexHullFeature::polygon_area (const std::vector<Pixel2>& vertices)
 
 void ConvexHullFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {
-	r.convHull_CH.clear();
+	// Build the convex hull
+	build_convex_hull (r.raw_pixels_NT, r.convHull_CH);
 
-	size_t n = r.raw_pixels_NT.size();
-
-	// Skip calculation if the ROI is too small
-	if (n < 2)
-		return;
-
-	std::vector<Pixel2>& upperCH = r.convHull_CH;
-	std::vector<Pixel2> lowerCH;
-
-	// Computing upper convex hull
-	upperCH.push_back(r.raw_pixels_NT.get_at(0));
-	upperCH.push_back(r.raw_pixels_NT.get_at(1));
-
-	for (size_t i = 2; i < n; i++)
-	{
-		while (upperCH.size() > 1 && (!right_turn(upperCH[upperCH.size() - 2], upperCH[upperCH.size() - 1], r.raw_pixels_NT.get_at(i))))
-			upperCH.pop_back();
-		upperCH.push_back(r.raw_pixels_NT.get_at(i));
-	}
-
-	// Computing lower convex hull
-	lowerCH.push_back(r.raw_pixels_NT.get_at(n - 1));
-	lowerCH.push_back(r.raw_pixels_NT.get_at(n - 2));
-
-	for (size_t i = 2; i < n; i++)
-	{
-		while (lowerCH.size() > 1 && (!right_turn(lowerCH[lowerCH.size() - 2], lowerCH[lowerCH.size() - 1], r.raw_pixels_NT.get_at(n - i - 1))))
-			lowerCH.pop_back();
-		lowerCH.push_back(r.raw_pixels_NT.get_at(n - i - 1));
-	}
-
-	// We could use 
-	//		upperCH.insert (upperCH.end(), lowerCH.begin(), lowerCH.end());
-	// but we don't need duplicate points in the result contour
-	for (auto& p : lowerCH)
-		if (std::find(upperCH.begin(), upperCH.end(), p) == upperCH.end())
-			upperCH.push_back(p);
+	// Calculate related features
+	double s_hull = polygon_area(r.convHull_CH),
+		s_roi = r.raw_pixels_NT.size(),
+		p = r.fvals[PERIMETER][0];
+	area = s_hull;
+	solidity = s_roi / s_hull;
+	circularity = sqrt(4.0 * M_PI * s_roi / (p * p));
 }
-
 
 namespace Nyxus
 {

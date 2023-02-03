@@ -111,7 +111,7 @@ namespace Nyxus
 			if (!fnameExists)
 			{
 				retval = false;
-				std::cout << "Error: expecting '" << s << "' to be a proper feature name. \n";
+				std::cout << "Error: expecting '" << s << "' to be a proper feature name or feature file path\n";
 			}
 			else
 				result.push_back(s_uppr);
@@ -404,8 +404,7 @@ void Environment::process_feature_list()
 				UNIFORMITY,
 				P01, P10, P25, P75, P90, P99,
 				INTERQUARTILE_RANGE,
-				ROBUST_MEAN_ABSOLUTE_DEVIATION,
-				MASS_DISPLACEMENT};
+				ROBUST_MEAN_ABSOLUTE_DEVIATION };
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -428,6 +427,7 @@ void Environment::process_feature_list()
 				MINOR_AXIS_LENGTH,
 				ECCENTRICITY,
 				ORIENTATION,
+				ROUNDNESS,
 				EXTENT,
 				ASPECT_RATIO,
 				DIAMETER_EQUAL_PERIMETER,
@@ -438,7 +438,8 @@ void Environment::process_feature_list()
 				EDGE_STDDEV_INTENSITY,
 				EDGE_MAX_INTENSITY,
 				EDGE_MIN_INTENSITY,
-				CIRCULARITY};
+				CIRCULARITY, 
+				MASS_DISPLACEMENT };
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -452,7 +453,7 @@ void Environment::process_feature_list()
 				BBOX_YMIN,
 				BBOX_XMIN,
 				BBOX_HEIGHT,
-				BBOX_WIDTH};
+				BBOX_WIDTH };
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -474,8 +475,7 @@ void Environment::process_feature_list()
 				GLCM_SUMAVERAGE,
 				GLCM_SUMENTROPY,
 				GLCM_SUMVARIANCE,
-				GLCM_VARIANCE
-			};
+				GLCM_VARIANCE };
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -497,7 +497,7 @@ void Environment::process_feature_list()
 				GLRLM_SRLGLE,
 				GLRLM_SRHGLE,
 				GLRLM_LRLGLE,
-				GLRLM_LRHGLE};
+				GLRLM_LRHGLE };
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -519,7 +519,7 @@ void Environment::process_feature_list()
 				GLSZM_SALGLE,
 				GLSZM_SAHGLE,
 				GLSZM_LALGLE,
-				GLSZM_LAHGLE};
+				GLSZM_LAHGLE };
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -539,7 +539,7 @@ void Environment::process_feature_list()
 				GLDM_SDLGLE,
 				GLDM_SDHGLE,
 				GLDM_LDLGLE,
-				GLDM_LDHGLE};
+				GLDM_LDHGLE };
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -550,7 +550,7 @@ void Environment::process_feature_list()
 				NGTDM_CONTRAST,
 				NGTDM_BUSYNESS,
 				NGTDM_COMPLEXITY,
-				NGTDM_STRENGTH};
+				NGTDM_STRENGTH };
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -655,8 +655,7 @@ void Environment::process_feature_list()
 				WEIGHTED_HU_M4,
 				WEIGHTED_HU_M5,
 				WEIGHTED_HU_M6,
-				WEIGHTED_HU_M7
-			};
+				WEIGHTED_HU_M7 };
 
 			theFeatureSet.disableFeatures(F);
 
@@ -881,31 +880,31 @@ int Environment::parse_cmdline(int argc, char **argv)
 		GLCMFeature::angles = glcmAngles;
 	}
 
-	//==== Parse the RAM limit
+	//==== Parse the RAM limit (in megabytes)
 	if (!rawRamLimit.empty())
 	{
 		// string -> integer
-		size_t value = 0;
-		auto scanfResult = sscanf(rawRamLimit.c_str(), "%zu", &value);
+		int value = 0;
+		auto scanfResult = sscanf(rawRamLimit.c_str(), "%d", &value);
 		if (scanfResult != 1 || value < 0)
 		{
 			std::cout << "Error: " << RAMLIMIT << "=" << rawRamLimit << ": expecting a non-negative integer constant (RAM limit in megabytes)\n";
 			return 1;
 		}
 
-		// To megabytes
-		value *= 1048576;
+		// Megabytes to bytes
+		size_t requestedCeiling = (size_t)value * 1048576;
 
 		// Check if it over the actual limit
 		unsigned long long actualRam = Nyxus::getAvailPhysMemory();
-		if (value > actualRam)
+		if (requestedCeiling > actualRam)
 		{
-			std::cout << "Error: RAM limit " << value << " is over the actual amount of available RAM " << actualRam << "\n";
+			std::cout << "Error: RAM limit " << value << " megabytes (=" << requestedCeiling << " bytes) exceeds the actual amount of available RAM " << actualRam << " bytes\n";
 			return 1;
 		}
 
-		// The angle list parsed well, let's tell it to GLCMFeature 
-		ramLimit = value;
+		// Set the member variable
+		ramLimit = requestedCeiling;
 	}
 
 	//==== Parse the temp directory

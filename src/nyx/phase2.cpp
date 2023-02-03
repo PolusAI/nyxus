@@ -131,7 +131,7 @@ namespace Nyxus
 						continue;
 
 					// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
-					if (! theEnvironment.singleROI && ! std::binary_search(whiteList.begin(), whiteList.end(), label)) //--slow-- if (std::find(PendingRoiLabels.begin(), PendingRoiLabels.end(), label) == PendingRoiLabels.end())
+					if (! theEnvironment.singleROI && ! std::binary_search(whiteList.begin(), whiteList.end(), label))
 						continue;
 
 					auto inten = dataI[i];
@@ -173,6 +173,8 @@ namespace Nyxus
 
 	void allocateTrivialRoisBuffers(const std::vector<int>& Pending)
 	{
+		imageMatrixBufferLen = 0;
+
 		// Calculate the total memory demand (in # of items) of all segments' image matrices
 		for (auto lab : Pending)
 		{
@@ -203,6 +205,19 @@ namespace Nyxus
 
 	void freeTrivialRoisBuffers(const std::vector<int>& Pending)
 	{
+		// Dispose memory of ROIs having their feature calculation finished 
+		// in order to give memory ROIs of the next ROI batch. 
+		// (Vector 'Pending' is the set of ROIs of the finished batch.)
+		for (auto lab : Pending)
+		{
+			LR& r = roiData[lab];
+			std::vector<Pixel2>().swap(r.raw_pixels);
+			std::vector<PixIntens>().swap(r.aux_image_matrix._pix_plane);
+			std::vector<Pixel2>().swap(r.convHull_CH);	// convex hull is not a large object but there's no point to keep it beyond the batch, unlike contour
+		}
+
+		// Dispose the buffer of batches' ROIs' image matrices. (We allocate the 
+		// image matrix buffer externally to minimize host-GPU transfers.)
 		delete ImageMatrixBuffer;
 	}
 
@@ -228,12 +243,12 @@ namespace Nyxus
 			{
 				// Scan pixels of pending trivial ROIs 
 				std::sort (Pending.begin(), Pending.end());
-				VERBOSLVL1(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";)
+				VERBOSLVL1(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of total " << uniqueLabels.size() << " ROIs\n";)
 				VERBOSLVL1(
 					if (Pending.size() ==1)					
-						std::cout << ">>> (single ROI " << Pending[0] << ")\n";
+						std::cout << ">>> (single ROI label " << Pending[0] << ")\n";
 					else
-						std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
+						std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 					)
 				scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
 

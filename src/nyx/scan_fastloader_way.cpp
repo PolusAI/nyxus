@@ -57,10 +57,11 @@ namespace Nyxus
 
 			{ STOPWATCH("Image scan2a/ImgScan2a/Scan2a/lightsteelblue", "\t=");
 
-			// Phase 1: gather ROI metrics
-			VERBOSLVL1(std::cout << "Gathering ROI metrics\n";)
-				gatherRoisMetrics(intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
-
+				// Phase 1: gather ROI metrics
+				VERBOSLVL1(std::cout << "Gathering ROI metrics\n");
+				bool okGather = gatherRoisMetrics(intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
+				if (!okGather)
+					return false;
 			}
 
 			{ STOPWATCH("Image scan2b/ImgScan2b/Scan2b/lightsteelblue", "\t=");
@@ -190,8 +191,10 @@ namespace Nyxus
 			VERBOSLVL1(Stopwatch::print_stats();)
 				
 			// Details - also to a file
-			fs::path p (theSegFname);
-			VERBOSLVL1(Stopwatch::save_stats (theEnvironment.output_dir + "/" + p.stem().string() + "_nyxustiming.csv");)
+			VERBOSLVL3(
+				fs::path p(theSegFname);
+				Stopwatch::save_stats(theEnvironment.output_dir + "/" + p.stem().string() + "_nyxustiming.csv");
+			);
 			#endif
 		}
 
@@ -207,8 +210,7 @@ namespace Nyxus
 		std::ofstream f (fpath);
 
 		// header
-		f << "label, area, minx, miny, maxx, maxy, width, height, min_intens, max_intens, size_bytes, size_class, host_tiles \n";
-
+		f << "label, area, minx, miny, maxx, maxy, width, height, min_intens, max_intens, size_bytes, size_class \n";
 		// sort labels
 		std::vector<int>  sortedLabs { uniqueLabels.begin(), uniqueLabels.end() };
 		std::sort(sortedLabs.begin(), sortedLabs.end());
@@ -230,14 +232,6 @@ namespace Nyxus
 				<< r.aux_max << ", "
 				<< szb << ", "
 				<< ovsz << ", ";
-			// host tile indices
-			int ti = 0;
-			for (auto tIdx : r.host_tiles)
-			{
-				if (ti++)
-					f << "|";
-				f << tIdx;
-			}
 			f << "\n";
 		}
 

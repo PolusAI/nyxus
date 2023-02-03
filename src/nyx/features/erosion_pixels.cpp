@@ -4,56 +4,49 @@
 ErosionPixelsFeature::ErosionPixelsFeature() : FeatureMethod("ErosionPixelsFeature")
 {
 	provide_features({ EROSIONS_2_VANISH, EROSIONS_2_VANISH_COMPLEMENT });
-	add_dependencies({ PERIMETER });
+	add_dependencies({ CONVEX_HULL_AREA });	// Feature EROSIONS_2_VANISH_COMPLEMENT requires the convex hull
 }
 
 void ErosionPixelsFeature::calculate(LR& r)
 {
-	auto& I = r.aux_image_matrix;
+	// Build the mask image matrix 'I2'
+	auto width = r.aabb.get_width(),
+		height = r.aabb.get_height(),
+		minx = r.aabb.get_xmin(),
+		miny = r.aabb.get_ymin();
+	
+	SimpleMatrix<PixIntens> I2((int)width, (int)height);
 
-	//[rows, columns, numberOfColorChannels] = size(grayImage);
-	int rows = I.height,
-		cols = I.width;
-
-	//% Define structuring element.
-	//se = logical([0 1 0; 1 1 1; 0 1 0]);
-	//[p, q] = size(se);
+	for (auto px : r.raw_pixels)
+	{
+		auto x = px.x - minx,
+			y = px.y - miny;
+		I2.xy(x,y) = px.inten + 1;	// '+1' does the job: wherever intensity pixels are defined (via raw_pixels), in the MIM we have at least 1 even if the intensity is 0
+	}
 
 	auto halfHeight = (int)floor(SE_R / 2);
 	auto halfWidth = (int)floor(SE_C / 2);
 
 	// Initialize output image
-	ImageMatrix I1, I2(I);
-
-	// Discretize
-	#if 0
-		writeablePixels I2wp = I2.WriteablePixels();
-		for (size_t i = 0; i < I2wp.size(); i++)
-		{
-			PixIntens& pi = I2wp[i];
-			if (pi != 0)
-				pi = 1;
-		}
-	#endif
-
 	std::vector<PixIntens> Nv;
 	Nv.reserve(SE_R*SE_C/2);	// Reserving the nnz(struc elem matrix), roughly equal to the 50% of the SE matrix size
 	
-	numErosions = 0;
-	for (; numErosions < SANITY_MAX_NUM_EROSIONS; numErosions++)
+	// Blank auxiliary image that we'll need in the loop
+	SimpleMatrix<PixIntens> I1;
+
+	for (numErosions = 0; numErosions < SANITY_MAX_NUM_EROSIONS; numErosions++)
 	{
 		// Copy the matrix from previous iteration
 		I1 = I2;
-		writeablePixels I2p = I2.WriteablePixels();
-		pixData I1p = I1.ReadablePixels();
 
+		// Perform an erosion operation and count the number of surviving non-blank pixels
 		int numNon0 = 0;
 
-		// Perform local min operation, which is morphological erosion.
-		for (int col = (halfWidth + 1); col < (cols - halfWidth); col++)
-			for (int row = (halfHeight + 1); row < (rows - halfHeight); row++)
+		// --Perform local min operation, which is morphological erosion
+		for (int col = (halfWidth + 1); col < (width - halfWidth); col++)
+			for (int row = (halfHeight + 1); row < (height - halfHeight); row++)
 			{
-				//% Get the 3x3 (or in general, NxN) neighborhood
+				// Get the 3x3 (or in general, NxN) neighborhood
 				int row1 = row - halfHeight;
 				int row2 = row + halfHeight;
 				int col1 = col - halfWidth;
@@ -64,7 +57,7 @@ void ErosionPixelsFeature::calculate(LR& r)
 				for (int r = row1; r <= row2; r++)
 					for (int c = col1; c <= col2; c++)
 					{
-						auto pi = I1p.yx(r, c);
+						auto pi = I1.xy(c,r);
 						N[r - row1][c - col1] = pi;
 
 						if (pi)
@@ -74,7 +67,7 @@ void ErosionPixelsFeature::calculate(LR& r)
 				// Skip finding minimum if we have all-zeros
 				if (all0)
 				{
-					I2p.yx(row, col) = 0;
+					I2.xy(col, row) = 0;
 					continue;
 				}
 
@@ -89,7 +82,7 @@ void ErosionPixelsFeature::calculate(LR& r)
 					}
 
 				PixIntens minPixel = *std::min_element(Nv.begin(), Nv.end());
-				I2p.yx(row, col) = minPixel;
+				I2.xy(col, row) = minPixel;
 
 				// Count non-0 pixels
 				if (minPixel > 0)
@@ -106,78 +99,65 @@ void ErosionPixelsFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t
 
 void ErosionPixelsFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {
-	//
-	// ImageLoader& imlo, ReadImageMatrix_nontriv& I
-	// 
-	// WriteImageMatrix_nontriv& W
-	//
-	//
+	// Build the mask image matrix 'I2'
+	auto width = r.aabb.get_width(),
+		height = r.aabb.get_height(),
+		minx = r.aabb.get_xmin(),
+		miny = r.aabb.get_ymin();
 
-	//-- auto& I = r.aux_image_matrix;
-	ReadImageMatrix_nontriv I(r.aabb);
+	WriteImageMatrix_nontriv I2("I2", r.label);
+	I2.allocate_from_cloud (r.raw_pixels_NT, r.aabb, true);
 
-	//[rows, columns, numberOfColorChannels] = size(grayImage);
-	int rows = r.aabb.get_height(),
-		cols = r.aabb.get_width();
+	auto halfHeight = (int)floor(SE_R / 2);
+	auto halfWidth = (int)floor(SE_C / 2);
 
-	//% Define structuring element.
-	//se = logical([0 1 0; 1 1 1; 0 1 0]);
-	//[p, q] = size(se);
+	// Initialize output image
+	std::vector<PixIntens> Nv;
+	Nv.reserve(SE_R * SE_C / 2);	// Reserving the nnz(struc elem matrix), roughly equal to the 50% of the SE matrix size
 
-	auto halfHeight = (int) floor(SE_R / 2);
-	auto halfWidth = (int) floor(SE_C / 2);
+	// Blank auxiliary image that we'll need to implement a chain of erosions
+	WriteImageMatrix_nontriv I1("I1", r.label);
+	I1.allocate(width, height, 0);
 
-	//% Initialize output image
-	//localMinImage = zeros(size(grayImage), class(grayImage));
-	//-- ImageMatrix I1, I2(I);
-	WriteImageMatrix_nontriv I1 ("ErosionPixelsFeature::osized_calculate_I1", r.label), 
-		I2 ("ErosionPixelsFeature::osized_calculate_I2", r.label);
-	I2.init_with_cloud(r.raw_pixels_NT, r.aabb);
-
-	numErosions = 0;
-	for (; numErosions < SANITY_MAX_NUM_EROSIONS; numErosions++)
+	for (numErosions = 0; numErosions < SANITY_MAX_NUM_EROSIONS; numErosions++)
 	{
 		// Copy the matrix from previous iteration
-		//-- I1 = I2;
-		I1.copy (I2);
+		I1.copy(I2);
 
-		//-- writeablePixels I2p = I2.WriteablePixels();
-		//-- pixData I1p = I1.ReadablePixels();
-
+		// Perform an erosion operation and count the number of surviving non-blank pixels 
 		int numNon0 = 0;
 
-		// Perform local min operation, which is morphological erosion.
-		for (int col = (halfWidth + 1); col < (cols - halfWidth); col++)
-			for (int row = (halfHeight + 1); row < (rows - halfHeight); row++)
+		// --Perform local min operation, which is morphological erosion
+		for (int col = (halfWidth + 1); col < (width - halfWidth); col++)
+			for (int row = (halfHeight + 1); row < (height - halfHeight); row++)
 			{
-				//% Get the 3x3 neighborhood
+				// Get the 3x3 (or in general, NxN) neighborhood
 				int row1 = row - halfHeight;
 				int row2 = row + halfHeight;
 				int col1 = col - halfWidth;
 				int col2 = col + halfWidth;
 
-				//thisNeighborhood = grayImage (row1:row2, col1 : col2);
 				bool all0 = true;
 				int N[SE_R][SE_C];
 				for (int r = row1; r <= row2; r++)
 					for (int c = col1; c <= col2; c++)
 					{
-						N[r - row1][c - col1] = I1.get_at (r, c);
+						auto pi = I1[r * width + c];
+						N[r - row1][c - col1] = pi;
 
-						if (N[r - row1][c - col1])
+						if (pi)
 							all0 = false;
 					}
 
 				// Skip finding minimum if we have all-zeros
 				if (all0)
 				{
-					I2.set_at (row, col, 0);
+					I2.set_at(row * width + col, 0);
 					continue;
 				}
 
 				// Apply the structuring element
-				//pixelsInSE = thisNeighborhood(se);
-				std::vector<PixIntens> Nv;
+				Nv.clear();
 				for (int r = 0; r < SE_R; r++)
 					for (int c = 0; c < SE_C; c++)
 					{
@@ -186,9 +166,8 @@ void ErosionPixelsFeature::osized_calculate (LR& r, ImageLoader& imloader)
 							Nv.push_back(N[r][c]);
 					}
 
-				//localMinImage(row, col) = min(pixelsInSE);
 				PixIntens minPixel = *std::min_element(Nv.begin(), Nv.end());
-				I2.set_at (row, col, minPixel);
+				I2.set_at(row * width + col, minPixel);
 
 				// Count non-0 pixels
 				if (minPixel > 0)
@@ -217,7 +196,7 @@ void ErosionPixelsFeature::parallel_process_1_batch(size_t start, size_t end, st
 			continue;
 
 		// Check if data is good
-		if ((int)r.fvals[MIN][0] == (int)r.fvals[MAX][0])
+		if (r.aux_min == r.aux_max)
 			continue;
 
 		// Calculate feature

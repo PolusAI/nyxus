@@ -91,6 +91,8 @@ private:
 
 	SimpleMatrix<int> P;	// dependence matrix
 
+	void clear_buffers();
+
 	const double BAD_ROI_FVAL = 0.0;
 	const double EPS = 2.2e-16;
 	const double LOG10_2 = 0.30102999566;	// precalculated log 2 base 10
