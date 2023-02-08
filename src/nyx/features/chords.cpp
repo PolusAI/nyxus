@@ -10,37 +10,43 @@
 
 void ChordsFeature::calculate (LR & r)
 {
-	const std::vector<Pixel2>& raw_pixels = r.raw_pixels;
-	const AABB& bb = r.aabb;
-	double cenx = (bb.get_xmin() + bb.get_xmax()) / 2.0,
-		ceny = (bb.get_ymin() + bb.get_ymax()) / 2.0;
+	// Center
+	double cenx = (r.aabb.get_xmin() + r.aabb.get_xmax()) / 2.0,
+		ceny = (r.aabb.get_ymin() + r.aabb.get_ymax()) / 2.0;
 
-	auto n = raw_pixels.size();
-	std::vector<Pixel2> R;	// raw_pixels rotated 
-	R.resize(n, {0,0,0});
-
-	std::vector<HistoItem> AC, MC; // all chords and max chords
-	std::vector<double> ACang, MCang; // corresponding angles
+	// All chords and max chords
+	std::vector<HistoItem> AC, MC; // lengths
+	std::vector<double> ACang, MCang; // angles
 
 	// Gather chord lengths at various angles
-	double angStep = M_PI / 20.0;
+	double angStep = M_PI / double(n_angle_segments);
 	for (double ang = 0; ang < M_PI; ang += angStep)
 	{
-		std::vector<int> TC; // chords at angle theta
+		// Chords at angle theta
+		std::vector<int> TC; 
 
-		Rotation::rotate_cloud (raw_pixels, cenx, ceny, ang, R);
+		// Container for rotated pixel cloud
+		std::vector<Pixel2> R;
+		R.resize(r.raw_pixels.size(), { 0,0,0 });
+
+		// Rotate the cloud and save as image matrix
+		Rotation::rotate_cloud (r.raw_pixels, cenx, ceny, ang, R);
 		ImageMatrix im (R);
-		for (int c = 0; c < im.width; c++)
+
+		// Explore column chords, with step to keep the timing under control at huge ROIs
+		int step = im.width >= 2 * n_side_segments ? im.width / n_side_segments : 1;
+		for (int col = 0; col < im.width; col += step)
 		{
-			int chlen = im.get_chlen(c);
+			int chlen = im.get_chlen (col);
 			if (chlen > 0)
 			{
-				TC.push_back(chlen);
-				AC.push_back(chlen);
-				ACang.push_back(ang);
+				TC.push_back (chlen);
+				AC.push_back (chlen);
+				ACang.push_back (ang);
 			}
 		}
 
+		// Save the longest chord's length and angle
 		if (TC.size() > 0)
 		{
 			auto maxChlen = *(std::max_element(TC.begin(), TC.end()));
@@ -51,7 +57,7 @@ void ChordsFeature::calculate (LR & r)
 
 	// Analyze max chords
 	if (MC.size() == 0)
-		return;
+		return;	// Nothing to analyze, return
 
 	Moments2 mom2;
 	for (auto chlen : MC)

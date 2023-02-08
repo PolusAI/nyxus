@@ -113,6 +113,9 @@ public:
 	}
 
 private:
+	const int n_angle_segments = 20;
+	const int n_side_segments = 100;
+
 	double allchords_max = 0,
 		allchords_min = 0,
 		allchords_median = 0,
