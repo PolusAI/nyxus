@@ -27,61 +27,6 @@ ChordsFeature::ChordsFeature() : FeatureMethod("ChordsFeature")
 		ALLCHORDS_STDDEV });
 }
 
-#if 0
-void ChordsFeature::osized_calculate (LR& r, ImageLoader& imloader)
-{
-	if (r.raw_pixels_NT.size() == 0)
-		return;
-
-	// The center that we'll rotate the ROI around
-	size_t cenx = (r.aabb.get_xmin() + r.aabb.get_xmax()) / 2,
-		ceny = (r.aabb.get_ymin() + r.aabb.get_ymax()) / 2;
-
-	std::vector<HistoItem> AC, MC; // all chords and max chords
-	std::vector<double> ACang, MCang; // corresponding angles
-
-	// Pixel cloud to store rotated ROI
-	OutOfRamPixelCloud R;
-	R.init (r.label, "rotatedPixCloud");
-
-	// Gather chord lengths at various angles
-	double angStep = M_PI / 20.0;
-	for (double ang = 0; ang < M_PI; ang += angStep)
-	{
-		std::vector<int> TC; // chords at angle theta
-
-		AABB aabbRot;	//  bounding box of the rotated cloud
-		Rotation::rotate_cloud (
-			// inputs
-			r.raw_pixels_NT, cenx, ceny, ang,
-			// outputs
-			R, aabbRot);
-
-		//ImageMatrix_nontriv im(R);
-		WriteImageMatrix_nontriv imRot ("imRot", r.label);
-		imRot.allocate_from_cloud (R, aabbRot, true);
-
-		for (int c = 0; c < imRot.get_width(); c++)
-		{
-			int chlen = imRot.get_chlen (c);
-			if (chlen > 0)
-			{
-				TC.push_back(chlen);
-				AC.push_back(chlen);
-				ACang.push_back(ang);
-			}
-		}
-
-		if (TC.size() > 0)
-		{
-			auto maxChlen = *(std::max_element(TC.begin(), TC.end()));
-			MC.push_back(maxChlen);
-			MCang.push_back(ang);
-		}
-	}
-}
-#endif
-
 void ChordsFeature::osized_calculate(LR& r, ImageLoader& imloader)
 {
 	// Center
