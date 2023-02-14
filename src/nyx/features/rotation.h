@@ -25,14 +25,12 @@ public:
 		// [out]
 		std::vector<Pixel2>& P_rot);
 
-	static void rotate_cloud(
+	static void rotate_cloud_NT(
 		// [in]
 		const OutOfRamPixelCloud & cloud,
 		const double cx,
 		const double cy,
 		float theta_radians,
 		// [out]
-		OutOfRamPixelCloud & rotated_cloud, 
-		AABB & rotated_aabb
-		);
+		OutOfRamPixelCloud & rotated_cloud);
 };

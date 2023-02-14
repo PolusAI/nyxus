@@ -19,7 +19,7 @@ class GaborFeature: public FeatureMethod
 public:
     static bool required(const FeatureSet& fs) { return fs.isEnabled(GABOR); }
 
-    static const int num_features = 7;
+    static constexpr int num_features = 7;
 
     GaborFeature();
     
@@ -62,7 +62,7 @@ private:
     // Computes Gabor energy 
     void GaborEnergy (
         const ImageMatrix& Im, 
-        PixIntens* /* double* */ out, 
+        PixIntens* out, 
         double* auxC, 
         double* Gex, 
         double f0, 
@@ -97,26 +97,37 @@ private:
     #endif
 
     // Nontrivial ROIs
-    void osized_GaborEnergy(
-        ImageLoader& imloader,
-        ReadImageMatrix_nontriv& Im,
-        WriteImageMatrix_nontriv& out,
-        WriteImageMatrix_nontriv& auxC,
+
+    void GaborEnergy_NT2 (
+        WriteImageMatrix_nontriv& Im,
         double* Gexp,
         double f0,
         double sig2lam,
         double gamma,
         double theta,
-        int n);
-    void osized_Gabor(double* Gex, double f0, double sig2lam, double gamma, double theta, double fi, int n);
-    void osized_conv_dud(
-        ImageLoader& imloader,
-        WriteImageMatrix_nontriv& C,
-        ReadImageMatrix_nontriv& A,
+        int n, 
+        bool max_or_threshold,
+        double threshold, 
+        double & max_val, 
+        size_t & cnt);
+
+    void conv_dud_NT (
+        double* C,
+        WriteImageMatrix_nontriv& A,
         double* B,
         int na, int ma, int nb, int mb);
 
+    void GetStats_NT (WriteImageMatrix_nontriv& I, Moments2& moments2);
+
     // Result cache
     std::vector<double> fvals;
+
+    // Parameters
+    static constexpr double gamma = 0.5; 
+    static constexpr double sig2lam = 0.56;
+    static constexpr int n = 38;
+    static constexpr double f0LP = 0.1;     // frequency of the baseline LP Gabor filter
+    static constexpr double theta = 3.14159265 / 2;
+    static constexpr double GRAYthr = 0.25; // simplified thresholding as GRAYthr=e2img.Otsu()
 };
 

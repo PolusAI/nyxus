@@ -9,77 +9,163 @@ GaborFeature::GaborFeature() : FeatureMethod("GaborFeature")
     provide_features ({ GABOR });
 }
 
-void GaborFeature::osized_calculate (LR& r, ImageLoader& imloader)
+void GaborFeature::osized_calculate (LR& r, ImageLoader&)
 {
-    double GRAYthr;
-
-    // Parameters set up in complience with the paper 
-    double gamma = 0.5, sig2lam = 0.56;
-    int n = 38;
-    double f0[7] = { 1,2,3,4,5,6,7 };       // frequencies for several HP Gabor filters
-    double f0LP = 0.1;     // frequencies for one LP Gabor filter
-    double theta = 3.14159265 / 2;
-    int ii;
-    unsigned long originalScore = 0;
-
-    //---readOnlyPixels im0_plane = Im0.ReadablePixels();
-    ReadImageMatrix_nontriv Im0 (r.aabb);
-
-    // --1
-    WriteImageMatrix_nontriv e2img ("e2img", r.label);
-    auto roiWidth = r.aabb.get_width(),
-        roiHeight = r.aabb.get_height();
-    e2img.allocate (roiWidth, roiHeight, 0);
-
-    // --2
-    //---std::vector<double> auxC((Im0.width + n - 1) * (Im0.height + n - 1) * 2);
-    WriteImageMatrix_nontriv auxC ("auxC", r.label);
-    auxC.allocate((roiWidth+n-1), (roiHeight+n-1) * 2, 0);   
-
-    // --3
-    std::vector<double> auxG (n*n*2);
-
-    // compute the original score before Gabor
-    osized_GaborEnergy (imloader, Im0, e2img, auxC, auxG.data(), f0LP, sig2lam, gamma, theta, n);
-
-    double max_val = e2img.get_max();
-
-    int cnt = 0;
-    double cmp_a = max_val * 0.4;
-    for (size_t i = 0; i < e2img.size(); i++) //--- for (auto a : pix_plane)
-    {
-        double a = e2img.get_at(i);
-        if (a > cmp_a)
-            cnt++;
-    }
-    originalScore = cnt;
-
     if (fvals.size() != GaborFeature::num_features)
-        fvals.resize(GaborFeature::num_features, 0.0);
+        fvals.resize(GaborFeature::num_features);
+    std::fill (fvals.begin(), fvals.end(), 0.0);
 
-    for (ii = 0; ii < GaborFeature::num_features; ii++)
+    // Skip calculation in case of noninformative data
+    if (r.aux_max == r.aux_min)
+        return;
+
+    // Prepare the image matrix
+    WriteImageMatrix_nontriv Im0 ("GaborFeature-osized_calculate-Im0", r.label);
+    Im0.allocate_from_cloud (r.raw_pixels_NT, r.aabb, false);
+
+    // Buffer for Gabor filters
+    std::vector<double> auxG (n * n * 2);
+
+    // Compute the original score before Gabor
+    double max0 = 0.0;
+    size_t cnt0 = 0;
+    GaborEnergy_NT2 (Im0, auxG.data(), f0LP, sig2lam, gamma, theta, n, true/*request max*/, 0/*threshold*/, max0/*out*/, cnt0/*out*/);
+
+    double cmp_a = max0 * GRAYthr;
+
+    size_t originalScore = 0;
+    GaborEnergy_NT2 (Im0, auxG.data(), f0LP, sig2lam, gamma, theta, n, false/*request count*/, cmp_a/*threshold*/, max0/*out*/, originalScore/*out*/);
+
+    for (int freq = 0; freq < GaborFeature::num_features; freq++)
     {
-        unsigned long afterGaborScore = 0;
-        osized_GaborEnergy (imloader, Im0, e2img, auxC, auxG.data(), f0[ii], sig2lam, gamma, theta, n);
+        VERBOSLVL3(std::cout << "\tcalculating Gabor frequency " << freq+1 << "/" << GaborFeature::num_features << "\n");
 
-        GRAYthr = 0.25; // --Using simplified thresholding-- GRAYthr = e2img.Otsu();
+        size_t afterGaborScore = 0;
+        GaborEnergy_NT2 (Im0, auxG.data(), freq + 1, sig2lam, gamma, theta, n, false/*request count*/, cmp_a/*threshold*/, max0/*out*/, afterGaborScore/*out*/);
+        fvals[freq] = (double)afterGaborScore / (double)originalScore;
 
-        afterGaborScore = 0;
-        for (size_t i = 0; i < e2img.size(); i++) 
-        {
-            double a = e2img.get_at(i);
-            if (a / max_val > GRAYthr)
-                afterGaborScore++;
-        }
-
-        fvals[ii] = (double)afterGaborScore / (double)originalScore;
+        VERBOSLVL3(std::cout << "\t\tfeature [" << freq << "] = " << fvals[freq] << "\n");
     }
 }
 
-void GaborFeature::osized_conv_dud (
-    ImageLoader& imloader, 
-    WriteImageMatrix_nontriv& C, //--- double* C,
-    ReadImageMatrix_nontriv& A, //--- const unsigned int* A,
+void GaborFeature::GetStats_NT (WriteImageMatrix_nontriv & I, Moments2& moments2) 
+{
+    // Feed all the image pixels into the Moments2 object:
+    moments2.reset();
+    for (size_t i = 0; i < I.size(); i++)
+    {
+        auto inten = I.get_at(i);
+        moments2.add (inten);
+    }
+}
+
+// Computes Gabor energy
+void GaborFeature::GaborEnergy_NT2 (
+    WriteImageMatrix_nontriv& Im,
+    double* Gexp,
+    double f0,
+    double sig2lam,
+    double gamma,
+    double theta,
+    int n, 
+    bool max_or_threshold,  // 'true' to return max, 'false' to return count
+    double threshold,
+    double & max_val/*out*/,
+    size_t & over_threshold_count/*out*/)
+{
+    // Reset the output variables
+    over_threshold_count = 0;
+    max_val = -1;
+
+    // Prepare a filter
+    double fi = 0;
+    Gabor (Gexp, f0, sig2lam, gamma, theta, fi, n);
+
+    // Helpful temps
+    auto width = Im.get_width(),
+        height = Im.get_height();
+    auto xy0 = (int)ceil(double(n) / 2.);
+
+    // Window (N-fold kernel size)
+    int winX = n * 10, 
+        winY = n * 10;
+    std::vector<unsigned int> W (winY * winX);
+
+    // Convolution result buffer
+    std::vector<double> auxC ((winY + n - 1) * (winX + n - 1) * 2);
+
+    // Iterate the image window by window
+    int n_winHor = width / winX, //ceil (float(width) / float(win)), 
+        n_winVert = height / winY; //ceil (float(height) / float(win));
+
+    // ROI smaller than kernel?
+    if (n_winVert == 0 || n_winHor == 0)
+    {
+        // Fill the window with data
+        for (int row=0; row < height; row++)
+            for (int col = 0; col < width; col++)
+            {
+                size_t idx = row * width + col;
+                W[idx] = Im.get_at(idx);
+            }    
+
+        // Convolve
+        conv_dud (auxC.data(), W.data(), Gexp, winY, winX, n, n);
+
+        // Collect the result
+        for (auto y = xy0, b = 0; b < winY; y++, b++)
+            for (auto x = xy0, a = 0; a < winX; x++, a++)
+            {
+                auto inten = (PixIntens)sqrt(pow(auxC[y * 2 * (winX + n - 1) + x * 2], 2) + pow(auxC[y * 2 * (winX + n - 1) + x * 2 + 1], 2));
+                // Calculate requested summary
+                if (max_or_threshold)
+                    max_val = std::max(max_val, double(inten));
+                else
+                    if (double(inten) > threshold)
+                        over_threshold_count++;
+            }
+
+        return;
+    }
+
+    // ROI larger than kernel
+    for (int winVert = 0; winVert < n_winVert; winVert++)
+    {
+        for (int winHor = 0; winHor < n_winHor; winHor++)
+        {
+            // Fill the window with data
+            for (int row=0; row<winY; row++)
+                for (int col = 0; col < winX; col++)
+                {
+                    size_t imIdx = winVert * n_winHor * winY * winX // skip whole windows above
+                        + row * n_winHor * winX  // skip 'row' image-wide horizontal lines
+                        + winHor * n_winHor * winX   // skip winHor-wide line
+                        + col;
+                    W[row * winX + col] = Im.get_at(imIdx);
+                }
+
+            // Convolve
+            conv_dud (auxC.data(), W.data(), Gexp, winY, winX, n, n);
+
+            // Collect the result
+            for (auto y = xy0, b = 0; b < height; y++, b++)
+                for (auto x = xy0, a = 0; a < width; x++, a++)
+                {
+                    auto inten = (PixIntens)sqrt(pow(auxC[y * 2 * (winX + n - 1) + x * 2], 2) + pow(auxC[y * 2 * (winX + n - 1) + x * 2 + 1], 2));
+                    // Calculate requested summary
+                    if (max_or_threshold)
+                        max_val = std::max(max_val, double(inten));
+                    else
+                        if (double(inten) > threshold)
+                            over_threshold_count++;
+                }
+        }
+    }
+}
+
+void GaborFeature::conv_dud_NT (
+    double* C,
+    WriteImageMatrix_nontriv& A,
     double* B,
     int na, int ma, int nb, int mb)
 {
@@ -96,7 +182,7 @@ void GaborFeature::osized_conv_dud (
     // initalize the output matrix 
     int mcnc = mc * nc;
     for (int i = 0; i < mcnc; i++)
-        C.set_at(i, 0.0); //--- C[i] = 0.0;
+        C[i] = 0.0;
 
     for (int j = 0; j < mb; ++j)
     {
@@ -118,18 +204,14 @@ void GaborFeature::osized_conv_dud (
                 for (int k = 0; k < na; k++)
                 {
                     // cache A[iq]
-                    double a = A.get_at(imloader, iq); //--- A[iq];
+                    double a = A[iq];
                     iq++;
 
                     // multiply by the real weight and add
-                    //--- C[ip] += a * wr;
-                    double tmp = C.get_at(ip) +  a * wr;
-                    C.set_at(ip, tmp);
+                    C[ip] += a * wr;
 
                     // multiply by the imaginary weight and add
-                    //--- C[ip + 1] += a * wi;
-                    tmp = C.get_at(ip+1) + a * wi;
-                    C.set_at(ip + 1, tmp);
+                    C[ip + 1] += a * wi;
                     ip += 2;
                 }
 
@@ -139,110 +221,4 @@ void GaborFeature::osized_conv_dud (
         }
     }
 }
-
-void GaborFeature::osized_GaborEnergy(
-    ImageLoader& imloader, 
-    ReadImageMatrix_nontriv & Im, //--- const ImageMatrix& Im,
-    WriteImageMatrix_nontriv& out, //--- PixIntens* /* double* */ out,
-    WriteImageMatrix_nontriv& auxC, //--- double* auxC,
-    double* Gexp,
-    double f0,
-    double sig2lam,
-    double gamma,
-    double theta,
-    int n)
-{
-    int n_gab = n;
-
-    double fi = 0;
-    osized_Gabor (Gexp, f0, sig2lam, gamma, theta, fi, n_gab);
-
-    //--- readOnlyPixels pix_plane = Im.ReadablePixels();
-
-    auto w = Im.get_width(), 
-        h = Im.get_height();
-
-    osized_conv_dud (imloader, auxC, Im, Gexp, w, h, n_gab, n_gab);
-
-    decltype(h) b = 0;
-    for (auto y = (int)ceil((double)n / 2); b < h; y++)
-    {
-        decltype(w) a = 0;
-        for (auto x = (int)ceil((double)n / 2); a < w; x++)
-        {
-            if (std::isnan(auxC.get_at(y*2*(w+n-1)+x*2)) || std::isnan(auxC.get_at(y*2*(w+n-1)+x*2+1)))
-            {
-                out.set_at (b*w+a, (PixIntens)std::numeric_limits<double>::quiet_NaN());
-                a++;
-                continue;
-            }
-
-            out.set_at (b*w+a, (PixIntens)sqrt(pow(auxC.get_at(y*2*(w+n-1)+x*2), 2) + pow(auxC.get_at(y*2*(w+n-1)+x*2+1), 2)));
-            a++;
-        }
-        b++;
-    }
-}
-
-void GaborFeature::osized_Gabor (double* Gex, double f0, double sig2lam, double gamma, double theta, double fi, int n)
-{
-    //double* tx, * ty;
-    double lambda = 2 * M_PI / f0;
-    double cos_theta = cos(theta), sin_theta = sin(theta);
-    double sig = sig2lam * lambda;
-    double sum;
-    //A double* Gex;
-    int x, y;
-    int nx = n;
-    int ny = n;
-    //A tx = new double[nx + 1];
-    std::vector<double> tx(nx + 1);
-    //A ty = new double[ny + 1];
-    std::vector<double> ty(nx + 1);
-
-    if (nx % 2 > 0) {
-        tx[0] = -((nx - 1) / 2);
-        for (x = 1; x < nx; x++)
-            tx[x] = tx[x - 1] + 1;
-    }
-    else {
-        tx[0] = -(nx / 2);
-        for (x = 1; x < nx; x++)
-            tx[x] = tx[x - 1] + 1;
-    }
-
-    if (ny % 2 > 0) {
-        ty[0] = -((ny - 1) / 2);
-        for (y = 1; y < ny; y++)
-            ty[y] = ty[y - 1] + 1;
-    }
-    else {
-        ty[0] = -(ny / 2);
-        for (y = 1; y < ny; y++)
-            ty[y] = ty[y - 1] + 1;
-    }
-
-    //A Gex = new double[n * n * 2];
-
-    sum = 0;
-    for (y = 0; y < n; y++) {
-        for (x = 0; x < n; x++) {
-            double argm, xte, yte, rte, ge;
-            xte = tx[x] * cos_theta + ty[y] * sin_theta;
-            yte = ty[y] * cos_theta - tx[x] * sin_theta;
-            rte = xte * xte + gamma * gamma * yte * yte;
-            ge = exp(-1 * rte / (2 * sig * sig));
-            argm = xte * f0 + fi;
-            Gex[y * n * 2 + x * 2] = ge * cos(argm);             // ge .* exp(j.*argm);
-            Gex[y * n * 2 + x * 2 + 1] = ge * sin(argm);
-            sum += sqrt(pow(Gex[y * n * 2 + x * 2], 2) + pow(Gex[y * n * 2 + x * 2 + 1], 2));
-        }
-    }
-
-    // normalize
-    for (y = 0; y < n; y++)
-        for (x = 0; x < n * 2; x += 1)
-            Gex[y * n * 2 + x] = Gex[y * n * 2 + x] / sum;
-}
-
 

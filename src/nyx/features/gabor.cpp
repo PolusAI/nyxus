@@ -7,27 +7,18 @@ using namespace std;
 
 void GaborFeature::calculate (LR& r)
 {
-    // Skip calculation in case of bad data
-    if ((int)r.fvals[MIN][0] == (int)r.fvals[MAX][0])
+    // Skip calculation in case of noninformative data
+    if (r.aux_max == r.aux_min)
     {
         fvals.resize (GaborFeature::num_features, 0);   // 'fvals' will then be picked up by save_values()
         return;
     }
 
     const ImageMatrix& Im0 = r.aux_image_matrix;
-
-    double GRAYthr;
-    /* parameters set up in complience with the paper */
-    double gamma = 0.5, sig2lam = 0.56;
-    int n = 38;
-    double f0[7] = { 1, 2, 3, 4, 5, 6, 7 };       // frequencies for several HP Gabor filters
-    double f0LP = 0.1;     // frequencies for one LP Gabor filter
-    double theta = 3.14159265 / 2;
     int ii;
     unsigned long originalScore = 0;
+    double f0[7] = { 1, 2, 3, 4, 5, 6, 7 };       // frequencies for several HP Gabor filters
 
-    readOnlyPixels im0_plane = Im0.ReadablePixels();
-    
     // Temp buffers
 
     // --1
@@ -50,9 +41,6 @@ void GaborFeature::calculate (LR& r)
     e2img.GetStats(local_stats);
     double max_val = local_stats.max__();
 
-    //
-    //originalScore = (pix_plane.array() > max_val * 0.4).count();
-    //
     int cnt = 0;
     double cmp_a = max_val * 0.4;
     for (auto a : pix_plane)
@@ -69,19 +57,6 @@ void GaborFeature::calculate (LR& r)
         writeablePixels e2_pix_plane = e2img.WriteablePixels();
         GaborEnergy (Im0, e2_pix_plane.data(), auxC.data(), auxG.data(), f0[ii], sig2lam, gamma, theta, n);
 
-        //
-        //Moments2 local_stats2;
-        //e2img.GetStats(local_stats2);
-        //double max_val2 = local_stats2.max__();
-        //
-        //e2_pix_plane.array() = (e2_pix_plane.array() / max_val2).unaryExpr(Moments2func(e2img.stats));
-        //
-
-        GRAYthr = 0.25; // --Using simplified thresholding-- GRAYthr = e2img.Otsu();
-
-        //
-        //afterGaborScore = (e2_pix_plane.array() > GRAYthr).count();
-        //
         afterGaborScore = 0;
         for (auto a : e2_pix_plane)
             if (double(a)/max_val > GRAYthr)
@@ -94,8 +69,8 @@ void GaborFeature::calculate (LR& r)
 #ifdef USE_GPU
 void GaborFeature::calculate_gpu (LR& r)
 {
-    // Skip calculation in case of bad data
-    if ((int)r.fvals[MIN][0] == (int)r.fvals[MAX][0])
+    // Skip calculation in case of noninformative data
+    if (r.aux_max == r.aux_min)
     {
         fvals.resize (GaborFeature::num_features, 0);   // 'fvals' will then be picked up by save_values()
         return;
@@ -168,7 +143,7 @@ void GaborFeature::calculate_gpu (LR& r)
 void GaborFeature::calculate_gpu_multi_filter (LR& r)
 {
 
-    if ((int)r.fvals[MIN][0] == (int)r.fvals[MAX][0])
+    if (r.aux_max == r.aux_min)
     {
         fvals.resize (GaborFeature::num_features, 0);   // 'fvals' will then be picked up by save_values()
         return;
@@ -641,8 +616,10 @@ void GaborFeature::Gabor (double* Gex, double f0, double sig2lam, double gamma, 
     //A Gex = new double[n * n * 2];
 
     sum = 0;
-    for (y = 0; y < n; y++) {
-        for (x = 0; x < n; x++) {
+    for (y = 0; y < n; y++) 
+    {
+        for (x = 0; x < n; x++) 
+{
             double argm, xte, yte, rte, ge;
             xte = tx[x] * cos_theta + ty[y] * sin_theta;
             yte = ty[y] * cos_theta - tx[x] * sin_theta;
@@ -665,7 +642,7 @@ void GaborFeature::Gabor (double* Gex, double f0, double sig2lam, double gamma, 
 // Computes Gabor energy
 void GaborFeature::GaborEnergy (
     const ImageMatrix& Im, 
-    PixIntens* /* double* */ out, 
+    PixIntens* out, 
     double* auxC, 
     double* Gexp,
     double f0, 
@@ -722,6 +699,7 @@ void GaborFeature::GaborEnergy (
         b++;
     }
 }
+
 #ifdef USE_GPU
 void GaborFeature::GaborEnergyGPU (
     const ImageMatrix& Im, 
