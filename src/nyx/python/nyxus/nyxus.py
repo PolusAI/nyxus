@@ -46,6 +46,8 @@ class Nyxus:
         Id of the gpu to use. To find available gpus along with ids, using nyxus.get_gpu_properties().
         The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
         thread for feature calculation. 
+    ibsi: bool (optional, default false)
+       IBSI available features will be IBSI compliant when true.
     """
 
     def __init__(
@@ -56,7 +58,8 @@ class Nyxus:
         coarse_gray_depth: int = 256, 
         n_feature_calc_threads: int = 4,
         n_loader_threads: int = 1,
-        using_gpu: int = -1
+        using_gpu: int = -1,
+        ibsi: bool = False
     ):
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
@@ -88,7 +91,8 @@ class Nyxus:
             coarse_gray_depth, 
             n_feature_calc_threads,
             n_loader_threads,
-            using_gpu
+            using_gpu,
+            ibsi
         )
 
     def featurize_directory(

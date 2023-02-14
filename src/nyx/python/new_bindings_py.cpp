@@ -42,7 +42,8 @@ void initialize_environment(
     uint32_t coarse_gray_depth, 
     uint32_t n_reduce_threads,
     uint32_t n_loader_threads,
-    int using_gpu)
+    int using_gpu,
+    bool ibsi)
 {
     theEnvironment.recognizedFeatureNames = features;
     theEnvironment.set_pixel_distance(static_cast<int>(neighbor_distance));
@@ -51,6 +52,7 @@ void initialize_environment(
     theEnvironment.set_coarse_gray_depth(coarse_gray_depth);
     theEnvironment.n_reduce_threads = n_reduce_threads;
     theEnvironment.n_loader_threads = n_loader_threads;
+    theEnvironment.ibsi_compliance = ibsi;
 
     // Throws exception if invalid feature is supplied.
     theEnvironment.process_feature_list();
