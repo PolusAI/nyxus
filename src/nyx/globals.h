@@ -14,6 +14,13 @@
 #include "results_cache.h"
 #include "roi_cache.h"
 
+#ifdef WITH_PYTHON_H
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
+namespace py = pybind11;
+#endif
+
 namespace Nyxus
 {
 	extern FeatureManager theFeatureMgr;
@@ -26,6 +33,16 @@ namespace Nyxus
 	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit);
 	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads);
 	void dump_roi_metrics(const std::string & label_fpath);
+
+	// in memory functions
+#ifdef WITH_PYTHON_H
+	bool gatherRoisMetricsInMemory (const py::array_t<unsigned int>& intens_image, const py::array_t<unsigned int>& label_image, int start_idx);
+	bool processIntSegImagePairInMemory (const std::string& intens_fpath, const std::string& label_fpath, int filepair_index, const std::string& intens_name, const std::string& seg_name);
+	int processDatasetInMemory(const py::array_t<unsigned int>& intensFiles, const py::array_t<unsigned int>& labelFiles, int numReduceThreads, int min_online_roi_size, bool save2csv, const std::string& csvOutputDir, const std::vector<std::string>& intensity_names,
+		const std::vector<std::string>& seg_names);
+	bool scanTrivialRois (const std::vector<int>& batch_labels, const py::array_t<unsigned int>& intens_images, const py::array_t<unsigned int>& label_images, int start_idx);
+	bool processTrivialRoisInMemory (const std::vector<int>& trivRoiLabels, const py::array_t<unsigned int>& intens_fpath, const py::array_t<unsigned int>& label_fpath, int start_idx);
+#endif
 
 	// 2 scenarios of saving a result of feature calculation of a label-intensity file pair: saving to a CSV-file and saving to a matrix to be later consumed by a Python endpoint
 	bool save_features_2_csv (std::string intFpath, std::string segFpath, std::string outputDir);
