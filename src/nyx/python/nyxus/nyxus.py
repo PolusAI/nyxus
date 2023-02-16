@@ -153,14 +153,14 @@ class Nyxus:
 
         return df
     
-    def featurize_memory(
+    def featurize(
         self,
         intensity_images: np.array,
         label_images: np.array,
         intensity_names: list = [],
         label_names: list = []
     ):
-        """Extract features from all the images satisfying the file pattern of provided image directories.
+        """Extract features from a single image pair in a 2D np.array or for all the images in a 3D np.array.
 
         Extracts all the requested features _at the image level_ from the images
         in `intensity_images`. Features will be extracted for each unique label 
@@ -243,7 +243,7 @@ class Nyxus:
     def using_gpu(self, gpu_on: bool):
         use_gpu(gpu_on)
 
-    def featurize (
+    def featurize_files (
         self,
         intensity_files: list,
         mask_files: list):
