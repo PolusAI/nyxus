@@ -45,7 +45,7 @@ Alternatively, Nyxus can process explicitly defined pairs of intensity-mask imag
 ```python 
 from nyxus import Nyxus
 nyx = Nyxus(["*ALL*"])
-features = nyx.featurize(
+features = nyx.featurize_files(
     [
         "/path/to/images/intensities/i1.ome.tif", 
         "/path/to/images/intensities/i2.ome.tif"
@@ -67,6 +67,79 @@ The `features` variable is a Pandas dataframe similar to what is shown below.
 |   4 | p1_y2_r51_c0.ome.tif | p1_y2_r51_c0.ome.tif |       5 | 36739.7 |  37798   |...|   0.854067 |
 | ... | ...                  | ...                  |     ... | ...     |  ...     |...|   ...      |
 | 734 | p5_y0_r51_c0.ome.tif | p5_y0_r51_c0.ome.tif |     223 | 54573.3 |  54573.3 |...|   0.980769 |
+
+Nyxus can also process intensity-mask pairs that are already loaded in memory as Numpy arrays using the `featurize` method. This method takes in either a single pair of 2D intensity-mask pairs
+or a pair of 3D arrays containing 2D intensity and mask images. There is also two optional parameters to supply names to the resulting dataframe, . 
+
+```python 
+from nyxus import Nyxus
+import numpy as np
+
+
+nyx = Nyxus(["*ALL*"])
+
+intens = [
+    [[1, 4, 4, 1, 1],
+        [1, 4, 6, 1, 1],
+        [4, 1, 6, 4, 1],
+        [4, 4, 6, 4, 1]],
+                   
+    [[1, 4, 4, 1, 1],
+    [1, 1, 6, 1, 1],
+    [1, 1, 3, 1, 1],
+    [4, 4, 6, 1, 1]]
+]
+
+seg = [
+    [[1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1]],
+                
+    [[1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1],
+    [0, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1]]
+]
+
+
+features = nyx.featurize(intes, seg)
+```
+
+The `features` variable is a Pandas dataframe similar to what is shown below.
+
+|     | mask_image    | intensity_image | label | MEAN    |   MEDIAN |...|    GABOR_6 |
+|----:|:--------------|:----------------|------:|--------:|---------:|--:|-----------:|
+|   0 | Segmentation1 | Intensity1      |     1 | 45366.9 |  46887   |...|   0.873016 |
+|   1 | Segmentation1 | Intensity1      |     2 | 27122.8 |  27124.5 |...|   1.000000 |
+|   2 | Segmentation1 | Intensity1      |     3 | 34777.4 |  33659   |...|   0.942857 |
+|   3 | Segmentation1 | Intensity1      |     4 | 35808.2 |  36924   |...|   0.824074 |
+| ... | ...           | ...             |   ... | ...     |  ...     |...|   ...      |
+|  14 | Segmentation2 | Intensity2      |     6 | 54573.3 |  54573.3 |...|   0.980769 |
+
+Note that in this case, default names were provided for the `mask_image` and `intensity_image` columns. To supply names 
+for these columns, the optional arguments `intensity_names` and `label_names` are used by passing lists of names in. 
+The length of the lists must be the same as the length of the mask and intensity arrays. To name the images, use
+
+```python 
+
+intens_names = ['custom_intens_name1', 'custom_intens_name2']
+seg_names = ['custom_seg_name1', 'custom_seg_name2']
+
+features = nyx.featurize(intes, seg, intens_name, seg_name)
+```
+
+The `features` variable will now use the custom names, as shown below
+
+|     | mask_image       | intensity_image          | label | MEAN    |   MEDIAN |...|    GABOR_6 |
+|----:|:-----------------|:-------------------------|------:|--------:|---------:|--:|-----------:|
+|   0 | custom_seg_name1 | custom_intens_name1      |     1 | 45366.9 |  46887   |...|   0.873016 |
+|   1 |custom_seg_name1  | custom_intens_name1      |     2 | 27122.8 |  27124.5 |...|   1.000000 |
+|   2 | custom_seg_name1 | custom_intens_name1      |     3 | 34777.4 |  33659   |...|   0.942857 |
+|   3 | custom_seg_name1 | custom_intens_name1      |     4 | 35808.2 |  36924   |...|   0.824074 |
+| ... | ...              | ...                      |   ... | ...     |  ...     |...|   ...      |
+|  14 | custom_seg_name2 | custom_intens_name2      |     6 | 54573.3 |  54573.3 |...|   0.980769 |
+
 
 For more information on all of the available options and features, check out [the documentation](#).
 
