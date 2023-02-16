@@ -158,25 +158,33 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 --pixelsPerunit|Enter the number of pixels per unit of the metric|Input|number
 --outDir|Output collection|Output|csvCollection
 --coarseGrayDepth|Custom number of levels in grayscale denoising used in texture features (default: 256)|Input|integer
+--skiproi|Optional. Skip ROIs having specified labels|Input|array
 ---
 
 ### Example: Running Nyxus to process images of specific image channel
 
 Suppose we need to process intensity/mask images of channel 1 :
 ```
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/output-ratbrain --filePattern=.*_c1\.ome\.tif --csvFile=singlecsv 
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.*_c1\.ome\.tif --csvFile=singlecsv 
 ```
 ### Example: Running Nyxus to process specific image 
 
 Suppose we need to process intensity/mask file p1_y2_r68_c1.ome.tif :
 ```
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/output-ratbrain --filePattern=p1_y2_r68_c1\.ome\.tif --csvFile=singlecsv 
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=p1_y2_r68_c1\.ome\.tif --csvFile=singlecsv 
 ```
 
 ### Example: Running Nyxus to extract only intensity and basic morphology features
 
 ```
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/output-ratbrain --filePattern=.* --csvFile=singlecsv 
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.* --csvFile=singlecsv 
+```
+
+### Example: Skipping specified ROIs while extracting features
+
+Suppose we need to blacklist ROI labels 15, 16, and 17 from feature extraction :
+```
+./nyxus --skiproi=15,16,17 --features=*all* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.* --csvFile=singlecsv 
 ```
 
 ## Nested features 
