@@ -48,6 +48,7 @@ namespace Nyxus
 	{
 		uniqueLabels.reserve(N2R);
 		roiData.reserve(N2R);
+		zero_background_area = 0;
 		labelMutexes.reserve(N2R);
 	}
 

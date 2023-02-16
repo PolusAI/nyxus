@@ -62,11 +62,20 @@ namespace Nyxus
 				bool okGather = gatherRoisMetrics(intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
 				if (!okGather)
 					return false;
+
+				// Check presence of zero-background
+				if (zero_background_area == 0)
+				{
+					std::string msg = "Error: mask image " + theSegFname + " contains no zero-background\n";
+					std::cerr << msg;
+					throw (std::runtime_error(msg));
+					return false;
+				}
 			}
 
 			{ STOPWATCH("Image scan2b/ImgScan2b/Scan2b/lightsteelblue", "\t=");
 
-					// Allocate each ROI's feature value buffer
+				// Allocate each ROI's feature value buffer
 				for (auto lab : uniqueLabels)
 				{
 					LR& r = roiData[lab];
@@ -74,8 +83,7 @@ namespace Nyxus
 				}
 
 				// Dump ROI metrics
-				VERBOSLVL4(dump_roi_metrics(label_fpath))	// dumps to file in the output directory
-
+				VERBOSLVL2(dump_roi_metrics(label_fpath))	// dumps to file in the output directory
 			}
 
 			{ STOPWATCH("Image scan3/ImgScan3/Scan3/lightsteelblue", "\t=");
@@ -83,6 +91,12 @@ namespace Nyxus
 				// Distribute ROIs among phases
 				for (auto lab : uniqueLabels)
 				{
+					if (theEnvironment.blacklisted_roi(lab))
+					{
+						std::cout << "Skipping blacklisted ROI " << lab << "\n";
+						continue;
+					}
+
 					LR& r = roiData[lab];
 					if (size_t roiFootprint = r.get_ram_footprint_estimate(), 
 						ramLim = theEnvironment.get_ram_limit(); 
@@ -219,7 +233,7 @@ namespace Nyxus
 		{
 			LR& r = roiData[lab];
 			auto szb = r.get_ram_footprint_estimate();
-			std::string ovsz = szb < theEnvironment.get_ram_limit() ? "T" : "OVERSIZE";
+			std::string ovsz = szb < theEnvironment.get_ram_limit() ? "TRIVIAL" : "OVERSIZE";
 			f << lab << ", "
 				<< r.aux_area << ", "
 				<< r.aabb.get_xmin() << ", "

@@ -30,6 +30,7 @@
 #define RAMLIMIT "--ramLimit"					// Optional. Limit for treating ROIs as non-trivial and for setting the batch size of trivial ROIs. Default - amount of available system RAM
 #define TEMPDIR "--tempDir"						// Optional. Used in processing non-trivial features. Default - system temp directory
 #define IBSICOMPLIANCE "--ibsi" // skip binning for grey level and grey tone features
+#define SKIPROI "--skiproi"		// Optional. Skip ROIs having specified labels. Sybtax: --skiproi <label[,label,label,...]>
 
 #ifdef USE_GPU
 	#define USEGPU "--useGpu"					// Environment::rawUseGpu, "true" or "false"
@@ -138,6 +139,9 @@ public:
 	unsigned int get_coarse_gray_depth();
 	void set_coarse_gray_depth(unsigned int new_depth);
 
+	// implementation of SKIPROI
+	bool blacklisted_roi (int roi_label);
+
 private:
 	std::vector<std::tuple<std::string, std::string>> recognizedArgs;	// Accepted command line arguments
 
@@ -165,6 +169,10 @@ private:
 
 	// data members implementing TEMPDIR
 	std::string rawTempDir = "";
+
+	// implementation of SKIPROI
+	std::string rawBlacklistedRois = "";
+	std::vector<int> blacklistedRois;
 };
 
 namespace Nyxus

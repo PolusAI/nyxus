@@ -59,6 +59,7 @@ namespace Nyxus
 	extern std::string theSegFname, theIntFname;	// Cached file names while iterating a dataset
 	extern std::unordered_set<int> uniqueLabels;
 	extern std::unordered_map <int, LR> roiData;
+	extern size_t zero_background_area;
 	extern std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
 
 	/// @brief Feeds a pixel to image measurement object to gauge the image RAM footprint without caching the pixel. Updates 'uniqueLabels' and 'roiData'.

@@ -216,6 +216,7 @@ void Environment::show_cmdline_help()
 		<< "\t\t[ " << IBSICOMPLIANCE << " skip binning for grayscale features to achieve IBSI compliance. Note that performance may be impacted by enabling this flag ] \n"
 		<< "\t\t[ " << RAMLIMIT << " <megabytes> ] \n"
 		<< "\t\t[ " << TEMPDIR << " <slash-terminating path> ] \n"
+		<< "\t\t[ " << SKIPROI << " <comma-separated list> ] \n"
 		<< "\n"
 		<< "\tnyxus -h\tDisplay help info\n"
 		<< "\tnyxus --help\tDisplay help info\n";
@@ -726,7 +727,8 @@ int Environment::parse_cmdline(int argc, char **argv)
 				find_string_argument(i, VERBOSITY, verbosity) ||
 				find_string_argument(i, IBSICOMPLIANCE, raw_ibsi_compliance) ||
 				find_string_argument(i, RAMLIMIT, rawRamLimit) ||
-				find_string_argument(i, TEMPDIR, rawTempDir)
+				find_string_argument(i, TEMPDIR, rawTempDir) ||
+				find_string_argument(i, SKIPROI, rawBlacklistedRois)
 #ifdef USE_GPU
 				|| find_string_argument(i, USEGPU, rawUseGpu) 
 				|| find_string_argument(i, GPUDEVICEID, rawGpuDeviceID) 
@@ -872,13 +874,15 @@ int Environment::parse_cmdline(int argc, char **argv)
 	{
 		if (!Nyxus::parse_delimited_string_list_to_ints (rawGlcmAngles, glcmAngles))
 		{
-			std::cout << "Error parsing a list of integers " << rawGlcmAngles << "\n";
+			std::cout << "Error parsing list of integers " << rawGlcmAngles << "\n";
 			return 1;
 		}
 
 		// The angle list parsed well, let's tell it to GLCMFeature 
 		GLCMFeature::angles = glcmAngles;
 	}
+
+
 
 	//==== Parse the RAM limit (in megabytes)
 	if (!rawRamLimit.empty())
@@ -919,6 +923,16 @@ int Environment::parse_cmdline(int argc, char **argv)
 		
 		// Modify the temp directory path
 		this->temp_dir_path = rawTempDir + "\\";
+	}
+
+	//==== Parse ROI blacklist
+	if (! rawBlacklistedRois.empty())
+	{
+		if (! Nyxus::parse_delimited_string_list_to_ints (rawBlacklistedRois, blacklistedRois))
+		{
+			std::cout << "Error parsing list of integers " << rawBlacklistedRois << "\n";
+			return 1;
+		}
 	}
 
 	//==== Using GPU
@@ -1115,6 +1129,15 @@ bool Environment::gpu_is_available() {
 	#else
 		return false;
 	#endif
+}
+
+bool Environment::blacklisted_roi (int label)
+{
+	if (blacklistedRois.empty())
+		return false;
+
+	bool retval = std::find (blacklistedRois.begin(), blacklistedRois.end(), label) != blacklistedRois.end();
+	return retval;
 }
 
 #ifdef USE_GPU
