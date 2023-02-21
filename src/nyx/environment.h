@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 #include "environment_basic.h"
+#include "roi_blacklist.h"
+
 #ifdef USE_GPU
 	#include <cuda_runtime.h>
 #endif
@@ -140,7 +142,10 @@ public:
 	void set_coarse_gray_depth(unsigned int new_depth);
 
 	// implementation of SKIPROI
-	bool blacklisted_roi (int roi_label);
+	bool roi_is_blacklisted (const std::string& fname, int roi_label);
+	bool parse_roi_blacklist_raw_string (const std::string& raw_blacklist_string, std::string& error_message);
+	void clear_roi_blacklist ();
+	void get_roi_blacklist_summary(std::string& response);
 
 private:
 	std::vector<std::tuple<std::string, std::string>> recognizedArgs;	// Accepted command line arguments
@@ -172,7 +177,7 @@ private:
 
 	// implementation of SKIPROI
 	std::string rawBlacklistedRois = "";
-	std::vector<int> blacklistedRois;
+	RoiBlacklist roiBlacklist;
 };
 
 namespace Nyxus

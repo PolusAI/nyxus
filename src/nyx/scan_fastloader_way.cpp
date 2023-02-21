@@ -88,16 +88,24 @@ namespace Nyxus
 
 			{ STOPWATCH("Image scan3/ImgScan3/Scan3/lightsteelblue", "\t=");
 
+				// Support of ROI blacklist
+				fs::path fp(theSegFname);
+				std::string shortSegFname = fp.stem().string() + fp.extension().string();
+
 				// Distribute ROIs among phases
 				for (auto lab : uniqueLabels)
 				{
-					if (theEnvironment.blacklisted_roi(lab))
+					LR& r = roiData[lab];					
+					
+					// Skip blacklisted ROI
+					if (theEnvironment.roi_is_blacklisted(shortSegFname, lab))
 					{
-						std::cout << "Skipping blacklisted ROI " << lab << "\n";
+						r.blacklisted = true;
+						std::cout << "Skipping blacklisted ROI " << lab << " for mask " << shortSegFname << "\n";
 						continue;
 					}
 
-					LR& r = roiData[lab];
+					// Examine ROI's memory footprint
 					if (size_t roiFootprint = r.get_ram_footprint_estimate(), 
 						ramLim = theEnvironment.get_ram_limit(); 
 						roiFootprint >= ramLim)

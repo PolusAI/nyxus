@@ -61,7 +61,6 @@ namespace Nyxus
 		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
 		std::sort(L.begin(), L.end());
 
-
 		static bool mustRenderHeader = true;	// This can be flipped to 'false' in 'singlecsv' scenario
 
 		// Make the file name and write mode
@@ -244,12 +243,16 @@ namespace Nyxus
 		// -- Values
 		for (auto l : L)
 		{
+			LR& r = roiData[l];			
+			
+			// Skip blacklisted ROI
+			if (r.blacklisted)
+				continue;
+
 			std::stringstream ssVals;
 
 			// Floating point precision
 			ssVals << std::fixed;
-
-			LR& r = roiData[l];
 
 			// Tear off pure file names from segment and intensity file paths
 			fs::path pseg(r.segFname), pint(r.intFname);

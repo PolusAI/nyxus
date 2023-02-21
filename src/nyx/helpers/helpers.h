@@ -9,6 +9,7 @@ namespace Nyxus
 {
 
 	// String manipulation
+
 	inline void parse_delimited_string(const std::string& rawString, const std::string& delim, std::vector<std::string>& result)
 	{
 		result.clear();
@@ -25,6 +26,54 @@ namespace Nyxus
 			raw.erase(0, pos + delim.length());
 		}
 		result.push_back(raw);
+	}
+
+	inline bool parse_as_float(const std::string& raw, float& result)
+	{
+		if (sscanf(raw.c_str(), "%f", &result) != 1)
+			return false;
+		else
+			return true;
+	}
+
+	inline bool parse_as_int(const std::string& raw, int& result)
+	{
+		if (sscanf(raw.c_str(), "%d", &result) != 1)
+			return false;
+		else
+			return true;
+	}
+
+	inline bool parse_delimited_string_list_to_ints(const std::string& rawString, std::vector<int>& result, std::string& error_msg)
+	{
+		// It's legal to not have rotation angles specified
+		if (rawString.length() == 0)
+			return true;
+
+		bool retval = true;
+		std::vector<std::string> strings;
+		parse_delimited_string(rawString, ",", strings);
+		result.clear();
+		for (auto& s : strings)
+		{
+			int v;
+			if (!parse_as_int(s, v))
+			{
+				retval = false;
+				error_msg = "Error: in '" + rawString + "' expecting '" + s + "' to be an integer number";
+			}
+			else
+				result.push_back(v);
+		}
+		return retval;
+	}
+
+	inline std::string toupper(const std::string& s)
+	{
+		auto s_uppr = s;
+		for (auto& c : s_uppr)
+			c = ::toupper(c);
+		return s_uppr;
 	}
 
 	// Geometry

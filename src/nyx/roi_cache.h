@@ -38,9 +38,9 @@ public:
 	bool caching_permitted();
 	void clear_pixels_cache();
 
-	std::string segFname, intFname;
+	std::string segFname, intFname;	// Full paths
 
-	bool roi_disabled = false;
+	bool blacklisted = false;
 
 	std::vector <Pixel2> raw_pixels;
 	OutOfRamPixelCloud raw_pixels_NT;
