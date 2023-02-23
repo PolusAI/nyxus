@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <sstream>
 #include "helpers/helpers.h"
 #include "roi_blacklist.h"
