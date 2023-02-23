@@ -13,6 +13,24 @@
   error "Missing the <filesystem> header."
 #endif
 
+std::map <std::string, double> Stopwatch::totals;
+bool Stopwatch::inclusive_ = true;
+
+bool Stopwatch::exclusive() 
+{ 
+	return !inclusive_; 
+}
+
+bool Stopwatch::inclusive()
+{
+	return inclusive_;
+}
+
+void Stopwatch::set_inclusive(bool incl)
+{
+	inclusive_ = incl;
+}
+
 Stopwatch::Stopwatch (const std::string& header_, const std::string& tail_)
 {
 	header = header_;
@@ -32,6 +50,11 @@ Stopwatch::~Stopwatch()
 	std::chrono::duration<double, Unit> elap = end - start;
 	VERBOSLVL1(std::cout << tail << " " << elap.count() << " us\n"; )
 		totals[header] = totals[header] + elap.count();
+}
+
+void Stopwatch::reset() 
+{ 
+	totals.clear(); 
 }
 
 void Stopwatch::print_stats()

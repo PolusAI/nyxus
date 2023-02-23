@@ -31,6 +31,10 @@
 #define TEMPDIR "--tempDir"						// Optional. Used in processing non-trivial features. Default - system temp directory
 #define IBSICOMPLIANCE "--ibsi" // skip binning for grey level and grey tone features
 
+#ifdef CHECKTIMING
+	#define EXCLUSIVETIMING "--exclusivetiming"
+#endif
+
 #ifdef USE_GPU
 	#define USEGPU "--useGpu"					// Environment::rawUseGpu, "true" or "false"
 	#define GPUDEVICEID "--gpuDeviceID"		// Environment::rawGpuDeviceID
@@ -165,6 +169,11 @@ private:
 
 	// data members implementing TEMPDIR
 	std::string rawTempDir = "";
+
+	// data members implementing exclusive-inclusive timing switch
+#ifdef CHECKTIMING
+	std::string rawExclusiveTiming = "";
+#endif
 };
 
 namespace Nyxus
