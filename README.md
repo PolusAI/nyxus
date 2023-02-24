@@ -141,24 +141,27 @@ Apart from defining your feature set by explicitly specifying comma-separated fe
 
 ## Command line usage
 
-Assuming you [built the Nyxus binary](#building-from-source) as outlined below, the following parameters are available for the CLI:
+Assuming you [built the Nyxus binary](#building-from-source) as outlined below, the following parameters are available for the command line interface:
 
-| Parameter | Description | I/O | Type |
-|------|-------------|------|----|
---intDir|Intensity image collection|Input|collection|
---segDir|Labeled image collection|Input|collection
---intSegMapDir | Data collection of the ad-hoc intensity-to-mask file mapping | Input | Collection
---intSegMapFile | Name of the text file containing an ad-hoc intensity-to-mask file mapping. The files are assumed to reside in corresponding intensity and label collections | Input | string
---features|Select intensity and shape features required|Input|array
---filePattern|To match intensity and labeled/segmented images |Input|string
---csvFile|Save csv file as one csv file for all images or separate csv file for each image|Input|enum
---pixelDistance|Pixel distance to calculate the neighbors touching cells|Input|integer|
---embeddedpixelsize|Consider the unit embedded in metadata, if present|Input|boolean
---unitLength|Enter the metric for unit conversion|Input|string
---pixelsPerunit|Enter the number of pixels per unit of the metric|Input|number
---outDir|Output collection|Output|csvCollection
---coarseGrayDepth|Custom number of levels in grayscale denoising used in texture features (default: 256)|Input|integer
---skiproi|Optional. Skip ROIs having specified labels|Input|array
+| <div style="width:150px">Parameter</div> | Description | Type |
+|------|-------------|------|
+--csvFile | Save csv file as one csv file for all the images or separate csv file for each image. Acceptable values: 'separatecsv' and 'singlecsv'. Default value: '--csvFile=separatecsv' | string constant
+--features | String constant or comma-seperated list of constants requesting a group of features or particular feature. Default value: '--features=\*ALL\*' | string
+--filePattern | Regular expression to match image files in directories specified by parameters '--intDir' and '--segDir'. To match all the files, use '--filePattern=.\*' | string
+--intDir | Directory of intensity image collection | path
+--outDir | Output directory | path
+--segDir | Directory of labeled image collection | path
+--coarseGrayDepth | (optional) Custom number of grayscale level bins used in texture features. Default: '--coarseGrayDepth=256' | integer
+--glcmAngles | (optional) Enabled direction angles of the GLCM feature. Superset of values: 0, 45, 90, and 135. Default: '--glcmAngles=0,45,90,135' | list of integer constants
+--intSegMapDir | (optional) Data collection of the ad-hoc intensity-to-mask file mapping. Must be used in combination with parameter '--intSegMapFile' | path
+--intSegMapFile | (optional) Name of the text file containing an ad-hoc intensity-to-mask file mapping. The files are assumed to reside in corresponding intensity and label collections. Must be used in combination with parameter '--intSegMapDir' | string
+--pixelDistance | (optional) Number of pixels to treat ROIs within specified distance as neighbors. Default value: '--pixelDistance=5' | integer
+--pixelsPerCentimeter | (optional) Number of pixels in centimeter used by unit length-related features. Default value: 0 | real
+--ramLimit | (optional) Amount of memory not to exceed by Nyxus, in megabytes. Default value: 50\% of available memory. Example: '--ramLimit=2000' to use 2,000 megabytes | integer
+--reduceThreads | (optional) Number of CPU threads used on the feature calculation step. Default: '--reduceThreads=1' | integer
+--skiproi | (optional) Skip ROIs having specified labels. Example: '--skiproi=image1.tif:2,3,4;image2.tif:45,56' | string
+--tempDir | (optional) Directory used by temporary out-of-RAM objects. Default value: system temporary directory | path
+
 ---
 
 ### Example: Running Nyxus to process images of specific image channel
