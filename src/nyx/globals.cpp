@@ -2,8 +2,6 @@
 #include "globals.h"
 #include "helpers/timing.h"
 
-std::map <std::string, double> Stopwatch::totals;
-
 namespace Nyxus
 {
 	// Command line info and default values

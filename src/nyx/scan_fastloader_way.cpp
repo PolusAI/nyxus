@@ -131,13 +131,19 @@ namespace Nyxus
 		bool save2csv,
 		const std::string& csvOutputDir)
 	{
+		#ifdef CHECKTIMING
+		if (Stopwatch::inclusive())
+			Stopwatch::reset();
+		#endif		
+			
 		bool ok = true;
 
 		auto nf = intensFiles.size();
 		for (int i = 0; i < nf; i++)
 		{
 			#ifdef CHECKTIMING
-			Stopwatch::reset();
+			if (! Stopwatch::exclusive())
+				Stopwatch::reset();
 			#endif
 
 			// Clear ROI label list, ROI data, etc.
@@ -187,16 +193,33 @@ namespace Nyxus
 			#endif
 
 			#ifdef CHECKTIMING
+			if (Stopwatch::exclusive())
+			{
+				// Detailed timing - on the screen
+				VERBOSLVL1(Stopwatch::print_stats());
+
+				// Details - also to a file
+				VERBOSLVL3(
+					fs::path p(theSegFname);
+					Stopwatch::save_stats(theEnvironment.output_dir + "/" + p.stem().string() + "_nyxustiming.csv");
+				);
+			}
+			#endif
+		}
+
+		#ifdef CHECKTIMING
+		if (Stopwatch::inclusive())
+		{
 			// Detailed timing - on the screen
-			VERBOSLVL1(Stopwatch::print_stats();)
-				
+			VERBOSLVL1(Stopwatch::print_stats());
+
 			// Details - also to a file
 			VERBOSLVL3(
 				fs::path p(theSegFname);
-				Stopwatch::save_stats(theEnvironment.output_dir + "/" + p.stem().string() + "_nyxustiming.csv");
+			Stopwatch::save_stats(theEnvironment.output_dir + "/" + p.stem().string() + "_nyxustiming.csv");
 			);
-			#endif
 		}
+		#endif
 
 		return 0; // success
 	}

@@ -11,6 +11,7 @@
 #include "features/glcm.h"
 #include "helpers/helpers.h"
 #include "helpers/system_resource.h"
+#include "helpers/timing.h"
 #include "version.h"
 
 namespace Nyxus
@@ -279,6 +280,11 @@ void Environment::show_summary(const std::string &head, const std::string &tail)
 
 	// Temp directory
 	std::cout << "\ttemp directory " << theEnvironment.get_temp_dir_path() << "\n";
+
+	// Timing mode
+	#if CHECKTIMING
+	std::cout << "\t#CHECKTIMING / exclusive mode of timing " << (Stopwatch::exclusive() ? "TRUE" : "FALSE") << "\n";
+	#endif
 
 	std::cout << tail;
 }
@@ -727,6 +733,9 @@ int Environment::parse_cmdline(int argc, char **argv)
 				find_string_argument(i, IBSICOMPLIANCE, raw_ibsi_compliance) ||
 				find_string_argument(i, RAMLIMIT, rawRamLimit) ||
 				find_string_argument(i, TEMPDIR, rawTempDir)
+				#ifdef CHECKTIMING
+					|| find_string_argument(i, EXCLUSIVETIMING, rawExclusiveTiming)
+				#endif
 #ifdef USE_GPU
 				|| find_string_argument(i, USEGPU, rawUseGpu) 
 				|| find_string_argument(i, GPUDEVICEID, rawGpuDeviceID) 
@@ -921,6 +930,18 @@ int Environment::parse_cmdline(int argc, char **argv)
 		this->temp_dir_path = rawTempDir + "\\";
 	}
 
+	//==== Parse exclusive-inclusive timing
+	#ifdef CHECKTIMING
+	if (!rawExclusiveTiming.empty())
+	{
+		std::transform (rawExclusiveTiming.begin(), rawExclusiveTiming.end(), rawExclusiveTiming.begin(), ::tolower);
+		if (rawExclusiveTiming == "true" || rawExclusiveTiming == "1" || rawExclusiveTiming == "on")
+			Stopwatch::set_inclusive (false);
+		else
+			Stopwatch::set_inclusive (true);
+	}
+	#endif
+
 	//==== Using GPU
 	#ifdef USE_GPU
 	auto rawUseGpuUC = Nyxus::toupper(rawUseGpu);
@@ -1040,10 +1061,14 @@ int Environment::parse_cmdline(int argc, char **argv)
 		pixelSizeUm = 1e-2f / xyRes / 1e-6f; // 1 cm in meters / pixels per cm / micrometers
 	}
 
+	//==== Parse IBSI compliance mode
 	std::transform(raw_ibsi_compliance.begin(), raw_ibsi_compliance.end(),raw_ibsi_compliance.begin(), ::tolower);
-	if (raw_ibsi_compliance == "true" || raw_ibsi_compliance == "1" || raw_ibsi_compliance == "on") {
+	if (raw_ibsi_compliance == "true" || raw_ibsi_compliance == "1" || raw_ibsi_compliance == "on") 
+	{
 		ibsi_compliance = true;
-	} else {
+	} 
+	else 
+	{
 		ibsi_compliance = false;
 	}
 
