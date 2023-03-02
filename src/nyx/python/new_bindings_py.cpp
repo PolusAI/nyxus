@@ -133,7 +133,6 @@ py::tuple featurize_memory_imp (
     const std::vector<std::string>& intensity_names,
     const std::vector<std::string>& label_names)
 {  
-
     bool ok = true;
 
     auto intens_buffer = intensity_images.request();
@@ -146,9 +145,9 @@ py::tuple featurize_memory_imp (
 
     auto label_width = intens_buffer.shape[1];
     auto label_height = intens_buffer.shape[2];
-;
+
     auto label_nf = intens_buffer.shape[0];
-;
+
     if (intensity_names.size() != nf || label_names.size() != nf) {
         throw std::invalid_argument("The length of the names vector must be the same as the number of images.");
     }
@@ -183,7 +182,6 @@ py::tuple featurize_memory_imp (
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing.");
     
-
     auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
     auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
     auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));

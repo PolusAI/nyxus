@@ -169,28 +169,29 @@ namespace Nyxus
 	}
 
 #ifdef WITH_PYTHON_H
-	bool scanTrivialRoisInMemory (const std::vector<int>& batch_labels, const PythonVars& vars)
+	bool scanTrivialRoisInMemory (const std::vector<int>& batch_labels, const py::array_t<unsigned int>& intens_images, const py::array_t<unsigned int>& label_images, int start_idx)
 	{
 		// Sort the batch's labels to enable binary searching in it
 		std::vector<int> whiteList = batch_labels;
 		std::sort (whiteList.begin(), whiteList.end());
 
 
-		auto intens_buffer = vars.intens_images->request();
-		auto label_buffer = vars.label_images->request();
+		auto intens_buffer = intens_images.request();
+		auto label_buffer = label_images.request();
 
 		auto width = intens_buffer.shape[1];
 		auto height = intens_buffer.shape[2];
 
-		unsigned int* dataL = static_cast<unsigned int*>(label_buffer.ptr);
+		unsigned int* dataL = static_cast<unsigned int*>(label_images.request().ptr);
 		unsigned int* dataI = static_cast<unsigned int*>(intens_buffer.ptr);
 
+		int cnt = 1;
 		for (unsigned int row = 0; row < width; row++)
 			for (unsigned int col = 0; col < height; col++)
 			{
 
 				// Skip non-mask pixels
-				auto label = dataL[vars.start_idx + row*height + col];
+				auto label = dataL[start_idx + row*height + col];
 				if (! label)
 					continue;
 
@@ -198,7 +199,7 @@ namespace Nyxus
 				if (! theEnvironment.singleROI && ! std::binary_search(whiteList.begin(), whiteList.end(), label))
 					continue;
 
-				auto inten = dataI[vars.start_idx + row*height + col];
+				auto inten = dataI[start_idx + row*height + col];
 
 				// Collapse all the labels to one if single-ROI mde is requested
 				if (theEnvironment.singleROI)
@@ -266,7 +267,7 @@ namespace Nyxus
 		delete ImageMatrixBuffer;
 	}
 
-	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit, const PythonVars& python_vars , bool in_memory)
+	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit)
 	{
 		std::vector<int> Pending;
 		size_t batchDemand = 0;
@@ -295,16 +296,7 @@ namespace Nyxus
 					else
 						std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 					)
-
-				#ifdef WITH_PYTHON_H
-					if (in_memory) {
-						scanTrivialRoisInMemory(Pending, python_vars);
-					} else {
-						scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
-					}
-				#else
-					scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
-				#endif
+				scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
 
 				// Allocate memory
 				VERBOSLVL1(std::cout << "\tallocating ROI buffers\n";)
@@ -351,16 +343,7 @@ namespace Nyxus
 				else
 					std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				)
-			//scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
-			#ifdef WITH_PYTHON_H
-				if (in_memory) {
-					scanTrivialRoisInMemory(Pending, python_vars);
-				} else {
-					scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
-				}
-			#else
-				scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
-			#endif
+			scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
 
 			// Allocate memory
 			VERBOSLVL1(std::cout << "\tallocating ROI buffers\n";)
@@ -393,4 +376,63 @@ namespace Nyxus
 		return true;
 	}
 
+
+#ifdef WITH_PYTHON_H
+	bool processTrivialRoisInMemory (const std::vector<int>& trivRoiLabels, const py::array_t<unsigned int>& intens_fpath, const py::array_t<unsigned int>& label_fpath, int start_idx)
+	{
+		std::vector<int> Pending;
+		size_t batchDemand = 0;
+		int roiBatchNo = 1;
+
+		// everything is already in memory so process all at once
+		for (auto lab : trivRoiLabels)
+		{
+			Pending.push_back(lab);
+		}
+
+		// Process what's remaining pending
+		if (Pending.size() > 0)
+		{
+			// Scan pixels of pending trivial ROIs 
+			std::sort (Pending.begin(), Pending.end());
+			VERBOSLVL1(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";)
+			VERBOSLVL1(
+				if (Pending.size() == 1)
+					std::cout << ">>> (single ROI " << Pending[0] << ")\n";
+				else
+					std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
+				)
+			scanTrivialRoisInMemory(Pending, intens_fpath, label_fpath, start_idx);
+
+			// Allocate memory
+			VERBOSLVL1(std::cout << "\tallocating ROI buffers\n";)
+			allocateTrivialRoisBuffers(Pending);
+
+			// Dump ROIs for use in unit testing
+#ifdef DUMP_ALL_ROI
+			dump_all_roi();
+#endif
+
+			// Reduce them
+			VERBOSLVL1(std::cout << "\treducing ROIs\n";)
+			//reduce_trivial_rois(Pending);	
+			reduce_trivial_rois_manual(Pending);
+
+			// Free memory
+			VERBOSLVL1(std::cout << "\tfreeing ROI buffers\n";)
+			freeTrivialRoisBuffers(Pending);
+
+			#ifdef WITH_PYTHON_H
+			// Allow heyboard interrupt.
+			if (PyErr_CheckSignals() != 0)
+                throw pybind11::error_already_set();
+			#endif
+		}
+
+		VERBOSLVL1(std::cout << "\treducing neighbor features and their depends for all ROIs\n")
+		reduce_neighbors_and_dependencies_manual();
+
+		return true;
+	}
+#endif
 }

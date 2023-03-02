@@ -23,28 +23,6 @@ namespace py = pybind11;
 
 namespace Nyxus
 {
-
-#ifdef WITH_PYTHON_H
-	struct PythonVars {
-		PythonVars() {
-			intens_images = nullptr;
-			label_images = nullptr;
-			start_idx = -1;
-		}
-
-		PythonVars(const py::array_t<unsigned int>& intens, const py::array_t<unsigned int>& label, int _start_idx) 
-		: intens_images(std::make_shared<py::array_t<unsigned int>>(intens)), label_images(std::make_shared<py::array_t<unsigned int>>(label)), start_idx(_start_idx) {}
-
-		std::shared_ptr<py::array_t<unsigned int>> intens_images;
-		std::shared_ptr<py::array_t<unsigned int>> label_images; 
-		long start_idx;
-	};
-#else
-	struct PythonVars {
-		PythonVars(){}
-	};
-#endif
-
 	extern FeatureManager theFeatureMgr;
 	extern ImageLoader theImLoader;
 
@@ -52,15 +30,18 @@ namespace Nyxus
 	std::string getPureFname(const std::string& fpath);
 	int processDataset(const std::vector<std::string>& intensFiles, const std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int numReduceThreads, int min_online_roi_size, bool save2csv, const std::string& csvOutputDir);
 	bool gatherRoisMetrics(const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads);
-	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit, const PythonVars& python_vars = {}, bool in_memory=false);
+	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit);
 	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads);
 	void dump_roi_metrics(const std::string & label_fpath);
 
 	// in memory functions
 #ifdef WITH_PYTHON_H
-	bool gatherRoisMetricsInMemory (const PythonVars& python_vars);
+	bool gatherRoisMetricsInMemory (const py::array_t<unsigned int>& intens_image, const py::array_t<unsigned int>& label_image, int start_idx);
+	bool processIntSegImagePairInMemory (const std::string& intens_fpath, const std::string& label_fpath, int filepair_index, const std::string& intens_name, const std::string& seg_name);
 	int processDatasetInMemory(const py::array_t<unsigned int>& intensFiles, const py::array_t<unsigned int>& labelFiles, int numReduceThreads, int min_online_roi_size, bool save2csv, const std::string& csvOutputDir, const std::vector<std::string>& intensity_names,
 		const std::vector<std::string>& seg_names);
+	bool scanTrivialRois (const std::vector<int>& batch_labels, const py::array_t<unsigned int>& intens_images, const py::array_t<unsigned int>& label_images, int start_idx);
+	bool processTrivialRoisInMemory (const std::vector<int>& trivRoiLabels, const py::array_t<unsigned int>& intens_fpath, const py::array_t<unsigned int>& label_fpath, int start_idx);
 #endif
 
 	// 2 scenarios of saving a result of feature calculation of a label-intensity file pair: saving to a CSV-file and saving to a matrix to be later consumed by a Python endpoint

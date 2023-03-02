@@ -91,12 +91,13 @@ namespace Nyxus
 	}
 
 #ifdef WITH_PYTHON_H
-	bool gatherRoisMetricsInMemory (const PythonVars& python_vars)
+	bool gatherRoisMetricsInMemory (const py::array_t<unsigned int>& intens_images, const py::array_t<unsigned int>& label_images, int start_idx)
 	{
 
-		auto intens_buffer = python_vars.intens_images->request();
+		int cnt = 1;
+		auto intens_buffer = intens_images.request();
 
-		unsigned int* dataL = static_cast<unsigned int*>(python_vars.label_images->request().ptr);
+		unsigned int* dataL = static_cast<unsigned int*>(label_images.request().ptr);
 		unsigned int* dataI = static_cast<unsigned int*>(intens_buffer.ptr);
 		
 		auto width = intens_buffer.shape[1];
@@ -106,7 +107,7 @@ namespace Nyxus
 			for (unsigned int col = 0; col < height; col++)
 			{
 				// Skip non-mask pixels
-				auto label = dataL[python_vars.start_idx + row * height + col];
+				auto label = dataL[start_idx + row * height + col];
 				if (!label)
 					continue;
 
@@ -116,8 +117,7 @@ namespace Nyxus
 					label = 1;
 				
 				// Update pixel's ROI metrics
-
-				feed_pixel_2_metrics (row, col, dataI[python_vars.start_idx + row * height + col], label, 200); // Updates 'uniqueLabels' and 'roiData'
+				feed_pixel_2_metrics (row, col, dataI[start_idx + row * height + col], label, 200); // Updates 'uniqueLabels' and 'roiData'
 				
 
 				if (PyErr_CheckSignals() != 0)

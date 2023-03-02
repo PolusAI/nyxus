@@ -33,7 +33,7 @@ namespace py = pybind11;
 
 namespace Nyxus
 {
-	bool processIntSegImagePair (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, int filepair_index, int tot_num_filepairs, const PythonVars& python_vars = {}, bool in_memory=false)
+	bool processIntSegImagePair (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, int filepair_index, int tot_num_filepairs)
 	{
 		std::vector<int> trivRoiLabels, nontrivRoiLabels;
 
@@ -44,10 +44,8 @@ namespace Nyxus
 			{ STOPWATCH("Image scan1/ImgScan1/Scan1/lightsteelblue", "\t=");
 
 				// Report the amount of free RAM
-
 				unsigned long long freeRamAmt = getAvailPhysMemory();
 				static unsigned long long initial_freeRamAmt = 0;
-
 				if (initial_freeRamAmt == 0)
 					initial_freeRamAmt = freeRamAmt;
 				double memDiff = double(freeRamAmt) - double(initial_freeRamAmt);
@@ -64,16 +62,7 @@ namespace Nyxus
 
 				// Phase 1: gather ROI metrics
 				VERBOSLVL1(std::cout << "Gathering ROI metrics\n");
-				bool okGather;
-				#ifdef WITH_PYTHON_H
-					if (in_memory) {
-						okGather =  gatherRoisMetricsInMemory(python_vars);
-					} else {
-						okGather = gatherRoisMetrics(intens_fpath, label_fpath, num_FL_threads);
-					}
-				#else
-					okGather = gatherRoisMetrics(intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
-				#endif
+				bool okGather = gatherRoisMetrics(intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
 				if (!okGather)
 					return false;
 			}
@@ -122,31 +111,19 @@ namespace Nyxus
 		if (trivRoiLabels.size())
 		{
 			VERBOSLVL1(std::cout << "Processing trivial ROIs\n";)
-			processTrivialRois (trivRoiLabels, intens_fpath, label_fpath, num_FL_threads, theEnvironment.get_ram_limit(), python_vars, in_memory);
+			processTrivialRois (trivRoiLabels, intens_fpath, label_fpath, num_FL_threads, theEnvironment.get_ram_limit());
 		}
 
 		// Phase 3: process nontrivial (oversized) ROIs, if any
 		if (nontrivRoiLabels.size())
 		{
-			if (in_memory) {
-				std::cerr << "Nontrivial ROIs are not supported by the in memory API. Skipping ROI(s) ";
-				auto num_rois = nontrivRoiLabels.size();
-				for (int i = 0; i < num_rois; ++i) {
-
-					std::cerr << nontrivRoiLabels[i];
-
-					if (i < num_rois-1) std::cerr << ", ";
-				}		
-			} else {
-				VERBOSLVL1(std::cout << "Processing oversized ROIs\n";)
-				processNontrivialRois (nontrivRoiLabels, intens_fpath, label_fpath, num_FL_threads);
-			}
+			VERBOSLVL1(std::cout << "Processing oversized ROIs\n";)
+			processNontrivialRois (nontrivRoiLabels, intens_fpath, label_fpath, num_FL_threads);
 		}
 
 		return true;
 	}
 
-/*
 #ifdef WITH_PYTHON_H
 	bool processIntSegImagePairInMemory (const py::array_t<unsigned int>& intens_fpath, const py::array_t<unsigned int>& label_fpath, int filepair_index, const std::string& intens_name, const std::string& seg_name)
 	{
@@ -221,7 +198,6 @@ namespace Nyxus
 		return true;
 	}
 #endif
-*/
 	int processDataset(
 		const std::vector<std::string>& intensFiles,
 		const std::vector<std::string>& labelFiles,
@@ -322,9 +298,7 @@ namespace Nyxus
 		auto height = intens_buffer.shape[2];
 
 		auto nf = intens_buffer.shape[0];
-
-		PythonVars python_vars(intensity_images, label_images, 0);
-
+		
 		for (int i = 0; i < nf; i++)
 		{
 			#ifdef CHECKTIMING
@@ -334,11 +308,9 @@ namespace Nyxus
 			// Clear ROI label list, ROI data, etc.
 			clear_feature_buffers();
 
-			python_vars.start_idx = i * width * height;
-			
-			//processIntSegImagePair (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, int filepair_index, int tot_num_filepairs, const PythonVars& python_vars = {}, bool in_memory=false)
-			auto ok = processIntSegImagePair(intensity_names[i], seg_names[i], 0, i, nf, python_vars, true);
-			//auto ok = processIntSegImagePair(intensity_images, label_images, image_idx, intensity_names[i], seg_names[i]);		// Phased processing
+			auto image_idx = i * width * height;
+
+			auto ok = processIntSegImagePairInMemory (intensity_images, label_images, image_idx, intensity_names[i], seg_names[i]);		// Phased processing
 
 			if (ok == false)
 			{
@@ -359,6 +331,8 @@ namespace Nyxus
 				std::cout << "save_features_2_csv() returned an error code" << std::endl;
 				return 2;
 			}
+
+			theImLoader.close();
 
 			#ifdef WITH_PYTHON_H
 			// Allow heyboard interrupt.
