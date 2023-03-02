@@ -142,7 +142,7 @@ namespace Nyxus
 		for (int i = 0; i < nf; i++)
 		{
 			#ifdef CHECKTIMING
-			if (! Stopwatch::exclusive())
+			if (Stopwatch::exclusive())
 				Stopwatch::reset();
 			#endif
 
