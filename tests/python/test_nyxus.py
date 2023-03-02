@@ -19,6 +19,8 @@ class TestNyxus():
             if (nyxus.gpu_is_available()):
                 cpu_nyx.using_gpu(False)
             cpu_features = cpu_nyx.featurize(intens, seg)
+            
+            assert cpu_nyx.error_message == ''
 
             if (nyxus.gpu_is_available()):
                 # gpu gabor
@@ -38,6 +40,8 @@ class TestNyxus():
             names = ["test_name_1", "test_name_2", "test_name_3", "test_name_4"]
 
             cpu_features = cpu_nyx.featurize(intens, seg, names, names)
+            
+            assert cpu_nyx.error_message == ''
 
             print(cpu_features)
 

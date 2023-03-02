@@ -226,8 +226,8 @@ class Nyxus:
         
         header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names)
         
+        self.error_message = error_message
         if(error_message != ''):
-            self.error_message = error_message
             print(error_message)
 
         df = pd.concat(
