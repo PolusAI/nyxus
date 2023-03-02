@@ -10,15 +10,11 @@
 
 int main (int argc, char** argv)
 {
-	VERBOSLVL1(std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021-2022 Axle Informatics\t" << "Build of " << __TIMESTAMP__ << "\n";)
+	VERBOSLVL1(std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021-2023 Axle Informatics" << " Build of " << __TIMESTAMP__ << "\n";)
 
-	int parseRes = theEnvironment.parse_cmdline (argc, argv);
-	if (parseRes)
-	{
-		std::cout << "\nError: missing command line arguments\n\n";
-		theEnvironment.show_cmdline_help();
-		return parseRes;
-	}
+	bool parseOk = theEnvironment.parse_cmdline (argc, argv);
+	if (! parseOk)
+		return 1;
 
 	VERBOSLVL1(theEnvironment.show_summary("\n"/*head*/, "\n"/*tail*/);)
 
