@@ -1,4 +1,4 @@
-from .backend import initialize_environment, featurize_directory_imp, featurize_memory_imp, featurize_fname_lists_imp, findrelations_imp, use_gpu, gpu_available 
+from .backend import initialize_environment, featurize_directory_imp, featurize_montage_imp, featurize_fname_lists_imp, findrelations_imp, use_gpu, gpu_available 
 import os
 import numpy as np
 import pandas as pd
@@ -224,7 +224,11 @@ class Nyxus:
         if (label_images.shape[0] != len(label_names)):
             raise ValueError("Number of segmentation names must be the same as the number of images.")
         
-        header, string_data, numeric_data = featurize_memory_imp (intensity_images, label_images, intensity_names, label_names)
+        header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names)
+        
+        if(error_message != ''):
+            self.error_message = error_message
+            print(error_message)
 
         df = pd.concat(
             [

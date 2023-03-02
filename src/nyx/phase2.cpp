@@ -182,7 +182,7 @@ namespace Nyxus
 		auto width = intens_buffer.shape[1];
 		auto height = intens_buffer.shape[2];
 
-		unsigned int* dataL = static_cast<unsigned int*>(label_images.request().ptr);
+		unsigned int* dataL = static_cast<unsigned int*>(label_buffer.ptr);
 		unsigned int* dataI = static_cast<unsigned int*>(intens_buffer.ptr);
 
 		int cnt = 1;
@@ -378,16 +378,57 @@ namespace Nyxus
 
 
 #ifdef WITH_PYTHON_H
-	bool processTrivialRoisInMemory (const std::vector<int>& trivRoiLabels, const py::array_t<unsigned int>& intens_fpath, const py::array_t<unsigned int>& label_fpath, int start_idx)
-	{
+	bool processTrivialRoisInMemory (const std::vector<int>& trivRoiLabels, const py::array_t<unsigned int>& intens, const py::array_t<unsigned int>& label, int start_idx, size_t memory_limit)
+	{	
 		std::vector<int> Pending;
 		size_t batchDemand = 0;
 		int roiBatchNo = 1;
 
-		// everything is already in memory so process all at once
 		for (auto lab : trivRoiLabels)
 		{
-			Pending.push_back(lab);
+			LR& r = roiData[lab];
+
+			size_t itemFootprint = r.get_ram_footprint_estimate();
+
+			// Check if we are good to accumulate this ROI in the current batch or should close the batch and reduce it
+			if (batchDemand + itemFootprint < memory_limit)
+			{
+				Pending.push_back(lab);
+				batchDemand += itemFootprint;
+			}
+			else
+			{
+				// Scan pixels of pending trivial ROIs 
+				std::sort (Pending.begin(), Pending.end());
+
+				scanTrivialRoisInMemory(Pending, intens, label, start_idx);
+
+				// Allocate memory
+				allocateTrivialRoisBuffers (Pending);
+
+				// reduce_trivial_rois(Pending);	
+				reduce_trivial_rois_manual(Pending);
+
+				// Free memory
+				freeTrivialRoisBuffers (Pending);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
+
+				// Reset the RAM footprint accumulator
+				batchDemand = 0;
+
+				// Clear the freshly processed ROIs from pending list 
+				Pending.clear();
+
+				// Start a new pending set by adding the stopper ROI 
+				Pending.push_back(lab);
+
+				// Advance the batch counter
+				roiBatchNo++;
+			}
+
+			// Allow heyboard interrupt.
+			if (PyErr_CheckSignals() != 0)
+                throw pybind11::error_already_set();
+
 		}
 
 		// Process what's remaining pending
@@ -395,17 +436,10 @@ namespace Nyxus
 		{
 			// Scan pixels of pending trivial ROIs 
 			std::sort (Pending.begin(), Pending.end());
-			VERBOSLVL1(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";)
-			VERBOSLVL1(
-				if (Pending.size() == 1)
-					std::cout << ">>> (single ROI " << Pending[0] << ")\n";
-				else
-					std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
-				)
-			scanTrivialRoisInMemory(Pending, intens_fpath, label_fpath, start_idx);
+			
+			scanTrivialRoisInMemory(Pending, intens, label, start_idx);
 
 			// Allocate memory
-			VERBOSLVL1(std::cout << "\tallocating ROI buffers\n";)
 			allocateTrivialRoisBuffers(Pending);
 
 			// Dump ROIs for use in unit testing
@@ -414,25 +448,20 @@ namespace Nyxus
 #endif
 
 			// Reduce them
-			VERBOSLVL1(std::cout << "\treducing ROIs\n";)
-			//reduce_trivial_rois(Pending);	
 			reduce_trivial_rois_manual(Pending);
 
 			// Free memory
-			VERBOSLVL1(std::cout << "\tfreeing ROI buffers\n";)
 			freeTrivialRoisBuffers(Pending);
 
-			#ifdef WITH_PYTHON_H
 			// Allow heyboard interrupt.
 			if (PyErr_CheckSignals() != 0)
                 throw pybind11::error_already_set();
-			#endif
 		}
 
-		VERBOSLVL1(std::cout << "\treducing neighbor features and their depends for all ROIs\n")
 		reduce_neighbors_and_dependencies_manual();
 
 		return true;
+
 	}
 #endif
 }

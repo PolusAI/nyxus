@@ -93,8 +93,6 @@ namespace Nyxus
 #ifdef WITH_PYTHON_H
 	bool gatherRoisMetricsInMemory (const py::array_t<unsigned int>& intens_images, const py::array_t<unsigned int>& label_images, int start_idx)
 	{
-
-		int cnt = 1;
 		auto intens_buffer = intens_images.request();
 
 		unsigned int* dataL = static_cast<unsigned int*>(label_images.request().ptr);

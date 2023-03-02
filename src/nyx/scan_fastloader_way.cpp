@@ -125,75 +125,47 @@ namespace Nyxus
 	}
 
 #ifdef WITH_PYTHON_H
-	bool processIntSegImagePairInMemory (const py::array_t<unsigned int>& intens_fpath, const py::array_t<unsigned int>& label_fpath, int filepair_index, const std::string& intens_name, const std::string& seg_name)
+	bool processIntSegImagePairInMemory (const py::array_t<unsigned int>& intens, const py::array_t<unsigned int>& label, int filepair_index, const std::string& intens_name, const std::string& seg_name, std::vector<int> unprocessed_rois)
 	{
-		std::vector<int> trivRoiLabels, nontrivRoiLabels;
+		std::vector<int> trivRoiLabels;
 
-		// Timing block (image scanning)
+		// Phase 1: gather ROI metrics
+		bool okGather = gatherRoisMetricsInMemory(intens, label, filepair_index);	// Output - set of ROI labels, label-ROI cache mappings
+		if (!okGather)
+			return false;
+
+		// Allocate each ROI's feature value buffer
+		for (auto lab : uniqueLabels)
 		{
+			LR& r = roiData[lab];
 
-			{ STOPWATCH("Image scan2a/ImgScan2a/Scan2a/lightsteelblue", "\t=");
+			r.intFname = intens_name;
+			r.segFname = seg_name;
 
-				// Phase 1: gather ROI metrics
-				VERBOSLVL1(std::cout << "Gathering ROI metrics\n");
-				bool okGather = gatherRoisMetricsInMemory(intens_fpath, label_fpath, filepair_index);	// Output - set of ROI labels, label-ROI cache mappings
-				if (!okGather)
-					return false;
+			r.initialize_fvals();
+		}
+
+		// Distribute ROIs among phases
+		for (auto lab : uniqueLabels)
+		{
+			LR& r = roiData[lab];
+			if (size_t roiFootprint = r.get_ram_footprint_estimate(), 
+				ramLim = theEnvironment.get_ram_limit(); 
+				roiFootprint >= ramLim)
+			{
+				unprocessed_rois.push_back(lab);
 			}
-
-			{ STOPWATCH("Image scan2b/ImgScan2b/Scan2b/lightsteelblue", "\t=");
-
-					// Allocate each ROI's feature value buffer
-				for (auto lab : uniqueLabels)
-				{
-					LR& r = roiData[lab];
-
-					r.intFname = intens_name;
-					r.segFname = seg_name;
-
-					r.initialize_fvals();
-				}
-
-			}
-
-			{ STOPWATCH("Image scan3/ImgScan3/Scan3/lightsteelblue", "\t=");
-
-				// Distribute ROIs among phases
-				for (auto lab : uniqueLabels)
-				{
-					LR& r = roiData[lab];
-					if (size_t roiFootprint = r.get_ram_footprint_estimate(), 
-						ramLim = theEnvironment.get_ram_limit(); 
-						roiFootprint >= ramLim)
-					{
-						VERBOSLVL2(
-							std::cout << "oversized ROI " << lab 
-								<< " (S=" << r.aux_area 
-								<< " W=" << r.aabb.get_width() 
-								<< " H=" << r.aabb.get_height() 
-								<< " px footprint=" << roiFootprint << " b"								
-								<< ")\n"
-						);
-						nontrivRoiLabels.push_back(lab);
-					}
-					else
-						trivRoiLabels.push_back(lab);
-				}
-			}
+			else
+				trivRoiLabels.push_back(lab);
 		}
 
 		// Phase 2: process trivial-sized ROIs
 		if (trivRoiLabels.size())
 		{
-			VERBOSLVL1(std::cout << "Processing trivial ROIs\n";)
-			processTrivialRoisInMemory (trivRoiLabels, intens_fpath, label_fpath, filepair_index);
+			processTrivialRoisInMemory (trivRoiLabels, intens, label, filepair_index, theEnvironment.get_ram_limit());
 		}
 
-		// Phase 3: process nontrivial (oversized) ROIs, if any
-		if (nontrivRoiLabels.size())
-		{
-			std::cout << "ERROR: NO NONTRIVIAL ROIS SHOULD EXISTS" << std::endl;
-		}
+		// Phase 3: skip nontrivial ROIs
 
 		return true;
 	}
@@ -280,15 +252,13 @@ namespace Nyxus
 
 #ifdef WITH_PYTHON_H
 	
-	int processDatasetInMemory(
+	int processMontage(
 		const py::array_t<unsigned int>& intensity_images,
 		const py::array_t<unsigned int>& label_images,
 		int numReduceThreads,
-		int min_online_roi_size,
-		bool save2csv,
-		const std::string& csvOutputDir,
 		const std::vector<std::string>& intensity_names,
-		const std::vector<std::string>& seg_names)
+		const std::vector<std::string>& seg_names,
+		std::string& error_message)
 	{
 
 		auto intens_buffer = intensity_images.request();
@@ -301,61 +271,47 @@ namespace Nyxus
 		
 		for (int i = 0; i < nf; i++)
 		{
-			#ifdef CHECKTIMING
-			Stopwatch::reset();
-			#endif
-
 			// Clear ROI label list, ROI data, etc.
 			clear_feature_buffers();
 
 			auto image_idx = i * width * height;
 
-			auto ok = processIntSegImagePairInMemory (intensity_images, label_images, image_idx, intensity_names[i], seg_names[i]);		// Phased processing
-
+			std::vector<int> unprocessed_rois;
+			auto ok = processIntSegImagePairInMemory (intensity_images, label_images, image_idx, intensity_names[i], seg_names[i], unprocessed_rois);		// Phased processing
 			if (ok == false)
 			{
-				std::cout << "processIntSegImagePair() returned an error code while processing file pair " << std::endl;
+				error_message = "processIntSegImagePairInMemory() returned an error code while processing file pair";
 				return 1;
 			}
-
-			// Save the result for this intensity-label file pair
-			if (save2csv) {
-				std::string intens_name = "Intensity " + std::to_string(i);
-				std::string segmentation_name = "Segmentation " + std::to_string(i);
-				ok = save_features_2_csv (intens_name, segmentation_name, csvOutputDir);
-			} else {
-				ok = save_features_2_buffer(theResultsCache);
-			}
+				
+			ok = save_features_2_buffer(theResultsCache);
 			if (ok == false)
 			{
-				std::cout << "save_features_2_csv() returned an error code" << std::endl;
+				error_message = "save_features_2_buffer() failed";
 				return 2;
 			}
 
-			theImLoader.close();
+			if (unprocessed_rois.size() > 0) {
+				error_message = "The following ROIS are oversized and cannot be processed: ";
+				for (const auto& roi: unprocessed_rois){
+					error_message += roi;
+					error_message += ", ";
+				}
+				
+				// remove trailing space and comma
+				error_message.pop_back();
+				error_message.pop_back();
+			}
 
-			#ifdef WITH_PYTHON_H
 			// Allow heyboard interrupt.
 			if (PyErr_CheckSignals() != 0)
                 		throw pybind11::error_already_set();
-			#endif
-
-			#ifdef CHECKTIMING
-			// Detailed timing - on the screen
-			VERBOSLVL1(Stopwatch::print_stats();)
-				
-			// Details - also to a file
-			VERBOSLVL3(
-				fs::path p(theSegFname);
-				Stopwatch::save_stats(theEnvironment.output_dir + "/" + p.stem().string() + "_nyxustiming.csv");
-			);
-			#endif
 		}
 		
-
 		return 0; // success
 	}
 #endif
+
 	void dump_roi_metrics(const std::string & label_fpath)
 	{
 		fs::path pseg (label_fpath);

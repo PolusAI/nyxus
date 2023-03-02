@@ -127,14 +127,13 @@ py::tuple featurize_directory_imp (
     return py::make_tuple(pyHeader, pyStrData, pyNumData);
 }
 
-py::tuple featurize_memory_imp (
-    const py::array_t<unsigned int>& intensity_images,
-    const py::array_t<unsigned int>& label_images,
+py::tuple featurize_montage_imp (
+    const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intensity_images,
+    const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images,
     const std::vector<std::string>& intensity_names,
     const std::vector<std::string>& label_names)
 {  
-    bool ok = true;
-
+    
     auto intens_buffer = intensity_images.request();
     auto label_buffer = label_images.request();
 
@@ -148,39 +147,35 @@ py::tuple featurize_memory_imp (
 
     auto label_nf = intens_buffer.shape[0];
 
-    if (intensity_names.size() != nf || label_names.size() != nf) {
-        throw std::invalid_argument("The length of the names vector must be the same as the number of images.");
-    }
 
     if(nf != label_nf) {
-        throw std::invalid_argument("The number of intensity and label images must be the same.");
+         throw std::invalid_argument("The number of intensity (" + std::to_string(nf) + ") and label (" + std::to_string(label_nf) + ") images must be the same.");
     }
 
     if(width != label_width || height != label_height) {
-        throw std::invalid_argument("The width and height of the intensity and label images must be the same.");
+        throw std::invalid_argument("Intensity (width " + std::to_string(width) + ", height " + std::to_string(height) + ") and label (width " + std::to_string(label_width) + ", height " + std::to_string(label_height) + ") image size mismatch");
     }
 
-    theEnvironment.intensity_dir = "";
-    theEnvironment.labels_dir = "";
+    theEnvironment.intensity_dir = "__NONE__";
+    theEnvironment.labels_dir = "__NONE__";
 
     init_feature_buffers();
 
     theResultsCache.clear();
 
     // Process the image sdata
-    int min_online_roi_size = 0;
-    int errorCode = processDatasetInMemory(
+    std::string error_message = "";
+    int errorCode = processMontage(
         intensity_images,
         label_images,
         theEnvironment.n_reduce_threads,
-        min_online_roi_size,
-        false, // 'true' to save to csv
-        theEnvironment.output_dir,
         intensity_names,
-        label_names);
+        label_names,
+        error_message);
 
     if (errorCode)
-        throw std::runtime_error("Error occurred during dataset processing.");
+        throw std::runtime_error("Error #" + std::to_string(errorCode) + " " + error_message + " occurred during dataset processing.");
+
     
     auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
     auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
@@ -189,7 +184,7 @@ py::tuple featurize_memory_imp (
     pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
     pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
 
-    return py::make_tuple(pyHeader, pyStrData, pyNumData);
+    return py::make_tuple(pyHeader, pyStrData, pyNumData, error_message);
 }
 
 py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames)
@@ -321,7 +316,7 @@ PYBIND11_MODULE(backend, m)
 
     m.def("initialize_environment", &initialize_environment, "Environment initialization");
     m.def("featurize_directory_imp", &featurize_directory_imp, "Calculate features of images defined by intensity and mask image collection directories");
-    m.def("featurize_memory_imp", &featurize_memory_imp, "Calculate features of images defined by intensity and mask image collection directories");
+    m.def("featurize_montage_imp", &featurize_montage_imp, "Calculate features of images defined by intensity and mask image collection directories");
     m.def("featurize_fname_lists_imp", &featurize_fname_lists_imp, "Calculate features of intensity-mask image pairs defined by lists of image file names");
     m.def("findrelations_imp", &findrelations_imp, "Find relations in segmentation images");
     m.def("gpu_available", &Environment::gpu_is_available, "Check if CUDA gpu is available");
