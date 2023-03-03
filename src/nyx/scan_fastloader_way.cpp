@@ -125,7 +125,7 @@ namespace Nyxus
 	}
 
 #ifdef WITH_PYTHON_H
-	bool processIntSegImagePairInMemory (const py::array_t<unsigned int>& intens, const py::array_t<unsigned int>& label, int filepair_index, const std::string& intens_name, const std::string& seg_name, std::vector<int> unprocessed_rois)
+	bool processIntSegImagePairInMemory (const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label, int filepair_index, const std::string& intens_name, const std::string& seg_name, std::vector<int> unprocessed_rois)
 	{
 		std::vector<int> trivRoiLabels;
 
@@ -253,8 +253,8 @@ namespace Nyxus
 #ifdef WITH_PYTHON_H
 	
 	int processMontage(
-		const py::array_t<unsigned int>& intensity_images,
-		const py::array_t<unsigned int>& label_images,
+		const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intensity_images,
+		const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images,
 		int numReduceThreads,
 		const std::vector<std::string>& intensity_names,
 		const std::vector<std::string>& seg_names,

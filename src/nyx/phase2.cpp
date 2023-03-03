@@ -169,7 +169,7 @@ namespace Nyxus
 	}
 
 #ifdef WITH_PYTHON_H
-	bool scanTrivialRoisInMemory (const std::vector<int>& batch_labels, const py::array_t<unsigned int>& intens_images, const py::array_t<unsigned int>& label_images, int start_idx)
+	bool scanTrivialRoisInMemory (const std::vector<int>& batch_labels, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens_images, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images, int start_idx)
 	{
 		// Sort the batch's labels to enable binary searching in it
 		std::vector<int> whiteList = batch_labels;
@@ -378,7 +378,7 @@ namespace Nyxus
 
 
 #ifdef WITH_PYTHON_H
-	bool processTrivialRoisInMemory (const std::vector<int>& trivRoiLabels, const py::array_t<unsigned int>& intens, const py::array_t<unsigned int>& label, int start_idx, size_t memory_limit)
+	bool processTrivialRoisInMemory (const std::vector<int>& trivRoiLabels, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label, int start_idx, size_t memory_limit)
 	{	
 		std::vector<int> Pending;
 		size_t batchDemand = 0;

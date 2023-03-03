@@ -91,7 +91,7 @@ namespace Nyxus
 	}
 
 #ifdef WITH_PYTHON_H
-	bool gatherRoisMetricsInMemory (const py::array_t<unsigned int>& intens_images, const py::array_t<unsigned int>& label_images, int start_idx)
+	bool gatherRoisMetricsInMemory (const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens_images, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images, int start_idx)
 	{
 		auto intens_buffer = intens_images.request();
 
@@ -101,8 +101,8 @@ namespace Nyxus
 		auto width = intens_buffer.shape[1];
    		auto height = intens_buffer.shape[2];
 
-		for (unsigned int row = 0; row < width; row++)
-			for (unsigned int col = 0; col < height; col++)
+		for (int row = 0; row < width; row++)
+			for (int col = 0; col < height; col++)
 			{
 				// Skip non-mask pixels
 				auto label = dataL[start_idx + row * height + col];
