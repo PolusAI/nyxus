@@ -168,6 +168,52 @@ namespace Nyxus
 		return true;
 	}
 
+#ifdef WITH_PYTHON_H
+	bool scanTrivialRoisInMemory (const std::vector<int>& batch_labels, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens_images, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images, int start_idx)
+	{
+		// Sort the batch's labels to enable binary searching in it
+		std::vector<int> whiteList = batch_labels;
+		std::sort (whiteList.begin(), whiteList.end());
+
+
+		auto intens_buffer = intens_images.request();
+		auto label_buffer = label_images.request();
+
+		auto width = intens_buffer.shape[1];
+		auto height = intens_buffer.shape[2];
+
+		unsigned int* dataL = static_cast<unsigned int*>(label_buffer.ptr);
+		unsigned int* dataI = static_cast<unsigned int*>(intens_buffer.ptr);
+
+		int cnt = 1;
+		for (unsigned int row = 0; row < width; row++)
+			for (unsigned int col = 0; col < height; col++)
+			{
+
+				// Skip non-mask pixels
+				auto label = dataL[start_idx + row*height + col];
+				if (! label)
+					continue;
+
+				// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
+				if (! theEnvironment.singleROI && ! std::binary_search(whiteList.begin(), whiteList.end(), label))
+					continue;
+
+				auto inten = dataI[start_idx + row*height + col];
+
+				// Collapse all the labels to one if single-ROI mde is requested
+				if (theEnvironment.singleROI)
+					label = 1;
+
+				// Cache this pixel 
+				feed_pixel_2_cache (row, col, inten, label);
+				
+			}
+
+		return true;
+	}
+#endif
+
 	PixIntens* ImageMatrixBuffer = nullptr;
 	size_t imageMatrixBufferLen = 0;
 
@@ -329,4 +375,93 @@ namespace Nyxus
 
 		return true;
 	}
+
+
+#ifdef WITH_PYTHON_H
+	bool processTrivialRoisInMemory (const std::vector<int>& trivRoiLabels, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label, int start_idx, size_t memory_limit)
+	{	
+		std::vector<int> Pending;
+		size_t batchDemand = 0;
+		int roiBatchNo = 1;
+
+		for (auto lab : trivRoiLabels)
+		{
+			LR& r = roiData[lab];
+
+			size_t itemFootprint = r.get_ram_footprint_estimate();
+
+			// Check if we are good to accumulate this ROI in the current batch or should close the batch and reduce it
+			if (batchDemand + itemFootprint < memory_limit)
+			{
+				Pending.push_back(lab);
+				batchDemand += itemFootprint;
+			}
+			else
+			{
+				// Scan pixels of pending trivial ROIs 
+				std::sort (Pending.begin(), Pending.end());
+
+				scanTrivialRoisInMemory(Pending, intens, label, start_idx);
+
+				// Allocate memory
+				allocateTrivialRoisBuffers (Pending);
+
+				// reduce_trivial_rois(Pending);	
+				reduce_trivial_rois_manual(Pending);
+
+				// Free memory
+				freeTrivialRoisBuffers (Pending);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
+
+				// Reset the RAM footprint accumulator
+				batchDemand = 0;
+
+				// Clear the freshly processed ROIs from pending list 
+				Pending.clear();
+
+				// Start a new pending set by adding the stopper ROI 
+				Pending.push_back(lab);
+
+				// Advance the batch counter
+				roiBatchNo++;
+			}
+
+			// Allow heyboard interrupt.
+			if (PyErr_CheckSignals() != 0)
+                throw pybind11::error_already_set();
+
+		}
+
+		// Process what's remaining pending
+		if (Pending.size() > 0)
+		{
+			// Scan pixels of pending trivial ROIs 
+			std::sort (Pending.begin(), Pending.end());
+			
+			scanTrivialRoisInMemory(Pending, intens, label, start_idx);
+
+			// Allocate memory
+			allocateTrivialRoisBuffers(Pending);
+
+			// Dump ROIs for use in unit testing
+#ifdef DUMP_ALL_ROI
+			dump_all_roi();
+#endif
+
+			// Reduce them
+			reduce_trivial_rois_manual(Pending);
+
+			// Free memory
+			freeTrivialRoisBuffers(Pending);
+
+			// Allow heyboard interrupt.
+			if (PyErr_CheckSignals() != 0)
+                throw pybind11::error_already_set();
+		}
+
+		reduce_neighbors_and_dependencies_manual();
+
+		return true;
+
+	}
+#endif
 }

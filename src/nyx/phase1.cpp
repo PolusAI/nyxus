@@ -5,6 +5,9 @@
 #include <array>
 #ifdef WITH_PYTHON_H
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
+namespace py = pybind11;
 #endif
 #include "environment.h"
 #include "globals.h"
@@ -87,4 +90,39 @@ namespace Nyxus
 		return true;
 	}
 
+#ifdef WITH_PYTHON_H
+	bool gatherRoisMetricsInMemory (const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens_images, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images, int start_idx)
+	{
+		auto intens_buffer = intens_images.request();
+
+		unsigned int* dataL = static_cast<unsigned int*>(label_images.request().ptr);
+		unsigned int* dataI = static_cast<unsigned int*>(intens_buffer.ptr);
+		
+		auto width = intens_buffer.shape[1];
+   		auto height = intens_buffer.shape[2];
+
+		for (int row = 0; row < width; row++)
+			for (int col = 0; col < height; col++)
+			{
+				// Skip non-mask pixels
+				auto label = dataL[start_idx + row * height + col];
+				if (!label)
+					continue;
+
+
+				// Collapse all the labels to one if single-ROI mde is requested
+				if (theEnvironment.singleROI)
+					label = 1;
+				
+				// Update pixel's ROI metrics
+				feed_pixel_2_metrics (row, col, dataI[start_idx + row * height + col], label, 200); // Updates 'uniqueLabels' and 'roiData'
+				
+
+				if (PyErr_CheckSignals() != 0)
+					throw pybind11::error_already_set();
+			}
+
+		return true;
+	}
+#endif
 }
