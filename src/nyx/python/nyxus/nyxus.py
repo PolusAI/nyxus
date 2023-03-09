@@ -191,8 +191,8 @@ class Nyxus:
             if(label_images.ndim != 2):
                 raise ValueError("Both intensity and label arrays must be the same dimension")
             
-            intensity_images = [intensity_images]
-            label_images = [label_images]
+            intensity_images = np.array([intensity_images])
+            label_images = np.array([label_images])
             
         elif(intensity_images.ndim == 3):
             if(label_images.ndim != 3):
