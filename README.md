@@ -68,7 +68,7 @@ The `features` variable is a Pandas dataframe similar to what is shown below.
 | ... | ...                  | ...                  |     ... | ...     |  ...     |...|   ...      |
 | 734 | p5_y0_r51_c0.ome.tif | p5_y0_r51_c0.ome.tif |     223 | 54573.3 |  54573.3 |...|   0.980769 |
 
-Nyxus can also process intensity-mask pairs that are already loaded in memory as Numpy arrays using the `featurize` method. This method takes in either a single pair of 2D intensity-mask pairs
+Nyxus can also process intensity-mask pairs that are loaded as Numpy arrays using the `featurize` method. This method takes in either a single pair of 2D intensity-mask pairs
 or a pair of 3D arrays containing 2D intensity and mask images. There is also two optional parameters to supply names to the resulting dataframe, . 
 
 ```python 
@@ -134,7 +134,7 @@ The `features` variable will now use the custom names, as shown below
 |     | mask_image       | intensity_image          | label | MEAN    |   MEDIAN |...|    GABOR_6 |
 |----:|:-----------------|:-------------------------|------:|--------:|---------:|--:|-----------:|
 |   0 | custom_seg_name1 | custom_intens_name1      |     1 | 45366.9 |  46887   |...|   0.873016 |
-|   1 |custom_seg_name1  | custom_intens_name1      |     2 | 27122.8 |  27124.5 |...|   1.000000 |
+|   1 | custom_seg_name1 | custom_intens_name1      |     2 | 27122.8 |  27124.5 |...|   1.000000 |
 |   2 | custom_seg_name1 | custom_intens_name1      |     3 | 34777.4 |  33659   |...|   0.942857 |
 |   3 | custom_seg_name1 | custom_intens_name1      |     4 | 35808.2 |  36924   |...|   0.824074 |
 | ... | ...              | ...                      |   ... | ...     |  ...     |...|   ...      |
