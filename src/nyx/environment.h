@@ -34,6 +34,10 @@
 #define IBSICOMPLIANCE "--ibsi" // skip binning for grey level and grey tone features
 #define SKIPROI "--skiproi"		// Optional. Skip ROIs having specified labels. Sybtax: --skiproi <label[,label,label,...]>
 
+#ifdef CHECKTIMING
+	#define EXCLUSIVETIMING "--exclusivetiming"
+#endif
+
 #ifdef USE_GPU
 	#define USEGPU "--useGpu"					// Environment::rawUseGpu, "true" or "false"
 	#define GPUDEVICEID "--gpuDeviceID"		// Environment::rawGpuDeviceID
@@ -178,6 +182,11 @@ private:
 	// implementation of SKIPROI
 	std::string rawBlacklistedRois = "";
 	RoiBlacklist roiBlacklist;
+
+	// data members implementing exclusive-inclusive timing switch
+	#ifdef CHECKTIMING
+		std::string rawExclusiveTiming = "";
+	#endif
 };
 
 namespace Nyxus

@@ -98,7 +98,7 @@ int main (int argc, char** argv)
 	}
 
 	// Current time stamp #2
-	VERBOSLVL1(std::cout << "\n>>> STARTED >>>\t" << startTS << "\n>>> ENDING >>>\t" << getTimeStr() << "\n";)
+	VERBOSLVL1(std::cout << "\n>>> STARTED >>>\t" << startTS << "\n>>> FINISHED >>>\t" << getTimeStr() << "\n";)
 
 	int exitCode = errorCode;
 	return exitCode;
