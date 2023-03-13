@@ -38,10 +38,21 @@ namespace Nyxus
 
 	inline bool parse_as_int(const std::string& raw, int& result)
 	{
-		if (sscanf(raw.c_str(), "%d", &result) != 1)
+		char* endptr;
+		const char* psz = raw.c_str();
+		long res = strtol(psz, &endptr, 10);
+
+		// Did conversion happen?
+		if (endptr == psz)
 			return false;
-		else
-			return true;
+		
+		// Was it successful?
+		if (*endptr != 0)
+			return false;
+		
+		// Successful conversion, return its result
+		result = (int)res;
+		return true;
 	}
 
 	inline bool parse_delimited_string_list_to_ints(const std::string& rawString, std::vector<int>& result, std::string& error_msg)
@@ -50,7 +61,6 @@ namespace Nyxus
 		if (rawString.length() == 0)
 			return true;
 
-		bool retval = true;
 		std::vector<std::string> strings;
 		parse_delimited_string(rawString, ",", strings);
 		result.clear();
@@ -59,13 +69,13 @@ namespace Nyxus
 			int v;
 			if (!parse_as_int(s, v))
 			{
-				retval = false;
 				error_msg = "Error: in '" + rawString + "' expecting '" + s + "' to be an integer number";
+				return false;
 			}
 			else
 				result.push_back(v);
 		}
-		return retval;
+		return true;
 	}
 
 	inline std::string toupper(const std::string& s)

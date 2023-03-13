@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 
-//using pairType = std::pair<std::string, std::vector<int>>;
 class pairType : public std::pair<std::string, std::vector<int>> {};
 
 class RoiBlacklist

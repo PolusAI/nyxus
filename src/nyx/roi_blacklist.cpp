@@ -23,6 +23,14 @@ bool RoiBlacklist::parse_file_blacklist (const std::string & p)
 	}
 
 	// Use LHS
+	// -- lrhs[0] is supposed to be file name so give it a light check 
+	for (auto ch : lrhs[0])
+		if (std::isspace(ch))
+		{
+			ermsg = "Error: " + lrhs[0] + " contains a space character";
+			return false;
+		}
+	// -- file name is OK, use it
 	pairType fbl;
 	fbl.first = lrhs[0];
 
@@ -118,9 +126,7 @@ bool RoiBlacklist::parse_raw_string(const std::string& raw)
 	{
 		// Syntax 2:
 		if (!Nyxus::parse_delimited_string_list_to_ints(raw, globalBlackList, ermsg))
-		{
 			return false;
-		}
 	}
 
 	// Mark the blacklist as defined
