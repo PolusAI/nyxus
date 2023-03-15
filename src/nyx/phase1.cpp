@@ -58,7 +58,13 @@ namespace Nyxus
 					// Skip non-mask pixels
 					auto label = dataL[i];
 					if (!label)
+					{
+						// Update zero-background area
+						zero_background_area++;
+
 						continue;
+					}
+
 
 					int y = row * th + i / tw,
 						x = col * tw + i % tw;

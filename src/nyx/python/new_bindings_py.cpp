@@ -309,6 +309,31 @@ static std::vector<std::map<std::string, std::string>> get_gpu_properties() {
     #endif
 }
 
+void blacklist_roi_imp (std::string raw_blacklist)
+{
+    // After successfully parsing the blacklist, Nyxus runtime becomes able 
+    // to skip blacklisted ROIs until the cached blacklist is cleared 
+    // with Environment::clear_roi_blacklist()
+
+    std::string lastError;
+    if (! theEnvironment.parse_roi_blacklist_raw_string (raw_blacklist, lastError))
+    {
+        std::string ermsg = "Error parsing ROI blacklist definition: " + lastError;
+        throw std::runtime_error(ermsg);
+    }
+}
+
+void clear_roi_blacklist_imp()
+{
+    theEnvironment.clear_roi_blacklist();
+}
+
+py::str roi_blacklist_get_summary_imp()
+{
+    std::string response;
+    theEnvironment.get_roi_blacklist_summary(response);
+    return py::str(response);
+}
 
 PYBIND11_MODULE(backend, m)
 {
@@ -322,6 +347,10 @@ PYBIND11_MODULE(backend, m)
     m.def("gpu_available", &Environment::gpu_is_available, "Check if CUDA gpu is available");
     m.def("use_gpu", &use_gpu, "Enable/disable GPU features");
     m.def("get_gpu_props", &get_gpu_properties, "Get properties of CUDA gpu");
+    m.def("blacklist_roi_imp", &blacklist_roi_imp, "Set up a global or per-mask file blacklist definition");
+    m.def("clear_roi_blacklist_imp", &clear_roi_blacklist_imp, "Clear the ROI black list");
+    m.def("roi_blacklist_get_summary_imp", &roi_blacklist_get_summary_imp, "Returns a summary of the ROI blacklist");
+
 }
 
 ///

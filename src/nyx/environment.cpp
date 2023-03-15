@@ -18,54 +18,6 @@ namespace Nyxus
 {
 	bool existsOnFilesystem(const std::string &);
 
-	bool parse_as_float(const std::string& raw, float &result)
-	{
-		if (sscanf(raw.c_str(), "%f", &result) != 1)
-			return false;
-		else
-			return true;
-	}
-
-	bool parse_as_int(const std::string& raw, int& result)
-	{
-		if (sscanf(raw.c_str(), "%d", &result) != 1)
-			return false;
-		else
-			return true;
-	}
-
-	bool parse_delimited_string_list_to_ints (const std::string & rawString, std::vector<int> & result)
-	{
-		// It's legal to not have rotation angles specified
-		if (rawString.length() == 0)
-			return true;
-
-		bool retval = true;
-		std::vector<std::string> strings;
-		parse_delimited_string(rawString, ",", strings);
-		result.clear();
-		for (auto &s : strings)
-		{
-			int v;
-			if (!parse_as_int(s, v))
-			{
-				retval = false;
-				std::cout << "Error: in '" << rawString << "' expecting '" << s << "' to be an integer number\n";
-			}
-			else
-				result.push_back(v);
-		}
-		return retval;
-	}
-
-	std::string toupper(const std::string &s)
-	{
-		auto s_uppr = s;
-		for (auto &c : s_uppr)
-			c = ::toupper(c);
-		return s_uppr;
-	}
-
 	bool parse_delimited_string_list_to_features(const std::string &rawString, std::vector<std::string> &result)
 	{
 		result.clear();
@@ -217,6 +169,7 @@ void Environment::show_cmdline_help()
 		<< "\t\t[ " << IBSICOMPLIANCE << " skip binning for grayscale features to achieve IBSI compliance. Note that performance may be impacted by enabling this flag ] \n"
 		<< "\t\t[ " << RAMLIMIT << " <megabytes> ] \n"
 		<< "\t\t[ " << TEMPDIR << " <slash-terminating path> ] \n"
+		<< "\t\t[ " << SKIPROI << " <comma-separated list> ] \n"
 		<< "\n"
 		<< "\tnyxus -h\tDisplay help info\n"
 		<< "\tnyxus --help\tDisplay help info\n";
@@ -281,9 +234,13 @@ void Environment::show_summary(const std::string &head, const std::string &tail)
 	// Temp directory
 	std::cout << "\ttemp directory " << theEnvironment.get_temp_dir_path() << "\n";
 
+	// Blacklisted ROIs
+	if (roiBlacklist.defined())
+		std::cout << "\tblacklisted ROI " << roiBlacklist.get_summary_text() << "\n";
+
 	// Timing mode
 	#if CHECKTIMING
-	std::cout << "\t#CHECKTIMING / exclusive mode of timing " << (Stopwatch::exclusive() ? "TRUE" : "FALSE") << "\n";
+		std::cout << "\t#CHECKTIMING / exclusive mode of timing " << (Stopwatch::exclusive() ? "TRUE" : "FALSE") << "\n";
 	#endif
 
 	std::cout << tail;
@@ -732,14 +689,17 @@ int Environment::parse_cmdline(int argc, char **argv)
 				find_string_argument(i, VERBOSITY, verbosity) ||
 				find_string_argument(i, IBSICOMPLIANCE, raw_ibsi_compliance) ||
 				find_string_argument(i, RAMLIMIT, rawRamLimit) ||
-				find_string_argument(i, TEMPDIR, rawTempDir)
+				find_string_argument(i, TEMPDIR, rawTempDir) ||
+				find_string_argument(i, SKIPROI, rawBlacklistedRois)
+
 				#ifdef CHECKTIMING
 					|| find_string_argument(i, EXCLUSIVETIMING, rawExclusiveTiming)
 				#endif
-#ifdef USE_GPU
-				|| find_string_argument(i, USEGPU, rawUseGpu) 
-				|| find_string_argument(i, GPUDEVICEID, rawGpuDeviceID) 
-#endif
+
+				#ifdef USE_GPU
+					|| find_string_argument(i, USEGPU, rawUseGpu) 
+					|| find_string_argument(i, GPUDEVICEID, rawGpuDeviceID) 
+				#endif
 			))
 			unrecognizedArgs.push_back(*i);
 	}
@@ -879,15 +839,18 @@ int Environment::parse_cmdline(int argc, char **argv)
 	//==== Parse rotations
 	if (!rawGlcmAngles.empty())
 	{
-		if (!Nyxus::parse_delimited_string_list_to_ints (rawGlcmAngles, glcmAngles))
+		std::string ermsg;
+		if (!Nyxus::parse_delimited_string_list_to_ints (rawGlcmAngles, glcmAngles, ermsg))
 		{
-			std::cout << "Error parsing a list of integers " << rawGlcmAngles << "\n";
+			std::cerr << "Error parsing list of integers " << rawGlcmAngles << ": " << ermsg << "\n";
 			return 1;
 		}
 
 		// The angle list parsed well, let's tell it to GLCMFeature 
 		GLCMFeature::angles = glcmAngles;
 	}
+
+
 
 	//==== Parse the RAM limit (in megabytes)
 	if (!rawRamLimit.empty())
@@ -928,6 +891,17 @@ int Environment::parse_cmdline(int argc, char **argv)
 		
 		// Modify the temp directory path
 		this->temp_dir_path = rawTempDir + "\\";
+	}
+
+	//==== Parse ROI blacklist
+	if (! rawBlacklistedRois.empty())
+	{
+		std::string ermsg;
+		if (!this->parse_roi_blacklist_raw_string (rawBlacklistedRois, ermsg))
+		{
+			std::cerr << ermsg << "\n";
+			return 1;
+		}
 	}
 
 	//==== Parse exclusive-inclusive timing
@@ -1140,6 +1114,32 @@ bool Environment::gpu_is_available() {
 	#else
 		return false;
 	#endif
+}
+
+bool Environment::parse_roi_blacklist_raw_string(const std::string& rbs, std::string& error_message)
+{
+	if (!roiBlacklist.parse_raw_string(rbs))
+	{
+		error_message = roiBlacklist.get_last_er_msg();
+		return false;
+	}
+	return true;
+}
+
+void Environment::clear_roi_blacklist()
+{
+	roiBlacklist.clear();
+}
+
+bool Environment::roi_is_blacklisted (const std::string& fname, int label)
+{
+	bool retval = roiBlacklist.check_label_blacklisted (fname, label);
+	return retval;
+}
+
+void Environment::get_roi_blacklist_summary(std::string& response)
+{
+	response = roiBlacklist.get_summary_text();
 }
 
 #ifdef USE_GPU
