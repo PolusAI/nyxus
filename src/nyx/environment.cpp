@@ -148,29 +148,58 @@ void Environment::set_ibsi_compliance(bool skip) {
 
 void Environment::show_cmdline_help()
 {
+	const char OPT[] = "(optional) ";
 	std::cout
-		<< PROJECT_NAME << " " << PROJECT_VER << "\nCopyright Axle Informatics 2021-2022\n"
-		<< "Usage:\t" << "nyxus" 
-		<< "\t" << FILEPATTERN << " <file pattern regular expression e.g. .*, *.tif, etc (default = .*)> \n"
-		<< "\t\t" << OUTPUTTYPE << " <'separatecsv'[default] or 'singlecsv'> \n"
-		<< "\t\t" << SEGDIR << " <directory of segmentation images> \n"
-		<< "\t\t" << INTDIR << " <directory of intensity images> \n"
-		<< "\t\t" << OUTDIR << " <output directory> \n"
-		<< "\t\t[ " << FEATURES << " <specific feature or '*all*' (default = '*all*')> ] \n"
-		<< "\t\t[ " << XYRESOLUTION << " <number of pixels per centimeter, an integer or floating point number> ] \n"
-		<< "\t\t[ " << EMBPIXSZ << " <[default = 0]> ]\n"
-		<< "\t\t[ " << LOADERTHREADS << " <number of image loader threads [default = 1]> ] \n"
-		<< "\t\t[ " << PXLSCANTHREADS << " <number of pixel scanner threads within a TIFF tile (default = 1)> ] \n"
-		<< "\t\t[ " << REDUCETHREADS << " <number of feature reduction threads [default = 1]> ] \n"
-		<< "\t\t[ " << PXLDIST << " <number of pixels as neighbor features radius [default = 5]> ] \n"
-		<< "\t\t[ " << COARSEGRAYDEPTH << " <custom number of grayscale levels (default: 256)> ] \n"
-		<< "\t\t[ " << GLCMANGLES << " <one or more comma separated rotation angles from set {0, 45, 90, and 135}, default is " << GLCMANGLES << "0,45,90,135> ] \n"
-		<< "\t\t[ " << VERBOSITY << " <levels of verbosity 0 (silence), 2 (timing), 4 (roi diagnostics), 8 (granular diagnostics) [default = 0]> ] \n"
-		<< "\t\t[ " << IBSICOMPLIANCE << " skip binning for grayscale features to achieve IBSI compliance. Note that performance may be impacted by enabling this flag ] \n"
-		<< "\t\t[ " << RAMLIMIT << " <megabytes> ] \n"
-		<< "\t\t[ " << TEMPDIR << " <slash-terminating path> ] \n"
-		<< "\t\t[ " << SKIPROI << " <comma-separated list> ] \n"
-		<< "\n"
+		<< "Usage:\t" << "nyxus"
+		<< "\t" << FILEPATTERN << "=<file pattern regular expression> \n"
+		<< "\t\t\tDefault: .* \n"
+		<< "\t\t\tExample: " << FILEPATTERN << "=.* for all files, " << FILEPATTERN << "=*.tif for .tif files \n"
+		<< "\t\t" << OUTPUTTYPE << "=<separatecsv or singlecsv> \n"
+		<< "\t\t\tDefault: separatecsv \n"
+		<< "\t\t" << SEGDIR << "=<directory of segmentation images> \n"
+		<< "\t\t" << INTDIR << "=<directory of intensity images> \n"
+		<< "\t\t" << OUTDIR << "=<output directory> \n"
+		<< "\t\t" << OPT << FEATURES << "=<specific feature or comma-separated features or feature group> \n"
+		<< "\t\t\tDefault: " << FEA_NICK_ALL << " \n"
+		<< "\t\t\tExample 1: " << FEATURES << "=" << theFeatureSet.findFeatureNameByCode(PERIMETER) << " \n"
+		<< "\t\t\tExample 2: " << FEATURES << "=" << theFeatureSet.findFeatureNameByCode(PERIMETER) << "," << theFeatureSet.findFeatureNameByCode(CIRCULARITY) << "," << theFeatureSet.findFeatureNameByCode(GABOR) << " \n"
+		<< "\t\t\tExample 3: " << FEATURES << "=" << FEA_NICK_ALL_INTENSITY << " \n"
+		<< "\t\t\tExample 4: " << FEATURES << "=" << FEA_NICK_BASIC_MORPHOLOGY << " \n"
+		<< "\t\t\tExample 5: " << FEATURES << "=" << FEA_NICK_ALL <<" \n"
+		<< "\t\t" << OPT << XYRESOLUTION << "=<number of pixels per centimeter, an integer or floating point number> \n"
+		<< "\t\t" << OPT << EMBPIXSZ << "=<number> \n"
+		<< "\t\t\tDefault: 0 \n"
+		<< "\t\t" << OPT << LOADERTHREADS << "=<number of image loader threads> \n"
+		<< "\t\t\tDefault: 1 \n"
+		<< "\t\t" << OPT << REDUCETHREADS << "=<number of feature reduction threads> \n"
+		<< "\t\t\tDefault: 1 \n"
+		<< "\t\t" << OPT << PXLDIST << "=<number of pixels as neighbor features radius> \n"
+		<< "\t\t\tDefault: 5 \n"
+		<< "\t\t" << OPT << COARSEGRAYDEPTH << "=<custom number of grayscale levels> \n"
+		<< "\t\t\tDefault: 256 \n"
+		<< "\t\t" << OPT << GLCMANGLES << "=<one or more comma separated rotation angles from set {0, 45, 90, and 135}> \n"
+		<< "\t\t\tDefault: 0,45,90,135 \n"
+		<< "\t\t" << OPT << VERBOSITY << "=<levels of verbosity 0 (silence), 1 (minimum output), 2 (1 + timing), 3 (2 + roi metrics + more timing), 4 (3 + diagnostic information)> \n"
+		<< "\t\t\tDefault: 0 \n"
+		<< "\t\t" << OPT << IBSICOMPLIANCE << "=<false or true> Enable IBSI compliance mode \n"
+		<< "\t\t\tDefault: false \n"
+		<< "\t\t\tNote: " << IBSICOMPLIANCE << "=true may reduce performance \n"
+		<< "\t\t" << OPT << RAMLIMIT << "=<megabytes> \n"
+		<< "\t\t\tDefault: 50% of available memory \n"
+		<< "\t\t" << OPT << TEMPDIR << "=<slash-terminating temporary directory path> \n"
+		<< "\t\t\tDefault: default system temp directory \n"
+		<< "\t\t" << OPT << SKIPROI << "=<ROI blacklist> \n"
+		<< "\t\t\tDefault: void blacklist \n"
+		<< "\t\t\tExample 1: " << SKIPROI << "=34,35,36 \n"
+		<< "\t\t\tExample 2: " << SKIPROI << "=image1.ome.tif:34,35,36;image2.ome.tif:42,43 \n";
+    
+	#ifdef CHECKTIMING
+		std::cout << "\t\t" << OPT << EXCLUSIVETIMING << "=<false or true> \n"
+			<< "\t\t\tDefault: false \n"
+			<< "\t\t\tUse " << EXCLUSIVETIMING << "=false to measure time of the whole image collection, " << EXCLUSIVETIMING << "=true to measure time per image pair \n";
+	#endif
+
+	std::cout << "\n"
 		<< "\tnyxus -h\tDisplay help info\n"
 		<< "\tnyxus --help\tDisplay help info\n";
 
@@ -651,11 +680,20 @@ void Environment::process_feature_list()
 	}
 }
 
-int Environment::parse_cmdline(int argc, char **argv)
+/**
+ * @brief Parses the command line. Caller needn't display command line help screen to the user after call
+ *
+ * @return true - success, false - error, execution should not continue
+ */
+bool Environment::parse_cmdline(int argc, char **argv)
 {
 	// Program being run without any flags and options?
 	if (argc == 1)
-		return 1;
+	{
+		std::cerr << "Error: missing command line arguments \n";
+		show_cmdline_help();
+		return false;
+	}
 
 	std::vector<std::string> args(argv + 1, argv + argc);
 	std::vector<std::string> unrecognizedArgs;
@@ -666,7 +704,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 		if (*i == "-h" || *i == "--help")
 		{
 			show_cmdline_help();
-			return 1;
+			return false;	// Option is valid but we return false to stop execution
 		}
 
 		if (!(
@@ -729,34 +767,34 @@ int Environment::parse_cmdline(int argc, char **argv)
 	if (file_pattern == "")
 	{
 		std::cout << "Error: Missing argument " << FILEPATTERN << "\n";
-		return 1;
+		return false;
 	}
 	if (check_file_pattern(file_pattern) == false)
 	{
 		std::cout << "Error: file pattern '" << file_pattern << "' is an invalid regular expression\n";
-		return 1;
+		return false;
 	}
 
 	if (labels_dir == "")
 	{
 		std::cout << "Error: Missing argument " << SEGDIR << "\n";
-		return 1;
+		return false;
 	}
 	if (intensity_dir == "")
 	{
 		std::cout << "Error: Missing argument " << INTDIR << "\n";
-		return 1;
+		return false;
 	}
 	if (output_dir == "")
 	{
 		std::cout << "Error: Missing argument " << OUTDIR << "\n";
-		return 1;
+		return false;
 	}
 
 	if (rawOutpType == "")
 	{
 		std::cout << "Error: Missing argument " << OUTPUTTYPE << "\n";
-		return 1;
+		return false;
 	}
 
 	if (rawFeatures == "")
@@ -770,7 +808,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 	if (rawOutpTypeUC != Nyxus::toupper(OT_SINGLECSV) && rawOutpTypeUC != Nyxus::toupper(OT_SEPCSV))
 	{
 		std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << " or " << OT_SINGLECSV << "\n";
-		return 1;
+		return false;
 	}
 	separateCsv = rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV);
 
@@ -781,7 +819,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 		if (sscanf(loader_threads.c_str(), "%d", &n_loader_threads) != 1 || n_loader_threads <= 0)
 		{
 			std::cout << "Error: " << LOADERTHREADS << "=" << loader_threads << ": expecting a positive integer constant\n";
-			return 1;
+			return false;
 		}
 	}
 
@@ -791,7 +829,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 		if (sscanf(pixel_scan_threads.c_str(), "%d", &n_pixel_scan_threads) != 1 || n_pixel_scan_threads <= 0)
 		{
 			std::cout << "Error: " << PXLSCANTHREADS << "=" << pixel_scan_threads << ": expecting a positive integer constant\n";
-			return 1;
+			return false;
 		}
 	}
 
@@ -801,7 +839,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 		if (sscanf(reduce_threads.c_str(), "%d", &n_reduce_threads) != 1 || n_reduce_threads <= 0)
 		{
 			std::cout << "Error: " << REDUCETHREADS << "=" << reduce_threads << ": expecting a positive integer constant\n";
-			return 1;
+			return false;
 		}
 	}
 
@@ -811,7 +849,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 		if (sscanf(pixel_distance.c_str(), "%d", &n_pixel_distance) != 1 || n_pixel_distance <= 0)
 		{
 			std::cout << "Error: " << PXLDIST << "=" << pixel_distance << ": expecting a positive integer constant\n";
-			return 1;
+			return false;
 		}
 	}
 
@@ -822,7 +860,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 		if (sscanf(raw_coarse_grayscale_depth.c_str(), "%d", &coarse_grayscale_depth) != 1 || coarse_grayscale_depth <= 0)
 		{
 			std::cout << "Error: " << COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": expecting a positive integer constant\n";
-			return 1;
+			return false;
 		}
 	}
 
@@ -832,7 +870,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 		if (sscanf(verbosity.c_str(), "%d", &verbosity_level) != 1 || verbosity_level < 0)
 		{
 			std::cout << "Error: " << VERBOSITY << "=" << reduce_threads << ": expecting a positive integer constant\n";
-			return 1;
+			return false;
 		}
 	}
 
@@ -843,14 +881,12 @@ int Environment::parse_cmdline(int argc, char **argv)
 		if (!Nyxus::parse_delimited_string_list_to_ints (rawGlcmAngles, glcmAngles, ermsg))
 		{
 			std::cerr << "Error parsing list of integers " << rawGlcmAngles << ": " << ermsg << "\n";
-			return 1;
+			return false;
 		}
 
 		// The angle list parsed well, let's tell it to GLCMFeature 
 		GLCMFeature::angles = glcmAngles;
 	}
-
-
 
 	//==== Parse the RAM limit (in megabytes)
 	if (!rawRamLimit.empty())
@@ -861,7 +897,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 		if (scanfResult != 1 || value < 0)
 		{
 			std::cout << "Error: " << RAMLIMIT << "=" << rawRamLimit << ": expecting a non-negative integer constant (RAM limit in megabytes)\n";
-			return 1;
+			return false;
 		}
 
 		// Megabytes to bytes
@@ -872,7 +908,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 		if (requestedCeiling > actualRam)
 		{
 			std::cout << "Error: RAM limit " << value << " megabytes (=" << requestedCeiling << " bytes) exceeds the actual amount of available RAM " << actualRam << " bytes\n";
-			return 1;
+			return false;
 		}
 
 		// Set the member variable
@@ -886,7 +922,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 		if (!existsOnFilesystem(rawTempDir))
 		{
 			std::cout << "Error :" << TEMPDIR << "=" << rawTempDir << ": nonexisting directory\n";
-			return 1;
+			return false;
 		}
 		
 		// Modify the temp directory path
@@ -931,7 +967,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 		if (rawUseGpuUC != validUsegpu1 && rawUseGpuUC != validUsegpu2)
 		{
 			std::cerr << "Error: valid values of " << USEGPU << " are " << validUsegpu1 << " or " << validUsegpu2 << "\n";
-			return 1;
+			return false;
 		}
 		use_gpu_ = rawUseGpuUC == validUsegpu1;
 
@@ -944,7 +980,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 				if (sscanf(rawGpuDeviceID.c_str(), "%d", &gpu_device_id_) != 1 || gpu_device_id_ < 0)
 				{
 					std::cout << "Error: " << GPUDEVICEID << "=" << gpu_device_id_ << ": expecting 0 or positive integer constant\n";
-					return 1;
+					return false;
 				}
 			}
 			else
@@ -988,7 +1024,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 	if (!Nyxus::parse_delimited_string_list_to_features(rawFeatures, recognizedFeatureNames))
 	{
 		std::cerr << "Stopping due to errors while parsing user requested features\n";
-		return 1;
+		return false;
 	}
 
 	// --Feature names are ok, set the flags
@@ -999,7 +1035,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 	catch (std::exception &e)
 	{
 		std::cerr << e.what();
-		return 1;
+		return false;
 	}
 
 	// --Handle the whole-slide mode
@@ -1029,7 +1065,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 		if (sscanf(rawXYRes.c_str(), "%f", &xyRes) != 1 || xyRes <= 0)
 		{
 			std::cout << "Error: " << XYRESOLUTION << "=" << xyRes << ": expecting a positive numeric constant\n";
-			return 1;
+			return false;
 		}
 		// pixel size
 		pixelSizeUm = 1e-2f / xyRes / 1e-6f; // 1 cm in meters / pixels per cm / micrometers
@@ -1047,7 +1083,7 @@ int Environment::parse_cmdline(int argc, char **argv)
 	}
 
 	// Success
-	return 0;
+	return true;
 }
 
 void Environment::show_featureset_help()
@@ -1202,8 +1238,6 @@ std::vector<std::map<std::string, std::string>> Environment::get_gpu_properties(
 
     return props;
 }
-
-
 
 #endif
 
