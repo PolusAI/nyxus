@@ -45,7 +45,7 @@ Alternatively, Nyxus can process explicitly defined pairs of intensity-mask imag
 ```python 
 from nyxus import Nyxus
 nyx = Nyxus(["*ALL*"])
-features = nyx.featurize(
+features = nyx.featurize_files(
     [
         "/path/to/images/intensities/i1.ome.tif", 
         "/path/to/images/intensities/i2.ome.tif"
@@ -67,6 +67,79 @@ The `features` variable is a Pandas dataframe similar to what is shown below.
 |   4 | p1_y2_r51_c0.ome.tif | p1_y2_r51_c0.ome.tif |       5 | 36739.7 |  37798   |...|   0.854067 |
 | ... | ...                  | ...                  |     ... | ...     |  ...     |...|   ...      |
 | 734 | p5_y0_r51_c0.ome.tif | p5_y0_r51_c0.ome.tif |     223 | 54573.3 |  54573.3 |...|   0.980769 |
+
+Nyxus can also process intensity-mask pairs that are already loaded in memory as Numpy arrays using the `featurize` method. This method takes in either a single pair of 2D intensity-mask pairs
+or a pair of 3D arrays containing 2D intensity and mask images. There is also two optional parameters to supply names to the resulting dataframe, . 
+
+```python 
+from nyxus import Nyxus
+import numpy as np
+
+
+nyx = Nyxus(["*ALL*"])
+
+intens = [
+    [[1, 4, 4, 1, 1],
+        [1, 4, 6, 1, 1],
+        [4, 1, 6, 4, 1],
+        [4, 4, 6, 4, 1]],
+                   
+    [[1, 4, 4, 1, 1],
+    [1, 1, 6, 1, 1],
+    [1, 1, 3, 1, 1],
+    [4, 4, 6, 1, 1]]
+]
+
+seg = [
+    [[1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1]],
+                
+    [[1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1],
+    [0, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1]]
+]
+
+
+features = nyx.featurize(intes, seg)
+```
+
+The `features` variable is a Pandas dataframe similar to what is shown below.
+
+|     | mask_image    | intensity_image | label | MEAN    |   MEDIAN |...|    GABOR_6 |
+|----:|:--------------|:----------------|------:|--------:|---------:|--:|-----------:|
+|   0 | Segmentation1 | Intensity1      |     1 | 45366.9 |  46887   |...|   0.873016 |
+|   1 | Segmentation1 | Intensity1      |     2 | 27122.8 |  27124.5 |...|   1.000000 |
+|   2 | Segmentation1 | Intensity1      |     3 | 34777.4 |  33659   |...|   0.942857 |
+|   3 | Segmentation1 | Intensity1      |     4 | 35808.2 |  36924   |...|   0.824074 |
+| ... | ...           | ...             |   ... | ...     |  ...     |...|   ...      |
+|  14 | Segmentation2 | Intensity2      |     6 | 54573.3 |  54573.3 |...|   0.980769 |
+
+Note that in this case, default names were provided for the `mask_image` and `intensity_image` columns. To supply names 
+for these columns, the optional arguments `intensity_names` and `label_names` are used by passing lists of names in. 
+The length of the lists must be the same as the length of the mask and intensity arrays. To name the images, use
+
+```python 
+
+intens_names = ['custom_intens_name1', 'custom_intens_name2']
+seg_names = ['custom_seg_name1', 'custom_seg_name2']
+
+features = nyx.featurize(intes, seg, intens_name, seg_name)
+```
+
+The `features` variable will now use the custom names, as shown below
+
+|     | mask_image       | intensity_image          | label | MEAN    |   MEDIAN |...|    GABOR_6 |
+|----:|:-----------------|:-------------------------|------:|--------:|---------:|--:|-----------:|
+|   0 | custom_seg_name1 | custom_intens_name1      |     1 | 45366.9 |  46887   |...|   0.873016 |
+|   1 |custom_seg_name1  | custom_intens_name1      |     2 | 27122.8 |  27124.5 |...|   1.000000 |
+|   2 | custom_seg_name1 | custom_intens_name1      |     3 | 34777.4 |  33659   |...|   0.942857 |
+|   3 | custom_seg_name1 | custom_intens_name1      |     4 | 35808.2 |  36924   |...|   0.824074 |
+| ... | ...              | ...                      |   ... | ...     |  ...     |...|   ...      |
+|  14 | custom_seg_name2 | custom_intens_name2      |     6 | 54573.3 |  54573.3 |...|   0.980769 |
+
 
 For more information on all of the available options and features, check out [the documentation](#).
 
@@ -141,42 +214,53 @@ Apart from defining your feature set by explicitly specifying comma-separated fe
 
 ## Command line usage
 
-Assuming you [built the Nyxus binary](#building-from-source) as outlined below, the following parameters are available for the CLI:
+Assuming you [built the Nyxus binary](#building-from-source) as outlined below, the following parameters are available for the command line interface:
 
-| Parameter | Description | I/O | Type |
-|------|-------------|------|----|
---intDir|Intensity image collection|Input|collection|
---segDir|Labeled image collection|Input|collection
---intSegMapDir | Data collection of the ad-hoc intensity-to-mask file mapping | Input | Collection
---intSegMapFile | Name of the text file containing an ad-hoc intensity-to-mask file mapping. The files are assumed to reside in corresponding intensity and label collections | Input | string
---features|Select intensity and shape features required|Input|array
---filePattern|To match intensity and labeled/segmented images |Input|string
---csvFile|Save csv file as one csv file for all images or separate csv file for each image|Input|enum
---pixelDistance|Pixel distance to calculate the neighbors touching cells|Input|integer|
---embeddedpixelsize|Consider the unit embedded in metadata, if present|Input|boolean
---unitLength|Enter the metric for unit conversion|Input|string
---pixelsPerunit|Enter the number of pixels per unit of the metric|Input|number
---outDir|Output collection|Output|csvCollection
---coarseGrayDepth|Custom number of levels in grayscale denoising used in texture features (default: 256)|Input|integer
+| <div style="width:150px">Parameter</div> | Description | Type |
+|------|-------------|------|
+--csvFile | Save csv file as one csv file for all the images or separate csv file for each image. Acceptable values: 'separatecsv' and 'singlecsv'. Default value: '--csvFile=separatecsv' | string constant
+--features | String constant or comma-seperated list of constants requesting a group of features or particular feature. Default value: '--features=\*ALL\*' | string
+--filePattern | Regular expression to match image files in directories specified by parameters '--intDir' and '--segDir'. To match all the files, use '--filePattern=.\*' | string
+--intDir | Directory of intensity image collection | path
+--outDir | Output directory | path
+--segDir | Directory of labeled image collection | path
+--coarseGrayDepth | (optional) Custom number of grayscale level bins used in texture features. Default: '--coarseGrayDepth=256' | integer
+--glcmAngles | (optional) Enabled direction angles of the GLCM feature. Superset of values: 0, 45, 90, and 135. Default: '--glcmAngles=0,45,90,135' | list of integer constants
+--intSegMapDir | (optional) Data collection of the ad-hoc intensity-to-mask file mapping. Must be used in combination with parameter '--intSegMapFile' | path
+--intSegMapFile | (optional) Name of the text file containing an ad-hoc intensity-to-mask file mapping. The files are assumed to reside in corresponding intensity and label collections. Must be used in combination with parameter '--intSegMapDir' | string
+--pixelDistance | (optional) Number of pixels to treat ROIs within specified distance as neighbors. Default value: '--pixelDistance=5' | integer
+--pixelsPerCentimeter | (optional) Number of pixels in centimeter used by unit length-related features. Default value: 0 | real
+--ramLimit | (optional) Amount of memory not to exceed by Nyxus, in megabytes. Default value: 50\% of available memory. Example: '--ramLimit=2000' to use 2,000 megabytes | integer
+--reduceThreads | (optional) Number of CPU threads used on the feature calculation step. Default: '--reduceThreads=1' | integer
+--skiproi | (optional) Skip ROIs having specified labels. Example: '--skiproi=image1.tif:2,3,4;image2.tif:45,56' | string
+--tempDir | (optional) Directory used by temporary out-of-RAM objects. Default value: system temporary directory | path
+
 ---
 
 ### Example: Running Nyxus to process images of specific image channel
 
 Suppose we need to process intensity/mask images of channel 1 :
 ```
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/output-ratbrain --filePattern=.*_c1\.ome\.tif --csvFile=singlecsv 
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.*_c1\.ome\.tif --csvFile=singlecsv 
 ```
 ### Example: Running Nyxus to process specific image 
 
 Suppose we need to process intensity/mask file p1_y2_r68_c1.ome.tif :
 ```
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/output-ratbrain --filePattern=p1_y2_r68_c1\.ome\.tif --csvFile=singlecsv 
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=p1_y2_r68_c1\.ome\.tif --csvFile=singlecsv 
 ```
 
 ### Example: Running Nyxus to extract only intensity and basic morphology features
 
 ```
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/output-ratbrain --filePattern=.* --csvFile=singlecsv 
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.* --csvFile=singlecsv 
+```
+
+### Example: Skipping specified ROIs while extracting features
+
+Suppose we need to blacklist ROI labels 15, 16, and 17 from feature extraction :
+```
+./nyxus --skiproi=15,16,17 --features=*all* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.* --csvFile=singlecsv 
 ```
 
 ## Nested features 

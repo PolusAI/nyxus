@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 #include "environment_basic.h"
+#include "roi_blacklist.h"
+
 #ifdef USE_GPU
 	#include <cuda_runtime.h>
 #endif
@@ -30,6 +32,7 @@
 #define RAMLIMIT "--ramLimit"					// Optional. Limit for treating ROIs as non-trivial and for setting the batch size of trivial ROIs. Default - amount of available system RAM
 #define TEMPDIR "--tempDir"						// Optional. Used in processing non-trivial features. Default - system temp directory
 #define IBSICOMPLIANCE "--ibsi" // skip binning for grey level and grey tone features
+#define SKIPROI "--skiproi"		// Optional. Skip ROIs having specified labels. Sybtax: --skiproi <label[,label,label,...]>
 
 #ifdef CHECKTIMING
 	#define EXCLUSIVETIMING "--exclusivetiming"
@@ -142,6 +145,12 @@ public:
 	unsigned int get_coarse_gray_depth();
 	void set_coarse_gray_depth(unsigned int new_depth);
 
+	// implementation of SKIPROI
+	bool roi_is_blacklisted (const std::string& fname, int roi_label);
+	bool parse_roi_blacklist_raw_string (const std::string& raw_blacklist_string, std::string& error_message);
+	void clear_roi_blacklist ();
+	void get_roi_blacklist_summary(std::string& response);
+
 private:
 	std::vector<std::tuple<std::string, std::string>> recognizedArgs;	// Accepted command line arguments
 
@@ -170,10 +179,14 @@ private:
 	// data members implementing TEMPDIR
 	std::string rawTempDir = "";
 
+	// implementation of SKIPROI
+	std::string rawBlacklistedRois = "";
+	RoiBlacklist roiBlacklist;
+
 	// data members implementing exclusive-inclusive timing switch
-#ifdef CHECKTIMING
-	std::string rawExclusiveTiming = "";
-#endif
+	#ifdef CHECKTIMING
+		std::string rawExclusiveTiming = "";
+	#endif
 };
 
 namespace Nyxus

@@ -186,6 +186,11 @@ namespace Nyxus
 		for (auto l : L)
 		{
 			LR& r = roiData[l];
+
+			// Skip blacklisted ROI
+			if (r.blacklisted)
+				continue;
+
 			rescache.inc_num_rows();	
 
 			// Tear off pure file names from segment and intensity file paths

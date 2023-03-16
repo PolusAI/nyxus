@@ -42,7 +42,8 @@ void initialize_environment(
     uint32_t coarse_gray_depth, 
     uint32_t n_reduce_threads,
     uint32_t n_loader_threads,
-    int using_gpu)
+    int using_gpu,
+    bool ibsi)
 {
     theEnvironment.recognizedFeatureNames = features;
     theEnvironment.set_pixel_distance(static_cast<int>(neighbor_distance));
@@ -51,6 +52,7 @@ void initialize_environment(
     theEnvironment.set_coarse_gray_depth(coarse_gray_depth);
     theEnvironment.n_reduce_threads = n_reduce_threads;
     theEnvironment.n_loader_threads = n_loader_threads;
+    theEnvironment.ibsi_compliance = ibsi;
 
     // Throws exception if invalid feature is supplied.
     theEnvironment.process_feature_list();
@@ -123,6 +125,66 @@ py::tuple featurize_directory_imp (
     pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
 
     return py::make_tuple(pyHeader, pyStrData, pyNumData);
+}
+
+py::tuple featurize_montage_imp (
+    const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intensity_images,
+    const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images,
+    const std::vector<std::string>& intensity_names,
+    const std::vector<std::string>& label_names)
+{  
+    
+    auto intens_buffer = intensity_images.request();
+    auto label_buffer = label_images.request();
+
+    auto width = intens_buffer.shape[1];
+    auto height = intens_buffer.shape[2];
+
+    auto nf = intens_buffer.shape[0];
+
+    auto label_width = intens_buffer.shape[1];
+    auto label_height = intens_buffer.shape[2];
+
+    auto label_nf = intens_buffer.shape[0];
+
+
+    if(nf != label_nf) {
+         throw std::invalid_argument("The number of intensity (" + std::to_string(nf) + ") and label (" + std::to_string(label_nf) + ") images must be the same.");
+    }
+
+    if(width != label_width || height != label_height) {
+        throw std::invalid_argument("Intensity (width " + std::to_string(width) + ", height " + std::to_string(height) + ") and label (width " + std::to_string(label_width) + ", height " + std::to_string(label_height) + ") image size mismatch");
+    }
+
+    theEnvironment.intensity_dir = "__NONE__";
+    theEnvironment.labels_dir = "__NONE__";
+
+    init_feature_buffers();
+
+    theResultsCache.clear();
+
+    // Process the image sdata
+    std::string error_message = "";
+    int errorCode = processMontage(
+        intensity_images,
+        label_images,
+        theEnvironment.n_reduce_threads,
+        intensity_names,
+        label_names,
+        error_message);
+
+    if (errorCode)
+        throw std::runtime_error("Error #" + std::to_string(errorCode) + " " + error_message + " occurred during dataset processing.");
+
+    
+    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
+    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
+    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+    auto nRows = theResultsCache.get_num_rows();
+    pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
+    pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+
+    return py::make_tuple(pyHeader, pyStrData, pyNumData, error_message);
 }
 
 py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames)
@@ -247,6 +309,31 @@ static std::vector<std::map<std::string, std::string>> get_gpu_properties() {
     #endif
 }
 
+void blacklist_roi_imp (std::string raw_blacklist)
+{
+    // After successfully parsing the blacklist, Nyxus runtime becomes able 
+    // to skip blacklisted ROIs until the cached blacklist is cleared 
+    // with Environment::clear_roi_blacklist()
+
+    std::string lastError;
+    if (! theEnvironment.parse_roi_blacklist_raw_string (raw_blacklist, lastError))
+    {
+        std::string ermsg = "Error parsing ROI blacklist definition: " + lastError;
+        throw std::runtime_error(ermsg);
+    }
+}
+
+void clear_roi_blacklist_imp()
+{
+    theEnvironment.clear_roi_blacklist();
+}
+
+py::str roi_blacklist_get_summary_imp()
+{
+    std::string response;
+    theEnvironment.get_roi_blacklist_summary(response);
+    return py::str(response);
+}
 
 PYBIND11_MODULE(backend, m)
 {
@@ -254,11 +341,16 @@ PYBIND11_MODULE(backend, m)
 
     m.def("initialize_environment", &initialize_environment, "Environment initialization");
     m.def("featurize_directory_imp", &featurize_directory_imp, "Calculate features of images defined by intensity and mask image collection directories");
+    m.def("featurize_montage_imp", &featurize_montage_imp, "Calculate features of images defined by intensity and mask image collection directories");
     m.def("featurize_fname_lists_imp", &featurize_fname_lists_imp, "Calculate features of intensity-mask image pairs defined by lists of image file names");
     m.def("findrelations_imp", &findrelations_imp, "Find relations in segmentation images");
     m.def("gpu_available", &Environment::gpu_is_available, "Check if CUDA gpu is available");
     m.def("use_gpu", &use_gpu, "Enable/disable GPU features");
     m.def("get_gpu_props", &get_gpu_properties, "Get properties of CUDA gpu");
+    m.def("blacklist_roi_imp", &blacklist_roi_imp, "Set up a global or per-mask file blacklist definition");
+    m.def("clear_roi_blacklist_imp", &clear_roi_blacklist_imp, "Clear the ROI black list");
+    m.def("roi_blacklist_get_summary_imp", &roi_blacklist_get_summary_imp, "Returns a summary of the ROI blacklist");
+
 }
 
 ///

@@ -16,6 +16,7 @@
 #include "test_glrlm.h"
 #include "test_glszm.h"
 #include "test_ngtdm.h"
+#include "test_roi_blacklist.h"
 
 TEST(TEST_NYXUS, TEST_GABOR){
     test_gabor();
@@ -832,6 +833,13 @@ TEST(TEST_NYXUS, TEST_NGTDM_COMPLEXITY)
 TEST(TEST_NYXUS, TEST_NGTDM_STRENGTH) 
 {
 	ASSERT_NO_THROW(test_ngtdm_strength());
+}
+
+// ROI blacklisting
+
+TEST(TEST_NYXUS, TEST_ROI_BLACKLISTING) 
+{
+	ASSERT_NO_THROW(test_roi_blacklist());
 }
 
 int main(int argc, char **argv) 
