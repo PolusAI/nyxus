@@ -145,6 +145,7 @@ set(SOURCE
 	src/nyx/pixel_feed.cpp
 	src/nyx/reduce_by_feature.cpp
 	src/nyx/reduce_trivial_rois.cpp
+	src/nyx/roi_blacklist.cpp
 	src/nyx/roi_cache.cpp
 	src/nyx/roi_cache_basic.cpp
 	src/nyx/scan_fastloader_way.cpp

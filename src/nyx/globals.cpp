@@ -14,6 +14,7 @@ namespace Nyxus
 	// Everything related to ROI data
 	std::unordered_set <int> uniqueLabels;
 	std::unordered_map <int, LR> roiData;
+	size_t zero_background_area;
 	std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
 
 	// Features

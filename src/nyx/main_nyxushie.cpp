@@ -65,15 +65,7 @@ bool 	output_relational_table (const std::vector<int>& P, const std::string& out
 	return true;
 }
 
-bool parse_as_float(const std::string& raw, float& result)
-{
-	if (sscanf(raw.c_str(), "%f", &result) != 1)
-		return false;
-	else
-		return true;
-}
-
-bool 	shape_all_parents (const std::vector<int> & P, const std::string & outdir, const ChildFeatureAggregation & aggr)
+bool shape_all_parents (const std::vector<int> & P, const std::string & outdir, const ChildFeatureAggregation & aggr)
 {
 	// Anything to do at all?
 	if (P.size() == 0)

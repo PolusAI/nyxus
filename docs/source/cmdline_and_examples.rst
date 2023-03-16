@@ -1,4 +1,104 @@
 
+Command line
+==============
+
+Assuming you built the Nyxus executable from source code, 
+the following parameters are available for the command 
+line usage. Regular comand line users should adhere 
+parameter value to the "Type" column. WIPP developers 
+should adhere to columns "WIPP I/O role" and "WIPP type".
+
+
+.. list-table::
+   :widths: 15 45 10 10 10
+   :header-rows: 1
+
+   * - Parameter
+     - Description
+     - Type
+     - WIPP I/O role
+     - WIPP type
+   * - --csvFile
+     - Save csv file as one csv file for all the images or separate csv file for each image. Acceptable values: 'separatecsv' and 'singlecsv'. Default value: '--csvFile=separatecsv'
+     - string constant
+     - input
+     - enum
+   * - --features
+     - String constant or comma-seperated list of constants requesting a group of features or particular feature. Default value: '--features=\*ALL\*'
+     - string
+     - input
+     - array
+   * - --filePattern
+     - Regular expression to match image files in directories specified by parameters '--intDir' and '--segDir'. To match all the files, use '--filePattern=.\*'
+     - string
+     - input
+     - string
+   * - --intDir
+     - Directory of intensity image collection
+     - path
+     - input
+     - collection
+   * - --outDir
+     - Output directory
+     - path
+     - output
+     - csvCollection
+   * - --segDir
+     - Directory of labeled image collection
+     - path
+     - input
+     - collection   
+   * - --coarseGrayDepth
+     - (Optional) Custom number of grayscale level bins used in texture features. Default: '--coarseGrayDepth=256'
+     - integer
+     - input
+     - integer
+   * - --glcmAngles
+     - (Optional) Enabled direction angles of the GLCM feature. Superset of values: 0, 45, 90, and 135. Default: '--glcmAngles=0,45,90,135'
+     - list of integer constants
+     - input
+     - collection
+   * - --intSegMapDir
+     - (Optional) Data collection of the ad-hoc intensity-to-mask file mapping. Must be used in combination with parameter '--intSegMapFile'
+     - path
+     - input
+     - collection
+   * - --intSegMapFile
+     - (Optional) Name of the text file containing an ad-hoc intensity-to-mask file mapping. The files are assumed to reside in corresponding intensity and label collections. Must be used in combination with parameter '--intSegMapDir'
+     - string
+     - input
+     - string
+   * - --pixelDistance
+     - (Optional) Number of pixels to treat ROIs within specified distance as neighbors. Default value: '--pixelDistance=5'
+     - integer
+     - input
+     - integer
+   * - --pixelsPerCentimeter
+     - (Optional) Number of pixels in centimeter used by unit length-related features. Default value: 0
+     - real
+     - input
+     - number
+   * - --ramLimit
+     - (Optional) Amount of memory not to exceed by Nyxus, in megabytes. Default value: 50\% of available memory. Example: '--ramLimit=2000' to use 2,000 megabytes
+     - integer
+     - input
+     - integer
+   * - --reduceThreads
+     - (Optional) Number of CPU threads used on the feature calculation step. Default: '--reduceThreads=1'
+     - integer
+     - input
+     - integer
+   * - --skiproi
+     - (Optional) Skip ROIs having specified labels. Example: '--skiproi=image1.tif:2,3,4;image2.tif:45,56'
+     - string
+     - input
+     - string
+   * - --tempDir
+     - (Optional) Directory used by temporary out-of-RAM objects. Default value: system temporary directory
+     - path
+     - input
+     - path
+
 Examples
 ========
 

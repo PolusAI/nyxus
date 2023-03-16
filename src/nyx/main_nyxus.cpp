@@ -15,7 +15,7 @@ int main (int argc, char** argv)
 	int parseRes = theEnvironment.parse_cmdline (argc, argv);
 	if (parseRes)
 	{
-		std::cout << "\nError: missing command line arguments\n\n";
+		std::cout << "\nError: command line error\n\n";
 		theEnvironment.show_cmdline_help();
 		return parseRes;
 	}

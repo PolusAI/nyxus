@@ -1,9 +1,8 @@
-from .backend import initialize_environment, featurize_directory_imp, featurize_montage_imp, featurize_fname_lists_imp, findrelations_imp, use_gpu, gpu_available 
+from .backend import initialize_environment, featurize_directory_imp, featurize_montage_imp, featurize_fname_lists_imp, findrelations_imp, use_gpu, gpu_available, blacklist_roi_imp, clear_roi_blacklist_imp, roi_blacklist_get_summary_imp  
 import os
 import numpy as np
 import pandas as pd
 from typing import Optional, List
-
 
 class Nyxus:
     """Nyxus image feature extraction library
@@ -290,7 +289,65 @@ class Nyxus:
             df["label"] = df.label.astype(np.uint32)
 
         return df
-		
+
+
+    def blacklist_roi(self, blacklist:str):
+        """Defines the application-wide ROI blacklist
+
+        Defines a set of ROI labels that need to be skipped during feature extraction and in the output. Examples: 
+        '27,28,30' - defines a global blacklist of ROI labels 27, 28, and 30
+        'file1.ome.tif:5,6,7;file2.ome.tif:11,12,13,14' - defines 2 file-specific blacklists
+
+        Parameters
+        ----------
+        blacklist : blacklist definition (string)
+
+        Returns
+        -------
+        None
+
+        """        
+        if blacklist is None:
+            raise IOError ("ROI blacklist argument is empty")
+
+        if len(blacklist.strip()) == 0:
+            raise IOError ("ROI blacklist argument is non-informative")
+
+        blacklist_roi_imp (blacklist)
+
+    def clear_roi_blacklist(self):
+        """Clears the ROI blacklist
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+
+        """
+        clear_roi_blacklist_imp ()
+
+    def roi_blacklist_get_summary (self):
+        """Returns a human-friendly text of the summary of the application-wide ROI blacklist
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        text of blacklist summary (string)
+
+        """ 
+        s = roi_blacklist_get_summary_imp()
+        s = s.strip()
+        if len(s) == 0:
+            return None
+        return s
+
+
 class Nested:
     """Nyxus image feature extraction library / ROI hierarchy analyzer
     
