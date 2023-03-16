@@ -103,7 +103,7 @@ seg = [
 ]
 
 
-features = nyx.featurize(intes, seg)
+features = nyx.featurize(intens, seg)
 ```
 
 The `features` variable is a Pandas dataframe similar to what is shown below.
@@ -126,7 +126,7 @@ The length of the lists must be the same as the length of the mask and intensity
 intens_names = ['custom_intens_name1', 'custom_intens_name2']
 seg_names = ['custom_seg_name1', 'custom_seg_name2']
 
-features = nyx.featurize(intes, seg, intens_name, seg_name)
+features = nyx.featurize(intens, seg, intens_name, seg_name)
 ```
 
 The `features` variable will now use the custom names, as shown below
