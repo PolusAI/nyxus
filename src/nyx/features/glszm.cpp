@@ -361,49 +361,144 @@ void GLSZMFeature::calculate(LR& r)
 	}
 }
 
-void GLSZMFeature::save_value (std::vector<std::vector<double>>& fvals)
+
+void GLSZMFeature::calc_sums_of_P()
 {
+	// Zero specialized sums
+	f_LAHGLE = 0;
+	f_LALGLE = 0;
+	f_SAHGLE = 0;
+	f_SALGLE = 0;
+	f_ZE = 0;
+	mu_GLV = 0;
+	mu_ZV = 0;
 
-	if (sum_p == 0) {
+	// Reset by-level counters
+	si.clear();
+	si.resize (Ng+1);
+	std::fill (si.begin(), si.end(), 0.0);
 
-		double val = 0;
+	// Aggregate by grayscale level
+	for (int i = 1; i <= Ng; ++i)
+	{
+		double sum = 0;
+		for (int j = 1; j <= Ns; ++j)
+		{
+			double p = P.matlab (i,j);
+			sum += p;
 
-		fvals[GLSZM_SAE][0] = val;
-		fvals[GLSZM_LAE][0] = val;
-		fvals[GLSZM_GLN][0] = val;
-		fvals[GLSZM_GLNN][0] = val;
-		fvals[GLSZM_SZN][0] = val;
-		fvals[GLSZM_SZNN][0] = val;
-		fvals[GLSZM_ZP][0] = val;
-		fvals[GLSZM_GLV][0] = val;
-		fvals[GLSZM_ZV][0] = val;
-		fvals[GLSZM_ZE][0] = val;
-		fvals[GLSZM_LGLZE][0] = val;
-		fvals[GLSZM_HGLZE][0] = val;
-		fvals[GLSZM_SALGLE][0] = val;
-		fvals[GLSZM_SAHGLE][0] = val;
-		fvals[GLSZM_LALGLE][0] = val;
-		fvals[GLSZM_LAHGLE][0] = val;
+			// Once we're iterating matrix P, let's compute specialized sums
+			double i2 = double(i) * double(i),
+				j2 = double(j) * double(j);
 
-		return;
+			f_LAHGLE += p * i2 * j2;
+			f_LALGLE += p * j2 / i2;
+			f_SAHGLE += p * i2 / j2;
+			f_SALGLE += p / (i2 * j2);
+
+			double entrTerm = fast_log10(p / sum_p + EPS) / LOG10_2;
+			f_ZE += p / sum_p * entrTerm;
+
+			mu_ZV += p / sum_p * double(j);
+			mu_GLV += p / sum_p * double(i);
+		}
+		si [i] = sum;
 	}
 
-	fvals[GLSZM_SAE][0] = calc_SAE();
-	fvals[GLSZM_LAE][0] = calc_LAE();
-	fvals[GLSZM_GLN][0] = calc_GLN();
-	fvals[GLSZM_GLNN][0] = calc_GLNN();
-	fvals[GLSZM_SZN][0] = calc_SZN();
-	fvals[GLSZM_SZNN][0] = calc_SZNN();
-	fvals[GLSZM_ZP][0] = calc_ZP();
-	fvals[GLSZM_GLV][0] = calc_GLV();
-	fvals[GLSZM_ZV][0] = calc_ZV();
-	fvals[GLSZM_ZE][0] = calc_ZE();
-	fvals[GLSZM_LGLZE][0] = calc_LGLZE();
-	fvals[GLSZM_HGLZE][0] = calc_HGLZE();
-	fvals[GLSZM_SALGLE][0] = calc_SALGLE();
-	fvals[GLSZM_SAHGLE][0] = calc_SAHGLE();
-	fvals[GLSZM_LALGLE][0] = calc_LALGLE();
-	fvals[GLSZM_LAHGLE][0] = calc_LAHGLE();
+	// Reset by-position counters
+	sj.clear();
+	sj.resize (Ns+1);
+	std::fill (sj.begin(), sj.end(), 0.0);
+	for (int j = 1; j <= Ns; ++j)
+	{
+		double sum = 0;
+		for (int i = 1; i <= Ng; ++i)
+			sum += P.matlab (i,j);
+		sj[j] = sum;
+	}
+}
+
+bool GLSZMFeature::need (Nyxus::AvailableFeatures f)
+{
+	return theFeatureSet.isEnabled (f);
+}
+
+void GLSZMFeature::save_value (std::vector<std::vector<double>>& fvals)
+{
+	// Clear result buffers
+	double val = 0;
+	fvals[GLSZM_SAE][0] = val;
+	fvals[GLSZM_LAE][0] = val;
+	fvals[GLSZM_GLN][0] = val;
+	fvals[GLSZM_GLNN][0] = val;
+	fvals[GLSZM_SZN][0] = val;
+	fvals[GLSZM_SZNN][0] = val;
+	fvals[GLSZM_ZP][0] = val;
+	fvals[GLSZM_GLV][0] = val;
+	fvals[GLSZM_ZV][0] = val;
+	fvals[GLSZM_ZE][0] = val;
+	fvals[GLSZM_LGLZE][0] = val;
+	fvals[GLSZM_HGLZE][0] = val;
+	fvals[GLSZM_SALGLE][0] = val;
+	fvals[GLSZM_SAHGLE][0] = val;
+	fvals[GLSZM_LALGLE][0] = val;
+	fvals[GLSZM_LAHGLE][0] = val;
+
+	// Non-informative matrix?
+	if (sum_p == 0)
+		return;
+
+	// Precalculate sums of P
+	calc_sums_of_P();
+
+	// Calculate features
+	if (need(GLSZM_SAE))
+		fvals[GLSZM_SAE][0] = calc_SAE();
+
+	if (need(GLSZM_LAE))
+		fvals[GLSZM_LAE][0] = calc_LAE();
+	
+	if (need(GLSZM_GLN))
+		fvals[GLSZM_GLN][0] = calc_GLN();
+	
+	if (need(GLSZM_GLNN))
+		fvals[GLSZM_GLNN][0] = calc_GLNN();
+	
+	if (need(GLSZM_SZN))
+		fvals[GLSZM_SZN][0] = calc_SZN();
+	
+	if (need(GLSZM_SZNN))
+		fvals[GLSZM_SZNN][0] = calc_SZNN();
+	
+	if (need(GLSZM_ZP))
+		fvals[GLSZM_ZP][0] = calc_ZP();
+	
+	if (need(GLSZM_GLV))
+		fvals[GLSZM_GLV][0] = calc_GLV();
+	
+	if (need(GLSZM_ZV))
+		fvals[GLSZM_ZV][0] = calc_ZV();
+	
+	if (need(GLSZM_ZE))
+		fvals[GLSZM_ZE][0] = calc_ZE();
+	
+	if (need(GLSZM_LGLZE))
+		fvals[GLSZM_LGLZE][0] = calc_LGLZE();
+	
+	if (need(GLSZM_HGLZE))
+		fvals[GLSZM_HGLZE][0] = calc_HGLZE();
+	
+	if (need(GLSZM_SALGLE))
+		fvals[GLSZM_SALGLE][0] = calc_SALGLE();
+	
+	if (need(GLSZM_SAHGLE))
+		fvals[GLSZM_SAHGLE][0] = calc_SAHGLE();
+	
+	if (need(GLSZM_LALGLE))
+		fvals[GLSZM_LALGLE][0] = calc_LALGLE();
+	
+	if (need(GLSZM_LAHGLE))
+		fvals[GLSZM_LAHGLE][0] = calc_LAHGLE();
 }
 
 // 1. Small Area Emphasis
@@ -413,20 +508,13 @@ double GLSZMFeature::calc_SAE()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	std::vector<double> sj(Ns+1, 0);
-	for (int i = 1; i <= Ng; ++i) {
-		for (int j = 1; j <= Ns; ++j) {
-			sj[j] += P.matlab(i, j);
-		}
-	}
-
+	// Calculate feature. 'sj' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int j = 1; j <= Ns; j++)
 	{
 		f += sj[j] / (j * j);
 	}
 	double retval = f / sum_p;
-
 	return retval;
 }
 
@@ -437,13 +525,7 @@ double GLSZMFeature::calc_LAE()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	std::vector<double> sj(Ns+1, 0);
-	for (int i = 1; i <= Ng; ++i) {
-		for (int j = 1; j <= Ns; ++j) {
-			sj[j] += P.matlab(i, j);
-		}
-	}
-
+	// Calculate feature. 'sj' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int j = 1; j <= Ns; j++)
 	{
@@ -460,17 +542,12 @@ double GLSZMFeature::calc_GLN()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	std::vector<double> si(Ng+1, 0);
-	for (int i = 1; i <= Ng; ++i) {
-		for (int j = 1; j <= Ns; ++j) {
-			si[i] += P.matlab(i, j);
-		}
-	}
-
+	// Calculate feature. 'si' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		f += si[i] * si[i];
+		double x = si[i];
+		f += x*x;
 	}
 
 	double retval = f / sum_p;
@@ -484,18 +561,13 @@ double GLSZMFeature::calc_GLNN()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	std::vector<double> si(Ng+1, 0);
-	for (int i = 1; i <= Ng; ++i) {
-		for (int j = 1; j <= Ns; ++j) {
-			si[i] += P.matlab(i, j);
-		}
-	}
-
+	// Calculate feature. 'si' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 
 	for (int i = 1; i <= Ng; i++)
 	{
-		f += si[i] * si[i];
+		double x = si[i];
+		f += x*x;
 	}
 
 	double retval = f / double(sum_p * sum_p);
@@ -509,17 +581,12 @@ double GLSZMFeature::calc_SZN()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	std::vector<double> sj(Ns+1, 0);
-	for (int i = 1; i <= Ng; ++i) {
-		for (int j = 1; j <= Ns; ++j) {
-			sj[j] += P.matlab(i, j);
-		}
-	}
-
+	// Calculate feature. 'sj' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int j = 1; j <= Ns; j++)
 	{
-		f += sj[j] * sj[j];
+		double x = sj[j];
+		f += x*x;
 	}
 
 	double retval = f / sum_p;
@@ -533,17 +600,12 @@ double GLSZMFeature::calc_SZNN()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	std::vector<double> sj(Ns+1, 0);
-	for (int i = 1; i <= Ng; ++i) {
-		for (int j = 1; j <= Ns; ++j) {
-			sj[j] += P.matlab(i, j);
-		}
-	}
-
+	// Calculate feature. 'sj' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int j = 1; j <= Ns; j++)
 	{
-		f += sj[j] * sj[j];
+		double x = sj[j];
+		f += x*x;
 	}
 
 	double retval = f / double(sum_p * sum_p);
@@ -568,22 +630,14 @@ double GLSZMFeature::calc_GLV()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double mu = 0.0;
-	for (int i = 1; i <= Ng; i++)
-	{
-		for (int j = 1; j <= Ns; j++)
-		{
-			mu += P.matlab(i, j)/sum_p * i;  
-		}
-	}
-
+	// Calculate feature. 'mu_GLV' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
 		for (int j = 1; j <= Ns; j++)
 		{
-			double mu2 = (i - mu) * (i - mu);
-			f += P.matlab(i,j)/sum_p * mu2;
+			double mu2 = (i - mu_GLV) * (i - mu_GLV);
+			f += P.matlab(i,j) / sum_p * mu2;
 		}
 	}
 	return f;
@@ -596,22 +650,14 @@ double GLSZMFeature::calc_ZV()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double mu = 0.0;
-	for (int i = 1; i <= Ng; i++)
-	{
-		for (int j = 1; j <= Ns; j++)
-		{
-			mu += P.matlab(i,j)/sum_p * double(j);
-		}
-	}
-
+	// Calculate feature. 'mu_ZV' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
 		for (int j = 1; j <= Ns; j++)
 		{
-			double mu2 = (j - mu) * (j - mu);
-			f += P.matlab(i, j)/sum_p * mu2;
+			double mu2 = (j - mu_ZV) * (j - mu_ZV);
+			f += P.matlab(i, j) / sum_p * mu2;
 		}
 	}
 	return f;
@@ -624,16 +670,8 @@ double GLSZMFeature::calc_ZE()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double f = 0.0;
-	for (int i = 1; i <= Ng; i++)
-	{
-		for (int j = 1; j <= Ns; j++)
-		{
-			double entrTerm = fast_log10(P.matlab(i,j)/sum_p + EPS) / LOG10_2;
-			f += P.matlab(i,j)/sum_p * entrTerm;
-		}
-	}
-	double retval = -f;
+	// Calculate feature. 'f_ZE' is expected to have been initialized in calc_sums_of_P()
+	double retval = -f_ZE;
 	return retval;
 }
 
@@ -644,13 +682,7 @@ double GLSZMFeature::calc_LGLZE()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	std::vector<double> si(Ng+1, 0);
-	for (int i = 1; i <= Ng; ++i) {
-		for (int j = 1; j <= Ns; ++j) {
-			si[i] += P.matlab(i, j);
-		}
-	}
-
+	// Calculate feature. 'si' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
@@ -668,13 +700,7 @@ double GLSZMFeature::calc_HGLZE()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	std::vector<double> si(Ng+1, 0);
-	for (int i = 1; i <= Ng; ++i) {
-		for (int j = 1; j <= Ns; ++j) {
-			si[i] += P.matlab(i, j);
-		}
-	}
-
+	// Calculate feature. 'si' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
@@ -682,7 +708,6 @@ double GLSZMFeature::calc_HGLZE()
 	}
 
 	double retval = f / sum_p;
-
 	return retval;
 }
 
@@ -693,15 +718,8 @@ double GLSZMFeature::calc_SALGLE()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double f = 0.0;
-	for (int i = 1; i <= Ng; i++)
-	{
-		for (int j = 1; j < Ns; j++)
-		{
-			f += P.matlab(i,j) / double(i * i * j * j);
-		}
-	}
-	double retval = f / sum_p;
+	// Calculate feature. 'f_SALGLE' is expected to have been initialized in calc_sums_of_P()
+	double retval = f_SALGLE / sum_p;
 	return retval;
 }
 
@@ -712,15 +730,8 @@ double GLSZMFeature::calc_SAHGLE()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double f = 0.0;
-	for (int i = 1; i <= Ng; i++)
-	{
-		for (int j = 1; j <= Ns; j++)
-		{
-			f += P.matlab(i,j) * double(i * i) / double(j * j);
-		}
-	}
-	double retval = f / sum_p;
+	// Calculate feature. 'f_SAHGLE' is expected to have been initialized in calc_sums_of_P()
+	double retval = f_SAHGLE / sum_p;
 	return retval;
 }
 
@@ -731,15 +742,8 @@ double GLSZMFeature::calc_LALGLE()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double f = 0.0;
-	for (int i = 1; i <= Ng; i++)
-	{
-		for (int j = 1; j <= Ns; j++)
-		{
-			f += P.matlab(i,j) * double(j * j) / double(i * i);
-		}
-	}
-	double retval = f / sum_p;
+	// Calculate feature. 'f_LALGLE' is expected to have been initialized in calc_sums_of_P()
+	double retval = f_LALGLE / sum_p;
 	return retval;
 }
 
@@ -750,15 +754,8 @@ double GLSZMFeature::calc_LAHGLE()
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
-	double f = 0.0;
-	for (int i = 1; i <= Ng; i++)
-	{
-		for (int j = 1; j <= Ns; j++)
-		{
-			f += P.matlab(i,j) * double(i * i * j * j);
-		}
-	}
-	double retval = f / sum_p;
+	// Calculate feature. 'f_LAHGLE' is expected to have been initialized in calc_sums_of_P()
+	double retval = f_LAHGLE / sum_p;
 	return retval;
 }
 

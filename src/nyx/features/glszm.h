@@ -103,6 +103,16 @@ private:
 	SimpleMatrix<int> P;
 	double sum_p = 0;
 
+	// Helper to check if feature is requested by user
+	bool need (Nyxus::AvailableFeatures f);
+
+	// Sum of P required by GLN, GLNN, LGLZE, HGLZE
+	std::vector<double> sj;
+	// Sum of P required by SAE, LAE, SZN, SZNN
+	std::vector<double> si;
+	double f_LAHGLE, f_LALGLE, f_SAHGLE, f_SALGLE, f_ZE, mu_GLV, mu_ZV;
+	void calc_sums_of_P();
+
 	void clear_buffers()
 	{
 		bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
