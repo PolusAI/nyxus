@@ -125,7 +125,7 @@ private:
     // Parameters
     static constexpr double gamma = 0.5; 
     static constexpr double sig2lam = 0.56;
-    static constexpr int n = 38;
+    static constexpr int n = 16;            // Gabor filter size
     static constexpr double f0LP = 0.1;     // frequency of the baseline LP Gabor filter
     static constexpr double theta = 3.14159265 / 2;
     static constexpr double GRAYthr = 0.25; // simplified thresholding as GRAYthr=e2img.Otsu()
