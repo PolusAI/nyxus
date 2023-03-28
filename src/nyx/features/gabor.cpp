@@ -31,6 +31,10 @@ void GaborFeature::calculate (LR& r)
     // --3
     std::vector<double> auxG (n * n * 2);
 
+    // --4
+    tx.resize (n + 1);
+    ty.resize (n + 1);
+
     // compute the original score before Gabor
     GaborEnergy (Im0, e2img.writable_data_ptr(), auxC.data(), auxG.data(), f0LP, sig2lam, gamma, theta, n);
     readOnlyPixels pix_plane = e2img.ReadablePixels();
@@ -577,19 +581,13 @@ void GaborFeature::conv_parallel_dud(
 // Creates a normalized Gabor filter
 void GaborFeature::Gabor (double* Gex, double f0, double sig2lam, double gamma, double theta, double fi, int n)
 {
-    //double* tx, * ty;
     double lambda = 2 * M_PI / f0;
     double cos_theta = cos(theta), sin_theta = sin(theta);
     double sig = sig2lam * lambda;
     double sum;
-    //A double* Gex;
     int x, y;
     int nx = n;
     int ny = n;
-    //A tx = new double[nx + 1];
-    std::vector<double> tx (nx + 1);
-    //A ty = new double[ny + 1];
-    std::vector<double> ty (nx + 1);
 
     if (nx % 2 > 0) {
         tx[0] = -((nx - 1) / 2);
@@ -613,8 +611,6 @@ void GaborFeature::Gabor (double* Gex, double f0, double sig2lam, double gamma, 
             ty[y] = ty[y - 1] + 1;
     }
 
-    //A Gex = new double[n * n * 2];
-
     sum = 0;
     for (y = 0; y < n; y++) 
     {
@@ -626,16 +622,17 @@ void GaborFeature::Gabor (double* Gex, double f0, double sig2lam, double gamma, 
             rte = xte * xte + gamma * gamma * yte * yte;
             ge = exp(-1 * rte / (2 * sig * sig));
             argm = xte * f0 + fi;
-            Gex[y * n * 2 + x * 2] = ge * cos(argm);             // ge .* exp(j.*argm);
-            Gex[y * n * 2 + x * 2 + 1] = ge * sin(argm);
-            sum += sqrt(pow(Gex[y * n * 2 + x * 2], 2) + pow(Gex[y * n * 2 + x * 2 + 1], 2));
+            int idx = y * n * 2 + x * 2;
+            Gex[idx] = ge * cos(argm);             // ge .* exp(j.*argm);
+            Gex[idx + 1] = ge * sin(argm);
+            sum += sqrt(pow(Gex[idx], 2) + pow(Gex[idx + 1], 2));
         }
     }
 
     // normalize
     for (y = 0; y < n; y++)
-        for (x = 0; x < n * 2; x += 1)
-            Gex[y * n * 2 + x] = Gex[y * n * 2 + x] / sum;
+        for (x = 0; x < n * 2; x++)
+            Gex[y * n * 2 + x] /= sum;
 
 }
 
