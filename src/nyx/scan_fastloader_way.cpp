@@ -287,7 +287,7 @@ namespace Nyxus
 			// Details - also to a file
 			VERBOSLVL3(
 				fs::path p(theSegFname);
-			Stopwatch::save_stats(theEnvironment.output_dir + "/" + p.stem().string() + "_nyxustiming.csv");
+			Stopwatch::save_stats(theEnvironment.output_dir + "/inclusive_nyxustiming.csv");
 			);
 		}
 		#endif

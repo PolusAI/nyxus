@@ -83,10 +83,9 @@ public:
 	}
 
 	// y - strided index, x - nonstrided; 1-based x and y
-	T matlab (int y, int x) const
+	inline T matlab (int y, int x) const
 	{
-		T t = xy(x-1,y-1);		//--formerly--> operator() (x-1,y-1);
-		return t;
+		return xy(x - 1, y - 1);
 	}
 
 	bool safe(int x, int y) const
