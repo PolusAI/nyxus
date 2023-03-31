@@ -30,10 +30,21 @@ namespace Nyxus
 
 	inline bool parse_as_float(const std::string& raw, float& result)
 	{
-		if (sscanf(raw.c_str(), "%f", &result) != 1)
+		char* endptr;
+		const char* psz = raw.c_str();
+		float res = strtof (psz, &endptr);
+
+		// Did conversion happen?
+		if (endptr == psz)
 			return false;
-		else
-			return true;
+
+		// Was it successful?
+		if (*endptr != 0)
+			return false;
+
+		// Successful conversion, return its result
+		result = res;
+		return true;
 	}
 
 	inline bool parse_as_int(const std::string& raw, int& result)
@@ -57,10 +68,11 @@ namespace Nyxus
 
 	inline bool parse_delimited_string_list_to_ints(const std::string& rawString, std::vector<int>& result, std::string& error_msg)
 	{
-		// It's legal to not have rotation angles specified
+		// Blank list is legal
 		if (rawString.length() == 0)
 			return true;
 
+		// Parse the list
 		std::vector<std::string> strings;
 		parse_delimited_string(rawString, ",", strings);
 		result.clear();
@@ -70,6 +82,30 @@ namespace Nyxus
 			if (!parse_as_int(s, v))
 			{
 				error_msg = "Error: in '" + rawString + "' expecting '" + s + "' to be an integer number";
+				return false;
+			}
+			else
+				result.push_back(v);
+		}
+		return true;
+	}
+
+	inline bool parse_delimited_string_list_to_doubles (const std::string& rawString, std::vector<double>& result, std::string& error_msg)
+	{
+		// Blank list is legal
+		if (rawString.length() == 0)
+			return true;
+
+		// Parse the list
+		std::vector<std::string> strings;
+		parse_delimited_string(rawString, ",", strings);
+		result.clear();
+		for (auto& s : strings)
+		{
+			float v;
+			if (!parse_as_float(s, v))
+			{
+				error_msg = "Error: in '" + rawString + "' expecting '" + s + "' to be a real value";
 				return false;
 			}
 			else

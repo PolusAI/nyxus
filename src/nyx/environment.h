@@ -5,6 +5,7 @@
 #include <vector>
 #include "environment_basic.h"
 #include "roi_blacklist.h"
+#include "cli_gabor_options.h"
 
 #ifdef USE_GPU
 	#include <cuda_runtime.h>
@@ -42,6 +43,15 @@
 	#define USEGPU "--useGpu"					// Environment::rawUseGpu, "true" or "false"
 	#define GPUDEVICEID "--gpuDeviceID"		// Environment::rawGpuDeviceID
 #endif
+
+// Gabor feature CLI arguments
+#define GABOR_FREQS "--gaborfreqs"		// Example: "2,4,8,72"
+#define GABOR_GAMMA "--gaborgamma"		// Example: "0.1"
+#define GABOR_SIG2LAM "--gaborsig2lam"	// Example: "0.8"
+#define GABOR_KERSIZE "--gaborkersize"	// Example: "20"
+#define GABOR_F0 "--gaborf0"			// Example: "0.1"
+#define GABOR_THETA "--gabortheta"		// Example: "60"
+#define GABOR_THRESHOLD "--gaborthold"	// Example: "0.025"
 
 // Feature group nicknames
 #define FEA_NICK_ALL "*ALL*"
@@ -151,10 +161,14 @@ public:
 	void clear_roi_blacklist ();
 	void get_roi_blacklist_summary(std::string& response);
 
+	// implementation of Gabor feature options
+	bool parse_gabor_options_raw_inputs (std::string& error_message);
+
 private:
+
 	std::vector<std::tuple<std::string, std::string>> recognizedArgs;	// Accepted command line arguments
 
-	bool find_string_argument(std::vector<std::string>::iterator &i, const char *arg, std::string &arg_value);
+	bool find_string_argument (std::vector<std::string>::iterator &i, const char *arg, std::string &arg_value);
 	bool find_int_argument(std::vector<std::string>::iterator &i, const char *arg, int &arg_value);
 
 	std::string rawTempDirPath = "";
@@ -187,6 +201,9 @@ private:
 	#ifdef CHECKTIMING
 		std::string rawExclusiveTiming = "";
 	#endif
+
+	// implementation of Gabor feature options
+	GaborOptions gaborOptions;
 };
 
 namespace Nyxus

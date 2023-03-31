@@ -181,7 +181,7 @@ namespace Nyxus
 				if (fc == GABOR)
 				{
 					// Generate the feature value list
-					for (auto i = 0; i < GaborFeature::num_features; i++)
+					for (auto i = 0; i < GaborFeature::f0.size(); i++)
 						ssHead << "," << fn << "_" << i;
 
 					// Proceed with other features
@@ -337,7 +337,7 @@ namespace Nyxus
 				// --Gabor
 				if (fc == GABOR)
 				{
-					for (auto i = 0; i < GaborFeature::num_features; i++)
+					for (auto i = 0; i < GaborFeature::f0.size(); i++)
 					{
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << vv[i];
