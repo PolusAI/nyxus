@@ -1,0 +1,3 @@
+[codespell]
+skip = *.html
+ignore-words = codespellignore.txt
