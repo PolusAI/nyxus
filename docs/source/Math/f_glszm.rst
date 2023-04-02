@@ -22,7 +22,7 @@ As an example, consider the following 5x5 ROI image, with 5 discrete gray levels
 
 The GLSZM then becomes:
 
-.. math ::
+.. math::
     \textbf{P} = \begin{bmatrix}
     0 & 0 & 0 & 1 & 0\\
     1 & 0 & 0 & 0 & 1\\
