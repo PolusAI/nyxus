@@ -47,7 +47,7 @@ public:
     static std::vector<double> f0; // [GaborFeature::num_features] = { 1, 2, 4, 8, 16, 32, 64 };
     // Aspect ratio of the Gaussian
     static double gamma;            
-    // 'signal to lambda' factor
+    // spatial frequency bandwidth (sigma to lambda)
     static double sig2lam;          
     // Size of the filter kernel
     static int n;                    
