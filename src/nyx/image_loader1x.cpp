@@ -10,6 +10,7 @@
 #include <iostream>
 #include "image_loader1x.h"
 #include "grayscale_tiff.h"
+#include "nyxus_dicom_loader.h"
 #include "omezarr.h"
 #include "dirs_and_files.h"
 
@@ -28,6 +29,9 @@ bool ImageLoader1x::open(const std::string& fpath)
 			#else
 			std::cout << "This version of Nyxus was not build with OmeZarr support." <<std::endl;
 			#endif
+		}
+		else if(fs::path(fpath).extension() == ".dcm" | fs::path(fpath).extension() == ".dicom"){
+			FL = std::make_unique<NyxusGrayscaleDicomLoader<uint32_t>>(n_threads, fpath);
 		}
 		else 
 		{

@@ -217,6 +217,11 @@ else ()
 	message(STATUS "Unable to find threads. Nyxus must have a threading library i.e. pthreads.")
 endif ()
 
+find_package(DCMTK REQUIRED)
+include_directories(${DCMTK_INCLUDE_DIRS})
+list(APPEND Nyxus_LIBRARIES ${DCMTK_LIBRARIES} )
+
+
 if(USEGPU)
 	include_directories("${CUDA_INCLUDE_DIRS}")
 	set(GPU_SOURCE_FILES
