@@ -213,19 +213,96 @@ and the file is passed to Nyxus via parameter --intSegMapFile, the mapping will 
 
 Alternatively, Nyxus can process explicitly defined pairs of intensity-mask images, for example image "i1" with mask "m1" and image "i2" with mask "m2":
 
-```python 
-from nyxus import Nyxus
-nyx = Nyxus(["*ALL*"])
-features = nyx.featurize(
-    [
-        "/path/to/images/intensities/i1.ome.tif", 
-        "/path/to/images/intensities/i2.ome.tif"
-    ], 
-    [
-        "/path/to/images/labels/m1.ome.tif", 
-        "/path/to/images/labels/m2.ome.tif"
-    ])
-```
+.. code-block:: python
+
+   from nyxus import Nyxus
+   nyx = Nyxus(["*ALL*"])
+   features = nyx.featurize_files(
+      [
+         "/path/to/images/intensities/i1.ome.tif", 
+         "/path/to/images/intensities/i2.ome.tif"
+      ], 
+      [
+         "/path/to/images/labels/m1.ome.tif", 
+         "/path/to/images/labels/m2.ome.tif"
+      ])
+
+
+Nyxus can also process intensity-mask pairs that are stored as Numpy arrays using the `featurize` method. This method takes in either a single pair of 2D intensity-mask pairs
+or a pair of 3D arrays containing 2D intensity and mask images. There is also two optional parameters to supply names to the resulting dataframe, . 
+
+.. code-block:: python
+
+   from nyxus import Nyxus
+   import numpy as np
+
+   nyx = Nyxus(["*ALL*"])
+
+   intens = [
+      [[1, 4, 4, 1, 1],
+      [1, 4, 6, 1, 1],
+      [4, 1, 6, 4, 1],
+      [4, 4, 6, 4, 1]],
+                     
+      [[1, 4, 4, 1, 1],
+      [1, 1, 6, 1, 1],
+      [1, 1, 3, 1, 1],
+      [4, 4, 6, 1, 1]]
+   ]
+
+   seg = [
+      [[1, 1, 1, 1, 1],
+      [1, 1, 1, 1, 1],
+      [1, 1, 1, 1, 1],
+      [1, 1, 1, 1, 1]],
+                  
+      [[1, 1, 1, 1, 1],
+      [1, 1, 1, 1, 1],
+      [0, 1, 1, 1, 1],
+      [1, 1, 1, 1, 1]]
+   ]
+
+
+   features = nyx.featurize(intens, seg)
+
+
+The `features` variable is a Pandas dataframe similar to what is shown below.
+
+.. code-block:: bash
+
+        mask_image     intensity_image  label  MEAN       MEDIAN   ...  GABOR_6 
+  
+   0   Segmentation1   Intensity1         1    45366.9    46887    ...  0.873016 
+   1   Segmentation1   Intensity1         2    27122.8    27124.5  ...  1.000000 
+   2   Segmentation1   Intensity1         3    34777.4    33659    ...  0.942857 
+   3   Segmentation1   Intensity1         4    35808.2    36924    ...  0.824074 
+   ...    ...             ...            ...     ...      ...      ...    ...      
+   14  Segmentation2   Intensity2         6    54573.3    54573.3  ...  0.980769
+
+Note that in this case, default names were provided for the `mask_image` and `intensity_image` columns. To supply names 
+for these columns, the optional arguments `intensity_names` and `label_names` are used by passing lists of names in. 
+The length of the lists must be the same as the length of the mask and intensity arrays. To name the images, use
+
+.. code-block:: python
+
+   intens_names = ['custom_intens_name1', 'custom_intens_name2']
+   seg_names = ['custom_seg_name1', 'custom_seg_name2']
+
+   features = nyx.featurize(intens, seg, intens_name, seg_name)
+
+
+The `features` variable will now use the custom names, as shown below
+
+.. code-block:: bash
+
+       mask_image        intensity_image             label  MEAN       MEDIAN   ...  GABOR_6 
+  
+   0   custom_seg_name1   custom_intens_name1          1    45366.9    46887    ...  0.873016 
+   1   custom_seg_name1   custom_intens_name1          2    27122.8    27124.5  ...  1.000000 
+   2   custom_seg_name1   custom_intens_name1          3    34777.4    33659    ...  0.942857 
+   3   custom_seg_name1   custom_intens_name1          4    35808.2    36924    ...  0.824074 
+   ...    ...             ...            ...     ...      ...      ...    ...      
+   14  custom_seg_name2   Intensity2         6    54573.3    54573.3  ...  0.980769
 
 8. Nested Features Examples
 -----------------------------------------------------------------------------

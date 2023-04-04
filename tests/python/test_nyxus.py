@@ -33,7 +33,18 @@ class TestNyxus():
                 print("Gpu not available")
                 assert True
                         
-        def test_in_memory(self):
+                        
+        def test_in_memory_2d(self):
+                
+            cpu_nyx = nyxus.Nyxus(["*ALL_GLCM*"], ibsi=True)
+            
+            names = ["test_name_1"]
+
+            cpu_features = cpu_nyx.featurize(intens[0], seg[0], names, names)
+            
+            assert cpu_nyx.error_message == ''
+            
+        def test_in_memory_3d(self):
             
             cpu_nyx = nyxus.Nyxus(["*ALL_GLCM*"], ibsi=True)
             
