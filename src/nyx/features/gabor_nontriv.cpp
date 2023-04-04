@@ -11,8 +11,10 @@ GaborFeature::GaborFeature() : FeatureMethod("GaborFeature")
 
 void GaborFeature::osized_calculate (LR& r, ImageLoader&)
 {
-    if (fvals.size() != GaborFeature::num_features)
-        fvals.resize(GaborFeature::num_features);
+    int nF = (int)GaborFeature::f0.size();
+
+    if (fvals.size() != nF)
+        fvals.resize(nF);
     std::fill (fvals.begin(), fvals.end(), 0.0);
 
     // Skip calculation in case of noninformative data
@@ -26,6 +28,10 @@ void GaborFeature::osized_calculate (LR& r, ImageLoader&)
     // Buffer for Gabor filters
     std::vector<double> auxG (n * n * 2);
 
+    // Prepare temp objects
+    tx.resize(n + 1);
+    ty.resize(n + 1);
+
     // Compute the original score before Gabor
     double max0 = 0.0;
     size_t cnt0 = 0;
@@ -36,9 +42,9 @@ void GaborFeature::osized_calculate (LR& r, ImageLoader&)
     size_t originalScore = 0;
     GaborEnergy_NT2 (Im0, auxG.data(), f0LP, sig2lam, gamma, theta, n, false/*request count*/, cmp_a/*threshold*/, max0/*out*/, originalScore/*out*/);
 
-    for (int freq = 0; freq < GaborFeature::num_features; freq++)
+    for (int freq=0; freq < nF; freq++)
     {
-        VERBOSLVL3(std::cout << "\tcalculating Gabor frequency " << freq+1 << "/" << GaborFeature::num_features << "\n");
+        VERBOSLVL3(std::cout << "\tcalculating Gabor frequency " << freq+1 << "/" << nF << "\n");
 
         size_t afterGaborScore = 0;
         GaborEnergy_NT2 (Im0, auxG.data(), freq + 1, sig2lam, gamma, theta, n, false/*request count*/, cmp_a/*threshold*/, max0/*out*/, afterGaborScore/*out*/);

@@ -17,23 +17,22 @@
 class GaborFeature: public FeatureMethod
 {
 public:
-    static bool required(const FeatureSet& fs) { return fs.isEnabled(GABOR); }
 
-    static constexpr int num_features = 7;
+    static bool required(const FeatureSet& fs) { return fs.isEnabled(GABOR); }
 
     GaborFeature();
     
-    // Trivial ROI
+    //=== Trivial ROIs ===
     void calculate(LR& r);
 
     // Trivial ROI on GPU
     #ifdef USE_GPU
         void calculate_gpu(LR& r);
         void calculate_gpu_multi_filter (LR& r);
-        static void gpu_process_all_rois( std::vector<int>& ptrLabels, std::unordered_map <int, LR>& ptrLabelData);
+        static void gpu_process_all_rois (std::vector<int>& ptrLabels, std::unordered_map <int, LR>& ptrLabelData);
     #endif
 
-    // Non-trivial
+    //=== Non-trivial ROIs ===
     void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
     void osized_calculate(LR& r, ImageLoader& imloader);
 
@@ -42,12 +41,32 @@ public:
 
     static void reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
+    //-------------- - User interface
+
+    // Frequencies of highpass Gabor filters    
+    static std::vector<double> f0; // [GaborFeature::num_features] = { 1, 2, 4, 8, 16, 32, 64 };
+    // Aspect ratio of the Gaussian
+    static double gamma;            
+    // spatial frequency bandwidth (sigma to lambda)
+    static double sig2lam;          
+    // Size of the filter kernel
+    static int n;                    
+    // Frequency of the low-pass Gabor filter used to produce the reference baseline image
+    static double f0LP;             
+    // Default orientation of Gaussian (radians)
+    static double theta;            
+    // Threshold of the filtered at frequency f0[i] to baseline image ratio
+    static double GRAYthr;  
+
 private:
-    // Trivial ROIs
-    void conv_ddd (double* c, double* a, double* b, int na, int ma, int nb, int mb);
+
+    // Result cache
+    std::vector<double> fvals;
+
+    //=== Trivial ROIs ===
+
+    // Convolves an uint-valued image with double-valued kernel
     void conv_dud (double* c, const unsigned int* a, double* b, int na, int ma, int nb, int mb);
-    void conv_parallel (double* c, double* a, double* b, int na, int ma, int nb, int mb);
-    void conv_parallel_dud (double* c, const unsigned int* a, double* b, int na, int ma, int nb, int mb);
 
     // Creates a non-normalized Gabor filter
     void Gabor (
@@ -58,6 +77,8 @@ private:
         double theta, 
         double fi, 
         int n);
+
+    std::vector<double> tx, ty;
 
     // Computes Gabor energy 
     void GaborEnergy (
@@ -96,7 +117,7 @@ private:
         int num_filters);
     #endif
 
-    // Nontrivial ROIs
+    //=== Nontrivial ROIs ===
 
     void GaborEnergy_NT2 (
         WriteImageMatrix_nontriv& Im,
@@ -118,16 +139,5 @@ private:
         int na, int ma, int nb, int mb);
 
     void GetStats_NT (WriteImageMatrix_nontriv& I, Moments2& moments2);
-
-    // Result cache
-    std::vector<double> fvals;
-
-    // Parameters
-    static constexpr double gamma = 0.5; 
-    static constexpr double sig2lam = 0.56;
-    static constexpr int n = 38;
-    static constexpr double f0LP = 0.1;     // frequency of the baseline LP Gabor filter
-    static constexpr double theta = 3.14159265 / 2;
-    static constexpr double GRAYthr = 0.25; // simplified thresholding as GRAYthr=e2img.Otsu()
 };
 

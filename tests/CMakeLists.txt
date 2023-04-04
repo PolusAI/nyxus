@@ -81,6 +81,7 @@ set(TEST_SRC
 	../src/nyx/features/specfunc.cpp
 	../src/nyx/features/zernike.cpp
 	../src/nyx/features/zernike_nontriv.cpp
+	../src/nyx/cli_gabor_options.cpp
 	../src/nyx/common_stats.cpp
 	../src/nyx/dirs_and_files.cpp
 	../src/nyx/environment.cpp

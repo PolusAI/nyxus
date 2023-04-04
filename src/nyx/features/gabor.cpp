@@ -5,25 +5,40 @@
 
 using namespace std;
 
+// Static members changeable by user via class 'Environment'
+std::vector<double> GaborFeature::f0 = { 1, 2, 4, 8, 16, 32, 64 };
+double GaborFeature::gamma = 0.1;           
+double GaborFeature::sig2lam = 0.8;         
+int GaborFeature::n = 16;                    
+double GaborFeature::f0LP = 0.1;            
+double GaborFeature::theta = M_PI_4;
+double GaborFeature::GRAYthr = 0.025;      
+
 void GaborFeature::calculate (LR& r)
 {
-    // Skip calculation in case of noninformative data
+    // Number of frequencies (feature values) calculated
+    int nFreqs = (int) GaborFeature::f0.size();
+
+    // Prepare the feature value buffer
+    if (fvals.size() != nFreqs)
+        fvals.resize (nFreqs);
+
+    // Skip calculation in case of noninformative data and return all zeros as feature values
     if (r.aux_max == r.aux_min)
     {
-        fvals.resize (GaborFeature::num_features, 0);   // 'fvals' will then be picked up by save_values()
+        std::fill (fvals.begin(), fvals.end(), 0.0);   // 'fvals' will then be picked up by save_values()
         return;
     }
 
+    // Get ahold of the ROI image matrix
     const ImageMatrix& Im0 = r.aux_image_matrix;
-    int ii;
-    unsigned long originalScore = 0;
-    double f0[7] = { 1, 2, 3, 4, 5, 6, 7 };       // frequencies for several HP Gabor filters
 
     // Temp buffers
 
     // --1
     ImageMatrix e2img;
     e2img.allocate (Im0.width, Im0.height);
+    readOnlyPixels pix_plane = e2img.ReadablePixels();
 
     // --2
     std::vector<double> auxC ((Im0.width + n - 1) * (Im0.height + n - 1) * 2);
@@ -31,74 +46,71 @@ void GaborFeature::calculate (LR& r)
     // --3
     std::vector<double> auxG (n * n * 2);
 
-    // compute the original score before Gabor
-    GaborEnergy (Im0, e2img.writable_data_ptr(), auxC.data(), auxG.data(), f0LP, sig2lam, gamma, theta, n);
-    readOnlyPixels pix_plane = e2img.ReadablePixels();
-    // N.B.: for the base of the ratios, the threshold is 0.4 of max energy,
-    // while the comparison thresholds are Otsu.
+    // --4
+    tx.resize (n + 1);
+    ty.resize (n + 1);
 
+    // Compute the baseline score before applying high-pass Gabor filters
+    GaborEnergy (Im0, e2img.writable_data_ptr(), auxC.data(), auxG.data(), f0LP, sig2lam, gamma, theta, n);
+
+    // Values that we need for scoring filter responses
     Moments2 local_stats;
     e2img.GetStats(local_stats);
-    double max_val = local_stats.max__();
+    double maxval = local_stats.max__(), 
+        cmpval = local_stats.min__();
 
-    int cnt = 0;
-    double cmp_a = max_val * 0.4;
+    // Score the baseline signal    
+    unsigned long baselineScore = 0;
     for (auto a : pix_plane)
-        if (double(a) > cmp_a)
-            cnt++;
-    originalScore = cnt;
+        if (double(a) > cmpval)
+            baselineScore++;
 
-    if (fvals.size() != GaborFeature::num_features)
-        fvals.resize (GaborFeature::num_features, 0.0);
-
-    for (ii = 0; ii < GaborFeature::num_features; ii++)
+    // Iterate frequencies and score corresponding filter responce over the baseline
+    for (int i=0; i < nFreqs; i++)
     {
-        unsigned long afterGaborScore = 0;
+        // filter response for i-th frequency
         writeablePixels e2_pix_plane = e2img.WriteablePixels();
-        GaborEnergy (Im0, e2_pix_plane.data(), auxC.data(), auxG.data(), f0[ii], sig2lam, gamma, theta, n);
+        GaborEnergy (Im0, e2_pix_plane.data(), auxC.data(), auxG.data(), f0[i], sig2lam, gamma, theta, n);
 
-        afterGaborScore = 0;
+        // score it
+        unsigned long afterGaborScore = 0;
         for (auto a : e2_pix_plane)
-            if (double(a)/max_val > GRAYthr)
+            if (double(a)/maxval > GRAYthr)
                 afterGaborScore++;
 
-        fvals[ii] = (double)afterGaborScore / (double)originalScore;
+        // save the score as feature value
+        fvals[i] = (double)afterGaborScore / (double)baselineScore;
     }
 }
 
 #ifdef USE_GPU
+
 void GaborFeature::calculate_gpu (LR& r)
 {
-    // Skip calculation in case of noninformative data
+    // Number of frequencies (feature values) calculated
+    int nFreqs = (int)GaborFeature::f0.size();
+
+    // Prepare the feature value buffer
+    if (fvals.size() != nFreqs)
+        fvals.resize(nFreqs);
+
+    // Skip calculation in case of noninformative data and return all zeros as feature values
     if (r.aux_max == r.aux_min)
     {
-        fvals.resize (GaborFeature::num_features, 0);   // 'fvals' will then be picked up by save_values()
+        std::fill(fvals.begin(), fvals.end(), 0.0);   // 'fvals' will then be picked up by save_values()
         return;
     }
 
+    // Get ahold of the ROI image matrix
     const ImageMatrix& Im0 = r.aux_image_matrix;
-
-    double GRAYthr;
-    /* parameters set up in complience with the paper */
-    double gamma = 0.5, sig2lam = 0.56;
-    int n = 38;
-    double f0[7] = { 1, 2, 3, 4, 5, 6, 7 };       // frequencies for several HP Gabor filters
-    double f0LP = 0.1;     // frequencies for one LP Gabor filter
-    double theta = 3.14159265 / 2;
-    int ii;
-    unsigned long originalScore = 0;
-
     readOnlyPixels im0_plane = Im0.ReadablePixels();
-
-    if (fvals.size() != GaborFeature::num_features)
-        fvals.resize (GaborFeature::num_features, 0.0);
     
     // Temp buffers
 
     // --1
     ImageMatrix e2img;
     e2img.allocate (Im0.width, Im0.height);
-
+    readOnlyPixels pix_plane = e2img.ReadablePixels();
 
     // --2
     std::vector<double> auxC ((Im0.width + n - 1) * (Im0.height + n - 1) * 2);
@@ -106,138 +118,148 @@ void GaborFeature::calculate_gpu (LR& r)
     // --3
     std::vector<double> auxG (n * n * 2);
 
-    // compute the original score before Gabor
-    GaborEnergyGPU (Im0, e2img.writable_data_ptr(), auxC.data(), auxG.data(), f0LP, sig2lam, gamma, theta, n);
-    readOnlyPixels pix_plane = e2img.ReadablePixels();
-    // N.B.: for the base of the ratios, the threshold is 0.4 of max energy,
-    // while the comparison thresholds are Otsu.
+    // --4
+    tx.resize (n + 1);
+    ty.resize (n + 1);
 
+    // Compute the baseline score before applying high-pass Gabor filters
+    GaborEnergyGPU (Im0, e2img.writable_data_ptr(), auxC.data(), auxG.data(), f0LP, sig2lam, gamma, theta, n);
+
+    // Values that we need for scoring filter responses
     Moments2 local_stats;
     e2img.GetStats(local_stats);
-    double max_val = local_stats.max__();
+    double maxval = local_stats.max__(),
+        cmpval = local_stats.min__();
 
-    int cnt = 0;
-    double cmp_a = max_val * 0.4;
+    // Score the baseline signal    
+    unsigned long baselineScore = 0;
     for (auto a : pix_plane)
-        if (double(a) > cmp_a)
-            cnt++;
-    originalScore = cnt;
+        if (double(a) > cmpval)
+            baselineScore++;
 
-    for (ii = 0; ii < GaborFeature::num_features; ii++)
+    // Iterate frequencies and score corresponding filter responce over the baseline
+    for (int i=0; i < nFreqs; i++)
     {
-        unsigned long afterGaborScore = 0;
+        // filter response for i-th frequency
         writeablePixels e2_pix_plane = e2img.WriteablePixels();
-        GaborEnergyGPU (Im0, e2_pix_plane.data(), auxC.data(), auxG.data(), f0[ii], sig2lam, gamma, theta, n);
+        GaborEnergyGPU (Im0, e2_pix_plane.data(), auxC.data(), auxG.data(), f0[i], sig2lam, gamma, theta, n);
 
-        GRAYthr = 0.25; // --Using simplified thresholding-- GRAYthr = e2img.Otsu();
-
-        afterGaborScore = 0;
+        // score it
+        unsigned long afterGaborScore = 0;
         for (auto a : e2_pix_plane)
-            if (double(a)/max_val > GRAYthr)
+            if (double(a)/maxval > GRAYthr)
                 afterGaborScore++;
 
-        fvals[ii] = (double)afterGaborScore / (double)originalScore;
+        // save the score as feature value
+        fvals[i] = (double)afterGaborScore / (double)baselineScore;
     }
 }
 
 void GaborFeature::calculate_gpu_multi_filter (LR& r)
 {
+    // Number of frequencies (feature values) calculated
+    int nFreqs = (int)GaborFeature::f0.size();
 
+    // Prepare the feature value buffer
+    if (fvals.size() != nFreqs)
+        fvals.resize(nFreqs);
+
+    // Skip calculation in case of noninformative data and return all zeros as feature values
     if (r.aux_max == r.aux_min)
     {
-        fvals.resize (GaborFeature::num_features, 0);   // 'fvals' will then be picked up by save_values()
+        std::fill(fvals.begin(), fvals.end(), 0.0);   // 'fvals' will then be picked up by save_values()
         return;
     }
 
+    // Get ahold of the ROI image matrix
     const ImageMatrix& Im0 = r.aux_image_matrix;
-
-    double GRAYthr;
-    
-    double gamma = 0.5, sig2lam = 0.56;
-    int n = 38;
-    double f0[8] = { 0.1, 1., 2., 3., 4., 5., 6., 7. };       // frequencies for several HP Gabor filters
-    double f0LP = 0.1;     // frequencies for one LP Gabor filter
-    double theta = 3.14159265 / 2;
-    int ii;
-    unsigned long originalScore = 0;
-    double max_val;
-    
     readOnlyPixels im0_plane = Im0.ReadablePixels();
 
+    // cuFFT dimensions
     long int cufft_size = 2 * ((Im0.width + n - 1) * (Im0.height + n - 1));
-
     int step_size = ceil(cufft_size / CUFFT_MAX_SIZE);
-    if(step_size == 0) step_size = 1;
+    if(step_size == 0) 
+        step_size = 1;
     int num_filters = ceil(8/step_size);
 
+    // Temp buffers
+    // 
+    // --1
     ImageMatrix e2img;
     e2img.allocate (Im0.width, Im0.height);
 
     // --2
-
     std::vector<double> auxC (num_filters * (Im0.width + n - 1) * (Im0.height + n - 1) * 2);
 
     // --3
     std::vector<double> auxG (n * n * 2);
 
-    for(int i = 0; i < 8; i += num_filters){
+    // --4
+    tx.resize (n + 1);
+    ty.resize (n + 1);
 
-        // compute the original score before Gabor
-        vector<vector<PixIntens>> e2_pix_plane_vec(num_filters, vector<PixIntens>(Im0.width * Im0.height));
+    // Variables that will be initialized in the 1-st iteration of the fillowing loop
+    unsigned long baselineScore = 0;    // abundance of baseline signal pixels over its average
+    double maxval = 0.0;                // max value of the baseline signal
+
+    // Common frequency vector: merge the low-pass (baseline related) and high-pass frequencies
+    std::vector<double> freqs = { f0LP };
+    freqs.insert (freqs.end(), f0.begin(), f0.end());
+
+    for(int i = 0; i < 8; i += num_filters)
+    {
+        // Compute the baseline score before applying high-pass Gabor filters
+        vector<vector<PixIntens>> e2_pix_plane_vec (num_filters, vector<PixIntens>(Im0.width * Im0.height));
 
         std::vector<double> f(num_filters);
 
-        for(int j = i; j < i + num_filters; j++) {
-            if(j >= 8) break;
-            
-            f[j-i] = f0[j]; 
+        for(int j = i; j < i + num_filters; j++) 
+        {
+            if(j >= 8) 
+                break;
+            f[j-i] = freqs[j]; 
         }
 
+        // Calculate low-passed baseline and high-passed filter responses
         GaborEnergyGPUMultiFilter (Im0, e2_pix_plane_vec, auxC.data(), auxG.data(), f, sig2lam, gamma, theta, n, num_filters);
 
-        if (i == 0) {
+        // Examine the baseline signal
+        if (i == 0) 
+        {
             vector<PixIntens>& pix_plane = e2_pix_plane_vec[0];
-
-            // N.B.: for the base of the ratios, the threshold is 0.4 of max energy,
-            // while the comparison thresholds are Otsu.
 
             PixIntens* e2img_ptr = e2img.writable_data_ptr();
 
-            for(int k = 0; k < Im0.height * Im0.width; ++k){
+            for(int k = 0; k < Im0.height * Im0.width; ++k)
+            {
                 e2img_ptr[k] = pix_plane[k];
             } 
             
+            // Values that we need for scoring filter responses
             Moments2 local_stats;
-            //e2img._pix_plane = pix_plane;
             e2img.GetStats(local_stats);
-            max_val = local_stats.max__();
+            maxval = local_stats.max__();
+            double cmpval = local_stats.min__();
 
-            int cnt = 0;
-            double cmp_a = max_val * 0.4;
+            // Score the baseline signal    
             for (auto a : pix_plane)
-                if (double(a) > cmp_a)
-                    cnt++;
-            originalScore = cnt;
+                if (double(a) > cmpval)
+                    baselineScore++;
         }
         
-        if (fvals.size() != GaborFeature::num_features)
-            fvals.resize (GaborFeature::num_features, 0.0);
-
-        for (ii = 0; ii < num_filters-1; ii++)
+        // Iterate high-pass filter response signals and score them 
+        for (int i=0; i < nFreqs; i++)
         {
-            vector<PixIntens>& e2_pix_plane_temp = e2_pix_plane_vec[ii+1];
+            vector<PixIntens>& e2_pix_plane_temp = e2_pix_plane_vec[i+1];
 
+            // score it
             unsigned long afterGaborScore = 0;
-
-
-            GRAYthr = 0.25; // --Using simplified thresholding-- GRAYthr = e2img.Otsu();
-
-            afterGaborScore = 0;
             for (auto a : e2_pix_plane_temp)
-                if (double(a)/max_val > GRAYthr)
+                if (double(a) / maxval > GRAYthr)
                     afterGaborScore++;
 
-            fvals[ii] = (double)afterGaborScore / (double)originalScore;
+            // save the score as feature value
+            fvals[i] = (double)afterGaborScore / (double)baselineScore;
         }
     }
 }
@@ -245,62 +267,27 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r)
 
 void GaborFeature::save_value(std::vector<std::vector<double>>& feature_vals)
 {
-    feature_vals[GABOR].resize(fvals.size());
-    for (int i = 0; i < fvals.size(); i++)
+    int nFreqs = (int) GaborFeature::f0.size();
+
+    if (feature_vals[GABOR].size() != nFreqs)
+        feature_vals[GABOR].resize(fvals.size());
+    for (int i=0; i < nFreqs; i++)
         feature_vals[GABOR][i] = fvals[i];
 }
 
-//  conv
+// conv_dud -- producing a double-valued image by convolving an unsigned int valued image with double-valued kernel
+//  ('conv_dud' is double <- uint * double)
 //
-//    double *c;	Result matrix (ma+mb-1)-by-(na+nb-1)
-//    double *a;	Larger matrix 
-//    double *b;	Smaller matrix 
-//    int ma;		Row size of a 
-//    int na;		Column size of a 
-//    int mb;		Row size of b 
-//    int nb;		Column size of b 
-void GaborFeature::conv_ddd (
-    double* c, 
-    double* a, 
-    double* b, 
-    int na, int ma, int nb, int mb) 
-{
-    	double *p,*q;	/* Pointer to elements in 'a' and 'c' matrices */
-    	double wr,wi;     	/* Imaginary and real weights from matrix b    */
-    int mc, nc;
-    	int k,l,i,j;
-    	double *r;				/* Pointer to elements in 'b' matrix */
-
-    mc = ma + mb - 1;
-    nc = (na + nb - 1) * 2;
-
-    /* initalize the output matrix */
-     for (int j = 0; j < mc; ++j)     /* For each element in b */
-           for (int i = 0; i < nc; ++i)
-               c[j*nc+i] = 0;
-
-    /* Perform convolution */
-    	r = b;
-    	for (j = 0; j < mb; ++j) {    /* For each element in b */
-    		for (i = 0; i < nb; ++i) {
-    			wr = *(r++);			/* Get weight from b matrix */
-    			wi = *(r++);
-    			p = c + j*nc + i*2;                 /* Start at first row of a in c. */
-    			q = a;
-    			for (l = 0; l < ma; l++) {               /* For each row of a ... */
-    				for (k = 0; k < na; k++) {
-    					*(p++) += *(q) * wr;	        /* multiply by the real weight and add.      */
-    					*(p++) += *(q++) * wi;       /* multiply by the imaginary weight and add. */
-    				}
-    				p += (nb-1)*2;	                /* Jump to next row position of a in c */
-    		//*flopcnt += 2*ma*na;
-    			}
-    		}
-    	}
-}
+//    C	-- Result matrix (ma+mb-1)-by-(na+nb-1). Must be zero-filled before call!
+//    A -- Larger matrix 
+//    B -- Smaller matrix of convolution kernel
+//    ma -- Row size of A 
+//    na -- Column size of A
+//    mb -- Row size of B
+//    nb -- Column size of B
 
 void GaborFeature::conv_dud(
-    double* C,  // must be zeroed before call
+    double* C,
     const unsigned int* A,
     double* B,
     int na, int ma, int nb, int mb)
@@ -358,238 +345,17 @@ void GaborFeature::conv_dud(
     }
 }
 
-void GaborFeature::conv_parallel (
-    double* c,
-    double* a,
-    double* b,
-    int na, int ma, int nb, int mb)
-{
-    //	double *p,*q;	/* Pointer to elements in 'a' and 'c' matrices */
-    //	double wr,wi;     	/* Imaginary and real weights from matrix b    */
-    int mc, nc;
-    //	int k,l,i,j;
-    //	double *r;				/* Pointer to elements in 'b' matrix */
-
-    mc = ma + mb - 1;
-    nc = (na + nb - 1) * 2;
-
-    /* initalize the output matrix */
-    //MM   for (int j = 0; j < mc; ++j)     /* For each element in b */
-    //       for (int i = 0; i < nc; ++i)
-    //           c[j*nc+i] = 0;
-
-    /* Perform convolution */
-    //	r = b;
-    //	for (j = 0; j < mb; ++j) {    /* For each element in b */
-    //		for (i = 0; i < nb; ++i) {
-    //			wr = *(r++);			/* Get weight from b matrix */
-    //			wi = *(r++);
-    //			p = c + j*nc + i*2;                 /* Start at first row of a in c. */
-    //			q = a;
-    //			for (l = 0; l < ma; l++) {               /* For each row of a ... */
-    //				for (k = 0; k < na; k++) {
-    //					*(p++) += *(q) * wr;	        /* multiply by the real weight and add.      */
-    //					*(p++) += *(q++) * wi;       /* multiply by the imaginary weight and add. */
-    //				}
-    //				p += (nb-1)*2;	                /* Jump to next row position of a in c */
-    //		*flopcnt += 2*ma*na;
-    //			}
-    //		}
-    //	}
-
-    #pragma omp parallel
-    {
-        //---double* cThread = new double[mc * nc];
-        std::vector<double> cThread(mc * nc);
-
-        for (int aa = 0; aa < mc * nc; aa++)
-            cThread[aa] = std::numeric_limits<double>::quiet_NaN();
-
-        #pragma omp for schedule(dynamic)
-        for (int j = 0; j < mb; ++j)
-        {    /* For each element in b */
-            for (int i = 0; i < nb; ++i)
-            {
-                double* r = b + (j * nb + i) * 2;
-                double wr = *(r++);			/* Get weight from b matrix */
-                double wi = *(r);
-
-                //--- double* p = cThread + j * nc + i * 2;                 /* Start at first row of a in c. */
-                int p = j * nc + i * 2;
-
-                double* q = a;
-                for (int l = 0; l < ma; l++)
-                {
-                    /* For each row of a ... */
-                    for (int k = 0; k < na; k++)
-                    {
-
-                        //MM *(p++) += *(q) * wr;	        /* multiply by the real weight and add.      */
-                        //MM *(p++) += *(q++) * wi;       /* multiply by the imaginary weight and add. */
-                        //MM:
-                        if (!std::isnan(*q))
-                        {
-                            if (std::isnan(cThread[p]))//--- if (std::isnan(*p))
-                            {
-                                cThread[p++] = *(q)*wr; //--- *(p++) = *(q)*wr;	        /* multiply by the real weight and add.      */
-                                cThread[p++] = *(q++) * wi; //--- *(p++) = *(q++) * wi;       /* multiply by the imaginary weight and add. */
-                            }
-                            else
-                            {
-                                cThread[p++] += *(q)*wr; //--- *(p++) += *(q)*wr;	        /* multiply by the real weight and add.      */
-                                cThread[p++] += *(q++) * wi; //--- *(p++) += *(q++) * wi;       /* multiply by the imaginary weight and add. */
-                            }
-                        }
-                        else
-                        {
-                            q++;
-                            p = p + 2;
-                        }
-
-
-                    }
-                    p += (nb - 1) * 2;	                /* Jump to next row position of a in c */
-                    //		*flopcnt += 2*ma*na;
-                }
-            }
-        }
-        #pragma omp critical
-        {
-            int p = 0; // index in cThread
-            for (int j = 0; j < mc; ++j) {    /* For each element in b */
-                for (int i = 0; i < nc; ++i)
-                {
-                    c[j * nc + i] += cThread[p++]; //--- c[j * nc + i] += *(cThread++);
-                }
-            }
-        }
-    }
-}
-
-void GaborFeature::conv_parallel_dud(
-    double* c,
-    const unsigned int* a,
-    double* b,
-    int na, int ma, int nb, int mb)
-{
-    //	double *p,*q;	/* Pointer to elements in 'a' and 'c' matrices */
-    //	double wr,wi;     	/* Imaginary and real weights from matrix b    */
-    int mc, nc;
-    //	int k,l,i,j;
-    //	double *r;				/* Pointer to elements in 'b' matrix */
-
-    mc = ma + mb - 1;
-    nc = (na + nb - 1) * 2;
-
-    /* initalize the output matrix */
-    //MM   for (int j = 0; j < mc; ++j)     /* For each element in b */
-    //       for (int i = 0; i < nc; ++i)
-    //           c[j*nc+i] = 0;
-
-    /* Perform convolution */
-    //	r = b;
-    //	for (j = 0; j < mb; ++j) {    /* For each element in b */
-    //		for (i = 0; i < nb; ++i) {
-    //			wr = *(r++);			/* Get weight from b matrix */
-    //			wi = *(r++);
-    //			p = c + j*nc + i*2;                 /* Start at first row of a in c. */
-    //			q = a;
-    //			for (l = 0; l < ma; l++) {               /* For each row of a ... */
-    //				for (k = 0; k < na; k++) {
-    //					*(p++) += *(q) * wr;	        /* multiply by the real weight and add.      */
-    //					*(p++) += *(q++) * wi;       /* multiply by the imaginary weight and add. */
-    //				}
-    //				p += (nb-1)*2;	                /* Jump to next row position of a in c */
-    //		*flopcnt += 2*ma*na;
-    //			}
-    //		}
-    //	}
-
-    #pragma omp parallel
-    {
-        //---double* cThread = new double[mc * nc];
-        std::vector<double> cThread(mc * nc);
-
-        for (int aa = 0; aa < mc * nc; aa++)
-            cThread[aa] = std::numeric_limits<double>::quiet_NaN();
-
-        #pragma omp for schedule(dynamic)
-        for (int j = 0; j < mb; ++j)
-        {    /* For each element in b */
-            for (int i = 0; i < nb; ++i)
-            {
-                double* r = b + (j * nb + i) * 2;
-                double wr = *(r++);			/* Get weight from b matrix */
-                double wi = *(r);
-
-                //--- double* p = cThread + j * nc + i * 2;                 /* Start at first row of a in c. */
-                int p = j * nc + i * 2;
-
-                const unsigned int* q = a;
-                for (int l = 0; l < ma; l++)
-                {
-                    /* For each row of a ... */
-                    for (int k = 0; k < na; k++)
-                    {
-
-                        //MM *(p++) += *(q) * wr;	        /* multiply by the real weight and add.      */
-                        //MM *(p++) += *(q++) * wi;       /* multiply by the imaginary weight and add. */
-                        //MM:
-                        if (!std::isnan((double)*q))
-                        {
-                            if (std::isnan(cThread[p]))//--- if (std::isnan(*p))
-                            {
-                                cThread[p++] = *(q)*wr; //--- *(p++) = *(q)*wr;	        /* multiply by the real weight and add.      */
-                                cThread[p++] = *(q++) * wi; //--- *(p++) = *(q++) * wi;       /* multiply by the imaginary weight and add. */
-                            }
-                            else
-                            {
-                                cThread[p++] += *(q)*wr; //--- *(p++) += *(q)*wr;	        /* multiply by the real weight and add.      */
-                                cThread[p++] += *(q++) * wi; //--- *(p++) += *(q++) * wi;       /* multiply by the imaginary weight and add. */
-                            }
-                        }
-                        else
-                        {
-                            q++;
-                            p = p + 2;
-                        }
-
-
-                    }
-                    p += (nb - 1) * 2;	                /* Jump to next row position of a in c */
-                    //		*flopcnt += 2*ma*na;
-                }
-            }
-        }
-        #pragma omp critical
-        {
-            int p = 0; // index in cThread
-            for (int j = 0; j < mc; ++j) {    /* For each element in b */
-                for (int i = 0; i < nc; ++i)
-                {
-                    c[j * nc + i] += cThread[p++]; //--- c[j * nc + i] += *(cThread++);
-                }
-            }
-        }
-    }
-}
-
 // Creates a normalized Gabor filter
 void GaborFeature::Gabor (double* Gex, double f0, double sig2lam, double gamma, double theta, double fi, int n)
 {
-    //double* tx, * ty;
-    double lambda = 2 * M_PI / f0;
-    double cos_theta = cos(theta), sin_theta = sin(theta);
-    double sig = sig2lam * lambda;
+    double lambda = 2 * M_PI / f0,
+        cos_theta = cos(theta), 
+        sin_theta = sin(theta),
+        sig = sig2lam * lambda;
     double sum;
-    //A double* Gex;
     int x, y;
     int nx = n;
     int ny = n;
-    //A tx = new double[nx + 1];
-    std::vector<double> tx (nx + 1);
-    //A ty = new double[ny + 1];
-    std::vector<double> ty (nx + 1);
 
     if (nx % 2 > 0) {
         tx[0] = -((nx - 1) / 2);
@@ -613,8 +379,6 @@ void GaborFeature::Gabor (double* Gex, double f0, double sig2lam, double gamma, 
             ty[y] = ty[y - 1] + 1;
     }
 
-    //A Gex = new double[n * n * 2];
-
     sum = 0;
     for (y = 0; y < n; y++) 
     {
@@ -626,16 +390,17 @@ void GaborFeature::Gabor (double* Gex, double f0, double sig2lam, double gamma, 
             rte = xte * xte + gamma * gamma * yte * yte;
             ge = exp(-1 * rte / (2 * sig * sig));
             argm = xte * f0 + fi;
-            Gex[y * n * 2 + x * 2] = ge * cos(argm);             // ge .* exp(j.*argm);
-            Gex[y * n * 2 + x * 2 + 1] = ge * sin(argm);
-            sum += sqrt(pow(Gex[y * n * 2 + x * 2], 2) + pow(Gex[y * n * 2 + x * 2 + 1], 2));
+            int idx = y * n * 2 + x * 2;
+            Gex[idx] = ge * cos(argm);             // ge .* exp(j.*argm);
+            Gex[idx + 1] = ge * sin(argm);
+            sum += sqrt(pow(Gex[idx], 2) + pow(Gex[idx + 1], 2));
         }
     }
 
     // normalize
     for (y = 0; y < n; y++)
-        for (x = 0; x < n * 2; x += 1)
-            Gex[y * n * 2 + x] = Gex[y * n * 2 + x] / sum;
+        for (x = 0; x < n * 2; x++)
+            Gex[y * n * 2 + x] /= sum;
 
 }
 
