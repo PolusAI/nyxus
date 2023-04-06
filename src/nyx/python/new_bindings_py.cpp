@@ -43,14 +43,14 @@ void initialize_environment(
     uint32_t n_reduce_threads,
     uint32_t n_loader_threads,
     int using_gpu,
-    std::string gabor_kersize, // Gabor options sorted (descending) by popularity
+    bool ibsi,
+    std::string gabor_kersize,
     std::string gabor_gamma,
     std::string gabor_sig2lam,
     std::string gabor_f0,
     std::string gabor_theta,
     std::string gabor_thold,
-    std::string gabor_freqs,
-    bool ibsi)
+    std::string gabor_freqs)
 {
     theEnvironment.recognizedFeatureNames = features;
     theEnvironment.set_pixel_distance(static_cast<int>(neighbor_distance));

@@ -45,6 +45,8 @@ class Nyxus:
         Id of the gpu to use. To find available gpus along with ids, using nyxus.get_gpu_properties().
         The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
         thread for feature calculation. 
+    ibsi: bool (optional, default false)
+       IBSI available features will be IBSI compliant when true.
     gabor_kersize: str (optional, default "16")
         GABOR feature: dimension of the 2D Gabor filter kernel
     gabor_gamma: str (optional, default "0.1")
@@ -59,8 +61,6 @@ class Nyxus:
         GABOR feature: lower threshold of the filtered image to baseline ratio
     gabor_freqs: str (optional, default "1,2,4,8,16,32,64")
         GABOR feature: comma-separated denominators of `\pi` as frequencies of Gabor filter's harmonic factor
-    ibsi: bool (optional, default false)
-       IBSI available features will be IBSI compliant when true.
     """
 
     def __init__(
@@ -72,14 +72,14 @@ class Nyxus:
         n_feature_calc_threads: int = 4,
         n_loader_threads: int = 1,
         using_gpu: int = -1,
+        ibsi: bool = False,
         gabor_kersize: str = "16",      # check GaborFeature::n
         gabor_gamma: str = "0.1",       # check GaborFeature::gamma
-        sig2lam: str = "0.8",           # check GaborFeature::sig2lam
+        gabor_sig2lam: str = "0.8",     # check GaborFeature::sig2lam
         gabor_f0: str = "0.1",          # check GaborFeature::f0LP
         gabor_theta: str = "45",        # check GaborFeature::theta (converted to radians)
         gabor_thold: str = "0.025",     # check GaborFeature::GRAYthr
-        gabor_freqs: str = "1,2,4,8,16,32,64",  # check GaborFeature::f0
-        ibsi: bool = False
+        gabor_freqs: str = "1,2,4,8,16,32,64"   # check GaborFeature::f0
     ):
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
@@ -112,7 +112,14 @@ class Nyxus:
             n_feature_calc_threads,
             n_loader_threads,
             using_gpu,
-            ibsi
+            ibsi,
+            gabor_kersize,
+            gabor_gamma,
+            gabor_sig2lam,
+            gabor_f0,
+            gabor_theta,
+            gabor_thold,
+            gabor_freqs
         )
 
     def featurize_directory(
