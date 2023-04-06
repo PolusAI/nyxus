@@ -43,6 +43,13 @@ void initialize_environment(
     uint32_t n_reduce_threads,
     uint32_t n_loader_threads,
     int using_gpu,
+    std::string gabor_kersize, // Gabor options sorted (descending) by popularity
+    std::string gabor_gamma,
+    std::string gabor_sig2lam,
+    std::string gabor_f0,
+    std::string gabor_theta,
+    std::string gabor_thold,
+    std::string gabor_freqs,
     bool ibsi)
 {
     theEnvironment.recognizedFeatureNames = features;
@@ -53,6 +60,18 @@ void initialize_environment(
     theEnvironment.n_reduce_threads = n_reduce_threads;
     theEnvironment.n_loader_threads = n_loader_threads;
     theEnvironment.ibsi_compliance = ibsi;
+
+    // Gabor settings
+    theEnvironment.gaborOptions.rawKerSize = gabor_kersize;
+    theEnvironment.gaborOptions.rawGamma = gabor_gamma;
+    theEnvironment.gaborOptions.rawSig2lam = gabor_sig2lam;
+    theEnvironment.gaborOptions.rawF0 = gabor_f0;
+    theEnvironment.gaborOptions.rawTheta = gabor_theta;
+    theEnvironment.gaborOptions.rawGrayThreshold = gabor_thold;
+    theEnvironment.gaborOptions.rawFreqs = gabor_freqs;
+    std::string ermsg;
+    if (!theEnvironment.parse_gabor_options_raw_inputs(ermsg))
+        throw std::invalid_argument("Invalid GABOR parameter value: " + ermsg);
 
     // Throws exception if invalid feature is supplied.
     theEnvironment.process_feature_list();
