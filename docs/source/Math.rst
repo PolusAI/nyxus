@@ -11,6 +11,7 @@ Math formulas
    Math/f_2dmoments
    Math/f_erosion
    Math/f_fractal_dimension
+   Math/f_gabor
    Math/f_glcm
    Math/f_gldm
    Math/f_glrlm

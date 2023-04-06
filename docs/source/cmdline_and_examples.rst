@@ -53,8 +53,43 @@ should adhere to columns "WIPP I/O role" and "WIPP type".
      - integer
      - input
      - integer
+   * - --gaborfreqs
+     - (Optional) Feature GABOR: custom denominators of :math:`\pi` as frequencies of Gabor filter's harmonic factor. Default: '--gaborfreqs=1,2,4,8,16,32,64'
+     - list of integer constants
+     - input
+     - collection
+   * - --gaborf0
+     - (Optional) Feature GABOR: frequency of the baseline lowpass filter as denominator of :math:`\pi`. Default: '--gaborf0=0.1'
+     - real
+     - input
+     - number
+   * - --gaborgamma
+     - (Optional) Feature GABOR: aspect ratio of Gabor filter's Gaussian factor. Default: '--gaborgamma=0.1'
+     - real
+     - input
+     - number
+   * - --gaborkersize
+     - (Optional) Feature GABOR: dimension of the 2D Gabor filter kernel. Default: '--gaborkersize=16'
+     - integer
+     - input
+     - integer
+   * - --gaborsig2lam
+     - (Optional) Feature GABOR: spatial frequency bandwidth of Gabor filter. Default: '--gaborsig2lam=0.8'
+     - real
+     - input
+     - number
+   * - --gabortheta
+     - (Optional) Feature GABOR: orientation of the Gaussian in degrees 0-180. Default: '--gabortheta=45'
+     - real
+     - input
+     - number
+   * - --gaborthold
+     - (Optional) Feature GABOR: lower threshold of the filtered image to baseline ratio. Default: '--gaborthold=0.025'
+     - real
+     - input
+     - number
    * - --glcmAngles
-     - (Optional) Enabled direction angles of the GLCM feature. Superset of values: 0, 45, 90, and 135. Default: '--glcmAngles=0,45,90,135'
+     - (Optional) Feature GLCM: enabled direction angles. Superset of values: 0, 45, 90, and 135. Default: '--glcmAngles=0,45,90,135'
      - list of integer constants
      - input
      - collection

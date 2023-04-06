@@ -203,7 +203,7 @@ void Environment::show_cmdline_help()
 		<< "\t\t\tDefault: 1,2,4,8,16,32,64 \n"
 		<< "\t\t" << OPT << GABOR_GAMMA << "=<anisotropy of the Gaussian> \n"
 		<< "\t\t\tDefault: 0.1 \n"
-		<< "\t\t" << OPT << GABOR_SIG2LAM << "=<spatial frequency bandwidth (sigma to lambda)> \n"
+		<< "\t\t" << OPT << GABOR_SIG2LAM << "=<spatial frequency bandwidth (sigma over lambda)> \n"
 		<< "\t\t\tDefault: 0.8 \n"
 		<< "\t\t" << OPT << GABOR_KERSIZE << "=<dimension of the 2D kernel> \n"
 		<< "\t\t\tDefault: 16 \n"
@@ -211,7 +211,7 @@ void Environment::show_cmdline_help()
 		<< "\t\t\tDefault: 0.1 \n"
 		<< "\t\t" << OPT << GABOR_THETA << "=<orientation of the Gaussian in degrees 0-180> \n"
 		<< "\t\t\tDefault: 45 \n"
-		<< "\t\t" << OPT << GABOR_THRESHOLD << "=<lower threshold of the baseline signal> \n"
+		<< "\t\t" << OPT << GABOR_THRESHOLD << "=<lower threshold of the filtered image to baseline ratio> \n"
 		<< "\t\t\tDefault: 0.025 \n";
 
 	std::cout << "\n"
