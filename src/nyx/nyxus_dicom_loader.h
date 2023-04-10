@@ -1,6 +1,10 @@
 #pragma once
 #include "abs_tile_loader.h"
 #include "dcmtk/dcmdata/dctk.h"
+#include "dcmtk/dcmjpeg/djdecode.h"  /* for JPEG decoders */
+#include "dcmtk/dcmjpls/djdecode.h"  /* for JPEG-LS decoders */
+#include "dcmtk/dcmdata/dcrledrg.h"  /* for RLE decoder */
+#include "dcmtk/dcmjpeg/dipijpeg.h"  /* for dcmimage JPEG plugin */
 
 template<class DataType>
 class NyxusGrayscaleDicomLoader : public AbstractTileLoader<DataType> 
@@ -15,60 +19,71 @@ public:
         std::string const& filePath)
         : AbstractTileLoader<DataType>("NyxusGrayscaleDicomLoader", numberThreads, filePath) 
     {
+        // register JPEG decoder
+        DJDecoderRegistration::registerCodecs();
+        // register JPEG-LS decoder
+        DJLSDecoderRegistration::registerCodecs();
+        // register RLE decoder
+        DcmRLEDecoderRegistration::registerCodecs();
         
         dcm_ff_ = DcmFileFormat();
-        auto file_ok = dcm_ff_.loadFile(filePath.c_str());
+        auto file_ok = dcm_ff_.loadFile(filePath.c_str()); 
         if (file_ok.good())
         // Open the file
         {
-            ds_ = dcm_ff_.getDataset();
-            auto dcm_tag_spp = DcmTagKey(0x0028,0x0002);
-            ds_->findAndGetUint16(dcm_tag_spp, samplesPerPixel);
+            DcmDataset* ds = dcm_ff_.getDataset();
+            uint16_t tmp = 0;
+            ds->findAndGetUint16(DCM_SamplesPerPixel, tmp);
+            samplesPerPixel_ = static_cast<short>(tmp); // OK to downcast
             // Test if the file is grayscale
-            if (samplesPerPixel != 1) 
+            if (samplesPerPixel_ != 1) 
             {          
                 std::stringstream message;
-                message << "Tile Loader ERROR: The file is not grayscale: SamplesPerPixel = " << samplesPerPixel << ".";
+                message << "Tile Loader ERROR: The file is not grayscale: SamplesPerPixel = " << samplesPerPixel_ << ".";
                 throw (std::runtime_error(message.str()));
             }
+            
+            tmp = 0;
+            ds->findAndGetUint16(DCM_Columns, tmp);
+            tileWidth_ = tmp;
 
-            const char* wsi_uid = "1.2.840.10008.5.1.4.1.1.7"; // WSI UID
-            auto dcm_tag_sop_class_uid = DcmTagKey(0x0008, 0x0016);
-            const char* sop_class_uid = NULL;
-            
-            ds_->findAndGetString(dcm_tag_sop_class_uid, sop_class_uid);
-            
-            auto dcm_tag_frame_width = DcmTagKey(0x0028,0x0011);
-            auto dcm_tag_frame_height = DcmTagKey(0x0028,0x0010);
-            uint16_t frame_height, frame_width;
-            ds_->findAndGetUint16(dcm_tag_frame_width, frame_width);
-            ds_->findAndGetUint16(dcm_tag_frame_height, frame_height);
-            auto dcm_tag_total_width = DcmTagKey(0x0048,0x0006) ;
-            auto dcm_tag_total_height = DcmTagKey(0x0048,0x0007) ;
-            
-            tileHeight_ = frame_height;
-            tileWidth_ = frame_width;
+            tmp = 0;
+            ds->findAndGetUint16(DCM_Rows, tmp);
+            tileHeight_ = tmp;
 
+            // for WSI, total height and widths are different from
+            // tile height and width
 
             unsigned int total_height = 0, total_width = 0;
-            OFCondition status = ds_->findAndGetUint32(dcm_tag_total_height, total_height);
+            OFCondition status = ds->findAndGetUint32(DCM_TotalPixelMatrixRows, total_height);
             if (status.bad() | total_height == 0) fullHeight_ = tileHeight_;
-            status = ds_->findAndGetUint32(dcm_tag_total_width, total_width);
+            status = ds->findAndGetUint32(DCM_TotalPixelMatrixColumns, total_width);
             if (status.bad() | total_width == 0) fullWidth_ = tileWidth_;
 
             numCols_ = static_cast<size_t>(ceil(fullWidth_/tileWidth_));
             numRows_ = static_cast<size_t>(ceil(fullHeight_/tileHeight_));
-            fullDepth_ = 1;
+            
+            // our images have single Z plane. Whole Slide images will have multiple frames 
+            // but still single Z plane
+            fullDepth_ = 1; 
             tileDepth_ = 1;
 
-
-            auto dcm_tag_num_frames = DcmTagKey(0x0028,0x0008);
+            // this comes into play for WSI and also for sanity check
             int32_t num_frames = 0;
-            status = ds_->findAndGetSint32(dcm_tag_num_frames, numFrames_);
+            status = ds->findAndGetSint32(DCM_NumberOfFrames, numFrames_);
             if (status.bad() | numFrames_ == 0) numFrames_ = numCols_*numRows_;
 
-            auto dcm_tag_bits_allocated = DcmTagKey(0x0028,0x0100);
-            ds_->findAndGetUint16(dcm_tag_bits_allocated, bitsPerSample_);
+            tmp = 0;
+            ds->findAndGetUint16(DCM_BitsAllocated, tmp);
+            bitsPerSample_ = static_cast<short>(tmp); // OK to downcast
+
+            tmp = 0;
+            ds->findAndGetUint16(DCM_PixelRepresentation, tmp);
+            if (tmp == 0) {
+                isSigned_ = false;
+            } else if (tmp == 1) {
+                isSigned_ = true;
+            }
         }
         else 
         { 
@@ -79,8 +94,10 @@ public:
     /// @brief NyxusGrayscaleDicomLoader destructor
     ~NyxusGrayscaleDicomLoader() override 
     {
-        ds_ = nullptr;
         dcm_ff_.clear();
+        DJDecoderRegistration::cleanup();
+        DJLSDecoderRegistration::cleanup();
+        DcmRLEDecoderRegistration::cleanup();
     }
 
     /// @brief Load a tiff tile from a view
@@ -106,21 +123,38 @@ public:
                 << indexColGlobalTile << ") could not be found.";
             throw (std::runtime_error(message.str()));
         }
-
-        switch(bitsPerSample_){
-            case 8:
-                copyFrame<uint8_t>(*tile, frame_no);
-                break;
-            case 16:
-                copyFrame<uint16_t>(*tile, frame_no);
-                break;
-            default:
-                std::stringstream message;
-                message
-                    << "Tile Loader ERROR: The data format is not supported for unsigned integer, number bits per pixel = "
-                    << bitsPerSample_;
-                throw (std::runtime_error(message.str()));
+        if (isSigned_){
+            switch(bitsPerSample_){
+                case 8:
+                    copyFrame<int8_t>(*tile, frame_no);
+                    break;
+                case 16:
+                    copyFrame<int16_t>(*tile, frame_no);
+                    break;
+                default:
+                    std::stringstream message;
+                    message
+                        << "Tile Loader ERROR: The data format is not supported for signed integer, number bits per pixel = "
+                        << bitsPerSample_;
+                    throw (std::runtime_error(message.str()));
+            }       
+        } else {
+            switch(bitsPerSample_){
+                case 8:
+                    copyFrame<uint8_t>(*tile, frame_no);
+                    break;
+                case 16:
+                    copyFrame<uint16_t>(*tile, frame_no);
+                    break;
+                default:
+                    std::stringstream message;
+                    message
+                        << "Tile Loader ERROR: The data format is not supported for unsigned integer, number bits per pixel = "
+                        << bitsPerSample_;
+                    throw (std::runtime_error(message.str()));
+            }       
         }
+
     }
 
 
@@ -152,7 +186,7 @@ public:
 
     /// @brief Tiff bits per sample
     /// @return Size of a sample in bits
-    [[nodiscard]] short bitsPerSample() const override { return static_cast<short>(bitsPerSample_); }
+    [[nodiscard]] short bitsPerSample() const override { return bitsPerSample_; }
     /// @brief Level accessor
     /// @return 1
     [[nodiscard]] size_t numberPyramidLevels() const override { return 1; }
@@ -179,43 +213,40 @@ private:
             throw (std::runtime_error(message.str()));
         }
         DcmElement* pixel_data_ptr = nullptr;
-        auto stat = ds_->findAndGetElement(DCM_PixelData, pixel_data_ptr);
-        DcmPixelData* pixel_data = OFreinterpret_cast(DcmPixelData*, pixel_data_ptr);
-        uint32_t frame_size = 0;
-        pixel_data->getUncompressedFrameSize(ds_,frame_size);
-        frame_size % 2 == 0 ? frame_size = frame_size : frame_size = frame_size + 1; // need to be even
-        
-
-
-        auto buffer = std::vector<FileType>(data_length);
-        uint32_t start_fragment = 0;
-        OFString decompressed_color_model;
-        auto status = pixel_data->getUncompressedFrame(ds_, 
-                                            frame_no,  
-                                            start_fragment, 
-                                            buffer.data(),
-                                            frame_size,
-                                            decompressed_color_model, NULL);
-        std::cout << status.text() << std::endl;
-
+        DcmDataset* ds = dcm_ff_.getDataset();
+        auto status = ds->findAndGetElement(DCM_PixelData, pixel_data_ptr);
         if(status.good()){
-        // Get ahold of the raw pointer
-            DataType* dest = dest_as_vector.data();
-            for (size_t i=0; i<data_length; i++){
-                *(dest+i) = static_cast<DataType>(buffer[i]);
+            DcmPixelData* pixel_data = OFreinterpret_cast(DcmPixelData*, pixel_data_ptr);
+            uint32_t frame_size = 0;
+            pixel_data->getUncompressedFrameSize(ds,frame_size);
+            frame_size % 2 == 0 ? frame_size = frame_size : frame_size = frame_size + 1; // need to be even
+
+            auto buffer = std::vector<FileType>(data_length);
+            uint32_t start_fragment = 0;
+            OFString decompressed_color_model;
+            status = pixel_data->getUncompressedFrame(ds, 
+                                                frame_no,  
+                                                start_fragment, 
+                                                buffer.data(),
+                                                frame_size,
+                                                decompressed_color_model, NULL);
+
+            if(status.good()){
+            // Get ahold of the raw pointer
+                DataType* dest = dest_as_vector.data();
+                for (size_t i=0; i<data_length; i++){
+                    *(dest+i) = static_cast<DataType>(buffer[i]);
+                }
+            } else {
+                std::stringstream message;
+                message
+                    << "Tile Loader ERROR: The requested frame ("
+                    << frame_no <<") could not be retrieved.";
+                throw (std::runtime_error(message.str()));
             }
-        } else {
-            std::stringstream message;
-            message
-                << "Tile Loader ERROR: The requested frame ("
-                << frame_no <<") could not be retrieved.";
-            throw (std::runtime_error(message.str()));
         }
   
     }
-
-    DcmDataset*
-        ds_ = nullptr;             ///< Tiff file pointer
 
     DcmFileFormat dcm_ff_;
     size_t
@@ -228,6 +259,7 @@ private:
         numCols_ = 0,
         numRows_ = 0;
 
-    uint16_t samplesPerPixel = 0, bitsPerSample_ = 0;
+    short samplesPerPixel_ = 0, bitsPerSample_ = 0;
     int32_t numFrames_ = 0;
+    bool isSigned_ = false;
 };
