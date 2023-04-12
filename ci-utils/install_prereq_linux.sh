@@ -159,4 +159,5 @@ if [ "$ON_GITHUB" == "TRUE" ]; then
     mkdir -p /tmp/nyxus/
     cp -r local_install/lib64 /tmp/nyxus/lib/
     cp -r local_install/lib /tmp/nyxus/lib/
+    ls /tmp/nyxus/lib/
 fi
