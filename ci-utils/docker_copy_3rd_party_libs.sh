@@ -26,3 +26,4 @@ cp $1/lib/./liblzma*.so* ./3rd_party_libs/
 cp $1/lib/./libLerc*.so* ./3rd_party_libs/
 cp $1/lib/./libjpeg*.so* ./3rd_party_libs/
 cp $1/lib/./libdeflate*.so* ./3rd_party_libs/
+cp $1/lib/./libdcm*.so* ./3rd_party_libs/
