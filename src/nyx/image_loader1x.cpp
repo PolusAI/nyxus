@@ -31,7 +31,11 @@ bool ImageLoader1x::open(const std::string& fpath)
 			#endif
 		}
 		else if(fs::path(fpath).extension() == ".dcm" | fs::path(fpath).extension() == ".dicom"){
+			#ifdef DICOM_SUPPORT
 			FL = std::make_unique<NyxusGrayscaleDicomLoader<uint32_t>>(n_threads, fpath);
+			#else
+			std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl; 
+			#endif
 		}
 		else 
 		{

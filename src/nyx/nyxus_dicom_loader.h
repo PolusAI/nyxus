@@ -1,3 +1,4 @@
+#ifdef DICOM_SUPPORT
 #pragma once
 #include "abs_tile_loader.h"
 #include "dcmtk/dcmdata/dctk.h"
@@ -263,3 +264,4 @@ private:
     int32_t numFrames_ = 0;
     bool isSigned_ = false;
 };
+#endif // DICOM_SUPPORT
