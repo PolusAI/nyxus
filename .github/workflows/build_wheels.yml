@@ -12,7 +12,7 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [macos-11]
         cibw_archs: ["auto64"]
         cibw_build: ["cp37-*"]
 
