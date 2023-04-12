@@ -109,6 +109,9 @@ unzip libdeflate.zip
 cd libdeflate-1.14
 PREFIX= LIBDIR=/lib64  DESTDIR=../$Z5_INSTALL_DIR/ make  install
 cd ../
+echo AFTER LIBDEFLATE
+ls $Z5_INSTALL_DIR/lib64
+ls $Z5_INSTALL_DIR/lib
 
 for i in {1..5}
 do
@@ -156,8 +159,12 @@ cd ../../
 
 if [ "$ON_GITHUB" == "TRUE" ]; then
     echo HERE
+    echo $PWD
     mkdir -p /tmp/nyxus/
-    cp -r local_install/lib64 /tmp/nyxus/lib/
-    cp -r local_install/lib /tmp/nyxus/lib/
+    ls local_install/lib/
+    ls local_install/lib64/
+    cp -r local_install/lib64/ /tmp/nyxus/lib64/
+    cp -r local_install/lib/ /tmp/nyxus/lib/
     ls /tmp/nyxus/lib/
+    ls /tmp/nyxus/lib64/
 fi
