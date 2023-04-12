@@ -43,7 +43,8 @@ jobs:
           CIBW_BEFORE_ALL_MACOS: brew install llvm libomp &&
                                    bash ci-utils/install_prereq_linux.sh &&
                                    mkdir -p /tmp/nyxus_bld &&
-                                   cp -r local_install /tmp/nyxus_bld
+                                   cp -r local_install /tmp/nyxus_bld &&
+                                   ls -lh /tmp/nyxus_bld/lib
           CIBW_BEFORE_ALL_LINUX: bash ci-utils/install_prereq_linux.sh &&
                                    mkdir -p /tmp/nyxus_bld &&
                                    cp -r local_install /tmp/nyxus_bld
