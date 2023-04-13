@@ -10,7 +10,7 @@ then
 else
      Z5_INSTALL_DIR=$1
 fi
-echo $Z5_INSTALL_DIR
+
 mkdir -p $Z5_INSTALL_DIR
 mkdir -p $Z5_INSTALL_DIR/include
 
@@ -96,8 +96,7 @@ cd build_man/
 cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF  ..
 make install -j4
 cd ../../
-echo HERE
-echo $PWD
+
 INSTALL_PATH=$PWD
 curl -L http://www.ijg.org/files/jpegsrc.v9e.tar.gz -o jpegsrc.v9e.tar.gz
 tar -xzf jpegsrc.v9e.tar.gz
@@ -119,9 +118,6 @@ unzip libdeflate.zip
 cd libdeflate-1.14
 PREFIX= LIBDIR=/lib64  DESTDIR=../$Z5_INSTALL_DIR/ make  install
 cd ../
-echo AFTER LIBDEFLATE
-ls $Z5_INSTALL_DIR/lib64
-ls $Z5_INSTALL_DIR/lib
 
 for i in {1..5}
 do
@@ -165,16 +161,3 @@ cd build_man/
 cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON  ..
 make install -j4
 cd ../../
-
-
-# if [ "$ON_GITHUB" == "TRUE" ]; then
-#     echo HERE
-#     echo $PWD
-#     mkdir -p /tmp/nyxus/
-#     ls local_install/lib/
-#     ls local_install/lib64/
-#     cp -r local_install/lib64/ /tmp/nyxus/lib64/
-#     cp -r local_install/lib/ /tmp/nyxus/lib/
-#     ls /tmp/nyxus/lib/
-#     ls /tmp/nyxus/lib64/
-# fi
