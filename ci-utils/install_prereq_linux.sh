@@ -97,13 +97,13 @@ cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../
 make install -j4
 cd ../../
 
-INSTALL_PATH=$PWD
+JPEG_INSTALL_PATH=$PWD
 curl -L http://www.ijg.org/files/jpegsrc.v9e.tar.gz -o jpegsrc.v9e.tar.gz
 tar -xzf jpegsrc.v9e.tar.gz
 cd jpeg-9e
 ./configure --prefix=
-make DESTDIR=$INSTALL_PATH/$Z5_INSTALL_DIR install
-./libtool --finish $INSTALL_PATH/$Z5_INSTALL_DIR/lib
+make DESTDIR=$JPEG_INSTALL_PATH/$Z5_INSTALL_DIR install
+./libtool --finish $JPEG_INSTALL_PATH/$Z5_INSTALL_DIR/lib
 cd ..
 
 for i in {1..5}
