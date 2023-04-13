@@ -177,13 +177,6 @@ if (TIFF_FOUND)
 	include_directories (${TIFF_INCLUDE_DIR})
 endif (TIFF_FOUND)
 
-find_package(ZLIB REQUIRED)
-if (ZLIB_FOUND)
-	list(APPEND Nyxus_LIBRARIES ${ZLIB_LIBRARIES} )
-	include_directories (${ZLIB_INCLUDE_DIR})
-endif (ZLIB_FOUND)
-
-
 #== Required for OMEZarr 
 if(OMEZARR)
 	find_package(BLOSC REQUIRED)
@@ -224,10 +217,16 @@ else ()
 	message(STATUS "Unable to find threads. Nyxus must have a threading library i.e. pthreads.")
 endif ()
 
+find_package(ZLIB REQUIRED)
+if (ZLIB_FOUND)
+	list(APPEND Nyxus_LIBRARIES ${ZLIB_LIBRARIES} )
+	include_directories (${ZLIB_INCLUDE_DIR})
+endif (ZLIB_FOUND)
+
 find_package(DCMTK)
 if(DCMTK_FOUND)
 	include_directories(${DCMTK_INCLUDE_DIRS})
-	add_definitions(-DDICOM_SUPPORT)
+	add_definitions(-DOMEZARR_SUPPORT)
 	foreach(LIB ${DCMTK_LIBRARIES})
 		FIND_LIBRARY(FOUND_LIB_${LIB} ${LIB})
 		LIST(APPEND Nyxus_LIBRARIES ${FOUND_LIB_${LIB}})
