@@ -6,7 +6,7 @@ pushd zlib
 mkdir build_man
 pushd build_man
 cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
-cmake --build . --config Release --target install  
+cmake --build . --config Release --target install --parallel 4  
 popd
 popd
 
@@ -29,7 +29,7 @@ pushd c-blosc
 mkdir build_man
 pushd build_man
 cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..   
-cmake --build . --config Release --target install 
+cmake --build . --config Release --target install  --parallel 4
 popd
 popd
 
@@ -65,7 +65,7 @@ pushd json
 mkdir build_man
 pushd build_man
 cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ -DJSON_BuildTests=OFF ..  
-cmake --build . --config Release --target install 
+cmake --build . --config Release --target install  --parallel 4
 popd
 popd
 
@@ -83,7 +83,7 @@ pushd z5
 mkdir build_man
 pushd build_man
 cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF ..
-cmake --build . --config Release --target install  
+cmake --build . --config Release --target install  --parallel 4
 popd
 popd
 
@@ -123,7 +123,7 @@ pushd libpng-1.6.39
 mkdir build_man
 pushd build_man
 cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/   ..
-cmake --build . --config Release --target install
+cmake --build . --config Release --target install --parallel 4
 popd
 popd
 
@@ -133,7 +133,7 @@ pushd openjpeg-2.5.0
 mkdir build_man
 pushd build_man
 cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/   ..
-cmake --build . --config Release --target install
+cmake --build . --config Release --target install --parallel 4
 popd
 popd
 
@@ -148,7 +148,7 @@ pushd dcmtk-DCMTK-3.6.7
 mkdir build_man
 pushd build_man
 cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ -DCMAKE_PREFIX_PATH=../../local_install/ -DBUILD_SHARED_LIBS=ON -DDCMTK_WITH_ICONV=OFF -DDCMTK_WITH_TIFF=ON -DWITH_LIBTIFFINC=../../local_install -DDCMTK_WITH_PNG=ON -DWITH_LIBPNGINC=../../local_install -DDCMTK_WITH_ZLIB=ON -DWITH_ZLIBINC=../../local_install -DDCMTK_WITH_OPENJPEG=ON -DWITH_OPENJPEGINC=../../local_install ..
-cmake --build . --config Release --target install
+cmake --build . --config Release --target install --parallel 4
 popd
 popd
 
