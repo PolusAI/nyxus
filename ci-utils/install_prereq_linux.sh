@@ -86,7 +86,7 @@ cd pybind11
 mkdir build_man
 cd build_man/
 cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/  -DPYBIND11_TEST=OFF ..
-make install
+make install -j4
 cd ../../
 
 git clone https://github.com/constantinpape/z5.git
@@ -94,8 +94,16 @@ cd z5
 mkdir build_man
 cd build_man/
 cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF  ..
-make install
+make install -j4
 cd ../../
+
+INSTALL_PATH=$PWD
+curl -L http://www.ijg.org/files/jpegsrc.v9e.tar.gz -o jpegsrc.v9e.tar.gz
+tar -xzf jpegsrc.v9e.tar.gz
+cd jpeg-9e
+./configure --prefix=
+make DESTDIR=$INSTALL_PATH install
+./libtool --finish $INSTALL_PATH/lib
 
 for i in {1..5}
 do
@@ -126,7 +134,7 @@ cd tiff-4.5.0
 mkdir build_man
 cd build_man/
 cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/   ..
-make install
+make install -j4
 cd ../../
 
 curl -L  https://github.com/glennrp/libpng/archive/refs/tags/v1.6.39.zip -o v1.6.39.zip
@@ -135,7 +143,7 @@ cd libpng-1.6.39/
 mkdir build_man
 cd build_man/
 cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/   ..
-make install
+make install -j4
 cd ../../
 
 curl -L https://github.com/uclouvain/openjpeg/archive/refs/tags/v2.5.0.zip -o v2.5.0.zip
@@ -144,7 +152,7 @@ cd openjpeg-2.5.0/
 mkdir build_man
 cd build_man/
 cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/   ..
-make install
+make install -j4
 cd ../../
 
 curl -L https://github.com/DCMTK/dcmtk/archive/refs/tags/DCMTK-3.6.7.zip -o DCMTK-3.6.7.zip
@@ -153,7 +161,7 @@ cd dcmtk-DCMTK-3.6.7/
 mkdir build_man
 cd build_man/
 cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON  ..
-make install
+make install -j4
 cd ../../
 
 
