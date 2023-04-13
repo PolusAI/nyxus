@@ -12,9 +12,9 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
     strategy:
       matrix:
-        os: [ubuntu-20.04]
+        os: [ubuntu-20.04, macos-11, windows-latest]
         cibw_archs: ["auto64"]
-        cibw_build: ["cp37-*"]
+        cibw_build: ["cp37-*", "cp38-*", "cp39-*", "cp310-*"]
 
     steps:
       - uses: actions/checkout@v3
@@ -39,7 +39,7 @@ jobs:
           python -m cibuildwheel --output-dir dist
         env:
           CIBW_BUILD: ${{ matrix.cibw_build }}
-          CIBW_SKIP: '*musllinux*'
+          CIBW_SKIP: "*musllinux*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2010
           CIBW_BEFORE_ALL_MACOS: brew install llvm libomp &&
                                    bash ci-utils/install_prereq_linux.sh &&
@@ -48,8 +48,6 @@ jobs:
           CIBW_BEFORE_ALL_LINUX: bash ci-utils/install_prereq_linux.sh &&
                                    mkdir -p /tmp/nyxus_bld &&
                                    cp -r local_install /tmp/nyxus_bld &&
-                                   ls -lh /tmp/nyxus_bld/local_install/lib &&
-                                   ls -lh /tmp/nyxus_bld/local_install/lib64
           CIBW_BEFORE_ALL_WINDOWS: ci-utils\install_prereq_win.bat &&
                                    xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install 
           CIBW_ENVIRONMENT_MACOS: REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64" ON_GITHUB="TRUE" PATH="$(brew --prefix llvm)/bin:$PATH" COMPILER="/usr/local/opt/llvm/bin/clang++" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib -Wl,-rpath,/usr/local/opt/llvm/lib" CXX="/usr/local/opt/llvm/bin/clang++" CC="/usr/local/opt/llvm/bin/clang" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
