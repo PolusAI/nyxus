@@ -157,14 +157,14 @@ make install
 cd ../../
 
 
-if [ "$ON_GITHUB" == "TRUE" ]; then
-    echo HERE
-    echo $PWD
-    mkdir -p /tmp/nyxus/
-    ls local_install/lib/
-    ls local_install/lib64/
-    cp -r local_install/lib64/ /tmp/nyxus/lib64/
-    cp -r local_install/lib/ /tmp/nyxus/lib/
-    ls /tmp/nyxus/lib/
-    ls /tmp/nyxus/lib64/
-fi
+# if [ "$ON_GITHUB" == "TRUE" ]; then
+#     echo HERE
+#     echo $PWD
+#     mkdir -p /tmp/nyxus/
+#     ls local_install/lib/
+#     ls local_install/lib64/
+#     cp -r local_install/lib64/ /tmp/nyxus/lib64/
+#     cp -r local_install/lib/ /tmp/nyxus/lib/
+#     ls /tmp/nyxus/lib/
+#     ls /tmp/nyxus/lib64/
+# fi
