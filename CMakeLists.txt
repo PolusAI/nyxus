@@ -226,12 +226,12 @@ endif ()
 
 find_package(DCMTK REQUIRED)
 if(DCMTK_FOUND)
-include_directories(${DCMTK_INCLUDE_DIRS})
-FOREACH(LIB ${DCMTK_LIBRARIES})
-	FIND_LIBRARY(FOUND_LIB_${LIB} ${LIB})
-	LIST(APPEND Nyxus_LIBRARIES ${FOUND_LIB_${LIB}})
-ENDFOREACH(LIB)
-
+	include_directories(${DCMTK_INCLUDE_DIRS})
+	foreach()
+		(LIB ${DCMTK_LIBRARIES})
+		FIND_LIBRARY(FOUND_LIB_${LIB} ${LIB})
+		LIST(APPEND Nyxus_LIBRARIES ${FOUND_LIB_${LIB}})
+	endforeach()
 endif()
 
 if(USEGPU)
