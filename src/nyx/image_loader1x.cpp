@@ -10,8 +10,8 @@
 #include <iostream>
 #include "image_loader1x.h"
 #include "grayscale_tiff.h"
-#include "nyxus_dicom_loader.h"
 #include "omezarr.h"
+#include "nyxus_dicom_loader.h"
 #include "dirs_and_files.h"
 
 ImageLoader1x::ImageLoader1x() {}
