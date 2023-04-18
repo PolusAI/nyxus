@@ -9,7 +9,7 @@
 void ImageMatrix::print (const std::string& head, const std::string& tail, std::vector<PrintablePoint> special_points)
 {
 	const int Wd = 6;	// data
-	const int Wi = 5;		// index
+	const int Wi = 5;	// index
 
 	readOnlyPixels D = ReadablePixels();
 
@@ -42,7 +42,7 @@ void ImageMatrix::print (const std::string& head, const std::string& tail, std::
 					y = std::get<1>(p);
 				int loc_x = x - original_aabb.get_xmin(),
 					loc_y = y - original_aabb.get_ymin();
-				if (col == loc_x && row == loc_y)
+				if (col == x && row == y) //??? if (col == loc_x && row == loc_y)
 				{
 					haveSpecPix = true;
 					std::string txt = std::get<2>(p);
@@ -58,7 +58,12 @@ void ImageMatrix::print (const std::string& head, const std::string& tail, std::
 			if (I == 0)
 				std::cout << std::setw(Wd) << '.';
 			else
-				std::cout << std::setw(Wd) << I;
+			{
+				// Sometimes a pixel's intensity has a special value within an algorithm, e.g. in GLDM's zone finding.
+				// Let's display such intensity values as negative for easier reading
+				signed int Isig = (signed int)I;
+				std::cout << std::setw(Wd) << Isig;
+			}
 		}
 		std::cout << "\n";
 	}

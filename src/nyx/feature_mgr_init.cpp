@@ -14,6 +14,7 @@
 #include "features/geodetic_len_thickness.h"
 #include "features/glcm.h"
 #include "features/glrlm.h"
+#include "features/gldzm.h"
 #include "features/glszm.h"
 #include "features/gldm.h"
 #include "features/hexagonality_polygonality.h"
@@ -48,7 +49,8 @@ FeatureManager::FeatureManager()
 	register_feature (new FractalDimensionFeature());
 	register_feature (new GLCMFeature());	
 	register_feature (new GLRLMFeature());	
-	register_feature (new GLSZMFeature());	
+	register_feature (new GLDZMFeature());
+	register_feature (new GLSZMFeature());
 	register_feature (new GLDMFeature());
 	register_feature (new NGTDMFeature());
 	register_feature (new ImageMomentsFeature());
