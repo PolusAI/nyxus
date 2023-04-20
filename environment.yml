@@ -3,7 +3,7 @@ channels:
   - https://repo.continuum.io/pkgs/free
   - defaults
 dependencies:
-  - python=3.8
+  - python=3.7
   - compilers
   - boost[version='>=1.63']
   - z5py
