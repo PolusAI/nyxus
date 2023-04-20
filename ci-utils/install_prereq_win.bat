@@ -132,7 +132,7 @@ tar -xvf v2.5.0.zip
 pushd openjpeg-2.5.0
 mkdir build_man
 pushd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/   ..
+cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/  -DBUILD_CODEC=OFF  ..
 cmake --build . --config Release --target install --parallel 4
 popd
 popd
