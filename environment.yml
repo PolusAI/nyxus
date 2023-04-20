@@ -1,0 +1,19 @@
+channels:
+  - conda-forge
+  - https://repo.continuum.io/pkgs/free
+  - defaults
+dependencies:
+  - python=3.8
+  - compilers
+  - boost[version='>=1.63']
+  - z5py
+  - nlohmann_json
+  - xsimd[version='>=8,<9']
+  - cmake
+  - xtensor[version='>=0.24,<0.25']
+  - libtiff
+  - pybind11[version='>=2.10.0']
+  - dcmtk[version='>=3.6.7']
+  - blosc
+  - pandas
+  - numpy

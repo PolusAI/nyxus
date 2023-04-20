@@ -3,18 +3,17 @@
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
 # Required
+
 version: 2
 
-# Set the version of Python and other tools you might need
 build:
-  os: ubuntu-20.04
+  os: "ubuntu-20.04"
   tools:
-    python: "3.7"
-  apt_packages:
-    - cmake
-  jobs:
-    pre_install:
-      - bash ./ci-utils/install_prereq_linux.sh
+    python: "mambaforge-4.10"
+
+conda:
+  environment: environment.yml
+
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
    configuration: docs/source/conf.py
@@ -24,7 +23,8 @@ submodules:
 
 # Optionally declare the Python requirements required to build your docs
 python:
+  version: 3.8
   install:
     - requirements: docs/requirements.txt
-    - method: setuptools
+    - method: pip
       path: .
