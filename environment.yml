@@ -19,7 +19,6 @@ dependencies:
   - numpy
   - pip>=20.1
   - pip:
-    - httpolice[version='>=0.9.0']
     - setuptools-scm
     - sphinx
     - sphinx_rtd_theme
@@ -27,9 +26,9 @@ dependencies:
     - sphinx-autodoc-typehints
     - httpolice
     - versioneer
-    - ghapi==0.1.20
-    - nox==2022.1.7
-    - pytest==6.2.4
-    - rich==12.4.4
-    - setuptools==58.0.4
-    - sphinx_rtd_theme==1.0.0
+    - ghapi[version='>=0.1.20']
+    - nox[version='>=2022.1.7']
+    - pytest[version='>=6.2.4']
+    - rich[version='>=12.4.4']]
+    - setuptools[version='>=58.0.4']
+    - sphinx_rtd_theme[version='>=1.0.0']
