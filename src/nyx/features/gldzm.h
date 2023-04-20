@@ -2,9 +2,9 @@
 
 #include "../feature_method.h"
 
-/// @brief Gray Level Distance Zone(GLSZM) features
+/// @brief Grey Level Distance Zone (GLDZM) features
 /// 
-/// Gray Level Size Zone(GLSZM) quantifies distances from locations to gray level zones in an image.
+/// Grey Level Dsitance Zone (GLDZM) quantifies distances zones of same intensity to the ROI border
 
 class GLDZMFeature : public FeatureMethod
 {
@@ -44,34 +44,12 @@ public:
 
 private:
 
-	void calc_auxiliary_sums (std::vector<double>& Mx, std::vector<double>& Md, const SimpleMatrix<int>& P, const int Ng, const int Nd);
-
-	void clear_buffers()
-	{
-		f_SDE = 
-		f_LDE = 
-		f_LGLE = 
-		f_HGLE = 
-		f_SDLGLE = 
-		f_SDHGLE = 
-		f_LDLGLE = 
-		f_LDHGLE = 
-		f_GLNU = 
-		f_GLNUN = 
-		f_ZDNU = 
-		f_ZDNUN = 
-		f_ZP = 
-		f_GLM = 
-		f_GLV = 
-		f_ZDM = 
-		f_ZDV = 
-		f_ZDE = 
-		f_GLE = 0;
-	}
+	void clear_buffers();	
+	template <class Imgmatrx> int dist2border (Imgmatrx & I, const int x, const int y);
+	template <class Imgmatrx> void calc_row_and_column_sum_vectors (std::vector<double>& Mx, std::vector<double>& Md, Imgmatrx & P, const int Ng, const int Nd);
+	template <class Imgmatrx> void calc_features (const std::vector<double>& Mx, const std::vector<double>& Md, Imgmatrx& P, unsigned int roi_area);
 
 	const double EPS = 2.2e-16;
-
-	int dist2closestRoiBorder (const pixData& D, const int x, const int y);
 
 	// Variables caching feature values between calculate() and save_value(). 
 	double f_SDE,		// Small Distance Emphasis

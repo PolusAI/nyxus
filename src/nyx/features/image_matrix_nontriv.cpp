@@ -29,6 +29,12 @@ OutOfRamPixelCloud::~OutOfRamPixelCloud()
 	}
 }
 
+void OutOfRamPixelCloud::check_io_ok() const
+{
+	if (!pF)
+		throw (std::runtime_error("ERROR in add_pixel() - file might not be open with init()"));
+}
+
 void OutOfRamPixelCloud::init (unsigned int _roi_label, std::string name)
 {
 	n_items = 0;	
@@ -69,6 +75,8 @@ void OutOfRamPixelCloud::clear()
 
 void OutOfRamPixelCloud::add_pixel(const Pixel2& p)
 {
+	check_io_ok();
+
 	fwrite((const void*) &(p.x), sizeof(p.x), 1, pF);
 	fwrite((const void*)&(p.y), sizeof(p.y), 1, pF);
 	fwrite((const void*)&(p.inten), sizeof(p.inten), 1, pF);
@@ -83,6 +91,8 @@ size_t OutOfRamPixelCloud::size() const
 
 Pixel2 OutOfRamPixelCloud::get_at(size_t idx) const
 {
+	check_io_ok();
+
 	size_t offs = idx * item_size;
 	fseek(pF, offs, SEEK_SET);
 	Pixel2 px;

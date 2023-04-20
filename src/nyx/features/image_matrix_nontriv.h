@@ -68,6 +68,7 @@ private:
 	std::string filepath;
 	FILE* pF = nullptr;
 	size_t item_size = sizeof(Pixel2::x) + sizeof(Pixel2::y) + sizeof(Pixel2::inten);
+	void check_io_ok() const;
 };
 
 /// @brief Read-only out of memory pixel matrix browsable via ImageLoader
@@ -175,6 +176,7 @@ protected:
 	size_t item_size = sizeof(double);
 	AABB original_aabb;
 };
+
 
 /// @brief Padded image matrix
 class Power2PaddedImageMatrix_NT : public WriteImageMatrix_nontriv

@@ -42,7 +42,7 @@ void ImageMatrix::print (const std::string& head, const std::string& tail, std::
 					y = std::get<1>(p);
 				int loc_x = x - original_aabb.get_xmin(),
 					loc_y = y - original_aabb.get_ymin();
-				if (col == x && row == y) //??? if (col == loc_x && row == loc_y)
+				if (col == x && row == y) // Global variant: (col == loc_x && row == loc_y)
 				{
 					haveSpecPix = true;
 					std::string txt = std::get<2>(p);

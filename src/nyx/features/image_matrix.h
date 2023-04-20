@@ -82,6 +82,16 @@ public:
 		return val;
 	}
 
+	inline T yx (int y, int x) const
+	{
+		return xy (x,y);
+	}
+
+	inline T& yx (int y, int x)
+	{
+		return xy (x,y);
+	}
+
 	// y - strided index, x - nonstrided; 1-based x and y
 	inline T matlab (int y, int x) const
 	{
@@ -184,8 +194,8 @@ public:
 			return true;
 	}
 
-	int width() const { return W; }
-	int height() const { return H; }
+	int get_width() const { return W; }
+	int get_height() const { return H; }
 
 private:
 	int W, H;
