@@ -139,6 +139,22 @@ else ()
 	message(FATAL_ERROR "libtiff library has not been found, please install it.")
 endif (TIFF_FOUND)
 
+find_package(DCMTK)
+if(DCMTK_FOUND)
+	include_directories(${DCMTK_INCLUDE_DIRS})
+	add_definitions(-DDICOM_SUPPORT)
+	foreach(LIB ${DCMTK_LIBRARIES})
+		FIND_LIBRARY(FOUND_LIB_${LIB} ${LIB})
+		LIST(APPEND runAllTests_LIBRARIES ${FOUND_LIB_${LIB}})
+	endforeach(LIB)
+endif()
+
+find_package(ZLIB REQUIRED)
+if (ZLIB_FOUND)
+	list(APPEND runAllTests_LIBRARIES ${ZLIB_LIBRARIES} )
+	include_directories (${ZLIB_INCLUDE_DIR})
+endif (ZLIB_FOUND)
+
 target_include_directories (runAllTests PUBLIC ${GTEST_INCLUDE_DIRS})
 target_link_directories (runAllTests PUBLIC ${GTEST_LIBRARY_PATH})
 
