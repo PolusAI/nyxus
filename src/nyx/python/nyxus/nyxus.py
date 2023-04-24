@@ -561,7 +561,7 @@ class Nyxus:
         """Returns the parameters of a Nyxus object
 
         Returns:
-            dict: A dictionary mapper the parameter name to the value
+            dict: A dictionary mapping the parameter name to the value
         """
         
         return get_params_imp()
