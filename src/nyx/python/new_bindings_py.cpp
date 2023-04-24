@@ -1,14 +1,17 @@
 #include <algorithm>
 #include <exception>
+#include <variant>
+#include <map>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include "../version.h"
 #include "../environment.h"
 #include "../feature_mgr.h"
-#include "../dirs_and_files.h"  
+#include "../dirs_and_files.h"   
 #include "../globals.h"
 #include "../nested_feature_aggregation.h"
+#include "../features/gabor.h"
 
 namespace py = pybind11;
 using namespace Nyxus;
@@ -70,6 +73,46 @@ void initialize_environment(
             std::cout << "No gpu available." << std::endl;
         }
     #endif
+}
+
+void set_if_ibsi_imp(bool ibsi) {
+    theEnvironment.set_ibsi_compliance(ibsi);
+}
+
+void set_environment_params_imp (
+    const std::vector<std::string> &features = {},
+    float neighbor_distance = -1,
+    float pixels_per_micron = -1,
+    uint32_t coarse_gray_depth = 0, 
+    uint32_t n_reduce_threads = 0,
+    uint32_t n_loader_threads = 0,
+    int using_gpu = -2
+) {
+    if (features.size() > 0) {
+        theEnvironment.recognizedFeatureNames = features;
+    }
+     
+    if (neighbor_distance > -1) {
+        theEnvironment.set_pixel_distance(static_cast<int>(neighbor_distance));
+    }
+
+    if (pixels_per_micron > -1) {
+        theEnvironment.xyRes = theEnvironment.pixelSizeUm = pixels_per_micron;
+    }
+
+    std::cout << "before" << std::endl;
+    if (coarse_gray_depth != 0) {
+        std::cout << "seeting coarse  depth" << std::endl;
+        theEnvironment.set_coarse_gray_depth(coarse_gray_depth);
+    }
+
+    if (n_reduce_threads != 0) {
+        theEnvironment.n_reduce_threads = n_reduce_threads;
+    }
+    
+    if (n_loader_threads != 0) {
+        theEnvironment.n_loader_threads = n_loader_threads;
+    }
 }
 
 py::tuple featurize_directory_imp (
@@ -344,6 +387,7 @@ void customize_gabor_feature_imp(
     const std::string& thold,
     const std::string& freqs)
 {
+
     // Step 1 - set raw strings of parameter values
     theEnvironment.gaborOptions.rawKerSize = kersize;
     theEnvironment.gaborOptions.rawGamma = gamma;
@@ -357,6 +401,31 @@ void customize_gabor_feature_imp(
     std::string ermsg;
     if (!theEnvironment.parse_gabor_options_raw_inputs(ermsg))
         throw std::invalid_argument("Invalid GABOR parameter value: " + ermsg);
+}
+
+
+std::map<std::string, std::variant<int, float, double, unsigned int, std::vector<double>, std::vector<std::string>>> get_params_imp() {
+    std::map<std::string, std::variant<int, float, double, unsigned int, std::vector<double>, std::vector<std::string>>> params;
+
+
+    params["features"] = theEnvironment.recognizedFeatureNames;
+    params["neighbor_distance"] = theEnvironment.n_pixel_distance;
+    params["pixels_per_micron"] = theEnvironment.xyRes;
+    params["coarse_gray_depth"] = theEnvironment.get_coarse_gray_depth();
+    params["n_feature_calc_threads"] = theEnvironment.n_reduce_threads;
+    params["n_loader_threads"] = theEnvironment.n_loader_threads;
+    params["ibsi"] = theEnvironment.ibsi_compliance;
+
+    params["gabor_kersize"] = GaborFeature::n;
+    params["gabor_gamma"] = GaborFeature::gamma;
+    params["gabor_sig2lam"] = GaborFeature::sig2lam;
+    params["gabor_f0"] = GaborFeature::f0LP;
+    params["gabor_theta"] = GaborFeature::theta / M_PI * 180; // convert theta back from radians
+    params["gabor_thold"] = GaborFeature::GRAYthr;
+    params["gabor_freqs"] = GaborFeature::f0;
+
+    return params;
+
 }
 
 PYBIND11_MODULE(backend, m)
@@ -375,6 +444,9 @@ PYBIND11_MODULE(backend, m)
     m.def("clear_roi_blacklist_imp", &clear_roi_blacklist_imp, "Clear the ROI black list");
     m.def("roi_blacklist_get_summary_imp", &roi_blacklist_get_summary_imp, "Returns a summary of the ROI blacklist");
     m.def("customize_gabor_feature_imp", &customize_gabor_feature_imp, "Sets custom GABOR feature's parameters");
+    m.def("set_if_ibsi_imp", &set_if_ibsi_imp, "Set if the features will be ibsi compliant");
+    m.def("set_environment_params_imp", &set_environment_params_imp, "Set the environment variables of Nyxus");
+    m.def("get_params_imp", &get_params_imp, "Get parameters of Nyxus");
 }
 
 ///

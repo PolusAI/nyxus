@@ -9,7 +9,11 @@ from .backend import (
     blacklist_roi_imp,
     clear_roi_blacklist_imp,
     roi_blacklist_get_summary_imp,
-    customize_gabor_feature_imp)
+    customize_gabor_feature_imp,
+    set_if_ibsi_imp,
+    set_environment_params_imp,
+    get_params_imp)
+
 import os
 import numpy as np
 import pandas as pd
@@ -58,6 +62,20 @@ class Nyxus:
         thread for feature calculation. 
     ibsi: bool (optional, default false)
        IBSI available features will be IBSI compliant when true.
+    gabor_kersize: int (optional, default 16)
+        Size of filter kernel's side
+    gabor_gamma: float (optional, default 0.1)
+        Aspect ratio of the Gaussian factor
+    gabor_sig2lam: float (optional, deafult 0.8)
+        Spatial frequency bandwidth.
+    gabor_f0: float (optional, default 0.1)
+        frequency of the baseline lowpass filter as denominator of `\pi`.
+    gabor_theta: float (optional, default 45): 
+        Orientation of the Gaussian in degrees 0-180.
+    gabor_thold: float (optional, 0.025)
+        lower threshold of the filtered image to baseline ratio. 
+    gabor_freqs: list[int] (optional, default [1,2,4,8,16,32,64])
+        comma-separated denominators of `\pi` as frequencies of Gabor filter's harmonic factor.
     """
 
     def __init__(
@@ -69,7 +87,17 @@ class Nyxus:
         n_feature_calc_threads: int = 4,
         n_loader_threads: int = 1,
         using_gpu: int = -1,
-        ibsi: bool = False):
+        ibsi: bool = False,
+        gabor_kersize: int = 16,
+        gabor_gamma: float = 0.1,
+        gabor_sig2lam: float = 0.8,
+        gabor_f0: float = 0.1,
+        gabor_theta: float = 45,
+        gabor_thold: float = 0.025,
+        gabor_freqs: List[int] = [1,2,4,8,16,32,64]
+        
+        
+        ):
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
 
@@ -92,6 +120,7 @@ class Nyxus:
         if(using_gpu > -1 and not gpu_available()):
             print("No gpu available.")
             using_gpu = -1
+    
 
         initialize_environment(
             features,
@@ -102,6 +131,17 @@ class Nyxus:
             n_loader_threads,
             using_gpu,
             ibsi)
+        
+        
+        self.set_gabor_feature_params(
+            kersize=gabor_kersize,
+            gamma=gabor_gamma,
+            sig2lam=gabor_sig2lam,
+            f0=gabor_f0,
+            theta=gabor_theta,
+            thold=gabor_thold,
+            freqs=gabor_freqs
+        )
 
     def featurize_directory(
         self,
@@ -356,7 +396,7 @@ class Nyxus:
             return None
         return s
 
-    def customize_gabor_feature (self, **kwargs):
+    def set_gabor_feature_params (self, **kwargs):
         """Sets parameters of feature GABOR
 
         Keyword args:
@@ -366,22 +406,167 @@ class Nyxus:
         * f0 (float): frequency of the baseline lowpass filter as denominator of `\pi`. Example: customize_gabor_feature(f0=0.1)
         * theta (float): orientation of the Gaussian in degrees 0-180. Example: customize_gabor_feature(theta=1.5708)
         * thold (float): lower threshold of the filtered image to baseline ratio. Example: customize_gabor_feature(thold=0.025)
-        * freqs (str): comma-separated denominators of `\pi` as frequencies of Gabor filter's harmonic factor. Example: customize_gabor_feature(freqs="1,2,4,8,16,32,64")
+        * freqs (list[int]): list of denominators of `\pi` as frequencies of Gabor filter's harmonic factor. Example: customize_gabor_feature(freqs="1,2,4,8,16,32,64")
         """
 
+        params = [
+            'kersize',
+            'gamma',
+            'sig2lam',
+            'f0',
+            'theta',
+            'thold',
+            'freqs'
+        ]
+        
+        for key in kwargs:
+            if key not in params:
+                raise ValueError(f"Invalid Gabor parameter {key}. The valid parameters are: {params}")
+    
         kersize = str(kwargs.get ('kersize', ""))
         gamma = str(kwargs.get ('gamma', ""))
         sig2lam = str(kwargs.get ('sig2lam', ""))
         f0 = str(kwargs.get ('f0', ""))
         theta = str(kwargs.get ('theta', ""))
         thold = str(kwargs.get ('thold', ""))
-        freqs = str(kwargs.get ('freqs', ""))
+        freqs = kwargs.get ('freqs', [])
 
         if len(kersize)==0 and len(gamma)==0 and len(sig2lam)==0 and len(f0)==0 and len(theta)==0 and len(thold)==0 and len(freqs)==0:
-            raise IOError ("illegal arguments passed to customize_gabor_feature()")
+            raise IOError ("Illegal arguments passed to set_gabor_feature_params()")
+        
+        if (freqs == []):
+            freqs = ""
+        else:
+            freqs = ",".join(str(i) for i in freqs)
 
         customize_gabor_feature_imp (kersize, gamma, sig2lam, f0, theta, thold, freqs)
 
+    
+    def set_environment_params (self, **params):
+        """Sets parameters of the environment for Nyxus
+        
+        Keyword args:
+        *neighbor_distance: float (
+            Any two objects separated by a Euclidean distance (pixel units) greater than this
+            value will not be be considered neighbors. This cutoff is used by all features which
+            rely on neighbor identification.
+        * pixels_per_micron: float(optional, default 1.0)
+            Specify the image resolution in terms of pixels per micron for unit conversion
+            of non-unitless features.
+        * coarse_gray_depth: int 
+            Custom number of levels in grayscale denoising used in texture features.
+        * n_feature_calc_threads: int (optional, default 4)
+            Number of threads to use for feature calculation parallelization purposes.
+        * n_loader_threads: int )
+            Number of threads to use for loading image tiles from disk. Note: image loading
+            multithreading is very memory intensive. You should consider optimizing
+            `n_feature_calc_threads` before increasing `n_loader_threads`.
+        * using_gpu: int 
+            Id of the gpu to use. To find available gpus along with ids, using nyxus.get_gpu_properties().
+            The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
+            thread for feature calculation. 
+        
+        """
+        
+        valid_params = [
+            'features',
+            'neighbor_distance',
+            'pixels_per_micron',
+            'coarse_gray_depth',
+            'n_feature_calc_threads',
+            'n_loader_threads',
+            'using_gpu'
+        ]
+        
+        for key in params:
+            if key not in valid_params:
+                raise ValueError(f'Invalid environment parameter {key}. Value parameters are {params}')
+        
+        features = params.get('features', [])
+        neighbor_distance = params.get ('neighbor_distance', -1)
+        pixels_per_micron = params.get ('pixels_per_micron', -1)
+        coarse_gray_depth = params.get ('coarse_gray_depth', 0)
+        n_reduce_threads = params.get ('n_feature_calc_threads', 0)
+        n_loader_threads = params.get ('n_loader_threads', 0)
+        using_gpu =params.get ('using_gpu', -2)
+        
+        set_environment_params_imp(features, 
+                                   neighbor_distance, 
+                                   pixels_per_micron,
+                                   coarse_gray_depth,
+                                   n_reduce_threads,
+                                   n_loader_threads,
+                                   using_gpu)
+        
+    def set_params(self, **params):
+        """Sets parameters of the Nyxus class
+
+        Keyword args:
+        
+        * features: List[str],
+        * neighbor_distance
+        * pixels_per_micron
+        * coarse_gray_depth
+        * n_feature_calc_threads
+        * n_loader_threads
+        * using_gpu
+        * ibsi: bool
+    
+        * gabor_kersize (int): size of filter kernel's side. Example: set_params(gabor_kersize=16)
+        * gabor_gamma (float): aspect ratio of the Gaussian factor. Example: set_params(gabor_gamma=0.1)
+        * gabor_sig2lam (float): spatial frequency bandwidth. Example: set_params(gabor_sig2lam=0.8)
+        * gabor_f0 (float): frequency of the baseline lowpass filter as denominator of `\pi`. Example: set_params(gabor_f0=0.1)
+        * gabor_theta (float): orientation of the Gaussian in degrees 0-180. Example: set_params(gabor_theta=1.5708)
+        * gabor_thold (float): lower threshold of the filtered image to baseline ratio. Example: set_params(gabor_thold=0.025)
+        * gabor_freqs (str): comma-separated denominators of `\pi` as frequencies of Gabor filter's harmonic factor. Example: set_params(gabor_freqs="1,2,4,8,16,32,64")
+        """
+        
+        available_environment_params = [
+            "features",
+            "neighbor_distance",
+            "pixels_per_micron",
+            "coarse_gray_depth",
+            "n_feature_calc_threads",
+            "n_loader_threads",
+            "using_gpu",
+            "ibsi"
+        ]
+        
+        environment_params = {}
+        
+        gabor_params = {}
+        
+        
+        for key, value in params.items():
+            if key.startswith("gabor_"):
+                gabor_params[key[len("gabor_"):]] = value
+            
+            elif (key == "ibsi"):
+                set_if_ibsi_imp(value)
+            
+            else:
+                if (key not in available_environment_params):
+                    raise ValueError(f"Invalid parameter {key}.")
+                else:
+                    environment_params[key] = value
+                
+                
+        if (len(gabor_params) > 0):
+            self.set_gabor_feature_params(**gabor_params)
+        
+        if (len(environment_params) > 0):
+            self.set_environment_params(**environment_params)
+    
+    def get_params(self):
+        """Returns the parameters of a Nyxus object
+
+        Returns:
+            dict: A dictionary mapper the parameter name to the value
+        """
+        
+        return get_params_imp()
+        
+        
 
 class Nested:
     """Nyxus image feature extraction library / ROI hierarchy analyzer

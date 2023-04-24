@@ -84,7 +84,7 @@ public:
 	Environment();
 	bool parse_cmdline(int argc, char **argv);
 	void show_cmdline_help();
-	void show_featureset_help();
+	void show_featureset_help(); 
 	void show_summary(const std::string &head, const std::string &tail);
 
 	std::string labels_dir = "",
