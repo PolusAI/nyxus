@@ -274,9 +274,11 @@ namespace Nyxus
 	/// @return Squeezed intensity within range [0,255]
 	inline unsigned int to_grayscale (unsigned int i, unsigned int min_i, unsigned int i_range, unsigned int n_levels, bool disable_binning=false)
 	{
-		if (disable_binning) return i;
+		if (disable_binning) 
+			return i;
 		
-		unsigned int new_pi = (unsigned int) ((double(i-min_i) / double(i_range) * double(n_levels))) ;
+		double pi = ((double(i-min_i) / double(i_range) * double(n_levels)));
+		unsigned int new_pi = (unsigned int)pi;
 		return new_pi;
 	}
 

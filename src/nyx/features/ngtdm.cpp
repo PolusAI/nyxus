@@ -59,8 +59,8 @@ void NGTDMFeature::calculate (LR& r)
 
 	// Gather zones
 	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
-	for (int row = 0; row < D.height(); row++)
-		for (int col = 0; col < D.width(); col++)
+	for (int row = 0; row < D.get_height(); row++)
+		for (int col = 0; col < D.get_width(); col++)
 		{
 			// Find a non-blank pixel 
 			

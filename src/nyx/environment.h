@@ -29,7 +29,7 @@
 #define ONLINESTATSTHRESH "--onlineStatsThresh" // Environment :: onlineStatsThreshold	-- Example: --onlineStatsThresh=150
 #define XYRESOLUTION "--pixelsPerCentimeter"	// pixels per centimeter
 #define PXLDIST "--pixelDistance"				// used in neighbor features
-#define COARSEGRAYDEPTH "--coarseGrayDepth"		// Default - 8
+#define COARSEGRAYDEPTH "--coarseGrayDepth"		// Environment :: raw_coarse_grayscale_depth
 #define RAMLIMIT "--ramLimit"					// Optional. Limit for treating ROIs as non-trivial and for setting the batch size of trivial ROIs. Default - amount of available system RAM
 #define TEMPDIR "--tempDir"						// Optional. Used in processing non-trivial features. Default - system temp directory
 #define IBSICOMPLIANCE "--ibsi" // skip binning for grey level and grey tone features

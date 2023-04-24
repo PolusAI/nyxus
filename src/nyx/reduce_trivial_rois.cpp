@@ -26,6 +26,7 @@
 #include "features/geodetic_len_thickness.h"
 #include "features/glcm.h"
 #include "features/glrlm.h"
+#include "features/gldzm.h"
 #include "features/glszm.h"
 #include "features/gldm.h"
 #include "features/hexagonality_polygonality.h"
@@ -188,6 +189,13 @@ namespace Nyxus
 		{
 			STOPWATCH("Texture/GLRLM/RL/#bbbbbb", "\t=");
 			runParallel(GLRLMFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+		}
+
+		//==== GLDZM
+		if (GLDZMFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Texture/GLDZM/DZ/#bbbbbb", "\t=");
+			runParallel(GLDZMFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== GLSZM

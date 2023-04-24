@@ -201,6 +201,26 @@ namespace Nyxus
 		GLRLM_LRLGLE,	// Long Run Low Gray Level Emphasis 
 		GLRLM_LRHGLE,	// Long Run High Gray Level Emphasis 
 
+		// GLDZM:
+		GLDZM_SDE,		// Small Distance Emphasis
+		GLDZM_LDE,		// Large Distance Emphasis
+		GLDZM_LGLE,		// Low Grey Level Emphasis
+		GLDZM_HGLE,		// High GreyLevel Emphasis
+		GLDZM_SDLGLE,	// Small Distance Low Grey Level Emphasis
+		GLDZM_SDHGLE,	// Small Distance High GreyLevel Emphasis
+		GLDZM_LDLGLE,	// Large Distance Low Grey Level Emphasis
+		GLDZM_LDHGLE,	// Large Distance High Grey Level Emphasis
+		GLDZM_GLNU,		// Grey Level Non Uniformity
+		GLDZM_GLNUN,	// Grey Level Non Uniformity Normalized
+		GLDZM_ZDNU,		// Zone Distance Non Uniformity
+		GLDZM_ZDNUN,	// Zone Distance Non Uniformity Normalized
+		GLDZM_ZP,		// Zone Percentage
+		GLDZM_GLM,		// Grey Level Mean
+		GLDZM_GLV,		// Grey Level Variance
+		GLDZM_ZDM,		// Zone Distance Mean
+		GLDZM_ZDV,		// Zone Distance Variance
+		GLDZM_ZDE,		// Zone Distance Entropy
+
 		// GLSZM:
 		GLSZM_SAE,	// Small Area Emphasis
 		GLSZM_LAE,	// Large Area Emphasis

@@ -106,6 +106,7 @@ set(SOURCE
 	src/nyx/features/glcm.cpp
 	src/nyx/features/glcm_nontriv.cpp
 	src/nyx/features/gldm.cpp
+	src/nyx/features/gldzm.cpp
 	src/nyx/features/glrlm.cpp
 	src/nyx/features/glszm.cpp
 	src/nyx/features/hexagonality_polygonality.cpp

@@ -77,7 +77,7 @@ bool FeatureManager::check_11_correspondence()
 			else	// error - no providers
 			{
 				success = false;
-				std::cout << "Error: feature " << theFeatureSet.findFeatureNameByCode((AvailableFeatures)i_fcode) << " (code " << i_fcode << ") is not provided by any feature method \n";
+				std::cout << "Error: feature " << theFeatureSet.findFeatureNameByCode((AvailableFeatures)i_fcode) << " (code " << i_fcode << ") is not provided by any feature method. Check constructor of class FeatureManager\n";
 			}
 	}
 
@@ -199,7 +199,7 @@ void FeatureManager::build_user_requested_set()
 		FeatureMethod* fm = get_feature_method_by_code (fc);
 
 		if (fm == nullptr)
-			throw (std::runtime_error("Feature " + std::to_string(fc) + " is not provided by any feature method"));
+			throw (std::runtime_error("Feature " + std::to_string(fc) + " is not provided by any feature method. Check constructor of class FeatureManager"));
 
 		// first, save feature methods of fm's dependencies
 		for (auto depend_fc : fm->dependencies)
@@ -207,7 +207,7 @@ void FeatureManager::build_user_requested_set()
 			FeatureMethod* depend_fm = get_feature_method_by_code (depend_fc);
 
 			if (depend_fm == nullptr)
-				throw (std::runtime_error("Feature " + std::to_string(depend_fc) + " is not provided by any feature method"));
+				throw (std::runtime_error("Feature " + std::to_string(depend_fc) + " is not provided by any feature method. Check constructor of class FeatureManager"));
 
 			// save this fm if it's not yet saved
 			if (std::find(user_requested_features.begin(), user_requested_features.end(), depend_fm) == user_requested_features.end())

@@ -44,6 +44,7 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader&)
 	//==== While scanning clusters, learn unique intensities 
 	std::unordered_set<PixIntens> U;
 
+	// Width of the intensity - zone area matrix 
 	int maxZoneArea = 0;
 
 	// Create an image matrix for this ROI
@@ -56,7 +57,7 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader&)
 
 	// Copy the image matrix
 	WriteImageMatrix_nontriv D ("GLSZMFeature-osized_calculate-D", r.label);
-	D.allocate (M.get_width(), M.get_height(), 0);
+	D.allocate (width, height, 0);
 	D.copy (M);
 
 	// Squeeze the intensity range
@@ -213,6 +214,7 @@ void GLSZMFeature::calculate(LR& r)
 	//==== While scanning clusters, learn unique intensities 
 	std::unordered_set<PixIntens> U;
 
+	// Width of the intensity - zone area matrix 
 	int maxZoneArea = 0;
 
 	// Copy the image matrix

@@ -20,7 +20,11 @@ namespace Nyxus
 	/// 
 	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads)
 	{
-		for (auto lab : nontrivRoiLabels)
+		// Sort labels for reproducibility with function's trivial counterpart. Nontrivial part of the workflow isn't time-critical anyway
+		auto L = nontrivRoiLabels;
+		std::sort (L.begin(), L.end());
+
+		for (auto lab : L)
 		{
 			LR& r = roiData[lab];
 

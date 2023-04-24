@@ -48,8 +48,8 @@ void GLDMFeature::calculate(LR& r)
 	bool disableGrayBinning = Environment::ibsi_compliance || nGrays >= piRange;
 
 	// Gather zones
-	for (int row = 0; row < D.height(); row++)
-		for (int col = 0; col < D.width(); col++)
+	for (int row = 0; row < D.get_height(); row++)
+		for (int col = 0; col < D.get_width(); col++)
 		{
 			// Find a non-blank pixel
 			PixIntens pi = Nyxus::to_grayscale (D.yx(row, col), r.aux_min, piRange, nGrays, disableGrayBinning);
