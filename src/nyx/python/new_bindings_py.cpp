@@ -13,9 +13,6 @@
 #include "../nested_feature_aggregation.h"
 #include "../features/gabor.h"
 
-#define _USE_MATH_DEFINES // need for M_PI
-#include <cmath>
-
 namespace py = pybind11;
 using namespace Nyxus;
 
@@ -423,7 +420,7 @@ std::map<std::string, std::variant<int, float, double, unsigned int, std::vector
     params["gabor_gamma"] = GaborFeature::gamma;
     params["gabor_sig2lam"] = GaborFeature::sig2lam;
     params["gabor_f0"] = GaborFeature::f0LP;
-    params["gabor_theta"] = GaborFeature::theta / M_PI * 180; // convert theta back from radians
+    params["gabor_theta"] = GaborFeature::get_theta_in_degrees(); // convert theta back from radians
     params["gabor_thold"] = GaborFeature::GRAYthr;
     params["gabor_freqs"] = GaborFeature::f0;
 

@@ -607,3 +607,7 @@ void GaborFeature::gpu_process_all_rois( std::vector<int>& ptrLabels, std::unord
 #endif
 
 
+double GaborFeature::get_theta_in_degrees() {
+    return theta / M_PI * 180;
+}
+
