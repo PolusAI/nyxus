@@ -14,6 +14,7 @@
 #include "../features/gabor.h"
 
 #define _USE_MATH_DEFINES // need for M_PI
+#include <cmath>
 
 namespace py = pybind11;
 using namespace Nyxus;
