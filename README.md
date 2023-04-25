@@ -184,12 +184,13 @@ Nyxus provides a set of pixel intensity, morphology, texture, intensity distribu
 | EROSIONS_2_VANISH | Number of erosion operations for a ROI to vanish in its axis aligned bounding box |
 | EROSIONS_2_VANISH_COMPLEMENT | Number of erosion operations for a ROI to vanish in its convex hull |
 | FRACT_DIM_BOXCOUNT, FRACT_DIM_PERIMETER | Fractal dimension features |
-| GLCM | Gray level co-occurrence Matrix features |
-| GLRLM | Gray level run-length matrix based features
-| GLSZM | Gray level size zone matrix based features
-| GLDM | Gray level dependency matrix based features
-| NGTDM | Neighbouring gray tone difference matrix features
-| ZERNIKE2D, FRAC_AT_D, RADIAL_CV, MEAN_FRAC | Radial distribution features
+| GLCM | Grey level co-occurrence Matrix features |
+| GLRLM | Grey level run-length matrix based features |
+| GLDZM | Grey level distance zone matrix based features |
+| GLSZM | Grey level size zone matrix based features |
+| GLDM | Grey level dependency matrix based features |
+| NGTDM | Neighbouring grey tone difference matrix features |
+| ZERNIKE2D, FRAC_AT_D, RADIAL_CV, MEAN_FRAC | Radial distribution features |
 | GABOR | A set of Gabor filters of varying frequencies and orientations |
 
 For the complete list of features see [Nyxus provided features](docs/featurelist.md)
@@ -224,7 +225,7 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 --intDir | Directory of intensity image collection | path
 --outDir | Output directory | path
 --segDir | Directory of labeled image collection | path
---coarseGrayDepth | (optional) Custom number of grayscale level bins used in texture features. Default: '--coarseGrayDepth=256' | integer
+--coarseGrayDepth | (optional) Custom number of greyscale level bins used in texture features. Default: '--coarseGrayDepth=256' | integer
 --glcmAngles | (optional) Enabled direction angles of the GLCM feature. Superset of values: 0, 45, 90, and 135. Default: '--glcmAngles=0,45,90,135' | list of integer constants
 --intSegMapDir | (optional) Data collection of the ad-hoc intensity-to-mask file mapping. Must be used in combination with parameter '--intSegMapFile' | path
 --intSegMapFile | (optional) Name of the text file containing an ad-hoc intensity-to-mask file mapping. The files are assumed to reside in corresponding intensity and label collections. Must be used in combination with parameter '--intSegMapDir' | string
