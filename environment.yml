@@ -23,7 +23,6 @@ dependencies:
     - sphinx_rtd_theme
     - autodocsumm
     - sphinx-autodoc-typehints
-    - httpolice
     - versioneer
     - ghapi==0.1.20
     - nox==2022.1.7
