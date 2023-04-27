@@ -1,4 +1,15 @@
-from .backend import initialize_environment, featurize_directory_imp, featurize_montage_imp, featurize_fname_lists_imp, findrelations_imp, use_gpu, gpu_available, blacklist_roi_imp, clear_roi_blacklist_imp, roi_blacklist_get_summary_imp  
+from .backend import (
+    initialize_environment,
+    featurize_directory_imp,
+    featurize_montage_imp,
+    featurize_fname_lists_imp,
+    findrelations_imp,
+    use_gpu,
+    gpu_available,
+    blacklist_roi_imp,
+    clear_roi_blacklist_imp,
+    roi_blacklist_get_summary_imp,
+    customize_gabor_feature_imp)
 import os
 import numpy as np
 import pandas as pd
@@ -58,8 +69,7 @@ class Nyxus:
         n_feature_calc_threads: int = 4,
         n_loader_threads: int = 1,
         using_gpu: int = -1,
-        ibsi: bool = False
-    ):
+        ibsi: bool = False):
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
 
@@ -91,8 +101,7 @@ class Nyxus:
             n_feature_calc_threads,
             n_loader_threads,
             using_gpu,
-            ibsi
-        )
+            ibsi)
 
     def featurize_directory(
         self,
@@ -346,6 +355,32 @@ class Nyxus:
         if len(s) == 0:
             return None
         return s
+
+    def customize_gabor_feature (self, **kwargs):
+        """Sets parameters of feature GABOR
+
+        Keyword args:
+        * kersize (int): size of filter kernel's side. Example: customize_gabor_feature(kersize=16)
+        * gamma (float): aspect ratio of the Gaussian factor. Example: customize_gabor_feature(gamma=0.1)
+        * sig2lam (float): spatial frequency bandwidth. Example: customize_gabor_feature(sig2lam=0.8)
+        * f0 (float): frequency of the baseline lowpass filter as denominator of `\pi`. Example: customize_gabor_feature(f0=0.1)
+        * theta (float): orientation of the Gaussian in degrees 0-180. Example: customize_gabor_feature(theta=1.5708)
+        * thold (float): lower threshold of the filtered image to baseline ratio. Example: customize_gabor_feature(thold=0.025)
+        * freqs (str): comma-separated denominators of `\pi` as frequencies of Gabor filter's harmonic factor. Example: customize_gabor_feature(freqs="1,2,4,8,16,32,64")
+        """
+
+        kersize = str(kwargs.get ('kersize', ""))
+        gamma = str(kwargs.get ('gamma', ""))
+        sig2lam = str(kwargs.get ('sig2lam', ""))
+        f0 = str(kwargs.get ('f0', ""))
+        theta = str(kwargs.get ('theta', ""))
+        thold = str(kwargs.get ('thold', ""))
+        freqs = str(kwargs.get ('freqs', ""))
+
+        if len(kersize)==0 and len(gamma)==0 and len(sig2lam)==0 and len(f0)==0 and len(theta)==0 and len(thold)==0 and len(freqs)==0:
+            raise IOError ("illegal arguments passed to customize_gabor_feature()")
+
+        customize_gabor_feature_imp (kersize, gamma, sig2lam, f0, theta, thold, freqs)
 
 
 class Nested:

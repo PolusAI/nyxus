@@ -163,6 +163,7 @@ public:
 
 	// implementation of Gabor feature options
 	bool parse_gabor_options_raw_inputs (std::string& error_message);
+	GaborOptions gaborOptions;
 
 private:
 
@@ -201,9 +202,6 @@ private:
 	#ifdef CHECKTIMING
 		std::string rawExclusiveTiming = "";
 	#endif
-
-	// implementation of Gabor feature options
-	GaborOptions gaborOptions;
 };
 
 namespace Nyxus

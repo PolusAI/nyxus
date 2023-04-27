@@ -32,8 +32,43 @@ class TestNyxus():
             else:
                 print("Gpu not available")
                 assert True
-                        
-                        
+
+        def test_gabor_customization (self):
+            nyx = nyxus.Nyxus (["GABOR"])
+            assert nyx is not None
+
+            # test ability to digest valid parameters
+            try:
+                nyx.customize_gabor_feature(kersize=16)
+                nyx.customize_gabor_feature(gamma=0.1)
+                nyx.customize_gabor_feature(sig2lam=0.8)
+                nyx.customize_gabor_feature(f0=0.1)
+                nyx.customize_gabor_feature(theta=1.5708)
+                nyx.customize_gabor_feature(thold=0.025)
+                nyx.customize_gabor_feature(freqs="1")
+                nyx.customize_gabor_feature(freqs="1,2,4,8,16,32,64")
+            except Exception as exc:
+                assert False, f"customize_gabor_feature(valid argument) raised an exception {exc}"
+
+            # test ability to intercept invalid values
+            with pytest.raises (Exception):
+                nyx.customize_gabor_feature(kersize=16.789)
+            with pytest.raises (Exception):
+                nyx.customize_gabor_feature(gamma="notAnumber")
+            with pytest.raises (Exception):
+                nyx.customize_gabor_feature(sig2lam="notAnumber")
+                nyx.customize_gabor_feature(f0="notAnumber")
+                nyx.customize_gabor_feature(theta="notAnumber")
+                nyx.customize_gabor_feature(thold="notAnumber")
+            with pytest.raises (Exception):
+                nyx.customize_gabor_feature(freqs="1,,2,3")
+            with pytest.raises (Exception):
+                nyx.customize_gabor_feature(freqs="1,")
+            with pytest.raises (Exception):
+                nyx.customize_gabor_feature(freqs="1 , 2,3")
+            with pytest.raises (Exception):
+                nyx.customize_gabor_feature(freqs="notAList")
+            
         def test_in_memory_2d(self):
                 
             cpu_nyx = nyxus.Nyxus(["*ALL_GLCM*"], ibsi=True)
