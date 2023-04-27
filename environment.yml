@@ -1,0 +1,31 @@
+channels:
+  - conda-forge
+  - https://repo.continuum.io/pkgs/free
+  - defaults
+dependencies:
+  - python=3.7
+  - compilers
+  - boost[version='>=1.63']
+  - z5py
+  - nlohmann_json
+  - xsimd[version='>=8,<9']
+  - cmake
+  - xtensor[version='>=0.24,<0.25']
+  - libtiff
+  - pybind11[version='>=2.10.0']
+  - dcmtk[version='>=3.6.7']
+  - blosc
+  - pandas
+  - numpy
+  - pip>=20.1
+  - pip:
+    - sphinx
+    - sphinx_rtd_theme
+    - autodocsumm
+    - sphinx-autodoc-typehints
+    - versioneer
+    - ghapi==0.1.20
+    - nox==2022.1.7
+    - pytest==6.2.4
+    - rich==12.4.4
+    - sphinx_rtd_theme==1.0.0
