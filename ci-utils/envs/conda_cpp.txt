@@ -8,3 +8,4 @@ xtensor >=0.24,<0.25
 xsimd >=8,<9
 cmake
 dcmtk >=3.6.7
+fmjpeg2koj >=1.0.3
