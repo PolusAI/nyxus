@@ -15,6 +15,7 @@ Math formulas
    Math/f_glcm
    Math/f_gldm
    Math/f_glrlm
+   Math/f_gldzm
    Math/f_glszm
    Math/f_ngtdm
    Math/f_morphology
