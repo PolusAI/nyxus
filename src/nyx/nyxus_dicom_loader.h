@@ -6,6 +6,9 @@
 #include "dcmtk/dcmjpls/djdecode.h"  /* for JPEG-LS decoders */
 #include "dcmtk/dcmdata/dcrledrg.h"  /* for RLE decoder */
 #include "dcmtk/dcmjpeg/dipijpeg.h"  /* for dcmimage JPEG plugin */
+#include "dcmtk/dcmseg/segdoc.h"
+#include "dcmtk/dcmseg/segment.h"
+#include "dcmtk/dcmseg/segutils.h"
 
 template<class DataType>
 class NyxusGrayscaleDicomLoader : public AbstractTileLoader<DataType> 
@@ -141,6 +144,9 @@ public:
             }       
         } else {
             switch(bitsPerSample_){
+                case 1:
+                    copyBinaryFrame(*tile, frame_no);
+                    break;
                 case 8:
                     copyFrame<uint8_t>(*tile, frame_no);
                     break;
@@ -247,6 +253,42 @@ private:
             }
         }
   
+    }
+
+    /// @brief Private function to copy and cast the values for Binary Segmentation Image
+    /// @tparam FileType Type inside the file
+    /// @param dest_as_vector Feature extraction facing buffer to fill
+    /// @param frame_no Frame to copy
+    void copyBinaryFrame(
+        std::vector<DataType>& dest_as_vector,
+        uint32_t frame_no) 
+    {   
+        DcmDataset* ds = dcm_ff_.getDataset();
+        DcmSegmentation *segdoc = nullptr;
+    
+        OFCondition status = DcmSegmentation::loadDataset(*ds, segdoc);
+        if(status.good()){
+            const DcmIODTypes::Frame *frame = segdoc->getFrame(static_cast<size_t>(frame_no));
+            const DcmIODTypes::Frame *unpacked_frame = nullptr;
+            unpacked_frame = DcmSegUtils::unpackBinaryFrame(frame, tileHeight_, tileWidth_);
+            if(unpacked_frame){
+                if(dest_as_vector.size() < unpacked_frame->length){
+                    std::stringstream message;
+                    message
+                        << "Tile Loader ERROR: The destination buffer size ("
+                        <<dest_as_vector.size()
+                        <<") is smaller than the frame size ("
+                        << unpacked_frame->length <<").";
+                    throw (std::runtime_error(message.str()));
+                }
+                DataType* dest = dest_as_vector.data();
+                for(size_t i=0;i<unpacked_frame->length;++i){
+                    *(dest+i) = static_cast<DataType>(unpacked_frame->pixData[i]);
+                }
+                delete unpacked_frame;
+            }
+        }
+
     }
 
     DcmFileFormat dcm_ff_;

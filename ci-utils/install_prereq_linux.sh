@@ -149,7 +149,7 @@ unzip v2.5.0.zip
 cd openjpeg-2.5.0/
 mkdir build_man
 cd build_man/
-cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/   ..
+cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/ -DBUILD_CODEC=OFF   ..
 make install -j4
 cd ../../
 
@@ -158,6 +158,6 @@ unzip DCMTK-3.6.7.zip
 cd dcmtk-DCMTK-3.6.7/
 mkdir build_man
 cd build_man/
-cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON  ..
+cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF  ..
 make install -j4
 cd ../../
