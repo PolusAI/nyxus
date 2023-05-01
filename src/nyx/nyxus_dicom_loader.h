@@ -9,7 +9,9 @@
 #include "dcmtk/dcmseg/segdoc.h"
 #include "dcmtk/dcmseg/segment.h"
 #include "dcmtk/dcmseg/segutils.h"
-
+#ifdef JPEG2K_SUPPORT
+#include "fmjpeg2k/djdecode.h"
+#endif
 template<class DataType>
 class NyxusGrayscaleDicomLoader : public AbstractTileLoader<DataType> 
 {
@@ -29,7 +31,10 @@ public:
         DJLSDecoderRegistration::registerCodecs();
         // register RLE decoder
         DcmRLEDecoderRegistration::registerCodecs();
-        
+#ifdef JPEG2K_SUPPORT
+        // JPEG2K decoder
+        FMJPEG2KDecoderRegistration::registerCodecs();
+#endif
         dcm_ff_ = DcmFileFormat();
         auto file_ok = dcm_ff_.loadFile(filePath.c_str()); 
         if (file_ok.good())
@@ -102,6 +107,9 @@ public:
         DJDecoderRegistration::cleanup();
         DJLSDecoderRegistration::cleanup();
         DcmRLEDecoderRegistration::cleanup();
+#ifdef JPEG2K_SUPPORT
+        FMJPEG2KDecoderRegistration::cleanup();
+#endif       
     }
 
     /// @brief Load a tiff tile from a view

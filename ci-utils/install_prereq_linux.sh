@@ -161,3 +161,13 @@ cd build_man/
 cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF  ..
 make install -j4
 cd ../../
+
+
+curl -L https://github.com/DraconPern/fmjpeg2koj/archive/refs/tags/v1.0.3.zip -o fmjpeg2koj.zip
+unzip fmjpeg2koj.zip
+cd fmjpeg2koj-1.0.3/
+mkdir build_man
+cd build_man/
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/  -DFMJPEG2K=../../$Z5_INSTALL_DIR/  ..
+make install -j4
+cd ../../

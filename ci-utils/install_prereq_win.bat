@@ -152,4 +152,18 @@ cmake --build . --config Release --target install --parallel 4
 popd
 popd
 
+SET ROOTTDIR="%cd%"
+curl -L https://github.com/DraconPern/fmjpeg2koj/archive/refs/tags/v1.0.3.zip -o fmjpeg2koj.zip
+tar -xvf fmjpeg2koj.zip
+pushd fmjpeg2koj-1.0.3
+mkdir build_man
+pushd build_man
+cmake -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_FLAGS_RELEASE="/MT /O2 /D NDEBUG" -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/  -DFMJPEG2K=%ROOTTDIR%\local_install\  ..
+cmake --build . --config Release --target install --parallel 4
+popd
+popd
+
+
+if errorlevel 1 exit 1
+
 if "%ON_GITHUB%"=="TRUE" xcopy /E /I /y local_install\bin %TEMP%\nyxus\bin

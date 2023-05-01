@@ -4,6 +4,7 @@ project(AxleNyxus)
 # this is a workaround for GitHub Action for wheelbuiling
 if(DEFINED ENV{NYXUS_DEP_DIR})
 	set(CMAKE_PREFIX_PATH $ENV{NYXUS_DEP_DIR})
+	link_directories($ENV{NYXUS_DEP_DIR}/lib)
 endif()
 
 find_package(CUDA)
@@ -219,13 +220,21 @@ else ()
 	message(STATUS "Unable to find threads. Nyxus must have a threading library i.e. pthreads.")
 endif ()
 
-
-
+#== Required for DICOM
 find_package(DCMTK)
 if(DCMTK_FOUND)
 	include_directories(${DCMTK_INCLUDE_DIRS})
 	add_definitions(-DDICOM_SUPPORT)
 	foreach(LIB ${DCMTK_LIBRARIES})
+		FIND_LIBRARY(FOUND_LIB_${LIB} ${LIB})
+		LIST(APPEND Nyxus_LIBRARIES ${FOUND_LIB_${LIB}})
+	endforeach(LIB)
+endif()
+
+find_package(fmjpeg2k)
+if(fmjpeg2k_FOUND)
+	add_definitions(-DJPEG2K_SUPPORT)
+	foreach(LIB ${FMJPEG2K_LIBRARIES})
 		FIND_LIBRARY(FOUND_LIB_${LIB} ${LIB})
 		LIST(APPEND Nyxus_LIBRARIES ${FOUND_LIB_${LIB}})
 	endforeach(LIB)
