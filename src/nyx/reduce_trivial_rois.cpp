@@ -30,6 +30,7 @@
 #include "features/glszm.h"
 #include "features/gldm.h"
 #include "features/hexagonality_polygonality.h"
+#include "features/ngldm.h"
 #include "features/ngtdm.h"
 #include "features/image_moments.h"
 #include "features/intensity.h"
@@ -210,6 +211,13 @@ namespace Nyxus
 		{
 			STOPWATCH("Texture/GLDM/D/#bbbbbb", "\t=");
 			runParallel(GLDMFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+		}
+
+		//==== NGLDM
+		if (NGLDMfeature::required(theFeatureSet))
+		{
+			STOPWATCH("Texture/NGLDM/NG/#bbbbbb", "\t=");
+			runParallel(NGLDMfeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
 		//==== NGTDM

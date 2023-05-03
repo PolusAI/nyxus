@@ -18,6 +18,7 @@
 #include "features/glszm.h"
 #include "features/gldm.h"
 #include "features/hexagonality_polygonality.h"
+#include "features/ngldm.h"
 #include "features/ngtdm.h"
 #include "features/image_moments.h"
 #include "features/intensity.h"
@@ -52,6 +53,7 @@ FeatureManager::FeatureManager()
 	register_feature (new GLDZMFeature());
 	register_feature (new GLSZMFeature());
 	register_feature (new GLDMFeature());
+	register_feature (new NGLDMfeature());
 	register_feature (new NGTDMFeature());
 	register_feature (new ImageMomentsFeature());
 	register_feature (new GaborFeature());
