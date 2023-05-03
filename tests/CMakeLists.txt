@@ -73,6 +73,7 @@ set(TEST_SRC
 	../src/nyx/features/image_moments_nontriv.cpp
 	../src/nyx/features/intensity.cpp
 	../src/nyx/features/neighbors.cpp
+	../src/nyx/features/ngldm.cpp
 	../src/nyx/features/ngtdm.cpp
 	../src/nyx/features/pixel.cpp
 	../src/nyx/features/radial_distribution.cpp
