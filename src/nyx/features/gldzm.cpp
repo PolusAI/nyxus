@@ -404,7 +404,7 @@ void GLDZMFeature::osized_calculate (LR& r, ImageLoader&)
 	// -- Create an image matrix for this ROI for
 	//		(1) making a binned (coarser) pixel intensity image and 
 	//		(2) zone finding alsorithm's ability to leave marks in recognized zones
-	WriteImageMatrix_nontriv D("GLDZMFeature-osized_calculate-M", r.label);
+	WriteImageMatrix_nontriv D("GLDZMFeature-osized_calculate-D", r.label);
 	D.allocate_from_cloud(r.raw_pixels_NT, r.aabb, false);
 
 	// -- Squeeze pixels' intensity range for getting more prominent zones 
