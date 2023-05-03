@@ -42,7 +42,7 @@ inline py::array_t<typename Sequence::value_type> as_pyarray(Sequence &&seq)
 
 void initialize_environment(
     const std::vector<std::string> &features,
-    float neighbor_distance,
+    int neighbor_distance,
     float pixels_per_micron,
     uint32_t coarse_gray_depth, 
     uint32_t n_reduce_threads,
@@ -51,7 +51,7 @@ void initialize_environment(
     bool ibsi)
 {
     theEnvironment.recognizedFeatureNames = features;
-    theEnvironment.set_pixel_distance(static_cast<int>(neighbor_distance));
+    theEnvironment.set_pixel_distance(neighbor_distance);
     theEnvironment.set_verbosity_level (0);
     theEnvironment.xyRes = theEnvironment.pixelSizeUm = pixels_per_micron;
     theEnvironment.set_coarse_gray_depth(coarse_gray_depth);
@@ -83,7 +83,7 @@ void set_if_ibsi_imp(bool ibsi) {
 
 void set_environment_params_imp (
     const std::vector<std::string> &features = {},
-    float neighbor_distance = -1,
+    int neighbor_distance = -1,
     float pixels_per_micron = -1,
     uint32_t coarse_gray_depth = 0, 
     uint32_t n_reduce_threads = 0,
@@ -477,7 +477,7 @@ PYBIND11_MODULE(backend, m)
 //
 void initialize_environment(
     const std::vector<std::string>& features,
-    float neighbor_distance,
+    int neighbor_distance,
     float pixels_per_micron,
     uint32_t coarse_gray_depth,
     uint32_t n_reduce_threads,

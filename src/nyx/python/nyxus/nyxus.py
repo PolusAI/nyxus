@@ -41,7 +41,7 @@ class Nyxus:
             *ALL_BUT_GABOR*
             *ALL_BUT_GLCM*
         Both individual features and feature groups are case sensitive.
-    neighbor_distance: float (optional, default 5.0)
+    neighbor_distance: int (optional, default 5)
         Any two objects separated by a Euclidean distance (pixel units) greater than this
         value will not be be considered neighbors. This cutoff is used by all features which
         rely on neighbor identification.
@@ -81,7 +81,7 @@ class Nyxus:
     def __init__(
         self,
         features: List[str],
-        neighbor_distance: float = 5.0,
+        neighbor_distance: int = 5,
         pixels_per_micron: float = 1.0,
         coarse_gray_depth: int = 256, 
         n_feature_calc_threads: int = 4,
@@ -446,11 +446,11 @@ class Nyxus:
         """Sets parameters of the environment for Nyxus
         
         Keyword args:
-        *neighbor_distance: float (
+        *neighbor_distance: int 
             Any two objects separated by a Euclidean distance (pixel units) greater than this
             value will not be be considered neighbors. This cutoff is used by all features which
             rely on neighbor identification.
-        * pixels_per_micron: float(optional, default 1.0)
+        * pixels_per_micron: float
             Specify the image resolution in terms of pixels per micron for unit conversion
             of non-unitless features.
         * coarse_gray_depth: int 
