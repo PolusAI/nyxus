@@ -557,14 +557,18 @@ class Nyxus:
         if (len(environment_params) > 0):
             self.set_environment_params(**environment_params)
     
-    def get_params(self):
+    def get_params(self, *args):
         """Returns the parameters of a Nyxus object
+        
+        Parameters
+        ----------
 
         Returns:
             dict: A dictionary mapping the parameter name to the value
         """
+        vars = list(args)
         
-        return get_params_imp()
+        return get_params_imp(vars)
         
         
 
@@ -577,7 +581,7 @@ class Nested:
     and the second is the function, e.g. aggregate=[('nanmean', lambda x: np.nanmean(x))]. 
     
     Parameters
-        ----------
+    ----------
         aggregate : list
             List of aggregate functions. Any aggregate function from Pandas can be used
             along with lambda functions.

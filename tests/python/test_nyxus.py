@@ -93,7 +93,27 @@ class TestNyxus():
                     assert params[key] == pytest.approx(result[key])
                 else:
                     assert params[key] == pytest.approx(result[key])                
-        
+
+        def test_get_params(self):
+            
+            nyx = nyxus.Nyxus (["*ALL*"])
+            assert nyx is not None
+            
+            params = nyx.get_params('coarse_gray_depth', 'features', 'gabor_f0')
+            
+            result = {'coarse_gray_depth': 256, 
+                      'features': ['*ALL*'], 
+                      'gabor_f0': 0.1}
+            
+            assert len(params) == 3
+            
+            for key in params:
+                
+                if (isinstance(params[key], float)):
+                    assert params[key] == pytest.approx(result[key])
+                else:
+                    assert params[key] == pytest.approx(result[key])
+
         def test_set_params(self):
             
             nyx = nyxus.Nyxus (["*ALL*"])

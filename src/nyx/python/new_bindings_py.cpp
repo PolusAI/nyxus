@@ -16,6 +16,8 @@
 namespace py = pybind11;
 using namespace Nyxus;
 
+using ParameterTypes = std::variant<int, float, double, unsigned int, std::vector<double>, std::vector<std::string>>;
+
 // Defined in nested.cpp
 bool mine_segment_relations (
 	bool output2python, 
@@ -100,9 +102,7 @@ void set_environment_params_imp (
         theEnvironment.xyRes = theEnvironment.pixelSizeUm = pixels_per_micron;
     }
 
-    std::cout << "before" << std::endl;
     if (coarse_gray_depth != 0) {
-        std::cout << "seeting coarse  depth" << std::endl;
         theEnvironment.set_coarse_gray_depth(coarse_gray_depth);
     }
 
@@ -404,8 +404,8 @@ void customize_gabor_feature_imp(
 }
 
 
-std::map<std::string, std::variant<int, float, double, unsigned int, std::vector<double>, std::vector<std::string>>> get_params_imp() {
-    std::map<std::string, std::variant<int, float, double, unsigned int, std::vector<double>, std::vector<std::string>>> params;
+std::map<std::string, ParameterTypes> get_params_imp(const std::vector<std::string>& vars ) {
+    std::map<std::string, ParameterTypes> params;
 
 
     params["features"] = theEnvironment.recognizedFeatureNames;
@@ -424,7 +424,21 @@ std::map<std::string, std::variant<int, float, double, unsigned int, std::vector
     params["gabor_thold"] = GaborFeature::GRAYthr;
     params["gabor_freqs"] = GaborFeature::f0;
 
-    return params;
+    if (vars.size() == 0) 
+        return params;
+
+    std::map<std::string, ParameterTypes> params_subset;
+
+    for (const auto& var: vars) {
+
+        auto it = params.find(var);
+
+        if (it != params.end()) {
+            params_subset.insert(*it);
+        }
+    }
+
+    return params_subset;
 
 }
 
