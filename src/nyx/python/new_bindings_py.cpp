@@ -95,7 +95,7 @@ void set_environment_params_imp (
     }
      
     if (neighbor_distance > -1) {
-        theEnvironment.set_pixel_distance(static_cast<int>(neighbor_distance));
+        theEnvironment.set_pixel_distance(neighbor_distance);
     }
 
     if (pixels_per_micron > -1) {
