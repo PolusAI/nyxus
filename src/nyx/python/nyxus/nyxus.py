@@ -558,10 +558,30 @@ class Nyxus:
             self.set_environment_params(**environment_params)
     
     def get_params(self, *args):
-        """Returns the parameters of a Nyxus object
+        """Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
+        
+        Valid parameters are:
+        
+        * features: List[str],
+        * neighbor_distance
+        * pixels_per_micron
+        * coarse_gray_depth
+        * n_feature_calc_threads
+        * n_loader_threads
+        * using_gpu
+        * ibsi: bool
+    
+        * gabor_kersize (int): size of filter kernel's side. Example: set_params(gabor_kersize=16)
+        * gabor_gamma (float): aspect ratio of the Gaussian factor. Example: set_params(gabor_gamma=0.1)
+        * gabor_sig2lam (float): spatial frequency bandwidth. Example: set_params(gabor_sig2lam=0.8)
+        * gabor_f0 (float): frequency of the baseline lowpass filter as denominator of `\pi`. Example: set_params(gabor_f0=0.1)
+        * gabor_theta (float): orientation of the Gaussian in degrees 0-180. Example: set_params(gabor_theta=1.5708)
+        * gabor_thold (float): lower threshold of the filtered image to baseline ratio. Example: set_params(gabor_thold=0.025)
+        * gabor_freqs (str): comma-separated denominators of `\pi` as frequencies of Gabor filter's harmonic factor. Example: set_params(gabor_freqs="1,2,4,8,16,32,64")
         
         Parameters
         ----------
+            args: Strings containing parameter names to get the value of. (Optional)
 
         Returns:
             dict: A dictionary mapping the parameter name to the value
