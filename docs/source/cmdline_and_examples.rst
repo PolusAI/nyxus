@@ -339,6 +339,77 @@ The `features` variable will now use the custom names, as shown below
    ...    ...             ...            ...     ...      ...      ...    ...      
    14  custom_seg_name2   Intensity2         6    54573.3    54573.3  ...  0.980769
 
+All parameters to configure Nyxus are available to set within the constructor. These parameters can also be updated after the object is created using the `set_params`
+method. This method takes in keyword arguments where the key is a valid parameter in Nyxus and the value is the updated value for the paramter. For example, 
+to update the `coarse_gray_depth` to 256 and the `gabor_f0` parameter to 0.1, the following can be done:
+
+.. code-block:: python
+
+   from nyxus import Nyxus
+   nyx = Nyxus(["*ALL*"])
+   intensityDir = "/path/to/images/intensities/"
+   maskDir = "/path/to/images/labels/"
+   features = nyx.featurize_directory (intensityDir, maskDir)
+
+   nyx.set_params(coarse_gray_depth=256, gabor_f0=0.1)
+
+
+A list of valid parameters is included in the documentation for this method.
+
+To get the values of the parameters in Nyxus, the `get_params` method is used. If no arguments are passed to this function, then a dictionary mapping all of the variable names to the respective value is returned. For example,
+
+.. code-block:: python
+
+   from nyxus import Nyxus
+   nyx = Nyxus(["*ALL*"])
+   intensityDir = "/path/to/images/intensities/"
+   maskDir = "/path/to/images/labels/"
+   features = nyx.featurize_directory (intensityDir, maskDir)
+
+   print(nyx.get_params())
+
+
+will print the dictionary
+
+.. code-block:: bash
+
+   {'coarse_gray_depth': 256, 
+   'features': ['*ALL*'], 
+   'gabor_f0': 0.1, 
+   'gabor_freqs': [1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0], 
+   'gabor_gamma': 0.1, 
+   'gabor_kersize': 16, 
+   'gabor_sig2lam': 0.8, 
+   'gabor_theta': 45.0, 
+   'gabor_thold': 0.025, 
+   'ibsi': 0, 
+   'n_loader_threads': 1, 
+   'n_feature_calc_threads': 4, 
+   'neighbor_distance': 5, 
+   'pixels_per_micron': 1.0}
+
+There is also the option to pass arguments to this function to only receive a subset of parameter values. The arguments should be 
+valid parameter names as string, separated by commas. For example,
+
+.. code-block:: python
+
+   from nyxus import Nyxus
+   nyx = Nyxus(["*ALL*"])
+   intensityDir = "/path/to/images/intensities/"
+   maskDir = "/path/to/images/labels/"
+   features = nyx.featurize_directory (intensityDir, maskDir)
+
+   print(nyx.get_params('coarse_gray_depth', 'features', 'gabor_f0'))
+
+will print the dictionary
+
+.. code-block:: bash
+
+   {'coarse_gray_depth': 256, 
+   'features': ['*ALL*'], 
+   'gabor_f0': 0.1}
+
+
 8. Nested Features Examples
 -----------------------------------------------------------------------------
 

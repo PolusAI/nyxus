@@ -58,6 +58,8 @@ public:
     // Threshold of the filtered at frequency f0[i] to baseline image ratio
     static double GRAYthr;  
 
+    static double get_theta_in_degrees();
+
 private:
 
     // Result cache
