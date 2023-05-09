@@ -162,12 +162,12 @@ cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../
 make install -j4
 cd ../../
 
-
+ROOTDIR=$(pwd)
 curl -L https://github.com/sameeul/fmjpeg2koj/archive/refs/heads/fix_cmake.zip -o fmjpeg2koj.zip
 unzip fmjpeg2koj.zip
 cd fmjpeg2koj-fix_cmake/
 mkdir build_man
 cd build_man/
-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/  -DFMJPEG2K=../../$Z5_INSTALL_DIR/  ..
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/  -DFMJPEG2K=$ROOTDIR/$Z5_INSTALL_DIR/  ..
 make install -j4
 cd ../../
