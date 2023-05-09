@@ -255,6 +255,26 @@ namespace Nyxus
 		GLDM_LDLGLE,	// Large Dependence Low Gray Level Emphasis (LDLGLE)
 		GLDM_LDHGLE,	// Large Dependence High Gray Level Emphasis (LDHGLE)
 
+		// NGLDM:
+		NGLDM_LDE,	// Low Dependence Emphasis
+		NGLDM_HDE,	// High Dependence Emphasis
+		NGLDM_LGLCE,	// Low Grey Level Count Emphasis
+		NGLDM_HGLCE,	// High Grey Level Count Emphasis
+		NGLDM_LDLGLE,	// Low Dependence Low Grey Level Emphasis
+		NGLDM_LDHGLE,	// Low Dependence High Grey Level Emphasis
+		NGLDM_HDLGLE,	// High Dependence Low Grey Level Emphasis
+		NGLDM_HDHGLE,	// High Dependence High Grey Level Emphasis
+		NGLDM_GLNU,	// Grey Level Non-Uniformity
+		NGLDM_GLNUN,	// Grey Level Non-Uniformity Normalised
+		NGLDM_DCNU,	// Dependence Count Non-Uniformity
+		NGLDM_DCNUN,	// Dependence Count Non-Uniformity Normalised
+		NGLDM_GLM,	// Grey Level Mean
+		NGLDM_GLV,	// Grey Level Variance
+		NGLDM_DCM,	// Dependence Count Mean
+		NGLDM_DCV,	// Dependence Count Variance
+		NGLDM_DCE,	// Dependence Count Entropy
+		NGLDM_DCENE,	// Dependence Count Energy
+
 		// NGTDM:
 		NGTDM_COARSENESS,
 		NGTDM_CONTRAST,
