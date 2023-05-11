@@ -32,22 +32,36 @@ public:
 	static bool required(const FeatureSet& fs) 
 	{
 		return fs.anyEnabled( {
-				GLCM_ANGULAR2NDMOMENT,
-				GLCM_CONTRAST,
-				GLCM_CORRELATION,
-				GLCM_DIFFERENCEAVERAGE,	
-				GLCM_DIFFERENCEVARIANCE,
-				GLCM_DIFFERENCEENTROPY,
-				GLCM_ENERGY, 
-				GLCM_ENTROPY,
-				GLCM_HOMOGENEITY,	
-				GLCM_INFOMEAS1,
-				GLCM_INFOMEAS2,
-				GLCM_INVERSEDIFFERENCEMOMENT,
-				GLCM_SUMAVERAGE,
-				GLCM_SUMVARIANCE,
-				GLCM_SUMENTROPY,
-				GLCM_VARIANCE
+			GLCM_ANGULAR2NDMOMENT,
+			GLCM_ACOR,
+			GLCM_CLUPROM,
+			GLCM_CLUSHADE,
+			GLCM_CLUTEND,
+			GLCM_CONTRAST,
+			GLCM_CORRELATION,
+			GLCM_DIFFERENCEAVERAGE,
+			GLCM_DIFFERENCEENTROPY,
+			GLCM_DIFFERENCEVARIANCE,
+			GLCM_DIS,
+			GLCM_ENERGY,
+			GLCM_ENTROPY,
+			GLCM_HOMOGENEITY,
+			GLCM_HOM2,
+			GLCM_IDMN,
+			GLCM_ID,
+			GLCM_IDN,
+			GLCM_INFOMEAS1,
+			GLCM_INFOMEAS2,
+			GLCM_INVERSEDIFFERENCEMOMENT,
+			GLCM_IV,
+			GLCM_JAVE,
+			GLCM_JE,
+			GLCM_JMAX,
+			GLCM_JVAR,
+			GLCM_SUMAVERAGE,
+			GLCM_SUMENTROPY,
+			GLCM_SUMVARIANCE,
+			GLCM_VARIANCE
 			});
 	}
 
@@ -101,7 +115,7 @@ private:
 
 	double f_asm (const SimpleMatrix<double>& P_matrix, int tone_count);	
 	double f_contrast (const SimpleMatrix<double>& P_matix, int tone_count);	
-	double f_corr (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
+	double f_corr (const SimpleMatrix<double>& P, int Ng, std::vector<double>& px, double& meanx);
 	double f_var (const SimpleMatrix<double>& P_matrix, int tone_count);
 	double f_idm (const SimpleMatrix<double>& P_matrix, int tone_count);
 	double f_savg (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
@@ -110,26 +124,53 @@ private:
 	double f_entropy (const SimpleMatrix<double>& P_matrix, int tone_count);	
 	double f_dvar (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
 	double f_dentropy (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
+	double f_GLCM_ACOR (const SimpleMatrix<double>& P_matrix, int tone_count);
+	double f_GLCM_CLUPROM (const SimpleMatrix<double>& P_matrix, int tone_count, double mean_x, double mean_y);
+	double f_GLCM_CLUSHADE (const SimpleMatrix<double>& P_matrix, int tone_count, double mean_x, double mean_y);
+	double f_GLCM_CLUTEND (const SimpleMatrix<double>& P_matrix, int tone_count, double mean_x, double mean_y);
+	double f_GLCM_DIS (const SimpleMatrix<double>& P_matrix, int tone_count);
+	double f_GLCM_HOM2 (const SimpleMatrix<double>& P_matrix, int tone_count);
+	double f_GLCM_IDMN (const SimpleMatrix<double>& P_matrix, int tone_count);
+	double f_GLCM_ID (const SimpleMatrix<double>& P_matrix, int tone_count);
+	double f_GLCM_IDN (const SimpleMatrix<double>& P_matrix, int tone_count);
+	double f_GLCM_IV (const SimpleMatrix<double>& P_matrix, int tone_count);
+	double f_GLCM_JAVE (const SimpleMatrix<double>& P_matrix, int tone_count, double mean_x);
+	double f_GLCM_JE (const SimpleMatrix<double>& P_matrix, int tone_count);
+	double f_GLCM_JMAX (const SimpleMatrix<double>& P_matrix, int tone_count);
+	double f_GLCM_JVAR (const SimpleMatrix<double>& P_matrix, int tone_count, double mean_x);
 
 	void copyfvals(AngledFeatures& dst, const AngledFeatures& src);
 
 	std::vector<double> fvals_ASM,
+		fvals_acor,
+		fvals_cluprom,
+		fvals_clushade,
+		fvals_clutend,
 		fvals_contrast,
 		fvals_correlation,
-		fvals_energy,
-		fvals_homo,
-		fvals_variance,
-		fvals_IDM,
-		fvals_sum_avg,
-		fvals_sum_var,
-		fvals_sum_entropy,
-		fvals_entropy,
 		fvals_diff_avg,
 		fvals_diff_var,
 		fvals_diff_entropy,
+		fvals_dis,
+		fvals_energy,
+		fvals_entropy,
+		fvals_homo,
+		fvals_hom2,
+		fvals_id,
+		fvals_idn,
+		fvals_IDM,
+		fvals_idmn,
 		fvals_meas_corr1,
 		fvals_meas_corr2,
-		fvals_max_corr_coef;
+		fvals_iv,
+		fvals_jave,
+		fvals_je,
+		fvals_jmax,
+		fvals_jvar,
+		fvals_sum_avg,
+		fvals_sum_var,
+		fvals_sum_entropy,
+		fvals_variance;
 
 	void clear_result_buffers();
 
