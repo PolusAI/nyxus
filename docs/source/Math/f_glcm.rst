@@ -76,10 +76,20 @@ Correlation
 
 GLCM_CORRELATION :math:`= \frac{\sum^{N_g}_{i=1}\sum^{N_g}_{j=1}{p_{ij}ij-\mu_x\mu_y}}{\sigma_x(i)\sigma_y(j)}`
 
+Dissimilarity
+-------------
+
+GLCM_DIS :math:`= \sum_{i=1}^{N_g} \sum_{j=1}^{N_g} |i-j|\, p_{ij}`
+
 Variance
 --------
 
 GLCM_VARIANCE :math:`= \sum^{N_g}_{i=1}\sum^{N_g}_{j=1}{(i-\mu_x)^2p_{ij}}`
+
+Inverse Difference
+------------------
+
+:math:GLCM_ID =\sum_{i=1}^{N_g} \sum_{j=1}^{N_g} \frac{p_{ij}}{1+|i-j|}
 
 Inverse difference moment
 -------------------------
@@ -107,6 +117,10 @@ Entropy
 
 GLCM_ENTROPY :math:`= -n \sum^{N_g}_{i=1}\sum^{N_g}_{j=1} {p_{ij}\log_2\big(p_{ij}+\epsilon\big)}`
 
+Difference Average
+------------------
+
+GLCM_DIFFERENCEAVERAGE :math:`=\sum_{k=0}^{N_g-1} k\, p_{i-j,k}`
 
 Difference variance
 -------------------
@@ -126,10 +140,33 @@ Informational Measure of Correlation 1
 
 GLCM_INFOMEAS1 :math:`= \frac{HXY-HXY1}{\max{HX,HY}}`
 
+
 Informational Measure of Correlation 2
 --------------------------------------
 
 GLCM_INFOMEAS2 :math:`= \sqrt{1-e^{-2(HXY2-HXY)}}`
+
+Joint Average
+-------------
+
+GLCM_JAVE :math:`=\sum_{i=1}^{N_g} \sum_{j=1}^{N_g} i\, p_{ij}`
+
+Joint Entropy
+-------------
+
+GLCM_JE :math:`=-\sum_{i=1}^{N_g} \sum_{j=1}^{N_g} p_{ij} \log_2 p_{ij}`
+
+Joint Maximum
+-------------
+
+GLCM_JMAX :math:`=\text{max}(p_{ij})`
+
+Joint Variance
+--------------
+
+GLCM_JVAR .. math::`= \sum_{i=1}^{N_g} \sum_{j=1}^{N_g} \left(i-\mu\right)^2 p_{ij}`
+
+
 
 References
 ----------
