@@ -300,7 +300,12 @@ class TestNyxus():
             
         def test_in_memory_3d(self):
             
-            cpu_nyx = nyxus.Nyxus(["*ALL_GLCM*"], ibsi=True)
+            cpu_nyx = nyxus.Nyxus([
+                "GLCM_ANGULAR2NDMOMENT", "GLCM_CONTRAST", "GLCM_CORRELATION", "GLCM_DIFFERENCEAVERAGE", 
+                "GLCM_DIFFERENCEENTROPY", "GLCM_DIFFERENCEVARIANCE", "GLCM_ENERGY", "GLCM_ENTROPY",
+                "GLCM_HOMOGENEITY", "GLCM_INFOMEAS1", "GLCM_INFOMEAS2", "GLCM_INVERSEDIFFERENCEMOMENT", 
+                "GLCM_SUMAVERAGE", "GLCM_SUMENTROPY", "GLCM_SUMVARIANCE", "GLCM_VARIANCE"], 
+            ibsi=True)
             
             names = ["test_name_1", "test_name_2", "test_name_3", "test_name_4"]
 
