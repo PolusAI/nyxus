@@ -9,27 +9,27 @@ std::vector<int> GLCMFeature::angles = { 0, 45, 90, 135 };
 GLCMFeature::GLCMFeature() : FeatureMethod("GLCMFeature")
 {
 	provide_features ({
-		GLCM_ANGULAR2NDMOMENT,
+		GLCM_ASM,		// Angular second moment
 		GLCM_ACOR,		// Autocorrelation, IBSI # QWB0
 		GLCM_CLUPROM,	// Cluster prominence, IBSI # AE86
 		GLCM_CLUSHADE,	// Cluster shade, IBSI # 7NFM
 		GLCM_CLUTEND,	// Cluster tendency, IBSI # DG8W
 		GLCM_CONTRAST,	// Contrast, IBSI # ACUI
 		GLCM_CORRELATION,	// Correlation, IBSI # NI2N
-		GLCM_DIFFERENCEAVERAGE,	// Difference average, IBSI # TF7R
-		GLCM_DIFFERENCEENTROPY,	// Difference entropy, IBSI # NTRS
-		GLCM_DIFFERENCEVARIANCE,	// Difference variance, IBSI # D3YU
+		GLCM_DIFAVE,	// Difference average, IBSI # TF7R
+		GLCM_DIFENTRO,	// Difference entropy, IBSI # NTRS
+		GLCM_DIFVAR,	// Difference variance, IBSI # D3YU
 		GLCM_DIS,		// Dissimilarity, IBSI # 8S9J
 		GLCM_ENERGY,	// Energy
 		GLCM_ENTROPY,	// Entropy
-		GLCM_HOMOGENEITY,	// Homogeneity-1 (PyR)
+		GLCM_HOM1,	// Homogeneity-1 (PyR)
 		GLCM_HOM2,	// Homogeneity-2 (PyR)
+		GLCM_IDM,	// Inv diff mom, IBSI # WF0Z
 		GLCM_IDMN,	// Inv diff mom normalized, IBSI # 1QCO
 		GLCM_ID,	// Inv diff, IBSI # IB1Z
 		GLCM_IDN,	// Inv diff normalized, IBSI # NDRX
 		GLCM_INFOMEAS1,	// Information measure of correlation 1, IBSI # R8DG
 		GLCM_INFOMEAS2,	// Information measure of correlation 2, IBSI # JN9H
-		GLCM_INVERSEDIFFERENCEMOMENT,	// Inv diff mom, IBSI # WF0Z
 		GLCM_IV,	// Inv variance, IBSI # E8JP
 		GLCM_JAVE,	// Joint average, IBSI # 60VM
 		GLCM_JE,	// Joint entropy, IBSI # TU9B
@@ -95,24 +95,24 @@ void GLCMFeature::copyfvals (AngledFeatures& dst, const AngledFeatures& src)
 
 void GLCMFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	copyfvals (fvals[GLCM_ANGULAR2NDMOMENT], fvals_ASM);
+	copyfvals (fvals[GLCM_ASM], fvals_ASM);
 	copyfvals (fvals[GLCM_ACOR], fvals_acor);
 	copyfvals (fvals[GLCM_CLUPROM], fvals_cluprom);
 	copyfvals (fvals[GLCM_CLUSHADE], fvals_clushade);
 	copyfvals (fvals[GLCM_CLUTEND], fvals_clutend);
 	copyfvals (fvals[GLCM_CONTRAST], fvals_contrast);
 	copyfvals (fvals[GLCM_CORRELATION], fvals_correlation);
-	copyfvals (fvals[GLCM_DIFFERENCEAVERAGE], fvals_diff_avg);
-	copyfvals (fvals[GLCM_DIFFERENCEVARIANCE], fvals_diff_var);
-	copyfvals (fvals[GLCM_DIFFERENCEENTROPY], fvals_diff_entropy);
+	copyfvals (fvals[GLCM_DIFAVE], fvals_diff_avg);
+	copyfvals (fvals[GLCM_DIFVAR], fvals_diff_var);
+	copyfvals (fvals[GLCM_DIFENTRO], fvals_diff_entropy);
 	copyfvals (fvals[GLCM_DIS], fvals_dis);
 	copyfvals (fvals[GLCM_ENERGY], fvals_energy);
 	copyfvals (fvals[GLCM_ENTROPY], fvals_entropy);
-	copyfvals (fvals[GLCM_HOMOGENEITY], fvals_homo);
+	copyfvals (fvals[GLCM_HOM1], fvals_homo);
 	copyfvals (fvals[GLCM_HOM2], fvals_hom2);
 	copyfvals (fvals[GLCM_ID], fvals_id);
 	copyfvals (fvals[GLCM_IDN], fvals_idn);
-	copyfvals (fvals[GLCM_INVERSEDIFFERENCEMOMENT], fvals_IDM);
+	copyfvals (fvals[GLCM_IDM], fvals_IDM);
 	copyfvals (fvals[GLCM_IDMN], fvals_idmn);
 	copyfvals (fvals[GLCM_INFOMEAS1], fvals_meas_corr1);
 	copyfvals (fvals[GLCM_INFOMEAS2], fvals_meas_corr2);
@@ -141,27 +141,27 @@ void GLCMFeature::parallel_process_1_batch(size_t start, size_t end, std::vector
 		{
 			// Zero out each angled feature value 
 			auto n = angles.size();
-			r.fvals[GLCM_ANGULAR2NDMOMENT].assign(n, 0);
+			r.fvals[GLCM_ASM].assign(n, 0);
 			r.fvals[GLCM_ACOR].assign(n, 0);
 			r.fvals[GLCM_CLUPROM].assign(n, 0);
 			r.fvals[GLCM_CLUSHADE].assign(n, 0);
 			r.fvals[GLCM_CLUTEND].assign(n, 0);
 			r.fvals[GLCM_CONTRAST].assign(n, 0);
 			r.fvals[GLCM_CORRELATION].assign(n, 0);
-			r.fvals[GLCM_DIFFERENCEAVERAGE].assign(n, 0);
-			r.fvals[GLCM_DIFFERENCEENTROPY].assign(n, 0);
-			r.fvals[GLCM_DIFFERENCEVARIANCE].assign(n, 0);
+			r.fvals[GLCM_DIFAVE].assign(n, 0);
+			r.fvals[GLCM_DIFENTRO].assign(n, 0);
+			r.fvals[GLCM_DIFVAR].assign(n, 0);
 			r.fvals[GLCM_DIS].assign(n, 0);
 			r.fvals[GLCM_ENERGY].assign(n, 0);
 			r.fvals[GLCM_ENTROPY].assign(n, 0);
-			r.fvals[GLCM_HOMOGENEITY].assign(n, 0);
+			r.fvals[GLCM_HOM1].assign(n, 0);
 			r.fvals[GLCM_HOM2].assign(n, 0);
 			r.fvals[GLCM_IDMN].assign(n, 0);
 			r.fvals[GLCM_ID].assign(n, 0);
 			r.fvals[GLCM_IDN].assign(n, 0);
 			r.fvals[GLCM_INFOMEAS1].assign(n, 0);
 			r.fvals[GLCM_INFOMEAS2].assign(n, 0);
-			r.fvals[GLCM_INVERSEDIFFERENCEMOMENT].assign(n, 0);
+			r.fvals[GLCM_IDM].assign(n, 0);
 			r.fvals[GLCM_IV].assign(n, 0);
 			r.fvals[GLCM_JAVE].assign(n, 0);
 			r.fvals[GLCM_JE].assign(n, 0);
@@ -266,7 +266,7 @@ void GLCMFeature::Extract_Texture_Features2 (int angle, const ImageMatrix & gray
 
 	// Compute Haralick statistics 
 	double f;
-	f = theFeatureSet.isEnabled (GLCM_ANGULAR2NDMOMENT) ? f_asm(P_matrix, n_levels) : 0.0;
+	f = theFeatureSet.isEnabled (GLCM_ASM) ? f_asm(P_matrix, n_levels) : 0.0;
 	fvals_ASM.push_back (f);
 
 	f = theFeatureSet.isEnabled(GLCM_CONTRAST) ? f_contrast(P_matrix, n_levels) : 0.0;
@@ -278,13 +278,13 @@ void GLCMFeature::Extract_Texture_Features2 (int angle, const ImageMatrix & gray
 	f = theFeatureSet.isEnabled(GLCM_ENERGY) ? f_energy (P_matrix, n_levels, Px) : 0.0;
 	fvals_energy.push_back (f);
 
-	f = theFeatureSet.isEnabled(GLCM_HOMOGENEITY) ? f_homogeneity (P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(GLCM_HOM1) ? f_homogeneity (P_matrix, n_levels, Px) : 0.0;
 	fvals_homo.push_back (f);
 
 	f = theFeatureSet.isEnabled(GLCM_VARIANCE) ? f_var (P_matrix, n_levels) : 0.0;
 	fvals_variance.push_back (f);
 
-	f = theFeatureSet.isEnabled(GLCM_INVERSEDIFFERENCEMOMENT) ? f_idm (P_matrix, n_levels) : 0.0;
+	f = theFeatureSet.isEnabled(GLCM_IDM) ? f_idm (P_matrix, n_levels) : 0.0;
 	fvals_IDM.push_back (f);
 
 	f = theFeatureSet.isEnabled(GLCM_SUMAVERAGE) ? f_savg (P_matrix, n_levels, Px) : 0.0;
@@ -299,13 +299,13 @@ void GLCMFeature::Extract_Texture_Features2 (int angle, const ImageMatrix & gray
 	f = theFeatureSet.isEnabled(GLCM_ENTROPY) ? f_entropy (P_matrix, n_levels) : 0.0;
 	fvals_entropy.push_back (f);
 
-	f = theFeatureSet.isEnabled(GLCM_DIFFERENCEVARIANCE) ? f_dvar (P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(GLCM_DIFVAR) ? f_dvar (P_matrix, n_levels, Px) : 0.0;
 	fvals_diff_var.push_back (f);
 
-	f = theFeatureSet.isEnabled(GLCM_DIFFERENCEENTROPY) ? f_dentropy (P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(GLCM_DIFENTRO) ? f_dentropy (P_matrix, n_levels, Px) : 0.0;
 	fvals_diff_entropy.push_back (f);
 
-	f = theFeatureSet.isEnabled (GLCM_DIFFERENCEAVERAGE) ? f_difference_avg (P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled (GLCM_DIFAVE) ? f_difference_avg (P_matrix, n_levels, Px) : 0.0;
 	fvals_diff_avg.push_back(f);
 
 	f = theFeatureSet.isEnabled(GLCM_INFOMEAS1) ? f_info_meas_corr1 (P_matrix, n_levels, Px, Py) : 0.0;

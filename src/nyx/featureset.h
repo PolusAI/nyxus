@@ -166,27 +166,27 @@ namespace Nyxus
 		ANG_BW_NEIGHBORS_MODE,
 
 		// GLCM:
-		GLCM_ANGULAR2NDMOMENT,
+		GLCM_ASM,		// Angular second moment, IBSI # 8ZQL
 		GLCM_ACOR,		// Autocorrelation, IBSI # QWB0
 		GLCM_CLUPROM,	// Cluster prominence, IBSI # AE86
 		GLCM_CLUSHADE,	// Cluster shade, IBSI # 7NFM
 		GLCM_CLUTEND,	// Cluster tendency, IBSI # DG8W
 		GLCM_CONTRAST,	// Contrast, IBSI # ACUI
-		GLCM_CORRELATION,	// Correlation, IBSI # NI2N
-		GLCM_DIFFERENCEAVERAGE,	// Difference average, IBSI # TF7R
-		GLCM_DIFFERENCEENTROPY,	// Difference entropy, IBSI # NTRS
-		GLCM_DIFFERENCEVARIANCE,	// Difference variance, IBSI # D3YU
+		GLCM_CORRELATION,		// Correlation, IBSI # NI2N
+		GLCM_DIFAVE,	// Difference average, IBSI # TF7R
+		GLCM_DIFENTRO,	// Difference entropy, IBSI # NTRS
+		GLCM_DIFVAR,	// Difference variance, IBSI # D3YU
 		GLCM_DIS,		// Dissimilarity, IBSI # 8S9J
 		GLCM_ENERGY,	// Energy
 		GLCM_ENTROPY,	// Entropy
-		GLCM_HOMOGENEITY,	// Homogeneity-1 (PyR)
+		GLCM_HOM1,	// Homogeneity-1 (PyR)
 		GLCM_HOM2,	// Homogeneity-2 (PyR)
-		GLCM_IDMN,	// Inv diff mom normalized, IBSI # 1QCO
 		GLCM_ID,	// Inv diff, IBSI # IB1Z
 		GLCM_IDN,	// Inv diff normalized, IBSI # NDRX
+		GLCM_IDM,	// Inv diff mom, IBSI # WF0Z
+		GLCM_IDMN,	// Inv diff mom normalized, IBSI # 1QCO
 		GLCM_INFOMEAS1,	// Information measure of correlation 1, IBSI # R8DG
 		GLCM_INFOMEAS2,	// Information measure of correlation 2, IBSI # JN9H
-		GLCM_INVERSEDIFFERENCEMOMENT,	// Inv diff mom, IBSI # WF0Z
 		GLCM_IV,	// Inv variance, IBSI # E8JP
 		GLCM_JAVE,	// Joint average, IBSI # 60VM
 		GLCM_JE,	// Joint entropy, IBSI # TU9B

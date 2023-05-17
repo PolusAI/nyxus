@@ -29,30 +29,30 @@ public:
 	double sum_p = 0; // sum of P matrix for normalization
 	static std::vector<int> angles;	// default value: {0,45,90,135} (the supreset)
 
-	static bool required(const FeatureSet& fs) 
+	static bool required (const FeatureSet& fs)
 	{
-		return fs.anyEnabled( {
-			GLCM_ANGULAR2NDMOMENT,
+		return fs.anyEnabled({
+			GLCM_ASM,
 			GLCM_ACOR,
 			GLCM_CLUPROM,
 			GLCM_CLUSHADE,
 			GLCM_CLUTEND,
 			GLCM_CONTRAST,
 			GLCM_CORRELATION,
-			GLCM_DIFFERENCEAVERAGE,
-			GLCM_DIFFERENCEENTROPY,
-			GLCM_DIFFERENCEVARIANCE,
+			GLCM_DIFAVE,
+			GLCM_DIFENTRO,
+			GLCM_DIFVAR,
 			GLCM_DIS,
 			GLCM_ENERGY,
 			GLCM_ENTROPY,
-			GLCM_HOMOGENEITY,
+			GLCM_HOM1,
 			GLCM_HOM2,
-			GLCM_IDMN,
 			GLCM_ID,
 			GLCM_IDN,
+			GLCM_IDM,
+			GLCM_IDMN,
 			GLCM_INFOMEAS1,
 			GLCM_INFOMEAS2,
-			GLCM_INVERSEDIFFERENCEMOMENT,
 			GLCM_IV,
 			GLCM_JAVE,
 			GLCM_JE,

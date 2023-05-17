@@ -81,7 +81,7 @@ void GLCMFeature::Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nont
 
 	// Compute Haralick statistics 
 	double f;
-	f = theFeatureSet.isEnabled(GLCM_ANGULAR2NDMOMENT) ? f_asm(P_matrix, n_levels) : 0.0;
+	f = theFeatureSet.isEnabled(GLCM_ASM) ? f_asm(P_matrix, n_levels) : 0.0;
 	fvals_ASM.push_back(f);
 
 	f = theFeatureSet.isEnabled(GLCM_CONTRAST) ? f_contrast(P_matrix, n_levels) : 0.0;
@@ -93,13 +93,13 @@ void GLCMFeature::Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nont
 	f = theFeatureSet.isEnabled(GLCM_ENERGY) ? f_energy(P_matrix, n_levels, Px) : 0.0;
 	fvals_energy.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_HOMOGENEITY) ? f_homogeneity(P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(GLCM_HOM1) ? f_homogeneity(P_matrix, n_levels, Px) : 0.0;
 	fvals_homo.push_back(f);
 
 	f = theFeatureSet.isEnabled(GLCM_VARIANCE) ? f_var(P_matrix, n_levels) : 0.0;
 	fvals_variance.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_INVERSEDIFFERENCEMOMENT) ? f_idm(P_matrix, n_levels) : 0.0;
+	f = theFeatureSet.isEnabled(GLCM_IDM) ? f_idm(P_matrix, n_levels) : 0.0;
 	fvals_IDM.push_back(f);
 
 	f = theFeatureSet.isEnabled(GLCM_SUMAVERAGE) ? f_savg(P_matrix, n_levels, Px) : 0.0;
@@ -114,13 +114,13 @@ void GLCMFeature::Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nont
 	f = theFeatureSet.isEnabled(GLCM_ENTROPY) ? f_entropy(P_matrix, n_levels) : 0.0;
 	fvals_entropy.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_DIFFERENCEVARIANCE) ? f_dvar(P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(GLCM_DIFVAR) ? f_dvar(P_matrix, n_levels, Px) : 0.0;
 	fvals_diff_var.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_DIFFERENCEENTROPY) ? f_dentropy(P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(GLCM_DIFENTRO) ? f_dentropy(P_matrix, n_levels, Px) : 0.0;
 	fvals_diff_entropy.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_DIFFERENCEAVERAGE) ? f_difference_avg(P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(GLCM_DIFAVE) ? f_difference_avg(P_matrix, n_levels, Px) : 0.0;
 	fvals_diff_avg.push_back(f);
 
 	f = theFeatureSet.isEnabled(GLCM_INFOMEAS1) ? f_info_meas_corr1(P_matrix, n_levels, Px, Py) : 0.0;
