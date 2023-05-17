@@ -64,7 +64,7 @@ then summed and normalised.
 The following features are then calculated based on the collocation matrix.
 
 .. math::
-	\underset{\mathrm{Nyxus \, code: \, GLCM\_ANGULAR2NDMOMENT}} {\textup{angular second moment}} =  \sum^{N_g}_{i=1}\sum^{N_g}_{j=1}{p_{i,j}^2}
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_ASM}} {\textup{angular second moment}} =  \sum^{N_g}_{i=1}\sum^{N_g}_{j=1}{p_{i,j}^2}
 
 .. math::
 	\underset{\mathrm{Nyxus \, code: \, GLCM\_ACOR}} {\textup{autocorrelation}} = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} p(i,j) i j
@@ -85,13 +85,13 @@ The following features are then calculated based on the collocation matrix.
 	\underset{\mathrm{Nyxus \, code: \, GLCM\_CORRELATION}} {\textup{correlation}} = \frac{\sum^{N_g}_{i=1}\sum^{N_g}_{j=1}{p_{ij}ij-\mu_x\mu_y}}{\sigma_x(i)\sigma_y(j)}
 
 .. math::
-	\underset{\mathrm{Nyxus \, code: \, GLCM\_DIFFERENCEAVERAGE}} {\textup{difference average}} =\sum_{k=0}^{N_g-1} k\, p_{i-j,k}
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_DIFAVE}} {\textup{difference average}} =\sum_{k=0}^{N_g-1} k\, p_{i-j,k}
 
 .. math::
-	\underset{\mathrm{Nyxus \, code: \, GLCM\_DIFFERENCEENTROPY}} {\textup{difference entropy}} = \sum^{N_g-1}_{k=0}{p_{x-y}(k)\log_2\big(p_{x-y}(k)+\epsilon\big)}
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_DIFENTRO}} {\textup{difference entropy}} = \sum^{N_g-1}_{k=0}{p_{x-y}(k)\log_2\big(p_{x-y}(k)+\epsilon\big)}
 
 .. math::
-	\underset{\mathrm{Nyxus \, code: \, GLCM\_DIFFERENCEVARIANCE}} {\textup{difference variance}} = \sum^{N_g-1}_{k=0}{(k-\mu_d)^2p_{x-y}(k)}
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_DIFVAR}} {\textup{difference variance}} = \sum^{N_g-1}_{k=0}{(k-\mu_d)^2p_{x-y}(k)}
 	
 where the difference average :math:`\mu_d` is 
 
@@ -105,13 +105,13 @@ where the difference average :math:`\mu_d` is
 	\underset{\mathrm{Nyxus \, code: \, GLCM\_JE}} {\textup{joint entropy}} = - \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} p(i,j) \log_2 ( p(i,j) + \epsilon )
 
 .. math::
-	\underset{\mathrm{Nyxus \, code: \, GLCM\_HOMOGENEITY1}} {\textup{homogeneity 1}} = \sum^{N_g}_{i=1}\displaystyle\sum^{N_g}_{j=1} \frac{p(i,j)}{1+|i-j|}
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_HOM1}} {\textup{homogeneity 1}} = \sum^{N_g}_{i=1}\displaystyle\sum^{N_g}_{j=1} \frac{p(i,j)}{1+|i-j|}
 
 .. math::
 	\underset{\mathrm{Nyxus \, code: \, GLCM\_HOM2}} {\textup{homogeneity 2}} = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1}{\frac{p(i,j)}{1+|i-j|^2}}
 
 .. math::
-	\underset{\mathrm{Nyxus \, code: \, GLCM\_INVERSEDIFFERENCEMOMENT}} {\textup{inverse difference moment}} = \sum^{N_g-1}_{k=0}{\frac{p_{x-y}(k)}{1+k^2}}
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_IDM}} {\textup{inverse difference moment}} = \sum^{N_g-1}_{k=0}{\frac{p_{x-y}(k)}{1+k^2}}
 
 .. math::
 	\underset{\mathrm{Nyxus \, code: \, GLCM\_IDMN}} {\textup{inverse difference moment normalized}} = \sum^{N_g-1}_{k=0} \frac {p_{x-y}(k)} {1+\frac{k^2}{N_g^2}}
