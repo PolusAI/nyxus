@@ -104,7 +104,7 @@ namespace Nyxus
 					if (theEnvironment.roi_is_blacklisted(shortSegFname, lab))
 					{
 						r.blacklisted = true;
-						std::cout << "Skipping blacklisted ROI " << lab << " for mask " << shortSegFname << "\n";
+						VERBOSLVL2(std::cout << "Skipping blacklisted ROI " << lab << " for mask " << shortSegFname << "\n");
 						continue;
 					}
 

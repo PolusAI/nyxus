@@ -76,35 +76,27 @@ or a pair of 3D arrays containing 2D intensity and mask images. There is also tw
 ```python 
 from nyxus import Nyxus
 import numpy as np
-
-
 nyx = Nyxus(["*ALL*"])
-
 intens = [
     [[1, 4, 4, 1, 1],
-        [1, 4, 6, 1, 1],
-        [4, 1, 6, 4, 1],
-        [4, 4, 6, 4, 1]],
-                   
+     [1, 4, 6, 1, 1],
+     [4, 1, 6, 4, 1],
+     [4, 4, 6, 4, 1]],
     [[1, 4, 4, 1, 1],
-    [1, 1, 6, 1, 1],
-    [1, 1, 3, 1, 1],
-    [4, 4, 6, 1, 1]]
+     [1, 1, 6, 1, 1],
+     [1, 1, 3, 1, 1],
+     [4, 4, 6, 1, 1]]
 ]
-
 seg = [
     [[1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1]],
-                
+     [1, 1, 1, 1, 1],
+     [1, 1, 1, 1, 1],
+     [1, 1, 1, 1, 1]],
     [[1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1],
-    [0, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1]]
+     [1, 1, 1, 1, 1],
+     [0, 1, 1, 1, 1],
+     [1, 1, 1, 1, 1]]
 ]
-
-
 features = nyx.featurize(intens, seg)
 ```
 
@@ -124,10 +116,8 @@ for these columns, the optional arguments `intensity_names` and `label_names` ar
 The length of the lists must be the same as the length of the mask and intensity arrays. To name the images, use
 
 ```python 
-
 intens_names = ['custom_intens_name1', 'custom_intens_name2']
 seg_names = ['custom_seg_name1', 'custom_seg_name2']
-
 features = nyx.featurize(intens, seg, intens_name, seg_name)
 ```
 
@@ -159,7 +149,6 @@ nyx = Nyxus(["*ALL*"])
 intensityDir = "/path/to/images/intensities/"
 maskDir = "/path/to/images/labels/"
 features = nyx.featurize_directory (intensityDir, maskDir)
-
 nyx.set_params(coarse_gray_depth=256, gabor_f0=0.1)
 ```
 
@@ -173,7 +162,6 @@ nyx = Nyxus(["*ALL*"])
 intensityDir = "/path/to/images/intensities/"
 maskDir = "/path/to/images/labels/"
 features = nyx.featurize_directory (intensityDir, maskDir)
-
 print(nyx.get_params())
 ```
 
@@ -205,15 +193,16 @@ nyx = Nyxus(["*ALL*"])
 intensityDir = "/path/to/images/intensities/"
 maskDir = "/path/to/images/labels/"
 features = nyx.featurize_directory (intensityDir, maskDir)
-
 print(nyx.get_params('coarse_gray_depth', 'features', 'gabor_f0'))
 ```
 will print the dictionary
 
-```bash
-{'coarse_gray_depth': 256, 
-'features': ['*ALL*'], 
-'gabor_f0': 0.1}
+```python
+{ 
+  'coarse_gray_depth': 256, 
+  'features': ['*ALL*'], 
+  'gabor_f0': 0.1 
+}
 ```
 
 ## Available features 
@@ -309,57 +298,108 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 
 ---
 
-### Example: Running Nyxus to process images of specific image channel
+## Examples
+
+<span style="color:blue">Example 1:</span> __Running Nyxus to process images of specific image channel__
 
 Suppose we need to process intensity/mask images of channel 1 :
-```
+```    
 ./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.*_c1\.ome\.tif --csvFile=singlecsv 
 ```
-### Example: Running Nyxus to process specific image 
+<span style="color:blue">Example 2:</span> __Running Nyxus to process specific image__
 
 Suppose we need to process intensity/mask file p1_y2_r68_c1.ome.tif :
 ```
 ./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=p1_y2_r68_c1\.ome\.tif --csvFile=singlecsv 
 ```
 
-### Example: Running Nyxus to extract only intensity and basic morphology features
+<span style="color:blue">Example 3:</span> __Running Nyxus to extract only intensity and basic morphology features__
 
 ```
 ./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.* --csvFile=singlecsv 
 ```
 
-### Example: Skipping specified ROIs while extracting features
+<span style="color:blue">Example 4:</span> __Skipping specified ROIs while extracting features__
 
-Suppose we need to blacklist ROI labels 15, 16, and 17 from feature extraction :
+Suppose we need to blacklist ROI labels 2 and 3 from the kurtosis feature extraction globally, in each image. The command line way to do that is using option __--skiproi__ :
+```shell 
+./nyxus --skiproi=2,3 --features=KURTOSIS --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.* --csvFile=singlecsv 
 ```
-./nyxus --skiproi=15,16,17 --features=*all* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.* --csvFile=singlecsv 
+
+As a result, the default feature extraction result produced without option --skiproi looking like
+
+<pre>
+          mask_image  intensity_image  label    KURTOSIS
+0    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      1   -0.134216
+1    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      2   -0.130024<b>
+2    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      3   -1.259801
+3    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      4   -0.934786</b>
+4    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      5   -1.072111
+..          ...             ...           ...      ...
+</pre>
+
+will start looking like 
+
+<pre>
+          mask_image  intensity_image  label    KURTOSIS
+0    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      1   -0.134216
+1    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      4   -0.934786
+2    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      5   -1.072111
+3    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      6   -0.347741
+4    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      7   -1.283468
+..          ...             ...           ...      ...
+</pre>
+
+
+Note the comma character separator <span style="background-color:lightgrey">&nbsp;&nbsp;<b>,</b>&nbsp;&nbsp;</span> in the blacklisted ROI label list.
+
+If we need to blacklist ROI labels 15 and 16 only in image image421.tif ROI label 17 in image image422.tif, we can do it via a per-file blacklist :
 ```
+./nyxus --skiproi=image421.tif:15,16;image421.tif:17 --features=KURTOSIS --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.* --csvFile=singlecsv 
+```
+Note the colon character <span style="background-color:lightgrey">&nbsp;&nbsp;<b>:</b>&nbsp;&nbsp;</span> between the file name and  backlisted labels within this file and semicolon character separator <span style="background-color:lightgrey">&nbsp;&nbsp;<b>;</b>&nbsp;&nbsp;</span> of file blacklists.
+
+<span style="color:blue">Example 5:</span> __Skipping specified ROIs while extracting features (via Python API)__
+
+The Nyxus Python API equivalent of global ROI blacklisting is implemented by method __blacklist_roi(*string*)__ called before a call of method __featurize...()__, for example, labels 15, 16, and 17 can be globally blacklisted as follows:
+```python
+from nyxus import Nyxus
+nyx = Nyxus(features=["KURTOSIS"])
+nyx.blacklist_roi('15,16,17')
+features = nyx.featurize_directory (intensity_dir="/path/to/intensity/images", label_dir="/path/to/mask/images", file_pattern=".*")
+```
+
+Similarly, per-file ROI blacklists are defined in a way similar to the command line interface:
+```python
+from nyxus import Nyxus
+nyx = Nyxus(features=["KURTOSIS"])
+nyx.blacklist_roi('p0_y1_r1_c0.ome.tif:15,16;p0_y1_r2_c0.ome.tif:17')
+features = nyx.featurize_directory (intensity_dir="/path/to/intensity/images", label_dir="/path/to/mask/images", file_pattern=".*")
+```
+
+See also methods __clear_roi_blacklist()__ and __roi_blacklist_get_summary()__ .
 
 ## Nested features 
 
-A separate command line executable "nyxushie" for the hierarchical ROI analysis by finding nested ROIs and aggregating features of child ROIs within corresponding parent features is available. Its command line format is:
+A separate command line executable __nyxushie__ for the hierarchical ROI analysis by finding nested ROIs and aggregating features of child ROIs within corresponding parent features is available. Its command line format is:
 ```
-nyxushie <segment image collection dir> <file pattern> <channel signature> <parent channel> <child channel> <features dir> [-aggregate=<aggregation method>]
+nyxushie <segmentation dir> <file pattern> <channel signature> <parent channel> <child channel> <features dir> [-aggregate=<aggregation method>]
 ```
 where 
 
-*\<segment image collection dir\>* is directory of the segment images collection ;
-
-*\<file pattern\>* is a regular expression to filter files in \<segment image collection dir\> ;
-
-*\<channel signature\>* is a signature of the channel part in an image file name ;
-
-*\<parent channel\>* is an integer channel number where parent ROIs are expected ;
-
-*\<child channel\>* is an integer channel number where child ROIs are expected ;
-
-*\<features dir\>* is a directory used as the output of parent-child ROI relations and, if aggregation is requested, where CSV files of Nyxus features produced with Nyxus command line option --csvfile=separatecsv is located ;
-
-(optional) *\<aggregation method\>* is a method instructing how to aggregate child ROI features under a parent ROI. 
+&nbsp;&nbsp;&nbsp; *\<<u>segmentation dir</u>\>* is directory of the segment images collection \
+&nbsp;&nbsp;&nbsp; *\<<u>file pattern</u>\>* is a regular expression to filter files in \<<u>segment image collection dir</u>\> \
+&nbsp;&nbsp;&nbsp; *\<<u>channel signature</u>\>* is a signature of the channel part in an image file name \
+&nbsp;&nbsp;&nbsp; *\<<u>parent channel</u>\>* is an integer channel number where parent ROIs are expected \
+&nbsp;&nbsp;&nbsp; *\<<u>child channel</u>\>* is an integer channel number where child ROIs are expected \
+&nbsp;&nbsp;&nbsp; *\<<u>features dir</u>\>* is a directory used as the output of parent-child ROI relations and, if aggregation is requested, where CSV files of Nyxus features produced with Nyxus command line option ```--csvfile=separatecsv``` is located \
+&nbsp;&nbsp;&nbsp; (optional) *\<<u>aggregation method</u>\>* is a method instructing how to aggregate child ROI features under a parent ROI. 
 
 Valid aggregation method options are: SUM, MEAN, MIN, MAX, or WMA (weighted mean average).
 
-__Example__: we need to process collection of mask images located in directory "\~/data/image-collection1/seg" considering only images named "train_.*\\.tif" whose channel information begins with characters "\_ch" (\_ch0, \_ch1, etc.) telling Nyxushie to treat channel 1 images as source of parent ROIs and channel 0 images as source of child ROIs. The output directory needs to be "\~/results/result1". The command line will be
+<span style="color:blue">Example 6:</span> __Processing an image set containing ROI hierarchy__ 
+
+We need to process collection of mask images located in directory "\~/data/image-collection1/seg" considering only images named "train_.*\\.tif" whose channel information begins with characters "\_ch" (\_ch0, \_ch1, etc.) telling Nyxushie to treat channel 1 images as source of parent ROIs and channel 0 images as source of child ROIs. The output directory needs to be "\~/results/result1". The command line will be
 ```
 nyxushie ~/data/image-collection1/seg train_.*\\.tif _ch 1 0 ~/results/result1
 ```
@@ -377,7 +417,7 @@ The `featurize` method takes in the parent-child mapping along with the features
 is provided to the constructor, this method will return a pivoted DataFrame where the rows are the ROI labels and the columns are grouped by the features.
 
 
-__Example__: Using aggregate functions
+__Example 7__: Using aggregate functions
 
 ``` python
 
@@ -424,7 +464,7 @@ and the aggregated DataFrame is
 
 ```
 
-__Example__: Without aggregate functions
+<span style="color:blue">Example 8:</span> __Without aggregate functions__
 
 ``` python
 
@@ -463,7 +503,7 @@ the parent-child map remains the same but the `featurize` result becomes
 
 Nyxus can either be build inside a `conda` environment or independently outside of it. For the later case, we provide a script to make it easier to download and build all the necessary dependencies.
 
-### Inside Conda
+### __Inside Conda__
 Nyxus uses a CMake build system. To build the command line interface, pass `-DBUILD_CLI=ON` in the `cmake` command. For building with GPU support, use `-DUSEGPU=ON` flag in the `cmake` command. Here are the few notes on building with GPU support.
 
 * Currently, GPU builds on Mac OS is not supported. 
@@ -497,7 +537,7 @@ git clone https://github.com/PolusAI/nyxus.git
 cd nyxus/ci-utils
 ./build_conda.sh ..
 ```
-### Without Using Conda
+### __Without Using Conda__
 To build Nyxus outside of a `conda` environment, use the following example.
 ```bash
 git clone https://github.com/PolusAI/nyxus.git
@@ -541,6 +581,7 @@ Nyxus is tested with Python 3.6+. Nyxus relies on the the following packages:
 [pybind11](https://github.com/pybind/pybind11) >= 2.8.1 <br>
 [libTIFF](http://www.libtiff.org) >= 3.6.1 <br>
 [Z5](https://github.com/constantinpape/z5) >=2.0.15 <br>
+
 Each of these dependencies also have hierarchical dependencies and so we recommend using the `conda` build system when building from source.
 
 ## WIPP Usage
