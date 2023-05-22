@@ -300,7 +300,12 @@ class TestNyxus():
             
         def test_in_memory_3d(self):
             
-            cpu_nyx = nyxus.Nyxus(["*ALL_GLCM*"], ibsi=True)
+            cpu_nyx = nyxus.Nyxus([
+                "GLCM_ASM", "GLCM_CONTRAST", "GLCM_CORRELATION", "GLCM_DIFAVE", 
+                "GLCM_DIFENTRO", "GLCM_DIFVAR", "GLCM_ENERGY", "GLCM_ENTROPY",
+                "GLCM_HOM1", "GLCM_INFOMEAS1", "GLCM_INFOMEAS2", "GLCM_IDM", 
+                "GLCM_SUMAVERAGE", "GLCM_SUMENTROPY", "GLCM_SUMVARIANCE", "GLCM_VARIANCE"], 
+            ibsi=True)
             
             names = ["test_name_1", "test_name_2", "test_name_3", "test_name_4"]
 
@@ -329,8 +334,8 @@ class TestNyxus():
             assert pytest.approx(averaged_results[0], 0.01) == 0.368 # angular2ndmoment
             assert pytest.approx(averaged_results[1], 0.01) == 5.28 # contrast 
             assert pytest.approx(averaged_results[2], 0.01) == -0.0121 # correlation
-            assert pytest.approx(averaged_results[9], 0.01) == 1.40 # difference entropy
-            assert pytest.approx(averaged_results[11], 0.1) == 2.90 # difference variance#
+            assert pytest.approx(averaged_results[4], 0.01) == 1.40 # difference entropy
+            assert pytest.approx(averaged_results[5], 0.1) == 2.90 # difference variance#
 
                 
         

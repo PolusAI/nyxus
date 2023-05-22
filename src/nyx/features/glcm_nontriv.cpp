@@ -15,7 +15,7 @@ void GLCMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 		Extract_Texture_Features2_NT(a, G, r.aux_min, r.aux_max);
 }
 
-void GLCMFeature::Extract_Texture_Features2_NT(int angle, WriteImageMatrix_nontriv& grays, PixIntens min_val, PixIntens max_val)
+void GLCMFeature::Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nontriv& grays, PixIntens min_val, PixIntens max_val)
 {
 	int nrows = grays.get_height();
 	int ncols = grays.get_width();
@@ -23,6 +23,9 @@ void GLCMFeature::Extract_Texture_Features2_NT(int angle, WriteImageMatrix_nontr
 	// Allocate Px and Py vectors
 	std::vector<double> Px(n_levels * 2),
 		Py(n_levels);
+
+	// Mean of marginal totals of GLCM
+	double mean_x;
 
 	// Compute the gray-tone spatial dependence matrix 
 	int dx, dy;
@@ -71,7 +74,6 @@ void GLCMFeature::Extract_Texture_Features2_NT(int angle, WriteImageMatrix_nontr
 		fvals_diff_avg.push_back(f);
 		fvals_meas_corr1.push_back(f);
 		fvals_meas_corr2.push_back(f);
-		fvals_max_corr_coef.push_back(0.0);
 		return;
 	}
 
@@ -79,25 +81,25 @@ void GLCMFeature::Extract_Texture_Features2_NT(int angle, WriteImageMatrix_nontr
 
 	// Compute Haralick statistics 
 	double f;
-	f = theFeatureSet.isEnabled(GLCM_ANGULAR2NDMOMENT) ? f_asm(P_matrix, n_levels) : 0.0;
+	f = theFeatureSet.isEnabled(GLCM_ASM) ? f_asm(P_matrix, n_levels) : 0.0;
 	fvals_ASM.push_back(f);
 
 	f = theFeatureSet.isEnabled(GLCM_CONTRAST) ? f_contrast(P_matrix, n_levels) : 0.0;
 	fvals_contrast.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_CORRELATION) ? f_corr(P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(GLCM_CORRELATION) ? f_corr(P_matrix, n_levels, Px, mean_x) : 0.0;
 	fvals_correlation.push_back(f);
 
 	f = theFeatureSet.isEnabled(GLCM_ENERGY) ? f_energy(P_matrix, n_levels, Px) : 0.0;
 	fvals_energy.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_HOMOGENEITY) ? f_homogeneity(P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(GLCM_HOM1) ? f_homogeneity(P_matrix, n_levels, Px) : 0.0;
 	fvals_homo.push_back(f);
 
 	f = theFeatureSet.isEnabled(GLCM_VARIANCE) ? f_var(P_matrix, n_levels) : 0.0;
 	fvals_variance.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_INVERSEDIFFERENCEMOMENT) ? f_idm(P_matrix, n_levels) : 0.0;
+	f = theFeatureSet.isEnabled(GLCM_IDM) ? f_idm(P_matrix, n_levels) : 0.0;
 	fvals_IDM.push_back(f);
 
 	f = theFeatureSet.isEnabled(GLCM_SUMAVERAGE) ? f_savg(P_matrix, n_levels, Px) : 0.0;
@@ -112,13 +114,13 @@ void GLCMFeature::Extract_Texture_Features2_NT(int angle, WriteImageMatrix_nontr
 	f = theFeatureSet.isEnabled(GLCM_ENTROPY) ? f_entropy(P_matrix, n_levels) : 0.0;
 	fvals_entropy.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_DIFFERENCEVARIANCE) ? f_dvar(P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(GLCM_DIFVAR) ? f_dvar(P_matrix, n_levels, Px) : 0.0;
 	fvals_diff_var.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_DIFFERENCEENTROPY) ? f_dentropy(P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(GLCM_DIFENTRO) ? f_dentropy(P_matrix, n_levels, Px) : 0.0;
 	fvals_diff_entropy.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_DIFFERENCEAVERAGE) ? f_difference_avg(P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(GLCM_DIFAVE) ? f_difference_avg(P_matrix, n_levels, Px) : 0.0;
 	fvals_diff_avg.push_back(f);
 
 	f = theFeatureSet.isEnabled(GLCM_INFOMEAS1) ? f_info_meas_corr1(P_matrix, n_levels, Px, Py) : 0.0;
@@ -127,7 +129,47 @@ void GLCMFeature::Extract_Texture_Features2_NT(int angle, WriteImageMatrix_nontr
 	f = theFeatureSet.isEnabled(GLCM_INFOMEAS2) ? f_info_meas_corr2(P_matrix, n_levels, Px, Py) : 0.0;
 	fvals_meas_corr2.push_back(f);
 
-	fvals_max_corr_coef.push_back(0.0);
+	f = !theFeatureSet.isEnabled(GLCM_ACOR) ? 0 : f_GLCM_ACOR(P_matrix, n_levels);
+	fvals_acor.push_back(f);
+
+	f = !theFeatureSet.isEnabled(GLCM_CLUPROM) ? 0 : f_GLCM_CLUPROM(P_matrix, n_levels, mean_x, mean_x);	// mean_x == mean_y due to symmetric GLCM
+	fvals_cluprom.push_back(f);
+
+	f = !theFeatureSet.isEnabled(GLCM_CLUSHADE) ? 0 : f_GLCM_CLUSHADE(P_matrix, n_levels, mean_x, mean_x);
+	fvals_clushade.push_back(f);
+
+	f = !theFeatureSet.isEnabled(GLCM_CLUTEND) ? 0 : f_GLCM_CLUTEND(P_matrix, n_levels, mean_x, mean_x);
+	fvals_clutend.push_back(f);
+
+	f = !theFeatureSet.isEnabled(GLCM_DIS) ? 0 : f_GLCM_DIS(P_matrix, n_levels);
+	fvals_dis.push_back(f);
+
+	f = !theFeatureSet.isEnabled(GLCM_HOM2) ? 0 : f_GLCM_HOM2(P_matrix, n_levels);
+	fvals_hom2.push_back(f);
+
+	f = !theFeatureSet.isEnabled(GLCM_IDMN) ? 0 : f_GLCM_IDMN(P_matrix, n_levels);
+	fvals_idmn.push_back(f);
+
+	f = !theFeatureSet.isEnabled(GLCM_ID) ? 0 : f_GLCM_ID(P_matrix, n_levels);
+	fvals_id.push_back(f);
+
+	f = !theFeatureSet.isEnabled(GLCM_IDN) ? 0 : f_GLCM_IDN(P_matrix, n_levels);
+	fvals_idn.push_back(f);
+
+	f = !theFeatureSet.isEnabled(GLCM_IV) ? 0 : f_GLCM_IV(P_matrix, n_levels);
+	fvals_iv.push_back(f);
+
+	f = !theFeatureSet.isEnabled(GLCM_JAVE) ? 0 : f_GLCM_JAVE(P_matrix, n_levels, mean_x);
+	fvals_jave.push_back(f);
+
+	f = !theFeatureSet.isEnabled(GLCM_JE) ? 0 : f_GLCM_JE(P_matrix, n_levels);
+	fvals_je.push_back(f);
+
+	f = !theFeatureSet.isEnabled(GLCM_JMAX) ? 0 : f_GLCM_JMAX(P_matrix, n_levels);
+	fvals_jmax.push_back(f);
+
+	f = !theFeatureSet.isEnabled(GLCM_JVAR) ? 0 : f_GLCM_JVAR(P_matrix, n_levels, mean_x);
+	fvals_jvar.push_back(f);
 }
 
 void GLCMFeature::calculateCoocMatAtAngle_NT(

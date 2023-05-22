@@ -14,6 +14,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <set>
 #include <stdlib.h>
 #include <stdio.h>
 #include "globals.h"
@@ -51,22 +52,39 @@ namespace Nyxus
 					fn = "feature" + std::to_string(fc);
 
 				// Parameterized feature
-				// --Texture family
-				bool textureFeature =
-					fc == GLCM_ANGULAR2NDMOMENT ||
+				// --GLCM family
+				bool angledGlcmFeature =
+					fc == GLCM_ASM ||
+					fc == GLCM_ACOR ||
+					fc == GLCM_CLUPROM ||
+					fc == GLCM_CLUSHADE ||
+					fc == GLCM_CLUTEND ||
 					fc == GLCM_CONTRAST ||
 					fc == GLCM_CORRELATION ||
-					fc == GLCM_VARIANCE ||
-					fc == GLCM_INVERSEDIFFERENCEMOMENT ||
-					fc == GLCM_SUMAVERAGE ||
-					fc == GLCM_SUMVARIANCE ||
-					fc == GLCM_SUMENTROPY ||
+					fc == GLCM_DIFAVE ||
+					fc == GLCM_DIFENTRO ||
+					fc == GLCM_DIFVAR ||
+					fc == GLCM_DIS ||
+					fc == GLCM_ENERGY ||
 					fc == GLCM_ENTROPY ||
-					fc == GLCM_DIFFERENCEVARIANCE ||
-					fc == GLCM_DIFFERENCEENTROPY ||
+					fc == GLCM_HOM1 ||
+					fc == GLCM_HOM2 ||
+					fc == GLCM_ID ||
+					fc == GLCM_IDN ||
+					fc == GLCM_IDM ||
+					fc == GLCM_IDMN ||
 					fc == GLCM_INFOMEAS1 ||
-					fc == GLCM_INFOMEAS2;
-				if (textureFeature)
+					fc == GLCM_INFOMEAS2 ||
+					fc == GLCM_IV ||
+					fc == GLCM_JAVE ||
+					fc == GLCM_JE ||
+					fc == GLCM_JMAX ||
+					fc == GLCM_JVAR ||
+					fc == GLCM_SUMAVERAGE ||
+					fc == GLCM_SUMENTROPY ||
+					fc == GLCM_SUMVARIANCE ||
+					fc == GLCM_VARIANCE;
+				if (angledGlcmFeature)
 				{
 					// Polulate with angles
 					for (auto ang : theEnvironment.glcmAngles)
@@ -208,22 +226,39 @@ namespace Nyxus
 				auto vv = r.get_fvals(fc);
 
 				// Parameterized feature
-				// --Texture family
-				bool textureFeature =
-					fc == GLCM_ANGULAR2NDMOMENT ||
+				// --GLCM family
+				bool angledGlcmFeature =
+					fc == GLCM_ASM ||
+					fc == GLCM_ACOR ||
+					fc == GLCM_CLUPROM ||
+					fc == GLCM_CLUSHADE ||
+					fc == GLCM_CLUTEND ||
 					fc == GLCM_CONTRAST ||
 					fc == GLCM_CORRELATION ||
-					fc == GLCM_VARIANCE ||
-					fc == GLCM_INVERSEDIFFERENCEMOMENT ||
-					fc == GLCM_SUMAVERAGE ||
-					fc == GLCM_SUMVARIANCE ||
-					fc == GLCM_SUMENTROPY ||
+					fc == GLCM_DIFAVE ||
+					fc == GLCM_DIFENTRO ||
+					fc == GLCM_DIFVAR ||
+					fc == GLCM_DIS ||
+					fc == GLCM_ENERGY ||
 					fc == GLCM_ENTROPY ||
-					fc == GLCM_DIFFERENCEVARIANCE ||
-					fc == GLCM_DIFFERENCEENTROPY ||
+					fc == GLCM_HOM1 ||
+					fc == GLCM_HOM2 ||
+					fc == GLCM_ID ||
+					fc == GLCM_IDN ||
+					fc == GLCM_IDM ||
+					fc == GLCM_IDMN ||
 					fc == GLCM_INFOMEAS1 ||
-					fc == GLCM_INFOMEAS2;
-				if (textureFeature)
+					fc == GLCM_INFOMEAS2 ||
+					fc == GLCM_IV ||
+					fc == GLCM_JAVE ||
+					fc == GLCM_JE ||
+					fc == GLCM_JMAX ||
+					fc == GLCM_JVAR ||
+					fc == GLCM_SUMAVERAGE ||
+					fc == GLCM_SUMENTROPY ||
+					fc == GLCM_SUMVARIANCE ||
+					fc == GLCM_VARIANCE;
+				if (angledGlcmFeature)
 				{
 					// Polulate with angles
 					for (int i = 0; i < theEnvironment.glcmAngles.size(); i++)

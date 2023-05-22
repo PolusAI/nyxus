@@ -14,15 +14,15 @@
 
 // dig. phantom values for intensity based features
 static std::unordered_map<std::string, float> IBSI_glcm_values {
-    {"GLCM_DIFFERENCEAVERAGE", 1.42},
-    {"GLCM_DIFFERENCEVARIANCE", 2.9},
-    {"GLCM_DIFFERENCEENTROPY", 1.4},
+    {"GLCM_DIFAVE", 1.42},
+    {"GLCM_DIFVAR", 2.9},
+    {"GLCM_DIFENTRO", 1.4},
     {"GLCM_SUMAVERAGE", 4.28},
     {"GLCM_SUMVARIANCE", 5.47},
     {"GLCM_SUMENTROPY", 1.6}, 
-    {"GLCM_ANGULAR2NDMOMENT", 0.368},
+    {"GLCM_ASM", 0.368},
     {"GLCM_CONTRAST", 5.28},
-    {"GLCM_INVERSEDIFFERENCEMOMENT", 0.619},
+    {"GLCM_IDM", 0.619},
     {"GLCM_CORRELATION", -0.0121},
     {"GLCM_INFOMEAS1", -0.155},
     {"GLCM_INFOMEAS2", 0.487}
@@ -136,19 +136,19 @@ void test_ibsi_glcm_feature(const AvailableFeatures& feature, const std::string&
 
 void test_ibsi_glcm_difference_average()
 {
-    test_ibsi_glcm_feature(GLCM_DIFFERENCEAVERAGE, "GLCM_DIFFERENCEAVERAGE");
+    test_ibsi_glcm_feature(GLCM_DIFAVE, "GLCM_DIFAVE");
 }
 
 
 void test_ibsi_glcm_difference_variance()
 {
-    test_ibsi_glcm_feature(GLCM_DIFFERENCEVARIANCE, "GLCM_DIFFERENCEVARIANCE");
+    test_ibsi_glcm_feature(GLCM_DIFVAR, "GLCM_DIFVAR");
 }
 
 
 void test_ibsi_glcm_difference_entropy()
 {
-    test_ibsi_glcm_feature(GLCM_DIFFERENCEENTROPY, "GLCM_DIFFERENCEENTROPY");
+    test_ibsi_glcm_feature(GLCM_DIFENTRO, "GLCM_DIFENTRO");
 }
 
 void test_ibsi_glcm_sum_average()
@@ -168,7 +168,7 @@ void test_ibsi_glcm_sum_entropy()
 
 void test_ibsi_glcm_angular_2d_moment()
 {
-    test_ibsi_glcm_feature(GLCM_ANGULAR2NDMOMENT, "GLCM_ANGULAR2NDMOMENT");
+    test_ibsi_glcm_feature(GLCM_ASM, "GLCM_ASM");
 }
 
 void test_ibsi_glcm_contrast()
@@ -192,5 +192,5 @@ void test_ibsi_glcm_infomeas2()
 }
 
 void test_ibsi_glcm_inversed_difference_moment() {
-    test_ibsi_glcm_feature(GLCM_INVERSEDIFFERENCEMOMENT, "GLCM_INVERSEDIFFERENCEMOMENT");
+    test_ibsi_glcm_feature(GLCM_IDM, "GLCM_IDM");
 }
