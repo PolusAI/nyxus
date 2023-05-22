@@ -59,77 +59,98 @@ Let:
 
 By default, the value of a feature is calculated on the GLCM for each angle separately, after which the mean of these
 values is returned. If distance weighting is enabled, GLCM matrices are weighted by weighting factor W and
-then summed and normalised. Features are then calculated on the resultant matrix.
+then summed and normalised. 
 
-2nd angular moment
-------------------
-
-GLCM_ANGULAR2NDMOMENT :math:`=  \sum^{N_g}_{i=1}\sum^{N_g}_{j=1}{p_{i,j}^2}`
-
-Contrast
---------
-
-GLCM_CONTRAST :math:`= \sum^{N_g}_{i=1}\sum^{N_g}_{j=1}{(i-j)^2p_{ij}}`
-
-Correlation
------------
-
-GLCM_CORRELATION :math:`= \frac{\sum^{N_g}_{i=1}\sum^{N_g}_{j=1}{p_{ij}ij-\mu_x\mu_y}}{\sigma_x(i)\sigma_y(j)}`
-
-Variance
---------
-
-GLCM_VARIANCE :math:`= \sum^{N_g}_{i=1}\sum^{N_g}_{j=1}{(i-\mu_x)^2p_{ij}}`
-
-Inverse difference moment
--------------------------
-
-GLCM_INVERSEDIFFERENCEMOMENT :math:`= \sum^{N_g-1}_{k=0}{\frac{p_{x-y}(k)}{1+k^2}}`
-
-
-Sum average
------------
-
-GLCM_SUMAVERAGE :math:`= \sum^{2N_g}_{k=2} {p_{x+y}(k)k}`
-
-Sum variance
-------------
-
-GLCM_SUMVARIANCE :math:`= \sum^{2N_g}_{k=2} {(k-SA)^2p_{x+y}(k)}`
-
-Sum entropy
------------
-
-GLCM_SUMENTROPY :math:`= \sum^{2N_g}_{k=2} {p_{x+y}(k)\log_2\big(p_{x+y}(k)+\epsilon\big)}`
-
-Entropy
--------
-
-GLCM_ENTROPY :math:`= -n \sum^{N_g}_{i=1}\sum^{N_g}_{j=1} {p_{ij}\log_2\big(p_{ij}+\epsilon\big)}`
-
-
-Difference variance
--------------------
-
-GLCM_DIFFERENCEVARIANCE :math:`= \sum^{N_g-1}_{k=0}{(k-\mu_d)^2p_{x-y}(k)}` where the difference average :math:`\mu_d` is 
+The following features are then calculated based on the collocation matrix.
 
 .. math::
-  \mu_d = \displaystyle\sum^{N_g-1}_{k=0}{kp_{x-y}(k)}.
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_ASM}} {\textup{angular second moment}} =  \sum^{N_g}_{i=1}\sum^{N_g}_{j=1}{p_{i,j}^2}
 
-Difference entropy
-------------------
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_ACOR}} {\textup{autocorrelation}} = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} p(i,j) i j
 
-GLCM_DIFFERENCEENTROPY :math:`= \sum^{N_g-1}_{k=0}{p_{x-y}(k)\log_2\big(p_{x-y}(k)+\epsilon\big)}`
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_CLUPROM}} {\textup{cluster prominence}} = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} (i + j - \mu_x - \mu_y) ^4 p(i,j)
 
-Informational Measure of Correlation 1
---------------------------------------
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_CLUSHADE}} {\textup{cluster shade}} = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} (i + j - \mu_x - \mu_y) ^3 p(i,j)
 
-GLCM_INFOMEAS1 :math:`= \frac{HXY-HXY1}{\max{HX,HY}}`
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_CLUTEND}} {\textup{cluster tendency}} = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} (i + j - \mu_x - \mu_y) ^2 p(i,j)
 
-Informational Measure of Correlation 2
---------------------------------------
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_CONTRAST}} {\textup{contrast}} = \sum^{N_g}_{i=1}\sum^{N_g}_{j=1}{(i-j)^2p_{ij}}
 
-GLCM_INFOMEAS2 :math:`= \sqrt{1-e^{-2(HXY2-HXY)}}`
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_CORRELATION}} {\textup{correlation}} = \frac{\sum^{N_g}_{i=1}\sum^{N_g}_{j=1}{p_{ij}ij-\mu_x\mu_y}}{\sigma_x(i)\sigma_y(j)}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_DIFAVE}} {\textup{difference average}} =\sum_{k=0}^{N_g-1} k\, p_{i-j,k}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_DIFENTRO}} {\textup{difference entropy}} = \sum^{N_g-1}_{k=0}{p_{x-y}(k)\log_2\big(p_{x-y}(k)+\epsilon\big)}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_DIFVAR}} {\textup{difference variance}} = \sum^{N_g-1}_{k=0}{(k-\mu_d)^2p_{x-y}(k)}
+	
+where the difference average :math:`\mu_d` is 
+
+.. math::
+	\mu_d = \sum^{N_g-1}_{k=0} kp_{x-y}(k) .
+
+.. math::  
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_DIS}} {\textup{dissimilarity}} = \sum_{i=1}^{N_g} \sum_{j=1}^{N_g} |i-j|\, p_{ij}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_JE}} {\textup{joint entropy}} = - \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} p(i,j) \log_2 ( p(i,j) + \epsilon )
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_HOM1}} {\textup{homogeneity 1}} = \sum^{N_g}_{i=1}\displaystyle\sum^{N_g}_{j=1} \frac{p(i,j)}{1+|i-j|}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_HOM2}} {\textup{homogeneity 2}} = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1}{\frac{p(i,j)}{1+|i-j|^2}}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_IDM}} {\textup{inverse difference moment}} = \sum^{N_g-1}_{k=0}{\frac{p_{x-y}(k)}{1+k^2}}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_IDMN}} {\textup{inverse difference moment normalized}} = \sum^{N_g-1}_{k=0} \frac {p_{x-y}(k)} {1+\frac{k^2}{N_g^2}}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_ID}} {\textup{inverse difference}} =\sum_{i=1}^{N_g} \sum_{j=1}^{N_g} \frac{p_{ij}}{1+|i-j|}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_IDN}} {\textup{inverse difference normalized}} = \sum^{N_g-1}_{k=0} \frac {p_{x-y}(k)} {1+\frac{k}{N_g}}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_INFOMEAS1}} {\textup{informational measure of correlation 1}} = \frac{HXY-HXY1}{\max{HX,HY}}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_INFOMEAS2}} {\textup{information measure of correlation 2}} = \sqrt{1-e^{-2(HXY2-HXY)}}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_VARIANCE}} {\textup{variance}} = \sum^{N_g}_{i=1}\sum^{N_g}_{j=1}{(i-\mu_x)^2p_{ij}}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_SUMAVERAGE}} {\textup{sum average}} = \sum^{2N_g}_{k=2} {p_{x+y}(k)k}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_SUMVARIANCE}} {\textup{sum variance}} = \sum^{2N_g}_{k=2} {(k-SA)^2p_{x+y}(k)}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_SUMENTROPY}} {\textup{sum entropy}} = \sum^{2N_g}_{k=2} {p_{x+y}(k)\log_2\big(p_{x+y}(k)+\epsilon\big)}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_JAVE}} {\textup{joint average}} = \sum_{i=1}^{N_g} \sum_{j=1}^{N_g} i\, p_{ij}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_JE}} {\textup{joint entropy}} = -\sum_{i=1}^{N_g} \sum_{j=1}^{N_g} p_{ij} \log_2 p_{ij}
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_JMAX}} {\textup{joint maximum}} = \text{max}(p_{ij})
+
+.. math::
+	\underset{\mathrm{Nyxus \, code: \, GLCM\_JVAR}} {\textup{joint variance}} = \sum_{i=1}^{N_g} \sum_{j=1}^{N_g} \left(i-\mu\right)^2 p_{ij}
 
 References
 ----------

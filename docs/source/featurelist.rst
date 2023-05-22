@@ -273,32 +273,66 @@ Nyxus provided features
 
    * - Nyxus feature code
      - Description
-   * - GLCM_ANGULAR2NDMOMENT
-     - Grey Level Co-occurrence Matrix (GLCM) Features, 2nd angular moment
+   * - GLCM_ASM
+     - GLCM, Angular second moment, IBSI # 8ZQL
+   * - GLCM_ACOR
+     - GLCM, Autocorrelation, IBSI # QWB0
+   * - GLCM_CLUPROM
+     - GLCM, Cluster prominence, IBSI # AE86
+   * - GLCM_CLUSHADE
+     - GLCM, Cluster shade, IBSI # 7NFM
+   * - GLCM_CLUTEND
+     - GLCM, Cluster tendency, IBSI # DG8W
    * - GLCM_CONTRAST
-     - GLCM, Contrast
+     - GLCM, Contrast, IBSI # ACUI
    * - GLCM_CORRELATION
-     - GLCM, Correlation
-   * - GLCM_VARIANCE
-     - GLCM, Variance
-   * - GLCM_INVERSEDIFFERENCEMOMENT
-     - GLCM, Inverse difference moment
-   * - GLCM_SUMAVERAGE
-     - GLCM, Sum average
-   * - GLCM_SUMVARIANCE
-     - GLCM, Sum variance
-   * - GLCM_SUMENTROPY
-     - GLCM, Sum entropy
+     - GLCM, Correlation, IBSI # NI2N
+   * - GLCM_DIFAVE
+     - GLCM, Difference average, IBSI # TF7R
+   * - GLCM_DIFENTRO
+     - GLCM, Difference entropy, IBSI # NTRS
+   * - GLCM_DIFVAR
+     - GLCM, Difference variance, IBSI # D3YU
+   * - GLCM_DIS
+     - GLCM, Dissimilarity, IBSI # 8S9J
+   * - GLCM_ENERGY
+     - GLCM, Energy
    * - GLCM_ENTROPY
      - GLCM, Entropy
-   * - GLCM_DIFFERENCEVARIANCE
-     - GLCM, Difference variance
-   * - GLCM_DIFFERENCEENTROPY
-     - GLCM, Difference entropy
+   * - GLCM_HOM1
+     - GLCM, Homogeneity-1
+   * - GLCM_HOM2
+     - GLCM, Homogeneity-2
+   * - GLCM_ID
+     - GLCM, Inverse difference, IBSI # IB1Z
+   * - GLCM_IDN
+     - GLCM, Inverse difference normalized, IBSI # NDRX
+   * - GLCM_IDM
+     - GLCM, Inverse difference moment, IBSI # WF0Z
+   * - GLCM_IDMN
+     - GLCM, Inverse difference moment normalized, IBSI # 1QCO
    * - GLCM_INFOMEAS1
-     - GLCM, Informational Measure of Correlation (IMC) 1
+     - GLCM, Information measure of correlation 1, IBSI # R8DG
    * - GLCM_INFOMEAS2
-     - GLCM, Informational Measure of Correlation (IMC) 2
+     - GLCM, Information measure of correlation 2, IBSI # JN9H
+   * - GLCM_IV
+     - GLCM, Inverse variance, IBSI # E8JP
+   * - GLCM_JAVE
+     - GLCM, Joint average, IBSI # 60VM
+   * - GLCM_JE
+     - GLCM, Joint entropy, IBSI # TU9B
+   * - GLCM_JMAX
+     - GLCM, Joint maximum (aka max probability), IBSI # GYBY
+   * - GLCM_JVAR
+     - GLCM, Joint variance (aka sum of squares), IBSI # UR99
+   * - GLCM_SUMAVERAGE
+     - GLCM, Sum average, IBSI # ZGXS
+   * - GLCM_SUMENTROPY
+     - GLCM, Sum entropy, IBSI # P6QZ
+   * - GLCM_SUMVARIANCE
+     - GLCM, Sum variance, IBSI # OEEB
+   * - GLCM_VARIANCE
+     - GLCM, Variance
    * - GLRLM_SRE
      - Grey level run-length matrix (GLRLM) based feature, Short Run Emphasis 
    * - GLRLM_LRE
