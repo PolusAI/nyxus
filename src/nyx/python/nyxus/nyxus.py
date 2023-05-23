@@ -203,8 +203,8 @@ class Nyxus:
     
     def featurize(
         self,
-        intensity_images: np.array,
-        label_images: np.array,
+        intensity_images: np.ndarray,
+        label_images: np.ndarray,
         intensity_names: list = [],
         label_names: list = []
     ):
@@ -218,9 +218,9 @@ class Nyxus:
 
         Parameters
         ----------
-        intensity_dir : np.array
+        intensity_images : np.ndarray
             2D image or 3D collection of intensity images.
-        label_images : np.array
+        label_images : np.ndarray
             2D image or 3D collection of label images.
         intensity_names (optional): list
             names for the images in for the DataFrame output. 
@@ -233,6 +233,13 @@ class Nyxus:
             Pandas DataFrame containing the requested features with one row per label
             per image.
         """
+        
+        # verify argument types
+        if not isinstance(intensity_images, np.ndarray):
+            raise ValueError("intensity_images parameter must be numpy.ndarray")
+
+        if not isinstance(label_images, np.ndarray):
+            raise ValueError("label_images parameter must be numpy.ndarray")
         
         # verify dimensions of images are the same
         if(intensity_images.ndim == 2):
