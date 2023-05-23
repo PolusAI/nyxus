@@ -8,23 +8,7 @@
 
 GLSZMFeature::GLSZMFeature() : FeatureMethod("GLSZMFeature")
 {
-	provide_features({ 
-		GLSZM_SAE,
-		GLSZM_LAE,
-		GLSZM_GLN,
-		GLSZM_GLNN,
-		GLSZM_SZN,
-		GLSZM_SZNN,
-		GLSZM_ZP,
-		GLSZM_GLV,
-		GLSZM_ZV,
-		GLSZM_ZE,
-		GLSZM_LGLZE,
-		GLSZM_HGLZE,
-		GLSZM_SALGLE,
-		GLSZM_SAHGLE,
-		GLSZM_LALGLE,
-		GLSZM_LAHGLE });
+	provide_features (GLSZMFeature::featureset);
 }
 
 void GLSZMFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {} // Not suporting

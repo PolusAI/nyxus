@@ -22,9 +22,18 @@
 
 class NGTDMFeature: public FeatureMethod
 {
-	using P_matrix = SimpleMatrix<int>;
-
 public:
+
+	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
+	// in the feature group nickname expansion, and in the feature value output 
+	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
+	{
+		NGTDM_COARSENESS,
+		NGTDM_CONTRAST,
+		NGTDM_BUSYNESS,
+		NGTDM_COMPLEXITY,
+		NGTDM_STRENGTH
+	};
 
 	NGTDMFeature(); 
 	void calculate(LR& r);
@@ -48,16 +57,11 @@ public:
 	// Comaptibility with manual reduce
 	static bool required(const FeatureSet& fs) 
 	{
-		return fs.anyEnabled({
-			NGTDM_COARSENESS,
-			NGTDM_CONTRAST,
-			NGTDM_BUSYNESS,
-			NGTDM_COMPLEXITY,
-			NGTDM_STRENGTH
-			});
+		return fs.anyEnabled (NGTDMFeature::featureset);
 	}
 
 private:
+
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
 	int Ng = 0;	// number of discreet intensity values in the image
 	int Ngp = 0; // number of non-zero gray levels. Since we keep only informative (non-zero) levels, Ngp is always ==Ng

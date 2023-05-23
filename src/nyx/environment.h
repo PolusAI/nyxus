@@ -53,15 +53,19 @@
 #define GABOR_THETA "--gabortheta"		// Example: "60"
 #define GABOR_THRESHOLD "--gaborthold"	// Example: "0.025"
 
-// Feature group nicknames
+// Feature group nicknames. Each nickname should be used twice - 
+// in Nyxus::parse_delimited_string_list_to_features() 
+// and in Environment::process_feature_list()
 #define FEA_NICK_ALL "*ALL*"
 #define FEA_NICK_ALL_INTENSITY "*ALL_INTENSITY*"
 #define FEA_NICK_ALL_MORPHOLOGY "*ALL_MORPHOLOGY*"
 #define FEA_NICK_BASIC_MORPHOLOGY "*BASIC_MORPHOLOGY*"
 #define FEA_NICK_ALL_GLCM "*ALL_GLCM*"
 #define FEA_NICK_ALL_GLRLM "*ALL_GLRLM*"
+#define FEA_NICK_ALL_GLDZM "*ALL_GLDZM*"
 #define FEA_NICK_ALL_GLSZM "*ALL_GLSZM*"
 #define FEA_NICK_ALL_GLDM "*ALL_GLDM*"
+#define FEA_NICK_ALL_NGLDM "*ALL_NGLDM*"
 #define FEA_NICK_ALL_NGTDM "*ALL_NGTDM*"
 #define FEA_NICK_ALL_BUT_GABOR "*ALL_BUT_GABOR*"
 #define FEA_NICK_ALL_BUT_GLCM "*ALL_BUT_GLCM*"

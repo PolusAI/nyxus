@@ -9,6 +9,31 @@
 class NGLDMfeature : public FeatureMethod
 {
 public:
+
+	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
+	// in the feature group nickname expansion, and in the feature value output 
+	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
+	{
+		NGLDM_LDE,		// Low Dependence Emphasis
+		NGLDM_HDE,		// High Dependence Emphasis
+		NGLDM_LGLCE,	// Low Grey Level Count Emphasis
+		NGLDM_HGLCE,	// High Grey Level Count Emphasis
+		NGLDM_LDLGLE,	// Low Dependence Low Grey Level Emphasis
+		NGLDM_LDHGLE,	// Low Dependence High Grey Level Emphasis
+		NGLDM_HDLGLE,	// High Dependence Low Grey Level Emphasis
+		NGLDM_HDHGLE,	// High Dependence High Grey Level Emphasis
+		NGLDM_GLNU,		// Grey Level Non-Uniformity
+		NGLDM_GLNUN,	// Grey Level Non-Uniformity Normalised
+		NGLDM_DCNU,		// Dependence Count Non-Uniformity
+		NGLDM_DCNUN,	// Dependence Count Non-Uniformity Normalised
+		NGLDM_GLM,		// Grey Level Mean
+		NGLDM_GLV,		// Grey Level Variance
+		NGLDM_DCM,		// Dependence Count Mean
+		NGLDM_DCV,		// Dependence Count Variance
+		NGLDM_DCE,		// Dependence Count Entropy
+		NGLDM_DCENE		// Dependence Count Energy
+	};
+
 	NGLDMfeature();
 
 	// Overrides
@@ -21,25 +46,7 @@ public:
 	// Support of manual reduce
 	static bool required (const FeatureSet& fs)
 	{
-		return fs.anyEnabled ({
-			NGLDM_LDE,
-			NGLDM_HDE,
-			NGLDM_LGLCE,
-			NGLDM_HGLCE,
-			NGLDM_LDLGLE,
-			NGLDM_LDHGLE,
-			NGLDM_HDLGLE,
-			NGLDM_HDHGLE,
-			NGLDM_GLNU,
-			NGLDM_GLNUN,
-			NGLDM_DCNU,
-			NGLDM_DCNUN,
-			NGLDM_GLM,
-			NGLDM_GLV,
-			NGLDM_DCM,
-			NGLDM_DCV,
-			NGLDM_DCE,
-			NGLDM_DCENE });
+		return fs.anyEnabled (NGLDMfeature::featureset);
 	}
 
 private:

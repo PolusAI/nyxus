@@ -22,26 +22,31 @@
 
 class GLDMFeature: public FeatureMethod
 {
-	using P_matrix = SimpleMatrix<int>;
-
 public:
-	static bool required(const FeatureSet& fs) {
-		return fs.anyEnabled({
-			GLDM_SDE,
-			GLDM_LDE,
-			GLDM_GLN,
-			GLDM_DN,
-			GLDM_DNN,
-			GLDM_GLV,
-			GLDM_DV,
-			GLDM_DE,
-			GLDM_LGLE,
-			GLDM_HGLE,
-			GLDM_SDLGLE,
-			GLDM_SDHGLE,
-			GLDM_LDLGLE,
-			GLDM_LDHGLE
-			});
+
+	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
+	// in the feature group nickname expansion, and in the feature value output 
+	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
+	{
+		GLDM_SDE,		// Small Dependence Emphasis
+		GLDM_LDE,		// Large Dependence Emphasis
+		GLDM_GLN,		// Gray Level Non-Uniformity
+		GLDM_DN,		// Dependence Non-Uniformity
+		GLDM_DNN,		// Dependence Non-Uniformity Normalized
+		GLDM_GLV,		// Gray Level Variance
+		GLDM_DV,		// Dependence Variance
+		GLDM_DE,		// Dependence Entropy
+		GLDM_LGLE,		// Low Gray Level Emphasis
+		GLDM_HGLE,		// High Gray Level Emphasis
+		GLDM_SDLGLE,	// Small Dependence Low Gray Level Emphasis
+		GLDM_SDHGLE,	// Small Dependence High Gray Level Emphasis
+		GLDM_LDLGLE,	// Large Dependence Low Gray Level Emphasis
+		GLDM_LDHGLE	// Large Dependence High Gray Level Emphasis
+	};
+
+	static bool required(const FeatureSet& fs) 
+	{
+		return fs.anyEnabled(GLDMFeature::featureset);
 	}
 
 	GLDMFeature ();

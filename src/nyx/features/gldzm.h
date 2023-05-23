@@ -8,7 +8,32 @@
 
 class GLDZMFeature : public FeatureMethod
 {
-public:
+public:	
+	
+	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
+	// in the feature group nickname expansion, and in the feature value output 
+	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
+	{
+		GLDZM_SDE,		// Small Distance Emphasis
+		GLDZM_LDE,		// Large Distance Emphasis
+		GLDZM_LGLE,		// Low Grey Level Emphasis
+		GLDZM_HGLE,		// High GreyLevel Emphasis
+		GLDZM_SDLGLE,	// Small Distance Low Grey Level Emphasis
+		GLDZM_SDHGLE,	// Small Distance High GreyLevel Emphasis
+		GLDZM_LDLGLE,	// Large Distance Low Grey Level Emphasis
+		GLDZM_LDHGLE,	// Large Distance High Grey Level Emphasis
+		GLDZM_GLNU,		// Grey Level Non Uniformity
+		GLDZM_GLNUN,	// Grey Level Non Uniformity Normalized
+		GLDZM_ZDNU,		// Zone Distance Non Uniformity
+		GLDZM_ZDNUN,	// Zone Distance Non Uniformity Normalized
+		GLDZM_ZP,		// Zone Percentage
+		GLDZM_GLM,		// Grey Level Mean
+		GLDZM_GLV,		// Grey Level Variance
+		GLDZM_ZDM,		// Zone Distance Mean
+		GLDZM_ZDV,		// Zone Distance Variance
+		GLDZM_ZDE		// Zone Distance Entropy
+	};
+
 	GLDZMFeature();
 
 	void calculate(LR& r);
@@ -20,26 +45,7 @@ public:
 	// Support of manual reduce
 	static bool required(const FeatureSet& fs) 
 	{
-		return fs.anyEnabled({
-			GLDZM_SDE,
-			GLDZM_LDE,
-			GLDZM_LGLE,
-			GLDZM_HGLE,
-			GLDZM_SDLGLE,
-			GLDZM_SDHGLE,
-			GLDZM_LDLGLE,
-			GLDZM_LDHGLE,
-			GLDZM_GLNU,
-			GLDZM_GLNUN,
-			GLDZM_ZDNU,
-			GLDZM_ZDNUN,
-			GLDZM_ZP,
-			GLDZM_GLM,
-			GLDZM_GLV,
-			GLDZM_ZDM,
-			GLDZM_ZDV,
-			GLDZM_ZDE
-			});
+		return fs.anyEnabled (GLDZMFeature::featureset);
 	}
 
 private:
