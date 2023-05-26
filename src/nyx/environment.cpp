@@ -9,6 +9,12 @@
 #include "environment.h"
 #include "featureset.h"
 #include "features/glcm.h"
+#include "features/gldm.h"
+#include "features/gldzm.h"
+#include "features/glrlm.h"
+#include "features/glszm.h"
+#include "features/ngldm.h"
+#include "features/ngtdm.h"
 #include "helpers/helpers.h"
 #include "helpers/system_resource.h"
 #include "helpers/timing.h"
@@ -47,8 +53,10 @@ namespace Nyxus
 				s_uppr == FEA_NICK_BASIC_MORPHOLOGY ||
 				s_uppr == FEA_NICK_ALL_GLCM ||
 				s_uppr == FEA_NICK_ALL_GLRLM ||
+				s_uppr == FEA_NICK_ALL_GLDZM ||
 				s_uppr == FEA_NICK_ALL_GLSZM ||
 				s_uppr == FEA_NICK_ALL_GLDM ||
+				s_uppr == FEA_NICK_ALL_NGLDM ||
 				s_uppr == FEA_NICK_ALL_NGTDM ||
 				s_uppr == FEA_NICK_ALL_BUT_GABOR ||
 				s_uppr == FEA_NICK_ALL_BUT_GLCM || 
@@ -356,6 +364,9 @@ void Environment::process_feature_list()
 	theFeatureSet.enableAll(false); // First, disable all
 	for (auto &s : recognizedFeatureNames) // Second, iterate uppercased feature names
 	{
+		// Enforce the feature names to be in uppercase
+		s = Nyxus::toupper(s);
+
 		// Check if features are requested via a group nickname
 		if (s == FEA_NICK_ALL)
 		{
@@ -487,113 +498,37 @@ void Environment::process_feature_list()
 		}
 		if (s == FEA_NICK_ALL_GLCM)
 		{
-			auto F = {
-				GLCM_ASM,
-				GLCM_ACOR,
-				GLCM_CLUPROM,
-				GLCM_CLUSHADE,
-				GLCM_CLUTEND,
-				GLCM_CONTRAST,
-				GLCM_CORRELATION,
-				GLCM_DIFAVE,
-				GLCM_DIFENTRO,
-				GLCM_DIFVAR,
-				GLCM_DIS,
-				GLCM_ENERGY,
-				GLCM_ENTROPY,
-				GLCM_HOM1,
-				GLCM_HOM2,
-				GLCM_IDM,				
-				GLCM_IDMN,
-				GLCM_ID,
-				GLCM_IDN,
-				GLCM_INFOMEAS1,
-				GLCM_INFOMEAS2,
-				GLCM_IV,
-				GLCM_JAVE,
-				GLCM_JE,
-				GLCM_JMAX,
-				GLCM_JVAR,
-				GLCM_SUMAVERAGE,
-				GLCM_SUMENTROPY,
-				GLCM_SUMVARIANCE,
-				GLCM_VARIANCE };
-			theFeatureSet.enableFeatures(F);
+			theFeatureSet.enableFeatures (GLCMFeature::featureset);
 			continue;
 		}
 		if (s == FEA_NICK_ALL_GLRLM)
 		{
-			auto F = {
-				GLRLM_SRE,
-				GLRLM_LRE,
-				GLRLM_GLN,
-				GLRLM_GLNN,
-				GLRLM_RLN,
-				GLRLM_RLNN,
-				GLRLM_RP,
-				GLRLM_GLV,
-				GLRLM_RV,
-				GLRLM_RE,
-				GLRLM_LGLRE,
-				GLRLM_HGLRE,
-				GLRLM_SRLGLE,
-				GLRLM_SRHGLE,
-				GLRLM_LRLGLE,
-				GLRLM_LRHGLE };
-			theFeatureSet.enableFeatures(F);
+			theFeatureSet.enableFeatures (GLRLMFeature::featureset);
+			continue;
+		}
+		if (s == FEA_NICK_ALL_GLDZM)
+		{
+			theFeatureSet.enableFeatures (GLDZMFeature::featureset);
 			continue;
 		}
 		if (s == FEA_NICK_ALL_GLSZM)
 		{
-			auto F = {
-				GLSZM_SAE,
-				GLSZM_LAE,
-				GLSZM_GLN,
-				GLSZM_GLNN,
-				GLSZM_SZN,
-				GLSZM_SZNN,
-				GLSZM_ZP,
-				GLSZM_GLV,
-				GLSZM_ZV,
-				GLSZM_ZE,
-				GLSZM_LGLZE,
-				GLSZM_HGLZE,
-				GLSZM_SALGLE,
-				GLSZM_SAHGLE,
-				GLSZM_LALGLE,
-				GLSZM_LAHGLE };
-			theFeatureSet.enableFeatures(F);
+			theFeatureSet.enableFeatures (GLSZMFeature::featureset);
 			continue;
 		}
 		if (s == FEA_NICK_ALL_GLDM)
 		{
-			auto F = {
-				GLDM_SDE,
-				GLDM_LDE,
-				GLDM_GLN,
-				GLDM_DN,
-				GLDM_DNN,
-				GLDM_GLV,
-				GLDM_DV,
-				GLDM_DE,
-				GLDM_LGLE,
-				GLDM_HGLE,
-				GLDM_SDLGLE,
-				GLDM_SDHGLE,
-				GLDM_LDLGLE,
-				GLDM_LDHGLE };
-			theFeatureSet.enableFeatures(F);
+			theFeatureSet.enableFeatures (GLDMFeature::featureset);
+			continue;
+		}
+		if (s == FEA_NICK_ALL_NGLDM)
+		{
+			theFeatureSet.enableFeatures (NGLDMfeature::featureset);
 			continue;
 		}
 		if (s == FEA_NICK_ALL_NGTDM)
 		{
-			auto F = {
-				NGTDM_COARSENESS,
-				NGTDM_CONTRAST,
-				NGTDM_BUSYNESS,
-				NGTDM_COMPLEXITY,
-				NGTDM_STRENGTH };
-			theFeatureSet.enableFeatures(F);
+			theFeatureSet.enableFeatures (NGTDMFeature::featureset);
 			continue;
 		}
 
@@ -719,11 +654,12 @@ void Environment::process_feature_list()
 			theFeatureSet.enableFeatures(F);
 			break; // No need to bother of others
 		}
-		// Process features individually
+
+		// 's' is an individual feature name, not feature group name. Process it now
 		AvailableFeatures af;
-		if (!theFeatureSet.findFeatureByString(s, af))
+		if (! theFeatureSet.findFeatureByString(s, af))
 		{
-			throw std::invalid_argument("Error: '" + s + "' is not a valid feature name. \n");
+			throw std::invalid_argument("Error: '" + s + "' is not a valid feature name \n");
 		}
 
 		theFeatureSet.enableFeature(af);

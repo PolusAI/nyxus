@@ -16,6 +16,29 @@
 class GLSZMFeature: public FeatureMethod
 {
 public:
+
+	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
+	// in the feature group nickname expansion, and in the feature value output 
+	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset = 
+	{ 
+		GLSZM_SAE,		// Small Area Emphasis
+		GLSZM_LAE,		// Large Area Emphasis
+		GLSZM_GLN,		// Gray Level Non - Uniformity
+		GLSZM_GLNN,		// Gray Level Non - Uniformity Normalized
+		GLSZM_SZN,		// Size - Zone Non - Uniformity
+		GLSZM_SZNN,		// Size - Zone Non - Uniformity Normalized
+		GLSZM_ZP,		// Zone Percentage
+		GLSZM_GLV,		// Gray Level Variance
+		GLSZM_ZV,		// Zone Variance
+		GLSZM_ZE,		// Zone Entropy
+		GLSZM_LGLZE,	// Low Gray Level Zone Emphasis
+		GLSZM_HGLZE,	// High Gray Level Zone Emphasis
+		GLSZM_SALGLE,	// Small Area Low Gray Level Emphasis
+		GLSZM_SAHGLE,	// Small Area High Gray Level Emphasis
+		GLSZM_LALGLE,	// Large Area Low Gray Level Emphasis
+		GLSZM_LAHGLE,	// Large Area High Gray Level Emphasis
+	};
+
 	GLSZMFeature ();
 
 	void calculate(LR& r);
@@ -25,25 +48,9 @@ public:
 	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 	// Compatibility with the manual reduce
-	static bool required(const FeatureSet& fs) {
-		return fs.anyEnabled({
-			GLSZM_SAE,
-			GLSZM_LAE,
-			GLSZM_GLN,
-			GLSZM_GLNN,
-			GLSZM_SZN,
-			GLSZM_SZNN,
-			GLSZM_ZP,
-			GLSZM_GLV,
-			GLSZM_ZV,
-			GLSZM_ZE,
-			GLSZM_LGLZE,
-			GLSZM_HGLZE,
-			GLSZM_SALGLE,
-			GLSZM_SAHGLE,
-			GLSZM_LALGLE,
-			GLSZM_LAHGLE
-			});
+	static bool required (const FeatureSet& fs) 
+	{
+		return fs.anyEnabled (GLSZMFeature::featureset);
 	}
 
 	// Small Area Emphasis

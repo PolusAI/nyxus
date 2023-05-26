@@ -4,25 +4,7 @@
 
 GLDZMFeature::GLDZMFeature() : FeatureMethod("GLDZMFeature")
 {
-	provide_features({
-		GLDZM_SDE,
-		GLDZM_LDE,
-		GLDZM_LGLE,
-		GLDZM_HGLE,
-		GLDZM_SDLGLE,
-		GLDZM_SDHGLE,
-		GLDZM_LDLGLE,
-		GLDZM_LDHGLE,
-		GLDZM_GLNU,
-		GLDZM_GLNUN,
-		GLDZM_ZDNU,
-		GLDZM_ZDNUN,
-		GLDZM_ZP,
-		GLDZM_GLM,
-		GLDZM_GLV,
-		GLDZM_ZDM,
-		GLDZM_ZDV,
-		GLDZM_ZDE });
+	provide_features (GLDZMFeature::featureset);
 }
 
 void GLDZMFeature::clear_buffers()

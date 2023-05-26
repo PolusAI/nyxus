@@ -8,21 +8,7 @@
 
 GLDMFeature::GLDMFeature() : FeatureMethod("GLDMFeature")
 {
-	provide_features({ 
-		GLDM_SDE,
-		GLDM_LDE,
-		GLDM_GLN,
-		GLDM_DN,
-		GLDM_DNN,
-		GLDM_GLV,
-		GLDM_DV,
-		GLDM_DE,
-		GLDM_LGLE,
-		GLDM_HGLE,
-		GLDM_SDLGLE,
-		GLDM_SDHGLE,
-		GLDM_LDLGLE,
-		GLDM_LDHGLE });
+	provide_features (GLDMFeature::featureset);
 }
 
 void GLDMFeature::calculate(LR& r)
