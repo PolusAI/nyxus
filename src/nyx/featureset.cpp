@@ -390,12 +390,14 @@ FeatureSet::FeatureSet()
 	enableAll(true);
 }
 
-bool FeatureSet::findFeatureByString(const std::string& featureName, AvailableFeatures& f)
+bool FeatureSet::findFeatureByString (const std::string& featureName, AvailableFeatures& f)
 {
-	if (Nyxus::UserFacingFeatureNames.find(featureName) == Nyxus::UserFacingFeatureNames.end())
+	auto it_f = Nyxus::UserFacingFeatureNames.find (featureName);
+
+	if (it_f == Nyxus::UserFacingFeatureNames.end())
 		return false;
 
-	f = Nyxus::UserFacingFeatureNames[featureName];
+	f = it_f->second;
 	return true;
 }
 
