@@ -403,10 +403,8 @@ void customize_gabor_feature_imp(
         throw std::invalid_argument("Invalid GABOR parameter value: " + ermsg);
 }
 
-
 std::map<std::string, ParameterTypes> get_params_imp(const std::vector<std::string>& vars ) {
     std::map<std::string, ParameterTypes> params;
-
 
     params["features"] = theEnvironment.recognizedFeatureNames;
     params["neighbor_distance"] = theEnvironment.n_pixel_distance;

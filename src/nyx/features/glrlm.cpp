@@ -8,23 +8,7 @@
 
 GLRLMFeature::GLRLMFeature() : FeatureMethod("GLRLMFeature")
 {
-	provide_features({
-		GLRLM_SRE,
-		GLRLM_LRE,
-		GLRLM_GLN,
-		GLRLM_GLNN,
-		GLRLM_RLN,
-		GLRLM_RLNN,
-		GLRLM_RP,
-		GLRLM_GLV,
-		GLRLM_RV,
-		GLRLM_RE,
-		GLRLM_LGLRE,
-		GLRLM_HGLRE,
-		GLRLM_SRLGLE,
-		GLRLM_SRHGLE,
-		GLRLM_LRLGLE,
-		GLRLM_LRHGLE });
+	provide_features (GLRLMFeature::featureset);
 }
 
 void GLRLMFeature::calculate (LR& r)

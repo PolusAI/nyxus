@@ -254,20 +254,20 @@ namespace Nyxus
 		GLSZM_LAHGLE,	// Large Area High Gray Level Emphasis
 
 		// GLDM:
-		GLDM_SDE,	// Small Dependence Emphasis(SDE)
-		GLDM_LDE,	// Large Dependence Emphasis (LDE)
-		GLDM_GLN,	// Gray Level Non-Uniformity (GLN)
-		GLDM_DN,	// Dependence Non-Uniformity (DN)
-		GLDM_DNN,	// Dependence Non-Uniformity Normalized (DNN)
-		GLDM_GLV,	// Gray Level Variance (GLV)
-		GLDM_DV,	// Dependence Variance (DV)
-		GLDM_DE,	// Dependence Entropy (DE)
-		GLDM_LGLE,	// Low Gray Level Emphasis (LGLE)
-		GLDM_HGLE,	// High Gray Level Emphasis (HGLE)
-		GLDM_SDLGLE,	// Small Dependence Low Gray Level Emphasis (SDLGLE)
-		GLDM_SDHGLE,	// Small Dependence High Gray Level Emphasis (SDHGLE)
-		GLDM_LDLGLE,	// Large Dependence Low Gray Level Emphasis (LDLGLE)
-		GLDM_LDHGLE,	// Large Dependence High Gray Level Emphasis (LDHGLE)
+		GLDM_SDE,		// Small Dependence Emphasis
+		GLDM_LDE,		// Large Dependence Emphasis
+		GLDM_GLN,		// Gray Level Non-Uniformity
+		GLDM_DN,		// Dependence Non-Uniformity
+		GLDM_DNN,		// Dependence Non-Uniformity Normalized
+		GLDM_GLV,		// Gray Level Variance
+		GLDM_DV,		// Dependence Variance
+		GLDM_DE,		// Dependence Entropy
+		GLDM_LGLE,		// Low Gray Level Emphasis
+		GLDM_HGLE,		// High Gray Level Emphasis
+		GLDM_SDLGLE,	// Small Dependence Low Gray Level Emphasis
+		GLDM_SDHGLE,	// Small Dependence High Gray Level Emphasis
+		GLDM_LDLGLE,	// Large Dependence Low Gray Level Emphasis
+		GLDM_LDHGLE,	// Large Dependence High Gray Level Emphasis
 
 		// NGLDM:
 		NGLDM_LDE,	// Low Dependence Emphasis
@@ -399,7 +399,7 @@ public:
 		for (auto f : desiredFeatures)
 			m_enabledFeatures[f] = false;
 	}
-	void enableFeatures(std::initializer_list<AvailableFeatures>& desiredFeatures) {
+	void enableFeatures(const std::initializer_list<AvailableFeatures>& desiredFeatures) {
 		for (auto f : desiredFeatures)
 			m_enabledFeatures[f] = true;
 	}
@@ -450,7 +450,7 @@ public:
 			m_enabledFeatures[STAT_FERET_DIAM_MODE] = true;
 	}
 	bool isEnabled(int fc) const { return fc < AvailableFeatures::_COUNT_ ? m_enabledFeatures[fc] : false; }
-	bool anyEnabled(std::initializer_list<int> F) const
+	bool anyEnabled(const std::initializer_list<AvailableFeatures> & F) const
 	{
 		for (auto f : F)
 			if (m_enabledFeatures[f])

@@ -9,12 +9,7 @@
 
 NGTDMFeature::NGTDMFeature(): FeatureMethod("NGTDMFeature")
 {
-	provide_features({
-		NGTDM_COARSENESS,
-		NGTDM_CONTRAST,
-		NGTDM_BUSYNESS,
-		NGTDM_COMPLEXITY,
-		NGTDM_STRENGTH });
+	provide_features (NGTDMFeature::featureset);
 }
 
 void NGTDMFeature::clear_buffers()

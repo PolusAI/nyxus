@@ -121,37 +121,7 @@ namespace Nyxus
 
 				// Parameterized feature
 				// --GLCM family
-				bool angledGlcmFeature =
-					fc == GLCM_ASM ||
-					fc == GLCM_ACOR ||
-					fc == GLCM_CLUPROM ||
-					fc == GLCM_CLUSHADE ||
-					fc == GLCM_CLUTEND ||
-					fc == GLCM_CONTRAST ||
-					fc == GLCM_CORRELATION ||
-					fc == GLCM_DIFAVE ||
-					fc == GLCM_DIFENTRO ||
-					fc == GLCM_DIFVAR ||
-					fc == GLCM_DIS ||
-					fc == GLCM_ENERGY ||
-					fc == GLCM_ENTROPY ||
-					fc == GLCM_HOM1 ||
-					fc == GLCM_HOM2 ||
-					fc == GLCM_ID ||
-					fc == GLCM_IDN ||
-					fc == GLCM_IDM ||
-					fc == GLCM_IDMN ||
-					fc == GLCM_INFOMEAS1 ||
-					fc == GLCM_INFOMEAS2 ||
-					fc == GLCM_IV ||
-					fc == GLCM_JAVE ||
-					fc == GLCM_JE ||
-					fc == GLCM_JMAX ||
-					fc == GLCM_JVAR ||
-					fc == GLCM_SUMAVERAGE ||
-					fc == GLCM_SUMENTROPY ||
-					fc == GLCM_SUMVARIANCE ||
-					fc == GLCM_VARIANCE;
+				bool angledGlcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
 				if (angledGlcmFeature)
 				{
 					// Polulate with angles
@@ -167,23 +137,7 @@ namespace Nyxus
 				}
 
 				// --GLRLM family
-				bool glrlmFeature =
-					fc == GLRLM_SRE ||
-					fc == GLRLM_LRE ||
-					fc == GLRLM_GLN ||
-					fc == GLRLM_GLNN ||
-					fc == GLRLM_RLN ||
-					fc == GLRLM_RLNN ||
-					fc == GLRLM_RP ||
-					fc == GLRLM_GLV ||
-					fc == GLRLM_RV ||
-					fc == GLRLM_RE ||
-					fc == GLRLM_LGLRE ||
-					fc == GLRLM_HGLRE ||
-					fc == GLRLM_SRLGLE ||
-					fc == GLRLM_SRHGLE ||
-					fc == GLRLM_LRLGLE ||
-					fc == GLRLM_LRHGLE;
+				bool glrlmFeature = std::find (GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
 				if (glrlmFeature)
 				{
 					// Polulate with angles
@@ -284,37 +238,7 @@ namespace Nyxus
 
 				// Parameterized feature
 				// --GLCM family
-				bool angledGlcmFeature =
-					fc == GLCM_ASM ||
-					fc == GLCM_ACOR ||
-					fc == GLCM_CLUPROM ||
-					fc == GLCM_CLUSHADE ||
-					fc == GLCM_CLUTEND ||
-					fc == GLCM_CONTRAST ||
-					fc == GLCM_CORRELATION ||
-					fc == GLCM_DIFAVE ||
-					fc == GLCM_DIFENTRO ||
-					fc == GLCM_DIFVAR ||
-					fc == GLCM_DIS ||
-					fc == GLCM_ENERGY ||
-					fc == GLCM_ENTROPY ||
-					fc == GLCM_HOM1 ||
-					fc == GLCM_HOM2 ||
-					fc == GLCM_ID ||
-					fc == GLCM_IDN ||
-					fc == GLCM_IDM ||
-					fc == GLCM_IDMN ||
-					fc == GLCM_INFOMEAS1 ||
-					fc == GLCM_INFOMEAS2 ||
-					fc == GLCM_IV ||
-					fc == GLCM_JAVE ||
-					fc == GLCM_JE ||
-					fc == GLCM_JMAX ||
-					fc == GLCM_JVAR ||
-					fc == GLCM_SUMAVERAGE ||
-					fc == GLCM_SUMENTROPY ||
-					fc == GLCM_SUMVARIANCE ||
-					fc == GLCM_VARIANCE;
+				bool angledGlcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
 				if (angledGlcmFeature)
 				{
 					// Mock angled values if they haven't been calculated for some error reason
@@ -335,23 +259,7 @@ namespace Nyxus
 				}
 
 				// --GLRLM family
-				bool glrlmFeature =
-					fc == GLRLM_SRE ||
-					fc == GLRLM_LRE ||
-					fc == GLRLM_GLN ||
-					fc == GLRLM_GLNN ||
-					fc == GLRLM_RLN ||
-					fc == GLRLM_RLNN ||
-					fc == GLRLM_RP ||
-					fc == GLRLM_GLV ||
-					fc == GLRLM_RV ||
-					fc == GLRLM_RE ||
-					fc == GLRLM_LGLRE ||
-					fc == GLRLM_HGLRE ||
-					fc == GLRLM_SRLGLE ||
-					fc == GLRLM_SRHGLE ||
-					fc == GLRLM_LRLGLE ||
-					fc == GLRLM_LRHGLE;
+				bool glrlmFeature = std::find (GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
 				if (glrlmFeature)
 				{
 					// Polulate with angles

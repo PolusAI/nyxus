@@ -14,11 +14,31 @@
 
 class GLRLMFeature: public FeatureMethod
 {
-	using P_matrix = SimpleMatrix<int>;
-	using AngledFtrs = std::vector<double>;
+public:	
+	
+	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
+	// in the feature group nickname expansion, and in the feature value output 
+	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
+	{
+		GLRLM_SRE,		// Short Run Emphasis 
+		GLRLM_LRE,		// Long Run Emphasis 
+		GLRLM_GLN,		// Gray Level Non-Uniformity 
+		GLRLM_GLNN,		// Gray Level Non-Uniformity Normalized 
+		GLRLM_RLN,		// Run Length Non-Uniformity
+		GLRLM_RLNN,		// Run Length Non-Uniformity Normalized 
+		GLRLM_RP,		// Run Percentage
+		GLRLM_GLV,		// Gray Level Variance 
+		GLRLM_RV,		// Run Variance 
+		GLRLM_RE,		// Run Entropy 
+		GLRLM_LGLRE,	// Low Gray Level Run Emphasis 
+		GLRLM_HGLRE,	// High Gray Level Run Emphasis 
+		GLRLM_SRLGLE,	// Short Run Low Gray Level Emphasis 
+		GLRLM_SRHGLE,	// Short Run High Gray Level Emphasis 
+		GLRLM_LRLGLE,	// Long Run Low Gray Level Emphasis 
+		GLRLM_LRHGLE	// Long Run High Gray Level Emphasis 
+	};
 
-public:
-	GLRLMFeature(); //(int minI, int maxI, const ImageMatrix& im);
+	GLRLMFeature();
 
 	void calculate(LR& r);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
@@ -27,26 +47,13 @@ public:
 	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 	// Compatibility with the manual reduce
-	static int required(const FeatureSet& fs) {
-		return fs.anyEnabled({
-			GLRLM_SRE,
-			GLRLM_LRE,
-			GLRLM_GLN,
-			GLRLM_GLNN,
-			GLRLM_RLN,
-			GLRLM_RLNN,
-			GLRLM_RP,
-			GLRLM_GLV,
-			GLRLM_RV,
-			GLRLM_RE,
-			GLRLM_LGLRE,
-			GLRLM_HGLRE,
-			GLRLM_SRLGLE,
-			GLRLM_SRHGLE,
-			GLRLM_LRLGLE,
-			GLRLM_LRHGLE
-		});
+	static int required(const FeatureSet& fs) 
+	{
+		return fs.anyEnabled (GLRLMFeature::featureset);
 	}
+
+	using P_matrix = SimpleMatrix<int>;
+	using AngledFtrs = std::vector<double>;
 
 	// 1. Short Run Emphasis 
 	void calc_SRE (AngledFtrs& af);

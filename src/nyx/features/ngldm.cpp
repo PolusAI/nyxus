@@ -4,25 +4,7 @@
 
 NGLDMfeature::NGLDMfeature() : FeatureMethod("NGLDMfeature")
 {
-	provide_features ({
-		NGLDM_LDE,
-		NGLDM_HDE,
-		NGLDM_LGLCE,
-		NGLDM_HGLCE,
-		NGLDM_LDLGLE,
-		NGLDM_LDHGLE,
-		NGLDM_HDLGLE,
-		NGLDM_HDHGLE,
-		NGLDM_GLNU,
-		NGLDM_GLNUN,
-		NGLDM_DCNU,
-		NGLDM_DCNUN,
-		NGLDM_GLM,
-		NGLDM_GLV,
-		NGLDM_DCM,
-		NGLDM_DCV,
-		NGLDM_DCE,
-		NGLDM_DCENE });
+	provide_features (NGLDMfeature::featureset);
 }
 
 void NGLDMfeature::clear_buffers()
