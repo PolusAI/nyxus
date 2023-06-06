@@ -26,36 +26,36 @@ public:
 	// in the feature group nickname expansion, and in the feature value output 
 	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
 	{
-		GLCM_ASM,		// Angular second moment
-		GLCM_ACOR,		// Autocorrelation, IBSI # QWB0
-		GLCM_CLUPROM,	// Cluster prominence, IBSI # AE86
-		GLCM_CLUSHADE,	// Cluster shade, IBSI # 7NFM
-		GLCM_CLUTEND,	// Cluster tendency, IBSI # DG8W
-		GLCM_CONTRAST,	// Contrast, IBSI # ACUI
-		GLCM_CORRELATION,	// Correlation, IBSI # NI2N
-		GLCM_DIFAVE,	// Difference average, IBSI # TF7R
-		GLCM_DIFENTRO,	// Difference entropy, IBSI # NTRS
-		GLCM_DIFVAR,	// Difference variance, IBSI # D3YU
-		GLCM_DIS,		// Dissimilarity, IBSI # 8S9J
+		GLCM_ACOR,		// Autocorrelation, IBSI # QWB0	(+)
+		GLCM_ASM,		// Angular second moment	IBSI # 8ZQL	(+)
+		GLCM_CLUPROM,	// Cluster prominence, IBSI # AE86 (+)
+		GLCM_CLUSHADE,	// Cluster shade, IBSI # 7NFM	(+)
+		GLCM_CLUTEND,	// Cluster tendency, IBSI # DG8W	(+)
+		GLCM_CONTRAST,	// Contrast, IBSI # ACUI	(+)
+		GLCM_CORRELATION,	// Correlation, IBSI # NI2N	(+)
+		GLCM_DIFAVE,	// Difference average, IBSI # TF7R	(+)
+		GLCM_DIFENTRO,	// Difference entropy, IBSI # NTRS	(+)
+		GLCM_DIFVAR,	// Difference variance, IBSI # D3YU	(+)
+		GLCM_DIS,		// Dissimilarity, IBSI # 8S9J	(+)
 		GLCM_ENERGY,	// Energy
 		GLCM_ENTROPY,	// Entropy
 		GLCM_HOM1,		// Homogeneity-1 (PyR)
 		GLCM_HOM2,		// Homogeneity-2 (PyR)
-		GLCM_IDM,		// Inv diff mom, IBSI # WF0Z
-		GLCM_IDMN,		// Inv diff mom normalized, IBSI # 1QCO
-		GLCM_ID,		// Inv diff, IBSI # IB1Z
-		GLCM_IDN,		// Inv diff normalized, IBSI # NDRX
-		GLCM_INFOMEAS1,	// Information measure of correlation 1, IBSI # R8DG
-		GLCM_INFOMEAS2,	// Information measure of correlation 2, IBSI # JN9H
-		GLCM_IV,		// Inv variance, IBSI # E8JP
-		GLCM_JAVE,		// Joint average, IBSI # 60VM
-		GLCM_JE,		// Joint entropy, IBSI # TU9B
-		GLCM_JMAX,		// Joint max (aka PyR max probability), IBSI # GYBY
-		GLCM_JVAR,		// Joint var (aka PyR Sum of Squares), IBSI # UR99
-		GLCM_SUMAVERAGE,	// Sum average, IBSI # ZGXS
-		GLCM_SUMENTROPY,	// Sum entropy, IBSI # P6QZ
-		GLCM_SUMVARIANCE,	// Sum variance, IBSI # OEEB
-		GLCM_VARIANCE
+		GLCM_ID,		// Inv diff, IBSI # IB1Z	(+)
+		GLCM_IDN,		// Inv diff normalized, IBSI # NDRX	(+)
+		GLCM_IDM,		// Inv diff mom, IBSI # WF0Z	(+)
+		GLCM_IDMN,		// Inv diff mom normalized, IBSI # 1QCO	(+)
+		GLCM_INFOMEAS1,	// Information measure of correlation 1, IBSI # R8DG	(+)
+		GLCM_INFOMEAS2,	// Information measure of correlation 2, IBSI # JN9H	(+)
+		GLCM_IV,		// Inv variance, IBSI # E8JP	(+)
+		GLCM_JAVE,		// Joint average, IBSI # 60VM (+)
+		GLCM_JE,		// Joint entropy, IBSI # TU9B	(+)
+		GLCM_JMAX,		// Joint max (aka PyR max probability), IBSI # GYBY (+)
+		GLCM_JVAR,		// Joint var (aka PyR Sum of Squares), IBSI # UR99	(+)
+		GLCM_SUMAVERAGE,	// Sum average, IBSI # ZGXS		(+)
+		GLCM_SUMENTROPY,	// Sum entropy, IBSI # P6QZ		(+)
+		GLCM_SUMVARIANCE,	// Sum variance, IBSI # OEEB	(+)
+		GLCM_VARIANCE	// Variance
 	};
 
 	static int offset;	// default value: 1
@@ -109,6 +109,7 @@ private:
 		bool normalize);
 
 	void calculatePxpmy();
+	void calculate_by_row_mean();
 
 	static inline int cast_to_range(PixIntens orig_I, PixIntens min_orig_I, PixIntens max_orig_I, int min_target_I, int max_target_I)
 	{
@@ -128,9 +129,9 @@ private:
 	double f_dvar (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
 	double f_dentropy (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
 	double f_GLCM_ACOR (const SimpleMatrix<double>& P_matrix, int tone_count);
-	double f_GLCM_CLUPROM (const SimpleMatrix<double>& P_matrix, int tone_count, double mean_x, double mean_y);
-	double f_GLCM_CLUSHADE (const SimpleMatrix<double>& P_matrix, int tone_count, double mean_x, double mean_y);
-	double f_GLCM_CLUTEND (const SimpleMatrix<double>& P_matrix, int tone_count, double mean_x, double mean_y);
+	double f_GLCM_CLUPROM();
+	double f_GLCM_CLUSHADE();
+	double f_GLCM_CLUTEND();
 	double f_GLCM_DIS (const SimpleMatrix<double>& P_matrix, int tone_count);
 	double f_GLCM_HOM2 (const SimpleMatrix<double>& P_matrix, int tone_count);
 	double f_GLCM_IDMN (const SimpleMatrix<double>& P_matrix, int tone_count);
@@ -191,6 +192,7 @@ private:
 	const double LOG10_2 = 0.30102999566;	// precalculated log 2 base 10
 	SimpleMatrix<double> P_matrix;
 	std::vector<double> Pxpy, Pxmy;
+	double by_row_mean;	
 	const double EPSILON = 0.000000001;
 };
 

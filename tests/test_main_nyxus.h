@@ -13,6 +13,11 @@ namespace Nyxus
         auto diff = fval - ground_truth;
         auto tolerance = ground_truth / frac_tolerance;
         bool good = std::abs(diff) <= std::abs(tolerance);
+
+        // Show the failure info in failed
+        if (!good)
+            std::cout << "\tabs of (actual=" << fval << " - groundtruth=" << ground_truth << ")=" << std::abs(diff) << " > tolerance = " << tolerance << "\n";
+
         return good;
     }
 

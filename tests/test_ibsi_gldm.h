@@ -111,8 +111,6 @@ void test_ibsi_gldm_feature(const AvailableFeatures& feature, const std::string&
     // Check the feature values vs ground truth
     total += roidata3.fvals[feature][0];
 
-    std::cerr << "value: " << total/4 << std::endl;
-
     ASSERT_TRUE(agrees_gt(total/4, IBSI_gldm_values[feature_name], 100.));
 }
 

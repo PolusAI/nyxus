@@ -14,19 +14,31 @@
 
 // dig. phantom values for intensity based features
 static std::unordered_map<std::string, float> IBSI_glcm_values {
-    {"GLCM_DIFAVE", 1.42},
-    {"GLCM_DIFVAR", 2.9},
-    {"GLCM_DIFENTRO", 1.4},
-    {"GLCM_SUMAVERAGE", 4.28},
-    {"GLCM_SUMVARIANCE", 5.47},
-    {"GLCM_SUMENTROPY", 1.6}, 
+    {"GLCM_ACOR", 5.09},
     {"GLCM_ASM", 0.368},
+    {"GLCM_CLUPROM", 79.1},
+    {"GLCM_CLUSHADE", 7},
+    {"GLCM_CLUTEND", 5.47},
     {"GLCM_CONTRAST", 5.28},
-    {"GLCM_IDM", 0.619},
     {"GLCM_CORRELATION", -0.0121},
+    {"GLCM_DIFAVE", 1.42},
+    {"GLCM_DIFENTRO", 1.4},
+    {"GLCM_DIFVAR", 2.9},
+    {"GLCM_DIS", 1.42},
+    {"GLCM_ID", 0.678},
+    {"GLCM_IDN", 0.851},
+    {"GLCM_IDM", 0.619},
+    {"GLCM_IDMN", 0.899},
     {"GLCM_INFOMEAS1", -0.155},
-    {"GLCM_INFOMEAS2", 0.487}
-
+    {"GLCM_INFOMEAS2", 0.487},
+    {"GLCM_IV", 0.0567},
+    {"GLCM_JAVE", 2.14},
+    {"GLCM_JE", 2.05},
+    {"GLCM_JMAX", 0.519},
+    {"GLCM_JVAR", 2.69},
+    {"GLCM_SUMAVERAGE", 4.28},
+    {"GLCM_SUMENTROPY", 1.6},
+    {"GLCM_SUMVARIANCE", 5.47}
 };
 
 
@@ -49,7 +61,6 @@ void test_ibsi_glcm_feature(const AvailableFeatures& feature, const std::string&
     // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
     f.save_value(roidata.fvals);
  
-
     total += roidata.fvals[feature][0];
     total += roidata.fvals[feature][1];
     total += roidata.fvals[feature][2];
@@ -133,37 +144,64 @@ void test_ibsi_glcm_feature(const AvailableFeatures& feature, const std::string&
     ASSERT_TRUE(agrees_gt(total / 16, IBSI_glcm_values[feature_name], 100.));
 }
 
+void test_ibsi_glcm_ACOR()
+{
+    test_ibsi_glcm_feature(GLCM_ACOR, "GLCM_ACOR");
+}
+
+void test_ibsi_glcm_CLUPROM()
+{
+    test_ibsi_glcm_feature(GLCM_CLUPROM, "GLCM_CLUPROM");
+}
+
+void test_ibsi_glcm_CLUSHADE()
+{
+    test_ibsi_glcm_feature(GLCM_CLUSHADE, "GLCM_CLUSHADE");
+}
+
+void test_ibsi_glcm_CLUTEND()
+{
+    test_ibsi_glcm_feature(GLCM_CLUTEND, "GLCM_CLUTEND");
+}
 
 void test_ibsi_glcm_difference_average()
 {
     test_ibsi_glcm_feature(GLCM_DIFAVE, "GLCM_DIFAVE");
 }
 
+void test_ibsi_glcm_difference_entropy()
+{
+    test_ibsi_glcm_feature(GLCM_DIFENTRO, "GLCM_DIFENTRO");
+}
 
 void test_ibsi_glcm_difference_variance()
 {
     test_ibsi_glcm_feature(GLCM_DIFVAR, "GLCM_DIFVAR");
 }
 
-
-void test_ibsi_glcm_difference_entropy()
+void test_ibsi_glcm_DIS()
 {
-    test_ibsi_glcm_feature(GLCM_DIFENTRO, "GLCM_DIFENTRO");
+    test_ibsi_glcm_feature(GLCM_DIS, "GLCM_DIS");
 }
 
-void test_ibsi_glcm_sum_average()
+void test_ibsi_glcm_ID()
 {
-    test_ibsi_glcm_feature(GLCM_SUMAVERAGE, "GLCM_SUMAVERAGE");
+    test_ibsi_glcm_feature(GLCM_ID, "GLCM_ID");
 }
 
-void test_ibsi_glcm_sum_variance()
+void test_ibsi_glcm_IDN()
 {
-    test_ibsi_glcm_feature(GLCM_SUMVARIANCE, "GLCM_SUMVARIANCE");
+    test_ibsi_glcm_feature(GLCM_IDN, "GLCM_IDN");
 }
 
-void test_ibsi_glcm_sum_entropy()
+void test_ibsi_glcm_IDM()
 {
-   test_ibsi_glcm_feature(GLCM_SUMENTROPY, "GLCM_SUMENTROPY");
+    test_ibsi_glcm_feature(GLCM_IDM, "GLCM_IDM");
+}
+
+void test_ibsi_glcm_IDMN()
+{
+    test_ibsi_glcm_feature(GLCM_IDMN, "GLCM_IDMN");
 }
 
 void test_ibsi_glcm_angular_2d_moment()
@@ -191,6 +229,46 @@ void test_ibsi_glcm_infomeas2()
    test_ibsi_glcm_feature(GLCM_INFOMEAS2, "GLCM_INFOMEAS2");
 }
 
+void test_ibsi_glcm_IV()
+{
+    test_ibsi_glcm_feature(GLCM_IV, "GLCM_IV");
+}
+
+void test_ibsi_glcm_JAVE()
+{
+    test_ibsi_glcm_feature(GLCM_JAVE, "GLCM_JAVE");
+}
+
+void test_ibsi_glcm_JE()
+{
+    test_ibsi_glcm_feature(GLCM_JE, "GLCM_JE");
+}
+
+void test_ibsi_glcm_JMAX()
+{
+    test_ibsi_glcm_feature(GLCM_JMAX, "GLCM_JMAX");
+}
+
+void test_ibsi_glcm_JVAR()
+{
+    test_ibsi_glcm_feature(GLCM_JVAR, "GLCM_JVAR");
+}
+
 void test_ibsi_glcm_inversed_difference_moment() {
     test_ibsi_glcm_feature(GLCM_IDM, "GLCM_IDM");
+}
+
+void test_ibsi_glcm_sum_average()
+{
+    test_ibsi_glcm_feature(GLCM_SUMAVERAGE, "GLCM_SUMAVERAGE");
+}
+
+void test_ibsi_glcm_sum_entropy()
+{
+   test_ibsi_glcm_feature(GLCM_SUMENTROPY, "GLCM_SUMENTROPY");
+}
+
+void test_ibsi_glcm_sum_variance()
+{
+    test_ibsi_glcm_feature(GLCM_SUMVARIANCE, "GLCM_SUMVARIANCE");
 }

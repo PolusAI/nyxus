@@ -130,8 +130,6 @@ void test_glcm_feature(const AvailableFeatures& feature, const std::string& feat
     total += roidata3.fvals[feature][2];
     total += roidata3.fvals[feature][3];
 
-    std::cout << "value: " << total / 16 << std::endl;
-
     ASSERT_TRUE(agrees_gt(total / 16, glcm_values[feature_name], 100.));
 }
 
