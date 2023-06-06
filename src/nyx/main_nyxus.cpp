@@ -38,6 +38,13 @@ int main (int argc, char** argv)
 	}
 	theFeatureMgr.apply_user_selection();
 
+
+	bool is_csv_out = true;
+	
+#ifdef USE_ARROW
+	is_csv_out = !(theEnvironment.arrow_output_type == "arrow" || theEnvironment.arrow_output_type == "parquet");
+#endif
+
 	// Scan file names
 	std::vector <std::string> intensFiles, labelFiles;
 	int errorCode = Nyxus::read_dataset (
@@ -71,12 +78,11 @@ int main (int argc, char** argv)
 		theEnvironment.n_pixel_scan_threads, 
 		theEnvironment.n_reduce_threads,
 		min_online_roi_size,
-		true, // 'true' to save to csv
+		is_csv_out, // 'true' to save to csv
 		theEnvironment.output_dir);
 
 	// Check the error code 
-	switch (errorCode)
-	{
+	switch (errorCode)	{
 	case 0:		// Success
 		break;
 	case 1:		// Dataset structure error e.g. intensity-label file name mismatch
@@ -92,6 +98,26 @@ int main (int argc, char** argv)
 		std::cout << std::endl << "Error #" << errorCode << std::endl;
 		break;
 	}
+
+
+	#ifdef USE_ARROW
+
+		if (theEnvironment.arrow_output_type == "arrow") {
+
+			theEnvironment.arrow_output.create_arrow_file(theResultsCache.get_headerBuf(),
+                                          	theResultsCache.get_stringColBuf(),
+                                          	theResultsCache.get_calcResultBuf(),
+                                          	theResultsCache.get_num_rows());
+
+		} else if (theEnvironment.arrow_output_type == "parquet"){
+
+			theEnvironment.arrow_output.create_parquet_file(theResultsCache.get_headerBuf(),
+                                          theResultsCache.get_stringColBuf(),
+                                          theResultsCache.get_calcResultBuf(),
+                                          theResultsCache.get_num_rows());
+		}
+
+	#endif 
 
 	// Current time stamp #2
 	VERBOSLVL1(std::cout << "\n>>> STARTED >>>\t" << startTS << "\n>>> FINISHED >>>\t" << getTimeStr() << "\n";)
