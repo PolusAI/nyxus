@@ -7,9 +7,13 @@ if(DEFINED ENV{NYXUS_DEP_DIR})
 	link_directories($ENV{NYXUS_DEP_DIR}/lib)
 endif()
 
+include(ExternalProject)
+include(FindPkgConfig)
+include(GNUInstallDirs)
+
 find_package(CUDA)
 option(USEGPU "Use GPU" ON)
-if(CUDA_FOUND AND USEGPU)
+if(CUDA_FOUND AND USEGPU) 
 	set(USEGPU ON)
 	if (CUDA_VERSION_MAJOR STREQUAL "10")
 		set(CUDA_ARCH_LIST "35;37;50;72;75")
@@ -35,6 +39,7 @@ endif()
 #==== Compiler Options
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 
 if(USEGPU)
     enable_language("CUDA")
@@ -155,11 +160,48 @@ set(SOURCE
 	src/nyx/scan_fastloader_way.cpp
 )
 
+option(PARQUET_LINK_SHARED "Link to the Parquet shared library" ON)
+
+option(USEARROW "Use Arrow" ON)
+
+if (USEARROW)
+	# Find arrow library
+	find_library(ARROW_LIB arrow)
+
+	# Look for installed packages the system
+	find_package(Parquet REQUIRED)
+
+	# Look for installed packages the system
+	find_package(Arrow REQUIRED)
+
+	add_definitions(-DUSE_ARROW)
+endif()
+
 
 # CLI
 if(BUILD_CLI)
+
 	add_executable(nyxus ${SOURCE} src/nyx/main_nyxus.cpp)
 	add_executable(nyxushie src/nyx/dirs_and_files.cpp src/nyx/environment_basic.cpp src/nyx/image_loader1x.cpp src/nyx/main_nyxushie.cpp src/nyx/nested_roi.cpp src/nyx/python/nested_roi_py.cpp src/nyx/roi_cache_basic.cpp)
+
+	if(USEARROW)
+		if (ARROW_LIB)
+
+			target_link_libraries(nyxus PRIVATE ${ARROW_LIB} )
+
+			target_link_libraries(nyxus PRIVATE arrow_shared )
+
+			if(PARQUET_LINK_SHARED)
+				target_link_libraries(nyxus PRIVATE Parquet::parquet_shared)
+			else()
+				target_link_libraries(nyxus PRIVATE Parquet::parquet_static)
+			endif()
+
+		else()
+			message(FATAL_ERROR "libarrow.so not found.")
+		endif()
+	endif()
+
 endif()
 
 
@@ -273,10 +315,63 @@ if(USEGPU)
 	endif()
 endif()
 
+
+
 if(BUILD_LIB)
+
+	if(USEARROW)
+		if(ARROW_LIB)
+
+			# Find Python
+			find_package(Python REQUIRED COMPONENTS Interpreter Development)
+
+			# Execute the Python script to find pyarrow include path
+			execute_process(
+				COMMAND ${Python_EXECUTABLE} -c "import pyarrow as pa; print(pa.get_include())"
+				OUTPUT_VARIABLE PATH_OUTPUT
+				OUTPUT_STRIP_TRAILING_WHITESPACE
+			)
+
+			# Store the path in a CMake variable
+			set(PYARROW_INCLUDE_PATH "${PATH_OUTPUT}" CACHE INTERNAL "Path to pyarrow include directory")
+
+			# Execute the Python script to find pyarrow library path
+			execute_process(
+				COMMAND ${Python_EXECUTABLE} -c "import pyarrow as pa; path=pa.get_library_dirs()[0] + '/libarrow_python.dylib'; print(path)"
+				OUTPUT_VARIABLE LIB_PATH_OUTPUT
+				OUTPUT_STRIP_TRAILING_WHITESPACE
+			)
+
+			# Store the path in a CMake variable
+			set(PYARROW_LIB_PATH "${LIB_PATH_OUTPUT}" CACHE INTERNAL "Path to pyarrow library directory")
+
+			# Print the path
+			message(STATUS "PyArrow Include Path: ${PYARROW_INCLUDE_PATH}")
+			message(STATUS "PyArrow Include Path: ${PYARROW_LIB_PATH}")
+
+			target_link_libraries(backend PRIVATE ${ARROW_LIB} )
+			target_link_libraries(backend PRIVATE ${PYARROW_LIB_PATH} )
+
+			include_directories(${PYARROW_INCLUDE_PATH})
+
+			target_link_libraries(backend PRIVATE arrow_shared )
+			target_include_directories(backend PRIVATE ${Python_INCLUDE_DIRS})
+
+			if(PARQUET_LINK_SHARED)
+				target_link_libraries(backend PRIVATE Parquet::parquet_shared)
+			else()
+				target_link_libraries(backend PRIVATE Parquet::parquet_static)
+			endif()
+
+		else()
+			message(FATAL_ERROR "libarrow.so not found.")
+		endif()
+	endif()
+
 	target_compile_definitions(backend PRIVATE WITH_PYTHON_H)
 	# VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
 	target_compile_definitions(backend PRIVATE VERSION_INFO=${VERSION_INFO})
+
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
