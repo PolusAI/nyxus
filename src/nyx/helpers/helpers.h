@@ -283,5 +283,23 @@ namespace Nyxus
 	}
 
 	bool parse_as_float(const std::string& raw, float& result);
+
+	/**
+	 * @brief Check is str ends with substr
+	 * 
+	 * @param str String to check ending of
+	 * @param substr Ending to check for
+	 * @return true str ends with substr
+	 * @return false str does not end with substr
+	 */
+	inline bool ends_with_substr(const std::string& str, const std::string& substr) {
+
+		if (str.length() >= substr.length()) {
+        	return (0 == str.compare(str.length() - substr.length(), substr.length(), substr));
+		} 
+
+		return false;
+	}
+
 }
 
