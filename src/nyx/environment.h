@@ -7,6 +7,11 @@
 #include "roi_blacklist.h"
 #include "cli_gabor_options.h"
 
+#ifdef USE_ARROW
+	#include "output_writers.h"
+	#include "arrow_output.h"
+#endif
+
 #ifdef USE_GPU
 	#include <cuda_runtime.h>
 #endif
@@ -81,6 +86,9 @@
 #define VERBOSITY_ROI_INFO 4
 #define VERBOSITY_DETAILED 8
 
+// Arrow ouput
+#define ARROW_OUPUT_TYPE "--arrowOuputType"
+
 /// @brief Class encapsulating the the feature extraction environment - command line option values, default values, etc. Use it to add a parseable command line parameter.
 class Environment: public BasicEnvironment
 {
@@ -98,6 +106,13 @@ public:
 				intSegMapFile = "";
 
 	bool singleROI = false; // is set to 'true' parse_cmdline() if labels_dir==intensity_dir
+
+#ifdef USE_ARROW
+
+	ArrowOutput arrow_output = ArrowOutput();
+	std::string arrow_output_type = "";
+	
+#endif
 
 	std::string embedded_pixel_size = "";
 
@@ -169,6 +184,8 @@ public:
 	bool parse_gabor_options_raw_inputs (std::string& error_message);
 	GaborOptions gaborOptions;
 
+	bool arrow_is_enabled();
+
 private:
 
 	std::vector<std::tuple<std::string, std::string>> recognizedArgs;	// Accepted command line arguments
@@ -206,6 +223,8 @@ private:
 	#ifdef CHECKTIMING
 		std::string rawExclusiveTiming = "";
 	#endif
+
+	
 };
 
 namespace Nyxus

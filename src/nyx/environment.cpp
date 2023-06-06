@@ -721,7 +721,11 @@ bool Environment::parse_cmdline(int argc, char **argv)
 				find_string_argument(i, GABOR_KERSIZE, gaborOptions.rawKerSize) ||
 				find_string_argument(i, GABOR_F0, gaborOptions.rawF0) ||
 				find_string_argument(i, GABOR_THETA, gaborOptions.rawTheta) ||
-				find_string_argument(i, GABOR_THRESHOLD, gaborOptions.rawGrayThreshold)
+				find_string_argument(i, GABOR_THRESHOLD, gaborOptions.rawGrayThreshold) 
+
+				#ifdef USE_ARROW
+					|| find_string_argument(i, ARROW_OUPUT_TYPE, arrow_output_type)
+				#endif
 
 				#ifdef CHECKTIMING
 					|| find_string_argument(i, EXCLUSIVETIMING, rawExclusiveTiming)
@@ -1191,6 +1195,15 @@ bool Environment::parse_gabor_options_raw_inputs (std::string& error_message)
 		return false;
 	}
 	return true;
+}
+
+
+bool Environment::arrow_is_enabled() {
+	#ifdef USE_ARROW
+		return true;
+	#else
+		return false;
+	#endif
 }
 
 #ifdef USE_GPU
