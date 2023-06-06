@@ -201,6 +201,89 @@ will print the dictionary
 }
 ```
 
+## Using Arrow for feature results
+
+Nyxus provides the ability to get the results of the feature calculations in Arrow IPC and Parquet formats. To create an Arrow IPC or Parquet file, use the `create_arrow_ipc_file()` and `create_parquet_file()` methods on a Nyxus object. For example,
+
+```python
+    from nyxus import Nyxus
+    import numpy as np
+
+    intens = np.array([
+        [[1, 4, 4, 1, 1],
+            [1, 4, 6, 1, 1],
+            [4, 1, 6, 4, 1],
+            [4, 4, 6, 4, 1]],
+                    
+        [[1, 4, 4, 1, 1],
+            [1, 1, 6, 1, 1],
+            [1, 1, 3, 1, 1],
+            [4, 4, 6, 1, 1]],
+        
+        [[1, 4, 4, 1, 1],
+            [1, 1, 1, 1, 1],
+            [1, 1, 6, 1, 1],
+            [1, 1, 6, 1, 1]],
+        
+        [[1, 4, 4, 1, 1],
+            [1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1],
+            [1, 1, 6, 1, 1]],
+    ])
+
+    seg = np.array([
+        [[1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1]],
+                    
+        [[1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1],
+            [0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1]],
+        
+        [[1, 1, 1, 0, 0],
+            [1, 1, 1, 1, 1],
+            [1, 1, 0, 1, 1],
+            [1, 1, 1, 1, 1]],
+                    
+        [[1, 1, 1, 0, 0],
+            [1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1]]
+        
+    ])
+
+    nyx = Nyxus(["*ALL_INTENSITY*"])
+
+    features = nyx.featurize(intens, seg)
+
+    nyx.create_arrow_file()
+
+    arrow_file_path = nyx.get_arrow_ipc_file()
+
+    print(arrow_file_path)
+
+```
+
+The output is:
+
+```bash
+    out.arrow
+```
+
+Note that both of these methods have an optional argument for a path to be provided of where to write the file to. For example, `nyx.create_arrow_file('out/out.arrow')`. For Arrow IPC files, a memory mapping can be created to access the data without using additional memory. For example, using the same `intens` and `seg` data as before,
+
+```python
+    nyx = Nyxus(["*ALL_INTENSITY*"])
+
+    features = nyx.featurize(intens, seg)
+
+    nyx.create_arrow_file()
+
+    arrow_array = nyx.get_arrow_memory_mapping()
+```
+
 ## Available features 
 The feature extraction plugin extracts morphology and intensity based features from pairs of intensity/binary mask images and produces a csv file output. The input image should be in tiled [OME TIFF format](https://docs.openmicroscopy.org/ome-model/6.2.0/ome-tiff/specification.html).  The plugin extracts the following features:
 
