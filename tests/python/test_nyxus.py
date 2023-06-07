@@ -6,6 +6,7 @@ import pandas as pd
 import math
 from pathlib import Path
 from test_data import intens, seg
+import os
 
 
 
@@ -375,6 +376,10 @@ class TestNyxus():
 
                         continue
                     assert feature_value == arrow_value
+            
+            path = nyx.get_arrow_ipc_file()
+            
+            os.remove(path)
                 
         def test_arrow_ipc_no_create(self):
             
@@ -407,6 +412,10 @@ class TestNyxus():
                         continue
                     assert feature_value == arrow_value
                     
+            path = nyx.get_arrow_ipc_file()
+            
+            os.remove(path)
+                    
         def test_arrow_ipc_path(self):
             
             nyx = nyxus.Nyxus (["*ALL*"])
@@ -427,6 +436,8 @@ class TestNyxus():
             
             assert path == 'out.arrow'
             
+            os.remove(path)
+            
         def test_arrow_ipc_path_no_create(self):
             
             nyx = nyxus.Nyxus (["*ALL*"])
@@ -445,9 +456,9 @@ class TestNyxus():
                     
             path = nyx.get_arrow_ipc_file()
             
-            print(path)
-            
             assert path == 'out.arrow'
+            
+            os.remove(path)
         
             
         def test_custom_arrow_ipc_path(self):
@@ -513,3 +524,7 @@ class TestNyxus():
 
                         continue
                     assert feature_value == arrow_value
+                    
+            path = nyx.get_parquet_file()
+            
+            os.remove(path)
