@@ -135,9 +135,15 @@ TEST(TEST_NYXUS, TEST_MORPHOLOGY_PERIMETER)
 
 
 // GLCM tests
+
 TEST(TEST_NYXUS, TEST_IBSI_GLCM_ACOR)
 {
 	ASSERT_NO_THROW(test_ibsi_glcm_ACOR());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_ANGULAR_2D_MOMENT)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_angular_2d_moment());
 }
 
 TEST(TEST_NYXUS, TEST_IBSI_GLCM_CLUPROM)
@@ -153,6 +159,16 @@ TEST(TEST_NYXUS, TEST_IBSI_GLCM_CLUSHADE)
 TEST(TEST_NYXUS, TEST_IBSI_GLCM_CLUTEND)
 {
 	ASSERT_NO_THROW(test_ibsi_glcm_CLUTEND());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_CONTRAST)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_contrast());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_CORRELATION)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_correlation());
 }
 
 TEST(TEST_NYXUS, TEST_IBSI_GLCM_DIFFERENCE_AVERAGE)
@@ -195,41 +211,6 @@ TEST(TEST_NYXUS, TEST_IBSI_GLCM_DIFFERENCE_IDMN)
 	ASSERT_NO_THROW(test_ibsi_glcm_IDMN());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLCM_SUM_AVERAGE) 
-{
-	ASSERT_NO_THROW(test_ibsi_glcm_sum_average());
-}
-
-TEST(TEST_NYXUS, TEST_IBSI_GLCM_SUM_VARIANCE)
-{
-	ASSERT_NO_THROW(test_ibsi_glcm_sum_variance());
-}
-
-TEST(TEST_NYXUS, TEST_IBSI_GLCM_SUM_ENTROPY)
-{
-	ASSERT_NO_THROW(test_ibsi_glcm_sum_entropy());
-}
-
-TEST(TEST_NYXUS, TEST_IBSI_GLCM_ANGULAR_2D_MOMENT)
-{
-	ASSERT_NO_THROW(test_ibsi_glcm_angular_2d_moment());
-}
-
-TEST(TEST_NYXUS, TEST_IBSI_CONTRAST)
-{
-	ASSERT_NO_THROW(test_ibsi_glcm_contrast());
-}
-
-TEST(TEST_NYXUS, TEST_IBSI_GLCM_INVERSED_DIFFERENCE_MOMENT)
-{
-	ASSERT_NO_THROW(test_ibsi_glcm_inversed_difference_moment());
-}
-
-TEST(TEST_NYXUS, TEST_IBSI_GLCM_CORRELATION)
-{
-	ASSERT_NO_THROW(test_ibsi_glcm_correlation());
-}
-
 TEST(TEST_NYXUS, TEST_IBSI_GLCM_INFOMEAS1)
 {
 	ASSERT_NO_THROW(test_ibsi_glcm_infomeas1());
@@ -238,6 +219,11 @@ TEST(TEST_NYXUS, TEST_IBSI_GLCM_INFOMEAS1)
 TEST(TEST_NYXUS, TEST_IBSI_GLCM_INFOMEAS2)
 {
 	ASSERT_NO_THROW(test_ibsi_glcm_infomeas2());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_INVERSED_DIFFERENCE_MOMENT)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_inversed_difference_moment());
 }
 
 TEST(TEST_NYXUS, TEST_IBSI_GLCM_IV)
@@ -262,8 +248,23 @@ TEST(TEST_NYXUS, TEST_IBSI_GLCM_JMAX)
 
 TEST(TEST_NYXUS, TEST_IBSI_GLCM_JVAR)
 {
+	ASSERT_NO_THROW(test_ibsi_glcm_JVAR());
 }
 
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_SUM_AVERAGE) 
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_sum_average());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_SUM_VARIANCE)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_sum_variance());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_SUM_ENTROPY)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_sum_entropy());
+}
 
 // GLDM tests
 
@@ -540,13 +541,6 @@ TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_MEAN_ABSOLUTE_DEVIATION)
 	ASSERT_NO_THROW(test_ibsi_mean_absolute_deviation_intensity());
 }
 
-/*
-TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_ROBUST_MEAN_ABSOLUTE_DEVIATION) 
-{
-	ASSERT_NO_THROW(test_ibsi_robust_mean_absolute_deviation_intensity());
-}
-*/
-
 TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_ENERGY) 
 {
 	ASSERT_NO_THROW(test_ibsi_energy_intensity());
@@ -584,13 +578,14 @@ TEST(TEST_NYXUS, TEST_IBSI_NGTDM_STRENGTH)
 	ASSERT_NO_THROW(test_ibsi_ngtdm_strength());
 }
 
-// GLCM witout binning
+//==== Tests of texture feature extraction witout binning
+
 // GLCM tests
+#if 0
 TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_AVERAGE) 
 {
 	ASSERT_NO_THROW(test_glcm_difference_average());
 }
-
 
 TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_VARIANCE)
 {
@@ -607,33 +602,29 @@ TEST(TEST_NYXUS, TEST_GLCM_SUM_AVERAGE)
 	ASSERT_NO_THROW(test_glcm_sum_average());
 }
 
-
 TEST(TEST_NYXUS, TEST_GLCM_SUM_VARIANCE)
 {
 	ASSERT_NO_THROW(test_glcm_sum_variance());
 }
-
 
 TEST(TEST_NYXUS, TEST_GLCM_SUM_ENTROPY)
 {
 	ASSERT_NO_THROW(test_glcm_sum_entropy());
 }
 
-
 TEST(TEST_NYXUS, TEST_GLCM_ANGULAR_2D_MOMENT)
 {
 	ASSERT_NO_THROW(test_glcm_angular_2d_moment());
 }
 
-
-TEST(TEST_NYXUS, TEST_CONTRAST)
+TEST(TEST_NYXUS, TEST_GLCM_CONTRAST)
 {
 	ASSERT_NO_THROW(test_glcm_contrast());
 }
 
 TEST(TEST_NYXUS, TEST_GLCM_INVERSED_DIFFERENCE_MOMENT)
 {
-	ASSERT_NO_THROW(test_glcm_inversed_difference_moment());
+	ASSERT_NO_THROW(test_glcm_IDM());
 }
 
 TEST(TEST_NYXUS, TEST_GLCM_CORRELATION)
@@ -650,6 +641,135 @@ TEST(TEST_NYXUS, TEST_GLCM_INFOMEAS2)
 {
 	ASSERT_NO_THROW(test_glcm_infomeas2());
 }
+
+#endif
+//--------------------
+
+TEST(TEST_NYXUS, TEST_GLCM_ACOR)
+{
+	ASSERT_NO_THROW(test_glcm_ACOR());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_ANGULAR_2D_MOMENT)
+{
+	ASSERT_NO_THROW(test_glcm_angular_2d_moment());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_CLUPROM)
+{
+	ASSERT_NO_THROW(test_glcm_CLUPROM());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_CLUSHADE)
+{
+	ASSERT_NO_THROW(test_glcm_CLUSHADE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_CLUTEND)
+{
+	ASSERT_NO_THROW(test_glcm_CLUTEND());
+}
+
+TEST(TEST_NYXUS, TEST_CONTRAST)
+{
+	ASSERT_NO_THROW(test_glcm_contrast());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_CORRELATION)
+{
+	ASSERT_NO_THROW(test_glcm_correlation());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_AVERAGE)
+{
+	ASSERT_NO_THROW(test_glcm_difference_average());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_VARIANCE)
+{
+	ASSERT_NO_THROW(test_glcm_difference_variance());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_ENTROPY)
+{
+	ASSERT_NO_THROW(test_glcm_difference_entropy());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_DIS)
+{
+	ASSERT_NO_THROW(test_glcm_DIS());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_ID)
+{
+	ASSERT_NO_THROW(test_glcm_ID());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_IDN)
+{
+	ASSERT_NO_THROW(test_glcm_IDN());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_IDM)
+{
+	ASSERT_NO_THROW(test_glcm_IDM());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_IDMN)
+{
+	ASSERT_NO_THROW(test_glcm_IDMN());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_INFOMEAS1)
+{
+	ASSERT_NO_THROW(test_glcm_infomeas1());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_INFOMEAS2)
+{
+	ASSERT_NO_THROW(test_glcm_infomeas2());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_IV)
+{
+	ASSERT_NO_THROW(test_glcm_IV());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_JAVE)
+{
+	ASSERT_NO_THROW(test_glcm_JAVE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_JE)
+{
+	ASSERT_NO_THROW(test_glcm_JE());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_JMAX)
+{
+	ASSERT_NO_THROW(test_glcm_JMAX());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_JVAR)
+{
+	ASSERT_NO_THROW(test_glcm_JVAR());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_SUM_AVERAGE)
+{
+	ASSERT_NO_THROW(test_glcm_sum_average());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_SUM_VARIANCE)
+{
+	ASSERT_NO_THROW(test_glcm_sum_variance());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_SUM_ENTROPY)
+{
+	ASSERT_NO_THROW(test_glcm_sum_entropy());
+}
+
 
 // GLDM tests
 

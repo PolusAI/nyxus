@@ -316,8 +316,9 @@ void GLCMFeature::Extract_Texture_Features2 (int angle, const ImageMatrix & gray
 	f = ! theFeatureSet.isEnabled (GLCM_IV) ? 0 : f_GLCM_IV (P_matrix, n_levels);
 	fvals_iv.push_back (f);
 
-	f = ! theFeatureSet.isEnabled (GLCM_JAVE) ? 0 : f_GLCM_JAVE (P_matrix, n_levels, mean_x);
+	f = ! theFeatureSet.isEnabled (GLCM_JAVE) ? 0 : f_GLCM_JAVE (P_matrix, n_levels);
 	fvals_jave.push_back (f);
+	auto jave = f;
 
 	f = ! theFeatureSet.isEnabled (GLCM_JE) ? 0 : f_GLCM_JE (P_matrix, n_levels);
 	fvals_je.push_back(f);
@@ -325,7 +326,7 @@ void GLCMFeature::Extract_Texture_Features2 (int angle, const ImageMatrix & gray
 	f = ! theFeatureSet.isEnabled (GLCM_JMAX) ? 0 : f_GLCM_JMAX (P_matrix, n_levels);
 	fvals_jmax.push_back (f);
 
-	f = ! theFeatureSet.isEnabled (GLCM_JVAR) ? 0 : f_GLCM_JVAR (P_matrix, n_levels, mean_x);
+	f = ! theFeatureSet.isEnabled (GLCM_JVAR) ? 0 : f_GLCM_JVAR (P_matrix, n_levels, jave);
 	fvals_jvar.push_back (f);
 }
 
@@ -958,13 +959,12 @@ double GLCMFeature::f_GLCM_IV (const SimpleMatrix<double>& P_matrix, int tone_co
 	return f;
 }
 
-double GLCMFeature::f_GLCM_JAVE (const SimpleMatrix<double>& P_matrix, int tone_count, double mean_x)
+double GLCMFeature::f_GLCM_JAVE (const SimpleMatrix<double>& P_matrix, int tone_count)
 {
 	// joint average = \mu_x = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} p(i,j) i
 
 	double f = 0;
 
-	// never calculated, let's do it now
 	for (int x = 0; x < tone_count; x++)
 		for (int y = 0; y < tone_count; y++)
 			f += P_matrix.xy(x, y) / sum_p  * double(x+1);
@@ -1004,16 +1004,19 @@ double GLCMFeature::f_GLCM_JMAX (const SimpleMatrix<double>& P_matrix, int tone_
 	return max_p;
 }
 
-double GLCMFeature::f_GLCM_JVAR (const SimpleMatrix<double>& P_matrix, int tone_count, double mean_x)
+double GLCMFeature::f_GLCM_JVAR (const SimpleMatrix<double>& P_matrix, int tone_count, double joint_ave)
 {
 	// joint variance = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} (i-\mu_x) ^2 p(i,j)
+	//		where \mu_x is the value of joint average feature (IBSI: "Fcm.joint.avg"), 
+	//		\mu_x = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} i p(i,j)
 
 	double f = 0;
 	for (int x = 0; x < n_levels; x++)
+	{
+		double d = double(x + 1) - joint_ave,
+			d2 = d * d;
 		for (int y = 0; y < n_levels; y++)
-		{
-			double d = double(x+1) - mean_x;
-			f = d*d * P_matrix.xy(x,y);
-		}	
+			f += d2 * P_matrix.xy(x,y) / sum_p;
+	}
 	return f;
 }

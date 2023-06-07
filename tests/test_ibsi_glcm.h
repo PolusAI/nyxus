@@ -12,33 +12,34 @@
 
 #include <unordered_map> 
 
-// dig. phantom values for intensity based features
+// Digital phantom values for intensity based features
+// (Reference: IBSI Documentation, Release 0.0.1dev Dec 13, 2021. Dataset: dig phantom. Aggr. method: 2D, averaged)
 static std::unordered_map<std::string, float> IBSI_glcm_values {
-    {"GLCM_ACOR", 5.09},
-    {"GLCM_ASM", 0.368},
-    {"GLCM_CLUPROM", 79.1},
-    {"GLCM_CLUSHADE", 7},
-    {"GLCM_CLUTEND", 5.47},
-    {"GLCM_CONTRAST", 5.28},
-    {"GLCM_CORRELATION", -0.0121},
-    {"GLCM_DIFAVE", 1.42},
-    {"GLCM_DIFENTRO", 1.4},
-    {"GLCM_DIFVAR", 2.9},
-    {"GLCM_DIS", 1.42},
-    {"GLCM_ID", 0.678},
-    {"GLCM_IDN", 0.851},
-    {"GLCM_IDM", 0.619},
-    {"GLCM_IDMN", 0.899},
-    {"GLCM_INFOMEAS1", -0.155},
-    {"GLCM_INFOMEAS2", 0.487},
-    {"GLCM_IV", 0.0567},
-    {"GLCM_JAVE", 2.14},
-    {"GLCM_JE", 2.05},
-    {"GLCM_JMAX", 0.519},
-    {"GLCM_JVAR", 2.69},
-    {"GLCM_SUMAVERAGE", 4.28},
-    {"GLCM_SUMENTROPY", 1.6},
-    {"GLCM_SUMVARIANCE", 5.47}
+    {"GLCM_ACOR", 5.09},    // p. 76, consensus: very strong
+    {"GLCM_ASM", 0.368},    // p. 68, consensus: very strong
+    {"GLCM_CLUPROM", 79.1}, // p. 79, consensus: very strong
+    {"GLCM_CLUSHADE", 7},   // p. 78, consensus: very strong
+    {"GLCM_CLUTEND", 5.47}, // p. 78, consensus: very strong
+    {"GLCM_CONTRAST", 5.28},    // p. 69, consensus: very strong
+    {"GLCM_CORRELATION", -0.0121},  // p. 76, consensus: very strong
+    {"GLCM_DIFAVE", 1.42},  // p. 64, consensus: very strong
+    {"GLCM_DIFENTRO", 1.4}, // p. 65, consensus: very strong
+    {"GLCM_DIFVAR", 2.9},   // p. 65, consensus: very strong
+    {"GLCM_DIS", 1.42},     // p. 70, consensus: very strong
+    {"GLCM_ID", 0.678},     // p. 71, consensus: very strong
+    {"GLCM_IDN", 0.851},    // p. 72, consensus: very strong
+    {"GLCM_IDM", 0.619},    // p. 73, consensus: very strong
+    {"GLCM_IDMN", 0.899},   // p. 74, consensus: very strong
+    {"GLCM_INFOMEAS1", -0.155}, // p. 80, consensus: very strong
+    {"GLCM_INFOMEAS2", 0.487},  // p. 81, consensus: very strong
+    {"GLCM_IV", 0.0567},    // p. 75, consensus: very strong
+    {"GLCM_JAVE", 2.14},    // p. 62, consensus: very strong
+    {"GLCM_JE", 2.05},      // p. 63, consensus: very strong
+    {"GLCM_JMAX", 0.519},   // p. 61, consensus: very strong
+    {"GLCM_JVAR", 2.69},    // p. 63, consensus: very strong
+    {"GLCM_SUMAVERAGE", 4.28},  // p. 66, consensus: very strong
+    {"GLCM_SUMENTROPY", 1.6},   // p. 67, consensus: very strong
+    {"GLCM_SUMVARIANCE", 5.47}  // p. 67, consensus: very strong
 };
 
 
