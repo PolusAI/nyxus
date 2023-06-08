@@ -12,21 +12,33 @@
 
 #include <unordered_map> 
 
-// dig. phantom values for intensity based features
+// Digital phantom values for intensity based features
 static std::unordered_map<std::string, float> glcm_values {
-    {"GLCM_DIFAVE", 1.42},
-    {"GLCM_DIFVAR", 2.9},
-    {"GLCM_DIFENTRO", 1.4},
-    {"GLCM_SUMAVERAGE", 4.28},
-    {"GLCM_SUMVARIANCE", 5.47},
-    {"GLCM_SUMENTROPY", 1.6}, 
-    {"GLCM_ASM", 0.368},
-    {"GLCM_CONTRAST", 5.28},
-    {"GLCM_IDM", 0.619},
-    {"GLCM_CORRELATION", -0.0121},
-    {"GLCM_INFOMEAS1", -0.155},
-    {"GLCM_INFOMEAS2", 0.487}
-
+    {"GLCM_ACOR", 5.09},    // p. 76, consensus: very strong
+    {"GLCM_ASM", 0.368},    // p. 68, consensus: very strong
+    {"GLCM_CLUPROM", 79.1}, // p. 79, consensus: very strong
+    {"GLCM_CLUSHADE", 7},   // p. 78, consensus: very strong
+    {"GLCM_CLUTEND", 5.47}, // p. 78, consensus: very strong
+    {"GLCM_CONTRAST", 5.28},    // p. 69, consensus: very strong
+    {"GLCM_CORRELATION", -0.0121},  // p. 76, consensus: very strong
+    {"GLCM_DIFAVE", 1.42},  // p. 64, consensus: very strong
+    {"GLCM_DIFENTRO", 1.4}, // p. 65, consensus: very strong
+    {"GLCM_DIFVAR", 2.9},   // p. 65, consensus: very strong
+    {"GLCM_DIS", 1.42},     // p. 70, consensus: very strong
+    {"GLCM_ID", 0.678},     // p. 71, consensus: very strong
+    {"GLCM_IDN", 0.851},    // p. 72, consensus: very strong
+    {"GLCM_IDM", 0.619},    // p. 73, consensus: very strong
+    {"GLCM_IDMN", 0.899},   // p. 74, consensus: very strong
+    {"GLCM_INFOMEAS1", -0.155}, // p. 80, consensus: very strong
+    {"GLCM_INFOMEAS2", 0.487},  // p. 81, consensus: very strong
+    {"GLCM_IV", 0.0567},    // p. 75, consensus: very strong
+    {"GLCM_JAVE", 2.14},    // p. 62, consensus: very strong
+    {"GLCM_JE", 2.05},      // p. 63, consensus: very strong
+    {"GLCM_JMAX", 0.519},   // p. 61, consensus: very strong
+    {"GLCM_JVAR", 2.69},    // p. 63, consensus: very strong
+    {"GLCM_SUMAVERAGE", 4.28},  // p. 66, consensus: very strong
+    {"GLCM_SUMENTROPY", 1.6},   // p. 67, consensus: very strong
+    {"GLCM_SUMVARIANCE", 5.47}  // p. 67, consensus: very strong
 };
 
 
@@ -130,47 +142,32 @@ void test_glcm_feature(const AvailableFeatures& feature, const std::string& feat
     total += roidata3.fvals[feature][2];
     total += roidata3.fvals[feature][3];
 
-    std::cout << "value: " << total / 16 << std::endl;
-
     ASSERT_TRUE(agrees_gt(total / 16, glcm_values[feature_name], 100.));
 }
 
-
-void test_glcm_difference_average()
+void test_glcm_ACOR()
 {
-    test_glcm_feature(GLCM_DIFAVE, "GLCM_DIFAVE");
-}
-
-
-void test_glcm_difference_variance()
-{
-    test_glcm_feature(GLCM_DIFVAR, "GLCM_DIFVAR");
-}
-
-
-void test_glcm_difference_entropy()
-{
-    test_glcm_feature(GLCM_DIFENTRO, "GLCM_DIFENTRO");
-}
-
-void test_glcm_sum_average()
-{
-    test_glcm_feature(GLCM_SUMAVERAGE, "GLCM_SUMAVERAGE");
-}
-
-void test_glcm_sum_variance()
-{
-    test_glcm_feature(GLCM_SUMVARIANCE, "GLCM_SUMVARIANCE");
-}
-
-void test_glcm_sum_entropy()
-{
-   test_glcm_feature(GLCM_SUMENTROPY, "GLCM_SUMENTROPY");
+    test_glcm_feature(GLCM_ACOR, "GLCM_ACOR");
 }
 
 void test_glcm_angular_2d_moment()
 {
     test_glcm_feature(GLCM_ASM, "GLCM_ASM");
+}
+
+void test_glcm_CLUPROM()
+{
+    test_glcm_feature(GLCM_CLUPROM, "GLCM_CLUPROM");
+}
+
+void test_glcm_CLUSHADE()
+{
+    test_glcm_feature(GLCM_CLUSHADE, "GLCM_CLUSHADE");
+}
+
+void test_glcm_CLUTEND()
+{
+    test_glcm_feature(GLCM_CLUTEND, "GLCM_CLUTEND");
 }
 
 void test_glcm_contrast()
@@ -183,6 +180,46 @@ void test_glcm_correlation()
     test_glcm_feature(GLCM_CORRELATION, "GLCM_CORRELATION");
 }
 
+void test_glcm_difference_average()
+{
+    test_glcm_feature(GLCM_DIFAVE, "GLCM_DIFAVE");
+}
+
+void test_glcm_difference_entropy()
+{
+    test_glcm_feature(GLCM_DIFENTRO, "GLCM_DIFENTRO");
+}
+
+void test_glcm_difference_variance()
+{
+    test_glcm_feature(GLCM_DIFVAR, "GLCM_DIFVAR");
+}
+
+void test_glcm_DIS()
+{
+    test_glcm_feature(GLCM_DIS, "GLCM_DIS");
+}
+
+void test_glcm_ID()
+{
+    test_glcm_feature(GLCM_ID, "GLCM_ID");
+}
+
+void test_glcm_IDN()
+{
+    test_glcm_feature(GLCM_IDN, "GLCM_IDN");
+}
+
+void test_glcm_IDM()
+{
+    test_glcm_feature(GLCM_IDM, "GLCM_IDM");
+}
+
+void test_glcm_IDMN()
+{
+    test_glcm_feature(GLCM_IDMN, "GLCM_IDMN");
+}
+
 void test_glcm_infomeas1()
 {
    test_glcm_feature(GLCM_INFOMEAS1, "GLCM_INFOMEAS1");
@@ -193,6 +230,43 @@ void test_glcm_infomeas2()
    test_glcm_feature(GLCM_INFOMEAS2, "GLCM_INFOMEAS2");
 }
 
-void test_glcm_inversed_difference_moment() {
-    test_glcm_feature(GLCM_IDM, "GLCM_IDM");
+void test_glcm_IV()
+{
+    test_glcm_feature(GLCM_IV, "GLCM_IV");
 }
+
+void test_glcm_JAVE()
+{
+    test_glcm_feature(GLCM_JAVE, "GLCM_JAVE");
+}
+
+void test_glcm_JE()
+{
+    test_glcm_feature(GLCM_JE, "GLCM_JE");
+}
+
+void test_glcm_JMAX()
+{
+    test_glcm_feature(GLCM_JMAX, "GLCM_JMAX");
+}
+
+void test_glcm_JVAR()
+{
+    test_glcm_feature(GLCM_JVAR, "GLCM_JVAR");
+}
+
+void test_glcm_sum_average()
+{
+    test_glcm_feature(GLCM_SUMAVERAGE, "GLCM_SUMAVERAGE");
+}
+
+void test_glcm_sum_entropy()
+{
+   test_glcm_feature(GLCM_SUMENTROPY, "GLCM_SUMENTROPY");
+}
+
+void test_glcm_sum_variance()
+{
+    test_glcm_feature(GLCM_SUMVARIANCE, "GLCM_SUMVARIANCE");
+}
+

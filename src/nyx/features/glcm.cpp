@@ -231,7 +231,10 @@ void GLCMFeature::Extract_Texture_Features2 (int angle, const ImageMatrix & gray
 	}
 
 	// ROI's collocation matrix is not blank, we're good to calculate texture features
-	calculatePxpmy ();
+	calculatePxpmy();
+
+	// Calculate by-row mean
+	calculate_by_row_mean();
 
 	// Compute Haralick statistics 
 	double f;
@@ -286,13 +289,13 @@ void GLCMFeature::Extract_Texture_Features2 (int angle, const ImageMatrix & gray
 	f = ! theFeatureSet.isEnabled (GLCM_ACOR) ? 0 : f_GLCM_ACOR (P_matrix, n_levels);
 	fvals_acor.push_back (f);
 
-	f = ! theFeatureSet.isEnabled (GLCM_CLUPROM) ? 0 : f_GLCM_CLUPROM (P_matrix, n_levels, mean_x, mean_x);	// mean_x == mean_y due to symmetric GLCM
+	f = ! theFeatureSet.isEnabled (GLCM_CLUPROM) ? 0 : f_GLCM_CLUPROM();
 	fvals_cluprom.push_back (f);
 
-	f = ! theFeatureSet.isEnabled (GLCM_CLUSHADE) ? 0 : f_GLCM_CLUSHADE (P_matrix, n_levels, mean_x, mean_x);
+	f = ! theFeatureSet.isEnabled (GLCM_CLUSHADE) ? 0 : f_GLCM_CLUSHADE();
 	fvals_clushade.push_back (f);
 
-	f = ! theFeatureSet.isEnabled (GLCM_CLUTEND) ? 0 : f_GLCM_CLUTEND (P_matrix, n_levels, mean_x, mean_x);
+	f = ! theFeatureSet.isEnabled (GLCM_CLUTEND) ? 0 : f_GLCM_CLUTEND();
 	fvals_clutend.push_back (f);
 
 	f = ! theFeatureSet.isEnabled (GLCM_DIS) ? 0 : f_GLCM_DIS (P_matrix, n_levels);
@@ -313,8 +316,9 @@ void GLCMFeature::Extract_Texture_Features2 (int angle, const ImageMatrix & gray
 	f = ! theFeatureSet.isEnabled (GLCM_IV) ? 0 : f_GLCM_IV (P_matrix, n_levels);
 	fvals_iv.push_back (f);
 
-	f = ! theFeatureSet.isEnabled (GLCM_JAVE) ? 0 : f_GLCM_JAVE (P_matrix, n_levels, mean_x);
+	f = ! theFeatureSet.isEnabled (GLCM_JAVE) ? 0 : f_GLCM_JAVE (P_matrix, n_levels);
 	fvals_jave.push_back (f);
+	auto jave = f;
 
 	f = ! theFeatureSet.isEnabled (GLCM_JE) ? 0 : f_GLCM_JE (P_matrix, n_levels);
 	fvals_je.push_back(f);
@@ -322,7 +326,7 @@ void GLCMFeature::Extract_Texture_Features2 (int angle, const ImageMatrix & gray
 	f = ! theFeatureSet.isEnabled (GLCM_JMAX) ? 0 : f_GLCM_JMAX (P_matrix, n_levels);
 	fvals_jmax.push_back (f);
 
-	f = ! theFeatureSet.isEnabled (GLCM_JVAR) ? 0 : f_GLCM_JVAR (P_matrix, n_levels, mean_x);
+	f = ! theFeatureSet.isEnabled (GLCM_JVAR) ? 0 : f_GLCM_JVAR (P_matrix, n_levels, jave);
 	fvals_jvar.push_back (f);
 }
 
@@ -410,6 +414,24 @@ void GLCMFeature::calculatePxpmy()
 			Pxpy[x + y] += P_matrix.xy(x,y);
 			Pxmy[std::abs(x - y)] += P_matrix.xy(x,y)/sum_p; // normalize matrix from IBSI definition
 		}
+}
+
+void GLCMFeature::calculate_by_row_mean()
+{
+	// px[i] is the (i-1)th entry in the marginal probability matrix obtained
+	// by summing the rows of p[i][j]
+	std::vector<double> px(n_levels);
+	for (int j = 0; j < n_levels; j++)
+		for (int i = 0; i < n_levels; i++)
+			px[i] += P_matrix.xy(i, j) / sum_p;
+
+	// Now calculate the means and standard deviations of px and py */
+	// - fix supplied by J. Michael Christensen, 21 Jun 1991 */
+	// - further modified by James Darrell McCauley, 16 Aug 1991
+	// after realizing that meanx=meany and stddevx=stddevy
+	by_row_mean = 0;
+	for (int i = 0; i < n_levels; ++i)
+		by_row_mean += px[i] * (i + 1);
 }
 
 /* Angular Second Moment
@@ -801,7 +823,7 @@ double GLCMFeature::f_GLCM_ACOR (const SimpleMatrix<double>& P_matrix, int tone_
 	
 	for (int x = 0; x < n_levels; x++)
 		for (int y = 0; y < n_levels; y++)
-			f += P_matrix.xy(x, y) * double(x+1) * double(y+1);
+			f += P_matrix.xy(x, y) / sum_p * double(x+1) * double(y+1);
 
 	return f;
 }
@@ -809,7 +831,7 @@ double GLCMFeature::f_GLCM_ACOR (const SimpleMatrix<double>& P_matrix, int tone_
 //
 // Argument 'mean_x' is calculated by f_corr()
 //
-double GLCMFeature::f_GLCM_CLUPROM (const SimpleMatrix<double>& P_matrix, int tone_count, double mean_x, double mean_y)
+double GLCMFeature::f_GLCM_CLUPROM ()
 {
 	// cluster prominence = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} (i + j - \mu_x - \mu_y) ^4 p(i,j)
 
@@ -818,14 +840,14 @@ double GLCMFeature::f_GLCM_CLUPROM (const SimpleMatrix<double>& P_matrix, int to
 	for (int x = 0; x < n_levels; x++)
 		for (int y = 0; y < n_levels; y++)
 		{
-			double m = double(x + 1) + double(y + 1) - mean_x - mean_y;
-			f += m*m*m*m * P_matrix.xy (x,y);	
+			double m = double(x+1) + double(y+1) - by_row_mean * 2.0;
+			f += m * m * m * m * P_matrix.xy (x,y) / sum_p;
 		}
 
 	return f;
 }
 
-double GLCMFeature::f_GLCM_CLUSHADE (const SimpleMatrix<double>& P_matrix, int tone_count, double mean_x, double mean_y)
+double GLCMFeature::f_GLCM_CLUSHADE ()
 {
 	// cluster shade = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} (i + j - \mu_x - \mu_y) ^3 p(i,j)
 
@@ -834,26 +856,29 @@ double GLCMFeature::f_GLCM_CLUSHADE (const SimpleMatrix<double>& P_matrix, int t
 	for (int x = 0; x < n_levels; x++)
 		for (int y = 0; y < n_levels; y++)
 		{
-			double m = double(x + 1) + double(y + 1) - mean_x - mean_y; 
-			f += m*m*m * P_matrix.xy (x,y);
+			double m = double(x+1) + double(y+1) - by_row_mean * 2.0;
+			f += m * m * m * P_matrix.xy(x, y) / sum_p;
 		}
 
 	return f;
 }
 
-double GLCMFeature::f_GLCM_CLUTEND (const SimpleMatrix<double>& P_matrix, int tone_count, double mean_x, double mean_y)
+double GLCMFeature::f_GLCM_CLUTEND ()
 {
-	// cluster tendency = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} (i + j - \mu_x - \mu_y) ^2 p(i,j)
+	double f = 0;
 
-	double f = 0;	
-	
-	for (int x = 0; x < n_levels; x++)
-		for (int y = 0; y < n_levels; y++)
-		{
-			double m = double(x + 1) + double(y + 1) - mean_x - mean_y; 
-			f += m*m * P_matrix.xy (x,y);
-		}
-	
+	if (theEnvironment.ibsi_compliance)
+		// According to IBSI, feature "cluster tendency" is equivalent to "sum variance"
+		f = f_svar (P_matrix, n_levels, -999.999, this->Pxpy);
+	else
+		// Calculate it the radiomics way: cluster tendency = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} (i + j - \mu_x - \mu_y) ^2 p(i,j)
+		for (int x = 0; x < n_levels; x++)
+			for (int y = 0; y < n_levels; y++)
+			{
+				double m = double(x+1) + double(y+1) - by_row_mean * 2.0; 
+				f += m * m * P_matrix.xy (x,y) / sum_p;
+			}
+
 	return f;
 }
 
@@ -865,9 +890,7 @@ double GLCMFeature::f_GLCM_DIS (const SimpleMatrix<double>& P_matrix, int tone_c
 
 	for (int x = 0; x < n_levels; x++)
 		for (int y = 0; y < n_levels; y++)
-		{
-			f += std::fabs(double(x+1) - double(y+1)) * P_matrix.xy(x,y);
-		}
+			f += std::fabs(double(x+1) - double(y+1)) * P_matrix.xy(x,y) / sum_p;
 	
 	return f;
 }
@@ -936,20 +959,15 @@ double GLCMFeature::f_GLCM_IV (const SimpleMatrix<double>& P_matrix, int tone_co
 	return f;
 }
 
-double GLCMFeature::f_GLCM_JAVE (const SimpleMatrix<double>& P_matrix, int tone_count, double mean_x)
+double GLCMFeature::f_GLCM_JAVE (const SimpleMatrix<double>& P_matrix, int tone_count)
 {
 	// joint average = \mu_x = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} p(i,j) i
 
 	double f = 0;
 
-	// the feature could have been calculated earlier
-	if (mean_x != 0.0)
-		return mean_x;
-
-	// never calculated, let's do it now
 	for (int x = 0; x < tone_count; x++)
 		for (int y = 0; y < tone_count; y++)
-			f += P_matrix.xy(x, y) * double(x);
+			f += P_matrix.xy(x, y) / sum_p  * double(x+1);
 
 	return f;
 }
@@ -963,11 +981,11 @@ double GLCMFeature::f_GLCM_JE (const SimpleMatrix<double>& P_matrix, int tone_co
 	for (int x = 0; x < n_levels; x++)
 		for (int y = 0; y < n_levels; y++)
 		{
-			double p = P_matrix.xy (x,y);
+			double p = P_matrix.xy (x,y) / sum_p;
 			f += p * fast_log10(p + EPSILON) / LOG10_2;
 		}
 
-	return f;
+	return -f;
 }
 
 double GLCMFeature::f_GLCM_JMAX (const SimpleMatrix<double>& P_matrix, int tone_count)
@@ -979,23 +997,26 @@ double GLCMFeature::f_GLCM_JMAX (const SimpleMatrix<double>& P_matrix, int tone_
 	for (int x = 0; x < n_levels; x++)
 		for (int y = 0; y < n_levels; y++)
 		{
-			double p = P_matrix.xy (x,y);
+			double p = P_matrix.xy (x,y) / sum_p;
 			max_p = std::max (max_p, p);
 		}	
 	
 	return max_p;
 }
 
-double GLCMFeature::f_GLCM_JVAR (const SimpleMatrix<double>& P_matrix, int tone_count, double mean_x)
+double GLCMFeature::f_GLCM_JVAR (const SimpleMatrix<double>& P_matrix, int tone_count, double joint_ave)
 {
 	// joint variance = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} (i-\mu_x) ^2 p(i,j)
+	//		where \mu_x is the value of joint average feature (IBSI: "Fcm.joint.avg"), 
+	//		\mu_x = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} i p(i,j)
 
 	double f = 0;
 	for (int x = 0; x < n_levels; x++)
+	{
+		double d = double(x + 1) - joint_ave,
+			d2 = d * d;
 		for (int y = 0; y < n_levels; y++)
-		{
-			double d = double(x+1) - mean_x;
-			f = d*d * P_matrix.xy(x,y);
-		}	
+			f += d2 * P_matrix.xy(x,y) / sum_p;
+	}
 	return f;
 }
