@@ -91,7 +91,6 @@ void test_ibsi_glcm_feature(const AvailableFeatures& feature, const std::string&
     total += roidata1.fvals[feature][2];
     total += roidata1.fvals[feature][3];
     
-    
     // image 3
     // Calculate features
 

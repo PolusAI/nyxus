@@ -27,10 +27,11 @@ public:
 		NGLDM_DCNU,		// Dependence Count Non-Uniformity
 		NGLDM_DCNUN,	// Dependence Count Non-Uniformity Normalised
 		NGLDM_GLM,		// Grey Level Mean
+		NGLDM_DCP,		// Dependence Count Percentage
 		NGLDM_GLV,		// Grey Level Variance
 		NGLDM_DCM,		// Dependence Count Mean
 		NGLDM_DCV,		// Dependence Count Variance
-		NGLDM_DCE,		// Dependence Count Entropy
+		NGLDM_DCENT,	// Dependence Count Entropy
 		NGLDM_DCENE		// Dependence Count Energy
 	};
 
@@ -49,13 +50,17 @@ public:
 		return fs.anyEnabled (NGLDMfeature::featureset);
 	}
 
+	// Support of unit testing
+	void prepare_NGLDM_matrix_kit (SimpleMatrix<unsigned int>& NGLDM, std::vector<PixIntens>& grey_levels_LUT, int& Ng, int& Nr, LR& r);
+
 private:
 
 	void clear_buffers();
 	template <class Pixelcloud> void gather_unique_intensities (std::vector<PixIntens> & V, Pixelcloud& C, PixIntens max_i);
-	template <class Imgmatrix> void calc_ngldm (SimpleMatrix<unsigned int> & NGLDM, Imgmatrix & I, std::vector<PixIntens> & V, PixIntens max_inten);
+	void gather_unique_intensities2 (std::vector<PixIntens>& V, const pixData& I, PixIntens max_inten);
+	template <class Imgmatrix> void calc_ngld_matrix (SimpleMatrix<unsigned int> & NGLDM, int & max_dep, Imgmatrix & I, const std::vector<PixIntens> & V, PixIntens max_inten);
 	void calc_rowwise_and_columnwise_totals (std::vector<double>& Mg, std::vector<double>& Mr, const SimpleMatrix<unsigned int>& NGLDM, const int Ng, const int Nr);
-	void calc_features (const std::vector<double>& Mx, const std::vector<double>& Md, SimpleMatrix<unsigned int>& P, unsigned int roi_area);
+	void calc_features (const std::vector<double>& Mx, const std::vector<double>& Md, SimpleMatrix<unsigned int>& NGLDM, int Nr, const std::vector<PixIntens> U, unsigned int roi_area);
 
 	const double EPS = 2.2e-16;
 
@@ -75,7 +80,8 @@ private:
 	double f_GLCM;	// Grey Level Count Mean
 	double f_GLV;	// Grey Level Variance
 	double f_DCM;	// Dependence Count Mean
+	double f_DCP;	// Dependence Count Percentage
 	double f_DCV;	// Dependence Count Variance
-	double f_DCE;	// Dependence Count Entropy
+	double f_DCENT;	// Dependence Count Entropy
 	double f_DCENE;	// Dependence Count Energy
 };
