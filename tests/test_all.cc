@@ -673,69 +673,6 @@ TEST(TEST_NYXUS, TEST_IBSI_NGTDM_STRENGTH)
 //==== Tests of texture feature extraction witout binning
 
 // GLCM tests
-#if 0
-TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_AVERAGE) 
-{
-	ASSERT_NO_THROW(test_glcm_difference_average());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_VARIANCE)
-{
-	ASSERT_NO_THROW(test_glcm_difference_variance());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_ENTROPY)
-{
-	ASSERT_NO_THROW(test_glcm_difference_entropy());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_SUM_AVERAGE) 
-{
-	ASSERT_NO_THROW(test_glcm_sum_average());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_SUM_VARIANCE)
-{
-	ASSERT_NO_THROW(test_glcm_sum_variance());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_SUM_ENTROPY)
-{
-	ASSERT_NO_THROW(test_glcm_sum_entropy());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_ANGULAR_2D_MOMENT)
-{
-	ASSERT_NO_THROW(test_glcm_angular_2d_moment());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_CONTRAST)
-{
-	ASSERT_NO_THROW(test_glcm_contrast());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_INVERSED_DIFFERENCE_MOMENT)
-{
-	ASSERT_NO_THROW(test_glcm_IDM());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_CORRELATION)
-{
-	ASSERT_NO_THROW(test_glcm_correlation());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_INFOMEAS1)
-{
-	ASSERT_NO_THROW(test_glcm_infomeas1());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_INFOMEAS2)
-{
-	ASSERT_NO_THROW(test_glcm_infomeas2());
-}
-
-#endif
-//--------------------
 
 TEST(TEST_NYXUS, TEST_GLCM_ACOR)
 {
