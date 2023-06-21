@@ -689,7 +689,7 @@ class Nyxus:
         
         arrow_file_path = self.get_arrow_ipc_file()
         
-        if (arrow_file_path is ""):
+        if (arrow_file_path == ""):
             self.create_arrow_file()
             arrow_file_path = self.get_arrow_ipc_file()
         
