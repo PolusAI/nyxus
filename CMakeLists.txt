@@ -166,13 +166,15 @@ option(USEARROW "Use Arrow" ON)
 
 if (USEARROW)
 	# Find arrow library
-	find_library(ARROW_LIB arrow)
-
-	# Look for installed packages the system
-	find_package(Parquet REQUIRED)
+	#find_library(ARROW_LIB arrow)
+	# Find arrow library
+	#find_library(PARQUET_LIB parquet)
 
 	# Look for installed packages the system
 	find_package(Arrow REQUIRED)
+
+	# Look for installed packages the system
+	find_package(Parquet REQUIRED)
 
 	add_definitions(-DUSE_ARROW)
 endif()
@@ -185,21 +187,21 @@ if(BUILD_CLI)
 	add_executable(nyxushie src/nyx/dirs_and_files.cpp src/nyx/environment_basic.cpp src/nyx/image_loader1x.cpp src/nyx/main_nyxushie.cpp src/nyx/nested_roi.cpp src/nyx/python/nested_roi_py.cpp src/nyx/roi_cache_basic.cpp)
 
 	if(USEARROW)
-		if (ARROW_LIB)
+		#if (ARROW_found)
 
-			target_link_libraries(nyxus PRIVATE ${ARROW_LIB} )
+		target_link_libraries(nyxus PRIVATE ${ARROW_LIB} )
 
-			target_link_libraries(nyxus PRIVATE arrow_shared )
+		target_link_libraries(nyxus PRIVATE arrow_shared )
 
-			if(PARQUET_LINK_SHARED)
-				target_link_libraries(nyxus PRIVATE Parquet::parquet_shared)
-			else()
-				target_link_libraries(nyxus PRIVATE Parquet::parquet_static)
-			endif()
-
+		if(PARQUET_LINK_SHARED)
+			target_link_libraries(nyxus PRIVATE parquet_shared)
 		else()
-			message(FATAL_ERROR "libarrow.so not found.")
+			target_link_libraries(nyxus PRIVATE parquet_static)
 		endif()
+
+		#else()
+		#	message(FATAL_ERROR "libarrow.so not found.")
+		#endif()
 	endif()
 
 endif()
@@ -320,52 +322,62 @@ endif()
 if(BUILD_LIB)
 
 	if(USEARROW)
-		if(ARROW_LIB)
+		#if(ARROW_LIB)
 
-			# Find Python
-			find_package(Python REQUIRED COMPONENTS Interpreter Development)
+		# Find Python
+		find_package(Python REQUIRED COMPONENTS Interpreter Development)
 
-			# Execute the Python script to find pyarrow include path
-			execute_process(
-				COMMAND ${Python_EXECUTABLE} -c "import pyarrow as pa; print(pa.get_include())"
-				OUTPUT_VARIABLE PATH_OUTPUT
-				OUTPUT_STRIP_TRAILING_WHITESPACE
-			)
+		# Execute the Python script to find pyarrow include path
+		execute_process(
+			COMMAND ${Python_EXECUTABLE} -c "import pyarrow as pa; print(pa.get_include())"
+			OUTPUT_VARIABLE PATH_OUTPUT
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
 
-			# Store the path in a CMake variable
-			set(PYARROW_INCLUDE_PATH "${PATH_OUTPUT}" CACHE INTERNAL "Path to pyarrow include directory")
+		# Store the path in a CMake variable
+		set(PYARROW_INCLUDE_PATH "${PATH_OUTPUT}" CACHE INTERNAL "Path to pyarrow include directory")
+		
+		# Set filename for finding pyarrow
+		set(python_filename "ci-utils/find_pyarrow.py")
+		set(python_filepath "${CMAKE_CURRENT_SOURCE_DIR}/${python_filename}")
 
-			# Execute the Python script to find pyarrow library path
-			execute_process(
-				COMMAND ${Python_EXECUTABLE} -c "import pyarrow as pa; path=pa.get_library_dirs()[0] + '/libarrow_python.dylib'; print(path)"
-				OUTPUT_VARIABLE LIB_PATH_OUTPUT
-				OUTPUT_STRIP_TRAILING_WHITESPACE
-			)
+		# Execute the Python script to find pyarrow library path
+		execute_process(
+			#COMMAND ${Python_EXECUTABLE} -c "import pyarrow as pa; path=pa.get_library_dirs()[0] + '/libarrow_python.dylib'; print(path)"
+			COMMAND ${Python_EXECUTABLE} ${python_filepath}
+			OUTPUT_VARIABLE LIB_PATH_OUTPUT
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
+		#find_package(arrow_python_shared REQUIRED)
 
-			# Store the path in a CMake variable
-			set(PYARROW_LIB_PATH "${LIB_PATH_OUTPUT}" CACHE INTERNAL "Path to pyarrow library directory")
+		# Store the path in a CMake variable
+		set(PYARROW_LIB_PATH "${LIB_PATH_OUTPUT}" CACHE INTERNAL "Path to pyarrow library directory")
 
-			# Print the path
-			message(STATUS "PyArrow Include Path: ${PYARROW_INCLUDE_PATH}")
-			message(STATUS "PyArrow Include Path: ${PYARROW_LIB_PATH}")
+		# Print the path
+		message(STATUS "PyArrow Include Path: ${PYARROW_INCLUDE_PATH}")
+		message(STATUS "PyArrow Include Path: ${PYARROW_LIB_PATH}")
 
-			target_link_libraries(backend PRIVATE ${ARROW_LIB} )
-			target_link_libraries(backend PRIVATE ${PYARROW_LIB_PATH} )
+		#link arrow
+		target_link_libraries(backend PRIVATE ${ARROW_LIB} )
+		
+		
+		target_link_libraries(backend PRIVATE ${PYARROW_LIB_PATH} )
+		# add pyarrow include path
+		include_directories(${PYARROW_INCLUDE_PATH})
+		
+		target_link_libraries(backend PRIVATE arrow_shared )
+		#target_link_libraries(backend PRIVATE arrow_python_shared )
+		target_include_directories(backend PRIVATE ${Python_INCLUDE_DIRS})
 
-			include_directories(${PYARROW_INCLUDE_PATH})
-
-			target_link_libraries(backend PRIVATE arrow_shared )
-			target_include_directories(backend PRIVATE ${Python_INCLUDE_DIRS})
-
-			if(PARQUET_LINK_SHARED)
-				target_link_libraries(backend PRIVATE Parquet::parquet_shared)
-			else()
-				target_link_libraries(backend PRIVATE Parquet::parquet_static)
-			endif()
-
+		if(PARQUET_LINK_SHARED)
+			target_link_libraries(backend PRIVATE parquet_shared)
 		else()
-			message(FATAL_ERROR "libarrow.so not found.")
+			target_link_libraries(backend PRIVATE parquet_static)
 		endif()
+
+		#else()
+		#	message(FATAL_ERROR "libarrow.so not found.")
+		#endif()
 	endif()
 
 	target_compile_definitions(backend PRIVATE WITH_PYTHON_H)
