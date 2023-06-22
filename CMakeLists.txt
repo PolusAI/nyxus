@@ -165,11 +165,6 @@ option(PARQUET_LINK_SHARED "Link to the Parquet shared library" ON)
 option(USEARROW "Use Arrow" ON)
 
 if (USEARROW)
-	# Find arrow library
-	#find_library(ARROW_LIB arrow)
-	# Find arrow library
-	#find_library(PARQUET_LIB parquet)
-
 	# Look for installed packages the system
 	find_package(Arrow REQUIRED)
 
@@ -185,24 +180,6 @@ if(BUILD_CLI)
 
 	add_executable(nyxus ${SOURCE} src/nyx/main_nyxus.cpp)
 	add_executable(nyxushie src/nyx/dirs_and_files.cpp src/nyx/environment_basic.cpp src/nyx/image_loader1x.cpp src/nyx/main_nyxushie.cpp src/nyx/nested_roi.cpp src/nyx/python/nested_roi_py.cpp src/nyx/roi_cache_basic.cpp)
-
-	if(USEARROW)
-		#if (ARROW_found)
-
-		target_link_libraries(nyxus PRIVATE ${ARROW_LIB} )
-
-		target_link_libraries(nyxus PRIVATE arrow_shared )
-
-		if(PARQUET_LINK_SHARED)
-			target_link_libraries(nyxus PRIVATE parquet_shared)
-		else()
-			target_link_libraries(nyxus PRIVATE parquet_static)
-		endif()
-
-		#else()
-		#	message(FATAL_ERROR "libarrow.so not found.")
-		#endif()
-	endif()
 
 endif()
 
@@ -317,13 +294,20 @@ if(USEGPU)
 	endif()
 endif()
 
+ 
+if(USEARROW)
+
+	#list(APPEND Nyxus_LIBRARIES ${ARROW_LIB})
+	list(APPEND Nyxus_LIBRARIES arrow_shared)
 
 
-if(BUILD_LIB)
+	if(PARQUET_LINK_SHARED)
+		list(APPEND Nyxus_LIBRARIES parquet_shared)
+	else()
+		list(APPEND Nyxus_LIBRARIES parquet_static)
+	endif()
 
-	if(USEARROW)
-		#if(ARROW_LIB)
-
+	if (BUILD_LIB)
 		# Find Python
 		find_package(Python REQUIRED COMPONENTS Interpreter Development)
 
@@ -357,34 +341,22 @@ if(BUILD_LIB)
 		message(STATUS "PyArrow Include Path: ${PYARROW_INCLUDE_PATH}")
 		message(STATUS "PyArrow Include Path: ${PYARROW_LIB_PATH}")
 
-		#link arrow
-		target_link_libraries(backend PRIVATE ${ARROW_LIB} )
-		
-		
-		target_link_libraries(backend PRIVATE ${PYARROW_LIB_PATH} )
 		# add pyarrow include path
 		include_directories(${PYARROW_INCLUDE_PATH})
-		
-		target_link_libraries(backend PRIVATE arrow_shared )
-		#target_link_libraries(backend PRIVATE arrow_python_shared )
-		target_include_directories(backend PRIVATE ${Python_INCLUDE_DIRS})
 
-		if(PARQUET_LINK_SHARED)
-			target_link_libraries(backend PRIVATE parquet_shared)
-		else()
-			target_link_libraries(backend PRIVATE parquet_static)
-		endif()
+		list(APPEND Nyxus_LIBRARIES ${PYARROW_LIB_PATH} )
 
-		#else()
-		#	message(FATAL_ERROR "libarrow.so not found.")
-		#endif()
+		list(APPEND Nyxus_LIBRARIES ${Python_INCLUDE_DIRS})
+
 	endif()
 
-	target_compile_definitions(backend PRIVATE WITH_PYTHON_H)
-	# VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
-	target_compile_definitions(backend PRIVATE VERSION_INFO=${VERSION_INFO})
-
 endif()
+
+target_compile_definitions(backend PRIVATE WITH_PYTHON_H)
+# VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
+target_compile_definitions(backend PRIVATE VERSION_INFO=${VERSION_INFO})
+
+#endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
