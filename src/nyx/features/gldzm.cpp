@@ -11,8 +11,8 @@ void GLDZMFeature::clear_buffers()
 {
 	f_SDE =
 		f_LDE =
-		f_LGLE =
-		f_HGLE =
+		f_LGLZE =
+		f_HGLZE =
 		f_SDLGLE =
 		f_SDHGLE =
 		f_LDLGLE =
@@ -30,19 +30,27 @@ void GLDZMFeature::clear_buffers()
 		f_GLE = 0;
 }
 
-void GLDZMFeature::calculate (LR& r)
+void GLDZMFeature::calc_gldzm_matrix (SimpleMatrix<unsigned int> & GLDZM, const std::vector<IDZ_cluster_indo> & Z, const std::vector<PixIntens> & I)
 {
-	clear_buffers();
+	int i = 0;
+	for (auto& z : Z)
+	{
+		// row. Gray tones are sparse so we need to find indices of tones in 'Z' and use them as rows of P-matrix
+		auto iter = std::find (I.begin(), I.end(), std::get<0>(z));
+		int row = (int)(iter - I.begin());
+		// column (a distance). Distances are dense \in [1,Nd]
+		int col = std::get<1>(z) - 1;	// 0-based => -1
+		auto& k = GLDZM.yx(row, col);
+		k++;
+	}
+}
 
-	//==== Check if the ROI is degenerate (equal intensity)
-	if (r.aux_min == r.aux_max)
-		return;
-
+void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, int& Ng, int& Nd, LR& r)
+{
 	//==== Compose the distance matrix
 
 	// -- Zones (intensity clusters)
-	using ACluster = std::pair<PixIntens, int>;	// <zone intensity, zone distance>
-	std::vector<ACluster> Z;
+	std::vector<IDZ_cluster_indo> Z;
 
 	// -- Unique intensities 
 	std::unordered_set<PixIntens> U;
@@ -64,7 +72,7 @@ void GLDZMFeature::calculate (LR& r)
 		if (Ir == 0)
 			continue;
 		// binned intensity
-		unsigned int Ib = Nyxus::to_grayscale (Ir, 0, piRange, nGrays, Environment::ibsi_compliance);
+		unsigned int Ib = Nyxus::to_grayscale(Ir, 0, piRange, nGrays, Environment::ibsi_compliance);
 		D[i] = Ib;
 		// update the set of unique intensities
 		U.insert(Ib);
@@ -84,14 +92,14 @@ void GLDZMFeature::calculate (LR& r)
 			// Found a gray pixel. Find same-intensity neighbourhood of it.
 			std::vector<std::tuple<int, int>> history;
 
-			int x = col, 
+			int x = col,
 				y = row;
 			int zoneSize = 1;	// '1' because we already have a pixel. Hopefully it's a part of a zone
 			D.yx(y, x) = VISITED;
 
 			// Keep track of this pixel, hopefully 1st pixel of the cluster
-			history.push_back ({x,y});
-			int zoneMetric = dist2border <pixData> (D, x, y); //dist2closestRoiBorder (D, x, y);
+			history.push_back({ x,y });
+			int zoneMetric = dist2border <pixData>(D, x, y); //dist2closestRoiBorder (D, x, y);
 
 			// Scan the neighborhood of pixel (x,y)
 			for (;;)
@@ -99,19 +107,19 @@ void GLDZMFeature::calculate (LR& r)
 				// East
 				int _x = x + 1,
 					_y = y;
-				if (D.safe(_y,_x) && D.yx(_y,_x) != VISITED && D.yx(_y,_x) == inten)
+				if (D.safe(_y, _x) && D.yx(_y, _x) != VISITED && D.yx(_y, _x) == inten)
 				{
 					D.yx(y, x + 1) = VISITED;
 
 					// Update zone's metric
-					int dist2roi = dist2border <pixData> (D, _x, _y); //dist2closestRoiBorder (D, _x, _y);
-					zoneMetric = std::min (zoneMetric, dist2roi);
+					int dist2roi = dist2border <pixData>(D, _x, _y); //dist2closestRoiBorder (D, _x, _y);
+					zoneMetric = std::min(zoneMetric, dist2roi);
 
 					// Update zone size
 					zoneSize++;
 
 					// Remember this pixel
-					history.push_back ({_x,_y});
+					history.push_back({ _x,_y });
 					// Advance
 					x = x + 1;
 					// Proceed
@@ -121,18 +129,18 @@ void GLDZMFeature::calculate (LR& r)
 				// South
 				_x = x;
 				_y = y + 1;
-				if (D.safe(_y,_x) && D.yx(_y,_x) != VISITED && D.yx(_y,_x) == inten)
+				if (D.safe(_y, _x) && D.yx(_y, _x) != VISITED && D.yx(_y, _x) == inten)
 				{
-					D.yx(_y,_x) = VISITED;
+					D.yx(_y, _x) = VISITED;
 
 					// Update zone's metric
-					int dist2roi = dist2border <pixData> (D, _x, _y); //dist2closestRoiBorder(D, _x, _y);
+					int dist2roi = dist2border <pixData>(D, _x, _y); //dist2closestRoiBorder(D, _x, _y);
 					zoneMetric = std::min(zoneMetric, dist2roi);
 
 					// Update zone size
 					zoneSize++;
 
-					history.push_back ({_x,_y});
+					history.push_back({ _x,_y });
 					y = y + 1;
 					continue;
 				}
@@ -146,48 +154,51 @@ void GLDZMFeature::calculate (LR& r)
 			U.insert(inten);
 
 			// --2 Create a zone
-			ACluster clu = { inten, zoneMetric};
-			Z.push_back(clu);
+			IDZ_cluster_indo clu = { inten, zoneMetric, zoneSize };
+			Z.push_back (clu);
 		}
 
 	//==== Fill the zonal metric matrix
 
 	// -- number of discrete intensity values in the image
-	int Ng = (int)U.size();
+	Ng = (int)U.size();
 
 	// -- max zone distance to ROI or image border
-	int Nd = 0;
+	Nd = 0;
 	for (auto& z : Z)
-		Nd = std::max (Nd, z.second);
+		Nd = std::max(Nd, std::get<1>(z));
 
 	// -- Set to vector to be able to know each intensity's index
 	std::vector<PixIntens> I (U.begin(), U.end());
 	std::sort (I.begin(), I.end());	// Optional
 
 	// -- Zone intensity -to- zone distance matrix
-	SimpleMatrix<int> P;
-	P.allocate (Nd, Ng);	// Ng rows, Nd columns
-	P.fill(0);
+	GLDZM.allocate (Nd, Ng);	// Ng rows, Nd columns
+	GLDZM.fill (0);
+	calc_gldzm_matrix (GLDZM, Z, I);
+}
 
-	// -- fill it
-	int i = 0;
-	for (auto& z : Z)
-	{
-		// row. Gray tones are sparse so we need to find indices of tones in 'Z' and use them as rows of P-matrix
-		auto iter = std::find (I.begin(), I.end(), z.first);	
-		int row = (int)(iter - I.begin());
-		// col (a distance). Distances are dense \in [1,Nd]
-		int col = z.second - 1;	// 0-based => -1
-		auto& k = P.yx (row, col);
-		k++;
-	}
+void GLDZMFeature::calculate (LR& r)
+{
+	clear_buffers();
+
+	//==== Check if the ROI is degenerate (equal intensity)
+	if (r.aux_min == r.aux_max)
+		return;
+
+	//==== Prepare the GLDZM-matrix kit: matrix itself and its dimensions
+	std::vector<PixIntens> greyLevelsLUT;
+	SimpleMatrix<unsigned int> GLDZM;
+	int Ng,	// number of grey levels
+		Nd;	// maximum number of non-zero dependencies
+	prepare_GLDZM_matrix_kit (GLDZM, Ng, Nd, r);
 
 	//==== Calculate vectors of totals by intensity (Mx) and by distance (Md)
 	std::vector<double> Mx, Md;
-	calc_row_and_column_sum_vectors (Mx, Md, P, Ng, Nd);
+	calc_row_and_column_sum_vectors (Mx, Md, GLDZM, Ng, Nd);
 
 	//==== Calculate features, set variables f_GLE, f_GML, f_GLV, etc
-	calc_features (Mx, Md, P, r.aux_area);
+	calc_features (Mx, Md, GLDZM, r.aux_area);
 }
 
 template <class Imgmatrx> int GLDZMFeature::dist2border (Imgmatrx& I, const int x, const int y)
@@ -281,12 +292,12 @@ template <class Imgmatrx> void GLDZMFeature::calc_features (const std::vector<do
 	{
 		double tmp = (double)g + 1;
 		double x = Mx[g];
-		f_LGLE += x / (tmp * tmp);	// Low Grey Level Emphasis = \frac{1}{N_s} \sum_x \frac{m_x}{x^2}
-		f_HGLE += (tmp * tmp) * x;	// High Grey Level Emphasis = \frac{1}{N_s} \sum_x x^2 m_x
+		f_LGLZE += x / (tmp * tmp);	// Low Grey Level Emphasis = \frac{1}{N_s} \sum_x \frac{m_x}{x^2}
+		f_HGLZE += (tmp * tmp) * x;	// High Grey Level Emphasis = \frac{1}{N_s} \sum_x x^2 m_x
 		f_GLNU += x * x;			// Grey Level Non-Uniformity = \frac{1}{N_s} \sum_x m_x^2
 	}
-	f_LGLE /= (double)Ns;
-	f_HGLE /= (double)Ns;
+	f_LGLZE /= (double)Ns;
+	f_HGLZE /= (double)Ns;
 	f_GLNU /= (double)Ns;
 	f_GLNUN = f_GLNU / (double)Ns;	// Grey Level Non-Uniformity Normalized = \frac{1}{N_s^2} \sum_x m_x^2
 
@@ -329,8 +340,8 @@ void GLDZMFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
 	fvals[GLDZM_SDE][0] = f_SDE;
 	fvals[GLDZM_LDE][0] = f_LDE;
-	fvals[GLDZM_LGLE][0] = f_LGLE;
-	fvals[GLDZM_HGLE][0] = f_HGLE;
+	fvals[GLDZM_LGLZE][0] = f_LGLZE;
+	fvals[GLDZM_HGLZE][0] = f_HGLZE;
 	fvals[GLDZM_SDLGLE][0] = f_SDLGLE;
 	fvals[GLDZM_SDHGLE][0] = f_SDHGLE;
 	fvals[GLDZM_LDLGLE][0] = f_LDLGLE;

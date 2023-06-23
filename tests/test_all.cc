@@ -8,6 +8,7 @@
 #include "test_ibsi_glcm.h"
 #include "test_ibsi_gldm.h"
 #include "test_ibsi_glrlm.h"
+#include "test_ibsi_gldzm.h"
 #include "test_ibsi_glszm.h"
 #include "test_ibsi_intensity.h"
 #include "test_ibsi_ngtdm.h"
@@ -910,12 +911,10 @@ TEST(TEST_NYXUS, TEST_GLRLM_RP)
 	ASSERT_NO_THROW(test_glrlm_rp());
 }
 
-
 TEST(TEST_NYXUS, TEST_GLRLM_GLV)
 {
 	ASSERT_NO_THROW(test_glrlm_glv());
 }
-
 
 TEST(TEST_NYXUS, TEST_GLRLM_RV)
 {
@@ -926,6 +925,89 @@ TEST(TEST_NYXUS, TEST_GLRLM_RE)
 {
 	ASSERT_NO_THROW(test_glrlm_re());
 }
+
+// GLDZM
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_CORRECTNESS)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_matrix_correctness());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_SDE)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_SDE());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_LDE)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_LDE());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_LGLZE)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_LGLZE());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_HGLZE)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_HGLZE());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_SDHGLE)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_SDHGLE());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_LDLGLE)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_LDLGLE());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_LDHGLE)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_LDHGLE());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_GLNU)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_GLNU());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_GLNUN());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_ZDNU)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_ZDNU());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_ZDNUN)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_ZDNUN());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_ZP)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_ZP());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_GLV)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_GLV());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_ZDV)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_ZDV());
+}
+
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_ZDE)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_ZDE());
+}
+
 
 // GLSZM
 
