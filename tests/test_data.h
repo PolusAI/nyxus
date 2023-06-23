@@ -189,16 +189,7 @@ const static int ibsi_fig3_19_ngldm_ground_truth[] =
 // Source: https://stackoverflow.com/questions/25019840/neighboring-gray-level-dependence-matrix-ngldm-in-matlab
 //
 
-const static NyxusPixel ibsi_rayryeng_ngldm_sample_image_int_00s[] =
-{
-	{1,1, 1}, {2,1, 1}, {3,1, 2}, {4,1, 3}, {5,1, 1},
-	{1,2, 0}, {2,2, 1}, {3,2, 1}, {4,2, 2}, {5,2, 2},
-	{1,3, 0}, {2,3, 0}, {3,3, 2}, {4,3, 2}, {5,3, 1},
-	{1,4, 3}, {2,4, 3}, {3,4, 2}, {4,4, 2}, {5,4, 1},
-	{1,5, 0}, {2,5, 0}, {3,5, 2}, {4,5, 0}, {5,5, 1}
-};
-
-const static NyxusPixel ibsi_rayryeng_ngldm_sample_image_int[] =
+const static NyxusPixel nonibsi_rayryeng_ngldm_sample_image_int[] =
 {
 	{1,1, 91}, {2,1, 91}, {3,1, 92}, {4,1, 93}, {5,1, 91},
 	{1,2, 90}, {2,2, 91}, {3,2, 91}, {4,2, 92}, {5,2, 92},
@@ -207,7 +198,7 @@ const static NyxusPixel ibsi_rayryeng_ngldm_sample_image_int[] =
 	{1,5, 90}, {2,5, 90}, {3,5, 92}, {4,5, 90}, {5,5, 91}
 };
 
-const static NyxusPixel ibsi_rayryeng_ngldm_sample_image_mask[] =
+const static NyxusPixel nonibsi_rayryeng_ngldm_sample_image_mask[] =
 {
 	{1,1, 1}, {2,1, 1}, {3,1, 1}, {4,1, 1}, {5,1, 1},
 	{1,2, 1}, {2,2, 1}, {3,2, 1}, {4,2, 1}, {5,2, 1},
@@ -216,7 +207,7 @@ const static NyxusPixel ibsi_rayryeng_ngldm_sample_image_mask[] =
 	{1,5, 1}, {2,5, 1}, {3,5, 1}, {4,5, 1}, {5,5, 1}
 };
 
-const static int ibsi_rayryeng_ngldm_ground_truth[] =
+const static int nonibsi_rayryeng_ngldm_ground_truth[] =
 {
 	0, 0, 1, 0, 0, 0,
 	0, 0, 1, 1, 0, 0,

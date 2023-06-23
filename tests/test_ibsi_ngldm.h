@@ -33,8 +33,15 @@ static std::unordered_map<std::string, float> ibsi_ngldm_gtruth
 	{"NGLDM_DCENE",		0.17}	// Dependence count entropy, p. 128
 };
 
-void test_ibsi_ngld_matrix1 ()
+//
+// Tests calculating the NGLD-matrix with the IBSI mode enabled, using IBSI-provided ground truth
+//
+
+void test_ibsi_ngld_matrix_ibsi ()
 {
+    // Activate the IBSI compliance mode
+    Environment::ibsi_compliance = true;
+
     // Load a test image
     LR roidata;
     load_masked_test_roi_data (roidata, ibsi_fig3_19_ngldm_sample_image_int, ibsi_fig3_19_ngldm_sample_image_mask, sizeof(ibsi_fig3_19_ngldm_sample_image_mask) / sizeof(NyxusPixel));
@@ -45,8 +52,8 @@ void test_ibsi_ngld_matrix1 ()
     // Have the feature object to create the NGLDM matrix kit (matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and NGLDM's dimensions)
     std::vector<PixIntens> greyLevelsLUT;
     SimpleMatrix<unsigned int> NGLDM;
-    int Ng,	// number of grey levels
-        Nr;	// maximum number of non-zero dependencies
+    int Ng = -1,	// number of grey levels
+        Nr = -1;	// maximum number of non-zero dependencies
     ASSERT_NO_THROW (f.prepare_NGLDM_matrix_kit (NGLDM, greyLevelsLUT, Ng, Nr, roidata));
 
     // Count discrepancies
@@ -66,11 +73,18 @@ void test_ibsi_ngld_matrix1 ()
     ASSERT_TRUE (n_mismatches == 0);
 }
 
-void test_ibsi_ngld_matrix2()
+//
+// Tests calculating the NGLD-matrix with the IBSI mode disabled, using community-provided ground truth
+//
+
+void test_ibsi_ngld_matrix_nonibsi()
 {
+    // Disable the IBSI compliance mode
+    Environment::ibsi_compliance = false;
+
     // Load a test image
     LR roidata;
-    load_masked_test_roi_data (roidata, ibsi_rayryeng_ngldm_sample_image_int, ibsi_rayryeng_ngldm_sample_image_mask, sizeof(ibsi_rayryeng_ngldm_sample_image_mask) / sizeof(NyxusPixel));
+    load_masked_test_roi_data (roidata, nonibsi_rayryeng_ngldm_sample_image_int, nonibsi_rayryeng_ngldm_sample_image_mask, sizeof(nonibsi_rayryeng_ngldm_sample_image_mask) / sizeof(NyxusPixel));
 
     // In this test, we only calculate and examine the NGLD-matrix without calculating features
     NGLDMfeature f;
@@ -78,8 +92,8 @@ void test_ibsi_ngld_matrix2()
     // Have the feature object to create the NGLDM matrix kit (matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and NGLDM's dimensions)
     std::vector<PixIntens> greyLevelsLUT;
     SimpleMatrix<unsigned int> NGLDM;
-    int Ng,	// number of grey levels
-        Nr;	// maximum number of non-zero dependencies
+    int Ng = -1,	// number of grey levels
+        Nr = -1;	// maximum number of non-zero dependencies
     ASSERT_NO_THROW(f.prepare_NGLDM_matrix_kit(NGLDM, greyLevelsLUT, Ng, Nr, roidata));
 
     // Count discrepancies
@@ -87,7 +101,7 @@ void test_ibsi_ngld_matrix2()
     for (int g = 0; g < Ng; g++)
         for (int r = 0; r < Nr; r++)
         {
-            auto gtruth = ibsi_rayryeng_ngldm_ground_truth[g * Nr + r];
+            auto gtruth = nonibsi_rayryeng_ngldm_ground_truth[g * Nr + r];
             auto actual = NGLDM.yx(g, r);
             if (gtruth != actual)
             {
@@ -198,14 +212,14 @@ void test_ibsi_ngldm_feature (const AvailableFeatures& feature, const std::strin
     ASSERT_TRUE(agrees_gt(aveTotal, ibsi_ngldm_gtruth[feature_name], 2.));
 }
 
-void test_ibsi_NGLDM_matrix_correctness1()
+void test_ibsi_NGLDM_matrix_correctness_IBSI()
 {
-    test_ibsi_ngld_matrix1();
+    test_ibsi_ngld_matrix_ibsi();
 }
 
-void test_ibsi_NGLDM_matrix_correctness2()
+void test_ibsi_NGLDM_matrix_correctness_NONIBSI()
 {
-    test_ibsi_ngld_matrix2();
+    test_ibsi_ngld_matrix_nonibsi();
 }
 
 
