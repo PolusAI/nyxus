@@ -344,9 +344,9 @@ if(USEARROW)
 		# add pyarrow include path
 		include_directories(${PYARROW_INCLUDE_PATH})
 
-		list(APPEND Nyxus_LIBRARIES ${PYARROW_LIB_PATH} )
+		target_link_libraries(backend PRIVATE ${PYARROW_LIB_PATH} )
 
-		list(APPEND Nyxus_LIBRARIES ${Python_INCLUDE_DIRS})
+		target_link_libraries(backend PRIVATE ${Python_INCLUDE_DIRS})
 
 	endif()
 
