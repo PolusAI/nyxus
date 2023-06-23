@@ -1,5 +1,3 @@
-import pyarrow as pa
-
 import os
 import re
 import sys
