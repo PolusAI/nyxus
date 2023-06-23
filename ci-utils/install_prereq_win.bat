@@ -155,10 +155,12 @@ popd
 curl -L https://github.com/apache/arrow/archive/refs/tags/apache-arrow-12.0.0.zip -o  arrow-apache-arrow-12.0.0.zip
 tar -xvf arrow-apache-arrow-12.0.0.zip
 pushd arrow-apache-arrow-12.0.0
+pushd cpp
 mkdir build_man
 pushd build_man
 cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ -DCMAKE_PREFIX_PATH=../../local_install/
 cmake --build . --config Release --target install --parallel 4
+popd
 popd
 popd
 
