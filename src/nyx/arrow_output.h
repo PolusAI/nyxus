@@ -9,6 +9,15 @@
 
 #include <arrow/table.h>
 
+#if __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem> 
+  namespace fs = std::experimental::filesystem;
+#else
+  error "Missing the <filesystem> header."
+#endif
 
 class ArrowOutput {
 
@@ -25,13 +34,18 @@ public:
                             const std::vector<std::string>& string_columns,
                             const std::vector<double>& results,
                             size_t num_rows,
-                            const std::string& arrow_file_path="") {
+                            const std::string& arrow_file_path="NyxusFeatures.arrow") {
 
-        arrow_file_path_ = (arrow_file_path == "") ? "out.arrow" : arrow_file_path;
 
-        if(arrow_file_path != "" && !Nyxus::ends_with_substr(arrow_file_path, ".arrow")) {
+        if(!fs::is_directory(arrow_file_path) && !Nyxus::ends_with_substr(arrow_file_path, ".arrow")) {
             throw std::invalid_argument("The arrow file path must end in \".arrow\"");
         }
+
+        arrow_file_path_ = arrow_file_path;
+
+        if (fs::is_directory(arrow_file_path)) {
+            arrow_file_path_ += "/NyxusFeatures.arrow";
+        } 
 
         writer_ = WriterFactory::create_writer(arrow_file_path_);
             
@@ -45,15 +59,18 @@ public:
                              const std::vector<std::string>& string_columns,
                              const std::vector<double>& results,
                              size_t num_rows,
-                             const std::string& parquet_file_path="") {
+                             const std::string& parquet_file_path="NyxusFeatures.parquet") {
 
-        arrow_file_path_ = (parquet_file_path == "") ? "out.parquet" : parquet_file_path;
 
-        if(!Nyxus::ends_with_substr(parquet_file_path, ".parquet")) {
+        if(!fs::is_directory(parquet_file_path) && !Nyxus::ends_with_substr(parquet_file_path, ".parquet")) {
             throw std::invalid_argument("The parquet file path must end in \".parquet\"");
         }
 
         parquet_file_path_ = parquet_file_path;
+
+        if (fs::is_directory(parquet_file_path)) {
+            parquet_file_path_ += "/NyxusFeatures.parquet";
+        }
 
         writer_ = WriterFactory::create_writer(parquet_file_path_);
             
