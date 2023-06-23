@@ -107,16 +107,18 @@ int main (int argc, char** argv)
 			theEnvironment.arrow_output.create_arrow_file(theResultsCache.get_headerBuf(),
                                           	theResultsCache.get_stringColBuf(),
                                           	theResultsCache.get_calcResultBuf(),
-                                          	theResultsCache.get_num_rows());
+                                          	theResultsCache.get_num_rows(),
+											theEnvironment.output_dir);
 
 		} else if (theEnvironment.arrow_output_type == "parquet"){
 
 			theEnvironment.arrow_output.create_parquet_file(theResultsCache.get_headerBuf(),
                                           theResultsCache.get_stringColBuf(),
                                           theResultsCache.get_calcResultBuf(),
-                                          theResultsCache.get_num_rows());
-		}
+                                          theResultsCache.get_num_rows(),
+										  theEnvironment.output_dir);
 
+		} 
 	#endif 
 
 	// Current time stamp #2

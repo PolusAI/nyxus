@@ -40,6 +40,7 @@
 #define IBSICOMPLIANCE "--ibsi" // skip binning for grey level and grey tone features
 #define SKIPROI "--skiproi"		// Optional. Skip ROIs having specified labels. Sybtax: --skiproi <label[,label,label,...]>
 
+
 #ifdef CHECKTIMING
 	#define EXCLUSIVETIMING "--exclusivetiming"
 #endif
@@ -87,7 +88,7 @@
 #define VERBOSITY_DETAILED 8
 
 // Arrow ouput
-#define ARROW_OUPUT_TYPE "--arrowOuputType"
+#define ARROW_OUPUT_TYPE "--arrowOutputType"
 
 /// @brief Class encapsulating the the feature extraction environment - command line option values, default values, etc. Use it to add a parseable command line parameter.
 class Environment: public BasicEnvironment
