@@ -352,11 +352,11 @@ if(USEARROW)
 
 endif()
 
-target_compile_definitions(backend PRIVATE WITH_PYTHON_H)
-# VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
-target_compile_definitions(backend PRIVATE VERSION_INFO=${VERSION_INFO})
-
-#endif()
+if(BUILD_LIB)
+	target_compile_definitions(backend PRIVATE WITH_PYTHON_H)
+	# VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
+	target_compile_definitions(backend PRIVATE VERSION_INFO=${VERSION_INFO})
+endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
