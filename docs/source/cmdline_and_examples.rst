@@ -133,6 +133,11 @@ should adhere to columns "WIPP I/O role" and "WIPP type".
      - path
      - input
      - path
+   * - --arrowOutputType
+     - (Optional) Type of Arrow file to write the feature results to. Current options are 'arrow' for Arrow IPC or 'parquet' for Parquet
+     - string 
+     - output
+     - enum
 
 Examples
 ========

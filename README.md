@@ -284,6 +284,8 @@ Note that both of these methods have an optional argument for a path to be provi
     arrow_array = nyx.get_arrow_memory_mapping()
 ```
 
+This functionality is also available in the through the command line using the flag `--arrowOutputType`. If this flag is set to `--arrowOutputType=arrow` then the results will be written to an Arrow IPC file in the output directory and `--arrowOutputType=parquet` will write to a Parquet file.
+
 ## Available features 
 The feature extraction plugin extracts morphology and intensity based features from pairs of intensity/binary mask images and produces a csv file output. The input image should be in tiled [OME TIFF format](https://docs.openmicroscopy.org/ome-model/6.2.0/ome-tiff/specification.html).  The plugin extracts the following features:
 
@@ -374,6 +376,7 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 --reduceThreads | (optional) Number of CPU threads used on the feature calculation step. Default: '--reduceThreads=1' | integer
 --skiproi | (optional) Skip ROIs having specified labels. Example: '--skiproi=image1.tif:2,3,4;image2.tif:45,56' | string
 --tempDir | (optional) Directory used by temporary out-of-RAM objects. Default value: system temporary directory | path
+--arrowOutputType | (optional) Type of Arrow file to write the feature results to. Current options are `arrow` for Arrow IPC or `parquet` for Parquet | string
 
 ---
 
