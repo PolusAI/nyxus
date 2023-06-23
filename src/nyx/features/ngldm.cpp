@@ -2,8 +2,6 @@
 #include "ngldm.h"
 #include "../environment.h"
 
-#include "C:\\WORK\\AXLE\\nyxus-diagnostics\\simpleMatrix-diagnostics.h"	// ???
-
 NGLDMfeature::NGLDMfeature() : FeatureMethod("NGLDMfeature")
 {
 	provide_features (NGLDMfeature::featureset);
@@ -64,7 +62,6 @@ void NGLDMfeature::gather_unique_intensities2 (std::vector<PixIntens>& V, const 
 	V.insert(V.end(), U.begin(), U.end()); //std::vector<PixIntens> V (U.begin(), U.end());
 	std::sort(V.begin(), V.end());
 }
-
 
 /**
  * Calculates an NGLD-matrix.

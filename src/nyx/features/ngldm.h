@@ -65,23 +65,23 @@ private:
 	const double EPS = 2.2e-16;
 
 	// Variables caching feature values between calculate() and save_value(). 
-	double f_LDE;	// Low Dependence Emphasis
-	double f_HDE;	// High Dependence Emphasis
-	double f_LGLCE;	// Low Grey Level Count Emphasis
-	double f_HGLCE;	// High Grey Level Count Emphasis
+	double f_LDE;		// Low Dependence Emphasis
+	double f_HDE;		// High Dependence Emphasis
+	double f_LGLCE;		// Low Grey Level Count Emphasis
+	double f_HGLCE;		// High Grey Level Count Emphasis
 	double f_LDLGLE;	// Low Dependence Low Grey Level Emphasis
 	double f_LDHGLE;	// Low Dependence High Grey Level Emphasis
 	double f_HDLGLE;	// High Dependence Low Grey Level Emphasis
 	double f_HDHGLE;	// High Dependence High Grey Level Emphasis
-	double f_GLNU;	// Grey Level Non-Uniformity
-	double f_GLNUN;	// Grey Level Non-Uniformity Normalised
-	double f_DCNU;	// Dependence Count Non-Uniformity
-	double f_DCNUN;	// Dependence Count Non-Uniformity Normalised
-	double f_GLCM;	// Grey Level Count Mean
-	double f_GLV;	// Grey Level Variance
-	double f_DCM;	// Dependence Count Mean
-	double f_DCP;	// Dependence Count Percentage
-	double f_DCV;	// Dependence Count Variance
-	double f_DCENT;	// Dependence Count Entropy
-	double f_DCENE;	// Dependence Count Energy
+	double f_GLNU;		// Grey Level Non-Uniformity
+	double f_GLNUN;		// Grey Level Non-Uniformity Normalised
+	double f_DCNU;		// Dependence Count Non-Uniformity
+	double f_DCNUN;		// Dependence Count Non-Uniformity Normalised
+	double f_GLCM;		// Grey Level Count Mean
+	double f_GLV;		// Grey Level Variance
+	double f_DCM;		// Dependence Count Mean
+	double f_DCP;		// Dependence Count Percentage
+	double f_DCV;		// Dependence Count Variance
+	double f_DCENT;		// Dependence Count Entropy
+	double f_DCENE;		// Dependence Count Energy
 };

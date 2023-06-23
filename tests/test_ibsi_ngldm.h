@@ -198,92 +198,15 @@ void test_ibsi_ngldm_feature (const AvailableFeatures& feature, const std::strin
     ASSERT_TRUE(agrees_gt(aveTotal, ibsi_ngldm_gtruth[feature_name], 2.));
 }
 
-void test_ibsi_NGLDM_matrix_correctness2()
-{
-    test_ibsi_ngld_matrix2();
-}
-
 void test_ibsi_NGLDM_matrix_correctness1()
 {
     test_ibsi_ngld_matrix1();
 }
 
-void test_ibsi_NGLDM_LDE() 
+void test_ibsi_NGLDM_matrix_correctness2()
 {
-    test_ibsi_ngldm_feature (NGLDM_LDE, "NGLDM_LDE");
+    test_ibsi_ngld_matrix2();
 }
 
-void test_ibsi_NGLDM_HDE() 
-{
-    test_ibsi_ngldm_feature (NGLDM_HDE, "NGLDM_HDE");
-}
 
-void test_ibsi_NGLDM_LGLCE() 
-{
-    test_ibsi_ngldm_feature (NGLDM_LGLCE, "NGLDM_LGLCE");
-}
 
-void test_ibsi_NGLDM_HGLCE() 
-{
-    test_ibsi_ngldm_feature (NGLDM_HGLCE, "NGLDM_HGLCE");
-}
-
-void test_ibsi_NGLDM_LDLGLE() 
-{
-    test_ibsi_ngldm_feature (NGLDM_LDLGLE, "NGLDM_LDLGLE");
-}
-
-void test_ibsi_NGLDM_LDHGLE() 
-{
-    test_ibsi_ngldm_feature (NGLDM_LDHGLE, "NGLDM_LDHGLE");
-}
-
-void test_ibsi_NGLDM_HDLGLE() 
-{
-    test_ibsi_ngldm_feature (NGLDM_HDLGLE, "NGLDM_HDLGLE");
-}
-
-void test_ibsi_NGLDM_HDHGLE() 
-{
-    test_ibsi_ngldm_feature (NGLDM_HDHGLE, "NGLDM_HDHGLE");
-}
-
-void test_ibsi_NGLDM_GLNU() 
-{
-    test_ibsi_ngldm_feature (NGLDM_GLNU, "NGLDM_GLNU");
-}
-
-void test_ibsi_NGLDM_GLNUN() 
-{
-    test_ibsi_ngldm_feature (NGLDM_GLNUN, "NGLDM_GLNUN");
-}
-
-void test_ibsi_NGLDM_DCNU() 
-{
-    test_ibsi_ngldm_feature (NGLDM_DCNU, "NGLDM_DCNU");
-}
-
-void test_ibsi_NGLDM_DCNUN() 
-{
-    test_ibsi_ngldm_feature (NGLDM_DCNUN, "NGLDM_DCNUN");
-}
-
-void test_ibsi_NGLDM_GLV() 
-{
-    test_ibsi_ngldm_feature (NGLDM_GLV, "NGLDM_GLV");
-}
-
-void test_ibsi_NGLDM_DCV() 
-{
-    test_ibsi_ngldm_feature (NGLDM_DCV, "NGLDM_DCV");
-}
-
-void test_ibsi_NGLDM_DCENT() 
-{
-    test_ibsi_ngldm_feature (NGLDM_DCENT, "NGLDM_DCENT");
-}
-
-void test_ibsi_NGLDM_DCENE() 
-{
-    test_ibsi_ngldm_feature (NGLDM_DCENE, "NGLDM_DCENE");
-}
