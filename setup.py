@@ -12,10 +12,6 @@ from distutils.version import LooseVersion
 from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext
 
-import numpy as np
-import pybind11
-
-
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=""):
@@ -96,6 +92,7 @@ class CMakeBuild(build_ext):
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
+
 
 setup(
     name="nyxus",
