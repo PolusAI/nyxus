@@ -178,10 +178,10 @@ const static NyxusPixel ibsi_fig3_17a_ngldm_sample_image_mask[] =
 
 const static int ibsi_fig3_17c_ngldm_ground_truth[] =
 {
-	1, 3, 0,
-	2, 2, 0,
-	3, 2, 0,
-	4, 1, 1
+	3, 0,
+	2, 0,
+	2, 0,
+	1, 1
 };
 
 // Phantom for ROI perimeter feature calculation - nonzero pixels of ROI mask generated in Matlab as:

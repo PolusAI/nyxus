@@ -1,4 +1,5 @@
 #include <limits.h>
+#include <stack>
 #include "gldzm.h"
 #include "../environment.h"
 
@@ -89,73 +90,140 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 			if (inten == 0 || int(inten) == VISITED)
 				continue;
 
-			// Found a gray pixel. Find same-intensity neighbourhood of it.
+			// Once found a nonblank pixel, explore its same-intensity neighbourhood (aka "zone") pixel's distance 
+			// to the image border and figure out the whole zone's metric - minimum member pixel's distance to the border.
 			std::vector<std::tuple<int, int>> history;
+			std::stack<std::tuple<int, int>> zonestack;
 
 			int x = col,
 				y = row;
-			int zoneSize = 1;	// '1' because we already have a pixel. Hopefully it's a part of a zone
-			D.yx(y, x) = VISITED;
+
+			// Initial zone size
+			int zoneSize = 1;	// once found a never-visited pixel, we already have a 1-pixel zone
 
 			// Keep track of this pixel, hopefully 1st pixel of the cluster
-			history.push_back({ x,y });
-			int zoneMetric = dist2border <pixData>(D, x, y); //dist2closestRoiBorder (D, x, y);
+			history.push_back ({x,y});
+
+			// Prepare an initial approximation of zone's distance to border
+			int zoneMetric = dist2border <pixData> (D, x, y); 
 
 			// Scan the neighborhood of pixel (x,y)
 			for (;;)
 			{
-				// East
+				//==== Calculate the metric of this pixel. It may happen to be the only pixel of a zone
+				
+				// Prevent rescanning
+				D.yx(y, x) = VISITED;
+
+				//==== Check if zone continues to the East
 				int _x = x + 1,
 					_y = y;
-				if (D.safe(_y, _x) && D.yx(_y, _x) != VISITED && D.yx(_y, _x) == inten)
+				if (D.safe(_y,_x) && D.yx(_y,_x) != VISITED && D.yx(_y,_x) == inten)
 				{
-					D.yx(y, x + 1) = VISITED;
+
+					// Remember this pixel
+					history.push_back ({x,y});
+					zonestack.push ({x,y});	// store the parent pixel pisition
 
 					// Update zone's metric
-					int dist2roi = dist2border <pixData>(D, _x, _y); //dist2closestRoiBorder (D, _x, _y);
+					int dist2roi = dist2border <pixData>(D, _x, _y);
 					zoneMetric = std::min(zoneMetric, dist2roi);
 
 					// Update zone size
 					zoneSize++;
 
-					// Remember this pixel
-					history.push_back({ _x,_y });
-					// Advance
-					x = x + 1;
-					// Proceed
+					// Make the new neighborhood pixel current parent
+					x = _x;
 					continue;
 				}
 
-				// South
+				//==== Check if zone continues to the South
 				_x = x;
 				_y = y + 1;
 				if (D.safe(_y, _x) && D.yx(_y, _x) != VISITED && D.yx(_y, _x) == inten)
 				{
-					D.yx(_y, _x) = VISITED;
+
+					// Remember this pixel
+					history.push_back ({x,y});
+					zonestack.push ({x,y});	// store the parent pixel pisition
 
 					// Update zone's metric
-					int dist2roi = dist2border <pixData>(D, _x, _y); //dist2closestRoiBorder(D, _x, _y);
+					int dist2roi = dist2border <pixData>(D, _x, _y);
 					zoneMetric = std::min(zoneMetric, dist2roi);
 
 					// Update zone size
 					zoneSize++;
 
-					history.push_back({ _x,_y });
-					y = y + 1;
+					// Make the new neighborhood pixel current parent
+					y = _y;
 					continue;
 				}
 
-				// We are done exploring this cluster
-				break;
+				//==== Check if zone continues to the West
+				_x = x - 1;
+				_y = y;
+				if (D.safe(_y, _x) && D.yx(_y, _x) != VISITED && D.yx(_y, _x) == inten)
+				{
+
+					// Remember this pixel
+					history.push_back ({x,y});
+					zonestack.push ({x,y});	// store the parent pixel pisition
+
+					// Update zone's metric
+					int dist2roi = dist2border <pixData>(D, _x, _y);
+					zoneMetric = std::min(zoneMetric, dist2roi);
+
+					// Update zone size
+					zoneSize++;
+
+					// Make the new neighborhood pixel current parent
+					x = _x;
+					continue;
+				}
+
+				//==== Check if zone continues to the North
+				_x = x;
+				_y = y - 1;
+				if (D.safe(_y, _x) && D.yx(_y, _x) != VISITED && D.yx(_y, _x) == inten)
+				{
+
+					// Remember this pixel
+					history.push_back({x,y});
+					zonestack.push({x,y});	// store the parent pixel pisition
+
+					// Update zone's metric
+					int dist2roi = dist2border <pixData>(D, _x, _y);
+					zoneMetric = std::min(zoneMetric, dist2roi);
+
+					// Update zone size
+					zoneSize++;
+
+					// Make the new neighborhood pixel current parent
+					y = _y;
+					continue;
+				}
+
+				// We are done exploring pixel's potential neighborhood. There might happen a zone or not (just this pixel)
+				if (zonestack.empty() == false)
+				{
+					// Not a trivial (single-pixel) zone
+					
+					// Restore the last parent as current
+					auto parent_xy = zonestack.top();	// get ahold the terminal pixel's parent who hopefully has other children
+					zonestack.pop();
+					x = std::get<0> (parent_xy);
+					y = std::get<1> (parent_xy);
+				}
+				else
+					break;
 			}
 
-			// Done scanning a cluster. Perform 3 actions:
-			// --1
-			U.insert(inten);
-
-			// --2 Create a zone
-			IDZ_cluster_indo clu = { inten, zoneMetric, zoneSize };
-			Z.push_back (clu);
+			// At this point 'zonestack' should be empty
+			{
+				// Done scanning the whole zone. Register it
+				IDZ_cluster_indo clu = {inten, zoneMetric, zoneSize};
+				Z.push_back (clu);
+			}
 		}
 
 	//==== Fill the zonal metric matrix
@@ -235,6 +303,12 @@ template <class Imgmatrx> int GLDZMFeature::dist2border (Imgmatrx& I, const int 
 			dist2b = y0 - y;
 			break;
 		}
+	// make distances 1-based
+	dist2l++;
+	dist2r++;
+	dist2t++;
+	dist2b++;
+
 	// result
 	int retval = std::min(std::min(std::min(dist2l, dist2r), dist2t), dist2b);
 	if (retval == 0)
