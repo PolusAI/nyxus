@@ -155,6 +155,66 @@ const static NyxusPixel ibsi_phantom_z4_mask[] = {
 {1, 4, 1}, {2, 4, 1}, {3, 4, 1}, {4, 4, 1}, {5, 4, 1}
 };
 
+//
+// Sample image for NGLDM feature calculation 
+// Source: IBSI Documentation, Release 0.0.1dev, Page 119
+//
+
+const static NyxusPixel ibsi_fig3_19_ngldm_sample_image_int[] =
+{
+	{1, 1, 1}, {2, 1, 2}, {3, 1, 2}, {4, 1, 3},
+	{1, 2, 1}, {2, 2, 2}, {3, 2, 3}, {4, 2, 3},
+	{1, 3, 4}, {2, 3, 2}, {3, 3, 4}, {4, 3, 1},
+	{1, 4, 4}, {2, 4, 1}, {3, 4, 2}, {4, 4, 3}
+};
+
+const static NyxusPixel ibsi_fig3_19_ngldm_sample_image_mask[] =
+{
+	{1, 1, 1}, {2, 1, 1}, {3, 1, 1}, {4, 1, 1},
+	{1, 2, 1}, {2, 2, 1}, {3, 2, 1}, {4, 2, 1},
+	{1, 3, 1}, {2, 3, 1}, {3, 3, 1}, {4, 3, 1},
+	{1, 4, 1}, {2, 4, 1}, {3, 4, 1}, {4, 4, 1}
+};
+
+const static int ibsi_fig3_19_ngldm_ground_truth[] =
+{
+	0, 0, 0, 0,
+	0, 0, 1, 1,
+	0, 0, 1, 0,
+	1, 0, 0, 0
+};
+
+//
+// Sample image for NGLDM feature calculation
+// Source: https://stackoverflow.com/questions/25019840/neighboring-gray-level-dependence-matrix-ngldm-in-matlab
+//
+
+const static NyxusPixel nonibsi_rayryeng_ngldm_sample_image_int[] =
+{
+	{1,1, 91}, {2,1, 91}, {3,1, 92}, {4,1, 93}, {5,1, 91},
+	{1,2, 90}, {2,2, 91}, {3,2, 91}, {4,2, 92}, {5,2, 92},
+	{1,3, 90}, {2,3, 90}, {3,3, 92}, {4,3, 92}, {5,3, 91},
+	{1,4, 93}, {2,4, 93}, {3,4, 92}, {4,4, 92}, {5,4, 91},
+	{1,5, 90}, {2,5, 90}, {3,5, 92}, {4,5, 90}, {5,5, 91}
+};
+
+const static NyxusPixel nonibsi_rayryeng_ngldm_sample_image_mask[] =
+{
+	{1,1, 1}, {2,1, 1}, {3,1, 1}, {4,1, 1}, {5,1, 1},
+	{1,2, 1}, {2,2, 1}, {3,2, 1}, {4,2, 1}, {5,2, 1},
+	{1,3, 1}, {2,3, 1}, {3,3, 1}, {4,3, 1}, {5,3, 1},
+	{1,4, 1}, {2,4, 1}, {3,4, 1}, {4,4, 1}, {5,4, 1},
+	{1,5, 1}, {2,5, 1}, {3,5, 1}, {4,5, 1}, {5,5, 1}
+};
+
+const static int nonibsi_rayryeng_ngldm_ground_truth[] =
+{
+	0, 0, 1, 0, 0, 0,
+	0, 0, 1, 1, 0, 0,
+	0, 0, 0, 0, 4, 1,
+	0, 1, 0, 0, 0, 0
+};
+
 // Phantom for ROI perimeter feature calculation - nonzero pixels of ROI mask generated in Matlab as:
 // BW_noholes = imfill(imread('circles.png', 'holes'))
 const static NyxusPixel roiDataForPerimeterTest[] = {
