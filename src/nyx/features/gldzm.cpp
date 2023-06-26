@@ -92,17 +92,13 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 
 			// Once found a nonblank pixel, explore its same-intensity neighbourhood (aka "zone") pixel's distance 
 			// to the image border and figure out the whole zone's metric - minimum member pixel's distance to the border.
-			std::vector<std::tuple<int, int>> history;
-			std::stack<std::tuple<int, int>> zonestack;
+			std::stack<std::tuple<int, int>> parentstack;
 
 			int x = col,
 				y = row;
 
 			// Initial zone size
 			int zoneSize = 1;	// once found a never-visited pixel, we already have a 1-pixel zone
-
-			// Keep track of this pixel, hopefully 1st pixel of the cluster
-			history.push_back ({x,y});
 
 			// Prepare an initial approximation of zone's distance to border
 			int zoneMetric = dist2border <pixData> (D, x, y); 
@@ -112,18 +108,17 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 			{
 				//==== Calculate the metric of this pixel. It may happen to be the only pixel of a zone
 				
-				// Prevent rescanning
-				D.yx(y, x) = VISITED;
+				// Prevent rescanning: mark eroded pixels with 'VISITED'. (The goal is to erode the whole zone.)
+				D.yx (y,x) = VISITED;
 
 				//==== Check if zone continues to the East
-				int _x = x + 1,
+				int _x = x+1, 
 					_y = y;
 				if (D.safe(_y,_x) && D.yx(_y,_x) != VISITED && D.yx(_y,_x) == inten)
 				{
 
-					// Remember this pixel
-					history.push_back ({x,y});
-					zonestack.push ({x,y});	// store the parent pixel pisition
+					// Store pixel (x+1,y)'s parent pixel pisition
+					parentstack.push ({x,y});
 
 					// Update zone's metric
 					int dist2roi = dist2border <pixData>(D, _x, _y);
@@ -139,13 +134,12 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 
 				//==== Check if zone continues to the South
 				_x = x;
-				_y = y + 1;
+				_y = y+1;
 				if (D.safe(_y, _x) && D.yx(_y, _x) != VISITED && D.yx(_y, _x) == inten)
 				{
 
-					// Remember this pixel
-					history.push_back ({x,y});
-					zonestack.push ({x,y});	// store the parent pixel pisition
+					// Store pixel (x,y+1)'s parent pixel pisition
+					parentstack.push ({x,y});	
 
 					// Update zone's metric
 					int dist2roi = dist2border <pixData>(D, _x, _y);
@@ -160,14 +154,13 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 				}
 
 				//==== Check if zone continues to the West
-				_x = x - 1;
+				_x = x-1;
 				_y = y;
 				if (D.safe(_y, _x) && D.yx(_y, _x) != VISITED && D.yx(_y, _x) == inten)
 				{
 
-					// Remember this pixel
-					history.push_back ({x,y});
-					zonestack.push ({x,y});	// store the parent pixel pisition
+					// Store pixel (x-1,y)'s parent pixel pisition
+					parentstack.push ({x,y});	
 
 					// Update zone's metric
 					int dist2roi = dist2border <pixData>(D, _x, _y);
@@ -183,17 +176,16 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 
 				//==== Check if zone continues to the North
 				_x = x;
-				_y = y - 1;
+				_y = y-1;
 				if (D.safe(_y, _x) && D.yx(_y, _x) != VISITED && D.yx(_y, _x) == inten)
 				{
 
-					// Remember this pixel
-					history.push_back({x,y});
-					zonestack.push({x,y});	// store the parent pixel pisition
+					// Store pixel (x,y-1)'s parent pixel pisition
+					parentstack.push ({x,y});	
 
 					// Update zone's metric
-					int dist2roi = dist2border <pixData>(D, _x, _y);
-					zoneMetric = std::min(zoneMetric, dist2roi);
+					int dist2roi = dist2border <pixData> (D, _x, _y);
+					zoneMetric = std::min (zoneMetric, dist2roi);
 
 					// Update zone size
 					zoneSize++;
@@ -204,21 +196,24 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 				}
 
 				// We are done exploring pixel's potential neighborhood. There might happen a zone or not (just this pixel)
-				if (zonestack.empty() == false)
+				if (parentstack.empty() == false)
 				{
 					// Not a trivial (single-pixel) zone
 					
-					// Restore the last parent as current
-					auto parent_xy = zonestack.top();	// get ahold the terminal pixel's parent who hopefully has other children
-					zonestack.pop();
+					// Restore the last saved parent position as current
+					// in order to get ahold the terminal pixel's parent who hopefully has other children
+					auto parent_xy = parentstack.top();	
+					parentstack.pop();
 					x = std::get<0> (parent_xy);
 					y = std::get<1> (parent_xy);
 				}
 				else
+					// Empty 'parentstack' indicates that no neighbors ("children") of pixel (x,y) are found or have all been ingested. 
+					// We are good to register this zone and proceed with searching another one.
 					break;
 			}
 
-			// At this point 'zonestack' should be empty
+			// At this point, 'parentstack' is expected to be empty
 			{
 				// Done scanning the whole zone. Register it
 				IDZ_cluster_indo clu = {inten, zoneMetric, zoneSize};
