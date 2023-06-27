@@ -166,12 +166,24 @@ option(USEARROW "Use Arrow" ON)
 
 if (USEARROW)
 	# Look for installed packages the system
-	find_package(Arrow REQUIRED)
+	find_package(Arrow)
 
-	# Look for installed packages the system
-	find_package(Parquet REQUIRED)
+	if (Arrow_FOUND) 
+		# Look for installed packages the system
+		find_package(Parquet)
 
-	add_definitions(-DUSE_ARROW)
+		if (Parquet_FOUND)
+			add_definitions(-DUSE_ARROW)
+		else()
+			message(WARNING "The Parquet library not found. The build will continue without Arrow support.")
+			set(USEARROW OFF)
+		endif()
+
+	else ()
+		message(WARNING "The Arrow library not found. The build will continue without Arrow support.")
+		set(USEARROW OFF)
+	endif()
+
 endif()
 
 
@@ -297,9 +309,7 @@ endif()
  
 if(USEARROW)
 
-	#list(APPEND Nyxus_LIBRARIES ${ARROW_LIB})
 	list(APPEND Nyxus_LIBRARIES arrow_shared)
-
 
 	if(PARQUET_LINK_SHARED)
 		list(APPEND Nyxus_LIBRARIES parquet_shared)
@@ -309,7 +319,7 @@ if(USEARROW)
 
 	if (BUILD_LIB)
 		# Find Python
-		find_package(Python REQUIRED COMPONENTS Interpreter Development)
+		find_package(Python REQUIRED COMPONENTS Interpreter)
 
 		# Execute the Python script to find pyarrow include path
 		execute_process(
@@ -327,12 +337,10 @@ if(USEARROW)
 
 		# Execute the Python script to find pyarrow library path
 		execute_process(
-			#COMMAND ${Python_EXECUTABLE} -c "import pyarrow as pa; path=pa.get_library_dirs()[0] + '/libarrow_python.dylib'; print(path)"
 			COMMAND ${Python_EXECUTABLE} ${python_filepath}
 			OUTPUT_VARIABLE LIB_PATH_OUTPUT
 			OUTPUT_STRIP_TRAILING_WHITESPACE
 		)
-		#find_package(arrow_python_shared REQUIRED)
 
 		# Store the path in a CMake variable
 		set(PYARROW_LIB_PATH "${LIB_PATH_OUTPUT}" CACHE INTERNAL "Path to pyarrow library directory")
