@@ -166,32 +166,32 @@ namespace Nyxus
 		ANG_BW_NEIGHBORS_MODE,
 
 		// GLCM:
-		GLCM_ASM,		// Angular second moment, IBSI # 8ZQL
-		GLCM_ACOR,		// Autocorrelation, IBSI # QWB0
-		GLCM_CLUPROM,	// Cluster prominence, IBSI # AE86
-		GLCM_CLUSHADE,	// Cluster shade, IBSI # 7NFM
-		GLCM_CLUTEND,	// Cluster tendency, IBSI # DG8W
-		GLCM_CONTRAST,	// Contrast, IBSI # ACUI
-		GLCM_CORRELATION,		// Correlation, IBSI # NI2N
-		GLCM_DIFAVE,	// Difference average, IBSI # TF7R
-		GLCM_DIFENTRO,	// Difference entropy, IBSI # NTRS
-		GLCM_DIFVAR,	// Difference variance, IBSI # D3YU
-		GLCM_DIS,		// Dissimilarity, IBSI # 8S9J
-		GLCM_ENERGY,	// Energy
-		GLCM_ENTROPY,	// Entropy
-		GLCM_HOM1,	// Homogeneity-1 (PyR)
-		GLCM_HOM2,	// Homogeneity-2 (PyR)
-		GLCM_ID,	// Inv diff, IBSI # IB1Z
-		GLCM_IDN,	// Inv diff normalized, IBSI # NDRX
-		GLCM_IDM,	// Inv diff mom, IBSI # WF0Z
-		GLCM_IDMN,	// Inv diff mom normalized, IBSI # 1QCO
-		GLCM_INFOMEAS1,	// Information measure of correlation 1, IBSI # R8DG
-		GLCM_INFOMEAS2,	// Information measure of correlation 2, IBSI # JN9H
-		GLCM_IV,	// Inv variance, IBSI # E8JP
-		GLCM_JAVE,	// Joint average, IBSI # 60VM
-		GLCM_JE,	// Joint entropy, IBSI # TU9B
-		GLCM_JMAX,	// Joint max (aka PyR max probability), IBSI # GYBY
-		GLCM_JVAR,	// Joint var (aka PyR Sum of Squares), IBSI # UR99
+		GLCM_ASM,			// Angular second moment, IBSI # 8ZQL
+		GLCM_ACOR,			// Autocorrelation, IBSI # QWB0
+		GLCM_CLUPROM,		// Cluster prominence, IBSI # AE86
+		GLCM_CLUSHADE,		// Cluster shade, IBSI # 7NFM
+		GLCM_CLUTEND,		// Cluster tendency, IBSI # DG8W
+		GLCM_CONTRAST,		// Contrast, IBSI # ACUI
+		GLCM_CORRELATION,	// Correlation, IBSI # NI2N
+		GLCM_DIFAVE,		// Difference average, IBSI # TF7R
+		GLCM_DIFENTRO,		// Difference entropy, IBSI # NTRS
+		GLCM_DIFVAR,		// Difference variance, IBSI # D3YU
+		GLCM_DIS,			// Dissimilarity, IBSI # 8S9J
+		GLCM_ENERGY,		// Energy
+		GLCM_ENTROPY,		// Entropy
+		GLCM_HOM1,			// Homogeneity-1 (PyR)
+		GLCM_HOM2,			// Homogeneity-2 (PyR)
+		GLCM_ID,			// Inv diff, IBSI # IB1Z
+		GLCM_IDN,			// Inv diff normalized, IBSI # NDRX
+		GLCM_IDM,			// Inv diff mom, IBSI # WF0Z
+		GLCM_IDMN,			// Inv diff mom normalized, IBSI # 1QCO
+		GLCM_INFOMEAS1,		// Information measure of correlation 1, IBSI # R8DG
+		GLCM_INFOMEAS2,		// Information measure of correlation 2, IBSI # JN9H
+		GLCM_IV,			// Inv variance, IBSI # E8JP
+		GLCM_JAVE,			// Joint average, IBSI # 60VM
+		GLCM_JE,			// Joint entropy, IBSI # TU9B
+		GLCM_JMAX,			// Joint max (aka PyR max probability), IBSI # GYBY
+		GLCM_JVAR,			// Joint var (aka PyR Sum of Squares), IBSI # UR99
 		GLCM_SUMAVERAGE,	// Sum average, IBSI # ZGXS
 		GLCM_SUMENTROPY,	// Sum entropy, IBSI # P6QZ
 		GLCM_SUMVARIANCE,	// Sum variance, IBSI # OEEB
@@ -270,24 +270,25 @@ namespace Nyxus
 		GLDM_LDHGLE,	// Large Dependence High Gray Level Emphasis
 
 		// NGLDM:
-		NGLDM_LDE,	// Low Dependence Emphasis
-		NGLDM_HDE,	// High Dependence Emphasis
-		NGLDM_LGLCE,	// Low Grey Level Count Emphasis
-		NGLDM_HGLCE,	// High Grey Level Count Emphasis
-		NGLDM_LDLGLE,	// Low Dependence Low Grey Level Emphasis
-		NGLDM_LDHGLE,	// Low Dependence High Grey Level Emphasis
-		NGLDM_HDLGLE,	// High Dependence Low Grey Level Emphasis
-		NGLDM_HDHGLE,	// High Dependence High Grey Level Emphasis
-		NGLDM_GLNU,	// Grey Level Non-Uniformity
-		NGLDM_GLNUN,	// Grey Level Non-Uniformity Normalised
-		NGLDM_DCNU,	// Dependence Count Non-Uniformity
-		NGLDM_DCNUN,	// Dependence Count Non-Uniformity Normalised
-		NGLDM_GLM,	// Grey Level Mean
-		NGLDM_GLV,	// Grey Level Variance
-		NGLDM_DCM,	// Dependence Count Mean
-		NGLDM_DCV,	// Dependence Count Variance
-		NGLDM_DCE,	// Dependence Count Entropy
-		NGLDM_DCENE,	// Dependence Count Energy
+		NGLDM_LDE,		// Low Dependence Emphasis (IBSI # SODN)
+		NGLDM_HDE,		// High Dependence Emphasis (IBSI # IMOQ)
+		NGLDM_LGLCE,	// Low Grey Level Count Emphasis (IBSI # TL9H)
+		NGLDM_HGLCE,	// High Grey Level Count Emphasis (IBSI # OAE7)
+		NGLDM_LDLGLE,	// Low Dependence Low Grey Level Emphasis (IBSI # EQ3F)
+		NGLDM_LDHGLE,	// Low Dependence High Grey Level Emphasis (IBSI # JA6D)
+		NGLDM_HDLGLE,	// High Dependence Low Grey Level Emphasis (IBSI # NBZI)
+		NGLDM_HDHGLE,	// High Dependence High Grey Level Emphasis (IBSI # 9QMG)
+		NGLDM_GLNU,		// Grey Level Non-Uniformity (IBSI # FP8K)
+		NGLDM_GLNUN,	// Grey Level Non-Uniformity Normalised (IBSI # 5SPA)
+		NGLDM_DCNU,		// Dependence Count Non-Uniformity (IBSI # Z87G)
+		NGLDM_DCNUN,	// Dependence Count Non-Uniformity Normalised (IBSI # OKJI)
+		NGLDM_DCP,		// Dependence Count Percentage (IBSI # 6XV8)
+		NGLDM_GLM,		// Grey Level Mean
+		NGLDM_GLV,		// Grey Level Variance (IBSI # 1PFV)
+		NGLDM_DCM,		// Dependence Count Mean
+		NGLDM_DCV,		// Dependence Count Variance (IBSI # DNX2)
+		NGLDM_DCENT,	// Dependence Count Entropy (IBSI # FCBV)
+		NGLDM_DCENE,	// Dependence Count Energy (IBSI # CAS9)
 
 		// NGTDM:
 		NGTDM_COARSENESS,

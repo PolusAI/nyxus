@@ -24,30 +24,58 @@ void NGLDMfeature::clear_buffers()
 		f_GLCM =
 		f_GLV =
 		f_DCM =
+		f_DCP = 
 		f_DCV =
-		f_DCE =
+		f_DCENT =
 		f_DCENE = 0;
 }
 
 template <class PixelCloud> void NGLDMfeature::gather_unique_intensities (std::vector<PixIntens> & V, PixelCloud & C, PixIntens max_inten)
 {
+	// Find unique intensities
 	std::unordered_set<PixIntens> U;
 	PixIntens range = max_inten - 0;
 	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
 	for (Pixel2 p : C)
 	{
-		PixIntens inten_ = Nyxus::to_grayscale(p.inten, 0, range, nGrays, Environment::ibsi_compliance);
+		PixIntens inten_ = Nyxus::to_grayscale (p.inten, 0, range, nGrays, Environment::ibsi_compliance);
+		U.insert(inten_);
+	}
+
+	// Cast the set to vector to be able to access intensities by indices
+	V.insert (V.end(), U.begin(), U.end()); 
+	std::sort (V.begin(), V.end());
+}
+
+void NGLDMfeature::gather_unique_intensities2 (std::vector<PixIntens>& V, const pixData& C, PixIntens max_inten)
+{
+	std::unordered_set<PixIntens> U;
+	PixIntens range = max_inten - 0;
+	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+	for (auto p : C)
+	{
+		PixIntens inten_ = Nyxus::to_grayscale (p, 0, range, nGrays, Environment::ibsi_compliance);
 		U.insert(inten_);
 	}
 
 	// -- Set to vector to be able to know each intensity's index
-	V.insert (V.end(), U.begin(), U.end()); //std::vector<PixIntens> V (U.begin(), U.end());
-	std::sort (V.begin(), V.end());
+	V.insert(V.end(), U.begin(), U.end()); //std::vector<PixIntens> V (U.begin(), U.end());
+	std::sort(V.begin(), V.end());
 }
 
-template <class Imgmatrix> void NGLDMfeature::calc_ngldm (SimpleMatrix<unsigned int> & NGLDM, Imgmatrix & I, std::vector<PixIntens> & V, PixIntens max_inten)
+/**
+ * Calculates an NGLD-matrix.
+ *
+ * @param NGLDM		(output) the NGLDM
+ * @param Nr		(output) Nr - max column index of non-zero element of NGLDM plus 1 for zero dependency
+ * @param I			Masked ROI image matrix. (Non-ROI elements are equal to zero.) 
+ * @param U			Grey levels LUT
+ * @param max_inten	Maximum intensity
+ */
+
+template <class Imgmatrix> void NGLDMfeature::calc_ngld_matrix (SimpleMatrix<unsigned int> & NGLDM, int & Nr, /*not const*/ Imgmatrix& I, const std::vector<PixIntens>& U, PixIntens max_inten)
 {
-	// Define the neighborhood
+	// Define the neighborhood at max Chebyshev distance \sqrt{2}
 	struct ShiftToNeighbor
 	{
 		int dx, dy;
@@ -68,39 +96,47 @@ template <class Imgmatrix> void NGLDMfeature::calc_ngldm (SimpleMatrix<unsigned 
 	PixIntens range = max_inten - 0;
 	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
 
-	// Iterate pixels having all the 8 neighbors
+	// Reset the max dependency
+	int max_dep = 0;
+
+	// Iterate pixels of the image skipping margin pixels 
+	// in order for a pixel to have all the 8 neighbors
 	for (int y = 1; y < I.get_height() - 1; y++)
 		for (int x = 1; x < I.get_width() - 1; x++)
 		{
 			// Raw intensity of the central pixel whose 
 			PixIntens cpi = I.yx (y,x);
 
-			// Skip off-ROI pixels
-			if (cpi == 0)
-				continue;
+			// Do not skip off-ROI pixels
+			//	if (cpi == 0)
+			//		continue;
 
 			// Binned intensity
 			PixIntens cpi_ = Nyxus::to_grayscale(cpi, 0, range, nGrays, Environment::ibsi_compliance);	// binned 'cpi'
 
 			// Get a dense index value for sparse binned intensity cpi_
-			auto iter = std::find(V.begin(), V.end(), cpi_);
-			int row = (int)(iter - V.begin());
+			auto iter = std::find (U.begin(), U.end(), cpi_);
+			int row = (int)(iter - U.begin());
 
-			// Analyze the neighborhood histogram of pixel (y,x)
+			// Having pixel (x,y) as the center, iterate pixels of the neighborhood and update its histogram 
+			int n_matches = 0;	// (y,x)'s dependency -- the number of matches of center pixel (y,x)'s intensity in its neighborhood
 			for (int i = 0; i < 8; i++)
 			{
 				PixIntens npi = I.yx(y + shifts[i].dy, x + shifts[i].dx);	// neighboring pixel intensity
 				PixIntens npi_ = Nyxus::to_grayscale(npi, 0, range, nGrays, Environment::ibsi_compliance);	// binned 'npi'
 
-				bool match = cpi_ == npi_;
-
-				if (!match)
-					continue;
-
-				unsigned int& binCount = NGLDM.yx(row, i);
-				binCount += (int)match;
+				if (cpi_ == npi_)
+					n_matches++;
 			}
+			unsigned int& binCount = NGLDM.yx (row, n_matches);
+			binCount++;
+
+			// Update the max dependency
+			max_dep = std::max(max_dep, n_matches);
 		}
+
+	// The result matrix NGLDM is one column wider due to eistence of the leftmost zero-dependency column
+	Nr = max_dep + 1;
 }
 
 void NGLDMfeature::calculate (LR& r)
@@ -111,29 +147,38 @@ void NGLDMfeature::calculate (LR& r)
 	if (r.aux_min == r.aux_max)
 		return;
 
-	//==== Unique binned intensities
-	std::vector<PixIntens> V; 
-	gather_unique_intensities (V, r.raw_pixels, r.aux_max);
+	//==== Prepare the NGLD-matrix kit: matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and NGLDM's dimensions
+	std::vector<PixIntens> greyLevelsLUT;
+	SimpleMatrix<unsigned int> NGLDM;	
+	int Ng,	// number of grey levels
+		Nr;	// maximum number of non-zero dependencies
+	prepare_NGLDM_matrix_kit (NGLDM, greyLevelsLUT, Ng, Nr, r);
 
-	//==== Temps
-	const pixData & I = r.aux_image_matrix.ReadablePixels();
-	int Ng = V.size(), 
-		Nr = 8;	// 8 neighbors
-	PixIntens range = r.aux_max - 0;
-	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
-
-	//==== NGLD-matrix
-	SimpleMatrix<unsigned int> NGLDM;
-	NGLDM.allocate (Nr, Ng);	// Ng rows, Nd columns
-	NGLDM.fill (0);
-	calc_ngldm (NGLDM, I, V, r.aux_max);
-
-	//==== Calculate vectors of totals by intensity (Mx) and by distance (Md)
+	//==== Calculate vectors of totals by intensity and by dependence
 	std::vector<double> Sg, Sr;
 	calc_rowwise_and_columnwise_totals (Sg, Sr, NGLDM, Ng, Nr);
 
 	//==== Calculate features
-	calc_features (Sg, Sr, NGLDM, r.aux_area);
+	calc_features (Sg, Sr, NGLDM, Nr, greyLevelsLUT, r.aux_area);
+}
+
+void NGLDMfeature::prepare_NGLDM_matrix_kit (SimpleMatrix<unsigned int> & NGLDM, std::vector<PixIntens> & grey_levels_LUT, int & Ng, int & Nr, LR& r)
+{
+	//==== Temps
+	const pixData& I = r.aux_image_matrix.ReadablePixels();
+
+	//==== Unique binned intensities gathered from the image matrix, not from raw pixels
+	gather_unique_intensities2 (grey_levels_LUT, I, r.aux_max); 
+	Ng = grey_levels_LUT.size();
+
+	int maxNr = 9;	// max number of columns in the NGLDM = max dependence 8 (due to 8 neighbors) + zero
+	PixIntens range = r.aux_max - 0;
+	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+
+	//==== NGLD-matrix
+	NGLDM.allocate (maxNr, Ng);	// Ng rows, maxNr columns, but we may end up having fewer informative columns after the NGLD-matrix calculation
+	NGLDM.fill(0);
+	calc_ngld_matrix (NGLDM, Nr, I, grey_levels_LUT, r.aux_max);	// sets the actual max dependency 'Nr'
 }
 
 void NGLDMfeature::calc_rowwise_and_columnwise_totals (
@@ -143,7 +188,7 @@ void NGLDMfeature::calc_rowwise_and_columnwise_totals (
 	const int Ng, 
 	const int Nr)
 {
-	// Sum distances of each grey levels
+	// Sum dependencies of each grey level
 	Sg.resize (Ng);
 	for (int gray_i = 0; gray_i < Ng; gray_i++)
 	{
@@ -153,7 +198,7 @@ void NGLDMfeature::calc_rowwise_and_columnwise_totals (
 		Sg[gray_i] = sumD;
 	}
 
-	// Sum grey levels of each distance
+	// Sum grey levels of each dependence
 	Sr.resize (Nr);
 	for (int r = 0; r < Nr; r++)
 	{
@@ -164,43 +209,48 @@ void NGLDMfeature::calc_rowwise_and_columnwise_totals (
 	}
 }
 
-void NGLDMfeature::calc_features (const std::vector<double>& Sg, const std::vector<double>& Sr, SimpleMatrix<unsigned int>& M, unsigned int roi_area)
+void NGLDMfeature::calc_features (const std::vector<double>& Sg, const std::vector<double>& Sr, SimpleMatrix<unsigned int>& NGLDM, int Nr, const std::vector<PixIntens> U, unsigned int roi_area)
 {
-	auto Ng = M.height(), 
-		Nr = M.width();
+	// While Nr is passed as a calculated parameter, Ng is simply the number of NGLDM's rows
+	auto Ng = NGLDM.height();
 
 	// Total of all the NGLDM elements
 	double Ns = 0;
-	for (auto sr : Sr)
-		Ns += sr;
+	for (int i = 0; i < Ng; ++i)
+		for (int j = 0; j < Nr; ++j)
+		{
+			auto sij = NGLDM.yx (i,j);
+			Ns += sij;
+		}
 
 	// Calculate features
 	for (int i = 0; i < Ng; ++i)
 	{
 		double sj = 0;
-		for (int j = 0; j < Nr; ++j)
+		for (int j=1; j<Nr; ++j)
 		{
-			double iInt = i + 1;
-			double sij = M.yx(i,j);
+			double iInt = U[i];	// get intensity by its index
+			double sij = NGLDM.yx(i,j);
 			double k = j + 1;
 			double pij = sij / Ns;
 
-			f_LDE += sij / k / k;
-			f_HDE += sij * k * k;
+			f_LDE += sij / j / j;	
+
+			f_HDE += sij * j * j;	
 			if (iInt != 0)
 				f_LGLCE += sij / iInt / iInt; // Low Grey Level Count Emphasis 
 			f_HGLCE += sij * iInt * iInt;	// High Grey Level Count Emphasis 
-			if (iInt != 0)
-				f_LDLGLE += sij / k / k / iInt / iInt;	// Low Dependence Low Grey Level Emphasis
+			if (iInt != 0 && j != 0)
+				f_LDLGLE += sij / j / j / iInt / iInt; // Low Dependence Low Grey Level Emphasis
 			f_LDHGLE += sij * iInt * iInt / k / k;	// Low Dependence High Grey Level Emphasis
 			if (iInt != 0)
 				f_HDLGLE += sij * k * k / iInt / iInt;	// High Dependence Low Grey Level Emphasis
 			f_HDHGLE += sij * k * k * iInt * iInt;	// High Dependence High Grey Level Emphasis
 
 			f_GLCM += iInt * pij;	// Mean Grey Level Count
-			f_DCM += k * pij;	// Mean Dependence Count
+			f_DCM += (double(j+1) * pij);		// Mean Dependence Count
 			if (pij > 0)
-				f_DCE -= pij * std::log(pij) / std::log(2);	// Dependence Count Entropy	F_{\mathit{ngl.dc.entr}} = - \sum_{i=1}^{N_g} \sum_{j=1}^{N_n} p_{ij} \log_2 p_{ij}
+				f_DCENT -= pij * std::log(pij) / std::log(2);	// Dependence Count Entropy	F_{\mathit{ngl.dc.entr}} = - \sum_{i=1}^{N_g} \sum_{j=1}^{N_n} p_{ij} \log_2 p_{ij}
 			f_DCENE += pij * pij;	// Dependence Count Energy	F_{\mathit{ngl.dc.energy}} = \sum_{i=1}^{N_g} \sum_{j=1}^{N_n} p_{ij}^2
 			sj += sij;
 		}
@@ -208,23 +258,25 @@ void NGLDMfeature::calc_features (const std::vector<double>& Sg, const std::vect
 		f_GLNUN += sj * sj;	// Grey Level Non Uniformity Normalised
 	}
 
-	for (int j = 0; j < Nr; ++j)
+	for (int i = 0; i < Ng; ++i)
 	{
+		// Aggregate nonzero dependencies at each grey level
 		double si = 0;
-		for (int i = 0; i < Ng; ++i)
+		for (int j = 1; j < Nr; ++j)	// note: j \in [1,Nr) due to considering only nonzero dependencies
 		{
-			double sij = M.yx (i, j);
+			double sij = NGLDM.yx (i,j);
 			si += sij;
 		}
 		f_DCNU += si * si;	// Dependence Count Non Uniformity
-		f_DCNUN += si * si;	// Dependence Count Non Uniformity Normalised
+		f_DCNUN += si * si;	// Dependence Count Non Uniformity Normalised 
 	}
+
 	for (int i = 0; i < Ng; ++i)
 	{
-		for (int j = 0; j < Nr; ++j)
+		for (int j = 1; j < Nr; ++j)
 		{
 			double i_1base = i + 1;
-			double sij = M.yx (i, j);
+			double sij = NGLDM.yx (i, j);
 			double k = j + 1;
 			double pij = sij / Ns;
 
@@ -253,6 +305,7 @@ void NGLDMfeature::calc_features (const std::vector<double>& Sg, const std::vect
 	f_GLNUN /= (Ns * Ns);	// Grey Level Non Uniformity Normalised	F_{\mathit{ngl.GLNU.NORM}}= \frac{1}{N_s^2} \sum_{i=1}^{N_g} s_{i.}^2
 	f_DCNU /= Ns;	// Dependence Count Non Uniformity	F_{\mathit{ngl.DCNU}}= \frac{1}{N_s} \sum_{j=1}^{N_n} s_{.j}^2
 	f_DCNUN /= (Ns * Ns);	// Dependence Count Non Uniformity Normalised	F_{\mathit{ngl.DCNU.NORM}}= \frac{1}{N_s^2} \sum_{i=1}^{N_n} s_{.j}^2
+	f_DCP = 1;		// Dependence count percentage, =1 (per IBSI Release 0.0.1 dev, p. 126)
 }
 
 void NGLDMfeature::save_value (std::vector<std::vector<double>>& fvals)
@@ -272,8 +325,9 @@ void NGLDMfeature::save_value (std::vector<std::vector<double>>& fvals)
 	fvals[NGLDM_GLM][0] = f_GLCM;
 	fvals[NGLDM_GLV][0] = f_GLV;
 	fvals[NGLDM_DCM][0] = f_DCM;
+	fvals[NGLDM_DCP][0] = f_DCP;
 	fvals[NGLDM_DCV][0] = f_DCV;
-	fvals[NGLDM_DCE][0] = f_DCE;
+	fvals[NGLDM_DCENT][0] = f_DCENT;
 	fvals[NGLDM_DCENE][0] = f_DCENE;
 }
 
@@ -313,16 +367,17 @@ void NGLDMfeature::osized_calculate(LR& r, ImageLoader&)
 
 	//==== NGLD-matrix
 	int Ng = V.size(),
-		Nr = 8;	// 8 neighbors
+		maxNr = 9;	// 8 neighbors + zero
 	SimpleMatrix<unsigned int> NGLDM;
-	NGLDM.allocate (Nr, Ng);	// Ng rows, Nd columns
+	NGLDM.allocate (maxNr, Ng);	// Ng rows, Nd columns
 	NGLDM.fill (0);
-	calc_ngldm (NGLDM, I, V, r.aux_max);
+	int Nr = 0;
+	calc_ngld_matrix (NGLDM, Nr, I, V, r.aux_max);
 	
 	//==== Calculate vectors of totals by intensity (Sg) and by distance (Sr)
 	std::vector<double> Sg, Sr;
 	calc_rowwise_and_columnwise_totals (Sg, Sr, NGLDM, Ng, Nr);
 
 	//==== Calculate features
-	calc_features (Sg, Sr, NGLDM, r.aux_area);
+	calc_features (Sg, Sr, NGLDM, Nr, V, r.aux_area);
 }

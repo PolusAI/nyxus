@@ -37,7 +37,7 @@ void test_ibsi_gldzm_matrix()
 
     // Load a test image
     LR roidata;
-    load_masked_test_roi_data (roidata, ibsi_fig3_17a_ngldm_sample_image_int, ibsi_fig3_17a_ngldm_sample_image_mask, sizeof(ibsi_fig3_17a_ngldm_sample_image_mask) / sizeof(NyxusPixel));
+    load_masked_test_roi_data (roidata, ibsi_fig3_17a_gldzm_sample_image_int, ibsi_fig3_17a_gldzm_sample_image_mask, sizeof(ibsi_fig3_17a_gldzm_sample_image_mask) / sizeof(NyxusPixel));
 
     // In this test, we only calculate and examine the NGLD-matrix without calculating features
     GLDZMFeature f;
@@ -168,4 +168,3 @@ void test_ibsi_GLDZM_matrix_correctness()
 {
     test_ibsi_gldzm_matrix();
 }
-

@@ -16,7 +16,7 @@ namespace Nyxus
 
         // Show the failure info in failed
         if (!good)
-            std::cout << "\tabs of (actual=" << fval << " - groundtruth=" << ground_truth << ")=" << std::abs(diff) << " > tolerance = " << tolerance << "\n";
+            std::cout << "\tabs of (actual=" << fval << " - groundtruth=" << ground_truth << ")=" << std::abs(diff) << " > tolerance=" << tolerance << "\n";
 
         return good;
     }
