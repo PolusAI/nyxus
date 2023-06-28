@@ -39,10 +39,10 @@ void test_ibsi_gldzm_matrix()
     LR roidata;
     load_masked_test_roi_data (roidata, ibsi_fig3_17a_gldzm_sample_image_int, ibsi_fig3_17a_gldzm_sample_image_mask, sizeof(ibsi_fig3_17a_gldzm_sample_image_mask) / sizeof(NyxusPixel));
 
-    // In this test, we only calculate and examine the NGLD-matrix without calculating features
+    // In this test, we only calculate and examine the GLDZ-matrix without calculating features
     GLDZMFeature f;
 
-    // Have the feature object to create the NGLDM matrix kit (matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and NGLDM's dimensions)
+    // Have the feature object to create the GLDZM matrix kit (matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and GLDZM's dimensions)
     SimpleMatrix<unsigned int> GLDZM;
     int Ng,	// number of grey levels
         Nd;	// maximum number of non-zero dependencies
@@ -53,7 +53,7 @@ void test_ibsi_gldzm_matrix()
     for (int g = 0; g < Ng; g++)
         for (int d = 0; d < Nd; d++)
         {
-            auto gtruth = ibsi_fig3_17c_ngldm_ground_truth [g * Nd + d];
+            auto gtruth = ibsi_fig3_17c_gldzm_ground_truth [g * Nd + d];
             auto actual = GLDZM.yx (g,d);
             if (gtruth != actual)
             {
