@@ -37,12 +37,12 @@ void test_ibsi_gldzm_matrix()
 
     // Load a test image
     LR roidata;
-    load_masked_test_roi_data (roidata, ibsi_fig3_17a_ngldm_sample_image_int, ibsi_fig3_17a_ngldm_sample_image_mask, sizeof(ibsi_fig3_17a_ngldm_sample_image_mask) / sizeof(NyxusPixel));
+    load_masked_test_roi_data (roidata, ibsi_fig3_17a_gldzm_sample_image_int, ibsi_fig3_17a_gldzm_sample_image_mask, sizeof(ibsi_fig3_17a_gldzm_sample_image_mask) / sizeof(NyxusPixel));
 
-    // In this test, we only calculate and examine the NGLD-matrix without calculating features
+    // In this test, we only calculate and examine the GLDZ-matrix without calculating features
     GLDZMFeature f;
 
-    // Have the feature object to create the NGLDM matrix kit (matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and NGLDM's dimensions)
+    // Have the feature object to create the GLDZM matrix kit (matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and GLDZM's dimensions)
     SimpleMatrix<unsigned int> GLDZM;
     int Ng,	// number of grey levels
         Nd;	// maximum number of non-zero dependencies
@@ -53,7 +53,7 @@ void test_ibsi_gldzm_matrix()
     for (int g = 0; g < Ng; g++)
         for (int d = 0; d < Nd; d++)
         {
-            auto gtruth = ibsi_fig3_17c_ngldm_ground_truth [g * Nd + d];
+            auto gtruth = ibsi_fig3_17c_gldzm_ground_truth [g * Nd + d];
             auto actual = GLDZM.yx (g,d);
             if (gtruth != actual)
             {
@@ -164,87 +164,7 @@ void test_ibsi_gldzm_feature (const AvailableFeatures& feature, const std::strin
     ASSERT_TRUE (agrees_gt(aveTotal, ibsi_gldzm_gtruth[feature_name], 2.));
 }
 
-    void test_ibsi_GLDZM_matrix_correctness()
-    {
-        test_ibsi_gldzm_matrix();
-    }
-
-    void test_ibsi_GLDZM_SDE()
-    {
-        test_ibsi_gldzm_feature (GLDZM_SDE, "GLDZM_SDE");
-    }
-
-    void test_ibsi_GLDZM_LDE()
-    {
-        test_ibsi_gldzm_feature (GLDZM_LDE, "GLDZM_LDE");
-    }
-
-    void test_ibsi_GLDZM_LGLZE()
-    {
-        test_ibsi_gldzm_feature (GLDZM_LGLZE, "GLDZM_LGLZE");
-    }
-
-    void test_ibsi_GLDZM_HGLZE()
-    {
-        test_ibsi_gldzm_feature (GLDZM_HGLZE, "GLDZM_HGLZE");
-    }
-
-    void test_ibsi_GLDZM_SDHGLE()
-    {
-        test_ibsi_gldzm_feature (GLDZM_SDHGLE, "GLDZM_SDHGLE");
-    }
-
-    void test_ibsi_GLDZM_LDLGLE()
-    {
-        test_ibsi_gldzm_feature (GLDZM_LDLGLE, "GLDZM_LDLGLE");
-    }
-
-    void test_ibsi_GLDZM_LDHGLE()
-    {
-        test_ibsi_gldzm_feature (GLDZM_LDHGLE, "GLDZM_LDHGLE");
-    }
-
-    void test_ibsi_GLDZM_GLNU()
-    {
-        test_ibsi_gldzm_feature(GLDZM_GLNU, "GLDZM_GLNU");
-    }
-
-    void test_ibsi_GLDZM_GLNUN()
-    {
-        test_ibsi_gldzm_feature(GLDZM_GLNUN, "GLDZM_GLNUN");
-    }
-
-    void test_ibsi_GLDZM_ZDNU()
-    {
-        test_ibsi_gldzm_feature(GLDZM_ZDNU, "GLDZM_ZDNU");
-    }
-
-    void test_ibsi_GLDZM_ZDNUN()
-    {
-        test_ibsi_gldzm_feature (GLDZM_ZDNUN, "GLDZM_ZDNUN");
-    }
-
-    void test_ibsi_GLDZM_ZP()
-    {
-        test_ibsi_gldzm_feature (GLDZM_ZP, "GLDZM_ZP");
-    }
-
-    void test_ibsi_GLDZM_GLV()
-    {
-        test_ibsi_gldzm_feature (GLDZM_GLV, "GLDZM_GLV");
-    }
-
-    void test_ibsi_GLDZM_ZDV()
-    {
-        test_ibsi_gldzm_feature (GLDZM_ZDV, "GLDZM_ZDV");
-    }
-
-    void test_ibsi_GLDZM_ZDE()
-    {
-        test_ibsi_gldzm_feature (GLDZM_ZDE, "GLDZM_ZDE");
-    }
-
-
-
-
-
+void test_ibsi_GLDZM_matrix_correctness()
+{
+    test_ibsi_gldzm_matrix();
+}

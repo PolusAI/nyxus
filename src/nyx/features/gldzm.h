@@ -16,8 +16,8 @@ public:
 	{
 		GLDZM_SDE,		// Small Distance Emphasis
 		GLDZM_LDE,		// Large Distance Emphasis
-		GLDZM_LGLE,		// Low Grey Level Emphasis
-		GLDZM_HGLE,		// High GreyLevel Emphasis
+		GLDZM_LGLZE,		// Low Grey Level Zone Emphasis
+		GLDZM_HGLZE,		// High Grey Level Zone Emphasis
 		GLDZM_SDLGLE,	// Small Distance Low Grey Level Emphasis
 		GLDZM_SDHGLE,	// Small Distance High GreyLevel Emphasis
 		GLDZM_LDLGLE,	// Large Distance Low Grey Level Emphasis
@@ -48,11 +48,17 @@ public:
 		return fs.anyEnabled (GLDZMFeature::featureset);
 	}
 
+	void prepare_GLDZM_matrix_kit(SimpleMatrix<unsigned int>& GLDZM, /*std::vector<PixIntens>& grey_levels_LUT,*/ int& Ng, int& Nd, LR& r);
+
 private:
 
 	void clear_buffers();	
 	template <class Imgmatrx> int dist2border (Imgmatrx & I, const int x, const int y);
 	template <class Imgmatrx> void calc_row_and_column_sum_vectors (std::vector<double>& Mx, std::vector<double>& Md, Imgmatrx & P, const int Ng, const int Nd);
+
+	using IDZ_cluster_indo = std::tuple<PixIntens, int, int>;	// <intensity, distance metric, size>
+	void calc_gldzm_matrix (SimpleMatrix<unsigned int>& GLDZM, const std::vector<IDZ_cluster_indo>& Z, const std::vector<PixIntens>& I);
+
 	template <class Imgmatrx> void calc_features (const std::vector<double>& Mx, const std::vector<double>& Md, Imgmatrx& P, unsigned int roi_area);
 
 	const double EPS = 2.2e-16;
@@ -60,8 +66,8 @@ private:
 	// Variables caching feature values between calculate() and save_value(). 
 	double f_SDE,		// Small Distance Emphasis
 		f_LDE,		// Large Distance Emphasis
-		f_LGLE,		// Low Grey Level Emphasis
-		f_HGLE,		// High GreyLevel Emphasis
+		f_LGLZE,		// Low Grey Level Zone Emphasis
+		f_HGLZE,		// High Grey Level Zone Emphasis
 		f_SDLGLE,	// Small Distance Low Grey Level Emphasis
 		f_SDHGLE,	// Small Distance High GreyLevel Emphasis
 		f_LDLGLE,	// Large Distance Low Grey Level Emphasis

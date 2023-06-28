@@ -215,6 +215,35 @@ const static int nonibsi_rayryeng_ngldm_ground_truth[] =
 	0, 1, 0, 0, 0, 0
 };
 
+//
+// Sample image for GLDZM feature calculation 
+// Source: IBSI Documentation, Release 0.0.1dev, Page 104
+//
+
+const static NyxusPixel ibsi_fig3_17a_gldzm_sample_image_int[] =
+{
+	{1, 1, 1}, {2, 1, 2}, {3, 1, 2}, {4, 1, 3},
+	{1, 2, 1}, {2, 2, 2}, {3, 2, 3}, {4, 2, 3},
+	{1, 3, 4}, {2, 3, 2}, {3, 3, 4}, {4, 3, 1},
+	{1, 4, 4}, {2, 4, 1}, {3, 4, 2}, {4, 4, 3}
+};
+
+const static NyxusPixel ibsi_fig3_17a_gldzm_sample_image_mask[] =
+{
+	{1, 1, 1}, {2, 1, 1}, {3, 1, 1}, {4, 1, 1},
+	{1, 2, 1}, {2, 2, 1}, {3, 2, 1}, {4, 2, 1},
+	{1, 3, 1}, {2, 3, 1}, {3, 3, 1}, {4, 3, 1},
+	{1, 4, 1}, {2, 4, 1}, {3, 4, 1}, {4, 4, 1}
+};
+
+const static int ibsi_fig3_17c_gldzm_ground_truth[] =
+{
+	3, 0,
+	2, 0,
+	2, 0,
+	1, 1
+};
+
 // Phantom for ROI perimeter feature calculation - nonzero pixels of ROI mask generated in Matlab as:
 // BW_noholes = imfill(imread('circles.png', 'holes'))
 const static NyxusPixel roiDataForPerimeterTest[] = {

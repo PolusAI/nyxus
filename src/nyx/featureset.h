@@ -218,10 +218,10 @@ namespace Nyxus
 		// GLDZM:
 		GLDZM_SDE,		// Small Distance Emphasis
 		GLDZM_LDE,		// Large Distance Emphasis
-		GLDZM_LGLE,		// Low Grey Level Emphasis
-		GLDZM_HGLE,		// High GreyLevel Emphasis
+		GLDZM_LGLZE,		// Low Grey Level Zone Emphasis
+		GLDZM_HGLZE,		// High Grey Level Zone Emphasis
 		GLDZM_SDLGLE,	// Small Distance Low Grey Level Emphasis
-		GLDZM_SDHGLE,	// Small Distance High GreyLevel Emphasis
+		GLDZM_SDHGLE,	// Small Distance High Grey Level Emphasis
 		GLDZM_LDLGLE,	// Large Distance Low Grey Level Emphasis
 		GLDZM_LDHGLE,	// Large Distance High Grey Level Emphasis
 		GLDZM_GLNU,		// Grey Level Non Uniformity

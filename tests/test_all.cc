@@ -8,6 +8,7 @@
 #include "test_ibsi_glcm.h"
 #include "test_ibsi_gldm.h"
 #include "test_ibsi_glrlm.h"
+#include "test_ibsi_gldzm.h"
 #include "test_ibsi_glszm.h"
 #include "test_ibsi_intensity.h"
 #include "test_ibsi_ngldm.h"
@@ -860,12 +861,10 @@ TEST(TEST_NYXUS, TEST_GLRLM_RP)
 	ASSERT_NO_THROW(test_glrlm_rp());
 }
 
-
 TEST(TEST_NYXUS, TEST_GLRLM_GLV)
 {
 	ASSERT_NO_THROW(test_glrlm_glv());
 }
-
 
 TEST(TEST_NYXUS, TEST_GLRLM_RV)
 {
@@ -875,6 +874,13 @@ TEST(TEST_NYXUS, TEST_GLRLM_RV)
 TEST(TEST_NYXUS, TEST_GLRLM_RE)
 {
 	ASSERT_NO_THROW(test_glrlm_re());
+}
+
+// GLDZM
+
+TEST(TEST_NYXUS, TEST_IBSI_GLDZM_MATRIX_CORRECTNESS)
+{
+	ASSERT_NO_THROW(test_ibsi_GLDZM_matrix_correctness());
 }
 
 // GLSZM
