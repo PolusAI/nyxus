@@ -11,24 +11,24 @@ GLDZMFeature::GLDZMFeature() : FeatureMethod("GLDZMFeature")
 void GLDZMFeature::clear_buffers()
 {
 	f_SDE =
-		f_LDE =
-		f_LGLZE =
-		f_HGLZE =
-		f_SDLGLE =
-		f_SDHGLE =
-		f_LDLGLE =
-		f_LDHGLE =
-		f_GLNU =
-		f_GLNUN =
-		f_ZDNU =
-		f_ZDNUN =
-		f_ZP =
-		f_GLM =
-		f_GLV =
-		f_ZDM =
-		f_ZDV =
-		f_ZDE =
-		f_GLE = 0;
+	f_LDE =
+	f_LGLZE =
+	f_HGLZE =
+	f_SDLGLE =
+	f_SDHGLE =
+	f_LDLGLE =
+	f_LDHGLE =
+	f_GLNU =
+	f_GLNUN =
+	f_ZDNU =
+	f_ZDNUN =
+	f_ZP =
+	f_GLM =
+	f_GLV =
+	f_ZDM =
+	f_ZDV =
+	f_ZDE =
+	f_GLE = 0;
 }
 
 void GLDZMFeature::calc_gldzm_matrix (SimpleMatrix<unsigned int> & GLDZM, const std::vector<IDZ_cluster_indo> & Z, const std::vector<PixIntens> & I)
@@ -46,7 +46,7 @@ void GLDZMFeature::calc_gldzm_matrix (SimpleMatrix<unsigned int> & GLDZM, const 
 	}
 }
 
-void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, int& Ng, int& Nd, LR& r)
+void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, int& Ng, int& Nd, std::vector<PixIntens>& greysLUT, LR& r)
 {
 	//==== Compose the distance matrix
 
@@ -70,8 +70,8 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 		// raw intensity
 		unsigned int Ir = D[i];
 		// ignore blank pixels
-		if (Ir == 0)
-			continue;
+		//	if (Ir == 0)
+		//		continue;
 		// binned intensity
 		unsigned int Ib = Nyxus::to_grayscale(Ir, 0, piRange, nGrays, Environment::ibsi_compliance);
 		D[i] = Ib;
@@ -85,10 +85,15 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 	for (int row = 0; row < M.height; row++)
 		for (int col = 0; col < M.width; col++)
 		{
-			// Find a non-blank pixel
 			auto inten = D.yx(row, col);
-			if (inten == 0 || int(inten) == VISITED)
+
+			// Skip visited pixels
+			if (int(inten) == VISITED)
 				continue;
+
+			// Accept non-blank pixels
+			//	if (inten == 0)
+			//		continue;
 
 			// Once found a nonblank pixel, explore its same-intensity neighbourhood (aka "zone") pixel's distance 
 			// to the image border and figure out the whole zone's metric - minimum member pixel's distance to the border.
@@ -232,13 +237,15 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 		Nd = std::max(Nd, std::get<1>(z));
 
 	// -- Set to vector to be able to know each intensity's index
-	std::vector<PixIntens> I (U.begin(), U.end());
-	std::sort (I.begin(), I.end());	// Optional
+	greysLUT.clear();
+	for (auto grey : U)
+		greysLUT.push_back(grey);
+	std::sort (greysLUT.begin(), greysLUT.end());
 
 	// -- Zone intensity -to- zone distance matrix
 	GLDZM.allocate (Nd, Ng);	// Ng rows, Nd columns
 	GLDZM.fill (0);
-	calc_gldzm_matrix (GLDZM, Z, I);
+	calc_gldzm_matrix (GLDZM, Z, greysLUT);
 }
 
 void GLDZMFeature::calculate (LR& r)
@@ -254,14 +261,14 @@ void GLDZMFeature::calculate (LR& r)
 	SimpleMatrix<unsigned int> GLDZM;
 	int Ng,	// number of grey levels
 		Nd;	// maximum number of non-zero dependencies
-	prepare_GLDZM_matrix_kit (GLDZM, Ng, Nd, r);
+	prepare_GLDZM_matrix_kit (GLDZM, Ng, Nd, greyLevelsLUT, r);
 
 	//==== Calculate vectors of totals by intensity (Mx) and by distance (Md)
 	std::vector<double> Mx, Md;
-	calc_row_and_column_sum_vectors (Mx, Md, GLDZM, Ng, Nd);
+	calc_row_and_column_sum_vectors (Mx, Md, GLDZM, Ng, Nd, greyLevelsLUT);
 
 	//==== Calculate features, set variables f_GLE, f_GML, f_GLV, etc
-	calc_features (Mx, Md, GLDZM, r.aux_area);
+	calc_features (Mx, Md, GLDZM, greyLevelsLUT, r.aux_area);
 }
 
 template <class Imgmatrx> int GLDZMFeature::dist2border (Imgmatrx& I, const int x, const int y)
@@ -311,96 +318,129 @@ template <class Imgmatrx> int GLDZMFeature::dist2border (Imgmatrx& I, const int 
 	return retval;
 }
 
-template <class Imgmatrx> void GLDZMFeature::calc_row_and_column_sum_vectors (std::vector<double> & Mx, std::vector<double>& Md, Imgmatrx& P, const int Ng, const int Nd)
+template <class Imgmatrx> void GLDZMFeature::calc_row_and_column_sum_vectors (std::vector<double> & Mx, std::vector<double>& Md, Imgmatrx& P, const int Ng, const int Nd, const std::vector<PixIntens>& greysLUT)
 {
 	// Sum distances of each grey levels
 	Mx.resize (Ng);
-	for (int gray_i = 0; gray_i < Ng; gray_i++)
+	for (int g = 0; g < Ng; g++)
 	{
 		double sumD = 0;
-		for (int d = 1; d <= Nd; d++)
-			sumD += P.yx (gray_i, d-1);
-		Mx[gray_i] = sumD;
+		for (int d = 0; d < Nd; d++)
+			sumD += P.yx (g, d);
+		Mx[g] = sumD;
 	}
 
 	// Sum grey levels of each distance
 	Md.resize (Nd);
-	for (int d = 1; d <= Nd; d++)
+	for (int d = 0; d < Nd; d++)
 	{
 		double sumG = 0;
-		for (int gray_i = 0; gray_i < Ng; gray_i++)
-			sumG += P.yx (gray_i, d-1);
-		Md[d-1] = sumG;
+		for (int g = 0; g < Ng; g++)
+		{	
+			// skip zero intensities
+			auto inten = greysLUT[g];
+			if (inten == 0)
+				continue;
+
+			sumG += P.yx (g,d);
+		}
+		Md[d] = sumG;
 	}
 }
 
-template <class Imgmatrx> void GLDZMFeature::calc_features (const std::vector<double>& Mx, const std::vector<double>& Md, Imgmatrx& P, unsigned int roi_area)
+template <class Imgmatrx> void GLDZMFeature::calc_features (const std::vector<double>& Mx, const std::vector<double>& Md, Imgmatrx& P, const std::vector<PixIntens>& greysLUT, unsigned int roi_area)
 {
-	int Nd = Md.size();
-	for (int d_ = 1; d_ <= Nd; d_++)
+	int Ng = Mx.size(),
+		Nd = Md.size();
+
+	// Ns is the number of realised zones
+	double Ns = 0;
+	for (int g = 0; g < Ng; g++)
+		for (int d = 0; d < Nd; d++)
+			if (greysLUT[g])	// skip zero grey level zones
+				Ns += P.yx(g,d);
+
+	// Nv is the number of potential zones
+	double Nv = roi_area;
+
+	for (int d_ = 0; d_ < Nd; d_++)
 	{
-		double d = (double) d_;
-		double m = Md [d_-1];
+		double d = (double) (d_+ 1);
+		double m = Md [d_];
 		f_SDE += m / d / d;			// Small Distance Emphasis = \frac{1}{N_s} \sum_d \frac{m_d}{d^2}
 		f_LDE += d * d * m;			// Large Distance Emphasis = \frac{1}{N_s} \sum_d d^2 m_d 
 		f_ZDNU += m * m;			// Zone Distance Non-Uniformity = \frac{1}{N_s} \sum_d m_d^2
 									// Zone Distance Non-Uniformity Normalized = \frac{1}{N_s^2} \sum_d m_d^2
 	}
 
-	double Ns = 0;
-	for (auto levelSumOfDists : Mx)
-		Ns += levelSumOfDists;
+	f_SDE /= Ns;
+	f_LDE /= Ns;
+	f_ZDNU /= Ns;
+	f_ZDNUN = f_ZDNU / Ns;
 
-	f_SDE /= (double)Ns;
-	f_LDE /= (double)Ns;
-	f_ZDNU /= (double)Ns;
-	f_ZDNUN = f_ZDNU / (double)Ns;
-
-	int Ng = Mx.size();
 	for (int g = 0; g < Ng; g++)
 	{
-		double tmp = (double)g + 1;
+		// skip zero intensities in general and to prevent arithmetic overflow
+		if (greysLUT[g] == 0)
+			continue;
+
+		double g_ = (double) greysLUT[g];
 		double x = Mx[g];
-		f_LGLZE += x / (tmp * tmp);	// Low Grey Level Emphasis = \frac{1}{N_s} \sum_x \frac{m_x}{x^2}
-		f_HGLZE += (tmp * tmp) * x;	// High Grey Level Emphasis = \frac{1}{N_s} \sum_x x^2 m_x
+		f_LGLZE += x / (g_ * g_);	// Low Grey Level Emphasis = \frac{1}{N_s} \sum_x \frac{m_x}{x^2}
+		f_HGLZE += (g_ * g_) * x;	// High Grey Level Emphasis = \frac{1}{N_s} \sum_x x^2 m_x
 		f_GLNU += x * x;			// Grey Level Non-Uniformity = \frac{1}{N_s} \sum_x m_x^2
 	}
-	f_LGLZE /= (double)Ns;
-	f_HGLZE /= (double)Ns;
-	f_GLNU /= (double)Ns;
-	f_GLNUN = f_GLNU / (double)Ns;	// Grey Level Non-Uniformity Normalized = \frac{1}{N_s^2} \sum_x m_x^2
+	f_LGLZE /= Ns;
+	f_HGLZE /= Ns;
+	f_GLNU /= Ns;
+	f_GLNUN = f_GLNU / Ns;	// Grey Level Non-Uniformity Normalized = \frac{1}{N_s^2} \sum_x m_x^2
 
 	for (int g = 0; g < Ng; g++)
-		for (int d = 1; d <= Nd; d++)
+		for (int d = 0; d < Nd; d++)
 		{
-			double g_ = (double)g + 1, d_ = d;
-			double p = P.yx(g, d - 1);
+			// skip zero intensities in general and to prevent arithmetic overflow
+			if (greysLUT[g] == 0)
+				continue;
+
+			double g_ = (double) greysLUT[g],
+				d_ = double (d + 1);
+			double p = P.yx (g,d);
 			f_SDLGLE += p / g_ / g_ / d_ / d_;	// Small Distance Low Grey Level Emphasis = \frac{1}{N_s} \sum_x \sum_d \frac{ m_{x,d}}{x^2 d^2}
 			f_SDHGLE += g_ * g_ * p / d_ / d_;	// Small Distance High Grey Level Emphasis = \frac{1}{N_s} \sum_x \sum_d \frac{x^2  m_{x,d}}{d^2}
 			f_LDLGLE += d_ * d_ * p / g_ / g_;	// Large Distance Low Grey Level Emphasis = \frac{1}{N_s} \sum_x \sum_d \frac{d^2 m_{x,d}}{x^2}
-			f_LDHGLE += g_ * g_ * d_ * d_ * p;		// Large Distance High Grey Level Emphasis = \frac{1}{N_s} \sum_x \sum_d \x^2 d^2 m_{x,d}
+			f_LDHGLE += g_ * g_ * d_ * d_ * p;	// Large Distance High Grey Level Emphasis = \frac{1}{N_s} \sum_x \sum_d \x^2 d^2 m_{x,d}
 			f_GLM += g_ * p;					// Grey Level Mean = \mu_x = \sum_x \sum_d x p_{x,d}
 			f_ZDM += d_ * p;					// Zone Distance Mean = \mu_d = \sum_x \sum_d d p_{x,d} 
-			f_ZDE += p * log2(p + EPS);			// Zone Distance Entropy = - \sum_x \sum_d p_{x,d} \textup{log}_2 ( p_{x,d} )
+			f_ZDE += p/Ns * log2(p/Ns + EPS);	// Zone Distance Entropy = - \sum_x \sum_d p_{x,d} \textup{log}_2 ( p_{x,d} )
 		}
-	f_SDLGLE /= (double)Ns;
-	f_SDHGLE /= (double)Ns;
-	f_LDLGLE /= (double)Ns;
-	f_LDHGLE /= (double)Ns;
-	f_ZP = (double)Ns / (double)roi_area;		// Zone Percentage = \frac{N_s}{N_v}
+	f_SDLGLE /= Ns;
+	f_SDHGLE /= Ns;
+	f_LDLGLE /= Ns;
+	f_LDHGLE /= Ns;
+	f_GLM /= Ns;
+	f_ZDM /= Ns;
+	f_ZDE = -f_ZDE;
+	f_ZP = Ns / Nv; // Zone Percentage = \frac{N_s}{N_v} 
+					// (ZP measures the fraction of the number of realised zones and the maximum 
+					// number of potential zones.)
 	f_GLE = f_ZDE;
 
 	for (int g = 0; g < Ng; g++)
-		for (int d = 1; d <= Nd; d++)
+		for (int d = 0; d < Nd; d++)
 		{
+			// skip zero intensities
+			if (greysLUT[g] == 0)
+				continue;
+
 			// Grey Level Variance = \sum_x \sum_d \left(x - \mu_x \right)^2 p_{x,d}
-			double p = P.yx(g, d - 1) / (double)Ns,
-				x = (double)g,
+			double p = P.yx(g, d) / Ns,
+				x = (double)greysLUT[g],
 				dif = x - f_GLM;
 			f_GLV += dif * dif * p;
+
 			// Zone Distance Variance} = \sum_x \sum_d \left(d - \mu_d \right)^2 p_{x,d} 
-			double d_ = (double)d;
-			dif = d - f_ZDM;
+			double d_ = (double) (d + 1);
+			dif = d_ - f_ZDM;
 			f_ZDV += dif * dif * p;
 		}
 }
@@ -580,8 +620,8 @@ void GLDZMFeature::osized_calculate (LR& r, ImageLoader&)
 		Nd = std::max (Nd, (int)p.inten);
 
 	// --Set to vector to be able to know each intensity's index
-	std::vector<PixIntens> I (U.begin(), U.end());
-	std::sort (I.begin(), I.end());	// Optional
+	std::vector<PixIntens> greysLUT (U.begin(), U.end());
+	std::sort (greysLUT.begin(), greysLUT.end());	// Optional
 
 	// -- Zone intensity -to- zone distance matrix
 	WriteImageMatrix_nontriv P ("GLDZMFeature-osized_calculate-P", r.label);
@@ -593,8 +633,8 @@ void GLDZMFeature::osized_calculate (LR& r, ImageLoader&)
 		auto inten = Z_int[i].inten;
 		auto dist = Z_dist[i].inten;
 		// row. Gray tones are sparse so we need to find indices of tones in 'Z' and use them as rows of P-matrix
-		auto iter = std::find(I.begin(), I.end(), inten);
-		int row = (int)(iter - I.begin());
+		auto iter = std::find (greysLUT.begin(), greysLUT.end(), inten);
+		int row = (int) (iter - greysLUT.begin());
 		// col (a distance). Distances are dense \in [1,Nd]
 		int col = dist - 1;	// 0-based => -1
 		auto k = P.yx (row, col);
@@ -603,9 +643,9 @@ void GLDZMFeature::osized_calculate (LR& r, ImageLoader&)
 
 	//==== Calculate vectors of totals by intensity (Mx) and by distance (Md)
 	std::vector<double> Mx, Md;
-	calc_row_and_column_sum_vectors (Mx, Md, P, Ng, Nd);
+	calc_row_and_column_sum_vectors (Mx, Md, P, Ng, Nd, greysLUT);
 
 	//==== Calculate features, set variables f_GLE, f_GML, f_GLV, etc
-	calc_features (Mx, Md, P, r.aux_area);
+	calc_features (Mx, Md, P, greysLUT, r.aux_area);
 }
 
