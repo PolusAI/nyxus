@@ -43,10 +43,11 @@ void test_ibsi_gldzm_matrix()
     GLDZMFeature f;
 
     // Have the feature object to create the GLDZM matrix kit (matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and GLDZM's dimensions)
+    std::vector<PixIntens> greysLUT;
     SimpleMatrix<unsigned int> GLDZM;
     int Ng,	// number of grey levels
         Nd;	// maximum number of non-zero dependencies
-    ASSERT_NO_THROW(f.prepare_GLDZM_matrix_kit (GLDZM, Ng, Nd, roidata));
+    ASSERT_NO_THROW(f.prepare_GLDZM_matrix_kit (GLDZM, Ng, Nd, greysLUT, roidata));
 
     // Count discrepancies
     int n_mismatches = 0;
@@ -93,8 +94,9 @@ void test_ibsi_gldzm_feature (const AvailableFeatures& feature, const std::strin
 
     total += roidata1.fvals[feature][0];
 
-    std::cout << "image #1: " << feature_name << "=" << roidata1.fvals[feature][0] << "\n";
-    std::cout << "running total=" << total << "\n";
+    // Diagnostic
+    //  std::cout << "image #1: " << feature_name << "=" << roidata1.fvals[feature][0] << "\n";
+    //  std::cout << "running average=" << total << "\n";
 
     //==== image 2
 
@@ -114,8 +116,9 @@ void test_ibsi_gldzm_feature (const AvailableFeatures& feature, const std::strin
 
     total += roidata2.fvals[feature][0];
 
-    std::cout << "image #2: " << feature_name << "=" << roidata2.fvals[feature][0] << "\n";
-    std::cout << "running total=" << total / 2. << "\n";
+    // Diagnostic
+    //  std::cout << "image #2: " << feature_name << "=" << roidata2.fvals[feature][0] << "\n";
+    //  std::cout << "running average=" << total / 2. << "\n";
 
     //==== image 3
 
@@ -135,8 +138,9 @@ void test_ibsi_gldzm_feature (const AvailableFeatures& feature, const std::strin
 
     total += roidata3.fvals[feature][0];
 
-    std::cout << "image #3: " << feature_name << "=" << roidata3.fvals[feature][0] << "\n";
-    std::cout << "running total=" << total / 3. << "\n";
+    // Diagnostic
+    //  std::cout << "image #3: " << feature_name << "=" << roidata3.fvals[feature][0] << "\n";
+    //  std::cout << "running average=" << total / 3. << "\n";
 
     //==== image 4
 
@@ -156,8 +160,9 @@ void test_ibsi_gldzm_feature (const AvailableFeatures& feature, const std::strin
 
     total += roidata4.fvals[feature][0];
 
-    std::cout << "image #4: " << feature_name << "=" << roidata4.fvals[feature][0] << "\n";
-    std::cout << "running total=" << total / 4. << "\n";
+    // Diagnostic
+    //  std::cout << "image #4: " << feature_name << "=" << roidata4.fvals[feature][0] << "\n";
+    //  std::cout << "running average=" << total / 4. << "\n";
 
     // Check the feature values vs ground truth
     double aveTotal = total / 4.0;
@@ -168,3 +173,79 @@ void test_ibsi_GLDZM_matrix_correctness()
 {
     test_ibsi_gldzm_matrix();
 }
+
+void test_ibsi_GLDZM_SDE()
+{
+    test_ibsi_gldzm_feature(GLDZM_SDE, "GLDZM_SDE");
+}
+
+void test_ibsi_GLDZM_LDE()
+{
+    test_ibsi_gldzm_feature(GLDZM_LDE, "GLDZM_LDE");
+}
+
+void test_ibsi_GLDZM_LGLZE()
+{
+    test_ibsi_gldzm_feature(GLDZM_LGLZE, "GLDZM_LGLZE");
+}
+
+void test_ibsi_GLDZM_HGLZE()
+{
+    test_ibsi_gldzm_feature(GLDZM_HGLZE, "GLDZM_HGLZE");
+}
+
+void test_ibsi_GLDZM_SDHGLE()
+{
+    test_ibsi_gldzm_feature(GLDZM_SDHGLE, "GLDZM_SDHGLE");
+}
+
+void test_ibsi_GLDZM_LDLGLE()
+{
+    test_ibsi_gldzm_feature(GLDZM_LDLGLE, "GLDZM_LDLGLE");
+}
+
+void test_ibsi_GLDZM_LDHGLE()
+{
+    test_ibsi_gldzm_feature(GLDZM_LDHGLE, "GLDZM_LDHGLE");
+}
+
+void test_ibsi_GLDZM_GLNU()
+{
+    test_ibsi_gldzm_feature(GLDZM_GLNU, "GLDZM_GLNU");
+}
+
+void test_ibsi_GLDZM_GLNUN()
+{
+    test_ibsi_gldzm_feature(GLDZM_GLNUN, "GLDZM_GLNUN");
+}
+
+void test_ibsi_GLDZM_ZDNU()
+{
+    test_ibsi_gldzm_feature(GLDZM_ZDNU, "GLDZM_ZDNU");
+}
+
+void test_ibsi_GLDZM_ZDNUN()
+{
+    test_ibsi_gldzm_feature(GLDZM_ZDNUN, "GLDZM_ZDNUN");
+}
+
+void test_ibsi_GLDZM_ZP()
+{
+    test_ibsi_gldzm_feature(GLDZM_ZP, "GLDZM_ZP");
+}
+
+void test_ibsi_GLDZM_GLV()
+{
+    test_ibsi_gldzm_feature(GLDZM_GLV, "GLDZM_GLV");
+}
+
+void test_ibsi_GLDZM_ZDV()
+{
+    test_ibsi_gldzm_feature(GLDZM_ZDV, "GLDZM_ZDV");
+}
+
+void test_ibsi_GLDZM_ZDE()
+{
+    test_ibsi_gldzm_feature(GLDZM_ZDE, "GLDZM_ZDE");
+}
+

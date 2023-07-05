@@ -43,31 +43,29 @@ public:
 	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 	// Support of manual reduce
-	static bool required(const FeatureSet& fs) 
-	{
-		return fs.anyEnabled (GLDZMFeature::featureset);
-	}
+	static bool required(const FeatureSet& fs) { return fs.anyEnabled (GLDZMFeature::featureset); }
 
-	void prepare_GLDZM_matrix_kit(SimpleMatrix<unsigned int>& GLDZM, /*std::vector<PixIntens>& grey_levels_LUT,*/ int& Ng, int& Nd, LR& r);
+	// Calculates the GLDZ-matrix, its dimensions, and a vector of sorted grey levels
+	void prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, int& Ng, int& Nd, std::vector<PixIntens>& greyLevelsLUT, LR& r);
 
 private:
 
 	void clear_buffers();	
 	template <class Imgmatrx> int dist2border (Imgmatrx & I, const int x, const int y);
-	template <class Imgmatrx> void calc_row_and_column_sum_vectors (std::vector<double>& Mx, std::vector<double>& Md, Imgmatrx & P, const int Ng, const int Nd);
+	template <class Imgmatrx> void calc_row_and_column_sum_vectors (std::vector<double>& Mx, std::vector<double>& Md, Imgmatrx & P, const int Ng, const int Nd, const std::vector<PixIntens>& greysLUT);
 
-	using IDZ_cluster_indo = std::tuple<PixIntens, int, int>;	// <intensity, distance metric, size>
-	void calc_gldzm_matrix (SimpleMatrix<unsigned int>& GLDZM, const std::vector<IDZ_cluster_indo>& Z, const std::vector<PixIntens>& I);
+	using IDZ_cluster_indo = std::tuple<PixIntens, int, int>;	// <intensity, distance metric, zone size>
+	void calc_gldzm_matrix (SimpleMatrix<unsigned int>& GLDZM, const std::vector<IDZ_cluster_indo>& Z, const std::vector<PixIntens>& greysLUT);
 
-	template <class Imgmatrx> void calc_features (const std::vector<double>& Mx, const std::vector<double>& Md, Imgmatrx& P, unsigned int roi_area);
+	template <class Imgmatrx> void calc_features (const std::vector<double>& Mx, const std::vector<double>& Md, Imgmatrx& P, const std::vector<PixIntens>& greyLevelsLUT, unsigned int roi_area);
 
 	const double EPS = 2.2e-16;
 
 	// Variables caching feature values between calculate() and save_value(). 
-	double f_SDE,		// Small Distance Emphasis
+	double f_SDE,	// Small Distance Emphasis
 		f_LDE,		// Large Distance Emphasis
-		f_LGLZE,		// Low Grey Level Zone Emphasis
-		f_HGLZE,		// High Grey Level Zone Emphasis
+		f_LGLZE,	// Low Grey Level Zone Emphasis
+		f_HGLZE,	// High Grey Level Zone Emphasis
 		f_SDLGLE,	// Small Distance Low Grey Level Emphasis
 		f_SDHGLE,	// Small Distance High GreyLevel Emphasis
 		f_LDLGLE,	// Large Distance Low Grey Level Emphasis
