@@ -25,6 +25,8 @@ Nyxus provided features
      - Range between the maximmu and minimum
    * - STANDARD_DEVIATION
      - Standard deviation
+   * - COV
+     - Coefficient of variation
    * - STANDARD_ERROR
      - Standard error
    * - SKEWNESS

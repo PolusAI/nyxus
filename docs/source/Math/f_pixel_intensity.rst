@@ -27,11 +27,15 @@ RANGE = :math:`\max \: G - \min \: G`,
 
 STANDARD_DEVIATION :math:`\gets \sigma = (\mathbb{E}[(G-\mu)^2]) ^{\frac {1}{2}} = \left[ \frac{1}{n} \sum_i^n (g_i-\mu)^2 \right ] ^{\frac {1}{2}}`
 
+COV = :math:`\frac{\sigma}{\mu}`, 
+
 STANDARD_ERROR = :math:`\frac{\sigma}{\sqrt{n}}`, 
 
 SKEWNESS =  :math:`\frac {\sqrt n \mu_3}{\mu_2^{1.5}}` if :math:`n>3` and :math:`\sigma_2 \neq 0`, otherwise :math:`=0`.
 
 KURTOSIS = :math:`\frac{n \mu_4} {\sigma^4}` if :math:`n>4` and :math:`\mu_2 \neq 0`, otherwise :math:`=0`.
+
+EXCESS_KURTOSIS = :math:`\frac{n \mu_4} {\sigma^4} - 3` if :math:`n>4` and :math:`\mu_2 \neq 0`, otherwise :math:`=0`.
 
 HYPERSKEWNESS = :math:`\frac{n \mu_4} {\mu_2^{5/2}}` if :math:`n>5` and :math:`\mu_2 \neq 0`, otherwise :math:`=0`
 

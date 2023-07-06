@@ -30,7 +30,8 @@ PixelIntensityFeatures::PixelIntensityFeatures() : FeatureMethod("PixelIntensity
 		UNIFORMITY_PIU,
 		P01, P10, P25, P75, P90, P99,
 		INTERQUARTILE_RANGE,
-		ROBUST_MEAN_ABSOLUTE_DEVIATION
+		ROBUST_MEAN_ABSOLUTE_DEVIATION,
+		COV
 		});
 }
 
@@ -63,7 +64,7 @@ void PixelIntensityFeatures::calculate(LR& r)
 	val_ROOT_MEAN_SQUARED = sqrt(val_ENERGY / n);
 	val_INTEGRATED_INTENSITY = integInten;
 
-	// --MAD, VARIANCE, STDDEV
+	// --MAD, VARIANCE, STDDEV, COV
 	double mad = 0.0,
 		var = 0.0;
 	for (auto& px : r.raw_pixels)
@@ -76,6 +77,7 @@ void PixelIntensityFeatures::calculate(LR& r)
 	var = n > 1 ? var / (n - 1) : 0.0;
 	double stddev = sqrt(var);
 	val_STANDARD_DEVIATION = stddev;
+	val_COV = stddev / mean_;
 
 	// --Standard error
 	val_STANDARD_ERROR = stddev / sqrt(n);
@@ -264,6 +266,7 @@ void PixelIntensityFeatures::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[P99][0] = val_P99;
 	fvals[INTERQUARTILE_RANGE][0] = val_INTERQUARTILE_RANGE;
 	fvals[ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = val_ROBUST_MEAN_ABSOLUTE_DEVIATION;
+	fvals[COV][0] = val_COV;
 }
 
 void PixelIntensityFeatures::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
@@ -308,28 +311,34 @@ void PixelIntensityFeatures::reduce(size_t start, size_t end, std::vector<int>* 
 
 void PixelIntensityFeatures::cleanup_instance()
 {
-	val_INTEGRATED_INTENSITY = 0,
-		val_MEAN = 0,
-		val_MEDIAN = 0,
-		val_MIN = 0,
-		val_MAX = 0,
-		val_RANGE = 0,
-		val_STANDARD_DEVIATION = 0,
-		val_STANDARD_ERROR = 0,
-		val_SKEWNESS = 0,
-		val_KURTOSIS = 0,
-		val_EXCESS_KURTOSIS = 0,
-		val_HYPERSKEWNESS = 0,
-		val_HYPERFLATNESS = 0,
-		val_MEAN_ABSOLUTE_DEVIATION = 0,
-		val_ENERGY = 0,
-		val_ROOT_MEAN_SQUARED = 0,
-		val_ENTROPY = 0,
-		val_MODE = 0,
-		val_UNIFORMITY = 0,
-		val_UNIFORMITY_PIU = 0,
-		val_P01 = 0, val_P10 = 0, val_P25 = 0, val_P75 = 0, val_P90 = 0, val_P99 = 0,
-		val_INTERQUARTILE_RANGE = 0,
-		val_ROBUST_MEAN_ABSOLUTE_DEVIATION = 0;
+	val_INTEGRATED_INTENSITY = 0;
+	val_MEAN = 0;
+	val_MEDIAN = 0;
+	val_MIN = 0;
+	val_MAX = 0;
+	val_RANGE = 0;
+	val_STANDARD_DEVIATION = 0;
+	val_STANDARD_ERROR = 0;
+	val_SKEWNESS = 0;
+	val_KURTOSIS = 0;
+	val_EXCESS_KURTOSIS = 0;
+	val_HYPERSKEWNESS = 0;
+	val_HYPERFLATNESS = 0;
+	val_MEAN_ABSOLUTE_DEVIATION = 0;
+	val_ENERGY = 0;
+	val_ROOT_MEAN_SQUARED = 0;
+	val_ENTROPY = 0;
+	val_MODE = 0;
+	val_UNIFORMITY = 0;
+	val_UNIFORMITY_PIU = 0;
+	val_P01 = 0; 
+	val_P10 = 0; 
+	val_P25 = 0; 
+	val_P75 = 0; 
+	val_P90 = 0; 
+	val_P99 = 0;
+	val_INTERQUARTILE_RANGE = 0;
+	val_ROBUST_MEAN_ABSOLUTE_DEVIATION = 0;
+	val_COV = 0;
 }
 

@@ -116,6 +116,7 @@ namespace Nyxus
 		r.fvals[MODE][0] = 0;
 		r.fvals[UNIFORMITY][0] = 0;
 		r.fvals[ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = 0;
+		r.fvals[COV][0] = 0;
 	}
 
 	void init_label_record_2 (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity, unsigned int tile_index)

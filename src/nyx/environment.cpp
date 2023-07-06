@@ -444,7 +444,9 @@ void Environment::process_feature_list()
 				UNIFORMITY,
 				P01, P10, P25, P75, P90, P99,
 				INTERQUARTILE_RANGE,
-				ROBUST_MEAN_ABSOLUTE_DEVIATION };
+				ROBUST_MEAN_ABSOLUTE_DEVIATION,
+				COV 
+			};
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
