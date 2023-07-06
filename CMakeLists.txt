@@ -345,6 +345,14 @@ if(USEARROW)
 		# Store the path in a CMake variable
 		set(PYARROW_LIB_PATH "${LIB_PATH_OUTPUT}" CACHE INTERNAL "Path to pyarrow library directory")
 
+		if (PYARROW_INCLUDE_PATH STREQUAL "")
+			message(FATAL_ERROR "Pyarrow library not found.")
+		endif()
+
+		if (PYARROW_LIB_PATH STREQUAL "")
+			message(FATAL_ERROR "Pyarrow library not found.")
+		endif()
+
 		# Print the path
 		message(STATUS "PyArrow Include Path: ${PYARROW_INCLUDE_PATH}")
 		message(STATUS "PyArrow Include Path: ${PYARROW_LIB_PATH}")
