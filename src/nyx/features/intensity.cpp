@@ -18,6 +18,7 @@ PixelIntensityFeatures::PixelIntensityFeatures() : FeatureMethod("PixelIntensity
 		STANDARD_ERROR,
 		SKEWNESS,
 		KURTOSIS,
+		EXCESS_KURTOSIS,
 		HYPERSKEWNESS,
 		HYPERFLATNESS,
 		MEAN_ABSOLUTE_DEVIATION,
@@ -110,8 +111,11 @@ void PixelIntensityFeatures::calculate(LR& r)
 		mom.add(px.inten);
 	val_SKEWNESS = mom.skewness();
 
-	// Kurtosis
+	// Pearson's Kurtosis
 	val_KURTOSIS = mom.kurtosis();
+
+	// Excess kurtosis
+	val_EXCESS_KURTOSIS = mom.excess_kurtosis();
 
 	double sumPow5 = 0, sumPow6 = 0;
 	for (auto& px : r.raw_pixels)
@@ -220,6 +224,9 @@ void PixelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	// Kurtosis
 	val_KURTOSIS = mom.kurtosis();
 
+	// Excess kurtosis
+	val_EXCESS_KURTOSIS = val_KURTOSIS - 3;
+
 	// Hyperskewness hs = E[x-mean].^5 / std(x).^5
 	val_HYPERSKEWNESS = mom.hyperskewness();
 
@@ -239,6 +246,7 @@ void PixelIntensityFeatures::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[STANDARD_ERROR][0] = val_STANDARD_ERROR;
 	fvals[SKEWNESS][0] = val_SKEWNESS;
 	fvals[KURTOSIS][0] = val_KURTOSIS;
+	fvals[EXCESS_KURTOSIS][0] = val_EXCESS_KURTOSIS;
 	fvals[HYPERSKEWNESS][0] = val_HYPERSKEWNESS;
 	fvals[HYPERFLATNESS][0] = val_HYPERFLATNESS;
 	fvals[MEAN_ABSOLUTE_DEVIATION][0] = val_MEAN_ABSOLUTE_DEVIATION;
@@ -310,6 +318,7 @@ void PixelIntensityFeatures::cleanup_instance()
 		val_STANDARD_ERROR = 0,
 		val_SKEWNESS = 0,
 		val_KURTOSIS = 0,
+		val_EXCESS_KURTOSIS = 0,
 		val_HYPERSKEWNESS = 0,
 		val_HYPERFLATNESS = 0,
 		val_MEAN_ABSOLUTE_DEVIATION = 0,

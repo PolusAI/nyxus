@@ -16,7 +16,7 @@ static std::unordered_map<std::string, float> IBSI_intensity_values {
     {"MEAN", 2.15},
     {"VARIANCE", 3.05},
     {"SKEWNESS", 1.08},
-    {"KURTOSIS", -0.355},
+    {"EXCESS_KURTOSIS", -0.355},
     {"MEDIAN", 1},
     {"MINIMUM", 1},
     {"P10", 1},
@@ -95,7 +95,7 @@ void test_ibsi_skewness_intensity()
 
 void test_ibsi_kurtosis_intensity()
 {
-    test_intensity_feature(KURTOSIS, "KURTOSIS");
+    test_intensity_feature(EXCESS_KURTOSIS, "EXCESS_KURTOSIS");
 }
 
 void test_ibsi_median_intensity()

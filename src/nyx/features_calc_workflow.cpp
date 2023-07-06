@@ -108,6 +108,7 @@ namespace Nyxus
 		r.fvals[STANDARD_DEVIATION][0] = 0;
 		r.fvals[SKEWNESS][0] = 0;
 		r.fvals[KURTOSIS][0] = 0;
+		r.fvals[EXCESS_KURTOSIS][0] = 0;
 		r.fvals[ROOT_MEAN_SQUARED][0] = 0;
 		r.fvals[P10][0] = r.fvals[P25][0] = r.fvals[P75][0] = r.fvals[90][0] = 0;
 		r.fvals[INTERQUARTILE_RANGE][0] = 0;

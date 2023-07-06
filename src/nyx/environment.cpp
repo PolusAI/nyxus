@@ -433,6 +433,7 @@ void Environment::process_feature_list()
 				UNIFORMITY,
 				SKEWNESS,
 				KURTOSIS,
+				EXCESS_KURTOSIS,
 				HYPERSKEWNESS,
 				HYPERFLATNESS,
 				MEAN_ABSOLUTE_DEVIATION,
