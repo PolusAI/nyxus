@@ -108,6 +108,7 @@ namespace Nyxus
 		r.fvals[STANDARD_DEVIATION][0] = 0;
 		r.fvals[SKEWNESS][0] = 0;
 		r.fvals[KURTOSIS][0] = 0;
+		r.fvals[EXCESS_KURTOSIS][0] = 0;
 		r.fvals[ROOT_MEAN_SQUARED][0] = 0;
 		r.fvals[P10][0] = r.fvals[P25][0] = r.fvals[P75][0] = r.fvals[90][0] = 0;
 		r.fvals[INTERQUARTILE_RANGE][0] = 0;
@@ -115,6 +116,7 @@ namespace Nyxus
 		r.fvals[MODE][0] = 0;
 		r.fvals[UNIFORMITY][0] = 0;
 		r.fvals[ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = 0;
+		r.fvals[COV][0] = 0;
 	}
 
 	void init_label_record_2 (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity, unsigned int tile_index)

@@ -180,6 +180,7 @@ PYBIND11_MODULE(nyx_backend, m)
 					STANDARD_DEVIATION,
 					SKEWNESS,
 					KURTOSIS,
+					EXCESS_KURTOSIS,
 					MEAN_ABSOLUTE_DEVIATION,
 					ENERGY,
 					ROOT_MEAN_SQUARED,
@@ -189,6 +190,7 @@ PYBIND11_MODULE(nyx_backend, m)
 					P10, P25, P75, P90,
 					INTERQUARTILE_RANGE,
 					ROBUST_MEAN_ABSOLUTE_DEVIATION,
+					COV,
 					WEIGHTED_CENTROID_Y,
 					WEIGHTED_CENTROID_X };
 				auto [errorCode, errorDetails, nx, ny, retbuf] = featureSetInvoker(desiredFeatures, label_path, intensity_path);

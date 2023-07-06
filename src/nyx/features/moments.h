@@ -87,14 +87,27 @@ public:
 
         return (_n > 3 ? (sqrt(_n) * M3) / pow(M2, 1.5) : 0.0);
     }
+
+    // Pearson's kurtosis. (Matches MATLAB's kurtosis)
     double kurtosis() const 
     { 
         // Intercept an overflow result
         if (M2 == 0.0)
             return 0.0;
 
-        return (_n > 4 ? (_n * M4) / (M2 * M2) - 3 : 0.0); // matlab does not subtract 3
+        return (_n > 4 ? (_n * M4) / (M2 * M2): 0.0);
     } 
+    
+    // Excess kurtosis
+    double excess_kurtosis() const
+    {
+        // Intercept an overflow result
+        if (M2 == 0.0)
+            return 0.0;
+
+        return (_n > 4 ? (_n * M4) / (M2 * M2) - 3 : 0.0); // matlab does not subtract 3
+    }
+
     void momentVector(double* z) { z[0] = mean(); z[1] = std(); z[2] = skewness(); z[3] = kurtosis(); }
     double hyperskewness() const 
     { 

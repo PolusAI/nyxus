@@ -21,6 +21,7 @@ namespace Nyxus
 		STANDARD_ERROR,
 		SKEWNESS,
 		KURTOSIS,
+		EXCESS_KURTOSIS,
 		HYPERSKEWNESS,
 		HYPERFLATNESS,
 		MEAN_ABSOLUTE_DEVIATION,
@@ -33,6 +34,7 @@ namespace Nyxus
 		P01, P10, P25, P75, P90, P99,
 		INTERQUARTILE_RANGE,
 		ROBUST_MEAN_ABSOLUTE_DEVIATION,
+		COV,
 
 		// Morphology:
 		AREA_PIXELS_COUNT,
@@ -417,6 +419,7 @@ public:
 			m_enabledFeatures[STANDARD_DEVIATION] =
 			m_enabledFeatures[SKEWNESS] =
 			m_enabledFeatures[KURTOSIS] =
+			m_enabledFeatures[EXCESS_KURTOSIS] =
 			m_enabledFeatures[MEAN_ABSOLUTE_DEVIATION] =
 			m_enabledFeatures[ENERGY] =
 			m_enabledFeatures[ROOT_MEAN_SQUARED] =
@@ -426,6 +429,7 @@ public:
 			m_enabledFeatures[P10] = m_enabledFeatures[P25] = m_enabledFeatures[P75] = m_enabledFeatures[P90] =
 			m_enabledFeatures[INTERQUARTILE_RANGE] =
 			m_enabledFeatures[ROBUST_MEAN_ABSOLUTE_DEVIATION] =
+			m_enabledFeatures[COV] =
 			m_enabledFeatures[WEIGHTED_CENTROID_Y] =
 			m_enabledFeatures[WEIGHTED_CENTROID_X] =
 			m_enabledFeatures[MASS_DISPLACEMENT] = true;

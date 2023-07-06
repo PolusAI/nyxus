@@ -25,12 +25,16 @@ Nyxus provided features
      - Range between the maximmu and minimum
    * - STANDARD_DEVIATION
      - Standard deviation
+   * - COV
+     - Coefficient of variation
    * - STANDARD_ERROR
      - Standard error
    * - SKEWNESS
      - Skewness - the 3rd standardized moment
    * - KURTOSIS
-     - Kurtosis - the 4th standardized moment
+     - Kurtosis - the 4th standardized moment (Pearson formula)
+   * - EXCESS_KURTOSIS
+     - Excess kurtosis - the 4th standardized moment (Fisher-corrected formula, IBSI feature IPH6)
    * - HYPERSKEWNESS
      - Hyperskewness - the 5th standardized moment
    * - HYPERFLATNESS
