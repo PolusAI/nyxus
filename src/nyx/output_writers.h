@@ -19,20 +19,40 @@
 
 #include <iostream>
 
-class Writer
+/**
+ * @brief Base class for creating Apache Arrow output writers
+ * 
+ * This class provides methods for the Arrow table used for writing to Arrow formats and
+ * provides virtual functions to overriden for writing to different formats
+ * 
+ */
+class ApacheArrowWriter
 {
 protected:
     std::shared_ptr<arrow::Table> table_;
 public:
 
+    /**
+     * @brief Get the arrow table object
+     * 
+     * @return std::shared_ptr<arrow::Table> 
+     */
     std::shared_ptr<arrow::Table> get_arrow_table() {return table_;}
 
+    /**
+     * @brief Generate an Arrow table from Nyxus output
+     * 
+     * @param header Header data
+     * @param string_columns String data
+     * @param numeric_columns Numeric data
+     * @param number_of_rows Number of rows
+     * @return std::shared_ptr<arrow::Table> 
+     */
     std::shared_ptr<arrow::Table> generate_arrow_table(const std::vector<std::string> &header,
                                                        const std::vector<std::string> &string_columns,
                                                        const std::vector<double> &numeric_columns,
                                                        int number_of_rows)
     {
-
         std::vector<std::shared_ptr<arrow::Field>> fields;
 
         fields.push_back(arrow::field(header[0], arrow::utf8()));
@@ -116,7 +136,15 @@ public:
         return arrow::Table::Make(schema, arrays);
     }
 
-
+    /**
+     * @brief Write Nyxus data to Arrow file
+     * 
+     * @param header Header data
+     * @param string_columns String data
+     * @param numeric_columns Numeric data
+     * @param number_of_rows Number of rows
+     * @return arrow::Status 
+     */
     virtual arrow::Status write (const std::vector<std::string> &header,
                 const std::vector<std::string> &string_columns,
                 const std::vector<double> &numeric_columns,
@@ -124,8 +152,13 @@ public:
 
 };
 
-
-class ParquetWriter : public Writer {
+/**
+ * @brief Class to write to Parquet format
+ * 
+ * Extends ApacheArrowWriter class and implements write method for the Parquet format.
+ * 
+ */
+class ParquetWriter : public ApacheArrowWriter {
     private:
 
         std::string output_file_;
@@ -134,11 +167,20 @@ class ParquetWriter : public Writer {
 
         ParquetWriter(const std::string& output_file) : output_file_(output_file) {}
 
-        virtual arrow::Status write (const std::vector<std::string> &header,
+        /**
+         * @brief Write to Parquet 
+         * 
+         * @param header Header data
+         * @param string_columns String data (filenames)
+         * @param numeric_columns Numberic data (feature calculations)
+         * @param number_of_rows Number of rows
+         * @return arrow::Status 
+         */
+        arrow::Status write (const std::vector<std::string> &header,
                                     const std::vector<std::string> &string_columns,
                                     const std::vector<double> &numeric_columns,
                                     int number_of_rows) override {
-
+            
             table_ = generate_arrow_table(header, string_columns, numeric_columns, number_of_rows);
 
             std::shared_ptr<arrow::io::FileOutputStream> outfile;
@@ -153,7 +195,13 @@ class ParquetWriter : public Writer {
     }
 };
 
-class ArrowIPCWriter : public Writer {
+/**
+ * @brief Write to Apache IPC format (feather)
+ * 
+ * Extends ApacheArrowWriter and overrides write method for Arrow IPC format
+ * 
+ */
+class ArrowIPCWriter : public ApacheArrowWriter {
     private:
 
         std::string output_file_;
@@ -162,6 +210,15 @@ class ArrowIPCWriter : public Writer {
 
         ArrowIPCWriter(const std::string& output_file) : output_file_(output_file) {}    
 
+        /**
+         * @brief Write to Arrow IPC
+         * 
+         * @param header Header data
+         * @param string_columns String data (filenames)
+         * @param numeric_columns Numberic data (feature calculations)
+         * @param number_of_rows Number of rows
+         * @return arrow::Status 
+         */
         arrow::Status write (const std::vector<std::string> &header,
                             const std::vector<std::string> &string_columns,
                             const std::vector<double> &numeric_columns,
@@ -186,19 +243,28 @@ class ArrowIPCWriter : public Writer {
     }
 };
 
+/**
+ * @brief Factory to create an ApacheArrowWriter based on type of file pass
+ * 
+ */
 class WriterFactory {
 
     public:
 
-        static std::shared_ptr<Writer> create_writer(const std::string &output_file) {
+        /**
+         * @brief Create an ApacheArrowWriter based on the type of file passed.
+         * 
+         * @param output_file Path to output file (.arrow or .parquet)
+         * @return std::shared_ptr<ApacheArrowWriter> 
+         */
+        static std::shared_ptr<ApacheArrowWriter> create_writer(const std::string &output_file) {
             
             if (Nyxus::ends_with_substr(output_file, ".parquet")) {
-
 
                 return std::make_shared<ParquetWriter>(output_file);
 
             } else if (Nyxus::ends_with_substr(output_file, ".arrow") || Nyxus::ends_with_substr(output_file, ".feather")) {
-
+                
                 return std::make_shared<ArrowIPCWriter>(output_file);
 
             } else {

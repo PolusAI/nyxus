@@ -19,13 +19,19 @@
   error "Missing the <filesystem> header."
 #endif
 
+/**
+ * @brief Class to write to Apache Arrow formats
+ * 
+ * This class provides methods for writing to the Arrow IPC and Parquet formats.
+ * 
+ */
 class ArrowOutput {
 
 private:
 
     std::string arrow_file_path_ = "";
 	std::string parquet_file_path_ = "";
-	std::shared_ptr<Writer> writer_ = nullptr;
+	std::shared_ptr<ApacheArrowWriter> writer_ = nullptr;
 	std::string arrow_output_type_ = "";    
 
 
@@ -60,8 +66,7 @@ public:
                              const std::vector<double>& results,
                              size_t num_rows,
                              const std::string& parquet_file_path="NyxusFeatures.parquet") {
-
-
+        
         if(!fs::is_directory(parquet_file_path) && !Nyxus::ends_with_substr(parquet_file_path, ".parquet")) {
             throw std::invalid_argument("The parquet file path must end in \".parquet\"");
         }
