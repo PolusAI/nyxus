@@ -86,6 +86,8 @@ is a solution of equation :math:`p = \int _{-\infty} ^{q_p} f(x)dx` where :math:
 MEDIAN -- the 50% percentile defined as :math:`0.5 = \int _{-\infty} ^{0.5} f(x)dx`, the value such that an equal number 
 of samples are less than and greater than the value (for an odd sample size), or the average of the two central values (for an even sample size).
 
+MEDIAN_ABSOLUTE_DEVIATION = :math:`\sigma = \frac{1}{n} \sum_i^n \left| g_i - MEDIAN \right|` 
+
 INTERQUARTILE_RANGE = :math:`q_{0.75} - q_{0.25}` - the difference of the 1st and 3rd sample quartiles,
 
 ROBUST_MEAN_ABSOLUTE_DEVIATION (RMAD) 

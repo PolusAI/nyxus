@@ -121,7 +121,6 @@ set(SOURCE
 	src/nyx/features/ngtdm.cpp
 	src/nyx/features/pixel.cpp
 	src/nyx/features/radial_distribution.cpp
-	src/nyx/features/roi_label.cpp
 	src/nyx/features/roi_radius.cpp
 	src/nyx/features/rotation.cpp
 	src/nyx/features/specfunc.cpp

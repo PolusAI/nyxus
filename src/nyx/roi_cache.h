@@ -63,7 +63,5 @@ public:
 	// needed by Contour, Erosions, GLCM, GLRLM, GLSZM, GLDM, NGTDM, Radial distribution, Gabor, Moments, ROI radius
 	ImageMatrix aux_image_matrix;
 	size_t im_buffer_offset;
-
-	void reduce_pixel_intensity_features();
 };
 

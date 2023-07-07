@@ -22,6 +22,7 @@ PixelIntensityFeatures::PixelIntensityFeatures() : FeatureMethod("PixelIntensity
 		HYPERSKEWNESS,
 		HYPERFLATNESS,
 		MEAN_ABSOLUTE_DEVIATION,
+		MEDIAN_ABSOLUTE_DEVIATION,
 		ENERGY,
 		ROOT_MEAN_SQUARED,
 		ENTROPY,
@@ -102,6 +103,12 @@ void PixelIntensityFeatures::calculate(LR& r)
 	val_ENTROPY = entropy_;
 	val_MODE = mode_;
 	val_UNIFORMITY = uniformity_;
+
+	// Median absolute deviation
+	double medad = 0.0;
+	for (auto& px : r.raw_pixels)
+		medad += std::abs(px.inten - median_);
+	val_MEDIAN_ABSOLUTE_DEVIATION = medad / n;
 
 	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
 	double piu = (1.0 - double(r.aux_max - r.aux_min) / double(r.aux_max + r.aux_min)) * 100.0;
@@ -207,6 +214,12 @@ void PixelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	val_MODE = mode_;
 	val_UNIFORMITY = uniformity_;
 
+	// Median absolute deviation
+	double medad = 0.0;
+	for (auto& px : r.raw_pixels)
+		medad += std::abs(px.inten - median_);
+	val_MEDIAN_ABSOLUTE_DEVIATION = medad / n;
+
 	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image 
 	//	intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] 
 	//	and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
@@ -252,6 +265,7 @@ void PixelIntensityFeatures::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[HYPERSKEWNESS][0] = val_HYPERSKEWNESS;
 	fvals[HYPERFLATNESS][0] = val_HYPERFLATNESS;
 	fvals[MEAN_ABSOLUTE_DEVIATION][0] = val_MEAN_ABSOLUTE_DEVIATION;
+	fvals[MEDIAN_ABSOLUTE_DEVIATION][0] = val_MEDIAN_ABSOLUTE_DEVIATION;
 	fvals[ENERGY][0] = val_ENERGY;
 	fvals[ROOT_MEAN_SQUARED][0] = val_ROOT_MEAN_SQUARED;
 	fvals[ENTROPY][0] = val_ENTROPY;
@@ -325,6 +339,7 @@ void PixelIntensityFeatures::cleanup_instance()
 	val_HYPERSKEWNESS = 0;
 	val_HYPERFLATNESS = 0;
 	val_MEAN_ABSOLUTE_DEVIATION = 0;
+	val_MEDIAN_ABSOLUTE_DEVIATION = 0;
 	val_ENERGY = 0;
 	val_ROOT_MEAN_SQUARED = 0;
 	val_ENTROPY = 0;

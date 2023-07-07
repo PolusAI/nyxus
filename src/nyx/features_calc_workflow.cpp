@@ -99,6 +99,7 @@ namespace Nyxus
 		r.fvals[ENERGY][0] = intensity * intensity;
 		r.aux_variance = 0.0;
 		r.fvals[MEAN_ABSOLUTE_DEVIATION][0] = 0.0;
+		r.fvals[MEDIAN_ABSOLUTE_DEVIATION][0] = 0.0;
 		// Weighted centroids x and y. 1-based for compatibility with Matlab and WNDCHRM
 		r.fvals[CENTROID_X][0] = StatsReal(x) + 1;
 		r.fvals[CENTROID_Y][0] = StatsReal(y) + 1;
