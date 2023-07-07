@@ -162,7 +162,7 @@ void Environment::show_cmdline_help()
 		<< "\t" << FILEPATTERN << "=<file pattern regular expression> \n"
 		<< "\t\t\tDefault: .* \n"
 		<< "\t\t\tExample: " << FILEPATTERN << "=.* for all files, " << FILEPATTERN << "=*.tif for .tif files \n"
-		<< "\t\t" << OUTPUTTYPE << "=<separatecsv or singlecsv> \n"
+		<< "\t\t" << OUTPUTTYPE << "=<separatecsv or singlecsv for csv output. arrowipc or parquet for arrow output> \n"
 		<< "\t\t\tDefault: separatecsv \n"
 		<< "\t\t" << SEGDIR << "=<directory of segmentation images> \n"
 		<< "\t\t" << INTDIR << "=<directory of intensity images> \n"
@@ -723,10 +723,6 @@ bool Environment::parse_cmdline(int argc, char **argv)
 				find_string_argument(i, GABOR_THETA, gaborOptions.rawTheta) ||
 				find_string_argument(i, GABOR_THRESHOLD, gaborOptions.rawGrayThreshold) 
 
-				#ifdef USE_ARROW
-					|| find_string_argument(i, ARROW_OUPUT_TYPE, arrow_output_type)
-				#endif
-
 				#ifdef CHECKTIMING
 					|| find_string_argument(i, EXCLUSIVETIMING, rawExclusiveTiming)
 				#endif
@@ -803,12 +799,34 @@ bool Environment::parse_cmdline(int argc, char **argv)
 
 	//==== Output type
 	auto rawOutpTypeUC = Nyxus::toupper(rawOutpType);
-	if (rawOutpTypeUC != Nyxus::toupper(OT_SINGLECSV) && rawOutpTypeUC != Nyxus::toupper(OT_SEPCSV))
+	if (rawOutpTypeUC != Nyxus::toupper(OT_SINGLECSV) && 
+	    rawOutpTypeUC != Nyxus::toupper(OT_SEPCSV) && 
+		rawOutpTypeUC != Nyxus::toupper(OT_ARROW) &&
+		rawOutpTypeUC != Nyxus::toupper(OT_ARROWIPC) &&
+		rawOutpTypeUC != Nyxus::toupper(OT_PARQUET))
 	{
-		std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << " or " << OT_SINGLECSV << "\n";
+		std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << ", " << OT_SINGLECSV << ", " << OT_ARROW ", or" << OT_PARQUET << "."  "\n";
 		return false;
 	}
+
+	if (rawOutpTypeUC != Nyxus::toupper(OT_ARROW) ||
+		rawOutpTypeUC != Nyxus::toupper(OT_ARROWIPC) ||
+		rawOutpTypeUC != Nyxus::toupper(OT_PARQUET)) {
+
+		#ifdef USE_ARROW 
+			useCsv = false;
+			arrow_output_type = rawOutpTypeUC;
+		#else
+			std::cout << "Error: Nyxus must be built with Apache Arrow enabled to use Arrow output types. Please rebuild with the flag USEARROW=ON." << std::endl;
+			return false;
+		#endif
+	}
+
+	useCsv = (rawOutpTypeUC == Nyxus::toupper(OT_SINGLECSV) || rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV));
+
 	separateCsv = rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV);
+
+	
 
 	//==== Check numeric parameters
 	if (!loader_threads.empty())

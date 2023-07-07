@@ -38,13 +38,6 @@ int main (int argc, char** argv)
 	}
 	theFeatureMgr.apply_user_selection();
 
-
-	bool is_csv_out = true;
-	
-#ifdef USE_ARROW
-	is_csv_out = !(theEnvironment.arrow_output_type == "arrow" || theEnvironment.arrow_output_type == "parquet");
-#endif
-
 	// Scan file names
 	std::vector <std::string> intensFiles, labelFiles;
 	int errorCode = Nyxus::read_dataset (
@@ -78,7 +71,7 @@ int main (int argc, char** argv)
 		theEnvironment.n_pixel_scan_threads, 
 		theEnvironment.n_reduce_threads,
 		min_online_roi_size,
-		is_csv_out, // 'true' to save to csv
+		theEnvironment.useCsv, // 'true' to save to csv
 		theEnvironment.output_dir);
 
 	// Check the error code 
@@ -99,10 +92,9 @@ int main (int argc, char** argv)
 		break;
 	}
 
-
 	#ifdef USE_ARROW
 
-		if (theEnvironment.arrow_output_type == "arrow") {
+		if (theEnvironment.arrow_output_type == "ARROW" || theEnvironment.arrow_output_type == "ARROWIPC") {
 
 			theEnvironment.arrow_output.create_arrow_file(theResultsCache.get_headerBuf(),
                                           	theResultsCache.get_stringColBuf(),
@@ -110,7 +102,7 @@ int main (int argc, char** argv)
                                           	theResultsCache.get_num_rows(),
 											theEnvironment.output_dir);
 
-		} else if (theEnvironment.arrow_output_type == "parquet"){
+		} else if (theEnvironment.arrow_output_type == "PARQUET"){
 
 			theEnvironment.arrow_output.create_parquet_file(theResultsCache.get_headerBuf(),
                                           theResultsCache.get_stringColBuf(),

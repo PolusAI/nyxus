@@ -24,7 +24,7 @@
 #define INTSEGMAPFILE "--intSegMapFile"			// get_int_seg_map_file()
 #define FEATURES "--features"					// Environment :: features	-- Example: (1) --features=area,kurtosis,neighbors (2) --features=featurefile.txt
 #define FILEPATTERN "--filePattern"				// Environment :: file_pattern
-#define OUTPUTTYPE "--csvFile"					// Environment :: bool separateCsv <= valid values "separatecsv" or "singlecsv"
+#define OUTPUTTYPE "--outputType"				// Environment :: Output type for feature values (speratecsv, singlecsv, arrow, parquet)
 #define EMBPIXSZ "--embeddedpixelsize"			// Environment :: embedded_pixel_size
 #define LOADERTHREADS "--loaderThreads"			// Environment :: n_loader_threads
 #define PXLSCANTHREADS "--pxlscanThreads"		// Environment :: n_pixel_scan_threads
@@ -81,14 +81,15 @@
 // Valid values of 'OUTPUTTYPE'
 #define OT_SEPCSV "separatecsv"
 #define OT_SINGLECSV "singlecsv"
+#define OT_ARROW "arrow"
+#define OT_ARROWIPC "arrowipc"
+#define OT_PARQUET "parquet"
 
 // Verbosity levels (combinable via binary and)
 #define VERBOSITY_TIMING 2
 #define VERBOSITY_ROI_INFO 4
 #define VERBOSITY_DETAILED 8
 
-// Arrow ouput
-#define ARROW_OUPUT_TYPE "--arrowOutputType"
 
 /// @brief Class encapsulating the the feature extraction environment - command line option values, default values, etc. Use it to add a parseable command line parameter.
 class Environment: public BasicEnvironment
@@ -140,8 +141,9 @@ public:
 	std::string rawOnlineStatsThresh = "";
 	int onlineStatsTreshold = 0;
 
-	std::string rawOutpType = ""; // Valid values: "separatecsv" or "singlecsv"
+	std::string rawOutpType = ""; // Valid values: "separatecsv", "singlecsv", "arrow", "parquet"
 	bool separateCsv = true;
+	bool useCsv = true;
 
 	// x- and y- resolution in pixels per centimeter
 	std::string rawXYRes = "";
