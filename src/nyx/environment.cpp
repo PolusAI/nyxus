@@ -437,6 +437,7 @@ void Environment::process_feature_list()
 				HYPERSKEWNESS,
 				HYPERFLATNESS,
 				MEAN_ABSOLUTE_DEVIATION,
+				MEDIAN_ABSOLUTE_DEVIATION,
 				ENERGY,
 				ROOT_MEAN_SQUARED,
 				ENTROPY,

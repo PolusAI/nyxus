@@ -25,6 +25,7 @@ namespace Nyxus
 		HYPERSKEWNESS,
 		HYPERFLATNESS,
 		MEAN_ABSOLUTE_DEVIATION,
+		MEDIAN_ABSOLUTE_DEVIATION,
 		ENERGY,
 		ROOT_MEAN_SQUARED,
 		ENTROPY,
@@ -421,6 +422,7 @@ public:
 			m_enabledFeatures[KURTOSIS] =
 			m_enabledFeatures[EXCESS_KURTOSIS] =
 			m_enabledFeatures[MEAN_ABSOLUTE_DEVIATION] =
+			m_enabledFeatures[MEDIAN_ABSOLUTE_DEVIATION] =
 			m_enabledFeatures[ENERGY] =
 			m_enabledFeatures[ROOT_MEAN_SQUARED] =
 			m_enabledFeatures[ENTROPY] =
