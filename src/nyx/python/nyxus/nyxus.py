@@ -151,16 +151,21 @@ class Nyxus:
             thold=gabor_thold,
             freqs=gabor_freqs
         )
+        
+        # list of valid outputs that are used throughout featurize functions
+        self._valid_output_types = ['pandas', 'arrow', 'arrowipc', 'parquet']
 
     def featurize_directory(
         self,
         intensity_dir: str,
         label_dir: Optional[str] = None,
         file_pattern: Optional[str] = ".*",
+        output_type: Optional[str] = "pandas",
+        output_path: Optional[str] = ""
     ):
         """Extract features from all the images satisfying the file pattern of provided image directories.
 
-        Extracts all the requested features _at the image level_ from the images
+        Extracts all the requested eatures _at the image level_ from the images
         present in `intensity_dir`. If `label_dir` is specified, features will be
         extracted for each unique label present in the label images. The file names
         of the label images are expected to match those of the intensity images.
@@ -194,28 +199,56 @@ class Nyxus:
         if label_dir is None:
             label_dir = intensity_dir
 
-        header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern)
+        if (output_type not in self._valid_output_types):
+            raise  ValueError(f'Invalid output type {output_type}. Valid output types are {self._valid_output_types}.')
+            
+        if (output_type == 'pandas'):
+            
+            header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern, True)
 
-        df = pd.concat(
-            [
-                pd.DataFrame(string_data, columns=header[: string_data.shape[1]]),
-                pd.DataFrame(numeric_data, columns=header[string_data.shape[1] :]),
-            ],
-            axis=1,
-        )
+            df = pd.concat(
+                [
+                    pd.DataFrame(string_data, columns=header[: string_data.shape[1]]),
+                    pd.DataFrame(numeric_data, columns=header[string_data.shape[1] :]),
+                ],
+                axis=1,
+            )
 
-        # Labels should always be uint.
-        if "label" in df.columns:
-            df["label"] = df.label.astype(np.uint32)
+            # Labels should always be uint.
+            if "label" in df.columns:
+                df["label"] = df.label.astype(np.uint32)
 
-        return df
+            return df
+        
+        else:
+            
+            featurize_directory_imp(intensity_dir, label_dir, file_pattern, False)
+            
+            output_type = output_type.lower() # ignore case of output type
+            
+            if (output_type == 'arrow' or output_type == 'arrowipc'):
+                
+                self.create_arrow_file(output_path)
+                
+                return self.get_arrow_ipc_file()
+                
+            elif (output_path == 'parquet'):
+                
+                self.create_parquet_file(output_path)
+                
+                return self.get_parquet_file
+            
+            
     
     def featurize(
         self,
         intensity_images: np.ndarray,
         label_images: np.ndarray,
         intensity_names: list = [],
-        label_names: list = []
+        label_names: list = [],
+        output_type: Optional[str] = "pandas",
+        output_path: Optional[str] = ""
+        
     ):
         """Extract features from a single image pair in a 2D np.array or for all the images in a 3D np.array.
 
@@ -249,6 +282,9 @@ class Nyxus:
 
         if not isinstance(label_images, np.ndarray):
             raise ValueError("label_images parameter must be numpy.ndarray")
+        
+        if (output_type not in self._valid_output_types):
+            raise  ValueError(f'Invalid output type {output_type}. Valid output types are {self._valid_output_types}.')
         
         # verify dimensions of images are the same
         if(intensity_images.ndim == 2):
@@ -288,25 +324,50 @@ class Nyxus:
         if (label_images.shape[0] != len(label_names)):
             raise ValueError("Number of segmentation names must be the same as the number of images.")
         
-        header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names)
-        
-        self.error_message = error_message
-        if(error_message != ''):
-            print(error_message)
+    
+        if (output_type == 'pandas'):
+                
+            header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, True)
+            
+            self.error_message = error_message
+            if(error_message != ''):
+                print(error_message)
 
-        df = pd.concat(
-            [
-                pd.DataFrame(string_data, columns=header[: string_data.shape[1]]),
-                pd.DataFrame(numeric_data, columns=header[string_data.shape[1] :]),
-            ],
-            axis=1,
-        )
+            df = pd.concat(
+                [
+                    pd.DataFrame(string_data, columns=header[: string_data.shape[1]]),
+                    pd.DataFrame(numeric_data, columns=header[string_data.shape[1] :]),
+                ],
+                axis=1,
+            )
 
-        # Labels should always be uint.
-        if "label" in df.columns:
-            df["label"] = df.label.astype(np.uint32)
+            # Labels should always be uint.
+            if "label" in df.columns:
+                df["label"] = df.label.astype(np.uint32)
 
-        return df
+            return df
+            
+        else:
+            
+            error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, False)
+            
+            self.error_message = error_message
+            if(error_message != ''):
+                print(error_message)
+            
+            output_type = output_type.lower() # ignore case of output type
+            
+            if (output_type == 'arrow' or output_type == 'arrowipc'):
+                
+                self.create_arrow_file(output_path)
+                
+                return self.get_arrow_ipc_file()
+                
+            elif (output_path == 'parquet'):
+                
+                self.create_parquet_file(output_path)
+                
+                return self.get_parquet_file
     
     def using_gpu(self, gpu_on: bool):
         use_gpu(gpu_on)
@@ -314,7 +375,9 @@ class Nyxus:
     def featurize_files (
         self,
         intensity_files: list,
-        mask_files: list):
+        mask_files: list,
+        output_type: Optional[str] = "pandas",
+        output_path: Optional[str] = ""):
         """Extract features from image file pairs passed as lists
 
         Extracts all the requested features _at the image level_ from the intensity images
@@ -338,22 +401,45 @@ class Nyxus:
 
         if mask_files is None:
             raise IOError ("The list of segment file paths is empty")
+        
+        if (output_type not in self._valid_output_types):
+            raise  ValueError(f'Invalid output type {output_type}. Valid output types are {self._valid_output_types}.')
 
-        header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files)
+        if (output_type == 'pandas'):
+            
+            header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files, True)
 
-        df = pd.concat(
-            [
-                pd.DataFrame(string_data, columns=header[: string_data.shape[1]]),
-                pd.DataFrame(numeric_data, columns=header[string_data.shape[1] :]),
-            ],
-            axis=1,
-        )
+            df = pd.concat(
+                [
+                    pd.DataFrame(string_data, columns=header[: string_data.shape[1]]),
+                    pd.DataFrame(numeric_data, columns=header[string_data.shape[1] :]),
+                ],
+                axis=1,
+            )
 
-        # Labels should always be uint.
-        if "label" in df.columns:
-            df["label"] = df.label.astype(np.uint32)
+            # Labels should always be uint.
+            if "label" in df.columns:
+                df["label"] = df.label.astype(np.uint32)
 
-        return df
+            return df
+        
+        else:
+            
+            featurize_fname_lists_imp (intensity_files, mask_files, False)
+            
+            output_type = output_type.lower() # ignore case of output type
+            
+            if (output_type == 'arrow' or output_type == 'arrowipc'):
+                
+                self.create_arrow_file(output_path)
+                
+                return self.get_arrow_ipc_file()
+                
+            elif (output_path == 'parquet'):
+                
+                self.create_parquet_file(output_path)
+                
+                return self.get_parquet_file
 
 
     def blacklist_roi(self, blacklist:str):

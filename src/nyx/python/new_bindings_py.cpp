@@ -135,7 +135,8 @@ void set_environment_params_imp (
 py::tuple featurize_directory_imp (
     const std::string &intensity_dir,
     const std::string &labels_dir,
-    const std::string &file_pattern)
+    const std::string &file_pattern,
+    bool pandas_output=true)
 {
     theEnvironment.intensity_dir = intensity_dir;
     theEnvironment.labels_dir = labels_dir;
@@ -156,7 +157,7 @@ py::tuple featurize_directory_imp (
         intensFiles, labelFiles);
 
     if (errorCode)
-        throw std::runtime_error("Dataset structure error.");
+       throw std::runtime_error("Dataset structure error.");
 
     init_feature_buffers();
 
@@ -177,21 +178,36 @@ py::tuple featurize_directory_imp (
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing.");
 
-    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBufByVal()));
-    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBufByVal()));
-    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBufByVal()));
-    auto nRows = theResultsCache.get_num_rows();
-    pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
-    pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+    if (pandas_output) {
 
-    return py::make_tuple(pyHeader, pyStrData, pyNumData);
-} 
+    #ifdef USE_ARROW
+        // Get by value to preserve buffers for writing to arrow
+        auto pyHeader = py::array(py::cast(theResultsCache.get_headerBufByVal()));
+        auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBufByVal()));
+        auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBufByVal()));
+    #else 
+        auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
+        auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
+        auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+    #endif
+        auto nRows = theResultsCache.get_num_rows();
+        pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
+        pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+
+        return py::make_tuple(pyHeader, pyStrData, pyNumData);
+    
+    } 
+
+    // Return "nothing" when output will be an Arrow format
+    return py::make_tuple();
+}
 
 py::tuple featurize_montage_imp (
     const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intensity_images,
     const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images,
     const std::vector<std::string>& intensity_names,
-    const std::vector<std::string>& label_names)
+    const std::vector<std::string>& label_names,
+    bool pandas_output=true)
 {  
     
     auto intens_buffer = intensity_images.request();
@@ -236,24 +252,31 @@ py::tuple featurize_montage_imp (
     if (errorCode)
         throw std::runtime_error("Error #" + std::to_string(errorCode) + " " + error_message + " occurred during dataset processing.");
 
-#ifdef USE_ARROW
-    // Get by value to preserve buffers for writing to arrow
-    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBufByVal()));
-    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBufByVal()));
-    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBufByVal()));
-#else 
-    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
-    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
-    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
-#endif
-    auto nRows = theResultsCache.get_num_rows();
-    pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
-    pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+    if (pandas_output) {
 
-    return py::make_tuple(pyHeader, pyStrData, pyNumData, error_message);
+        #ifdef USE_ARROW
+            // Get by value to preserve buffers for writing to arrow
+            auto pyHeader = py::array(py::cast(theResultsCache.get_headerBufByVal()));
+            auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBufByVal()));
+            auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBufByVal()));
+        #else 
+            auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
+            auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
+            auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+        #endif
+            auto nRows = theResultsCache.get_num_rows();
+            pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
+            pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+
+        return py::make_tuple(pyHeader, pyStrData, pyNumData, error_message);
+    
+    } 
+
+    // Return "nothing" when output will be an Arrow format
+    return py::make_tuple(error_message);
 }
 
-py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames)
+py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames, bool pandas_output=true)
 {
     std::vector<std::string> intensFiles, labelFiles;
     for (auto it = int_fnames.begin(); it != int_fnames.end(); ++it)
@@ -309,21 +332,28 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing.");
 
-#ifdef USE_ARROW
-    // Get by value to preserve buffers for writing to arrow
-    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBufByVal()));
-    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBufByVal()));
-    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBufByVal()));
-#else 
-    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
-    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
-    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
-#endif
-    auto nRows = theResultsCache.get_num_rows();
-    pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
-    pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+    if (pandas_output) {
 
-    return py::make_tuple(pyHeader, pyStrData, pyNumData);
+        #ifdef USE_ARROW
+            // Get by value to preserve buffers for writing to arrow
+            auto pyHeader = py::array(py::cast(theResultsCache.get_headerBufByVal()));
+            auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBufByVal()));
+            auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBufByVal()));
+        #else 
+            auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
+            auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
+            auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+        #endif
+            auto nRows = theResultsCache.get_num_rows();
+            pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
+            pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+
+            return py::make_tuple(pyHeader, pyStrData, pyNumData);
+        
+    } 
+
+    // Return "nothing" when output will be an Arrow format
+    return py::make_tuple();
 }
 
 py::tuple findrelations_imp(
@@ -663,7 +693,7 @@ PYBIND11_MODULE(backend, m)
 //
 void initialize_environment(
     const std::vector<std::string>& features,
-    float neighbor_distance,
+    int neighbor_distance,
     float pixels_per_micron,
     uint32_t coarse_gray_depth,
     uint32_t n_reduce_threads,
