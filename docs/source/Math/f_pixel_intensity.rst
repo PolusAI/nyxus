@@ -25,7 +25,11 @@ MAX = :math:`\max \: G`,
 
 RANGE = :math:`\max \: G - \min \: G`,
 
-STANDARD_DEVIATION :math:`\gets \sigma = (\mathbb{E}[(G-\mu)^2]) ^{\frac {1}{2}} = \left[ \frac{1}{n} \sum_i^n (g_i-\mu)^2 \right ] ^{\frac {1}{2}}`
+COVERED_IMAGE_INTENSITY_RANGE = :math: `\frac {\max \: G - \min \: G} {\max \: P - \min \: P} `
+
+STANDARD_DEVIATION :math:`\gets \sigma = (\mathbb{E}[(G-\mu)^2]) ^{\frac {1}{2}} = \left[ \frac{1}{n-1} \sum_i^n (g_i-\mu)^2 \right ] ^{\frac {1}{2}}`
+
+STANDARD_DEVIATION_BIASED :math:`\gets \sigma_b = (\mathbb{E}[(G-\mu)^2]) ^{\frac {1}{2}} = \left[ \frac{1}{n} \sum_i^n (g_i-\mu)^2 \right ] ^{\frac {1}{2}}`
 
 COV = :math:`\frac{\sigma}{\mu}`, 
 
@@ -52,6 +56,10 @@ ENTROPY :math:`= \sum_i^k (- b_{i} \: \log \: b_{i})` where :math:`b_i` is a non
 MODE :math:`= x_{uk} + w \frac{f_k - f_{k-1}}{2 f_k - f_{k-1} - f_{k+1}}` where :math:`k` - the index of the histogram bin containing the greatest count, 
 :math:`x_{uk}` - lower bound of the histogram bin containing the greatest count, :math:`f_k` - the greatest bin count, :math:`f_{k-1}` and :math:`f_{k+1}` - 
 counts of the bins neighboring to the greatest count bin; (informally, the histogram bin value having the highest count)
+
+VARIANCE :math:`\gets \sigma = (\mathbb{E}[(G-\mu)^2]) ^{\frac {1}{2}} = \left[ \frac{1}{n-1} \sum_i^n (g_i-\mu)^2 \right ]`
+
+VARIANCE_BIASED :math:`\gets \sigma_b = (\mathbb{E}[(G-\mu)^2]) ^{\frac {1}{2}} = \left[ \frac{1}{n} \sum_i^n (g_i-\mu)^2 \right ]`
 
 UNIFORMITY = :math:`\sum_i^k b_{i}^2` where :math:`b_i` is a value of the image histogram of size :math:`k = 256`
 
@@ -82,6 +90,8 @@ The :math:`p`-th quantile of a random variable :math:`X` is the value :math:`q_p
 P01, P10, P25, P75, P90, P99 - the 1%, 10%, 25%, 75%, 90%, and 99% percentiles. A percentile :math:`q_p` 
 is a solution of equation :math:`p = \int _{-\infty} ^{q_p} f(x)dx` where :math:`p=0.01, 0.1, 0.25, etc`, for example 
 :math:`0.25 = \int _{-\infty} ^{0.25} f(x)dx`.  
+
+QCOD = :math:`\frac {P75 - P25} {P75 + P25}`
 
 MEDIAN -- the 50% percentile defined as :math:`0.5 = \int _{-\infty} ^{0.5} f(x)dx`, the value such that an equal number 
 of samples are less than and greater than the value (for an odd sample size), or the average of the two central values (for an even sample size).

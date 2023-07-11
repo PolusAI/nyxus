@@ -17,6 +17,9 @@ namespace Nyxus
 {
 	bool gatherRoisMetrics (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads)
 	{
+		// Reset per-image counters and extrema
+		LR::reset_global_stats();
+
 		int lvl = 0, // Pyramid level
 			lyr = 0; //	Layer
 
