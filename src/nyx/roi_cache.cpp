@@ -1,5 +1,15 @@
+#include <limits.h>
 #include "globals.h"
 #include "roi_cache.h"
+
+PixIntens LR::global_min_inten = 0;
+PixIntens LR::global_max_inten = 0;
+
+void LR::reset_global_stats()
+{
+	LR::global_min_inten = UINT_MAX;
+	LR::global_max_inten = 0;
+}
 
 LR::LR()
 {}

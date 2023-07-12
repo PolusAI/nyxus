@@ -207,8 +207,12 @@ namespace Nyxus
 			Stopwatch::reset();
 		#endif		
 			
+		// One-time initialization
+		init_feature_buffers();
+
 		bool ok = true;
 
+		// Iterate file pattern-filtered images of the dataset
 		auto nf = intensFiles.size();
 		for (int i = 0; i < nf; i++)
 		{
@@ -217,7 +221,7 @@ namespace Nyxus
 				Stopwatch::reset();
 			#endif
 
-			// Clear ROI label list, ROI data, etc.
+			// Clear per-image ROI label list, ROI data, etc.
 			clear_feature_buffers();
 
 			auto& ifp = intensFiles[i],

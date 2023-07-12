@@ -141,8 +141,6 @@ py::tuple featurize_directory_imp (
     if (errorCode)
         throw std::runtime_error("Dataset structure error.");
 
-    init_feature_buffers();
-
     theResultsCache.clear();
 
     // Process the image sdata
@@ -202,6 +200,7 @@ py::tuple featurize_montage_imp (
     theEnvironment.intensity_dir = "__NONE__";
     theEnvironment.labels_dir = "__NONE__";
 
+    // One-time initialization
     init_feature_buffers();
 
     theResultsCache.clear();
@@ -267,8 +266,6 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
             throw std::runtime_error(msg);
         }
     }
-
-    init_feature_buffers();
 
     theResultsCache.clear();
 

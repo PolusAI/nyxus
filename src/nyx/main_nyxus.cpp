@@ -55,9 +55,6 @@ int main (int argc, char** argv)
 		return 1; 
 	}
 
-	// One-time initialization
-	init_feature_buffers();
-
 	// Current time stamp #1
 	auto startTS = getTimeStr();
 	VERBOSLVL1(std::cout << "\n>>> STARTING >>> " << startTS << "\n";)

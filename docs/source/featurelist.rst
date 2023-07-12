@@ -23,8 +23,12 @@ Nyxus provided features
      - Maximum intensity value in the ROI
    * - RANGE
      - Range between the maximmu and minimum
+   * - COVERED_IMAGE_INTENSITY_RANGE
+     - intensity range of the ROI to intensity range of all the ROIs
    * - STANDARD_DEVIATION
-     - Standard deviation
+     - Standard deviation (unbiased)
+   * - STANDARD_DEVIATION_BIASED
+     - Biased standard deviation
    * - COV
      - Coefficient of variation
    * - STANDARD_ERROR
@@ -57,6 +61,8 @@ Nyxus provided features
      - Percent image uniformity, another measure of intensity distribution uniformity
    * - P01, P10, P25, P75, P90, P99
      - 1%, 10%, 25%, 75%, 90%, and 99% percentiles of intensity distribution
+   * - QCOD 
+     - quantile coefficient of dispersion
    * - INTERQUARTILE_RANGE
      - Distribution's interquartile range
    * - ROBUST_MEAN_ABSOLUTE_DEVIATION
