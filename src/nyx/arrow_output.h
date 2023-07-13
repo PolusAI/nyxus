@@ -41,13 +41,17 @@ public:
                             const std::vector<double>& results,
                             size_t num_rows,
                             const std::string& arrow_file_path="NyxusFeatures.arrow") {
+        
 
-
-        if(!fs::is_directory(arrow_file_path) && !Nyxus::ends_with_substr(arrow_file_path, ".arrow")) {
+        if(arrow_file_path != "" && !fs::is_directory(arrow_file_path) && !Nyxus::ends_with_substr(arrow_file_path, ".arrow")) {
             throw std::invalid_argument("The arrow file path must end in \".arrow\"");
         }
 
-        arrow_file_path_ = arrow_file_path;
+        if (arrow_file_path == "") {
+            arrow_file_path_="NyxusFeatures.arrow";
+        } else {
+            arrow_file_path_ = arrow_file_path;
+        }
 
         if (fs::is_directory(arrow_file_path)) {
             arrow_file_path_ += "/NyxusFeatures.arrow";
@@ -66,12 +70,16 @@ public:
                              const std::vector<double>& results,
                              size_t num_rows,
                              const std::string& parquet_file_path="NyxusFeatures.parquet") {
-        
-        if(!fs::is_directory(parquet_file_path) && !Nyxus::ends_with_substr(parquet_file_path, ".parquet")) {
+
+        if(parquet_file_path != "" && !fs::is_directory(parquet_file_path) && !Nyxus::ends_with_substr(parquet_file_path, ".parquet")) {
             throw std::invalid_argument("The parquet file path must end in \".parquet\"");
         }
 
-        parquet_file_path_ = parquet_file_path;
+        if (parquet_file_path == "") {
+            parquet_file_path_="NyxusFeatures.parquet";
+        } else {
+            parquet_file_path_ = parquet_file_path;
+        }
 
         if (fs::is_directory(parquet_file_path)) {
             parquet_file_path_ += "/NyxusFeatures.parquet";
