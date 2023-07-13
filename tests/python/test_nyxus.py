@@ -516,8 +516,6 @@ class TestNyxus():
             
             path = nyx.get_arrow_ipc_file()
             
-            print(path)
-            
             assert path == 'out.arrow'
             
             #os.remove(path)
@@ -627,8 +625,6 @@ class TestNyxus():
             features = nyx.featurize(intens, seg)
 
             parquet_file = nyx.featurize(intens, seg, output_type="parquet", output_path='TestNyxusOut')
-            
-            print(parquet_file)
             
             # Read the Parquet file into a Pandas DataFrame
             parquet_df = pq.read_table(parquet_file).to_pandas()
