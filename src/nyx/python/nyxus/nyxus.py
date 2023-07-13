@@ -165,7 +165,7 @@ class Nyxus:
     ):
         """Extract features from all the images satisfying the file pattern of provided image directories.
 
-        Extracts all the requested eatures _at the image level_ from the images
+        Extracts all the requested features _at the image level_ from the images
         present in `intensity_dir`. If `label_dir` is specified, features will be
         extracted for each unique label present in the label images. The file names
         of the label images are expected to match those of the intensity images.
@@ -232,11 +232,11 @@ class Nyxus:
                 
                 return self.get_arrow_ipc_file()
                 
-            elif (output_path == 'parquet'):
+            elif (output_type == 'parquet'):
                 
                 self.create_parquet_file(output_path)
                 
-                return self.get_parquet_file
+                return self.get_parquet_file()
             
             
     
@@ -363,11 +363,11 @@ class Nyxus:
                 
                 return self.get_arrow_ipc_file()
                 
-            elif (output_path == 'parquet'):
+            elif (output_type == 'parquet'):
                 
                 self.create_parquet_file(output_path)
                 
-                return self.get_parquet_file
+                return self.get_parquet_file()
     
     def using_gpu(self, gpu_on: bool):
         use_gpu(gpu_on)
@@ -435,11 +435,11 @@ class Nyxus:
                 
                 return self.get_arrow_ipc_file()
                 
-            elif (output_path == 'parquet'):
+            elif (output_type == 'parquet'):
                 
                 self.create_parquet_file(output_path)
                 
-                return self.get_parquet_file
+                return self.get_parquet_file()
 
 
     def blacklist_roi(self, blacklist:str):
