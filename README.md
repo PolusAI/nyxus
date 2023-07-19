@@ -203,7 +203,9 @@ will print the dictionary
 
 ## Using Arrow for feature results
 
-Nyxus provides the ability to get the results of the feature calculations in Arrow IPC and Parquet formats. To create an Arrow IPC or Parquet file, use the `create_arrow_ipc_file()` and `create_parquet_file()` methods on a Nyxus object. For example,
+Nyxus provides the ability to get the results of the feature calculations in Arrow IPC and Parquet formats. Note that writing to Arrow is currently only supported by building from source and is not yet available in the PyPI wheels. It is recommended to use Conda for building with Arrow enabled.
+
+ To create an Arrow IPC or Parquet file, use the `create_arrow_ipc_file()` and `create_parquet_file()` methods on a Nyxus object. For example,
 
 ```python
     from nyxus import Nyxus
