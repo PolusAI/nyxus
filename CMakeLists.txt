@@ -162,7 +162,7 @@ set(SOURCE
 
 option(PARQUET_LINK_SHARED "Link to the Parquet shared library" ON)
 
-option(USEARROW "Use Arrow" ON)
+option(USEARROW "Use Arrow" OFF)
 
 if (USEARROW)
 	# Look for installed packages the system
@@ -175,12 +175,12 @@ if (USEARROW)
 		if (Parquet_FOUND)
 			add_definitions(-DUSE_ARROW)
 		else()
-			message(WARNING "The Parquet library not found. The build will continue without Arrow support.")
+			message(WARNING "The Parquet library was not found. The build will continue without Arrow support.")
 			set(USEARROW OFF)
 		endif()
 
 	else ()
-		message(WARNING "The Arrow library not found. The build will continue without Arrow support.")
+	message(WARNING "The Arrow library was not found. The build will continue without Arrow support.")
 		set(USEARROW OFF)
 	endif()
 
@@ -412,7 +412,7 @@ if (RUN_GTEST)
 
 	# Prevent GoogleTest from overriding our compiler/linker options
 	# when building with Visual Studio
-	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE) 
 
 	# Add googletest directly to our build. This adds
 	# the following targets: gtest, gtest_main, gmock
