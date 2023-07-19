@@ -12,20 +12,27 @@ import time
 
 class TestImport():
     def test_import(self):
-        assert nyxus.__name__ == "nyxus" 
+        assert nyxus.__name__ == "nyxus"  
         
 class TestNyxus():
         PATH = PATH = Path(__file__).with_name('data')
-
+        
         @classmethod
         def setup_class(cls):
             os.mkdir('TestNyxusOut')
 
-        @classmethod
+        @classmethod 
         def teardown_class(cls):
             shutil.rmtree('TestNyxusOut')
-            os.remove('out.arrow')
-            os.remove('out.parquet')
+            try:
+                os.remove('NyxusFeatures.arrow')
+            except:
+                print('No .arrow file to delete')
+                
+            try:
+                os.remove('NyxusFeatures.parquet')
+            except:
+                print('No .parquet file to delete')
             
 
         def test_gabor_gpu(self):
@@ -352,6 +359,7 @@ class TestNyxus():
             assert pytest.approx(averaged_results[4], 0.01) == 1.40 # difference entropy
             assert pytest.approx(averaged_results[5], 0.1) == 2.90 # difference variance#
 
+        @pytest.mark.arrow
         def test_make_arrow_ipc(self):
             
             nyx = nyxus.Nyxus (["*ALL*"])
@@ -389,7 +397,8 @@ class TestNyxus():
                     assert feature_value == arrow_value
             
             path = nyx.get_arrow_ipc_file()
-            
+        
+        @pytest.mark.arrow
         def test_arrow_ipc(self):
             
             nyx = nyxus.Nyxus (["*ALL*"])
@@ -426,6 +435,7 @@ class TestNyxus():
                         continue
                     assert feature_value == arrow_value
         
+        @pytest.mark.arrow
         def test_arrow_ipc_no_path(self):
             
             nyx = nyxus.Nyxus (["*ALL*"])
@@ -464,7 +474,7 @@ class TestNyxus():
                         continue
                     assert feature_value == arrow_value
         
-                
+        @pytest.mark.arrow
         def test_arrow_ipc_no_create(self):
             
             nyx = nyxus.Nyxus (["*ALL*"])
@@ -498,8 +508,7 @@ class TestNyxus():
                     
             path = nyx.get_arrow_ipc_file()
             
-            #os.remove(path)
-                    
+        @pytest.mark.arrow         
         def test_arrow_ipc_path(self):
             
             nyx = nyxus.Nyxus (["*ALL*"])
@@ -516,10 +525,9 @@ class TestNyxus():
             
             path = nyx.get_arrow_ipc_file()
             
-            assert path == 'out.arrow'
+            assert path == 'NyxusFeatures.arrow'
             
-            #os.remove(path)
-            
+        @pytest.mark.arrow  
         def test_arrow_ipc_path_no_create(self):
             
             nyx = nyxus.Nyxus (["*ALL*"])
@@ -538,11 +546,11 @@ class TestNyxus():
                     
             path = nyx.get_arrow_ipc_file()
             
-            assert path == 'out.arrow'
+            assert path == 'NyxusFeatures.arrow'
             
             #os.remove(path)
         
-            
+        @pytest.mark.arrow  
         def test_custom_arrow_ipc_path(self):
             
             nyx = nyxus.Nyxus (["*ALL*"])
@@ -566,7 +574,7 @@ class TestNyxus():
             
             assert path == 'out/out.arrow'
         
-        
+        @pytest.mark.arrow
         def test_make_parquet_file(self):
             
             nyx = nyxus.Nyxus (["*ALL*"])
@@ -606,7 +614,8 @@ class TestNyxus():
 
                         continue
                     assert feature_value == arrow_value
-                    
+        
+        @pytest.mark.arrow        
         def test_parquet_writer(self):
             
             nyx = nyxus.Nyxus (["*ALL*"])
@@ -646,7 +655,7 @@ class TestNyxus():
                         continue
                     assert feature_value == arrow_value
                     
-                    
+        @pytest.mark.arrow     
         def test_parquet_writer(self):
                 
                 nyx = nyxus.Nyxus (["*ALL*"])
