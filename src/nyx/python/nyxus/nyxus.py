@@ -693,14 +693,14 @@ class Nyxus:
         return get_params_imp(vars)
         
         
-    def create_arrow_file(self, path: str="out.arrow"):
+    def create_arrow_file(self, path: str="NyxusFeatures.arrow"):
         """Creates an Arrow IPC file containing the features.
         
         This method must be called after calling one of the featurize methods.
 
         Parameters
         ----------
-        path: Path to write the arrow file to. (Optional, default "out.arrow")
+        path: Path to write the arrow file to. (Optional, default "NyxusFeatures.arrow")
 
         Returns
         -------
@@ -725,14 +725,14 @@ class Nyxus:
         
         return get_arrow_file_imp()
     
-    def create_parquet_file(self, path: str="out.parquet"):
+    def create_parquet_file(self, path: str="NyxusFeatures.parquet"):
         """Creates a Parquet file containing the features.
         
         This method must be called after calling one of the featurize methods.
 
         Parameters
         ----------
-        path: Path to write the parquet file to. (Optional, default "out.parquet")
+        path: Path to write the parquet file to. (Optional, default "NyxusFeatures.parquet")
 
         Returns
         -------
