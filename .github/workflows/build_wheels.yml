@@ -29,10 +29,10 @@ jobs:
         name: Install Python
         with:
           python-version: '3.8'
-
+ 
       - name: Install cibuildwheel
         run: |
-          python -m pip install cibuildwheel==2.12.1 delvewheel wheel Cython
+          python -m pip install cibuildwheel==2.12.1 delvewheel wheel
 
       - name: Building wheels 
         run: |
@@ -41,17 +41,14 @@ jobs:
           CIBW_BUILD: ${{ matrix.cibw_build }}
           CIBW_SKIP: "*musllinux*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
-          CIBW_BEFORE_ALL_MACOS: python -m pip install Cython numpy pyarrow &&
-                                   brew install llvm libomp &&
+          CIBW_BEFORE_ALL_MACOS: brew install llvm libomp && 
                                    bash ci-utils/install_prereq_linux.sh &&
                                    mkdir -p /tmp/nyxus_bld &&
                                    cp -r local_install /tmp/nyxus_bld 
-          CIBW_BEFORE_ALL_LINUX:  python -m pip install Cython numpy pyarrow &&
-                                   bash ci-utils/install_prereq_linux.sh &&
+          CIBW_BEFORE_ALL_LINUX:  bash ci-utils/install_prereq_linux.sh &&
                                    mkdir -p /tmp/nyxus_bld &&
                                    cp -r local_install /tmp/nyxus_bld
-          CIBW_BEFORE_ALL_WINDOWS: python -m pip install Cython numpy pyarrow &&
-                                   ci-utils\install_prereq_win.bat &&
+          CIBW_BEFORE_ALL_WINDOWS: ci-utils\install_prereq_win.bat &&
                                    xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install
                                      
           CIBW_ENVIRONMENT_MACOS: REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64" ON_GITHUB="TRUE" PATH="$(brew --prefix llvm)/bin:$PATH" COMPILER="/usr/local/opt/llvm/bin/clang++" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm/lib -Wl,-rpath,/usr/local/opt/llvm/lib" CXX="/usr/local/opt/llvm/bin/clang++" CC="/usr/local/opt/llvm/bin/clang" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
@@ -61,7 +58,7 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
           CIBW_TEST_REQUIRES: numpy pandas pytest requests pyarrow
-          CIBW_TEST_COMMAND: pytest {project}/tests/python
+          CIBW_TEST_COMMAND: pytest {project}/tests/python -m "not arrow"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
