@@ -152,24 +152,6 @@ cmake --build . --config Release --target install --parallel 4
 popd
 popd
 
-curl -L https://github.com/apache/arrow/archive/refs/tags/apache-arrow-12.0.0.zip -o  arrow-apache-arrow-12.0.0.zip
-tar -xvf arrow-apache-arrow-12.0.0.zip
-pushd arrow-apache-arrow-12.0.0
-pushd cpp
-mkdir build_man
-pushd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ -DCMAKE_PREFIX_PATH=../../local_install/
-cmake -DARROW_PARQUET="ON" --build . --config Release --target install --parallel 4
-popd
-popd
-pushd python/
-export PYARROW_WITH_PARQUET=1
-export PYARROW_WITH_DATASET=1
-export PYARROW_PARALLEL=4
-python setup.py build_ext --inplace
-popd
-popd
-
 SET ROOTTDIR="%cd%"
 curl -L https://github.com/DraconPern/fmjpeg2koj/archive/refs/tags/v1.0.3.zip -o fmjpeg2koj.zip
 tar -xvf fmjpeg2koj.zip
