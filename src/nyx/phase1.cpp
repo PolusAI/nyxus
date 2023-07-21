@@ -65,7 +65,6 @@ namespace Nyxus
 						continue;
 					}
 
-
 					int y = row * th + i / tw,
 						x = col * tw + i % tw;
 					

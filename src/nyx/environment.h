@@ -6,6 +6,7 @@
 #include "environment_basic.h"
 #include "roi_blacklist.h"
 #include "cli_gabor_options.h"
+#include "cli_nested_roi_options.h"
 
 #ifdef USE_GPU
 	#include <cuda_runtime.h>
@@ -52,6 +53,12 @@
 #define GABOR_F0 "--gaborf0"			// Example: "0.1"
 #define GABOR_THETA "--gabortheta"		// Example: "60"
 #define GABOR_THRESHOLD "--gaborthold"	// Example: "0.025"
+
+// Nested ROI functionality
+#define NESTEDROI_CHNL_SIGNATURE "--hcnlsig"
+#define NESTEDROI_PARENT_CHNL "--hparcnl"
+#define NESTEDROI_CHILD_CHNL "--hchcnl"
+#define NESTEDROI_AGGREGATION_METHOD "--haggr"
 
 // Feature group nicknames. Each nickname should be used twice - 
 // in Nyxus::parse_delimited_string_list_to_features() 
@@ -168,6 +175,10 @@ public:
 	// implementation of Gabor feature options
 	bool parse_gabor_options_raw_inputs (std::string& error_message);
 	GaborOptions gaborOptions;
+
+	// implementation of nested ROI options
+	bool parse_nested_options_raw_inputs (std::string& error_message);
+	NestedRoiOptions nestedOptions;
 
 private:
 

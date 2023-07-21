@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include "features/aabb.h"
 #include "features/pixel.h"
 
@@ -10,6 +11,7 @@ public:
 
 	AABB aabb;
 	int label;
+	std::string segFname, intFname;	// Full paths
 
 private:
 };

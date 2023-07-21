@@ -62,7 +62,7 @@ int main (int argc, char** argv)
 	auto startTS = getTimeStr();
 	VERBOSLVL1(std::cout << "\n>>> STARTING >>> " << startTS << "\n";)
 
-	// Process the image sdata
+	// Process the image data
 	int min_online_roi_size = 0;
 	errorCode = processDataset (
 		intensFiles, 
@@ -74,23 +74,44 @@ int main (int argc, char** argv)
 		true, // 'true' to save to csv
 		theEnvironment.output_dir);
 
-	// Check the error code 
+	// Report feature extraction error, if any
 	switch (errorCode)
 	{
-	case 0:		// Success
-		break;
-	case 1:		// Dataset structure error e.g. intensity-label file name mismatch
-		std::cout << std::endl << "Input data error" << std::endl;
-		break;
-	case 2:		// Internal FastLoader error e.g. TIFF access error
-		std::cout << std::endl << "Result output error" << std::endl;
-		break;
-	case 3:		// Memory error
-		std::cout << std::endl << "Memory error" << std::endl;
-		break;
-	default:	// Any other error
-		std::cout << std::endl << "Error #" << errorCode << std::endl;
-		break;
+		case 0:		// Success
+			break;
+		case 1:		// Dataset structure error e.g. intensity-label file name mismatch
+			std::cout << std::endl << "Input data error" << std::endl;
+			break;
+		case 2:		// Internal FastLoader error e.g. TIFF access error
+			std::cout << std::endl << "Result output error" << std::endl;
+			break;
+		case 3:		// Memory error
+			std::cout << std::endl << "Memory error" << std::endl;
+			break;
+		default:	// Any other error
+			std::cout << std::endl << "Error #" << errorCode << std::endl;
+			break;
+	}
+
+	// Process nested ROIs
+	if (theEnvironment.nestedOptions.defined())
+	{
+		bool mineOK = mine_segment_relations2 (
+			labelFiles,
+			theEnvironment.get_file_pattern(),
+			theEnvironment.nestedOptions.rawChannelSignature, //---.channel_signature(),
+			theEnvironment.nestedOptions.parent_channel_number(),
+			theEnvironment.nestedOptions.child_channel_number(),
+			theEnvironment.output_dir,
+			theEnvironment.nestedOptions.aggregation_method(),
+			theEnvironment.get_verbosity_level());
+
+		// Report nested ROI errors, if any
+		if (!mineOK)
+		{
+			std::cerr << "Error minimg hierarchical relations\n";
+			return 1;
+		}	
 	}
 
 	// Current time stamp #2

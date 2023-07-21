@@ -217,7 +217,7 @@ namespace Nyxus
 				Stopwatch::reset();
 			#endif
 
-			// Clear ROI label list, ROI data, etc.
+			// Clear ROI data cached for the previous image
 			clear_feature_buffers();
 
 			auto& ifp = intensFiles[i],
@@ -256,6 +256,10 @@ namespace Nyxus
 			}
 
 			theImLoader.close();
+
+			// Save nested ROI related info of this image
+			if (theEnvironment.nestedOptions.defined())
+				save_nested_roi_info (nestedRoiData, uniqueLabels, roiData);
 
 			#ifdef WITH_PYTHON_H
 			// Allow heyboard interrupt.

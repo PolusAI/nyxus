@@ -129,6 +129,7 @@ set(SOURCE
 	src/nyx/features/zernike_nontriv.cpp
 	src/nyx/helpers/timing.cpp
 	src/nyx/cli_gabor_options.cpp
+	src/nyx/cli_nested_roi_options.cpp
 	src/nyx/common_stats.cpp
 	src/nyx/dirs_and_files.cpp
 	src/nyx/environment.cpp
@@ -159,7 +160,6 @@ set(SOURCE
 # CLI
 if(BUILD_CLI)
 	add_executable(nyxus ${SOURCE} src/nyx/main_nyxus.cpp)
-	add_executable(nyxushie src/nyx/dirs_and_files.cpp src/nyx/environment_basic.cpp src/nyx/image_loader1x.cpp src/nyx/main_nyxushie.cpp src/nyx/nested_roi.cpp src/nyx/python/nested_roi_py.cpp src/nyx/roi_cache_basic.cpp)
 endif()
 
 
@@ -191,9 +191,7 @@ if(OMEZARR)
 		endif()
 		if(BUILD_CLI)
 			target_compile_definitions(nyxus PRIVATE -DWITH_BLOSC)
-			target_compile_definitions(nyxushie PRIVATE -DWITH_BLOSC) 	
 			target_link_libraries(nyxus PRIVATE ${BLOSC_LIBRARIES})	
-			target_link_libraries(nyxushie PRIVATE ${BLOSC_LIBRARIES})	
 		endif()
 	endif()
 
@@ -288,8 +286,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	if(BUILD_CLI)
 		target_link_libraries(nyxus PRIVATE -static-libgcc -static-libstdc++)
 		target_link_libraries(nyxus PRIVATE stdc++fs)
-		target_link_libraries(nyxushie PRIVATE -static-libgcc -static-libstdc++)
-		target_link_libraries(nyxushie PRIVATE stdc++fs)
 	endif()
 endif()
 
@@ -303,7 +299,6 @@ endif()
 
 if(BUILD_CLI)
 	target_link_libraries(nyxus PRIVATE ${Nyxus_LIBRARIES})
-	target_link_libraries(nyxushie PRIVATE ${Nyxus_LIBRARIES})
 endif()
 
 ## Running Tests

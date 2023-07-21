@@ -80,7 +80,7 @@ public:
 	}
 
 private:
-	Nyxus::AvailableChildFeatureAggregations method = Nyxus::AvailableChildFeatureAggregations::aNONE;
+	Nyxus::AvailableChildFeatureAggregations method;// = Nyxus::AvailableChildFeatureAggregations::aNONE;
 	std::string option_name;	// initialized via constructor
 
 	bool find_string_argument(std::string& raw, const char* arg, std::string& arg_value)

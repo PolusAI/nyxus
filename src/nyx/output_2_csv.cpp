@@ -55,29 +55,39 @@ namespace Nyxus
 		return x;
 	}
 
+	std::string get_feature_output_fname (const std::string& intFpath, const std::string& segFpath)
+	{
+		std::string retval;
+		if (theEnvironment.separateCsv)
+		{
+			retval = theEnvironment.output_dir + "/_INT_" + getPureFname(intFpath) + "_SEG_" + getPureFname(segFpath) + ".csv";
+		}
+		else
+		{
+			retval = theEnvironment.output_dir + "/" + "NyxusFeatures.csv";
+		}
+		return retval;
+	}
+
+	const std::vector<std::string> mandatory_output_columns {"intensity_image", "segmentation_image", "ROI_label"};
+
 	// Saves the result of image scanning and feature calculation. Must be called after the reduction phase.
-	bool save_features_2_csv (std::string intFpath, std::string segFpath, std::string outputDir)
+	bool save_features_2_csv (const std::string & intFpath, const std::string & segFpath, const std::string & outputDir)
 	{
 		// Sort the labels
 		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
 		std::sort(L.begin(), L.end());
 
-		static bool mustRenderHeader = true;	// This can be flipped to 'false' in 'singlecsv' scenario
+		static bool mustRenderHeader = true;	// In 'singlecsv' scenario this flag flips from 'T' to 'F' when necessary (after the header is rendered)
 
 		// Make the file name and write mode
-		std::string fullPath;
-		const char* mode; // = "w";
-		if (theEnvironment.separateCsv)
-		{
-			fullPath = outputDir + "/_INT_" + getPureFname(intFpath) + "_SEG_" + getPureFname(segFpath) + ".csv";
-			VERBOSLVL1(std::cout << "\t--> " << fullPath << "\n";)
-		}
-		else
-		{
-			fullPath = outputDir + "/" + "NyxusFeatures.csv";
-			VERBOSLVL1(std::cout << "\t--> " << fullPath << "\n";)
+		std::string fullPath = get_feature_output_fname (intFpath, segFpath);
+		VERBOSLVL1(std::cout << "\t--> " << fullPath << "\n");
+
+		// Single CSV: create or continue?
+		const char* mode = "w";
+		if (! theEnvironment.separateCsv)
 			mode = mustRenderHeader ? "w" : "a";
-		}
 
 		// Open it
 		FILE* fp = nullptr;
@@ -104,8 +114,15 @@ namespace Nyxus
 		{
 			std::stringstream ssHead;
 
-			ssHead << "mask_image,intensity_image,label";
+			// Mandatory column names
+			for (const auto& s : mandatory_output_columns)
+			{
+				ssHead << s;
+				if (s != mandatory_output_columns.back())
+					ssHead << ",";
+			}
 
+			// Optional columns
 			for (auto& enabdF : F)
 			{
 				auto fn = std::get<0>(enabdF);	// feature name
