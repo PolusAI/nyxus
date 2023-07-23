@@ -115,7 +115,7 @@ namespace Nyxus
 	std::unordered_map <int, std::vector<int>> parentsChildren;
 	std::unordered_map <int, HieLR> roiDataP, roiDataC;
 
-	void parse_csv_line(std::vector<std::string>& dst, std::istringstream& src)
+	void parse_csv_line2 (std::vector<std::string>& dst, std::istringstream& src)
 	{
 		dst.clear();
 		std::string field;
@@ -123,7 +123,7 @@ namespace Nyxus
 			dst.push_back(field);
 	}
 
-	bool find_csv_record(std::string& csvLine, std::vector<std::string>& csvHeader, std::vector<std::string>& csvFields, const std::string& csvFP, int label)
+	bool find_csv_record2 (std::string& csvLine, std::vector<std::string>& csvHeader, std::vector<std::string>& csvFields, const std::string& csvFP, int label)
 	{
 		std::ifstream f(csvFP);
 		std::string line;
@@ -132,12 +132,12 @@ namespace Nyxus
 		// just store the header
 		std::getline(f, line);
 		ssLine.str(line);
-		parse_csv_line(csvHeader, ssLine);
+		parse_csv_line2(csvHeader, ssLine);
 
 		while (std::getline(f, line))
 		{
 			std::istringstream ss(line); 
-			parse_csv_line(csvFields, ss);
+			parse_csv_line2(csvFields, ss);
 
 			std::stringstream ssLab;
 			ssLab << label;
@@ -445,7 +445,7 @@ namespace Nyxus
 			std::string csvFP = get_feature_output_fname(r.intFname, r.segFname);
 			std::string csvWholeline;
 			std::vector<std::string> csvHeader, csvFields;
-			bool ok = find_csv_record (csvWholeline, csvHeader, csvFields, csvFP, lPar);
+			bool ok = find_csv_record2 (csvWholeline, csvHeader, csvFields, csvFP, lPar);
 			if (ok == false)
 			{
 				std::cerr << "Cannot find record for parent " << lPar << " in " << csvFP << "\n";
@@ -486,7 +486,7 @@ namespace Nyxus
 
 					// read child's feature CSV file
 					std::string rawLine;
-					bool ok = find_csv_record (rawLine, csvHeader, csvFields, fpath, lChi);
+					bool ok = find_csv_record2 (rawLine, csvHeader, csvFields, fpath, lChi);
 					if (ok == false)
 					{
 						std::cerr << "Cannot find record for child " << lChi << " in " << fpath << "\n";
@@ -524,7 +524,7 @@ namespace Nyxus
 
 					// Read child's features
 					std::string csvWholeline_chi;
-					bool ok = find_csv_record (csvWholeline_chi, csvHeader, csvFields, csvFP_chi, lChi);
+					bool ok = find_csv_record2 (csvWholeline_chi, csvHeader, csvFields, csvFP_chi, lChi);
 					if (ok == false)
 					{
 						std::cerr << "Cannot find record for child " << lPar << " in " << csvFP << "\n";
