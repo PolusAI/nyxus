@@ -113,7 +113,7 @@ std::string NestedRoiOptions::get_last_er_msg()
 namespace Nyxus 
 {
 	std::unordered_map <int, std::vector<int>> parentsChildren;
-	std::unordered_map <int, HieLR> roiData1, roiData2;
+	std::unordered_map <int, HieLR> roiDataP, roiDataC;
 
 	void parse_csv_line(std::vector<std::string>& dst, std::istringstream& src)
 	{
@@ -164,7 +164,7 @@ namespace Nyxus
 		// Process parents
 		for (auto l_par : P)
 		{
-			HieLR& r = Nyxus::roiData1[l_par];
+			HieLR& r = Nyxus::roiDataP[l_par];
 			for (auto l_chi : r.child_segs)
 			{
 				rescache.add_string(r.segFname);
@@ -185,7 +185,7 @@ namespace Nyxus
 			return true;
 
 		// Make the relational table file name
-		auto& fullSegImgPath = Nyxus::roiData1[P[0]].segFname;
+		auto& fullSegImgPath = Nyxus::roiDataP[P[0]].segFname;
 		fs::path pSeg(fullSegImgPath);
 		auto segImgFname = pSeg.stem().string();
 		std::string fPath = outdir + "/" + segImgFname + "_nested_relations.csv";	// output file path
@@ -201,7 +201,7 @@ namespace Nyxus
 		// Process parents
 		for (auto l_par : P)
 		{
-			HieLR& r = Nyxus::roiData1[l_par];
+			HieLR& r = Nyxus::roiDataP[l_par];
 			for (auto l_chi : r.child_segs)
 			{
 				ofile << r.segFname << "," << l_par << "," << l_chi << "\n";
