@@ -12,12 +12,22 @@ from .backend import (
     customize_gabor_feature_imp,
     set_if_ibsi_imp,
     set_environment_params_imp,
-    get_params_imp)
+    get_params_imp, 
+    create_arrow_file_imp, 
+    get_arrow_file_imp, 
+    get_parquet_file_imp, 
+    create_parquet_file_imp, 
+    get_arrow_table_imp,
+    arrow_is_enabled_imp,
+    )
 
 import os
 import numpy as np
 import pandas as pd
+import pyarrow as pa
 from typing import Optional, List
+
+#pa.import_pyarrow()
 
 class Nyxus:
     """Nyxus image feature extraction library
@@ -95,9 +105,8 @@ class Nyxus:
         gabor_theta: float = 45,
         gabor_thold: float = 0.025,
         gabor_freqs: List[int] = [1,2,4,8,16,32,64]
-        
-        
         ):
+
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
 
@@ -142,12 +151,17 @@ class Nyxus:
             thold=gabor_thold,
             freqs=gabor_freqs
         )
+        
+        # list of valid outputs that are used throughout featurize functions
+        self._valid_output_types = ['pandas', 'arrow', 'arrowipc', 'parquet']
 
     def featurize_directory(
         self,
         intensity_dir: str,
         label_dir: Optional[str] = None,
         file_pattern: Optional[str] = ".*",
+        output_type: Optional[str] = "pandas",
+        output_path: Optional[str] = ""
     ):
         """Extract features from all the images satisfying the file pattern of provided image directories.
 
@@ -185,28 +199,56 @@ class Nyxus:
         if label_dir is None:
             label_dir = intensity_dir
 
-        header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern)
+        if (output_type not in self._valid_output_types):
+            raise  ValueError(f'Invalid output type {output_type}. Valid output types are {self._valid_output_types}.')
+            
+        if (output_type == 'pandas'):
+            
+            header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern, True)
 
-        df = pd.concat(
-            [
-                pd.DataFrame(string_data, columns=header[: string_data.shape[1]]),
-                pd.DataFrame(numeric_data, columns=header[string_data.shape[1] :]),
-            ],
-            axis=1,
-        )
+            df = pd.concat(
+                [
+                    pd.DataFrame(string_data, columns=header[: string_data.shape[1]]),
+                    pd.DataFrame(numeric_data, columns=header[string_data.shape[1] :]),
+                ],
+                axis=1,
+            )
 
-        # Labels should always be uint.
-        if "label" in df.columns:
-            df["label"] = df.label.astype(np.uint32)
+            # Labels should always be uint.
+            if "label" in df.columns:
+                df["label"] = df.label.astype(np.uint32)
 
-        return df
+            return df
+        
+        else:
+            
+            featurize_directory_imp(intensity_dir, label_dir, file_pattern, False)
+            
+            output_type = output_type.lower() # ignore case of output type
+            
+            if (output_type == 'arrow' or output_type == 'arrowipc'):
+                
+                self.create_arrow_file(output_path)
+                
+                return self.get_arrow_ipc_file()
+                
+            elif (output_type == 'parquet'):
+                
+                self.create_parquet_file(output_path)
+                
+                return self.get_parquet_file()
+            
+            
     
     def featurize(
         self,
         intensity_images: np.ndarray,
         label_images: np.ndarray,
         intensity_names: list = [],
-        label_names: list = []
+        label_names: list = [],
+        output_type: Optional[str] = "pandas",
+        output_path: Optional[str] = ""
+        
     ):
         """Extract features from a single image pair in a 2D np.array or for all the images in a 3D np.array.
 
@@ -240,6 +282,9 @@ class Nyxus:
 
         if not isinstance(label_images, np.ndarray):
             raise ValueError("label_images parameter must be numpy.ndarray")
+        
+        if (output_type not in self._valid_output_types):
+            raise  ValueError(f'Invalid output type {output_type}. Valid output types are {self._valid_output_types}.')
         
         # verify dimensions of images are the same
         if(intensity_images.ndim == 2):
@@ -279,25 +324,50 @@ class Nyxus:
         if (label_images.shape[0] != len(label_names)):
             raise ValueError("Number of segmentation names must be the same as the number of images.")
         
-        header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names)
-        
-        self.error_message = error_message
-        if(error_message != ''):
-            print(error_message)
+    
+        if (output_type == 'pandas'):
+                
+            header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, True)
+            
+            self.error_message = error_message
+            if(error_message != ''):
+                print(error_message)
 
-        df = pd.concat(
-            [
-                pd.DataFrame(string_data, columns=header[: string_data.shape[1]]),
-                pd.DataFrame(numeric_data, columns=header[string_data.shape[1] :]),
-            ],
-            axis=1,
-        )
+            df = pd.concat(
+                [
+                    pd.DataFrame(string_data, columns=header[: string_data.shape[1]]),
+                    pd.DataFrame(numeric_data, columns=header[string_data.shape[1] :]),
+                ],
+                axis=1,
+            )
 
-        # Labels should always be uint.
-        if "label" in df.columns:
-            df["label"] = df.label.astype(np.uint32)
+            # Labels should always be uint.
+            if "label" in df.columns:
+                df["label"] = df.label.astype(np.uint32)
 
-        return df
+            return df
+            
+        else:
+            
+            error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, False)
+            
+            self.error_message = error_message
+            if(error_message != ''):
+                print(error_message)
+            
+            output_type = output_type.lower() # ignore case of output type
+            
+            if (output_type == 'arrow' or output_type == 'arrowipc'):
+                
+                self.create_arrow_file(output_path)
+                
+                return self.get_arrow_ipc_file()
+                
+            elif (output_type == 'parquet'):
+                
+                self.create_parquet_file(output_path)
+                
+                return self.get_parquet_file()
     
     def using_gpu(self, gpu_on: bool):
         use_gpu(gpu_on)
@@ -305,7 +375,9 @@ class Nyxus:
     def featurize_files (
         self,
         intensity_files: list,
-        mask_files: list):
+        mask_files: list,
+        output_type: Optional[str] = "pandas",
+        output_path: Optional[str] = ""):
         """Extract features from image file pairs passed as lists
 
         Extracts all the requested features _at the image level_ from the intensity images
@@ -329,22 +401,45 @@ class Nyxus:
 
         if mask_files is None:
             raise IOError ("The list of segment file paths is empty")
+        
+        if (output_type not in self._valid_output_types):
+            raise  ValueError(f'Invalid output type {output_type}. Valid output types are {self._valid_output_types}.')
 
-        header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files)
+        if (output_type == 'pandas'):
+            
+            header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files, True)
 
-        df = pd.concat(
-            [
-                pd.DataFrame(string_data, columns=header[: string_data.shape[1]]),
-                pd.DataFrame(numeric_data, columns=header[string_data.shape[1] :]),
-            ],
-            axis=1,
-        )
+            df = pd.concat(
+                [
+                    pd.DataFrame(string_data, columns=header[: string_data.shape[1]]),
+                    pd.DataFrame(numeric_data, columns=header[string_data.shape[1] :]),
+                ],
+                axis=1,
+            )
 
-        # Labels should always be uint.
-        if "label" in df.columns:
-            df["label"] = df.label.astype(np.uint32)
+            # Labels should always be uint.
+            if "label" in df.columns:
+                df["label"] = df.label.astype(np.uint32)
 
-        return df
+            return df
+        
+        else:
+            
+            featurize_fname_lists_imp (intensity_files, mask_files, False)
+            
+            output_type = output_type.lower() # ignore case of output type
+            
+            if (output_type == 'arrow' or output_type == 'arrowipc'):
+                
+                self.create_arrow_file(output_path)
+                
+                return self.get_arrow_ipc_file()
+                
+            elif (output_type == 'parquet'):
+                
+                self.create_parquet_file(output_path)
+                
+                return self.get_parquet_file()
 
 
     def blacklist_roi(self, blacklist:str):
@@ -402,7 +497,7 @@ class Nyxus:
         if len(s) == 0:
             return None
         return s
-
+    
     def set_gabor_feature_params (self, **kwargs):
         """Sets parameters of feature GABOR
 
@@ -598,6 +693,128 @@ class Nyxus:
         return get_params_imp(vars)
         
         
+    def create_arrow_file(self, path: str="NyxusFeatures.arrow"):
+        """Creates an Arrow IPC file containing the features.
+        
+        This method must be called after calling one of the featurize methods.
+
+        Parameters
+        ----------
+        path: Path to write the arrow file to. (Optional, default "NyxusFeatures.arrow")
+
+        Returns
+        -------
+        None
+
+        """
+        create_arrow_file_imp(path)
+
+    
+    def get_arrow_ipc_file(self):
+        """Returns the path to the Arrow IPC file.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        Path to the Arrow IPC file (string)
+
+        """
+        
+        return get_arrow_file_imp()
+    
+    def create_parquet_file(self, path: str="NyxusFeatures.parquet"):
+        """Creates a Parquet file containing the features.
+        
+        This method must be called after calling one of the featurize methods.
+
+        Parameters
+        ----------
+        path: Path to write the parquet file to. (Optional, default "NyxusFeatures.parquet")
+
+        Returns
+        -------
+        None
+
+        """
+        
+        create_parquet_file_imp(path)
+    
+    def get_parquet_file(self):
+        """Returns the path to the Arrow IPC file.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        Path to the Parquet file (string)
+
+        """
+        
+        return get_parquet_file_imp()
+    
+    def get_arrow_memory_mapping(self):
+        """Returns a memory mapping to the Arrow IPC file.
+        
+        This method creates a memory mapping between the Arrow IPC file on disk to allow
+        for random access. This method does not consume addition RAM.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        MemoryMappedFile 
+
+        """
+        
+        arrow_file_path = self.get_arrow_ipc_file()
+        
+        if (arrow_file_path == ""):
+            self.create_arrow_file()
+            arrow_file_path = self.get_arrow_ipc_file()
+        
+        with pa.memory_map(arrow_file_path, 'rb') as source:
+            array = pa.ipc.open_file(source).read_all()
+        
+        return array
+    
+    
+    def get_arrow_table(self):
+        """Returns an arrow table containing the feature calculations.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        pyarrow.Table 
+
+        """
+        
+        return get_arrow_table_imp()
+    
+    def arrow_is_enabled(self):
+        """Returns true if arrow support is enabled.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        bool: If arrow support is enabled 
+        """
+        
+        return arrow_is_enabled_imp()
+    
+
 
 class Nested:
     """Nyxus image feature extraction library / ROI hierarchy analyzer

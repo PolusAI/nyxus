@@ -7,9 +7,13 @@ if(DEFINED ENV{NYXUS_DEP_DIR})
 	link_directories($ENV{NYXUS_DEP_DIR}/lib)
 endif()
 
+include(ExternalProject)
+include(FindPkgConfig)
+include(GNUInstallDirs)
+
 find_package(CUDA)
 option(USEGPU "Use GPU" ON)
-if(CUDA_FOUND AND USEGPU)
+if(CUDA_FOUND AND USEGPU) 
 	set(USEGPU ON)
 	if (CUDA_VERSION_MAJOR STREQUAL "10")
 		set(CUDA_ARCH_LIST "35;37;50;72;75")
@@ -35,6 +39,7 @@ endif()
 #==== Compiler Options
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 
 if(USEGPU)
     enable_language("CUDA")
@@ -154,11 +159,39 @@ set(SOURCE
 	src/nyx/scan_fastloader_way.cpp
 )
 
+option(PARQUET_LINK_SHARED "Link to the Parquet shared library" ON)
+
+option(USEARROW "Use Arrow" OFF)
+
+if (USEARROW)
+	# Look for installed packages the system
+	find_package(Arrow)
+
+	if (Arrow_FOUND) 
+		# Look for installed packages the system
+		find_package(Parquet)
+
+		if (Parquet_FOUND)
+			add_definitions(-DUSE_ARROW)
+		else()
+			message(WARNING "The Parquet library was not found. The build will continue without Arrow support.")
+			set(USEARROW OFF)
+		endif()
+
+	else ()
+	message(WARNING "The Arrow library was not found. The build will continue without Arrow support.")
+		set(USEARROW OFF)
+	endif()
+
+endif()
+
 
 # CLI
 if(BUILD_CLI)
+
 	add_executable(nyxus ${SOURCE} src/nyx/main_nyxus.cpp)
 	add_executable(nyxushie src/nyx/dirs_and_files.cpp src/nyx/environment_basic.cpp src/nyx/image_loader1x.cpp src/nyx/main_nyxushie.cpp src/nyx/nested_roi.cpp src/nyx/python/nested_roi_py.cpp src/nyx/roi_cache_basic.cpp)
+
 endif()
 
 
@@ -272,6 +305,68 @@ if(USEGPU)
 	endif()
 endif()
 
+ 
+if(USEARROW)
+
+	list(APPEND Nyxus_LIBRARIES arrow_shared)
+
+	if(PARQUET_LINK_SHARED)
+		list(APPEND Nyxus_LIBRARIES parquet_shared)
+	else()
+		list(APPEND Nyxus_LIBRARIES parquet_static)
+	endif()
+
+	if (BUILD_LIB)
+		# Find Python
+		find_package(Python REQUIRED COMPONENTS Interpreter)
+
+		# Execute the Python script to find pyarrow include path
+		execute_process(
+			COMMAND ${Python_EXECUTABLE} -c "import pyarrow as pa; print(pa.get_include())"
+			OUTPUT_VARIABLE PATH_OUTPUT
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
+
+		# Store the path in a CMake variable
+		set(PYARROW_INCLUDE_PATH "${PATH_OUTPUT}" CACHE INTERNAL "Path to pyarrow include directory")
+		
+		# Set filename for finding pyarrow
+		set(python_filename "ci-utils/find_pyarrow.py")
+		set(python_filepath "${CMAKE_CURRENT_SOURCE_DIR}/${python_filename}")
+
+		# Execute the Python script to find pyarrow library path
+		execute_process(
+			COMMAND ${Python_EXECUTABLE} ${python_filepath}
+			OUTPUT_VARIABLE LIB_PATH_OUTPUT
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
+
+		# Store the path in a CMake variable
+		set(PYARROW_LIB_PATH "${LIB_PATH_OUTPUT}" CACHE INTERNAL "Path to pyarrow library directory")
+
+		if (PYARROW_INCLUDE_PATH STREQUAL "")
+			message(FATAL_ERROR "Pyarrow library not found.")
+		endif()
+
+		if (PYARROW_LIB_PATH STREQUAL "")
+			message(FATAL_ERROR "Pyarrow library not found.")
+		endif()
+
+		# Print the path
+		message(STATUS "PyArrow Include Path: ${PYARROW_INCLUDE_PATH}")
+		message(STATUS "PyArrow Include Path: ${PYARROW_LIB_PATH}")
+
+		# add pyarrow include path
+		include_directories(${PYARROW_INCLUDE_PATH})
+
+		target_link_libraries(backend PRIVATE ${PYARROW_LIB_PATH} )
+
+		target_link_libraries(backend PRIVATE ${Python_INCLUDE_DIRS})
+
+	endif()
+
+endif()
+
 if(BUILD_LIB)
 	target_compile_definitions(backend PRIVATE WITH_PYTHON_H)
 	# VERSION_INFO is defined by setup.py and passed into the C++ code as a define (VERSION_INFO) here.
@@ -316,7 +411,7 @@ if (RUN_GTEST)
 
 	# Prevent GoogleTest from overriding our compiler/linker options
 	# when building with Visual Studio
-	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE) 
 
 	# Add googletest directly to our build. This adds
 	# the following targets: gtest, gtest_main, gmock

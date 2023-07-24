@@ -68,12 +68,11 @@ int main (int argc, char** argv)
 		theEnvironment.n_pixel_scan_threads, 
 		theEnvironment.n_reduce_threads,
 		min_online_roi_size,
-		true, // 'true' to save to csv
+		theEnvironment.useCsv, // 'true' to save to csv
 		theEnvironment.output_dir);
 
 	// Check the error code 
-	switch (errorCode)
-	{
+	switch (errorCode)	{
 	case 0:		// Success
 		break;
 	case 1:		// Dataset structure error e.g. intensity-label file name mismatch
@@ -89,6 +88,27 @@ int main (int argc, char** argv)
 		std::cout << std::endl << "Error #" << errorCode << std::endl;
 		break;
 	}
+
+	#ifdef USE_ARROW
+
+		if (theEnvironment.arrow_output_type == "ARROW" || theEnvironment.arrow_output_type == "ARROWIPC") {
+
+			theEnvironment.arrow_output.create_arrow_file(theResultsCache.get_headerBuf(),
+                                          	theResultsCache.get_stringColBuf(),
+                                          	theResultsCache.get_calcResultBuf(),
+                                          	theResultsCache.get_num_rows(),
+											theEnvironment.output_dir);
+
+		} else if (theEnvironment.arrow_output_type == "PARQUET"){
+
+			theEnvironment.arrow_output.create_parquet_file(theResultsCache.get_headerBuf(),
+                                          theResultsCache.get_stringColBuf(),
+                                          theResultsCache.get_calcResultBuf(),
+                                          theResultsCache.get_num_rows(),
+										  theEnvironment.output_dir);
+
+		} 
+	#endif 
 
 	// Current time stamp #2
 	VERBOSLVL1(std::cout << "\n>>> STARTED >>>\t" << startTS << "\n>>> FINISHED >>>\t" << getTimeStr() << "\n";)
