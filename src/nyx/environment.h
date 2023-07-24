@@ -55,10 +55,10 @@
 #define GABOR_THRESHOLD "--gaborthold"	// Example: "0.025"
 
 // Nested ROI functionality
-#define NESTEDROI_CHNL_SIGNATURE "--hcnlsig"
-#define NESTEDROI_PARENT_CHNL "--hparcnl"
-#define NESTEDROI_CHILD_CHNL "--hchcnl"
-#define NESTEDROI_AGGREGATION_METHOD "--haggr"
+#define NESTEDROI_CHNL_SIGNATURE "--hsig"		// Channel signature Example: "_c" in "p0_y1_r1_c1.ome.tiff"
+#define NESTEDROI_PARENT_CHNL "--hpar"			// Channel number that should be used as a provider of parent segments. Example: --hpar=1
+#define NESTEDROI_CHILD_CHNL "--hchi"			// Channel number that should be used as a provider of child segments. Example: --hchi=0
+#define NESTEDROI_AGGREGATION_METHOD "--hag"	// How to aggregate features of segments recognized as children of same parent segment. See class NestedRoiOptions for options.
 
 // Feature group nicknames. Each nickname should be used twice - 
 // in Nyxus::parse_delimited_string_list_to_features() 

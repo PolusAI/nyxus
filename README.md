@@ -291,6 +291,10 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 --reduceThreads | (optional) Number of CPU threads used on the feature calculation step. Default: '--reduceThreads=1' | integer
 --skiproi | (optional) Skip ROIs having specified labels. Example: '--skiproi=image1.tif:2,3,4;image2.tif:45,56' | string
 --tempDir | (optional) Directory used by temporary out-of-RAM objects. Default value: system temporary directory | path
+--hsig | (optional) Channel signature Example: "--hsig=_c" to match images whose file names have channel info starting substring '_c' like in 'p0_y1_r1_c1.ome.tiff' | string
+--hpar | (optional) Channel number that should be used as a provider of parent segments. Example: '--hpar=1' | integer
+--hchi | (optional) Channel number that should be used as a provider of child segments. Example: '--hchi=0' | integer
+--hag | (optional) Name of a method how to aggregate features of segments recognized as children of same parent segment. Valid options are 'SUM', 'MEAN', 'MIN', 'MAX', 'WMA' (weighted mean average), and 'NONE' (no aggregation, instead, same parent child segments will be laid out horizontally) | string
 
 ---
 
@@ -375,30 +379,31 @@ features = nyx.featurize_directory (intensity_dir="/path/to/intensity/images", l
 
 See also methods __clear_roi_blacklist()__ and __roi_blacklist_get_summary()__ .
 
-## Nested features 
+## Nested ROIs 
 
-A separate command line executable __nyxushie__ for the hierarchical ROI analysis by finding nested ROIs and aggregating features of child ROIs within corresponding parent features is available. Its command line format is:
+Hierarchical ROI analysis in a form of finding ROIs nested geometrically as nested AABBs and aggregating features of child ROIs within corresponding parent is available as an optional extra step after the feature extraction of the whole image set is finished. To enable this step, all the command line options '--hsig', '--hpar', '--hchi', and '--hag' need to have non-blank valid values. 
+
+Valid aggregation options are SUM, MEAN, MIN, MAX, WMA (weighted mean average), or NONE (no aggregation).
+
+<span style="color:blue">Example 6:</span> __Processing an image set with nested ROI postprocessing__ 
+
 ```
-nyxushie <segmentation dir> <file pattern> <channel signature> <parent channel> <child channel> <features dir> [-aggregate=<aggregation method>]
+nyxus --features=*ALL_intensity* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output/directory --filePattern=.* --csvFile=separatecsv --reduceThreads=4 --hsig=_c --hpar=1 --hchi=0 --hag=WMA 
 ```
-where 
 
-&nbsp;&nbsp;&nbsp; *\<<u>segmentation dir</u>\>* is directory of the segment images collection \
-&nbsp;&nbsp;&nbsp; *\<<u>file pattern</u>\>* is a regular expression to filter files in \<<u>segment image collection dir</u>\> \
-&nbsp;&nbsp;&nbsp; *\<<u>channel signature</u>\>* is a signature of the channel part in an image file name \
-&nbsp;&nbsp;&nbsp; *\<<u>parent channel</u>\>* is an integer channel number where parent ROIs are expected \
-&nbsp;&nbsp;&nbsp; *\<<u>child channel</u>\>* is an integer channel number where child ROIs are expected \
-&nbsp;&nbsp;&nbsp; *\<<u>features dir</u>\>* is a directory used as the output of parent-child ROI relations and, if aggregation is requested, where CSV files of Nyxus features produced with Nyxus command line option ```--csvfile=separatecsv``` is located \
-&nbsp;&nbsp;&nbsp; (optional) *\<<u>aggregation method</u>\>* is a method instructing how to aggregate child ROI features under a parent ROI. 
+As a result, 2 additional CSV files will be produced for each mask image whose channel number matches the value of option '--hpar': file 
 
-Valid aggregation method options are: SUM, MEAN, MIN, MAX, or WMA (weighted mean average).
-
-<span style="color:blue">Example 6:</span> __Processing an image set containing ROI hierarchy__ 
-
-We need to process collection of mask images located in directory "\~/data/image-collection1/seg" considering only images named "train_.*\\.tif" whose channel information begins with characters "\_ch" (\_ch0, \_ch1, etc.) telling Nyxushie to treat channel 1 images as source of parent ROIs and channel 0 images as source of child ROIs. The output directory needs to be "\~/results/result1". The command line will be
 ```
-nyxushie ~/data/image-collection1/seg train_.*\\.tif _ch 1 0 ~/results/result1
+<imagename>_nested_features.csv
+``` 
+
+where features of the detected child ROIs are laid next to their parent ROIs on same lines and auxiliary file 
+
 ```
+<imagename>_nested_relations.csv
+``` 
+
+serving as a relational table of  parent and child ROI labels within parent ROI channel image ```<imagename>```.
 
 ### Nested features Python API
 
