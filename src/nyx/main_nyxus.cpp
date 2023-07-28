@@ -55,9 +55,6 @@ int main (int argc, char** argv)
 		return 1; 
 	}
 
-	// One-time initialization
-	init_feature_buffers();
-
 	// Current time stamp #1
 	auto startTS = getTimeStr();
 	VERBOSLVL1(std::cout << "\n>>> STARTING >>> " << startTS << "\n";)
@@ -71,7 +68,7 @@ int main (int argc, char** argv)
 		theEnvironment.n_pixel_scan_threads, 
 		theEnvironment.n_reduce_threads,
 		min_online_roi_size,
-		true, // 'true' to save to csv
+		theEnvironment.useCsv, // 'true' to save to csv
 		theEnvironment.output_dir);
 
 	// Report feature extraction error, if any
@@ -113,6 +110,27 @@ int main (int argc, char** argv)
 			return 1;
 		}	
 	}
+
+	#ifdef USE_ARROW
+
+		if (theEnvironment.arrow_output_type == "ARROW" || theEnvironment.arrow_output_type == "ARROWIPC") {
+
+			theEnvironment.arrow_output.create_arrow_file(theResultsCache.get_headerBuf(),
+                                          	theResultsCache.get_stringColBuf(),
+                                          	theResultsCache.get_calcResultBuf(),
+                                          	theResultsCache.get_num_rows(),
+											theEnvironment.output_dir);
+
+		} else if (theEnvironment.arrow_output_type == "PARQUET"){
+
+			theEnvironment.arrow_output.create_parquet_file(theResultsCache.get_headerBuf(),
+                                          theResultsCache.get_stringColBuf(),
+                                          theResultsCache.get_calcResultBuf(),
+                                          theResultsCache.get_num_rows(),
+										  theEnvironment.output_dir);
+
+		} 
+	#endif 
 
 	// Current time stamp #2
 	VERBOSLVL1(std::cout << "\n>>> STARTED >>>\t" << startTS << "\n>>> FINISHED >>>\t" << getTimeStr() << "\n";)

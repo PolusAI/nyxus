@@ -44,9 +44,6 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::ini
 	if (errorCode)
 		return { 1, "Dataset structure error", 0, 0, nullptr };
 
-	// One-time initialization
-	Nyxus::init_feature_buffers();
-
 	// Process the image sdata. Upon return, global buffer 'calcResultBuf' will be filled with result data
 	errorCode = Nyxus::processDataset(
 		intensFiles,
@@ -177,18 +174,24 @@ PYBIND11_MODULE(nyx_backend, m)
 					MIN,
 					MAX,
 					RANGE,
+					COVERED_IMAGE_INTENSITY_RANGE,
 					STANDARD_DEVIATION,
 					SKEWNESS,
 					KURTOSIS,
+					EXCESS_KURTOSIS,
 					MEAN_ABSOLUTE_DEVIATION,
+					MEDIAN_ABSOLUTE_DEVIATION,
 					ENERGY,
 					ROOT_MEAN_SQUARED,
 					ENTROPY,
 					MODE,
 					UNIFORMITY,
 					P10, P25, P75, P90,
+					QCOD,
 					INTERQUARTILE_RANGE,
+					ROBUST_MEAN, 
 					ROBUST_MEAN_ABSOLUTE_DEVIATION,
+					COV,
 					WEIGHTED_CENTROID_Y,
 					WEIGHTED_CENTROID_X };
 				auto [errorCode, errorDetails, nx, ny, retbuf] = featureSetInvoker(desiredFeatures, label_path, intensity_path);

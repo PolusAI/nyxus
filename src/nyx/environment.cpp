@@ -162,7 +162,7 @@ void Environment::show_cmdline_help()
 		<< "\t" << FILEPATTERN << "=<file pattern regular expression> \n"
 		<< "\t\t\tDefault: .* \n"
 		<< "\t\t\tExample: " << FILEPATTERN << "=.* for all files, " << FILEPATTERN << "=*.tif for .tif files \n"
-		<< "\t\t" << OUTPUTTYPE << "=<separatecsv or singlecsv> \n"
+		<< "\t\t" << OUTPUTTYPE << "=<separatecsv or singlecsv for csv output. arrowipc or parquet for arrow output> \n"
 		<< "\t\t\tDefault: separatecsv \n"
 		<< "\t\t" << SEGDIR << "=<directory of segmentation images> \n"
 		<< "\t\t" << INTDIR << "=<directory of intensity images> \n"
@@ -429,28 +429,38 @@ void Environment::process_feature_list()
 		if (s == FEA_NICK_ALL_INTENSITY)
 		{
 			auto F = {
-				INTEGRATED_INTENSITY,
-				MEAN,
-				MEDIAN,
-				MIN,
-				MAX,
-				RANGE,
-				STANDARD_DEVIATION,
-				STANDARD_ERROR,
-				UNIFORMITY,
-				SKEWNESS,
-				KURTOSIS,
-				HYPERSKEWNESS,
-				HYPERFLATNESS,
-				MEAN_ABSOLUTE_DEVIATION,
+				COV,
+				COVERED_IMAGE_INTENSITY_RANGE,
 				ENERGY,
-				ROOT_MEAN_SQUARED,
 				ENTROPY,
-				MODE,
-				UNIFORMITY,
-				P01, P10, P25, P75, P90, P99,
+				EXCESS_KURTOSIS,
+				HYPERFLATNESS,
+				HYPERSKEWNESS,
+				INTEGRATED_INTENSITY,
 				INTERQUARTILE_RANGE,
-				ROBUST_MEAN_ABSOLUTE_DEVIATION };
+				KURTOSIS,
+				MAX,
+				MEAN,
+				MEAN_ABSOLUTE_DEVIATION,
+				MEDIAN,
+				MEDIAN_ABSOLUTE_DEVIATION,
+				MIN,
+				MODE,
+				P01, P10, P25, P75, P90, P99,
+				QCOD,
+				RANGE,
+				ROBUST_MEAN,
+				ROBUST_MEAN_ABSOLUTE_DEVIATION,
+				ROOT_MEAN_SQUARED,
+				SKEWNESS,
+				STANDARD_DEVIATION,
+				STANDARD_DEVIATION_BIASED,
+				STANDARD_ERROR,
+				VARIANCE,
+				VARIANCE_BIASED,
+				UNIFORMITY,
+				UNIFORMITY_PIU
+			};
 			theFeatureSet.enableFeatures(F);
 			continue;
 		}
@@ -810,12 +820,34 @@ bool Environment::parse_cmdline(int argc, char **argv)
 
 	//==== Output type
 	auto rawOutpTypeUC = Nyxus::toupper(rawOutpType);
-	if (rawOutpTypeUC != Nyxus::toupper(OT_SINGLECSV) && rawOutpTypeUC != Nyxus::toupper(OT_SEPCSV))
+	if (rawOutpTypeUC != Nyxus::toupper(OT_SINGLECSV) && 
+	    rawOutpTypeUC != Nyxus::toupper(OT_SEPCSV) && 
+		rawOutpTypeUC != Nyxus::toupper(OT_ARROW) &&
+		rawOutpTypeUC != Nyxus::toupper(OT_ARROWIPC) &&
+		rawOutpTypeUC != Nyxus::toupper(OT_PARQUET))
 	{
-		std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << " or " << OT_SINGLECSV << "\n";
+		std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << ", " << OT_SINGLECSV << ", " << OT_ARROW ", or" << OT_PARQUET << "."  "\n";
 		return false;
 	}
+
+	if (rawOutpTypeUC != Nyxus::toupper(OT_ARROW) ||
+		rawOutpTypeUC != Nyxus::toupper(OT_ARROWIPC) ||
+		rawOutpTypeUC != Nyxus::toupper(OT_PARQUET)) {
+
+		#ifdef USE_ARROW 
+			useCsv = false;
+			arrow_output_type = rawOutpTypeUC;
+		#else
+			std::cout << "Error: Nyxus must be built with Apache Arrow enabled to use Arrow output types. Please rebuild with the flag USEARROW=ON." << std::endl;
+			return false;
+		#endif
+	}
+
+	useCsv = (rawOutpTypeUC == Nyxus::toupper(OT_SINGLECSV) || rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV));
+
 	separateCsv = rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV);
+
+	
 
 	//==== Check numeric parameters
 	if (!loader_threads.empty())
@@ -1223,6 +1255,15 @@ bool Environment::parse_nested_options_raw_inputs (std::string& error_message)
 		return false;
 	}
 	return true;
+}
+
+bool Environment::arrow_is_enabled() 
+{
+	#ifdef USE_ARROW
+		return true;
+	#else
+		return false;
+	#endif
 }
 
 #ifdef USE_GPU

@@ -8,7 +8,7 @@ on:
 
 env:
   BUILD_TYPE: Release
-  PYTHON_VER: 3.7
+  PYTHON_VER: 3.8
 
 jobs:
   Build_and_Run_GTest:
@@ -26,7 +26,7 @@ jobs:
     - uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: anaconda-client-env
-        python-version: 3.7
+        python-version: 3.8
         channels: conda-forge
         auto-activate-base: false
 
@@ -35,7 +35,7 @@ jobs:
         conda install compilers=1.1.1  --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON -DRUN_GTEST=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
+      run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON -DRUN_GTEST=ON -DUSEARROW=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
 
     - name: Build
       run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}} --parallel 2
@@ -60,7 +60,7 @@ jobs:
     - uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: anaconda-client-env
-        python-version: 3.7
+        python-version: 3.8
         channels: conda-forge
         auto-activate-base: false
 
@@ -70,7 +70,7 @@ jobs:
 
     - name: Install Nyxus
       working-directory: ${{github.workspace}}
-      run: CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX" python -m pip install . -vv
+      run: CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DUSEARROW=ON" python -m pip install . -vv
 
     - name: Run PyTest
       working-directory: ${{github.workspace}}

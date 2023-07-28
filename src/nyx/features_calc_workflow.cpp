@@ -55,6 +55,7 @@ namespace Nyxus
 	// Resets the main containers
 	void clear_feature_buffers()
 	{
+		// Reset per-image buffers
 		uniqueLabels.clear();
 		roiData.clear();
 		labelMutexes.clear();
@@ -99,6 +100,7 @@ namespace Nyxus
 		r.fvals[ENERGY][0] = intensity * intensity;
 		r.aux_variance = 0.0;
 		r.fvals[MEAN_ABSOLUTE_DEVIATION][0] = 0.0;
+		r.fvals[MEDIAN_ABSOLUTE_DEVIATION][0] = 0.0;
 		// Weighted centroids x and y. 1-based for compatibility with Matlab and WNDCHRM
 		r.fvals[CENTROID_X][0] = StatsReal(x) + 1;
 		r.fvals[CENTROID_Y][0] = StatsReal(y) + 1;
@@ -108,13 +110,17 @@ namespace Nyxus
 		r.fvals[STANDARD_DEVIATION][0] = 0;
 		r.fvals[SKEWNESS][0] = 0;
 		r.fvals[KURTOSIS][0] = 0;
+		r.fvals[EXCESS_KURTOSIS][0] = 0;
 		r.fvals[ROOT_MEAN_SQUARED][0] = 0;
 		r.fvals[P10][0] = r.fvals[P25][0] = r.fvals[P75][0] = r.fvals[90][0] = 0;
 		r.fvals[INTERQUARTILE_RANGE][0] = 0;
+		r.fvals[QCOD][0] = 0;
 		r.fvals[ENTROPY][0] = 0;
 		r.fvals[MODE][0] = 0;
 		r.fvals[UNIFORMITY][0] = 0;
+		r.fvals[ROBUST_MEAN][0] = 0;
 		r.fvals[ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = 0;
+		r.fvals[COV][0] = 0;
 	}
 
 	void init_label_record_2 (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity, unsigned int tile_index)
@@ -147,15 +153,25 @@ namespace Nyxus
 
 		// Update ROI bounds
 		lr.update_aabb(x, y);
+
+		// Per-image 
+		LR::global_min_inten = std::min(LR::global_min_inten, intensity);
+		LR::global_max_inten = std::max(LR::global_max_inten, intensity);
 	}
 
 	void update_label_record_2 (LR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index)
 	{
-		// Initialize basic counters
+		// Per-ROI 
 		lr.aux_area++;
+
 		lr.aux_min = std::min(lr.aux_min, intensity);
 		lr.aux_max = std::max(lr.aux_max, intensity);
+
 		lr.update_aabb (x,y);
+
+		// Per-image
+		LR::global_min_inten = std::min(LR::global_min_inten, intensity);
+		LR::global_max_inten = std::max(LR::global_max_inten, intensity);
 	}
 
 }

@@ -62,7 +62,10 @@ public:
 	ImageMatrix aux_image_matrix;
 	size_t im_buffer_offset;
 
-	void reduce_pixel_intensity_features();
+	// Stats across ROI pixels of the whole image
+	static PixIntens global_min_inten;
+	static PixIntens global_max_inten;
+	static void reset_global_stats();
 };
 
 /// @brief Encapsulates ROI data related to ROI nesting

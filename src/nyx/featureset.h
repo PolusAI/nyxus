@@ -11,28 +11,37 @@ namespace Nyxus
 		//==== 2D features
 		
 		// Pixel intensity stats
-		INTEGRATED_INTENSITY = 0,
-		MEAN,
-		MEDIAN,
-		MIN,
-		MAX,
-		RANGE,
-		STANDARD_DEVIATION,
-		STANDARD_ERROR,
-		SKEWNESS,
-		KURTOSIS,
-		HYPERSKEWNESS,
-		HYPERFLATNESS,
-		MEAN_ABSOLUTE_DEVIATION,
+		COV = 0,	// coefficient of variation
+		COVERED_IMAGE_INTENSITY_RANGE,
 		ENERGY,
-		ROOT_MEAN_SQUARED,
 		ENTROPY,
+		EXCESS_KURTOSIS,
+		HYPERFLATNESS,
+		HYPERSKEWNESS,
+		INTEGRATED_INTENSITY,
+		INTERQUARTILE_RANGE,
+		KURTOSIS,
+		MAX,
+		MEAN,
+		MEAN_ABSOLUTE_DEVIATION,
+		MEDIAN,
+		MEDIAN_ABSOLUTE_DEVIATION,
+		MIN,
 		MODE,
+		P01, P10, P25, P75, P90, P99,
+		QCOD,	// quantile coefficient of dispersion
+		RANGE,
+		ROBUST_MEAN,
+		ROBUST_MEAN_ABSOLUTE_DEVIATION,
+		ROOT_MEAN_SQUARED,
+		SKEWNESS,
+		STANDARD_DEVIATION,
+		STANDARD_DEVIATION_BIASED,
+		STANDARD_ERROR,
+		VARIANCE, 
+		VARIANCE_BIASED,
 		UNIFORMITY,
 		UNIFORMITY_PIU,
-		P01, P10, P25, P75, P90, P99,
-		INTERQUARTILE_RANGE,
-		ROBUST_MEAN_ABSOLUTE_DEVIATION,
 
 		// Morphology:
 		AREA_PIXELS_COUNT,
@@ -414,21 +423,30 @@ public:
 			m_enabledFeatures[MIN] =
 			m_enabledFeatures[MAX] =
 			m_enabledFeatures[RANGE] =
+			m_enabledFeatures[COVERED_IMAGE_INTENSITY_RANGE] =
 			m_enabledFeatures[STANDARD_DEVIATION] =
 			m_enabledFeatures[SKEWNESS] =
 			m_enabledFeatures[KURTOSIS] =
+			m_enabledFeatures[EXCESS_KURTOSIS] =
 			m_enabledFeatures[MEAN_ABSOLUTE_DEVIATION] =
+			m_enabledFeatures[MEDIAN_ABSOLUTE_DEVIATION] =
 			m_enabledFeatures[ENERGY] =
 			m_enabledFeatures[ROOT_MEAN_SQUARED] =
 			m_enabledFeatures[ENTROPY] =
 			m_enabledFeatures[MODE] =
 			m_enabledFeatures[UNIFORMITY] =
 			m_enabledFeatures[P10] = m_enabledFeatures[P25] = m_enabledFeatures[P75] = m_enabledFeatures[P90] =
+			m_enabledFeatures[QCOD] =
 			m_enabledFeatures[INTERQUARTILE_RANGE] =
+			m_enabledFeatures[ROBUST_MEAN] = 
 			m_enabledFeatures[ROBUST_MEAN_ABSOLUTE_DEVIATION] =
+			m_enabledFeatures[COV] =
 			m_enabledFeatures[WEIGHTED_CENTROID_Y] =
 			m_enabledFeatures[WEIGHTED_CENTROID_X] =
-			m_enabledFeatures[MASS_DISPLACEMENT] = true;
+			m_enabledFeatures[MASS_DISPLACEMENT] =
+			m_enabledFeatures[STANDARD_DEVIATION_BIASED] = 			
+			m_enabledFeatures[VARIANCE] =			
+			m_enabledFeatures[VARIANCE_BIASED] = true;
 	}
 	void enableBoundingBox() {
 		enableAll(false);

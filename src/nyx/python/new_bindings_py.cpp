@@ -13,6 +13,23 @@
 #include "../nested_feature_aggregation.h"
 #include "../features/gabor.h"
 
+#ifdef USE_ARROW
+    #include "../output_writers.h" 
+
+    #include "../arrow_output.h"
+
+    #include <arrow/python/pyarrow.h>
+    #include <arrow/table.h>
+
+    #include <arrow/python/platform.h>
+
+    #include <arrow/python/datetime.h>
+    #include <arrow/python/init.h>
+    #include <arrow/python/pyarrow.h>
+
+    #include "table_caster.h"
+#endif
+
 namespace py = pybind11;
 using namespace Nyxus;
 
@@ -118,7 +135,8 @@ void set_environment_params_imp (
 py::tuple featurize_directory_imp (
     const std::string &intensity_dir,
     const std::string &labels_dir,
-    const std::string &file_pattern)
+    const std::string &file_pattern,
+    bool pandas_output=true)
 {
     theEnvironment.intensity_dir = intensity_dir;
     theEnvironment.labels_dir = labels_dir;
@@ -139,9 +157,7 @@ py::tuple featurize_directory_imp (
         intensFiles, labelFiles);
 
     if (errorCode)
-        throw std::runtime_error("Dataset structure error.");
-
-    init_feature_buffers();
+       throw std::runtime_error("Dataset structure error.");
 
     theResultsCache.clear();
 
@@ -160,21 +176,36 @@ py::tuple featurize_directory_imp (
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing.");
 
-    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
-    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
-    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
-    auto nRows = theResultsCache.get_num_rows();
-    pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
-    pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+    if (pandas_output) {
 
-    return py::make_tuple(pyHeader, pyStrData, pyNumData);
+    #ifdef USE_ARROW
+        // Get by value to preserve buffers for writing to arrow
+        auto pyHeader = py::array(py::cast(theResultsCache.get_headerBufByVal()));
+        auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBufByVal()));
+        auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBufByVal()));
+    #else 
+        auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
+        auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
+        auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+    #endif
+        auto nRows = theResultsCache.get_num_rows();
+        pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
+        pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+
+        return py::make_tuple(pyHeader, pyStrData, pyNumData);
+    
+    } 
+
+    // Return "nothing" when output will be an Arrow format
+    return py::make_tuple();
 }
 
 py::tuple featurize_montage_imp (
     const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intensity_images,
     const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images,
     const std::vector<std::string>& intensity_names,
-    const std::vector<std::string>& label_names)
+    const std::vector<std::string>& label_names,
+    bool pandas_output=true)
 {  
     
     auto intens_buffer = intensity_images.request();
@@ -202,6 +233,7 @@ py::tuple featurize_montage_imp (
     theEnvironment.intensity_dir = "__NONE__";
     theEnvironment.labels_dir = "__NONE__";
 
+    // One-time initialization
     init_feature_buffers();
 
     theResultsCache.clear();
@@ -219,18 +251,31 @@ py::tuple featurize_montage_imp (
     if (errorCode)
         throw std::runtime_error("Error #" + std::to_string(errorCode) + " " + error_message + " occurred during dataset processing.");
 
-    
-    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
-    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
-    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
-    auto nRows = theResultsCache.get_num_rows();
-    pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
-    pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+    if (pandas_output) {
 
-    return py::make_tuple(pyHeader, pyStrData, pyNumData, error_message);
+        #ifdef USE_ARROW
+            // Get by value to preserve buffers for writing to arrow
+            auto pyHeader = py::array(py::cast(theResultsCache.get_headerBufByVal()));
+            auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBufByVal()));
+            auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBufByVal()));
+        #else 
+            auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
+            auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
+            auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+        #endif
+            auto nRows = theResultsCache.get_num_rows();
+            pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
+            pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+
+        return py::make_tuple(pyHeader, pyStrData, pyNumData, error_message);
+    
+    } 
+
+    // Return "nothing" when output will be an Arrow format
+    return py::make_tuple(error_message);
 }
 
-py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames)
+py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames, bool pandas_output=true)
 {
     std::vector<std::string> intensFiles, labelFiles;
     for (auto it = int_fnames.begin(); it != int_fnames.end(); ++it)
@@ -268,8 +313,6 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
         }
     }
 
-    init_feature_buffers();
-
     theResultsCache.clear();
 
     // Process the image sdata
@@ -286,14 +329,28 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing.");
 
-    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
-    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
-    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
-    auto nRows = theResultsCache.get_num_rows();
-    pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
-    pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+    if (pandas_output) {
 
-    return py::make_tuple(pyHeader, pyStrData, pyNumData);
+        #ifdef USE_ARROW
+            // Get by value to preserve buffers for writing to arrow
+            auto pyHeader = py::array(py::cast(theResultsCache.get_headerBufByVal()));
+            auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBufByVal()));
+            auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBufByVal()));
+        #else 
+            auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
+            auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
+            auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+        #endif
+            auto nRows = theResultsCache.get_num_rows();
+            pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
+            pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+
+            return py::make_tuple(pyHeader, pyStrData, pyNumData);
+        
+    } 
+
+    // Return "nothing" when output will be an Arrow format
+    return py::make_tuple();
 }
 
 py::tuple findrelations_imp(
@@ -314,9 +371,16 @@ py::tuple findrelations_imp(
     if (! mineOK)
         throw std::runtime_error("Error occurred during dataset processing: mine_segment_relations() returned false");
     
-    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf())); // Column names
-    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf())); // String cells of first n columns
-    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));  // Numeric data
+#ifdef USE_ARROW
+    // Get by value to preserve buffers for writing to arrow
+    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBufByVal()));
+    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBufByVal()));
+    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBufByVal()));
+#else 
+    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
+    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
+    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+#endif
     auto nRows = theResultsCache.get_num_rows();
     pyStrData = pyStrData.reshape({ nRows, pyStrData.size() / nRows });
     pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
@@ -440,10 +504,155 @@ std::map<std::string, ParameterTypes> get_params_imp(const std::vector<std::stri
 
 }
 
+///
+/// The following code block is a quick & simple manual test of the Python interface 
+/// invokable from from the command line. It lets you bypass building and installing the Python library.
+/// To use it, 
+///     #define TESTING_PY_INTERFACE, 
+///     exclude file main_nyxus.cpp from build, and 
+///     rebuild the CLI target.
+/// 
+#ifdef TESTING_PY_INTERFACE
+//
+// Testing Python interface
+//
+void initialize_environment(
+    const std::vector<std::string>& features,
+    int neighbor_distance,
+    float pixels_per_micron,
+    uint32_t coarse_gray_depth,
+    uint32_t n_reduce_threads,
+    uint32_t n_loader_threads);
+
+py::tuple featurize_directory_imp(
+    const std::string& intensity_dir,
+    const std::string& labels_dir,
+    const std::string& file_pattern);
+
+int main(int argc, char** argv)
+{
+    std::cout << "main() \n";
+
+    // Test feature extraction
+    
+    //  initialize_environment({ "*ALL*" }, 5, 120, 1, 1);
+    //
+    //  py::tuple result = featurize_directory_imp(
+    //      "C:\\WORK\\AXLE\\data\\mini\\int", // intensity_dir,
+    //      "C:\\WORK\\AXLE\\data\\mini\\seg", // const std::string & labels_dir,
+    //      "p0_y1_r1_c0\\.ome\\.tif"); // const std::string & file_pattern
+
+    // Test nested segments functionality
+
+    py::tuple result = findrelations_imp(
+        "C:\\WORK\\AXLE\\data\\mini\\seg",  // label_dir, 
+        ".*", // file_pattern,
+        "_c", // channel_signature, 
+        "1", // parent_channel, 
+        "0"); // child_channel
+
+    std::cout << "finishing \n";
+}
+
+#endif
+
+
+void create_arrow_file_imp(const std::string& arrow_file_path="") {
+
+#ifdef USE_ARROW
+
+    return theEnvironment.arrow_output.create_arrow_file(theResultsCache.get_headerBuf(),
+                                          theResultsCache.get_stringColBuf(),
+                                          theResultsCache.get_calcResultBuf(),
+                                          theResultsCache.get_num_rows(),
+                                          arrow_file_path);
+
+#else
+    
+    throw std::runtime_error("Arrow functionality is not available. Rebuild Nyxus with Arrow enabled.");
+
+#endif
+
+}
+
+std::string get_arrow_file_imp() {
+#ifdef USE_ARROW
+
+    return theEnvironment.arrow_output.get_arrow_file();
+
+#else
+    
+    throw std::runtime_error("Arrow functionality is not available. Rebuild Nyxus with Arrow enabled.");
+
+#endif
+}
+
+void create_parquet_file_imp(std::string& parquet_file_path) {
+
+#ifdef USE_ARROW
+
+    return theEnvironment.arrow_output.create_parquet_file(theResultsCache.get_headerBuf(),
+                                            theResultsCache.get_stringColBuf(),
+                                            theResultsCache.get_calcResultBuf(),
+                                            theResultsCache.get_num_rows(),
+                                            parquet_file_path);
+
+#else
+    
+    throw std::runtime_error("Arrow functionality is not available. Rebuild Nyxus with Arrow enabled.");
+
+#endif
+}
+
+std::string get_parquet_file_imp() {
+
+#ifdef USE_ARROW
+
+    return theEnvironment.arrow_output.get_parquet_file();
+
+#else
+    
+    throw std::runtime_error("Arrow functionality is not available. Rebuild Nyxus with Arrow enabled.");
+
+#endif
+}
+
+#ifdef USEARROW
+
+std::shared_ptr<arrow::Table> get_arrow_table_imp() {
+
+    return theEnvironment.arrow_output.get_arrow_table(theResultsCache.get_headerBuf(),
+                                                       theResultsCache.get_stringColBuf(),
+                                                       theResultsCache.get_calcResultBuf(),
+                                                       theResultsCache.get_num_rows());
+}
+
+#else
+
+void get_arrow_table_imp() {
+    throw std::runtime_error("Arrow functionality is not available. Rebuild Nyxus with Arrow enabled.");
+}
+
+#endif
+
+bool arrow_is_enabled_imp() {
+    return theEnvironment.arrow_is_enabled();
+}
+
 PYBIND11_MODULE(backend, m)
 {
-    m.doc() = "Nyxus";
 
+#ifdef USE_ARROW
+    Py_Initialize();
+
+    int success = arrow::py::import_pyarrow();
+
+    if (success != 0) {
+        throw std::runtime_error("Error initializing pyarrow.");
+    } 
+#endif
+    m.doc() = "Nyxus";
+    
     m.def("initialize_environment", &initialize_environment, "Environment initialization");
     m.def("featurize_directory_imp", &featurize_directory_imp, "Calculate features of images defined by intensity and mask image collection directories");
     m.def("featurize_montage_imp", &featurize_montage_imp, "Calculate features of images defined by intensity and mask image collection directories");
@@ -459,6 +668,12 @@ PYBIND11_MODULE(backend, m)
     m.def("set_if_ibsi_imp", &set_if_ibsi_imp, "Set if the features will be ibsi compliant");
     m.def("set_environment_params_imp", &set_environment_params_imp, "Set the environment variables of Nyxus");
     m.def("get_params_imp", &get_params_imp, "Get parameters of Nyxus");
+    m.def("create_arrow_file_imp", &create_arrow_file_imp, "Creates an arrow file for the feature calculations");
+    m.def("get_arrow_file_imp", &get_arrow_file_imp, "Get path to arrow file");
+    m.def("get_parquet_file_imp", &get_parquet_file_imp, "Returns path to parquet file");
+    m.def("create_parquet_file_imp", &create_parquet_file_imp, "Create parquet file for the features calculations");
+    m.def("get_arrow_table_imp", &get_arrow_table_imp, py::call_guard<py::gil_scoped_release>());
+    m.def("arrow_is_enabled_imp", &arrow_is_enabled_imp, "Check if arrow is enabled.");
 }
 
 ///

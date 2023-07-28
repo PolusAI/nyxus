@@ -207,8 +207,12 @@ namespace Nyxus
 			Stopwatch::reset();
 		#endif		
 			
+		// One-time initialization
+		init_feature_buffers();
+
 		bool ok = true;
 
+		// Iterate file pattern-filtered images of the dataset
 		auto nf = intensFiles.size();
 		for (int i = 0; i < nf; i++)
 		{
