@@ -38,8 +38,6 @@ public:
 	bool caching_permitted();
 	void clear_pixels_cache();
 
-	std::string segFname, intFname;	// Full paths
-
 	bool blacklisted = false;
 
 	std::vector <Pixel2> raw_pixels;
@@ -70,3 +68,18 @@ public:
 	static void reset_global_stats();
 };
 
+/// @brief Encapsulates ROI data related to ROI nesting
+class NestedLR: public BasicLR
+{
+public:
+	NestedLR(const LR& r) 
+	{
+		this->aabb = r.aabb;
+		this->label = r.label;
+		this->segFname = r.segFname;
+		this->intFname = r.intFname;
+	}
+	NestedLR() {}
+	std::vector<int> children;
+	std::string segFname;
+};

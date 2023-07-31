@@ -50,6 +50,15 @@ public:
 		return {bb.get_xmin(), bb.get_ymin(), bb.get_xmax(), bb.get_ymax()};
 	}
 
+	inline bool contains(const AABB& other)
+	{
+		bool retval = get_xmin() <= other.get_xmin() &&
+			get_xmax() >= other.get_xmax() &&
+			get_ymin() <= other.get_ymin() &&
+			get_ymax() >= other.get_ymax();
+		return retval;
+	}
+
 private:
 	StatsInt xmin = INT32_MAX, xmax = INT32_MIN, ymin = INT32_MAX, ymax = INT32_MIN;
 };

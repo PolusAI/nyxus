@@ -222,6 +222,13 @@ void Environment::show_cmdline_help()
 		<< "\t\t" << OPT << GABOR_THRESHOLD << "=<lower threshold of the filtered image to baseline ratio> \n"
 		<< "\t\t\tDefault: 0.025 \n";
 
+	std::cout << "\t\t" << OPT << NESTEDROI_CHNL_SIGNATURE << "=<comma separated denominators of \\pi> \n"
+		<< "\t\t" << OPT << NESTEDROI_PARENT_CHNL << "=<number of the parent channel e.g. 1\n"
+		<< "\t\t" << OPT << NESTEDROI_CHILD_CHNL << "=<number of the child channel e.g. 0\n"
+		<< "\t\t" << OPT << NESTEDROI_AGGREGATION_METHOD << "=<SUM, MEAN, MIN, MAX, WMA, or NONE>\n"
+		<< ""
+		<< "\t\t\tDefault: 0.1 \n";
+
 	std::cout << "\n"
 		<< "\tnyxus -h\tDisplay help info\n"
 		<< "\tnyxus --help\tDisplay help info\n";
@@ -731,7 +738,11 @@ bool Environment::parse_cmdline(int argc, char **argv)
 				find_string_argument(i, GABOR_KERSIZE, gaborOptions.rawKerSize) ||
 				find_string_argument(i, GABOR_F0, gaborOptions.rawF0) ||
 				find_string_argument(i, GABOR_THETA, gaborOptions.rawTheta) ||
-				find_string_argument(i, GABOR_THRESHOLD, gaborOptions.rawGrayThreshold) 
+				find_string_argument(i, GABOR_THRESHOLD, gaborOptions.rawGrayThreshold)
+				|| find_string_argument(i, NESTEDROI_CHNL_SIGNATURE, nestedOptions.rawChannelSignature)
+				|| find_string_argument(i, NESTEDROI_PARENT_CHNL, nestedOptions.rawParentChannelNo)
+				|| find_string_argument(i, NESTEDROI_CHILD_CHNL, nestedOptions.rawChildChannelNo)
+				|| find_string_argument(i, NESTEDROI_AGGREGATION_METHOD, nestedOptions.rawAggregationMethod)
 
 				#ifdef CHECKTIMING
 					|| find_string_argument(i, EXCLUSIVETIMING, rawExclusiveTiming)
@@ -962,7 +973,7 @@ bool Environment::parse_cmdline(int argc, char **argv)
 		if (!this->parse_roi_blacklist_raw_string (rawBlacklistedRois, ermsg))
 		{
 			std::cerr << ermsg << "\n";
-			return 1;
+			return false;
 		}
 	}
 
@@ -973,7 +984,18 @@ bool Environment::parse_cmdline(int argc, char **argv)
 		if (!this->parse_gabor_options_raw_inputs (ermsg))
 		{
 			std::cerr << ermsg << "\n";
-			return 1;
+			return false;
+		}
+	}
+
+	//==== Parse nested ROI options
+	if (!nestedOptions.empty())
+	{
+		std::string ermsg;
+		if (!this->parse_nested_options_raw_inputs (ermsg))
+		{
+			std::cerr << ermsg << "\n";
+			return false;
 		}
 	}
 
@@ -1225,8 +1247,18 @@ bool Environment::parse_gabor_options_raw_inputs (std::string& error_message)
 	return true;
 }
 
+bool Environment::parse_nested_options_raw_inputs (std::string& error_message)
+{
+	if (!nestedOptions.parse_input())
+	{
+		error_message = nestedOptions.get_last_er_msg();
+		return false;
+	}
+	return true;
+}
 
-bool Environment::arrow_is_enabled() {
+bool Environment::arrow_is_enabled() 
+{
 	#ifdef USE_ARROW
 		return true;
 	#else

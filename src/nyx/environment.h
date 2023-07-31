@@ -6,6 +6,7 @@
 #include "environment_basic.h"
 #include "roi_blacklist.h"
 #include "cli_gabor_options.h"
+#include "cli_nested_roi_options.h"
 
 #ifdef USE_ARROW
 	#include "output_writers.h"
@@ -58,6 +59,12 @@
 #define GABOR_F0 "--gaborf0"			// Example: "0.1"
 #define GABOR_THETA "--gabortheta"		// Example: "60"
 #define GABOR_THRESHOLD "--gaborthold"	// Example: "0.025"
+
+// Nested ROI functionality
+#define NESTEDROI_CHNL_SIGNATURE "--hsig"		// Channel signature Example: "_c" in "p0_y1_r1_c1.ome.tiff"
+#define NESTEDROI_PARENT_CHNL "--hpar"			// Channel number that should be used as a provider of parent segments. Example: --hpar=1
+#define NESTEDROI_CHILD_CHNL "--hchi"			// Channel number that should be used as a provider of child segments. Example: --hchi=0
+#define NESTEDROI_AGGREGATION_METHOD "--hag"	// How to aggregate features of segments recognized as children of same parent segment. See class NestedRoiOptions for options.
 
 // Feature group nicknames. Each nickname should be used twice - 
 // in Nyxus::parse_delimited_string_list_to_features() 
@@ -187,6 +194,11 @@ public:
 	bool parse_gabor_options_raw_inputs (std::string& error_message);
 	GaborOptions gaborOptions;
 
+	// implementation of nested ROI options
+	bool parse_nested_options_raw_inputs (std::string& error_message);
+	NestedRoiOptions nestedOptions;
+  
+  // implementation of Apache options
 	bool arrow_is_enabled();
 
 private:

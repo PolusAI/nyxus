@@ -14,6 +14,10 @@
 #include "results_cache.h"
 #include "roi_cache.h"
 
+#include "nested_feature_aggregation.h" // Nested ROI
+
+#include "cli_nested_roi_options.h"
+
 #ifdef WITH_PYTHON_H
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -46,7 +50,9 @@ namespace Nyxus
 #endif
 
 	// 2 scenarios of saving a result of feature calculation of a label-intensity file pair: saving to a CSV-file and saving to a matrix to be later consumed by a Python endpoint
-	bool save_features_2_csv (std::string intFpath, std::string segFpath, std::string outputDir);
+	std::string get_feature_output_fname(const std::string& intFpath, const std::string& segFpath);
+	extern const std::vector<std::string> mandatory_output_columns;
+	bool save_features_2_csv (const std::string & intFpath, const std::string & segFpath, const std::string & outputDir);
 	bool save_features_2_buffer (ResultsCache& results_cache);		
 
 	void init_feature_buffers();
@@ -98,5 +104,22 @@ namespace Nyxus
 	// System resources
 	unsigned long long getAvailPhysMemory();
 
+	// Nested ROI
+
+	using NestableRois = std::unordered_map<int, NestedLR>;
+	extern std::unordered_map <std::string, NestableRois> nestedRoiData;
+	void save_nested_roi_info(std::unordered_map <std::string, NestableRois>& dst_nestedRoiData, const std::unordered_set<int>& src_labels, std::unordered_map <int, LR>& src_roiData);
+
+	bool mine_segment_relations2(
+		const std::vector <std::string>& label_files,
+		const std::string& file_pattern,
+		const std::string& channel_signature,
+		const int parent_channel,
+		const int child_channel,
+		const std::string& outdir,
+		const NestedRoiOptions::Aggregations& aggr,
+		int verbosity_level);
+
 } // namespace Nyxus
+
 

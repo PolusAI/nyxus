@@ -122,6 +122,13 @@ namespace Nyxus
 		return s_uppr;
 	}
 
+	// File path manipulation
+	inline std::string baseFname (const std::string & fpath)
+	{
+		std::string baseFN = fpath.substr (fpath.find_last_of("/\\") + 1);
+		return baseFN;
+	}
+
 	// Geometry
 	inline double angle(const double x1, const double y1, double x2, const double y2)
 	{

@@ -32,7 +32,7 @@ or
 conda install nyxus -c conda-forge
 ```
 
-Usage is very straightforward. Given `intensities` and `labels` folders, Nyxus pairs up intensity-label pairs and extracts features from all of them. A summary of the avaialble feature are [listed below](#available-features).
+Usage is very straightforward. Given `intensities` and `labels` folders, Nyxus pairs up intensity-label images and extracts features from all of them. A summary of the avaialble feature are [listed below](#available-features).
 
 ```python 
 from nyxus import Nyxus
@@ -42,7 +42,7 @@ maskDir = "/path/to/images/labels/"
 features = nyx.featurize_directory (intensityDir, maskDir)
 ```
 
-Alternatively, Nyxus can process explicitly defined pairs of intensity-mask images, for example image "i1" with mask "m1" and image "i2" with mask "m2":
+Alternatively, Nyxus can process explicitly defined pairs of intensity-mask images thus specifying custom 1:N and M:N mapping between label and intensity image files. The following example extracts features from intensity images 'i1', 'i2', and 'i3' related with mask images 'm1' and 'm2' via a custom mapping:
 
 ```python 
 from nyxus import Nyxus
@@ -50,10 +50,12 @@ nyx = Nyxus(["*ALL*"])
 features = nyx.featurize_files(
     [
         "/path/to/images/intensities/i1.ome.tif", 
-        "/path/to/images/intensities/i2.ome.tif"
+        "/path/to/images/intensities/i2.ome.tif",
+        "/path/to/images/intensities/i3.ome.tif" 
     ], 
     [
         "/path/to/images/labels/m1.ome.tif", 
+        "/path/to/images/labels/m2.ome.tif",
         "/path/to/images/labels/m2.ome.tif"
     ])
 ```
@@ -107,13 +109,12 @@ The `features` variable is a Pandas dataframe similar to what is shown below.
 | ... | ...           | ...             |   ... | ...     |  ...     |...|   ...      |
 |  14 | Segmentation2 | Intensity2      |     6 | 54573.3 |  54573.3 |...|   0.980769 |
 
-Note that in this case, default names were provided for the `mask_image` and `intensity_image` columns. To supply names 
-for these columns, the optional arguments `intensity_names` and `label_names` are used by passing lists of names in. 
-The length of the lists must be the same as the length of the mask and intensity arrays. To name the images, use
+Note that in this case, default names of virtual image files were provided for the `mask_image` and `intensity_image` columns. To override default names 'Intensity<k>' and 'Segmentation<k>' appearing in these columns, the optional arguments `intensity_names` and `label_names` are used by passing lists of names in. 
+The length of the lists must be the same as the length of the mask and intensity arrays. The following example sets mask and intensity images in the output to desired values:
 
 ```python 
-intens_names = ['custom_intens_name1', 'custom_intens_name2']
-seg_names = ['custom_seg_name1', 'custom_seg_name2']
+intens_names = ['int1', 'int2']
+seg_names = ['seg1', 'seg2']
 features = nyx.featurize(intens, seg, intens_name, seg_name)
 ```
 
@@ -121,12 +122,12 @@ The `features` variable will now use the custom names, as shown below
 
 |     | mask_image       | intensity_image          | label | MEAN    |   MEDIAN |...|    GABOR_6 |
 |----:|:-----------------|:-------------------------|------:|--------:|---------:|--:|-----------:|
-|   0 | custom_seg_name1 | custom_intens_name1      |     1 | 45366.9 |  46887   |...|   0.873016 |
-|   1 | custom_seg_name1 | custom_intens_name1      |     2 | 27122.8 |  27124.5 |...|   1.000000 |
-|   2 | custom_seg_name1 | custom_intens_name1      |     3 | 34777.4 |  33659   |...|   0.942857 |
-|   3 | custom_seg_name1 | custom_intens_name1      |     4 | 35808.2 |  36924   |...|   0.824074 |
+|   0 | seg1 | int1      |     1 | 45366.9 |  46887   |...|   0.873016 |
+|   1 | seg1 | int1      |     2 | 27122.8 |  27124.5 |...|   1.000000 |
+|   2 | seg1 | int1      |     3 | 34777.4 |  33659   |...|   0.942857 |
+|   3 | seg1 | int1      |     4 | 35808.2 |  36924   |...|   0.824074 |
 | ... | ...              | ...                      |   ... | ...     |  ...     |...|   ...      |
-|  14 | custom_seg_name2 | custom_intens_name2      |     6 | 54573.3 |  54573.3 |...|   0.980769 |
+|  14 | seg2 | int2      |     6 | 54573.3 |  54573.3 |...|   0.980769 |
 
 
 For more information on all of the available options and features, check out [the documentation](#).
@@ -378,6 +379,10 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 --reduceThreads | (optional) Number of CPU threads used on the feature calculation step. Default: '--reduceThreads=1' | integer
 --skiproi | (optional) Skip ROIs having specified labels. Example: '--skiproi=image1.tif:2,3,4;image2.tif:45,56' | string
 --tempDir | (optional) Directory used by temporary out-of-RAM objects. Default value: system temporary directory | path
+--hsig | (optional) Channel signature Example: "--hsig=_c" to match images whose file names have channel info starting substring '_c' like in 'p0_y1_r1_c1.ome.tiff' | string
+--hpar | (optional) Channel number that should be used as a provider of parent segments. Example: '--hpar=1' | integer
+--hchi | (optional) Channel number that should be used as a provider of child segments. Example: '--hchi=0' | integer
+--hag | (optional) Name of a method how to aggregate features of segments recognized as children of same parent segment. Valid options are 'SUM', 'MEAN', 'MIN', 'MAX', 'WMA' (weighted mean average), and 'NONE' (no aggregation, instead, same parent child segments will be laid out horizontally) | string
 --arrowOutputType | (optional) Type of Arrow file to write the feature results to. Current options are `arrow` for Arrow IPC or `parquet` for Parquet | string
 
 ---
@@ -463,30 +468,31 @@ features = nyx.featurize_directory (intensity_dir="/path/to/intensity/images", l
 
 See also methods __clear_roi_blacklist()__ and __roi_blacklist_get_summary()__ .
 
-## Nested features 
+## Nested ROIs 
 
-A separate command line executable __nyxushie__ for the hierarchical ROI analysis by finding nested ROIs and aggregating features of child ROIs within corresponding parent features is available. Its command line format is:
+Hierarchical ROI analysis in a form of finding ROIs nested geometrically as nested AABBs and aggregating features of child ROIs within corresponding parent is available as an optional extra step after the feature extraction of the whole image set is finished. To enable this step, all the command line options '--hsig', '--hpar', '--hchi', and '--hag' need to have non-blank valid values. 
+
+Valid aggregation options are SUM, MEAN, MIN, MAX, WMA (weighted mean average), or NONE (no aggregation).
+
+<span style="color:blue">Example 6:</span> __Processing an image set with nested ROI postprocessing__ 
+
 ```
-nyxushie <segmentation dir> <file pattern> <channel signature> <parent channel> <child channel> <features dir> [-aggregate=<aggregation method>]
+nyxus --features=*ALL_intensity* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output/directory --filePattern=.* --csvFile=separatecsv --reduceThreads=4 --hsig=_c --hpar=1 --hchi=0 --hag=WMA 
 ```
-where 
 
-&nbsp;&nbsp;&nbsp; *\<<u>segmentation dir</u>\>* is directory of the segment images collection \
-&nbsp;&nbsp;&nbsp; *\<<u>file pattern</u>\>* is a regular expression to filter files in \<<u>segment image collection dir</u>\> \
-&nbsp;&nbsp;&nbsp; *\<<u>channel signature</u>\>* is a signature of the channel part in an image file name \
-&nbsp;&nbsp;&nbsp; *\<<u>parent channel</u>\>* is an integer channel number where parent ROIs are expected \
-&nbsp;&nbsp;&nbsp; *\<<u>child channel</u>\>* is an integer channel number where child ROIs are expected \
-&nbsp;&nbsp;&nbsp; *\<<u>features dir</u>\>* is a directory used as the output of parent-child ROI relations and, if aggregation is requested, where CSV files of Nyxus features produced with Nyxus command line option ```--csvfile=separatecsv``` is located \
-&nbsp;&nbsp;&nbsp; (optional) *\<<u>aggregation method</u>\>* is a method instructing how to aggregate child ROI features under a parent ROI. 
+As a result, 2 additional CSV files will be produced for each mask image whose channel number matches the value of option '--hpar': file 
 
-Valid aggregation method options are: SUM, MEAN, MIN, MAX, or WMA (weighted mean average).
-
-<span style="color:blue">Example 6:</span> __Processing an image set containing ROI hierarchy__ 
-
-We need to process collection of mask images located in directory "\~/data/image-collection1/seg" considering only images named "train_.*\\.tif" whose channel information begins with characters "\_ch" (\_ch0, \_ch1, etc.) telling Nyxushie to treat channel 1 images as source of parent ROIs and channel 0 images as source of child ROIs. The output directory needs to be "\~/results/result1". The command line will be
 ```
-nyxushie ~/data/image-collection1/seg train_.*\\.tif _ch 1 0 ~/results/result1
+<imagename>_nested_features.csv
+``` 
+
+where features of the detected child ROIs are laid next to their parent ROIs on same lines and auxiliary file 
+
 ```
+<imagename>_nested_relations.csv
+``` 
+
+serving as a relational table of  parent and child ROI labels within parent ROI channel image ```<imagename>```.
 
 ### Nested features Python API
 

@@ -17,6 +17,9 @@ namespace Nyxus
 	size_t zero_background_area;
 	std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
 
+	// Nested ROI
+	std::unordered_map <std::string, NestableRois> nestedRoiData;
+
 	// Features
 	FeatureSet theFeatureSet;
 	FeatureManager theFeatureMgr;

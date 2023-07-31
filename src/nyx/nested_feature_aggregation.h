@@ -70,17 +70,17 @@ public:
 		switch (method)
 		{
 		case Nyxus::AvailableChildFeatureAggregations::aNONE:	return "NONE";
-		case Nyxus::AvailableChildFeatureAggregations::aSUM:		return "SUM";
+		case Nyxus::AvailableChildFeatureAggregations::aSUM:	return "SUM";
 		case Nyxus::AvailableChildFeatureAggregations::aMEAN:	return "MEAN";
-		case Nyxus::AvailableChildFeatureAggregations::aMIN:		return "MIN";
-		case Nyxus::AvailableChildFeatureAggregations::aMAX:		return "MAX";
-		case Nyxus::AvailableChildFeatureAggregations::aWMA:		return "WMA";
+		case Nyxus::AvailableChildFeatureAggregations::aMIN:	return "MIN";
+		case Nyxus::AvailableChildFeatureAggregations::aMAX:	return "MAX";
+		case Nyxus::AvailableChildFeatureAggregations::aWMA:	return "WMA";
 		}
 		return "UNKNOWN";
 	}
 
 private:
-	Nyxus::AvailableChildFeatureAggregations method = Nyxus::AvailableChildFeatureAggregations::aNONE;
+	Nyxus::AvailableChildFeatureAggregations method;
 	std::string option_name;	// initialized via constructor
 
 	bool find_string_argument(std::string& raw, const char* arg, std::string& arg_value)
