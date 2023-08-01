@@ -1,7 +1,7 @@
 {
   "name": "Nyxus",
-  "version": "0.4.1",
-  "containerId": "polusai/nyxus:0.4.2",
+  "version": "0.7.0",
+  "containerId": "polusai/nyxus:0.7.0",
   "title": "Nyxus feature extraction",
   "description": "Nyxus feature extractor",
   "author": "friskluft + hsidky",
@@ -1123,13 +1123,15 @@
       "required": true
     },
     {
-      "name": "csvFile",
-      "description": "csvfile : singlecsv for saving values in one csv file and separate csv to save values for each image in separate csv file",
+      "name": "outputType",
+      "description": "outputType : singlecsv for saving values in one csv file and separate csv to save values for each image in separate csv file, arrow and parquet for saving in those file formats respectively",
       "type": "enum",
       "options": {
         "values": [
           "singlecsv",
-          "separatecsv"
+          "separatecsv",
+          "arrow", 
+          "parquet"
         ]
       },
       "required": true
@@ -1187,9 +1189,9 @@
       "description": "Select features"
     },
     {
-      "key": "inputs.csvFile",
-      "title": "Output csv file",
-      "description": "Save csv file separately for each image or one csv file for all images"
+      "key": "inputs.outputType",
+      "title": "Output file type",
+      "description": "Save csv file separately for each image or one csv file for all images. Alternatively, outuput can be written as arrow or parquet file"
     },
     {
       "key": "inputs.embeddedpixelsize",

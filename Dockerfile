@@ -17,10 +17,8 @@ COPY ${LIB_LOCATION}/*.so* ${LIB_DIR}/
 
 #Copy executable
 COPY nyxus ${EXEC_DIR}/
-COPY nyxushie ${EXEC_DIR}/
 
 RUN chmod +x ${EXEC_DIR}/nyxus
-RUN chmod +x ${EXEC_DIR}/nyxushie
 
 WORKDIR ${EXEC_DIR}
 
