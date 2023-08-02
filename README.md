@@ -363,7 +363,7 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 
 | <div style="width:150px">Parameter</div> | Description | Type |
 |------|-------------|------|
---csvFile | Save csv file as one csv file for all the images or separate csv file for each image. Acceptable values: 'separatecsv' and 'singlecsv'. Default value: '--csvFile=separatecsv' | string constant
+--outputType | Output type for feature values (speratecsv, singlecsv, arrow, parquet). Default value: '--outputType=separatecsv' | string constant
 --features | String constant or comma-seperated list of constants requesting a group of features or particular feature. Default value: '--features=\*ALL\*' | string
 --filePattern | Regular expression to match image files in directories specified by parameters '--intDir' and '--segDir'. To match all the files, use '--filePattern=.\*' | string
 --intDir | Directory of intensity image collection | path
@@ -393,26 +393,26 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 
 Suppose we need to process intensity/mask images of channel 1 :
 ```    
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.*_c1\.ome\.tif --csvFile=singlecsv 
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.*_c1\.ome\.tif --outputType=singlecsv 
 ```
 <span style="color:blue">Example 2:</span> __Running Nyxus to process specific image__
 
 Suppose we need to process intensity/mask file p1_y2_r68_c1.ome.tif :
 ```
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=p1_y2_r68_c1\.ome\.tif --csvFile=singlecsv 
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=p1_y2_r68_c1\.ome\.tif --outputType=singlecsv 
 ```
 
 <span style="color:blue">Example 3:</span> __Running Nyxus to extract only intensity and basic morphology features__
 
 ```
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.* --csvFile=singlecsv 
+./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.* --outputType=singlecsv 
 ```
 
 <span style="color:blue">Example 4:</span> __Skipping specified ROIs while extracting features__
 
 Suppose we need to blacklist ROI labels 2 and 3 from the kurtosis feature extraction globally, in each image. The command line way to do that is using option __--skiproi__ :
 ```shell 
-./nyxus --skiproi=2,3 --features=KURTOSIS --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.* --csvFile=singlecsv 
+./nyxus --skiproi=2,3 --features=KURTOSIS --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.* --outputType=singlecsv 
 ```
 
 As a result, the default feature extraction result produced without option --skiproi looking like
@@ -444,7 +444,7 @@ Note the comma character separator <span style="background-color:lightgrey">&nbs
 
 If we need to blacklist ROI labels 15 and 16 only in image image421.tif ROI label 17 in image image422.tif, we can do it via a per-file blacklist :
 ```
-./nyxus --skiproi=image421.tif:15,16;image421.tif:17 --features=KURTOSIS --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.* --csvFile=singlecsv 
+./nyxus --skiproi=image421.tif:15,16;image421.tif:17 --features=KURTOSIS --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.* --outputType=singlecsv 
 ```
 Note the colon character <span style="background-color:lightgrey">&nbsp;&nbsp;<b>:</b>&nbsp;&nbsp;</span> between the file name and  backlisted labels within this file and semicolon character separator <span style="background-color:lightgrey">&nbsp;&nbsp;<b>;</b>&nbsp;&nbsp;</span> of file blacklists.
 
@@ -477,7 +477,7 @@ Valid aggregation options are SUM, MEAN, MIN, MAX, WMA (weighted mean average), 
 <span style="color:blue">Example 6:</span> __Processing an image set with nested ROI postprocessing__ 
 
 ```
-nyxus --features=*ALL_intensity* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output/directory --filePattern=.* --csvFile=separatecsv --reduceThreads=4 --hsig=_c --hpar=1 --hchi=0 --hag=WMA 
+nyxus --features=*ALL_intensity* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output/directory --filePattern=.* --outputType=separatecsv --reduceThreads=4 --hsig=_c --hpar=1 --hchi=0 --hag=WMA 
 ```
 
 As a result, 2 additional CSV files will be produced for each mask image whose channel number matches the value of option '--hpar': file 
@@ -653,7 +653,7 @@ docker pull polusai/nyxus
 
 The following command line is an example of running the dockerized feature extractor (image hash 87f3b560bbf2) with only intensity features selected:
 ```
-docker run -it [--gpus all] --mount type=bind,source=/images/collections,target=/data 87f3b560bbf2 --intDir=/data/c1/int --segDir=/data/c1/seg --outDir=/data/output --filePattern=.* --csvFile=separatecsv --features=entropy,kurtosis,skewness,max_intensity,mean_intensity,min_intensity,median,mode,standard_deviation
+docker run -it [--gpus all] --mount type=bind,source=/images/collections,target=/data 87f3b560bbf2 --intDir=/data/c1/int --segDir=/data/c1/seg --outDir=/data/output --filePattern=.* --outputType=separatecsv --features=entropy,kurtosis,skewness,max_intensity,mean_intensity,min_intensity,median,mode,standard_deviation
 ```
 
 ### Install from sources and package into a Docker image
@@ -693,8 +693,8 @@ Enter value for this parameter if neighbors touching cells needs to be calculate
 __Features:__
 Comma separated list of features to be extracted. If all the features are required, then choose option __*all*__.
 
-__Csvfile:__
-There are 2 options available under this category. __*Separatecsv*__ - to save all the features extracted for each image in separate csv file. __*Singlecsv*__ - to save all the features extracted from all the images in the same csv file.
+__outputType:__
+There are 4 options available under this category. __*Separatecsv*__ - to save all the features extracted for each image in separate csv file. __*Singlecsv*__ - to save all the features extracted from all the images in the same csv file. __*arrow*__ - to save all the features extracted from all the images in arrow format. __*parquet*__ - to save all the features extracted from all the images in parquet format
 
 __Embedded pixel size:__
 This is an optional parameter. Use this parameter only if units are present in the metadata and want to use those embedded units for the features extraction. If this option is selected, value for the length of unit and pixels per unit parameters are not required.

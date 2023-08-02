@@ -18,8 +18,8 @@ should adhere to columns "WIPP I/O role" and "WIPP type".
      - Type
      - WIPP I/O role
      - WIPP type
-   * - --csvFile
-     - Save csv file as one csv file for all the images or separate csv file for each image. Acceptable values: 'separatecsv' and 'singlecsv'. Default value: '--csvFile=separatecsv'
+   * - --outputType
+     - Output type for feature values. Acceptable value: speratecsv, singlecsv, arrow, parquet. Default value: '--outputType=separatecsv'
      - string constant
      - input
      - enum
@@ -151,7 +151,7 @@ Suppose we need to extract only Zernike features and first 3 Hu's moments:
 
 .. code-block:: bash
 
-   ./nyxus --features=ZERNIKE2D,HU_M1,HU_M2,HU_M3 --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/OUTPUT-ratbrain --filePattern=.* --csvFile=singlecsv
+   ./nyxus --features=ZERNIKE2D,HU_M1,HU_M2,HU_M3 --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/OUTPUT-ratbrain --filePattern=.* --outputType=singlecsv
 
 2. Requesting specific feature groups
 -------------------------------------
@@ -160,7 +160,7 @@ Suppose we need to extract only intensity features basic morphology features:
 
 .. code-block:: bash
 
-   ./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/OUTPUT-ratbrain --filePattern=.* --csvFile=singlecsv
+   ./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/OUTPUT-ratbrain --filePattern=.* --outputType=singlecsv
 
 3. Mixing specific feature groups and individual features
 ---------------------------------------------------------
@@ -169,7 +169,7 @@ Suppose we need to extract intensity features, basic morphology features, and Ze
 
 .. code-block:: bash
 
-   ./nyxus --features=*all_intensity*,*basic_morphology*,zernike2d --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/OUTPUT-ratbrain --filePattern=.* --csvFile=singlecsv
+   ./nyxus --features=*all_intensity*,*basic_morphology*,zernike2d --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/OUTPUT-ratbrain --filePattern=.* --outputType=singlecsv
 
 4. Specifying a feature list from with a file instead of command line
 ---------------------------------------------------------------------
@@ -185,7 +185,7 @@ Then the command line will be:
 
 .. code-block:: bash
 
-   ./nyxus --features=feature_list.txt --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/OUTPUT-ratbrain --filePattern=.* --csvFile=singlecsv
+   ./nyxus --features=feature_list.txt --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/OUTPUT-ratbrain --filePattern=.* --outputType=singlecsv
 
 5. Whole-image feature extraction
 ---------------------------------
@@ -194,7 +194,7 @@ The regular operation mode of Nyxus is processing pairs of intensity and mask im
 
 .. code-block:: bash
 
-   ./nyxus --features=*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/int --outDir=/home/ec2-user/work/OUTPUT-ratbrain --filePattern=.* --csvFile=singlecsv
+   ./nyxus --features=*basic_morphology* --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/int --outDir=/home/ec2-user/work/OUTPUT-ratbrain --filePattern=.* --outputType=singlecsv
 
 6. Regular and ad-hoc mapping between intensity and mask image files
 --------------------------------------------------------------------

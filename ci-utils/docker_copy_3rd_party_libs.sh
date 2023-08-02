@@ -30,7 +30,6 @@ cp $1/lib/./liblz4*.so* ./3rd_party_libs/
 cp $1/lib/./libsnappy*.so* ./3rd_party_libs/
 cp $1/lib/./libz*.so* ./3rd_party_libs/
 cp $1/lib/./libzstd*.so* ./3rd_party_libs/
-
 cp $1/lib/./libwebp*.so* ./3rd_party_libs/
 cp $1/lib/./liblzma*.so* ./3rd_party_libs/
 cp $1/lib/./libLerc*.so* ./3rd_party_libs/
