@@ -1124,7 +1124,7 @@
     },
     {
       "name": "outputType",
-      "description": "outputType : singlecsv for saving values in one csv file and separate csv to save values for each image in separate csv file, arrow and parquet for saving in those file formats respectively",
+      "description": "outputType : singlecsv for saving values in one csv file and separate csv to save values for each image in separate csv file, arrow and parquet for saving in Apache Arrow and Parquet file formats respectively",
       "type": "enum",
       "options": {
         "values": [

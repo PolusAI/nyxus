@@ -694,7 +694,7 @@ __Features:__
 Comma separated list of features to be extracted. If all the features are required, then choose option __*all*__.
 
 __Outputtype:__
-There are 4 options available under this category. __*Separatecsv*__ - to save all the features extracted for each image in separate csv file. __*Singlecsv*__ - to save all the features extracted from all the images in the same csv file. __*Arrow*__ - to save all the features extracted from all the images in arrow format. __*Parquet*__ - to save all the features extracted from all the images in parquet format
+There are 4 options available under this category. __*Separatecsv*__ - to save all the features extracted for each image in separate csv file. __*Singlecsv*__ - to save all the features extracted from all the images in the same csv file. __*Arrow*__ - to save all the features extracted from all the images in Apache Arrow format. __*Parquet*__ - to save all the features extracted from all the images in Apache Parquet format
 
 __Embedded pixel size:__
 This is an optional parameter. Use this parameter only if units are present in the metadata and want to use those embedded units for the features extraction. If this option is selected, value for the length of unit and pixels per unit parameters are not required.
