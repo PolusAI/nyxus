@@ -74,6 +74,10 @@ namespace Nyxus
 	// Saves the result of image scanning and feature calculation. Must be called after the reduction phase.
 	bool save_features_2_csv (const std::string & intFpath, const std::string & segFpath, const std::string & outputDir)
 	{
+		// Non-exotic formatting for compatibility with the buffer output (Python API, Apache)
+		char rvbuf[100]; // real value buffer 
+		const char rvfmt[] = "%20.12f";
+
 		// Sort the labels
 		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
 		std::sort(L.begin(), L.end());
@@ -262,13 +266,15 @@ namespace Nyxus
 					if (vv.size() < GLCMFeature::angles.size())
 						vv.resize(GLCMFeature::angles.size(), 0.0);
 					// Output the sub-values
-					for (int i = 0; i < GLCMFeature::angles.size(); i++) // theEnvironment.rotAngles.size(); i++)
+					int nAng = GLCMFeature::angles.size();
+					for (int i=0; i < nAng; i++)
 					{
+						sprintf (rvbuf, rvfmt, vv[i]);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
-							ssVals << "," << vv[i];
+							ssVals << "," << rvbuf;
 						#else
 							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << vv[i];	
+							ssVals << "," << fn << "-" << rvbuf;	
 						#endif
 					}
 					// Proceed with other features
@@ -280,14 +286,15 @@ namespace Nyxus
 				if (glrlmFeature)
 				{
 					// Polulate with angles
-					auto nAng = 4; // sizeof(GLRLMFeature::rotAngles) / sizeof(GLRLMFeature::rotAngles[0]);
-					for (int i = 0; i < nAng; i++)
+					int nAng = 4;
+					for (int i=0; i < nAng; i++)
 					{
+						sprintf (rvbuf, rvfmt, vv[i]);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
-							ssVals << "," << vv[i];
+							ssVals << "," << rvbuf;
 						#else
 							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << vv[i];	
+							ssVals << "," << fn << "-" << rvbuf;	
 						#endif
 					}
 					// Proceed with other features
@@ -299,11 +306,12 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < GaborFeature::f0.size(); i++)
 					{
+						sprintf(rvbuf, rvfmt, vv[i]);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
-							ssVals << "," << vv[i];
+							ssVals << "," << rvbuf;
 						#else	
 							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << vv[i];	
+							ssVals << "," << fn << "-" << rvbuf;	
 						#endif			
 					}
 
@@ -316,11 +324,12 @@ namespace Nyxus
 				{
 					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
 					{
+						sprintf(rvbuf, rvfmt, vv[i]);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
-							ssVals << "," << vv[i];
+							ssVals << "," << rvbuf;
 						#else
 							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << vv[i];	
+							ssVals << "," << fn << "-" << rvbuf;	
 						#endif
 					}
 
@@ -333,11 +342,12 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
 					{
+						sprintf(rvbuf, rvfmt, vv[i]);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
-							ssVals << "," << vv[i];
+							ssVals << "," << rvbuf;
 						#else
 							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << vv[i];	
+							ssVals << "," << fn << "-" << rvbuf;	
 						#endif
 					}
 					// Proceed with other features
@@ -347,11 +357,12 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
 					{
+						sprintf(rvbuf, rvfmt, vv[i]);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
-							ssVals << "," << vv[i];
+							ssVals << "," << rvbuf;
 						#else
 							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << vv[i];	
+							ssVals << "," << fn << "-" << rvbuf;	
 						#endif
 					}
 					// Proceed with other features
@@ -361,11 +372,12 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
 					{
+						sprintf(rvbuf, rvfmt, vv[i]);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
-							ssVals << "," << vv[i];
+							ssVals << "," << rvbuf;
 						#else
 							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << vv[i];	
+							ssVals << "," << fn << "-" << rvbuf;	
 						#endif
 					}
 					// Proceed with other features
@@ -373,11 +385,12 @@ namespace Nyxus
 				}
 
 				// Regular feature
+				sprintf(rvbuf, rvfmt, vv[0]);
 				#ifndef DIAGNOSE_NYXUS_OUTPUT
-					ssVals << "," << auto_precision (ssVals, vv[0]);
+				ssVals << "," << rvbuf; // Alternatively: auto_precision(ssVals, vv[0]);
 				#else
 					//--diagnoze misalignment-- 
-					ssVals << "," << fn << "-" << vv[0];	
+					ssVals << "," << fn << "-" << rvbuf;	
 				#endif
 			}
 

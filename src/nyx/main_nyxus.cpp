@@ -90,6 +90,25 @@ int main (int argc, char** argv)
 			break;
 	}
 
+	// Save features in Apache formats, if enabled
+	#ifdef USE_ARROW
+
+		if (theEnvironment.arrow_output_type == "ARROW" || theEnvironment.arrow_output_type == "ARROWIPC") 
+			theEnvironment.arrow_output.create_arrow_file(theResultsCache.get_headerBuf(),
+				theResultsCache.get_stringColBuf(),
+				theResultsCache.get_calcResultBuf(),
+				theResultsCache.get_num_rows(),
+				theEnvironment.output_dir);
+
+		else 
+			if (theEnvironment.arrow_output_type == "PARQUET") 
+				theEnvironment.arrow_output.create_parquet_file(theResultsCache.get_headerBuf(),
+					theResultsCache.get_stringColBuf(),
+					theResultsCache.get_calcResultBuf(),
+					theResultsCache.get_num_rows(),
+					theEnvironment.output_dir);
+	#endif 
+
 	// Process nested ROIs
 	if (theEnvironment.nestedOptions.defined())
 	{
@@ -110,27 +129,6 @@ int main (int argc, char** argv)
 			return 1;
 		}	
 	}
-
-	#ifdef USE_ARROW
-
-		if (theEnvironment.arrow_output_type == "ARROW" || theEnvironment.arrow_output_type == "ARROWIPC") {
-
-			theEnvironment.arrow_output.create_arrow_file(theResultsCache.get_headerBuf(),
-                                          	theResultsCache.get_stringColBuf(),
-                                          	theResultsCache.get_calcResultBuf(),
-                                          	theResultsCache.get_num_rows(),
-											theEnvironment.output_dir);
-
-		} else if (theEnvironment.arrow_output_type == "PARQUET"){
-
-			theEnvironment.arrow_output.create_parquet_file(theResultsCache.get_headerBuf(),
-                                          theResultsCache.get_stringColBuf(),
-                                          theResultsCache.get_calcResultBuf(),
-                                          theResultsCache.get_num_rows(),
-										  theEnvironment.output_dir);
-
-		} 
-	#endif 
 
 	// Current time stamp #2
 	VERBOSLVL1(std::cout << "\n>>> STARTED >>>\t" << startTS << "\n>>> FINISHED >>>\t" << getTimeStr() << "\n";)

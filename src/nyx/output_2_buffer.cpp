@@ -185,8 +185,13 @@ namespace Nyxus
 				bool angledGlcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
 				if (angledGlcmFeature)
 				{
+					// Mock angled values if they haven't been calculated for some error reason
+					if (vv.size() < GLCMFeature::angles.size())
+						vv.resize(GLCMFeature::angles.size(), 0.0);
+					
 					// Polulate with angles
-					for (int i = 0; i < theEnvironment.glcmAngles.size(); i++)
+					int nAng = GLCMFeature::angles.size();
+					for (int i=0; i < nAng; i++)
 						rescache.add_numeric(vv[i]);		
 					
 					// Proceed with other features
@@ -198,10 +203,10 @@ namespace Nyxus
 				if (glrlmFeature)
 				{
 					// Polulate with angles
-					auto nAng = 4; // sizeof(GLRLM_features::rotAngles) / sizeof(GLRLM_features::rotAngles[0]);
-					for (int i = 0; i < nAng; i++)
+					int nAng = 4;
+					for (int i=0; i < nAng; i++)
 						rescache.add_numeric(vv[i]);		
-					
+					// Proceed with other features
 					continue;
 				}
 

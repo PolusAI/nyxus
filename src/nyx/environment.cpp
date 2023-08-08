@@ -819,6 +819,9 @@ bool Environment::parse_cmdline(int argc, char **argv)
 	}
 
 	//==== Output type
+#ifdef USE_ARROW 
+	VERBOSLVL1(std::cout << "\n*-*-*-*- Using Apache output -*-*-*-*\n");
+
 	auto rawOutpTypeUC = Nyxus::toupper(rawOutpType);
 	if (rawOutpTypeUC != Nyxus::toupper(OT_SINGLECSV) && 
 	    rawOutpTypeUC != Nyxus::toupper(OT_SEPCSV) && 
@@ -830,24 +833,38 @@ bool Environment::parse_cmdline(int argc, char **argv)
 		return false;
 	}
 
-	if (rawOutpTypeUC != Nyxus::toupper(OT_ARROW) ||
-		rawOutpTypeUC != Nyxus::toupper(OT_ARROWIPC) ||
-		rawOutpTypeUC != Nyxus::toupper(OT_PARQUET)) {
+	if (rawOutpTypeUC == Nyxus::toupper(OT_ARROW) ||
+		rawOutpTypeUC == Nyxus::toupper(OT_ARROWIPC) ||
+		rawOutpTypeUC == Nyxus::toupper(OT_PARQUET)) 
+	{
+		useCsv = false;
+		arrow_output_type = rawOutpTypeUC;
+	}
+	else
+	{	
+		useCsv = true;
+		separateCsv = rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV);
+	}
 
-		#ifdef USE_ARROW 
-			useCsv = false;
-			arrow_output_type = rawOutpTypeUC;
-		#else
+#else // no Apache support
+	auto rawOutpTypeUC = Nyxus::toupper(rawOutpType);
+	if (rawOutpTypeUC != Nyxus::toupper(OT_SINGLECSV) &&
+		rawOutpTypeUC != Nyxus::toupper(OT_SEPCSV))
+	{
+		std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << ", " << OT_SINGLECSV << "\n";
+
+		// Intercept an attempt of running Nyxus with Apache options
+		if (rawOutpTypeUC != Nyxus::toupper(OT_ARROW) ||
+			rawOutpTypeUC != Nyxus::toupper(OT_ARROWIPC) ||
+			rawOutpTypeUC != Nyxus::toupper(OT_PARQUET)) 
 			std::cout << "Error: Nyxus must be built with Apache Arrow enabled to use Arrow output types. Please rebuild with the flag USEARROW=ON." << std::endl;
-			return false;
-		#endif
+
+		return false;
 	}
 
 	useCsv = (rawOutpTypeUC == Nyxus::toupper(OT_SINGLECSV) || rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV));
-
 	separateCsv = rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV);
-
-	
+#endif
 
 	//==== Check numeric parameters
 	if (!loader_threads.empty())
