@@ -248,11 +248,11 @@ namespace Nyxus
 				return 1;
 			}
 
-			// Save the result for this intensity-label file pair
+			// For the non-Apache output mode, save the result for this intensity-label file pair
 			if (save2csv)
 				ok = save_features_2_csv (ifp, lfp, csvOutputDir);
 			else
-				ok = save_features_2_buffer(theResultsCache);
+				ok = save_features_2_buffer (theResultsCache);
 			if (ok == false)
 			{
 				std::cout << "save_features_2_csv() returned an error code" << std::endl;
