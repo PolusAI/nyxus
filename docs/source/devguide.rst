@@ -222,14 +222,14 @@ Often multiple features need to be calculated together and the user faces the ne
 
 .. code-block:: bash
 
-   nyxus --features=AREA_PIXELS_COUNT,AREA_UM2,CENTROID_X,CENTROID_Y,BBOX_YMIN,BBOX_XMIN,BBOX_HEIGHT,BBOX_WIDTH --intDir=/home/ec2-user/work/datasetXYZ/int --segDir=/home/ec2-user/work/dataXYZ/seg --outDir=/home/ec2-user/work/datasetXYZ --filePattern=.* --csvFile=separatecsv
+   nyxus --features=AREA_PIXELS_COUNT,AREA_UM2,CENTROID_X,CENTROID_Y,BBOX_YMIN,BBOX_XMIN,BBOX_HEIGHT,BBOX_WIDTH --intDir=/home/ec2-user/work/datasetXYZ/int --segDir=/home/ec2-user/work/dataXYZ/seg --outDir=/home/ec2-user/work/datasetXYZ --filePattern=.* --outputType=separatecsv
 
 
 Features can be grouped toegther and gived convenient aliases, for example the above features AREA_PIXELS_COUNT, AREA_UM2, CENTROID_X, CENTROID_Y, BBOX_YMIN, BBOX_XMIN, BBOX_HEIGHT, and BBOX_WIDTH can be refered to as \*BASIC_MORPHOLOGY\* . (Asterisks are a part of the alias and aren't special symbols.) The command line then becomes simpler
 
 .. code-block:: bash
 
-   nyxus --features=\ *BASIC_MORPHOLOGY* AREA_PIXELS_COUNT,AREA_UM2,CENTROID_X,CENTROID_Y,BBOX_YMIN,BBOX_XMIN,BBOX_HEIGHT,BBOX_WIDTH*\ * --intDir=/home/ec2-user/work/datasetXYZ/int --segDir=/home/ec2-user/work/dataXYZ/seg --outDir=/home/ec2-user/work/datasetXYZ --filePattern=.* --csvFile=separatecsv
+   nyxus --features=\ *BASIC_MORPHOLOGY* AREA_PIXELS_COUNT,AREA_UM2,CENTROID_X,CENTROID_Y,BBOX_YMIN,BBOX_XMIN,BBOX_HEIGHT,BBOX_WIDTH*\ * --intDir=/home/ec2-user/work/datasetXYZ/int --segDir=/home/ec2-user/work/dataXYZ/seg --outDir=/home/ec2-user/work/datasetXYZ --filePattern=.* --outputType=separatecsv
 
 Step 1 - giving an alias to a multiple features 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
