@@ -26,7 +26,7 @@ if(CUDA_FOUND AND USEGPU)
 			set(CUDA_ARCH_LIST "35;37;50;72;75;80;86")
 		endif()
 	elseif (CUDA_VERSION_MAJOR STREQUAL "12")
-		set(CUDA_ARCH_LIST "52;60;72;75;80;86;89;90")
+		set(CUDA_ARCH_LIST "52;60;75;80;86;89;90")
 	else() # some old CUDA version (<10)
 		set(CUDA_ARCH_LIST "50")
 	endif()
@@ -317,49 +317,37 @@ if(USEARROW)
 	if (BUILD_LIB)
 		# Find Python
 		find_package(Python REQUIRED COMPONENTS Interpreter)
-
 		# Execute the Python script to find pyarrow include path
 		execute_process(
 			COMMAND ${Python_EXECUTABLE} -c "import pyarrow as pa; print(pa.get_include())"
 			OUTPUT_VARIABLE PATH_OUTPUT
 			OUTPUT_STRIP_TRAILING_WHITESPACE
 		)
-
 		# Store the path in a CMake variable
 		set(PYARROW_INCLUDE_PATH "${PATH_OUTPUT}" CACHE INTERNAL "Path to pyarrow include directory")
-		
-		# Set filename for finding pyarrow
-		set(python_filename "ci-utils/find_pyarrow.py")
-		set(python_filepath "${CMAKE_CURRENT_SOURCE_DIR}/${python_filename}")
-
 		# Execute the Python script to find pyarrow library path
 		execute_process(
-			COMMAND ${Python_EXECUTABLE} ${python_filepath}
+			COMMAND ${Python_EXECUTABLE} -c "import pyarrow as pa; pa.get_library_dirs()[0]"
 			OUTPUT_VARIABLE LIB_PATH_OUTPUT
 			OUTPUT_STRIP_TRAILING_WHITESPACE
 		)
-
 		# Store the path in a CMake variable
 		set(PYARROW_LIB_PATH "${LIB_PATH_OUTPUT}" CACHE INTERNAL "Path to pyarrow library directory")
-
 		if (PYARROW_INCLUDE_PATH STREQUAL "")
 			message(FATAL_ERROR "Pyarrow library not found.")
 		endif()
-
 		if (PYARROW_LIB_PATH STREQUAL "")
 			message(FATAL_ERROR "Pyarrow library not found.")
 		endif()
-
 		# Print the path
 		message(STATUS "PyArrow Include Path: ${PYARROW_INCLUDE_PATH}")
-		message(STATUS "PyArrow Include Path: ${PYARROW_LIB_PATH}")
+		message(STATUS "PyArrow library Path: ${PYARROW_LIB_PATH}")
 
 		# add pyarrow include path
 		include_directories(${PYARROW_INCLUDE_PATH})
-
-		target_link_libraries(backend PRIVATE ${PYARROW_LIB_PATH} )
-
-		target_link_libraries(backend PRIVATE ${Python_INCLUDE_DIRS})
+		#add pyarrow library
+		list(APPEND Nyxus_LIBRARIES arrow_python)
+		target_link_directories(backend PRIVATE ${PYARROW_LIB_PATH})
 
 	endif()
 

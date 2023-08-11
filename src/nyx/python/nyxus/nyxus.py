@@ -1,3 +1,14 @@
+import os
+import numpy as np
+import pandas as pd
+from typing import Optional, List
+
+#pa.import_pyarrow()
+import pyarrow as pa
+if os.sys.platform == "win32":
+    for lib_dir in pa.get_library_dirs():
+        os.add_dll_directory(lib_dir)
+
 from .backend import (
     initialize_environment,
     featurize_directory_imp,
@@ -21,13 +32,6 @@ from .backend import (
     arrow_is_enabled_imp,
     )
 
-import os
-import numpy as np
-import pandas as pd
-import pyarrow as pa
-from typing import Optional, List
-
-#pa.import_pyarrow()
 
 class Nyxus:
     """Nyxus image feature extraction library
