@@ -327,7 +327,7 @@ if(USEARROW)
 		set(PYARROW_INCLUDE_PATH "${PATH_OUTPUT}" CACHE INTERNAL "Path to pyarrow include directory")
 		# Execute the Python script to find pyarrow library path
 		execute_process(
-			COMMAND ${Python_EXECUTABLE} -c "import pyarrow as pa; pa.get_library_dirs()[0]"
+			COMMAND ${Python_EXECUTABLE} -c "import pyarrow as pa; print(pa.get_library_dirs()[0])"
 			OUTPUT_VARIABLE LIB_PATH_OUTPUT
 			OUTPUT_STRIP_TRAILING_WHITESPACE
 		)
@@ -341,7 +341,7 @@ if(USEARROW)
 		endif()
 		# Print the path
 		message(STATUS "PyArrow Include Path: ${PYARROW_INCLUDE_PATH}")
-		message(STATUS "PyArrow library Path: ${PYARROW_LIB_PATH}")
+		message(STATUS "PyArrow Library Path: ${PYARROW_LIB_PATH}")
 
 		# add pyarrow include path
 		include_directories(${PYARROW_INCLUDE_PATH})

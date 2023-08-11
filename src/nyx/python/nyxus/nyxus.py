@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 from typing import Optional, List
 
-#pa.import_pyarrow()
 import pyarrow as pa
 if os.sys.platform == "win32":
     for lib_dir in pa.get_library_dirs():
