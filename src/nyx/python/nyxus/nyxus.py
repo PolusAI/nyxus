@@ -4,15 +4,14 @@ import numpy as np
 import pandas as pd
 from typing import Optional, List
 
-if sys.version_info[0]==3 and sys.version_info[1]>=8: 
-    # since add_dll_dir is added in Python3.8
-    # Assuming this is OK since 3.7 has reached EOL and 
-    # this added search_path is needed on conda distribution only which 
-    # currently builds for 3.8+
-    import pyarrow as pa
-    if os.sys.platform == "win32":
-        for lib_dir in pa.get_library_dirs():
+import pyarrow as pa
+if os.sys.platform == "win32":
+    for lib_dir in pa.get_library_dirs():
+        if sys.version_info[0]==3 and sys.version_info[1]>=8: 
+            # since add_dll_dir is added in Python3.8
             os.add_dll_directory(lib_dir)
+        else:
+            os.environ['PATH'] = lib_dir + os.pathsep + os.environ['PATH']
 
 from .backend import (
     initialize_environment,
