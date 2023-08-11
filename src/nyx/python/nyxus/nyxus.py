@@ -24,10 +24,10 @@ from .backend import (
 import os
 import numpy as np
 import pandas as pd
-import pyarrow as pa
 from typing import Optional, List
 
-#pa.import_pyarrow()
+if arrow_is_enabled_imp():
+    import pyarrow as pa
 
 class Nyxus:
     """Nyxus image feature extraction library
@@ -773,16 +773,19 @@ class Nyxus:
 
         """
         
-        arrow_file_path = self.get_arrow_ipc_file()
-        
-        if (arrow_file_path == ""):
-            self.create_arrow_file()
+        if arrow_is_enabled_imp():
             arrow_file_path = self.get_arrow_ipc_file()
-        
-        with pa.memory_map(arrow_file_path, 'rb') as source:
-            array = pa.ipc.open_file(source).read_all()
-        
-        return array
+            
+            if (arrow_file_path == ""):
+                self.create_arrow_file()
+                arrow_file_path = self.get_arrow_ipc_file()
+            
+            with pa.memory_map(arrow_file_path, 'rb') as source:
+                array = pa.ipc.open_file(source).read_all()
+            
+            return array
+        else:
+            raise RuntimeError("Apache arrow is not enabled. Please rebuild Nyxus with Arrow support to enable this functionality.")
     
     
     def get_arrow_table(self):
