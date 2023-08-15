@@ -1,3 +1,18 @@
+import os
+import sys
+import numpy as np
+import pandas as pd
+from typing import Optional, List
+
+import pyarrow as pa
+if os.sys.platform == "win32":
+    for lib_dir in pa.get_library_dirs():
+        if sys.version_info[0]==3 and sys.version_info[1]>=8: 
+            # since add_dll_dir is added in Python3.8
+            os.add_dll_directory(lib_dir)
+        else:
+            os.environ['PATH'] = lib_dir + os.pathsep + os.environ['PATH']
+
 from .backend import (
     initialize_environment,
     featurize_directory_imp,
@@ -20,11 +35,6 @@ from .backend import (
     get_arrow_table_imp,
     arrow_is_enabled_imp,
     )
-
-import os
-import numpy as np
-import pandas as pd
-from typing import Optional, List
 
 if arrow_is_enabled_imp():
     import pyarrow as pa
