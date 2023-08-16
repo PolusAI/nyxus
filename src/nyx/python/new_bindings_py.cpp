@@ -659,6 +659,7 @@ PYBIND11_MODULE(backend, m)
     m.def("set_if_ibsi_imp", &set_if_ibsi_imp, "Set if the features will be ibsi compliant");
     m.def("set_environment_params_imp", &set_environment_params_imp, "Set the environment variables of Nyxus");
     m.def("get_params_imp", &get_params_imp, "Get parameters of Nyxus");
+    m.def("arrow_is_enabled_imp", &arrow_is_enabled_imp, "Check if arrow is enabled.");
 }
 
 PYBIND11_MODULE(backend_arrow, m_arrow)
@@ -681,7 +682,6 @@ PYBIND11_MODULE(backend_arrow, m_arrow)
     m_arrow.def("get_parquet_file_imp", &get_parquet_file_imp, "Returns path to parquet file");
     m_arrow.def("create_parquet_file_imp", &create_parquet_file_imp, "Create parquet file for the features calculations");
     m_arrow.def("get_arrow_table_imp", &get_arrow_table_imp, py::call_guard<py::gil_scoped_release>());
-    m_arrow.def("arrow_is_enabled_imp", &arrow_is_enabled_imp, "Check if arrow is enabled.");
 
 }
 

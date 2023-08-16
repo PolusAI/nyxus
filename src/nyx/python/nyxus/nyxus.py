@@ -4,26 +4,6 @@ import numpy as np
 import pandas as pd
 from typing import Optional, List
 
-from .nyxus_arrow import arrow_headers_found, link_arrow_lib
-
-if arrow_headers_found():
-    
-    from .backend_arrow import (
-        create_arrow_file_imp, 
-        get_arrow_file_imp, 
-        get_parquet_file_imp, 
-        create_parquet_file_imp, 
-        get_arrow_table_imp,
-        arrow_is_enabled_imp,
-    )
-    
-    if arrow_is_enabled_imp():
-        print('enabling arrow')
-        
-        import pyarrow as pa
-        
-        link_arrow_lib()
-        
 
 from .backend import (
     initialize_environment,
@@ -40,7 +20,28 @@ from .backend import (
     set_if_ibsi_imp,
     set_environment_params_imp,
     get_params_imp,
+    arrow_is_enabled_imp,
     )
+
+if (arrow_headers_found() and arrow_is_enabled_imp()):
+
+        from .nyxus_arrow import arrow_headers_found, link_arrow_lib
+        
+        from .backend_arrow import (
+            create_arrow_file_imp, 
+            get_arrow_file_imp, 
+            get_parquet_file_imp, 
+            create_parquet_file_imp, 
+            get_arrow_table_imp,
+        )
+        
+        if arrow_is_enabled_imp():
+            
+            import pyarrow as pa
+            
+            link_arrow_lib()
+    
+
 
 
 class Nyxus:
