@@ -4,6 +4,27 @@ import numpy as np
 import pandas as pd
 from typing import Optional, List
 
+from .nyxus_arrow import arrow_headers_found, link_arrow_lib
+
+if arrow_headers_found():
+    
+    from .backend_arrow import (
+        create_arrow_file_imp, 
+        get_arrow_file_imp, 
+        get_parquet_file_imp, 
+        create_parquet_file_imp, 
+        get_arrow_table_imp,
+        arrow_is_enabled_imp,
+    )
+    
+    if arrow_is_enabled_imp():
+        print('enabling arrow')
+        
+        import pyarrow as pa
+        
+        link_arrow_lib()
+        
+
 from .backend import (
     initialize_environment,
     featurize_directory_imp,
@@ -18,26 +39,9 @@ from .backend import (
     customize_gabor_feature_imp,
     set_if_ibsi_imp,
     set_environment_params_imp,
-    get_params_imp, 
-    create_arrow_file_imp, 
-    get_arrow_file_imp, 
-    get_parquet_file_imp, 
-    create_parquet_file_imp, 
-    get_arrow_table_imp,
-    arrow_is_enabled_imp,
+    get_params_imp,
     )
 
-if arrow_is_enabled_imp():
-    
-    import pyarrow as pa
-    
-    if os.sys.platform == "win32":
-        for lib_dir in pa.get_library_dirs():
-            if sys.version_info[0]==3 and sys.version_info[1]>=8: 
-                # since add_dll_dir is added in Python3.8
-                os.add_dll_directory(lib_dir)
-            else:
-                os.environ['PATH'] = lib_dir + os.pathsep + os.environ['PATH']
 
 class Nyxus:
     """Nyxus image feature extraction library
