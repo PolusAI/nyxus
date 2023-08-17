@@ -105,7 +105,8 @@ void set_environment_params_imp (
     uint32_t coarse_gray_depth = 0, 
     uint32_t n_reduce_threads = 0,
     uint32_t n_loader_threads = 0,
-    int using_gpu = -2
+    int using_gpu = -2,
+    int verbosity_level = 0
 ) {
     if (features.size() > 0) {
         theEnvironment.recognizedFeatureNames = features;
@@ -130,6 +131,9 @@ void set_environment_params_imp (
     if (n_loader_threads != 0) {
         theEnvironment.n_loader_threads = n_loader_threads;
     }
+
+    if (verbosity_level != 0)
+        theEnvironment.verbosity = verbosity_level;
 }
 
 py::tuple featurize_directory_imp (
@@ -138,13 +142,19 @@ py::tuple featurize_directory_imp (
     const std::string &file_pattern,
     bool pandas_output=true)
 {
+    // Check and cache the file pattern
+    if (! theEnvironment.check_file_pattern(file_pattern))
+        throw std::invalid_argument ("Invalid filepattern " + file_pattern);
+    theEnvironment.set_file_pattern(file_pattern);
+
+    // Cache the directories
     theEnvironment.intensity_dir = intensity_dir;
     theEnvironment.labels_dir = labels_dir;
-    theEnvironment.set_file_pattern (file_pattern);
 
-    if (!theEnvironment.check_file_pattern(file_pattern))
-        throw std::invalid_argument("Filepattern provided is not valid.");
+    // Set the whole-slide/multi-ROI flag
+    theEnvironment.singleROI = intensity_dir == labels_dir;
 
+    // Read image pairs from the intensity and label directories applying the filepattern
     std::vector<std::string> intensFiles, labelFiles;
     int errorCode = Nyxus::read_dataset(
         intensity_dir,
@@ -157,8 +167,9 @@ py::tuple featurize_directory_imp (
         intensFiles, labelFiles);
 
     if (errorCode)
-       throw std::runtime_error("Dataset structure error.");
+       throw std::runtime_error("Error traversing the dataset");
 
+    // We're good to extract features. Reset the feature results cache
     theResultsCache.clear();
 
     // Process the image sdata
@@ -174,29 +185,30 @@ py::tuple featurize_directory_imp (
         theEnvironment.output_dir);
 
     if (errorCode)
-        throw std::runtime_error("Error occurred during dataset processing.");
+        throw std::runtime_error("Error " + std::to_string(errorCode) + " occurred during dataset processing");
 
-    if (pandas_output) {
-
+    // Output the result
+    if (pandas_output) 
+    {
     #ifdef USE_ARROW
         // Get by value to preserve buffers for writing to arrow
         auto pyHeader = py::array(py::cast(theResultsCache.get_headerBufByVal()));
         auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBufByVal()));
         auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBufByVal()));
-    #else 
+    #else // regular dataframe output
         auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
         auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
         auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
     #endif
-        auto nRows = theResultsCache.get_num_rows();
-        pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
-        pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
 
-        return py::make_tuple(pyHeader, pyStrData, pyNumData);
-    
+        // Shape the user-facing dataframe
+        auto nRows = theResultsCache.get_num_rows();
+        pyStrData = pyStrData.reshape ({nRows, pyStrData.size() / nRows});
+        pyNumData = pyNumData.reshape ({ nRows, pyNumData.size() / nRows });
+        return py::make_tuple (pyHeader, pyStrData, pyNumData);
     } 
 
-    // Return "nothing" when output will be an Arrow format
+    // To avoid duplication, return a void dataframe on the Python-side when the output is a file in Arrow format
     return py::make_tuple();
 }
 
@@ -207,7 +219,9 @@ py::tuple featurize_montage_imp (
     const std::vector<std::string>& label_names,
     bool pandas_output=true)
 {  
-    
+    // Set the whole-slide/multi-ROI flag
+    theEnvironment.singleROI = false;
+
     auto intens_buffer = intensity_images.request();
     auto label_buffer = label_images.request();
 
@@ -277,6 +291,9 @@ py::tuple featurize_montage_imp (
 
 py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames, bool pandas_output=true)
 {
+    // Set the whole-slide/multi-ROI flag
+    theEnvironment.singleROI = false;
+
     std::vector<std::string> intensFiles, labelFiles;
     for (auto it = int_fnames.begin(); it != int_fnames.end(); ++it)
     {
@@ -503,59 +520,6 @@ std::map<std::string, ParameterTypes> get_params_imp(const std::vector<std::stri
     return params_subset;
 
 }
-
-///
-/// The following code block is a quick & simple manual test of the Python interface 
-/// invokable from from the command line. It lets you bypass building and installing the Python library.
-/// To use it, 
-///     #define TESTING_PY_INTERFACE, 
-///     exclude file main_nyxus.cpp from build, and 
-///     rebuild the CLI target.
-/// 
-#ifdef TESTING_PY_INTERFACE
-//
-// Testing Python interface
-//
-void initialize_environment(
-    const std::vector<std::string>& features,
-    int neighbor_distance,
-    float pixels_per_micron,
-    uint32_t coarse_gray_depth,
-    uint32_t n_reduce_threads,
-    uint32_t n_loader_threads);
-
-py::tuple featurize_directory_imp(
-    const std::string& intensity_dir,
-    const std::string& labels_dir,
-    const std::string& file_pattern);
-
-int main(int argc, char** argv)
-{
-    std::cout << "main() \n";
-
-    // Test feature extraction
-    
-    //  initialize_environment({ "*ALL*" }, 5, 120, 1, 1);
-    //
-    //  py::tuple result = featurize_directory_imp(
-    //      "C:\\WORK\\AXLE\\data\\mini\\int", // intensity_dir,
-    //      "C:\\WORK\\AXLE\\data\\mini\\seg", // const std::string & labels_dir,
-    //      "p0_y1_r1_c0\\.ome\\.tif"); // const std::string & file_pattern
-
-    // Test nested segments functionality
-
-    py::tuple result = findrelations_imp(
-        "C:\\WORK\\AXLE\\data\\mini\\seg",  // label_dir, 
-        ".*", // file_pattern,
-        "_c", // channel_signature, 
-        "1", // parent_channel, 
-        "0"); // child_channel
-
-    std::cout << "finishing \n";
-}
-
-#endif
-
 
 void create_arrow_file_imp(const std::string& arrow_file_path="") {
 

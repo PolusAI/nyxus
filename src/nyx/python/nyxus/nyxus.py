@@ -585,7 +585,8 @@ class Nyxus:
             'coarse_gray_depth',
             'n_feature_calc_threads',
             'n_loader_threads',
-            'using_gpu'
+            'using_gpu',
+            'verbose'
         ]
         
         for key in params:
@@ -598,7 +599,8 @@ class Nyxus:
         coarse_gray_depth = params.get ('coarse_gray_depth', 0)
         n_reduce_threads = params.get ('n_feature_calc_threads', 0)
         n_loader_threads = params.get ('n_loader_threads', 0)
-        using_gpu =params.get ('using_gpu', -2)
+        using_gpu = params.get ('using_gpu', -2)
+        verbosity_lvl = params.get ('verbose', 0)
         
         set_environment_params_imp(features, 
                                    neighbor_distance, 
@@ -606,7 +608,8 @@ class Nyxus:
                                    coarse_gray_depth,
                                    n_reduce_threads,
                                    n_loader_threads,
-                                   using_gpu)
+                                   using_gpu,
+                                   verbosity_lvl)
         
     def set_params(self, **params):
         """Sets parameters of the Nyxus class
