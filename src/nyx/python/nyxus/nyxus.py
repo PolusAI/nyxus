@@ -719,7 +719,10 @@ class Nyxus:
         None
 
         """
-        create_arrow_file_imp(path)
+        if self.arrow_is_enabled():
+            create_arrow_file_imp(path)
+        else:
+            raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
 
     
     def get_arrow_ipc_file(self):
@@ -735,7 +738,10 @@ class Nyxus:
 
         """
         
-        return get_arrow_file_imp()
+        if self.arrow_is_enabled():
+            return get_arrow_file_imp()
+        else:
+            raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
     
     def create_parquet_file(self, path: str="NyxusFeatures.parquet"):
         """Creates a Parquet file containing the features.
@@ -752,7 +758,10 @@ class Nyxus:
 
         """
         
-        create_parquet_file_imp(path)
+        if self.arrow_is_enabled():
+            create_parquet_file_imp(path)
+        else:
+            raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
     
     def get_parquet_file(self):
         """Returns the path to the Arrow IPC file.
@@ -766,8 +775,10 @@ class Nyxus:
         Path to the Parquet file (string)
 
         """
-        
-        return get_parquet_file_imp()
+        if self.arrow_is_enabled():
+            return get_parquet_file_imp()
+        else:
+            raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
     
     def get_arrow_memory_mapping(self):
         """Returns a memory mapping to the Arrow IPC file.
@@ -785,7 +796,7 @@ class Nyxus:
 
         """
         
-        if arrow_is_enabled_imp():
+        if self.arrow_is_enabled():
             arrow_file_path = self.get_arrow_ipc_file()
             
             if (arrow_file_path == ""):
@@ -813,7 +824,10 @@ class Nyxus:
 
         """
         
-        return get_arrow_table_imp()
+        if self.arrow_is_enabled():
+            return get_arrow_table_imp()
+        else:
+            raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
     
     def arrow_is_enabled(self):
         """Returns true if arrow support is enabled.
@@ -827,10 +841,9 @@ class Nyxus:
         bool: If arrow support is enabled 
         """
         
+
         return arrow_is_enabled_imp()
-    
-
-
+       
 class Nested:
     """Nyxus image feature extraction library / ROI hierarchy analyzer
     
