@@ -1,10 +1,3 @@
-import os
-import sys
-import numpy as np
-import pandas as pd
-from typing import Optional, List
-
-
 from .backend import (
     initialize_environment,
     featurize_directory_imp,
@@ -23,25 +16,29 @@ from .backend import (
     arrow_is_enabled_imp,
     )
 
-if (arrow_headers_found() and arrow_is_enabled_imp()):
+import os
+import sys
+import numpy as np
+import pandas as pd
+from typing import Optional, List
 
-        from .nyxus_arrow import arrow_headers_found, link_arrow_lib
+from .nyxus_arrow import arrow_headers_found
+
+if (arrow_headers_found() and arrow_is_enabled_imp()):
         
-        from .backend_arrow import (
+        from .backend import (
             create_arrow_file_imp, 
             get_arrow_file_imp, 
             get_parquet_file_imp, 
             create_parquet_file_imp, 
             get_arrow_table_imp,
         )
+            
+        import pyarrow as pa
         
-        if arrow_is_enabled_imp():
-            
-            import pyarrow as pa
-            
-            link_arrow_lib()
-    
-
+        from .nyxus_arrow import link_arrow_lib
+        
+        link_arrow_lib()
 
 
 class Nyxus:
