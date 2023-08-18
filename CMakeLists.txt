@@ -349,11 +349,6 @@ if(USEARROW)
 		list(APPEND Nyxus_LIBRARIES arrow_python)
 		target_link_directories(backend PRIVATE ${PYARROW_LIB_PATH})
 
-		pybind11_add_module(backend_arrow
-			${SOURCE}
-			src/nyx/python/new_bindings_py.cpp
-		)
-
 	endif()
 
 endif()
