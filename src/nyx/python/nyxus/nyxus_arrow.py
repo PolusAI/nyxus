@@ -3,8 +3,10 @@ import sys
 
 def link_arrow_lib():
     
-    if arrow_headers_found():
-        import pyarrow as pa
+    if not arrow_headers_found():
+        raise ImportError("The pyarrow library was not found. Pyarrow must be installed ot link the Arrow library.")
+        
+    import pyarrow as pa
     
     if os.sys.platform == "win32":
         for lib_dir in pa.get_library_dirs():

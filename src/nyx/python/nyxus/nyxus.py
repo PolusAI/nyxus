@@ -1,3 +1,10 @@
+from .nyxus_arrow import arrow_headers_found
+
+if (arrow_headers_found()):
+    from .nyxus_arrow import link_arrow_lib
+        
+    link_arrow_lib()
+    
 from .backend import (
     initialize_environment,
     featurize_directory_imp,
@@ -22,8 +29,6 @@ import numpy as np
 import pandas as pd
 from typing import Optional, List
 
-from .nyxus_arrow import arrow_headers_found
-
 if (arrow_headers_found() and arrow_is_enabled_imp()):
         
         from .backend import (
@@ -35,11 +40,6 @@ if (arrow_headers_found() and arrow_is_enabled_imp()):
         )
             
         import pyarrow as pa
-        
-        from .nyxus_arrow import link_arrow_lib
-        
-        link_arrow_lib()
-
 
 class Nyxus:
     """Nyxus image feature extraction library
