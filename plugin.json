@@ -1191,7 +1191,7 @@
     {
       "key": "inputs.outputType",
       "title": "Output file type",
-      "description": "Save csv file separately for each image or one csv file for all images. Alternatively, outuput can be written as arrow or parquet file"
+      "description": "Save csv file separately for each image or one csv file for all images. Alternatively, output can be written as arrow or parquet file"
     },
     {
       "key": "inputs.embeddedpixelsize",

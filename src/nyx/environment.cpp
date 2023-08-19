@@ -42,7 +42,7 @@ namespace Nyxus
 		// Check individual features
 		for (const auto &s : strings)
 		{
-			// Forgive user's typos of consequtive commas e.g. MIN,MAX,,MEDIAN
+			// Forgive user's typos of consecutive commas e.g. MIN,MAX,,MEDIAN
 			if (s.empty())
 				continue;
 

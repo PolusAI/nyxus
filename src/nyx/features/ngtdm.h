@@ -10,8 +10,8 @@
 /// @brief Neighbouring Gray Tone Difference Matrix (NGTDM) features
 /// Neighbouring Gray Tone Difference Matrix quantifies the difference between a gray value and the average gray value
 /// of its neighbours within distance : math:`\delta`. The sum of absolute differences for gray level : math:`i` is stored in the matrix.
-/// Let :math:`\textbf{ X }_{ gl }` be a set of segmented voxelsand :math:`x_{gl}(j_x, j_y, j_z) \in \textbf{ X }_{ gl }` be the gray level of a voxel at postion
-/// 	: math:`(j_x, j_y, j_z)`, then the average gray level of the neigbourhood is :
+/// Let :math:`\textbf{ X }_{ gl }` be a set of segmented voxelsand :math:`x_{gl}(j_x, j_y, j_z) \in \textbf{ X }_{ gl }` be the gray level of a voxel at position
+/// 	: math:`(j_x, j_y, j_z)`, then the average gray level of the neighborhood is :
 /// 
 /// 	..math::
 /// 
@@ -63,10 +63,10 @@ public:
 private:
 
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
-	int Ng = 0;	// number of discreet intensity values in the image
+	int Ng = 0;	// number of discrete intensity values in the image
 	int Ngp = 0; // number of non-zero gray levels. Since we keep only informative (non-zero) levels, Ngp is always ==Ng
 	int Nvp = 0;	// number of "valid voxels" i.e. those voxels that have at least 1 neighbor
-	int Nd = 0; // number of discreet dependency sizes in the image
+	int Nd = 0; // number of discrete dependency sizes in the image
 	int Nz = 0; // number of dependency zones in the ROI, Nz = sum(sum(P[i,j]))
 	double Nvc = 0; // sum of N vector
 	std::vector <double> P, S;

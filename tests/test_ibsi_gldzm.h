@@ -71,7 +71,7 @@ void test_ibsi_gldzm_feature (const AvailableFeatures& feature, const std::strin
     // Activate the IBSI compliance mode
     Environment::ibsi_compliance = true;
 
-    // Chck if ground truth is available for the feature
+    // Check if ground truth is available for the feature
     ASSERT_TRUE (ibsi_gldzm_gtruth.count(feature_name) > 0);
 
     double total = 0;

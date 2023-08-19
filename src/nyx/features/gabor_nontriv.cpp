@@ -185,7 +185,7 @@ void GaborFeature::conv_dud_NT (
     mc = ma + mb - 1;
     nc = (na + nb - 1) * 2;
 
-    // initalize the output matrix 
+    // initialize the output matrix 
     int mcnc = mc * nc;
     for (int i = 0; i < mcnc; i++)
         C[i] = 0.0;

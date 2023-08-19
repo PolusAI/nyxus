@@ -109,8 +109,8 @@ private:
 		angled_LRHGLE;
 
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
-	std::vector<int> angles_Ng;	// number of discreet intensity values in the image
-	std::vector<int> angles_Nr; // number of discreet run lengths in the image
+	std::vector<int> angles_Ng;	// number of discrete intensity values in the image
+	std::vector<int> angles_Nr; // number of discrete run lengths in the image
 	std::vector<int> angles_Np; // number of voxels in the image
 	std::vector<P_matrix> angles_P;
 	std::vector<double> sum_p;

@@ -65,7 +65,7 @@ void GaborFeature::calculate (LR& r)
         if (double(a) > cmpval)
             baselineScore++;
 
-    // Iterate frequencies and score corresponding filter responce over the baseline
+    // Iterate frequencies and score corresponding filter response over the baseline
     for (int i=0; i < nFreqs; i++)
     {
         // filter response for i-th frequency
@@ -137,7 +137,7 @@ void GaborFeature::calculate_gpu (LR& r)
         if (double(a) > cmpval)
             baselineScore++;
 
-    // Iterate frequencies and score corresponding filter responce over the baseline
+    // Iterate frequencies and score corresponding filter response over the baseline
     for (int i=0; i < nFreqs; i++)
     {
         // filter response for i-th frequency
@@ -198,7 +198,7 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r)
     tx.resize (n + 1);
     ty.resize (n + 1);
 
-    // Variables that will be initialized in the 1-st iteration of the fillowing loop
+    // Variables that will be initialized in the 1-st iteration of the following loop
     unsigned long baselineScore = 0;    // abundance of baseline signal pixels over its average
     double maxval = 0.0;                // max value of the baseline signal
 
@@ -302,7 +302,7 @@ void GaborFeature::conv_dud(
     mc = ma + mb - 1;
     nc = (na + nb - 1) * 2;
 
-    // initalize the output matrix 
+    // initialize the output matrix 
     int mcnc = mc * nc;
     for (int i = 0; i < mcnc; i++)
         C[i] = 0.0;

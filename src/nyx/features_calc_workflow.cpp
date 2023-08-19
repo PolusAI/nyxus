@@ -70,7 +70,7 @@ namespace Nyxus
 		// Allocate the value matrix
 		for (int i = 0; i < AvailableFeatures::_COUNT_; i++)
 		{
-			std::vector<StatsReal> row{ 0.0 };	// One value initialy. More values can be added for Haralick and Zernike type methods
+			std::vector<StatsReal> row{ 0.0 };	// One value initially. More values can be added for Haralick and Zernike type methods
 			r.fvals.push_back(row);
 		}
 

@@ -441,7 +441,7 @@ namespace Nyxus
 			int lPar = p.first;
 			auto nCh = r.children.size();
 
-			// Search this parent's feature extraction result recod 
+			// Search this parent's feature extraction result record 
 			std::string csvFP = get_feature_output_fname(r.intFname, r.segFname);
 			std::string csvWholeline;
 			std::vector<std::string> csvHeader, csvFields;

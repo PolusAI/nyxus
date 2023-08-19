@@ -99,7 +99,7 @@ void parallel_process_1_batch_of_collision_pairs (size_t start, size_t end, std:
 		// Save partial statis of r1's touching pixel stats
 		r1.fvals[PERCENT_TOUCHING][0] += n_touchingOuterPixels;
 
-		// Definitely neigbors
+		// Definitely neighbors
 		r1.fvals[NUM_NEIGHBORS][0]++;
 		r1.aux_neighboring_labels.push_back(l2);
 	}
@@ -211,7 +211,7 @@ void NeighborsFeature::manual_reduce()
 				// Save partial statis of r1's touching pixel stats
 				r1.fvals[PERCENT_TOUCHING][0] += n_touchingOuterPixels;
 
-				// Definitely neigbors
+				// Definitely neighbors
 				r1.fvals[NUM_NEIGHBORS][0]++;
 				r2.fvals[NUM_NEIGHBORS][0]++;
 				r1.aux_neighboring_labels.push_back (l2);
@@ -265,7 +265,7 @@ void NeighborsFeature::manual_reduce()
 			// Save partial statis of r1's touching pixel stats
 			r1.fvals[PERCENT_TOUCHING][0] += n_touchingOuterPixels;
 
-			// Definitely neigbors
+			// Definitely neighbors
 			r1.fvals[NUM_NEIGHBORS][0]++;
 			r1.aux_neighboring_labels.push_back(l2);
 
@@ -465,7 +465,7 @@ void NeighborsFeature::manual_reduce()
 		}
 	}
 
-	// Angle between neigbors
+	// Angle between neighbors
 	Moments2 mom2;
 	std::vector<int> anglesRounded;
 	for (auto l : Nyxus::uniqueLabels)
@@ -531,8 +531,8 @@ inline unsigned long NeighborsFeature::spat_hash_2d(StatsInt x, StatsInt y, int 
 {
 	unsigned long h = x * 73856093;
 	h = h ^ y * 19349663;
-	// hash   hash  z × 83492791	// For the future
-	// hash   hash  l × 67867979
+	// hash   hash  z ï¿½ 83492791	// For the future
+	// hash   hash  l ï¿½ 67867979
 	unsigned long retval = h % m;
 	return retval;
 }

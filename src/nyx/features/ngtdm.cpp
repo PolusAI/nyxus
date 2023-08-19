@@ -114,7 +114,7 @@ void NGTDMFeature::calculate (LR& r)
 				nd++;
 			}
 
-			// Save the intensity's average neigborhood intensity
+			// Save the intensity's average neighborhood intensity
 			if (nd > 0) {
 				//if(pi == 1) {
 				//	std::cerr << "neigsI: " << neigsI << ", nd: " << nd << std::endl;
@@ -274,7 +274,7 @@ void NGTDMFeature::osized_calculate (LR& r, ImageLoader&)
 				nd++;
 			}
 
-			// Save the intensity's average neigborhood intensity
+			// Save the intensity's average neighborhood intensity
 			if (nd > 0) 
 			{
 				neigsI /= nd;

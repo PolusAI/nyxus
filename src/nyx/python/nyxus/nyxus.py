@@ -88,7 +88,7 @@ class Nyxus:
         Size of filter kernel's side
     gabor_gamma: float (optional, default 0.1)
         Aspect ratio of the Gaussian factor
-    gabor_sig2lam: float (optional, deafult 0.8)
+    gabor_sig2lam: float (optional, default 0.8)
         Spatial frequency bandwidth.
     gabor_f0: float (optional, default 0.1)
         frequency of the baseline lowpass filter as denominator of `\pi`.

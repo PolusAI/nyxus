@@ -111,7 +111,7 @@ void HexagonalityPolygonalityFeature::calculate (LR& r)
         std::vector<double> list_perim = { perim1, perim2, perim3, perim4, perim5, perim6, perim7, perim8, perim9, perim10, perim11, perim12, perim13, perim14 };
         std::vector<double> perim_array; 
 
-        // 1 - Create an array of the ratio of all Perimeters to eachother. 2 - Create Summary statistics of all array ratios.
+        // 1 - Create an array of the ratio of all Perimeters to each other. 2 - Create Summary statistics of all array ratios.
         double sum2 = 0;
         for (int ib = 0; ib < list_perim.size(); ++ib)
             for (int ic = ib + 1; ic < list_perim.size(); ++ic)

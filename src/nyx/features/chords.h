@@ -41,11 +41,11 @@ public:
 	Chords_feature (const std::vector<Pixel2> & raw_pixels, const AABB & bb, const double cenx, const double ceny);
 
 	/// @brief Calculated maxchords statistics
-	/// @return Tupple of [0] max, [1] min, [2] median, [3] mean, [4] mode, [5] std, [6] min_angle, [7] max_angle
+	/// @return Tuple of [0] max, [1] min, [2] median, [3] mean, [4] mode, [5] std, [6] min_angle, [7] max_angle
 	std::tuple<double, double, double, double, double, double, double, double> get_maxchords_stats();
 
 	/// @brief Calculated allchords statistics
-	/// @return Tupple of [0] max, [1] min, [2] median, [3] mean, [4] mode, [5] std, [6] min_angle, [7] max_angle
+	/// @return Tuple of [0] max, [1] min, [2] median, [3] mean, [4] mode, [5] std, [6] min_angle, [7] max_angle
 	std::tuple<double, double, double, double, double, double, double, double> get_allchords_stats();
 
 	/// @brief Calculates "maxchords" and "allchords" features for a range of ROI labels

@@ -614,7 +614,7 @@ inline void __getLastCudaError(const char* errorMessage, const char* file,
 }
 
 // This will only print the proper error string when calling cudaGetLastError
-// but not exit program incase error detected.
+// but not exit program in case error detected.
 #define printLastCudaError(msg) __printLastCudaError(msg, __FILE__, __LINE__)
 
 inline void __printLastCudaError(const char* errorMessage, const char* file,
@@ -646,7 +646,7 @@ inline int _ConvertSMVer2Cores(int major, int minor) {
     // Defines for GPU Architecture types (using the SM version to determine
     // the # of cores per SM
     typedef struct {
-        int SM;  // 0xMm (hexidecimal notation), M = SM Major version,
+        int SM;  // 0xMm (hexadecimal notation), M = SM Major version,
         // and m = SM minor version
         int Cores;
     } sSMtoCores;
@@ -693,7 +693,7 @@ inline const char* _ConvertSMVer2ArchName(int major, int minor) {
     // Defines for GPU Architecture types (using the SM version to determine
     // the GPU Arch name)
     typedef struct {
-        int SM;  // 0xMm (hexidecimal notation), M = SM Major version,
+        int SM;  // 0xMm (hexadecimal notation), M = SM Major version,
         // and m = SM minor version
         const char* name;
     } sSMtoArchName;
