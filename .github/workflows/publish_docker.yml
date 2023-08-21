@@ -16,29 +16,22 @@ jobs:
         shell: bash -l {0}
 
     steps:
+      - name: Create more disk space
+        run: sudo rm -rf /usr/share/dotnet && sudo rm -rf /opt/ghc && sudo rm -rf "/usr/local/share/boost" && sudo rm -rf "$AGENT_TOOLSDIRECTORY" && sudo df -H
+
     - uses: actions/checkout@v3
-
-    - uses: conda-incubator/setup-miniconda@v2
       with:
-        activate-environment: anaconda-client-env
-        python-version: 3.8
-        channels: conda-forge
-        auto-activate-base: false
+        submodules: recursive
 
-    - name: Install Conda Dependencies
+    - name: Run Build Script
+      working-directory: ${{github.workspace}}
       run: |
-        conda install compilers=1.1.1  --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt --file ${{github.workspace}}/ci-utils/envs/conda_gpu.txt
+        bash ci-utils/build_conda.sh ${{github.workspace}}
 
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON -DUSE_GPU=ON -DUSEARROW=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
-
-    - name: Build
-      run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}} --parallel 2
-      
     - name: Copy 3rd-party libraries to staging directory
       working-directory: ${{github.workspace}}
       run: |
-        bash ci-utils/docker_copy_3rd_party_libs.sh $CONDA_PREFIX
+        bash ci-utils/docker_copy_3rd_party_libs.sh ${{github.workspace}}/miniconda-for-nyxus/envs/nyxus-3.8
 
     - name: Create Version File
       run: python setup.py --version| grep -v init > VERSION
