@@ -16,8 +16,8 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - name: Create more disk space
-        run: sudo rm -rf /usr/share/dotnet && sudo rm -rf /opt/ghc && sudo rm -rf "/usr/local/share/boost" && sudo rm -rf "$AGENT_TOOLSDIRECTORY" && sudo df -H
+    - name: Create more disk space
+      run: sudo rm -rf /usr/share/dotnet && sudo rm -rf /opt/ghc && sudo rm -rf "/usr/local/share/boost" && sudo rm -rf "$AGENT_TOOLSDIRECTORY" && sudo df -H
 
     - uses: actions/checkout@v3
       with:
