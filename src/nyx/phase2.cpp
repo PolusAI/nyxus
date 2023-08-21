@@ -288,30 +288,30 @@ namespace Nyxus
 			else
 			{
 				// Scan pixels of pending trivial ROIs 
-				std::sort (Pending.begin(), Pending.end());
+				std::sort(Pending.begin(), Pending.end());
 				VERBOSLVL1(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of total " << uniqueLabels.size() << " ROIs\n";)
-				VERBOSLVL1(
-					if (Pending.size() ==1)					
-						std::cout << ">>> (single ROI label " << Pending[0] << ")\n";
-					else
-						std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
-					)
-				scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
+					VERBOSLVL1(
+						if (Pending.size() == 1)
+							std::cout << ">>> (single ROI label " << Pending[0] << ")\n";
+						else
+							std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
+				)
+					scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
 
 				// Allocate memory
 				VERBOSLVL1(std::cout << "\tallocating ROI buffers\n";)
-				allocateTrivialRoisBuffers (Pending);
+					allocateTrivialRoisBuffers(Pending);
 
 				// Reduce them
 				VERBOSLVL1(std::cout << "\treducing ROIs\n";)
-				// reduce_trivial_rois(Pending);	
-				reduce_trivial_rois_manual(Pending);
+					// reduce_trivial_rois(Pending);	
+					reduce_trivial_rois_manual(Pending);
 
 				// Free memory
 				VERBOSLVL1(std::cout << "\tfreeing ROI buffers\n";)
-				freeTrivialRoisBuffers (Pending);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
+					freeTrivialRoisBuffers(Pending);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
 
-				// Reset the RAM footprint accumulator
+					// Reset the RAM footprint accumulator
 				batchDemand = 0;
 
 				// Clear the freshly processed ROIs from pending list 
@@ -325,10 +325,13 @@ namespace Nyxus
 			}
 
 			// Allow heyboard interrupt.
-#ifdef WITH_PYTHON_H
+			#ifdef WITH_PYTHON_H
 			if (PyErr_CheckSignals() != 0)
-                throw pybind11::error_already_set();
-#endif
+			{
+				sureprint("\nAborting per user input\n");
+				throw pybind11::error_already_set();
+			}
+			#endif
 		}
 
 		// Process what's remaining pending
@@ -366,7 +369,10 @@ namespace Nyxus
 			#ifdef WITH_PYTHON_H
 			// Allow heyboard interrupt.
 			if (PyErr_CheckSignals() != 0)
-                throw pybind11::error_already_set();
+			{
+				sureprint("\nAborting per user input\n");
+				throw pybind11::error_already_set();
+			}
 			#endif
 		}
 

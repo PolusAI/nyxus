@@ -1,3 +1,10 @@
+from .nyxus_arrow import arrow_headers_found
+
+if (arrow_headers_found()):
+    from .nyxus_arrow import link_arrow_lib
+        
+    link_arrow_lib()
+    
 from .backend import (
     initialize_environment,
     featurize_directory_imp,
@@ -12,22 +19,27 @@ from .backend import (
     customize_gabor_feature_imp,
     set_if_ibsi_imp,
     set_environment_params_imp,
-    get_params_imp, 
-    create_arrow_file_imp, 
-    get_arrow_file_imp, 
-    get_parquet_file_imp, 
-    create_parquet_file_imp, 
-    get_arrow_table_imp,
+    get_params_imp,
     arrow_is_enabled_imp,
     )
 
 import os
+import sys
 import numpy as np
 import pandas as pd
-import pyarrow as pa
 from typing import Optional, List
 
-#pa.import_pyarrow()
+if (arrow_headers_found() and arrow_is_enabled_imp()):
+        
+        from .backend import (
+            create_arrow_file_imp, 
+            get_arrow_file_imp, 
+            get_parquet_file_imp, 
+            create_parquet_file_imp, 
+            get_arrow_table_imp,
+        )
+            
+        import pyarrow as pa
 
 class Nyxus:
     """Nyxus image feature extraction library
@@ -577,7 +589,8 @@ class Nyxus:
             'coarse_gray_depth',
             'n_feature_calc_threads',
             'n_loader_threads',
-            'using_gpu'
+            'using_gpu',
+            'verbose'
         ]
         
         for key in params:
@@ -590,7 +603,8 @@ class Nyxus:
         coarse_gray_depth = params.get ('coarse_gray_depth', 0)
         n_reduce_threads = params.get ('n_feature_calc_threads', 0)
         n_loader_threads = params.get ('n_loader_threads', 0)
-        using_gpu =params.get ('using_gpu', -2)
+        using_gpu = params.get ('using_gpu', -2)
+        verbosity_lvl = params.get ('verbose', 0)
         
         set_environment_params_imp(features, 
                                    neighbor_distance, 
@@ -598,7 +612,8 @@ class Nyxus:
                                    coarse_gray_depth,
                                    n_reduce_threads,
                                    n_loader_threads,
-                                   using_gpu)
+                                   using_gpu,
+                                   verbosity_lvl)
         
     def set_params(self, **params):
         """Sets parameters of the Nyxus class
@@ -707,7 +722,10 @@ class Nyxus:
         None
 
         """
-        create_arrow_file_imp(path)
+        if self.arrow_is_enabled():
+            create_arrow_file_imp(path)
+        else:
+            raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
 
     
     def get_arrow_ipc_file(self):
@@ -723,7 +741,10 @@ class Nyxus:
 
         """
         
-        return get_arrow_file_imp()
+        if self.arrow_is_enabled():
+            return get_arrow_file_imp()
+        else:
+            raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
     
     def create_parquet_file(self, path: str="NyxusFeatures.parquet"):
         """Creates a Parquet file containing the features.
@@ -740,7 +761,10 @@ class Nyxus:
 
         """
         
-        create_parquet_file_imp(path)
+        if self.arrow_is_enabled():
+            create_parquet_file_imp(path)
+        else:
+            raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
     
     def get_parquet_file(self):
         """Returns the path to the Arrow IPC file.
@@ -754,8 +778,10 @@ class Nyxus:
         Path to the Parquet file (string)
 
         """
-        
-        return get_parquet_file_imp()
+        if self.arrow_is_enabled():
+            return get_parquet_file_imp()
+        else:
+            raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
     
     def get_arrow_memory_mapping(self):
         """Returns a memory mapping to the Arrow IPC file.
@@ -773,16 +799,19 @@ class Nyxus:
 
         """
         
-        arrow_file_path = self.get_arrow_ipc_file()
-        
-        if (arrow_file_path == ""):
-            self.create_arrow_file()
+        if self.arrow_is_enabled():
             arrow_file_path = self.get_arrow_ipc_file()
-        
-        with pa.memory_map(arrow_file_path, 'rb') as source:
-            array = pa.ipc.open_file(source).read_all()
-        
-        return array
+            
+            if (arrow_file_path == ""):
+                self.create_arrow_file()
+                arrow_file_path = self.get_arrow_ipc_file()
+            
+            with pa.memory_map(arrow_file_path, 'rb') as source:
+                array = pa.ipc.open_file(source).read_all()
+            
+            return array
+        else:
+            raise RuntimeError("Apache arrow is not enabled. Please rebuild Nyxus with Arrow support to enable this functionality.")
     
     
     def get_arrow_table(self):
@@ -798,7 +827,10 @@ class Nyxus:
 
         """
         
-        return get_arrow_table_imp()
+        if self.arrow_is_enabled():
+            return get_arrow_table_imp()
+        else:
+            raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
     
     def arrow_is_enabled(self):
         """Returns true if arrow support is enabled.
@@ -812,10 +844,9 @@ class Nyxus:
         bool: If arrow support is enabled 
         """
         
+
         return arrow_is_enabled_imp()
-    
-
-
+       
 class Nested:
     """Nyxus image feature extraction library / ROI hierarchy analyzer
     

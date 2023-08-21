@@ -55,7 +55,6 @@ namespace Nyxus
 					int digits = 2, k = std::pow(10.f, digits);
 				float perCent = float(filepair_index * 100 * k / tot_num_filepairs) / float(k);
 				VERBOSLVL1(std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << intens_fpath << " SEG: " << label_fpath << "\n";)
-
 			}
 
 			{ STOPWATCH("Image scan2a/ImgScan2a/Scan2a/lightsteelblue", "\t=");
@@ -64,7 +63,12 @@ namespace Nyxus
 				VERBOSLVL1(std::cout << "Gathering ROI metrics\n");
 				bool okGather = gatherRoisMetrics(intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
 				if (!okGather)
+				{
+					std::string msg = "Error in gatherRoisMetrics()\n";
+					std::cerr << msg;
+					throw (std::runtime_error(msg));
 					return false;
+				}
 
 				// Check presence of zero-background
 				if (zero_background_area == 0)
@@ -216,10 +220,10 @@ namespace Nyxus
 		auto nf = intensFiles.size();
 		for (int i = 0; i < nf; i++)
 		{
-			#ifdef CHECKTIMING
+#ifdef CHECKTIMING
 			if (Stopwatch::exclusive())
 				Stopwatch::reset();
-			#endif
+#endif
 
 			// Clear ROI data cached for the previous image
 			clear_feature_buffers();
@@ -229,19 +233,19 @@ namespace Nyxus
 
 			// Cache the file names to be picked up by labels to know their file origin
 			fs::path p_int(ifp), p_seg(lfp);
-			theSegFname = p_seg.string(); 
-			theIntFname = p_int.string(); 
+			theSegFname = p_seg.string();
+			theIntFname = p_int.string();
 
 			// Scan one label-intensity pair 
-			ok = theImLoader.open (theIntFname, theSegFname);
+			ok = theImLoader.open(theIntFname, theSegFname);
 			if (ok == false)
 			{
 				std::cout << "Terminating\n";
 				return 1;
 			}
 
-			ok = processIntSegImagePair (ifp, lfp, numFastloaderThreads, i, nf);		// Phased processing
-
+			// Do phased processing: prescan, trivial ROI processing, oversized ROI processing
+			ok = processIntSegImagePair(ifp, lfp, numFastloaderThreads, i, nf);
 			if (ok == false)
 			{
 				std::cout << "processIntSegImagePair() returned an error code while processing file pair " << ifp << " and " << lfp << std::endl;
@@ -250,9 +254,9 @@ namespace Nyxus
 
 			// For the non-Apache output mode, save the result for this intensity-label file pair
 			if (save2csv)
-				ok = save_features_2_csv (ifp, lfp, csvOutputDir);
+				ok = save_features_2_csv(ifp, lfp, csvOutputDir);
 			else
-				ok = save_features_2_buffer (theResultsCache);
+				ok = save_features_2_buffer(theResultsCache);
 			if (ok == false)
 			{
 				std::cout << "save_features_2_csv() returned an error code" << std::endl;
@@ -263,12 +267,15 @@ namespace Nyxus
 
 			// Save nested ROI related info of this image
 			if (theEnvironment.nestedOptions.defined())
-				save_nested_roi_info (nestedRoiData, uniqueLabels, roiData);
+				save_nested_roi_info(nestedRoiData, uniqueLabels, roiData);
 
 			#ifdef WITH_PYTHON_H
 			// Allow heyboard interrupt.
 			if (PyErr_CheckSignals() != 0)
-                		throw pybind11::error_already_set();
+			{
+				sureprint("\nAborting per user input\n");
+				throw pybind11::error_already_set();
+			}
 			#endif
 
 			#ifdef CHECKTIMING
