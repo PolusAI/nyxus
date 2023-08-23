@@ -143,7 +143,7 @@ public:
 	std::string rawGlcmAngles = "";
 	std::vector<int> glcmAngles = {0, 45, 90, 135};
 
-	std::string verbosity = "";	// 'verbosity_level' is inherited from BasicEnvironment
+	std::string rawVerbosity = "";	// 'verbosity_level' is inherited from BasicEnvironment
 
 	std::string rawOnlineStatsThresh = "";
 	int onlineStatsTreshold = 0;

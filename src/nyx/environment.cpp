@@ -727,7 +727,7 @@ bool Environment::parse_cmdline(int argc, char **argv)
 				find_string_argument(i, GLCMANGLES, rawGlcmAngles) ||
 				find_string_argument(i, PXLDIST, pixel_distance) ||
 				find_string_argument(i, COARSEGRAYDEPTH, raw_coarse_grayscale_depth) ||
-				find_string_argument(i, VERBOSITY, verbosity) ||
+				find_string_argument(i, VERBOSITY, rawVerbosity) ||
 				find_string_argument(i, IBSICOMPLIANCE, raw_ibsi_compliance) ||
 				find_string_argument(i, RAMLIMIT, rawRamLimit) ||
 				find_string_argument(i, TEMPDIR, rawTempDir) ||
@@ -918,10 +918,10 @@ bool Environment::parse_cmdline(int argc, char **argv)
 		}
 	}
 
-	if (!verbosity.empty())
+	if (!rawVerbosity.empty())
 	{
 		// string -> integer
-		if (sscanf(verbosity.c_str(), "%d", &verbosity_level) != 1 || verbosity_level < 0)
+		if (sscanf(rawVerbosity.c_str(), "%d", &verbosity_level) != 1 || verbosity_level < 0)
 		{
 			std::cout << "Error: " << VERBOSITY << "=" << reduce_threads << ": expecting a positive integer constant\n";
 			return false;

@@ -57,7 +57,8 @@ features = nyx.featurize_files(
         "/path/to/images/labels/m1.ome.tif", 
         "/path/to/images/labels/m2.ome.tif",
         "/path/to/images/labels/m2.ome.tif"
-    ])
+    ],
+	False)
 ```
 
 The `features` variable is a Pandas dataframe similar to what is shown below.
