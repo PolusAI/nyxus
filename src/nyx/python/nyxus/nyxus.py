@@ -388,18 +388,20 @@ class Nyxus:
         self,
         intensity_files: list,
         mask_files: list,
+        single_roi: bool,
         output_type: Optional[str] = "pandas",
         output_path: Optional[str] = ""):
         """Extract features from image file pairs passed as lists
 
         Extracts all the requested features _at the image level_ from the intensity images
         present in list `intensity_files` with respect to region of interest masks presented in 
-        list `mask_files`. Multiple 
+        list `mask_files`. Single-ROI feature extraction is enforced via passing 'True' as parameter 'single_roi'
 
         Parameters
         ----------
         intensity_files : list of intensity image file paths
         mask_files : list of mask image file paths
+        single_roi : 'True' to treat items of 'intensity_files' as single-ROI ('mask_files' will be ignored), 'False' to treat items of 'intensity_files' and 'mask_files' as intensity/segmentation image pairs
 
         Returns
         -------
@@ -415,11 +417,11 @@ class Nyxus:
             raise IOError ("The list of segment file paths is empty")
         
         if (output_type not in self._valid_output_types):
-            raise  ValueError(f'Invalid output type {output_type}. Valid output types are {self._valid_output_types}.')
+            raise  ValueError(f'Invalid output type {output_type}. Valid output types are {self._valid_output_types}')
 
         if (output_type == 'pandas'):
             
-            header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files, True)
+            header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files, single_roi, True)
 
             df = pd.concat(
                 [
@@ -437,7 +439,7 @@ class Nyxus:
         
         else:
             
-            featurize_fname_lists_imp (intensity_files, mask_files, False)
+            featurize_fname_lists_imp (intensity_files, mask_files, single_roi, False)
             
             output_type = output_type.lower() # ignore case of output type
             
@@ -579,6 +581,8 @@ class Nyxus:
             Id of the gpu to use. To find available gpus along with ids, using nyxus.get_gpu_properties().
             The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
             thread for feature calculation. 
+        * verbose: int (optional, non-negative, default 0)
+            Level of diagnostic output shown in the console. Set '0' to disable any diagnostic output.
         
         """
         

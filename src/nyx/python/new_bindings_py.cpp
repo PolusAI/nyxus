@@ -106,7 +106,7 @@ void set_environment_params_imp (
     uint32_t n_reduce_threads = 0,
     uint32_t n_loader_threads = 0,
     int using_gpu = -2,
-    int verbosity_level = 0
+    int verb_level = 0
 ) {
     if (features.size() > 0) {
         theEnvironment.recognizedFeatureNames = features;
@@ -132,8 +132,10 @@ void set_environment_params_imp (
         theEnvironment.n_loader_threads = n_loader_threads;
     }
 
-    if (verbosity_level != 0)
-        theEnvironment.verbosity = verbosity_level;
+    if (verb_level >= 0)
+        theEnvironment.set_verbosity_level (verb_level);
+    else
+        throw std::runtime_error("Error: verbosity (" + std::to_string(verb_level) + ") should be a non-negative value");
 }
 
 py::tuple featurize_directory_imp (
@@ -289,10 +291,10 @@ py::tuple featurize_montage_imp (
     return py::make_tuple(error_message);
 }
 
-py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames, bool pandas_output=true)
+py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames, bool single_roi, bool pandas_output=true)
 {
     // Set the whole-slide/multi-ROI flag
-    theEnvironment.singleROI = false;
+    theEnvironment.singleROI = single_roi;
 
     std::vector<std::string> intensFiles, labelFiles;
     for (auto it = int_fnames.begin(); it != int_fnames.end(); ++it)
@@ -363,7 +365,6 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
             pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
 
             return py::make_tuple(pyHeader, pyStrData, pyNumData);
-        
     } 
 
     // Return "nothing" when output will be an Arrow format
