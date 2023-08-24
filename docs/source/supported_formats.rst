@@ -5,7 +5,7 @@ Supported Image Formats
 Currently, Nyxus supports OME-TIFF, OME-Zarr and DICOM 2D Grayscale images.
 
 OME-TIFF images uses the standard TIFF specification to store one or multiple image planes. OME-TIFF images are always structured as 
-5D data((T)ime, (C)hannel, Z, Y and X). For 2D single channel image, Z, C and T dimentions are constrained to be one. OME-TIFF images also contain an XML 
+5D data((T)ime, (C)hannel, Z, Y and X). For 2D single channel image, Z, C and T dimensions are constrained to be one. OME-TIFF images also contain an XML 
 document stored under the ``IMAGE_DESCRIPTION`` tag. This XML document contains the metadata to extract Image File Directory (IFD) for a 
 given T, C and Z position. Since, Nyxus only processes grayscale 2D images at a fixed time point, the images are 
 assumed to have only one IFD, and the internal loader reads the first IFD even if the image file contains multiple IFDs. 

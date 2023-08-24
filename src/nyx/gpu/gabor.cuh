@@ -54,10 +54,10 @@ namespace CuGabor{
      * @param out Results array
      * @param image Image to convolve
      * @param kernel Kernel
-     * @param image_n Widht of image
-     * @param image_m Heigh of image
+     * @param image_n Width of image
+     * @param image_m Height of image
      * @param kernel_n Width of kernel
-     * @param kernel_m Heigh of image
+     * @param kernel_m Height of image
      */
     bool conv_dud_gpu_fft(double* out, // must be zeroed
                     const unsigned int* image, 

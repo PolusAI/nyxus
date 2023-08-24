@@ -592,7 +592,7 @@ TEST(TEST_NYXUS, TEST_IBSI_NGTDM_STRENGTH)
 	ASSERT_NO_THROW(test_ibsi_ngtdm_strength());
 }
 
-//==== Tests of texture feature extraction witout binning
+//==== Tests of texture feature extraction without binning
 
 // GLCM tests
 

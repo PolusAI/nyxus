@@ -4,7 +4,7 @@ Command line
 
 Assuming you built the Nyxus executable from source code, 
 the following parameters are available for the command 
-line usage. Regular comand line users should adhere 
+line usage. Regular command line users should adhere 
 parameter value to the "Type" column. WIPP developers 
 should adhere to columns "WIPP I/O role" and "WIPP type".
 
@@ -345,7 +345,7 @@ The `features` variable will now use the custom names, as shown below
    14  custom_seg_name2   Intensity2         6    54573.3    54573.3  ...  0.980769
 
 All parameters to configure Nyxus are available to set within the constructor. These parameters can also be updated after the object is created using the `set_params`
-method. This method takes in keyword arguments where the key is a valid parameter in Nyxus and the value is the updated value for the paramter. For example, 
+method. This method takes in keyword arguments where the key is a valid parameter in Nyxus and the value is the updated value for the parameter. For example, 
 to update the `coarse_gray_depth` to 256 and the `gabor_f0` parameter to 0.1, the following can be done:
 
 .. code-block:: python

@@ -40,7 +40,7 @@ public:
 	/// @return Value of the ellipse elongation feature
 	double get_elongation();
 
-	/// @brief Orientation describes whather the ellipse is horizontal or vertical
+	/// @brief Orientation describes whether the ellipse is horizontal or vertical
 	/// @return 
 	double get_orientation();
 

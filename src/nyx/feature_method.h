@@ -29,7 +29,7 @@ public:
 	virtual void osized_reduce() final {};	// Get rid of this method in all derived
 	virtual void osized_calculate (LR& r, ImageLoader& imloader) = 0;	// Called once right after having scanned the ROI in the raster order. Put your reduction or summarization of data gathered in osized_add_online_pixel()
 
-	// Put method-dependent set of calculation results in the standard feature results list further savable as CSV-file
+	// Put method-dependent set of calculation results in the standard feature results list further saveable as CSV-file
 	virtual void save_value(std::vector<std::vector<double>>& feature_vals) = 0;
 
 	// Feature-specific cache clean-up 

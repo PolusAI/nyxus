@@ -44,9 +44,9 @@ Nyxus provided features
    * - HYPERFLATNESS
      - Hyperflatness - the 6th standardized moment
    * - MEAN_ABSOLUTE_DEVIATION
-     - Mean absolute devation
+     - Mean absolute deviation
    * - MEDIAN_ABSOLUTE_DEVIATION
-     - Median absolute devation
+     - Median absolute deviation
    * - ENERGY
      - ROI energy
    * - ROOT_MEAN_SQUARED

@@ -20,7 +20,7 @@ The continuity is meant as a 4-connected neighbourhood. For example, the followi
     \fbox{3} & 1 & 0 & 0 & 0 & 1 & 0
 	\end{bmatrix}
 
-The zone's distance is the minimum of its each pixel's distance to the ROI or image border measured as the number of pixel boudaries to the first off-ROI or off-image pixel.
+The zone's distance is the minimum of its each pixel's distance to the ROI or image border measured as the number of pixel boundaries to the first off-ROI or off-image pixel.
 
 Considering the following ROI image 
 
@@ -93,7 +93,7 @@ Applied to the example, the GLDZM :math:`M(I_2)` of image :math:`I_2` having dis
     1 & 1 & 0\end{bmatrix}
 
 Let
-:math:`m(x,d)` be an element ofthe distance zone matrix corresponding to grey level :math:`x` and zone distance :math:`d` ,
+:math:`m(x,d)` be an element of the distance zone matrix corresponding to grey level :math:`x` and zone distance :math:`d` ,
 
 :math:`N_g` -- the number of grey levels ,
 

@@ -103,8 +103,8 @@ public:
 
 private:
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
-	int Ng = 0;	// number of discreet intensity values in the image
-	int Ns = 0; // number of discreet zone sizes in the image
+	int Ng = 0;	// number of discrete intensity values in the image
+	int Ns = 0; // number of discrete zone sizes in the image
 	int Np = 0; // number of voxels in the image
 	int Nz = 0; // number of zones in the ROI, 1<=Nz<=Np
 	SimpleMatrix<int> P;
@@ -123,8 +123,8 @@ private:
 	void clear_buffers()
 	{
 		bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
-		Ng = 0;	// number of discreet intensity values in the image
-		Ns = 0; // number of discreet zone sizes in the image
+		Ng = 0;	// number of discrete intensity values in the image
+		Ns = 0; // number of discrete zone sizes in the image
 		Np = 0; // number of voxels in the image
 		Nz = 0; // number of zones in the ROI, 1<=Nz<=Np
 		P.clear();

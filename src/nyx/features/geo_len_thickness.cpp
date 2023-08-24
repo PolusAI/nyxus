@@ -18,7 +18,7 @@ void GeodeticLengthThicknessFeature::calculate (LR& r)
 	if (SqRootTmp < 0) 
 		SqRootTmp = 0;
 
-	// Calcuate geodetic_length with pq-formula (see above):
+	// Calculate geodetic_length with pq-formula (see above):
 	geodetic_length = roiPerimeter / 4 + sqrt(SqRootTmp);
 
 	// Calculate thickness by rewriting Equation (2):

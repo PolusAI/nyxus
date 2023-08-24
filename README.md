@@ -32,7 +32,7 @@ or
 conda install nyxus -c conda-forge
 ```
 
-Usage is very straightforward. Given `intensities` and `labels` folders, Nyxus pairs up intensity-label images and extracts features from all of them. A summary of the avaialble feature are [listed below](#available-features).
+Usage is very straightforward. Given `intensities` and `labels` folders, Nyxus pairs up intensity-label images and extracts features from all of them. A summary of the available feature are [listed below](#available-features).
 
 ```python 
 from nyxus import Nyxus
@@ -138,7 +138,7 @@ Nyxus can also be [built from source](#building-from-source) and used from the c
 ## Getting and setting parameters of Nyxus
 
 All parameters to configure Nyxus are available to set within the constructor. These parameters can also be updated after the object is created using the `set_params`
-method. This method takes in keyword arguments where the key is a valid parameter in Nyxus and the value is the updated value for the paramter. For example, 
+method. This method takes in keyword arguments where the key is a valid parameter in Nyxus and the value is the updated value for the parameter. For example, 
 to update the `coarse_gray_depth` to 256 and the `gabor_f0` parameter to 0.1, the following can be done:
 
 ```python 
@@ -301,7 +301,7 @@ Nyxus provides a set of pixel intensity, morphology, texture, intensity distribu
 | INTEGRATED_INTENSITY | Integrated intensity of the region of interest (ROI) |
 | MEAN, MAX, MEDIAN, STANDARD_DEVIATION, MODE | Mean/max/median/stddev/mode intensity value of the ROI | 
 | SKEWNESS, KURTOSIS, HYPERSKEWNESS, HYPERFLATNESS  | higher standardized moments | 
-| MEAN_ABSOLUTE_DEVIATION  | Mean absolute devation | 
+| MEAN_ABSOLUTE_DEVIATION  | Mean absolute deviation | 
 | ENERGY  | ROI energy | 
 | ROOT_MEAN_SQUARED  | Root of mean squared deviation | 
 | ENTROPY  | ROI entropy - a measure of the amount of information in the ROI | 

@@ -279,7 +279,7 @@ namespace Nyxus
 
 			size_t itemFootprint = r.get_ram_footprint_estimate();
 
-			// Sheck if we are good to accumulate this ROI in the current batch or should close the batch and reduce it
+			// Check if we are good to accumulate this ROI in the current batch or should close the batch and reduce it
 			if (batchDemand + itemFootprint < memory_limit)
 			{
 				Pending.push_back(lab);

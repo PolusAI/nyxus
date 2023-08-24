@@ -159,7 +159,7 @@ void ContourFeature::buildRegularContour(LR& r)
 						if (counter2 > 8)
 						{
 							// If counter2 is above 8, we have sought around the neighborhood and
-							// therefor the border is a single non-blank pixel, and we can exit
+							// therefore the border is a single non-blank pixel, and we can exit
 							counter2 = 0;
 							break;
 						}
@@ -200,7 +200,7 @@ void ContourFeature::buildRegularContour(LR& r)
 		std::cout << "\n\n\n";
 	);
 
-	//==== Remove padding and save the countour image as a vector of non-blank pixels
+	//==== Remove padding and save the contour image as a vector of non-blank pixels
 	AABB & bb = r.aabb; // r.aux_image_matrix.original_aabb;
 	int base_x = bb.get_xmin(),
 		base_y = bb.get_ymin();
@@ -213,7 +213,7 @@ void ContourFeature::buildRegularContour(LR& r)
 			auto inte = borderImage[idx];
 			if (inte)
 			{
-				Pixel2 p(x, y, inte - 1);		// Undecorate the intesity		
+				Pixel2 p(x, y, inte - 1);		// Undecorate the intensity		
 				r.contour.push_back(p);
 			}
 		}
@@ -251,7 +251,7 @@ void ContourFeature::buildRegularContour(LR& r)
 			cands.push_back(px);
 		}
 
-		//	--are there any tip's neighbr candidate?
+		//	--are there any tip's neighbor candidate?
 		if (!cands.empty())
 		{
 			int distMin = pxTip.sqdist(cands[0]);
@@ -483,7 +483,7 @@ void ContourFeature::buildRegularContour_nontriv(LR& r)
 						if (counter2 > 8)
 						{
 							// If counter2 is above 8 we have traced around the neighborhood and
-							// therefor the border is a single black pixel and we can exit
+							// therefore the border is a single black pixel and we can exit
 							counter2 = 0;
 							break;
 						}
@@ -496,7 +496,7 @@ void ContourFeature::buildRegularContour_nontriv(LR& r)
 			}
 		}
 
-	//==== Remove padding and save the countour image as a vector of contour-onlu pixels
+	//==== Remove padding and save the contour image as a vector of contour-onlu pixels
 	AABB& bb = r.aabb; // r.aux_image_matrix.original_aabb;
 	int base_x = bb.get_xmin(),
 		base_y = bb.get_ymin();

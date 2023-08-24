@@ -643,7 +643,7 @@ PYBIND11_MODULE(backend, m)
 
 ///
 /// The following code block is a quick & simple manual test of the Python interface 
-/// invokable from from the command line. It lets you bypass building and installing the Python library.
+/// invocable from from the command line. It lets you bypass building and installing the Python library.
 /// To use it, 
 ///     #define TESTING_PY_INTERFACE, 
 ///     exclude file main_nyxus.cpp from build, and 

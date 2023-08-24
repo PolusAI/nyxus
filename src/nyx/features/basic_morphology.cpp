@@ -80,7 +80,7 @@ void BasicMorphologyFeatures::calculate(LR& r)
 
 	for (auto& px : r.raw_pixels)
 	{
-		// the "+1" is only for compatability with matlab code (where index starts from 1) 
+		// the "+1" is only for compatibility with matlab code (where index starts from 1) 
 		x_mass = x_mass + (px.x + 1) * px.inten;
 		y_mass = y_mass + (px.y + 1) * px.inten;
 		mass += px.inten;
@@ -171,7 +171,7 @@ void BasicMorphologyFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)	// for (auto& px : r.raw_pixels)
 	{
 		auto px = r.raw_pixels_NT.get_at(i);
-		// the "+1" is only for compatability with matlab code (where index starts from 1) 
+		// the "+1" is only for compatibility with matlab code (where index starts from 1) 
 		x_mass = x_mass + (px.x + 1) * px.inten;
 		y_mass = y_mass + (px.y + 1) * px.inten;
 		mass += px.inten;

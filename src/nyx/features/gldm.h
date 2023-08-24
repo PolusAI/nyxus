@@ -88,8 +88,8 @@ public:
 
 private:
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
-	int Ng = 0;	// number of discreet intensity values in the image
-	int Nd = 0; // number of discreet dependency sizes in the image
+	int Ng = 0;	// number of discrete intensity values in the image
+	int Nd = 0; // number of discrete dependency sizes in the image
 	int Nz = 0; // number of dependency zones in the ROI, Nz = sum(sum(P[i,j]))
 
 	double sum_p = 0;

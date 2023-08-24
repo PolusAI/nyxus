@@ -45,7 +45,7 @@ edit the integer to string feature identifier mapping in mapping UserFacingFeatu
 Step 3 - create a feature method class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Any Nyxus feature needs to be derived from class FeatureMethod defining a particular calculator of one or multiple features. FeatureMethod is a skeleton of the custom feature calculator responding to image data streamed to it in various ways - pixel by pixel (so called online mode), as a cached pixel cloud in the form of std::vector\ :raw-html-m2r:`<Pixel2>` object for images whose size permits caching a single ROI's data in user computer's RAM (so called trivial ROIs), and as a browser of a mask-intensity image pair for ROIs whose cache exceeds the RAM limit (so called non-trivial or oversized ROIs). All the particular feature calculation logic neds to be placed in your implementation of FeatureMethod's pure virtual methods. The class's header and source files are suggested to be placed in directory "features". For example, if we want to implement a class calculating a 3-segmental ROI intensity statistics (means) weighted by unit perimeter length delivered to user as features MYFEATURE1, MYFEATURE2, and MYFEATURE3: 
+Any Nyxus feature needs to be derived from class FeatureMethod defining a particular calculator of one or multiple features. FeatureMethod is a skeleton of the custom feature calculator responding to image data streamed to it in various ways - pixel by pixel (so called online mode), as a cached pixel cloud in the form of std::vector\ :raw-html-m2r:`<Pixel2>` object for images whose size permits caching a single ROI's data in user computer's RAM (so called trivial ROIs), and as a browser of a mask-intensity image pair for ROIs whose cache exceeds the RAM limit (so called non-trivial or oversized ROIs). All the particular feature calculation logic needs to be placed in your implementation of FeatureMethod's pure virtual methods. The class's header and source files are suggested to be placed in directory "features". For example, if we want to implement a class calculating a 3-segmental ROI intensity statistics (means) weighted by unit perimeter length delivered to user as features MYFEATURE1, MYFEATURE2, and MYFEATURE3: 
 
 .. code-block:: c++
 
@@ -135,7 +135,7 @@ For example
 
 Step 8 - implement feature calculation of oversized ROIs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-An oversized ROI's cached data cannot fit in computer meory so in the oversized ROI scenarios we cannot rely on its pixel cloud or image matrix. Instead, all the calculations should be performed "in place" - using the image browser class ImageLoader (header image_loader.h) similarly to class ImageMatrix (image_matrix.h) and creating out of memory cache using classes OutOfRamPixelCloud, OOR_ReadMatrix, ReadImageMatrix_nontriv, and WriteImageMatrix_nontriv (header image_matrix.nontriv). You are guaranteed to have initialized object LR::osized_pixel_cloud prior to the call of method osized_calculate(). For example:
+An oversized ROI's cached data cannot fit in computer memory so in the oversized ROI scenarios we cannot rely on its pixel cloud or image matrix. Instead, all the calculations should be performed "in place" - using the image browser class ImageLoader (header image_loader.h) similarly to class ImageMatrix (image_matrix.h) and creating out of memory cache using classes OutOfRamPixelCloud, OOR_ReadMatrix, ReadImageMatrix_nontriv, and WriteImageMatrix_nontriv (header image_matrix.nontriv). You are guaranteed to have initialized object LR::osized_pixel_cloud prior to the call of method osized_calculate(). For example:
 
 .. code-block:: c++
 
@@ -225,7 +225,7 @@ Often multiple features need to be calculated together and the user faces the ne
    nyxus --features=AREA_PIXELS_COUNT,AREA_UM2,CENTROID_X,CENTROID_Y,BBOX_YMIN,BBOX_XMIN,BBOX_HEIGHT,BBOX_WIDTH --intDir=/home/ec2-user/work/datasetXYZ/int --segDir=/home/ec2-user/work/dataXYZ/seg --outDir=/home/ec2-user/work/datasetXYZ --filePattern=.* --outputType=separatecsv
 
 
-Features can be grouped toegther and gived convenient aliases, for example the above features AREA_PIXELS_COUNT, AREA_UM2, CENTROID_X, CENTROID_Y, BBOX_YMIN, BBOX_XMIN, BBOX_HEIGHT, and BBOX_WIDTH can be refered to as \*BASIC_MORPHOLOGY\* . (Asterisks are a part of the alias and aren't special symbols.) The command line then becomes simpler
+Features can be grouped toegther and given convenient aliases, for example the above features AREA_PIXELS_COUNT, AREA_UM2, CENTROID_X, CENTROID_Y, BBOX_YMIN, BBOX_XMIN, BBOX_HEIGHT, and BBOX_WIDTH can be referred to as \*BASIC_MORPHOLOGY\* . (Asterisks are a part of the alias and aren't special symbols.) The command line then becomes simpler
 
 .. code-block:: bash
 

@@ -145,7 +145,7 @@ namespace Nyxus
 				bool angledGlcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
 				if (angledGlcmFeature)
 				{
-					// Polulate with angles
+					// Populate with angles
 					for (auto ang : theEnvironment.glcmAngles)
 					{
 						// CSV separator
@@ -161,7 +161,7 @@ namespace Nyxus
 				bool glrlmFeature = std::find (GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
 				if (glrlmFeature)
 				{
-					// Polulate with angles
+					// Populate with angles
 					for (auto ang : GLRLMFeature::rotAngles)
 					{
 						ssHead << "," << fn << "_" << ang;
@@ -285,7 +285,7 @@ namespace Nyxus
 				bool glrlmFeature = std::find (GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
 				if (glrlmFeature)
 				{
-					// Polulate with angles
+					// Populate with angles
 					int nAng = 4;
 					for (int i=0; i < nAng; i++)
 					{

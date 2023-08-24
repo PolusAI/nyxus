@@ -11,7 +11,7 @@ GLSZMFeature::GLSZMFeature() : FeatureMethod("GLSZMFeature")
 	provide_features (GLSZMFeature::featureset);
 }
 
-void GLSZMFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {} // Not suporting
+void GLSZMFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {} // Not supporting
 
 void GLSZMFeature::osized_calculate (LR& r, ImageLoader&)
 {

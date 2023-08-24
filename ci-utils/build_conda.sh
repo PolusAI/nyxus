@@ -13,7 +13,7 @@ then
       exit
 fi
 
-MINICONDA=$PWD/miniconda-for-nyxus # Modify this to your preferred location for persistance
+MINICONDA=$PWD/miniconda-for-nyxus # Modify this to your preferred location for persistence
 CPP_BUILD_DIR=$PWD
 SRC_ROOT=$1 #source dir location
 NYXUS_ROOT=$SRC_ROOT
