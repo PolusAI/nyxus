@@ -11,7 +11,7 @@ GaborFeature::GaborFeature() : FeatureMethod("GaborFeature")
 
 void GaborFeature::osized_calculate (LR& r, ImageLoader&)
 {
-    int nF = (int)GaborFeature::f0.size();
+    int nF = (int)GaborFeature::f0_theta_pairs.size();
 
     if (fvals.size() != nF)
         fvals.resize(nF);
@@ -35,22 +35,25 @@ void GaborFeature::osized_calculate (LR& r, ImageLoader&)
     // Compute the original score before Gabor
     double max0 = 0.0;
     size_t cnt0 = 0;
-    GaborEnergy_NT2 (Im0, auxG.data(), f0LP, sig2lam, gamma, theta, n, true/*request max*/, 0/*threshold*/, max0/*out*/, cnt0/*out*/);
+    GaborEnergy_NT2 (Im0, auxG.data(), f0LP, sig2lam, gamma, M_PI_2, n, true/*request max*/, 0/*threshold*/, max0/*out*/, cnt0/*out*/); // compromise pi/2 theta
 
     double cmp_a = max0 * GRAYthr;
 
     size_t originalScore = 0;
-    GaborEnergy_NT2 (Im0, auxG.data(), f0LP, sig2lam, gamma, theta, n, false/*request count*/, cmp_a/*threshold*/, max0/*out*/, originalScore/*out*/);
-
-    for (int freq=0; freq < nF; freq++)
+    for (int i=0; i < nF; i++)
     {
-        VERBOSLVL3(std::cout << "\tcalculating Gabor frequency " << freq+1 << "/" << nF << "\n");
+        VERBOSLVL3 (std::cout << "\tcalculating Gabor frequency " << i+1 << "/" << nF << "\n");
+
+        // -- unpack a frequency-angle pair
+        const auto& ft = f0_theta_pairs[i];
+        auto f0 = ft.first;
+        auto theta = ft.second;
 
         size_t afterGaborScore = 0;
-        GaborEnergy_NT2 (Im0, auxG.data(), freq + 1, sig2lam, gamma, theta, n, false/*request count*/, cmp_a/*threshold*/, max0/*out*/, afterGaborScore/*out*/);
-        fvals[freq] = (double)afterGaborScore / (double)originalScore;
+        GaborEnergy_NT2 (Im0, auxG.data(), f0, sig2lam, gamma, theta, n, false/*request count*/, cmp_a/*threshold*/, max0/*out*/, afterGaborScore/*out*/);
+        fvals[i] = (double)afterGaborScore / (double)originalScore;
 
-        VERBOSLVL3(std::cout << "\t\tfeature [" << freq << "] = " << fvals[freq] << "\n");
+        VERBOSLVL3 (std::cout << "\t\tfeature [" << i << "] = " << fvals[i] << "\n");
     }
 }
 

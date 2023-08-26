@@ -1,6 +1,4 @@
 #pragma once
-
-#include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -308,5 +306,14 @@ namespace Nyxus
 		return false;
 	}
 
+	inline double rad2deg (double x)
+	{
+		return x / 3.14159265358979323846 * 180.;
+	}
+	
+	inline double deg2rad (double x)
+	{
+		return x / 180. * 3.14159265358979323846;
+	}
 }
 

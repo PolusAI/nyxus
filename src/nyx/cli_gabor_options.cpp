@@ -1,20 +1,47 @@
-#define _USE_MATH_DEFINES	// For M_PI, etc.
-#include <cmath>
 #include "cli_gabor_options.h"
 #include "features/gabor.h"
 
 bool GaborOptions::parse_input()
 {
-	if (!rawFreqs.empty())
+	// OK to have both angles and frequencies specified but not one of them
+	if (!rawTheta.empty() && !rawFreqs.empty())
 	{
-		// string -> vector of doubles
-		std::vector<double> x;
-		if (!Nyxus::parse_delimited_string_list_to_doubles(rawFreqs, x, ermsg))
+		std::vector<double> t;
+		if (!Nyxus::parse_delimited_string_list_to_doubles(rawTheta, t, ermsg))
+		{
+			ermsg = "Error in " + rawTheta + ": expecting a list of real values";
 			return false;
+		}
 
-		// set feature class parameter
-		GaborFeature::f0 = x;	
+		std::vector<double> f;
+		if (!Nyxus::parse_delimited_string_list_to_doubles(rawFreqs, f, ermsg))
+		{
+			ermsg = "Error in " + rawFreqs + ": expecting a list of real values";
+			return false;
+		}
+
+		// Check lengths
+		if (t.size() != f.size())
+		{
+			ermsg = "Error: frequency and angle lists must me of same size. Received thetas=" + rawTheta + " freqs=" + rawFreqs;
+			return false;
+		}
+
+		// All the checks passed, now cache the f0/theta pairs in the feature class
+		GaborFeature::f0_theta_pairs.clear();	// clear the previously cached pairs
+		int n = t.size();
+		for (int i = 0; i < n; i++)
+		{
+			std::pair p (f[i], deg2rad(t[i]));	// angle in radians
+			GaborFeature::f0_theta_pairs.push_back(p);
+		}
 	}
+	else
+		if (rawTheta.empty() != rawFreqs.empty())
+		{
+			ermsg = "Error: frequency and angle lists are allowed to be both empty or non-empty";
+			return false;
+		}
 
 	if (!rawGamma.empty())
 	{
@@ -74,21 +101,6 @@ bool GaborOptions::parse_input()
 
 		// set feature class parameter
 		GaborFeature::f0LP = x;
-	}
-
-	if (!rawTheta.empty())
-	{
-		// string -> real
-		float x;
-		bool ok = parse_as_float(rawTheta, x);
-		if (!ok || x < 0 || x > 180)
-		{
-			ermsg = "Error in " + rawTheta + ": expecting a real value in [0,180]";
-			return false;
-		}
-
-		// set feature class parameter (in radians)
-		GaborFeature::theta = x/180.0 * M_PI;
 	}
 
 	if (!rawGrayThreshold.empty())

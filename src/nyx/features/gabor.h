@@ -43,8 +43,6 @@ public:
 
     //-------------- - User interface
 
-    // Frequencies of highpass Gabor filters    
-    static std::vector<double> f0; // [GaborFeature::num_features] = { 1, 2, 4, 8, 16, 32, 64 };
     // Aspect ratio of the Gaussian
     static double gamma;            
     // spatial frequency bandwidth (sigma to lambda)
@@ -53,12 +51,14 @@ public:
     static int n;                    
     // Frequency of the low-pass Gabor filter used to produce the reference baseline image
     static double f0LP;             
-    // Default orientation of Gaussian (radians)
-    static double theta;            
     // Threshold of the filtered at frequency f0[i] to baseline image ratio
     static double GRAYthr;  
 
-    static double get_theta_in_degrees();
+    // Pairs of orientation angles of the Gaussian (in radians) and frequency of corresponding highpass filters
+    static std::vector<std::pair<double, double>> f0_theta_pairs;
+
+    // Returns the angle of i-th pair of 'f0_theta_pairs'
+    static double get_theta_in_degrees (int i);
 
 private:
 
@@ -106,15 +106,15 @@ private:
         double theta, 
         int n);
 
-    void GaborEnergyGPUMultiFilter (
-        const ImageMatrix& Im, 
-        std::vector<std::vector<PixIntens>>& /* double* */ out, 
-        double* auxC, 
+    void GaborEnergyGPUMultiFilter(
+        const ImageMatrix& Im,
+        std::vector<std::vector<PixIntens>>& out,
+        double* auxC,
         double* Gexp,
-        std::vector<double>& f, 
-        double sig2lam, 
-        double gamma, 
-        double theta, 
+        const std::vector<double>& f0,     // frequencies matching 'thetas'
+        double sig2lam,
+        double gamma,
+        const std::vector<double>& thetas, // thetas matching frequencies in 'f'
         int n,
         int num_filters);
     #endif
