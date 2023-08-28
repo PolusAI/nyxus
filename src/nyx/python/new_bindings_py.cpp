@@ -509,7 +509,7 @@ std::map<std::string, ParameterTypes> get_params_imp(const std::vector<std::stri
         t.push_back (Nyxus::rad2deg(p.second));
     }
     params["gabor_freqs"] = f;
-    params["gabor_theta"] = t;
+    params["gabor_thetas"] = t;
 
     if (vars.size() == 0) 
         return params;

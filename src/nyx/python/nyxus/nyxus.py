@@ -92,11 +92,11 @@ class Nyxus:
         Spatial frequency bandwidth.
     gabor_f0: float (optional, default 0.1)
         frequency of the baseline lowpass filter as denominator of `\pi`.
-    gabor_theta: float (optional, default 45): 
+    gabor_thetas: list[float] (optional, default [0, 45, 90, 135]): 
         Orientation of the Gaussian in degrees 0-180.
     gabor_thold: float (optional, 0.025)
         lower threshold of the filtered image to baseline ratio. 
-    gabor_freqs: list[int] (optional, default [1,2,4,8,16,32,64])
+    gabor_freqs: list[float] (optional, default [4, 16, 32, 64])
         comma-separated denominators of `\pi` as frequencies of Gabor filter's harmonic factor.
     """
 
@@ -115,7 +115,7 @@ class Nyxus:
         gabor_sig2lam: float = 0.8,
         gabor_f0: float = 0.1,
         gabor_thold: float = 0.025,
-        gabor_theta: List[int] = [0, 45, 90, 135],
+        gabor_thetas: List[int] = [0, 45, 90, 135],
         gabor_freqs: List[int] = [4, 16, 32, 64]
         ):
 
@@ -159,7 +159,7 @@ class Nyxus:
             sig2lam = gabor_sig2lam,
             f0 = gabor_f0,
             thold = gabor_thold,
-            thetas = gabor_theta,
+            thetas = gabor_thetas,
             freqs = gabor_freqs
         )
         

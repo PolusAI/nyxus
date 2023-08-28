@@ -16,7 +16,7 @@ std::vector<std::pair<double, double>> GaborFeature::f0_theta_pairs
     {0,         4.0}, 
     {M_PI_4,    16.0}, 
     {M_PI_2,    32.0},  
-    {M_PI_4*3., 64.0} 
+    {M_PI_4*3.0, 64.0} 
 };
 
 void GaborFeature::calculate (LR& r)
