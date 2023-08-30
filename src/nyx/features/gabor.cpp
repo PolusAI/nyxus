@@ -6,18 +6,23 @@
 using namespace std;
 
 // Static members changeable by user via class 'Environment'
-std::vector<double> GaborFeature::f0 = { 1, 2, 4, 8, 16, 32, 64 };
 double GaborFeature::gamma = 0.1;           
 double GaborFeature::sig2lam = 0.8;         
 int GaborFeature::n = 16;                    
 double GaborFeature::f0LP = 0.1;            
-double GaborFeature::theta = M_PI_4;
 double GaborFeature::GRAYthr = 0.025;      
+std::vector<std::pair<double, double>> GaborFeature::f0_theta_pairs
+{
+    {0,         4.0}, 
+    {M_PI_4,    16.0}, 
+    {M_PI_2,    32.0},  
+    {M_PI_4*3.0, 64.0} 
+};
 
 void GaborFeature::calculate (LR& r)
 {
     // Number of frequencies (feature values) calculated
-    int nFreqs = (int) GaborFeature::f0.size();
+    int nFreqs = (int) GaborFeature::f0_theta_pairs.size();
 
     // Prepare the feature value buffer
     if (fvals.size() != nFreqs)
@@ -51,7 +56,7 @@ void GaborFeature::calculate (LR& r)
     ty.resize (n + 1);
 
     // Compute the baseline score before applying high-pass Gabor filters
-    GaborEnergy (Im0, e2img.writable_data_ptr(), auxC.data(), auxG.data(), f0LP, sig2lam, gamma, theta, n);
+    GaborEnergy (Im0, e2img.writable_data_ptr(), auxC.data(), auxG.data(), f0LP, sig2lam, gamma, M_PI_2, n);    // compromise pi/2 theta
 
     // Values that we need for scoring filter responses
     Moments2 local_stats;
@@ -70,7 +75,13 @@ void GaborFeature::calculate (LR& r)
     {
         // filter response for i-th frequency
         writeablePixels e2_pix_plane = e2img.WriteablePixels();
-        GaborEnergy (Im0, e2_pix_plane.data(), auxC.data(), auxG.data(), f0[i], sig2lam, gamma, theta, n);
+        
+        // -- unpack a frequency-angle pair
+        const auto& ft = f0_theta_pairs[i];
+        auto f0 = ft.first;
+        auto theta = ft.second;
+
+        GaborEnergy (Im0, e2_pix_plane.data(), auxC.data(), auxG.data(), f0, sig2lam, gamma, theta, n);
 
         // score it
         unsigned long afterGaborScore = 0;
@@ -88,7 +99,7 @@ void GaborFeature::calculate (LR& r)
 void GaborFeature::calculate_gpu (LR& r)
 {
     // Number of frequencies (feature values) calculated
-    int nFreqs = (int)GaborFeature::f0.size();
+    int nFreqs = (int)GaborFeature::f0_theta_pairs.size();
 
     // Prepare the feature value buffer
     if (fvals.size() != nFreqs)
@@ -123,7 +134,7 @@ void GaborFeature::calculate_gpu (LR& r)
     ty.resize (n + 1);
 
     // Compute the baseline score before applying high-pass Gabor filters
-    GaborEnergyGPU (Im0, e2img.writable_data_ptr(), auxC.data(), auxG.data(), f0LP, sig2lam, gamma, theta, n);
+    GaborEnergyGPU (Im0, e2img.writable_data_ptr(), auxC.data(), auxG.data(), f0LP, sig2lam, gamma, M_PI_2, n); // compromise pi/2 theta
 
     // Values that we need for scoring filter responses
     Moments2 local_stats;
@@ -142,7 +153,13 @@ void GaborFeature::calculate_gpu (LR& r)
     {
         // filter response for i-th frequency
         writeablePixels e2_pix_plane = e2img.WriteablePixels();
-        GaborEnergyGPU (Im0, e2_pix_plane.data(), auxC.data(), auxG.data(), f0[i], sig2lam, gamma, theta, n);
+
+        // -- unpack a frequency-angle pair
+        const auto& ft = f0_theta_pairs[i];
+        auto f0 = ft.first;
+        auto theta = ft.second;
+
+        GaborEnergyGPU (Im0, e2_pix_plane.data(), auxC.data(), auxG.data(), f0, sig2lam, gamma, theta, n);
 
         // score it
         unsigned long afterGaborScore = 0;
@@ -158,7 +175,7 @@ void GaborFeature::calculate_gpu (LR& r)
 void GaborFeature::calculate_gpu_multi_filter (LR& r)
 {
     // Number of frequencies (feature values) calculated
-    int nFreqs = (int)GaborFeature::f0.size();
+    int nFreqs = (int)GaborFeature::f0_theta_pairs.size();
 
     // Prepare the feature value buffer
     if (fvals.size() != nFreqs)
@@ -203,8 +220,13 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r)
     double maxval = 0.0;                // max value of the baseline signal
 
     // Common frequency vector: merge the low-pass (baseline related) and high-pass frequencies
-    std::vector<double> freqs = { f0LP };
-    freqs.insert (freqs.end(), f0.begin(), f0.end());
+    std::vector<double> freqs = { f0LP }, 
+        thetas = { M_PI_2 };    // the lowpass filter goes at compromise pi/2 theta
+    for (auto& ft : f0_theta_pairs)
+    {
+        freqs.push_back(ft.first);
+        thetas.push_back(ft.second);
+    }
 
     for(int i = 0; i < 8; i += num_filters)
     {
@@ -221,7 +243,7 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r)
         }
 
         // Calculate low-passed baseline and high-passed filter responses
-        GaborEnergyGPUMultiFilter (Im0, e2_pix_plane_vec, auxC.data(), auxG.data(), f, sig2lam, gamma, theta, n, num_filters);
+        GaborEnergyGPUMultiFilter (Im0, e2_pix_plane_vec, auxC.data(), auxG.data(), f, sig2lam, gamma, thetas, n, num_filters);
 
         // Examine the baseline signal
         if (i == 0) 
@@ -267,7 +289,7 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r)
 
 void GaborFeature::save_value(std::vector<std::vector<double>>& feature_vals)
 {
-    int nFreqs = (int) GaborFeature::f0.size();
+    int nFreqs = (int) GaborFeature::f0_theta_pairs.size();
 
     if (feature_vals[GABOR].size() != nFreqs)
         feature_vals[GABOR].resize(fvals.size());
@@ -512,13 +534,13 @@ void GaborFeature::GaborEnergyGPU (
 
 void GaborFeature::GaborEnergyGPUMultiFilter (
     const ImageMatrix& Im, 
-    vector<vector<PixIntens>>& /* double* */ out, 
+    std::vector<std::vector<PixIntens>>& out, 
     double* auxC, 
     double* Gexp,
-    std::vector<double>& f, 
+    const std::vector<double>& f0s,     // f0-s matching 'thetas'
     double sig2lam, 
     double gamma, 
-    double theta, 
+    const std::vector<double>& thetas, // thetas matching frequencies in 'f0s'
     int n,
     int num_filters) 
 {
@@ -530,11 +552,9 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
     double fi = 0;
 
     int idx = 0;
-    double f0;
     for(int i = 0; i < num_filters; ++i) 
     {   
-        f0 = f[i];
-        Gabor (Gexp, f0, sig2lam, gamma, theta, fi, n_gab);
+        Gabor (Gexp, f0s[i], sig2lam, gamma, thetas[i], fi, n_gab);
         for(int i = 0; i < 2*n*n; ++i) {
             g_filters[idx+i] = Gexp[i];
         }
@@ -607,7 +627,11 @@ void GaborFeature::gpu_process_all_rois( std::vector<int>& ptrLabels, std::unord
 #endif
 
 
-double GaborFeature::get_theta_in_degrees() {
+double GaborFeature::get_theta_in_degrees (int i) 
+{
+    // theta needs to be unpacked from a pair
+    const auto& ft = GaborFeature::f0_theta_pairs[i];
+    auto theta = ft.second;
     return theta / M_PI * 180;
 }
 

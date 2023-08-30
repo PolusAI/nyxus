@@ -500,9 +500,16 @@ std::map<std::string, ParameterTypes> get_params_imp(const std::vector<std::stri
     params["gabor_gamma"] = GaborFeature::gamma;
     params["gabor_sig2lam"] = GaborFeature::sig2lam;
     params["gabor_f0"] = GaborFeature::f0LP;
-    params["gabor_theta"] = GaborFeature::get_theta_in_degrees(); // convert theta back from radians
     params["gabor_thold"] = GaborFeature::GRAYthr;
-    params["gabor_freqs"] = GaborFeature::f0;
+
+    std::vector<double> f, t;
+    for (auto p : GaborFeature::f0_theta_pairs)
+    {
+        f.push_back (p.first);
+        t.push_back (Nyxus::rad2deg(p.second));
+    }
+    params["gabor_freqs"] = f;
+    params["gabor_thetas"] = t;
 
     if (vars.size() == 0) 
         return params;

@@ -87,7 +87,7 @@ namespace Nyxus
 				if (fc == GABOR)
 				{
 					// Generate the feature value list
-					for (auto i = 0; i < GaborFeature::f0.size(); i++)
+					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
 					{
 						std::string col = fn + "_" + std::to_string(i);
 						rescache.add_to_header(col);	
@@ -213,7 +213,7 @@ namespace Nyxus
 				// --Gabor
 				if (fc == GABOR)
 				{
-					for (auto i = 0; i < GaborFeature::f0.size(); i++)
+					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
 						rescache.add_numeric(vv[i]);		
 
 					// Proceed with other features
