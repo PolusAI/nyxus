@@ -18,6 +18,8 @@
 
     #include "../arrow_output.h"
 
+    #include "../arrow_output_stream.h"
+
     #include <arrow/python/pyarrow.h>
     #include <arrow/table.h>
 
@@ -140,7 +142,8 @@ py::tuple featurize_directory_imp (
     const std::string &intensity_dir,
     const std::string &labels_dir,
     const std::string &file_pattern,
-    bool pandas_output=true)
+    bool pandas_output=true,
+    const std::string &arrow_file_path="")
 {
     // Check and cache the file pattern
     if (! theEnvironment.check_file_pattern(file_pattern))
@@ -172,6 +175,19 @@ py::tuple featurize_directory_imp (
     // We're good to extract features. Reset the feature results cache
     theResultsCache.clear();
 
+    auto arrow_output = !pandas_output;
+
+    std::string csv_out = "";
+    if (arrow_output) {
+        //auto csv_dir = fs::temp_directory_path().u8string() + "/nyx_tmp/"; // store in separate variable for safe deletion
+        auto csv_dir = "/Users/jmckinzie/Documents/GitHub/nyxus/out";
+        std::cout << csv_dir << std::endl;
+        fs::create_directory(csv_dir);
+        theEnvironment.output_dir = csv_dir;
+    }
+
+    theEnvironment.separateCsv = false;
+
     // Process the image sdata
     int min_online_roi_size = 0;
     errorCode = processDataset(
@@ -181,7 +197,7 @@ py::tuple featurize_directory_imp (
         theEnvironment.n_pixel_scan_threads,
         theEnvironment.n_reduce_threads,
         min_online_roi_size,
-        false, // 'true' to save to csv
+        arrow_output, // 'true' to save to csv
         theEnvironment.output_dir);
 
     if (errorCode)
@@ -208,6 +224,16 @@ py::tuple featurize_directory_imp (
         return py::make_tuple (pyHeader, pyStrData, pyNumData);
     } 
 
+    ArrowOutputStream arrow_stream = ArrowOutputStream();
+ 
+    std::string csv_file = theEnvironment.output_dir + "/NyxusFeatures.csv";
+
+    Nyxus::generate_header(theResultsCache, theFeatureSet.getEnabledFeatures());
+
+    std::cout << "before" << std::endl;
+    arrow_stream.create_arrow_file(csv_file, theResultsCache.get_headerBuf(), arrow_file_path);
+    std::cout << "end" << std::endl;
+ 
     // To avoid duplication, return a void dataframe on the Python-side when the output is a file in Arrow format
     return py::make_tuple();
 }
@@ -365,6 +391,8 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
             return py::make_tuple(pyHeader, pyStrData, pyNumData);
         
     } 
+
+
 
     // Return "nothing" when output will be an Arrow format
     return py::make_tuple();

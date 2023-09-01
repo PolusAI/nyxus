@@ -3,7 +3,7 @@
 #include "dirs_and_files.h"
 #include "environment.h"
 #include "globals.h"
-
+#include "arrow_output_stream.h"
 #ifdef USE_GPU
 	bool gpu_initialize(int dev_id); 
 #endif
@@ -59,6 +59,28 @@ int main (int argc, char** argv)
 	auto startTS = getTimeStr();
 	VERBOSLVL1(std::cout << "\n>>> STARTING >>> " << startTS << "\n";)
 
+	// Save features in Apache formats, if enabled
+#ifdef USE_ARROW
+
+	std::string csv_file = "";
+	std::string csv_path = "";
+	std::string arrow_path = "";
+	if (theEnvironment.arrow_output_type != "") { 
+
+		csv_path = fs::temp_directory_path().u8string() + "/nyx_tmp";
+
+		fs::create_directory(csv_path);
+
+		theEnvironment.useCsv = true;
+		theEnvironment.separateCsv = false;
+		arrow_path = theEnvironment.output_dir;
+		theEnvironment.output_dir = csv_path;
+
+		csv_file = csv_path + "/NyxusFeatures.csv";
+
+	}
+#endif
+
 	// Process the image data
 	int min_online_roi_size = 0;
 	errorCode = processDataset (
@@ -93,20 +115,21 @@ int main (int argc, char** argv)
 	// Save features in Apache formats, if enabled
 	#ifdef USE_ARROW
 
-		if (theEnvironment.arrow_output_type == "ARROW" || theEnvironment.arrow_output_type == "ARROWIPC") 
-			theEnvironment.arrow_output.create_arrow_file(theResultsCache.get_headerBuf(),
-				theResultsCache.get_stringColBuf(),
-				theResultsCache.get_calcResultBuf(),
-				theResultsCache.get_num_rows(),
-				theEnvironment.output_dir);
+		if (theEnvironment.arrow_output_type == "ARROW" || theEnvironment.arrow_output_type == "ARROWIPC") {
+			ArrowOutputStream arrow_stream = ArrowOutputStream();
 
-		else 
+			Nyxus::generate_header(theResultsCache, theFeatureSet.getEnabledFeatures());
+
+			std::cout << "writing from csv" << std::endl;
+			arrow_stream.create_arrow_file(csv_file, theResultsCache.get_headerBuf(), arrow_path);
+		} else { 
 			if (theEnvironment.arrow_output_type == "PARQUET") 
 				theEnvironment.arrow_output.create_parquet_file(theResultsCache.get_headerBuf(),
 					theResultsCache.get_stringColBuf(),
 					theResultsCache.get_calcResultBuf(),
 					theResultsCache.get_num_rows(),
 					theEnvironment.output_dir);
+		}
 	#endif 
 
 	// Process nested ROIs

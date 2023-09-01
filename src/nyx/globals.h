@@ -37,6 +37,9 @@ namespace Nyxus
 	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit);
 	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads);
 	void dump_roi_metrics(const std::string & label_fpath);
+	bool generate_header(ResultsCache& rescache, std::vector<std::tuple<std::string, AvailableFeatures>> F);
+
+
 
 	// Shows a message in CLI ('send_to_stderr': stdout or stderr) or Python terminal
 	void sureprint(const std::string& msg, bool send_to_stderr=false);

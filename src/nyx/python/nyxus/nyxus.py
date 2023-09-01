@@ -216,7 +216,7 @@ class Nyxus:
             
         if (output_type == 'pandas'):
             
-            header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern, True)
+            header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern, True, "")
 
             df = pd.concat(
                 [
@@ -234,10 +234,13 @@ class Nyxus:
         
         else:
             
-            featurize_directory_imp(intensity_dir, label_dir, file_pattern, False)
+            path = featurize_directory_imp(intensity_dir, label_dir, file_pattern, False, output_path)
+            print('after in python')
+            return path
             
             output_type = output_type.lower() # ignore case of output type
             
+            '''
             if (output_type == 'arrow' or output_type == 'arrowipc'):
                 
                 self.create_arrow_file(output_path)
@@ -249,6 +252,7 @@ class Nyxus:
                 self.create_parquet_file(output_path)
                 
                 return self.get_parquet_file()
+            '''
             
             
     

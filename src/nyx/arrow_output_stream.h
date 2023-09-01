@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef USE_ARROW
+//#ifdef USE_ARROW
 #include <string>
 #include <memory>
 
@@ -25,7 +25,7 @@
  * This class provides methods for writing to the Arrow IPC and Parquet formats.
  * 
  */
-class ArrowOutput {
+class ArrowOutputStream {
 
 private:
 
@@ -36,14 +36,12 @@ private:
 
 
 public:
-    void create_arrow_file( const std::vector<std::string>& header,
-                            const std::vector<std::string>& string_columns,
-                            const std::vector<double>& results,
-                            size_t num_rows,
+    void create_arrow_file( const std::string& csv_path,
+                            const std::vector<std::string>& header,
                             const std::string& arrow_file_path="NyxusFeatures.arrow") {
         
 
-        if(arrow_file_path != "" && !fs::is_directory(arrow_file_path) && !Nyxus::ends_with_substr(arrow_file_path, ".arrow")) {
+        if(arrow_file_path != "" && !fs::is_directory(arrow_file_path) && !(Nyxus::ends_with_substr(arrow_file_path, ".arrow") || Nyxus::ends_with_substr(arrow_file_path, ".feather"))) {
             throw std::invalid_argument("The arrow file path must end in \".arrow\"");
         }
 
@@ -58,10 +56,9 @@ public:
         } 
 
         writer_ = WriterFactory::create_writer(arrow_file_path_);
-            
-        //writer_->write(header, string_columns, results, num_rows);
-
-
+        
+        std::cout << "writing" << std::endl;
+        writer_->write(csv_path, header);
 
     }
 
@@ -85,7 +82,7 @@ public:
             parquet_file_path_ += "/NyxusFeatures.parquet";
         }
 
-        writer_ = WriterFactory::create_writer(parquet_file_path_);
+        //writer_ = WriterFactory::create_writer(parquet_file_path_);
             
         //writer_->write(header, string_columns, results, num_rows);
     }
@@ -114,4 +111,4 @@ public:
     }
 
 };
-#endif
+//#endif
