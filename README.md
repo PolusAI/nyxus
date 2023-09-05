@@ -338,7 +338,7 @@ Nyxus provides a set of pixel intensity, morphology, texture, intensity distribu
 | ZERNIKE2D, FRAC_AT_D, RADIAL_CV, MEAN_FRAC | Radial distribution features |
 | GABOR | A set of Gabor filters of varying frequencies and orientations |
 
-For the complete list of features see [Nyxus provided features](docs/featurelist.md)
+For the complete list of features see [Nyxus provided features](docs/source/featurelist.rst)
 
 ## Feature groups
 
