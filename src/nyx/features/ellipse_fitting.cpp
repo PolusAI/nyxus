@@ -46,7 +46,7 @@ void EllipseFittingFeature::calculate (LR& r)
 	double common = sqrt((uxx - uyy) * (uxx - uyy) + 4. * uxy * uxy);
 	majorAxisLength = 2. * sqrt(2.) * sqrt(uxx + uyy + common);
 	minorAxisLength = 2. * sqrt(2.) * sqrt(uxx + uyy - common);
-	eccentricity = sqrt(1.0 - majorAxisLength* majorAxisLength / (minorAxisLength* minorAxisLength)); 
+	eccentricity = sqrt (1.0 - minorAxisLength * minorAxisLength / (majorAxisLength * majorAxisLength));
 	elongation = sqrt(minorAxisLength/majorAxisLength);
 	roundness = (4. * area) / (M_PI * majorAxisLength * majorAxisLength);
 

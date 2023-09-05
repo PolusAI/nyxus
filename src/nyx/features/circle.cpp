@@ -4,7 +4,7 @@
 EnclosingInscribingCircumscribingCircleFeature::EnclosingInscribingCircumscribingCircleFeature() : FeatureMethod("EnclosingInscribingCircumscribingCircleFeature")
 {
     provide_features({ DIAMETER_MIN_ENCLOSING_CIRCLE, DIAMETER_INSCRIBING_CIRCLE, DIAMETER_CIRCUMSCRIBING_CIRCLE });
-    add_dependencies({ PERIMETER, CONVEX_HULL_AREA, NUM_NEIGHBORS });
+    add_dependencies({ PERIMETER, CENTROID_X, CENTROID_Y });    // Availability of feature 'PERIMETER' ensures availability of LR::contour
 }
 
 void EnclosingInscribingCircumscribingCircleFeature::calculate(LR& r)
@@ -29,9 +29,9 @@ double EnclosingInscribingCircumscribingCircleFeature::calculate_min_enclosing_c
     float radius = 0;
     minEnclosingCircle(Contour, center, radius);
 
-    //Diameter of the minimum circumference of the projection area.
+    // Diameter of the minimum circumference of the projection area.
     double diameter_min_enclosing_circle = 2 * radius;
-    return diameter_min_enclosing_circle; // ratios[45] = diameter_min_enclosing_circle;
+    return diameter_min_enclosing_circle;
 }
 
 void EnclosingInscribingCircumscribingCircleFeature::findCircle3pts (const std::vector<Pixel2>& pts, Point2f& center, float& radius)
@@ -51,11 +51,10 @@ void EnclosingInscribingCircumscribingCircleFeature::findCircle3pts (const std::
     float det = v1.x * v2.y - v1.y * v2.x;
     if (fabs(det) <= EPS)
     {
-        // v1 and v2 are colinear, so the longest distance between any 2 points
-        // is the diameter of the minimum enclosing circle.
-        float d1 = normL2 (pts[0] - pts[1]);  //normL2Sqr<float>(pts[0] - pts[1]);
-        float d2 = normL2 (pts[0] - pts[2]);   //normL2Sqr<float>(pts[0] - pts[2]);
-        float d3 = normL2 (pts[1] - pts[2]);   //normL2Sqr<float>(pts[1] - pts[2]);
+        // v1 and v2 are colinear, so the longest distance between any 2 points is the diameter of the minimum enclosing circle
+        float d1 = normL2 (pts[0] - pts[1]),    // Note: d1-3 are squared distances
+            d2 = normL2 (pts[0] - pts[2]),
+            d3 = normL2 (pts[1] - pts[2]);
         radius = sqrt(std::max(d1, std::max(d2, d3))) * 0.5f + EPS;
         if (d1 >= d2 && d1 >= d3)
         {
@@ -88,14 +87,12 @@ void EnclosingInscribingCircumscribingCircleFeature::findThirdPoint (const std::
     float dy = (float)(pts[j].y - pts[i].y);
     radius = (float)normL2(Point2f(dx, dy)) / 2.0f + EPS;
 
-    for (int k = 0; k < j; ++k)
+    for (int k = 0; k < j; k++)
     {
         dx = center.x - (float)pts[k].x;
         dy = center.y - (float)pts[k].y;
         if (normL2(Point2f(dx, dy)) < radius)
-        {
             continue;
-        }
         else
         {
             std::vector<Pixel2> ptsf;   
@@ -121,14 +118,12 @@ void EnclosingInscribingCircumscribingCircleFeature::findSecondPoint (const std:
     float dy = (float)(pts[0].y - pts[i].y);
     radius = (float)normL2(Point2f(dx, dy)) / 2.0f + EPS;
 
-    for (int j = 1; j < i; ++j)
+    for (int j = 1; j < i; j++)
     {
         dx = center.x - (float)pts[j].x;
         dy = center.y - (float)pts[j].y;
         if (normL2(Point2f(dx, dy)) < radius)
-        {
             continue;
-        }
         else
         {
             Point2f new_center; float new_radius = 0;
@@ -142,16 +137,16 @@ void EnclosingInscribingCircumscribingCircleFeature::findSecondPoint (const std:
     }
 }
 
-void EnclosingInscribingCircumscribingCircleFeature::findMinEnclosingCircle (const std::vector<Pixel2>& contour, Point2f& center, float& radius)
+void EnclosingInscribingCircumscribingCircleFeature::findMinEnclosingCircle (std::vector<Pixel2>& contour, Point2f& center, float& radius)
 {
     center.x = (float)(contour[0].x + contour[1].x) / 2.0f;
     center.y = (float)(contour[0].y + contour[1].y) / 2.0f;
-    float dx = (float)(contour[0].x - contour[1].x);
-    float dy = (float)(contour[0].y - contour[1].y);
+    float dx = (float)(contour[0].x - contour[1].x),
+        dy = (float)(contour[0].y - contour[1].y);
     radius = (float)normL2(Point2f(dx, dy)) / 2.0f + EPS;
 
     auto count = contour.size();
-    for (auto i = 2; i < count; ++i)
+    for (auto i = 2; i < count; i++)
     {
         dx = (float)contour[i].x - center.x;
         dy = (float)contour[i].y - center.y;
@@ -188,31 +183,31 @@ void EnclosingInscribingCircumscribingCircleFeature::minEnclosingCircle(
 
     switch (count)
     {
-    case 1:
-    {
-        _center = Point2f ((float)Contour[0].x, (float)Contour[0].y);   //(is_float) ? ptsf[0] : Point2f((float)ptsi[0].x, (float)ptsi[0].y);
-        _radius = EPS;
-        break;
-    }
-    case 2:
-    {
-        Point2f p1 = Point2f ((float)Contour[0].x, (float)Contour[0].y);   //(is_float) ? ptsf[0] : Point2f((float)ptsi[0].x, (float)ptsi[0].y);
-        Point2f p2 = Point2f ((float)Contour[1].x, (float)Contour[1].y);    //(is_float) ? ptsf[1] : Point2f((float)ptsi[1].x, (float)ptsi[1].y);
-        _center.x = (p1.x + p2.x) / 2.0f;
-        _center.y = (p1.y + p2.y) / 2.0f;
-        _radius = (float)(normL2(p1 - p2) / 2.0) + EPS;
-        break;
-    }
-    default:
-    {
-        Point2f center;
-        float radius = 0.f;
+        case 1:
+        {
+            _center = Point2f ((float)Contour[0].x, (float)Contour[0].y);   //(is_float) ? ptsf[0] : Point2f((float)ptsi[0].x, (float)ptsi[0].y);
+            _radius = EPS;
+            break;
+        }
+        case 2:
+        {
+            Point2f p1 = Point2f ((float)Contour[0].x, (float)Contour[0].y);   //(is_float) ? ptsf[0] : Point2f((float)ptsi[0].x, (float)ptsi[0].y);
+            Point2f p2 = Point2f ((float)Contour[1].x, (float)Contour[1].y);    //(is_float) ? ptsf[1] : Point2f((float)ptsi[1].x, (float)ptsi[1].y);
+            _center.x = (p1.x + p2.x) / 2.0f;
+            _center.y = (p1.y + p2.y) / 2.0f;
+            _radius = (float)(normL2(p1 - p2) / 2.0) + EPS;
+            break;
+        }
+        default:
+        {
+            Point2f center;
+            float radius = 0.f;
 
-        findMinEnclosingCircle (Contour, center, radius);
-        _center = center;
-        _radius = radius;
-        break;
-    }
+            findMinEnclosingCircle (Contour, center, radius);
+            _center = center;
+            _radius = radius;
+            break;
+        }
     }
 }
 
@@ -226,7 +221,8 @@ std::tuple <double, double> EnclosingInscribingCircumscribingCircleFeature::calc
     double xCentroid2 = xCentroid - 1;
     std::vector <double> distances;
 
-    for (size_t j = 0; j < contours.size(); j++) {
+    for (size_t j = 0; j < contours.size(); j++) 
+    {
         double tmpx = (contours[j].x - xCentroid2);
         double tmpy = (contours[j].y - yCentroid2);
         double distance = sqrt(tmpx * tmpx + tmpy * tmpy);
@@ -253,7 +249,7 @@ void EnclosingInscribingCircumscribingCircleFeature::parallel_process_1_batch (s
             continue;
 
         // Skip if the contour, convex hull, and neighbors are unavailable, otherwise the related features will be == NAN. Those feature will be equal to the default unassigned value.
-        if (r.contour.size() == 0 || r.convHull_CH.size() == 0 || r.fvals[NUM_NEIGHBORS][0] == 0)
+        if (r.contour.size() == 0)
             continue;
 
         EnclosingInscribingCircumscribingCircleFeature cir;
@@ -267,5 +263,5 @@ void EnclosingInscribingCircumscribingCircleFeature::osized_add_online_pixel(siz
 
 void EnclosingInscribingCircumscribingCircleFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {
-        calculate(r);
+    calculate(r);
 }
