@@ -36,8 +36,7 @@ private:
 
 
 public:
-    void create_arrow_file( const std::string& csv_path,
-                            const std::vector<std::string>& header,
+    std::shared_ptr<ApacheArrowWriter> create_arrow_file(const std::vector<std::string>& header,
                             const std::string& arrow_file_path="NyxusFeatures.arrow") {
         
 
@@ -55,10 +54,9 @@ public:
             arrow_file_path_ += "/NyxusFeatures.arrow";
         } 
 
-        writer_ = WriterFactory::create_writer(arrow_file_path_);
-        
-        std::cout << "writing" << std::endl;
-        writer_->write(csv_path, header);
+        writer_ = WriterFactory::create_writer(arrow_file_path_, header);
+
+        return writer_;
 
     }
 
@@ -96,13 +94,14 @@ public:
                                                       const std::vector<double>& results,
                                                       size_t num_rows) {
                                                         
-        if (writer_ == nullptr) {
-            writer_ = WriterFactory::create_writer("out.arrow");
+        /*if (writer_ == nullptr) {
+            //writer_ = WriterFactory::create_writer("out.arrow");
 
             writer_->generate_arrow_table(header, string_columns, results, num_rows);
 
             return writer_->get_arrow_table();
         }
+        */
 
         auto table = writer_->get_arrow_table();
 

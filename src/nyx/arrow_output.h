@@ -57,7 +57,7 @@ public:
             arrow_file_path_ += "/NyxusFeatures.arrow";
         } 
 
-        writer_ = WriterFactory::create_writer(arrow_file_path_);
+        //writer_ = WriterFactory::create_writer(arrow_file_path_);
             
         //writer_->write(header, string_columns, results, num_rows);
 
@@ -85,7 +85,7 @@ public:
             parquet_file_path_ += "/NyxusFeatures.parquet";
         }
 
-        writer_ = WriterFactory::create_writer(parquet_file_path_);
+        //writer_ = WriterFactory::create_writer(parquet_file_path_);
             
         //writer_->write(header, string_columns, results, num_rows);
     }
@@ -99,13 +99,14 @@ public:
                                                       const std::vector<double>& results,
                                                       size_t num_rows) {
                                                         
-        if (writer_ == nullptr) {
+        /*if (writer_ == nullptr) {
             writer_ = WriterFactory::create_writer("out.arrow");
 
             writer_->generate_arrow_table(header, string_columns, results, num_rows);
 
             return writer_->get_arrow_table();
         }
+        */
 
         auto table = writer_->get_arrow_table();
 

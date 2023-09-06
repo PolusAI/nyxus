@@ -18,6 +18,7 @@
 #include <memory>
 
 #include "helpers/helpers.h"
+#include "globals.h"
 
 #include <iostream>
 
@@ -149,7 +150,7 @@ public:
      * @param number_of_rows Number of rows
      * @return arrow::Status 
      */
-    virtual arrow::Status write (const std::string& csv_path, const std::vector<std::string> &header) = 0;
+    virtual arrow::Status write (const std::string & intFpath, const std::string & segFpath, const std::string & outputDir) = 0;
 
 };
 
@@ -177,7 +178,7 @@ class ParquetWriter : public ApacheArrowWriter {
          * @param number_of_rows Number of rows
          * @return arrow::Status 
          */
-        arrow::Status write (const std::string& csv_path, const std::vector<std::string> &header) override {
+        arrow::Status write (const std::string & intFpath, const std::string & segFpath, const std::string & outputDir) override {
             /*
             table_ = generate_arrow_table(header, string_columns, numeric_columns, number_of_rows);
 
@@ -204,56 +205,11 @@ class ArrowIPCWriter : public ApacheArrowWriter {
     private:
 
         std::string output_file_;
+        std::shared_ptr<arrow::Schema> schema_;
+        std::shared_ptr<arrow::io::FileOutputStream> output_stream_;
+        arrow::Result<std::shared_ptr<arrow::ipc::RecordBatchWriter>> writer_;
 
-    public:
-
-        ArrowIPCWriter(const std::string& output_file) : output_file_(output_file) {}    
-
-        /**
-         * @brief Write to Arrow IPC
-         * 
-         * @param header Header data
-         * @param string_columns String data (filenames)
-         * @param numeric_columns Numberic data (feature calculations)
-         * @param number_of_rows Number of rows
-         * @return arrow::Status 
-         */
-        arrow::Status write (const std::string& csv_path, const std::vector<std::string> &header) override {
-            std::cout << "calling write method" << std::endl;
-            arrow::io::IOContext io_context = arrow::io::default_io_context();
-            std::shared_ptr<arrow::io::InputStream> input;
-            std::cout << "csv path: " << csv_path << std::endl;
-            ARROW_ASSIGN_OR_RAISE (input, arrow::io::ReadableFile::Open(csv_path));
-
-            auto read_options = arrow::csv::ReadOptions::Defaults();
-            auto parse_options = arrow::csv::ParseOptions::Defaults();
-            auto convert_options = arrow::csv::ConvertOptions::Defaults();
-
-            std::cout << "1" << std::endl;
-
-            // Instantiate StreamingReader from input stream and options
-            auto maybe_reader =
-                arrow::csv::StreamingReader::Make(io_context,
-                                                input,
-                                                read_options,
-                                                parse_options,
-                                                convert_options);
-            if (!maybe_reader.ok()) {
-                // Handle StreamingReader instantiation error...
-                throw std::runtime_error("Error initializing the reader.");
-            }
-            std::shared_ptr<arrow::csv::StreamingReader> reader = *maybe_reader;
-            std::cout << "2" << std::endl;
-
-
-            // Create the Arrow file writer
-            std::shared_ptr<arrow::io::FileOutputStream> output_stream;
-
-            std::cout << "3" << std::endl;
-
-            ARROW_ASSIGN_OR_RAISE(
-                output_stream, arrow::io::FileOutputStream::Open(output_file_)
-            );
+        void set_schema(const std::vector<std::string> &header) {
 
             std::vector<std::shared_ptr<arrow::Field>> fields;
 
@@ -266,142 +222,136 @@ class ArrowIPCWriter : public ApacheArrowWriter {
                 fields.push_back(arrow::field(header[i], arrow::float64()));
             }
 
-            auto schema = arrow::schema(fields);
+            schema_ = arrow::schema(fields);
 
-            // Set aside a RecordBatch pointer for re-use while streaming
-            //std::shared_ptr<arrow::RecordBatch> batch;
-            
+        }
+
+        arrow::Status set_output_stream(const std::string& output_file){
+
+            ARROW_ASSIGN_OR_RAISE(
+                output_stream_, arrow::io::FileOutputStream::Open(output_file_)
+            );
+
+            return arrow::Status::OK();
+        }
+
+        void set_stream_writer() {
+            writer_ = arrow::ipc::MakeStreamWriter(output_stream_,  schema_);
+        }
+
+    public:
+
+        ArrowIPCWriter(const std::string& output_file, const std::vector<std::string> &header) : output_file_(output_file) {
+
+            this->set_schema(header);
+
+            this->set_output_stream(output_file);
+
+            this->set_stream_writer();
+        }    
+
+        /**
+         * @brief Write to Arrow IPC
+         * 
+         * @param header Header data
+         * @param string_columns String data (filenames)
+         * @param numeric_columns Numberic data (feature calculations)
+         * @param number_of_rows Number of rows
+         * @return arrow::Status 
+         */
+        arrow::Status write (const std::string & intFpath, const std::string & segFpath, const std::string & outputDir) override {
+
+            std::shared_ptr<arrow::RecordBatch> batch;
+
+            auto features = Nyxus::get_feature_values();
+
+            int num_rows = features.size();
+
+            std::vector<std::shared_ptr<arrow::Array>> arrays;
+
+            arrow::StringBuilder string_builder;
+            std::shared_ptr<arrow::Array> intensity_array;
+
+            // construct intensity column
+            for (int i = 0; i < num_rows; ++i) {
+                string_builder.Append(std::get<0>(features[i])[1]);
+            }
+
+            string_builder.Finish(&intensity_array);
+
+            arrays.push_back(intensity_array);
+            string_builder.Reset();
+
+            std::shared_ptr<arrow::Array> segmentation_array;
+
+            // construct intensity column
+            for (int i = 0; i < num_rows; ++i) {
+                string_builder.Append(std::get<0>(features[i])[0]);
+            }
+
+            string_builder.Finish(&segmentation_array);
+
+            arrays.push_back(segmentation_array);
+
+            arrow::Int32Builder int_builder;
+            std::shared_ptr<arrow::Array> labels_array;
+            // construct label column
+            for (int i = 0; i < num_rows; ++i) {
+                int_builder.Append(std::get<1>(features[i]));
+            }
+
+            int_builder.Finish(&labels_array);
+
+            arrays.push_back(labels_array);
+
+            // construct columns for each feature 
+            for (int j = 3; j < std::get<2>(features[0]).size(); ++j) {
+
+                arrow::DoubleBuilder builder;   
+                std::shared_ptr<arrow::Array> double_array;
+
+                for (int i = 0; i < num_rows; ++i) {
+                    builder.Append(std::get<2>(features[i])[j]);
+                }
+
+                builder.Finish(&double_array);
+
+                arrays.push_back(double_array);
+            }
+
+
             //ARROW_ASSIGN_OR_RAISE(
-            //    batch, arrow::RecordBatch::MakeEmpty(schema)
+            //    batch, arrow::RecordBatch::Make(schema_, num_rows, arrays)
             //);
 
-            auto writer = arrow::ipc::MakeStreamWriter(output_stream,  schema);
+            batch = arrow::RecordBatch::Make(schema_, num_rows, arrays);
 
-            std::cout << "before writing" << std::endl;
-            while (true) {
-                std::shared_ptr<arrow::RecordBatch> temp_batch;
-                ARROW_ASSIGN_OR_RAISE(
-                    temp_batch, arrow::RecordBatch::MakeEmpty(schema)
-                );
-                // Attempt to read the first RecordBatch
-                std::cout << "reading csv" << std::endl;
-                arrow::Status status = reader->ReadNext(&temp_batch);
+            // put data in record batch now or make a non empty batch
 
-                //std::cout << batch->ToString() << std::endl;
+            auto status = writer_->get()->WriteRecordBatch(*batch);
 
-                if (!status.ok()) {
-                    // Handle read error
-                    throw std::runtime_error("Error writing Arrow file 1.");
-                }
-
-                if (temp_batch == NULL) {
-                    // Handle end of file
-                    break;
-                }
-
-                //std::cout << temp_batch->schema()->ToString() << std::endl;
-                //std::cout << "-----------" << std::endl;
-                //std::cout << schema->ToString() << std::endl;
-
-                // Check if the batch schema matches the writer schema
-                if (!temp_batch->schema()->Equals(schema)) {
-
-                    // Schemas are different, identify the differences
-                    auto desired_fields = temp_batch->schema()->fields();
-                    auto actual_fields = schema->fields();
-
-                    for (size_t i = 0; i < desired_fields.size(); ++i) {
-                        if (!desired_fields[i]->Equals(actual_fields[i])) {
-                            std::cout << "Field " << i << " differs:" << std::endl;
-                            std::cout << "Desired Field: " << desired_fields[i]->ToString() << std::endl;
-                            std::cout << "Actual Field: " << actual_fields[i]->ToString() << std::endl;
-                        }
-                    }
-
-
-                    // Handle schema mismatch (e.g., modify schema to match batch schema)
-                    // You might need to adapt the schema or handle this situation based on your use case.
-                    throw std::runtime_error("Error: the schemas do not match");
-                }
-
-                status = writer->get()->WriteRecordBatch(*temp_batch);
-                if (!status.ok()) {
-                    // Handle read error
-                    auto err = status.ToString();
-                    throw std::runtime_error("Error writing Arrow file 2: " + err);
-                }
+            if (!status.ok()) {
+                // Handle read error
+                auto err = status.ToString();
+                throw std::runtime_error("Error writing Arrow file 2: " + err);
             }
-            std::cout << "Closing Arrow file" << std::endl;
-            arrow::Status status = writer->get()->Close();
-            std::cout << "arrow file closed" << std::endl;
+
+            return arrow::Status::OK();
+        }
+
+
+        arrow::Status close () {
+
+            arrow::Status status = writer_->get()->Close();
+
             if (!status.ok()) {
                 // Handle read error
                 auto err = status.ToString();
                 throw std::runtime_error("Error closing the Arrow file: " + err);
             }
             return arrow::Status::OK();
-            /*
-            // Create Arrow schema from CSV schema
-            auto csv_schema = arrow::schema({ });
             
-            // Create Arrow IPC file writer
-            std::shared_ptr<arrow::io::FileOutputStream> output_stream;
-            auto status = arrow::io::FileOutputStream::Open(output_file_, &output_stream);
-            if (!status.ok()) {
-                // Handle output file creation error
-                throw std::runtime_error("Error creating Arrow file.");
-            }
-            auto ipc_writer = arrow::ipc::MakeStreamWriter(output_stream.get(), csv_schema);
-            
-            // Read CSV file row by row
-            std::shared_ptr<arrow::csv::TableReader> csv_reader;
-            auto status2 = arrow::csv::TableReader::Make(arrow::default_memory_pool(), csv_path, arrow::csv::ReadOptions::Defaults(), csv_schema, &csv_reader);
-            if (!status.ok()) {
-                // Handle CSV reader creation error
-                throw std::runtime_error("Error creating Arrow file.");
-            }
-            
-            while (true) {
-                std::shared_ptr<arrow::Table> table;
-                status = csv_reader->Read(&table);
-                if (!status.ok() || table->num_rows() == 0) {
-                    // Either error or end of file
-                    break;
-                }
-                
-                // Write the current batch of rows to Arrow IPC file
-                status = ipc_writer->WriteTable(*table);
-                if (!status.ok()) {
-                    // Handle IPC writing error
-                    return status;
-                }
-            }
-            
-            // Close IPC writer and output stream
-            ipc_writer->Close();
-            output_stream->Close();
-
-            return arrow::Status::OK();
-            */
-            /*
-            table_ = generate_arrow_table(header, string_columns, numeric_columns, number_of_rows);
-
-            // Create the Arrow file writer
-            std::shared_ptr<arrow::io::FileOutputStream> output_stream;
-
-            ARROW_ASSIGN_OR_RAISE(
-                output_stream, arrow::io::FileOutputStream::Open(output_file_)
-            );
-
-            auto writer = arrow::ipc::MakeFileWriter(output_stream, table_->schema());
-
-            // Write the Arrow table to file
-            writer->get()->WriteTable(*table_);
-            writer->get()->Close();
-
-
-            */
-    }
+        }
 };
 
 /**
@@ -418,7 +368,7 @@ class WriterFactory {
          * @param output_file Path to output file (.arrow or .parquet)
          * @return std::shared_ptr<ApacheArrowWriter> 
          */
-        static std::shared_ptr<ApacheArrowWriter> create_writer(const std::string &output_file) {
+        static std::shared_ptr<ApacheArrowWriter> create_writer(const std::string &output_file, const std::vector<std::string> &header) {
             
             if (Nyxus::ends_with_substr(output_file, ".parquet")) {
                 std::cout << "creating parquet file" << std::endl;
@@ -427,7 +377,7 @@ class WriterFactory {
             } else if (Nyxus::ends_with_substr(output_file, ".arrow") || Nyxus::ends_with_substr(output_file, ".feather")) {
                 std::cout << "creating arrow file" << std::endl;
                 
-                return std::make_shared<ArrowIPCWriter>(output_file);
+                return std::make_shared<ArrowIPCWriter>(output_file, header);
 
             } else {
                 std::cout << "error branch" << std::endl;
@@ -446,4 +396,6 @@ class WriterFactory {
             }
         }
 };
+
+
 #endif

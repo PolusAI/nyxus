@@ -25,6 +25,8 @@ namespace py = pybind11;
 #include "environment.h"
 #include "globals.h"
 #include "helpers/timing.h"
+#include "arrow_output_stream.h"
+#include "output_writers.h"
 
 // Sanity
 #ifdef _WIN32
@@ -203,6 +205,7 @@ namespace Nyxus
 		int numSensemakerThreads,
 		int numReduceThreads,
 		int min_online_roi_size,
+		bool arrow_output,
 		bool save2csv,
 		const std::string& csvOutputDir)
 	{
@@ -210,9 +213,19 @@ namespace Nyxus
 		if (Stopwatch::inclusive())
 			Stopwatch::reset();
 		#endif		
-			
+		
 		// One-time initialization
 		init_feature_buffers();
+
+
+		// initialize arrow writer if needed
+	#ifdef USE_ARROW
+		std::shared_ptr<ArrowIPCWriter> writer;
+		if (arrow_output) {
+			Nyxus::generate_header(theResultsCache, theFeatureSet.getEnabledFeatures());
+			writer = std::make_shared<ArrowIPCWriter>(ArrowIPCWriter(csvOutputDir, theResultsCache.get_headerBuf()));
+		}
+	#endif
 
 		bool ok = true;
 
@@ -251,6 +264,12 @@ namespace Nyxus
 				std::cout << "processIntSegImagePair() returned an error code while processing file pair " << ifp << " and " << lfp << std::endl;
 				return 1;
 			}
+
+		#ifdef USE_ARROW
+			if (arrow_output) {
+				writer->write(ifp, lfp, csvOutputDir);
+			}
+		#endif
 
 			// For the non-Apache output mode, save the result for this intensity-label file pair
 			if (save2csv)
@@ -306,6 +325,12 @@ namespace Nyxus
 			);
 		}
 		#endif
+
+	#ifdef USE_ARROW
+		if (arrow_output) {
+			writer->close();
+		}
+	#endif
 
 		return 0; // success
 	}

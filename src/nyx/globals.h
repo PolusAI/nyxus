@@ -39,8 +39,6 @@ namespace Nyxus
 	void dump_roi_metrics(const std::string & label_fpath);
 	bool generate_header(ResultsCache& rescache, std::vector<std::tuple<std::string, AvailableFeatures>> F);
 
-
-
 	// Shows a message in CLI ('send_to_stderr': stdout or stderr) or Python terminal
 	void sureprint(const std::string& msg, bool send_to_stderr=false);
 
@@ -58,7 +56,8 @@ namespace Nyxus
 	std::string get_feature_output_fname(const std::string& intFpath, const std::string& segFpath);
 	extern const std::vector<std::string> mandatory_output_columns;
 	bool save_features_2_csv (const std::string & intFpath, const std::string & segFpath, const std::string & outputDir);
-	bool save_features_2_buffer (ResultsCache& results_cache);		
+	bool save_features_2_buffer (ResultsCache& results_cache);	
+	std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> get_feature_values();	
 
 	void init_feature_buffers();
 	void clear_feature_buffers();	

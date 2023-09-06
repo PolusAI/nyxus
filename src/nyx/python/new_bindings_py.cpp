@@ -224,16 +224,16 @@ py::tuple featurize_directory_imp (
         return py::make_tuple (pyHeader, pyStrData, pyNumData);
     } 
 
+    /*
     ArrowOutputStream arrow_stream = ArrowOutputStream();
- 
-    std::string csv_file = theEnvironment.output_dir + "/NyxusFeatures.csv";
+
 
     Nyxus::generate_header(theResultsCache, theFeatureSet.getEnabledFeatures());
 
     std::cout << "before" << std::endl;
     arrow_stream.create_arrow_file(csv_file, theResultsCache.get_headerBuf(), arrow_file_path);
     std::cout << "end" << std::endl;
- 
+    */
     // To avoid duplication, return a void dataframe on the Python-side when the output is a file in Arrow format
     return py::make_tuple();
 }
