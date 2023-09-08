@@ -4,7 +4,7 @@
 
 CaliperFeretFeature::CaliperFeretFeature() : FeatureMethod("CaliperFeretFeature")
 {
-	// Letting the feature dependency manager know 
+	// Letting the feature dependency manager know
 	provide_features({
 			MIN_FERET_DIAMETER,
 			MAX_FERET_DIAMETER,
@@ -159,7 +159,7 @@ void CaliperFeretFeature::calculate_imp(const std::vector<Pixel2>& convex_hull, 
 
 void CaliperFeretFeature::osized_calculate(LR& r, ImageLoader&)
 {
-	// Calculating this feature does not require access to the massive ROI pixel cloud, 
+	// Calculating this feature does not require access to the massive ROI pixel cloud,
 	// so we can reuse the trivial calculate()
 	calculate(r);
 }
@@ -174,7 +174,7 @@ void CaliperFeretFeature::parallel_process(std::vector<int>& roi_labels, std::un
 
 void CaliperFeretFeature::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
-	// Calculate the feature for each batch ROI item 
+	// Calculate the feature for each batch ROI item
 	for (auto i = firstitem; i < lastitem; i++)
 	{
 		// Get ahold of ROI's label and cache

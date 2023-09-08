@@ -21,7 +21,7 @@ public:
     static bool required(const FeatureSet& fs) { return fs.isEnabled(GABOR); }
 
     GaborFeature();
-    
+
     //=== Trivial ROIs ===
     void calculate(LR& r);
 
@@ -44,15 +44,15 @@ public:
     //-------------- - User interface
 
     // Aspect ratio of the Gaussian
-    static double gamma;            
+    static double gamma;
     // spatial frequency bandwidth (sigma to lambda)
-    static double sig2lam;          
+    static double sig2lam;
     // Size of the filter kernel
-    static int n;                    
+    static int n;
     // Frequency of the low-pass Gabor filter used to produce the reference baseline image
-    static double f0LP;             
+    static double f0LP;
     // Threshold of the filtered at frequency f0[i] to baseline image ratio
-    static double GRAYthr;  
+    static double GRAYthr;
 
     // Pairs of orientation angles of the Gaussian (in radians) and frequency of corresponding highpass filters
     static std::vector<std::pair<double, double>> f0_theta_pairs;
@@ -73,37 +73,37 @@ private:
     // Creates a non-normalized Gabor filter
     void Gabor (
         double* Gex,    // buffer of size n*n*2
-        double f0, 
-        double sig2lam, 
-        double gamma, 
-        double theta, 
-        double fi, 
+        double f0,
+        double sig2lam,
+        double gamma,
+        double theta,
+        double fi,
         int n);
 
     std::vector<double> tx, ty;
 
-    // Computes Gabor energy 
+    // Computes Gabor energy
     void GaborEnergy (
-        const ImageMatrix& Im, 
-        PixIntens* out, 
-        double* auxC, 
-        double* Gex, 
-        double f0, 
-        double sig2lam, 
-        double gamma, 
-        double theta, 
+        const ImageMatrix& Im,
+        PixIntens* out,
+        double* auxC,
+        double* Gex,
+        double f0,
+        double sig2lam,
+        double gamma,
+        double theta,
         int n);
 
     #ifdef USE_GPU
     void GaborEnergyGPU (
-        const ImageMatrix& Im, 
-        PixIntens* /* double* */ out, 
-        double* auxC, 
-        double* Gex, 
-        double f0, 
-        double sig2lam, 
-        double gamma, 
-        double theta, 
+        const ImageMatrix& Im,
+        PixIntens* /* double* */ out,
+        double* auxC,
+        double* Gex,
+        double f0,
+        double sig2lam,
+        double gamma,
+        double theta,
         int n);
 
     void GaborEnergyGPUMultiFilter(
@@ -128,10 +128,10 @@ private:
         double sig2lam,
         double gamma,
         double theta,
-        int n, 
+        int n,
         bool max_or_threshold,
-        double threshold, 
-        double & max_val, 
+        double threshold,
+        double & max_val,
         size_t & cnt);
 
     void conv_dud_NT (
@@ -142,4 +142,3 @@ private:
 
     void GetStats_NT (WriteImageMatrix_nontriv& I, Moments2& moments2);
 };
-

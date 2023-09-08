@@ -51,7 +51,7 @@ void FeatureManager::apply_user_selection()
 	build_user_requested_set();	// The result is 'user_requested_features'
 }
 
-// This test checks every feature code 
+// This test checks every feature code
 bool FeatureManager::check_11_correspondence()
 {
 	bool success = true;
@@ -108,7 +108,7 @@ bool FeatureManager::gather_dependencies()
 			// Feature method instance is good
 			std::cout << fm->feature_info << ": " << n_deps << " depends\n";
 
-			// Show the user method's extended dependencies 
+			// Show the user method's extended dependencies
 			for (auto fcode : extendedDependencies)
 				std::cout << "\t" << theFeatureSet.findFeatureNameByCode(fcode) << "\n";
 		)
@@ -143,7 +143,7 @@ int FeatureManager::get_num_fmethods_dependencies (FeatureMethod * fm, std::vect
 
 
 		// Add dependency fcode to the dependency list to be checked
-		parent_dependencies.push_back(fcode); 
+		parent_dependencies.push_back(fcode);
 
 
 		// Find the feature method providing the dependency fcode (the child feature method)
@@ -166,7 +166,7 @@ int FeatureManager::get_num_fmethods_dependencies (FeatureMethod * fm, std::vect
 		// Analyze the child
 		int n_child_deps = get_num_fmethods_dependencies(
 			providerFM,
-			parent_dependencies); 
+			parent_dependencies);
 		n_deps += n_child_deps;
 	}
 
@@ -219,4 +219,3 @@ void FeatureManager::build_user_requested_set()
 			user_requested_features.push_back(fm);
 	}
 }
-

@@ -59,7 +59,7 @@ namespace Nyxus
 				s_uppr == FEA_NICK_ALL_NGLDM ||
 				s_uppr == FEA_NICK_ALL_NGTDM ||
 				s_uppr == FEA_NICK_ALL_BUT_GABOR ||
-				s_uppr == FEA_NICK_ALL_BUT_GLCM || 
+				s_uppr == FEA_NICK_ALL_BUT_GLCM ||
 				s_uppr == FEA_NICK_ALL_EASY ||
 				s_uppr == FEA_NICK_ALL_NEIG)
 			{
@@ -200,7 +200,7 @@ void Environment::show_cmdline_help()
 		<< "\t\t\tDefault: void blacklist \n"
 		<< "\t\t\tExample 1: " << SKIPROI << "=34,35,36 \n"
 		<< "\t\t\tExample 2: " << SKIPROI << "=image1.ome.tif:34,35,36;image2.ome.tif:42,43 \n";
-    
+
 	#ifdef CHECKTIMING
 		std::cout << "\t\t" << OPT << EXCLUSIVETIMING << "=<false or true> \n"
 			<< "\t\t\tDefault: false \n"
@@ -471,7 +471,7 @@ void Environment::process_feature_list()
 				AREA_UM2,
 				CENTROID_X,
 				CENTROID_Y,
-				DIAMETER_EQUAL_AREA, 
+				DIAMETER_EQUAL_AREA,
 				WEIGHTED_CENTROID_Y,
 				WEIGHTED_CENTROID_X,
 				COMPACTNESS,
@@ -494,7 +494,7 @@ void Environment::process_feature_list()
 				EDGE_STDDEV_INTENSITY,
 				EDGE_MAX_INTENSITY,
 				EDGE_MIN_INTENSITY,
-				CIRCULARITY, 
+				CIRCULARITY,
 				MASS_DISPLACEMENT };
 			theFeatureSet.enableFeatures(F);
 			continue;
@@ -633,7 +633,7 @@ void Environment::process_feature_list()
 				NORM_SPAT_MOMENT_20,
 				NORM_SPAT_MOMENT_30,
 
-				// Hu's moments 1-7 
+				// Hu's moments 1-7
 				HU_M1,
 				HU_M2,
 				HU_M3,
@@ -642,7 +642,7 @@ void Environment::process_feature_list()
 				HU_M6,
 				HU_M7,
 
-				// Weighted Hu's moments 1-7 
+				// Weighted Hu's moments 1-7
 				WEIGHTED_HU_M1,
 				WEIGHTED_HU_M2,
 				WEIGHTED_HU_M3,
@@ -749,8 +749,8 @@ bool Environment::parse_cmdline(int argc, char **argv)
 				#endif
 
 				#ifdef USE_GPU
-					|| find_string_argument(i, USEGPU, rawUseGpu) 
-					|| find_string_argument(i, GPUDEVICEID, rawGpuDeviceID) 
+					|| find_string_argument(i, USEGPU, rawUseGpu)
+					|| find_string_argument(i, GPUDEVICEID, rawGpuDeviceID)
 				#endif
 			))
 			unrecognizedArgs.push_back(*i);
@@ -819,12 +819,12 @@ bool Environment::parse_cmdline(int argc, char **argv)
 	}
 
 	//==== Output type
-#ifdef USE_ARROW 
+#ifdef USE_ARROW
 	VERBOSLVL1(std::cout << "\n*-*-*-*- Using Apache output -*-*-*-*\n");
 
 	auto rawOutpTypeUC = Nyxus::toupper(rawOutpType);
-	if (rawOutpTypeUC != Nyxus::toupper(OT_SINGLECSV) && 
-	    rawOutpTypeUC != Nyxus::toupper(OT_SEPCSV) && 
+	if (rawOutpTypeUC != Nyxus::toupper(OT_SINGLECSV) &&
+	    rawOutpTypeUC != Nyxus::toupper(OT_SEPCSV) &&
 		rawOutpTypeUC != Nyxus::toupper(OT_ARROW) &&
 		rawOutpTypeUC != Nyxus::toupper(OT_ARROWIPC) &&
 		rawOutpTypeUC != Nyxus::toupper(OT_PARQUET))
@@ -835,13 +835,13 @@ bool Environment::parse_cmdline(int argc, char **argv)
 
 	if (rawOutpTypeUC == Nyxus::toupper(OT_ARROW) ||
 		rawOutpTypeUC == Nyxus::toupper(OT_ARROWIPC) ||
-		rawOutpTypeUC == Nyxus::toupper(OT_PARQUET)) 
+		rawOutpTypeUC == Nyxus::toupper(OT_PARQUET))
 	{
 		useCsv = false;
 		arrow_output_type = rawOutpTypeUC;
 	}
 	else
-	{	
+	{
 		useCsv = true;
 		separateCsv = rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV);
 	}
@@ -856,7 +856,7 @@ bool Environment::parse_cmdline(int argc, char **argv)
 		// Intercept an attempt of running Nyxus with Apache options
 		if (rawOutpTypeUC != Nyxus::toupper(OT_ARROW) ||
 			rawOutpTypeUC != Nyxus::toupper(OT_ARROWIPC) ||
-			rawOutpTypeUC != Nyxus::toupper(OT_PARQUET)) 
+			rawOutpTypeUC != Nyxus::toupper(OT_PARQUET))
 			std::cout << "Error: Nyxus must be built with Apache Arrow enabled to use Arrow output types. Please rebuild with the flag USEARROW=ON." << std::endl;
 
 		return false;
@@ -938,7 +938,7 @@ bool Environment::parse_cmdline(int argc, char **argv)
 			return false;
 		}
 
-		// The angle list parsed well, let's tell it to GLCMFeature 
+		// The angle list parsed well, let's tell it to GLCMFeature
 		GLCMFeature::angles = glcmAngles;
 	}
 
@@ -978,7 +978,7 @@ bool Environment::parse_cmdline(int argc, char **argv)
 			std::cout << "Error :" << TEMPDIR << "=" << rawTempDir << ": nonexisting directory\n";
 			return false;
 		}
-		
+
 		// Modify the temp directory path
 		this->temp_dir_path = rawTempDir + "\\";
 	}
@@ -1038,7 +1038,7 @@ bool Environment::parse_cmdline(int argc, char **argv)
 	}
 	else
 	{
-		auto validUsegpu1 = Nyxus::toupper("true"), 
+		auto validUsegpu1 = Nyxus::toupper("true"),
 			validUsegpu2 = Nyxus::toupper("false");
 		if (rawUseGpuUC != validUsegpu1 && rawUseGpuUC != validUsegpu2)
 		{
@@ -1118,17 +1118,17 @@ bool Environment::parse_cmdline(int argc, char **argv)
 	if (Nyxus::toupper(labels_dir) == Nyxus::toupper(intensity_dir))
 	{
 		singleROI = true;
-		std::cout << 
+		std::cout <<
 			"+-----------------------------------------------------------+\n"
 			"|                                                           |\n"
 			"|  Activating whole slide (aka single-ROI) mode             |\n"
 			"|  ATTENTION: disabling time-sonsuming erosions features    |\n"
 			"|                                                           |\n"
 			"+-----------------------------------------------------------+\n" ;
-		
+
 		auto F = {
 			EROSIONS_2_VANISH,
-			EROSIONS_2_VANISH_COMPLEMENT, 
+			EROSIONS_2_VANISH_COMPLEMENT,
 			GABOR
 		};
 		theFeatureSet.disableFeatures (F);
@@ -1149,11 +1149,11 @@ bool Environment::parse_cmdline(int argc, char **argv)
 
 	//==== Parse IBSI compliance mode
 	std::transform(raw_ibsi_compliance.begin(), raw_ibsi_compliance.end(),raw_ibsi_compliance.begin(), ::tolower);
-	if (raw_ibsi_compliance == "true" || raw_ibsi_compliance == "1" || raw_ibsi_compliance == "on") 
+	if (raw_ibsi_compliance == "true" || raw_ibsi_compliance == "1" || raw_ibsi_compliance == "on")
 	{
 		ibsi_compliance = true;
-	} 
-	else 
+	}
+	else
 	{
 		ibsi_compliance = false;
 	}
@@ -1166,8 +1166,8 @@ void Environment::show_featureset_help()
 {
 	const int W = 40;   // width
 
-	std::cout << "\n" << 
-		"Available features : " << "\n" << 
+	std::cout << "\n" <<
+		"Available features : " << "\n" <<
 		"-------------------- " <<
 		"\n";
 	for (auto f = Nyxus::UserFacingFeatureNames.begin(); f != Nyxus::UserFacingFeatureNames.end(); ++f) // (const auto& f : Nyxus::UserFacingFeatureNames)
@@ -1197,7 +1197,7 @@ void Environment::show_featureset_help()
 		FEA_NICK_ALL_NEIG
 	};
 
-	std::cout << "\n" << 
+	std::cout << "\n" <<
 		"Available feature groups :" << "\n" <<
 		"--------------------------" << "\n";
 	for (const auto& f : fgroups)
@@ -1220,7 +1220,7 @@ void Environment::set_coarse_gray_depth (unsigned int new_depth)
 	coarse_grayscale_depth = new_depth;
 }
 
-bool Environment::gpu_is_available() { 
+bool Environment::gpu_is_available() {
 	#ifdef USE_GPU
     	return get_gpu_properties().size() > 0 ? true : false;
 	#else
@@ -1274,7 +1274,7 @@ bool Environment::parse_nested_options_raw_inputs (std::string& error_message)
 	return true;
 }
 
-bool Environment::arrow_is_enabled() 
+bool Environment::arrow_is_enabled()
 {
 	#ifdef USE_ARROW
 		return true;
@@ -1345,5 +1345,3 @@ std::vector<std::map<std::string, std::string>> Environment::get_gpu_properties(
 }
 
 #endif
-
-

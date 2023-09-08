@@ -17,18 +17,18 @@ public:
 	void cleanup_instance();
 	static void reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
-	static bool required(const FeatureSet& fs) 
+	static bool required(const FeatureSet& fs)
 	{
 		return theFeatureSet.anyEnabled({
 			PERIMETER,
-			DIAMETER_EQUAL_PERIMETER, 
+			DIAMETER_EQUAL_PERIMETER,
 			EDGE_INTEGRATED_INTENSITY,
 			EDGE_MAX_INTENSITY,
 			EDGE_MIN_INTENSITY,
 			EDGE_MEAN_INTENSITY,
 			EDGE_STDDEV_INTENSITY,
 			// dependencies:
-			CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY, 
+			CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY,
 			// Spatial (raw) moments
 			SPAT_MOMENT_00,
 			SPAT_MOMENT_01,
@@ -83,7 +83,7 @@ public:
 			NORM_SPAT_MOMENT_10,
 			NORM_SPAT_MOMENT_20,
 			NORM_SPAT_MOMENT_30,
-			// Hu's moments 1-7 
+			// Hu's moments 1-7
 			HU_M1,
 			HU_M2,
 			HU_M3,
@@ -91,14 +91,14 @@ public:
 			HU_M5,
 			HU_M6,
 			HU_M7,
-			// Weighted Hu's moments 1-7 
+			// Weighted Hu's moments 1-7
 			WEIGHTED_HU_M1,
 			WEIGHTED_HU_M2,
 			WEIGHTED_HU_M3,
 			WEIGHTED_HU_M4,
 			WEIGHTED_HU_M5,
 			WEIGHTED_HU_M6,
-			WEIGHTED_HU_M7, 
+			WEIGHTED_HU_M7,
 			ROI_RADIUS_MEAN, ROI_RADIUS_MAX, ROI_RADIUS_MEDIAN,
 			FRAC_AT_D, MEAN_FRAC, RADIAL_CV
 		});
@@ -110,12 +110,11 @@ private:
 	void buildWholeSlideContour(LR& r);
 	std::tuple<double, double, double, double> calc_min_max_mean_stddev_intensity (const std::vector<Pixel2> & contour_pixels);
 	double
-		fval_PERIMETER = 0, 
+		fval_PERIMETER = 0,
 		fval_DIAMETER_EQUAL_PERIMETER = 0,
-		fval_EDGE_MEAN_INTENSITY = 0, 
-		fval_EDGE_STDDEV_INTENSITY = 0, 
-		fval_EDGE_MAX_INTENSITY = 0, 
+		fval_EDGE_MEAN_INTENSITY = 0,
+		fval_EDGE_STDDEV_INTENSITY = 0,
+		fval_EDGE_MAX_INTENSITY = 0,
 		fval_EDGE_MIN_INTENSITY = 0,
 		fval_EDGE_INTEGRATEDINTENSITY = 0;
 };
-

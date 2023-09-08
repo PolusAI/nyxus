@@ -10,7 +10,7 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
-#include <unordered_map> 
+#include <unordered_map>
 
 // values for each feature produced by Nyxus on 01/18/23 after IBSI updates
 static std::unordered_map<std::string, float> gldm_values {
@@ -32,7 +32,7 @@ static std::unordered_map<std::string, float> gldm_values {
 };
 
 /// @brief Smoke test of GLDM
-void test_gldm_feature(const AvailableFeatures& feature, const std::string& feature_name) 
+void test_gldm_feature(const AvailableFeatures& feature, const std::string& feature_name)
 {
     LR roidata;
 
@@ -74,7 +74,7 @@ void test_gldm_hgle()
 
 void test_gldm_sdlgle()
 {
-    test_gldm_feature(GLDM_SDLGLE, "GLDM_SDLGLE");    
+    test_gldm_feature(GLDM_SDLGLE, "GLDM_SDLGLE");
 }
 
 void test_gldm_sdhgle()

@@ -14,11 +14,11 @@ void LR::reset_global_stats()
 LR::LR()
 {}
 
-bool LR::nontrivial_roi (size_t memory_limit) 
-{ 
+bool LR::nontrivial_roi (size_t memory_limit)
+{
 	size_t footprint = get_ram_footprint_estimate();
 	bool nonTriv = footprint >= memory_limit;
-	return nonTriv; 
+	return nonTriv;
 }
 
 size_t LR::get_ram_footprint_estimate()
@@ -85,5 +85,3 @@ void LR::initialize_fvals()
 	for (auto& valVec : fvals)
 		valVec.push_back(0.0);
 }
-
-

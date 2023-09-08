@@ -5,7 +5,7 @@
 #include <cmath>
 #include <memory>
 #include <unordered_map>
-#include <unordered_set> 
+#include <unordered_set>
 #include <algorithm>
 #include <iostream>
 #include <chrono>
@@ -34,7 +34,7 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::ini
 
 	//==== Calculate features
 	theFeatureSet.enableAll (false);
-	theFeatureSet.enableFeatures (desiredFeatures); 
+	theFeatureSet.enableFeatures (desiredFeatures);
 
 	// Try to reach data files at directories 'label_path' and 'intensity_path'
 	std::vector <std::string> intensFiles, labelFiles;
@@ -52,7 +52,7 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::ini
 		Nyxus::theEnvironment.n_pixel_scan_threads,
 		Nyxus::theEnvironment.n_reduce_threads,
 		100,	// min_online_roi_size
-		false, 
+		false,
 		"unused_dirOut");
 
 	// Check for error
@@ -60,7 +60,7 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::ini
 		return { 2, "Error while calculating features", 0, 0, nullptr};
 
 	//==== Allocate the low-level return data buffer
-	// 
+	//
 	// Allocate and initialize the return data buffer - [a matrix n_labels X n_features]:
 	// (Background knowledge - https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11 and https://stackoverflow.com/questions/54876346/pybind11-and-stdvector-how-to-free-data-using-capsules)
 	size_t ny = Nyxus::uniqueLabels.size(),
@@ -84,9 +84,9 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::ini
 		return { 5, ss.str(), 0, 0, nullptr };
 	}
 
-	// Allocate 
+	// Allocate
 	retbuf = new double[len];
-	
+
 	// Check for error
 	if (retbuf == nullptr)
 	{
@@ -110,7 +110,7 @@ PYBIND11_MODULE(nyx_backend, m)
 	m.def("backend_is_alive_imp", [](const std::string& label_path, const std::string& intensity_path)
 		{
 			//==== Calculate features
-			// 
+			//
 			// Request the features that we want to calculate
 			theFeatureSet.enableBoundingBox();
 
@@ -124,7 +124,7 @@ PYBIND11_MODULE(nyx_backend, m)
 			}
 
 			//==== Mock returned results
-			// 
+			//
 			// Allocate and initialize the return data buffer - [a matrix n_labels X n_features]:
 			// (Background knowledge - https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11 and https://stackoverflow.com/questions/54876346/pybind11-and-stdvector-how-to-free-data-using-capsules)
 			size_t ny = 4,	// # unique ROI
@@ -189,7 +189,7 @@ PYBIND11_MODULE(nyx_backend, m)
 					P10, P25, P75, P90,
 					QCOD,
 					INTERQUARTILE_RANGE,
-					ROBUST_MEAN, 
+					ROBUST_MEAN,
 					ROBUST_MEAN_ABSOLUTE_DEVIATION,
 					COV,
 					WEIGHTED_CENTROID_Y,
@@ -250,16 +250,16 @@ PYBIND11_MODULE(nyx_backend, m)
 	m.def("calc_feret", [](const std::string& label_path, const std::string& intensity_path)
 		{
 			// Calculate features
-			auto desiredFeatures = { 
-				MIN_FERET_DIAMETER, 
-				MAX_FERET_DIAMETER, 
-				MIN_FERET_ANGLE, 
-				MAX_FERET_ANGLE, 
-				STAT_FERET_DIAM_MIN, 
-				STAT_FERET_DIAM_MAX, 
-				STAT_FERET_DIAM_MEAN, 
-				STAT_FERET_DIAM_MEDIAN, 
-				STAT_FERET_DIAM_STDDEV, 
+			auto desiredFeatures = {
+				MIN_FERET_DIAMETER,
+				MAX_FERET_DIAMETER,
+				MIN_FERET_ANGLE,
+				MAX_FERET_ANGLE,
+				STAT_FERET_DIAM_MIN,
+				STAT_FERET_DIAM_MAX,
+				STAT_FERET_DIAM_MEAN,
+				STAT_FERET_DIAM_MEDIAN,
+				STAT_FERET_DIAM_STDDEV,
 				STAT_FERET_DIAM_MODE };
 			auto [errorCode, errorDetails, nx, ny, retbuf] = featureSetInvoker(desiredFeatures, label_path, intensity_path);
 
@@ -332,5 +332,3 @@ PYBIND11_MODULE(nyx_backend, m)
 		});
 
 }
-
-

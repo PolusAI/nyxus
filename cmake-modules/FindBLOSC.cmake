@@ -32,11 +32,11 @@
 #   - BLOSC_LIBRARIES, the Blosc library path
 #   - BLOSC_FOUND, whether Blosc has been found
 
-# Find header files  
+# Find header files
 if(BLOSC_SEARCH_HEADER_PATHS)
-  find_path( 
-      BLOSC_INCLUDE_DIR blosc.h 
-      PATHS ${BLOSC_SEARCH_HEADER_PATHS}   
+  find_path(
+      BLOSC_INCLUDE_DIR blosc.h
+      PATHS ${BLOSC_SEARCH_HEADER_PATHS}
       NO_DEFAULT_PATH
   )
 else()

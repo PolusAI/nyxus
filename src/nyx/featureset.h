@@ -9,7 +9,7 @@ namespace Nyxus
 	enum AvailableFeatures
 	{
 		//==== 2D features
-		
+
 		// Pixel intensity stats
 		COV = 0,	// coefficient of variation
 		COVERED_IMAGE_INTENSITY_RANGE,
@@ -38,7 +38,7 @@ namespace Nyxus
 		STANDARD_DEVIATION,
 		STANDARD_DEVIATION_BIASED,
 		STANDARD_ERROR,
-		VARIANCE, 
+		VARIANCE,
 		VARIANCE_BIASED,
 		UNIFORMITY,
 		UNIFORMITY_PIU,
@@ -50,7 +50,7 @@ namespace Nyxus
 		CENTROID_Y,
 		WEIGHTED_CENTROID_Y,
 		WEIGHTED_CENTROID_X,
-		MASS_DISPLACEMENT,		
+		MASS_DISPLACEMENT,
 		COMPACTNESS,
 		BBOX_YMIN,
 		BBOX_XMIN,
@@ -60,7 +60,7 @@ namespace Nyxus
 		EXTENT,
 		ASPECT_RATIO,
 		// -- Legendre inertia ellipse
-		MAJOR_AXIS_LENGTH,	
+		MAJOR_AXIS_LENGTH,
 		MINOR_AXIS_LENGTH,
 		// -- ellipticity related
 		ECCENTRICITY,
@@ -75,7 +75,7 @@ namespace Nyxus
 		EDGE_STDDEV_INTENSITY,
 		EDGE_MAX_INTENSITY,
 		EDGE_MIN_INTENSITY,
-		EDGE_INTEGRATED_INTENSITY,	
+		EDGE_INTEGRATED_INTENSITY,
 		CIRCULARITY,
 
 		// -- convex hull related
@@ -207,22 +207,22 @@ namespace Nyxus
 		GLCM_VARIANCE,
 
 		// GLRLM:
-		GLRLM_SRE,	// Short Run Emphasis 
-		GLRLM_LRE,	// Long Run Emphasis 
-		GLRLM_GLN,	// Gray Level Non-Uniformity 
-		GLRLM_GLNN,	// Gray Level Non-Uniformity Normalized 
+		GLRLM_SRE,	// Short Run Emphasis
+		GLRLM_LRE,	// Long Run Emphasis
+		GLRLM_GLN,	// Gray Level Non-Uniformity
+		GLRLM_GLNN,	// Gray Level Non-Uniformity Normalized
 		GLRLM_RLN,	// Run Length Non-Uniformity
-		GLRLM_RLNN,	// Run Length Non-Uniformity Normalized 
+		GLRLM_RLNN,	// Run Length Non-Uniformity Normalized
 		GLRLM_RP,	// Run Percentage
-		GLRLM_GLV,	// Gray Level Variance 
-		GLRLM_RV,	// Run Variance 
-		GLRLM_RE,	// Run Entropy 
-		GLRLM_LGLRE,	// Low Gray Level Run Emphasis 
-		GLRLM_HGLRE,	// High Gray Level Run Emphasis 
-		GLRLM_SRLGLE,	// Short Run Low Gray Level Emphasis 
-		GLRLM_SRHGLE,	// Short Run High Gray Level Emphasis 
-		GLRLM_LRLGLE,	// Long Run Low Gray Level Emphasis 
-		GLRLM_LRHGLE,	// Long Run High Gray Level Emphasis 
+		GLRLM_GLV,	// Gray Level Variance
+		GLRLM_RV,	// Run Variance
+		GLRLM_RE,	// Run Entropy
+		GLRLM_LGLRE,	// Low Gray Level Run Emphasis
+		GLRLM_HGLRE,	// High Gray Level Run Emphasis
+		GLRLM_SRLGLE,	// Short Run Low Gray Level Emphasis
+		GLRLM_SRHGLE,	// Short Run High Gray Level Emphasis
+		GLRLM_LRLGLE,	// Long Run Low Gray Level Emphasis
+		GLRLM_LRHGLE,	// Long Run High Gray Level Emphasis
 
 		// GLDZM:
 		GLDZM_SDE,		// Small Distance Emphasis
@@ -311,7 +311,7 @@ namespace Nyxus
 		FRAC_AT_D,
 		MEAN_FRAC,
 		RADIAL_CV,
-			
+
 		// Spatial (raw) moments
 		SPAT_MOMENT_00,
 		SPAT_MOMENT_01,
@@ -372,7 +372,7 @@ namespace Nyxus
 		NORM_SPAT_MOMENT_20,
 		NORM_SPAT_MOMENT_30,
 
-		// Hu's moments 1-7 
+		// Hu's moments 1-7
 		HU_M1,
 		HU_M2,
 		HU_M3,
@@ -381,7 +381,7 @@ namespace Nyxus
 		HU_M6,
 		HU_M7,
 
-		// Weighted Hu's moments 1-7 
+		// Weighted Hu's moments 1-7
 		WEIGHTED_HU_M1,
 		WEIGHTED_HU_M2,
 		WEIGHTED_HU_M3,
@@ -438,14 +438,14 @@ public:
 			m_enabledFeatures[P10] = m_enabledFeatures[P25] = m_enabledFeatures[P75] = m_enabledFeatures[P90] =
 			m_enabledFeatures[QCOD] =
 			m_enabledFeatures[INTERQUARTILE_RANGE] =
-			m_enabledFeatures[ROBUST_MEAN] = 
+			m_enabledFeatures[ROBUST_MEAN] =
 			m_enabledFeatures[ROBUST_MEAN_ABSOLUTE_DEVIATION] =
 			m_enabledFeatures[COV] =
 			m_enabledFeatures[WEIGHTED_CENTROID_Y] =
 			m_enabledFeatures[WEIGHTED_CENTROID_X] =
 			m_enabledFeatures[MASS_DISPLACEMENT] =
-			m_enabledFeatures[STANDARD_DEVIATION_BIASED] = 			
-			m_enabledFeatures[VARIANCE] =			
+			m_enabledFeatures[STANDARD_DEVIATION_BIASED] =
+			m_enabledFeatures[VARIANCE] =
 			m_enabledFeatures[VARIANCE_BIASED] = true;
 	}
 	void enableBoundingBox() {

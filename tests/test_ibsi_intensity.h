@@ -9,7 +9,7 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
-#include <unordered_map> 
+#include <unordered_map>
 
 // dig. phantom values for intensity based features
 static std::unordered_map<std::string, float> IBSI_intensity_values {
@@ -59,7 +59,7 @@ void test_intensity_feature(const AvailableFeatures& feature, const std::string&
         combined_mask.push_back(p);
 
     double total = 0;
-    
+
     LR roidata;
     // Calculate features
     PixelIntensityFeatures f;

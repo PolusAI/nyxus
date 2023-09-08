@@ -5,7 +5,7 @@
 #include "image_matrix.h"
 #include "../feature_method.h"
 
-// Inspired by 
+// Inspired by
 //		https://stackoverflow.com/questions/25019840/neighboring-gray-level-dependence-matrix-ngldm-in-matlab?fbclid=IwAR14fT0kpmjmOXRhKcguFMH3tCg0G4ubDLRxyHZoXdpKdbPxF7Zuq-WKE8o
 //		https://qiita.com/tatsunidas/items/fd49ef6ac7c3deb141e0
 //
@@ -18,14 +18,14 @@
 ///	if :math:`|i - j | \le\alpha`. In a gray level dependence matrix : math:`\textbf{ P }(i, j)` the :math:`(i, j)`\ :sup:`th`
 ///	element describes the number of times a voxel with gray level : math:`i` with : math : `j` dependent voxels
 ///	in its neighbourhood appears in image.
-/// 
+///
 
 class GLDMFeature: public FeatureMethod
 {
 public:
 
-	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
-	// in the feature group nickname expansion, and in the feature value output 
+	// Codes of features implemented by this class. Used in feature manager's mechanisms,
+	// in the feature group nickname expansion, and in the feature value output
 	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
 	{
 		GLDM_SDE,		// Small Dependence Emphasis
@@ -44,7 +44,7 @@ public:
 		GLDM_LDHGLE	// Large Dependence High Gray Level Emphasis
 	};
 
-	static bool required(const FeatureSet& fs) 
+	static bool required(const FeatureSet& fs)
 	{
 		return fs.anyEnabled(GLDMFeature::featureset);
 	}
@@ -102,4 +102,3 @@ private:
 	const double EPS = 2.2e-16;
 	const double LOG10_2 = 0.30102999566;	// precalculated log 2 base 10
 };
-

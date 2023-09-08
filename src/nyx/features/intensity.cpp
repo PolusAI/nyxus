@@ -237,8 +237,8 @@ void PixelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 		medad += std::abs(px.inten - median_);
 	val_MEDIAN_ABSOLUTE_DEVIATION = medad / n;
 
-	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image 
-	//	intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] 
+	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image
+	//	intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/]
 	//	and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
 	double piu = (1.0 - double(r.aux_max - r.aux_min) / double(r.aux_max + r.aux_min)) * 100.0;
 	val_UNIFORMITY_PIU = piu;
@@ -317,7 +317,7 @@ void PixelIntensityFeatures::parallel_process(std::vector<int>& roi_labels, std:
 
 void PixelIntensityFeatures::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
-	// Calculate the feature for each batch ROI item 
+	// Calculate the feature for each batch ROI item
 	for (auto i = firstitem; i < lastitem; i++)
 	{
 		// Get ahold of ROI's label and cache
@@ -371,11 +371,11 @@ void PixelIntensityFeatures::cleanup_instance()
 	val_MODE = 0;
 	val_UNIFORMITY = 0;
 	val_UNIFORMITY_PIU = 0;
-	val_P01 = 0; 
-	val_P10 = 0; 
-	val_P25 = 0; 
-	val_P75 = 0; 
-	val_P90 = 0; 
+	val_P01 = 0;
+	val_P10 = 0;
+	val_P25 = 0;
+	val_P75 = 0;
+	val_P90 = 0;
 	val_P99 = 0;
 	val_QCOD = 0;
 	val_INTERQUARTILE_RANGE = 0;
@@ -386,4 +386,3 @@ void PixelIntensityFeatures::cleanup_instance()
 	val_VARIANCE = 0;
 	val_VARIANCE_BIASED = 0;
 }
-

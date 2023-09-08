@@ -3,15 +3,15 @@
 #include "../feature_method.h"
 
 /// @brief Neighbouring grey level dependence matrix (NGLDM) based features
-/// 
+///
 /// NGLDM features quantify the coarseness of the overall texture in a rotationally invariant way
 
 class NGLDMfeature : public FeatureMethod
 {
 public:
 
-	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
-	// in the feature group nickname expansion, and in the feature value output 
+	// Codes of features implemented by this class. Used in feature manager's mechanisms,
+	// in the feature group nickname expansion, and in the feature value output
 	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
 	{
 		NGLDM_LDE,		// Low Dependence Emphasis
@@ -64,7 +64,7 @@ private:
 
 	const double EPS = 2.2e-16;
 
-	// Variables caching feature values between calculate() and save_value(). 
+	// Variables caching feature values between calculate() and save_value().
 	double f_LDE;		// Low Dependence Emphasis
 	double f_HDE;		// High Dependence Emphasis
 	double f_LGLCE;		// Low Grey Level Count Emphasis

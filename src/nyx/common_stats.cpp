@@ -3,7 +3,7 @@
 
 namespace Nyxus
 {
-Statistics ComputeCommonStatistics2 (std::vector<double> & Data) 
+Statistics ComputeCommonStatistics2 (std::vector<double> & Data)
 {
     Statistics output;
 

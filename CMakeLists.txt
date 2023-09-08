@@ -13,7 +13,7 @@ include(GNUInstallDirs)
 
 find_package(CUDA)
 option(USEGPU "Use GPU" ON)
-if(CUDA_FOUND AND USEGPU) 
+if(CUDA_FOUND AND USEGPU)
 	set(USEGPU ON)
 	if (CUDA_VERSION_MAJOR STREQUAL "10")
 		set(CUDA_ARCH_LIST "35;37;50;72;75")
@@ -54,13 +54,13 @@ if(USEGPU)
 	elseif (CUDA_VERSION_MAJOR STREQUAL "11")
 		set(CMAKE_CUDA_STANDARD 17)
 	endif()
-	set(CMAKE_CUDA_STANDARD_REQUIRED ON)	
+	set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 endif()
 
 #since xtensor does not built with GCC 7.5 and lower
 option(OMEZARR "Support OMEZarr" ON)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.5) 
+	if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.5)
 		add_definitions(-DOMEZARR_SUPPORT)
 	else()
 		set(OMEZARR OFF)
@@ -81,7 +81,7 @@ endif()
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
-#== GTest 
+#== GTest
 option(RUN_GTEST "Downloads google unit test API and runs google test scripts to test Nyxus" OFF)
 
 
@@ -170,7 +170,7 @@ if (USEARROW)
 	# Look for installed packages the system
 	find_package(Arrow)
 
-	if (Arrow_FOUND) 
+	if (Arrow_FOUND)
 		# Look for installed packages the system
 		find_package(Parquet)
 
@@ -197,7 +197,7 @@ endif()
 
 # Python bindings.
 if(BUILD_LIB)
-	pybind11_add_module(backend 
+	pybind11_add_module(backend
 		${SOURCE}
 		src/nyx/python/new_bindings_py.cpp
 		src/nyx/python/nested_roi_py.cpp
@@ -206,14 +206,14 @@ if(BUILD_LIB)
 	)
 endif()
 
-#== Required for OMETiff  
+#== Required for OMETiff
 find_package(TIFF REQUIRED)
 if (TIFF_FOUND)
 	list(APPEND Nyxus_LIBRARIES ${TIFF_LIBRARIES} )
 	include_directories (${TIFF_INCLUDE_DIR})
 endif (TIFF_FOUND)
 
-#== Required for OMEZarr 
+#== Required for OMEZarr
 if(OMEZARR)
 	find_package(BLOSC REQUIRED)
 	if(BLOSC_FOUND)
@@ -223,7 +223,7 @@ if(OMEZARR)
 		endif()
 		if(BUILD_CLI)
 			target_compile_definitions(nyxus PRIVATE -DWITH_BLOSC)
-			target_link_libraries(nyxus PRIVATE ${BLOSC_LIBRARIES})	
+			target_link_libraries(nyxus PRIVATE ${BLOSC_LIBRARIES})
 		endif()
 	endif()
 
@@ -303,7 +303,7 @@ if(USEGPU)
 	endif()
 endif()
 
- 
+
 if(USEARROW)
 
 	list(APPEND Nyxus_LIBRARIES arrow_shared)
@@ -394,7 +394,7 @@ if (RUN_GTEST)
 
 	# Prevent GoogleTest from overriding our compiler/linker options
 	# when building with Visual Studio
-	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE) 
+	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 	# Add googletest directly to our build. This adds
 	# the following targets: gtest, gtest_main, gmock

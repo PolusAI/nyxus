@@ -3,7 +3,7 @@
 #include <cmath>
 #include <memory>
 #include <unordered_map>
-#include <unordered_set> 
+#include <unordered_set>
 #include <algorithm>
 #include <iostream>
 #include <chrono>
@@ -154,14 +154,14 @@ namespace Nyxus
 		// Update ROI bounds
 		lr.update_aabb(x, y);
 
-		// Per-image 
+		// Per-image
 		LR::global_min_inten = std::min(LR::global_min_inten, intensity);
 		LR::global_max_inten = std::max(LR::global_max_inten, intensity);
 	}
 
 	void update_label_record_2 (LR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index)
 	{
-		// Per-ROI 
+		// Per-ROI
 		lr.aux_area++;
 
 		lr.aux_min = std::min(lr.aux_min, intensity);

@@ -143,7 +143,7 @@ void ImageMomentsFeature::calcRawMoments(const pixcloud_NT& cloud)
     m30 = moment(cloud, 3, 0);
 }
 
-/// @brief 
+/// @brief
 /// @param cloud Cloud of weighted ROI pixels
 void ImageMomentsFeature::calcWeightedRawMoments(const pixcloud_NT& cloud)
 {
@@ -202,4 +202,3 @@ void ImageMomentsFeature::calcNormRawMoments(const pixcloud_NT& cloud)
     w20 = normRawMom(cloud, 2, 0);
     w30 = normRawMom(cloud, 3, 0);
 }
-

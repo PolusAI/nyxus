@@ -2,7 +2,7 @@
   #include <filesystem>
   namespace fs = std::filesystem;
 #elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
+  #include <experimental/filesystem>
   namespace fs = std::experimental::filesystem;
 #else
   error "Missing the <filesystem> header."
@@ -20,36 +20,36 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 {
 	int n_threads = 1;
 
-	try 
+	try
 	{
 		if 	(fs::path(int_fpath).extension() == ".zarr")
 		{
 			#ifdef OMEZARR_SUPPORT
 			intFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, int_fpath);
 			#else
-			std::cout << "This version of Nyxus was not build with OmeZarr support." <<std::endl; 
+			std::cout << "This version of Nyxus was not build with OmeZarr support." <<std::endl;
 			#endif
 		}
 		else if(fs::path(int_fpath).extension() == ".dcm" | fs::path(int_fpath).extension() == ".dicom"){
 			#ifdef DICOM_SUPPORT
 			intFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, int_fpath);
 			#else
-			std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl; 
+			std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl;
 			#endif
 		}
-		else 
+		else
 		{
 			if (Nyxus::check_tile_status(int_fpath))
 			{
 				intFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(n_threads, int_fpath);
-			} 
-			else 
+			}
+			else
 			{
 				intFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, int_fpath);
 			}
 		}
 	}
-	catch (std::exception const& e)	
+	catch (std::exception const& e)
 	{
 		std::cout << "Error while initializing the image loader for intensity image file " << int_fpath << ": " << e.what() << "\n";
 		return false;
@@ -71,7 +71,7 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 			#ifdef DICOM_SUPPORT
 			segFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, seg_fpath);
 			#else
-			std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl; 
+			std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl;
 			#endif
 		}
 		else
@@ -79,8 +79,8 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 			if (Nyxus::check_tile_status(seg_fpath))
 			{
 				segFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(n_threads, seg_fpath);
-			} 
-			else 
+			}
+			else
 			{
 				segFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, seg_fpath);
 			}
@@ -88,7 +88,7 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 
 
 	}
-	catch (std::exception const& e)	
+	catch (std::exception const& e)
 	{
 		std::cout << "Error while initializing the image loader for mask image file " <<  seg_fpath << ": " << e.what() << "\n";
 		return false;
@@ -96,7 +96,7 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 
 	if (segFL == nullptr)
 		return false;
-	
+
 	// File #1 (intensity)
 	th = intFL->tileHeight(lvl);
 	tw = intFL->tileWidth(lvl);
@@ -115,7 +115,7 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 
 	// -- check whole file consistency
 	auto fh_seg = segFL->fullHeight(lvl),
-		fw_seg = segFL->fullWidth(lvl), 
+		fw_seg = segFL->fullWidth(lvl),
 		fd_seg = segFL->fullDepth(lvl);
 	if (fh != fh_seg || fw != fw_seg || fd != fd_seg)
 	{
@@ -137,10 +137,10 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 	ptrI = std::make_shared<std::vector<uint32_t>>(tileSize);
 	// Experiment
 	ptrL = std::make_shared<std::vector<uint32_t>>(tileSize);
-	segFL->loadTileFromFile(ptrL, 
-		0, //row, 
-		0, //col, 
-		0, //lyr, 
+	segFL->loadTileFromFile(ptrL,
+		0, //row,
+		0, //col,
+		0, //lyr,
 		0); // lvl);
 	auto& dataL = *ptrL;
 #endif
@@ -175,7 +175,7 @@ bool ImageLoader::load_tile(size_t tile_idx)
 	auto col = tile_idx % ntw;
 	intFL->loadTileFromFile (ptrI, row, col, lyr, lvl);
 	segFL->loadTileFromFile (ptrL, row, col, lyr, lvl);
-	
+
 	return true;
 }
 

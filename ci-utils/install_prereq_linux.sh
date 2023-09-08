@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 # Usage: $bash install_prereq_linux.sh $INSTALL_DIR
 # Default $INSTALL_DIR = ./local_install
 #
@@ -8,76 +8,76 @@ then
       echo "Creating local_install directory"
       Z5_INSTALL_DIR="local_install"
 else
-     Z5_INSTALL_DIR=$1
+     Z5_INSTALL_DIR="$1"
 fi
 
-mkdir -p $Z5_INSTALL_DIR
-mkdir -p $Z5_INSTALL_DIR/include
+mkdir -p "$Z5_INSTALL_DIR"
+mkdir -p "$Z5_INSTALL_DIR"/include
 
 for i in {1..5}
 do
-    curl -L https://boostorg.jfrog.io/artifactory/main/release/1.79.0/source/boost_1_79_0.tar.bz2 -o boost_1_79_0.tar.bz2 
+    curl -L https://boostorg.jfrog.io/artifactory/main/release/1.79.0/source/boost_1_79_0.tar.bz2 -o boost_1_79_0.tar.bz2
     if [ -f "boost_1_79_0.tar.bz2" ] ; then
         break
     fi
 done
-tar --bzip2 -xf boost_1_79_0.tar.bz2 
-cd boost_1_79_0 
-./bootstrap.sh 
+tar --bzip2 -xf boost_1_79_0.tar.bz2
+cd boost_1_79_0
+./bootstrap.sh
 ./b2 headers
-cp -r boost ../$Z5_INSTALL_DIR/include
+cp -r boost ../"$Z5_INSTALL_DIR"/include
 cd ../
 
 git clone https://github.com/madler/zlib.git
 cd zlib
 mkdir build_man
 cd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/ ..  
-cmake --build . 
-cmake --build . --target install 
+cmake -DCMAKE_INSTALL_PREFIX=../../"$Z5_INSTALL_DIR"/ ..
+cmake --build .
+cmake --build . --target install
 cd ../../
 
-git clone https://github.com/Blosc/c-blosc.git 
-cd c-blosc 
+git clone https://github.com/Blosc/c-blosc.git
+cd c-blosc
 mkdir build_man
 cd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/ ..  
-cmake --build . 
-cmake --build . --target install 
+cmake -DCMAKE_INSTALL_PREFIX=../../"$Z5_INSTALL_DIR"/ ..
+cmake --build .
+cmake --build . --target install
 cd ../../
 
-git clone https://github.com/xtensor-stack/xtl.git 
-cd xtl 
+git clone https://github.com/xtensor-stack/xtl.git
+cd xtl
 mkdir build_man
 cd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/ ..  
-cmake --build . 
-cmake --build . --target install 
+cmake -DCMAKE_INSTALL_PREFIX=../../"$Z5_INSTALL_DIR"/ ..
+cmake --build .
+cmake --build . --target install
 cd ../../
 
-git clone https://github.com/xtensor-stack/xtensor.git 
-cd xtensor 
+git clone https://github.com/xtensor-stack/xtensor.git
+cd xtensor
 mkdir build_man
 cd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/ ..  
-cmake --build . 
-cmake --build . --target install 
+cmake -DCMAKE_INSTALL_PREFIX=../../"$Z5_INSTALL_DIR"/ ..
+cmake --build .
+cmake --build . --target install
 cd ../../
 
-git clone https://github.com/xtensor-stack/xsimd.git 
-cd xsimd 
+git clone https://github.com/xtensor-stack/xsimd.git
+cd xsimd
 mkdir build_man
 cd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/ ..  
-cmake --build . 
-cmake --build . --target install 
+cmake -DCMAKE_INSTALL_PREFIX=../../"$Z5_INSTALL_DIR"/ ..
+cmake --build .
+cmake --build . --target install
 cd ../../
 
 git clone  https://github.com/nlohmann/json.git
 cd json
 mkdir build_man
 cd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/ ..  
+cmake -DCMAKE_INSTALL_PREFIX=../../"$Z5_INSTALL_DIR"/ ..
 make install/fast
 cd ../../
 
@@ -85,7 +85,7 @@ git clone https://github.com/pybind/pybind11.git
 cd pybind11
 mkdir build_man
 cd build_man/
-cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/  -DPYBIND11_TEST=OFF ..
+cmake -DCMAKE_INSTALL_PREFIX=../../"$Z5_INSTALL_DIR"/  -DPYBIND11_TEST=OFF ..
 make install -j4
 cd ../../
 
@@ -93,7 +93,7 @@ git clone https://github.com/constantinpape/z5.git
 cd z5
 mkdir build_man
 cd build_man/
-cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF  ..
+cmake -DCMAKE_INSTALL_PREFIX=../../"$Z5_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$Z5_INSTALL_DIR"/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF  ..
 make install -j4
 cd ../../
 
@@ -102,8 +102,8 @@ curl -L http://www.ijg.org/files/jpegsrc.v9e.tar.gz -o jpegsrc.v9e.tar.gz
 tar -xzf jpegsrc.v9e.tar.gz
 cd jpeg-9e
 ./configure --prefix=
-make DESTDIR=$JPEG_INSTALL_PATH/$Z5_INSTALL_DIR install
-./libtool --finish $JPEG_INSTALL_PATH/$Z5_INSTALL_DIR/lib
+make DESTDIR="$JPEG_INSTALL_PATH"/"$Z5_INSTALL_DIR" install
+./libtool --finish "$JPEG_INSTALL_PATH"/"$Z5_INSTALL_DIR"/lib
 cd ..
 
 for i in {1..5}
@@ -116,12 +116,12 @@ done
 
 unzip libdeflate.zip
 cd libdeflate-1.14
-PREFIX= LIBDIR=/lib64  DESTDIR=../$Z5_INSTALL_DIR/ make  install
+PREFIX= LIBDIR=/lib64  DESTDIR=../"$Z5_INSTALL_DIR"/ make  install
 cd ../
 
 for i in {1..5}
 do
-    curl https://download.osgeo.org/libtiff/tiff-4.5.0.zip -o libtiff.zip 
+    curl https://download.osgeo.org/libtiff/tiff-4.5.0.zip -o libtiff.zip
     if [ -f "libtiff.zip" ] ; then
         break
     fi
@@ -131,7 +131,7 @@ unzip libtiff.zip
 cd tiff-4.5.0
 mkdir build_man
 cd build_man/
-cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/   ..
+cmake -DCMAKE_INSTALL_PREFIX=../../"$Z5_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$Z5_INSTALL_DIR"/   ..
 make install -j4
 cd ../../
 
@@ -140,7 +140,7 @@ unzip v1.6.39.zip
 cd libpng-1.6.39/
 mkdir build_man
 cd build_man/
-cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/   ..
+cmake -DCMAKE_INSTALL_PREFIX=../../"$Z5_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$Z5_INSTALL_DIR"/   ..
 make install -j4
 cd ../../
 
@@ -149,7 +149,7 @@ unzip v2.5.0.zip
 cd openjpeg-2.5.0/
 mkdir build_man
 cd build_man/
-cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/ -DBUILD_CODEC=OFF   ..
+cmake -DCMAKE_INSTALL_PREFIX=../../"$Z5_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$Z5_INSTALL_DIR"/ -DBUILD_CODEC=OFF   ..
 make install -j4
 cd ../../
 
@@ -158,7 +158,7 @@ unzip DCMTK-3.6.7.zip
 cd dcmtk-DCMTK-3.6.7/
 mkdir build_man
 cd build_man/
-cmake -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF  ..
+cmake -DCMAKE_INSTALL_PREFIX=../../"$Z5_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$Z5_INSTALL_DIR"/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF  ..
 make install -j4
 cd ../../
 
@@ -168,6 +168,6 @@ unzip fmjpeg2koj.zip
 cd fmjpeg2koj-fix_cmake/
 mkdir build_man
 cd build_man/
-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../$Z5_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$Z5_INSTALL_DIR/  -DFMJPEG2K=$ROOTDIR/$Z5_INSTALL_DIR/  ..
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../"$Z5_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$Z5_INSTALL_DIR"/  -DFMJPEG2K="$ROOTDIR"/"$Z5_INSTALL_DIR"/  ..
 make install -j4
 cd ../../

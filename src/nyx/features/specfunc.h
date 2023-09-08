@@ -41,5 +41,3 @@ enum {
 	GSL_ETOLG = 31,  /* cannot reach the specified tolerance in gradient */
 	GSL_EOF = 32   /* end of file */
 };
-
-

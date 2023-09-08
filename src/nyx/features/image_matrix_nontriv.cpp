@@ -2,7 +2,7 @@
   #include <filesystem>
   namespace fs = std::filesystem;
 #elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
+  #include <experimental/filesystem>
   namespace fs = std::experimental::filesystem;
 #else
   error "Missing the <filesystem> header."
@@ -37,15 +37,15 @@ void OutOfRamPixelCloud::check_io_ok() const
 
 void OutOfRamPixelCloud::init (unsigned int _roi_label, std::string name)
 {
-	n_items = 0;	
-	
+	n_items = 0;
+
 	auto tid = std::this_thread::get_id();
 
 	std::stringstream ssPath;
 	ssPath << Nyxus::theEnvironment.get_temp_dir_path() << name << "_roi" << _roi_label << "_tid" << tid << ".vec.nyxus";
 	filepath = ssPath.str();
-	
-	errno = 0;	
+
+	errno = 0;
 	pF = fopen(filepath.c_str(), "w+b");
 	if (!pF)
 		throw (std::runtime_error("Error creating file " + filepath + " Error code:" + std::to_string(errno)));
@@ -116,7 +116,7 @@ WriteImageMatrix_nontriv::WriteImageMatrix_nontriv (const std::string& _name, un
 	if (!pF)
 		throw (std::runtime_error("Error creating file " + filepath + " Error code:" + std::to_string(errno)));
 
-	if (std::setvbuf (pF, nullptr, _IOFBF, 32768) != 0) 
+	if (std::setvbuf (pF, nullptr, _IOFBF, 32768) != 0)
 		std::cout << "setvbuf failed\n";
 }
 
@@ -148,11 +148,11 @@ void WriteImageMatrix_nontriv::allocate_from_cloud (const OutOfRamPixelCloud & c
 	// Allocate space
 	allocate(aabb.get_width(), aabb.get_height(), 0);
 
-	// '+1' does the job: wherever intensity pixels are defined in 'cloud', 
+	// '+1' does the job: wherever intensity pixels are defined in 'cloud',
 	// in the image we will have at least 1 even if the pixel intensity is 0
 	int maskMagic = mask_image ? 1 : 0;
-	
-	// Fill it with cloud pixels 
+
+	// Fill it with cloud pixels
 	for (size_t i = 0; i < cloud.size(); i++)
 	{
 		const Pixel2 p = cloud.get_at(i);
@@ -170,7 +170,7 @@ void WriteImageMatrix_nontriv::allocate_from_cloud_coarser_grayscale (const OutO
 	// Allocate space
 	allocate(aabb.get_width(), aabb.get_height(), 0);
 
-	// Fill it with cloud pixels 
+	// Fill it with cloud pixels
 	for (size_t i = 0; i < cloud.size(); i++)
 	{
 		const Pixel2 p = cloud.get_at(i);
@@ -192,7 +192,7 @@ void WriteImageMatrix_nontriv::copy (WriteImageMatrix_nontriv& other)
 	if (this->height != other.height || this->width != other.width)
 	{
 		std::string msg = "Error: size mismatch while copying " + other.info() + " to " + this->info();
-		throw (std::runtime_error(msg));	
+		throw (std::runtime_error(msg));
 	}
 
 	for (size_t i = 0; i < this->size(); i++)
@@ -472,4 +472,3 @@ bool Power2PaddedImageMatrix_NT::tile_contains_signal (int tile_row, int tile_co
 				return true;
 	return false;
 }
-

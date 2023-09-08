@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from .nyxus import Nyxus
 from .nyxus import Nested
 from .functions import gpu_is_available, get_gpu_properties

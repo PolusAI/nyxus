@@ -1,7 +1,7 @@
 #include <cmath>
 #include <memory>
 #include <unordered_map>
-#include <unordered_set> 
+#include <unordered_set>
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
@@ -25,7 +25,7 @@ namespace Nyxus
 	// Global mutex locking requests to per-label mutexes
 	std::mutex glock;
 
-	// Parallel version of update_label_stats() 
+	// Parallel version of update_label_stats()
 	void update_label_parallel(int x, int y, int label, PixIntens intensity)
 	{
 		std::mutex* mux;
@@ -120,7 +120,7 @@ namespace Nyxus
 			fw = I.fullWidth(lvl),
 			fd = I.fullDepth(lvl),
 			ntw = I.numberTileWidth(lvl),
-			nth = I.numberTileHeight(lvl), 
+			nth = I.numberTileHeight(lvl),
 			ntd = I.numberTileDepth(lvl);
 
 		// File #2 (labels)
@@ -140,8 +140,8 @@ namespace Nyxus
 			return false;
 		}
 
-		// Read the TIFF tile by tile 
-		// 
+		// Read the TIFF tile by tile
+		//
 		// -- allocate the tile buffer
 		std::shared_ptr<std::vector<uint32_t>> ptrI = std::make_shared<std::vector<uint32_t>>(tileSize);
 		std::shared_ptr<std::vector<uint32_t>> ptrL = std::make_shared<std::vector<uint32_t>>(tileSize);

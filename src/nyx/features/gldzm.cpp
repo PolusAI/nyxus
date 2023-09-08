@@ -53,11 +53,11 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 	// -- Zones (intensity clusters)
 	std::vector<IDZ_cluster_indo> Z;
 
-	// -- Unique intensities 
+	// -- Unique intensities
 	std::unordered_set<PixIntens> U;
 
-	// -- We need a copy of ROI's image matrix for 
-	//		(1) making a binned (coarser) pixel intensity image and 
+	// -- We need a copy of ROI's image matrix for
+	//		(1) making a binned (coarser) pixel intensity image and
 	//		(2) zone finding alsorithm's ability to leave marks in recognized zones
 	auto M = r.aux_image_matrix;
 	pixData& D = M.WriteablePixels();
@@ -95,7 +95,7 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 			//	if (inten == 0)
 			//		continue;
 
-			// Once found a nonblank pixel, explore its same-intensity neighbourhood (aka "zone") pixel's distance 
+			// Once found a nonblank pixel, explore its same-intensity neighbourhood (aka "zone") pixel's distance
 			// to the image border and figure out the whole zone's metric - minimum member pixel's distance to the border.
 			std::stack<std::tuple<int, int>> parentstack;
 
@@ -106,18 +106,18 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 			int zoneSize = 1;	// once found a never-visited pixel, we already have a 1-pixel zone
 
 			// Prepare an initial approximation of zone's distance to border
-			int zoneMetric = dist2border <pixData> (D, x, y); 
+			int zoneMetric = dist2border <pixData> (D, x, y);
 
 			// Scan the neighborhood of pixel (x,y)
 			for (;;)
 			{
 				//==== Calculate the metric of this pixel. It may happen to be the only pixel of a zone
-				
+
 				// Prevent rescanning: mark eroded pixels with 'VISITED'. (The goal is to erode the whole zone.)
 				D.yx (y,x) = VISITED;
 
 				//==== Check if zone continues to the East
-				int _x = x+1, 
+				int _x = x+1,
 					_y = y;
 				if (D.safe(_y,_x) && D.yx(_y,_x) != VISITED && D.yx(_y,_x) == inten)
 				{
@@ -144,7 +144,7 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 				{
 
 					// Store pixel (x,y+1)'s parent pixel pisition
-					parentstack.push ({x,y});	
+					parentstack.push ({x,y});
 
 					// Update zone's metric
 					int dist2roi = dist2border <pixData>(D, _x, _y);
@@ -165,7 +165,7 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 				{
 
 					// Store pixel (x-1,y)'s parent pixel pisition
-					parentstack.push ({x,y});	
+					parentstack.push ({x,y});
 
 					// Update zone's metric
 					int dist2roi = dist2border <pixData>(D, _x, _y);
@@ -186,7 +186,7 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 				{
 
 					// Store pixel (x,y-1)'s parent pixel pisition
-					parentstack.push ({x,y});	
+					parentstack.push ({x,y});
 
 					// Update zone's metric
 					int dist2roi = dist2border <pixData> (D, _x, _y);
@@ -204,16 +204,16 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 				if (parentstack.empty() == false)
 				{
 					// Not a trivial (single-pixel) zone
-					
+
 					// Restore the last saved parent position as current
 					// in order to get ahold the terminal pixel's parent who hopefully has other children
-					auto parent_xy = parentstack.top();	
+					auto parent_xy = parentstack.top();
 					parentstack.pop();
 					x = std::get<0> (parent_xy);
 					y = std::get<1> (parent_xy);
 				}
 				else
-					// Empty 'parentstack' indicates that no neighbors ("children") of pixel (x,y) are found or have all been ingested. 
+					// Empty 'parentstack' indicates that no neighbors ("children") of pixel (x,y) are found or have all been ingested.
 					// We are good to register this zone and proceed with searching another one.
 					break;
 			}
@@ -336,7 +336,7 @@ template <class Imgmatrx> void GLDZMFeature::calc_row_and_column_sum_vectors (st
 	{
 		double sumG = 0;
 		for (int g = 0; g < Ng; g++)
-		{	
+		{
 			// skip zero intensities
 			auto inten = greysLUT[g];
 			if (inten == 0)
@@ -368,7 +368,7 @@ template <class Imgmatrx> void GLDZMFeature::calc_features (const std::vector<do
 		double d = (double) (d_+ 1);
 		double m = Md [d_];
 		f_SDE += m / d / d;			// Small Distance Emphasis = \frac{1}{N_s} \sum_d \frac{m_d}{d^2}
-		f_LDE += d * d * m;			// Large Distance Emphasis = \frac{1}{N_s} \sum_d d^2 m_d 
+		f_LDE += d * d * m;			// Large Distance Emphasis = \frac{1}{N_s} \sum_d d^2 m_d
 		f_ZDNU += m * m;			// Zone Distance Non-Uniformity = \frac{1}{N_s} \sum_d m_d^2
 									// Zone Distance Non-Uniformity Normalized = \frac{1}{N_s^2} \sum_d m_d^2
 	}
@@ -410,7 +410,7 @@ template <class Imgmatrx> void GLDZMFeature::calc_features (const std::vector<do
 			f_LDLGLE += d_ * d_ * p / g_ / g_;	// Large Distance Low Grey Level Emphasis = \frac{1}{N_s} \sum_x \sum_d \frac{d^2 m_{x,d}}{x^2}
 			f_LDHGLE += g_ * g_ * d_ * d_ * p;	// Large Distance High Grey Level Emphasis = \frac{1}{N_s} \sum_x \sum_d \x^2 d^2 m_{x,d}
 			f_GLM += g_ * p;					// Grey Level Mean = \mu_x = \sum_x \sum_d x p_{x,d}
-			f_ZDM += d_ * p;					// Zone Distance Mean = \mu_d = \sum_x \sum_d d p_{x,d} 
+			f_ZDM += d_ * p;					// Zone Distance Mean = \mu_d = \sum_x \sum_d d p_{x,d}
 			f_ZDE += p/Ns * log2(p/Ns + EPS);	// Zone Distance Entropy = - \sum_x \sum_d p_{x,d} \textup{log}_2 ( p_{x,d} )
 		}
 	f_SDLGLE /= Ns;
@@ -420,8 +420,8 @@ template <class Imgmatrx> void GLDZMFeature::calc_features (const std::vector<do
 	f_GLM /= Ns;
 	f_ZDM /= Ns;
 	f_ZDE = -f_ZDE;
-	f_ZP = Ns / Nv; // Zone Percentage = \frac{N_s}{N_v} 
-					// (ZP measures the fraction of the number of realised zones and the maximum 
+	f_ZP = Ns / Nv; // Zone Percentage = \frac{N_s}{N_v}
+					// (ZP measures the fraction of the number of realised zones and the maximum
 					// number of potential zones.)
 	f_GLE = f_ZDE;
 
@@ -438,7 +438,7 @@ template <class Imgmatrx> void GLDZMFeature::calc_features (const std::vector<do
 				dif = x - f_GLM;
 			f_GLV += dif * dif * p;
 
-			// Zone Distance Variance} = \sum_x \sum_d \left(d - \mu_d \right)^2 p_{x,d} 
+			// Zone Distance Variance} = \sum_x \sum_d \left(d - \mu_d \right)^2 p_{x,d}
 			double d_ = (double) (d + 1);
 			dif = d_ - f_ZDM;
 			f_ZDV += dif * dif * p;
@@ -500,16 +500,16 @@ void GLDZMFeature::osized_calculate (LR& r, ImageLoader&)
 	Z_int.init (r.label, "GLDZMFeature-osized_calculate-Z_int");
 	Z_dist.init (r.label, "GLDZMFeature-osized_calculate-Z_dist");
 
-	// -- Unique intensities 
+	// -- Unique intensities
 	std::unordered_set<PixIntens> U;
 
 	// -- Create an image matrix for this ROI for
-	//		(1) making a binned (coarser) pixel intensity image and 
+	//		(1) making a binned (coarser) pixel intensity image and
 	//		(2) zone finding alsorithm's ability to leave marks in recognized zones
 	WriteImageMatrix_nontriv D("GLDZMFeature-osized_calculate-D", r.label);
 	D.allocate_from_cloud(r.raw_pixels_NT, r.aabb, false);
 
-	// -- Squeeze pixels' intensity range for getting more prominent zones 
+	// -- Squeeze pixels' intensity range for getting more prominent zones
 	PixIntens piRange = r.aux_max - 0;	// reflecting the fact that the original image's pixel intensity range is [0-r.aux_max] where 0 represents off-ROI pixels
 	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
 	for (size_t i = 0; i < D.size(); i++)
@@ -648,4 +648,3 @@ void GLDZMFeature::osized_calculate (LR& r, ImageLoader&)
 	//==== Calculate features, set variables f_GLE, f_GML, f_GLV, etc
 	calc_features (Mx, Md, P, greysLUT, r.aux_area);
 }
-

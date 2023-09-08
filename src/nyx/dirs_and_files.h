@@ -15,24 +15,24 @@ namespace Nyxus
 	std::string getPureFname(const std::string& fpath);
 
 	/// @brief Checks if a directory exists
-	/// @param dir 
-	/// @return 
+	/// @param dir
+	/// @return
 	bool existsOnFilesystem(const std::string& dir);
-	
+
 	/// @brief Reads all the files in a directory with respect to a file pattern
-	/// @param dir 
-	/// @param file_pattern 
-	/// @param files 
+	/// @param dir
+	/// @param file_pattern
+	/// @param files
 	void readDirectoryFiles(const std::string& dir, const std::string& file_pattern, std::vector<std::string>& files);
-	
+
 	/// @brief Nyxus specific: checks if the intensity, mask, and output directories exist
-	/// @param dirIntens 
-	/// @param dirLabels 
-	/// @param dirOut 
-	/// @param mustCheckDirOut 
-	/// @return 
+	/// @param dirIntens
+	/// @param dirLabels
+	/// @param dirOut
+	/// @param mustCheckDirOut
+	/// @return
 	int datasetDirsOK(const std::string& dirIntens, const std::string& dirLabels, const std::string& dirOut, bool mustCheckDirOut);
-	
+
 	int read_dataset(
 		// input:
 		const std::string& dirIntens,

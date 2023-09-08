@@ -8,13 +8,13 @@
 #include "../version.h"
 #include "../environment.h"
 #include "../feature_mgr.h"
-#include "../dirs_and_files.h"   
+#include "../dirs_and_files.h"
 #include "../globals.h"
 #include "../nested_feature_aggregation.h"
 #include "../features/gabor.h"
 
 #ifdef USE_ARROW
-    #include "../output_writers.h" 
+    #include "../output_writers.h"
 
     #include "../arrow_output.h"
 
@@ -37,12 +37,12 @@ using ParameterTypes = std::variant<int, float, double, unsigned int, std::vecto
 
 // Defined in nested.cpp
 bool mine_segment_relations (
-	bool output2python, 
+	bool output2python,
 	const std::string& label_dir,
 	const std::string& parent_file_pattern,
 	const std::string& child_file_pattern,
-	const std::string& outdir, 
-	const ChildFeatureAggregation& aggr, 
+	const std::string& outdir,
+	const ChildFeatureAggregation& aggr,
 	int verbosity_level);
 
 template <typename Sequence>
@@ -61,7 +61,7 @@ void initialize_environment(
     const std::vector<std::string> &features,
     int neighbor_distance,
     float pixels_per_micron,
-    uint32_t coarse_gray_depth, 
+    uint32_t coarse_gray_depth,
     uint32_t n_reduce_threads,
     uint32_t n_loader_threads,
     int using_gpu,
@@ -87,7 +87,7 @@ void initialize_environment(
         } else {
             theEnvironment.set_gpu_device_id(using_gpu);
         }
-    #else 
+    #else
         if (using_gpu != -1) {
             std::cout << "No gpu available." << std::endl;
         }
@@ -102,7 +102,7 @@ void set_environment_params_imp (
     const std::vector<std::string> &features = {},
     int neighbor_distance = -1,
     float pixels_per_micron = -1,
-    uint32_t coarse_gray_depth = 0, 
+    uint32_t coarse_gray_depth = 0,
     uint32_t n_reduce_threads = 0,
     uint32_t n_loader_threads = 0,
     int using_gpu = -2,
@@ -111,7 +111,7 @@ void set_environment_params_imp (
     if (features.size() > 0) {
         theEnvironment.recognizedFeatureNames = features;
     }
-     
+
     if (neighbor_distance > -1) {
         theEnvironment.set_pixel_distance(neighbor_distance);
     }
@@ -127,7 +127,7 @@ void set_environment_params_imp (
     if (n_reduce_threads != 0) {
         theEnvironment.n_reduce_threads = n_reduce_threads;
     }
-    
+
     if (n_loader_threads != 0) {
         theEnvironment.n_loader_threads = n_loader_threads;
     }
@@ -161,7 +161,7 @@ py::tuple featurize_directory_imp (
     int errorCode = Nyxus::read_dataset(
         intensity_dir,
         labels_dir,
-        theEnvironment.get_file_pattern(), 
+        theEnvironment.get_file_pattern(),
         "./",   // output directory
         theEnvironment.intSegMapDir,
         theEnvironment.intSegMapFile,
@@ -190,7 +190,7 @@ py::tuple featurize_directory_imp (
         throw std::runtime_error("Error " + std::to_string(errorCode) + " occurred during dataset processing");
 
     // Output the result
-    if (pandas_output) 
+    if (pandas_output)
     {
     #ifdef USE_ARROW
         // Get by value to preserve buffers for writing to arrow
@@ -208,7 +208,7 @@ py::tuple featurize_directory_imp (
         pyStrData = pyStrData.reshape ({nRows, pyStrData.size() / nRows});
         pyNumData = pyNumData.reshape ({ nRows, pyNumData.size() / nRows });
         return py::make_tuple (pyHeader, pyStrData, pyNumData);
-    } 
+    }
 
     // To avoid duplication, return a void dataframe on the Python-side when the output is a file in Arrow format
     return py::make_tuple();
@@ -220,7 +220,7 @@ py::tuple featurize_montage_imp (
     const std::vector<std::string>& intensity_names,
     const std::vector<std::string>& label_names,
     bool pandas_output=true)
-{  
+{
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = false;
 
@@ -274,7 +274,7 @@ py::tuple featurize_montage_imp (
             auto pyHeader = py::array(py::cast(theResultsCache.get_headerBufByVal()));
             auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBufByVal()));
             auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBufByVal()));
-        #else 
+        #else
             auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
             auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
             auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
@@ -284,8 +284,8 @@ py::tuple featurize_montage_imp (
             pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
 
         return py::make_tuple(pyHeader, pyStrData, pyNumData, error_message);
-    
-    } 
+
+    }
 
     // Return "nothing" when output will be an Arrow format
     return py::make_tuple(error_message);
@@ -308,7 +308,7 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
         labelFiles.push_back(fn);
     }
 
-    // Check the file names 
+    // Check the file names
     if (intensFiles.size() == 0)
         throw std::runtime_error("Intensity file list is blank");
     if (labelFiles.size() == 0)
@@ -355,7 +355,7 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
             auto pyHeader = py::array(py::cast(theResultsCache.get_headerBufByVal()));
             auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBufByVal()));
             auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBufByVal()));
-        #else 
+        #else
             auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
             auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
             auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
@@ -365,7 +365,7 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
             pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
 
             return py::make_tuple(pyHeader, pyStrData, pyNumData);
-    } 
+    }
 
     // Return "nothing" when output will be an Arrow format
     return py::make_tuple();
@@ -388,13 +388,13 @@ py::tuple findrelations_imp(
 
     if (! mineOK)
         throw std::runtime_error("Error occurred during dataset processing: mine_segment_relations() returned false");
-    
+
 #ifdef USE_ARROW
     // Get by value to preserve buffers for writing to arrow
     auto pyHeader = py::array(py::cast(theResultsCache.get_headerBufByVal()));
     auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBufByVal()));
     auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBufByVal()));
-#else 
+#else
     auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
     auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
     auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
@@ -409,26 +409,26 @@ py::tuple findrelations_imp(
 
 /**
  * @brief Set whether to use the gpu for available gpu features
- * 
+ *
  * @param yes True to use gpu
  */
 void use_gpu(bool yes){
     #ifdef USE_GPU
         theEnvironment.set_use_gpu(yes);
-    #else 
+    #else
         std::cout << "GPU is not available." << std::endl;
     #endif
 }
 
 /**
  * @brief Get the gpu properties. If gpu is not available, return an empty vector
- * 
+ *
  * @return std::vector<std::map<std::string, std::string>> Properties of gpu
  */
 static std::vector<std::map<std::string, std::string>> get_gpu_properties() {
     #ifdef USE_GPU
         return theEnvironment.get_gpu_properties();
-    #else 
+    #else
         std::vector<std::map<std::string, std::string>> empty;
         return empty;
     #endif
@@ -436,8 +436,8 @@ static std::vector<std::map<std::string, std::string>> get_gpu_properties() {
 
 void blacklist_roi_imp (std::string raw_blacklist)
 {
-    // After successfully parsing the blacklist, Nyxus runtime becomes able 
-    // to skip blacklisted ROIs until the cached blacklist is cleared 
+    // After successfully parsing the blacklist, Nyxus runtime becomes able
+    // to skip blacklisted ROIs until the cached blacklist is cleared
     // with Environment::clear_roi_blacklist()
 
     std::string lastError;
@@ -511,7 +511,7 @@ std::map<std::string, ParameterTypes> get_params_imp(const std::vector<std::stri
     params["gabor_freqs"] = f;
     params["gabor_thetas"] = t;
 
-    if (vars.size() == 0) 
+    if (vars.size() == 0)
         return params;
 
     std::map<std::string, ParameterTypes> params_subset;
@@ -540,7 +540,7 @@ void create_arrow_file_imp(const std::string& arrow_file_path="") {
                                           arrow_file_path);
 
 #else
-    
+
     throw std::runtime_error("Arrow functionality is not available. Rebuild Nyxus with Arrow enabled.");
 
 #endif
@@ -553,7 +553,7 @@ std::string get_arrow_file_imp() {
     return theEnvironment.arrow_output.get_arrow_file();
 
 #else
-    
+
     throw std::runtime_error("Arrow functionality is not available. Rebuild Nyxus with Arrow enabled.");
 
 #endif
@@ -570,7 +570,7 @@ void create_parquet_file_imp(std::string& parquet_file_path) {
                                             parquet_file_path);
 
 #else
-    
+
     throw std::runtime_error("Arrow functionality is not available. Rebuild Nyxus with Arrow enabled.");
 
 #endif
@@ -583,7 +583,7 @@ std::string get_parquet_file_imp() {
     return theEnvironment.arrow_output.get_parquet_file();
 
 #else
-    
+
     throw std::runtime_error("Arrow functionality is not available. Rebuild Nyxus with Arrow enabled.");
 
 #endif
@@ -621,10 +621,10 @@ PYBIND11_MODULE(backend, m)
 
     if (success != 0) {
         throw std::runtime_error("Error initializing pyarrow.");
-    } 
+    }
 #endif
     m.doc() = "Nyxus";
-    
+
     m.def("initialize_environment", &initialize_environment, "Environment initialization");
     m.def("featurize_directory_imp", &featurize_directory_imp, "Calculate features of images defined by intensity and mask image collection directories");
     m.def("featurize_montage_imp", &featurize_montage_imp, "Calculate features of images defined by intensity and mask image collection directories");
@@ -649,13 +649,13 @@ PYBIND11_MODULE(backend, m)
 }
 
 ///
-/// The following code block is a quick & simple manual test of the Python interface 
+/// The following code block is a quick & simple manual test of the Python interface
 /// invocable from from the command line. It lets you bypass building and installing the Python library.
-/// To use it, 
-///     #define TESTING_PY_INTERFACE, 
-///     exclude file main_nyxus.cpp from build, and 
+/// To use it,
+///     #define TESTING_PY_INTERFACE,
+///     exclude file main_nyxus.cpp from build, and
 ///     rebuild the CLI target.
-/// 
+///
 #ifdef TESTING_PY_INTERFACE
 //
 // Testing Python interface
@@ -678,7 +678,7 @@ int main(int argc, char** argv)
     std::cout << "main() \n";
 
     // Test feature extraction
-    
+
     //  initialize_environment({ "*ALL*" }, 5, 120, 1, 1);
     //
     //  py::tuple result = featurize_directory_imp(
@@ -689,14 +689,13 @@ int main(int argc, char** argv)
     // Test nested segments functionality
 
     py::tuple result = findrelations_imp(
-        "C:\\WORK\\AXLE\\data\\mini\\seg",  // label_dir, 
+        "C:\\WORK\\AXLE\\data\\mini\\seg",  // label_dir,
         ".*", // file_pattern,
-        "_c", // channel_signature, 
-        "1", // parent_channel, 
+        "_c", // channel_signature,
+        "1", // parent_channel,
         "0"); // child_channel
 
     std::cout << "finishing \n";
 }
 
 #endif
-

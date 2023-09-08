@@ -15,7 +15,7 @@ void GeodeticLengthThicknessFeature::calculate (LR& r)
 	double SqRootTmp = roiPerimeter * roiPerimeter / 16 - (double)roiArea;
 
 	// Make sure value under SqRootTmp is always positive
-	if (SqRootTmp < 0) 
+	if (SqRootTmp < 0)
 		SqRootTmp = 0;
 
 	// Calculate geodetic_length with pq-formula (see above):
@@ -53,4 +53,3 @@ void GeodeticLengthThicknessFeature::parallel_process_1_batch (size_t start, siz
 		glt.save_value(r.fvals);
 	}
 }
-

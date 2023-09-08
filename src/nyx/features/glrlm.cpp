@@ -24,7 +24,7 @@ void GLRLMFeature::calculate (LR& r)
 	if (minI == maxI)
 	{
 		// insert zero for all 4 angles to make the output expecting 4-angled values happy
-		angled_SRE.resize(4, 0);	
+		angled_SRE.resize(4, 0);
 		angled_LRE.resize(4, 0);
 		angled_GLN.resize(4, 0);
 		angled_GLNN.resize(4, 0);
@@ -52,7 +52,7 @@ void GLRLMFeature::calculate (LR& r)
 	using AngleZones = std::vector<ACluster>;
 	//--unnec--	std::vector<AngleZones> angles_Z;
 
-	//==== While scanning clusters, learn unique intensities 
+	//==== While scanning clusters, learn unique intensities
 	using AngleUniqInte = std::unordered_set<PixIntens>;
 	//--unnec--	std::vector<AngleUniqInte>  angles_U;
 
@@ -71,7 +71,7 @@ void GLRLMFeature::calculate (LR& r)
 		// We need it to estimate the x-dimension of matrix P
 		int maxZoneArea = 0;
 
-		// Copy the image matrix. We'll use it to maintain state of cluster scanning 
+		// Copy the image matrix. We'll use it to maintain state of cluster scanning
 		auto M = im;
 		pixData& D = M.WriteablePixels();
 
@@ -80,7 +80,7 @@ void GLRLMFeature::calculate (LR& r)
 
 		for (size_t i = 0; i < D.size(); i++)
 			D[i] = Nyxus::to_grayscale (D[i], r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
-		
+
 
 		// Number of zones
 		const int VISITED = -1;
@@ -113,7 +113,7 @@ void GLRLMFeature::calculate (LR& r)
 
 						// Remember this pixel
 						history.push_back({ x,y });
-						// Advance 
+						// Advance
 						x = x + 1;
 						// Proceed
 						continue;
@@ -193,7 +193,7 @@ void GLRLMFeature::calculate (LR& r)
 
 		//==== Fill the zone matrix
 
-		int Ng = Environment::ibsi_compliance ? 
+		int Ng = Environment::ibsi_compliance ?
 			*std::max_element(std::begin(im.ReadablePixels()), std::end(im.ReadablePixels())) : (decltype(Ng))U.size();
 		int Nr = maxZoneArea;
 		int Nz = (decltype(Nz))Z.size();
@@ -232,7 +232,7 @@ void GLRLMFeature::calculate (LR& r)
 		for (int i = 1; i <= Ng; ++i) {
 			for (int j = 1; j <= Nr; ++j) {
 				sum += P.matlab(i, j);
-			}	
+			}
 		}
 
 		sum_p.push_back(sum);
@@ -329,7 +329,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 	using AngleZones = std::vector<ACluster>;
 	//--unnec--	std::vector<AngleZones> angles_Z;
 
-	//==== While scanning clusters, learn unique intensities 
+	//==== While scanning clusters, learn unique intensities
 	using AngleUniqInte = std::unordered_set<PixIntens>;
 	//--unnec--	std::vector<AngleUniqInte>  angles_U;
 
@@ -348,7 +348,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 		// We need it to estimate the x-dimension of matrix P
 		int maxZoneArea = 0;
 
-		// Clean-copy the image matrix. We'll use it to maintain state of cluster scanning 
+		// Clean-copy the image matrix. We'll use it to maintain state of cluster scanning
 		WriteImageMatrix_nontriv D("GLRLMFeature-osized_calculate-D", r.label);
 		D.allocate(r.aabb.get_width(), r.aabb.get_height(), 0.0);
 		D.copy(im);
@@ -390,7 +390,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 
 						// Remember this pixel
 						history.push_back({ x,y });
-						// Advance 
+						// Advance
 						x = x + 1;
 						// Proceed
 						continue;
@@ -554,13 +554,13 @@ void GLRLMFeature::save_value(std::vector<std::vector<double>>& fvals)
 }
 
 
-// 1. Short Run Emphasis 
+// 1. Short Run Emphasis
 // ai - angle index
 void GLRLMFeature::calc_SRE (AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 	{
 		af.resize(4, BAD_ROI_FVAL);
@@ -574,7 +574,7 @@ void GLRLMFeature::calc_SRE (AngledFtrs& af)
 			continue;
 		}
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
+		// Get ahold of the requested angle's matrix and its related N parameters
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
 		const SimpleMatrix<int>& P = angles_P[ai];
@@ -596,12 +596,12 @@ void GLRLMFeature::calc_SRE (AngledFtrs& af)
 	}
 }
 
-// 2. Long Run Emphasis 
+// 2. Long Run Emphasis
 void GLRLMFeature::calc_LRE (AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 	{
 		af.resize(4, BAD_ROI_FVAL);
@@ -615,7 +615,7 @@ void GLRLMFeature::calc_LRE (AngledFtrs& af)
 			continue;
 		}
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
+		// Get ahold of the requested angle's matrix and its related N parameters
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
 		const SimpleMatrix<int>& P = angles_P[ai];
@@ -635,12 +635,12 @@ void GLRLMFeature::calc_LRE (AngledFtrs& af)
 	}
 }
 
-// 3. Gray Level Non-Uniformity 
+// 3. Gray Level Non-Uniformity
 void GLRLMFeature::calc_GLN (AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 	{
 		af.resize(4, BAD_ROI_FVAL);
@@ -654,7 +654,7 @@ void GLRLMFeature::calc_GLN (AngledFtrs& af)
 			continue;
 		}
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
+		// Get ahold of the requested angle's matrix and its related N parameters
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
 		const SimpleMatrix<int>& P = angles_P[ai];
@@ -676,12 +676,12 @@ void GLRLMFeature::calc_GLN (AngledFtrs& af)
 	}
 }
 
-// 4. Gray Level Non-Uniformity Normalized 
+// 4. Gray Level Non-Uniformity Normalized
 void GLRLMFeature::calc_GLNN (AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 	{
 		af.resize(4, BAD_ROI_FVAL);
@@ -695,7 +695,7 @@ void GLRLMFeature::calc_GLNN (AngledFtrs& af)
 			continue;
 		}
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
+		// Get ahold of the requested angle's matrix and its related N parameters
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
 		const SimpleMatrix<int>& P = angles_P[ai];
@@ -722,7 +722,7 @@ void GLRLMFeature::calc_RLN (AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 	{
 		af.resize(4, BAD_ROI_FVAL);
@@ -736,7 +736,7 @@ void GLRLMFeature::calc_RLN (AngledFtrs& af)
 			continue;
 		}
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
+		// Get ahold of the requested angle's matrix and its related N parameters
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
 		const SimpleMatrix<int>& P = angles_P[ai];
@@ -758,12 +758,12 @@ void GLRLMFeature::calc_RLN (AngledFtrs& af)
 	}
 }
 
-// 6. Run Length Non-Uniformity Normalized 
+// 6. Run Length Non-Uniformity Normalized
 void GLRLMFeature::calc_RLNN (AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 	{
 		af.resize(4, BAD_ROI_FVAL);
@@ -777,7 +777,7 @@ void GLRLMFeature::calc_RLNN (AngledFtrs& af)
 			continue;
 		}
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
+		// Get ahold of the requested angle's matrix and its related N parameters
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
 		const SimpleMatrix<int>& P = angles_P[ai];
@@ -803,9 +803,9 @@ void GLRLMFeature::calc_RLNN (AngledFtrs& af)
 void GLRLMFeature::calc_RP (AngledFtrs& af)
 {
 	af.clear();
-	
 
-	// Prevent using bad data 
+
+	// Prevent using bad data
 	if (bad_roi_data)
 	{
 		af.resize(4, BAD_ROI_FVAL);
@@ -819,7 +819,7 @@ void GLRLMFeature::calc_RP (AngledFtrs& af)
 			continue;
 		}
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
+		// Get ahold of the requested angle's matrix and its related N parameters
 		int Np = angles_Np[ai];
 
 		double retval = double(sum_p[ai] / Np);
@@ -827,12 +827,12 @@ void GLRLMFeature::calc_RP (AngledFtrs& af)
 	}
 }
 
-// 8. Gray Level Variance 
+// 8. Gray Level Variance
 void GLRLMFeature::calc_GLV (AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 	{
 		af.resize(4, BAD_ROI_FVAL);
@@ -851,7 +851,7 @@ void GLRLMFeature::calc_GLV (AngledFtrs& af)
 			continue;
 		}
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
+		// Get ahold of the requested angle's matrix and its related N parameters
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
 		const SimpleMatrix<int>& P = angles_P[ai];
@@ -879,19 +879,19 @@ void GLRLMFeature::calc_GLV (AngledFtrs& af)
 	}
 }
 
-// 9. Run Variance 
+// 9. Run Variance
 void GLRLMFeature::calc_RV (AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 	{
 		af.resize(4, BAD_ROI_FVAL);
 		return;
 	}
 
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 	{
 		af.resize(4, BAD_ROI_FVAL);
@@ -905,7 +905,7 @@ void GLRLMFeature::calc_RV (AngledFtrs& af)
 			continue;
 		}
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
+		// Get ahold of the requested angle's matrix and its related N parameters
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
 		const SimpleMatrix<int>& P = angles_P[ai];
@@ -933,12 +933,12 @@ void GLRLMFeature::calc_RV (AngledFtrs& af)
 	}
 }
 
-// 10. Run Entropy 
+// 10. Run Entropy
 void GLRLMFeature::calc_RE (AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 	{
 		af.resize(4, BAD_ROI_FVAL);
@@ -952,7 +952,7 @@ void GLRLMFeature::calc_RE (AngledFtrs& af)
 			continue;
 		}
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
+		// Get ahold of the requested angle's matrix and its related N parameters
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
 		const SimpleMatrix<int>& P = angles_P[ai];
@@ -972,12 +972,12 @@ void GLRLMFeature::calc_RE (AngledFtrs& af)
 	}
 }
 
-// 11. Low Gray Level Run Emphasis 
+// 11. Low Gray Level Run Emphasis
 void GLRLMFeature::calc_LGLRE (AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 	{
 		af.resize(4, BAD_ROI_FVAL);
@@ -991,7 +991,7 @@ void GLRLMFeature::calc_LGLRE (AngledFtrs& af)
 			continue;
 		}
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
+		// Get ahold of the requested angle's matrix and its related N parameters
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
 		const SimpleMatrix<int>& P = angles_P[ai];
@@ -1010,12 +1010,12 @@ void GLRLMFeature::calc_LGLRE (AngledFtrs& af)
 	}
 }
 
-// 12. High Gray Level Run Emphasis 
+// 12. High Gray Level Run Emphasis
 void GLRLMFeature::calc_HGLRE (AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 	{
 		af.resize(4, BAD_ROI_FVAL);
@@ -1029,7 +1029,7 @@ void GLRLMFeature::calc_HGLRE (AngledFtrs& af)
 			continue;
 		}
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
+		// Get ahold of the requested angle's matrix and its related N parameters
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
 		const SimpleMatrix<int>& P = angles_P[ai];
@@ -1048,12 +1048,12 @@ void GLRLMFeature::calc_HGLRE (AngledFtrs& af)
 	}
 }
 
-// 13. Short Run Low Gray Level Emphasis 
+// 13. Short Run Low Gray Level Emphasis
 void GLRLMFeature::calc_SRLGLE (AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 	{
 		af.resize(4, BAD_ROI_FVAL);
@@ -1067,7 +1067,7 @@ void GLRLMFeature::calc_SRLGLE (AngledFtrs& af)
 			continue;
 		}
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
+		// Get ahold of the requested angle's matrix and its related N parameters
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
 		const SimpleMatrix<int>& P = angles_P[ai];
@@ -1086,12 +1086,12 @@ void GLRLMFeature::calc_SRLGLE (AngledFtrs& af)
 	}
 }
 
-// 14. Short Run High Gray Level Emphasis 
+// 14. Short Run High Gray Level Emphasis
 void GLRLMFeature::calc_SRHGLE (AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 	{
 		af.resize(4, BAD_ROI_FVAL);
@@ -1105,7 +1105,7 @@ void GLRLMFeature::calc_SRHGLE (AngledFtrs& af)
 			continue;
 		}
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
+		// Get ahold of the requested angle's matrix and its related N parameters
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
 		const SimpleMatrix<int>& P = angles_P[ai];
@@ -1124,12 +1124,12 @@ void GLRLMFeature::calc_SRHGLE (AngledFtrs& af)
 	}
 }
 
-// 15. Long Run Low Gray Level Emphasis 
+// 15. Long Run Low Gray Level Emphasis
 void GLRLMFeature::calc_LRLGLE (AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 	{
 		af.resize(4, BAD_ROI_FVAL);
@@ -1143,7 +1143,7 @@ void GLRLMFeature::calc_LRLGLE (AngledFtrs& af)
 			continue;
 		}
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
+		// Get ahold of the requested angle's matrix and its related N parameters
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
 		const SimpleMatrix<int>& P = angles_P[ai];
@@ -1162,12 +1162,12 @@ void GLRLMFeature::calc_LRLGLE (AngledFtrs& af)
 	}
 }
 
-// 16. Long Run High Gray Level Emphasis 
+// 16. Long Run High Gray Level Emphasis
 void GLRLMFeature::calc_LRHGLE (AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 	{
 		af.resize(4, BAD_ROI_FVAL);
@@ -1180,8 +1180,8 @@ void GLRLMFeature::calc_LRHGLE (AngledFtrs& af)
 			af.push_back(0.0);
 			continue;
 		}
-		
-		// Get ahold of the requested angle's matrix and its related N parameters 
+
+		// Get ahold of the requested angle's matrix and its related N parameters
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
 		const SimpleMatrix<int>& P = angles_P[ai];
@@ -1212,4 +1212,3 @@ void GLRLMFeature::parallel_process_1_batch (size_t start, size_t end, std::vect
 		glrlm.save_value(r.fvals);
 	}
 }
-

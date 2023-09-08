@@ -7,7 +7,7 @@ class GaborOptions
 {
 public:
 	// Parses 'raw*', set 'defined_' and 'ermsg'
-	bool parse_input();	
+	bool parse_input();
 
 	// Returns true if all 'raw*' are empty
 	bool empty();

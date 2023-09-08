@@ -29,5 +29,5 @@ private:
 	bool right_turn(const Pixel2& P1, const Pixel2& P2, const Pixel2& P3);
 	double polygon_area(const std::vector<Pixel2>& vertices);
 
-	double area = 0, solidity = 0, circularity = 0;	
+	double area = 0, solidity = 0, circularity = 0;
 };

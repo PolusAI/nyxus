@@ -23,7 +23,7 @@ void EnclosingInscribingCircumscribingCircleFeature::save_value(std::vector<std:
 double EnclosingInscribingCircumscribingCircleFeature::calculate_min_enclosing_circle_diam (std::vector<Pixel2>& Contour)
 {
     // Inspired by https://git.rwth-aachen.de/ants/sensorlab/imea/-/blob/master/imea/measure_2d/macro.py#L166
-    
+
     // Find the minimum enclosing circle of an object
     Point2f center;
     float radius = 0;
@@ -98,10 +98,10 @@ void EnclosingInscribingCircumscribingCircleFeature::findThirdPoint (const std::
         }
         else
         {
-            std::vector<Pixel2> ptsf;   
-            ptsf.push_back (Pixel2(pts[i].x, pts[i].y, 0));   
-            ptsf.push_back(Pixel2(pts[j].x, pts[j].y, 0));   
-            ptsf.push_back(Pixel2(pts[k].x, pts[k].y, 0));  
+            std::vector<Pixel2> ptsf;
+            ptsf.push_back (Pixel2(pts[i].x, pts[i].y, 0));
+            ptsf.push_back(Pixel2(pts[j].x, pts[j].y, 0));
+            ptsf.push_back(Pixel2(pts[k].x, pts[k].y, 0));
             Point2f new_center; float new_radius = 0;
             findCircle3pts(ptsf, new_center, new_radius);
             if (new_radius > 0)
@@ -160,7 +160,7 @@ void EnclosingInscribingCircumscribingCircleFeature::findMinEnclosingCircle (con
             continue;
         else
         {
-            Point2f new_center; 
+            Point2f new_center;
             float new_radius = 0;
             findSecondPoint(contour, i, new_center, new_radius);
             if (new_radius > 0)

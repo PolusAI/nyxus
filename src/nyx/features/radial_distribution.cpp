@@ -49,7 +49,7 @@ void RadialDistributionFeature::calculate(LR& r)
 	auto& raw_pixels = r.raw_pixels;
 	auto& contour_pixels = r.contour;
 
-	// Skip calculation if we have insofficient informative data 
+	// Skip calculation if we have insofficient informative data
 	if (raw_pixels.size() == 0 || contour_pixels.size() == 0)
 		return;
 
@@ -72,8 +72,8 @@ void RadialDistributionFeature::calculate(LR& r)
 	for (auto& pxA : raw_pixels)
 	{
 		// Distance center to cloud pixel
-		double dstOA = std::sqrt(pxA.sqdist(pxO));		
-		
+		double dstOA = std::sqrt(pxA.sqdist(pxO));
+
 		// Find the radial bin index
 		double rat = dstOA / dstOC;
 		int bi = int(rat * (n-1));	// bin index
@@ -128,7 +128,7 @@ void RadialDistributionFeature::osized_calculate(LR& r, ImageLoader& imlo)
 
 	auto n = RadialDistributionFeature::num_bins;
 
-	// Skip calculation if we have insofficient informative data 
+	// Skip calculation if we have insofficient informative data
 	if (r.raw_pixels_NT.size() == 0 || r.contour.size() == 0)
 		return;
 
@@ -146,14 +146,14 @@ void RadialDistributionFeature::osized_calculate(LR& r, ImageLoader& imlo)
 	const Pixel2 pxO = r.raw_pixels_NT[idxO];
 
 	// Max radius
-	double dstOC = std::sqrt(pxO.max_sqdist(r.contour)); 
+	double dstOC = std::sqrt(pxO.max_sqdist(r.contour));
 
 	for (auto pxA : r.raw_pixels_NT)
 	{
 		// Distance center to cloud pixel
 		double dstOA = std::sqrt(pxA.sqdist(pxO));
 
-		// Find the radial bin index 
+		// Find the radial bin index
 		double rat = dstOA / dstOC;
 		int bi = int(rat * (n - 1));	// bin index
 		if (bi >= n)
@@ -182,9 +182,9 @@ void RadialDistributionFeature::osized_calculate(LR& r, ImageLoader& imlo)
 
 void RadialDistributionFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[FRAC_AT_D] = values_FracAtD; 
-	fvals[MEAN_FRAC] = values_MeanFrac;  
-	fvals[RADIAL_CV] = values_RadialCV;  
+	fvals[FRAC_AT_D] = values_FracAtD;
+	fvals[MEAN_FRAC] = values_MeanFrac;
+	fvals[RADIAL_CV] = values_RadialCV;
 }
 
 void RadialDistributionFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
@@ -237,4 +237,3 @@ void RadialDistributionFeature:: get_RadialCV()
 		values_RadialCV[i] = cv;
 	}
 }
-

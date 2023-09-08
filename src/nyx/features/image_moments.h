@@ -7,7 +7,7 @@
 #include "../feature_method.h"
 
 // Inspired by Yavuz Unver
-// 
+//
 // Hu Moments and Digit Recognition Algorithm:
 // http://www.wseas.us/e-library/conferences/2013/CambridgeUK/AISE/AISE-15.pdf
 //
@@ -19,7 +19,7 @@ using pixcloud_NT = OutOfRamPixelCloud;
 class ImageMomentsFeature: public FeatureMethod
 {
 public:
-    ImageMomentsFeature(); 
+    ImageMomentsFeature();
 
     void calculate(LR& r);
     void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
@@ -139,8 +139,8 @@ bool ImageMomentsFeature_calculate2 (
     double& whm1, double& whm2, double& whm3, double& whm4, double& whm5, double& whm6, double& whm7,    // weighted Hum moments
     // input:
     const ImageMatrix& Im,
-    size_t roi_idx, 
-    StatsInt aabb_min_x, 
+    size_t roi_idx,
+    StatsInt aabb_min_x,
     StatsInt aabb_min_y);
 
 bool ImageMomentsFeature_calculate3(

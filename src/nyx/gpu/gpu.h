@@ -24,7 +24,7 @@
     return false;	\
     };
 
-#else 
+#else
 
     #define CHECKCUFFTERR(call) \
     if (((call) != CUFFT_SUCCESS)    \
@@ -44,5 +44,3 @@
 
 
 bool gpu_initialize(int dev_id);
-
-

@@ -10,7 +10,7 @@
 //#include "test_data.h"
 //#include "test_main_nyxus.h"
 
-void test_roi_blacklist () 
+void test_roi_blacklist ()
 {
     //=== Test global blacklists
 

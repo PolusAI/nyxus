@@ -55,11 +55,11 @@ namespace Nyxus
 		// Did conversion happen?
 		if (endptr == psz)
 			return false;
-		
+
 		// Was it successful?
 		if (*endptr != 0)
 			return false;
-		
+
 		// Successful conversion, return its result
 		result = (int)res;
 		return true;
@@ -235,7 +235,7 @@ namespace Nyxus
 		int exp;
 		float lg2;
 		union { float f; unsigned int i; } ux1, ux2;
-		int greater;		// actually, a boolean 
+		int greater;		// actually, a boolean
 
 		//
 		// Assuming IEEE representation, which is sgn(1):exp(8):frac(23)
@@ -249,8 +249,8 @@ namespace Nyxus
 		greater = ux1.i & 0x00400000;  // true if signif > 1.5
 		if (greater)
 		{
-			// signif >= 1.5 so need to divide by 2.  Accomplish this by 
-			// stuffing exp = 126 which corresponds to an exponent of -1 
+			// signif >= 1.5 so need to divide by 2.  Accomplish this by
+			// stuffing exp = 126 which corresponds to an exponent of -1
 			ux2.i = (ux1.i & 0x007FFFFF) | 0x3f000000;
 			signif = ux2.f;
 			fexp = exp - 126.0f;    // 126 instead of 127 compensates for division by 2
@@ -267,7 +267,7 @@ namespace Nyxus
 			lg2 = fexp + a * signif * signif + b * signif;  // <<--
 		}
 
-		// lines marked <<-- are common code, but optimize better 
+		// lines marked <<-- are common code, but optimize better
 		//  when duplicated, at least when using gcc
 
 		return lg2 * 0.30102999566;	// log2 to log10
@@ -280,9 +280,9 @@ namespace Nyxus
 	/// @return Squeezed intensity within range [0,255]
 	inline unsigned int to_grayscale (unsigned int i, unsigned int min_i, unsigned int i_range, unsigned int n_levels, bool disable_binning=false)
 	{
-		if (disable_binning) 
+		if (disable_binning)
 			return i;
-		
+
 		double pi = ((double(i-min_i) / double(i_range) * double(n_levels)));
 		unsigned int new_pi = (unsigned int)pi;
 		return new_pi;
@@ -292,7 +292,7 @@ namespace Nyxus
 
 	/**
 	 * @brief Check is str ends with substr
-	 * 
+	 *
 	 * @param str String to check ending of
 	 * @param substr Ending to check for
 	 * @return true str ends with substr
@@ -302,7 +302,7 @@ namespace Nyxus
 
 		if (str.length() >= substr.length()) {
         	return (0 == str.compare(str.length() - substr.length(), substr.length(), substr));
-		} 
+		}
 
 		return false;
 	}
@@ -311,10 +311,9 @@ namespace Nyxus
 	{
 		return x / 3.14159265358979323846 * 180.;
 	}
-	
+
 	inline double deg2rad (double x)
 	{
 		return x / 180. * 3.14159265358979323846;
 	}
 }
-

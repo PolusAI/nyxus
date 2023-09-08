@@ -8,7 +8,7 @@
   #include <filesystem>
   namespace fs = std::filesystem;
 #elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
+  #include <experimental/filesystem>
   namespace fs = std::experimental::filesystem;
 #else
   error "Missing the <filesystem> header."
@@ -37,12 +37,12 @@ namespace Nyxus
 			if (entry.path().filename().string()[0] == '.')
 			{
 				std::cout << "Skipping " << entry.path().filename().string() << "\n";
-				continue; 
+				continue;
 			}
 
 			std::string fullPath = entry.path().string(),
 				pureFname = entry.path().filename().string();
-			
+
 			if (std::regex_match(pureFname, re))
 				files.push_back(fullPath);
 		}
@@ -72,15 +72,15 @@ namespace Nyxus
 
 	int read_dataset (
 		// input
-		const std::string& dirIntens, 
-		const std::string& dirLabels, 
+		const std::string& dirIntens,
+		const std::string& dirLabels,
 		const std::string& filePatt,
-		const std::string& dirOut, 
-		const std::string& intLabMappingDir, 
+		const std::string& dirOut,
+		const std::string& intLabMappingDir,
 		const std::string& intLabMappingFile,
 		bool mustCheckDirOut,
 		// output
-		std::vector <std::string>& intensFiles, 
+		std::vector <std::string>& intensFiles,
 		std::vector <std::string>& labelFiles)
 	{
 		// Check the directories
@@ -139,9 +139,9 @@ namespace Nyxus
 			{
 				std::cout << "Error: nonexisting file " << mapPath << std::endl;
 				return 1;
-			}		
+			}
 
-			// Read 
+			// Read
 			std::ifstream file(mapPath);
 			std::string ln, intFile, segFile;
 			int lineNo = 1;

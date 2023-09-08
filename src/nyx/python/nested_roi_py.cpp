@@ -2,7 +2,7 @@
   #include <filesystem>
   namespace fs = std::filesystem;
 #elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
+  #include <experimental/filesystem>
   namespace fs = std::experimental::filesystem;
 #else
   error "Missing the <filesystem> header."
@@ -89,7 +89,7 @@ bool gatherRoisMetrics_H(const std::string& fpath, std::unordered_set <int>& uni
 		ss << "Error opening file " << fpath;
 #ifdef WITH_PYTHON_H
 		throw ss.str();
-#endif	
+#endif
 		std::cerr << ss.str() << "\n";
 		return false;
 	}
@@ -106,7 +106,7 @@ bool gatherRoisMetrics_H(const std::string& fpath, std::unordered_set <int>& uni
 	for (unsigned int row = 0; row < nth; row++)
 		for (unsigned int col = 0; col < ntv; col++)
 		{
-			// Fetch the tile 
+			// Fetch the tile
 			ok = imlo.load_tile(row, col);
 			if (!ok)
 			{
@@ -114,7 +114,7 @@ bool gatherRoisMetrics_H(const std::string& fpath, std::unordered_set <int>& uni
 				ss << "Error fetching tile row=" << row << " col=" << col;
 #ifdef WITH_PYTHON_H
 				throw ss.str();
-#endif	
+#endif
 				std::cerr << ss.str() << "\n";
 				return false;
 			}
@@ -226,7 +226,7 @@ bool find_hierarchy (std::vector<int>& P, const std::string& par_fname, const st
 
 /// @brief Save results of one set of parents to the results cache
 bool 	output_roi_relational_table_2_rescache (
-	const std::vector<int>& P, 
+	const std::vector<int>& P,
 	ResultsCache& rescache)
 {
 	// Anything to do at all?
@@ -239,10 +239,10 @@ bool 	output_roi_relational_table_2_rescache (
 		HieLR& r = Nyxus::roiData1[l_par];
 		for (auto l_chi : r.child_segs)
 		{
-			rescache.add_string(r.segFname);	
-			rescache.add_numeric(l_par); 
-			rescache.add_numeric(l_chi); 
-			rescache.inc_num_rows(); 
+			rescache.add_string(r.segFname);
+			rescache.add_numeric(l_par);
+			rescache.add_numeric(l_chi);
+			rescache.inc_num_rows();
 		}
 	}
 
@@ -286,7 +286,7 @@ bool 	output_roi_relational_table_2_csv (const std::vector<int>& P, const std::s
 	return true;
 }
 
-/// @brief Scans the feature database and aggregates features of labels in parameter "P" according to aggregation "aggrs", the output goes to directory "outdir" 
+/// @brief Scans the feature database and aggregates features of labels in parameter "P" according to aggregation "aggrs", the output goes to directory "outdir"
 bool 	aggregate_features (const std::vector<int>& P, const std::string& outdir, const ChildFeatureAggregation& aggr)
 {
 	// Anything to do at all?
@@ -355,7 +355,7 @@ bool 	aggregate_features (const std::vector<int>& P, const std::string& outdir, 
 	else
 	{
 		// We are in the AGGREGATION scenario
-		auto aggrS = aggr.get_method_string();		
+		auto aggrS = aggr.get_method_string();
 		// Output <-- child's header
 		for (auto& field : csvHeader)
 			ofile << "aggr_" << aggrS << "_" << field << ",";
@@ -374,7 +374,7 @@ bool 	aggregate_features (const std::vector<int>& P, const std::string& outdir, 
 			continue;
 		}
 
-		// Output <-- parent features 
+		// Output <-- parent features
 		for (auto& field : csvFields)
 			ofile << field << ",";
 		//-- don't break the line! children features will follow-- ofile << "\n";
@@ -396,7 +396,7 @@ bool 	aggregate_features (const std::vector<int>& P, const std::string& outdir, 
 					continue;
 				}
 
-				// Output <-- child features 
+				// Output <-- child features
 
 				for (auto& field : csvFields)
 					ofile << field << ",";
@@ -434,7 +434,7 @@ bool 	aggregate_features (const std::vector<int>& P, const std::string& outdir, 
 					continue;
 				}
 
-				// Output <-- child features 
+				// Output <-- child features
 				std::vector<double> childRow;
 				for (auto& field : csvFields)
 				{
@@ -508,14 +508,14 @@ bool 	aggregate_features (const std::vector<int>& P, const std::string& outdir, 
 
 /// @brief Finds related (nested) segments and sets global variables 'pyHeader', 'pyStrData', and 'pyNumData' consumed by Python binding function findrelations_imp()
 bool mine_segment_relations (
-	bool output2python, 
-	const std::string& label_dir, 
-	const std::string& file_pattern, 
-	const std::string& channel_signature, 
-	const int parent_channel, 
-	const int child_channel, 
-	const std::string& outdir, 
-	const ChildFeatureAggregation& aggr, 
+	bool output2python,
+	const std::string& label_dir,
+	const std::string& file_pattern,
+	const std::string& channel_signature,
+	const int parent_channel,
+	const int child_channel,
+	const std::string& outdir,
+	const ChildFeatureAggregation& aggr,
 	int verbosity_level)
 {
 	std::vector<std::string> segFiles;
@@ -576,7 +576,7 @@ bool mine_segment_relations (
 		}
 
 		std::string numericChannel = channel.substr(0, lenOfNumeric);
-		std::string tail = channel.substr(lenOfNumeric, channel.size());	
+		std::string tail = channel.substr(lenOfNumeric, channel.size());
 
 		// String to int
 		int n_channel = std::atoi(numericChannel.c_str());
@@ -593,17 +593,17 @@ bool mine_segment_relations (
 		}
 	}
 
-	// Prepare the buffers. 
+	// Prepare the buffers.
 	// 'totalNumLabels', 'stringColBuf', and 'calcResultBuf' will be updated with every call of output_roi_relational_table()
 	theResultsCache.clear();
 
 	// Prepare the header
 	theResultsCache.add_to_header({ "Image", "Parent_Label", "Child_Label" });
 
-	// Mine parent-child relations 
+	// Mine parent-child relations
 	for (auto& parStemInfo : Stems)
 	{
-		auto stem = parStemInfo.first, 
+		auto stem = parStemInfo.first,
 			tail = parStemInfo.second;
 
 		// Form parent and child file names
@@ -613,7 +613,7 @@ bool mine_segment_relations (
 
 		// Diagnostic
 		if (verbosity_level >= 1)
-			std::cout << stem << "\t" << parent_channel << ":" << child_channel << "\n";	
+			std::cout << stem << "\t" << parent_channel << ":" << child_channel << "\n";
 
 		// Clear reference tables
 		uniqueLabels1.clear();
@@ -665,12 +665,12 @@ bool mine_segment_relations (
 
 /// @brief Finds related (nested) segments and sets global variables 'pyHeader', 'pyStrData', and 'pyNumData' consumed by Python binding function findrelations_imp()
 bool mine_segment_relations (
-	bool output2python, 
+	bool output2python,
 	const std::string& label_dir,
 	const std::string& parent_file_pattern,
 	const std::string& child_file_pattern,
-	const std::string& outdir, 
-	const ChildFeatureAggregation& aggr, 
+	const std::string& outdir,
+	const ChildFeatureAggregation& aggr,
 	int verbosity_level)
 {
 
@@ -696,14 +696,14 @@ bool mine_segment_relations (
 		throw std::runtime_error("Parent and child channels must have the same number of files");
 	}
 
-	// Prepare the buffers. 
+	// Prepare the buffers.
 	// 'totalNumLabels', 'stringColBuf', and 'calcResultBuf' will be updated with every call of output_roi_relational_table()
 	theResultsCache.clear();
 
 	// Prepare the header
 	theResultsCache.add_to_header({ "Image", "Parent_Label", "Child_Label" });
 
-	// Mine parent-child relations 
+	// Mine parent-child relations
 	for (int i = 0; i < parentFiles.size(); ++i)
 	{
 		auto parFname = parentFiles[i];
@@ -711,7 +711,7 @@ bool mine_segment_relations (
 
 		// Diagnostic
 		//if (verbosity_level >= 1)
-		//	std::cout << stem << "\t" << parent_channel << ":" << child_channel << "\n";	
+		//	std::cout << stem << "\t" << parent_channel << ":" << child_channel << "\n";
 
 		// Clear reference tables
 		uniqueLabels1.clear();

@@ -3,7 +3,7 @@
 #include "rotation.h"
 
 void Rotation::rotate_around_center(
-	// in 
+	// in
 	const std::vector<Pixel2>& P,
 	float angle_deg,
 	// out
@@ -28,7 +28,7 @@ void Rotation::rotate_around_center(
 		// Physics coordinate system
 		//	x_rot = ((x - cx) * cos(theta)) - ((y - cy) * sin(theta)) + cx;
 		//	y_rot = ((x - cx) * sin(theta)) + ((y - cy) * cos(theta)) + cy;
-		
+
 		// Screen coordinate system
 		double x_rot = ((p.x - cx) * cos(theta)) - ((cy - p.y) * sin(theta)) + cx;
 		double y_rot = cy - ((cy - p.y) * cos(theta)) + ((p.x - cx) * sin(theta));
@@ -40,9 +40,9 @@ void Rotation::rotate_around_center(
 }
 
 void Rotation::rotate_cloud (
-	// in 
+	// in
 	const std::vector<Pixel2>& P,
-	const double cx, 
+	const double cx,
 	const double cy,
 	float theta,
 	// out
@@ -86,4 +86,3 @@ void Rotation::rotate_cloud_NT (
 		rotated_cloud.add_pixel (p_rot);
 	}
 }
-

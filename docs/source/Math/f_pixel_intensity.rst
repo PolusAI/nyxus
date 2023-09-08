@@ -1,12 +1,12 @@
 Pixel intensity features
 ========================
 
-Denote 
+Denote
 
-- :math:`f(x,y)` -- real value of a continuous intensity function :math:`f` at real-valued (continuous) Cartesian image location :math:`(x,y)`; 
-- :math:`P` -- 2-dimensional point set of greyscale image intensity values at discrete locations; 
-- :math:`p(x,y)` -- greyscale value of :math:`f(x,y)` at discrete 2-dimensional image pixel location :math:`(x,y)`, or, simply, pixel :math:`(x,y)` intensity; 
-- :math:`G = {p(x,y) | p(x,y)>0}` -- 1-dimensional set of image pixels of non-zero intensity, or so called region of interest (ROI); 
+- :math:`f(x,y)` -- real value of a continuous intensity function :math:`f` at real-valued (continuous) Cartesian image location :math:`(x,y)`;
+- :math:`P` -- 2-dimensional point set of greyscale image intensity values at discrete locations;
+- :math:`p(x,y)` -- greyscale value of :math:`f(x,y)` at discrete 2-dimensional image pixel location :math:`(x,y)`, or, simply, pixel :math:`(x,y)` intensity;
+- :math:`G = {p(x,y) | p(x,y)>0}` -- 1-dimensional set of image pixels of non-zero intensity, or so called region of interest (ROI);
 - :math:`g_i` -- element of :math:`G`;
 - :math:`n = card(G)` -- number of ROI elements;
 - :math:`\mathbb{E}` -- the expectation operator;
@@ -25,15 +25,15 @@ MAX = :math:`\max \: G`,
 
 RANGE = :math:`\max \: G - \min \: G`,
 
-COVERED_IMAGE_INTENSITY_RANGE = :math: `\frac {\max \: G - \min \: G} {\max \: P - \min \: P} `
+COVERED_IMAGE_INTENSITY_RANGE = :math:`\frac {\max \: G - \min \: G} {\max \: P - \min \: P} `
 
 STANDARD_DEVIATION :math:`\gets \sigma = (\mathbb{E}[(G-\mu)^2]) ^{\frac {1}{2}} = \left[ \frac{1}{n-1} \sum_i^n (g_i-\mu)^2 \right ] ^{\frac {1}{2}}`
 
 STANDARD_DEVIATION_BIASED :math:`\gets \sigma_b = (\mathbb{E}[(G-\mu)^2]) ^{\frac {1}{2}} = \left[ \frac{1}{n} \sum_i^n (g_i-\mu)^2 \right ] ^{\frac {1}{2}}`
 
-COV = :math:`\frac{\sigma}{\mu}`, 
+COV = :math:`\frac{\sigma}{\mu}`,
 
-STANDARD_ERROR = :math:`\frac{\sigma}{\sqrt{n}}`, 
+STANDARD_ERROR = :math:`\frac{\sigma}{\sqrt{n}}`,
 
 SKEWNESS =  :math:`\frac {\sqrt n \mu_3}{\mu_2^{1.5}}` if :math:`n>3` and :math:`\sigma_2 \neq 0`, otherwise :math:`=0`.
 
@@ -45,7 +45,7 @@ HYPERSKEWNESS = :math:`\frac{n \mu_4} {\mu_2^{5/2}}` if :math:`n>5` and :math:`\
 
 HYPERFLATNESS = :math:`\frac {n \mu_5} {\mu_2^3}` if :math:`n>6` and :math:`\mu_2 \neq 0`, otherwise :math:`=0`
 
-MEAN_ABSOLUTE_DEVIATION = :math:`\sigma = \frac{1}{n} \sum_i^n \left| g_i-\mu \right|` 
+MEAN_ABSOLUTE_DEVIATION = :math:`\sigma = \frac{1}{n} \sum_i^n \left| g_i-\mu \right|`
 
 ENERGY :math:`\gets E = \sum _i^n g_i^2`
 
@@ -53,8 +53,8 @@ ROOT_MEAN_SQUARED :math:`= \sqrt {\frac {1} {n} \sum_i^n g_i^2 }`
 
 ENTROPY :math:`= \sum_i^k (- b_{i} \: \log \: b_{i})` where :math:`b_i` is a non-zero value of the image histogram of size :math:`k = 1 + \log_2 \: n`,
 
-MODE :math:`= x_{uk} + w \frac{f_k - f_{k-1}}{2 f_k - f_{k-1} - f_{k+1}}` where :math:`k` - the index of the histogram bin containing the greatest count, 
-:math:`x_{uk}` - lower bound of the histogram bin containing the greatest count, :math:`f_k` - the greatest bin count, :math:`f_{k-1}` and :math:`f_{k+1}` - 
+MODE :math:`= x_{uk} + w \frac{f_k - f_{k-1}}{2 f_k - f_{k-1} - f_{k+1}}` where :math:`k` - the index of the histogram bin containing the greatest count,
+:math:`x_{uk}` - lower bound of the histogram bin containing the greatest count, :math:`f_k` - the greatest bin count, :math:`f_{k-1}` and :math:`f_{k+1}` -
 counts of the bins neighboring to the greatest count bin; (informally, the histogram bin value having the highest count)
 
 VARIANCE :math:`\gets \sigma = (\mathbb{E}[(G-\mu)^2]) ^{\frac {1}{2}} = \left[ \frac{1}{n-1} \sum_i^n (g_i-\mu)^2 \right ]`
@@ -72,48 +72,47 @@ for a continuous random variable with density function :math:`f(x)` by solving
 
 .. math::
 
-    p = \int_{-\inf}^{q_p} f(x)dx 
+    p = \int_{-\inf}^{q_p} f(x)dx
 
-for :math:`q_p`, or by using the inverse of the cumulative distribution function, 
+for :math:`q_p`, or by using the inverse of the cumulative distribution function,
 
 .. math::
 
-    q_p = F^{-1}(p). 
-    
-The :math:`p`-th quantile of a random variable :math:`X` is the value :math:`q_p` such that 
+    q_p = F^{-1}(p).
+
+The :math:`p`-th quantile of a random variable :math:`X` is the value :math:`q_p` such that
 
 .. math::
 
     F(q_p) = P(X \leqslant q_p) = p
 
 
-P01, P10, P25, P75, P90, P99 - the 1%, 10%, 25%, 75%, 90%, and 99% percentiles. A percentile :math:`q_p` 
-is a solution of equation :math:`p = \int _{-\infty} ^{q_p} f(x)dx` where :math:`p=0.01, 0.1, 0.25, etc`, for example 
-:math:`0.25 = \int _{-\infty} ^{0.25} f(x)dx`.  
+P01, P10, P25, P75, P90, P99 - the 1%, 10%, 25%, 75%, 90%, and 99% percentiles. A percentile :math:`q_p`
+is a solution of equation :math:`p = \int _{-\infty} ^{q_p} f(x)dx` where :math:`p=0.01, 0.1, 0.25, etc`, for example
+:math:`0.25 = \int _{-\infty} ^{0.25} f(x)dx`.
 
 QCOD = :math:`\frac {P75 - P25} {P75 + P25}`
 
-MEDIAN -- the 50% percentile defined as :math:`0.5 = \int _{-\infty} ^{0.5} f(x)dx`, the value such that an equal number 
+MEDIAN -- the 50% percentile defined as :math:`0.5 = \int _{-\infty} ^{0.5} f(x)dx`, the value such that an equal number
 of samples are less than and greater than the value (for an odd sample size), or the average of the two central values (for an even sample size).
 
-MEDIAN_ABSOLUTE_DEVIATION = :math:`\sigma = \frac{1}{n} \sum_i^n \left| g_i - MEDIAN \right|` 
+MEDIAN_ABSOLUTE_DEVIATION = :math:`\sigma = \frac{1}{n} \sum_i^n \left| g_i - MEDIAN \right|`
 
 INTERQUARTILE_RANGE = :math:`q_{0.75} - q_{0.25}` - the difference of the 1st and 3rd sample quartiles,
 
-ROBUST_MEAN_ABSOLUTE_DEVIATION (RMAD) 
+ROBUST_MEAN_ABSOLUTE_DEVIATION (RMAD)
 
 .. math::
-    RMAD = \frac{1}{k} \underset{q_{0.1} \leqslant g_i \leqslant q_{0.9}} {\sum_i^n} |g_i - \mu_R| 
+    RMAD = \frac{1}{k} \underset{q_{0.1} \leqslant g_i \leqslant q_{0.9}} {\sum_i^n} |g_i - \mu_R|
 
-where 
+where
 
 .. math::
-    \mu_R = \underset{q_{0.1} \leqslant g_i \leqslant q_{0.9}} { \frac{1}{n} \sum_i^n g_i } 
-    
+    \mu_R = \underset{q_{0.1} \leqslant g_i \leqslant q_{0.9}} { \frac{1}{n} \sum_i^n g_i }
+
 or, otherwise, MAD calculated over the subset of :math:`G=\{g_i\}^n` whose elements are in the :math:`[q_{0.1},q_{0.9}]` value interval.
 
 References
 ----------
 
 Zwillinger, D. (Ed.). CRC Standard Mathematical Tables and Formulae. Boca Raton, FL: CRC Press, p. 602, 1995.
-

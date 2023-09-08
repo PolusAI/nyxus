@@ -80,7 +80,7 @@ private:
 		val_P01 = 0, val_P10 = 0, val_P25 = 0, val_P75 = 0, val_P90 = 0, val_P99 = 0,
 		val_QCOD = 0,
 		val_INTERQUARTILE_RANGE = 0,
-		val_ROBUST_MEAN = 0, 
+		val_ROBUST_MEAN = 0,
 		val_ROBUST_MEAN_ABSOLUTE_DEVIATION = 0,
 		val_COV = 0,
 		val_STANDARD_DEVIATION_BIASED = 0,

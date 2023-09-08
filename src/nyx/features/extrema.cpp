@@ -1,6 +1,6 @@
 #include "extrema.h"
 
-ExtremaFeature::ExtremaFeature() : FeatureMethod("ExtremaFeature") 
+ExtremaFeature::ExtremaFeature() : FeatureMethod("ExtremaFeature")
 {
 	provide_features({
 		EXTREMA_P1_Y,
@@ -40,7 +40,7 @@ void ExtremaFeature::calculate (LR& r)
 
 	for (Pixel2 p : r.raw_pixels)
 	{
-		// Find leftmost and rightmost x-pixels of the top 
+		// Find leftmost and rightmost x-pixels of the top
 		if (p.y == TopMost && (TopMost_MostLeft == -1 || p.x < (StatsInt)TopMost_MostLeft))
 			TopMost_MostLeft = p.x;
 		if (p.y == TopMost && (TopMost_MostRight == -1 || p.x > (StatsInt)TopMost_MostRight))
@@ -103,7 +103,7 @@ void ExtremaFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	{
 		Pixel2 p = r.raw_pixels_NT.get_at(i);
 
-		// Find leftmost and rightmost x-pixels of the top 
+		// Find leftmost and rightmost x-pixels of the top
 		if (p.y == TopMost && (TopMost_MostLeft == -1 || p.x < (StatsInt)TopMost_MostLeft))
 			TopMost_MostLeft = p.x;
 		if (p.y == TopMost && (TopMost_MostRight == -1 || p.x > (StatsInt)TopMost_MostRight))
@@ -148,16 +148,16 @@ void ExtremaFeature::osized_calculate (LR& r, ImageLoader& imloader)
 
 std::tuple<int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int> ExtremaFeature::get_values()
 {
-	return 
-	{ 
-		x1, y1, 
-		x2, y2, 
-		x3, y3, 
-		x4, y4, 
-		x5, y5, 
-		x6, y6, 
-		x7, y7, 
-		x8, y8 
+	return
+	{
+		x1, y1,
+		x2, y2,
+		x3, y3,
+		x4, y4,
+		x5, y5,
+		x6, y6,
+		x7, y7,
+		x8, y8
 	};
 }
 
@@ -196,4 +196,3 @@ void ExtremaFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabe
 		ef.save_value(r.fvals);
 	}
 }
-

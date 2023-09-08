@@ -4,7 +4,7 @@
 #include "image_matrix_nontriv.h"
 
 
-GaborFeature::GaborFeature() : FeatureMethod("GaborFeature") 
+GaborFeature::GaborFeature() : FeatureMethod("GaborFeature")
 {
     provide_features ({ GABOR });
 }
@@ -57,7 +57,7 @@ void GaborFeature::osized_calculate (LR& r, ImageLoader&)
     }
 }
 
-void GaborFeature::GetStats_NT (WriteImageMatrix_nontriv & I, Moments2& moments2) 
+void GaborFeature::GetStats_NT (WriteImageMatrix_nontriv & I, Moments2& moments2)
 {
     // Feed all the image pixels into the Moments2 object:
     moments2.reset();
@@ -76,7 +76,7 @@ void GaborFeature::GaborEnergy_NT2 (
     double sig2lam,
     double gamma,
     double theta,
-    int n, 
+    int n,
     bool max_or_threshold,  // 'true' to return max, 'false' to return count
     double threshold,
     double & max_val/*out*/,
@@ -96,7 +96,7 @@ void GaborFeature::GaborEnergy_NT2 (
     auto xy0 = (int)ceil(double(n) / 2.);
 
     // Window (N-fold kernel size)
-    int winX = n * 10, 
+    int winX = n * 10,
         winY = n * 10;
     std::vector<unsigned int> W (winY * winX);
 
@@ -104,7 +104,7 @@ void GaborFeature::GaborEnergy_NT2 (
     std::vector<double> auxC ((winY + n - 1) * (winX + n - 1) * 2);
 
     // Iterate the image window by window
-    int n_winHor = width / winX, //ceil (float(width) / float(win)), 
+    int n_winHor = width / winX, //ceil (float(width) / float(win)),
         n_winVert = height / winY; //ceil (float(height) / float(win));
 
     // ROI smaller than kernel?
@@ -116,7 +116,7 @@ void GaborFeature::GaborEnergy_NT2 (
             {
                 size_t idx = row * width + col;
                 W[idx] = Im.get_at(idx);
-            }    
+            }
 
         // Convolve
         conv_dud (auxC.data(), W.data(), Gexp, winY, winX, n, n);
@@ -188,14 +188,14 @@ void GaborFeature::conv_dud_NT (
     mc = ma + mb - 1;
     nc = (na + nb - 1) * 2;
 
-    // initialize the output matrix 
+    // initialize the output matrix
     int mcnc = mc * nc;
     for (int i = 0; i < mcnc; i++)
         C[i] = 0.0;
 
     for (int j = 0; j < mb; ++j)
     {
-        // For each element in b 
+        // For each element in b
         for (int i = 0; i < nb; ++i)
         {
             // Get weight from B matrix
@@ -203,13 +203,13 @@ void GaborFeature::conv_dud_NT (
             wi = B[ir + 1];
             ir += 2;
 
-            // Start at first row of A in C 
+            // Start at first row of A in C
             ip = j * nc + i * 2;
             iq = 0;
 
             for (int l = 0; l < ma; l++)
             {
-                // For each row of A ... 
+                // For each row of A ...
                 for (int k = 0; k < na; k++)
                 {
                     // cache A[iq]
@@ -230,4 +230,3 @@ void GaborFeature::conv_dud_NT (
         }
     }
 }
-

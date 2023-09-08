@@ -61,7 +61,7 @@ Nyxus provided features
      - Percent image uniformity, another measure of intensity distribution uniformity
    * - P01, P10, P25, P75, P90, P99
      - 1%, 10%, 25%, 75%, 90%, and 99% percentiles of intensity distribution
-   * - QCOD 
+   * - QCOD
      - quantile coefficient of dispersion
    * - INTERQUARTILE_RANGE
      - Distribution's interquartile range
@@ -227,31 +227,31 @@ Nyxus provided features
    * - EXTREMA_P2_X
      - X-ccordinate of ROI's axis aligned bounding box extremum point #2
    * - EXTREMA_P2_Y
-     - 
+     -
    * - EXTREMA_P3_X
      - X-ccordinate of ROI's axis aligned bounding box extremum point #3
    * - EXTREMA_P3_Y
-     - 
+     -
    * - EXTREMA_P4_X
      - X-ccordinate of ROI's axis aligned bounding box extremum point #4
    * - EXTREMA_P4_Y
-     - 
+     -
    * - EXTREMA_P5_X
      - X-ccordinate of ROI's axis aligned bounding box extremum point #5
    * - EXTREMA_P5_Y
-     - 
+     -
    * - EXTREMA_P6_X
      - X-ccordinate of ROI's axis aligned bounding box extremum point #6
    * - EXTREMA_P6_Y
-     - 
+     -
    * - EXTREMA_P7_X
      - X-ccordinate of ROI's axis aligned bounding box extremum point #7
    * - EXTREMA_P7_Y
-     - 
+     -
    * - EXTREMA_P8_X
      - X-ccordinate of ROI's axis aligned bounding box extremum point #8
    * - EXTREMA_P8_Y
-     - 
+     -
    * - POLYGONALITY_AVE
      - The score ranges from $ -\infty $ to 10. Score 10 indicates the object shape is polygon and score $ -\infty $ indicates the ROI shape is not polygon
    * - HEXAGONALITY_AVE
@@ -346,37 +346,37 @@ Nyxus provided features
    * - GLCM_VARIANCE
      - GLCM, Variance
    * - GLRLM_SRE
-     - Grey level run-length matrix (GLRLM) based feature, Short Run Emphasis 
+     - Grey level run-length matrix (GLRLM) based feature, Short Run Emphasis
    * - GLRLM_LRE
-     - GLRLM, Long Run Emphasis 
+     - GLRLM, Long Run Emphasis
    * - GLRLM_GLN
-     - GLRLM, Grey Level Non-Uniformity 
+     - GLRLM, Grey Level Non-Uniformity
    * - GLRLM_GLNN
-     - GLRLM, Grey Level Non-Uniformity Normalized 
+     - GLRLM, Grey Level Non-Uniformity Normalized
    * - GLRLM_RLN
      - GLRLM, Run Length Non-Uniformity
    * - GLRLM_RLNN
-     - GLRLM, Run Length Non-Uniformity Normalized 
+     - GLRLM, Run Length Non-Uniformity Normalized
    * - GLRLM_RP
      - GLRLM, Run Percentage
    * - GLRLM_GLV
-     - GLRLM, Grey Level Variance 
+     - GLRLM, Grey Level Variance
    * - GLRLM_RV
-     - GLRLM, Run Variance 
+     - GLRLM, Run Variance
    * - GLRLM_RE
-     - GLRLM, Run Entropy 
+     - GLRLM, Run Entropy
    * - GLRLM_LGLRE
-     - GLRLM, Low Grey Level Run Emphasis 
+     - GLRLM, Low Grey Level Run Emphasis
    * - GLRLM_HGLRE
-     - GLRLM, High Grey Level Run Emphasis 
+     - GLRLM, High Grey Level Run Emphasis
    * - GLRLM_SRLGLE
-     - GLRLM, Short Run Low Grey Level Emphasis 
+     - GLRLM, Short Run Low Grey Level Emphasis
    * - GLRLM_SRHGLE
-     - GLRLM, Short Run High Grey Level Emphasis 
+     - GLRLM, Short Run High Grey Level Emphasis
    * - GLRLM_LRLGLE
-     - GLRLM, Long Run Low Grey Level Emphasis 
+     - GLRLM, Long Run Low Grey Level Emphasis
    * - GLRLM_LRHGLE
-     - GLRLM, Long Run High Grey Level Emphasis 
+     - GLRLM, Long Run High Grey Level Emphasis
    * - GLDZM_SDE
      - GLDZM, Small Distance Emphasis
    * - GLDZM_LDE
@@ -565,101 +565,101 @@ Nyxus provided features
    * - Nyxus feature code
      - Description
    * - SPAT_MOMENT_00
-     - Spatial (raw) moments 
+     - Spatial (raw) moments
    * - SPAT_MOMENT_01
      - of order 00, 01, 02, etc
    * - SPAT_MOMENT_02
-     - 
+     -
    * - SPAT_MOMENT_03
-     - 
+     -
    * - SPAT_MOMENT_10
-     - 
+     -
    * - SPAT_MOMENT_11
-     - 
+     -
    * - SPAT_MOMENT_12
-     - 
+     -
    * - SPAT_MOMENT_20
-     - 
+     -
    * - SPAT_MOMENT_21
-     - 
+     -
    * - SPAT_MOMENT_30
-     - 
+     -
    * - WEIGHTED_SPAT_MOMENT_00
      - Spatial moments weighted by pixel distance to ROI edge
    * - WEIGHTED_SPAT_MOMENT_01
-     - 
+     -
    * - WEIGHTED_SPAT_MOMENT_02
-     - 
+     -
    * - WEIGHTED_SPAT_MOMENT_03
-     - 
+     -
    * - WEIGHTED_SPAT_MOMENT_10
-     - 
+     -
    * - WEIGHTED_SPAT_MOMENT_11
-     - 
+     -
    * - WEIGHTED_SPAT_MOMENT_12
-     - 
+     -
    * - WEIGHTED_SPAT_MOMENT_20
-     - 
+     -
    * - WEIGHTED_SPAT_MOMENT_21
-     - 
+     -
    * - WEIGHTED_SPAT_MOMENT_30
-     - 
+     -
    * - CENTRAL_MOMENT_02
-     - Central moments 
+     - Central moments
    * - CENTRAL_MOMENT_03
-     - 
+     -
    * - CENTRAL_MOMENT_11
-     - 
+     -
    * - CENTRAL_MOMENT_12
-     - 
+     -
    * - CENTRAL_MOMENT_20
-     - 
+     -
    * - CENTRAL_MOMENT_21
-     - 
+     -
    * - CENTRAL_MOMENT_30
-     - 
+     -
    * - WEIGHTED_CENTRAL_MOMENT_02
      - Central moments weighted by pixel distance to ROI edge
    * - WEIGHTED_CENTRAL_MOMENT_03
-     - 
+     -
    * - WEIGHTED_CENTRAL_MOMENT_11
-     - 
+     -
    * - WEIGHTED_CENTRAL_MOMENT_12
-     - 
+     -
    * - WEIGHTED_CENTRAL_MOMENT_20
-     - 
+     -
    * - WEIGHTED_CENTRAL_MOMENT_21
-     - 
+     -
    * - WEIGHTED_CENTRAL_MOMENT_30
-     - 
+     -
    * - NORM_CENTRAL_MOMENT_02
      - Normalized central moments
    * - NORM_CENTRAL_MOMENT_03
-     - 
+     -
    * - NORM_CENTRAL_MOMENT_11
-     - 
+     -
    * - NORM_CENTRAL_MOMENT_12
-     - 
+     -
    * - NORM_CENTRAL_MOMENT_20
-     - 
+     -
    * - NORM_CENTRAL_MOMENT_21
-     - 
+     -
    * - NORM_CENTRAL_MOMENT_30
-     - 
+     -
    * - NORM_SPAT_MOMENT_00
      - Normalized (standardized) spatial moments
    * - NORM_SPAT_MOMENT_01
-     - 
+     -
    * - NORM_SPAT_MOMENT_02
-     - 
+     -
    * - NORM_SPAT_MOMENT_03
-     - 
+     -
    * - NORM_SPAT_MOMENT_10
-     - 
+     -
    * - NORM_SPAT_MOMENT_20
-     - 
+     -
    * - NORM_SPAT_MOMENT_30
-     - 
+     -
    * - HU_M1
      - Hu's moment 1
    * - HU_M2
@@ -700,7 +700,7 @@ Nyxus provided features
    * - Nyxus feature code
      - Description
    * - NUM_NEIGHBORS
-     - The number of neighbors bordering the ROI's perimeter within proximity radius specified by command line argument --pixelDistance. (Default value of --pixelDistance is 5.) Algorithmically calculating this feature invilves solving the nearest neighbors search problem that in turn involves the proximity measure and the proximity threshold. Particularly, this plugin uses the :math:`L_2` norm measure over Cartesian space of pixel coordinates and parameter --pixelDistance 
+     - The number of neighbors bordering the ROI's perimeter within proximity radius specified by command line argument --pixelDistance. (Default value of --pixelDistance is 5.) Algorithmically calculating this feature invilves solving the nearest neighbors search problem that in turn involves the proximity measure and the proximity threshold. Particularly, this plugin uses the :math:`L_2` norm measure over Cartesian space of pixel coordinates and parameter --pixelDistance
    * - PERCENT_TOUCHING
      - Percent of ROI's contour pixels located at distance 0 from neighboring other ROIs's contour
    * - CLOSEST_NEIGHBOR1_DIST
@@ -717,4 +717,3 @@ Nyxus provided features
      - Standard deviation in degrees of angles between ROI's centroid and centroids of its neighboring ROIs
    * - ANG_BW_NEIGHBORS_MODE
      - Mode value in degrees of angles between ROI's centroid and centroids of its neighboring ROIs
-

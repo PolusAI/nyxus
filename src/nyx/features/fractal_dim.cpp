@@ -43,7 +43,7 @@ void FractalDimensionFeature::calculate_boxcount_fdim (LR & r)
 	}
 
 	// Debug
-	// print_curve(boxCoverage, "boxCoverage N vs R");	
+	// print_curve(boxCoverage, "boxCoverage N vs R");
 
 	box_count_fd = -calc_lyapunov_slope(coverage);
 }
@@ -196,4 +196,3 @@ void FractalDimensionFeature::parallel_process_1_batch(size_t start, size_t end,
 		fd.save_value(r.fvals);
 	}
 }
-

@@ -1,12 +1,12 @@
 #include <memory>
 #include <unordered_map>
-#include <unordered_set> 
+#include <unordered_set>
 #include <algorithm>
 #if __has_include(<filesystem>)
   #include <filesystem>
   namespace fs = std::filesystem;
 #elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
+  #include <experimental/filesystem>
   namespace fs = std::experimental::filesystem;
 #else
   error "Missing the <filesystem> header."
@@ -45,7 +45,7 @@ namespace Nyxus
 
 				double tmp1 = std::abs(x),
 					tmp2 = std::log10(tmp1),
-					tmp3 = std::abs(tmp2), 
+					tmp3 = std::abs(tmp2),
 					tmp4 = tmp3 + 0.5;
 				int n = int(tmp4);
 
@@ -75,7 +75,7 @@ namespace Nyxus
 	bool save_features_2_csv (const std::string & intFpath, const std::string & segFpath, const std::string & outputDir)
 	{
 		// Non-exotic formatting for compatibility with the buffer output (Python API, Apache)
-		char rvbuf[100]; // real value buffer 
+		char rvbuf[100]; // real value buffer
 		const char rvfmt[] = "%20.12f";
 
 		// Sort the labels
@@ -211,12 +211,12 @@ namespace Nyxus
 					continue;
 				}
 
-				// --Zernike features header 
+				// --Zernike features header
 				if (fc == ZERNIKE2D)
 				{
 					// Populate with indices
 					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)	// i < ZernikeFeature::num_feature_values_calculated
-						ssHead << "," << fn << "_Z" << i;						
+						ssHead << "," << fn << "_Z" << i;
 
 					// Proceed with other features
 					continue;
@@ -236,8 +236,8 @@ namespace Nyxus
 		// -- Values
 		for (auto l : L)
 		{
-			LR& r = roiData[l];			
-			
+			LR& r = roiData[l];
+
 			// Skip blacklisted ROI
 			if (r.blacklisted)
 				continue;
@@ -273,8 +273,8 @@ namespace Nyxus
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
-							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << rvbuf;	
+							//--diagnoze misalignment--
+							ssVals << "," << fn << "-" << rvbuf;
 						#endif
 					}
 					// Proceed with other features
@@ -293,8 +293,8 @@ namespace Nyxus
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
-							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << rvbuf;	
+							//--diagnoze misalignment--
+							ssVals << "," << fn << "-" << rvbuf;
 						#endif
 					}
 					// Proceed with other features
@@ -309,10 +309,10 @@ namespace Nyxus
 						sprintf(rvbuf, rvfmt, vv[i]);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
-						#else	
-							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << rvbuf;	
-						#endif			
+						#else
+							//--diagnoze misalignment--
+							ssVals << "," << fn << "-" << rvbuf;
+						#endif
 					}
 
 					// Proceed with other features
@@ -328,8 +328,8 @@ namespace Nyxus
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
-							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << rvbuf;	
+							//--diagnoze misalignment--
+							ssVals << "," << fn << "-" << rvbuf;
 						#endif
 					}
 
@@ -346,8 +346,8 @@ namespace Nyxus
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
-							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << rvbuf;	
+							//--diagnoze misalignment--
+							ssVals << "," << fn << "-" << rvbuf;
 						#endif
 					}
 					// Proceed with other features
@@ -361,8 +361,8 @@ namespace Nyxus
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
-							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << rvbuf;	
+							//--diagnoze misalignment--
+							ssVals << "," << fn << "-" << rvbuf;
 						#endif
 					}
 					// Proceed with other features
@@ -376,8 +376,8 @@ namespace Nyxus
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
-							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << rvbuf;	
+							//--diagnoze misalignment--
+							ssVals << "," << fn << "-" << rvbuf;
 						#endif
 					}
 					// Proceed with other features
@@ -389,8 +389,8 @@ namespace Nyxus
 				#ifndef DIAGNOSE_NYXUS_OUTPUT
 				ssVals << "," << rvbuf; // Alternatively: auto_precision(ssVals, vv[0]);
 				#else
-					//--diagnoze misalignment-- 
-					ssVals << "," << fn << "-" << rvbuf;	
+					//--diagnoze misalignment--
+					ssVals << "," << fn << "-" << rvbuf;
 				#endif
 			}
 

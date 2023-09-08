@@ -17,10 +17,10 @@ class GLSZMFeature: public FeatureMethod
 {
 public:
 
-	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
-	// in the feature group nickname expansion, and in the feature value output 
-	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset = 
-	{ 
+	// Codes of features implemented by this class. Used in feature manager's mechanisms,
+	// in the feature group nickname expansion, and in the feature value output
+	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
+	{
 		GLSZM_SAE,		// Small Area Emphasis
 		GLSZM_LAE,		// Large Area Emphasis
 		GLSZM_GLN,		// Gray Level Non - Uniformity
@@ -48,7 +48,7 @@ public:
 	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 	// Compatibility with the manual reduce
-	static bool required (const FeatureSet& fs) 
+	static bool required (const FeatureSet& fs)
 	{
 		return fs.anyEnabled (GLSZMFeature::featureset);
 	}
@@ -128,7 +128,7 @@ private:
 		Np = 0; // number of voxels in the image
 		Nz = 0; // number of zones in the ROI, 1<=Nz<=Np
 		P.clear();
-		sum_p = 0;	
+		sum_p = 0;
 	}
 
 	const double EPS = 2.2e-16;

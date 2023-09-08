@@ -1,6 +1,6 @@
 #pragma once
 
-#include <algorithm> 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <map>
@@ -21,7 +21,7 @@ public:
 
 	void initialize(HistoItem min_value, HistoItem max_value, const std::vector<Pixel2>& raw_data)
 	{
-		// Allocate 
+		// Allocate
 		// -- "binary"
 		population = raw_data.size();
 		n_bins = decltype(n_bins) ((1. + log2(population)) + 0.5);
@@ -94,7 +94,7 @@ public:
 
 	void initialize(HistoItem min_value, HistoItem max_value, const OutOfRamPixelCloud& raw_data)
 	{
-		// Allocate 
+		// Allocate
 		// -- "binary"
 		population = raw_data.size();
 		n_bins = decltype(n_bins) ((1. + log2(population)) + 0.5);
@@ -175,7 +175,7 @@ public:
 	//	[0] median
 	// 	[1] mode
 	//	[2-7] p1, p10, p25, p75, p90, p99
-	//	[8] IQR 
+	//	[8] IQR
 	//	[9] RMAD
 	//	[10] entropy
 	//	[11] uniformity
@@ -241,7 +241,7 @@ public:
 			}
 		}
 
-		// -- Correction for the case where no items fall into the 10-90% range 
+		// -- Correction for the case where no items fall into the 10-90% range
 		if (population1090 == 0)
 			rmad = 0;
 		else
@@ -417,4 +417,3 @@ private:
 		return double(bin_idx) * bin_width * 1.5;
 	}
 };
-

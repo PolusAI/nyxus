@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import sys
 import numpy as np
 from . import nyx_backend
@@ -5,29 +6,29 @@ from . import nyx_backend
 def isalive():
     print ("Responding")
     return True
-    
+
 def isalive2(arg):
     print ("isalive2 received " + str(arg))
-    return True    
+    return True
 
 def isalive3():
     print ("Responding with a numpy array:")
     f = np.array([[1,2,3], [4,2,5]])
-    return f    
+    return f
 
 def backend_is_alive (label_dir, intensity_dir):
     assert (bool(label_dir and not label_dir.isspace()))
     assert (bool(intensity_dir and not intensity_dir.isspace()))
     f = nyx_backend.backend_is_alive_imp (label_dir, intensity_dir)
     print (type(f))
-    print(f)    
+    print(f)
     return f
 
 def pixel_intensity_stats (label_dir, intensity_dir):
-    """Calculate mean, median, min, max, range, standard_deviation, skewness, kurtosis, 
-    mean_absolute_deviation, energy, root_mean_squared, entropy, mode, uniformity, 
-    P10, P25, P75, P90, interquartile_range, robust_mean_absolute_deviation, 
-    weighted_centroid_y, weighted_centroid_x 
+    """Calculate mean, median, min, max, range, standard_deviation, skewness, kurtosis,
+    mean_absolute_deviation, energy, root_mean_squared, entropy, mode, uniformity,
+    P10, P25, P75, P90, interquartile_range, robust_mean_absolute_deviation,
+    weighted_centroid_y, weighted_centroid_x
 
     Parameters
     ----------
@@ -36,8 +37,8 @@ def pixel_intensity_stats (label_dir, intensity_dir):
 
     Returns
     -------
-    numpy.ndarray, type float - 2-dimensional array of N calculated features 
-        for each of L unique labels in shape 
+    numpy.ndarray, type float - 2-dimensional array of N calculated features
+        for each of L unique labels in shape
         `[[f1, f2, ... fN], [f1, f2, ... fN], ... [f1, f2, ... fN]]`.
     """
 
@@ -47,7 +48,7 @@ def pixel_intensity_stats (label_dir, intensity_dir):
     return f
 
 def bounding_box (label_dir, intensity_dir):
-    """Calculate ROIs' bounding box x, y, width, and height  
+    """Calculate ROIs' bounding box x, y, width, and height
 
     Parameters
     ----------
@@ -56,8 +57,8 @@ def bounding_box (label_dir, intensity_dir):
 
     Returns
     -------
-    numpy.ndarray, type float - 2-dimensional array of N calculated features 
-        for each of L unique labels in shape 
+    numpy.ndarray, type float - 2-dimensional array of N calculated features
+        for each of L unique labels in shape
         `[[f1, f2, ... fN], [f1, f2, ... fN], ... [f1, f2, ... fN]]`.
     """
 
@@ -68,7 +69,7 @@ def bounding_box (label_dir, intensity_dir):
 
 
 def feret (label_dir, intensity_dir):
-    """Calculate ROIs' Feret diameters, angles, and statistics  
+    """Calculate ROIs' Feret diameters, angles, and statistics
 
     Parameters
     ----------
@@ -77,7 +78,7 @@ def feret (label_dir, intensity_dir):
 
     Returns
     -------
-    numpy.ndarray, type float - 2-dimensional array of N calculated features 
+    numpy.ndarray, type float - 2-dimensional array of N calculated features
             MIN_FERET_DIAMETER
             MAX_FERET_DIAMETER
             MIN_FERET_ANGLE
@@ -88,7 +89,7 @@ def feret (label_dir, intensity_dir):
             STAT_FERET_DIAM_MEDIAN
             STAT_FERET_DIAM_STDDEV
             STAT_FERET_DIAM_MODE
-        for each of L unique labels in shape 
+        for each of L unique labels in shape
         `[[f1, f2, ... fN], [f1, f2, ... fN], ... [f1, f2, ... fN]]`.
     """
 
@@ -98,7 +99,7 @@ def feret (label_dir, intensity_dir):
     return f
 
 def glrlm (label_dir, intensity_dir):
-    """Calculate ROIs' GLRLM features  
+    """Calculate ROIs' GLRLM features
 
     Parameters
     ----------
@@ -107,7 +108,7 @@ def glrlm (label_dir, intensity_dir):
 
     Returns
     -------
-    numpy.ndarray, type float - 2-dimensional array of N calculated features 
+    numpy.ndarray, type float - 2-dimensional array of N calculated features
 	        GLRLM_SRE,
 	        GLRLM_LRE,
 	        GLRLM_GLN,
@@ -124,7 +125,7 @@ def glrlm (label_dir, intensity_dir):
 	        GLRLM_SRHGLE,
 	        GLRLM_LRLGLE,
 	        GLRLM_LRHGLE
-        for each of L unique labels in shape 
+        for each of L unique labels in shape
         `[[f1, f2, ... fN], [f1, f2, ... fN], ... [f1, f2, ... fN]]`.
     """
 

@@ -34,8 +34,8 @@ public:
 	}
 private:
 	double
-		val_AREA_PIXELS_COUNT = 0, 
-		val_AREA_UM2 = 0, 
+		val_AREA_PIXELS_COUNT = 0,
+		val_AREA_UM2 = 0,
 		val_ASPECT_RATIO = 0,
 		val_BBOX_XMIN = 0,
 		val_BBOX_YMIN = 0,

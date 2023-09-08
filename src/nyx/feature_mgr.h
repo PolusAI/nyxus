@@ -12,7 +12,7 @@ public:
 
 	// Registers a feature method
 	void register_feature (FeatureMethod*);
-	
+
 	// Performs the 1:1 correspondence and cyclic dependency checks and sets up the set of user-requested features
 	bool compile();
 
@@ -31,7 +31,7 @@ private:
 	// This test checks if there exists a feature code in Nyxus::AvailableFeatures implemented by multiple feature methods
 	bool check_11_correspondence();
 
-	// This test checks for cyclic feature dependencies and populates 'xdeps' 
+	// This test checks for cyclic feature dependencies and populates 'xdeps'
 	bool gather_dependencies();
 
 	int get_num_fmethods_dependencies(FeatureMethod* fm, std::vector<Nyxus::AvailableFeatures> & parent_dependencies);
@@ -46,4 +46,3 @@ private:
 	std::vector<std::vector<Nyxus::AvailableFeatures>> xdeps;	// Vector of 'full_featureset' items' extended dependencies (as feature codes)
 
 };
-

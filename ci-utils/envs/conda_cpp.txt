@@ -1,9 +1,9 @@
-z5py 
-libtiff 
+z5py
+libtiff
 boost >=1.63
-nlohmann_json 
-blosc 
-pybind11 >= 2.10.0 
+nlohmann_json
+blosc
+pybind11 >= 2.10.0
 xtensor >=0.24,<0.25
 xsimd >=8,<9
 cmake

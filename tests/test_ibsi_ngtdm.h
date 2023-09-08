@@ -10,7 +10,7 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
-#include <unordered_map> 
+#include <unordered_map>
 
 // dig. phantom values for intensity based features
 static std::unordered_map<std::string, float> IBSI_ngtdm_values {
@@ -24,7 +24,7 @@ static std::unordered_map<std::string, float> IBSI_ngtdm_values {
 void test_ibsi_ngtdm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
 
     double total = 0;
-    
+
     LR roidata;
     // Calculate features
     NGTDMFeature f;
@@ -41,7 +41,7 @@ void test_ibsi_ngtdm_feature(const AvailableFeatures& feature, const std::string
     f.save_value(roidata.fvals);
 
     total += roidata.fvals[feature][0];
-    
+
     // image 2
     // Calculate features
     LR roidata1;
@@ -83,7 +83,7 @@ void test_ibsi_ngtdm_feature(const AvailableFeatures& feature, const std::string
 
     // image 4
     // Calculate features
-    
+
     LR roidata3;
     // Calculate features
     NGTDMFeature f3;
@@ -121,7 +121,7 @@ void test_ibsi_ngtdm_busyness()
 }
 
 void test_ibsi_ngtdm_complexity()
-{   
+{
     test_ibsi_ngtdm_feature(NGTDM_COMPLEXITY, "NGTDM_COMPLEXITY");
 }
 

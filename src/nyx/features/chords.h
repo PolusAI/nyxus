@@ -8,11 +8,11 @@
 #include "../roi_cache.h"
 #include "../feature_method.h"
 
-/// @brief Class encapsulating calculating "allchords" and "maxchors" features. 
-/// An "all chord" refers to all the chords for all ROI rotations. 
-/// A max chord is the max of all chords for one ROI rotation. 
-/// 
- 
+/// @brief Class encapsulating calculating "allchords" and "maxchors" features.
+/// An "all chord" refers to all the chords for all ROI rotations.
+/// A max chord is the max of all chords for one ROI rotation.
+///
+
 #if 0
 class Chords_feature
 {
@@ -84,13 +84,13 @@ public:
 	// Trivial
 	void calculate(LR& r);
 
-	// Non-trivial 
+	// Non-trivial
 	void osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {}
 	void osized_calculate (LR& r, ImageLoader& imloader);
 	void save_value (std::vector<std::vector<double>>& feature_vals);
 	static void process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
-	// Support of "manual" phase 2 
+	// Support of "manual" phase 2
 	static bool required(const FeatureSet& fs)
 	{
 		return fs.anyEnabled({
@@ -133,4 +133,3 @@ private:
 		maxchords_min_angle = 0,
 		maxchords_max_angle = 0;
 };
-

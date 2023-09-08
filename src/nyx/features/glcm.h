@@ -16,14 +16,14 @@
 /// The distance : math:`\delta` from the center voxel is defined as the distance according to the infinity norm.
 /// For :math:`\delta = 1`, this results in 2 neighbors for each of 13 angles in 3D(26 - connectivity) and for
 /// 	:math:`\delta = 2` a 98 - connectivity(49 unique angles).
-/// 
+///
 
 class GLCMFeature: public FeatureMethod
 {
 public:
 
-	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
-	// in the feature group nickname expansion, and in the feature value output 
+	// Codes of features implemented by this class. Used in feature manager's mechanisms,
+	// in the feature group nickname expansion, and in the feature value output
 	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
 	{
 		GLCM_ACOR,		// Autocorrelation, IBSI # QWB0
@@ -92,7 +92,7 @@ private:
 	void Extract_Texture_Features(
 		int distance,
 		int angle,
-		const SimpleMatrix<uint8_t>& grays);	// 'grays' is 0-255 grays 
+		const SimpleMatrix<uint8_t>& grays);	// 'grays' is 0-255 grays
 	void Extract_Texture_Features2 (int angle, const ImageMatrix& grays, PixIntens min_val, PixIntens max_val);
 
 	void calculate_normalized_graytone_matrix (SimpleMatrix<uint8_t>& G, int minI, int maxI, const ImageMatrix& Im);
@@ -105,7 +105,7 @@ private:
 		int dx, int dy,
 		const ImageMatrix& grays,
 		PixIntens min_val,
-		PixIntens max_val, 
+		PixIntens max_val,
 		bool normalize);
 
 	void calculatePxpmy();
@@ -117,15 +117,15 @@ private:
 		return target_I;
 	}
 
-	double f_asm (const SimpleMatrix<double>& P_matrix, int tone_count);	
-	double f_contrast (const SimpleMatrix<double>& P_matix, int tone_count);	
+	double f_asm (const SimpleMatrix<double>& P_matrix, int tone_count);
+	double f_contrast (const SimpleMatrix<double>& P_matix, int tone_count);
 	double f_corr (const SimpleMatrix<double>& P, int Ng, std::vector<double>& px, double& meanx);
 	double f_var (const SimpleMatrix<double>& P_matrix, int tone_count);
 	double f_idm (const SimpleMatrix<double>& P_matrix, int tone_count);
 	double f_savg (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
 	double f_sentropy (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
 	double f_svar (const SimpleMatrix<double>& P_matrix, int tone_count, double sum_entropy, std::vector<double>& px);
-	double f_entropy (const SimpleMatrix<double>& P_matrix, int tone_count);	
+	double f_entropy (const SimpleMatrix<double>& P_matrix, int tone_count);
 	double f_dvar (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
 	double f_dentropy (const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
 	double f_GLCM_ACOR (const SimpleMatrix<double>& P_matrix, int tone_count);
@@ -192,7 +192,6 @@ private:
 	const double LOG10_2 = 0.30102999566;	// precalculated log 2 base 10
 	SimpleMatrix<double> P_matrix;
 	std::vector<double> Pxpy, Pxmy;
-	double by_row_mean;	
+	double by_row_mean;
 	const double EPSILON = 0.000000001;
 };
-

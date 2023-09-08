@@ -16,13 +16,13 @@ ImageMomentsFeature::ImageMomentsFeature() : FeatureMethod("ImageMomentsFeature"
         SPAT_MOMENT_20,
         SPAT_MOMENT_21,
         SPAT_MOMENT_30,
-        NORM_SPAT_MOMENT_00, 
-        NORM_SPAT_MOMENT_01, 
-        NORM_SPAT_MOMENT_02, 
-        NORM_SPAT_MOMENT_03, 
-        NORM_SPAT_MOMENT_10, 
-        NORM_SPAT_MOMENT_20, 
-        NORM_SPAT_MOMENT_30, 
+        NORM_SPAT_MOMENT_00,
+        NORM_SPAT_MOMENT_01,
+        NORM_SPAT_MOMENT_02,
+        NORM_SPAT_MOMENT_03,
+        NORM_SPAT_MOMENT_10,
+        NORM_SPAT_MOMENT_20,
+        NORM_SPAT_MOMENT_30,
         CENTRAL_MOMENT_02,
         CENTRAL_MOMENT_03,
         CENTRAL_MOMENT_11,
@@ -37,23 +37,23 @@ ImageMomentsFeature::ImageMomentsFeature() : FeatureMethod("ImageMomentsFeature"
         NORM_CENTRAL_MOMENT_20,
         NORM_CENTRAL_MOMENT_21,
         NORM_CENTRAL_MOMENT_30,
-        WEIGHTED_CENTRAL_MOMENT_02, 
-        WEIGHTED_CENTRAL_MOMENT_03, 
-        WEIGHTED_CENTRAL_MOMENT_11, 
-        WEIGHTED_CENTRAL_MOMENT_12, 
-        WEIGHTED_CENTRAL_MOMENT_20, 
-        WEIGHTED_CENTRAL_MOMENT_21, 
-        WEIGHTED_CENTRAL_MOMENT_30, 
-        WEIGHTED_SPAT_MOMENT_00, 
-        WEIGHTED_SPAT_MOMENT_01, 
-        WEIGHTED_SPAT_MOMENT_02, 
-        WEIGHTED_SPAT_MOMENT_03, 
-        WEIGHTED_SPAT_MOMENT_10, 
-        WEIGHTED_SPAT_MOMENT_11, 
-        WEIGHTED_SPAT_MOMENT_12, 
-        WEIGHTED_SPAT_MOMENT_20, 
-        WEIGHTED_SPAT_MOMENT_21, 
-        WEIGHTED_SPAT_MOMENT_30, 
+        WEIGHTED_CENTRAL_MOMENT_02,
+        WEIGHTED_CENTRAL_MOMENT_03,
+        WEIGHTED_CENTRAL_MOMENT_11,
+        WEIGHTED_CENTRAL_MOMENT_12,
+        WEIGHTED_CENTRAL_MOMENT_20,
+        WEIGHTED_CENTRAL_MOMENT_21,
+        WEIGHTED_CENTRAL_MOMENT_30,
+        WEIGHTED_SPAT_MOMENT_00,
+        WEIGHTED_SPAT_MOMENT_01,
+        WEIGHTED_SPAT_MOMENT_02,
+        WEIGHTED_SPAT_MOMENT_03,
+        WEIGHTED_SPAT_MOMENT_10,
+        WEIGHTED_SPAT_MOMENT_11,
+        WEIGHTED_SPAT_MOMENT_12,
+        WEIGHTED_SPAT_MOMENT_20,
+        WEIGHTED_SPAT_MOMENT_21,
+        WEIGHTED_SPAT_MOMENT_30,
         HU_M1,
         HU_M2,
         HU_M3,
@@ -112,9 +112,9 @@ void ImageMomentsFeature::calculate_via_gpu (LR& r, size_t roi_idx)
     //    wm00, wm01, wm02, wm03, wm10, wm11, wm12, wm20, wm21, wm30,   // weighted spatial moments
     //    wmu02, wmu03, wmu11, wmu12, wmu20, wmu21, wmu30,   // weighted central moments
     //    whm1, whm2, whm3, whm4, whm5, whm6, whm7,    // weighted Hum moments
-    //    im, 
+    //    im,
     //    roi_idx,
-    //    r.aabb.get_xmin(), 
+    //    r.aabb.get_xmin(),
     //    r.aabb.get_ymin());
 
     bool ok = ImageMomentsFeature_calculate3(
@@ -126,11 +126,11 @@ void ImageMomentsFeature::calculate_via_gpu (LR& r, size_t roi_idx)
         wm00, wm01, wm02, wm03, wm10, wm11, wm12, wm20, wm21, wm30,   // weighted spatial moments
         wmu02, wmu03, wmu11, wmu12, wmu20, wmu21, wmu30,   // weighted central moments
         whm1, whm2, whm3, whm4, whm5, whm6, whm7,    // weighted Hum moments
-        r.im_buffer_offset, 
+        r.im_buffer_offset,
         roi_idx,
-        r.aabb.get_xmin(), 
-        r.aabb.get_ymin(), 
-        r.aabb.get_width(), 
+        r.aabb.get_xmin(),
+        r.aabb.get_ymin(),
+        r.aabb.get_width(),
         r.aabb.get_height());
 
     if (!ok)
@@ -316,7 +316,7 @@ void ImageMomentsFeature::calcRawMoments (const std::vector<Pixel2>& cloud)
     m30 = moment (cloud, 3, 0);
 }
 
-/// @brief 
+/// @brief
 /// @param cloud Cloud of weighted ROI pixels
 void ImageMomentsFeature::calcWeightedRawMoments (const std::vector<Pixel2>& cloud)
 {
@@ -398,7 +398,7 @@ void ImageMomentsFeature::parallel_process_1_batch (size_t start, size_t end, st
 }
 
 #ifdef USE_GPU
-/// @brief Calculates the features for all the ROIs in a single thread (for calculating via GPU) 
+/// @brief Calculates the features for all the ROIs in a single thread (for calculating via GPU)
 /// @param ptrLabels ROI label vector
 /// @param ptrLabelData ROI data
 void ImageMomentsFeature::gpu_process_all_rois (const std::vector<int> & Labels, std::unordered_map <int, LR>& RoiData)
@@ -433,7 +433,7 @@ void ImageMomentsFeature::gpu_process_all_rois (const std::vector<int> & Labels,
 
         if (r.has_bad_data())
             continue;
-        
+
         ImageMomentsFeature imf;
         imf.calculate_via_gpu (r, roiIdx);
         imf.save_value(r.fvals);
@@ -444,4 +444,3 @@ void ImageMomentsFeature::gpu_process_all_rois (const std::vector<int> & Labels,
     ok = free_imgmatrices_on_gpu();
 }
 #endif
-

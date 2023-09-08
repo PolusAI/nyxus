@@ -14,7 +14,7 @@ void ErosionPixelsFeature::calculate(LR& r)
 		height = r.aabb.get_height(),
 		minx = r.aabb.get_xmin(),
 		miny = r.aabb.get_ymin();
-	
+
 	SimpleMatrix<PixIntens> I2((int)width, (int)height);
 
 	for (auto px : r.raw_pixels)
@@ -30,7 +30,7 @@ void ErosionPixelsFeature::calculate(LR& r)
 	// Initialize output image
 	std::vector<PixIntens> Nv;
 	Nv.reserve(SE_R*SE_C/2);	// Reserving the nnz(struc elem matrix), roughly equal to the 50% of the SE matrix size
-	
+
 	// Blank auxiliary image that we'll need in the loop
 	SimpleMatrix<PixIntens> I1;
 
@@ -124,7 +124,7 @@ void ErosionPixelsFeature::osized_calculate (LR& r, ImageLoader& imloader)
 		// Copy the matrix from previous iteration
 		I1.copy(I2);
 
-		// Perform an erosion operation and count the number of surviving non-blank pixels 
+		// Perform an erosion operation and count the number of surviving non-blank pixels
 		int numNon0 = 0;
 
 		// --Perform local min operation, which is morphological erosion
@@ -205,4 +205,3 @@ void ErosionPixelsFeature::parallel_process_1_batch(size_t start, size_t end, st
 		epix.save_value(r.fvals);
 	}
 }
-

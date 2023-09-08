@@ -18,7 +18,7 @@ void GLCMFeature::calculate(LR& r)
 
 	// Calculate features for all the directions
 	for (auto a: angles)
-		Extract_Texture_Features2 (a, r.aux_image_matrix, r.aux_min, r.aux_max); 
+		Extract_Texture_Features2 (a, r.aux_image_matrix, r.aux_min, r.aux_max);
 }
 
 void GLCMFeature::clear_result_buffers()
@@ -32,7 +32,7 @@ void GLCMFeature::clear_result_buffers()
 	fvals_correlation.clear();
 	fvals_diff_avg.clear();
 	fvals_diff_var.clear();
-	fvals_diff_entropy.clear();	
+	fvals_diff_entropy.clear();
 	fvals_dis.clear();
 	fvals_energy.clear();
 	fvals_entropy.clear();
@@ -51,7 +51,7 @@ void GLCMFeature::clear_result_buffers()
 	fvals_jvar.clear();
 	fvals_sum_avg.clear();
 	fvals_sum_var.clear();
-	fvals_sum_entropy.clear();	
+	fvals_sum_entropy.clear();
 	fvals_variance.clear();
 }
 
@@ -108,7 +108,7 @@ void GLCMFeature::parallel_process_1_batch(size_t start, size_t end, std::vector
 			maxI = Nyxus::to_grayscale(r.aux_max, r.aux_min, r.aux_max - r.aux_min, theEnvironment.get_coarse_gray_depth());
 		if (minI == maxI)
 		{
-			// Zero out each angled feature value 
+			// Zero out each angled feature value
 			auto n = angles.size();
 			r.fvals[GLCM_ASM].assign(n, 0);
 			r.fvals[GLCM_ACOR].assign(n, 0);
@@ -160,13 +160,13 @@ void GLCMFeature::Extract_Texture_Features2 (int angle, const ImageMatrix & gray
 	}
 
 	// Allocate Px and Py vectors
-	std::vector<double> Px (n_levels * 2), 
+	std::vector<double> Px (n_levels * 2),
 		Py (n_levels);
 
 	// Mean of marginal totals of GLCM
 	double mean_x;
 
-	// Compute the gray-tone spatial dependence matrix 
+	// Compute the gray-tone spatial dependence matrix
 	int dx, dy;
 	switch (angle)
 	{
@@ -194,7 +194,7 @@ void GLCMFeature::Extract_Texture_Features2 (int angle, const ImageMatrix & gray
 	calculateCoocMatAtAngle (P_matrix, dx, dy, grays, min_val, max_val, false);
 
 	// In a special case of blank ROI's collocation matrix at given angle, assign each feature value '0'
-	if (sum_p == 0) 
+	if (sum_p == 0)
 	{
 		fvals_ASM.push_back (0);
 		fvals_acor.push_back (0);
@@ -236,7 +236,7 @@ void GLCMFeature::Extract_Texture_Features2 (int angle, const ImageMatrix & gray
 	// Calculate by-row mean
 	calculate_by_row_mean();
 
-	// Compute Haralick statistics 
+	// Compute Haralick statistics
 	double f;
 	f = theFeatureSet.isEnabled (GLCM_ASM) ? f_asm(P_matrix, n_levels) : 0.0;
 	fvals_ASM.push_back (f);
@@ -338,14 +338,14 @@ void GLCMFeature::calculateCoocMatAtAngle(
 	int dy,
 	const ImageMatrix& grays,
 	PixIntens min_val,
-	PixIntens max_val, 
+	PixIntens max_val,
 	bool normalize)
 {
-	matrix.allocate(n_levels, n_levels); 
+	matrix.allocate(n_levels, n_levels);
 	std::fill(matrix.begin(), matrix.end(), 0.);
 
 	int d = GLCMFeature::offset;
-	int count = 0;	// normalizing factor 
+	int count = 0;	// normalizing factor
 
 	int rows = grays.height,
 		cols = grays.width;
@@ -367,18 +367,18 @@ void GLCMFeature::calculateCoocMatAtAngle(
 				if (raw_lvl_x == 0 || raw_lvl_y == 0)
 					continue;
 
-				int x = raw_lvl_x -1, 
+				int x = raw_lvl_x -1,
 					y = raw_lvl_y -1;
 
 				// Cast intensities on the 1-n_levels scale
 				if (Environment::ibsi_compliance == false)
 				{
-					x = GLCMFeature::cast_to_range (raw_lvl_x, min_val, max_val, 1, GLCMFeature::n_levels) -1, 
+					x = GLCMFeature::cast_to_range (raw_lvl_x, min_val, max_val, 1, GLCMFeature::n_levels) -1,
 					y = GLCMFeature::cast_to_range (raw_lvl_y, min_val, max_val, 1, GLCMFeature::n_levels) -1;
 				}
 
 				// Increment the symmetric count
-				count += 2;	
+				count += 2;
 				matrix.xy(y,x)++;
 				matrix.xy(x,y)++;
 			}
@@ -408,8 +408,8 @@ void GLCMFeature::calculatePxpmy()
 	std::fill(Pxpy.begin(), Pxpy.end(), 0.);
 	std::fill(Pxmy.begin(), Pxmy.end(), 0.);
 
-	for (int x = 0; x < n_levels; x++) 
-		for (int y = 0; y < n_levels; y++) 
+	for (int x = 0; x < n_levels; x++)
+		for (int y = 0; y < n_levels; y++)
 		{
 			Pxpy[x + y] += P_matrix.xy(x,y);
 			Pxmy[std::abs(x - y)] += P_matrix.xy(x,y)/sum_p; // normalize matrix from IBSI definition
@@ -474,7 +474,7 @@ double GLCMFeature::f_contrast(const SimpleMatrix<double>& P, int Ng)
 *
 * This correlation feature is a measure of gray-tone linear-dependencies
 * in the image.
-* 
+*
 * Returns marginal totals 'px' and their mean 'meanx'
 */
 double GLCMFeature::f_corr (const SimpleMatrix<double>& P, int Ng, std::vector<double>& px, double& meanx)
@@ -500,7 +500,7 @@ double GLCMFeature::f_corr (const SimpleMatrix<double>& P, int Ng, std::vector<d
 	/*- further modified by James Darrell McCauley, 16 Aug 1991
 	*     after realizing that meanx=meany and stddevx=stddevy
 	*/
-	for (i = 0; i < Ng; ++i) 
+	for (i = 0; i < Ng; ++i)
 	{
 		meanx += px[i] * i;
 		sum_sqrx += px[i] * i * i;
@@ -517,14 +517,14 @@ double GLCMFeature::f_corr (const SimpleMatrix<double>& P, int Ng, std::vector<d
 		for (i = 0; i < Ng; i++)
 			tmp += i * j * (P.xy(i, j)/sum_p);
 
-	if (stddevx * stddevy == 0) 
+	if (stddevx * stddevy == 0)
 		return(1);  // protect from error
-	else 
+	else
 		return (tmp - meanx * meany) / (stddevx * stddevy);
 }
 
 /* Sum of Squares: Variance */
-double GLCMFeature::f_var(const SimpleMatrix<double>& P, int Ng) 
+double GLCMFeature::f_var(const SimpleMatrix<double>& P, int Ng)
 {
 	int i, j;
 	double mean = 0, var = 0;
@@ -546,7 +546,7 @@ double GLCMFeature::f_var(const SimpleMatrix<double>& P, int Ng)
 }
 
 /* Inverse Difference Moment */
-double GLCMFeature::f_idm(const SimpleMatrix<double>& P, int Ng) 
+double GLCMFeature::f_idm(const SimpleMatrix<double>& P, int Ng)
 {
 	double idm = 0;
 
@@ -558,7 +558,7 @@ double GLCMFeature::f_idm(const SimpleMatrix<double>& P, int Ng)
 }
 
 /* Sum Average */
-double GLCMFeature::f_savg(const SimpleMatrix<double>& P, int Ng, std::vector<double>& Pxpy) 
+double GLCMFeature::f_savg(const SimpleMatrix<double>& P, int Ng, std::vector<double>& Pxpy)
 {
 	int i, j;
 	double savg = 0;
@@ -580,7 +580,7 @@ double GLCMFeature::f_savg(const SimpleMatrix<double>& P, int Ng, std::vector<do
 }
 
 /* Sum Variance */
-double GLCMFeature::f_svar(const SimpleMatrix<double>& P, int Ng, double S, std::vector<double>& Pxpy) 
+double GLCMFeature::f_svar(const SimpleMatrix<double>& P, int Ng, double S, std::vector<double>& Pxpy)
 {
 	double var = 0;
 
@@ -595,7 +595,7 @@ double GLCMFeature::f_svar(const SimpleMatrix<double>& P, int Ng, double S, std:
 			pxpy[i+j] += P.xy(i,j)/sum_p;
 		}
 	}
-	
+
 	for(int k = 2; k <= 2 * n_levels; ++k) {
 		var += (k-diffAvg) * (k-diffAvg) * pxpy[k-2];
 	}
@@ -615,7 +615,7 @@ double GLCMFeature::f_sentropy(const SimpleMatrix<double>& P, int Ng, std::vecto
 			pxpy[i+j] += P.xy(i,j)/sum_p;
 		}
 	}
-	
+
 	for(int k = 2; k <= 2 * n_levels; ++k) {
 
 		if (Pxpy[k-2] == 0) continue;
@@ -654,12 +654,12 @@ double GLCMFeature::f_dvar(const SimpleMatrix<double>& P, int Ng, std::vector<do
 	double sum = 0;
 	for (int x = 0; x < Pxmy.size(); x++)
 		sum += var[x];
-	
+
 	return sum/Pxmy.size();
 }
 
 /* Difference Entropy */
-double GLCMFeature::f_dentropy(const SimpleMatrix<double>& P, int Ng, std::vector<double>& Pxpy) 
+double GLCMFeature::f_dentropy(const SimpleMatrix<double>& P, int Ng, std::vector<double>& Pxpy)
 {
 	std::vector<double> entropy(n_levels, 0);
 	double sum = 0;
@@ -685,7 +685,7 @@ double GLCMFeature::f_difference_avg (const SimpleMatrix<double>& P_matrix, int 
 	double sum = 0;
 	for (int x = 0; x < Pxmy.size(); x++)
 		sum += diffAvg[x];
-	
+
 	return sum/Pxmy.size();
 }
 
@@ -715,21 +715,21 @@ void GLCMFeature::calcH (const SimpleMatrix<double>& P, int Ng, std::vector<doub
 			} else {
 				log_pp = fast_log10(pxi * pyj + EPSILON) / LOG10_2 /*avoid /LOG10_2 */;
 			}
-			
+
 			hxy1 += p * log_pp;
 			hxy2 += pxi * pyj * log_pp;
-			if (p > 0) 
+			if (p > 0)
 				hxy += p * fast_log10(p + EPSILON) / LOG10_2 /*avoid /LOG10_2 */;
 		}
 	}
 
 	/* Calculate entropies of px and py */
 	for (int i = 0; i < Ng; ++i)
-	{	
-		if (px[i] > 0) 
+	{
+		if (px[i] > 0)
 			hx += px[i] * fast_log10(px[i] + EPSILON) / LOG10_2 /*avoid /LOG10_2 */;
-		
-		
+
+
 		if(py[i] > 0)
 			hy += py[i] * fast_log10(py[i] + EPSILON) / LOG10_2 /*avoid /LOG10_2 */;
 	}
@@ -746,26 +746,26 @@ double GLCMFeature::f_info_meas_corr1 (const SimpleMatrix<double>& P, int Ng, st
 		for (int j = 0; j < Ng; ++j) {
 			px[i] += P.xy(i,j)/sum_p;
 			py[j] += P.xy(i,j)/sum_p;
-		}	
+		}
 	}
-	
+
 	for (int i = 0; i < Ng; ++i) {
 		for (int j = 0; j < Ng; ++j) {
 			HXY += P.xy(i,j)/sum_p * fast_log10(P.xy(i,j)/sum_p + EPSILON) / LOG10_2;
 			HXY1 += P.xy(i,j)/sum_p * fast_log10(px[i] * py[j] + EPSILON) / LOG10_2;
-			
-		}	
+
+		}
 	}
-	
+
 	for (int i = 0; i < Ng; ++i) {
 		HX += px[i] * fast_log10(px[i] + EPSILON) / LOG10_2;
-		
+
 	}
 
 	return (HXY - HXY1) / HX;
 }
 
-double GLCMFeature::f_info_meas_corr2 (const SimpleMatrix<double>& P, int Ng, std::vector<double>& px, std::vector<double>& py) 
+double GLCMFeature::f_info_meas_corr2 (const SimpleMatrix<double>& P, int Ng, std::vector<double>& px, std::vector<double>& py)
 {
 	double HX = 0, HXY = 0, HXY2 = 0;
 
@@ -776,17 +776,17 @@ double GLCMFeature::f_info_meas_corr2 (const SimpleMatrix<double>& P, int Ng, st
 		for (int j = 0; j < Ng; ++j) {
 			px[i] += P.xy(i,j)/sum_p;
 			py[j] += P.xy(i,j)/sum_p;
-		}	
+		}
 	}
-	
+
 	for (int i = 0; i < Ng; ++i) {
 		for (int j = 0; j < Ng; ++j) {
 			HXY += P.xy(i,j)/sum_p * fast_log10(P.xy(i,j)/sum_p + EPSILON) / LOG10_2;
-			
+
 			HXY2 += px[i] * py[j] * fast_log10(px[i] * py[j] + EPSILON) / LOG10_2;
-		}	
+		}
 	}
-	
+
 	return sqrt(fabs(1 - exp(-2 * (-HXY2 + HXY))));
 }
 
@@ -794,8 +794,8 @@ double GLCMFeature::f_energy (const SimpleMatrix<double>& P_matrix, int n_levels
 {
 	double energy = 0.0;
 
-	for (int x = 0; x < n_levels; x++) 
-		for (int y = 0; y < n_levels; y++) 
+	for (int x = 0; x < n_levels; x++)
+		for (int y = 0; y < n_levels; y++)
 		{
 			auto p = P_matrix.xy(x,y);
 			energy += p*p;
@@ -820,7 +820,7 @@ double GLCMFeature::f_GLCM_ACOR (const SimpleMatrix<double>& P_matrix, int tone_
 	// autocorrelation = \sum^{N_g}_{i=1} sum^{N_g}_{j=1} p(i,j) i j
 
 	double f = 0;
-	
+
 	for (int x = 0; x < n_levels; x++)
 		for (int y = 0; y < n_levels; y++)
 			f += P_matrix.xy(x, y) / sum_p * double(x+1) * double(y+1);
@@ -875,7 +875,7 @@ double GLCMFeature::f_GLCM_CLUTEND ()
 		for (int x = 0; x < n_levels; x++)
 			for (int y = 0; y < n_levels; y++)
 			{
-				double m = double(x+1) + double(y+1) - by_row_mean * 2.0; 
+				double m = double(x+1) + double(y+1) - by_row_mean * 2.0;
 				f += m * m * P_matrix.xy (x,y) / sum_p;
 			}
 
@@ -891,7 +891,7 @@ double GLCMFeature::f_GLCM_DIS (const SimpleMatrix<double>& P_matrix, int tone_c
 	for (int x = 0; x < n_levels; x++)
 		for (int y = 0; y < n_levels; y++)
 			f += std::fabs(double(x+1) - double(y+1)) * P_matrix.xy(x,y) / sum_p;
-	
+
 	return f;
 }
 
@@ -993,21 +993,21 @@ double GLCMFeature::f_GLCM_JMAX (const SimpleMatrix<double>& P_matrix, int tone_
 	// maximum probability = \max p(i,j)
 
 	double max_p = -1;	// never-probability
-	
+
 	for (int x = 0; x < n_levels; x++)
 		for (int y = 0; y < n_levels; y++)
 		{
 			double p = P_matrix.xy (x,y) / sum_p;
 			max_p = std::max (max_p, p);
-		}	
-	
+		}
+
 	return max_p;
 }
 
 double GLCMFeature::f_GLCM_JVAR (const SimpleMatrix<double>& P_matrix, int tone_count, double joint_ave)
 {
 	// joint variance = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} (i-\mu_x) ^2 p(i,j)
-	//		where \mu_x is the value of joint average feature (IBSI: "Fcm.joint.avg"), 
+	//		where \mu_x is the value of joint average feature (IBSI: "Fcm.joint.avg"),
 	//		\mu_x = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} i p(i,j)
 
 	double f = 0;

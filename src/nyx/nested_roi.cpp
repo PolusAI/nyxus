@@ -11,7 +11,7 @@ std::string HieLR::get_output_csv_fname()
 
 namespace Nyxus
 {
-	/// @brief Tables referring ROI labels to their cache per each parent-child image pair 
+	/// @brief Tables referring ROI labels to their cache per each parent-child image pair
 	std::unordered_set <int> uniqueLabels1, uniqueLabels2;
 	std::unordered_map <int, HieLR> roiData1, roiData2;
 	std::string theParFname, theChiFname;

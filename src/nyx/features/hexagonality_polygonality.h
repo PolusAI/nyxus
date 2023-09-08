@@ -24,4 +24,3 @@ public:
 private:
 	double polyAve = 0, hexAve = 0, hexSd = 0;
 };
-

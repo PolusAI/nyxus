@@ -5,8 +5,8 @@ git clone https://github.com/madler/zlib.git
 pushd zlib
 mkdir build_man
 pushd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
-cmake --build . --config Release --target install --parallel 4  
+cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..
+cmake --build . --config Release --target install --parallel 4
 popd
 popd
 
@@ -18,45 +18,45 @@ for /l %%x in (1, 1, 5) do (
 )
 :continue_boost
 tar  -xf boost_1_79_0.zip
-pushd boost_1_79_0 
-call bootstrap.bat 
+pushd boost_1_79_0
+call bootstrap.bat
 .\b2 headers
 xcopy /E /I /y boost ..\local_install\include\boost
 popd
 
-git clone https://github.com/Blosc/c-blosc.git 
-pushd c-blosc 
+git clone https://github.com/Blosc/c-blosc.git
+pushd c-blosc
 mkdir build_man
 pushd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..   
+cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..
 cmake --build . --config Release --target install  --parallel 4
 popd
 popd
 
-git clone https://github.com/xtensor-stack/xtl.git 
-pushd xtl 
+git clone https://github.com/xtensor-stack/xtl.git
+pushd xtl
 mkdir build_man
 pushd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
-cmake --build . --config Release --target install 
+cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..
+cmake --build . --config Release --target install
 popd
 popd
 
-git clone https://github.com/xtensor-stack/xtensor.git 
-pushd xtensor 
+git clone https://github.com/xtensor-stack/xtensor.git
+pushd xtensor
 mkdir build_man
 pushd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
-cmake --build . --config Release --target install 
+cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..
+cmake --build . --config Release --target install
 popd
 popd
 
-git clone https://github.com/xtensor-stack/xsimd.git 
-pushd xsimd 
+git clone https://github.com/xtensor-stack/xsimd.git
+pushd xsimd
 mkdir build_man
 pushd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
-cmake --build . --config Release --target install  
+cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..
+cmake --build . --config Release --target install
 popd
 popd
 
@@ -64,7 +64,7 @@ git clone  https://github.com/nlohmann/json.git
 pushd json
 mkdir build_man
 pushd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ -DJSON_BuildTests=OFF ..  
+cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ -DJSON_BuildTests=OFF ..
 cmake --build . --config Release --target install  --parallel 4
 popd
 popd
@@ -74,7 +74,7 @@ pushd pybind11
 mkdir build_man
 pushd build_man
 cmake -DCMAKE_INSTALL_PREFIX=../../local_install/  -DPYBIND11_TEST=OFF ..
-cmake --build . --config Release --target install  
+cmake --build . --config Release --target install
 popd
 popd
 

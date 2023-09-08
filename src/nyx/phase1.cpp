@@ -37,7 +37,7 @@ namespace Nyxus
 		for (unsigned int row = 0; row < nth; row++)
 			for (unsigned int col = 0; col < ntv; col++)
 			{
-				// Fetch the tile 
+				// Fetch the tile
 				bool ok = theImLoader.load_tile(row, col);
 				if (!ok)
 				{
@@ -45,7 +45,7 @@ namespace Nyxus
 					ss << "Error fetching tile row=" << row << " col=" << col;
 					#ifdef WITH_PYTHON_H
 						throw ss.str();
-					#endif	
+					#endif
 					std::cerr << ss.str() << "\n";
 					return false;
 				}
@@ -70,7 +70,7 @@ namespace Nyxus
 
 					int y = row * th + i / tw,
 						x = col * tw + i % tw;
-					
+
 					// Skip tile buffer pixels beyond the image's bounds
 					if (x >= fullwidth || y >= fullheight)
 						continue;
@@ -78,7 +78,7 @@ namespace Nyxus
 					// Collapse all the labels to one if single-ROI mde is requested
 					if (theEnvironment.singleROI)
 						label = 1;
-					
+
 					// Update pixel's ROI metrics
 					feed_pixel_2_metrics (x, y, dataI[i], label, tileIdx); // Updates 'uniqueLabels' and 'roiData'
 				}
@@ -105,7 +105,7 @@ namespace Nyxus
 
 		unsigned int* dataL = static_cast<unsigned int*>(label_images.request().ptr);
 		unsigned int* dataI = static_cast<unsigned int*>(intens_buffer.ptr);
-		
+
 		auto width = intens_buffer.shape[1];
    		auto height = intens_buffer.shape[2];
 
@@ -121,10 +121,10 @@ namespace Nyxus
 				// Collapse all the labels to one if single-ROI mde is requested
 				if (theEnvironment.singleROI)
 					label = 1;
-				
+
 				// Update pixel's ROI metrics
 				feed_pixel_2_metrics (row, col, dataI[start_idx + row * height + col], label, 200); // Updates 'uniqueLabels' and 'roiData'
-				
+
 
 				if (PyErr_CheckSignals() != 0)
 					throw pybind11::error_already_set();

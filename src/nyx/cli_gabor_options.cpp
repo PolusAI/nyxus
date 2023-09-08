@@ -164,4 +164,3 @@ std::string GaborOptions::get_last_er_msg()
 {
 	return ermsg;
 }
-

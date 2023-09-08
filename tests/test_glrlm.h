@@ -10,7 +10,7 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
-#include <unordered_map> 
+#include <unordered_map>
 
 // dig. phantom values for intensity based features
 static std::unordered_map<std::string, float> glrlm_values {
@@ -25,8 +25,8 @@ static std::unordered_map<std::string, float> glrlm_values {
     {"GLRLM_GLN", 2.80937},
     {"GLRLM_GLNN", 0.417335},
     {"GLRLM_RLN", 5.47778},
-    {"GLRLM_RLNN", 0.829799}, 
-    {"GLRLM_RP", 0.348317}, 
+    {"GLRLM_RLNN", 0.829799},
+    {"GLRLM_RP", 0.348317},
     {"GLRLM_GLV", 0.630247},
     {"GLRLM_RV", 0.114035},
     {"GLRLM_RE", 1.58115}
@@ -35,11 +35,11 @@ static std::unordered_map<std::string, float> glrlm_values {
 void test_glrlm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
 
     double total = 0;
-    
+
     LR roidata;
     // Calculate features
     GLRLMFeature f;
-    Environment::ibsi_compliance = false; 
+    Environment::ibsi_compliance = false;
     // image 1
 
     load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
@@ -55,7 +55,7 @@ void test_glrlm_feature(const AvailableFeatures& feature, const std::string& fea
     total += roidata.fvals[feature][1];
     total += roidata.fvals[feature][2];
     total += roidata.fvals[feature][3];
-    
+
     // image 2
     // Calculate features
     LR roidata1;
@@ -76,8 +76,8 @@ void test_glrlm_feature(const AvailableFeatures& feature, const std::string& fea
     total += roidata1.fvals[feature][1];
     total += roidata1.fvals[feature][2];
     total += roidata1.fvals[feature][3];
-    
-    
+
+
     // image 3
     // Calculate features
 
@@ -99,10 +99,10 @@ void test_glrlm_feature(const AvailableFeatures& feature, const std::string& fea
     total += roidata2.fvals[feature][1];
     total += roidata2.fvals[feature][2];
     total += roidata2.fvals[feature][3];
-    
+
     // image 4
     // Calculate features
-    
+
     LR roidata3;
     // Calculate features
     GLRLMFeature f3;
@@ -146,7 +146,7 @@ void test_glrlm_lglre()
 void test_glrlm_hglre()
 {
     test_glrlm_feature(GLRLM_HGLRE, "GLRLM_HGLRE");
-}   
+}
 
 void test_glrlm_srlgle()
 {
@@ -169,7 +169,7 @@ void test_glrlm_lrhgle()
 }
 
 void test_glrlm_gln()
-{   
+{
     test_glrlm_feature(GLRLM_GLN, "GLRLM_GLN");
 }
 

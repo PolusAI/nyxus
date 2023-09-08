@@ -1130,7 +1130,7 @@
         "values": [
           "singlecsv",
           "separatecsv",
-          "arrow", 
+          "arrow",
           "parquet"
         ]
       },

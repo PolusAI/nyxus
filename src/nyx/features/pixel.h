@@ -8,7 +8,7 @@ using StatsInt = long;
 using StatsReal = double;
 
 /// @brief Geneal purpose class encapsulating a 2D Cartesian vector
-/// @tparam T 
+/// @tparam T
 template <typename T>
 struct Point2
 {
@@ -85,10 +85,10 @@ struct Pixel2 : public Point2i
 		Pixel2 p2(StatsInt(this->x * k), StatsInt(this->y * k), this->inten);
 		return p2;
 	}
-	operator Point2f () const 
-	{ 
-		Point2f p((float)this->x, (float)this->y); 
-		return p; 
+	operator Point2f () const
+	{
+		Point2f p((float)this->x, (float)this->y);
+		return p;
 	}
 
 	/// @brief Returns squared distance between 'x' and 'y'
@@ -123,7 +123,7 @@ struct Pixel2 : public Point2i
 	/// @brief Returns the maximum squared distance squared distance from <this> pixel to the <cloud>
 	double max_sqdist (const std::vector<Pixel2>& cloud) const;
 
-	/// @brief Returns the angle in radians between this pixel and 'other' relative to the origin 
+	/// @brief Returns the angle in radians between this pixel and 'other' relative to the origin
 	double angle(const Pixel2& other) const;
 
 };

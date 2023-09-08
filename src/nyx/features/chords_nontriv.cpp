@@ -8,7 +8,7 @@
 
 ChordsFeature::ChordsFeature() : FeatureMethod("ChordsFeature")
 {
-	provide_features({ 
+	provide_features({
 		MAXCHORDS_MAX,
 		MAXCHORDS_MAX_ANG,
 		MAXCHORDS_MIN,
@@ -51,7 +51,7 @@ void ChordsFeature::osized_calculate(LR& r, ImageLoader& imloader)
 		// Rotate the cloud and save as image matrix
 		Rotation::rotate_cloud_NT (
 			// input
-			r.raw_pixels_NT, cenx, ceny, ang, 
+			r.raw_pixels_NT, cenx, ceny, ang,
 			// output
 			R);
 		WriteImageMatrix_nontriv im ("im", r.label);
