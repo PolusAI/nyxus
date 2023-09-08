@@ -666,7 +666,7 @@ If you want to build your own Nyxus Docker container we provide a convenient she
 
 
 ## Dependencies
-Nyxus is tested with Python 3.6+. Nyxus relies on the the following packages:
+Nyxus is tested with Python 3.8+. Nyxus relies on the the following packages:
 
 [pybind11](https://github.com/pybind/pybind11) >= 2.8.1 <br>
 [libTIFF](http://www.libtiff.org) >= 3.6.1 <br>
