@@ -1,21 +1,21 @@
 //
-//	Adaptation of Wind-Charm's adaptation of Ilya Goldberg's adaptation 
+//	Adaptation of Wind-Charm's adaptation of Ilya Goldberg's adaptation
 // of Michael Boland's mb_Znl.c Zernike polynomial based feature extraction (09 Dec 1998)
-//                                                                          
-//  Revisions:                                                              
-//  9-1-04 Tom Macura <tmacura@nih.gov> modified to make the code ANSI C    
-//         and work with included complex arithmetic library from           
-//         Numerical Recepies in C instead of using the system's C++ STL    
-//         Libraries.                                                       
-//                                                                          
-//  1-29-06 Lior Shamir <shamirl (-at-) mail.nih.gov> modified "factorial"  
-//  to a loop, replaced input structure with ImageMatrix class.             
-//  2011-04-25 Ilya Goldberg. Optimization due to this function accounting  
-//    for 35% of the total wndchrm run-time.  Now ~4x faster.               
-//  2012-12-13 Ilya Goldberg. Added 10x faster mb_zernike2D_2               
-//    the feature values this algorithm produces are not the same as before 
-//    however, the weights assigned to these features in classification     
-//    are as good or better than mb_zernike2D                               
+//
+//  Revisions:
+//  9-1-04 Tom Macura <tmacura@nih.gov> modified to make the code ANSI C
+//         and work with included complex arithmetic library from
+//         Numerical Recepies in C instead of using the system's C++ STL
+//         Libraries.
+//
+//  1-29-06 Lior Shamir <shamirl (-at-) mail.nih.gov> modified "factorial"
+//  to a loop, replaced input structure with ImageMatrix class.
+//  2011-04-25 Ilya Goldberg. Optimization due to this function accounting
+//    for 35% of the total wndchrm run-time.  Now ~4x faster.
+//  2012-12-13 Ilya Goldberg. Added 10x faster mb_zernike2D_2
+//    the feature values this algorithm produces are not the same as before
+//    however, the weights assigned to these features in classification
+//    are as good or better than mb_zernike2D
 //
 
 #define _USE_MATH_DEFINES 	// For M_PI, etc.
@@ -24,9 +24,9 @@
 #include <cfloat> // Has definition of DBL_EPSILON
 #include <assert.h>
 #include <stdio.h>
-#include "specfunc.h" 
+#include "specfunc.h"
 
-#include "image_matrix.h" 
+#include "image_matrix.h"
 
 #include <unordered_map>
 #include "../roi_cache.h"
@@ -180,7 +180,7 @@ void ZernikeFeature::mb_zernike2D_nontriv (WriteImageMatrix_nontriv& I, double o
 				SINT[m] = a * SINT[m - 1] + b * COST[m - 1];
 			}
 
-			// compute contribution to Zernike moments for all 
+			// compute contribution to Zernike moments for all
 			// orders and repetitions by the pixel at (i,j)
 			// In the paper, the intensity was the raw image intensity
 			f = I.yx(j, i) / sum;
@@ -237,6 +237,3 @@ void ZernikeFeature::mb_zernike2D_nontriv (WriteImageMatrix_nontriv& I, double o
 	}
 	*output_size = numZ;
 }
-
-
-

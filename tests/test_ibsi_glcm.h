@@ -10,7 +10,7 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
-#include <unordered_map> 
+#include <unordered_map>
 
 // Digital phantom values for intensity based features
 // (Reference: IBSI Documentation, Release 0.0.1dev Dec 13, 2021. Dataset: dig phantom. Aggr. method: 2D, averaged)
@@ -45,11 +45,11 @@ static std::unordered_map<std::string, float> IBSI_glcm_values {
 
 void test_ibsi_glcm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
     double total = 0;
-    
+
     LR roidata;
     // Calculate features
     GLCMFeature f;
-    Environment::ibsi_compliance = true; 
+    Environment::ibsi_compliance = true;
     GLCMFeature::angles = {0, 45, 90, 135};
 
     // image 1
@@ -61,7 +61,7 @@ void test_ibsi_glcm_feature(const AvailableFeatures& feature, const std::string&
 
     // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
     f.save_value(roidata.fvals);
- 
+
     total += roidata.fvals[feature][0];
     total += roidata.fvals[feature][1];
     total += roidata.fvals[feature][2];
@@ -90,7 +90,7 @@ void test_ibsi_glcm_feature(const AvailableFeatures& feature, const std::string&
     total += roidata1.fvals[feature][1];
     total += roidata1.fvals[feature][2];
     total += roidata1.fvals[feature][3];
-    
+
     // image 3
     // Calculate features
 
@@ -115,14 +115,14 @@ void test_ibsi_glcm_feature(const AvailableFeatures& feature, const std::string&
     total += roidata2.fvals[feature][1];
     total += roidata2.fvals[feature][2];
     total += roidata2.fvals[feature][3];
-    
+
     // image 4
     // Calculate features
-    
+
     LR roidata3;
     // Calculate features
     GLCMFeature f3;
-    Environment::ibsi_compliance = true; 
+    Environment::ibsi_compliance = true;
     GLCMFeature::angles = {0, 45, 90, 135};
 
     load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));

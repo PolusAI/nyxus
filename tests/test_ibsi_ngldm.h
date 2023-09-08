@@ -1,7 +1,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <unordered_map> 
+#include <unordered_map>
 #include "../src/nyx/environment.h"
 #include "../src/nyx/features/ngldm.h"
 #include "test_data.h"
@@ -48,7 +48,7 @@ void test_ibsi_ngld_matrix_ibsi ()
 
     // In this test, we only calculate and examine the NGLD-matrix without calculating features
     NGLDMfeature f;
-    
+
     // Have the feature object to create the NGLDM matrix kit (matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and NGLDM's dimensions)
     std::vector<PixIntens> greyLevelsLUT;
     SimpleMatrix<unsigned int> NGLDM;
@@ -113,7 +113,7 @@ void test_ibsi_ngld_matrix_nonibsi()
     ASSERT_TRUE(n_mismatches == 0);
 }
 
-void test_ibsi_ngldm_feature (const AvailableFeatures& feature, const std::string& feature_name) 
+void test_ibsi_ngldm_feature (const AvailableFeatures& feature, const std::string& feature_name)
 {
     // Activate the IBSI compliance mode
     Environment::ibsi_compliance = true;
@@ -221,6 +221,3 @@ void test_ibsi_NGLDM_matrix_correctness_NONIBSI()
 {
     test_ibsi_ngld_matrix_nonibsi();
 }
-
-
-

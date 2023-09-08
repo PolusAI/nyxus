@@ -23,7 +23,7 @@ void ChordsFeature::calculate (LR & r)
 	for (double ang = 0; ang < M_PI; ang += angStep)
 	{
 		// Chords at angle theta
-		std::vector<int> TC; 
+		std::vector<int> TC;
 
 		// Container for rotated pixel cloud
 		std::vector<Pixel2> R;
@@ -62,7 +62,7 @@ void ChordsFeature::calculate (LR & r)
 	Moments2 mom2;
 	for (auto chlen : MC)
 		mom2.add(chlen);
-	
+
 	maxchords_max = mom2.max__();
 	maxchords_min = mom2.min__();
 	maxchords_mean = mom2.mean();
@@ -72,7 +72,7 @@ void ChordsFeature::calculate (LR & r)
 	histo.initialize_uniques (MC);
 	maxchords_mode = histo.get_mode();
 	maxchords_median = histo.get_median();
-	
+
 	auto iteMin = std::min_element (MC.begin(), MC.end());
 	auto idxmin = std::distance (MC.begin(), iteMin);
 	maxchords_min_angle = MCang[idxmin];
@@ -91,9 +91,9 @@ void ChordsFeature::calculate (LR & r)
 	allchords_mean = mom2.mean();
 	allchords_stddev = mom2.std();
 
-	histo.initialize_uniques(MC); 
-	allchords_mode = histo.get_mode(); 
-	allchords_median = histo.get_median(); 
+	histo.initialize_uniques(MC);
+	allchords_mode = histo.get_mode();
+	allchords_median = histo.get_median();
 
 	iteMin = std::min_element(AC.begin(), AC.end());
 	idxmin = std::distance(AC.begin(), iteMin);
@@ -119,4 +119,3 @@ void ChordsFeature::process_1_batch (size_t start, size_t end, std::vector<int>*
 		f.save_value(r.fvals);
 	}
 }
-

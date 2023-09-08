@@ -12,9 +12,9 @@
 /// of its neighbours within distance : math:`\delta`. The sum of absolute differences for gray level : math:`i` is stored in the matrix.
 /// Let :math:`\textbf{ X }_{ gl }` be a set of segmented voxelsand :math:`x_{gl}(j_x, j_y, j_z) \in \textbf{ X }_{ gl }` be the gray level of a voxel at position
 /// 	: math:`(j_x, j_y, j_z)`, then the average gray level of the neighborhood is :
-/// 
+///
 /// 	..math::
-/// 
+///
 /// 		\bar{ A }_i &= \bar{ A }(j_x, j_y, j_z) \\
 /// 		&= \displaystyle\frac{ 1 }{W} \displaystyle\sum_{ k_x = -\delta }^ {\delta}\displaystyle\sum_{ k_y = -\delta }^ {\delta}
 /// 	\displaystyle\sum_{ k_z = -\delta }^ {\delta} {x_{ gl }(j_x + k_x, j_y + k_y, j_z + k_z)}, \\
@@ -24,8 +24,8 @@ class NGTDMFeature: public FeatureMethod
 {
 public:
 
-	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
-	// in the feature group nickname expansion, and in the feature value output 
+	// Codes of features implemented by this class. Used in feature manager's mechanisms,
+	// in the feature group nickname expansion, and in the feature value output
 	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
 	{
 		NGTDM_COARSENESS,
@@ -35,7 +35,7 @@ public:
 		NGTDM_STRENGTH
 	};
 
-	NGTDMFeature(); 
+	NGTDMFeature();
 	void calculate(LR& r);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
 	void osized_calculate(LR& r, ImageLoader& imloader);
@@ -55,7 +55,7 @@ public:
 	static void parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 	// Comaptibility with manual reduce
-	static bool required(const FeatureSet& fs) 
+	static bool required(const FeatureSet& fs)
 	{
 		return fs.anyEnabled (NGTDMFeature::featureset);
 	}
@@ -77,9 +77,9 @@ private:
 	const double BAD_ROI_FVAL = 0.0;
 	const double EPS = 2.2e-16;
 
-	double _coarseness = 0, 
-		_contrast = 0, 
-		_busyness = 0, 
-		_complexity = 0, 
+	double _coarseness = 0,
+		_contrast = 0,
+		_busyness = 0,
+		_complexity = 0,
 		_strength = 0;
 };

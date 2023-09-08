@@ -55,10 +55,10 @@ namespace Nyxus
 	std::string get_feature_output_fname(const std::string& intFpath, const std::string& segFpath);
 	extern const std::vector<std::string> mandatory_output_columns;
 	bool save_features_2_csv (const std::string & intFpath, const std::string & segFpath, const std::string & outputDir);
-	bool save_features_2_buffer (ResultsCache& results_cache);		
+	bool save_features_2_buffer (ResultsCache& results_cache);
 
 	void init_feature_buffers();
-	void clear_feature_buffers();	
+	void clear_feature_buffers();
 
 	void update_label(int x, int y, int label, PixIntens intensity);
 	void update_label_parallel(int x, int y, int label, PixIntens intensity);
@@ -91,15 +91,15 @@ namespace Nyxus
 	/// @brief Feeds a pixel to image measurement object to gauge the image RAM footprint without caching the pixel. Updates 'uniqueLabels' and 'roiData'.
 	/// @param x -- x-coordinate of the pixel in the image
 	/// @param y -- y-coordinate of the pixel in the image
-	/// @param label -- label of pixel's segment 
+	/// @param label -- label of pixel's segment
 	/// @param intensity -- pixel's intensity
 	/// @param tile_index -- index of pixel's tile in the image
 	void feed_pixel_2_metrics(int x, int y, PixIntens intensity, int label, unsigned int tile_index);
 
-	/// @brief Copies a pixel to the ROI's cache. 
+	/// @brief Copies a pixel to the ROI's cache.
 	/// @param x -- x-coordinate of the pixel in the image
 	/// @param y -- y-coordinate of the pixel in the image
-	/// @param label -- label of pixel's segment 
+	/// @param label -- label of pixel's segment
 	/// @param intensity -- pixel's intensity
 	void feed_pixel_2_cache(int x, int y, PixIntens intensity, int label);
 
@@ -123,5 +123,3 @@ namespace Nyxus
 		int verbosity_level);
 
 } // namespace Nyxus
-
-

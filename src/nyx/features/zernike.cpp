@@ -1,21 +1,21 @@
 //
-//	Adaptation of Wind-Charm's adaptation of Ilya Goldberg's adaptation 
+//	Adaptation of Wind-Charm's adaptation of Ilya Goldberg's adaptation
 // of Michael Boland's mb_Znl.c Zernike polynomial based feature extraction (09 Dec 1998)
-//                                                                          
-//  Revisions:                                                              
-//  9-1-04 Tom Macura <tmacura@nih.gov> modified to make the code ANSI C    
-//         and work with included complex arithmetic library from           
-//         Numerical Recepies in C instead of using the system's C++ STL    
-//         Libraries.                                                       
-//                                                                          
-//  1-29-06 Lior Shamir <shamirl (-at-) mail.nih.gov> modified "factorial"  
-//  to a loop, replaced input structure with ImageMatrix class.             
-//  2011-04-25 Ilya Goldberg. Optimization due to this function accounting  
-//    for 35% of the total wndchrm run-time.  Now ~4x faster.               
-//  2012-12-13 Ilya Goldberg. Added 10x faster mb_zernike2D_2               
-//    the feature values this algorithm produces are not the same as before 
-//    however, the weights assigned to these features in classification     
-//    are as good or better than mb_zernike2D                               
+//
+//  Revisions:
+//  9-1-04 Tom Macura <tmacura@nih.gov> modified to make the code ANSI C
+//         and work with included complex arithmetic library from
+//         Numerical Recepies in C instead of using the system's C++ STL
+//         Libraries.
+//
+//  1-29-06 Lior Shamir <shamirl (-at-) mail.nih.gov> modified "factorial"
+//  to a loop, replaced input structure with ImageMatrix class.
+//  2011-04-25 Ilya Goldberg. Optimization due to this function accounting
+//    for 35% of the total wndchrm run-time.  Now ~4x faster.
+//  2012-12-13 Ilya Goldberg. Added 10x faster mb_zernike2D_2
+//    the feature values this algorithm produces are not the same as before
+//    however, the weights assigned to these features in classification
+//    are as good or better than mb_zernike2D
 //
 
 #define _USE_MATH_DEFINES	 // For M_PI, etc.
@@ -24,9 +24,9 @@
 #include <cfloat> // Has definition of DBL_EPSILON
 #include <assert.h>
 #include <stdio.h>
-#include "specfunc.h" 
+#include "specfunc.h"
 
-#include "image_matrix.h" 
+#include "image_matrix.h"
 
 #include <unordered_map>
 #include "../roi_cache.h"
@@ -51,7 +51,7 @@ void ZernikeFeature::save_value (std::vector<std::vector<double>>& fvals)
 	}
 }
 
-/*  
+/*
 	Zernike moment generating function.  The moment of degree n and
 	angular dependence l for the pixels defined by coordinate vectors
 	X and Y and intensity vector P.  X, Y, and P must have the same length
@@ -77,17 +77,17 @@ void ZernikeFeature::mb_Znl (double* X, double* Y, double* P, int size, double D
 	// Other hard-coded D values should just need changing MAX_D, MAX_Z and MAX_LUT above.
 	assert(D == MAX_D);
 
-	if (! init_lut) 
+	if (! init_lut)
 	{
 		theZ = 0;
 		theLUT = 0;
-		for (n = 0; n <= MAX_D; n++) 
+		for (n = 0; n <= MAX_D; n++)
 		{
-			for (l = 0; l <= n; l++) 
+			for (l = 0; l <= n; l++)
 			{
-				if ((n - l) % 2 == 0) 
+				if ((n - l) % 2 == 0)
 				{
-					for (m = 0; m <= (n - l) / 2; m++) 
+					for (m = 0; m <= (n - l) / 2; m++)
 					{
 						LUT[theLUT] = pow((double)-1.0, (double)m) * ((long double)gsl_sf_fact(n - m) / ((long double)gsl_sf_fact(m) * (long double)gsl_sf_fact((n - 2 * m + l) / 2) *
 							(long double)gsl_sf_fact((n - 2 * m - l) / 2)));
@@ -103,11 +103,11 @@ void ZernikeFeature::mb_Znl (double* X, double* Y, double* P, int size, double D
 	}
 
 	// Get the number of Z values, and clear the sums.
-	for (n = 0; n <= D; n++) 
+	for (n = 0; n <= D; n++)
 	{
-		for (l = 0; l <= n; l++) 
+		for (l = 0; l <= n; l++)
 		{
-			if ((n - l) % 2 == 0) 
+			if ((n - l) % 2 == 0)
 			{
 				sum[numZ] = complex<double>(0.0, 0.0);
 				numZ++;
@@ -115,7 +115,7 @@ void ZernikeFeature::mb_Znl (double* X, double* Y, double* P, int size, double D
 		}
 	}
 
-	for (i = 0; i < size; i++) 
+	for (i = 0; i < size; i++)
 	{
 		x = (X[i] - m10_m00) / R;
 		y = (Y[i] - m01_m00) / R;
@@ -125,12 +125,12 @@ void ZernikeFeature::mb_Znl (double* X, double* Y, double* P, int size, double D
 		p = P[i] / psum;
 		double atan2yx = atan2(y, x);
 		theLUT = 0;
-		for (theZ = 0; theZ < numZ; theZ++) 
+		for (theZ = 0; theZ < numZ; theZ++)
 		{
 			n = n_s[theZ];
 			l = l_s[theZ];
 			Vnl = complex<double>(0.0, 0.0);
-			for (m = 0; m <= (n - l) / 2; m++) 
+			for (m = 0; m <= (n - l) / 2; m++)
 			{
 				Vnl += (polar(1.0, l * atan2yx) * LUT[theLUT] * pow(sqr_x2y2, (double)(n - 2 * m)));
 				theLUT++;
@@ -140,7 +140,7 @@ void ZernikeFeature::mb_Znl (double* X, double* Y, double* P, int size, double D
 	}
 
 	double preal, pimag;
-	for (theZ = 0; theZ < numZ; theZ++) 
+	for (theZ = 0; theZ < numZ; theZ++)
 	{
 		sum[theZ] *= ((n_s[theZ] + 1) / M_PI);
 		preal = real(sum[theZ]);
@@ -166,7 +166,7 @@ void ZernikeFeature::mb_Znl (double* X, double* Y, double* P, int size, double D
   where zernike features are useful.
 */
 
-void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double rad, double* zvalues, long* output_size) 
+void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double rad, double* zvalues, long* output_size)
 {
 	int cols = Im.width;
 	int rows = Im.height;
@@ -178,13 +178,13 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 	N = Im.width < Im.height ? Im.width : Im.height;
 	//--alternatively-- N = Im.width > Im.height ? Im.width : Im.height; //MM: This change is needed for bounding box implementations to ensure disk is covering the entire area of the Image
 
-	if (order > 0) 
+	if (order > 0)
 		L = (int)order;
-	else 
+	else
 		L = 15;
 	assert(L < MAX_L);
 
-	if (!(rad > 0.0)) 
+	if (!(rad > 0.0))
 		rad = N;
 	D = (int)(rad * 2);
 
@@ -207,9 +207,9 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 	double moment10 = 0.0, moment00 = 0.0, moment01 = 0.0;
 	double intensity;
 	for (i = 0; i < cols; i++)
-		for (j = 0; j < rows; j++) 
+		for (j = 0; j < rows; j++)
 		{
-			if (std::isnan((double)I_pix_plane.yx(j, i))) 
+			if (std::isnan((double)I_pix_plane.yx(j, i)))
 				continue; //MM
 			intensity = I_pix_plane.yx(j, i);
 			sum += intensity;
@@ -221,13 +221,13 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 	double m01_m00 = moment01 / moment00;
 
 	// Pre-initialization of statics
-	if (init) 
+	if (init)
 	{
-		for (n = 0; n < MAX_L; n++) 
+		for (n = 0; n < MAX_L; n++)
 		{
-			for (m = 0; m <= n; m++) 
+			for (m = 0; m <= n; m++)
 			{
-				if (n != m) 
+				if (n != m)
 				{
 					H3[n][m] = -(double)(4.0 * (m + 2.0) * (m + 1.0)) / (double)((n + m + 2.0) * (n - m));
 					H2[n][m] = ((double)(H3[n][m] * (n + m + 4.0) * (n - m - 2.0)) / (double)(4.0 * (m + 3.0))) + (m + 2.0);
@@ -239,23 +239,23 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 	}
 
 	// Zero-out the Zernike moment accumulators
-	for (n = 0; n <= L; n++) 
+	for (n = 0; n <= L; n++)
 	{
-		for (m = 0; m <= n; m++) 
+		for (m = 0; m <= n; m++)
 		{
 			AR[n][m] = AI[n][m] = 0.0;
 		}
 	}
 
 	area = M_PI * rad * rad;
-	for (i = 0; i < cols; i++) 
+	for (i = 0; i < cols; i++)
 	{
 		// In the paper, the center of the unit circle was the center of the image
 		//	x = (double)(2*i+1-N)/(double)D;
 		x = (i + 1 - m10_m00) / rad;
-		for (j = 0; j < rows; j++) 
+		for (j = 0; j < rows; j++)
 		{
-			if (std::isnan((double)I_pix_plane.yx(j, i))) 
+			if (std::isnan((double)I_pix_plane.yx(j, i)))
 				continue; //MM
 
 		// In the paper, the center of the unit circle was the center of the image
@@ -263,50 +263,50 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 			y = (j + 1 - m01_m00) / rad;
 			r2 = x * x + y * y;
 			r = sqrt(r2);
-			if (r < DBL_EPSILON || r > 1.0) 
+			if (r < DBL_EPSILON || r > 1.0)
 				continue;
 			/*compute all powers of r and save in a table */
 			R[0] = 1;
-			for (n = 1; n <= L; n++) 
+			for (n = 1; n <= L; n++)
 				R[n] = r * R[n - 1];
 			/* compute COST SINT and save in tables */
 			a = COST[0] = x / r;
 			b = SINT[0] = y / r;
-			for (m = 1; m <= L; m++) 
+			for (m = 1; m <= L; m++)
 			{
 				COST[m] = a * COST[m - 1] - b * SINT[m - 1];
 				SINT[m] = a * SINT[m - 1] + b * COST[m - 1];
 			}
 
-			// compute contribution to Zernike moments for all 
+			// compute contribution to Zernike moments for all
 			// orders and repetitions by the pixel at (i,j)
 			// In the paper, the intensity was the raw image intensity
 			f = I_pix_plane.yx(j, i) / sum;
 
 			Rnmp2 = Rnm2 = 0;
-			for (n = 0; n <= L; n++) 
+			for (n = 0; n <= L; n++)
 			{
 				// In the paper, this was divided by the area in pixels
 				// seemed that pi was supposed to be the area of a unit circle.
 				const_t = (n + 1) * f / M_PI;
 				Rn = R[n];
-				if (n >= 2) 
+				if (n >= 2)
 					Rnm2 = R[n - 2];
-				for (m = n; m >= 0; m -= 2) 
+				for (m = n; m >= 0; m -= 2)
 				{
-					if (m == n) 
+					if (m == n)
 					{
 						Rnm = Rn;
 						Rnmp4 = Rn;
 					}
-					else 
-						if (m == n - 2) 
+					else
+						if (m == n - 2)
 						{
 							Rnnm2 = n * Rn - (n - 1) * Rnm2;
 							Rnm = Rnnm2;
 							Rnmp2 = Rnnm2;
 						}
-						else 
+						else
 						{
 							Rnm = H1[n][m] * Rnmp4 + (H2[n][m] + (H3[n][m] / r2)) * Rnmp2;
 							Rnmp4 = Rnmp2;
@@ -320,11 +320,11 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 	}
 
 	int numZ = 0;
-	for (n = 0; n <= L; n++) 
+	for (n = 0; n <= L; n++)
 	{
-		for (m = 0; m <= n; m++) 
+		for (m = 0; m <= n; m++)
 		{
-			if ((n - m) % 2 == 0) 
+			if ((n - m) % 2 == 0)
 			{
 				AR[n][m] *= AR[n][m];
 				AI[n][m] *= AI[n][m];
@@ -359,4 +359,3 @@ void ZernikeFeature::parallel_process_1_batch (size_t firstitem, size_t lastitem
 		f.save_value(r.fvals);
 	}
 }
-

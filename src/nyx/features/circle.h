@@ -20,7 +20,7 @@ public:
 	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 	// Compatibility with manual reduce
-	static bool required(const FeatureSet& fs) 
+	static bool required(const FeatureSet& fs)
 	{
 		return fs.anyEnabled ({ DIAMETER_MIN_ENCLOSING_CIRCLE, DIAMETER_INSCRIBING_CIRCLE, DIAMETER_CIRCUMSCRIBING_CIRCLE });
 	}

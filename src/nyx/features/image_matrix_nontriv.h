@@ -20,30 +20,30 @@ public:
 	Pixel2 get_at (size_t idx) const;
 	Pixel2 operator[] (size_t idx) const { return get_at(idx); }
 
-	struct iterator 
+	struct iterator
 	{
 		public:
 			iterator (const OutOfRamPixelCloud& obj, std::size_t idx)
-				: m_object(obj), 
+				: m_object(obj),
 				m_index(idx)
 			{}
 
-			Pixel2 operator * () const 
+			Pixel2 operator * () const
 			{
 				return m_object.get_at(m_index);
 			}
 
-			bool operator == (iterator const& it) const 
+			bool operator == (iterator const& it) const
 			{
 				return (&m_object == &it.m_object) && (m_index == it.m_index);
 			}
 
-			bool operator != (iterator const& it) const 
+			bool operator != (iterator const& it) const
 			{
 				return (&m_object != &it.m_object) || (m_index != it.m_index);
 			}
 
-			iterator& operator ++ () 
+			iterator& operator ++ ()
 			{
 				++m_index;
 				return *this;
@@ -82,24 +82,24 @@ public:
 	bool safe(size_t x, size_t y) const;
 
 	/// @brief Helps constructing a Pixel2 instance at index 'idx' in intensity matrix scenarios
-	/// 
+	///
 	/// Example:
 	/// 	auto [y0, x0] = matrix.idx_2_rc(idx);
 	/// 	double inten = matrix.get_at(imlo, idx);
 	/// 	Pixel2 p0(x0, y0, inten);
-	/// 
+	///
 	/// @param idx 0-based pixel index
-	/// @return 0-based row and column 
+	/// @return 0-based row and column
 	std::tuple<size_t, size_t> idx_2_rc (size_t idx) const;
 
 	double get_at (size_t row, size_t col) const;
 	double get_at (size_t idx) const;
 
 	// Normalization
-	void apply_normalizing_range (double _minval, double _maxval, double _normalization_ceil) 
-	{ 
-		minval = _minval; 
-		maxval = _maxval; 
+	void apply_normalizing_range (double _minval, double _maxval, double _normalization_ceil)
+	{
+		minval = _minval;
+		maxval = _maxval;
 		normalization_ceil = _normalization_ceil;
 		scale = normalization_ceil * (maxval - minval);
 	}
@@ -126,14 +126,14 @@ public:
 	size_t get_size() const;
 
 	/// @brief Helps constructing a Pixel2 instance at index 'idx' in intensity matrix scenarios
-	/// 
+	///
 	/// Example:
 	/// 	auto [y0, x0] = matrix.idx_2_rc(idx);
 	/// 	double inten = matrix.get_at(imlo, idx);
 	/// 	Pixel2 p0(x0, y0, inten);
-	/// 
+	///
 	/// @param idx 0-based pixel index
-	/// @return 0-based row and column 
+	/// @return 0-based row and column
 	std::tuple<size_t, size_t> idx_2_rc (size_t idx) const;
 
 	bool safe(size_t x, size_t y) const;
@@ -148,7 +148,7 @@ class WriteImageMatrix_nontriv
 public:
 	WriteImageMatrix_nontriv (const std::string&  _name, unsigned int _roi_label);
 	~WriteImageMatrix_nontriv();
-	
+
 	// Initialization
 	void allocate (int w, int h, double ini_value);
 	void allocate_from_cloud (const OutOfRamPixelCloud& cloud, const AABB& aabb, bool mask_image);
@@ -192,4 +192,3 @@ public:
 	// Support of erosion features
 	bool tile_contains_signal (int tile_row, int tile_col, int tile_side);
 };
-

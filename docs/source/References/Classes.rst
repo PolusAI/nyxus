@@ -1,7 +1,7 @@
 Nyxus Classes
 ================
 .. autosummary::
-    :toctree: stubs 
+    :toctree: stubs
 
     nyxus.Nyxus
     nyxus.Nested

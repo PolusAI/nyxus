@@ -59,7 +59,7 @@ Let:
 
 By default, the value of a feature is calculated on the GLCM for each angle separately, after which the mean of these
 values is returned. If distance weighting is enabled, GLCM matrices are weighted by weighting factor W and
-then summed and normalised. 
+then summed and normalised.
 
 The following features are then calculated based on the collocation matrix.
 
@@ -92,13 +92,13 @@ The following features are then calculated based on the collocation matrix.
 
 .. math::
 	\underset{\mathrm{Nyxus \, code: \, GLCM\_DIFVAR}} {\textup{difference variance}} = \sum^{N_g-1}_{k=0}{(k-\mu_d)^2p_{x-y}(k)}
-	
-where the difference average :math:`\mu_d` is 
+
+where the difference average :math:`\mu_d` is
 
 .. math::
 	\mu_d = \sum^{N_g-1}_{k=0} kp_{x-y}(k) .
 
-.. math::  
+.. math::
 	\underset{\mathrm{Nyxus \, code: \, GLCM\_DIS}} {\textup{dissimilarity}} = \sum_{i=1}^{N_g} \sum_{j=1}^{N_g} |i-j|\, p_{ij}
 
 .. math::

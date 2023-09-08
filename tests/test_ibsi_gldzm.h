@@ -1,7 +1,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <unordered_map> 
+#include <unordered_map>
 #include "../src/nyx/environment.h"
 #include "../src/nyx/features/gldzm.h"
 #include "test_data.h"
@@ -248,4 +248,3 @@ void test_ibsi_GLDZM_ZDE()
 {
     test_ibsi_gldzm_feature(GLDZM_ZDE, "GLDZM_ZDE");
 }
-

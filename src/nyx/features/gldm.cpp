@@ -12,7 +12,7 @@ GLDMFeature::GLDMFeature() : FeatureMethod("GLDMFeature")
 }
 
 void GLDMFeature::calculate(LR& r)
-{	
+{
 	clear_buffers();
 
 	if (r.aux_min == r.aux_max)
@@ -22,7 +22,7 @@ void GLDMFeature::calculate(LR& r)
 	using ACluster = std::pair<PixIntens, int>;	// Pairs of (intensity,number_of_neighbors)
 	std::vector<ACluster> Z;
 
-	//==== While scanning clusters, learn unique intensities 
+	//==== While scanning clusters, learn unique intensities
 	std::unordered_set<PixIntens> U;
 
 	const pixData& D = r.aux_image_matrix.ReadablePixels();
@@ -87,7 +87,7 @@ void GLDMFeature::calculate(LR& r)
 			}
 
 			if (D.safe(row + 1, col - 1)) {
-				
+
 				piQ = Nyxus::to_grayscale (D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// South-West
 
 				if (piQ == pi)
@@ -178,7 +178,7 @@ void GLDMFeature::osized_calculate (LR& r, ImageLoader&)
 	using ACluster = std::pair<PixIntens, int>;	// Pairs of (intensity,number_of_neighbors)
 	std::vector<ACluster> Z;
 
-	//==== While scanning clusters, learn unique intensities 
+	//==== While scanning clusters, learn unique intensities
 	std::unordered_set<PixIntens> U;
 
 	WriteImageMatrix_nontriv D("GLDMFeature-osized_calculate-D", r.label);
@@ -353,7 +353,7 @@ void GLDMFeature::save_value(std::vector<std::vector<double>>& fvals)
 // 1. Small Dependence Emphasis(SDE)
 double GLDMFeature::calc_SDE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -365,7 +365,7 @@ double GLDMFeature::calc_SDE()
 			sj[j-1] += P.matlab(i, j);
 		}
 	}
-	
+
 
 	double f = 0.0;
 	for (int j = 1; j <= Nd; j++)
@@ -380,7 +380,7 @@ double GLDMFeature::calc_SDE()
 // 2. Large Dependence Emphasis (LDE)
 double GLDMFeature::calc_LDE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -392,7 +392,7 @@ double GLDMFeature::calc_LDE()
 			sj[j-1] += P.matlab(i, j);
 		}
 	}
-	
+
 	double f = 0.0;
 	for (int j = 1; j <= Nd; j++)
 	{
@@ -428,7 +428,7 @@ double GLDMFeature::calc_GLN()
 // 4. Dependence Non-Uniformity (DN)
 double GLDMFeature::calc_DN()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -453,7 +453,7 @@ double GLDMFeature::calc_DN()
 // 5. Dependence Non-Uniformity Normalized (DNN)
 double GLDMFeature::calc_DNN()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -478,7 +478,7 @@ double GLDMFeature::calc_DNN()
 // 6. Gray Level Variance (GLV)
 double GLDMFeature::calc_GLV()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -506,7 +506,7 @@ double GLDMFeature::calc_GLV()
 // 7. Dependence Variance (DV)
 double GLDMFeature::calc_DV()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -534,7 +534,7 @@ double GLDMFeature::calc_DV()
 // 8. Dependence Entropy (DE)
 double GLDMFeature::calc_DE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -554,7 +554,7 @@ double GLDMFeature::calc_DE()
 // 9. Low Gray Level Emphasis (LGLE)
 double GLDMFeature::calc_LGLE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -580,7 +580,7 @@ double GLDMFeature::calc_LGLE()
 // 10. High Gray Level Emphasis (HGLE)
 double GLDMFeature::calc_HGLE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -592,7 +592,7 @@ double GLDMFeature::calc_HGLE()
 			si[i-1] += P.matlab(i, j);
 		}
 	}
-	
+
 
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
@@ -607,7 +607,7 @@ double GLDMFeature::calc_HGLE()
 // 11. Small Dependence Low Gray Level Emphasis (SDLGLE)
 double GLDMFeature::calc_SDLGLE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -626,7 +626,7 @@ double GLDMFeature::calc_SDLGLE()
 // 12. Small Dependence High Gray Level Emphasis (SDHGLE)
 double GLDMFeature::calc_SDHGLE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -645,7 +645,7 @@ double GLDMFeature::calc_SDHGLE()
 // 13. Large Dependence Low Gray Level Emphasis (LDLGLE)
 double GLDMFeature::calc_LDLGLE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -664,7 +664,7 @@ double GLDMFeature::calc_LDLGLE()
 // 14. Large Dependence High Gray Level Emphasis (LDHGLE)
 double GLDMFeature::calc_LDHGLE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -695,4 +695,3 @@ void GLDMFeature::parallel_process_1_batch (size_t start, size_t end, std::vecto
 		gldm.save_value(r.fvals);
 	}
 }
-

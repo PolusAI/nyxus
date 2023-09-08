@@ -17,7 +17,7 @@ class Moments2func {
 	Moments2& moments;
 public:
 	Moments2func(Moments2& in_moments) : moments(in_moments) { in_moments.reset(); }
-	double operator()(const double& x) const 
+	double operator()(const double& x) const
 	{
 		return (moments.add(x));
 	}
@@ -29,8 +29,8 @@ template <class T>
 class SimpleMatrix : public std::vector<T>
 {
 public:
-	SimpleMatrix(int _w, int _h) : W(_w), H(_h) 
-	{ 
+	SimpleMatrix(int _w, int _h) : W(_w), H(_h)
+	{
 		this->resize (W*H, 0);
 	}
 
@@ -138,7 +138,7 @@ public:
 		std::vector<PixIntens>::resize (width * height, val);
 	}
 
-	/// @brief Only initializes the image matrix buffer but does not allocate it. 
+	/// @brief Only initializes the image matrix buffer but does not allocate it.
 	void initialize_without_allocation (int width, int height, PixIntens val)
 	{
 		W = width;
@@ -146,7 +146,7 @@ public:
 		for (size_t n=W*H, i=0; i<n; i++)
 			at(i) = val;
 	}
-	
+
 	// = W * y + x
 	inline PixIntens & yx /*operator()*/ (int y, int x)
 	{
@@ -185,7 +185,7 @@ public:
 		PixIntens val = this->at (W * y + x);
 		return val;
 	}
-	
+
 	bool safe (int y, int x) const
 	{
 		if (x < 0 || x >= W || y < 0 || y >= H)
@@ -210,7 +210,7 @@ class ImageMatrix
 public:
 	ImageMatrix(): _pix_plane(0,0) {}
 
-	ImageMatrix(const ImageMatrix & I, const AABB& aabb): 
+	ImageMatrix(const ImageMatrix & I, const AABB& aabb):
 		original_aabb(aabb),
 		_pix_plane(0,0)
 	{
@@ -242,7 +242,7 @@ public:
 	}
 
 	ImageMatrix(const std::vector <Pixel2>& labels_raw_pixels):
-		original_aabb(labels_raw_pixels), 
+		original_aabb(labels_raw_pixels),
 		_pix_plane(original_aabb.get_width(), original_aabb.get_height())
 	{
 		// Dimensions
@@ -325,7 +325,7 @@ public:
 	PixIntens* writable_data_ptr() { return _pix_plane.data(); }
 
 	// by default, based on computed min and max
-	void histogram(double* bins, unsigned short nbins, bool imhist = false, const Moments2& in_stats = Moments2()) const; 
+	void histogram(double* bins, unsigned short nbins, bool imhist = false, const Moments2& in_stats = Moments2()) const;
 
 	// Based on X.Shu, Q.Zhang, J.Shi and Y.Qi - "A Comparative Study on Weighted Central Moment and Its Application in 2D Shape Retrieval" (2016) https://pdfs.semanticscholar.org/8927/2bef7ba9496c59081ae102925ebc0134bceb.pdf
 	void apply_distance_to_contour_weights(const std::vector<Pixel2>& raw_pixels, const std::vector<Pixel2>& contour_pixels);
@@ -341,7 +341,7 @@ public:
 
 	StatsInt height = 0, width = 0;
 	AABB original_aabb;
-	
+
 	//std::vector<PixIntens> _pix_plane;	// [ height * width ]
 	pixData _pix_plane;
 
@@ -384,11 +384,10 @@ public:
 	}
 };
 
-/// @brief Applies to distance-to-contour weighting to intensities of pixel cloud 
+/// @brief Applies to distance-to-contour weighting to intensities of pixel cloud
 void apply_dist2contour_weighting(
 	// input & output
 	std::vector<Pixel2>& cloud,
 	// input
 	const std::vector<Pixel2>& contour,
 	const double epsilon);
-

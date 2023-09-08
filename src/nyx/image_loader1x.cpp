@@ -2,7 +2,7 @@
   #include <filesystem>
   namespace fs = std::filesystem;
 #elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
+  #include <experimental/filesystem>
   namespace fs = std::experimental::filesystem;
 #else
   error "Missing the <filesystem> header."
@@ -34,16 +34,16 @@ bool ImageLoader1x::open(const std::string& fpath)
 			#ifdef DICOM_SUPPORT
 			FL = std::make_unique<NyxusGrayscaleDicomLoader<uint32_t>>(n_threads, fpath);
 			#else
-			std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl; 
+			std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl;
 			#endif
 		}
-		else 
+		else
 		{
 			if (Nyxus::check_tile_status(fpath))
-				FL = std::make_unique<NyxusGrayscaleTiffTileLoader<uint32_t>> (n_threads, fpath); 
+				FL = std::make_unique<NyxusGrayscaleTiffTileLoader<uint32_t>> (n_threads, fpath);
 			else
 			{
-				FL = std::make_unique<NyxusGrayscaleTiffStripLoader<uint32_t>> (n_threads, fpath); 
+				FL = std::make_unique<NyxusGrayscaleTiffStripLoader<uint32_t>> (n_threads, fpath);
 			}
 
 		}

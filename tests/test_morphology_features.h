@@ -10,7 +10,7 @@
 #include "test_main_nyxus.h"
 
 //
-// The value of PERIMETER feature should match the pixel count of contour calculated 
+// The value of PERIMETER feature should match the pixel count of contour calculated
 // in Matlab as:
 //      BW_noholes = imfill(imread('circles.png'), "holes");
 //      nnz(bwperim(BW_noholes))    % returns 846

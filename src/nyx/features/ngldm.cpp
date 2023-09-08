@@ -24,7 +24,7 @@ void NGLDMfeature::clear_buffers()
 		f_GLCM =
 		f_GLV =
 		f_DCM =
-		f_DCP = 
+		f_DCP =
 		f_DCV =
 		f_DCENT =
 		f_DCENE = 0;
@@ -43,7 +43,7 @@ template <class PixelCloud> void NGLDMfeature::gather_unique_intensities (std::v
 	}
 
 	// Cast the set to vector to be able to access intensities by indices
-	V.insert (V.end(), U.begin(), U.end()); 
+	V.insert (V.end(), U.begin(), U.end());
 	std::sort (V.begin(), V.end());
 }
 
@@ -68,7 +68,7 @@ void NGLDMfeature::gather_unique_intensities2 (std::vector<PixIntens>& V, const 
  *
  * @param NGLDM		(output) the NGLDM
  * @param Nr		(output) Nr - max column index of non-zero element of NGLDM plus 1 for zero dependency
- * @param I			Masked ROI image matrix. (Non-ROI elements are equal to zero.) 
+ * @param I			Masked ROI image matrix. (Non-ROI elements are equal to zero.)
  * @param U			Grey levels LUT
  * @param max_inten	Maximum intensity
  */
@@ -79,7 +79,7 @@ template <class Imgmatrix> void NGLDMfeature::calc_ngld_matrix (SimpleMatrix<uns
 	struct ShiftToNeighbor
 	{
 		int dx, dy;
-	}; 
+	};
 	const static ShiftToNeighbor shifts[] =
 	{
 		{-1, 0},	// West
@@ -99,12 +99,12 @@ template <class Imgmatrix> void NGLDMfeature::calc_ngld_matrix (SimpleMatrix<uns
 	// Reset the max dependency
 	int max_dep = 0;
 
-	// Iterate pixels of the image skipping margin pixels 
+	// Iterate pixels of the image skipping margin pixels
 	// in order for a pixel to have all the 8 neighbors
 	for (int y = 1; y < I.get_height() - 1; y++)
 		for (int x = 1; x < I.get_width() - 1; x++)
 		{
-			// Raw intensity of the central pixel whose 
+			// Raw intensity of the central pixel whose
 			PixIntens cpi = I.yx (y,x);
 
 			// Do not skip off-ROI pixels
@@ -118,7 +118,7 @@ template <class Imgmatrix> void NGLDMfeature::calc_ngld_matrix (SimpleMatrix<uns
 			auto iter = std::find (U.begin(), U.end(), cpi_);
 			int row = (int)(iter - U.begin());
 
-			// Having pixel (x,y) as the center, iterate pixels of the neighborhood and update its histogram 
+			// Having pixel (x,y) as the center, iterate pixels of the neighborhood and update its histogram
 			int n_matches = 0;	// (y,x)'s dependency -- the number of matches of center pixel (y,x)'s intensity in its neighborhood
 			for (int i = 0; i < 8; i++)
 			{
@@ -149,7 +149,7 @@ void NGLDMfeature::calculate (LR& r)
 
 	//==== Prepare the NGLD-matrix kit: matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and NGLDM's dimensions
 	std::vector<PixIntens> greyLevelsLUT;
-	SimpleMatrix<unsigned int> NGLDM;	
+	SimpleMatrix<unsigned int> NGLDM;
 	int Ng,	// number of grey levels
 		Nr;	// maximum number of non-zero dependencies
 	prepare_NGLDM_matrix_kit (NGLDM, greyLevelsLUT, Ng, Nr, r);
@@ -168,7 +168,7 @@ void NGLDMfeature::prepare_NGLDM_matrix_kit (SimpleMatrix<unsigned int> & NGLDM,
 	const pixData& I = r.aux_image_matrix.ReadablePixels();
 
 	//==== Unique binned intensities gathered from the image matrix, not from raw pixels
-	gather_unique_intensities2 (grey_levels_LUT, I, r.aux_max); 
+	gather_unique_intensities2 (grey_levels_LUT, I, r.aux_max);
 	Ng = grey_levels_LUT.size();
 
 	int maxNr = 9;	// max number of columns in the NGLDM = max dependence 8 (due to 8 neighbors) + zero
@@ -182,10 +182,10 @@ void NGLDMfeature::prepare_NGLDM_matrix_kit (SimpleMatrix<unsigned int> & NGLDM,
 }
 
 void NGLDMfeature::calc_rowwise_and_columnwise_totals (
-	std::vector<double>& Sg, 
-	std::vector<double>& Sr, 
-	const SimpleMatrix<unsigned int>& NGLDM, 
-	const int Ng, 
+	std::vector<double>& Sg,
+	std::vector<double>& Sr,
+	const SimpleMatrix<unsigned int>& NGLDM,
+	const int Ng,
 	const int Nr)
 {
 	// Sum dependencies of each grey level
@@ -234,12 +234,12 @@ void NGLDMfeature::calc_features (const std::vector<double>& Sg, const std::vect
 			double k = j + 1;
 			double pij = sij / Ns;
 
-			f_LDE += sij / j / j;	
+			f_LDE += sij / j / j;
 
-			f_HDE += sij * j * j;	
+			f_HDE += sij * j * j;
 			if (iInt != 0)
-				f_LGLCE += sij / iInt / iInt; // Low Grey Level Count Emphasis 
-			f_HGLCE += sij * iInt * iInt;	// High Grey Level Count Emphasis 
+				f_LGLCE += sij / iInt / iInt; // Low Grey Level Count Emphasis
+			f_HGLCE += sij * iInt * iInt;	// High Grey Level Count Emphasis
 			if (iInt != 0 && j != 0)
 				f_LDLGLE += sij / j / j / iInt / iInt; // Low Dependence Low Grey Level Emphasis
 			f_LDHGLE += sij * iInt * iInt / k / k;	// Low Dependence High Grey Level Emphasis
@@ -268,7 +268,7 @@ void NGLDMfeature::calc_features (const std::vector<double>& Sg, const std::vect
 			si += sij;
 		}
 		f_DCNU += si * si;	// Dependence Count Non Uniformity
-		f_DCNUN += si * si;	// Dependence Count Non Uniformity Normalised 
+		f_DCNUN += si * si;	// Dependence Count Non Uniformity Normalised
 	}
 
 	for (int i = 0; i < Ng; ++i)
@@ -280,9 +280,9 @@ void NGLDMfeature::calc_features (const std::vector<double>& Sg, const std::vect
 			double k = j + 1;
 			double pij = sij / Ns;
 
-			// Grey Level Variance	
-			//	F_{\mathit{ngl.gl.var}}=  \sum_{i=1}^{N_g} \sum_{j=1}^{N_n} (i-\mu)^2 p_{ij} 
-			//		where 
+			// Grey Level Variance
+			//	F_{\mathit{ngl.gl.var}}=  \sum_{i=1}^{N_g} \sum_{j=1}^{N_n} (i-\mu)^2 p_{ij}
+			//		where
 			//	\mu = \sum_{i=1}^{N_g} \sum_{j=1}^{N_n} i\,p_{ij}
 			f_GLV += (i_1base - f_GLCM) * (i_1base - f_GLCM) * pij;
 
@@ -290,7 +290,7 @@ void NGLDMfeature::calc_features (const std::vector<double>& Sg, const std::vect
 			//	F_{\mathit{ngl.dc.var}}= \sum_{i=1}^{N_g} \sum_{j=1}^{N_n} (j-\mu)^2 p_{ij}
 			//		where
 			//	\mu = \sum_{i=1}^{N_g} \sum_{j=1}^{N_n} j\,p_{ij}
-			f_DCV += (k - f_DCM) * (k - f_DCM) * pij;	
+			f_DCV += (k - f_DCM) * (k - f_DCM) * pij;
 		}
 	}
 	f_LDE /= Ns;	// Low Dependence Emphasis	F_{\mathit{ngl.LDE}} = \frac{1}{N_s} \sum_{j=1}^{N_n} \frac{s_{.j}}{j^2}
@@ -373,7 +373,7 @@ void NGLDMfeature::osized_calculate(LR& r, ImageLoader&)
 	NGLDM.fill (0);
 	int Nr = 0;
 	calc_ngld_matrix (NGLDM, Nr, I, V, r.aux_max);
-	
+
 	//==== Calculate vectors of totals by intensity (Sg) and by distance (Sr)
 	std::vector<double> Sg, Sr;
 	calc_rowwise_and_columnwise_totals (Sg, Sr, NGLDM, Ng, Nr);

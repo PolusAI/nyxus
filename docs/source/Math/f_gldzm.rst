@@ -22,7 +22,7 @@ The continuity is meant as a 4-connected neighbourhood. For example, the followi
 
 The zone's distance is the minimum of its each pixel's distance to the ROI or image border measured as the number of pixel boundaries to the first off-ROI or off-image pixel.
 
-Considering the following ROI image 
+Considering the following ROI image
 
 .. math::
     R = \begin{bmatrix}
@@ -35,7 +35,7 @@ Considering the following ROI image
     1 & 1 & 0 & 0 & 0 & 1 & 0
 	\end{bmatrix}
 
-the distances of zons of intensity 3, ignoring pixels of other non-zero intensities (shown as :math:`*`), in the masked image (whose off-ROI pixels are shown as :math:`\times`) are 
+the distances of zons of intensity 3, ignoring pixels of other non-zero intensities (shown as :math:`*`), in the masked image (whose off-ROI pixels are shown as :math:`\times`) are
 
 .. math::
     D = \begin{bmatrix}
@@ -97,23 +97,23 @@ Let
 
 :math:`N_g` -- the number of grey levels ,
 
-:math:`N_d` -- the maximum zone distance, and 
+:math:`N_d` -- the maximum zone distance, and
 
 :math:`N_s` -- the number of zones of any non-zero intensity.
 
-:math:`p(x,d)` be an element of the normalized distance zone matrix expressing the relative probability of element :math:`(x,d)`, defined as 
+:math:`p(x,d)` be an element of the normalized distance zone matrix expressing the relative probability of element :math:`(x,d)`, defined as
 
 .. math::
-	p_{x,d} = \frac{m_{x,d}}{N_s} . 
+	p_{x,d} = \frac{m_{x,d}}{N_s} .
 
-:math:`N_v` is the number of ROI image pixels. 
+:math:`N_v` is the number of ROI image pixels.
 
-In addition, the marginal totals 
+In addition, the marginal totals
 
 .. math::
 	m_{x,\cdot} = m_x = \sum_d m_{x,d}
 
-represent the total of all zones with a given intensity :math:`x`, and  
+represent the total of all zones with a given intensity :math:`x`, and
 
 .. math::
 	m_{\cdot, d} = m_d = \sum_x m_{x,d}
@@ -123,10 +123,10 @@ represent the total of all zones with a given distance :math:`d`.
 The following features are then defined:
 
 .. math::
-	\underset{\mathrm{Nyxus \, code: \, GLDZM\_SDE}} {\textup{Small Distance Emphasis}} = \frac{1}{N_s} \sum_d \frac{m_d}{d^2} 
+	\underset{\mathrm{Nyxus \, code: \, GLDZM\_SDE}} {\textup{Small Distance Emphasis}} = \frac{1}{N_s} \sum_d \frac{m_d}{d^2}
 
 .. math::
-	\underset{\mathrm{Nyxus \, code: \, GLDZM\_LDE}} {\textup{Large Distance Emphasis}} = \frac{1}{N_s} \sum_d d^2 m_d 
+	\underset{\mathrm{Nyxus \, code: \, GLDZM\_LDE}} {\textup{Large Distance Emphasis}} = \frac{1}{N_s} \sum_d d^2 m_d
 
 .. math::
 	\underset{\mathrm{Nyxus \, code: \, GLDZM\_LGLE}} {\textup{Low Grey Level Emphasis}} = \frac{1}{N_s} \sum_x  \frac{m_x}{x^2}
@@ -168,16 +168,16 @@ The following features are then defined:
 	\underset{\mathrm{Nyxus \, code: \, GLDZM\_GLV}} {\textup{Grey Level Variance}} = \sum_x \sum_d \left(x - \mu_x \right)^2 p_{x,d}
 
 .. math::
-	\underset{\mathrm{Nyxus \, code: \, GLDZM\_ZDM}} {\textup{Zone Distance Mean}} = \mu_d = \sum_x \sum_d d p_{x,d} 
+	\underset{\mathrm{Nyxus \, code: \, GLDZM\_ZDM}} {\textup{Zone Distance Mean}} = \mu_d = \sum_x \sum_d d p_{x,d}
 
 .. math::
-	\underset{\mathrm{Nyxus \, code: \, GLDZM\_ZDV}} {\textup{Zone Distance Variance}} = \sum_x \sum_d \left(d - \mu_d \right)^2 p_{x,d} 
+	\underset{\mathrm{Nyxus \, code: \, GLDZM\_ZDV}} {\textup{Zone Distance Variance}} = \sum_x \sum_d \left(d - \mu_d \right)^2 p_{x,d}
 
 .. math::
 	\underset{\mathrm{Nyxus \, code: \, GLDZM\_ZDE}} {\textup{Zone Distance Entropy}} = - \sum_x \sum_d p_{x,d} \textup{log}_2 ( p_{x,d} )
 
 .. math::
-	\underset{\mathrm{Nyxus \, code: \, GLDZM\_GLE}} {\textup{Grey Level Entropy}} = - \sum_x \sum_d p_{x,d} \textup{log}_2 ( p_{x,d} ) 
+	\underset{\mathrm{Nyxus \, code: \, GLDZM\_GLE}} {\textup{Grey Level Entropy}} = - \sum_x \sum_d p_{x,d} \textup{log}_2 ( p_{x,d} )
 
 
 References

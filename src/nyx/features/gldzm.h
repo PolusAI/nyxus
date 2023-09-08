@@ -3,15 +3,15 @@
 #include "../feature_method.h"
 
 /// @brief Grey Level Distance Zone (GLDZM) features
-/// 
+///
 /// Grey Level Dsitance Zone (GLDZM) quantifies distances zones of same intensity to the ROI border
 
 class GLDZMFeature : public FeatureMethod
 {
-public:	
-	
-	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
-	// in the feature group nickname expansion, and in the feature value output 
+public:
+
+	// Codes of features implemented by this class. Used in feature manager's mechanisms,
+	// in the feature group nickname expansion, and in the feature value output
 	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
 	{
 		GLDZM_SDE,		// Small Distance Emphasis
@@ -50,7 +50,7 @@ public:
 
 private:
 
-	void clear_buffers();	
+	void clear_buffers();
 	template <class Imgmatrx> int dist2border (Imgmatrx & I, const int x, const int y);
 	template <class Imgmatrx> void calc_row_and_column_sum_vectors (std::vector<double>& Mx, std::vector<double>& Md, Imgmatrx & P, const int Ng, const int Nd, const std::vector<PixIntens>& greysLUT);
 
@@ -61,7 +61,7 @@ private:
 
 	const double EPS = 2.2e-16;
 
-	// Variables caching feature values between calculate() and save_value(). 
+	// Variables caching feature values between calculate() and save_value().
 	double f_SDE,	// Small Distance Emphasis
 		f_LDE,		// Large Distance Emphasis
 		f_LGLZE,	// Low Grey Level Zone Emphasis

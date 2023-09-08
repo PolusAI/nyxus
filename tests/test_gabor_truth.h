@@ -1,6 +1,6 @@
 #include <vector>
 
-// Ground truth at 
+// Ground truth at
 //      'gabor_f0': 0.1
 //      'gabor_freqs' : [4.0, 16.0, 32.0, 64.0]
 //      'gabor_thetas' : [0.0, 45.0, 90.0, 135.0]

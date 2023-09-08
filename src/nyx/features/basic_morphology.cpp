@@ -14,14 +14,14 @@ BasicMorphologyFeatures::BasicMorphologyFeatures(): FeatureMethod("BasicMorpholo
 		BBOX_XMIN,
 		BBOX_YMIN,
 		BBOX_WIDTH,
-		BBOX_HEIGHT,		
+		BBOX_HEIGHT,
 		CENTROID_X,
 		CENTROID_Y,
 		COMPACTNESS,
 		EXTENT,
-		MASS_DISPLACEMENT,		
+		MASS_DISPLACEMENT,
 		WEIGHTED_CENTROID_X,
-		WEIGHTED_CENTROID_Y, 
+		WEIGHTED_CENTROID_Y,
 		DIAMETER_EQUAL_AREA
 		});
 }
@@ -49,7 +49,7 @@ void BasicMorphologyFeatures::calculate(LR& r)
 
 	val_CENTROID_X = cen_x;
 	val_CENTROID_Y = cen_y;
-	
+
 	// --COMPACTNESS
 	Moments2 mom2;
 	for (auto& px : r.raw_pixels)
@@ -80,7 +80,7 @@ void BasicMorphologyFeatures::calculate(LR& r)
 
 	for (auto& px : r.raw_pixels)
 	{
-		// the "+1" is only for compatibility with matlab code (where index starts from 1) 
+		// the "+1" is only for compatibility with matlab code (where index starts from 1)
 		x_mass = x_mass + (px.x + 1) * px.inten;
 		y_mass = y_mass + (px.y + 1) * px.inten;
 		mass += px.inten;
@@ -127,7 +127,7 @@ void BasicMorphologyFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	// --CENTROID_XY
 	double cen_x = 0.0,
 		cen_y = 0.0;
-	
+
 	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)	// for (auto& px : r.raw_pixels)
 	{
 		auto px = r.raw_pixels_NT.get_at(i);
@@ -171,7 +171,7 @@ void BasicMorphologyFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)	// for (auto& px : r.raw_pixels)
 	{
 		auto px = r.raw_pixels_NT.get_at(i);
-		// the "+1" is only for compatibility with matlab code (where index starts from 1) 
+		// the "+1" is only for compatibility with matlab code (where index starts from 1)
 		x_mass = x_mass + (px.x + 1) * px.inten;
 		y_mass = y_mass + (px.y + 1) * px.inten;
 		mass += px.inten;
@@ -230,7 +230,7 @@ void BasicMorphologyFeatures::parallel_process(std::vector<int>& roi_labels, std
 
 void BasicMorphologyFeatures::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
-	// Calculate the feature for each batch ROI item 
+	// Calculate the feature for each batch ROI item
 	for (auto i = firstitem; i < lastitem; i++)
 	{
 		// Get ahold of ROI's label and cache
@@ -266,4 +266,3 @@ void BasicMorphologyFeatures::cleanup_instance()
 	val_ASPECT_RATIO = 0;
 	val_DIAMETER_EQUAL_AREA = 0;
 }
-

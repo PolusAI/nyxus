@@ -133,27 +133,27 @@ void ImageMatrix::print (std::ofstream& f, const std::string& head, const std::s
 	f << tail;
 }
 
-// get image histogram 
-void ImageMatrix::histogram(double* bins, unsigned short nbins, bool imhist, const Moments2& in_stats) const 
+// get image histogram
+void ImageMatrix::histogram(double* bins, unsigned short nbins, bool imhist, const Moments2& in_stats) const
 {
 	unsigned long a, bin, num = width * height;
 	double val, h_min = INF, h_max = -INF, h_scale;
 	readOnlyPixels pix_plane = ReadablePixels();
 
-	// find the minimum and maximum 
-	if (imhist) 
+	// find the minimum and maximum
+	if (imhist)
 	{
-		// similar to the Matlab imhist 
+		// similar to the Matlab imhist
 		h_min = 0;
 		int bits = sizeof(PixIntens) * 8;
 		h_max = pow((double)2, bits) - 1;
 	}
-	else if (in_stats.n() > 0) 
+	else if (in_stats.n() > 0)
 	{
 		h_min = in_stats.min__();
 		h_max = in_stats.max__();
 	}
-	else 
+	else
 	{
 		// to keep this const method from modifying the object, we use GetStats on a local Moments2 object
 		Moments2 local_stats;
@@ -169,10 +169,10 @@ void ImageMatrix::histogram(double* bins, unsigned short nbins, bool imhist, con
 		bins[i] = 0.0;
 
 	// build the histogram
-	for (a = 0; a < num; a++) 
+	for (a = 0; a < num; a++)
 	{
-		val = pix_plane[a];  
-		if (std::isnan(val)) 
+		val = pix_plane[a];
+		if (std::isnan(val))
 			continue;
 		bin = (unsigned long)(((val - h_min) * h_scale));
 		if (bin >= nbins) bin = nbins - 1;
@@ -194,10 +194,10 @@ void ImageMatrix::apply_distance_to_contour_weights (const std::vector<Pixel2>& 
 		// (row, column) coordinates in the image matrix
 		auto c = p.x - original_aabb.get_xmin(),
 			r = p.y - original_aabb.get_ymin();
-		
+
 		// Weighted intensity
 		PixIntens wi = PixIntens((double)_pix_plane.yx(r, c) / (dist + epsilon));
-		
+
 		_pix_plane.yx(r,c) = wi;
 	}
 }
@@ -249,12 +249,12 @@ bool ImageMatrix::tile_contains_signal (int tile_row, int tile_col, int tile_sid
 	return false;
 }
 
-/// @brief Applies to distance-to-contour weighting to intensities of pixel cloud 
+/// @brief Applies to distance-to-contour weighting to intensities of pixel cloud
 void apply_dist2contour_weighting(
 	// input & output
 	std::vector<Pixel2>& cloud,
 	// input
-	const std::vector<Pixel2>& contour, 
+	const std::vector<Pixel2>& contour,
 	const double epsilon)
 {
 	for (auto& p : cloud)
@@ -270,4 +270,3 @@ void apply_dist2contour_weighting(
 		p.inten = wi;
 	}
 }
-

@@ -28,7 +28,7 @@ namespace Nyxus
     int* dev_lastBlockCounter;
 }
 
-__device__ bool lastBlock(int* counter) 
+__device__ bool lastBlock(int* counter)
 {
     __threadfence(); //ensure that partial result is visible by all blocks
     int last = 0;
@@ -65,15 +65,15 @@ __global__ void kerSpatialMom(
         // Formula: sum += D.yx(y,x) * pow(x, p) * pow(y, q)
         double y = i / nx;
         double x = i % nx;
-        double k = pow_pos_int(x, p) * pow_pos_int(y, q); 
+        double k = pow_pos_int(x, p) * pow_pos_int(y, q);
         sum += k * (double)gArr[i];
     }
 
     __shared__ double shArr[blockSize];
     shArr[thIdx] = sum;
     __syncthreads();
-    for (int size = blockSize / 2; size > 0; size /= 2) 
-    { 
+    for (int size = blockSize / 2; size > 0; size /= 2)
+    {
         // uniform
         if (thIdx < size)
             shArr[thIdx] += shArr[thIdx + size];
@@ -81,12 +81,12 @@ __global__ void kerSpatialMom(
     }
     if (thIdx == 0)
         gOut[blockIdx.x] = shArr[0];
-    if (lastBlock(lastBlockCounter)) 
+    if (lastBlock(lastBlockCounter))
     {
         shArr[thIdx] = thIdx < gridSize ? gOut[thIdx] : 0;
         __syncthreads();
-        for (int size = blockSize / 2; size > 0; size /= 2) 
-        { 
+        for (int size = blockSize / 2; size > 0; size /= 2)
+        {
             // uniform
             if (thIdx < size)
                 shArr[thIdx] += shArr[thIdx + size];
@@ -119,15 +119,15 @@ __global__ void kerCentralMom(
         size_t x = i % nx;
         double xc = double(x) - origin_x,
             yc = double(y) - origin_y;
-        double k = pow_pos_int(xc, p) * pow_pos_int(yc, q); 
+        double k = pow_pos_int(xc, p) * pow_pos_int(yc, q);
         sum += k * (double)gArr[i];
     }
 
     __shared__ double shArr[blockSize];
     shArr[thIdx] = sum;
     __syncthreads();
-    for (int size = blockSize / 2; size > 0; size /= 2) 
-    { 
+    for (int size = blockSize / 2; size > 0; size /= 2)
+    {
         //uniform
         if (thIdx < size)
             shArr[thIdx] += shArr[thIdx + size];
@@ -138,8 +138,8 @@ __global__ void kerCentralMom(
     if (lastBlock(lastBlockCounter)) {
         shArr[thIdx] = thIdx < gridSize ? gOut[thIdx] : 0;
         __syncthreads();
-        for (int size = blockSize / 2; size > 0; size /= 2) 
-        { 
+        for (int size = blockSize / 2; size > 0; size /= 2)
+        {
             //uniform
             if (thIdx < size)
                 shArr[thIdx] += shArr[thIdx + size];
@@ -269,8 +269,8 @@ bool ImageMomentsFeature_calcOrigins4(
     auto ok = cudaMemcpy (hoM, devM, 3 * sizeof(hoM[0]), cudaMemcpyDeviceToHost);
     CHECKERR(ok)
 
-    double m00 = hoM[0], 
-        m01 = hoM[1], 
+    double m00 = hoM[0],
+        m01 = hoM[1],
         m10 = hoM[2];
 
     //==== Calculate the origin
@@ -356,67 +356,67 @@ bool ImageMomentsFeature_calcCentralMoments4(
 {
     if (!ImageMomentsFeature_central_moment4(
         0, 0,
-        devImageMatrixBuffer, imOffset, nx, ny, originX, originY, 
+        devImageMatrixBuffer, imOffset, nx, ny, originX, originY,
         devM+0, dev_lastBlockCounter+0))
         return false;
 
     if (!ImageMomentsFeature_central_moment4(
         0, 1,
-        devImageMatrixBuffer, imOffset, nx, ny, originX, originY, 
+        devImageMatrixBuffer, imOffset, nx, ny, originX, originY,
         devM+1, dev_lastBlockCounter+1))
         return false;
 
     if (!ImageMomentsFeature_central_moment4(
         0, 2,
-        devImageMatrixBuffer, imOffset, nx, ny, originX, originY, 
+        devImageMatrixBuffer, imOffset, nx, ny, originX, originY,
         devM+2, dev_lastBlockCounter+2))
         return false;
 
     if (!ImageMomentsFeature_central_moment4(
         0, 3,
-        devImageMatrixBuffer, imOffset, nx, ny, originX, originY, 
+        devImageMatrixBuffer, imOffset, nx, ny, originX, originY,
         devM+3, dev_lastBlockCounter+3))
         return false;
 
     if (!ImageMomentsFeature_central_moment4(
         1, 0,
-        devImageMatrixBuffer, imOffset, nx, ny, originX, originY, 
+        devImageMatrixBuffer, imOffset, nx, ny, originX, originY,
         devM+4, dev_lastBlockCounter+4))
         return false;
 
     if (!ImageMomentsFeature_central_moment4(
         1, 1,
-        devImageMatrixBuffer, imOffset, nx, ny, originX, originY, 
+        devImageMatrixBuffer, imOffset, nx, ny, originX, originY,
         devM+5, dev_lastBlockCounter+5))
         return false;
 
     if (!ImageMomentsFeature_central_moment4(
         1, 2,
-        devImageMatrixBuffer, imOffset, nx, ny, originX, originY, 
+        devImageMatrixBuffer, imOffset, nx, ny, originX, originY,
         devM+6, dev_lastBlockCounter+6))
         return false;
 
     if (!ImageMomentsFeature_central_moment4(
         2, 0,
-        devImageMatrixBuffer, imOffset, nx, ny, originX, originY, 
+        devImageMatrixBuffer, imOffset, nx, ny, originX, originY,
         devM+7, dev_lastBlockCounter+7))
         return false;
 
     if (!ImageMomentsFeature_central_moment4(
         2, 1,
-        devImageMatrixBuffer, imOffset, nx, ny, originX, originY, 
+        devImageMatrixBuffer, imOffset, nx, ny, originX, originY,
         devM+8, dev_lastBlockCounter+8))
         return false;
 
     if (!ImageMomentsFeature_central_moment4(
         2, 2,
-        devImageMatrixBuffer, imOffset, nx, ny, originX, originY, 
+        devImageMatrixBuffer, imOffset, nx, ny, originX, originY,
         devM+9, dev_lastBlockCounter+9))
         return false;
 
     if (!ImageMomentsFeature_central_moment4(
         3, 0,
-        devImageMatrixBuffer, imOffset, nx, ny, originX, originY, 
+        devImageMatrixBuffer, imOffset, nx, ny, originX, originY,
         devM+10, dev_lastBlockCounter+10))
         return false;
 
@@ -426,7 +426,7 @@ bool ImageMomentsFeature_calcCentralMoments4(
 bool ImageMomentsFeature_calcNormCentralMoments3(
     double& nu02, double& nu03, double& nu11, double& nu12, double& nu20, double& nu21, double& nu30,   // output
     double cm02, double cm03, double cm11, double cm12, double cm20, double cm21, double cm30,
-    double m00) 
+    double m00)
 {
     // Formula:
     //  double temp = ((double(p) + double(q)) / 2.0) + 1.0;
@@ -461,9 +461,9 @@ bool ImageMomentsFeature_calcNormCentralMoments3(
 bool ImageMomentsFeature_calcNormSpatialMoments3(
     double& w00, double& w01, double& w02, double& w03, double& w10, double& w20, double& w30,   // output
     double cm00, double cm01, double cm02, double cm03, double cm10, double cm20, double cm30,
-    double cm22) 
+    double cm22)
 {
-    // Formula: 
+    // Formula:
     //  double stddev = CentralMom(D, 2, 2);
     //  int w = std::max(q, p);
     //  double normCoef = pow(stddev, w);
@@ -626,8 +626,8 @@ bool ImageMomentsFeature_calculate3(
     size_t imOffset,
     size_t roi_index,
     StatsInt aabb_min_x,
-    StatsInt aabb_min_y, 
-    StatsInt width, 
+    StatsInt aabb_min_y,
+    StatsInt width,
     StatsInt height)
 {
     //==== Initialize reduction helpers (a helper per calculated value)
@@ -640,11 +640,11 @@ bool ImageMomentsFeature_calculate3(
         ny = height;
 
     double originX, originY;
-    
+
     bool good = ImageMomentsFeature_calcOrigins4(
         originX, originY,   // output
         Nyxus::devImageMatrixBuffer, imOffset, nx, ny,
-        Nyxus::devM, Nyxus::hoM,    // devM [0-2] 
+        Nyxus::devM, Nyxus::hoM,    // devM [0-2]
         Nyxus::dev_lastBlockCounter    // helper
     );
 
@@ -652,7 +652,7 @@ bool ImageMomentsFeature_calculate3(
         return false;
 
     //==== Spatial moments
-    
+
     good = ImageMomentsFeature_calcSpatialMoments4(
         Nyxus::devImageMatrixBuffer, imOffset, nx, ny,   // image data
         Nyxus::devM+3,   // output devM[3-12] -> m00, m01, m02, m03, m10, m11, m12, m20, m21, m30
@@ -673,19 +673,19 @@ bool ImageMomentsFeature_calculate3(
     //==== Retrieve results (raw and central moments)
     ok = cudaMemcpy(Nyxus::hoM, Nyxus::devM, sizeof(Nyxus::hoM[0])*Nyxus::M_length, cudaMemcpyDeviceToHost);
     CHECKERR(ok);
-    m00 = Nyxus::hoM[3]; m01 = Nyxus::hoM[4]; m02 = Nyxus::hoM[5]; m03 = Nyxus::hoM[6]; 
-        m10 = Nyxus::hoM[7]; m11 = Nyxus::hoM[8]; m12 = Nyxus::hoM[9]; m20 = Nyxus::hoM[10]; m21 = Nyxus::hoM[11]; 
+    m00 = Nyxus::hoM[3]; m01 = Nyxus::hoM[4]; m02 = Nyxus::hoM[5]; m03 = Nyxus::hoM[6];
+        m10 = Nyxus::hoM[7]; m11 = Nyxus::hoM[8]; m12 = Nyxus::hoM[9]; m20 = Nyxus::hoM[10]; m21 = Nyxus::hoM[11];
         m30 = Nyxus::hoM[12];
-    double cm00 = Nyxus::hoM[13], 
-        cm01 = Nyxus::hoM[14]; 
-    cm02 = Nyxus::hoM[15]; 
-    cm03 = Nyxus::hoM[16]; 
+    double cm00 = Nyxus::hoM[13],
+        cm01 = Nyxus::hoM[14];
+    cm02 = Nyxus::hoM[15];
+    cm03 = Nyxus::hoM[16];
     double cm10 = Nyxus::hoM[17];
-    cm11 = Nyxus::hoM[18]; 
-    cm12 = Nyxus::hoM[19]; 
-    cm20 = Nyxus::hoM[20]; 
-    cm21 = Nyxus::hoM[21]; 
-    double cm22 = Nyxus::hoM[22]; 
+    cm11 = Nyxus::hoM[18];
+    cm12 = Nyxus::hoM[19];
+    cm20 = Nyxus::hoM[20];
+    cm21 = Nyxus::hoM[21];
+    double cm22 = Nyxus::hoM[22];
     cm30 = Nyxus::hoM[23];
 
     //==== Norm central moments
@@ -732,7 +732,7 @@ bool ImageMomentsFeature_calculate3(
     );
 
     if (!good)
-        return false; 
+        return false;
 
     good = ImageMomentsFeature_calcSpatialMoments4(
         Nyxus::devImageMatrixBuffer, imOffset, nx, ny,   // image data
@@ -756,24 +756,24 @@ bool ImageMomentsFeature_calculate3(
     ok = cudaMemcpy(Nyxus::hoM, Nyxus::devM, sizeof(Nyxus::hoM[0]) * Nyxus::M_length, cudaMemcpyDeviceToHost);
     CHECKERR(ok);
     wm00 = Nyxus::hoM[base];
-        wm01 = Nyxus::hoM[base+1]; 
-        wm02 = Nyxus::hoM[base+2]; 
+        wm01 = Nyxus::hoM[base+1];
+        wm02 = Nyxus::hoM[base+2];
         wm03 = Nyxus::hoM[base+3];
-        wm10 = Nyxus::hoM[base+4]; 
-        wm11 = Nyxus::hoM[base+5]; 
-        wm12 = Nyxus::hoM[base+6]; 
-        wm20 = Nyxus::hoM[base+7]; 
+        wm10 = Nyxus::hoM[base+4];
+        wm11 = Nyxus::hoM[base+5];
+        wm12 = Nyxus::hoM[base+6];
+        wm20 = Nyxus::hoM[base+7];
         wm21 = Nyxus::hoM[base+8];
         wm30 = Nyxus::hoM[base+9];
-        cm00 = Nyxus::hoM[base+10]; 
-        cm01 = Nyxus::hoM[base+11]; 
-        cm02 = Nyxus::hoM[base+12]; 
+        cm00 = Nyxus::hoM[base+10];
+        cm01 = Nyxus::hoM[base+11];
+        cm02 = Nyxus::hoM[base+12];
         cm03 = Nyxus::hoM[base+13];
-        cm10 = Nyxus::hoM[base+14]; 
-        cm11 = Nyxus::hoM[base+15]; 
-        cm12 = Nyxus::hoM[base+16]; 
-        cm20 = Nyxus::hoM[base+17]; 
-        cm21 = Nyxus::hoM[base+18]; 
+        cm10 = Nyxus::hoM[base+14];
+        cm11 = Nyxus::hoM[base+15];
+        cm12 = Nyxus::hoM[base+16];
+        cm20 = Nyxus::hoM[base+17];
+        cm21 = Nyxus::hoM[base+18];
         cm22 = Nyxus::hoM[base+19];
         cm30 = Nyxus::hoM[base+20];
 
@@ -835,7 +835,7 @@ bool send_imgmatrices_to_gpu (PixIntens* hoImageMatrixBuffer, size_t buf_len)
     // Transfer the image matrix data
     ok = cudaMemcpy(Nyxus::devImageMatrixBuffer, hoImageMatrixBuffer, szb, cudaMemcpyHostToDevice);
     CHECKERR(ok);
-    
+
     // Reserve the GPU-side moment calculation result buffer
     ok = cudaMalloc(reinterpret_cast<void**> (&Nyxus::devM), Nyxus::M_length*sizeof(double));
     CHECKERR(ok);
@@ -865,5 +865,3 @@ bool free_imgmatrices_on_gpu()
 
     return true;
 }
-
-

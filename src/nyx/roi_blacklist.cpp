@@ -23,7 +23,7 @@ bool RoiBlacklist::parse_file_blacklist (const std::string & p)
 	}
 
 	// Use LHS
-	// -- lrhs[0] is supposed to be file name so give it a light check 
+	// -- lrhs[0] is supposed to be file name so give it a light check
 	for (auto ch : lrhs[0])
 		if (std::isspace(ch))
 		{
@@ -91,9 +91,9 @@ bool RoiBlacklist::parse_raw_string(const std::string& raw)
 	// Syntax 1B - one file-specific label list
 	// Example: 'raw' is "file1.tif:3,5,7"
 
-	// Syntax 1C - one file-specific label 
+	// Syntax 1C - one file-specific label
 	// Example: 'raw' is "file1.tif:27"
-		
+
 	// Syntax 2A - comma-separated labels (global blacklist)
 	// Example: 'raw' is "27,35,42"
 

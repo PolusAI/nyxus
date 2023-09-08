@@ -18,7 +18,7 @@ public:
 private:
 	bool defined_ = false;
 	std::string ermsg;
-	std::vector<int> globalBlackList; 
+	std::vector<int> globalBlackList;
 	std::vector<pairType> fileBlackList;
 	bool parse_file_blacklist (const std::string &);
 };

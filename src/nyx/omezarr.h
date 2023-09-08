@@ -18,7 +18,7 @@
 /// @brief Tile Loader for OMEZarr
 /// @tparam DataType AbstractView's internal type
 template<class DataType>
-class NyxusOmeZarrLoader : public AbstractTileLoader<DataType> 
+class NyxusOmeZarrLoader : public AbstractTileLoader<DataType>
 {
 public:
 
@@ -41,7 +41,7 @@ public:
         fs::path metadata_path;
         auto success = z5::filesystem::metadata_detail::getMetadataPath(ds_handle, metadata_path);
         z5::filesystem::metadata_detail::readMetadata(metadata_path, ds_attributes);
-        
+
         full_depth_ = ds_attributes["shape"][2].get<size_t>();
         full_height_ = ds_attributes["shape"][3].get<size_t>();
         full_width_ = ds_attributes["shape"][4].get<size_t>();
@@ -64,7 +64,7 @@ public:
     }
 
     /// @brief NyxusOmeZarrLoader destructor
-    ~NyxusOmeZarrLoader() override 
+    ~NyxusOmeZarrLoader() override
     {
         zarr_ptr_ = nullptr;
     }
@@ -79,13 +79,13 @@ public:
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
         size_t indexLayerGlobalTile,
-        [[maybe_unused]] size_t level) override 
+        [[maybe_unused]] size_t level) override
     {
         size_t pixel_row_index = indexRowGlobalTile*tile_height_;
         size_t pixel_col_index = indexColGlobalTile*tile_width_;
         size_t pixel_layer_index = indexLayerGlobalTile*tile_depth_;
 
-        
+
         switch (data_format_)
         {
         case 1:
@@ -123,13 +123,13 @@ public:
             break;
         }
     }
-    
+
     template<typename FileType>
     void loadTile(std::shared_ptr<std::vector<DataType>> &dest, size_t pixel_row_index, size_t pixel_col_index, size_t pixel_layer_index){
         std::vector<std::string> datasets;
         zarr_ptr_->keys(datasets);
         auto ds = z5::openDataset(*zarr_ptr_, datasets[0]);
-        
+
         size_t data_height = tile_height_, data_width = tile_width_;
         if (pixel_row_index + data_height > full_height_) {data_height = full_height_ - pixel_row_index;}
         if (pixel_col_index + data_width > full_width_) {data_width = full_width_ - pixel_col_index;}
@@ -137,10 +137,10 @@ public:
         typename xt::xarray<FileType>::shape_type shape = {1,1,1,data_height,data_width };
         z5::types::ShapeType offset = { 0,0,pixel_layer_index, pixel_row_index, pixel_col_index };
         xt::xarray<FileType> array(shape);
-        z5::multiarray::readSubarray<FileType>(ds, array, offset.begin());     
+        z5::multiarray::readSubarray<FileType>(ds, array, offset.begin());
         std::vector<DataType> tmp = std::vector<DataType> (array.begin(), array.end());
 
-        
+
         for (size_t k=0;k<data_height;++k)
         {
             std::copy(tmp.begin()+ k*data_width, tmp.begin()+(k+1)*data_width, dest->begin()+k*tile_width_);

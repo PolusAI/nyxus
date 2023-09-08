@@ -27,7 +27,7 @@ namespace Nyxus
 	// Results cache serving Nyxus' CLI & Python API, NyxusHie's CLI & Python API
 	ResultsCache theResultsCache;
 
-	// Shows a message in CLI or Python terminal 
+	// Shows a message in CLI or Python terminal
 	void sureprint (const std::string& msg, bool send_to_stderr)
 	{
 #ifdef WITH_PYTHON_H

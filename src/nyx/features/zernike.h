@@ -33,12 +33,12 @@ private:
 	void mb_Znl(double* X, double* Y, double* P, int size, double D, double m10_m00, double m01_m00, double R, double psum, double* zvalues, long* output_size);
 
 	/// @brief Algorithms for fast computation of Zernike momentsand their numerical stability
-	/// Chandan Singhand Ekta Walia, Imageand Vision Computing 29 (2011) 251–259 implemented from 
+	/// Chandan Singhand Ekta Walia, Imageand Vision Computing 29 (2011) 251–259 implemented from
 	/// pseudo-code by Ilya Goldberg
 	void mb_zernike2D (const ImageMatrix& Im, double order, double rad, double* zvalues, long* output_size);
 
 	/// @brief Algorithms for fast computation of Zernike momentsand their numerical stability
-	/// Chandan Singhand Ekta Walia, Imageand Vision Computing 29 (2011) 251–259 implemented from 
+	/// Chandan Singhand Ekta Walia, Imageand Vision Computing 29 (2011) 251–259 implemented from
 	/// pseudo-code by Ilya Goldberg
 	void mb_zernike2D_nontriv (WriteImageMatrix_nontriv& I, double order, double rad, double* zvalues, long* output_size);
 
@@ -56,5 +56,3 @@ private:
 
 // This is also based on the maximum D parameter - contains pre-computed factorials
 #define MAX_LUT 240
-
-

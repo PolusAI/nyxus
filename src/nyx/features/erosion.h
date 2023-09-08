@@ -18,7 +18,7 @@ public:
 	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 	static bool required(FeatureSet& fs) { return fs.anyEnabled({ EROSIONS_2_VANISH, EROSIONS_2_VANISH_COMPLEMENT }); }
-	
+
 private:
 
 	const int SANITY_MAX_NUM_EROSIONS = 1000;	// Prevent infinite erosions
@@ -44,12 +44,12 @@ private:
 	static const int SE_R = 7, SE_C = 7;		// rows, columns
 
 	int strucElem[SE_R][SE_C] = {
-		{0,     0,     0,     1,     0,     0,     0}, 
-		{0,     0,     1,     1,     1,     0,     0}, 
-		{0,     1,      1,      1,      1,      1,      0}, 
-		{1,     1,      1,      1,      1,      1,      1}, 
-		{0,     1,      1,      1,      1,      1,      0}, 
-		{0,     0,      1,      1,      1,      0,      0}, 
+		{0,     0,     0,     1,     0,     0,     0},
+		{0,     0,     1,     1,     1,     0,     0},
+		{0,     1,      1,      1,      1,      1,      0},
+		{1,     1,      1,      1,      1,      1,      1},
+		{0,     1,      1,      1,      1,      1,      0},
+		{0,     0,      1,      1,      1,      0,      0},
 		{0,     0,      0,      1,      0,      0,      0}
 	};
 #endif
@@ -59,15 +59,15 @@ private:
 	static const int SE_R = 11, SE_C = 11;		// rows, columns
 	int strucElem[SE_R][SE_C] = {
 		{0,     0,     0,     0,     0,     1,     0,     0,     0,     0,     0},
-		{0,     0,     0,     0,     1,     1,     1,     0,     0,     0,     0}, 
-		{0,     0,     0,     1,     1,     1,     1,     1,     0,     0,     0}, 
-		{0,     0,     1,     1,     1,     1,     1,     1,     1,     0,     0}, 
-		{0,     1,     1,     1,     1,     1,     1,     1,     1,     1,     0}, 
-		{1,     1,     1,     1,     1,     1,     1,     1,     1,     1,     1}, 
-		{0,     1,     1,     1,     1,     1,     1,     1,     1,     1,     0}, 
-		{0,     0,     1,     1,     1,     1,     1,     1,     1,     0,     0}, 
-		{0,     0,     0,     1,     1,     1,     1,     1,     0,     0,     0}, 
-		{0,     0,     0,     0,     1,     1,     1,     0,     0,     0,     0}, 
+		{0,     0,     0,     0,     1,     1,     1,     0,     0,     0,     0},
+		{0,     0,     0,     1,     1,     1,     1,     1,     0,     0,     0},
+		{0,     0,     1,     1,     1,     1,     1,     1,     1,     0,     0},
+		{0,     1,     1,     1,     1,     1,     1,     1,     1,     1,     0},
+		{1,     1,     1,     1,     1,     1,     1,     1,     1,     1,     1},
+		{0,     1,     1,     1,     1,     1,     1,     1,     1,     1,     0},
+		{0,     0,     1,     1,     1,     1,     1,     1,     1,     0,     0},
+		{0,     0,     0,     1,     1,     1,     1,     1,     0,     0,     0},
+		{0,     0,     0,     0,     1,     1,     1,     0,     0,     0,     0},
 		{0,     0,     0,     0,     0,     1,     0,     0,     0,     0,     0}
 	};
 #endif

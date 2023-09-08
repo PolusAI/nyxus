@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 from python.test_download_data import download
-import argparse 
+import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--url', help='url')

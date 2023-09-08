@@ -13,7 +13,7 @@ ConvexHullFeature::ConvexHullFeature() : FeatureMethod("ConvexHullFeature")
 void ConvexHullFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
 	fvals [CONVEX_HULL_AREA][0] = area;
-	fvals [SOLIDITY][0] = solidity; 
+	fvals [SOLIDITY][0] = solidity;
 	fvals [CIRCULARITY][0] = circularity;
 }
 
@@ -29,7 +29,7 @@ void ConvexHullFeature::calculate (LR& r)
 
 	// Calculate related features
 	double s_hull = polygon_area(r.convHull_CH),
-		s_roi = r.raw_pixels.size(), 
+		s_roi = r.raw_pixels.size(),
 		p = r.fvals[PERIMETER][0];
 	area = s_hull;
 	solidity = s_roi / s_hull;
@@ -48,7 +48,7 @@ void ConvexHullFeature::build_convex_hull (const std::vector<Pixel2>& cloud, std
 	std::vector<Pixel2> lowerCH;
 
 	size_t n = cloud.size();
-	
+
 	//	No need to sort pixels because we accumulate them in a raster pattern without multithreading//
 	//	std::vector<Pixel2> cloud = roi_cloud;	// Safely copy the ROI for fear of changing the original pixels order
 	//	std::sort (cloud.begin(), cloud.end(), compare_locations);
@@ -76,7 +76,7 @@ void ConvexHullFeature::build_convex_hull (const std::vector<Pixel2>& cloud, std
 		lowerCH.push_back(cloud[n - i - 1]);
 	}
 
-	// We could use 
+	// We could use
 	//		upperCH.insert (upperCH.end(), lowerCH.begin(), lowerCH.end());
 	// but we don't need duplicate points in the result contour
 	for (auto& p : lowerCH)
@@ -102,7 +102,7 @@ void ConvexHullFeature::build_convex_hull (const OutOfRamPixelCloud& cloud, std:
 //	std::vector<Pixel2> cloud = roi_cloud;	// Safely copy the ROI for fear of changing the original pixels order
 //	std::sort(cloud.begin(), cloud.end(), compare_locations);
 //
- 
+
 	// Computing upper convex hull
 	upperCH.push_back(cloud[0]);
 	upperCH.push_back(cloud[1]);
@@ -125,7 +125,7 @@ void ConvexHullFeature::build_convex_hull (const OutOfRamPixelCloud& cloud, std:
 		lowerCH.push_back(cloud[n - i - 1]);
 	}
 
-	// We could use 
+	// We could use
 	//		upperCH.insert (upperCH.end(), lowerCH.begin(), lowerCH.end());
 	// but we don't need duplicate points in the result contour
 	for (auto& p : lowerCH)
@@ -157,7 +157,7 @@ double ConvexHullFeature::polygon_area (const std::vector<Pixel2>& vertices)
 	size_t n = vertices.size();
 	for (size_t i = 0; i < n-1; i++)
 	{
-		const Pixel2 &p1 = vertices[i], 
+		const Pixel2 &p1 = vertices[i],
 			&p2 = vertices[i+1];
 		area += p1.x * p2.y - p1.y * p2.x;
 	}
@@ -200,4 +200,3 @@ namespace Nyxus
 		}
 	}
 }
-

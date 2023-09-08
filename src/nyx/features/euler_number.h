@@ -13,7 +13,7 @@ class EulerNumberFeature: public FeatureMethod
 {
 public:
 	EulerNumberFeature();
-	
+
 	// Trivial ROI
 	void calculate(LR& r);
 
@@ -31,7 +31,7 @@ private:
 	const int mode = 8;		// Using mode=8 following WNDCHRM example
 	long calculate_euler (std::vector<unsigned char>& I, int height, int width, int mode);
 
-	long euler_number = 0;	
+	long euler_number = 0;
 
 	static constexpr unsigned char Px[10] = { //MM: 0 or 1 in the left side of << represent binary pixel values
 	// P1 - single pixel  8/4/2/1
@@ -59,4 +59,3 @@ private:
 		(1 << 1) | (0 << 0)
 	};
 };
-

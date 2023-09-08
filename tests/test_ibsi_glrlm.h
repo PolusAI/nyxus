@@ -9,7 +9,7 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
-#include <unordered_map> 
+#include <unordered_map>
 
 // dig. phantom values for intensity based features
 static std::unordered_map<std::string, float> IBSI_glrlm_values {
@@ -24,8 +24,8 @@ static std::unordered_map<std::string, float> IBSI_glrlm_values {
     {"GLRLM_GLN", 5.2},
     {"GLRLM_GLNN", 0.46},
     {"GLRLM_RLN", 6.12},
-    {"GLRLM_RLNN", 0.492}, 
-    {"GLRLM_RP", 0.627}, 
+    {"GLRLM_RLNN", 0.492},
+    {"GLRLM_RP", 0.627},
     {"GLRLM_GLV", 3.35},
     {"GLRLM_RV", 0.761},
     {"GLRLM_RE", 2.17}
@@ -34,7 +34,7 @@ static std::unordered_map<std::string, float> IBSI_glrlm_values {
 void test_ibsi_glrlm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
 
     double total = 0;
-    
+
     LR roidata;
     // Calculate features
     GLRLMFeature f;
@@ -54,7 +54,7 @@ void test_ibsi_glrlm_feature(const AvailableFeatures& feature, const std::string
     total += roidata.fvals[feature][1];
     total += roidata.fvals[feature][2];
     total += roidata.fvals[feature][3];
-    
+
     // image 2
     // Calculate features
     LR roidata1;
@@ -75,8 +75,8 @@ void test_ibsi_glrlm_feature(const AvailableFeatures& feature, const std::string
     total += roidata1.fvals[feature][1];
     total += roidata1.fvals[feature][2];
     total += roidata1.fvals[feature][3];
-    
-    
+
+
     // image 3
     // Calculate features
 
@@ -98,10 +98,10 @@ void test_ibsi_glrlm_feature(const AvailableFeatures& feature, const std::string
     total += roidata2.fvals[feature][1];
     total += roidata2.fvals[feature][2];
     total += roidata2.fvals[feature][3];
-    
+
     // image 4
     // Calculate features
-    
+
     LR roidata3;
     // Calculate features
     GLRLMFeature f3;
@@ -145,7 +145,7 @@ void test_ibsi_glrlm_lglre()
 void test_ibsi_glrlm_hglre()
 {
     test_ibsi_glrlm_feature(GLRLM_HGLRE, "GLRLM_HGLRE");
-}   
+}
 
 void test_ibsi_glrlm_srlgle()
 {
@@ -168,7 +168,7 @@ void test_ibsi_glrlm_lrhgle()
 }
 
 void test_ibsi_glrlm_gln()
-{   
+{
     test_ibsi_glrlm_feature(GLRLM_GLN, "GLRLM_GLN");
 }
 

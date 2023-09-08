@@ -206,7 +206,7 @@ namespace Nyxus
 		{ "GLCM_ID", GLCM_ID },
 		{ "GLCM_IDN", GLCM_IDN },
 		{ "GLCM_IDM", GLCM_IDM },
-		{ "GLCM_IDMN", GLCM_IDMN },		
+		{ "GLCM_IDMN", GLCM_IDMN },
 		{ "GLCM_INFOMEAS1", GLCM_INFOMEAS1 },
 		{ "GLCM_INFOMEAS2", GLCM_INFOMEAS2 },
 		{ "GLCM_IV", GLCM_IV },
@@ -416,7 +416,7 @@ std::string FeatureSet::findFeatureNameByCode(AvailableFeatures fcode)
 	auto result = std::find_if(
 		Nyxus::UserFacingFeatureNames.begin(),
 		Nyxus::UserFacingFeatureNames.end(),
-		[fcode](const auto& finfo) 
+		[fcode](const auto& finfo)
 		{ return finfo.second == fcode; });
 
 	// Return the feature name if found
@@ -447,10 +447,9 @@ std::vector<std::tuple<std::string, AvailableFeatures>> FeatureSet::getEnabledFe
 			}
 
 			// Save the pair
-			std::tuple<std::string, AvailableFeatures> f(fname, (AvailableFeatures)i); 
+			std::tuple<std::string, AvailableFeatures> f(fname, (AvailableFeatures)i);
 			F.push_back(f);
 		}
 	}
 	return F;
 }
-

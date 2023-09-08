@@ -66,8 +66,8 @@
 #define NESTEDROI_CHILD_CHNL "--hchi"			// Channel number that should be used as a provider of child segments. Example: --hchi=0
 #define NESTEDROI_AGGREGATION_METHOD "--hag"	// How to aggregate features of segments recognized as children of same parent segment. See class NestedRoiOptions for options.
 
-// Feature group nicknames. Each nickname should be used twice - 
-// in Nyxus::parse_delimited_string_list_to_features() 
+// Feature group nicknames. Each nickname should be used twice -
+// in Nyxus::parse_delimited_string_list_to_features()
 // and in Environment::process_feature_list()
 #define FEA_NICK_ALL "*ALL*"
 #define FEA_NICK_ALL_INTENSITY "*ALL_INTENSITY*"
@@ -83,7 +83,7 @@
 #define FEA_NICK_ALL_BUT_GABOR "*ALL_BUT_GABOR*"
 #define FEA_NICK_ALL_BUT_GLCM "*ALL_BUT_GLCM*"
 #define FEA_NICK_ALL_EASY "*ALL_EASY*"	// Equivalent to *ALL* minus GABOR, GLCM, and 2D moments
-#define FEA_NICK_ALL_NEIG "*ALL_NEIGHBOR*"	
+#define FEA_NICK_ALL_NEIG "*ALL_NEIGHBOR*"
 
 // Valid values of 'OUTPUTTYPE'
 #define OT_SEPCSV "separatecsv"
@@ -105,7 +105,7 @@ public:
 	Environment();
 	bool parse_cmdline(int argc, char **argv);
 	void show_cmdline_help();
-	void show_featureset_help(); 
+	void show_featureset_help();
 	void show_summary(const std::string &head, const std::string &tail);
 
 	std::string labels_dir = "",
@@ -120,7 +120,7 @@ public:
 
 	ArrowOutput arrow_output = ArrowOutput();
 	std::string arrow_output_type = "";
-	
+
 #endif
 
 	std::string embedded_pixel_size = "";
@@ -175,7 +175,7 @@ public:
 	int get_gpu_device_choice();
 	void set_gpu_device_id(int choice);
 	void set_use_gpu(bool yes);
-	bool using_gpu();	
+	bool using_gpu();
 	static std::vector<std::map<std::string, std::string>> get_gpu_properties();
 #endif
 
@@ -197,7 +197,7 @@ public:
 	// implementation of nested ROI options
 	bool parse_nested_options_raw_inputs (std::string& error_message);
 	NestedRoiOptions nestedOptions;
-  
+
   // implementation of Apache options
 	bool arrow_is_enabled();
 
@@ -218,7 +218,7 @@ private:
 	std::vector<std::map<std::string, std::string>> gpu_props_;
 #endif
 
-	int floating_point_precision = 10;	
+	int floating_point_precision = 10;
 
 	unsigned int coarse_grayscale_depth = 256;
 	std::string raw_coarse_grayscale_depth = "";
@@ -239,7 +239,7 @@ private:
 		std::string rawExclusiveTiming = "";
 	#endif
 
-	
+
 };
 
 namespace Nyxus
@@ -250,4 +250,4 @@ namespace Nyxus
 #define VERBOSLVL1(stmt) if(Nyxus::theEnvironment.get_verbosity_level()>=1){stmt;}
 #define VERBOSLVL2(stmt) if(Nyxus::theEnvironment.get_verbosity_level()>=2){stmt;}
 #define VERBOSLVL3(stmt) if(Nyxus::theEnvironment.get_verbosity_level()>=3){stmt;}
-#define VERBOSLVL4(stmt) if(Nyxus::theEnvironment.get_verbosity_level()>=4){stmt;}	
+#define VERBOSLVL4(stmt) if(Nyxus::theEnvironment.get_verbosity_level()>=4){stmt;}

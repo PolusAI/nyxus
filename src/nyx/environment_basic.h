@@ -5,12 +5,12 @@ class BasicEnvironment
 {
 public:
 	BasicEnvironment();
-	
+
 	std::string get_file_pattern();
-	
+
 	void set_file_pattern(const std::string & pat);
 	bool check_file_pattern(const std::string& pat);
-	
+
 	int get_verbosity_level();
 	void set_verbosity_level(int vl);
 

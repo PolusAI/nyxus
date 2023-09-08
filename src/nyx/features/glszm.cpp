@@ -25,10 +25,10 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader&)
 	using ACluster = std::pair<PixIntens, int>;
 	std::vector<ACluster> Z;
 
-	//==== While scanning clusters, learn unique intensities 
+	//==== While scanning clusters, learn unique intensities
 	std::unordered_set<PixIntens> U;
 
-	// Width of the intensity - zone area matrix 
+	// Width of the intensity - zone area matrix
 	int maxZoneArea = 0;
 
 	// Create an image matrix for this ROI
@@ -36,7 +36,7 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader&)
 	M.allocate_from_cloud (r.raw_pixels_NT, r.aabb, false);
 
 	// Helpful temps
-	auto height = M.get_height(), 
+	auto height = M.get_height(),
 		width = M.get_width();
 
 	// Copy the image matrix
@@ -190,15 +190,15 @@ void GLSZMFeature::calculate(LR& r)
 	//==== Check if the ROI is degenerate (equal intensity)
 	if (r.aux_min == r.aux_max)
 		return;
-	 
+
 	//==== Make a list of intensity clusters (zones)
 	using ACluster = std::pair<PixIntens, int>;
 	std::vector<ACluster> Z;
 
-	//==== While scanning clusters, learn unique intensities 
+	//==== While scanning clusters, learn unique intensities
 	std::unordered_set<PixIntens> U;
 
-	// Width of the intensity - zone area matrix 
+	// Width of the intensity - zone area matrix
 	int maxZoneArea = 0;
 
 	// Copy the image matrix
@@ -285,7 +285,7 @@ void GLSZMFeature::calculate(LR& r)
 
 				// We are done exploring this cluster
 				break;
-			
+
 			}
 
 			// Done scanning a cluster. Perform 3 actions:
@@ -303,9 +303,9 @@ void GLSZMFeature::calculate(LR& r)
 	// count non-zero pixels
 	int count = 0;
 
-	for (const auto& px: M.ReadablePixels()) 
+	for (const auto& px: M.ReadablePixels())
 	{
-		if(px != 0) 
+		if(px != 0)
 			++count;
 	}
 
@@ -317,7 +317,7 @@ void GLSZMFeature::calculate(LR& r)
 	Ng = Environment::ibsi_compliance ? *std::max_element(std::begin(r.aux_image_matrix.ReadablePixels()), std::end(r.aux_image_matrix.ReadablePixels())) : (int)U.size();
 	Ns = height * width;
 	Nz = (int) Z.size();
-	Np = count;	
+	Np = count;
 
 	// --Set to vector to be able to know each intensity's index
 	std::vector<PixIntens> I (U.begin(), U.end());
@@ -325,7 +325,7 @@ void GLSZMFeature::calculate(LR& r)
 
 	// --allocate the matrix
 	P.allocate (Ns, Ng);
-	
+
 	// --iterate zones and fill the matrix
 	int i = 0;
 	for (auto& z : Z)
@@ -443,46 +443,46 @@ void GLSZMFeature::save_value (std::vector<std::vector<double>>& fvals)
 
 	if (need(GLSZM_LAE))
 		fvals[GLSZM_LAE][0] = calc_LAE();
-	
+
 	if (need(GLSZM_GLN))
 		fvals[GLSZM_GLN][0] = calc_GLN();
-	
+
 	if (need(GLSZM_GLNN))
 		fvals[GLSZM_GLNN][0] = calc_GLNN();
-	
+
 	if (need(GLSZM_SZN))
 		fvals[GLSZM_SZN][0] = calc_SZN();
-	
+
 	if (need(GLSZM_SZNN))
 		fvals[GLSZM_SZNN][0] = calc_SZNN();
-	
+
 	if (need(GLSZM_ZP))
 		fvals[GLSZM_ZP][0] = calc_ZP();
-	
+
 	if (need(GLSZM_GLV))
 		fvals[GLSZM_GLV][0] = calc_GLV();
-	
+
 	if (need(GLSZM_ZV))
 		fvals[GLSZM_ZV][0] = calc_ZV();
-	
+
 	if (need(GLSZM_ZE))
 		fvals[GLSZM_ZE][0] = calc_ZE();
-	
+
 	if (need(GLSZM_LGLZE))
 		fvals[GLSZM_LGLZE][0] = calc_LGLZE();
-	
+
 	if (need(GLSZM_HGLZE))
 		fvals[GLSZM_HGLZE][0] = calc_HGLZE();
-	
+
 	if (need(GLSZM_SALGLE))
 		fvals[GLSZM_SALGLE][0] = calc_SALGLE();
-	
+
 	if (need(GLSZM_SAHGLE))
 		fvals[GLSZM_SAHGLE][0] = calc_SAHGLE();
-	
+
 	if (need(GLSZM_LALGLE))
 		fvals[GLSZM_LALGLE][0] = calc_LALGLE();
-	
+
 	if (need(GLSZM_LAHGLE))
 		fvals[GLSZM_LAHGLE][0] = calc_LAHGLE();
 }
@@ -490,7 +490,7 @@ void GLSZMFeature::save_value (std::vector<std::vector<double>>& fvals)
 // 1. Small Area Emphasis
 double GLSZMFeature::calc_SAE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -507,7 +507,7 @@ double GLSZMFeature::calc_SAE()
 // 2. Large Area Emphasis
 double GLSZMFeature::calc_LAE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -524,7 +524,7 @@ double GLSZMFeature::calc_LAE()
 // 3. Gray Level Non - Uniformity
 double GLSZMFeature::calc_GLN()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -543,7 +543,7 @@ double GLSZMFeature::calc_GLN()
 // 4. Gray Level Non - Uniformity Normalized
 double GLSZMFeature::calc_GLNN()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -563,7 +563,7 @@ double GLSZMFeature::calc_GLNN()
 // 5. Size - Zone Non - Uniformity
 double GLSZMFeature::calc_SZN()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -582,7 +582,7 @@ double GLSZMFeature::calc_SZN()
 // 6. Size - Zone Non - Uniformity Normalized
 double GLSZMFeature::calc_SZNN()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -601,7 +601,7 @@ double GLSZMFeature::calc_SZNN()
 // 7. Zone Percentage
 double GLSZMFeature::calc_ZP()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -612,7 +612,7 @@ double GLSZMFeature::calc_ZP()
 // 8. Gray Level Variance
 double GLSZMFeature::calc_GLV()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -632,7 +632,7 @@ double GLSZMFeature::calc_GLV()
 // 9. Zone Variance
 double GLSZMFeature::calc_ZV()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -652,7 +652,7 @@ double GLSZMFeature::calc_ZV()
 // 10. Zone Entropy
 double GLSZMFeature::calc_ZE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -664,7 +664,7 @@ double GLSZMFeature::calc_ZE()
 // 11. Low Gray Level Zone Emphasis
 double GLSZMFeature::calc_LGLZE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -682,7 +682,7 @@ double GLSZMFeature::calc_LGLZE()
 // 12. High Gray Level Zone Emphasis
 double GLSZMFeature::calc_HGLZE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -700,7 +700,7 @@ double GLSZMFeature::calc_HGLZE()
 // 13. Small Area Low Gray Level Emphasis
 double GLSZMFeature::calc_SALGLE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -712,7 +712,7 @@ double GLSZMFeature::calc_SALGLE()
 // 14. Small Area High Gray Level Emphasis
 double GLSZMFeature::calc_SAHGLE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -724,7 +724,7 @@ double GLSZMFeature::calc_SAHGLE()
 // 15. Large Area Low Gray Level Emphasis
 double GLSZMFeature::calc_LALGLE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -736,7 +736,7 @@ double GLSZMFeature::calc_LALGLE()
 // 16. Large Area High Gray Level Emphasis
 double GLSZMFeature::calc_LAHGLE()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -760,4 +760,3 @@ void GLSZMFeature::parallel_process_1_batch (size_t start, size_t end, std::vect
 		f.save_value(r.fvals);
 	}
 }
-

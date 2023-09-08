@@ -11,11 +11,11 @@ HexagonalityPolygonalityFeature::HexagonalityPolygonalityFeature() : FeatureMeth
 
 void HexagonalityPolygonalityFeature::calculate (LR& r)
 {
-    // The whole calculation is inspired by calculation of this feature in POLUS feature extraction plugin 
+    // The whole calculation is inspired by calculation of this feature in POLUS feature extraction plugin
     // https://github.com/LabShare/polus-plugins/blob/master/polus-feature-extraction-plugin/src/main.py
 
     size_t neighbors = r.fvals[NUM_NEIGHBORS][0];
-    double area = r.aux_area; 
+    double area = r.aux_area;
     double perimeter = r.fvals[PERIMETER][0];
     double area_hull = r.fvals[CONVEX_HULL_AREA][0];
     double perim_hull = 6 * sqrt(area_hull / (1.5 * sqrt(3)));
@@ -69,7 +69,7 @@ void HexagonalityPolygonalityFeature::calculate (LR& r)
             for (int ic = ib + 1; ic < list_area.size(); ++ic)
             {
                 double area_ratio = 1.0 - abs(1.0 - list_area[ib] / list_area[ic]);
-                
+
                 // skip NANs
                 if (!std::isfinite(area_ratio))
                     continue;
@@ -109,7 +109,7 @@ void HexagonalityPolygonalityFeature::calculate (LR& r)
 
         // Create an array of all unique Perimeters
         std::vector<double> list_perim = { perim1, perim2, perim3, perim4, perim5, perim6, perim7, perim8, perim9, perim10, perim11, perim12, perim13, perim14 };
-        std::vector<double> perim_array; 
+        std::vector<double> perim_array;
 
         // 1 - Create an array of the ratio of all Perimeters to each other. 2 - Create Summary statistics of all array ratios.
         double sum2 = 0;
@@ -181,7 +181,3 @@ void HexagonalityPolygonalityFeature::parallel_process_1_batch (size_t start, si
         hexpo.save_value(r.fvals);
     }
 }
-
-
-
-

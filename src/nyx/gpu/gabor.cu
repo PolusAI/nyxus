@@ -4,7 +4,7 @@
 using namespace std;
 
 namespace CuGabor {
-    
+
     __global__ void multiply(cufftDoubleComplex* A, int row_size, int col_size, cufftDoubleComplex* B, cufftDoubleComplex* result, int batch_size) {
         int i = threadIdx.x + blockIdx.x * blockDim.x;
         int j = threadIdx.y + blockIdx.y * blockDim.y;
@@ -34,7 +34,7 @@ namespace CuGabor {
         CHECKERR(ok);
 
         // Check if kernel execution generated and error
-        ok = cudaGetLastError();   
+        ok = cudaGetLastError();
         CHECKERR(ok);
 
         return true;
@@ -69,19 +69,19 @@ namespace CuGabor {
         CHECKERR(ok);
 
         // Check if kernel execution generated and error
-        ok = cudaGetLastError();   
+        ok = cudaGetLastError();
         CHECKERR(ok);
 
         return true;
     }
 
-    bool conv_dud_gpu_fft(double* out, 
-                            const unsigned int* image, 
-                            double* kernel, 
+    bool conv_dud_gpu_fft(double* out,
+                            const unsigned int* image,
+                            double* kernel,
                             int image_n, int image_m, int kernel_n, int kernel_m){
 
-        
-        
+
+
         int batch_size = 1;
 
         // calculate new size of image based on padding size
@@ -98,14 +98,14 @@ namespace CuGabor {
         std::vector<Complex> linear_kernel(size * batch_size);
 
         int index, index2;
-        
+
         for (int i = 0; i < row_size; ++i) {
             for (int j = 0; j < col_size; ++j) {
 
                 index = (i*col_size + j);
                 linear_image[index].y = 0.f;
 
-                if (i < image_m && j < image_n) { 
+                if (i < image_m && j < image_n) {
 
                     index2 = (i*image_n + j) ;
                     linear_image[index].x = image[index2];
@@ -148,10 +148,10 @@ namespace CuGabor {
 
         ok = cudaMalloc((void**)&d_result, sizeof(CuComplex)*size*batch_size);
         CHECKERR(ok);
-        
-        ok = cudaMalloc((void**)&d_kernel, sizeof(CuComplex)*size*batch_size);  
+
+        ok = cudaMalloc((void**)&d_kernel, sizeof(CuComplex)*size*batch_size);
         CHECKERR(ok);
-        
+
         // copy data to GPU
         ok = cudaMemcpy(d_image, linear_image.data(), batch_size*size*sizeof(CuComplex), cudaMemcpyHostToDevice);
         CHECKERR(ok);
@@ -163,7 +163,7 @@ namespace CuGabor {
         cufftHandle plan_k;
         int idist = size;
         int odist = size;
-        
+
         int inembed[] = {row_size, col_size};
         int onembed[] = {row_size, col_size};
 
@@ -172,10 +172,10 @@ namespace CuGabor {
 
         auto call = cufftPlanMany(&plan, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_C2C, batch_size);
         CHECKCUFFTERR(call);
-           
+
         call = cufftPlanMany(&plan_k, 2, n, inembed, istride, idist, onembed, ostride, odist, CUFFT_C2C, batch_size);
         CHECKCUFFTERR(call);
-        
+
 
         call = cufftExecC2C(plan, d_image, d_image, CUFFT_FORWARD);
         CHECKCUFFTERR(call);
@@ -197,10 +197,10 @@ namespace CuGabor {
         CHECKCUFFTERR(call);
 
         // copy results from device to host
-        ok = cudaMemcpy(result.data(), d_result, batch_size*size*sizeof(CuComplex), cudaMemcpyDeviceToHost); 
+        ok = cudaMemcpy(result.data(), d_result, batch_size*size*sizeof(CuComplex), cudaMemcpyDeviceToHost);
         CHECKERR(ok);
 
-        // transfer to output array 
+        // transfer to output array
         for(int i = 0; i < size; ++i) {
             out[2*i] = (result[i].x/(size));
             out[2*i + 1] = (result[i].y/(size));
@@ -213,14 +213,14 @@ namespace CuGabor {
         cudaFree(d_result);
         cudaFree(d_kernel);
 
-        return true;                    
+        return true;
     }
 
-     bool conv_dud_gpu_fft_multi_filter(double* out, 
-                            const unsigned int* image, 
-                            double* kernel, 
+     bool conv_dud_gpu_fft_multi_filter(double* out,
+                            const unsigned int* image,
+                            double* kernel,
                             int image_n, int image_m, int kernel_n, int kernel_m, int batch_size){
-        
+
         typedef double2 Complex; // comment out to use float
         typedef cufftDoubleComplex CuComplex; // comment out to use float
 
@@ -238,7 +238,7 @@ namespace CuGabor {
         std::vector<Complex> linear_kernel(size * batch_size);
 
         int index, index2;
-        
+
         int batch_idx, batch_idx2;
         for (int batch = 0; batch < batch_size; ++batch) {
 
@@ -250,7 +250,7 @@ namespace CuGabor {
                     index = batch_idx + (i*col_size + j);
                     linear_image[index].y = 0.f;
 
-                    if (i < image_m && j < image_n) { 
+                    if (i < image_m && j < image_n) {
 
                         index2 = (i*image_n + j);
                         linear_image[index].x = image[index2];
@@ -297,14 +297,14 @@ namespace CuGabor {
 
         ok = cudaMalloc((void**)&d_result, sizeof(CuComplex)*size*batch_size);
         CHECKERR(ok);
-        
+
         ok = cudaMalloc((void**)&d_kernel, sizeof(CuComplex)*size*batch_size);
         CHECKERR(ok);
-        
+
         // copy data to GPU
         ok = cudaMemcpy(d_image, linear_image.data(), batch_size*size*sizeof(CuComplex), cudaMemcpyHostToDevice);
         CHECKERR(ok);
-        
+
         ok = cudaMemcpy(d_kernel, linear_kernel.data(), batch_size*size*sizeof(CuComplex), cudaMemcpyHostToDevice);
         CHECKERR(ok);
 
@@ -313,7 +313,7 @@ namespace CuGabor {
 
         int idist = size;
         int odist = size;
-        
+
         int inembed[] = {row_size, col_size};
         int onembed[] = {row_size, col_size};
 
@@ -348,9 +348,9 @@ namespace CuGabor {
 
         // copy results from device to host
         ok = cudaMemcpy(result.data(), d_result, batch_size*size*sizeof(CuComplex), cudaMemcpyDeviceToHost);
-        CHECKERR(ok); 
+        CHECKERR(ok);
 
-        // transfer to output array 
+        // transfer to output array
         for(int batch = 0; batch < batch_size; ++batch){
             batch_idx = batch*size;
             for(int i = 0; i < size; ++i) {
@@ -358,7 +358,7 @@ namespace CuGabor {
                 out[2*batch_idx + 2*i + 1] = (result[batch_idx + i].y/((double)size));
             }
         }
-        
+
         // free device memory
         cufftDestroy(plan);
         cufftDestroy(plan_k);
@@ -366,7 +366,6 @@ namespace CuGabor {
         cudaFree(d_result);
         cudaFree(d_kernel);
 
-        return true;                    
+        return true;
     }
 }
-

@@ -360,4 +360,3 @@ void test_pixel_intensity_percentiles_iqr()
     ASSERT_TRUE(agrees_gt(roidata.fvals[P99][0], 6.338096000000000e+04));
     ASSERT_TRUE(agrees_gt(roidata.fvals[INTERQUARTILE_RANGE][0], 26171));
 }
-

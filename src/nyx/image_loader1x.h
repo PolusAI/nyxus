@@ -26,7 +26,7 @@ public:
 	size_t get_tile_y(size_t pixel_row);
 	size_t get_within_tile_idx(size_t pixel_row, size_t pixel_col);
 private:
-	std::unique_ptr<AbstractTileLoader<uint32_t>> FL = nullptr;	
+	std::unique_ptr<AbstractTileLoader<uint32_t>> FL = nullptr;
 	std::shared_ptr<std::vector<uint32_t>> ptr = nullptr;
 	// Tile height, width, and depth
 	size_t th,

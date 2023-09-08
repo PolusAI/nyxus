@@ -10,7 +10,7 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
-#include <unordered_map> 
+#include <unordered_map>
 
 // dig. phantom values for intensity based features
 static std::unordered_map<std::string, float> IBSI_gldm_values {
@@ -34,11 +34,11 @@ static std::unordered_map<std::string, float> IBSI_gldm_values {
 
 void test_ibsi_gldm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
     double total = 0;
-    
+
     LR roidata;
     // Calculate features
     GLDMFeature f;
-    Environment::ibsi_compliance = true; 
+    Environment::ibsi_compliance = true;
 
     // image 1
     load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
@@ -53,12 +53,12 @@ void test_ibsi_gldm_feature(const AvailableFeatures& feature, const std::string&
 
     total += roidata.fvals[feature][0];
 
-    
+
     // image 2
     LR roidata1;
     // Calculate features
     GLDMFeature f1;
-    Environment::ibsi_compliance = true; 
+    Environment::ibsi_compliance = true;
 
     load_masked_test_roi_data (roidata1, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask,  sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
 
@@ -77,7 +77,7 @@ void test_ibsi_gldm_feature(const AvailableFeatures& feature, const std::string&
     LR roidata2;
     // Calculate features
     GLDMFeature f2;
-    Environment::ibsi_compliance = true; 
+    Environment::ibsi_compliance = true;
 
     load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
 
@@ -90,13 +90,13 @@ void test_ibsi_gldm_feature(const AvailableFeatures& feature, const std::string&
     f2.save_value(roidata2.fvals);
 
     total += roidata2.fvals[feature][0];
-    
+
     // image 4
 
     LR roidata3;
     // Calculate features
     GLDMFeature f3;
-    Environment::ibsi_compliance = true; 
+    Environment::ibsi_compliance = true;
 
     load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
 
@@ -136,7 +136,7 @@ void test_ibsi_gldm_hgle()
 
 void test_ibsi_gldm_sdlgle()
 {
-    test_ibsi_gldm_feature(GLDM_SDLGLE, "GLDM_SDLGLE");    
+    test_ibsi_gldm_feature(GLDM_SDLGLE, "GLDM_SDLGLE");
 }
 
 void test_ibsi_gldm_sdhgle()

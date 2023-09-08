@@ -10,12 +10,12 @@
 class RadialDistributionFeature: public FeatureMethod
 {
 public:
-	static bool required(const FeatureSet& fs) 
+	static bool required(const FeatureSet& fs)
 	{
 		return fs.anyEnabled({ FRAC_AT_D, MEAN_FRAC, RADIAL_CV });
 	}
 
-	RadialDistributionFeature(); 
+	RadialDistributionFeature();
 	void calculate(LR& r);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
 	void osized_calculate(LR& r, ImageLoader& imloader);
@@ -55,7 +55,7 @@ private:
 	std::vector<std::vector<size_t>> banded_wedges;
 
 	// Helpers
-	int cached_center_x = -1, 
+	int cached_center_x = -1,
 		cached_center_y = -1;
 	int cached_num_pixels = 0;
 	const double epsilon = 0.000000001;

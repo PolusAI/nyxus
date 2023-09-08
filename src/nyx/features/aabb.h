@@ -11,7 +11,7 @@ class AABB
 {
 public:
 	AABB() {}
-	AABB(const std::vector<Pixel2> & cloud) 
+	AABB(const std::vector<Pixel2> & cloud)
 	{
 		for (auto& px : cloud)
 		{

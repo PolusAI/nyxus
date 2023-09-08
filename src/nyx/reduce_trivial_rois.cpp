@@ -3,7 +3,7 @@
 #include <cmath>
 #include <memory>
 #include <unordered_map>
-#include <unordered_set> 
+#include <unordered_set>
 #include <algorithm>
 #include <iostream>
 #include <chrono>
@@ -58,8 +58,8 @@ namespace Nyxus
 	// Calculating features in parallel with hard-coded feature order. This function should be called once after a file pair processing is finished.
 	void reduce_trivial_rois_manual (std::vector<int> & PendingRoisLabels)
 	{
-		//==== Parallel execution parameters 
-		int n_reduce_threads = theEnvironment.n_reduce_threads;		
+		//==== Parallel execution parameters
+		int n_reduce_threads = theEnvironment.n_reduce_threads;
 		size_t jobSize = PendingRoisLabels.size(),
 			workPerThread = jobSize / n_reduce_threads;
 
@@ -85,9 +85,9 @@ namespace Nyxus
 		}
 
 		//==== Contour-related ROI perimeter, equivalent circle diameter
-		if (ContourFeature::required(theFeatureSet) 
+		if (ContourFeature::required(theFeatureSet)
 			|| ConvexHullFeature::required(theFeatureSet)
-			|| FractalDimensionFeature::required(theFeatureSet) 
+			|| FractalDimensionFeature::required(theFeatureSet)
 			|| GeodeticLengthThicknessFeature::required(theFeatureSet)
 			|| NeighborsFeature::required(theFeatureSet)
 			|| RoiRadiusFeature::required(theFeatureSet))
@@ -97,10 +97,10 @@ namespace Nyxus
 		}
 
 		//==== Convex hull related solidity, circularity
-		if (ConvexHullFeature::required(theFeatureSet) 
-			|| CaliperFeretFeature::required(theFeatureSet) 
-			|| CaliperMartinFeature::required(theFeatureSet) 
-			|| CaliperNassensteinFeature::required(theFeatureSet) 
+		if (ConvexHullFeature::required(theFeatureSet)
+			|| CaliperFeretFeature::required(theFeatureSet)
+			|| CaliperMartinFeature::required(theFeatureSet)
+			|| CaliperNassensteinFeature::required(theFeatureSet)
 			|| HexagonalityPolygonalityFeature::required(theFeatureSet))
 		{
 			// CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY // depends on PERIMETER
@@ -108,14 +108,14 @@ namespace Nyxus
 			runParallel(parallelReduceConvHull, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
-		//==== Extrema 
+		//==== Extrema
 		if (ExtremaFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Extrema/Ex/#4aaaea", "\t=");
 			runParallel(ExtremaFeature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
-		//==== Euler 
+		//==== Euler
 		if (EulerNumberFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Euler/Eu/#4aaaea", "\t=");
@@ -178,7 +178,7 @@ namespace Nyxus
 			runParallel(FractalDimensionFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 		}
 
-		//==== GLCM aka Haralick 2D 
+		//==== GLCM aka Haralick 2D
 		if (GLCMFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Texture/GLCM/GLCM/#bbbbbb", "\t=");
@@ -236,7 +236,7 @@ namespace Nyxus
 			#else
 				// Did the user opted out from using GPU?
 				if (theEnvironment.using_gpu() == false)
-				{				
+				{
 					// Route calculation via the regular CPU-multithreaded way
 					STOPWATCH("Moments/Moments/2D moms/#FFFACD", "\t=");
 					runParallel(ImageMomentsFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
@@ -257,9 +257,9 @@ namespace Nyxus
 
 				STOPWATCH("Gabor/Gabor/Gabor/#f58231", "\t=");
 				runParallel(GaborFeature::reduce, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
-				
-			#else 
-				
+
+			#else
+
 				if (theEnvironment.using_gpu() == false) {
 
 					STOPWATCH("Gabor/Gabor/Gabor/#f58231", "\t=");
@@ -271,11 +271,11 @@ namespace Nyxus
 					GaborFeature::gpu_process_all_rois(PendingRoisLabels, roiData);
 
 				}
-				
+
 			#endif
 		}
 
-		//==== Radial distribution / Zernike 2D 
+		//==== Radial distribution / Zernike 2D
 		if (ZernikeFeature::required(theFeatureSet))
 		{
 			STOPWATCH("RDistribution/Zernike/Rz/#00FFFF", "\t=");
@@ -297,8 +297,8 @@ namespace Nyxus
 		AL.reserve (uniqueLabels.size());
 		AL.insert (AL.end(), uniqueLabels.begin(), uniqueLabels.end());
 
-		//==== Parallel execution parameters 
-		int n_reduce_threads = theEnvironment.n_reduce_threads;		
+		//==== Parallel execution parameters
+		int n_reduce_threads = theEnvironment.n_reduce_threads;
 		size_t jobSize = AL.size(),
 			workPerThread = jobSize / n_reduce_threads;
 
@@ -325,4 +325,3 @@ namespace Nyxus
 	}
 
 }
-

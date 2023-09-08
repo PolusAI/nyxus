@@ -3,7 +3,7 @@
 #include <cmath>
 #include <memory>
 #include <unordered_map>
-#include <unordered_set> 
+#include <unordered_set>
 #include <algorithm>
 #include <iostream>
 #include <chrono>
@@ -44,12 +44,12 @@ namespace Nyxus
 	// This function should be called once after a file pair processing is finished.
 	void reduce_by_feature (int nThr, int min_online_roi_size)
 	{
-		//=== Copy ROI labels to a vector to make them indexable 
+		//=== Copy ROI labels to a vector to make them indexable
 		std::vector<int> roiLabelsVector;
 		for (auto l : uniqueLabels)
 			roiLabelsVector.push_back(l);
 
-		//==== 	Parallel execution parameters 
+		//==== 	Parallel execution parameters
 		size_t jobSize = roiLabelsVector.size(),
 			workPerThread = jobSize / nThr;
 
@@ -60,21 +60,21 @@ namespace Nyxus
 		}
 
 		//==== Neighbors
-		if (NeighborsFeature::required(theFeatureSet)) 
+		if (NeighborsFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Neighbors/Neighbors/N/#FF69B4", "\t=");
 			NeighborsFeature::manual_reduce();
 		}
 
 		//==== Fitting an ellipse
-		if (EllipseFittingFeature::required(theFeatureSet)) 
+		if (EllipseFittingFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Ellipticity/E/#4aaaea", "\t=");
 			runParallel(EllipseFittingFeature::reduce, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
 		}
 
 		//==== Contour-related ROI perimeter, equivalent circle diameter
-		if (ContourFeature::required(theFeatureSet)) 
+		if (ContourFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Contour/C/#4aaaea", "\t=");
 			runParallel(
@@ -90,14 +90,14 @@ namespace Nyxus
 			runParallel(parallelReduceConvHull, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
 		}
 
-		//==== Extrema 
+		//==== Extrema
 		if (ExtremaFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Extrema/Ex/#4aaaea", "\t=");
 			runParallel(ExtremaFeature::reduce, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
 		}
 
-		//==== Euler 
+		//==== Euler
 		if (EulerNumberFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Euler/Eu/#4aaaea", "\t=");
@@ -105,7 +105,7 @@ namespace Nyxus
 		}
 
 		//==== Feret diameters and angles
-		if (CaliperFeretFeature::required(theFeatureSet)) 
+		if (CaliperFeretFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Morphology/Feret/F/#4aaaea", "\t=");
 			runParallel(CaliperFeretFeature::parallel_process_1_batch, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
@@ -174,7 +174,7 @@ namespace Nyxus
 			runParallel(FractalDimensionFeature::parallel_process_1_batch, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
 		}
 
-		//==== GLCM aka Haralick 2D 
+		//==== GLCM aka Haralick 2D
 		if (GLCMFeature::required(theFeatureSet))
 		{
 			STOPWATCH("Texture/GLCM/GLCM/#bbbbbb", "\t=");
@@ -239,7 +239,7 @@ namespace Nyxus
 			runParallel(GaborFeature::reduce, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
 		}
 
-		//==== Radial distribution / Zernike 2D 
+		//==== Radial distribution / Zernike 2D
 		if (ZernikeFeature::required(theFeatureSet))
 		{
 			STOPWATCH("RDistribution/Zernike/Rz/#00FFFF", "\t=");
@@ -255,4 +255,3 @@ namespace Nyxus
 
 	}
 }
-

@@ -1790,5 +1790,3 @@ double gsl_sf_fact(const int n)
         return (GSL_POSINF);
     }
 }
-
-

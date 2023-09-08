@@ -18,9 +18,9 @@ void NGTDMFeature::clear_buffers()
 	Ng = 0;
 	Ngp = 0;
 	Nvp = 0;
-	Nd = 0; 
-	Nz = 0; 
-	Nvc = 0; 
+	Nd = 0;
+	Nz = 0;
+	Nvc = 0;
 	P.clear();
 	S.clear();
 	N.clear();
@@ -49,7 +49,7 @@ void NGTDMFeature::calculate (LR& r)
 	using AveNeighborhoodInte = std::pair<PixIntens, double>;	// Pairs of (intensity, average intensity of all 8 neighbors)
 	std::vector<AveNeighborhoodInte> Z;
 
-	// While scanning clusters, learn unique intensities 
+	// While scanning clusters, learn unique intensities
 	std::unordered_set<PixIntens> U;
 
 	// Gather zones
@@ -57,9 +57,9 @@ void NGTDMFeature::calculate (LR& r)
 	for (int row = 0; row < D.get_height(); row++)
 		for (int col = 0; col < D.get_width(); col++)
 		{
-			// Find a non-blank pixel 
-			
-			PixIntens pi = Nyxus::to_grayscale (D.yx(row, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance); 
+			// Find a non-blank pixel
+
+			PixIntens pi = Nyxus::to_grayscale (D.yx(row, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
 			if (pi == 0)
 				continue;
 
@@ -161,7 +161,7 @@ void NGTDMFeature::calculate (LR& r)
 
 	// --Calculate Nvc (sum of N)
 	Nvc = 0;
-	for (int i = 0; i < N.size(); i++) 
+	for (int i = 0; i < N.size(); i++)
 		Nvc += N[i];
 
 	// --Calculate P
@@ -206,7 +206,7 @@ void NGTDMFeature::osized_calculate (LR& r, ImageLoader&)
 	using AveNeighborhoodInte = std::pair<PixIntens, double>;	// Pairs of (intensity, average intensity of all 8 neighbors)
 	std::vector<AveNeighborhoodInte> Z;
 
-	// While scanning clusters, learn unique intensities 
+	// While scanning clusters, learn unique intensities
 	std::unordered_set<PixIntens> U;
 
 	// ROI image
@@ -218,7 +218,7 @@ void NGTDMFeature::osized_calculate (LR& r, ImageLoader&)
 	for (int row = 0; row < D.get_height(); row++)
 		for (int col = 0; col < D.get_width(); col++)
 		{
-			// Find a non-blank pixel 
+			// Find a non-blank pixel
 			PixIntens pi = Nyxus::to_grayscale(D.yx(row, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
 			if (pi == 0)
 				continue;
@@ -275,7 +275,7 @@ void NGTDMFeature::osized_calculate (LR& r, ImageLoader&)
 			}
 
 			// Save the intensity's average neighborhood intensity
-			if (nd > 0) 
+			if (nd > 0)
 			{
 				neigsI /= nd;
 				AveNeighborhoodInte z = { pi, neigsI };
@@ -337,7 +337,7 @@ void NGTDMFeature::osized_calculate (LR& r, ImageLoader&)
 // Coarseness
 double NGTDMFeature::calc_Coarseness()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -352,7 +352,7 @@ double NGTDMFeature::calc_Coarseness()
 // Contrast
 double NGTDMFeature::calc_Contrast()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -381,7 +381,7 @@ double NGTDMFeature::calc_Contrast()
 // Busyness
 double NGTDMFeature::calc_Busyness()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -403,7 +403,7 @@ double NGTDMFeature::calc_Busyness()
 				sum2 += std::abs (tmp);
 			}
 		}
-	
+
 	if (sum2 == 0) return 0;
 
 	double retval = sum1 / sum2;
@@ -413,7 +413,7 @@ double NGTDMFeature::calc_Busyness()
 // Complexity
 double NGTDMFeature::calc_Complexity()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -434,7 +434,7 @@ double NGTDMFeature::calc_Complexity()
 // Strength
 double NGTDMFeature::calc_Strength()
 {
-	// Prevent using bad data 
+	// Prevent using bad data
 	if (bad_roi_data)
 		return BAD_ROI_FVAL;
 
@@ -471,4 +471,3 @@ void NGTDMFeature::parallel_process_1_batch (size_t start, size_t end, std::vect
 		f.save_value(r.fvals);
 	}
 }
-

@@ -9,7 +9,7 @@
   #include <filesystem>
   namespace fs = std::filesystem;
 #elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
+  #include <experimental/filesystem>
   namespace fs = std::experimental::filesystem;
 #else
   error "Missing the <filesystem> header."
@@ -28,7 +28,7 @@ void test_initialization() {
 
     for(int i = 0 ; i < pending.size(); ++i) {
         LR roi;
-        
+
         load_test_roi_data(roi, i, false);
 
         roiData[i] = roi;
@@ -48,4 +48,3 @@ void test_initialization() {
     freeTrivialRoisBuffers(pending);
 
 }
-

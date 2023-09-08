@@ -23,7 +23,7 @@ public:
 	void save_value(std::vector<std::vector<double>>& feature_vals);
 
 	// Compatibility with manual
-	static bool required(const FeatureSet& fs) 
+	static bool required(const FeatureSet& fs)
 	{
 		return fs.anyEnabled({
 			EXTREMA_P1_Y,

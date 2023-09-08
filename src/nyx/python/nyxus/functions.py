@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from .backend import gpu_available, get_gpu_props
 
 def gpu_is_available():

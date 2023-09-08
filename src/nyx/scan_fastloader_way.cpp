@@ -5,7 +5,7 @@
   #include <filesystem>
   namespace fs = std::filesystem;
 #elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
+  #include <experimental/filesystem>
   namespace fs = std::experimental::filesystem;
 #else
   error "Missing the <filesystem> header."
@@ -102,8 +102,8 @@ namespace Nyxus
 				// Distribute ROIs among phases
 				for (auto lab : uniqueLabels)
 				{
-					LR& r = roiData[lab];					
-					
+					LR& r = roiData[lab];
+
 					// Skip blacklisted ROI
 					if (theEnvironment.roi_is_blacklisted(shortSegFname, lab))
 					{
@@ -113,16 +113,16 @@ namespace Nyxus
 					}
 
 					// Examine ROI's memory footprint
-					if (size_t roiFootprint = r.get_ram_footprint_estimate(), 
-						ramLim = theEnvironment.get_ram_limit(); 
+					if (size_t roiFootprint = r.get_ram_footprint_estimate(),
+						ramLim = theEnvironment.get_ram_limit();
 						roiFootprint >= ramLim)
 					{
 						VERBOSLVL2(
-							std::cout << "oversized ROI " << lab 
-								<< " (S=" << r.aux_area 
-								<< " W=" << r.aabb.get_width() 
-								<< " H=" << r.aabb.get_height() 
-								<< " px footprint=" << roiFootprint << " b"								
+							std::cout << "oversized ROI " << lab
+								<< " (S=" << r.aux_area
+								<< " W=" << r.aabb.get_width()
+								<< " H=" << r.aabb.get_height()
+								<< " px footprint=" << roiFootprint << " b"
 								<< ")\n"
 						);
 						nontrivRoiLabels.push_back(lab);
@@ -175,8 +175,8 @@ namespace Nyxus
 		for (auto lab : uniqueLabels)
 		{
 			LR& r = roiData[lab];
-			if (size_t roiFootprint = r.get_ram_footprint_estimate(), 
-				ramLim = theEnvironment.get_ram_limit(); 
+			if (size_t roiFootprint = r.get_ram_footprint_estimate(),
+				ramLim = theEnvironment.get_ram_limit();
 				roiFootprint >= ramLim)
 			{
 				unprocessed_rois.push_back(lab);
@@ -209,8 +209,8 @@ namespace Nyxus
 		#ifdef CHECKTIMING
 		if (Stopwatch::inclusive())
 			Stopwatch::reset();
-		#endif		
-			
+		#endif
+
 		// One-time initialization
 		init_feature_buffers();
 
@@ -236,7 +236,7 @@ namespace Nyxus
 			theSegFname = p_seg.string();
 			theIntFname = p_int.string();
 
-			// Scan one label-intensity pair 
+			// Scan one label-intensity pair
 			ok = theImLoader.open(theIntFname, theSegFname);
 			if (ok == false)
 			{
@@ -311,7 +311,7 @@ namespace Nyxus
 	}
 
 #ifdef WITH_PYTHON_H
-	
+
 	int processMontage(
 		const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intensity_images,
 		const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images,
@@ -328,7 +328,7 @@ namespace Nyxus
 		auto height = intens_buffer.shape[2];
 
 		auto nf = intens_buffer.shape[0];
-		
+
 		for (int i = 0; i < nf; i++)
 		{
 			// Clear ROI label list, ROI data, etc.
@@ -343,7 +343,7 @@ namespace Nyxus
 				error_message = "processIntSegImagePairInMemory() returned an error code while processing file pair";
 				return 1;
 			}
-				
+
 			ok = save_features_2_buffer(theResultsCache);
 			if (ok == false)
 			{
@@ -357,7 +357,7 @@ namespace Nyxus
 					error_message += roi;
 					error_message += ", ";
 				}
-				
+
 				// remove trailing space and comma
 				error_message.pop_back();
 				error_message.pop_back();
@@ -367,7 +367,7 @@ namespace Nyxus
 			if (PyErr_CheckSignals() != 0)
                 		throw pybind11::error_already_set();
 		}
-		
+
 		return 0; // success
 	}
 #endif
@@ -410,5 +410,4 @@ namespace Nyxus
 		std::cout << "... done\n";
 	}
 
-} 
-
+}

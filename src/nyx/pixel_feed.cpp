@@ -14,7 +14,7 @@ namespace Nyxus
 	/// @brief Feeds a pixel to image measurement object to gauge the image RAM footprint without caching the pixel. Updates 'uniqueLabels' and 'roiData'.
 	/// @param x -- x-coordinate of the pixel in the image
 	/// @param y -- y-coordinate of the pixel in the image
-	/// @param label -- label of pixel's segment 
+	/// @param label -- label of pixel's segment
 	/// @param intensity -- pixel's intensity
 	/// @param tile_index -- index of pixel's tile in the image
 	void feed_pixel_2_metrics(int x, int y, PixIntens intensity, int label, unsigned int tile_index)
@@ -37,10 +37,10 @@ namespace Nyxus
 		}
 	}
 
-	/// @brief Copies a pixel to the ROI's cache. 
+	/// @brief Copies a pixel to the ROI's cache.
 	/// @param x -- x-coordinate of the pixel in the image
 	/// @param y -- y-coordinate of the pixel in the image
-	/// @param label -- label of pixel's segment 
+	/// @param label -- label of pixel's segment
 	/// @param intensity -- pixel's intensity
 	void feed_pixel_2_cache(int x, int y, PixIntens intensity, int label)
 	{

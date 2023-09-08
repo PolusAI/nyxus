@@ -2,7 +2,7 @@
 #include <cmath>
 #include <memory>
 #include <unordered_map>
-#include <unordered_set> 
+#include <unordered_set>
 #include <algorithm>
 #include <iostream>
 #include <chrono>
@@ -30,7 +30,7 @@ NeighborsFeature::NeighborsFeature(): FeatureMethod("NeighborsFeature")
 void NeighborsFeature::calculate(LR& r)
 {}
 
-void NeighborsFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} 
+void NeighborsFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
 
 void NeighborsFeature::osized_calculate(LR& r, ImageLoader& imloader)
 {
@@ -38,15 +38,15 @@ void NeighborsFeature::osized_calculate(LR& r, ImageLoader& imloader)
 }
 
 /// @brief All the logic is in parallel_process()
-/// @param feature_vals 
+/// @param feature_vals
 void NeighborsFeature::save_value(std::vector<std::vector<double>>& feature_vals) {}
 
 /// @brief All the logic is in parallel_process()
-/// @param start 
-/// @param end 
-/// @param ptrLabels 
-/// @param ptrLabelData 
-void NeighborsFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData) 
+/// @param start
+/// @param end
+/// @param ptrLabels
+/// @param ptrLabelData
+void NeighborsFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 }
 
@@ -57,10 +57,10 @@ void NeighborsFeature::parallel_process (std::vector<int>& roi_labels, std::unor
 }
 
 /// @brief Implements the narrow phase
-/// @param start 
-/// @param end 
-/// @param ptrLabels 
-/// @param ptrLabelData 
+/// @param start
+/// @param end
+/// @param ptrLabels
+/// @param ptrLabelData
 void parallel_process_1_batch_of_collision_pairs (size_t start, size_t end, std::vector<std::pair<int, int>>* ptrCollisionPairsVec, std::unordered_map <int, LR>* ptrLabelData)
 {
 	int radius = theEnvironment.get_pixel_distance();
@@ -118,11 +118,11 @@ void NeighborsFeature::manual_reduce()
 	//}
 
 	int radius = theEnvironment.get_pixel_distance();
-	int n_threads = 1; 
+	int n_threads = 1;
 
 	//==== Collision detection, method 1 (greedy)
 	auto n_ul = uniqueLabels.size();
-	
+
 	std::vector <int> LabsVec;
 	LabsVec.reserve (uniqueLabels.size());
 	LabsVec.insert (LabsVec.end(), uniqueLabels.begin(), uniqueLabels.end());
@@ -136,21 +136,21 @@ void NeighborsFeature::manual_reduce()
 	//DEBUG
 	//	auto startTime = std::chrono::system_clock::now();
 
-	for (size_t i1 = 0; i1 < n_ul; i1++) 
+	for (size_t i1 = 0; i1 < n_ul; i1++)
 	{
 		auto l1 = LabsVec[i1];
 		LR& r1 = roiData[l1];
 
-		for (size_t i2 = 0; i2 < n_ul; i2++) 
+		for (size_t i2 = 0; i2 < n_ul; i2++)
 		{
 			auto l2 = LabsVec[i2];
-			if (i1 == i2) 
+			if (i1 == i2)
 				continue;	// Trivial - diagonal element
-			if (n_threads==1 && i1 > i2) 
+			if (n_threads==1 && i1 > i2)
 				continue;	// No need to check the upper triangle for single-threaded runs. Multi-threaded runs require the upper triangle for thread-safe results.
 
 			LR& r2 = roiData[l2];
-			bool noOverlap = r2.aabb.get_xmin() > r1.aabb.get_xmax() || r2.aabb.get_xmax() < r1.aabb.get_xmin() 
+			bool noOverlap = r2.aabb.get_xmin() > r1.aabb.get_xmax() || r2.aabb.get_xmax() < r1.aabb.get_xmin()
 				|| r2.aabb.get_ymin() > r1.aabb.get_ymax() || r2.aabb.get_ymax() < r1.aabb.get_ymin() ;
 			if (! noOverlap)
 			{
@@ -172,19 +172,19 @@ void NeighborsFeature::manual_reduce()
 	// Harvest collision pairs v #1
 #if 0
 	size_t radius2 = radius * radius;	// We will compare radius with L2 distances
-	for (size_t i1 = 0; i1 < nul; i1++) 
+	for (size_t i1 = 0; i1 < nul; i1++)
 	{
 		auto l1 = LabsVec[i1];
 		LR& r1 = roiData[l1];
 
-		for (size_t i2 = 0; i2 < nul; i2++) 
+		for (size_t i2 = 0; i2 < nul; i2++)
 		{
-			if (i1 == i2) 
+			if (i1 == i2)
 				continue;	// Trivial - diagonal element
-			if (i1 > i2) 
+			if (i1 > i2)
 				continue;	// No need to check the upper triangle
 
-			unsigned int idx = i1 * nul + i2; 
+			unsigned int idx = i1 * nul + i2;
 			if (CM[idx] == true)
 			{
 				// Check if these labels are close enough
@@ -225,7 +225,7 @@ void NeighborsFeature::manual_reduce()
 #endif
 
 	// Harvest collision pairs v #2
-	
+
 	if (n_threads == 1)
 	{
 		// single thread
@@ -270,7 +270,7 @@ void NeighborsFeature::manual_reduce()
 			r1.aux_neighboring_labels.push_back(l2);
 
 			// We're single-threaded here so it's safe to update both r1 and r2
-			r2.fvals[NUM_NEIGHBORS][0]++;	
+			r2.fvals[NUM_NEIGHBORS][0]++;
 			r2.aux_neighboring_labels.push_back(l1);
 		}
 		for (auto pa : CM2)
@@ -302,7 +302,7 @@ void NeighborsFeature::manual_reduce()
 	//auto narPhaseTime = std::chrono::system_clock::now();
 
 // Collision detection method #1 (kept for the record)
-#if 0 
+#if 0
 	//==== Collision detection, method 2
 
 	// Hash table
@@ -387,7 +387,7 @@ void NeighborsFeature::manual_reduce()
 
 			for (auto& l2 : bin)
 			{
-				if (l1 < l2)	// Lower triangle 
+				if (l1 < l2)	// Lower triangle
 				{
 					LR& r2 = Nyxus::roiData[l2];
 					bool overlap = !aabbNoOverlap(r1, r2, radius);
@@ -461,7 +461,7 @@ void NeighborsFeature::manual_reduce()
 
 			// Save angle with neighbor #2
 			LR& r2 = Nyxus::roiData[closest2label];
-			r.fvals[CLOSEST_NEIGHBOR2_ANG][0] = 180.0 * angle(cenx, ceny, r2.fvals[CENTROID_X][0], r2.fvals[CENTROID_X][0]); 
+			r.fvals[CLOSEST_NEIGHBOR2_ANG][0] = 180.0 * angle(cenx, ceny, r2.fvals[CENTROID_X][0], r2.fvals[CENTROID_X][0]);
 		}
 	}
 
@@ -487,7 +487,7 @@ void NeighborsFeature::manual_reduce()
 			double cenx_n = r_neig.fvals[CENTROID_X][0],
 				ceny_n = r_neig.fvals[CENTROID_Y][0];
 
-			double ang = 180.0 * angle (cenx, ceny, cenx_n, ceny_n);	
+			double ang = 180.0 * angle (cenx, ceny, cenx_n, ceny_n);
 			mom2.add(ang);
 			anglesRounded.push_back(ang);
 		}
@@ -536,5 +536,3 @@ inline unsigned long NeighborsFeature::spat_hash_2d(StatsInt x, StatsInt y, int 
 	unsigned long retval = h % m;
 	return retval;
 }
-
-

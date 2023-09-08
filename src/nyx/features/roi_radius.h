@@ -21,7 +21,7 @@ public:
 	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 	// Compatibility with manual reduce
-	static bool required (const FeatureSet& fs) 
+	static bool required (const FeatureSet& fs)
 	{
 		return fs.anyEnabled({
 			ROI_RADIUS_MEAN,

@@ -43,13 +43,13 @@ FeatureManager::FeatureManager()
 	register_feature (new CaliperNassensteinFeature());
 	register_feature (new ChordsFeature());
 	register_feature (new HexagonalityPolygonalityFeature());
-	register_feature (new EnclosingInscribingCircumscribingCircleFeature());	
+	register_feature (new EnclosingInscribingCircumscribingCircleFeature());
 	register_feature (new GeodeticLengthThicknessFeature());
 	register_feature (new RoiRadiusFeature());
-	register_feature (new ErosionPixelsFeature());	
+	register_feature (new ErosionPixelsFeature());
 	register_feature (new FractalDimensionFeature());
-	register_feature (new GLCMFeature());	
-	register_feature (new GLRLMFeature());	
+	register_feature (new GLCMFeature());
+	register_feature (new GLRLMFeature());
 	register_feature (new GLDZMFeature());
 	register_feature (new GLSZMFeature());
 	register_feature (new GLDMFeature());
@@ -60,5 +60,3 @@ FeatureManager::FeatureManager()
 	register_feature (new ZernikeFeature());
 	register_feature (new RadialDistributionFeature());
 }
-
-

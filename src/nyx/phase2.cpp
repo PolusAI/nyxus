@@ -105,7 +105,7 @@ namespace Nyxus
 		for (unsigned int row = 0; row < nth; row++)
 			for (unsigned int col = 0; col < ntv; col++)
 			{
-				// Fetch the tile 
+				// Fetch the tile
 				bool ok = theImLoader.load_tile(row, col);
 				if (!ok)
 				{
@@ -113,7 +113,7 @@ namespace Nyxus
 					ss << "Error fetching tile row=" << row << " col=" << col;
 					#ifdef WITH_PYTHON_H
 						throw ss.str();
-					#endif	
+					#endif
 					std::cerr << ss.str() << "\n";
 					return false;
 				}
@@ -146,11 +146,11 @@ namespace Nyxus
 					if (theEnvironment.singleROI)
 						label = 1;
 
-					// Cache this pixel 
+					// Cache this pixel
 					feed_pixel_2_cache (x, y, dataI[i], label);
 				}
 
-				VERBOSLVL2(				
+				VERBOSLVL2(
 					// Show stayalive progress info
 					if (cnt++ % 4 == 0)
 					{
@@ -161,7 +161,7 @@ namespace Nyxus
 								std::cout << "\t scan trivial " << int(pc) << " %\n";
 								prevIntPc = int(pc);
 							}
-					} 
+					}
 				)
 			}
 
@@ -205,9 +205,9 @@ namespace Nyxus
 				if (theEnvironment.singleROI)
 					label = 1;
 
-				// Cache this pixel 
+				// Cache this pixel
 				feed_pixel_2_cache (row, col, inten, label);
-				
+
 			}
 
 		return true;
@@ -251,8 +251,8 @@ namespace Nyxus
 
 	void freeTrivialRoisBuffers(const std::vector<int>& Pending)
 	{
-		// Dispose memory of ROIs having their feature calculation finished 
-		// in order to give memory ROIs of the next ROI batch. 
+		// Dispose memory of ROIs having their feature calculation finished
+		// in order to give memory ROIs of the next ROI batch.
 		// (Vector 'Pending' is the set of ROIs of the finished batch.)
 		for (auto lab : Pending)
 		{
@@ -262,7 +262,7 @@ namespace Nyxus
 			std::vector<Pixel2>().swap(r.convHull_CH);	// convex hull is not a large object but there's no point to keep it beyond the batch, unlike contour
 		}
 
-		// Dispose the buffer of batches' ROIs' image matrices. (We allocate the 
+		// Dispose the buffer of batches' ROIs' image matrices. (We allocate the
 		// image matrix buffer externally to minimize host-GPU transfers.)
 		delete ImageMatrixBuffer;
 	}
@@ -287,7 +287,7 @@ namespace Nyxus
 			}
 			else
 			{
-				// Scan pixels of pending trivial ROIs 
+				// Scan pixels of pending trivial ROIs
 				std::sort(Pending.begin(), Pending.end());
 				VERBOSLVL1(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of total " << uniqueLabels.size() << " ROIs\n";)
 					VERBOSLVL1(
@@ -304,7 +304,7 @@ namespace Nyxus
 
 				// Reduce them
 				VERBOSLVL1(std::cout << "\treducing ROIs\n";)
-					// reduce_trivial_rois(Pending);	
+					// reduce_trivial_rois(Pending);
 					reduce_trivial_rois_manual(Pending);
 
 				// Free memory
@@ -314,10 +314,10 @@ namespace Nyxus
 					// Reset the RAM footprint accumulator
 				batchDemand = 0;
 
-				// Clear the freshly processed ROIs from pending list 
+				// Clear the freshly processed ROIs from pending list
 				Pending.clear();
 
-				// Start a new pending set by adding the stopper ROI 
+				// Start a new pending set by adding the stopper ROI
 				Pending.push_back(lab);
 
 				// Advance the batch counter
@@ -337,7 +337,7 @@ namespace Nyxus
 		// Process what's remaining pending
 		if (Pending.size() > 0)
 		{
-			// Scan pixels of pending trivial ROIs 
+			// Scan pixels of pending trivial ROIs
 			std::sort (Pending.begin(), Pending.end());
 			VERBOSLVL1(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";)
 			VERBOSLVL1(
@@ -359,7 +359,7 @@ namespace Nyxus
 
 			// Reduce them
 			VERBOSLVL1(std::cout << "\treducing ROIs\n";)
-			//reduce_trivial_rois(Pending);	
+			//reduce_trivial_rois(Pending);
 			reduce_trivial_rois_manual(Pending);
 
 			// Free memory
@@ -385,7 +385,7 @@ namespace Nyxus
 
 #ifdef WITH_PYTHON_H
 	bool processTrivialRoisInMemory (const std::vector<int>& trivRoiLabels, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label, int start_idx, size_t memory_limit)
-	{	
+	{
 		std::vector<int> Pending;
 		size_t batchDemand = 0;
 		int roiBatchNo = 1;
@@ -404,7 +404,7 @@ namespace Nyxus
 			}
 			else
 			{
-				// Scan pixels of pending trivial ROIs 
+				// Scan pixels of pending trivial ROIs
 				std::sort (Pending.begin(), Pending.end());
 
 				scanTrivialRoisInMemory(Pending, intens, label, start_idx);
@@ -412,7 +412,7 @@ namespace Nyxus
 				// Allocate memory
 				allocateTrivialRoisBuffers (Pending);
 
-				// reduce_trivial_rois(Pending);	
+				// reduce_trivial_rois(Pending);
 				reduce_trivial_rois_manual(Pending);
 
 				// Free memory
@@ -421,10 +421,10 @@ namespace Nyxus
 				// Reset the RAM footprint accumulator
 				batchDemand = 0;
 
-				// Clear the freshly processed ROIs from pending list 
+				// Clear the freshly processed ROIs from pending list
 				Pending.clear();
 
-				// Start a new pending set by adding the stopper ROI 
+				// Start a new pending set by adding the stopper ROI
 				Pending.push_back(lab);
 
 				// Advance the batch counter
@@ -440,9 +440,9 @@ namespace Nyxus
 		// Process what's remaining pending
 		if (Pending.size() > 0)
 		{
-			// Scan pixels of pending trivial ROIs 
+			// Scan pixels of pending trivial ROIs
 			std::sort (Pending.begin(), Pending.end());
-			
+
 			scanTrivialRoisInMemory(Pending, intens, label, start_idx);
 
 			// Allocate memory

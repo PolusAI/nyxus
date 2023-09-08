@@ -30,8 +30,7 @@ bool FeatureMethod::provides (Nyxus::AvailableFeatures fcode)
 	return std::find (provided_features.begin(), provided_features.end(), fcode) != provided_features.end();
 }
 
-bool FeatureMethod::depends (Nyxus::AvailableFeatures fcode)	
+bool FeatureMethod::depends (Nyxus::AvailableFeatures fcode)
 {
 	return std::find (dependencies.begin(), dependencies.end(), fcode) != dependencies.end();
 }
-

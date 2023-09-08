@@ -11,7 +11,7 @@ class GeodeticLengthThicknessFeature:public FeatureMethod
 {
 public:
 	GeodeticLengthThicknessFeature();
-	
+
 	void calculate(LR& r);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
 	void osized_calculate(LR& r, ImageLoader& imloader);
@@ -22,4 +22,3 @@ public:
 private:
 	double geodetic_length = 0, thickness = 0;
 };
-

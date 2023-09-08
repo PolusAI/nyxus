@@ -17,9 +17,9 @@
 enum RoiDataCacheItem
 {
 	RAW_PIXELS = 0,
-	CONTOUR, 
-	CONVEX_HULL, 
-	IMAGE_MATRIX, 
+	CONTOUR,
+	CONVEX_HULL,
+	IMAGE_MATRIX,
 	NEIGHBOR_ROI_LABELS
 };
 
@@ -44,8 +44,8 @@ public:
 	OutOfRamPixelCloud raw_pixels_NT;
 	unsigned int aux_area = 0;
 	PixIntens aux_min, aux_max;
-	std::vector<Pixel2> contour;	
-	std::vector<Pixel2> convHull_CH; 
+	std::vector<Pixel2> contour;
+	std::vector<Pixel2> convHull_CH;
 
 	std::vector<std::vector<StatsReal>> fvals;
 	std::vector<StatsReal> get_fvals(AvailableFeatures af);
@@ -72,7 +72,7 @@ public:
 class NestedLR: public BasicLR
 {
 public:
-	NestedLR(const LR& r) 
+	NestedLR(const LR& r)
 	{
 		this->aabb = r.aabb;
 		this->label = r.label;

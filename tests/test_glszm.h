@@ -10,7 +10,7 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
-#include <unordered_map> 
+#include <unordered_map>
 
 // dig. phantom values for intensity based features
 static std::unordered_map<std::string, float> glszm_values {
@@ -32,11 +32,11 @@ static std::unordered_map<std::string, float> glszm_values {
     {"GLSZM_ZE", 1.76906}
 };
 
-void test_glszm_feature(const AvailableFeatures& feature, const std::string& feature_name) 
+void test_glszm_feature(const AvailableFeatures& feature, const std::string& feature_name)
 {
 
     double total = 0;
-    
+
     LR roidata;
     // Calculate features
     GLSZMFeature f;
@@ -53,7 +53,7 @@ void test_glszm_feature(const AvailableFeatures& feature, const std::string& fea
     f.save_value(roidata.fvals);
 
     total += roidata.fvals[feature][0];
-    
+
     // image 2
     // Calculate features
     LR roidata1;
@@ -72,7 +72,7 @@ void test_glszm_feature(const AvailableFeatures& feature, const std::string& fea
     f1.save_value(roidata1.fvals);
 
     total += roidata1.fvals[feature][0];
-  
+
     // image 3
     // Calculate features
 
@@ -92,10 +92,10 @@ void test_glszm_feature(const AvailableFeatures& feature, const std::string& fea
     f2.save_value(roidata2.fvals);
 
     total += roidata2.fvals[feature][0];
-    
+
     // image 4
     // Calculate features
-    
+
     LR roidata3;
     // Calculate features
     GLSZMFeature f3;
@@ -144,7 +144,7 @@ void test_glszm_salgle()
 }
 
 void test_glszm_sahgle()
-{  
+{
     test_glszm_feature(GLSZM_SAHGLE, "GLSZM_SAHGLE");
 }
 

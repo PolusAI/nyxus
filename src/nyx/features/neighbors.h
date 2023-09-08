@@ -23,9 +23,9 @@ public:
 
 	// Compatibility with manual reduce
 	static void manual_reduce();
-	static bool required(const FeatureSet& fs) 
-	{ 
-		return fs.anyEnabled ({ 
+	static bool required(const FeatureSet& fs)
+	{
+		return fs.anyEnabled ({
 			NUM_NEIGHBORS,
 			PERCENT_TOUCHING,
 			CLOSEST_NEIGHBOR1_DIST,
@@ -34,8 +34,8 @@ public:
 			CLOSEST_NEIGHBOR2_ANG,
 			ANG_BW_NEIGHBORS_MEAN,
 			ANG_BW_NEIGHBORS_STDDEV,
-			ANG_BW_NEIGHBORS_MODE	
-			}); 
+			ANG_BW_NEIGHBORS_MODE
+			});
 	}
 private:
 	int collision_radius = 0;

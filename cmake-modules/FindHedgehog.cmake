@@ -95,4 +95,3 @@ endif ()
 #elseif (NOT MSVC)
 #    list(APPEND Hedgehog_LIBRARIES "stdc++fs")
 #endif (CMAKE_COMPILER_IS_CLANGXX)
-

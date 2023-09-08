@@ -3,7 +3,7 @@ name: Build And Run Test on Windows
 on:
   push:
     branches: [ main ]
-  pull_request: 
+  pull_request:
   workflow_dispatch:
 
 env:
@@ -21,7 +21,7 @@ jobs:
 
     - uses: ilammy/msvc-dev-cmd@v1
       name: Add MSVS Path
- 
+
     - uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: anaconda-client-env
@@ -41,9 +41,9 @@ jobs:
 
     - name: Run GTest Suite
       working-directory: ${{github.workspace}}
-      # Execute tests.  
+      # Execute tests.
       run: ./tests/${{env.BUILD_TYPE}}/runAllTests.exe
-      
+
 
   Build_and_Run_PyTest:
     name: Build and Run PyTest

@@ -11,7 +11,7 @@
 #include <filesystem>
 namespace fs = std::filesystem;
 #elif __has_include(<experimental/filesystem>)
-#include <experimental/filesystem> 
+#include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 #else
 error "Missing the <filesystem> header."
@@ -110,7 +110,7 @@ std::string NestedRoiOptions::get_last_er_msg()
 	return ermsg;
 }
 
-namespace Nyxus 
+namespace Nyxus
 {
 	std::unordered_map <int, std::vector<int>> parentsChildren;
 	std::unordered_map <int, HieLR> roiDataP, roiDataC;
@@ -136,7 +136,7 @@ namespace Nyxus
 
 		while (std::getline(f, line))
 		{
-			std::istringstream ss(line); 
+			std::istringstream ss(line);
 			parse_csv_line2(csvFields, ss);
 
 			std::stringstream ssLab;
@@ -219,7 +219,7 @@ namespace Nyxus
 		// Make the relational table file name
 		std::string fPath = outdir + "/" + parent_fname + "_nested_relations.csv";	// output file path
 
-		VERBOSLVL2(std::cout << "\nWriting relational structure to file " << fPath << "\n");	
+		VERBOSLVL2(std::cout << "\nWriting relational structure to file " << fPath << "\n");
 
 		// Write a header
 		std::ofstream ofile;
@@ -235,7 +235,7 @@ namespace Nyxus
 				ofile << r.segFname << "," << p.first << "," << childLabel << "\n";
 		}
 
-		ofile.close();	
+		ofile.close();
 	}
 
 	bool find_hierarchy(std::vector<int>& P, const std::string& par_fname, const std::string& chi_fname, int verbosity_level)
@@ -244,7 +244,7 @@ namespace Nyxus
 			std::cout << "\nUsing \n\t" << par_fname << " as container (parent) segment provider, \n\t" << chi_fname << " as child segment provider\n";
 
 		// Cache the file names to be picked up by labels to know their file origin
-		std::string base_parFname = baseFname (par_fname), 
+		std::string base_parFname = baseFname (par_fname),
 			base_chiFname = baseFname (chi_fname);
 
 		// Initialize children lists of all potential parents
@@ -264,7 +264,7 @@ namespace Nyxus
 		}
 
 		// Match children with parents
-		size_t n_orphans = 0, 
+		size_t n_orphans = 0,
 			n_non_orphans = 0;
 		for (auto lc : uniqueLabels)
 		{
@@ -287,7 +287,7 @@ namespace Nyxus
 				// Get ahold of this parent's children list
 				auto& children = parentsChildren[lp];
 
-				// We found a pair or ROIs belonging to images of specified channels. 
+				// We found a pair or ROIs belonging to images of specified channels.
 				// Now check if one is inside the other via a strict containment
 				AABB& parBB = rp.aabb;
 				if (parBB.get_xmin() <= chiBB.get_xmin() &&
@@ -356,8 +356,8 @@ namespace Nyxus
 		return "UNKNOWN";
 	}
 
-	/// @brief Scans the feature database and aggregates features of labels in parameter "P" 
-	/// according to aggregation "aggrs". The result goes to directory "outdir" 
+	/// @brief Scans the feature database and aggregates features of labels in parameter "P"
+	/// according to aggregation "aggrs". The result goes to directory "outdir"
 	bool aggregate_features2 (Nyxus::NestableRois& P, Nyxus::NestableRois& C, const std::string& outdir, const std::string& parentFname, const NestedRoiOptions::Aggregations& aggr)
 	{
 		// Anything to do at all?
@@ -376,7 +376,7 @@ namespace Nyxus
 		}
 
 		// number of child feature sets
-		int n_childSets = aggr == NestedRoiOptions::Aggregations::aNONE ? max_n_children : 1; 
+		int n_childSets = aggr == NestedRoiOptions::Aggregations::aNONE ? max_n_children : 1;
 
 		// columns of a feature result record that need to be skipped
 		int skipNonfeatureColumns = mandatory_output_columns.size();
@@ -406,7 +406,7 @@ namespace Nyxus
 		}
 
 		//--no line break now--	ofile << "\n";
-		
+
 		// *** Columns of the children or their aggregate
 		if (aggr == NestedRoiOptions::Aggregations::aNONE)
 		{
@@ -441,7 +441,7 @@ namespace Nyxus
 			int lPar = p.first;
 			auto nCh = r.children.size();
 
-			// Search this parent's feature extraction result record 
+			// Search this parent's feature extraction result record
 			std::string csvFP = get_feature_output_fname(r.intFname, r.segFname);
 			std::string csvWholeline;
 			std::vector<std::string> csvHeader, csvFields;
@@ -450,7 +450,7 @@ namespace Nyxus
 			{
 				std::cerr << "Cannot find record for parent " << lPar << " in " << csvFP << "\n";
 
-				// Write emergency CSV-code to zero-fill incomplete date of this parent 
+				// Write emergency CSV-code to zero-fill incomplete date of this parent
 
 				// --- zero-fill parent feature cells
 				for (auto& f : F)
@@ -472,11 +472,11 @@ namespace Nyxus
 
 			// Don't break the line here (ofile << "\n")! Children features may follow
 
-			//====== Write child features, aggregated or raw 
+			//====== Write child features, aggregated or raw
 
 			if (aggr == NestedRoiOptions::Aggregations::aNONE)
 			{
-				// Iterate children segments writing their raw features 
+				// Iterate children segments writing their raw features
 				// (that is, without aggregating those features)
 				int iCh = 0;	// counter of actual digested children to know how many child cells need to zero-fill wrt max number of children
 				for (auto lChi : r.children)
@@ -493,7 +493,7 @@ namespace Nyxus
 						continue;
 					}
 
-					// write features 
+					// write features
 					for (int i=0; i < F.size(); i++)
 						ofile << csvFields [skipNonfeatureColumns + i] << ",";
 
@@ -537,7 +537,7 @@ namespace Nyxus
 					{
 						auto & f = F[i];
 						auto fn = std::get<0>(f);	// feature name
-						
+
 						// Parse a feature value. (Nans, infs, etc. need to be handled.)
 						float val = 0.0f;
 						parse_as_float (csvFields[skipNonfeatureColumns+i], val);
@@ -548,8 +548,8 @@ namespace Nyxus
 					// actual children written
 					iCh++;
 				}
-			
-				// Handle a special case of no children: in that case, we need to zero-fill 
+
+				// Handle a special case of no children: in that case, we need to zero-fill
 				// the common table's cells
 				int n_chi = aggrBuf.size();
 				VERBOSLVL2(std::cout << "Parent " << lPar << ": " << n_chi << " child ROIs\n");
@@ -630,7 +630,7 @@ bool mine_segment_relations2 (
 		throw std::runtime_error("No label files to process");
 
 	// Infer a list of stems - common parts of file names without channel parts
-	
+
 	// Reverse the signature before using
 	auto signRev = channel_signature;
 	std::reverse(signRev.begin(), signRev.end());
@@ -697,14 +697,14 @@ bool mine_segment_relations2 (
 		}
 	}
 
-	// Prepare the buffers. 
+	// Prepare the buffers.
 	// 'totalNumLabels', 'stringColBuf', and 'calcResultBuf' will be updated with every call of output_roi_relational_table()
 	theResultsCache.clear();
 
 	// Prepare the header
 	theResultsCache.add_to_header({ "Image", "Parent_Label", "Child_Label" });
 
-	// Mine parent-child relations 
+	// Mine parent-child relations
 	for (auto& parStemInfo : Stems)
 	{
 		auto stem = parStemInfo.first,

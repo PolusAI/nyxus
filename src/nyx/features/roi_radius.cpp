@@ -29,19 +29,19 @@ void RoiRadiusFeature::calculate (LR& r)
 	// Median
 	TrivialHistogram h;
 	h.initialize_uniques(dists);
-	median_r = h.get_median(); 
+	median_r = h.get_median();
 }
 
 void RoiRadiusFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
 
 void RoiRadiusFeature::osized_calculate (LR& r, ImageLoader& imloader)
 {
-	const auto& cloud = r.raw_pixels_NT; 
+	const auto& cloud = r.raw_pixels_NT;
 	const std::vector<Pixel2>& contour = r.contour;
 
 	Moments2 mom2;
 	std::vector<HistoItem> dists;
-	for (size_t i=0; i<cloud.size(); i++) 
+	for (size_t i=0; i<cloud.size(); i++)
 	{
 		Pixel2 pxA = cloud.get_at(i);
 		auto [minSD, maxSD] = pxA.min_max_sqdist(contour);
@@ -65,7 +65,7 @@ void RoiRadiusFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
 	fvals[ROI_RADIUS_MEAN][0] = mean_r;
 	fvals[ROI_RADIUS_MAX][0] = max_r;
-	fvals[ROI_RADIUS_MEDIAN][0] = median_r; 
+	fvals[ROI_RADIUS_MEDIAN][0] = median_r;
 }
 
 void RoiRadiusFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)

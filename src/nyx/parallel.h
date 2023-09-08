@@ -7,10 +7,10 @@
 
 namespace Nyxus
 {
-	/// @brief Defines a parallelizable function 
+	/// @brief Defines a parallelizable function
 	typedef void (*functype) (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
-	/// @brief Runs ROI data processing functions in parallel 
+	/// @brief Runs ROI data processing functions in parallel
 	/// @param f Global function or static class method
 	/// @param nThr Number of threads
 	/// @param workPerThread Number of ROIs per thread

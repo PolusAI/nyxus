@@ -27,7 +27,7 @@ void GLCMFeature::Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nont
 	// Mean of marginal totals of GLCM
 	double mean_x;
 
-	// Compute the gray-tone spatial dependence matrix 
+	// Compute the gray-tone spatial dependence matrix
 	int dx, dy;
 	switch (angle)
 	{
@@ -55,7 +55,7 @@ void GLCMFeature::Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nont
 	calculateCoocMatAtAngle_NT (P_matrix, dx, dy, grays, min_val, max_val, false);
 
 	// Zero all feature values for blank ROI
-	if (sum_p == 0) 
+	if (sum_p == 0)
 	{
 		double f = 0.0;
 		fvals_ASM.push_back(f);
@@ -79,7 +79,7 @@ void GLCMFeature::Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nont
 
 	calculatePxpmy();
 
-	// Compute Haralick statistics 
+	// Compute Haralick statistics
 	double f;
 	f = theFeatureSet.isEnabled(GLCM_ASM) ? f_asm(P_matrix, n_levels) : 0.0;
 	fvals_ASM.push_back(f);
@@ -188,7 +188,7 @@ void GLCMFeature::calculateCoocMatAtAngle_NT(
 	matrix.fill(0.0);
 
 	int d = GLCMFeature::offset;
-	int count = 0;	// normalizing factor 
+	int count = 0;	// normalizing factor
 
 	int rows = grays.get_height(),
 		cols = grays.get_width();
@@ -240,4 +240,3 @@ void GLCMFeature::calculateCoocMatAtAngle_NT(
 		for (int j = 0; j < GLCMFeature::n_levels; j++)
 			matrix.xy(i, j) /= (realCnt + EPSILON);
 }
-

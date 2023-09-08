@@ -13,7 +13,7 @@
 #include "fmjpeg2k/djdecode.h"
 #endif
 template<class DataType>
-class NyxusGrayscaleDicomLoader : public AbstractTileLoader<DataType> 
+class NyxusGrayscaleDicomLoader : public AbstractTileLoader<DataType>
 {
 public:
 
@@ -23,7 +23,7 @@ public:
     NyxusGrayscaleDicomLoader(
         size_t numberThreads,
         std::string const& filePath)
-        : AbstractTileLoader<DataType>("NyxusGrayscaleDicomLoader", numberThreads, filePath) 
+        : AbstractTileLoader<DataType>("NyxusGrayscaleDicomLoader", numberThreads, filePath)
     {
         // register JPEG decoder
         DJDecoderRegistration::registerCodecs();
@@ -36,7 +36,7 @@ public:
         FMJPEG2KDecoderRegistration::registerCodecs();
 #endif
         dcm_ff_ = DcmFileFormat();
-        auto file_ok = dcm_ff_.loadFile(filePath.c_str()); 
+        auto file_ok = dcm_ff_.loadFile(filePath.c_str());
         if (file_ok.good())
         // Open the file
         {
@@ -45,13 +45,13 @@ public:
             ds->findAndGetUint16(DCM_SamplesPerPixel, tmp);
             samplesPerPixel_ = static_cast<short>(tmp); // OK to downcast
             // Test if the file is grayscale
-            if (samplesPerPixel_ != 1) 
-            {          
+            if (samplesPerPixel_ != 1)
+            {
                 std::stringstream message;
                 message << "Tile Loader ERROR: The file is not grayscale: SamplesPerPixel = " << samplesPerPixel_ << ".";
                 throw (std::runtime_error(message.str()));
             }
-            
+
             tmp = 0;
             ds->findAndGetUint16(DCM_Columns, tmp);
             tileWidth_ = tmp;
@@ -71,10 +71,10 @@ public:
 
             numCols_ = static_cast<size_t>(ceil(fullWidth_/tileWidth_));
             numRows_ = static_cast<size_t>(ceil(fullHeight_/tileHeight_));
-            
-            // our images have single Z plane. Whole Slide images will have multiple frames 
+
+            // our images have single Z plane. Whole Slide images will have multiple frames
             // but still single Z plane
-            fullDepth_ = 1; 
+            fullDepth_ = 1;
             tileDepth_ = 1;
 
             // this comes into play for WSI and also for sanity check
@@ -94,14 +94,14 @@ public:
                 isSigned_ = true;
             }
         }
-        else 
-        { 
-            throw (std::runtime_error("Tile Loader ERROR: The file can not be opened.")); 
+        else
+        {
+            throw (std::runtime_error("Tile Loader ERROR: The file can not be opened."));
         }
     }
 
     /// @brief NyxusGrayscaleDicomLoader destructor
-    ~NyxusGrayscaleDicomLoader() override 
+    ~NyxusGrayscaleDicomLoader() override
     {
         dcm_ff_.clear();
         DJDecoderRegistration::cleanup();
@@ -109,7 +109,7 @@ public:
         DcmRLEDecoderRegistration::cleanup();
 #ifdef JPEG2K_SUPPORT
         FMJPEG2KDecoderRegistration::cleanup();
-#endif       
+#endif
     }
 
     /// @brief Load a tiff tile from a view
@@ -122,7 +122,7 @@ public:
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
         size_t indexLayerGlobalTile,
-        [[maybe_unused]] size_t level) override 
+        [[maybe_unused]] size_t level) override
     {
         // Get ahold of the logical (feature extraction facing) tile buffer from its smart pointer
         std::vector<DataType>& tileDataVec = *tile;
@@ -149,7 +149,7 @@ public:
                         << "Tile Loader ERROR: The data format is not supported for signed integer, number bits per pixel = "
                         << bitsPerSample_;
                     throw (std::runtime_error(message.str()));
-            }       
+            }
         } else {
             switch(bitsPerSample_){
                 case 1:
@@ -167,7 +167,7 @@ public:
                         << "Tile Loader ERROR: The data format is not supported for unsigned integer, number bits per pixel = "
                         << bitsPerSample_;
                     throw (std::runtime_error(message.str()));
-            }       
+            }
         }
 
     }
@@ -215,8 +215,8 @@ private:
     template<typename FileType>
     void copyFrame(
         std::vector<DataType>& dest_as_vector,
-        uint32_t frame_no) 
-    {   
+        uint32_t frame_no)
+    {
         size_t data_length = tileHeight_ * tileWidth_;
         if(dest_as_vector.size() < data_length){
             std::stringstream message;
@@ -239,9 +239,9 @@ private:
             auto buffer = std::vector<FileType>(data_length);
             uint32_t start_fragment = 0;
             OFString decompressed_color_model;
-            status = pixel_data->getUncompressedFrame(ds, 
-                                                frame_no,  
-                                                start_fragment, 
+            status = pixel_data->getUncompressedFrame(ds,
+                                                frame_no,
+                                                start_fragment,
                                                 buffer.data(),
                                                 frame_size,
                                                 decompressed_color_model, NULL);
@@ -260,7 +260,7 @@ private:
                 throw (std::runtime_error(message.str()));
             }
         }
-  
+
     }
 
     /// @brief Private function to copy and cast the values for Binary Segmentation Image
@@ -269,11 +269,11 @@ private:
     /// @param frame_no Frame to copy
     void copyBinaryFrame(
         std::vector<DataType>& dest_as_vector,
-        uint32_t frame_no) 
-    {   
+        uint32_t frame_no)
+    {
         DcmDataset* ds = dcm_ff_.getDataset();
         DcmSegmentation *segdoc = nullptr;
-    
+
         OFCondition status = DcmSegmentation::loadDataset(*ds, segdoc);
         if(status.good()){
             const DcmIODTypes::Frame *frame = segdoc->getFrame(static_cast<size_t>(frame_no));

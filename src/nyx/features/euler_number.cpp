@@ -18,9 +18,9 @@ void EulerNumberFeature::calculate (LR& r)
 	const std::vector<Pixel2>& cloud = r.raw_pixels;
 	const AABB& aabb = r.aabb;
 
-	StatsInt min_x = aabb.get_xmin(), 
-		min_y = aabb.get_ymin(), 
-		max_x = aabb.get_xmax(), 
+	StatsInt min_x = aabb.get_xmin(),
+		min_y = aabb.get_ymin(),
+		max_x = aabb.get_xmax(),
 		max_y = aabb.get_ymax();
 
 	// Create the image mask matrix
@@ -31,7 +31,7 @@ void EulerNumberFeature::calculate (LR& r)
 	for (auto& p : cloud)
 	{
 		int col = p.x - min_x,
-			row = p.y - min_y, 
+			row = p.y - min_y,
 			idx = row * nx + col;
 		I[idx] = 1;
 	}
@@ -46,7 +46,7 @@ long EulerNumberFeature::calculate_euler (std::vector<unsigned char> & arr, int 
 		std::cout << "Error! Calling EulerNumberFeature with mode other than 4 or 8 \n";
 		return 0;
 	}
-	
+
 	unsigned char Imq;
 	// Pattern match counters
 	long C1 = 0, C3 = 0, Cd = 0;
@@ -55,35 +55,35 @@ long EulerNumberFeature::calculate_euler (std::vector<unsigned char> & arr, int 
 	size_t i;
 
 	// update pattern counters by scanning the image.
-	for (y = 1; y < height; y++) 
+	for (y = 1; y < height; y++)
 	{
-		for (x = 1; x < width; x++) 
+		for (x = 1; x < width; x++)
 		{
 			// Get the quad-pixel at this image location
 			Imq = 0;
-			if (arr[(y - 1) * width + x - 1] > 0) 
+			if (arr[(y - 1) * width + x - 1] > 0)
 				Imq |= (1 << 3);
-			if (arr[(y - 1) * width + x] > 0) 
+			if (arr[(y - 1) * width + x] > 0)
 				Imq |= (1 << 2);
-			if (arr[y * width + x - 1] > 0) 
+			if (arr[y * width + x - 1] > 0)
 				Imq |= (1 << 1);
-			if (arr[y * width + x] > 0) 
+			if (arr[y * width + x] > 0)
 				Imq |= (1 << 0);
 
 			// find the matching pattern
-			for (i = 0; i < 10; i++) 
-				if (Imq == Px[i]) 
+			for (i = 0; i < 10; i++)
+				if (Imq == Px[i])
 					break;
 			// unsigned i always >= 0
 			// if      (i >= 0 && i <= 3) C1++;
-			if (i <= 3) 
+			if (i <= 3)
 				C1++;
-			else 
+			else
 				if (i >= 4 && i <= 7) {
 					C3++;
 				}
-				else 
-					if (i == 8 && i == 9) { 
+				else
+					if (i == 8 && i == 9) {
 						Cd++;
 					}
 		}

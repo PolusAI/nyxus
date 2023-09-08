@@ -16,8 +16,8 @@ where
 
 .. math::
 
-    (k_x,k_y,k_z)\neq(0,0,0) 
-and 
+    (k_x,k_y,k_z)\neq(0,0,0)
+and
 
 .. math::
 
@@ -90,9 +90,9 @@ NGTDM_COARSENESS :math:`=  \frac{1}{\sum^{N_g}_{i=1}{p_{i}s_{i}}}`
 Contrast
 --------
 
-Assuming :math:`p_i` and :math:`p_j` are row indices of the NGTDM matrix, 
+Assuming :math:`p_i` and :math:`p_j` are row indices of the NGTDM matrix,
 
-NGTDM_CONTRAST :math:`= \left(\frac{1}{N_{g,p}(N_{g,p}-1)}\sum^{N_g}_{i=1}\sum^{N_g}_{j=1}{p_{i}p_{j}(i-j)^2}\right) \left(\frac{1}{N_{v,p}}\sum^{N_g}_{i=1}{s_i}\right)` 
+NGTDM_CONTRAST :math:`= \left(\frac{1}{N_{g,p}(N_{g,p}-1)}\sum^{N_g}_{i=1}\sum^{N_g}_{j=1}{p_{i}p_{j}(i-j)^2}\right) \left(\frac{1}{N_{v,p}}\sum^{N_g}_{i=1}{s_i}\right)`
 where :math:`p_i \neq 0` and :math:`p_j \neq 0`
 
 Busyness
@@ -103,7 +103,7 @@ NGTDM_BUSYNESS :math:`= \frac{\sum^{N_g}_{i = 1}{p_{i}s_{i}}}{\sum^{N_g}_{i = 1}
 Complexity
 ----------
 
-NGTDM_COMPLEXITY :math:`= \frac{1}{N_{v,p}}\sum^{N_g}_{i = 1}\sum^{N_g}_{j = 1}{|i - j| \frac{p_{i}s_{i} + p_{j}s_{j}}{p_i + p_j}}` 
+NGTDM_COMPLEXITY :math:`= \frac{1}{N_{v,p}}\sum^{N_g}_{i = 1}\sum^{N_g}_{j = 1}{|i - j| \frac{p_{i}s_{i} + p_{j}s_{j}}{p_i + p_j}}`
 where :math:`p_i \neq 0, p_j \neq 0`
 
 Strength

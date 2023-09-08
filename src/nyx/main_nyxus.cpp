@@ -5,7 +5,7 @@
 #include "globals.h"
 
 #ifdef USE_GPU
-	bool gpu_initialize(int dev_id); 
+	bool gpu_initialize(int dev_id);
 #endif
 
 int main (int argc, char** argv)
@@ -41,18 +41,18 @@ int main (int argc, char** argv)
 	// Scan file names
 	std::vector <std::string> intensFiles, labelFiles;
 	int errorCode = Nyxus::read_dataset (
-		theEnvironment.intensity_dir, 
-		theEnvironment.labels_dir, 
+		theEnvironment.intensity_dir,
+		theEnvironment.labels_dir,
 		theEnvironment.get_file_pattern(),
-		theEnvironment.output_dir, 
-		theEnvironment.intSegMapDir, 
-		theEnvironment.intSegMapFile, 
-		true, 
+		theEnvironment.output_dir,
+		theEnvironment.intSegMapDir,
+		theEnvironment.intSegMapFile,
+		true,
 		intensFiles, labelFiles);
 	if (errorCode)
 	{
 		std::cout << "Dataset structure error\n";
-		return 1; 
+		return 1;
 	}
 
 	// Current time stamp #1
@@ -62,10 +62,10 @@ int main (int argc, char** argv)
 	// Process the image data
 	int min_online_roi_size = 0;
 	errorCode = processDataset (
-		intensFiles, 
-		labelFiles, 
-		theEnvironment.n_loader_threads, 
-		theEnvironment.n_pixel_scan_threads, 
+		intensFiles,
+		labelFiles,
+		theEnvironment.n_loader_threads,
+		theEnvironment.n_pixel_scan_threads,
 		theEnvironment.n_reduce_threads,
 		min_online_roi_size,
 		theEnvironment.useCsv, // 'true' to save to csv
@@ -93,21 +93,21 @@ int main (int argc, char** argv)
 	// Save features in Apache formats, if enabled
 	#ifdef USE_ARROW
 
-		if (theEnvironment.arrow_output_type == "ARROW" || theEnvironment.arrow_output_type == "ARROWIPC") 
+		if (theEnvironment.arrow_output_type == "ARROW" || theEnvironment.arrow_output_type == "ARROWIPC")
 			theEnvironment.arrow_output.create_arrow_file(theResultsCache.get_headerBuf(),
 				theResultsCache.get_stringColBuf(),
 				theResultsCache.get_calcResultBuf(),
 				theResultsCache.get_num_rows(),
 				theEnvironment.output_dir);
 
-		else 
-			if (theEnvironment.arrow_output_type == "PARQUET") 
+		else
+			if (theEnvironment.arrow_output_type == "PARQUET")
 				theEnvironment.arrow_output.create_parquet_file(theResultsCache.get_headerBuf(),
 					theResultsCache.get_stringColBuf(),
 					theResultsCache.get_calcResultBuf(),
 					theResultsCache.get_num_rows(),
 					theEnvironment.output_dir);
-	#endif 
+	#endif
 
 	// Process nested ROIs
 	if (theEnvironment.nestedOptions.defined())
@@ -127,7 +127,7 @@ int main (int argc, char** argv)
 		{
 			std::cerr << "Error minimg hierarchical relations\n";
 			return 1;
-		}	
+		}
 	}
 
 	// Current time stamp #2
@@ -139,9 +139,7 @@ int main (int argc, char** argv)
 
 void showCmdlineHelp()
 {
-	std::cout 
-		<< "Command line format:" << std::endl 
+	std::cout
+		<< "Command line format:" << std::endl
 		<< "\t" << PROJECT_NAME << " <label directory> <intensity directory> <output directory> [--minOnlineROI <# of pixels>] [--threads <# of FastLoader threads> <# of feature calculation threads>]" << std::endl;
 }
-
-

@@ -9,10 +9,10 @@ bool operator == (const Pixel2& p1, const Pixel2& p2)
 
 double Pixel2::min_sqdist(const std::vector<Pixel2>& cloud) const
 {
-	#if 0	
+	#if 0
 	//
 	// v1, slower version not requiring the ordered contour
-	// 
+	//
 
 	auto extrem_d = sqdist(cloud[0]);
 	int mindi = 0;
@@ -57,18 +57,18 @@ double Pixel2::min_sqdist(const std::vector<Pixel2>& cloud) const
 		a = extrem_i - stepL;
 		b = extrem_i + stepR;
 		step = b - a <= 10 ? 1 : (b - a) / log(b - a);
-	} 
-	while (b - a > 2);	
+	}
+	while (b - a > 2);
 
 	return extrem_d;
 }
 
 double Pixel2::max_sqdist(const std::vector<Pixel2>& cloud) const
 {
-	#if 0	
+	#if 0
 	//
 	// v1, slower version not requiring the ordered contour
-	// 
+	//
 
 	auto extrem_d = sqdist(cloud[0]);
 	int mindi = 0;
@@ -113,7 +113,7 @@ double Pixel2::max_sqdist(const std::vector<Pixel2>& cloud) const
 		a = extrem_i - stepL;
 		b = extrem_i + stepR;
 		step = b - a <= 10 ? 1 : (b - a) / log(b - a);
-	} 
+	}
 	while (b - a > 2);
 
 	return extrem_d;
@@ -194,9 +194,3 @@ double Pixel2::sqdist(int x, int y) const
 	double retval = dx * dx + dy * dy;
 	return retval;
 }
-
-
-
-
-
-

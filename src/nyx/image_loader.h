@@ -29,16 +29,16 @@ public:
 	size_t get_full_width();
 	size_t get_full_height();
 private:
-	AbstractTileLoader<uint32_t> *segFL = nullptr, *intFL = nullptr; 
-	std::shared_ptr<std::vector<uint32_t>> ptrI = nullptr; 
-	std::shared_ptr<std::vector<uint32_t>> ptrL = nullptr; 
+	AbstractTileLoader<uint32_t> *segFL = nullptr, *intFL = nullptr;
+	std::shared_ptr<std::vector<uint32_t>> ptrI = nullptr;
+	std::shared_ptr<std::vector<uint32_t>> ptrL = nullptr;
 	// Tile height, width, and depth
 	size_t th,
 		tw,
 		td;
 
 	// 2D tile size
-	size_t tileSize;	
+	size_t tileSize;
 
 	// Full height, width, and depth
 	size_t fh,

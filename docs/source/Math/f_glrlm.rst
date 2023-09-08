@@ -35,15 +35,15 @@ Let:
 * :math:`N_g` be the number of discrete intensity values in the image
 * :math:`N_r` be the number of discrete run lengths in the image
 * :math:`N_p` be the number of voxels in the image
-* :math:`N_r(\theta)` be the number of runs in the image along angle :math:`\theta`, which is equal to 
+* :math:`N_r(\theta)` be the number of runs in the image along angle :math:`\theta`, which is equal to
 
 .. math::
-  \sum^{N_g}_{i=1}\sum^{N_r}_{j=1}{\textbf{P}(i,j|\theta)} 
-  
+  \sum^{N_g}_{i=1}\sum^{N_r}_{j=1}{\textbf{P}(i,j|\theta)}
+
 and :math:`1 \leq N_r(\theta) \leq N_p`
 
 * :math:`\textbf{P}(i,j|\theta)` be the run length matrix for an arbitrary direction :math:`\theta`
-* :math:`p(i,j|\theta)` be the normalized run length matrix, defined as 
+* :math:`p(i,j|\theta)` be the normalized run length matrix, defined as
 
 .. math::
   p(i,j|\theta) = \frac{\textbf{P}(i,j|\theta)}{N_r(\theta)}

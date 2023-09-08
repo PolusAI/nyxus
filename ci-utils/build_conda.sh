@@ -15,22 +15,22 @@ fi
 
 MINICONDA=$PWD/miniconda-for-nyxus # Modify this to your preferred location for persistence
 CPP_BUILD_DIR=$PWD
-SRC_ROOT=$1 #source dir location
+SRC_ROOT="$1" #source dir location
 NYXUS_ROOT=$SRC_ROOT
 PYTHON=3.8
 
-git config --global --add safe.directory $NYXUS_ROOT
+git config --global --add safe.directory "$NYXUS_ROOT"
 
 #----------------------------------------------------------------------
 # Run these only once
 
 function setup_miniconda() {
   MINICONDA_URL="https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh"
-  curl -L $MINICONDA_URL -o miniconda.sh
+  curl -L "$MINICONDA_URL" -o miniconda.sh
   echo "installing miniconda"
-  bash miniconda.sh -b -p $MINICONDA
+  bash miniconda.sh -b -p "$MINICONDA"
   rm -f miniconda.sh
-  LOCAL_PATH=$PATH
+  LOCAL_PATH="$PATH"
   export PATH="$MINICONDA/bin:$PATH"
 
   echo "updating miniconda"
@@ -45,10 +45,10 @@ function setup_miniconda() {
   echo "install dependencies"
   conda create -y -n nyxus-$PYTHON -c conda-forge  \
         python=$PYTHON \
-        --file ${SRC_ROOT}/ci-utils/envs/conda_cpp.txt \
-        --file ${SRC_ROOT}/ci-utils/envs/conda_linux_compiler.txt \
-        --file ${SRC_ROOT}/ci-utils/envs/conda_py.txt \
-        --file ${SRC_ROOT}/ci-utils/envs/conda_linux_gpu.txt 
+        --file "${SRC_ROOT}"/ci-utils/envs/conda_cpp.txt \
+        --file "${SRC_ROOT}"/ci-utils/envs/conda_linux_compiler.txt \
+        --file "${SRC_ROOT}"/ci-utils/envs/conda_py.txt \
+        --file "${SRC_ROOT}"/ci-utils/envs/conda_linux_gpu.txt
 
   export PATH=$LOCAL_PATH
 }
@@ -58,17 +58,17 @@ setup_miniconda
 #----------------------------------------------------------------------
 # Activate conda in bash and activate conda environment
 
-. $MINICONDA/etc/profile.d/conda.sh
+. "$MINICONDA"/etc/profile.d/conda.sh
 conda activate nyxus-$PYTHON
-export NYXUS_HOME=$CONDA_PREFIX
+export NYXUS_HOME="$CONDA_PREFIX"
 #Build CLI
-mkdir -p $CPP_BUILD_DIR
-pushd $CPP_BUILD_DIR
-cmake -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-      -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+mkdir -p "$CPP_BUILD_DIR"
+pushd "$CPP_BUILD_DIR"
+cmake -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+      -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
       -DBUILD_CLI=ON \
       -DUSEGPU=ON \
       -DUSEARROW=ON \
-      $NYXUS_ROOT
+      "$NYXUS_ROOT"
 
 cmake --build . --parallel 4
