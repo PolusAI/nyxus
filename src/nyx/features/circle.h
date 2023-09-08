@@ -34,7 +34,7 @@ private:
 		// out:
 		Point2f& center,
 		float& radius);
-	void findMinEnclosingCircle(std::vector<Pixel2>& contour, Point2f& center, float& radius);
+	void findMinEnclosingCircle(const std::vector<Pixel2>& contour, Point2f& center, float& radius);
 	void findSecondPoint(const std::vector<Pixel2>& pts, int i, Point2f& center, float& radius);
 	void findThirdPoint(const std::vector<Pixel2>& pts, int i, int j, Point2f& center, float& radius);
 	void findCircle3pts(const std::vector<Pixel2>& pts, Point2f& center, float& radius);

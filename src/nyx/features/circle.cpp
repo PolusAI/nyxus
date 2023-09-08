@@ -137,7 +137,7 @@ void EnclosingInscribingCircumscribingCircleFeature::findSecondPoint (const std:
     }
 }
 
-void EnclosingInscribingCircumscribingCircleFeature::findMinEnclosingCircle (std::vector<Pixel2>& contour, Point2f& center, float& radius)
+void EnclosingInscribingCircumscribingCircleFeature::findMinEnclosingCircle (const std::vector<Pixel2>& contour, Point2f& center, float& radius)
 {
     center.x = (float)(contour[0].x + contour[1].x) / 2.0f;
     center.y = (float)(contour[0].y + contour[1].y) / 2.0f;
