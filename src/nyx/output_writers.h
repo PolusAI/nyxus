@@ -371,16 +371,15 @@ class WriterFactory {
         static std::shared_ptr<ApacheArrowWriter> create_writer(const std::string &output_file, const std::vector<std::string> &header) {
             
             if (Nyxus::ends_with_substr(output_file, ".parquet")) {
-                std::cout << "creating parquet file" << std::endl;
+                
                 return std::make_shared<ParquetWriter>(output_file);
 
             } else if (Nyxus::ends_with_substr(output_file, ".arrow") || Nyxus::ends_with_substr(output_file, ".feather")) {
-                std::cout << "creating arrow file" << std::endl;
                 
                 return std::make_shared<ArrowIPCWriter>(output_file, header);
 
             } else {
-                std::cout << "error branch" << std::endl;
+
                 std::filesystem::path path(output_file);
 
                 if (path.has_extension()) {
