@@ -20,7 +20,7 @@ public:
 	void cleanup_instance();
 
 	// Support of manual reduce
-	static bool required(const FeatureSet& fs) { return fs.anyEnabled ({ CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY }); }
+	static bool required(const FeatureSet& fs) { return fs.anyEnabled ({ CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY, POLYGONALITY_AVE, HEXAGONALITY_AVE, HEXAGONALITY_STDDEV }); }
 
 private:
 	void build_convex_hull(const std::vector<Pixel2>& contour, std::vector<Pixel2>& convhull);

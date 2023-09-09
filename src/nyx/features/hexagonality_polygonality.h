@@ -23,5 +23,6 @@ public:
 
 private:
 	double polyAve = 0, hexAve = 0, hexSd = 0;
+	static const int novalue = -1;	// feature falue made intentionally blank and unsuitable for model training
 };
 
