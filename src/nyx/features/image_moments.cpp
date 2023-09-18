@@ -1,8 +1,6 @@
 #include "../environment.h"
 #include "image_moments.h"
 
-using pixelvector = std::vector<Pixel2>;
-
 ImageMomentsFeature::ImageMomentsFeature() : FeatureMethod("ImageMomentsFeature")
 {
     provide_features({
@@ -88,35 +86,20 @@ void ImageMomentsFeature::calculate (LR& r)
     calcHuInvariants (c);
 
     // Prepare weighted pixel cloud
-    decltype(c) w = c;
-    apply_dist2contour_weighting (w, r.contour, weighting_epsilon);
+    std::vector<float> w;
+    Nyxus::copy_pixcloud_intensities (w, c);
+    Nyxus::apply_dist2contour_weighting (w, c, r.contour, weighting_epsilon);
 
     // Calculate weighted moments
-    calcOrigins (w);
-    calcWeightedRawMoments (w);
-    calcWeightedCentralMoments (w);
-    calcWeightedHuInvariants (w);
+    calcOrigins (c, w);
+    calcWeightedRawMoments (c, w);
+    calcWeightedCentralMoments (c, w);
+    calcWeightedHuInvariants (c, w);
 }
 
 #ifdef USE_GPU
 void ImageMomentsFeature::calculate_via_gpu (LR& r, size_t roi_idx)
 {
-    //ImageMatrix& im = r.aux_image_matrix;
-    //
-    //bool ok = ImageMomentsFeature_calculate2(
-    //    m00, m01, m02, m03, m10, m11, m12, m20, m21, m30,   // spatial moments
-    //    mu02, mu03, mu11, mu12, mu20, mu21, mu30,   // central moments
-    //    nu02, nu03, nu11, nu12, nu20, nu21, nu30,    // normalized central moments
-    //    w00, w01, w02, w03, w10, w20, w30,   // normalized spatial moments
-    //    hm1, hm2, hm3, hm4, hm5, hm6, hm7,  // Hu moments
-    //    wm00, wm01, wm02, wm03, wm10, wm11, wm12, wm20, wm21, wm30,   // weighted spatial moments
-    //    wmu02, wmu03, wmu11, wmu12, wmu20, wmu21, wmu30,   // weighted central moments
-    //    whm1, whm2, whm3, whm4, whm5, whm6, whm7,    // weighted Hum moments
-    //    im, 
-    //    roi_idx,
-    //    r.aabb.get_xmin(), 
-    //    r.aabb.get_ymin());
-
     bool ok = ImageMomentsFeature_calculate3(
         m00, m01, m02, m03, m10, m11, m12, m20, m21, m30,   // spatial moments
         mu02, mu03, mu11, mu12, mu20, mu21, mu30,   // central moments
@@ -215,7 +198,7 @@ void ImageMomentsFeature::save_value(std::vector<std::vector<double>>& fvals)
     fvals[WEIGHTED_HU_M7][0] = whm7;
 }
 
-/// @brief Calculates the spatial 2D moment of order q,p f ROI pixel cloud
+/// @brief Calculates a spatial 2D moment of order q,p of ROI pixel cloud
 double ImageMomentsFeature::moment (const pixcloud& cloud, int p, int q)
 {
     double q_ = q, p_ = p, sum = 0;
@@ -224,7 +207,27 @@ double ImageMomentsFeature::moment (const pixcloud& cloud, int p, int q)
     return sum;
 }
 
+/// @brief Calculates a spatial 2D moment of order q,p of ROI pixel cloud 'c' using real-valued intensities 'real_intens'
+double ImageMomentsFeature::moment (const pixcloud& c, const std::vector<float>& real_intens, int p, int q)
+{
+    double q_ = q, p_ = p, sum = 0;
+    size_t n = c.size();
+    for (size_t i=0; i<n; i++)
+    {
+        auto& pxl = c[i];
+        sum += real_intens[i] * pow(double(pxl.x - baseX), p_) * pow(double(pxl.y - baseY), q_);
+    }
+    return sum;
+}
+
 void ImageMomentsFeature::calcOrigins (const std::vector<Pixel2>& cloud)
+{
+    double m00 = moment (cloud, 0, 0);
+    originOfX = moment (cloud, 1, 0) / m00;
+    originOfY = moment (cloud, 0, 1) / m00;
+}
+
+void ImageMomentsFeature::calcOrigins (const std::vector<Pixel2>& cloud, const std::vector<float>& real_valued_intensities)
 {
     double m00 = moment (cloud, 0, 0);
     originOfX = moment (cloud, 1, 0) / m00;
@@ -237,6 +240,19 @@ double ImageMomentsFeature::centralMom (const std::vector<Pixel2>& cloud, int p,
     double sum = 0;
     for (auto& pxl : cloud)
         sum += double(pxl.inten) * pow(double(pxl.x-baseX) - originOfX, p) * pow(double(pxl.y-baseY) - originOfY, q);
+    return sum;
+}
+
+/// @brief Calculates the central 2D moment of order q,p of ROI pixel cloud using real-valued intensities
+double ImageMomentsFeature::centralMom (const std::vector<Pixel2>& cloud, const std::vector<float>& realintens, int p, int q)
+{
+    double sum = 0;
+    size_t n = cloud.size();
+    for (size_t i = 0; i < n; i++)
+    {
+        auto& pxl = cloud[i];
+        sum += realintens[i] * pow(double(pxl.x - baseX) - originOfX, p) * pow(double(pxl.y - baseY) - originOfY, q);
+    }
     return sum;
 }
 
@@ -256,6 +272,14 @@ double ImageMomentsFeature::normCentralMom (const std::vector<Pixel2>& cloud, in
 {
     double temp = ((double(p) + double(q)) / 2.0) + 1.0;
     double retval = centralMom(cloud, p, q) / pow(moment (cloud, 0, 0), temp);
+    return retval;
+}
+
+/// @brief Calculates the normalized central 2D moment of order q,p of ROI pixel cloud using real-valued intensities 'realintens'
+double ImageMomentsFeature::normCentralMom (const std::vector<Pixel2>& cloud, const std::vector<float>& realintens, int p, int q)
+{
+    double temp = ((double(p) + double(q)) / 2.0) + 1.0;
+    double retval = centralMom(cloud, realintens, p, q) / pow(moment(cloud, realintens, 0, 0), temp);
     return retval;
 }
 
@@ -292,6 +316,39 @@ std::tuple<double, double, double, double, double, double, double> ImageMomentsF
     return { h1, h2, h3, h4, h5, h6, h7 };
 }
 
+std::tuple<double, double, double, double, double, double, double> ImageMomentsFeature::calcHuInvariants_imp (const std::vector<Pixel2>& cloud, const std::vector<float>& realintens)
+{
+    // calculate the 7 Hu-1962 invariants
+
+    auto _20 = normCentralMom (cloud, realintens, 2, 0),
+        _02 = normCentralMom (cloud, realintens, 0, 2),
+        _11 = normCentralMom (cloud, realintens, 1, 1),
+        _30 = normCentralMom (cloud, realintens, 3, 0),
+        _12 = normCentralMom (cloud, realintens, 1, 2),
+        _21 = normCentralMom (cloud, realintens, 2, 1),
+        _03 = normCentralMom (cloud, realintens, 0, 3);
+
+    double h1 = _20 + _02;
+    double h2 = pow((_20 - _02), 2) + 4 * (pow(_11, 2));
+    double h3 = pow((_30 - 3 * _12), 2) +
+        pow((3 * _21 - _03), 2);
+    double h4 = pow((_30 + _12), 2) +
+        pow((_21 + _03), 2);
+    double h5 = (_30 - 3 * _12) *
+        (_30 + _12) *
+        (pow(_30 + _12, 2) - 3 * pow(_21 + _03, 2)) +
+        (3 * _21 - _03) * (_21 + _03) *
+        (pow(3 * (_30 + _12), 2) - pow(_21 + _03, 2));
+    double h6 = (_20 - _02) * (pow(_30 + _12, 2) -
+        pow(_21 + _03, 2)) + (4 * _11 * (_30 + _12) *
+            _21 + _03);
+    double h7 = (3 * _21 - _03) * (_30 + _12) * (pow(_30 + _12, 2) -
+        3 * pow(_21 + _03, 2)) - (_30 - 3 * _12) * (_21 + _03) *
+        (3 * pow(_30 + _12, 2) - pow(_21 + _03, 2));
+
+    return { h1, h2, h3, h4, h5, h6, h7 };
+}
+
 void ImageMomentsFeature::calcHuInvariants (const std::vector<Pixel2>& cloud)
 {
     std::tie(hm1, hm2, hm3, hm4, hm5, hm6, hm7) = calcHuInvariants_imp (cloud);
@@ -300,6 +357,11 @@ void ImageMomentsFeature::calcHuInvariants (const std::vector<Pixel2>& cloud)
 void ImageMomentsFeature::calcWeightedHuInvariants (const std::vector<Pixel2>& cloud)
 {
     std::tie(whm1, whm2, whm3, whm4, whm5, whm6, whm7) = calcHuInvariants_imp (cloud);
+}
+
+void ImageMomentsFeature::calcWeightedHuInvariants (const std::vector<Pixel2>& cloud, const std::vector<float>& realintens)
+{
+    std::tie(whm1, whm2, whm3, whm4, whm5, whm6, whm7) = calcHuInvariants_imp (cloud, realintens);
 }
 
 void ImageMomentsFeature::calcRawMoments (const std::vector<Pixel2>& cloud)
@@ -332,6 +394,20 @@ void ImageMomentsFeature::calcWeightedRawMoments (const std::vector<Pixel2>& clo
     wm30 = moment (cloud, 3, 0);
 }
 
+void ImageMomentsFeature::calcWeightedRawMoments (const std::vector<Pixel2>& cloud, const std::vector<float>& real_intens)
+{
+    wm00 = moment (cloud, real_intens, 0, 0);
+    wm01 = moment (cloud, real_intens, 0, 1);
+    wm02 = moment (cloud, real_intens, 0, 2);
+    wm03 = moment (cloud, real_intens, 0, 3);
+    wm10 = moment (cloud, real_intens, 1, 0);
+    wm11 = moment (cloud, real_intens, 1, 1);
+    wm12 = moment (cloud, real_intens, 1, 2);
+    wm20 = moment (cloud, real_intens, 2, 0);
+    wm21 = moment (cloud, real_intens, 2, 1);
+    wm30 = moment (cloud, real_intens, 3, 0);
+}
+
 void ImageMomentsFeature::calcCentralMoments (const std::vector<Pixel2>& cloud)
 {
     mu02 = centralMom (cloud, 0, 2);
@@ -352,6 +428,19 @@ void ImageMomentsFeature::calcWeightedCentralMoments (const std::vector<Pixel2>&
     wmu20 = centralMom (cloud, 2, 0);
     wmu21 = centralMom (cloud, 2, 1);
     wmu30 = centralMom (cloud, 3, 0);
+}
+
+//
+
+void ImageMomentsFeature::calcWeightedCentralMoments (const std::vector<Pixel2>& cloud, const std::vector<float>& realintens)
+{
+    wmu02 = centralMom (cloud, realintens, 0, 2);
+    wmu03 = centralMom (cloud, realintens, 0, 3);
+    wmu11 = centralMom (cloud, realintens, 1, 1);
+    wmu12 = centralMom (cloud, realintens, 1, 2);
+    wmu20 = centralMom (cloud, realintens, 2, 0);
+    wmu21 = centralMom (cloud, realintens, 2, 1);
+    wmu30 = centralMom (cloud, realintens, 3, 0);
 }
 
 void ImageMomentsFeature::calcNormCentralMoments (const std::vector<Pixel2>& cloud)
@@ -403,8 +492,8 @@ void ImageMomentsFeature::parallel_process_1_batch (size_t start, size_t end, st
 /// @param ptrLabelData ROI data
 void ImageMomentsFeature::gpu_process_all_rois (const std::vector<int> & Labels, std::unordered_map <int, LR>& RoiData)
 {
-    // Send image matrices to GPU-side
-    bool ok = send_imgmatrices_to_gpu (ImageMatrixBuffer, imageMatrixBufferLen);
+    // Transfers a solid buffer of whole image's combined image matrices to GPU-side
+    bool ok = send_imgmatrices_to_gpu (Nyxus::ImageMatrixBuffer, Nyxus::imageMatrixBufferLen, Nyxus::largest_roi_imatr_buf_len);
 
     // Prepare consolidated all-ROI contours for pixel weighting in weighted moments
     std::vector<size_t> hoIndices;
@@ -445,3 +534,35 @@ void ImageMomentsFeature::gpu_process_all_rois (const std::vector<int> & Labels,
 }
 #endif
 
+namespace Nyxus
+{
+    void copy_pixcloud_intensities (std::vector<float> & dst, const pixcloud & src)
+    {
+        dst.reserve (src.size());
+        for (auto pxl : src)
+            dst.push_back (float(pxl.inten));
+    }
+
+    /// @brief Applies to distance-to-contour weighting to intensities of pixel cloud. Saves the result in 'realintens' 
+    void apply_dist2contour_weighting(
+        // input & output
+        std::vector<float>& realintens,
+        // input
+        const std::vector<Pixel2>& cloud,
+        const std::vector<Pixel2>& contour,
+        const double epsilon)
+    {
+        size_t n = cloud.size();
+        for (size_t i = 0; i < n; i++)
+        {
+            auto& p = cloud[i];
+
+            // pixel distance
+            auto mind2 = p.min_sqdist(contour);
+            double dist = std::sqrt(mind2);
+
+            // weighted intensity
+            realintens[i] = double(p.inten) / (dist + epsilon);
+        }
+    }
+}

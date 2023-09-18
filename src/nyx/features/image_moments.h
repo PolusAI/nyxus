@@ -12,14 +12,63 @@
 // http://www.wseas.us/e-library/conferences/2013/CambridgeUK/AISE/AISE-15.pdf
 //
 
-using pixcloud = std::vector <Pixel2>;
+using pixcloud = std::vector <Pixel2>;  // cloud of pixels
+using intcloud = std::vector <float>;    // cloud of pixel intensities
 using pixcloud_NT = OutOfRamPixelCloud;
 
 /// @brief Hu invariants, weighted Hu invariants, spatial , central, and normalized central moments.
 class ImageMomentsFeature: public FeatureMethod
 {
 public:
-    ImageMomentsFeature(); 
+    // Codes of features implemented by this class. Used in feature manager's mechanisms, 
+    // in the feature group nickname expansion, and in the feature value output 
+    const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
+    {
+        SPAT_MOMENT_00,
+        SPAT_MOMENT_01,
+        SPAT_MOMENT_02,
+        SPAT_MOMENT_03,
+        SPAT_MOMENT_10,
+        SPAT_MOMENT_11,
+        SPAT_MOMENT_12,
+        SPAT_MOMENT_20,
+        SPAT_MOMENT_21,
+        SPAT_MOMENT_30,
+
+        CENTRAL_MOMENT_02,
+        CENTRAL_MOMENT_03,
+        CENTRAL_MOMENT_11,
+        CENTRAL_MOMENT_12,
+        CENTRAL_MOMENT_20,
+        CENTRAL_MOMENT_21,
+        CENTRAL_MOMENT_30,
+
+        NORM_CENTRAL_MOMENT_02,
+        NORM_CENTRAL_MOMENT_03,
+        NORM_CENTRAL_MOMENT_11,
+        NORM_CENTRAL_MOMENT_12,
+        NORM_CENTRAL_MOMENT_20,
+        NORM_CENTRAL_MOMENT_21,
+        NORM_CENTRAL_MOMENT_30,
+
+        HU_M1,
+        HU_M2,
+        HU_M3,
+        HU_M4,
+        HU_M5,
+        HU_M6,
+        HU_M7,
+
+        WEIGHTED_HU_M1,
+        WEIGHTED_HU_M2,
+        WEIGHTED_HU_M3,
+        WEIGHTED_HU_M4,
+        WEIGHTED_HU_M5,
+        WEIGHTED_HU_M6,
+        WEIGHTED_HU_M7 
+    };
+
+    ImageMomentsFeature();
 
     void calculate(LR& r);
     void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
@@ -31,67 +80,33 @@ public:
     // Compatibility with manual reduce
     static bool required(const FeatureSet& fs)
     {
-        return fs.anyEnabled({
-                SPAT_MOMENT_00,
-                SPAT_MOMENT_01,
-                SPAT_MOMENT_02,
-                SPAT_MOMENT_03,
-                SPAT_MOMENT_10,
-                SPAT_MOMENT_11,
-                SPAT_MOMENT_12,
-                SPAT_MOMENT_20,
-                SPAT_MOMENT_21,
-                SPAT_MOMENT_30,
-
-                CENTRAL_MOMENT_02,
-                CENTRAL_MOMENT_03,
-                CENTRAL_MOMENT_11,
-                CENTRAL_MOMENT_12,
-                CENTRAL_MOMENT_20,
-                CENTRAL_MOMENT_21,
-                CENTRAL_MOMENT_30,
-
-                NORM_CENTRAL_MOMENT_02,
-                NORM_CENTRAL_MOMENT_03,
-                NORM_CENTRAL_MOMENT_11,
-                NORM_CENTRAL_MOMENT_12,
-                NORM_CENTRAL_MOMENT_20,
-                NORM_CENTRAL_MOMENT_21,
-                NORM_CENTRAL_MOMENT_30,
-
-                HU_M1,
-                HU_M2,
-                HU_M3,
-                HU_M4,
-                HU_M5,
-                HU_M6,
-                HU_M7,
-
-                WEIGHTED_HU_M1,
-                WEIGHTED_HU_M2,
-                WEIGHTED_HU_M3,
-                WEIGHTED_HU_M4,
-                WEIGHTED_HU_M5,
-                WEIGHTED_HU_M6,
-                WEIGHTED_HU_M7 });
+        return fs.anyEnabled (ImageMomentsFeature::featureset);
     }
 
 private:
     // Trivial ROI
     double moment (const pixcloud& cloud, int p, int q);
+    double moment (const pixcloud& cloud, const intcloud& real_intens, int p, int q);
     void calcOrigins (const pixcloud& cloud);
+    void calcOrigins (const pixcloud& cloud, const intcloud& real_valued_intensities);
     double centralMom (const pixcloud& c, int p, int q);
+    double centralMom(const pixcloud& c, const intcloud& realintens, int p, int q);
     double normRawMom (const pixcloud& cloud, int p, int q);
     double normCentralMom (const pixcloud& c, int p, int q);
+    double normCentralMom (const pixcloud& cloud, const intcloud& realintens, int p, int q);
     std::tuple<double, double, double, double, double, double, double> calcHuInvariants_imp (const pixcloud& cloud);
+    std::tuple<double, double, double, double, double, double, double> calcHuInvariants_imp (const pixcloud& cloud, const intcloud& real_valued_intensities);
     void calcRawMoments (const pixcloud& cloud);
     void calcNormRawMoments (const pixcloud& cloud);
     void calcNormCentralMoments (const pixcloud& cloud);
     void calcWeightedRawMoments (const pixcloud& cloud);
+    void calcWeightedRawMoments (const pixcloud& cloud, const intcloud& real_valued_intensities);
     void calcCentralMoments (const pixcloud& cloud);
     void calcWeightedCentralMoments (const pixcloud& cloud);
+    void calcWeightedCentralMoments (const pixcloud& cloud, const intcloud& real_valued_intensities);
     void calcHuInvariants (const pixcloud& cloud);
     void calcWeightedHuInvariants (const pixcloud& cloud);
+    void calcWeightedHuInvariants (const pixcloud& cloud, const intcloud& real_valued_intensities);
 
     // Non-trivial ROI
     double moment(const pixcloud_NT& cloud, int p, int q);
@@ -143,6 +158,7 @@ bool ImageMomentsFeature_calculate2 (
     StatsInt aabb_min_x, 
     StatsInt aabb_min_y);
 
+// References glocal objects 'Nyxus::ImageMatrixBuffer' and 'Nyxus::devImageMatrixBuffer'
 bool ImageMomentsFeature_calculate3(
     // output:
     double& m00, double& m01, double& m02, double& m03, double& m10, double& m11, double& m12, double& m20, double& m21, double& m30,   // spatial moments
@@ -163,11 +179,24 @@ bool ImageMomentsFeature_calculate3(
 
 bool send_contours_to_gpu (const std::vector<size_t> & hoIndices, const std::vector<StatsInt> & hoContourData);
 bool free_contour_data_on_gpu();
-bool send_imgmatrices_to_gpu (PixIntens* hoImageMatrixBuffer, size_t buf_len);
+bool send_imgmatrices_to_gpu (PixIntens* hoImageMatrixBuffer, size_t buf_len, size_t largest_roi_imatr_size);
 bool free_imgmatrices_on_gpu();
 
 namespace Nyxus
 {
     extern PixIntens* ImageMatrixBuffer;
     extern size_t imageMatrixBufferLen;
+    extern size_t largest_roi_imatr_buf_len;
+
+    /// @brief Copies integer pixel cloud intensities to real-valued vector
+    void copy_pixcloud_intensities (intcloud & dst, const pixcloud & src);
+
+    /// @brief Applies to distance-to-contour weighting to intensities of pixel cloud 
+    void apply_dist2contour_weighting(
+        // output
+        intcloud& weighted_intensities,
+        // input
+        const pixcloud& cloud,
+        const std::vector<Pixel2>& contour,
+        const double epsilon);
 }
