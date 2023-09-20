@@ -10,7 +10,6 @@
 
 #ifdef USE_ARROW
 	#include "output_writers.h"
-	#include "arrow_output.h"
 #endif
 
 #ifdef USE_GPU
@@ -118,7 +117,6 @@ public:
 
 #ifdef USE_ARROW
 
-	ArrowOutput arrow_output = ArrowOutput();
 	std::string arrow_output_type = "";
 	
 #endif
