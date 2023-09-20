@@ -11,7 +11,6 @@
 
 int main (int argc, char** argv)
 {
-	google::InitGoogleLogging(argv[0]);
 	VERBOSLVL1(std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021-2023 Axle Informatics" << " Build of " << __TIMESTAMP__ << "\n";)
 
 	bool parseOk = theEnvironment.parse_cmdline (argc, argv);
