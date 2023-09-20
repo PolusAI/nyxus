@@ -432,6 +432,133 @@ namespace Nyxus
 		return true;
 	}
 
+	std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> get_feature_values() {
+
+		std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> features;
+
+		// Sort the labels
+		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
+		std::sort(L.begin(), L.end());
+
+		// Learn what features need to be displayed
+		std::vector<std::tuple<std::string, AvailableFeatures>> F = theFeatureSet.getEnabledFeatures();
+
+    	// -- Values
+		for (auto l : L)
+		{
+			LR& r = roiData[l];		
+
+			std::vector<double> feature_values;	
+			
+			// Skip blacklisted ROI
+			if (r.blacklisted)
+				continue;
+
+			// Tear off pure file names from segment and intensity file paths
+			fs::path pseg(r.segFname), pint(r.intFname);
+			std::vector<std::string> filenames;
+			filenames.push_back(pseg.filename());
+			filenames.push_back(pint.filename());
+
+			for (auto& enabdF : F)
+			{
+				auto fc = std::get<1>(enabdF);
+				auto vv = r.get_fvals(std::get<1>(enabdF));
+
+				// Parameterized feature
+				// --GLCM family
+				bool angledGlcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
+				if (angledGlcmFeature)
+				{
+					// Mock angled values if they haven't been calculated for some error reason
+					if (vv.size() < GLCMFeature::angles.size())
+						vv.resize(GLCMFeature::angles.size(), 0.0);
+					// Output the sub-values
+					int nAng = GLCMFeature::angles.size();
+					for (int i=0; i < nAng; i++)
+					{
+						feature_values.push_back(vv[i]);
+					}
+					// Proceed with other features
+					continue;
+				}
+
+				// --GLRLM family
+				bool glrlmFeature = std::find (GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
+				if (glrlmFeature)
+				{
+					// Polulate with angles
+					int nAng = 4;
+					for (int i=0; i < nAng; i++)
+					{
+						feature_values.push_back(vv[i]);
+					}
+					// Proceed with other features
+					continue;
+				}
+
+				// --Gabor
+				if (fc == GABOR)
+				{
+					for (auto i = 0; i < GaborFeature::f0.size(); i++)
+					{
+						feature_values.push_back(vv[i]);		
+					}
+
+					// Proceed with other features
+					continue;
+				}
+
+				// --Zernike feature values
+				if (fc == ZERNIKE2D)
+				{
+					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
+					{
+						feature_values.push_back(vv[i]);
+					}
+
+					// Proceed with other features
+					continue;
+				}
+
+				// --Radial distribution features
+				if (fc == FRAC_AT_D)
+				{
+					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
+					{
+						feature_values.push_back(vv[i]);
+					}
+					// Proceed with other features
+					continue;
+				}
+				if (fc == MEAN_FRAC)
+				{
+					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
+					{
+						feature_values.push_back(vv[i]);
+					}
+					// Proceed with other features
+					continue;
+				}
+				if (fc == RADIAL_CV)
+				{
+					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
+					{
+						feature_values.push_back(vv[i]);
+					}
+					// Proceed with other features
+					continue;
+				}
+
+				feature_values.push_back(vv[0]);
+			}
+
+			features.push_back(std::make_tuple(filenames, l, feature_values));
+		}
+
+		return features;
+	}
+
 	// Diagnostic function
 	void print_by_label(const char* featureName, std::unordered_map<int, StatsInt> L, int numColumns)
 	{

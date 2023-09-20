@@ -27,21 +27,10 @@
 
 namespace Nyxus
 {
-	/// @brief Copies ROIs' feature values into a ResultsCache structure that will then shape them as a table
-	bool save_features_2_buffer (ResultsCache& rescache)
+
+	bool generate_header(ResultsCache& rescache, std::vector<std::tuple<std::string, AvailableFeatures>> F) 
 	{
-		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
-		std::sort(L.begin(), L.end());
-		std::vector<std::tuple<std::string, AvailableFeatures>> F = theFeatureSet.getEnabledFeatures();
-
-		// We only fill in the header once.
-		// We depend on the caller to manage headerBuf contents and clear it appropriately...
-		bool fill_header = rescache.get_calcResultBuf().size() == 0;
-
-		// -- Header
-		if (fill_header)
-		{
-			rescache.add_to_header({"mask_image", "intensity_image", "label"});
+		rescache.add_to_header({"mask_image", "intensity_image", "label"});
 
 			for (auto& enabdF : F)
 			{
@@ -153,6 +142,23 @@ namespace Nyxus
 				// Regular feature
 				rescache.add_to_header(fn);	
 			}
+	}
+
+	/// @brief Copies ROIs' feature values into a ResultsCache structure that will then shape them as a table
+	bool save_features_2_buffer (ResultsCache& rescache)
+	{
+		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
+		std::sort(L.begin(), L.end());
+		std::vector<std::tuple<std::string, AvailableFeatures>> F = theFeatureSet.getEnabledFeatures();
+
+		// We only fill in the header once.
+		// We depend on the caller to manage headerBuf contents and clear it appropriately...
+		bool fill_header = rescache.get_calcResultBuf().size() == 0;
+
+		// -- Header
+		if (fill_header)
+		{
+			generate_header(rescache, F);
 		}
 
 		// -- Values
