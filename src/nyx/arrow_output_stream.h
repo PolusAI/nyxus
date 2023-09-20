@@ -68,12 +68,9 @@ public:
     }
 
 
-    std::shared_ptr<arrow::Table> get_arrow_table(const std::vector<std::string>& header,
-                                                      const std::vector<std::string>& string_columns,
-                                                      const std::vector<double>& results,
-                                                      size_t num_rows) {
+    std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path) {
                                                         
-        auto table = writer_->get_arrow_table();
+        auto table = writer_->get_arrow_table(file_path);
 
         return table;
     }

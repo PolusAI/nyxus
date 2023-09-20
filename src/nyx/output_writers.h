@@ -22,7 +22,15 @@
 
 #include <iostream>
 
-
+#if __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem> 
+  namespace fs = std::experimental::filesystem;
+#else
+  error "Missing the <filesystem> header."
+#endif
 
 /**
  * @brief Base class for creating Apache Arrow output writers
@@ -34,6 +42,21 @@
 class ApacheArrowWriter
 {
 
+private:
+
+    arrow::Status open(std::shared_ptr<arrow::io::RandomAccessFile> input, const std::string& file_path) {
+        ARROW_ASSIGN_OR_RAISE(input, arrow::io::ReadableFile::Open(file_path));
+    }
+
+    arrow::Status open_parquet_file(std::shared_ptr<arrow::io::RandomAccessFile> input, arrow::MemoryPool* pool, std::unique_ptr<parquet::arrow::FileReader> arrow_reader) {
+        ARROW_RETURN_NOT_OK(parquet::arrow::OpenFile(input, pool, &arrow_reader));
+    }
+
+    arrow::Status read_parquet_table(std::unique_ptr<parquet::arrow::FileReader> arrow_reader, std::shared_ptr<arrow::Table> table) {
+        ARROW_RETURN_NOT_OK(arrow_reader->ReadTable(&table));
+    }
+
+
 public:
 
     /**
@@ -41,42 +64,93 @@ public:
      * 
      * @return std::shared_ptr<arrow::Table> 
      */
-    static std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path) {
+    std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path) {
 
-        auto file_extension = fs::path(file_path).extension.u8string();
+        auto file_extension = fs::path(file_path).extension().u8string();
 
         if (file_extension == ".parquet") {
             arrow::MemoryPool* pool = arrow::default_memory_pool();
 
             std::shared_ptr<arrow::io::RandomAccessFile> input;
 
-            ARROW_ASSIGN_OR_RAISE(input, arrow::io::ReadableFile::Open(file_path));
+            auto status = this->open(input, file_path);
+
+            if (!status.ok()) {
+                    // Handle read error
+                auto err = status.ToString();
+                throw std::runtime_error("Error reading Arrow file: " + err);
+            }
             
             std::unique_ptr<parquet::arrow::FileReader> arrow_reader;
 
-            ARROW_RETURN_NOT_OK(parquet::arrow::OpenFile(input, pool, &arrow_reader));
+            status = parquet::arrow::OpenFile(input, pool, &arrow_reader);
+
+            if (!status.ok()) {
+                    // Handle read error
+                auto err = status.ToString();
+                throw std::runtime_error("Error reading Arrow file: " + err);
+            }
 
             // Read entire file as a single Arrow table
             std::shared_ptr<arrow::Table> table;
-            ARROW_RETURN_NOT_OK(arrow_reader->ReadTable(&table));
+
+            status = arrow_reader->ReadTable(&table);
+
+            if (!status.ok()) {
+                    // Handle read error
+                auto err = status.ToString();
+                throw std::runtime_error("Error reading Arrow file: " + err);
+            }
 
             return table;
 
         } else if (file_extension == ".arrow") {
 
-            arrow::MemoryPool* pool = arrow::default_memory_pool();
+            // Create a memory-mapped file for reading.
+            std::shared_ptr<arrow::io::ReadableFile> input;
+            auto status = this->open(input, file_path);
 
-            std::shared_ptr<arrow::io::RandomAccessFile> input;
+            if (!status.ok()) {
+                    // Handle read error
+                auto err = status.ToString();
+                throw std::runtime_error("Error reading Arrow file: " + err);
+            }
 
-            ARROW_ASSIGN_OR_RAISE(input, arrow::io::ReadableFile::Open(file_path));
+            // Create an IPC reader.
+            //std::shared_ptr<arrow::ipc::RecordBatchFileReader> ipc_reader;
+            auto ipc_reader = (arrow::ipc::RecordBatchFileReader::Open(input.get()))->get();
+
+            if (!status.ok()) {
+                    // Handle read error
+                auto err = status.ToString();
+                throw std::runtime_error("Error reading Arrow file: " + err);
+            }
+
+            // Read the schema from the file.
+            //std::shared_ptr<arrow::Schema> schema;
+            //status = ipc_reader->ReadSchema(&schema);
+
+            if (!status.ok()) {
+                    // Handle read error
+                auto err = status.ToString();
+                throw std::runtime_error("Error reading Arrow file: " + err);
+            }
+
+            // Create an empty table to hold the combined data.
             
-            std::unique_ptr<arrow::ipc::FileReader> arrow_reader;
-
-            ARROW_RETURN_NOT_OK(arrow::ipc::OpenFile(input, pool, &arrow_reader));
-
-            // Read entire file as a single Arrow table
+            
+            
             std::shared_ptr<arrow::Table> table;
-            ARROW_RETURN_NOT_OK(arrow_reader->ReadTable(&table));
+
+
+            std::vector<std::shared_ptr<arrow::RecordBatch>> batches;
+            for (int i = 0; i < ipc_reader->num_record_batches(); ++i) {
+                std::shared_ptr<arrow::RecordBatch> batch = (ipc_reader->ReadRecordBatch(i)).ValueOrDie();
+
+                batches.push_back(batch);
+            }
+            
+            table = arrow::Table::FromRecordBatches(batches).ValueOrDie();
 
             return table;
             
