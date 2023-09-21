@@ -16,15 +16,11 @@
 #ifdef USE_ARROW
     #include "../output_writers.h" 
 
-    #include "../arrow_output.h"
-
     #include "../arrow_output_stream.h"
 
-    #include <arrow/python/pyarrow.h>
     #include <arrow/table.h>
 
     #include <arrow/python/platform.h>
-
     #include <arrow/python/datetime.h>
     #include <arrow/python/init.h>
     #include <arrow/python/pyarrow.h>
