@@ -385,16 +385,9 @@ py::tuple findrelations_imp(
     if (! mineOK)
         throw std::runtime_error("Error occurred during dataset processing: mine_segment_relations() returned false");
     
-#ifdef USE_ARROW
-    // Get by value to preserve buffers for writing to arrow
-    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBufByVal()));
-    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBufByVal()));
-    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBufByVal()));
-#else 
     auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
     auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
     auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
-#endif
     auto nRows = theResultsCache.get_num_rows();
     pyStrData = pyStrData.reshape({ nRows, pyStrData.size() / nRows });
     pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
@@ -525,28 +518,10 @@ std::map<std::string, ParameterTypes> get_params_imp(const std::vector<std::stri
 
 }
 
-void create_arrow_file_imp(const std::string& arrow_file_path="") {
-
-#ifdef USE_ARROW
-
-    return theEnvironment.arrow_output.create_arrow_file(theResultsCache.get_headerBuf(),
-                                          theResultsCache.get_stringColBuf(),
-                                          theResultsCache.get_calcResultBuf(),
-                                          theResultsCache.get_num_rows(),
-                                          arrow_file_path);
-
-#else
-    
-    throw std::runtime_error("Arrow functionality is not available. Rebuild Nyxus with Arrow enabled.");
-
-#endif
-
-}
-
 std::string get_arrow_file_imp() {
 #ifdef USE_ARROW
 
-    return theEnvironment.arrow_output.get_arrow_file();
+    return theEnvironment.arrow_writer.get_arrow_file();
 
 #else
     
@@ -576,7 +551,7 @@ std::string get_parquet_file_imp() {
 
 #ifdef USE_ARROW
 
-    return theEnvironment.arrow_output.get_parquet_file();
+    return theEnvironment.arrow_writer.get_arrow_file();
 
 #else
     
@@ -634,7 +609,6 @@ PYBIND11_MODULE(backend, m)
     m.def("set_environment_params_imp", &set_environment_params_imp, "Set the environment variables of Nyxus");
     m.def("get_params_imp", &get_params_imp, "Get parameters of Nyxus");
     m.def("arrow_is_enabled_imp", &arrow_is_enabled_imp, "Check if arrow is enabled.");
-    m.def("create_arrow_file_imp", &create_arrow_file_imp, "Creates an arrow file for the feature calculations");
     m.def("get_arrow_file_imp", &get_arrow_file_imp, "Get path to arrow file");
     m.def("get_parquet_file_imp", &get_parquet_file_imp, "Returns path to parquet file");
     m.def("create_parquet_file_imp", &create_parquet_file_imp, "Create parquet file for the features calculations");

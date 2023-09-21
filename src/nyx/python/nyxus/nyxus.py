@@ -32,10 +32,8 @@ from typing import Optional, List
 if (arrow_headers_found() and arrow_is_enabled_imp()):
         
         from .backend import (
-            create_arrow_file_imp, 
             get_arrow_file_imp, 
             get_parquet_file_imp, 
-            create_parquet_file_imp, 
             get_arrow_table_imp,
         )
             
@@ -423,19 +421,7 @@ class Nyxus:
             
             featurize_fname_lists_imp (intensity_files, mask_files, single_roi, False)
             
-            output_type = output_type.lower() # ignore case of output type
             
-            if (output_type == 'arrow' or output_type == 'arrowipc'):
-                
-                self.create_arrow_file(output_path)
-                
-                return self.get_arrow_ipc_file()
-                
-            elif (output_type == 'parquet'):
-                
-                self.create_parquet_file(output_path)
-                
-                return self.get_parquet_file()
 
 
     def blacklist_roi(self, blacklist:str):
@@ -698,26 +684,6 @@ class Nyxus:
         
         return get_params_imp(vars)
         
-        
-    def create_arrow_file(self, path: str="NyxusFeatures.arrow"):
-        """Creates an Arrow IPC file containing the features.
-        
-        This method must be called after calling one of the featurize methods.
-
-        Parameters
-        ----------
-        path: Path to write the arrow file to. (Optional, default "NyxusFeatures.arrow")
-
-        Returns
-        -------
-        None
-
-        """
-        if self.arrow_is_enabled():
-            create_arrow_file_imp(path)
-        else:
-            raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
-
     
     def get_arrow_ipc_file(self):
         """Returns the path to the Arrow IPC file.
@@ -774,7 +740,7 @@ class Nyxus:
         else:
             raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
     
-    def get_arrow_memory_mapping(self):
+    def get_arrow_memory_mapping(self, arrow_ipc_file_path):
         """Returns a memory mapping to the Arrow IPC file.
         
         This method creates a memory mapping between the Arrow IPC file on disk to allow
@@ -791,13 +757,8 @@ class Nyxus:
         """
         
         if self.arrow_is_enabled():
-            arrow_file_path = self.get_arrow_ipc_file()
             
-            if (arrow_file_path == ""):
-                self.create_arrow_file()
-                arrow_file_path = self.get_arrow_ipc_file()
-            
-            with pa.memory_map(arrow_file_path, 'rb') as source:
+            with pa.memory_map(arrow_ipc_file_path, 'rb') as source:
                 array = pa.ipc.open_file(source).read_all()
             
             return array

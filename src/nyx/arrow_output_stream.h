@@ -31,7 +31,6 @@ class ArrowOutputStream {
 private:
 
     std::string arrow_file_path_ = "";
-	std::string parquet_file_path_ = "";
 	std::shared_ptr<ApacheArrowWriter> writer_ = nullptr;
 	std::string arrow_output_type_ = "";    
 
@@ -60,7 +59,7 @@ public:
 
         if (fs::is_directory(arrow_file_path)) {
             arrow_file_path_ += "/NyxusFeatures" + extension;
-        } 
+        }
 
         writer_ = WriterFactory::create_writer(arrow_file_path_, header);
 
@@ -73,6 +72,10 @@ public:
         auto table = writer_->get_arrow_table(file_path);
 
         return table;
+    }
+
+    std::string get_arrow_path() {
+        return arrow_file_path_;
     }
 
 };
