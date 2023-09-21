@@ -168,6 +168,17 @@ if (ZLIB_FOUND)
 	include_directories (${ZLIB_INCLUDE_DIR})
 endif (ZLIB_FOUND)
 
+# Look for installed packages the system
+find_package(Arrow REQUIRED)
+if (Arrow_FOUND) 
+	list(APPEND runAllTests_LIBRARIES arrow_shared)
+endif()
+
+find_package(Parquet)
+if (Parquet_FOUND)
+	list(APPEND runAllTests_LIBRARIES parquet_shared)
+endif()
+
 target_include_directories (runAllTests PUBLIC ${GTEST_INCLUDE_DIRS})
 target_link_directories (runAllTests PUBLIC ${GTEST_LIBRARY_PATH})
 
