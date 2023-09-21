@@ -12,8 +12,8 @@
 // http://www.wseas.us/e-library/conferences/2013/CambridgeUK/AISE/AISE-15.pdf
 //
 
-using pixcloud = std::vector <Pixel2>;  // cloud of pixels
-using intcloud = std::vector <float>;    // cloud of pixel intensities
+using pixcloud = std::vector <Pixel2>;          // cloud of pixels
+using intcloud = std::vector <RealPixIntens>;   // cloud of pixel intensities
 using pixcloud_NT = OutOfRamPixelCloud;
 
 /// @brief Hu invariants, weighted Hu invariants, spatial , central, and normalized central moments.
