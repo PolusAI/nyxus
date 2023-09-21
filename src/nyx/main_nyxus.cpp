@@ -4,7 +4,6 @@
 #include "environment.h"
 #include "globals.h"
 #include "arrow_output_stream.h"
-#include <glog/logging.h>
 #ifdef USE_GPU
 	bool gpu_initialize(int dev_id); 
 #endif
