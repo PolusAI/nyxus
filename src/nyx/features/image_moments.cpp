@@ -536,7 +536,7 @@ void ImageMomentsFeature::gpu_process_all_rois (const std::vector<int> & Labels,
 
 namespace Nyxus
 {
-    void copy_pixcloud_intensities (std::vector<RealPixIntens> & dst, const pixcloud & src)
+    void copy_pixcloud_intensities (intcloud & dst, const pixcloud & src)
     {
         dst.reserve (src.size());
         for (auto pxl : src)
@@ -546,10 +546,10 @@ namespace Nyxus
     /// @brief Applies to distance-to-contour weighting to intensities of pixel cloud. Saves the result in 'realintens' 
     void apply_dist2contour_weighting(
         // input & output
-        std::vector<RealPixIntens>& realintens,
+        intcloud & realintens,
         // input
-        const std::vector<Pixel2>& cloud,
-        const std::vector<Pixel2>& contour,
+        const pixcloud & cloud,
+        const pixcloud & contour,
         const double epsilon)
     {
         size_t n = cloud.size();

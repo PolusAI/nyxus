@@ -194,9 +194,9 @@ namespace Nyxus
     /// @brief Applies to distance-to-contour weighting to intensities of pixel cloud 
     void apply_dist2contour_weighting(
         // output
-        intcloud& weighted_intensities,
+        intcloud & weighted_intensities,
         // input
-        const pixcloud& cloud,
-        const std::vector<Pixel2>& contour,
+        const pixcloud & cloud,
+        const pixcloud & contour,
         const double epsilon);
 }
