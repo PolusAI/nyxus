@@ -4,6 +4,7 @@
 #include <vector>
 
 using PixIntens = unsigned int;
+using RealPixIntens = float;
 using StatsInt = long;
 using StatsReal = double;
 

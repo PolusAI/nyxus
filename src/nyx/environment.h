@@ -84,6 +84,7 @@
 #define FEA_NICK_ALL_BUT_GLCM "*ALL_BUT_GLCM*"
 #define FEA_NICK_ALL_EASY "*ALL_EASY*"	// Equivalent to *ALL* minus GABOR, GLCM, and 2D moments
 #define FEA_NICK_ALL_NEIG "*ALL_NEIGHBOR*"	
+#define FEA_NICK_2DMOMENTS "*2DMOMENTS*"	
 
 // Valid values of 'OUTPUTTYPE'
 #define OT_SEPCSV "separatecsv"

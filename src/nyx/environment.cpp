@@ -13,6 +13,7 @@
 #include "features/gldzm.h"
 #include "features/glrlm.h"
 #include "features/glszm.h"
+#include "features/image_moments.h"
 #include "features/ngldm.h"
 #include "features/ngtdm.h"
 #include "helpers/helpers.h"
@@ -61,7 +62,8 @@ namespace Nyxus
 				s_uppr == FEA_NICK_ALL_BUT_GABOR ||
 				s_uppr == FEA_NICK_ALL_BUT_GLCM || 
 				s_uppr == FEA_NICK_ALL_EASY ||
-				s_uppr == FEA_NICK_ALL_NEIG)
+				s_uppr == FEA_NICK_ALL_NEIG ||
+				s_uppr == FEA_NICK_2DMOMENTS)
 			{
 				result.push_back(s_uppr);
 				continue;
@@ -672,6 +674,12 @@ void Environment::process_feature_list()
 			break; // No need to bother of others
 		}
 
+		if (s == FEA_NICK_2DMOMENTS)
+		{
+			theFeatureSet.enableFeatures (ImageMomentsFeature::featureset);
+			continue;
+		}
+
 		// 's' is an individual feature name, not feature group name. Process it now
 		AvailableFeatures af;
 		if (! theFeatureSet.findFeatureByString(s, af))
@@ -1194,7 +1202,8 @@ void Environment::show_featureset_help()
 		FEA_NICK_ALL_NGTDM,
 		FEA_NICK_ALL_BUT_GABOR,
 		FEA_NICK_ALL_BUT_GLCM,
-		FEA_NICK_ALL_NEIG
+		FEA_NICK_ALL_NEIG,
+		FEA_NICK_2DMOMENTS
 	};
 
 	std::cout << "\n" << 
