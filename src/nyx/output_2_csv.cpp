@@ -75,7 +75,8 @@ namespace Nyxus
 	bool save_features_2_csv (const std::string & intFpath, const std::string & segFpath, const std::string & outputDir)
 	{
 		// Non-exotic formatting for compatibility with the buffer output (Python API, Apache)
-		char rvbuf[100]; // real value buffer 
+		constexpr int VAL_BUF_LEN = 450;
+		char rvbuf[VAL_BUF_LEN]; // real value buffer large enough to fit a float64 value in range (2.2250738585072014E-308 to 1.79769313486231570e+308)
 		const char rvfmt[] = "%20.12f";
 
 		// Sort the labels
@@ -269,7 +270,7 @@ namespace Nyxus
 					int nAng = GLCMFeature::angles.size();
 					for (int i=0; i < nAng; i++)
 					{
-						sprintf (rvbuf, rvfmt, vv[i]);
+						snprintf (rvbuf, VAL_BUF_LEN, rvfmt, vv[i]);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
@@ -289,7 +290,7 @@ namespace Nyxus
 					int nAng = 4;
 					for (int i=0; i < nAng; i++)
 					{
-						sprintf (rvbuf, rvfmt, vv[i]);
+						snprintf (rvbuf, VAL_BUF_LEN, rvfmt, vv[i]);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
@@ -306,7 +307,7 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
 					{
-						sprintf(rvbuf, rvfmt, vv[i]);
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, vv[i]);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else	
@@ -324,7 +325,7 @@ namespace Nyxus
 				{
 					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
 					{
-						sprintf(rvbuf, rvfmt, vv[i]);
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, vv[i]);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
@@ -342,7 +343,7 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
 					{
-						sprintf(rvbuf, rvfmt, vv[i]);
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, vv[i]);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
@@ -357,7 +358,7 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
 					{
-						sprintf(rvbuf, rvfmt, vv[i]);
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, vv[i]);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
@@ -372,7 +373,7 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
 					{
-						sprintf(rvbuf, rvfmt, vv[i]);
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, vv[i]);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
@@ -385,7 +386,7 @@ namespace Nyxus
 				}
 
 				// Regular feature
-				sprintf(rvbuf, rvfmt, vv[0]);
+				snprintf(rvbuf, VAL_BUF_LEN, rvfmt, vv[0]);
 				#ifndef DIAGNOSE_NYXUS_OUTPUT
 				ssVals << "," << rvbuf; // Alternatively: auto_precision(ssVals, vv[0]);
 				#else
