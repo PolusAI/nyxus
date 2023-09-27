@@ -30,6 +30,7 @@ jobs:
         channels: conda-forge
         auto-activate-base: false
         use-mamba: true
+        mamba-version: "*"
 
     - name: Install Conda Dependencies
       run: |
@@ -65,6 +66,7 @@ jobs:
         channels: conda-forge
         auto-activate-base: false
         use-mamba: true
+        mamba-version: "*"
 
     - name: Install Conda Dependencies
       run: |
