@@ -29,11 +29,10 @@ jobs:
         python-version: 3.8
         channels: conda-forge
         auto-activate-base: false
-        use-mamba: true
-        mamba-version: "*"
 
     - name: Install Conda Dependencies
       run: |
+        conda install mamba
         mamba install compilers=1.1.1  --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt
 
     - name: Configure CMake
@@ -65,11 +64,10 @@ jobs:
         python-version: 3.8
         channels: conda-forge
         auto-activate-base: false
-        use-mamba: true
-        mamba-version: "*"
 
     - name: Install Conda Dependencies
       run: |
+        conda install mamba
         mamba install compilers=1.1.1 pytest requests --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt --file ${{github.workspace}}/ci-utils/envs/conda_py.txt
 
     - name: Install Nyxus
