@@ -227,13 +227,11 @@ namespace Nyxus
 
 		// initialize arrow writer if needed
 	#ifdef USE_ARROW
-		std::shared_ptr<ApacheArrowWriter> writer;
-
 		if (arrow_output) {
 
-			theEnvironment.arrow_writer = ArrowOutputStream();
+			theEnvironment.arrow_stream = ArrowOutputStream();
 
-			writer = theEnvironment.arrow_writer.create_arrow_file(theEnvironment.arrow_output_type, outputDir,   Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+			theEnvironment.arrow_writer = theEnvironment.arrow_stream.create_arrow_file(theEnvironment.arrow_output_type, outputDir,   Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
 		}
 	#endif
 
@@ -278,7 +276,9 @@ namespace Nyxus
 		#ifdef USE_ARROW
 			if (arrow_output) {
 
-				auto status = writer->write(Nyxus::get_feature_values());
+				auto features = Nyxus::get_feature_values();
+
+				auto status = theEnvironment.arrow_writer->write();
 				
 				if (!status.ok()) {
                     // Handle read error
@@ -351,7 +351,7 @@ namespace Nyxus
 	#ifdef USE_ARROW
 		if (arrow_output) {
 			// close arrow file after use
-			auto status = writer->close();
+			auto status = theEnvironment.arrow_writer->close();
 			
 			if (!status.ok()) {
 				// Handle read error
@@ -377,13 +377,11 @@ namespace Nyxus
 		const std::string& outputDir)
 	{	
 		#ifdef USE_ARROW
-		std::shared_ptr<ApacheArrowWriter> writer;
-
 		if (arrow_output) {
 
-			theEnvironment.arrow_writer = ArrowOutputStream();
+			theEnvironment.arrow_stream = ArrowOutputStream();
 
-			writer = theEnvironment.arrow_writer.create_arrow_file(theEnvironment.arrow_output_type, outputDir,  Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+			theEnvironment.arrow_writer = theEnvironment.arrow_stream.create_arrow_file(theEnvironment.arrow_output_type, outputDir,  Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
 		}
 	#endif
 
@@ -413,7 +411,7 @@ namespace Nyxus
 		#ifdef USE_ARROW
 			if (arrow_output) {
 
-				auto status = writer->write(Nyxus::get_feature_values());
+				auto status = theEnvironment.arrow_writer->write();
 				
 				if (!status.ok()) {
                     // Handle read error
@@ -452,7 +450,7 @@ namespace Nyxus
 	#ifdef USE_ARROW
 		if (arrow_output) {
 			// close arrow file after use
-			auto status = writer->close();
+			auto status = theEnvironment.arrow_writer->close();
 			
 			if (!status.ok()) {
 				// Handle read error

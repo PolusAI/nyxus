@@ -358,7 +358,10 @@ class Nyxus:
             if (output_path.endswith('.arrow') or output_path.endswith('.parquet')):
                 return output_path
             else:
-                return output_path + 'NyxusFeatures.' + output_type
+                if (output_path == ""):
+                    return 'NyxusFeatures.' + output_type
+                else:
+                    return output_path + '/NyxusFeatures.' + output_type
                 
     
     def using_gpu(self, gpu_on: bool):
@@ -702,27 +705,7 @@ class Nyxus:
             return get_arrow_file_imp()
         else:
             raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
-    
-    def create_parquet_file(self, path: str="NyxusFeatures.parquet"):
-        """Creates a Parquet file containing the features.
         
-        This method must be called after calling one of the featurize methods.
-
-        Parameters
-        ----------
-        path: Path to write the parquet file to. (Optional, default "NyxusFeatures.parquet")
-
-        Returns
-        -------
-        None
-
-        """
-        
-        if self.arrow_is_enabled():
-            create_parquet_file_imp(path)
-        else:
-            raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
-    
     def get_parquet_file(self):
         """Returns the path to the Arrow IPC file.
 
@@ -780,7 +763,7 @@ class Nyxus:
         """
         
         if self.arrow_is_enabled():
-            return get_arrow_table_imp(arrow_file_path)
+            return get_arrow_table_imp(str(arrow_file_path))
         else:
             raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
     

@@ -10,6 +10,7 @@ std::shared_ptr<arrow::Table> ApacheArrowWriter::get_arrow_table(const std::stri
     if (file_extension == ".parquet") {
         arrow::MemoryPool* pool = arrow::default_memory_pool();
 
+
         std::shared_ptr<arrow::io::RandomAccessFile> input;
 
         input = arrow::io::ReadableFile::Open(file_path).ValueOrDie();
@@ -107,8 +108,8 @@ ParquetWriter::ParquetWriter(const std::string& output_file, const std::vector<s
 }
 
         
-    arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features) {
-
+arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features2) {
+    std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> features = Nyxus::get_feature_values();
     int num_rows = features.size();
 
     std::vector<std::shared_ptr<arrow::Array>> arrays;
@@ -215,7 +216,12 @@ ParquetWriter::ParquetWriter(const std::string& output_file, const std::vector<s
     ARROW_ASSIGN_OR_RAISE(auto table,
                 arrow::Table::FromRecordBatches(schema_, {batch}));
 
+
+    std::cout << table->ToString() << std::endl;
+
     ARROW_RETURN_NOT_OK(writer_->WriteTable(*table.get(), batch->num_rows()));
+
+    
 
     return arrow::Status::OK();
 }

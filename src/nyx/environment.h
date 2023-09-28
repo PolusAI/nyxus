@@ -119,7 +119,8 @@ public:
 #ifdef USE_ARROW
 
 	std::string arrow_output_type = "";
-	ArrowOutputStream  arrow_writer;
+	ArrowOutputStream  arrow_stream;
+	std::shared_ptr<ApacheArrowWriter> arrow_writer;
 	
 #endif
 
