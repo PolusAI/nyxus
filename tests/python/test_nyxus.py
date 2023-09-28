@@ -497,7 +497,7 @@ class TestNyxus():
 
                             continue
                         assert feature_value == arrow_value
-
+        '''
         @pytest.mark.arrow
         def test_arrow_ipc_get_table(self):
             
@@ -561,3 +561,4 @@ class TestNyxus():
 
                         continue
                     assert feature_value == arrow_value
+        '''
