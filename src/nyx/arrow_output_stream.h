@@ -1,7 +1,7 @@
 #pragma once
 
 #ifdef USE_ARROW
-//#ifdef USE_ARROW
+
 #include <string>
 #include <memory>
 
@@ -38,45 +38,8 @@ private:
 public:
     std::shared_ptr<ApacheArrowWriter> create_arrow_file(const std::string& arrow_file_type,
                                                          const std::string& arrow_file_path,
-                                                         const std::vector<std::string>& header) {
-        
-
-        if(arrow_file_path != "" && !fs::is_directory(arrow_file_path) && !(Nyxus::ends_with_substr(arrow_file_path, ".arrow") || Nyxus::ends_with_substr(arrow_file_path, ".feather") || Nyxus::ends_with_substr(arrow_file_path, ".parquet"))) {
-            throw std::invalid_argument("The arrow file path must end in \".arrow\"");
-        }
-
-        if (!(arrow_file_type == "ARROW" || arrow_file_type == "ARROWIPC" || arrow_file_type == "PARQUET")) {
-            throw std::invalid_argument("The valid file types are ARROW, ARROWIPC, or PARQUET");
-        }
-
-        std::string extension = (arrow_file_type == "PARQUET") ? ".parquet" : ".arrow";
-
-        if (arrow_file_path == "") {
-            arrow_file_path_ = "NyxusFeatures" + extension;
-        } else {
-            arrow_file_path_ = arrow_file_path;
-        }
-
-        if (fs::is_directory(arrow_file_path)) {
-            arrow_file_path_ += "/NyxusFeatures" + extension;
-        }
-
-        writer_ = WriterFactory::create_writer(arrow_file_path_, header);
-
-        return writer_;
-    }
-
-
-    std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path) {
-                                                        
-        auto table = writer_->get_arrow_table(file_path);
-
-        return table;
-    }
-
-    std::string get_arrow_path() {
-        return arrow_file_path_;
-    }
-
+                                                         const std::vector<std::string>& header);
+    std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path);
+    std::string get_arrow_path();
 };
 #endif

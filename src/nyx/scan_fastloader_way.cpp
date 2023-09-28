@@ -25,8 +25,11 @@ namespace py = pybind11;
 #include "environment.h"
 #include "globals.h"
 #include "helpers/timing.h"
+
+#ifdef USE_ARROW
 #include "arrow_output_stream.h"
 #include "output_writers.h"
+#endif
 
 // Sanity
 #ifdef _WIN32
@@ -210,7 +213,7 @@ namespace Nyxus
 		int min_online_roi_size,
 		bool arrow_output,
 		bool save2csv,
-		const std::string& csvOutputDir)
+		const std::string& outputDir)
 	{
 
 		#ifdef CHECKTIMING
@@ -227,13 +230,10 @@ namespace Nyxus
 		std::shared_ptr<ApacheArrowWriter> writer;
 
 		if (arrow_output) {
-			
-			// Get header data for arrow output
-			Nyxus::generate_header(theResultsCache, theFeatureSet.getEnabledFeatures());
 
 			theEnvironment.arrow_writer = ArrowOutputStream();
 
-			writer = arrow_writer.create_arrow_file(theEnvironment.arrow_output_type, csvOutputDir, theResultsCache.get_headerBuf());
+			writer = theEnvironment.arrow_writer.create_arrow_file(theEnvironment.arrow_output_type, outputDir,   Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
 		}
 	#endif
 
@@ -278,7 +278,7 @@ namespace Nyxus
 		#ifdef USE_ARROW
 			if (arrow_output) {
 
-				auto status = writer->write();
+				auto status = writer->(Nyxus::get_feature_values());
 				
 				if (!status.ok()) {
                     // Handle read error
@@ -292,7 +292,7 @@ namespace Nyxus
 			if (!arrow_output) {
 
 				if (save2csv) {
-					ok = save_features_2_csv(ifp, lfp, csvOutputDir);
+					ok = save_features_2_csv(ifp, lfp, outputDir);
 				} else {
 					ok = save_features_2_buffer(theResultsCache);
 				}
@@ -380,13 +380,10 @@ namespace Nyxus
 		std::shared_ptr<ApacheArrowWriter> writer;
 
 		if (arrow_output) {
-			
-			// Get header data for arrow output
-			Nyxus::generate_header(theResultsCache, theFeatureSet.getEnabledFeatures());
 
-			ArrowOutputStream arrow_writer = ArrowOutputStream();
+			theEnvironment.arrow_writer = ArrowOutputStream();
 
-			writer = arrow_writer.create_arrow_file(theEnvironment.arrow_output_type, outputDir, theResultsCache.get_headerBuf());
+			writer = theEnvironment.arrow_writer.create_arrow_file(theEnvironment.arrow_output_type, outputDir,  Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
 		}
 	#endif
 
@@ -416,7 +413,7 @@ namespace Nyxus
 		#ifdef USE_ARROW
 			if (arrow_output) {
 
-				auto status = writer->write();
+				auto status = writer->write(Nyxus::get_feature_values());
 				
 				if (!status.ok()) {
                     // Handle read error

@@ -15,7 +15,6 @@
 
 #ifdef USE_ARROW
     #include "../output_writers.h" 
-
     #include "../arrow_output_stream.h"
 
     #include <arrow/table.h>

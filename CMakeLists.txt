@@ -94,6 +94,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake-modules")
 
 #==== Source files
 set(SOURCE
+	src/nyx/arrow_output_stream.cpp
 	src/nyx/features/basic_morphology.cpp
 	src/nyx/features/caliper_feret.cpp
 	src/nyx/features/caliper_martin.cpp
@@ -149,6 +150,7 @@ set(SOURCE
 	src/nyx/image_loader.cpp
 	src/nyx/output_2_buffer.cpp
 	src/nyx/output_2_csv.cpp
+	src/nyx/output_writers.cpp
 	src/nyx/parallel.cpp
 	src/nyx/phase1.cpp
 	src/nyx/phase2.cpp
