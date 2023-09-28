@@ -45,6 +45,7 @@ set(TEST_SRC
 	test_gabor.cc
 	test_gabor.h
 	test_initialization.h
+	../src/nyx/arrow_output_stream.cpp
 	../src/nyx/features/basic_morphology.cpp
 	../src/nyx/features/caliper_feret.cpp
 	../src/nyx/features/caliper_martin.cpp
@@ -99,6 +100,7 @@ set(TEST_SRC
 	../src/nyx/image_loader.cpp
 	../src/nyx/output_2_buffer.cpp
 	../src/nyx/output_2_csv.cpp
+	../src/nyx/output_writers.cpp
 	../src/nyx/parallel.cpp
 	../src/nyx/phase1.cpp
 	../src/nyx/phase2.cpp
