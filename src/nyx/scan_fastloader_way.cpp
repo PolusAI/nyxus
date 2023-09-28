@@ -278,7 +278,7 @@ namespace Nyxus
 
 				auto features = Nyxus::get_feature_values();
 
-				auto status = theEnvironment.arrow_writer->write();
+				auto status = theEnvironment.arrow_writer->write(Nyxus::get_feature_values());
 				
 				if (!status.ok()) {
                     // Handle read error
@@ -411,7 +411,7 @@ namespace Nyxus
 		#ifdef USE_ARROW
 			if (arrow_output) {
 
-				auto status = theEnvironment.arrow_writer->write();
+				auto status = theEnvironment.arrow_writer->write(Nyxus::get_feature_values());
 				
 				if (!status.ok()) {
                     // Handle read error
