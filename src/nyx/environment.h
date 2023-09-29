@@ -120,7 +120,7 @@ public:
 
 	std::string arrow_output_type = "";
 	ArrowOutputStream  arrow_stream;
-	std::shared_ptr<ApacheArrowWriter> arrow_writer;
+	std::shared_ptr<ApacheArrowWriter> arrow_writer = nullptr;
 	
 #endif
 
