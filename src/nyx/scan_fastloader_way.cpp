@@ -36,8 +36,6 @@ namespace py = pybind11;
 #include<windows.h>
 #endif
 
-#include <chrono>
-
 
 namespace Nyxus
 {
@@ -282,8 +280,8 @@ namespace Nyxus
 				
 				if (!status.ok()) {
                     // Handle read error
-                    auto err = status.ToString();
-                    throw std::runtime_error("Error writing Arrow file: " + err);
+                    std::cout << "Error writing Arrow file: " << status.ToString() << std::endl;
+					return 2;
 				}
 			}
 		#endif
@@ -355,8 +353,8 @@ namespace Nyxus
 			
 			if (!status.ok()) {
 				// Handle read error
-				auto err = status.ToString();
-				throw std::runtime_error("Error closing Arrow file: " + err);
+				std::cout << "Error closing Arrow file: " << status.ToString() << std::endl;
+				return 2;
 			}
 		}
 	#endif
@@ -415,8 +413,8 @@ namespace Nyxus
 				
 				if (!status.ok()) {
                     // Handle read error
-                    auto err = status.ToString();
-                    throw std::runtime_error("Error writing Arrow file: " + err);
+                    std::cout << "Error writing Arrow file: " << status.ToString() << std::endl;
+					return 2;
 				}
 			}
 		#endif
@@ -454,8 +452,8 @@ namespace Nyxus
 			
 			if (!status.ok()) {
 				// Handle read error
-				auto err = status.ToString();
-				throw std::runtime_error("Error closing Arrow file: " + err);
+				std::cout << "Error closing Arrow file: " << status.ToString() << std::endl;
+				return 2;
 			}
 		}
 	#endif
