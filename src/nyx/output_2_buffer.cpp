@@ -27,7 +27,6 @@
 
 namespace Nyxus
 {
-
 	/// @brief Copies ROIs' feature values into a ResultsCache structure that will then shape them as a table
 	bool save_features_2_buffer (ResultsCache& rescache)
 	{
