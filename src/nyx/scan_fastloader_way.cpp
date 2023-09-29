@@ -413,7 +413,7 @@ namespace Nyxus
 				
 				if (!status.ok()) {
                     // Handle read error
-                    std::cout << "Error writing Arrow file: " << status.ToString() << std::endl;
+                    error_message = "Error writing Arrow file: " + status.ToString();
 					return 2;
 				}
 			}
@@ -452,7 +452,7 @@ namespace Nyxus
 			
 			if (!status.ok()) {
 				// Handle read error
-				std::cout << "Error closing Arrow file: " << status.ToString() << std::endl;
+				error_message = "Error closing Arrow file: " + status.ToString();
 				return 2;
 			}
 		}
