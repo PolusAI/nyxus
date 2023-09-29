@@ -75,7 +75,7 @@ int main (int argc, char** argv)
 		theEnvironment.n_pixel_scan_threads, 
 		theEnvironment.n_reduce_threads,
 		min_online_roi_size,
-		use_arrow, // 'true' to save to csv
+		use_arrow,
 		theEnvironment.useCsv,
 		theEnvironment.output_dir);
 
