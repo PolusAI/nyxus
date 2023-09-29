@@ -108,8 +108,8 @@ ParquetWriter::ParquetWriter(const std::string& output_file, const std::vector<s
 }
 
         
-arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features2) {
-    std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> features = Nyxus::get_feature_values();
+arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features) {
+    
     int num_rows = features.size();
 
     std::vector<std::shared_ptr<arrow::Array>> arrays;
