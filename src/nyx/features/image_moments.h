@@ -24,6 +24,7 @@ public:
     // in the feature group nickname expansion, and in the feature value output 
     const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
     {
+        // Spatial (raw) moments
         SPAT_MOMENT_00,
         SPAT_MOMENT_01,
         SPAT_MOMENT_02,
@@ -35,6 +36,19 @@ public:
         SPAT_MOMENT_21,
         SPAT_MOMENT_30,
 
+        // Weighted spatial moments
+        WEIGHTED_SPAT_MOMENT_00,
+        WEIGHTED_SPAT_MOMENT_01,
+        WEIGHTED_SPAT_MOMENT_02,
+        WEIGHTED_SPAT_MOMENT_03,
+        WEIGHTED_SPAT_MOMENT_10,
+        WEIGHTED_SPAT_MOMENT_11,
+        WEIGHTED_SPAT_MOMENT_12,
+        WEIGHTED_SPAT_MOMENT_20,
+        WEIGHTED_SPAT_MOMENT_21,
+        WEIGHTED_SPAT_MOMENT_30,
+
+        // Central moments
         CENTRAL_MOMENT_02,
         CENTRAL_MOMENT_03,
         CENTRAL_MOMENT_11,
@@ -43,6 +57,16 @@ public:
         CENTRAL_MOMENT_21,
         CENTRAL_MOMENT_30,
 
+        // Weighted central moments
+        WEIGHTED_CENTRAL_MOMENT_02,
+        WEIGHTED_CENTRAL_MOMENT_03,
+        WEIGHTED_CENTRAL_MOMENT_11,
+        WEIGHTED_CENTRAL_MOMENT_12,
+        WEIGHTED_CENTRAL_MOMENT_20,
+        WEIGHTED_CENTRAL_MOMENT_21,
+        WEIGHTED_CENTRAL_MOMENT_30,
+
+        // Normalized central moments
         NORM_CENTRAL_MOMENT_02,
         NORM_CENTRAL_MOMENT_03,
         NORM_CENTRAL_MOMENT_11,
@@ -51,6 +75,16 @@ public:
         NORM_CENTRAL_MOMENT_21,
         NORM_CENTRAL_MOMENT_30,
 
+        // Normalized (standardized) spatial moments
+        NORM_SPAT_MOMENT_00,
+        NORM_SPAT_MOMENT_01,
+        NORM_SPAT_MOMENT_02,
+        NORM_SPAT_MOMENT_03,
+        NORM_SPAT_MOMENT_10,
+        NORM_SPAT_MOMENT_20,
+        NORM_SPAT_MOMENT_30,
+
+        // Hu's moments 1-7 
         HU_M1,
         HU_M2,
         HU_M3,
@@ -59,13 +93,14 @@ public:
         HU_M6,
         HU_M7,
 
+        // Weighted Hu's moments 1-7 
         WEIGHTED_HU_M1,
         WEIGHTED_HU_M2,
         WEIGHTED_HU_M3,
         WEIGHTED_HU_M4,
         WEIGHTED_HU_M5,
         WEIGHTED_HU_M6,
-        WEIGHTED_HU_M7 
+        WEIGHTED_HU_M7
     };
 
     ImageMomentsFeature();
@@ -159,7 +194,7 @@ bool ImageMomentsFeature_calculate2 (
     StatsInt aabb_min_y);
 
 // References glocal objects 'Nyxus::ImageMatrixBuffer' and 'Nyxus::devImageMatrixBuffer'
-bool ImageMomentsFeature_calculate3(
+bool ImageMomentsFeature_calculate (
     // output:
     double& m00, double& m01, double& m02, double& m03, double& m10, double& m11, double& m12, double& m20, double& m21, double& m30,   // spatial moments
     double& cm02, double& cm03, double& cm11, double& cm12, double& cm20, double& cm21, double& cm30,   // central moments
@@ -177,16 +212,22 @@ bool ImageMomentsFeature_calculate3(
     StatsInt width,
     StatsInt height);
 
-bool send_contours_to_gpu (const std::vector<size_t> & hoIndices, const std::vector<StatsInt> & hoContourData);
-bool free_contour_data_on_gpu();
-bool send_imgmatrices_to_gpu (PixIntens* hoImageMatrixBuffer, size_t buf_len, size_t largest_roi_imatr_size);
-bool free_imgmatrices_on_gpu();
+bool allocate_2dmoments_buffers_on_gpu(size_t max_cloudsize);
+bool free_2dmoments_buffers_on_gpu ();
+bool send_roi_data_2_gpu(Pixel2* data, size_t n);
+bool send_contour_data_2_gpu(Pixel2* data, size_t n);
 
 namespace Nyxus
 {
-    extern PixIntens* ImageMatrixBuffer;
-    extern size_t imageMatrixBufferLen;
-    extern size_t largest_roi_imatr_buf_len;
+    extern size_t largest_roi_imatr_buf_len;    // being set in phase 2
+    extern Pixel2* devRoiCloudBuffer;
+    extern size_t roi_cloud_len;
+    extern RealPixIntens* devRealintensBuffer;  // [roi_cloud_len]
+    extern double* devPrereduce;                // reduction helper [roi_cloud_len]
+    extern double* devBlockSubsums;   // [whole chunks]
+    extern double* hoBlockSubsums;    // [whole chunks]
+    extern Pixel2* devContourCloudBuffer;
+    extern size_t contour_cloud_len;
 
     /// @brief Copies integer pixel cloud intensities to real-valued vector
     void copy_pixcloud_intensities (intcloud & dst, const pixcloud & src);

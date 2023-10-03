@@ -117,8 +117,14 @@ add_executable(runAllTests ${TEST_SRC})
 if(USEGPU)
 	set(GPU_SOURCE_FILES
 		../src/nyx/gpu/gpu_helpers.cu
-		../src/nyx/gpu/image_moments.cu
         ../src/nyx/gpu/gabor.cu
+		../src/nyx/gpu/geomoments_central.cu
+		../src/nyx/gpu/geomoments_hu.cu
+		../src/nyx/gpu/geomoments_main.cu
+		../src/nyx/gpu/geomoments_norm.cu
+		../src/nyx/gpu/geomoments_origin.cu
+		../src/nyx/gpu/geomoments_raw.cu
+		../src/nyx/gpu/geomoments_weighting.cu
 	)
 
 	target_sources(runAllTests PRIVATE ${GPU_SOURCE_FILES})

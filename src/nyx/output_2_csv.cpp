@@ -76,7 +76,7 @@ namespace Nyxus
 	{
 		// Non-exotic formatting for compatibility with the buffer output (Python API, Apache)
 		char rvbuf[100]; // real value buffer 
-		const char rvfmt[] = "%20.12f";
+		const char rvfmt[] = "%g"; // instead of "%20.12f" which produces a too massive output
 
 		// Sort the labels
 		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };

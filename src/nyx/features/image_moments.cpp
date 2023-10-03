@@ -98,9 +98,17 @@ void ImageMomentsFeature::calculate (LR& r)
 }
 
 #ifdef USE_GPU
+
 void ImageMomentsFeature::calculate_via_gpu (LR& r, size_t roi_idx)
 {
-    bool ok = ImageMomentsFeature_calculate3(
+    bool ok = send_roi_data_2_gpu (r.raw_pixels.data(), r.raw_pixels.size());
+    if (!ok)
+        std::cerr << "Geometric moments: error sending ROI data to GPU-side\n";
+    ok = send_contour_data_2_gpu (r.contour.data(), r.contour.size());
+    if (!ok)
+        std::cerr << "Geometric moments: error sending ROI contour data to GPU-side\n";
+
+    ok = ImageMomentsFeature_calculate (
         m00, m01, m02, m03, m10, m11, m12, m20, m21, m30,   // spatial moments
         mu02, mu03, mu11, mu12, mu20, mu21, mu30,   // central moments
         nu02, nu03, nu11, nu12, nu20, nu21, nu30,    // normalized central moments
@@ -117,9 +125,7 @@ void ImageMomentsFeature::calculate_via_gpu (LR& r, size_t roi_idx)
         r.aabb.get_height());
 
     if (!ok)
-    {
-        std::cerr << "Error calculating image moments\n";
-    }
+        std::cerr << "Geometric moments: error calculating features\n";
 }
 #endif
 
@@ -222,9 +228,11 @@ double ImageMomentsFeature::moment (const pixcloud & c, const intcloud & real_in
 
 void ImageMomentsFeature::calcOrigins (const pixcloud & cloud)
 {
-    double m00 = moment (cloud, 0, 0);
-    originOfX = moment (cloud, 1, 0) / m00;
-    originOfY = moment (cloud, 0, 1) / m00;
+    double m00 = moment (cloud, 0, 0), 
+        m10 = moment (cloud, 1, 0),
+        m01 = moment (cloud, 0, 1);
+    originOfX =  m10 / m00;
+    originOfY =  m01 / m00;
 }
 
 void ImageMomentsFeature::calcOrigins (const pixcloud & cloud, const intcloud & real_valued_intensities)
@@ -492,27 +500,7 @@ void ImageMomentsFeature::parallel_process_1_batch (size_t start, size_t end, st
 /// @param ptrLabelData ROI data
 void ImageMomentsFeature::gpu_process_all_rois (const std::vector<int> & Labels, std::unordered_map <int, LR>& RoiData)
 {
-    // Transfers a solid buffer of whole image's combined image matrices to GPU-side
-    bool ok = send_imgmatrices_to_gpu (Nyxus::ImageMatrixBuffer, Nyxus::imageMatrixBufferLen, Nyxus::largest_roi_imatr_buf_len);
-
-    // Prepare consolidated all-ROI contours for pixel weighting in weighted moments
-    std::vector<size_t> hoIndices;
-
-    // --data layout:
-    //      x1, y1, x2, y2, ... (ROI1's contour pixels count)
-    //      x1, y1, x2, y2, ... (ROI2's contour pixels count)
-    //      ...
-    std::vector< StatsInt> hoContourData;
-    for (int lab : Labels)
-    {
-        size_t roiBase = hoContourData.size();
-        hoIndices.push_back(roiBase);
-        LR& r = RoiData[lab];
-        size_t n = r.contour.size();
-        hoContourData.push_back(n);
-    }
-
-    ok = send_contours_to_gpu (hoIndices, hoContourData);
+    bool ok = allocate_2dmoments_buffers_on_gpu (Nyxus::largest_roi_imatr_buf_len);   // allocates device-side buffers for the pixel cloud and contour
 
     // Calculate features
     for (auto roiIdx=0; roiIdx<Labels.size(); roiIdx++)
@@ -525,14 +513,13 @@ void ImageMomentsFeature::gpu_process_all_rois (const std::vector<int> & Labels,
         
         ImageMomentsFeature imf;
         imf.calculate_via_gpu (r, roiIdx);
-        imf.save_value(r.fvals);
+        imf.save_value (r.fvals);
     }
 
-    // Free image matrix data
-    ok = free_contour_data_on_gpu();
-    ok = free_imgmatrices_on_gpu();
+    ok = free_2dmoments_buffers_on_gpu();
+
 }
-#endif
+#endif // USE_GPU
 
 namespace Nyxus
 {
@@ -562,7 +549,7 @@ namespace Nyxus
             double dist = std::sqrt(mind2);
 
             // weighted intensity
-            realintens[i] = double(p.inten) / (dist + epsilon);
+            realintens[i] = RealPixIntens(double(p.inten) / (dist + epsilon));
         }
     }
 }
