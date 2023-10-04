@@ -1,7 +1,7 @@
 #ifdef USE_ARROW
 #include "output_writers.h"
 
-std::shared_ptr<arrow::Table> ApacheArrowWriter::get_arrow_table(const std::string& file_path) {
+std::shared_ptr<arrow::Table> ApacheArrowWriter::get_arrow_table(const std::string& file_path, arrow::Status& table_status) {
 
     if (table_ != nullptr) return table_;
 
@@ -20,9 +20,9 @@ std::shared_ptr<arrow::Table> ApacheArrowWriter::get_arrow_table(const std::stri
         auto status = parquet::arrow::OpenFile(input, pool, &arrow_reader);
 
         if (!status.ok()) {
-                // Handle read error
-            auto err = status.ToString();
-            throw std::runtime_error("Error reading Arrow file: " + err);
+            // Handle read error
+            table_status = status;
+            return nullptr;
         }
 
         // Read entire file as a single Arrow table
@@ -31,9 +31,9 @@ std::shared_ptr<arrow::Table> ApacheArrowWriter::get_arrow_table(const std::stri
         status = arrow_reader->ReadTable(&table);
 
         if (!status.ok()) {
-                // Handle read error
-            auto err = status.ToString();
-            throw std::runtime_error("Error reading Arrow file: " + err);
+            // Handle read error
+            table_status = status;
+            return nullptr;
         }
 
         return table;
@@ -102,14 +102,13 @@ ParquetWriter::ParquetWriter(const std::string& output_file, const std::vector<s
 
     if (!status.ok()) {
         // Handle read error
-        auto err = status.ToString();
-        throw std::runtime_error("Error writing setting up Arrow writer: " + err);
+        std::cout << "Error writing setting up Arrow writer: " << status.ToString() << std::endl;
     }
 }
 
         
 arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features) {
-    
+
     int num_rows = features.size();
 
     std::vector<std::shared_ptr<arrow::Array>> arrays;
@@ -125,16 +124,14 @@ arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std
 
         if (!append_status.ok()) {
             // Handle read error
-            auto err = append_status.ToString();
-            throw std::runtime_error("Error writing Arrow file 2: " + err);
+            return append_status;
         }
     }
 
     append_status = string_builder.Finish(&intensity_array);
     if (!append_status.ok()) {
             // Handle read error
-            auto err = append_status.ToString();
-            throw std::runtime_error("Error writing Arrow file 2: " + err);
+            return append_status;
         }
     
 
@@ -149,8 +146,7 @@ arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std
 
         if (!append_status.ok()) {
             // Handle read error
-            auto err = append_status.ToString();
-            throw std::runtime_error("Error writing Arrow file 2: " + err);
+            return append_status;
         }
     }
 
@@ -158,8 +154,7 @@ arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std
 
     if (!append_status.ok()) {
         // Handle read error
-        auto err = append_status.ToString();
-        throw std::runtime_error("Error writing Arrow file 2: " + err);
+        return append_status;
     }
 
     arrays.push_back(segmentation_array);
@@ -171,16 +166,14 @@ arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std
         append_status = int_builder.Append(std::get<1>(features[i]));
         if (!append_status.ok()) {
             // Handle read error
-            auto err = append_status.ToString();
-            throw std::runtime_error("Error writing Arrow file 2: " + err);
+            return append_status;
         }
     }
 
     append_status = int_builder.Finish(&labels_array);
     if (!append_status.ok()) {
         // Handle read error
-        auto err = append_status.ToString();
-        throw std::runtime_error("Error writing Arrow file 2: " + err);
+        return append_status;
     }
     arrays.push_back(labels_array);
 
@@ -195,8 +188,7 @@ arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std
 
             if (!append_status.ok()) {
                 // Handle read error
-                auto err = append_status.ToString();
-                throw std::runtime_error("Error writing Arrow file 2: " + err);
+            return append_status;
             }
         }
 
@@ -204,8 +196,7 @@ arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std
 
         if (!append_status.ok()) {
             // Handle read error
-            auto err = append_status.ToString();
-            throw std::runtime_error("Error writing Arrow file 2: " + err);
+            return append_status;
         }
 
         arrays.push_back(double_array);
@@ -231,8 +222,7 @@ arrow::Status ParquetWriter::close () {
 
         if (!status.ok()) {
             // Handle read error
-            auto err = status.ToString();
-            throw std::runtime_error("Error closing the Arrow file: " + err);
+            return status; 
         }
         return arrow::Status::OK();
         
@@ -271,11 +261,6 @@ ArrowIPCWriter::ArrowIPCWriter(const std::string& output_file, const std::vector
 
     auto status = this->setup(header);
 
-    if (!status.ok()) {
-        // Handle read error
-        auto err = status.ToString();
-        throw std::runtime_error("Error writing setting up Arrow writer: " + err);
-    }
 }    
 
 
@@ -297,16 +282,14 @@ arrow::Status ArrowIPCWriter::write (const std::vector<std::tuple<std::vector<st
 
         if (!append_status.ok()) {
             // Handle read error
-            auto err = append_status.ToString();
-            throw std::runtime_error("Error writing Arrow file 2: " + err);
+            return append_status;
         }
     }
 
     append_status = string_builder.Finish(&intensity_array);
     if (!append_status.ok()) {
             // Handle read error
-            auto err = append_status.ToString();
-            throw std::runtime_error("Error writing Arrow file 2: " + err);
+            return append_status;
         }
     
 
@@ -321,8 +304,7 @@ arrow::Status ArrowIPCWriter::write (const std::vector<std::tuple<std::vector<st
 
         if (!append_status.ok()) {
             // Handle read error
-            auto err = append_status.ToString();
-            throw std::runtime_error("Error writing Arrow file 2: " + err);
+            return append_status;
         }
     }
 
@@ -330,8 +312,7 @@ arrow::Status ArrowIPCWriter::write (const std::vector<std::tuple<std::vector<st
 
     if (!append_status.ok()) {
         // Handle read error
-        auto err = append_status.ToString();
-        throw std::runtime_error("Error writing Arrow file 2: " + err);
+        return append_status;
     }
 
     arrays.push_back(segmentation_array);
@@ -343,16 +324,14 @@ arrow::Status ArrowIPCWriter::write (const std::vector<std::tuple<std::vector<st
         append_status = int_builder.Append(std::get<1>(features[i]));
         if (!append_status.ok()) {
             // Handle read error
-            auto err = append_status.ToString();
-            throw std::runtime_error("Error writing Arrow file 2: " + err);
+            return append_status;
         }
     }
 
     append_status = int_builder.Finish(&labels_array);
     if (!append_status.ok()) {
         // Handle read error
-        auto err = append_status.ToString();
-        throw std::runtime_error("Error writing Arrow file 2: " + err);
+        return append_status;
     }
     arrays.push_back(labels_array);
 
@@ -367,8 +346,7 @@ arrow::Status ArrowIPCWriter::write (const std::vector<std::tuple<std::vector<st
 
             if (!append_status.ok()) {
                 // Handle read error
-                auto err = append_status.ToString();
-                throw std::runtime_error("Error writing Arrow file 2: " + err);
+                return append_status;
             }
         }
 
@@ -376,8 +354,7 @@ arrow::Status ArrowIPCWriter::write (const std::vector<std::tuple<std::vector<st
 
         if (!append_status.ok()) {
             // Handle read error
-            auto err = append_status.ToString();
-            throw std::runtime_error("Error writing Arrow file 2: " + err);
+            return append_status;
         }
 
         arrays.push_back(double_array);
@@ -389,8 +366,7 @@ arrow::Status ArrowIPCWriter::write (const std::vector<std::tuple<std::vector<st
 
     if (!status.ok()) {
         // Handle read error
-        auto err = status.ToString();
-        throw std::runtime_error("Error writing Arrow file 2: " + err);
+        return status;
     }
 
     return arrow::Status::OK();
@@ -403,8 +379,7 @@ arrow::Status ArrowIPCWriter::close () {
 
     if (!status.ok()) {
         // Handle read error
-        auto err = status.ToString();
-        throw std::runtime_error("Error closing the Arrow file: " + err);
+        return status;
     }
     return arrow::Status::OK();
     

@@ -546,8 +546,16 @@ std::string get_parquet_file_imp() {
 #ifdef USE_ARROW
 
 std::shared_ptr<arrow::Table> get_arrow_table_imp(const std::string& file_path) {
+    
+    arrow::Status status;
 
-    return theEnvironment.arrow_stream.get_arrow_table(file_path);
+    auto table = theEnvironment.arrow_stream.get_arrow_table(file_path, status);
+
+    if (!status.ok()) {
+        throw std::runtime_error("Error creating Arrow table: " + status.ToString());
+    }
+
+    return table;
 }
 
 #else

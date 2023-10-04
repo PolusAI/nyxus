@@ -47,14 +47,20 @@ private:
 
     arrow::Status open(std::shared_ptr<arrow::io::RandomAccessFile> input, const std::string& file_path) {
         ARROW_ASSIGN_OR_RAISE(input, arrow::io::ReadableFile::Open(file_path));
+
+        return arrow::Status::OK();
     }
 
     arrow::Status open_parquet_file(std::shared_ptr<arrow::io::RandomAccessFile> input, arrow::MemoryPool* pool, std::unique_ptr<parquet::arrow::FileReader> arrow_reader) {
         ARROW_RETURN_NOT_OK(parquet::arrow::OpenFile(input, pool, &arrow_reader));
+
+        return arrow::Status::OK();
     }
 
     arrow::Status read_parquet_table(std::unique_ptr<parquet::arrow::FileReader> arrow_reader, std::shared_ptr<arrow::Table> table) {
         ARROW_RETURN_NOT_OK(arrow_reader->ReadTable(&table));
+
+        return arrow::Status::OK();
     }
 
 public:
@@ -64,7 +70,7 @@ public:
      * 
      * @return std::shared_ptr<arrow::Table> 
      */
-    std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path);
+    std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path, arrow::Status& table_status);
 
     /**
      * @brief Write Nyxus data to Arrow file
