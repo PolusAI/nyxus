@@ -34,11 +34,13 @@ std::shared_ptr<ApacheArrowWriter> ArrowOutputStream::create_arrow_file(const st
 }
 
 
-std::shared_ptr<arrow::Table> ArrowOutputStream::get_arrow_table(const std::string& file_path) {
-                                                    
-    auto table = writer_->get_arrow_table(file_path);
+std::shared_ptr<arrow::Table> ArrowOutputStream::get_arrow_table(const std::string& file_path, arrow::Status& table_status) {
 
-    return table;
+    if (this->arrow_table_ != nullptr) return this->arrow_table_;
+                                                    
+    this->arrow_table_ = writer_->get_arrow_table(file_path, table_status);
+
+    return this->arrow_table_;
 }
 
 std::string ArrowOutputStream::get_arrow_path() {

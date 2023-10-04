@@ -30,16 +30,16 @@ class ArrowOutputStream {
 
 private:
 
-    std::string arrow_file_path_ = "";
+  std::string arrow_file_path_ = "";
 	std::shared_ptr<ApacheArrowWriter> writer_ = nullptr;
-	std::string arrow_output_type_ = "";    
-
+	std::string arrow_output_type_ = "";
+  std::shared_ptr<arrow::Table> arrow_table_ = nullptr;
 
 public:
     std::shared_ptr<ApacheArrowWriter> create_arrow_file(const std::string& arrow_file_type,
                                                          const std::string& arrow_file_path,
                                                          const std::vector<std::string>& header);
-    std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path);
+    std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path, arrow::Status& table_status);
     std::string get_arrow_path();
 };
 #endif
