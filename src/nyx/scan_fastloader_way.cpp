@@ -26,10 +26,16 @@ namespace py = pybind11;
 #include "globals.h"
 #include "helpers/timing.h"
 
+#ifdef USE_ARROW
+#include "arrow_output_stream.h"
+#include "output_writers.h"
+#endif
+
 // Sanity
 #ifdef _WIN32
 #include<windows.h>
 #endif
+
 
 namespace Nyxus
 {
@@ -203,16 +209,34 @@ namespace Nyxus
 		int numSensemakerThreads,
 		int numReduceThreads,
 		int min_online_roi_size,
+		bool arrow_output,
 		bool save2csv,
-		const std::string& csvOutputDir)
+		const std::string& outputDir)
 	{
+
 		#ifdef CHECKTIMING
 		if (Stopwatch::inclusive())
 			Stopwatch::reset();
 		#endif		
-			
+		
 		// One-time initialization
 		init_feature_buffers();
+
+
+		// initialize arrow writer if needed
+	#ifdef USE_ARROW
+		if (arrow_output) {
+
+			theEnvironment.arrow_stream = ArrowOutputStream();
+
+			try {
+				theEnvironment.arrow_writer = theEnvironment.arrow_stream.create_arrow_file(theEnvironment.arrow_output_type, outputDir,   Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+			} catch (const std::exception &err) {
+				std::cout << "Error creating Arrow file: " << err.what() << std::endl;
+				return 1;
+			}
+		}
+	#endif
 
 		bool ok = true;
 
@@ -252,15 +276,33 @@ namespace Nyxus
 				return 1;
 			}
 
+		#ifdef USE_ARROW
+			if (arrow_output) {
+
+				auto status = theEnvironment.arrow_writer->write(Nyxus::get_feature_values());
+				
+				if (!status.ok()) {
+                    // Handle read error
+                    std::cout << "Error writing Arrow file: " << status.ToString() << std::endl;
+					return 2;
+				}
+			}
+		#endif
+
 			// For the non-Apache output mode, save the result for this intensity-label file pair
-			if (save2csv)
-				ok = save_features_2_csv(ifp, lfp, csvOutputDir);
-			else
-				ok = save_features_2_buffer(theResultsCache);
-			if (ok == false)
-			{
-				std::cout << "save_features_2_csv() returned an error code" << std::endl;
-				return 2;
+			if (!arrow_output) {
+
+				if (save2csv) {
+					ok = save_features_2_csv(ifp, lfp, outputDir);
+				} else {
+					ok = save_features_2_buffer(theResultsCache);
+				}
+
+				if (ok == false)
+				{
+					std::cout << "save_features_2_csv() returned an error code" << std::endl;
+					return 2;
+				}
 			}
 
 			theImLoader.close();
@@ -302,11 +344,24 @@ namespace Nyxus
 			// Details - also to a file
 			VERBOSLVL3(
 				fs::path p(theSegFname);
-			Stopwatch::save_stats(theEnvironment.output_dir + "/inclusive_nyxustiming.csv");
+				Stopwatch::save_stats(theEnvironment.output_dir + "/inclusive_nyxustiming.csv");
 			);
 		}
 		#endif
 
+	#ifdef USE_ARROW
+		if (arrow_output) {
+			// close arrow file after use
+			auto status = theEnvironment.arrow_writer->close();
+			
+			if (!status.ok()) {
+				// Handle read error
+				std::cout << "Error closing Arrow file: " << status.ToString() << std::endl;
+				return 2;
+			}
+		}
+	#endif
+	
 		return 0; // success
 	}
 
@@ -318,8 +373,23 @@ namespace Nyxus
 		int numReduceThreads,
 		const std::vector<std::string>& intensity_names,
 		const std::vector<std::string>& seg_names,
-		std::string& error_message)
-	{
+		std::string& error_message,
+		bool arrow_output,
+		const std::string& outputDir)
+	{	
+		#ifdef USE_ARROW
+		if (arrow_output) {
+
+			theEnvironment.arrow_stream = ArrowOutputStream();
+
+			try {
+				theEnvironment.arrow_writer = theEnvironment.arrow_stream.create_arrow_file(theEnvironment.arrow_output_type, outputDir,  Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+			} catch (const std::exception &err) {
+				error_message = err.what();
+				return 1;
+			}
+		}
+	#endif
 
 		auto intens_buffer = intensity_images.request();
 		auto label_buffer = label_images.request();
@@ -343,8 +413,23 @@ namespace Nyxus
 				error_message = "processIntSegImagePairInMemory() returned an error code while processing file pair";
 				return 1;
 			}
+			
+		#ifdef USE_ARROW
+			if (arrow_output) {
+
+				auto status = theEnvironment.arrow_writer->write(Nyxus::get_feature_values());
 				
-			ok = save_features_2_buffer(theResultsCache);
+				if (!status.ok()) {
+                    // Handle read error
+                    error_message = "Error writing Arrow file: " + status.ToString();
+					return 2;
+				}
+			}
+		#endif
+
+			if (!arrow_output)
+				ok = save_features_2_buffer(theResultsCache);
+
 			if (ok == false)
 			{
 				error_message = "save_features_2_buffer() failed";
@@ -367,6 +452,19 @@ namespace Nyxus
 			if (PyErr_CheckSignals() != 0)
                 		throw pybind11::error_already_set();
 		}
+
+	#ifdef USE_ARROW
+		if (arrow_output) {
+			// close arrow file after use
+			auto status = theEnvironment.arrow_writer->close();
+			
+			if (!status.ok()) {
+				// Handle read error
+				error_message = "Error closing Arrow file: " + status.ToString();
+				return 2;
+			}
+		}
+	#endif
 		
 		return 0; // success
 	}

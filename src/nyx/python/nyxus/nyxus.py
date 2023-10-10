@@ -32,10 +32,8 @@ from typing import Optional, List
 if (arrow_headers_found() and arrow_is_enabled_imp()):
         
         from .backend import (
-            create_arrow_file_imp, 
             get_arrow_file_imp, 
             get_parquet_file_imp, 
-            create_parquet_file_imp, 
             get_arrow_table_imp,
         )
             
@@ -215,7 +213,7 @@ class Nyxus:
             
         if (output_type == 'pandas'):
             
-            header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern, True)
+            header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern, True, "")
 
             df = pd.concat(
                 [
@@ -233,24 +231,10 @@ class Nyxus:
         
         else:
             
-            featurize_directory_imp(intensity_dir, label_dir, file_pattern, False)
+            featurize_directory_imp(intensity_dir, label_dir, file_pattern, False, output_path)
+        
+
             
-            output_type = output_type.lower() # ignore case of output type
-            
-            if (output_type == 'arrow' or output_type == 'arrowipc'):
-                
-                self.create_arrow_file(output_path)
-                
-                return self.get_arrow_ipc_file()
-                
-            elif (output_type == 'parquet'):
-                
-                self.create_parquet_file(output_path)
-                
-                return self.get_parquet_file()
-            
-            
-    
     def featurize(
         self,
         intensity_images: np.ndarray,
@@ -286,6 +270,10 @@ class Nyxus:
             Pandas DataFrame containing the requested features with one row per label
             per image.
         """
+        valid_output_types = ['arrow', 'parquet', 'pandas']
+        if (output_type != "" and output_type not in valid_output_types):
+            raise ValueError("Invalid output type: " + output_type + ". Valid options are: " + valid_output_types)
+            
         
         # verify argument types
         if not isinstance(intensity_images, np.ndarray):
@@ -338,7 +326,7 @@ class Nyxus:
     
         if (output_type == 'pandas'):
                 
-            header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, True)
+            header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, True, "", "")
             
             self.error_message = error_message
             if(error_message != ''):
@@ -360,25 +348,21 @@ class Nyxus:
             
         else:
             
-            error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, False)
+            error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, False, output_type, output_path)
             
             self.error_message = error_message
-            if(error_message != ''):
-                print(error_message)
             
-            output_type = output_type.lower() # ignore case of output type
+            if(error_message[0] != ''):
+                raise RuntimeError('Error calculating features: ' + error_message[0])
             
-            if (output_type == 'arrow' or output_type == 'arrowipc'):
+            if (output_path.endswith('.arrow') or output_path.endswith('.parquet')):
+                return output_path
+            else:
+                if (output_path == ""):
+                    return 'NyxusFeatures.' + output_type
+                else:
+                    return output_path + '/NyxusFeatures.' + output_type
                 
-                self.create_arrow_file(output_path)
-                
-                return self.get_arrow_ipc_file()
-                
-            elif (output_type == 'parquet'):
-                
-                self.create_parquet_file(output_path)
-                
-                return self.get_parquet_file()
     
     def using_gpu(self, gpu_on: bool):
         use_gpu(gpu_on)
@@ -440,19 +424,7 @@ class Nyxus:
             
             featurize_fname_lists_imp (intensity_files, mask_files, single_roi, False)
             
-            output_type = output_type.lower() # ignore case of output type
             
-            if (output_type == 'arrow' or output_type == 'arrowipc'):
-                
-                self.create_arrow_file(output_path)
-                
-                return self.get_arrow_ipc_file()
-                
-            elif (output_type == 'parquet'):
-                
-                self.create_parquet_file(output_path)
-                
-                return self.get_parquet_file()
 
 
     def blacklist_roi(self, blacklist:str):
@@ -715,26 +687,6 @@ class Nyxus:
         
         return get_params_imp(vars)
         
-        
-    def create_arrow_file(self, path: str="NyxusFeatures.arrow"):
-        """Creates an Arrow IPC file containing the features.
-        
-        This method must be called after calling one of the featurize methods.
-
-        Parameters
-        ----------
-        path: Path to write the arrow file to. (Optional, default "NyxusFeatures.arrow")
-
-        Returns
-        -------
-        None
-
-        """
-        if self.arrow_is_enabled():
-            create_arrow_file_imp(path)
-        else:
-            raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
-
     
     def get_arrow_ipc_file(self):
         """Returns the path to the Arrow IPC file.
@@ -753,27 +705,7 @@ class Nyxus:
             return get_arrow_file_imp()
         else:
             raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
-    
-    def create_parquet_file(self, path: str="NyxusFeatures.parquet"):
-        """Creates a Parquet file containing the features.
         
-        This method must be called after calling one of the featurize methods.
-
-        Parameters
-        ----------
-        path: Path to write the parquet file to. (Optional, default "NyxusFeatures.parquet")
-
-        Returns
-        -------
-        None
-
-        """
-        
-        if self.arrow_is_enabled():
-            create_parquet_file_imp(path)
-        else:
-            raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
-    
     def get_parquet_file(self):
         """Returns the path to the Arrow IPC file.
 
@@ -791,7 +723,7 @@ class Nyxus:
         else:
             raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
     
-    def get_arrow_memory_mapping(self):
+    def get_arrow_memory_mapping(self, arrow_ipc_file_path):
         """Returns a memory mapping to the Arrow IPC file.
         
         This method creates a memory mapping between the Arrow IPC file on disk to allow
@@ -808,13 +740,8 @@ class Nyxus:
         """
         
         if self.arrow_is_enabled():
-            arrow_file_path = self.get_arrow_ipc_file()
             
-            if (arrow_file_path == ""):
-                self.create_arrow_file()
-                arrow_file_path = self.get_arrow_ipc_file()
-            
-            with pa.memory_map(arrow_file_path, 'rb') as source:
+            with pa.memory_map(arrow_ipc_file_path, 'rb') as source:
                 array = pa.ipc.open_file(source).read_all()
             
             return array
@@ -822,7 +749,7 @@ class Nyxus:
             raise RuntimeError("Apache arrow is not enabled. Please rebuild Nyxus with Arrow support to enable this functionality.")
     
     
-    def get_arrow_table(self):
+    def get_arrow_table(self, arrow_file_path: str):
         """Returns an arrow table containing the feature calculations.
 
         Parameters
@@ -836,7 +763,7 @@ class Nyxus:
         """
         
         if self.arrow_is_enabled():
-            return get_arrow_table_imp()
+            return get_arrow_table_imp(str(arrow_file_path))
         else:
             raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
     

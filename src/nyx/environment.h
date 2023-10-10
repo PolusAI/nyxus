@@ -10,7 +10,7 @@
 
 #ifdef USE_ARROW
 	#include "output_writers.h"
-	#include "arrow_output.h"
+	#include "arrow_output_stream.h"
 #endif
 
 #ifdef USE_GPU
@@ -119,8 +119,9 @@ public:
 
 #ifdef USE_ARROW
 
-	ArrowOutput arrow_output = ArrowOutput();
 	std::string arrow_output_type = "";
+	ArrowOutputStream  arrow_stream;
+	std::shared_ptr<ApacheArrowWriter> arrow_writer = nullptr;
 	
 #endif
 
