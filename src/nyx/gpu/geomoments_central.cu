@@ -23,9 +23,6 @@ __device__ double pow_pos_int_central (double a, int b)
     return retval;
 }
 
-__global__ void kerSum(double* __restrict__ outdata, const double* __restrict__ indata, size_t N);
-
-
 __global__ void kerCentralMoment (
     double* d_prereduce,
     const Pixel2* d_roicloud,
@@ -86,17 +83,21 @@ bool drvCentralMoment(
     CHECKERR(cudaDeviceSynchronize());
     CHECKERR(cudaGetLastError());
 
-    kerSum <<<nblo, blockSize >>> (Nyxus::devBlockSubsums, Nyxus::devPrereduce, cloudlen);
+    //=== device-reduce:
+    // Determine temporary device storage requirements
+    double* d_out = nullptr;
+    CHECKERR(cudaMalloc(&d_out, sizeof(double)));
+    void* d_temp_storage = NULL;
+    size_t   temp_storage_bytes = 0;
+    cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, d_out, cloudlen/*num_items*/);
+    // Allocate temporary storage
+    cudaMalloc(&d_temp_storage, temp_storage_bytes);
+    // Run sum-reduction
+    cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, d_out, cloudlen/*num_items*/);
+    double h_out;
+    CHECKERR(cudaMemcpy(&h_out, d_out, sizeof(h_out), cudaMemcpyDeviceToHost));
 
-    CHECKERR(cudaPeekAtLastError());
-    CHECKERR(cudaDeviceSynchronize());
-    CHECKERR(cudaGetLastError());
-
-    CHECKERR(cudaMemcpy(Nyxus::hoBlockSubsums, Nyxus::devBlockSubsums, nblo * sizeof(double), cudaMemcpyDeviceToHost));
-    double sum = 0.0;
-    for (int i = 0; i < nblo; i++)
-        sum += Nyxus::hoBlockSubsums[i];
-    retval = sum;
+    retval = h_out;
 
     return true;
 }
@@ -115,19 +116,26 @@ bool drvCentralMomentWeighted (
     int nblo = whole_chunks2(cloudlen, blockSize);
     kerCentralMomentWeighted <<< nblo, blockSize >>> (Nyxus::devPrereduce, d_realintens, d_roicloud, cloudlen, base_x, base_y, origin_x, origin_y, p, q);
 
+    CHECKERR(cudaPeekAtLastError());
     CHECKERR(cudaDeviceSynchronize());
     CHECKERR(cudaGetLastError());
 
-    kerSum << <nblo, blockSize >> > (Nyxus::devBlockSubsums, Nyxus::devPrereduce, cloudlen);
+    //=== device-reduce:
+    // Determine temporary device storage requirements
+    double* d_out = nullptr;
+    CHECKERR(cudaMalloc(&d_out, sizeof(double)));
+    void* d_temp_storage = NULL;
+    size_t   temp_storage_bytes = 0;
+    cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, d_out, cloudlen/*num_items*/);
+    // Allocate temporary storage
+    cudaMalloc(&d_temp_storage, temp_storage_bytes);
+    // Run sum-reduction
+    cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, d_out, cloudlen/*num_items*/);
+    // d_out <-- [38]
+    double h_out;
+    CHECKERR(cudaMemcpy(&h_out, d_out, sizeof(h_out), cudaMemcpyDeviceToHost));
 
-    CHECKERR(cudaDeviceSynchronize());
-    CHECKERR(cudaGetLastError());
-
-    CHECKERR(cudaMemcpy(Nyxus::hoBlockSubsums, Nyxus::devBlockSubsums, nblo * sizeof(double), cudaMemcpyDeviceToHost));
-    double sum = 0.0;
-    for (int i = 0; i < nblo; i++)
-        sum += Nyxus::hoBlockSubsums[i];
-    retval = sum;
+    retval = h_out;
 
     return true;
 }
@@ -136,7 +144,7 @@ bool ImageMomentsFeature_calcCentralMoments (
     // output
     double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _20, double& _21, double& _22, double& _30,
     // input
-    Pixel2* d_roicloud, size_t cloud_len, StatsInt base_x, StatsInt base_y, double origin_x, double origin_y)
+    const Pixel2* d_roicloud, size_t cloud_len, StatsInt base_x, StatsInt base_y, double origin_x, double origin_y)
 {
     // Mark as unassigned a value
     _00 = _01 = _02 = _03 = _10 = _11 = _12 = _20 = _21 = _22 = _30 = -1;
@@ -182,7 +190,7 @@ bool ImageMomentsFeature_calcCentralMomentsWeighted (
     // output
     double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _20, double& _21, double& _22, double& _30,
     // input
-    const RealPixIntens* d_realintens, Pixel2* d_roicloud, size_t cloud_len, StatsInt base_x, StatsInt base_y, double origin_x, double origin_y)
+    const RealPixIntens* d_realintens, const Pixel2* d_roicloud, size_t cloud_len, StatsInt base_x, StatsInt base_y, double origin_x, double origin_y)
 {
     // Mark as unassigned a value
     _00 = _01 = _02 = _03 = _10 = _11 = _12 = _20 = _21 = _22 = _30 = -1;

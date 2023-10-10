@@ -12,7 +12,7 @@ bool ImageMomentsFeature_calcOrigins(
     // output
     double& originOfX, double& originOfY,
     // input
-    Pixel2* d_roicloud,
+    const Pixel2* d_roicloud,
     size_t cloudlen,
     StatsInt base_x,
     StatsInt base_y);
@@ -21,8 +21,8 @@ bool ImageMomentsFeature_calcOriginsWeighted(
     // output
     double& originOfX, double& originOfY,
     // input
-    RealPixIntens* d_realintens,
-    Pixel2* d_roicloud,
+    const RealPixIntens* d_realintens,
+    const Pixel2* d_roicloud,
     size_t cloudlen,
     StatsInt base_x,
     StatsInt base_y);
@@ -31,7 +31,7 @@ bool ImageMomentsFeature_calcRawMoments(
     // output
     double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _20, double& _21, double& _30,
     // input
-    Pixel2* d_roicloud, 
+    const Pixel2* d_roicloud,
     size_t cloud_len, 
     StatsInt base_x, 
     StatsInt base_y);
@@ -40,8 +40,8 @@ bool ImageMomentsFeature_calcRawMomentsWeighted(
     // output
     double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _20, double& _21, double& _30,
     // input
-    RealPixIntens* d_realintens,
-    Pixel2* d_roicloud,
+    const RealPixIntens* d_realintens,
+    const Pixel2* d_roicloud,
     size_t cloud_len,
     StatsInt base_x,
     StatsInt base_y);
@@ -50,21 +50,21 @@ bool ImageMomentsFeature_calcCentralMoments(
     // output
     double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _20, double& _21, double& _22, double& _30,
     // input
-    Pixel2* d_roicloud, size_t cloud_len, StatsInt base_x, StatsInt base_y, double origin_x, double origin_y);
+    const Pixel2* d_roicloud, size_t cloud_len, StatsInt base_x, StatsInt base_y, double origin_x, double origin_y);
 
 bool ImageMomentsFeature_calcCentralMomentsWeighted(
     // output
     double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _20, double& _21, double& _22, double& _30,
     // input
-    const RealPixIntens* d_realintens, Pixel2* d_roicloud, size_t cloud_len, StatsInt base_x, StatsInt base_y, double origin_x, double origin_y);
+    const RealPixIntens* d_realintens, const Pixel2* d_roicloud, size_t cloud_len, StatsInt base_x, StatsInt base_y, double origin_x, double origin_y);
 
 bool ImageMomentsFeature_calc_weighted_intens(
     // output
     RealPixIntens* d_realintens_buf,
     // input
-    Pixel2* d_roicloud,
+    const Pixel2* d_roicloud,
     size_t cloud_len,
-    Pixel2* d_roicontour,
+    const Pixel2* d_roicontour,
     size_t contour_len);
 
 bool ImageMomentsFeature_calcHuInvariants3(
@@ -83,15 +83,20 @@ bool ImageMomentsFeature_calcNormSpatialMoments3(
 
 namespace Nyxus
 {
-    // Image matrices (allocated and initialized with data each time a pending ROI batch is formed)
+    // Objects implementing GPU-based calculation of geometric moments
+    // -- device-side copy of a ROI cloud
     Pixel2* devRoiCloudBuffer = nullptr;
     size_t roi_cloud_len = 0;
     RealPixIntens* devRealintensBuffer = nullptr;
-    double* devPrereduce = nullptr;
-    double* devBlockSubsums = nullptr;
-    double* hoBlockSubsums = nullptr;
+    // -- device-side copy of ROI's contour data
     Pixel2* devContourCloudBuffer = nullptr;
     size_t contour_cloud_len = 0;
+    // -- result of partial geometric moment expression (before sum-reduce)
+    double* devPrereduce = nullptr;
+    // -- reduce helpers
+    double* d_out = nullptr;
+    void* d_temp_storage = nullptr;
+    size_t temp_storage_bytes = 0;
 }
 
 bool ImageMomentsFeature_calculate (
@@ -253,10 +258,7 @@ bool allocate_2dmoments_buffers_on_gpu (size_t cloudsize)
     ok = cudaMalloc (reinterpret_cast<void**> (&Nyxus::devPrereduce), szb3);
     CHECKERR(ok);
 
-    int nblo = whole_chunks2(cloudsize, blockSize);
-    ok = cudaMalloc(reinterpret_cast<void**> (&Nyxus::devBlockSubsums), nblo*sizeof(double));
-    CHECKERR(ok);
-    Nyxus::hoBlockSubsums = new double [nblo];
+    CHECKERR(cudaMalloc(&Nyxus::d_out, sizeof(double)));
 
     return true;
 }
@@ -265,10 +267,12 @@ bool free_2dmoments_buffers_on_gpu()
 {
     CHECKERR(cudaFree(Nyxus::devRoiCloudBuffer));
     CHECKERR(cudaFree(Nyxus::devRealintensBuffer));
-    CHECKERR(cudaFree(Nyxus::devPrereduce));
-    CHECKERR(cudaFree(Nyxus::devBlockSubsums));
-    delete Nyxus::hoBlockSubsums;
     CHECKERR(cudaFree(Nyxus::devContourCloudBuffer));
+    CHECKERR(cudaFree(Nyxus::devPrereduce));
+
+    CHECKERR(cudaFree(Nyxus::d_out));
+    if (Nyxus::d_temp_storage)
+        CHECKERR(cudaFree(Nyxus::d_temp_storage));
 
     return true;
 }
@@ -294,6 +298,18 @@ bool send_contour_data_2_gpu (Pixel2* data, size_t n)
     size_t szb = n * sizeof(data[0]);
     cudaError_t ok = cudaMemcpy(Nyxus::devContourCloudBuffer, data, szb, cudaMemcpyHostToDevice);
     CHECKERR(ok);
+    return true;
+}
+
+bool free_roi_data_on_gpu()
+{
+    if (Nyxus::d_temp_storage)
+    {
+        CHECKERR(cudaFree(Nyxus::d_temp_storage));
+        Nyxus::d_temp_storage = nullptr;
+        Nyxus::temp_storage_bytes = 0;
+    }
+
     return true;
 }
 

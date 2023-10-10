@@ -216,18 +216,30 @@ bool allocate_2dmoments_buffers_on_gpu(size_t max_cloudsize);
 bool free_2dmoments_buffers_on_gpu ();
 bool send_roi_data_2_gpu(Pixel2* data, size_t n);
 bool send_contour_data_2_gpu(Pixel2* data, size_t n);
+bool free_roi_data_on_gpu();
 
 namespace Nyxus
 {
-    extern size_t largest_roi_imatr_buf_len;    // being set in phase 2
+    extern size_t largest_roi_imatr_buf_len;    // set in phase 2
+
+    // Objects implementing GPU-based calculation of geometric moments
+    // -- device-side copy of a ROI cloud
     extern Pixel2* devRoiCloudBuffer;
     extern size_t roi_cloud_len;
-    extern RealPixIntens* devRealintensBuffer;  // [roi_cloud_len]
-    extern double* devPrereduce;                // reduction helper [roi_cloud_len]
-    extern double* devBlockSubsums;   // [whole chunks]
-    extern double* hoBlockSubsums;    // [whole chunks]
+    extern RealPixIntens* devRealintensBuffer;   // [roi_cloud_len]
+    // -- device-side copy of ROI's contour data
     extern Pixel2* devContourCloudBuffer;
     extern size_t contour_cloud_len;
+    // -- result of partial geometric moment expression (before sum-reduce)
+    extern double* devPrereduce;     // reduction helper [roi_cloud_len]
+    // -- reduce helpers
+#if 0
+    double* devBlockSubsums = nullptr;  // [whole chunks]
+    double* hoBlockSubsums = nullptr;   // [whole chunks]
+#endif
+    extern double* d_out;    // 1 double
+    extern void* d_temp_storage;   // allocated [] elements by cub::DeviceReduce::Sum()
+    extern size_t temp_storage_bytes;
 
     /// @brief Copies integer pixel cloud intensities to real-valued vector
     void copy_pixcloud_intensities (intcloud & dst, const pixcloud & src);

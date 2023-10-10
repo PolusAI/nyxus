@@ -27,7 +27,7 @@ bool ImageMomentsFeature_calcOrigins (
     // output
     double& originOfX, double& originOfY,
     // input
-    Pixel2* d_roicloud,
+    const Pixel2* d_roicloud,
     size_t cloudlen,
     StatsInt base_x,
     StatsInt base_y)
@@ -51,8 +51,8 @@ bool ImageMomentsFeature_calcOriginsWeighted(
     // output
     double& originOfX, double& originOfY,
     // input
-    RealPixIntens* d_realintens,
-    Pixel2* d_roicloud,
+    const RealPixIntens* d_realintens,
+    const Pixel2* d_roicloud,
     size_t cloudlen,
     StatsInt base_x,
     StatsInt base_y)

@@ -10,29 +10,54 @@
 
 static __device__ const double WEIGHTING_EPSILON = 0.01;
 
-__device__ double pixel_sqdist_2_contour(StatsInt x, StatsInt y, Pixel2* d_roicontour, size_t contour_len)
+__device__ double sqdist (StatsInt x, StatsInt y, const Pixel2 & pxl)
 {
-    double dx = double(x) - double(d_roicontour[0].x),
-        dy = double(y) - double(d_roicontour[0].y);
+    double dx = double(x) - double(pxl.x),
+        dy = double(y) - double(pxl.y);
     double dist = dx * dx + dy * dy;
-    double mindist = dist;
-    for (size_t i = 1; i < contour_len; i++)
-    {
-        dx = double(x) - double(d_roicontour[i].x);
-        dy = double(y) - double(d_roicontour[i].y);
-        double dist = dx * dx + dy * dy;
-        mindist = __min(mindist, dist);
-    }
-    return mindist;
+    return dist;
 }
+
+__device__ double pixel_sqdist_2_contour (StatsInt x, StatsInt y, const Pixel2* d_roicontour, size_t contour_len)
+{
+    size_t n = contour_len;
+    size_t a = 0, 
+        b = n;
+    auto extrem_d = sqdist(x, y, d_roicontour[a]);
+    auto extrem_i = a;
+    int step = (b - a) / logf (b - a);
+    do
+    {
+        for (size_t i = a + step; i < b; i += step)
+        {
+            auto dist = sqdist(x, y, d_roicontour[i]);
+            if (extrem_d > dist)
+            {
+                extrem_d = dist;
+                extrem_i = i;
+            }
+        }
+
+        // left or right ?
+        auto stepL = extrem_i >= step ? step : extrem_i,
+            stepR = extrem_i + step < n ? step : n - extrem_i;
+
+        a = extrem_i - stepL;
+        b = extrem_i + stepR;
+        step = b - a <= 10 ? 1 : (b - a) / logf(b - a);
+    } while (b - a > 2);
+
+    return extrem_d;
+}
+
 
 __global__ void kerCalcWeightedImage3(
     // output
     RealPixIntens* d_realintens,
     // input
-    Pixel2* d_roicloud,
+    const Pixel2* d_roicloud,
     size_t cloud_len,
-    Pixel2* d_roicontour,
+    const Pixel2* d_roicontour,
     size_t contour_len)
 {
     // pixel index
@@ -56,9 +81,9 @@ bool ImageMomentsFeature_calc_weighted_intens(
     // output
     RealPixIntens* d_realintens_buf,
     // input
-    Pixel2* d_roicloud,
+    const Pixel2* d_roicloud,
     size_t cloud_len,
-    Pixel2* d_roicontour,
+    const Pixel2* d_roicontour,
     size_t contour_len)
 {
     int nb = whole_chunks2(cloud_len, blockSize);

@@ -123,9 +123,13 @@ void ImageMomentsFeature::calculate_via_gpu (LR& r, size_t roi_idx)
         r.aabb.get_ymin(), 
         r.aabb.get_width(), 
         r.aabb.get_height());
-
     if (!ok)
-        std::cerr << "Geometric moments: error calculating features\n";
+        std::cerr << "Geometric moments: error calculating features on GPU\n";
+
+    ok = free_roi_data_on_gpu();
+    if (!ok)
+        std::cerr << "Geometric moments: error freeing ROI data on GPU-side\n";
+
 }
 #endif
 
