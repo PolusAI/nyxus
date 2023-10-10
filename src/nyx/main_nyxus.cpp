@@ -3,7 +3,7 @@
 #include "dirs_and_files.h"
 #include "environment.h"
 #include "globals.h"
-
+#include "arrow_output_stream.h"
 #ifdef USE_GPU
 	bool gpu_initialize(int dev_id); 
 #endif
@@ -59,6 +59,13 @@ int main (int argc, char** argv)
 	auto startTS = getTimeStr();
 	VERBOSLVL1(std::cout << "\n>>> STARTING >>> " << startTS << "\n";)
 
+
+	bool use_arrow = false;
+
+#ifdef USE_ARROW
+	use_arrow = theEnvironment.arrow_output_type == "ARROW" || theEnvironment.arrow_output_type == "PARQUET";
+#endif
+	
 	// Process the image data
 	int min_online_roi_size = 0;
 	errorCode = processDataset (
@@ -68,7 +75,8 @@ int main (int argc, char** argv)
 		theEnvironment.n_pixel_scan_threads, 
 		theEnvironment.n_reduce_threads,
 		min_online_roi_size,
-		theEnvironment.useCsv, // 'true' to save to csv
+		use_arrow,
+		theEnvironment.useCsv,
 		theEnvironment.output_dir);
 
 	// Report feature extraction error, if any
@@ -89,25 +97,6 @@ int main (int argc, char** argv)
 			std::cout << std::endl << "Error #" << errorCode << std::endl;
 			break;
 	}
-
-	// Save features in Apache formats, if enabled
-	#ifdef USE_ARROW
-
-		if (theEnvironment.arrow_output_type == "ARROW" || theEnvironment.arrow_output_type == "ARROWIPC") 
-			theEnvironment.arrow_output.create_arrow_file(theResultsCache.get_headerBuf(),
-				theResultsCache.get_stringColBuf(),
-				theResultsCache.get_calcResultBuf(),
-				theResultsCache.get_num_rows(),
-				theEnvironment.output_dir);
-
-		else 
-			if (theEnvironment.arrow_output_type == "PARQUET") 
-				theEnvironment.arrow_output.create_parquet_file(theResultsCache.get_headerBuf(),
-					theResultsCache.get_stringColBuf(),
-					theResultsCache.get_calcResultBuf(),
-					theResultsCache.get_num_rows(),
-					theEnvironment.output_dir);
-	#endif 
 
 	// Process nested ROIs
 	if (theEnvironment.nestedOptions.defined())

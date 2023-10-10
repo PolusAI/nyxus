@@ -89,6 +89,7 @@ class TestNyxus():
         def test_get_default_params(self):
             
             nyx = nyxus.Nyxus (["*ALL*"])
+            
             assert nyx is not None
             
             # actual
@@ -311,22 +312,15 @@ class TestNyxus():
             
             features = nyx.featurize(intens, seg)
             
-            if (not nyx.arrow_is_enabled()):
+            arrow_path = nyx.featurize(intens, seg, output_type="arrow")
+
+            arrow_array = nyx.get_arrow_memory_mapping(arrow_path)
+
+            pd_columns = list(features.columns)
                 
-                with pytest.raises (Exception):
-                    nyx.create_arrow_file()
-                    
-                with pytest.raises (Exception):
-                    arrow_array = nyx.get_arrow_memory_mapping()
-                return
-            
-            nyx.create_arrow_file()
-            
-            arrow_array = nyx.get_arrow_memory_mapping()
-            
-            for col in features:
-                column_list = features[col].tolist()
-                arrow_list = arrow_array[col]
+            for i in range(len(features.columns)):
+                column_list = features[pd_columns[i]].tolist()
+                arrow_list = arrow_array[i]
                 
                 for i in range(len(column_list)):
                     feature_value = column_list[i]
@@ -361,11 +355,13 @@ class TestNyxus():
 
             features = nyx.featurize(intens, seg)
             
-            arrow_array = nyx.get_arrow_memory_mapping()
+            arrow_array = nyx.get_arrow_memory_mapping(arrow_path)
             
-            for col in features:
-                column_list = features[col].tolist()
-                arrow_list = arrow_array[col]
+            pd_columns = list(features.columns)
+                
+            for i in range(len(features.columns)):
+                column_list = features[pd_columns[i]].tolist()
+                arrow_list = arrow_array[i]
                 
                 for i in range(len(column_list)):
                     feature_value = column_list[i]
@@ -400,11 +396,12 @@ class TestNyxus():
 
             features = nyx.featurize(intens, seg)
             
-            arrow_array = nyx.get_arrow_memory_mapping()
-            
-            for col in features:
-                column_list = features[col].tolist()
-                arrow_list = arrow_array[col]
+            arrow_array = nyx.get_arrow_memory_mapping(arrow_path)
+            pd_columns = list(features.columns)
+                
+            for i in range(len(features.columns)):
+                column_list = features[pd_columns[i]].tolist()
+                arrow_list = arrow_array[i]
                 
                 for i in range(len(column_list)):
                     feature_value = column_list[i]
@@ -418,39 +415,6 @@ class TestNyxus():
                         continue
                     assert feature_value == arrow_value
         
-        @pytest.mark.arrow
-        def test_arrow_ipc_no_create(self):
-            
-            nyx = nyxus.Nyxus (["*ALL*"])
-            assert nyx is not None
-            
-            features = nyx.featurize(intens, seg)
-            
-            if (not nyx.arrow_is_enabled()):
-                with pytest.raises (Exception):
-                    arrow_array = nyx.get_arrow_memory_mapping()
-                
-                return
-            
-            arrow_array = nyx.get_arrow_memory_mapping()
-            
-            for col in features:
-                column_list = features[col].tolist()
-                arrow_list = arrow_array[col]
-                
-                for i in range(len(column_list)):
-                    feature_value = column_list[i]
-                    arrow_value = arrow_list[i].as_py()
-                    
-                    #skip nan values
-                    if (isinstance(feature_value, (int, float)) and math.isnan(feature_value)):
-                        if (not math.isnan(arrow_value)):
-                            assert False
-
-                        continue
-                    assert feature_value == arrow_value
-                    
-            path = nyx.get_arrow_ipc_file()
             
         @pytest.mark.arrow         
         def test_arrow_ipc_path(self):
@@ -458,122 +422,19 @@ class TestNyxus():
             nyx = nyxus.Nyxus (["*ALL*"])
             assert nyx is not None
             
-            features = nyx.featurize(intens, seg)
-            
-            if (not nyx.arrow_is_enabled()):
-                with pytest.raises (Exception):
-                    nyx.create_arrow_file()
-                return
-            
-            nyx.create_arrow_file()
+            arrow_path = nyx.featurize(intens, seg, output_type="arrow")
             
             path = nyx.get_arrow_ipc_file()
-            
-            assert path == 'NyxusFeatures.arrow'
-            
-        @pytest.mark.arrow  
-        def test_arrow_ipc_path_no_create(self):
-            
-            nyx = nyxus.Nyxus (["*ALL*"])
-            assert nyx is not None
-            
-            if (not nyx.arrow_is_enabled()):
-                assert True
-                return
-            
-            features = nyx.featurize(intens, seg)
-            
-            if (not nyx.arrow_is_enabled()):
-                with pytest.raises (Exception):
-                    path = nyx.get_arrow_ipc_file()
-                return
-                    
-            path = nyx.get_arrow_ipc_file()
-            
-            assert path == 'NyxusFeatures.arrow'
-            
-            #os.remove(path)
-        
-        @pytest.mark.arrow  
-        def test_custom_arrow_ipc_path(self):
-            
-            nyx = nyxus.Nyxus (["*ALL*"])
-            assert nyx is not None
-            
-            if (not nyx.arrow_is_enabled()):
-                assert True
-                return
-            
-            features = nyx.featurize(intens, seg)
-            
-            nyx.create_arrow_file('out/out.arrow')
-            
-            if (not nyx.arrow_is_enabled()):
-                with pytest.raises (Exception):
-                    path = nyx.get_arrow_ipc_file()
-                    
-                return
-            
-            path = nyx.get_arrow_ipc_file()
-            
-            assert path == 'out/out.arrow'
-        
-        @pytest.mark.arrow
-        def test_make_parquet_file(self):
-            
-            nyx = nyxus.Nyxus (["*ALL*"])
-            assert nyx is not None
-            
-            features = nyx.featurize(intens, seg)
-            
-            if (not nyx.arrow_is_enabled()):
-                with pytest.raises (Exception):
-                     nyx.create_parquet_file()
-            
-                with pytest.raises (Exception):
-                    parquet_file = nyx.get_parquet_file()
-                    
-                return
-            
-            nyx.create_parquet_file()
-            
-            parquet_file = nyx.get_parquet_file()
 
-            # Read the Parquet file into a Pandas DataFrame
-            parquet_df = pq.read_table(parquet_file).to_pandas()
-                
-            
-            for col in features:
-                column_list = features[col].tolist()
-                arrow_list = parquet_df[col].tolist()
-                
-                for i in range(len(column_list)):
-                    feature_value = column_list[i]
-                    arrow_value = arrow_list[i]
-                    
-                    #skip nan values
-                    if (isinstance(feature_value, (int, float)) and math.isnan(feature_value)):
-                        if (not math.isnan(arrow_value)):
-                            assert False
+            assert arrow_path == 'NyxusFeatures.arrow'
 
-                        continue
-                    assert feature_value == arrow_value
         
         @pytest.mark.arrow        
         def test_parquet_writer(self):
             
             nyx = nyxus.Nyxus (["*ALL*"])
             assert nyx is not None
-        
             
-            if (not nyx.arrow_is_enabled()):
-                with pytest.raises (Exception):
-                     nyx.create_parquet_file()
-            
-                with pytest.raises (Exception):
-                    parquet_file = nyx.get_parquet_file()
-                    
-                return
             
             features = nyx.featurize(intens, seg)
 
@@ -581,11 +442,13 @@ class TestNyxus():
             
             # Read the Parquet file into a Pandas DataFrame
             parquet_df = pq.read_table(parquet_file).to_pandas()
+            pd_columns = list(features.columns)
+
+            arrow_columns = list(parquet_df.columns)
                 
-            
-            for col in features:
-                column_list = features[col].tolist()
-                arrow_list = parquet_df[col].tolist()
+            for i in range(len(features.columns)):
+                column_list = features[pd_columns[i]].tolist()
+                arrow_list = parquet_df[arrow_columns[i]].tolist()
                 
                 for i in range(len(column_list)):
                     feature_value = column_list[i]
@@ -606,15 +469,6 @@ class TestNyxus():
                 assert nyx is not None
             
                 
-                if (not nyx.arrow_is_enabled()):
-                    with pytest.raises (Exception):
-                        nyx.create_parquet_file()
-                
-                    with pytest.raises (Exception):
-                        parquet_file = nyx.get_parquet_file()
-                        
-                    return
-                
                 features = nyx.featurize(intens, seg)
 
                 parquet_file = nyx.featurize(intens, seg, output_type="parquet")
@@ -623,11 +477,14 @@ class TestNyxus():
                 
                 # Read the Parquet file into a Pandas DataFrame
                 parquet_df = pq.read_table(parquet_file).to_pandas()
-                    
                 
-                for col in features:
-                    column_list = features[col].tolist()
-                    arrow_list = parquet_df[col].tolist()
+                pd_columns = list(features.columns)
+                
+                arrow_columns = list(parquet_df.columns)
+                
+                for i in range(len(features.columns)):
+                    column_list = features[pd_columns[i]].tolist()
+                    arrow_list = parquet_df[arrow_columns[i]].tolist()
                     
                     for i in range(len(column_list)):
                         feature_value = column_list[i]
@@ -640,4 +497,68 @@ class TestNyxus():
 
                             continue
                         assert feature_value == arrow_value
+        '''
+        @pytest.mark.arrow
+        def test_arrow_ipc_get_table(self):
+            
+            nyx = nyxus.Nyxus (["*ALL*"])
+            assert nyx is not None
+            
+            arrow_path = nyx.featurize(intens, seg, output_type="arrow")
+            
+            assert arrow_path == 'NyxusFeatures.arrow'
+
+            features = nyx.featurize(intens, seg)
+            
+            arrow_table = nyx.get_arrow_table(arrow_path)
+            
+            arrow_df = arrow_table.to_pandas() 
+            
+            for col in features:
+                column_list = features[col].tolist()
+                arrow_list = arrow_df[col].tolist()
+                
+                for i in range(len(column_list)):
+                    feature_value = column_list[i]
+                    arrow_value = arrow_list[i]
                     
+                    #skip nan values
+                    if (isinstance(feature_value, (int, float)) and math.isnan(feature_value)):
+                        if (not math.isnan(arrow_value)):
+                            assert False
+
+                        continue
+                    assert feature_value == arrow_value
+                    
+        @pytest.mark.arrow
+        def test_parquet_get_table(self):
+            
+            nyx = nyxus.Nyxus (["*ALL*"])
+            assert nyx is not None
+            
+            arrow_path = nyx.featurize(intens, seg, output_type="parquet")
+            
+            assert arrow_path == 'NyxusFeatures.parquet'
+            
+            features = nyx.featurize(intens, seg)
+            
+            arrow_table = nyx.get_arrow_table(arrow_path)
+            
+            arrow_df = arrow_table.to_pandas()
+            
+            for col in features:
+                column_list = features[col].tolist()
+                arrow_list = arrow_df[col].tolist()
+                
+                for i in range(len(column_list)):
+                    feature_value = column_list[i]
+                    arrow_value = arrow_list[i]
+                    
+                    #skip nan values
+                    if (isinstance(feature_value, (int, float)) and math.isnan(feature_value)):
+                        if (not math.isnan(arrow_value)):
+                            assert False
+
+                        continue
+                    assert feature_value == arrow_value
+        '''

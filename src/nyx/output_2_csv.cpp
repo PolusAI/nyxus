@@ -55,6 +55,120 @@ namespace Nyxus
 		return x;
 	}
 
+	std::vector<std::string> get_header(const std::vector<std::tuple<std::string, AvailableFeatures>>& F ) {
+		std::stringstream ssHead;
+
+		std::vector<std::string> head;
+
+		// Mandatory column names
+		for (const auto& s : mandatory_output_columns)
+		{
+			head.emplace_back(s);
+		}
+
+		// Optional columns
+		for (auto& enabdF : F)
+		{
+			auto fn = std::get<0>(enabdF);	// feature name
+			auto fc = std::get<1>(enabdF);	// feature code
+
+			// Handle missing feature name (which is a significant issue!) in order to at least be able to trace back to the feature code
+			if (fn.empty())
+			{
+				std::stringstream temp;
+				temp << "feature" << fc;
+				fn = temp.str();
+			}
+
+			// Parameterized feature
+			// --GLCM family
+			bool angledGlcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
+			if (angledGlcmFeature)
+			{
+				// Populate with angles
+				for (auto ang : theEnvironment.glcmAngles)
+				{
+					// CSV separator
+					//if (ang != theEnvironment.rotAngles[0])
+					//	ssHead << ",";
+					head.emplace_back(fn + "_" + std::to_string(ang));
+				}
+				// Proceed with other features
+				continue;
+			}
+
+			// --GLRLM family
+			bool glrlmFeature = std::find (GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
+			if (glrlmFeature)
+			{
+				// Populate with angles
+				for (auto ang : GLRLMFeature::rotAngles)
+				{
+					head.emplace_back(fn + "_" + std::to_string(ang));
+				}
+				// Proceed with other features
+				continue;
+			}
+
+			// --Gabor
+			if (fc == GABOR)
+			{
+				// Generate the feature value list
+				for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
+					head.emplace_back(fn + "_" + std::to_string(i));
+
+				// Proceed with other features
+				continue;
+			}
+
+			if (fc == FRAC_AT_D)
+			{
+				// Generate the feature value list
+				for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
+					head.emplace_back(fn + "_" + std::to_string(i));
+
+				// Proceed with other features
+				continue;
+			}
+
+			if (fc == MEAN_FRAC)
+			{
+				// Generate the feature value list
+				for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
+					head.emplace_back(fn + "_" + std::to_string(i));
+
+				// Proceed with other features
+				continue;
+			}
+
+			if (fc == RADIAL_CV)
+			{
+				// Generate the feature value list
+				for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
+					head.emplace_back(fn + "_" + std::to_string(i));
+
+				// Proceed with other features
+				continue;
+			}
+
+			// --Zernike features header 
+			if (fc == ZERNIKE2D)
+			{
+				// Populate with indices
+				for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)	// i < ZernikeFeature::num_feature_values_calculated
+					head.emplace_back(fn + "_Z" + std::to_string(i));						
+
+				// Proceed with other features
+				continue;
+			}
+
+			// Regular feature
+			head.emplace_back(fn);
+		}
+
+		return head;
+	}
+
 	std::string get_feature_output_fname (const std::string& intFpath, const std::string& segFpath)
 	{
 		std::string retval;
@@ -119,115 +233,17 @@ namespace Nyxus
 		{
 			std::stringstream ssHead;
 
-			// Mandatory column names
-			for (const auto& s : mandatory_output_columns)
-			{
-				ssHead << s;
-				if (s != mandatory_output_columns.back())
-					ssHead << ",";
+			auto head_vector = Nyxus::get_header(F);
+
+			for(const auto& column: head_vector){
+				ssHead << column << ", ";
 			}
 
-			// Optional columns
-			for (auto& enabdF : F)
-			{
-				auto fn = std::get<0>(enabdF);	// feature name
-				auto fc = std::get<1>(enabdF);	// feature code
+			auto head_string = ssHead.str();
 
-				// Handle missing feature name (which is a significant issue!) in order to at least be able to trace back to the feature code
-				if (fn.empty())
-				{
-					std::stringstream temp;
-					temp << "feature" << fc;
-					fn = temp.str();
-				}
+			head_string.pop_back(); // remove trailing comma
 
-				// Parameterized feature
-				// --GLCM family
-				bool angledGlcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
-				if (angledGlcmFeature)
-				{
-					// Populate with angles
-					for (auto ang : theEnvironment.glcmAngles)
-					{
-						// CSV separator
-						//if (ang != theEnvironment.rotAngles[0])
-						//	ssHead << ",";
-						ssHead << "," << fn << "_" << ang;
-					}
-					// Proceed with other features
-					continue;
-				}
-
-				// --GLRLM family
-				bool glrlmFeature = std::find (GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
-				if (glrlmFeature)
-				{
-					// Populate with angles
-					for (auto ang : GLRLMFeature::rotAngles)
-					{
-						ssHead << "," << fn << "_" << ang;
-					}
-					// Proceed with other features
-					continue;
-				}
-
-				// --Gabor
-				if (fc == GABOR)
-				{
-					// Generate the feature value list
-					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
-						ssHead << "," << fn << "_" << i;
-
-					// Proceed with other features
-					continue;
-				}
-
-				if (fc == FRAC_AT_D)
-				{
-					// Generate the feature value list
-					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
-						ssHead << "," << fn << "_" << i;
-
-					// Proceed with other features
-					continue;
-				}
-
-				if (fc == MEAN_FRAC)
-				{
-					// Generate the feature value list
-					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
-						ssHead << "," << fn << "_" << i;
-
-					// Proceed with other features
-					continue;
-				}
-
-				if (fc == RADIAL_CV)
-				{
-					// Generate the feature value list
-					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
-						ssHead << "," << fn << "_" << i;
-
-					// Proceed with other features
-					continue;
-				}
-
-				// --Zernike features header 
-				if (fc == ZERNIKE2D)
-				{
-					// Populate with indices
-					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)	// i < ZernikeFeature::num_feature_values_calculated
-						ssHead << "," << fn << "_Z" << i;						
-
-					// Proceed with other features
-					continue;
-				}
-
-				// Regular feature
-				ssHead << "," << fn;
-			}
-
-			fprintf(fp, "%s\n", ssHead.str().c_str());
+			fprintf(fp, "%s\n", head_string.c_str());
 
 			// Prevent rendering the header again for another image's portion of labels
 			if (theEnvironment.separateCsv == false)
@@ -431,6 +447,133 @@ namespace Nyxus
 #endif
 
 		return true;
+	}
+
+	std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> get_feature_values() {
+
+		std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> features;
+
+		// Sort the labels
+		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
+		std::sort(L.begin(), L.end());
+
+		// Learn what features need to be displayed
+		std::vector<std::tuple<std::string, AvailableFeatures>> F = theFeatureSet.getEnabledFeatures();
+
+    	// -- Values
+		for (auto l : L)
+		{
+			LR& r = roiData[l];		
+
+			std::vector<double> feature_values;	
+			
+			// Skip blacklisted ROI
+			if (r.blacklisted)
+				continue;
+
+			// Tear off pure file names from segment and intensity file paths
+			fs::path pseg(r.segFname), pint(r.intFname);
+			std::vector<std::string> filenames;
+			filenames.push_back(pseg.filename().u8string());
+			filenames.push_back(pint.filename().u8string());
+
+			for (auto& enabdF : F)
+			{
+				auto fc = std::get<1>(enabdF);
+				auto vv = r.get_fvals(std::get<1>(enabdF));
+
+				// Parameterized feature
+				// --GLCM family
+				bool angledGlcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
+				if (angledGlcmFeature)
+				{
+					// Mock angled values if they haven't been calculated for some error reason
+					if (vv.size() < GLCMFeature::angles.size())
+						vv.resize(GLCMFeature::angles.size(), 0.0);
+					// Output the sub-values
+					int nAng = GLCMFeature::angles.size();
+					for (int i=0; i < nAng; i++)
+					{
+						feature_values.push_back(vv[i]);
+					}
+					// Proceed with other features
+					continue;
+				}
+
+				// --GLRLM family
+				bool glrlmFeature = std::find (GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
+				if (glrlmFeature)
+				{
+					// Polulate with angles
+					int nAng = 4;
+					for (int i=0; i < nAng; i++)
+					{
+						feature_values.push_back(vv[i]);
+					}
+					// Proceed with other features
+					continue;
+				}
+
+				// --Gabor
+				if (fc == GABOR)
+				{
+					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
+					{
+						feature_values.push_back(vv[i]);		
+					}
+
+					// Proceed with other features
+					continue;
+				}
+
+				// --Zernike feature values
+				if (fc == ZERNIKE2D)
+				{
+					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
+					{
+						feature_values.push_back(vv[i]);
+					}
+
+					// Proceed with other features
+					continue;
+				}
+
+				// --Radial distribution features
+				if (fc == FRAC_AT_D)
+				{
+					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
+					{
+						feature_values.push_back(vv[i]);
+					}
+					// Proceed with other features
+					continue;
+				}
+				if (fc == MEAN_FRAC)
+				{
+					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
+					{
+						feature_values.push_back(vv[i]);
+					}
+					// Proceed with other features
+					continue;
+				}
+				if (fc == RADIAL_CV)
+				{
+					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
+					{
+						feature_values.push_back(vv[i]);
+					}
+					// Proceed with other features
+					continue;
+				}
+
+				feature_values.push_back(vv[0]);
+			}
+
+			features.push_back(std::make_tuple(filenames, l, feature_values));
+		}
+
+		return features;
 	}
 
 	// Diagnostic function
