@@ -16,11 +16,6 @@ public:
 		totalNumLabels_ = 0;
 	}
 
-	std::vector<std::string> get_headerBufByVal() { return headerBuf_; }
-	std::vector<std::string> get_stringColBufByVal() { return stringColBuf_; }
-	std::vector<double> get_calcResultBufByVal() { return calcResultBuf_; }
-
-	
 	std::vector<std::string>& get_headerBuf() { return headerBuf_; }
 	std::vector<std::string>& get_stringColBuf() { return stringColBuf_; }
 	std::vector<double>& get_calcResultBuf() { return calcResultBuf_; }
