@@ -1,6 +1,5 @@
 #define _USE_MATH_DEFINES	// For M_PI, etc.
 #include <cmath>
-#include <omp.h>
 #include "gabor.h"
 
 using namespace std;

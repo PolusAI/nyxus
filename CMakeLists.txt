@@ -88,8 +88,6 @@ option(RUN_GTEST "Downloads google unit test API and runs google test scripts to
 #==== Pybind11
 find_package(pybind11 CONFIG REQUIRED)
 
-find_package(OpenMP COMPONENTS C CXX)
-
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake-modules")
 
 #==== Source files
