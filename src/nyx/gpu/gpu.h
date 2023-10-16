@@ -6,6 +6,8 @@
 #include <builtin_types.h>
 #include <iostream>
 
+static const int blockSize = 256;
+
 #define whole_chunks2(n,t) ((unsigned int)n+(t)-1)/(t)
 
 #ifndef WITH_PYTHON_H

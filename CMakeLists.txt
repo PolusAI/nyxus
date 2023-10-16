@@ -37,11 +37,9 @@ else()
 	set(USEGPU OFF) # probably redundant fail-safe
 endif()
 
-
 #==== Compiler Options
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 
 if(USEGPU)
     enable_language("CUDA")
@@ -58,18 +56,19 @@ if(USEGPU)
 endif()
 
 #since xtensor does not built with GCC 7.5 and lower
-option(OMEZARR "Support OMEZarr" ON)
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.5) 
-		add_definitions(-DOMEZARR_SUPPORT)
+if(NOT ESSENTIAL)
+	option(OMEZARR "Support OMEZarr" ON)
+	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.5) 
+			add_definitions(-DOMEZARR_SUPPORT)
+		else()
+			set(OMEZARR OFF)
+			message(WARNING "OMEZarr support is not available with GCC 7.5 and older compiler.")
+		endif()
 	else()
-		set(OMEZARR OFF)
-		message(WARNING "OMEZarr support is not available with GCC 7.5 and older compiler.")
+		add_definitions(-DOMEZARR_SUPPORT)
 	endif()
-else()
-	add_definitions(-DOMEZARR_SUPPORT)
-endif()
-
+endif() # ESSENTIAL
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive- /EHsc /bigobj")
@@ -83,7 +82,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 #== GTest 
 option(RUN_GTEST "Downloads google unit test API and runs google test scripts to test Nyxus" OFF)
-
 
 #==== Pybind11
 find_package(pybind11 CONFIG REQUIRED)
@@ -162,38 +160,37 @@ set(SOURCE
 	src/nyx/scan_fastloader_way.cpp
 )
 
-option(PARQUET_LINK_SHARED "Link to the Parquet shared library" ON)
+if(NOT ESSENTIAL)
+	option(PARQUET_LINK_SHARED "Link to the Parquet shared library" ON)
+	option(USEARROW "Use Arrow" OFF)
 
-option(USEARROW "Use Arrow" OFF)
-
-if (USEARROW)
-	# Look for installed packages the system
-	find_package(Arrow)
-
-	if (Arrow_FOUND) 
+	if (USEARROW)
 		# Look for installed packages the system
-		find_package(Parquet)
+		find_package(Arrow)
 
-		if (Parquet_FOUND)
-			add_definitions(-DUSE_ARROW)
-		else()
-			message(WARNING "The Parquet library was not found. The build will continue without Arrow support.")
+		if (Arrow_FOUND) 
+			# Look for installed packages the system
+			find_package(Parquet)
+
+			if (Parquet_FOUND)
+				add_definitions(-DUSE_ARROW)
+			else()
+				message(WARNING "The Parquet library was not found. The build will continue without Arrow support.")
+				set(USEARROW OFF)
+			endif()
+
+		else ()
+		message(WARNING "The Arrow library was not found. The build will continue without Arrow support.")
 			set(USEARROW OFF)
 		endif()
 
-	else ()
-	message(WARNING "The Arrow library was not found. The build will continue without Arrow support.")
-		set(USEARROW OFF)
 	endif()
-
-endif()
-
+endif() #ESSENTIAL
 
 # CLI
 if(BUILD_CLI)
 	add_executable(nyxus ${SOURCE} src/nyx/main_nyxus.cpp)
 endif()
-
 
 # Python bindings.
 if(BUILD_LIB)
@@ -213,33 +210,34 @@ if (TIFF_FOUND)
 	include_directories (${TIFF_INCLUDE_DIR})
 endif (TIFF_FOUND)
 
-#== Required for OMEZarr 
-if(OMEZARR)
-	find_package(BLOSC REQUIRED)
-	if(BLOSC_FOUND)
-		if(BUILD_LIB)
-			target_compile_definitions(backend PRIVATE -DWITH_BLOSC)
-			target_link_libraries(backend PRIVATE ${BLOSC_LIBRARIES})
+if(NOT ESSENTIAL)
+	#== Required for OMEZarr 
+	if(OMEZARR)
+		find_package(BLOSC REQUIRED)
+		if(BLOSC_FOUND)
+			if(BUILD_LIB)
+				target_compile_definitions(backend PRIVATE -DWITH_BLOSC)
+				target_link_libraries(backend PRIVATE ${BLOSC_LIBRARIES})
+			endif()
+			if(BUILD_CLI)
+				target_compile_definitions(nyxus PRIVATE -DWITH_BLOSC)
+				target_link_libraries(nyxus PRIVATE ${BLOSC_LIBRARIES})	
+			endif()
 		endif()
-		if(BUILD_CLI)
-			target_compile_definitions(nyxus PRIVATE -DWITH_BLOSC)
-			target_link_libraries(nyxus PRIVATE ${BLOSC_LIBRARIES})	
+
+		find_package(Boost REQUIRED)
+		if(Boost_FOUND)
+			include_directories(${Boost_INCLUDE_DIR})
 		endif()
+
+		find_package(nlohmann_json REQUIRED)
+		if(nlohmann_json_FOUND)
+			include_directories(${nlohmann_json_INCLUDE_DIR})
+		endif()
+
+		find_file(Z5 "z5/z5.hxx" REQUIRED)
 	endif()
-
-	find_package(Boost REQUIRED)
-	if(Boost_FOUND)
-		include_directories(${Boost_INCLUDE_DIR})
-	endif()
-
-	find_package(nlohmann_json REQUIRED)
-	if(nlohmann_json_FOUND)
-		include_directories(${nlohmann_json_INCLUDE_DIR})
-	endif()
-
-	find_file(Z5 "z5/z5.hxx" REQUIRED)
-endif()
-
+endif() # ESSENTIAL
 
 find_package(Threads QUIET)
 if (Threads_FOUND)
@@ -251,38 +249,46 @@ else ()
 	message(STATUS "Unable to find threads. Nyxus must have a threading library i.e. pthreads.")
 endif ()
 
-#== Required for DICOM
-find_package(DCMTK)
-if(DCMTK_FOUND)
-	include_directories(${DCMTK_INCLUDE_DIRS})
-	add_definitions(-DDICOM_SUPPORT)
-	foreach(LIB ${DCMTK_LIBRARIES})
-		FIND_LIBRARY(FOUND_LIB_${LIB} ${LIB})
-		LIST(APPEND Nyxus_LIBRARIES ${FOUND_LIB_${LIB}})
-	endforeach(LIB)
-endif()
+if(NOT ESSENTIAL)
+	#== Required for DICOM
+	find_package(DCMTK)
+	if(DCMTK_FOUND)
+		include_directories(${DCMTK_INCLUDE_DIRS})
+		add_definitions(-DDICOM_SUPPORT)
+		foreach(LIB ${DCMTK_LIBRARIES})
+			FIND_LIBRARY(FOUND_LIB_${LIB} ${LIB})
+			LIST(APPEND Nyxus_LIBRARIES ${FOUND_LIB_${LIB}})
+		endforeach(LIB)
+	endif()
 
-find_package(fmjpeg2k)
-if(fmjpeg2k_FOUND)
-	add_definitions(-DJPEG2K_SUPPORT)
-	foreach(LIB ${FMJPEG2K_LIBRARIES})
-		FIND_LIBRARY(FOUND_LIB_${LIB} ${LIB})
-		LIST(APPEND Nyxus_LIBRARIES ${FOUND_LIB_${LIB}})
-	endforeach(LIB)
-endif()
+	find_package(fmjpeg2k)
+	if(fmjpeg2k_FOUND)
+		add_definitions(-DJPEG2K_SUPPORT)
+		foreach(LIB ${FMJPEG2K_LIBRARIES})
+			FIND_LIBRARY(FOUND_LIB_${LIB} ${LIB})
+			LIST(APPEND Nyxus_LIBRARIES ${FOUND_LIB_${LIB}})
+		endforeach(LIB)
+	endif()
 
-find_package(ZLIB REQUIRED)
-if (ZLIB_FOUND)
-	list(APPEND Nyxus_LIBRARIES ${ZLIB_LIBRARIES} )
-	include_directories (${ZLIB_INCLUDE_DIR})
-endif (ZLIB_FOUND)
+	find_package(ZLIB REQUIRED)
+	if (ZLIB_FOUND)
+		list(APPEND Nyxus_LIBRARIES ${ZLIB_LIBRARIES} )
+		include_directories (${ZLIB_INCLUDE_DIR})
+	endif (ZLIB_FOUND)
+endif() # ESSENTIAL
 
 if(USEGPU)
 	include_directories("${CUDA_INCLUDE_DIRS}")
 	set(GPU_SOURCE_FILES
-		src/nyx/gpu/gpu_helpers.cu
-		src/nyx/gpu/image_moments.cu
         src/nyx/gpu/gabor.cu
+		src/nyx/gpu/gpu_helpers.cu
+		src/nyx/gpu/geomoments_central.cu
+		src/nyx/gpu/geomoments_hu.cu
+		src/nyx/gpu/geomoments_main.cu
+		src/nyx/gpu/geomoments_norm.cu
+		src/nyx/gpu/geomoments_origin.cu
+		src/nyx/gpu/geomoments_raw.cu
+		src/nyx/gpu/geomoments_weighting.cu
 	)
 	add_library(nyxus_gpu ${GPU_SOURCE_FILES})
 
@@ -303,55 +309,56 @@ if(USEGPU)
 	endif()
 endif()
 
- 
-if(USEARROW)
+if(NOT ESSENTIAL) 
+	if(USEARROW)
 
-	list(APPEND Nyxus_LIBRARIES arrow_shared)
+		list(APPEND Nyxus_LIBRARIES arrow_shared)
 
-	if(PARQUET_LINK_SHARED)
-		list(APPEND Nyxus_LIBRARIES parquet_shared)
-	else()
-		list(APPEND Nyxus_LIBRARIES parquet_static)
-	endif()
-
-	if (BUILD_LIB)
-		# Find Python
-		find_package(Python REQUIRED COMPONENTS Interpreter)
-		# Execute the Python script to find pyarrow include path
-		execute_process(
-			COMMAND ${Python_EXECUTABLE} -c "import pyarrow as pa; print(pa.get_include())"
-			OUTPUT_VARIABLE PATH_OUTPUT
-			OUTPUT_STRIP_TRAILING_WHITESPACE
-		)
-		# Store the path in a CMake variable
-		set(PYARROW_INCLUDE_PATH "${PATH_OUTPUT}" CACHE INTERNAL "Path to pyarrow include directory")
-		# Execute the Python script to find pyarrow library path
-		execute_process(
-			COMMAND ${Python_EXECUTABLE} -c "import pyarrow as pa; print(pa.get_library_dirs()[0])"
-			OUTPUT_VARIABLE LIB_PATH_OUTPUT
-			OUTPUT_STRIP_TRAILING_WHITESPACE
-		)
-		# Store the path in a CMake variable
-		set(PYARROW_LIB_PATH "${LIB_PATH_OUTPUT}" CACHE INTERNAL "Path to pyarrow library directory")
-		if (PYARROW_INCLUDE_PATH STREQUAL "")
-			message(FATAL_ERROR "Pyarrow library not found.")
+		if(PARQUET_LINK_SHARED)
+			list(APPEND Nyxus_LIBRARIES parquet_shared)
+		else()
+			list(APPEND Nyxus_LIBRARIES parquet_static)
 		endif()
-		if (PYARROW_LIB_PATH STREQUAL "")
-			message(FATAL_ERROR "Pyarrow library not found.")
-		endif()
-		# Print the path
-		message(STATUS "PyArrow Include Path: ${PYARROW_INCLUDE_PATH}")
-		message(STATUS "PyArrow Library Path: ${PYARROW_LIB_PATH}")
 
-		# add pyarrow include path
-		include_directories(${PYARROW_INCLUDE_PATH})
-		#add pyarrow library
-		list(APPEND Nyxus_LIBRARIES arrow_python)
-		target_link_directories(backend PRIVATE ${PYARROW_LIB_PATH})
+		if (BUILD_LIB)
+			# Find Python
+			find_package(Python REQUIRED COMPONENTS Interpreter)
+			# Execute the Python script to find pyarrow include path
+			execute_process(
+				COMMAND ${Python_EXECUTABLE} -c "import pyarrow as pa; print(pa.get_include())"
+				OUTPUT_VARIABLE PATH_OUTPUT
+				OUTPUT_STRIP_TRAILING_WHITESPACE
+			)
+			# Store the path in a CMake variable
+			set(PYARROW_INCLUDE_PATH "${PATH_OUTPUT}" CACHE INTERNAL "Path to pyarrow include directory")
+			# Execute the Python script to find pyarrow library path
+			execute_process(
+				COMMAND ${Python_EXECUTABLE} -c "import pyarrow as pa; print(pa.get_library_dirs()[0])"
+				OUTPUT_VARIABLE LIB_PATH_OUTPUT
+				OUTPUT_STRIP_TRAILING_WHITESPACE
+			)
+			# Store the path in a CMake variable
+			set(PYARROW_LIB_PATH "${LIB_PATH_OUTPUT}" CACHE INTERNAL "Path to pyarrow library directory")
+			if (PYARROW_INCLUDE_PATH STREQUAL "")
+				message(FATAL_ERROR "Pyarrow library not found.")
+			endif()
+			if (PYARROW_LIB_PATH STREQUAL "")
+				message(FATAL_ERROR "Pyarrow library not found.")
+			endif()
+			# Print the path
+			message(STATUS "PyArrow Include Path: ${PYARROW_INCLUDE_PATH}")
+			message(STATUS "PyArrow Library Path: ${PYARROW_LIB_PATH}")
+
+			# add pyarrow include path
+			include_directories(${PYARROW_INCLUDE_PATH})
+			#add pyarrow library
+			list(APPEND Nyxus_LIBRARIES arrow_python)
+			target_link_directories(backend PRIVATE ${PYARROW_LIB_PATH})
+
+		endif()
 
 	endif()
-
-endif()
+endif() # ESSENTIAL
 
 if(BUILD_LIB)
 	target_compile_definitions(backend PRIVATE WITH_PYTHON_H)

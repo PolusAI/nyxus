@@ -191,7 +191,7 @@ namespace Nyxus
 		// Non-exotic formatting for compatibility with the buffer output (Python API, Apache)
 		constexpr int VAL_BUF_LEN = 450;
 		char rvbuf[VAL_BUF_LEN]; // real value buffer large enough to fit a float64 value in range (2.2250738585072014E-308 to 1.79769313486231570e+308)
-		const char rvfmt[] = "%20.12f";
+		const char rvfmt[] = "%g"; // instead of "%20.12f" which produces a too massive output
 
 		// Sort the labels
 		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };

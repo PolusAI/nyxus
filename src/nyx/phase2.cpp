@@ -214,21 +214,35 @@ namespace Nyxus
 	}
 #endif
 
-	PixIntens* ImageMatrixBuffer = nullptr;
-	size_t imageMatrixBufferLen = 0;
+	// Objects that are used by GPU code to transfer image matrices of all the image's ROIs
+	PixIntens* ImageMatrixBuffer = nullptr;	// Solid buffer of all the image matrices in the image
+	size_t imageMatrixBufferLen = 0;		// Combined size of all ROIs' image matrices in the image
+	size_t largest_roi_imatr_buf_len = 0;
 
 	void allocateTrivialRoisBuffers(const std::vector<int>& Pending)
 	{
-		imageMatrixBufferLen = 0;
-
 		// Calculate the total memory demand (in # of items) of all segments' image matrices
+		imageMatrixBufferLen = 0;
 		for (auto lab : Pending)
 		{
 			LR& r = roiData[lab];
-			imageMatrixBufferLen += r.aabb.get_width() * r.aabb.get_height();
+			size_t w = r.aabb.get_width(), 
+				h = r.aabb.get_height(), 
+				imatrSize = w * h;
+			imageMatrixBufferLen += imatrSize;
+
+			largest_roi_imatr_buf_len = largest_roi_imatr_buf_len == 0 ? imatrSize : std::max (largest_roi_imatr_buf_len, imatrSize);
 		}
 
 		ImageMatrixBuffer = new PixIntens[imageMatrixBufferLen];
+
+		// Lagest ROI
+		largest_roi_imatr_buf_len = 0;
+		for (auto lab : Pending)
+		{
+			LR& r = roiData[lab];
+			largest_roi_imatr_buf_len = largest_roi_imatr_buf_len ? std::max(largest_roi_imatr_buf_len, r.raw_pixels.size()) : r.raw_pixels.size();
+		}
 
 		// Allocate image matrices and remember each ROI's image matrix offset in 'ImageMatrixBuffer'
 		size_t baseIdx = 0;
@@ -240,11 +254,11 @@ namespace Nyxus
 			r.im_buffer_offset = baseIdx;
 
 			// matrix data
-			size_t imgLen = r.aabb.get_width() * r.aabb.get_height();
-			r.aux_image_matrix.bind_to_buffer(ImageMatrixBuffer + baseIdx, ImageMatrixBuffer + baseIdx + imgLen);
-			baseIdx += imgLen;
+			size_t imatrSize = r.aabb.get_width() * r.aabb.get_height();
+			r.aux_image_matrix.bind_to_buffer(ImageMatrixBuffer + baseIdx, ImageMatrixBuffer + baseIdx + imatrSize);
+			baseIdx += imatrSize;	
 
-			// Calculate the image matrix
+			// Calculate the image matrix in the external buffer
 			r.aux_image_matrix.calculate_from_pixelcloud(r.raw_pixels, r.aabb);
 		}
 	}

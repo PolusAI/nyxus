@@ -213,7 +213,7 @@ void ContourFeature::buildRegularContour(LR& r)
 			auto inte = borderImage[idx];
 			if (inte)
 			{
-				Pixel2 p(x, y, inte - 1);		// Undecorate the intensity		
+				Pixel2 p(x+base_x, y+base_x, inte-1);		// Cast pixel position from relative to absolute and undecorate its intensity
 				r.contour.push_back(p);
 			}
 		}
