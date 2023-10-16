@@ -1,7 +1,7 @@
 #ifdef USE_ARROW
 #include "output_writers.h"
 
-std::shared_ptr<arrow::Table> ApacheArrowWriter::get_arrow_table(const std::string& file_path, arrow::Status& table_status) {
+std::shared_ptr<arrow::Table> ApacheArrowWriter::get_arrow_table(const std::string& file_path) {
 
     if (table_ != nullptr) return table_;
 
@@ -21,7 +21,7 @@ std::shared_ptr<arrow::Table> ApacheArrowWriter::get_arrow_table(const std::stri
 
         if (!status.ok()) {
             // Handle read error
-            table_status = status;
+            std::cerr << "Error creating arrow table: " << status.ToString();
             return nullptr;
         }
 
@@ -32,7 +32,7 @@ std::shared_ptr<arrow::Table> ApacheArrowWriter::get_arrow_table(const std::stri
 
         if (!status.ok()) {
             // Handle read error
-            table_status = status;
+            std::cerr << "Error creating arrow table: " << status.ToString();
             return nullptr;
         }
 
