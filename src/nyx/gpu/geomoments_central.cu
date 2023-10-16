@@ -8,9 +8,10 @@
 
 namespace Nyxus
 {
-    extern double* devPrereduce;      // reduction helper [roi_cloud_len]
-    extern double* devBlockSubsums;   // [whole chunks]
-    extern double* hoBlockSubsums;    // [whole chunks]
+    extern double* devPrereduce;    // reduction helper [roi_cloud_len]
+    extern double* d_out;           // 1 double
+    extern void* d_temp_storage;    // allocated [] elements by cub::DeviceReduce::Sum()
+    extern size_t temp_storage_bytes;
 };
 
 __device__ double pow_pos_int_central (double a, int b)
@@ -84,18 +85,17 @@ bool drvCentralMoment(
     CHECKERR(cudaGetLastError());
 
     //=== device-reduce:
-    // Determine temporary device storage requirements
-    double* d_out = nullptr;
-    CHECKERR(cudaMalloc(&d_out, sizeof(double)));
-    void* d_temp_storage = NULL;
-    size_t   temp_storage_bytes = 0;
-    cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, d_out, cloudlen/*num_items*/);
-    // Allocate temporary storage
-    cudaMalloc(&d_temp_storage, temp_storage_bytes);
+    // Determine temporary device storage requirements and allocate it, if not done yet
+    if (!Nyxus::d_temp_storage)
+    {
+        CHECKERR(cub::DeviceReduce::Sum(Nyxus::d_temp_storage, Nyxus::temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, Nyxus::d_out, cloudlen/*num_items*/));
+        // Allocate temporary storage
+        CHECKERR(cudaMalloc(&Nyxus::d_temp_storage, Nyxus::temp_storage_bytes));
+    }
     // Run sum-reduction
-    cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, d_out, cloudlen/*num_items*/);
+    cub::DeviceReduce::Sum(Nyxus::d_temp_storage, Nyxus::temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, Nyxus::d_out, cloudlen/*num_items*/);
     double h_out;
-    CHECKERR(cudaMemcpy(&h_out, d_out, sizeof(h_out), cudaMemcpyDeviceToHost));
+    CHECKERR(cudaMemcpy(&h_out, Nyxus::d_out, sizeof(h_out), cudaMemcpyDeviceToHost));
 
     retval = h_out;
 
@@ -122,18 +122,16 @@ bool drvCentralMomentWeighted (
 
     //=== device-reduce:
     // Determine temporary device storage requirements
-    double* d_out = nullptr;
-    CHECKERR(cudaMalloc(&d_out, sizeof(double)));
-    void* d_temp_storage = NULL;
-    size_t   temp_storage_bytes = 0;
-    cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, d_out, cloudlen/*num_items*/);
-    // Allocate temporary storage
-    cudaMalloc(&d_temp_storage, temp_storage_bytes);
+    if (!Nyxus::d_temp_storage)
+    {
+        CHECKERR(cub::DeviceReduce::Sum(Nyxus::d_temp_storage, Nyxus::temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, Nyxus::d_out, cloudlen/*num_items*/));
+        // Allocate temporary storage
+        CHECKERR(cudaMalloc(&Nyxus::d_temp_storage, Nyxus::temp_storage_bytes));
+    }
     // Run sum-reduction
-    cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, d_out, cloudlen/*num_items*/);
-    // d_out <-- [38]
+    CHECKERR(cub::DeviceReduce::Sum(Nyxus::d_temp_storage, Nyxus::temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, Nyxus::d_out, cloudlen/*num_items*/));
     double h_out;
-    CHECKERR(cudaMemcpy(&h_out, d_out, sizeof(h_out), cudaMemcpyDeviceToHost));
+    CHECKERR(cudaMemcpy(&h_out, Nyxus::d_out, sizeof(h_out), cudaMemcpyDeviceToHost));
 
     retval = h_out;
 

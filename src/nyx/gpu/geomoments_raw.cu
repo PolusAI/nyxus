@@ -88,12 +88,12 @@ bool drvRawMoment (
     // Determine temporary device storage requirements and allocate it, if not done yet
     if (!Nyxus::d_temp_storage)
     {
-        cub::DeviceReduce::Sum(Nyxus::d_temp_storage, Nyxus::temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, Nyxus::d_out, cloudlen/*num_items*/);
+        CHECKERR(cub::DeviceReduce::Sum(Nyxus::d_temp_storage, Nyxus::temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, Nyxus::d_out, cloudlen/*num_items*/));
         // Allocate temporary storage
-        cudaMalloc(&Nyxus::d_temp_storage, Nyxus::temp_storage_bytes);
+        CHECKERR(cudaMalloc(&Nyxus::d_temp_storage, Nyxus::temp_storage_bytes));
     }
     // Run sum-reduction
-    cub::DeviceReduce::Sum (Nyxus::d_temp_storage, Nyxus::temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, Nyxus::d_out, cloudlen/*num_items*/);
+    CHECKERR(cub::DeviceReduce::Sum (Nyxus::d_temp_storage, Nyxus::temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, Nyxus::d_out, cloudlen/*num_items*/));
     double h_out;
     CHECKERR(cudaMemcpy(&h_out, Nyxus::d_out, sizeof(h_out), cudaMemcpyDeviceToHost));
     
@@ -122,12 +122,12 @@ bool drvRawMomentWeighted(
     // Determine temporary device storage requirements
     if (!Nyxus::d_temp_storage)
     {
-        cub::DeviceReduce::Sum(Nyxus::d_temp_storage, Nyxus::temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, Nyxus::d_out, cloudlen/*num_items*/);
+        CHECKERR(cub::DeviceReduce::Sum(Nyxus::d_temp_storage, Nyxus::temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, Nyxus::d_out, cloudlen/*num_items*/));
         // Allocate temporary storage
-        cudaMalloc(&Nyxus::d_temp_storage, Nyxus::temp_storage_bytes);
+        CHECKERR(cudaMalloc(&Nyxus::d_temp_storage, Nyxus::temp_storage_bytes));
     }
     // Run sum-reduction
-    cub::DeviceReduce::Sum (Nyxus::d_temp_storage, Nyxus::temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, Nyxus::d_out, cloudlen/*num_items*/);
+    CHECKERR(cub::DeviceReduce::Sum (Nyxus::d_temp_storage, Nyxus::temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, Nyxus::d_out, cloudlen/*num_items*/));
     double h_out;
     CHECKERR(cudaMemcpy(&h_out, Nyxus::d_out, sizeof(h_out), cudaMemcpyDeviceToHost));
 
