@@ -101,6 +101,8 @@ int main (int argc, char** argv)
 		case 3:		// Memory error
 			std::cout << std::endl << "Memory error" << std::endl;
 			break;
+		case 4:
+			std::cout << std::endl << "Arrow not enabled" << std::endl;
 		default:	// Any other error
 			std::cout << std::endl << "Error #" << errorCode << std::endl;
 			break;

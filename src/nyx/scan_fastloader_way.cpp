@@ -449,7 +449,7 @@ namespace Nyxus
 		return 0; // success
 	#else 
 		std::cerr << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enable or use a different output type." << std::endl;	
-		return 1;
+		return 4;
 	#endif
 
 	}
@@ -528,7 +528,7 @@ namespace Nyxus
 		const std::string& outputDir)
 	{	
 	#ifdef USE_ARROW
-	
+
 		theEnvironment.arrow_stream = ArrowOutputStream();
 
 		try {
@@ -600,8 +600,8 @@ namespace Nyxus
 		return 0; // success
 
 	#else 
-		std::cerr << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enable or use a different output type." << std::endl;	
-		return 1;
+		error_message = "Apache Arrow functionality is not available. Please install Nyxus with Arrow enable or use a different output type.";
+		return 4;
 	#endif
 	}
 
