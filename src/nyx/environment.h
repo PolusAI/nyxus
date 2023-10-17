@@ -117,12 +117,12 @@ public:
 
 	bool singleROI = false; // is set to 'true' parse_cmdline() if labels_dir==intensity_dir
 
-#ifdef USE_ARROW
 
+	bool use_arrow = false;
+#ifdef USE_ARROW
 	std::string arrow_output_type = "";
 	ArrowOutputStream  arrow_stream;
 	std::shared_ptr<ApacheArrowWriter> arrow_writer = nullptr;
-	
 #endif
 
 	std::string embedded_pixel_size = "";

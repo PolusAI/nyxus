@@ -58,26 +58,34 @@ int main (int argc, char** argv)
 	// Current time stamp #1
 	auto startTS = getTimeStr();
 	VERBOSLVL1(std::cout << "\n>>> STARTING >>> " << startTS << "\n";)
-
-
-	bool use_arrow = false;
-
-#ifdef USE_ARROW
-	use_arrow = theEnvironment.arrow_output_type == "ARROW" || theEnvironment.arrow_output_type == "PARQUET";
-#endif
 	
 	// Process the image data
 	int min_online_roi_size = 0;
-	errorCode = processDataset (
-		intensFiles, 
-		labelFiles, 
-		theEnvironment.n_loader_threads, 
-		theEnvironment.n_pixel_scan_threads, 
-		theEnvironment.n_reduce_threads,
-		min_online_roi_size,
-		use_arrow,
-		theEnvironment.useCsv,
-		theEnvironment.output_dir);
+
+	if (theEnvironment.use_arrow) {
+
+		errorCode = processDataset (
+			intensFiles, 
+			labelFiles, 
+			theEnvironment.n_loader_threads, 
+			theEnvironment.n_pixel_scan_threads, 
+			theEnvironment.n_reduce_threads,
+			min_online_roi_size,
+			theEnvironment.output_dir);
+
+	} else {
+
+		errorCode = processDataset (
+			intensFiles, 
+			labelFiles, 
+			theEnvironment.n_loader_threads, 
+			theEnvironment.n_pixel_scan_threads, 
+			theEnvironment.n_reduce_threads,
+			min_online_roi_size,
+			theEnvironment.useCsv,
+			theEnvironment.output_dir);
+
+	}
 
 	// Report feature extraction error, if any
 	switch (errorCode)

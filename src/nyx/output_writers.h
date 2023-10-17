@@ -70,7 +70,7 @@ public:
      * 
      * @return std::shared_ptr<arrow::Table> 
      */
-    std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path, arrow::Status& table_status);
+    std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path);
 
     /**
      * @brief Write Nyxus data to Arrow file

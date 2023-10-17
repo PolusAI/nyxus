@@ -209,7 +209,6 @@ namespace Nyxus
 		int numSensemakerThreads,
 		int numReduceThreads,
 		int min_online_roi_size,
-		bool arrow_output,
 		bool save2csv,
 		const std::string& outputDir)
 	{
@@ -221,22 +220,6 @@ namespace Nyxus
 		
 		// One-time initialization
 		init_feature_buffers();
-
-
-		// initialize arrow writer if needed
-	#ifdef USE_ARROW
-		if (arrow_output) {
-
-			theEnvironment.arrow_stream = ArrowOutputStream();
-
-			try {
-				theEnvironment.arrow_writer = theEnvironment.arrow_stream.create_arrow_file(theEnvironment.arrow_output_type, outputDir,   Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
-			} catch (const std::exception &err) {
-				std::cout << "Error creating Arrow file: " << err.what() << std::endl;
-				return 1;
-			}
-		}
-	#endif
 
 		bool ok = true;
 
@@ -276,33 +259,138 @@ namespace Nyxus
 				return 1;
 			}
 
-		#ifdef USE_ARROW
-			if (arrow_output) {
-
-				auto status = theEnvironment.arrow_writer->write(Nyxus::get_feature_values());
-				
-				if (!status.ok()) {
-                    // Handle read error
-                    std::cout << "Error writing Arrow file: " << status.ToString() << std::endl;
-					return 2;
-				}
+			if (save2csv) {
+				ok = save_features_2_csv(ifp, lfp, outputDir);
+			} else {
+				ok = save_features_2_buffer(theResultsCache);
 			}
+
+			if (ok == false)
+			{
+				std::cout << "save_features_2_csv() returned an error code" << std::endl;
+				return 2;
+			}
+			
+			theImLoader.close();
+
+			// Save nested ROI related info of this image
+			if (theEnvironment.nestedOptions.defined())
+				save_nested_roi_info(nestedRoiData, uniqueLabels, roiData);
+
+			#ifdef WITH_PYTHON_H
+			// Allow heyboard interrupt.
+			if (PyErr_CheckSignals() != 0)
+			{
+				sureprint("\nAborting per user input\n");
+				throw pybind11::error_already_set();
+			}
+			#endif
+
+			#ifdef CHECKTIMING
+			if (Stopwatch::exclusive())
+			{
+				// Detailed timing - on the screen
+				VERBOSLVL1(Stopwatch::print_stats());
+
+				// Details - also to a file
+				VERBOSLVL3(
+					fs::path p(theSegFname);
+					Stopwatch::save_stats(theEnvironment.output_dir + "/" + p.stem().string() + "_nyxustiming.csv");
+				);
+			}
+			#endif
+		}
+
+		#ifdef CHECKTIMING
+		if (Stopwatch::inclusive())
+		{
+			// Detailed timing - on the screen
+			VERBOSLVL1(Stopwatch::print_stats());
+
+			// Details - also to a file
+			VERBOSLVL3(
+				fs::path p(theSegFname);
+				Stopwatch::save_stats(theEnvironment.output_dir + "/inclusive_nyxustiming.csv");
+			);
+		}
 		#endif
+	
+		return 0; // success
+	}
 
-			// For the non-Apache output mode, save the result for this intensity-label file pair
-			if (!arrow_output) {
 
-				if (save2csv) {
-					ok = save_features_2_csv(ifp, lfp, outputDir);
-				} else {
-					ok = save_features_2_buffer(theResultsCache);
-				}
+	int processDataset(
+		const std::vector<std::string>& intensFiles,
+		const std::vector<std::string>& labelFiles,
+		int numFastloaderThreads,
+		int numSensemakerThreads,
+		int numReduceThreads,
+		int min_online_roi_size,
+		const std::string& outputDir)
+	{
+	#ifdef USE_ARROW
 
-				if (ok == false)
-				{
-					std::cout << "save_features_2_csv() returned an error code" << std::endl;
-					return 2;
-				}
+		#ifdef CHECKTIMING
+		if (Stopwatch::inclusive())
+			Stopwatch::reset();
+		#endif		
+		
+		// One-time initialization
+		init_feature_buffers();
+
+		theEnvironment.arrow_stream = ArrowOutputStream();
+
+		try {
+			theEnvironment.arrow_writer = theEnvironment.arrow_stream.create_arrow_file(theEnvironment.arrow_output_type, outputDir,   Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+		} catch (const std::exception &err) {
+			std::cout << "Error creating Arrow file: " << err.what() << std::endl;
+			return 1;
+		}
+
+		bool ok = true;
+
+		// Iterate file pattern-filtered images of the dataset
+		auto nf = intensFiles.size();
+		for (int i = 0; i < nf; i++)
+		{
+#ifdef CHECKTIMING
+			if (Stopwatch::exclusive())
+				Stopwatch::reset();
+#endif
+
+			// Clear ROI data cached for the previous image
+			clear_feature_buffers();
+
+			auto& ifp = intensFiles[i],
+				& lfp = labelFiles[i];
+
+			// Cache the file names to be picked up by labels to know their file origin
+			fs::path p_int(ifp), p_seg(lfp);
+			theSegFname = p_seg.string();
+			theIntFname = p_int.string();
+
+			// Scan one label-intensity pair 
+			ok = theImLoader.open(theIntFname, theSegFname);
+			if (ok == false)
+			{
+				std::cout << "Terminating\n";
+				return 1;
+			}
+
+			// Do phased processing: prescan, trivial ROI processing, oversized ROI processing
+			ok = processIntSegImagePair(ifp, lfp, numFastloaderThreads, i, nf);
+			if (ok == false)
+			{
+				std::cout << "processIntSegImagePair() returned an error code while processing file pair " << ifp << " and " << lfp << std::endl;
+				return 1;
+			}
+
+			auto status = theEnvironment.arrow_writer->write(Nyxus::get_feature_values());
+			
+			if (!status.ok()) {
+				// Handle read error
+				std::cout << "Error writing Arrow file: " << status.ToString() << std::endl;
+				return 2;
 			}
 
 			theImLoader.close();
@@ -349,21 +437,23 @@ namespace Nyxus
 		}
 		#endif
 
-	#ifdef USE_ARROW
-		if (arrow_output) {
-			// close arrow file after use
-			auto status = theEnvironment.arrow_writer->close();
-			
-			if (!status.ok()) {
-				// Handle read error
-				std::cout << "Error closing Arrow file: " << status.ToString() << std::endl;
-				return 2;
-			}
+		// close arrow file after use
+		auto status = theEnvironment.arrow_writer->close();
+		
+		if (!status.ok()) {
+			// Handle read error
+			std::cout << "Error closing Arrow file: " << status.ToString() << std::endl;
+			return 2;
 		}
-	#endif
-	
+
 		return 0; // success
+	#else 
+		std::cerr << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enable or use a different output type." << std::endl;	
+		return 1;
+	#endif
+
 	}
+
 
 #ifdef WITH_PYTHON_H
 	
@@ -373,23 +463,81 @@ namespace Nyxus
 		int numReduceThreads,
 		const std::vector<std::string>& intensity_names,
 		const std::vector<std::string>& seg_names,
-		std::string& error_message,
-		bool arrow_output,
-		const std::string& outputDir)
+		std::string& error_message)
 	{	
-		#ifdef USE_ARROW
-		if (arrow_output) {
 
-			theEnvironment.arrow_stream = ArrowOutputStream();
+		auto intens_buffer = intensity_images.request();
+		auto label_buffer = label_images.request();
 
-			try {
-				theEnvironment.arrow_writer = theEnvironment.arrow_stream.create_arrow_file(theEnvironment.arrow_output_type, outputDir,  Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
-			} catch (const std::exception &err) {
-				error_message = err.what();
+		auto width = intens_buffer.shape[1];
+		auto height = intens_buffer.shape[2];
+
+		auto nf = intens_buffer.shape[0];
+		
+		for (int i = 0; i < nf; i++)
+		{
+			// Clear ROI label list, ROI data, etc.
+			clear_feature_buffers();
+
+			auto image_idx = i * width * height;
+
+			std::vector<int> unprocessed_rois;
+			auto ok = processIntSegImagePairInMemory (intensity_images, label_images, image_idx, intensity_names[i], seg_names[i], unprocessed_rois);		// Phased processing
+			if (ok == false)
+			{
+				error_message = "processIntSegImagePairInMemory() returned an error code while processing file pair";
 				return 1;
 			}
+
+			ok = save_features_2_buffer(theResultsCache);
+
+			if (ok == false)
+			{
+				error_message = "save_features_2_buffer() failed";
+				return 2;
+			}
+
+			if (unprocessed_rois.size() > 0) {
+				error_message = "The following ROIS are oversized and cannot be processed: ";
+				for (const auto& roi: unprocessed_rois){
+					error_message += roi;
+					error_message += ", ";
+				}
+				
+				// remove trailing space and comma
+				error_message.pop_back();
+				error_message.pop_back();
+			}
+
+			// Allow heyboard interrupt.
+			if (PyErr_CheckSignals() != 0)
+                		throw pybind11::error_already_set();
 		}
-	#endif
+		
+		return 0; // success
+	}
+
+	
+	int processMontage(
+		const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intensity_images,
+		const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images,
+		int numReduceThreads,
+		const std::vector<std::string>& intensity_names,
+		const std::vector<std::string>& seg_names,
+		std::string& error_message,
+		const std::string& outputDir)
+	{	
+	#ifdef USE_ARROW
+	
+		theEnvironment.arrow_stream = ArrowOutputStream();
+
+		try {
+			theEnvironment.arrow_writer = theEnvironment.arrow_stream.create_arrow_file(theEnvironment.arrow_output_type, outputDir,  Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+		} catch (const std::exception &err) {
+			error_message = err.what();
+			return 1;
+		}
+
 
 		auto intens_buffer = intensity_images.request();
 		auto label_buffer = label_images.request();
@@ -414,25 +562,12 @@ namespace Nyxus
 				return 1;
 			}
 			
-		#ifdef USE_ARROW
-			if (arrow_output) {
 
-				auto status = theEnvironment.arrow_writer->write(Nyxus::get_feature_values());
-				
-				if (!status.ok()) {
-                    // Handle read error
-                    error_message = "Error writing Arrow file: " + status.ToString();
-					return 2;
-				}
-			}
-		#endif
-
-			if (!arrow_output)
-				ok = save_features_2_buffer(theResultsCache);
-
-			if (ok == false)
-			{
-				error_message = "save_features_2_buffer() failed";
+			auto status = theEnvironment.arrow_writer->write(Nyxus::get_feature_values());
+			
+			if (!status.ok()) {
+				// Handle read error
+				error_message = "Error writing Arrow file: " + status.ToString();
 				return 2;
 			}
 
@@ -453,21 +588,23 @@ namespace Nyxus
                 		throw pybind11::error_already_set();
 		}
 
-	#ifdef USE_ARROW
-		if (arrow_output) {
-			// close arrow file after use
-			auto status = theEnvironment.arrow_writer->close();
-			
-			if (!status.ok()) {
-				// Handle read error
-				error_message = "Error closing Arrow file: " + status.ToString();
-				return 2;
-			}
+		// close arrow file after use
+		auto status = theEnvironment.arrow_writer->close();
+		
+		if (!status.ok()) {
+			// Handle read error
+			error_message = "Error closing Arrow file: " + status.ToString();
+			return 2;
 		}
-	#endif
 		
 		return 0; // success
+
+	#else 
+		std::cerr << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enable or use a different output type." << std::endl;	
+		return 1;
+	#endif
 	}
+
 #endif
 
 	void dump_roi_metrics(const std::string & label_fpath)

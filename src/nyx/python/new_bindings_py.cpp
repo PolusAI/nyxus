@@ -173,22 +173,36 @@ py::tuple featurize_directory_imp (
     // We're good to extract features. Reset the feature results cache
     theResultsCache.clear();
 
-    auto arrow_output = !pandas_output;
+    theEnvironment.use_arrow = !pandas_output;
 
     theEnvironment.separateCsv = false;
 
     // Process the image sdata
     int min_online_roi_size = 0;
-    errorCode = processDataset(
-        intensFiles,
-        labelFiles,
-        theEnvironment.n_loader_threads,
-        theEnvironment.n_pixel_scan_threads,
-        theEnvironment.n_reduce_threads,
-        min_online_roi_size,
-        arrow_output,
-        false,
-        theEnvironment.output_dir);
+    
+    if (theEnvironment.use_arrow) {
+
+        errorCode = processDataset(
+            intensFiles,
+            labelFiles,
+            theEnvironment.n_loader_threads,
+            theEnvironment.n_pixel_scan_threads,
+            theEnvironment.n_reduce_threads,
+            min_online_roi_size,
+            theEnvironment.output_dir);
+
+    } else {
+
+        errorCode = processDataset(
+            intensFiles,
+            labelFiles,
+            theEnvironment.n_loader_threads,
+            theEnvironment.n_pixel_scan_threads,
+            theEnvironment.n_reduce_threads,
+            min_online_roi_size,
+            false,
+            theEnvironment.output_dir);
+    }
 
     if (errorCode)
         throw std::runtime_error("Error " + std::to_string(errorCode) + " occurred during dataset processing");
@@ -258,17 +272,33 @@ py::tuple featurize_montage_imp (
 
     theResultsCache.clear();
 
+    theEnvironment.use_arrow = !pandas_output;
+
     // Process the image sdata
     std::string error_message = "";
-    int errorCode = processMontage(
-        intensity_images,
-        label_images,
-        theEnvironment.n_reduce_threads,
-        intensity_names,
-        label_names,
-        error_message,
-        !pandas_output,
-        output_dir);
+
+    int errorCode;
+    if (theEnvironment.use_arrow) {
+
+        errorCode = processMontage(
+            intensity_images,
+            label_images,
+            theEnvironment.n_reduce_threads,
+            intensity_names,
+            label_names,
+            error_message,
+            output_dir);
+
+    } else {
+
+        errorCode = processMontage(
+            intensity_images,
+            label_images,
+            theEnvironment.n_reduce_threads,
+            intensity_names,
+            label_names,
+            error_message);
+    }
 
     if (errorCode)
         throw std::runtime_error("Error #" + std::to_string(errorCode) + " " + error_message + " occurred during dataset processing.");
@@ -334,18 +364,37 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
 
     theResultsCache.clear();
 
+    theEnvironment.use_arrow = !pandas_output;
+
     // Process the image sdata
     int min_online_roi_size = 0;
-    int errorCode = processDataset(
-        intensFiles,
-        labelFiles,
-        theEnvironment.n_loader_threads,
-        theEnvironment.n_pixel_scan_threads,
-        theEnvironment.n_reduce_threads,
-        min_online_roi_size,
-        !pandas_output,
-        false, // 'true' to save to csv
-        theEnvironment.output_dir);
+    int errorCode;
+
+    if (theEnvironment.use_arrow) {
+
+        errorCode = processDataset(
+            intensFiles,
+            labelFiles,
+            theEnvironment.n_loader_threads,
+            theEnvironment.n_pixel_scan_threads,
+            theEnvironment.n_reduce_threads,
+            min_online_roi_size,
+            theEnvironment.output_dir);
+
+    } else {
+
+        errorCode = processDataset(
+            intensFiles,
+            labelFiles,
+            theEnvironment.n_loader_threads,
+            theEnvironment.n_pixel_scan_threads,
+            theEnvironment.n_reduce_threads,
+            min_online_roi_size,
+            false,
+            theEnvironment.output_dir);
+    }
+
+
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing.");
 
