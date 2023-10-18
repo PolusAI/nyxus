@@ -15,8 +15,8 @@ include(GNUInstallDirs)
 option(USE_Z5 "Support OMEZarr" OFF)
 option(USE_DCMTK "Use DCMTK" OFF)
 option(USE_ARROW "Use Arrow" OFF)
-set(BUILD_WITH_ALL "Building with all I/O support" OFF)
-set(MINIMUM_BUILD "Building with Only Tiff and Pybind11(For Python package)" ON)
+option(BUILD_WITH_ALL "Building with all I/O support" OFF)
+option(MINIMUM_BUILD "Building with Only Tiff and Pybind11(For Python package)" ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake-modules")
 
