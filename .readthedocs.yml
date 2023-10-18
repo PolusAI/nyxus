@@ -25,4 +25,4 @@ submodules:
 python:
   install:
     - method: pip
-      path: .
+      path: . -vvv
