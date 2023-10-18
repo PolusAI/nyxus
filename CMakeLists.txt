@@ -243,6 +243,11 @@ if(USE_Z5)
 		include_directories(${Boost_INCLUDE_DIR})
 	endif()
 
+	if (ZLIB_FOUND)
+		list(APPEND Nyxus_LIBRARIES ${ZLIB_LIBRARIES} )
+		include_directories (${ZLIB_INCLUDE_DIR})
+	endif()
+	
 	if(nlohmann_json_FOUND)
 		include_directories(${nlohmann_json_INCLUDE_DIR})
 	endif()
