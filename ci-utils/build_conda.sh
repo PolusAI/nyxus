@@ -68,7 +68,7 @@ cmake -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
       -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
       -DBUILD_CLI=ON \
       -DUSEGPU=ON \
-      -DUSEARROW=ON \
+      -DUSE_ARROW=ON \
       $NYXUS_ROOT
 
 cmake --build . --parallel 4

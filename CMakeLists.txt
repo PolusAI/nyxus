@@ -18,6 +18,7 @@ option(USE_ARROW "Use Arrow" OFF)
 set(BUILD_WITH_ALL "Building with all I/O support" OFF)
 set(MINIMUM_BUILD "Building with Only Tiff and Pybind11(For Python package)" ON)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake-modules")
 
 if(MINIMUM_BUILD)
 	set(USE_Z5 OFF)
@@ -31,8 +32,14 @@ if(BUILD_WITH_ALL)
 	set(USE_ARROW ON) 
 endif()
 
+set(Z5_REQUESTED ${USE_Z5})
+set(ARROW_REQUESTED ${USE_ARROW})
+set(DCMTK_REQUESTED ${USE_DCMTK})
+
 find_package(CUDA)
 option(USEGPU "Use GPU" ON)
+set(CUDA_REQUESTED ${USEGPU})
+
 if(CUDA_FOUND AND USEGPU) 
 	set(USEGPU ON)
 	if (CUDA_VERSION_MAJOR STREQUAL "10")
@@ -83,6 +90,11 @@ if(USE_Z5)
 			message(WARNING "OMEZarr support is not available with GCC 7.5 and older compiler.")
 		endif()
 	endif()
+	find_package(ZLIB)
+	if (NOT ZLIB_FOUND)
+		set(USE_Z5 OFF)
+		message(WARNING "zlib not found. Blosc and hereby OMEZarr support will not be available.")
+	endif()
 	find_package(BLOSC)
 	if(NOT BLOSC_FOUND)
 		set(USE_Z5 OFF)
@@ -122,8 +134,6 @@ option(RUN_GTEST "Downloads google unit test API and runs google test scripts to
 
 #==== Pybind11
 find_package(pybind11 CONFIG REQUIRED)
-
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake-modules")
 
 #==== Source files
 set(SOURCE
@@ -418,6 +428,14 @@ if(BUILD_CLI)
 	target_link_libraries(nyxus PRIVATE ${Nyxus_LIBRARIES})
 endif()
 
+message(STATUS "Nyxus Dependencies Summary")
+message(STATUS "================================")
+message(STATUS "Support | Requested | Found")
+message(STATUS "================================")
+message(STATUS "Z5      | ${Z5_REQUESTED} | ${USE_Z5}")
+message(STATUS "Arrow   | ${ARROW_REQUESTED} | ${USE_ARROW}")
+message(STATUS "Dicom   | ${DCMTK_REQUESTED} | ${USE_DCMTK}")
+message(STATUS "CUDA    | ${CUDA_REQUESTED} | ${USEGPU}")
 ## Running Tests
 if (RUN_GTEST)
 	# Download and unpack googletest at configure time
