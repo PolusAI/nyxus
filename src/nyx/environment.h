@@ -8,10 +8,9 @@
 #include "cli_gabor_options.h"
 #include "cli_nested_roi_options.h"
 
-#ifdef USE_ARROW
-	#include "output_writers.h"
-	#include "arrow_output_stream.h"
-#endif
+#include "output_writers.h"
+#include "arrow_output_stream.h"
+
 
 #ifdef USE_GPU
 	#include <cuda_runtime.h>
@@ -119,11 +118,9 @@ public:
 
 
 	bool use_arrow = false;
-#ifdef USE_ARROW
 	std::string arrow_output_type = "";
 	ArrowOutputStream  arrow_stream;
 	std::shared_ptr<ApacheArrowWriter> arrow_writer = nullptr;
-#endif
 
 	std::string embedded_pixel_size = "";
 

@@ -179,30 +179,21 @@ py::tuple featurize_directory_imp (
 
     // Process the image sdata
     int min_online_roi_size = 0;
-    
-    if (theEnvironment.use_arrow) {
 
-        errorCode = processDataset(
-            intensFiles,
-            labelFiles,
-            theEnvironment.n_loader_threads,
-            theEnvironment.n_pixel_scan_threads,
-            theEnvironment.n_reduce_threads,
-            min_online_roi_size,
-            theEnvironment.output_dir);
+    SaveOption saveOption = [](){
+        if (theEnvironment.use_arrow) return SaveOption::saveArrow;
+		else {return SaveOption::saveBuffer;}
+	}();
 
-    } else {
-
-        errorCode = processDataset(
-            intensFiles,
-            labelFiles,
-            theEnvironment.n_loader_threads,
-            theEnvironment.n_pixel_scan_threads,
-            theEnvironment.n_reduce_threads,
-            min_online_roi_size,
-            false,
-            theEnvironment.output_dir);
-    }
+    errorCode = processDataset(
+        intensFiles,
+        labelFiles,
+        theEnvironment.n_loader_threads,
+        theEnvironment.n_pixel_scan_threads,
+        theEnvironment.n_reduce_threads,
+        min_online_roi_size,
+        saveOption,
+        theEnvironment.output_dir);
 
     if (errorCode)
         throw std::runtime_error("Error " + std::to_string(errorCode) + " occurred during dataset processing");
@@ -277,28 +268,20 @@ py::tuple featurize_montage_imp (
     // Process the image sdata
     std::string error_message = "";
 
-    int errorCode;
-    if (theEnvironment.use_arrow) {
+    SaveOption saveOption = [](){
+        if (theEnvironment.use_arrow) return SaveOption::saveArrow;
+		else {return SaveOption::saveBuffer;}
+	}();
 
-        errorCode = processMontage(
-            intensity_images,
-            label_images,
-            theEnvironment.n_reduce_threads,
-            intensity_names,
-            label_names,
-            error_message,
-            output_dir);
-
-    } else {
-
-        errorCode = processMontage(
-            intensity_images,
-            label_images,
-            theEnvironment.n_reduce_threads,
-            intensity_names,
-            label_names,
-            error_message);
-    }
+    int errorCode = processMontage(
+        intensity_images,
+        label_images,
+        theEnvironment.n_reduce_threads,
+        intensity_names,
+        label_names,
+        error_message,
+        saveOption,
+        output_dir);
 
     if (errorCode)
         throw std::runtime_error("Error #" + std::to_string(errorCode) + " " + error_message + " occurred during dataset processing.");
@@ -370,29 +353,20 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
     int min_online_roi_size = 0;
     int errorCode;
 
-    if (theEnvironment.use_arrow) {
+    SaveOption saveOption = [](){
+        if (theEnvironment.use_arrow) return SaveOption::saveArrow;
+		else {return SaveOption::saveBuffer;}
+	}();
 
-        errorCode = processDataset(
-            intensFiles,
-            labelFiles,
-            theEnvironment.n_loader_threads,
-            theEnvironment.n_pixel_scan_threads,
-            theEnvironment.n_reduce_threads,
-            min_online_roi_size,
-            theEnvironment.output_dir);
-
-    } else {
-
-        errorCode = processDataset(
-            intensFiles,
-            labelFiles,
-            theEnvironment.n_loader_threads,
-            theEnvironment.n_pixel_scan_threads,
-            theEnvironment.n_reduce_threads,
-            min_online_roi_size,
-            false,
-            theEnvironment.output_dir);
-    }
+    errorCode = processDataset(
+        intensFiles,
+        labelFiles,
+        theEnvironment.n_loader_threads,
+        theEnvironment.n_pixel_scan_threads,
+        theEnvironment.n_reduce_threads,
+        min_online_roi_size,
+        saveOption,
+        theEnvironment.output_dir);
 
 
     if (errorCode)

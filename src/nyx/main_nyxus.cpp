@@ -62,30 +62,21 @@ int main (int argc, char** argv)
 	// Process the image data
 	int min_online_roi_size = 0;
 
-	if (theEnvironment.use_arrow) {
+	SaveOption saveOption = [](){
+        if (theEnvironment.use_arrow) return SaveOption::saveArrow;
+        else if (theEnvironment.useCsv) {return SaveOption::saveCSV;}
+		else {return SaveOption::saveBuffer;}
+	}();
 
-		errorCode = processDataset (
-			intensFiles, 
-			labelFiles, 
-			theEnvironment.n_loader_threads, 
-			theEnvironment.n_pixel_scan_threads, 
-			theEnvironment.n_reduce_threads,
-			min_online_roi_size,
-			theEnvironment.output_dir);
-
-	} else {
-
-		errorCode = processDataset (
-			intensFiles, 
-			labelFiles, 
-			theEnvironment.n_loader_threads, 
-			theEnvironment.n_pixel_scan_threads, 
-			theEnvironment.n_reduce_threads,
-			min_online_roi_size,
-			theEnvironment.useCsv,
-			theEnvironment.output_dir);
-
-	}
+	errorCode = processDataset (
+		intensFiles, 
+		labelFiles, 
+		theEnvironment.n_loader_threads, 
+		theEnvironment.n_pixel_scan_threads, 
+		theEnvironment.n_reduce_threads,
+		min_online_roi_size,
+		saveOption,
+		theEnvironment.output_dir);
 
 	// Report feature extraction error, if any
 	switch (errorCode)
@@ -102,7 +93,7 @@ int main (int argc, char** argv)
 			std::cout << std::endl << "Memory error" << std::endl;
 			break;
 		case 4:
-			std::cout << std::endl << "Arrow not enabled" << std::endl;
+			std::cout << std::endl << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enabled to use this functionality." << std::endl;
 		default:	// Any other error
 			std::cout << std::endl << "Error #" << errorCode << std::endl;
 			break;
