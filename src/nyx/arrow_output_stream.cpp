@@ -1,6 +1,6 @@
-#ifdef USE_ARROW
-
 #include "arrow_output_stream.h"
+
+#ifdef USE_ARROW
 
 std::shared_ptr<ApacheArrowWriter> ArrowOutputStream::create_arrow_file(const std::string& arrow_file_type,
                                                          const std::string& arrow_file_path,
@@ -46,4 +46,31 @@ std::shared_ptr<arrow::Table> ArrowOutputStream::get_arrow_table(const std::stri
 std::string ArrowOutputStream::get_arrow_path() {
     return arrow_file_path_;
 }
+
+#else 
+
+std::shared_ptr<ApacheArrowWriter> ArrowOutputStream::create_arrow_file(const std::string& arrow_file_type,
+                                                         const std::string& arrow_file_path,
+                                                         const std::vector<std::string>& header) {
+    
+    std::cerr << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enabled to use this functionality." << std::endl;
+
+    return nullptr;
+}
+
+
+std::shared_ptr<arrow::Table> ArrowOutputStream::get_arrow_table(const std::string& file_path) {
+
+    std::cerr << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enabled to use this functionality." << std::endl;
+
+    return nullptr;
+}
+
+std::string ArrowOutputStream::get_arrow_path() {
+
+    std::cerr << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enabled to use this functionality." << std::endl;
+    
+    return "";
+}
+
 #endif
