@@ -9,10 +9,6 @@
 
 BUILD_Z5_DEP=1
 BULD_DCMTK_DEP=1
-BUILD_ARROW_DEP=1
-
-MIN_BUILD=0
-FULL_BUILD=1
 
 while [ $# -gt 0 ]; do
     if [[ $1 == "--"* ]]; then
@@ -26,7 +22,6 @@ done
 if [[ "${min_build,,}" == "yes" ]]; then
     BUILD_Z5_DEP=0
     BULD_DCMTK_DEP=0
-    BUILD_ARROW_DEP=0
 fi
 
 if [[ -z $install_dir ]]
@@ -38,19 +33,28 @@ else
     LOCAL_INSTALL_DIR=$install_dir
 fi
 
-mkdir -p $LOCAL_INSTALL_DIR
-mkdir -p $LOCAL_INSTALL_DIR/include
+mkdir -p "$LOCAL_INSTALL_DIR"
+mkdir -p "$LOCAL_INSTALL_DIR"/include
+
+git clone https://github.com/pybind/pybind11.git
+cd pybind11
+mkdir build_man
+cd build_man/
+cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/  -DPYBIND11_TEST=OFF ..
+make install -j4
+cd ../../
 
 if [[ $BUILD_Z5_DEP -eq 1 ]] || [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     git clone https://github.com/madler/zlib.git
     cd zlib
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../$LOCAL_INSTALL_DIR/ ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
     cmake --build . 
     cmake --build . --target install 
     cd ../../
 fi
+
 if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     for i in {1..5}
     do
@@ -63,14 +67,14 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cd boost_1_79_0 
     ./bootstrap.sh 
     ./b2 headers
-    cp -r boost ../$LOCAL_INSTALL_DIR/include
+    cp -r boost ../"$LOCAL_INSTALL_DIR"/include
     cd ../
 
     git clone https://github.com/Blosc/c-blosc.git 
     cd c-blosc 
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../$LOCAL_INSTALL_DIR/ ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
     cmake --build . 
     cmake --build . --target install 
     cd ../../
@@ -79,7 +83,7 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cd xtl 
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../$LOCAL_INSTALL_DIR/ ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
     cmake --build . 
     cmake --build . --target install 
     cd ../../
@@ -88,7 +92,7 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cd xtensor 
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../$LOCAL_INSTALL_DIR/ ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
     cmake --build . 
     cmake --build . --target install 
     cd ../../
@@ -97,7 +101,7 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cd xsimd 
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../$LOCAL_INSTALL_DIR/ ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
     cmake --build . 
     cmake --build . --target install 
     cd ../../
@@ -106,7 +110,7 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cd json
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../$LOCAL_INSTALL_DIR/ ..  
+    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
     make install/fast
     cd ../../
 
@@ -114,19 +118,11 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cd z5
     mkdir build_man
     cd build_man/
-    cmake -DCMAKE_INSTALL_PREFIX=../../$LOCAL_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$LOCAL_INSTALL_DIR/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF  ..
+    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF  ..
     make install -j4
     cd ../../
 fi
 
-
-git clone https://github.com/pybind/pybind11.git
-cd pybind11
-mkdir build_man
-cd build_man/
-cmake -DCMAKE_INSTALL_PREFIX=../../$LOCAL_INSTALL_DIR/  -DPYBIND11_TEST=OFF ..
-make install -j4
-cd ../../
 
 if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     JPEG_INSTALL_PATH=$PWD
@@ -134,8 +130,8 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     tar -xzf jpegsrc.v9e.tar.gz
     cd jpeg-9e
     ./configure --prefix=
-    make DESTDIR=$JPEG_INSTALL_PATH/$LOCAL_INSTALL_DIR install
-    ./libtool --finish $JPEG_INSTALL_PATH/$LOCAL_INSTALL_DIR/lib
+    make DESTDIR="$JPEG_INSTALL_PATH"/"$LOCAL_INSTALL_DIR" install
+    ./libtool --finish "$JPEG_INSTALL_PATH"/"$LOCAL_INSTALL_DIR"/lib
     cd ..
 fi
 
@@ -149,7 +145,7 @@ done
 
 unzip libdeflate.zip
 cd libdeflate-1.14
-PREFIX= LIBDIR=/lib64  DESTDIR=../$LOCAL_INSTALL_DIR/ make  install
+PREFIX='' LIBDIR=/lib64  DESTDIR=../"$LOCAL_INSTALL_DIR"/ make  install
 cd ../
 
 for i in {1..5}
@@ -164,7 +160,7 @@ unzip libtiff.zip
 cd tiff-4.5.0
 mkdir build_man
 cd build_man/
-cmake -DCMAKE_INSTALL_PREFIX=../../$LOCAL_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$LOCAL_INSTALL_DIR/   ..
+cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/   ..
 make install -j4
 cd ../../
 
@@ -174,7 +170,7 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     cd libpng-1.6.39/
     mkdir build_man
     cd build_man/
-    cmake -DCMAKE_INSTALL_PREFIX=../../$LOCAL_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$LOCAL_INSTALL_DIR/   ..
+    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/   ..
     make install -j4
     cd ../../
 
@@ -183,7 +179,7 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     cd openjpeg-2.5.0/
     mkdir build_man
     cd build_man/
-    cmake -DCMAKE_INSTALL_PREFIX=../../$LOCAL_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$LOCAL_INSTALL_DIR/ -DBUILD_CODEC=OFF   ..
+    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DBUILD_CODEC=OFF   ..
     make install -j4
     cd ../../
 
@@ -192,7 +188,7 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     cd dcmtk-DCMTK-3.6.7/
     mkdir build_man
     cd build_man/
-    cmake -DCMAKE_INSTALL_PREFIX=../../$LOCAL_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$LOCAL_INSTALL_DIR/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF  ..
+    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF  ..
     make install -j4
     cd ../../
 
@@ -202,8 +198,7 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     cd fmjpeg2koj-fix_cmake/
     mkdir build_man
     cd build_man/
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../$LOCAL_INSTALL_DIR/   -DCMAKE_PREFIX_PATH=../../$LOCAL_INSTALL_DIR/  -DFMJPEG2K=$ROOTDIR/$LOCAL_INSTALL_DIR/  ..
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DFMJPEG2K="$ROOTDIR"/"$LOCAL_INSTALL_DIR"/  ..
     make install -j4
     cd ../../
 fi
-
