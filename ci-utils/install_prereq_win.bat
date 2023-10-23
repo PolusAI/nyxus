@@ -84,7 +84,6 @@ if "%BUILD_Z5_DEP%" == "1" (
     popd
     popd
 
-    git clone https://github.com/xtensor-stack/xsimd.git 
     curl -L https://github.com/xtensor-stack/xsimd/archive/refs/tags/11.1.0.zip -o 11.1.0.zip
     tar -xf 11.1.0.zip 
     pushd xsimd-11.1.0 
@@ -95,7 +94,6 @@ if "%BUILD_Z5_DEP%" == "1" (
     popd
     popd
 
-    git clone  https://github.com/nlohmann/json.git
     curl -L https://github.com/nlohmann/json/archive/refs/tags/v3.11.2.zip -o v3.11.2.zip
     tar -xf v3.11.2.zip 
     pushd json-3.11.2
@@ -106,7 +104,6 @@ if "%BUILD_Z5_DEP%" == "1" (
     popd
     popd
 
-    git clone https://github.com/constantinpape/z5.git
     curl -L https://github.com/constantinpape/z5/archive/refs/tags/2.0.16.zip -o 2.0.16.zip
     tar -xf 2.0.16.zip 
     pushd z5-2.0.16

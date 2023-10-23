@@ -36,24 +36,24 @@ fi
 mkdir -p "$LOCAL_INSTALL_DIR"
 mkdir -p "$LOCAL_INSTALL_DIR"/include
 
-git clone https://github.com/pybind/pybind11.git
-cd pybind11
+curl -L https://github.com/pybind/pybind11/archive/refs/tags/v2.11.1.zip -o v2.11.1.zip
+unzip v2.11.1.zip
+cd pybind11-2.11.1
 mkdir build_man
 cd build_man/
 cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/  -DPYBIND11_TEST=OFF ..
 make install -j4
 cd ../../
 
-if [[ $BUILD_Z5_DEP -eq 1 ]] || [[ $BULD_DCMTK_DEP -eq 1 ]]; then
-    git clone https://github.com/madler/zlib.git
-    cd zlib
-    mkdir build_man
-    cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
-    cmake --build . 
-    cmake --build . --target install 
-    cd ../../
-fi
+curl -L https://github.com/madler/zlib/releases/download/v1.3/zlib13.zip -o zlib13.zip
+unzip zlib13.zip
+cd zlib-1.3
+mkdir build_man
+cd build_man
+cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
+cmake --build . 
+cmake --build . --target install 
+cd ../../
 
 if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     for i in {1..5}
@@ -70,8 +70,9 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cp -r boost ../"$LOCAL_INSTALL_DIR"/include
     cd ../
 
-    git clone https://github.com/Blosc/c-blosc.git 
-    cd c-blosc 
+    curl -L https://github.com/Blosc/c-blosc/archive/refs/tags/v1.21.5.zip -o v1.21.5.zip
+    unzip v1.21.5.zip
+    cd c-blosc-1.21.5
     mkdir build_man
     cd build_man
     cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
@@ -79,8 +80,9 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cmake --build . --target install 
     cd ../../
 
-    git clone https://github.com/xtensor-stack/xtl.git 
-    cd xtl 
+    curl -L https://github.com/xtensor-stack/xtl/archive/refs/tags/0.7.5.zip -o 0.7.5.zip
+    unzip 0.7.5.zip
+    cd xtl-0.7.5 
     mkdir build_man
     cd build_man
     cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
@@ -88,8 +90,9 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cmake --build . --target install 
     cd ../../
 
-    git clone https://github.com/xtensor-stack/xtensor.git 
-    cd xtensor 
+    curl -L https://github.com/xtensor-stack/xtensor/archive/refs/tags/0.24.7.zip -o 0.24.7.zip
+    unzip 0.24.7.zip
+    cd xtensor-0.24.7
     mkdir build_man
     cd build_man
     cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
@@ -97,8 +100,9 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cmake --build . --target install 
     cd ../../
 
-    git clone https://github.com/xtensor-stack/xsimd.git 
-    cd xsimd 
+    curl -L https://github.com/xtensor-stack/xsimd/archive/refs/tags/11.1.0.zip -o 11.1.0.zip
+    unzip 11.1.0.zip 
+    cd xsimd-11.1.0 
     mkdir build_man
     cd build_man
     cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
@@ -106,16 +110,18 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cmake --build . --target install 
     cd ../../
 
-    git clone  https://github.com/nlohmann/json.git
-    cd json
+    curl -L https://github.com/nlohmann/json/archive/refs/tags/v3.11.2.zip -o v3.11.2.zip
+    unzip v3.11.2.zip 
+    cd json-3.11.2
     mkdir build_man
     cd build_man
     cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
     make install/fast
     cd ../../
 
-    git clone https://github.com/constantinpape/z5.git
-    cd z5
+    curl -L https://github.com/constantinpape/z5/archive/refs/tags/2.0.16.zip -o 2.0.16.zip
+    unzip 2.0.16.zip 
+    cd z5-2.0.16
     mkdir build_man
     cd build_man/
     cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF  ..
@@ -133,38 +139,7 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     make DESTDIR="$JPEG_INSTALL_PATH"/"$LOCAL_INSTALL_DIR" install
     ./libtool --finish "$JPEG_INSTALL_PATH"/"$LOCAL_INSTALL_DIR"/lib
     cd ..
-fi
 
-for i in {1..5}
-do
-    curl -L https://github.com/ebiggers/libdeflate/archive/refs/tags/v1.14.zip -o libdeflate.zip
-    if [ -f "libdeflate.zip" ] ; then
-        break
-    fi
-done
-
-unzip libdeflate.zip
-cd libdeflate-1.14
-PREFIX='' LIBDIR=/lib64  DESTDIR=../"$LOCAL_INSTALL_DIR"/ make  install
-cd ../
-
-for i in {1..5}
-do
-    curl https://download.osgeo.org/libtiff/tiff-4.5.0.zip -o libtiff.zip 
-    if [ -f "libtiff.zip" ] ; then
-        break
-    fi
-done
-
-unzip libtiff.zip
-cd tiff-4.5.0
-mkdir build_man
-cd build_man/
-cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/   ..
-make install -j4
-cd ../../
-
-if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     curl -L  https://github.com/glennrp/libpng/archive/refs/tags/v1.6.39.zip -o v1.6.39.zip
     unzip v1.6.39.zip
     cd libpng-1.6.39/
@@ -182,7 +157,35 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DBUILD_CODEC=OFF   ..
     make install -j4
     cd ../../
+fi
 
+curl -L https://github.com/ebiggers/libdeflate/archive/refs/tags/v1.19.zip -o v1.19.zip
+tar -xf v1.19.zip
+cd libdeflate-1.19
+mkdir build_man
+cd build_man
+cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/   ..
+make install -j4
+cd ../../
+
+
+for i in {1..5}
+do
+    curl -L https://download.osgeo.org/libtiff/tiff-4.6.0.zip -o tiff-4.6.0.zip 
+    if [ -f "tiff-4.6.0.zip" ] ; then
+        break
+    fi
+done
+
+unzip tiff-4.6.0.zip
+cd tiff-4.6.0
+mkdir build_man
+cd build_man/
+cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/   ..
+make install -j4
+cd ../../
+
+if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     curl -L https://github.com/DCMTK/dcmtk/archive/refs/tags/DCMTK-3.6.7.zip -o DCMTK-3.6.7.zip
     unzip DCMTK-3.6.7.zip
     cd dcmtk-DCMTK-3.6.7/
