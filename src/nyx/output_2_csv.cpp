@@ -178,12 +178,12 @@ namespace Nyxus
 		}
 		else
 		{
-			retval = theEnvironment.output_dir + "/" + "NyxusFeatures.csv";
+			retval = theEnvironment.output_dir + "/" + theEnvironment.nyxus_result_fname + ".csv";
 		}
 		return retval;
 	}
 
-	const std::vector<std::string> mandatory_output_columns {"intensity_image", "segmentation_image", "ROI_label"};
+	const std::vector<std::string> mandatory_output_columns {"intensity_image", "mask_image", "ROI_label"};
 
 	// Saves the result of image scanning and feature calculation. Must be called after the reduction phase.
 	bool save_features_2_csv (const std::string & intFpath, const std::string & segFpath, const std::string & outputDir)

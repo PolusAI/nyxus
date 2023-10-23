@@ -287,7 +287,7 @@ py::tuple featurize_montage_imp (
     
     } 
 
-    std::string path = output_dir + "NyxusFeatures.";
+    std::string path = output_dir + theEnvironment.nyxus_result_fname + ".";
     return py::make_tuple(error_message, path);
 }
 
@@ -312,9 +312,9 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
     if (intensFiles.size() == 0)
         throw std::runtime_error("Intensity file list is blank");
     if (labelFiles.size() == 0)
-        throw std::runtime_error("Segmentation file list is blank");
+        throw std::runtime_error("Segmentation mask file list is blank");
     if (intensFiles.size() != labelFiles.size())
-        throw std::runtime_error("Imbalanced intensity and segmentation file lists");
+        throw std::runtime_error("Imbalanced intensity and segmentation mask file lists");
     for (auto i = 0; i < intensFiles.size(); i++)
     {
         const std::string& i_fname = intensFiles[i];
@@ -588,7 +588,7 @@ PYBIND11_MODULE(backend, m)
     m.def("featurize_directory_imp", &featurize_directory_imp, "Calculate features of images defined by intensity and mask image collection directories");
     m.def("featurize_montage_imp", &featurize_montage_imp, "Calculate features of images defined by intensity and mask image collection directories");
     m.def("featurize_fname_lists_imp", &featurize_fname_lists_imp, "Calculate features of intensity-mask image pairs defined by lists of image file names");
-    m.def("findrelations_imp", &findrelations_imp, "Find relations in segmentation images");
+    m.def("findrelations_imp", &findrelations_imp, "Find relations in segmentation mask images");
     m.def("gpu_available", &Environment::gpu_is_available, "Check if CUDA gpu is available");
     m.def("use_gpu", &use_gpu, "Enable/disable GPU features");
     m.def("get_gpu_props", &get_gpu_properties, "Get properties of CUDA gpu");
