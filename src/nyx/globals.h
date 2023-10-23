@@ -30,7 +30,7 @@ namespace Nyxus
 	extern FeatureManager theFeatureMgr;
 	extern ImageLoader theImLoader;
 
-	enum class SaveOption {saveCSV, saveArrow, saveBuffer};
+	enum class SaveOption {saveCSV, saveBuffer, saveArrowIPC, saveParquet};
 
 	bool scanFilePairParallel(const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads, int filepair_index, int tot_num_filepairs);
 	std::string getPureFname(const std::string& fpath);

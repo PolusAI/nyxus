@@ -221,14 +221,15 @@ namespace Nyxus
 		// One-time initialization
 		init_feature_buffers();
 
+		bool write_apache = (saveOption == SaveOption::saveArrowIPC || saveOption == SaveOption::saveParquet);
 
 		// initialize arrow writer if needed
-		if (saveOption == SaveOption::saveArrow) {
+		if (write_apache) {
 
 			theEnvironment.arrow_stream = ArrowOutputStream();
 
 			try {
-				theEnvironment.arrow_writer = theEnvironment.arrow_stream.create_arrow_file(theEnvironment.arrow_output_type, outputDir,   Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+				theEnvironment.arrow_writer = theEnvironment.arrow_stream.create_arrow_file(saveOption, outputDir,   Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
 			} catch (const std::exception &err) {
 				std::cout << "Error creating Arrow file: " << err.what() << std::endl;
 				return 1;
@@ -275,7 +276,7 @@ namespace Nyxus
 			}
 
 
-			if (saveOption == SaveOption::saveArrow) {
+			if (write_apache) {
 
 				auto status = theEnvironment.arrow_writer->write(Nyxus::get_feature_values());
 				
@@ -346,7 +347,7 @@ namespace Nyxus
 		}
 		#endif
 
-		if (saveOption == SaveOption::saveArrow) {
+		if (write_apache) {
 			// close arrow file after use
 			auto status = theEnvironment.arrow_writer->close();
 			
@@ -372,13 +373,14 @@ namespace Nyxus
 		SaveOption saveOption,
 		const std::string& outputDir)
 	{	
+		bool write_apache = (saveOption == SaveOption::saveArrowIPC || saveOption == SaveOption::saveParquet);
 
-		if (saveOption == SaveOption::saveArrow) {
+		if (write_apache) {
 
 			theEnvironment.arrow_stream = ArrowOutputStream();
 
 			try {
-				theEnvironment.arrow_writer = theEnvironment.arrow_stream.create_arrow_file(theEnvironment.arrow_output_type, outputDir,  Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+				theEnvironment.arrow_writer = theEnvironment.arrow_stream.create_arrow_file(saveOption, outputDir,  Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
 			} catch (const std::exception &err) {
 				error_message = err.what();
 				return 1;
@@ -409,8 +411,8 @@ namespace Nyxus
 			}
 			
 
-			if (saveOption == SaveOption::saveArrow) {
-
+			if (write_apache) {
+			
 				auto status = theEnvironment.arrow_writer->write(Nyxus::get_feature_values());
 				
 				if (!status.ok()) {
@@ -449,7 +451,7 @@ namespace Nyxus
 		}
 
 
-		if (saveOption == SaveOption::saveArrow) {
+		if (write_apache) {
 			// close arrow file after use
 			auto status = theEnvironment.arrow_writer->close();
 			

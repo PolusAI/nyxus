@@ -2,21 +2,19 @@
 
 #ifdef USE_ARROW
 
-std::shared_ptr<ApacheArrowWriter> ArrowOutputStream::create_arrow_file(const std::string& arrow_file_type,
+std::shared_ptr<ApacheArrowWriter> ArrowOutputStream::create_arrow_file(const SaveOption& arrow_file_type,
                                                          const std::string& arrow_file_path,
                                                          const std::vector<std::string>& header) {
-    
-    std::string arrow_file_type_upper = Nyxus::toupper(arrow_file_type);
 
     if(arrow_file_path != "" && !fs::is_directory(arrow_file_path) && !(Nyxus::ends_with_substr(arrow_file_path, ".arrow") || Nyxus::ends_with_substr(arrow_file_path, ".feather") || Nyxus::ends_with_substr(arrow_file_path, ".parquet"))) {
         throw std::invalid_argument("The arrow file path must end in \".arrow\"");
     }
 
-    if (!(arrow_file_type_upper == "ARROW" || arrow_file_type_upper == "ARROWIPC" || arrow_file_type_upper == "PARQUET")) {
-        throw std::invalid_argument("The valid file types are ARROW, ARROWIPC, or PARQUET");
+    if (arrow_file_type != SaveOption::saveArrowIPC && arrow_file_type != SaveOption::saveParquet) {
+        throw std::invalid_argument("The valid save options are SaveOption::saveArrowIPC or SaveOption::saveParquet.");
     }
 
-    std::string extension = (arrow_file_type_upper == "PARQUET") ? ".parquet" : ".arrow";
+    std::string extension = (arrow_file_type == SaveOption::saveParquet) ? ".parquet" : ".arrow";
 
     if (arrow_file_path == "") {
         arrow_file_path_ = "NyxusFeatures" + extension;
@@ -49,7 +47,7 @@ std::string ArrowOutputStream::get_arrow_path() {
 
 #else 
 
-std::shared_ptr<ApacheArrowWriter> ArrowOutputStream::create_arrow_file(const std::string& arrow_file_type,
+std::shared_ptr<ApacheArrowWriter> ArrowOutputStream::create_arrow_file(const SaveOption& arrow_file_type,
                                                          const std::string& arrow_file_path,
                                                          const std::vector<std::string>& header) {
     

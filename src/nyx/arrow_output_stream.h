@@ -1,12 +1,11 @@
 #pragma once
 
-
-
 #include <string>
 #include <memory>
 
 #include "output_writers.h"
 #include "helpers/helpers.h"
+#include "globals.h"
 
 #ifdef USE_ARROW
 #include <arrow/table.h>
@@ -37,7 +36,7 @@ private:
   std::shared_ptr<arrow::Table> arrow_table_ = nullptr;
 
 public:
-    std::shared_ptr<ApacheArrowWriter> create_arrow_file(const std::string& arrow_file_type,
+    std::shared_ptr<ApacheArrowWriter> create_arrow_file(const SaveOption& arrow_file_type,
                                                          const std::string& arrow_file_path,
                                                          const std::vector<std::string>& header);
     std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path);
@@ -67,7 +66,7 @@ private:
   std::shared_ptr<arrow::Table> arrow_table_ = nullptr;
 
 public:
-    std::shared_ptr<ApacheArrowWriter> create_arrow_file(const std::string& arrow_file_type,
+    std::shared_ptr<ApacheArrowWriter> create_arrow_file(const SaveOption& arrow_file_type,
                                                          const std::string& arrow_file_path,
                                                          const std::vector<std::string>& header);
     std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path);

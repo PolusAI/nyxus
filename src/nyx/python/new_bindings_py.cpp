@@ -181,7 +181,13 @@ py::tuple featurize_directory_imp (
     int min_online_roi_size = 0;
 
     SaveOption saveOption = [](){
-        if (theEnvironment.use_apache_writers) return SaveOption::saveArrow;
+        if (theEnvironment.use_apache_writers) {
+			if (Nyxus::toupper(theEnvironment.arrow_output_type) == "ARROW") {
+				return SaveOption::saveArrowIPC;
+			} else {
+				return SaveOption::saveParquet;
+			} 
+		} 
 		else {return SaveOption::saveBuffer;}
 	}();
 
@@ -269,9 +275,17 @@ py::tuple featurize_montage_imp (
     std::string error_message = "";
 
     SaveOption saveOption = [](){
-        if (theEnvironment.use_apache_writers) return SaveOption::saveArrow;
+        if (theEnvironment.use_apache_writers) {
+			if (Nyxus::toupper(theEnvironment.arrow_output_type) == "ARROW") {
+				return SaveOption::saveArrowIPC;
+			} else {
+				return SaveOption::saveParquet;
+			} 
+		} 
 		else {return SaveOption::saveBuffer;}
 	}();
+
+
 
     int errorCode = processMontage(
         intensity_images,
@@ -354,7 +368,13 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
     int errorCode;
 
     SaveOption saveOption = [](){
-        if (theEnvironment.use_apache_writers) return SaveOption::saveArrow;
+        if (theEnvironment.use_apache_writers) {
+			if (Nyxus::toupper(theEnvironment.arrow_output_type) == "ARROW") {
+				return SaveOption::saveArrowIPC;
+			} else {
+				return SaveOption::saveParquet;
+			} 
+		} 
 		else {return SaveOption::saveBuffer;}
 	}();
 
