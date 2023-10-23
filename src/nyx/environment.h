@@ -117,7 +117,7 @@ public:
 	bool singleROI = false; // is set to 'true' parse_cmdline() if labels_dir==intensity_dir
 
 
-	bool use_arrow = false;
+	bool use_apache_writers = false;
 	std::string arrow_output_type = "";
 	ArrowOutputStream  arrow_stream;
 	std::shared_ptr<ApacheArrowWriter> arrow_writer = nullptr;

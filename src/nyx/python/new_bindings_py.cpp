@@ -173,7 +173,7 @@ py::tuple featurize_directory_imp (
     // We're good to extract features. Reset the feature results cache
     theResultsCache.clear();
 
-    theEnvironment.use_arrow = !pandas_output;
+    theEnvironment.use_apache_writers = !pandas_output;
 
     theEnvironment.separateCsv = false;
 
@@ -181,7 +181,7 @@ py::tuple featurize_directory_imp (
     int min_online_roi_size = 0;
 
     SaveOption saveOption = [](){
-        if (theEnvironment.use_arrow) return SaveOption::saveArrow;
+        if (theEnvironment.use_apache_writers) return SaveOption::saveArrow;
 		else {return SaveOption::saveBuffer;}
 	}();
 
@@ -263,13 +263,13 @@ py::tuple featurize_montage_imp (
 
     theResultsCache.clear();
 
-    theEnvironment.use_arrow = !pandas_output;
+    theEnvironment.use_apache_writers = !pandas_output;
 
     // Process the image sdata
     std::string error_message = "";
 
     SaveOption saveOption = [](){
-        if (theEnvironment.use_arrow) return SaveOption::saveArrow;
+        if (theEnvironment.use_apache_writers) return SaveOption::saveArrow;
 		else {return SaveOption::saveBuffer;}
 	}();
 
@@ -347,14 +347,14 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
 
     theResultsCache.clear();
 
-    theEnvironment.use_arrow = !pandas_output;
+    theEnvironment.use_apache_writers = !pandas_output;
 
     // Process the image sdata
     int min_online_roi_size = 0;
     int errorCode;
 
     SaveOption saveOption = [](){
-        if (theEnvironment.use_arrow) return SaveOption::saveArrow;
+        if (theEnvironment.use_apache_writers) return SaveOption::saveArrow;
 		else {return SaveOption::saveBuffer;}
 	}();
 

@@ -63,7 +63,7 @@ int main (int argc, char** argv)
 	int min_online_roi_size = 0;
 
 	SaveOption saveOption = [](){
-        if (theEnvironment.use_arrow) return SaveOption::saveArrow;
+        if (theEnvironment.use_apache_writers) return SaveOption::saveArrow;
         else if (theEnvironment.useCsv) {return SaveOption::saveCSV;}
 		else {return SaveOption::saveBuffer;}
 	}();

@@ -847,7 +847,7 @@ bool Environment::parse_cmdline(int argc, char **argv)
 	{
 		useCsv = false;
 		arrow_output_type = rawOutpTypeUC;
-		use_arrow = true;
+		use_apache_writers = true;
 	}
 	else
 	{	
