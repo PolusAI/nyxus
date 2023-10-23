@@ -1,19 +1,22 @@
 @echo OFF
+setlocal
 set BUILD_Z5_DEP=1
 set BUILD_DCMTK_DEP=1
+set BUILD_ZLIB=1
+SET ROOTDIR="%cd%"
 
 setlocal enabledelayedexpansion
-
 :GETOPTS
     if /I "%~1" == "--min_build" set MIN_BUILD=%2& shift
     shift
 
 if not (%1)==() goto GETOPTS
-echo %MIN_BUILD%
-if /I "!min_build!" == "yes" (
+if /I "%min_build%" == "yes" (
     set BUILD_Z5_DEP=0
     set BUILD_DCMTK_DEP=0
+    set BUILD_ZLIB=0
 )
+SETLOCAL DisableDelayedExpansion
 
 mkdir local_install
 mkdir local_install\include
@@ -27,20 +30,18 @@ cmake --build . --config Release --target install
 popd
 popd
 
-if  not "%BUILD_DCMTK_DEP%" == "0" (
-    if not "%BUILD_Z5_DEP%" == "0" (
-        git clone https://github.com/madler/zlib.git
-        pushd zlib
-        mkdir build_man
-        pushd build_man
-        cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
-        cmake --build . --config Release --target install --parallel 4  
-        popd
-        popd
-    ) 
-)
+if "%BUILD_ZLIB%" == "1" (
+    git clone https://github.com/madler/zlib.git
+    pushd zlib
+    mkdir build_man
+    pushd build_man
+    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
+    cmake --build . --config Release --target install --parallel 4  
+    popd
+    popd
+) 
 
-if not "%BUILD_Z5_DEP%" == "0" (
+if "%BUILD_Z5_DEP%" == "1" (
     for /l %%x in (1, 1, 5) do (
         curl -L https://boostorg.jfrog.io/artifactory/main/release/1.79.0/source/boost_1_79_0.zip -o boost_1_79_0.zip
         if  exist boost_1_79_0.zip (
@@ -111,7 +112,7 @@ if not "%BUILD_Z5_DEP%" == "0" (
 )
 
 
-if  not "%BUILD_DCMTK_DEP%" == "0" (
+if "%BUILD_DCMTK_DEP%" == "1" (
     curl -L https://github.com/glennrp/libpng/archive/refs/tags/v1.6.39.zip -o v1.6.39.zip
     tar -xvf v1.6.39.zip
     pushd libpng-1.6.39
@@ -162,7 +163,7 @@ copy libdeflate-1.14\*.lib ..\..\local_install\lib\
 popd
 popd
 
-if  not "%BUILD_DCMTK_DEP%" == "0" (
+if "%BUILD_DCMTK_DEP%" == "1" (
     copy local_install\lib\zlib.lib local_install\lib\zlib_o.lib
     copy local_install\lib\libpng16.lib local_install\lib\libpng_o.lib
     copy local_install\lib\openjp2.lib local_install\lib\openjp2_o.lib
@@ -178,13 +179,12 @@ if  not "%BUILD_DCMTK_DEP%" == "0" (
     popd
     popd
 
-    SET ROOTTDIR="%cd%"
     curl -L https://github.com/DraconPern/fmjpeg2koj/archive/refs/tags/v1.0.3.zip -o fmjpeg2koj.zip
     tar -xvf fmjpeg2koj.zip
     pushd fmjpeg2koj-1.0.3
     mkdir build_man
     pushd build_man
-    cmake -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_FLAGS_RELEASE="/MT /O2 /D NDEBUG" -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/  -DFMJPEG2K=%ROOTTDIR%\local_install\  ..
+    cmake -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_FLAGS_RELEASE="/MT /O2 /D NDEBUG" -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/  -DFMJPEG2K=%ROOTDIR%\local_install\  ..
     cmake --build . --config Release --target install --parallel 4
     popd
     popd
@@ -193,5 +193,3 @@ if  not "%BUILD_DCMTK_DEP%" == "0" (
 if errorlevel 1 exit 1
 
 if "%ON_GITHUB%"=="TRUE" xcopy /E /I /y local_install\bin %TEMP%\nyxus\bin
-
-endlocal
