@@ -12,6 +12,7 @@
 #endif
 #include <cstring>
 #include <sstream>
+#include <limits.h> // for INT_MAX 
 
 constexpr size_t STRIP_TILE_HEIGHT = 1024;
 constexpr size_t STRIP_TILE_WIDTH = 1024;
@@ -165,10 +166,10 @@ public:
             case 8:
             case 16:
             case 32:
-                loadTile<float>(tiffTile, tileDataVec);
+                loadTile_real_intens <float> (tiffTile, tileDataVec);
                 break;
             case 64:
-                loadTile<double>(tiffTile, tileDataVec);
+                loadTile_real_intens <double> (tiffTile, tileDataVec);
                 break;
             default:
                 message
@@ -267,7 +268,51 @@ private:
                 for (size_t i = 0; i < n; i++)
                     *(dest + i) = (DataType) *(((FileType*)src) + i);
             }
+    }
 
+    /// @brief Private function to copy and cast values to a real data type (float or double determined by parameter 'FileType'). It solves the issue when intensities in range [0.0 , 1.0] are cast to integer 0.
+    /// @tparam FileType Type inside the file
+    /// @param src Piece of memory coming from libtiff
+    /// @param dst_as_vector [OUTPUT] Feature extraction facing logical buffer, usually of type unsigned 32-bit int
+    /// 
+    template<typename FileType>
+    void loadTile_real_intens (tdata_t src, std::vector<DataType>& dst_as_vector)
+    {
+        // Get ahold of the raw pointer
+        DataType* dest = dst_as_vector.data();
+
+        // Special case of tileWidth_ (e.g. 1024) > fullWidth_ (e.g. 256)
+        if (tileWidth_ > fullWidth_ && tileHeight_ > fullHeight_)
+        {
+            // Zero-prefill margins of the logical buffer 
+            size_t szb = tileHeight_ * tileWidth_ * sizeof(*dest);
+            memset(dest, 0, szb);
+
+            // Copy pixels assuming the row-major layout both in the physical (TIFF) and logical (ROI scanner facing) buffers
+            for (size_t r = 0; r < fullHeight_; r++)
+                for (size_t c = 0; c < fullWidth_; c++)
+                {
+                    size_t logOffs = r * tileWidth_ + c,
+                        physOffs = r * tileWidth_ + c;
+
+                    // Prevent real-valued intensities smaller than 1.0 from being cast to integer 0
+                    auto tmp1 = * (((FileType*)src) + physOffs);    // real-valued intensity e.g. 0.0724
+                    auto tmp2 = (DataType) (tmp1 * float(INT_MAX)); // integer-valued intensity
+                    *(dest + logOffs) = tmp2;
+                }
+        }
+        else
+            // General case the logical buffer is same size (specifically, tile size) as the physical one even if tileWidth_ (e.g. 1024) < fullWidth_ (e.g. 1080)
+        {
+            size_t n = tileHeight_ * tileWidth_;
+            for (size_t i = 0; i < n; i++)
+            {
+                // Prevent real-valued intensities smaller than 1.0 from being cast to integer 0
+                auto tmp1 = * (((FileType*)src) + i);           // real-valued intensity e.g. 0.0724
+                auto tmp2 = (DataType) (tmp1 + float(INT_MAX)); // integer-valued intensity
+                *(dest + i) = tmp2;
+            }
+        }
     }
 
     TIFF*
