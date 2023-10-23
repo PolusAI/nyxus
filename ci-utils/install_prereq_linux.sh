@@ -40,7 +40,7 @@ curl -L https://github.com/pybind/pybind11/archive/refs/tags/v2.11.1.zip -o v2.1
 unzip v2.11.1.zip
 cd pybind11-2.11.1
 mkdir build_man
-cd build_man/
+cd build_man
 cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/  -DPYBIND11_TEST=OFF ..
 make install -j4
 cd ../../
@@ -123,7 +123,7 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     unzip 2.0.16.zip 
     cd z5-2.0.16
     mkdir build_man
-    cd build_man/
+    cd build_man
     cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF  ..
     make install -j4
     cd ../../
@@ -142,29 +142,29 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
 
     curl -L  https://github.com/glennrp/libpng/archive/refs/tags/v1.6.39.zip -o v1.6.39.zip
     unzip v1.6.39.zip
-    cd libpng-1.6.39/
+    cd libpng-1.6.39
     mkdir build_man
-    cd build_man/
+    cd build_man
     cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/   ..
     make install -j4
     cd ../../
 
     curl -L https://github.com/uclouvain/openjpeg/archive/refs/tags/v2.5.0.zip -o v2.5.0.zip
     unzip v2.5.0.zip
-    cd openjpeg-2.5.0/
+    cd openjpeg-2.5.0
     mkdir build_man
-    cd build_man/
+    cd build_man
     cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DBUILD_CODEC=OFF   ..
     make install -j4
     cd ../../
 fi
 
 curl -L https://github.com/ebiggers/libdeflate/archive/refs/tags/v1.19.zip -o v1.19.zip
-tar -xf v1.19.zip
+unzip v1.19.zip
 cd libdeflate-1.19
 mkdir build_man
 cd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/   ..
+cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ ..
 make install -j4
 cd ../../
 
@@ -180,7 +180,7 @@ done
 unzip tiff-4.6.0.zip
 cd tiff-4.6.0
 mkdir build_man
-cd build_man/
+cd build_man
 cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/   ..
 make install -j4
 cd ../../
@@ -188,9 +188,9 @@ cd ../../
 if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     curl -L https://github.com/DCMTK/dcmtk/archive/refs/tags/DCMTK-3.6.7.zip -o DCMTK-3.6.7.zip
     unzip DCMTK-3.6.7.zip
-    cd dcmtk-DCMTK-3.6.7/
+    cd dcmtk-DCMTK-3.6.7
     mkdir build_man
-    cd build_man/
+    cd build_man
     cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF  ..
     make install -j4
     cd ../../
@@ -198,9 +198,9 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     ROOTDIR=$(pwd)
     curl -L https://github.com/sameeul/fmjpeg2koj/archive/refs/heads/fix_cmake.zip -o fmjpeg2koj.zip
     unzip fmjpeg2koj.zip
-    cd fmjpeg2koj-fix_cmake/
+    cd fmjpeg2koj-fix_cmake
     mkdir build_man
-    cd build_man/
+    cd build_man
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DFMJPEG2K="$ROOTDIR"/"$LOCAL_INSTALL_DIR"/  ..
     make install -j4
     cd ../../
