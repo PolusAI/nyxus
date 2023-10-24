@@ -620,9 +620,10 @@ git clone https://github.com/PolusAI/nyxus.git
 cd nyxus
 conda install mamba -c conda-forge
 mamba install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt 
+export NYXUS_DEP_DIR=$CONDA_PREFIX
 mkdir build
 cd build
-cmake -DBUILD_CLI=ON -DBUILD_WITH_ALL=ON  -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX ..
+cmake -DBUILD_CLI=ON -DBUILD_WITH_ALL=ON  -DUSEGPU=ON ..
 make -j4
 ```
 
@@ -634,7 +635,8 @@ git clone https://github.com/PolusAI/nyxus.git
 cd nyxus
 conda install mamba -c conda-forge
 mamba install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_py.txt
-CMAKE_ARGS="-DUSEGPU=ON -DBUILD_WITH_ALL=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DPython_ROOT_DIR=$CONDA_PREFIX -DPython_FIND_VIRTUALENV=ONLY" python -m pip install . -vv
+export NYXUS_DEP_DIR=$CONDA_PREFIX
+CMAKE_ARGS="-DUSEGPU=ON -DBUILD_WITH_ALL=ON -DPython_ROOT_DIR=$CONDA_PREFIX -DPython_FIND_VIRTUALENV=ONLY" python -m pip install . -vv
 ```
 
 ### __Without Using Conda__
