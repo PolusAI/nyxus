@@ -253,17 +253,6 @@ if(USE_Z5)
 	endif()
 endif()
 
-find_package(Threads QUIET)
-if (Threads_FOUND)
-    if (CMAKE_USE_PTHREADS_INIT)
-		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
-    endif (CMAKE_USE_PTHREADS_INIT)
-    list(APPEND Nyxus_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
-else ()
-	message(STATUS "Unable to find threads. Nyxus must have a threading library i.e. pthreads.")
-endif ()
-
-
 if(USE_DCMTK)
 	#== Required for DICOM
 	find_package(DCMTK)
