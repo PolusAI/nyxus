@@ -271,7 +271,7 @@ class Nyxus:
             per image.
         """
         if (output_type != "" and output_type not in self._valid_output_types):
-            raise ValueError("Invalid output type: " + output_type + ". Valid options are: " + self._valid_output_types)
+            raise ValueError(f'Invalid output type: {output_type}. Valid options are: {self._valid_output_types}')
             
         
         # verify argument types
