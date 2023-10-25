@@ -3,6 +3,7 @@
 #include "dirs_and_files.h"
 #include "environment.h"
 #include "globals.h"
+#include "save_option.h"
 #include "arrow_output_stream.h"
 #ifdef USE_GPU
 	bool gpu_initialize(int dev_id); 
@@ -62,18 +63,6 @@ int main (int argc, char** argv)
 	// Process the image data
 	int min_online_roi_size = 0;
 
-	SaveOption saveOption = [](){
-        if (theEnvironment.use_apache_writers) {
-			if (Nyxus::toupper(theEnvironment.arrow_output_type) == "ARROW") {
-				return SaveOption::saveArrowIPC;
-			} else {
-				return SaveOption::saveParquet;
-			} 
-		} 
-        else if (theEnvironment.useCsv) {return SaveOption::saveCSV;}
-		else {return SaveOption::saveBuffer;}
-	}();
-
 	errorCode = processDataset (
 		intensFiles, 
 		labelFiles, 
@@ -81,7 +70,7 @@ int main (int argc, char** argv)
 		theEnvironment.n_pixel_scan_threads, 
 		theEnvironment.n_reduce_threads,
 		min_online_roi_size,
-		saveOption,
+		theEnvironment.saveOption,
 		theEnvironment.output_dir);
 
 	// Report feature extraction error, if any

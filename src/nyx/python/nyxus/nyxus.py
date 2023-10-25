@@ -162,7 +162,7 @@ class Nyxus:
         )
         
         # list of valid outputs that are used throughout featurize functions
-        self._valid_output_types = ['pandas', 'arrow', 'arrowipc', 'parquet']
+        self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
 
     def featurize_directory(
         self,
@@ -213,7 +213,7 @@ class Nyxus:
             
         if (output_type == 'pandas'):
             
-            header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern, True, "")
+            header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern, output_type, "")
 
             df = pd.concat(
                 [
@@ -231,7 +231,7 @@ class Nyxus:
         
         else:
             
-            featurize_directory_imp(intensity_dir, label_dir, file_pattern, False, output_path)
+            featurize_directory_imp(intensity_dir, label_dir, file_pattern, output_type, output_path)
         
 
             
@@ -270,9 +270,8 @@ class Nyxus:
             Pandas DataFrame containing the requested features with one row per label
             per image.
         """
-        valid_output_types = ['arrow', 'parquet', 'pandas']
-        if (output_type != "" and output_type not in valid_output_types):
-            raise ValueError("Invalid output type: " + output_type + ". Valid options are: " + valid_output_types)
+        if (output_type != "" and output_type not in self._valid_output_types):
+            raise ValueError("Invalid output type: " + output_type + ". Valid options are: " + self._valid_output_types)
             
         
         # verify argument types
@@ -326,7 +325,7 @@ class Nyxus:
     
         if (output_type == 'pandas'):
                 
-            header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, True, "", "")
+            header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_Type, "")
             
             self.error_message = error_message
             if(error_message != ''):
@@ -348,7 +347,7 @@ class Nyxus:
             
         else:
             
-            error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, False, output_type, output_path)
+            error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, output_path)
             
             self.error_message = error_message
             
@@ -404,7 +403,7 @@ class Nyxus:
 
         if (output_type == 'pandas'):
             
-            header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files, single_roi, True)
+            header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, "")
 
             df = pd.concat(
                 [
@@ -422,7 +421,7 @@ class Nyxus:
         
         else:
             
-            featurize_fname_lists_imp (intensity_files, mask_files, single_roi, False)
+            featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, output_path)
             
             
 

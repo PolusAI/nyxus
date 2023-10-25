@@ -140,7 +140,7 @@ py::tuple featurize_directory_imp (
     const std::string &intensity_dir,
     const std::string &labels_dir,
     const std::string &file_pattern,
-    bool pandas_output=true,
+    const std::string &output_type,
     const std::string &arrow_file_path="")
 {
     // Check and cache the file pattern
@@ -173,22 +173,17 @@ py::tuple featurize_directory_imp (
     // We're good to extract features. Reset the feature results cache
     theResultsCache.clear();
 
-    theEnvironment.use_apache_writers = !pandas_output;
-
     theEnvironment.separateCsv = false;
 
     // Process the image sdata
     int min_online_roi_size = 0;
 
-    SaveOption saveOption = [](){
-        if (theEnvironment.use_apache_writers) {
-			if (Nyxus::toupper(theEnvironment.arrow_output_type) == "ARROW") {
-				return SaveOption::saveArrowIPC;
-			} else {
-				return SaveOption::saveParquet;
-			} 
-		} 
-		else {return SaveOption::saveBuffer;}
+    theEnvironment.saveOption = [&output_type](){
+        if (output_type == "arrowipc") {
+            return SaveOption::saveArrowIPC;
+	    } else if (output_type == "parquet") {
+            return SaveOption::saveParquet;
+        } else {return SaveOption::saveBuffer;}
 	}();
 
     errorCode = processDataset(
@@ -198,14 +193,14 @@ py::tuple featurize_directory_imp (
         theEnvironment.n_pixel_scan_threads,
         theEnvironment.n_reduce_threads,
         min_online_roi_size,
-        saveOption,
+        theEnvironment.saveOption,
         theEnvironment.output_dir);
 
     if (errorCode)
         throw std::runtime_error("Error " + std::to_string(errorCode) + " occurred during dataset processing");
 
     // Output the result
-    if (pandas_output) 
+    if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
     {
 
         auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
@@ -227,17 +222,11 @@ py::tuple featurize_montage_imp (
     const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images,
     const std::vector<std::string>& intensity_names,
     const std::vector<std::string>& label_names,
-    bool pandas_output=true,
-    const std::string arrow_output_type="",
+    const std::string output_type="",
     const std::string output_dir="")
 {  
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = false;
-
-#ifdef USE_ARROW
-    // Set arrow output type
-    theEnvironment.arrow_output_type = arrow_output_type;
-#endif
 
     auto intens_buffer = intensity_images.request();
     auto label_buffer = label_images.request();
@@ -269,20 +258,15 @@ py::tuple featurize_montage_imp (
 
     theResultsCache.clear();
 
-    theEnvironment.use_apache_writers = !pandas_output;
-
     // Process the image sdata
     std::string error_message = "";
 
-    SaveOption saveOption = [](){
-        if (theEnvironment.use_apache_writers) {
-			if (Nyxus::toupper(theEnvironment.arrow_output_type) == "ARROW") {
-				return SaveOption::saveArrowIPC;
-			} else {
-				return SaveOption::saveParquet;
-			} 
-		} 
-		else {return SaveOption::saveBuffer;}
+     theEnvironment.saveOption = [&output_type](){
+        if (output_type == "arrowipc") {
+            return SaveOption::saveArrowIPC;
+	    } else if (output_type == "parquet") {
+			return SaveOption::saveParquet;
+		} else {return SaveOption::saveBuffer;}
 	}();
 
 
@@ -294,13 +278,13 @@ py::tuple featurize_montage_imp (
         intensity_names,
         label_names,
         error_message,
-        saveOption,
+        theEnvironment.saveOption,
         output_dir);
 
     if (errorCode)
         throw std::runtime_error("Error #" + std::to_string(errorCode) + " " + error_message + " occurred during dataset processing.");
 
-    if (pandas_output) {
+    if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer) {
 
         auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
         auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
@@ -318,10 +302,11 @@ py::tuple featurize_montage_imp (
     return py::make_tuple(error_message, path);
 }
 
-py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames, bool single_roi, bool pandas_output=true)
+py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames, bool single_roi, const std::string& output_type, const std::string& output_dir)
 {
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = single_roi;
+    theEnvironment.output_dir = output_dir;
 
     std::vector<std::string> intensFiles, labelFiles;
     for (auto it = int_fnames.begin(); it != int_fnames.end(); ++it)
@@ -361,21 +346,16 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
 
     theResultsCache.clear();
 
-    theEnvironment.use_apache_writers = !pandas_output;
-
     // Process the image sdata
     int min_online_roi_size = 0;
     int errorCode;
 
-    SaveOption saveOption = [](){
-        if (theEnvironment.use_apache_writers) {
-			if (Nyxus::toupper(theEnvironment.arrow_output_type) == "ARROW") {
-				return SaveOption::saveArrowIPC;
-			} else {
-				return SaveOption::saveParquet;
-			} 
-		} 
-		else {return SaveOption::saveBuffer;}
+    theEnvironment.saveOption = [&output_type](){
+        if (output_type == "arrowipc") {
+            return SaveOption::saveArrowIPC;
+	    } else if (output_type == "parquet") {
+            return SaveOption::saveParquet;
+		} else {return SaveOption::saveBuffer;}
 	}();
 
     errorCode = processDataset(
@@ -385,14 +365,14 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
         theEnvironment.n_pixel_scan_threads,
         theEnvironment.n_reduce_threads,
         min_online_roi_size,
-        saveOption,
+        theEnvironment.saveOption,
         theEnvironment.output_dir);
 
 
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing.");
 
-    if (pandas_output) {
+    if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer) {
 
             auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
             auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
