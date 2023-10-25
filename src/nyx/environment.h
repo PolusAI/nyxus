@@ -7,6 +7,7 @@
 #include "roi_blacklist.h"
 #include "cli_gabor_options.h"
 #include "cli_nested_roi_options.h"
+#include "save_option.h"
 
 #include "output_writers.h"
 #include "arrow_output_stream.h"
@@ -88,7 +89,6 @@
 // Valid values of 'OUTPUTTYPE'
 #define OT_SEPCSV "separatecsv"
 #define OT_SINGLECSV "singlecsv"
-#define OT_ARROW "arrow"
 #define OT_ARROWIPC "arrowipc"
 #define OT_PARQUET "parquet"
 
@@ -117,8 +117,6 @@ public:
 	bool singleROI = false; // is set to 'true' parse_cmdline() if labels_dir==intensity_dir
 
 
-	bool use_apache_writers = false;
-	std::string arrow_output_type = "";
 	ArrowOutputStream  arrow_stream;
 	std::shared_ptr<ApacheArrowWriter> arrow_writer = nullptr;
 
@@ -149,7 +147,8 @@ public:
 
 	std::string rawOutpType = ""; // Valid values: "separatecsv", "singlecsv", "arrow", "parquet"
 	bool separateCsv = true;
-	bool useCsv = true;
+
+	Nyxus::SaveOption saveOption;
 
 	// x- and y- resolution in pixels per centimeter
 	std::string rawXYRes = "";
