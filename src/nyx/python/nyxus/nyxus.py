@@ -368,7 +368,7 @@ class Nyxus:
                 else:
                     
                     if (output_type == "arrowipc"):
-                        return output_path + 'NyxusFeatures.arrow'
+                        return output_path + '/NyxusFeatures.arrow'
                     
                     return output_path + '/NyxusFeatures.' + output_type
                 
