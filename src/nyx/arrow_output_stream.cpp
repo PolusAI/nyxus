@@ -2,7 +2,7 @@
 
 #ifdef USE_ARROW
 
-std::shared_ptr<ApacheArrowWriter> ArrowOutputStream::create_arrow_file(const SaveOption& arrow_file_type,
+std::shared_ptr<ApacheArrowWriter> ArrowOutputStream::create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
                                                          const std::string& arrow_file_path,
                                                          const std::vector<std::string>& header) {
 
@@ -10,11 +10,11 @@ std::shared_ptr<ApacheArrowWriter> ArrowOutputStream::create_arrow_file(const Sa
         throw std::invalid_argument("The arrow file path must end in \".arrow\"");
     }
 
-    if (arrow_file_type != SaveOption::saveArrowIPC && arrow_file_type != SaveOption::saveParquet) {
-        throw std::invalid_argument("The valid save options are SaveOption::saveArrowIPC or SaveOption::saveParquet.");
+    if (arrow_file_type != Nyxus::SaveOption::saveArrowIPC && arrow_file_type != Nyxus::SaveOption::saveParquet) {
+        throw std::invalid_argument("The valid save options are Nyxus::SaveOption::saveArrowIPC or Nyxus::SaveOption::saveParquet.");
     }
 
-    std::string extension = (arrow_file_type == SaveOption::saveParquet) ? ".parquet" : ".arrow";
+    std::string extension = (arrow_file_type == Nyxus::SaveOption::saveParquet) ? ".parquet" : ".arrow";
 
     if (arrow_file_path == "") {
         arrow_file_path_ = "NyxusFeatures" + extension;
@@ -47,7 +47,7 @@ std::string ArrowOutputStream::get_arrow_path() {
 
 #else 
 
-std::shared_ptr<ApacheArrowWriter> ArrowOutputStream::create_arrow_file(const SaveOption& arrow_file_type,
+std::shared_ptr<ApacheArrowWriter> ArrowOutputStream::create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
                                                          const std::string& arrow_file_path,
                                                          const std::vector<std::string>& header) {
     
