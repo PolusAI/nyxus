@@ -325,7 +325,7 @@ class Nyxus:
     
         if (output_type == 'pandas'):
                 
-            header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_Type, "")
+            header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, "")
             
             self.error_message = error_message
             if(error_message != ''):
@@ -357,9 +357,19 @@ class Nyxus:
             if (output_path.endswith('.arrow') or output_path.endswith('.parquet')):
                 return output_path
             else:
+                
                 if (output_path == ""):
+                    
+                    if (output_type == "arrowipc"):
+                        return 'NyxusFeatures.arrow'
+                    
                     return 'NyxusFeatures.' + output_type
+                
                 else:
+                    
+                    if (output_type == "arrowipc"):
+                        return output_path + 'NyxusFeatures.arrow'
+                    
                     return output_path + '/NyxusFeatures.' + output_type
                 
     
