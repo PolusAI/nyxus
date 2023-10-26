@@ -602,7 +602,7 @@ To build Nyxus from source, several build dependencies are needed to be satisfie
 
 These packages also have underlying dependencies and at times, these dependency resolution may appear challenging. We prefer     `conda` to help with resolving these dependencies. However, for users without access to a `conda` enviornment, we have also provided installation script to build and install all the dependencies except `Apache Arrow`.
 
-By default, Nyxus can be built with a minimal set of dependecies (Tiff support and Python interface). To build Nyxus with all the supported IO options mentioned above, pass `-DBUILD_WITH_ALL=ON` in the `cmake` command.
+By default, Nyxus can be built with a minimal set of dependecies (Tiff support and Python interface). To build Nyxus with all the supported IO options mentioned above, pass `-DALLEXTRAS=ON` in the `cmake` command.
 
 ### __GPU Support__
 Nyxus also can be build with NVIDIA GPU support. To do so, a `CUDA` Development toolkit compatible with the host `C++` compiler need to be present in the system. For building with GPU support, pass `-DUSEGPU=ON` flag in the `cmake` command. 
@@ -623,7 +623,7 @@ mamba install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt
 export NYXUS_DEP_DIR=$CONDA_PREFIX
 mkdir build
 cd build
-cmake -DBUILD_CLI=ON -DBUILD_WITH_ALL=ON  -DUSEGPU=ON ..
+cmake -DBUILD_CLI=ON -DALLEXTRAS=ON  -DUSEGPU=ON ..
 make -j4
 ```
 
@@ -636,7 +636,7 @@ cd nyxus
 conda install mamba -c conda-forge
 mamba install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_py.txt
 export NYXUS_DEP_DIR=$CONDA_PREFIX
-CMAKE_ARGS="-DUSEGPU=ON -DBUILD_WITH_ALL=ON -DPython_ROOT_DIR=$CONDA_PREFIX -DPython_FIND_VIRTUALENV=ONLY" python -m pip install . -vv
+CMAKE_ARGS="-DUSEGPU=ON -DALLEXTRAS=ON -DPython_ROOT_DIR=$CONDA_PREFIX -DPython_FIND_VIRTUALENV=ONLY" python -m pip install . -vv
 ```
 
 ### __Without Using Conda__
@@ -648,7 +648,7 @@ cd nyxus
 mkdir build
 cd build
 ..\ci-utils\install_prereq_windows.bat
-cmake -DBUILD_CLI=ON -DUSEGPU=ON -DBUILD_WITH_ALL=ON -DCMAKE_PREFIX_PATH=.\local_install -DCMAKE_INSTALL_PREFIX=.\local_install ..
+cmake -DBUILD_CLI=ON -DUSEGPU=ON -DALLEXTRAS=ON -DCMAKE_PREFIX_PATH=.\local_install -DCMAKE_INSTALL_PREFIX=.\local_install ..
 cmake --build . --config Release
 set PATH=%PATH%;%cd%\local_install\bin
 ```
@@ -664,7 +664,7 @@ cd build_dep
 ..\ci-utils\install_prereq_windows.bat
 cd ..
 set NYXUS_DEP_DIR=%cd%\build_dep\local_install
-set CMAKE_ARGS=-DUSEGPU=ON -DBUILD_WITH_ALL=ON
+set CMAKE_ARGS=-DUSEGPU=ON -DALLEXTRAS=ON
 python -m pip install . -vv
 xcopy /E /I /y %NYXUS_DEP_DIR%\bin\*.dll %VIRTUAL_ENV%\lib\site-packages\nyxus
 ```
