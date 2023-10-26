@@ -204,6 +204,9 @@ public:
   // implementation of Apache options
 	bool arrow_is_enabled();
 
+	// NAN substitute in feature values
+	double nan_substitute = 0.0;
+
 private:
 
 	std::vector<std::tuple<std::string, std::string>> recognizedArgs;	// Accepted command line arguments
