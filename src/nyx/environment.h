@@ -40,7 +40,7 @@
 #define TEMPDIR "--tempDir"						// Optional. Used in processing non-trivial features. Default - system temp directory
 #define IBSICOMPLIANCE "--ibsi" // skip binning for grey level and grey tone features
 #define SKIPROI "--skiproi"		// Optional. Skip ROIs having specified labels. Sybtax: --skiproi <label[,label,label,...]>
-
+#define RESULTFNAME "--resultFname"				// Environment :: nyxus_result_fname
 
 #ifdef CHECKTIMING
 	#define EXCLUSIVETIMING "--exclusivetiming"
@@ -109,10 +109,11 @@ public:
 	void show_summary(const std::string &head, const std::string &tail);
 
 	std::string labels_dir = "",
-				intensity_dir = "",
-				output_dir = "",
-				intSegMapDir = "",
-				intSegMapFile = "";
+		intensity_dir = "",
+		output_dir = "",
+		intSegMapDir = "",
+		intSegMapFile = "";
+	std::string nyxus_result_fname = "NyxusFeatures";	// Default file name without extension ".csv", ".arrow", etc
 
 	bool singleROI = false; // is set to 'true' parse_cmdline() if labels_dir==intensity_dir
 
@@ -198,6 +199,9 @@ public:
   
   // implementation of Apache options
 	bool arrow_is_enabled();
+
+	// NAN substitute in feature values
+	double nan_substitute = 0.0;
 
 private:
 

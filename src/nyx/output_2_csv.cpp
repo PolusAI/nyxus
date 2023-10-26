@@ -178,12 +178,12 @@ namespace Nyxus
 		}
 		else
 		{
-			retval = theEnvironment.output_dir + "/" + "NyxusFeatures.csv";
+			retval = theEnvironment.output_dir + "/" + theEnvironment.nyxus_result_fname + ".csv";
 		}
 		return retval;
 	}
 
-	const std::vector<std::string> mandatory_output_columns {"intensity_image", "segmentation_image", "ROI_label"};
+	const std::vector<std::string> mandatory_output_columns { Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label };
 
 	// Saves the result of image scanning and feature calculation. Must be called after the reduction phase.
 	bool save_features_2_csv (const std::string & intFpath, const std::string & segFpath, const std::string & outputDir)
@@ -235,14 +235,16 @@ namespace Nyxus
 
 			auto head_vector = Nyxus::get_header(F);
 
-			for(const auto& column: head_vector){
-				ssHead << column << ", ";
+			// Make sure that the header is in format "column1","column2",...,"columnN" without spaces
+			for(int i=0; i<head_vector.size(); i++)
+			{
+				const auto& column = head_vector[i];
+				if (i)
+					ssHead << ',';
+				ssHead << '\"' << column << '\"';
 			}
 
 			auto head_string = ssHead.str();
-
-			head_string.pop_back(); // remove trailing comma
-
 			fprintf(fp, "%s\n", head_string.c_str());
 
 			// Prevent rendering the header again for another image's portion of labels
@@ -286,7 +288,8 @@ namespace Nyxus
 					int nAng = GLCMFeature::angles.size();
 					for (int i=0; i < nAng; i++)
 					{
-						snprintf (rvbuf, VAL_BUF_LEN, rvfmt, vv[i]);
+						double fv = Nyxus::force_finite_number (vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
+						snprintf (rvbuf, VAL_BUF_LEN, rvfmt, fv);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
@@ -306,7 +309,8 @@ namespace Nyxus
 					int nAng = 4;
 					for (int i=0; i < nAng; i++)
 					{
-						snprintf (rvbuf, VAL_BUF_LEN, rvfmt, vv[i]);
+						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
+						snprintf (rvbuf, VAL_BUF_LEN, rvfmt, fv);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
@@ -323,7 +327,8 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
 					{
-						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, vv[i]);
+						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else	
@@ -341,7 +346,8 @@ namespace Nyxus
 				{
 					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
 					{
-						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, vv[i]);
+						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
@@ -359,7 +365,8 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
 					{
-						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, vv[i]);
+						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
@@ -374,7 +381,8 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
 					{
-						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, vv[i]);
+						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
@@ -389,7 +397,8 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
 					{
-						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, vv[i]);
+						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 						#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
 						#else
@@ -402,7 +411,7 @@ namespace Nyxus
 				}
 
 				// Regular feature
-				snprintf(rvbuf, VAL_BUF_LEN, rvfmt, vv[0]);
+				snprintf(rvbuf, VAL_BUF_LEN, rvfmt, Nyxus::force_finite_number (vv[0], theEnvironment.nan_substitute));
 				#ifndef DIAGNOSE_NYXUS_OUTPUT
 				ssVals << "," << rvbuf; // Alternatively: auto_precision(ssVals, vv[0]);
 				#else

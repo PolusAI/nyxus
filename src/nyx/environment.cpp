@@ -166,7 +166,7 @@ void Environment::show_cmdline_help()
 		<< "\t\t\tExample: " << FILEPATTERN << "=.* for all files, " << FILEPATTERN << "=*.tif for .tif files \n"
 		<< "\t\t" << OUTPUTTYPE << "=<separatecsv or singlecsv for csv output. arrowipc or parquet for arrow output> \n"
 		<< "\t\t\tDefault: separatecsv \n"
-		<< "\t\t" << SEGDIR << "=<directory of segmentation images> \n"
+		<< "\t\t" << SEGDIR << "=<directory of segmentation mask images> \n"
 		<< "\t\t" << INTDIR << "=<directory of intensity images> \n"
 		<< "\t\t" << OUTDIR << "=<output directory> \n"
 		<< "\t\t" << OPT << FEATURES << "=<specific feature or comma-separated features or feature group> \n"
@@ -201,7 +201,10 @@ void Environment::show_cmdline_help()
 		<< "\t\t" << OPT << SKIPROI << "=<ROI blacklist> \n"
 		<< "\t\t\tDefault: void blacklist \n"
 		<< "\t\t\tExample 1: " << SKIPROI << "=34,35,36 \n"
-		<< "\t\t\tExample 2: " << SKIPROI << "=image1.ome.tif:34,35,36;image2.ome.tif:42,43 \n";
+		<< "\t\t\tExample 2: " << SKIPROI << "=image1.ome.tif:34,35,36;image2.ome.tif:42,43 \n"
+		<< "\t\t" << OPT << RESULTFNAME << "=<file name without extension> \n"
+		<< "\t\t\tDefault: NyxusFeatures \n"
+		<< "\t\t\tExample: " << RESULTFNAME << "=training_set_features";
     
 	#ifdef CHECKTIMING
 		std::cout << "\t\t" << OPT << EXCLUSIVETIMING << "=<false or true> \n"
@@ -751,6 +754,7 @@ bool Environment::parse_cmdline(int argc, char **argv)
 				|| find_string_argument(i, NESTEDROI_PARENT_CHNL, nestedOptions.rawParentChannelNo)
 				|| find_string_argument(i, NESTEDROI_CHILD_CHNL, nestedOptions.rawChildChannelNo)
 				|| find_string_argument(i, NESTEDROI_AGGREGATION_METHOD, nestedOptions.rawAggregationMethod)
+				|| find_string_argument(i, RESULTFNAME, nyxus_result_fname)
 
 				#ifdef CHECKTIMING
 					|| find_string_argument(i, EXCLUSIVETIMING, rawExclusiveTiming)
@@ -824,6 +828,13 @@ bool Environment::parse_cmdline(int argc, char **argv)
 	{
 		std::cout << "Warning: " << FEATURES << "=<empty string>, defaulting to " << FEA_NICK_ALL << "\n";
 		rawFeatures = FEA_NICK_ALL;
+	}
+
+	//==== Parse optional result file name
+	if (nyxus_result_fname == "")
+	{
+		std::cout << "Error: void argument " << RESULTFNAME << "\n";
+		return false;
 	}
 
 	//==== Output type
