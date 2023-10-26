@@ -1,6 +1,6 @@
 
 Supported Image Formats
-==============
+=========================
 
 Currently, Nyxus supports OME-TIFF, OME-Zarr and DICOM 2D Grayscale images.
 

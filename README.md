@@ -590,54 +590,85 @@ the parent-child map remains the same but the `featurize` result becomes
 ```
 
 ## Building from source
+Nyxus uses `CMake` as the build system and needs a `C++17` supported compiler to build from the source.
 
-Nyxus can either be build inside a `conda` environment or independently outside of it. For the later case, we provide a script to make it easier to download and build all the necessary dependencies.
+### __Dependencies__
+To build Nyxus from source, several build dependencies are needed to be satisfied. These dependencies arise from Nyxus's need to read and write various data format. The dependencies are listed below.
+* Tiff Support:  libtiff, libdeflate, zlib
+* Zarr Support: z5, xtensor, nlohman_json, blosc, zlib
+* Dicom Support: dcmtk, fmjpeg, zlib
+* Apache Arrow Support: arrow-cpp, pyarrow
+* Python Interface: pybind11
+
+These packages also have underlying dependencies and at times, these dependency resolution may appear challenging. We prefer     `conda` to help with resolving these dependencies. However, for users without access to a `conda` enviornment, we have also provided installation script to build and install all the dependencies except `Apache Arrow`.
+
+By default, Nyxus can be built with a minimal set of dependecies (Tiff support and Python interface). To build Nyxus with all the supported IO options mentioned above, pass `-DALLEXTRAS=ON` in the `cmake` command.
+
+### __GPU Support__
+Nyxus also can be build with NVIDIA GPU support. To do so, a `CUDA` Development toolkit compatible with the host `C++` compiler need to be present in the system. For building with GPU support, pass `-DUSEGPU=ON` flag in the `cmake` command. 
 
 ### __Inside Conda__
-Nyxus uses a CMake build system. To build the command line interface, pass `-DBUILD_CLI=ON` in the `cmake` command. For building with GPU support, use `-DUSEGPU=ON` flag in the `cmake` command. Here are the few notes on building with GPU support.
+To build the command line interface, pass `-DBUILD_CLI=ON` in the `cmake` command.
 
-* Currently, GPU builds on Mac OS is not supported. 
-* Due to the limitation of CUDA Development toolkit, upto GCC 9.X versions can be used on Linux. 
-* On Windows, we assume the correct version of CUDA toolkit and compiler is installed that is compatible with the Microsoft Visual Studio C++ compiler. 
 
 Below is an example of how to build Nyxus inside a `conda` environment on Linux.
 
 ```bash
+conda create -n nyxus_build python=3.10
+conda activate nyxus_build
 git clone https://github.com/PolusAI/nyxus.git
 cd nyxus
-conda install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_linux_compiler.txt --file ci-utils/envs/conda_py.txt --file ci-utils/envs/conda_linux_gpu.txt
+conda install mamba -c conda-forge
+mamba install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt 
+export NYXUS_DEP_DIR=$CONDA_PREFIX
 mkdir build
 cd build
-cmake -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX ..
+cmake -DBUILD_CLI=ON -DALLEXTRAS=ON  -DUSEGPU=ON ..
 make -j4
 ```
-If you are building on Mac or Windows, skip the dependencies from `ci-utils/envs/conda_linux_compiler.txt` and `ci-utils/envs/conda_linux_gpu.txt`
 
 To install the python package in the `conda` environment on Linux, use the following direction.
 ```bash
+conda create -n nyxus_build python=3.10
+conda activate nyxus_build
 git clone https://github.com/PolusAI/nyxus.git
 cd nyxus
-conda install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_linux_compiler.txt --file ci-utils/envs/conda_linux_gpu.txt --file ci-utils/envs/conda_py.txt
-CMAKE_ARGS=" -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX " python setup.py install
+conda install mamba -c conda-forge
+mamba install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_py.txt
+export NYXUS_DEP_DIR=$CONDA_PREFIX
+CMAKE_ARGS="-DUSEGPU=ON -DALLEXTRAS=ON -DPython_ROOT_DIR=$CONDA_PREFIX -DPython_FIND_VIRTUALENV=ONLY" python -m pip install . -vv
 ```
 
-We also provide an example script that downloads `conda`, installs the necessary dependencies and then builds both the CLI and the python library on Linux. To run the script, do the following.
-```bash
-git clone https://github.com/PolusAI/nyxus.git
-cd nyxus/ci-utils
-./build_conda.sh ..
-```
 ### __Without Using Conda__
-To build Nyxus outside of a `conda` environment, use the following example.
+To build Nyxus outside of a `conda` environment, we will first need to build and install all the required and optional dependecies. `ci-utils/install_prereq_windwos.bat` and `ci-utils/install_prereq_linux.sh` performs the task for Windows and Linux (and Mac) respectively. These script take a `--min_build yes` option to only build the minimal dependencies. Below, we provide an example for Windows OS.
+
 ```bash
 git clone https://github.com/PolusAI/nyxus.git
 cd nyxus
 mkdir build
 cd build
-bash ../ci-utils/install_prereq_linux.sh
-cmake -DBUILD_CLI=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=./local_install -DCMAKE_INSTALL_PREFIX=./local_install ..
-make -j4
+..\ci-utils\install_prereq_windows.bat
+cmake -DBUILD_CLI=ON -DUSEGPU=ON -DALLEXTRAS=ON -DCMAKE_PREFIX_PATH=.\local_install -DCMAKE_INSTALL_PREFIX=.\local_install ..
+cmake --build . --config Release
+set PATH=%PATH%;%cd%\local_install\bin
 ```
+To install the python package in the environment on Linux, use the following direction.
+
+```bash
+python -m virtualenv venv
+venv\Scripts\activate.bat
+git clone https://github.com/PolusAI/nyxus.git
+cd nyxus
+mkdir build_dep
+cd build_dep
+..\ci-utils\install_prereq_windows.bat
+cd ..
+set NYXUS_DEP_DIR=%cd%\build_dep\local_install
+set CMAKE_ARGS=-DUSEGPU=ON -DALLEXTRAS=ON
+python -m pip install . -vv
+xcopy /E /I /y %NYXUS_DEP_DIR%\bin\*.dll %VIRTUAL_ENV%\lib\site-packages\nyxus
+```
+Note that, in both cases, the `dll`s of the dependencies need to be in the `PATH` (for CLI) or in the `site-packages` location (for Python package).
 
 ## Running via Docker 
 Running Nyxus from a local directory freshly made Docker container is a good idea. It allows one to test-run conteinerized Nyxus before it reaches Docker cloud deployment.
@@ -655,24 +686,6 @@ The following command line is an example of running the dockerized feature extra
 ```
 docker run -it [--gpus all] --mount type=bind,source=/images/collections,target=/data 87f3b560bbf2 --intDir=/data/c1/int --segDir=/data/c1/seg --outDir=/data/output --filePattern=.* --outputType=separatecsv --features=entropy,kurtosis,skewness,max_intensity,mean_intensity,min_intensity,median,mode,standard_deviation
 ```
-
-### Install from sources and package into a Docker image
-
-If you want to build your own Nyxus Docker container we provide a convenient shell script:
-
-```
-./ci-utils/build-docker.sh
-```
-
-
-## Dependencies
-Nyxus is tested with Python 3.8+. Nyxus relies on the the following packages:
-
-[pybind11](https://github.com/pybind/pybind11) >= 2.8.1 <br>
-[libTIFF](http://www.libtiff.org) >= 3.6.1 <br>
-[Z5](https://github.com/constantinpape/z5) >=2.0.15 <br>
-
-Each of these dependencies also have hierarchical dependencies and so we recommend using the `conda` build system when building from source.
 
 ## WIPP Usage
 
