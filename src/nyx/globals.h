@@ -27,6 +27,12 @@ namespace py = pybind11;
 
 namespace Nyxus
 {
+	// Permanent column names of the feature output table
+	const char colname_intensity_image[] = "intensity_image",
+		colname_mask_image[] = "mask_image",
+		colname_roi_label[] = "ROI_label";
+
+	// Global instances
 	extern FeatureManager theFeatureMgr;
 	extern ImageLoader theImLoader;
 
@@ -59,8 +65,6 @@ namespace Nyxus
 	
 	std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> get_feature_values();	
 	std::vector<std::string> get_header(const std::vector<std::tuple<std::string, AvailableFeatures>>& F );
-
-
 
 	void init_feature_buffers();
 	void clear_feature_buffers();	
