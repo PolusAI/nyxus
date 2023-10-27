@@ -195,9 +195,6 @@ namespace arrow {
 class ApacheArrowWriter
 {
 
-private: 
-    std::shared_ptr<arrow::Table> table_ = nullptr;
-
 public:
 
     /**

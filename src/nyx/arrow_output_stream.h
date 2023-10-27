@@ -58,13 +58,6 @@ namespace arrow {
  */
 class ArrowOutputStream {
 
-private:
-
-  std::string arrow_file_path_ = "";
-	std::shared_ptr<ApacheArrowWriter> writer_ = nullptr;
-	std::string arrow_output_type_ = "";
-  std::shared_ptr<arrow::Table> arrow_table_ = nullptr;
-
 public:
     std::shared_ptr<ApacheArrowWriter> create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
                                                          const std::string& arrow_file_path,
