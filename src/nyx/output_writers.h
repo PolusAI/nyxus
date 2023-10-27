@@ -88,6 +88,8 @@ public:
 
     virtual arrow::Status close () = 0;
 
+    virtual ~ApacheArrowWriter() = default;
+
 };
 
 /**
