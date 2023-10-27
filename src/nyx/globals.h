@@ -13,6 +13,7 @@
 #include "image_loader.h"
 #include "results_cache.h"
 #include "roi_cache.h"
+#include "save_option.h"
 
 #include "nested_feature_aggregation.h" // Nested ROI
 
@@ -26,6 +27,7 @@ namespace py = pybind11;
 #endif
 
 namespace Nyxus
+
 {
 	// Permanent column names of the feature output table
 	const char colname_intensity_image[] = "intensity_image",
@@ -38,7 +40,7 @@ namespace Nyxus
 
 	bool scanFilePairParallel(const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads, int filepair_index, int tot_num_filepairs);
 	std::string getPureFname(const std::string& fpath);
-	int processDataset(const std::vector<std::string>& intensFiles, const std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int numReduceThreads, int min_online_roi_size, bool save2csv, bool arrow_output, const std::string& csvOutputDir);
+	int processDataset(const std::vector<std::string>& intensFiles, const std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int numReduceThreads, int min_online_roi_size, SaveOption saveOption, const std::string& outputDir);
 	bool gatherRoisMetrics(const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads);
 	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit);
 	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads);
@@ -52,7 +54,7 @@ namespace Nyxus
 	bool gatherRoisMetricsInMemory (const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens_image, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_image, int start_idx);
 	bool processIntSegImagePairInMemory (const std::string& intens_fpath, const std::string& label_fpath, int filepair_index, const std::string& intens_name, const std::string& seg_name);
 	int processMontage(const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intensFiles, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& labelFiles, int numReduceThreads, const std::vector<std::string>& intensity_names,
-		const std::vector<std::string>& seg_names, std::string& error_message, bool arrow_output=false, const std::string& outputDir="");
+		const std::vector<std::string>& seg_names, std::string& error_message, SaveOption saveOption,  const std::string& outputDir="");
 	bool scanTrivialRois (const std::vector<int>& batch_labels, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens_images, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images, int start_idx);
 	bool processTrivialRoisInMemory (const std::vector<int>& trivRoiLabels, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens_fpath, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_fpath, int start_idx, size_t memory_limit);
 #endif
@@ -132,5 +134,3 @@ namespace Nyxus
 		int verbosity_level);
 
 } // namespace Nyxus
-
-
