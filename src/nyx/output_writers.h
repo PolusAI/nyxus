@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <tuple>
+#include <optional>
 
 #ifdef USE_ARROW
 #include <arrow/api.h>
@@ -161,9 +163,9 @@ class WriterFactory {
          * @brief Create an ApacheArrowWriter based on the type of file passed.
          * 
          * @param output_file Path to output file (.arrow or .parquet)
-         * @return std::shared_ptr<ApacheArrowWriter> 
+         * @return std::unique_ptr<ApacheArrowWriter> 
          */
-        static std::shared_ptr<ApacheArrowWriter> create_writer(const std::string &output_file, const std::vector<std::string> &header);
+        static std::tuple<std::unique_ptr<ApacheArrowWriter>, std::optional<std::string>> create_writer(const std::string &output_file, const std::vector<std::string> &header);
 };
 
 #else 

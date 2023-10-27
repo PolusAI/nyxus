@@ -1,5 +1,5 @@
 #include "output_writers.h"
-
+#define USE_ARROW
 #ifdef USE_ARROW
 std::shared_ptr<arrow::Table> ApacheArrowWriter::get_arrow_table(const std::string& file_path) {
 
@@ -386,30 +386,30 @@ arrow::Status ArrowIPCWriter::close () {
 }
 
 
-std::shared_ptr<ApacheArrowWriter> WriterFactory::create_writer(const std::string &output_file, const std::vector<std::string> &header) {
+std::tuple<std::unique_ptr<ApacheArrowWriter>, std::optional<std::string>> WriterFactory::create_writer(const std::string &output_file, const std::vector<std::string> &header) {
     
     if (Nyxus::ends_with_substr(output_file, ".parquet")) {
         
-        return std::make_shared<ParquetWriter>(output_file, header);
+        return {std::make_unique<ParquetWriter>(output_file, header), std::nullopt};
 
     } else if (Nyxus::ends_with_substr(output_file, ".arrow") || Nyxus::ends_with_substr(output_file, ".feather")) {
         
-        return std::make_shared<ArrowIPCWriter>(output_file, header);
+        return {std::make_unique<ArrowIPCWriter>(output_file, header), std::nullopt};
 
     } else {
 
         std::filesystem::path path(output_file);
 
-        if (path.has_extension()) {
-            std::string file_extension = path.extension().string();
-            
-            throw std::invalid_argument("No writer option for extension \"" + file_extension + "\". Valid options are \".parquet\" or \".arrow\".");
+        auto error_msg = [&path](){        
+            if (path.has_extension()) 
+            {
+                return "No writer option for extension \"" + path.extension().string() + "\". Valid options are \".parquet\" or \".arrow\".";
+            } else {
+                return std::string{"No extension type was provided in the path."};
+            }
+        }; 
 
-        } else {
-
-            throw std::invalid_argument("No extension type was provided in the path. ");
-
-        }
+        return {nullptr, error_msg()};
     }
 }
 #else

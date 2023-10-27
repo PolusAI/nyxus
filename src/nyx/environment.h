@@ -119,7 +119,6 @@ public:
 
 
 	ArrowOutputStream  arrow_stream;
-	std::shared_ptr<ApacheArrowWriter> arrow_writer = nullptr;
 
 	std::string embedded_pixel_size = "";
 
