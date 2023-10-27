@@ -18,13 +18,12 @@ std::shared_ptr<ApacheArrowWriter> ArrowOutputStream::create_arrow_file(const Ny
 
     if (arrow_file_path == "") {
         arrow_file_path_ = "NyxusFeatures" + extension;
+    } else if (fs::is_directory(arrow_file_path)) {
+        arrow_file_path_ = arrow_file_path + "/NyxusFeatures" + extension;
     } else {
         arrow_file_path_ = arrow_file_path;
     }
 
-    if (fs::is_directory(arrow_file_path)) {
-        arrow_file_path_ += "/NyxusFeatures" + extension;
-    }
 
     writer_ = WriterFactory::create_writer(arrow_file_path_, header);
 
