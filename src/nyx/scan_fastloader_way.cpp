@@ -26,11 +26,6 @@ namespace py = pybind11;
 #include "globals.h"
 #include "helpers/timing.h"
 
-#ifdef USE_ARROW
-#include "arrow_output_stream.h"
-#include "output_writers.h"
-#endif
-
 // Sanity
 #ifdef _WIN32
 #include<windows.h>
