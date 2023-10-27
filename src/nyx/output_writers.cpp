@@ -1,5 +1,5 @@
 #include "output_writers.h"
-#define USE_ARROW
+
 #ifdef USE_ARROW
 std::shared_ptr<arrow::Table> ApacheArrowWriter::get_arrow_table(const std::string& file_path) {
 
@@ -412,18 +412,4 @@ std::tuple<std::unique_ptr<ApacheArrowWriter>, std::optional<std::string>> Write
         return {nullptr, error_msg()};
     }
 }
-#else
-
-    std::shared_ptr<arrow::Table> ApacheArrowWriter::get_arrow_table(const std::string& file_path) {
-        return nullptr;
-    }
-
-    arrow::Status ApacheArrowWriter::write (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features) {
-        return arrow::Status();
-    }
-
-    arrow::Status ApacheArrowWriter::close () {
-        return arrow::Status();
-    }
-
 #endif

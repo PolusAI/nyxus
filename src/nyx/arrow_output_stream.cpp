@@ -78,11 +78,11 @@ bool ArrowOutputStream::create_arrow_file(const Nyxus::SaveOption& arrow_file_ty
 }
 
 
-bool ArrowOutputStream::get_arrow_table(const std::string& file_path) {
+std::shared_ptr<arrow::Table> ArrowOutputStream::get_arrow_table(const std::string& file_path) {
 
     std::cerr << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enabled to use this functionality." << std::endl;
 
-    return false;
+    return nullptr;
 }
 
 std::string ArrowOutputStream::get_arrow_path() {
@@ -94,11 +94,11 @@ std::string ArrowOutputStream::get_arrow_path() {
 
 std::tuple<bool, std::optional<std::string>> ArrowOutputStream::write_arrow_file (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features){
     std::cerr << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enabled to use this functionality." << std::endl;
-    return std::make_tuple(false, "Apache Arrow functionality is not available.")
+    return {false, "Apache Arrow functionality is not available."};
 }
 std::tuple<bool, std::optional<std::string>> ArrowOutputStream::close_arrow_file (){
     std::cerr << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enabled to use this functionality." << std::endl;
-    return std::make_tuple(false, "Apache Arrow functionality is not available.")
+    return {false, "Apache Arrow functionality is not available."};
 }
 
 

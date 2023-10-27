@@ -8,8 +8,6 @@
 #include "cli_gabor_options.h"
 #include "cli_nested_roi_options.h"
 #include "save_option.h"
-
-#include "output_writers.h"
 #include "arrow_output_stream.h"
 
 
