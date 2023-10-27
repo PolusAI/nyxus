@@ -45,25 +45,25 @@ std::tuple<bool, std::optional<std::string>> ArrowOutputStream::write_arrow_file
     if (writer_){
         auto status = writer_->write(features);
         if (status.ok()) {
-            return std::make_tuple(true, std::nullopt);
+            return {true, std::nullopt};
         }
         else {
-            return std::make_tuple(false, status.ToString());
+            return {false, status.ToString()};
         }
     }
-    return std::make_tuple(false, "Arrow Writer is not initialized.");
+    return {false, "Arrow Writer is not initialized."};
 }
 std::tuple<bool, std::optional<std::string>> ArrowOutputStream::close_arrow_file (){
     if (writer_){
         auto status = writer_->close();
         if (status.ok()) {
-            return std::make_tuple(true, std::nullopt);
+            return {true, std::nullopt};
         }
         else {
-            return std::make_tuple(false, status.ToString());
+            return {false, status.ToString()};
         }
     }
-    return std::make_tuple(false, "Arrow Writer is not initialized.");
+    return {false, "Arrow Writer is not initialized."};
 }
 
 #else 
