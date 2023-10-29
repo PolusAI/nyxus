@@ -38,7 +38,7 @@ private:
   std::shared_ptr<arrow::Table> arrow_table_ = nullptr;
 
 public:
-    bool create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
+    std::tuple<bool, std::optional<std::string>> create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
                                                          const std::string& arrow_file_path,
                                                          const std::vector<std::string>& header);
     std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path);
@@ -58,7 +58,7 @@ public:
 class ArrowOutputStream {
 
 public:
-    bool create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
+    std::tuple<bool, std::optional<std::string>> create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
                                                          const std::string& arrow_file_path,
                                                          const std::vector<std::string>& header);
     std::tuple<bool, std::optional<std::string>> write_arrow_file (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features);
