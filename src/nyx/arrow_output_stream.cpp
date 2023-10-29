@@ -29,7 +29,7 @@ std::tuple<bool, std::optional<std::string>> ArrowOutputStream::create_arrow_fil
         } else if (fs::is_directory(arrow_file_path)) {
             arrow_file_path_ = arrow_file_path + "/NyxusFeatures." + extension;
         } else {
-            arrow_file_path_ = fs::path(arrow_file_path).replace_extension(extension);
+            arrow_file_path_ = fs::path(arrow_file_path).replace_extension(extension).string();
         }
     }
 
