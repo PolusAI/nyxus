@@ -159,6 +159,11 @@ public:
 	float xyRes = 0.0,
 		  pixelSizeUm = 0.0;
 
+	// floating-point TIFF parameters
+	float floatpt_image_min_intensity = 0.0,
+		floatpt_image_max_intensity = 1.0,
+		floatpt_image_target_dyn_range = 1e4;
+
 	int get_pixel_distance();
 	void set_pixel_distance(int pixelDistance);
 	size_t get_ram_limit();

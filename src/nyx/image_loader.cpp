@@ -13,6 +13,7 @@
 #include "omezarr.h"
 #include "nyxus_dicom_loader.h"
 #include "dirs_and_files.h"
+#include "environment.h"
 
 ImageLoader::ImageLoader() {}
 
@@ -41,7 +42,12 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 		{
 			if (Nyxus::check_tile_status(int_fpath))
 			{
-				intFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(n_threads, int_fpath);
+				intFL = new NyxusGrayscaleTiffTileLoader<uint32_t> (
+					n_threads, 
+					int_fpath, 
+					Nyxus::theEnvironment.floatpt_image_min_intensity,
+					Nyxus::theEnvironment.floatpt_image_max_intensity,
+					Nyxus::theEnvironment.floatpt_image_target_dyn_range);
 			} 
 			else 
 			{
@@ -78,7 +84,12 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 		{
 			if (Nyxus::check_tile_status(seg_fpath))
 			{
-				segFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(n_threads, seg_fpath);
+				segFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(
+					n_threads, 
+					seg_fpath, 
+					Nyxus::theEnvironment.floatpt_image_min_intensity,
+					Nyxus::theEnvironment.floatpt_image_max_intensity,
+					Nyxus::theEnvironment.floatpt_image_target_dyn_range);
 			} 
 			else 
 			{

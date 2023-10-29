@@ -307,6 +307,12 @@ void Environment::show_summary(const std::string &head, const std::string &tail)
 	if (! gaborOptions.empty())
 		std::cout << "\tGabor feature options: " << gaborOptions.get_summary_text() << "\n";
 
+	// Real valued TIFF
+	std::cout << "\tImage-wide expected \n"
+		<< "\t\tmin real-valued intensity " << Nyxus::theEnvironment.floatpt_image_min_intensity << "\n"
+		<< "\t\tmax real-valued intensity " << Nyxus::theEnvironment.floatpt_image_max_intensity << "\n"
+		<< "\t\ttarget dynamic range 0 to " << Nyxus::theEnvironment.floatpt_image_target_dyn_range << "\n";
+
 	std::cout << tail;
 }
 
