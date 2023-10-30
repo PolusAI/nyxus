@@ -308,11 +308,8 @@ void Environment::show_summary(const std::string &head, const std::string &tail)
 		std::cout << "\tGabor feature options: " << gaborOptions.get_summary_text() << "\n";
 
 	// Real valued TIFF
-	std::cout << "\tImage-wide expected \n"
-		<< "\t\tmin real-valued intensity " << Nyxus::theEnvironment.floatpt_image_min_intensity << "\n"
-		<< "\t\tmax real-valued intensity " << Nyxus::theEnvironment.floatpt_image_max_intensity << "\n"
-		<< "\t\ttarget dynamic range 0 to " << Nyxus::theEnvironment.floatpt_image_target_dyn_range << "\n";
-
+	if (!fpimageOptions.empty())
+		std::cout << "\tImage-wide expected \n" << fpimageOptions.get_summary_text() << "\n";
 	std::cout << tail;
 }
 
@@ -757,6 +754,9 @@ bool Environment::parse_cmdline(int argc, char **argv)
 				|| find_string_argument(i, NESTEDROI_PARENT_CHNL, nestedOptions.rawParentChannelNo)
 				|| find_string_argument(i, NESTEDROI_CHILD_CHNL, nestedOptions.rawChildChannelNo)
 				|| find_string_argument(i, NESTEDROI_AGGREGATION_METHOD, nestedOptions.rawAggregationMethod)
+				|| find_string_argument(i, FPIMAGE_TARGET_DYNRANGE, fpimageOptions.raw_target_dyn_range)
+				|| find_string_argument(i, FPIMAGE_MIN, fpimageOptions.raw_min_intensity)
+				|| find_string_argument(i, FPIMAGE_MAX, fpimageOptions.raw_max_intensity)
 
 				#ifdef CHECKTIMING
 					|| find_string_argument(i, EXCLUSIVETIMING, rawExclusiveTiming)
@@ -1019,6 +1019,17 @@ bool Environment::parse_cmdline(int argc, char **argv)
 		}
 	}
 
+	//==== Parse floating point image options
+	if (! fpimageOptions.empty())
+	{
+		std::string ermsg;
+		if (!this->parse_fpimage_options_raw_inputs (ermsg))
+		{
+			std::cerr << ermsg << "\n";
+			return false;
+		}
+	}
+
 	//==== Parse nested ROI options
 	if (!nestedOptions.empty())
 	{
@@ -1274,6 +1285,16 @@ bool Environment::parse_gabor_options_raw_inputs (std::string& error_message)
 	if (!gaborOptions.parse_input())
 	{
 		error_message = gaborOptions.get_last_er_msg();
+		return false;
+	}
+	return true;
+}
+
+bool Environment::parse_fpimage_options_raw_inputs (std::string& error_message)
+{
+	if (!fpimageOptions.parse_input())
+	{
+		error_message = fpimageOptions.get_last_er_msg();
 		return false;
 	}
 	return true;

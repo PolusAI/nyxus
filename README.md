@@ -384,6 +384,9 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 --hpar | (optional) Channel number that should be used as a provider of parent segments. Example: '--hpar=1' | integer
 --hchi | (optional) Channel number that should be used as a provider of child segments. Example: '--hchi=0' | integer
 --hag | (optional) Name of a method how to aggregate features of segments recognized as children of same parent segment. Valid options are 'SUM', 'MEAN', 'MIN', 'MAX', 'WMA' (weighted mean average), and 'NONE' (no aggregation, instead, same parent child segments will be laid out horizontally) | string
+--fpimgdr | (optional) Desired dynamic range of voxels of a floating point TIFF image. Example: --fpimgdr=240 makes intensities be read in range 0-240. Default value: 10e4 | unsigned integer
+--fpimgmin | (optional) Minimum intensity of voxels of a floating point TIFF image. Default value: 0.0 | real
+--fpimgdr | (optional) Maximum intensity of voxels of a floating point TIFF image. Default value: 1.0 | real
 
 ---
 

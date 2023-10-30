@@ -112,9 +112,9 @@ namespace Nyxus
 		NyxusGrayscaleTiffTileLoader<uint32_t> I(
 			num_fastloader_threads, 
 			intens_fpath, 
-			Nyxus::theEnvironment.floatpt_image_min_intensity,
-			Nyxus::theEnvironment.floatpt_image_max_intensity,
-			Nyxus::theEnvironment.floatpt_image_target_dyn_range);
+			Nyxus::theEnvironment.fpimageOptions.min_intensity(),
+			Nyxus::theEnvironment.fpimageOptions.max_intensity(),
+			Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
 
 		size_t th = I.tileHeight(lvl),
 			tw = I.tileWidth(lvl),
@@ -132,9 +132,9 @@ namespace Nyxus
 		NyxusGrayscaleTiffTileLoader<uint32_t> L(
 			num_fastloader_threads, 
 			label_fpath,
-			Nyxus::theEnvironment.floatpt_image_min_intensity,
-			Nyxus::theEnvironment.floatpt_image_max_intensity,
-			Nyxus::theEnvironment.floatpt_image_target_dyn_range);
+			Nyxus::theEnvironment.fpimageOptions.min_intensity(),
+			Nyxus::theEnvironment.fpimageOptions.max_intensity(),
+			Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
 
 		// -- check whole file consistency
 		if (fh != L.fullHeight(lvl) || fw != L.fullWidth(lvl) || fd != L.fullDepth(lvl))

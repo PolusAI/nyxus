@@ -5,6 +5,7 @@
 #include <vector>
 #include "environment_basic.h"
 #include "roi_blacklist.h"
+#include "cli_fpimage_options.h"
 #include "cli_gabor_options.h"
 #include "cli_nested_roi_options.h"
 
@@ -65,6 +66,11 @@
 #define NESTEDROI_PARENT_CHNL "--hpar"			// Channel number that should be used as a provider of parent segments. Example: --hpar=1
 #define NESTEDROI_CHILD_CHNL "--hchi"			// Channel number that should be used as a provider of child segments. Example: --hchi=0
 #define NESTEDROI_AGGREGATION_METHOD "--hag"	// How to aggregate features of segments recognized as children of same parent segment. See class NestedRoiOptions for options.
+
+// Floating-point voxel image options (served by class FpImageOptions)
+#define FPIMAGE_TARGET_DYNRANGE "--fpimgdr"		// Desired dynamic range of the integer voxel intensities converted from floating-point intensities
+#define FPIMAGE_MIN "--fpimgmin"				// Expected voxel min intensity
+#define FPIMAGE_MAX "--fpimgmax"				// Expected voxel max intensity
 
 // Feature group nicknames. Each nickname should be used twice - 
 // in Nyxus::parse_delimited_string_list_to_features() 
@@ -159,11 +165,6 @@ public:
 	float xyRes = 0.0,
 		  pixelSizeUm = 0.0;
 
-	// floating-point TIFF parameters
-	float floatpt_image_min_intensity = 0.0,
-		floatpt_image_max_intensity = 1.0,
-		floatpt_image_target_dyn_range = 1e4;
-
 	int get_pixel_distance();
 	void set_pixel_distance(int pixelDistance);
 	size_t get_ram_limit();
@@ -205,7 +206,11 @@ public:
 	bool parse_nested_options_raw_inputs (std::string& error_message);
 	NestedRoiOptions nestedOptions;
   
-  // implementation of Apache options
+	// implementation of floating point image options
+	bool parse_fpimage_options_raw_inputs (std::string& error_message);
+	FpImageOptions fpimageOptions;
+
+	// implementation of Apache options
 	bool arrow_is_enabled();
 
 private:

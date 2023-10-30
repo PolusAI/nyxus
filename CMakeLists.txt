@@ -90,7 +90,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake-modules")
 
 #==== Source files
 set(SOURCE
-	src/nyx/arrow_output_stream.cpp
 	src/nyx/features/basic_morphology.cpp
 	src/nyx/features/caliper_feret.cpp
 	src/nyx/features/caliper_martin.cpp
@@ -132,6 +131,7 @@ set(SOURCE
 	src/nyx/features/zernike_nontriv.cpp
 	src/nyx/helpers/timing.cpp
 	src/nyx/cli_gabor_options.cpp
+	src/nyx/cli_fpimage_options.cpp
 	src/nyx/cli_nested_roi_options.cpp
 	src/nyx/common_stats.cpp
 	src/nyx/dirs_and_files.cpp
@@ -159,6 +159,10 @@ set(SOURCE
 	src/nyx/roi_cache_basic.cpp
 	src/nyx/scan_fastloader_way.cpp
 )
+
+if (NOT ESSENTIAL)
+	list(APPEND SOURCE src/nyx/arrow_output_stream.cpp)
+endif()
 
 if(NOT ESSENTIAL)
 	option(PARQUET_LINK_SHARED "Link to the Parquet shared library" ON)

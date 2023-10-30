@@ -42,9 +42,9 @@ bool ImageLoader1x::open(const std::string& fpath)
 		{
 			if (Nyxus::check_tile_status(fpath))
 				FL = std::make_unique<NyxusGrayscaleTiffTileLoader<uint32_t>> (n_threads, fpath, 
-					Nyxus::theEnvironment.floatpt_image_min_intensity,
-					Nyxus::theEnvironment.floatpt_image_max_intensity,
-					Nyxus::theEnvironment.floatpt_image_target_dyn_range);
+					Nyxus::theEnvironment.fpimageOptions.min_intensity(),
+					Nyxus::theEnvironment.fpimageOptions.max_intensity(),
+					Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
 			else
 			{
 				FL = std::make_unique<NyxusGrayscaleTiffStripLoader<uint32_t>> (n_threads, fpath); 
