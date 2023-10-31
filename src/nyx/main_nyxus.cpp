@@ -3,6 +3,7 @@
 #include "dirs_and_files.h"
 #include "environment.h"
 #include "globals.h"
+#include "save_option.h"
 #include "arrow_output_stream.h"
 #ifdef USE_GPU
 	bool gpu_initialize(int dev_id); 
@@ -58,16 +59,10 @@ int main (int argc, char** argv)
 	// Current time stamp #1
 	auto startTS = getTimeStr();
 	VERBOSLVL1(std::cout << "\n>>> STARTING >>> " << startTS << "\n";)
-
-
-	bool use_arrow = false;
-
-#ifdef USE_ARROW
-	use_arrow = theEnvironment.arrow_output_type == "ARROW" || theEnvironment.arrow_output_type == "PARQUET";
-#endif
 	
 	// Process the image data
 	int min_online_roi_size = 0;
+
 	errorCode = processDataset (
 		intensFiles, 
 		labelFiles, 
@@ -75,8 +70,7 @@ int main (int argc, char** argv)
 		theEnvironment.n_pixel_scan_threads, 
 		theEnvironment.n_reduce_threads,
 		min_online_roi_size,
-		use_arrow,
-		theEnvironment.useCsv,
+		theEnvironment.saveOption,
 		theEnvironment.output_dir);
 
 	// Report feature extraction error, if any
@@ -93,6 +87,8 @@ int main (int argc, char** argv)
 		case 3:		// Memory error
 			std::cout << std::endl << "Memory error" << std::endl;
 			break;
+		case 4:
+			std::cout << std::endl << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enabled to use this functionality." << std::endl;
 		default:	// Any other error
 			std::cout << std::endl << "Error #" << errorCode << std::endl;
 			break;

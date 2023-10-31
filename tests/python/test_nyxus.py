@@ -312,7 +312,7 @@ class TestNyxus():
             
             features = nyx.featurize(intens, seg)
             
-            arrow_path = nyx.featurize(intens, seg, output_type="arrow")
+            arrow_path = nyx.featurize(intens, seg, output_type="arrowipc")
 
             arrow_array = nyx.get_arrow_memory_mapping(arrow_path)
 
@@ -342,7 +342,7 @@ class TestNyxus():
             nyx = nyxus.Nyxus (["*ALL*"])
             assert nyx is not None
             
-            arrow_path = nyx.featurize(intens, seg, output_type="arrow", output_path='TestNyxusOut')
+            arrow_path = nyx.featurize(intens, seg, output_type="arrowipc", output_path='TestNyxusOut')
             
             if (not nyx.arrow_is_enabled()):
                 
@@ -381,7 +381,7 @@ class TestNyxus():
             nyx = nyxus.Nyxus (["*ALL*"])
             assert nyx is not None
             
-            arrow_path = nyx.featurize(intens, seg, output_type="arrow")
+            arrow_path = nyx.featurize(intens, seg, output_type="arrowipc")
             
             assert arrow_path == 'NyxusFeatures.arrow'
             
@@ -422,7 +422,7 @@ class TestNyxus():
             nyx = nyxus.Nyxus (["*ALL*"])
             assert nyx is not None
             
-            arrow_path = nyx.featurize(intens, seg, output_type="arrow")
+            arrow_path = nyx.featurize(intens, seg, output_type="arrowipc")
             
             path = nyx.get_arrow_ipc_file()
 

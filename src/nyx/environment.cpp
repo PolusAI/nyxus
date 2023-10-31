@@ -166,7 +166,7 @@ void Environment::show_cmdline_help()
 		<< "\t\t\tExample: " << FILEPATTERN << "=.* for all files, " << FILEPATTERN << "=*.tif for .tif files \n"
 		<< "\t\t" << OUTPUTTYPE << "=<separatecsv or singlecsv for csv output. arrowipc or parquet for arrow output> \n"
 		<< "\t\t\tDefault: separatecsv \n"
-		<< "\t\t" << SEGDIR << "=<directory of segmentation images> \n"
+		<< "\t\t" << SEGDIR << "=<directory of segmentation mask images> \n"
 		<< "\t\t" << INTDIR << "=<directory of intensity images> \n"
 		<< "\t\t" << OUTDIR << "=<output directory> \n"
 		<< "\t\t" << OPT << FEATURES << "=<specific feature or comma-separated features or feature group> \n"
@@ -201,7 +201,10 @@ void Environment::show_cmdline_help()
 		<< "\t\t" << OPT << SKIPROI << "=<ROI blacklist> \n"
 		<< "\t\t\tDefault: void blacklist \n"
 		<< "\t\t\tExample 1: " << SKIPROI << "=34,35,36 \n"
-		<< "\t\t\tExample 2: " << SKIPROI << "=image1.ome.tif:34,35,36;image2.ome.tif:42,43 \n";
+		<< "\t\t\tExample 2: " << SKIPROI << "=image1.ome.tif:34,35,36;image2.ome.tif:42,43 \n"
+		<< "\t\t" << OPT << RESULTFNAME << "=<file name without extension> \n"
+		<< "\t\t\tDefault: NyxusFeatures \n"
+		<< "\t\t\tExample: " << RESULTFNAME << "=training_set_features";
     
 	#ifdef CHECKTIMING
 		std::cout << "\t\t" << OPT << EXCLUSIVETIMING << "=<false or true> \n"
@@ -757,14 +760,15 @@ bool Environment::parse_cmdline(int argc, char **argv)
 				|| find_string_argument(i, FPIMAGE_TARGET_DYNRANGE, fpimageOptions.raw_target_dyn_range)
 				|| find_string_argument(i, FPIMAGE_MIN, fpimageOptions.raw_min_intensity)
 				|| find_string_argument(i, FPIMAGE_MAX, fpimageOptions.raw_max_intensity)
+				|| find_string_argument(i, RESULTFNAME, nyxus_result_fname)
 
 				#ifdef CHECKTIMING
-					|| find_string_argument(i, EXCLUSIVETIMING, rawExclusiveTiming)
+				|| find_string_argument(i, EXCLUSIVETIMING, rawExclusiveTiming)
 				#endif
 
 				#ifdef USE_GPU
-					|| find_string_argument(i, USEGPU, rawUseGpu) 
-					|| find_string_argument(i, GPUDEVICEID, rawGpuDeviceID) 
+				|| find_string_argument(i, USEGPU, rawUseGpu) 
+				|| find_string_argument(i, GPUDEVICEID, rawGpuDeviceID) 
 				#endif
 			))
 			unrecognizedArgs.push_back(*i);
@@ -832,53 +836,52 @@ bool Environment::parse_cmdline(int argc, char **argv)
 		rawFeatures = FEA_NICK_ALL;
 	}
 
+	//==== Parse optional result file name
+	if (nyxus_result_fname == "")
+	{
+		std::cout << "Error: void argument " << RESULTFNAME << "\n";
+		return false;
+	}
+
 	//==== Output type
-#ifdef USE_ARROW 
 	VERBOSLVL1(std::cout << "\n*-*-*-*- Using Apache output -*-*-*-*\n");
 
 	auto rawOutpTypeUC = Nyxus::toupper(rawOutpType);
-	if (rawOutpTypeUC != Nyxus::toupper(OT_SINGLECSV) && 
-	    rawOutpTypeUC != Nyxus::toupper(OT_SEPCSV) && 
-		rawOutpTypeUC != Nyxus::toupper(OT_ARROW) &&
-		rawOutpTypeUC != Nyxus::toupper(OT_ARROWIPC) &&
-		rawOutpTypeUC != Nyxus::toupper(OT_PARQUET))
+	if (!((rawOutpTypeUC == Nyxus::toupper(OT_SINGLECSV))  || 
+	      (rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV)) || 
+		  (rawOutpTypeUC == Nyxus::toupper(OT_ARROWIPC)) ||
+		  (rawOutpTypeUC == Nyxus::toupper(OT_PARQUET))
+		))	
 	{
-		std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << ", " << OT_SINGLECSV << ", " << OT_ARROW ", or" << OT_PARQUET << "."  "\n";
+		std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << ", " 
+					<< OT_SINGLECSV <<", "
+					#ifdef USE_ARROW
+					<< OT_ARROWIPC <<", or" << OT_PARQUET <<
+					#endif 
+					"."  "\n";
 		return false;
 	}
 
-	if (rawOutpTypeUC == Nyxus::toupper(OT_ARROW) ||
-		rawOutpTypeUC == Nyxus::toupper(OT_ARROWIPC) ||
-		rawOutpTypeUC == Nyxus::toupper(OT_PARQUET)) 
-	{
-		useCsv = false;
-		arrow_output_type = rawOutpTypeUC;
+	SaveOption saveOption = [&rawOutpTypeUC](){
+        if (rawOutpTypeUC == Nyxus::toupper(OT_ARROWIPC)) {
+			return SaveOption::saveArrowIPC;
+		} else if (rawOutpTypeUC == Nyxus::toupper(OT_PARQUET)) {
+			return SaveOption::saveParquet;
+		} else {
+			return SaveOption::saveCSV;
+		} 
+	}();
+
+#ifndef USE_ARROW // no Apache support
+	if (saveOption == SaveOption::saveArrowIPC || saveOption == SaveOption::saveParquet) {
+		std::cout << "Error: Nyxus must be built with Apache Arrow enabled to use Arrow output types. Please rebuild with the flag USEARROW=ON." << std::endl;
+		return false;
 	}
-	else
-	{	
-		useCsv = true;
+#endif
+
+	if (saveOption == SaveOption::saveCSV) {
 		separateCsv = rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV);
 	}
-
-#else // no Apache support
-	auto rawOutpTypeUC = Nyxus::toupper(rawOutpType);
-	if (rawOutpTypeUC != Nyxus::toupper(OT_SINGLECSV) &&
-		rawOutpTypeUC != Nyxus::toupper(OT_SEPCSV))
-	{
-		std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << ", " << OT_SINGLECSV << "\n";
-
-		// Intercept an attempt of running Nyxus with Apache options
-		if (rawOutpTypeUC != Nyxus::toupper(OT_ARROW) ||
-			rawOutpTypeUC != Nyxus::toupper(OT_ARROWIPC) ||
-			rawOutpTypeUC != Nyxus::toupper(OT_PARQUET)) 
-			std::cout << "Error: Nyxus must be built with Apache Arrow enabled to use Arrow output types. Please rebuild with the flag USEARROW=ON." << std::endl;
-
-		return false;
-	}
-
-	useCsv = (rawOutpTypeUC == Nyxus::toupper(OT_SINGLECSV) || rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV));
-	separateCsv = rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV);
-#endif
 
 	//==== Check numeric parameters
 	if (!loader_threads.empty())

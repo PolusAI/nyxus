@@ -41,7 +41,7 @@ namespace Nyxus
 		// -- Header
 		if (fill_header)
 		{
-			rescache.add_to_header({"mask_image", "intensity_image", "label"});
+			rescache.add_to_header ({ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label });
 
 			for (auto& enabdF : F)
 			{

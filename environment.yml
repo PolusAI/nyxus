@@ -18,6 +18,10 @@ dependencies:
   - pandas
   - numpy
   - pip>=20.1
+  - pyarrow
+  - fmjpeg2koj 
+  - arrow-cpp[version='>=10.0.0']
+  - parquet-cpp
   - pip:
     - sphinx
     - sphinx_rtd_theme

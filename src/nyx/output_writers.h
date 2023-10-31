@@ -1,6 +1,12 @@
 
 #pragma once
 
+#include <vector>
+#include <string>
+#include <memory>
+#include <tuple>
+#include <optional>
+
 #ifdef USE_ARROW
 #include <arrow/api.h>
 #include <arrow/io/api.h>
@@ -13,11 +19,8 @@
 
 #include <arrow/csv/api.h>
 
-#include <vector>
-#include <string>
 #include <filesystem> 
 #include <stdexcept>
-#include <memory>
 #include <iostream>
 #include "helpers/helpers.h"
 
@@ -70,7 +73,7 @@ public:
      * 
      * @return std::shared_ptr<arrow::Table> 
      */
-    std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path, arrow::Status& table_status);
+    std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path);
 
     /**
      * @brief Write Nyxus data to Arrow file
@@ -84,6 +87,8 @@ public:
     virtual arrow::Status write (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features) = 0;
 
     virtual arrow::Status close () = 0;
+
+    virtual ~ApacheArrowWriter() = default;
 
 };
 
@@ -160,10 +165,8 @@ class WriterFactory {
          * @brief Create an ApacheArrowWriter based on the type of file passed.
          * 
          * @param output_file Path to output file (.arrow or .parquet)
-         * @return std::shared_ptr<ApacheArrowWriter> 
+         * @return std::unique_ptr<ApacheArrowWriter> 
          */
-        static std::shared_ptr<ApacheArrowWriter> create_writer(const std::string &output_file, const std::vector<std::string> &header);
+        static std::tuple<std::unique_ptr<ApacheArrowWriter>, std::optional<std::string>> create_writer(const std::string &output_file, const std::vector<std::string> &header);
 };
-
-
 #endif

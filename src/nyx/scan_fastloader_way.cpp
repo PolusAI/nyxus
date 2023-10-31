@@ -26,11 +26,6 @@ namespace py = pybind11;
 #include "globals.h"
 #include "helpers/timing.h"
 
-#ifdef USE_ARROW
-#include "arrow_output_stream.h"
-#include "output_writers.h"
-#endif
-
 // Sanity
 #ifdef _WIN32
 #include<windows.h>
@@ -209,9 +204,8 @@ namespace Nyxus
 		int numSensemakerThreads,
 		int numReduceThreads,
 		int min_online_roi_size,
-		bool arrow_output,
-		bool save2csv,
-		const std::string& outputDir)
+		const SaveOption saveOption,
+		const std::string& outputPath)
 	{
 
 		#ifdef CHECKTIMING
@@ -222,21 +216,20 @@ namespace Nyxus
 		// One-time initialization
 		init_feature_buffers();
 
+		bool write_apache = (saveOption == SaveOption::saveArrowIPC || saveOption == SaveOption::saveParquet);
 
 		// initialize arrow writer if needed
-	#ifdef USE_ARROW
-		if (arrow_output) {
+		if (write_apache) {
 
 			theEnvironment.arrow_stream = ArrowOutputStream();
-
-			try {
-				theEnvironment.arrow_writer = theEnvironment.arrow_stream.create_arrow_file(theEnvironment.arrow_output_type, outputDir,   Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
-			} catch (const std::exception &err) {
-				std::cout << "Error creating Arrow file: " << err.what() << std::endl;
+			auto [status, msg] = theEnvironment.arrow_stream.create_arrow_file(saveOption, outputPath, Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+			
+			if (!status) {
+				std::cout << "Error creating Arrow file: " << msg.value() << std::endl;
 				return 1;
 			}
 		}
-	#endif
+
 
 		bool ok = true;
 
@@ -276,31 +269,29 @@ namespace Nyxus
 				return 1;
 			}
 
-		#ifdef USE_ARROW
-			if (arrow_output) {
 
-				auto status = theEnvironment.arrow_writer->write(Nyxus::get_feature_values());
+			if (write_apache) {
+
+				auto [status, msg] = theEnvironment.arrow_stream.write_arrow_file(Nyxus::get_feature_values());
 				
-				if (!status.ok()) {
-                    // Handle read error
-                    std::cout << "Error writing Arrow file: " << status.ToString() << std::endl;
+				if (!status) {
+					std::cout << "Error writing Arrow file: " << msg.value() << std::endl;
 					return 2;
 				}
-			}
-		#endif
-
-			// For the non-Apache output mode, save the result for this intensity-label file pair
-			if (!arrow_output) {
-
-				if (save2csv) {
-					ok = save_features_2_csv(ifp, lfp, outputDir);
-				} else {
-					ok = save_features_2_buffer(theResultsCache);
-				}
+			} else if (saveOption == SaveOption::saveCSV) {
+				ok = save_features_2_csv(ifp, lfp, outputPath);
 
 				if (ok == false)
 				{
 					std::cout << "save_features_2_csv() returned an error code" << std::endl;
+					return 2;
+				}
+			} else {
+				ok = save_features_2_buffer(theResultsCache);
+
+				if (ok == false)
+				{
+					std::cout << "save_features_2_buffer() returned an error code" << std::endl;
 					return 2;
 				}
 			}
@@ -349,18 +340,14 @@ namespace Nyxus
 		}
 		#endif
 
-	#ifdef USE_ARROW
-		if (arrow_output) {
+		if (write_apache) {
 			// close arrow file after use
-			auto status = theEnvironment.arrow_writer->close();
-			
-			if (!status.ok()) {
-				// Handle read error
-				std::cout << "Error closing Arrow file: " << status.ToString() << std::endl;
-				return 2;
+			auto [status, msg] = theEnvironment.arrow_stream.close_arrow_file();
+			if (!status) {
+				std::cout << "Error closing Arrow file: " << msg.value() << std::endl;
+					return 2;
 			}
 		}
-	#endif
 	
 		return 0; // success
 	}
@@ -374,22 +361,20 @@ namespace Nyxus
 		const std::vector<std::string>& intensity_names,
 		const std::vector<std::string>& seg_names,
 		std::string& error_message,
-		bool arrow_output,
-		const std::string& outputDir)
+		const SaveOption saveOption,
+		const std::string& outputPath)
 	{	
-		#ifdef USE_ARROW
-		if (arrow_output) {
+		bool write_apache = (saveOption == SaveOption::saveArrowIPC || saveOption == SaveOption::saveParquet);
+
+		if (write_apache) {
 
 			theEnvironment.arrow_stream = ArrowOutputStream();
-
-			try {
-				theEnvironment.arrow_writer = theEnvironment.arrow_stream.create_arrow_file(theEnvironment.arrow_output_type, outputDir,  Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
-			} catch (const std::exception &err) {
-				error_message = err.what();
+			auto [status, msg] = theEnvironment.arrow_stream.create_arrow_file(saveOption, outputPath,   Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+			if (!status) {
+				std::cout << "Error creating Arrow file: " << msg.value() << std::endl;
 				return 1;
 			}
 		}
-	#endif
 
 		auto intens_buffer = intensity_images.request();
 		auto label_buffer = label_images.request();
@@ -414,26 +399,24 @@ namespace Nyxus
 				return 1;
 			}
 			
-		#ifdef USE_ARROW
-			if (arrow_output) {
 
-				auto status = theEnvironment.arrow_writer->write(Nyxus::get_feature_values());
-				
-				if (!status.ok()) {
-                    // Handle read error
-                    error_message = "Error writing Arrow file: " + status.ToString();
+			if (write_apache) {
+			
+				auto [status, msg] = theEnvironment.arrow_stream.write_arrow_file(Nyxus::get_feature_values());
+				if (!status) {
+					std::cout << "Error writing Arrow file: " << msg.value() << std::endl;
 					return 2;
 				}
-			}
-		#endif
+			} else {
 
-			if (!arrow_output)
 				ok = save_features_2_buffer(theResultsCache);
 
-			if (ok == false)
-			{
-				error_message = "save_features_2_buffer() failed";
-				return 2;
+				if (ok == false)
+				{
+					error_message = "save_features_2_buffer() failed";
+					return 2;
+				}
+
 			}
 
 			if (unprocessed_rois.size() > 0) {
@@ -453,19 +436,15 @@ namespace Nyxus
                 		throw pybind11::error_already_set();
 		}
 
-	#ifdef USE_ARROW
-		if (arrow_output) {
+
+		if (write_apache) {
 			// close arrow file after use
-			auto status = theEnvironment.arrow_writer->close();
-			
-			if (!status.ok()) {
-				// Handle read error
-				error_message = "Error closing Arrow file: " + status.ToString();
+			auto [status, msg] = theEnvironment.arrow_stream.close_arrow_file();
+			if (!status) {
+				std::cout << "Error closing Arrow file: " << msg.value() << std::endl;
 				return 2;
 			}
 		}
-	#endif
-		
 		return 0; // success
 	}
 #endif
@@ -509,4 +488,3 @@ namespace Nyxus
 	}
 
 } 
-

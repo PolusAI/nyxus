@@ -140,7 +140,7 @@ py::tuple featurize_directory_imp (
     const std::string &intensity_dir,
     const std::string &labels_dir,
     const std::string &file_pattern,
-    bool pandas_output=true,
+    const std::string &output_type,
     const std::string &arrow_file_path="")
 {
     // Check and cache the file pattern
@@ -173,12 +173,19 @@ py::tuple featurize_directory_imp (
     // We're good to extract features. Reset the feature results cache
     theResultsCache.clear();
 
-    auto arrow_output = !pandas_output;
-
     theEnvironment.separateCsv = false;
 
     // Process the image sdata
     int min_online_roi_size = 0;
+
+    theEnvironment.saveOption = [&output_type](){
+        if (output_type == "arrowipc") {
+            return SaveOption::saveArrowIPC;
+	    } else if (output_type == "parquet") {
+            return SaveOption::saveParquet;
+        } else {return SaveOption::saveBuffer;}
+	}();
+
     errorCode = processDataset(
         intensFiles,
         labelFiles,
@@ -186,15 +193,14 @@ py::tuple featurize_directory_imp (
         theEnvironment.n_pixel_scan_threads,
         theEnvironment.n_reduce_threads,
         min_online_roi_size,
-        arrow_output,
-        false,
+        theEnvironment.saveOption,
         theEnvironment.output_dir);
 
     if (errorCode)
         throw std::runtime_error("Error " + std::to_string(errorCode) + " occurred during dataset processing");
 
     // Output the result
-    if (pandas_output) 
+    if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
     {
 
         auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
@@ -216,17 +222,11 @@ py::tuple featurize_montage_imp (
     const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images,
     const std::vector<std::string>& intensity_names,
     const std::vector<std::string>& label_names,
-    bool pandas_output=true,
-    const std::string arrow_output_type="",
+    const std::string output_type="",
     const std::string output_dir="")
 {  
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = false;
-
-#ifdef USE_ARROW
-    // Set arrow output type
-    theEnvironment.arrow_output_type = arrow_output_type;
-#endif
 
     auto intens_buffer = intensity_images.request();
     auto label_buffer = label_images.request();
@@ -260,6 +260,17 @@ py::tuple featurize_montage_imp (
 
     // Process the image sdata
     std::string error_message = "";
+
+     theEnvironment.saveOption = [&output_type](){
+        if (output_type == "arrowipc") {
+            return SaveOption::saveArrowIPC;
+	    } else if (output_type == "parquet") {
+			return SaveOption::saveParquet;
+		} else {return SaveOption::saveBuffer;}
+	}();
+
+
+
     int errorCode = processMontage(
         intensity_images,
         label_images,
@@ -267,13 +278,13 @@ py::tuple featurize_montage_imp (
         intensity_names,
         label_names,
         error_message,
-        !pandas_output,
+        theEnvironment.saveOption,
         output_dir);
 
     if (errorCode)
         throw std::runtime_error("Error #" + std::to_string(errorCode) + " " + error_message + " occurred during dataset processing.");
 
-    if (pandas_output) {
+    if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer) {
 
         auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
         auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
@@ -287,14 +298,15 @@ py::tuple featurize_montage_imp (
     
     } 
 
-    std::string path = output_dir + "NyxusFeatures.";
+    std::string path = output_dir + theEnvironment.nyxus_result_fname + ".";
     return py::make_tuple(error_message, path);
 }
 
-py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames, bool single_roi, bool pandas_output=true)
+py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames, bool single_roi, const std::string& output_type, const std::string& output_dir)
 {
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = single_roi;
+    theEnvironment.output_dir = output_dir;
 
     std::vector<std::string> intensFiles, labelFiles;
     for (auto it = int_fnames.begin(); it != int_fnames.end(); ++it)
@@ -312,9 +324,9 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
     if (intensFiles.size() == 0)
         throw std::runtime_error("Intensity file list is blank");
     if (labelFiles.size() == 0)
-        throw std::runtime_error("Segmentation file list is blank");
+        throw std::runtime_error("Segmentation mask file list is blank");
     if (intensFiles.size() != labelFiles.size())
-        throw std::runtime_error("Imbalanced intensity and segmentation file lists");
+        throw std::runtime_error("Imbalanced intensity and segmentation mask file lists");
     for (auto i = 0; i < intensFiles.size(); i++)
     {
         const std::string& i_fname = intensFiles[i];
@@ -336,20 +348,31 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
 
     // Process the image sdata
     int min_online_roi_size = 0;
-    int errorCode = processDataset(
+    int errorCode;
+
+    theEnvironment.saveOption = [&output_type](){
+        if (output_type == "arrowipc") {
+            return SaveOption::saveArrowIPC;
+	    } else if (output_type == "parquet") {
+            return SaveOption::saveParquet;
+		} else {return SaveOption::saveBuffer;}
+	}();
+
+    errorCode = processDataset(
         intensFiles,
         labelFiles,
         theEnvironment.n_loader_threads,
         theEnvironment.n_pixel_scan_threads,
         theEnvironment.n_reduce_threads,
         min_online_roi_size,
-        !pandas_output,
-        false, // 'true' to save to csv
+        theEnvironment.saveOption,
         theEnvironment.output_dir);
+
+
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing.");
 
-    if (pandas_output) {
+    if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer) {
 
             auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
             auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
@@ -546,16 +569,15 @@ std::string get_parquet_file_imp() {
 #ifdef USE_ARROW
 
 std::shared_ptr<arrow::Table> get_arrow_table_imp(const std::string& file_path) {
+
+    auto table = theEnvironment.arrow_stream.get_arrow_table(file_path);
     
-    arrow::Status status;
-
-    auto table = theEnvironment.arrow_stream.get_arrow_table(file_path, status);
-
-    if (!status.ok()) {
-        throw std::runtime_error("Error creating Arrow table: " + status.ToString());
+    if (table == nullptr) {
+        std::cerr << "Error creating Arrow table." << std::endl;
     }
-
+    
     return table;
+
 }
 
 #else
@@ -588,7 +610,7 @@ PYBIND11_MODULE(backend, m)
     m.def("featurize_directory_imp", &featurize_directory_imp, "Calculate features of images defined by intensity and mask image collection directories");
     m.def("featurize_montage_imp", &featurize_montage_imp, "Calculate features of images defined by intensity and mask image collection directories");
     m.def("featurize_fname_lists_imp", &featurize_fname_lists_imp, "Calculate features of intensity-mask image pairs defined by lists of image file names");
-    m.def("findrelations_imp", &findrelations_imp, "Find relations in segmentation images");
+    m.def("findrelations_imp", &findrelations_imp, "Find relations in segmentation mask images");
     m.def("gpu_available", &Environment::gpu_is_available, "Check if CUDA gpu is available");
     m.def("use_gpu", &use_gpu, "Enable/disable GPU features");
     m.def("get_gpu_props", &get_gpu_properties, "Get properties of CUDA gpu");

@@ -8,11 +8,9 @@
 #include "cli_fpimage_options.h"
 #include "cli_gabor_options.h"
 #include "cli_nested_roi_options.h"
+#include "save_option.h"
+#include "arrow_output_stream.h"
 
-#ifdef USE_ARROW
-	#include "output_writers.h"
-	#include "arrow_output_stream.h"
-#endif
 
 #ifdef USE_GPU
 	#include <cuda_runtime.h>
@@ -41,7 +39,7 @@
 #define TEMPDIR "--tempDir"						// Optional. Used in processing non-trivial features. Default - system temp directory
 #define IBSICOMPLIANCE "--ibsi" // skip binning for grey level and grey tone features
 #define SKIPROI "--skiproi"		// Optional. Skip ROIs having specified labels. Sybtax: --skiproi <label[,label,label,...]>
-
+#define RESULTFNAME "--resultFname"				// Environment :: nyxus_result_fname
 
 #ifdef CHECKTIMING
 	#define EXCLUSIVETIMING "--exclusivetiming"
@@ -95,7 +93,6 @@
 // Valid values of 'OUTPUTTYPE'
 #define OT_SEPCSV "separatecsv"
 #define OT_SINGLECSV "singlecsv"
-#define OT_ARROW "arrow"
 #define OT_ARROWIPC "arrowipc"
 #define OT_PARQUET "parquet"
 
@@ -116,20 +113,16 @@ public:
 	void show_summary(const std::string &head, const std::string &tail);
 
 	std::string labels_dir = "",
-				intensity_dir = "",
-				output_dir = "",
-				intSegMapDir = "",
-				intSegMapFile = "";
+		intensity_dir = "",
+		output_dir = "",
+		intSegMapDir = "",
+		intSegMapFile = "";
+	std::string nyxus_result_fname = "NyxusFeatures";	// Default file name without extension ".csv", ".arrow", etc
 
 	bool singleROI = false; // is set to 'true' parse_cmdline() if labels_dir==intensity_dir
 
-#ifdef USE_ARROW
 
-	std::string arrow_output_type = "";
 	ArrowOutputStream  arrow_stream;
-	std::shared_ptr<ApacheArrowWriter> arrow_writer = nullptr;
-	
-#endif
 
 	std::string embedded_pixel_size = "";
 
@@ -158,7 +151,8 @@ public:
 
 	std::string rawOutpType = ""; // Valid values: "separatecsv", "singlecsv", "arrow", "parquet"
 	bool separateCsv = true;
-	bool useCsv = true;
+
+	Nyxus::SaveOption saveOption;
 
 	// x- and y- resolution in pixels per centimeter
 	std::string rawXYRes = "";
@@ -212,6 +206,9 @@ public:
 
 	// implementation of Apache options
 	bool arrow_is_enabled();
+
+	// NAN substitute in feature values
+	double nan_substitute = 0.0;
 
 private:
 

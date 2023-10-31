@@ -316,5 +316,13 @@ namespace Nyxus
 	{
 		return x / 180. * 3.14159265358979323846;
 	}
+
+	inline double force_finite_number (double x, double nan_substitute = 0.0)
+	{
+		if (std::isnan(x) || std::isinf(x))
+			return nan_substitute;
+		else
+			return x;
+	}
 }
 
