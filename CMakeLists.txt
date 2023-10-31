@@ -178,6 +178,7 @@ set(SOURCE
 	src/nyx/features/zernike.cpp
 	src/nyx/features/zernike_nontriv.cpp
 	src/nyx/helpers/timing.cpp
+	src/nyx/cli_fpimage_options.cpp
 	src/nyx/cli_gabor_options.cpp
 	src/nyx/cli_nested_roi_options.cpp
 	src/nyx/common_stats.cpp
