@@ -205,6 +205,7 @@ set(SOURCE
 	src/nyx/roi_cache.cpp
 	src/nyx/roi_cache_basic.cpp
 	src/nyx/scan_fastloader_way.cpp
+	src/nyx/cli_fpimage_options.cpp
 )
 
 

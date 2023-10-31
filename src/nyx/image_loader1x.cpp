@@ -13,6 +13,7 @@
 #include "omezarr.h"
 #include "nyxus_dicom_loader.h"
 #include "dirs_and_files.h"
+#include "environment.h"
 
 ImageLoader1x::ImageLoader1x() {}
 
@@ -40,7 +41,10 @@ bool ImageLoader1x::open(const std::string& fpath)
 		else 
 		{
 			if (Nyxus::check_tile_status(fpath))
-				FL = std::make_unique<NyxusGrayscaleTiffTileLoader<uint32_t>> (n_threads, fpath); 
+				FL = std::make_unique<NyxusGrayscaleTiffTileLoader<uint32_t>> (n_threads, fpath, 
+					Nyxus::theEnvironment.fpimageOptions.min_intensity(),
+					Nyxus::theEnvironment.fpimageOptions.max_intensity(),
+					Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
 			else
 			{
 				FL = std::make_unique<NyxusGrayscaleTiffStripLoader<uint32_t>> (n_threads, fpath); 

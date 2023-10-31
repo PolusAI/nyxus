@@ -166,7 +166,7 @@ void Environment::show_cmdline_help()
 		<< "\t\t\tExample: " << FILEPATTERN << "=.* for all files, " << FILEPATTERN << "=*.tif for .tif files \n"
 		<< "\t\t" << OUTPUTTYPE << "=<separatecsv or singlecsv for csv output. arrowipc or parquet for arrow output> \n"
 		<< "\t\t\tDefault: separatecsv \n"
-		<< "\t\t" << SEGDIR << "=<directory of segmentation mask images> \n"
+		<< "\t\t" << SEGDIR << "=<directory of segmentation images> \n"
 		<< "\t\t" << INTDIR << "=<directory of intensity images> \n"
 		<< "\t\t" << OUTDIR << "=<output directory> \n"
 		<< "\t\t" << OPT << FEATURES << "=<specific feature or comma-separated features or feature group> \n"
@@ -201,10 +201,7 @@ void Environment::show_cmdline_help()
 		<< "\t\t" << OPT << SKIPROI << "=<ROI blacklist> \n"
 		<< "\t\t\tDefault: void blacklist \n"
 		<< "\t\t\tExample 1: " << SKIPROI << "=34,35,36 \n"
-		<< "\t\t\tExample 2: " << SKIPROI << "=image1.ome.tif:34,35,36;image2.ome.tif:42,43 \n"
-		<< "\t\t" << OPT << RESULTFNAME << "=<file name without extension> \n"
-		<< "\t\t\tDefault: NyxusFeatures \n"
-		<< "\t\t\tExample: " << RESULTFNAME << "=training_set_features";
+		<< "\t\t\tExample 2: " << SKIPROI << "=image1.ome.tif:34,35,36;image2.ome.tif:42,43 \n";
     
 	#ifdef CHECKTIMING
 		std::cout << "\t\t" << OPT << EXCLUSIVETIMING << "=<false or true> \n"
@@ -310,6 +307,9 @@ void Environment::show_summary(const std::string &head, const std::string &tail)
 	if (! gaborOptions.empty())
 		std::cout << "\tGabor feature options: " << gaborOptions.get_summary_text() << "\n";
 
+	// Real valued TIFF
+	if (!fpimageOptions.empty())
+		std::cout << "\tImage-wide expected \n" << fpimageOptions.get_summary_text() << "\n";
 	std::cout << tail;
 }
 
@@ -754,6 +754,9 @@ bool Environment::parse_cmdline(int argc, char **argv)
 				|| find_string_argument(i, NESTEDROI_PARENT_CHNL, nestedOptions.rawParentChannelNo)
 				|| find_string_argument(i, NESTEDROI_CHILD_CHNL, nestedOptions.rawChildChannelNo)
 				|| find_string_argument(i, NESTEDROI_AGGREGATION_METHOD, nestedOptions.rawAggregationMethod)
+				|| find_string_argument(i, FPIMAGE_TARGET_DYNRANGE, fpimageOptions.raw_target_dyn_range)
+				|| find_string_argument(i, FPIMAGE_MIN, fpimageOptions.raw_min_intensity)
+				|| find_string_argument(i, FPIMAGE_MAX, fpimageOptions.raw_max_intensity)
 				|| find_string_argument(i, RESULTFNAME, nyxus_result_fname)
 
 				#ifdef CHECKTIMING
@@ -1016,6 +1019,17 @@ bool Environment::parse_cmdline(int argc, char **argv)
 		}
 	}
 
+	//==== Parse floating point image options
+	if (! fpimageOptions.empty())
+	{
+		std::string ermsg;
+		if (!this->parse_fpimage_options_raw_inputs (ermsg))
+		{
+			std::cerr << ermsg << "\n";
+			return false;
+		}
+	}
+
 	//==== Parse nested ROI options
 	if (!nestedOptions.empty())
 	{
@@ -1271,6 +1285,16 @@ bool Environment::parse_gabor_options_raw_inputs (std::string& error_message)
 	if (!gaborOptions.parse_input())
 	{
 		error_message = gaborOptions.get_last_er_msg();
+		return false;
+	}
+	return true;
+}
+
+bool Environment::parse_fpimage_options_raw_inputs (std::string& error_message)
+{
+	if (!fpimageOptions.parse_input())
+	{
+		error_message = fpimageOptions.get_last_er_msg();
 		return false;
 	}
 	return true;
