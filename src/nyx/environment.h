@@ -8,8 +8,6 @@
 #include "cli_gabor_options.h"
 #include "cli_nested_roi_options.h"
 #include "save_option.h"
-
-#include "output_writers.h"
 #include "arrow_output_stream.h"
 
 
@@ -119,7 +117,6 @@ public:
 
 
 	ArrowOutputStream  arrow_stream;
-	std::shared_ptr<ApacheArrowWriter> arrow_writer = nullptr;
 
 	std::string embedded_pixel_size = "";
 

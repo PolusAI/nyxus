@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <tuple>
+#include <optional>
 
 #ifdef USE_ARROW
 #include <arrow/api.h>
@@ -86,6 +88,8 @@ public:
 
     virtual arrow::Status close () = 0;
 
+    virtual ~ApacheArrowWriter() = default;
+
 };
 
 /**
@@ -161,65 +165,8 @@ class WriterFactory {
          * @brief Create an ApacheArrowWriter based on the type of file passed.
          * 
          * @param output_file Path to output file (.arrow or .parquet)
-         * @return std::shared_ptr<ApacheArrowWriter> 
+         * @return std::unique_ptr<ApacheArrowWriter> 
          */
-        static std::shared_ptr<ApacheArrowWriter> create_writer(const std::string &output_file, const std::vector<std::string> &header);
+        static std::tuple<std::unique_ptr<ApacheArrowWriter>, std::optional<std::string>> create_writer(const std::string &output_file, const std::vector<std::string> &header);
 };
-
-#else 
-
-
-namespace arrow {
-
-    using Table = bool;
-
-    class Status {
-
-    public:
-
-        bool ok() {return false;}
-
-        std::string ToString() {return "Apache Arrow support is not enabled. Please reinstall Nyxus with Arrow support enabled.";}
-
-    };
-
-};
-
-/**
- * @brief Base class for creating Apache Arrow output writers
- * 
- * This class provides methods for the Arrow table used for writing to Arrow formats and
- * provides virtual functions to overridden for writing to different formats
- * 
- */
-class ApacheArrowWriter
-{
-
-private: 
-    std::shared_ptr<arrow::Table> table_ = nullptr;
-
-public:
-
-    /**
-     * @brief Get the arrow table object
-     * 
-     * @return std::shared_ptr<arrow::Table> 
-     */
-    std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path);
-
-    /**
-     * @brief Write Nyxus data to Arrow file
-     * 
-     * @param header Header data
-     * @param string_columns String data
-     * @param numeric_columns Numeric data
-     * @param number_of_rows Number of rows
-     * @return arrow::Status 
-     */
-    virtual arrow::Status write (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features);
-
-    virtual arrow::Status close ();
-
-};
-
 #endif

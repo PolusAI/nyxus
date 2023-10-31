@@ -412,7 +412,7 @@ endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
-	list(APPEND Nyxus_LIBRARIES stdc++fs)
+	list(APPEND Nyxus_LIBRARIES stdc++fs -static-libgcc -static-libstdc++)
 endif()
 
 if(BUILD_LIB)

@@ -838,16 +838,21 @@ bool Environment::parse_cmdline(int argc, char **argv)
 	}
 
 	//==== Output type
-#ifdef USE_ARROW 
 	VERBOSLVL1(std::cout << "\n*-*-*-*- Using Apache output -*-*-*-*\n");
 
 	auto rawOutpTypeUC = Nyxus::toupper(rawOutpType);
-	if (rawOutpTypeUC != Nyxus::toupper(OT_SINGLECSV) && 
-	    rawOutpTypeUC != Nyxus::toupper(OT_SEPCSV) && 
-		rawOutpTypeUC != Nyxus::toupper(OT_ARROWIPC) &&
-		rawOutpTypeUC != Nyxus::toupper(OT_PARQUET))
+	if (!((rawOutpTypeUC == Nyxus::toupper(OT_SINGLECSV))  || 
+	      (rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV)) || 
+		  (rawOutpTypeUC == Nyxus::toupper(OT_ARROWIPC)) ||
+		  (rawOutpTypeUC == Nyxus::toupper(OT_PARQUET))
+		))	
 	{
-		std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << ", " << OT_SINGLECSV << ", or" << OT_PARQUET << "."  "\n";
+		std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << ", " 
+					<< OT_SINGLECSV <<", "
+					#ifdef USE_ARROW
+					<< OT_ARROWIPC <<", or" << OT_PARQUET <<
+					#endif 
+					"."  "\n";
 		return false;
 	}
 
@@ -861,31 +866,16 @@ bool Environment::parse_cmdline(int argc, char **argv)
 		} 
 	}();
 
+#ifndef USE_ARROW // no Apache support
+	if (saveOption == SaveOption::saveArrowIPC || saveOption == SaveOption::saveParquet) {
+		std::cout << "Error: Nyxus must be built with Apache Arrow enabled to use Arrow output types. Please rebuild with the flag USEARROW=ON." << std::endl;
+		return false;
+	}
+#endif
+
 	if (saveOption == SaveOption::saveCSV) {
 		separateCsv = rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV);
 	}
-
-#else // no Apache support
-	auto rawOutpTypeUC = Nyxus::toupper(rawOutpType);
-	if (rawOutpTypeUC != Nyxus::toupper(OT_SINGLECSV) &&
-		rawOutpTypeUC != Nyxus::toupper(OT_SEPCSV))
-	{
-		std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << ", " << OT_SINGLECSV << "\n";
-
-		// Intercept an attempt of running Nyxus with Apache options
-		if (rawOutpTypeUC != Nyxus::toupper(OT_ARROWIPC) ||
-			rawOutpTypeUC != Nyxus::toupper(OT_PARQUET)) 
-			std::cout << "Error: Nyxus must be built with Apache Arrow enabled to use Arrow output types. Please rebuild with the flag USEARROW=ON." << std::endl;
-
-		return false;
-	}
-
-	separateCsv = rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV);
-
-	if (rawOutpTypeUC == Nyxus::toupper(OT_SINGLECSV) || rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV)) {
-		saveOption = Nyxus::SaveOption::saveCSV;
-	}
-#endif
 
 	//==== Check numeric parameters
 	if (!loader_threads.empty())

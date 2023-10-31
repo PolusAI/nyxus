@@ -26,11 +26,6 @@ namespace py = pybind11;
 #include "globals.h"
 #include "helpers/timing.h"
 
-#ifdef USE_ARROW
-#include "arrow_output_stream.h"
-#include "output_writers.h"
-#endif
-
 // Sanity
 #ifdef _WIN32
 #include<windows.h>
@@ -209,8 +204,8 @@ namespace Nyxus
 		int numSensemakerThreads,
 		int numReduceThreads,
 		int min_online_roi_size,
-		SaveOption saveOption,
-		const std::string& outputDir)
+		const SaveOption saveOption,
+		const std::string& outputPath)
 	{
 
 		#ifdef CHECKTIMING
@@ -227,11 +222,10 @@ namespace Nyxus
 		if (write_apache) {
 
 			theEnvironment.arrow_stream = ArrowOutputStream();
-
-			try {
-				theEnvironment.arrow_writer = theEnvironment.arrow_stream.create_arrow_file(saveOption, outputDir,   Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
-			} catch (const std::exception &err) {
-				std::cout << "Error creating Arrow file: " << err.what() << std::endl;
+			auto [status, msg] = theEnvironment.arrow_stream.create_arrow_file(saveOption, outputPath, Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+			
+			if (!status) {
+				std::cout << "Error creating Arrow file: " << msg.value() << std::endl;
 				return 1;
 			}
 		}
@@ -278,15 +272,14 @@ namespace Nyxus
 
 			if (write_apache) {
 
-				auto status = theEnvironment.arrow_writer->write(Nyxus::get_feature_values());
+				auto [status, msg] = theEnvironment.arrow_stream.write_arrow_file(Nyxus::get_feature_values());
 				
-				if (!status.ok()) {
-                    // Handle read error
-                    std::cout << "Error writing Arrow file: " << status.ToString() << std::endl;
+				if (!status) {
+					std::cout << "Error writing Arrow file: " << msg.value() << std::endl;
 					return 2;
 				}
 			} else if (saveOption == SaveOption::saveCSV) {
-				ok = save_features_2_csv(ifp, lfp, outputDir);
+				ok = save_features_2_csv(ifp, lfp, outputPath);
 
 				if (ok == false)
 				{
@@ -349,12 +342,10 @@ namespace Nyxus
 
 		if (write_apache) {
 			// close arrow file after use
-			auto status = theEnvironment.arrow_writer->close();
-			
-			if (!status.ok()) {
-				// Handle read error
-				std::cout << "Error closing Arrow file: " << status.ToString() << std::endl;
-				return 2;
+			auto [status, msg] = theEnvironment.arrow_stream.close_arrow_file();
+			if (!status) {
+				std::cout << "Error closing Arrow file: " << msg.value() << std::endl;
+					return 2;
 			}
 		}
 	
@@ -370,19 +361,17 @@ namespace Nyxus
 		const std::vector<std::string>& intensity_names,
 		const std::vector<std::string>& seg_names,
 		std::string& error_message,
-		SaveOption saveOption,
-		const std::string& outputDir)
+		const SaveOption saveOption,
+		const std::string& outputPath)
 	{	
 		bool write_apache = (saveOption == SaveOption::saveArrowIPC || saveOption == SaveOption::saveParquet);
 
 		if (write_apache) {
 
 			theEnvironment.arrow_stream = ArrowOutputStream();
-
-			try {
-				theEnvironment.arrow_writer = theEnvironment.arrow_stream.create_arrow_file(saveOption, outputDir,  Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
-			} catch (const std::exception &err) {
-				error_message = err.what();
+			auto [status, msg] = theEnvironment.arrow_stream.create_arrow_file(saveOption, outputPath,   Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+			if (!status) {
+				std::cout << "Error creating Arrow file: " << msg.value() << std::endl;
 				return 1;
 			}
 		}
@@ -413,14 +402,11 @@ namespace Nyxus
 
 			if (write_apache) {
 			
-				auto status = theEnvironment.arrow_writer->write(Nyxus::get_feature_values());
-				
-				if (!status.ok()) {
-                    // Handle read error
-                    error_message = "Error writing Arrow file: " + status.ToString();
+				auto [status, msg] = theEnvironment.arrow_stream.write_arrow_file(Nyxus::get_feature_values());
+				if (!status) {
+					std::cout << "Error writing Arrow file: " << msg.value() << std::endl;
 					return 2;
 				}
-
 			} else {
 
 				ok = save_features_2_buffer(theResultsCache);
@@ -453,15 +439,12 @@ namespace Nyxus
 
 		if (write_apache) {
 			// close arrow file after use
-			auto status = theEnvironment.arrow_writer->close();
-			
-			if (!status.ok()) {
-				// Handle read error
-				error_message = "Error closing Arrow file: " + status.ToString();
+			auto [status, msg] = theEnvironment.arrow_stream.close_arrow_file();
+			if (!status) {
+				std::cout << "Error closing Arrow file: " << msg.value() << std::endl;
 				return 2;
 			}
 		}
-		
 		return 0; // success
 	}
 #endif
