@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(AxleNyxus)
-
+set(CMAKE_VERBOSE_MAKEFILE ON)
 # this is a workaround for GitHub Action for wheelbuiling
 if(DEFINED ENV{NYXUS_DEP_DIR})
 	set(CMAKE_PREFIX_PATH $ENV{NYXUS_DEP_DIR})
