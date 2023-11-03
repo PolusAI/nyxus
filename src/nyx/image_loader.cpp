@@ -8,12 +8,14 @@
   error "Missing the <filesystem> header."
 #endif
 #include <iostream>
+#include "environment.h"
 #include "image_loader.h"
 #include "grayscale_tiff.h"
 #include "omezarr.h"
 #include "nyxus_dicom_loader.h"
 #include "dirs_and_files.h"
-#include "environment.h"
+
+
 
 ImageLoader::ImageLoader() {}
 
