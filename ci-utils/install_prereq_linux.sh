@@ -1,14 +1,17 @@
 #!/bin/bash
-# Usage: $bash install_prereq_linux.sh --min_build yes --install_dir <LOCATION>
+# Usage: $bash install_prereq_linux.sh --min_build yes --on_mac yes --install_dir <LOCATION>
 # Defaults:
 #   $install_dir = ./local_install
 #   $min_build == no
+#   $on_mac == no
 #
 # $min_build = yes will only install pybind11, libtiff and libdeflate
 #
 
 BUILD_Z5_DEP=1
 BULD_DCMTK_DEP=1
+BUILD_ARROW_DEP=1
+BUILD_LLVM=1
 
 while [ $# -gt 0 ]; do
     if [[ $1 == "--"* ]]; then
@@ -22,6 +25,10 @@ done
 if [[ "${min_build,,}" == "yes" ]]; then
     BUILD_Z5_DEP=0
     BULD_DCMTK_DEP=0
+fi
+
+if [[ "${on_mac,,}" == "yes" ]]; then
+    BUILD_LLVM=0
 fi
 
 if [[ -z $install_dir ]]
@@ -204,4 +211,46 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DFMJPEG2K="$ROOTDIR"/"$LOCAL_INSTALL_DIR"/  ..
     make install -j4
     cd ../../
+fi
+
+if [[ $BUILD_ARROW_DEP -eq 1 ]]; then
+    
+    ROOTDIR=$(pwd) 
+
+    if [[ $BUILD_LLVM eq 1 ]]; then
+
+        curl -L https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-14.0.0.zip -o llvmorg-14.0.0.zip
+        unzip llvmorg-14.0.0.zip
+        cd llvm-project-llvmorg-14.0.0
+        mkdir build
+        cd build
+        cmake -G "Unix Makefiles" -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra" -DCMAKE_INSTALL_PREFIX=$ROOTDIR/$Z5_INSTALL_DIR -DCMAKE_BUILD_TYPE=Release ../llvm
+        make -j4
+        make install
+
+        cd $ROOTDIR
+
+    fi
+
+    curl -L https://github.com/apache/arrow/archive/refs/tags/apache-arrow-13.0.0.zip -o  arrow-apache-arrow-13.0.0.zip
+    unzip arrow-apache-arrow-13.0.0.zip
+    cd arrow-apache-arrow-13.0.0
+    cd cpp
+    mkdir build
+    cd build
+    cmake -DCMAKE_INSTALL_PREFIX=$ROOTDIR/$Z5_INSTALL_DIR \
+            -DCMAKE_PREFIX_PATH=$ROOTDIR/$Z5_INSTALL_DIR \
+            -DCMAKE_INSTALL_LIBDIR=arrow_lib \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DARROW_COMPUTE=ON \
+            -DARROW_CSV=ON \
+            -DARROW_DATASET=ON \
+            -DARROW_ACERO=ON \
+            -DARROW_PARQUET=ON \
+            -DARROW_WITH_SNAPPY=ON \
+            .. 
+    make -j4
+    make install
+
+    cd $ROOTDIR
 fi
