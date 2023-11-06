@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <tuple>
+#include <vector>
 
 #include "output_writers.h"
 #include "save_option.h"

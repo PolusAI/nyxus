@@ -1,3 +1,4 @@
+#include <iostream>
 #include "arrow_output_stream.h"
 
 #ifdef USE_ARROW
@@ -92,7 +93,6 @@ std::tuple<bool, std::optional<std::string>> ArrowOutputStream::close_arrow_file
 }
 
 #else 
-
 std::tuple<bool, std::optional<std::string>> ArrowOutputStream::create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
                                                          const std::string& arrow_file_path,
                                                          const std::vector<std::string>& header) {
