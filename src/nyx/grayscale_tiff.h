@@ -12,6 +12,7 @@
 #endif
 #include <cstring>
 #include <sstream>
+#include <limits.h> // for INT_MAX 
 
 constexpr size_t STRIP_TILE_HEIGHT = 1024;
 constexpr size_t STRIP_TILE_WIDTH = 1024;
@@ -27,8 +28,16 @@ public:
     /// @brief NyxusGrayscaleTiffTileLoader unique constructor
     /// @param numberThreads Number of threads associated
     /// @param filePath Path of tiff file
-    NyxusGrayscaleTiffTileLoader(size_t numberThreads, std::string const& filePath)
-        : AbstractTileLoader<DataType>("NyxusGrayscaleTiffTileLoader", numberThreads, filePath) 
+    NyxusGrayscaleTiffTileLoader(
+        size_t numberThreads, 
+        std::string const& filePath, 
+        float _floatpt_image_min_intensity,
+        float _floatpt_image_max_intensity,
+        float _floatpt_image_target_dyn_range)
+        : AbstractTileLoader<DataType>("NyxusGrayscaleTiffTileLoader", numberThreads, filePath), 
+        floatpt_image_min_intensity(_floatpt_image_min_intensity),
+        floatpt_image_max_intensity(_floatpt_image_max_intensity),
+        floatpt_image_target_dyn_range(_floatpt_image_target_dyn_range)
     {
         short samplesPerPixel = 0;
 
@@ -165,10 +174,10 @@ public:
             case 8:
             case 16:
             case 32:
-                loadTile<float>(tiffTile, tileDataVec);
+                loadTile_real_intens <float> (tiffTile, tileDataVec);
                 break;
             case 64:
-                loadTile<double>(tiffTile, tileDataVec);
+                loadTile_real_intens <double> (tiffTile, tileDataVec);
                 break;
             default:
                 message
@@ -267,7 +276,57 @@ private:
                 for (size_t i = 0; i < n; i++)
                     *(dest + i) = (DataType) *(((FileType*)src) + i);
             }
+    }
 
+    /// @brief Private function to copy and cast values to a real data type (float or double determined by parameter 'FileType'). It solves the issue when intensities in range [0.0 , 1.0] are cast to integer 0.
+    /// @tparam FileType Type inside the file
+    /// @param src Piece of memory coming from libtiff
+    /// @param dst_as_vector [OUTPUT] Feature extraction facing logical buffer, usually of type unsigned 32-bit int
+    /// 
+    template<typename FileType>
+    void loadTile_real_intens (tdata_t src, std::vector<DataType>& dst_as_vector)
+    {
+        // Get ahold of the raw pointer
+        DataType* dest = dst_as_vector.data();
+
+        // Special case of tileWidth_ (e.g. 1024) > fullWidth_ (e.g. 256)
+        if (tileWidth_ > fullWidth_ && tileHeight_ > fullHeight_)
+        {
+            // Zero-prefill margins of the logical buffer 
+            size_t szb = tileHeight_ * tileWidth_ * sizeof(*dest);
+            memset(dest, 0, szb);
+
+            // Copy pixels assuming the row-major layout both in the physical (TIFF) and logical (ROI scanner facing) buffers
+            for (size_t r = 0; r < fullHeight_; r++)
+                for (size_t c = 0; c < fullWidth_; c++)
+                {
+                    size_t logOffs = r * tileWidth_ + c,
+                        physOffs = r * tileWidth_ + c;
+
+                    // Prevent real-valued intensities smaller than 1.0 from being cast to integer 0
+                    auto tmp1 = * (((FileType*)src) + physOffs);    // real-valued intensity e.g. 0.0724
+                    if (tmp1 < floatpt_image_min_intensity || tmp1 > floatpt_image_max_intensity)
+                        throw std::runtime_error("Expecting a pixel intensity in range [" + std::to_string(floatpt_image_min_intensity) + "," + std::to_string(floatpt_image_max_intensity) + "]. Please rerun with different expected intensity bounds");
+                    auto tmp2 = floatpt_image_target_dyn_range * (tmp1 - floatpt_image_min_intensity) / (floatpt_image_max_intensity - floatpt_image_min_intensity);
+                    auto tmp3 = (DataType) tmp2; // integer-valued intensity
+                    *(dest + logOffs) = tmp3;
+                }
+        }
+        else
+            // General case the logical buffer is same size (specifically, tile size) as the physical one even if tileWidth_ (e.g. 1024) < fullWidth_ (e.g. 1080)
+            {
+                size_t n = tileHeight_ * tileWidth_;
+                for (size_t i = 0; i < n; i++)
+                {
+                    // Prevent real-valued intensities smaller than 1.0 from being cast to integer 0
+                    auto tmp1 = * (((FileType*)src) + i);           // real-valued intensity e.g. 0.0724
+                    if (tmp1 < floatpt_image_min_intensity || tmp1 > floatpt_image_max_intensity)
+                        throw std::runtime_error("Expecting a pixel intensity in range [" + std::to_string(floatpt_image_min_intensity) + "," + std::to_string(floatpt_image_max_intensity) + "]. Please rerun with different expected intensity bounds");
+                    auto tmp2 = floatpt_image_target_dyn_range * (tmp1 - floatpt_image_min_intensity) / (floatpt_image_max_intensity - floatpt_image_min_intensity);
+                    auto tmp3 = (DataType) tmp2; // integer-valued intensity
+                    *(dest + i) = tmp3;
+                }
+            }
     }
 
     TIFF*
@@ -282,6 +341,10 @@ private:
     short
         sampleFormat_ = 0,          ///< Sample format as defined by libtiff
         bitsPerSample_ = 0;         ///< Bit Per Sample as defined by libtiff
+
+    float floatpt_image_min_intensity = 0.0,
+        floatpt_image_max_intensity = 1.0,
+        floatpt_image_target_dyn_range = 1e4;
 
 };
 

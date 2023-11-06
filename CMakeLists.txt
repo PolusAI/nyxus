@@ -178,6 +178,7 @@ set(SOURCE
 	src/nyx/features/zernike.cpp
 	src/nyx/features/zernike_nontriv.cpp
 	src/nyx/helpers/timing.cpp
+	src/nyx/cli_fpimage_options.cpp
 	src/nyx/cli_gabor_options.cpp
 	src/nyx/cli_nested_roi_options.cpp
 	src/nyx/common_stats.cpp
@@ -217,10 +218,10 @@ endif()
 if(BUILD_LIB)
 	pybind11_add_module(backend 
 		${SOURCE}
-		src/nyx/python/new_bindings_py.cpp
 		src/nyx/python/nested_roi_py.cpp
-		src/nyx/nested_roi.cpp
+		src/nyx/python/new_bindings_py.cpp
 		src/nyx/image_loader1x.cpp
+		src/nyx/nested_roi.cpp
 	)
 endif()
 
