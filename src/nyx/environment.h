@@ -3,13 +3,15 @@
 #include <map>
 #include <string>
 #include <vector>
+
+#include "arrow_output_stream.h"
 #include "environment_basic.h"
-#include "roi_blacklist.h"
 #include "cli_fpimage_options.h"
 #include "cli_gabor_options.h"
 #include "cli_nested_roi_options.h"
+#include "roi_blacklist.h"
 #include "save_option.h"
-#include "arrow_output_stream.h"
+
 
 
 #ifdef USE_GPU
