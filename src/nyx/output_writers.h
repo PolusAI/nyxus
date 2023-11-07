@@ -10,13 +10,9 @@
 
 #include <arrow/api.h>
 #include <arrow/io/api.h>
-#include <parquet/arrow/reader.h>
 #include <parquet/arrow/writer.h>
-#include <parquet/exception.h>
 #include <arrow/ipc/api.h>
-#include <arrow/result.h>
-#include <arrow/ipc/reader.h>
-#include <arrow/csv/api.h>
+
 
 
 /**
@@ -31,25 +27,6 @@ class ApacheArrowWriter
 
 private: 
     std::shared_ptr<arrow::Table> table_ = nullptr;
-
-
-    arrow::Status open(std::shared_ptr<arrow::io::RandomAccessFile> input, const std::string& file_path) {
-        ARROW_ASSIGN_OR_RAISE(input, arrow::io::ReadableFile::Open(file_path));
-
-        return arrow::Status::OK();
-    }
-
-    arrow::Status open_parquet_file(std::shared_ptr<arrow::io::RandomAccessFile> input, arrow::MemoryPool* pool, std::unique_ptr<parquet::arrow::FileReader> arrow_reader) {
-        ARROW_RETURN_NOT_OK(parquet::arrow::OpenFile(input, pool, &arrow_reader));
-
-        return arrow::Status::OK();
-    }
-
-    arrow::Status read_parquet_table(std::unique_ptr<parquet::arrow::FileReader> arrow_reader, std::shared_ptr<arrow::Table> table) {
-        ARROW_RETURN_NOT_OK(arrow_reader->ReadTable(&table));
-
-        return arrow::Status::OK();
-    }
 
 public:
 

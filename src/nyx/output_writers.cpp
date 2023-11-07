@@ -13,6 +13,8 @@
 #endif
 
 #include <iostream>
+#include <parquet/arrow/reader.h>
+
 #include "helpers/helpers.h"
 
 std::shared_ptr<arrow::Table> ApacheArrowWriter::get_arrow_table(const std::string& file_path) {
