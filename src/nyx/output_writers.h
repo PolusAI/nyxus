@@ -10,10 +10,8 @@
 
 #include <arrow/api.h>
 #include <arrow/io/api.h>
-#include <parquet/arrow/writer.h>
 #include <arrow/ipc/api.h>
-
-
+#include <parquet/arrow/writer.h>
 
 /**
  * @brief Base class for creating Apache Arrow output writers
