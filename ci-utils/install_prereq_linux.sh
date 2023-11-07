@@ -217,7 +217,7 @@ if [[ $BUILD_ARROW_DEP -eq 1 ]]; then
     
     ROOTDIR=$(pwd) 
 
-    if [[ $BUILD_LLVM eq 1 ]]; then
+    if [[ $BUILD_LLVM -eq 1 ]]; then
 
         curl -L https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-14.0.0.zip -o llvmorg-14.0.0.zip
         unzip llvmorg-14.0.0.zip
