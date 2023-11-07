@@ -29,9 +29,11 @@ if [[ "${min_build,,}" == "yes" ]]; then
     BUILD_ARROW=0
 fi
 
-if [[ "${build_arrow,,}" == "yes" ]]; then
+if [[ "${build_arrow}" == "yes" ]]; then
     BUILD_ARROW=1
 fi
+
+echo build arrow $BUILD_ARROW
 
 if [[ -z $install_dir ]]
 then
@@ -238,4 +240,25 @@ if [[ $BUILD_ARROW_DEP -eq 1 ]]; then
     make install
 
     cd ../../../
+
+
+    curl -L https://github.com/apache/arrow/archive/refs/tags/apache-arrow-12.0.0.zip -o  arrow-apache-arrow-12.0.0.zip
+unzip arrow-apache-arrow-12.0.0.zip
+cd arrow-apache-arrow-12.0.0/
+cd cpp/
+mkdir build
+cd build/
+cmake -DCMAKE_INSTALL_PREFIX=../../../$Z5_INSTALL_DIR \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DARROW_COMPUTE=ON \
+        -DARROW_CSV=ON \
+        -DARROW_DATASET=ON \
+        -DARROW_ACERO=ON \
+        -DARROW_PARQUET=ON \
+        -DARROW_WITH_SNAPPY=ON \
+        .. 
+make -j4
+make install
+cd ../../../
 fi
