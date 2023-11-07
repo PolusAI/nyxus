@@ -47,7 +47,8 @@ jobs:
                                    bash ci-utils/install_prereq_linux.sh --on_mac yes &&
                                    mkdir -p /tmp/nyxus_bld &&
                                    cp -r local_install /tmp/nyxus_bld 
-          CIBW_BEFORE_ALL_LINUX:  bash ci-utils/install_prereq_linux.sh &&
+          CIBW_BEFORE_ALL_LINUX:  yum install -y llvm libevent-devel openssl-devel && bash ci-utils/install_arrow_centos.sh &&
+                                   bash ci-utils/install_prereq_linux.sh &&
                                    mkdir -p /tmp/nyxus_bld &&
                                    cp -r local_install /tmp/nyxus_bld
           CIBW_BEFORE_ALL_WINDOWS: ci-utils\install_prereq_win.bat &&
@@ -60,7 +61,7 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
           CIBW_TEST_REQUIRES: numpy pandas pytest requests
-          CIBW_TEST_COMMAND: pytest {project}/tests/python -m "not arrow"
+          CIBW_TEST_COMMAND: pytest {project}/tests/python
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
