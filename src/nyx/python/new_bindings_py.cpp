@@ -561,16 +561,6 @@ bool arrow_is_enabled_imp() {
 
 PYBIND11_MODULE(backend, m)
 {
-
-#ifdef USE_ARROW
-    Py_Initialize();
-
-    int success = arrow::py::import_pyarrow();
-
-    if (success != 0) {
-        throw std::runtime_error("Error initializing pyarrow.");
-    } 
-#endif
     m.doc() = "Nyxus";
     
     m.def("initialize_environment", &initialize_environment, "Environment initialization");
