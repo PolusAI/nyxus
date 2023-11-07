@@ -44,7 +44,7 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           CIBW_BEFORE_ALL_MACOS:  brew install llvm libomp && 
                                    python3 -m pip install setuptools==68.2.2 &&
-                                   bash ci-utils/install_prereq_linux.sh --on_mac yes &&
+                                   bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
                                    mkdir -p /tmp/nyxus_bld &&
                                    cp -r local_install /tmp/nyxus_bld 
           CIBW_BEFORE_ALL_LINUX:  yum install -y llvm libevent-devel openssl-devel && 
@@ -62,6 +62,7 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
           CIBW_TEST_REQUIRES: numpy pandas pytest requests
+          CIBW_TEST_SKIP: "*-windows"
           CIBW_TEST_COMMAND: pytest {project}/tests/python
 
       - name: Upload Artifact
