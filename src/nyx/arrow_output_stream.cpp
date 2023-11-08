@@ -1,5 +1,16 @@
+#include <iostream>
 #include "arrow_output_stream.h"
+
 #ifdef USE_ARROW
+#if __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem> 
+  namespace fs = std::experimental::filesystem;
+#else
+  error "Missing the <filesystem> header."
+#endif
 
 std::tuple<bool, std::optional<std::string>> ArrowOutputStream::create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
                                                          const std::string& arrow_file_path,
@@ -82,7 +93,6 @@ std::tuple<bool, std::optional<std::string>> ArrowOutputStream::close_arrow_file
 }
 
 #else 
-
 std::tuple<bool, std::optional<std::string>> ArrowOutputStream::create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
                                                          const std::string& arrow_file_path,
                                                          const std::vector<std::string>& header) {

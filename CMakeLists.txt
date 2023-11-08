@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(AxleNyxus)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 # this is a workaround for GitHub Action for wheelbuiling
 if(DEFINED ENV{NYXUS_DEP_DIR})
@@ -375,7 +376,7 @@ endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
-	list(APPEND Nyxus_LIBRARIES stdc++fs -static-libgcc -static-libstdc++)
+	list(APPEND Nyxus_LIBRARIES stdc++fs)
 endif()
 
 if(BUILD_LIB)

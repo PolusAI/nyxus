@@ -5,16 +5,24 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
+
+#ifdef USE_ARROW
+#include <arrow/table.h>
+#include <arrow/python/platform.h>
+#include <arrow/python/datetime.h>
+#include <arrow/python/init.h>
+#include <arrow/python/pyarrow.h>
+#endif
+
 #include "../version.h"
+#include "../dirs_and_files.h"   
 #include "../environment.h"
 #include "../feature_mgr.h"
-#include "../dirs_and_files.h"   
 #include "../globals.h"
 #include "../nested_feature_aggregation.h"
 #include "../features/gabor.h"
 #include "../output_writers.h" 
 #include "../arrow_output_stream.h"
-
 
 namespace py = pybind11;
 using namespace Nyxus;

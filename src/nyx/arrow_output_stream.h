@@ -4,23 +4,13 @@
 #include <string>
 #include <memory>
 #include <tuple>
+#include <vector>
 
 #include "output_writers.h"
-#include "helpers/helpers.h"
 #include "save_option.h"
 
 #ifdef USE_ARROW
 #include <arrow/table.h>
-
-#if __has_include(<filesystem>)
-  #include <filesystem>
-  namespace fs = std::filesystem;
-#elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
-  namespace fs = std::experimental::filesystem;
-#else
-  error "Missing the <filesystem> header."
-#endif
 
 /**
  * @brief Class to write to Apache Arrow formats

@@ -1,6 +1,22 @@
 #include "output_writers.h"
 
 #ifdef USE_ARROW
+
+#if __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem> 
+  namespace fs = std::experimental::filesystem;
+#else
+  error "Missing the <filesystem> header."
+#endif
+
+#include <iostream>
+#include <parquet/arrow/reader.h>
+
+#include "helpers/helpers.h"
+
 std::shared_ptr<arrow::Table> ApacheArrowWriter::get_arrow_table(const std::string& file_path) {
 
     if (table_ != nullptr) return table_;
