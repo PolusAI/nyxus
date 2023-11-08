@@ -6,14 +6,6 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 
-#ifdef USE_ARROW
-#include <arrow/table.h>
-#include <arrow/python/platform.h>
-#include <arrow/python/datetime.h>
-#include <arrow/python/init.h>
-#include <arrow/python/pyarrow.h>
-#endif
-
 #include "../version.h"
 #include "../dirs_and_files.h"   
 #include "../environment.h"
