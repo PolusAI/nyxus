@@ -225,8 +225,8 @@ if [[ $BUILD_ARROW_DEP -eq 1 ]]; then
     cd cpp
     mkdir build
     cd build
-    cmake -DCMAKE_INSTALL_PREFIX=../../../$Z5_INSTALL_DIR \
-            -DCMAKE_PREFIX_PATH=../../../$Z5_INSTALL_DIR \
+    cmake -DCMAKE_INSTALL_PREFIX=../../../"$LOCAL_INSTALL_DIR"/ \
+            -DCMAKE_PREFIX_PATH=../../../"$LOCAL_INSTALL_DIR"/ \
             -DCMAKE_INSTALL_LIBDIR=lib \
             -DCMAKE_BUILD_TYPE=Release \
             -DARROW_COMPUTE=ON \
