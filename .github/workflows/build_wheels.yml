@@ -64,7 +64,7 @@ jobs:
           CIBW_TEST_REQUIRES: numpy pandas pytest requests
           CIBW_TEST_COMMAND_MACOS: pytest {project}/tests/python
           CIBW_TEST_COMMAND_LINUX: pytest {project}/tests/python
-          CIBW_TEST_COMMAND_WINDOW: pytest {project}/tests/python -m "not arrow"
+          CIBW_TEST_COMMAND_WINDOWS: pytest {project}/tests/python -m "not arrow"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
