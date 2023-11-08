@@ -349,7 +349,7 @@ if(USE_ARROW)
 	endif()
 	
 	find_package(Parquet)
-	if (NOT Arrow_FOUND) 
+	if (NOT Parquet_FOUND) 
 		message(WARNING "The Parquet library was not found. The build will continue without Arrow support.")
 		set(USE_ARROW OFF)
 	endif()
