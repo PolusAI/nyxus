@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
 project(AxleNyxus)
-set(CMAKE_VERBOSE_MAKEFILE ON)
 include(GNUInstallDirs)
 include(CheckLanguage)
 
@@ -46,7 +45,6 @@ if (USEGPU)
 endif()
 
 if(USEGPU) 
-	message(STATUS "CUDA Toolkit Version {CUDAToolkit_VERSION}")
 	if (CUDAToolkit_VERSION_MAJOR STREQUAL "10")
 		set(CUDA_ARCH_LIST "35;37;50;72;75")
 	elseif (CUDAToolkit_VERSION_MAJOR STREQUAL "11")
