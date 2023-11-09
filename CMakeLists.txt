@@ -330,9 +330,10 @@ if(USEGPU)
 	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		target_compile_options(nyxus_gpu PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
 	endif()
-	list(APPEND Nyxus_LIBRARIES CUDA::cudart)
-	list(APPEND Nyxus_LIBRARIES CUDA::cufft)
 	list(APPEND Nyxus_LIBRARIES nyxus_gpu)
+	list(APPEND Nyxus_LIBRARIES CUDA::cufft)
+	list(APPEND Nyxus_LIBRARIES CUDA::cudart)
+
 
 	if(BUILD_LIB)
 		set_target_properties(backend PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
