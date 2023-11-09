@@ -41,7 +41,7 @@ check_language(CUDA)
 
 if(CMAKE_CUDA_COMPILER AND USEGPU) 
 	set(USEGPU ON)
-	  enable_language(CUDA)
+	enable_language(CUDA)
 	if (CUDA_VERSION_MAJOR STREQUAL "10")
 		set(CUDA_ARCH_LIST "35;37;50;72;75")
 	elseif (CUDA_VERSION_MAJOR STREQUAL "11")
