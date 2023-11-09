@@ -10,7 +10,8 @@
 
 BUILD_Z5_DEP=1
 BULD_DCMTK_DEP=1
-BUILD_ARROW=0
+BUILD_ARROW_DEP=0
+BUILD_BOOST_DEP=1
 
 while [ $# -gt 0 ]; do
     if [[ $1 == "--"* ]]; then
@@ -24,14 +25,15 @@ done
 if [[ "${min_build,,}" == "yes" ]]; then
     BUILD_Z5_DEP=0
     BULD_DCMTK_DEP=0
-    BUILD_ARROW=0
+    BUILD_ARROW_DEP=0
+    BUILD_BOOST_DEP=0
 fi
 
 if [[ "${build_arrow}" == "yes" ]]; then
-    BUILD_ARROW=1
+    BUILD_ARROW_DEP=1
+    BUILD_BOOST_DEP=1
 fi
 
-echo build arrow $BUILD_ARROW
 
 if [[ -z $install_dir ]]
 then
@@ -64,7 +66,7 @@ cmake --build .
 cmake --build . --target install 
 cd ../../
 
-if [[ $BUILD_Z5_DEP -eq 1 ]]; then
+if [[ $BUILD_BOOST_DEP -eq 1 ]]; then
     for i in {1..5}
     do
         curl -L https://boostorg.jfrog.io/artifactory/main/release/1.79.0/source/boost_1_79_0.tar.bz2 -o boost_1_79_0.tar.bz2 
@@ -78,7 +80,9 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     ./b2 headers
     cp -r boost ../"$LOCAL_INSTALL_DIR"/include
     cd ../
+fi
 
+if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     curl -L https://github.com/Blosc/c-blosc/archive/refs/tags/v1.21.5.zip -o v1.21.5.zip
     unzip v1.21.5.zip
     cd c-blosc-1.21.5
@@ -215,7 +219,7 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     cd ../../
 fi
 
-if [[ $BUILD_ARROW -eq 1 ]]; then
+if [[ $BUILD_ARROW_DEP -eq 1 ]]; then
 
     curl -L https://github.com/apache/arrow/archive/refs/tags/apache-arrow-13.0.0.zip -o  arrow-apache-arrow-13.0.0.zip
     unzip arrow-apache-arrow-13.0.0.zip

@@ -1,77 +1,11 @@
 #include "output_writers.h"
 
 #ifdef USE_ARROW
-
-#if __has_include(<filesystem>)
-  #include <filesystem>
-  namespace fs = std::filesystem;
-#elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
-  namespace fs = std::experimental::filesystem;
-#else
-  error "Missing the <filesystem> header."
-#endif
-
 #include <iostream>
 #include <parquet/arrow/reader.h>
 
 #include "helpers/helpers.h"
 
-std::shared_ptr<arrow::Table> ApacheArrowWriter::get_arrow_table(const std::string& file_path) {
-
-    if (table_ != nullptr) return table_;
-
-    auto file_extension = fs::path(file_path).extension().u8string();
-
-    if (file_extension == ".parquet") {
-        arrow::MemoryPool* pool = arrow::default_memory_pool();
-
-
-        std::shared_ptr<arrow::io::RandomAccessFile> input;
-
-        input = arrow::io::ReadableFile::Open(file_path).ValueOrDie();
-        
-        std::unique_ptr<parquet::arrow::FileReader> arrow_reader;
-
-        auto status = parquet::arrow::OpenFile(input, pool, &arrow_reader);
-
-        if (!status.ok()) {
-            // Handle read error
-            std::cerr << "Error creating arrow table: " << status.ToString();
-            return nullptr;
-        }
-
-        // Read entire file as a single Arrow table
-        std::shared_ptr<arrow::Table> table;
-
-        status = arrow_reader->ReadTable(&table);
-
-        if (!status.ok()) {
-            // Handle read error
-            std::cerr << "Error creating arrow table: " << status.ToString();
-            return nullptr;
-        }
-
-        return table;
-
-    } else if (file_extension == ".arrow") {
-
-        // Create a memory-mapped file for reading.
-        std::shared_ptr<arrow::io::ReadableFile> input;
-        input = arrow::io::ReadableFile::Open(file_path).ValueOrDie();
-
-        // Create an IPC reader.
-        auto ipc_reader = (arrow::ipc::RecordBatchStreamReader::Open(input.get())).ValueOrDie();
-
-        this->table_ = ipc_reader->ToTable().ValueOrDie();
-
-        return table_;
-
-    } else {
-        throw std::invalid_argument("Error: file must either be an Arrow or Parquet file.");
-    }
-
-}
 
 arrow::Status ParquetWriter::setup(const std::vector<std::string> &header) {
 
