@@ -1,6 +1,17 @@
 #include "output_writers.h"
 
 #ifdef USE_ARROW
+
+#if __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem> 
+  namespace fs = std::experimental::filesystem;
+#else
+  error "Missing the <filesystem> header."
+#endif
+
 #include <iostream>
 #include <parquet/arrow/reader.h>
 
@@ -348,7 +359,7 @@ std::tuple<std::unique_ptr<ApacheArrowWriter>, std::optional<std::string>> Write
 
     } else {
 
-        std::filesystem::path path(output_file);
+        fs::path path(output_file);
 
         auto error_msg = [&path](){        
             if (path.has_extension()) 
