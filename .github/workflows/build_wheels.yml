@@ -42,11 +42,14 @@ jobs:
           CIBW_SKIP: "*musllinux*"
           CIBW_BUILD_VERBOSITY: 3
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
-          CIBW_BEFORE_ALL_MACOS: brew install llvm libomp && 
-                                   bash ci-utils/install_prereq_linux.sh &&
+          CIBW_BEFORE_ALL_MACOS:  brew install llvm libomp && 
+                                   python3 -m pip install setuptools==68.2.2 &&
+                                   bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
                                    mkdir -p /tmp/nyxus_bld &&
                                    cp -r local_install /tmp/nyxus_bld 
-          CIBW_BEFORE_ALL_LINUX:  bash ci-utils/install_prereq_linux.sh &&
+          CIBW_BEFORE_ALL_LINUX:  yum install -y llvm libevent-devel openssl-devel && 
+                                   bash ci-utils/install_arrow_yum.sh &&
+                                   bash ci-utils/install_prereq_linux.sh --build_arrow no &&
                                    mkdir -p /tmp/nyxus_bld &&
                                    cp -r local_install /tmp/nyxus_bld
           CIBW_BEFORE_ALL_WINDOWS: ci-utils\install_prereq_win.bat &&
@@ -59,7 +62,9 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
           CIBW_TEST_REQUIRES: numpy pandas pytest requests
-          CIBW_TEST_COMMAND: pytest {project}/tests/python -m "not arrow"
+          CIBW_TEST_COMMAND_MACOS: pytest {project}/tests/python
+          CIBW_TEST_COMMAND_LINUX: pytest {project}/tests/python
+          CIBW_TEST_COMMAND_WINDOWS: pytest {project}/tests/python -m "not arrow"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3

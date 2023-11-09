@@ -33,8 +33,7 @@ if (arrow_headers_found() and arrow_is_enabled_imp()):
         
         from .backend import (
             get_arrow_file_imp, 
-            get_parquet_file_imp, 
-            get_arrow_table_imp,
+            get_parquet_file_imp,
         )
             
         import pyarrow as pa
@@ -755,25 +754,6 @@ class Nyxus:
             return array
         else:
             raise RuntimeError("Apache arrow is not enabled. Please rebuild Nyxus with Arrow support to enable this functionality.")
-    
-    
-    def get_arrow_table(self, arrow_file_path: str):
-        """Returns an arrow table containing the feature calculations.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        pyarrow.Table 
-
-        """
-        
-        if self.arrow_is_enabled():
-            return get_arrow_table_imp(str(arrow_file_path))
-        else:
-            raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
     
     def arrow_is_enabled(self):
         """Returns true if arrow support is enabled.
