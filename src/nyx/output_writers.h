@@ -27,14 +27,6 @@ private:
     std::shared_ptr<arrow::Table> table_ = nullptr;
 
 public:
-
-    /**
-     * @brief Get the arrow table object
-     * 
-     * @return std::shared_ptr<arrow::Table> 
-     */
-    std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path);
-
     /**
      * @brief Write Nyxus data to Arrow file
      * 

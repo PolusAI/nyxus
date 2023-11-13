@@ -341,7 +341,6 @@ if(USEGPU)
 endif()
 
 if(USE_ARROW)
-	option(PARQUET_LINK_SHARED "Link to the Parquet shared library" ON)
 	# Look for installed packages the system
 	find_package(Arrow)
 	if (NOT Arrow_FOUND) 
@@ -360,12 +359,7 @@ endif()
 if(USE_ARROW)
 	add_definitions(-DUSE_ARROW)
 	list(APPEND Nyxus_LIBRARIES arrow_shared)
-
-	if(PARQUET_LINK_SHARED)
-		list(APPEND Nyxus_LIBRARIES parquet_shared)
-	else()
-		list(APPEND Nyxus_LIBRARIES parquet_static)
-	endif()
+	list(APPEND Nyxus_LIBRARIES parquet_shared)
 endif()
 
 if(BUILD_LIB)
