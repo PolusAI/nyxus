@@ -44,9 +44,8 @@ bool ImageMomentsFeature_calcNormCentralMoments3(
 }
 
 bool ImageMomentsFeature_calcNormSpatialMoments3(
-    double& w00, double& w01, double& w02, double& w03, double& w10, double& w20, double& w30,   // output
-    double cm00, double cm01, double cm02, double cm03, double cm10, double cm20, double cm30,
-    double cm22)
+    double& w00, double& w01, double& w02, double& w03, double& w10, double& w11, double& w12, double& w13, double& w20, double& w21, double& w22, double& w23, double& w30, double& w31, double& w32, double& w33,   // output
+    double cm00, double cm01, double cm02, double cm03, double cm10, double cm11, double cm12, double cm13, double cm20, double cm21, double cm22, double cm23, double cm30, double cm31, double cm32, double cm33)
 {
     // Formula: 
     //  double stddev = CentralMom(D, 2, 2);
@@ -54,36 +53,31 @@ bool ImageMomentsFeature_calcNormSpatialMoments3(
     //  double normCoef = pow(stddev, w);
     //  double retval = CentralMom(D, p, q) / normCoef;
 
-    int w;
-    double normCoef;
-    // 00
-    w = 0;
-    normCoef = pow(cm22, w * 1.0);
-    w00 = cm00 / normCoef;
-    // 01
-    w = 1;
-    normCoef = pow(cm22, w * 1.0);
-    w01 = cm01 / normCoef;
-    // 02
-    w = 2;
-    normCoef = pow(cm22, w * 1.0);
-    w02 = cm02 / normCoef;
-    // 03
-    w = 3;
-    normCoef = pow(cm22, w * 1.0);
-    w03 = cm03 / normCoef;
-    // 10
-    w = 1;
-    normCoef = pow(cm22, w * 1.0);
-    w10 = cm10 / normCoef;
-    // 20
-    w = 2;
-    normCoef = pow(cm22, w * 1.0);
-    w20 = cm20 / normCoef;
-    // 30
-    w = 3;
-    normCoef = pow(cm22, w * 1.0);
-    w30 = cm30 / normCoef;
+    // Normalizing coefficients 
+    double nc0 = pow(cm22, 0),
+        nc1 = pow(cm22, 1),
+        nc2 = pow(cm22, 2),
+        nc3 = pow(cm22, 3);
+
+    w00 = cm00 / nc0;  // 00
+    w01 = cm01 / nc1;  // 01
+    w02 = cm02 / nc2;  // 02
+    w03 = cm03 / nc3;  // 03
+
+    w10 = cm10 / nc0;  // 10
+    w11 = cm11 / nc1;  // 11
+    w12 = cm12 / nc2;  // 12
+    w13 = cm13 / nc3;  // 13
+
+    w20 = cm20 / nc0;  // 20
+    w21 = cm21 / nc1;  // 21
+    w22 = cm22 / nc2;  // 22
+    w23 = cm23 / nc3;  // 23
+
+    w30 = cm30 / nc0;  // 30
+    w31 = cm31 / nc1;  // 31
+    w32 = cm32 / nc2;  // 32
+    w33 = cm33 / nc3;  // 33
 
     return true;
 }

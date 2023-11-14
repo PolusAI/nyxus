@@ -140,12 +140,12 @@ bool drvCentralMomentWeighted (
 
 bool ImageMomentsFeature_calcCentralMoments (
     // output
-    double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _20, double& _21, double& _22, double& _30,
+    double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _13, double& _20, double& _21, double& _22, double& _23, double& _30, double& _31, double& _32, double& _33,
     // input
     const Pixel2* d_roicloud, size_t cloud_len, StatsInt base_x, StatsInt base_y, double origin_x, double origin_y)
 {
     // Mark as unassigned a value
-    _00 = _01 = _02 = _03 = _10 = _11 = _12 = _20 = _21 = _22 = _30 = -1;
+    _00 = _01 = _02 = _03 = _10 = _11 = _12 = _13 = _20 = _21 = _22 = _30 = _30 = _31 = _32 = _33 = -1;
 
     // Calculate
     if (drvCentralMoment(_00, 0, 0, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
@@ -169,6 +169,9 @@ bool ImageMomentsFeature_calcCentralMoments (
     if (drvCentralMoment(_12, 1, 2, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
         return false;
 
+    if (drvCentralMoment(_13, 1, 3, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
+        return false;
+
     if (drvCentralMoment(_20, 2, 0, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
         return false;
 
@@ -178,7 +181,19 @@ bool ImageMomentsFeature_calcCentralMoments (
     if (drvCentralMoment(_22, 2, 2, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
         return false;
 
+    if (drvCentralMoment(_23, 2, 3, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
+        return false;
+
     if (drvCentralMoment(_30, 3, 0, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
+        return false;
+
+    if (drvCentralMoment(_31, 3, 1, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
+        return false;
+
+    if (drvCentralMoment(_32, 3, 2, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
+        return false;
+
+    if (drvCentralMoment(_33, 3, 3, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
         return false;
 
     return true;

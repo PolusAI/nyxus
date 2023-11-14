@@ -32,8 +32,11 @@ public:
         SPAT_MOMENT_10,
         SPAT_MOMENT_11,
         SPAT_MOMENT_12,
+        SPAT_MOMENT_13,
         SPAT_MOMENT_20,
         SPAT_MOMENT_21,
+        SPAT_MOMENT_22,
+        SPAT_MOMENT_23,
         SPAT_MOMENT_30,
 
         // Weighted spatial moments
@@ -49,13 +52,22 @@ public:
         WEIGHTED_SPAT_MOMENT_30,
 
         // Central moments
+        CENTRAL_MOMENT_00,
+        CENTRAL_MOMENT_01,
         CENTRAL_MOMENT_02,
         CENTRAL_MOMENT_03,
+        CENTRAL_MOMENT_10,
         CENTRAL_MOMENT_11,
         CENTRAL_MOMENT_12,
+        CENTRAL_MOMENT_13,
         CENTRAL_MOMENT_20,
         CENTRAL_MOMENT_21,
+        CENTRAL_MOMENT_22,
+        CENTRAL_MOMENT_23,
         CENTRAL_MOMENT_30,
+        CENTRAL_MOMENT_31,
+        CENTRAL_MOMENT_32,
+        CENTRAL_MOMENT_33,
 
         // Weighted central moments
         WEIGHTED_CENTRAL_MOMENT_02,
@@ -81,8 +93,17 @@ public:
         NORM_SPAT_MOMENT_02,
         NORM_SPAT_MOMENT_03,
         NORM_SPAT_MOMENT_10,
+        NORM_SPAT_MOMENT_11,
+        NORM_SPAT_MOMENT_12,
+        NORM_SPAT_MOMENT_13,
         NORM_SPAT_MOMENT_20,
+        NORM_SPAT_MOMENT_21,
+        NORM_SPAT_MOMENT_22,
+        NORM_SPAT_MOMENT_23,
         NORM_SPAT_MOMENT_30,
+        NORM_SPAT_MOMENT_31,
+        NORM_SPAT_MOMENT_32,
+        NORM_SPAT_MOMENT_33,
 
         // Hu's moments 1-7 
         HU_M1,
@@ -165,11 +186,11 @@ private:
 
     StatsInt baseX = 0, baseY = 0; // cached min X and Y of the ROI. Reason - Pixel2's X and Y are absolute so we need to make them relative. Must be set in calculate() prior to calculating any 2D moment
     double originOfX = 0, originOfY = 0; // centroids
-    double m00 = 0, m01 = 0, m02 = 0, m03 = 0, m10 = 0, m11 = 0, m12 = 0, m20 = 0, m21 = 0, m30 = 0;    // spatial moments
+    double m00=0, m01=0, m02=0, m03=0, m10=0, m11=0, m12=0, m13=0, m20=0, m21=0, m22=0, m23=0, m30=0;    // spatial moments
     double wm00 = 0, wm01 = 0, wm02 = 0, wm03 = 0, wm10 = 0, wm11 = 0, wm12 = 0, wm20 = 0, wm21 = 0, wm30 = 0;    // weighted spatial moments
-    double w00 = 0, w01 = 0, w02 = 0, w03 = 0, w10 = 0, w20 = 0, w30 = 0;   // normalized spatial moments
+    double w00=0, w01=0, w02=0, w03=0, w10=0, w11=0, w12=0, w13=0, w20=0, w21=0, w22=0, w23=0, w30=0, w31=0, w32=0, w33=0;   // normalized spatial moments
     double nu02 = 0, nu03 = 0, nu11 = 0, nu12 = 0, nu20 = 0, nu21 = 0, nu30 = 0;    // normalized central moments
-    double mu02 = 0, mu03 = 0, mu11 = 0, mu12 = 0, mu20 = 0, mu21 = 0, mu30 = 0;    // central moments
+    double mu00=0, mu01=0, mu02=0, mu03=0, mu10=0, mu11=0, mu12=0, mu13=0, mu20=0, mu21=0, mu22=0, mu23=0, mu30=0, mu31=0, mu32=0, mu33=0;  // central moments
     double wmu02 = 0, wmu03 = 0, wmu11 = 0, wmu12 = 0, wmu20 = 0, wmu21 = 0, wmu30 = 0;    // weighted central moments
     double hm1 = 0, hm2 = 0, hm3 = 0, hm4 = 0, hm5 = 0, hm6 = 0, hm7 = 0;   // Hu invariants
     double whm1 = 0, whm2 = 0, whm3 = 0, whm4 = 0, whm5 = 0, whm6 = 0, whm7 = 0;    // weighted Hu invariants
@@ -177,29 +198,13 @@ private:
     const double weighting_epsilon = 0.001;
 };
 
-bool ImageMomentsFeature_calculate2 (
-    // output:
-    double& m00, double& m01, double& m02, double& m03, double& m10, double& m11, double& m12, double& m20, double& m21, double& m30,   // spatial moments
-    double& cm02, double& cm03, double& cm11, double& cm12, double& cm20, double& cm21, double& cm30,   // central moments
-    double& nu02, double& nu03, double& nu11, double& nu12, double& nu20, double& nu21, double& nu30,    // normalized central moments
-    double& w00, double& w01, double& w02, double& w03, double& w10, double& w20, double& w30,   // normalized spatial moments
-    double& hm1, double& hm2, double& hm3, double& hm4, double& hm5, double& hm6, double& hm7,  // Hu moments
-    double& wm00, double& wm01, double& wm02, double& wm03, double& wm10, double& wm11, double& wm12, double& wm20, double& wm21, double& wm30,   // weighted spatial moments
-    double& wmu02, double& wmu03, double& wmu11, double& wmu12, double& wmu20, double& wmu21, double& wmu30,   // weighted central moments
-    double& whm1, double& whm2, double& whm3, double& whm4, double& whm5, double& whm6, double& whm7,    // weighted Hum moments
-    // input:
-    const ImageMatrix& Im,
-    size_t roi_idx, 
-    StatsInt aabb_min_x, 
-    StatsInt aabb_min_y);
-
 // References glocal objects 'Nyxus::ImageMatrixBuffer' and 'Nyxus::devImageMatrixBuffer'
 bool ImageMomentsFeature_calculate (
     // output:
-    double& m00, double& m01, double& m02, double& m03, double& m10, double& m11, double& m12, double& m20, double& m21, double& m30,   // spatial moments
-    double& cm02, double& cm03, double& cm11, double& cm12, double& cm20, double& cm21, double& cm30,   // central moments
+    double& m00, double& m01, double& m02, double& m03, double& m10, double& m11, double& m12, double& m13, double& m20, double& m21, double& m22, double& m23, double& m30,   // spatial moments
+    double& cm00, double& cm01, double& cm02, double& cm03, double& cm10, double& cm11, double& cm12, double& cm13, double& cm20, double& cm21, double& cm22, double& cm23, double& cm30, double& cm31, double& cm32, double& cm33,  // central moments
     double& nu02, double& nu03, double& nu11, double& nu12, double& nu20, double& nu21, double& nu30,    // normalized central moments
-    double& w00, double& w01, double& w02, double& w03, double& w10, double& w20, double& w30,   // normalized spatial moments
+    double& w00, double& w01, double& w02, double& w03, double& w10, double& w11, double& w12, double& w13, double& w20, double& w21, double& w22, double& w23, double& w30, double& w31, double& w32, double& w33,   // normalized spatial moments
     double& hm1, double& hm2, double& hm3, double& hm4, double& hm5, double& hm6, double& hm7,  // Hu moments
     double& wm00, double& wm01, double& wm02, double& wm03, double& wm10, double& wm11, double& wm12, double& wm20, double& wm21, double& wm30,   // weighted spatial moments
     double& wmu02, double& wmu03, double& wmu11, double& wmu12, double& wmu20, double& wmu21, double& wmu30,   // weighted central moments
@@ -217,7 +222,6 @@ bool free_2dmoments_buffers_on_gpu ();
 bool send_roi_data_2_gpu(Pixel2* data, size_t n);
 bool send_contour_data_2_gpu(Pixel2* data, size_t n);
 bool free_roi_data_on_gpu();
-
 namespace Nyxus
 {
     extern size_t largest_roi_imatr_buf_len;    // set in phase 2

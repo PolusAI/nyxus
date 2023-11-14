@@ -138,12 +138,12 @@ bool drvRawMomentWeighted(
 
 bool ImageMomentsFeature_calcRawMoments (
     // output
-    double & _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _20, double& _21, double& _30,
+    double & _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _13, double& _20, double& _21, double& _22, double& _23, double& _30,
     // input
     const Pixel2* d_roicloud, size_t cloud_len, StatsInt base_x, StatsInt base_y) // image data
 {
     // Mark as unassigned a value
-    _00 = _01 = _02 = _03 = _10 = _11 = _12 = _20 = _21 = _30 = -1; 
+    _00 = _01 = _02 = _03 = _10 = _11 = _12 = _13 = _20 = _21 = _22 = _23 =_30 = -1; 
 
     // Calculate
     if (drvRawMoment(_00, 0, 0, d_roicloud, cloud_len, base_x, base_y) == false)
@@ -167,10 +167,19 @@ bool ImageMomentsFeature_calcRawMoments (
     if (drvRawMoment(_12, 1, 2, d_roicloud, cloud_len, base_x, base_y) == false)
         return false;
 
+    if (drvRawMoment(_13, 1, 3, d_roicloud, cloud_len, base_x, base_y) == false)
+        return false;
+
     if (drvRawMoment(_20, 2, 0, d_roicloud, cloud_len, base_x, base_y) == false)
         return false;
 
     if (drvRawMoment(_21, 2, 1, d_roicloud, cloud_len, base_x, base_y) == false)
+        return false;
+
+    if (drvRawMoment(_22, 2, 2, d_roicloud, cloud_len, base_x, base_y) == false)
+        return false;
+
+    if (drvRawMoment(_23, 2, 3, d_roicloud, cloud_len, base_x, base_y) == false)
         return false;
 
     if (drvRawMoment(_30, 3, 0, d_roicloud, cloud_len, base_x, base_y) == false)

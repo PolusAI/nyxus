@@ -138,8 +138,11 @@ void ImageMomentsFeature::calcRawMoments(const pixcloud_NT& cloud)
     m10 = moment(cloud, 1, 0);
     m11 = moment(cloud, 1, 1);
     m12 = moment(cloud, 1, 2);
+    m13 = moment(cloud, 1, 3);
     m20 = moment(cloud, 2, 0);
     m21 = moment(cloud, 2, 1);
+    m22 = moment(cloud, 2, 2);
+    m23 = moment(cloud, 2, 3);
     m30 = moment(cloud, 3, 0);
 }
 

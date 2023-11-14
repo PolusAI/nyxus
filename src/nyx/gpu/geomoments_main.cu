@@ -29,7 +29,7 @@ bool ImageMomentsFeature_calcOriginsWeighted(
 
 bool ImageMomentsFeature_calcRawMoments(
     // output
-    double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _20, double& _21, double& _30,
+    double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _13, double& _20, double& _21, double& _22, double& _23, double& _30,
     // input
     const Pixel2* d_roicloud,
     size_t cloud_len, 
@@ -48,7 +48,7 @@ bool ImageMomentsFeature_calcRawMomentsWeighted(
 
 bool ImageMomentsFeature_calcCentralMoments(
     // output
-    double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _20, double& _21, double& _22, double& _30,
+    double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _13, double& _20, double& _21, double& _22, double& _23, double& _30, double& _31, double& _32, double& _33,
     // input
     const Pixel2* d_roicloud, size_t cloud_len, StatsInt base_x, StatsInt base_y, double origin_x, double origin_y);
 
@@ -77,9 +77,8 @@ bool ImageMomentsFeature_calcNormCentralMoments3(
     double m00);
 
 bool ImageMomentsFeature_calcNormSpatialMoments3(
-    double& w00, double& w01, double& w02, double& w03, double& w10, double& w20, double& w30,   // output
-    double cm00, double cm01, double cm02, double cm03, double cm10, double cm20, double cm30,
-    double cm22);
+    double& w00, double& w01, double& w02, double& w03, double& w10, double& w11, double& w12, double& w13, double& w20, double& w21, double& w22, double& w23, double& w30, double& w31, double& w32, double& w33, // output
+    double cm00, double cm01, double cm02, double cm03, double cm10, double cm11, double cm12, double cm13, double cm20, double cm21, double cm22, double cm23, double cm30, double cm31, double cm32, double cm33);
 
 namespace Nyxus
 {
@@ -100,10 +99,10 @@ namespace Nyxus
 }
 
 bool ImageMomentsFeature_calculate (
-    double& m00, double& m01, double& m02, double& m03, double& m10, double& m11, double& m12, double& m20, double& m21, double& m30,   // spatial moments
-    double& cm02, double& cm03, double& cm11, double& cm12, double& cm20, double& cm21, double& cm30,   // central moments
+    double& m00, double& m01, double& m02, double& m03, double& m10, double& m11, double& m12, double& m13, double& m20, double& m21, double& m22, double& m23, double& m30,   // spatial moments
+    double& cm00, double& cm01, double& cm02, double& cm03, double& cm10, double& cm11, double& cm12, double& cm13, double& cm20, double& cm21, double& cm22, double& cm23, double& cm30, double& cm31, double& cm32, double& cm33,   // central moments
     double& nu02, double& nu03, double& nu11, double& nu12, double& nu20, double& nu21, double& nu30,    // normalized central moments
-    double& w00, double& w01, double& w02, double& w03, double& w10, double& w20, double& w30,   // normalized spatial moments
+    double& w00, double& w01, double& w02, double& w03, double& w10, double& w11, double& w12, double& w13, double& w20, double& w21, double& w22, double& w23, double& w30, double& w31, double& w32, double& w33,   // normalized spatial moments
     double& hm1, double& hm2, double& hm3, double& hm4, double& hm5, double& hm6, double& hm7,  // Hu moments
     double& wm00, double& wm01, double& wm02, double& wm03, double& wm10, double& wm11, double& wm12, double& wm20, double& wm21, double& wm30,   // weighted spatial moments
     double& wcm02, double& wcm03, double& wcm11, double& wcm12, double& wcm20, double& wcm21, double& wcm30,   // weighted central moments
@@ -133,16 +132,15 @@ bool ImageMomentsFeature_calculate (
 
     //==== Spatial moments
     good = ImageMomentsFeature_calcRawMoments(
-        m00, m01, m02, m03, m10, m11, m12, m20, m21, m30,
+        m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30,
         Nyxus::devRoiCloudBuffer, Nyxus::roi_cloud_len, aabb_min_x, aabb_min_y); 
 
     if (!good)
         return false;
 
     //==== Central moments
-    double cm00_ = -1, cm01_ = -1, cm10_ = -1, cm22_ = -1;  // needd by norm raw moments, mark with -1 as unassigned
     good = ImageMomentsFeature_calcCentralMoments(
-        cm00_, cm01_, cm02, cm03, cm10_, cm11, cm12, cm20, cm21, cm22_, cm30,
+        cm00, cm01, cm02, cm03, cm10, cm11, cm12, cm13, cm20, cm21, cm22, cm23, cm30, cm31, cm32, cm33,
         Nyxus::devRoiCloudBuffer, Nyxus::roi_cloud_len, aabb_min_x, aabb_min_y, originX, originY);
 
     if (!good)
@@ -157,10 +155,13 @@ bool ImageMomentsFeature_calculate (
     if (!good)
         return false;
     
-    //==== Norm-spatial moments
+    //==== Norm spatial moments
+    double cm00_ = -1;
     good = ImageMomentsFeature_calcNormSpatialMoments3(
-        w00, w01, w02, w03, w10, w20, w30,  // output
-        cm00_, cm01_, cm02, cm03, cm10_, cm20, cm30, cm22_);
+        //w00, w01, w02, w03, w10, w11, w12, w13, w20, w21, w22, w23, w30, w31, w32, w33,  // output
+        //cm00_, cm01_, cm02, cm03, cm10_, cm20, cm30, cm22_
+        w00, w01, w02, w03, w10, w11, w12, w13, w20, w21, w22, w23, w30, w31, w32, w33,   // output
+        cm00, cm01, cm02, cm03, cm10, cm11, cm12, cm13, cm20, cm21, cm22, cm23, cm30, cm31, cm32, cm33);
     if (!good)
         return false;
 
