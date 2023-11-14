@@ -222,7 +222,7 @@ namespace Nyxus
 		if (write_apache) {
 
 			theEnvironment.arrow_stream = ArrowOutputStream();
-			auto [status, msg] = theEnvironment.arrow_stream.create_arrow_file(saveOption, outputPath, Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+			auto [status, msg] = theEnvironment.arrow_stream.create_arrow_file(saveOption, outputPath, theEnvironment.nyxus_result_fname, Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
 			
 			if (!status) {
 				std::cout << "Error creating Arrow file: " << msg.value() << std::endl;
@@ -369,7 +369,7 @@ namespace Nyxus
 		if (write_apache) {
 
 			theEnvironment.arrow_stream = ArrowOutputStream();
-			auto [status, msg] = theEnvironment.arrow_stream.create_arrow_file(saveOption, outputPath,   Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+			auto [status, msg] = theEnvironment.arrow_stream.create_arrow_file(saveOption, outputPath, theEnvironment.nyxus_result_fname, Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
 			if (!status) {
 				std::cout << "Error creating Arrow file: " << msg.value() << std::endl;
 				return 1;

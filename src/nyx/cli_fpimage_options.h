@@ -34,6 +34,18 @@ public:
 		return target_dyn_range_; 
 	}
 
+	void set_min_intensity(float min_intensity) {
+		min_intensity_ = min_intensity;
+	}
+
+	void set_max_intensity(float max_intensity) {
+		max_intensity_ = max_intensity;
+	}
+
+	void set_target_dyn_range(float target_dyn_range) {
+		target_dyn_range_ = target_dyn_range;
+	}
+
 private:
 	bool defined_ = false;
 	std::string ermsg = "";
