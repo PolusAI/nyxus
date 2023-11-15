@@ -20,21 +20,7 @@ class TestNyxus():
         
         @classmethod
         def setup_class(cls):
-            os.mkdir('TestNyxusOut')
-
-        @classmethod 
-        def teardown_class(cls):
-            shutil.rmtree('TestNyxusOut')
-            try:
-                os.remove('NyxusFeatures.arrow')
-            except:
-                print('No .arrow file to delete')
-                
-            try:
-                os.remove('NyxusFeatures.parquet')
-            except:
-                print('No .parquet file to delete')
-            
+            os.mkdir('TestNyxusOut')   
 
         def test_gabor_gpu(self):
             # cpu gabor
