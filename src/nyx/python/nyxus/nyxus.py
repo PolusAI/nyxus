@@ -35,13 +35,30 @@ if (arrow_headers_found() and arrow_is_enabled_imp()):
             get_arrow_file_imp, 
             get_parquet_file_imp,
         )
-            
-        import pyarrow as pa
 
 class Nyxus:
     """Nyxus image feature extraction library
 
     Scalably extracts features from images.
+    
+    Example:
+    nyx = Nyxus(
+            features = [["*ALL*"]],
+            neighbor_distance = 5,
+            pixels_per_micron = 1.0,
+            coarse_gray_depth= 256, 
+            n_feature_calc_threads = 4,
+            n_loader_threads = 1,
+            using_gpu = -1,
+            ibsi = False,
+            gabor_kersize = 16,
+            gabor_gamma = 0.1,
+            gabor_sig2lam = 0.8,
+            gabor_f0 = 0.1,
+            gabor_thold = 0.025,
+            gabor_thetas = [0, 45, 90, 135],
+            gabor_freqs = [4, 16, 32, 64]
+        )
 
     Parameters
     ----------
@@ -95,27 +112,67 @@ class Nyxus:
         lower threshold of the filtered image to baseline ratio. 
     gabor_freqs: list[float] (optional, default [4, 16, 32, 64])
         comma-separated denominators of `\pi` as frequencies of Gabor filter's harmonic factor.
+    channel_signature: (optional)
+        Channel signature to match files with the given channel name, such as channel_signature='c' for '_c' like in 'p0_y1_r1_c1.ome.tiff'
+    parent_channel: (optional)
+        Channel number that should be used as a provider of parent segments
+    child_channel: (optional)
+        Channel number that should be used as a provider of child segments
+    aggregate: (optional)
+        Name of a method how to aggregate features of segments recognized as children of same parent segment.
+        Options are 'SUM', 'MEAN', 'MIN', 'MAX', 'WMA', and 'NONE'.
+    dynamic_range: (optional)
+        Desired dynamic range of voxels of a floating point TIFF image.
+    min_intensity: (optional, default 0.0)
+        Minimum intensity of voxels of a floating point TIFF image.
+    max_intensity: (optional, default 1.0)
+        Maximum intensity of voxels of a floating point TIFF image.
+
+
+
     """
 
     def __init__(
         self,
         features: List[str],
-        neighbor_distance: int = 5,
-        pixels_per_micron: float = 1.0,
-        coarse_gray_depth: int = 256, 
-        n_feature_calc_threads: int = 4,
-        n_loader_threads: int = 1,
-        using_gpu: int = -1,
-        ibsi: bool = False,
-        gabor_kersize: int = 16,
-        gabor_gamma: float = 0.1,
-        gabor_sig2lam: float = 0.8,
-        gabor_f0: float = 0.1,
-        gabor_thold: float = 0.025,
-        gabor_thetas: List[int] = [0, 45, 90, 135],
-        gabor_freqs: List[int] = [4, 16, 32, 64]
+        **kwargs
         ):
+      
+        valid_keys = [
+            'neighbor_distance', 'pixels_per_micron', 'coarse_gray_depth',
+            'n_feature_calc_threads', 'n_loader_threads', 'using_gpu', 'ibsi',
+            'gabor_kersize', 'gabor_gamma', 'gabor_sig2lam', 'gabor_f0',
+            'gabor_thold', 'gabor_thetas', 'gabor_freqs', 'channel_signature', 
+            'parent_channel', 'child_channel', 'aggregate', 'dynamic_range', 'min_intensity',
+            'max_intensity'
+        ]
 
+        # Check for unexpected keyword arguments
+        invalid_keys = set(kwargs.keys()) - set(valid_keys)
+        if invalid_keys:
+            print(f"Warning: unexpected keyword argument(s): {', '.join(invalid_keys)}")
+        
+        # parse kwargs
+        features = features
+        neighbor_distance = kwargs.get('neighbor_distance', 5)
+        pixels_per_micron = kwargs.get('pixels_per_micron', 1.0)
+        coarse_gray_depth = kwargs.get('coarse_gray_depth', 256)
+        n_feature_calc_threads = kwargs.get('n_feature_calc_threads', 4)
+        n_loader_threads = kwargs.get('n_loader_threads', 1)
+        using_gpu = kwargs.get('using_gpu', -1)
+        ibsi = kwargs.get('ibsi', False)
+        gabor_kersize = kwargs.get('gabor_kersize', 16)
+        gabor_gamma = kwargs.get('gabor_gamma', 0.1)
+        gabor_sig2lam = kwargs.get('gabor_sig2lam', 0.8)
+        gabor_f0 = kwargs.get('gabor_f0', 0.1)
+        gabor_thold = kwargs.get('gabor_thold', 0.025)
+        gabor_thetas = kwargs.get('gabor_thetas', [0, 45, 90, 135])
+        gabor_freqs = kwargs.get('gabor_freqs', [4, 16, 32, 64])
+        dynamic_range = kwargs.get('dynamic_range', 10000)
+        min_intensity = kwargs.get('min_intensity', 0.0)
+        max_intensity = kwargs.get('max_intensity', 1.0)
+        
+        
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
 
@@ -148,7 +205,10 @@ class Nyxus:
             n_feature_calc_threads,
             n_loader_threads,
             using_gpu,
-            ibsi)
+            ibsi,
+            dynamic_range,
+            min_intensity,
+            max_intensity)
         
         self.set_gabor_feature_params(
             kersize = gabor_kersize,
@@ -169,7 +229,8 @@ class Nyxus:
         label_dir: Optional[str] = None,
         file_pattern: Optional[str] = ".*",
         output_type: Optional[str] = "pandas",
-        output_path: Optional[str] = ""
+        output_directory: Optional[str] = "",
+        output_filename: Optional[str] = "NyxusFeatures"
     ):
         """Extract features from all the images satisfying the file pattern of provided image directories.
 
@@ -183,11 +244,16 @@ class Nyxus:
         intensity_dir : str
             Path to directory containing intensity images.
         label_dir : str (optional, default None)
-            Path to directory containing label images.
+            Path to direct ory containing label images.
         file_pattern: str (optional, default ".*")
             Regular expression used to filter the images present in both
             `intensity_dir` and `label_dir`
-
+        output_type: str (optional, default "pandas")
+            Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
+        output_directory: str (optional, default "")
+            Output directory for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
+        output_filename: str (optional, default "NyxusFeatures") 
+            Output filename for Arrow IPC and Parquet output formats.
         Returns
         -------
         df : pd.DataFrame
@@ -212,7 +278,7 @@ class Nyxus:
             
         if (output_type == 'pandas'):
             
-            header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern, output_type, "")
+            header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern, output_type, "", "")
 
             df = pd.concat(
                 [
@@ -230,7 +296,9 @@ class Nyxus:
         
         else:
             
-            featurize_directory_imp(intensity_dir, label_dir, file_pattern, output_type, output_path)
+            path = featurize_directory_imp(intensity_dir, label_dir, file_pattern, output_type, output_directory, output_filename)
+            
+            return path[0] # return path to file
         
 
             
@@ -241,7 +309,8 @@ class Nyxus:
         intensity_names: list = [],
         label_names: list = [],
         output_type: Optional[str] = "pandas",
-        output_path: Optional[str] = ""
+        output_directory: Optional[str] = "",
+        output_filename: Optional[str] = "NyxusFeatures"
         
     ):
         """Extract features from a single image pair in a 2D np.array or for all the images in a 3D np.array.
@@ -261,7 +330,13 @@ class Nyxus:
         intensity_names (optional): list
             names for the images in for the DataFrame output. 
         label_names (optional): list
-            names for the labels in for the DataFrame output. 
+            names for the labels in for the DataFrame output.
+        output_type: str (optional, default "pandas")
+            Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
+        output_directory: str (optional, default "")
+            Output directory for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
+        output_filename: str (optional, default "NyxusFeatures") 
+            Output filename for Arrow IPC and Parquet output formats.
             
         Returns
         -------
@@ -324,7 +399,7 @@ class Nyxus:
     
         if (output_type == 'pandas'):
                 
-            header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, "")
+            header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, "", "")
             
             self.error_message = error_message
             if(error_message != ''):
@@ -346,30 +421,14 @@ class Nyxus:
             
         else:
             
-            error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, output_path)
+            ret = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, output_directory, output_filename)
             
-            self.error_message = error_message
+            self.error_message = ret[0]
             
-            if(error_message[0] != ''):
+            if(self.error_message != ''):
                 raise RuntimeError('Error calculating features: ' + error_message[0])
             
-            if (output_path.endswith('.arrow') or output_path.endswith('.parquet')):
-                return output_path
-            else:
-                
-                if (output_path == ""):
-                    
-                    if (output_type == "arrowipc"):
-                        return 'NyxusFeatures.arrow'
-                    
-                    return 'NyxusFeatures.' + output_type
-                
-                else:
-                    
-                    if (output_type == "arrowipc"):
-                        return output_path + '/NyxusFeatures.arrow'
-                    
-                    return output_path + '/NyxusFeatures.' + output_type
+            return ret[1] # return path to file
                 
     
     def using_gpu(self, gpu_on: bool):
@@ -381,7 +440,9 @@ class Nyxus:
         mask_files: list,
         single_roi: bool,
         output_type: Optional[str] = "pandas",
-        output_path: Optional[str] = ""):
+        output_directory: Optional[str] = "",
+        output_filename: Optional[str] = "NyxusFeatures"
+    ):
         """Extract features from image file pairs passed as lists
 
         Extracts all the requested features at the image level from the intensity images
@@ -393,6 +454,12 @@ class Nyxus:
         intensity_files : list of intensity image file paths
         mask_files : list of mask image file paths
         single_roi : 'True' to treat items of 'intensity_files' as single-ROI ('mask_files' will be ignored), 'False' to treat items of 'intensity_files' and 'mask_files' as intensity/segmentation image pairs
+        output_type: str (optional, default "pandas")
+            Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
+        output_directory: str (optional, default "")
+            Output directory for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
+        output_filename: str (optional, default "NyxusFeatures") 
+            Output filename for Arrow IPC and Parquet output formats.
 
         Returns
         -------
@@ -412,7 +479,7 @@ class Nyxus:
 
         if (output_type == 'pandas'):
             
-            header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, "")
+            header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, "", "")
 
             df = pd.concat(
                 [
@@ -430,7 +497,9 @@ class Nyxus:
         
         else:
             
-            featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, output_path)
+            path = featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, output_directory, output_filename)
+            
+            return path[0]
             
             
 
@@ -577,7 +646,10 @@ class Nyxus:
             'n_feature_calc_threads',
             'n_loader_threads',
             'using_gpu',
-            'verbose'
+            'verbose',
+            'dynamic_range',
+            'min_intensity',
+            'max_intensity'
         ]
         
         for key in params:
@@ -592,6 +664,9 @@ class Nyxus:
         n_loader_threads = params.get ('n_loader_threads', 0)
         using_gpu = params.get ('using_gpu', -2)
         verbosity_lvl = params.get ('verbose', 0)
+        dynamic_range = params.get('dynamic_range', -1)
+        min_intensity = params.get('min_intensity', -1)
+        max_intensity = params.get('max_intensity', -1)
         
         set_environment_params_imp(features, 
                                    neighbor_distance, 
@@ -600,7 +675,10 @@ class Nyxus:
                                    n_reduce_threads,
                                    n_loader_threads,
                                    using_gpu,
-                                   verbosity_lvl)
+                                   verbosity_lvl,
+                                   dynamic_range,
+                                   min_intensity,
+                                   max_intensity)
         
     def set_params(self, **params):
         """Sets parameters of the Nyxus class
@@ -615,6 +693,9 @@ class Nyxus:
         * n_loader_threads
         * using_gpu
         * ibsi: bool
+        * dynamic_range (float): Desired dynamic range of voxels of a floating point TIFF image.
+        * min_intensity (float): Minimum intensity of voxels of a floating point TIFF image.
+        * max_intensity (float): Maximum intensity of voxels of a floating point TIFF image.
     
         * gabor_kersize (int): size of filter kernel's side. Example: set_params(gabor_kersize=16)
         * gabor_gamma (float): aspect ratio of the Gaussian factor. Example: set_params(gabor_gamma=0.1)
@@ -633,7 +714,10 @@ class Nyxus:
             "n_feature_calc_threads",
             "n_loader_threads",
             "using_gpu",
-            "ibsi"
+            "ibsi",
+            "dynamic_range",
+            "min_intensity",
+            "max_intensity"
         ]
         
         environment_params = {}
@@ -674,6 +758,9 @@ class Nyxus:
         * n_loader_threads
         * using_gpu
         * ibsi: bool
+        * dynamic_range (float): Desired dynamic range of voxels of a floating point TIFF image.
+        * min_intensity (float): Minimum intensity of voxels of a floating point TIFF image.
+        * max_intensity (float): Maximum intensity of voxels of a floating point TIFF image.
     
         * gabor_kersize (int): size of filter kernel's side. Example: set_params(gabor_kersize=16)
         * gabor_gamma (float): aspect ratio of the Gaussian factor. Example: set_params(gabor_gamma=0.1)
@@ -730,30 +817,7 @@ class Nyxus:
         else:
             raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
     
-    def get_arrow_memory_mapping(self, arrow_ipc_file_path):
-        """Returns a memory mapping to the Arrow IPC file.
-        
-        This method creates a memory mapping between the Arrow IPC file on disk to allow
-        for random access. This method does not consume addition RAM.
 
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        MemoryMappedFile 
-
-        """
-        
-        if self.arrow_is_enabled():
-            
-            with pa.memory_map(arrow_ipc_file_path, 'rb') as source:
-                array = pa.ipc.open_file(source).read_all()
-            
-            return array
-        else:
-            raise RuntimeError("Apache arrow is not enabled. Please rebuild Nyxus with Arrow support to enable this functionality.")
     
     def arrow_is_enabled(self):
         """Returns true if arrow support is enabled.
