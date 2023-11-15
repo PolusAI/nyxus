@@ -243,7 +243,6 @@ py::tuple featurize_montage_imp (
     const std::string output_dir="",
     const std::string output_filename="")
 {  
-    std::cout << "1" << std::endl;
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = false;
 
@@ -291,8 +290,6 @@ py::tuple featurize_montage_imp (
 		} else {return SaveOption::saveBuffer;}
 	}();
 
-    std::cout << "2" << std::endl;
-
     int errorCode = processMontage(
         intensity_images,
         label_images,
@@ -302,8 +299,6 @@ py::tuple featurize_montage_imp (
         error_message,
         theEnvironment.saveOption,
         theEnvironment.output_dir);
-
-    std::cout << "3" << std::endl;
 
     if (errorCode)
         throw std::runtime_error("Error #" + std::to_string(errorCode) + " " + error_message + " occurred during dataset processing.");
