@@ -1,3 +1,4 @@
+import pyarrow as pa
 import pyarrow.parquet as pq
 import nyxus
 import pytest
@@ -323,7 +324,8 @@ class TestNyxus():
             
             arrow_path = nyx.featurize(intens, seg, output_type="arrowipc")
 
-            arrow_array = nyx.get_arrow_memory_mapping(arrow_path)
+            with pa.memory_map(arrow_path, 'rb') as source:
+                arrow_array = pa.ipc.open_file(source).read_all()
 
             pd_columns = list(features.columns)
                 
@@ -352,19 +354,11 @@ class TestNyxus():
             assert nyx is not None
             
             arrow_path = nyx.featurize(intens, seg, output_type="arrowipc", output_directory='TestNyxusOut')
-            
-            if (not nyx.arrow_is_enabled()):
-                
-                with pytest.raises (Exception):
-                    nyx.create_arrow_file()
-                    
-                with pytest.raises (Exception):
-                    arrow_array = nyx.get_arrow_memory_mapping()
-                return
 
             features = nyx.featurize(intens, seg)
             
-            arrow_array = nyx.get_arrow_memory_mapping(arrow_path)
+            with pa.memory_map(arrow_path, 'rb') as source:
+                arrow_array = pa.ipc.open_file(source).read_all()
             
             pd_columns = list(features.columns)
                 
@@ -393,20 +387,11 @@ class TestNyxus():
             arrow_path = nyx.featurize(intens, seg, output_type="arrowipc", output_directory='TestNyxusOut', output_filename="test_nyxus")
             
             assert arrow_path == "TestNyxusOut/test_nyxus.arrow"
-            
-            '''
-            if (not nyx.arrow_is_enabled()):
-                
-                with pytest.raises (Exception):
-                    nyx.create_arrow_file()
-                    
-                with pytest.raises (Exception):
-                    arrow_array = nyx.get_arrow_memory_mapping()
-                return
 
             features = nyx.featurize(intens, seg)
             
-            arrow_array = nyx.get_arrow_memory_mapping(arrow_path)
+            with pa.memory_map(arrow_path, 'rb') as source:
+                arrow_array = pa.ipc.open_file(source).read_all()
             
             pd_columns = list(features.columns)
                 
@@ -425,7 +410,7 @@ class TestNyxus():
 
                         continue
                     assert feature_value == arrow_value
-            '''
+            
         @pytest.mark.arrow
         def test_arrow_ipc_no_path(self):
             
@@ -435,19 +420,12 @@ class TestNyxus():
             arrow_path = nyx.featurize(intens, seg, output_type="arrowipc")
             
             assert arrow_path == 'NyxusFeatures.arrow'
-            '''
-            if (not nyx.arrow_is_enabled()):
-                
-                with pytest.raises (Exception):
-                    nyx.create_arrow_file()
-                    
-                with pytest.raises (Exception):
-                    arrow_array = nyx.get_arrow_memory_mapping()
-                return
 
             features = nyx.featurize(intens, seg)
-            
-            arrow_array = nyx.get_arrow_memory_mapping(arrow_path)
+        
+            with pa.memory_map(arrow_path, 'rb') as source:
+                arrow_array = pa.ipc.open_file(source).read_all()
+                
             pd_columns = list(features.columns)
                 
             for i in range(len(features.columns)):
@@ -465,7 +443,6 @@ class TestNyxus():
 
                         continue
                     assert feature_value == arrow_value
-            '''
             
         @pytest.mark.arrow         
         def test_arrow_ipc_path(self):
@@ -489,7 +466,7 @@ class TestNyxus():
 
             parquet_file = nyx.featurize(intens, seg, output_type="parquet", output_directory='TestNyxusOut')
             
-            '''
+            
             # Read the Parquet file into a Pandas DataFrame
             parquet_df = pq.read_table(parquet_file).to_pandas()
             pd_columns = list(features.columns)
@@ -511,7 +488,7 @@ class TestNyxus():
 
                         continue
                     assert feature_value == arrow_value
-            '''
+            
         @pytest.mark.arrow        
         def test_parquet_writer_file_naming(self):
             
@@ -524,7 +501,7 @@ class TestNyxus():
             parquet_file = nyx.featurize(intens, seg, output_type="parquet", output_directory='TestNyxusOut', output_filename="test_nyxus")
             
             assert parquet_file == "TestNyxusOut/test_nyxus.parquet"
-            '''
+            
             # Read the Parquet file into a Pandas DataFrame
             parquet_df = pq.read_table(parquet_file).to_pandas()
             pd_columns = list(features.columns)
@@ -546,7 +523,7 @@ class TestNyxus():
 
                         continue
                     assert feature_value == arrow_value
-            '''
+            
         @pytest.mark.arrow     
         def test_parquet_writer(self):
                 
