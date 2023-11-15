@@ -11,23 +11,44 @@ ImageMomentsFeature::ImageMomentsFeature() : FeatureMethod("ImageMomentsFeature"
         SPAT_MOMENT_10,
         SPAT_MOMENT_11,
         SPAT_MOMENT_12,
+        SPAT_MOMENT_13,
         SPAT_MOMENT_20,
         SPAT_MOMENT_21,
+        SPAT_MOMENT_22,
+        SPAT_MOMENT_23,
         SPAT_MOMENT_30,
-        NORM_SPAT_MOMENT_00, 
-        NORM_SPAT_MOMENT_01, 
-        NORM_SPAT_MOMENT_02, 
-        NORM_SPAT_MOMENT_03, 
-        NORM_SPAT_MOMENT_10, 
-        NORM_SPAT_MOMENT_20, 
-        NORM_SPAT_MOMENT_30, 
+        CENTRAL_MOMENT_00,
+        CENTRAL_MOMENT_01,
         CENTRAL_MOMENT_02,
         CENTRAL_MOMENT_03,
+        CENTRAL_MOMENT_10,
         CENTRAL_MOMENT_11,
         CENTRAL_MOMENT_12,
+        CENTRAL_MOMENT_13,
         CENTRAL_MOMENT_20,
         CENTRAL_MOMENT_21,
+        CENTRAL_MOMENT_22,
+        CENTRAL_MOMENT_23,
         CENTRAL_MOMENT_30,
+        CENTRAL_MOMENT_31,
+        CENTRAL_MOMENT_32,
+        CENTRAL_MOMENT_33,
+        NORM_SPAT_MOMENT_00,
+        NORM_SPAT_MOMENT_01,
+        NORM_SPAT_MOMENT_02,
+        NORM_SPAT_MOMENT_03,
+        NORM_SPAT_MOMENT_10,
+        NORM_SPAT_MOMENT_11,
+        NORM_SPAT_MOMENT_12,
+        NORM_SPAT_MOMENT_13,
+        NORM_SPAT_MOMENT_20,
+        NORM_SPAT_MOMENT_21,
+        NORM_SPAT_MOMENT_22,
+        NORM_SPAT_MOMENT_23,
+        NORM_SPAT_MOMENT_30,
+        NORM_SPAT_MOMENT_31,
+        NORM_SPAT_MOMENT_32,
+        NORM_SPAT_MOMENT_33,
         NORM_CENTRAL_MOMENT_02,
         NORM_CENTRAL_MOMENT_03,
         NORM_CENTRAL_MOMENT_11,
@@ -109,10 +130,10 @@ void ImageMomentsFeature::calculate_via_gpu (LR& r, size_t roi_idx)
         std::cerr << "Geometric moments: error sending ROI contour data to GPU-side\n";
 
     ok = ImageMomentsFeature_calculate (
-        m00, m01, m02, m03, m10, m11, m12, m20, m21, m30,   // spatial moments
-        mu02, mu03, mu11, mu12, mu20, mu21, mu30,   // central moments
+        m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30,   // spatial moments
+        mu00, mu01, mu02, mu03, mu10, mu11, mu12, mu13, mu20, mu21, mu22, mu23, mu30, mu31, mu32, mu33,   // central moments
         nu02, nu03, nu11, nu12, nu20, nu21, nu30,    // normalized central moments
-        w00, w01, w02, w03, w10, w20, w30,   // normalized spatial moments
+        w00, w01, w02, w03, w10, w11, w12, w13, w20, w21, w22, w23, w30, w31, w32, w33,   // normalized spatial moments
         hm1, hm2, hm3, hm4, hm5, hm6, hm7,  // Hu moments
         wm00, wm01, wm02, wm03, wm10, wm11, wm12, wm20, wm21, wm30,   // weighted spatial moments
         wmu02, wmu03, wmu11, wmu12, wmu20, wmu21, wmu30,   // weighted central moments
@@ -137,6 +158,20 @@ void ImageMomentsFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t 
 
 void ImageMomentsFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
+    SPAT_MOMENT_00,
+        SPAT_MOMENT_01,
+        SPAT_MOMENT_02,
+        SPAT_MOMENT_03,
+        SPAT_MOMENT_10,
+        SPAT_MOMENT_11,
+        SPAT_MOMENT_12,
+        SPAT_MOMENT_13,
+        SPAT_MOMENT_20,
+        SPAT_MOMENT_21,
+        SPAT_MOMENT_22,
+        SPAT_MOMENT_23,
+        SPAT_MOMENT_30,
+        
     fvals[SPAT_MOMENT_00][0] = m00;
     fvals[SPAT_MOMENT_01][0] = m01;
     fvals[SPAT_MOMENT_02][0] = m02;
@@ -144,8 +179,11 @@ void ImageMomentsFeature::save_value(std::vector<std::vector<double>>& fvals)
     fvals[SPAT_MOMENT_10][0] = m10;
     fvals[SPAT_MOMENT_11][0] = m11;
     fvals[SPAT_MOMENT_12][0] = m12;
+    fvals[SPAT_MOMENT_13][0] = m13;
     fvals[SPAT_MOMENT_20][0] = m20;
     fvals[SPAT_MOMENT_21][0] = m21;
+    fvals[SPAT_MOMENT_22][0] = m22;
+    fvals[SPAT_MOMENT_23][0] = m23;
     fvals[SPAT_MOMENT_30][0] = m30;
 
     fvals[WEIGHTED_SPAT_MOMENT_00][0] = wm00;
@@ -159,13 +197,22 @@ void ImageMomentsFeature::save_value(std::vector<std::vector<double>>& fvals)
     fvals[WEIGHTED_SPAT_MOMENT_21][0] = wm21;
     fvals[WEIGHTED_SPAT_MOMENT_30][0] = wm30;
 
+    fvals[CENTRAL_MOMENT_00][0] = mu00;
+    fvals[CENTRAL_MOMENT_01][0] = mu01;
     fvals[CENTRAL_MOMENT_02][0] = mu02;
     fvals[CENTRAL_MOMENT_03][0] = mu03;
+    fvals[CENTRAL_MOMENT_10][0] = mu10;
     fvals[CENTRAL_MOMENT_11][0] = mu11;
     fvals[CENTRAL_MOMENT_12][0] = mu12;
+    fvals[CENTRAL_MOMENT_13][0] = mu13;
     fvals[CENTRAL_MOMENT_20][0] = mu20;
     fvals[CENTRAL_MOMENT_21][0] = mu21;
+    fvals[CENTRAL_MOMENT_22][0] = mu22;
+    fvals[CENTRAL_MOMENT_23][0] = mu23;
     fvals[CENTRAL_MOMENT_30][0] = mu30;
+    fvals[CENTRAL_MOMENT_31][0] = mu31;
+    fvals[CENTRAL_MOMENT_32][0] = mu32;
+    fvals[CENTRAL_MOMENT_33][0] = mu33;
 
     fvals[WEIGHTED_CENTRAL_MOMENT_02][0] = wmu02;
     fvals[WEIGHTED_CENTRAL_MOMENT_03][0] = wmu03;
@@ -188,8 +235,17 @@ void ImageMomentsFeature::save_value(std::vector<std::vector<double>>& fvals)
     fvals[NORM_SPAT_MOMENT_02][0] = w02;
     fvals[NORM_SPAT_MOMENT_03][0] = w03;
     fvals[NORM_SPAT_MOMENT_10][0] = w10;
+    fvals[NORM_SPAT_MOMENT_11][0] = w11;
+    fvals[NORM_SPAT_MOMENT_12][0] = w12;
+    fvals[NORM_SPAT_MOMENT_13][0] = w13;
     fvals[NORM_SPAT_MOMENT_20][0] = w20;
+    fvals[NORM_SPAT_MOMENT_21][0] = w21;
+    fvals[NORM_SPAT_MOMENT_22][0] = w22;
+    fvals[NORM_SPAT_MOMENT_23][0] = w23;
     fvals[NORM_SPAT_MOMENT_30][0] = w30;
+    fvals[NORM_SPAT_MOMENT_31][0] = w31;
+    fvals[NORM_SPAT_MOMENT_32][0] = w32;
+    fvals[NORM_SPAT_MOMENT_33][0] = w33;
 
     fvals[HU_M1][0] = hm1;
     fvals[HU_M2][0] = hm2;
@@ -385,8 +441,11 @@ void ImageMomentsFeature::calcRawMoments (const pixcloud & cloud)
     m10 = moment (cloud, 1, 0);
     m11 = moment (cloud, 1, 1);
     m12 = moment (cloud, 1, 2);
+    m13 = moment (cloud, 1, 3);
     m20 = moment (cloud, 2, 0);
     m21 = moment (cloud, 2, 1);
+    m22 = moment (cloud, 2, 2);
+    m23 = moment (cloud, 2, 3);
     m30 = moment (cloud, 3, 0);
 }
 
@@ -422,13 +481,25 @@ void ImageMomentsFeature::calcWeightedRawMoments (const pixcloud & cloud, const 
 
 void ImageMomentsFeature::calcCentralMoments (const pixcloud & cloud)
 {
+    mu00 = centralMom (cloud, 0, 0);
+    mu01 = centralMom (cloud, 0, 1);
     mu02 = centralMom (cloud, 0, 2);
     mu03 = centralMom (cloud, 0, 3);
+
+    mu10 = centralMom (cloud, 1, 0);
     mu11 = centralMom (cloud, 1, 1);
     mu12 = centralMom (cloud, 1, 2);
+    mu13 = centralMom (cloud, 1, 3);
+
     mu20 = centralMom (cloud, 2, 0);
     mu21 = centralMom (cloud, 2, 1);
+    mu22 = centralMom (cloud, 2, 2);
+    mu23 = centralMom (cloud, 2, 3);
+
     mu30 = centralMom (cloud, 3, 0);
+    mu31 = centralMom (cloud, 3, 1);
+    mu32 = centralMom (cloud, 3, 2);
+    mu33 = centralMom (cloud, 3, 3);
 }
 
 void ImageMomentsFeature::calcWeightedCentralMoments (const pixcloud & cloud)
@@ -441,8 +512,6 @@ void ImageMomentsFeature::calcWeightedCentralMoments (const pixcloud & cloud)
     wmu21 = centralMom (cloud, 2, 1);
     wmu30 = centralMom (cloud, 3, 0);
 }
-
-//
 
 void ImageMomentsFeature::calcWeightedCentralMoments (const pixcloud& cloud, const intcloud& realintens)
 {
@@ -472,9 +541,21 @@ void ImageMomentsFeature::calcNormRawMoments (const pixcloud & cloud)
     w01 = normRawMom (cloud, 0, 1);
     w02 = normRawMom (cloud, 0, 2);
     w03 = normRawMom (cloud, 0, 3);
+
     w10 = normRawMom (cloud, 1, 0);
+    w11 = normRawMom (cloud, 1, 1);
+    w12 = normRawMom (cloud, 1, 2);
+    w13 = normRawMom (cloud, 1, 3);
+
     w20 = normRawMom (cloud, 2, 0);
+    w21 = normRawMom (cloud, 2, 1);
+    w22 = normRawMom (cloud, 2, 2);
+    w23 = normRawMom (cloud, 2, 3);
+
     w30 = normRawMom (cloud, 3, 0);
+    w31 = normRawMom (cloud, 3, 1);
+    w32 = normRawMom (cloud, 3, 2);
+    w33 = normRawMom (cloud, 3, 3);
 }
 
 /// @brief Calculates the features for a subset of ROIs in a thread-safe way with other ROI subsets

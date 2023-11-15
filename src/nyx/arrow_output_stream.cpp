@@ -56,15 +56,6 @@ std::tuple<bool, std::optional<std::string>> ArrowOutputStream::create_arrow_fil
 }
 
 
-std::shared_ptr<arrow::Table> ArrowOutputStream::get_arrow_table(const std::string& file_path) {
-
-    if (this->arrow_table_ != nullptr) return this->arrow_table_;
-                                                    
-    this->arrow_table_ = writer_->get_arrow_table(file_path);
-
-    return this->arrow_table_;
-}
-
 std::string ArrowOutputStream::get_arrow_path() {
     return arrow_file_path_;
 }
