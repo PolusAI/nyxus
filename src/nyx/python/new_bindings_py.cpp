@@ -231,7 +231,7 @@ py::tuple featurize_directory_imp (
         return py::make_tuple (pyHeader, pyStrData, pyNumData);
     } 
 
-    return py::make_tuple(theEnvironment.arrow_stream.get_arrow_path());
+    return py::make_tuple();
 }
 
 py::tuple featurize_montage_imp (
@@ -317,8 +317,7 @@ py::tuple featurize_montage_imp (
     
     } 
 
-
-    return py::make_tuple(error_message, theEnvironment.arrow_stream.get_arrow_path());
+    return py::make_tuple(error_message);
 }
 
 py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames, bool single_roi, const std::string& output_type, const std::string& output_dir, const std::string& output_filename)
@@ -408,7 +407,7 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
     } 
 
     // Return "nothing" when output will be an Arrow format
-    return py::make_tuple(theEnvironment.arrow_stream.get_arrow_path());
+    return py::make_tuple();
 }
 
 py::tuple findrelations_imp(

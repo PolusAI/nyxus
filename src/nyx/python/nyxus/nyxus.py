@@ -296,9 +296,9 @@ class Nyxus:
         
         else:
             
-            path = featurize_directory_imp(intensity_dir, label_dir, file_pattern, output_type, output_directory, output_filename)
+            featurize_directory_imp(intensity_dir, label_dir, file_pattern, output_type, output_directory, output_filename)
             
-            return path[0] # return path to file
+            return get_arrow_file_imp() # return path to file
         
 
             
@@ -428,7 +428,7 @@ class Nyxus:
             if(self.error_message != ''):
                 raise RuntimeError('Error calculating features: ' + error_message[0])
             
-            return ret[1] # return path to file
+            return get_arrow_file_imp() # return path to file
                 
     
     def using_gpu(self, gpu_on: bool):
@@ -497,9 +497,9 @@ class Nyxus:
         
         else:
             
-            path = featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, output_directory, output_filename)
+            featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, output_directory, output_filename)
             
-            return path[0]
+            return get_arrow_file_imp()
             
             
 
