@@ -35,8 +35,6 @@ if (arrow_headers_found() and arrow_is_enabled_imp()):
             get_arrow_file_imp, 
             get_parquet_file_imp,
         )
-            
-        import pyarrow as pa
 
 class Nyxus:
     """Nyxus image feature extraction library
@@ -819,30 +817,7 @@ class Nyxus:
         else:
             raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
     
-    def get_arrow_memory_mapping(self, arrow_ipc_file_path):
-        """Returns a memory mapping to the Arrow IPC file.
-        
-        This method creates a memory mapping between the Arrow IPC file on disk to allow
-        for random access. This method does not consume addition RAM.
 
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        MemoryMappedFile 
-
-        """
-        
-        if self.arrow_is_enabled():
-            
-            with pa.memory_map(arrow_ipc_file_path, 'rb') as source:
-                array = pa.ipc.open_file(source).read_all()
-            
-            return array
-        else:
-            raise RuntimeError("Apache arrow is not enabled. Please rebuild Nyxus with Arrow support to enable this functionality.")
     
     def arrow_is_enabled(self):
         """Returns true if arrow support is enabled.
