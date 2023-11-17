@@ -11,6 +11,7 @@
 #include "../environment.h"
 #include "../feature_mgr.h"
 #include "../globals.h"
+#include "../helpers/helpers.h"
 #include "../nested_feature_aggregation.h"
 #include "../features/gabor.h"
 #include "../output_writers.h" 
@@ -151,8 +152,7 @@ py::tuple featurize_directory_imp (
     const std::string &labels_dir,
     const std::string &file_pattern,
     const std::string &output_type,
-    const std::string &output_dir="",
-    const std::string &output_filename="")
+    const std::string &output_path="")
 {
     // Check and cache the file pattern
     if (! theEnvironment.check_file_pattern(file_pattern))
@@ -165,10 +165,6 @@ py::tuple featurize_directory_imp (
 
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = intensity_dir == labels_dir;
-
-    // Set output directory or path
-
-    theEnvironment.output_dir = output_dir;
 
     // Read image pairs from the intensity and label directories applying the filepattern
     std::vector<std::string> intensFiles, labelFiles;
@@ -193,8 +189,6 @@ py::tuple featurize_directory_imp (
     // Process the image sdata
     int min_online_roi_size = 0;
 
-    if (output_filename != "") theEnvironment.nyxus_result_fname = output_filename;
-
     theEnvironment.saveOption = [&output_type](){
         if (output_type == "arrowipc") {
             return SaveOption::saveArrowIPC;
@@ -211,7 +205,7 @@ py::tuple featurize_directory_imp (
         theEnvironment.n_reduce_threads,
         min_online_roi_size,
         theEnvironment.saveOption,
-        theEnvironment.output_dir);
+        output_path);
 
     if (errorCode)
         throw std::runtime_error("Error " + std::to_string(errorCode) + " occurred during dataset processing");
@@ -240,8 +234,7 @@ py::tuple featurize_montage_imp (
     const std::vector<std::string>& intensity_names,
     const std::vector<std::string>& label_names,
     const std::string output_type="",
-    const std::string output_dir="",
-    const std::string output_filename="")
+    const std::string output_path="")
 {  
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = false;
@@ -270,9 +263,6 @@ py::tuple featurize_montage_imp (
 
     theEnvironment.intensity_dir = "__NONE__";
     theEnvironment.labels_dir = "__NONE__";
-    theEnvironment.output_dir = output_dir;
-
-    if (output_filename != "") theEnvironment.nyxus_result_fname = output_filename;
 
     // One-time initialization
     init_feature_buffers();
@@ -298,7 +288,7 @@ py::tuple featurize_montage_imp (
         label_names,
         error_message,
         theEnvironment.saveOption,
-        theEnvironment.output_dir);
+        output_path);
 
     if (errorCode)
         throw std::runtime_error("Error #" + std::to_string(errorCode) + " " + error_message + " occurred during dataset processing.");
@@ -320,11 +310,10 @@ py::tuple featurize_montage_imp (
     return py::make_tuple(error_message);
 }
 
-py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames, bool single_roi, const std::string& output_type, const std::string& output_dir, const std::string& output_filename)
+py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames, bool single_roi, const std::string& output_type, const std::string& output_path)
 {
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = single_roi;
-    theEnvironment.output_dir = output_dir;
 
     std::vector<std::string> intensFiles, labelFiles;
     for (auto it = int_fnames.begin(); it != int_fnames.end(); ++it)
@@ -367,8 +356,6 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
     // Process the image sdata
     int min_online_roi_size = 0;
     int errorCode;
-
-    if (output_filename != "") theEnvironment.nyxus_result_fname = output_filename;
 
     theEnvironment.saveOption = [&output_type](){
         if (output_type == "arrowipc") {
