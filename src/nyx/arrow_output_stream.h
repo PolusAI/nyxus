@@ -27,8 +27,8 @@ private:
 
 public:
     std::tuple<bool, std::optional<std::string>> create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
-                                                         const std::string& arrow_file_path,
-                                                         const std::string& output_filename,
+                                                         const std::string& output_path,
+                                                         const std::string& default_filename,
                                                          const std::vector<std::string>& header);
     std::string get_arrow_path();
     std::tuple<bool, std::optional<std::string>> write_arrow_file (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features);

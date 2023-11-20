@@ -229,8 +229,7 @@ class Nyxus:
         label_dir: Optional[str] = None,
         file_pattern: Optional[str] = ".*",
         output_type: Optional[str] = "pandas",
-        output_directory: Optional[str] = "",
-        output_filename: Optional[str] = "NyxusFeatures"
+        output_path: Optional[str] = "",
     ):
         """Extract features from all the images satisfying the file pattern of provided image directories.
 
@@ -244,7 +243,7 @@ class Nyxus:
         intensity_dir : str
             Path to directory containing intensity images.
         label_dir : str (optional, default None)
-            Path to direct ory containing label images.
+            Path to directory containing label images.
         file_pattern: str (optional, default ".*")
             Regular expression used to filter the images present in both
             `intensity_dir` and `label_dir`
@@ -278,7 +277,7 @@ class Nyxus:
             
         if (output_type == 'pandas'):
             
-            header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern, output_type, "", "")
+            header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern, output_type, "")
 
             df = pd.concat(
                 [
@@ -296,9 +295,9 @@ class Nyxus:
         
         else:
             
-            path = featurize_directory_imp(intensity_dir, label_dir, file_pattern, output_type, output_directory, output_filename)
+            featurize_directory_imp(intensity_dir, label_dir, file_pattern, output_type, output_path)
             
-            return path[0] # return path to file
+            return get_arrow_file_imp() # return path to file
         
 
             
@@ -309,8 +308,7 @@ class Nyxus:
         intensity_names: list = [],
         label_names: list = [],
         output_type: Optional[str] = "pandas",
-        output_directory: Optional[str] = "",
-        output_filename: Optional[str] = "NyxusFeatures"
+        output_path: Optional[str] = "",
         
     ):
         """Extract features from a single image pair in a 2D np.array or for all the images in a 3D np.array.
@@ -399,7 +397,7 @@ class Nyxus:
     
         if (output_type == 'pandas'):
                 
-            header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, "", "")
+            header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, "")
             
             self.error_message = error_message
             if(error_message != ''):
@@ -421,14 +419,14 @@ class Nyxus:
             
         else:
             
-            ret = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, output_directory, output_filename)
+            ret = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, output_path)
             
             self.error_message = ret[0]
             
             if(self.error_message != ''):
                 raise RuntimeError('Error calculating features: ' + error_message[0])
             
-            return ret[1] # return path to file
+            return get_arrow_file_imp() # return path to file
                 
     
     def using_gpu(self, gpu_on: bool):
@@ -440,8 +438,7 @@ class Nyxus:
         mask_files: list,
         single_roi: bool,
         output_type: Optional[str] = "pandas",
-        output_directory: Optional[str] = "",
-        output_filename: Optional[str] = "NyxusFeatures"
+        output_path: Optional[str] = "",
     ):
         """Extract features from image file pairs passed as lists
 
@@ -479,7 +476,7 @@ class Nyxus:
 
         if (output_type == 'pandas'):
             
-            header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, "", "")
+            header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, "")
 
             df = pd.concat(
                 [
@@ -497,9 +494,9 @@ class Nyxus:
         
         else:
             
-            path = featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, output_directory, output_filename)
+            featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, output_path)
             
-            return path[0]
+            return get_arrow_file_imp()
             
             
 
