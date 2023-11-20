@@ -1,6 +1,8 @@
 #include <iostream>
 #include "arrow_output_stream.h"
+#include "environment.h"
 #include "helpers/helpers.h"
+
 
 #ifdef USE_ARROW
 #if __has_include(<filesystem>)
@@ -13,37 +15,15 @@
   error "Missing the <filesystem> header."
 #endif
 
-std::tuple<bool, std::optional<std::string>> ArrowOutputStream::create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
-                                                         const std::string& output_path,
-                                                         const std::string& default_filename,
-                                                         const std::vector<std::string>& header) {
+namespace Nyxus {
 
-    
-    bool is_directory = (Nyxus::ends_with_substr(output_path, "/") || output_path == "");
+std::string get_arrow_path (const std::string path, const Nyxus::SaveOption& arrow_file_type) {
 
-    auto current_ext = fs::path(output_path).extension().u8string();
-    auto path = fs::path(output_path).remove_filename().u8string();
+    bool is_directory = (Nyxus::ends_with_substr(path, "/") ||  path == "" || fs::is_directory(fs::path(path)));
 
-    if (current_ext != "" && !fs::exists(path)) {
-        try {        
-            fs::create_directory(path);
-        } catch (std::exception& e) {
-            return {false, e.what()};
-        }
-    } 
+    std::string slash = (path == "" || Nyxus::ends_with_substr(path, "/")) ? "" : "/";
 
-
-    if (is_directory && output_path != "" && !fs::exists(output_path)) {
-        try {        
-            fs::create_directory(output_path);
-        } catch (std::exception& e) {
-            return {false, e.what()};
-        }
-    }
-
-    std::string slash = (output_path == "") ? "" : "/";
-
-    arrow_file_path_ = (is_directory) ? output_path + slash + default_filename : output_path;
+    std::string arrow_file_path = (is_directory) ? path + slash + theEnvironment.nyxus_result_fname : path;
 
     std::string file_extension = [&arrow_file_type](){
         if (arrow_file_type == Nyxus::SaveOption::saveArrowIPC) {
@@ -53,16 +33,37 @@ std::tuple<bool, std::optional<std::string>> ArrowOutputStream::create_arrow_fil
         } else {return "";}
     }();
 
+    auto current_ext = fs::path(path).extension().u8string();
+
     if (current_ext == "") {
-        arrow_file_path_ += file_extension;
+        arrow_file_path += file_extension;
     } else {
         if (current_ext != file_extension) {
             std::cerr << "Incorrect file extension \"" + current_ext + "\". Using correct extension \"" + file_extension + "\"." << std::endl;
 
-            auto fs_path = fs::path(arrow_file_path_);
-            arrow_file_path_ = fs_path.remove_filename().u8string() + fs_path.stem().u8string() + file_extension; // correct the extension
+            auto fs_path = fs::path(arrow_file_path);
+            arrow_file_path = fs_path.remove_filename().u8string() + fs_path.stem().u8string() + file_extension; // correct the extension
         }
     }
+    
+    return arrow_file_path;
+}
+
+std::tuple<bool, std::optional<std::string>> ArrowOutputStream::create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
+                                                         const std::string& output_path,
+                                                         const std::vector<std::string>& header) {
+
+    this->arrow_file_path_ = output_path;
+
+    auto path = fs::path(output_path).remove_filename().u8string();
+
+    if (path != "" && !fs::exists(path)) {
+        try {        
+            fs::create_directory(path);
+        } catch (std::exception& e) {
+            return {false, e.what()};
+        }
+    } 
 
     std::optional<std::string> error_msg;
     std::tie(writer_, error_msg) = WriterFactory::create_writer(arrow_file_path_, header);
@@ -106,7 +107,6 @@ std::tuple<bool, std::optional<std::string>> ArrowOutputStream::close_arrow_file
 #else 
 std::tuple<bool, std::optional<std::string>> ArrowOutputStream::create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
                                                          const std::string& arrow_file_path,
-                                                         const std::string& output_filename,
                                                          const std::vector<std::string>& header) {
     
     std::cerr << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enabled to use this functionality." << std::endl;
@@ -125,3 +125,4 @@ std::tuple<bool, std::optional<std::string>> ArrowOutputStream::close_arrow_file
 
 
 #endif
+}
