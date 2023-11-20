@@ -124,7 +124,7 @@ public:
 	bool singleROI = false; // is set to 'true' parse_cmdline() if labels_dir==intensity_dir
 
 
-	ArrowOutputStream  arrow_stream;
+	Nyxus::ArrowOutputStream  arrow_stream;
 
 	std::string embedded_pixel_size = "";
 
