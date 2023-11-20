@@ -243,7 +243,7 @@ class Nyxus:
         intensity_dir : str
             Path to directory containing intensity images.
         label_dir : str (optional, default None)
-            Path to direct ory containing label images.
+            Path to directory containing label images.
         file_pattern: str (optional, default ".*")
             Regular expression used to filter the images present in both
             `intensity_dir` and `label_dir`
