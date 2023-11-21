@@ -23,7 +23,7 @@ namespace Nyxus {
         }
 
         this->arrow_file_path_ = output_path;
-        if (auto arrow_path = fs::path(output_path); !fs::is_directory(arrow_path.parent_path()){
+        if (auto arrow_path = fs::path(output_path); !fs::is_directory(arrow_path.parent_path())){
             try {        
                 fs::create_directory(arrow_path.parent_path());
             } catch (std::exception& e) {
