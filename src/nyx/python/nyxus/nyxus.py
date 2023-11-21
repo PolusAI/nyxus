@@ -253,11 +253,14 @@ class Nyxus:
             Output directory for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
         output_filename: str (optional, default "NyxusFeatures") 
             Output filename for Arrow IPC and Parquet output formats.
+            
         Returns
         -------
-        df : pd.DataFrame
+        df : pd.DataFrame or str
+            if output_type == pandas
             Pandas DataFrame containing the requested features with one row per label
             per image.
+            Otherwise, arrow file path
         """
         if not os.path.exists(intensity_dir):
             raise IOError(
@@ -338,9 +341,11 @@ class Nyxus:
             
         Returns
         -------
-        df : pd.DataFrame
+        df : pd.DataFrame or str
+            if output_type == pandas
             Pandas DataFrame containing the requested features with one row per label
             per image.
+            Otherwise, arrow file path
         """
         if (output_type != "" and output_type not in self._valid_output_types):
             raise ValueError(f'Invalid output type: {output_type}. Valid options are: {self._valid_output_types}')
@@ -460,9 +465,11 @@ class Nyxus:
 
         Returns
         -------
-        df : pd.DataFrame
+        df : pd.DataFrame or str
+            if output_type == pandas
             Pandas DataFrame containing the requested features with one row per label
             per image.
+            Otherwise, arrow file path
         """
 
         if intensity_files is None:
