@@ -12,7 +12,7 @@ env:
 jobs:
   Build_and_Run_GTest:
     name: Build and Run GoogleTest
-    runs-on: macos-11
+    runs-on: macos-12
     defaults:
       run:
         shell: bash -l {0}

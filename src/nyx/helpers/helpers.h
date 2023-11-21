@@ -337,36 +337,49 @@ namespace Nyxus
 			return x;
 	}
 
-	inline std::string get_arrow_path (const std::string& path, const std::string& file_name, const SaveOption& arrow_file_type) {
+	inline std::string get_arrow_filename(const std::string& output_path, const std::string& default_filename, const SaveOption& arrow_file_type){
 
-        bool is_directory = (Nyxus::ends_with_substr(path, "/") ||  path == "" || fs::is_directory(fs::path(path)));
+		std::string valid_ext = [&arrow_file_type](){
+			if (arrow_file_type == Nyxus::SaveOption::saveArrowIPC) {
+				return ".arrow";
+			} else if (arrow_file_type == Nyxus::SaveOption::saveParquet) {
+				return ".parquet";
+			} else {return "";}
+		}();
+	
+		if (output_path != ""){
 
-        std::string slash = (path == "" || Nyxus::ends_with_substr(path, "/")) ? "" : "/";
+			auto arrow_path = std::filesystem::path(output_path);
 
-        std::string arrow_file_path = (is_directory) ? path + slash + file_name : path;
+			// case 1: output_path is a directory
+			if (std::filesystem::is_directory(arrow_path) 
+			    || Nyxus::ends_with_substr(output_path, "/") 
+				|| Nyxus::ends_with_substr(output_path, "\\")){
 
-        std::string file_extension = [&arrow_file_type](){
-            if (arrow_file_type == Nyxus::SaveOption::saveArrowIPC) {
-                return ".arrow";
-            } else if (arrow_file_type == Nyxus::SaveOption::saveParquet) {
-                return ".parquet";
-            } else {return "";}
-        }();
+				// append default filename with correct extension
+				arrow_path = arrow_path/default_filename;
+				arrow_path.replace_extension(valid_ext);
 
-        auto current_ext = fs::path(path).extension().u8string();
+			} else if(!arrow_path.has_extension()) { // case 2: filename without extension
 
-        if (current_ext == "") {
-            arrow_file_path += file_extension;
-        } else {
-            if (current_ext != file_extension) {
-                std::cerr << "Incorrect file extension \"" + current_ext + "\". Using correct extension \"" + file_extension + "\"." << std::endl;
+				// append default filename with correct extension
+				arrow_path = arrow_path/default_filename;
+				arrow_path.replace_extension(valid_ext);
 
-                auto fs_path = fs::path(arrow_file_path);
-                arrow_file_path = fs_path.remove_filename().u8string() + fs_path.stem().u8string() + file_extension; // correct the extension
-            }
-        }
-        
-        return arrow_file_path;
-    }
+			} else { // case 3: filename with extension
+
+				if (arrow_path.extension().string() != valid_ext){
+					// update extension to match output option
+					arrow_path.replace_extension(valid_ext);
+				}
+
+			}
+			return arrow_path.string();
+
+		} else {
+			// case 4: output_path is empty
+			return default_filename + valid_ext;
+		}  
+	}
 }
 
