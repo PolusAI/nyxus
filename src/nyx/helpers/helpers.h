@@ -4,6 +4,18 @@
 #include <string>
 #include <vector>
 
+#include "../save_option.h"
+
+#if __has_include(<filesystem>)
+  #include <filesystem>
+  namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem> 
+  namespace fs = std::experimental::filesystem;
+#else
+  error "Missing the <filesystem> header."
+#endif
+
 namespace Nyxus
 {
 
@@ -323,6 +335,51 @@ namespace Nyxus
 			return nan_substitute;
 		else
 			return x;
+	}
+
+	inline std::string get_arrow_filename(const std::string& output_path, const std::string& default_filename, const SaveOption& arrow_file_type){
+
+		std::string valid_ext = [&arrow_file_type](){
+			if (arrow_file_type == Nyxus::SaveOption::saveArrowIPC) {
+				return ".arrow";
+			} else if (arrow_file_type == Nyxus::SaveOption::saveParquet) {
+				return ".parquet";
+			} else {return "";}
+		}();
+	
+		if (output_path != ""){
+
+			auto arrow_path = std::filesystem::path(output_path);
+
+			// case 1: output_path is a directory
+			if (std::filesystem::is_directory(arrow_path) 
+			    || Nyxus::ends_with_substr(output_path, "/") 
+				|| Nyxus::ends_with_substr(output_path, "\\")){
+
+				// append default filename with correct extension
+				arrow_path = arrow_path/default_filename;
+				arrow_path.replace_extension(valid_ext);
+
+			} else if(!arrow_path.has_extension()) { // case 2: filename without extension
+
+				// append default filename with correct extension
+				arrow_path = arrow_path/default_filename;
+				arrow_path.replace_extension(valid_ext);
+
+			} else { // case 3: filename with extension
+
+				if (arrow_path.extension().string() != valid_ext){
+					// update extension to match output option
+					arrow_path.replace_extension(valid_ext);
+				}
+
+			}
+			return arrow_path.string();
+
+		} else {
+			// case 4: output_path is empty
+			return default_filename + valid_ext;
+		}  
 	}
 }
 

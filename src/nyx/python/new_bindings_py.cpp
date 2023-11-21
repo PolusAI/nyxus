@@ -11,6 +11,7 @@
 #include "../environment.h"
 #include "../feature_mgr.h"
 #include "../globals.h"
+#include "../helpers/helpers.h"
 #include "../nested_feature_aggregation.h"
 #include "../features/gabor.h"
 #include "../output_writers.h" 
@@ -51,7 +52,10 @@ void initialize_environment(
     uint32_t n_reduce_threads,
     uint32_t n_loader_threads,
     int using_gpu,
-    bool ibsi)
+    bool ibsi,
+    float dynamic_range,
+    float min_intensity,
+    float max_intensity)
 {
     theEnvironment.recognizedFeatureNames = features;
     theEnvironment.set_pixel_distance(neighbor_distance);
@@ -66,6 +70,10 @@ void initialize_environment(
     theEnvironment.process_feature_list();
     theFeatureMgr.compile();
     theFeatureMgr.apply_user_selection();
+
+    theEnvironment.fpimageOptions.set_target_dyn_range(dynamic_range);
+    theEnvironment.fpimageOptions.set_min_intensity(min_intensity);
+    theEnvironment.fpimageOptions.set_max_intensity(max_intensity);
 
     #ifdef USE_GPU
         if(using_gpu == -1) {
@@ -92,7 +100,10 @@ void set_environment_params_imp (
     uint32_t n_reduce_threads = 0,
     uint32_t n_loader_threads = 0,
     int using_gpu = -2,
-    int verb_level = 0
+    int verb_level = 0,
+    float dynamic_range = -1,
+    float min_intensity = -1,
+    float max_intensity = -1
 ) {
     if (features.size() > 0) {
         theEnvironment.recognizedFeatureNames = features;
@@ -118,10 +129,22 @@ void set_environment_params_imp (
         theEnvironment.n_loader_threads = n_loader_threads;
     }
 
+    if (dynamic_range >= 0) {
+        theEnvironment.fpimageOptions.set_target_dyn_range(dynamic_range);
+    }
+
+    if (min_intensity >= 0) {
+        theEnvironment.fpimageOptions.set_min_intensity(min_intensity);
+    }
+
+    if (max_intensity >= 0) {
+        theEnvironment.fpimageOptions.set_max_intensity(max_intensity);
+    }
+
     if (verb_level >= 0)
         theEnvironment.set_verbosity_level (verb_level);
     else
-        throw std::runtime_error("Error: verbosity (" + std::to_string(verb_level) + ") should be a non-negative value");
+        std::cerr << "Error: verbosity (" + std::to_string(verb_level) + ") should be a non-negative value" << std::endl;
 }
 
 py::tuple featurize_directory_imp (
@@ -129,7 +152,7 @@ py::tuple featurize_directory_imp (
     const std::string &labels_dir,
     const std::string &file_pattern,
     const std::string &output_type,
-    const std::string &arrow_file_path="")
+    const std::string &output_path="")
 {
     // Check and cache the file pattern
     if (! theEnvironment.check_file_pattern(file_pattern))
@@ -182,7 +205,7 @@ py::tuple featurize_directory_imp (
         theEnvironment.n_reduce_threads,
         min_online_roi_size,
         theEnvironment.saveOption,
-        theEnvironment.output_dir);
+        output_path);
 
     if (errorCode)
         throw std::runtime_error("Error " + std::to_string(errorCode) + " occurred during dataset processing");
@@ -211,7 +234,7 @@ py::tuple featurize_montage_imp (
     const std::vector<std::string>& intensity_names,
     const std::vector<std::string>& label_names,
     const std::string output_type="",
-    const std::string output_dir="")
+    const std::string output_path="")
 {  
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = false;
@@ -249,15 +272,13 @@ py::tuple featurize_montage_imp (
     // Process the image sdata
     std::string error_message = "";
 
-     theEnvironment.saveOption = [&output_type](){
+    theEnvironment.saveOption = [&output_type](){
         if (output_type == "arrowipc") {
             return SaveOption::saveArrowIPC;
 	    } else if (output_type == "parquet") {
 			return SaveOption::saveParquet;
 		} else {return SaveOption::saveBuffer;}
 	}();
-
-
 
     int errorCode = processMontage(
         intensity_images,
@@ -267,7 +288,7 @@ py::tuple featurize_montage_imp (
         label_names,
         error_message,
         theEnvironment.saveOption,
-        output_dir);
+        output_path);
 
     if (errorCode)
         throw std::runtime_error("Error #" + std::to_string(errorCode) + " " + error_message + " occurred during dataset processing.");
@@ -286,15 +307,13 @@ py::tuple featurize_montage_imp (
     
     } 
 
-    std::string path = output_dir + theEnvironment.nyxus_result_fname + ".";
-    return py::make_tuple(error_message, path);
+    return py::make_tuple(error_message);
 }
 
-py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames, bool single_roi, const std::string& output_type, const std::string& output_dir)
+py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames, bool single_roi, const std::string& output_type, const std::string& output_path)
 {
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = single_roi;
-    theEnvironment.output_dir = output_dir;
 
     std::vector<std::string> intensFiles, labelFiles;
     for (auto it = int_fnames.begin(); it != int_fnames.end(); ++it)
@@ -510,6 +529,10 @@ std::map<std::string, ParameterTypes> get_params_imp(const std::vector<std::stri
     }
     params["gabor_freqs"] = f;
     params["gabor_thetas"] = t;
+
+    params["dynamic_range"] = theEnvironment.fpimageOptions.target_dyn_range();
+    params["min_intensity"] = theEnvironment.fpimageOptions.min_intensity();
+    params["max_intensity"] = theEnvironment.fpimageOptions.max_intensity();
 
     if (vars.size() == 0) 
         return params;
