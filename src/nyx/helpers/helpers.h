@@ -348,31 +348,32 @@ namespace Nyxus
 		}();
 	
 		if (output_path != ""){
+			auto arrow_path = fs::path(output_path);
 
-			auto arrow_path = std::filesystem::path(output_path);
-
-			// case 1: output_path is a directory
-			if (std::filesystem::is_directory(arrow_path) 
+			if (fs::is_directory(arrow_path) 
 			    || Nyxus::ends_with_substr(output_path, "/") 
 				|| Nyxus::ends_with_substr(output_path, "\\")){
-
+				// case 1: output_path is a directory
 				// append default filename with correct extension
 				arrow_path = arrow_path/default_filename;
 				arrow_path.replace_extension(valid_ext);
-
-			} else if(!arrow_path.has_extension()) { // case 2: filename without extension
-
-				// append default filename with correct extension
-				arrow_path = arrow_path/default_filename;
+			} else if(!arrow_path.has_extension()) {
+				// case 2: This can be a valid filename missing the extension
+				//	a directory. We will first assume that this is a valid filename missing the extension
+				// and check if the parent directory exists, otherwise we will treat this as a
+				// directory that is not created yet
+				if(!fs::is_directory(arrow_path.parent_path())){
+					// parent path do not exist, treat as the later case
+					// append default filename with correct extension
+					arrow_path = arrow_path/default_filename;
+				}
 				arrow_path.replace_extension(valid_ext);
-
-			} else { // case 3: filename with extension
-
+			} else { 
+				// case 3: filename with extension
 				if (arrow_path.extension().string() != valid_ext){
 					// update extension to match output option
 					arrow_path.replace_extension(valid_ext);
 				}
-
 			}
 			return arrow_path.string();
 
