@@ -12,7 +12,7 @@
 #ifdef USE_ARROW
 
 /**
- * @brief Class to write to Apache Arrow formats
+ * @brief  Class to write to Apache Arrow formats
  * 
  * This class provides methods for writing to the Arrow IPC and Parquet formats.
  * 
