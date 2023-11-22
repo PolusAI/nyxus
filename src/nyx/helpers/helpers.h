@@ -346,39 +346,43 @@ namespace Nyxus
 				return ".parquet";
 			} else {return "";}
 		}();
+	/*
+				output_path			condition			verdict
+	Case 1: 	/foo/bar		exist in fs				is a directory, append default filename with proper ext
+				/foo/bar/		or ends with / or \
+				\foo\bar\			
+
+	Case 2:		/foo/bar		does not exist in fs	assume the extension is missing, append proper ext
+								but /foo exists
+
+	Case 3: 	/foo/bar		neither /foo nor 		treat as directory, append default filename with proper ext
+								/foo/bar exists in fs
 	
+	Case 4: 	/foo/bar.ext	exists in fs and is a 	append default filename with proper ext
+								directory	
+			
+	Case 5: 	/foo/bar.ext	does not exist in fs  	this is a file, check if ext is correct and modify if needed
+
+	Case 6:		empty									default filename with proper ext
+								
+
+	*/
 		if (output_path != ""){
 			auto arrow_path = fs::path(output_path);
-
-			if (fs::is_directory(arrow_path) 
+			if (fs::is_directory(arrow_path) // case 1, 4
 			    || Nyxus::ends_with_substr(output_path, "/") 
 				|| Nyxus::ends_with_substr(output_path, "\\")){
-				// case 1: output_path is a directory
-				// append default filename with correct extension
 				arrow_path = arrow_path/default_filename;
-				arrow_path.replace_extension(valid_ext);
-			} else if(!arrow_path.has_extension()) {
-				// case 2: This can be a valid filename missing the extension
-				//	a directory. We will first assume that this is a valid filename missing the extension
-				// and check if the parent directory exists, otherwise we will treat this as a
-				// directory that is not created yet
-				if(!fs::is_directory(arrow_path.parent_path())){
-					// parent path do not exist, treat as the later case
-					// append default filename with correct extension
+			} else if(!arrow_path.has_extension()) { 
+				if(!fs::is_directory(arrow_path.parent_path())){ // case 3
 					arrow_path = arrow_path/default_filename;
 				}
-				arrow_path.replace_extension(valid_ext);
-			} else { 
-				// case 3: filename with extension
-				if (arrow_path.extension().string() != valid_ext){
-					// update extension to match output option
-					arrow_path.replace_extension(valid_ext);
-				}
+				// else case 2, do nothing here	
 			}
+			// case 5 here, but also for 1-4, update extenstion here
+			arrow_path.replace_extension(valid_ext);
 			return arrow_path.string();
-
-		} else {
-			// case 4: output_path is empty
+		} else { // case 6
 			return default_filename + valid_ext;
 		}  
 	}
