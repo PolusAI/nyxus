@@ -11,7 +11,6 @@
 #include "../environment.h"
 #include "../feature_mgr.h"
 #include "../globals.h"
-#include "../helpers/helpers.h"
 #include "../nested_feature_aggregation.h"
 #include "../features/gabor.h"
 #include "../output_writers.h" 

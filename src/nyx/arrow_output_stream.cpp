@@ -1,6 +1,5 @@
 #include <iostream>
 #include "arrow_output_stream.h"
-#include "helpers/helpers.h"
 
 #if __has_include(<filesystem>)
   #include <filesystem>
@@ -19,15 +18,17 @@ namespace Nyxus {
                                                             const std::string& output_path,
                                                             const std::vector<std::string>& header) {
 
+        if (output_path == ""){
+            return {false, "No path provided for Arrow file."};
+        }
+
         this->arrow_file_path_ = output_path;
-
-        auto path = fs::path(output_path).remove_filename().u8string();
-
-        if (path != "" && !fs::exists(path)) {
-            try {        
-                fs::create_directory(path);
+        if (auto parent_path = fs::path(output_path).parent_path(); 
+            !parent_path.empty() &&  !fs::is_directory(parent_path)){
+            try {
+                fs::create_directory(parent_path);
             } catch (std::exception& e) {
-                return {false, e.what()};
+                return {false, e.what()}; 
             }
         } 
 
