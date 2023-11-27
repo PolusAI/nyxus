@@ -17,7 +17,7 @@ class TestImport():
         
 class TestNyxus():
         PATH = PATH = Path(__file__).with_name('data')
-        
+
         @classmethod
         def setup_class(cls):
             os.mkdir('TestNyxusOut')
@@ -34,7 +34,7 @@ class TestNyxus():
                 os.remove('NyxusFeatures.parquet')
             except:
                 print('No .parquet file to delete')
-            
+
 
         def test_gabor_gpu(self):
             # cpu gabor
@@ -355,22 +355,25 @@ class TestNyxus():
             open_parquet_file.close()
             
         @pytest.mark.arrow        
-        def test_parquet_writer_file_naming(self):
+        def test_parquet_writer_file_naming(self, tmp_path):
         
             nyx = nyxus.Nyxus (["*ALL*"])
             assert nyx is not None
             
             features = nyx.featurize(intens, seg)
-
-            parquet_file = nyx.featurize(intens, seg, output_type="parquet", output_path='TestNyxusOut/test_parquet.parquet')
+            output_dir = tmp_path/"TestNyxusOut"
+            output_dir.mkdir()
             
+            parquet_file = nyx.featurize(intens, seg, output_type="parquet", output_path=output_dir.str()+"/test_parquet")
+
+            output_file = tmp_path/parquet_file
+            assert output_file.is_file()
+
             assert parquet_file == "TestNyxusOut/test_parquet.parquet"
 
             # Read the Parquet file into a Pandas DataFrame
-            #parquet_df = pq.read_table(open_parquet_file).to_pandas()
-            file = pq.ParquetFile(parquet_file)
+            file = pq.ParquetFile(output_file.str())
             parquet_df = file.read().to_pandas()
-            #parquet_df = pd.read_parquet(parquet_file)
             pd_columns = list(features.columns)
 
             arrow_columns = list(parquet_df.columns)
@@ -393,25 +396,6 @@ class TestNyxus():
             
 
             file.close()
-            '''
-            attempts = 0
-            while True:
-                
-                try:
-                    os.remove('TestNyxusOut/test_parquet.parquet')
-                    print('deleted successfully')
-                    break
-                except:
-                    
-                    attempts +=1
-                    
-                    if attempts > 5:
-                        print("Could not delete file")
-                        break
-                    
-                    time.sleep(30)
-            '''
-            print("parquet file is closed: " + str(file.closed))
 
         @pytest.mark.arrow
         def test_make_arrow_ipc(self):
