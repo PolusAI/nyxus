@@ -418,7 +418,8 @@ will print the dictionary
 8. Using Arrow for feature results
 -----------------------------------------------------------------------------
 
-Nyxus provides the ability to get the results of the feature calculations in Arrow IPC and Parquet formats. To create an Arrow IPC or Parquet file, use the `create_arrow_ipc_file()` and `create_parquet_file()` methods on a Nyxus object. For example,
+Nyxus provides the ability to get the results of the feature calculations in Arrow IPC and Parquet formats. To create an Arrow IPC or Parquet file, use `output_type="arrowipc"` or `output_type="parquet"` in `Nyxus.featurize*` calls. 
+Optionally, an `output_path` argument can be passed to specify the location of the output file.
 
 .. code-block:: python
 
@@ -472,33 +473,23 @@ Nyxus provides the ability to get the results of the feature calculations in Arr
 
    nyx = Nyxus(["*ALL_INTENSITY*"])
 
-   features = nyx.featurize(intens, seg)
+   arrow_file = nyx.featurize(intens, seg, output_type="arrowipc", output_path="some_path")
 
-   nyx.create_arrow_file()
-
-   arrow_file_path = nyx.get_arrow_ipc_file()
-
-   print(arrow_file_path)
-
+   print(arrow_file)
 
 
 The output is:
 
 .. code-block:: bash
 
-   out.arrow
-
-Note that both of these methods have an optional argument for a path to be provided of where to write the file to. For example, `nyx.create_arrow_file('out/out.arrow')`. For Arrow IPC files, a memory mapping can be created to access the data without using additional memory. For example, using the same `intens` and `seg` data as before,
+   some_path/NyxusFeatures.arrow
 
 .. code-block:: python
    
    nyx = Nyxus(["*ALL_INTENSITY*"])
 
-   features = nyx.featurize(intens, seg)
+   arrow_file = nyx.featurize(intens, seg, output_type="arrowipc")
 
-   nyx.create_arrow_file()
-
-   arrow_array = nyx.get_arrow_memory_mapping()
 
 9. Nested Features Examples
 -----------------------------------------------------------------------------

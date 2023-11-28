@@ -5,7 +5,6 @@ import pytest
 import math
 from pathlib import Path
 from test_data import intens, seg
-import os
 import shutil
 
 class TestImport():
@@ -14,24 +13,6 @@ class TestImport():
         
 class TestNyxus():
         PATH = PATH = Path(__file__).with_name('data')
-
-        @classmethod
-        def setup_class(cls):
-            os.mkdir('TestNyxusOut')
-
-        @classmethod 
-        def teardown_class(cls):
-            shutil.rmtree('TestNyxusOut')
-            try:
-                os.remove('NyxusFeatures.arrow')
-            except:
-                print('No .arrow file to delete')
-                
-            try:
-                os.remove('NyxusFeatures.parquet')
-            except:
-                print('No .parquet file to delete')
-
 
         def test_gabor_gpu(self):
             # cpu gabor
@@ -346,6 +327,7 @@ class TestNyxus():
                     assert feature_value == arrow_value
             
             open_parquet_file.close()
+            Path(parquet_file).unlink()
             
         @pytest.mark.arrow        
         def test_parquet_writer_file_naming(self, tmp_path):
@@ -357,7 +339,7 @@ class TestNyxus():
             output_dir = tmp_path/"TestNyxusOut"
             output_dir.mkdir()
             
-            parquet_file = nyx.featurize(intens, seg, output_type="parquet", output_path=str(output_dir)+"/test_parquet")
+            parquet_file = nyx.featurize(intens, seg, output_type="parquet", output_path=str(output_dir/"test_parquet"))
 
             output_file = Path(parquet_file)
             assert output_file.is_file()
@@ -389,6 +371,7 @@ class TestNyxus():
             
 
             file.close()
+            shutil.rmtree(output_dir)
 
         @pytest.mark.arrow
         def test_make_arrow_ipc(self):
@@ -422,14 +405,18 @@ class TestNyxus():
                     assert feature_value == arrow_value
             
             path = nyx.get_arrow_ipc_file()
+            assert path == arrow_path
+            
+            Path(arrow_path).unlink()
         
         @pytest.mark.arrow
-        def test_arrow_ipc(self):
+        def test_arrow_ipc(self, tmp_path):
             
             nyx = nyxus.Nyxus (["*ALL*"])
             assert nyx is not None
-            
-            arrow_path = nyx.featurize(intens, seg, output_type="arrowipc", output_path='TestNyxusOut/')
+            output_dir = tmp_path/"TestNyxusOut"
+            output_dir.mkdir()
+            arrow_path = nyx.featurize(intens, seg, output_type="arrowipc", output_path=str(output_dir))
 
             features = nyx.featurize(intens, seg)
             
@@ -453,6 +440,8 @@ class TestNyxus():
 
                         continue
                     assert feature_value == arrow_value
+
+            shutil.rmtree(output_dir)
                     
         @pytest.mark.arrow
         def test_arrow_ipc_file_naming(self, tmp_path):
@@ -489,6 +478,8 @@ class TestNyxus():
                         continue
                     assert feature_value == arrow_value
             
+            shutil.rmtree(output_dir)
+            
         @pytest.mark.arrow
         def test_arrow_ipc_no_path(self):
             
@@ -521,3 +512,4 @@ class TestNyxus():
 
                         continue
                     assert feature_value == arrow_value
+            Path(arrow_path).unlink()
