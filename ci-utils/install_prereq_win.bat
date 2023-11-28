@@ -2,6 +2,7 @@
 setlocal
 set BUILD_Z5_DEP=1
 set BUILD_DCMTK_DEP=1
+set BUILD_ARROW=1
 SET ROOTDIR="%cd%"
 
 setlocal enabledelayedexpansion
@@ -111,6 +112,22 @@ if "%BUILD_Z5_DEP%" == "1" (
     pushd build_man
     cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF ..
     cmake --build . --config Release --target install  --parallel 4
+    popd
+    popd
+)
+
+if "%BUILD_ARROW%" == "1" (
+    set _ROOTDIR=%ROOTDIR:\=/%
+
+    curl -L https://github.com/apache/arrow/archive/refs/tags/apache-arrow-13.0.0.zip -o  arrow-apache-arrow-13.0.0.zip
+    unzip arrow-apache-arrow-13.0.0.zip
+    pushd arrow-apache-arrow-13.0.0
+    pushd cpp
+    mkdir build
+    pushd build
+    cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_INSTALL_PREFIX=../../../local_install/ -DCMAKE_PREFIX_PATH=../../../local_install/ -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON -DBOOST_ROOT=%_ROOTDIR%/boost_1_79_0
+    cmake --build . --config Release --target install --parallel 4
+    popd 
     popd
     popd
 )
