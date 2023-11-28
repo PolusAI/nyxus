@@ -6,6 +6,7 @@ import math
 from pathlib import Path
 from test_data import intens, seg
 import shutil
+import time
 
 class TestImport():
     def test_import(self):
@@ -327,6 +328,7 @@ class TestNyxus():
                     assert feature_value == arrow_value
             
             open_parquet_file.close()
+            time.sleep(100)
             Path(parquet_file).unlink()
             
         @pytest.mark.arrow        
