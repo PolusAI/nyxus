@@ -484,13 +484,6 @@ The output is:
 
    some_path/NyxusFeatures.arrow
 
-.. code-block:: python
-   
-   nyx = Nyxus(["*ALL_INTENSITY*"])
-
-   arrow_file = nyx.featurize(intens, seg, output_type="arrowipc")
-
-
 9. Nested Features Examples
 -----------------------------------------------------------------------------
 
