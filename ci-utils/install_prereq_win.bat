@@ -2,6 +2,7 @@
 setlocal
 set BUILD_Z5_DEP=1
 set BUILD_DCMTK_DEP=1
+set BUILD_ARROW=1
 SET ROOTDIR="%cd%"
 
 setlocal enabledelayedexpansion
