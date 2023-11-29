@@ -205,7 +205,7 @@ will print the dictionary
 
 ## Using Arrow for feature results
 
-Nyxus provides the ability to get the results of the feature calculations in Arrow IPC and Parquet formats. Note that writing to Arrow is currently unavailable in Windows PyPI wheels. 
+Nyxus provides the ability to get the results of the feature calculations in Arrow IPC and Parquet formats. 
 
 To create an Arrow IPC or Parquet file, use `output_type="arrowipc"` or `output_type="parquet"` in `Nyxus.featurize*` calls. 
 Optionally, an `output_path` argument can be passed to specify the location of the output file. For example,
