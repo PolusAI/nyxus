@@ -32,18 +32,27 @@ public:
 		GLCM_CLUSHADE,	// Cluster shade, IBSI # 7NFM
 		GLCM_CLUTEND,	// Cluster tendency, IBSI # DG8W
 		GLCM_CONTRAST,	// Contrast, IBSI # ACUI
+		GLCM_CONTRAST_AVE,
 		GLCM_CORRELATION,	// Correlation, IBSI # NI2N
+		GLCM_CORRELATION_AVE,
 		GLCM_DIFAVE,	// Difference average, IBSI # TF7R
+		GLCM_DIFAVE_AVE,
 		GLCM_DIFENTRO,	// Difference entropy, IBSI # NTRS
+		GLCM_DIFENTRO_AVE,
 		GLCM_DIFVAR,	// Difference variance, IBSI # D3YU
+		GLCM_DIFVAR_AVE,
 		GLCM_DIS,		// Dissimilarity, IBSI # 8S9J
 		GLCM_ENERGY,	// Energy
+		GLCM_ENERGY_AVE,
 		GLCM_ENTROPY,	// Entropy
+		GLCM_ENTROPY_AVE,
 		GLCM_HOM1,		// Homogeneity-1 (PyR)
+		GLCM_HOM1_AVE,
 		GLCM_HOM2,		// Homogeneity-2 (PyR)
 		GLCM_ID,		// Inv diff, IBSI # IB1Z
 		GLCM_IDN,		// Inv diff normalized, IBSI # NDRX
 		GLCM_IDM,		// Inv diff mom, IBSI # WF0Z
+		GLCM_IDM_AVE,
 		GLCM_IDMN,		// Inv diff mom normalized, IBSI # 1QCO
 		GLCM_INFOMEAS1,	// Information measure of correlation 1, IBSI # R8DG
 		GLCM_INFOMEAS2,	// Information measure of correlation 2, IBSI # JN9H
@@ -53,9 +62,31 @@ public:
 		GLCM_JMAX,		// Joint max (aka PyR max probability), IBSI # GYBY
 		GLCM_JVAR,		// Joint var (aka PyR Sum of Squares), IBSI # UR99
 		GLCM_SUMAVERAGE,	// Sum average, IBSI # ZGXS
+		GLCM_SUMAVERAGE_AVE,
 		GLCM_SUMENTROPY,	// Sum entropy, IBSI # P6QZ
+		GLCM_SUMENTROPY_AVE,
 		GLCM_SUMVARIANCE,	// Sum variance, IBSI # OEEB
-		GLCM_VARIANCE	// Variance
+		GLCM_SUMVARIANCE_AVE,
+		GLCM_VARIANCE,	// Variance
+		GLCM_VARIANCE_AVE
+	};
+
+	// Features implemented by this class that do not require vector-like angled output. Instead, they are output as a single values
+	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> nonAngledFeatures =
+	{
+		GLCM_CONTRAST_AVE,
+		GLCM_CORRELATION_AVE,
+		GLCM_DIFAVE_AVE,
+		GLCM_DIFENTRO_AVE,
+		GLCM_DIFVAR_AVE,
+		GLCM_ENERGY_AVE,
+		GLCM_ENTROPY_AVE,
+		GLCM_HOM1_AVE,
+		GLCM_IDM_AVE,
+		GLCM_SUMAVERAGE_AVE,
+		GLCM_SUMENTROPY_AVE,
+		GLCM_SUMVARIANCE_AVE,
+		GLCM_VARIANCE_AVE
 	};
 
 	static int offset;	// default value: 1
@@ -143,9 +174,12 @@ private:
 	double f_GLCM_JMAX (const SimpleMatrix<double>& P_matrix, int tone_count);
 	double f_GLCM_JVAR (const SimpleMatrix<double>& P_matrix, int tone_count, double mean_x);
 
+	double calc_ave (const std::vector<double> & angled_feature_vals);
+
 	using AngledFeatures = std::vector<double>;
 	void copyfvals(AngledFeatures& dst, const AngledFeatures& src);
 
+	// Angled feature values. Each vector contains 1 to 4 values corresponding to angles 0, 45, 90, and 135 degrees
 	std::vector<double> fvals_ASM,
 		fvals_acor,
 		fvals_cluprom,

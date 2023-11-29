@@ -1,3 +1,4 @@
+#include <numeric>
 #include "glcm.h"
 #include "../helpers/helpers.h"
 #include "../environment.h"
@@ -70,18 +71,27 @@ void GLCMFeature::save_value(std::vector<std::vector<double>>& fvals)
 	copyfvals (fvals[GLCM_CLUSHADE], fvals_clushade);
 	copyfvals (fvals[GLCM_CLUTEND], fvals_clutend);
 	copyfvals (fvals[GLCM_CONTRAST], fvals_contrast);
+	fvals[GLCM_CONTRAST_AVE][0] = calc_ave (fvals_contrast);
 	copyfvals (fvals[GLCM_CORRELATION], fvals_correlation);
+	fvals[GLCM_CORRELATION_AVE][0] = calc_ave (fvals_correlation);
 	copyfvals (fvals[GLCM_DIFAVE], fvals_diff_avg);
+	fvals[GLCM_DIFAVE_AVE][0] = calc_ave (fvals_diff_avg);
 	copyfvals (fvals[GLCM_DIFVAR], fvals_diff_var);
+	fvals[GLCM_DIFVAR][0] = calc_ave (fvals_diff_var);
 	copyfvals (fvals[GLCM_DIFENTRO], fvals_diff_entropy);
+	fvals[GLCM_DIFENTRO][0] = calc_ave (fvals_diff_entropy);
 	copyfvals (fvals[GLCM_DIS], fvals_dis);
 	copyfvals (fvals[GLCM_ENERGY], fvals_energy);
+	fvals[GLCM_ENERGY_AVE][0] = calc_ave (fvals_energy);
 	copyfvals (fvals[GLCM_ENTROPY], fvals_entropy);
+	fvals[GLCM_ENTROPY_AVE][0] = calc_ave (fvals_entropy);
 	copyfvals (fvals[GLCM_HOM1], fvals_homo);
+	fvals[GLCM_HOM1_AVE][0] = calc_ave (fvals_homo);
 	copyfvals (fvals[GLCM_HOM2], fvals_hom2);
 	copyfvals (fvals[GLCM_ID], fvals_id);
 	copyfvals (fvals[GLCM_IDN], fvals_idn);
 	copyfvals (fvals[GLCM_IDM], fvals_IDM);
+	fvals[GLCM_IDM_AVE][0] = calc_ave (fvals_IDM);
 	copyfvals (fvals[GLCM_IDMN], fvals_idmn);
 	copyfvals (fvals[GLCM_INFOMEAS1], fvals_meas_corr1);
 	copyfvals (fvals[GLCM_INFOMEAS2], fvals_meas_corr2);
@@ -91,9 +101,13 @@ void GLCMFeature::save_value(std::vector<std::vector<double>>& fvals)
 	copyfvals (fvals[GLCM_JMAX], fvals_jmax);
 	copyfvals (fvals[GLCM_JVAR], fvals_jvar);
 	copyfvals (fvals[GLCM_SUMAVERAGE], fvals_sum_avg);
+	fvals[GLCM_SUMAVERAGE_AVE][0] = calc_ave (fvals_sum_avg);
 	copyfvals (fvals[GLCM_SUMVARIANCE], fvals_sum_var);
+	fvals[GLCM_SUMVARIANCE_AVE][0] = calc_ave (fvals_sum_var);
 	copyfvals (fvals[GLCM_SUMENTROPY], fvals_sum_entropy);
+	fvals[GLCM_SUMENTROPY_AVE][0] = calc_ave (fvals_sum_entropy);
 	copyfvals (fvals[GLCM_VARIANCE], fvals_variance);
+	fvals[GLCM_VARIANCE_AVE][0] = calc_ave (fvals_variance);
 }
 
 void GLCMFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
@@ -116,14 +130,22 @@ void GLCMFeature::parallel_process_1_batch(size_t start, size_t end, std::vector
 			r.fvals[GLCM_CLUSHADE].assign(n, 0);
 			r.fvals[GLCM_CLUTEND].assign(n, 0);
 			r.fvals[GLCM_CONTRAST].assign(n, 0);
+			r.fvals[GLCM_CONTRAST_AVE][0] = 0;
 			r.fvals[GLCM_CORRELATION].assign(n, 0);
+			r.fvals[GLCM_CORRELATION_AVE][0] = 0;
 			r.fvals[GLCM_DIFAVE].assign(n, 0);
+			r.fvals[GLCM_DIFAVE_AVE][0] = 0;
 			r.fvals[GLCM_DIFENTRO].assign(n, 0);
+			r.fvals[GLCM_DIFENTRO][0] = 0;
 			r.fvals[GLCM_DIFVAR].assign(n, 0);
+			r.fvals[GLCM_DIFVAR_AVE][0] = 0;
 			r.fvals[GLCM_DIS].assign(n, 0);
 			r.fvals[GLCM_ENERGY].assign(n, 0);
+			r.fvals[GLCM_ENERGY_AVE][0] = 0;
 			r.fvals[GLCM_ENTROPY].assign(n, 0);
+			r.fvals[GLCM_ENTROPY_AVE][0] = 0;
 			r.fvals[GLCM_HOM1].assign(n, 0);
+			r.fvals[GLCM_HOM1_AVE][0] = 0;
 			r.fvals[GLCM_HOM2].assign(n, 0);
 			r.fvals[GLCM_IDMN].assign(n, 0);
 			r.fvals[GLCM_ID].assign(n, 0);
@@ -131,15 +153,20 @@ void GLCMFeature::parallel_process_1_batch(size_t start, size_t end, std::vector
 			r.fvals[GLCM_INFOMEAS1].assign(n, 0);
 			r.fvals[GLCM_INFOMEAS2].assign(n, 0);
 			r.fvals[GLCM_IDM].assign(n, 0);
+			r.fvals[GLCM_IDM_AVE][0] = 0;
 			r.fvals[GLCM_IV].assign(n, 0);
 			r.fvals[GLCM_JAVE].assign(n, 0);
 			r.fvals[GLCM_JE].assign(n, 0);
 			r.fvals[GLCM_JMAX].assign(n, 0);
 			r.fvals[GLCM_JVAR].assign(n, 0);
 			r.fvals[GLCM_SUMAVERAGE].assign(n, 0);
+			r.fvals[GLCM_SUMAVERAGE_AVE][0] = 0;
 			r.fvals[GLCM_SUMENTROPY].assign(n, 0);
+			r.fvals[GLCM_SUMENTROPY_AVE][0] = 0;
 			r.fvals[GLCM_SUMVARIANCE].assign(n, 0);
+			r.fvals[GLCM_SUMVARIANCE][0] = 0;
 			r.fvals[GLCM_VARIANCE].assign(n, 0);
+			r.fvals[GLCM_VARIANCE_AVE][0] = 0;
 			// No need to calculate features for this ROI
 			continue;
 		}
@@ -1019,4 +1046,16 @@ double GLCMFeature::f_GLCM_JVAR (const SimpleMatrix<double>& P_matrix, int tone_
 			f += d2 * P_matrix.xy(x,y) / sum_p;
 	}
 	return f;
+}
+
+// 'afv' is angled feature values
+double GLCMFeature::calc_ave (const std::vector<double> & afv)
+{
+	if (afv.empty()) 
+		return 0;
+
+	double n = static_cast<double> (afv.size()),
+		ave = std::reduce(afv.begin(), afv.end()) / n;
+	
+	return ave;
 }

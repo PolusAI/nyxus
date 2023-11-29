@@ -82,8 +82,9 @@ namespace Nyxus
 
 			// Parameterized feature
 			// --GLCM family
-			bool angledGlcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
-			if (angledGlcmFeature)
+			bool glcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
+			bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
+			if (glcmFeature && nonAngledGlcmFeature==false)
 			{
 				// Populate with angles
 				for (auto ang : theEnvironment.glcmAngles)
@@ -278,8 +279,9 @@ namespace Nyxus
 
 				// Parameterized feature
 				// --GLCM family
-				bool angledGlcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
-				if (angledGlcmFeature)
+				bool glcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
+				bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
+				if (glcmFeature && nonAngledGlcmFeature == false)
 				{
 					// Mock angled values if they haven't been calculated for some error reason
 					if (vv.size() < GLCMFeature::angles.size())
@@ -493,8 +495,9 @@ namespace Nyxus
 
 				// Parameterized feature
 				// --GLCM family
-				bool angledGlcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
-				if (angledGlcmFeature)
+				bool glcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
+				bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
+				if (glcmFeature && nonAngledGlcmFeature == false)
 				{
 					// Mock angled values if they haven't been calculated for some error reason
 					if (vv.size() < GLCMFeature::angles.size())

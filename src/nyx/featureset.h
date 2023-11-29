@@ -181,18 +181,27 @@ namespace Nyxus
 		GLCM_CLUSHADE,		// Cluster shade, IBSI # 7NFM
 		GLCM_CLUTEND,		// Cluster tendency, IBSI # DG8W
 		GLCM_CONTRAST,		// Contrast, IBSI # ACUI
+		GLCM_CONTRAST_AVE,	// Average of angled GLCM_CONTRAST
 		GLCM_CORRELATION,	// Correlation, IBSI # NI2N
+		GLCM_CORRELATION_AVE,	// Average of angled GLCM_CORRELATION
 		GLCM_DIFAVE,		// Difference average, IBSI # TF7R
+		GLCM_DIFAVE_AVE,		// Average of angled GLCM_DIFAVE
 		GLCM_DIFENTRO,		// Difference entropy, IBSI # NTRS
+		GLCM_DIFENTRO_AVE,	// Average of angled GLCM_DIFENTRO
 		GLCM_DIFVAR,		// Difference variance, IBSI # D3YU
+		GLCM_DIFVAR_AVE,	// Average of angled GLCM_DIFVAR
 		GLCM_DIS,			// Dissimilarity, IBSI # 8S9J
 		GLCM_ENERGY,		// Energy
+		GLCM_ENERGY_AVE,	// Average of angled GLCM_ENERGY
 		GLCM_ENTROPY,		// Entropy
+		GLCM_ENTROPY_AVE,	// Average of angled GLCM_ENTROPY
 		GLCM_HOM1,			// Homogeneity-1 (PyR)
+		GLCM_HOM1_AVE,		// Average of angled GLCM_HOM1
 		GLCM_HOM2,			// Homogeneity-2 (PyR)
 		GLCM_ID,			// Inv diff, IBSI # IB1Z
 		GLCM_IDN,			// Inv diff normalized, IBSI # NDRX
 		GLCM_IDM,			// Inv diff mom, IBSI # WF0Z
+		GLCM_IDM_AVE,		// Average of angled GLCM_IDM
 		GLCM_IDMN,			// Inv diff mom normalized, IBSI # 1QCO
 		GLCM_INFOMEAS1,		// Information measure of correlation 1, IBSI # R8DG
 		GLCM_INFOMEAS2,		// Information measure of correlation 2, IBSI # JN9H
@@ -202,9 +211,13 @@ namespace Nyxus
 		GLCM_JMAX,			// Joint max (aka PyR max probability), IBSI # GYBY
 		GLCM_JVAR,			// Joint var (aka PyR Sum of Squares), IBSI # UR99
 		GLCM_SUMAVERAGE,	// Sum average, IBSI # ZGXS
+		GLCM_SUMAVERAGE_AVE,	// Average of angled GLCM_SUMAVERAGE
 		GLCM_SUMENTROPY,	// Sum entropy, IBSI # P6QZ
+		GLCM_SUMENTROPY_AVE,	// Average of angled GLCM_SUMENTROPY
 		GLCM_SUMVARIANCE,	// Sum variance, IBSI # OEEB
+		GLCM_SUMVARIANCE_AVE,	// Average of angled 
 		GLCM_VARIANCE,
+		GLCM_VARIANCE_AVE,	// Average of angled GLCM_VARIANCE
 
 		// GLRLM:
 		GLRLM_SRE,	// Short Run Emphasis 
