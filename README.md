@@ -205,9 +205,10 @@ will print the dictionary
 
 ## Using Arrow for feature results
 
-Nyxus provides the ability to get the results of the feature calculations in Arrow IPC and Parquet formats. Note that writing to Arrow is currently only supported by building from source and is not yet available in the PyPI wheels. It is recommended to use Conda for building with Arrow enabled.
+Nyxus provides the ability to get the results of the feature calculations in Arrow IPC and Parquet formats. 
 
- To create an Arrow IPC or Parquet file, use the `create_arrow_ipc_file()` and `create_parquet_file()` methods on a Nyxus object. For example,
+To create an Arrow IPC or Parquet file, use `output_type="arrowipc"` or `output_type="parquet"` in `Nyxus.featurize*` calls. 
+Optionally, an `output_path` argument can be passed to specify the location of the output file. For example,
 
 ```python
     from nyxus import Nyxus
@@ -260,35 +261,19 @@ Nyxus provides the ability to get the results of the feature calculations in Arr
 
     nyx = Nyxus(["*ALL_INTENSITY*"])
 
-    features = nyx.featurize(intens, seg)
+    arrow_file = nyx.featurize(intens, seg, output_type="arrowipc", output_path="some_path")
 
-    nyx.create_arrow_file()
-
-    arrow_file_path = nyx.get_arrow_ipc_file()
-
-    print(arrow_file_path)
+    print(arrow_file)
 
 ```
 
 The output is:
 
 ```bash
-    out.arrow
+    NyxusFeatures.arrow
 ```
 
-Note that both of these methods have an optional argument for a path to be provided of where to write the file to. For example, `nyx.create_arrow_file('out/out.arrow')`. For Arrow IPC files, a memory mapping can be created to access the data without using additional memory. For example, using the same `intens` and `seg` data as before,
-
-```python
-    nyx = Nyxus(["*ALL_INTENSITY*"])
-
-    features = nyx.featurize(intens, seg)
-
-    nyx.create_arrow_file()
-
-    arrow_array = nyx.get_arrow_memory_mapping()
-```
-
-This functionality is also available in the through the command line using the flag `--outputType`. If this flag is set to `--outputType=arrow` then the results will be written to an Arrow IPC file in the output directory and `--outputType=parquet` will write to a Parquet file.
+This functionality is also available in the through the command line using the flag `--outputType`. If this flag is set to `--outputType=arrowipc` then the results will be written to an Arrow IPC file in the output directory and `--outputType=parquet` will write to a Parquet file.
 
 ## Available features 
 The feature extraction plugin extracts morphology and intensity based features from pairs of intensity/binary mask images and produces a csv file output. The input image should be in tiled [OME TIFF format](https://docs.openmicroscopy.org/ome-model/6.2.0/ome-tiff/specification.html).  The plugin extracts the following features:

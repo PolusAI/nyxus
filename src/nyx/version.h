@@ -2,6 +2,6 @@
 #define VERSIONH_INCLUDED
 
 #define PROJECT_NAME "Nyxus"
-#define PROJECT_VER "0.7.1"
+#define PROJECT_VER "0.7.2"
 
 #endif // VERSIONH_INCLUDED
