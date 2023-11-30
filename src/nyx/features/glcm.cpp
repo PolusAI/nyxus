@@ -77,9 +77,9 @@ void GLCMFeature::save_value(std::vector<std::vector<double>>& fvals)
 	copyfvals (fvals[GLCM_DIFAVE], fvals_diff_avg);
 	fvals[GLCM_DIFAVE_AVE][0] = calc_ave (fvals_diff_avg);
 	copyfvals (fvals[GLCM_DIFVAR], fvals_diff_var);
-	fvals[GLCM_DIFVAR][0] = calc_ave (fvals_diff_var);
+	fvals[GLCM_DIFVAR_AVE][0] = calc_ave (fvals_diff_var);
 	copyfvals (fvals[GLCM_DIFENTRO], fvals_diff_entropy);
-	fvals[GLCM_DIFENTRO][0] = calc_ave (fvals_diff_entropy);
+	fvals[GLCM_DIFENTRO_AVE][0] = calc_ave (fvals_diff_entropy);
 	copyfvals (fvals[GLCM_DIS], fvals_dis);
 	copyfvals (fvals[GLCM_ENERGY], fvals_energy);
 	fvals[GLCM_ENERGY_AVE][0] = calc_ave (fvals_energy);
