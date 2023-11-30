@@ -888,8 +888,6 @@ bool Environment::parse_cmdline(int argc, char **argv)
 	}
 
 	//==== Output type
-	VERBOSLVL1(std::cout << "\n*-*-*-*- Using Apache output -*-*-*-*\n");
-
 	auto rawOutpTypeUC = Nyxus::toupper(rawOutpType);
 	if (!((rawOutpTypeUC == Nyxus::toupper(OT_SINGLECSV))  || 
 	      (rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV)) || 
