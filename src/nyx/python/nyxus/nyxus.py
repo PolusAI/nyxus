@@ -1,10 +1,3 @@
-from .nyxus_arrow import arrow_headers_found
-
-if (arrow_headers_found()):
-    from .nyxus_arrow import link_arrow_lib
-        
-    link_arrow_lib()
-    
 from .backend import (
     initialize_environment,
     featurize_directory_imp,
@@ -21,6 +14,8 @@ from .backend import (
     set_environment_params_imp,
     get_params_imp,
     arrow_is_enabled_imp,
+    get_arrow_file_imp, 
+    get_parquet_file_imp,
     )
 
 import os
@@ -28,13 +23,6 @@ import sys
 import numpy as np
 import pandas as pd
 from typing import Optional, List
-
-if (arrow_headers_found() and arrow_is_enabled_imp()):
-        
-        from .backend import (
-            get_arrow_file_imp, 
-            get_parquet_file_imp,
-        )
 
 class Nyxus:
     """Nyxus image feature extraction library
