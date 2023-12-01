@@ -1,10 +1,3 @@
-from .nyxus_arrow import arrow_headers_found
-
-if (arrow_headers_found()):
-    from .nyxus_arrow import link_arrow_lib
-        
-    link_arrow_lib()
-    
 from .backend import (
     initialize_environment,
     featurize_directory_imp,
@@ -21,6 +14,8 @@ from .backend import (
     set_environment_params_imp,
     get_params_imp,
     arrow_is_enabled_imp,
+    get_arrow_file_imp, 
+    get_parquet_file_imp,
     )
 
 import os
@@ -28,13 +23,6 @@ import sys
 import numpy as np
 import pandas as pd
 from typing import Optional, List
-
-if (arrow_headers_found() and arrow_is_enabled_imp()):
-        
-        from .backend import (
-            get_arrow_file_imp, 
-            get_parquet_file_imp,
-        )
 
 class Nyxus:
     """Nyxus image feature extraction library
@@ -249,10 +237,14 @@ class Nyxus:
             `intensity_dir` and `label_dir`
         output_type: str (optional, default "pandas")
             Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
-        output_directory: str (optional, default "")
-            Output directory for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
-        output_filename: str (optional, default "NyxusFeatures") 
-            Output filename for Arrow IPC and Parquet output formats.
+        output_path: str (optional, default "")
+            Output filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
+            The output_path can either be to a directory or filename. For example,
+                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created.
+                  If the directory does not exist, it will be created.
+                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. 
+                  If the directory does not exist, it will also be created.
+                - If 'output_path=some_file_name.arrow' then this file will be created in the current working directory.
 
         Returns
         -------
@@ -334,10 +326,14 @@ class Nyxus:
             names for the labels in for the DataFrame output.
         output_type: str (optional, default "pandas")
             Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
-        output_directory: str (optional, default "")
-            Output directory for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
-        output_filename: str (optional, default "NyxusFeatures") 
-            Output filename for Arrow IPC and Parquet output formats.
+        output_path: str (optional, default "")
+            Output filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
+            The output_path can either be to a directory or filename. For example,
+                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created.
+                  If the directory does not exist, it will be created.
+                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. 
+                  If the directory does not exist, it will also be created.
+                - If 'output_path=some_file_name.arrow' then this file will be created in the current working directory.
             
         Returns
         -------
@@ -458,10 +454,14 @@ class Nyxus:
         single_roi : 'True' to treat items of 'intensity_files' as single-ROI ('mask_files' will be ignored), 'False' to treat items of 'intensity_files' and 'mask_files' as intensity/segmentation image pairs
         output_type: str (optional, default "pandas")
             Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
-        output_directory: str (optional, default "")
-            Output directory for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
-        output_filename: str (optional, default "NyxusFeatures") 
-            Output filename for Arrow IPC and Parquet output formats.
+        output_path: str (optional, default "")
+            Output filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
+            The output_path can either be to a directory or filename. For example,
+                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created.
+                  If the directory does not exist, it will be created.
+                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. 
+                  If the directory does not exist, it will also be created.
+                - If 'output_path=some_file_name.arrow' then this file will be created in the current working directory.
 
         Returns
         -------
