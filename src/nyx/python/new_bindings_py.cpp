@@ -372,7 +372,7 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
         theEnvironment.n_reduce_threads,
         min_online_roi_size,
         theEnvironment.saveOption,
-        theEnvironment.output_dir);
+        output_path);
 
 
     if (errorCode)
