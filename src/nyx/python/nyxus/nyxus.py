@@ -237,10 +237,8 @@ class Nyxus:
             `intensity_dir` and `label_dir`
         output_type: str (optional, default "pandas")
             Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
-        output_directory: str (optional, default "")
-            Output directory for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
-        output_filename: str (optional, default "NyxusFeatures") 
-            Output filename for Arrow IPC and Parquet output formats.
+        output_path: str (optional, default "")
+            Output directory or filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
 
         Returns
         -------
@@ -322,10 +320,8 @@ class Nyxus:
             names for the labels in for the DataFrame output.
         output_type: str (optional, default "pandas")
             Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
-        output_directory: str (optional, default "")
-            Output directory for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
-        output_filename: str (optional, default "NyxusFeatures") 
-            Output filename for Arrow IPC and Parquet output formats.
+        output_path: str (optional, default "")
+            Output directory or filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
             
         Returns
         -------
@@ -446,10 +442,8 @@ class Nyxus:
         single_roi : 'True' to treat items of 'intensity_files' as single-ROI ('mask_files' will be ignored), 'False' to treat items of 'intensity_files' and 'mask_files' as intensity/segmentation image pairs
         output_type: str (optional, default "pandas")
             Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
-        output_directory: str (optional, default "")
-            Output directory for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
-        output_filename: str (optional, default "NyxusFeatures") 
-            Output filename for Arrow IPC and Parquet output formats.
+        output_path: str (optional, default "")
+            Output directory or filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
 
         Returns
         -------
