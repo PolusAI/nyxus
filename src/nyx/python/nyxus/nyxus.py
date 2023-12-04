@@ -240,10 +240,8 @@ class Nyxus:
         output_path: str (optional, default "")
             Output filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
             The output_path can either be to a directory or filename. For example,
-                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created.
-                  If the directory does not exist, it will be created.
-                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. 
-                  If the directory does not exist, it will also be created.
+                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created. If the directory does not exist, it will be created.
+                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. If the directory does not exist, it will also be created.
                 - If 'output_path=some_file_name.arrow' then this file will be created in the current working directory.
 
         Returns
@@ -320,19 +318,17 @@ class Nyxus:
             2D image or 3D collection of intensity images.
         label_images : np.ndarray
             2D image or 3D collection of label images.
-        intensity_names (optional): list
+        intensity_names: list (optional, default []) 
             names for the images in for the DataFrame output. 
-        label_names (optional): list
+        label_names: list (optional, default []) 
             names for the labels in for the DataFrame output.
         output_type: str (optional, default "pandas")
             Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
         output_path: str (optional, default "")
             Output filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
             The output_path can either be to a directory or filename. For example,
-                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created.
-                  If the directory does not exist, it will be created.
-                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. 
-                  If the directory does not exist, it will also be created.
+                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created. If the directory does not exist, it will be created.
+                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. If the directory does not exist, it will also be created.
                 - If 'output_path=some_file_name.arrow' then this file will be created in the current working directory.
             
         Returns
@@ -457,10 +453,8 @@ class Nyxus:
         output_path: str (optional, default "")
             Output filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
             The output_path can either be to a directory or filename. For example,
-                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created.
-                  If the directory does not exist, it will be created.
-                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. 
-                  If the directory does not exist, it will also be created.
+                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created. If the directory does not exist, it will be created.
+                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. If the directory does not exist, it will also be created.
                 - If 'output_path=some_file_name.arrow' then this file will be created in the current working directory.
 
         Returns
