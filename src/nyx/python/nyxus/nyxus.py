@@ -318,9 +318,9 @@ class Nyxus:
             2D image or 3D collection of intensity images.
         label_images : np.ndarray
             2D image or 3D collection of label images.
-        intensity_names (optional): list
+        intensity_names: list (optional, default []) 
             names for the images in for the DataFrame output. 
-        label_names (optional): list
+        label_names: list (optional, default []) 
             names for the labels in for the DataFrame output.
         output_type: str (optional, default "pandas")
             Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
