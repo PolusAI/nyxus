@@ -19,6 +19,15 @@
 #include "test_glszm.h"
 #include "test_ngtdm.h"
 #include "test_roi_blacklist.h"
+#include "test_arrow.h"
+
+TEST(TEST_NYXUS, TEST_ARROW) {
+	test_arrow();
+}
+
+TEST(TEST_NYXUS, TEST_PARQUET) {
+	test_parquet();
+}
 
 TEST(TEST_NYXUS, TEST_GABOR){
     test_gabor();
