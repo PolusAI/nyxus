@@ -170,21 +170,24 @@ arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std
 
     ARROW_RETURN_NOT_OK(writer_->WriteTable(*table.get(), batch->num_rows()));
 
-    
-
     return arrow::Status::OK();
 }
 
 arrow::Status ParquetWriter::close () {
-    arrow::Status status = writer_->Close();
+    auto status = writer_->Close();
 
-        if (!status.ok()) {
-            // Handle read error
-            return status; 
-        }
-        return arrow::Status::OK();
-        
+    if (!status.ok()) {
+        // Handle read error
+        return status; 
+    }
 
+    status = output_stream_->Close();
+
+    if (!status.ok()) {
+        // Handle read error
+        return status; 
+    }
+    
     return arrow::Status::OK();
 }
 
