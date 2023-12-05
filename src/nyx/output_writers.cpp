@@ -342,6 +342,14 @@ arrow::Status ArrowIPCWriter::close () {
         // Handle read error
         return status;
     }
+
+    status = output_stream_->Close();
+
+    if (!status.ok()) {
+        // Handle read error
+        return status; 
+    }
+
     return arrow::Status::OK();
     
 }
