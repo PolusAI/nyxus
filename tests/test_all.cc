@@ -20,6 +20,11 @@
 #include "test_ngtdm.h"
 #include "test_roi_blacklist.h"
 #include "test_arrow.h"
+#include "test_arrow_file_name.h"
+
+TEST(TEST_NYXUS, TEST_ARROW_FILE_NAME) {
+	test_file_naming();
+}
 
 TEST(TEST_NYXUS, TEST_ARROW) {
 	test_arrow();

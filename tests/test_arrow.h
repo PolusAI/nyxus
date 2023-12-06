@@ -221,7 +221,9 @@ bool are_tables_equal(const arrow::Table& table1, const arrow::Table& table2) {
 
 void test_arrow() {
 
-    std::string outputPath = "NyxusFeatures.arrow";
+    auto temp = fs::temp_directory_path();
+
+    std::string outputPath = temp.u8string() + "NyxusFeatures.arrow";
 
     auto arrow_stream = ArrowOutputStream();
 
@@ -279,7 +281,9 @@ void test_arrow() {
 
 void test_parquet() {
 
-    std::string outputPath = "NyxusFeatures.parquet";
+    auto temp = fs::temp_directory_path();
+
+    std::string outputPath = temp.u8string() + "NyxusFeatures.parquet";
 
     auto arrow_stream = ArrowOutputStream();
 
