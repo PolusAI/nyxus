@@ -67,6 +67,7 @@ namespace Nyxus
 	
 	std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> get_feature_values();	
 	std::vector<std::string> get_header(const std::vector<std::tuple<std::string, AvailableFeatures>>& F );
+	std::string get_arrow_filename(const std::string& output_path, const std::string& default_filename, const SaveOption& arrow_file_type);
 
 	void init_feature_buffers();
 	void clear_feature_buffers();	
