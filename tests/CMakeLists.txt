@@ -33,30 +33,6 @@ if(USEGPU)
 
 endif()
 
-if(USE_ARROW)
-	# Look for installed packages the system
-	find_package(Arrow)
-	if (NOT Arrow_FOUND) 
-		message(WARNING "The Arrow library was not found. The build will continue without Arrow support.")
-		set(USE_ARROW OFF)
-	endif()
-	
-	find_package(Parquet)
-	if (NOT Parquet_FOUND) 
-		message(WARNING "The Parquet library was not found. The build will continue without Arrow support.")
-		set(USE_ARROW OFF)
-	endif()
-
-endif()
-
-if(USE_ARROW)
-	add_definitions(-DUSE_ARROW)
-	list(APPEND Nyxus_LIBRARIES arrow_shared)
-	list(APPEND Nyxus_LIBRARIES parquet_shared)
-endif()
-
-target_link_libraries(runAllTests PUBLIC ${Nyxus_LIBRARIES})
-
 target_include_directories (runAllTests PUBLIC ${GTEST_INCLUDE_DIRS})
 target_link_directories (runAllTests PUBLIC ${GTEST_LIBRARY_PATH})
 target_link_libraries (runAllTests PUBLIC gtest ${Nyxus_LIBRARIES})
