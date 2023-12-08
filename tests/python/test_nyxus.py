@@ -7,6 +7,8 @@ import pandas as pd
 import math
 from pathlib import Path
 from test_data import intens, seg
+from test_write_data import write_test_data
+from test_feature_results import feature_results
 import os
 import shutil
 import time
@@ -20,11 +22,34 @@ class TestNyxus():
         
         @classmethod
         def setup_class(cls):
-            os.mkdir('TestNyxusOut')
+            try:
+                os.mkdir('TestNyxusOut')
+            except:
+                print("Directory already exists")
+            # directory to save data to
+            write_data_path = 'nyxus_test_data/'
+            
+            try:
+                os.mkdir('nyxus_test_data/')
+            except:
+                print("Directory already exists")
+                
+            try:
+                os.mkdir('nyxus_test_data/int')
+            except:
+                print("Directory already exists")
+                
+            try:
+                os.mkdir('nyxus_test_data/seg')
+            except:
+                print("Directory already exists")
+            write_test_data(write_data_path)
+            
 
         @classmethod 
         def teardown_class(cls):
             shutil.rmtree('TestNyxusOut')
+            shutil.rmtree('nyxus_test_data/')
             try:
                 os.remove('NyxusFeatures.arrow')
             except:
@@ -551,4 +576,53 @@ class TestNyxus():
             
             arrow_path = nyx.featurize(intens, seg, output_type="arrowipc")
 
-            assert arrow_path == 'NyxusFeatures.arrow'           
+            assert arrow_path == 'NyxusFeatures.arrow'  
+            
+        def test_featurize_directory(self):
+            nyx = nyxus.Nyxus (["*ALL*"])
+            assert nyx is not None
+            
+            features = nyx.featurize_directory('', intens, seg)
+            
+            features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+            
+            features_list = features.values.tolist()
+    
+            assert features_list == feature_results
+            
+        def test_featurize_directory(self):
+            nyx = nyxus.Nyxus (["*ALL*"])
+            assert nyx is not None
+            
+            features = nyx.featurize_directory('nyxus_test_data/int/', 'nyxus_test_data/seg/')
+            
+            features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+            
+            expected = pd.DataFrame.from_dict(feature_results)
+            
+            assert features.equals(expected)
+            
+        def test_featurize_list(self):
+            nyx = nyxus.Nyxus (["*ALL*"])
+            assert nyx is not None
+            
+            features = nyx.featurize_files(
+                ['nyxus_test_data/int/image1.ome.tif', 'nyxus_test_data/int/image2.ome.tif', 'nyxus_test_data/int/image3.ome.tif', 'nyxus_test_data/int/image4.ome.tif'], 
+                ['nyxus_test_data/seg/image1.ome.tif', 'nyxus_test_data/seg/image2.ome.tif', 'nyxus_test_data/seg/image3.ome.tif', 'nyxus_test_data/seg/image4.ome.tif'], 
+                single_roi=False,
+            )
+            
+            features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+            
+            expected = pd.DataFrame.from_dict(feature_results)
+            
+            assert features.equals(expected)
+            
+            '''
+            features_list = features.to_dict()
+            
+            print(features_list)
+
+            for result, expected in zip(features_list, feature_results):
+                assert result == pytest.approx(expected)
+            '''
