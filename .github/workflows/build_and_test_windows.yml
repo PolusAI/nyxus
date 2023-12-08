@@ -72,7 +72,7 @@ jobs:
       working-directory: ${{github.workspace}}
       run: |
         conda install mamba
-        mamba install pytest --file ./ci-utils/envs/conda_cpp.txt --file ./ci-utils/envs/conda_py.txt
+        mamba install pytest pyarrow bfio --file ./ci-utils/envs/conda_cpp.txt --file ./ci-utils/envs/conda_py.txt
 
     - name: Install Nyxus
       working-directory: ${{github.workspace}}
