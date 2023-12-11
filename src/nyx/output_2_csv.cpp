@@ -157,7 +157,7 @@ namespace Nyxus
 			{
 				// Populate with indices
 				for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)	// i < ZernikeFeature::num_feature_values_calculated
-					head.emplace_back(fn + "_" + std::to_string(i));						
+					head.emplace_back(fn + "_Z" + std::to_string(i));						
 
 				// Proceed with other features
 				continue;
