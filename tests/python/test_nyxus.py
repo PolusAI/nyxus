@@ -385,6 +385,7 @@ class TestNyxus():
                 assert (len(column_list) == len(arrow_list))
                 
                 for j in range(len(column_list)):
+                    
                     feature_value = column_list[j]
                     arrow_value = arrow_list[j]
                     
@@ -413,13 +414,16 @@ class TestNyxus():
                 arrow_pd = pa.ipc.open_file(source).read_all().to_pandas()
             
                 pd_columns = list(features.columns)
+                arrow_columns = list(arrow_pd.columns)
+                
+                assert len(pd_columns) == len(arrow_columns)
                     
                 for column in pd_columns:
                     
-                    if (column == 'mask_image'):
-                        continue
                     column_list = features[column].tolist()
                     arrow_list = arrow_pd[column].tolist()
+                    
+                    assert len(column_list) == len(arrow_list)
                     
                     for j in range(len(column_list)):
                         feature_value = column_list[j]
@@ -448,13 +452,16 @@ class TestNyxus():
                 arrow_pd = pa.ipc.open_file(source).read_all().to_pandas()
             
                 pd_columns = list(features.columns)
+                arrow_columns = list(arrow_pd.columns)
+                
+                assert len(pd_columns) == len(arrow_columns)
                     
                 for column in pd_columns:
                     
-                    if (column == 'mask_image'):
-                        continue
                     column_list = features[column].tolist()
                     arrow_list = arrow_pd[column].tolist()
+                    
+                    assert len(column_list) == len(arrow_list)
                     
                     for j in range(len(column_list)):
                         feature_value = column_list[j]
@@ -484,13 +491,16 @@ class TestNyxus():
                 arrow_pd = pa.ipc.open_file(source).read_all().to_pandas()
             
                 pd_columns = list(features.columns)
+                arrow_columns = list(arrow_pd.columns)
+                
+                assert len(pd_columns) == len(arrow_columns)
                     
                 for column in pd_columns:
                     
-                    if (column == 'mask_image'):
-                        continue
                     column_list = features[column].tolist()
                     arrow_list = arrow_pd[column].tolist()
+                    
+                    assert len(column_list) == len(arrow_list)
                     
                     for j in range(len(column_list)):
                         feature_value = column_list[j]
@@ -520,13 +530,16 @@ class TestNyxus():
                 arrow_pd = pa.ipc.open_file(source).read_all().to_pandas()
             
                 pd_columns = list(features.columns)
+                arrow_columns = list(arrow_pd.columns)
+                
+                assert len(pd_columns) == len(arrow_columns)
                     
                 for column in pd_columns:
                     
-                    if (column == 'mask_image'):
-                        continue
                     column_list = features[column].tolist()
                     arrow_list = arrow_pd[column].tolist()
+                    
+                    assert len(column_list) == len(arrow_list)
                     
                     for j in range(len(column_list)):
                         feature_value = column_list[j]
