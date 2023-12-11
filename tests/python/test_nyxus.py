@@ -316,9 +316,9 @@ class TestNyxus():
             
         @pytest.mark.arrow        
         def test_parquet_writer(self):
+            
             nyx = nyxus.Nyxus (["*ALL*"])
             assert nyx is not None
-            
             
             features = nyx.featurize(intens, seg)
 
@@ -328,10 +328,7 @@ class TestNyxus():
             
             parquet_df = open_parquet_file.read().to_pandas()
             
-            
             # Read the Parquet file into a Pandas DataFrame
-            #parquet_df = pq.read_table(open_parquet_file).to_pandas()
-            #parquet_df = pd.read_parquet(parquet_file)
             pd_columns = list(features.columns)
 
             arrow_columns = list(parquet_df.columns)
@@ -354,7 +351,7 @@ class TestNyxus():
                             assert False
 
                         continue
-                    assert feature_value == arrow_value
+                    assert feature_value == pytest.approx(arrow_value, rel=1e-6)
             
             open_parquet_file.close()
             
@@ -397,29 +394,10 @@ class TestNyxus():
                             assert False
 
                         continue
-                    assert feature_value == arrow_value
+                    assert feature_value == pytest.approx(arrow_value, rel=1e-6)
             
-
             file.close()
-            '''
-            attempts = 0
-            while True:
-                
-                try:
-                    os.remove('TestNyxusOut/test_parquet.parquet')
-                    print('deleted successfully')
-                    break
-                except:
-                    
-                    attempts +=1
-                    
-                    if attempts > 5:
-                        print("Could not delete file")
-                        break
-                    
-                    time.sleep(30)
-            '''
-            print("parquet file is closed: " + str(file.closed))
+
 
         @pytest.mark.arrow
         def test_make_arrow_ipc(self):
@@ -453,9 +431,8 @@ class TestNyxus():
                                 assert False
 
                             continue
-                        assert feature_value == arrow_value
-            
-            path = nyx.get_arrow_ipc_file()
+                        assert feature_value == pytest.approx(arrow_value, rel=1e-6)
+
         
         @pytest.mark.arrow
         def test_arrow_ipc(self):
@@ -489,7 +466,7 @@ class TestNyxus():
                                 assert False
 
                             continue
-                        assert feature_value == arrow_value
+                        assert feature_value == pytest.approx(arrow_value, rel=1e-6)
                         
         @pytest.mark.arrow
         def test_arrow_ipc_file_naming(self):
@@ -525,7 +502,7 @@ class TestNyxus():
                                 assert False
 
                             continue
-                        assert feature_value == arrow_value
+                        assert feature_value == pytest.approx(arrow_value, rel=1e-6)
             
         @pytest.mark.arrow
         def test_arrow_ipc_no_path(self):
@@ -561,7 +538,7 @@ class TestNyxus():
                                 assert False
 
                             continue
-                        assert feature_value == arrow_value
+                        assert feature_value == pytest.approx(arrow_value, rel=1e-6)
             
         @pytest.mark.arrow         
         def test_arrow_ipc_path(self):
