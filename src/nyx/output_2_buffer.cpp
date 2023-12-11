@@ -202,7 +202,8 @@ namespace Nyxus
 
 				// --GLRLM family
 				bool glrlmFeature = std::find (GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
-				if (glrlmFeature)
+				bool nonAngledGlrlmFeature = std::find(GLRLMFeature::nonAngledFeatures.begin(), GLRLMFeature::nonAngledFeatures.end(), fc) != GLRLMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
+				if (glrlmFeature && nonAngledGlrlmFeature == false)
 				{
 					// Populate with angles
 					int nAng = 4;
