@@ -3,13 +3,13 @@
 #include <unordered_set> 
 #include <algorithm>
 #if __has_include(<filesystem>)
-  #include <filesystem>
-  namespace fs = std::filesystem;
+#include <filesystem>
+namespace fs = std::filesystem;
 #elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
-  namespace fs = std::experimental::filesystem;
+#include <experimental/filesystem> 
+namespace fs = std::experimental::filesystem;
 #else
-  error "Missing the <filesystem> header."
+error "Missing the <filesystem> header."
 #endif
 #include <iostream>
 #include <sstream>
@@ -32,7 +32,7 @@ namespace Nyxus
 #define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),(mode)))==NULL
 #endif
 
-	double auto_precision (std::stringstream& ss, double x)
+	double auto_precision(std::stringstream& ss, double x)
 	{
 		if (std::abs(x) >= 1.0)
 			ss << std::setprecision(theEnvironment.get_floating_point_precision());
@@ -45,7 +45,7 @@ namespace Nyxus
 
 				double tmp1 = std::abs(x),
 					tmp2 = std::log10(tmp1),
-					tmp3 = std::abs(tmp2), 
+					tmp3 = std::abs(tmp2),
 					tmp4 = tmp3 + 0.5;
 				int n = int(tmp4);
 
@@ -55,7 +55,7 @@ namespace Nyxus
 		return x;
 	}
 
-	std::vector<std::string> get_header(const std::vector<std::tuple<std::string, AvailableFeatures>>& F ) {
+	std::vector<std::string> get_header(const std::vector<std::tuple<std::string, AvailableFeatures>>& F) {
 		std::stringstream ssHead;
 
 		std::vector<std::string> head;
@@ -82,9 +82,9 @@ namespace Nyxus
 
 			// Parameterized feature
 			// --GLCM family
-			bool glcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
+			bool glcmFeature = std::find(GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
 			bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
-			if (glcmFeature && nonAngledGlcmFeature==false)
+			if (glcmFeature && nonAngledGlcmFeature == false)
 			{
 				// Populate with angles
 				for (auto ang : theEnvironment.glcmAngles)
@@ -99,8 +99,9 @@ namespace Nyxus
 			}
 
 			// --GLRLM family
-			bool glrlmFeature = std::find (GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
-			if (glrlmFeature)
+			bool glrlmFeature = std::find(GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
+			bool nonAngledGlrlmFeature = std::find(GLRLMFeature::nonAngledFeatures.begin(), GLRLMFeature::nonAngledFeatures.end(), fc) != GLRLMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
+			if (glrlmFeature && nonAngledGlrlmFeature == false)
 			{
 				// Populate with angles
 				for (auto ang : GLRLMFeature::rotAngles)
@@ -157,7 +158,7 @@ namespace Nyxus
 			{
 				// Populate with indices
 				for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)	// i < ZernikeFeature::num_feature_values_calculated
-					head.emplace_back(fn + "_Z" + std::to_string(i));						
+					head.emplace_back(fn + "_Z" + std::to_string(i));
 
 				// Proceed with other features
 				continue;
@@ -170,7 +171,7 @@ namespace Nyxus
 		return head;
 	}
 
-	std::string get_feature_output_fname (const std::string& intFpath, const std::string& segFpath)
+	std::string get_feature_output_fname(const std::string& intFpath, const std::string& segFpath)
 	{
 		std::string retval;
 		if (theEnvironment.separateCsv)
@@ -184,10 +185,10 @@ namespace Nyxus
 		return retval;
 	}
 
-	const std::vector<std::string> mandatory_output_columns { Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label };
+	const std::vector<std::string> mandatory_output_columns{ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label };
 
 	// Saves the result of image scanning and feature calculation. Must be called after the reduction phase.
-	bool save_features_2_csv (const std::string & intFpath, const std::string & segFpath, const std::string & outputDir)
+	bool save_features_2_csv(const std::string& intFpath, const std::string& segFpath, const std::string& outputDir)
 	{
 		// Non-exotic formatting for compatibility with the buffer output (Python API, Apache)
 		constexpr int VAL_BUF_LEN = 450;
@@ -201,12 +202,12 @@ namespace Nyxus
 		static bool mustRenderHeader = true;	// In 'singlecsv' scenario this flag flips from 'T' to 'F' when necessary (after the header is rendered)
 
 		// Make the file name and write mode
-		std::string fullPath = get_feature_output_fname (intFpath, segFpath);
+		std::string fullPath = get_feature_output_fname(intFpath, segFpath);
 		VERBOSLVL1(std::cout << "\t--> " << fullPath << "\n");
 
 		// Single CSV: create or continue?
 		const char* mode = "w";
-		if (! theEnvironment.separateCsv)
+		if (!theEnvironment.separateCsv)
 			mode = mustRenderHeader ? "w" : "a";
 
 		// Open it
@@ -216,7 +217,7 @@ namespace Nyxus
 		if (!fp)
 		{
 			std::string errmsg = "Cannot open file " + fullPath + " for writing";
-			std::perror (errmsg.c_str());
+			std::perror(errmsg.c_str());
 			return false;
 		}
 
@@ -237,7 +238,7 @@ namespace Nyxus
 			auto head_vector = Nyxus::get_header(F);
 
 			// Make sure that the header is in format "column1","column2",...,"columnN" without spaces
-			for(int i=0; i<head_vector.size(); i++)
+			for (int i = 0; i < head_vector.size(); i++)
 			{
 				const auto& column = head_vector[i];
 				if (i)
@@ -256,8 +257,8 @@ namespace Nyxus
 		// -- Values
 		for (auto l : L)
 		{
-			LR& r = roiData[l];			
-			
+			LR& r = roiData[l];
+
 			// Skip blacklisted ROI
 			if (r.blacklisted)
 				continue;
@@ -279,7 +280,7 @@ namespace Nyxus
 
 				// Parameterized feature
 				// --GLCM family
-				bool glcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
+				bool glcmFeature = std::find(GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
 				bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
 				if (glcmFeature && nonAngledGlcmFeature == false)
 				{
@@ -288,37 +289,38 @@ namespace Nyxus
 						vv.resize(GLCMFeature::angles.size(), 0.0);
 					// Output the sub-values
 					int nAng = GLCMFeature::angles.size();
-					for (int i=0; i < nAng; i++)
+					for (int i = 0; i < nAng; i++)
 					{
-						double fv = Nyxus::force_finite_number (vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
-						snprintf (rvbuf, VAL_BUF_LEN, rvfmt, fv);
-						#ifndef DIAGNOSE_NYXUS_OUTPUT
-							ssVals << "," << rvbuf;
-						#else
-							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << rvbuf;	
-						#endif
+						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
+#ifndef DIAGNOSE_NYXUS_OUTPUT
+						ssVals << "," << rvbuf;
+#else
+						//--diagnoze misalignment-- 
+						ssVals << "," << fn << "-" << rvbuf;
+#endif
 					}
 					// Proceed with other features
 					continue;
 				}
 
 				// --GLRLM family
-				bool glrlmFeature = std::find (GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
-				if (glrlmFeature)
+				bool glrlmFeature = std::find(GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
+				bool nonAngledGlrlmFeature = std::find(GLRLMFeature::nonAngledFeatures.begin(), GLRLMFeature::nonAngledFeatures.end(), fc) != GLRLMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
+				if (glrlmFeature && nonAngledGlrlmFeature == false)
 				{
 					// Populate with angles
 					int nAng = 4;
-					for (int i=0; i < nAng; i++)
+					for (int i = 0; i < nAng; i++)
 					{
 						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
-						snprintf (rvbuf, VAL_BUF_LEN, rvfmt, fv);
-						#ifndef DIAGNOSE_NYXUS_OUTPUT
-							ssVals << "," << rvbuf;
-						#else
-							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << rvbuf;	
-						#endif
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
+#ifndef DIAGNOSE_NYXUS_OUTPUT
+						ssVals << "," << rvbuf;
+#else
+						//--diagnoze misalignment-- 
+						ssVals << "," << fn << "-" << rvbuf;
+#endif
 					}
 					// Proceed with other features
 					continue;
@@ -331,12 +333,12 @@ namespace Nyxus
 					{
 						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
 						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
-						#ifndef DIAGNOSE_NYXUS_OUTPUT
-							ssVals << "," << rvbuf;
-						#else	
-							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << rvbuf;	
-						#endif			
+#ifndef DIAGNOSE_NYXUS_OUTPUT
+						ssVals << "," << rvbuf;
+#else	
+						//--diagnoze misalignment-- 
+						ssVals << "," << fn << "-" << rvbuf;
+#endif			
 					}
 
 					// Proceed with other features
@@ -350,12 +352,12 @@ namespace Nyxus
 					{
 						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
 						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
-						#ifndef DIAGNOSE_NYXUS_OUTPUT
-							ssVals << "," << rvbuf;
-						#else
-							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << rvbuf;	
-						#endif
+#ifndef DIAGNOSE_NYXUS_OUTPUT
+						ssVals << "," << rvbuf;
+#else
+						//--diagnoze misalignment-- 
+						ssVals << "," << fn << "-" << rvbuf;
+#endif
 					}
 
 					// Proceed with other features
@@ -369,12 +371,12 @@ namespace Nyxus
 					{
 						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
 						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
-						#ifndef DIAGNOSE_NYXUS_OUTPUT
-							ssVals << "," << rvbuf;
-						#else
-							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << rvbuf;	
-						#endif
+#ifndef DIAGNOSE_NYXUS_OUTPUT
+						ssVals << "," << rvbuf;
+#else
+						//--diagnoze misalignment-- 
+						ssVals << "," << fn << "-" << rvbuf;
+#endif
 					}
 					// Proceed with other features
 					continue;
@@ -385,12 +387,12 @@ namespace Nyxus
 					{
 						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
 						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
-						#ifndef DIAGNOSE_NYXUS_OUTPUT
-							ssVals << "," << rvbuf;
-						#else
-							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << rvbuf;	
-						#endif
+#ifndef DIAGNOSE_NYXUS_OUTPUT
+						ssVals << "," << rvbuf;
+#else
+						//--diagnoze misalignment-- 
+						ssVals << "," << fn << "-" << rvbuf;
+#endif
 					}
 					// Proceed with other features
 					continue;
@@ -401,25 +403,25 @@ namespace Nyxus
 					{
 						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
 						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
-						#ifndef DIAGNOSE_NYXUS_OUTPUT
-							ssVals << "," << rvbuf;
-						#else
-							//--diagnoze misalignment-- 
-							ssVals << "," << fn << "-" << rvbuf;	
-						#endif
+#ifndef DIAGNOSE_NYXUS_OUTPUT
+						ssVals << "," << rvbuf;
+#else
+						//--diagnoze misalignment-- 
+						ssVals << "," << fn << "-" << rvbuf;
+#endif
 					}
 					// Proceed with other features
 					continue;
 				}
 
 				// Regular feature
-				snprintf(rvbuf, VAL_BUF_LEN, rvfmt, Nyxus::force_finite_number (vv[0], theEnvironment.nan_substitute));
-				#ifndef DIAGNOSE_NYXUS_OUTPUT
+				snprintf(rvbuf, VAL_BUF_LEN, rvfmt, Nyxus::force_finite_number(vv[0], theEnvironment.nan_substitute));
+#ifndef DIAGNOSE_NYXUS_OUTPUT
 				ssVals << "," << rvbuf; // Alternatively: auto_precision(ssVals, vv[0]);
-				#else
-					//--diagnoze misalignment-- 
-					ssVals << "," << fn << "-" << rvbuf;	
-				#endif
+#else
+				//--diagnoze misalignment-- 
+				ssVals << "," << fn << "-" << rvbuf;
+#endif
 			}
 
 			fprintf(fp, "%s\n", ssVals.str().c_str());
@@ -471,13 +473,13 @@ namespace Nyxus
 		// Learn what features need to be displayed
 		std::vector<std::tuple<std::string, AvailableFeatures>> F = theFeatureSet.getEnabledFeatures();
 
-    	// -- Values
+		// -- Values
 		for (auto l : L)
 		{
-			LR& r = roiData[l];		
+			LR& r = roiData[l];
 
-			std::vector<double> feature_values;	
-			
+			std::vector<double> feature_values;
+
 			// Skip blacklisted ROI
 			if (r.blacklisted)
 				continue;
@@ -495,7 +497,7 @@ namespace Nyxus
 
 				// Parameterized feature
 				// --GLCM family
-				bool glcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
+				bool glcmFeature = std::find(GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
 				bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
 				if (glcmFeature && nonAngledGlcmFeature == false)
 				{
@@ -504,7 +506,7 @@ namespace Nyxus
 						vv.resize(GLCMFeature::angles.size(), 0.0);
 					// Output the sub-values
 					int nAng = GLCMFeature::angles.size();
-					for (int i=0; i < nAng; i++)
+					for (int i = 0; i < nAng; i++)
 					{
 						feature_values.push_back(vv[i]);
 					}
@@ -513,12 +515,12 @@ namespace Nyxus
 				}
 
 				// --GLRLM family
-				bool glrlmFeature = std::find (GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
+				bool glrlmFeature = std::find(GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
 				if (glrlmFeature)
 				{
 					// Polulate with angles
 					int nAng = 4;
-					for (int i=0; i < nAng; i++)
+					for (int i = 0; i < nAng; i++)
 					{
 						feature_values.push_back(vv[i]);
 					}
@@ -531,7 +533,7 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
 					{
-						feature_values.push_back(vv[i]);		
+						feature_values.push_back(vv[i]);
 					}
 
 					// Proceed with other features
