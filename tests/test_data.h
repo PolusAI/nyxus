@@ -631,7 +631,7 @@ const static NyxusPixel roiDataForPerimeterTest[] = {
 
 
 const static std::tuple<std::vector<std::string>, std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>> features {
-	std::make_tuple(std::vector<std::string>{"intensity_image", "segmentation_image", "ROI_label", "COV", "COVERED_IMAGE_INTENSITY_RANGE", "ENERGY", 
+	std::make_tuple(std::vector<std::string>{"intensity_image", "mask_image", "ROI_label", "COV", "COVERED_IMAGE_INTENSITY_RANGE", "ENERGY", 
 	"ENTROPY", "EXCESS_KURTOSIS", "HYPERFLATNESS", "HYPERSKEWNESS", "INTEGRATED_INTENSITY", "INTERQUARTILE_RANGE", "KURTOSIS", 
 	"MAX", "MEAN", "MEAN_ABSOLUTE_DEVIATION", "MEDIAN", "MEDIAN_ABSOLUTE_DEVIATION", "MIN", "MODE", "P01", "P10", "P25", "P75", 
 	"P90", "P99", "QCOD", "RANGE", "ROBUST_MEAN", "ROBUST_MEAN_ABSOLUTE_DEVIATION", "ROOT_MEAN_SQUARED", "SKEWNESS", "STANDARD_DEVIATION", 
