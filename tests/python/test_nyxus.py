@@ -350,7 +350,7 @@ class TestNyxus():
                             assert False
 
                         continue
-                    assert feature_value == pytest.approx(arrow_value, 1e-5)
+                    assert feature_value == pytest.approx(arrow_value, rel=1e-6)
             
             open_parquet_file.close()
             
@@ -389,7 +389,7 @@ class TestNyxus():
                             assert False
 
                         continue
-                    assert feature_value == pytest.approx(arrow_value, 1e-5)
+                    assert feature_value == pytest.approx(arrow_value, rel=1e-6)
             
 
             file.close()
@@ -442,7 +442,7 @@ class TestNyxus():
                             assert False
 
                         continue
-                    assert feature_value == pytest.approx(arrow_value, 1e-5)
+                    assert feature_value == pytest.approx(arrow_value, rel=1e-6)
             
             path = nyx.get_arrow_ipc_file()
         
@@ -475,7 +475,7 @@ class TestNyxus():
                             assert False
 
                         continue
-                    assert feature_value == pytest.approx(arrow_value, 1e-5)
+                    assert feature_value == pytest.approx(arrow_value, rel=1e-6)
                     
         @pytest.mark.arrow
         def test_arrow_ipc_file_naming(self):
@@ -508,7 +508,7 @@ class TestNyxus():
                             assert False
 
                         continue
-                    assert feature_value == pytest.approx(arrow_value, 1e-5)
+                    assert feature_value == pytest.approx(arrow_value, rel=1e-6)
             
         @pytest.mark.arrow
         def test_arrow_ipc_no_path(self):
@@ -541,7 +541,7 @@ class TestNyxus():
                             assert False
 
                         continue
-                    assert feature_value == pytest.approx(arrow_value, 1e-5)
+                    assert feature_value == pytest.approx(arrow_value, rel=1e-6)
             
         @pytest.mark.arrow         
         def test_arrow_ipc_path(self):
