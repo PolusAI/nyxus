@@ -3,13 +3,13 @@
 #include <unordered_set> 
 #include <algorithm>
 #if __has_include(<filesystem>)
-  #include <filesystem>
-  namespace fs = std::filesystem;
+#include <filesystem>
+namespace fs = std::filesystem;
 #elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
-  namespace fs = std::experimental::filesystem;
+#include <experimental/filesystem> 
+namespace fs = std::experimental::filesystem;
 #else
-  error "Missing the <filesystem> header."
+error "Missing the <filesystem> header."
 #endif
 #include <iostream>
 #include <sstream>
@@ -28,7 +28,7 @@
 namespace Nyxus
 {
 	/// @brief Copies ROIs' feature values into a ResultsCache structure that will then shape them as a table
-	bool save_features_2_buffer (ResultsCache& rescache)
+	bool save_features_2_buffer(ResultsCache& rescache)
 	{
 		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
 		std::sort(L.begin(), L.end());
@@ -41,7 +41,7 @@ namespace Nyxus
 		// -- Header
 		if (fill_header)
 		{
-			rescache.add_to_header ({ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label });
+			rescache.add_to_header({ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label });
 
 			for (auto& enabdF : F)
 			{
@@ -54,7 +54,7 @@ namespace Nyxus
 
 				// Parameterized feature
 				// --GLCM family
-				bool glcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
+				bool glcmFeature = std::find(GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
 				bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
 				if (glcmFeature && nonAngledGlcmFeature == false)
 				{
@@ -62,7 +62,7 @@ namespace Nyxus
 					for (auto ang : theEnvironment.glcmAngles)
 					{
 						std::string col = fn + "_" + std::to_string(ang);
-						rescache.add_to_header(col);	
+						rescache.add_to_header(col);
 					}
 
 					// Proceed with other features
@@ -70,16 +70,17 @@ namespace Nyxus
 				}
 
 				// --GLRLM family
-				bool glrlmFeature = std::find (GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
-				if (glrlmFeature)
+				bool glrlmFeature = std::find(GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
+				bool nonAngledGlrlmFeature = std::find(GLRLMFeature::nonAngledFeatures.begin(), GLRLMFeature::nonAngledFeatures.end(), fc) != GLRLMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
+				if (glrlmFeature && nonAngledGlrlmFeature == false)
 				{
 					// Populate with angles
 					for (auto ang : GLRLMFeature::rotAngles)
 					{
 						std::string col = fn + "_" + std::to_string(ang);
-						rescache.add_to_header(col);	
+						rescache.add_to_header(col);
 					}
-					
+
 					// Proceed with other features
 					continue;
 				}
@@ -91,7 +92,7 @@ namespace Nyxus
 					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
 					{
 						std::string col = fn + "_" + std::to_string(i);
-						rescache.add_to_header(col);	
+						rescache.add_to_header(col);
 					}
 
 					// Proceed with other features
@@ -152,7 +153,7 @@ namespace Nyxus
 				}
 
 				// Regular feature
-				rescache.add_to_header(fn);	
+				rescache.add_to_header(fn);
 			}
 		}
 
@@ -165,16 +166,16 @@ namespace Nyxus
 			if (r.blacklisted)
 				continue;
 
-			rescache.inc_num_rows();	
+			rescache.inc_num_rows();
 
 			// Tear off pure file names from segment and intensity file paths
 			fs::path pseg(r.segFname), pint(r.intFname);
 			std::string segfname = pseg.filename().string(),
 				intfname = pint.filename().string();
 
-			rescache.add_string(segfname);	
-			rescache.add_string(intfname);	
-			rescache.add_numeric(l); 
+			rescache.add_string(segfname);
+			rescache.add_string(intfname);
+			rescache.add_numeric(l);
 			for (auto& enabdF : F)
 			{
 				auto fc = std::get<1>(enabdF);
@@ -183,31 +184,32 @@ namespace Nyxus
 
 				// Parameterized feature
 				// --GLCM family
-				bool glcmFeature = std::find (GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
+				bool glcmFeature = std::find(GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
 				bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
 				if (glcmFeature && nonAngledGlcmFeature == false)
 				{
 					// Mock angled values if they haven't been calculated for some error reason
 					if (vv.size() < GLCMFeature::angles.size())
 						vv.resize(GLCMFeature::angles.size(), 0.0);
-					
+
 					// Populate with angles
 					int nAng = GLCMFeature::angles.size();
-					for (int i=0; i < nAng; i++)
-						rescache.add_numeric(vv[i]);		
-					
+					for (int i = 0; i < nAng; i++)
+						rescache.add_numeric(vv[i]);
+
 					// Proceed with other features
 					continue;
 				}
 
 				// --GLRLM family
-				bool glrlmFeature = std::find (GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
-				if (glrlmFeature)
+				bool glrlmFeature = std::find(GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
+				bool nonAngledGlrlmFeature = std::find(GLRLMFeature::nonAngledFeatures.begin(), GLRLMFeature::nonAngledFeatures.end(), fc) != GLRLMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
+				if (glrlmFeature && nonAngledGlrlmFeature == false)
 				{
 					// Populate with angles
 					int nAng = 4;
-					for (int i=0; i < nAng; i++)
-						rescache.add_numeric(vv[i]);		
+					for (int i = 0; i < nAng; i++)
+						rescache.add_numeric(vv[i]);
 					// Proceed with other features
 					continue;
 				}
@@ -216,7 +218,7 @@ namespace Nyxus
 				if (fc == GABOR)
 				{
 					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
-						rescache.add_numeric(vv[i]);		
+						rescache.add_numeric(vv[i]);
 
 					// Proceed with other features
 					continue;
@@ -226,7 +228,7 @@ namespace Nyxus
 				if (fc == ZERNIKE2D)
 				{
 					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
-						rescache.add_numeric(vv[i]);		
+						rescache.add_numeric(vv[i]);
 
 					// Proceed with other features
 					continue;
@@ -236,30 +238,30 @@ namespace Nyxus
 				if (fc == FRAC_AT_D)
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
-						rescache.add_numeric(vv[i]);		
-					
+						rescache.add_numeric(vv[i]);
+
 					// Proceed with other features
 					continue;
 				}
 				if (fc == MEAN_FRAC)
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
-						rescache.add_numeric(vv[i]);		
-					
+						rescache.add_numeric(vv[i]);
+
 					// Proceed with other features
 					continue;
 				}
 				if (fc == RADIAL_CV)
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
-						rescache.add_numeric(vv[i]);		
-					
+						rescache.add_numeric(vv[i]);
+
 					// Proceed with other features
 					continue;
 				}
 
 				// Regular feature
-				rescache.add_numeric(vv[0]);		
+				rescache.add_numeric(vv[0]);
 			}
 		}
 

@@ -194,28 +194,19 @@ namespace Nyxus
 		{ "GLCM_CLUSHADE", GLCM_CLUSHADE },
 		{ "GLCM_CLUTEND", GLCM_CLUTEND },
 		{ "GLCM_CONTRAST", GLCM_CONTRAST },
-		{ "GLCM_CONTRAST_AVE", GLCM_CONTRAST_AVE },
 		{ "GLCM_CORRELATION", GLCM_CORRELATION },
-		{ "GLCM_CORRELATION_AVE", GLCM_CORRELATION_AVE },
 		{ "GLCM_DIFAVE", GLCM_DIFAVE },
-		{ "GLCM_DIFAVE_AVE", GLCM_DIFAVE_AVE },
 		{ "GLCM_DIFVAR", GLCM_DIFVAR },
-		{ "GLCM_DIFVAR_AVE", GLCM_DIFVAR_AVE },
 		{ "GLCM_DIFENTRO", GLCM_DIFENTRO },
-		{ "GLCM_DIFENTRO_AVE", GLCM_DIFENTRO_AVE },
 		{ "GLCM_DIS", GLCM_DIS },
 		{ "GLCM_ENERGY", GLCM_ENERGY},
-		{ "GLCM_ENERGY_AVE", GLCM_ENERGY_AVE },
 		{ "GLCM_ENTROPY", GLCM_ENTROPY },
-		{ "GLCM_ENTROPY_AVE", GLCM_ENTROPY_AVE },
 		{ "GLCM_HOM1", GLCM_HOM1},
-		{ "GLCM_HOM1_AVE", GLCM_HOM1_AVE },
 		{ "GLCM_HOM2", GLCM_HOM2},
 		{ "GLCM_ID", GLCM_ID },
 		{ "GLCM_IDN", GLCM_IDN },
 		{ "GLCM_IDM", GLCM_IDM },
-		{ "GLCM_IDM_AVE", GLCM_IDM_AVE },
-		{ "GLCM_IDMN", GLCM_IDMN },		
+		{ "GLCM_IDMN", GLCM_IDMN },
 		{ "GLCM_INFOMEAS1", GLCM_INFOMEAS1 },
 		{ "GLCM_INFOMEAS2", GLCM_INFOMEAS2 },
 		{ "GLCM_IV", GLCM_IV },
@@ -224,12 +215,39 @@ namespace Nyxus
 		{ "GLCM_JMAX", GLCM_JMAX },
 		{ "GLCM_JVAR", GLCM_JVAR },
 		{ "GLCM_SUMAVERAGE", GLCM_SUMAVERAGE },
-		{ "GLCM_SUMAVERAGE_AVE", GLCM_SUMAVERAGE_AVE },
 		{ "GLCM_SUMVARIANCE", GLCM_SUMVARIANCE },
-		{ "GLCM_SUMVARIANCE_AVE", GLCM_SUMVARIANCE_AVE },
-		{ "GLCM_SUMENTROPY", 	GLCM_SUMENTROPY },
-		{ "GLCM_SUMENTROPY_AVE", 	GLCM_SUMENTROPY_AVE },
+		{ "GLCM_SUMENTROPY", GLCM_SUMENTROPY },
 		{ "GLCM_VARIANCE", GLCM_VARIANCE },
+
+		{ "GLCM_ASM_AVE", GLCM_ASM_AVE },
+		{ "GLCM_ACOR_AVE", GLCM_ACOR_AVE },
+		{ "GLCM_CLUPROM_AVE", GLCM_CLUPROM_AVE },
+		{ "GLCM_CLUSHADE_AVE", GLCM_CLUSHADE_AVE },
+		{ "GLCM_CLUTEND_AVE", GLCM_CLUTEND_AVE },
+		{ "GLCM_CONTRAST_AVE", GLCM_CONTRAST_AVE },
+		{ "GLCM_CORRELATION_AVE", GLCM_CORRELATION_AVE },
+		{ "GLCM_DIFAVE_AVE", GLCM_DIFAVE_AVE },
+		{ "GLCM_DIFVAR_AVE", GLCM_DIFVAR_AVE },
+		{ "GLCM_DIFENTRO_AVE", GLCM_DIFENTRO_AVE },
+		{ "GLCM_DIS_AVE", GLCM_DIS_AVE },
+		{ "GLCM_ENERGY_AVE", GLCM_ENERGY_AVE },
+		{ "GLCM_ENTROPY_AVE", GLCM_ENTROPY_AVE },
+		{ "GLCM_HOM1_AVE", GLCM_HOM1_AVE },
+		{ "GLCM_ID_AVE", GLCM_ID_AVE },
+		{ "GLCM_IDN_AVE", GLCM_IDN_AVE },
+		{ "GLCM_IDM_AVE", GLCM_IDM_AVE },
+		{ "GLCM_IDMN_AVE", GLCM_IDMN_AVE },
+		{ "GLCM_IV_AVE", GLCM_IV_AVE },
+		{ "GLCM_JAVE_AVE", GLCM_JAVE_AVE },
+		{ "GLCM_JE_AVE", GLCM_JE_AVE },
+		{ "GLCM_INFOMEAS1_AVE", GLCM_INFOMEAS1_AVE },
+		{ "GLCM_INFOMEAS2_AVE", GLCM_INFOMEAS2_AVE },
+		{ "GLCM_VARIANCE_AVE", GLCM_VARIANCE_AVE },
+		{ "GLCM_JMAX_AVE", GLCM_JMAX_AVE },
+		{ "GLCM_JVAR_AVE", GLCM_JVAR_AVE },
+		{ "GLCM_SUMAVERAGE_AVE", GLCM_SUMAVERAGE_AVE },
+		{ "GLCM_SUMVARIANCE_AVE", GLCM_SUMVARIANCE_AVE },
+		{ "GLCM_SUMENTROPY_AVE", GLCM_SUMENTROPY_AVE },
 		{ "GLCM_VARIANCE_AVE", GLCM_VARIANCE_AVE },
 
 		{ "GLRLM_SRE", GLRLM_SRE },
@@ -248,6 +266,23 @@ namespace Nyxus
 		{ "GLRLM_SRHGLE", GLRLM_SRHGLE},
 		{ "GLRLM_LRLGLE", GLRLM_LRLGLE},
 		{ "GLRLM_LRHGLE", GLRLM_LRHGLE},
+
+		{ "GLRLM_SRE_AVE", GLRLM_SRE_AVE},
+		{ "GLRLM_LRE_AVE", GLRLM_LRE_AVE},
+		{ "GLRLM_GLN_AVE", GLRLM_GLN_AVE },
+		{ "GLRLM_GLNN_AVE", GLRLM_GLNN_AVE },
+		{ "GLRLM_RLN_AVE", GLRLM_RLN_AVE },
+		{ "GLRLM_RLNN_AVE", GLRLM_RLNN_AVE },
+		{ "GLRLM_RP_AVE", GLRLM_RP_AVE },
+		{ "GLRLM_GLV_AVE", GLRLM_GLV_AVE },
+		{ "GLRLM_RV_AVE", GLRLM_RV_AVE },
+		{ "GLRLM_RE_AVE", GLRLM_RE_AVE },
+		{ "GLRLM_LGLRE_AVE", GLRLM_LGLRE_AVE },
+		{ "GLRLM_HGLRE_AVE", GLRLM_HGLRE_AVE },
+		{ "GLRLM_SRLGLE_AVE", GLRLM_SRLGLE_AVE },
+		{ "GLRLM_SRHGLE_AVE", GLRLM_SRHGLE_AVE },
+		{ "GLRLM_LRLGLE_AVE", GLRLM_LRLGLE_AVE },
+		{ "GLRLM_LRHGLE_AVE", GLRLM_LRHGLE_AVE },
 
 		{ "GLDZM_SDE", GLDZM_SDE},
 		{ "GLDZM_LDE", GLDZM_LDE},
@@ -435,9 +470,9 @@ FeatureSet::FeatureSet()
 	enableAll(true);
 }
 
-bool FeatureSet::findFeatureByString (const std::string& featureName, AvailableFeatures& f)
+bool FeatureSet::findFeatureByString(const std::string& featureName, AvailableFeatures& f)
 {
-	auto it_f = Nyxus::UserFacingFeatureNames.find (featureName);
+	auto it_f = Nyxus::UserFacingFeatureNames.find(featureName);
 
 	if (it_f == Nyxus::UserFacingFeatureNames.end())
 		return false;
@@ -452,7 +487,7 @@ std::string FeatureSet::findFeatureNameByCode(AvailableFeatures fcode)
 	auto result = std::find_if(
 		Nyxus::UserFacingFeatureNames.begin(),
 		Nyxus::UserFacingFeatureNames.end(),
-		[fcode](const auto& finfo) 
+		[fcode](const auto& finfo)
 		{ return finfo.second == fcode; });
 
 	// Return the feature name if found
@@ -483,10 +518,9 @@ std::vector<std::tuple<std::string, AvailableFeatures>> FeatureSet::getEnabledFe
 			}
 
 			// Save the pair
-			std::tuple<std::string, AvailableFeatures> f(fname, (AvailableFeatures)i); 
+			std::tuple<std::string, AvailableFeatures> f(fname, (AvailableFeatures)i);
 			F.push_back(f);
 		}
 	}
 	return F;
 }
-
