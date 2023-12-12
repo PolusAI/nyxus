@@ -351,7 +351,7 @@ class TestNyxus():
                             assert False
 
                         continue
-                    assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
+                    assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6), f"For column {column}, expected {feature_value}, found {arrow_value}"
             
             open_parquet_file.close()
             
@@ -395,7 +395,7 @@ class TestNyxus():
                             assert False
 
                         continue
-                    assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
+                    assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6), f"For column {column}, expected {feature_value}, found {arrow_value}"
             
             file.close()
 
@@ -435,7 +435,7 @@ class TestNyxus():
                                 assert False
 
                             continue
-                        assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
+                        assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6), f"For column {column}, expected {feature_value}, found {arrow_value}"
 
         
         @pytest.mark.arrow
@@ -473,7 +473,7 @@ class TestNyxus():
                                 assert False
 
                             continue
-                        assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
+                        assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6), f"For column {column}, expected {feature_value}, found {arrow_value}"
                         
         @pytest.mark.arrow
         def test_arrow_ipc_file_naming(self):
@@ -512,7 +512,7 @@ class TestNyxus():
                                 assert False
 
                             continue
-                        assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
+                        assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6), f"For column {column}, expected {feature_value}, found {arrow_value}"
             
         @pytest.mark.arrow
         def test_arrow_ipc_no_path(self):
@@ -551,7 +551,7 @@ class TestNyxus():
                                 assert False
 
                             continue
-                        assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
+                        assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6), f"For column {column}, expected {feature_value}, found {arrow_value}"
             
         @pytest.mark.arrow         
         def test_arrow_ipc_path(self):
