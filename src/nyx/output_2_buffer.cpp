@@ -143,7 +143,7 @@ namespace Nyxus
 					// Populate with indices
 					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
 					{
-						std::string col = fn + "_" + std::to_string(i);
+						std::string col = fn + "_Z" + std::to_string(i);
 						rescache.add_to_header(col);
 					}
 

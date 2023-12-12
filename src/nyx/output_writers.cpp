@@ -197,7 +197,7 @@ arrow::Status ArrowIPCWriter::setup(const std::vector<std::string> &header) {
     
 
     fields.push_back(arrow::field("intensity_image", arrow::utf8()));
-    fields.push_back(arrow::field("segmentation_image", arrow::utf8()));
+    fields.push_back(arrow::field("mask_image", arrow::utf8()));
     fields.push_back(arrow::field("ROI_label", arrow::int32()));
 
     for (int i = 3; i < header.size(); ++i)
