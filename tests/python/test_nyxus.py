@@ -37,8 +37,56 @@ class TestNyxus():
                 os.remove('NyxusFeatures.parquet')
             except:
                 print('No .parquet file to delete')
+                
+        def test_featurize_directory(self):
             
-
+            path = str(pathlib.Path(__file__).parent.resolve())
+            
+            data_path = path + '/data/'
+            
+            nyx = nyxus.Nyxus (["*ALL*"])
+            assert nyx is not None
+            
+            features = nyx.featurize_directory(data_path + 'int/', data_path + 'seg/')
+            
+            features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+            
+            expected = pd.DataFrame.from_dict(feature_results)
+            
+            print(features.to_dict())
+            
+            # use pd.testing.assert_frame_equal for rel and abs tolerance
+            try:
+                pd.testing.assert_frame_equal(features, expected)
+            except:
+                pytest.fail("DataFrames are not equal.")
+        
+        def test_featurize_list(self):
+            
+            path = str(pathlib.Path(__file__).parent.resolve())
+            
+            data_path = path + '/data/'
+            
+            nyx = nyxus.Nyxus (["*ALL*"])
+            assert nyx is not None
+            
+            features = nyx.featurize_files(
+                [data_path + 'int/p0_y1_r1_c0.ome.tif', data_path + 'int/p0_y1_r1_c1.ome.tif'],
+                [data_path + 'seg/p0_y1_r1_c0.ome.tif', data_path + 'seg/p0_y1_r1_c1.ome.tif'],
+                single_roi=False,
+            )
+            
+            features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+            
+            expected = pd.DataFrame.from_dict(feature_results)
+            
+            # use pd.testing.assert_frame_equal for rel and abs tolerance
+            try:
+                pd.testing.assert_frame_equal(features, expected)
+            except:
+                pytest.fail("DataFrames are not equal.")
+        
+        #'''
         def test_gabor_gpu(self):
             # cpu gabor
             cpu_nyx = nyxus.Nyxus(["GABOR"])
@@ -396,25 +444,6 @@ class TestNyxus():
             
 
             file.close()
-            '''
-            attempts = 0
-            while True:
-                
-                try:
-                    os.remove('TestNyxusOut/test_parquet.parquet')
-                    print('deleted successfully')
-                    break
-                except:
-                    
-                    attempts +=1
-                    
-                    if attempts > 5:
-                        print("Could not delete file")
-                        break
-                    
-                    time.sleep(30)
-            '''
-            print("parquet file is closed: " + str(file.closed))
 
         @pytest.mark.arrow
         def test_make_arrow_ipc(self):
@@ -555,51 +584,7 @@ class TestNyxus():
             arrow_path = nyx.featurize(intens, seg, output_type="arrowipc")
 
             assert arrow_path == 'NyxusFeatures.arrow'           
-
-        def test_featurize_directory(self):
-            
-            path = str(pathlib.Path(__file__).parent.resolve())
-            
-            data_path = path + '/data/'
-            
-            nyx = nyxus.Nyxus (["*ALL*"])
-            assert nyx is not None
-            
-            features = nyx.featurize_directory(data_path + 'int/', data_path + 'seg/')
-            
-            features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
-            
-            expected = pd.DataFrame.from_dict(feature_results)
-            
-            print(features.to_dict())
-            
-            # use pd.testing.assert_frame_equal for rel and abs tolerance
-            try:
-                pd.testing.assert_frame_equal(features, expected)
-            except:
-                pytest.fail("DataFrames are not equal.")
-            
-        def test_featurize_list(self):
-            
-            path = str(pathlib.Path(__file__).parent.resolve())
-            
-            data_path = path + '/data/'
-            
-            nyx = nyxus.Nyxus (["*ALL*"])
-            assert nyx is not None
-            
-            features = nyx.featurize_files(
-                [data_path + 'int/p0_y1_r1_c0.ome.tif', data_path + 'int/p0_y1_r1_c1.ome.tif'],
-                [data_path + 'seg/p0_y1_r1_c0.ome.tif', data_path + 'seg/p0_y1_r1_c1.ome.tif'],
-                single_roi=False,
-            )
-            
-            features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
-            
-            expected = pd.DataFrame.from_dict(feature_results)
-            
-            # use pd.testing.assert_frame_equal for rel and abs tolerance
-            try:
-                pd.testing.assert_frame_equal(features, expected)
-            except:
-                pytest.fail("DataFrames are not equal.")
+        
+        #'''
+        
+        
