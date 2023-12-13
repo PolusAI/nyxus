@@ -5,11 +5,14 @@ import pytest
 import numpy as np
 import pandas as pd
 import math
-from pathlib import Path
-from test_data import intens, seg
+import pathlib
 import os
 import shutil
-import time
+from pathlib import Path
+
+from test_data import intens, seg
+from test_feature_results import feature_results
+
 
 class TestImport():
     def test_import(self):
@@ -552,3 +555,51 @@ class TestNyxus():
             arrow_path = nyx.featurize(intens, seg, output_type="arrowipc")
 
             assert arrow_path == 'NyxusFeatures.arrow'           
+
+        def test_featurize_directory(self):
+            
+            path = str(pathlib.Path(__file__).parent.resolve())
+            
+            data_path = path + '/data/'
+            
+            nyx = nyxus.Nyxus (["*ALL*"])
+            assert nyx is not None
+            
+            features = nyx.featurize_directory(data_path + 'int/', data_path + 'seg/')
+            
+            features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+            
+            expected = pd.DataFrame.from_dict(feature_results)
+            
+            print(features.to_dict())
+            
+            # use pd.testing.assert_frame_equal for rel and abs tolerance
+            try:
+                pd.testing.assert_frame_equal(features, expected)
+            except:
+                pytest.fail("DataFrames are not equal.")
+            
+        def test_featurize_list(self):
+            
+            path = str(pathlib.Path(__file__).parent.resolve())
+            
+            data_path = path + '/data/'
+            
+            nyx = nyxus.Nyxus (["*ALL*"])
+            assert nyx is not None
+            
+            features = nyx.featurize_files(
+                [data_path + 'int/p0_y1_r1_c0.ome.tif', data_path + 'int/p0_y1_r1_c1.ome.tif'],
+                [data_path + 'seg/p0_y1_r1_c0.ome.tif', data_path + 'seg/p0_y1_r1_c1.ome.tif'],
+                single_roi=False,
+            )
+            
+            features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+            
+            expected = pd.DataFrame.from_dict(feature_results)
+            
+            # use pd.testing.assert_frame_equal for rel and abs tolerance
+            try:
+                pd.testing.assert_frame_equal(features, expected)
+            except:
+                pytest.fail("DataFrames are not equal.")
