@@ -2,6 +2,19 @@
 #include "../parallel.h"
 #include "rotation.h"
 
+int get_min_idx(const std::vector<double>& vec) {
+	auto min = vec[0];
+	auto min_idx = 0;
+	for (int i = 0; i<vec.size(); ++i) {
+		if (vec[i] < min) {
+			min = vec[i];
+			min_idx = i;
+		}
+	}
+
+	return min_idx;
+}
+
 CaliperFeretFeature::CaliperFeretFeature() : FeatureMethod("CaliperFeretFeature")
 {
 	// Letting the feature dependency manager know 
@@ -41,14 +54,17 @@ void CaliperFeretFeature::calculate(LR& r)
 	if (allD.size() > 0)
 	{
 		// Min and max
-		auto itr_min_d = std::min_element(allD.begin(), allD.end());
+		int itr_min_d = get_min_idx(allD);
 		auto itr_max_d = std::max_element(allD.begin(), allD.end());
-		minFeretDiameter = *itr_min_d;
+		minFeretDiameter = allD[itr_min_d];
 		maxFeretDiameter = *itr_max_d;
+	
+		
 
 		// Angles
-		auto idxMin = std::distance(allD.begin(), itr_min_d);
+		auto idxMin = itr_min_d;
 		minFeretAngle = (double)idxMin / 2.0;
+		
 		auto idxMax = std::distance(allD.begin(), itr_max_d);
 		maxFeretAngle = (double)idxMax / 2.0;
 	}
