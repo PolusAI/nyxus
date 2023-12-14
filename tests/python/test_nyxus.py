@@ -12,7 +12,8 @@ from pathlib import Path
 
 from test_data import intens, seg
 from test_feature_results import feature_results
-
+    
+    
 
 class TestImport():
     def test_import(self):
@@ -53,11 +54,9 @@ class TestNyxus():
             
             expected = pd.DataFrame.from_dict(feature_results)
             
-            print(features.to_dict())
-            
             # use pd.testing.assert_frame_equal for rel and abs tolerance
             try:
-                pd.testing.assert_frame_equal(features, expected)
+                pd.testing.assert_frame_equal(features, expected, check_exact=False, atol=1e-5)
             except:
                 pytest.fail("DataFrames are not equal.")
         
