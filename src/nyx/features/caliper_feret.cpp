@@ -2,11 +2,14 @@
 #include "../parallel.h"
 #include "rotation.h"
 
+
+#define EPSILON_DIFF 0.000001
+
 int get_min_idx(const std::vector<double>& vec) {
 	auto min = vec[0];
 	auto min_idx = 0;
 	for (int i = 0; i<vec.size(); ++i) {
-		if (vec[i] < min) {
+		if ((vec[i] - min < EPSILON_DIFF) && (fabs(vec[i]-min) > EPSILON_DIFF)) {
 			min = vec[i];
 			min_idx = i;
 		}
@@ -50,6 +53,12 @@ void CaliperFeretFeature::calculate(LR& r)
 	_stdev = s.stdev;
 	_mode = (double)s.mode;
 
+	std::cerr << "allD: ";
+	for(const auto& d: allD) {
+		std::cerr << d << ", ";
+	}
+	std::cerr << std::endl;
+
 	// Calculate angles at min- and max- diameter
 	if (allD.size() > 0)
 	{
@@ -63,6 +72,7 @@ void CaliperFeretFeature::calculate(LR& r)
 
 		// Angles
 		auto idxMin = itr_min_d;
+		std::cout << "minIdx: " << idxMin;
 		minFeretAngle = (double)idxMin / 2.0;
 		
 		auto idxMax = std::distance(allD.begin(), itr_max_d);
