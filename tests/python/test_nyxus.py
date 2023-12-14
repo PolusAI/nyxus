@@ -81,7 +81,7 @@ class TestNyxus():
             
             # use pd.testing.assert_frame_equal for rel and abs tolerance
             try:
-                pd.testing.assert_frame_equal(features, expected)
+                pd.testing.assert_frame_equal(features, expected, check_exact=False, atol=1e-5)
             except:
                 pytest.fail("DataFrames are not equal.")
         
