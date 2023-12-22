@@ -91,8 +91,6 @@ namespace Nyxus
 		FRACT_DIM_PERIMETER,
 
 		// Caliper:
-		MIN_FERET_DIAMETER,
-		MAX_FERET_DIAMETER,
 		MIN_FERET_ANGLE,
 		MAX_FERET_ANGLE,
 
@@ -525,16 +523,14 @@ public:
 	}
 	void enableFeret() {
 		enableAll(false);
-		m_enabledFeatures[MIN_FERET_DIAMETER] =
-			m_enabledFeatures[MAX_FERET_DIAMETER] =
-			m_enabledFeatures[MIN_FERET_ANGLE] =
-			m_enabledFeatures[MAX_FERET_ANGLE] =
-			m_enabledFeatures[STAT_FERET_DIAM_MIN] =
-			m_enabledFeatures[STAT_FERET_DIAM_MAX] =
-			m_enabledFeatures[STAT_FERET_DIAM_MEAN] =
-			m_enabledFeatures[STAT_FERET_DIAM_MEDIAN] =
-			m_enabledFeatures[STAT_FERET_DIAM_STDDEV] =
-			m_enabledFeatures[STAT_FERET_DIAM_MODE] = true;
+		m_enabledFeatures[MIN_FERET_ANGLE] =
+		m_enabledFeatures[MAX_FERET_ANGLE] =
+		m_enabledFeatures[STAT_FERET_DIAM_MIN] =
+		m_enabledFeatures[STAT_FERET_DIAM_MAX] =
+		m_enabledFeatures[STAT_FERET_DIAM_MEAN] =
+		m_enabledFeatures[STAT_FERET_DIAM_MEDIAN] =
+		m_enabledFeatures[STAT_FERET_DIAM_STDDEV] =
+		m_enabledFeatures[STAT_FERET_DIAM_MODE] = true;
 	}
 	bool isEnabled(int fc) const { return fc < AvailableFeatures::_COUNT_ ? m_enabledFeatures[fc] : false; }
 	bool anyEnabled(const std::initializer_list<AvailableFeatures>& F) const

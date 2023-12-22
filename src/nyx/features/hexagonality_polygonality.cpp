@@ -6,7 +6,7 @@
 HexagonalityPolygonalityFeature::HexagonalityPolygonalityFeature() : FeatureMethod("HexagonalityPolygonalityFeature")
 {
     provide_features({ POLYGONALITY_AVE, HEXAGONALITY_AVE, HEXAGONALITY_STDDEV });
-    add_dependencies({ NUM_NEIGHBORS, PERIMETER, CONVEX_HULL_AREA, MAX_FERET_DIAMETER, MIN_FERET_DIAMETER });
+    add_dependencies({ NUM_NEIGHBORS, PERIMETER, CONVEX_HULL_AREA, STAT_FERET_DIAM_MAX, STAT_FERET_DIAM_MIN });
 }
 
 void HexagonalityPolygonalityFeature::calculate (LR& r)
@@ -19,8 +19,8 @@ void HexagonalityPolygonalityFeature::calculate (LR& r)
     double perimeter = r.fvals[PERIMETER][0];
     double area_hull = r.fvals[CONVEX_HULL_AREA][0];
     double perim_hull = 6 * sqrt(area_hull / (1.5 * sqrt(3)));
-    double min_feret_diam = r.fvals[MIN_FERET_DIAMETER][0];
-    double max_feret_diam = r.fvals[MAX_FERET_DIAMETER][0];
+    double min_feret_diam = r.fvals[STAT_FERET_DIAM_MIN][0];
+    double max_feret_diam = r.fvals[STAT_FERET_DIAM_MAX][0];
     double perimeter_neighbors;
 
     if (neighbors == 0)

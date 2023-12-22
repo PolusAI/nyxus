@@ -324,4 +324,32 @@ namespace Nyxus
 		else
 			return x;
 	}
-}
+
+	#define GET_MINMAX_IDX_EPSILON_DIFF 0.000001
+	inline size_t get_min_idx(const std::vector<double>& vec)
+	{
+		auto min_ = vec[0];
+		size_t idx = 0;
+		for (size_t i = 0; i < vec.size(); ++i)
+			if ((vec[i] - min_ < GET_MINMAX_IDX_EPSILON_DIFF) && (fabs(vec[i] - min_) > GET_MINMAX_IDX_EPSILON_DIFF))
+			{
+				min_ = vec[i];
+				idx = i;
+			}
+
+		return idx;
+	}
+
+	inline size_t get_max_idx(const std::vector<double>& vec)
+	{
+		auto max_ = vec[0];
+		size_t idx = 0;
+		for (size_t i = 0; i < vec.size(); ++i)
+			if ((max_ - vec[i] < GET_MINMAX_IDX_EPSILON_DIFF) && (fabs(vec[i] - max_) > GET_MINMAX_IDX_EPSILON_DIFF))
+			{
+				max_ = vec[i];
+				idx = i;
+			}
+
+		return idx;
+	}}
