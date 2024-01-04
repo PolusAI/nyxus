@@ -1,16 +1,19 @@
 import numpy as np
 from bfio import BioReader
+from pathlib import Path
 
-with BioReader('/Users/jmckinzie/Documents/GitHub/nyxus/tests/python/data/int/p0_y1_r1_c0.ome.tif') as br:
+path = str(Path(__file__).parent.resolve())
+
+with BioReader('/data/int/p0_y1_r1_c0.ome.tif') as br:
     int_p0_y1_r1_c0 = br.read()
     
-with BioReader('/Users/jmckinzie/Documents/GitHub/nyxus/tests/python/data/int/p0_y1_r1_c1.ome.tif') as br:
+with BioReader('/data/int/p0_y1_r1_c1.ome.tif') as br:
     int_p0_y1_r1_c1 = br.read()
     
-with BioReader('/Users/jmckinzie/Documents/GitHub/nyxus/tests/python/data/seg/p0_y1_r1_c0.ome.tif') as br:
+with BioReader('/data/seg/p0_y1_r1_c0.ome.tif') as br:
     seg_p0_y1_r1_c0 = br.read()
     
-with BioReader('/Users/jmckinzie/Documents/GitHub/nyxus/tests/python/data/seg/p0_y1_r1_c1.ome.tif') as br:
+with BioReader('/data/seg/p0_y1_r1_c1.ome.tif') as br:
     seg_p0_y1_r1_c1 = br.read()
 
 tissuenet_int = np.array([int_p0_y1_r1_c0, int_p0_y1_r1_c1])
