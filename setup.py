@@ -109,5 +109,5 @@ setup(
     zip_safe=False,
     python_requires=">=3.8",
     install_requires=["numpy", "pandas"],
-    tests_require = ["pyarrow, bfio"]
+    tests_require = ["pyarrow", "bfio"]
 )
