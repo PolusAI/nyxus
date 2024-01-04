@@ -6,10 +6,13 @@ import numpy as np
 import pandas as pd
 import math
 from pathlib import Path
+import pathlib
 from test_data import intens, seg
 import os
 import shutil
 import time
+
+from test_tissuenet_data import tissuenet_int, tissuenet_seg
 
 class TestImport():
     def test_import(self):
@@ -34,8 +37,79 @@ class TestNyxus():
                 os.remove('NyxusFeatures.parquet')
             except:
                 print('No .parquet file to delete')
+                
+        def test_featurize_all(self):
+            path = str(pathlib.Path(__file__).parent.resolve())
             
-
+            data_path = path + '/data/'
+            
+            nyx = nyxus.Nyxus (["*ALL*"])
+            assert nyx is not None
+            
+            directory_features = nyx.featurize_directory(data_path + 'int/', data_path + 'seg/')
+            directory_features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+            
+            files_features = nyx.featurize_files(
+                [data_path + 'int/p0_y1_r1_c0.ome.tif', data_path + 'int/p0_y1_r1_c1.ome.tif'],
+                [data_path + 'seg/p0_y1_r1_c0.ome.tif', data_path + 'seg/p0_y1_r1_c1.ome.tif'],
+                single_roi=False,
+            )
+            
+            files_features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+            
+            directory_columns = directory_features.columns
+            files_columns = files_features.columns
+            
+            assert len(directory_columns) == len(files_columns)
+            
+            files_not_equal = []
+            
+            for col in directory_columns:
+                directory_list = directory_features[col].tolist()
+                files_list = files_features[col].tolist()
+                
+                for directory_val, files_val in zip(directory_list, files_list):
+                    if not directory_val == pytest.approx(files_val, rel=1e-5, abs=1e-5):
+                        files_not_equal.append(col)
+                        break
+                    
+            print(files_not_equal)
+            
+            assert len(files_not_equal) == 0
+            
+        def test_featurize_montage(self):
+            
+            path = str(pathlib.Path(__file__).parent.resolve())
+            
+            data_path = path + '/data/'
+            
+            nyx = nyxus.Nyxus (["*ALL_INTENSITY*"])
+            assert nyx is not None
+            
+            montage_features = nyx.featurize(tissuenet_int, tissuenet_seg, intensity_names=['p0_y1_r1_c0.ome.tif', 'p0_y1_r1_c1.ome.tif'], label_names=['p0_y1_r1_c0.ome.tif', 'p0_y1_r1_c1.ome.tif'])
+            directory_features = nyx.featurize_directory(data_path + 'int/', data_path + 'seg/')
+            
+            montage_features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+            directory_features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+            
+            directory_columns = directory_features.columns
+            montage_columns = montage_features.columns
+            
+            assert len(directory_columns) == len(montage_columns)
+            
+            montage_not_equal = []
+            
+            for col in directory_columns:
+                directory_list = directory_features[col].tolist()
+                montage_list = montage_features[col].tolist()
+                
+                for directory_val, montage_val in zip(directory_list, montage_list):
+                    if not directory_val == pytest.approx(montage_val, rel=1e-4, abs=1e-4): # higher error tolerance for COVERED_IMAGE_INTENSITY_RANGE
+                        montage_not_equal.append(col)
+                        break
+            
+            assert len(montage_not_equal) == 0
+            
         def test_gabor_gpu(self):
             # cpu gabor
             cpu_nyx = nyxus.Nyxus(["GABOR"])
@@ -562,3 +636,4 @@ class TestNyxus():
             arrow_path = nyx.featurize(intens, seg, output_type="arrowipc")
 
             assert arrow_path == 'NyxusFeatures.arrow'           
+        
