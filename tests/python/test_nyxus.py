@@ -421,8 +421,6 @@ class TestNyxus():
                             continue
                         assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
 
-                        continue
-                    assert feature_value == arrow_value
             
             path = nyx.get_arrow_ipc_file()
             assert path == arrow_path
