@@ -1,5 +1,5 @@
 z5py 
-libtiff 
+libtiff <=4.5.0
 boost >=1.63
 nlohmann_json 
 blosc 

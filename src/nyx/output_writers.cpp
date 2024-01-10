@@ -26,7 +26,7 @@ arrow::Status ParquetWriter::setup(const std::vector<std::string> &header) {
 
     fields.push_back(arrow::field(header[0], arrow::utf8()));
     fields.push_back(arrow::field(header[1], arrow::utf8()));
-    fields.push_back(arrow::field(header[2], arrow::int64()));
+    fields.push_back(arrow::field(header[2], arrow::int32()));
 
     for (int i = 3; i < header.size(); ++i)
     {
@@ -120,7 +120,7 @@ arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std
 
     arrays.push_back(segmentation_array);
 
-    arrow::Int64Builder int_builder;
+    arrow::Int32Builder int_builder;
     std::shared_ptr<arrow::Array> labels_array;
     // construct label column
     for (int i = 0; i < num_rows; ++i) {
@@ -168,26 +168,26 @@ arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std
     ARROW_ASSIGN_OR_RAISE(auto table,
                 arrow::Table::FromRecordBatches(schema_, {batch}));
 
-
-    std::cout << table->ToString() << std::endl;
-
     ARROW_RETURN_NOT_OK(writer_->WriteTable(*table.get(), batch->num_rows()));
-
-    
 
     return arrow::Status::OK();
 }
 
 arrow::Status ParquetWriter::close () {
-    arrow::Status status = writer_->Close();
+    auto status = writer_->Close();
 
-        if (!status.ok()) {
-            // Handle read error
-            return status; 
-        }
-        return arrow::Status::OK();
-        
+    if (!status.ok()) {
+        // Handle read error
+        return status; 
+    }
 
+    status = output_stream_->Close();
+
+    if (!status.ok()) {
+        // Handle read error
+        return status; 
+    }
+    
     return arrow::Status::OK();
 }
 
@@ -197,8 +197,8 @@ arrow::Status ArrowIPCWriter::setup(const std::vector<std::string> &header) {
     
 
     fields.push_back(arrow::field("intensity_image", arrow::utf8()));
-    fields.push_back(arrow::field("segmentation_image", arrow::utf8()));
-    fields.push_back(arrow::field("ROI_label", arrow::int64()));
+    fields.push_back(arrow::field("mask_image", arrow::utf8()));
+    fields.push_back(arrow::field("ROI_label", arrow::int32()));
 
     for (int i = 3; i < header.size(); ++i)
     {
@@ -342,6 +342,14 @@ arrow::Status ArrowIPCWriter::close () {
         // Handle read error
         return status;
     }
+
+    status = output_stream_->Close();
+
+    if (!status.ok()) {
+        // Handle read error
+        return status; 
+    }
+
     return arrow::Status::OK();
     
 }

@@ -12,10 +12,10 @@
 /// 	: math:`i`and length :math:`j` occur in the image(ROI) along angle : math:`\theta`.
 /// 
 
-class GLRLMFeature: public FeatureMethod
+class GLRLMFeature : public FeatureMethod
 {
-public:	
-	
+public:
+
 	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
 	// in the feature group nickname expansion, and in the feature value output 
 	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
@@ -35,7 +35,45 @@ public:
 		GLRLM_SRLGLE,	// Short Run Low Gray Level Emphasis 
 		GLRLM_SRHGLE,	// Short Run High Gray Level Emphasis 
 		GLRLM_LRLGLE,	// Long Run Low Gray Level Emphasis 
-		GLRLM_LRHGLE	// Long Run High Gray Level Emphasis 
+		GLRLM_LRHGLE,	// Long Run High Gray Level Emphasis 
+		// averaged features:
+		GLRLM_SRE_AVE,
+		GLRLM_LRE_AVE,
+		GLRLM_GLN_AVE,
+		GLRLM_GLNN_AVE,
+		GLRLM_RLN_AVE,
+		GLRLM_RLNN_AVE,
+		GLRLM_RP_AVE,
+		GLRLM_GLV_AVE,
+		GLRLM_RV_AVE,
+		GLRLM_RE_AVE,
+		GLRLM_LGLRE_AVE,
+		GLRLM_HGLRE_AVE,
+		GLRLM_SRLGLE_AVE,
+		GLRLM_SRHGLE_AVE,
+		GLRLM_LRLGLE_AVE,
+		GLRLM_LRHGLE_AVE
+	};
+
+	// Features implemented by this class that do not require vector-like angled output. Instead, they are output as a single values
+	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> nonAngledFeatures =
+	{
+		GLRLM_SRE_AVE,
+		GLRLM_LRE_AVE,
+		GLRLM_GLN_AVE,
+		GLRLM_GLNN_AVE,
+		GLRLM_RLN_AVE,
+		GLRLM_RLNN_AVE,
+		GLRLM_RP_AVE,
+		GLRLM_GLV_AVE,
+		GLRLM_RV_AVE,
+		GLRLM_RE_AVE,
+		GLRLM_LGLRE_AVE,
+		GLRLM_HGLRE_AVE,
+		GLRLM_SRLGLE_AVE,
+		GLRLM_SRHGLE_AVE,
+		GLRLM_LRLGLE_AVE,
+		GLRLM_LRHGLE_AVE
 	};
 
 	GLRLMFeature();
@@ -47,51 +85,52 @@ public:
 	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 	// Compatibility with the manual reduce
-	static int required(const FeatureSet& fs) 
+	static int required(const FeatureSet& fs)
 	{
-		return fs.anyEnabled (GLRLMFeature::featureset);
+		return fs.anyEnabled(GLRLMFeature::featureset);
 	}
 
 	using P_matrix = SimpleMatrix<int>;
 	using AngledFtrs = std::vector<double>;
 
 	// 1. Short Run Emphasis 
-	void calc_SRE (AngledFtrs& af);
+	void calc_SRE(AngledFtrs& af);
 	// 2. Long Run Emphasis 
-	void calc_LRE (AngledFtrs& af);
+	void calc_LRE(AngledFtrs& af);
 	// 3. Gray Level Non-Uniformity 
-	void calc_GLN (AngledFtrs& af);
+	void calc_GLN(AngledFtrs& af);
 	// 4. Gray Level Non-Uniformity Normalized 
-	void calc_GLNN (AngledFtrs& af);
+	void calc_GLNN(AngledFtrs& af);
 	// 5. Run Length Non-Uniformity
-	void calc_RLN (AngledFtrs& af);
+	void calc_RLN(AngledFtrs& af);
 	// 6. Run Length Non-Uniformity Normalized 
-	void calc_RLNN (AngledFtrs& af);
+	void calc_RLNN(AngledFtrs& af);
 	// 7. Run Percentage
-	void calc_RP (AngledFtrs& af);
+	void calc_RP(AngledFtrs& af);
 	// 8. Gray Level Variance 
-	void calc_GLV (AngledFtrs& af);
+	void calc_GLV(AngledFtrs& af);
 	// 9. Run Variance 
-	void calc_RV (AngledFtrs& af);
+	void calc_RV(AngledFtrs& af);
 	// 10. Run Entropy 
-	void calc_RE (AngledFtrs& af);
+	void calc_RE(AngledFtrs& af);
 	// 11. Low Gray Level Run Emphasis 
-	void calc_LGLRE (AngledFtrs& af);
+	void calc_LGLRE(AngledFtrs& af);
 	// 12. High Gray Level Run Emphasis 
-	void calc_HGLRE (AngledFtrs& af);
+	void calc_HGLRE(AngledFtrs& af);
 	// 13. Short Run Low Gray Level Emphasis 
-	void calc_SRLGLE (AngledFtrs& af);
+	void calc_SRLGLE(AngledFtrs& af);
 	// 14. Short Run High Gray Level Emphasis 
-	void calc_SRHGLE (AngledFtrs& af);
+	void calc_SRHGLE(AngledFtrs& af);
 	// 15. Long Run Low Gray Level Emphasis 
-	void calc_LRLGLE (AngledFtrs& af);
+	void calc_LRLGLE(AngledFtrs& af);
 	// 16. Long Run High Gray Level Emphasis 
-	void calc_LRHGLE (AngledFtrs& af);
+	void calc_LRHGLE(AngledFtrs& af);
 
-	constexpr static int rotAngles [] = {0, 45, 90, 135};
+	constexpr static int rotAngles[] = { 0, 45, 90, 135 };
 
 private:
-	std::vector<double> angled_SRE, 
+
+	std::vector<double> angled_SRE,
 		angled_LRE,
 		angled_GLN,
 		angled_GLNN,
@@ -107,6 +146,8 @@ private:
 		angled_SRHGLE,
 		angled_LRLGLE,
 		angled_LRHGLE;
+
+	double calc_ave(const std::vector<double>& angled_feature_vals);
 
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
 	std::vector<int> angles_Ng;	// number of discrete intensity values in the image

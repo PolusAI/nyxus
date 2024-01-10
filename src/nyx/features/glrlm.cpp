@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
+#include <numeric>
 #include <sstream>
 #include <unordered_set>
 #include "glrlm.h"
@@ -8,10 +9,10 @@
 
 GLRLMFeature::GLRLMFeature() : FeatureMethod("GLRLMFeature")
 {
-	provide_features (GLRLMFeature::featureset);
+	provide_features(GLRLMFeature::featureset);
 }
 
-void GLRLMFeature::calculate (LR& r)
+void GLRLMFeature::calculate(LR& r)
 {
 	//==== Clear the feature values buffers
 	clear_buffers();
@@ -24,7 +25,7 @@ void GLRLMFeature::calculate (LR& r)
 	if (minI == maxI)
 	{
 		// insert zero for all 4 angles to make the output expecting 4-angled values happy
-		angled_SRE.resize(4, 0);	
+		angled_SRE.resize(4, 0);
 		angled_LRE.resize(4, 0);
 		angled_GLN.resize(4, 0);
 		angled_GLNN.resize(4, 0);
@@ -79,8 +80,8 @@ void GLRLMFeature::calculate (LR& r)
 		unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
 
 		for (size_t i = 0; i < D.size(); i++)
-			D[i] = Nyxus::to_grayscale (D[i], r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
-		
+			D[i] = Nyxus::to_grayscale(D[i], r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+
 
 		// Number of zones
 		const int VISITED = -1;
@@ -98,13 +99,13 @@ void GLRLMFeature::calculate (LR& r)
 				std::vector<std::tuple<int, int>> history;
 				int x = col, y = row;
 				int zoneArea = 1;
-				D.yx(y,x) = VISITED;
+				D.yx(y, x) = VISITED;
 
 				// State machine scanning the rest of the cluster
 				for (;;)
 				{
 					// angleIdx==0 === 0 degrees
-					if (angleIdx==0 && D.safe(y, x + 1) && D.yx(y, x + 1) == pi)
+					if (angleIdx == 0 && D.safe(y, x + 1) && D.yx(y, x + 1) == pi)
 					{
 						D.yx(y, x + 1) = VISITED;
 						zoneArea++;
@@ -120,7 +121,7 @@ void GLRLMFeature::calculate (LR& r)
 					}
 
 					// angleIdx==1 === 45 degrees
-					if (angleIdx==1 && D.safe(y + 1, x + 1) && D.yx(y + 1, x + 1) == pi)
+					if (angleIdx == 1 && D.safe(y + 1, x + 1) && D.yx(y + 1, x + 1) == pi)
 					{
 						D.yx(y + 1, x + 1) = VISITED;
 						zoneArea++;
@@ -134,7 +135,7 @@ void GLRLMFeature::calculate (LR& r)
 					}
 
 					// angleIdx==2 === 90 degrees
-					if (angleIdx==2 && D.safe(y + 1, x) && D.yx(y + 1, x) == pi)
+					if (angleIdx == 2 && D.safe(y + 1, x) && D.yx(y + 1, x) == pi)
 					{
 						D.yx(y + 1, x) = VISITED;
 						zoneArea++;
@@ -147,7 +148,7 @@ void GLRLMFeature::calculate (LR& r)
 					}
 
 					// angleIdx==3 === 135 degrees
-					if (angleIdx== 3 && D.safe(y + 1, x - 1) && D.yx(y + 1, x - 1) == pi)
+					if (angleIdx == 3 && D.safe(y + 1, x - 1) && D.yx(y + 1, x - 1) == pi)
 					{
 						D.yx(y + 1, x - 1) = VISITED;
 						zoneArea++;
@@ -187,13 +188,13 @@ void GLRLMFeature::calculate (LR& r)
 		// count non-zero pixels
 		int count = 0;
 
-		for (const auto& px: im.ReadablePixels()) {
-			if(px !=0) ++count;
+		for (const auto& px : im.ReadablePixels()) {
+			if (px != 0) ++count;
 		}
 
 		//==== Fill the zone matrix
 
-		int Ng = Environment::ibsi_compliance ? 
+		int Ng = Environment::ibsi_compliance ?
 			*std::max_element(std::begin(im.ReadablePixels()), std::end(im.ReadablePixels())) : (decltype(Ng))U.size();
 		int Nr = maxZoneArea;
 		int Nz = (decltype(Nz))Z.size();
@@ -205,7 +206,7 @@ void GLRLMFeature::calculate (LR& r)
 
 		// --allocate the matrix
 		P_matrix P;
-		P.allocate (Nr, Ng);
+		P.allocate(Nr, Ng);
 
 		// --iterate zones and fill the matrix
 		for (auto& z : Z)
@@ -221,10 +222,10 @@ void GLRLMFeature::calculate (LR& r)
 		}
 
 		// --save this angle's results
-		angles_P.push_back (P);
-		angles_Ng.push_back (Ng);
-		angles_Nr.push_back (Nr);
-		angles_Np.push_back (Np);
+		angles_P.push_back(P);
+		angles_Ng.push_back(Ng);
+		angles_Nr.push_back(Nr);
+		angles_Np.push_back(Np);
 		//--unnec-- angles_U.push_back (U);
 		//--unnec-- angles_Z.push_back (Z);
 
@@ -232,7 +233,7 @@ void GLRLMFeature::calculate (LR& r)
 		for (int i = 1; i <= Ng; ++i) {
 			for (int j = 1; j <= Nr; ++j) {
 				sum += P.matlab(i, j);
-			}	
+			}
 		}
 
 		sum_p.push_back(sum);
@@ -551,12 +552,30 @@ void GLRLMFeature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[GLRLM_SRHGLE] = angled_SRHGLE;
 	fvals[GLRLM_LRLGLE] = angled_LRLGLE;
 	fvals[GLRLM_LRHGLE] = angled_LRHGLE;
+
+	// -- averages --
+	fvals[GLRLM_SRE_AVE][0] = calc_ave(angled_SRE);
+	fvals[GLRLM_LRE_AVE][0] = calc_ave(angled_LRE);
+	fvals[GLRLM_GLN_AVE][0] = calc_ave(angled_GLN);
+	fvals[GLRLM_GLNN_AVE][0] = calc_ave(angled_GLNN);
+	fvals[GLRLM_RLN_AVE][0] = calc_ave(angled_RLN);
+	fvals[GLRLM_RLNN_AVE][0] = calc_ave(angled_RLNN);
+	fvals[GLRLM_RP_AVE][0] = calc_ave(angled_RP);
+	fvals[GLRLM_GLV_AVE][0] = calc_ave(angled_GLV);
+	fvals[GLRLM_RV_AVE][0] = calc_ave(angled_RV);
+	fvals[GLRLM_RE_AVE][0] = calc_ave(angled_RE);
+	fvals[GLRLM_LGLRE_AVE][0] = calc_ave(angled_LGLRE);
+	fvals[GLRLM_HGLRE_AVE][0] = calc_ave(angled_HGLRE);
+	fvals[GLRLM_SRLGLE_AVE][0] = calc_ave(angled_SRLGLE);
+	fvals[GLRLM_SRHGLE_AVE][0] = calc_ave(angled_SRHGLE);
+	fvals[GLRLM_LRLGLE_AVE][0] = calc_ave(angled_LRLGLE);
+	fvals[GLRLM_LRHGLE_AVE][0] = calc_ave(angled_LRHGLE);
 }
 
 
 // 1. Short Run Emphasis 
 // ai - angle index
-void GLRLMFeature::calc_SRE (AngledFtrs& af)
+void GLRLMFeature::calc_SRE(AngledFtrs& af)
 {
 	af.clear();
 
@@ -580,7 +599,7 @@ void GLRLMFeature::calc_SRE (AngledFtrs& af)
 		const SimpleMatrix<int>& P = angles_P[ai];
 
 		double f = 0.;
-		std::vector<double> rj(Nr+1, 0.);
+		std::vector<double> rj(Nr + 1, 0.);
 		for (int i = 1; i <= Ng; ++i) {
 			for (int j = 1; j <= Nr; ++j) {
 				rj[j] += P.matlab(i, j);
@@ -588,16 +607,16 @@ void GLRLMFeature::calc_SRE (AngledFtrs& af)
 		}
 
 		for (int j = 1; j <= Nr; ++j) {
-			f +=  rj[j] / (j * j);
+			f += rj[j] / (j * j);
 		}
 
 		double retval = f / double(sum_p[ai]);
-		af.push_back (retval);
+		af.push_back(retval);
 	}
 }
 
 // 2. Long Run Emphasis 
-void GLRLMFeature::calc_LRE (AngledFtrs& af)
+void GLRLMFeature::calc_LRE(AngledFtrs& af)
 {
 	af.clear();
 
@@ -626,7 +645,7 @@ void GLRLMFeature::calc_LRE (AngledFtrs& af)
 		{
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) * j*j;
+				f += P.matlab(i, j) * j * j;
 			}
 		}
 
@@ -636,7 +655,7 @@ void GLRLMFeature::calc_LRE (AngledFtrs& af)
 }
 
 // 3. Gray Level Non-Uniformity 
-void GLRLMFeature::calc_GLN (AngledFtrs& af)
+void GLRLMFeature::calc_GLN(AngledFtrs& af)
 {
 	af.clear();
 
@@ -677,7 +696,7 @@ void GLRLMFeature::calc_GLN (AngledFtrs& af)
 }
 
 // 4. Gray Level Non-Uniformity Normalized 
-void GLRLMFeature::calc_GLNN (AngledFtrs& af)
+void GLRLMFeature::calc_GLNN(AngledFtrs& af)
 {
 	af.clear();
 
@@ -712,13 +731,13 @@ void GLRLMFeature::calc_GLNN (AngledFtrs& af)
 			f += sum * sum;
 		}
 
-		double retval = f / double(sum_p[ai]*sum_p[ai]);
+		double retval = f / double(sum_p[ai] * sum_p[ai]);
 		af.push_back(retval);
 	}
 }
 
 // 5. Run Length Non-Uniformity
-void GLRLMFeature::calc_RLN (AngledFtrs& af)
+void GLRLMFeature::calc_RLN(AngledFtrs& af)
 {
 	af.clear();
 
@@ -759,7 +778,7 @@ void GLRLMFeature::calc_RLN (AngledFtrs& af)
 }
 
 // 6. Run Length Non-Uniformity Normalized 
-void GLRLMFeature::calc_RLNN (AngledFtrs& af)
+void GLRLMFeature::calc_RLNN(AngledFtrs& af)
 {
 	af.clear();
 
@@ -794,16 +813,16 @@ void GLRLMFeature::calc_RLNN (AngledFtrs& af)
 			f += sum * sum;
 		}
 
-		double retval = f / double(sum_p[ai]*sum_p[ai]);
+		double retval = f / double(sum_p[ai] * sum_p[ai]);
 		af.push_back(retval);
 	}
 }
 
 // 7. Run Percentage
-void GLRLMFeature::calc_RP (AngledFtrs& af)
+void GLRLMFeature::calc_RP(AngledFtrs& af)
 {
 	af.clear();
-	
+
 
 	// Prevent using bad data 
 	if (bad_roi_data)
@@ -828,7 +847,7 @@ void GLRLMFeature::calc_RP (AngledFtrs& af)
 }
 
 // 8. Gray Level Variance 
-void GLRLMFeature::calc_GLV (AngledFtrs& af)
+void GLRLMFeature::calc_GLV(AngledFtrs& af)
 {
 	af.clear();
 
@@ -862,7 +881,7 @@ void GLRLMFeature::calc_GLV (AngledFtrs& af)
 		{
 			for (int j = 1; j <= Nr; j++)
 			{
-				mu += P.matlab(i, j)/sum_p[ai] * i;
+				mu += P.matlab(i, j) / sum_p[ai] * i;
 			}
 		}
 
@@ -872,15 +891,15 @@ void GLRLMFeature::calc_GLV (AngledFtrs& af)
 			for (int j = 1; j <= Nr; j++)
 			{
 				double mu2 = (i - mu) * (i - mu);
-				f += P.matlab(i, j)/sum_p[ai] * mu2;
+				f += P.matlab(i, j) / sum_p[ai] * mu2;
 			}
 		}
-		af.push_back (f);
+		af.push_back(f);
 	}
 }
 
 // 9. Run Variance 
-void GLRLMFeature::calc_RV (AngledFtrs& af)
+void GLRLMFeature::calc_RV(AngledFtrs& af)
 {
 	af.clear();
 
@@ -916,7 +935,7 @@ void GLRLMFeature::calc_RV (AngledFtrs& af)
 		{
 			for (int j = 1; j <= Nr; j++)
 			{
-				mu += P.matlab(i, j)/sum_p[ai] * j;
+				mu += P.matlab(i, j) / sum_p[ai] * j;
 			}
 		}
 
@@ -926,7 +945,7 @@ void GLRLMFeature::calc_RV (AngledFtrs& af)
 			for (int j = 1; j <= Nr; j++)
 			{
 				double mu2 = (j - mu) * (j - mu);
-				f += P.matlab(i, j)/sum_p[ai] * mu2;
+				f += P.matlab(i, j) / sum_p[ai] * mu2;
 			}
 		}
 		af.push_back(f);
@@ -934,7 +953,7 @@ void GLRLMFeature::calc_RV (AngledFtrs& af)
 }
 
 // 10. Run Entropy 
-void GLRLMFeature::calc_RE (AngledFtrs& af)
+void GLRLMFeature::calc_RE(AngledFtrs& af)
 {
 	af.clear();
 
@@ -963,8 +982,8 @@ void GLRLMFeature::calc_RE (AngledFtrs& af)
 		{
 			for (int j = 1; j <= Nr; j++)
 			{
-				double entrTerm = fast_log10(P.matlab(i, j)/sum_p[ai] + EPS) / LOG10_2;
-				f += P.matlab(i, j)/sum_p[ai] * entrTerm;
+				double entrTerm = fast_log10(P.matlab(i, j) / sum_p[ai] + EPS) / LOG10_2;
+				f += P.matlab(i, j) / sum_p[ai] * entrTerm;
 			}
 		}
 		double retval = -f;
@@ -973,7 +992,7 @@ void GLRLMFeature::calc_RE (AngledFtrs& af)
 }
 
 // 11. Low Gray Level Run Emphasis 
-void GLRLMFeature::calc_LGLRE (AngledFtrs& af)
+void GLRLMFeature::calc_LGLRE(AngledFtrs& af)
 {
 	af.clear();
 
@@ -1011,7 +1030,7 @@ void GLRLMFeature::calc_LGLRE (AngledFtrs& af)
 }
 
 // 12. High Gray Level Run Emphasis 
-void GLRLMFeature::calc_HGLRE (AngledFtrs& af)
+void GLRLMFeature::calc_HGLRE(AngledFtrs& af)
 {
 	af.clear();
 
@@ -1049,7 +1068,7 @@ void GLRLMFeature::calc_HGLRE (AngledFtrs& af)
 }
 
 // 13. Short Run Low Gray Level Emphasis 
-void GLRLMFeature::calc_SRLGLE (AngledFtrs& af)
+void GLRLMFeature::calc_SRLGLE(AngledFtrs& af)
 {
 	af.clear();
 
@@ -1087,7 +1106,7 @@ void GLRLMFeature::calc_SRLGLE (AngledFtrs& af)
 }
 
 // 14. Short Run High Gray Level Emphasis 
-void GLRLMFeature::calc_SRHGLE (AngledFtrs& af)
+void GLRLMFeature::calc_SRHGLE(AngledFtrs& af)
 {
 	af.clear();
 
@@ -1125,7 +1144,7 @@ void GLRLMFeature::calc_SRHGLE (AngledFtrs& af)
 }
 
 // 15. Long Run Low Gray Level Emphasis 
-void GLRLMFeature::calc_LRLGLE (AngledFtrs& af)
+void GLRLMFeature::calc_LRLGLE(AngledFtrs& af)
 {
 	af.clear();
 
@@ -1163,7 +1182,7 @@ void GLRLMFeature::calc_LRLGLE (AngledFtrs& af)
 }
 
 // 16. Long Run High Gray Level Emphasis 
-void GLRLMFeature::calc_LRHGLE (AngledFtrs& af)
+void GLRLMFeature::calc_LRHGLE(AngledFtrs& af)
 {
 	af.clear();
 
@@ -1180,7 +1199,7 @@ void GLRLMFeature::calc_LRHGLE (AngledFtrs& af)
 			af.push_back(0.0);
 			continue;
 		}
-		
+
 		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
@@ -1200,7 +1219,7 @@ void GLRLMFeature::calc_LRHGLE (AngledFtrs& af)
 	}
 }
 
-void GLRLMFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void GLRLMFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -1213,3 +1232,14 @@ void GLRLMFeature::parallel_process_1_batch (size_t start, size_t end, std::vect
 	}
 }
 
+// 'afv' is angled feature values
+double GLRLMFeature::calc_ave(const std::vector<double>& afv)
+{
+	if (afv.empty())
+		return 0;
+
+	double n = static_cast<double> (afv.size()),
+		ave = std::reduce(afv.begin(), afv.end()) / n;
+
+	return ave;
+}

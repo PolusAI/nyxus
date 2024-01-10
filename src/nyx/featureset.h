@@ -9,7 +9,7 @@ namespace Nyxus
 	enum AvailableFeatures
 	{
 		//==== 2D features
-		
+
 		// Pixel intensity stats
 		COV = 0,	// coefficient of variation
 		COVERED_IMAGE_INTENSITY_RANGE,
@@ -38,7 +38,7 @@ namespace Nyxus
 		STANDARD_DEVIATION,
 		STANDARD_DEVIATION_BIASED,
 		STANDARD_ERROR,
-		VARIANCE, 
+		VARIANCE,
 		VARIANCE_BIASED,
 		UNIFORMITY,
 		UNIFORMITY_PIU,
@@ -50,7 +50,7 @@ namespace Nyxus
 		CENTROID_Y,
 		WEIGHTED_CENTROID_Y,
 		WEIGHTED_CENTROID_X,
-		MASS_DISPLACEMENT,		
+		MASS_DISPLACEMENT,
 		COMPACTNESS,
 		BBOX_YMIN,
 		BBOX_XMIN,
@@ -60,7 +60,7 @@ namespace Nyxus
 		EXTENT,
 		ASPECT_RATIO,
 		// -- Legendre inertia ellipse
-		MAJOR_AXIS_LENGTH,	
+		MAJOR_AXIS_LENGTH,
 		MINOR_AXIS_LENGTH,
 		// -- ellipticity related
 		ECCENTRICITY,
@@ -75,7 +75,7 @@ namespace Nyxus
 		EDGE_STDDEV_INTENSITY,
 		EDGE_MAX_INTENSITY,
 		EDGE_MIN_INTENSITY,
-		EDGE_INTEGRATED_INTENSITY,	
+		EDGE_INTEGRATED_INTENSITY,
 		CIRCULARITY,
 
 		// -- convex hull related
@@ -181,27 +181,18 @@ namespace Nyxus
 		GLCM_CLUSHADE,		// Cluster shade, IBSI # 7NFM
 		GLCM_CLUTEND,		// Cluster tendency, IBSI # DG8W
 		GLCM_CONTRAST,		// Contrast, IBSI # ACUI
-		GLCM_CONTRAST_AVE,	// Average of angled GLCM_CONTRAST
 		GLCM_CORRELATION,	// Correlation, IBSI # NI2N
-		GLCM_CORRELATION_AVE,	// Average of angled GLCM_CORRELATION
 		GLCM_DIFAVE,		// Difference average, IBSI # TF7R
-		GLCM_DIFAVE_AVE,		// Average of angled GLCM_DIFAVE
 		GLCM_DIFENTRO,		// Difference entropy, IBSI # NTRS
-		GLCM_DIFENTRO_AVE,	// Average of angled GLCM_DIFENTRO
 		GLCM_DIFVAR,		// Difference variance, IBSI # D3YU
-		GLCM_DIFVAR_AVE,	// Average of angled GLCM_DIFVAR
 		GLCM_DIS,			// Dissimilarity, IBSI # 8S9J
 		GLCM_ENERGY,		// Energy
-		GLCM_ENERGY_AVE,	// Average of angled GLCM_ENERGY
 		GLCM_ENTROPY,		// Entropy
-		GLCM_ENTROPY_AVE,	// Average of angled GLCM_ENTROPY
 		GLCM_HOM1,			// Homogeneity-1 (PyR)
-		GLCM_HOM1_AVE,		// Average of angled GLCM_HOM1
 		GLCM_HOM2,			// Homogeneity-2 (PyR)
 		GLCM_ID,			// Inv diff, IBSI # IB1Z
 		GLCM_IDN,			// Inv diff normalized, IBSI # NDRX
 		GLCM_IDM,			// Inv diff mom, IBSI # WF0Z
-		GLCM_IDM_AVE,		// Average of angled GLCM_IDM
 		GLCM_IDMN,			// Inv diff mom normalized, IBSI # 1QCO
 		GLCM_INFOMEAS1,		// Information measure of correlation 1, IBSI # R8DG
 		GLCM_INFOMEAS2,		// Information measure of correlation 2, IBSI # JN9H
@@ -211,13 +202,39 @@ namespace Nyxus
 		GLCM_JMAX,			// Joint max (aka PyR max probability), IBSI # GYBY
 		GLCM_JVAR,			// Joint var (aka PyR Sum of Squares), IBSI # UR99
 		GLCM_SUMAVERAGE,	// Sum average, IBSI # ZGXS
-		GLCM_SUMAVERAGE_AVE,	// Average of angled GLCM_SUMAVERAGE
 		GLCM_SUMENTROPY,	// Sum entropy, IBSI # P6QZ
-		GLCM_SUMENTROPY_AVE,	// Average of angled GLCM_SUMENTROPY
 		GLCM_SUMVARIANCE,	// Sum variance, IBSI # OEEB
-		GLCM_SUMVARIANCE_AVE,	// Average of angled 
 		GLCM_VARIANCE,
-		GLCM_VARIANCE_AVE,	// Average of angled GLCM_VARIANCE
+		// -- averages --
+		GLCM_ASM_AVE,
+		GLCM_ACOR_AVE,
+		GLCM_CLUPROM_AVE,
+		GLCM_CLUSHADE_AVE,
+		GLCM_CLUTEND_AVE,
+		GLCM_CONTRAST_AVE,
+		GLCM_CORRELATION_AVE,
+		GLCM_DIFAVE_AVE,
+		GLCM_DIFENTRO_AVE,
+		GLCM_DIFVAR_AVE,
+		GLCM_DIS_AVE,
+		GLCM_ENERGY_AVE,
+		GLCM_ENTROPY_AVE,
+		GLCM_HOM1_AVE,
+		GLCM_ID_AVE,
+		GLCM_IDN_AVE,
+		GLCM_IDM_AVE,
+		GLCM_IDMN_AVE,
+		GLCM_IV_AVE,
+		GLCM_JAVE_AVE,
+		GLCM_JE_AVE,
+		GLCM_INFOMEAS1_AVE,
+		GLCM_INFOMEAS2_AVE,
+		GLCM_VARIANCE_AVE,
+		GLCM_JMAX_AVE,
+		GLCM_JVAR_AVE,
+		GLCM_SUMAVERAGE_AVE,
+		GLCM_SUMENTROPY_AVE,
+		GLCM_SUMVARIANCE_AVE,
 
 		// GLRLM:
 		GLRLM_SRE,	// Short Run Emphasis 
@@ -236,12 +253,29 @@ namespace Nyxus
 		GLRLM_SRHGLE,	// Short Run High Gray Level Emphasis 
 		GLRLM_LRLGLE,	// Long Run Low Gray Level Emphasis 
 		GLRLM_LRHGLE,	// Long Run High Gray Level Emphasis 
+		// -- averages --
+		GLRLM_SRE_AVE,
+		GLRLM_LRE_AVE,
+		GLRLM_GLN_AVE,
+		GLRLM_GLNN_AVE,
+		GLRLM_RLN_AVE,
+		GLRLM_RLNN_AVE,
+		GLRLM_RP_AVE,
+		GLRLM_GLV_AVE,
+		GLRLM_RV_AVE,
+		GLRLM_RE_AVE,
+		GLRLM_LGLRE_AVE,
+		GLRLM_HGLRE_AVE,
+		GLRLM_SRLGLE_AVE,
+		GLRLM_SRHGLE_AVE,
+		GLRLM_LRLGLE_AVE,
+		GLRLM_LRHGLE_AVE,
 
 		// GLDZM:
 		GLDZM_SDE,		// Small Distance Emphasis
 		GLDZM_LDE,		// Large Distance Emphasis
-		GLDZM_LGLZE,		// Low Grey Level Zone Emphasis
-		GLDZM_HGLZE,		// High Grey Level Zone Emphasis
+		GLDZM_LGLZE,	// Low Grey Level Zone Emphasis
+		GLDZM_HGLZE,	// High Grey Level Zone Emphasis
 		GLDZM_SDLGLE,	// Small Distance Low Grey Level Emphasis
 		GLDZM_SDHGLE,	// Small Distance High Grey Level Emphasis
 		GLDZM_LDLGLE,	// Large Distance Low Grey Level Emphasis
@@ -324,7 +358,7 @@ namespace Nyxus
 		FRAC_AT_D,
 		MEAN_FRAC,
 		RADIAL_CV,
-			
+
 		// Spatial (raw) moments
 		SPAT_MOMENT_00,
 		SPAT_MOMENT_01,
@@ -354,8 +388,8 @@ namespace Nyxus
 		CENTRAL_MOMENT_22,
 		CENTRAL_MOMENT_23,
 		CENTRAL_MOMENT_30,
-		CENTRAL_MOMENT_31, 
-		CENTRAL_MOMENT_32, 
+		CENTRAL_MOMENT_31,
+		CENTRAL_MOMENT_32,
 		CENTRAL_MOMENT_33,
 
 		// Normalized (standardized) spatial moments
@@ -437,8 +471,8 @@ class FeatureSet
 {
 public:
 	FeatureSet();
-	void enableAll (bool newStatus = true) { for (int i = 0; i < AvailableFeatures::_COUNT_; i++) m_enabledFeatures[i] = newStatus; }
-	void disableFeatures (std::initializer_list<AvailableFeatures>& desiredFeatures)
+	void enableAll(bool newStatus = true) { for (int i = 0; i < AvailableFeatures::_COUNT_; i++) m_enabledFeatures[i] = newStatus; }
+	void disableFeatures(std::initializer_list<AvailableFeatures>& desiredFeatures)
 	{
 		for (auto f : desiredFeatures)
 			m_enabledFeatures[f] = false;
@@ -472,14 +506,14 @@ public:
 			m_enabledFeatures[P10] = m_enabledFeatures[P25] = m_enabledFeatures[P75] = m_enabledFeatures[P90] =
 			m_enabledFeatures[QCOD] =
 			m_enabledFeatures[INTERQUARTILE_RANGE] =
-			m_enabledFeatures[ROBUST_MEAN] = 
+			m_enabledFeatures[ROBUST_MEAN] =
 			m_enabledFeatures[ROBUST_MEAN_ABSOLUTE_DEVIATION] =
 			m_enabledFeatures[COV] =
 			m_enabledFeatures[WEIGHTED_CENTROID_Y] =
 			m_enabledFeatures[WEIGHTED_CENTROID_X] =
 			m_enabledFeatures[MASS_DISPLACEMENT] =
-			m_enabledFeatures[STANDARD_DEVIATION_BIASED] = 			
-			m_enabledFeatures[VARIANCE] =			
+			m_enabledFeatures[STANDARD_DEVIATION_BIASED] =
+			m_enabledFeatures[VARIANCE] =
 			m_enabledFeatures[VARIANCE_BIASED] = true;
 	}
 	void enableBoundingBox() {
@@ -503,7 +537,7 @@ public:
 			m_enabledFeatures[STAT_FERET_DIAM_MODE] = true;
 	}
 	bool isEnabled(int fc) const { return fc < AvailableFeatures::_COUNT_ ? m_enabledFeatures[fc] : false; }
-	bool anyEnabled(const std::initializer_list<AvailableFeatures> & F) const
+	bool anyEnabled(const std::initializer_list<AvailableFeatures>& F) const
 	{
 		for (auto f : F)
 			if (m_enabledFeatures[f])
@@ -517,8 +551,8 @@ public:
 				cnt++;
 		return cnt;
 	}
-	bool findFeatureByString (const std::string& featureName, AvailableFeatures& fcode);
-	std::string findFeatureNameByCode (AvailableFeatures fcode);
+	bool findFeatureByString(const std::string& featureName, AvailableFeatures& fcode);
+	std::string findFeatureNameByCode(AvailableFeatures fcode);
 	void show_help();
 
 	// Relying on RVO rather than std::move
