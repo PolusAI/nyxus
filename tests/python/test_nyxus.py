@@ -72,8 +72,6 @@ class TestNyxus():
                     if not directory_val == pytest.approx(files_val, rel=1e-5, abs=1e-5):
                         files_not_equal.append(col)
                         break
-                    
-            print(files_not_equal)
             
             assert len(files_not_equal) == 0
             
