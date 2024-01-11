@@ -134,8 +134,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 #== GTest 
 option(RUN_GTEST "Downloads google unit test API and runs google test scripts to test Nyxus" OFF)
 
-#==== Pybind11
-find_package(pybind11 CONFIG REQUIRED)
 
 #==== Source files
 set(SOURCE
@@ -218,6 +216,7 @@ endif()
 
 # Python bindings.
 if(BUILD_LIB)
+	find_package(pybind11 CONFIG REQUIRED)
 	pybind11_add_module(backend 
 		${SOURCE}
 		src/nyx/python/nested_roi_py.cpp
