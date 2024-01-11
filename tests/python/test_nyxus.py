@@ -2,12 +2,12 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import nyxus
 import pytest
+import numpy as np
 import math
 from pathlib import Path
 import pathlib
 from test_data import intens, seg
 import shutil
-import time
 
 from test_tissuenet_data import tissuenet_int, tissuenet_seg
 
