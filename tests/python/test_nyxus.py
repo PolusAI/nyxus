@@ -15,10 +15,7 @@ class TestImport():
     def test_import(self):
         assert nyxus.__name__ == "nyxus"  
         
-class TestNyxus():
-        PATH = PATH = Path(__file__).with_name('data')
-        
-                
+class TestNyxus():     
         def test_featurize_all(self):
             path = str(pathlib.Path(__file__).parent.resolve())
             
