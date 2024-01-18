@@ -66,8 +66,10 @@ void test_ibsi_gldzm_matrix()
     ASSERT_TRUE(n_mismatches == 0);
 }
 
-void test_ibsi_gldzm_feature (const Feature2D& feature, const std::string& feature_name)
+void test_ibsi_gldzm_feature (const Feature2D& feature_, const std::string& feature_name)
 {
+    int feature = int(feature_);
+
     // Activate the IBSI compliance mode
     Environment::ibsi_compliance = true;
 
@@ -176,76 +178,76 @@ void test_ibsi_GLDZM_matrix_correctness()
 
 void test_ibsi_GLDZM_SDE()
 {
-    test_ibsi_gldzm_feature(GLDZM_SDE, "GLDZM_SDE");
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_SDE, "GLDZM_SDE");
 }
 
 void test_ibsi_GLDZM_LDE()
 {
-    test_ibsi_gldzm_feature(GLDZM_LDE, "GLDZM_LDE");
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_LDE, "GLDZM_LDE");
 }
 
 void test_ibsi_GLDZM_LGLZE()
 {
-    test_ibsi_gldzm_feature(GLDZM_LGLZE, "GLDZM_LGLZE");
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_LGLZE, "GLDZM_LGLZE");
 }
 
 void test_ibsi_GLDZM_HGLZE()
 {
-    test_ibsi_gldzm_feature(GLDZM_HGLZE, "GLDZM_HGLZE");
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_HGLZE, "GLDZM_HGLZE");
 }
 
 void test_ibsi_GLDZM_SDHGLE()
 {
-    test_ibsi_gldzm_feature(GLDZM_SDHGLE, "GLDZM_SDHGLE");
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_SDHGLE, "GLDZM_SDHGLE");
 }
 
 void test_ibsi_GLDZM_LDLGLE()
 {
-    test_ibsi_gldzm_feature(GLDZM_LDLGLE, "GLDZM_LDLGLE");
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_LDLGLE, "GLDZM_LDLGLE");
 }
 
 void test_ibsi_GLDZM_LDHGLE()
 {
-    test_ibsi_gldzm_feature(GLDZM_LDHGLE, "GLDZM_LDHGLE");
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_LDHGLE, "GLDZM_LDHGLE");
 }
 
 void test_ibsi_GLDZM_GLNU()
 {
-    test_ibsi_gldzm_feature(GLDZM_GLNU, "GLDZM_GLNU");
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_GLNU, "GLDZM_GLNU");
 }
 
 void test_ibsi_GLDZM_GLNUN()
 {
-    test_ibsi_gldzm_feature(GLDZM_GLNUN, "GLDZM_GLNUN");
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_GLNUN, "GLDZM_GLNUN");
 }
 
 void test_ibsi_GLDZM_ZDNU()
 {
-    test_ibsi_gldzm_feature(GLDZM_ZDNU, "GLDZM_ZDNU");
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_ZDNU, "GLDZM_ZDNU");
 }
 
 void test_ibsi_GLDZM_ZDNUN()
 {
-    test_ibsi_gldzm_feature(GLDZM_ZDNUN, "GLDZM_ZDNUN");
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_ZDNUN, "GLDZM_ZDNUN");
 }
 
 void test_ibsi_GLDZM_ZP()
 {
-    test_ibsi_gldzm_feature(GLDZM_ZP, "GLDZM_ZP");
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_ZP, "GLDZM_ZP");
 }
 
 void test_ibsi_GLDZM_GLV()
 {
-    test_ibsi_gldzm_feature(GLDZM_GLV, "GLDZM_GLV");
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_GLV, "GLDZM_GLV");
 }
 
 void test_ibsi_GLDZM_ZDV()
 {
-    test_ibsi_gldzm_feature(GLDZM_ZDV, "GLDZM_ZDV");
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_ZDV, "GLDZM_ZDV");
 }
 
 void test_ibsi_GLDZM_ZDE()
 {
-    test_ibsi_gldzm_feature(GLDZM_ZDE, "GLDZM_ZDE");
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_ZDE, "GLDZM_ZDE");
 }
 

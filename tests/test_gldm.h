@@ -54,70 +54,70 @@ void test_gldm_feature(const Feature2D& feature, const std::string& feature_name
 
 void test_gldm_sde()
 {
-    test_gldm_feature(GLDM_SDE, "GLDM_SDE");
+    test_gldm_feature(Nyxus::Feature2D::GLDM_SDE, "GLDM_SDE");
 }
 
 void test_gldm_lde()
 {
-   test_gldm_feature(GLDM_LDE, "GLDM_LDE");
+   test_gldm_feature(Nyxus::Feature2D::GLDM_LDE, "GLDM_LDE");
 }
 
 void test_gldm_lgle()
 {
-   test_gldm_feature(GLDM_SDE, "GLDM_SDE");
+   test_gldm_feature(Nyxus::Feature2D::GLDM_SDE, "GLDM_SDE");
 }
 
 void test_gldm_hgle()
 {
-    test_gldm_feature(GLDM_HGLE, "GLDM_HGLE");
+    test_gldm_feature(Nyxus::Feature2D::GLDM_HGLE, "GLDM_HGLE");
 }
 
 void test_gldm_sdlgle()
 {
-    test_gldm_feature(GLDM_SDLGLE, "GLDM_SDLGLE");    
+    test_gldm_feature(Nyxus::Feature2D::GLDM_SDLGLE, "GLDM_SDLGLE");    
 }
 
 void test_gldm_sdhgle()
 {
-    test_gldm_feature(GLDM_SDHGLE, "GLDM_SDHGLE");
+    test_gldm_feature(Nyxus::Feature2D::GLDM_SDHGLE, "GLDM_SDHGLE");
 }
 
 void test_gldm_ldlgle()
 {
-    test_gldm_feature(GLDM_LDLGLE, "GLDM_LDLGLE");
+    test_gldm_feature(Nyxus::Feature2D::GLDM_LDLGLE, "GLDM_LDLGLE");
 }
 
 void test_gldm_ldhgle()
 {
-    test_gldm_feature(GLDM_LDHGLE, "GLDM_LDHGLE");
+    test_gldm_feature(Nyxus::Feature2D::GLDM_LDHGLE, "GLDM_LDHGLE");
 }
 
 void test_gldm_gln()
 {
-   test_gldm_feature(GLDM_GLN, "GLDM_GLN");
+   test_gldm_feature(Nyxus::Feature2D::GLDM_GLN, "GLDM_GLN");
 }
 
 void test_gldm_dn()
 {
-    test_gldm_feature(GLDM_DN, "GLDM_DN");
+    test_gldm_feature(Nyxus::Feature2D::GLDM_DN, "GLDM_DN");
 }
 
 void test_gldm_dnn()
 {
-    test_gldm_feature(GLDM_DNN, "GLDM_DNN");
+    test_gldm_feature(Nyxus::Feature2D::GLDM_DNN, "GLDM_DNN");
 }
 
 void test_gldm_glv()
 {
-    test_gldm_feature(GLDM_GLV, "GLDM_GLV");
+    test_gldm_feature(Nyxus::Feature2D::GLDM_GLV, "GLDM_GLV");
 }
 
 void test_gldm_dv()
 {
-    test_gldm_feature(GLDM_DV, "GLDM_DV");
+    test_gldm_feature(Nyxus::Feature2D::GLDM_DV, "GLDM_DV");
 }
 
 void test_gldm_de()
 {
-    test_gldm_feature(GLDM_DE, "GLDM_DE");
+    test_gldm_feature(Nyxus::Feature2D::GLDM_DE, "GLDM_DE");
 }

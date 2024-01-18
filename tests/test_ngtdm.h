@@ -21,7 +21,8 @@ static std::unordered_map<std::string, float> ngtdm_values {
     {"NGTDM_STRENGTH", 0.015942}
 };
 
-void test_ngtdm_feature(const Feature2D& feature, const std::string& feature_name) {
+void test_ngtdm_feature(const Feature2D& feature_, const std::string& feature_name) {
+    int feature = int(feature_);
 
     double total = 0;
     
@@ -107,25 +108,25 @@ void test_ngtdm_feature(const Feature2D& feature, const std::string& feature_nam
 
 void test_ngtdm_coarseness()
 {
-    test_ngtdm_feature(NGTDM_COARSENESS, "NGTDM_COARSENESS");
+    test_ngtdm_feature(Nyxus::Feature2D::NGTDM_COARSENESS, "NGTDM_COARSENESS");
 }
 
 void test_ngtdm_contrast()
 {
-    test_ngtdm_feature(NGTDM_CONTRAST, "NGTDM_CONTRAST");
+    test_ngtdm_feature(Nyxus::Feature2D::NGTDM_CONTRAST, "NGTDM_CONTRAST");
 }
 
 void test_ngtdm_busyness()
 {
-    test_ngtdm_feature(NGTDM_BUSYNESS, "NGTDM_BUSYNESS");
+    test_ngtdm_feature(Nyxus::Feature2D::NGTDM_BUSYNESS, "NGTDM_BUSYNESS");
 }
 
 void test_ngtdm_complexity()
 {   
-    test_ngtdm_feature(NGTDM_COMPLEXITY, "NGTDM_COMPLEXITY");
+    test_ngtdm_feature(Nyxus::Feature2D::NGTDM_COMPLEXITY, "NGTDM_COMPLEXITY");
 }
 
 void test_ngtdm_strength()
 {
-    test_ngtdm_feature(NGTDM_STRENGTH, "NGTDM_STRENGTH");
+    test_ngtdm_feature(Nyxus::Feature2D::NGTDM_STRENGTH, "NGTDM_STRENGTH");
 }

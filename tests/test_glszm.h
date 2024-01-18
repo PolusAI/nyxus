@@ -32,8 +32,9 @@ static std::unordered_map<std::string, float> glszm_values {
     {"GLSZM_ZE", 1.76906}
 };
 
-void test_glszm_feature(const Feature2D& feature, const std::string& feature_name) 
+void test_glszm_feature(const Feature2D& feature_, const std::string& feature_name) 
 {
+    int feature = int(feature_);
 
     double total = 0;
     
@@ -119,81 +120,81 @@ void test_glszm_feature(const Feature2D& feature, const std::string& feature_nam
 
 void test_glszm_sae()
 {
-    test_glszm_feature(GLSZM_SAE, "GLSZM_SAE");
+    test_glszm_feature(Nyxus::Feature2D::GLSZM_SAE, "GLSZM_SAE");
 }
 
 void test_glszm_lae()
 {
-    test_glszm_feature(GLSZM_LAE, "GLSZM_LAE");
+    test_glszm_feature(Nyxus::Feature2D::GLSZM_LAE, "GLSZM_LAE");
 }
 
 void test_glszm_lglze()
 {
-    test_glszm_feature(GLSZM_LGLZE, "GLSZM_LGLZE");
+    test_glszm_feature(Nyxus::Feature2D::GLSZM_LGLZE, "GLSZM_LGLZE");
 }
 
 
 void test_glszm_hglze()
 {
-    test_glszm_feature(GLSZM_HGLZE, "GLSZM_HGLZE");
+    test_glszm_feature(Nyxus::Feature2D::GLSZM_HGLZE, "GLSZM_HGLZE");
 }
 
 void test_glszm_salgle()
 {
-    test_glszm_feature(GLSZM_SALGLE, "GLSZM_SALGLE");
+    test_glszm_feature(Nyxus::Feature2D::GLSZM_SALGLE, "GLSZM_SALGLE");
 }
 
 void test_glszm_sahgle()
 {  
-    test_glszm_feature(GLSZM_SAHGLE, "GLSZM_SAHGLE");
+    test_glszm_feature(Nyxus::Feature2D::GLSZM_SAHGLE, "GLSZM_SAHGLE");
 }
 
 void test_glszm_lalgle()
 {
-    test_glszm_feature(GLSZM_LALGLE, "GLSZM_LALGLE");
+    test_glszm_feature(Nyxus::Feature2D::GLSZM_LALGLE, "GLSZM_LALGLE");
 }
 
 void test_glszm_lahgle()
 {
-    test_glszm_feature(GLSZM_LAHGLE, "GLSZM_LAHGLE");
+    test_glszm_feature(Nyxus::Feature2D::GLSZM_LAHGLE, "GLSZM_LAHGLE");
 }
 
 void test_glszm_gln()
 {
-    test_glszm_feature(GLSZM_GLN, "GLSZM_GLN");
+    test_glszm_feature(Nyxus::Feature2D::GLSZM_GLN, "GLSZM_GLN");
 }
 
 void test_glszm_glnn()
 {
-    test_glszm_feature(GLSZM_GLNN, "GLSZM_GLNN");
+    test_glszm_feature(Nyxus::Feature2D::GLSZM_GLNN, "GLSZM_GLNN");
 }
 
 void test_glszm_szn()
 {
-    test_glszm_feature(GLSZM_SZN, "GLSZM_SZN");
+    test_glszm_feature(Nyxus::Feature2D::GLSZM_SZN, "GLSZM_SZN");
 }
 
 void test_glszm_sznn()
 {
-    test_glszm_feature(GLSZM_SZNN, "GLSZM_SZNN");
+    test_glszm_feature(Nyxus::Feature2D::GLSZM_SZNN, "GLSZM_SZNN");
 }
 
 void test_glszm_zp()
 {
-    test_glszm_feature(GLSZM_ZP, "GLSZM_ZP");
+    test_glszm_feature(Nyxus::Feature2D::GLSZM_ZP, "GLSZM_ZP");
 }
 
 void test_glszm_glv()
 {
-    test_glszm_feature(GLSZM_GLV, "GLSZM_GLV");
+    test_glszm_feature(Nyxus::Feature2D::GLSZM_GLV, "GLSZM_GLV");
 }
 
 void test_glszm_zv()
 {
-    test_glszm_feature(GLSZM_ZV, "GLSZM_ZV");
+    test_glszm_feature(Nyxus::Feature2D::GLSZM_ZV, "GLSZM_ZV");
 }
 
 void test_glszm_ze()
 {
-    test_glszm_feature(GLSZM_ZE, "GLSZM_ZE");
+    test_glszm_feature(Nyxus::Feature2D::GLSZM_ZE, "GLSZM_ZE");
 }
