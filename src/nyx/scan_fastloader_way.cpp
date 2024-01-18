@@ -29,6 +29,7 @@ namespace py = pybind11;
 #include "environment.h"
 #include "globals.h"
 #include "helpers/helpers.h"
+#include "helpers/system_resource.h"
 #include "helpers/timing.h"
 
 // Sanity

@@ -124,9 +124,6 @@ namespace Nyxus
 	void feed_pixel_2_cache(int x, int y, PixIntens intensity, int label);
 	void feed_pixel_2_cache_3D(int x, int y, int z, PixIntens intensity, int label);
 
-	// System resources
-	unsigned long long getAvailPhysMemory();
-
 	// Nested ROI
 
 	using NestableRois = std::unordered_map<int, NestedLR>;
