@@ -89,7 +89,6 @@ namespace Nyxus
 			return default_filename + valid_ext;
 		}  
 	}
-	
 
 	bool processIntSegImagePair (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, int filepair_index, int tot_num_filepairs)
 	{
@@ -102,7 +101,7 @@ namespace Nyxus
 			{ STOPWATCH("Image scan1/ImgScan1/Scan1/lightsteelblue", "\t=");
 
 				// Report the amount of free RAM
-				unsigned long long freeRamAmt = getAvailPhysMemory();
+				unsigned long long freeRamAmt = Nyxus::getAvailPhysMemory();
 				static unsigned long long initial_freeRamAmt = 0;
 				if (initial_freeRamAmt == 0)
 					initial_freeRamAmt = freeRamAmt;
@@ -217,7 +216,7 @@ namespace Nyxus
 			{ STOPWATCH("Image scan1/ImgScan1/Scan1/lightsteelblue", "\t=");
 
 				// Report the amount of free RAM
-				unsigned long long freeRamAmt = getAvailPhysMemory();
+				unsigned long long freeRamAmt = Nyxus::getAvailPhysMemory();
 				static unsigned long long initial_freeRamAmt = 0;
 				if (initial_freeRamAmt == 0)
 					initial_freeRamAmt = freeRamAmt;

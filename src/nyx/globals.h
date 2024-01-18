@@ -27,7 +27,6 @@ namespace py = pybind11;
 #endif
 
 namespace Nyxus
-
 {
 	// Permanent column names of the feature output table
 	const char colname_intensity_image[] = "intensity_image",
