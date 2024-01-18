@@ -12,7 +12,7 @@ class RadialDistributionFeature: public FeatureMethod
 public:
 	static bool required(const FeatureSet& fs) 
 	{
-		return fs.anyEnabled({ FRAC_AT_D, MEAN_FRAC, RADIAL_CV });
+		return fs.anyEnabled({ Nyxus::Feature2D::FRAC_AT_D, Nyxus::Feature2D::MEAN_FRAC, Nyxus::Feature2D::RADIAL_CV });
 	}
 
 	RadialDistributionFeature(); 

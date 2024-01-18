@@ -1,10 +1,12 @@
 #include <algorithm>
 #include "erosion.h"
 
+using namespace Nyxus;
+
 ErosionPixelsFeature::ErosionPixelsFeature() : FeatureMethod("ErosionPixelsFeature")
 {
-	provide_features({ EROSIONS_2_VANISH, EROSIONS_2_VANISH_COMPLEMENT });
-	add_dependencies({ CONVEX_HULL_AREA });	// Feature EROSIONS_2_VANISH_COMPLEMENT requires the convex hull
+	provide_features({ Feature2D::EROSIONS_2_VANISH, Feature2D::EROSIONS_2_VANISH_COMPLEMENT });
+	add_dependencies({ Feature2D::CONVEX_HULL_AREA });	// Feature EROSIONS_2_VANISH_COMPLEMENT requires the convex hull
 }
 
 void ErosionPixelsFeature::calculate(LR& r)
@@ -182,7 +184,7 @@ void ErosionPixelsFeature::osized_calculate (LR& r, ImageLoader& imloader)
 
 void ErosionPixelsFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[EROSIONS_2_VANISH][0] = numErosions;
+	fvals[(int)Feature2D::EROSIONS_2_VANISH][0] = numErosions;
 }
 
 void ErosionPixelsFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)

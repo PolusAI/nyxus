@@ -22,7 +22,10 @@ public:
 	// Compatibility with manual reduce
 	static bool required(const FeatureSet& fs) 
 	{
-		return fs.anyEnabled ({ DIAMETER_MIN_ENCLOSING_CIRCLE, DIAMETER_INSCRIBING_CIRCLE, DIAMETER_CIRCUMSCRIBING_CIRCLE });
+		return fs.anyEnabled ({ 
+			Nyxus::Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE, 
+			Nyxus::Feature2D::DIAMETER_INSCRIBING_CIRCLE, 
+			Nyxus::Feature2D::DIAMETER_CIRCUMSCRIBING_CIRCLE });
 	}
 
 private:

@@ -113,7 +113,7 @@ void test_ibsi_ngld_matrix_nonibsi()
     ASSERT_TRUE(n_mismatches == 0);
 }
 
-void test_ibsi_ngldm_feature (const AvailableFeatures& feature, const std::string& feature_name) 
+void test_ibsi_ngldm_feature (const Feature2D& feature, const std::string& feature_name) 
 {
     // Activate the IBSI compliance mode
     Environment::ibsi_compliance = true;

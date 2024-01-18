@@ -25,7 +25,7 @@ public:
 	void save_value (std::vector<std::vector<double>>& feature_vals);
 
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
-	static bool required (const FeatureSet& fs) { return fs.isEnabled(EULER_NUMBER); }
+	static bool required (const FeatureSet& fs) { return fs.isEnabled(Nyxus::Feature2D::EULER_NUMBER); }
 
 private:
 	const int mode = 8;		// Using mode=8 following WNDCHRM example

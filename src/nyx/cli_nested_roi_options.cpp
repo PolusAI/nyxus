@@ -397,7 +397,7 @@ namespace Nyxus
 			ofile << s << ",";
 
 		// User feature selection
-		std::vector<std::tuple<std::string, AvailableFeatures>> F = theFeatureSet.getEnabledFeatures();
+		std::vector<std::tuple<std::string, int>> F = theFeatureSet.getEnabledFeatures();
 		for (auto& f : F)
 		{
 			auto fn = std::get<0>(f);	// feature name

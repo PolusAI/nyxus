@@ -1,9 +1,11 @@
 #include <iostream>
 #include "euler_number.h"
 
+using namespace Nyxus;
+
 EulerNumberFeature::EulerNumberFeature() : FeatureMethod("EulerNumberFeature")
 {
-	provide_features({ EULER_NUMBER });
+	provide_features({ Feature2D::EULER_NUMBER });
 }
 
 void EulerNumberFeature::calculate (LR& r)
@@ -97,7 +99,7 @@ long EulerNumberFeature::calculate_euler (std::vector<unsigned char> & arr, int 
 
 void EulerNumberFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[EULER_NUMBER][0] = euler_number;
+	fvals[(int)Feature2D::EULER_NUMBER][0] = euler_number;
 }
 
 void EulerNumberFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)

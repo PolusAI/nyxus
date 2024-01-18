@@ -25,68 +25,6 @@ namespace Nyxus
 {
 	bool existsOnFilesystem(const std::string&);
 
-	bool parse_delimited_string_list_to_features(const std::string& rawString, std::vector<std::string>& result)
-	{
-		result.clear();
-
-		if (rawString.length() == 0)
-		{
-			std::cout << "Warning: no features specified, defaulting to " << FEA_NICK_ALL << "\n";
-			result.push_back(FEA_NICK_ALL);
-			return true;
-		}
-
-		bool retval = true;
-		std::vector<std::string> strings;
-		parse_delimited_string(rawString, ",", strings);
-
-		// Check individual features
-		for (const auto& s : strings)
-		{
-			// Forgive user's typos of consecutive commas e.g. MIN,MAX,,MEDIAN
-			if (s.empty())
-				continue;
-
-			auto s_uppr = toupper(s);
-			if (s_uppr == FEA_NICK_ALL ||
-				s_uppr == FEA_NICK_ALL_INTENSITY ||
-				s_uppr == FEA_NICK_ALL_MORPHOLOGY ||
-				s_uppr == FEA_NICK_BASIC_MORPHOLOGY ||
-				s_uppr == FEA_NICK_ALL_GLCM ||
-				s_uppr == FEA_NICK_ALL_GLRLM ||
-				s_uppr == FEA_NICK_ALL_GLDZM ||
-				s_uppr == FEA_NICK_ALL_GLSZM ||
-				s_uppr == FEA_NICK_ALL_GLDM ||
-				s_uppr == FEA_NICK_ALL_NGLDM ||
-				s_uppr == FEA_NICK_ALL_NGTDM ||
-				s_uppr == FEA_NICK_ALL_BUT_GABOR ||
-				s_uppr == FEA_NICK_ALL_BUT_GLCM ||
-				s_uppr == FEA_NICK_ALL_EASY ||
-				s_uppr == FEA_NICK_ALL_NEIG ||
-				s_uppr == FEA_NICK_2DMOMENTS)
-			{
-				result.push_back(s_uppr);
-				continue;
-			}
-
-			AvailableFeatures af;
-			bool fnameExists = theFeatureSet.findFeatureByString(s_uppr, af);
-			if (!fnameExists)
-			{
-				retval = false;
-				std::cout << "Error: expecting '" << s << "' to be a proper feature name or feature file path\n";
-			}
-			else
-				result.push_back(s_uppr);
-		}
-
-		// Show help on available features if necessary
-		if (!retval)
-			theEnvironment.show_featureset_help();
-
-		return retval;
-	}
-
 	std::string strip_punctn_and_comment(const std::string& src)
 	{
 		std::string s = src;
@@ -127,6 +65,8 @@ namespace Nyxus
 		return s;
 	}
 }
+
+using namespace Nyxus;
 
 bool Environment::ibsi_compliance = false;
 std::string Environment::raw_ibsi_compliance = ""; // string for input
@@ -170,12 +110,12 @@ void Environment::show_cmdline_help()
 		<< "\t\t" << INTDIR << "=<directory of intensity images> \n"
 		<< "\t\t" << OUTDIR << "=<output directory> \n"
 		<< "\t\t" << OPT << FEATURES << "=<specific feature or comma-separated features or feature group> \n"
-		<< "\t\t\tDefault: " << FEA_NICK_ALL << " \n"
-		<< "\t\t\tExample 1: " << FEATURES << "=" << theFeatureSet.findFeatureNameByCode(PERIMETER) << " \n"
-		<< "\t\t\tExample 2: " << FEATURES << "=" << theFeatureSet.findFeatureNameByCode(PERIMETER) << "," << theFeatureSet.findFeatureNameByCode(CIRCULARITY) << "," << theFeatureSet.findFeatureNameByCode(GABOR) << " \n"
-		<< "\t\t\tExample 3: " << FEATURES << "=" << FEA_NICK_ALL_INTENSITY << " \n"
-		<< "\t\t\tExample 4: " << FEATURES << "=" << FEA_NICK_BASIC_MORPHOLOGY << " \n"
-		<< "\t\t\tExample 5: " << FEATURES << "=" << FEA_NICK_ALL << " \n"
+		<< "\t\t\tDefault: " << Nyxus::theFeatureSet.findGroupNameByCode(Nyxus::Fgroup2D::FG2_ALL) << " \n"
+		<< "\t\t\tExample 1: " << FEATURES << "=" << theFeatureSet.findFeatureNameByCode(Feature2D::PERIMETER) << " \n"
+		<< "\t\t\tExample 2: " << FEATURES << "=" << theFeatureSet.findFeatureNameByCode(Feature2D::PERIMETER) << "," << theFeatureSet.findFeatureNameByCode(Feature2D::CIRCULARITY) << "," << theFeatureSet.findFeatureNameByCode(Feature2D::GABOR) << " \n"
+		<< "\t\t\tExample 3: " << FEATURES << "=" << Nyxus::theFeatureSet.findGroupNameByCode(Nyxus::Fgroup2D::FG2_INTENSITY) << " \n"
+		<< "\t\t\tExample 4: " << FEATURES << "=" << Nyxus::theFeatureSet.findGroupNameByCode(Nyxus::Fgroup2D::FG2_BASIC_MORPHOLOGY) << " \n"
+		<< "\t\t\tExample 5: " << FEATURES << "=" << Nyxus::theFeatureSet.findGroupNameByCode(Nyxus::Fgroup2D::FG2_ALL) << " \n"
 		<< "\t\t" << OPT << XYRESOLUTION << "=<number of pixels per centimeter, an integer or floating point number> \n"
 		<< "\t\t" << OPT << EMBPIXSZ << "=<number> \n"
 		<< "\t\t\tDefault: 0 \n"
@@ -248,12 +188,13 @@ void Environment::show_summary(const std::string& head, const std::string& tail)
 	std::cout << head;
 	std::cout << "Using " << get_ram_limit() << " bytes of memory\n\n";
 	std::cout << "Work plan:\n"
+		<< "\tdimensionality: " << dim() << "\n"
 		<< "\tlabels\t" << labels_dir << "\n"
 		<< "\tintensities\t" << intensity_dir << "\n"
 		<< "\tintensities-to-segmentation map directory\t" << intSegMapDir << "\n"
 		<< "\tintensities-to-segmentation map file\t" << intSegMapFile << "\n"
 		<< "\toutput\t" << output_dir << "\n"
-		<< "\tfile pattern\t" << file_pattern << "\n"
+		<< "\tfile pattern\t" << rawFilePattern << "\n"
 		<< "\tembedded pixel size\t" << embedded_pixel_size << "\n"
 		<< "\toutput type\t" << rawOutpType << "\n"
 		<< "\t# of image loader threads\t" << n_loader_threads << "\n"
@@ -374,378 +315,7 @@ bool Environment::find_int_argument(std::vector<std::string>::iterator& i, const
 	return false;
 }
 
-void Environment::process_feature_list()
-{
-	theFeatureSet.enableAll(false); // First, disable all
-	for (auto& s : recognizedFeatureNames) // Second, iterate uppercased feature names
-	{
-		// Enforce the feature names to be in uppercase
-		s = Nyxus::toupper(s);
 
-		// Check if features are requested via a group nickname
-		if (s == FEA_NICK_ALL)
-		{
-			theFeatureSet.enableAll();
-			break; // No need to bother of others
-		}
-		if (s == FEA_NICK_ALL_BUT_GABOR)
-		{
-			theFeatureSet.enableAll();
-			auto F = { GABOR };
-			theFeatureSet.disableFeatures(F);
-			break; // No need to bother of others
-		}
-		if (s == FEA_NICK_ALL_BUT_GLCM)
-		{
-			theFeatureSet.enableAll();
-			auto F = {
-				GLCM_ASM,
-				GLCM_ACOR,
-				GLCM_CLUPROM,
-				GLCM_CLUSHADE,
-				GLCM_CLUTEND,
-				GLCM_CONTRAST,
-				GLCM_CORRELATION,
-				GLCM_DIFAVE,
-				GLCM_DIFENTRO,
-				GLCM_DIFVAR,
-				GLCM_DIS,
-				GLCM_ENERGY,
-				GLCM_ENTROPY,
-				GLCM_HOM1,
-				GLCM_HOM2,
-				GLCM_IDM,
-				GLCM_IDMN,
-				GLCM_ID,
-				GLCM_IDN,
-				GLCM_INFOMEAS1,
-				GLCM_INFOMEAS2,
-				GLCM_IV,
-				GLCM_JAVE,
-				GLCM_JE,
-				GLCM_JMAX,
-				GLCM_JVAR,
-				GLCM_SUMAVERAGE,
-				GLCM_SUMENTROPY,
-				GLCM_SUMVARIANCE,
-				GLCM_VARIANCE,
-				GLCM_ASM_AVE,
-				GLCM_ACOR_AVE,
-				GLCM_CLUPROM_AVE,
-				GLCM_CLUSHADE_AVE,
-				GLCM_CLUTEND_AVE,
-				GLCM_CONTRAST_AVE,
-				GLCM_CORRELATION_AVE,
-				GLCM_DIFAVE_AVE,
-				GLCM_DIFENTRO_AVE,
-				GLCM_DIFVAR_AVE,
-				GLCM_DIS_AVE,
-				GLCM_ENERGY_AVE,
-				GLCM_ENTROPY_AVE,
-				GLCM_HOM1_AVE,
-				GLCM_ID_AVE,
-				GLCM_IDN_AVE,
-				GLCM_IDM_AVE,
-				GLCM_IDMN_AVE,
-				GLCM_IV_AVE,
-				GLCM_JAVE_AVE,
-				GLCM_JE_AVE,
-				GLCM_INFOMEAS1_AVE,
-				GLCM_INFOMEAS2_AVE,
-				GLCM_VARIANCE_AVE,
-				GLCM_JMAX_AVE,
-				GLCM_JVAR_AVE,
-				GLCM_SUMAVERAGE_AVE,
-				GLCM_SUMENTROPY_AVE,
-				GLCM_SUMVARIANCE_AVE
-			};
-			theFeatureSet.disableFeatures(F);
-			break; // No need to bother of others
-		}
-
-		if (s == FEA_NICK_ALL_INTENSITY)
-		{
-			auto F = {
-				COV,
-				COVERED_IMAGE_INTENSITY_RANGE,
-				ENERGY,
-				ENTROPY,
-				EXCESS_KURTOSIS,
-				HYPERFLATNESS,
-				HYPERSKEWNESS,
-				INTEGRATED_INTENSITY,
-				INTERQUARTILE_RANGE,
-				KURTOSIS,
-				MAX,
-				MEAN,
-				MEAN_ABSOLUTE_DEVIATION,
-				MEDIAN,
-				MEDIAN_ABSOLUTE_DEVIATION,
-				MIN,
-				MODE,
-				P01, P10, P25, P75, P90, P99,
-				QCOD,
-				RANGE,
-				ROBUST_MEAN,
-				ROBUST_MEAN_ABSOLUTE_DEVIATION,
-				ROOT_MEAN_SQUARED,
-				SKEWNESS,
-				STANDARD_DEVIATION,
-				STANDARD_DEVIATION_BIASED,
-				STANDARD_ERROR,
-				VARIANCE,
-				VARIANCE_BIASED,
-				UNIFORMITY,
-				UNIFORMITY_PIU
-			};
-			theFeatureSet.enableFeatures(F);
-			continue;
-		}
-		if (s == FEA_NICK_ALL_MORPHOLOGY)
-		{
-			auto F = {
-				AREA_PIXELS_COUNT,
-				AREA_UM2,
-				CENTROID_X,
-				CENTROID_Y,
-				DIAMETER_EQUAL_AREA,
-				WEIGHTED_CENTROID_Y,
-				WEIGHTED_CENTROID_X,
-				COMPACTNESS,
-				BBOX_YMIN,
-				BBOX_XMIN,
-				BBOX_HEIGHT,
-				BBOX_WIDTH,
-				MAJOR_AXIS_LENGTH,
-				MINOR_AXIS_LENGTH,
-				ECCENTRICITY,
-				ORIENTATION,
-				ROUNDNESS,
-				EXTENT,
-				ASPECT_RATIO,
-				DIAMETER_EQUAL_PERIMETER,
-				CONVEX_HULL_AREA,
-				SOLIDITY,
-				PERIMETER,
-				EDGE_MEAN_INTENSITY,
-				EDGE_STDDEV_INTENSITY,
-				EDGE_MAX_INTENSITY,
-				EDGE_MIN_INTENSITY,
-				CIRCULARITY,
-				MASS_DISPLACEMENT };
-			theFeatureSet.enableFeatures(F);
-			continue;
-		}
-		if (s == FEA_NICK_BASIC_MORPHOLOGY)
-		{
-			auto F = {
-				AREA_PIXELS_COUNT,
-				AREA_UM2,
-				CENTROID_X,
-				CENTROID_Y,
-				BBOX_YMIN,
-				BBOX_XMIN,
-				BBOX_HEIGHT,
-				BBOX_WIDTH };
-			theFeatureSet.enableFeatures(F);
-			continue;
-		}
-		if (s == FEA_NICK_ALL_GLCM)
-		{
-			theFeatureSet.enableFeatures(GLCMFeature::featureset);
-			continue;
-		}
-		if (s == FEA_NICK_ALL_GLRLM)
-		{
-			theFeatureSet.enableFeatures(GLRLMFeature::featureset);
-			continue;
-		}
-		if (s == FEA_NICK_ALL_GLDZM)
-		{
-			theFeatureSet.enableFeatures(GLDZMFeature::featureset);
-			continue;
-		}
-		if (s == FEA_NICK_ALL_GLSZM)
-		{
-			theFeatureSet.enableFeatures(GLSZMFeature::featureset);
-			continue;
-		}
-		if (s == FEA_NICK_ALL_GLDM)
-		{
-			theFeatureSet.enableFeatures(GLDMFeature::featureset);
-			continue;
-		}
-		if (s == FEA_NICK_ALL_NGLDM)
-		{
-			theFeatureSet.enableFeatures(NGLDMfeature::featureset);
-			continue;
-		}
-		if (s == FEA_NICK_ALL_NGTDM)
-		{
-			theFeatureSet.enableFeatures(NGTDMFeature::featureset);
-			continue;
-		}
-
-		if (s == FEA_NICK_ALL_EASY)
-		{
-			theFeatureSet.enableAll();
-			auto F = {
-				//=== Gabor
-				GABOR,
-
-				//=== GLCM
-				GLCM_ASM,
-				GLCM_CONTRAST,
-				GLCM_CORRELATION,
-				GLCM_VARIANCE,
-				GLCM_IDM,
-				GLCM_SUMAVERAGE,
-				GLCM_SUMVARIANCE,
-				GLCM_SUMENTROPY,
-				GLCM_ENTROPY,
-				GLCM_DIFVAR,
-				GLCM_DIFENTRO,
-				GLCM_INFOMEAS1,
-				GLCM_INFOMEAS2,
-
-				//=== 2D moments
-
-				// Spatial (raw) moments
-				SPAT_MOMENT_00,
-				SPAT_MOMENT_01,
-				SPAT_MOMENT_02,
-				SPAT_MOMENT_03,
-				SPAT_MOMENT_10,
-				SPAT_MOMENT_11,
-				SPAT_MOMENT_12,
-				SPAT_MOMENT_13,
-				SPAT_MOMENT_20,
-				SPAT_MOMENT_21,
-				SPAT_MOMENT_22,
-				SPAT_MOMENT_23,
-				SPAT_MOMENT_30,
-
-				// Weighted spatial moments
-				WEIGHTED_SPAT_MOMENT_00,
-				WEIGHTED_SPAT_MOMENT_01,
-				WEIGHTED_SPAT_MOMENT_02,
-				WEIGHTED_SPAT_MOMENT_03,
-				WEIGHTED_SPAT_MOMENT_10,
-				WEIGHTED_SPAT_MOMENT_11,
-				WEIGHTED_SPAT_MOMENT_12,
-				WEIGHTED_SPAT_MOMENT_20,
-				WEIGHTED_SPAT_MOMENT_21,
-				WEIGHTED_SPAT_MOMENT_30,
-
-				// Central moments
-				CENTRAL_MOMENT_00,
-				CENTRAL_MOMENT_01,
-				CENTRAL_MOMENT_02,
-				CENTRAL_MOMENT_03,
-				CENTRAL_MOMENT_10,
-				CENTRAL_MOMENT_11,
-				CENTRAL_MOMENT_12,
-				CENTRAL_MOMENT_13,
-				CENTRAL_MOMENT_20,
-				CENTRAL_MOMENT_21,
-				CENTRAL_MOMENT_22,
-				CENTRAL_MOMENT_23,
-				CENTRAL_MOMENT_30,
-				CENTRAL_MOMENT_31,
-				CENTRAL_MOMENT_32,
-				CENTRAL_MOMENT_33,
-
-				// Weighted central moments
-				WEIGHTED_CENTRAL_MOMENT_02,
-				WEIGHTED_CENTRAL_MOMENT_03,
-				WEIGHTED_CENTRAL_MOMENT_11,
-				WEIGHTED_CENTRAL_MOMENT_12,
-				WEIGHTED_CENTRAL_MOMENT_20,
-				WEIGHTED_CENTRAL_MOMENT_21,
-				WEIGHTED_CENTRAL_MOMENT_30,
-
-				// Normalized central moments
-				NORM_CENTRAL_MOMENT_02,
-				NORM_CENTRAL_MOMENT_03,
-				NORM_CENTRAL_MOMENT_11,
-				NORM_CENTRAL_MOMENT_12,
-				NORM_CENTRAL_MOMENT_20,
-				NORM_CENTRAL_MOMENT_21,
-				NORM_CENTRAL_MOMENT_30,
-
-				// Normalized (standardized) spatial moments
-				NORM_SPAT_MOMENT_00,
-				NORM_SPAT_MOMENT_01,
-				NORM_SPAT_MOMENT_02,
-				NORM_SPAT_MOMENT_03,
-				NORM_SPAT_MOMENT_10,
-				NORM_SPAT_MOMENT_11,
-				NORM_SPAT_MOMENT_12,
-				NORM_SPAT_MOMENT_13,
-				NORM_SPAT_MOMENT_20,
-				NORM_SPAT_MOMENT_21,
-				NORM_SPAT_MOMENT_22,
-				NORM_SPAT_MOMENT_23,
-				NORM_SPAT_MOMENT_30,
-				NORM_SPAT_MOMENT_31,
-				NORM_SPAT_MOMENT_32,
-				NORM_SPAT_MOMENT_33,
-
-				// Hu's moments 1-7 
-				HU_M1,
-				HU_M2,
-				HU_M3,
-				HU_M4,
-				HU_M5,
-				HU_M6,
-				HU_M7,
-
-				// Weighted Hu's moments 1-7 
-				WEIGHTED_HU_M1,
-				WEIGHTED_HU_M2,
-				WEIGHTED_HU_M3,
-				WEIGHTED_HU_M4,
-				WEIGHTED_HU_M5,
-				WEIGHTED_HU_M6,
-				WEIGHTED_HU_M7 };
-
-			theFeatureSet.disableFeatures(F);
-
-			break; // No need to bother of others
-		}
-
-		if (s == FEA_NICK_ALL_NEIG)
-		{
-			auto F = {
-				NUM_NEIGHBORS,
-				PERCENT_TOUCHING,
-				CLOSEST_NEIGHBOR1_DIST,
-				CLOSEST_NEIGHBOR1_ANG,
-				CLOSEST_NEIGHBOR2_DIST,
-				CLOSEST_NEIGHBOR2_ANG,
-				ANG_BW_NEIGHBORS_MEAN,
-				ANG_BW_NEIGHBORS_STDDEV,
-				ANG_BW_NEIGHBORS_MODE };
-			theFeatureSet.enableFeatures(F);
-			break; // No need to bother of others
-		}
-
-		if (s == FEA_NICK_2DMOMENTS)
-		{
-			theFeatureSet.enableFeatures(ImageMomentsFeature::featureset);
-			continue;
-		}
-
-		// 's' is an individual feature name, not feature group name. Process it now
-		AvailableFeatures af;
-		if (!theFeatureSet.findFeatureByString(s, af))
-		{
-			throw std::invalid_argument("Error: '" + s + "' is not a valid feature name \n");
-		}
-
-		theFeatureSet.enableFeature(af);
-	}
-}
 
 /**
  * @brief Parses the command line. Caller needn't display command line help screen to the user after call
@@ -765,7 +335,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	std::vector<std::string> args(argv + 1, argv + argc);
 	std::vector<std::string> unrecognizedArgs;
 
-	//==== Gather raw data
+	//==== Gather command line arguments as raw strings
 	for (auto i = args.begin(); i != args.end(); ++i)
 	{
 		if (*i == "-h" || *i == "--help")
@@ -782,7 +352,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			find_string_argument(i, INTSEGMAPFILE, intSegMapFile) ||
 			find_string_argument(i, FEATURES, rawFeatures) ||
 			find_string_argument(i, XYRESOLUTION, rawXYRes) ||
-			find_string_argument(i, FILEPATTERN, file_pattern) ||
+			find_string_argument(i, FILEPATTERN, rawFilePattern) ||
 			find_string_argument(i, OUTPUTTYPE, rawOutpType) ||
 			find_string_argument(i, EMBPIXSZ, embedded_pixel_size) ||
 			find_string_argument(i, LOADERTHREADS, loader_threads) ||
@@ -811,6 +381,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			|| find_string_argument(i, FPIMAGE_MIN, fpimageOptions.raw_min_intensity)
 			|| find_string_argument(i, FPIMAGE_MAX, fpimageOptions.raw_max_intensity)
 			|| find_string_argument(i, RESULTFNAME, nyxus_result_fname)
+			|| find_string_argument(i, CLI_DIM, raw_dim)
 
 #ifdef CHECKTIMING
 			|| find_string_argument(i, EXCLUSIVETIMING, rawExclusiveTiming)
@@ -832,64 +403,99 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	std::copy(args.begin(), args.end(), std::ostream_iterator<std::string>(rawCL, " ")); // vector of strings -> string
 	rawCL << "\n\n";
 
-	std::cout << "\nAccepted command line arguments:\n";
+	std::cout << "Recognized command line arguments:\n";
 	for (auto& m : recognizedArgs)
 		std::cout << "\t" << std::get<0>(m) << " : " << std::get<1>(m) << "\n";
+	
+	std::cout << "\n";
 
 	// --what's not recognized?
 	if (unrecognizedArgs.size() > 0)
 	{
-		std::cout << "\nError - unrecognized arguments:\n";
+		std::cerr << "\nError - unrecognized arguments:\n";
 		for (auto& u : unrecognizedArgs)
-			std::cout << "\t" << u << "\n";
+			std::cerr << "\t" << u << "\n";
 		return false;
 	}
 
 	//==== Check mandatory parameters
 
-	if (file_pattern == "")
+	// -- file pattern
+
+	if (rawFilePattern == "")
 	{
-		std::cout << "Error: Missing argument " << FILEPATTERN << "\n";
-		return false;
-	}
-	if (check_file_pattern(file_pattern) == false)
-	{
-		std::cout << "Error: file pattern '" << file_pattern << "' is an invalid regular expression\n";
+		std::cerr << "Error: Missing argument " << FILEPATTERN << "\n";
 		return false;
 	}
 
+	// -- dimensionality
+
+	if (!raw_dim.empty())
+	{
+		// string -> integer
+		if (sscanf(raw_dim.c_str(), "%d", &dim_) != 1 || !(dim_==2 || dim_==3))
+		{
+			std::cerr << "Error: " << CLI_DIM << "=" << raw_dim << ": expecting 2 or 3\n";
+			return false;
+		}
+	}
+	else
+		set_dim(2);	// No user's input about dimensionality, so default it to 2D
+	switch (dim())
+	{
+		case 2:
+			if (check_2d_file_pattern(rawFilePattern) == false)
+			{
+				std::cerr << "Error: invalid file pattern '" << rawFilePattern << "' \n";
+				return false;
+			}
+			break;
+		case 3:
+			if (check_3d_file_pattern(rawFilePattern) == false)
+			{
+				std::cerr << "Error: invalid 3D file pattern '" << rawFilePattern << "' \n";
+				return false;
+			}
+			break;
+	}
+
+	// -- directories
+
 	if (labels_dir == "")
 	{
-		std::cout << "Error: Missing argument " << SEGDIR << "\n";
+		std::cerr << "Error: Missing argument " << SEGDIR << "\n";
 		return false;
 	}
 	if (intensity_dir == "")
 	{
-		std::cout << "Error: Missing argument " << INTDIR << "\n";
+		std::cerr << "Error: Missing argument " << INTDIR << "\n";
 		return false;
 	}
 	if (output_dir == "")
 	{
-		std::cout << "Error: Missing argument " << OUTDIR << "\n";
+		std::cerr << "Error: Missing argument " << OUTDIR << "\n";
 		return false;
 	}
 
 	if (rawOutpType == "")
 	{
-		std::cout << "Error: Missing argument " << OUTPUTTYPE << "\n";
+		std::cerr << "Error: Missing argument " << OUTPUTTYPE << "\n";
 		return false;
 	}
 
 	if (rawFeatures == "")
 	{
-		std::cout << "Warning: " << FEATURES << "=<empty string>, defaulting to " << FEA_NICK_ALL << "\n";
-		rawFeatures = FEA_NICK_ALL;
+		if (dim() == 3)
+			rawFeatures = theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_ALL);
+		else
+			rawFeatures = theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_ALL);
+		std::cerr << "Warning: " << FEATURES << "=<empty string>, defaulting to " << rawFeatures << '\n';
 	}
 
 	//==== Parse optional result file name
 	if (nyxus_result_fname == "")
 	{
-		std::cout << "Error: void argument " << RESULTFNAME << "\n";
+		std::cerr << "Error: void argument " << RESULTFNAME << "\n";
 		return false;
 	}
 
@@ -901,7 +507,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		(rawOutpTypeUC == Nyxus::toupper(OT_PARQUET))
 		))
 	{
-		std::cout << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << ", "
+		std::cerr << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << ", "
 			<< OT_SINGLECSV << ", "
 #ifdef USE_ARROW
 			<< OT_ARROWIPC << ", or" << OT_PARQUET <<
@@ -924,7 +530,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 
 #ifndef USE_ARROW // no Apache support
 	if (saveOption == SaveOption::saveArrowIPC || saveOption == SaveOption::saveParquet) {
-		std::cout << "Error: Nyxus must be built with Apache Arrow enabled to use Arrow output types. Please rebuild with the flag USEARROW=ON." << std::endl;
+		std::cerr << "Error: Nyxus must be built with Apache Arrow enabled to use Arrow output types. Please rebuild with the flag USEARROW=ON." << std::endl;
 		return false;
 	}
 #endif
@@ -939,7 +545,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		// string -> integer
 		if (sscanf(loader_threads.c_str(), "%d", &n_loader_threads) != 1 || n_loader_threads <= 0)
 		{
-			std::cout << "Error: " << LOADERTHREADS << "=" << loader_threads << ": expecting a positive integer constant\n";
+			std::cerr << "Error: " << LOADERTHREADS << "=" << loader_threads << ": expecting a positive integer constant\n";
 			return false;
 		}
 	}
@@ -949,7 +555,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		// string -> integer
 		if (sscanf(pixel_scan_threads.c_str(), "%d", &n_pixel_scan_threads) != 1 || n_pixel_scan_threads <= 0)
 		{
-			std::cout << "Error: " << PXLSCANTHREADS << "=" << pixel_scan_threads << ": expecting a positive integer constant\n";
+			std::cerr << "Error: " << PXLSCANTHREADS << "=" << pixel_scan_threads << ": expecting a positive integer constant\n";
 			return false;
 		}
 	}
@@ -959,7 +565,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		// string -> integer
 		if (sscanf(reduce_threads.c_str(), "%d", &n_reduce_threads) != 1 || n_reduce_threads <= 0)
 		{
-			std::cout << "Error: " << REDUCETHREADS << "=" << reduce_threads << ": expecting a positive integer constant\n";
+			std::cerr << "Error: " << REDUCETHREADS << "=" << reduce_threads << ": expecting a positive integer constant\n";
 			return false;
 		}
 	}
@@ -969,7 +575,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		// string -> integer
 		if (sscanf(pixel_distance.c_str(), "%d", &n_pixel_distance) != 1 || n_pixel_distance <= 0)
 		{
-			std::cout << "Error: " << PXLDIST << "=" << pixel_distance << ": expecting a positive integer constant\n";
+			std::cerr << "Error: " << PXLDIST << "=" << pixel_distance << ": expecting a positive integer constant\n";
 			return false;
 		}
 	}
@@ -980,7 +586,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		// string -> integer
 		if (sscanf(raw_coarse_grayscale_depth.c_str(), "%d", &coarse_grayscale_depth) != 1 || coarse_grayscale_depth <= 0)
 		{
-			std::cout << "Error: " << COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": expecting a positive integer constant\n";
+			std::cerr << "Error: " << COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": expecting a positive integer constant\n";
 			return false;
 		}
 	}
@@ -990,7 +596,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		// string -> integer
 		if (sscanf(rawVerbosity.c_str(), "%d", &verbosity_level) != 1 || verbosity_level < 0)
 		{
-			std::cout << "Error: " << VERBOSITY << "=" << reduce_threads << ": expecting a positive integer constant\n";
+			std::cerr << "Error: " << VERBOSITY << "=" << reduce_threads << ": expecting a positive integer constant\n";
 			return false;
 		}
 	}
@@ -1017,7 +623,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		auto scanfResult = sscanf(rawRamLimit.c_str(), "%d", &value);
 		if (scanfResult != 1 || value < 0)
 		{
-			std::cout << "Error: " << RAMLIMIT << "=" << rawRamLimit << ": expecting a non-negative integer constant (RAM limit in megabytes)\n";
+			std::cerr << "Error: " << RAMLIMIT << "=" << rawRamLimit << ": expecting a non-negative integer constant (RAM limit in megabytes)\n";
 			return false;
 		}
 
@@ -1028,7 +634,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		unsigned long long actualRam = Nyxus::getAvailPhysMemory();
 		if (requestedCeiling > actualRam)
 		{
-			std::cout << "Error: RAM limit " << value << " megabytes (=" << requestedCeiling << " bytes) exceeds the actual amount of available RAM " << actualRam << " bytes\n";
+			std::cerr << "Error: RAM limit " << value << " megabytes (=" << requestedCeiling << " bytes) exceeds the actual amount of available RAM " << actualRam << " bytes\n";
 			return false;
 		}
 
@@ -1042,7 +648,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		// Check the path
 		if (!existsOnFilesystem(rawTempDir))
 		{
-			std::cout << "Error :" << TEMPDIR << "=" << rawTempDir << ": nonexisting directory\n";
+			std::cerr << "Error :" << TEMPDIR << "=" << rawTempDir << ": nonexisting directory\n";
 			return false;
 		}
 
@@ -1133,7 +739,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 				// string -> integer
 				if (sscanf(rawGpuDeviceID.c_str(), "%d", &gpu_device_id_) != 1 || gpu_device_id_ < 0)
 				{
-					std::cout << "Error: " << GPUDEVICEID << "=" << gpu_device_id_ << ": expecting 0 or positive integer constant\n";
+					std::cerr << "Error: " << GPUDEVICEID << "=" << gpu_device_id_ << ": expecting 0 or positive integer constant\n";
 					return false;
 				}
 			}
@@ -1145,7 +751,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 
 	//==== Parse desired features
 
-	// --Try to pick up features from a file
+	// --Try to pick up features from a text file treating 'rawFeatures' as a feature file path-name
 	if (rawFeatures.length() > 0 && Nyxus::existsOnFilesystem(rawFeatures))
 	{
 		std::ifstream file(rawFeatures);
@@ -1175,16 +781,16 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	}
 
 	// --Make sure all the feature names are legal and cast to uppercase (class FeatureSet understands uppercase names)
-	if (!Nyxus::parse_delimited_string_list_to_features(rawFeatures, recognizedFeatureNames))
+	if (!spellcheck_raw_featurelist(rawFeatures, recognizedFeatureNames))
 	{
 		std::cerr << "Stopping due to errors while parsing user requested features\n";
 		return false;
 	}
 
-	// --Feature names are ok, set the flags
+	// --Feature names are ok, now expand feature group nicknames and set the enabled flag for each feature in 'theFeatureSet'
 	try
 	{
-		process_feature_list();
+		expand_featuregroups();
 	}
 	catch (std::exception& e)
 	{
@@ -1192,7 +798,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		return false;
 	}
 
-	// --Handle the whole-slide mode
+	//==== Handle the whole-slide mode
 	if (Nyxus::toupper(labels_dir) == Nyxus::toupper(intensity_dir))
 	{
 		singleROI = true;
@@ -1205,9 +811,9 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			"+-----------------------------------------------------------+\n";
 
 		auto F = {
-			EROSIONS_2_VANISH,
-			EROSIONS_2_VANISH_COMPLEMENT,
-			GABOR
+			Feature2D::EROSIONS_2_VANISH,
+			Feature2D::EROSIONS_2_VANISH_COMPLEMENT,
+			Feature2D::GABOR
 		};
 		theFeatureSet.disableFeatures(F);
 	}
@@ -1218,7 +824,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		// string -> number
 		if (sscanf(rawXYRes.c_str(), "%f", &xyRes) != 1 || xyRes <= 0)
 		{
-			std::cout << "Error: " << XYRESOLUTION << "=" << xyRes << ": expecting a positive numeric constant\n";
+			std::cerr << "Error: " << XYRESOLUTION << "=" << xyRes << ": expecting a positive numeric constant\n";
 			return false;
 		}
 		// pixel size
@@ -1240,49 +846,6 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	return true;
 }
 
-void Environment::show_featureset_help()
-{
-	const int W = 40;   // width
-
-	std::cout << "\n" <<
-		"Available features : " << "\n" <<
-		"-------------------- " <<
-		"\n";
-	for (auto f = Nyxus::UserFacingFeatureNames.begin(); f != Nyxus::UserFacingFeatureNames.end(); ++f) // (const auto& f : Nyxus::UserFacingFeatureNames)
-	{
-		auto idx = std::distance(Nyxus::UserFacingFeatureNames.begin(), f);
-
-		std::cout << std::setw(W) << f->first << " ";
-		if ((idx + 1) % 4 == 0)
-			std::cout << "\n";
-	}
-	std::cout << "\n";
-
-	std::vector<std::string> fgroups =
-	{
-		FEA_NICK_ALL,
-		FEA_NICK_ALL_EASY,
-		FEA_NICK_ALL_INTENSITY,
-		FEA_NICK_ALL_MORPHOLOGY,
-		FEA_NICK_BASIC_MORPHOLOGY,
-		FEA_NICK_ALL_GLCM,
-		FEA_NICK_ALL_GLRLM,
-		FEA_NICK_ALL_GLSZM,
-		FEA_NICK_ALL_GLDM,
-		FEA_NICK_ALL_NGTDM,
-		FEA_NICK_ALL_BUT_GABOR,
-		FEA_NICK_ALL_BUT_GLCM,
-		FEA_NICK_ALL_NEIG,
-		FEA_NICK_2DMOMENTS
-	};
-
-	std::cout << "\n" <<
-		"Available feature groups :" << "\n" <<
-		"--------------------------" << "\n";
-	for (const auto& f : fgroups)
-		std::cout << std::setw(W) << f << "\n";
-	std::cout << "\n";
-}
 
 int Environment::get_floating_point_precision()
 {
@@ -1335,6 +898,12 @@ void Environment::get_roi_blacklist_summary(std::string& response)
 
 bool Environment::parse_gabor_options_raw_inputs(std::string& error_message)
 {
+	if (dim() != 2)
+	{
+		error_message = "Error: Gabor options are not applicable to dimensionality " + std::to_string(dim());
+		return false;
+	}
+
 	if (!gaborOptions.parse_input())
 	{
 		error_message = gaborOptions.get_last_er_msg();
@@ -1355,6 +924,12 @@ bool Environment::parse_fpimage_options_raw_inputs(std::string& error_message)
 
 bool Environment::parse_nested_options_raw_inputs(std::string& error_message)
 {
+	if (dim() != 2)
+	{
+		error_message = "Error: nested options are not applicable to dimensionality " + std::to_string(dim());
+		return false;
+	}
+
 	if (!nestedOptions.parse_input())
 	{
 		error_message = nestedOptions.get_last_er_msg();
@@ -1374,17 +949,18 @@ bool Environment::arrow_is_enabled()
 
 #ifdef USE_GPU
 
-void Environment::set_gpu_device_id(int choice) {
-
-	int num_gpus = get_gpu_properties().size();
-
-	if (num_gpus == 0) {
-		std::cout << "No gpu available." << std::endl;
+void Environment::set_gpu_device_id (int choice) 
+{
+	auto n_gpus = get_gpu_properties().size();
+	if (n_gpus == 0) 
+	{
+		std::cerr << "Error: no GPU devices available \n";
 		return;
 	}
 
-	if (choice > get_gpu_properties().size() - 1) {
-		std::cout << "GPU choice out of range. Defaulting to device 0." << std::endl;
+	if (choice > get_gpu_properties().size() - 1) 
+	{
+		std::cerr << "Warning: GPU choice (" << choice << ") is out of range. Defaulting to device 0 \n";
 		gpu_device_id_ = 0;
 		return;
 	}

@@ -7,6 +7,8 @@
 #include "glrlm.h"
 #include "../environment.h"
 
+using namespace Nyxus;
+
 GLRLMFeature::GLRLMFeature() : FeatureMethod("GLRLMFeature")
 {
 	provide_features(GLRLMFeature::featureset);
@@ -536,40 +538,40 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 
 void GLRLMFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[GLRLM_SRE] = angled_SRE;
-	fvals[GLRLM_LRE] = angled_LRE;
-	fvals[GLRLM_GLN] = angled_GLN;
-	fvals[GLRLM_GLNN] = angled_GLNN;
-	fvals[GLRLM_RLN] = angled_RLN;
-	fvals[GLRLM_RLNN] = angled_RLNN;
-	fvals[GLRLM_RP] = angled_RP;
-	fvals[GLRLM_GLV] = angled_GLV;
-	fvals[GLRLM_RV] = angled_RV;
-	fvals[GLRLM_RE] = angled_RE;
-	fvals[GLRLM_LGLRE] = angled_LGLRE;
-	fvals[GLRLM_HGLRE] = angled_HGLRE;
-	fvals[GLRLM_SRLGLE] = angled_SRLGLE;
-	fvals[GLRLM_SRHGLE] = angled_SRHGLE;
-	fvals[GLRLM_LRLGLE] = angled_LRLGLE;
-	fvals[GLRLM_LRHGLE] = angled_LRHGLE;
+	fvals[(int)Feature2D::GLRLM_SRE] = angled_SRE;
+	fvals[(int)Feature2D::GLRLM_LRE] = angled_LRE;
+	fvals[(int)Feature2D::GLRLM_GLN] = angled_GLN;
+	fvals[(int)Feature2D::GLRLM_GLNN] = angled_GLNN;
+	fvals[(int)Feature2D::GLRLM_RLN] = angled_RLN;
+	fvals[(int)Feature2D::GLRLM_RLNN] = angled_RLNN;
+	fvals[(int)Feature2D::GLRLM_RP] = angled_RP;
+	fvals[(int)Feature2D::GLRLM_GLV] = angled_GLV;
+	fvals[(int)Feature2D::GLRLM_RV] = angled_RV;
+	fvals[(int)Feature2D::GLRLM_RE] = angled_RE;
+	fvals[(int)Feature2D::GLRLM_LGLRE] = angled_LGLRE;
+	fvals[(int)Feature2D::GLRLM_HGLRE] = angled_HGLRE;
+	fvals[(int)Feature2D::GLRLM_SRLGLE] = angled_SRLGLE;
+	fvals[(int)Feature2D::GLRLM_SRHGLE] = angled_SRHGLE;
+	fvals[(int)Feature2D::GLRLM_LRLGLE] = angled_LRLGLE;
+	fvals[(int)Feature2D::GLRLM_LRHGLE] = angled_LRHGLE;
 
 	// -- averages --
-	fvals[GLRLM_SRE_AVE][0] = calc_ave(angled_SRE);
-	fvals[GLRLM_LRE_AVE][0] = calc_ave(angled_LRE);
-	fvals[GLRLM_GLN_AVE][0] = calc_ave(angled_GLN);
-	fvals[GLRLM_GLNN_AVE][0] = calc_ave(angled_GLNN);
-	fvals[GLRLM_RLN_AVE][0] = calc_ave(angled_RLN);
-	fvals[GLRLM_RLNN_AVE][0] = calc_ave(angled_RLNN);
-	fvals[GLRLM_RP_AVE][0] = calc_ave(angled_RP);
-	fvals[GLRLM_GLV_AVE][0] = calc_ave(angled_GLV);
-	fvals[GLRLM_RV_AVE][0] = calc_ave(angled_RV);
-	fvals[GLRLM_RE_AVE][0] = calc_ave(angled_RE);
-	fvals[GLRLM_LGLRE_AVE][0] = calc_ave(angled_LGLRE);
-	fvals[GLRLM_HGLRE_AVE][0] = calc_ave(angled_HGLRE);
-	fvals[GLRLM_SRLGLE_AVE][0] = calc_ave(angled_SRLGLE);
-	fvals[GLRLM_SRHGLE_AVE][0] = calc_ave(angled_SRHGLE);
-	fvals[GLRLM_LRLGLE_AVE][0] = calc_ave(angled_LRLGLE);
-	fvals[GLRLM_LRHGLE_AVE][0] = calc_ave(angled_LRHGLE);
+	fvals[(int)Feature2D::GLRLM_SRE_AVE][0] = calc_ave(angled_SRE);
+	fvals[(int)Feature2D::GLRLM_LRE_AVE][0] = calc_ave(angled_LRE);
+	fvals[(int)Feature2D::GLRLM_GLN_AVE][0] = calc_ave(angled_GLN);
+	fvals[(int)Feature2D::GLRLM_GLNN_AVE][0] = calc_ave(angled_GLNN);
+	fvals[(int)Feature2D::GLRLM_RLN_AVE][0] = calc_ave(angled_RLN);
+	fvals[(int)Feature2D::GLRLM_RLNN_AVE][0] = calc_ave(angled_RLNN);
+	fvals[(int)Feature2D::GLRLM_RP_AVE][0] = calc_ave(angled_RP);
+	fvals[(int)Feature2D::GLRLM_GLV_AVE][0] = calc_ave(angled_GLV);
+	fvals[(int)Feature2D::GLRLM_RV_AVE][0] = calc_ave(angled_RV);
+	fvals[(int)Feature2D::GLRLM_RE_AVE][0] = calc_ave(angled_RE);
+	fvals[(int)Feature2D::GLRLM_LGLRE_AVE][0] = calc_ave(angled_LGLRE);
+	fvals[(int)Feature2D::GLRLM_HGLRE_AVE][0] = calc_ave(angled_HGLRE);
+	fvals[(int)Feature2D::GLRLM_SRLGLE_AVE][0] = calc_ave(angled_SRLGLE);
+	fvals[(int)Feature2D::GLRLM_SRHGLE_AVE][0] = calc_ave(angled_SRHGLE);
+	fvals[(int)Feature2D::GLRLM_LRLGLE_AVE][0] = calc_ave(angled_LRLGLE);
+	fvals[(int)Feature2D::GLRLM_LRHGLE_AVE][0] = calc_ave(angled_LRHGLE);
 }
 
 

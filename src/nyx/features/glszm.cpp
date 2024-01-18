@@ -6,6 +6,8 @@
 #include "glszm.h"
 #include "../environment.h"
 
+using namespace Nyxus;
+
 GLSZMFeature::GLSZMFeature() : FeatureMethod("GLSZMFeature")
 {
 	provide_features (GLSZMFeature::featureset);
@@ -404,7 +406,7 @@ void GLSZMFeature::calc_sums_of_P()
 	}
 }
 
-bool GLSZMFeature::need (Nyxus::AvailableFeatures f)
+bool GLSZMFeature::need (Nyxus::Feature2D f)
 {
 	return theFeatureSet.isEnabled (f);
 }
@@ -413,22 +415,22 @@ void GLSZMFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
 	// Clear result buffers
 	double val = 0;
-	fvals[GLSZM_SAE][0] = val;
-	fvals[GLSZM_LAE][0] = val;
-	fvals[GLSZM_GLN][0] = val;
-	fvals[GLSZM_GLNN][0] = val;
-	fvals[GLSZM_SZN][0] = val;
-	fvals[GLSZM_SZNN][0] = val;
-	fvals[GLSZM_ZP][0] = val;
-	fvals[GLSZM_GLV][0] = val;
-	fvals[GLSZM_ZV][0] = val;
-	fvals[GLSZM_ZE][0] = val;
-	fvals[GLSZM_LGLZE][0] = val;
-	fvals[GLSZM_HGLZE][0] = val;
-	fvals[GLSZM_SALGLE][0] = val;
-	fvals[GLSZM_SAHGLE][0] = val;
-	fvals[GLSZM_LALGLE][0] = val;
-	fvals[GLSZM_LAHGLE][0] = val;
+	fvals[(int)Feature2D::GLSZM_SAE][0] = val;
+	fvals[(int)Feature2D::GLSZM_LAE][0] = val;
+	fvals[(int)Feature2D::GLSZM_GLN][0] = val;
+	fvals[(int)Feature2D::GLSZM_GLNN][0] = val;
+	fvals[(int)Feature2D::GLSZM_SZN][0] = val;
+	fvals[(int)Feature2D::GLSZM_SZNN][0] = val;
+	fvals[(int)Feature2D::GLSZM_ZP][0] = val;
+	fvals[(int)Feature2D::GLSZM_GLV][0] = val;
+	fvals[(int)Feature2D::GLSZM_ZV][0] = val;
+	fvals[(int)Feature2D::GLSZM_ZE][0] = val;
+	fvals[(int)Feature2D::GLSZM_LGLZE][0] = val;
+	fvals[(int)Feature2D::GLSZM_HGLZE][0] = val;
+	fvals[(int)Feature2D::GLSZM_SALGLE][0] = val;
+	fvals[(int)Feature2D::GLSZM_SAHGLE][0] = val;
+	fvals[(int)Feature2D::GLSZM_LALGLE][0] = val;
+	fvals[(int)Feature2D::GLSZM_LAHGLE][0] = val;
 
 	// Non-informative matrix?
 	if (sum_p == 0)
@@ -438,53 +440,53 @@ void GLSZMFeature::save_value (std::vector<std::vector<double>>& fvals)
 	calc_sums_of_P();
 
 	// Calculate features
-	if (need(GLSZM_SAE))
-		fvals[GLSZM_SAE][0] = calc_SAE();
+	if (need(Feature2D::GLSZM_SAE))
+		fvals[(int)Feature2D::GLSZM_SAE][0] = calc_SAE();
 
-	if (need(GLSZM_LAE))
-		fvals[GLSZM_LAE][0] = calc_LAE();
+	if (need(Feature2D::GLSZM_LAE))
+		fvals[(int)Feature2D::GLSZM_LAE][0] = calc_LAE();
 	
-	if (need(GLSZM_GLN))
-		fvals[GLSZM_GLN][0] = calc_GLN();
+	if (need(Feature2D::GLSZM_GLN))
+		fvals[(int)Feature2D::GLSZM_GLN][0] = calc_GLN();
 	
-	if (need(GLSZM_GLNN))
-		fvals[GLSZM_GLNN][0] = calc_GLNN();
+	if (need(Feature2D::GLSZM_GLNN))
+		fvals[(int)Feature2D::GLSZM_GLNN][0] = calc_GLNN();
 	
-	if (need(GLSZM_SZN))
-		fvals[GLSZM_SZN][0] = calc_SZN();
+	if (need(Feature2D::GLSZM_SZN))
+		fvals[(int)Feature2D::GLSZM_SZN][0] = calc_SZN();
 	
-	if (need(GLSZM_SZNN))
-		fvals[GLSZM_SZNN][0] = calc_SZNN();
+	if (need(Feature2D::GLSZM_SZNN))
+		fvals[(int)Feature2D::GLSZM_SZNN][0] = calc_SZNN();
 	
-	if (need(GLSZM_ZP))
-		fvals[GLSZM_ZP][0] = calc_ZP();
+	if (need(Feature2D::GLSZM_ZP))
+		fvals[(int)Feature2D::GLSZM_ZP][0] = calc_ZP();
 	
-	if (need(GLSZM_GLV))
-		fvals[GLSZM_GLV][0] = calc_GLV();
+	if (need(Feature2D::GLSZM_GLV))
+		fvals[(int)Feature2D::GLSZM_GLV][0] = calc_GLV();
 	
-	if (need(GLSZM_ZV))
-		fvals[GLSZM_ZV][0] = calc_ZV();
+	if (need(Feature2D::GLSZM_ZV))
+		fvals[(int)Feature2D::GLSZM_ZV][0] = calc_ZV();
 	
-	if (need(GLSZM_ZE))
-		fvals[GLSZM_ZE][0] = calc_ZE();
+	if (need(Feature2D::GLSZM_ZE))
+		fvals[(int)Feature2D::GLSZM_ZE][0] = calc_ZE();
 	
-	if (need(GLSZM_LGLZE))
-		fvals[GLSZM_LGLZE][0] = calc_LGLZE();
+	if (need(Feature2D::GLSZM_LGLZE))
+		fvals[(int)Feature2D::GLSZM_LGLZE][0] = calc_LGLZE();
 	
-	if (need(GLSZM_HGLZE))
-		fvals[GLSZM_HGLZE][0] = calc_HGLZE();
+	if (need(Feature2D::GLSZM_HGLZE))
+		fvals[(int)Feature2D::GLSZM_HGLZE][0] = calc_HGLZE();
 	
-	if (need(GLSZM_SALGLE))
-		fvals[GLSZM_SALGLE][0] = calc_SALGLE();
+	if (need(Feature2D::GLSZM_SALGLE))
+		fvals[(int)Feature2D::GLSZM_SALGLE][0] = calc_SALGLE();
 	
-	if (need(GLSZM_SAHGLE))
-		fvals[GLSZM_SAHGLE][0] = calc_SAHGLE();
+	if (need(Feature2D::GLSZM_SAHGLE))
+		fvals[(int)Feature2D::GLSZM_SAHGLE][0] = calc_SAHGLE();
 	
-	if (need(GLSZM_LALGLE))
-		fvals[GLSZM_LALGLE][0] = calc_LALGLE();
+	if (need(Feature2D::GLSZM_LALGLE))
+		fvals[(int)Feature2D::GLSZM_LALGLE][0] = calc_LALGLE();
 	
-	if (need(GLSZM_LAHGLE))
-		fvals[GLSZM_LAHGLE][0] = calc_LAHGLE();
+	if (need(Feature2D::GLSZM_LAHGLE))
+		fvals[(int)Feature2D::GLSZM_LAHGLE][0] = calc_LAHGLE();
 }
 
 // 1. Small Area Emphasis

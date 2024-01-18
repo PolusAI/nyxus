@@ -22,6 +22,7 @@
 #include "features/ngtdm.h"
 #include "features/image_moments.h"
 #include "features/intensity.h"
+#include "features/intensity_3d.h"
 #include "features/moments.h"
 #include "features/neighbors.h"
 #include "features/caliper.h"
@@ -59,6 +60,7 @@ FeatureManager::FeatureManager()
 	register_feature (new GaborFeature());
 	register_feature (new ZernikeFeature());
 	register_feature (new RadialDistributionFeature());
+	register_feature(new PixelIntensityFeatures_3D());
 }
 
 

@@ -1,23 +1,25 @@
 #include <algorithm>
 #include "circle.h"
 
+using namespace Nyxus;
+
 EnclosingInscribingCircumscribingCircleFeature::EnclosingInscribingCircumscribingCircleFeature() : FeatureMethod("EnclosingInscribingCircumscribingCircleFeature")
 {
-    provide_features({ DIAMETER_MIN_ENCLOSING_CIRCLE, DIAMETER_INSCRIBING_CIRCLE, DIAMETER_CIRCUMSCRIBING_CIRCLE });
-    add_dependencies({ PERIMETER, CENTROID_X, CENTROID_Y });    // Availability of feature 'PERIMETER' ensures availability of LR::contour
+    provide_features({ Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE, Feature2D::DIAMETER_INSCRIBING_CIRCLE, Feature2D::DIAMETER_CIRCUMSCRIBING_CIRCLE });
+    add_dependencies({ Feature2D::PERIMETER, Feature2D::CENTROID_X, Feature2D::CENTROID_Y });    // Availability of feature 'PERIMETER' ensures availability of LR::contour
 }
 
 void EnclosingInscribingCircumscribingCircleFeature::calculate(LR& r)
 {
     d_minEnclo = calculate_min_enclosing_circle_diam (r.contour);
-    std::tie(d_inscr, d_circum) = calculate_inscribing_circumscribing_circle (r.contour, r.fvals[CENTROID_X][0], r.fvals[CENTROID_Y][0]);
+    std::tie(d_inscr, d_circum) = calculate_inscribing_circumscribing_circle (r.contour, r.fvals[(int)Feature2D::CENTROID_X][0], r.fvals[(int)Feature2D::CENTROID_Y][0]);
 }
 
 void EnclosingInscribingCircumscribingCircleFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-    fvals[DIAMETER_MIN_ENCLOSING_CIRCLE][0] = d_minEnclo;
-    fvals[DIAMETER_INSCRIBING_CIRCLE][0] = d_inscr;
-    fvals[DIAMETER_CIRCUMSCRIBING_CIRCLE][0] = d_circum;
+    fvals[(int)Nyxus::Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE][0] = d_minEnclo;
+    fvals[(int)Nyxus::Feature2D::DIAMETER_INSCRIBING_CIRCLE][0] = d_inscr;
+    fvals[(int)Nyxus::Feature2D::DIAMETER_CIRCUMSCRIBING_CIRCLE][0] = d_circum;
 }
 
 double EnclosingInscribingCircumscribingCircleFeature::calculate_min_enclosing_circle_diam (std::vector<Pixel2>& Contour)

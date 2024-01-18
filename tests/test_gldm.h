@@ -32,7 +32,7 @@ static std::unordered_map<std::string, float> gldm_values {
 };
 
 /// @brief Smoke test of GLDM
-void test_gldm_feature(const AvailableFeatures& feature, const std::string& feature_name) 
+void test_gldm_feature(const Feature2D& feature, const std::string& feature_name) 
 {
     LR roidata;
 

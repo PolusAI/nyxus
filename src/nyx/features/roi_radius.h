@@ -24,9 +24,9 @@ public:
 	static bool required (const FeatureSet& fs) 
 	{
 		return fs.anyEnabled({
-			ROI_RADIUS_MEAN,
-			ROI_RADIUS_MAX,
-			ROI_RADIUS_MEDIAN
+			Nyxus::Feature2D::ROI_RADIUS_MEAN,
+			Nyxus::Feature2D::ROI_RADIUS_MAX,
+			Nyxus::Feature2D::ROI_RADIUS_MEDIAN
 			});
 	}
 

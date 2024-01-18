@@ -42,7 +42,7 @@ static std::unordered_map<std::string, float> glcm_values {
 };
 
 
-void test_glcm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
+void test_glcm_feature(const Feature2D& feature, const std::string& feature_name) {
     double total = 0;
     
     LR roidata;

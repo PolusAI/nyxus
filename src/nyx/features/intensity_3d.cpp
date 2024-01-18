@@ -1,56 +1,97 @@
 #include "../environment.h"
 #include "../parallel.h"
 #include "histogram.h"
-#include "intensity.h"
+#include "intensity_3d.h"
 #include "pixel.h"
 
 using namespace Nyxus;
 
-bool PixelIntensityFeatures::required(const FeatureSet& fs)
+bool PixelIntensityFeatures_3D::required (const FeatureSet & fs)
 {
 	return fs.anyEnabled(
 		{
-			Feature2D::COV,
-			Feature2D::COVERED_IMAGE_INTENSITY_RANGE,
-			Feature2D::ENERGY,
-			Feature2D::ENTROPY,
-			Feature2D::EXCESS_KURTOSIS,
-			Feature2D::HYPERFLATNESS,
-			Feature2D::HYPERSKEWNESS,
-			Feature2D::INTEGRATED_INTENSITY,
-			Feature2D::INTERQUARTILE_RANGE,
-			Feature2D::KURTOSIS,
-			Feature2D::MAX,
-			Feature2D::MEAN,
-			Feature2D::MEAN_ABSOLUTE_DEVIATION,
-			Feature2D::MEDIAN,
-			Feature2D::MEDIAN_ABSOLUTE_DEVIATION,
-			Feature2D::MIN,
-			Feature2D::MODE,
-			Feature2D::P01,
-			Feature2D::P10, Feature2D::P25, Feature2D::P75, Feature2D::P90, Feature2D::P99,
-			Feature2D::QCOD,
-			Feature2D::RANGE,
-			Feature2D::ROBUST_MEAN,
-			Feature2D::ROBUST_MEAN_ABSOLUTE_DEVIATION,
-			Feature2D::ROOT_MEAN_SQUARED,
-			Feature2D::SKEWNESS,
-			Feature2D::STANDARD_DEVIATION,
-			Feature2D::STANDARD_DEVIATION_BIASED,
-			Feature2D::STANDARD_ERROR,
-			Feature2D::VARIANCE,
-			Feature2D::VARIANCE_BIASED,
-			Feature2D::UNIFORMITY,
-			Feature2D::UNIFORMITY_PIU
+			Nyxus::Feature3D::COV,
+			Nyxus::Feature3D::COVERED_IMAGE_INTENSITY_RANGE,
+			Nyxus::Feature3D::ENERGY,
+			Nyxus::Feature3D::ENTROPY,
+			Nyxus::Feature3D::EXCESS_KURTOSIS,
+			Nyxus::Feature3D::HYPERFLATNESS,
+			Nyxus::Feature3D::HYPERSKEWNESS,
+			Nyxus::Feature3D::INTEGRATED_INTENSITY,
+			Nyxus::Feature3D::INTERQUARTILE_RANGE,
+			Nyxus::Feature3D::KURTOSIS,
+			Nyxus::Feature3D::MAX,
+			Nyxus::Feature3D::MEAN,
+			Nyxus::Feature3D::MEAN_ABSOLUTE_DEVIATION,
+			Nyxus::Feature3D::MEDIAN,
+			Nyxus::Feature3D::MEDIAN_ABSOLUTE_DEVIATION,
+			Nyxus::Feature3D::MIN,
+			Nyxus::Feature3D::MODE,
+			Nyxus::Feature3D::P01,
+			Nyxus::Feature3D::P10,
+			Nyxus::Feature3D::P25,
+			Nyxus::Feature3D::P75,
+			Nyxus::Feature3D::P90,
+			Nyxus::Feature3D::P99,
+			Nyxus::Feature3D::QCOD,
+			Nyxus::Feature3D::RANGE,
+			Nyxus::Feature3D::ROBUST_MEAN,
+			Nyxus::Feature3D::ROBUST_MEAN_ABSOLUTE_DEVIATION,
+			Nyxus::Feature3D::ROOT_MEAN_SQUARED,
+			Nyxus::Feature3D::SKEWNESS,
+			Nyxus::Feature3D::STANDARD_DEVIATION,
+			Nyxus::Feature3D::STANDARD_DEVIATION_BIASED,
+			Nyxus::Feature3D::STANDARD_ERROR,
+			Nyxus::Feature3D::VARIANCE,
+			Nyxus::Feature3D::VARIANCE_BIASED,
+			Nyxus::Feature3D::UNIFORMITY,
+			Nyxus::Feature3D::UNIFORMITY_PIU
 		});
 }
 
-PixelIntensityFeatures::PixelIntensityFeatures() : FeatureMethod("PixelIntensityFeatures")
+PixelIntensityFeatures_3D::PixelIntensityFeatures_3D() : FeatureMethod("PixelIntensityFeatures_3D")
 {
-	provide_features (PixelIntensityFeatures::featureset);
+	provide_features({
+			Nyxus::Feature3D::COV,
+			Nyxus::Feature3D::COVERED_IMAGE_INTENSITY_RANGE,
+			Nyxus::Feature3D::ENERGY,
+			Nyxus::Feature3D::ENTROPY,
+			Nyxus::Feature3D::EXCESS_KURTOSIS,
+			Nyxus::Feature3D::HYPERFLATNESS,
+			Nyxus::Feature3D::HYPERSKEWNESS,
+			Nyxus::Feature3D::INTEGRATED_INTENSITY,
+			Nyxus::Feature3D::INTERQUARTILE_RANGE,
+			Nyxus::Feature3D::KURTOSIS,
+			Nyxus::Feature3D::MAX,
+			Nyxus::Feature3D::MEAN,
+			Nyxus::Feature3D::MEAN_ABSOLUTE_DEVIATION,
+			Nyxus::Feature3D::MEDIAN,
+			Nyxus::Feature3D::MEDIAN_ABSOLUTE_DEVIATION,
+			Nyxus::Feature3D::MIN,
+			Nyxus::Feature3D::MODE,
+			Nyxus::Feature3D::P01,
+			Nyxus::Feature3D::P10,
+			Nyxus::Feature3D::P25,
+			Nyxus::Feature3D::P75,
+			Nyxus::Feature3D::P90,
+			Nyxus::Feature3D::P99,
+			Nyxus::Feature3D::QCOD,
+			Nyxus::Feature3D::RANGE,
+			Nyxus::Feature3D::ROBUST_MEAN,
+			Nyxus::Feature3D::ROBUST_MEAN_ABSOLUTE_DEVIATION,
+			Nyxus::Feature3D::ROOT_MEAN_SQUARED,
+			Nyxus::Feature3D::SKEWNESS,
+			Nyxus::Feature3D::STANDARD_DEVIATION,
+			Nyxus::Feature3D::STANDARD_DEVIATION_BIASED,
+			Nyxus::Feature3D::STANDARD_ERROR,
+			Nyxus::Feature3D::UNIFORMITY,
+			Nyxus::Feature3D::UNIFORMITY_PIU,
+			Nyxus::Feature3D::VARIANCE,
+			Nyxus::Feature3D::VARIANCE_BIASED,
+		});
 }
 
-void PixelIntensityFeatures::calculate(LR& r)
+void PixelIntensityFeatures_3D::calculate(LR& r)
 {
 	// --MIN, MAX
 	val_MIN = r.aux_min;
@@ -67,13 +108,15 @@ void PixelIntensityFeatures::calculate(LR& r)
 	double energy = 0.0;
 	double cen_x = 0.0,
 		cen_y = 0.0,
+		cen_z = 0.0,
 		integInten = 0.0;
-	for (auto& px : r.raw_pixels)
+	for (auto& px : r.raw_pixels_3D)
 	{
 		mean_ += px.inten;
 		energy += px.inten * px.inten;
 		cen_x += px.x;
 		cen_y += px.y;
+		cen_z += px.z;
 		integInten += px.inten;
 	}
 	mean_ /= n;
@@ -85,15 +128,15 @@ void PixelIntensityFeatures::calculate(LR& r)
 	// --MAD, VARIANCE, STDDEV, COV
 	double mad = 0.0,
 		var = 0.0;
-	for (auto& px : r.raw_pixels)
+	for (auto& px : r.raw_pixels_3D)
 	{
 		double diff = px.inten - mean_;
 		mad += std::abs(diff);
 		var += diff * diff;
 	}
 	val_MEAN_ABSOLUTE_DEVIATION = mad / n;
-	val_VARIANCE = n>1 ? var/(n-1) : 0.0;
-	val_VARIANCE_BIASED = n>1 ? var/n : 0.0;
+	val_VARIANCE = n > 1 ? var / (n - 1) : 0.0;
+	val_VARIANCE_BIASED = n > 1 ? var / n : 0.0;
 	val_STANDARD_DEVIATION = sqrt(val_VARIANCE);
 	val_STANDARD_DEVIATION_BIASED = sqrt(val_VARIANCE_BIASED);
 	val_COV = val_STANDARD_DEVIATION / mean_;
@@ -107,7 +150,7 @@ void PixelIntensityFeatures::calculate(LR& r)
 
 	// P10, 25, 75, 90, IQR, QCOD, RMAD, entropy, uniformity
 	TrivialHistogram H;
-	H.initialize(r.aux_min, r.aux_max, r.raw_pixels);
+	H.initialize(r.aux_min, r.aux_max, r.raw_pixels_3D);
 	auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
 	val_MEDIAN = median_;
 	val_P01 = p01_;
@@ -125,7 +168,7 @@ void PixelIntensityFeatures::calculate(LR& r)
 
 	// Median absolute deviation
 	double medad = 0.0;
-	for (auto& px : r.raw_pixels)
+	for (auto& px : r.raw_pixels_3D)
 		medad += std::abs(px.inten - median_);
 	val_MEDIAN_ABSOLUTE_DEVIATION = medad / n;
 
@@ -135,7 +178,7 @@ void PixelIntensityFeatures::calculate(LR& r)
 
 	// Skewness
 	Moments4 mom;
-	for (auto& px : r.raw_pixels)
+	for (auto& px : r.raw_pixels_3D)
 		mom.add(px.inten);
 	val_SKEWNESS = mom.skewness();
 
@@ -146,7 +189,7 @@ void PixelIntensityFeatures::calculate(LR& r)
 	val_EXCESS_KURTOSIS = mom.excess_kurtosis();
 
 	double sumPow5 = 0, sumPow6 = 0;
-	for (auto& px : r.raw_pixels)
+	for (auto& px : r.raw_pixels_3D)
 	{
 		double diff = px.inten - mean_;
 		sumPow5 += std::pow(diff, 5.);
@@ -162,10 +205,10 @@ void PixelIntensityFeatures::calculate(LR& r)
 	val_HYPERFLATNESS = denom == 0. ? 0. : sumPow6 / denom;
 }
 
-void PixelIntensityFeatures::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
+void PixelIntensityFeatures_3D::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
 {}
 
-void PixelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
+void PixelIntensityFeatures_3D::osized_calculate(LR& r, ImageLoader& imloader)
 {
 	// --MIN, MAX
 	val_MIN = r.aux_min;
@@ -201,7 +244,7 @@ void PixelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	// --MAD, VARIANCE, STDDEV, COV
 	double mad = 0.0,
 		var = 0.0;
-	for (auto& px : r.raw_pixels)
+	for (auto& px : r.raw_pixels_3D)
 	{
 		double diff = px.inten - mean_;
 		mad += std::abs(diff);
@@ -241,7 +284,7 @@ void PixelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 
 	// Median absolute deviation
 	double medad = 0.0;
-	for (auto& px : r.raw_pixels)
+	for (auto& px : r.raw_pixels_3D)
 		medad += std::abs(px.inten - median_);
 	val_MEDIAN_ABSOLUTE_DEVIATION = medad / n;
 
@@ -274,56 +317,56 @@ void PixelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	val_HYPERFLATNESS = mom.hyperflatness();
 }
 
-void PixelIntensityFeatures::save_value(std::vector<std::vector<double>>& fvals)
+void PixelIntensityFeatures_3D::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::INTEGRATED_INTENSITY][0] = val_INTEGRATED_INTENSITY;
-	fvals[(int)Feature2D::MEAN][0] = val_MEAN;
-	fvals[(int)Feature2D::MEDIAN][0] = val_MEDIAN;
-	fvals[(int)Feature2D::MIN][0] = val_MIN;
-	fvals[(int)Feature2D::MAX][0] = val_MAX;
-	fvals[(int)Feature2D::RANGE][0] = val_RANGE;
-	fvals[(int)Feature2D::COVERED_IMAGE_INTENSITY_RANGE][0] = val_COVERED_IMAGE_INTENSITY_RANGE;
-	fvals[(int)Feature2D::STANDARD_DEVIATION][0] = val_STANDARD_DEVIATION;
-	fvals[(int)Feature2D::STANDARD_ERROR][0] = val_STANDARD_ERROR;
-	fvals[(int)Feature2D::SKEWNESS][0] = val_SKEWNESS;
-	fvals[(int)Feature2D::KURTOSIS][0] = val_KURTOSIS;
-	fvals[(int)Feature2D::EXCESS_KURTOSIS][0] = val_EXCESS_KURTOSIS;
-	fvals[(int)Feature2D::HYPERSKEWNESS][0] = val_HYPERSKEWNESS;
-	fvals[(int)Feature2D::HYPERFLATNESS][0] = val_HYPERFLATNESS;
-	fvals[(int)Feature2D::MEAN_ABSOLUTE_DEVIATION][0] = val_MEAN_ABSOLUTE_DEVIATION;
-	fvals[(int)Feature2D::MEDIAN_ABSOLUTE_DEVIATION][0] = val_MEDIAN_ABSOLUTE_DEVIATION;
-	fvals[(int)Feature2D::ENERGY][0] = val_ENERGY;
-	fvals[(int)Feature2D::ROOT_MEAN_SQUARED][0] = val_ROOT_MEAN_SQUARED;
-	fvals[(int)Feature2D::ENTROPY][0] = val_ENTROPY;
-	fvals[(int)Feature2D::MODE][0] = val_MODE;
-	fvals[(int)Feature2D::UNIFORMITY][0] = val_UNIFORMITY;
-	fvals[(int)Feature2D::UNIFORMITY_PIU][0] = val_UNIFORMITY_PIU;
-	fvals[(int)Feature2D::P01][0] = val_P01;
-	fvals[(int)Feature2D::P10][0] = val_P10;
-	fvals[(int)Feature2D::P25][0] = val_P25;
-	fvals[(int)Feature2D::P75][0] = val_P75;
-	fvals[(int)Feature2D::P90][0] = val_P90;
-	fvals[(int)Feature2D::P99][0] = val_P99;
-	fvals[(int)Feature2D::QCOD][0] = val_QCOD;
-	fvals[(int)Feature2D::INTERQUARTILE_RANGE][0] = val_INTERQUARTILE_RANGE;
-	fvals[(int)Feature2D::QCOD][0] = val_QCOD;
-	fvals[(int)Feature2D::ROBUST_MEAN][0] = val_ROBUST_MEAN;
-	fvals[(int)Feature2D::ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = val_ROBUST_MEAN_ABSOLUTE_DEVIATION;
-	fvals[(int)Feature2D::COV][0] = val_COV;
-	fvals[(int)Feature2D::STANDARD_DEVIATION_BIASED][0] = val_STANDARD_DEVIATION_BIASED;
-	fvals[(int)Feature2D::VARIANCE][0] = val_VARIANCE;
-	fvals[(int)Feature2D::VARIANCE_BIASED][0] = val_VARIANCE_BIASED;
+	fvals[(int)Feature3D::INTEGRATED_INTENSITY][0] = val_INTEGRATED_INTENSITY;
+	fvals[(int)Feature3D::MEAN][0] = val_MEAN;
+	fvals[(int)Feature3D::MEDIAN][0] = val_MEDIAN;
+	fvals[(int)Feature3D::MIN][0] = val_MIN;
+	fvals[(int)Feature3D::MAX][0] = val_MAX;
+	fvals[(int)Feature3D::RANGE][0] = val_RANGE;
+	fvals[(int)Feature3D::COVERED_IMAGE_INTENSITY_RANGE][0] = val_COVERED_IMAGE_INTENSITY_RANGE;
+	fvals[(int)Feature3D::STANDARD_DEVIATION][0] = val_STANDARD_DEVIATION;
+	fvals[(int)Feature3D::STANDARD_ERROR][0] = val_STANDARD_ERROR;
+	fvals[(int)Feature3D::SKEWNESS][0] = val_SKEWNESS;
+	fvals[(int)Feature3D::KURTOSIS][0] = val_KURTOSIS;
+	fvals[(int)Feature3D::EXCESS_KURTOSIS][0] = val_EXCESS_KURTOSIS;
+	fvals[(int)Feature3D::HYPERSKEWNESS][0] = val_HYPERSKEWNESS;
+	fvals[(int)Feature3D::HYPERFLATNESS][0] = val_HYPERFLATNESS;
+	fvals[(int)Feature3D::MEAN_ABSOLUTE_DEVIATION][0] = val_MEAN_ABSOLUTE_DEVIATION;
+	fvals[(int)Feature3D::MEDIAN_ABSOLUTE_DEVIATION][0] = val_MEDIAN_ABSOLUTE_DEVIATION;
+	fvals[(int)Feature3D::ENERGY][0] = val_ENERGY;
+	fvals[(int)Feature3D::ROOT_MEAN_SQUARED][0] = val_ROOT_MEAN_SQUARED;
+	fvals[(int)Feature3D::ENTROPY][0] = val_ENTROPY;
+	fvals[(int)Feature3D::MODE][0] = val_MODE;
+	fvals[(int)Feature3D::UNIFORMITY][0] = val_UNIFORMITY;
+	fvals[(int)Feature3D::UNIFORMITY_PIU][0] = val_UNIFORMITY_PIU;
+	fvals[(int)Feature3D::P01][0] = val_P01;
+	fvals[(int)Feature3D::P10][0] = val_P10;
+	fvals[(int)Feature3D::P25][0] = val_P25;
+	fvals[(int)Feature3D::P75][0] = val_P75;
+	fvals[(int)Feature3D::P90][0] = val_P90;
+	fvals[(int)Feature3D::P99][0] = val_P99;
+	fvals[(int)Feature3D::QCOD][0] = val_QCOD;
+	fvals[(int)Feature3D::INTERQUARTILE_RANGE][0] = val_INTERQUARTILE_RANGE;
+	fvals[(int)Feature3D::QCOD][0] = val_QCOD;
+	fvals[(int)Feature3D::ROBUST_MEAN][0] = val_ROBUST_MEAN;
+	fvals[(int)Feature3D::ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = val_ROBUST_MEAN_ABSOLUTE_DEVIATION;
+	fvals[(int)Feature3D::COV][0] = val_COV;
+	fvals[(int)Feature3D::STANDARD_DEVIATION_BIASED][0] = val_STANDARD_DEVIATION_BIASED;
+	fvals[(int)Feature3D::VARIANCE][0] = val_VARIANCE;
+	fvals[(int)Feature3D::VARIANCE_BIASED][0] = val_VARIANCE_BIASED;
 }
 
-void PixelIntensityFeatures::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
+void PixelIntensityFeatures_3D::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
 {
 	size_t jobSize = roi_labels.size(),
 		workPerThread = jobSize / n_threads;
 
-	runParallel(PixelIntensityFeatures::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
+	runParallel(PixelIntensityFeatures_3D::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
 }
 
-void PixelIntensityFeatures::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void PixelIntensityFeatures_3D::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	// Calculate the feature for each batch ROI item 
 	for (auto i = firstitem; i < lastitem; i++)
@@ -337,25 +380,25 @@ void PixelIntensityFeatures::parallel_process_1_batch(size_t firstitem, size_t l
 			continue;
 
 		// Calculate the feature and save it in ROI's csv-friendly buffer 'fvals'
-		PixelIntensityFeatures f;
+		PixelIntensityFeatures_3D f;
 		f.calculate(r);
 		f.save_value(r.fvals);
 	}
 }
 
-void PixelIntensityFeatures::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void PixelIntensityFeatures_3D::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-		PixelIntensityFeatures f;
+		PixelIntensityFeatures_3D f;
 		f.calculate(r);
 		f.save_value(r.fvals);
 	}
 }
 
-void PixelIntensityFeatures::cleanup_instance()
+void PixelIntensityFeatures_3D::cleanup_instance()
 {
 	val_INTEGRATED_INTENSITY = 0;
 	val_MEAN = 0;
@@ -379,11 +422,11 @@ void PixelIntensityFeatures::cleanup_instance()
 	val_MODE = 0;
 	val_UNIFORMITY = 0;
 	val_UNIFORMITY_PIU = 0;
-	val_P01 = 0; 
-	val_P10 = 0; 
-	val_P25 = 0; 
-	val_P75 = 0; 
-	val_P90 = 0; 
+	val_P01 = 0;
+	val_P10 = 0;
+	val_P25 = 0;
+	val_P75 = 0;
+	val_P90 = 0;
 	val_P99 = 0;
 	val_QCOD = 0;
 	val_INTERQUARTILE_RANGE = 0;

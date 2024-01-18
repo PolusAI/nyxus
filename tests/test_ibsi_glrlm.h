@@ -31,7 +31,7 @@ static std::unordered_map<std::string, float> IBSI_glrlm_values {
     {"GLRLM_RE", 2.17}
 };
 
-void test_ibsi_glrlm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
+void test_ibsi_glrlm_feature(const Feature2D& feature, const std::string& feature_name) {
 
     double total = 0;
     

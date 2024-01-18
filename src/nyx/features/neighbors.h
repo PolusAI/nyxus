@@ -12,6 +12,19 @@
 class NeighborsFeature : public FeatureMethod
 {
 public:
+
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset = {
+		Nyxus::Feature2D::NUM_NEIGHBORS,
+		Nyxus::Feature2D::PERCENT_TOUCHING,
+		Nyxus::Feature2D::CLOSEST_NEIGHBOR1_DIST,
+		Nyxus::Feature2D::CLOSEST_NEIGHBOR1_ANG,
+		Nyxus::Feature2D::CLOSEST_NEIGHBOR2_DIST,
+		Nyxus::Feature2D::CLOSEST_NEIGHBOR2_ANG,
+		Nyxus::Feature2D::ANG_BW_NEIGHBORS_MEAN,
+		Nyxus::Feature2D::ANG_BW_NEIGHBORS_STDDEV,
+		Nyxus::Feature2D::ANG_BW_NEIGHBORS_MODE
+	};
+
 	NeighborsFeature();
 
 	void calculate(LR& r);
@@ -23,20 +36,8 @@ public:
 
 	// Compatibility with manual reduce
 	static void manual_reduce();
-	static bool required(const FeatureSet& fs) 
-	{ 
-		return fs.anyEnabled ({ 
-			NUM_NEIGHBORS,
-			PERCENT_TOUCHING,
-			CLOSEST_NEIGHBOR1_DIST,
-			CLOSEST_NEIGHBOR1_ANG,
-			CLOSEST_NEIGHBOR2_DIST,
-			CLOSEST_NEIGHBOR2_ANG,
-			ANG_BW_NEIGHBORS_MEAN,
-			ANG_BW_NEIGHBORS_STDDEV,
-			ANG_BW_NEIGHBORS_MODE	
-			}); 
-	}
+	static bool required(const FeatureSet& fs);
+
 private:
 	int collision_radius = 0;
 	static bool aabbNoOverlap(

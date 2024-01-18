@@ -3,6 +3,8 @@
 #include "gldzm.h"
 #include "../environment.h"
 
+using namespace Nyxus;
+
 GLDZMFeature::GLDZMFeature() : FeatureMethod("GLDZMFeature")
 {
 	provide_features (GLDZMFeature::featureset);
@@ -447,24 +449,24 @@ template <class Imgmatrx> void GLDZMFeature::calc_features (const std::vector<do
 
 void GLDZMFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
-	fvals[GLDZM_SDE][0] = f_SDE;
-	fvals[GLDZM_LDE][0] = f_LDE;
-	fvals[GLDZM_LGLZE][0] = f_LGLZE;
-	fvals[GLDZM_HGLZE][0] = f_HGLZE;
-	fvals[GLDZM_SDLGLE][0] = f_SDLGLE;
-	fvals[GLDZM_SDHGLE][0] = f_SDHGLE;
-	fvals[GLDZM_LDLGLE][0] = f_LDLGLE;
-	fvals[GLDZM_LDHGLE][0] = f_LDHGLE;
-	fvals[GLDZM_GLNU][0] = f_GLNU;
-	fvals[GLDZM_GLNUN][0] = f_GLNUN;
-	fvals[GLDZM_ZDNU][0] = f_ZDNU;
-	fvals[GLDZM_ZDNUN][0] = f_ZDNUN;
-	fvals[GLDZM_ZP][0] = f_ZP;
-	fvals[GLDZM_GLM][0] = f_GLM;
-	fvals[GLDZM_GLV][0] = f_GLV;
-	fvals[GLDZM_ZDM][0] = f_ZDM;
-	fvals[GLDZM_ZDV][0] = f_ZDV;
-	fvals[GLDZM_ZDE][0] = f_ZDE;
+	fvals[(int)Feature2D::GLDZM_SDE][0] = f_SDE;
+	fvals[(int)Feature2D::GLDZM_LDE][0] = f_LDE;
+	fvals[(int)Feature2D::GLDZM_LGLZE][0] = f_LGLZE;
+	fvals[(int)Feature2D::GLDZM_HGLZE][0] = f_HGLZE;
+	fvals[(int)Feature2D::GLDZM_SDLGLE][0] = f_SDLGLE;
+	fvals[(int)Feature2D::GLDZM_SDHGLE][0] = f_SDHGLE;
+	fvals[(int)Feature2D::GLDZM_LDLGLE][0] = f_LDLGLE;
+	fvals[(int)Feature2D::GLDZM_LDHGLE][0] = f_LDHGLE;
+	fvals[(int)Feature2D::GLDZM_GLNU][0] = f_GLNU;
+	fvals[(int)Feature2D::GLDZM_GLNUN][0] = f_GLNUN;
+	fvals[(int)Feature2D::GLDZM_ZDNU][0] = f_ZDNU;
+	fvals[(int)Feature2D::GLDZM_ZDNUN][0] = f_ZDNUN;
+	fvals[(int)Feature2D::GLDZM_ZP][0] = f_ZP;
+	fvals[(int)Feature2D::GLDZM_GLM][0] = f_GLM;
+	fvals[(int)Feature2D::GLDZM_GLV][0] = f_GLV;
+	fvals[(int)Feature2D::GLDZM_ZDM][0] = f_ZDM;
+	fvals[(int)Feature2D::GLDZM_ZDV][0] = f_ZDV;
+	fvals[(int)Feature2D::GLDZM_ZDE][0] = f_ZDE;
 }
 
 void GLDZMFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)

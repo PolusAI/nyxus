@@ -15,9 +15,32 @@
 #include "../features/gabor.h"
 #include "../output_writers.h" 
 #include "../arrow_output_stream.h"
+#include "../strpat.h"
 
 namespace py = pybind11;
 using namespace Nyxus;
+
+namespace Nyxus {
+    int processDataset(
+        const std::vector<std::string>& intensFiles,
+        const std::vector<std::string>& labelFiles,
+        int numFastloaderThreads,
+        int numSensemakerThreads,
+        int numReduceThreads,
+        int min_online_roi_size,
+        const SaveOption saveOption,
+        const std::string& outputPath);
+
+    int processDataset_3D(
+        const std::vector <Imgfile3D_layoutA>& intensFiles,
+        const std::vector <Imgfile3D_layoutA>& labelFiles,
+        int numFastloaderThreads,
+        int numSensemakerThreads,
+        int numReduceThreads,
+        int min_online_roi_size,
+        const SaveOption saveOption,
+        const std::string& outputPath);
+};
 
 using ParameterTypes = std::variant<int, float, double, unsigned int, std::vector<double>, std::vector<std::string>>;
 
@@ -44,6 +67,7 @@ inline py::array_t<typename Sequence::value_type> as_pyarray(Sequence &&seq)
 }
 
 void initialize_environment(
+    int n_dim,
     const std::vector<std::string> &features,
     int neighbor_distance,
     float pixels_per_micron,
@@ -56,6 +80,7 @@ void initialize_environment(
     float min_intensity,
     float max_intensity)
 {
+    theEnvironment.set_dim(n_dim),
     theEnvironment.recognizedFeatureNames = features;
     theEnvironment.set_pixel_distance(neighbor_distance);
     theEnvironment.set_verbosity_level (0);
@@ -66,7 +91,7 @@ void initialize_environment(
     theEnvironment.ibsi_compliance = ibsi;
 
     // Throws exception if invalid feature is supplied.
-    theEnvironment.process_feature_list();
+    theEnvironment.expand_featuregroups();
     theFeatureMgr.compile();
     theFeatureMgr.apply_user_selection();
 
@@ -154,7 +179,7 @@ py::tuple featurize_directory_imp (
     const std::string &output_path="")
 {
     // Check and cache the file pattern
-    if (! theEnvironment.check_file_pattern(file_pattern))
+    if (! theEnvironment.check_2d_file_pattern(file_pattern))
         throw std::invalid_argument ("Invalid filepattern " + file_pattern);
     theEnvironment.set_file_pattern(file_pattern);
 
@@ -167,7 +192,7 @@ py::tuple featurize_directory_imp (
 
     // Read image pairs from the intensity and label directories applying the filepattern
     std::vector<std::string> intensFiles, labelFiles;
-    int errorCode = Nyxus::read_dataset(
+    int errorCode = Nyxus::read_2D_dataset(
         intensity_dir,
         labels_dir,
         theEnvironment.get_file_pattern(), 
@@ -223,6 +248,95 @@ py::tuple featurize_directory_imp (
         pyNumData = pyNumData.reshape ({ nRows, pyNumData.size() / nRows });
         return py::make_tuple (pyHeader, pyStrData, pyNumData);
     } 
+
+    return py::make_tuple();
+}
+
+py::tuple featurize_directory_3D_imp(
+    const std::string& intensity_dir,
+    const std::string& labels_dir,
+    const std::string& file_pattern,
+    const std::string& output_type,
+    const std::string& output_path = "")
+{
+    // Set dimensionality =3 to let all the modules know the context
+    theEnvironment.set_dim(3);
+    
+    // Check and cache the file pattern
+    if (!theEnvironment.check_3d_file_pattern(file_pattern))
+        throw std::invalid_argument("Invalid file pattern " + file_pattern);
+
+    // No need to set the raw file pattern separately for 3D
+    //      theEnvironment.set_file_pattern(file_pattern);
+
+    // Cache the directories
+    theEnvironment.intensity_dir = intensity_dir;
+    theEnvironment.labels_dir = labels_dir;
+
+    // Set the whole-slide/multi-ROI flag
+    theEnvironment.singleROI = intensity_dir == labels_dir;
+
+    // Read image pairs from the intensity and label directories applying the filepattern
+    std::vector <Imgfile3D_layoutA> intensFiles, labelFiles;
+    int errorCode = Nyxus::read_3D_dataset(
+        intensity_dir,
+        labels_dir,
+        theEnvironment.file_pattern_3D,
+        "./",   // output directory
+        theEnvironment.intSegMapDir,
+        theEnvironment.intSegMapFile,
+        true,
+        intensFiles, labelFiles);
+
+    if (errorCode)
+        throw std::runtime_error("Error traversing the dataset");
+
+    // We're good to extract features. Reset the feature results cache
+    theResultsCache.clear();
+
+    // Enforce flag 'separateCsv' to be TRUE to prevent flushing intermediate results after each input image. We're going to return the result in a buffer, not leave file(s)
+    theEnvironment.separateCsv = false;
+
+    // Process the image sdata
+    int min_online_roi_size = 0;
+
+    theEnvironment.saveOption = [&output_type]() {
+        if (output_type == "arrowipc") {
+            return SaveOption::saveArrowIPC;
+        }
+        else if (output_type == "parquet") {
+            return SaveOption::saveParquet;
+        }
+        else { return SaveOption::saveBuffer; }
+    }();
+
+    errorCode = processDataset_3D(
+        intensFiles,
+        labelFiles,
+        theEnvironment.n_loader_threads,
+        theEnvironment.n_pixel_scan_threads,
+        theEnvironment.n_reduce_threads,
+        min_online_roi_size,
+        theEnvironment.saveOption,
+        output_path);
+
+    if (errorCode)
+        throw std::runtime_error("Error " + std::to_string(errorCode) + " occurred during dataset processing");
+
+    // Output the result
+    if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
+    {
+
+        auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
+        auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
+        auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+
+        // Shape the user-facing dataframe
+        auto nRows = theResultsCache.get_num_rows();
+        pyStrData = pyStrData.reshape({ nRows, pyStrData.size() / nRows });
+        pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+        return py::make_tuple(pyHeader, pyStrData, pyNumData);
+    }
 
     return py::make_tuple();
 }
@@ -402,7 +516,7 @@ py::tuple findrelations_imp(
         std::string& child_file_pattern
     )
 {
-    if (! theEnvironment.check_file_pattern(parent_file_pattern) || ! theEnvironment.check_file_pattern(child_file_pattern))
+    if (! theEnvironment.check_2d_file_pattern(parent_file_pattern) || ! theEnvironment.check_2d_file_pattern(child_file_pattern))
         throw std::invalid_argument("Filepattern provided is not valid.");
 
     theResultsCache.clear();
@@ -587,6 +701,7 @@ PYBIND11_MODULE(backend, m)
     
     m.def("initialize_environment", &initialize_environment, "Environment initialization");
     m.def("featurize_directory_imp", &featurize_directory_imp, "Calculate features of images defined by intensity and mask image collection directories");
+    m.def("featurize_directory_3D_imp", &featurize_directory_3D_imp, "Calculate 3D features of images defined by intensity and mask image collection directories");
     m.def("featurize_montage_imp", &featurize_montage_imp, "Calculate features of images defined by intensity and mask image collection directories");
     m.def("featurize_fname_lists_imp", &featurize_fname_lists_imp, "Calculate features of intensity-mask image pairs defined by lists of image file names");
     m.def("findrelations_imp", &findrelations_imp, "Find relations in segmentation mask images");
@@ -626,6 +741,11 @@ void initialize_environment(
     uint32_t n_loader_threads);
 
 py::tuple featurize_directory_imp(
+    const std::string& intensity_dir,
+    const std::string& labels_dir,
+    const std::string& file_pattern);
+
+py::tuple featurize_directory_3D_imp(
     const std::string& intensity_dir,
     const std::string& labels_dir,
     const std::string& file_pattern);

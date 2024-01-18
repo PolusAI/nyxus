@@ -19,24 +19,24 @@ public:
 
 	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
 	// in the feature group nickname expansion, and in the feature value output 
-	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset = 
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset = 
 	{ 
-		GLSZM_SAE,		// Small Area Emphasis
-		GLSZM_LAE,		// Large Area Emphasis
-		GLSZM_GLN,		// Gray Level Non - Uniformity
-		GLSZM_GLNN,		// Gray Level Non - Uniformity Normalized
-		GLSZM_SZN,		// Size - Zone Non - Uniformity
-		GLSZM_SZNN,		// Size - Zone Non - Uniformity Normalized
-		GLSZM_ZP,		// Zone Percentage
-		GLSZM_GLV,		// Gray Level Variance
-		GLSZM_ZV,		// Zone Variance
-		GLSZM_ZE,		// Zone Entropy
-		GLSZM_LGLZE,	// Low Gray Level Zone Emphasis
-		GLSZM_HGLZE,	// High Gray Level Zone Emphasis
-		GLSZM_SALGLE,	// Small Area Low Gray Level Emphasis
-		GLSZM_SAHGLE,	// Small Area High Gray Level Emphasis
-		GLSZM_LALGLE,	// Large Area Low Gray Level Emphasis
-		GLSZM_LAHGLE,	// Large Area High Gray Level Emphasis
+		Nyxus::Feature2D::GLSZM_SAE,		// Small Area Emphasis
+		Nyxus::Feature2D::GLSZM_LAE,		// Large Area Emphasis
+		Nyxus::Feature2D::GLSZM_GLN,		// Gray Level Non - Uniformity
+		Nyxus::Feature2D::GLSZM_GLNN,		// Gray Level Non - Uniformity Normalized
+		Nyxus::Feature2D::GLSZM_SZN,		// Size - Zone Non - Uniformity
+		Nyxus::Feature2D::GLSZM_SZNN,		// Size - Zone Non - Uniformity Normalized
+		Nyxus::Feature2D::GLSZM_ZP,		// Zone Percentage
+		Nyxus::Feature2D::GLSZM_GLV,		// Gray Level Variance
+		Nyxus::Feature2D::GLSZM_ZV,		// Zone Variance
+		Nyxus::Feature2D::GLSZM_ZE,		// Zone Entropy
+		Nyxus::Feature2D::GLSZM_LGLZE,	// Low Gray Level Zone Emphasis
+		Nyxus::Feature2D::GLSZM_HGLZE,	// High Gray Level Zone Emphasis
+		Nyxus::Feature2D::GLSZM_SALGLE,	// Small Area Low Gray Level Emphasis
+		Nyxus::Feature2D::GLSZM_SAHGLE,	// Small Area High Gray Level Emphasis
+		Nyxus::Feature2D::GLSZM_LALGLE,	// Large Area Low Gray Level Emphasis
+		Nyxus::Feature2D::GLSZM_LAHGLE,	// Large Area High Gray Level Emphasis
 	};
 
 	GLSZMFeature ();
@@ -111,7 +111,7 @@ private:
 	double sum_p = 0;
 
 	// Helper to check if feature is requested by user
-	bool need (Nyxus::AvailableFeatures f);
+	bool need (Nyxus::Feature2D f);
 
 	// Sum of P required by GLN, GLNN, LGLZE, HGLZE
 	std::vector<double> sj;

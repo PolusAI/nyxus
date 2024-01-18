@@ -32,7 +32,7 @@ static std::unordered_map<std::string, float> glrlm_values {
     {"GLRLM_RE", 1.58115}
 };
 
-void test_glrlm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
+void test_glrlm_feature(const Feature2D& feature, const std::string& feature_name) {
 
     double total = 0;
     

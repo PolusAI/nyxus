@@ -26,13 +26,13 @@ public:
 
 	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
 	// in the feature group nickname expansion, and in the feature value output 
-	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
 	{
-		NGTDM_COARSENESS,
-		NGTDM_CONTRAST,
-		NGTDM_BUSYNESS,
-		NGTDM_COMPLEXITY,
-		NGTDM_STRENGTH
+		Nyxus::Feature2D::NGTDM_COARSENESS,
+		Nyxus::Feature2D::NGTDM_CONTRAST,
+		Nyxus::Feature2D::NGTDM_BUSYNESS,
+		Nyxus::Feature2D::NGTDM_COMPLEXITY,
+		Nyxus::Feature2D::NGTDM_STRENGTH
 	};
 
 	NGTDMFeature(); 

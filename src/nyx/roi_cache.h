@@ -33,6 +33,7 @@ public:
 	bool nontrivial_roi (size_t memory_limit);
 	bool has_bad_data();
 	size_t get_ram_footprint_estimate();
+	size_t get_ram_footprint_estimate_3D();
 	void recycle_aux_obj (RoiDataCacheItem itm);
 	bool have_oversize_roi();
 	bool caching_permitted();
@@ -41,6 +42,7 @@ public:
 	bool blacklisted = false;
 
 	std::vector <Pixel2> raw_pixels;
+	std::vector <Pixel3> raw_pixels_3D;
 	OutOfRamPixelCloud raw_pixels_NT;
 	unsigned int aux_area = 0;
 	PixIntens aux_min, aux_max;
@@ -48,7 +50,7 @@ public:
 	std::vector<Pixel2> convHull_CH; 
 
 	std::vector<std::vector<StatsReal>> fvals;
-	std::vector<StatsReal> get_fvals(AvailableFeatures af);
+	std::vector<StatsReal> get_fvals (int fcode);
 	void initialize_fvals();
 
 	StatsReal aux_M2,

@@ -30,7 +30,7 @@ static std::unordered_map<std::string, float> IBSI_intensity_values {
     {"ROOT_MEAN_SQUARED", 2.77}
 };
 
-void test_intensity_feature(const AvailableFeatures& feature, const std::string& feature_name, bool round = false) {
+void test_intensity_feature(const Feature2D& feature, const std::string& feature_name, bool round = false) {
     std::vector<NyxusPixel> combined_image;
     std::vector<NyxusPixel> combined_mask;
 

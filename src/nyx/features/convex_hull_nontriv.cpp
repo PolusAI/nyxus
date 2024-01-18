@@ -4,17 +4,19 @@
 #include "image_matrix_nontriv.h"
 #include "convex_hull.h"
 
+using namespace Nyxus;
+
 ConvexHullFeature::ConvexHullFeature() : FeatureMethod("ConvexHullFeature")
 {
-	provide_features ({ CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY });
-	add_dependencies ({ PERIMETER });
+	provide_features ({ Feature2D::CONVEX_HULL_AREA, Feature2D::SOLIDITY, Feature2D::CIRCULARITY });
+	add_dependencies ({ Feature2D::PERIMETER });
 }
 
 void ConvexHullFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals [CONVEX_HULL_AREA][0] = area;
-	fvals [SOLIDITY][0] = solidity; 
-	fvals [CIRCULARITY][0] = circularity;
+	fvals [(int)Feature2D::CONVEX_HULL_AREA][0] = area;
+	fvals [(int)Feature2D::SOLIDITY][0] = solidity;
+	fvals [(int)Feature2D::CIRCULARITY][0] = circularity;
 }
 
 void ConvexHullFeature::cleanup_instance()
@@ -30,7 +32,7 @@ void ConvexHullFeature::calculate (LR& r)
 	// Calculate related features
 	double s_hull = polygon_area(r.convHull_CH),
 		s_roi = r.raw_pixels.size(), 
-		p = r.fvals[PERIMETER][0];
+		p = r.fvals[(int)Feature2D::PERIMETER][0];
 	area = s_hull;
 	solidity = s_roi / s_hull;
 	circularity = sqrt(4.0 * M_PI * s_roi / (p*p));
@@ -176,7 +178,7 @@ void ConvexHullFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	// Calculate related features
 	double s_hull = polygon_area(r.convHull_CH),
 		s_roi = r.raw_pixels_NT.size(),
-		p = r.fvals[PERIMETER][0];
+		p = r.fvals[(int)Feature2D::PERIMETER][0];
 	area = s_hull;
 	solidity = s_roi / s_hull;
 	circularity = sqrt(4.0 * M_PI * s_roi / (p * p));

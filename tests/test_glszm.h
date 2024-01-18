@@ -32,7 +32,7 @@ static std::unordered_map<std::string, float> glszm_values {
     {"GLSZM_ZE", 1.76906}
 };
 
-void test_glszm_feature(const AvailableFeatures& feature, const std::string& feature_name) 
+void test_glszm_feature(const Feature2D& feature, const std::string& feature_name) 
 {
 
     double total = 0;

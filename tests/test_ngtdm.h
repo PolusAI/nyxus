@@ -21,7 +21,7 @@ static std::unordered_map<std::string, float> ngtdm_values {
     {"NGTDM_STRENGTH", 0.015942}
 };
 
-void test_ngtdm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
+void test_ngtdm_feature(const Feature2D& feature, const std::string& feature_name) {
 
     double total = 0;
     

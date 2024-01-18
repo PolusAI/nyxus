@@ -6,11 +6,6 @@
 
 #include "gpu.h"
 
-
-
-
-
-//???? ----------
 __global__ void kerTest1(
     double* outdata,
     size_t cloudlen)

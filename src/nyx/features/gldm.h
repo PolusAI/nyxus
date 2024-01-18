@@ -26,22 +26,22 @@ public:
 
 	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
 	// in the feature group nickname expansion, and in the feature value output 
-	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
 	{
-		GLDM_SDE,		// Small Dependence Emphasis
-		GLDM_LDE,		// Large Dependence Emphasis
-		GLDM_GLN,		// Gray Level Non-Uniformity
-		GLDM_DN,		// Dependence Non-Uniformity
-		GLDM_DNN,		// Dependence Non-Uniformity Normalized
-		GLDM_GLV,		// Gray Level Variance
-		GLDM_DV,		// Dependence Variance
-		GLDM_DE,		// Dependence Entropy
-		GLDM_LGLE,		// Low Gray Level Emphasis
-		GLDM_HGLE,		// High Gray Level Emphasis
-		GLDM_SDLGLE,	// Small Dependence Low Gray Level Emphasis
-		GLDM_SDHGLE,	// Small Dependence High Gray Level Emphasis
-		GLDM_LDLGLE,	// Large Dependence Low Gray Level Emphasis
-		GLDM_LDHGLE	// Large Dependence High Gray Level Emphasis
+		Nyxus::Feature2D::GLDM_SDE,		// Small Dependence Emphasis
+		Nyxus::Feature2D::GLDM_LDE,		// Large Dependence Emphasis
+		Nyxus::Feature2D::GLDM_GLN,		// Gray Level Non-Uniformity
+		Nyxus::Feature2D::GLDM_DN,		// Dependence Non-Uniformity
+		Nyxus::Feature2D::GLDM_DNN,		// Dependence Non-Uniformity Normalized
+		Nyxus::Feature2D::GLDM_GLV,		// Gray Level Variance
+		Nyxus::Feature2D::GLDM_DV,		// Dependence Variance
+		Nyxus::Feature2D::GLDM_DE,		// Dependence Entropy
+		Nyxus::Feature2D::GLDM_LGLE,		// Low Gray Level Emphasis
+		Nyxus::Feature2D::GLDM_HGLE,		// High Gray Level Emphasis
+		Nyxus::Feature2D::GLDM_SDLGLE,	// Small Dependence Low Gray Level Emphasis
+		Nyxus::Feature2D::GLDM_SDHGLE,	// Small Dependence High Gray Level Emphasis
+		Nyxus::Feature2D::GLDM_LDLGLE,	// Large Dependence Low Gray Level Emphasis
+		Nyxus::Feature2D::GLDM_LDHGLE	// Large Dependence High Gray Level Emphasis
 	};
 
 	static bool required(const FeatureSet& fs) 

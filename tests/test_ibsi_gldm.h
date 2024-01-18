@@ -32,7 +32,7 @@ static std::unordered_map<std::string, float> IBSI_gldm_values {
 };
 
 
-void test_ibsi_gldm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
+void test_ibsi_gldm_feature(const Feature2D& feature, const std::string& feature_name) {
     double total = 0;
     
     LR roidata;
