@@ -40,7 +40,7 @@ namespace Nyxus
     }
 #endif
 
-#ifdef __unix
+#ifdef __linux__
     // Source #1: https://www.gnu.org/software/libc/manual/html_node/Query-Memory-Parameters.html
     // Source #2: https://man7.org/linux/man-pages/man3/sysconf.3.html
 #include <unistd.h>
