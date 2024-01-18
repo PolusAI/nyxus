@@ -200,7 +200,7 @@ bool StringPattern::filepatt_to_grammar(const std::string& filePatt, std::vector
 {
 	grammar.clear();
 	const char* delimiters = "_ -";
-	char* dupFP = _strdup(filePatt.c_str());
+	char* dupFP = strdup(filePatt.c_str());
 	char* token = std::strtok(dupFP, delimiters);
 	while (token)
 	{
