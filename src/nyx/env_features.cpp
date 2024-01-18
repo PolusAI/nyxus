@@ -69,30 +69,6 @@ bool Environment::spellcheck_raw_featurelist(const std::string& comma_separated_
 			continue;
 
 		auto s_uppr = Nyxus::toupper(s);
-
-		/*
-		if (s_uppr == FEA_NICK_ALL ||
-			s_uppr == FEA_NICK_ALL_INTENSITY ||
-			s_uppr == FEA_NICK_ALL_MORPHOLOGY ||
-			s_uppr == FEA_NICK_BASIC_MORPHOLOGY ||
-			s_uppr == FEA_NICK_ALL_GLCM ||
-			s_uppr == FEA_NICK_ALL_GLRLM ||
-			s_uppr == FEA_NICK_ALL_GLDZM ||
-			s_uppr == FEA_NICK_ALL_GLSZM ||
-			s_uppr == FEA_NICK_ALL_GLDM ||
-			s_uppr == FEA_NICK_ALL_NGLDM ||
-			s_uppr == FEA_NICK_ALL_NGTDM ||
-			s_uppr == FEA_NICK_ALL_BUT_GABOR ||
-			s_uppr == FEA_NICK_ALL_BUT_GLCM ||
-			s_uppr == FEA_NICK_ALL_EASY ||
-			s_uppr == FEA_NICK_ALL_NEIG ||
-			s_uppr == FEA_NICK_2DMOMENTS)
-		{
-			fnames.push_back(s_uppr);
-			continue;
-		}
-		*/
-
 		if (dim() == 2)
 		{
 			// Is feature found among 2D features?
@@ -191,13 +167,11 @@ bool Environment::spellcheck_raw_featurelist(const std::string& comma_separated_
 }
 
 // Returns:
-//		true to stop expanding other groups (s is exclusive)
-//		false to continue expanding other groups (s is additive)
+//		true if s is recognized as a group name
+//		false if not recognized (s may be an individual feature name)
 //
 bool Environment::expand_2D_featuregroup (const std::string & s)
 {
-	// mutually exclusive groups:
-
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_ALL))
 	{
 		Nyxus::theFeatureSet.enableAll();
@@ -233,12 +207,10 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 		return true;
 	}
 
-	// additive groups:
-
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_INTENSITY))
 	{
 		theFeatureSet.enableFeatures(PixelIntensityFeatures::featureset);
-		return false;	// additive
+		return true;
 	}
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_MORPHOLOGY))
 	{
@@ -273,7 +245,7 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 			Feature2D::CIRCULARITY,
 			Feature2D::MASS_DISPLACEMENT };
 		theFeatureSet.enableFeatures(F);
-		return false;	// additive
+		return true;
 	}
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_BASIC_MORPHOLOGY))
 	{
@@ -287,56 +259,56 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 			Feature2D::BBOX_HEIGHT,
 			Feature2D::BBOX_WIDTH };
 		theFeatureSet.enableFeatures(F);
-		return false;	// additive
+		return true;
 	}
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_GLCM))
 	{
 		theFeatureSet.enableFeatures(GLCMFeature::featureset);
-		return false;
+		return true;
 	}
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_GLRLM))
 	{
 		theFeatureSet.enableFeatures(GLRLMFeature::featureset);
-		return false;
+		return true;
 	}
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_GLDZM))
 	{
 		theFeatureSet.enableFeatures(GLDZMFeature::featureset);
-		return false;
+		return true;
 	}
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_GLSZM))
 	{
 		theFeatureSet.enableFeatures(GLSZMFeature::featureset);
-		return false;
+		return true;
 	}
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_GLDM))
 	{
 		theFeatureSet.enableFeatures(GLDMFeature::featureset);
-		return false;
+		return true;
 	}
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_NGLDM))
 	{
 		theFeatureSet.enableFeatures(NGLDMfeature::featureset);
-		return false;
+		return true;
 	}
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_NGTDM))
 	{
 		theFeatureSet.enableFeatures(NGTDMFeature::featureset);
-		return false;
+		return true;
 	}
 
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_MOMENTS))
 	{
 		theFeatureSet.enableFeatures(ImageMomentsFeature::featureset);
-		return false;
+		return true;
 	}
 
-	return false;	// reaching this line is abnormal
+	return false;
 }
 
 // Returns:
-//		true to stop expanding other groups (s is exclusive)
-//		false to continue expanding other groups (s is additive)
+//		true if s is recognized as a group name
+//		false if not recognized (s may be an individual feature name)
 //
 bool Environment::expand_3D_featuregroup (const std::string& s)
 {
@@ -425,7 +397,7 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 		return true;
 	}
 
-	return false;	// reaching this line is abnormal
+	return false;
 }
 
 void Environment::expand_featuregroups()
@@ -438,20 +410,14 @@ void Environment::expand_featuregroups()
 
 		if (dim() == 2)
 		{
-			bool exclusive = expand_2D_featuregroup (s);
-			if (exclusive)
-				break;
-			else
-				continue;
+			if (expand_2D_featuregroup (s))
+				return;
 		}
 
 		if (dim() == 3)
 		{
-			bool exclusive = expand_3D_featuregroup (s);
-			if (exclusive)
-				break;
-			else
-				continue;
+			if (expand_3D_featuregroup (s))
+				return;
 		}
 
 		// 's' is an individual feature name, not feature group name. Process it now
