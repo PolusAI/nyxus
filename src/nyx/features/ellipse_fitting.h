@@ -48,7 +48,7 @@ public:
 	/// @return 
 	double get_roundness();
 
-	static bool required (const FeatureSet& fs) { return fs.anyEnabled ({ MAJOR_AXIS_LENGTH, MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION, ROUNDNESS }); }
+	static bool required (const FeatureSet& fs); 
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 private:

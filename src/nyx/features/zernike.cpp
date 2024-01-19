@@ -32,22 +32,24 @@
 #include "../roi_cache.h"
 #include "zernike.h"
 
+using namespace Nyxus;
+
 int ZernikeFeature::num_feature_values_calculated = 0;
 
 ZernikeFeature::ZernikeFeature() : FeatureMethod("ZernikeFeature")
 {
-	provide_features ({ ZERNIKE2D });
+	provide_features ({ Feature2D::ZERNIKE2D });
 }
 
 void ZernikeFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {} // Not supporting
 
 void ZernikeFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
-	fvals[ZERNIKE2D].clear();
+	fvals[(int)Feature2D::ZERNIKE2D].clear();
 	for (int i=0; i<ZernikeFeature::num_feature_values_calculated; i++)
 	{
 		auto f = coeffs[i];
-		fvals[ZERNIKE2D].push_back(f);
+		fvals[(int)Feature2D::ZERNIKE2D].push_back(f);
 	}
 }
 

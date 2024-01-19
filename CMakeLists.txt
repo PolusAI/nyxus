@@ -167,6 +167,7 @@ set(SOURCE
 	src/nyx/features/image_moments.cpp
 	src/nyx/features/image_moments_nontriv.cpp
 	src/nyx/features/intensity.cpp
+	src/nyx/features/intensity_3d.cpp
 	src/nyx/features/neighbors.cpp
 	src/nyx/features/ngldm.cpp
 	src/nyx/features/ngtdm.cpp
@@ -185,6 +186,7 @@ set(SOURCE
 	src/nyx/dirs_and_files.cpp
 	src/nyx/environment.cpp
 	src/nyx/environment_basic.cpp
+	src/nyx/env_features.cpp
 	src/nyx/feature_method.cpp
 	src/nyx/feature_mgr.cpp
 	src/nyx/feature_mgr_init.cpp
@@ -206,6 +208,7 @@ set(SOURCE
 	src/nyx/roi_cache.cpp
 	src/nyx/roi_cache_basic.cpp
 	src/nyx/scan_fastloader_way.cpp
+	src/nyx/strpat.cpp
 )
 
 

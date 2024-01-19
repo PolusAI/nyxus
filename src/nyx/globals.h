@@ -27,7 +27,6 @@ namespace py = pybind11;
 #endif
 
 namespace Nyxus
-
 {
 	// Permanent column names of the feature output table
 	const char colname_intensity_image[] = "intensity_image",
@@ -40,11 +39,15 @@ namespace Nyxus
 
 	bool scanFilePairParallel(const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads, int filepair_index, int tot_num_filepairs);
 	std::string getPureFname(const std::string& fpath);
-	int processDataset(const std::vector<std::string>& intensFiles, const std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int numReduceThreads, int min_online_roi_size, const SaveOption saveOption, const std::string& outputPath);
+//	int processDataset(const std::vector<std::string>& intensFiles, const std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int numReduceThreads, int min_online_roi_size, const SaveOption saveOption, const std::string& outputPath);
+//	int processDataset_3D(const std::vector <Imgfile3D_layoutA>& intensFiles, const std::vector <Imgfile3D_layoutA>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int numReduceThreads, int min_online_roi_size, const SaveOption saveOption, const std::string& outputPath);
 	bool gatherRoisMetrics(const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads);
-	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit);
+	bool gatherRoisMetrics_3D(const std::string& intens_fpath, const std::string& label_fpath, const std::vector<std::string>& z_indices);	
+	bool processTrivialRois(const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit);
+	bool processTrivialRois_3D(const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit, const std::vector<std::string>& z_indices);
 	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads);
 	void dump_roi_metrics(const std::string & label_fpath);
+	void dump_roi_pixels(const std::vector<int> & batch_labels, const std::string & label_fpath);
 
 	// Shows a message in CLI ('send_to_stderr': stdout or stderr) or Python terminal
 	void sureprint(const std::string& msg, bool send_to_stderr=false);
@@ -66,7 +69,7 @@ namespace Nyxus
 	bool save_features_2_buffer (ResultsCache& results_cache);	
 	
 	std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> get_feature_values();	
-	std::vector<std::string> get_header(const std::vector<std::tuple<std::string, AvailableFeatures>>& F );
+	std::vector<std::string> get_header(const std::vector<std::tuple<std::string, int>>& F );
 	std::string get_arrow_filename(const std::string& output_path, const std::string& default_filename, const SaveOption& arrow_file_type);
 
 	void init_feature_buffers();
@@ -87,11 +90,15 @@ namespace Nyxus
 
 	void init_label_record(LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity);
 	void init_label_record_2(LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity, unsigned int tile_index);
+	void init_label_record_3D (LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int z, int label, PixIntens intensity, unsigned int tile_index);
 	void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity);
 	void update_label_record_2(LR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index);
+	void update_label_record_3D (LR& lr, int x, int y, int z, int label, PixIntens intensity, unsigned int tile_index);
 
-	void allocateTrivialRoisBuffers(const std::vector<int>& Pending);
-	void freeTrivialRoisBuffers(const std::vector<int>& Pending);
+	void allocateTrivialRoisBuffers(const std::vector<int>& roi_labels);
+	void allocateTrivialRoisBuffers_3D(const std::vector<int>& roi_labels);
+	void freeTrivialRoisBuffers(const std::vector<int>& roi_labels);
+	void freeTrivialRoisBuffers_3D(const std::vector<int>& roi_labels);
 
 	// Label data
 	extern std::string theSegFname, theIntFname;	// Cached file names while iterating a dataset
@@ -107,6 +114,7 @@ namespace Nyxus
 	/// @param intensity -- pixel's intensity
 	/// @param tile_index -- index of pixel's tile in the image
 	void feed_pixel_2_metrics(int x, int y, PixIntens intensity, int label, unsigned int tile_index);
+	void feed_pixel_2_metrics_3D (int x, int y, int z, PixIntens intensity, int label, unsigned int tile_index);
 
 	/// @brief Copies a pixel to the ROI's cache. 
 	/// @param x -- x-coordinate of the pixel in the image
@@ -114,9 +122,7 @@ namespace Nyxus
 	/// @param label -- label of pixel's segment 
 	/// @param intensity -- pixel's intensity
 	void feed_pixel_2_cache(int x, int y, PixIntens intensity, int label);
-
-	// System resources
-	unsigned long long getAvailPhysMemory();
+	void feed_pixel_2_cache_3D(int x, int y, int z, PixIntens intensity, int label);
 
 	// Nested ROI
 

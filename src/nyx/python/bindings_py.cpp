@@ -28,7 +28,7 @@
 // [3] - number of unique ROI labels (ny)
 // [4] - data buffer [nx X ny] requiring further deallocation
 //
-std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::initializer_list<AvailableFeatures>& desiredFeatures, const std::string& label_path, const std::string& intensity_path)
+std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::initializer_list<Feature2D>& desiredFeatures, const std::string& label_path, const std::string& intensity_path)
 {
 	double* retbuf = nullptr;
 
@@ -38,7 +38,7 @@ std::tuple<int, std::string, size_t, size_t, double*> featureSetInvoker(std::ini
 
 	// Try to reach data files at directories 'label_path' and 'intensity_path'
 	std::vector <std::string> intensFiles, labelFiles;
-	int errorCode = Nyxus::read_dataset (intensity_path, label_path, "outputPath", "", "", false, intensFiles, labelFiles);
+	int errorCode = Nyxus::read_2D_dataset (intensity_path, label_path, "outputPath", "", "", false, intensFiles, labelFiles);
 
 	// Check for error
 	if (errorCode)
@@ -116,7 +116,7 @@ PYBIND11_MODULE(nyx_backend, m)
 
 			// Try to reach data files at directories 'label_path' and 'intensity_path'
 			std::vector <std::string> intensFiles, labelFiles;
-			int errorCode = Nyxus::read_dataset (intensity_path, label_path, "outputPath", "", "", false, intensFiles, labelFiles);
+			int errorCode = Nyxus::read_2D_dataset (intensity_path, label_path, "outputPath", "", "", false, intensFiles, labelFiles);
 			if (errorCode)
 			{
 				std::cout << std::endl << "Dataset structure error" << std::endl;

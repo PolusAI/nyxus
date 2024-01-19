@@ -43,7 +43,9 @@ static std::unordered_map<std::string, float> IBSI_glcm_values {
 };
 
 
-void test_ibsi_glcm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
+void test_ibsi_glcm_feature(const Feature2D& feature_, const std::string& feature_name) {
+    int feature = int(feature_);
+
     double total = 0;
     
     LR roidata;
@@ -146,129 +148,129 @@ void test_ibsi_glcm_feature(const AvailableFeatures& feature, const std::string&
 
 void test_ibsi_glcm_ACOR()
 {
-    test_ibsi_glcm_feature(GLCM_ACOR, "GLCM_ACOR");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_ACOR, "GLCM_ACOR");
 }
 
 void test_ibsi_glcm_CLUPROM()
 {
-    test_ibsi_glcm_feature(GLCM_CLUPROM, "GLCM_CLUPROM");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_CLUPROM, "GLCM_CLUPROM");
 }
 
 void test_ibsi_glcm_CLUSHADE()
 {
-    test_ibsi_glcm_feature(GLCM_CLUSHADE, "GLCM_CLUSHADE");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_CLUSHADE, "GLCM_CLUSHADE");
 }
 
 void test_ibsi_glcm_CLUTEND()
 {
-    test_ibsi_glcm_feature(GLCM_CLUTEND, "GLCM_CLUTEND");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_CLUTEND, "GLCM_CLUTEND");
 }
 
 void test_ibsi_glcm_difference_average()
 {
-    test_ibsi_glcm_feature(GLCM_DIFAVE, "GLCM_DIFAVE");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_DIFAVE, "GLCM_DIFAVE");
 }
 
 void test_ibsi_glcm_difference_entropy()
 {
-    test_ibsi_glcm_feature(GLCM_DIFENTRO, "GLCM_DIFENTRO");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_DIFENTRO, "GLCM_DIFENTRO");
 }
 
 void test_ibsi_glcm_difference_variance()
 {
-    test_ibsi_glcm_feature(GLCM_DIFVAR, "GLCM_DIFVAR");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_DIFVAR, "GLCM_DIFVAR");
 }
 
 void test_ibsi_glcm_DIS()
 {
-    test_ibsi_glcm_feature(GLCM_DIS, "GLCM_DIS");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_DIS, "GLCM_DIS");
 }
 
 void test_ibsi_glcm_ID()
 {
-    test_ibsi_glcm_feature(GLCM_ID, "GLCM_ID");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_ID, "GLCM_ID");
 }
 
 void test_ibsi_glcm_IDN()
 {
-    test_ibsi_glcm_feature(GLCM_IDN, "GLCM_IDN");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_IDN, "GLCM_IDN");
 }
 
 void test_ibsi_glcm_IDM()
 {
-    test_ibsi_glcm_feature(GLCM_IDM, "GLCM_IDM");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_IDM, "GLCM_IDM");
 }
 
 void test_ibsi_glcm_IDMN()
 {
-    test_ibsi_glcm_feature(GLCM_IDMN, "GLCM_IDMN");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_IDMN, "GLCM_IDMN");
 }
 
 void test_ibsi_glcm_angular_2d_moment()
 {
-    test_ibsi_glcm_feature(GLCM_ASM, "GLCM_ASM");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_ASM, "GLCM_ASM");
 }
 
 void test_ibsi_glcm_contrast()
 {
-   test_ibsi_glcm_feature(GLCM_CONTRAST, "GLCM_CONTRAST");
+   test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_CONTRAST, "GLCM_CONTRAST");
 }
 
 void test_ibsi_glcm_correlation()
 {
-    test_ibsi_glcm_feature(GLCM_CORRELATION, "GLCM_CORRELATION");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_CORRELATION, "GLCM_CORRELATION");
 }
 
 void test_ibsi_glcm_infomeas1()
 {
-   test_ibsi_glcm_feature(GLCM_INFOMEAS1, "GLCM_INFOMEAS1");
+   test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_INFOMEAS1, "GLCM_INFOMEAS1");
 }
 
 void test_ibsi_glcm_infomeas2()
 {
-   test_ibsi_glcm_feature(GLCM_INFOMEAS2, "GLCM_INFOMEAS2");
+   test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_INFOMEAS2, "GLCM_INFOMEAS2");
 }
 
 void test_ibsi_glcm_IV()
 {
-    test_ibsi_glcm_feature(GLCM_IV, "GLCM_IV");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_IV, "GLCM_IV");
 }
 
 void test_ibsi_glcm_JAVE()
 {
-    test_ibsi_glcm_feature(GLCM_JAVE, "GLCM_JAVE");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_JAVE, "GLCM_JAVE");
 }
 
 void test_ibsi_glcm_JE()
 {
-    test_ibsi_glcm_feature(GLCM_JE, "GLCM_JE");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_JE, "GLCM_JE");
 }
 
 void test_ibsi_glcm_JMAX()
 {
-    test_ibsi_glcm_feature(GLCM_JMAX, "GLCM_JMAX");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_JMAX, "GLCM_JMAX");
 }
 
 void test_ibsi_glcm_JVAR()
 {
-    test_ibsi_glcm_feature(GLCM_JVAR, "GLCM_JVAR");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_JVAR, "GLCM_JVAR");
 }
 
 void test_ibsi_glcm_inversed_difference_moment() {
-    test_ibsi_glcm_feature(GLCM_IDM, "GLCM_IDM");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_IDM, "GLCM_IDM");
 }
 
 void test_ibsi_glcm_sum_average()
 {
-    test_ibsi_glcm_feature(GLCM_SUMAVERAGE, "GLCM_SUMAVERAGE");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_SUMAVERAGE, "GLCM_SUMAVERAGE");
 }
 
 void test_ibsi_glcm_sum_entropy()
 {
-   test_ibsi_glcm_feature(GLCM_SUMENTROPY, "GLCM_SUMENTROPY");
+   test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_SUMENTROPY, "GLCM_SUMENTROPY");
 }
 
 void test_ibsi_glcm_sum_variance()
 {
-    test_ibsi_glcm_feature(GLCM_SUMVARIANCE, "GLCM_SUMVARIANCE");
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_SUMVARIANCE, "GLCM_SUMVARIANCE");
 }

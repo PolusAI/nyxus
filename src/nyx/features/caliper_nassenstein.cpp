@@ -2,15 +2,12 @@
 #include "../parallel.h"
 #include "rotation.h"
 
+using namespace Nyxus;
+
 CaliperNassensteinFeature::CaliperNassensteinFeature() : FeatureMethod("CaliperNassensteinFeature")
 {
 	// Letting the feature dependency manager know
-	provide_features({ STAT_NASSENSTEIN_DIAM_MIN,
-			STAT_NASSENSTEIN_DIAM_MAX,
-			STAT_NASSENSTEIN_DIAM_MEAN,
-			STAT_NASSENSTEIN_DIAM_MEDIAN,
-			STAT_NASSENSTEIN_DIAM_STDDEV,
-			STAT_NASSENSTEIN_DIAM_MODE });
+	provide_features (CaliperNassensteinFeature::featureset);
 }
 
 void CaliperNassensteinFeature::calculate (LR& r)
@@ -33,12 +30,12 @@ void CaliperNassensteinFeature::calculate (LR& r)
 
 void CaliperNassensteinFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
-	fvals[STAT_NASSENSTEIN_DIAM_MIN][0] = _min;
-	fvals[STAT_NASSENSTEIN_DIAM_MAX][0] = _max;
-	fvals[STAT_NASSENSTEIN_DIAM_MEAN][0] = _mean;
-	fvals[STAT_NASSENSTEIN_DIAM_MEDIAN][0] = _median;
-	fvals[STAT_NASSENSTEIN_DIAM_STDDEV][0] = _stdev;
-	fvals[STAT_NASSENSTEIN_DIAM_MODE][0] = _mode;
+	fvals[(int)Feature2D::STAT_NASSENSTEIN_DIAM_MIN][0] = _min;
+	fvals[(int)Feature2D::STAT_NASSENSTEIN_DIAM_MAX][0] = _max;
+	fvals[(int)Feature2D::STAT_NASSENSTEIN_DIAM_MEAN][0] = _mean;
+	fvals[(int)Feature2D::STAT_NASSENSTEIN_DIAM_MEDIAN][0] = _median;
+	fvals[(int)Feature2D::STAT_NASSENSTEIN_DIAM_STDDEV][0] = _stdev;
+	fvals[(int)Feature2D::STAT_NASSENSTEIN_DIAM_MODE][0] = _mode;
 }
 
 void CaliperNassensteinFeature::calculate_imp (const std::vector<Pixel2>& convex_hull, std::vector<double>& all_D)

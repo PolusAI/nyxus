@@ -1,6 +1,7 @@
 from .backend import (
     initialize_environment,
     featurize_directory_imp,
+    featurize_directory_3D_imp,
     featurize_montage_imp,
     featurize_fname_lists_imp,
     findrelations_imp,
@@ -115,9 +116,6 @@ class Nyxus:
         Minimum intensity of voxels of a floating point TIFF image.
     max_intensity: (optional, default 1.0)
         Maximum intensity of voxels of a floating point TIFF image.
-
-
-
     """
 
     def __init__(
@@ -125,7 +123,6 @@ class Nyxus:
         features: List[str],
         **kwargs
         ):
-      
         valid_keys = {
             'neighbor_distance', 'pixels_per_micron', 'coarse_gray_depth',
             'n_feature_calc_threads', 'n_loader_threads', 'using_gpu', 'ibsi',
@@ -160,7 +157,6 @@ class Nyxus:
         min_intensity = kwargs.get('min_intensity', 0.0)
         max_intensity = kwargs.get('max_intensity', 1.0)
         
-        
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
 
@@ -186,6 +182,7 @@ class Nyxus:
     
 
         initialize_environment(
+            2, # 2D
             features,
             neighbor_distance,
             pixels_per_micron,
@@ -291,9 +288,8 @@ class Nyxus:
             featurize_directory_imp(intensity_dir, label_dir, file_pattern, output_type, output_path)
             
             return get_arrow_file_imp() # return path to file
-        
 
-            
+
     def featurize(
         self,
         intensity_images: np.ndarray,
@@ -498,8 +494,6 @@ class Nyxus:
             featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, output_path)
             
             return get_arrow_file_imp()
-            
-            
 
 
     def blacklist_roi(self, blacklist:str):
@@ -832,6 +826,400 @@ class Nyxus:
 
         return arrow_is_enabled_imp()
        
+
+class Nyxus3D:
+    """Nyxus3D image feature extraction library
+
+    Scalably extracts features from images.
+    
+    Example:
+    nyx = Nyxus3D(
+            features = [["*ALL*"]],
+            neighbor_distance = 5,
+            pixels_per_micron = 1.0,
+            coarse_gray_depth= 256, 
+            n_feature_calc_threads = 4,
+            using_gpu = -1,
+            ibsi = False,
+            gabor_kersize = 16,
+            gabor_gamma = 0.1,
+            gabor_sig2lam = 0.8,
+            gabor_f0 = 0.1,
+            gabor_thold = 0.025,
+            gabor_thetas = [0, 45, 90, 135],
+            gabor_freqs = [4, 16, 32, 64]
+        )
+
+    Parameters
+    ----------
+    features : list[str]
+        List of features to be calculated. Individual features can be
+        provided or pre-specified feature groups. Valid groups include:
+            *3D_ALL*
+            *3D_ALL_INTENSITY*
+        Both individual features and feature groups are case sensitive.
+    neighbor_distance: int (optional, default 5)
+        Any two objects separated by a Euclidean distance (pixel units) greater than this
+        value will not be be considered neighbors. This cutoff is used by all features which
+        rely on neighbor identification.
+    pixels_per_micron: float (optional, default 1.0)
+        Specify the image resolution in terms of pixels per micron for unit conversion
+        of non-unitless features.
+    coarse_gray_depth: int (optional, default 256)
+        Custom number of levels in grayscale denoising used in texture features.
+    n_feature_calc_threads: int (optional, default 4)
+        Number of threads to use for feature calculation parallelization purposes.
+    using_gpu: int (optional, default -1)
+        Id of the gpu to use. To find available gpus along with ids, using nyxus.get_gpu_properties().
+        The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
+        thread for feature calculation. 
+    ibsi: bool (optional, default false)
+       IBSI available features will be IBSI compliant when true.
+    dynamic_range: (optional)
+        Desired dynamic range of voxels of a floating point TIFF image.
+    min_intensity: (optional, default 0.0)
+        Minimum intensity of voxels of a floating point TIFF image.
+    max_intensity: (optional, default 1.0)
+        Maximum intensity of voxels of a floating point TIFF image.
+    """
+
+    def __init__(
+        self,
+        features: List[str],
+        **kwargs
+        ):
+        valid_keys = {
+            'neighbor_distance', 'pixels_per_micron', 'coarse_gray_depth',
+            'n_feature_calc_threads', 'using_gpu', 'ibsi', 'channel_signature', 
+            'parent_channel', 'child_channel', 'aggregate', 
+            'dynamic_range', 'min_intensity', 'max_intensity'
+        }
+
+        # Check for unexpected keyword arguments
+        invalid_keys = set(kwargs.keys()) - valid_keys
+        if invalid_keys:
+            print(f"Warning: unexpected keyword argument(s): {', '.join(invalid_keys)}")
+        
+        # parse kwargs
+        features = features
+        neighbor_distance = kwargs.get('neighbor_distance', 5)
+        pixels_per_micron = kwargs.get('pixels_per_micron', 1.0)
+        coarse_gray_depth = kwargs.get('coarse_gray_depth', 256)
+        n_feature_calc_threads = kwargs.get('n_feature_calc_threads', 4)
+        using_gpu = kwargs.get('using_gpu', -1)
+        ibsi = kwargs.get('ibsi', False)
+        dynamic_range = kwargs.get('dynamic_range', 10000)
+        min_intensity = kwargs.get('min_intensity', 0.0)
+        max_intensity = kwargs.get('max_intensity', 1.0)
+        
+        if neighbor_distance <= 0:
+            raise ValueError("Neighbor distance must be greater than zero.")
+
+        if pixels_per_micron <= 0:
+            raise ValueError("Pixels per micron must be greater than zero.")
+
+        if coarse_gray_depth <= 0:
+            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=256) must be non-negative.")
+
+        if n_feature_calc_threads < 1:
+            raise ValueError("There must be at least one feature calculation thread.")
+        
+        if(using_gpu > -1 and n_feature_calc_threads != 1):
+            print("Gpu features only support a single thread. Defaulting to one thread.")
+            n_feature_calc_threads = 1
+            
+        if(using_gpu > -1 and not gpu_available()):
+            print("No gpu available.")
+            using_gpu = -1
+
+        initialize_environment(
+            3, # 3D
+            features,
+            neighbor_distance,
+            pixels_per_micron,
+            coarse_gray_depth, 
+            n_feature_calc_threads,
+            1, # n_loader_threads
+            using_gpu,
+            ibsi,
+            dynamic_range,
+            min_intensity,
+            max_intensity)
+        
+        # list of valid outputs that are used throughout featurize functions
+        self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
+
+    def featurize_directory(
+        self,
+        intensity_dir: str,
+        label_dir: str,
+        file_pattern: str,
+        output_type: Optional[str] = "pandas",
+        output_path: Optional[str] = "",
+    ):
+        """Extract features from all the images satisfying the file pattern of provided image directories.
+
+        Extracts all the requested features at the image level from the images
+        present in `intensity_dir`. If `label_dir` is specified, features will be
+        extracted for each unique label present in the label images. The file names
+        of the label images are expected to match those of the intensity images.
+
+        Parameters
+        ----------
+        intensity_dir : str
+            Path to directory containing intensity images.
+        label_dir : str (optional, default None)
+            Path to directory containing label images.
+        file_pattern: str
+            Regular expression used to filter the images present in both
+            `intensity_dir` and `label_dir`
+        output_type: str (optional, default "pandas")
+            Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
+        output_path: str (optional, default "")
+            Output filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
+            The output_path can either be to a directory or filename. For example,
+                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created. If the directory does not exist, it will be created.
+                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. If the directory does not exist, it will also be created.
+                - If 'output_path=some_file_name.arrow' then this file will be created in the current working directory.
+
+        Returns
+        -------
+        df : pd.DataFrame or str
+            if output_type == pandas
+            Pandas DataFrame containing the requested features with one row per label
+            per image.
+            Otherwise, arrow file path
+        """
+        if not os.path.exists(intensity_dir):
+            raise IOError(
+                f"Provided intensity image directory '{intensity_dir}' does not exist."
+            )
+
+        if label_dir is not None and not os.path.exists(label_dir):
+            raise IOError(
+                f"Provided label image directory '{label_dir}' does not exist."
+            )
+
+        if label_dir is None:
+            label_dir = intensity_dir
+
+        if (output_type not in self._valid_output_types):
+            raise  ValueError(f'Invalid output type {output_type}. Valid output types are {self._valid_output_types}.')
+            
+        if (output_type == 'pandas'):
+            header, string_data, numeric_data = featurize_directory_3D_imp (intensity_dir, label_dir, file_pattern, output_type, "")
+            df = pd.concat(
+                [
+                    pd.DataFrame(string_data, columns=header[: string_data.shape[1]]),
+                    pd.DataFrame(numeric_data, columns=header[string_data.shape[1] :]),
+                ],
+                axis=1,
+            )
+            # Labels should always be uint.
+            if "label" in df.columns:
+                df["label"] = df.label.astype(np.uint32)
+            return df
+        else:
+            featurize_directory_3D_imp (intensity_dir, label_dir, file_pattern, output_type, output_path)
+            return get_arrow_file_imp() # return path to file
+
+    
+    def set_environment_params (self, **params):
+        """Sets parameters of the environment for Nyxus
+        
+        Keyword args:
+        *neighbor_distance: int 
+            Any two objects separated by a Euclidean distance (pixel units) greater than this
+            value will not be be considered neighbors. This cutoff is used by all features which
+            rely on neighbor identification.
+        * pixels_per_micron: float
+            Specify the image resolution in terms of pixels per micron for unit conversion
+            of non-unitless features.
+        * coarse_gray_depth: int 
+            Custom number of levels in grayscale denoising used in texture features.
+        * n_feature_calc_threads: int (optional, default 4)
+            Number of threads to use for feature calculation parallelization purposes.
+        * using_gpu: int 
+            Id of the gpu to use. To find available gpus along with ids, using nyxus.get_gpu_properties().
+            The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
+            thread for feature calculation. 
+        * verbose: int (optional, non-negative, default 0)
+            Level of diagnostic output shown in the console. Set '0' to disable any diagnostic output.
+        """
+        
+        valid_params = [
+            'features',
+            'neighbor_distance',
+            'pixels_per_micron',
+            'coarse_gray_depth',
+            'n_feature_calc_threads',
+            'using_gpu',
+            'verbose',
+            'dynamic_range',
+            'min_intensity',
+            'max_intensity'
+        ]
+        
+        for key in params:
+            if key not in valid_params:
+                raise ValueError(f'Invalid environment parameter {key}. Value parameters are {params}')
+        
+        features = params.get('features', [])
+        neighbor_distance = params.get ('neighbor_distance', -1)
+        pixels_per_micron = params.get ('pixels_per_micron', -1)
+        coarse_gray_depth = params.get ('coarse_gray_depth', 0)
+        n_reduce_threads = params.get ('n_feature_calc_threads', 0)
+        using_gpu = params.get ('using_gpu', -2)
+        verbosity_lvl = params.get ('verbose', 0)
+        dynamic_range = params.get('dynamic_range', -1)
+        min_intensity = params.get('min_intensity', -1)
+        max_intensity = params.get('max_intensity', -1)
+        
+        set_environment_params_imp(features, 
+                                   neighbor_distance, 
+                                   pixels_per_micron,
+                                   coarse_gray_depth,
+                                   n_reduce_threads,
+                                   1, # n_loader_threads,
+                                   using_gpu,
+                                   verbosity_lvl,
+                                   dynamic_range,
+                                   min_intensity,
+                                   max_intensity)
+        
+    def set_params(self, **params):
+        """Sets parameters of the Nyxus class
+
+        Keyword args:
+        
+        * features: List[str],
+        * neighbor_distance
+        * pixels_per_micron
+        * coarse_gray_depth
+        * n_feature_calc_threads
+        * using_gpu
+        * ibsi: bool
+        * dynamic_range (float): Desired dynamic range of voxels of a floating point TIFF image.
+        * min_intensity (float): Minimum intensity of voxels of a floating point TIFF image.
+        * max_intensity (float): Maximum intensity of voxels of a floating point TIFF image.
+    
+        """
+        
+        available_environment_params = [
+            "features",
+            "neighbor_distance",
+            "pixels_per_micron",
+            "coarse_gray_depth",
+            "n_feature_calc_threads",
+            "using_gpu",
+            "ibsi",
+            "dynamic_range",
+            "min_intensity",
+            "max_intensity"
+        ]
+        
+        environment_params = {}
+        
+        gabor_params = {}
+        
+        
+        for key, value in params.items():
+           
+            if (key == "ibsi"):
+                set_if_ibsi_imp(value)
+            
+            else:
+                if (key not in available_environment_params):
+                    raise ValueError(f"Invalid parameter {key}.")
+                else:
+                    environment_params[key] = value
+                
+                        
+        if (len(environment_params) > 0):
+            self.set_environment_params(**environment_params)
+    
+    def get_params(self, *args):
+        """Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
+        
+        Valid parameters are:
+        
+        * features: List[str],
+        * neighbor_distance
+        * pixels_per_micron
+        * coarse_gray_depth
+        * n_feature_calc_threads
+        * using_gpu
+        * ibsi: bool
+        * dynamic_range (float): Desired dynamic range of voxels of a floating point TIFF image.
+        * min_intensity (float): Minimum intensity of voxels of a floating point TIFF image.
+        * max_intensity (float): Maximum intensity of voxels of a floating point TIFF image.
+        
+        Parameters
+        ----------
+            args: Strings containing parameter names to get the value of. (Optional)
+
+        Returns:
+            dict: A dictionary mapping the parameter name to the value
+        """
+        vars = list(args)
+        
+        return get_params_imp(vars)
+        
+    
+    def get_arrow_ipc_file(self):
+        """Returns the path to the Arrow IPC file.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        Path to the Arrow IPC file (string)
+
+        """
+        
+        if self.arrow_is_enabled():
+            return get_arrow_file_imp()
+        else:
+            raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
+        
+    def get_parquet_file(self):
+        """Returns the path to the Arrow IPC file.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        Path to the Parquet file (string)
+
+        """
+        if self.arrow_is_enabled():
+            return get_parquet_file_imp()
+        else:
+            raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
+    
+
+    
+    def arrow_is_enabled(self):
+        """Returns true if arrow support is enabled.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        bool: If arrow support is enabled 
+        """
+        
+
+        return arrow_is_enabled_imp()
+       
+
+
 class Nested:
     """Nyxus image feature extraction library / ROI hierarchy analyzer
     

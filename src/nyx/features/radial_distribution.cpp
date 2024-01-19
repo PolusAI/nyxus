@@ -7,10 +7,12 @@
 #include "image_matrix.h"
 #include "../globals.h"
 
+using namespace Nyxus;
+
 RadialDistributionFeature::RadialDistributionFeature() : FeatureMethod("RadialDistributionFeature")
 {
-	provide_features ({ FRAC_AT_D, MEAN_FRAC, RADIAL_CV });
-	add_dependencies ({PERIMETER});	// Actually we need the LR::contour object so we declare a dependency on feature 'PERIMETER' that in turn requires the LR::contour prerequisite
+	provide_features ({ Feature2D::FRAC_AT_D, Feature2D::MEAN_FRAC, Feature2D::RADIAL_CV });
+	add_dependencies ({ Feature2D::PERIMETER });	// Actually we need the LR::contour object so we declare a dependency on feature 'PERIMETER' that in turn requires the LR::contour prerequisite
 }
 
 void RadialDistributionFeature::reset_buffers()
@@ -182,9 +184,9 @@ void RadialDistributionFeature::osized_calculate(LR& r, ImageLoader& imlo)
 
 void RadialDistributionFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[FRAC_AT_D] = values_FracAtD; 
-	fvals[MEAN_FRAC] = values_MeanFrac;  
-	fvals[RADIAL_CV] = values_RadialCV;  
+	fvals[(int)Feature2D::FRAC_AT_D] = values_FracAtD;
+	fvals[(int)Feature2D::MEAN_FRAC] = values_MeanFrac;
+	fvals[(int)Feature2D::RADIAL_CV] = values_RadialCV;
 }
 
 void RadialDistributionFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)

@@ -23,7 +23,7 @@ public:
 	static int num_feature_values_calculated;
 
 	// Compatibility with manual reduce
-	static bool required(const FeatureSet& fs) { return fs.isEnabled(ZERNIKE2D); }
+	static bool required(const FeatureSet& fs) { return fs.isEnabled(Nyxus::Feature2D::ZERNIKE2D); }
 
 private:
 

@@ -2,6 +2,8 @@
 #include "glcm.h"
 #include "image_matrix_nontriv.h"
 
+using namespace Nyxus;
+
 void GLCMFeature::osized_calculate(LR& r, ImageLoader& imloader)
 {
 	// Clear the feature values buffers
@@ -81,95 +83,95 @@ void GLCMFeature::Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nont
 
 	// Compute Haralick statistics 
 	double f;
-	f = theFeatureSet.isEnabled(GLCM_ASM) ? f_asm(P_matrix, n_levels) : 0.0;
+	f = theFeatureSet.isEnabled(Feature2D::GLCM_ASM) ? f_asm(P_matrix, n_levels) : 0.0;
 	fvals_ASM.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_CONTRAST) ? f_contrast(P_matrix, n_levels) : 0.0;
+	f = theFeatureSet.isEnabled(Feature2D::GLCM_CONTRAST) ? f_contrast(P_matrix, n_levels) : 0.0;
 	fvals_contrast.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_CORRELATION) ? f_corr(P_matrix, n_levels, Px, mean_x) : 0.0;
+	f = theFeatureSet.isEnabled(Feature2D::GLCM_CORRELATION) ? f_corr(P_matrix, n_levels, Px, mean_x) : 0.0;
 	fvals_correlation.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_ENERGY) ? f_energy(P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(Feature2D::GLCM_ENERGY) ? f_energy(P_matrix, n_levels, Px) : 0.0;
 	fvals_energy.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_HOM1) ? f_homogeneity(P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(Feature2D::GLCM_HOM1) ? f_homogeneity(P_matrix, n_levels, Px) : 0.0;
 	fvals_homo.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_VARIANCE) ? f_var(P_matrix, n_levels) : 0.0;
+	f = theFeatureSet.isEnabled(Feature2D::GLCM_VARIANCE) ? f_var(P_matrix, n_levels) : 0.0;
 	fvals_variance.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_IDM) ? f_idm(P_matrix, n_levels) : 0.0;
+	f = theFeatureSet.isEnabled(Feature2D::GLCM_IDM) ? f_idm(P_matrix, n_levels) : 0.0;
 	fvals_IDM.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_SUMAVERAGE) ? f_savg(P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(Feature2D::GLCM_SUMAVERAGE) ? f_savg(P_matrix, n_levels, Px) : 0.0;
 	fvals_sum_avg.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_SUMENTROPY) ? f_sentropy(P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(Feature2D::GLCM_SUMENTROPY) ? f_sentropy(P_matrix, n_levels, Px) : 0.0;
 	fvals_sum_entropy.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_SUMVARIANCE) ? f_svar(P_matrix, n_levels, f, Px) : 0.0;
+	f = theFeatureSet.isEnabled(Feature2D::GLCM_SUMVARIANCE) ? f_svar(P_matrix, n_levels, f, Px) : 0.0;
 	fvals_sum_var.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_ENTROPY) ? f_entropy(P_matrix, n_levels) : 0.0;
+	f = theFeatureSet.isEnabled(Feature2D::GLCM_ENTROPY) ? f_entropy(P_matrix, n_levels) : 0.0;
 	fvals_entropy.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_DIFVAR) ? f_dvar(P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(Feature2D::GLCM_DIFVAR) ? f_dvar(P_matrix, n_levels, Px) : 0.0;
 	fvals_diff_var.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_DIFENTRO) ? f_dentropy(P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(Feature2D::GLCM_DIFENTRO) ? f_dentropy(P_matrix, n_levels, Px) : 0.0;
 	fvals_diff_entropy.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_DIFAVE) ? f_difference_avg(P_matrix, n_levels, Px) : 0.0;
+	f = theFeatureSet.isEnabled(Feature2D::GLCM_DIFAVE) ? f_difference_avg(P_matrix, n_levels, Px) : 0.0;
 	fvals_diff_avg.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_INFOMEAS1) ? f_info_meas_corr1(P_matrix, n_levels, Px, Py) : 0.0;
+	f = theFeatureSet.isEnabled(Feature2D::GLCM_INFOMEAS1) ? f_info_meas_corr1(P_matrix, n_levels, Px, Py) : 0.0;
 	fvals_meas_corr1.push_back(f);
 
-	f = theFeatureSet.isEnabled(GLCM_INFOMEAS2) ? f_info_meas_corr2(P_matrix, n_levels, Px, Py) : 0.0;
+	f = theFeatureSet.isEnabled(Feature2D::GLCM_INFOMEAS2) ? f_info_meas_corr2(P_matrix, n_levels, Px, Py) : 0.0;
 	fvals_meas_corr2.push_back(f);
 
-	f = !theFeatureSet.isEnabled(GLCM_ACOR) ? 0 : f_GLCM_ACOR(P_matrix, n_levels);
+	f = !theFeatureSet.isEnabled(Feature2D::GLCM_ACOR) ? 0 : f_GLCM_ACOR(P_matrix, n_levels);
 	fvals_acor.push_back(f);
 
-	f = !theFeatureSet.isEnabled(GLCM_CLUPROM) ? 0 : f_GLCM_CLUPROM();
+	f = !theFeatureSet.isEnabled(Feature2D::GLCM_CLUPROM) ? 0 : f_GLCM_CLUPROM();
 	fvals_cluprom.push_back(f);
 
-	f = !theFeatureSet.isEnabled(GLCM_CLUSHADE) ? 0 : f_GLCM_CLUSHADE();
+	f = !theFeatureSet.isEnabled(Feature2D::GLCM_CLUSHADE) ? 0 : f_GLCM_CLUSHADE();
 	fvals_clushade.push_back(f);
 
-	f = !theFeatureSet.isEnabled(GLCM_CLUTEND) ? 0 : f_GLCM_CLUTEND();
+	f = !theFeatureSet.isEnabled(Feature2D::GLCM_CLUTEND) ? 0 : f_GLCM_CLUTEND();
 	fvals_clutend.push_back(f);
 
-	f = !theFeatureSet.isEnabled(GLCM_DIS) ? 0 : f_GLCM_DIS(P_matrix, n_levels);
+	f = !theFeatureSet.isEnabled(Feature2D::GLCM_DIS) ? 0 : f_GLCM_DIS(P_matrix, n_levels);
 	fvals_dis.push_back(f);
 
-	f = !theFeatureSet.isEnabled(GLCM_HOM2) ? 0 : f_GLCM_HOM2(P_matrix, n_levels);
+	f = !theFeatureSet.isEnabled(Feature2D::GLCM_HOM2) ? 0 : f_GLCM_HOM2(P_matrix, n_levels);
 	fvals_hom2.push_back(f);
 
-	f = !theFeatureSet.isEnabled(GLCM_IDMN) ? 0 : f_GLCM_IDMN(P_matrix, n_levels);
+	f = !theFeatureSet.isEnabled(Feature2D::GLCM_IDMN) ? 0 : f_GLCM_IDMN(P_matrix, n_levels);
 	fvals_idmn.push_back(f);
 
-	f = !theFeatureSet.isEnabled(GLCM_ID) ? 0 : f_GLCM_ID(P_matrix, n_levels);
+	f = !theFeatureSet.isEnabled(Feature2D::GLCM_ID) ? 0 : f_GLCM_ID(P_matrix, n_levels);
 	fvals_id.push_back(f);
 
-	f = !theFeatureSet.isEnabled(GLCM_IDN) ? 0 : f_GLCM_IDN(P_matrix, n_levels);
+	f = !theFeatureSet.isEnabled(Feature2D::GLCM_IDN) ? 0 : f_GLCM_IDN(P_matrix, n_levels);
 	fvals_idn.push_back(f);
 
-	f = !theFeatureSet.isEnabled(GLCM_IV) ? 0 : f_GLCM_IV(P_matrix, n_levels);
+	f = !theFeatureSet.isEnabled(Feature2D::GLCM_IV) ? 0 : f_GLCM_IV(P_matrix, n_levels);
 	fvals_iv.push_back(f);
 
-	f = !theFeatureSet.isEnabled(GLCM_JAVE) ? 0 : f_GLCM_JAVE(P_matrix, n_levels);
+	f = !theFeatureSet.isEnabled(Feature2D::GLCM_JAVE) ? 0 : f_GLCM_JAVE(P_matrix, n_levels);
 	fvals_jave.push_back(f);
 	auto jave = f;
 
-	f = !theFeatureSet.isEnabled(GLCM_JE) ? 0 : f_GLCM_JE(P_matrix, n_levels);
+	f = !theFeatureSet.isEnabled(Feature2D::GLCM_JE) ? 0 : f_GLCM_JE(P_matrix, n_levels);
 	fvals_je.push_back(f);
 
-	f = !theFeatureSet.isEnabled(GLCM_JMAX) ? 0 : f_GLCM_JMAX(P_matrix, n_levels);
+	f = !theFeatureSet.isEnabled(Feature2D::GLCM_JMAX) ? 0 : f_GLCM_JMAX(P_matrix, n_levels);
 	fvals_jmax.push_back(f);
 
-	f = !theFeatureSet.isEnabled(GLCM_JVAR) ? 0 : f_GLCM_JVAR(P_matrix, n_levels, jave);
+	f = !theFeatureSet.isEnabled(Feature2D::GLCM_JVAR) ? 0 : f_GLCM_JVAR(P_matrix, n_levels, jave);
 	fvals_jvar.push_back(f);
 }
 

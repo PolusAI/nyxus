@@ -70,12 +70,17 @@ namespace Nyxus
 			update_label_record_2(existingData, x, y, label, 999/*dummy intensity*/, tile_index);
 		}
 	}
+
+	void readDirectoryFiles_2D(const std::string& dir, const std::string& file_pattern, std::vector<std::string>& files);
+
 }
+
+using namespace Nyxus;
 
 /// @brief Gathers online morphological properties for nested ROI functionality (Python class NyxusHie, nyxushie CLI)
 bool gatherRoisMetrics_H(const std::string& fpath, std::unordered_set <int>& uniqueLabels, std::unordered_map <int, HieLR>& roiData)
 {
-	theParFname = fpath;
+	Nyxus::theParFname = fpath;
 
 	int lvl = 0, // Pyramid level
 		lyr = 0; //	Layer
@@ -134,7 +139,7 @@ bool gatherRoisMetrics_H(const std::string& fpath, std::unordered_set <int>& uni
 						x = col * tw + i % tw;
 
 					// Update pixel's ROI metrics
-					feed_pixel_2_metrics_H(uniqueLabels, roiData, x, y, label, tileIdx); // Updates 'uniqueLabels' and 'roiData'
+					Nyxus::feed_pixel_2_metrics_H(uniqueLabels, roiData, x, y, label, tileIdx); // Updates 'uniqueLabels' and 'roiData'
 				}
 			}
 
@@ -519,7 +524,7 @@ bool mine_segment_relations (
 	int verbosity_level)
 {
 	std::vector<std::string> segFiles;
-	readDirectoryFiles(label_dir, file_pattern, segFiles);
+	readDirectoryFiles_2D (label_dir, file_pattern, segFiles);
 
 	// Check if the dataset is meaningful
 	if (segFiles.size() == 0)
@@ -675,10 +680,10 @@ bool mine_segment_relations (
 {
 
 	std::vector<std::string> parentFiles;
-	readDirectoryFiles(label_dir, parent_file_pattern, parentFiles);
+	readDirectoryFiles_2D (label_dir, parent_file_pattern, parentFiles);
 
 	std::vector<std::string> childFiles;
-	readDirectoryFiles(label_dir, child_file_pattern, childFiles);
+	readDirectoryFiles_2D (label_dir, child_file_pattern, childFiles);
 
 	// Check if the dataset is meaningful
 	if (parentFiles.size() == 0)

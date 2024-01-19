@@ -32,7 +32,8 @@ static std::unordered_map<std::string, float> glrlm_values {
     {"GLRLM_RE", 1.58115}
 };
 
-void test_glrlm_feature(const AvailableFeatures& feature, const std::string& feature_name) {
+void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_name) {
+    int feature = int(feature_);
 
     double total = 0;
     
@@ -130,80 +131,80 @@ void test_glrlm_feature(const AvailableFeatures& feature, const std::string& fea
 
 void test_glrlm_sre()
 {
-    test_glrlm_feature(GLRLM_SRE, "GLRLM_SRE");
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_SRE, "GLRLM_SRE");
 }
 
 void test_glrlm_lre()
 {
-    test_glrlm_feature(GLRLM_LRE, "GLRLM_LRE");
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_LRE, "GLRLM_LRE");
 }
 
 void test_glrlm_lglre()
 {
-    test_glrlm_feature(GLRLM_LGLRE, "GLRLM_LGLRE");
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_LGLRE, "GLRLM_LGLRE");
 }
 
 void test_glrlm_hglre()
 {
-    test_glrlm_feature(GLRLM_HGLRE, "GLRLM_HGLRE");
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_HGLRE, "GLRLM_HGLRE");
 }   
 
 void test_glrlm_srlgle()
 {
-    test_glrlm_feature(GLRLM_SRLGLE, "GLRLM_SRLGLE");
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_SRLGLE, "GLRLM_SRLGLE");
 }
 
 void test_glrlm_srhgle()
 {
-    test_glrlm_feature(GLRLM_SRHGLE, "GLRLM_SRHGLE");
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_SRHGLE, "GLRLM_SRHGLE");
 }
 
 void test_glrlm_lrlgle()
 {
-    test_glrlm_feature(GLRLM_LRLGLE, "GLRLM_LRLGLE");
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_LRLGLE, "GLRLM_LRLGLE");
 }
 
 void test_glrlm_lrhgle()
 {
-    test_glrlm_feature(GLRLM_LRHGLE, "GLRLM_LRHGLE");
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_LRHGLE, "GLRLM_LRHGLE");
 }
 
 void test_glrlm_gln()
 {   
-    test_glrlm_feature(GLRLM_GLN, "GLRLM_GLN");
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_GLN, "GLRLM_GLN");
 }
 
 void test_glrlm_glnn()
 {
-    test_glrlm_feature(GLRLM_GLNN, "GLRLM_GLNN");
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_GLNN, "GLRLM_GLNN");
 }
 
 void test_glrlm_rln()
 {
-    test_glrlm_feature(GLRLM_RLN, "GLRLM_RLN");
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RLN, "GLRLM_RLN");
 }
 
 void test_glrlm_rlnn()
 {
-    test_glrlm_feature(GLRLM_RLNN, "GLRLM_RLNN");
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RLNN, "GLRLM_RLNN");
 }
 
 void test_glrlm_rp()
 {
-    test_glrlm_feature(GLRLM_RP, "GLRLM_RP");
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RP, "GLRLM_RP");
 }
 
 void test_glrlm_glv()
 {
-    test_glrlm_feature(GLRLM_GLV, "GLRLM_GLV");
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_GLV, "GLRLM_GLV");
 }
 
 void test_glrlm_rv()
 {
-    test_glrlm_feature(GLRLM_RV, "GLRLM_RV");
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RV, "GLRLM_RV");
 }
 
 void test_glrlm_re()
 {
-    test_glrlm_feature(GLRLM_RE, "GLRLM_RE");
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RE, "GLRLM_RE");
 }

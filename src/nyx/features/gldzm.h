@@ -12,26 +12,26 @@ public:
 	
 	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
 	// in the feature group nickname expansion, and in the feature value output 
-	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
 	{
-		GLDZM_SDE,		// Small Distance Emphasis
-		GLDZM_LDE,		// Large Distance Emphasis
-		GLDZM_LGLZE,		// Low Grey Level Zone Emphasis
-		GLDZM_HGLZE,		// High Grey Level Zone Emphasis
-		GLDZM_SDLGLE,	// Small Distance Low Grey Level Emphasis
-		GLDZM_SDHGLE,	// Small Distance High GreyLevel Emphasis
-		GLDZM_LDLGLE,	// Large Distance Low Grey Level Emphasis
-		GLDZM_LDHGLE,	// Large Distance High Grey Level Emphasis
-		GLDZM_GLNU,		// Grey Level Non Uniformity
-		GLDZM_GLNUN,	// Grey Level Non Uniformity Normalized
-		GLDZM_ZDNU,		// Zone Distance Non Uniformity
-		GLDZM_ZDNUN,	// Zone Distance Non Uniformity Normalized
-		GLDZM_ZP,		// Zone Percentage
-		GLDZM_GLM,		// Grey Level Mean
-		GLDZM_GLV,		// Grey Level Variance
-		GLDZM_ZDM,		// Zone Distance Mean
-		GLDZM_ZDV,		// Zone Distance Variance
-		GLDZM_ZDE		// Zone Distance Entropy
+		Nyxus::Feature2D::GLDZM_SDE,		// Small Distance Emphasis
+		Nyxus::Feature2D::GLDZM_LDE,		// Large Distance Emphasis
+		Nyxus::Feature2D::GLDZM_LGLZE,		// Low Grey Level Zone Emphasis
+		Nyxus::Feature2D::GLDZM_HGLZE,		// High Grey Level Zone Emphasis
+		Nyxus::Feature2D::GLDZM_SDLGLE,	// Small Distance Low Grey Level Emphasis
+		Nyxus::Feature2D::GLDZM_SDHGLE,	// Small Distance High GreyLevel Emphasis
+		Nyxus::Feature2D::GLDZM_LDLGLE,	// Large Distance Low Grey Level Emphasis
+		Nyxus::Feature2D::GLDZM_LDHGLE,	// Large Distance High Grey Level Emphasis
+		Nyxus::Feature2D::GLDZM_GLNU,		// Grey Level Non Uniformity
+		Nyxus::Feature2D::GLDZM_GLNUN,	// Grey Level Non Uniformity Normalized
+		Nyxus::Feature2D::GLDZM_ZDNU,		// Zone Distance Non Uniformity
+		Nyxus::Feature2D::GLDZM_ZDNUN,	// Zone Distance Non Uniformity Normalized
+		Nyxus::Feature2D::GLDZM_ZP,		// Zone Percentage
+		Nyxus::Feature2D::GLDZM_GLM,		// Grey Level Mean
+		Nyxus::Feature2D::GLDZM_GLV,		// Grey Level Variance
+		Nyxus::Feature2D::GLDZM_ZDM,		// Zone Distance Mean
+		Nyxus::Feature2D::GLDZM_ZDV,		// Zone Distance Variance
+		Nyxus::Feature2D::GLDZM_ZDE		// Zone Distance Entropy
 	};
 
 	GLDZMFeature();

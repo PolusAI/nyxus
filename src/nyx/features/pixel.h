@@ -130,3 +130,100 @@ struct Pixel2 : public Point2i
 };
 
 bool operator == (const Pixel2& p1, const Pixel2& p2);
+
+template <typename T>
+struct Point3
+{
+	T x, y, z;
+	Point3(T x_, T y_, T z_) : x(x_), y(y_), z(z_) {}
+	Point3() : x(0), y(0), z(0) {}
+
+	float normL2() const { return sqrt(x*x + y*y + z*z); }
+
+	Point3 operator - ()
+	{
+		Point3 p (-(this->x), -(this->y), -(this->z));
+		return p;
+	}
+	Point3 operator - (const Point3 & v)
+	{
+		Point3 p (this->x - v.x, this->y - v.y, this->z - v.z);
+		return p;
+	}
+	Point3 operator + (const Point3 & v)
+	{
+		Point3 p (this->x + v.x, this->y + v.y, this->z + v.z);
+		return p;
+	}
+	Point3 operator / (float k)
+	{
+		Point3 p (this->x / k, this->y / k, this->z / k);
+		return p;
+	}
+};
+
+using Point3i = Point3<StatsInt>;
+
+struct Pixel3 : public Point3i
+{
+	PixIntens inten;
+
+	Pixel3() : Point3(0, 0, 0), inten(0) {}
+	Pixel3(StatsInt x_, StatsInt y_, StatsInt z_, PixIntens i_) : Point3(x_, y_, z_), inten(i_) {}
+	Pixel3(int x_, int y_, int z_, PixIntens i_) : Point3(x_, y_,z_), inten(i_) {}
+	Pixel3(float x_, float y_, float z_, PixIntens i_) : Point3((StatsInt)x_, (StatsInt)y_, (StatsInt)z_), inten(i_) {}
+	Pixel3(size_t x_, size_t y_, size_t z_, double i_) : Point3((StatsInt)x_, (StatsInt)y_, (StatsInt)z_), inten((PixIntens)i_) {}
+	Pixel3(size_t x_, size_t y_, size_t z_, PixIntens i_) : Point3((StatsInt)x_, (StatsInt)y_, (StatsInt)z_), inten(i_) {}
+
+	bool operator == (const Pixel3& p)
+	{
+		return this->x == p.x && this->y == p.y && this->z == p.z;
+	}
+	Pixel3 operator - ()
+	{
+		Pixel3 p(-(this->x), -(this->y), -(this->z), this->inten);
+		return p;
+	}
+	Pixel3 operator - (const Pixel3& v) const
+	{
+		Pixel3 p(this->x - v.x, this->y - v.y, this->z - v.z, this->inten);
+		return p;
+	}
+	Pixel3 operator + (const Pixel3& v) const
+	{
+		Pixel3 p(this->x + v.x, this->y + v.y, this->z + v.z, this->inten);
+		return p;
+	}
+	Pixel3 operator / (float k) const
+	{
+		Pixel3 p(StatsInt(this->x / k), StatsInt(this->y / k), StatsInt(this->z / k), this->inten);
+		return p;
+	}
+	Pixel3 operator * (float k) const
+	{
+		Pixel3 p(StatsInt(this->x * k), StatsInt(this->y * k), StatsInt(this->z * k), this->inten);
+		return p;
+	}
+
+	/// @brief Returns squared distance between 'x' and 'y'
+	double sqdist(int x, int y, int z) const;
+
+	/// @brief Returns the squared distance between this pixel and 'px'
+	double sqdist(const Pixel3& px) const;
+
+	/// @brief Returns an index in argument 'cloud'
+	static int find_center(const std::vector<Pixel3>& cloud, const std::vector<Pixel3>& contour);
+
+	std::pair<double, double> min_max_sqdist(const std::vector<Pixel3>& contour) const;
+
+	/// @brief Returns the minimum squared distance squared distance from <this> pixel to the <cloud>
+	double min_sqdist(const std::vector<Pixel3>& cloud) const;
+
+	/// @brief Returns the maximum squared distance squared distance from <this> pixel to the <cloud>
+	double max_sqdist(const std::vector<Pixel3>& cloud) const;
+
+	/// @brief Returns the angle in radians between this pixel and 'other' relative to the origin 
+	double angle(const Pixel3& other) const;
+
+};
+
