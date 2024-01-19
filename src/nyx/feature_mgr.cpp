@@ -63,7 +63,6 @@ bool FeatureManager::check_11_correspondence()
 		int nProviders = 0;
 		for (const auto fm : full_featureset)
 		{
-			//Nyxus::Feature2D fcode = (Nyxus::Feature2D) i_fcode;
 			if (fm->provides (i_fcode))
 				nProviders++;
 		}
@@ -154,12 +153,6 @@ int FeatureManager::get_num_fmethods_dependencies (const FeatureMethod * fm, std
 		const FeatureMethod* providerFM = nullptr;
 		for (const FeatureMethod* fm : full_featureset)
 		{
-			//if (fm->provides(fcode))
-			//{
-			//	providerFM = fm;
-			//	break;
-			//}
-
 			if (fm->provides(fcode))
 			{
 				providerFM = fm;

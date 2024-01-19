@@ -73,30 +73,6 @@
 #define FPIMAGE_MIN "--fpimgmin"				// Expected voxel min intensity
 #define FPIMAGE_MAX "--fpimgmax"				// Expected voxel max intensity
 
-/*
-// Feature group nicknames. Each nickname should be used twice - 
-//	in Environment::spellcheck_raw_featurelist() 
-//	and in Environment::expand_featuregroups()
-#define FEA_NICK_ALL "*ALL*"
-#define FEA_NICK_ALL_INTENSITY "*ALL_INTENSITY*"
-#define FEA_NICK_ALL_MORPHOLOGY "*ALL_MORPHOLOGY*"
-#define FEA_NICK_BASIC_MORPHOLOGY "*BASIC_MORPHOLOGY*"
-#define FEA_NICK_ALL_GLCM "*ALL_GLCM*"
-#define FEA_NICK_ALL_GLRLM "*ALL_GLRLM*"
-#define FEA_NICK_ALL_GLDZM "*ALL_GLDZM*"
-#define FEA_NICK_ALL_GLSZM "*ALL_GLSZM*"
-#define FEA_NICK_ALL_GLDM "*ALL_GLDM*"
-#define FEA_NICK_ALL_NGLDM "*ALL_NGLDM*"
-#define FEA_NICK_ALL_NGTDM "*ALL_NGTDM*"
-#define FEA_NICK_ALL_BUT_GABOR "*ALL_BUT_GABOR*"
-#define FEA_NICK_ALL_BUT_GLCM "*ALL_BUT_GLCM*"
-#define FEA_NICK_ALL_EASY "*ALL_EASY*"	// Equivalent to *ALL* minus GABOR, GLCM, and 2D moments
-#define FEA_NICK_ALL_NEIG "*ALL_NEIGHBOR*"	
-#define FEA_NICK_2DMOMENTS "*2DMOMENTS*"	
-
-#define FGROUP_3D_ALL "*ALL3D*"
-*/
-
 // Valid values of 'OUTPUTTYPE'
 #define OT_SEPCSV "separatecsv"
 #define OT_SINGLECSV "singlecsv"

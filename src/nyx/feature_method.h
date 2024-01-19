@@ -46,10 +46,6 @@ public:
 	/// @brief Checks if a feature code belongs to the provided set 
 	/// @param  
 	/// @return 
-	/*
-	bool provides (Nyxus::Feature2D);	// Looks up in 'provided_features'
-	bool provides (Nyxus::Feature3D);	// Looks up in 'provided_features'
-	*/
 	bool provides (int feature_code) const;	// Looks up in 'provided_features'
 
 	/// @brief 

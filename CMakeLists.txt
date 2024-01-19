@@ -34,7 +34,7 @@ set(Z5_REQUESTED ${USE_Z5})
 set(ARROW_REQUESTED ${USE_ARROW})
 set(DCMTK_REQUESTED ${USE_DCMTK})
 
-#---2024-01-15--- option(USEGPU "Use GPU" ON)
+option(USEGPU "Use GPU" ON)
 set(CUDA_REQUESTED ${USEGPU})
 check_language(CUDA)
 find_package(CUDAToolkit)
