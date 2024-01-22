@@ -5,8 +5,63 @@ StringPattern::StringPattern()
 {
 }
 
+// Example of a valid pat: BRATS_{d+}_z{set d+}_t{d+}.ome.tif for BRATS_001_z004_t002.ome.tif
+bool StringPattern::set_filepattern (const std::string & pat)
+{
+	// parse a Polus-style filepattern 
+	const std::string magicAnyStr = "mzmzmzmzmzmzmzmzmzmzmzm",	// a string highly unlikely to happen to be a part of file name
+		magicAnyNum = "18446744073709551615" "000",	// int value that will never occur (max 64-bit int \times 10^3)
+		magicStarNum = "18446744073709551615" "111";	// int value that will never occur (max 64-bit int \times 10^3 + 111)
+
+	// replace all {d+} with NUM
+	std::string repl1 = std::regex_replace (pat, std::regex("\\{d\\+\\}"), magicAnyNum);
+
+	// replace all {c+} with TEXT
+	std::string repl2 = std::regex_replace (repl1, std::regex("\\{c\\+\\}"), magicAnyStr);
+
+	// replace all {set d+} or its variant {set,d+} with =*
+	std::string repl3 = std::regex_replace (repl2, std::regex("\\{set d\\+\\}"), magicStarNum);
+	std::string repl4 = std::regex_replace (repl3, std::regex("\\{set,d\\+\\}"), magicStarNum);
+
+	// validate all the expressions in curly brackets 
+	if (repl4.find("{") != std::string::npos || repl4.find("}") != std::string::npos)
+	{
+		ermsg_ = "illegal {Expression}. Only {d+}, {c+}, and {set d+} or {set,d+} are permitted";
+		return false;
+	}
+
+	// now lexify this file pattern into a raw pattern to produce a grammar
+	std::vector<std::string> tokCodes;
+	std::vector<std::string> tokVals;
+
+	bool ok = tokenize(
+		repl4,
+		tokCodes,
+		tokVals);
+
+	if (!ok)
+		return false;
+
+	std::string join;
+	for (int i = 0; i < tokCodes.size(); i++)
+	{
+		if (tokVals[i] == magicAnyStr || tokVals[i] == magicAnyNum)
+			join += tokCodes[i];
+		else
+			if(tokVals[i] == magicStarNum)
+				join += tokCodes[i] + "=*";
+			else
+				join += tokCodes[i] + "=" + tokVals[i];
+		join += " ";
+	}
+
+	ok = set_raw_pattern(join);
+	
+	return ok;
+}
+
 // initialize the file pattern object with a string
-bool StringPattern::set_pattern(const std::string& s)
+bool StringPattern::set_raw_pattern (const std::string& s)
 {
 	// Cache the pattern string no matter if it's correct or not
 	cached_pattern_string = s;
@@ -15,7 +70,6 @@ bool StringPattern::set_pattern(const std::string& s)
 	if (!filepatt_to_grammar(s, grammar_, ermsg_))
 	{
 		good_ = false;
-		ermsg_ = "tokenize error";
 		return false;
 	}
 
@@ -37,6 +91,18 @@ std::string StringPattern::get_ermsg() const
 	return ermsg_;
 }
 
+std::string StringPattern::get_term_context (const std::string & term)
+{
+	size_t idxFound = term.find("=");
+	if (idxFound != std::string::npos)
+	{
+		std::string tc = term.substr(idxFound + 1, term.size() - 1);
+		return tc;
+	}
+	else
+		return "";
+}
+
 // returns true if a string matches the pattern
 bool StringPattern::match (const std::string& s, std::map<std::string, std::vector<std::string>> & imgDirs, std::string & external_ermsg) const
 {
@@ -53,8 +119,12 @@ bool StringPattern::match (const std::string& s, std::map<std::string, std::vect
 		return false;
 	}
 
+	// check if 's' matches the grammar in the number of tokens
+	if (tokCodes.size() != grammar_.size())
+		return false;
+
 	// check the file name string versus a grammar of 3D layout A
-	std::vector<std::string> state;
+	std::string aggrValue;
 	std::string mapKey;
 
 	// check grammar
@@ -67,7 +137,7 @@ bool StringPattern::match (const std::string& s, std::map<std::string, std::vect
 		std::string pureTerm = term,
 			termContext;
 
-		// if we have a token with a qualifying constant, tear the token off 
+		// if we have a token with a qualifying constant, tear the token apart into a pure term and its context
 		size_t idxFound = term.find("=");
 
 		bool haveEq = false;
@@ -81,7 +151,7 @@ bool StringPattern::match (const std::string& s, std::map<std::string, std::vect
 		// grammar check
 		if (tokCodes[i] != pureTerm)
 		{
-			external_ermsg = "after " + mapKey + " expecting " + pureTerm + " while actual is " + tokCodes[i] + " (" + tokVals[i] + "), so skipping file " + s;
+			external_ermsg = "skipping " + mapKey + tokCodes[i] + " not ending " + pureTerm;
 			return false;
 		}
 
@@ -92,55 +162,49 @@ bool StringPattern::match (const std::string& s, std::map<std::string, std::vect
 		}
 		else
 		{
-			if (pureTerm == "TEXT")
+			// token not matching the qualifier ?
+			if (termContext != "*" && termContext != tokVals[i])
+			{
+				external_ermsg = "skipping " + mapKey + termContext + " not ending " + tokVals[i];
+				return false;
+			}
+
+			// ok, matching
+
+			if (pureTerm == t_TEXT)
 			{
 				mapKey += tokVals[i];
-				state.push_back(termContext);	// for example "z"
+				//---state.push_back(termContext);	// for example "z"
 				continue;
 			}
-			if (pureTerm == "NUM")
+			if (pureTerm == t_SEP)
+			{
+				mapKey += tokVals[i];
+				continue;
+			}
+			if (pureTerm == t_NUM)
 			{
 				mapKey += (termContext == "*" ? termContext : tokVals[i]);
-				state.push_back(tokVals[i]);	// for example "457"
+				aggrValue = tokVals[i]; // for example "0457" in "z0457"
+
 				continue;
 			}
-			if (pureTerm == "#")
-			{
-				// merge the rest of the input string with the mapping key and quit traversing the grammar
-				for (int j = i; j < tokCodes.size(); j++)
-					mapKey += tokCodes[i];
-				break;	// quit the grammar check
-			}
+
 		}
 	} //- grammar walk
 
 	// if we are at this point, syntax is OK. Now update filename's association with a value mined from a set term
-	// no match with an aggregator?
-	if (state.size() == 0)
-	{
-		external_ermsg = "expecting " + s + " to contain an aggregator";
-		return false; 
-	}
-	// incomplete aggregator match?
-	if (state.size() == 1)
-	{
-		external_ermsg = "incomplete aggregator in " + s;
-		return false;
-	}
 	// make an aggregation action using an aggregator name-value(s) tuple cached in state
-	if (state[0] == "z")
+	auto imdir = imgDirs.find(mapKey);
+	if (imdir == imgDirs.end())
 	{
-		auto imdir = imgDirs.find(mapKey);
-		if (imdir == imgDirs.end())
-		{
-			std::vector zValues{ state[1] };
-			imgDirs[mapKey] = zValues;
-		}
-		else
-		{
-			std::vector<std::string>& zValues = imdir->second;
-			zValues.push_back(state[1]);
-		}
+		std::vector zValues { aggrValue };
+		imgDirs[mapKey] = zValues;
+	}
+	else
+	{
+		std::vector<std::string>& zValues = imdir->second;
+		zValues.push_back (aggrValue);
 	}
 
 	return true;
@@ -157,9 +221,10 @@ bool StringPattern::tokenize (
 	// use std::vector instead, we need to have it in this order
 	std::vector<std::pair<std::string, std::string>> v
 	{
-		{ "[0-9]+" , "NUM" } ,
-		{ "[a-z]+|[A-Z]+" , "TEXT" },
-		{ "~|`|!|@|#|\\$|%|\\^|&|\\(|\\)|_|-|\\+|=|\\{|\\}|\\[|]|'|;|,|\\.", "SEP" }
+		{ "[0-9]+" , t_NUM } ,
+		{ "[a-z]+|[A-Z]+" , t_TEXT },
+		{ "~|`|!|@|#|\\$|%|\\^|&|\\(|\\)|_|-|\\+|=|\\{|\\}|\\[|]|'|;|,|\\.", t_SEP },
+		{ "\\*", t_STAR }
 	};
 
 	std::string reg;
@@ -199,25 +264,38 @@ bool StringPattern::tokenize (
 bool StringPattern::filepatt_to_grammar(const std::string& filePatt, std::vector<std::string>& grammar, std::string& errMsg)
 {
 	grammar.clear();
-	const char* delimiters = "_ -";
+	const char* delimiters = " ";
 	char* dupFP = strdup(filePatt.c_str());
 	char* token = std::strtok(dupFP, delimiters);
+	int n_aggrs = 0;
 	while (token)
 	{
 		std::string strToken = token;
 
-		// check
-		if (strToken.find("TEXT") != 0 && strToken.find("NUM") != 0 && strToken.find("SEP") != 0)
+		// check 1: illegal terms
+		if (strToken.find(t_TEXT) != 0 && strToken.find(t_NUM) != 0 && strToken.find(t_SEP) != 0)
 		{
 			errMsg = "error: " + strToken + " needs to be TEXT, NUM, or SEP";
 			return false;
 		}
+
+		// check 2: unique aggregator
+		std::string tc = get_term_context(strToken);
+		if (tc == "*")
+			n_aggrs++;
 
 		// save
 		grammar.push_back(strToken);
 		token = std::strtok(nullptr, delimiters);
 	}
 	free(dupFP);
+
+	// check 2: unique aggregator
+	if (n_aggrs != 1)
+	{
+		errMsg = "error: aggregator needs to be unique (actual count is " + std::to_string(n_aggrs) + ")";
+		return false;
+	}
 
 	return true;
 }

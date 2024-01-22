@@ -21,7 +21,6 @@
 
 using Nyxus::allocateTrivialRoisBuffers;
 using Nyxus::freeTrivialRoisBuffers;
-using namespace Nyxus;
 
 void test_initialization() {
 
