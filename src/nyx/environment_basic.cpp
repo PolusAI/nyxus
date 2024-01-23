@@ -34,7 +34,7 @@ bool BasicEnvironment::check_2d_file_pattern(const std::string& pat)
 
 bool BasicEnvironment::check_3d_file_pattern(const std::string& pat)
 {
-	return file_pattern_3D.set_pattern (pat);
+	return file_pattern_3D.set_filepattern (pat);
 }
 
 std::string BasicEnvironment::get_file_pattern()

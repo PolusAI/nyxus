@@ -453,7 +453,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		case 3:
 			if (check_3d_file_pattern(rawFilePattern) == false)
 			{
-				std::cerr << "Error: invalid 3D file pattern '" << rawFilePattern << "' \n";
+				std::cerr << "Error: invalid 3D file pattern " << rawFilePattern << " : " << this->file_pattern_3D.get_ermsg() << '\n';
 				return false;
 			}
 			break;

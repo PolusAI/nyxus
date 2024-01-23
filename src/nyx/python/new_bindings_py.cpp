@@ -263,8 +263,9 @@ py::tuple featurize_directory_3D_imp(
     theEnvironment.set_dim(3);
     
     // Check and cache the file pattern
+    std::string ermsg;
     if (!theEnvironment.check_3d_file_pattern(file_pattern))
-        throw std::invalid_argument("Invalid file pattern " + file_pattern);
+        throw std::invalid_argument("Invalid file pattern " + file_pattern + " : " + theEnvironment.file_pattern_3D.get_ermsg());
 
     // No need to set the raw file pattern separately for 3D
     //      theEnvironment.set_file_pattern(file_pattern);
