@@ -1,4 +1,5 @@
 #include <regex>
+#include <string.h>
 #include "strpat.h"
 
 StringPattern::StringPattern()
@@ -266,7 +267,7 @@ bool StringPattern::filepatt_to_grammar(const std::string& filePatt, std::vector
 	grammar.clear();
 	const char* delimiters = " ";
 	char* dupFP = strdup(filePatt.c_str());
-	char* token = std::strtok(dupFP, delimiters);
+	char* token = strtok(dupFP, delimiters);
 	int n_aggrs = 0;
 	while (token)
 	{
