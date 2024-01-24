@@ -287,7 +287,7 @@ bool StringPattern::filepatt_to_grammar(const std::string& filePatt, std::vector
 
 		// save
 		grammar.push_back(strToken);
-		token = std::strtok(nullptr, delimiters);
+		token = strtok(nullptr, delimiters);
 	}
 	free(dupFP);
 
