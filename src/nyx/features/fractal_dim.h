@@ -18,7 +18,7 @@ public:
 	void save_value(std::vector<std::vector<double>>& feature_vals);
 	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
-	static bool required(const FeatureSet& fs) { return fs.anyEnabled({ FRACT_DIM_BOXCOUNT, FRACT_DIM_PERIMETER }); }
+	static bool required(const FeatureSet& fs) { return fs.anyEnabled({ Nyxus::Feature2D::FRACT_DIM_BOXCOUNT, Nyxus::Feature2D::FRACT_DIM_PERIMETER }); }
 
 private:
 	void calculate_boxcount_fdim (LR& r);

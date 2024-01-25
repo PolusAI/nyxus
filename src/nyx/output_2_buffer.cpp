@@ -32,7 +32,7 @@ namespace Nyxus
 	{
 		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
 		std::sort(L.begin(), L.end());
-		std::vector<std::tuple<std::string, AvailableFeatures>> F = theFeatureSet.getEnabledFeatures();
+		std::vector<std::tuple<std::string, int>> F = theFeatureSet.getEnabledFeatures();
 
 		// We only fill in the header once.
 		// We depend on the caller to manage headerBuf contents and clear it appropriately...
@@ -54,8 +54,8 @@ namespace Nyxus
 
 				// Parameterized feature
 				// --GLCM family
-				bool glcmFeature = std::find(GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
-				bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
+				bool glcmFeature = std::find(GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), (Feature2D)fc) != GLCMFeature::featureset.end();
+				bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), (Feature2D)fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
 				if (glcmFeature && nonAngledGlcmFeature == false)
 				{
 					// Populate with angles
@@ -70,8 +70,8 @@ namespace Nyxus
 				}
 
 				// --GLRLM family
-				bool glrlmFeature = std::find(GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
-				bool nonAngledGlrlmFeature = std::find(GLRLMFeature::nonAngledFeatures.begin(), GLRLMFeature::nonAngledFeatures.end(), fc) != GLRLMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
+				bool glrlmFeature = std::find(GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), (Feature2D)fc) != GLRLMFeature::featureset.end();
+				bool nonAngledGlrlmFeature = std::find(GLRLMFeature::nonAngledFeatures.begin(), GLRLMFeature::nonAngledFeatures.end(), (Feature2D)fc) != GLRLMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
 				if (glrlmFeature && nonAngledGlrlmFeature == false)
 				{
 					// Populate with angles
@@ -86,7 +86,7 @@ namespace Nyxus
 				}
 
 				// --Gabor
-				if (fc == GABOR)
+				if (fc == (int) Feature2D::GABOR)
 				{
 					// Generate the feature value list
 					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
@@ -99,7 +99,7 @@ namespace Nyxus
 					continue;
 				}
 
-				if (fc == FRAC_AT_D)
+				if (fc == (int) Feature2D::FRAC_AT_D)
 				{
 					// Generate the feature value list
 					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
@@ -112,7 +112,7 @@ namespace Nyxus
 					continue;
 				}
 
-				if (fc == MEAN_FRAC)
+				if (fc == (int) Feature2D::MEAN_FRAC)
 				{
 					// Generate the feature value list
 					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
@@ -125,7 +125,7 @@ namespace Nyxus
 					continue;
 				}
 
-				if (fc == RADIAL_CV)
+				if (fc == (int) Feature2D::RADIAL_CV)
 				{
 					// Generate the feature value list
 					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
@@ -139,7 +139,7 @@ namespace Nyxus
 				}
 
 				// --Zernike family
-				if (fc == ZERNIKE2D)
+				if (fc == (int) Feature2D::ZERNIKE2D)
 				{
 					// Populate with indices
 					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
@@ -184,8 +184,8 @@ namespace Nyxus
 
 				// Parameterized feature
 				// --GLCM family
-				bool glcmFeature = std::find(GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), fc) != GLCMFeature::featureset.end();
-				bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
+				bool glcmFeature = std::find(GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), (Feature2D)fc) != GLCMFeature::featureset.end();
+				bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), (Feature2D)fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
 				if (glcmFeature && nonAngledGlcmFeature == false)
 				{
 					// Mock angled values if they haven't been calculated for some error reason
@@ -202,8 +202,8 @@ namespace Nyxus
 				}
 
 				// --GLRLM family
-				bool glrlmFeature = std::find(GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), fc) != GLRLMFeature::featureset.end();
-				bool nonAngledGlrlmFeature = std::find(GLRLMFeature::nonAngledFeatures.begin(), GLRLMFeature::nonAngledFeatures.end(), fc) != GLRLMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
+				bool glrlmFeature = std::find(GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), (Feature2D)fc) != GLRLMFeature::featureset.end();
+				bool nonAngledGlrlmFeature = std::find(GLRLMFeature::nonAngledFeatures.begin(), GLRLMFeature::nonAngledFeatures.end(), (Feature2D)fc) != GLRLMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
 				if (glrlmFeature && nonAngledGlrlmFeature == false)
 				{
 					// Populate with angles
@@ -215,7 +215,7 @@ namespace Nyxus
 				}
 
 				// --Gabor
-				if (fc == GABOR)
+				if (fc == (int) Feature2D::GABOR)
 				{
 					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
 						rescache.add_numeric(vv[i]);
@@ -225,7 +225,7 @@ namespace Nyxus
 				}
 
 				// --Zernike family
-				if (fc == ZERNIKE2D)
+				if (fc == (int) Feature2D::ZERNIKE2D)
 				{
 					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
 						rescache.add_numeric(vv[i]);
@@ -235,7 +235,7 @@ namespace Nyxus
 				}
 
 				// --Radial distribution features
-				if (fc == FRAC_AT_D)
+				if (fc == (int) Feature2D::FRAC_AT_D)
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
 						rescache.add_numeric(vv[i]);
@@ -243,7 +243,7 @@ namespace Nyxus
 					// Proceed with other features
 					continue;
 				}
-				if (fc == MEAN_FRAC)
+				if (fc == (int) Feature2D::MEAN_FRAC)
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
 						rescache.add_numeric(vv[i]);
@@ -251,7 +251,7 @@ namespace Nyxus
 					// Proceed with other features
 					continue;
 				}
-				if (fc == RADIAL_CV)
+				if (fc == (int) Feature2D::RADIAL_CV)
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
 						rescache.add_numeric(vv[i]);

@@ -3,20 +3,13 @@
 #include "../parallel.h"
 #include "rotation.h"
 
+using namespace Nyxus;
+
 CaliperFeretFeature::CaliperFeretFeature() : FeatureMethod("CaliperFeretFeature")
 {
 	// Letting the feature dependency manager know 
-	provide_features({
-			MIN_FERET_ANGLE,
-			MAX_FERET_ANGLE,
-			STAT_FERET_DIAM_MIN,
-			STAT_FERET_DIAM_MAX,
-			STAT_FERET_DIAM_MEAN,
-			STAT_FERET_DIAM_MEDIAN,
-			STAT_FERET_DIAM_STDDEV,
-			STAT_FERET_DIAM_MODE});
-
-	add_dependencies({ CONVEX_HULL_AREA });
+	provide_features (CaliperFeretFeature::featureset);
+	add_dependencies ({ Feature2D::CONVEX_HULL_AREA });
 }
 
 void CaliperFeretFeature::calculate(LR& r)
@@ -48,14 +41,16 @@ void CaliperFeretFeature::calculate(LR& r)
 
 void CaliperFeretFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[MIN_FERET_ANGLE][0] = minFeretAngle;
-	fvals[MAX_FERET_ANGLE][0] = maxFeretAngle;
-	fvals[STAT_FERET_DIAM_MIN][0] = _min;
-	fvals[STAT_FERET_DIAM_MAX][0] = _max;
-	fvals[STAT_FERET_DIAM_MEAN][0] = _mean;
-	fvals[STAT_FERET_DIAM_MEDIAN][0] = _median;
-	fvals[STAT_FERET_DIAM_STDDEV][0] = _stdev;
-	fvals[STAT_FERET_DIAM_MODE][0] = _mode;
+	fvals[(int)Feature2D::MIN_FERET_DIAMETER][0] = minFeretDiameter;
+	fvals[(int)Feature2D::MAX_FERET_DIAMETER][0] = maxFeretDiameter;
+	fvals[(int)Feature2D::MIN_FERET_ANGLE][0] = minFeretAngle;
+	fvals[(int)Feature2D::MAX_FERET_ANGLE][0] = maxFeretAngle;
+	fvals[(int)Feature2D::STAT_FERET_DIAM_MIN][0] = _min;
+	fvals[(int)Feature2D::STAT_FERET_DIAM_MAX][0] = _max;
+	fvals[(int)Feature2D::STAT_FERET_DIAM_MEAN][0] = _mean;
+	fvals[(int)Feature2D::STAT_FERET_DIAM_MEDIAN][0] = _median;
+	fvals[(int)Feature2D::STAT_FERET_DIAM_STDDEV][0] = _stdev;
+	fvals[(int)Feature2D::STAT_FERET_DIAM_MODE][0] = _mode;
 }
 
 //void CaliperFeretFeature::calculate_imp (const std::vector<Pixel2>& convex_hull, std::vector<double>& D_min, std::vector<double>& D_max)

@@ -69,7 +69,7 @@ jobs:
     - name: Install Conda Dependencies
       run: |
         conda install mamba
-        mamba install compilers pytest --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt --file ${{github.workspace}}/ci-utils/envs/conda_py.txt 
+        mamba install compilers pytest bfio --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt --file ${{github.workspace}}/ci-utils/envs/conda_py.txt 
 
     - name: Install Nyxus
       working-directory: ${{github.workspace}}

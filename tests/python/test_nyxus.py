@@ -3,39 +3,89 @@ import pyarrow.parquet as pq
 import nyxus
 import pytest
 import numpy as np
-import pandas as pd
 import math
 from pathlib import Path
+import pathlib
 from test_data import intens, seg
-import os
 import shutil
-import time
+
+from test_tissuenet_data import tissuenet_int, tissuenet_seg
 
 class TestImport():
     def test_import(self):
         assert nyxus.__name__ == "nyxus"  
         
-class TestNyxus():
-        PATH = PATH = Path(__file__).with_name('data')
-        
-        @classmethod
-        def setup_class(cls):
-            os.mkdir('TestNyxusOut')
-
-        @classmethod 
-        def teardown_class(cls):
-            shutil.rmtree('TestNyxusOut')
-            try:
-                os.remove('NyxusFeatures.arrow')
-            except:
-                print('No .arrow file to delete')
-                
-            try:
-                os.remove('NyxusFeatures.parquet')
-            except:
-                print('No .parquet file to delete')
+class TestNyxus():     
+        def test_featurize_all(self):
+            path = str(pathlib.Path(__file__).parent.resolve())
             
-
+            data_path = path + '/data/'
+            
+            nyx = nyxus.Nyxus (["*ALL*"])
+            assert nyx is not None
+            
+            directory_features = nyx.featurize_directory(data_path + 'int/', data_path + 'seg/')
+            directory_features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+            
+            files_features = nyx.featurize_files(
+                [data_path + 'int/p0_y1_r1_c0.ome.tif', data_path + 'int/p0_y1_r1_c1.ome.tif'],
+                [data_path + 'seg/p0_y1_r1_c0.ome.tif', data_path + 'seg/p0_y1_r1_c1.ome.tif'],
+                single_roi=False,
+            )
+            
+            files_features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+            
+            directory_columns = directory_features.columns
+            files_columns = files_features.columns
+            
+            assert len(directory_columns) == len(files_columns)
+            
+            files_not_equal = []
+            
+            for col in directory_columns:
+                directory_list = directory_features[col].tolist()
+                files_list = files_features[col].tolist()
+                
+                for directory_val, files_val in zip(directory_list, files_list):
+                    if not directory_val == pytest.approx(files_val, rel=1e-5, abs=1e-5):
+                        files_not_equal.append(col)
+                        break
+            
+            assert len(files_not_equal) == 0
+            
+        def test_featurize_montage(self):
+            
+            path = str(pathlib.Path(__file__).parent.resolve())
+            
+            data_path = path + '/data/'
+            
+            nyx = nyxus.Nyxus (["*ALL_INTENSITY*"])
+            assert nyx is not None
+            
+            montage_features = nyx.featurize(tissuenet_int, tissuenet_seg, intensity_names=['p0_y1_r1_c0.ome.tif', 'p0_y1_r1_c1.ome.tif'], label_names=['p0_y1_r1_c0.ome.tif', 'p0_y1_r1_c1.ome.tif'])
+            directory_features = nyx.featurize_directory(data_path + 'int/', data_path + 'seg/')
+            
+            montage_features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+            directory_features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+            
+            directory_columns = directory_features.columns
+            montage_columns = montage_features.columns
+            
+            assert len(directory_columns) == len(montage_columns)
+            
+            montage_not_equal = []
+            
+            for col in directory_columns:
+                directory_list = directory_features[col].tolist()
+                montage_list = montage_features[col].tolist()
+                
+                for directory_val, montage_val in zip(directory_list, montage_list):
+                    if not directory_val == pytest.approx(montage_val, rel=1e-4, abs=1e-4): # higher error tolerance for COVERED_IMAGE_INTENSITY_RANGE
+                        montage_not_equal.append(col)
+                        break
+            
+            assert len(montage_not_equal) == 0
+            
         def test_gabor_gpu(self):
             # cpu gabor
             cpu_nyx = nyxus.Nyxus(["GABOR"])
@@ -327,7 +377,7 @@ class TestNyxus():
             open_parquet_file = pq.ParquetFile(parquet_file)
             
             parquet_df = open_parquet_file.read().to_pandas()
-            
+
             # Read the Parquet file into a Pandas DataFrame
             pd_columns = list(features.columns)
 
@@ -354,24 +404,28 @@ class TestNyxus():
                     assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
             
             open_parquet_file.close()
+            Path(parquet_file).unlink()
             
         @pytest.mark.arrow        
-        def test_parquet_writer_file_naming(self):
+        def test_parquet_writer_file_naming(self, tmp_path):
         
             nyx = nyxus.Nyxus (["*ALL*"])
             assert nyx is not None
             
             features = nyx.featurize(intens, seg)
-
-            parquet_file = nyx.featurize(intens, seg, output_type="parquet", output_path='TestNyxusOut/test_parquet.parquet')
+            output_dir = tmp_path/"TestNyxusOut"
+            output_dir.mkdir()
             
-            assert parquet_file == "TestNyxusOut/test_parquet.parquet"
+            parquet_file = nyx.featurize(intens, seg, output_type="parquet", output_path=str(output_dir/"test_parquet"))
+
+            output_file = Path(parquet_file)
+            assert output_file.is_file()
+
+            assert parquet_file == str(output_file)
 
             # Read the Parquet file into a Pandas DataFrame
-            #parquet_df = pq.read_table(open_parquet_file).to_pandas()
-            file = pq.ParquetFile(parquet_file)
+            file = pq.ParquetFile(str(output_file))
             parquet_df = file.read().to_pandas()
-            #parquet_df = pd.read_parquet(parquet_file)
             pd_columns = list(features.columns)
 
             arrow_columns = list(parquet_df.columns)
@@ -399,6 +453,7 @@ class TestNyxus():
             
             file.close()
 
+            shutil.rmtree(output_dir)
 
         @pytest.mark.arrow
         def test_make_arrow_ipc(self):
@@ -437,14 +492,21 @@ class TestNyxus():
                             continue
                         assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
 
+            
+            path = nyx.get_arrow_ipc_file()
+            assert path == arrow_path
+            
+            Path(arrow_path).unlink()
+
         
         @pytest.mark.arrow
-        def test_arrow_ipc(self):
+        def test_arrow_ipc(self, tmp_path):
             
             nyx = nyxus.Nyxus (["*ALL*"])
             assert nyx is not None
-            
-            arrow_path = nyx.featurize(intens, seg, output_type="arrowipc", output_path='TestNyxusOut/')
+            output_dir = tmp_path/"TestNyxusOut"
+            output_dir.mkdir()
+            arrow_path = nyx.featurize(intens, seg, output_type="arrowipc", output_path=str(output_dir))
 
             features = nyx.featurize(intens, seg)
             
@@ -456,6 +518,8 @@ class TestNyxus():
                 
                 assert len(pd_columns) == len(arrow_columns)
                     
+
+
                 for column in pd_columns:
                     
                     column_list = features[column].tolist()
@@ -474,16 +538,21 @@ class TestNyxus():
 
                             continue
                         assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
+            
+            shutil.rmtree(output_dir)
+
                         
         @pytest.mark.arrow
-        def test_arrow_ipc_file_naming(self):
+        def test_arrow_ipc_file_naming(self, tmp_path):
             
             nyx = nyxus.Nyxus (["*ALL*"])
             assert nyx is not None
-            
-            arrow_path = nyx.featurize(intens, seg, output_type="arrowipc", output_path='TestNyxusOut/test_nyxus.arrow')
-            
-            assert arrow_path == "TestNyxusOut/test_nyxus.arrow"
+            output_dir = tmp_path/"TestNyxusOut"
+            output_dir.mkdir()
+            output_file = output_dir/"test_nyxus.arrow"
+            arrow_path = nyx.featurize(intens, seg, output_type="arrowipc", output_path=str(output_file))
+            assert output_file.is_file()
+            assert arrow_path == str(output_file)
 
             features = nyx.featurize(intens, seg)
             
@@ -512,8 +581,11 @@ class TestNyxus():
                                 assert False
 
                             continue
+
                         assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
             
+            shutil.rmtree(output_dir)
+
         @pytest.mark.arrow
         def test_arrow_ipc_no_path(self):
             
@@ -534,6 +606,7 @@ class TestNyxus():
                 
                 assert len(pd_columns) == len(arrow_columns)
                     
+
                 for column in pd_columns:
                     
                     column_list = features[column].tolist()
@@ -552,7 +625,8 @@ class TestNyxus():
 
                             continue
                         assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
-            
+            Path(arrow_path).unlink()
+                        
         @pytest.mark.arrow         
         def test_arrow_ipc_path(self):
             
@@ -562,3 +636,4 @@ class TestNyxus():
             arrow_path = nyx.featurize(intens, seg, output_type="arrowipc")
 
             assert arrow_path == 'NyxusFeatures.arrow'           
+

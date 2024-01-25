@@ -13,25 +13,8 @@ public:
 	void parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads);
 	static void parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 	void cleanup_instance();
+	static bool required(const FeatureSet& fs);
 
-	static bool required(const FeatureSet& fs) {
-		return fs.anyEnabled({
-			AREA_PIXELS_COUNT,
-			AREA_UM2,
-			ASPECT_RATIO,
-			BBOX_XMIN,
-			BBOX_YMIN,
-			BBOX_WIDTH,
-			BBOX_HEIGHT,
-			CENTROID_X,
-			CENTROID_Y,
-			COMPACTNESS,
-			DIAMETER_EQUAL_AREA,
-			EXTENT,
-			MASS_DISPLACEMENT,
-			WEIGHTED_CENTROID_X,
-			WEIGHTED_CENTROID_Y });
-	}
 private:
 	double
 		val_AREA_PIXELS_COUNT = 0, 

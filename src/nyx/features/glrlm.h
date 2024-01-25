@@ -18,62 +18,62 @@ public:
 
 	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
 	// in the feature group nickname expansion, and in the feature value output 
-	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
 	{
-		GLRLM_SRE,		// Short Run Emphasis 
-		GLRLM_LRE,		// Long Run Emphasis 
-		GLRLM_GLN,		// Gray Level Non-Uniformity 
-		GLRLM_GLNN,		// Gray Level Non-Uniformity Normalized 
-		GLRLM_RLN,		// Run Length Non-Uniformity
-		GLRLM_RLNN,		// Run Length Non-Uniformity Normalized 
-		GLRLM_RP,		// Run Percentage
-		GLRLM_GLV,		// Gray Level Variance 
-		GLRLM_RV,		// Run Variance 
-		GLRLM_RE,		// Run Entropy 
-		GLRLM_LGLRE,	// Low Gray Level Run Emphasis 
-		GLRLM_HGLRE,	// High Gray Level Run Emphasis 
-		GLRLM_SRLGLE,	// Short Run Low Gray Level Emphasis 
-		GLRLM_SRHGLE,	// Short Run High Gray Level Emphasis 
-		GLRLM_LRLGLE,	// Long Run Low Gray Level Emphasis 
-		GLRLM_LRHGLE,	// Long Run High Gray Level Emphasis 
+		Nyxus::Feature2D::GLRLM_SRE,		// Short Run Emphasis 
+		Nyxus::Feature2D::GLRLM_LRE,		// Long Run Emphasis 
+		Nyxus::Feature2D::GLRLM_GLN,		// Gray Level Non-Uniformity 
+		Nyxus::Feature2D::GLRLM_GLNN,		// Gray Level Non-Uniformity Normalized 
+		Nyxus::Feature2D::GLRLM_RLN,		// Run Length Non-Uniformity
+		Nyxus::Feature2D::GLRLM_RLNN,		// Run Length Non-Uniformity Normalized 
+		Nyxus::Feature2D::GLRLM_RP,		// Run Percentage
+		Nyxus::Feature2D::GLRLM_GLV,		// Gray Level Variance 
+		Nyxus::Feature2D::GLRLM_RV,		// Run Variance 
+		Nyxus::Feature2D::GLRLM_RE,		// Run Entropy 
+		Nyxus::Feature2D::GLRLM_LGLRE,	// Low Gray Level Run Emphasis 
+		Nyxus::Feature2D::GLRLM_HGLRE,	// High Gray Level Run Emphasis 
+		Nyxus::Feature2D::GLRLM_SRLGLE,	// Short Run Low Gray Level Emphasis 
+		Nyxus::Feature2D::GLRLM_SRHGLE,	// Short Run High Gray Level Emphasis 
+		Nyxus::Feature2D::GLRLM_LRLGLE,	// Long Run Low Gray Level Emphasis 
+		Nyxus::Feature2D::GLRLM_LRHGLE,	// Long Run High Gray Level Emphasis 
 		// averaged features:
-		GLRLM_SRE_AVE,
-		GLRLM_LRE_AVE,
-		GLRLM_GLN_AVE,
-		GLRLM_GLNN_AVE,
-		GLRLM_RLN_AVE,
-		GLRLM_RLNN_AVE,
-		GLRLM_RP_AVE,
-		GLRLM_GLV_AVE,
-		GLRLM_RV_AVE,
-		GLRLM_RE_AVE,
-		GLRLM_LGLRE_AVE,
-		GLRLM_HGLRE_AVE,
-		GLRLM_SRLGLE_AVE,
-		GLRLM_SRHGLE_AVE,
-		GLRLM_LRLGLE_AVE,
-		GLRLM_LRHGLE_AVE
+		Nyxus::Feature2D::GLRLM_SRE_AVE,
+		Nyxus::Feature2D::GLRLM_LRE_AVE,
+		Nyxus::Feature2D::GLRLM_GLN_AVE,
+		Nyxus::Feature2D::GLRLM_GLNN_AVE,
+		Nyxus::Feature2D::GLRLM_RLN_AVE,
+		Nyxus::Feature2D::GLRLM_RLNN_AVE,
+		Nyxus::Feature2D::GLRLM_RP_AVE,
+		Nyxus::Feature2D::GLRLM_GLV_AVE,
+		Nyxus::Feature2D::GLRLM_RV_AVE,
+		Nyxus::Feature2D::GLRLM_RE_AVE,
+		Nyxus::Feature2D::GLRLM_LGLRE_AVE,
+		Nyxus::Feature2D::GLRLM_HGLRE_AVE,
+		Nyxus::Feature2D::GLRLM_SRLGLE_AVE,
+		Nyxus::Feature2D::GLRLM_SRHGLE_AVE,
+		Nyxus::Feature2D::GLRLM_LRLGLE_AVE,
+		Nyxus::Feature2D::GLRLM_LRHGLE_AVE
 	};
 
 	// Features implemented by this class that do not require vector-like angled output. Instead, they are output as a single values
-	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> nonAngledFeatures =
+	const constexpr static std::initializer_list<Nyxus::Feature2D> nonAngledFeatures =
 	{
-		GLRLM_SRE_AVE,
-		GLRLM_LRE_AVE,
-		GLRLM_GLN_AVE,
-		GLRLM_GLNN_AVE,
-		GLRLM_RLN_AVE,
-		GLRLM_RLNN_AVE,
-		GLRLM_RP_AVE,
-		GLRLM_GLV_AVE,
-		GLRLM_RV_AVE,
-		GLRLM_RE_AVE,
-		GLRLM_LGLRE_AVE,
-		GLRLM_HGLRE_AVE,
-		GLRLM_SRLGLE_AVE,
-		GLRLM_SRHGLE_AVE,
-		GLRLM_LRLGLE_AVE,
-		GLRLM_LRHGLE_AVE
+		Nyxus::Feature2D::GLRLM_SRE_AVE,
+		Nyxus::Feature2D::GLRLM_LRE_AVE,
+		Nyxus::Feature2D::GLRLM_GLN_AVE,
+		Nyxus::Feature2D::GLRLM_GLNN_AVE,
+		Nyxus::Feature2D::GLRLM_RLN_AVE,
+		Nyxus::Feature2D::GLRLM_RLNN_AVE,
+		Nyxus::Feature2D::GLRLM_RP_AVE,
+		Nyxus::Feature2D::GLRLM_GLV_AVE,
+		Nyxus::Feature2D::GLRLM_RV_AVE,
+		Nyxus::Feature2D::GLRLM_RE_AVE,
+		Nyxus::Feature2D::GLRLM_LGLRE_AVE,
+		Nyxus::Feature2D::GLRLM_HGLRE_AVE,
+		Nyxus::Feature2D::GLRLM_SRLGLE_AVE,
+		Nyxus::Feature2D::GLRLM_SRHGLE_AVE,
+		Nyxus::Feature2D::GLRLM_LRLGLE_AVE,
+		Nyxus::Feature2D::GLRLM_LRHGLE_AVE
 	};
 
 	GLRLMFeature();

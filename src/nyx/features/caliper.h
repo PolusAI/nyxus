@@ -9,6 +9,16 @@
 class CaliperNassensteinFeature : public FeatureMethod
 {
 public:
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+	{
+		Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MIN,
+		Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MAX,
+		Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MEAN,
+		Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MEDIAN,
+		Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_STDDEV,
+		Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MODE
+	};
+
 	CaliperNassensteinFeature();
 	void calculate (LR& r);
 	void osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {};		// No online mode for this feature
@@ -18,15 +28,10 @@ public:
 	void parallel_process (std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads);
 
 	// Compatibility with manual reduce
-	static bool required(const FeatureSet& fs) {
-		return fs.anyEnabled({
-			STAT_NASSENSTEIN_DIAM_MIN,
-			STAT_NASSENSTEIN_DIAM_MAX,
-			STAT_NASSENSTEIN_DIAM_MEAN,
-			STAT_NASSENSTEIN_DIAM_MEDIAN,
-			STAT_NASSENSTEIN_DIAM_STDDEV,
-			STAT_NASSENSTEIN_DIAM_MODE });
-			}
+	static bool required(const FeatureSet& fs) 
+	{
+		return fs.anyEnabled (CaliperNassensteinFeature::featureset);
+	}
 
 private:
 	void calculate_imp(const std::vector<Pixel2>& convex_hull, std::vector<double>& all_D);
@@ -42,6 +47,20 @@ private:
 class CaliperFeretFeature : public FeatureMethod
 {
 public:
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset = 
+	{
+		Nyxus::Feature2D::MIN_FERET_DIAMETER,
+		Nyxus::Feature2D::MAX_FERET_DIAMETER,
+		Nyxus::Feature2D::MIN_FERET_ANGLE,
+		Nyxus::Feature2D::MAX_FERET_ANGLE,
+		Nyxus::Feature2D::STAT_FERET_DIAM_MIN,
+		Nyxus::Feature2D::STAT_FERET_DIAM_MAX,
+		Nyxus::Feature2D::STAT_FERET_DIAM_MEAN,
+		Nyxus::Feature2D::STAT_FERET_DIAM_MEDIAN,
+		Nyxus::Feature2D::STAT_FERET_DIAM_STDDEV,
+		Nyxus::Feature2D::STAT_FERET_DIAM_MODE
+	};
+
 	CaliperFeretFeature();
 	void calculate(LR& r);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {};		// No online mode for this feature
@@ -51,16 +70,9 @@ public:
 	void parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads);
 
 	// Compatibility with manual reduce
-	static bool required(const FeatureSet& fs) {
-		return fs.anyEnabled({ 
-			MIN_FERET_ANGLE,
-			MAX_FERET_ANGLE,
-			STAT_FERET_DIAM_MIN,
-			STAT_FERET_DIAM_MAX,
-			STAT_FERET_DIAM_MEAN,
-			STAT_FERET_DIAM_MEDIAN,
-			STAT_FERET_DIAM_STDDEV,
-			STAT_FERET_DIAM_MODE });
+	static bool required(const FeatureSet& fs) 
+	{
+		return fs.anyEnabled (CaliperFeretFeature::featureset);
 	}
 
 private:	
@@ -85,6 +97,16 @@ private:
 class CaliperMartinFeature : public FeatureMethod
 {
 public:
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+	{
+		Nyxus::Feature2D::STAT_MARTIN_DIAM_MIN,
+		Nyxus::Feature2D::STAT_MARTIN_DIAM_MAX,
+		Nyxus::Feature2D::STAT_MARTIN_DIAM_MEAN,
+		Nyxus::Feature2D::STAT_MARTIN_DIAM_MEDIAN,
+		Nyxus::Feature2D::STAT_MARTIN_DIAM_STDDEV,
+		Nyxus::Feature2D::STAT_MARTIN_DIAM_MODE
+	};
+
 	CaliperMartinFeature();
 	void calculate(LR& r);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {};		
@@ -94,14 +116,9 @@ public:
 	void parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads);
 
 	// Compatibility with manual reduce
-	static bool required(const FeatureSet& fs) {
-		return fs.anyEnabled({ 
-			STAT_MARTIN_DIAM_MIN,
-			STAT_MARTIN_DIAM_MAX,
-			STAT_MARTIN_DIAM_MEAN,
-			STAT_MARTIN_DIAM_MEDIAN,
-			STAT_MARTIN_DIAM_STDDEV,
-			STAT_MARTIN_DIAM_MODE });
+	static bool required(const FeatureSet& fs) 
+	{
+		return fs.anyEnabled (CaliperMartinFeature::featureset);
 	}
 
 private:

@@ -18,10 +18,12 @@ class GaborFeature: public FeatureMethod
 {
 public:
 
-    static bool required(const FeatureSet& fs) { return fs.isEnabled(GABOR); }
+    const constexpr static std::initializer_list<Nyxus::Feature2D> featureset = { Nyxus::Feature2D::GABOR };
 
     GaborFeature();
-    
+
+    static bool required(const FeatureSet& fs);
+   
     //=== Trivial ROIs ===
     void calculate(LR& r);
 

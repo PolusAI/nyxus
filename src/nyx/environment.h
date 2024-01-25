@@ -42,6 +42,7 @@
 #define IBSICOMPLIANCE "--ibsi" // skip binning for grey level and grey tone features
 #define SKIPROI "--skiproi"		// Optional. Skip ROIs having specified labels. Sybtax: --skiproi <label[,label,label,...]>
 #define RESULTFNAME "--resultFname"				// Environment :: nyxus_result_fname
+#define CLI_DIM "--dim"							// Environment :: raw_dim
 
 #ifdef CHECKTIMING
 	#define EXCLUSIVETIMING "--exclusivetiming"
@@ -72,26 +73,6 @@
 #define FPIMAGE_MIN "--fpimgmin"				// Expected voxel min intensity
 #define FPIMAGE_MAX "--fpimgmax"				// Expected voxel max intensity
 
-// Feature group nicknames. Each nickname should be used twice - 
-// in Nyxus::parse_delimited_string_list_to_features() 
-// and in Environment::process_feature_list()
-#define FEA_NICK_ALL "*ALL*"
-#define FEA_NICK_ALL_INTENSITY "*ALL_INTENSITY*"
-#define FEA_NICK_ALL_MORPHOLOGY "*ALL_MORPHOLOGY*"
-#define FEA_NICK_BASIC_MORPHOLOGY "*BASIC_MORPHOLOGY*"
-#define FEA_NICK_ALL_GLCM "*ALL_GLCM*"
-#define FEA_NICK_ALL_GLRLM "*ALL_GLRLM*"
-#define FEA_NICK_ALL_GLDZM "*ALL_GLDZM*"
-#define FEA_NICK_ALL_GLSZM "*ALL_GLSZM*"
-#define FEA_NICK_ALL_GLDM "*ALL_GLDM*"
-#define FEA_NICK_ALL_NGLDM "*ALL_NGLDM*"
-#define FEA_NICK_ALL_NGTDM "*ALL_NGTDM*"
-#define FEA_NICK_ALL_BUT_GABOR "*ALL_BUT_GABOR*"
-#define FEA_NICK_ALL_BUT_GLCM "*ALL_BUT_GLCM*"
-#define FEA_NICK_ALL_EASY "*ALL_EASY*"	// Equivalent to *ALL* minus GABOR, GLCM, and 2D moments
-#define FEA_NICK_ALL_NEIG "*ALL_NEIGHBOR*"	
-#define FEA_NICK_2DMOMENTS "*2DMOMENTS*"	
-
 // Valid values of 'OUTPUTTYPE'
 #define OT_SEPCSV "separatecsv"
 #define OT_SINGLECSV "singlecsv"
@@ -121,8 +102,11 @@ public:
 		intSegMapFile = "";
 	std::string nyxus_result_fname = "NyxusFeatures";	// Default file name without extension ".csv", ".arrow", etc
 
-	bool singleROI = false; // is set to 'true' parse_cmdline() if labels_dir==intensity_dir
+	// Returns the expected dataset dimensionality based on the command line options
+	int dim() { return dim_; }
+	void set_dim(int d) { dim_ = d; }
 
+	bool singleROI = false; // Applies to dim()==2: singleROI is set to 'true' parse_cmdline() if labels_dir==intensity_dir
 
 	Nyxus::ArrowOutputStream  arrow_stream;
 
@@ -164,7 +148,7 @@ public:
 	int get_pixel_distance();
 	void set_pixel_distance(int pixelDistance);
 	size_t get_ram_limit();
-	void process_feature_list();
+	void expand_featuregroups();
 
 	static bool gpu_is_available();
 
@@ -218,6 +202,7 @@ private:
 
 	bool find_string_argument (std::vector<std::string>::iterator &i, const char *arg, std::string &arg_value);
 	bool find_int_argument(std::vector<std::string>::iterator &i, const char *arg, int &arg_value);
+	bool spellcheck_raw_featurelist (const std::string & comma_separated_fnames, std::vector<std::string> & fnames);
 
 	std::string rawTempDirPath = "";
 
@@ -245,12 +230,16 @@ private:
 	std::string rawBlacklistedRois = "";
 	RoiBlacklist roiBlacklist;
 
+	// Dataset's dimensionality. Valid values: 2 and 3
+	int dim_ = 2;
+	std::string raw_dim = "";
+	bool expand_2D_featuregroup (const std::string& name);
+	bool expand_3D_featuregroup (const std::string& name);
+
 	// data members implementing exclusive-inclusive timing switch
 	#ifdef CHECKTIMING
 		std::string rawExclusiveTiming = "";
 	#endif
-
-	
 };
 
 namespace Nyxus
@@ -262,3 +251,4 @@ namespace Nyxus
 #define VERBOSLVL2(stmt) if(Nyxus::theEnvironment.get_verbosity_level()>=2){stmt;}
 #define VERBOSLVL3(stmt) if(Nyxus::theEnvironment.get_verbosity_level()>=3){stmt;}
 #define VERBOSLVL4(stmt) if(Nyxus::theEnvironment.get_verbosity_level()>=4){stmt;}	
+#define VERBOSLVL5(stmt) if(Nyxus::theEnvironment.get_verbosity_level()>=5){stmt;}	

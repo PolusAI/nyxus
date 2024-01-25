@@ -3,10 +3,11 @@
 #include "gabor.h"
 #include "image_matrix_nontriv.h"
 
+using namespace Nyxus;
 
 GaborFeature::GaborFeature() : FeatureMethod("GaborFeature") 
 {
-    provide_features ({ GABOR });
+    provide_features ({ Feature2D::GABOR });
 }
 
 void GaborFeature::osized_calculate (LR& r, ImageLoader&)

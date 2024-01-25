@@ -7,6 +7,8 @@
 #include "image_matrix_nontriv.h"
 #include "../environment.h"
 
+using namespace Nyxus;
+
 NGTDMFeature::NGTDMFeature(): FeatureMethod("NGTDMFeature")
 {
 	provide_features (NGTDMFeature::featureset);
@@ -178,11 +180,11 @@ void NGTDMFeature::calculate (LR& r)
 
 void NGTDMFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[NGTDM_COARSENESS][0] = _coarseness;
-	fvals[NGTDM_CONTRAST][0] = _contrast;
-	fvals[NGTDM_BUSYNESS][0] = _busyness;
-	fvals[NGTDM_COMPLEXITY][0] = _complexity;
-	fvals[NGTDM_STRENGTH][0] = _strength;
+	fvals[(int)Feature2D::NGTDM_COARSENESS][0] = _coarseness;
+	fvals[(int)Feature2D::NGTDM_CONTRAST][0] = _contrast;
+	fvals[(int)Feature2D::NGTDM_BUSYNESS][0] = _busyness;
+	fvals[(int)Feature2D::NGTDM_COMPLEXITY][0] = _complexity;
+	fvals[(int)Feature2D::NGTDM_STRENGTH][0] = _strength;
 }
 
 void NGTDMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} // Not supporting

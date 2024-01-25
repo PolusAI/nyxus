@@ -5,7 +5,7 @@
 
 std::string HieLR::get_output_csv_fname()
 {
-	std::string fullPath = "_INT_" + getPureFname(segFname) + "_SEG_" + getPureFname(segFname) + ".csv";
+	std::string fullPath = "_INT_" + Nyxus::getPureFname(segFname) + "_SEG_" + Nyxus::getPureFname(segFname) + ".csv";
 	return fullPath;
 }
 

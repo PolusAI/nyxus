@@ -12,27 +12,27 @@ public:
 
 	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
 	// in the feature group nickname expansion, and in the feature value output 
-	const constexpr static std::initializer_list<Nyxus::AvailableFeatures> featureset =
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
 	{
-		NGLDM_LDE,		// Low Dependence Emphasis
-		NGLDM_HDE,		// High Dependence Emphasis
-		NGLDM_LGLCE,	// Low Grey Level Count Emphasis
-		NGLDM_HGLCE,	// High Grey Level Count Emphasis
-		NGLDM_LDLGLE,	// Low Dependence Low Grey Level Emphasis
-		NGLDM_LDHGLE,	// Low Dependence High Grey Level Emphasis
-		NGLDM_HDLGLE,	// High Dependence Low Grey Level Emphasis
-		NGLDM_HDHGLE,	// High Dependence High Grey Level Emphasis
-		NGLDM_GLNU,		// Grey Level Non-Uniformity
-		NGLDM_GLNUN,	// Grey Level Non-Uniformity Normalised
-		NGLDM_DCNU,		// Dependence Count Non-Uniformity
-		NGLDM_DCNUN,	// Dependence Count Non-Uniformity Normalised
-		NGLDM_GLM,		// Grey Level Mean
-		NGLDM_DCP,		// Dependence Count Percentage
-		NGLDM_GLV,		// Grey Level Variance
-		NGLDM_DCM,		// Dependence Count Mean
-		NGLDM_DCV,		// Dependence Count Variance
-		NGLDM_DCENT,	// Dependence Count Entropy
-		NGLDM_DCENE		// Dependence Count Energy
+		Nyxus::Feature2D::NGLDM_LDE,		// Low Dependence Emphasis
+		Nyxus::Feature2D::NGLDM_HDE,		// High Dependence Emphasis
+		Nyxus::Feature2D::NGLDM_LGLCE,	// Low Grey Level Count Emphasis
+		Nyxus::Feature2D::NGLDM_HGLCE,	// High Grey Level Count Emphasis
+		Nyxus::Feature2D::NGLDM_LDLGLE,	// Low Dependence Low Grey Level Emphasis
+		Nyxus::Feature2D::NGLDM_LDHGLE,	// Low Dependence High Grey Level Emphasis
+		Nyxus::Feature2D::NGLDM_HDLGLE,	// High Dependence Low Grey Level Emphasis
+		Nyxus::Feature2D::NGLDM_HDHGLE,	// High Dependence High Grey Level Emphasis
+		Nyxus::Feature2D::NGLDM_GLNU,		// Grey Level Non-Uniformity
+		Nyxus::Feature2D::NGLDM_GLNUN,	// Grey Level Non-Uniformity Normalised
+		Nyxus::Feature2D::NGLDM_DCNU,		// Dependence Count Non-Uniformity
+		Nyxus::Feature2D::NGLDM_DCNUN,	// Dependence Count Non-Uniformity Normalised
+		Nyxus::Feature2D::NGLDM_GLM,		// Grey Level Mean
+		Nyxus::Feature2D::NGLDM_DCP,		// Dependence Count Percentage
+		Nyxus::Feature2D::NGLDM_GLV,		// Grey Level Variance
+		Nyxus::Feature2D::NGLDM_DCM,		// Dependence Count Mean
+		Nyxus::Feature2D::NGLDM_DCV,		// Dependence Count Variance
+		Nyxus::Feature2D::NGLDM_DCENT,	// Dependence Count Entropy
+		Nyxus::Feature2D::NGLDM_DCENE		// Dependence Count Energy
 	};
 
 	NGLDMfeature();

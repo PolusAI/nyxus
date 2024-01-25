@@ -13,69 +13,6 @@
 /// A max chord is the max of all chords for one ROI rotation. 
 /// 
  
-#if 0
-class Chords_feature
-{
-public:
-	static bool required(const FeatureSet& fs)
-	{
-		return fs.anyEnabled({
-				MAXCHORDS_MAX,
-				MAXCHORDS_MAX_ANG,
-				MAXCHORDS_MIN,
-				MAXCHORDS_MIN_ANG,
-				MAXCHORDS_MEDIAN,
-				MAXCHORDS_MEAN,
-				MAXCHORDS_MODE,
-				MAXCHORDS_STDDEV,
-				ALLCHORDS_MAX,
-				ALLCHORDS_MAX_ANG,
-				ALLCHORDS_MIN,
-				ALLCHORDS_MIN_ANG,
-				ALLCHORDS_MEDIAN,
-				ALLCHORDS_MEAN,
-				ALLCHORDS_MODE,
-				ALLCHORDS_STDDEV, });
-	}
-
-	Chords_feature (const std::vector<Pixel2> & raw_pixels, const AABB & bb, const double cenx, const double ceny);
-
-	/// @brief Calculated maxchords statistics
-	/// @return Tuple of [0] max, [1] min, [2] median, [3] mean, [4] mode, [5] std, [6] min_angle, [7] max_angle
-	std::tuple<double, double, double, double, double, double, double, double> get_maxchords_stats();
-
-	/// @brief Calculated allchords statistics
-	/// @return Tuple of [0] max, [1] min, [2] median, [3] mean, [4] mode, [5] std, [6] min_angle, [7] max_angle
-	std::tuple<double, double, double, double, double, double, double, double> get_allchords_stats();
-
-	/// @brief Calculates "maxchords" and "allchords" features for a range of ROI labels
-	/// @param start First ROI label index
-	/// @param end Last ROI label index
-	/// @param ptrLabels Vector of ROI labels
-	/// @param ptrLabelData Map of numeric ROI labels to ROI data
-	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
-
-private:
-	double
-		allchords_max = 0,
-		allchords_min = 0,
-		allchords_median = 0,
-		allchords_mean = 0,
-		allchords_mode = 0,
-		allchords_stddev = 0,
-		allchords_min_angle = 0,
-		allchords_max_angle = 0,
-		maxchords_max = 0,
-		maxchords_min = 0,
-		maxchords_median = 0,
-		maxchords_mean = 0,
-		maxchords_mode = 0,
-		maxchords_stddev = 0,
-		maxchords_min_angle = 0,
-		maxchords_max_angle = 0;
-};
-#endif
-
 class ChordsFeature : public FeatureMethod
 {
 public:
@@ -94,24 +31,23 @@ public:
 	static bool required(const FeatureSet& fs)
 	{
 		return fs.anyEnabled({
-				MAXCHORDS_MAX,
-				MAXCHORDS_MAX_ANG,
-				MAXCHORDS_MIN,
-				MAXCHORDS_MIN_ANG,
-				MAXCHORDS_MEDIAN,
-				MAXCHORDS_MEAN,
-				MAXCHORDS_MODE,
-				MAXCHORDS_STDDEV,
-				ALLCHORDS_MAX,
-				ALLCHORDS_MAX_ANG,
-				ALLCHORDS_MIN,
-				ALLCHORDS_MIN_ANG,
-				ALLCHORDS_MEDIAN,
-				ALLCHORDS_MEAN,
-				ALLCHORDS_MODE,
-				ALLCHORDS_STDDEV });
+				Nyxus::Feature2D::MAXCHORDS_MAX,
+				Nyxus::Feature2D::MAXCHORDS_MAX_ANG,
+				Nyxus::Feature2D::MAXCHORDS_MIN,
+				Nyxus::Feature2D::MAXCHORDS_MIN_ANG,
+				Nyxus::Feature2D::MAXCHORDS_MEDIAN,
+				Nyxus::Feature2D::MAXCHORDS_MEAN,
+				Nyxus::Feature2D::MAXCHORDS_MODE,
+				Nyxus::Feature2D::MAXCHORDS_STDDEV,
+				Nyxus::Feature2D::ALLCHORDS_MAX,
+				Nyxus::Feature2D::ALLCHORDS_MAX_ANG,
+				Nyxus::Feature2D::ALLCHORDS_MIN,
+				Nyxus::Feature2D::ALLCHORDS_MIN_ANG,
+				Nyxus::Feature2D::ALLCHORDS_MEDIAN,
+				Nyxus::Feature2D::ALLCHORDS_MEAN,
+				Nyxus::Feature2D::ALLCHORDS_MODE,
+				Nyxus::Feature2D::ALLCHORDS_STDDEV });
 	}
-
 private:
 	const int n_angle_segments = 20;
 	const int n_side_segments = 100;

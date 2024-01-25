@@ -1,6 +1,8 @@
 #include "cli_gabor_options.h"
 #include "features/gabor.h"
 
+using namespace Nyxus;
+
 bool GaborOptions::parse_input()
 {
 	// OK to have both angles and frequencies specified but not one of them

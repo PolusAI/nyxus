@@ -1,94 +1,12 @@
 #include "../environment.h"
 #include "image_moments.h"
 
+using namespace Nyxus;
+
 ImageMomentsFeature::ImageMomentsFeature() : FeatureMethod("ImageMomentsFeature")
 {
-    provide_features({
-        SPAT_MOMENT_00,
-        SPAT_MOMENT_01,
-        SPAT_MOMENT_02,
-        SPAT_MOMENT_03,
-        SPAT_MOMENT_10,
-        SPAT_MOMENT_11,
-        SPAT_MOMENT_12,
-        SPAT_MOMENT_13,
-        SPAT_MOMENT_20,
-        SPAT_MOMENT_21,
-        SPAT_MOMENT_22,
-        SPAT_MOMENT_23,
-        SPAT_MOMENT_30,
-        CENTRAL_MOMENT_00,
-        CENTRAL_MOMENT_01,
-        CENTRAL_MOMENT_02,
-        CENTRAL_MOMENT_03,
-        CENTRAL_MOMENT_10,
-        CENTRAL_MOMENT_11,
-        CENTRAL_MOMENT_12,
-        CENTRAL_MOMENT_13,
-        CENTRAL_MOMENT_20,
-        CENTRAL_MOMENT_21,
-        CENTRAL_MOMENT_22,
-        CENTRAL_MOMENT_23,
-        CENTRAL_MOMENT_30,
-        CENTRAL_MOMENT_31,
-        CENTRAL_MOMENT_32,
-        CENTRAL_MOMENT_33,
-        NORM_SPAT_MOMENT_00,
-        NORM_SPAT_MOMENT_01,
-        NORM_SPAT_MOMENT_02,
-        NORM_SPAT_MOMENT_03,
-        NORM_SPAT_MOMENT_10,
-        NORM_SPAT_MOMENT_11,
-        NORM_SPAT_MOMENT_12,
-        NORM_SPAT_MOMENT_13,
-        NORM_SPAT_MOMENT_20,
-        NORM_SPAT_MOMENT_21,
-        NORM_SPAT_MOMENT_22,
-        NORM_SPAT_MOMENT_23,
-        NORM_SPAT_MOMENT_30,
-        NORM_SPAT_MOMENT_31,
-        NORM_SPAT_MOMENT_32,
-        NORM_SPAT_MOMENT_33,
-        NORM_CENTRAL_MOMENT_02,
-        NORM_CENTRAL_MOMENT_03,
-        NORM_CENTRAL_MOMENT_11,
-        NORM_CENTRAL_MOMENT_12,
-        NORM_CENTRAL_MOMENT_20,
-        NORM_CENTRAL_MOMENT_21,
-        NORM_CENTRAL_MOMENT_30,
-        WEIGHTED_CENTRAL_MOMENT_02, 
-        WEIGHTED_CENTRAL_MOMENT_03, 
-        WEIGHTED_CENTRAL_MOMENT_11, 
-        WEIGHTED_CENTRAL_MOMENT_12, 
-        WEIGHTED_CENTRAL_MOMENT_20, 
-        WEIGHTED_CENTRAL_MOMENT_21, 
-        WEIGHTED_CENTRAL_MOMENT_30, 
-        WEIGHTED_SPAT_MOMENT_00, 
-        WEIGHTED_SPAT_MOMENT_01, 
-        WEIGHTED_SPAT_MOMENT_02, 
-        WEIGHTED_SPAT_MOMENT_03, 
-        WEIGHTED_SPAT_MOMENT_10, 
-        WEIGHTED_SPAT_MOMENT_11, 
-        WEIGHTED_SPAT_MOMENT_12, 
-        WEIGHTED_SPAT_MOMENT_20, 
-        WEIGHTED_SPAT_MOMENT_21, 
-        WEIGHTED_SPAT_MOMENT_30, 
-        HU_M1,
-        HU_M2,
-        HU_M3,
-        HU_M4,
-        HU_M5,
-        HU_M6,
-        HU_M7,
-        WEIGHTED_HU_M1,
-        WEIGHTED_HU_M2,
-        WEIGHTED_HU_M3,
-        WEIGHTED_HU_M4,
-        WEIGHTED_HU_M5,
-        WEIGHTED_HU_M6,
-        WEIGHTED_HU_M7 });
-
-    add_dependencies({PERIMETER});
+    provide_features (ImageMomentsFeature::featureset);
+    add_dependencies ({Feature2D::PERIMETER});
 }
 
 void ImageMomentsFeature::calculate (LR& r)
@@ -158,110 +76,96 @@ void ImageMomentsFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t 
 
 void ImageMomentsFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-    SPAT_MOMENT_00,
-        SPAT_MOMENT_01,
-        SPAT_MOMENT_02,
-        SPAT_MOMENT_03,
-        SPAT_MOMENT_10,
-        SPAT_MOMENT_11,
-        SPAT_MOMENT_12,
-        SPAT_MOMENT_13,
-        SPAT_MOMENT_20,
-        SPAT_MOMENT_21,
-        SPAT_MOMENT_22,
-        SPAT_MOMENT_23,
-        SPAT_MOMENT_30,
-        
-    fvals[SPAT_MOMENT_00][0] = m00;
-    fvals[SPAT_MOMENT_01][0] = m01;
-    fvals[SPAT_MOMENT_02][0] = m02;
-    fvals[SPAT_MOMENT_03][0] = m03;
-    fvals[SPAT_MOMENT_10][0] = m10;
-    fvals[SPAT_MOMENT_11][0] = m11;
-    fvals[SPAT_MOMENT_12][0] = m12;
-    fvals[SPAT_MOMENT_13][0] = m13;
-    fvals[SPAT_MOMENT_20][0] = m20;
-    fvals[SPAT_MOMENT_21][0] = m21;
-    fvals[SPAT_MOMENT_22][0] = m22;
-    fvals[SPAT_MOMENT_23][0] = m23;
-    fvals[SPAT_MOMENT_30][0] = m30;
+    fvals[(int)Feature2D::SPAT_MOMENT_00][0] = m00;
+    fvals[(int)Feature2D::SPAT_MOMENT_01][0] = m01;
+    fvals[(int)Feature2D::SPAT_MOMENT_02][0] = m02;
+    fvals[(int)Feature2D::SPAT_MOMENT_03][0] = m03;
+    fvals[(int)Feature2D::SPAT_MOMENT_10][0] = m10;
+    fvals[(int)Feature2D::SPAT_MOMENT_11][0] = m11;
+    fvals[(int)Feature2D::SPAT_MOMENT_12][0] = m12;
+    fvals[(int)Feature2D::SPAT_MOMENT_13][0] = m13;
+    fvals[(int)Feature2D::SPAT_MOMENT_20][0] = m20;
+    fvals[(int)Feature2D::SPAT_MOMENT_21][0] = m21;
+    fvals[(int)Feature2D::SPAT_MOMENT_22][0] = m22;
+    fvals[(int)Feature2D::SPAT_MOMENT_23][0] = m23;
+    fvals[(int)Feature2D::SPAT_MOMENT_30][0] = m30;
 
-    fvals[WEIGHTED_SPAT_MOMENT_00][0] = wm00;
-    fvals[WEIGHTED_SPAT_MOMENT_01][0] = wm01;
-    fvals[WEIGHTED_SPAT_MOMENT_02][0] = wm02;
-    fvals[WEIGHTED_SPAT_MOMENT_03][0] = wm03;
-    fvals[WEIGHTED_SPAT_MOMENT_10][0] = wm10;
-    fvals[WEIGHTED_SPAT_MOMENT_11][0] = wm11;
-    fvals[WEIGHTED_SPAT_MOMENT_12][0] = wm12;
-    fvals[WEIGHTED_SPAT_MOMENT_20][0] = wm20;
-    fvals[WEIGHTED_SPAT_MOMENT_21][0] = wm21;
-    fvals[WEIGHTED_SPAT_MOMENT_30][0] = wm30;
+    fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_00][0] = wm00;
+    fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_01][0] = wm01;
+    fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_02][0] = wm02;
+    fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_03][0] = wm03;
+    fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_10][0] = wm10;
+    fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_11][0] = wm11;
+    fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_12][0] = wm12;
+    fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_20][0] = wm20;
+    fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_21][0] = wm21;
+    fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_30][0] = wm30;
 
-    fvals[CENTRAL_MOMENT_00][0] = mu00;
-    fvals[CENTRAL_MOMENT_01][0] = mu01;
-    fvals[CENTRAL_MOMENT_02][0] = mu02;
-    fvals[CENTRAL_MOMENT_03][0] = mu03;
-    fvals[CENTRAL_MOMENT_10][0] = mu10;
-    fvals[CENTRAL_MOMENT_11][0] = mu11;
-    fvals[CENTRAL_MOMENT_12][0] = mu12;
-    fvals[CENTRAL_MOMENT_13][0] = mu13;
-    fvals[CENTRAL_MOMENT_20][0] = mu20;
-    fvals[CENTRAL_MOMENT_21][0] = mu21;
-    fvals[CENTRAL_MOMENT_22][0] = mu22;
-    fvals[CENTRAL_MOMENT_23][0] = mu23;
-    fvals[CENTRAL_MOMENT_30][0] = mu30;
-    fvals[CENTRAL_MOMENT_31][0] = mu31;
-    fvals[CENTRAL_MOMENT_32][0] = mu32;
-    fvals[CENTRAL_MOMENT_33][0] = mu33;
+    fvals[(int)Feature2D::CENTRAL_MOMENT_00][0] = mu00;
+    fvals[(int)Feature2D::CENTRAL_MOMENT_01][0] = mu01;
+    fvals[(int)Feature2D::CENTRAL_MOMENT_02][0] = mu02;
+    fvals[(int)Feature2D::CENTRAL_MOMENT_03][0] = mu03;
+    fvals[(int)Feature2D::CENTRAL_MOMENT_10][0] = mu10;
+    fvals[(int)Feature2D::CENTRAL_MOMENT_11][0] = mu11;
+    fvals[(int)Feature2D::CENTRAL_MOMENT_12][0] = mu12;
+    fvals[(int)Feature2D::CENTRAL_MOMENT_13][0] = mu13;
+    fvals[(int)Feature2D::CENTRAL_MOMENT_20][0] = mu20;
+    fvals[(int)Feature2D::CENTRAL_MOMENT_21][0] = mu21;
+    fvals[(int)Feature2D::CENTRAL_MOMENT_22][0] = mu22;
+    fvals[(int)Feature2D::CENTRAL_MOMENT_23][0] = mu23;
+    fvals[(int)Feature2D::CENTRAL_MOMENT_30][0] = mu30;
+    fvals[(int)Feature2D::CENTRAL_MOMENT_31][0] = mu31;
+    fvals[(int)Feature2D::CENTRAL_MOMENT_32][0] = mu32;
+    fvals[(int)Feature2D::CENTRAL_MOMENT_33][0] = mu33;
 
-    fvals[WEIGHTED_CENTRAL_MOMENT_02][0] = wmu02;
-    fvals[WEIGHTED_CENTRAL_MOMENT_03][0] = wmu03;
-    fvals[WEIGHTED_CENTRAL_MOMENT_11][0] = wmu11;
-    fvals[WEIGHTED_CENTRAL_MOMENT_12][0] = wmu12;
-    fvals[WEIGHTED_CENTRAL_MOMENT_20][0] = wmu20;
-    fvals[WEIGHTED_CENTRAL_MOMENT_21][0] = wmu21;
-    fvals[WEIGHTED_CENTRAL_MOMENT_30][0] = wmu30;
+    fvals[(int)Feature2D::WEIGHTED_CENTRAL_MOMENT_02][0] = wmu02;
+    fvals[(int)Feature2D::WEIGHTED_CENTRAL_MOMENT_03][0] = wmu03;
+    fvals[(int)Feature2D::WEIGHTED_CENTRAL_MOMENT_11][0] = wmu11;
+    fvals[(int)Feature2D::WEIGHTED_CENTRAL_MOMENT_12][0] = wmu12;
+    fvals[(int)Feature2D::WEIGHTED_CENTRAL_MOMENT_20][0] = wmu20;
+    fvals[(int)Feature2D::WEIGHTED_CENTRAL_MOMENT_21][0] = wmu21;
+    fvals[(int)Feature2D::WEIGHTED_CENTRAL_MOMENT_30][0] = wmu30;
 
-    fvals[NORM_CENTRAL_MOMENT_02][0] = nu02;
-    fvals[NORM_CENTRAL_MOMENT_03][0] = nu03;
-    fvals[NORM_CENTRAL_MOMENT_11][0] = nu11;
-    fvals[NORM_CENTRAL_MOMENT_12][0] = nu12;
-    fvals[NORM_CENTRAL_MOMENT_20][0] = nu20;
-    fvals[NORM_CENTRAL_MOMENT_21][0] = nu21;
-    fvals[NORM_CENTRAL_MOMENT_30][0] = nu30;
+    fvals[(int)Feature2D::NORM_CENTRAL_MOMENT_02][0] = nu02;
+    fvals[(int)Feature2D::NORM_CENTRAL_MOMENT_03][0] = nu03;
+    fvals[(int)Feature2D::NORM_CENTRAL_MOMENT_11][0] = nu11;
+    fvals[(int)Feature2D::NORM_CENTRAL_MOMENT_12][0] = nu12;
+    fvals[(int)Feature2D::NORM_CENTRAL_MOMENT_20][0] = nu20;
+    fvals[(int)Feature2D::NORM_CENTRAL_MOMENT_21][0] = nu21;
+    fvals[(int)Feature2D::NORM_CENTRAL_MOMENT_30][0] = nu30;
 
-    fvals[NORM_SPAT_MOMENT_00][0] = w00;
-    fvals[NORM_SPAT_MOMENT_01][0] = w01;
-    fvals[NORM_SPAT_MOMENT_02][0] = w02;
-    fvals[NORM_SPAT_MOMENT_03][0] = w03;
-    fvals[NORM_SPAT_MOMENT_10][0] = w10;
-    fvals[NORM_SPAT_MOMENT_11][0] = w11;
-    fvals[NORM_SPAT_MOMENT_12][0] = w12;
-    fvals[NORM_SPAT_MOMENT_13][0] = w13;
-    fvals[NORM_SPAT_MOMENT_20][0] = w20;
-    fvals[NORM_SPAT_MOMENT_21][0] = w21;
-    fvals[NORM_SPAT_MOMENT_22][0] = w22;
-    fvals[NORM_SPAT_MOMENT_23][0] = w23;
-    fvals[NORM_SPAT_MOMENT_30][0] = w30;
-    fvals[NORM_SPAT_MOMENT_31][0] = w31;
-    fvals[NORM_SPAT_MOMENT_32][0] = w32;
-    fvals[NORM_SPAT_MOMENT_33][0] = w33;
+    fvals[(int)Feature2D::NORM_SPAT_MOMENT_00][0] = w00;
+    fvals[(int)Feature2D::NORM_SPAT_MOMENT_01][0] = w01;
+    fvals[(int)Feature2D::NORM_SPAT_MOMENT_02][0] = w02;
+    fvals[(int)Feature2D::NORM_SPAT_MOMENT_03][0] = w03;
+    fvals[(int)Feature2D::NORM_SPAT_MOMENT_10][0] = w10;
+    fvals[(int)Feature2D::NORM_SPAT_MOMENT_11][0] = w11;
+    fvals[(int)Feature2D::NORM_SPAT_MOMENT_12][0] = w12;
+    fvals[(int)Feature2D::NORM_SPAT_MOMENT_13][0] = w13;
+    fvals[(int)Feature2D::NORM_SPAT_MOMENT_20][0] = w20;
+    fvals[(int)Feature2D::NORM_SPAT_MOMENT_21][0] = w21;
+    fvals[(int)Feature2D::NORM_SPAT_MOMENT_22][0] = w22;
+    fvals[(int)Feature2D::NORM_SPAT_MOMENT_23][0] = w23;
+    fvals[(int)Feature2D::NORM_SPAT_MOMENT_30][0] = w30;
+    fvals[(int)Feature2D::NORM_SPAT_MOMENT_31][0] = w31;
+    fvals[(int)Feature2D::NORM_SPAT_MOMENT_32][0] = w32;
+    fvals[(int)Feature2D::NORM_SPAT_MOMENT_33][0] = w33;
 
-    fvals[HU_M1][0] = hm1;
-    fvals[HU_M2][0] = hm2;
-    fvals[HU_M3][0] = hm3;
-    fvals[HU_M4][0] = hm4;
-    fvals[HU_M5][0] = hm5;
-    fvals[HU_M6][0] = hm6;
-    fvals[HU_M7][0] = hm7;
+    fvals[(int)Feature2D::HU_M1][0] = hm1;
+    fvals[(int)Feature2D::HU_M2][0] = hm2;
+    fvals[(int)Feature2D::HU_M3][0] = hm3;
+    fvals[(int)Feature2D::HU_M4][0] = hm4;
+    fvals[(int)Feature2D::HU_M5][0] = hm5;
+    fvals[(int)Feature2D::HU_M6][0] = hm6;
+    fvals[(int)Feature2D::HU_M7][0] = hm7;
 
-    fvals[WEIGHTED_HU_M1][0] = whm1;
-    fvals[WEIGHTED_HU_M2][0] = whm2;
-    fvals[WEIGHTED_HU_M3][0] = whm3;
-    fvals[WEIGHTED_HU_M4][0] = whm4;
-    fvals[WEIGHTED_HU_M5][0] = whm5;
-    fvals[WEIGHTED_HU_M6][0] = whm6;
-    fvals[WEIGHTED_HU_M7][0] = whm7;
+    fvals[(int)Feature2D::WEIGHTED_HU_M1][0] = whm1;
+    fvals[(int)Feature2D::WEIGHTED_HU_M2][0] = whm2;
+    fvals[(int)Feature2D::WEIGHTED_HU_M3][0] = whm3;
+    fvals[(int)Feature2D::WEIGHTED_HU_M4][0] = whm4;
+    fvals[(int)Feature2D::WEIGHTED_HU_M5][0] = whm5;
+    fvals[(int)Feature2D::WEIGHTED_HU_M6][0] = whm6;
+    fvals[(int)Feature2D::WEIGHTED_HU_M7][0] = whm7;
 }
 
 /// @brief Calculates a spatial 2D moment of order q,p of ROI pixel cloud

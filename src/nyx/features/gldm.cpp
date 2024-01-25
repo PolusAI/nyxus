@@ -6,6 +6,8 @@
 #include "gldm.h"
 #include "../environment.h"
 
+using namespace Nyxus;
+
 GLDMFeature::GLDMFeature() : FeatureMethod("GLDMFeature")
 {
 	provide_features (GLDMFeature::featureset);
@@ -318,36 +320,36 @@ void GLDMFeature::save_value(std::vector<std::vector<double>>& fvals)
 	if (sum_p == 0) {
 		double val = 0.0;
 
-		fvals[GLDM_SDE][0] = val;
-		fvals[GLDM_LDE][0] = val;
-		fvals[GLDM_GLN][0] = val;
-		fvals[GLDM_DN][0] = val;
-		fvals[GLDM_DNN][0] = val;
-		fvals[GLDM_GLV][0] = val;
-		fvals[GLDM_DV][0] = val;
-		fvals[GLDM_DE][0] = val;
-		fvals[GLDM_LGLE][0] = val;
-		fvals[GLDM_HGLE][0] = val;
-		fvals[GLDM_SDLGLE][0] = val;
-		fvals[GLDM_SDHGLE][0] = val;
-		fvals[GLDM_LDLGLE][0] = val;
-		fvals[GLDM_LDHGLE][0] = val;
+		fvals[(int)Feature2D::GLDM_SDE][0] = val;
+		fvals[(int)Feature2D::GLDM_LDE][0] = val;
+		fvals[(int)Feature2D::GLDM_GLN][0] = val;
+		fvals[(int)Feature2D::GLDM_DN][0] = val;
+		fvals[(int)Feature2D::GLDM_DNN][0] = val;
+		fvals[(int)Feature2D::GLDM_GLV][0] = val;
+		fvals[(int)Feature2D::GLDM_DV][0] = val;
+		fvals[(int)Feature2D::GLDM_DE][0] = val;
+		fvals[(int)Feature2D::GLDM_LGLE][0] = val;
+		fvals[(int)Feature2D::GLDM_HGLE][0] = val;
+		fvals[(int)Feature2D::GLDM_SDLGLE][0] = val;
+		fvals[(int)Feature2D::GLDM_SDHGLE][0] = val;
+		fvals[(int)Feature2D::GLDM_LDLGLE][0] = val;
+		fvals[(int)Feature2D::GLDM_LDHGLE][0] = val;
 	}
 
-	fvals[GLDM_SDE][0] = calc_SDE();
-	fvals[GLDM_LDE][0] = calc_LDE();
-	fvals[GLDM_GLN][0] = calc_GLN();
-	fvals[GLDM_DN][0] = calc_DN();
-	fvals[GLDM_DNN][0] = calc_DNN();
-	fvals[GLDM_GLV][0] = calc_GLV();
-	fvals[GLDM_DV][0] = calc_DV();
-	fvals[GLDM_DE][0] = calc_DE();
-	fvals[GLDM_LGLE][0] = calc_LGLE();
-	fvals[GLDM_HGLE][0] = calc_HGLE();
-	fvals[GLDM_SDLGLE][0] = calc_SDLGLE();
-	fvals[GLDM_SDHGLE][0] = calc_SDHGLE();
-	fvals[GLDM_LDLGLE][0] = calc_LDLGLE();
-	fvals[GLDM_LDHGLE][0] = calc_LDHGLE();
+	fvals[(int)Feature2D::GLDM_SDE][0] = calc_SDE();
+	fvals[(int)Feature2D::GLDM_LDE][0] = calc_LDE();
+	fvals[(int)Feature2D::GLDM_GLN][0] = calc_GLN();
+	fvals[(int)Feature2D::GLDM_DN][0] = calc_DN();
+	fvals[(int)Feature2D::GLDM_DNN][0] = calc_DNN();
+	fvals[(int)Feature2D::GLDM_GLV][0] = calc_GLV();
+	fvals[(int)Feature2D::GLDM_DV][0] = calc_DV();
+	fvals[(int)Feature2D::GLDM_DE][0] = calc_DE();
+	fvals[(int)Feature2D::GLDM_LGLE][0] = calc_LGLE();
+	fvals[(int)Feature2D::GLDM_HGLE][0] = calc_HGLE();
+	fvals[(int)Feature2D::GLDM_SDLGLE][0] = calc_SDLGLE();
+	fvals[(int)Feature2D::GLDM_SDHGLE][0] = calc_SDHGLE();
+	fvals[(int)Feature2D::GLDM_LDLGLE][0] = calc_LDLGLE();
+	fvals[(int)Feature2D::GLDM_LDHGLE][0] = calc_LDHGLE();
 }
 
 // 1. Small Dependence Emphasis(SDE)

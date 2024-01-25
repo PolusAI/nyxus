@@ -68,7 +68,7 @@ namespace Nyxus
 		r.intFname = intFile;
 
 		// Allocate the value matrix
-		for (int i = 0; i < AvailableFeatures::_COUNT_; i++)
+		for (int i = 0; i < (int) Feature2D::_COUNT_; i++)
 		{
 			std::vector<StatsReal> row{ 0.0 };	// One value initially. More values can be added for Haralick and Zernike type methods
 			r.fvals.push_back(row);
@@ -82,45 +82,45 @@ namespace Nyxus
 		// Save the pixel
 		r.raw_pixels.push_back(Pixel2(x, y, intensity));
 
-		r.fvals[AREA_PIXELS_COUNT][0] = 1;
+		r.fvals[(int)Feature2D::AREA_PIXELS_COUNT][0] = 1;
 		if (theEnvironment.xyRes == 0.0)
-			r.fvals[AREA_UM2][0] = 0;
+			r.fvals[(int)Feature2D::AREA_UM2][0] = 0;
 		else
-			r.fvals[AREA_UM2][0] = std::pow(theEnvironment.pixelSizeUm, 2);
+			r.fvals[(int)Feature2D::AREA_UM2][0] = std::pow(theEnvironment.pixelSizeUm, 2);
 
 		// Min
-		r.fvals[MIN][0] = r.aux_min = intensity;
+		r.fvals[(int)Feature2D::MIN][0] = r.aux_min = intensity;
 		// Max
-		r.fvals[MAX][0] = r.aux_max = intensity;
+		r.fvals[(int)Feature2D::MAX][0] = r.aux_max = intensity;
 		// Moments
-		r.fvals[MEAN][0] = intensity;
+		r.fvals[(int)Feature2D::MEAN][0] = intensity;
 		r.aux_M2 = 0;
 		r.aux_M3 = 0;
 		r.aux_M4 = 0;
-		r.fvals[ENERGY][0] = intensity * intensity;
+		r.fvals[(int)Feature2D::ENERGY][0] = intensity * intensity;
 		r.aux_variance = 0.0;
-		r.fvals[MEAN_ABSOLUTE_DEVIATION][0] = 0.0;
-		r.fvals[MEDIAN_ABSOLUTE_DEVIATION][0] = 0.0;
+		r.fvals[(int)Feature2D::MEAN_ABSOLUTE_DEVIATION][0] = 0.0;
+		r.fvals[(int)Feature2D::MEDIAN_ABSOLUTE_DEVIATION][0] = 0.0;
 		// Weighted centroids x and y. 1-based for compatibility with Matlab and WNDCHRM
-		r.fvals[CENTROID_X][0] = StatsReal(x) + 1;
-		r.fvals[CENTROID_Y][0] = StatsReal(y) + 1;
+		r.fvals[(int)Feature2D::CENTROID_X][0] = StatsReal(x) + 1;
+		r.fvals[(int)Feature2D::CENTROID_Y][0] = StatsReal(y) + 1;
 
 		// Other fields
-		r.fvals[MEDIAN][0] = 0;
-		r.fvals[STANDARD_DEVIATION][0] = 0;
-		r.fvals[SKEWNESS][0] = 0;
-		r.fvals[KURTOSIS][0] = 0;
-		r.fvals[EXCESS_KURTOSIS][0] = 0;
-		r.fvals[ROOT_MEAN_SQUARED][0] = 0;
-		r.fvals[P10][0] = r.fvals[P25][0] = r.fvals[P75][0] = r.fvals[90][0] = 0;
-		r.fvals[INTERQUARTILE_RANGE][0] = 0;
-		r.fvals[QCOD][0] = 0;
-		r.fvals[ENTROPY][0] = 0;
-		r.fvals[MODE][0] = 0;
-		r.fvals[UNIFORMITY][0] = 0;
-		r.fvals[ROBUST_MEAN][0] = 0;
-		r.fvals[ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = 0;
-		r.fvals[COV][0] = 0;
+		r.fvals[(int)Feature2D::MEDIAN][0] = 0;
+		r.fvals[(int)Feature2D::STANDARD_DEVIATION][0] = 0;
+		r.fvals[(int)Feature2D::SKEWNESS][0] = 0;
+		r.fvals[(int)Feature2D::KURTOSIS][0] = 0;
+		r.fvals[(int)Feature2D::EXCESS_KURTOSIS][0] = 0;
+		r.fvals[(int)Feature2D::ROOT_MEAN_SQUARED][0] = 0;
+		r.fvals[(int)Feature2D::P10][0] = r.fvals[(int)Feature2D::P25][0] = r.fvals[(int)Feature2D::P75][0] = r.fvals[(int)Feature2D::P90][0] = 0;
+		r.fvals[(int)Feature2D::INTERQUARTILE_RANGE][0] = 0;
+		r.fvals[(int)Feature2D::QCOD][0] = 0;
+		r.fvals[(int)Feature2D::ENTROPY][0] = 0;
+		r.fvals[(int)Feature2D::MODE][0] = 0;
+		r.fvals[(int)Feature2D::UNIFORMITY][0] = 0;
+		r.fvals[(int)Feature2D::ROBUST_MEAN][0] = 0;
+		r.fvals[(int)Feature2D::ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = 0;
+		r.fvals[(int)Feature2D::COV][0] = 0;
 	}
 
 	void init_label_record_2 (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity, unsigned int tile_index)
@@ -129,6 +129,21 @@ namespace Nyxus
 		r.aux_area = 1;
 		r.aux_min = r.aux_max = intensity;
 		r.init_aabb (x,y);
+
+		// Cache the ROI label
+		r.label = label;
+
+		// File names
+		r.segFname = segFile;
+		r.intFname = intFile;
+	}
+
+	void init_label_record_3D (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int z, int label, PixIntens intensity, unsigned int tile_index)
+	{
+		// Initialize basic counters
+		r.aux_area = 1;
+		r.aux_min = r.aux_max = intensity;
+		r.init_aabb_3D (x, y, z);
 
 		// Cache the ROI label
 		r.label = label;
@@ -174,4 +189,18 @@ namespace Nyxus
 		LR::global_max_inten = std::max(LR::global_max_inten, intensity);
 	}
 
+	void update_label_record_3D (LR& lr, int x, int y, int z, int label, PixIntens intensity, unsigned int tile_index)
+	{
+		// Per-ROI 
+		lr.aux_area++;
+
+		lr.aux_min = std::min(lr.aux_min, intensity);
+		lr.aux_max = std::max(lr.aux_max, intensity);
+
+		lr.update_aabb_3D (x, y, z);
+
+		// Per-image
+		LR::global_min_inten = std::min(LR::global_min_inten, intensity);
+		LR::global_max_inten = std::max(LR::global_max_inten, intensity);
+	}
 }

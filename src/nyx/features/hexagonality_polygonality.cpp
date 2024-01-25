@@ -3,10 +3,12 @@
 #include <vector>
 #include "hexagonality_polygonality.h"
 
+using namespace Nyxus;
+
 HexagonalityPolygonalityFeature::HexagonalityPolygonalityFeature() : FeatureMethod("HexagonalityPolygonalityFeature")
 {
-    provide_features({ POLYGONALITY_AVE, HEXAGONALITY_AVE, HEXAGONALITY_STDDEV });
-    add_dependencies({ NUM_NEIGHBORS, PERIMETER, CONVEX_HULL_AREA, STAT_FERET_DIAM_MAX, STAT_FERET_DIAM_MIN });
+    provide_features({ Feature2D::POLYGONALITY_AVE, Feature2D::HEXAGONALITY_AVE, Feature2D::HEXAGONALITY_STDDEV });
+    add_dependencies({ Feature2D::NUM_NEIGHBORS, Feature2D::PERIMETER, Feature2D::CONVEX_HULL_AREA, Feature2D::MAX_FERET_DIAMETER, Feature2D::MIN_FERET_DIAMETER });
 }
 
 void HexagonalityPolygonalityFeature::calculate (LR& r)
@@ -14,13 +16,13 @@ void HexagonalityPolygonalityFeature::calculate (LR& r)
     // The whole calculation is inspired by calculation of this feature in POLUS feature extraction plugin 
     // https://github.com/LabShare/polus-plugins/blob/master/polus-feature-extraction-plugin/src/main.py
 
-    size_t neighbors = r.fvals[NUM_NEIGHBORS][0];
+    size_t neighbors = r.fvals[(int)Feature2D::NUM_NEIGHBORS][0];
     double area = r.aux_area; 
-    double perimeter = r.fvals[PERIMETER][0];
-    double area_hull = r.fvals[CONVEX_HULL_AREA][0];
+    double perimeter = r.fvals[(int)Feature2D::PERIMETER][0];
+    double area_hull = r.fvals[(int)Feature2D::CONVEX_HULL_AREA][0];
     double perim_hull = 6 * sqrt(area_hull / (1.5 * sqrt(3)));
-    double min_feret_diam = r.fvals[STAT_FERET_DIAM_MIN][0];
-    double max_feret_diam = r.fvals[STAT_FERET_DIAM_MAX][0];
+    double min_feret_diam = r.fvals[(int)Feature2D::MIN_FERET_DIAMETER][0];
+    double max_feret_diam = r.fvals[(int)Feature2D::MAX_FERET_DIAMETER][0];
     double perimeter_neighbors;
 
     if (neighbors == 0)
@@ -157,9 +159,9 @@ void HexagonalityPolygonalityFeature::osized_calculate(LR& r, ImageLoader&)
 
 void HexagonalityPolygonalityFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-    fvals[POLYGONALITY_AVE][0] = polyAve;
-    fvals[HEXAGONALITY_AVE][0] = hexAve;
-    fvals[HEXAGONALITY_STDDEV][0] = hexSd;
+    fvals[(int)Feature2D::POLYGONALITY_AVE][0] = polyAve;
+    fvals[(int)Feature2D::HEXAGONALITY_AVE][0] = hexAve;
+    fvals[(int)Feature2D::HEXAGONALITY_STDDEV][0] = hexSd;
 }
 
 void HexagonalityPolygonalityFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
@@ -182,7 +184,7 @@ void HexagonalityPolygonalityFeature::parallel_process_1_batch (size_t start, si
         }
 
         // Feasibility check #2
-        if (r.contour.size() == 0 || r.fvals[CONVEX_HULL_AREA][0] == 0 || r.fvals[NUM_NEIGHBORS][0] == 0)
+        if (r.contour.size() == 0 || r.fvals[(int)Feature2D::CONVEX_HULL_AREA][0] == 0 || r.fvals[(int)Feature2D::NUM_NEIGHBORS][0] == 0)
         {
             // Explicitly assign dummy yet valid values to indicate that features weren't calculated. Better than NAN - less data cleaning before training
             HexagonalityPolygonalityFeature hexpo;

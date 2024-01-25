@@ -21,6 +21,7 @@ public:
 	}
 	void init_x(StatsInt x) { xmin = xmax = x; }
 	void init_y(StatsInt y) { ymin = ymax = y; }
+	void init_z(StatsInt z) { zmin = zmax = z; }
 	void update_x(StatsInt x)
 	{
 		xmin = std::min(xmin, x);
@@ -31,8 +32,15 @@ public:
 		ymin = std::min(ymin, y);
 		ymax = std::max(ymax, y);
 	}
+	void update_z(StatsInt z)
+	{
+		zmin = std::min(zmin, z);
+		zmax = std::max(zmax, z);
+	}
 	inline StatsInt get_height() const { return ymax - ymin + 1; }
 	inline StatsInt get_width() const { return xmax - xmin + 1; }
+	inline StatsInt get_z_depth() const { return zmax - zmin + 1; }
+
 	inline StatsInt get_area() const { return get_width() * get_height(); }
 	inline StatsInt get_xmin() const { return xmin; }
 	inline StatsInt get_xmax() const { return xmax; }
@@ -60,5 +68,5 @@ public:
 	}
 
 private:
-	StatsInt xmin = INT32_MAX, xmax = INT32_MIN, ymin = INT32_MAX, ymax = INT32_MIN;
+	StatsInt xmin = INT32_MAX, xmax = INT32_MIN, ymin = INT32_MAX, ymax = INT32_MIN, zmin = INT32_MAX, zmax = INT32_MIN;
 };

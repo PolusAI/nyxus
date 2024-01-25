@@ -4,6 +4,42 @@
 class PixelIntensityFeatures : public FeatureMethod
 {
 public:
+
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+	{
+		Nyxus::Feature2D::COV,
+		Nyxus::Feature2D::COVERED_IMAGE_INTENSITY_RANGE,
+		Nyxus::Feature2D::ENERGY,
+		Nyxus::Feature2D::ENTROPY,
+		Nyxus::Feature2D::EXCESS_KURTOSIS,
+		Nyxus::Feature2D::HYPERFLATNESS,
+		Nyxus::Feature2D::HYPERSKEWNESS,
+		Nyxus::Feature2D::INTEGRATED_INTENSITY,
+		Nyxus::Feature2D::INTERQUARTILE_RANGE,
+		Nyxus::Feature2D::KURTOSIS,
+		Nyxus::Feature2D::MAX,
+		Nyxus::Feature2D::MEAN,
+		Nyxus::Feature2D::MEAN_ABSOLUTE_DEVIATION,
+		Nyxus::Feature2D::MEDIAN,
+		Nyxus::Feature2D::MEDIAN_ABSOLUTE_DEVIATION,
+		Nyxus::Feature2D::MIN,
+		Nyxus::Feature2D::MODE,
+		Nyxus::Feature2D::P01, Nyxus::Feature2D::P10, Nyxus::Feature2D::P25, Nyxus::Feature2D::P75, Nyxus::Feature2D::P90, Nyxus::Feature2D::P99,
+		Nyxus::Feature2D::QCOD,
+		Nyxus::Feature2D::RANGE,
+		Nyxus::Feature2D::ROBUST_MEAN,
+		Nyxus::Feature2D::ROBUST_MEAN_ABSOLUTE_DEVIATION,
+		Nyxus::Feature2D::ROOT_MEAN_SQUARED,
+		Nyxus::Feature2D::SKEWNESS,
+		Nyxus::Feature2D::STANDARD_DEVIATION,
+		Nyxus::Feature2D::STANDARD_DEVIATION_BIASED,
+		Nyxus::Feature2D::STANDARD_ERROR,
+		Nyxus::Feature2D::VARIANCE,
+		Nyxus::Feature2D::VARIANCE_BIASED,
+		Nyxus::Feature2D::UNIFORMITY,
+		Nyxus::Feature2D::UNIFORMITY_PIU
+	};
+
 	PixelIntensityFeatures();
 	void calculate(LR& r);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
@@ -15,43 +51,7 @@ public:
 	void cleanup_instance();
 
 	// list dependencies of this class
-	static bool required(const FeatureSet& fs)
-	{
-		return fs.anyEnabled(
-			{
-				COV,
-				COVERED_IMAGE_INTENSITY_RANGE,
-				ENERGY,
-				ENTROPY,
-				EXCESS_KURTOSIS,
-				HYPERFLATNESS,
-				HYPERSKEWNESS,
-				INTEGRATED_INTENSITY,
-				INTERQUARTILE_RANGE,
-				KURTOSIS,
-				MAX,
-				MEAN,
-				MEAN_ABSOLUTE_DEVIATION,
-				MEDIAN,
-				MEDIAN_ABSOLUTE_DEVIATION,
-				MIN,
-				MODE,
-				P01, P10, P25, P75, P90, P99,
-				QCOD,
-				RANGE,
-				ROBUST_MEAN,
-				ROBUST_MEAN_ABSOLUTE_DEVIATION,
-				ROOT_MEAN_SQUARED,
-				SKEWNESS,
-				STANDARD_DEVIATION,
-				STANDARD_DEVIATION_BIASED,
-				STANDARD_ERROR,
-				VARIANCE,
-				VARIANCE_BIASED,
-				UNIFORMITY,
-				UNIFORMITY_PIU
-			});
-	}
+	static bool required(const FeatureSet& fs);
 
 private:
 	double

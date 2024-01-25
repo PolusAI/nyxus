@@ -9,22 +9,22 @@
 ChordsFeature::ChordsFeature() : FeatureMethod("ChordsFeature")
 {
 	provide_features({ 
-		MAXCHORDS_MAX,
-		MAXCHORDS_MAX_ANG,
-		MAXCHORDS_MIN,
-		MAXCHORDS_MIN_ANG,
-		MAXCHORDS_MEDIAN,
-		MAXCHORDS_MEAN,
-		MAXCHORDS_MODE,
-		MAXCHORDS_STDDEV,
-		ALLCHORDS_MAX,
-		ALLCHORDS_MAX_ANG,
-		ALLCHORDS_MIN,
-		ALLCHORDS_MIN_ANG,
-		ALLCHORDS_MEDIAN,
-		ALLCHORDS_MEAN,
-		ALLCHORDS_MODE,
-		ALLCHORDS_STDDEV });
+		Nyxus::Feature2D::MAXCHORDS_MAX,
+		Nyxus::Feature2D::MAXCHORDS_MAX_ANG,
+		Nyxus::Feature2D::MAXCHORDS_MIN,
+		Nyxus::Feature2D::MAXCHORDS_MIN_ANG,
+		Nyxus::Feature2D::MAXCHORDS_MEDIAN,
+		Nyxus::Feature2D::MAXCHORDS_MEAN,
+		Nyxus::Feature2D::MAXCHORDS_MODE,
+		Nyxus::Feature2D::MAXCHORDS_STDDEV,
+		Nyxus::Feature2D::ALLCHORDS_MAX,
+		Nyxus::Feature2D::ALLCHORDS_MAX_ANG,
+		Nyxus::Feature2D::ALLCHORDS_MIN,
+		Nyxus::Feature2D::ALLCHORDS_MIN_ANG,
+		Nyxus::Feature2D::ALLCHORDS_MEDIAN,
+		Nyxus::Feature2D::ALLCHORDS_MEAN,
+		Nyxus::Feature2D::ALLCHORDS_MODE,
+		Nyxus::Feature2D::ALLCHORDS_STDDEV });
 }
 
 void ChordsFeature::osized_calculate(LR& r, ImageLoader& imloader)
@@ -131,20 +131,20 @@ void ChordsFeature::osized_calculate(LR& r, ImageLoader& imloader)
 
 void ChordsFeature::save_value (std::vector<std::vector<double>>& feature_vals)
 {
-	feature_vals[MAXCHORDS_MAX][0] = maxchords_max;
-	feature_vals[MAXCHORDS_MAX_ANG][0] = maxchords_max_angle;
-	feature_vals[MAXCHORDS_MIN][0] = maxchords_min;
-	feature_vals[MAXCHORDS_MIN_ANG][0] = maxchords_min_angle;
-	feature_vals[MAXCHORDS_MEDIAN][0] = maxchords_median;
-	feature_vals[MAXCHORDS_MEAN][0] = maxchords_mean;
-	feature_vals[MAXCHORDS_MODE][0] = maxchords_mode;
-	feature_vals[MAXCHORDS_STDDEV][0] = maxchords_stddev;
-	feature_vals[ALLCHORDS_MAX][0] = allchords_max;
-	feature_vals[ALLCHORDS_MAX_ANG][0] = allchords_max_angle;
-	feature_vals[ALLCHORDS_MIN][0] = allchords_min;
-	feature_vals[ALLCHORDS_MIN_ANG][0] = allchords_min_angle;
-	feature_vals[ALLCHORDS_MEDIAN][0] = allchords_median;
-	feature_vals[ALLCHORDS_MEAN][0] = allchords_mean;
-	feature_vals[ALLCHORDS_MODE][0] = allchords_mode;
-	feature_vals[ALLCHORDS_STDDEV][0] = allchords_stddev;
+	feature_vals[(int)Nyxus::Feature2D::MAXCHORDS_MAX][0] = maxchords_max;
+	feature_vals[(int)Nyxus::Feature2D::MAXCHORDS_MAX_ANG][0] = maxchords_max_angle;
+	feature_vals[(int)Nyxus::Feature2D::MAXCHORDS_MIN][0] = maxchords_min;
+	feature_vals[(int)Nyxus::Feature2D::MAXCHORDS_MIN_ANG][0] = maxchords_min_angle;
+	feature_vals[(int)Nyxus::Feature2D::MAXCHORDS_MEDIAN][0] = maxchords_median;
+	feature_vals[(int)Nyxus::Feature2D::MAXCHORDS_MEAN][0] = maxchords_mean;
+	feature_vals[(int)Nyxus::Feature2D::MAXCHORDS_MODE][0] = maxchords_mode;
+	feature_vals[(int)Nyxus::Feature2D::MAXCHORDS_STDDEV][0] = maxchords_stddev;
+	feature_vals[(int)Nyxus::Feature2D::ALLCHORDS_MAX][0] = allchords_max;
+	feature_vals[(int)Nyxus::Feature2D::ALLCHORDS_MAX_ANG][0] = allchords_max_angle;
+	feature_vals[(int)Nyxus::Feature2D::ALLCHORDS_MIN][0] = allchords_min;
+	feature_vals[(int)Nyxus::Feature2D::ALLCHORDS_MIN_ANG][0] = allchords_min_angle;
+	feature_vals[(int)Nyxus::Feature2D::ALLCHORDS_MEDIAN][0] = allchords_median;
+	feature_vals[(int)Nyxus::Feature2D::ALLCHORDS_MEAN][0] = allchords_mean;
+	feature_vals[(int)Nyxus::Feature2D::ALLCHORDS_MODE][0] = allchords_mode;
+	feature_vals[(int)Nyxus::Feature2D::ALLCHORDS_STDDEV][0] = allchords_stddev;
 }

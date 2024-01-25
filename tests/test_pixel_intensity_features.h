@@ -9,6 +9,8 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
+using namespace Nyxus;
+
 // ROI pixel accumulation routines implemented in Nyxus
 
 void test_pixel_intensity_integrated_intensity()
@@ -26,7 +28,7 @@ void test_pixel_intensity_integrated_intensity()
     f.save_value (roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[INTEGRATED_INTENSITY][0], 5015224));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::INTEGRATED_INTENSITY][0], 5015224));
 }
 
 void test_pixel_intensity_min_max_range()
@@ -44,9 +46,9 @@ void test_pixel_intensity_min_max_range()
     f.save_value (roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[MIN][0], 11079));
-    ASSERT_TRUE(agrees_gt(roidata.fvals[MAX][0], 64090));
-    ASSERT_TRUE(agrees_gt(roidata.fvals[RANGE][0], 53011));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::MIN][0], 11079));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::MAX][0], 64090));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::RANGE][0], 53011));
 }
 
 void test_pixel_intensity_mean()
@@ -64,7 +66,7 @@ void test_pixel_intensity_mean()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[MEAN][0], 3.256638961038961e+04));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::MEAN][0], 3.256638961038961e+04));
 }
 
 void test_pixel_intensity_median()
@@ -82,7 +84,7 @@ void test_pixel_intensity_median()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[MEDIAN][0], 2.980350000000000e+04));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::MEDIAN][0], 2.980350000000000e+04));
 }
 
 void test_pixel_intensity_mode()
@@ -100,7 +102,7 @@ void test_pixel_intensity_mode()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[MODE][0], 19552));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::MODE][0], 19552));
 }
 
 void test_pixel_intensity_standard_deviation()
@@ -118,7 +120,7 @@ void test_pixel_intensity_standard_deviation()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[STANDARD_DEVIATION][0], 1.473096831710767e+04));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::STANDARD_DEVIATION][0], 1.473096831710767e+04));
 }
 
 void test_pixel_intensity_skewness()
@@ -136,7 +138,7 @@ void test_pixel_intensity_skewness()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[SKEWNESS][0], 0.450256759704494));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::SKEWNESS][0], 0.450256759704494));
 }
 
 void test_pixel_intensity_kurtosis()
@@ -154,7 +156,7 @@ void test_pixel_intensity_kurtosis()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[EXCESS_KURTOSIS][0], 1.927888720710090-3));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::EXCESS_KURTOSIS][0], 1.927888720710090-3));
 }
 
 void test_pixel_intensity_hyperskewness()
@@ -172,7 +174,7 @@ void test_pixel_intensity_hyperskewness()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[HYPERSKEWNESS][0], 1.978293086605381));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::HYPERSKEWNESS][0], 1.978293086605381));
 }
 
 void test_pixel_intensity_hyperflatness()
@@ -190,7 +192,7 @@ void test_pixel_intensity_hyperflatness()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[HYPERFLATNESS][0], 5.126659243028459));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::HYPERFLATNESS][0], 5.126659243028459));
 }
 
 void test_pixel_intensity_mean_absolute_deviation()
@@ -208,7 +210,7 @@ void test_pixel_intensity_mean_absolute_deviation()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[MEAN_ABSOLUTE_DEVIATION][0], 1.283308449991567e+04));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::MEAN_ABSOLUTE_DEVIATION][0], 1.283308449991567e+04));
 }
 
 void test_pixel_intensity_robust_mean_absolute_deviation()
@@ -226,7 +228,7 @@ void test_pixel_intensity_robust_mean_absolute_deviation()
     f.save_value (roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[ROBUST_MEAN_ABSOLUTE_DEVIATION][0], 1.115934515469031e+04));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::ROBUST_MEAN_ABSOLUTE_DEVIATION][0], 1.115934515469031e+04));
 }
 
 void test_pixel_intensity_standard_error()
@@ -244,7 +246,7 @@ void test_pixel_intensity_standard_error()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[STANDARD_ERROR][0], 1.187055255225567e+03));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::STANDARD_ERROR][0], 1.187055255225567e+03));
 }
 
 void test_pixel_intensity_root_mean_squared()
@@ -262,7 +264,7 @@ void test_pixel_intensity_root_mean_squared()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[ROOT_MEAN_SQUARED][0], 3.572341052638121e+04));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::ROOT_MEAN_SQUARED][0], 3.572341052638121e+04));
 }
 
 void test_pixel_intensity_entropy()
@@ -280,7 +282,7 @@ void test_pixel_intensity_entropy()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[ENTROPY][0], 2.898016861688313));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::ENTROPY][0], 2.898016861688313));
 }
 
 void test_pixel_intensity_energy()
@@ -298,7 +300,7 @@ void test_pixel_intensity_energy()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[ENERGY][0], 1.965289571840000e+11));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::ENERGY][0], 1.965289571840000e+11));
 }
 
 void test_pixel_intensity_uniformity()
@@ -316,7 +318,7 @@ void test_pixel_intensity_uniformity()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[UNIFORMITY][0], 322, 100)); // Using 1% tolerance vs MATLAB
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::UNIFORMITY][0], 322, 100)); // Using 1% tolerance vs MATLAB
 }
 
 void test_pixel_intensity_uniformity_piu()
@@ -334,7 +336,7 @@ void test_pixel_intensity_uniformity_piu()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[UNIFORMITY_PIU][0], 29.477577192725725));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::UNIFORMITY_PIU][0], 29.477577192725725));
 }
 
 void test_pixel_intensity_percentiles_iqr()
@@ -352,12 +354,12 @@ void test_pixel_intensity_percentiles_iqr()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[P01][0], 1.208140000000000e+04));
-    ASSERT_TRUE(agrees_gt(roidata.fvals[P10][0], 16329));
-    ASSERT_TRUE(agrees_gt(roidata.fvals[P25][0], 19552));
-    ASSERT_TRUE(agrees_gt(roidata.fvals[P75][0], 45723));
-    ASSERT_TRUE(agrees_gt(roidata.fvals[P90][0], 5.336070000000000e+04));
-    ASSERT_TRUE(agrees_gt(roidata.fvals[P99][0], 6.338096000000000e+04));
-    ASSERT_TRUE(agrees_gt(roidata.fvals[INTERQUARTILE_RANGE][0], 26171));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::P01][0], 1.208140000000000e+04));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::P10][0], 16329));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::P25][0], 19552));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::P75][0], 45723));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::P90][0], 5.336070000000000e+04));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::P99][0], 6.338096000000000e+04));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::INTERQUARTILE_RANGE][0], 26171));
 }
 

@@ -2,7 +2,7 @@
 #include <cmath>
 #include "gabor.h"
 
-using namespace std;
+using namespace Nyxus;
 
 // Static members changeable by user via class 'Environment'
 double GaborFeature::gamma = 0.1;           
@@ -17,6 +17,11 @@ std::vector<std::pair<double, double>> GaborFeature::f0_theta_pairs
     {M_PI_2,    32.0},  
     {M_PI_4*3.0, 64.0} 
 };
+
+bool GaborFeature::required(const FeatureSet& fs) 
+{ 
+    return fs.isEnabled (Feature2D::GABOR); 
+}
 
 void GaborFeature::calculate (LR& r)
 {
@@ -230,7 +235,7 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r)
     for(int i = 0; i < 8; i += num_filters)
     {
         // Compute the baseline score before applying high-pass Gabor filters
-        vector<vector<PixIntens>> e2_pix_plane_vec (num_filters, vector<PixIntens>(Im0.width * Im0.height));
+        std::vector<std::vector<PixIntens>> e2_pix_plane_vec (num_filters, std::vector<PixIntens>(Im0.width * Im0.height));
 
         std::vector<double> f(num_filters);
 
@@ -247,7 +252,7 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r)
         // Examine the baseline signal
         if (i == 0) 
         {
-            vector<PixIntens>& pix_plane = e2_pix_plane_vec[0];
+            std::vector<PixIntens>& pix_plane = e2_pix_plane_vec[0];
 
             PixIntens* e2img_ptr = e2img.writable_data_ptr();
 
@@ -271,7 +276,7 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r)
         // Iterate high-pass filter response signals and score them 
         for (int i=0; i < nFreqs; i++)
         {
-            vector<PixIntens>& e2_pix_plane_temp = e2_pix_plane_vec[i+1];
+            std::vector<PixIntens>& e2_pix_plane_temp = e2_pix_plane_vec[i+1];
 
             // score it
             unsigned long afterGaborScore = 0;
@@ -290,10 +295,10 @@ void GaborFeature::save_value(std::vector<std::vector<double>>& feature_vals)
 {
     int nFreqs = (int) GaborFeature::f0_theta_pairs.size();
 
-    if (feature_vals[GABOR].size() != nFreqs)
-        feature_vals[GABOR].resize(fvals.size());
+    if (feature_vals[(int)Feature2D::GABOR].size() != nFreqs)
+        feature_vals[(int)Feature2D::GABOR].resize(fvals.size());
     for (int i=0; i < nFreqs; i++)
-        feature_vals[GABOR][i] = fvals[i];
+        feature_vals[(int)Feature2D::GABOR][i] = fvals[i];
 }
 
 // conv_dud -- producing a double-valued image by convolving an unsigned int valued image with double-valued kernel
@@ -508,7 +513,7 @@ void GaborFeature::GaborEnergyGPU (
     //=== Version 2
     bool success = CuGabor::conv_dud_gpu_fft (auxC, pix_plane.data(), Gexp, Im.width, Im.height, n_gab, n_gab);
     if(!success) {
-        std::cerr << "Unable to calculate Gabor features on GPU." << endl;
+        std::cerr << "Unable to calculate Gabor features on GPU \n";
     }
 
     decltype(Im.height) b = 0;
@@ -545,7 +550,7 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
 {
     int n_gab = n;
 
-    vector<double> g_filters;
+    std::vector<double> g_filters;
     g_filters.resize(2 * n * n * num_filters);
 
     double fi = 0;
@@ -565,7 +570,7 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
     
     bool success = CuGabor::conv_dud_gpu_fft_multi_filter (auxC, pix_plane.data(), g_filters.data(), Im.width, Im.height, n_gab, n_gab, num_filters);
     if(!success) {
-        std::cerr << "Unable to calculate Gabor features on GPU." << endl;
+        std::cerr << "Unable to calculate Gabor features on GPU \n";
     }
 
     for (int i = 0; i < num_filters; ++i){

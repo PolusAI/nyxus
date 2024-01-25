@@ -1,18 +1,20 @@
 #include "fractal_dim.h"
 #include "image_matrix.h"
 
+using namespace Nyxus;
+
 FractalDimensionFeature::FractalDimensionFeature() : FeatureMethod("FractalDimensionFeature")
 {
-	provide_features({ FRACT_DIM_BOXCOUNT, FRACT_DIM_PERIMETER });
-	add_dependencies({ PERIMETER });	// FRACT_DIM_PERIMETER requires perimeter's pixels
+	provide_features({ Feature2D::FRACT_DIM_BOXCOUNT, Feature2D::FRACT_DIM_PERIMETER });
+	add_dependencies({ Feature2D::PERIMETER });	// FRACT_DIM_PERIMETER requires perimeter's pixels
 }
 
 void FractalDimensionFeature::calculate(LR& r)
 {
-	if (theFeatureSet.isEnabled(FRACT_DIM_BOXCOUNT))
+	if (theFeatureSet.isEnabled(Feature2D::FRACT_DIM_BOXCOUNT))
 		calculate_boxcount_fdim(r);
 
-	if (theFeatureSet.isEnabled(FRACT_DIM_PERIMETER))
+	if (theFeatureSet.isEnabled(Feature2D::FRACT_DIM_PERIMETER))
 		calculate_perimeter_fdim(r);
 }
 
@@ -167,17 +169,17 @@ void FractalDimensionFeature::osized_add_online_pixel(size_t x, size_t y, uint32
 
 void FractalDimensionFeature::osized_calculate(LR& r, ImageLoader& imloader)
 {
-	if (theFeatureSet.isEnabled(FRACT_DIM_BOXCOUNT))
+	if (theFeatureSet.isEnabled(Feature2D::FRACT_DIM_BOXCOUNT))
 		calculate_boxcount_fdim_oversized (r);
 
-	if (theFeatureSet.isEnabled(FRACT_DIM_PERIMETER))
+	if (theFeatureSet.isEnabled(Feature2D::FRACT_DIM_PERIMETER))
 		calculate_perimeter_fdim(r);
 }
 
 void FractalDimensionFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[FRACT_DIM_BOXCOUNT][0] = box_count_fd;
-	fvals[FRACT_DIM_PERIMETER][0] = perim_fd;
+	fvals[(int)Feature2D::FRACT_DIM_BOXCOUNT][0] = box_count_fd;
+	fvals[(int)Feature2D::FRACT_DIM_PERIMETER][0] = perim_fd;
 }
 
 void FractalDimensionFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)

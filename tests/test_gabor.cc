@@ -16,6 +16,7 @@
 #include "test_main_nyxus.h"
 
 using namespace std;
+using namespace Nyxus;
 
 void test_gabor(bool gpu)
 {
@@ -45,11 +46,11 @@ void test_gabor(bool gpu)
 
         f.save_value (roidata.fvals);
 
-        ASSERT_TRUE(gabor_truth[i].size() == roidata.fvals[GABOR].size());
+        ASSERT_TRUE(gabor_truth[i].size() == roidata.fvals[(int)Nyxus::Feature2D::GABOR].size());
 
         for(int j = 0; j < gabor_truth[i].size(); ++j) 
         {
-            ASSERT_TRUE(agrees_gt(gabor_truth[i][j], roidata.fvals[GABOR][j]));
+            ASSERT_TRUE(agrees_gt(gabor_truth[i][j], roidata.fvals[(int)Nyxus::Feature2D::GABOR][j]));
         }
     }
 }

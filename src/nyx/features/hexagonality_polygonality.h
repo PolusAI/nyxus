@@ -19,7 +19,7 @@ public:
 	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 	// Compatibility with manual reduce
-	static bool required (const FeatureSet& fs) { return fs.anyEnabled({ POLYGONALITY_AVE, HEXAGONALITY_AVE, HEXAGONALITY_STDDEV }); }
+	static bool required (const FeatureSet& fs) { return fs.anyEnabled({ Nyxus::Feature2D::POLYGONALITY_AVE, Nyxus::Feature2D::HEXAGONALITY_AVE, Nyxus::Feature2D::HEXAGONALITY_STDDEV }); }
 
 private:
 	double polyAve = 0, hexAve = 0, hexSd = 0;
