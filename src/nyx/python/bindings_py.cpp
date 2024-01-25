@@ -251,8 +251,6 @@ PYBIND11_MODULE(nyx_backend, m)
 		{
 			// Calculate features
 			auto desiredFeatures = { 
-				MIN_FERET_DIAMETER, 
-				MAX_FERET_DIAMETER, 
 				MIN_FERET_ANGLE, 
 				MAX_FERET_ANGLE, 
 				STAT_FERET_DIAM_MIN, 

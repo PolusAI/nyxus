@@ -76,17 +76,14 @@ public:
 	}
 
 private:	
-	// Implements feature calculation for a trivial ROI, saves result in instance cache
-	void calculate_imp (const std::vector<Pixel2>& cnovhull, std::vector<double>& D);
+	void calculate_angled_caliper_measurements (const std::vector<Pixel2>& cnovhull, std::vector<float>& angles, std::vector<double>& feret_measurements);
 
 	// Results instance cache
 	double 
-		// angles at min or max diameter
-		minFeretDiameter = 0, 
+		minFeretDiameter = 0,
 		maxFeretDiameter = 0,
 		minFeretAngle = 0,
 		maxFeretAngle = 0, 
-		// diameters of diameters
 		_min = 0, 
 		_max = 0, 
 		_mean = 0, 
@@ -95,7 +92,7 @@ private:
 		_mode = 0;
 
 	// Implementation constant
-	const float rot_angle_increment = 10.f;	// degrees
+	const double rot_angle_increment = 10.f;	// degrees
 	const int n_steps = 10;
 };
 

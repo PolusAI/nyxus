@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include <string>
+#include <tuple>
 #include <vector>
 
 namespace Nyxus
@@ -323,5 +324,35 @@ namespace Nyxus
 			return nan_substitute;
 		else
 			return x;
+	}
+
+	inline std::tuple<size_t, size_t> get_minmax_idx (const std::vector<double> & vec)
+	{
+		size_t n = vec.size();
+
+		if (n == 0)
+			return { 0,0 };
+
+		const double *ptr = vec.data();
+
+		size_t smallest = 0, largest = 0;
+		double smallestVal = ptr[smallest];
+		double largestVal = ptr[largest];
+
+		for (size_t i=1; i<n; i++)
+		{
+			if (ptr[i] < smallestVal)
+			{
+				smallest = i;
+				smallestVal = ptr[smallest];
+			}
+			if (ptr[i] > largestVal)
+			{
+				largest = i;
+				largestVal = ptr[largest];
+			}
+		}
+
+		return { smallest, largest };
 	}
 }
