@@ -53,7 +53,6 @@ void CaliperFeretFeature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature2D::STAT_FERET_DIAM_MODE][0] = _mode;
 }
 
-//void CaliperFeretFeature::calculate_imp (const std::vector<Pixel2>& convex_hull, std::vector<double>& D_min, std::vector<double>& D_max)
 void CaliperFeretFeature::calculate_angled_caliper_measurements (const std::vector<Pixel2>& convex_hull, std::vector<float>& angles, std::vector<double>& ferets)
 {
 	// Rotated convex hull
