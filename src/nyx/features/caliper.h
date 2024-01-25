@@ -80,6 +80,8 @@ private:
 
 	// Results instance cache
 	double 
+		minFeretDiameter = 0,
+		maxFeretDiameter = 0,
 		minFeretAngle = 0,
 		maxFeretAngle = 0, 
 		_min = 0, 
