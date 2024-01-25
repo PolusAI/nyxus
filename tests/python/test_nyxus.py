@@ -85,7 +85,8 @@ class TestNyxus():
                         break
             
             assert len(montage_not_equal) == 0
-            
+        
+        @pytest.mark.gpu
         def test_gabor_gpu(self):
             # cpu gabor
             cpu_nyx = nyxus.Nyxus(["GABOR"])
