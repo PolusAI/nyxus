@@ -38,10 +38,12 @@ void CaliperFeretFeature::calculate(LR& r)
 	_mode = s.mode;
 
 	// Angles
-	size_t min_i = Nyxus::get_min_idx (ferets);
-	size_t max_i = Nyxus::get_max_idx (ferets);
-	minFeretAngle = angles [min_i];
-	maxFeretAngle = angles [max_i];
+	if (ferets.size())
+	{
+		std::tuple<size_t,size_t> minmax = Nyxus::get_minmax_idx(ferets);
+		minFeretAngle = angles[std::get<0>(minmax)];
+		maxFeretAngle = angles[std::get<1>(minmax)];
+	}
 }
 
 void CaliperFeretFeature::save_value(std::vector<std::vector<double>>& fvals)
