@@ -34,45 +34,17 @@ set(Z5_REQUESTED ${USE_Z5})
 set(ARROW_REQUESTED ${USE_ARROW})
 set(DCMTK_REQUESTED ${USE_DCMTK})
 
-option(USEGPU "Use GPU" ON)
+option(USEGPU "Use GPU" OFF)
 set(CUDA_REQUESTED ${USEGPU})
 check_language(CUDA)
 find_package(CUDAToolkit)
 if (USEGPU)
 	if (NOT(CMAKE_CUDA_COMPILER) OR NOT(CUDAToolkit_FOUND))
-		set(USEGPU OFF)
-	endif()
-endif()
-
-option(USE_CUDA11 "CUDA 11 Build" OFF)
-option(USE_CUDA12 "CUDA 12 Build" OFF)
-if (USE_CUDA11 OR USE_CUDA12)
-
-	if (NOT(CMAKE_CUDA_COMPILER) OR NOT(CUDAToolkit_FOUND))
 		message(FATAL_ERROR "Unable to find CUDA compiler.")
 	endif()
-
-	if (USE_CUDA11)
-		if (NOT(CUDAToolkit_VERSION_MAJOR STREQUAL "11"))
-			message(FATAL_ERROR "CUDA major version must be 11 to build with USE_CUDA11")
-		endif()
-
-		if (CUDAToolkit_VERSION_MINOR STREQUAL "0")
-			message(FATAL_ERROR "CUDA minor version must be 1 or greater for building 11 support.")
-		endif()
-	endif()
-
-	if (USE_CUDA12)
-		if (NOT(CUDAToolkit_VERSION_MAJOR STREQUAL "12"))
-			message(FATAL_ERROR "CUDA major version must be 12 to build with USE_CUDA12")
-		endif()
-	endif()
-
-	set(CUDA_REQUESTED ON)
 endif()
 
-
-if(USEGPU OR USE_CUDA11 OR USE_CUDA12) 
+if(USEGPU) 
 	if (CUDAToolkit_VERSION_MAJOR STREQUAL "10")
 		set(CUDA_ARCH_LIST "35;37;50;72;75")
 	elseif (CUDAToolkit_VERSION_MAJOR STREQUAL "11")
@@ -91,11 +63,6 @@ if(USEGPU OR USE_CUDA11 OR USE_CUDA12)
 else()
 	if(CUDA_REQUESTED)
 		message(WARNING "CUDA Toolkit not found. USEGPU flag will be ignored.")
-
-		if (USE_CUDA11 OR USE_CUDA12)
-			message (FATAL_ERROR "Build cannot continue without CUDA for USE_CUDA11 or USE_CUDA12. Try USEGPU=ON for the flexible solution.")
-		endif()
-
 	endif()
 endif()
 
@@ -103,7 +70,7 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(USEGPU OR USE_CUDA11 OR USE_CUDA12)
+if(USEGPU)
     enable_language("CUDA")
 	SET(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
 	set_property(GLOBAL PROPERTY CUDA_ARCHITECTURES "${CUDA_ARCH_LIST}")
@@ -345,9 +312,8 @@ if(USE_DCMTK)
 	endif()
 endif()
 
-if(USEGPU OR USE_CUDA11 OR USE_CUDA12)
-	#include_directories("${CUDAToolkit_INCLUDE_DIRS}")
-
+if(USEGPU)
+	include_directories("${CUDAToolkit_INCLUDE_DIRS}")
 	set(GPU_SOURCE_FILES
         src/nyx/gpu/gabor.cu
 		src/nyx/gpu/gpu_helpers.cu
