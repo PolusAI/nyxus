@@ -1,4 +1,4 @@
-name: Publish to PyPi
+name: Publish CUDA 12 to PyPi
 
 on:
   release:
