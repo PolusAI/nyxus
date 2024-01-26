@@ -87,11 +87,11 @@ class TestNyxus():
             assert len(montage_not_equal) == 0
             
         @pytest.mark.gpu
-        def test_gpu_available(self):
-            
+        def test_gpu_enabled(self):
+            from nyxus import gpu_is_enabled
             nyx = nyxus.Nyxus(["*ALL*"])
             
-            assert nyx.gpu_is_available == True, f"GPU assertion failed. If running tests on a machine without GPU, use the flag \"-m \"not gpu\"\"."
+            assert gpu_is_enabled == True, f"GPU assertion failed. If running tests non GPU enabled wheels, use the flag \"-m \"not gpu\"\"."
             
         @pytest.mark.skip_ci
         def test_gabor_gpu(self):

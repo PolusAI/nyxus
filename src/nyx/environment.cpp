@@ -862,6 +862,14 @@ void Environment::set_coarse_gray_depth(unsigned int new_depth)
 	coarse_grayscale_depth = new_depth;
 }
 
+bool Environment::gpu_is_enabled() {
+#ifdef USE_GPU
+	return true;
+#else
+	return false;
+#endif
+}
+
 bool Environment::gpu_is_available() {
 #ifdef USE_GPU
 	return get_gpu_properties().size() > 0 ? true : false;
