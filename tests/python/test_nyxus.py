@@ -87,7 +87,7 @@ class TestNyxus():
             assert len(montage_not_equal) == 0
             
         @pytest.mark.gpu
-        def test_gpu_available():
+        def test_gpu_available(self):
             
             nyx = nyxus.Nyxus(["*ALL*"])
             
