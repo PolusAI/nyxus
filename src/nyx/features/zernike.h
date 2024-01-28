@@ -19,8 +19,7 @@ public:
 	void save_value(std::vector<std::vector<double>>& feature_vals);
 	static void parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
-	static const short ZERNIKE2D_ORDER = 9, NUM_FEATURE_VALS = 72;
-	static int num_feature_values_calculated;
+	static const short ZERNIKE2D_ORDER = 9, NUM_FEATURE_VALS = 30;
 
 	// Compatibility with manual reduce
 	static bool required(const FeatureSet& fs) { return fs.isEnabled(Nyxus::Feature2D::ZERNIKE2D); }
@@ -35,12 +34,12 @@ private:
 	/// @brief Algorithms for fast computation of Zernike momentsand their numerical stability
 	/// Chandan Singhand Ekta Walia, Imageand Vision Computing 29 (2011) 251–259 implemented from 
 	/// pseudo-code by Ilya Goldberg
-	void mb_zernike2D (const ImageMatrix& Im, double order, double rad, double* zvalues, long* output_size);
+	void mb_zernike2D (const ImageMatrix& Im, double order, double rad, double* zvalues);
 
 	/// @brief Algorithms for fast computation of Zernike momentsand their numerical stability
 	/// Chandan Singhand Ekta Walia, Imageand Vision Computing 29 (2011) 251–259 implemented from 
 	/// pseudo-code by Ilya Goldberg
-	void mb_zernike2D_nontriv (WriteImageMatrix_nontriv& I, double order, double rad, double* zvalues, long* output_size);
+	void mb_zernike2D_nontriv (WriteImageMatrix_nontriv& I, double order, double rad, double* zvalues);
 
 	std::vector<double> coeffs;
 };

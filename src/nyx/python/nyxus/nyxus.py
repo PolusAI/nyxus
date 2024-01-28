@@ -278,8 +278,8 @@ class Nyxus:
             )
 
             # Labels should always be uint.
-            if "label" in df.columns:
-                df["label"] = df.label.astype(np.uint32)
+            if "ROI_label" in df.columns:
+                df["ROI_label"] = df.ROI_label.astype(np.uint32)
 
             return df
         

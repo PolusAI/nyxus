@@ -237,7 +237,6 @@ py::tuple featurize_directory_imp (
     // Output the result
     if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
     {
-
         auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
         auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
         auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
@@ -246,6 +245,7 @@ py::tuple featurize_directory_imp (
         auto nRows = theResultsCache.get_num_rows();
         pyStrData = pyStrData.reshape ({nRows, pyStrData.size() / nRows});
         pyNumData = pyNumData.reshape ({ nRows, pyNumData.size() / nRows });
+
         return py::make_tuple (pyHeader, pyStrData, pyNumData);
     } 
 

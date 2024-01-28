@@ -36,7 +36,7 @@ namespace Nyxus
 
 		// We only fill in the header once.
 		// We depend on the caller to manage headerBuf contents and clear it appropriately...
-		bool fill_header = rescache.get_calcResultBuf().size() == 0;
+		bool fill_header = rescache.get_headerBuf().size() == 0;
 
 		// -- Header
 		if (fill_header)
@@ -142,7 +142,7 @@ namespace Nyxus
 				if (fc == (int) Feature2D::ZERNIKE2D)
 				{
 					// Populate with indices
-					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
+					for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
 					{
 						std::string col = fn + "_Z" + std::to_string(i);
 						rescache.add_to_header(col);
@@ -180,6 +180,7 @@ namespace Nyxus
 			{
 				auto fc = std::get<1>(enabdF);
 				auto fn = std::get<0>(enabdF);	// debug
+
 				auto vv = r.get_fvals(fc);
 
 				// Parameterized feature
@@ -195,7 +196,9 @@ namespace Nyxus
 					// Populate with angles
 					int nAng = GLCMFeature::angles.size();
 					for (int i = 0; i < nAng; i++)
+					{
 						rescache.add_numeric(vv[i]);
+					}
 
 					// Proceed with other features
 					continue;
@@ -207,9 +210,11 @@ namespace Nyxus
 				if (glrlmFeature && nonAngledGlrlmFeature == false)
 				{
 					// Populate with angles
-					int nAng = 4;
+					int nAng = 4; // check GLRLMFeature::rotAngles
 					for (int i = 0; i < nAng; i++)
+					{
 						rescache.add_numeric(vv[i]);
+					}
 					// Proceed with other features
 					continue;
 				}
@@ -218,8 +223,9 @@ namespace Nyxus
 				if (fc == (int) Feature2D::GABOR)
 				{
 					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
+					{
 						rescache.add_numeric(vv[i]);
-
+					}
 					// Proceed with other features
 					continue;
 				}
@@ -227,9 +233,10 @@ namespace Nyxus
 				// --Zernike family
 				if (fc == (int) Feature2D::ZERNIKE2D)
 				{
-					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
+					for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
+					{
 						rescache.add_numeric(vv[i]);
-
+					}
 					// Proceed with other features
 					continue;
 				}
@@ -238,24 +245,27 @@ namespace Nyxus
 				if (fc == (int) Feature2D::FRAC_AT_D)
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
+					{
 						rescache.add_numeric(vv[i]);
-
+					}
 					// Proceed with other features
 					continue;
 				}
 				if (fc == (int) Feature2D::MEAN_FRAC)
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
+					{
 						rescache.add_numeric(vv[i]);
-
+					}
 					// Proceed with other features
 					continue;
 				}
 				if (fc == (int) Feature2D::RADIAL_CV)
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
+					{
 						rescache.add_numeric(vv[i]);
-
+					}
 					// Proceed with other features
 					continue;
 				}
