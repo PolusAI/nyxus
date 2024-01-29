@@ -49,9 +49,7 @@ void ZernikeFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	coeffs.resize(ZernikeFeature::NUM_FEATURE_VALS, 0);
 
 	// Calculate features
-	long output_size;   // output size is normally 72 (NUM_FEATURE_VALS)
-	mb_zernike2D_nontriv (I, ZernikeFeature::ZERNIKE2D_ORDER, 0/*rad*/, coeffs.data(), &output_size);
-	ZernikeFeature::num_feature_values_calculated = output_size;
+	mb_zernike2D_nontriv (I, ZernikeFeature::ZERNIKE2D_ORDER, 0/*rad*/, coeffs.data());
 }
 
 /*
@@ -69,7 +67,7 @@ void ZernikeFeature::osized_calculate (LR& r, ImageLoader& imloader)
   where zernike features are useful.
 */
 
-void ZernikeFeature::mb_zernike2D_nontriv (WriteImageMatrix_nontriv& I, double order, double rad, double* zvalues, long* output_size)
+void ZernikeFeature::mb_zernike2D_nontriv (WriteImageMatrix_nontriv& I, double order, double rad, double* zvalues)
 {
 	int cols = I.get_width();
 	int rows = I.get_height();
@@ -235,7 +233,6 @@ void ZernikeFeature::mb_zernike2D_nontriv (WriteImageMatrix_nontriv& I, double o
 			}
 		}
 	}
-	*output_size = numZ;
 }
 
 

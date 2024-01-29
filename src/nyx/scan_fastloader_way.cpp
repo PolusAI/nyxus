@@ -453,7 +453,8 @@ namespace Nyxus
 					std::cout << "Error writing Arrow file: " << msg.value() << std::endl;
 					return 2;
 				}
-			} else if (saveOption == SaveOption::saveCSV) {
+			} else if (saveOption == SaveOption::saveCSV) 
+			{
 				ok = save_features_2_csv(ifp, lfp, outputPath);
 
 				if (ok == false)
@@ -461,7 +462,8 @@ namespace Nyxus
 					std::cout << "save_features_2_csv() returned an error code" << std::endl;
 					return 2;
 				}
-			} else {
+			} else 
+			{
 				ok = save_features_2_buffer(theResultsCache);
 
 				if (ok == false)

@@ -157,7 +157,7 @@ namespace Nyxus
 			if (fc == (int) Feature2D::ZERNIKE2D)
 			{
 				// Populate with indices
-				for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)	// i < ZernikeFeature::num_feature_values_calculated
+				for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)	// i < ZernikeFeature::num_feature_values_calculated
 					head.emplace_back(fn + "_Z" + std::to_string(i));
 
 				// Proceed with other features
@@ -348,7 +348,7 @@ namespace Nyxus
 				// --Zernike feature values
 				if (fc == (int) Feature2D::ZERNIKE2D)
 				{
-					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
+					for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
 					{
 						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
 						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
@@ -544,7 +544,7 @@ namespace Nyxus
 				// --Zernike feature values
 				if (fc == (int) Feature2D::ZERNIKE2D)
 				{
-					for (int i = 0; i < ZernikeFeature::num_feature_values_calculated; i++)
+					for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
 					{
 						feature_values.push_back(vv[i]);
 					}
