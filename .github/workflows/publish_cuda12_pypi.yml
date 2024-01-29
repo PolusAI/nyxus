@@ -1,0 +1,65 @@
+name: Publish CUDA 12 to PyPi
+
+on:
+  release:
+    types: [published]
+
+  workflow_dispatch:
+
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]
+        cibw_archs: ["auto64"]
+        cibw_build: ["cp38-*", "cp39-*", "cp310-*", "cp311-*"]
+
+    steps:
+      - uses: actions/checkout@v3
+        name: Check out
+        with:
+          submodules: recursive    
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        name: Add MSVS Path
+
+      - uses: actions/setup-python@v4
+        name: Install Python
+        with:
+          python-version: '3.9'
+ 
+      - name: Install cibuildwheel
+        run: |
+          python -m pip install cibuildwheel==2.16.2 delvewheel wheel
+
+      - name: Building wheels 
+        run: |
+          python -m cibuildwheel --output-dir dist
+        env:
+          CIBW_BUILD: ${{ matrix.cibw_build }}
+          CIBW_SKIP: "*musllinux*"
+          CIBW_BUILD_VERBOSITY: 3
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+          CIBW_BEFORE_ALL_LINUX:  yum install -y llvm libevent-devel openssl-devel &&
+                                   bash ci-utils/install_cuda12_yum.sh && 
+                                   bash ci-utils/install_arrow_yum.sh &&
+                                   bash ci-utils/install_prereq_linux.sh --build_arrow no &&
+                                   mkdir -p /tmp/nyxus_bld &&
+                                   cp -r local_install /tmp/nyxus_bld
+          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:/usr/local/cuda/targets/x86_64-linux/lib:$LD_LIBRARY_PATH" CPATH="/usr/local/cuda/targets/x86_64-linux/include:$CPATH" PATH="/usr/local/cuda/bin:$PATH" ON_GITHUB="TRUE" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install" CXXFLAGS="-I /usr/local/cuda/include" CMAKE_ARGS="-DUSEGPU=ON -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc -DCMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES=/usr/local/cuda/include" 
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: auditwheel repair --exclude=libcufft.so --exclude=libcufft.so.11 --exclude=libcufft.so.11.0.12.1  --exclude=libcudart.so --exclude=libcudart.so.12 --exclude=libcudart.so.12.3.101  -w {dest_dir} {wheel}
+          CIBW_ARCHS: ${{ matrix.cibw_archs }}
+          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
+          CIBW_TEST_COMMAND: pytest {project}/tests/python -m "not skip_ci"
+
+      - name: Install Dependencies
+        run: python -m pip install --upgrade twine requests
+        
+      - name: Publish to PyPi
+        run: python -m twine upload dist/*.whl
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.TWINE_CUDA12_API_KEY }}
+          TWINE_REPOSITORY: pypi
