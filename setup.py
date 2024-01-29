@@ -1,10 +1,8 @@
 import os
 import re
 import sys
-import sysconfig
 import versioneer
 import platform
-import subprocess
 import subprocess
 
 from distutils.version import LooseVersion
@@ -91,30 +89,24 @@ class CMakeBuild(build_ext):
     
 def get_cuda_major_version():
     try:
-        # find python version
-        result = subprocess.run(['nvcc', '--version'], capture_output=True, text=True)
-        output = result.stdout
-        lines = output.split('\n')
-        for line in lines:
-            # Find line with version info
-            if 'release' in line.lower():
-                major_version = line.split()[4].split('.')[0]
-                # ensure the version is numeric
-                try:
-                    version = int(major_version)
-                except:
-                    raise RuntimeError('CUDA version not found')
-                return major_version
-        raise RuntimeError('CUDA version not found')
+        output = subprocess.check_output(['nvcc', '--version']).decode('utf-8')
+        match = re.search(r'release (\d+)\.', output)
+        if match:
+            return match.group(1)
+        else:
+            return None
     except Exception as e:
-        return f"Error getting CUDA version: {str(e)}"
-    
+        return None    
     
 def get_name():
     if len(os.environ.get("CMAKE_ARGS", "")):
         args = os.environ.get("CMAKE_ARGS", "").split(" ")
         if "-DUSEGPU=ON" in args: #check if gpu build is requested
-            return "nyxus-cuda" + str(get_cuda_major_version())
+            cuda_major_version = get_cuda_major_version()
+            if cuda_major_version is None:
+                raise ValueError("USEGPU flag was set to ON but no CUDA version was found. Set USEGPU=OFF to continue.")
+            else:
+                return f"nyxus-cuda{cuda_major_version}x"
     return "nyxus"
 
 

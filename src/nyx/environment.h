@@ -150,7 +150,6 @@ public:
 	size_t get_ram_limit();
 	void expand_featuregroups();
 
-	static bool gpu_is_enabled();
 	static bool gpu_is_available();
 
 	static bool ibsi_compliance;

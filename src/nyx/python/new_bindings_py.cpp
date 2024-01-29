@@ -707,7 +707,6 @@ PYBIND11_MODULE(backend, m)
     m.def("featurize_fname_lists_imp", &featurize_fname_lists_imp, "Calculate features of intensity-mask image pairs defined by lists of image file names");
     m.def("findrelations_imp", &findrelations_imp, "Find relations in segmentation mask images");
     m.def("gpu_available", &Environment::gpu_is_available, "Check if CUDA gpu is available");
-    m.def("gpu_enabled", &Environment::gpu_is_enabled, "Check if Python wheel is CUDA enabled");
     m.def("use_gpu", &use_gpu, "Enable/disable GPU features");
     m.def("get_gpu_props", &get_gpu_properties, "Get properties of CUDA gpu");
     m.def("blacklist_roi_imp", &blacklist_roi_imp, "Set up a global or per-mask file blacklist definition");
