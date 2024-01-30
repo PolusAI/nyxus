@@ -199,12 +199,13 @@ make install -j4
 cd ../../
 
 if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
-    curl -L  https://github.com/sameeul/dcmtk/archive/refs/heads/inspect_tiff.zip  -o dcmtk.zip
-    unzip dcmtk.zip 
-    cd dcmtk-inspect_tiff
+    curl -L https://github.com/DCMTK/dcmtk/archive/refs/tags/DCMTK-3.6.7.zip -o DCMTK-3.6.7.zip
+    unzip DCMTK-3.6.7.zip
+    cd dcmtk-DCMTK-3.6.7
+    sed -i 's/TIFF_LIBRARY/TIFF_LIBRARIES/' CMake/3rdparty.cmake
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF  ..
+    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF  ..
     make install -j4
     cd ../../
 
