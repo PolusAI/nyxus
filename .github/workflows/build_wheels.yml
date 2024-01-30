@@ -34,7 +34,7 @@ jobs:
         run: |
           python -m pip install cibuildwheel==2.16.2 delvewheel wheel
 
-      - name: Building wheels 
+      - name: Building  wheels 
         run: |
           python -m cibuildwheel --output-dir dist
         env:
