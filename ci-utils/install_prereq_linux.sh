@@ -200,7 +200,7 @@ cd ../../
 
 if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     curl -L  https://github.com/sameeul/dcmtk/archive/refs/heads/inspect_tiff.zip  -o dcmtk.zip
-    unzip inspect_tiff.zip 
+    unzip dcmtk.zip 
     cd dcmtk-inspect_tiff
     mkdir build_man
     cd build_man
