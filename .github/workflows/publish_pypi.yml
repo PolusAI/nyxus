@@ -73,3 +73,53 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.TWINE_API_KEY }}
           TWINE_REPOSITORY: pypi
+
+
+  build_wheels_apple_arm64:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
+    strategy:
+      matrix:
+        os: [macos-13-xlarge]
+        cibw_archs: ["arm64"]
+        cibw_build: ["cp39-*", "cp310-*", "cp311-*"]
+
+    steps:
+      - uses: actions/checkout@v3
+        name: Check out
+
+      - uses: actions/setup-python@v4
+        name: Install Python
+        with:
+          python-version: '3.11'
+  
+      - name: Install cibuildwheel
+        run: |
+          python -m pip install cibuildwheel==2.16.2 delvewheel wheel
+
+      - name: Building wheels 
+        run: |
+          python -m cibuildwheel --output-dir dist
+        env:
+          CIBW_BUILD: ${{ matrix.cibw_build }}
+          CIBW_BUILD_VERBOSITY: 3
+          CIBW_ARCHS_MACOS: arm64
+          CIBW_BEFORE_ALL_MACOS:  brew install llvm@16 && 
+                                    bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
+                                    mkdir -p /tmp/nyxus_bld &&
+                                    cp -r local_install /tmp/nyxus_bld 
+                                      
+          CIBW_ENVIRONMENT_MACOS: REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64" ON_GITHUB="TRUE" PATH="/opt/homebrew/opt/llvm@16/bin:$PATH" COMPILER="/opt/homebrew/opt/llvm@16/bin/clang++" CFLAGS="-I /opt/homebrew/include -I/opt/homebrew/opt/llvm@16/include" CPPFLAGS="-I/opt/homebrew/opt/llvm@16/include" LDFLAGS="-L/opt/homebrew/opt/llvm@16/lib -L/opt/homebrew/opt/llvm@16/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm@16/lib/c++" CXX="/opt/homebrew/opt/llvm@16/bin/clang++" CC="/opt/homebrew/opt/llvm@16/bin/clang" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
+          CIBW_REPAIR_WHEEL_COMMAND_MACOS: DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-listdeps {wheel} && DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
+          CIBW_ARCHS: ${{ matrix.cibw_archs }}
+          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
+          CIBW_TEST_COMMAND: pytest {project}/tests/python
+          
+      - name: Publish to PyPi
+        run: python -m twine upload dist/*.whl
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.TWINE_API_KEY }}
+          TWINE_REPOSITORY: pypi
