@@ -34,7 +34,7 @@ if [[ "${build_arrow}" == "yes" ]]; then
     BUILD_BOOST_DEP=1
 fi
 
-
+BULD_DCMTK_DEP=0
 if [[ -z $install_dir ]]
 then
       echo "No path to the Nyxus source location provided"
