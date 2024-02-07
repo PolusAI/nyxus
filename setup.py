@@ -99,14 +99,15 @@ def get_cuda_major_version():
         return None    
     
 def get_name():
-    if len(os.environ.get("CMAKE_ARGS", "")):
-        args = os.environ.get("CMAKE_ARGS", "").split(" ")
-        if "-DUSEGPU=ON" in args: #check if gpu build is requested
-            cuda_major_version = get_cuda_major_version()
-            if cuda_major_version is None:
-                raise ValueError("USEGPU flag was set to ON but no CUDA version was found. Set USEGPU=OFF to continue.")
-            else:
-                return f"nyxus-cuda{cuda_major_version}x"
+    if os.environ.get("NYXUS_GPU_WHEEL", "") == "ON":
+        if len(os.environ.get("CMAKE_ARGS", "")):
+            args = os.environ.get("CMAKE_ARGS", "").split(" ")
+            if "-DUSEGPU=ON" in args: #check if gpu build is requested
+                cuda_major_version = get_cuda_major_version()
+                if cuda_major_version is None:
+                    raise RuntimeError("USEGPU flag was set to ON but no CUDA version was found. Set USEGPU=OFF to continue.")
+                else:
+                    return f"nyxus-cuda{cuda_major_version}x"
     return "nyxus"
 
 
