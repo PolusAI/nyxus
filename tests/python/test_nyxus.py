@@ -107,36 +107,7 @@ class TestNyxus():
                 print("Gpu not available")
                 assert True
 
-        # def test_gabor_customization (self):
-        #     nyx = nyxus.Nyxus (["GABOR"])
-        #     assert nyx is not None
 
-        #     # test ability to digest valid parameters
-        #     try:
-        #         nyx.set_gabor_feature_params(kersize=16)
-        #         nyx.set_gabor_feature_params(gamma=0.1)
-        #         nyx.set_gabor_feature_params(sig2lam=0.8)
-        #         nyx.set_gabor_feature_params(f0=0.1)
-        #         nyx.set_gabor_feature_params(thold=0.025)
-        #         nyx.set_gabor_feature_params(freqs=[1], thetas=[30])
-        #         nyx.set_gabor_feature_params(freqs=[1,2,4,8,16,32,64], thetas=[15, 30, 45, 75, 90, 105, 115])
-        #     except Exception as exc:
-        #         assert False, f"set_gabor_feature_params(valid argument) raised an exception {exc}"
-
-        #     # test ability to intercept invalid values
-        #     with pytest.raises (Exception):
-        #         nyx.set_gabor_feature_params(kersize=16.789)
-        #     with pytest.raises (Exception):
-        #         nyx.set_gabor_feature_params(gamma="notAnumber")
-        #     with pytest.raises (Exception):
-        #         nyx.set_gabor_feature_params(sig2lam="notAnumber")
-        #         nyx.set_gabor_feature_params(f0="notAnumber")
-        #         nyx.set_gabor_feature_params(thetas="notAnumber")
-        #         nyx.set_gabor_feature_params(thold="notAnumber")
-        #     with pytest.raises (Exception):
-        #         nyx.set_gabor_feature_params(freqs=["notAnumber"])
-        #     with pytest.raises (Exception):
-        #         nyx.set_gabor_feature_params(freqs="notAList")
         
         def test_get_default_params(self):
             
@@ -638,3 +609,33 @@ class TestNyxus():
 
             assert arrow_path == 'NyxusFeatures.arrow'           
 
+        def test_gabor_customization (self):
+            nyx = nyxus.Nyxus (["GABOR"])
+            assert nyx is not None
+
+            # test ability to digest valid parameters
+            try:
+                nyx.set_gabor_feature_params(kersize=16)
+                nyx.set_gabor_feature_params(gamma=0.1)
+                nyx.set_gabor_feature_params(sig2lam=0.8)
+                nyx.set_gabor_feature_params(f0=0.1)
+                nyx.set_gabor_feature_params(thold=0.025)
+                nyx.set_gabor_feature_params(freqs=[1], thetas=[30])
+                nyx.set_gabor_feature_params(freqs=[1,2,4,8,16,32,64], thetas=[15, 30, 45, 75, 90, 105, 115])
+            except Exception as exc:
+                assert False, f"set_gabor_feature_params(valid argument) raised an exception {exc}"
+
+            # test ability to intercept invalid values
+            with pytest.raises (Exception):
+                nyx.set_gabor_feature_params(kersize=16.789)
+            with pytest.raises (Exception):
+                nyx.set_gabor_feature_params(gamma="notAnumber")
+            with pytest.raises (Exception):
+                nyx.set_gabor_feature_params(sig2lam="notAnumber")
+                nyx.set_gabor_feature_params(f0="notAnumber")
+                nyx.set_gabor_feature_params(thetas="notAnumber")
+                nyx.set_gabor_feature_params(thold="notAnumber")
+            with pytest.raises (Exception):
+                nyx.set_gabor_feature_params(freqs=["notAnumber"])
+            with pytest.raises (Exception):
+                nyx.set_gabor_feature_params(freqs="notAList")
