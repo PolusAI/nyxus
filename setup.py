@@ -105,10 +105,10 @@ def get_cuda_major_version():
 def get_name(build_gpu_wheel):
     if build_gpu_wheel:
         cuda_major_version = get_cuda_major_version()
-        # if cuda_major_version is None:
-        #     raise RuntimeError("build-gpu-wheel option was used but no CUDA version was found. To continue, remove build-gpu-wheel option.")
-        # else:
-        #     return f"nyxus-cuda{cuda_major_version}x"
+        if cuda_major_version is None:
+            raise RuntimeError("build-gpu-wheel option was used but no CUDA version was found. To continue, remove build-gpu-wheel option.")
+        else:
+            return f"nyxus-cuda{cuda_major_version}x"
     return "nyxus"
 
 
