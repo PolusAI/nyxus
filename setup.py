@@ -11,12 +11,13 @@ from setuptools.command.build_ext import build_ext
 
 
 class CMakeExtension(Extension):
-    def __init__(self, name, sourcedir=""):
+    def __init__(self, name, usegpu, sourcedir=""):
         print("-----------------__init__ (" + str(Extension) + ")")
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
         print("-----------------__init__ self.sourcedir=" + str(self.sourcedir))
-
+        self.usegpu = usegpu
+        print("-----------------__init__ self.usegpu=" + str(usegpu))
 
 class CMakeBuild(build_ext):
     def run(self):
@@ -73,6 +74,9 @@ class CMakeBuild(build_ext):
         if len(os.environ.get("CMAKE_ARGS", "")):
             cmake_args += os.environ.get("CMAKE_ARGS", "").split(" ")
 
+        if ext.usegpu and "-DUSEGPU=ON" not in cmake_args:
+            cmake_args += ["-DUSEGPU=ON"]
+
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
         print("--------------- cmake_args=" + str(cmake_args))
@@ -98,24 +102,28 @@ def get_cuda_major_version():
     except Exception as e:
         return None    
     
-def get_name():
-    if len(os.environ.get("CMAKE_ARGS", "")):
-        args = os.environ.get("CMAKE_ARGS", "").split(" ")
-        if "-DUSEGPU=ON" in args: #check if gpu build is requested
-            cuda_major_version = get_cuda_major_version()
-            if cuda_major_version is None:
-                raise ValueError("USEGPU flag was set to ON but no CUDA version was found. Set USEGPU=OFF to continue.")
-            else:
-                return f"nyxus-cuda{cuda_major_version}x"
+def get_name(build_gpu_wheel):
+    if build_gpu_wheel:
+        cuda_major_version = get_cuda_major_version()
+        # if cuda_major_version is None:
+        #     raise RuntimeError("build-gpu-wheel option was used but no CUDA version was found. To continue, remove build-gpu-wheel option.")
+        # else:
+        #     return f"nyxus-cuda{cuda_major_version}x"
     return "nyxus"
 
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
-    
-    
+
+build_gpu_wheel = False 
+for arg in sys.argv:
+    if arg == "--build-gpu-wheel":
+        build_gpu_wheel = True
+        sys.argv.remove(arg)
+        break
+
 setup(
-    name=get_name(),
+    name=get_name(build_gpu_wheel),
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(dict(build_ext=CMakeBuild)),
     author="Andriy Kharchenko",
@@ -126,7 +134,7 @@ setup(
     long_description_content_type="text/markdown",
     packages=find_packages("src/nyx/python"),
     package_dir={"": "src/nyx/python"},
-    ext_modules=[CMakeExtension("nyxus/backend")],
+    ext_modules=[CMakeExtension("nyxus/backend", build_gpu_wheel)],
     test_suite="tests",
     zip_safe=False,
     python_requires=">=3.8",
