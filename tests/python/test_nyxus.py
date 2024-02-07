@@ -607,7 +607,8 @@ class TestNyxus():
             
             arrow_path = nyx.featurize(intens, seg, output_type="arrowipc")
 
-            assert arrow_path == 'NyxusFeatures.arrow'           
+            assert arrow_path == 'NyxusFeatures.arrow'    
+            Path(arrow_path).unlink()       
 
         def test_gabor_customization (self):
             nyx = nyxus.Nyxus (["GABOR"])
