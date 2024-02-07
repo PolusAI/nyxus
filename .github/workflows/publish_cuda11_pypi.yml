@@ -42,7 +42,7 @@ jobs:
           CIBW_SKIP: "*musllinux*"
           CIBW_BUILD_VERBOSITY: 3
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
-          CIBW_CONFIG_SETTINGS: "--build-option=--build-gpu-wheel"
+          CIBW_BUILD_FRONTEND: "pip; args: --build-option=--build-gpu-wheel"
           CIBW_BEFORE_ALL_LINUX:  yum install -y llvm libevent-devel openssl-devel &&
                                    bash ci-utils/install_cuda11_yum.sh && 
                                    bash ci-utils/install_arrow_yum.sh &&
