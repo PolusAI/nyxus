@@ -103,6 +103,7 @@ jobs:
           CIBW_BUILD_VERBOSITY: 3
           CIBW_ARCHS_MACOS: arm64
           CIBW_BEFORE_ALL_MACOS:  brew install llvm@16 && 
+                                    export CMAKE_ARGS="-DCMAKE_OSX_SYSROOT=/Applications/Xcode_14.2.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk" &&
                                     bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
                                     mkdir -p /tmp/nyxus_bld &&
                                     cp -r local_install /tmp/nyxus_bld 
