@@ -5,72 +5,6 @@ on:
   pull_request:
 
 jobs:
-  build_wheels:
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    env:
-      MACOSX_DEPLOYMENT_TARGET: "10.15"
-    strategy:
-      matrix:
-        os: [ubuntu-20.04, macos-12, windows-latest]
-        cibw_archs: ["auto64"]
-        cibw_build: ["cp38-*", "cp39-*", "cp310-*", "cp311-*"]
-
-    steps:
-      - uses: actions/checkout@v3
-        name: Check out
-        with:
-          submodules: recursive    
-
-      - uses: ilammy/msvc-dev-cmd@v1
-        name: Add MSVS Path
-
-      - uses: actions/setup-python@v4
-        name: Install Python
-        with:
-          python-version: '3.9'
- 
-      - name: Install cibuildwheel
-        run: |
-          python -m pip install cibuildwheel==2.16.2 delvewheel wheel
-
-      - name: Building wheels 
-        run: |
-          python -m cibuildwheel --output-dir dist
-        env:
-          CIBW_BUILD: ${{ matrix.cibw_build }}
-          CIBW_SKIP: "*musllinux*"
-          CIBW_BUILD_VERBOSITY: 3
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
-          CIBW_BEFORE_ALL_MACOS:  brew install llvm@16 && 
-                                   bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
-                                   mkdir -p /tmp/nyxus_bld &&
-                                   cp -r local_install /tmp/nyxus_bld 
-          CIBW_BEFORE_ALL_LINUX:  yum install -y llvm libevent-devel openssl-devel && 
-                                   bash ci-utils/install_arrow_yum.sh &&
-                                   bash ci-utils/install_prereq_linux.sh --build_arrow no &&
-                                   mkdir -p /tmp/nyxus_bld &&
-                                   cp -r local_install /tmp/nyxus_bld
-          CIBW_BEFORE_ALL_WINDOWS: ci-utils\install_prereq_win.bat &&
-                                   xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install
-                                     
-          CIBW_ENVIRONMENT_MACOS: REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64" ON_GITHUB="TRUE" PATH="$(brew --prefix llvm@16)/bin:$PATH" COMPILER="/usr/local/opt/llvm@16/bin/clang++" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm@16/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm@16/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm@16/lib -Wl,-rpath,/usr/local/opt/llvm@16/lib" CXX="/usr/local/opt/llvm@16/bin/clang++" CC="/usr/local/opt/llvm@16/bin/clang" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
-          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:$LD_LIBRARY_PATH" ON_GITHUB="TRUE" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install" 
-          CIBW_ENVIRONMENT_WINDOWS: PATH="$TEMP\\nyxus\\bin;$PATH" ON_GITHUB="TRUE" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install"
-          CIBW_REPAIR_WHEEL_COMMAND_MACOS: DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-listdeps {wheel} && DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
-          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
-          CIBW_ARCHS: ${{ matrix.cibw_archs }}
-          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
-          CIBW_TEST_COMMAND: pytest -vv {project}/tests/python
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: nyxus-wheels
-          path: dist/*.whl
-          retention-days: 1
-
-
   build_wheels_apple_arm64:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -103,7 +37,7 @@ jobs:
           CIBW_BUILD_VERBOSITY: 3
           CIBW_ARCHS_MACOS: arm64
           CIBW_BEFORE_ALL_MACOS:  brew install llvm@16 && 
-                                    export CMAKE_ARGS="-DCMAKE_OSX_SYSROOT=/Applications/Xcode_14.2.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk" &&
+                                    xcode-select -s /Applications/Xcode_14.2.app &&
                                     bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
                                     mkdir -p /tmp/nyxus_bld &&
                                     cp -r local_install /tmp/nyxus_bld 
@@ -111,7 +45,7 @@ jobs:
           CIBW_ENVIRONMENT_MACOS: REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64" ON_GITHUB="TRUE" PATH="/opt/homebrew/opt/llvm@16/bin:$PATH" COMPILER="/opt/homebrew/opt/llvm@16/bin/clang++" CFLAGS="-I /opt/homebrew/include -I/opt/homebrew/opt/llvm@16/include" CPPFLAGS="-I/opt/homebrew/opt/llvm@16/include" LDFLAGS="-L/opt/homebrew/opt/llvm@16/lib -L/opt/homebrew/opt/llvm@16/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm@16/lib/c++" CXX="/opt/homebrew/opt/llvm@16/bin/clang++" CC="/opt/homebrew/opt/llvm@16/bin/clang" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install" CMAKE_ARGS="-DCMAKE_OSX_SYSROOT=/Applications/Xcode_14.2.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk"
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-listdeps {wheel} && DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
-          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio==2.3.3
+          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
           CIBW_TEST_COMMAND: pytest -vv {project}/tests/python
 
       - name: Upload Artifact
