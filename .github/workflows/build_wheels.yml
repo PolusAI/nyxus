@@ -57,7 +57,7 @@ jobs:
           CIBW_ENVIRONMENT_MACOS: REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64" ON_GITHUB="TRUE" PATH="$(brew --prefix llvm@16)/bin:$PATH" COMPILER="/usr/local/opt/llvm@16/bin/clang++" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm@16/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm@16/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm@16/lib -Wl,-rpath,/usr/local/opt/llvm@16/lib" CXX="/usr/local/opt/llvm@16/bin/clang++" CC="/usr/local/opt/llvm@16/bin/clang" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
           CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:$LD_LIBRARY_PATH" ON_GITHUB="TRUE" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install" 
           CIBW_ENVIRONMENT_WINDOWS: PATH="$TEMP\\nyxus\\bin;$PATH" ON_GITHUB="TRUE" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install"
-          CIBW_REPAIR_WHEEL_COMMAND_MACOS: DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-listdeps {wheel} && DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
+          CIBW_REPAIR_WHEEL_COMMAND_MACOS: DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-listdeps {wheel} && DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-wheel --exclude=libunwind.1.0.dylib --require-archs {delocate_archs} -w {dest_dir} {wheel}
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
           CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
