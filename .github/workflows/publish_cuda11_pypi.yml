@@ -61,5 +61,5 @@ jobs:
         run: python -m twine upload dist/*.whl
         env:
           TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.TWINE_API_KEY }}
+          TWINE_PASSWORD: ${{ secrets.TWINE_API_KEY_CUDA11 }}
           TWINE_REPOSITORY: pypi
