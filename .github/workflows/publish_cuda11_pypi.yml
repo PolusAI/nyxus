@@ -60,7 +60,7 @@ jobs:
           CIBW_BUILD_VERBOSITY: 3
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           CIBW_BEFORE_ALL_LINUX:  yum install -y llvm libevent-devel openssl-devel &&
-                                   bash ci-utils/install_cuda11_yum.sh && 
+                                   bash ci-utils/install_cuda_yum.sh 11 && 
                                    bash ci-utils/install_arrow_yum.sh &&
                                    bash ci-utils/install_prereq_linux.sh --build_arrow no &&
                                    mkdir -p /tmp/nyxus_bld &&
