@@ -104,6 +104,7 @@ void initialize_environment(
             theEnvironment.set_use_gpu(false);
         } else {
             theEnvironment.set_gpu_device_id(using_gpu);
+            theEnvironment.set_use_gpu(true);
         }
     #else 
         if (using_gpu != -1) {
