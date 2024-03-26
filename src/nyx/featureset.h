@@ -457,6 +457,10 @@ namespace Nyxus
 		WEIGHTED_HU_M6,
 		WEIGHTED_HU_M7,
 
+		// Image Quality features
+		FOCUS_SCORE,
+		POWER_LOG_SLOPE,
+
 		_COUNT_
 	};
 

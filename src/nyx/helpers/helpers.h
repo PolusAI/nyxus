@@ -355,4 +355,74 @@ namespace Nyxus
 
 		return { smallest, largest };
 	}
+
+	template <class T>
+	inline std::vector<T> remove_padding(const std::vector<T>& img, int img_row, int img_col, int original_row_size, int original_col_size) {
+    
+		std::vector<T> out(original_row_size * original_col_size, 0);
+
+		for (int i = original_row_size-1; i < 2 * original_row_size - 1; ++i) {
+			for (int j = original_col_size-1; j < 2 * original_col_size - 1; ++j) {
+				out[(i-original_row_size+1) * original_col_size + (j-original_col_size+1)] = img[i * img_col + j];
+			}
+		}
+
+		return out;
+	}
+
+	inline  std::vector<unsigned int> add_mirror_boundary(std::vector<unsigned int>& img, int rows, int cols) {
+
+		auto temp = img;
+
+		int new_col_size = cols + 2 * (cols-1);
+		int new_row_size = rows + 2 * (rows-1);
+
+		auto initial_row_size = rows;
+		auto initial_col_size = cols;
+
+		size_t size;
+		// Append the reversed vector to itself, excluding the first and last rows
+		for (int i = 1; i < rows; ++i) {
+			std::vector<unsigned int>::const_iterator first = img.begin() + (i * rows);
+			std::vector<unsigned int>::const_iterator last = img.begin() + ((i+1) * rows);
+			temp.insert(temp.begin(), first, last);
+		}
+
+		auto new_size = temp.size();
+		
+		for (int i = rows-2; i >= 0 ; --i) {
+			temp.insert(temp.end(), img.begin() + i * cols, img.begin() +  ((i+1) * rows));
+		}
+		
+		std::vector<unsigned int> padded;
+
+		for (int i = 0; i < new_row_size; ++i) {
+
+			std::vector<unsigned int> row = std::vector<unsigned int>(temp.begin() + i * cols, temp.begin() + (i+1) * cols);
+
+			std::vector<unsigned int> mirrored_row = row; // Copy the row
+			std::reverse(mirrored_row.begin(), mirrored_row.end()); // Reverse the copied row
+
+			row.insert(row.begin(), mirrored_row.begin(), mirrored_row.end()-1); // Append the mirrored row to the original row
+			row.insert(row.end(), mirrored_row.begin()+1, mirrored_row.end());
+
+			padded.insert(padded.end(), row.begin(), row.end());
+		}
+		
+		
+		return padded;
+	}
+
+
+	inline std::vector<int> arrange(int start, int end, int step) {
+
+		std::vector<int> out;
+
+		for (int i = start; i < end; ++i) {
+			out.push_back(i);
+		}
+
+		return out;
+ 
+	}
 }

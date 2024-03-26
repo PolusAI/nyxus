@@ -147,6 +147,7 @@ set(SOURCE
 	src/nyx/features/erosion_pixels.cpp
 	src/nyx/features/euler_number.cpp
 	src/nyx/features/extrema.cpp
+	src/nyx/features/focus_score.cpp
 	src/nyx/features/fractal_dim.cpp
 	src/nyx/features/gabor.cpp
 	src/nyx/features/gabor_nontriv.cpp

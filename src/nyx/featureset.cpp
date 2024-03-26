@@ -463,6 +463,8 @@ namespace Nyxus
 
 		// Gabor filter based feature:
 		{ "GABOR", Feature2D::GABOR },
+
+		{"FOCUS_SCORE", Feature2D::FOCUS_SCORE},
 	};
 
 	std::map <std::string, Fgroup2D> UserFacing2dFeaturegroupNames =
