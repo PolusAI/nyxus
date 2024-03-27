@@ -4,6 +4,7 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <map>
 
 namespace Nyxus
 {
@@ -414,7 +415,7 @@ namespace Nyxus
 	}
 
 
-	inline std::vector<int> arrange(int start, int end, int step) {
+	inline std::vector<int> arrange(int start, int end, int step=1) {
 
 		std::vector<int> out;
 
@@ -424,5 +425,78 @@ namespace Nyxus
 
 		return out;
  
+	}
+
+	inline std::vector<double> nd_sum(std::vector<double> input, std::vector<int> labels, std::vector<int> index) {
+
+		if (input.size() != labels.size()) throw std::runtime_error("input vector and labels vector must be the same size");
+
+		std::map<int, double> sum_values;
+
+		for (const auto& value: index) {
+			sum_values[value] = 0.;
+		}
+		
+		for (int i = 0; i < input.size(); ++i) {
+			sum_values[labels[i]] += input[i];
+		}
+
+		std::vector<double> out;
+
+		for (std::map<int, double>::iterator it = sum_values.begin(); it != sum_values.end(); ++it) {
+			out.push_back(it->second);
+		}
+
+		return out;
+	}
+
+
+	inline std::vector<std::vector<int>> flipud (std::vector<std::vector<int>> vec) {
+
+		std::vector<std::vector<int>> out;
+
+		for (int i = vec.size()-1; i >=0; --i) {
+			out.push_back(vec[i]);
+		}
+
+		return out;
+	}
+
+	inline std::vector<std::vector<int>> fliplr (std::vector<std::vector<int>> vec) {
+		
+
+		std::vector<std::vector<int>> out = vec;
+
+		for (auto& row: out) {
+			std::reverse(row.begin(), row.end());
+		}
+
+		return out;
+	}
+
+	inline std::vector<std::vector<int>> minimum(std::vector<std::vector<int>> vec1, std::vector<std::vector<int>> vec2) {
+
+		std::vector<std::vector<int>> out = vec1;
+
+		for (int i = 0; i < vec1.size(); ++i) {
+			for (int j = 0; j < vec1[0].size(); ++j) {
+				if (vec2[i][j] < vec1[i][j]){
+					out[i][j] = vec2[i][j];
+				}
+			}
+		} 
+
+		return out;
+	}
+
+	template <class T>
+	inline double mean(std::vector<T> vec) {
+
+		double accum = 0;
+		for (auto& element: vec ) {
+			accum += element;
+		}
+		
+		return accum / (double)vec.size();
 	}
 }

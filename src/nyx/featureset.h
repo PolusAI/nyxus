@@ -459,7 +459,7 @@ namespace Nyxus
 
 		// Image Quality features
 		FOCUS_SCORE,
-		POWER_LOG_SLOPE,
+		POWER_SPECTRUM_SLOPE,
 
 		_COUNT_
 	};

@@ -8,13 +8,13 @@
 #include "../environment.h"
 
 /// @brief Extract face feature based on gabor filtering
-class PowerLogSlopeFeature: public FeatureMethod
+class PowerSpectrumFeature: public FeatureMethod
 {
 public:
 
-    const constexpr static std::initializer_list<Nyxus::Feature2D> featureset = { Nyxus::Feature2D::POWER_LOG_SLOPE };
+    const constexpr static std::initializer_list<Nyxus::Feature2D> featureset = { Nyxus::Feature2D::FOCUS_SCORE };
 
-    PowerLogSlopeFeature();
+    PowerSpectrumFeature();
 
     static bool required(const FeatureSet& fs);
    
@@ -31,17 +31,16 @@ public:
     static void reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
     //-------------- - User interface
+    static int ksize;
 
 private:
-
-    // Result cache
+ 
     std::vector<double> fvals;
 
-    void rps();
-    void power_spectrum();
+    //=== Trivial ROIs ===
 
-
-
-
+    std::vector<double> invariant(std::vector<unsigned int> image);
+    std::tuple<std::vector<int>, std::vector<double>, std::vector<double>>  rps(std::vector<unsigned int> image, int rows, int cols);
+    double power_spectrum_slope(const ImageMatrix& Im);
 };
 

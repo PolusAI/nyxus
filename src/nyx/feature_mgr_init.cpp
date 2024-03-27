@@ -29,7 +29,7 @@
 #include "features/roi_radius.h"
 #include "features/zernike.h"
 #include "features/focus_score.h"
-#include "features/power_log_slope.h"
+#include "features/power_spectrum.h"
 
 FeatureManager::FeatureManager()
 {
@@ -64,6 +64,6 @@ FeatureManager::FeatureManager()
 	register_feature (new RadialDistributionFeature());
 	register_feature (new PixelIntensityFeatures_3D());
 	register_feature (new FocusScoreFeature());
-	register_feature (new PowerLogSlopeFeature());
+	register_feature (new PowerSpectrumFeature());
 
 }
