@@ -199,7 +199,8 @@ if "%BUILD_DCMTK_DEP%" == "1" (
     cmake --build . --config Release --target install --parallel 4
     popd
     popd
-
+    
+    SET ROOTDIR="%cd%"
     curl -L https://github.com/DraconPern/fmjpeg2koj/archive/refs/tags/v1.0.3.zip -o fmjpeg2koj.zip
     tar -xvf fmjpeg2koj.zip
     pushd fmjpeg2koj-1.0.3

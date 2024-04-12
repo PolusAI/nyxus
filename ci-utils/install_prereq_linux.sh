@@ -217,6 +217,7 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     cd ../../
 
     ROOTDIR=$(pwd)
+    echo $ROOTDIR
     curl -L https://github.com/sameeul/fmjpeg2koj/archive/refs/heads/fix_cmake.zip -o fmjpeg2koj.zip
     unzip fmjpeg2koj.zip
     cd fmjpeg2koj-fix_cmake
