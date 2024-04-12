@@ -270,7 +270,7 @@ namespace Nyxus
 
 			// Tear off pure file names from segment and intensity file paths
 			fs::path pseg(r.segFname), pint(r.intFname);
-			ssVals << pseg.filename() << "," << pint.filename() << "," << l;
+			ssVals << pint.filename() << "," << pseg.filename() << "," << l;
 
 			for (auto& enabdF : F)
 			{
@@ -487,8 +487,8 @@ namespace Nyxus
 			// Tear off pure file names from segment and intensity file paths
 			fs::path pseg(r.segFname), pint(r.intFname);
 			std::vector<std::string> filenames;
-			filenames.push_back(pseg.filename().u8string());
 			filenames.push_back(pint.filename().u8string());
+			filenames.push_back(pseg.filename().u8string());
 
 			for (auto& enabdF : F)
 			{
