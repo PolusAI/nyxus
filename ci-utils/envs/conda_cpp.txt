@@ -9,5 +9,4 @@ xsimd >=8,<9
 cmake
 dcmtk >=3.6.7
 fmjpeg2koj >=1.0.3
-arrow-cpp>=10.0.0
-parquet-cpp
+libarrow
