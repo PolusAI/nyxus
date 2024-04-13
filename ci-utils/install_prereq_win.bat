@@ -40,99 +40,22 @@ cmake --build . --config Release --target install --parallel 4
 popd
 popd
 
-if "%BUILD_Z5_DEP%" == "1" (
-    for /l %%x in (1, 1, 5) do (
-        curl -L https://boostorg.jfrog.io/artifactory/main/release/1.79.0/source/boost_1_79_0.zip -o boost_1_79_0.zip
-        if  exist boost_1_79_0.zip (
-            goto :continue_boost
-        )
+for /l %%x in (1, 1, 5) do (
+    curl -L https://boostorg.jfrog.io/artifactory/main/release/1.79.0/source/boost_1_79_0.zip -o boost_1_79_0.zip
+    if  exist boost_1_79_0.zip (
+        goto :continue_boost
     )
-    :continue_boost
-    tar  -xf boost_1_79_0.zip
-    pushd boost_1_79_0 
-    call bootstrap.bat 
-    .\b2 headers --prefix=../local_install
-    .\b2 install --prefix=../local_install
-    xcopy /E /I /y boost ..\local_install\include\boost
-    popd
-
-    curl -L https://github.com/Blosc/c-blosc/archive/refs/tags/v1.21.5.zip -o v1.21.5.zip
-    tar -xf v1.21.5.zip
-    pushd c-blosc-1.21.5
-    mkdir build_man
-    pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..   
-    cmake --build . --config Release --target install  --parallel 4
-    popd
-    popd
-
-    curl -L https://github.com/xtensor-stack/xtl/archive/refs/tags/0.7.5.zip -o 0.7.5.zip
-    tar -xf 0.7.5.zip
-    pushd xtl-0.7.5 
-    mkdir build_man
-    pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
-    cmake --build . --config Release --target install 
-    popd
-    popd
-
-    curl -L https://github.com/xtensor-stack/xtensor/archive/refs/tags/0.24.7.zip -o 0.24.7.zip
-    tar -xf 0.24.7.zip
-    pushd xtensor-0.24.7
-    mkdir build_man
-    pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
-    cmake --build . --config Release --target install 
-    popd
-    popd
-
-    curl -L https://github.com/xtensor-stack/xsimd/archive/refs/tags/11.1.0.zip -o 11.1.0.zip
-    tar -xf 11.1.0.zip 
-    pushd xsimd-11.1.0 
-    mkdir build_man
-    pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
-    cmake --build . --config Release --target install  
-    popd
-    popd
-
-    curl -L https://github.com/nlohmann/json/archive/refs/tags/v3.11.2.zip -o v3.11.2.zip
-    tar -xf v3.11.2.zip 
-    pushd json-3.11.2
-    mkdir build_man
-    pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ -DJSON_BuildTests=OFF ..  
-    cmake --build . --config Release --target install  --parallel 4
-    popd
-    popd
-
-    curl -L https://github.com/constantinpape/z5/archive/refs/tags/2.0.16.zip -o 2.0.16.zip
-    tar -xf 2.0.16.zip 
-    pushd z5-2.0.16
-    mkdir build_man
-    pushd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF ..
-    cmake --build . --config Release --target install  --parallel 4
-    popd
-    popd
 )
+:continue_boost
+tar  -xf boost_1_79_0.zip
+pushd boost_1_79_0 
+call bootstrap.bat 
+.\b2 headers --prefix=../local_install
+.\b2 install --prefix=../local_install
+xcopy /E /I /y boost ..\local_install\include\boost
+popd
 
 
-set _ROOTDIR=%ROOTDIR:\=/%
-if "%BUILD_ARROW%" == "1" (
-
-    curl -L https://github.com/apache/arrow/archive/refs/tags/apache-arrow-13.0.0.zip -o  arrow-apache-arrow-13.0.0.zip
-    unzip arrow-apache-arrow-13.0.0.zip
-    pushd arrow-apache-arrow-13.0.0
-    pushd cpp
-    mkdir build
-    pushd build
-    cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_INSTALL_PREFIX=../../../local_install/ -DCMAKE_PREFIX_PATH=../../../local_install/ -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON -DBOOST_ROOT=%_ROOTDIR%/boost_1_79_0
-    cmake --build . --config Release --target install --parallel 4
-    popd 
-    popd
-    popd
-)
 
 
 
