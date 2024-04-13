@@ -217,9 +217,9 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     cd ../../
 
     ROOTDIR=$(pwd)
-    curl -L https://github.com/sameeul/fmjpeg2koj/archive/refs/heads/fix_cmake.zip -o fmjpeg2koj.zip
+    curl -L https://github.com/sameeul/fmjpeg2koj/archive/refs/heads/test_ci.zip -o fmjpeg2koj.zip
     unzip fmjpeg2koj.zip
-    cd fmjpeg2koj-fix_cmake
+    cd fmjpeg2koj-test_ci
     mkdir build_man
     cd build_man
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DFMJPEG2K="$ROOTDIR"/"$LOCAL_INSTALL_DIR"/  ..
