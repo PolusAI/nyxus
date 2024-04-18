@@ -1,4 +1,5 @@
 #include "focus_score.h"
+#include "../parallel.h"
 
 using namespace Nyxus;
 
@@ -13,10 +14,38 @@ void FocusScoreFeature::calculate(LR& r) {
 
     auto focus_score = this->variance(this->laplacian(Im0));
 
-    std::cout << "FOCUS_SCORE = " << focus_score << std::endl;
+    VERBOSLVL1(std::cout << "FOCUS_SCORE = " << focus_score << std::endl);
 
-    fvals[0] = focus_score; 
+    focus_score_ = focus_score; 
 
+}
+
+void FocusScoreFeature::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
+{
+	size_t jobSize = roi_labels.size(),
+		workPerThread = jobSize / n_threads;
+
+	runParallel(FocusScoreFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
+}
+
+void FocusScoreFeature::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	// Calculate the feature for each batch ROI item 
+	for (auto i = firstitem; i < lastitem; i++)
+	{
+		// Get ahold of ROI's label and cache
+		int roiLabel = (*ptrLabels)[i];
+		LR& r = (*ptrLabelData)[roiLabel];
+
+		// Skip the ROI if its data is invalid to prevent nans and infs in the output
+		if (r.has_bad_data())
+			continue;
+
+		// Calculate the feature and save it in ROI's csv-friendly buffer 'fvals'
+		FocusScoreFeature f;
+		f.calculate(r);
+		f.save_value(r.fvals);
+	}
 }
 
 bool FocusScoreFeature::required(const FeatureSet& fs) 
@@ -41,7 +70,7 @@ void FocusScoreFeature::reduce (size_t start, size_t end, std::vector<int>* ptrL
 
 void FocusScoreFeature::save_value(std::vector<std::vector<double>>& feature_vals) {
     
-    feature_vals[(int)Feature2D::FOCUS_SCORE][0] = fvals[0];
+    feature_vals[(int)Feature2D::FOCUS_SCORE][0] = focus_score_;
 
 }
 

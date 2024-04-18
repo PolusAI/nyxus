@@ -21,6 +21,9 @@ public:
     //=== Trivial ROIs ===
     void calculate(LR& r);
 
+    static void parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+    void parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads);
+
     //=== Non-trivial ROIs ===
     void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
     void osized_calculate(LR& r, ImageLoader& imloader){};
@@ -36,7 +39,7 @@ public:
 private:
 
     // Result cache
-    std::vector<double> fvals;
+    double focus_score_;
 
     //=== Trivial ROIs ===
 
