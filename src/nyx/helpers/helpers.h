@@ -499,4 +499,24 @@ namespace Nyxus
 		
 		return accum / (double)vec.size();
 	}
+
+	template <class T>
+	std::vector<double> normalize(const std::vector<T>& vec) {
+
+		auto out = vec;
+		double sum = 0;
+
+		for (auto& element: out) {
+			sum += element;
+		}
+		
+		// Avoid division by zero
+		if (sum == 0) return out;
+
+		for (auto& element: out) {
+			element /= sum;
+		}
+
+		return out;
+	}
 }

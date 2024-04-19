@@ -65,5 +65,6 @@ FeatureManager::FeatureManager()
 	register_feature (new PixelIntensityFeatures_3D());
 	register_feature (new FocusScoreFeature());
 	register_feature (new PowerSpectrumFeature());
+	register_feature (new BrisquFeature());
 
 }
