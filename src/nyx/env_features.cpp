@@ -175,6 +175,17 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_ALL))
 	{
 		Nyxus::theFeatureSet.enableAll();
+
+		// disabled image quality features (will improve disabling if we add this as feature group)
+		auto F = {
+			Feature2D::FOCUS_SCORE,
+			Feature2D::POWER_SPECTRUM_SLOPE,
+			Feature2D::SATURATION,
+			Feature2D::SHARPNESS,
+			Feature2D::BRISQUE
+		};
+		
+		Nyxus::theFeatureSet.disableFeatures(F);
 		return true; 
 	}
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_BUT_GABOR))
