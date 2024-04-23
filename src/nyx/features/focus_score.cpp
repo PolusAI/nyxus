@@ -14,8 +14,6 @@ void FocusScoreFeature::calculate(LR& r) {
 
     auto focus_score = this->variance(this->laplacian(Im0));
 
-    VERBOSLVL1(std::cout << "FOCUS_SCORE = " << focus_score << std::endl);
-
     focus_score_ = focus_score; 
 
 }
