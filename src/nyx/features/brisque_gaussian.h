@@ -5,6 +5,7 @@
 #include <cassert>
 #include <vector>
 #include <unordered_map>
+#include <functional>
 
 #include "../helpers/convolution2d.h"
 
