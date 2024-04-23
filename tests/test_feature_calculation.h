@@ -48,7 +48,5 @@ void test_feature(const T& feature_object,
     // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
     f.save_value(roidata.fvals);
 
-    std::cout << "value: " << roidata.fvals[(int)feature_name][0] << std::endl;
-
     test_truth(roidata.fvals[(int)feature_name], truth_value, frac_tolerance);
 };

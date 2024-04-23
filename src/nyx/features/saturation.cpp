@@ -24,8 +24,6 @@ void SaturationFeature::calculate(LR& r) {
 
     std::tie(min_saturation_, max_saturation_) = get_percent_max_pixels(Im0);
 
-    std::cerr << "min saturation: " << min_saturation_ << std::endl;
-    std::cerr << "max saturation: " << max_saturation_ << std::endl;
 }
 
 void SaturationFeature::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
