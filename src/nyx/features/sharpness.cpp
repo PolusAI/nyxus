@@ -346,6 +346,12 @@ double SharpnessFeature::sharpness(const ImageMatrix& Im, int width) {
 
     auto blurred = median_blur(image, rows, cols, 3);
 
+    std::cerr << "blurred: ";
+    for (const auto& pix: blurred) {
+        std::cerr << pix << " ";
+    }
+    std::cerr << std::endl;
+
     for (auto& pix: blurred) {
         pix /= 255.;
     }
