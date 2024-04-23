@@ -128,7 +128,7 @@ std::vector<double> SharpnessFeature::median_blur(const std::vector<unsigned int
     int padded_rows = rows + 2 * row_padding;
     int padded_cols = cols + 2 * col_padding;
 
-    auto padded_img = pad_array(img, 3, 3, row_padding, col_padding);
+    auto padded_img = pad_array(img, rows, cols, row_padding, col_padding);
 
     std::vector<double> temp (padded_rows * padded_cols, 0);
 
@@ -155,6 +155,7 @@ std::vector<double> SharpnessFeature::median_blur(const std::vector<unsigned int
 
             // Get the median value
             int median_index = std::floor((double)window.size() / 2);
+            std::cerr << "median index: " << median_index << std::endl;
             temp[i * padded_cols + j] = window[median_index];
         }
     }

@@ -46,7 +46,7 @@ void test_saturation_feature() {
 void test_sharpness_feature() {
     
     SharpnessFeature f;
-    double truth_value = 0.584;
+    double truth_value = 3.197;
 
     test_feature(f, Nyxus::Feature2D::SHARPNESS, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
