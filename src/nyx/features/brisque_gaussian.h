@@ -1,10 +1,12 @@
+#pragma once
+
 #include <iostream>
 #include <cmath>
 #include <cassert>
 #include <vector>
 #include <unordered_map>
 
-#include "helpers/convolution2d.h"
+#include "../helpers/convolution2d.h"
 
 enum class MscnType {
     mscn = 1,

@@ -1,6 +1,8 @@
+#pragma once
+
 #include <vector>
 
-std::vector<double> convolution2d(std::vector<unsigned int>& image,
+inline std::vector<double> convolution2d(std::vector<unsigned int>& image,
                                 std::vector<double>& kernel, 
                                 int n_image, int m_image, 
                                 int n_kernel, int m_kernel){
