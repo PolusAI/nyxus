@@ -22,4 +22,5 @@ to operate at any scale, its highly validated algorithms, and its modular nature
    devguide
    Math
    supported_formats
+   imagequality
    
