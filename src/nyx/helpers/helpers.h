@@ -519,4 +519,18 @@ namespace Nyxus
 
 		return out;
 	}
+
+	template <class T>
+	std::vector<T> transpose_vector(const std::vector<T>& image, int rows, int cols) {
+		std::vector<T> transposed(cols * rows);
+		
+		// Transpose the flattened vector
+		for (int i = 0; i < rows; ++i) {
+			for (int j = 0; j < cols; ++j) {
+				transposed[j * cols + i] = image[i * cols + j];
+			}
+		}
+		
+		return transposed;
+	}
 }

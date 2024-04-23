@@ -9,6 +9,7 @@
 #include "../helpers/helpers.h"
 #include "../helpers/fft.h"
 #include "../helpers/lstsq.h"
+#include "../parallel.h"
 
 using namespace Nyxus;
 
@@ -21,10 +22,7 @@ void PowerSpectrumFeature::calculate(LR& r) {
     // Get ahold of the ROI image matrix
     const ImageMatrix& Im0 = r.aux_image_matrix;
 
-    auto slope = power_spectrum_slope(Im0);
-
-    fvals[0] = slope; 
-
+    slope_ = power_spectrum_slope(Im0); 
 }
 
 bool PowerSpectrumFeature::required(const FeatureSet& fs) 
@@ -47,9 +45,37 @@ void PowerSpectrumFeature::reduce (size_t start, size_t end, std::vector<int>* p
     }
 }
 
+void PowerSpectrumFeature::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
+{
+	size_t jobSize = roi_labels.size(),
+		workPerThread = jobSize / n_threads;
+
+	runParallel(PowerSpectrumFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
+}
+
+void PowerSpectrumFeature::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+{
+	// Calculate the feature for each batch ROI item 
+	for (auto i = firstitem; i < lastitem; i++)
+	{
+		// Get ahold of ROI's label and cache
+		int roiLabel = (*ptrLabels)[i];
+		LR& r = (*ptrLabelData)[roiLabel];
+
+		// Skip the ROI if its data is invalid to prevent nans and infs in the output
+		if (r.has_bad_data())
+			continue;
+
+		// Calculate the feature and save it in ROI's csv-friendly b uffer 'fvals'
+		PowerSpectrumFeature f;
+		f.calculate(r);
+		f.save_value(r.fvals);
+	}
+}
+
 void PowerSpectrumFeature::save_value(std::vector<std::vector<double>>& feature_vals) {
     
-    feature_vals[(int)Feature2D::POWER_SPECTRUM_SLOPE][0] = fvals[0];
+    feature_vals[(int)Feature2D::POWER_SPECTRUM_SLOPE][0] = slope_;
 
 }
 
@@ -80,7 +106,7 @@ double PowerSpectrumFeature::power_spectrum_slope(const ImageMatrix& Im) {
                 log_radii.push_back(std::log(radii[i]));
             }
         }
-
+        
         if (radii.size() > 1) {
             std::vector<std::vector<double>> A (radii.size(), std::vector<double>(2, 1));
 
@@ -94,6 +120,8 @@ double PowerSpectrumFeature::power_spectrum_slope(const ImageMatrix& Im) {
             return lstsq(A, power)[0]; // get slope from least squares
         }
     }
+
+    return 0;
 }
 
 std::vector<double> PowerSpectrumFeature::invariant(std::vector<unsigned int> image) {
