@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <iostream>
+#define _USE_MATH_DEFINES	// For M_PI, etc.
 #include <cmath>
 #include <numeric>
 #include <unordered_map>
