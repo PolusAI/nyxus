@@ -135,6 +135,7 @@ option(RUN_GTEST "Downloads google unit test API and runs google test scripts to
 set(SOURCE
 	src/nyx/arrow_output_stream.cpp
 	src/nyx/features/basic_morphology.cpp
+	src/nyx/features/brisque.cpp
 	src/nyx/features/caliper_feret.cpp
 	src/nyx/features/caliper_martin.cpp
 	src/nyx/features/caliper_nassenstein.cpp
@@ -174,6 +175,7 @@ set(SOURCE
 	src/nyx/features/roi_radius.cpp
 	src/nyx/features/rotation.cpp
 	src/nyx/features/saturation.cpp
+	src/nyx/features/sharpness.cpp
 	src/nyx/features/specfunc.cpp
 	src/nyx/features/zernike.cpp
 	src/nyx/features/zernike_nontriv.cpp
@@ -261,7 +263,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	find_package(Threads QUIET)
 	if (Threads_FOUND)
 		if (CMAKE_USE_PTHREADS_INIT)
-			SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+			SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -g")
 		endif (CMAKE_USE_PTHREADS_INIT)
 		list(APPEND Nyxus_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 	else ()
@@ -372,7 +374,7 @@ if(BUILD_LIB)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
+	SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC -g")
 	list(APPEND Nyxus_LIBRARIES stdc++fs)
 endif()
 
@@ -381,7 +383,7 @@ if(BUILD_LIB)
 endif()
 
 if (APPLE AND BUILD_LIB)
-	set_target_properties(backend PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+	set_target_properties(backend PROPERTIES LINK_FLAGS "-undefined dynamic_lookup -g")
 endif()
 
 if(BUILD_CLI)

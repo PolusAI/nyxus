@@ -25,7 +25,7 @@ namespace Nyxus
 		{ "MASS_DISPLACEMENT", Feature2D::MASS_DISPLACEMENT },
 		{ "MAX", Feature2D::MAX },
 		{ "MEAN", Feature2D::MEAN },
-		{ "MEAN_ABSOLUTE_DEVIATION", Feature2D::MEAN_ABSOLUTE_DEVIATION },
+		{ "MEAN_ABSOLUTE_DEVIATION", Feature2D::MEAN_ABSOLUTE_DEVIATION }, 
 		{ "MEDIAN", Feature2D::MEDIAN },
 		{ "MEDIAN_ABSOLUTE_DEVIATION", Feature2D::MEDIAN_ABSOLUTE_DEVIATION },
 		{ "MIN", Feature2D::MIN },
@@ -464,7 +464,12 @@ namespace Nyxus
 		// Gabor filter based feature:
 		{ "GABOR", Feature2D::GABOR },
 
+		// Image quality features
 		{"FOCUS_SCORE", Feature2D::FOCUS_SCORE},
+		{"POWER_SPECTRUM_SLOPE", Feature2D::POWER_SPECTRUM_SLOPE},
+		{"SATURATION", Feature2D::SATURATION},
+		{"SHARPNESS", Feature2D::SHARPNESS},
+		{"BRISQUE", Feature2D::BRISQUE}
 	};
 
 	std::map <std::string, Fgroup2D> UserFacing2dFeaturegroupNames =
