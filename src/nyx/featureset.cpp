@@ -466,8 +466,10 @@ namespace Nyxus
 
 		// Image quality features
 		{"FOCUS_SCORE", Feature2D::FOCUS_SCORE},
+		{"LOCAL_FOCUS_SCORE", Feature2D::LOCAL_FOCUS_SCORE},
 		{"POWER_SPECTRUM_SLOPE", Feature2D::POWER_SPECTRUM_SLOPE},
-		{"SATURATION", Feature2D::SATURATION},
+		{"MAX_SATURATION", Feature2D::MAX_SATURATION},
+		{"MIN_SATURATION", Feature2D::MIN_SATURATION},
 		{"SHARPNESS", Feature2D::SHARPNESS},
 		{"BRISQUE", Feature2D::BRISQUE}
 	};

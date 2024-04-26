@@ -179,8 +179,10 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 		// disabled image quality features (will improve disabling if we add this as feature group)
 		auto F = {
 			Feature2D::FOCUS_SCORE,
+			Feature2D::LOCAL_FOCUS_SCORE,
 			Feature2D::POWER_SPECTRUM_SLOPE,
-			Feature2D::SATURATION,
+			Feature2D::MIN_SATURATION,
+			Feature2D::MAX_SATURATION,
 			Feature2D::SHARPNESS,
 			Feature2D::BRISQUE
 		};

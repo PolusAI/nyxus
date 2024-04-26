@@ -14,7 +14,7 @@
 using namespace Nyxus;
 
 SaturationFeature::SaturationFeature() : FeatureMethod("SaturationFeature") {
-    provide_features({Feature2D::SATURATION});
+    provide_features(SaturationFeature::featureset);
 }
 
 void SaturationFeature::calculate(LR& r) {
@@ -56,7 +56,7 @@ void SaturationFeature::parallel_process_1_batch(size_t firstitem, size_t lastit
 
 bool SaturationFeature::required(const FeatureSet& fs) 
 { 
-    return fs.isEnabled (Feature2D::SATURATION); 
+    return fs.anyEnabled (SaturationFeature::featureset); 
 }
 
 void SaturationFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
@@ -76,12 +76,11 @@ void SaturationFeature::reduce (size_t start, size_t end, std::vector<int>* ptrL
 
 void SaturationFeature::save_value(std::vector<std::vector<double>>& feature_vals) {
     
-    if (feature_vals[(int)Feature2D::SATURATION].size() != 2) {
-        feature_vals[(int)Feature2D::SATURATION].resize(2);
-    }
- 
-    feature_vals[(int)Feature2D::SATURATION][0] = min_saturation_;
-    feature_vals[(int)Feature2D::SATURATION][1] = max_saturation_;
+    feature_vals[(int)Feature2D::MAX_SATURATION].resize(1);
+    feature_vals[(int)Feature2D::MAX_SATURATION][0] = max_saturation_;
+
+    feature_vals[(int)Feature2D::MIN_SATURATION].resize(1);
+    feature_vals[(int)Feature2D::MIN_SATURATION][0] = min_saturation_;
 }
 
 std::tuple<double, double> SaturationFeature::get_percent_max_pixels(const ImageMatrix& Im) {
