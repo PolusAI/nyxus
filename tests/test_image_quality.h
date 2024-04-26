@@ -24,6 +24,13 @@ void test_focus_score_feature() {
     test_feature(f, Nyxus::Feature2D::FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
 
+void test_local_focus_score_feature() {
+    
+    FocusScoreFeature f;
+    double truth_value = 1.15292e+18;
+
+    test_feature(f, Nyxus::Feature2D::LOCAL_FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+};
 
 void test_power_spectrum_feature() {
     
@@ -34,12 +41,21 @@ void test_power_spectrum_feature() {
 };
 
 
-void test_saturation_feature() {
+void test_min_saturation_feature() {
     
     SaturationFeature f;
     double truth_value = 0.1875;
 
-    test_feature(f, Nyxus::Feature2D::SATURATION, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+    test_feature(f, Nyxus::Feature2D::MIN_SATURATION, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+};
+
+
+void test_max_saturation_feature() {
+    
+    SaturationFeature f;
+    double truth_value = 0.166667;
+
+    test_feature(f, Nyxus::Feature2D::MAX_SATURATION, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
 
 

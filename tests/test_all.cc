@@ -1069,14 +1069,24 @@ TEST(TEST_IMAGE_QUALITY, TEST_FOCUS_SCORE)
 	ASSERT_NO_THROW(test_focus_score_feature());
 }
 
+TEST(TEST_IMAGE_QUALITY, TEST_LOCAL_FOCUS_SCORE) 
+{
+	ASSERT_NO_THROW(test_local_focus_score_feature());
+}
+
 TEST(TEST_IMAGE_QUALITY, TEST_POWER_SPECTRUM) 
 {
 	ASSERT_NO_THROW(test_power_spectrum_feature());
 }
 
-TEST(TEST_IMAGE_QUALITY, TEST_SATURATION) 
+TEST(TEST_IMAGE_QUALITY, TEST_MIN_SATURATION) 
 {
-	ASSERT_NO_THROW(test_saturation_feature());
+	ASSERT_NO_THROW(test_min_saturation_feature());
+}
+
+TEST(TEST_IMAGE_QUALITY, TEST_MAX_SATURATION) 
+{
+	ASSERT_NO_THROW(test_max_saturation_feature());
 }
 
 TEST(TEST_IMAGE_QUALITY, TEST_SHARPNESS) 
