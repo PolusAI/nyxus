@@ -4,7 +4,7 @@
 using namespace Nyxus;
 
 FocusScoreFeature::FocusScoreFeature() : FeatureMethod("FocusScoreFeature") {
-    provide_features({Feature2D::FOCUS_SCORE});
+    provide_features(FocusScoreFeature::featureset);
 }
 
 void FocusScoreFeature::calculate(LR& r) {
@@ -12,9 +12,9 @@ void FocusScoreFeature::calculate(LR& r) {
     // Get ahold of the ROI image matrix
     const ImageMatrix& Im0 = r.aux_image_matrix;
 
-    auto focus_score = this->variance(this->laplacian(Im0));
+    focus_score_ = this->variance(this->laplacian(Im0.ReadablePixels(), Im0.height, Im0.width));
 
-    focus_score_ = focus_score; 
+    local_focus_score_ = this->get_local_focus_score(Im0.ReadablePixels(), Im0.height, Im0.width);
 
 }
 
@@ -48,7 +48,7 @@ void FocusScoreFeature::parallel_process_1_batch(size_t firstitem, size_t lastit
 
 bool FocusScoreFeature::required(const FeatureSet& fs) 
 { 
-    return fs.isEnabled (Feature2D::FOCUS_SCORE); 
+    return fs.anyEnabled (FocusScoreFeature::featureset); 
 }
 
 void FocusScoreFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
@@ -68,15 +68,44 @@ void FocusScoreFeature::reduce (size_t start, size_t end, std::vector<int>* ptrL
 
 void FocusScoreFeature::save_value(std::vector<std::vector<double>>& feature_vals) {
     
+    feature_vals[(int)Feature2D::FOCUS_SCORE].resize(1);
     feature_vals[(int)Feature2D::FOCUS_SCORE][0] = focus_score_;
+
+    feature_vals[(int)Feature2D::LOCAL_FOCUS_SCORE].resize(1);
+    feature_vals[(int)Feature2D::LOCAL_FOCUS_SCORE][0] = local_focus_score_;
 
 }
 
-std::vector<double> FocusScoreFeature::laplacian(const ImageMatrix& Im, 
-                                                int ksize) {
-    
-    int n_image = Im.height;
-    int m_image = Im.width;
+double FocusScoreFeature::get_local_focus_score(const std::vector<PixIntens>& image, int height, int width, int ksize, int scale) {
+
+    local_focus_score_ = 0;
+
+    int M = height / scale;
+    int N = width / scale;
+
+    double focus_score;
+    for (int y = 0; y < height; y += M) {
+        for (int x = 0; x < width; x += N) {
+
+            // Extract image tile
+            std::vector<PixIntens> image_tile;
+            for (int i = y; i < y + M; i++) {
+                for (int j = x; j < x + N; j++) {
+                    image_tile.push_back(image[i * width + j]);
+                }
+            }
+            
+            // calculate focus score for tile
+            focus_score = this->variance(this->laplacian(image_tile, M, N, ksize));
+        }
+
+        local_focus_score_ += focus_score;
+    }
+
+    return local_focus_score_ / (scale * scale); // average scores
+}
+
+std::vector<double> FocusScoreFeature::laplacian(const std::vector<PixIntens>& image, int n_image, int m_image, int ksize) {
 
     int m_kernel = 3;
     int n_kernel = 3;
@@ -92,8 +121,6 @@ std::vector<double> FocusScoreFeature::laplacian(const ImageMatrix& Im,
                    0, -8, 0, 
                    2, 0, 2 };
     }
-
-    readOnlyPixels image = Im.ReadablePixels();
 
     std::vector<double> out(m_image * n_image, 0);
 

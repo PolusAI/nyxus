@@ -12,7 +12,7 @@ class FocusScoreFeature: public FeatureMethod
 {
 public:
 
-    const constexpr static std::initializer_list<Nyxus::Feature2D> featureset = { Nyxus::Feature2D::FOCUS_SCORE };
+    const constexpr static std::initializer_list<Nyxus::Feature2D> featureset = { Nyxus::Feature2D::FOCUS_SCORE,  Nyxus::Feature2D::LOCAL_FOCUS_SCORE};
 
     FocusScoreFeature();
 
@@ -40,11 +40,13 @@ private:
 
     // Result cache
     double focus_score_;
+    double local_focus_score_;
 
     //=== Trivial ROIs ===
 
-    std::vector<double> laplacian(const ImageMatrix& Im, 
-                                  int ksize=1);
+    double get_local_focus_score(const std::vector<PixIntens>& image, int n_image, int m_image, int ksize=1, int scale=2);
+
+    std::vector<double> laplacian(const std::vector<PixIntens>& image, int n_image, int m_image, int ksize=1);
 
     double mean(std::vector<double> image);
     double variance(std::vector<double> image);
