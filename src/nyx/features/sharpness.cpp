@@ -155,7 +155,7 @@ std::vector<double> SharpnessFeature::median_blur(const std::vector<unsigned int
 
             // Get the median value
             int median_index = std::floor((double)window.size() / 2);
-            std::cerr << "median index: " << median_index << std::endl;
+
             temp[i * padded_cols + j] = window[median_index];
         }
     }
@@ -346,12 +346,6 @@ double SharpnessFeature::sharpness(const ImageMatrix& Im, int width) {
     int cols = Im.width;
 
     auto blurred = median_blur(image, rows, cols, 3);
-
-    std::cerr << "blurred: ";
-    for (const auto& pix: blurred) {
-        std::cerr << pix << " ";
-    }
-    std::cerr << std::endl;
 
     for (auto& pix: blurred) {
         pix /= 255.;
