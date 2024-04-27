@@ -173,8 +173,8 @@ namespace Nyxus
 			std::string segfname = pseg.filename().string(),
 				intfname = pint.filename().string();
 
-			rescache.add_string(segfname);
 			rescache.add_string(intfname);
+			rescache.add_string(segfname);
 			rescache.add_numeric(l);
 			for (auto& enabdF : F)
 			{
