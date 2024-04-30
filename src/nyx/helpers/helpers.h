@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <algorithm>
+#include <numeric>
 
 namespace Nyxus
 {
@@ -416,18 +417,6 @@ namespace Nyxus
 	}
 
 
-	inline std::vector<int> arrange(int start, int end, int step=1) {
-
-		std::vector<int> out;
-
-		for (int i = start; i < end; ++i) {
-			out.push_back(i);
-		}
-
-		return out;
- 
-	}
-
 	inline std::vector<double> nd_sum(std::vector<double> input, std::vector<int> labels, std::vector<int> index) {
 
 		if (input.size() != labels.size()) throw std::runtime_error("input vector and labels vector must be the same size");
@@ -452,9 +441,9 @@ namespace Nyxus
 	}
 
 
-	inline std::vector<std::vector<int>> flipud (std::vector<std::vector<int>> vec) {
+	inline std::vector<std::vector<int>> flipud (const std::vector<std::vector<int>>& vec) {
 
-		std::vector<std::vector<int>> out;
+		std::vector<std::vector<int>> out(vec.size(), std::vector<int>(vec[0].size()));
 
 		for (int i = vec.size()-1; i >=0; --i) {
 			out.push_back(vec[i]);
@@ -463,7 +452,7 @@ namespace Nyxus
 		return out;
 	}
 
-	inline std::vector<std::vector<int>> fliplr (std::vector<std::vector<int>> vec) {
+	inline std::vector<std::vector<int>> fliplr (const std::vector<std::vector<int>>& vec) {
 		
 
 		std::vector<std::vector<int>> out = vec;
@@ -475,7 +464,7 @@ namespace Nyxus
 		return out;
 	}
 
-	inline std::vector<std::vector<int>> minimum(std::vector<std::vector<int>> vec1, std::vector<std::vector<int>> vec2) {
+	inline std::vector<std::vector<int>> minimum(const std::vector<std::vector<int>>& vec1, const std::vector<std::vector<int>>& vec2) {
 
 		std::vector<std::vector<int>> out = vec1;
 
@@ -491,10 +480,10 @@ namespace Nyxus
 	}
 
 	template <class T>
-	inline double mean(std::vector<T> vec) {
+	inline double mean(const std::vector<T>& vec) {
 
 		double accum = 0;
-		for (auto& element: vec ) {
+		for (const auto& element: vec ) {
 			accum += element;
 		}
 		
@@ -504,19 +493,17 @@ namespace Nyxus
 	template <class T>
 	std::vector<double> normalize(const std::vector<T>& vec) {
 
-		auto out = vec;
-		double sum = 0;
+		std::vector<double> out(vec.size(), 0);
 
-		for (auto& element: out) {
-			sum += element;
-		}
-		
+		double sum = std::accumulate(vec.begin(), vec.end(), 0.0);
+
 		// Avoid division by zero
 		if (sum == 0) return out;
 
-		for (auto& element: out) {
-			element /= sum;
-		}
+		// copy input vector into double vector and divide by sum
+		std::transform(vec.begin(), vec.end(), out.begin(), [sum](T int_value) {
+			return int_value/sum;
+		});
 
 		return out;
 	}

@@ -158,8 +158,11 @@ std::tuple<std::vector<int>, std::vector<double>, std::vector<double>>  PowerSpe
         return std::make_tuple(std::vector<int> {2}, std::vector<double> {0.}, std::vector<double> {0.});
     }
 
-    auto rows_arrange = arrange(0, rows, 1); 
-    auto cols_arrange = arrange(0, cols, 1); 
+    std::vector<int> rows_arrange(rows);
+    std::iota(rows_arrange.begin(), rows_arrange.end(), 1);
+
+    std::vector<int> cols_arrange(rows);
+    std::iota(cols_arrange.begin(), cols_arrange.end(), 1);
 
     std::vector<std::vector<int>> added_vecs (rows, std::vector<int>(cols));
 
@@ -204,7 +207,10 @@ std::tuple<std::vector<int>, std::vector<double>, std::vector<double>>  PowerSpe
         power.emplace_back(num * num);
     }
 
-    std::vector<int> linear_labels = arrange(2, std::floor(max_width));
+
+    std::vector<int> linear_labels(std::floor(max_width));
+    std::iota(linear_labels.begin(), linear_labels.end(), 2);
+    
 
     auto mag_sum = nd_sum(mag, radii, linear_labels);
     auto power_sum = nd_sum(power, radii, linear_labels);
