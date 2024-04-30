@@ -421,23 +421,17 @@ namespace Nyxus
 
 		if (input.size() != labels.size()) throw std::runtime_error("input vector and labels vector must be the same size");
 
-		std::map<int, double> sum_values;
+		std::vector<double> out(index.size(), 0.0);
 
-		for (const auto& value: index) {
-			sum_values[value] = 0.;
-		}
-		
 		for (int i = 0; i < input.size(); ++i) {
-			sum_values[labels[i]] += input[i];
+			auto label_index = std::find(index.begin(), index.end(), labels[i]);
+			if (label_index != index.end()) {
+				auto index_position = std::distance(index.begin(), label_index);
+				out[index_position] += input[i];
+			}
 		}
 
-		std::vector<double> out;
-
-		for (std::map<int, double>::iterator it = sum_values.begin(); it != sum_values.end(); ++it) {
-			out.push_back(it->second);
-		}
-
-		return out;
+ 	   return out;
 	}
 
 
@@ -477,17 +471,6 @@ namespace Nyxus
 		} 
 
 		return out;
-	}
-
-	template <class T>
-	inline double mean(const std::vector<T>& vec) {
-
-		double accum = 0;
-		for (const auto& element: vec ) {
-			accum += element;
-		}
-		
-		return accum / (double)vec.size();
 	}
 
 	template <class T>

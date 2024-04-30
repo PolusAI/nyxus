@@ -127,7 +127,7 @@ double PowerSpectrumFeature::power_spectrum_slope(const ImageMatrix& Im) {
 std::vector<double> PowerSpectrumFeature::invariant(std::vector<unsigned int> image) {
 
     
-    double mean_value = mean(image);
+    double mean_value = std::accumulate(image.begin(), image.end(), 0.0)/image.size();
 
     auto temp = image;
 
@@ -179,7 +179,7 @@ std::tuple<std::vector<int>, std::vector<double>, std::vector<double>>  PowerSpe
     
     std::vector<double> image_invariant = (ptp > 0) ? invariant(image) : std::vector<double>(image.begin(), image.end());
 
-    double invariant_mean = mean(image_invariant);
+    double invariant_mean = std::accumulate(image_invariant.begin(), image_invariant.end(), 0.0) / image_invariant.size();
 
     for(auto& element: image_invariant) {
         element -= invariant_mean;
