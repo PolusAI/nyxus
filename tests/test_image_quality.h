@@ -71,7 +71,7 @@ void test_sharpness_feature() {
 void test_brisque_feature() {
     
     BrisqueFeature f;
-    double truth_value = 0.580;
+    double truth_value = 0.563;
 
     test_feature(f, Nyxus::Feature2D::BRISQUE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };

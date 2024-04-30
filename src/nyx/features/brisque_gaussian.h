@@ -17,7 +17,15 @@ enum class MscnType {
     secondary_diagonal = 5
 };
 
-const static int num_mscn_types = 5; // Need better solution for iterator over MscnType enum
+
+const static std::vector<MscnType> mscn_types {
+    MscnType::mscn, 
+    MscnType::horizontal, 
+    MscnType::vertical, 
+    MscnType::main_diagonal, 
+    MscnType::secondary_diagonal
+};
+
 
 class Mscn {
 

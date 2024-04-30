@@ -31,8 +31,9 @@ void BrisqueFeature::brisque(const ImageMatrix& Im) {
 
     std::vector<double> temp;
     
-    for (int i = 0;  i < num_mscn_types; ++i) {
-        temp = calculate_features((MscnType)i);
+
+    for (const auto& mscn_type: mscn_types) {
+        temp = calculate_features(mscn_type);
         features_.insert(features_.end(), temp.begin(), temp.end());
     }
 
