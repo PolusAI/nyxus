@@ -46,10 +46,10 @@ private:
 
     double get_local_focus_score(const std::vector<PixIntens>& image, int n_image, int m_image, int ksize=1, int scale=2);
 
-    std::vector<double> laplacian(const std::vector<PixIntens>& image, int n_image, int m_image, int ksize=1);
+    static void laplacian(const std::vector<PixIntens>& image, std::vector<double>& out, int n_image, int m_image, int ksize=1);
 
-    double mean(std::vector<double> image);
-    double variance(std::vector<double> image);
+    static double mean(const std::vector<double>& image);
+    static double variance(const std::vector<double>& image);
 
 };
 

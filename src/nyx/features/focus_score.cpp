@@ -12,7 +12,11 @@ void FocusScoreFeature::calculate(LR& r) {
     // Get ahold of the ROI image matrix
     const ImageMatrix& Im0 = r.aux_image_matrix;
 
-    focus_score_ = this->variance(this->laplacian(Im0.ReadablePixels(), Im0.height, Im0.width));
+    std::vector<double> laplacian_vec(Im0.height * Im0.width, 0);
+
+    this->laplacian(Im0.ReadablePixels(), laplacian_vec, Im0.height, Im0.width);
+
+    focus_score_ = this->variance(laplacian_vec);
 
     local_focus_score_ = this->get_local_focus_score(Im0.ReadablePixels(), Im0.height, Im0.width);
 
@@ -68,10 +72,7 @@ void FocusScoreFeature::reduce (size_t start, size_t end, std::vector<int>* ptrL
 
 void FocusScoreFeature::save_value(std::vector<std::vector<double>>& feature_vals) {
     
-    feature_vals[(int)Feature2D::FOCUS_SCORE].resize(1);
     feature_vals[(int)Feature2D::FOCUS_SCORE][0] = focus_score_;
-
-    feature_vals[(int)Feature2D::LOCAL_FOCUS_SCORE].resize(1);
     feature_vals[(int)Feature2D::LOCAL_FOCUS_SCORE][0] = local_focus_score_;
 
 }
@@ -84,6 +85,7 @@ double FocusScoreFeature::get_local_focus_score(const std::vector<PixIntens>& im
     int N = width / scale;
 
     double focus_score;
+    std::vector<double> laplacian_vec(M*N);
     for (int y = 0; y < height; y += M) {
         for (int x = 0; x < width; x += N) {
 
@@ -95,8 +97,11 @@ double FocusScoreFeature::get_local_focus_score(const std::vector<PixIntens>& im
                 }
             }
             
+            std::fill(laplacian_vec.begin(), laplacian_vec.end(), 0.);
+            this->laplacian(image_tile, laplacian_vec, M, N, ksize);
+
             // calculate focus score for tile
-            focus_score = this->variance(this->laplacian(image_tile, M, N, ksize));
+            focus_score = this->variance(laplacian_vec);
         }
 
         local_focus_score_ += focus_score;
@@ -105,7 +110,7 @@ double FocusScoreFeature::get_local_focus_score(const std::vector<PixIntens>& im
     return local_focus_score_ / (scale * scale); // average scores
 }
 
-std::vector<double> FocusScoreFeature::laplacian(const std::vector<PixIntens>& image, int n_image, int m_image, int ksize) {
+void FocusScoreFeature::laplacian(const std::vector<PixIntens>& image, std::vector<double>& out, int n_image, int m_image, int ksize) {
 
     int m_kernel = 3;
     int n_kernel = 3;
@@ -121,8 +126,6 @@ std::vector<double> FocusScoreFeature::laplacian(const std::vector<PixIntens>& i
                    0, -8, 0, 
                    2, 0, 2 };
     }
-
-    std::vector<double> out(m_image * n_image, 0);
 
     int xKSize = n_kernel; // number of columns
     int yKSize = m_kernel; // number of rows
@@ -151,11 +154,9 @@ std::vector<double> FocusScoreFeature::laplacian(const std::vector<PixIntens>& i
             }
         }
     }
-    
-    return out;
 }
 
-double FocusScoreFeature::mean(std::vector<double> image) {
+double FocusScoreFeature::mean(const std::vector<double>& image) {
 
     double sum = 0.;
 
@@ -167,8 +168,8 @@ double FocusScoreFeature::mean(std::vector<double> image) {
 }
 
 
-double FocusScoreFeature::variance(std::vector<double> image) {
-    double image_mean = this->mean(image);
+double FocusScoreFeature::variance(const std::vector<double>& image) {
+    double image_mean = FocusScoreFeature::mean(image);
     double sum_squared_diff = 0.0;
 
     for (const auto& pix: image) {
