@@ -41,8 +41,13 @@ private:
 
     //=== Trivial ROIs ===
 
-    std::vector<double> invariant(std::vector<unsigned int> image);
-    std::tuple<std::vector<int>, std::vector<double>, std::vector<double>>  rps(std::vector<unsigned int> image, int rows, int cols);
-    double power_spectrum_slope(const ImageMatrix& Im);
+    static void invariant(const std::vector<unsigned int>& image, std::vector<double>& out);
+
+    static void rps(const std::vector<unsigned int>& image, 
+              int rows, int cols, 
+              std::vector<double>& mag_sum, 
+              std::vector<double>& power_sum);
+
+    static double power_spectrum_slope(const ImageMatrix& Im);
 };
 
