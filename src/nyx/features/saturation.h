@@ -39,6 +39,6 @@ private:
  
     double max_saturation_, min_saturation_;
 
-    std::tuple<double, double> get_percent_max_pixels(const ImageMatrix& Im);
+    static std::tuple<double, double> get_percent_max_pixels(const ImageMatrix& Im);
 
 };
