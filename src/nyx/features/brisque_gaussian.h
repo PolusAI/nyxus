@@ -169,7 +169,7 @@ public:
     Mscn(const std::vector<unsigned int>& img, int rows, int cols, 
          const std::vector<double>& kernel, int k_rows, int k_cols) {
 
-        image_ = img;
+        image_ = img;   
         image_rows_ = rows;
         image_cols_ = cols;
         
@@ -204,7 +204,7 @@ private:
     std::vector<double> x_;
     double alpha_;
 
-    std::vector<double> x(DistributionSide side) {
+    std::vector<double> calculate_x(DistributionSide side) {
 
         std::vector<double> result;
 
@@ -237,11 +237,11 @@ private:
 
         if (side == DistributionSide::right) {
 
-            _x_vec = x(DistributionSide::right);
+            _x_vec = calculate_x(DistributionSide::right);
 
         } else if (side == DistributionSide::left) {
 
-            _x_vec = x(DistributionSide::left);
+            _x_vec = calculate_x(DistributionSide::left);
 
         } else {
             throw std::invalid_argument("Side was not recognized");
@@ -295,11 +295,11 @@ public:
     }
 
     std::vector<double> x_left() {
-        return x(DistributionSide::left);
+        return calculate_x(DistributionSide::left);
     }
 
     std::vector<double> x_right() {
-        return x(DistributionSide::right);
+        return calculate_x(DistributionSide::right);
     }
 
     double sigma_left() {
