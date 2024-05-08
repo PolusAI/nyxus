@@ -416,31 +416,6 @@ namespace Nyxus
 		return padded;
 	}
 
-
-	// replace with std::reverse
-	inline std::vector<std::vector<int>> flipud (const std::vector<std::vector<int>>& vec) {
-
-		std::vector<std::vector<int>> out(vec.size(), std::vector<int>(vec[0].size()));
-
-		for (int i = vec.size()-1; i >=0; --i) {
-			out.push_back(vec[i]);
-		}
-
-		return out;
-	}
-
-	inline std::vector<std::vector<int>> fliplr (const std::vector<std::vector<int>>& vec) {
-		
-
-		std::vector<std::vector<int>> out = vec;
-
-		for (auto& row: out) {
-			std::reverse(row.begin(), row.end());
-		}
-
-		return out;
-	}
-
 	inline std::vector<std::vector<int>> minimum(const std::vector<std::vector<int>>& vec1, const std::vector<std::vector<int>>& vec2) {
 
 		std::vector<std::vector<int>> out = vec1;
