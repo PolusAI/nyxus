@@ -43,25 +43,23 @@ private:
     // Result cache
     double sharpness_;
 
-    std::vector<unsigned int> pad_array(const std::vector<unsigned int>& array, int rows, int cols, int padRows, int padCols);
+    static void pad_array(const std::vector<unsigned int>& array, std::vector<unsigned int>& out, int rows, int cols, int padRows, int padCols);
 
-    std::vector<double> remove_padding(std::vector<double> img, int img_row, int img_col, int row_padding, int col_padding);
+    static void remove_padding(std::vector<double>& img, int img_row, int img_col, int row_padding, int col_padding);
 
-    std::vector<double> median_blur(const std::vector<unsigned int>& img, int rows, int cols, int ksize);
+    static void median_blur(const std::vector<unsigned int>& img, std::vector<double>& blurred_img_out, int rows, int cols, int ksize);
 
-    std::vector<double> convolve_1d(const std::vector<double>& img, std::vector<double>& kernel);
+    static std::vector<double> convolve_1d(const std::vector<double>& img, std::vector<double>& kernel);
 
-    std::vector<double> smooth_image(const std::vector<unsigned int>& image, int rows, int cols, bool transpose=false, double epsilon=1e-8);
+    static void smooth_image(const std::vector<unsigned int>& image, std::vector<double>& smoothed, std::vector<double>& smoothed_transposed, int rows, int cols, double epsilon=1e-8);
 
-    std::tuple<std::vector<double>, std::vector<double>> edges(const std::vector<unsigned int>& image, int rows, int cols, double edge_threshold=0.0001);
+    static void edges(const std::vector<unsigned int>& image, std::vector<double>& edge_x_out, std::vector<double>& edge_y_out, int rows, int cols, double edge_threshold=0.0001);
 
-    std::vector<double> absolute_difference(const std::vector<double>& mat1, const std::vector<double>& mat2, int numRows, int numCols);
+    static void dom(const std::vector<double>& Im, std::vector<double>& dom_x_out, std::vector<double>& dom_y_out, int rows, int cols);
 
-    std::tuple<std::vector<double>, std::vector<double>> dom(std::vector<double>& Im, int rows, int cols);
+    static void contrast(const std::vector<double>& Im, std::vector<double>&cx_out, std::vector<double>&cy_out, int rows, int cols);
 
-    std::tuple<std::vector<double>, std::vector<double>> contrast(const std::vector<double>& Im, int rows, int cols);
-
-    double sharpness(const ImageMatrix& Im, int width=2);
+    static double sharpness(const ImageMatrix& Im, int width=2);
 
 };
 
