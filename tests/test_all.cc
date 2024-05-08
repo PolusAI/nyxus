@@ -1093,8 +1093,3 @@ TEST(TEST_IMAGE_QUALITY, TEST_SHARPNESS)
 {
 	ASSERT_NO_THROW(test_sharpness_feature());
 }
-
-TEST(TEST_IMAGE_QUALITY, TEST_BRISQUE) 
-{
-	ASSERT_NO_THROW(test_brisque_feature());
-}

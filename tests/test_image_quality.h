@@ -12,7 +12,6 @@
 #include "../src/nyx/features/power_spectrum.h"
 #include "../src/nyx/features/saturation.h"
 #include "../src/nyx/features/sharpness.h"
-#include "../src/nyx/features/brisque.h"
 
 /* GLCM dissimilarity and correlation for image quality are handled in GLCM tests */
 
@@ -65,13 +64,4 @@ void test_sharpness_feature() {
     double truth_value = 2.19047;
 
     test_feature(f, Nyxus::Feature2D::SHARPNESS, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
-};
-
-
-void test_brisque_feature() {
-    
-    BrisqueFeature f;
-    double truth_value = 0.563;
-
-    test_feature(f, Nyxus::Feature2D::BRISQUE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };

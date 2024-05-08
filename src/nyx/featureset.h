@@ -464,7 +464,6 @@ namespace Nyxus
 		MAX_SATURATION,
 		MIN_SATURATION,
 		SHARPNESS,
-		BRISQUE,
 
 		_COUNT_
 	};

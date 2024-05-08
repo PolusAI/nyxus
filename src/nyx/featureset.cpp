@@ -470,8 +470,7 @@ namespace Nyxus
 		{"POWER_SPECTRUM_SLOPE", Feature2D::POWER_SPECTRUM_SLOPE},
 		{"MAX_SATURATION", Feature2D::MAX_SATURATION},
 		{"MIN_SATURATION", Feature2D::MIN_SATURATION},
-		{"SHARPNESS", Feature2D::SHARPNESS},
-		{"BRISQUE", Feature2D::BRISQUE}
+		{"SHARPNESS", Feature2D::SHARPNESS}
 	};
 
 	std::map <std::string, Fgroup2D> UserFacing2dFeaturegroupNames =

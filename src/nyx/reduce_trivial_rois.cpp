@@ -44,7 +44,6 @@
 #include "features/power_spectrum.h"
 #include "features/saturation.h"
 #include "features/sharpness.h"
-#include "features/brisque.h"
 
 #include "helpers/timing.h"
 #include "parallel.h"
@@ -315,11 +314,6 @@ namespace Nyxus
 			if (SharpnessFeature::required(theFeatureSet)) {
 				STOPWATCH("ImageQuality/Sharpness/Rd/#00FFFF", "\t=");
 				runParallel(SharpnessFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
-			}
-
-			if (BrisqueFeature::required(theFeatureSet)) {
-				STOPWATCH("ImageQuality/Brisque/Rd/#00FFFF", "\t=");
-				runParallel(BrisqueFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 			}
 		}
 		else

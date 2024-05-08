@@ -135,7 +135,6 @@ option(RUN_GTEST "Downloads google unit test API and runs google test scripts to
 set(SOURCE
 	src/nyx/arrow_output_stream.cpp
 	src/nyx/features/basic_morphology.cpp
-	src/nyx/features/brisque.cpp
 	src/nyx/features/caliper_feret.cpp
 	src/nyx/features/caliper_martin.cpp
 	src/nyx/features/caliper_nassenstein.cpp

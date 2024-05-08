@@ -183,8 +183,7 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 			Feature2D::POWER_SPECTRUM_SLOPE,
 			Feature2D::MIN_SATURATION,
 			Feature2D::MAX_SATURATION,
-			Feature2D::SHARPNESS,
-			Feature2D::BRISQUE
+			Feature2D::SHARPNESS
 		};
 		
 		Nyxus::theFeatureSet.disableFeatures(F);
