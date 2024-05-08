@@ -136,49 +136,5 @@ The sharpness of the image is then given by the Frobenius norm,
     S_I = \sqrt{R_x^2+R_y^2}.
 
 
-Brisque
--------
-
-The Brisque calculation is a no-reference image quality metric that predicts the quality of an image[2]. The Brisque calculation in completed in three steps:
-extracting the natural scene statistics, creating feature vectors, and then predicting the image quality score using a support vector machine. To begin, the natural 
-scene statistics are calculated. In this step, the pixel intensities are normalized. A natural image will follow a Gaussian distribution while unnatural or distorted
-images will not follow a normal distribution. The amount of distortion in the image can therefore be measured by its deviation from the Gaussian distribution. In Brisque,
-the images are normalized through Mean Subtracted Contrast Normalization (MSCN). To calculate the MSCN coefficients, the image intensity :math:`I` at pixel :math:`(i,j)`
-is transformed to luminance :math:`\hat{I}(i,j)`,
-
-.. math::
-
-    \hat{I}(i,j) = \frac{I(i,j) - \mu (i,j)}{\sigma (i,j) + C},
-
-
-where :math:`\mu (i,j)` is the local mean field and :math:`\sigma (i,j)` is the local variance field. The local mean field is found from the Gaussian blur of the image,
-
-.. math::
-    
-    \mu = W * I,
-
-where \textbf{W} is the Gaussian blur window function. The local variance field is the Gaussian blur of the square of the difference of the image and :math:`\mu`,
-
-.. math::
-
-    \sigma = \sqrt{W*(I - \mu)^2.
-
-To also capture neighboring pixel relations, pair-wise products of the MSCN image are also calculated for four orientations: horizontal (H), vertical (V), left diagonal (LD),
-and right diagonal (RD),
-
-.. math::
-
-    H(i,j) = \hat{I}(i,j)\hat{I}(i,j+1) \\
-    V(i,j) = \hat{I}(i,j)\hat{I}(i+1,j) \\
-    LD(i,j) = \hat{I}(i,j)\hat{I}(i+1,j+1) \\
-    RD(i,j) = \hat{I}(i,j)\hat{I}(i+1,j-1).
-
-Next, the feature vectors are calculated. For each of the 5 derived images from MSCN and the four addition orientations. This feature vector contains 36 columns regardless of 
-image size; two columns for the Generlaized Gaussian distribution of the MSCN image and four columns each for the four additional orientations. The columns for each of these orientations 
-are found by calculating the shape, mean left variance, and right variance. This gives 18 columns for the feature vector. The remaining 18 columns are found from performing the same calculations 
-on the original image that is downsized to half the size, giving the 36 columns. Finally, the image quality score is predicted by feeding the feature vector to a support vector machine (SVM)
-to predict the quality of the image. The resulting score ranges from 0 to 100, where a higher score indicates a higher quality image.
-
 [1] J. Kumar, F. Chen and D. Doermann, "Sharpness estimation for document and scene images," Proceedings of the 21st International Conference on Pattern Recognition (ICPR2012), Tsukuba, Japan, 2012, pp. 3292-3295.
-[2] https://learnopencv.com/image-quality-assessment-brisque/
 

@@ -25,5 +25,3 @@ group.
      - Percent of pixels at minimum and maximum pixel values
    * - SHARPNESS
      - Uses median-filtered image as indicator of edge scharpness. Values range from 0 to sqrt(2). Low scores indicate blurriness.
-   * - BRISQUE
-     - Referenceless Image Spatial Quality Evaluator. Values range from 0 to 100. High scores indicate a blurry image.
