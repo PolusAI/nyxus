@@ -21,3 +21,4 @@ Math formulas
    Math/f_ngtdm
    Math/f_morphology
    Math/f_zernike
+   Math/f_image_quality
