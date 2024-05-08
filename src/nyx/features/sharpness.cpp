@@ -74,51 +74,51 @@ void SharpnessFeature::save_value(std::vector<std::vector<double>>& feature_vals
 
 }
 
-std::vector<double> SharpnessFeature::remove_padding(std::vector<double> img, int img_row, int img_col, int row_padding, int col_padding) {
-    std::vector<double> out;
+ void SharpnessFeature::remove_padding(std::vector<double>& img, int img_row, int img_col, int row_padding, int col_padding) {
 
-    for (int i = row_padding; i < img_row-row_padding; ++i) {
-        for (int j = col_padding; j < img_col-col_padding; ++j) {
-            out.push_back(img[i * img_col + j]);
-        }
+    int new_col_size = img_col - 2*col_padding;
+
+    for (int i = 0; i < img_row - 2*row_padding; ++i) {
+        for (int j = 0; j < new_col_size; ++j) {
+            img[i * new_col_size + j] = img[(i+row_padding) * img_col + (j+col_padding)];            
+        } 
     }
-    return out;
+    
+    img.erase(img.begin() + img_row*img_col, img.end());    
 }
 
 
-std::vector<unsigned int> SharpnessFeature::pad_array(const std::vector<unsigned int>& array, int rows, int cols, int padRows, int padCols) {
+void SharpnessFeature::pad_array(const std::vector<unsigned int>& array, std::vector<unsigned int>& out, int rows, int cols, int padRows, int padCols) {
     int paddedRows = rows + 2 * padRows;
     int paddedCols = cols + 2 * padCols;
 
-    std::vector<unsigned int> paddedArray(paddedRows * paddedCols, 0);
+    out.resize(paddedRows * paddedCols, 0);
 
     // Copy the original array to the center of the padded array
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-            paddedArray[(i + padRows) * paddedCols + (j + padCols)] = array[i * cols + j];
+            out[(i + padRows) * paddedCols + (j + padCols)] = array[i * cols + j];
         }
     }
 
     // Duplicate border elements horizontally
     for (int i = 0; i < rows; ++i) {
         for (int k = 1; k <= padCols; ++k) {
-            paddedArray[(i + padRows) * paddedCols + k - 1] = array[i * cols]; // Left border
-            paddedArray[(i + padRows) * paddedCols + paddedCols - k] = array[i * cols + cols - 1]; // Right border
+            out[(i + padRows) * paddedCols + k - 1] = array[i * cols]; // Left border
+            out[(i + padRows) * paddedCols + paddedCols - k] = array[i * cols + cols - 1]; // Right border
         }
     }
 
     // Duplicate border elements vertically
     for (int i = 0; i < padRows; ++i){
         for (int j = 0; j < paddedCols; ++j) {
-            paddedArray[(i*paddedCols) + j] = paddedArray[(padRows*paddedCols) + j];
-            paddedArray[(i*paddedCols + (paddedCols*padRows + paddedCols*rows)) + j] = paddedArray[((paddedRows* paddedCols) - (padRows*paddedCols) - paddedCols) + j];
+            out[(i*paddedCols) + j] = out[(padRows*paddedCols) + j];
+            out[(i*paddedCols + (paddedCols*padRows + paddedCols*rows)) + j] = out[((paddedRows* paddedCols) - (padRows*paddedCols) - paddedCols) + j];
         }
     }
-
-    return paddedArray;
 }
 
-std::vector<double> SharpnessFeature::median_blur(const std::vector<unsigned int>& img, int rows, int cols, int ksize) {
+void SharpnessFeature::median_blur(const std::vector<unsigned int>& img, std::vector<double>& blurred_img_out, int rows, int cols, int ksize) {
 
     int pad = (ksize-1) / 2;
 
@@ -128,9 +128,10 @@ std::vector<double> SharpnessFeature::median_blur(const std::vector<unsigned int
     int padded_rows = rows + 2 * row_padding;
     int padded_cols = cols + 2 * col_padding;
 
-    auto padded_img = pad_array(img, rows, cols, row_padding, col_padding);
+    std::vector<unsigned int> padded_img;
+    pad_array(img, padded_img, rows, cols, row_padding, col_padding);
 
-    std::vector<double> temp (padded_rows * padded_cols, 0);
+    blurred_img_out.resize(padded_rows * padded_cols, 0);
 
     for (int i = 0; i < padded_rows; ++i) {
         for (int j = 0; j < padded_cols; ++j) {
@@ -141,7 +142,6 @@ std::vector<double> SharpnessFeature::median_blur(const std::vector<unsigned int
 
                     int nx = i + x;
                     int ny = j + y;
-
 
                     // Check boundary conditions
                     if (nx >= 0 && nx < padded_rows && ny >= 0 && ny < padded_cols) {
@@ -156,13 +156,11 @@ std::vector<double> SharpnessFeature::median_blur(const std::vector<unsigned int
             // Get the median value
             int median_index = std::floor((double)window.size() / 2);
 
-            temp[i * padded_cols + j] = window[median_index];
+            blurred_img_out[i * padded_cols + j] = window[median_index];
         }
     }
 
-    auto out = remove_padding(temp, padded_rows, padded_cols, rows, cols);
-
-    return out;
+    remove_padding(blurred_img_out, padded_rows, padded_cols, rows, cols);
 }
 
 
@@ -190,151 +188,114 @@ std::vector<double> SharpnessFeature::convolve_1d(const std::vector<double>& img
     return result;
 }
 
-std::vector<double> SharpnessFeature::smooth_image(const std::vector<unsigned int>& image, int rows, int cols, bool transpose, double epsilon) {
-
+void SharpnessFeature::smooth_image(const std::vector<unsigned int>& image, std::vector<double>& smoothed, std::vector<double>& smoothed_transposed, int rows, int cols, double epsilon) {
+    
     std::vector<double> kernel {-0.5, 0, 0.5};
 
-    std::vector<double> result;
+    smoothed = std::vector<double>(image.begin(), image.end());
+    smoothed_transposed.resize(image.size());
 
-    auto in = transpose ? transpose_vector(image, rows, cols) : image;
-
+    // Transpose the vector
     for (int i = 0; i < rows; ++i) {
-        auto conv = convolve_1d(std::vector<double>(in.begin() + i*cols, in.begin() + (i+1)*cols), kernel);
-        for (auto& pix: conv) {
-            result.emplace_back(pix);
+        for (int j = 0; j < cols; ++j) {
+            smoothed_transposed[j * rows + i] = image[i * cols + j];
         }
     }
-    
 
-    if (transpose) {
-        result = transpose_vector(result, rows, cols);
+    std::vector<double> conv, conv_transposed;
+    for (int i = 0; i < rows; ++i) {
+
+        conv = convolve_1d(std::vector<double>(smoothed.begin() + i*cols, smoothed.begin() + (i+1)*cols), kernel);
+        
+        for (int j = 0; j < conv.size(); ++j) {
+            smoothed[i * cols + j] = conv[j];
+        }
     }
 
-    auto max = *std::max_element(result.begin(), result.end());
+    for (int i = 0; i < cols; ++i) {
+        conv_transposed = convolve_1d(std::vector<double>(smoothed_transposed.begin() + i*rows, smoothed_transposed.begin() + (i+1)*rows), kernel);
 
-    for (auto& pix: result) {
-        pix = std::abs(pix)/ (max+epsilon);
+        for (int j=0; j < conv_transposed.size(); ++j) {
+            smoothed_transposed[i * rows + j] = conv_transposed[j];
+        }
     }
 
-    return result;
+    //  Transpose the vector
+    for (int i = 0; i < cols; ++i) {
+        for (int j = 0; j < rows; ++j) {
+            std::swap(smoothed_transposed[j * cols + i], smoothed_transposed[i * rows + j]);
+        }
+    }
+
+    auto max = *std::max_element(smoothed.begin(), smoothed.end());
+
+    for (int i=0; i < smoothed.size(); ++i) {
+        smoothed[i] = std::abs(smoothed[i])/(max+epsilon);
+        smoothed_transposed[i] = std::abs(smoothed_transposed[i])/(max+epsilon);
+    }
 }
 
-std::tuple<std::vector<double>, std::vector<double>> SharpnessFeature::edges(const std::vector<unsigned int>& image, int rows, int cols, double edge_threshold) {
+void SharpnessFeature::edges(const std::vector<unsigned int>& image, std::vector<double>& edge_x_out, std::vector<double>& edge_y_out, int rows, int cols, double edge_threshold) {
 
-    std::vector<double> edge_x, edge_y; 
-
-    auto smooth_x = smooth_image(image, rows, cols, true);
-    auto smooth_y = smooth_image(image, rows, cols);
+    std::vector<double> smooth_x, smooth_y;
+    smooth_image(image, smooth_x, smooth_y, rows, cols);
 
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
 
             if (smooth_x[i * cols + j] > edge_threshold) {
-                edge_x.emplace_back(1);
+                edge_x_out.emplace_back(1);
             } else {
-                edge_x.emplace_back(0);
+                edge_x_out.emplace_back(0);
             }
 
             if (smooth_y[i * cols + j] > edge_threshold) {
-                edge_y.emplace_back(1);
+                edge_y_out.emplace_back(1);
             } else {
-                edge_y.emplace_back(0);
+                edge_y_out.emplace_back(0);
             }
         }
     }
-
-    return std::make_tuple(edge_x, edge_y);
 }
 
-// Function to calculate the absolute difference of matrices
-std::vector<double> SharpnessFeature::absolute_difference(const std::vector<double>& mat1, const std::vector<double>& mat2, int numRows, int numCols) {
+void SharpnessFeature::dom(const std::vector<double>& Im, std::vector<double>& dom_x_out, std::vector<double>& dom_y_out, int rows, int cols) {
 
-    std::vector<double> result(numRows * numCols, 0);
-    
-    for (int i = 0; i < numRows; ++i) {
-        for (int j = 0; j < numCols; ++j) {
-            result[i * numCols + j] = mat1[i * numCols + j] + mat2[i * numCols + j];
+    // Calculate domx
+    double median_shift_up, median_shift_down;
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            median_shift_up = (i >= 2) ? Im[(i - 2) * cols + j] : 0;
+            median_shift_down = (i < rows - 2) ? Im[(i + 2) * cols + j] : 0;
+            dom_x_out[i * cols + j] = std::abs(median_shift_up - 2 * Im[i * cols + j] + median_shift_down);
         }
     }
 
-    return result;
+    // Calculate domy
+    double median_shift_left, median_shift_right;
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            median_shift_left = (j >= 2) ? Im[i * cols + (j - 2)] : 0;
+            median_shift_right = (j < cols - 2) ? Im[i * cols + (j + 2)] : 0;
+            dom_y_out[i * cols + j] = std::abs(median_shift_left - 2 * Im[i * cols + j] + median_shift_right);
+        }
+    }
 }
 
-std::tuple<std::vector<double>, std::vector<double>> SharpnessFeature::dom(std::vector<double>& Im, int rows, int cols) {
+void SharpnessFeature::contrast(const std::vector<double>& Im, std::vector<double>&cx_out, std::vector<double>&cy_out, int rows, int cols) {
 
-    // Padding for median_shift_up and median_shift_down
-    std::vector<double> median_shift_up = Im;
-    for (int i = 0; i < 2*rows; ++i) {
-        median_shift_up.emplace_back(0);
-    }
-    median_shift_up.erase(median_shift_up.begin(), median_shift_up.begin() + 2*cols);
+    cx_out.resize(rows*cols);
+    cy_out.resize(rows*cols);
 
-    std::vector<double> median_shift_down = Im;
-    for (int i = 0; i < 2*rows; ++i) {
-        median_shift_down.insert(median_shift_down.begin(), 0);
-    }
-    median_shift_down.erase(median_shift_down.end() - (2*cols), median_shift_down.end());
-
-    
-    // Calculate domx
-    std::vector<double> dom_x(cols * rows);
-    for (int i = 0; i < rows * cols; ++i) {
-        dom_x[i] = std::abs(median_shift_up[i] - 2 * Im[i] + median_shift_down[i]);
-    }
-    
-    // Padding for median_shift_left and median_shift_right
-    std::vector<double> median_shift_left = Im;
-    std::vector<double> median_shift_right = Im;
-
+    double value;
     for (int i = 0; i < rows; ++i) {
-        median_shift_left.insert(median_shift_left.begin() + i * cols + cols + 2*i, 0);
-        median_shift_left.insert(median_shift_left.begin() + i * cols + cols + 2*i, 0);
+        for (int j = 0; j < cols; ++j) {
+            value = (i+1 < rows) ? Im[(i + 1) * cols + j] : 0;
+            cx_out[i * cols + j] = std::abs(value - Im[i * cols + j]);
 
-        median_shift_right.insert(median_shift_right.begin() + i * cols + 2*i, 0);
-        median_shift_right.insert(median_shift_right.begin() + i * cols + 2*i, 0);
+            value = (j+1 < cols) ? Im[i * cols + (j + 1)] : 0;
+            cy_out[i * cols + j] = std::abs(value - Im[i * cols + j]);
+        }
     }
-
-    for (int i = 0; i < rows; ++i) {
-        median_shift_left.erase(median_shift_left.begin() + cols*i);
-        median_shift_left.erase(median_shift_left.begin() + cols*i);
-
-        median_shift_right.erase(median_shift_right.begin() + i * cols + cols);
-        median_shift_right.erase(median_shift_right.begin() + i * cols + cols);
-    }
-
-    // Calculate domx]
-    std::vector<double> dom_y(cols * rows);
-    for (int i = 0; i < rows * cols; ++i) {
-        dom_y[i] = std::abs(median_shift_left[i] - 2 * Im[i] + median_shift_right[i]);
-    }  
-    
-    return std::make_tuple(dom_x, dom_y);
-}
-
-std::tuple<std::vector<double>, std::vector<double>> SharpnessFeature::contrast(const std::vector<double>& Im, int rows, int cols) {
-
-    std::vector<double> cy_shift = Im;
-    for (int i = 0; i < rows; ++i) {
-        cy_shift.emplace_back(0);
-    }
-    cy_shift.erase(cy_shift.begin(), cy_shift.begin() + cols);
-
-    std::vector<double> cx_shift = Im;
-    for (int i = 0; i < rows; ++i) {
-        cx_shift.insert(cx_shift.begin(), 0);
-    }
-    cx_shift.erase(cx_shift.end() - (cols), cx_shift.end());
-
-    
-
-    std::vector<double> cx(rows*cols), cy(rows*cols);
-
-    for (int i = 0; i < rows*cols; ++i) {
-        cx[i] = std::abs(Im[i] - cx_shift[i]);
-        cy[i] = std::abs(Im[i] - cy_shift[i]);
-    }
-
-    return std::make_tuple(cx, cy);
 }
 
 
@@ -345,7 +306,8 @@ double SharpnessFeature::sharpness(const ImageMatrix& Im, int width) {
     int rows = Im.height;
     int cols = Im.width;
 
-    auto blurred = median_blur(image, rows, cols, 3);
+    std::vector<double> blurred;
+    median_blur(image, blurred, rows, cols, 3);
 
     for (auto& pix: blurred) {
         pix /= 255.;
@@ -353,13 +315,16 @@ double SharpnessFeature::sharpness(const ImageMatrix& Im, int width) {
     
     std::vector<double> edge_x, edge_y;
 
-    std::tie(edge_x, edge_y) = edges(image, rows, cols);
+    edges(image, edge_x, edge_y, rows, cols);
 
-    std::vector<double> dom_x, dom_y;
-    std::tie(dom_x, dom_y) = dom(blurred, rows, cols);
+    std::vector<double> dom_x(rows*cols), dom_y(rows*cols);
+    dom_x.resize(rows*cols);
+    dom_y.resize(rows*cols);
+
+    dom(blurred, dom_x, dom_y, rows, cols);
 
     std::vector<double> cx, cy;
-    std::tie(cx, cy) = contrast(blurred, rows, cols);
+    contrast(blurred, cx, cy, rows, cols);
 
     for (int i = 0; i < rows*cols; ++i) {
         cx[i] *= edge_x[i];
@@ -367,11 +332,11 @@ double SharpnessFeature::sharpness(const ImageMatrix& Im, int width) {
     }
 
     std::vector<double> sx(rows*cols, 0), sy(rows*cols, 0);
-
+    std::vector<double> num(cols, 0.), dn(cols, 0.);
     for (int i = width; i < rows-width; ++i) {
         
-        std::vector<double> num(cols, 0.0);
-        std::vector<double> dn(cols, 0.0);
+        std::fill(num.begin(), num.end(), 0.);
+        std::fill(dn.begin(), dn.end(), 0.);
 
         // Calculate num and dn
         for (int j = -width; j < width; ++j) {
@@ -385,12 +350,9 @@ double SharpnessFeature::sharpness(const ImageMatrix& Im, int width) {
         for (int k = 0; k < cols-width; ++k) {
             sx[i * cols + k] = (dn[k] > 1e-3) ? (num[k] / dn[k]) : 0;
         }
-    }
 
-    for (int i = width; i < rows-width; ++i) {
-        
-        std::vector<double> num(cols, 0.0);
-        std::vector<double> dn(cols, 0.0);
+        std::fill(num.begin(), num.end(), 0.);
+        std::fill(dn.begin(), dn.end(), 0.);
 
         // Calculate num and dn
         for (int j = -width; j < width; ++j) {

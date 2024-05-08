@@ -86,24 +86,27 @@ double PowerSpectrumFeature::power_spectrum_slope(const ImageMatrix& Im) {
     int rows = Im.height;
     int cols = Im.width;
 
-    std::vector<int> radii;
     std::vector<double> magnitude, power;
 
-    std::tie(radii, magnitude, power) = rps(image, rows, cols);
+    double max_width = std::min(rows, cols) / 8.;
+
+    std::vector<int> radii(std::floor(max_width));
+    std::iota(radii.begin(), radii.end(), 2);
+
+    rps(image, rows, cols, magnitude, power);
+    int num_radii = power.size();
+
 
     std::vector<double> result;
 
     if (std::accumulate(magnitude.begin(), magnitude.end(), 0.) > 0 && 
-        std::set<unsigned int>(image.begin(), image.end()).size() > 0) {
+        !image.empty()) {
 
-        std::vector<double> log_radii;
         for (int i = 0; i < magnitude.size(); ++i) {
 
             if (magnitude[i] < 0 || !std::isfinite(std::log(power[i]))) {
                 radii.erase(radii.begin() + i);
                 power.erase(power.begin() + i);
-            } else {
-                log_radii.push_back(std::log(radii[i]));
             }
         }
         
@@ -124,7 +127,7 @@ double PowerSpectrumFeature::power_spectrum_slope(const ImageMatrix& Im) {
     return 0;
 }
 
-std::vector<double> PowerSpectrumFeature::invariant(std::vector<unsigned int> image) {
+void PowerSpectrumFeature::invariant(const std::vector<unsigned int>& image, std::vector<double>& out) {
 
     
     double mean_value = std::accumulate(image.begin(), image.end(), 0.0)/image.size();
@@ -141,80 +144,62 @@ std::vector<double> PowerSpectrumFeature::invariant(std::vector<unsigned int> im
     std::nth_element(sorted_temp.begin(), sorted_temp.begin()+n, sorted_temp.end()); // sort to middle element to get median
     double median = sorted_temp[n];
 
-    std::vector<double> out (image.size(), 0.);
-
     for (int i = 0; i < image.size(); ++i) {
         out[i] = (double)image[i] / median;
     }    
-
-    return out;
 }
 
-std::tuple<std::vector<int>, std::vector<double>, std::vector<double>>  PowerSpectrumFeature::rps(std::vector<unsigned int> image, int rows, int cols) {
+void PowerSpectrumFeature::rps(const std::vector<unsigned int>& image, int rows, int cols, std::vector<double>& mag_sum, std::vector<double>& power_sum) {
 
     double max_width = std::min(rows, cols) / 8.;
 
     if (std::floor(max_width) < 3) {
-        return std::make_tuple(std::vector<int> {2}, std::vector<double> {0.}, std::vector<double> {0.});
+        mag_sum = {0.};
+        power_sum = {0.};
+        return;
     }
-
-    std::vector<int> rows_arrange(rows);
-    std::iota(rows_arrange.begin(), rows_arrange.end(), 1);
-
-    std::vector<int> cols_arrange(rows);
-    std::iota(cols_arrange.begin(), cols_arrange.end(), 1);
-
-    std::vector<std::vector<int>> added_vecs (rows, std::vector<int>(cols));
-
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            added_vecs[i][j] = std::pow(rows_arrange[i], 2) + std::pow(cols_arrange[j], 2);
-        }
-    }
-
-    added_vecs = minimum(added_vecs, flipud(added_vecs));
-    added_vecs = minimum(added_vecs, fliplr(added_vecs));
 
     int ptp = (*std::max_element(image.begin(), image.end())) - (*std::min_element(image.begin(), image.end()));
-    
-    std::vector<double> image_invariant = (ptp > 0) ? invariant(image) : std::vector<double>(image.begin(), image.end());
 
+    // calculate invariant or convert the pixels to double
+    std::vector<double> image_invariant(image.size(), 0.);
+    if (ptp > 0) {
+        invariant(image, image_invariant);
+    } else {
+        image_invariant = std::vector<double>(image.begin(), image.end());
+    }
+
+    // get mean
     double invariant_mean = std::accumulate(image_invariant.begin(), image_invariant.end(), 0.0) / image_invariant.size();
 
-    for(auto& element: image_invariant) {
-        element -= invariant_mean;
-    }
+    // subtract mean from each pixel
+    std::transform(image_invariant.begin(), image_invariant.end(), image_invariant.begin(),
+               [&](auto& pix) { return pix - invariant_mean; });
 
-
-    std::vector<std::complex<double>> vec;
-
+    // convert image to complex for fft
+    std::vector<std::complex<double>> complex_image;
     for (const auto& num: image_invariant) {
-
-        vec.push_back(std::complex<double>(num, 0));
+        complex_image.push_back(std::complex<double>(num, 0));
     }
 
-    std::vector<std::complex<double>> after_fft = fft2d(vec, dj::fft_dir::DIR_FWD);
-
-    std::vector<double> mag;
-    for (auto& num: after_fft) {
-        mag.push_back(std::abs(num));
-    }
+    std::vector<std::complex<double>> after_fft = fft2d(complex_image, dj::fft_dir::DIR_FWD);
 
     std::vector<int> radii;
-    std::vector<double> power;
-    for(auto& num: mag) {
-        radii.emplace_back(std::floor(std::sqrt(num)) + 1);
-        power.emplace_back(num * num);
+    for (auto& num: after_fft) {
+        radii.emplace_back(std::floor(std::sqrt(std::abs(num))) + 1);
     }
-
-
-    std::vector<int> linear_labels(std::floor(max_width));
-    std::iota(linear_labels.begin(), linear_labels.end(), 2);
     
+    mag_sum.resize(after_fft.size(), 0);
+    power_sum.resize(after_fft.size(), 0);
 
-    auto mag_sum = nd_sum(mag, radii, linear_labels);
-    auto power_sum = nd_sum(power, radii, linear_labels);
-
-    return std::make_tuple(linear_labels, mag_sum, power_sum);
+    double fft_double_value;
+    for (int i = 0; i < after_fft.size(); ++i) {
+        auto label_index = radii[i]-2;
+        if (label_index >=0 && label_index < after_fft.size()) {
+            fft_double_value = std::abs(after_fft[i]);
+            mag_sum[label_index] += fft_double_value;
+            power_sum[label_index] += fft_double_value * fft_double_value;
+        }
+    }
 }
 

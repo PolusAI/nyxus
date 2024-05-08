@@ -417,24 +417,7 @@ namespace Nyxus
 	}
 
 
-	inline std::vector<double> nd_sum(std::vector<double> input, std::vector<int> labels, std::vector<int> index) {
-
-		if (input.size() != labels.size()) throw std::runtime_error("input vector and labels vector must be the same size");
-
-		std::vector<double> out(index.size(), 0.0);
-
-		for (int i = 0; i < input.size(); ++i) {
-			auto label_index = std::find(index.begin(), index.end(), labels[i]);
-			if (label_index != index.end()) {
-				auto index_position = std::distance(index.begin(), label_index);
-				out[index_position] += input[i];
-			}
-		}
-
- 	   return out;
-	}
-
-
+	// replace with std::reverse
 	inline std::vector<std::vector<int>> flipud (const std::vector<std::vector<int>>& vec) {
 
 		std::vector<std::vector<int>> out(vec.size(), std::vector<int>(vec[0].size()));
@@ -491,6 +474,7 @@ namespace Nyxus
 		return out;
 	}
 
+	// check if this is transpose; if it is use i instead of cols
 	template <class T>
 	std::vector<T> transpose_vector(const std::vector<T>& image, int rows, int cols) {
 		std::vector<T> transposed(cols * rows);

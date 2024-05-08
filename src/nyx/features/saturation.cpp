@@ -7,8 +7,6 @@
 #include <map>
 #include <set>
 
-#include "../helpers/helpers.h"
-#include "../helpers/fft.h"
 #include "../parallel.h"
 
 using namespace Nyxus;
@@ -76,10 +74,7 @@ void SaturationFeature::reduce (size_t start, size_t end, std::vector<int>* ptrL
 
 void SaturationFeature::save_value(std::vector<std::vector<double>>& feature_vals) {
     
-    feature_vals[(int)Feature2D::MAX_SATURATION].resize(1);
     feature_vals[(int)Feature2D::MAX_SATURATION][0] = max_saturation_;
-
-    feature_vals[(int)Feature2D::MIN_SATURATION].resize(1);
     feature_vals[(int)Feature2D::MIN_SATURATION][0] = min_saturation_;
 }
 
@@ -87,8 +82,10 @@ std::tuple<double, double> SaturationFeature::get_percent_max_pixels(const Image
 
     readOnlyPixels image = Im.ReadablePixels();
 
-    auto max_pixel = *std::max_element(image.begin(), image.end());
-    auto min_pixel = *std::min_element(image.begin(), image.end());
+    auto [min_pixel_ptr, max_pixel_ptr] = std::minmax_element(image.begin(), image.end());
+
+    auto min_pixel = *min_pixel_ptr;
+    auto max_pixel = *max_pixel_ptr;
 
     double max_pixel_count = 0;
     double min_pixel_count = 0;
