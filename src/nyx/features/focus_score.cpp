@@ -158,14 +158,11 @@ void FocusScoreFeature::laplacian(const std::vector<PixIntens>& image, std::vect
 
 double FocusScoreFeature::variance(const std::vector<double>& image) {
 
-    double image_mean = std::transform_reduce(image.begin(), image.end(), 0.0, std::plus<>(),
-                                  [](double val) { return std::abs(val); }) / image.size();
+    double image_mean = std::transform_reduce(image.begin(), image.end(), 0.0, std::plus<>(), [](double val) { 
+        return std::abs(val); 
+    }) / image.size();
 
-    double sum_squared_diff = 0.0;
-
-    for (const auto& pix: image) {
-        sum_squared_diff += std::pow(std::abs(pix) - image_mean, 2);
-    }
-
-    return sum_squared_diff / (image.size());
+    return std::transform_reduce(image.begin(), image.end(), 0.0, std::plus<>(), [image_mean](double pix) {
+        return std::pow(std::abs(pix) - image_mean, 2);
+    }) / image.size();
 }
