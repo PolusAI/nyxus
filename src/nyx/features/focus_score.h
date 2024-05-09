@@ -48,7 +48,6 @@ private:
 
     static void laplacian(const std::vector<PixIntens>& image, std::vector<double>& out, int n_image, int m_image, int ksize=1);
 
-    static double mean(const std::vector<double>& image);
     static double variance(const std::vector<double>& image);
 
 };
