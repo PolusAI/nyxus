@@ -253,6 +253,87 @@ py::tuple featurize_directory_imp (
     return py::make_tuple();
 }
 
+py::tuple featurize_directory_imq_imp (
+    const std::string &intensity_dir,
+    const std::string &labels_dir,
+    const std::string &file_pattern,
+    const std::string &output_type,
+    const std::string &output_path="")
+{
+    // Check and cache the file pattern
+    if (! theEnvironment.check_2d_file_pattern(file_pattern))
+        throw std::invalid_argument ("Invalid filepattern " + file_pattern);
+    theEnvironment.set_file_pattern(file_pattern);
+
+    // Cache the directories
+    theEnvironment.intensity_dir = intensity_dir;
+    theEnvironment.labels_dir = labels_dir;
+
+    // Set the whole-slide/multi-ROI flag
+    theEnvironment.singleROI = intensity_dir == labels_dir;
+
+    // Read image pairs from the intensity and label directories applying the filepattern
+    std::vector<std::string> intensFiles, labelFiles;
+    int errorCode = Nyxus::read_2D_dataset(
+        intensity_dir,
+        labels_dir,
+        theEnvironment.get_file_pattern(), 
+        "./",   // output directory
+        theEnvironment.intSegMapDir,
+        theEnvironment.intSegMapFile,
+        true,
+        intensFiles, labelFiles);
+
+    if (errorCode)
+       throw std::runtime_error("Error traversing the dataset");
+
+    // We're good to extract features. Reset the feature results cache
+    theResultsCache.clear();
+
+    theEnvironment.separateCsv = false;
+
+    // Process the image sdata
+    int min_online_roi_size = 0;
+
+    theEnvironment.saveOption = [&output_type](){
+        if (output_type == "arrowipc") {
+            return SaveOption::saveArrowIPC;
+	    } else if (output_type == "parquet") {
+            return SaveOption::saveParquet;
+        } else {return SaveOption::saveBuffer;}
+	}();
+
+    errorCode = processDataset(
+        intensFiles,
+        labelFiles,
+        theEnvironment.n_loader_threads,
+        theEnvironment.n_pixel_scan_threads,
+        theEnvironment.n_reduce_threads,
+        min_online_roi_size,
+        theEnvironment.saveOption,
+        output_path);
+
+    if (errorCode)
+        throw std::runtime_error("Error " + std::to_string(errorCode) + " occurred during dataset processing");
+
+    // Output the result
+    if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
+    {
+        auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
+        auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
+        auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+
+        // Shape the user-facing dataframe
+        auto nRows = theResultsCache.get_num_rows();
+        pyStrData = pyStrData.reshape ({nRows, pyStrData.size() / nRows});
+        pyNumData = pyNumData.reshape ({ nRows, pyNumData.size() / nRows });
+
+        return py::make_tuple (pyHeader, pyStrData, pyNumData);
+    } 
+
+    return py::make_tuple();
+}
+
 py::tuple featurize_directory_3D_imp(
     const std::string& intensity_dir,
     const std::string& labels_dir,

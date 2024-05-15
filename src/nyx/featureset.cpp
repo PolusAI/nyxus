@@ -463,14 +463,20 @@ namespace Nyxus
 
 		// Gabor filter based feature:
 		{ "GABOR", Feature2D::GABOR },
+	};
 
-		// Image quality features
-		{"FOCUS_SCORE", Feature2D::FOCUS_SCORE},
-		{"LOCAL_FOCUS_SCORE", Feature2D::LOCAL_FOCUS_SCORE},
-		{"POWER_SPECTRUM_SLOPE", Feature2D::POWER_SPECTRUM_SLOPE},
-		{"MAX_SATURATION", Feature2D::MAX_SATURATION},
-		{"MIN_SATURATION", Feature2D::MIN_SATURATION},
-		{"SHARPNESS", Feature2D::SHARPNESS}
+	// Image quality features
+	std::map <std::string, FeatureIMQ> UserFacingIMQFeatureNames = {
+		{"FOCUS_SCORE", FeatureIMQ::FOCUS_SCORE},
+		{"LOCAL_FOCUS_SCORE", FeatureIMQ::LOCAL_FOCUS_SCORE},
+		{"POWER_SPECTRUM_SLOPE", FeatureIMQ::POWER_SPECTRUM_SLOPE},
+		{"MAX_SATURATION", FeatureIMQ::MAX_SATURATION},
+		{"MIN_SATURATION", FeatureIMQ::MIN_SATURATION},
+		{"SHARPNESS", FeatureIMQ::SHARPNESS}
+	};
+
+	std::map <std::string, FgroupIMQ> UserFacingIMQFeaturegroupNames = {
+		{ "*ALL_IMQ*", FgroupIMQ::ALL_IMQ}
 	};
 
 	std::map <std::string, Fgroup2D> UserFacing2dFeaturegroupNames =
@@ -633,6 +639,28 @@ bool FeatureSet::find_3D_GroupByString (const std::string & grpName, Fgroup3D & 
 	return true;
 }
 
+bool FeatureSet::find_IMQ_FeatureByString (const std::string& featureName, FeatureIMQ& f)
+{
+	auto it_f = Nyxus::UserFacingIMQFeatureNames.find(featureName);
+
+	if (it_f == Nyxus::UserFacingIMQFeatureNames.end())
+		return false;
+
+	f = it_f->second;
+	return true;
+}
+
+bool FeatureSet::find_IMQ_GroupByString (const std::string & grpName, FgroupIMQ & grpCode)
+{
+	auto itr = Nyxus::UserFacingIMQFeaturegroupNames.find (grpName);
+
+	if (itr == Nyxus::UserFacingIMQFeaturegroupNames.end())
+		return false;
+
+	grpCode = itr->second;
+	return true;
+}
+
 std::string FeatureSet::findFeatureNameByCode (Feature2D fcode)
 {
 	// Search
@@ -695,6 +723,23 @@ std::string FeatureSet::findGroupNameByCode (Fgroup3D code)
 
 	// Return the feature name if found
 	if (result != Nyxus::UserFacing3dFeaturegroupNames.end())
+		return result->first;
+
+	// Not found
+	return "UNNAMED_FEATURE_GROUP_" + std::to_string((int)code);
+}
+
+std::string FeatureSet::findGroupNameByCode (FgroupIMQ code)
+{
+	// Search
+	auto result = std::find_if(
+		Nyxus::UserFacingIMQFeaturegroupNames.begin(),
+		Nyxus::UserFacingIMQFeaturegroupNames.end(),
+		[code](const auto& finfo)
+		{ return finfo.second == code; });
+
+	// Return the feature name if found
+	if (result != Nyxus::UserFacingIMQFeaturegroupNames.end())
 		return result->first;
 
 	// Not found

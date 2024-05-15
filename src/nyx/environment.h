@@ -105,6 +105,8 @@ public:
 	// Returns the expected dataset dimensionality based on the command line options
 	int dim() { return dim_; }
 	void set_dim(int d) { dim_ = d; }
+	bool is_imq() {return is_imq_;};
+	void set_imq(bool is_imq) {is_imq_ = is_imq;}
 
 	bool singleROI = false; // Applies to dim()==2: singleROI is set to 'true' parse_cmdline() if labels_dir==intensity_dir
 
@@ -149,6 +151,9 @@ public:
 	void set_pixel_distance(int pixelDistance);
 	size_t get_ram_limit();
 	void expand_featuregroups();
+
+	void expand_IMQ_featuregroups();
+
 
 	static bool gpu_is_available();
 
@@ -235,6 +240,9 @@ private:
 	std::string raw_dim = "";
 	bool expand_2D_featuregroup (const std::string& name);
 	bool expand_3D_featuregroup (const std::string& name);
+	bool expand_IMQ_featuregroup (const std::string & s)
+
+	bool is_imq_ = false;
 
 	// data members implementing exclusive-inclusive timing switch
 	#ifdef CHECKTIMING

@@ -166,6 +166,8 @@ bool Environment::spellcheck_raw_featurelist(const std::string& comma_separated_
 	return success;
 }
 
+
+
 // Returns:
 //		true if s is recognized as a group name
 //		false if not recognized (s may be an individual feature name)
@@ -175,18 +177,6 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_ALL))
 	{
 		Nyxus::theFeatureSet.enableAll();
-
-		// disabled image quality features (will improve disabling if we add this as feature group)
-		auto F = {
-			Feature2D::FOCUS_SCORE,
-			Feature2D::LOCAL_FOCUS_SCORE,
-			Feature2D::POWER_SPECTRUM_SLOPE,
-			Feature2D::MIN_SATURATION,
-			Feature2D::MAX_SATURATION,
-			Feature2D::SHARPNESS
-		};
-		
-		Nyxus::theFeatureSet.disableFeatures(F);
 		return true; 
 	}
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_BUT_GABOR))
@@ -412,6 +402,22 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 	return false;
 }
 
+// Returns:
+//		true if s is recognized as a group name
+//		false if not recognized (s may be an individual feature name)
+//
+bool Environment::expand_IMQ_featuregroup (const std::string & s)
+{
+	if (s == Nyxus::theFeatureSet.findGroupNameByCode(FgroupIMQ::ALL_IMQ))
+	{
+		Nyxus::theFeatureSet.enableAll();
+		return true; 
+	}
+
+	return false;
+}
+
+
 void Environment::expand_featuregroups()
 {
 	theFeatureSet.enableAll(false); 
@@ -419,6 +425,18 @@ void Environment::expand_featuregroups()
 	{
 		// Enforce the feature names to be in uppercase
 		s = Nyxus::toupper(s);
+
+		if (is_imq) {
+			if (expand_IMQ_featuregroup (s)) 
+				return;
+
+			FeatureIMQ a;
+			if (!theFeatureSet.find_IMQ_FeatureByString(s, a))
+				throw std::invalid_argument("Error: '" + s + "' is not a valid 2D feature name \n");
+
+			theFeatureSet.enableFeature (int(a));
+			continue;
+		}
 
 		if (dim() == 2)
 		{
