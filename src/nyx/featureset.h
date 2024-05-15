@@ -600,7 +600,6 @@ public:
 	void enableAllIMQ(bool newStatus = true)
 	{
 		for (int i = int(Nyxus::Feature3D::_COUNT_); i < int(Nyxus::FeatureIMQ::_COUNT_); i++) {
-			std::cerr << "i: " << i << std::endl;
 			m_enabledFeatures[i] = newStatus; 
 		}
 	}

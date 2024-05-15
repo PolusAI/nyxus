@@ -386,12 +386,12 @@ namespace Nyxus
 		if (Stopwatch::inclusive())
 			Stopwatch::reset();
 		#endif		
-		std::cerr << "p1" << std::endl;
+
 		// One-time initialization
 		init_feature_buffers();
 
 		bool write_apache = (saveOption == SaveOption::saveArrowIPC || saveOption == SaveOption::saveParquet);
-		std::cerr << "p2" << std::endl;
+
 		// initialize arrow writer if needed
 		if (write_apache) {
 
@@ -406,7 +406,7 @@ namespace Nyxus
 				return 1;
 			}
 		}
-		std::cerr << "p3" << std::endl;
+
 		bool ok = true;
 
 		// Iterate file pattern-filtered images of the dataset
@@ -417,7 +417,7 @@ namespace Nyxus
 			if (Stopwatch::exclusive())
 				Stopwatch::reset();
 #endif
-			std::cerr << "p4" << std::endl;
+
 			// Clear ROI data cached for the previous image
 			clear_feature_buffers();
 
@@ -436,10 +436,10 @@ namespace Nyxus
 				std::cout << "Terminating\n";
 				return 1;
 			}
-			std::cerr << "p5" << std::endl;
+
 			// Do phased processing: prescan, trivial ROI processing, oversized ROI processing
 			ok = processIntSegImagePair(ifp, lfp, numFastloaderThreads, i, nf);
-			std::cerr << "p6" << std::endl;
+
 			if (ok == false)
 			{
 				std::cout << "processIntSegImagePair() returned an error code while processing file pair " << ifp << " and " << lfp << std::endl;

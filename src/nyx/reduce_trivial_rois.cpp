@@ -301,20 +301,15 @@ namespace Nyxus
 				runParallel(FocusScoreFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 			}
 
-			std::cerr << "before power" << std::endl;
 			if (PowerSpectrumFeature::required(theFeatureSet)) {
 				STOPWATCH("ImageQuality/PowerSpectrum/Rd/#00FFFF", "\t=");
-				std::cerr << "running power" << std::endl;
 				runParallel(PowerSpectrumFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 			}
-			std::cerr << "after power" << std::endl;
-			std::cerr << "before saturation" << std::endl;
+
 			if (SaturationFeature::required(theFeatureSet)) {
-				std::cerr << "running saturation" << std::endl;
 				STOPWATCH("ImageQuality/Saturation/Rd/#00FFFF", "\t=");
 				runParallel(SaturationFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 			}
-			std::cerr << "after saturation" << std::endl;
 
 			if (SharpnessFeature::required(theFeatureSet)) {
 				STOPWATCH("ImageQuality/Sharpness/Rd/#00FFFF", "\t=");
