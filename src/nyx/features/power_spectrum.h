@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <complex>
 #include "../helpers/helpers.h"
 #include "../roi_cache.h"
 #include "image_matrix.h"
@@ -49,5 +50,18 @@ private:
               std::vector<double>& power_sum);
 
     static double power_spectrum_slope(const ImageMatrix& Im);
+
+    static unsigned int next_power_of_2(unsigned int x) {
+        if (x == 0) return 1;
+        --x;
+        x |= x >> 1;
+        x |= x >> 2;
+        x |= x >> 4;
+        x |= x >> 8;
+        x |= x >> 16;
+        return ++x;
+    }
+
+    static void power_of_2_padding(std::vector<std::complex<double>>& complex_image, int rows, int cols);
 };
 

@@ -55,11 +55,11 @@ void PowerSpectrumFeature::parallel_process(std::vector<int>& roi_labels, std::u
 
 void PowerSpectrumFeature::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
-    std::cerr << "power1" << std::endl;
+
 	// Calculate the feature for each batch ROI item 
 	for (auto i = firstitem; i < lastitem; i++)
 	{
-        std::cerr << "power2" << std::endl;
+
 		// Get ahold of ROI's label and cache
 		int roiLabel = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[roiLabel];
@@ -67,11 +67,11 @@ void PowerSpectrumFeature::parallel_process_1_batch(size_t firstitem, size_t las
 		// Skip the ROI if its data is invalid to prevent nans and infs in the output
 		if (r.has_bad_data())
 			continue;
-        std::cerr << "power3" << std::endl;
+
 		// Calculate the feature and save it in ROI's csv-friendly b uffer 'fvals'
 		PowerSpectrumFeature f;
 		f.calculate(r);
-        std::cerr << "here" << std::endl;
+
 		f.save_value(r.fvals);
 	}
 }
@@ -99,7 +99,6 @@ double PowerSpectrumFeature::power_spectrum_slope(const ImageMatrix& Im) {
     rps(image, rows, cols, magnitude, power);
     int num_radii = power.size();
 
-
     std::vector<double> result;
 
     if (std::accumulate(magnitude.begin(), magnitude.end(), 0.) > 0 && 
@@ -108,11 +107,11 @@ double PowerSpectrumFeature::power_spectrum_slope(const ImageMatrix& Im) {
         for (int i = 0; i < magnitude.size(); ++i) {
 
             if (magnitude[i] < 0 || !std::isfinite(std::log(power[i]))) {
-                radii.erase(radii.begin() + i);
-                power.erase(power.begin() + i);
+                if (i < radii.size()) radii.erase(radii.begin() + i);
+                if (i < power.size()) power.erase(power.begin() + i);
             }
         }
-        
+
         if (radii.size() > 1) {
             std::vector<std::vector<double>> A (radii.size(), std::vector<double>(2, 1));
 
@@ -122,7 +121,7 @@ double PowerSpectrumFeature::power_spectrum_slope(const ImageMatrix& Im) {
 
             // apply log to power vector
             std::transform(power.begin(), power.end(), power.begin(), [](double x) { return std::log(x); });
-            
+
             return lstsq(A, power)[0]; // get slope from least squares
         }
     }
@@ -185,13 +184,20 @@ void PowerSpectrumFeature::rps(const std::vector<unsigned int>& image, int rows,
         complex_image.push_back(std::complex<double>(num, 0));
     }
 
-    Fft::transform(complex_image, false);
+    auto rows_po2 = next_power_of_2(rows);
+    auto cols_po2 = next_power_of_2(cols);
+    
+    auto po2 = std::max(rows_po2, cols_po2); // find max power of 2 to make square 
+
+    power_of_2_padding(complex_image, rows, cols);
+
+    std::vector<std::complex<double>> after_fft = fft2d(complex_image, dj::fft_dir::DIR_FWD);
 
     std::vector<int> radii;
     for (auto& num: complex_image) {
         radii.emplace_back(std::floor(std::sqrt(std::abs(num))) + 1);
     }
-    
+
     mag_sum.resize(complex_image.size(), 0);
     power_sum.resize(complex_image.size(), 0);
 
@@ -206,3 +212,19 @@ void PowerSpectrumFeature::rps(const std::vector<unsigned int>& image, int rows,
     }
 }
 
+void PowerSpectrumFeature::power_of_2_padding(std::vector<std::complex<double>>& complex_image, int rows, int cols) {
+    unsigned int max_dim = std::max(rows, cols);
+    unsigned int new_size = next_power_of_2(max_dim);
+    unsigned int new_total_size = new_size * new_size;
+    
+    // Resize the vector to the new total size
+    complex_image.resize(new_total_size, 0);
+
+    // Start from the last element and move backwards to avoid overwriting
+    for (int i = rows - 1; i >= 0; --i) {
+        for (int j = cols - 1; j >= 0; --j) {
+            complex_image[i * new_size + j] = complex_image[i * cols + j];
+        }
+    }
+
+}

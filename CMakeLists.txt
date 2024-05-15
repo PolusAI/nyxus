@@ -211,7 +211,6 @@ set(SOURCE
 	src/nyx/strpat.cpp
 )
 
-
 # CLI
 if(BUILD_CLI)
 	add_executable(nyxus ${SOURCE} src/nyx/main_nyxus.cpp)
