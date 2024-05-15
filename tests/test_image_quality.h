@@ -20,7 +20,7 @@ void test_focus_score_feature() {
     FocusScoreFeature f;
     double truth_value = 2.810e18;
 
-    test_feature(f, Nyxus::Feature2D::FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+    test_feature(f, Nyxus::FeatureIMQ::FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
 
 void test_local_focus_score_feature() {
@@ -28,7 +28,7 @@ void test_local_focus_score_feature() {
     FocusScoreFeature f;
     double truth_value = 1.15292e+18;
 
-    test_feature(f, Nyxus::Feature2D::LOCAL_FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+    test_feature(f, Nyxus::FeatureIMQ::LOCAL_FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
 
 void test_power_spectrum_feature() {
@@ -36,7 +36,7 @@ void test_power_spectrum_feature() {
     PowerSpectrumFeature f;
     double truth_value = 0.0;
 
-    test_feature(f, Nyxus::Feature2D::POWER_SPECTRUM_SLOPE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+    test_feature(f, Nyxus::FeatureIMQ::POWER_SPECTRUM_SLOPE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
 
 
@@ -45,7 +45,7 @@ void test_min_saturation_feature() {
     SaturationFeature f;
     double truth_value = 0.1875;
 
-    test_feature(f, Nyxus::Feature2D::MIN_SATURATION, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+    test_feature(f, Nyxus::FeatureIMQ::MIN_SATURATION, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
 
 
@@ -54,7 +54,7 @@ void test_max_saturation_feature() {
     SaturationFeature f;
     double truth_value = 0.166667;
 
-    test_feature(f, Nyxus::Feature2D::MAX_SATURATION, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+    test_feature(f, Nyxus::FeatureIMQ::MAX_SATURATION, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
 
 
@@ -63,5 +63,5 @@ void test_sharpness_feature() {
     SharpnessFeature f;
     double truth_value = 2.19047;
 
-    test_feature(f, Nyxus::Feature2D::SHARPNESS, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+    test_feature(f, Nyxus::FeatureIMQ::SHARPNESS, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };

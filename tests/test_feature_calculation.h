@@ -25,9 +25,9 @@ void test_truth(const std::vector<double> values, double truth_value, double fra
     ASSERT_TRUE(agrees_gt(values[0], truth_value, frac_tolerance));
 }
 
-template <class T, class S>
+template <class T, class S, class F>
 void test_feature(const T& feature_object,
-                  const Feature2D& feature_name,
+                  const F& feature_name,
                   const int num_feautures, 
                   const NyxusPixel* intensity_data, 
                   const NyxusPixel* mask_data, 
