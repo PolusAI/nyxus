@@ -2,7 +2,7 @@
 
 #include <map>
 #include <vector>
-
+#include <iostream>
 namespace Nyxus
 {
 	/// @brief Feature codes (2D)
@@ -538,7 +538,7 @@ namespace Nyxus
 
 	enum class FeatureIMQ {
 		// Image Quality features
-		FOCUS_SCORE,
+		FOCUS_SCORE = (int) Feature3D::_COUNT_,
 		LOCAL_FOCUS_SCORE,
 		POWER_SPECTRUM_SLOPE,
 		MAX_SATURATION,
@@ -546,11 +546,6 @@ namespace Nyxus
 		SHARPNESS,
 
 		_COUNT_
-	};
-
-	enum class FgroupIMQ
-	{
-		ALL_IMQ=0
 	};
 
 	enum class Fgroup2D
@@ -584,6 +579,13 @@ namespace Nyxus
 		FG3_MOMENTS,
 		_COUNT_
 	};
+
+	enum class FgroupIMQ
+	{
+		ALL_IMQ= (int) Fgroup3D::_COUNT_,
+
+		__COUNT_
+	};
 }
 
 /// @brief Helper class to set and access user feature selection made via the command line or Python interface.
@@ -597,7 +599,10 @@ public:
 	}
 	void enableAllIMQ(bool newStatus = true)
 	{
-		for (int i = 0; i < int(Nyxus::FeatureIMQ::_COUNT_); i++) m_enabledFeatures[i] = newStatus; 
+		for (int i = int(Nyxus::Feature3D::_COUNT_); i < int(Nyxus::FeatureIMQ::_COUNT_); i++) {
+			std::cerr << "i: " << i << std::endl;
+			m_enabledFeatures[i] = newStatus; 
+		}
 	}
 	void disableFeatures(const std::initializer_list<Nyxus::Feature2D>& desiredFeatures)
 	{
@@ -736,7 +741,7 @@ public:
 	std::vector<std::tuple<std::string, int>> getEnabledFeatures();
 
 private:
-	bool m_enabledFeatures [(int) Nyxus::Feature3D::_COUNT_];
+	bool m_enabledFeatures [(int) Nyxus::FeatureIMQ::_COUNT_];
 };
 
 namespace Nyxus

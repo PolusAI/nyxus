@@ -9,14 +9,13 @@
 using namespace Nyxus;
 
 SharpnessFeature::SharpnessFeature() : FeatureMethod("SharpnessFeature") {
-    provide_features({Feature2D::SHARPNESS});
+    provide_features({FeatureIMQ::SHARPNESS});
 }
 
 void SharpnessFeature::calculate(LR& r) {
 
     // Get ahold of the ROI image matrix
     const ImageMatrix& Im0 = r.aux_image_matrix;
-
     sharpness_ = sharpness(Im0);
 }
 
@@ -50,7 +49,7 @@ void SharpnessFeature::parallel_process_1_batch(size_t firstitem, size_t lastite
 
 bool SharpnessFeature::required(const FeatureSet& fs) 
 { 
-    return fs.isEnabled (Feature2D::SHARPNESS); 
+    return fs.isEnabled (FeatureIMQ::SHARPNESS); 
 }
 
 void SharpnessFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
@@ -69,9 +68,7 @@ void SharpnessFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLa
 }
 
 void SharpnessFeature::save_value(std::vector<std::vector<double>>& feature_vals) {
-    feature_vals[(int)Feature2D::SHARPNESS].resize(1);
-    feature_vals[(int)Feature2D::SHARPNESS][0] = sharpness_;
-
+    feature_vals[(int)FeatureIMQ::SHARPNESS][0] = sharpness_;
 }
 
  void SharpnessFeature::remove_padding(std::vector<double>& img, int img_row, int img_col, int row_padding, int col_padding) {

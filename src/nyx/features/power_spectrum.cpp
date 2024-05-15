@@ -14,7 +14,7 @@
 using namespace Nyxus;
 
 PowerSpectrumFeature::PowerSpectrumFeature() : FeatureMethod("PowerSpectrumFeature") {
-    provide_features({Feature2D::POWER_SPECTRUM_SLOPE});
+    provide_features({FeatureIMQ::POWER_SPECTRUM_SLOPE});
 }
 
 void PowerSpectrumFeature::calculate(LR& r) {
@@ -27,7 +27,7 @@ void PowerSpectrumFeature::calculate(LR& r) {
 
 bool PowerSpectrumFeature::required(const FeatureSet& fs) 
 { 
-    return fs.isEnabled (Feature2D::POWER_SPECTRUM_SLOPE); 
+    return fs.isEnabled (FeatureIMQ::POWER_SPECTRUM_SLOPE); 
 }
 
 void PowerSpectrumFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
@@ -55,9 +55,11 @@ void PowerSpectrumFeature::parallel_process(std::vector<int>& roi_labels, std::u
 
 void PowerSpectrumFeature::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
+    std::cerr << "power1" << std::endl;
 	// Calculate the feature for each batch ROI item 
 	for (auto i = firstitem; i < lastitem; i++)
 	{
+        std::cerr << "power2" << std::endl;
 		// Get ahold of ROI's label and cache
 		int roiLabel = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[roiLabel];
@@ -65,17 +67,18 @@ void PowerSpectrumFeature::parallel_process_1_batch(size_t firstitem, size_t las
 		// Skip the ROI if its data is invalid to prevent nans and infs in the output
 		if (r.has_bad_data())
 			continue;
-
+        std::cerr << "power3" << std::endl;
 		// Calculate the feature and save it in ROI's csv-friendly b uffer 'fvals'
 		PowerSpectrumFeature f;
 		f.calculate(r);
+        std::cerr << "here" << std::endl;
 		f.save_value(r.fvals);
 	}
 }
 
 void PowerSpectrumFeature::save_value(std::vector<std::vector<double>>& feature_vals) {
     
-    feature_vals[(int)Feature2D::POWER_SPECTRUM_SLOPE][0] = slope_;
+    feature_vals[(int)FeatureIMQ::POWER_SPECTRUM_SLOPE][0] = slope_;
 
 }
 
@@ -182,21 +185,21 @@ void PowerSpectrumFeature::rps(const std::vector<unsigned int>& image, int rows,
         complex_image.push_back(std::complex<double>(num, 0));
     }
 
-    std::vector<std::complex<double>> after_fft = fft2d(complex_image, dj::fft_dir::DIR_FWD);
+    Fft::transform(complex_image, false);
 
     std::vector<int> radii;
-    for (auto& num: after_fft) {
+    for (auto& num: complex_image) {
         radii.emplace_back(std::floor(std::sqrt(std::abs(num))) + 1);
     }
     
-    mag_sum.resize(after_fft.size(), 0);
-    power_sum.resize(after_fft.size(), 0);
+    mag_sum.resize(complex_image.size(), 0);
+    power_sum.resize(complex_image.size(), 0);
 
     double fft_double_value;
-    for (int i = 0; i < after_fft.size(); ++i) {
+    for (int i = 0; i < complex_image.size(); ++i) {
         auto label_index = radii[i]-2;
-        if (label_index >=0 && label_index < after_fft.size()) {
-            fft_double_value = std::abs(after_fft[i]);
+        if (label_index >=0 && label_index < complex_image.size()) {
+            fft_double_value = std::abs(complex_image[i]);
             mag_sum[label_index] += fft_double_value;
             power_sum[label_index] += fft_double_value * fft_double_value;
         }

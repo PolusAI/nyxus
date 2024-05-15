@@ -12,7 +12,7 @@ class FocusScoreFeature: public FeatureMethod
 {
 public:
 
-    const constexpr static std::initializer_list<Nyxus::Feature2D> featureset = { Nyxus::Feature2D::FOCUS_SCORE,  Nyxus::Feature2D::LOCAL_FOCUS_SCORE};
+    const constexpr static std::initializer_list<Nyxus::FeatureIMQ> featureset = { Nyxus::FeatureIMQ::FOCUS_SCORE,  Nyxus::FeatureIMQ::LOCAL_FOCUS_SCORE};
 
     FocusScoreFeature();
 

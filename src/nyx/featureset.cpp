@@ -794,5 +794,28 @@ std::vector<std::tuple<std::string, int>> FeatureSet::getEnabledFeatures()
 			F.push_back(f);
 		}
 	}
+
+	// Image Quality features
+	for (int i = (int) Nyxus::Feature3D::_COUNT_; i < (int) Nyxus::FeatureIMQ::_COUNT_; i++)
+	{
+		if (m_enabledFeatures[i])
+		{
+			// Find feature i's name
+			std::string fname = "IMQ-feature" + std::to_string(i);	// name feature<number> will indicate a number of a missing user-facing feature name, if any
+			for (const auto& f : Nyxus::UserFacingIMQFeatureNames)
+			{
+				if (f.second == (Nyxus::FeatureIMQ) i)
+				{
+					fname = f.first;
+					break;
+				}
+			}
+
+			// Save the pair
+			std::tuple<std::string, int> f (fname, i);
+			F.push_back(f);
+		}
+	}
+
 	return F;
 }

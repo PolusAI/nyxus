@@ -78,9 +78,11 @@ void initialize_environment(
     bool ibsi,
     float dynamic_range,
     float min_intensity,
-    float max_intensity)
+    float max_intensity,
+    bool is_imq)
 {
-    theEnvironment.set_dim(n_dim),
+    theEnvironment.set_imq(is_imq);
+    theEnvironment.set_dim(n_dim);
     theEnvironment.recognizedFeatureNames = features;
     theEnvironment.set_pixel_distance(neighbor_distance);
     theEnvironment.set_verbosity_level (0);
@@ -179,6 +181,7 @@ py::tuple featurize_directory_imp (
     const std::string &output_type,
     const std::string &output_path="")
 {
+
     // Check and cache the file pattern
     if (! theEnvironment.check_2d_file_pattern(file_pattern))
         throw std::invalid_argument ("Invalid filepattern " + file_pattern);

@@ -72,8 +72,8 @@ void FocusScoreFeature::reduce (size_t start, size_t end, std::vector<int>* ptrL
 
 void FocusScoreFeature::save_value(std::vector<std::vector<double>>& feature_vals) {
     
-    feature_vals[(int)Feature2D::FOCUS_SCORE][0] = focus_score_;
-    feature_vals[(int)Feature2D::LOCAL_FOCUS_SCORE][0] = local_focus_score_;
+    feature_vals[(int)FeatureIMQ::FOCUS_SCORE][0] = focus_score_;
+    feature_vals[(int)FeatureIMQ::LOCAL_FOCUS_SCORE][0] = local_focus_score_;
 
 }
 

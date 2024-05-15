@@ -410,7 +410,7 @@ bool Environment::expand_IMQ_featuregroup (const std::string & s)
 {
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(FgroupIMQ::ALL_IMQ))
 	{
-		Nyxus::theFeatureSet.enableAll();
+		Nyxus::theFeatureSet.enableAllIMQ();
 		return true; 
 	}
 
@@ -426,13 +426,13 @@ void Environment::expand_featuregroups()
 		// Enforce the feature names to be in uppercase
 		s = Nyxus::toupper(s);
 
-		if (is_imq) {
+		if (is_imq()) {
 			if (expand_IMQ_featuregroup (s)) 
 				return;
 
 			FeatureIMQ a;
 			if (!theFeatureSet.find_IMQ_FeatureByString(s, a))
-				throw std::invalid_argument("Error: '" + s + "' is not a valid 2D feature name \n");
+				throw std::invalid_argument("Error: '" + s + "' is not a valid Image Quality feature name \n");
 
 			theFeatureSet.enableFeature (int(a));
 			continue;

@@ -24,7 +24,7 @@ bool LR::nontrivial_roi (size_t memory_limit)
 size_t LR::get_ram_footprint_estimate()
 {
 	size_t sz =
-		int(Nyxus::Feature3D::_COUNT_) * 10 * sizeof(double) + // feature values (approximately 10 each)
+		int(Nyxus::FeatureIMQ::_COUNT_) * 10 * sizeof(double) + // feature values (approximately 10 each)
 		aabb.get_width() * aabb.get_height() * sizeof(Pixel2) +	// image matrix
 		aux_area * sizeof(Pixel2) +	// raw pixels
 		(Nyxus::uniqueLabels.size() - 1) * sizeof(int);	// neighbors
@@ -34,7 +34,7 @@ size_t LR::get_ram_footprint_estimate()
 size_t LR::get_ram_footprint_estimate_3D()
 {
 	size_t sz =
-		int(Nyxus::Feature3D::_COUNT_) * 10 * sizeof(double) + // feature values (approximately 10 each)
+		int(Nyxus::FeatureIMQ::_COUNT_) * 10 * sizeof(double) + // feature values (approximately 10 each)
 		aabb.get_width() * aabb.get_height() * aabb.get_z_depth() * sizeof(Pixel2) +	// image matrix
 		aux_area * sizeof(Pixel2) +	// raw pixels
 		(Nyxus::uniqueLabels.size() - 1) * sizeof(int);	// neighbors
@@ -91,7 +91,7 @@ std::vector<StatsReal> LR::get_fvals (int fcode)
 
 void LR::initialize_fvals()
 {
-	fvals.resize ((int)Nyxus::Feature3D::_COUNT_);
+	fvals.resize ((int)Nyxus::FeatureIMQ::_COUNT_);
 	for (auto& valVec : fvals)
 		valVec.push_back(0.0);
 }

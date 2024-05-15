@@ -240,7 +240,7 @@ private:
 	std::string raw_dim = "";
 	bool expand_2D_featuregroup (const std::string& name);
 	bool expand_3D_featuregroup (const std::string& name);
-	bool expand_IMQ_featuregroup (const std::string & s)
+	bool expand_IMQ_featuregroup (const std::string & s);
 
 	bool is_imq_ = false;
 

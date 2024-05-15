@@ -192,7 +192,8 @@ class Nyxus:
             ibsi,
             dynamic_range,
             min_intensity,
-            max_intensity)
+            max_intensity,
+            False)
         
         self.set_gabor_feature_params(
             kersize = gabor_kersize,
@@ -943,7 +944,8 @@ class Nyxus3D:
             ibsi,
             dynamic_range,
             min_intensity,
-            max_intensity)
+            max_intensity,
+            False)
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
@@ -1339,7 +1341,8 @@ class ImageQuality:
             ibsi,
             dynamic_range,
             min_intensity,
-            max_intensity)
+            max_intensity,
+            True)
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
