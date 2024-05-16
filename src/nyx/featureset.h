@@ -2,7 +2,7 @@
 
 #include <map>
 #include <vector>
-#include <iostream>
+
 namespace Nyxus
 {
 	/// @brief Feature codes (2D)
