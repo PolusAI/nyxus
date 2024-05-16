@@ -73,7 +73,7 @@ class Nyxus:
     pixels_per_micron: float (optional, default 1.0)
         Specify the image resolution in terms of pixels per micron for unit conversion
         of non-unitless features.
-    coarse_gray_depth: int (optional, default 256)
+    coarse_gray_depth: int (optional, default 64)
         Custom number of levels in grayscale denoising used in texture features.
     n_feature_calc_threads: int (optional, default 4)
         Number of threads to use for feature calculation parallelization purposes.
@@ -141,7 +141,7 @@ class Nyxus:
         features = features
         neighbor_distance = kwargs.get('neighbor_distance', 5)
         pixels_per_micron = kwargs.get('pixels_per_micron', 1.0)
-        coarse_gray_depth = kwargs.get('coarse_gray_depth', 256)
+        coarse_gray_depth = kwargs.get('coarse_gray_depth', 64)
         n_feature_calc_threads = kwargs.get('n_feature_calc_threads', 4)
         n_loader_threads = kwargs.get('n_loader_threads', 1)
         using_gpu = kwargs.get('using_gpu', -1)
@@ -164,7 +164,7 @@ class Nyxus:
             raise ValueError("Pixels per micron must be greater than zero.")
 
         if coarse_gray_depth <= 0:
-            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=256) must be non-negative.")
+            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=64) must be non-negative.")
 
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
@@ -837,7 +837,7 @@ class Nyxus3D:
             features = [["*ALL*"]],
             neighbor_distance = 5,
             pixels_per_micron = 1.0,
-            coarse_gray_depth= 256, 
+            coarse_gray_depth= 64, 
             n_feature_calc_threads = 4,
             using_gpu = -1,
             ibsi = False,
@@ -865,7 +865,7 @@ class Nyxus3D:
     pixels_per_micron: float (optional, default 1.0)
         Specify the image resolution in terms of pixels per micron for unit conversion
         of non-unitless features.
-    coarse_gray_depth: int (optional, default 256)
+    coarse_gray_depth: int (optional, default 64)
         Custom number of levels in grayscale denoising used in texture features.
     n_feature_calc_threads: int (optional, default 4)
         Number of threads to use for feature calculation parallelization purposes.
@@ -904,7 +904,7 @@ class Nyxus3D:
         features = features
         neighbor_distance = kwargs.get('neighbor_distance', 5)
         pixels_per_micron = kwargs.get('pixels_per_micron', 1.0)
-        coarse_gray_depth = kwargs.get('coarse_gray_depth', 256)
+        coarse_gray_depth = kwargs.get('coarse_gray_depth', 64)
         n_feature_calc_threads = kwargs.get('n_feature_calc_threads', 4)
         using_gpu = kwargs.get('using_gpu', -1)
         ibsi = kwargs.get('ibsi', False)
@@ -919,7 +919,7 @@ class Nyxus3D:
             raise ValueError("Pixels per micron must be greater than zero.")
 
         if coarse_gray_depth <= 0:
-            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=256) must be non-negative.")
+            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=64) must be non-negative.")
 
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")

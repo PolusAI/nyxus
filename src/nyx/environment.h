@@ -13,8 +13,6 @@
 #include "roi_blacklist.h"
 #include "save_option.h"
 
-
-
 #ifdef USE_GPU
 	#include <cuda_runtime.h>
 #endif
@@ -131,9 +129,6 @@ public:
 	std::string pixel_distance = "";
 	int n_pixel_distance = 5;
 
-//?????	std::string rawGlcmAngles = "";
-//?????	std::vector<int> glcmAngles = {0, 45, 90, 135};
-
 	std::string rawVerbosity = "";	// 'verbosity_level' is inherited from BasicEnvironment
 
 	std::string rawOnlineStatsThresh = "";
@@ -224,7 +219,7 @@ private:
 
 	int floating_point_precision = 10;	
 
-	int coarse_grayscale_depth = 256;
+	int coarse_grayscale_depth = 64;
 	std::string raw_coarse_grayscale_depth = "";
 
 	// data members implementing RAMLIMIT

@@ -8,7 +8,7 @@
 
 using namespace Nyxus;
 
-int GLSZMFeature::n_levels = 8;
+int GLSZMFeature::n_levels = 0;
 
 GLSZMFeature::GLSZMFeature() : FeatureMethod("GLSZMFeature")
 {

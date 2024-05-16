@@ -193,7 +193,7 @@ void GLRLMFeature::calculate(LR& r)
 				Z.push_back(clu);
 			}
 
-		// count non-zero pixels	??? isn't it ==ROI area ?
+		// count non-zero pixels
 		int count = 0;
 
 		for (const auto& px : r.aux_image_matrix.ReadablePixels())

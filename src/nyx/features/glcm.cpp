@@ -462,7 +462,7 @@ void GLCMFeature::calculateCoocMatAtAngle(
 	for (int row = 0; row < h; row++)
 		for (int col = 0; col < w; col++)
 		{
-			if (row + dy >= 0 && row + dy < h && col + dx >= 0 && col + dx < w) //??? && graysdata.yx(row + dy, col + dx))
+			if (row + dy >= 0 && row + dy < h && col + dx >= 0 && col + dx < w) 
 			{
 				// Raw intensities
 				PixIntens lvl_b = D.yx(row, col),

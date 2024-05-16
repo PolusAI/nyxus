@@ -126,7 +126,7 @@ void Environment::show_cmdline_help()
 		<< "\t\t" << OPT << PXLDIST << "=<number of pixels as neighbor features radius> \n"
 		<< "\t\t\tDefault: 5 \n"
 		<< "\t\t" << OPT << COARSEGRAYDEPTH << "=<custom number of grayscale levels> \n"
-		<< "\t\t\tDefault: 256 \n"
+		<< "\t\t\tDefault: 64 \n"
 		<< "\t\t" << OPT << GLCMANGLES << "=<one or more comma separated rotation angles from set {0, 45, 90, and 135}> \n"
 		<< "\t\t\tDefault: 0,45,90,135 \n"
 		<< "\t\t" << OPT << VERBOSITY << "=<levels of verbosity 0 (silence), 1 (minimum output), 2 (1 + timing), 3 (2 + roi metrics + more timing), 4 (3 + diagnostic information)> \n"
