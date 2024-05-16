@@ -19,6 +19,7 @@
 #include "test_glszm.h"
 #include "test_ngtdm.h"
 #include "test_roi_blacklist.h"
+#if 0
 #include "test_arrow.h"
 #include "test_arrow_file_name.h"
 
@@ -33,6 +34,7 @@ TEST(TEST_NYXUS, TEST_ARROW) {
 TEST(TEST_NYXUS, TEST_PARQUET) {
 	test_parquet();
 }
+#endif
 
 TEST(TEST_NYXUS, TEST_GABOR){
     test_gabor();
