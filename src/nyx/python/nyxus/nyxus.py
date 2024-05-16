@@ -730,13 +730,13 @@ class Nyxus:
                 else:
                     environment_params[key] = value
                 
-                
         if (len(gabor_params) > 0):
             self.set_gabor_feature_params(**gabor_params)
         
         if (len(environment_params) > 0):
             self.set_environment_params(**environment_params)
-    
+
+
     def get_params(self, *args):
         """Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
         

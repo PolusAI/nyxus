@@ -3,6 +3,15 @@
 
 using namespace Nyxus;
 
+
+#define MOMENTS_OF_BINARY
+#ifdef MOMENTS_OF_BINARY
+    #define INTEN(x) 1.0
+#else
+    #define INTEN(x) x
+#endif
+
+
 ImageMomentsFeature::ImageMomentsFeature() : FeatureMethod("ImageMomentsFeature")
 {
     provide_features (ImageMomentsFeature::featureset);
@@ -173,7 +182,7 @@ double ImageMomentsFeature::moment (const pixcloud& cloud, int p, int q)
 {
     double q_ = q, p_ = p, sum = 0;
     for (auto& pxl : cloud)
-        sum += double(pxl.inten) * pow(double(pxl.x-baseX), p_) * pow(double(pxl.y-baseY), q_);
+        sum += INTEN(double(pxl.inten)) * pow(double(pxl.x-baseX), p_) * pow(double(pxl.y-baseY), q_);
     return sum;
 }
 
@@ -211,7 +220,7 @@ double ImageMomentsFeature::centralMom (const pixcloud & cloud, int p, int q)
 {
     double sum = 0;
     for (auto& pxl : cloud)
-        sum += double(pxl.inten) * pow(double(pxl.x-baseX) - originOfX, p) * pow(double(pxl.y-baseY) - originOfY, q);
+        sum += INTEN(double(pxl.inten)) * pow(double(pxl.x-baseX) - originOfX, p) * pow(double(pxl.y-baseY) - originOfY, q);
     return sum;
 }
 
@@ -318,7 +327,7 @@ std::tuple<double, double, double, double, double, double, double> ImageMomentsF
         3 * pow(_21 + _03, 2)) - (_30 - 3 * _12) * (_21 + _03) *
         (3 * pow(_30 + _12, 2) - pow(_21 + _03, 2));
 
-    return { h1, h2, h3, h4, h5, h6, h7 };
+    return { h1, h2, h3, h4, h5,h6, h7 };
 }
 
 void ImageMomentsFeature::calcHuInvariants (const pixcloud & cloud)

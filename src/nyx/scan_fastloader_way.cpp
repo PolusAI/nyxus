@@ -91,6 +91,23 @@ namespace Nyxus
 		}  
 	}
 
+	std::string group_thousands (unsigned int x)
+	{
+		std::string raw = std::to_string(x);
+		std::string s = "";
+		int n = raw.length();
+		for (int i = 0; i < n; i++)
+		{
+			char ch = raw[n-1-i];
+			std::string c = std::to_string(ch);
+			if (i > 0 && i % 3 == 0)
+				s = c + "," + s;
+			else
+				s = c + s;
+		}
+		return s;
+	}
+
 	bool processIntSegImagePair (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, int filepair_index, int tot_num_filepairs)
 	{
 		std::vector<int> trivRoiLabels, nontrivRoiLabels;
@@ -101,24 +118,37 @@ namespace Nyxus
 
 			{ STOPWATCH("Image scan1/ImgScan1/Scan1/lightsteelblue", "\t=");
 
-				// Report the amount of free RAM
-				unsigned long long freeRamAmt = Nyxus::getAvailPhysMemory();
-				static unsigned long long initial_freeRamAmt = 0;
-				if (initial_freeRamAmt == 0)
-					initial_freeRamAmt = freeRamAmt;
-				double memDiff = double(freeRamAmt) - double(initial_freeRamAmt);
-				VERBOSLVL1(std::cout << std::setw(15) << freeRamAmt << " bytes free (" << "consumed=" << memDiff << ") ";)
-
-					// Display (1) dataset progress info and (2) file pair info
-					int digits = 2, k = std::pow(10.f, digits);
-				float perCent = float(filepair_index * 100 * k / tot_num_filepairs) / float(k);
-				VERBOSLVL1(std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << intens_fpath << " SEG: " << label_fpath << "\n";)
+				VERBOSLVL2(
+					// Report the amount of free RAM
+					unsigned long long freeRamAmt = Nyxus::getAvailPhysMemory();
+					static unsigned long long initial_freeRamAmt = 0;
+					if (initial_freeRamAmt == 0)
+						initial_freeRamAmt = freeRamAmt;
+					unsigned long long memDiff = 0;
+					char sgn;
+					if (freeRamAmt > initial_freeRamAmt)
+					{
+						memDiff = freeRamAmt - initial_freeRamAmt;
+						sgn = '+';
+					}
+					else // system memory can be freed by other processes
+					{
+						memDiff = initial_freeRamAmt - freeRamAmt;
+						sgn = '-';
+					}
+					std::cout << std::setw(15) << freeRamAmt << " b free (" << sgn << memDiff << ") ";
+					)
+				// Display (1) dataset progress info and (2) file pair info
+				int digits = 2, k = std::pow(10.f, digits);
+				float perCent = float(filepair_index) * 100. * k / float(tot_num_filepairs) / float(k);
+				VERBOSLVL1 (std::cout << "[ " << filepair_index << " = " << std::setw(digits + 2) << perCent << "% ]\t" << intens_fpath << "\n")
+				VERBOSLVL2 (std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << intens_fpath << " SEG: " << label_fpath << "\n")
 			}
 
 			{ STOPWATCH("Image scan2a/ImgScan2a/Scan2a/lightsteelblue", "\t=");
 
 				// Phase 1: gather ROI metrics
-				VERBOSLVL1(std::cout << "Gathering ROI metrics\n");
+				VERBOSLVL2(std::cout << "Gathering ROI metrics\n");
 				bool okGather = gatherRoisMetrics(intens_fpath, label_fpath, num_FL_threads);	// Output - set of ROI labels, label-ROI cache mappings
 				if (!okGather)
 				{
@@ -126,6 +156,12 @@ namespace Nyxus
 					std::cerr << msg;
 					throw (std::runtime_error(msg));
 					return false;
+				}
+
+				// Any ROIs in this slide? (Such slides may exist, it's normal.)
+				if (uniqueLabels.size() == 0)
+				{
+					return true;
 				}
 
 				// Check presence of zero-background
@@ -196,14 +232,14 @@ namespace Nyxus
 		// Phase 2: process trivial-sized ROIs
 		if (trivRoiLabels.size())
 		{
-			VERBOSLVL1(std::cout << "Processing trivial ROIs\n";)
+			VERBOSLVL2(std::cout << "Processing trivial ROIs\n";)
 			processTrivialRois (trivRoiLabels, intens_fpath, label_fpath, num_FL_threads, theEnvironment.get_ram_limit());
 		}
 
 		// Phase 3: process nontrivial (oversized) ROIs, if any
 		if (nontrivRoiLabels.size())
 		{
-			VERBOSLVL1(std::cout << "Processing oversized ROIs\n";)
+			VERBOSLVL2(std::cout << "Processing oversized ROIs\n";)
 			processNontrivialRois (nontrivRoiLabels, intens_fpath, label_fpath, num_FL_threads);
 		}
 
@@ -232,7 +268,7 @@ namespace Nyxus
 
 			{ STOPWATCH("Image scan2a/ImgScan2a/Scan2a/lightsteelblue", "\t=");
 				// Phase 1: gather ROI metrics
-				VERBOSLVL1(std::cout << "Gathering ROI metrics\n");
+				VERBOSLVL2(std::cout << "Gathering ROI metrics\n");
 				bool okGather = gatherRoisMetrics_3D (intens_fpath, label_fpath, z_indices);
 				if (!okGather)
 				{
@@ -309,14 +345,14 @@ namespace Nyxus
 		// Phase 2: process trivial-sized ROIs
 		if (trivRoiLabels.size())
 		{
-			VERBOSLVL1(std::cout << "Processing trivial ROIs\n";)
+			VERBOSLVL2(std::cout << "Processing trivial ROIs\n";)
 			processTrivialRois_3D (trivRoiLabels, intens_fpath, label_fpath, theEnvironment.get_ram_limit(), z_indices);
 		}
 
 		// Phase 3: process nontrivial (oversized) ROIs, if any
 		if (nontrivRoiLabels.size())
 		{
-			VERBOSLVL1(std::cout << "Processing oversized ROIs\n";)
+			VERBOSLVL2(std::cout << "Processing oversized ROIs\n";)
 			processNontrivialRois(nontrivRoiLabels, intens_fpath, label_fpath, 1/*num_FL_threads*/);
 		}
 

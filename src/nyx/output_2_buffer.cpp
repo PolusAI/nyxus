@@ -59,7 +59,7 @@ namespace Nyxus
 				if (glcmFeature && nonAngledGlcmFeature == false)
 				{
 					// Populate with angles
-					for (auto ang : theEnvironment.glcmAngles)
+					for (auto ang : theEnvironment.glcmOptions.glcmAngles)
 					{
 						std::string col = fn + "_" + std::to_string(ang);
 						rescache.add_to_header(col);

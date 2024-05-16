@@ -34,6 +34,12 @@
 
 using namespace Nyxus;
 
+#ifdef ZERNIKE_OF_BINARY
+#define INTEN(x) x != 0 ? 1.0 : 0
+#else
+#define INTEN(x) x
+#endif
+
 ZernikeFeature::ZernikeFeature() : FeatureMethod("ZernikeFeature")
 {
 	provide_features ({ Feature2D::ZERNIKE2D });
@@ -211,7 +217,7 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 		{
 			if (std::isnan((double)I_pix_plane.yx(j, i))) 
 				continue; //MM
-			intensity = I_pix_plane.yx(j, i);
+			intensity = INTEN(I_pix_plane.yx(j,i));
 			sum += intensity;
 			moment10 += (i + 1) * intensity;
 			moment00 += intensity;
@@ -281,7 +287,7 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 			// compute contribution to Zernike moments for all 
 			// orders and repetitions by the pixel at (i,j)
 			// In the paper, the intensity was the raw image intensity
-			f = I_pix_plane.yx(j, i) / sum;
+			f = INTEN(I_pix_plane.yx(j,i)) / sum;
 
 			Rnmp2 = Rnm2 = 0;
 			for (n = 0; n <= L; n++) 

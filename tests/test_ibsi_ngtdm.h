@@ -21,17 +21,18 @@ static std::unordered_map<std::string, float> IBSI_ngtdm_values {
     {"NGTDM_STRENGTH", 2.88}
 };
 
-void test_ibsi_ngtdm_feature(const Feature2D& feature_, const std::string& feature_name) {
+void test_ibsi_ngtdm_feature (const Feature2D& feature_, const std::string& feature_name) 
+{
     int feature = int(feature_);
 
     double total = 0;
     
     LR roidata;
-    // Calculate features
     NGTDMFeature f;
     Environment::ibsi_compliance = true;
 
     // image 1
+
     load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
     ASSERT_NO_THROW(f.calculate(roidata));
 
@@ -44,9 +45,8 @@ void test_ibsi_ngtdm_feature(const Feature2D& feature_, const std::string& featu
     total += roidata.fvals[feature][0];
     
     // image 2
-    // Calculate features
+
     LR roidata1;
-    // Calculate features
     NGTDMFeature f1;
     Environment::ibsi_compliance = true;
 
@@ -63,10 +63,8 @@ void test_ibsi_ngtdm_feature(const Feature2D& feature_, const std::string& featu
     total += roidata1.fvals[feature][0];
 
     // image 3
-    // Calculate features
 
     LR roidata2;
-    // Calculate features
     NGTDMFeature f2;
     Environment::ibsi_compliance = true;
 
@@ -83,10 +81,8 @@ void test_ibsi_ngtdm_feature(const Feature2D& feature_, const std::string& featu
     total += roidata2.fvals[feature][0];
 
     // image 4
-    // Calculate features
     
     LR roidata3;
-    // Calculate features
     NGTDMFeature f3;
     Environment::ibsi_compliance = true;
 
@@ -103,7 +99,9 @@ void test_ibsi_ngtdm_feature(const Feature2D& feature_, const std::string& featu
     // Check the feature values vs ground truth
     total += roidata3.fvals[feature][0];
 
-    ASSERT_TRUE(agrees_gt(total/4, IBSI_ngtdm_values[feature_name], 100.));
+    // Verdict
+    double ave = total / 4;
+    ASSERT_TRUE(agrees_gt(ave, IBSI_ngtdm_values[feature_name], 100.));
 }
 
 void test_ibsi_ngtdm_coarseness()

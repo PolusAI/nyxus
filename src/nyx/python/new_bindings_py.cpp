@@ -696,6 +696,7 @@ bool arrow_is_enabled_imp() {
     return theEnvironment.arrow_is_enabled();
 }
 
+
 PYBIND11_MODULE(backend, m)
 {
     m.doc() = "Nyxus";

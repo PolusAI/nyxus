@@ -9,6 +9,9 @@
 
 using namespace Nyxus;
 
+int GLRLMFeature::n_levels = 0;
+
+
 GLRLMFeature::GLRLMFeature() : FeatureMethod("GLRLMFeature")
 {
 	provide_features(GLRLMFeature::featureset);
@@ -21,8 +24,7 @@ void GLRLMFeature::calculate(LR& r)
 
 	auto minI = r.aux_min,
 		maxI = r.aux_max;
-	const ImageMatrix& im = r.aux_image_matrix;
-
+	
 	//==== Check if the ROI is degenerate (equal intensity => no texture)
 	if (minI == maxI)
 	{
@@ -48,22 +50,15 @@ void GLRLMFeature::calculate(LR& r)
 		return;
 	}
 
-	//--debug-- im.print("initial ROI\n");
-
 	//==== Make a list of intensity clusters (zones)
 	using ACluster = std::pair<PixIntens, int>;
 	using AngleZones = std::vector<ACluster>;
-	//--unnec--	std::vector<AngleZones> angles_Z;
 
 	//==== While scanning clusters, learn unique intensities 
 	using AngleUniqInte = std::unordered_set<PixIntens>;
-	//--unnec--	std::vector<AngleUniqInte>  angles_U;
-
-	// Prepare ROI's intensity range
-	PixIntens piRange = r.aux_max - r.aux_min;
 
 	//==== Iterate angles 0,45,90,135
-	for (int angleIdx = 0; angleIdx < 4; angleIdx++)
+	for (int angleIdx = 0; angleIdx < Na; angleIdx++)
 	{
 		// Clusters at angle 'angleIdx'
 		AngleZones Z;
@@ -75,20 +70,43 @@ void GLRLMFeature::calculate(LR& r)
 		int maxZoneArea = 0;
 
 		// Copy the image matrix. We'll use it to maintain state of cluster scanning 
-		auto M = im;
-		pixData& D = M.WriteablePixels();
+		// auto M = im;
+		ImageMatrix M;
+		M.allocate (r.aux_image_matrix.width, r.aux_image_matrix.height);
+
+		pixData & D = M.WriteablePixels();
 
 		// Squeeze the intensity range
-		unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+		auto greyInfo = theEnvironment.get_coarse_gray_depth();
+		auto greyInfo_localFeature = GLRLMFeature::n_levels;
+		if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
+			greyInfo = greyInfo_localFeature;
+		if (Nyxus::theEnvironment.ibsi_compliance)
+			greyInfo = 0;
 
-		for (size_t i = 0; i < D.size(); i++)
-			D[i] = Nyxus::to_grayscale(D[i], r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+		auto& imR = r.aux_image_matrix.ReadablePixels();
+		bin_intensities (D, imR, r.aux_min, r.aux_max, greyInfo);
 
+		// allocate intensities matrix
+		if (ibsi_grey_binning(greyInfo))
+		{
+			auto n_ibsi_levels = *std::max_element(D.begin(), D.end());
+			I.resize(n_ibsi_levels);
+			for (int i = 0; i < n_ibsi_levels; i++)
+				I[i] = i + 1;
+		}
+		else // radiomics and matlab
+		{
+			std::unordered_set<PixIntens> U(D.begin(), D.end());
+			U.erase(0);	// discard intensity '0'
+			I.assign(U.begin(), U.end());
+			std::sort(I.begin(), I.end());
+		}
 
-		// Number of zones
+		// Find zones
 		const int VISITED = -1;
 
-		// Scan the image and check non-blank pixels' clusters
+		// --- Scan the image and check non-blank pixels' clusters
 		for (int row = 0; row < M.height; row++)
 			for (int col = 0; col < M.width; col++)
 			{
@@ -112,8 +130,6 @@ void GLRLMFeature::calculate(LR& r)
 						D.yx(y, x + 1) = VISITED;
 						zoneArea++;
 
-						//--debug-- M.print("After x+1,y");
-
 						// Remember this pixel
 						history.push_back({ x,y });
 						// Advance 
@@ -128,8 +144,6 @@ void GLRLMFeature::calculate(LR& r)
 						D.yx(y + 1, x + 1) = VISITED;
 						zoneArea++;
 
-						//--debug-- M.print("After x+1,y+1");
-
 						history.push_back({ x,y });
 						x = x + 1;
 						y = y + 1;
@@ -142,8 +156,6 @@ void GLRLMFeature::calculate(LR& r)
 						D.yx(y + 1, x) = VISITED;
 						zoneArea++;
 
-						//--debug-- M.print("After x,y+1");
-
 						history.push_back({ x,y });
 						y = y + 1;
 						continue;
@@ -154,8 +166,6 @@ void GLRLMFeature::calculate(LR& r)
 					{
 						D.yx(y + 1, x - 1) = VISITED;
 						zoneArea++;
-
-						//--debug-- M.print("After x-1,y+1");
 
 						history.push_back({ x,y });
 						x = x - 1;
@@ -175,10 +185,6 @@ void GLRLMFeature::calculate(LR& r)
 					break;
 				}
 
-				// Done scanning a cluster. Perform 3 actions:
-				// --1
-				U.insert(pi);
-
 				// --2
 				maxZoneArea = std::max(maxZoneArea, zoneArea);
 
@@ -187,35 +193,39 @@ void GLRLMFeature::calculate(LR& r)
 				Z.push_back(clu);
 			}
 
-		// count non-zero pixels
+		// count non-zero pixels	??? isn't it ==ROI area ?
 		int count = 0;
 
-		for (const auto& px : im.ReadablePixels()) {
-			if (px != 0) ++count;
+		for (const auto& px : r.aux_image_matrix.ReadablePixels())
+		{
+			if (px != 0) 
+				++count;
 		}
 
-		//==== Fill the zone matrix
+		//==== Create a zone matrix
 
-		int Ng = Environment::ibsi_compliance ?
-			*std::max_element(std::begin(im.ReadablePixels()), std::end(im.ReadablePixels())) : (decltype(Ng))U.size();
+		int Ng = Environment::ibsi_compliance ? *std::max_element(I.begin(), I.end()) : I.size();
 		int Nr = maxZoneArea;
-		int Nz = (decltype(Nz))Z.size();
+		int Nz = (int) Z.size();
 		int Np = count;
-
-		// --Set to vector to be able to know each intensity's index
-		std::vector<PixIntens> I(U.begin(), U.end());
-		std::sort(I.begin(), I.end());	// Optional
 
 		// --allocate the matrix
 		P_matrix P;
-		P.allocate(Nr, Ng);
+		P.allocate (Nr, Ng);	// w = Nr, h = card(I) aka Ng
 
 		// --iterate zones and fill the matrix
 		for (auto& z : Z)
 		{
-			// row
-			auto iter = std::find(I.begin(), I.end(), z.first);
-			int row = (Environment::ibsi_compliance) ? z.first - 1 : int(iter - I.begin());
+			auto inten = z.first;
+			// row (grey level)
+			int row = -1;
+			if (Environment::ibsi_compliance)
+				row = inten - 1;
+			else
+			{
+				auto lower = std::lower_bound (I.begin(), I.end(), inten);	// enjoy sorted vector 'I'
+				row = int(lower - I.begin());	// intensity index in array of unique intensities 'I'
+			}
 			// col
 			int col = z.second - 1;	// 0-based => -1
 			// update the matrix
@@ -228,18 +238,17 @@ void GLRLMFeature::calculate(LR& r)
 		angles_Ng.push_back(Ng);
 		angles_Nr.push_back(Nr);
 		angles_Np.push_back(Np);
-		//--unnec-- angles_U.push_back (U);
-		//--unnec-- angles_Z.push_back (Z);
 
 		double sum = 0;
-		for (int i = 1; i <= Ng; ++i) {
-			for (int j = 1; j <= Nr; ++j) {
+		for (int i = 1; i <= P.height(); ++i) 
+			for (int j = 1; j <= P.width(); ++j) 
 				sum += P.matlab(i, j);
-			}
-		}
+		sum = 0;
+		for (auto p : P)
+			sum += p;
 
 		sum_p.push_back(sum);
-	}
+	} //- angles
 
 	calc_SRE(angled_SRE);
 	calc_LRE(angled_LRE);
@@ -267,6 +276,7 @@ void GLRLMFeature::clear_buffers()
 	angles_Np.clear();
 	angles_P.clear();
 	sum_p.clear();
+	I.clear();
 
 	angled_SRE.clear();
 	angled_LRE.clear();
@@ -581,13 +591,6 @@ void GLRLMFeature::calc_SRE(AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
-	if (bad_roi_data)
-	{
-		af.resize(4, BAD_ROI_FVAL);
-		return;
-	}
-
 	for (int ai = 0; ai < 4; ai++)
 	{
 		if (sum_p[ai] == 0) {
@@ -622,13 +625,6 @@ void GLRLMFeature::calc_LRE(AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
-	if (bad_roi_data)
-	{
-		af.resize(4, BAD_ROI_FVAL);
-		return;
-	}
-
 	for (int ai = 0; ai < 4; ai++)
 	{
 		if (sum_p[ai] == 0) {
@@ -660,13 +656,6 @@ void GLRLMFeature::calc_LRE(AngledFtrs& af)
 void GLRLMFeature::calc_GLN(AngledFtrs& af)
 {
 	af.clear();
-
-	// Prevent using bad data 
-	if (bad_roi_data)
-	{
-		af.resize(4, BAD_ROI_FVAL);
-		return;
-	}
 
 	for (int ai = 0; ai < 4; ai++)
 	{
@@ -702,13 +691,6 @@ void GLRLMFeature::calc_GLNN(AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
-	if (bad_roi_data)
-	{
-		af.resize(4, BAD_ROI_FVAL);
-		return;
-	}
-
 	for (int ai = 0; ai < 4; ai++)
 	{
 		if (sum_p[ai] == 0) {
@@ -742,13 +724,6 @@ void GLRLMFeature::calc_GLNN(AngledFtrs& af)
 void GLRLMFeature::calc_RLN(AngledFtrs& af)
 {
 	af.clear();
-
-	// Prevent using bad data 
-	if (bad_roi_data)
-	{
-		af.resize(4, BAD_ROI_FVAL);
-		return;
-	}
 
 	for (int ai = 0; ai < 4; ai++)
 	{
@@ -784,13 +759,6 @@ void GLRLMFeature::calc_RLNN(AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
-	if (bad_roi_data)
-	{
-		af.resize(4, BAD_ROI_FVAL);
-		return;
-	}
-
 	for (int ai = 0; ai < 4; ai++)
 	{
 		if (sum_p[ai] == 0) {
@@ -825,14 +793,6 @@ void GLRLMFeature::calc_RP(AngledFtrs& af)
 {
 	af.clear();
 
-
-	// Prevent using bad data 
-	if (bad_roi_data)
-	{
-		af.resize(4, BAD_ROI_FVAL);
-		return;
-	}
-
 	for (int ai = 0; ai < 4; ai++)
 	{
 		if (sum_p[ai] == 0) {
@@ -853,21 +813,10 @@ void GLRLMFeature::calc_GLV(AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
-	if (bad_roi_data)
-	{
-		af.resize(4, BAD_ROI_FVAL);
-		return;
-	}
-
 	for (int ai = 0; ai < 4; ai++)
 	{
-		if (sum_p[ai] == 0) {
-			af.push_back(0.0);
-			continue;
-		}
-
-		if (sum_p[ai] == 0) {
+		if (sum_p[ai] == 0) 
+		{
 			af.push_back(0.0);
 			continue;
 		}
@@ -881,18 +830,20 @@ void GLRLMFeature::calc_GLV(AngledFtrs& af)
 		double mu = 0.0;
 		for (int i = 1; i <= Ng; i++)
 		{
+			auto inten = I[i-1];
 			for (int j = 1; j <= Nr; j++)
 			{
-				mu += P.matlab(i, j) / sum_p[ai] * i;
+				mu += P.matlab(i, j) / sum_p[ai] * inten;
 			}
 		}
 
 		double f = 0.0;
 		for (int i = 1; i <= Ng; i++)
 		{
+			auto inten = I[i-1];
 			for (int j = 1; j <= Nr; j++)
 			{
-				double mu2 = (i - mu) * (i - mu);
+				double mu2 = (inten - mu) * (inten - mu);
 				f += P.matlab(i, j) / sum_p[ai] * mu2;
 			}
 		}
@@ -904,20 +855,6 @@ void GLRLMFeature::calc_GLV(AngledFtrs& af)
 void GLRLMFeature::calc_RV(AngledFtrs& af)
 {
 	af.clear();
-
-	// Prevent using bad data 
-	if (bad_roi_data)
-	{
-		af.resize(4, BAD_ROI_FVAL);
-		return;
-	}
-
-	// Prevent using bad data 
-	if (bad_roi_data)
-	{
-		af.resize(4, BAD_ROI_FVAL);
-		return;
-	}
 
 	for (int ai = 0; ai < 4; ai++)
 	{
@@ -959,13 +896,6 @@ void GLRLMFeature::calc_RE(AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
-	if (bad_roi_data)
-	{
-		af.resize(4, BAD_ROI_FVAL);
-		return;
-	}
-
 	for (int ai = 0; ai < 4; ai++)
 	{
 		if (sum_p[ai] == 0) {
@@ -994,16 +924,9 @@ void GLRLMFeature::calc_RE(AngledFtrs& af)
 }
 
 // 11. Low Gray Level Run Emphasis 
-void GLRLMFeature::calc_LGLRE(AngledFtrs& af)
+void GLRLMFeature::calc_LGLRE (AngledFtrs& af)
 {
 	af.clear();
-
-	// Prevent using bad data 
-	if (bad_roi_data)
-	{
-		af.resize(4, BAD_ROI_FVAL);
-		return;
-	}
 
 	for (int ai = 0; ai < 4; ai++)
 	{
@@ -1021,9 +944,10 @@ void GLRLMFeature::calc_LGLRE(AngledFtrs& af)
 		double f = 0.0;
 		for (int i = 1; i <= Ng; i++)
 		{
+			auto inten = I[i-1];
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) / double(i * i);
+				f += P.matlab(i, j) / double(inten*inten);
 			}
 		}
 		double retval = f / double(sum_p[ai]);
@@ -1036,13 +960,6 @@ void GLRLMFeature::calc_HGLRE(AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
-	if (bad_roi_data)
-	{
-		af.resize(4, BAD_ROI_FVAL);
-		return;
-	}
-
 	for (int ai = 0; ai < 4; ai++)
 	{
 		if (sum_p[ai] == 0) {
@@ -1059,9 +976,10 @@ void GLRLMFeature::calc_HGLRE(AngledFtrs& af)
 		double f = 0.0;
 		for (int i = 1; i <= Ng; i++)
 		{
+			auto inten = I[i - 1];
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) * double(i * i);
+				f += P.matlab(i, j) * double(inten * inten);
 			}
 		}
 		double retval = f / double(sum_p[ai]);
@@ -1074,13 +992,6 @@ void GLRLMFeature::calc_SRLGLE(AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
-	if (bad_roi_data)
-	{
-		af.resize(4, BAD_ROI_FVAL);
-		return;
-	}
-
 	for (int ai = 0; ai < 4; ai++)
 	{
 		if (sum_p[ai] == 0) {
@@ -1097,9 +1008,10 @@ void GLRLMFeature::calc_SRLGLE(AngledFtrs& af)
 		double f = 0.0;
 		for (int i = 1; i <= Ng; i++)
 		{
+			auto inten = I[i-1];
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) / double(i * i * j * j);
+				f += P.matlab(i, j) / double(inten * inten * j * j);
 			}
 		}
 		double retval = f / double(sum_p[ai]);
@@ -1112,13 +1024,6 @@ void GLRLMFeature::calc_SRHGLE(AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
-	if (bad_roi_data)
-	{
-		af.resize(4, BAD_ROI_FVAL);
-		return;
-	}
-
 	for (int ai = 0; ai < 4; ai++)
 	{
 		if (sum_p[ai] == 0) {
@@ -1135,9 +1040,10 @@ void GLRLMFeature::calc_SRHGLE(AngledFtrs& af)
 		double f = 0.0;
 		for (int i = 1; i <= Ng; i++)
 		{
+			auto inten = I[i-1];
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) * double(i * i) / double(j * j);
+				f += P.matlab(i, j) * double(inten * inten) / double(j * j);
 			}
 		}
 		double retval = f / double(sum_p[ai]);
@@ -1150,32 +1056,25 @@ void GLRLMFeature::calc_LRLGLE(AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
-	if (bad_roi_data)
-	{
-		af.resize(4, BAD_ROI_FVAL);
-		return;
-	}
-
 	for (int ai = 0; ai < 4; ai++)
 	{
-		if (sum_p[ai] == 0) {
+		if (sum_p[ai] == 0) 
+		{
 			af.push_back(0.0);
 			continue;
 		}
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
 		int Ng = angles_Ng[ai],
 			Nr = angles_Nr[ai];
 		const SimpleMatrix<int>& P = angles_P[ai];
 
-		// Calculate
 		double f = 0.0;
 		for (int i = 1; i <= Ng; i++)
 		{
+			auto inten = I[i-1];
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) * double(j * j) / double(i * i);
+				f += P.matlab(i, j) * double(j * j) / double(inten*inten);
 			}
 		}
 		double retval = f / double(sum_p[ai]);
@@ -1188,13 +1087,6 @@ void GLRLMFeature::calc_LRHGLE(AngledFtrs& af)
 {
 	af.clear();
 
-	// Prevent using bad data 
-	if (bad_roi_data)
-	{
-		af.resize(4, BAD_ROI_FVAL);
-		return;
-	}
-
 	for (int ai = 0; ai < 4; ai++)
 	{
 		if (sum_p[ai] == 0) {
@@ -1211,9 +1103,10 @@ void GLRLMFeature::calc_LRHGLE(AngledFtrs& af)
 		double f = 0.0;
 		for (int i = 1; i <= Ng; i++)
 		{
+			auto inten = I[i - 1];
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) * double(i * i * j * j);
+				f += P.matlab(i, j) * double(inten * inten * j * j);
 			}
 		}
 		double retval = f / double(sum_p[ai]);

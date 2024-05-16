@@ -1,12 +1,13 @@
 #pragma once
 
 #include "../feature_method.h"
+#include "texture_feature.h"
 
 /// @brief Grey Level Distance Zone (GLDZM) features
 /// 
 /// Grey Level Dsitance Zone (GLDZM) quantifies distances zones of same intensity to the ROI border
 
-class GLDZMFeature : public FeatureMethod
+class GLDZMFeature : public FeatureMethod, public TextureFeature
 {
 public:	
 	
@@ -48,6 +49,8 @@ public:
 	// Calculates the GLDZ-matrix, its dimensions, and a vector of sorted grey levels
 	void prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, int& Ng, int& Nd, std::vector<PixIntens>& greyLevelsLUT, LR& r);
 
+	static int n_levels; // default value: 0
+
 private:
 
 	void clear_buffers();	
@@ -81,4 +84,5 @@ private:
 		f_ZDV,		// Zone Distance Variance
 		f_ZDE,		// Zone Distance Entropy
 		f_GLE;		// Grey Level Entropy
+
 };

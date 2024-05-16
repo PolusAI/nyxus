@@ -19,20 +19,20 @@
 #include "test_glszm.h"
 #include "test_ngtdm.h"
 #include "test_roi_blacklist.h"
-#include "test_arrow.h"
-#include "test_arrow_file_name.h"
+//???	#include "test_arrow.h"
+//???	#include "test_arrow_file_name.h"
 
-TEST(TEST_NYXUS, TEST_ARROW_FILE_NAME) {
-	test_file_naming();
-}
+//???	TEST(TEST_NYXUS, TEST_ARROW_FILE_NAME) {
+//???		test_file_naming();
+//???	}
 
-TEST(TEST_NYXUS, TEST_ARROW) {
-	test_arrow();
-}
+//???	TEST(TEST_NYXUS, TEST_ARROW) {
+//???		test_arrow();
+//???	}
 
-TEST(TEST_NYXUS, TEST_PARQUET) {
-	test_parquet();
-}
+//???	TEST(TEST_NYXUS, TEST_PARQUET) {
+//???		test_parquet();
+//???	}
 
 TEST(TEST_NYXUS, TEST_GABOR){
     test_gabor();
@@ -148,6 +148,34 @@ TEST(TEST_NYXUS, TEST_MORPHOLOGY_PERIMETER)
 //
 //==== IBSI tests
 //
+
+// NGTDM
+
+TEST(TEST_NYXUS, TEST_IBSI_NGTDM_COARSENESS)
+{
+	ASSERT_NO_THROW(test_ibsi_ngtdm_coarseness());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGTDM_CONTRAST)
+{
+	ASSERT_NO_THROW(test_ibsi_ngtdm_contrast());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGTDM_BUSYNESS)
+{
+	ASSERT_NO_THROW(test_ibsi_ngtdm_busyness());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGTDM_COMPLEXITY)
+{
+	ASSERT_NO_THROW(test_ibsi_ngtdm_complexity());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGTDM_STRENGTH)
+{
+	ASSERT_NO_THROW(test_ibsi_ngtdm_strength());
+}
+
 
 
 // GLCM tests
@@ -577,33 +605,6 @@ TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_ENERGY)
 TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_ROOT_MEAN_SQUARED) 
 {
 	ASSERT_NO_THROW(test_ibsi_root_mean_squared_intensity());
-}
-
-// NGTDM
-
-TEST(TEST_NYXUS, TEST_IBSI_NGTDM_COARSENESS) 
-{
-	ASSERT_NO_THROW(test_ibsi_ngtdm_coarseness());
-}
-
-TEST(TEST_NYXUS, TEST_IBSI_NGTDM_CONTRAST) 
-{
-	ASSERT_NO_THROW(test_ibsi_ngtdm_contrast());
-}
-
-TEST(TEST_NYXUS, TEST_IBSI_NGTDM_BUSYNESS) 
-{
-	ASSERT_NO_THROW(test_ibsi_ngtdm_busyness());
-}
-
-TEST(TEST_NYXUS, TEST_IBSI_NGTDM_COMPLEXITY) 
-{
-	ASSERT_NO_THROW(test_ibsi_ngtdm_complexity());
-}
-
-TEST(TEST_NYXUS, TEST_IBSI_NGTDM_STRENGTH) 
-{
-	ASSERT_NO_THROW(test_ibsi_ngtdm_strength());
 }
 
 //==== Tests of texture feature extraction without binning

@@ -36,11 +36,12 @@ public:
 
 	SimpleMatrix() {}
 
+	// Updates matrice's width and geight from the parapeters
 	void allocate(int _w, int _h)
 	{
 		W = _w;
 		H = _h;
-		this->resize (W*H);
+		this->resize (size_t(W) * size_t(H));
 	}
 
 	// = W * y + x
@@ -49,13 +50,18 @@ public:
 		#ifdef NYX_CHECK_BUFFER_BOUNDS
 		if (x >= W || y >= H)
 		{
-			std::string msg = "index ";
+			std::string msg = "index (";
 			msg += std::to_string(x) + ",";
-			msg += std::to_string(y) + " is out of range ";
+			msg += std::to_string(y) + ") is out of range (";
 			msg += std::to_string(W) + ",";
-			msg += std::to_string(H) + " at ";
+			msg += std::to_string(H) + ") at ";
 			msg += __FILE__ ":" + std::to_string(__LINE__);
-			throw std::out_of_range(msg.c_str());
+			#ifdef WITH_PYTHON_H
+				throw std::out_of_range(msg.c_str());
+			#else
+				std::cerr << "\nError: " << msg << '\n';
+				std::exit(1);
+			#endif
 		}
 		#endif
 
@@ -290,6 +296,20 @@ public:
 			_pix_plane[y * width + x] = pxl.inten;
 		}
 	}
+
+	/*
+	* Example:
+	* 
+	*		PixIntens fantom[] = {
+	*			5 , 2 , 5 , 4 , 4,
+	*			3 , 3 , 3 , 1 , 3,
+	*			2 , 1 , 1 , 1 , 3,
+	*			4 , 2 , 2 , 2 , 3,
+	*			3 , 5 , 3 , 3 , 2 };
+	*		ImageMatrix im;
+	*		im.calculate_from_array(fantom, sizeof(fantom) / sizeof(fantom[0]), 5, 5);
+	*/
+	void calculate_from_array (const PixIntens* ptr, const size_t len, int w, int h);
 
 	void allocate(int w, int h)
 	{

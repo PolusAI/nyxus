@@ -8,6 +8,8 @@
 
 using namespace Nyxus;
 
+int GLSZMFeature::n_levels = 8;
+
 GLSZMFeature::GLSZMFeature() : FeatureMethod("GLSZMFeature")
 {
 	provide_features (GLSZMFeature::featureset);
@@ -157,8 +159,8 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader&)
 	Np = count;
 
 	// --Set to vector to be able to know each intensity's index
-	std::vector<PixIntens> I(U.begin(), U.end());
-	std::sort(I.begin(), I.end());	// Optional
+	I.assign(U.begin(), U.end());
+	std::sort(I.begin(), I.end());
 
 	// --allocate the matrix
 	P.allocate(Ns, Ng);
@@ -203,16 +205,33 @@ void GLSZMFeature::calculate(LR& r)
 	// Width of the intensity - zone area matrix 
 	int maxZoneArea = 0;
 
-	// Copy the image matrix
-	auto M = r.aux_image_matrix;
-	pixData& D = M.WriteablePixels();
+	// Copy the image matrix (SZ-matrix algorithm needs this copy)
+	ImageMatrix M;
+	M.allocate (r.aux_image_matrix.width, r.aux_image_matrix.height);
+	pixData & D = M.WriteablePixels();
 
 	// Squeeze the intensity range
-	PixIntens piRange = r.aux_max - r.aux_min;		// Prepare ROI's intensity range
-	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+	auto greyInfo = theEnvironment.get_coarse_gray_depth();
+	if (Nyxus::theEnvironment.ibsi_compliance)
+		greyInfo = 0;
+	auto& imR = r.aux_image_matrix.ReadablePixels();
+	bin_intensities (D, imR, r.aux_min, r.aux_max, greyInfo);
 
-	for (size_t i = 0; i < D.size(); i++)
-		D[i] = Nyxus::to_grayscale (D[i], r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+	// allocate intensities matrix
+	if (ibsi_grey_binning(greyInfo))
+	{
+		auto n_ibsi_levels = *std::max_element(D.begin(), D.end());
+		I.resize(n_ibsi_levels);
+		for (int i = 0; i < n_ibsi_levels; i++)
+			I[i] = i + 1;
+	}
+	else // radiomics and matlab
+	{
+		std::unordered_set<PixIntens> U(D.begin(), D.end());
+		U.erase(0);	// discard intensity '0'
+		I.assign(U.begin(), U.end());
+		std::sort(I.begin(), I.end());
+	}
 
 	// Number of zones
 	const int VISITED = -1;
@@ -316,14 +335,10 @@ void GLSZMFeature::calculate(LR& r)
 	auto height = M.height;
 	auto width = M.width;
 
-	Ng = Environment::ibsi_compliance ? *std::max_element(std::begin(r.aux_image_matrix.ReadablePixels()), std::end(r.aux_image_matrix.ReadablePixels())) : (int)U.size();
+	Ng = Environment::ibsi_compliance ? *std::max_element(I.begin(), I.end()) : I.size(); //		I.size();
 	Ns = height * width;
-	Nz = (int) Z.size();
-	Np = count;	
-
-	// --Set to vector to be able to know each intensity's index
-	std::vector<PixIntens> I (U.begin(), U.end());
-	std::sort (I.begin(), I.end());	// Optional
+	Nz = (int)Z.size();
+	Np = count;
 
 	// --allocate the matrix
 	P.allocate (Ns, Ng);
@@ -349,7 +364,6 @@ void GLSZMFeature::calculate(LR& r)
 	}
 }
 
-
 void GLSZMFeature::calc_sums_of_P()
 {
 	// Zero specialized sums
@@ -369,6 +383,7 @@ void GLSZMFeature::calc_sums_of_P()
 	// Aggregate by grayscale level
 	for (int i = 1; i <= Ng; ++i)
 	{
+		double inten = (double) I[i-1];
 		double sum = 0;
 		for (int j = 1; j <= Ns; ++j)
 		{
@@ -376,7 +391,7 @@ void GLSZMFeature::calc_sums_of_P()
 			sum += p;
 
 			// Once we're iterating matrix P, let's compute specialized sums
-			double i2 = double(i) * double(i),
+			double i2 = inten * inten,
 				j2 = double(j) * double(j);
 
 			f_LAHGLE += p * i2 * j2;
@@ -388,7 +403,7 @@ void GLSZMFeature::calc_sums_of_P()
 			f_ZE += p / sum_p * entrTerm;
 
 			mu_ZV += p / sum_p * double(j);
-			mu_GLV += p / sum_p * double(i);
+			mu_GLV += p / sum_p * double(inten);
 		}
 		si [i] = sum;
 	}
@@ -492,10 +507,6 @@ void GLSZMFeature::save_value (std::vector<std::vector<double>>& fvals)
 // 1. Small Area Emphasis
 double GLSZMFeature::calc_SAE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate feature. 'sj' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int j = 1; j <= Ns; j++)
@@ -622,10 +633,11 @@ double GLSZMFeature::calc_GLV()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
+		double inten = (double) I[i-1];
 		for (int j = 1; j <= Ns; j++)
 		{
-			double mu2 = (i - mu_GLV) * (i - mu_GLV);
-			f += P.matlab(i,j) / sum_p * mu2;
+			double d2 = (inten - mu_GLV) * (inten - mu_GLV);
+			f += P.matlab(i,j) / sum_p * d2;
 		}
 	}
 	return f;
@@ -644,7 +656,7 @@ double GLSZMFeature::calc_ZV()
 	{
 		for (int j = 1; j <= Ns; j++)
 		{
-			double mu2 = (j - mu_ZV) * (j - mu_ZV);
+			double mu2 = (double(j) - mu_ZV) * (double(j) - mu_ZV);
 			f += P.matlab(i, j) / sum_p * mu2;
 		}
 	}
@@ -674,7 +686,8 @@ double GLSZMFeature::calc_LGLZE()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		f += si[i] / (i * i);
+		double inten = (double)I[i - 1];
+		f += si[i] / (inten * inten);
 	}
 
 	double retval = f / sum_p;
@@ -692,7 +705,8 @@ double GLSZMFeature::calc_HGLZE()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		f += si[i] * (i * i);
+		double inten = (double) I[i-1];
+		f += si[i] * (inten * inten);
 	}
 
 	double retval = f / sum_p;
