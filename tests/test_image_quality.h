@@ -26,7 +26,7 @@ void test_focus_score_feature() {
 void test_local_focus_score_feature() {
     
     FocusScoreFeature f;
-    double truth_value = 1.15292e+18;
+    double truth_value = 7.57639;
 
     test_feature(f, Nyxus::FeatureIMQ::LOCAL_FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
