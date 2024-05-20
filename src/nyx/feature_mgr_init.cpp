@@ -63,4 +63,8 @@ FeatureManager::FeatureManager()
 	register_feature(new PixelIntensityFeatures_3D());
 }
 
+bool FeatureManager::init_feature_classes()
+{
+	return GaborFeature::init_class();
+}
 

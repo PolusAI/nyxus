@@ -18,6 +18,10 @@ public:
 
 	void apply_user_selection();
 
+	// Initializes feature classes 
+	// (allocates lookup tables, precalculates filter banks, etc.)
+	bool init_feature_classes();
+
 	// After compiling, returns the number of user-requested features
 	int get_num_requested_features();
 

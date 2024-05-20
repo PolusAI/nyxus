@@ -89,7 +89,7 @@ void GaborFeature::GaborEnergy_NT2 (
 
     // Prepare a filter
     double fi = 0;
-    Gabor (Gexp, f0, sig2lam, gamma, theta, fi, n);
+    Gabor (Gexp, f0, sig2lam, gamma, theta, fi, n, tx, ty);
 
     // Helpful temps
     auto width = Im.get_width(),
