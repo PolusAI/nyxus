@@ -86,8 +86,8 @@ double FocusScoreFeature::get_local_focus_score(const std::vector<PixIntens>& im
 
     std::vector<double> laplacian_vec(M*N);
     std::vector<PixIntens> image_tile(M*N);
-    for (int y = 0; y < height; y += M) {
-        for (int x = 0; x < width; x += N) {
+    for (int y = 0; y < height - M; y += M) {
+        for (int x = 0; x < width - N; x += N) {
 
             // Extract image tile
             for (int i = y; i < y + M; i++) {
