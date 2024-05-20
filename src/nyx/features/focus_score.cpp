@@ -113,16 +113,21 @@ void FocusScoreFeature::laplacian(const std::vector<PixIntens>& image, std::vect
     int m_kernel = 3;
     int n_kernel = 3;
 
-    std::vector<int> kernel;
+    // use c-style array for compile time initialization
+    int kernel[9] = { 0, 1, 0, 
+                    1, -4, 1, 
+                    0, 1, 0 };
 
-    if (ksize == 1) {
-        kernel = { 0, 1, 0, 
-                   1, -4, 1, 
-                   0, 1, 0 };
-    } else {
-        kernel = { 2, 0, 2, 
-                   0, -8, 0, 
-                   2, 0, 2 };
+    if (ksize != 1) {
+        kernel[0] = 2; 
+        kernel[1] = 0;
+        kernel[2] = 2;
+        kernel[3] = 0;
+        kernel[4] = -8;
+        kernel[5] = 0;
+        kernel[6] = 2;
+        kernel[7] = 0;
+        kernel[8] = 2;
     }
 
     int xKSize = n_kernel; // number of columns
@@ -156,11 +161,11 @@ void FocusScoreFeature::laplacian(const std::vector<PixIntens>& image, std::vect
 
 double FocusScoreFeature::variance(const std::vector<double>& image) {
 
-    double image_mean = std::transform_reduce(image.begin(), image.end(), 0.0, std::plus<>(), [](double val) { 
+    double abs_image_mean = std::transform_reduce(image.begin(), image.end(), 0.0, std::plus<>(), [](double val) { 
         return std::abs(val); 
     }) / image.size();
 
-    return std::transform_reduce(image.begin(), image.end(), 0.0, std::plus<>(), [image_mean](double pix) {
-        return std::pow(std::abs(pix) - image_mean, 2);
+    return std::transform_reduce(image.begin(), image.end(), 0.0, std::plus<>(), [abs_image_mean](double pix) {
+        return std::pow(std::abs(pix) - abs_image_mean, 2);
     }) / image.size();
 }
