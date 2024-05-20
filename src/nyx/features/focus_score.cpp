@@ -79,38 +79,36 @@ void FocusScoreFeature::save_value(std::vector<std::vector<double>>& feature_val
 
 double FocusScoreFeature::get_local_focus_score(const std::vector<PixIntens>& image, int height, int width, int ksize, int scale) {
 
-    local_focus_score_ = 0;
+    double local_focus_score = 0;
 
     int M = height / scale;
     int N = width / scale;
 
-    double focus_score;
     std::vector<double> laplacian_vec(M*N);
+    std::vector<PixIntens> image_tile(M*N);
     for (int y = 0; y < height; y += M) {
         for (int x = 0; x < width; x += N) {
 
             // Extract image tile
-            std::vector<PixIntens> image_tile;
             for (int i = y; i < y + M; i++) {
                 for (int j = x; j < x + N; j++) {
-                    image_tile.push_back(image[i * width + j]);
+                    image_tile[(i-y) * N + (j-x)] = image[i * width + j];
                 }
             }
             
             std::fill(laplacian_vec.begin(), laplacian_vec.end(), 0.);
-            this->laplacian(image_tile, laplacian_vec, M, N, ksize);
+            laplacian(image_tile, laplacian_vec, M, N, ksize);
 
             // calculate focus score for tile
-            focus_score = this->variance(laplacian_vec);
+            local_focus_score += variance(laplacian_vec);
         }
 
-        local_focus_score_ += focus_score;
     }
 
-    return local_focus_score_ / (scale * scale); // average scores
+    return local_focus_score / (scale * scale); // average scores
 }
 
-void FocusScoreFeature::laplacian(const std::vector<PixIntens>& image, std::vector<double>& out, int n_image, int m_image, int ksize) {
+void FocusScoreFeature::laplacian(const std::vector<PixIntens>& image, std::vector<double>& out, int m_image, int n_image, int ksize) {
 
     int m_kernel = 3;
     int n_kernel = 3;
