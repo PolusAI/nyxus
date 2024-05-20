@@ -1355,7 +1355,7 @@ class ImageQuality:
         output_type: Optional[str] = "pandas",
         output_path: Optional[str] = "",
     ):
-        """Extract features from all the images satisfying the file pattern of provided image directories.
+        """Extract image quality features from all the images satisfying the file pattern of provided image directories.
 
         Extracts all the requested features at the image level from the images
         present in `intensity_dir`. If `label_dir` is specified, features will be
@@ -1432,14 +1432,14 @@ class ImageQuality:
     def featurize(
         self,
         intensity_images: np.ndarray,
-        label_images: np.ndarray = [],
+        label_images: np.ndarray = np.array([[]]),
         intensity_names: list = [],
         label_names: list = [],
         output_type: Optional[str] = "pandas",
         output_path: Optional[str] = "",
         
     ):
-        """Extract features from a single image pair in a 2D np.array or for all the images in a 3D np.array.
+        """Extract image quality features from a single image pair in a 2D np.array or for all the images in a 3D np.array.
 
         Extracts all the requested features at the image level from the images
         in `intensity_images`. Features will be extracted for each unique label 
@@ -1451,8 +1451,8 @@ class ImageQuality:
         ----------
         intensity_images : np.ndarray
             2D image or 3D collection of intensity images.
-        label_images : np.ndarray
-            2D image or 3D collection of label images.
+        label_images : np.ndarray (optional, default np.array([[]]))
+            2D image or 3D collection of label images. If not supplied, the intensity_images with be processed in whole slide (single ROI) mode.
         intensity_names: list (optional, default []) 
             names for the images in for the DataFrame output. 
         label_names: list (optional, default []) 
@@ -1476,7 +1476,11 @@ class ImageQuality:
         """
         if (output_type != "" and output_type not in self._valid_output_types):
             raise ValueError(f'Invalid output type: {output_type}. Valid options are: {self._valid_output_types}')
-            
+        
+        # Handle single_roi        
+        if (label_images.size == 0):
+            label_images = np.ones_like(intensity_images)
+
         
         # verify argument types
         if not isinstance(intensity_images, np.ndarray):
@@ -1568,7 +1572,7 @@ class ImageQuality:
         output_type: Optional[str] = "pandas",
         output_path: Optional[str] = "",
     ):
-        """Extract features from image file pairs passed as lists
+        """Extract image quality features from image file pairs passed as lists
 
         Extracts all the requested features at the image level from the intensity images
         present in list `intensity_files` with respect to region of interest masks presented in 
