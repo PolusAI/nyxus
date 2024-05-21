@@ -8,18 +8,6 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
-// check values of multiple features
-void test_truth(const std::vector<double> values, const std::vector<double>& truth_values, double frac_tolerance) {
-
-    if (values.size() != truth_values.size()) {
-        FAIL() << "Number of truth values does not match the number of features calculated" << std::endl;
-    }
-
-    for (int i = 0; i < values.size(); ++i) {
-        ASSERT_TRUE(agrees_gt(values[i], truth_values[i], frac_tolerance));
-    }
-}
-
 // check value of single feature
 void test_truth(const std::vector<double> values, double truth_value, double frac_tolerance) {
     ASSERT_TRUE(agrees_gt(values[0], truth_value, frac_tolerance));
