@@ -13,37 +13,40 @@
 #include <unordered_map> 
 
 // dig. phantom values for intensity based features
+// Calculated at 100 grey levels
 static std::unordered_map<std::string, float> glszm_values {
-    {"GLSZM_SAE", 0.501157},
-    {"GLSZM_LAE", 5.95833},
-    {"GLSZM_LGLZE", 0.467303},
-    {"GLSZM_HGLZE", 4.89583},
-    {"GLSZM_SALGLE", 0.168113},
-    {"GLSZM_SAHGLE", 3.11227},
-    {"GLSZM_LALGLE", 4.34925},
-    {"GLSZM_LAHGLE", 16.1042},
-    {"GLSZM_GLN", 1.45833},
-    {"GLSZM_GLNN", 0.385417},
-    {"GLSZM_SZN", 2},
-    {"GLSZM_SZNN", 0.486111},
-    {"GLSZM_ZP", 0.572348},
-    {"GLSZM_GLV", 0.623264},
-    {"GLSZM_ZV", 0.895833},
-    {"GLSZM_ZE", 1.76906}
+    {"GLSZM_SAE", 0.38873},
+    {"GLSZM_LAE", 32.5},
+    {"GLSZM_LGLZE", 0.1962550},
+    {"GLSZM_HGLZE", 1497.574999},
+    {"GLSZM_SALGLE", 0.109386},
+    {"GLSZM_SAHGLE", 881.470652},
+    {"GLSZM_LALGLE", 0.769358},
+    {"GLSZM_LAHGLE", 11048.97500},
+    {"GLSZM_GLN", 1.487499999},
+    {"GLSZM_GLNN", 0.2771875000},
+    {"GLSZM_SZN", 1.96249999},
+    {"GLSZM_SZNN", 0.35968749999},
+    {"GLSZM_ZP", 0.2750000},
+    {"GLSZM_GLV", 551.70375000},
+    {"GLSZM_ZV", 16.6875000000},
+    {"GLSZM_ZE", 2.28429019}
 };
 
 void test_glszm_feature(const Feature2D& feature_, const std::string& feature_name) 
 {
+    // Set feature's state
+    Environment::ibsi_compliance = false;
+    GLSZMFeature::n_levels = 100;
+
     int feature = int(feature_);
 
     double total = 0;
-    
-    LR roidata;
-    // Calculate features
-    GLSZMFeature f;
-    Environment::ibsi_compliance = false;
 
     // image 1
+
+    LR roidata;
+    GLSZMFeature f;    
     load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
     ASSERT_NO_THROW(f.calculate(roidata));
 
@@ -56,9 +59,8 @@ void test_glszm_feature(const Feature2D& feature_, const std::string& feature_na
     total += roidata.fvals[feature][0];
     
     // image 2
-    // Calculate features
+
     LR roidata1;
-    // Calculate features
     GLSZMFeature f1;
     Environment::ibsi_compliance = false;
 
@@ -75,13 +77,10 @@ void test_glszm_feature(const Feature2D& feature_, const std::string& feature_na
     total += roidata1.fvals[feature][0];
   
     // image 3
-    // Calculate features
 
     LR roidata2;
-    // Calculate features
     GLSZMFeature f2;
     Environment::ibsi_compliance = false;
-
     load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f2.calculate(roidata2));
@@ -95,10 +94,8 @@ void test_glszm_feature(const Feature2D& feature_, const std::string& feature_na
     total += roidata2.fvals[feature][0];
     
     // image 4
-    // Calculate features
     
     LR roidata3;
-    // Calculate features
     GLSZMFeature f3;
     Environment::ibsi_compliance = false;
 
@@ -114,8 +111,8 @@ void test_glszm_feature(const Feature2D& feature_, const std::string& feature_na
 
     total += roidata3.fvals[feature][0];
 
+    // Verdict
     ASSERT_TRUE(agrees_gt(total/4, glszm_values[feature_name], 100.));
-
 }
 
 void test_glszm_sae()

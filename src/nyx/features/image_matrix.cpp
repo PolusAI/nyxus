@@ -271,3 +271,21 @@ void apply_dist2contour_weighting(
 	}
 }
 
+void ImageMatrix::calculate_from_array (const PixIntens* bufr, const size_t len, int w, int h)
+{
+	original_aabb.init_from_widthheight (w, h);
+
+	// Dimensions
+	width = original_aabb.get_width();
+	height = original_aabb.get_height();
+
+	// allocate and zero-initialize
+	allocate (w, h);
+	
+	// Read pixels
+	size_t n = size_t(w) * size_t(h);
+	for (size_t i=0; i<n; i++)
+	{
+		_pix_plane [i] = bufr [i];
+	}
+}

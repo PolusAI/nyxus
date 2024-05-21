@@ -13,47 +13,53 @@
 #include <unordered_map> 
 
 // Digital phantom values for intensity based features
-static std::unordered_map<std::string, float> glcm_values {
-    {"GLCM_ACOR", 5.09},    // p. 76, consensus: very strong
-    {"GLCM_ASM", 0.368},    // p. 68, consensus: very strong
-    {"GLCM_CLUPROM", 79.1}, // p. 79, consensus: very strong
-    {"GLCM_CLUSHADE", 7},   // p. 78, consensus: very strong
-    {"GLCM_CLUTEND", 5.47}, // p. 78, consensus: very strong
-    {"GLCM_CONTRAST", 5.28},    // p. 69, consensus: very strong
-    {"GLCM_CORRELATION", -0.0121},  // p. 76, consensus: very strong
-    {"GLCM_DIFAVE", 1.42},  // p. 64, consensus: very strong
-    {"GLCM_DIFENTRO", 1.4}, // p. 65, consensus: very strong
-    {"GLCM_DIFVAR", 2.9},   // p. 65, consensus: very strong
-    {"GLCM_DIS", 1.42},     // p. 70, consensus: very strong
-    {"GLCM_ID", 0.678},     // p. 71, consensus: very strong
-    {"GLCM_IDN", 0.851},    // p. 72, consensus: very strong
-    {"GLCM_IDM", 0.619},    // p. 73, consensus: very strong
-    {"GLCM_IDMN", 0.899},   // p. 74, consensus: very strong
-    {"GLCM_INFOMEAS1", -0.155}, // p. 80, consensus: very strong
-    {"GLCM_INFOMEAS2", 0.487},  // p. 81, consensus: very strong
-    {"GLCM_IV", 0.0567},    // p. 75, consensus: very strong
-    {"GLCM_JAVE", 2.14},    // p. 62, consensus: very strong
-    {"GLCM_JE", 2.05},      // p. 63, consensus: very strong
-    {"GLCM_JMAX", 0.519},   // p. 61, consensus: very strong
-    {"GLCM_JVAR", 2.69},    // p. 63, consensus: very strong
-    {"GLCM_SUMAVERAGE", 4.28},  // p. 66, consensus: very strong
-    {"GLCM_SUMENTROPY", 1.6},   // p. 67, consensus: very strong
-    {"GLCM_SUMVARIANCE", 5.47}  // p. 67, consensus: very strong
+// Calculated at 100 grey levels, offset 1, and asymmetric cooc matrix
+static std::unordered_map<std::string, float> glcm_values 
+{
+    {"GLCM_ACOR", 1340.12},
+    {"GLCM_ASM", 0.29},
+    {"GLCM_CLUPROM", 6401030.04}, 
+    {"GLCM_CLUSHADE", 20646.08},
+    {"GLCM_CLUTEND", 1563.9},
+    {"GLCM_CONTRAST", 1444.81},
+    {"GLCM_CORRELATION", 0.01}, 
+    {"GLCM_DIFAVE", 24.33}, 
+    {"GLCM_DIFENTRO", 1.75},
+    {"GLCM_DIFVAR", 771.58}, 
+    {"GLCM_DIS", 24.33},
+    {"GLCM_ID", 0.51},
+    {"GLCM_IDN", 0.84},
+    {"GLCM_IDM", 0.5},
+    {"GLCM_IDMN", 0.9},
+    {"GLCM_INFOMEAS1", -0.24},
+    {"GLCM_INFOMEAS2", 0.6},
+    {"GLCM_IV", 0.00056},
+    {"GLCM_JAVE", 33.015},
+    {"GLCM_JE", 2.26},
+    {"GLCM_JMAX", 0.45},
+    {"GLCM_JVAR", 818.5607},
+    {"GLCM_SUMAVERAGE", 68.28},
+    {"GLCM_SUMENTROPY", 1.952},
+    {"GLCM_SUMVARIANCE", 1563.904}
 };
 
+void test_glcm_feature(const Feature2D& feature_, const std::string& feature_name) 
+{
+    // Set feature's state
+    GLCMFeature::n_levels = 100;
+    GLCMFeature::offset = 1;
+    GLCMFeature::symmetric_glcm = false;
+    Environment::ibsi_compliance = false;
+    GLCMFeature::angles = { 0, 45, 90, 135 };
 
-void test_glcm_feature(const Feature2D& feature_, const std::string& feature_name) {
     int feature = int(feature_);
 
     double total = 0;
-    
-    LR roidata;
-    // Calculate features
-    GLCMFeature f;
-    Environment::ibsi_compliance = false; 
-    GLCMFeature::angles = {0, 45, 90, 135};
 
     // image 1
+
+     LR roidata;
+    GLCMFeature f;   
     load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
     ASSERT_NO_THROW(f.calculate(roidata));
 
@@ -63,21 +69,15 @@ void test_glcm_feature(const Feature2D& feature_, const std::string& feature_nam
     // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
     f.save_value(roidata.fvals);
  
-
     total += roidata.fvals[feature][0];
     total += roidata.fvals[feature][1];
     total += roidata.fvals[feature][2];
     total += roidata.fvals[feature][3];
 
     // image 2
-    // Calculate features
-    LR roidata1;
-    // Calculate features
-    GLCMFeature f1;
-    //GLCMFeature::n_levels = 6;
-    Environment::ibsi_compliance = false; //<<< New!
-    GLCMFeature::angles = {0, 45, 90, 135};
 
+    LR roidata1;
+    GLCMFeature f1;
     load_masked_test_roi_data (roidata1, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask,  sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f1.calculate(roidata1));
@@ -93,17 +93,10 @@ void test_glcm_feature(const Feature2D& feature_, const std::string& feature_nam
     total += roidata1.fvals[feature][2];
     total += roidata1.fvals[feature][3];
     
-    
     // image 3
-    // Calculate features
 
     LR roidata2;
-    // Calculate features
     GLCMFeature f2;
-    //GLCMFeature::n_levels = 6;
-    Environment::ibsi_compliance = false; //<<< New!
-    GLCMFeature::angles = {0, 45, 90, 135};
-
     load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f2.calculate(roidata2));
@@ -120,14 +113,9 @@ void test_glcm_feature(const Feature2D& feature_, const std::string& feature_nam
     total += roidata2.fvals[feature][3];
     
     // image 4
-    // Calculate features
     
     LR roidata3;
-    // Calculate features
     GLCMFeature f3;
-    Environment::ibsi_compliance = false; 
-    GLCMFeature::angles = {0, 45, 90, 135};
-
     load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f3.calculate(roidata3));
@@ -144,6 +132,7 @@ void test_glcm_feature(const Feature2D& feature_, const std::string& feature_nam
     total += roidata3.fvals[feature][2];
     total += roidata3.fvals[feature][3];
 
+    // Verdict
     ASSERT_TRUE(agrees_gt(total / 16, glcm_values[feature_name], 100.));
 }
 

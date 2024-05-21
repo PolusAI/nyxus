@@ -28,21 +28,22 @@ static std::unordered_map<std::string, float> IBSI_gldm_values {
     {"GLDM_GLV", 2.7},
     {"GLDM_DV", 2.73},
     {"GLDM_DE", 2.71}
-
 };
 
 
-void test_ibsi_gldm_feature(const Feature2D& feature_, const std::string& feature_name) {
+void test_ibsi_gldm_feature(const Feature2D& feature_, const std::string& feature_name) 
+{
+    // Activate IBSI globally 
+    Environment::ibsi_compliance = true;
+
     int feature = int(feature_);
 
     double total = 0;
     
-    LR roidata;
-    // Calculate features
-    GLDMFeature f;
-    Environment::ibsi_compliance = true; 
-
     // image 1
+
+    LR roidata;
+    GLDMFeature f;
     load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f.calculate(roidata));
@@ -54,14 +55,11 @@ void test_ibsi_gldm_feature(const Feature2D& feature_, const std::string& featur
     f.save_value(roidata.fvals);
 
     total += roidata.fvals[feature][0];
-
     
     // image 2
-    LR roidata1;
-    // Calculate features
-    GLDMFeature f1;
-    Environment::ibsi_compliance = true; 
 
+    LR roidata1;
+    GLDMFeature f1;
     load_masked_test_roi_data (roidata1, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask,  sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f1.calculate(roidata1));
@@ -77,10 +75,7 @@ void test_ibsi_gldm_feature(const Feature2D& feature_, const std::string& featur
     // image 3
 
     LR roidata2;
-    // Calculate features
     GLDMFeature f2;
-    Environment::ibsi_compliance = true; 
-
     load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f2.calculate(roidata2));
@@ -96,10 +91,7 @@ void test_ibsi_gldm_feature(const Feature2D& feature_, const std::string& featur
     // image 4
 
     LR roidata3;
-    // Calculate features
     GLDMFeature f3;
-    Environment::ibsi_compliance = true; 
-
     load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f3.calculate(roidata3));
@@ -113,6 +105,7 @@ void test_ibsi_gldm_feature(const Feature2D& feature_, const std::string& featur
     // Check the feature values vs ground truth
     total += roidata3.fvals[feature][0];
 
+    // Verdict
     ASSERT_TRUE(agrees_gt(total/4, IBSI_gldm_values[feature_name], 100.));
 }
 

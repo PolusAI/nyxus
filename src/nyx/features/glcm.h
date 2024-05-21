@@ -4,8 +4,8 @@
 #include "../roi_cache.h"
 #include "image_matrix.h"
 #include "../feature_method.h"
+#include "texture_feature.h"
 
-#define PGM_MAXMAXVAL 255
 
 /// @brief Gray Level Cooccurrence Matrix(GLCM) features
 /// Gray Level Cooccurrence Matrix(GLCM) of size : math:`N_g \times N_g` describes the second - order joint probability
@@ -18,7 +18,7 @@
 /// 	:math:`\delta = 2` a 98 - connectivity(49 unique angles).
 /// 
 
-class GLCMFeature : public FeatureMethod
+class GLCMFeature : public FeatureMethod, public TextureFeature
 {
 public:
 
@@ -122,9 +122,10 @@ public:
 	};
 
 	static int offset;	// default value: 1
-	static int n_levels;	// default value: 8
-	double sum_p = 0; // sum of P matrix for normalization
+	static int n_levels;	// default value: 0
+	static bool symmetric_glcm;	// default value: false
 	static std::vector<int> angles;	// default value: {0,45,90,135} (the supreset)
+	double sum_p = 0; // sum of P matrix for normalization
 
 	static bool required(const FeatureSet& fs)
 	{
@@ -168,8 +169,7 @@ private:
 		int dx, int dy,
 		const ImageMatrix& grays,
 		PixIntens min_val,
-		PixIntens max_val,
-		bool normalize);
+		PixIntens max_val);
 
 	void calculatePxpmy();
 	void calculate_by_row_mean();
@@ -180,31 +180,31 @@ private:
 		return target_I;
 	}
 
-	double f_asm(const SimpleMatrix<double>& P_matrix, int tone_count);
-	double f_contrast(const SimpleMatrix<double>& P_matix, int tone_count);
-	double f_corr(const SimpleMatrix<double>& P, int Ng, std::vector<double>& px, double& meanx);
-	double f_var(const SimpleMatrix<double>& P_matrix, int tone_count);
-	double f_idm(const SimpleMatrix<double>& P_matrix, int tone_count);
-	double f_savg(const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
-	double f_sentropy(const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
-	double f_svar(const SimpleMatrix<double>& P_matrix, int tone_count, double sum_entropy, std::vector<double>& px);
-	double f_entropy(const SimpleMatrix<double>& P_matrix, int tone_count);
-	double f_dvar(const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
-	double f_dentropy(const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
-	double f_GLCM_ACOR(const SimpleMatrix<double>& P_matrix, int tone_count);
+	double f_asm(const SimpleMatrix<double>& P_matrix);
+	double f_contrast(const SimpleMatrix<double>& P_matix);
+	double f_corr();
+	double f_var(const SimpleMatrix<double>& P_matrix);
+	double f_idm();
+	double f_savg();
+	double f_sentropy();
+	double f_svar(const SimpleMatrix<double>& P_matrix, double sum_entropy);
+	double f_entropy(const SimpleMatrix<double>& P_matrix);
+	double f_dvar(const SimpleMatrix<double>& P_matrix);
+	double f_dentropy(const SimpleMatrix<double>& P_matrix);
+	double f_GLCM_ACOR(const SimpleMatrix<double>& P_matrix);
 	double f_GLCM_CLUPROM();
 	double f_GLCM_CLUSHADE();
 	double f_GLCM_CLUTEND();
-	double f_GLCM_DIS(const SimpleMatrix<double>& P_matrix, int tone_count);
-	double f_GLCM_HOM2(const SimpleMatrix<double>& P_matrix, int tone_count);
-	double f_GLCM_IDMN(const SimpleMatrix<double>& P_matrix, int tone_count);
-	double f_GLCM_ID(const SimpleMatrix<double>& P_matrix, int tone_count);
-	double f_GLCM_IDN(const SimpleMatrix<double>& P_matrix, int tone_count);
-	double f_GLCM_IV(const SimpleMatrix<double>& P_matrix, int tone_count);
-	double f_GLCM_JAVE(const SimpleMatrix<double>& P_matrix, int tone_count);
-	double f_GLCM_JE(const SimpleMatrix<double>& P_matrix, int tone_count);
-	double f_GLCM_JMAX(const SimpleMatrix<double>& P_matrix, int tone_count);
-	double f_GLCM_JVAR(const SimpleMatrix<double>& P_matrix, int tone_count, double mean_x);
+	double f_GLCM_DIS(const SimpleMatrix<double>& P_matrix);
+	double f_GLCM_HOM2(const SimpleMatrix<double>& P_matrix);
+	double f_GLCM_IDMN();
+	double f_GLCM_ID();
+	double f_GLCM_IDN();
+	double f_GLCM_IV();
+	double f_GLCM_JAVE();
+	double f_GLCM_JE(const SimpleMatrix<double>& P_matrix);
+	double f_GLCM_JMAX(const SimpleMatrix<double>& P_matrix);
+	double f_GLCM_JVAR(const SimpleMatrix<double>& P_matrix, double mean_x);
 
 	double calc_ave(const std::vector<double>& angled_feature_vals);
 
@@ -246,18 +246,22 @@ private:
 	void clear_result_buffers();
 
 	double hx = -1, hy = -1, hxy = -1, hxy1 = -1, hxy2 = -1;	// Entropies for f12/f13_icorr calculation
-	void calcH(const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px, std::vector<double>& py);
-	double f_info_meas_corr1(const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px, std::vector<double>& py);
-	double f_info_meas_corr2(const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px, std::vector<double>& py);
+	void calcH(const SimpleMatrix<double>& P_matrix, std::vector<double>& px, std::vector<double>& py);
+	double f_info_meas_corr1(const SimpleMatrix<double>& P_matrix);
+	double f_info_meas_corr2(const SimpleMatrix<double>& P_matrix);
 
-	double f_energy(const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
-	double f_inv_difference(const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
-	double f_homogeneity(const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
-	double f_difference_avg(const SimpleMatrix<double>& P_matrix, int tone_count, std::vector<double>& px);
+	double f_energy(const SimpleMatrix<double>& P_matrix);
+	double f_inv_difference(const SimpleMatrix<double>& P_matrix);
+	double f_homogeneity();
+	double f_difference_avg();
 
 	const double LOG10_2 = 0.30102999566;	// precalculated log 2 base 10
 	SimpleMatrix<double> P_matrix;
-	std::vector<double> Pxpy, Pxmy;
+	std::vector<PixIntens> I;	// unique sorted intensities
+	std::vector<double> Pxpy,
+		Pxmy,
+		kValuesSum,	// intensities x+y
+		kValuesDiff;	// intensities x-y
 	double by_row_mean;
 	const double EPSILON = 0.000000001;
 };

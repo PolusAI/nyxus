@@ -126,7 +126,7 @@ void Environment::show_cmdline_help()
 		<< "\t\t" << OPT << PXLDIST << "=<number of pixels as neighbor features radius> \n"
 		<< "\t\t\tDefault: 5 \n"
 		<< "\t\t" << OPT << COARSEGRAYDEPTH << "=<custom number of grayscale levels> \n"
-		<< "\t\t\tDefault: 256 \n"
+		<< "\t\t\tDefault: 64 \n"
 		<< "\t\t" << OPT << GLCMANGLES << "=<one or more comma separated rotation angles from set {0, 45, 90, and 135}> \n"
 		<< "\t\t\tDefault: 0,45,90,135 \n"
 		<< "\t\t" << OPT << VERBOSITY << "=<levels of verbosity 0 (silence), 1 (minimum output), 2 (1 + timing), 3 (2 + roi metrics + more timing), 4 (3 + diagnostic information)> \n"
@@ -265,6 +265,9 @@ bool Environment::find_string_argument(std::vector<std::string>::iterator& i, co
 	std::string a = arg;
 	if (actualArgName == a)
 	{
+		if (arg_value.length())
+			std::cerr << "Warning: " << a << " already has value \'" << arg_value << "\'\n";
+
 		arg_value = *++i;
 		recognizedArgs.push_back({ a, arg_value });
 		return true;
@@ -276,6 +279,9 @@ bool Environment::find_string_argument(std::vector<std::string>::iterator& i, co
 		auto pos = actualArgName.find(a);
 		if (pos != std::string::npos)
 		{
+			if (arg_value.length())
+				std::cerr << "Warning: " << a << " already has value \'" << arg_value << "\'\n";
+
 			arg_value = actualArgName.substr(a.length());
 			recognizedArgs.push_back({ a, arg_value });
 			return true;
@@ -358,7 +364,8 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			find_string_argument(i, LOADERTHREADS, loader_threads) ||
 			find_string_argument(i, PXLSCANTHREADS, pixel_scan_threads) ||
 			find_string_argument(i, REDUCETHREADS, reduce_threads) ||
-			find_string_argument(i, GLCMANGLES, rawGlcmAngles) ||
+			find_string_argument(i, GLCMANGLES, glcmOptions.rawAngles) ||
+			find_string_argument(i, GLCMOFFSET, glcmOptions.rawOffs) ||
 			find_string_argument(i, PXLDIST, pixel_distance) ||
 			find_string_argument(i, COARSEGRAYDEPTH, raw_coarse_grayscale_depth) ||
 			find_string_argument(i, VERBOSITY, rawVerbosity) ||
@@ -584,9 +591,9 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	if (!raw_coarse_grayscale_depth.empty())
 	{
 		// string -> integer
-		if (sscanf(raw_coarse_grayscale_depth.c_str(), "%d", &coarse_grayscale_depth) != 1 || coarse_grayscale_depth <= 0)
+		if (sscanf(raw_coarse_grayscale_depth.c_str(), "%d", &coarse_grayscale_depth) != 1)
 		{
-			std::cerr << "Error: " << COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": expecting a positive integer constant\n";
+			std::cerr << "Error: " << COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": expecting an integer constant\n";
 			return false;
 		}
 	}
@@ -599,20 +606,6 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			std::cerr << "Error: " << VERBOSITY << "=" << reduce_threads << ": expecting a positive integer constant\n";
 			return false;
 		}
-	}
-
-	//==== Parse rotations
-	if (!rawGlcmAngles.empty())
-	{
-		std::string ermsg;
-		if (!Nyxus::parse_delimited_string_list_to_ints(rawGlcmAngles, glcmAngles, ermsg))
-		{
-			std::cerr << "Error parsing list of integers " << rawGlcmAngles << ": " << ermsg << "\n";
-			return false;
-		}
-
-		// The angle list parsed well, let's tell it to GLCMFeature 
-		GLCMFeature::angles = glcmAngles;
 	}
 
 	//==== Parse the RAM limit (in megabytes)
@@ -672,6 +665,17 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	{
 		std::string ermsg;
 		if (!this->parse_gabor_options_raw_inputs(ermsg))
+		{
+			std::cerr << ermsg << "\n";
+			return false;
+		}
+	}
+
+	//==== Parse GLCM options
+	if (!glcmOptions.empty())
+	{
+		std::string ermsg;
+		if (!this->parse_glcm_options_raw_inputs(ermsg))
 		{
 			std::cerr << ermsg << "\n";
 			return false;
@@ -852,7 +856,7 @@ int Environment::get_floating_point_precision()
 	return floating_point_precision;
 }
 
-unsigned int Environment::get_coarse_gray_depth()
+int Environment::get_coarse_gray_depth()
 {
 	return coarse_grayscale_depth;
 }
@@ -907,6 +911,17 @@ bool Environment::parse_gabor_options_raw_inputs(std::string& error_message)
 	if (!gaborOptions.parse_input())
 	{
 		error_message = gaborOptions.get_last_er_msg();
+		return false;
+	}
+	return true;
+}
+
+bool Environment::parse_glcm_options_raw_inputs (std::string& error_message)
+{
+
+	if (!glcmOptions.parse_input())
+	{
+		error_message = glcmOptions.get_last_er_msg();
 		return false;
 	}
 	return true;

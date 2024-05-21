@@ -314,7 +314,7 @@ void ContourFeature::buildRegularContour(LR& r)
 	);
 
 	//==== Remove padding and save the contour image as a vector of non-blank pixels
-	AABB & bb = r.aabb; // r.aux_image_matrix.original_aabb;
+	AABB & bb = r.aabb;
 	int base_x = bb.get_xmin(),
 		base_y = bb.get_ymin();
 	r.contour.clear();
@@ -610,7 +610,7 @@ void ContourFeature::buildRegularContour_nontriv(LR& r)
 		}
 
 	//==== Remove padding and save the contour image as a vector of contour-onlu pixels
-	AABB& bb = r.aabb; // r.aux_image_matrix.original_aabb;
+	AABB& bb = r.aabb;
 	int base_x = bb.get_xmin(),
 		base_y = bb.get_ymin();
 	r.contour.clear();

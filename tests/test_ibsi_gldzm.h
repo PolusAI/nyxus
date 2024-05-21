@@ -96,10 +96,6 @@ void test_ibsi_gldzm_feature (const Feature2D& feature_, const std::string& feat
 
     total += roidata1.fvals[feature][0];
 
-    // Diagnostic
-    //  std::cout << "image #1: " << feature_name << "=" << roidata1.fvals[feature][0] << "\n";
-    //  std::cout << "running average=" << total << "\n";
-
     //==== image 2
 
     // Load data (slice #2)
@@ -117,10 +113,6 @@ void test_ibsi_gldzm_feature (const Feature2D& feature_, const std::string& feat
     f2.save_value(roidata2.fvals);
 
     total += roidata2.fvals[feature][0];
-
-    // Diagnostic
-    //  std::cout << "image #2: " << feature_name << "=" << roidata2.fvals[feature][0] << "\n";
-    //  std::cout << "running average=" << total / 2. << "\n";
 
     //==== image 3
 
@@ -140,10 +132,6 @@ void test_ibsi_gldzm_feature (const Feature2D& feature_, const std::string& feat
 
     total += roidata3.fvals[feature][0];
 
-    // Diagnostic
-    //  std::cout << "image #3: " << feature_name << "=" << roidata3.fvals[feature][0] << "\n";
-    //  std::cout << "running average=" << total / 3. << "\n";
-
     //==== image 4
 
     // Load data (slice #4)
@@ -162,11 +150,7 @@ void test_ibsi_gldzm_feature (const Feature2D& feature_, const std::string& feat
 
     total += roidata4.fvals[feature][0];
 
-    // Diagnostic
-    //  std::cout << "image #4: " << feature_name << "=" << roidata4.fvals[feature][0] << "\n";
-    //  std::cout << "running average=" << total / 4. << "\n";
-
-    // Check the feature values vs ground truth
+    // Verdict
     double aveTotal = total / 4.0;
     ASSERT_TRUE (agrees_gt(aveTotal, ibsi_gldzm_gtruth[feature_name], 2.));
 }
