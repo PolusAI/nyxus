@@ -62,6 +62,6 @@ private:
         return ++x;
     }
 
-    static void power_of_2_padding(std::vector<std::complex<double>>& complex_image, int rows, int cols);
+    static void power_of_2_padding(std::vector<double>& complex_image, int rows, int cols);
 };
 

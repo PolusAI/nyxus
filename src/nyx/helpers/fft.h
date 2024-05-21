@@ -95,7 +95,8 @@ inline int bitr(uint32_t x, int nb)
  *
  * NOTE: the input must be a square matrix whose size is a power-of-two
  */
-template <typename T> fft_arg<T> fft2d(const fft_arg<T> &xi, const fft_dir &dir)
+template <typename T> 
+void r2r_fft2d_inplace(std::vector<T> &xi, const fft_dir &dir)
 {   
     DJ_ASSERT((xi.size() & (xi.size() - 1)) == 0 && "invalid input size");
     int cnt2 = (int)xi.size();   // NxN
@@ -110,7 +111,7 @@ template <typename T> fft_arg<T> fft2d(const fft_arg<T> &xi, const fft_dir &dir)
         int k2 = bitr(j2, msb);
         int k1 = bitr(j1, msb);
 
-        xo[j1 + cnt * j2] = nrm * xi[k1 + cnt * k2];
+        xo[j1 + cnt * j2] = nrm * std::complex<T>(xi[k1 + cnt * k2], 0);
     }
 
     // fft passes
@@ -155,7 +156,9 @@ template <typename T> fft_arg<T> fft2d(const fft_arg<T> &xi, const fft_dir &dir)
         }
     }
 
-    return xo;
+    for (int i = 0; i < xo.size(); ++i) {
+        xi[i] = std::abs(xo[i]);
+    }
 }
 
 

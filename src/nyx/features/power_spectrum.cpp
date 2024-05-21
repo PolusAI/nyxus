@@ -134,17 +134,14 @@ void PowerSpectrumFeature::invariant(const std::vector<unsigned int>& image, std
     
     double mean_value = std::accumulate(image.begin(), image.end(), 0.0)/image.size();
 
-    auto temp = image;
-
-    for (auto& element: temp) {
-        element = abs(element - mean_value);
-    }
+    std::transform(image.begin(), image.end(), out.begin(), [mean_value](double element) {
+        return std::abs(element - mean_value);
+    });
 
     // calculate median
-    auto sorted_temp = temp;
-    size_t n = sorted_temp.size() / 2;
-    std::nth_element(sorted_temp.begin(), sorted_temp.begin()+n, sorted_temp.end()); // sort to middle element to get median
-    double median = sorted_temp[n];
+    size_t n = out.size() / 2;
+    std::nth_element(out.begin(), out.begin()+n, out.end()); // sort to middle element to get median
+    double median = out[n];
 
     for (int i = 0; i < image.size(); ++i) {
         out[i] = (double)image[i] / median;
@@ -161,7 +158,9 @@ void PowerSpectrumFeature::rps(const std::vector<unsigned int>& image, int rows,
         return;
     }
 
-    int ptp = (*std::max_element(image.begin(), image.end())) - (*std::min_element(image.begin(), image.end()));
+    auto [min, max] = std::minmax_element(image.begin(), image.end());
+
+    auto ptp = max - min;
 
     // calculate invariant or convert the pixels to double
     std::vector<double> image_invariant(image.size(), 0.);
@@ -178,41 +177,28 @@ void PowerSpectrumFeature::rps(const std::vector<unsigned int>& image, int rows,
     std::transform(image_invariant.begin(), image_invariant.end(), image_invariant.begin(),
                [&](auto& pix) { return pix - invariant_mean; });
 
-    // convert image to complex for fft
-    std::vector<std::complex<double>> complex_image;
-    for (const auto& num: image_invariant) {
-        complex_image.push_back(std::complex<double>(num, 0));
-    }
-
-    auto rows_po2 = next_power_of_2(rows);
-    auto cols_po2 = next_power_of_2(cols);
     
-    auto po2 = std::max(rows_po2, cols_po2); // find max power of 2 to make square 
+    auto po2 = std::max(next_power_of_2(rows), next_power_of_2(cols)); // find max power of 2 to make square 
 
-    power_of_2_padding(complex_image, rows, cols);
+    power_of_2_padding(image_invariant, rows, cols);
 
-    std::vector<std::complex<double>> after_fft = fft2d(complex_image, dj::fft_dir::DIR_FWD);
+    r2r_fft2d_inplace(image_invariant, dj::fft_dir::DIR_FWD);
 
-    std::vector<int> radii;
-    for (auto& num: complex_image) {
-        radii.emplace_back(std::floor(std::sqrt(std::abs(num))) + 1);
-    }
-
-    mag_sum.resize(complex_image.size(), 0);
-    power_sum.resize(complex_image.size(), 0);
+    mag_sum.resize(image_invariant.size(), 0);
+    power_sum.resize(image_invariant.size(), 0);
 
     double fft_double_value;
-    for (int i = 0; i < complex_image.size(); ++i) {
-        auto label_index = radii[i]-2;
-        if (label_index >=0 && label_index < complex_image.size()) {
-            fft_double_value = std::abs(complex_image[i]);
+    for (int i = 0; i < image_invariant.size(); ++i) {
+        auto label_index = std::floor(std::sqrt(image_invariant[i])) + 1; //radii[i]-2;
+        if (label_index >=0 && label_index < image_invariant.size()) {
+            fft_double_value = std::abs(image_invariant[i]);
             mag_sum[label_index] += fft_double_value;
             power_sum[label_index] += fft_double_value * fft_double_value;
         }
     }
 }
 
-void PowerSpectrumFeature::power_of_2_padding(std::vector<std::complex<double>>& complex_image, int rows, int cols) {
+void PowerSpectrumFeature::power_of_2_padding(std::vector<double>& complex_image, int rows, int cols) {
     unsigned int max_dim = std::max(rows, cols);
     unsigned int new_size = next_power_of_2(max_dim);
     unsigned int new_total_size = new_size * new_size;
