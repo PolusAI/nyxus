@@ -91,23 +91,6 @@ namespace Nyxus
 		}  
 	}
 
-	std::string group_thousands (unsigned int x)
-	{
-		std::string raw = std::to_string(x);
-		std::string s = "";
-		int n = raw.length();
-		for (int i = 0; i < n; i++)
-		{
-			char ch = raw[n-1-i];
-			std::string c = std::to_string(ch);
-			if (i > 0 && i % 3 == 0)
-				s = c + "," + s;
-			else
-				s = c + s;
-		}
-		return s;
-	}
-
 	bool processIntSegImagePair (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, int filepair_index, int tot_num_filepairs)
 	{
 		std::vector<int> trivRoiLabels, nontrivRoiLabels;
