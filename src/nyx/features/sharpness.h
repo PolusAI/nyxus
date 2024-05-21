@@ -7,7 +7,7 @@
 #include "../feature_method.h"
 #include "../environment.h"
 
-#define EPSILON 1e-8
+static constexpr double EPSILON = 1e-8;
 
 /// @brief Extract face feature based on gabor filtering
 class SharpnessFeature: public FeatureMethod
