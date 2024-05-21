@@ -177,8 +177,6 @@ void PowerSpectrumFeature::rps(const std::vector<unsigned int>& image, int rows,
     std::transform(image_invariant.begin(), image_invariant.end(), image_invariant.begin(),
                [&](auto& pix) { return pix - invariant_mean; });
 
-    
-    auto po2 = std::max(next_power_of_2(rows), next_power_of_2(cols)); // find max power of 2 to make square 
 
     power_of_2_padding(image_invariant, rows, cols);
 
