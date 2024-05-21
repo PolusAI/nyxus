@@ -549,30 +549,6 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
 
     readOnlyPixels pix_plane = Im.ReadablePixels();
 
-#if 0   // ---now via cache---
-    std::vector<double> g_filters;
-    g_filters.resize(2 * n * n * num_filters);
-
-    double fi = 0;
-
-    int idx = 0;
-    for(int i = 0; i < num_filters; ++i) 
-    {   
-        Gabor (Gexp, f0s[i], sig2lam, gamma, thetas[i], fi, n_gab, tx, ty);
-        for(int i = 0; i < 2*n*n; ++i) {
-            g_filters[idx+i] = Gexp[i];
-        }
-
-        idx += 2*n*n;
-    }
-
-    bool success = CuGabor::conv_dud_gpu_fft_multi_filter (auxC, pix_plane.data(), g_filters.data(), Im.width, Im.height, n_gab, n_gab, num_filters);
-    if(!success) {
-        std::cerr << "Unable to calculate Gabor features on GPU \n";
-    }
-#endif
-
-    //--- via cache ---
     bool success = CuGabor::conv_dud_gpu_fft_multi_filter (
         auxC, 
         pix_plane.data(), 
@@ -608,9 +584,7 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
             }
             b++;
         }
-        
     }
-
 }
 #endif
 
