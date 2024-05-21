@@ -19,10 +19,22 @@
 #include "test_glszm.h"
 #include "test_ngtdm.h"
 #include "test_roi_blacklist.h"
-//#include "test_arrow.h"
-//#include "test_arrow_file_name.h"
+#include "test_arrow.h"
+#include "test_arrow_file_name.h"
 #include "test_image_quality.h"
 
+
+TEST(TEST_NYXUS, TEST_ARROW_FILE_NAME) {
+	test_file_naming();
+}
+
+TEST(TEST_NYXUS, TEST_ARROW) {
+	test_arrow();
+}
+
+TEST(TEST_NYXUS, TEST_PARQUET) {
+	test_parquet();
+}
 
 TEST(TEST_NYXUS, TEST_GABOR){
     test_gabor();
@@ -1057,13 +1069,6 @@ TEST(TEST_NYXUS, TEST_ROI_BLACKLISTING)
 	ASSERT_NO_THROW(test_roi_blacklist());
 }
 
-int main(int argc, char **argv) 
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  int ret = RUN_ALL_TESTS();
-  return ret;
-}
-
 TEST(TEST_IMAGE_QUALITY, TEST_FOCUS_SCORE) 
 {
 	ASSERT_NO_THROW(test_focus_score_feature());
@@ -1092,4 +1097,11 @@ TEST(TEST_IMAGE_QUALITY, TEST_MAX_SATURATION)
 TEST(TEST_IMAGE_QUALITY, TEST_SHARPNESS) 
 {
 	ASSERT_NO_THROW(test_sharpness_feature());
+}
+
+int main(int argc, char **argv) 
+{
+  ::testing::InitGoogleTest(&argc, argv);
+  int ret = RUN_ALL_TESTS();
+  return ret;
 }
