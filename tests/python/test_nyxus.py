@@ -149,7 +149,7 @@ class TestNyxus():
             
             # expected
             e = {
-                'coarse_gray_depth': 256,
+                'coarse_gray_depth': 64,
                 'features': ['*ALL*'],
                 'gabor_f0': 0.1,
                 'gabor_freqs': [4.0, 16.0, 32.0, 64.0],
@@ -182,7 +182,7 @@ class TestNyxus():
             
             params = nyx.get_params('coarse_gray_depth', 'features', 'gabor_f0')
             
-            result = {'coarse_gray_depth': 256, 
+            result = {'coarse_gray_depth': 64, 
                       'features': ['*ALL*'], 
                       'gabor_f0': 0.1}
             
@@ -294,7 +294,7 @@ class TestNyxus():
             
             params = nyx.get_params()
             
-            result = {'coarse_gray_depth': 256, 
+            result = {'coarse_gray_depth': 64, 
                       'features': ['*ALL*'], 
                       'gabor_f0': 1, 
                       'gabor_freqs': [1, 2, 3, 4, 5], 

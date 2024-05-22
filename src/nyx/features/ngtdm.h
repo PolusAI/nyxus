@@ -4,6 +4,8 @@
 #include "../roi_cache.h"
 #include "../feature_method.h"
 #include "image_matrix.h"
+#include "texture_feature.h"
+
 
 // Inspired by https://qiita.com/tatsunidas/items/50f4bee7236eb0392aaf
 
@@ -20,7 +22,7 @@
 /// 	\displaystyle\sum_{ k_z = -\delta }^ {\delta} {x_{ gl }(j_x + k_x, j_y + k_y, j_z + k_z)}, \\
 /// 		& \mbox{ where }(k_x, k_y, k_z)\neq(0, 0, 0)\mbox{ and } x_{ gl }(j_x + k_x, j_y + k_y, j_z + k_z) \in \textbf{ X }_{ gl }
 
-class NGTDMFeature: public FeatureMethod
+class NGTDMFeature: public FeatureMethod, public TextureFeature
 {
 public:
 
@@ -60,6 +62,8 @@ public:
 		return fs.anyEnabled (NGTDMFeature::featureset);
 	}
 
+	static int n_levels; // default value: 0
+
 private:
 
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
@@ -72,6 +76,8 @@ private:
 	std::vector <double> P, S;
 	std::vector<int> N;
 
+	std::vector<PixIntens> I;	// sorted unique intensities after image greyscale binning
+
 	void clear_buffers();
 
 	const double BAD_ROI_FVAL = 0.0;
@@ -82,4 +88,5 @@ private:
 		_busyness = 0, 
 		_complexity = 0, 
 		_strength = 0;
+
 };

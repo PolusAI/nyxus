@@ -24,23 +24,39 @@ void GLDMFeature::calculate(LR& r)
 	using ACluster = std::pair<PixIntens, int>;	// Pairs of (intensity,number_of_neighbors)
 	std::vector<ACluster> Z;
 
-	//==== While scanning clusters, learn unique intensities 
-	std::unordered_set<PixIntens> U;
+	ImageMatrix M;
+	M.allocate (r.aux_image_matrix.width, r.aux_image_matrix.height);
+	pixData& D = M.WriteablePixels();
 
-	const pixData& D = r.aux_image_matrix.ReadablePixels();
+	// bin intensities
+	auto greyInfo = theEnvironment.get_coarse_gray_depth();
+	if (Nyxus::theEnvironment.ibsi_compliance)
+		greyInfo = 0;
+	auto& imR = r.aux_image_matrix.ReadablePixels();
+	bin_intensities (D, imR, r.aux_min, r.aux_max, greyInfo);
 
-	// Prepare ROI's intensity range for normalize_I()
-	PixIntens piRange = r.aux_max - r.aux_min;
+	// allocate intensities matrix
+	if (ibsi_grey_binning(greyInfo))
+	{
+		auto n_ibsi_levels = *std::max_element(D.begin(), D.end());
 
-	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
-	bool disableGrayBinning = Environment::ibsi_compliance || nGrays >= piRange;
+		I.resize(n_ibsi_levels);
+		for (int i = 0; i < n_ibsi_levels; i++)
+			I[i] = i + 1;
+	}
+	else // radiomics and matlab
+	{
+		std::unordered_set<PixIntens> U(D.begin(), D.end());
+		U.erase(0);	// discard intensity '0'
+		I.assign(U.begin(), U.end());
+		std::sort(I.begin(), I.end());
+	}
 
 	// Gather zones
 	for (int row = 0; row < D.get_height(); row++)
 		for (int col = 0; col < D.get_width(); col++)
 		{
-			// Find a non-blank pixel
-			PixIntens pi = Nyxus::to_grayscale (D.yx(row, col), r.aux_min, piRange, nGrays, disableGrayBinning);
+			PixIntens pi = D.yx(row, col);
 
 			if (pi == 0)
 				continue;
@@ -48,65 +64,73 @@ void GLDMFeature::calculate(LR& r)
 			// Count dependencies
 			int nd = 1;	// Number of dependencies
 			PixIntens piQ; // Pixel intensity of questionn
-			if (D.safe(row - 1, col)) {
+			if (D.safe(row - 1, col)) 
+			{
 
-				piQ = Nyxus::to_grayscale (D.yx(row - 1, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// North
-
-				if (piQ == pi)
-					nd++;
-			}
-
-			if (D.safe(row - 1, col + 1)) {
-
-				piQ = Nyxus::to_grayscale (D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// North-East
+				piQ = D.yx(row - 1, col);	 // North
 
 				if (piQ == pi)
 					nd++;
 			}
 
-			if (D.safe(row, col + 1)) {
+			if (D.safe(row - 1, col + 1)) 
+			{
 
-				piQ = Nyxus::to_grayscale (D.yx(row, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// East
-
-				if (piQ == pi)
-					nd++;
-			}
-
-			if (D.safe(row + 1, col + 1)) {
-
-				piQ = Nyxus::to_grayscale (D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// South-East
+				piQ = D.yx(row - 1, col + 1);	// North-East
 
 				if (piQ == pi)
 					nd++;
 			}
 
-			if (D.safe(row + 1, col)) {
+			if (D.safe(row, col + 1)) 
+			{
 
-				piQ = Nyxus::to_grayscale(D.yx(row + 1, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);		// South
-
-				if (piQ == pi)
-					nd++;
-			}
-
-			if (D.safe(row + 1, col - 1)) {
-				
-				piQ = Nyxus::to_grayscale (D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// South-West
+				piQ = D.yx(row, col + 1);	// East
 
 				if (piQ == pi)
 					nd++;
 			}
 
-			if (D.safe(row, col - 1)) {
+			if (D.safe(row + 1, col + 1)) 
+			{
 
-				piQ = Nyxus::to_grayscale (D.yx(row, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);		// West
+				piQ = D.yx(row + 1, col + 1);	// South-East
 
 				if (piQ == pi)
 					nd++;
 			}
 
-			if (D.safe(row - 1, col - 1)) {
+			if (D.safe(row + 1, col)) 
+			{
 
-				piQ = Nyxus::to_grayscale (D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// North-West
+				piQ = D.yx(row + 1, col);		// South
+
+				if (piQ == pi)
+					nd++;
+			}
+
+			if (D.safe(row + 1, col - 1)) 
+			{
+
+				piQ = D.yx(row + 1, col - 1);	// South-West
+
+				if (piQ == pi)
+					nd++;
+			}
+
+			if (D.safe(row, col - 1)) 
+			{
+
+				piQ = D.yx(row, col - 1);		// West
+
+				if (piQ == pi)
+					nd++;
+			}
+
+			if (D.safe(row - 1, col - 1)) 
+			{
+
+				piQ = D.yx(row - 1, col - 1);	// North-West
 
 				if (piQ == pi)
 					nd++;
@@ -115,44 +139,51 @@ void GLDMFeature::calculate(LR& r)
 			// Save the intensity's dependency
 			ACluster clu = { pi, nd };
 			Z.push_back(clu);
-
-			// Update unique intensities
-			U.insert(pi);
 		}
 
+
 	//==== Fill the matrix
-	Ng = disableGrayBinning ? *std::max_element(std::begin(r.aux_image_matrix.ReadablePixels()), std::end(r.aux_image_matrix.ReadablePixels())) : (int)U.size();
+	Ng = greyInfo==0 ? *std::max_element(I.begin(), I.end()) : (int) I.size();
 	Nd = 8 + 1;	// N, NE, E, SE, S, SW, W, NW + zero
-	Nz = (decltype(Nz))Z.size();
 
 	// --allocate the matrix
-	P.allocate(Nd+1, Ng+1);
+	P.allocate (Nd + 1, Ng + 1);
 
-	// --Set to vector to be able to know each intensity's index
-	std::vector<PixIntens> I(U.begin(), U.end());
-	std::sort(I.begin(), I.end());	// Optional
+	// maximum dependency (non-sparse, though)
+	int max_Nd = 0;
 
 	// --iterate zones and fill the matrix
 	for (auto& z : Z)
 	{
-		// row
-		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = disableGrayBinning ? z.first - 1 : int(iter - I.begin());
+		// row (grey level)
+		auto inten = z.first;
+		int row = -1;
+		if (Environment::ibsi_compliance)
+			row = inten - 1;
+		else
+		{
+			auto lower = std::lower_bound(I.begin(), I.end(), inten);	// enjoy sorted vector 'I'
+			row = int(lower - I.begin());	// intensity index in array of unique intensities 'I'
+		}
+
 		// col
 		int col = z.second - 1;	// 1-based
 		// increment
 		auto& k = P.xy(col, row);
 		k++;
+
+		// update max referenced dependency
+		max_Nd = std::max (max_Nd, col+1);
 	}
 
-	sum_p = 0;
-	for (int i = 1; i <= Ng; i++)
-	{
-		for (int j = 1; j <= Nd; j++)
-		{
-			sum_p += P.matlab(i,j);
-		}
-	}
+	// If not IBSI mode, adjust Nd. No need to iterate the GLDM beyond 'max_Nd'
+	if (greyInfo)
+		Nd = max_Nd;
+
+	// Number of dependency zones
+	Nz = 0;
+	for (auto p : P)
+		Nz += p;
 }
 
 void GLDMFeature::clear_buffers()
@@ -304,12 +335,12 @@ void GLDMFeature::osized_calculate (LR& r, ImageLoader&)
 		k++;
 	}
 
-	sum_p = 0;
+	Nz = 0;
 	for (int i = 1; i <= Ng; i++)
 	{
 		for (int j = 1; j <= Nd; j++)
 		{
-			sum_p += P.matlab(i, j);
+			Nz += P.matlab(i, j);
 		}
 	}
 }
@@ -317,7 +348,7 @@ void GLDMFeature::osized_calculate (LR& r, ImageLoader&)
 void GLDMFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
 
-	if (sum_p == 0) {
+	if (Nz == 0) {
 		double val = 0.0;
 
 		fvals[(int)Feature2D::GLDM_SDE][0] = val;
@@ -355,53 +386,26 @@ void GLDMFeature::save_value(std::vector<std::vector<double>>& fvals)
 // 1. Small Dependence Emphasis(SDE)
 double GLDMFeature::calc_SDE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
-	std::vector<double> sj(Nd+1, 0.);
+	double sum = 0;
 	for (int i = 1; i <= Ng; i++)
 	{
 		for (int j = 1; j <= Nd; j++)
-		{
-			sj[j-1] += P.matlab(i, j);
-		}
+			sum += P.matlab (i,j) / (double(j) * double(j));
 	}
-	
-
-	double f = 0.0;
-	for (int j = 1; j <= Nd; j++)
-	{
-		f +=  sj[j-1] / double(j*j);
-	}
-
-	double retval = f / sum_p;
+	double retval = sum / double(Nz);
 	return retval;
 }
 
 // 2. Large Dependence Emphasis (LDE)
 double GLDMFeature::calc_LDE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
-	std::vector<double> sj(Nd+1, 0.);
+	double sum = 0;
 	for (int i = 1; i <= Ng; i++)
 	{
 		for (int j = 1; j <= Nd; j++)
-		{
-			sj[j-1] += P.matlab(i, j);
-		}
+			sum += P.matlab(i, j) * (double(j) * double(j));
 	}
-	
-	double f = 0.0;
-	for (int j = 1; j <= Nd; j++)
-	{
-		f +=  sj[j-1] * double(j*j);
-	}
-
-	double retval = f / sum_p;
+	double retval = sum / double(Nz);
 	return retval;
 }
 
@@ -423,17 +427,13 @@ double GLDMFeature::calc_GLN()
 		f += si[i-1] * si[i-1];
 	}
 
-	double retval = f / sum_p;
+	double retval = f / double(Nz);
 	return retval;
 }
 
 // 4. Dependence Non-Uniformity (DN)
 double GLDMFeature::calc_DN()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	std::vector<double> sj(Nd+1, 0.);
 	for (int i = 1; i <= Ng; i++)
 	{
@@ -449,16 +449,12 @@ double GLDMFeature::calc_DN()
 		f += sj[j-1] * sj[j-1];
 	}
 
-	double retval = f / sum_p;
+	double retval = f / double(Nz);
 	return retval;
 }
 // 5. Dependence Non-Uniformity Normalized (DNN)
 double GLDMFeature::calc_DNN()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	std::vector<double> sj(Nd+1, 0.);
 	for (int i = 1; i <= Ng; i++)
 	{
@@ -473,33 +469,31 @@ double GLDMFeature::calc_DNN()
 	{
 		f += sj[j-1] * sj[j-1];
 	}
-	double retval = f / double(sum_p * sum_p);
+	double retval = f / (double(Nz) * double(Nz));
 	return retval;
 }
 
 // 6. Gray Level Variance (GLV)
 double GLDMFeature::calc_GLV()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	double mu = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
+		double inten = (double) I[i-1];
 		for (int j = 1; j <= Nd; j++)
 		{
-			mu += P.matlab(i, j)/sum_p * i;
+			mu += P.matlab(i, j) / double(Nz) * inten;
 		}
 	}
 
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
+		double inten = (double) I[i-1];
 		for (int j = 1; j <= Nd; j++)
 		{
-			double mu2 = (i - mu) * (i - mu);
-			f += P.matlab(i, j)/sum_p * mu2;
+			double mu2 = (inten - mu) * (inten - mu);
+			f += P.matlab(i, j) / double(Nz) * mu2;
 		}
 	}
 	return f;
@@ -508,16 +502,12 @@ double GLDMFeature::calc_GLV()
 // 7. Dependence Variance (DV)
 double GLDMFeature::calc_DV()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	double mu = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
 		for (int j = 1; j <= Nd; j++)
 		{
-			mu += P.matlab(i, j)/sum_p * j;
+			mu += P.matlab(i, j) / double(Nz) * j;
 		}
 	}
 
@@ -526,8 +516,9 @@ double GLDMFeature::calc_DV()
 	{
 		for (int j = 1; j <= Nd; j++)
 		{
-			double mu2 = (j - mu) * (j - mu);
-			f += P.matlab(i, j)/sum_p * mu2;
+			double d = double(j) - mu, 
+				mu2 = d*d;
+			f += P.matlab(i, j) / double(Nz) * mu2;
 		}
 	}
 	return f;
@@ -536,17 +527,13 @@ double GLDMFeature::calc_DV()
 // 8. Dependence Entropy (DE)
 double GLDMFeature::calc_DE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
 		for (int j = 1; j <= Nd; j++)
 		{
-			double entrTerm = fast_log10(P.matlab(i, j)/sum_p + EPS) / LOG10_2;
-			f += P.matlab(i, j)/sum_p * entrTerm;
+			double entrTerm = fast_log10(P.matlab(i, j) / double(Nz) + EPS) / LOG10_2;
+			f += P.matlab(i, j) / double(Nz) * entrTerm;
 		}
 	}
 	double retval = -f;
@@ -556,36 +543,24 @@ double GLDMFeature::calc_DE()
 // 9. Low Gray Level Emphasis (LGLE)
 double GLDMFeature::calc_LGLE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
-	std::vector<double> si(Ng+1, 0.);
+	double sum_i = 0;
 	for (int i = 1; i <= Ng; i++)
 	{
+		double inten2 = (double) I[i-1];
+		inten2 *= inten2;
+		double sum_j = 0;
 		for (int j = 1; j <= Nd; j++)
-		{
-			si[i-1] += P.matlab(i, j);
-		}
+			sum_j += P.matlab(i, j);
+		sum_i += sum_j / inten2;
 	}
+	double retval = sum_i / double(Nz);
 
-	double f = 0.0;
-	for (int i = 1; i <= Ng; i++)
-	{
-		f +=  si[i-1] / double(i*i);
-	}
-
-	double retval = f / sum_p;
 	return retval;
 }
 
 // 10. High Gray Level Emphasis (HGLE)
 double GLDMFeature::calc_HGLE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	std::vector<double> si(Ng+1, 0.);
 	for (int i = 1; i <= Ng; i++)
 	{
@@ -594,91 +569,79 @@ double GLDMFeature::calc_HGLE()
 			si[i-1] += P.matlab(i, j);
 		}
 	}
-	
 
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		f +=  si[i-1] * double(i*i);
+		double inten = (double) I[i-1];
+		f +=  si[i-1] * inten * inten;
 	}
 
-	double retval = f / sum_p;
+	double retval = f / double(Nz);
 	return retval;
 }
 
 // 11. Small Dependence Low Gray Level Emphasis (SDLGLE)
 double GLDMFeature::calc_SDLGLE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		for (int j = 1; j < Nd; j++)
+		double inten = (double) I[i-1];
+		for (int j = 1; j <= Nd; j++)
 		{
-			f += P.matlab(i, j) / double(i*i * j*j);
+			f += P.matlab(i, j) / double(inten * inten * j * j);
 		}
 	}
-	double retval = f / sum_p;
+	double retval = f / double(Nz);
 	return retval;
 }
 
 // 12. Small Dependence High Gray Level Emphasis (SDHGLE)
 double GLDMFeature::calc_SDHGLE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
+		double inten = (double) I[i-1];
 		for (int j = 1; j <= Nd; j++)
 		{
-			f += P.matlab(i, j) * double(i*i) / double(j*j);
+			f += P.matlab(i, j) * (inten * inten) / double(j*j);
 		}
 	}
-	double retval = f / sum_p;
+	double retval = f / double(Nz);
 	return retval;
 }
 
 // 13. Large Dependence Low Gray Level Emphasis (LDLGLE)
 double GLDMFeature::calc_LDLGLE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	double f = 0.0;
-	for (int i = 1; i < Ng; i++)
+	for (int i = 1; i <= Ng; i++)
 	{
-		for (int j = 1; j < Nd; j++)
+		double inten = (double) I[i-1];
+		for (int j = 1; j <= Nd; j++)
 		{
-			f += P.matlab(i, j) * double(j * j) / double(i * i);
+			f += P.matlab(i, j) * double(j * j) / (inten * inten);
 		}
 	}
-	double retval = f / sum_p;
+	double retval = f / double(Nz);
 	return retval;
 }
 
 // 14. Large Dependence High Gray Level Emphasis (LDHGLE)
 double GLDMFeature::calc_LDHGLE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
+		double inten = (double)I[i - 1];
 		for (int j = 1; j <= Nd; j++)
 		{
-			f += P.matlab(i, j) * double(i * i * j * j);
+			f += P.matlab(i, j) * double(inten * inten * j * j);
 		}
 	}
-	double retval = f / sum_p;
+	double retval = f / double(Nz);
 	return retval;
 }
 

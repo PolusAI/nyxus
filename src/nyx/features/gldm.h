@@ -4,6 +4,7 @@
 #include "../roi_cache.h"
 #include "image_matrix.h"
 #include "../feature_method.h"
+#include "texture_feature.h"
 
 // Inspired by 
 //		https://stackoverflow.com/questions/25019840/neighboring-gray-level-dependence-matrix-ngldm-in-matlab?fbclid=IwAR14fT0kpmjmOXRhKcguFMH3tCg0G4ubDLRxyHZoXdpKdbPxF7Zuq-WKE8o
@@ -20,7 +21,7 @@
 ///	in its neighbourhood appears in image.
 /// 
 
-class GLDMFeature: public FeatureMethod
+class GLDMFeature: public FeatureMethod, public TextureFeature
 {
 public:
 
@@ -92,9 +93,9 @@ private:
 	int Nd = 0; // number of discrete dependency sizes in the image
 	int Nz = 0; // number of dependency zones in the ROI, Nz = sum(sum(P[i,j]))
 
-	double sum_p = 0;
-
 	SimpleMatrix<int> P;	// dependence matrix
+
+	std::vector<PixIntens> I;	// sorted unique intensities after image greyscale binning
 
 	void clear_buffers();
 

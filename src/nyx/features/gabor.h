@@ -62,6 +62,8 @@ public:
     // Returns the angle of i-th pair of 'f0_theta_pairs'
     static double get_theta_in_degrees (int i);
 
+    static bool init_class();
+
 private:
 
     // Result cache
@@ -73,14 +75,16 @@ private:
     void conv_dud (double* c, const unsigned int* a, double* b, int na, int ma, int nb, int mb);
 
     // Creates a non-normalized Gabor filter
-    void Gabor (
+    static void Gabor (
         double* Gex,    // buffer of size n*n*2
         double f0, 
         double sig2lam, 
         double gamma, 
         double theta, 
         double fi, 
-        int n);
+        int n, 
+        std::vector<double>& tx, 
+        std::vector<double>& ty);
 
     std::vector<double> tx, ty;
 
@@ -143,5 +147,15 @@ private:
         int na, int ma, int nb, int mb);
 
     void GetStats_NT (WriteImageMatrix_nontriv& I, Moments2& moments2);
+
+    // members referenced from init_class()
+    static void create_filterbank();
+    static int n_bank_filters;
+    static std::vector<std::vector<double>> filterbank;
+    #ifdef USE_GPU
+        static bool send_filterbank_2_gpuside();
+        static std::vector<double> ho_filterbank;
+        static double* dev_filterbank;
+    #endif
 };
 

@@ -69,4 +69,8 @@ FeatureManager::FeatureManager()
 	register_feature (new PowerSpectrumFeature());
 	register_feature (new SaturationFeature());
 	register_feature (new SharpnessFeature());
+}bool FeatureManager::init_feature_classes()
+{
+	return GaborFeature::init_class();
 }
+

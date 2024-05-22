@@ -13,25 +13,30 @@
 #include <unordered_map> 
 
 // dig. phantom values for intensity based features
+// Calculated at grey scalefactlr 100
 static std::unordered_map<std::string, float> ngtdm_values {
-    {"NGTDM_COARSENESS", 0.0269458},
-    {"NGTDM_CONTRAST", 1.23285},
-    {"NGTDM_BUSYNESS", 115.112},
-    {"NGTDM_COMPLEXITY", 71.0732},
-    {"NGTDM_STRENGTH", 0.015942}
+    {"NGTDM_COARSENESS", 0.008374068},
+    {"NGTDM_CONTRAST", 3169.92908},
+    {"NGTDM_BUSYNESS", 1.444571},
+    {"NGTDM_COMPLEXITY", 3608.3891},
+    {"NGTDM_STRENGTH", 52.076642}
 };
 
-void test_ngtdm_feature(const Feature2D& feature_, const std::string& feature_name) {
+void test_ngtdm_feature(const Feature2D& feature_, const std::string& feature_name) 
+{
+    // Set feature's state
+    Environment::ibsi_compliance = false;
+    NGTDMFeature::n_levels = 100;
+
     int feature = int(feature_);
 
     double total = 0;
     
     LR roidata;
-    // Calculate features
     NGTDMFeature f;
-    Environment::ibsi_compliance = false;
 
     // image 1
+
     load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
     ASSERT_NO_THROW(f.calculate(roidata));
 
@@ -44,9 +49,8 @@ void test_ngtdm_feature(const Feature2D& feature_, const std::string& feature_na
     total += roidata.fvals[feature][0];
     
     // image 2
-    // Calculate features
+
     LR roidata1;
-    // Calculate features
     NGTDMFeature f1;
     Environment::ibsi_compliance = false;
 
@@ -63,10 +67,8 @@ void test_ngtdm_feature(const Feature2D& feature_, const std::string& feature_na
     total += roidata1.fvals[feature][0];
 
     // image 3
-    // Calculate features
 
     LR roidata2;
-    // Calculate features
     NGTDMFeature f2;
     Environment::ibsi_compliance = false;
 
@@ -83,10 +85,8 @@ void test_ngtdm_feature(const Feature2D& feature_, const std::string& feature_na
     total += roidata2.fvals[feature][0];
 
     // image 4
-    // Calculate features
     
     LR roidata3;
-    // Calculate features
     NGTDMFeature f3;
     Environment::ibsi_compliance = false;
 
@@ -103,6 +103,7 @@ void test_ngtdm_feature(const Feature2D& feature_, const std::string& feature_na
     // Check the feature values vs ground truth
     total += roidata3.fvals[feature][0];
 
+    // Verdict
     ASSERT_TRUE(agrees_gt(total/4, ngtdm_values[feature_name], 100.));
 }
 

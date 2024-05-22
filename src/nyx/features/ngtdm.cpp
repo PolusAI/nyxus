@@ -9,6 +9,8 @@
 
 using namespace Nyxus;
 
+int NGTDMFeature::n_levels = 0;
+
 NGTDMFeature::NGTDMFeature(): FeatureMethod("NGTDMFeature")
 {
 	provide_features (NGTDMFeature::featureset);
@@ -33,86 +35,104 @@ void NGTDMFeature::calculate (LR& r)
 	// Clear variables
 	clear_buffers();
 
-	// ROI image
-	const ImageMatrix& im = r.aux_image_matrix;
-	const pixData& D = im.ReadablePixels();
+	ImageMatrix M;
+	M.allocate(r.aux_image_matrix.width, r.aux_image_matrix.height);
+	pixData& D = M.WriteablePixels();
+	auto& imR = r.aux_image_matrix.ReadablePixels();
 
-	// Check if the ROI is degenerate (equal intensity)
-	if (r.aux_min == r.aux_max)
+	// bin intensities		
+	auto greyInfo = theEnvironment.get_coarse_gray_depth();
+	auto greyInfo_localFeature = NGTDMFeature::n_levels;
+	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
+		greyInfo = greyInfo_localFeature;
+	if (Nyxus::theEnvironment.ibsi_compliance)
+		greyInfo = 0;
+	bin_intensities (D, imR, r.aux_min, r.aux_max, greyInfo);
+
+	// unique intensities
+	std::unordered_set<PixIntens> U (D.begin(), D.end());
+	U.erase(0);	// discard intensity '0'
+
+	if (ibsi_grey_binning(greyInfo))
 	{
-		bad_roi_data = true;
+		// intensities 0-max
+		auto max_I = *std::max_element(U.begin(), U.end());
+		for (PixIntens i = 0; i <= max_I; i++)
+			I.push_back (i);
+	}
+	else
+		// only unique intensities
+		I.assign (U.begin(), U.end());
+
+	std::sort(I.begin(), I.end());
+
+	// is binned data informative?
+	if (I.size() < 2)
+	{
+		_coarseness = 
+		_contrast = 
+		_busyness = 
+		_complexity = 
+		_strength = 0;
 		return;
 	}
-
-	// Prepare ROI's intensity range for normalize_I()
-	PixIntens piRange = r.aux_max - r.aux_min;
-
-	// Make a list of intensity clusters (zones)
-	using AveNeighborhoodInte = std::pair<PixIntens, double>;	// Pairs of (intensity, average intensity of all 8 neighbors)
-	std::vector<AveNeighborhoodInte> Z;
-
-	// While scanning clusters, learn unique intensities 
-	std::unordered_set<PixIntens> U;
-
+	 
 	// Gather zones
-	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+	using AveNeighborhoodInte = std::pair<PixIntens, double>;	// Pairs of (intensity, average intensity of all 8 neighbors)
+	std::vector<AveNeighborhoodInte> Z;	// list of intensity clusters (zones)
 	for (int row = 0; row < D.get_height(); row++)
 		for (int col = 0; col < D.get_width(); col++)
 		{
-			// Find a non-blank pixel 
-			
-			PixIntens pi = Nyxus::to_grayscale (D.yx(row, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance); 
+			PixIntens pi = D.yx(row, col);
+
 			if (pi == 0)
 				continue;
-
-			// Update unique intensities
-			U.insert(pi);
 
 			// Evaluate the neighborhood
 			double neigsI = 0;
 
 			int nd = 0;	// Number of dependencies
 
-			if (D.safe(row - 1, col) && D.yx(row-1, col) != 0)	// North
+			if (D.safe(row - 1, col) && D.yx(row - 1, col) != 0)	// North
 			{
-				neigsI += Nyxus::to_grayscale (D.yx(row-1, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += D.yx(row - 1, col);
 				nd++;
 			}
 
-			if (D.safe(row - 1, col + 1) && D.yx(row-1, col+1) != 0)	// North-East
+			if (D.safe(row - 1, col + 1) && D.yx(row - 1, col + 1) != 0)	// North-East
 			{
-				neigsI += Nyxus::to_grayscale (D.yx(row-1, col+1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += D.yx(row - 1, col + 1);
 				nd++;
 			}
 
-			if (D.safe(row, col + 1) && D.yx(row, col+1) != 0)	// East
+			if (D.safe(row, col + 1) && D.yx(row, col + 1) != 0)	// East
 			{
-				neigsI += Nyxus::to_grayscale (D.yx(row, col+1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += D.yx(row, col + 1);
 				nd++;
 			}
-			if (D.safe(row + 1, col + 1) && D.yx(row+1, col+1) != 0)	// South-East
+			if (D.safe(row + 1, col + 1) && D.yx(row + 1, col + 1) != 0)	// South-East
 			{
-				neigsI += Nyxus::to_grayscale (D.yx(row+1, col+1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += D.yx(row + 1, col + 1);
 				nd++;
 			}
-			if (D.safe(row + 1, col) && D.yx(row+1, col) != 0)	// South
+			if (D.safe(row + 1, col) && D.yx(row + 1, col) != 0)	// South
 			{
-				neigsI += Nyxus::to_grayscale (D.yx(row+1, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += D.yx(row + 1, col);
 				nd++;
 			}
-			if (D.safe(row + 1, col - 1) && D.yx(row+1, col-1) != 0)	// South-West
+			if (D.safe(row + 1, col - 1) && D.yx(row + 1, col - 1) != 0)	// South-West
 			{
-				neigsI += Nyxus::to_grayscale (D.yx(row+1, col-1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += D.yx(row + 1, col - 1);
 				nd++;
 			}
-			if (D.safe(row, col - 1) && D.yx(row, col-1) !=0)	// West
+			if (D.safe(row, col - 1) && D.yx(row, col - 1) != 0)	// West
 			{
-				neigsI += Nyxus::to_grayscale (D.yx(row, col-1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += D.yx(row, col - 1);
 				nd++;
 			}
-			if (D.safe(row - 1, col - 1) && D.yx(row-1, col-1) != 0)	// North-West
+			if (D.safe(row - 1, col - 1) && D.yx(row - 1, col - 1) != 0)	// North-West
 			{
-				neigsI += Nyxus::to_grayscale (D.yx(row-1, col-1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += D.yx(row - 1, col - 1);
 				nd++;
 			}
 
@@ -129,7 +149,7 @@ void NGTDMFeature::calculate (LR& r)
 
 	// Fill the matrix
 	// --dimensions
-	Ng = Environment::ibsi_compliance ? *std::max_element(std::begin(im.ReadablePixels()), std::end(im.ReadablePixels())) : (int) U.size();
+	Ng = (int) I.size();	//---pre 2024---> Ng = Environment::ibsi_compliance ? *std::max_element(std::begin(im.ReadablePixels()), std::end(im.ReadablePixels())) : (int) U.size();
 	Ngp = (int) U.size();
 
 	// --allocate the matrix
@@ -137,23 +157,26 @@ void NGTDMFeature::calculate (LR& r)
 	S.resize(Ng + 1, 0);
 	N.resize(Ng + 1, 0);
 
-	// --Set to vector to be able to know each intensity's index
-	std::vector<PixIntens> I(U.begin(), U.end());
-	std::sort(I.begin(), I.end());	// Optional
-
 	// --Calculate N and S
 	for (auto& z : Z)
 	{
-		// row
-		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = (Environment::ibsi_compliance) ?
-			z.first : int(iter - I.begin());
+		// row (grey level)
+		auto inten = z.first;
+		int row = -1;
+		if (Environment::ibsi_compliance)
+			row = inten;
+		else
+		{
+			auto lower = std::lower_bound (I.begin(), I.end(), inten);	// enjoy sorted vector 'I'
+			row = int(lower - I.begin());	// intensity index in array of unique intensities 'I'
+		}
+
 		// col
 		int col = (int) z.second;	// 1-based
 		// increment
 		N[row]++;
 		// --S
-		PixIntens pi = row;
+		PixIntens pi = I[row];
 		double aveNeigI = z.second;
 		S[row] += std::abs(pi - aveNeigI);
 		// --Nvp
@@ -339,14 +362,10 @@ void NGTDMFeature::osized_calculate (LR& r, ImageLoader&)
 // Coarseness
 double NGTDMFeature::calc_Coarseness()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate the feature
 	double sum = 0.0;
 	for (int i = 1; i <= Ng; i++)
-		sum += P[i] * S[i];
+		sum += P[i-1] * S[i-1];
 	double retval = 1.0 / sum;
 	return retval;
 }
@@ -354,26 +373,26 @@ double NGTDMFeature::calc_Coarseness()
 // Contrast
 double NGTDMFeature::calc_Contrast()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate the feature
 	// --term 1
 	double sum = 0.0;
-	for (int i=1; i<=Ng; i++)
+	for (int i = 1; i <= Ng; i++)
+	{
+		double ival = (double) I [i-1];
 		for (int j = 1; j <= Ng; j++)
 		{
-			double tmp = P[i] * P[j] * (i - j) * (i - j);
+			double jval = (double) I [j-1];
+			double tmp = P[i-1] * P[j-1] * (ival - jval) * (ival - jval);
 			sum += tmp;
 		}
+	}
 	int Ngp_p2 = Ngp > 1 ? Ngp * (Ngp - 1) : Ngp;
 	double term1 = sum / double(Ngp_p2);
 
 	// --term 2
 	sum = 0.0;
 	for (int i = 1; i <= Ng; i++)
-		sum += S[i];
+		sum += S[i-1];
 	double term2 = sum / Nvc;
 
 	double retval = term1 * term2;
@@ -383,10 +402,6 @@ double NGTDMFeature::calc_Contrast()
 // Busyness
 double NGTDMFeature::calc_Busyness()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Trivial case?
 	if (Ngp == 1)
 		return 0.0;
@@ -394,19 +409,25 @@ double NGTDMFeature::calc_Busyness()
 	// Calculate the feature
 	double sum1 = 0.0;
 	for (int i = 1; i <= Ng; i++)
-		sum1 += P[i] * S[i];
+		sum1 += P[i-1] * S[i-1];
 
 	double sum2 = 0.0;
 	for (int i = 1; i <= Ng; i++)
+	{
+		double ival = (double) I [i-1];
 		for (int j = 1; j <= Ng; j++)
 		{
-			if (P[i] != 0 && P[j] != 0) {
-				double tmp = P[i] * double(i) - P[j] * double(j);
+			double jval = (double) I [j-1];
+			if (P[i-1] != 0 && P[j-1] != 0) 
+			{
+				double tmp = P[i-1] * ival - P[j-1] * jval;
 				sum2 += std::abs (tmp);
 			}
 		}
+	}
 	
-	if (sum2 == 0) return 0;
+	if (sum2 == 0) 
+		return 0;
 
 	double retval = sum1 / sum2;
 	return retval;
@@ -415,19 +436,20 @@ double NGTDMFeature::calc_Busyness()
 // Complexity
 double NGTDMFeature::calc_Complexity()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate the feature
 	double sum = 0.0;
 	for (int i = 1; i <= Ng; i++)
+	{
+		double ival = (double) I [i-1];
 		for (int j = 1; j <= Ng; j++)
 		{
-			if (P[i] != 0 && P[j] != 0) {
-				sum += std::abs(i-j) * (P[i]*S[i] + P[j]*S[j]) / (P[i]+P[j]) ;
+			double jval = (double) I [j-1];
+			if (P[i-1] != 0 && P[j-1] != 0) 
+			{
+				sum += std::abs(ival-jval) * (P[i-1]*S[i-1] + P[j-1]*S[j-1]) / (P[i-1] + P[j-1]) ;
 			}
 		}
+	}
 
 	double retval = sum / double(Nvp);
 	return retval;
@@ -436,23 +458,24 @@ double NGTDMFeature::calc_Complexity()
 // Strength
 double NGTDMFeature::calc_Strength()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate the feature
 	double sum1 = 0.0;
 	for (int i = 1; i <= Ng; i++)
+	{
+		double ival = (double) I[i-1];
 		for (int j = 1; j <= Ng; j++)
 		{
-			if (P[i] != 0 && P[j] != 0) {
-				sum1 += (P[i] + P[j]) * (i - j) * (i - j);
+			double jval = (double) I[j-1];
+			if (P[i-1] != 0 && P[j-1] != 0) 
+			{
+				sum1 += (P[i-1] + P[j-1]) * (ival - jval) * (ival - jval);
 			}
 		}
+	}
 
 	double sum2 = 0.0;
 	for (int i = 1; i <= Ng; i++)
-		sum2 += S[i];
+		sum2 += S[i-1];
 
 	double retval = sum1 / sum2;
 	return retval;

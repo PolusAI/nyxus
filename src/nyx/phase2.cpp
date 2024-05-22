@@ -462,8 +462,8 @@ namespace Nyxus
 			{
 				// Scan pixels of pending trivial ROIs 
 				std::sort(Pending.begin(), Pending.end());
-				VERBOSLVL1(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of total " << uniqueLabels.size() << " ROIs\n";)
-					VERBOSLVL1(
+				VERBOSLVL2(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of total " << uniqueLabels.size() << " ROIs\n";)
+					VERBOSLVL2(
 						if (Pending.size() == 1)
 							std::cout << ">>> (single ROI label " << Pending[0] << ")\n";
 						else
@@ -472,16 +472,16 @@ namespace Nyxus
 					scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
 
 				// Allocate memory
-				VERBOSLVL1(std::cout << "\tallocating ROI buffers\n";)
+				VERBOSLVL2(std::cout << "\tallocating ROI buffers\n";)
 					allocateTrivialRoisBuffers(Pending);
 
 				// Reduce them
-				VERBOSLVL1(std::cout << "\treducing ROIs\n";)
+				VERBOSLVL2(std::cout << "\treducing ROIs\n";)
 					// reduce_trivial_rois(Pending);	
 					reduce_trivial_rois_manual(Pending);
 
 				// Free memory
-				VERBOSLVL1(std::cout << "\tfreeing ROI buffers\n";)
+				VERBOSLVL2(std::cout << "\tfreeing ROI buffers\n";)
 					freeTrivialRoisBuffers(Pending);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
 
 					// Reset the RAM footprint accumulator
@@ -512,8 +512,8 @@ namespace Nyxus
 		{
 			// Scan pixels of pending trivial ROIs 
 			std::sort (Pending.begin(), Pending.end());
-			VERBOSLVL1(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";)
-			VERBOSLVL1(
+			VERBOSLVL2(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";)
+			VERBOSLVL2(
 				if (Pending.size() == 1)
 					std::cout << ">>> (single ROI " << Pending[0] << ")\n";
 				else
@@ -522,7 +522,7 @@ namespace Nyxus
 			scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
 
 			// Allocate memory
-			VERBOSLVL1(std::cout << "\tallocating ROI buffers\n";)
+			VERBOSLVL2(std::cout << "\tallocating ROI buffers\n";)
 			allocateTrivialRoisBuffers(Pending);
 
 			// Dump ROIs for use in unit testing
@@ -531,12 +531,12 @@ namespace Nyxus
 #endif
 
 			// Reduce them
-			VERBOSLVL1(std::cout << "\treducing ROIs\n";)
+			VERBOSLVL2(std::cout << "\treducing ROIs\n";)
 			//reduce_trivial_rois(Pending);	
 			reduce_trivial_rois_manual(Pending);
 
 			// Free memory
-			VERBOSLVL1(std::cout << "\tfreeing ROI buffers\n";)
+			VERBOSLVL2(std::cout << "\tfreeing ROI buffers\n";)
 			freeTrivialRoisBuffers(Pending);
 
 			#ifdef WITH_PYTHON_H
@@ -549,7 +549,7 @@ namespace Nyxus
 			#endif
 		}
 
-		VERBOSLVL1(std::cout << "\treducing neighbor features and their depends for all ROIs\n")
+		VERBOSLVL2(std::cout << "\treducing neighbor features and their depends for all ROIs\n")
 		reduce_neighbors_and_dependencies_manual();
 
 		return true;
@@ -577,8 +577,8 @@ namespace Nyxus
 			{
 				// Scan pixels of pending trivial ROIs 
 				std::sort(Pending.begin(), Pending.end());
-				VERBOSLVL1(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of total " << uniqueLabels.size() << " ROIs\n";)
-					VERBOSLVL1(
+				VERBOSLVL2(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of total " << uniqueLabels.size() << " ROIs\n";)
+					VERBOSLVL2(
 						if (Pending.size() == 1)
 							std::cout << ">>> (single ROI label " << Pending[0] << ")\n";
 						else
@@ -587,16 +587,16 @@ namespace Nyxus
 					scanTrivialRois_3D (Pending, intens_fpath, label_fpath, z_indices);
 
 				// Allocate memory
-				VERBOSLVL1(std::cout << "\tallocating ROI buffers\n";)
+				VERBOSLVL2(std::cout << "\tallocating ROI buffers\n";)
 					allocateTrivialRoisBuffers_3D (Pending);
 
 				// Reduce them
-				VERBOSLVL1(std::cout << "\treducing ROIs\n";)
+				VERBOSLVL2(std::cout << "\treducing ROIs\n";)
 					// reduce_trivial_rois(Pending);	
 					reduce_trivial_rois_manual(Pending);
 
 				// Free memory
-				VERBOSLVL1(std::cout << "\tfreeing ROI buffers\n";)
+				VERBOSLVL2(std::cout << "\tfreeing ROI buffers\n";)
 					freeTrivialRoisBuffers_3D(Pending);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
 
 					// Reset the RAM footprint accumulator
@@ -627,8 +627,8 @@ namespace Nyxus
 		{
 			// Read raw pixels of pending trivial ROIs 
 			std::sort(Pending.begin(), Pending.end());
-			VERBOSLVL1(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";)
-			VERBOSLVL1(
+			VERBOSLVL2(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";)
+			VERBOSLVL2(
 					if (Pending.size() == 1)
 						std::cout << ">>> (single ROI " << Pending[0] << ")\n";
 					else
@@ -637,7 +637,7 @@ namespace Nyxus
 				scanTrivialRois_3D (Pending, intens_fpath, label_fpath, z_indices);
 				
 			// Allocate memory
-			VERBOSLVL1(std::cout << "\tallocating ROI buffers\n";)
+			VERBOSLVL2(std::cout << "\tallocating ROI buffers\n";)
 				allocateTrivialRoisBuffers_3D(Pending);
 
 			// Dump ROIs for use in unit testing
@@ -646,12 +646,12 @@ namespace Nyxus
 #endif
 
 			// Reduce them
-			VERBOSLVL1(std::cout << "\treducing ROIs\n";)
+			VERBOSLVL2(std::cout << "\treducing ROIs\n";)
 				//reduce_trivial_rois(Pending);	
 				reduce_trivial_rois_manual(Pending);
 
 			// Free memory
-			VERBOSLVL1(std::cout << "\tfreeing ROI buffers\n";)
+			VERBOSLVL2(std::cout << "\tfreeing ROI buffers\n";)
 				freeTrivialRoisBuffers_3D(Pending);
 
 #ifdef WITH_PYTHON_H
@@ -664,7 +664,7 @@ namespace Nyxus
 #endif
 	}
 
-		VERBOSLVL1(std::cout << "\treducing neighbor features and their depends for all ROIs\n")
+		VERBOSLVL2(std::cout << "\treducing neighbor features and their depends for all ROIs\n")
 			reduce_neighbors_and_dependencies_manual();
 
 		return true;

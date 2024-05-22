@@ -28,7 +28,6 @@ static std::unordered_map<std::string, float> gldm_values {
     {"GLDM_GLV", 0.634569},
     {"GLDM_DV", 0.286155},
     {"GLDM_DE", 1.84336}
-
 };
 
 /// @brief Smoke test of GLDM

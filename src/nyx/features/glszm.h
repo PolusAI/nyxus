@@ -4,6 +4,7 @@
 #include "../roi_cache.h"
 #include "image_matrix.h"
 #include "../feature_method.h"
+#include "texture_feature.h"
 
 /// @brief Gray Level Size Zone(GLSZM) features
 /// Gray Level Size Zone(GLSZM) quantifies gray level zones in an image.A gray level zone is defined as a the number
@@ -13,7 +14,7 @@
 /// with gray level : math:`i`and size :math:`j` appear in image.Contrary to GLCMand GLRLM, the GLSZM is rotation
 /// independent, with only one matrix calculated for all directions in the ROI.
 
-class GLSZMFeature: public FeatureMethod
+class GLSZMFeature: public FeatureMethod, public TextureFeature
 {
 public:
 
@@ -101,6 +102,8 @@ public:
 	// Large Area High Gray Level Emphasis
 	double calc_LAHGLE();
 
+	static int n_levels;	// default value: 8
+
 private:
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
 	int Ng = 0;	// number of discrete intensity values in the image
@@ -109,6 +112,7 @@ private:
 	int Nz = 0; // number of zones in the ROI, 1<=Nz<=Np
 	SimpleMatrix<int> P;
 	double sum_p = 0;
+	std::vector<PixIntens> I;	// sorted unique intensities
 
 	// Helper to check if feature is requested by user
 	bool need (Nyxus::Feature2D f);

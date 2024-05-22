@@ -4,6 +4,7 @@
 #include "../roi_cache.h"
 #include "../feature_method.h"
 #include "image_matrix.h"
+#include "texture_feature.h"
 
 /// @brief Gray Level Run Length Matrix(GLRLM) features
 /// Gray Level Run Length Matrix(GLRLM) quantifies gray level runs, which are defined as the length in number of
@@ -12,7 +13,7 @@
 /// 	: math:`i`and length :math:`j` occur in the image(ROI) along angle : math:`\theta`.
 /// 
 
-class GLRLMFeature : public FeatureMethod
+class GLRLMFeature : public FeatureMethod, public TextureFeature
 {
 public:
 
@@ -90,6 +91,7 @@ public:
 		return fs.anyEnabled(GLRLMFeature::featureset);
 	}
 
+	static int n_levels;	// default value: 0
 	using P_matrix = SimpleMatrix<int>;
 	using AngledFtrs = std::vector<double>;
 
@@ -149,12 +151,15 @@ private:
 
 	double calc_ave(const std::vector<double>& angled_feature_vals);
 
+	int Na = 4;	// number of angles
+
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
 	std::vector<int> angles_Ng;	// number of discrete intensity values in the image
 	std::vector<int> angles_Nr; // number of discrete run lengths in the image
 	std::vector<int> angles_Np; // number of voxels in the image
 	std::vector<P_matrix> angles_P;
 	std::vector<double> sum_p;
+	std::vector<PixIntens> I;	// sorted unique intensities
 
 	void clear_buffers();
 

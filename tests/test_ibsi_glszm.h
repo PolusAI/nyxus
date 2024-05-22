@@ -38,7 +38,6 @@ void test_ibsi_glszm_feature(const Feature2D& feature_, const std::string& featu
     double total = 0;
     
     LR roidata;
-    // Calculate features
     GLSZMFeature f;
     Environment::ibsi_compliance = true;
 
@@ -55,9 +54,7 @@ void test_ibsi_glszm_feature(const Feature2D& feature_, const std::string& featu
     total += roidata.fvals[feature][0];
     
     // image 2
-    // Calculate features
     LR roidata1;
-    // Calculate features
     GLSZMFeature f1;
     Environment::ibsi_compliance = true;
 
@@ -74,10 +71,7 @@ void test_ibsi_glszm_feature(const Feature2D& feature_, const std::string& featu
     total += roidata1.fvals[feature][0];
   
     // image 3
-    // Calculate features
-
     LR roidata2;
-    // Calculate features
     GLSZMFeature f2;
     Environment::ibsi_compliance = true;
 
@@ -94,10 +88,7 @@ void test_ibsi_glszm_feature(const Feature2D& feature_, const std::string& featu
     total += roidata2.fvals[feature][0];
     
     // image 4
-    // Calculate features
-    
     LR roidata3;
-    // Calculate features
     GLSZMFeature f3;
     Environment::ibsi_compliance = true;
 
@@ -113,8 +104,8 @@ void test_ibsi_glszm_feature(const Feature2D& feature_, const std::string& featu
 
     total += roidata3.fvals[feature][0];
 
+    // Verdict
     ASSERT_TRUE(agrees_gt(total/4, IBSI_glszm_values[feature_name], 100.));
-
 }
 
 void test_ibsi_glszm_sae()

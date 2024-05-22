@@ -61,7 +61,6 @@ void test_intensity_feature(const Feature2D& feature, const std::string& feature
     double total = 0;
     
     LR roidata;
-    // Calculate features
     PixelIntensityFeatures f;
 
     // image 1
@@ -80,7 +79,6 @@ void test_intensity_feature(const Feature2D& feature, const std::string& feature
     if (round) total = std::round(total);
 
     ASSERT_TRUE(agrees_gt(total, IBSI_intensity_values[feature_name], 100.));
-
 }
 
 void test_ibsi_mean_intensity()

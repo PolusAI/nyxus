@@ -87,7 +87,7 @@ namespace Nyxus
 			if (glcmFeature && nonAngledGlcmFeature == false)
 			{
 				// Populate with angles
-				for (auto ang : theEnvironment.glcmAngles)
+				for (auto ang : theEnvironment.glcmOptions.glcmAngles)
 				{
 					// CSV separator
 					//if (ang != theEnvironment.rotAngles[0])
@@ -203,7 +203,7 @@ namespace Nyxus
 
 		// Make the file name and write mode
 		std::string fullPath = get_feature_output_fname(intFpath, segFpath);
-		VERBOSLVL1(std::cout << "\t--> " << fullPath << "\n");
+		VERBOSLVL2(std::cout << "\t--> " << fullPath << "\n");
 
 		// Single CSV: create or continue?
 		const char* mode = "w";

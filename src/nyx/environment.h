@@ -8,11 +8,10 @@
 #include "environment_basic.h"
 #include "cli_fpimage_options.h"
 #include "cli_gabor_options.h"
+#include "cli_glcm_options.h"
 #include "cli_nested_roi_options.h"
 #include "roi_blacklist.h"
 #include "save_option.h"
-
-
 
 #ifdef USE_GPU
 	#include <cuda_runtime.h>
@@ -31,7 +30,6 @@
 #define LOADERTHREADS "--loaderThreads"			// Environment :: n_loader_threads
 #define PXLSCANTHREADS "--pxlscanThreads"		// Environment :: n_pixel_scan_threads
 #define REDUCETHREADS "--reduceThreads"			// Environment :: n_reduce_threads
-#define GLCMANGLES "--glcmAngles"					// Environment :: rotAngles
 #define VERBOSITY "--verbose"					// Environment :: verbosity_level	-- Example: --verbosity=3
 #define ONLINESTATSTHRESH "--onlineStatsThresh" // Environment :: onlineStatsThreshold	-- Example: --onlineStatsThresh=150
 #define XYRESOLUTION "--pixelsPerCentimeter"	// pixels per centimeter
@@ -54,13 +52,17 @@
 #endif
 
 // Gabor feature CLI arguments
-#define GABOR_FREQS "--gaborfreqs"		// Example: "2,4,8,72"
+#define GABOR_FREQS "--gaborfreqs"		// Example: "2,4,8,72". Frequencies should atch thetas: --gaborfreqs=1,2,3,4,5 --gabortheta=30,30,45,90,90
 #define GABOR_GAMMA "--gaborgamma"		// Example: "0.1"
 #define GABOR_SIG2LAM "--gaborsig2lam"	// Example: "0.8"
 #define GABOR_KERSIZE "--gaborkersize"	// Example: "20"
 #define GABOR_F0 "--gaborf0"			// Example: "0.1"
-#define GABOR_THETA "--gabortheta"		// Example: "60"
+#define GABOR_THETA "--gabortheta"		// Example: "60,45,90"
 #define GABOR_THRESHOLD "--gaborthold"	// Example: "0.025"
+
+// GLCM feature
+#define GLCMANGLES "--glcmAngles"				// Environment :: rotAngles
+#define GLCMOFFSET "--glcmOff"					// Environment :: raw_glcm_
 
 // Nested ROI functionality
 #define NESTEDROI_CHNL_SIGNATURE "--hsig"		// Channel signature Example: "_c" in "p0_y1_r1_c1.ome.tiff"
@@ -129,9 +131,6 @@ public:
 	std::string pixel_distance = "";
 	int n_pixel_distance = 5;
 
-	std::string rawGlcmAngles = "";
-	std::vector<int> glcmAngles = {0, 45, 90, 135};
-
 	std::string rawVerbosity = "";	// 'verbosity_level' is inherited from BasicEnvironment
 
 	std::string rawOnlineStatsThresh = "";
@@ -174,7 +173,7 @@ public:
 
 	int get_floating_point_precision();
 
-	unsigned int get_coarse_gray_depth();
+	int get_coarse_gray_depth();
 	void set_coarse_gray_depth(unsigned int new_depth);
 
 	// implementation of SKIPROI
@@ -186,6 +185,10 @@ public:
 	// implementation of Gabor feature options
 	bool parse_gabor_options_raw_inputs (std::string& error_message);
 	GaborOptions gaborOptions;
+
+	// implementation of GLCM feature options
+	bool parse_glcm_options_raw_inputs (std::string& error_message);
+	GLCMoptions glcmOptions;
 
 	// implementation of nested ROI options
 	bool parse_nested_options_raw_inputs (std::string& error_message);
@@ -221,7 +224,7 @@ private:
 
 	int floating_point_precision = 10;	
 
-	unsigned int coarse_grayscale_depth = 256;
+	int coarse_grayscale_depth = 64;
 	std::string raw_coarse_grayscale_depth = "";
 
 	// data members implementing RAMLIMIT

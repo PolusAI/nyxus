@@ -5,6 +5,8 @@
 
 using namespace Nyxus;
 
+int GLDZMFeature::n_levels = 0;
+
 GLDZMFeature::GLDZMFeature() : FeatureMethod("GLDZMFeature")
 {
 	provide_features (GLDZMFeature::featureset);
@@ -55,30 +57,35 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 	// -- Zones (intensity clusters)
 	std::vector<IDZ_cluster_indo> Z;
 
-	// -- Unique intensities 
-	std::unordered_set<PixIntens> U;
-
-	// -- We need a copy of ROI's image matrix for 
-	//		(1) making a binned (coarser) pixel intensity image and 
-	//		(2) zone finding alsorithm's ability to leave marks in recognized zones
-	auto M = r.aux_image_matrix;
+	ImageMatrix M;
+	M.allocate(r.aux_image_matrix.width, r.aux_image_matrix.height);
 	pixData& D = M.WriteablePixels();
 
-	// -- Squeeze the copy's intensity range for getting more prominent zones
-	PixIntens piRange = r.aux_max - 0; // Not 'r.aux_max - r.aux_min' because unlike in 'LR::raw_pixels' the min intensity in an image matrix ==0
-	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
-	for (size_t i = 0; i < D.size(); i++)
+	auto greyInfo = theEnvironment.get_coarse_gray_depth();
+	auto greyInfo_localFeature = GLDZMFeature::n_levels;
+	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
+		greyInfo = greyInfo_localFeature;
+	if (Nyxus::theEnvironment.ibsi_compliance)
+		greyInfo = 0;
+
+	auto& imR = r.aux_image_matrix.ReadablePixels();
+	bin_intensities (D, imR, r.aux_min, r.aux_max, greyInfo);
+
+	// allocate intensities matrix
+	std::vector<PixIntens> I;
+	if (ibsi_grey_binning(greyInfo))
 	{
-		// raw intensity
-		unsigned int Ir = D[i];
-		// ignore blank pixels
-		//	if (Ir == 0)
-		//		continue;
-		// binned intensity
-		unsigned int Ib = Nyxus::to_grayscale(Ir, 0, piRange, nGrays, Environment::ibsi_compliance);
-		D[i] = Ib;
-		// update the set of unique intensities
-		U.insert(Ib);
+		auto n_ibsi_levels = *std::max_element(D.begin(), D.end());
+		I.resize(n_ibsi_levels);
+		for (int i = 0; i < n_ibsi_levels; i++)
+			I[i] = i + 1;
+	}
+	else // radiomics and matlab
+	{
+		std::unordered_set<PixIntens> U(D.begin(), D.end());
+		U.erase(0);	// discard intensity '0'
+		I.assign(U.begin(), U.end());
+		std::sort(I.begin(), I.end());
 	}
 
 	//==== Find zones
@@ -93,9 +100,10 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 			if (int(inten) == VISITED)
 				continue;
 
-			// Accept non-blank pixels
-			//	if (inten == 0)
-			//		continue;
+			// Skip 0-intensity pixels (usually out of mask pixels)
+			if (ibsi_grey_binning(greyInfo))
+				if (inten == 0)
+					continue;
 
 			// Once found a nonblank pixel, explore its same-intensity neighbourhood (aka "zone") pixel's distance 
 			// to the image border and figure out the whole zone's metric - minimum member pixel's distance to the border.
@@ -231,7 +239,7 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 	//==== Fill the zonal metric matrix
 
 	// -- number of discrete intensity values in the image
-	Ng = (int)U.size();
+	Ng = (int)I.size();
 
 	// -- max zone distance to ROI or image border
 	Nd = 0;
@@ -240,7 +248,7 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 
 	// -- Set to vector to be able to know each intensity's index
 	greysLUT.clear();
-	for (auto grey : U)
+	for (auto grey : I)
 		greysLUT.push_back(grey);
 	std::sort (greysLUT.begin(), greysLUT.end());
 

@@ -151,6 +151,34 @@ TEST(TEST_NYXUS, TEST_MORPHOLOGY_PERIMETER)
 //==== IBSI tests
 //
 
+// NGTDM
+
+TEST(TEST_NYXUS, TEST_IBSI_NGTDM_COARSENESS)
+{
+	ASSERT_NO_THROW(test_ibsi_ngtdm_coarseness());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGTDM_CONTRAST)
+{
+	ASSERT_NO_THROW(test_ibsi_ngtdm_contrast());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGTDM_BUSYNESS)
+{
+	ASSERT_NO_THROW(test_ibsi_ngtdm_busyness());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGTDM_COMPLEXITY)
+{
+	ASSERT_NO_THROW(test_ibsi_ngtdm_complexity());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_NGTDM_STRENGTH)
+{
+	ASSERT_NO_THROW(test_ibsi_ngtdm_strength());
+}
+
+
 
 // GLCM tests
 
@@ -579,33 +607,6 @@ TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_ENERGY)
 TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_ROOT_MEAN_SQUARED) 
 {
 	ASSERT_NO_THROW(test_ibsi_root_mean_squared_intensity());
-}
-
-// NGTDM
-
-TEST(TEST_NYXUS, TEST_IBSI_NGTDM_COARSENESS) 
-{
-	ASSERT_NO_THROW(test_ibsi_ngtdm_coarseness());
-}
-
-TEST(TEST_NYXUS, TEST_IBSI_NGTDM_CONTRAST) 
-{
-	ASSERT_NO_THROW(test_ibsi_ngtdm_contrast());
-}
-
-TEST(TEST_NYXUS, TEST_IBSI_NGTDM_BUSYNESS) 
-{
-	ASSERT_NO_THROW(test_ibsi_ngtdm_busyness());
-}
-
-TEST(TEST_NYXUS, TEST_IBSI_NGTDM_COMPLEXITY) 
-{
-	ASSERT_NO_THROW(test_ibsi_ngtdm_complexity());
-}
-
-TEST(TEST_NYXUS, TEST_IBSI_NGTDM_STRENGTH) 
-{
-	ASSERT_NO_THROW(test_ibsi_ngtdm_strength());
 }
 
 //==== Tests of texture feature extraction without binning

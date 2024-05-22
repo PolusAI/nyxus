@@ -13,36 +13,39 @@
 #include <unordered_map> 
 
 // dig. phantom values for intensity based features
+// Calculated at 100 grey levels
 static std::unordered_map<std::string, float> glrlm_values {
-    {"GLRLM_SRE", 0.875714},
-    {"GLRLM_LRE", 1.57431},
-    {"GLRLM_LGLRE", 0.493811},
-    {"GLRLM_HGLRE", 4.68802},
-    {"GLRLM_SRLGLE", 0.412494},
-    {"GLRLM_SRHGLE", 4.27033},
-    {"GLRLM_LRLGLE", 0.86152},
-    {"GLRLM_LRHGLE", 6.57483},
-    {"GLRLM_GLN", 2.80937},
-    {"GLRLM_GLNN", 0.417335},
-    {"GLRLM_RLN", 5.47778},
-    {"GLRLM_RLNN", 0.829799}, 
-    {"GLRLM_RP", 0.348317}, 
-    {"GLRLM_GLV", 0.630247},
-    {"GLRLM_RV", 0.114035},
-    {"GLRLM_RE", 1.58115}
+    {"GLRLM_SRE", 0.677679}, 
+    {"GLRLM_LRE", 3.41805}, 
+    {"GLRLM_LGLRE", 0.11546}, 
+    {"GLRLM_HGLRE", 2486.087}, 
+    {"GLRLM_SRLGLE", 0.104}, 
+    {"GLRLM_SRHGLE", 2157.737}, 
+    {"GLRLM_LRLGLE", 0.165085}, 
+    {"GLRLM_LRHGLE", 4464.084}, 
+    {"GLRLM_GLN", 4.866}, 
+    {"GLRLM_GLNN", 0.37445}, 
+    {"GLRLM_RLN", 7.068975}, 
+    {"GLRLM_RLNN", 0.518777}, 
+    {"GLRLM_RP", 0.705}, 
+    {"GLRLM_GLV", 951.70428}, 
+    {"GLRLM_RV", 0.709646}, 
+    {"GLRLM_RE", 2.3747}
 };
 
-void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_name) {
+void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_name) 
+{
+    // Set feature's state
+    Environment::ibsi_compliance = false;
+    GLRLMFeature::n_levels = 100;
+
     int feature = int(feature_);
 
     double total = 0;
-    
-    LR roidata;
-    // Calculate features
-    GLRLMFeature f;
-    Environment::ibsi_compliance = false; 
-    // image 1
 
+    // image 1
+    LR roidata;
+    GLRLMFeature f;
     load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
     ASSERT_NO_THROW(f.calculate(roidata));
 
@@ -58,11 +61,8 @@ void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_na
     total += roidata.fvals[feature][3];
     
     // image 2
-    // Calculate features
     LR roidata1;
-    // Calculate features
     GLRLMFeature f1;
-
     load_masked_test_roi_data (roidata1, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask,  sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f1.calculate(roidata1));
@@ -78,14 +78,10 @@ void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_na
     total += roidata1.fvals[feature][2];
     total += roidata1.fvals[feature][3];
     
-    
     // image 3
-    // Calculate features
 
     LR roidata2;
-    // Calculate features
     GLRLMFeature f2;
-
     load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f2.calculate(roidata2));
@@ -102,12 +98,9 @@ void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_na
     total += roidata2.fvals[feature][3];
     
     // image 4
-    // Calculate features
     
     LR roidata3;
-    // Calculate features
     GLRLMFeature f3;
-
     load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f3.calculate(roidata3));
@@ -124,9 +117,8 @@ void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_na
     total += roidata3.fvals[feature][2];
     total += roidata3.fvals[feature][3];
 
+    // Verdict
     ASSERT_TRUE(agrees_gt(total/16, glrlm_values[feature_name], 100.));
-
-
 }
 
 void test_glrlm_sre()

@@ -47,6 +47,14 @@ public:
 	inline StatsInt get_ymin() const { return ymin; }
 	inline StatsInt get_ymax() const { return ymax; }
 
+	void init_from_widthheight (StatsInt w, StatsInt h)
+	{
+		xmin = 0;
+		xmax = w;
+		ymin = 0;
+		ymax = h;
+	}
+
 	static std::tuple<StatsInt, StatsInt, StatsInt, StatsInt> from_pixelcloud (const std::vector<Pixel2>& P)
 	{
 		AABB bb;
