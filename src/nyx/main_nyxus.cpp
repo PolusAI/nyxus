@@ -57,14 +57,21 @@ int main (int argc, char** argv)
 	// Have the feature manager prepare the feature toolset reflecting user's selection
 	if (!theFeatureMgr.compile())
 	{
-		std::cout << "Error: compiling feature methods failed\n";
+		std::cerr << "Error: compiling feature methods failed\n";
 		return 1;
 	}
 	theFeatureMgr.apply_user_selection();
 
 	// Current time stamp #1
 	auto startTS = getTimeStr();
-	VERBOSLVL1(std::cout << "\n>>> STARTING >>> " << startTS << "\n";)
+	VERBOSLVL1 (std::cout << "\n>>> STARTING >>> " << startTS << "\n");
+
+	// Initialize feature classes 
+	if (! theFeatureMgr.init_feature_classes())
+	{
+		std::cerr << "Error: initializing feature classes failed\n";
+		return 1;
+	}
 		
 	if (theEnvironment.dim() == 2)
 	{

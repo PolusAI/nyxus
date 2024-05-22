@@ -4,7 +4,10 @@
 
 using namespace Nyxus;
 
+//
 // Static members changeable by user via class 'Environment'
+//
+
 double GaborFeature::gamma = 0.1;           
 double GaborFeature::sig2lam = 0.8;         
 int GaborFeature::n = 16;                    
@@ -17,6 +20,17 @@ std::vector<std::pair<double, double>> GaborFeature::f0_theta_pairs
     {M_PI_2,    32.0},  
     {M_PI_4*3.0, 64.0} 
 };
+
+#ifdef USE_GPU
+    int GaborFeature::n_bank_filters = -1;
+    std::vector<std::vector<double>> GaborFeature::filterbank;
+    std::vector<double> GaborFeature::ho_filterbank;
+    double* GaborFeature::dev_filterbank = nullptr;
+#endif
+
+//
+//
+//
 
 bool GaborFeature::required(const FeatureSet& fs) 
 { 
@@ -201,7 +215,7 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r)
     int step_size = ceil(cufft_size / CUFFT_MAX_SIZE);
     if(step_size == 0) 
         step_size = 1;
-    int num_filters = ceil(8/step_size);
+    int num_filters = ceil(nFreqs/step_size) + 1;
 
     // Temp buffers
     // 
@@ -232,61 +246,44 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r)
         thetas.push_back(ft.second);
     }
 
-    for(int i = 0; i < 8; i += num_filters)
-    {
-        // Compute the baseline score before applying high-pass Gabor filters
-        std::vector<std::vector<PixIntens>> e2_pix_plane_vec (num_filters, std::vector<PixIntens>(Im0.width * Im0.height));
+    // Compute the baseline score before applying high-pass Gabor filters
+    std::vector<std::vector<PixIntens>> responses (num_filters, std::vector<PixIntens>(Im0.width * Im0.height));
 
-        std::vector<double> f(num_filters);
+    // Calculate low-passed baseline and high-passed filter responses
+    GaborEnergyGPUMultiFilter (Im0, responses, auxC.data(), auxG.data(), freqs, sig2lam, gamma, thetas, n, freqs.size());
 
-        for(int j = i; j < i + num_filters; j++) 
-        {
-            if(j >= 8) 
-                break;
-            f[j-i] = freqs[j]; 
-        }
+    // Examine the baseline signal
+    std::vector<PixIntens>& pix_plane = responses[0];
 
-        // Calculate low-passed baseline and high-passed filter responses
-        GaborEnergyGPUMultiFilter (Im0, e2_pix_plane_vec, auxC.data(), auxG.data(), f, sig2lam, gamma, thetas, n, num_filters);
+    PixIntens* e2img_ptr = e2img.writable_data_ptr();
 
-        // Examine the baseline signal
-        if (i == 0) 
-        {
-            std::vector<PixIntens>& pix_plane = e2_pix_plane_vec[0];
-
-            PixIntens* e2img_ptr = e2img.writable_data_ptr();
-
-            for(int k = 0; k < Im0.height * Im0.width; ++k)
-            {
-                e2img_ptr[k] = pix_plane[k];
-            } 
+    for (int k = 0; k < Im0.height * Im0.width; ++k)
+        e2img_ptr[k] = pix_plane[k];
             
-            // Values that we need for scoring filter responses
-            Moments2 local_stats;
-            e2img.GetStats(local_stats);
-            maxval = local_stats.max__();
-            double cmpval = local_stats.min__();
+    // Values that we need for scoring filter responses
+    Moments2 local_stats;
+    e2img.GetStats(local_stats);
+    maxval = local_stats.max__();
+    double cmpval = local_stats.min__();
 
-            // Score the baseline signal    
-            for (auto a : pix_plane)
-                if (double(a) > cmpval)
-                    baselineScore++;
-        }
+    // Score the baseline signal    
+    for (auto a : pix_plane)
+        if (double(a) > cmpval)
+            baselineScore++;
         
-        // Iterate high-pass filter response signals and score them 
-        for (int i=0; i < nFreqs; i++)
-        {
-            std::vector<PixIntens>& e2_pix_plane_temp = e2_pix_plane_vec[i+1];
+    // Iterate high-pass filter response signals and score them 
+    for (int j=1; j< freqs.size(); j++)
+    {
+        std::vector<PixIntens>& e2_pix_plane_temp = responses [j];
 
-            // score it
-            unsigned long afterGaborScore = 0;
-            for (auto a : e2_pix_plane_temp)
-                if (double(a) / maxval > GRAYthr)
-                    afterGaborScore++;
+        // score it
+        unsigned long afterGaborScore = 0;
+        for (auto a : e2_pix_plane_temp)
+            if (double(a) / maxval > GRAYthr)
+                afterGaborScore++;
 
-            // save the score as feature value
-            fvals[i] = (double)afterGaborScore / (double)baselineScore;
-        }
+        // save the score as feature value
+        fvals[j-1] = (double)afterGaborScore / (double)baselineScore;
     }
 }
 #endif
@@ -372,7 +369,7 @@ void GaborFeature::conv_dud(
 }
 
 // Creates a normalized Gabor filter
-void GaborFeature::Gabor (double* Gex, double f0, double sig2lam, double gamma, double theta, double fi, int n)
+void GaborFeature::Gabor (double* Gex, double f0, double sig2lam, double gamma, double theta, double fi, int n, std::vector<double> & tx, std::vector<double> & ty)
 {
     double lambda = 2 * M_PI / f0,
         cos_theta = cos(theta), 
@@ -445,7 +442,7 @@ void GaborFeature::GaborEnergy (
     int n_gab = n;
 
     double fi = 0;
-    Gabor (Gexp, f0, sig2lam, gamma, theta, fi, n_gab);
+    Gabor (Gexp, f0, sig2lam, gamma, theta, fi, n_gab, tx, ty);
 
     readOnlyPixels pix_plane = Im.ReadablePixels();
 
@@ -506,7 +503,7 @@ void GaborFeature::GaborEnergyGPU (
     int n_gab = n;
 
     double fi = 0;
-    Gabor (Gexp, f0, sig2lam, gamma, theta, fi, n_gab);
+    Gabor (Gexp, f0, sig2lam, gamma, theta, fi, n_gab, tx, ty);
 
     readOnlyPixels pix_plane = Im.ReadablePixels();
 
@@ -550,30 +547,23 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
 {
     int n_gab = n;
 
-    std::vector<double> g_filters;
-    g_filters.resize(2 * n * n * num_filters);
-
-    double fi = 0;
-
-    int idx = 0;
-    for(int i = 0; i < num_filters; ++i) 
-    {   
-        Gabor (Gexp, f0s[i], sig2lam, gamma, thetas[i], fi, n_gab);
-        for(int i = 0; i < 2*n*n; ++i) {
-            g_filters[idx+i] = Gexp[i];
-        }
-
-        idx += 2*n*n;
-    }
-
     readOnlyPixels pix_plane = Im.ReadablePixels();
-    
-    bool success = CuGabor::conv_dud_gpu_fft_multi_filter (auxC, pix_plane.data(), g_filters.data(), Im.width, Im.height, n_gab, n_gab, num_filters);
-    if(!success) {
-        std::cerr << "Unable to calculate Gabor features on GPU \n";
-    }
 
-    for (int i = 0; i < num_filters; ++i){
+    bool success = CuGabor::conv_dud_gpu_fft_multi_filter (
+        auxC, 
+        pix_plane.data(), 
+        GaborFeature::ho_filterbank.data(), 
+        Im.width, 
+        Im.height, 
+        n_gab, 
+        n_gab, 
+        num_filters,
+        GaborFeature::dev_filterbank);
+    if (!success) 
+        std::cerr << "\n\n\nUnable to calculate Gabor features on GPU \n\n\n";
+
+    for (int idx, i = 0; i < num_filters; ++i)
+    {
         idx = 2 * i * (Im.width + n - 1) * (Im.height + n - 1);
         decltype(Im.height) b = 0;
         
@@ -594,9 +584,7 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
             }
             b++;
         }
-        
     }
-
 }
 #endif
 
@@ -639,3 +627,61 @@ double GaborFeature::get_theta_in_degrees (int i)
     return theta / M_PI * 180;
 }
 
+#ifdef USE_GPU
+
+void GaborFeature::create_filterbank()
+{
+    // frequencies and angles
+    std::vector<double> freqs = { f0LP },
+        thetas = { M_PI_2 };    // the lowpass filter goes at compromise pi/2 theta
+    for (auto& ft : GaborFeature::f0_theta_pairs)
+    {
+        freqs.push_back(ft.first);
+        thetas.push_back(ft.second);
+    }
+
+    // allocate the conv kernels buffer
+    GaborFeature::n_bank_filters = (int)freqs.size();
+    GaborFeature::filterbank.resize(GaborFeature::n_bank_filters);
+    for (auto& f : GaborFeature::filterbank)
+        f.resize (2 * GaborFeature::n * GaborFeature::n * GaborFeature::n_bank_filters);
+
+    ho_filterbank.resize(2 * GaborFeature::n * GaborFeature::n * GaborFeature::n_bank_filters);
+
+    // temps
+    std::vector<double> temp_tx, temp_ty;
+    temp_tx.resize (GaborFeature::n + 1);
+    temp_ty.resize (GaborFeature::n + 1);
+    double fi = 0;  // offset
+
+    // filter bank as a single chunk of memory
+    int idx = 0;
+    for (int i = 0; i < GaborFeature::n_bank_filters; i++)
+    {
+        auto filterData = GaborFeature::filterbank[i];
+        Gabor (filterData.data(), freqs[i], GaborFeature::sig2lam, GaborFeature::gamma, thetas[i], fi, GaborFeature::n, temp_tx, temp_ty);
+
+        for (int i = 0; i < 2 * GaborFeature::n * GaborFeature::n; ++i)
+            GaborFeature::ho_filterbank [idx + i] = filterData[i];
+
+        idx += 2 * GaborFeature::n * GaborFeature::n;
+    }
+}
+
+bool GaborFeature::send_filterbank_2_gpuside()
+{
+    return CuGabor::send_filterbank_2_gpuside (&GaborFeature::dev_filterbank, GaborFeature::ho_filterbank.data(), GaborFeature::ho_filterbank.size());
+}
+
+#endif
+
+bool GaborFeature::init_class()
+{
+    #ifdef USE_GPU
+    GaborFeature::create_filterbank();
+    if (! GaborFeature::send_filterbank_2_gpuside())
+        return false;
+    #endif
+
+    return true;
+}

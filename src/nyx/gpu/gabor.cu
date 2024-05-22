@@ -78,10 +78,8 @@ namespace CuGabor {
     bool conv_dud_gpu_fft(double* out, 
                             const unsigned int* image, 
                             double* kernel, 
-                            int image_n, int image_m, int kernel_n, int kernel_m){
-
-        
-        
+                            int image_n, int image_m, int kernel_n, int kernel_m)
+    {
         int batch_size = 1;
 
         // calculate new size of image based on padding size
@@ -216,10 +214,11 @@ namespace CuGabor {
         return true;                    
     }
 
-     bool conv_dud_gpu_fft_multi_filter(double* out, 
+    bool conv_dud_gpu_fft_multi_filter(double* out, 
                             const unsigned int* image, 
                             double* kernel, 
-                            int image_n, int image_m, int kernel_n, int kernel_m, int batch_size){
+                            int image_n, int image_m, int kernel_n, int kernel_m, int batch_size,
+                            double* dev_filterbank){
         
         typedef double2 Complex; // comment out to use float
         typedef cufftDoubleComplex CuComplex; // comment out to use float
@@ -262,30 +261,6 @@ namespace CuGabor {
             }
         }
 
-        for (int batch = 0; batch < batch_size; ++batch) {
-
-            batch_idx = batch * size;
-            batch_idx2 = batch * kernel_m * kernel_n;
-
-            for (int i = 0; i < row_size; ++i) {
-                for (int j = 0; j < col_size; ++j) {
-
-                    index = batch_idx + (i*col_size + j);
-                    index2 = batch_idx2 + (i*kernel_n + j);
-
-                    if (i < kernel_m && j < kernel_n) {
-
-                        linear_kernel[index].x = kernel[2*index2];
-                        linear_kernel[index].y = kernel[2*index2+1];
-
-                    } else {
-                        linear_kernel[index].x = 0;
-                        linear_kernel[index].y = 0;
-                    }
-                }
-            }
-        }
-
         CuComplex* d_image;
         CuComplex* d_result;
         CuComplex* d_kernel;
@@ -305,8 +280,9 @@ namespace CuGabor {
         ok = cudaMemcpy(d_image, linear_image.data(), batch_size*size*sizeof(CuComplex), cudaMemcpyHostToDevice);
         CHECKERR(ok);
         
-        ok = cudaMemcpy(d_kernel, linear_kernel.data(), batch_size*size*sizeof(CuComplex), cudaMemcpyHostToDevice);
-        CHECKERR(ok);
+        bool ok2 = dense_2_padded_filterbank (d_kernel, dev_filterbank, image_m, image_n, kernel_m, kernel_n, batch_size);
+        if (!ok2)
+            return false;
 
         cufftHandle plan;
         cufftHandle plan_k;
@@ -368,5 +344,74 @@ namespace CuGabor {
 
         return true;                    
     }
+
+     bool send_filterbank_2_gpuside (double** dev_filterbank, const double* ho_filterbank, size_t filterbank_len_all_batches)
+     {
+         auto szb = sizeof(dev_filterbank[0]) * filterbank_len_all_batches;
+
+         auto ok = cudaMalloc ((void**)dev_filterbank, szb);
+         CHECKERR(ok);
+
+         ok = cudaMemcpy (*dev_filterbank, ho_filterbank, szb, cudaMemcpyHostToDevice);
+         CHECKERR(ok);
+
+         return true;
+     }
+
+     // X --> Y
+     __global__ void ker_dense_2_padded (cufftDoubleComplex* Y, double* X, int y_rowsize, int y_colsize, int x_rowsize, int x_colsize, int batchsize)
+     {
+         int c = threadIdx.x + blockIdx.x * blockDim.x;
+         int r = threadIdx.y + blockIdx.y * blockDim.y;
+         int batch = threadIdx.z + blockIdx.z * blockDim.z;
+
+         // dimensions of the padded image
+         int row_size = y_rowsize + x_rowsize - 1; 
+         int col_size = y_colsize + x_colsize - 1; 
+
+         if (c >= row_size || r >= col_size || batch >= batchsize)
+             return;
+
+         int size = row_size * col_size;
+         int batch_idx = batch * size;
+         int batch_idx2 = batch * x_rowsize * x_colsize;
+
+         int index = batch_idx + (c * col_size + r);
+         int index2 = batch_idx2 + (c * x_colsize + r);
+
+         if (c < x_rowsize && r < x_colsize)
+         {
+             Y[index].x = X[2 * index2];
+             Y[index].y = X[2 * index2 + 1];
+         }
+         else
+         {
+             Y[index].x = 0.f;
+             Y[index].y = 0.f;
+         }
+     }
+
+     // X --> Y
+     bool dense_2_padded_filterbank (cufftDoubleComplex* Y, double* X, int y_rowsize, int y_colsize, int x_rowsize, int x_colsize, int batchsize)
+     {
+         int rowsize = y_rowsize + x_rowsize - 1;
+         int colsize = y_colsize + x_colsize - 1;
+
+         int blo = 4;
+         dim3 tpb (blo, blo, blo);
+         dim3 bpg (ceil(rowsize / blo) + 1, ceil(colsize / blo) + 1, ceil(batchsize / blo) + 1);
+
+         ker_dense_2_padded <<< bpg, tpb >>> (Y, X, y_rowsize, y_colsize, x_rowsize, x_colsize, batchsize);
+
+         cudaError_t ok = cudaDeviceSynchronize();
+         CHECKERR(ok);
+
+         // Check if kernel execution generated and error
+         ok = cudaGetLastError();
+         CHECKERR(ok);
+
+         return true;
+     }
+
 }
 
