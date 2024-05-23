@@ -28,6 +28,10 @@
 #include "features/caliper.h"
 #include "features/roi_radius.h"
 #include "features/zernike.h"
+#include "features/focus_score.h"
+#include "features/power_spectrum.h"
+#include "features/saturation.h"
+#include "features/sharpness.h"
 
 FeatureManager::FeatureManager()
 {
@@ -60,10 +64,12 @@ FeatureManager::FeatureManager()
 	register_feature (new GaborFeature());
 	register_feature (new ZernikeFeature());
 	register_feature (new RadialDistributionFeature());
-	register_feature(new PixelIntensityFeatures_3D());
-}
-
-bool FeatureManager::init_feature_classes()
+	register_feature (new PixelIntensityFeatures_3D());
+	register_feature (new FocusScoreFeature());
+	register_feature (new PowerSpectrumFeature());
+	register_feature (new SaturationFeature());
+	register_feature (new SharpnessFeature());
+}bool FeatureManager::init_feature_classes()
 {
 	return GaborFeature::init_class();
 }

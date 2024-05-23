@@ -4,6 +4,9 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <map>
+#include <algorithm>
+#include <numeric>
 
 namespace Nyxus
 {

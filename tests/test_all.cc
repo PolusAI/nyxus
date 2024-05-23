@@ -21,6 +21,8 @@
 #include "test_roi_blacklist.h"
 #include "test_arrow.h"
 #include "test_arrow_file_name.h"
+#include "test_image_quality.h"
+
 
 TEST(TEST_NYXUS, TEST_ARROW_FILE_NAME) {
 	test_file_naming();
@@ -1066,6 +1068,36 @@ TEST(TEST_NYXUS, TEST_NGTDM_STRENGTH)
 TEST(TEST_NYXUS, TEST_ROI_BLACKLISTING) 
 {
 	ASSERT_NO_THROW(test_roi_blacklist());
+}
+
+TEST(TEST_IMAGE_QUALITY, TEST_FOCUS_SCORE) 
+{
+	ASSERT_NO_THROW(test_focus_score_feature());
+}
+
+TEST(TEST_IMAGE_QUALITY, TEST_LOCAL_FOCUS_SCORE) 
+{
+	ASSERT_NO_THROW(test_local_focus_score_feature());
+}
+
+TEST(TEST_IMAGE_QUALITY, TEST_POWER_SPECTRUM) 
+{
+	ASSERT_NO_THROW(test_power_spectrum_feature());
+}
+
+TEST(TEST_IMAGE_QUALITY, TEST_MIN_SATURATION) 
+{
+	ASSERT_NO_THROW(test_min_saturation_feature());
+}
+
+TEST(TEST_IMAGE_QUALITY, TEST_MAX_SATURATION) 
+{
+	ASSERT_NO_THROW(test_max_saturation_feature());
+}
+
+TEST(TEST_IMAGE_QUALITY, TEST_SHARPNESS) 
+{
+	ASSERT_NO_THROW(test_sharpness_feature());
 }
 
 int main(int argc, char **argv) 

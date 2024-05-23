@@ -25,7 +25,7 @@ namespace Nyxus
 		{ "MASS_DISPLACEMENT", Feature2D::MASS_DISPLACEMENT },
 		{ "MAX", Feature2D::MAX },
 		{ "MEAN", Feature2D::MEAN },
-		{ "MEAN_ABSOLUTE_DEVIATION", Feature2D::MEAN_ABSOLUTE_DEVIATION },
+		{ "MEAN_ABSOLUTE_DEVIATION", Feature2D::MEAN_ABSOLUTE_DEVIATION }, 
 		{ "MEDIAN", Feature2D::MEDIAN },
 		{ "MEDIAN_ABSOLUTE_DEVIATION", Feature2D::MEDIAN_ABSOLUTE_DEVIATION },
 		{ "MIN", Feature2D::MIN },
@@ -465,6 +465,20 @@ namespace Nyxus
 		{ "GABOR", Feature2D::GABOR },
 	};
 
+	// Image quality features
+	std::map <std::string, FeatureIMQ> UserFacingIMQFeatureNames = {
+		{"FOCUS_SCORE", FeatureIMQ::FOCUS_SCORE},
+		{"LOCAL_FOCUS_SCORE", FeatureIMQ::LOCAL_FOCUS_SCORE},
+		{"POWER_SPECTRUM_SLOPE", FeatureIMQ::POWER_SPECTRUM_SLOPE},
+		{"MAX_SATURATION", FeatureIMQ::MAX_SATURATION},
+		{"MIN_SATURATION", FeatureIMQ::MIN_SATURATION},
+		{"SHARPNESS", FeatureIMQ::SHARPNESS}
+	};
+
+	std::map <std::string, FgroupIMQ> UserFacingIMQFeaturegroupNames = {
+		{ "*ALL_IMQ*", FgroupIMQ::ALL_IMQ}
+	};
+
 	std::map <std::string, Fgroup2D> UserFacing2dFeaturegroupNames =
 	{
 		{ "*ALL*", Fgroup2D::FG2_ALL},
@@ -625,6 +639,28 @@ bool FeatureSet::find_3D_GroupByString (const std::string & grpName, Fgroup3D & 
 	return true;
 }
 
+bool FeatureSet::find_IMQ_FeatureByString (const std::string& featureName, FeatureIMQ& f)
+{
+	auto it_f = Nyxus::UserFacingIMQFeatureNames.find(featureName);
+
+	if (it_f == Nyxus::UserFacingIMQFeatureNames.end())
+		return false;
+
+	f = it_f->second;
+	return true;
+}
+
+bool FeatureSet::find_IMQ_GroupByString (const std::string & grpName, FgroupIMQ & grpCode)
+{
+	auto itr = Nyxus::UserFacingIMQFeaturegroupNames.find (grpName);
+
+	if (itr == Nyxus::UserFacingIMQFeaturegroupNames.end())
+		return false;
+
+	grpCode = itr->second;
+	return true;
+}
+
 std::string FeatureSet::findFeatureNameByCode (Feature2D fcode)
 {
 	// Search
@@ -693,6 +729,23 @@ std::string FeatureSet::findGroupNameByCode (Fgroup3D code)
 	return "UNNAMED_FEATURE_GROUP_" + std::to_string((int)code);
 }
 
+std::string FeatureSet::findGroupNameByCode (FgroupIMQ code)
+{
+	// Search
+	auto result = std::find_if(
+		Nyxus::UserFacingIMQFeaturegroupNames.begin(),
+		Nyxus::UserFacingIMQFeaturegroupNames.end(),
+		[code](const auto& finfo)
+		{ return finfo.second == code; });
+
+	// Return the feature name if found
+	if (result != Nyxus::UserFacingIMQFeaturegroupNames.end())
+		return result->first;
+
+	// Not found
+	return "UNNAMED_FEATURE_GROUP_" + std::to_string((int)code);
+}
+
 // Relying on RVO rather than std::move
 std::vector<std::tuple<std::string, int>> FeatureSet::getEnabledFeatures()
 {
@@ -741,5 +794,28 @@ std::vector<std::tuple<std::string, int>> FeatureSet::getEnabledFeatures()
 			F.push_back(f);
 		}
 	}
+
+	// Image Quality features
+	for (int i = (int) Nyxus::Feature3D::_COUNT_; i < (int) Nyxus::FeatureIMQ::_COUNT_; i++)
+	{
+		if (m_enabledFeatures[i])
+		{
+			// Find feature i's name
+			std::string fname = "IMQ-feature" + std::to_string(i);	// name feature<number> will indicate a number of a missing user-facing feature name, if any
+			for (const auto& f : Nyxus::UserFacingIMQFeatureNames)
+			{
+				if (f.second == (Nyxus::FeatureIMQ) i)
+				{
+					fname = f.first;
+					break;
+				}
+			}
+
+			// Save the pair
+			std::tuple<std::string, int> f (fname, i);
+			F.push_back(f);
+		}
+	}
+
 	return F;
 }

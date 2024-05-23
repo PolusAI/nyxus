@@ -13,6 +13,12 @@ void FeatureMethod::provide_features (const std::initializer_list<Nyxus::Feature
 		provided_features.push_back((int)f);
 }
 
+void FeatureMethod::provide_features (const std::initializer_list<Nyxus::FeatureIMQ> & F)
+{
+	for (auto f : F)
+		provided_features.push_back((int)f);
+}
+
 void FeatureMethod::provide_features (const std::initializer_list<Nyxus::Feature3D> & F)
 {
 	for (auto f : F)
@@ -20,6 +26,12 @@ void FeatureMethod::provide_features (const std::initializer_list<Nyxus::Feature
 }
 
 void FeatureMethod::add_dependencies (const std::initializer_list<Nyxus::Feature2D>& F)
+{
+	for (auto f : F)
+		dependencies.push_back((int)f);
+}
+
+void FeatureMethod::add_dependencies (const std::initializer_list<Nyxus::FeatureIMQ>& F)
 {
 	for (auto f : F)
 		dependencies.push_back((int)f);
@@ -43,6 +55,11 @@ bool FeatureMethod::provides (int fcode) const
 }
 
 bool FeatureMethod::depends (Nyxus::Feature2D fcode)
+{
+	return std::find (dependencies.begin(), dependencies.end(), (int)fcode) != dependencies.end();
+}
+
+bool FeatureMethod::depends (Nyxus::FeatureIMQ fcode)
 {
 	return std::find (dependencies.begin(), dependencies.end(), (int)fcode) != dependencies.end();
 }

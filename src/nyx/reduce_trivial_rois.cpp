@@ -40,6 +40,11 @@
 #include "features/caliper.h"
 #include "features/roi_radius.h"
 #include "features/zernike.h"
+#include "features/focus_score.h"
+#include "features/power_spectrum.h"
+#include "features/saturation.h"
+#include "features/sharpness.h"
+
 #include "helpers/timing.h"
 #include "parallel.h"
 
@@ -287,6 +292,28 @@ namespace Nyxus
 			{
 				STOPWATCH("RDistribution/Rdist/Rd/#00FFFF", "\t=");
 				runParallel(RadialDistributionFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			}
+
+			// Image quality features
+			if (FocusScoreFeature::required(theFeatureSet)) 
+			{
+				STOPWATCH("ImageQuality/FocusScore/Rd/#00FFFF", "\t=");
+				runParallel(FocusScoreFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			}
+
+			if (PowerSpectrumFeature::required(theFeatureSet)) {
+				STOPWATCH("ImageQuality/PowerSpectrum/Rd/#00FFFF", "\t=");
+				runParallel(PowerSpectrumFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			}
+
+			if (SaturationFeature::required(theFeatureSet)) {
+				STOPWATCH("ImageQuality/Saturation/Rd/#00FFFF", "\t=");
+				runParallel(SaturationFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
+			}
+
+			if (SharpnessFeature::required(theFeatureSet)) {
+				STOPWATCH("ImageQuality/Sharpness/Rd/#00FFFF", "\t=");
+				runParallel(SharpnessFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &PendingRoisLabels, &roiData);
 			}
 		}
 		else

@@ -405,7 +405,7 @@ namespace Nyxus
 		if (Stopwatch::inclusive())
 			Stopwatch::reset();
 		#endif		
-		
+
 		// One-time initialization
 		init_feature_buffers();
 
@@ -458,6 +458,7 @@ namespace Nyxus
 
 			// Do phased processing: prescan, trivial ROI processing, oversized ROI processing
 			ok = processIntSegImagePair(ifp, lfp, numFastloaderThreads, i, nf);
+
 			if (ok == false)
 			{
 				std::cout << "processIntSegImagePair() returned an error code while processing file pair " << ifp << " and " << lfp << std::endl;

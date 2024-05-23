@@ -41,6 +41,10 @@ public:
 
 	/// @brief 
 	/// @param F 
+	void provide_features (const std::initializer_list<Nyxus::FeatureIMQ> & F);	// Queried by provides()
+
+	/// @brief 
+	/// @param F 
 	void provide_features (const std::initializer_list<Nyxus::Feature3D> & F);	// Queried by provides()
 
 	/// @brief Checks if a feature code belongs to the provided set 
@@ -52,12 +56,14 @@ public:
 	/// @param F 
 	void add_dependencies (const std::initializer_list<Nyxus::Feature2D>& F);	// Queried with depends()
 	void add_dependencies (const std::initializer_list<Nyxus::Feature3D>& F);	// Queried with depends()
+	void add_dependencies (const std::initializer_list<Nyxus::FeatureIMQ>& F);	// Queried with depends()
 
 	/// @brief Checks if a feature code is among dependencies
 	/// @param  
 	/// @return 
 	bool depends (Nyxus::Feature2D);	// Looks up in 'dependencies'
 	bool depends (Nyxus::Feature3D);	// Looks up in 'dependencies'
+	bool depends (Nyxus::FeatureIMQ);	// Looks up in 'dependencies'
 
 private:
 	// Dependency manager support

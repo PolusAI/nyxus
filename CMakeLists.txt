@@ -147,6 +147,7 @@ set(SOURCE
 	src/nyx/features/erosion_pixels.cpp
 	src/nyx/features/euler_number.cpp
 	src/nyx/features/extrema.cpp
+	src/nyx/features/focus_score.cpp
 	src/nyx/features/fractal_dim.cpp
 	src/nyx/features/gabor.cpp
 	src/nyx/features/gabor_nontriv.cpp
@@ -168,9 +169,12 @@ set(SOURCE
 	src/nyx/features/ngldm.cpp
 	src/nyx/features/ngtdm.cpp
 	src/nyx/features/pixel.cpp
+	src/nyx/features/power_spectrum.cpp
 	src/nyx/features/radial_distribution.cpp
 	src/nyx/features/roi_radius.cpp
 	src/nyx/features/rotation.cpp
+	src/nyx/features/saturation.cpp
+	src/nyx/features/sharpness.cpp
 	src/nyx/features/specfunc.cpp
 	src/nyx/features/texture_feature.cpp
 	src/nyx/features/zernike.cpp
@@ -208,7 +212,6 @@ set(SOURCE
 	src/nyx/scan_fastloader_way.cpp
 	src/nyx/strpat.cpp
 )
-
 
 # CLI
 if(BUILD_CLI)

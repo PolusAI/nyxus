@@ -536,6 +536,18 @@ namespace Nyxus
 		_COUNT_
 	};
 
+	enum class FeatureIMQ {
+		// Image Quality features
+		FOCUS_SCORE = (int) Feature3D::_COUNT_,
+		LOCAL_FOCUS_SCORE,
+		POWER_SPECTRUM_SLOPE,
+		MAX_SATURATION,
+		MIN_SATURATION,
+		SHARPNESS,
+
+		_COUNT_
+	};
+
 	enum class Fgroup2D
 	{
 		FG2_ALL = 0,
@@ -567,6 +579,13 @@ namespace Nyxus
 		FG3_MOMENTS,
 		_COUNT_
 	};
+
+	enum class FgroupIMQ
+	{
+		ALL_IMQ= (int) Fgroup3D::_COUNT_,
+
+		__COUNT_
+	};
 }
 
 /// @brief Helper class to set and access user feature selection made via the command line or Python interface.
@@ -577,6 +596,12 @@ public:
 	void enableAll(bool newStatus = true) 
 	{ 
 		for (int i = 0; i < int(Nyxus::Feature2D::_COUNT_); i++) m_enabledFeatures[i] = newStatus; 
+	}
+	void enableAllIMQ(bool newStatus = true)
+	{
+		for (int i = int(Nyxus::Feature3D::_COUNT_); i < int(Nyxus::FeatureIMQ::_COUNT_); i++) {
+			m_enabledFeatures[i] = newStatus; 
+		}
 	}
 	void disableFeatures(const std::initializer_list<Nyxus::Feature2D>& desiredFeatures)
 	{
@@ -589,6 +614,10 @@ public:
 	}
 	void enableFeatures(const std::initializer_list<Nyxus::Feature3D>& desiredFeatures) 
 	{
+		for (auto f : desiredFeatures)
+			m_enabledFeatures[(int)f] = true;
+	}
+	void enableFeatures(const std::initializer_list<Nyxus::FeatureIMQ>& desiredFeatures) {
 		for (auto f : desiredFeatures)
 			m_enabledFeatures[(int)f] = true;
 	}
@@ -659,6 +688,10 @@ public:
 	{ 
 		return fc < Nyxus::Feature3D::_COUNT_ ? m_enabledFeatures[(int)fc] : false;
 	}
+	bool isEnabled (Nyxus::FeatureIMQ fc) const
+	{ 
+		return fc < Nyxus::FeatureIMQ::_COUNT_ ? m_enabledFeatures[(int)fc] : false;
+	}
 
 	bool anyEnabled (const std::initializer_list<Nyxus::Feature2D>& F) const
 	{
@@ -668,6 +701,13 @@ public:
 		return false;
 	}
 	bool anyEnabled (const std::initializer_list<Nyxus::Feature3D>& F) const
+	{
+		for (auto f : F)
+			if (m_enabledFeatures[(int)f])
+				return true;
+		return false;
+	}
+	bool anyEnabled (const std::initializer_list<Nyxus::FeatureIMQ>& F) const
 	{
 		for (auto f : F)
 			if (m_enabledFeatures[(int)f])
@@ -685,11 +725,14 @@ public:
 	bool find_2D_GroupByString (const std::string & group_name, Nyxus::Fgroup2D & group_code);
 	bool find_3D_FeatureByString (const std::string & feature_name, Nyxus::Feature3D & feature_code);
 	bool find_3D_GroupByString (const std::string & group_name, Nyxus::Fgroup3D & group_code);
+	bool find_IMQ_FeatureByString (const std::string & feature_name, Nyxus::FeatureIMQ & feature_code);
+	bool find_IMQ_GroupByString (const std::string & group_name, Nyxus::FgroupIMQ & group_code);
 
 	std::string findFeatureNameByCode (Nyxus::Feature2D code);
 	std::string findFeatureNameByCode (Nyxus::Feature3D fcode);
 	std::string findGroupNameByCode (Nyxus::Fgroup2D code);
 	std::string findGroupNameByCode (Nyxus::Fgroup3D code);
+	std::string findGroupNameByCode (Nyxus::FgroupIMQ code);
 
 	void show_help();
 
@@ -697,13 +740,14 @@ public:
 	std::vector<std::tuple<std::string, int>> getEnabledFeatures();
 
 private:
-	bool m_enabledFeatures [(int) Nyxus::Feature3D::_COUNT_];
+	bool m_enabledFeatures [(int) Nyxus::FeatureIMQ::_COUNT_];
 };
 
 namespace Nyxus
 {
 	extern FeatureSet theFeatureSet;
 	extern std::map <std::string, Nyxus::Feature2D> UserFacingFeatureNames;
+	extern std::map <std::string, Nyxus::FeatureIMQ> UserFacingIMQFeatureGroupNames;
 	extern std::map <std::string, Nyxus::Fgroup2D> UserFacing2dFeaturegroupNames;
 	extern std::map <std::string, Nyxus::Feature3D> UserFacing_3D_featureNames;
 	extern std::map <std::string, Nyxus::Fgroup3D> UserFacing3dFeaturegroupNames;
