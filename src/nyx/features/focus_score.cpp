@@ -3,6 +3,10 @@
 
 using namespace Nyxus;
 
+int FocusScoreFeature::kernel[9] = { 0, 1, 0, 
+                                     1, -4, 1, 
+                                     0, 1, 0 };
+
 FocusScoreFeature::FocusScoreFeature() : FeatureMethod("FocusScoreFeature") {
     provide_features(FocusScoreFeature::featureset);
 }
@@ -70,10 +74,123 @@ void FocusScoreFeature::reduce (size_t start, size_t end, std::vector<int>* ptrL
     }
 }
 
+void osized_calculate(LR& r, ImageLoader& imloader) {
+
+    // Skip calculation in case of noninformative data
+    if (r.aux_max == r.aux_min) return;
+
+    WriteImageMatrix_nontriv Im0 ("FocusScoreFeature-osized_calculate-Im0", r.label);
+    Im0.allocate_from_cloud (r.raw_pixels_NT, r.aabb, false);
+
+}
+
 void FocusScoreFeature::save_value(std::vector<std::vector<double>>& feature_vals) {
     
     feature_vals[(int)FeatureIMQ::FOCUS_SCORE][0] = focus_score_;
     feature_vals[(int)FeatureIMQ::LOCAL_FOCUS_SCORE][0] = local_focus_score_;
+
+}
+
+double FocusScoreFeature::get_local_focus_score_NT(WriteImageMatrix_nontriv& Im, int ksize) {
+
+    int n = 3; // size of kernel nxn
+
+    if (ksize != 1) {
+
+        kernel[0] = 2; 
+        kernel[1] = 0;
+        kernel[2] = 2;
+
+        kernel[3] = 0;
+        kernel[4] = -8;
+        kernel[5] = 0;
+
+        kernel[6] = 2;
+        kernel[7] = 0;
+        kernel[8] = 2;
+    }
+
+    auto width = Im.get_width(),
+        height = Im.get_height(); 
+    auto xy0 = (int)ceil(double(n) / 2.);
+
+    // Window (N-fold kernel size)
+    int winX = n * 10, 
+        winY = n * 10;
+    std::vector<unsigned int> W (winY * winX);
+
+    // Convolution result buffer
+    std::vector<double> conv_buffer ((winY + n - 1) * (winX + n - 1) * 2);
+
+    // Iterate the image window by window
+    int n_winHor = width / winX, //ceil (float(width) / float(win)), 
+        n_winVert = height / winY; //ceil (float(height) / float(win));
+
+    
+    // ROI smaller than kernel?
+    if (n_winVert == 0 || n_winHor == 0)
+    {
+        // Fill the window with data
+        for (int row=0; row < height; row++) {
+            for (int col = 0; col < width; col++)
+            {
+                size_t idx = row * width + col;
+                W[idx] = Im.get_at(idx);
+            }    
+        }
+
+        // Convolve
+        laplacian (W, conv_buffer, width, height, ksize);
+        
+        return variance(conv_buffer);
+    }
+
+    double total_abs_sum = 0;
+
+    std::vector<std::tuple<double, double, int>> tile_variance; // vector of tuples containing 0: abs sum of tile, 1: variance of tile, 2: buffer size
+    // ROI larger than kernel
+    for (int winVert = 0; winVert < n_winVert; winVert++)
+    {
+        for (int winHor = 0; winHor < n_winHor; winHor++)
+        {
+            int count = 0;
+            // Fill the window with data
+            for (int row=0; row<winY; row++)
+                for (int col = 0; col < winX; col++)
+                {
+                    size_t imIdx = winVert * n_winHor * winY * winX // skip whole windows above
+                        + row * n_winHor * winX  // skip 'row' image-wide horizontal lines
+                        + winHor * n_winHor * winX   // skip winHor-wide line
+                        + col;
+                    W[row * winX + col] = Im.get_at(imIdx);
+                }
+
+            // Convolve
+            laplacian (W, conv_buffer, winY, winX, ksize);
+
+            double abs_sum = std::transform_reduce(conv_buffer.begin(), conv_buffer.end(), 0.0, std::plus<>(), [](double val) { 
+                return val; 
+            });
+
+            total_abs_sum += abs_sum;
+
+            tile_variance.emplace_back(std::make_tuple(abs_sum, variance(conv_buffer), conv_buffer.size()));
+        }
+    }
+
+    double abs_mean = total_abs_sum / (width * height); // get median of absolute sum
+
+    double total_variance = 0;
+    for (auto& sum_pair: tile_variance) {
+        
+        auto mu_i = std::get<0>(sum_pair);
+        auto s_i = std::get<1>(sum_pair);
+        auto n_i = std::get<2>(sum_pair);
+
+        total_variance += ((n_i - 1) * s_i) + (n_i * (mu_i - total_abs_sum) * (mu_i - abs_mean));
+    }
+    
+    return total_variance / (width * height);
 
 }
 
@@ -113,18 +230,15 @@ void FocusScoreFeature::laplacian(const std::vector<PixIntens>& image, std::vect
     int m_kernel = 3;
     int n_kernel = 3;
 
-    // use c-style array for compile time initialization
-    int kernel[9] = { 0, 1, 0, 
-                    1, -4, 1, 
-                    0, 1, 0 };
-
     if (ksize != 1) {
         kernel[0] = 2; 
         kernel[1] = 0;
         kernel[2] = 2;
+
         kernel[3] = 0;
         kernel[4] = -8;
         kernel[5] = 0;
+
         kernel[6] = 2;
         kernel[7] = 0;
         kernel[8] = 2;

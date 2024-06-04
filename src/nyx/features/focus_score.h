@@ -26,7 +26,8 @@ public:
 
     //=== Non-trivial ROIs ===
     void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
-    void osized_calculate(LR& r, ImageLoader& imloader){};
+    void osized_calculate(LR& r, ImageLoader& imloader);
+    double get_local_focus_score_NT(WriteImageMatrix_nontriv& Im, int ksize);
 
     // Result saver
     void save_value(std::vector<std::vector<double>>& feature_vals);
@@ -50,5 +51,6 @@ private:
 
     static double variance(const std::vector<double>& image);
 
+    static int kernel[9];
 };
 
