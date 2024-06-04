@@ -74,13 +74,15 @@ void FocusScoreFeature::reduce (size_t start, size_t end, std::vector<int>* ptrL
     }
 }
 
-void osized_calculate(LR& r, ImageLoader& imloader) {
+void FocusScoreFeature::osized_calculate(LR& r, ImageLoader& imloader) {
 
     // Skip calculation in case of noninformative data
     if (r.aux_max == r.aux_min) return;
 
     WriteImageMatrix_nontriv Im0 ("FocusScoreFeature-osized_calculate-Im0", r.label);
     Im0.allocate_from_cloud (r.raw_pixels_NT, r.aabb, false);
+
+    focus_score_ = get_focus_score_NT(Im0, 1);
 
 }
 
@@ -91,7 +93,7 @@ void FocusScoreFeature::save_value(std::vector<std::vector<double>>& feature_val
 
 }
 
-double FocusScoreFeature::get_local_focus_score_NT(WriteImageMatrix_nontriv& Im, int ksize) {
+double FocusScoreFeature::get_focus_score_NT(WriteImageMatrix_nontriv& Im, int ksize) {
 
     int n = 3; // size of kernel nxn
 
