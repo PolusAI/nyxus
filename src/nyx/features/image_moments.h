@@ -131,7 +131,7 @@ public:
     void osized_calculate(LR& r, ImageLoader& imloader);
     void save_value(std::vector<std::vector<double>>& feature_vals);
     static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
-    static void gpu_process_all_rois (const std::vector<int>& ptrLabels, std::unordered_map <int, LR>& ptrLabelData);
+    static void gpu_process_all_rois (const std::vector<int>& roi_batch_labels, std::unordered_map <int, LR>& roi_data);
 
     // Compatibility with manual reduce
     static bool required(const FeatureSet& fs)
@@ -237,13 +237,13 @@ namespace Nyxus
     // -- result of partial geometric moment expression (before sum-reduce)
     extern double* devPrereduce;     // reduction helper [roi_cloud_len]
     // -- reduce helpers
-#if 0
-    double* devBlockSubsums = nullptr;  // [whole chunks]
-    double* hoBlockSubsums = nullptr;   // [whole chunks]
-#endif
     extern double* d_out;    // 1 double
     extern void* d_temp_storage;   // allocated [] elements by cub::DeviceReduce::Sum()
     extern size_t temp_storage_bytes;
+    // -- intermediate data
+    //          (layout: [0] - origin x, [1] - origin y)
+    extern double* d_intermediate;
+    extern int n_intermediates;
 
     /// @brief Copies integer pixel cloud intensities to real-valued vector
     void copy_pixcloud_intensities (intcloud & dst, const pixcloud & src);

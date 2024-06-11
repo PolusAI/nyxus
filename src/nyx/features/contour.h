@@ -7,6 +7,18 @@
 class ContourFeature: public FeatureMethod
 {
 public:
+
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+	{
+		Nyxus::Feature2D::PERIMETER,
+		Nyxus::Feature2D::DIAMETER_EQUAL_PERIMETER,
+		Nyxus::Feature2D::EDGE_INTEGRATED_INTENSITY,
+		Nyxus::Feature2D::EDGE_MAX_INTENSITY,
+		Nyxus::Feature2D::EDGE_MIN_INTENSITY,
+		Nyxus::Feature2D::EDGE_MEAN_INTENSITY,
+		Nyxus::Feature2D::EDGE_STDDEV_INTENSITY
+	};
+
 	ContourFeature();
 	void calculate(LR& r);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);

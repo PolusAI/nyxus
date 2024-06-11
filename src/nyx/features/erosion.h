@@ -9,6 +9,12 @@
 class ErosionPixelsFeature: public FeatureMethod
 {
 public:
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+	{
+		Nyxus::Feature2D::EROSIONS_2_VANISH, 
+		Nyxus::Feature2D::EROSIONS_2_VANISH_COMPLEMENT
+	};
+
 	ErosionPixelsFeature();
 
 	void calculate(LR& r);
@@ -17,7 +23,10 @@ public:
 	void save_value(std::vector<std::vector<double>>& feature_vals);
 	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
-	static bool required(FeatureSet& fs) { return fs.anyEnabled({ Nyxus::Feature2D::EROSIONS_2_VANISH, Nyxus::Feature2D::EROSIONS_2_VANISH_COMPLEMENT }); }
+	static bool required(FeatureSet& fs) 
+	{
+		return fs.anyEnabled (ErosionPixelsFeature::featureset); 
+	}
 	
 private:
 

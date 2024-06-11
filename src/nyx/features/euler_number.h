@@ -12,6 +12,9 @@
 class EulerNumberFeature: public FeatureMethod
 {
 public:
+
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset = { Nyxus::Feature2D::EULER_NUMBER };
+
 	EulerNumberFeature();
 	
 	// Trivial ROI

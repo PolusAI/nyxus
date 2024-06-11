@@ -5,7 +5,7 @@ using namespace Nyxus;
 
 EnclosingInscribingCircumscribingCircleFeature::EnclosingInscribingCircumscribingCircleFeature() : FeatureMethod("EnclosingInscribingCircumscribingCircleFeature")
 {
-    provide_features({ Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE, Feature2D::DIAMETER_INSCRIBING_CIRCLE, Feature2D::DIAMETER_CIRCUMSCRIBING_CIRCLE });
+    provide_features (EnclosingInscribingCircumscribingCircleFeature::featureset);
     add_dependencies({ Feature2D::PERIMETER, Feature2D::CENTROID_X, Feature2D::CENTROID_Y });    // Availability of feature 'PERIMETER' ensures availability of LR::contour
 }
 
