@@ -10,7 +10,6 @@
 #include "featureset.h"
 #include "feature_method.h"
 #include "feature_mgr.h"
-#include "gpucache.h"
 #include "image_loader.h"
 #include "results_cache.h"
 #include "roi_cache.h"
@@ -107,13 +106,6 @@ namespace Nyxus
 	extern std::unordered_map <int, LR> roiData;
 	extern size_t zero_background_area;
 	extern std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
-
-	#ifdef USE_GPU
-	// GPU cache of a ROI batch
-	extern GpuCache<Pixel2> gpu_roiclouds_2d;
-	extern GpuCache<size_t> gpu_roicontours_2d;
-	void send_roi_batch_data_2_gpu (GpuCache<Pixel2> & cloud, std::vector<int> & labels, std::unordered_map <int, LR> & roi_data);
-#endif
 
 	/// @brief Feeds a pixel to image measurement object to gauge the image RAM footprint without caching the pixel. Updates 'uniqueLabels' and 'roiData'.
 	/// @param x -- x-coordinate of the pixel in the image
