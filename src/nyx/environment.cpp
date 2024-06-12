@@ -8,28 +8,28 @@
 #include <iterator>
 #include "environment.h"
 #include "featureset.h"
-#include "features/basic_morphology.h"
-#include "features/chords.h"
-#include "features/convex_hull.h"
-#include "features/erosion.h"
-#include "features/caliper.h"
-#include "features/circle.h"
-#include "features/ellipse_fitting.h"
-#include "features/euler_number.h"
-#include "features/extrema.h"
-#include "features/fractal_dim.h"
-#include "features/geodetic_len_thickness.h"
-#include "features/gabor.h"
+//#include "features/basic_morphology.h"
+//#include "features/chords.h"
+//#include "features/convex_hull.h"
+//#include "features/erosion.h"
+//#include "features/caliper.h"
+//#include "features/circle.h"
+//#include "features/ellipse_fitting.h"
+//#include "features/euler_number.h"
+//#include "features/extrema.h"
+//#include "features/fractal_dim.h"
+//#include "features/geodetic_len_thickness.h"
+//#include "features/gabor.h"
 #include "features/glcm.h"
-#include "features/gldm.h"
-#include "features/gldzm.h"
-#include "features/glrlm.h"
-#include "features/glszm.h"
-#include "features/image_moments.h"
-#include "features/neighbors.h"
-#include "features/ngldm.h"
-#include "features/ngtdm.h"
-#include "features/roi_radius.h"
+//#include "features/gldm.h"
+//#include "features/gldzm.h"
+//#include "features/glrlm.h"
+//#include "features/glszm.h"
+//#include "features/image_moments.h"
+//#include "features/neighbors.h"
+//#include "features/ngldm.h"
+//#include "features/ngtdm.h"
+//#include "features/roi_radius.h"
 #include "helpers/helpers.h"
 #include "helpers/system_resource.h"
 #include "helpers/timing.h"
@@ -498,6 +498,13 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		return false;
 	}
 
+	//==== whole-slide mode
+	if (Nyxus::toupper(labels_dir) == Nyxus::toupper(intensity_dir))
+	{
+		singleROI = true;
+	}
+
+
 	if (rawOutpType == "")
 	{
 		std::cerr << "Error: Missing argument " << OUTPUTTYPE << "\n";
@@ -805,7 +812,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		return false;
 	}
 
-	// --Feature names are ok, now expand feature group nicknames and set the enabled flag for each feature in 'theFeatureSet'
+	// --Feature names are ok, now expand feature group nicknames and enable each feature in 'theFeatureSet'
 	try
 	{
 		expand_featuregroups();
@@ -814,48 +821,6 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	{
 		std::cerr << e.what();
 		return false;
-	}
-
-	//==== Handle the whole-slide mode
-	if (Nyxus::toupper(labels_dir) == Nyxus::toupper(intensity_dir))
-	{
-		singleROI = true;
-		std::cout <<
-			"+---------------------------------------------------------------------+\n"
-			"|                                                                     |\n"
-			"|  Activating whole slide (aka single-ROI) mode                       |\n"
-			"|  ATTENTION: disabling inappplicable and time-sonsuming features:    |\n"
-			"|      - morphological features                                       |\n"
-			"|      - neighbor features                                            |\n"
-			"|      - GLDM, GLDZM, GLRLM, GLSZM, NGLDM, NGTDM                      |\n"
-			"|                                                                     |\n"
-			"+---------------------------------------------------------------------+\n";
-
-		theFeatureSet.disableFeatures (BasicMorphologyFeatures::featureset);
-		theFeatureSet.disableFeatures (EnclosingInscribingCircumscribingCircleFeature::featureset);
-		theFeatureSet.disableFeatures (ContourFeature::featureset);		// and its dependencies below (see file reduce_trivial_rois_manual.cpp)
-			theFeatureSet.disableFeatures (ConvexHullFeature::featureset);
-			theFeatureSet.disableFeatures (FractalDimensionFeature::featureset);
-			theFeatureSet.disableFeatures (GeodeticLengthThicknessFeature::featureset);
-			theFeatureSet.disableFeatures (NeighborsFeature::featureset);
-			theFeatureSet.disableFeatures (RoiRadiusFeature::featureset);
-		theFeatureSet.disableFeatures (EllipseFittingFeature::featureset);
-		theFeatureSet.disableFeatures (EulerNumberFeature::featureset);
-		theFeatureSet.disableFeatures (ExtremaFeature::featureset);
-		theFeatureSet.disableFeatures (ErosionPixelsFeature::featureset);
-		theFeatureSet.disableFeatures (CaliperFeretFeature::featureset);
-		theFeatureSet.disableFeatures (CaliperMartinFeature::featureset);
-		theFeatureSet.disableFeatures (CaliperNassensteinFeature::featureset);
-		theFeatureSet.disableFeatures (ChordsFeature::featureset);
-		
-		//theFeatureSet.disableFeatures(GaborFeature::featureset);
-		//theFeatureSet.disableFeatures (ImageMomentsFeature::featureset);	// not sure
-		theFeatureSet.disableFeatures (GLDMFeature::featureset);	// 4.72 % 4.34976e+07
-		theFeatureSet.disableFeatures (GLDZMFeature::featureset);	// 38.14 % 3.51746e+08
-		theFeatureSet.disableFeatures (GLRLMFeature::featureset);	// 17.29 % 1.59442e+08
-		theFeatureSet.disableFeatures (GLSZMFeature::featureset);	// 15.94 % 1.47023e+08
-		theFeatureSet.disableFeatures (NGLDMfeature::featureset);	// 3.57 % 3.28824e+07
-		theFeatureSet.disableFeatures (NGTDMFeature::featureset);	// 5.13 % 4.72927e+07
 	}
 
 	//==== Parse resolution
