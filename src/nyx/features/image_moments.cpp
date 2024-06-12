@@ -49,15 +49,14 @@ void ImageMomentsFeature::calculate (LR& r)
 
 void ImageMomentsFeature::calculate_via_gpu (LR& r, size_t roi_idx)
 {
-    bool ok;    //????????????????!!!!!!!!!!!!!!!!!!
-//#if 0
+    bool ok;
+
     ok = send_roi_data_2_gpu (r.raw_pixels.data(), r.raw_pixels.size());
     if (!ok)
         std::cerr << "Geometric moments: error sending ROI data to GPU-side\n";
     ok = send_contour_data_2_gpu (r.contour.data(), r.contour.size());
     if (!ok)
         std::cerr << "Geometric moments: error sending ROI contour data to GPU-side\n";
-//#endif
 
     ok = ImageMomentsFeature_calculate (
         m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30,   // spatial moments
