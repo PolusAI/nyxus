@@ -117,6 +117,7 @@ jobs:
 
 
       - name: Add MSVS Path 
+        if: runner.os == 'Windows'
         uses: TheMrMilchmann/setup-msvc-dev@v3
         with:
           toolset: 14.39
