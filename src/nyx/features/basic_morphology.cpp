@@ -7,44 +7,14 @@
 
 using namespace Nyxus;
 
-bool BasicMorphologyFeatures::required(const FeatureSet& fs) {
-	return fs.anyEnabled({
-		Feature2D::AREA_PIXELS_COUNT,
-		Feature2D::AREA_UM2,
-		Feature2D::ASPECT_RATIO,
-		Feature2D::BBOX_XMIN,
-		Feature2D::BBOX_YMIN,
-		Feature2D::BBOX_WIDTH,
-		Feature2D::BBOX_HEIGHT,
-		Feature2D::CENTROID_X,
-		Feature2D::CENTROID_Y,
-		Feature2D::COMPACTNESS,
-		Feature2D::DIAMETER_EQUAL_AREA,
-		Feature2D::EXTENT,
-		Feature2D::MASS_DISPLACEMENT,
-		Feature2D::WEIGHTED_CENTROID_X,
-		Feature2D::WEIGHTED_CENTROID_Y });
+bool BasicMorphologyFeatures::required(const FeatureSet& fs) 
+{
+	return fs.anyEnabled (BasicMorphologyFeatures::featureset);
 }
 
 BasicMorphologyFeatures::BasicMorphologyFeatures(): FeatureMethod("BasicMorphologyFeatures")
 {
-	provide_features({
-		Feature2D::AREA_PIXELS_COUNT,
-		Feature2D::AREA_UM2,
-		Feature2D::ASPECT_RATIO,
-		Feature2D::BBOX_XMIN,
-		Feature2D::BBOX_YMIN,
-		Feature2D::BBOX_WIDTH,
-		Feature2D::BBOX_HEIGHT,
-		Feature2D::CENTROID_X,
-		Feature2D::CENTROID_Y,
-		Feature2D::COMPACTNESS,
-		Feature2D::EXTENT,
-		Feature2D::MASS_DISPLACEMENT,
-		Feature2D::WEIGHTED_CENTROID_X,
-		Feature2D::WEIGHTED_CENTROID_Y,
-		Feature2D::DIAMETER_EQUAL_AREA
-		});
+	provide_features (BasicMorphologyFeatures::featureset);
 }
 
 void BasicMorphologyFeatures::calculate(LR& r)

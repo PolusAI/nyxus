@@ -115,11 +115,16 @@ public:
         auto errcode = TIFFReadTile(tiff_, tiffTile, indexColGlobalTile * tileWidth_, indexRowGlobalTile * tileHeight_, 0, 0);
         if (errcode < 0)
         {
-            std::stringstream message;
-            message
-                << "Tile Loader ERROR: error reading tile data returning code "
-                << errcode;
-            throw (std::runtime_error(message.str()));
+            if (errcode == -1) // the TIFF file is not tiled, don't break for each image like that
+                memset (tiffTile, 0, t_szb);    
+            else // something else
+            {
+                std::stringstream message;
+                message
+                    << "Tile Loader ERROR: error reading tile data returning code "
+                    << errcode;
+                throw (std::runtime_error(message.str()));
+            }
         }
         std::stringstream message;
         switch (sampleFormat_) 

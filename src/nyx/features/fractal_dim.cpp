@@ -5,7 +5,7 @@ using namespace Nyxus;
 
 FractalDimensionFeature::FractalDimensionFeature() : FeatureMethod("FractalDimensionFeature")
 {
-	provide_features({ Feature2D::FRACT_DIM_BOXCOUNT, Feature2D::FRACT_DIM_PERIMETER });
+	provide_features (FractalDimensionFeature::featureset);
 	add_dependencies({ Feature2D::PERIMETER });	// FRACT_DIM_PERIMETER requires perimeter's pixels
 }
 

@@ -10,7 +10,7 @@ bool GeodeticLengthThicknessFeature::required(const FeatureSet& fs)
 
 GeodeticLengthThicknessFeature::GeodeticLengthThicknessFeature() : FeatureMethod("GeodeticLengthThicknessFeature")
 {
-	provide_features ({ Feature2D::GEODETIC_LENGTH, Feature2D::THICKNESS });
+	provide_features (GeodeticLengthThicknessFeature::featureset);
 	add_dependencies ({ Feature2D::AREA_PIXELS_COUNT, Feature2D::PERIMETER });
 }
 

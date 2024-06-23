@@ -7,10 +7,10 @@
 #include <map>
 #include <algorithm>
 #include <numeric>
+#include <sstream>
 
 namespace Nyxus
 {
-
 	// String manipulation
 
 	inline void parse_delimited_string(const std::string& rawString, const std::string& delim, std::vector<std::string>& result)
@@ -29,6 +29,43 @@ namespace Nyxus
 			raw.erase(0, pos + delim.length());
 		}
 		result.push_back(raw);
+	}
+
+	// No tabs in 'txt' !
+	inline std::string box_text(const std::string& txt)
+	{
+		std::vector<std::string> L;
+		parse_delimited_string(txt, "\n", L);
+
+		size_t maxlen = 0, curlen = 0;
+		for (const auto& l : L)
+		{
+			auto len = l.size();
+			maxlen = (std::max)(maxlen, len);
+		}
+
+		std::stringstream ss;
+
+		ss << '+';
+		for (auto i = 0; i < maxlen + 2; i++)
+			ss << '-';
+		ss << '+' << '\n';
+
+		for (const auto& l : L)
+		{
+			ss << "| ";
+			ss << l;
+			for (auto i = l.size(); i < maxlen; i++)
+				ss << ' ';
+			ss << " |\n";
+		}
+
+		ss << '+';
+		for (auto i = 0; i < maxlen + 2; i++)
+			ss << '-';
+		ss << '+' << '\n';
+
+		return ss.str();
 	}
 
 	inline bool parse_as_float(const std::string& raw, float& result)

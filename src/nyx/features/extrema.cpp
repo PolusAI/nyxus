@@ -4,46 +4,13 @@ using namespace Nyxus;
 
 bool ExtremaFeature::required(const FeatureSet& fs)
 {
-	return fs.anyEnabled({
-		Feature2D::EXTREMA_P1_Y,
-		Feature2D::EXTREMA_P1_X,
-		Feature2D::EXTREMA_P2_Y,
-		Feature2D::EXTREMA_P2_X,
-		Feature2D::EXTREMA_P3_Y,
-		Feature2D::EXTREMA_P3_X,
-		Feature2D::EXTREMA_P4_Y,
-		Feature2D::EXTREMA_P4_X,
-		Feature2D::EXTREMA_P5_Y,
-		Feature2D::EXTREMA_P5_X,
-		Feature2D::EXTREMA_P6_Y,
-		Feature2D::EXTREMA_P6_X,
-		Feature2D::EXTREMA_P7_Y,
-		Feature2D::EXTREMA_P7_X,
-		Feature2D::EXTREMA_P8_Y,
-		Feature2D::EXTREMA_P8_X });
+	return fs.anyEnabled (ExtremaFeature::featureset);
 }
 
 
 ExtremaFeature::ExtremaFeature() : FeatureMethod("ExtremaFeature") 
 {
-	provide_features({
-		Feature2D::EXTREMA_P1_Y,
-		Feature2D::EXTREMA_P1_X,
-		Feature2D::EXTREMA_P2_Y,
-		Feature2D::EXTREMA_P2_X,
-		Feature2D::EXTREMA_P3_Y,
-		Feature2D::EXTREMA_P3_X,
-		Feature2D::EXTREMA_P4_Y,
-		Feature2D::EXTREMA_P4_X,
-		Feature2D::EXTREMA_P5_Y,
-		Feature2D::EXTREMA_P5_X,
-		Feature2D::EXTREMA_P6_Y,
-		Feature2D::EXTREMA_P6_X,
-		Feature2D::EXTREMA_P7_Y,
-		Feature2D::EXTREMA_P7_X,
-		Feature2D::EXTREMA_P8_Y,
-		Feature2D::EXTREMA_P8_X
-		});
+	provide_features (ExtremaFeature::featureset);
 }
 
 void ExtremaFeature::calculate (LR& r)

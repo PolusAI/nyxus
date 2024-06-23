@@ -19,13 +19,7 @@ bool EllipseFittingFeature::required(const FeatureSet& fs)
 
 EllipseFittingFeature::EllipseFittingFeature() : FeatureMethod("EllipseFittingFeature") 
 {
-	provide_features({
-		Feature2D::MAJOR_AXIS_LENGTH,
-		Feature2D::MINOR_AXIS_LENGTH,
-		Feature2D::ECCENTRICITY,
-		Feature2D::ELONGATION,
-		Feature2D::ORIENTATION,
-		Feature2D::ROUNDNESS });
+	provide_features (EllipseFittingFeature::featureset);
 }
 
 //EllipseFittingFeature::EllipseFittingFeature(const std::vector<Pixel2>& roi_pixels, double centroid_x, double centroid_y, double area)

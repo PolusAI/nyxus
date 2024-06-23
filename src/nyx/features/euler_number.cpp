@@ -5,7 +5,7 @@ using namespace Nyxus;
 
 EulerNumberFeature::EulerNumberFeature() : FeatureMethod("EulerNumberFeature")
 {
-	provide_features({ Feature2D::EULER_NUMBER });
+	provide_features (EulerNumberFeature::featureset);
 }
 
 void EulerNumberFeature::calculate (LR& r)

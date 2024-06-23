@@ -16,21 +16,8 @@
 class ChordsFeature : public FeatureMethod
 {
 public:
-	ChordsFeature();
-
-	// Trivial
-	void calculate(LR& r);
-
-	// Non-trivial 
-	void osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {}
-	void osized_calculate (LR& r, ImageLoader& imloader);
-	void save_value (std::vector<std::vector<double>>& feature_vals);
-	static void process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
-
-	// Support of "manual" phase 2 
-	static bool required(const FeatureSet& fs)
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
 	{
-		return fs.anyEnabled({
 				Nyxus::Feature2D::MAXCHORDS_MAX,
 				Nyxus::Feature2D::MAXCHORDS_MAX_ANG,
 				Nyxus::Feature2D::MAXCHORDS_MIN,
@@ -46,8 +33,26 @@ public:
 				Nyxus::Feature2D::ALLCHORDS_MEDIAN,
 				Nyxus::Feature2D::ALLCHORDS_MEAN,
 				Nyxus::Feature2D::ALLCHORDS_MODE,
-				Nyxus::Feature2D::ALLCHORDS_STDDEV });
+				Nyxus::Feature2D::ALLCHORDS_STDDEV
+	};
+
+	ChordsFeature();
+
+	// Trivial
+	void calculate(LR& r);
+
+	// Non-trivial 
+	void osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {}
+	void osized_calculate (LR& r, ImageLoader& imloader);
+	void save_value (std::vector<std::vector<double>>& feature_vals);
+	static void process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+
+	// Support of "manual" phase 2 
+	static bool required(const FeatureSet& fs)
+	{
+		return fs.anyEnabled (ChordsFeature::featureset);
 	}
+
 private:
 	const int n_angle_segments = 20;
 	const int n_side_segments = 100;

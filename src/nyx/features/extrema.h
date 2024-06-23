@@ -10,6 +10,27 @@
 class ExtremaFeature: public FeatureMethod
 {
 public:
+
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+	{
+		Nyxus::Feature2D::EXTREMA_P1_Y,
+		Nyxus::Feature2D::EXTREMA_P1_X,
+		Nyxus::Feature2D::EXTREMA_P2_Y,
+		Nyxus::Feature2D::EXTREMA_P2_X,
+		Nyxus::Feature2D::EXTREMA_P3_Y,
+		Nyxus::Feature2D::EXTREMA_P3_X,
+		Nyxus::Feature2D::EXTREMA_P4_Y,
+		Nyxus::Feature2D::EXTREMA_P4_X,
+		Nyxus::Feature2D::EXTREMA_P5_Y,
+		Nyxus::Feature2D::EXTREMA_P5_X,
+		Nyxus::Feature2D::EXTREMA_P6_Y,
+		Nyxus::Feature2D::EXTREMA_P6_X,
+		Nyxus::Feature2D::EXTREMA_P7_Y,
+		Nyxus::Feature2D::EXTREMA_P7_X,
+		Nyxus::Feature2D::EXTREMA_P8_Y,
+		Nyxus::Feature2D::EXTREMA_P8_X
+	};
+
 	ExtremaFeature();
 
 	// Trivial ROI
