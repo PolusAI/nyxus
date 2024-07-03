@@ -253,7 +253,7 @@ namespace Nyxus
 				{
 					// Calculate the feature via GPU
 					STOPWATCH("GPU-Moments/GPU-Moments/2D moms/#FFFACD", "\t=");
-					ImageMomentsFeature::gpu_process_all_rois(PendingRoisLabels, roiData);
+					ImageMomentsFeature::gpu_process_all_rois (PendingRoisLabels, roiData);
 				}
 #endif
 			}
@@ -341,7 +341,10 @@ namespace Nyxus
 			workPerThread = jobSize / n_reduce_threads;
 
 		//==== Neighbors
-		if (NeighborsFeature::required(theFeatureSet) || HexagonalityPolygonalityFeature::required(theFeatureSet) || EnclosingInscribingCircumscribingCircleFeature::required(theFeatureSet))
+		bool needNeigs = NeighborsFeature::required(theFeatureSet),
+			needHexpol = HexagonalityPolygonalityFeature::required(theFeatureSet),
+			needEnclosing = EnclosingInscribingCircumscribingCircleFeature::required(theFeatureSet);
+		if (needNeigs || needHexpol || needEnclosing)
 		{
 			STOPWATCH("Neighbors/Neighbors/N/#FF69B4", "\t=");
 			NeighborsFeature::manual_reduce();

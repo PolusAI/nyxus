@@ -49,7 +49,9 @@ void ImageMomentsFeature::calculate (LR& r)
 
 void ImageMomentsFeature::calculate_via_gpu (LR& r, size_t roi_idx)
 {
-    bool ok = send_roi_data_2_gpu (r.raw_pixels.data(), r.raw_pixels.size());
+    bool ok;
+
+    ok = send_roi_data_2_gpu (r.raw_pixels.data(), r.raw_pixels.size());
     if (!ok)
         std::cerr << "Geometric moments: error sending ROI data to GPU-side\n";
     ok = send_contour_data_2_gpu (r.contour.data(), r.contour.size());
@@ -496,14 +498,14 @@ void ImageMomentsFeature::parallel_process_1_batch (size_t start, size_t end, st
 /// @brief Calculates the features for all the ROIs in a single thread (for calculating via GPU) 
 /// @param ptrLabels ROI label vector
 /// @param ptrLabelData ROI data
-void ImageMomentsFeature::gpu_process_all_rois (const std::vector<int> & Labels, std::unordered_map <int, LR>& RoiData)
+void ImageMomentsFeature::gpu_process_all_rois (const std::vector<int> & roi_batch_labels, std::unordered_map <int, LR>& RoiData)
 {
     bool ok = allocate_2dmoments_buffers_on_gpu (Nyxus::largest_roi_imatr_buf_len);   // allocates device-side buffers for the pixel cloud and contour
 
     // Calculate features
-    for (auto roiIdx=0; roiIdx<Labels.size(); roiIdx++)
+    for (auto roiIdx=0; roiIdx< roi_batch_labels.size(); roiIdx++)
     {
-        auto lab = Labels[roiIdx];
+        auto lab = roi_batch_labels [roiIdx];
         LR& r = RoiData[lab];
 
         if (r.has_bad_data())
@@ -515,8 +517,8 @@ void ImageMomentsFeature::gpu_process_all_rois (const std::vector<int> & Labels,
     }
 
     ok = free_2dmoments_buffers_on_gpu();
-
 }
+
 #endif // USE_GPU
 
 namespace Nyxus

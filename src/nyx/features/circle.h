@@ -12,6 +12,13 @@
 class EnclosingInscribingCircumscribingCircleFeature: public FeatureMethod
 {
 public:
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+	{
+		Nyxus::Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE,
+		Nyxus::Feature2D::DIAMETER_INSCRIBING_CIRCLE,
+		Nyxus::Feature2D::DIAMETER_CIRCUMSCRIBING_CIRCLE
+	};
+
 	EnclosingInscribingCircumscribingCircleFeature();
 	void calculate(LR& r);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);

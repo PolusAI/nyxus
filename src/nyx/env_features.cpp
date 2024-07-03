@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <exception>
 #include <fstream>
 #include <iomanip>
@@ -9,6 +10,17 @@
 #include <vector>
 #include "environment.h"
 #include "featureset.h"
+#include "features/basic_morphology.h"
+#include "features/chords.h"
+#include "features/convex_hull.h"
+#include "features/erosion.h"
+#include "features/caliper.h"
+#include "features/circle.h"
+#include "features/ellipse_fitting.h"
+#include "features/euler_number.h"
+#include "features/extrema.h"
+#include "features/fractal_dim.h"
+#include "features/geodetic_len_thickness.h"
 #include "features/gabor.h"
 #include "features/glcm.h"
 #include "features/gldm.h"
@@ -20,6 +32,7 @@
 #include "features/neighbors.h"
 #include "features/ngldm.h"
 #include "features/ngtdm.h"
+#include "features/roi_radius.h"
 #include "helpers/helpers.h"
 #include "helpers/system_resource.h"
 #include "helpers/timing.h"
@@ -166,8 +179,6 @@ bool Environment::spellcheck_raw_featurelist(const std::string& comma_separated_
 	return success;
 }
 
-
-
 // Returns:
 //		true if s is recognized as a group name
 //		false if not recognized (s may be an individual feature name)
@@ -177,6 +188,45 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_ALL))
 	{
 		Nyxus::theFeatureSet.enableAll();
+
+		// Handle whole-slide mode differently: disable features irrelevant to this mode (shape, neighbors, etc)
+		if (singleROI)
+		{
+			std::cout << box_text ("Activating whole slide (aka single-ROI) mode\n"
+				"ATTENTION: disabling inappplicable and time-sonsuming features:\n"
+				" - morphological features\n"
+				" - neighbor features\n"
+				" - GLDM, GLDZM, GLRLM, GLSZM, NGLDM, NGTDM");
+
+			theFeatureSet.disableFeatures(BasicMorphologyFeatures::featureset);
+			theFeatureSet.disableFeatures(EnclosingInscribingCircumscribingCircleFeature::featureset);
+			theFeatureSet.disableFeatures(ContourFeature::featureset);		// and its dependencies below (see file reduce_trivial_rois_manual.cpp)
+			theFeatureSet.disableFeatures(ConvexHullFeature::featureset);				// depends on ContourFeature
+			theFeatureSet.disableFeatures(FractalDimensionFeature::featureset);		// depends on ContourFeature
+			theFeatureSet.disableFeatures(GeodeticLengthThicknessFeature::featureset);	// depends on ContourFeature
+			theFeatureSet.disableFeatures(NeighborsFeature::featureset);				// depends on ContourFeature
+			theFeatureSet.disableFeatures(RoiRadiusFeature::featureset);				// depends on ContourFeature
+			theFeatureSet.disableFeatures(EllipseFittingFeature::featureset);
+			theFeatureSet.disableFeatures(EulerNumberFeature::featureset);
+			theFeatureSet.disableFeatures(ExtremaFeature::featureset);
+			theFeatureSet.disableFeatures(ErosionPixelsFeature::featureset);
+			theFeatureSet.disableFeatures(CaliperFeretFeature::featureset);
+			theFeatureSet.disableFeatures(CaliperMartinFeature::featureset);
+			theFeatureSet.disableFeatures(CaliperNassensteinFeature::featureset);
+			theFeatureSet.disableFeatures(ChordsFeature::featureset);
+
+			// enabling GaborFeature
+			// enabling ImageMomentsFeature
+			// enabling GLCMFeature
+
+			theFeatureSet.disableFeatures(GLDMFeature::featureset);		// costs about 4.72 %
+			theFeatureSet.disableFeatures(GLDZMFeature::featureset);	// costs about 38.14 %
+			theFeatureSet.disableFeatures(GLRLMFeature::featureset);	// costs about 17.29 %
+			theFeatureSet.disableFeatures(GLSZMFeature::featureset);	// costs about 15.94 %
+			theFeatureSet.disableFeatures(NGLDMfeature::featureset);	// costs about 3.57 %
+			theFeatureSet.disableFeatures(NGTDMFeature::featureset);	// costs about 5.13 %
+		}
+		
 		return true; 
 	}
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_BUT_GABOR))
@@ -305,6 +355,7 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 		return true;
 	}
 
+	// unrecognized feature group
 	return false;
 }
 
@@ -441,13 +492,13 @@ void Environment::expand_featuregroups()
 		if (dim() == 2)
 		{
 			if (expand_2D_featuregroup (s))
-				return;
+				continue;
 		}
 
 		if (dim() == 3)
 		{
 			if (expand_3D_featuregroup (s))
-				return;
+				continue;
 		}
 
 		// 's' is an individual feature name, not feature group name. Process it now
