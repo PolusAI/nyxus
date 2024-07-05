@@ -69,8 +69,8 @@ jobs:
           CIBW_BEFORE_ALL_WINDOWS: nvcc -V &&
                                    ci-utils\install_prereq_win.bat &&
                                    xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install
-          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:/usr/local/cuda/targets/x86_64-linux/lib:$LD_LIBRARY_PATH" CPATH="/usr/local/cuda/targets/x86_64-linux/include:$CPATH" PATH="/usr/local/cuda/bin:$PATH" ON_GITHUB="TRUE" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install" CXXFLAGS="-I /usr/local/cuda/include" CMAKE_ARGS="-DUSEGPU=ON -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc -DCMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES=/usr/local/cuda/include" 
-          CIBW_ENVIRONMENT_WINDOWS: PATH="$TEMP\\nyxus\\bin;$PATH" ON_GITHUB="TRUE" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install" CMAKE_ARGS="-DUSEGPU=ON"
+          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:/usr/local/cuda/targets/x86_64-linux/lib:$LD_LIBRARY_PATH" CPATH="/usr/local/cuda/targets/x86_64-linux/include:$CPATH" PATH="/usr/local/cuda/bin:$PATH" ON_GITHUB="TRUE" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install" CXXFLAGS="-I /usr/local/cuda/include" CMAKE_ARGS="-DUSEGPU=ON -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc -DCMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES=/usr/local/cuda/include" NYXUS_GPU_WHEEL="ON" 
+          CIBW_ENVIRONMENT_WINDOWS: PATH="$TEMP\\nyxus\\bin;$PATH" ON_GITHUB="TRUE" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install" CMAKE_ARGS="-DUSEGPU=ON" NYXUS_GPU_WHEEL="ON" 
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: "auditwheel repair --exclude=libcufft.so --exclude=libcufft.so.10 --exclude=libcufft.so.10.4.2.109 --exclude=libcudart.so --exclude=libcudart.so.11.0 --exclude=libcudart.so.11.3.109  -w {dest_dir} {wheel}"
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -vv -w {dest_dir} {wheel} --no-dll=cufft64_10.dll;cufftw64_10.dll;cudart32_110.dll;cudart64_110.dll"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
