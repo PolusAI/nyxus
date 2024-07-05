@@ -48,7 +48,10 @@ jobs:
                                    bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
                                    mkdir -p /tmp/nyxus_bld &&
                                    cp -r local_install /tmp/nyxus_bld
-          CIBW_BEFORE_ALL_LINUX:  yum install -y llvm libevent-devel openssl-devel && 
+          CIBW_BEFORE_ALL_LINUX:  sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo &&
+                                   sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo &&
+                                   sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo && 
+                                   yum install -y llvm libevent-devel openssl-devel && 
                                    bash ci-utils/install_arrow_yum.sh &&
                                    bash ci-utils/install_prereq_linux.sh --build_arrow no &&
                                    mkdir -p /tmp/nyxus_bld &&
