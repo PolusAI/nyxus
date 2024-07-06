@@ -71,7 +71,7 @@ jobs:
                                    ci-utils\install_prereq_win.bat &&
                                    xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install
           CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:/usr/local/cuda/targets/x86_64-linux/lib:$LD_LIBRARY_PATH" CPATH="/usr/local/cuda/targets/x86_64-linux/include:$CPATH" PATH="/usr/local/cuda/bin:$PATH" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install" CXXFLAGS="-I /usr/local/cuda/include" CMAKE_ARGS="-DUSEGPU=ON -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc -DCMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES=/usr/local/cuda/include" NYXUS_GPU_WHEEL="ON" 
-          CIBW_ENVIRONMENT_WINDOWS: PATH="C:\\TEMP\\nyxus_bld\\local_install\\bin;$PATH" ON_GITHUB="TRUE" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install" CMAKE_ARGS="-DUSEGPU=ON" NYXUS_GPU_WHEEL="ON" 
+          CIBW_ENVIRONMENT_WINDOWS: PATH="C:\\TEMP\\nyxus_bld\\local_install\\bin;$PATH" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install" CMAKE_ARGS="-DUSEGPU=ON" NYXUS_GPU_WHEEL="ON" 
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel} --no-dll cufft64_11.dll;cufftw64_11.dll;cudart32_120.dll;cudart64_120.dll"
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: auditwheel repair --exclude=libcufft.so --exclude=libcufft.so.11 --exclude=libcufft.so.11.0.12.1  --exclude=libcudart.so --exclude=libcudart.so.12 --exclude=libcudart.so.12.3.101  -w {dest_dir} {wheel}
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
