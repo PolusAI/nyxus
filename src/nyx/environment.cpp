@@ -620,19 +620,14 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			return false;
 		}
 
-		// Megabytes to bytes
-		size_t requestedCeiling = (size_t)value * 1048576;
+		auto success = set_ram_limit(value);
 
 		// Check if it over the actual limit
 		unsigned long long actualRam = Nyxus::getAvailPhysMemory();
-		if (requestedCeiling > actualRam)
+		if (!success)
 		{
-			std::cerr << "Error: RAM limit " << value << " megabytes (=" << requestedCeiling << " bytes) exceeds the actual amount of available RAM " << actualRam << " bytes\n";
 			return false;
 		}
-
-		// Set the member variable
-		ramLimit = requestedCeiling;
 	}
 
 	//==== Parse the temp directory
@@ -846,6 +841,24 @@ void Environment::set_coarse_gray_depth(unsigned int new_depth)
 	coarse_grayscale_depth = new_depth;
 }
 
+bool Environment::set_ram_limit(size_t bytes) {
+
+	// Megabytes to bytes
+	size_t requestedCeiling = bytes * 1048576;
+
+	// Check if it over the actual limit
+	unsigned long long actualRam = Nyxus::getAvailPhysMemory();
+	if (requestedCeiling > actualRam)
+	{
+		std::cerr << "Error: RAM limit " << bytes << " megabytes (=" << requestedCeiling << " bytes) exceeds the actual amount of available RAM " << actualRam << " bytes\n";
+		return false;
+	}
+
+	// Set the member variable
+	ramLimit = requestedCeiling;
+	return true;
+}
+
 bool Environment::gpu_is_available() {
 #ifdef USE_GPU
 	return get_gpu_properties().size() > 0 ? true : false;
@@ -941,6 +954,7 @@ bool Environment::arrow_is_enabled()
 	return false;
 #endif
 }
+
 
 #ifdef USE_GPU
 
