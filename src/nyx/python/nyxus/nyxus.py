@@ -116,6 +116,8 @@ class Nyxus:
         Minimum intensity of voxels of a floating point TIFF image.
     max_intensity: (optional, default 1.0)
         Maximum intensity of voxels of a floating point TIFF image.
+    ram_limit: (optional)
+        Limit the amount of ram used by Nyxus in MB
     """
 
     def __init__(self, features: List[str], **kwargs):
@@ -168,6 +170,7 @@ class Nyxus:
         dynamic_range = kwargs.get("dynamic_range", 10000)
         min_intensity = kwargs.get("min_intensity", 0.0)
         max_intensity = kwargs.get("max_intensity", 1.0)
+        ram_limit = kwargs.get("ram_limit", -1)
 
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
@@ -210,6 +213,7 @@ class Nyxus:
             min_intensity,
             max_intensity,
             False,
+            ram_limit,
         )
 
         self.set_gabor_feature_params(
@@ -1360,6 +1364,7 @@ class ImageQuality:
             "channel_signature",
             "min_intensity",
             "max_intensity",
+            "ram_limit",
         }
 
         # Check for unexpected keyword arguments
@@ -1379,6 +1384,7 @@ class ImageQuality:
         dynamic_range = kwargs.get("dynamic_range", 10000)
         min_intensity = kwargs.get("min_intensity", 0.0)
         max_intensity = kwargs.get("max_intensity", 1.0)
+        ram_limit = kwargs.get("ram_limit", -1)
 
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
@@ -1421,6 +1427,7 @@ class ImageQuality:
             min_intensity,
             max_intensity,
             True,
+            ram_limit,
         )
 
         # list of valid outputs that are used throughout featurize functions

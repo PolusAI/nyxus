@@ -102,7 +102,7 @@ void initialize_environment(
     theEnvironment.fpimageOptions.set_min_intensity(min_intensity);
     theEnvironment.fpimageOptions.set_max_intensity(max_intensity);
 
-    theEnvironment.set_ram_limit(ram_limit_mb);
+    if (ram_limit_mb >= 0) theEnvironment.set_ram_limit(ram_limit_mb);
 
     #ifdef USE_GPU
         if(using_gpu == -1) {
