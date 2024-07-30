@@ -115,6 +115,8 @@ class Nyxus:
         Minimum intensity of voxels of a floating point TIFF image.
     max_intensity: (optional, default 1.0)
         Maximum intensity of voxels of a floating point TIFF image.
+    ram_limit: int (optional)
+        Maximum amount of ram to be used by Nyxus in megabytes
     """
 
     def __init__(
@@ -630,6 +632,8 @@ class Nyxus:
             thread for feature calculation. 
         * verbose: int (optional, non-negative, default 0)
             Level of diagnostic output shown in the console. Set '0' to disable any diagnostic output.
+        * ram_limit: int (optional)
+            Maximum amount of ram to be used by Nyxus in megabytes
         """
         
         valid_params = [
