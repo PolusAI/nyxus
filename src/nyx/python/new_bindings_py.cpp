@@ -80,7 +80,7 @@ void initialize_environment(
     float min_intensity,
     float max_intensity,
     bool is_imq,
-    size_t ram_limit_mb)
+    int ram_limit_mb)
 {
     theEnvironment.set_imq(is_imq);
     theEnvironment.set_dim(n_dim);
@@ -102,6 +102,7 @@ void initialize_environment(
     theEnvironment.fpimageOptions.set_min_intensity(min_intensity);
     theEnvironment.fpimageOptions.set_max_intensity(max_intensity);
 
+    std::cerr << "ram_limit: " << ram_limit_mb << std::endl;
     if (ram_limit_mb >= 0) theEnvironment.set_ram_limit(ram_limit_mb);
 
     #ifdef USE_GPU
@@ -134,7 +135,7 @@ void set_environment_params_imp (
     float dynamic_range = -1,
     float min_intensity = -1,
     float max_intensity = -1,
-    size_t ram_limit_mb = -1
+    int ram_limit_mb = -1
 ) {
     if (features.size() > 0) {
         theEnvironment.recognizedFeatureNames = features;
@@ -741,6 +742,7 @@ std::map<std::string, ParameterTypes> get_params_imp(const std::vector<std::stri
     params["dynamic_range"] = theEnvironment.fpimageOptions.target_dyn_range();
     params["min_intensity"] = theEnvironment.fpimageOptions.min_intensity();
     params["max_intensity"] = theEnvironment.fpimageOptions.max_intensity();
+    params["ram_limit"] = (int)theEnvironment.get_ram_limit();
 
     if (vars.size() == 0) 
         return params;

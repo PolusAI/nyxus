@@ -897,7 +897,7 @@ class Nyxus3D:
             'neighbor_distance', 'pixels_per_micron', 'coarse_gray_depth',
             'n_feature_calc_threads', 'using_gpu', 'ibsi', 'channel_signature', 
             'parent_channel', 'child_channel', 'aggregate', 
-            'dynamic_range', 'min_intensity', 'max_intensity'
+            'dynamic_range', 'min_intensity', 'max_intensity', 'ram_limit'
         }
 
         # Check for unexpected keyword arguments
@@ -937,6 +937,8 @@ class Nyxus3D:
             print("No gpu available.")
             using_gpu = -1
 
+        ram_limit = kwargs.get('ram_limit', -1)
+
         initialize_environment(
             3, # 3D
             features,
@@ -950,7 +952,8 @@ class Nyxus3D:
             dynamic_range,
             min_intensity,
             max_intensity,
-            False)
+            False,
+            ram_limit)
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
@@ -1333,6 +1336,7 @@ class ImageQuality:
             print("No gpu available.")
             using_gpu = -1
     
+        ram_limit = -1
 
         initialize_environment(
             2, # 2D
@@ -1347,7 +1351,8 @@ class ImageQuality:
             dynamic_range,
             min_intensity,
             max_intensity,
-            True)
+            True,
+            ram_limit)
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
