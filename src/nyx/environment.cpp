@@ -620,9 +620,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			return false;
 		}
 
-		size_t requestedCeiling = value * 1048576;
-
-		auto success = set_ram_limit(requestedCeiling);
+		auto success = set_ram_limit(value);
 
 		// Check if it over the actual limit
 		unsigned long long actualRam = Nyxus::getAvailPhysMemory();
@@ -845,16 +843,19 @@ void Environment::set_coarse_gray_depth(unsigned int new_depth)
 
 bool Environment::set_ram_limit(size_t megabytes) {
 
+	// Megabytes to bytes
+	size_t requestedCeiling = megabytes * 1048576;
+
 	// Check if it over the actual limit
 	unsigned long long actualRam = Nyxus::getAvailPhysMemory();
-	if (megabytes > actualRam)
+	if (requestedCeiling > actualRam)
 	{
-		std::cerr << "Error: RAM limit " << megabytes << " megabytes exceeds the actual amount of available RAM " << actualRam << " bytes\n";
+		std::cerr << "Error: RAM limit " << megabytes << " megabytes (=" << requestedCeiling << " bytes) exceeds the actual amount of available RAM " << actualRam << " bytes\n";
 		return false;
 	}
 
 	// Set the member variable
-	ramLimit = megabytes;
+	ramLimit = requestedCeiling;
 	return true;
 }
 
