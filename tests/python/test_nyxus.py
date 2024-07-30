@@ -168,7 +168,7 @@ class TestNyxus():
                 'max_intensity': 1.0
                 }
             
-            for key in a:
+            for key in e:
                 
                 if (isinstance(a[key], float)):
                     assert a[key] == pytest.approx(e[key])
@@ -225,7 +225,7 @@ class TestNyxus():
             
             params = nyx.get_params()
             
-            for key in params:
+            for key in new_values:
                     
                 if (isinstance(params[key], float)):
                     assert params[key] == pytest.approx(new_values[key])
@@ -312,13 +312,12 @@ class TestNyxus():
                       'min_intensity': 0.0,
                       'max_intensity': 1.0}
             
-            for key in params:
+            for key in result:
                 
                 if (isinstance(params[key], float)):
                     assert params[key] == pytest.approx(result[key])
                 else:
                     assert params[key] == pytest.approx(result[key])    
-            
                 
         def test_in_memory_2d(self):
                 
@@ -702,4 +701,12 @@ class TestNyxus():
             directory_features = nyx.featurize(tissuenet_int, intensity_names=['p0_y1_r1_c0.ome.tif', 'p0_y1_r1_c1.ome.tif'], label_names=['p0_y1_r1_c0.ome.tif', 'p0_y1_r1_c1.ome.tif'])    
 
             assert directory_features.shape[1] > 3
+        
+        def test_set_ram_limit_param(self):
+            nyx = nyxus.Nyxus (["*ALL*"])
+            assert nyx is not None
+            nyx.set_params (ram_limit = 1)
+            actual = nyx.get_params()
+            expected = {'ram_limit': 1}
+            assert actual['ram_limit'] == expected['ram_limit']
 
