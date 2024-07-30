@@ -742,7 +742,7 @@ std::map<std::string, ParameterTypes> get_params_imp(const std::vector<std::stri
     params["dynamic_range"] = theEnvironment.fpimageOptions.target_dyn_range();
     params["min_intensity"] = theEnvironment.fpimageOptions.min_intensity();
     params["max_intensity"] = theEnvironment.fpimageOptions.max_intensity();
-    params["ram_limit"] = (int)theEnvironment.get_ram_limit();
+    params["ram_limit"] = (int)(theEnvironment.get_ram_limit()/1048576); // convert from bytes to megabytes
 
     if (vars.size() == 0) 
         return params;
