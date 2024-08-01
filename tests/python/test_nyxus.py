@@ -8,6 +8,7 @@ from pathlib import Path
 import pathlib
 from test_data import intens, seg
 import shutil
+import pandas as pd
 
 from test_tissuenet_data import tissuenet_int, tissuenet_seg
 
@@ -375,9 +376,7 @@ class TestNyxus():
 
             parquet_file = nyx.featurize(intens, seg, output_type="parquet")
             
-            open_parquet_file = pq.ParquetFile(parquet_file)
-            
-            parquet_df = open_parquet_file.read().to_pandas()
+            parquet_df = pd.read_parquet(parquet_file, engine='pyarrow')
 
             # Read the Parquet file into a Pandas DataFrame
             pd_columns = list(features.columns)
@@ -403,9 +402,7 @@ class TestNyxus():
 
                         continue
                     assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
-            
-            open_parquet_file.close()
-            Path(parquet_file).unlink()
+        
             
         @pytest.mark.arrow        
         def test_parquet_writer_file_naming(self, tmp_path):
@@ -425,8 +422,7 @@ class TestNyxus():
             assert parquet_file == str(output_file)
 
             # Read the Parquet file into a Pandas DataFrame
-            file = pq.ParquetFile(str(output_file))
-            parquet_df = file.read().to_pandas()
+            parquet_df = pd.read_parquet(parquet_file, engine='pyarrow')
             pd_columns = list(features.columns)
 
             arrow_columns = list(parquet_df.columns)
@@ -452,8 +448,6 @@ class TestNyxus():
                         continue
                     assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
             
-            file.close()
-
             shutil.rmtree(output_dir)
 
         @pytest.mark.arrow
@@ -649,7 +643,7 @@ class TestNyxus():
             
             data_path = path + '/data/'
             
-            nyx = nyxus.ImageQuality (["*ALL_IMQ*"])
+            nyx = nyxus.ImageQuality (["*ALL_IMQ*"]) 
 
             directory_features = nyx.featurize_directory(data_path + 'int/', data_path + 'seg/')      
 
