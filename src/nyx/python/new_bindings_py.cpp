@@ -79,7 +79,8 @@ void initialize_environment(
     float dynamic_range,
     float min_intensity,
     float max_intensity,
-    bool is_imq)
+    bool is_imq,
+    int ram_limit_mb)
 {
     theEnvironment.set_imq(is_imq);
     theEnvironment.set_dim(n_dim);
@@ -100,6 +101,8 @@ void initialize_environment(
     theEnvironment.fpimageOptions.set_target_dyn_range(dynamic_range);
     theEnvironment.fpimageOptions.set_min_intensity(min_intensity);
     theEnvironment.fpimageOptions.set_max_intensity(max_intensity);
+
+    if (ram_limit_mb >= 0) theEnvironment.set_ram_limit(ram_limit_mb);
 
     #ifdef USE_GPU
         if(using_gpu == -1) {
@@ -130,7 +133,8 @@ void set_environment_params_imp (
     int verb_level = 0,
     float dynamic_range = -1,
     float min_intensity = -1,
-    float max_intensity = -1
+    float max_intensity = -1,
+    int ram_limit_mb = -1
 ) {
     if (features.size() > 0) {
         theEnvironment.recognizedFeatureNames = features;
@@ -168,10 +172,15 @@ void set_environment_params_imp (
         theEnvironment.fpimageOptions.set_max_intensity(max_intensity);
     }
 
-    if (verb_level >= 0)
+    if (verb_level >= 0) {
         theEnvironment.set_verbosity_level (verb_level);
-    else
+    } else {
         std::cerr << "Error: verbosity (" + std::to_string(verb_level) + ") should be a non-negative value" << std::endl;
+    }
+
+    if (ram_limit_mb >= 0) {
+        auto success = theEnvironment.set_ram_limit(ram_limit_mb);
+    }
 }
 
 py::tuple featurize_directory_imp (
@@ -732,6 +741,7 @@ std::map<std::string, ParameterTypes> get_params_imp(const std::vector<std::stri
     params["dynamic_range"] = theEnvironment.fpimageOptions.target_dyn_range();
     params["min_intensity"] = theEnvironment.fpimageOptions.min_intensity();
     params["max_intensity"] = theEnvironment.fpimageOptions.max_intensity();
+    params["ram_limit"] = (int)(theEnvironment.get_ram_limit()/1048576); // convert from bytes to megabytes
 
     if (vars.size() == 0) 
         return params;
