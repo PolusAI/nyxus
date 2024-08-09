@@ -1296,7 +1296,7 @@ class ImageQuality:
             'neighbor_distance', 'pixels_per_micron', 'coarse_gray_depth',
             'n_feature_calc_threads', 'n_loader_threads', 'ibsi',
             'gabor_kersize', 'gabor_gamma', 'gabor_sig2lam', 'gabor_f0',
-            'channel_signature', 'min_intensity', 'max_intensity'
+            'channel_signature', 'min_intensity', 'max_intensity', 'ram_limit',
         }
 
         # Check for unexpected keyword arguments
@@ -1316,6 +1316,7 @@ class ImageQuality:
         dynamic_range = kwargs.get('dynamic_range', 10000)
         min_intensity = kwargs.get('min_intensity', 0.0)
         max_intensity = kwargs.get('max_intensity', 1.0)
+        ram_limit = kwargs.get('ram_limit', -1)
         
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
@@ -1339,8 +1340,6 @@ class ImageQuality:
         if(using_gpu > -1 and not gpu_available()):
             print("No gpu available.")
             using_gpu = -1
-    
-        ram_limit = -1
 
         initialize_environment(
             2, # 2D
