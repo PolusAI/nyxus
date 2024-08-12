@@ -161,7 +161,7 @@ double FocusScoreFeature::get_focus_score_NT(WriteImageMatrix_nontriv& Im, int k
     {
         for (int winHor = 0; winHor < n_winHor; winHor++)
         {
-            //int count = 0;
+
             // Fill the window with data
             for (int row=0; row<winY; row++) {
                 for (int col = 0; col < winX; col++)
