@@ -72,6 +72,19 @@ void SaturationFeature::reduce (size_t start, size_t end, std::vector<int>* ptrL
     }
 }
 
+void SaturationFeature::osized_calculate(LR& r, ImageLoader& imloader) {
+
+    // Skip calculation in case of noninformative data
+    if (r.aux_max == r.aux_min) return;
+
+    WriteImageMatrix_nontriv Im0 ("SaturationFeature-osized_calculate-Im0", r.label);
+    Im0.allocate_from_cloud (r.raw_pixels_NT, r.aabb, false);
+
+    std::tie(min_saturation_, max_saturation_) = get_percent_max_pixels_NT(Im0);
+
+    save_value(r.fvals);
+}
+
 void SaturationFeature::save_value(std::vector<std::vector<double>>& feature_vals) {
     
     feature_vals[(int)FeatureIMQ::MAX_SATURATION][0] = max_saturation_;
@@ -99,4 +112,41 @@ std::tuple<double, double> SaturationFeature::get_percent_max_pixels(const Image
     }
 
     return std::make_tuple(min_pixel_count / image.size(), max_pixel_count / image.size());
+}
+
+std::tuple<double, double> SaturationFeature::get_percent_max_pixels_NT(WriteImageMatrix_nontriv& Im) {
+
+    auto min_pixel = Im.get_at(0);
+    auto max_pixel = Im.get_at(0);
+
+    auto width = Im.get_width(),
+         height = Im.get_height(); 
+
+    for (int row=0; row < height; row++) {
+        for (int col = 0; col < width; col++)
+        {
+            size_t idx = row * width + col;
+            auto pix = Im.get_at(idx);
+
+            if (pix > max_pixel) max_pixel = pix;
+            if (pix < min_pixel) min_pixel = pix;
+        }    
+    }
+
+    double max_pixel_count = 0;
+    double min_pixel_count = 0;
+
+    for (int row=0; row < height; row++) {
+        for (int col = 0; col < width; col++)
+        {
+            size_t idx = row * width + col;
+            auto pix = Im.get_at(idx);
+
+            if (pix == max_pixel) ++max_pixel_count;
+            if (pix == min_pixel) ++min_pixel_count;
+        }    
+    }
+
+    return std::make_tuple(min_pixel_count / (width*height), max_pixel_count / (width*height));
+    
 }
