@@ -397,8 +397,8 @@ class TestNyxus():
                     arrow_value = arrow_list[j]
                     
                     #skip nan values
-                    if (isinstance(feature_value, (int, float)) and feature_value==-999):   # if (isinstance(feature_value, (int, float)) and math.isnan(feature_value)):
-                        if (not arrow_value==-999):   # if (not math.isnan(arrow_value)):
+                    if (isinstance(feature_value, (int, float)) and math.isnan(feature_value)):
+                        if (not math.isnan(arrow_value)):
                             assert False
 
                         continue
