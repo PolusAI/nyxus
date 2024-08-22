@@ -151,7 +151,7 @@ arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std
         for (int i = 0; i < num_rows; ++i) {
             // prevent NANs in the output
             double fval = std::get<2>(features[i])[j];
-            fval = Nyxus::force_finite_number (fval, theEnvironment.nan_substitute);
+            fval = Nyxus::force_finite_number (fval, Nyxus::theEnvironment.nan_substitute);
             append_status = builder.Append (fval);
 
             if (!append_status.ok()) {
