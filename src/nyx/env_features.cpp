@@ -353,9 +353,14 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 			Feature3D::UNIFORMITY,
 			Feature3D::UNIFORMITY_PIU,
 
-// 3D features planned for a following PR
+			// 3D features planned for a future PR
 #if 0
-			// Morphology:
+			Feature3D::AREA,
+			Feature3D::MESH_VOLUME,
+			Feature3D::VOLUME_CONVEXHULL,
+			Feature3D::DIAMETER_EQUAL_AREA,
+			Feature3D::DIAMETER_EQUAL_VOLUME,
+
 			Feature3D::VOLUME_PIXELS,
 			Feature3D::CENTROID_X,
 			Feature3D::CENTROID_Y,
