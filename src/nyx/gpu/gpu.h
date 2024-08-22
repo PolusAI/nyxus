@@ -38,20 +38,20 @@ static const int blockSize = 256;
     #define CHECKCUFFTERR(call) \
     if (((call) != CUFFT_SUCCESS)    \
     {	\
-    throw (std::runtime_error(std::string(FILE)+ ":"+std::to_string(LINE)+ ":"+"cuda cuFFT error code "+std::to_string(call)));	\
+    throw (std::runtime_error(std::string(__FILE__)+ ":"+std::to_string(__LINE__)+ ":"+"cuda cuFFT error code "+std::to_string(call)));	\
     return false;	\
     };
 
     #define CHECKERR(ok)	\
     if (ok != cudaSuccess)	\
     {	\
-    throw (std::runtime_error(std::string(FILE)+ ":"+std::to_string(LINE)+ ":"+"cuda error code "+std::to_string(ok)));	\
+    throw (std::runtime_error(std::string(__FILE__)+ ":"+std::to_string(__LINE__)+ ":"+"cuda error code "+std::to_string(ok)));	\
     return false;	\
     };
 
 #define OK(x) if (x == false) \
     { \
-	    throw (std::runtime_error(std::string(FILE)+ ":"+std::to_string(LINE));	\
+	    throw (std::runtime_error(std::string(__FILE__)+ ":"+std::to_string(__LINE__));	\
 	    return false; \
     } \
 
