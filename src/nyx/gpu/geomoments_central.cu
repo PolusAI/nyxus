@@ -4,244 +4,312 @@
 #include <cuda_runtime_api.h>
 #include <builtin_types.h>
 #include "gpu.h"
+#include "../gpucache.h"
 #include "../features/pixel.h"
+#include "geomoments.cuh"
 
-namespace Nyxus
+namespace NyxusGpu
 {
-    extern double* devPrereduce;    // reduction helper [roi_cloud_len]
-    extern double* d_out;           // 1 double
-    extern void* d_temp_storage;    // allocated [] elements by cub::DeviceReduce::Sum()
-    extern size_t temp_storage_bytes;
-};
 
-__device__ double pow_pos_int_central (double a, int b)
-{
-    if (b == 0)
-        return 1.0;
-    double retval = 1.0;
-    for (int i = 0; i < b; i++)
-        retval *= a;
-    return retval;
-}
-
-__global__ void kerCentralMoment (
-    double* d_prereduce,
-    const Pixel2* d_roicloud,
-    size_t cloudlen,
-    StatsInt base_x,
-    StatsInt base_y,
-    double origin_x, 
-    double origin_y,
-    int p,
-    int q)
-{
-    int tid = threadIdx.x + blockIdx.x * blockSize;
-    
-    if (tid >= cloudlen)
-        return;
-
-    d_prereduce[tid] = double(d_roicloud[tid].inten) 
-        * pow_pos_int_central (double(d_roicloud[tid].x - base_x) - origin_x, p) 
-        * pow_pos_int_central (double(d_roicloud[tid].y - base_y) - origin_y, q);
-}
-
-__global__ void kerCentralMomentWeighted (
-    double* d_prereduce,
-    const RealPixIntens* d_realintens,
-    const Pixel2* d_roicloud,
-    size_t cloudlen,
-    StatsInt base_x,
-    StatsInt base_y,
-    double origin_x,
-    double origin_y,
-    int p,
-    int q)
-{
-    int tid = threadIdx.x + blockIdx.x * blockSize;
-
-    if (tid >= cloudlen)
-        return;
-
-    d_prereduce[tid] = d_realintens[tid]
-        * pow_pos_int_central(double(d_roicloud[tid].x - base_x) - origin_x, p)
-        * pow_pos_int_central(double(d_roicloud[tid].y - base_y) - origin_y, q);
-}
-
-bool drvCentralMoment(
-    double& retval,
-    int p, int q,
-    const Pixel2* d_roicloud,
-    size_t cloudlen,
-    StatsInt base_x,
-    StatsInt base_y,
-    double origin_x,
-    double origin_y)
-{
-    int nblo = whole_chunks2(cloudlen, blockSize);
-    kerCentralMoment <<< nblo, blockSize >>> (Nyxus::devPrereduce, d_roicloud, cloudlen, base_x, base_y, origin_x, origin_y, p, q);
-
-    CHECKERR(cudaPeekAtLastError());
-    CHECKERR(cudaDeviceSynchronize());
-    CHECKERR(cudaGetLastError());
-
-    //=== device-reduce:
-    // Determine temporary device storage requirements and allocate it, if not done yet
-    if (!Nyxus::d_temp_storage)
+    __device__ double pow_pos_int_central(double a, int b)
     {
-        CHECKERR(cub::DeviceReduce::Sum(Nyxus::d_temp_storage, Nyxus::temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, Nyxus::d_out, cloudlen/*num_items*/));
-        // Allocate temporary storage
-        CHECKERR(cudaMalloc(&Nyxus::d_temp_storage, Nyxus::temp_storage_bytes));
+        if (b == 0)
+            return 1.0;
+        double retval = 1.0;
+        for (int i = 0; i < b; i++)
+            retval *= a;
+        return retval;
     }
-    // Run sum-reduction
-    cub::DeviceReduce::Sum(Nyxus::d_temp_storage, Nyxus::temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, Nyxus::d_out, cloudlen/*num_items*/);
-    double h_out;
-    CHECKERR(cudaMemcpy(&h_out, Nyxus::d_out, sizeof(h_out), cudaMemcpyDeviceToHost));
 
-    retval = h_out;
-
-    return true;
-}
-
-bool drvCentralMomentWeighted (
-    double& retval,
-    int p, int q,
-    const RealPixIntens* d_realintens,
-    const Pixel2* d_roicloud,
-    size_t cloudlen,
-    StatsInt base_x,
-    StatsInt base_y,
-    double origin_x,
-    double origin_y)
-{
-    int nblo = whole_chunks2(cloudlen, blockSize);
-    kerCentralMomentWeighted <<< nblo, blockSize >>> (Nyxus::devPrereduce, d_realintens, d_roicloud, cloudlen, base_x, base_y, origin_x, origin_y, p, q);
-
-    CHECKERR(cudaPeekAtLastError());
-    CHECKERR(cudaDeviceSynchronize());
-    CHECKERR(cudaGetLastError());
-
-    //=== device-reduce:
-    // Determine temporary device storage requirements
-    if (!Nyxus::d_temp_storage)
+    __global__ void kerCentralMomentAll_snu(
+        // out
+        double* d_prereduce00,
+        double* d_prereduce01,
+        double* d_prereduce02,
+        double* d_prereduce03,
+        double* d_prereduce10,
+        double* d_prereduce11,
+        double* d_prereduce12,
+        double* d_prereduce13,
+        double* d_prereduce20,
+        double* d_prereduce21,
+        double* d_prereduce22,
+        double* d_prereduce23,
+        double* d_prereduce30,
+        double* d_prereduce31,
+        double* d_prereduce32,
+        double* d_prereduce33,
+        // in
+        const Pixel2* d_roicloud,
+        size_t cloudlen,
+        gpureal* origin_x,
+        gpureal* origin_y)
     {
-        CHECKERR(cub::DeviceReduce::Sum(Nyxus::d_temp_storage, Nyxus::temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, Nyxus::d_out, cloudlen/*num_items*/));
-        // Allocate temporary storage
-        CHECKERR(cudaMalloc(&Nyxus::d_temp_storage, Nyxus::temp_storage_bytes));
+        int tid = threadIdx.x + blockIdx.x * blockSize;
+
+        if (tid >= cloudlen)
+            return;
+
+        float I = 1, // <--shape moments--   d_roicloud[tid].inten,
+            OX = *origin_x,
+            OY = *origin_y,
+            X = float(d_roicloud[tid].x) - OX,
+            Y = float(d_roicloud[tid].y) - OY;
+
+        float P0 = I,
+            P1 = I * X,
+            P2 = I * X * X,
+            P3 = I * X * X * X,
+            Q0 = I,
+            Q1 = I * Y,
+            Q2 = I * Y * Y,
+            Q3 = I * Y * Y * Y;
+
+        d_prereduce00[tid] = P0 * Q0;
+        d_prereduce01[tid] = P0 * Q1;
+        d_prereduce02[tid] = P0 * Q2;
+        d_prereduce03[tid] = P0 * Q3;
+
+        d_prereduce10[tid] = P1 * Q0;
+        d_prereduce11[tid] = P1 * Q1;
+        d_prereduce12[tid] = P1 * Q2;
+        d_prereduce13[tid] = P1 * Q3;
+
+        d_prereduce20[tid] = P2 * Q0;
+        d_prereduce21[tid] = P2 * Q1;
+        d_prereduce22[tid] = P2 * Q2;
+        d_prereduce23[tid] = P2 * Q3;
+
+        d_prereduce30[tid] = P3 * Q0;
+        d_prereduce31[tid] = P3 * Q1;
+        d_prereduce32[tid] = P3 * Q2;
+        d_prereduce33[tid] = P3 * Q3;
     }
-    // Run sum-reduction
-    CHECKERR(cub::DeviceReduce::Sum(Nyxus::d_temp_storage, Nyxus::temp_storage_bytes, Nyxus::devPrereduce/*d_in*/, Nyxus::d_out, cloudlen/*num_items*/));
-    double h_out;
-    CHECKERR(cudaMemcpy(&h_out, Nyxus::d_out, sizeof(h_out), cudaMemcpyDeviceToHost));
 
-    retval = h_out;
+    __global__ void kerCentralMomentWeightedAll_snu(
+        // out
+        double* d_prereduce00,
+        double* d_prereduce02,
+        double* d_prereduce03,
+        double* d_prereduce11,
+        double* d_prereduce12,
+        double* d_prereduce20,
+        double* d_prereduce21,
+        double* d_prereduce30,
+        // in
+        const RealPixIntens* d_realintens,
+        const Pixel2* d_roicloud,
+        size_t cloudlen,
+        gpureal* origin_x,
+        gpureal* origin_y)
+    {
+        int tid = threadIdx.x + blockIdx.x * blockSize;
 
-    return true;
+        if (tid >= cloudlen)
+            return;
+
+        float I = d_realintens[tid],
+            OX = *origin_x,
+            OY = *origin_y,
+            X = d_roicloud[tid].x - OX,
+            Y = d_roicloud[tid].y - OY;
+
+        float P0 = 1,
+            P1 = X,
+            P2 = X * X,
+            P3 = X * X * X,
+            Q0 = 1,
+            Q1 = Y,
+            Q2 = Y * Y,
+            Q3 = Y * Y * Y;
+
+        d_prereduce00[tid] = I * P0 * Q0;
+        d_prereduce02[tid] = I * P0 * Q2;
+        d_prereduce03[tid] = I * P0 * Q3;
+        d_prereduce11[tid] = I * P1 * Q1;
+        d_prereduce12[tid] = I * P1 * Q2;
+        d_prereduce20[tid] = I * P2 * Q0;
+        d_prereduce21[tid] = I * P2 * Q1;
+        d_prereduce30[tid] = I * P3 * Q0;
+    }
+
+    bool sumreduce(
+        gpureal* d_result,
+        size_t cloudlen,
+        double* d_prereduce,
+        void* d_devreduce_tempstorage,
+        size_t& devreduce_tempstorage_szb)
+    {
+        size_t szb;
+        CHECKERR(cub::DeviceReduce::Sum(nullptr, szb, d_prereduce/*d_in*/, d_result, cloudlen/*num_items*/));
+        if (devreduce_tempstorage_szb != szb)
+        {
+            // new size, new storage
+            devreduce_tempstorage_szb = szb;
+            CHECKERR(cudaFree(d_devreduce_tempstorage));
+            CHECKERR(cudaMalloc(&d_devreduce_tempstorage, devreduce_tempstorage_szb));
+        }
+
+        // Run sum-reduction
+        cub::DeviceReduce::Sum(d_devreduce_tempstorage, devreduce_tempstorage_szb, d_prereduce/*d_in*/, d_result, cloudlen/*num_items*/);
+
+        return true;
+    }
+
+    bool drvCentralMomentAll__snu(
+        // out
+        gpureal* d_result,
+        // in
+        const Pixel2* d_roicloud,
+        size_t cloudlen,
+        gpureal* origin_x,
+        gpureal* origin_y,
+        double* d_prereduce,
+        void* d_devreduce_tempstorage,
+        size_t& devreduce_tempstorage_szb)
+    {
+        // prepare lanes of partial totals
+        double* d_pr00 = d_prereduce,
+            * d_pr01 = &d_prereduce[cloudlen],
+            * d_pr02 = &d_prereduce[cloudlen * 2],
+            * d_pr03 = &d_prereduce[cloudlen * 3],
+            * d_pr10 = &d_prereduce[cloudlen * 4],
+            * d_pr11 = &d_prereduce[cloudlen * 5],
+            * d_pr12 = &d_prereduce[cloudlen * 6],
+            * d_pr13 = &d_prereduce[cloudlen * 7],
+            * d_pr20 = &d_prereduce[cloudlen * 8],
+            * d_pr21 = &d_prereduce[cloudlen * 9],
+            * d_pr22 = &d_prereduce[cloudlen * 10],
+            * d_pr23 = &d_prereduce[cloudlen * 11],
+            * d_pr30 = &d_prereduce[cloudlen * 12],
+            * d_pr31 = &d_prereduce[cloudlen * 13],
+            * d_pr32 = &d_prereduce[cloudlen * 14],
+            * d_pr33 = &d_prereduce[cloudlen * 15];
+
+        int nblo = whole_chunks2(cloudlen, blockSize);
+        kerCentralMomentAll_snu << < nblo, blockSize >> > (
+            // out
+            d_pr00, d_pr01, d_pr02, d_pr03,
+            d_pr10, d_pr11, d_pr12, d_pr13,
+            d_pr20, d_pr21, d_pr22, d_pr23,
+            d_pr30, d_pr31, d_pr32, d_pr33,
+            // in
+            d_roicloud, cloudlen, origin_x, origin_y);
+
+        CHECKERR(cudaDeviceSynchronize());
+        CHECKERR(cudaGetLastError());
+
+        //=== device-reduce:
+
+        bool k; // oK
+        k = sumreduce(&d_result[GpusideState::CM00], cloudlen, d_pr00, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::CM01], cloudlen, d_pr01, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::CM02], cloudlen, d_pr02, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::CM03], cloudlen, d_pr03, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+
+        k = sumreduce(&d_result[GpusideState::CM10], cloudlen, d_pr10, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::CM11], cloudlen, d_pr11, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::CM12], cloudlen, d_pr12, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::CM13], cloudlen, d_pr13, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+
+        k = sumreduce(&d_result[GpusideState::CM20], cloudlen, d_pr20, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::CM21], cloudlen, d_pr21, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::CM22], cloudlen, d_pr22, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::CM23], cloudlen, d_pr23, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+
+        k = sumreduce(&d_result[GpusideState::CM30], cloudlen, d_pr30, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::CM31], cloudlen, d_pr31, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::CM32], cloudlen, d_pr32, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::CM33], cloudlen, d_pr33, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+
+        return true;
+    }
+
+    bool drvCentralMomentWeightedAll__snu(
+        // out
+        gpureal* d_result,
+        // in
+        const RealPixIntens* d_realintens,
+        const Pixel2* d_roicloud,
+        size_t cloudlen,
+        gpureal* origin_x,
+        gpureal* origin_y,
+        double* d_prereduce,
+        void* d_devreduce_tempstorage,
+        size_t& devreduce_tempstorage_szb)
+    {
+        // prepare lanes of partial totals
+        double
+            * d_pr00 = &d_prereduce[0],
+            //not using *d_pr01 = &d_prereduce[cloudlen * 1],
+            * d_pr02 = &d_prereduce[cloudlen * 2],
+            * d_pr03 = &d_prereduce[cloudlen * 3],
+            //not using * d_pr10 = &d_prereduce[cloudlen * 4],
+            * d_pr11 = &d_prereduce[cloudlen * 5],
+            * d_pr12 = &d_prereduce[cloudlen * 6],
+            //not using *d_pr13 = &d_prereduce[cloudlen * 7],
+            * d_pr20 = &d_prereduce[cloudlen * 8],
+            * d_pr21 = &d_prereduce[cloudlen * 9],
+            //not using *d_pr22 = &d_prereduce[cloudlen * 10],
+            //not using *d_pr23 = &d_prereduce[cloudlen * 11],
+            * d_pr30 = &d_prereduce[cloudlen * 12];
+
+        int nblo = whole_chunks2(cloudlen, blockSize);
+        kerCentralMomentWeightedAll_snu << < nblo, blockSize >> > (
+            // out
+            d_pr00, d_pr02, d_pr03,
+            d_pr11, d_pr12,
+            d_pr20, d_pr21,
+            d_pr30,
+            // in
+            d_realintens, d_roicloud, cloudlen, origin_x, origin_y);
+
+        CHECKERR(cudaDeviceSynchronize());
+        CHECKERR(cudaGetLastError());
+
+        //=== device-reduce:
+
+        bool k; // oK
+        k = sumreduce(&d_result[GpusideState::WCM00], cloudlen, d_pr00, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::WCM02], cloudlen, d_pr02, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::WCM03], cloudlen, d_pr03, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::WCM11], cloudlen, d_pr11, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::WCM12], cloudlen, d_pr12, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::WCM20], cloudlen, d_pr20, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::WCM21], cloudlen, d_pr21, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce(&d_result[GpusideState::WCM30], cloudlen, d_pr30, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+
+        return true;
+    }
+
+    bool ImageMomentsFeature_calcCentralMoments__snu(
+        // output
+        gpureal* d_intermed,
+        // input
+        const Pixel2* d_roicloud, size_t cloud_len,
+        double* d_prereduce,    // reduction helper [roi_cloud_len]
+        void* d_temp_storage,
+        size_t& temp_storage_szb)
+    {
+        if (drvCentralMomentAll__snu(d_intermed, d_roicloud, cloud_len, &d_intermed[ORGX], &d_intermed[ORGY], d_prereduce, d_temp_storage, temp_storage_szb) == false)
+            return false;
+
+        return true;
+    }
+
+    bool ImageMomentsFeature_calcCentralMomentsWeighted__snu(
+        // output
+        gpureal* d_intermed,
+        // input
+        const RealPixIntens* d_realintens, const Pixel2* d_roicloud, size_t cloud_len, gpureal* dev_origin_x, gpureal* dev_origin_y,
+        double* d_prereduce,    // reduction helper [roi_cloud_len]
+        void* d_temp_storage,
+        size_t& temp_storage_szb)
+    {
+        if (drvCentralMomentWeightedAll__snu(d_intermed, d_realintens, d_roicloud, cloud_len, &d_intermed[WORGX], &d_intermed[WORGY], d_prereduce, d_temp_storage, temp_storage_szb) == false)
+            return false;
+
+        return true;
+    }
+
 }
-
-bool ImageMomentsFeature_calcCentralMoments (
-    // output
-    double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _13, double& _20, double& _21, double& _22, double& _23, double& _30, double& _31, double& _32, double& _33,
-    // input
-    const Pixel2* d_roicloud, size_t cloud_len, StatsInt base_x, StatsInt base_y, double origin_x, double origin_y)
-{
-    // Mark as unassigned a value
-    _00 = _01 = _02 = _03 = _10 = _11 = _12 = _13 = _20 = _21 = _22 = _30 = _30 = _31 = _32 = _33 = -1;
-
-    // Calculate
-    if (drvCentralMoment(_00, 0, 0, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMoment(_01, 0, 1, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMoment(_02, 0, 2, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMoment(_03, 0, 3, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMoment(_10, 1, 0, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMoment(_11, 1, 1, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMoment(_12, 1, 2, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMoment(_13, 1, 3, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMoment(_20, 2, 0, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMoment(_21, 2, 1, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMoment(_22, 2, 2, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMoment(_23, 2, 3, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMoment(_30, 3, 0, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMoment(_31, 3, 1, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMoment(_32, 3, 2, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMoment(_33, 3, 3, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    return true;
-}
-
-bool ImageMomentsFeature_calcCentralMomentsWeighted (
-    // output
-    double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _20, double& _21, double& _22, double& _30,
-    // input
-    const RealPixIntens* d_realintens, const Pixel2* d_roicloud, size_t cloud_len, StatsInt base_x, StatsInt base_y, double origin_x, double origin_y)
-{
-    // Mark as unassigned a value
-    _00 = _01 = _02 = _03 = _10 = _11 = _12 = _20 = _21 = _22 = _30 = -1;
-
-    // Calculate
-    if (drvCentralMomentWeighted (_00, 0, 0, d_realintens, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMomentWeighted (_01, 0, 1, d_realintens, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMomentWeighted (_02, 0, 2, d_realintens, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMomentWeighted (_03, 0, 3, d_realintens, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMomentWeighted (_10, 1, 0, d_realintens, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMomentWeighted (_11, 1, 1, d_realintens, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMomentWeighted (_12, 1, 2, d_realintens, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMomentWeighted (_20, 2, 0, d_realintens, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMomentWeighted (_21, 2, 1, d_realintens, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMomentWeighted (_22, 2, 2, d_realintens, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    if (drvCentralMomentWeighted (_30, 3, 0, d_realintens, d_roicloud, cloud_len, base_x, base_y, origin_x, origin_y) == false)
-        return false;
-
-    return true;
-}
-

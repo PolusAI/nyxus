@@ -1,5 +1,8 @@
 #include "environment.h"
 #include "globals.h"
+#ifdef USE_GPU
+	#include "gpucache.h"
+#endif
 #include "helpers/timing.h"
 
 namespace Nyxus
@@ -16,6 +19,7 @@ namespace Nyxus
 	std::unordered_map <int, LR> roiData;
 	size_t zero_background_area;
 	std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
+
 
 	// Nested ROI
 	std::unordered_map <std::string, NestableRois> nestedRoiData;

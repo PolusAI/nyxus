@@ -8,21 +8,36 @@ using namespace Nyxus;
 HexagonalityPolygonalityFeature::HexagonalityPolygonalityFeature() : FeatureMethod("HexagonalityPolygonalityFeature")
 {
     provide_features({ Feature2D::POLYGONALITY_AVE, Feature2D::HEXAGONALITY_AVE, Feature2D::HEXAGONALITY_STDDEV });
-    add_dependencies({ Feature2D::NUM_NEIGHBORS, Feature2D::PERIMETER, Feature2D::CONVEX_HULL_AREA, Feature2D::MAX_FERET_DIAMETER, Feature2D::MIN_FERET_DIAMETER });
+    add_dependencies({ Feature2D::NUM_NEIGHBORS, Feature2D::PERIMETER, Feature2D::CONVEX_HULL_AREA, Feature2D::STAT_FERET_DIAM_MAX, Feature2D::STAT_FERET_DIAM_MIN });
 }
 
 void HexagonalityPolygonalityFeature::calculate (LR& r)
 {
     // The whole calculation is inspired by calculation of this feature in POLUS feature extraction plugin 
-    // https://github.com/LabShare/polus-plugins/blob/master/polus-feature-extraction-plugin/src/main.py
+    // https://github.com/PolusAI/image-tools/tree/master/features/polus-feature-extraction-plugin
+    //
+    //  Interpreting feature values:
+    // 
+    //  Polygonality score: 
+    //      The score ranges from -infinity to 10. Score 10 indicates 
+    //      the object shape is a polygon and score -infinity indicates the object shape 
+    //      is not polygon.
+    //      
+     // Hexagonality score: 
+    //      The score ranges from -infinity to 10. Score 10 indicates the object shape 
+    //      is hexagon and score - infinity indicates the object shape is not hexagon.
+    //
+    //  Hexagonality standard deviation:
+    //      Dispersion of hexagonality_score relative to its mean.
+    //
 
     size_t neighbors = r.fvals[(int)Feature2D::NUM_NEIGHBORS][0];
     double area = r.aux_area; 
     double perimeter = r.fvals[(int)Feature2D::PERIMETER][0];
     double area_hull = r.fvals[(int)Feature2D::CONVEX_HULL_AREA][0];
     double perim_hull = 6 * sqrt(area_hull / (1.5 * sqrt(3)));
-    double min_feret_diam = r.fvals[(int)Feature2D::MIN_FERET_DIAMETER][0];
-    double max_feret_diam = r.fvals[(int)Feature2D::MAX_FERET_DIAMETER][0];
+    double min_feret_diam = r.fvals[(int)Feature2D::STAT_FERET_DIAM_MIN][0];
+    double max_feret_diam = r.fvals[(int)Feature2D::STAT_FERET_DIAM_MAX][0];
     double perimeter_neighbors;
 
     if (neighbors == 0)

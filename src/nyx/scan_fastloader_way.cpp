@@ -27,16 +27,15 @@ namespace py = pybind11;
 #endif
 #include "dirs_and_files.h"
 #include "environment.h"
+#include "features/gabor.h"
 #include "globals.h"
 #include "helpers/helpers.h"
 #include "helpers/system_resource.h"
 #include "helpers/timing.h"
 
-// Sanity
-#ifdef _WIN32
-#include<windows.h>
+#ifdef USE_GPU
+	#include "gpucache.h"
 #endif
-
 
 namespace Nyxus
 {
@@ -99,7 +98,7 @@ namespace Nyxus
 		{
 			//______	STOPWATCH("Image scan/ImgScan/Scan/lightsteelblue", "\t=");
 
-			{ STOPWATCH("Image scan1/ImgScan1/Scan1/lightsteelblue", "\t=");
+			{ STOPWATCH("Image scan1/scan1/s1/#aabbcc", "\t=");
 
 				VERBOSLVL2(
 					// Report the amount of free RAM
@@ -128,7 +127,7 @@ namespace Nyxus
 				VERBOSLVL2 (std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << intens_fpath << " SEG: " << label_fpath << "\n")
 			}
 
-			{ STOPWATCH("Image scan2a/ImgScan2a/Scan2a/lightsteelblue", "\t=");
+			{ STOPWATCH("Image scan2a/scan2a/s2a/#aabbcc", "\t=");
 
 				// Phase 1: gather ROI metrics
 				VERBOSLVL2(std::cout << "Gathering ROI metrics\n");
@@ -157,7 +156,7 @@ namespace Nyxus
 				}
 			}
 
-			{ STOPWATCH("Image scan2b/ImgScan2b/Scan2b/lightsteelblue", "\t=");
+			{ STOPWATCH("Image scan2b/scan2b/s2b/#aabbcc", "\t=");
 
 				// Allocate each ROI's feature value buffer
 				for (auto lab : uniqueLabels)
@@ -172,7 +171,7 @@ namespace Nyxus
 				#endif		
 			}
 
-			{ STOPWATCH("Image scan3/ImgScan3/Scan3/lightsteelblue", "\t=");
+			{ STOPWATCH("Image scan3/scan3/s3/#aabbcc", "\t=");
 
 				// Support of ROI blacklist
 				fs::path fp(theSegFname);
@@ -233,7 +232,7 @@ namespace Nyxus
 	{
 		std::vector<int> trivRoiLabels, nontrivRoiLabels;
 
-			{ STOPWATCH("Image scan1/ImgScan1/Scan1/lightsteelblue", "\t=");
+			{ STOPWATCH("Image scan1/scan1/s1/#aabbcc", "\t=");
 
 				// Report the amount of free RAM
 				unsigned long long freeRamAmt = Nyxus::getAvailPhysMemory();
@@ -249,7 +248,7 @@ namespace Nyxus
 				VERBOSLVL1(std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << intens_fpath << " SEG: " << label_fpath << "\n")
 			}
 
-			{ STOPWATCH("Image scan2a/ImgScan2a/Scan2a/lightsteelblue", "\t=");
+			{ STOPWATCH("Image scan2a/scan2a/s2a/#aabbcc", "\t=");
 				// Phase 1: gather ROI metrics
 				VERBOSLVL2(std::cout << "Gathering ROI metrics\n");
 				bool okGather = gatherRoisMetrics_3D (intens_fpath, label_fpath, z_indices);
@@ -271,7 +270,7 @@ namespace Nyxus
 				}
 			}
 
-			{ STOPWATCH("Image scan2b/ImgScan2b/Scan2b/lightsteelblue", "\t=");
+			{ STOPWATCH("Image scan2b/scan2b/s2b/#aabbcc", "\t=");
 
 				// Allocate each ROI's feature value buffer
 				for (auto lab : uniqueLabels)
@@ -286,7 +285,7 @@ namespace Nyxus
 #endif		
 			}
 
-			{ STOPWATCH("Image scan3/ImgScan3/Scan3/lightsteelblue", "\t=");
+			{ STOPWATCH("Image scan3/scan3/s3/#aabbcc", "\t=");
 
 			// Support of ROI blacklist
 			fs::path fp (label_fpath);
@@ -390,6 +389,166 @@ namespace Nyxus
 	}
 #endif
 
+	bool gatherRoisMetrics_2_slideprops (ImageLoader & ilo, SlideProps & p)
+	{
+		bool wholeslide = p.fname_int == p.fname_seg;
+
+		std::unordered_set<int> U;	// unique ROI mask labels
+		std::unordered_map <int, LR> R;	// ROI data
+
+		// Reset per-image counters and extrema
+		LR::reset_global_stats();
+
+		int lvl = 0, // pyramid level
+			lyr = 0; //	layer
+
+		// Read the tiff. The image loader is put in the open state in processDataset()
+		size_t nth = ilo.get_num_tiles_hor(),
+			ntv = ilo.get_num_tiles_vert(),
+			fw = ilo.get_tile_width(),
+			th = ilo.get_tile_height(),
+			tw = ilo.get_tile_width(),
+			tileSize = ilo.get_tile_size(),
+			fullwidth = ilo.get_full_width(),
+			fullheight = ilo.get_full_height();
+
+		int cnt = 1;
+		for (unsigned int row = 0; row < nth; row++)
+			for (unsigned int col = 0; col < ntv; col++)
+			{
+				// Fetch the tile 
+				bool ok = ilo.load_tile(row, col);
+				if (!ok)
+				{
+#ifdef WITH_PYTHON_H
+					throw "Error fetching tile";
+#endif	
+					std::cerr << "Error fetching tile\n";
+					return false;
+				}
+
+				// Get ahold of tile's pixel buffer
+				auto tidx = row * nth + col;
+				auto data_I = ilo.get_int_tile_buffer(),
+					data_L = ilo.get_seg_tile_buffer();
+
+				// Iterate pixels
+				for (size_t i = 0; i < tileSize; i++)
+				{
+					// Skip non-mask pixels
+					auto msk = data_L [i];
+					if (!msk)
+					{
+						// Update zero-background area
+						zero_background_area++;
+						continue;
+					}
+
+					// Collapse all the labels to one if single-ROI mde is requested
+					if (wholeslide)
+						msk = 1;
+
+					int y = row * th + i / tw,
+						x = col * tw + i % tw;
+
+					// Skip tile buffer pixels beyond the image's bounds
+					if (x >= fullwidth || y >= fullheight)
+						continue;
+
+					auto inten = data_I [i];
+
+					// Update pixel's ROI metrics
+					//		- the following block mocks feed_pixel_2_metrics (x, y, dataI[i], msk, tidx)
+					if (U.find(msk) == U.end())
+					{
+						// Remember this label
+						U.insert(msk);
+
+						// Initialize the ROI label record
+						LR r;
+						//		- mocking init_label_record_2(newData, theSegFname, theIntFname, x, y, label, intensity, tile_index)
+						// Initialize basic counters
+						r.aux_area = 1;
+						r.aux_min = r.aux_max = inten;
+						r.init_aabb(x, y);
+						// Cache the ROI label
+						r.label = msk;
+
+						//		- not storing file names (r.segFname = segFile, r.intFname = intFile) but will do so in the future
+
+						// Attach
+						R[msk] = r;
+					}
+					else
+					{
+						// Update basic ROI info (info that doesn't require costly calculations)
+						LR & r = R[msk];
+
+						//		- mocking update_label_record_2 (r, x, y, label, intensity, tile_index)
+						
+						// Per-ROI 
+						r.aux_area++;
+
+						r.aux_min = (std::min) (r.aux_min, inten);
+						r.aux_max = (std::max) (r.aux_max, inten);
+
+						// save
+						r.update_aabb(x, y);
+					}
+				} // scan tile
+
+#ifdef WITH_PYTHON_H
+				if (PyErr_CheckSignals() != 0)
+					throw pybind11::error_already_set();
+#endif
+
+				// Show stayalive progress info
+				VERBOSLVL2(
+					if (cnt++ % 4 == 0)
+						std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n";
+				);
+			} // foreach tile
+
+		//****** Analysis
+		
+		// slide-wide (max ROI area) x (number of ROIs)
+		size_t maxArea = 0;
+		size_t max_w = 0, max_h = 0;
+		for (const auto & pair : R)
+		{
+			const LR& r = pair.second;
+			maxArea = maxArea > r.aux_area ? maxArea : r.aux_area; //std::max (maxArea, r.aux_area);
+			max_w = max_w > r.aabb.get_width() ? max_w : r.aabb.get_width();
+			max_h = max_h > r.aabb.get_height() ? max_h : r.aabb.get_height();
+		}
+		p.max_roi_area = maxArea;
+		p.n_rois = R.size();
+		p.max_roi_w = max_w;
+		p.max_roi_h = max_h;
+
+		return true;
+	}
+
+	bool scan_intlabel_pair_props (SlideProps & p)
+	{
+		ImageLoader ilo;
+		if (!ilo.open(p.fname_int, p.fname_seg))
+		{
+			std::cerr << "error opening an ImageLoader for " << p.fname_int << " | " << p.fname_seg << "\n";
+			return false;
+		}
+
+		if (!gatherRoisMetrics_2_slideprops(ilo, p))
+		{
+			std::cerr << "error in gatherRoisMetrics_2_slideprops() \n";
+			return false;
+		}
+
+		ilo.close();
+
+		return true;
+	}
+
 	int processDataset(
 		const std::vector<std::string>& intensFiles,
 		const std::vector<std::string>& labelFiles,
@@ -405,6 +564,97 @@ namespace Nyxus
 		if (Stopwatch::inclusive())
 			Stopwatch::reset();
 		#endif		
+
+		//********************** prescan ***********************
+
+		// scan the whole dataset for ROI properties, slide properties, and dataset global properties
+		size_t nf = intensFiles.size();
+
+		{ STOPWATCH("prescan/p0/P/#ccbbaa", "\t=");
+
+		std::cout << "phase 0 \n";
+
+		LR::reset_dataset_props();
+		LR::dataset_props.resize(nf);
+		for (size_t i = 0; i < nf; i++)
+		{
+			auto& ifp = intensFiles[i],
+				& mfp = labelFiles[i];
+
+			SlideProps& p = LR::dataset_props[i];
+			p.fname_int = ifp;
+			p.fname_seg = mfp;
+
+			std::cout << "prescanning " << p.fname_int << "\n";
+			if (!scan_intlabel_pair_props(p))
+			{
+				std::cout << "error prescanning pair " << ifp << " and " << mfp << std::endl;
+				return 1;
+			}
+		}
+
+		// get global properties
+		LR::dataset_max_combined_roicloud_len = 0;
+		LR::dataset_max_n_rois = 0;
+		LR::dataset_max_roi_area = 0;
+		LR::dataset_max_roi_w = 0;
+		LR::dataset_max_roi_h = 0;
+
+		for (SlideProps& p : LR::dataset_props)
+		{
+			size_t sup_s_n = p.n_rois * p.max_roi_area;
+			LR::dataset_max_combined_roicloud_len = (std::max)(LR::dataset_max_combined_roicloud_len, sup_s_n);
+
+			LR::dataset_max_n_rois = (std::max)(LR::dataset_max_n_rois, p.n_rois);
+			LR::dataset_max_roi_area = (std::max)(LR::dataset_max_roi_area, p.max_roi_area);
+
+			LR::dataset_max_roi_w = (std::max) (LR::dataset_max_roi_w, p.max_roi_w);
+			LR::dataset_max_roi_h = (std::max)(LR::dataset_max_roi_h, p.max_roi_h);
+		}
+
+		std::cout << "\t ---done phase 0 \n";
+
+		//***********************************************************************************************
+#ifdef USE_GPU
+		if (theEnvironment.using_gpu())
+		{
+			std::cout << "allocate GPU cache \n";
+
+			if (!NyxusGpu::allocate_gpu_cache(
+				// out
+				NyxusGpu::gpu_roiclouds_2d,
+				NyxusGpu::gpu_roicontours_2d,
+				&NyxusGpu::dev_realintens,
+				&NyxusGpu::dev_prereduce,
+				NyxusGpu::gpu_featurestatebuf,
+				NyxusGpu::devicereduce_temp_storage_szb,
+				&NyxusGpu::dev_devicereduce_temp_storage,	
+				NyxusGpu::gpu_batch_len,
+				&NyxusGpu::dev_imat1,
+				&NyxusGpu::dev_imat2,
+				NyxusGpu::gabor_linear_image,
+				NyxusGpu::gabor_linear_kernel,
+				NyxusGpu::gabor_result,
+				NyxusGpu::gabor_energy_image,
+				// in
+				LR::dataset_max_combined_roicloud_len, // desired totCloLen,
+				LR::dataset_max_combined_roicloud_len, // desired totKontLen,
+				LR::dataset_max_n_rois,	// labels.size()
+				LR::dataset_max_roi_area,
+				LR::dataset_max_roi_w,
+				LR::dataset_max_roi_h,
+				GaborFeature::f0_theta_pairs.size(),
+				GaborFeature::n
+				))	// we need max ROI area inside the function to calculate the batch size if 'dataset_max_combined_roicloud_len' doesn't fit in RAM
+			{
+				std::cerr << "error in " << __FILE__ << ":" << __LINE__ << "\n";
+				return 1;
+			}
+
+			std::cout << "\t ---done allocate GPU cache \n";
+		}
+#endif
+		} // prescan timing
 
 		// One-time initialization
 		init_feature_buffers();
@@ -429,7 +679,6 @@ namespace Nyxus
 		bool ok = true;
 
 		// Iterate file pattern-filtered images of the dataset
-		auto nf = intensFiles.size();
 		for (int i = 0; i < nf; i++)
 		{
 #ifdef CHECKTIMING
@@ -515,7 +764,7 @@ namespace Nyxus
 				VERBOSLVL1(Stopwatch::print_stats());
 
 				// Details - also to a file
-				VERBOSLVL3(
+				VERBOSLVL1(
 					fs::path p(theSegFname);
 					Stopwatch::save_stats(theEnvironment.output_dir + "/" + p.stem().string() + "_nyxustiming.csv");
 				);
@@ -530,7 +779,7 @@ namespace Nyxus
 			VERBOSLVL1(Stopwatch::print_stats());
 
 			// Details - also to a file
-			VERBOSLVL3(
+			VERBOSLVL1(
 				fs::path p(theSegFname);
 				Stopwatch::save_stats(theEnvironment.output_dir + "/inclusive_nyxustiming.csv");
 			);
@@ -545,6 +794,29 @@ namespace Nyxus
 					return 2;
 			}
 		}
+
+#ifdef USE_GPU
+		if (theEnvironment.using_gpu())
+		{
+			if (!NyxusGpu::free_gpu_cache(
+				NyxusGpu::gpu_roiclouds_2d,
+				NyxusGpu::gpu_roicontours_2d,
+				NyxusGpu::dev_realintens,
+				NyxusGpu::dev_prereduce,
+				NyxusGpu::gpu_featurestatebuf,
+				NyxusGpu::dev_devicereduce_temp_storage,
+				NyxusGpu::dev_imat1,
+				NyxusGpu::dev_imat2,
+				NyxusGpu::gabor_linear_image,
+				NyxusGpu::gabor_result,
+				NyxusGpu::gabor_linear_kernel,
+				NyxusGpu::gabor_energy_image))
+			{
+				std::cerr << "error in free_gpu_cache()\n";
+				return 1;
+			}
+		}
+#endif
 	
 		return 0; // success
 	}
@@ -601,29 +873,6 @@ namespace Nyxus
 
 			auto& ifile = intensFiles[i],	// intensity
 				& mfile = labelFiles[i];	// mask
-
-			/*
-			* 
-			* for (const auto z : intensFiles[i].z_indices) :
-			* 
-
-			// ifile and mfile contain a placeholder for the z-index. We need to turn them to physical filesystem files
-			std::string phys_ifname = std::regex_replace (ifile.fname, std::regex("\*"), std::to_string(z)),
-				phys_mfname = std::regex_replace (mfile.fname, std::regex("\*"), std::to_string(z));
-
-			// Cache the file names to be picked up by labels to know their file origin
-			theSegFname = mfile.fdir + phys_ifname;
-			theIntFname = ifile.fdir + phys_mfname;
-
-			// Extract features from this intensity-mask pair 
-			ok = theImLoader.open (theIntFname, theSegFname);
-			if (ok == false)
-			{
-				std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
-				return 1;
-			}		
-
-			*/
 
 			// Do phased processing: prescan, trivial ROI processing, oversized ROI processing
 			ok = processIntSegImagePair_3D (ifile.fdir+ifile.fname, mfile.fdir+mfile.fname, i, nf, intensFiles[i].z_indices);
@@ -753,7 +1002,6 @@ namespace Nyxus
 				error_message = "processIntSegImagePairInMemory() returned an error code while processing file pair";
 				return 1;
 			}
-			
 
 			if (write_apache) {
 			
@@ -900,8 +1148,13 @@ namespace Nyxus
 		{
 			LR& r = roiData [lab];
 			if (dim3)
-				for (auto pxl : r.raw_pixels_3D)
-					f << lab << "," << pxl.x << ',' << pxl.y << ',' << pxl.z << ',' << pxl.inten << ',' << '\n';
+				for (auto & plane : r.zplanes)
+					for (auto idx : plane.second)
+					{
+						auto& pxl = r.raw_pixels_3D[idx];
+						f << lab << "," << pxl.x << ',' << pxl.y << ',' << pxl.z << ',' << pxl.inten << ',' << '\n';
+
+					}
 			else
 				for (auto pxl : r.raw_pixels)
 					f << lab << "," << pxl.x << ',' << pxl.y << ',' << pxl.inten << ',' << '\n';

@@ -102,5 +102,22 @@ private:
 	const double BAD_ROI_FVAL = 0.0;
 	const double EPS = 2.2e-16;
 	const double LOG10_2 = 0.30102999566;	// precalculated log 2 base 10
+
+	// feature values cache between calculate() and save_value()
+	double fv_SDE,
+		fv_LDE,
+		fv_GLN,
+		fv_DN,
+		fv_DNN,
+		fv_GLV,
+		fv_DV,
+		fv_DE,
+		fv_LGLE,
+		fv_HGLE,
+		fv_SDLGLE,
+		fv_SDHGLE,
+		fv_LDLGLE,
+		fv_LDHGLE;
+
 };
 

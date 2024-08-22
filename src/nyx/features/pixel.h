@@ -7,6 +7,8 @@ using PixIntens = unsigned int;
 using RealPixIntens = float;
 using StatsInt = long;
 using StatsReal = double;
+using gpureal = double;
+
 
 /// @brief Geneal purpose class encapsulating a 2D Cartesian vector
 /// @tparam T 

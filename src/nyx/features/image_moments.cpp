@@ -1,8 +1,11 @@
 #include "../environment.h"
+#ifdef USE_GPU
+    #include "../gpucache.h"
+    #include "../gpu/geomoments.cuh"
+#endif
 #include "image_moments.h"
 
 using namespace Nyxus;
-
 
 #define MOMENTS_OF_BINARY
 #ifdef MOMENTS_OF_BINARY
@@ -10,7 +13,6 @@ using namespace Nyxus;
 #else
     #define INTEN(x) x
 #endif
-
 
 ImageMomentsFeature::ImageMomentsFeature() : FeatureMethod("ImageMomentsFeature")
 {
@@ -20,6 +22,29 @@ ImageMomentsFeature::ImageMomentsFeature() : FeatureMethod("ImageMomentsFeature"
 
 void ImageMomentsFeature::calculate (LR& r)
 {
+    // intercept blank ROIs
+    if (r.aux_max == r.aux_min)
+    {
+        // spatial moments
+        m00 = m01 = m02 = m03 = m10 = m11 = m12 = m13 = m20 = m21 = m22 = m23 = m30 =   
+        // weighted spatial moments
+        wm00 = wm01 = wm02 = wm03 = wm10 = wm11 = wm12 = wm20 = wm21 = wm30 =           
+        // normalized spatial moments
+        w00 = w01 = w02 = w03 = w10 = w11 = w12 = w13 = w20 = w21 = w22 = w23 = w30 = w31 = w32 = w33 =
+        // normalized central moments
+        nu02 = nu03 = nu11 = nu12 = nu20 = nu21 = nu30 =
+        // central moments
+        mu00 = mu01 = mu02 = mu03 = mu10 = mu11 = mu12 = mu13 = mu20 = mu21 = mu22 = mu23 = mu30 = mu31 = mu32 = mu33 =
+        // weighted central moments
+        wmu02 = wmu03 = wmu11 = wmu12 = wmu20 = wmu21 = wmu30 =
+        // Hu invariants
+        hm1 = hm2 = hm3 = hm4 = hm5 = hm6 = hm7 =
+        // weighted Hu invariants
+        whm1 = whm2 = whm3 = whm4 = whm5 = whm6 = whm7 = theEnvironment.nan_substitute;
+
+        return;
+    }
+
     // Cache ROI frame of reference
     baseX = r.aabb.get_xmin();
     baseY = r.aabb.get_ymin();
@@ -42,41 +67,16 @@ void ImageMomentsFeature::calculate (LR& r)
     calcOrigins (c, w);
     calcWeightedRawMoments (c, w);
     calcWeightedCentralMoments (c, w);
+    calcWeightedNormCentralMoms (c, w);
     calcWeightedHuInvariants (c, w);
 }
 
 #ifdef USE_GPU
-
 void ImageMomentsFeature::calculate_via_gpu (LR& r, size_t roi_idx)
 {
-    bool ok = send_roi_data_2_gpu (r.raw_pixels.data(), r.raw_pixels.size());
-    if (!ok)
-        std::cerr << "Geometric moments: error sending ROI data to GPU-side\n";
-    ok = send_contour_data_2_gpu (r.contour.data(), r.contour.size());
-    if (!ok)
-        std::cerr << "Geometric moments: error sending ROI contour data to GPU-side\n";
-
-    ok = ImageMomentsFeature_calculate (
-        m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30,   // spatial moments
-        mu00, mu01, mu02, mu03, mu10, mu11, mu12, mu13, mu20, mu21, mu22, mu23, mu30, mu31, mu32, mu33,   // central moments
-        nu02, nu03, nu11, nu12, nu20, nu21, nu30,    // normalized central moments
-        w00, w01, w02, w03, w10, w11, w12, w13, w20, w21, w22, w23, w30, w31, w32, w33,   // normalized spatial moments
-        hm1, hm2, hm3, hm4, hm5, hm6, hm7,  // Hu moments
-        wm00, wm01, wm02, wm03, wm10, wm11, wm12, wm20, wm21, wm30,   // weighted spatial moments
-        wmu02, wmu03, wmu11, wmu12, wmu20, wmu21, wmu30,   // weighted central moments
-        whm1, whm2, whm3, whm4, whm5, whm6, whm7,    // weighted Hum moments
-        r.im_buffer_offset, 
-        roi_idx,
-        r.aabb.get_xmin(), 
-        r.aabb.get_ymin(), 
-        r.aabb.get_width(), 
-        r.aabb.get_height());
+    bool ok = NyxusGpu::ImageMomentsFeature_calculate (roi_idx);
     if (!ok)
         std::cerr << "Geometric moments: error calculating features on GPU\n";
-
-    ok = free_roi_data_on_gpu();
-    if (!ok)
-        std::cerr << "Geometric moments: error freeing ROI data on GPU-side\n";
 
 }
 #endif
@@ -168,6 +168,14 @@ void ImageMomentsFeature::save_value(std::vector<std::vector<double>>& fvals)
     fvals[(int)Feature2D::HU_M6][0] = hm6;
     fvals[(int)Feature2D::HU_M7][0] = hm7;
 
+    fvals[(int)Feature2D::WT_NORM_CTR_MOM_02][0] = wncm02;
+    fvals[(int)Feature2D::WT_NORM_CTR_MOM_03][0] = wncm03;
+    fvals[(int)Feature2D::WT_NORM_CTR_MOM_11][0] = wncm11;
+    fvals[(int)Feature2D::WT_NORM_CTR_MOM_12][0] = wncm12;
+    fvals[(int)Feature2D::WT_NORM_CTR_MOM_20][0] = wncm20;
+    fvals[(int)Feature2D::WT_NORM_CTR_MOM_21][0] = wncm21;
+    fvals[(int)Feature2D::WT_NORM_CTR_MOM_30][0] = wncm30;
+
     fvals[(int)Feature2D::WEIGHTED_HU_M1][0] = whm1;
     fvals[(int)Feature2D::WEIGHTED_HU_M2][0] = whm2;
     fvals[(int)Feature2D::WEIGHTED_HU_M3][0] = whm3;
@@ -240,11 +248,8 @@ double ImageMomentsFeature::centralMom (const pixcloud & cloud, const intcloud &
 /// @brief Calculates the normalized spatial 2D moment of order q,p of ROI pixel cloud
 double ImageMomentsFeature::normRawMom (const pixcloud & cloud, int p, int q)
 {
-    double stddev = centralMom (cloud, 2, 2);
-    int w = std::max(q, p);
-    double normCoef = pow(stddev, (double)w);
-    double cmPQ = centralMom(cloud, p, q);
-    double retval = cmPQ / normCoef;
+    double k = ((double(p) + double(q)) / 2.0) + 1.0;
+    double retval = moment(cloud, p, q) / pow(moment(cloud, 0, 0), k);
     return retval;
 }
 
@@ -264,51 +269,10 @@ double ImageMomentsFeature::normCentralMom (const pixcloud & cloud, const intclo
     return retval;
 }
 
-std::tuple<double, double, double, double, double, double, double> ImageMomentsFeature::calcHuInvariants_imp (const pixcloud & cloud)
+// Hu-1962 invariants
+// _02, _03, _11, _12, _20, _21, _30 are normed central moments
+std::tuple<double, double, double, double, double, double, double> ImageMomentsFeature::calcHu_imp (double _02, double _03, double _11, double _12, double _20, double _21, double _30)
 {
-    // calculate the 7 Hu-1962 invariants
-
-    auto _20 = normCentralMom(cloud, 2, 0),
-        _02 = normCentralMom(cloud, 0, 2),
-        _11 = normCentralMom(cloud, 1, 1),
-        _30 = normCentralMom(cloud, 3, 0),
-        _12 = normCentralMom(cloud, 1, 2),
-        _21 = normCentralMom(cloud, 2, 1),
-        _03 = normCentralMom(cloud, 0, 3);
-
-    double h1 = _20 + _02;
-    double h2 = pow((_20 - _02), 2) + 4 * (pow(_11, 2));
-    double h3 = pow((_30 - 3 * _12), 2) +
-        pow((3 * _21 - _03), 2);
-    double h4 = pow((_30 + _12), 2) +
-        pow((_21 + _03), 2);
-    double h5 = (_30 - 3 * _12) *
-        (_30 + _12) *
-        (pow(_30 + _12, 2) - 3 * pow(_21 + _03, 2)) +
-        (3 * _21 - _03) * (_21 + _03) *
-        (pow(3 * (_30 + _12), 2) - pow(_21 + _03, 2));
-    double h6 = (_20 - _02) * (pow(_30 + _12, 2) -
-        pow(_21 + _03, 2)) + (4 * _11 * (_30 + _12) *
-            _21 + _03);
-    double h7 = (3 * _21 - _03) * (_30 + _12) * (pow(_30 + _12, 2) -
-        3 * pow(_21 + _03, 2)) - (_30 - 3 * _12) * (_21 + _03) *
-        (3 * pow(_30 + _12, 2) - pow(_21 + _03, 2));
-
-    return { h1, h2, h3, h4, h5, h6, h7 };
-}
-
-std::tuple<double, double, double, double, double, double, double> ImageMomentsFeature::calcHuInvariants_imp (const pixcloud & cloud, const intcloud & realintens)
-{
-    // calculate the 7 Hu-1962 invariants
-
-    auto _20 = normCentralMom (cloud, realintens, 2, 0),
-        _02 = normCentralMom (cloud, realintens, 0, 2),
-        _11 = normCentralMom (cloud, realintens, 1, 1),
-        _30 = normCentralMom (cloud, realintens, 3, 0),
-        _12 = normCentralMom (cloud, realintens, 1, 2),
-        _21 = normCentralMom (cloud, realintens, 2, 1),
-        _03 = normCentralMom (cloud, realintens, 0, 3);
-
     double h1 = _20 + _02;
     double h2 = pow((_20 - _02), 2) + 4 * (pow(_11, 2));
     double h3 = pow((_30 - 3 * _12), 2) +
@@ -330,19 +294,16 @@ std::tuple<double, double, double, double, double, double, double> ImageMomentsF
     return { h1, h2, h3, h4, h5,h6, h7 };
 }
 
+// Prerequisite: precalculated normed central moments 'nu02 ... nu30'
 void ImageMomentsFeature::calcHuInvariants (const pixcloud & cloud)
 {
-    std::tie(hm1, hm2, hm3, hm4, hm5, hm6, hm7) = calcHuInvariants_imp (cloud);
+    std::tie(hm1, hm2, hm3, hm4, hm5, hm6, hm7) = calcHu_imp (nu02, nu03, nu11, nu12, nu20, nu21, nu30);
 }
 
-void ImageMomentsFeature::calcWeightedHuInvariants (const pixcloud & cloud)
-{
-    std::tie(whm1, whm2, whm3, whm4, whm5, whm6, whm7) = calcHuInvariants_imp (cloud);
-}
-
+// Prerequisite: precalculated weighted normed central moments 'wncm02 ... wncm30'
 void ImageMomentsFeature::calcWeightedHuInvariants (const pixcloud & cloud, const intcloud & realintens)
 {
-    std::tie(whm1, whm2, whm3, whm4, whm5, whm6, whm7) = calcHuInvariants_imp (cloud, realintens);
+    std::tie(whm1, whm2, whm3, whm4, whm5, whm6, whm7) = calcHu_imp (wncm02, wncm03, wncm11, wncm12, wncm20, wncm21, wncm30);
 }
 
 void ImageMomentsFeature::calcRawMoments (const pixcloud & cloud)
@@ -360,22 +321,6 @@ void ImageMomentsFeature::calcRawMoments (const pixcloud & cloud)
     m22 = moment (cloud, 2, 2);
     m23 = moment (cloud, 2, 3);
     m30 = moment (cloud, 3, 0);
-}
-
-/// @brief 
-/// @param cloud Cloud of weighted ROI pixels
-void ImageMomentsFeature::calcWeightedRawMoments (const pixcloud & cloud)
-{
-    wm00 = moment (cloud, 0, 0);
-    wm01 = moment (cloud, 0, 1);
-    wm02 = moment (cloud, 0, 2);
-    wm03 = moment (cloud, 0, 3);
-    wm10 = moment (cloud, 1, 0);
-    wm11 = moment (cloud, 1, 1);
-    wm12 = moment (cloud, 1, 2);
-    wm20 = moment (cloud, 2, 0);
-    wm21 = moment (cloud, 2, 1);
-    wm30 = moment (cloud, 3, 0);
 }
 
 void ImageMomentsFeature::calcWeightedRawMoments (const pixcloud & cloud, const intcloud & real_intens)
@@ -415,17 +360,6 @@ void ImageMomentsFeature::calcCentralMoments (const pixcloud & cloud)
     mu33 = centralMom (cloud, 3, 3);
 }
 
-void ImageMomentsFeature::calcWeightedCentralMoments (const pixcloud & cloud)
-{
-    wmu02 = centralMom (cloud, 0, 2);
-    wmu03 = centralMom (cloud, 0, 3);
-    wmu11 = centralMom (cloud, 1, 1);
-    wmu12 = centralMom (cloud, 1, 2);
-    wmu20 = centralMom (cloud, 2, 0);
-    wmu21 = centralMom (cloud, 2, 1);
-    wmu30 = centralMom (cloud, 3, 0);
-}
-
 void ImageMomentsFeature::calcWeightedCentralMoments (const pixcloud& cloud, const intcloud& realintens)
 {
     wmu02 = centralMom (cloud, realintens, 0, 2);
@@ -446,6 +380,17 @@ void ImageMomentsFeature::calcNormCentralMoments (const pixcloud & cloud)
     nu20 = normCentralMom (cloud, 2, 0);
     nu21 = normCentralMom (cloud, 2, 1);
     nu30 = normCentralMom (cloud, 3, 0);
+}
+
+void ImageMomentsFeature::calcWeightedNormCentralMoms (const pixcloud & cloud, const intcloud& realintens)
+{
+    wncm20 = normCentralMom (cloud, realintens, 2, 0);
+    wncm02 = normCentralMom (cloud, realintens, 0, 2);
+    wncm11 = normCentralMom (cloud, realintens, 1, 1);
+    wncm30 = normCentralMom (cloud, realintens, 3, 0);
+    wncm12 = normCentralMom (cloud, realintens, 1, 2);
+    wncm21 = normCentralMom (cloud, realintens, 2, 1);
+    wncm03 = normCentralMom (cloud, realintens, 0, 3);
 }
 
 void ImageMomentsFeature::calcNormRawMoments (const pixcloud & cloud)
@@ -493,29 +438,151 @@ void ImageMomentsFeature::parallel_process_1_batch (size_t start, size_t end, st
 }
 
 #ifdef USE_GPU
-/// @brief Calculates the features for all the ROIs in a single thread (for calculating via GPU) 
-/// @param ptrLabels ROI label vector
-/// @param ptrLabelData ROI data
-void ImageMomentsFeature::gpu_process_all_rois (const std::vector<int> & Labels, std::unordered_map <int, LR>& RoiData)
+
+void save_values_from_gpu_buffer(
+    std::unordered_map <int, LR>& roidata,
+    const std::vector<int>& roilabels,
+    const GpuCache<gpureal>& intermediate_already_hostside,
+    size_t batch_offset,
+    size_t batch_len)
 {
-    bool ok = allocate_2dmoments_buffers_on_gpu (Nyxus::largest_roi_imatr_buf_len);   // allocates device-side buffers for the pixel cloud and contour
-
-    // Calculate features
-    for (auto roiIdx=0; roiIdx<Labels.size(); roiIdx++)
+    for (size_t i = 0; i < batch_len; i++)
     {
-        auto lab = Labels[roiIdx];
-        LR& r = RoiData[lab];
+        size_t roiidx = batch_offset + i;
+        auto lbl = roilabels[roiidx];
+        LR& roi = roidata[lbl];
+        auto& fvals = roi.fvals;
 
-        if (r.has_bad_data())
-            continue;
-        
-        ImageMomentsFeature imf;
-        imf.calculate_via_gpu (r, roiIdx);
-        imf.save_value (r.fvals);
+        size_t offs = i * GpusideState::__COUNT__;
+        const gpureal* ptrBuf = &intermediate_already_hostside.hobuffer[offs];
+
+        fvals[(int)Feature2D::SPAT_MOMENT_00][0] = ptrBuf[GpusideState::RM00];
+        fvals[(int)Feature2D::SPAT_MOMENT_01][0] = ptrBuf[GpusideState::RM01];
+        fvals[(int)Feature2D::SPAT_MOMENT_02][0] = ptrBuf[GpusideState::RM02];
+        fvals[(int)Feature2D::SPAT_MOMENT_03][0] = ptrBuf[GpusideState::RM03];
+        fvals[(int)Feature2D::SPAT_MOMENT_10][0] = ptrBuf[GpusideState::RM10];
+        fvals[(int)Feature2D::SPAT_MOMENT_11][0] = ptrBuf[GpusideState::RM11];
+        fvals[(int)Feature2D::SPAT_MOMENT_12][0] = ptrBuf[GpusideState::RM12];
+        fvals[(int)Feature2D::SPAT_MOMENT_13][0] = ptrBuf[GpusideState::RM13];
+        fvals[(int)Feature2D::SPAT_MOMENT_20][0] = ptrBuf[GpusideState::RM20];
+        fvals[(int)Feature2D::SPAT_MOMENT_21][0] = ptrBuf[GpusideState::RM21];
+        fvals[(int)Feature2D::SPAT_MOMENT_22][0] = ptrBuf[GpusideState::RM22];
+        fvals[(int)Feature2D::SPAT_MOMENT_23][0] = ptrBuf[GpusideState::RM23];
+        fvals[(int)Feature2D::SPAT_MOMENT_30][0] = ptrBuf[GpusideState::RM30];
+
+        fvals[(int)Feature2D::CENTRAL_MOMENT_00][0] = ptrBuf[GpusideState::CM00];
+        fvals[(int)Feature2D::CENTRAL_MOMENT_01][0] = ptrBuf[GpusideState::CM01];
+        fvals[(int)Feature2D::CENTRAL_MOMENT_02][0] = ptrBuf[GpusideState::CM02];
+        fvals[(int)Feature2D::CENTRAL_MOMENT_03][0] = ptrBuf[GpusideState::CM03];
+        fvals[(int)Feature2D::CENTRAL_MOMENT_10][0] = ptrBuf[GpusideState::CM10];
+        fvals[(int)Feature2D::CENTRAL_MOMENT_11][0] = ptrBuf[GpusideState::CM11];
+        fvals[(int)Feature2D::CENTRAL_MOMENT_12][0] = ptrBuf[GpusideState::CM12];
+        fvals[(int)Feature2D::CENTRAL_MOMENT_13][0] = ptrBuf[GpusideState::CM13];
+        fvals[(int)Feature2D::CENTRAL_MOMENT_20][0] = ptrBuf[GpusideState::CM20];
+        fvals[(int)Feature2D::CENTRAL_MOMENT_21][0] = ptrBuf[GpusideState::CM21];
+        fvals[(int)Feature2D::CENTRAL_MOMENT_22][0] = ptrBuf[GpusideState::CM22];
+        fvals[(int)Feature2D::CENTRAL_MOMENT_23][0] = ptrBuf[GpusideState::CM23];
+        fvals[(int)Feature2D::CENTRAL_MOMENT_30][0] = ptrBuf[GpusideState::CM30];
+        fvals[(int)Feature2D::CENTRAL_MOMENT_31][0] = ptrBuf[GpusideState::CM31];
+        fvals[(int)Feature2D::CENTRAL_MOMENT_32][0] = ptrBuf[GpusideState::CM32];
+        fvals[(int)Feature2D::CENTRAL_MOMENT_33][0] = ptrBuf[GpusideState::CM33];
+
+        fvals[(int)Feature2D::NORM_SPAT_MOMENT_00][0] = ptrBuf[GpusideState::W00];
+        fvals[(int)Feature2D::NORM_SPAT_MOMENT_01][0] = ptrBuf[GpusideState::W01];
+        fvals[(int)Feature2D::NORM_SPAT_MOMENT_02][0] = ptrBuf[GpusideState::W02];
+        fvals[(int)Feature2D::NORM_SPAT_MOMENT_03][0] = ptrBuf[GpusideState::W03];
+        fvals[(int)Feature2D::NORM_SPAT_MOMENT_10][0] = ptrBuf[GpusideState::W10];
+        fvals[(int)Feature2D::NORM_SPAT_MOMENT_11][0] = ptrBuf[GpusideState::W11];
+        fvals[(int)Feature2D::NORM_SPAT_MOMENT_12][0] = ptrBuf[GpusideState::W12];
+        fvals[(int)Feature2D::NORM_SPAT_MOMENT_13][0] = ptrBuf[GpusideState::W13];
+        fvals[(int)Feature2D::NORM_SPAT_MOMENT_20][0] = ptrBuf[GpusideState::W20];
+        fvals[(int)Feature2D::NORM_SPAT_MOMENT_21][0] = ptrBuf[GpusideState::W21];
+        fvals[(int)Feature2D::NORM_SPAT_MOMENT_22][0] = ptrBuf[GpusideState::W22];
+        fvals[(int)Feature2D::NORM_SPAT_MOMENT_23][0] = ptrBuf[GpusideState::W23];
+        fvals[(int)Feature2D::NORM_SPAT_MOMENT_30][0] = ptrBuf[GpusideState::W30];
+        fvals[(int)Feature2D::NORM_SPAT_MOMENT_31][0] = ptrBuf[GpusideState::W31];
+        fvals[(int)Feature2D::NORM_SPAT_MOMENT_32][0] = ptrBuf[GpusideState::W32];
+        fvals[(int)Feature2D::NORM_SPAT_MOMENT_33][0] = ptrBuf[GpusideState::W33];
+
+        fvals[(int)Feature2D::NORM_CENTRAL_MOMENT_02][0] = ptrBuf[GpusideState::NU02];
+        fvals[(int)Feature2D::NORM_CENTRAL_MOMENT_03][0] = ptrBuf[GpusideState::NU03];
+        fvals[(int)Feature2D::NORM_CENTRAL_MOMENT_11][0] = ptrBuf[GpusideState::NU11];
+        fvals[(int)Feature2D::NORM_CENTRAL_MOMENT_12][0] = ptrBuf[GpusideState::NU12];
+        fvals[(int)Feature2D::NORM_CENTRAL_MOMENT_20][0] = ptrBuf[GpusideState::NU20];
+        fvals[(int)Feature2D::NORM_CENTRAL_MOMENT_21][0] = ptrBuf[GpusideState::NU21];
+        fvals[(int)Feature2D::NORM_CENTRAL_MOMENT_30][0] = ptrBuf[GpusideState::NU30];
+
+        fvals[(int)Feature2D::HU_M1][0] = ptrBuf[GpusideState::H1];
+        fvals[(int)Feature2D::HU_M2][0] = ptrBuf[GpusideState::H2];
+        fvals[(int)Feature2D::HU_M3][0] = ptrBuf[GpusideState::H3];
+        fvals[(int)Feature2D::HU_M4][0] = ptrBuf[GpusideState::H4];
+        fvals[(int)Feature2D::HU_M5][0] = ptrBuf[GpusideState::H5];
+        fvals[(int)Feature2D::HU_M6][0] = ptrBuf[GpusideState::H6];
+        fvals[(int)Feature2D::HU_M7][0] = ptrBuf[GpusideState::H7];
+
+        fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_00][0] = ptrBuf[GpusideState::WRM00];
+        fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_01][0] = ptrBuf[GpusideState::WRM01];
+        fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_02][0] = ptrBuf[GpusideState::WRM02];
+        fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_03][0] = ptrBuf[GpusideState::WRM03];
+        fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_10][0] = ptrBuf[GpusideState::WRM10];
+        fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_11][0] = ptrBuf[GpusideState::WRM11];
+        fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_12][0] = ptrBuf[GpusideState::WRM12];
+        fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_20][0] = ptrBuf[GpusideState::WRM20];
+        fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_21][0] = ptrBuf[GpusideState::WRM21];
+        fvals[(int)Feature2D::WEIGHTED_SPAT_MOMENT_30][0] = ptrBuf[GpusideState::WRM30];
+
+        fvals[(int)Feature2D::WEIGHTED_CENTRAL_MOMENT_02][0] = ptrBuf[GpusideState::WCM02];
+        fvals[(int)Feature2D::WEIGHTED_CENTRAL_MOMENT_03][0] = ptrBuf[GpusideState::WCM03];
+        fvals[(int)Feature2D::WEIGHTED_CENTRAL_MOMENT_11][0] = ptrBuf[GpusideState::WCM11];
+        fvals[(int)Feature2D::WEIGHTED_CENTRAL_MOMENT_12][0] = ptrBuf[GpusideState::WCM12];
+        fvals[(int)Feature2D::WEIGHTED_CENTRAL_MOMENT_20][0] = ptrBuf[GpusideState::WCM20];
+        fvals[(int)Feature2D::WEIGHTED_CENTRAL_MOMENT_21][0] = ptrBuf[GpusideState::WCM21];
+        fvals[(int)Feature2D::WEIGHTED_CENTRAL_MOMENT_30][0] = ptrBuf[GpusideState::WCM30];
+
+        fvals[(int)Feature2D::WT_NORM_CTR_MOM_02][0] = ptrBuf[GpusideState::WNU02];
+        fvals[(int)Feature2D::WT_NORM_CTR_MOM_03][0] = ptrBuf[GpusideState::WNU03];
+        fvals[(int)Feature2D::WT_NORM_CTR_MOM_11][0] = ptrBuf[GpusideState::WNU11];
+        fvals[(int)Feature2D::WT_NORM_CTR_MOM_12][0] = ptrBuf[GpusideState::WNU12];
+        fvals[(int)Feature2D::WT_NORM_CTR_MOM_20][0] = ptrBuf[GpusideState::WNU20];
+        fvals[(int)Feature2D::WT_NORM_CTR_MOM_21][0] = ptrBuf[GpusideState::WNU21];
+        fvals[(int)Feature2D::WT_NORM_CTR_MOM_30][0] = ptrBuf[GpusideState::WNU30];
+
+        fvals[(int)Feature2D::WEIGHTED_HU_M1][0] = ptrBuf[GpusideState::WH1];
+        fvals[(int)Feature2D::WEIGHTED_HU_M2][0] = ptrBuf[GpusideState::WH2];
+        fvals[(int)Feature2D::WEIGHTED_HU_M3][0] = ptrBuf[GpusideState::WH3];
+        fvals[(int)Feature2D::WEIGHTED_HU_M4][0] = ptrBuf[GpusideState::WH4];
+        fvals[(int)Feature2D::WEIGHTED_HU_M5][0] = ptrBuf[GpusideState::WH5];
+        fvals[(int)Feature2D::WEIGHTED_HU_M6][0] = ptrBuf[GpusideState::WH6];
+        fvals[(int)Feature2D::WEIGHTED_HU_M7][0] = ptrBuf[GpusideState::WH7];
     }
+}
 
-    ok = free_2dmoments_buffers_on_gpu();
+void ImageMomentsFeature::gpu_process_all_rois (
+    const std::vector<int> & Labels, 
+    std::unordered_map <int, LR>& RoiData,
+    size_t batch_offset, 
+    size_t batch_len)
+{
+    for (auto i=0; i < batch_len; i++)
+    {
+        size_t far_i = i + batch_offset;
+        auto lab = Labels[far_i];
+        LR& r = RoiData[lab];
+        
+        // Calculate features        
+        ImageMomentsFeature imf;
+        imf.calculate_via_gpu (r, i);
+        //---delayed until we process all the ROIs on GPU-side--->  imf.save_value (r.fvals);
 
+        // Pull the result from GPU cache and save it
+        if (!NyxusGpu::gpu_featurestatebuf.download())
+        { 
+            std::cerr << "error in " << __FILE__ << ":" << __LINE__ << "\n";
+            return;
+        }
+        
+        save_values_from_gpu_buffer (RoiData, Labels, NyxusGpu::gpu_featurestatebuf, batch_offset, batch_len);
+    }
 }
 #endif // USE_GPU
 
@@ -543,11 +610,12 @@ namespace Nyxus
             auto& p = cloud[i];
 
             // pixel distance
-            auto mind2 = p.min_sqdist(contour);
+            double mind2 = p.min_sqdist (contour);
             double dist = std::sqrt(mind2);
 
             // weighted intensity
-            realintens[i] = RealPixIntens(double(p.inten) / (dist + epsilon));
+            double I = 1.0; // shape moments => constant intensity within the ROI
+            realintens[i] = I / (dist + epsilon);
         }
     }
 }

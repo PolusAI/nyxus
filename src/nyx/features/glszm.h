@@ -105,7 +105,6 @@ public:
 	static int n_levels;	// default value: 8
 
 private:
-	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
 	int Ng = 0;	// number of discrete intensity values in the image
 	int Ns = 0; // number of discrete zone sizes in the image
 	int Np = 0; // number of voxels in the image
@@ -126,7 +125,6 @@ private:
 
 	void clear_buffers()
 	{
-		bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
 		Ng = 0;	// number of discrete intensity values in the image
 		Ns = 0; // number of discrete zone sizes in the image
 		Np = 0; // number of voxels in the image
@@ -138,4 +136,24 @@ private:
 	const double EPS = 2.2e-16;
 	const double BAD_ROI_FVAL = 0.0;
 	const double LOG10_2 = 0.30102999566;	// precalculated log 2 base 10
+
+	// feature value cache
+	double fv_SAE,
+		fv_LAE,
+		fv_GLN,
+		fv_GLNN,
+		fv_SZN,
+		fv_SZNN,
+		fv_ZP,
+		fv_GLV,
+		fv_ZV,
+		fv_ZE,
+		fv_LGLZE,
+		fv_HGLZE,
+		fv_SALGLE,
+		fv_SAHGLE,
+		fv_LALGLE,
+		fv_LAHGLE;
+
+	void invalidate();	// assigns each cached feature value a safe NAN
 };

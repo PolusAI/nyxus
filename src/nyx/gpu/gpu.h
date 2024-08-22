@@ -26,6 +26,12 @@ static const int blockSize = 256;
     return false;	\
     };
 
+#define OK(x) if (x == false) \
+    { \
+	    std::cerr << "error in " << __FILE__ << ":" << __LINE__ << "\n"; \
+	    return false; \
+    } \
+
 #else 
 
     #define CHECKCUFFTERR(call) \
@@ -42,9 +48,18 @@ static const int blockSize = 256;
     return false;	\
     };
 
+#define OK(x) if (x == false) \
+    { \
+	    throw (std::runtime_error(std::string(FILE)+ ":"+std::to_string(LINE));	\
+	    return false; \
+    } \
+
 #endif
 
 
-bool gpu_initialize(int dev_id);
+namespace NyxusGpu
+{
+    bool gpu_initialize(int dev_id);
 
+}
 

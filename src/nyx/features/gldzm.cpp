@@ -258,13 +258,35 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 	calc_gldzm_matrix (GLDZM, Z, greysLUT);
 }
 
-void GLDZMFeature::calculate (LR& r)
+void GLDZMFeature::calculate(LR& r)
 {
 	clear_buffers();
 
-	//==== Check if the ROI is degenerate (equal intensity)
+	// intercept blank ROIs
 	if (r.aux_min == r.aux_max)
+	{
+		f_SDE =
+		f_LDE =
+		f_LGLZE =
+		f_HGLZE =
+		f_SDLGLE =
+		f_SDHGLE =
+		f_LDLGLE =
+		f_LDHGLE =
+		f_GLNU =
+		f_GLNUN =
+		f_ZDNU =
+		f_ZDNUN =
+		f_ZP =
+		f_GLM =
+		f_GLV =
+		f_ZDM =
+		f_ZDV =
+		f_ZDE =
+		f_GLE = theEnvironment.nan_substitute;
+
 		return;
+	}
 
 	//==== Prepare the GLDZM-matrix kit: matrix itself and its dimensions
 	std::vector<PixIntens> greyLevelsLUT;

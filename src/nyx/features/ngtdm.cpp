@@ -73,7 +73,7 @@ void NGTDMFeature::calculate (LR& r)
 		_contrast = 
 		_busyness = 
 		_complexity = 
-		_strength = 0;
+		_strength = theEnvironment.nan_substitute;
 		return;
 	}
 	 
@@ -137,10 +137,8 @@ void NGTDMFeature::calculate (LR& r)
 			}
 
 			// Save the intensity's average neighborhood intensity
-			if (nd > 0) {
-				//if(pi == 1) {
-				//	std::cerr << "neigsI: " << neigsI << ", nd: " << nd << std::endl;
-				//}
+			if (nd > 0) 
+			{
 				neigsI /= nd;
 				AveNeighborhoodInte z = { pi, neigsI };
 				Z.push_back(z);

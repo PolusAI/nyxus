@@ -44,6 +44,12 @@ public:
 		this->resize (size_t(W) * size_t(H));
 	}
 
+	// Returns size in bytes
+	size_t szb()
+	{
+		return sizeof(T) * W * H;
+	}
+
 	// = W * y + x
 	inline T& xy(int x, int y)
 	{

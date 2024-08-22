@@ -3,6 +3,9 @@
 
 namespace Nyxus
 {
+//
+// Attention: sorts elements of Data !
+//
 Statistics ComputeCommonStatistics2 (std::vector<double> & Data) 
 {
     Statistics output;

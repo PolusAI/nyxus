@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include "features/aabb.h"
@@ -13,6 +14,18 @@
 // Label record - structure aggregating label's cached data and calculated features
 #define DFLT0 -0.0	// default unassigned value
 #define DFLT0i -0	// default unassigned value
+
+struct SlideProps
+{
+	PixIntens min_inten;
+	PixIntens max_inten;
+	size_t max_roi_area;
+	size_t n_rois;
+	size_t max_roi_w;
+	size_t max_roi_h;
+	std::string fname_int;
+	std::string fname_seg;
+};
 
 enum RoiDataCacheItem
 {
@@ -42,12 +55,16 @@ public:
 	bool blacklisted = false;
 
 	std::vector <Pixel2> raw_pixels;
+
 	std::vector <Pixel3> raw_pixels_3D;
+	std::unordered_map<int, std::vector<size_t>> zplanes;  
+
 	OutOfRamPixelCloud raw_pixels_NT;
 	unsigned int aux_area = 0;
 	PixIntens aux_min, aux_max;
 	std::vector<Pixel2> contour;	
-	std::vector<Pixel2> convHull_CH; 
+	std::unordered_map<int, std::vector<size_t>> contours_3D; // std::unordered_map<int, std::vector<Pixel3>> contours_3D;
+	std::vector<Pixel2> convHull_CH;
 
 	std::vector<std::vector<StatsReal>> fvals;
 	std::vector<StatsReal> get_fvals (int fcode);
@@ -68,6 +85,14 @@ public:
 	static PixIntens global_min_inten;
 	static PixIntens global_max_inten;
 	static void reset_global_stats();
+	// Dataset properties
+	static std::vector<SlideProps> dataset_props;
+	static size_t dataset_max_combined_roicloud_len;
+	static size_t dataset_max_n_rois;
+	static size_t dataset_max_roi_area;
+	static size_t dataset_max_roi_w;
+	static size_t dataset_max_roi_h;
+	static void reset_dataset_props();
 };
 
 /// @brief Encapsulates ROI data related to ROI nesting

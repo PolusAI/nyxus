@@ -46,14 +46,14 @@ endif()
 
 if(USEGPU) 
 	if (CUDAToolkit_VERSION_MAJOR STREQUAL "10")
-		set(CUDA_ARCH_LIST "35;37;50;72;75")
+		set(CUDA_ARCH_LIST "35;37;50;72;75;50;72;75")	############ "35;37;50;72;75"
 	elseif (CUDAToolkit_VERSION_MAJOR STREQUAL "11")
 		if(CUDAToolkit_VERSION_MINOR STREQUAL "0")
-			set(CUDA_ARCH_LIST "35;37;50;72;75")
+			set(CUDA_ARCH_LIST "50;72;75")
 		elseif (CUDAToolkit_VERSION_MINOR STREQUAL "1" OR CUDAToolkit_VERSION_MINOR STREQUAL "2")
-			set(CUDA_ARCH_LIST "35;37;50;72;75;80;86")
+			set(CUDA_ARCH_LIST "50;72;75;80;86")
 		else () # for now, we assume CUDA 11.2+ supports all these archs.
-			set(CUDA_ARCH_LIST "35;37;50;72;75;80;86")
+			set(CUDA_ARCH_LIST "50;72;75;80;86")
 		endif()
 	elseif (CUDAToolkit_VERSION_MAJOR STREQUAL "12")
 		set(CUDA_ARCH_LIST "52;60;75;80;86;89;90")
@@ -144,7 +144,7 @@ set(SOURCE
 	src/nyx/features/contour.cpp
 	src/nyx/features/convex_hull_nontriv.cpp
 	src/nyx/features/ellipse_fitting.cpp
-	src/nyx/features/erosion_pixels.cpp
+	src/nyx/features/erosion.cpp
 	src/nyx/features/euler_number.cpp
 	src/nyx/features/extrema.cpp
 	src/nyx/features/focus_score.cpp
@@ -194,6 +194,7 @@ set(SOURCE
 	src/nyx/feature_mgr_init.cpp
 	src/nyx/features_calc_workflow.cpp
 	src/nyx/featureset.cpp
+	src/nyx/gpucache.cpp
 	src/nyx/globals.cpp
 	src/nyx/image_loader.cpp
 	src/nyx/output_2_buffer.cpp
@@ -314,9 +315,12 @@ if(USE_DCMTK)
 endif()
 
 if(USEGPU)
+	set(CUDA_SEPARABLE_COMPILATION TRUE) #-- required by DP --
+
 	include_directories("${CUDAToolkit_INCLUDE_DIRS}")
 	set(GPU_SOURCE_FILES
-        src/nyx/gpu/gabor.cu
+		src/nyx/gpu/erosion.cu
+		src/nyx/gpu/gabor.cu
 		src/nyx/gpu/gpu_helpers.cu
 		src/nyx/gpu/geomoments_central.cu
 		src/nyx/gpu/geomoments_hu.cu
@@ -325,23 +329,25 @@ if(USEGPU)
 		src/nyx/gpu/geomoments_origin.cu
 		src/nyx/gpu/geomoments_raw.cu
 		src/nyx/gpu/geomoments_weighting.cu
+		src/nyx/gpu/glszm.cu
+		src/nyx/gpu/gpucache.cu
 	)
 	add_library(nyxus_gpu ${GPU_SOURCE_FILES})
 
 	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-		target_compile_options(nyxus_gpu PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
+		set(CUDA_VERBOSE_BUILD ON)
+		target_compile_options(nyxus_gpu PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC -rdc=true -lcudadevrt>) #--required by DP--
 	endif()
 	list(APPEND Nyxus_LIBRARIES nyxus_gpu)
 	list(APPEND Nyxus_LIBRARIES CUDA::cufft)
-	list(APPEND Nyxus_LIBRARIES CUDA::cudart)
-
+	#--we already link versus cudart_static-- list(APPEND Nyxus_LIBRARIES CUDA::cudart)
 
 	if(BUILD_LIB)
-		set_target_properties(backend PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
+		set_target_properties(backend PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCH_LIST} CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 	endif()
 
 	if(BUILD_CLI)
-		set_target_properties(nyxus PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
+		set_target_properties(nyxus PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCH_LIST} CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 	endif()
 endif()
 

@@ -1,4 +1,5 @@
 #include "caliper.h"
+#include "../environment.h"
 #include "../parallel.h"
 #include "rotation.h"
 
@@ -12,8 +13,18 @@ CaliperMartinFeature::CaliperMartinFeature() : FeatureMethod("CaliperMartinFeatu
 
 void CaliperMartinFeature::calculate(LR& r)
 {
-	if (r.has_bad_data())
+	// intercept void ROIs
+	if (r.convHull_CH.size() == 0)
+	{
+		_min =
+		_max =
+		_mean =
+		_median =
+		_stdev =
+		_mode = theEnvironment.nan_substitute;
+
 		return;
+	}
 
 	std::vector<double> allD;	// Diameters at 0-180 degrees rotation
 	calculate_imp(r.convHull_CH, allD);
@@ -51,10 +62,9 @@ void CaliperMartinFeature::calculate_imp(const std::vector<Pixel2>& convex_hull,
 		Rotation::rotate_around_center(convex_hull, theta, CH_rot);
 		auto [minX, minY, maxX, maxY] = AABB::from_pixelcloud(CH_rot);
 
-		//
 		std::vector<float> DA;	// Diameters at this angle
 
-		// Iterate y-grid
+		// Iterate the Y-grid
 		float stepY = (maxY - minY) / float(n_steps);
 		for (int iy = 1; iy <= n_steps; iy++)
 		{
@@ -69,18 +79,43 @@ void CaliperMartinFeature::calculate_imp(const std::vector<Pixel2>& convex_hull,
 					& b = CH_rot[iH];
 
 				// Chord's Y is between segment AB's Ys ?
-				if ((a.y >= chord_y && b.y <= chord_y) || (b.y >= chord_y && a.y <= chord_y))
+				if ((a.y >= chord_y && b.y < chord_y) || (b.y >= chord_y && a.y < chord_y))
 				{
-					auto chord_x = b.y != a.y ?
+					float chord_x = b.y != a.y ?
 						(b.x - a.x) * (chord_y - a.y) / (b.y - a.y) + a.x
-						: (b.y + a.y) / 2;
-					auto tup = std::make_pair(chord_x, chord_y);
-					X.push_back(tup);
+						: (b.x + a.x) / 2;
+					auto tup1 = std::make_pair(chord_x, chord_y);
+					X.push_back (tup1);
+
+					// find the 2nd intersection
+					for (int kH = iH+1; kH < CH_rot.size(); kH++)
+					{
+						auto & a = CH_rot [kH-1],
+							& b = CH_rot [kH];
+
+						// chord chord_y crosses hull's segment (a,b) ?
+						if ((a.y >= chord_y && b.y < chord_y) || (b.y >= chord_y && a.y < chord_y))
+						{
+							float chord_x = b.y != a.y ?
+								(b.x - a.x) * (chord_y - a.y) / (b.y - a.y) + a.x
+								: (b.x + a.x) / 2;
+							auto tup2 = std::make_pair(chord_x, chord_y);
+
+							// save point #2 only if it's different from #1, otherwise the chord's length will be ==0
+							// (#1==#2 happens when chord's Y is exactly the Y of the contact of 2 convex hull segments.)
+							if (tup1 != tup2)
+								X.push_back (tup2);
+
+							break; // done with chord point #2
+						}
+					}
+
+					break;	// done with chord point #1
 				}
 			}
 
 			// Save the length of this chord. There must be 2 items in 'chordEnds' because we don't allow uniformative chords of zero length
-			if (X.size() >= 2)
+			if (X.size() == 2)	// we ignore special 1-vertex segments because their lengths are ==0
 			{
 				// for N segments
 				auto compareFunc = [](const std::pair<float, float>& p1, const std::pair<float, float>& p2) { return p1.first < p2.first; };
