@@ -115,6 +115,8 @@ class Nyxus:
         Minimum intensity of voxels of a floating point TIFF image.
     max_intensity: (optional, default 1.0)
         Maximum intensity of voxels of a floating point TIFF image.
+    ram_limit: int (optional)
+        Maximum amount of ram to be used by Nyxus in megabytes
     """
 
     def __init__(
@@ -128,7 +130,7 @@ class Nyxus:
             'gabor_kersize', 'gabor_gamma', 'gabor_sig2lam', 'gabor_f0',
             'gabor_thold', 'gabor_thetas', 'gabor_freqs', 'channel_signature', 
             'parent_channel', 'child_channel', 'aggregate', 'dynamic_range', 'min_intensity',
-            'max_intensity'
+            'max_intensity', 'ram_limit'
         }
 
         # Check for unexpected keyword arguments
@@ -155,6 +157,7 @@ class Nyxus:
         dynamic_range = kwargs.get('dynamic_range', 10000)
         min_intensity = kwargs.get('min_intensity', 0.0)
         max_intensity = kwargs.get('max_intensity', 1.0)
+        ram_limit = kwargs.get('ram_limit', -1)
         
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
@@ -193,7 +196,8 @@ class Nyxus:
             dynamic_range,
             min_intensity,
             max_intensity,
-            False)
+            False,
+            ram_limit)
         
         self.set_gabor_feature_params(
             kersize = gabor_kersize,
@@ -628,6 +632,8 @@ class Nyxus:
             thread for feature calculation. 
         * verbose: int (optional, non-negative, default 0)
             Level of diagnostic output shown in the console. Set '0' to disable any diagnostic output.
+        * ram_limit: int (optional)
+            Maximum amount of ram to be used by Nyxus in megabytes
         """
         
         valid_params = [
@@ -641,7 +647,8 @@ class Nyxus:
             'verbose',
             'dynamic_range',
             'min_intensity',
-            'max_intensity'
+            'max_intensity',
+            'ram_limit',
         ]
         
         for key in params:
@@ -659,6 +666,7 @@ class Nyxus:
         dynamic_range = params.get('dynamic_range', -1)
         min_intensity = params.get('min_intensity', -1)
         max_intensity = params.get('max_intensity', -1)
+        ram_limit = params.get('ram_limit', -1)
         
         set_environment_params_imp(features, 
                                    neighbor_distance, 
@@ -670,7 +678,8 @@ class Nyxus:
                                    verbosity_lvl,
                                    dynamic_range,
                                    min_intensity,
-                                   max_intensity)
+                                   max_intensity,
+                                   ram_limit,)
         
     def set_params(self, **params):
         """Sets parameters of the Nyxus class
@@ -709,13 +718,13 @@ class Nyxus:
             "ibsi",
             "dynamic_range",
             "min_intensity",
-            "max_intensity"
+            "max_intensity",
+            "ram_limit",
         ]
         
         environment_params = {}
         
         gabor_params = {}
-        
         
         for key, value in params.items():
             if key.startswith("gabor_"):
@@ -892,7 +901,7 @@ class Nyxus3D:
             'neighbor_distance', 'pixels_per_micron', 'coarse_gray_depth',
             'n_feature_calc_threads', 'using_gpu', 'ibsi', 'channel_signature', 
             'parent_channel', 'child_channel', 'aggregate', 
-            'dynamic_range', 'min_intensity', 'max_intensity'
+            'dynamic_range', 'min_intensity', 'max_intensity', 'ram_limit'
         }
 
         # Check for unexpected keyword arguments
@@ -932,6 +941,8 @@ class Nyxus3D:
             print("No gpu available.")
             using_gpu = -1
 
+        ram_limit = kwargs.get('ram_limit', -1)
+
         initialize_environment(
             3, # 3D
             features,
@@ -945,7 +956,8 @@ class Nyxus3D:
             dynamic_range,
             min_intensity,
             max_intensity,
-            False)
+            False,
+            ram_limit)
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
@@ -1284,7 +1296,7 @@ class ImageQuality:
             'neighbor_distance', 'pixels_per_micron', 'coarse_gray_depth',
             'n_feature_calc_threads', 'n_loader_threads', 'ibsi',
             'gabor_kersize', 'gabor_gamma', 'gabor_sig2lam', 'gabor_f0',
-            'channel_signature', 'min_intensity', 'max_intensity'
+            'channel_signature', 'min_intensity', 'max_intensity', 'ram_limit',
         }
 
         # Check for unexpected keyword arguments
@@ -1304,6 +1316,7 @@ class ImageQuality:
         dynamic_range = kwargs.get('dynamic_range', 10000)
         min_intensity = kwargs.get('min_intensity', 0.0)
         max_intensity = kwargs.get('max_intensity', 1.0)
+        ram_limit = kwargs.get('ram_limit', -1)
         
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
@@ -1327,7 +1340,6 @@ class ImageQuality:
         if(using_gpu > -1 and not gpu_available()):
             print("No gpu available.")
             using_gpu = -1
-    
 
         initialize_environment(
             2, # 2D
@@ -1342,7 +1354,8 @@ class ImageQuality:
             dynamic_range,
             min_intensity,
             max_intensity,
-            True)
+            True,
+            ram_limit)
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']

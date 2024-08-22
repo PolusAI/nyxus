@@ -182,6 +182,8 @@ public:
 	void clear_roi_blacklist ();
 	void get_roi_blacklist_summary(std::string& response);
 
+	bool set_ram_limit(size_t bytes);
+
 	// implementation of Gabor feature options
 	bool parse_gabor_options_raw_inputs (std::string& error_message);
 	GaborOptions gaborOptions;

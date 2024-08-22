@@ -20,9 +20,9 @@ SETLOCAL DisableDelayedExpansion
 mkdir local_install
 mkdir local_install\include
 
-curl -L https://github.com/pybind/pybind11/archive/refs/tags/v2.11.1.zip -o v2.11.1.zip
-tar -xvf v2.11.1.zip
-pushd pybind11-2.11.1
+curl -L https://github.com/pybind/pybind11/archive/refs/tags/v2.12.0.zip -o v2.12.0.zip
+tar -xvf v2.12.0.zip
+pushd pybind11-2.12.0
 mkdir build_man
 pushd build_man
 cmake -DCMAKE_INSTALL_PREFIX=../../local_install/  -DPYBIND11_TEST=OFF ..
@@ -127,7 +127,7 @@ if "%BUILD_ARROW%" == "1" (
     pushd cpp
     mkdir build
     pushd build
-    cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_INSTALL_PREFIX=../../../local_install/ -DCMAKE_PREFIX_PATH=../../../local_install/ -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON -DBOOST_ROOT=%_ROOTDIR%/boost_1_79_0
+    cmake .. -A x64 -DCMAKE_INSTALL_PREFIX=../../../local_install/ -DCMAKE_PREFIX_PATH=../../../local_install/ -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON -DBOOST_ROOT=%_ROOTDIR%/boost_1_79_0
     cmake --build . --config Release --target install --parallel 4
     popd 
     popd
@@ -212,5 +212,3 @@ if "%BUILD_DCMTK_DEP%" == "1" (
 )
 
 if errorlevel 1 exit 1
-
-if "%ON_GITHUB%"=="TRUE" xcopy /E /I /y local_install\bin %TEMP%\nyxus\bin

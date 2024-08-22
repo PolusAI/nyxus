@@ -77,7 +77,6 @@ void ImageMomentsFeature::calculate_via_gpu (LR& r, size_t roi_idx)
     bool ok = NyxusGpu::ImageMomentsFeature_calculate (roi_idx);
     if (!ok)
         std::cerr << "Geometric moments: error calculating features on GPU\n";
-
 }
 #endif
 
@@ -584,6 +583,7 @@ void ImageMomentsFeature::gpu_process_all_rois (
         save_values_from_gpu_buffer (RoiData, Labels, NyxusGpu::gpu_featurestatebuf, batch_offset, batch_len);
     }
 }
+
 #endif // USE_GPU
 
 namespace Nyxus

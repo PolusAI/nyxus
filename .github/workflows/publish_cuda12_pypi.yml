@@ -12,9 +12,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-20.04]
+        os: [windows-2019, ubuntu-20.04]
         cibw_archs: ["auto64"]
-        cibw_build: ["cp38-*", "cp39-*", "cp310-*", "cp311-*"]
+        cibw_build: ["cp38-*", "cp39-*", "cp310-*", "cp311-*",  "cp312-*"]
 
     steps:
       - uses: actions/checkout@v3
@@ -29,7 +29,7 @@ jobs:
         if: runner.os == 'Windows'
         env: 
           cuda: "12.0.0"
-          visual_studio: "Visual Studio 17 2022"
+          visual_studio: "Visual Studio 16 2019"
         shell: powershell
         run: .\ci-utils\install_cuda_windows.ps1
 
@@ -58,8 +58,10 @@ jobs:
           CIBW_BUILD: ${{ matrix.cibw_build }}
           CIBW_SKIP: "*musllinux*"
           CIBW_BUILD_VERBOSITY: 3
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
-          CIBW_BEFORE_ALL_LINUX:  yum install -y llvm libevent-devel openssl-devel &&
+          CIBW_BEFORE_ALL_LINUX:  sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo &&
+                                   sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo &&
+                                   sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo && 
+                                   yum install -y llvm libevent-devel openssl-devel && 
                                    bash ci-utils/install_cuda_yum.sh 12 && 
                                    bash ci-utils/install_arrow_yum.sh &&
                                    bash ci-utils/install_prereq_linux.sh --build_arrow no &&
@@ -68,8 +70,8 @@ jobs:
           CIBW_BEFORE_ALL_WINDOWS: nvcc -V &&
                                    ci-utils\install_prereq_win.bat &&
                                    xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install
-          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:/usr/local/cuda/targets/x86_64-linux/lib:$LD_LIBRARY_PATH" CPATH="/usr/local/cuda/targets/x86_64-linux/include:$CPATH" PATH="/usr/local/cuda/bin:$PATH" ON_GITHUB="TRUE" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install" CXXFLAGS="-I /usr/local/cuda/include" CMAKE_ARGS="-DUSEGPU=ON -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc -DCMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES=/usr/local/cuda/include" 
-          CIBW_ENVIRONMENT_WINDOWS: PATH="$TEMP\\nyxus\\bin;$PATH" ON_GITHUB="TRUE" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install" CMAKE_ARGS="-DUSEGPU=ON"
+          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:/usr/local/cuda/targets/x86_64-linux/lib:$LD_LIBRARY_PATH" CPATH="/usr/local/cuda/targets/x86_64-linux/include:$CPATH" PATH="/usr/local/cuda/bin:$PATH" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install" CXXFLAGS="-I /usr/local/cuda/include" CMAKE_ARGS="-DUSEGPU=ON -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc -DCMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES=/usr/local/cuda/include" NYXUS_GPU_WHEEL="ON" 
+          CIBW_ENVIRONMENT_WINDOWS: PATH="C:\\TEMP\\nyxus_bld\\local_install\\bin;$PATH" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install" CMAKE_ARGS="-DUSEGPU=ON" NYXUS_GPU_WHEEL="ON" 
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel} --no-dll cufft64_11.dll;cufftw64_11.dll;cudart32_120.dll;cudart64_120.dll"
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: auditwheel repair --exclude=libcufft.so --exclude=libcufft.so.11 --exclude=libcufft.so.11.0.12.1  --exclude=libcudart.so --exclude=libcudart.so.12 --exclude=libcudart.so.12.3.101  -w {dest_dir} {wheel}
           CIBW_ARCHS: ${{ matrix.cibw_archs }}

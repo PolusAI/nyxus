@@ -9,6 +9,12 @@
 class ErosionPixelsFeature: public FeatureMethod
 {
 public:
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+	{
+		Nyxus::Feature2D::EROSIONS_2_VANISH, 
+		Nyxus::Feature2D::EROSIONS_2_VANISH_COMPLEMENT
+	};
+
 	ErosionPixelsFeature();
 
 	void calculate(LR& r);
@@ -26,7 +32,7 @@ public:
 #endif // USE_GPU
 
 	static bool required(FeatureSet& fs) { return fs.anyEnabled({ Nyxus::Feature2D::EROSIONS_2_VANISH, Nyxus::Feature2D::EROSIONS_2_VANISH_COMPLEMENT }); }
-	
+
 private:
 
 	const int SANITY_MAX_NUM_EROSIONS = 1000;	// Prevent infinite erosions

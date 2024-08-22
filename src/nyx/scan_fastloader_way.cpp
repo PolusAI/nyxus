@@ -145,15 +145,6 @@ namespace Nyxus
 				{
 					return true;
 				}
-
-				// Check presence of zero-background
-				if (zero_background_area == 0)
-				{
-					std::string msg = "Error: mask image " + theSegFname + " contains no zero-background\n";
-					std::cerr << msg;
-					throw (std::runtime_error(msg));
-					return false;
-				}
 			}
 
 			{ STOPWATCH("Image scan2b/scan2b/s2b/#aabbcc", "\t=");
@@ -255,15 +246,6 @@ namespace Nyxus
 				if (!okGather)
 				{
 					std::string msg = "Error in gatherRoisMetrics()\n";
-					std::cerr << msg;
-					throw (std::runtime_error(msg));
-					return false;
-				}
-
-				// Check presence of zero-background
-				if (zero_background_area == 0)
-				{
-					std::string msg = "Error: mask image " + theSegFname + " contains no zero-background\n";
 					std::cerr << msg;
 					throw (std::runtime_error(msg));
 					return false;

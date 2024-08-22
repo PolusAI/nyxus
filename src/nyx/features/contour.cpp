@@ -24,6 +24,7 @@ using namespace Nyxus;
 
 bool ContourFeature::required(const FeatureSet& fs)
 {
+
 	return theFeatureSet.anyEnabled({
 		// own features
 		Feature2D::PERIMETER,
@@ -80,19 +81,12 @@ bool ContourFeature::required(const FeatureSet& fs)
 		Feature2D::MEAN_FRAC, 
 		Feature2D::RADIAL_CV
 		});
+
 }
 
 ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 {
-	provide_features({ 
-		Feature2D::PERIMETER,
-		Feature2D::DIAMETER_EQUAL_PERIMETER,
-		Feature2D::EDGE_INTEGRATED_INTENSITY,
-		Feature2D::EDGE_MAX_INTENSITY,
-		Feature2D::EDGE_MIN_INTENSITY,
-		Feature2D::EDGE_MEAN_INTENSITY,
-		Feature2D::EDGE_STDDEV_INTENSITY
-		});
+	provide_features (ContourFeature::featureset);
 }
 
 void ContourFeature::buildRegularContour(LR& r)

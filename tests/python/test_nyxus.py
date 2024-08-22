@@ -8,6 +8,7 @@ from pathlib import Path
 import pathlib
 from test_data import intens, seg
 import shutil
+import pandas as pd
 
 from test_tissuenet_data import tissuenet_int, tissuenet_seg
 
@@ -168,7 +169,7 @@ class TestNyxus():
                 'max_intensity': 1.0
                 }
             
-            for key in a:
+            for key in e:
                 
                 if (isinstance(a[key], float)):
                     assert a[key] == pytest.approx(e[key])
@@ -225,7 +226,7 @@ class TestNyxus():
             
             params = nyx.get_params()
             
-            for key in params:
+            for key in new_values:
                     
                 if (isinstance(params[key], float)):
                     assert params[key] == pytest.approx(new_values[key])
@@ -312,13 +313,12 @@ class TestNyxus():
                       'min_intensity': 0.0,
                       'max_intensity': 1.0}
             
-            for key in params:
+            for key in result:
                 
                 if (isinstance(params[key], float)):
                     assert params[key] == pytest.approx(result[key])
                 else:
                     assert params[key] == pytest.approx(result[key])    
-            
                 
         def test_in_memory_2d(self):
                 
@@ -375,9 +375,7 @@ class TestNyxus():
 
             parquet_file = nyx.featurize(intens, seg, output_type="parquet")
             
-            open_parquet_file = pq.ParquetFile(parquet_file)
-            
-            parquet_df = open_parquet_file.read().to_pandas()
+            parquet_df = pd.read_parquet(parquet_file, engine='pyarrow')
 
             # Read the Parquet file into a Pandas DataFrame
             pd_columns = list(features.columns)
@@ -403,9 +401,7 @@ class TestNyxus():
 
                         continue
                     assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
-            
-            open_parquet_file.close()
-            Path(parquet_file).unlink()
+        
             
         @pytest.mark.arrow        
         def test_parquet_writer_file_naming(self, tmp_path):
@@ -425,8 +421,7 @@ class TestNyxus():
             assert parquet_file == str(output_file)
 
             # Read the Parquet file into a Pandas DataFrame
-            file = pq.ParquetFile(str(output_file))
-            parquet_df = file.read().to_pandas()
+            parquet_df = pd.read_parquet(parquet_file, engine='pyarrow')
             pd_columns = list(features.columns)
 
             arrow_columns = list(parquet_df.columns)
@@ -452,8 +447,6 @@ class TestNyxus():
                         continue
                     assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
             
-            file.close()
-
             shutil.rmtree(output_dir)
 
         @pytest.mark.arrow
@@ -649,7 +642,7 @@ class TestNyxus():
             
             data_path = path + '/data/'
             
-            nyx = nyxus.ImageQuality (["*ALL_IMQ*"])
+            nyx = nyxus.ImageQuality (["*ALL_IMQ*"]) 
 
             directory_features = nyx.featurize_directory(data_path + 'int/', data_path + 'seg/')      
 
@@ -702,4 +695,12 @@ class TestNyxus():
             directory_features = nyx.featurize(tissuenet_int, intensity_names=['p0_y1_r1_c0.ome.tif', 'p0_y1_r1_c1.ome.tif'], label_names=['p0_y1_r1_c0.ome.tif', 'p0_y1_r1_c1.ome.tif'])    
 
             assert directory_features.shape[1] > 3
+        
+        def test_set_ram_limit_param(self):
+            nyx = nyxus.Nyxus (["*ALL*"])
+            assert nyx is not None
+            nyx.set_params (ram_limit = 1)
+            actual = nyx.get_params()
+            expected = {'ram_limit': 1}
+            assert actual['ram_limit'] == expected['ram_limit']
 

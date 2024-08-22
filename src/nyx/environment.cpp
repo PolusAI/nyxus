@@ -9,13 +9,6 @@
 #include "environment.h"
 #include "featureset.h"
 #include "features/glcm.h"
-#include "features/gldm.h"
-#include "features/gldzm.h"
-#include "features/glrlm.h"
-#include "features/glszm.h"
-#include "features/image_moments.h"
-#include "features/ngldm.h"
-#include "features/ngtdm.h"
 #include "helpers/helpers.h"
 #include "helpers/system_resource.h"
 #include "helpers/timing.h"
@@ -484,6 +477,13 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		return false;
 	}
 
+	//==== whole-slide mode
+	if (Nyxus::toupper(labels_dir) == Nyxus::toupper(intensity_dir))
+	{
+		singleROI = true;
+	}
+
+
 	if (rawOutpType == "")
 	{
 		std::cerr << "Error: Missing argument " << OUTPUTTYPE << "\n";
@@ -620,19 +620,14 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			return false;
 		}
 
-		// Megabytes to bytes
-		size_t requestedCeiling = (size_t)value * 1048576;
+		auto success = set_ram_limit(value);
 
 		// Check if it over the actual limit
 		unsigned long long actualRam = Nyxus::getAvailPhysMemory();
-		if (requestedCeiling > actualRam)
+		if (!success)
 		{
-			std::cerr << "Error: RAM limit " << value << " megabytes (=" << requestedCeiling << " bytes) exceeds the actual amount of available RAM " << actualRam << " bytes\n";
 			return false;
 		}
-
-		// Set the member variable
-		ramLimit = requestedCeiling;
 	}
 
 	//==== Parse the temp directory
@@ -791,7 +786,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		return false;
 	}
 
-	// --Feature names are ok, now expand feature group nicknames and set the enabled flag for each feature in 'theFeatureSet'
+	// --Feature names are ok, now expand feature group nicknames and enable each feature in 'theFeatureSet'
 	try
 	{
 		expand_featuregroups();
@@ -800,26 +795,6 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	{
 		std::cerr << e.what();
 		return false;
-	}
-
-	//==== Handle the whole-slide mode
-	if (Nyxus::toupper(labels_dir) == Nyxus::toupper(intensity_dir))
-	{
-		singleROI = true;
-		std::cout <<
-			"+-----------------------------------------------------------+\n"
-			"|                                                           |\n"
-			"|  Activating whole slide (aka single-ROI) mode             |\n"
-			"|  ATTENTION: disabling time-sonsuming erosions features    |\n"
-			"|                                                           |\n"
-			"+-----------------------------------------------------------+\n";
-
-		auto F = {
-			Feature2D::EROSIONS_2_VANISH,
-			Feature2D::EROSIONS_2_VANISH_COMPLEMENT,
-			Feature2D::GABOR
-		};
-		theFeatureSet.disableFeatures(F);
 	}
 
 	//==== Parse resolution
@@ -864,6 +839,24 @@ int Environment::get_coarse_gray_depth()
 void Environment::set_coarse_gray_depth(unsigned int new_depth)
 {
 	coarse_grayscale_depth = new_depth;
+}
+
+bool Environment::set_ram_limit(size_t megabytes) {
+
+	// Megabytes to bytes
+	size_t requestedCeiling = megabytes * 1048576;
+
+	// Check if it over the actual limit
+	unsigned long long actualRam = Nyxus::getAvailPhysMemory();
+	if (requestedCeiling > actualRam)
+	{
+		std::cerr << "Error: RAM limit " << megabytes << " megabytes (=" << requestedCeiling << " bytes) exceeds the actual amount of available RAM " << actualRam << " bytes\n";
+		return false;
+	}
+
+	// Set the member variable
+	ramLimit = requestedCeiling;
+	return true;
 }
 
 bool Environment::gpu_is_available() {
@@ -961,6 +954,7 @@ bool Environment::arrow_is_enabled()
 	return false;
 #endif
 }
+
 
 #ifdef USE_GPU
 
