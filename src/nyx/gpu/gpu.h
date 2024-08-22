@@ -5,6 +5,7 @@
 #include <cuda_runtime_api.h>
 #include <builtin_types.h>
 #include <iostream>
+#include <stdexcept>
 
 static const int blockSize = 256;
 
@@ -26,13 +27,13 @@ static const int blockSize = 256;
     return false;	\
     };
 
-#define OK(x) if (x == false) \
+    #define OK(x) if (x == false) \
     { \
 	    std::cerr << "error in " << __FILE__ << ":" << __LINE__ << "\n"; \
 	    return false; \
     } \
 
-#else 
+#else // WITH_PYTHON_H is defined
 
     #define CHECKCUFFTERR(call) \
     if (((call) != CUFFT_SUCCESS)    \
