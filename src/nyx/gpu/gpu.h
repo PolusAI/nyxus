@@ -51,7 +51,7 @@ static const int blockSize = 256;
 
 #define OK(x) if (x == false) \
     { \
-	    throw (std::runtime_error(std::string(__FILE__)+ ":"+std::to_string(__LINE__));	\
+	    throw (std::runtime_error(std::string(__FILE__)+ ":"+std::to_string(__LINE__)));	\
 	    return false; \
     } \
 
