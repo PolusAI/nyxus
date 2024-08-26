@@ -106,7 +106,7 @@ namespace NyxusGpu
 	extern size_t devicereduce_temp_storage_szb;
 	extern size_t gpu_batch_len;
 
-	// helper buffers of erosion features
+	// helper buffers of erosion features (single instance shared by all batch ROIs)
 	extern PixIntens* dev_imat1;
 	extern PixIntens* dev_imat2;
 

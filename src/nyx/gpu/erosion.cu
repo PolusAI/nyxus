@@ -175,13 +175,13 @@ namespace NyxusGpu
         size_t cloud_len = NyxusGpu::gpu_roiclouds_2d.ho_lengths[roi_index];
         size_t cloud_offset = NyxusGpu::gpu_roiclouds_2d.ho_offsets[roi_index];
         Pixel2* d_cloud = &NyxusGpu::gpu_roiclouds_2d.devbuffer[cloud_offset];
-        PixIntens* d_imat1 = &NyxusGpu::dev_imat1[roi_index],
-            * d_imat2 = &NyxusGpu::dev_imat2[roi_index];
+        PixIntens* d_imat1 = NyxusGpu::dev_imat1,
+            * d_imat2 = NyxusGpu::dev_imat2;
         double* d_prereduce = NyxusGpu::dev_prereduce;
 
         //***** zero imat2
-        size_t szb = roi_w * roi_h * sizeof(d_imat1[0]);
-        CHECKERR(cudaMemset (d_imat2, 0, szb));
+        size_t szb = roi_w * roi_h * sizeof(d_imat2[0]);
+        CHECKERR(cudaMemset(d_imat2, 0, szb));
 
         //***** imat2 <-- ROI cloud 
         int nblo = whole_chunks2 (cloud_len, blockSize);
