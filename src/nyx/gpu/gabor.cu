@@ -285,50 +285,58 @@ namespace CuGabor {
         return true;
     }
 
-    // layouts are different! Complex column-major, energy row-major
+    // Calculates padded convolution results montage into non-padded energy montage.
+    // Assumes parallelism by pixels of the result (non-padded E montage).
     __global__ void kerCalcEnergy(
         // out
         PixIntens* nonpadded_e_montage,  // montage of smaller (nonpadded) images of size ROI_w*ROI_h
         // in
         cufftDoubleComplex* padded_montage, // montage of complex
-        size_t padded_frame_offset,
+        size_t skipBig,
         size_t padded_w,
         size_t padded_h,
-        size_t roi_offset,
-        size_t roi_w,
-        size_t roi_h,
+        size_t skipSmall,
+        size_t nonpadded_w,
+        size_t nonpadded_h,
         size_t kerside)
     {
         int c = threadIdx.x + blockIdx.x * blockDim.x;
         int r = threadIdx.y + blockIdx.y * blockDim.y;
-        if (c >= roi_w || r >= roi_h)
+        if (c >= nonpadded_w || r >= nonpadded_h)
             return;
 
-        size_t idx_p = r * padded_w + c + kerside / 2;
+        // for a future 3D implementation:
+        //      size_t skipBig = k * padded_w * padded_h;
+        //      size_t skipSmall = k * nonpadded_w * nonpadded_h;
 
-        double plen = (double)(padded_w * padded_h);
-        cufftDoubleComplex w = padded_montage[padded_frame_offset + idx_p];
+        size_t halfpad = kerside / 2;
+        size_t idxBig = (r + halfpad) * (nonpadded_w + kerside - 1) + c + halfpad;
 
-        double wx = w.x / plen,
-            wy = w.y / plen,
+        double bigLen = (double)(padded_w * padded_h);
+        cufftDoubleComplex w = padded_montage [skipBig + idxBig];
+
+        double wx = w.x / bigLen,
+            wy = w.y / bigLen,
             e = sqrt(wx * wx + wy * wy);
 
-        size_t idx_roi = r * roi_w + c;
-        nonpadded_e_montage[roi_offset + idx_roi] = e;
+        size_t idxSmall = r * nonpadded_w + c;
+        nonpadded_e_montage [skipSmall + idxSmall] = e;
     }
 
-    bool conv_dud_gpu_fft_multi_filter(
+    bool conv_dud_gpu_fft_multi_filter (
         double* out,
         const unsigned int* image,
         double* kernel,
-        int image_n, int image_m,
-        int kernel_n, int kernel_m,
+        int image_w, 
+        int image_h, 
+        int kernel_w, 
+        int kernel_h,
         int n_filters,
         double* dev_filterbank)
     {
         // calculate new size of image based on padding size
-        int row_size = image_m + kernel_m - 1;
-        int col_size = image_n + kernel_n - 1;
+        int row_size = image_h + kernel_h - 1;
+        int col_size = image_w + kernel_w - 1;
         int size = row_size * col_size; // image+kernel size [pixels]
 
         size_t bufsize = 2 * size * n_filters;
@@ -351,6 +359,7 @@ namespace CuGabor {
         cufftDoubleComplex* d_kernel = NyxusGpu::gabor_linear_kernel.devbuffer;
         cudaError_t ok;
 
+        // prepare the image
         for (int batch = 0; batch < n_filters; ++batch)
         {
             size_t batch_idx = batch * size;
@@ -359,7 +368,7 @@ namespace CuGabor {
             dim3 tpb(block, block);
             dim3 bpg(ceil(row_size / block) + 1, ceil(col_size / block) + 1);
 
-            re_2_complex_img << <bpg, tpb >> > (d_image, row_size, col_size, image_m, image_n, NyxusGpu::dev_imat1, batch_idx);
+            re_2_complex_img << <bpg, tpb >> > (d_image, row_size, col_size, image_h, image_w, NyxusGpu::dev_imat1, batch_idx);
 
             CHECKERR(cudaDeviceSynchronize());
             CHECKERR(cudaGetLastError());
@@ -367,7 +376,8 @@ namespace CuGabor {
 
         int n[2] = { row_size, col_size };
 
-        bool ok2 = dense_2_padded_filterbank(d_kernel, dev_filterbank, image_m, image_n, kernel_m, kernel_n, n_filters);
+        // prepare the kernel
+        bool ok2 = dense_2_padded_filterbank(d_kernel, dev_filterbank, image_h, image_w, kernel_h, kernel_w, n_filters);
         if (!ok2)
         {
             std::cerr << "ERROR: CuGabor::dense_2_padded_filterbank failed \n";
@@ -415,56 +425,74 @@ namespace CuGabor {
         CHECKCUFFTERR(call);
 
         //
-        // no need to memcpy(result<-d_result) above ^^^ !
+        // no need to memcpy(result<-d_result) above
         //
 
+        // convert the montage from complex padded layout ('d_result') to real non-padded energy ('NyxusGpu::gabor_energy_image.devbuffer')
         for (int k = 0; k < n_filters; k++)
         {
             size_t padded_off = k * size,
-                roi_off = k * image_m * image_n;
+                roi_off = k * image_h * image_w;
 
             int block = 16;
             dim3 tpb(block, block);
-            dim3 bpg(ceil(image_m / block) + 1, ceil(image_n / block) + 1);
+            dim3 bpg(ceil(image_w / block) + 1, ceil(image_h / block) + 1);
 
-            /*
-                    // out
-                    PixIntens* nonpadded_e_montage,  // montage of smaller (nonpadded) images of size ROI_w*ROI_h
-                    // in
-                    cufftDoubleComplex* padded_montage, // montage of complex
-                    size_t padded_frame_offset,
-                    size_t padded_w,
-                    size_t padded_h,
-                    size_t roi_offset,
-                    size_t roi_w,
-                    size_t roi_h,
-                    size_t kerside
-             */
-            kerCalcEnergy << < bpg, tpb >> > (
+            kerCalcEnergy <<< bpg, tpb >>> (
                 // out
                 NyxusGpu::gabor_energy_image.devbuffer,
                 // in
                 d_result,
                 padded_off,
-                row_size,   // padded w
-                col_size,   // padded h
+                col_size,   // padded w
+                row_size,   // padded h
                 roi_off,
-                image_m,    // roi w
-                image_n,    // roi h
-                kernel_n);
+                image_w,    // roi w
+                image_h,    // roi h
+                kernel_w);
 
             CHECKERR(cudaDeviceSynchronize());
             CHECKERR(cudaGetLastError());
         }
 
+        // download energy on host
+        size_t szb = n_filters * image_h * image_w * sizeof(NyxusGpu::gabor_energy_image.hobuffer[0]);
+        CHECKERR(cudaMemcpy(NyxusGpu::gabor_energy_image.hobuffer, NyxusGpu::gabor_energy_image.devbuffer, szb, cudaMemcpyDeviceToHost));
+
+        /* The above parallel code implements the following single - thread logic :
+        * (Converting big complex -> small energy)
+        * 
+        * OK(NyxusGpu::gabor_result.download());
+        *
+        * for (int k = 0; k < n_filters; k++)
+        * {
+        *    size_t skipBig = k * row_size * col_size;
+        *    size_t skipSmall = k * image_m * image_n;
+        *
+        *   for (int r = 0; r < image_m; r++)
+        *       for (int c = 0; c < image_n; c++)
+        *        {
+        *            size_t halfpad = kernel_n / 2;
+        *            size_t idxBig = (r + halfpad) * (image_n + kernel_n - 1) + c + halfpad;
+        *
+        *            double bigLen = (double)(row_size * col_size);
+        *            cufftDoubleComplex w = NyxusGpu::gabor_result.hobuffer[skipBig + idxBig];
+        *
+        *            double wx = w.x / bigLen,
+        *                wy = w.y / bigLen,
+        *                e = sqrt (wx * wx + wy * wy);
+        *
+        *            size_t idxSmall = r * image_n + c;
+        *            NyxusGpu::gabor_energy_image.hobuffer [skipSmall + idxSmall] = e;
+        *        }
+        * }
+        *
+        */
+
         // free device memory
         cufftDestroy(plan);
         cufftDestroy(plan_k);
-
-        // download energy on host
-        size_t szb = n_filters * image_m * image_n * sizeof(NyxusGpu::gabor_energy_image.hobuffer[0]);
-        CHECKERR(cudaMemcpy(NyxusGpu::gabor_energy_image.hobuffer, NyxusGpu::gabor_energy_image.devbuffer, szb, cudaMemcpyDeviceToHost));
-
+        
         return true;
     }
 

@@ -255,6 +255,16 @@ bool GpuCache<cufftDoubleComplex>::alloc(size_t roi_buf_len, size_t num_rois__)
 }
 
 template<>
+bool GpuCache<cufftDoubleComplex>::download()
+{
+	size_t szb = total_len * sizeof(devbuffer[0]);
+	if (!NyxusGpu::download_on_host((void*)hobuffer, (void*)devbuffer, szb))
+		return false;
+
+	return true;
+}
+
+template<>
 bool GpuCache<PixIntens>::clear()
 {
 	if (hobuffer)

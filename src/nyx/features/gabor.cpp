@@ -272,81 +272,42 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r, size_t roiidx)
 
     // Examine the baseline signal
 
-#ifdef GAMLEDAGE
-    unsigned long baselineScore = 0;    // abundance of baseline signal pixels over its average
-    double maxval = 0.0;                // max value of the baseline signal
-
-    std::vector<PixIntens>& pix_plane = responses[0];
-
-    ImageMatrix e2img;
-    e2img.allocate(Im0.width, Im0.height);
-    PixIntens* e2img_ptr = e2img.writable_data_ptr();
-
-    for (int k = 0; k < Im0.height * Im0.width; ++k)
-        e2img_ptr[k] = pix_plane[k];
-            
-    // Values that we need for scoring filter responses
-    Moments2 local_stats;
-    e2img.GetStats(local_stats);
-    maxval = local_stats.max__();
-    double cmpval = local_stats.min__();
-
-    // Score the baseline signal    
-    for (auto a : pix_plane)
-        if (double(a) > cmpval)
-            baselineScore++;
-#else
-
-    size_t roiLen = Im0.width * Im0.height;
-    Moments2 stats;
-    for (size_t i = 0; i < roiLen; i++)
-    {
-        PixIntens p = NyxusGpu::gabor_energy_image.hobuffer[i];
-        stats.add(p);
-    }
-    double maxval = stats.max__(),
-        cmpval = stats.min__();
+    // we need to get these 3 values from response[0], the baseline signal
+    PixIntens maxval = 0,
+        cmpval = UINT16_MAX; // min
     size_t baselineScore = 0;
-    for (size_t i = 0; i < roiLen; i++)
+
+    size_t wh = Im0.width * Im0.height;
+    for (size_t i = 0; i < wh; i++)
     {
-        PixIntens p = NyxusGpu::gabor_energy_image.hobuffer[i];
-        if (p > cmpval)
+        auto a = responses[0][i];
+        maxval = std::max(a, maxval);
+        cmpval = std::min(a, cmpval);
+    }
+
+    for (size_t i = 0; i < wh; i++)
+    {
+        auto a = responses[0][i];
+        if (a > cmpval)
             baselineScore++;
     }
-#endif
 
-#ifdef GAMLEDAGE        
     // Iterate high-pass filter response signals and score them 
-    for (auto j=1; j< freqs.size(); j++)
-    {
-        std::vector<PixIntens>& responsePixplane = responses [j];
-
-        // score it
-        unsigned long afterGaborScore = 0;
-        for (PixIntens a : responsePixplane)
-            if (double(a) / maxval > GRAYthr)
-                afterGaborScore++;
-
-        // save the score as feature value
-        fvals[j-1] = (double)afterGaborScore / (double)baselineScore;
-    }
-#else
-
     for (auto k = 1; k < freqs.size(); k++)
     {
-        size_t offs = k * roiLen;
+        size_t offs = k * wh;
         size_t afterGaborScore = 0;
         // score this filter response
-        for (size_t i = 0; i < roiLen; i++)
+        for (size_t i = 0; i < wh; i++)
         {
-            PixIntens p = NyxusGpu::gabor_energy_image.hobuffer [offs + i];
-            if (double(p) / maxval > GRAYthr)
+            double a = responses[k][i]; 
+            if (a / maxval > GRAYthr)
                 afterGaborScore++;
         }
         // save the score as feature value
         fvals[k - 1] = (double)afterGaborScore / (double)baselineScore;
     }
-#endif
+
 }
 #endif
 
@@ -607,10 +568,10 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
     int kerside,
     int num_filters) 
 {
-//xxxxxxx    int n_gab = n;
-
     readOnlyPixels pix_plane = Im.ReadablePixels();
 
+    // result in NyxusGpu::gabor_energy_image.hobuffer 
+    // of length [ num_filters * Im.width * Im.height ]
     bool success = CuGabor::conv_dud_gpu_fft_multi_filter (
         auxC, 
         pix_plane.data(), 
@@ -621,38 +582,22 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
         kerside,
         num_filters,
         GaborFeature::dev_filterbank);
-    if (!success) 
-        std::cerr << "\n\n\nUnable to calculate Gabor features on GPU \n\n\n";
-
-#ifdef GAMLEDAGE
-    for (int idx, i = 0; i < num_filters; ++i)
+    if (!success)
     {
-        idx = 2 * i * (Im.width + kerside - 1) * (Im.height + kerside - 1);
-        decltype(Im.height) b = 0;
-        
-        for (auto y = (int)ceil((double)kerside / 2); b < Im.height; y++)
-        {
-            decltype(Im.width) a = 0;
-
-            for (auto x = (int)ceil((double)kerside / 2); a < Im.width; x++)
-            {
-                size_t oi = (y * 2 * (Im.width + kerside - 1) + x * 2); // offset within the image, complex layout
-                if (std::isnan(auxC[idx + oi]) || std::isnan(auxC[idx + oi+1]))
-                {
-                    out[i][(b * Im.width + a)] = (PixIntens) std::numeric_limits<double>::quiet_NaN();
-                    a++;
-                    continue;
-                }
-                out[i][(b * Im.width + a)] = (PixIntens) sqrt(pow(auxC[idx + oi], 2) + pow(auxC[idx + oi+1], 2));
-                a++;
-            }
-            b++;
-        }
+        std::cerr << "\n\n\nUnable to calculate Gabor features on GPU \n\n\n";
+        return;
     }
-#else
+
     // GPU: 'NyxusGpu::gabor_energy_image.hobuffer' already has the above out[i][.] result
 
-#endif
+    // Convert it to a 'paged' layout
+    size_t wh = Im.width * Im.height;
+    for (int f = 0; f < num_filters; f++)
+    {
+        size_t skip = f * wh;
+        for (size_t i = 0; i < wh; i++)
+            out[f][i] = NyxusGpu::gabor_energy_image.hobuffer [skip + i];
+    }
 
 }
 #endif
