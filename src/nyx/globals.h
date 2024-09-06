@@ -107,6 +107,7 @@ namespace Nyxus
 	extern size_t zero_background_area;
 	extern std::unordered_map <int, std::shared_ptr<std::mutex>> labelMutexes;
 
+
 	/// @brief Feeds a pixel to image measurement object to gauge the image RAM footprint without caching the pixel. Updates 'uniqueLabels' and 'roiData'.
 	/// @param x -- x-coordinate of the pixel in the image
 	/// @param y -- y-coordinate of the pixel in the image

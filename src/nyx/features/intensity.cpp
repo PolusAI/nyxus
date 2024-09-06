@@ -52,6 +52,45 @@ PixelIntensityFeatures::PixelIntensityFeatures() : FeatureMethod("PixelIntensity
 
 void PixelIntensityFeatures::calculate(LR& r)
 {
+	// intercept blank ROIs
+	if (r.aux_max == r.aux_min)
+	{
+		val_MEAN =
+			val_MEDIAN =
+			val_MIN =
+			val_MAX = r.aux_min;
+		val_RANGE = 0;
+
+		val_INTEGRATED_INTENSITY =
+			val_COVERED_IMAGE_INTENSITY_RANGE =
+			val_STANDARD_DEVIATION =
+			val_STANDARD_ERROR =
+			val_SKEWNESS =
+			val_KURTOSIS =
+			val_EXCESS_KURTOSIS =
+			val_HYPERSKEWNESS =
+			val_HYPERFLATNESS =
+			val_MEAN_ABSOLUTE_DEVIATION =
+			val_MEDIAN_ABSOLUTE_DEVIATION =
+			val_ENERGY =
+			val_ROOT_MEAN_SQUARED =
+			val_ENTROPY =
+			val_MODE =
+			val_UNIFORMITY =
+			val_UNIFORMITY_PIU =
+			val_P01 = val_P10 = val_P25 = val_P75 = val_P90 = val_P99 =
+			val_QCOD =
+			val_INTERQUARTILE_RANGE =
+			val_ROBUST_MEAN =
+			val_ROBUST_MEAN_ABSOLUTE_DEVIATION =
+			val_COV =
+			val_STANDARD_DEVIATION_BIASED =
+			val_VARIANCE =
+			val_VARIANCE_BIASED = theEnvironment.nan_substitute;
+
+		return;
+	}
+
 	// --MIN, MAX
 	val_MIN = r.aux_min;
 	val_MAX = r.aux_max;

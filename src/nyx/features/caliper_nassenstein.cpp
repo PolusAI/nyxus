@@ -1,4 +1,5 @@
 #include "caliper.h"
+#include "../environment.h"
 #include "../parallel.h"
 #include "rotation.h"
 
@@ -12,8 +13,18 @@ CaliperNassensteinFeature::CaliperNassensteinFeature() : FeatureMethod("CaliperN
 
 void CaliperNassensteinFeature::calculate (LR& r)
 {
-	if (r.has_bad_data())
+	// intercept void ROIs
+	if (r.convHull_CH.size() == 0)
+	{
+		_min =
+		_max =
+		_mean =
+		_median =
+		_stdev =
+		_mode = theEnvironment.nan_substitute; 
+		
 		return;
+	}
 
 	std::vector<double> allD;	// Diameters at 0-180 degrees rotation
 	calculate_imp (r.convHull_CH, allD);
@@ -51,7 +62,6 @@ void CaliperNassensteinFeature::calculate_imp (const std::vector<Pixel2>& convex
 		Rotation::rotate_around_center(convex_hull, theta, CH_rot);
 		auto [minX, minY, maxX, maxY] = AABB::from_pixelcloud(CH_rot);
 
-		//
 		std::vector<float> DA;	// Diameters at this angle
 
 		// Iterate y-grid

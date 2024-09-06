@@ -16,7 +16,7 @@ public:
 	~Stopwatch();
 	static void add_measurement_once(const std::string& measurement_name, double value) 
 	{ 
-		totals[measurement_name] = value; 
+		totals[measurement_name] += value; 
 	}
 	static bool exclusive();
 	static bool inclusive();

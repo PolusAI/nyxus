@@ -61,7 +61,7 @@ void NGLDMfeature::gather_unique_intensities2 (std::vector<PixIntens>& V, const 
 	}
 
 	// -- Set to vector to be able to know each intensity's index
-	V.insert(V.end(), U.begin(), U.end()); //std::vector<PixIntens> V (U.begin(), U.end());
+	V.insert(V.end(), U.begin(), U.end()); // alt.: std::vector<PixIntens> V (U.begin(), U.end());
 	std::sort(V.begin(), V.end());
 }
 
@@ -145,9 +145,31 @@ void NGLDMfeature::calculate (LR& r)
 {
 	clear_buffers();
 
-	//==== Check if the ROI is degenerate (equal intensity)
+	// intercept blank ROIs
 	if (r.aux_min == r.aux_max)
+	{
+		f_LDE =
+		f_HDE =
+		f_LGLCE =
+		f_HGLCE =
+		f_LDLGLE =
+		f_LDHGLE =
+		f_HDLGLE =
+		f_HDHGLE =
+		f_GLNU =
+		f_GLNUN =
+		f_DCNU =
+		f_DCNUN =
+		f_GLCM =
+		f_GLV =
+		f_DCM =
+		f_DCP =
+		f_DCV =
+		f_DCENT =
+		f_DCENE = theEnvironment.nan_substitute;
+
 		return;
+	}
 
 	//==== Prepare the NGLD-matrix kit: matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and NGLDM's dimensions
 	std::vector<PixIntens> greyLevelsLUT;

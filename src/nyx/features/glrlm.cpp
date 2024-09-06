@@ -25,26 +25,27 @@ void GLRLMFeature::calculate(LR& r)
 	auto minI = r.aux_min,
 		maxI = r.aux_max;
 	
-	//==== Check if the ROI is degenerate (equal intensity => no texture)
+	// intercept blank ROIs
 	if (minI == maxI)
 	{
-		// insert zero for all 4 angles to make the output expecting 4-angled values happy
-		angled_SRE.resize(4, 0);
-		angled_LRE.resize(4, 0);
-		angled_GLN.resize(4, 0);
-		angled_GLNN.resize(4, 0);
-		angled_RLN.resize(4, 0);
-		angled_RLNN.resize(4, 0);
-		angled_RP.resize(4, 0);
-		angled_GLV.resize(4, 0);
-		angled_RV.resize(4, 0);
-		angled_RE.resize(4, 0);
-		angled_LGLRE.resize(4, 0);
-		angled_HGLRE.resize(4, 0);
-		angled_SRLGLE.resize(4, 0);
-		angled_SRHGLE.resize(4, 0);
-		angled_LRLGLE.resize(4, 0);
-		angled_LRHGLE.resize(4, 0);
+		// insert a non-NAN value for all 4 angles to make the output expecting 4-angled values happy
+		auto w = theEnvironment.nan_substitute;	// safe NAN
+		angled_SRE.resize(4, w);
+		angled_LRE.resize(4, w);
+		angled_GLN.resize(4, w);
+		angled_GLNN.resize(4, w);
+		angled_RLN.resize(4, w);
+		angled_RLNN.resize(4, w);
+		angled_RP.resize(4, w);
+		angled_GLV.resize(4, w);
+		angled_RV.resize(4, w);
+		angled_RE.resize(4, w);
+		angled_LGLRE.resize(4, w);
+		angled_HGLRE.resize(4, w);
+		angled_SRLGLE.resize(4, w);
+		angled_SRHGLE.resize(4, w);
+		angled_LRLGLE.resize(4, w);
+		angled_LRHGLE.resize(4, w);
 
 		bad_roi_data = true;
 		return;

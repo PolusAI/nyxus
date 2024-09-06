@@ -24,113 +24,64 @@ using namespace Nyxus;
 
 bool ContourFeature::required(const FeatureSet& fs)
 {
-	return 
-		// own features:
-		theFeatureSet.anyEnabled(ContourFeature::featureset) || 
+
+	return theFeatureSet.anyEnabled({
+		// own features
+		Feature2D::PERIMETER,
+		Feature2D::DIAMETER_EQUAL_PERIMETER,
+		Feature2D::EDGE_INTEGRATED_INTENSITY,
+		Feature2D::EDGE_MAX_INTENSITY,
+		Feature2D::EDGE_MIN_INTENSITY,
+		Feature2D::EDGE_MEAN_INTENSITY,
+		Feature2D::EDGE_STDDEV_INTENSITY,
 		// dependencies:
-		theFeatureSet.anyEnabled( 
-			{
-			Feature2D::CONVEX_HULL_AREA, 
-			Feature2D::SOLIDITY,
-			Feature2D::CIRCULARITY,
-			// Spatial (raw) moments
-			Feature2D::SPAT_MOMENT_00,
-			Feature2D::SPAT_MOMENT_01,
-			Feature2D::SPAT_MOMENT_02,
-			Feature2D::SPAT_MOMENT_03,
-			Feature2D::SPAT_MOMENT_10,
-			Feature2D::SPAT_MOMENT_11,
-			Feature2D::SPAT_MOMENT_12,
-			Feature2D::SPAT_MOMENT_13,
-			Feature2D::SPAT_MOMENT_20,
-			Feature2D::SPAT_MOMENT_21,
-			Feature2D::SPAT_MOMENT_22,
-			Feature2D::SPAT_MOMENT_23,
-			Feature2D::SPAT_MOMENT_30,
-			// Weighted spatial moments
-			Feature2D::WEIGHTED_SPAT_MOMENT_00,
-			Feature2D::WEIGHTED_SPAT_MOMENT_01,
-			Feature2D::WEIGHTED_SPAT_MOMENT_02,
-			Feature2D::WEIGHTED_SPAT_MOMENT_03,
-			Feature2D::WEIGHTED_SPAT_MOMENT_10,
-			Feature2D::WEIGHTED_SPAT_MOMENT_11,
-			Feature2D::WEIGHTED_SPAT_MOMENT_12,
-			Feature2D::WEIGHTED_SPAT_MOMENT_20,
-			Feature2D::WEIGHTED_SPAT_MOMENT_21,
-			Feature2D::WEIGHTED_SPAT_MOMENT_30,
-			// Central moments
-			Feature2D::CENTRAL_MOMENT_00,
-			Feature2D::CENTRAL_MOMENT_01,
-			Feature2D::CENTRAL_MOMENT_02,
-			Feature2D::CENTRAL_MOMENT_03,
-			Feature2D::CENTRAL_MOMENT_10,
-			Feature2D::CENTRAL_MOMENT_11,
-			Feature2D::CENTRAL_MOMENT_12,
-			Feature2D::CENTRAL_MOMENT_13,
-			Feature2D::CENTRAL_MOMENT_20,
-			Feature2D::CENTRAL_MOMENT_21,
-			Feature2D::CENTRAL_MOMENT_22,
-			Feature2D::CENTRAL_MOMENT_23,
-			Feature2D::CENTRAL_MOMENT_30,
-			Feature2D::CENTRAL_MOMENT_31,
-			Feature2D::CENTRAL_MOMENT_32,
-			Feature2D::CENTRAL_MOMENT_33,
-			// Weighted central moments
-			Feature2D::WEIGHTED_CENTRAL_MOMENT_02,
-			Feature2D::WEIGHTED_CENTRAL_MOMENT_03,
-			Feature2D::WEIGHTED_CENTRAL_MOMENT_11,
-			Feature2D::WEIGHTED_CENTRAL_MOMENT_12,
-			Feature2D::WEIGHTED_CENTRAL_MOMENT_20,
-			Feature2D::WEIGHTED_CENTRAL_MOMENT_21,
-			Feature2D::WEIGHTED_CENTRAL_MOMENT_30,
-			// Normalized central moments
-			Feature2D::NORM_CENTRAL_MOMENT_02,
-			Feature2D::NORM_CENTRAL_MOMENT_03,
-			Feature2D::NORM_CENTRAL_MOMENT_11,
-			Feature2D::NORM_CENTRAL_MOMENT_12,
-			Feature2D::NORM_CENTRAL_MOMENT_20,
-			Feature2D::NORM_CENTRAL_MOMENT_21,
-			Feature2D::NORM_CENTRAL_MOMENT_30,
-			// Normalized (standardized) spatial moments
-			Feature2D::NORM_SPAT_MOMENT_00,
-			Feature2D::NORM_SPAT_MOMENT_01,
-			Feature2D::NORM_SPAT_MOMENT_02,
-			Feature2D::NORM_SPAT_MOMENT_03,
-			Feature2D::NORM_SPAT_MOMENT_10,
-			Feature2D::NORM_SPAT_MOMENT_11,
-			Feature2D::NORM_SPAT_MOMENT_12,
-			Feature2D::NORM_SPAT_MOMENT_13,
-			Feature2D::NORM_SPAT_MOMENT_20,
-			Feature2D::NORM_SPAT_MOMENT_21,
-			Feature2D::NORM_SPAT_MOMENT_22,
-			Feature2D::NORM_SPAT_MOMENT_23,
-			Feature2D::NORM_SPAT_MOMENT_30,
-			Feature2D::NORM_SPAT_MOMENT_31,
-			Feature2D::NORM_SPAT_MOMENT_32,
-			Feature2D::NORM_SPAT_MOMENT_33,
-			// Hu's moments 1-7 
-			Feature2D::HU_M1,
-			Feature2D::HU_M2,
-			Feature2D::HU_M3,
-			Feature2D::HU_M4,
-			Feature2D::HU_M5,
-			Feature2D::HU_M6,
-			Feature2D::HU_M7,
-			// Weighted Hu's moments 1-7 
-			Feature2D::WEIGHTED_HU_M1,
-			Feature2D::WEIGHTED_HU_M2,
-			Feature2D::WEIGHTED_HU_M3,
-			Feature2D::WEIGHTED_HU_M4,
-			Feature2D::WEIGHTED_HU_M5,
-			Feature2D::WEIGHTED_HU_M6,
-			Feature2D::WEIGHTED_HU_M7,
-			Feature2D::ROI_RADIUS_MEAN, 
-			Feature2D::ROI_RADIUS_MAX, 
-			Feature2D::ROI_RADIUS_MEDIAN,
-			Feature2D::FRAC_AT_D, 
-			Feature2D::MEAN_FRAC, 
-			Feature2D::RADIAL_CV
-			});
+		Feature2D::CONVEX_HULL_AREA, 
+		Feature2D::SOLIDITY,
+		Feature2D::CIRCULARITY,
+		// weighted spatial moments
+		Feature2D::WEIGHTED_SPAT_MOMENT_00,
+		Feature2D::WEIGHTED_SPAT_MOMENT_01,
+		Feature2D::WEIGHTED_SPAT_MOMENT_02,
+		Feature2D::WEIGHTED_SPAT_MOMENT_03,
+		Feature2D::WEIGHTED_SPAT_MOMENT_10,
+		Feature2D::WEIGHTED_SPAT_MOMENT_11,
+		Feature2D::WEIGHTED_SPAT_MOMENT_12,
+		Feature2D::WEIGHTED_SPAT_MOMENT_20,
+		Feature2D::WEIGHTED_SPAT_MOMENT_21,
+		Feature2D::WEIGHTED_SPAT_MOMENT_30,
+		// weighted central moments
+		Feature2D::WEIGHTED_CENTRAL_MOMENT_02,
+		Feature2D::WEIGHTED_CENTRAL_MOMENT_03,
+		Feature2D::WEIGHTED_CENTRAL_MOMENT_11,
+		Feature2D::WEIGHTED_CENTRAL_MOMENT_12,
+		Feature2D::WEIGHTED_CENTRAL_MOMENT_20,
+		Feature2D::WEIGHTED_CENTRAL_MOMENT_21,
+		Feature2D::WEIGHTED_CENTRAL_MOMENT_30,
+		// weighted normalized central moments
+		Feature2D::WT_NORM_CTR_MOM_02,
+		Feature2D::WT_NORM_CTR_MOM_03,
+		Feature2D::WT_NORM_CTR_MOM_11,
+		Feature2D::WT_NORM_CTR_MOM_12,
+		Feature2D::WT_NORM_CTR_MOM_20,
+		Feature2D::WT_NORM_CTR_MOM_21,
+		Feature2D::WT_NORM_CTR_MOM_30,
+		// weighted Hu's moments 1-7 
+		Feature2D::WEIGHTED_HU_M1,
+		Feature2D::WEIGHTED_HU_M2,
+		Feature2D::WEIGHTED_HU_M3,
+		Feature2D::WEIGHTED_HU_M4,
+		Feature2D::WEIGHTED_HU_M5,
+		Feature2D::WEIGHTED_HU_M6,
+		Feature2D::WEIGHTED_HU_M7,
+		// misc
+		Feature2D::ROI_RADIUS_MEAN, 
+		Feature2D::ROI_RADIUS_MAX, 
+		Feature2D::ROI_RADIUS_MEDIAN,
+		Feature2D::FRAC_AT_D, 
+		Feature2D::MEAN_FRAC, 
+		Feature2D::RADIAL_CV
+		});
+
 }
 
 ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")

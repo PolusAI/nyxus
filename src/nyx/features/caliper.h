@@ -49,8 +49,6 @@ class CaliperFeretFeature : public FeatureMethod
 public:
 	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset = 
 	{
-		Nyxus::Feature2D::MIN_FERET_DIAMETER,
-		Nyxus::Feature2D::MAX_FERET_DIAMETER,
 		Nyxus::Feature2D::MIN_FERET_ANGLE,
 		Nyxus::Feature2D::MAX_FERET_ANGLE,
 		Nyxus::Feature2D::STAT_FERET_DIAM_MIN,
@@ -80,8 +78,6 @@ private:
 
 	// Results instance cache
 	double 
-		minFeretDiameter = 0,
-		maxFeretDiameter = 0,
 		minFeretAngle = 0,
 		maxFeretAngle = 0, 
 		_min = 0, 

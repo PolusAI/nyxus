@@ -6,8 +6,9 @@
 #include "save_option.h"
 #include "arrow_output_stream.h"
 #ifdef USE_GPU
-	bool gpu_initialize(int dev_id); 
+	#include "gpu/gpu.h"
 #endif
+
 
 using namespace Nyxus;
 
@@ -46,7 +47,7 @@ int main (int argc, char** argv)
 	if (theEnvironment.using_gpu())
 	{
 		int gpuDevNo = theEnvironment.get_gpu_device_choice();
-		if (gpuDevNo >= 0 && gpu_initialize(gpuDevNo) == false)
+		if (gpuDevNo >= 0 && NyxusGpu::gpu_initialize(gpuDevNo) == false)
 		{
 			std::cerr << "Error: cannot use GPU device ID " << gpuDevNo << ". You can disable GPU usage via command line option " << USEGPU << "=false\n";
 			return 1;

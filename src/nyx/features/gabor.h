@@ -30,8 +30,8 @@ public:
     // Trivial ROI on GPU
     #ifdef USE_GPU
         void calculate_gpu(LR& r);
-        void calculate_gpu_multi_filter (LR& r);
-        static void gpu_process_all_rois (std::vector<int>& ptrLabels, std::unordered_map <int, LR>& ptrLabelData);
+        void calculate_gpu_multi_filter (LR& r, size_t roiidx);
+        static void gpu_process_all_rois (std::vector<int>& ptrLabels, std::unordered_map <int, LR>& ptrLabelData, size_t batch_offset, size_t batch_len);
     #endif
 
     //=== Non-trivial ROIs ===
@@ -86,6 +86,7 @@ private:
         std::vector<double>& tx, 
         std::vector<double>& ty);
 
+    // Buffers for Gabor amplitudes. Used by method Gabor()
     std::vector<double> tx, ty;
 
     // Computes Gabor energy 

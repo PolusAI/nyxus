@@ -1,5 +1,9 @@
 #include "output_writers.h"
 
+// prevent NANs in the output
+#include "helpers/helpers.h"
+#include "environment.h"
+
 #ifdef USE_ARROW
 
 #if __has_include(<filesystem>)
@@ -144,8 +148,12 @@ arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std
         arrow::DoubleBuilder builder;   
         std::shared_ptr<arrow::Array> double_array;
 
-        for (int i = 0; i < num_rows; ++i) {
-            append_status = builder.Append(std::get<2>(features[i])[j]);
+        for (int i = 0; i < num_rows; ++i) 
+        {
+            // prevent NANs in the output
+            double fval = std::get<2>(features[i])[j];
+            fval = Nyxus::force_finite_number (fval, Nyxus::theEnvironment.nan_substitute);
+            append_status = builder.Append (fval);
 
             if (!append_status.ok()) {
                 // Handle read error
@@ -302,8 +310,12 @@ arrow::Status ArrowIPCWriter::write (const std::vector<std::tuple<std::vector<st
         arrow::DoubleBuilder builder;   
         std::shared_ptr<arrow::Array> double_array;
 
-        for (int i = 0; i < num_rows; ++i) {
-            append_status = builder.Append(std::get<2>(features[i])[j]);
+        for (int i = 0; i < num_rows; ++i) 
+        {
+            // prevent NANs in the output
+            double fval = std::get<2>(features[i])[j];
+            fval = Nyxus::force_finite_number (fval, Nyxus::theEnvironment.nan_substitute);
+            append_status = builder.Append (fval);
 
             if (!append_status.ok()) {
                 // Handle read error

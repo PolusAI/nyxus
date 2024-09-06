@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <string>
 #include <vector>
 
 namespace Nyxus
@@ -89,11 +90,8 @@ namespace Nyxus
 		FRACT_DIM_PERIMETER,
 
 		// Caliper:
-		MIN_FERET_DIAMETER,
-		MAX_FERET_DIAMETER,
 		MIN_FERET_ANGLE,
 		MAX_FERET_ANGLE,
-
 		STAT_FERET_DIAM_MIN,
 		STAT_FERET_DIAM_MAX,
 		STAT_FERET_DIAM_MEAN,
@@ -448,6 +446,15 @@ namespace Nyxus
 		WEIGHTED_CENTRAL_MOMENT_21,
 		WEIGHTED_CENTRAL_MOMENT_30,
 
+		// Weighted normalized central moments
+		WT_NORM_CTR_MOM_02,
+		WT_NORM_CTR_MOM_03,
+		WT_NORM_CTR_MOM_11,
+		WT_NORM_CTR_MOM_12,
+		WT_NORM_CTR_MOM_20,
+		WT_NORM_CTR_MOM_21,
+		WT_NORM_CTR_MOM_30,
+			
 		// Weighted Hu's moments 1-7 
 		WEIGHTED_HU_M1,
 		WEIGHTED_HU_M2,
@@ -506,6 +513,12 @@ namespace Nyxus
 		BBOX_HEIGHT,
 		BBOX_WIDTH,
 		BBOX_DEPTH,
+		// morphology related to surface
+		AREA,
+		MESH_VOLUME,
+		VOLUME_CONVEXHULL,
+		DIAMETER_EQUAL_AREA,
+		DIAMETER_EQUAL_VOLUME,
 
 		// Neighbor features
 		NUM_NEIGHBORS,
@@ -669,8 +682,6 @@ public:
 	}
 	void enableFeret() {
 		enableAll(false);
-		m_enabledFeatures[(int)Nyxus::Feature2D::MIN_FERET_DIAMETER] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::MAX_FERET_DIAMETER] =
 			m_enabledFeatures[(int)Nyxus::Feature2D::MIN_FERET_ANGLE] =
 			m_enabledFeatures[(int)Nyxus::Feature2D::MAX_FERET_ANGLE] =
 			m_enabledFeatures[(int)Nyxus::Feature2D::STAT_FERET_DIAM_MIN] =

@@ -4,17 +4,24 @@
 #include <builtin_types.h>
 #include <iostream>
 
-bool gpu_initialize(int dev_id)
+namespace NyxusGpu
 {
-	// Are there any GPU devices?
-	int nDevices;
-	cudaGetDeviceCount(&nDevices);
-	if (nDevices < 1)
-		return false;
 
-	// Establish the context
-	if (cudaSetDevice(dev_id) != cudaSuccess)
-		return false;
+	bool gpu_initialize(int dev_id)
+	{
+		// Are there any GPU devices?
+		int nDevices;
+		cudaGetDeviceCount(&nDevices);
+		if (nDevices < 1)
+			return false;
 
-	return true;
+		// Establish the context
+		if (cudaSetDevice(dev_id) != cudaSuccess)
+			return false;
+
+		return true;
+	}
+
+
+
 }

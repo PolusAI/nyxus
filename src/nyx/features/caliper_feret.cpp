@@ -1,4 +1,5 @@
 #include "caliper.h"
+#include "../environment.h"
 #include "../helpers/helpers.h"
 #include "../parallel.h"
 #include "rotation.h"
@@ -14,35 +15,58 @@ CaliperFeretFeature::CaliperFeretFeature() : FeatureMethod("CaliperFeretFeature"
 
 void CaliperFeretFeature::calculate(LR& r)
 {
-	if (r.has_bad_data())
+	// intercept void ROIs
+	if (r.convHull_CH.size() == 0)
+	{
+		minFeretAngle =
+		maxFeretAngle =
+		_min =
+		_max =
+		_mean =
+		_median =
+		_stdev =
+		_mode = theEnvironment.nan_substitute;
+
 		return;
+	}
 
 	std::vector<float> angles;
 	std::vector<double> ferets;
 	calculate_angled_caliper_measurements (r.convHull_CH, angles, ferets);
 
 	// Statistics of Feret diameters
-	auto s = ComputeCommonStatistics2 (ferets);
-	_min = s.min;
-	_max = s.max;
-	_mean = s.mean;
-	_median = s.median;
-	_stdev = s.stdev;
-	_mode = s.mode;
-
-	// Angles
 	if (ferets.size())
 	{
-		std::tuple<size_t,size_t> minmax = Nyxus::get_minmax_idx(ferets);
+		// angles (find them before 'ferets' gets sorted by the statistics calculator)
+		std::tuple<size_t, size_t> minmax = Nyxus::get_minmax_idx(ferets);
 		minFeretAngle = angles[std::get<0>(minmax)];
-		maxFeretAngle = angles[std::get<1>(minmax)];
+		maxFeretAngle = angles[std::get<1>(minmax)];		
+		
+		// diameters
+		auto s = ComputeCommonStatistics2 (ferets); 
+		_min = s.min;
+		_max = s.max;
+		_mean = s.mean;
+		_median = s.median;
+		_stdev = s.stdev;
+		_mode = s.mode;
+	}
+	else
+	{
+		// measurement rotations went wrong, so report failure feture values
+		minFeretAngle =
+		maxFeretAngle =
+		_min =
+		_max =
+		_mean =
+		_median =
+		_stdev =
+		_mode = theEnvironment.nan_substitute;
 	}
 }
 
 void CaliperFeretFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::MIN_FERET_DIAMETER][0] = minFeretDiameter;
-	fvals[(int)Feature2D::MAX_FERET_DIAMETER][0] = maxFeretDiameter;
 	fvals[(int)Feature2D::MIN_FERET_ANGLE][0] = minFeretAngle;
 	fvals[(int)Feature2D::MAX_FERET_ANGLE][0] = maxFeretAngle;
 	fvals[(int)Feature2D::STAT_FERET_DIAM_MIN][0] = _min;

@@ -213,21 +213,21 @@ namespace Nyxus
 		if (ImageMomentsFeature::required(theFeatureSet))
 		{
 			#ifndef USE_GPU
-				STOPWATCH("Moments/Moments/2D moms/#FFFACD", "\t=");
+				STOPWATCH("Moments/Moments/GM/#FFFACD", "\t=");
 				runParallel(ImageMomentsFeature::parallel_process_1_batch, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
 			#else
 				// Did the user opted out from using GPU?
 				if (theEnvironment.using_gpu() == false)
 				{
 					// Route calculation via the regular CPU-multithreaded way
-					STOPWATCH("Moments/Moments/2D moms/#FFFACD", "\t=");
+					STOPWATCH("Moments/Moments/GM/#FFFACD", "\t=");
 					runParallel(ImageMomentsFeature::parallel_process_1_batch, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
 				}
 				else
 				{
 					// Calculate the feature via GPU
-					STOPWATCH("GPU-Moments/GPU-Moments/2D moms/#FFFACD", "\t=");
-					ImageMomentsFeature::gpu_process_all_rois(roiLabelsVector, roiData);
+					STOPWATCH("GPU-Moments/GPU-Moments/GM/#FFFACD", "\t=");
+					ImageMomentsFeature::gpu_process_all_rois(roiLabelsVector, roiData, 0/*batch_offset*/, roiLabelsVector.size()/*batch_len*/);
 				}
 			#endif
 		}

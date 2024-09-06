@@ -125,7 +125,7 @@ void Stopwatch::save_stats (const std::string & fpath)
 	f << _quote_ << "h1" << _quote_ << _comma_
 		<< _quote_ << "h2" << _quote_ << _comma_
 		<< _quote_ << "h3" << _quote_ << _comma_
-		<< _quote_ << "share%" << _quote_ << _comma_
+		<< _quote_ << "weight" << _quote_ << _comma_
 		<< _quote_ << "color" << _quote_ << _comma_
 		<< _quote_ << "codes" << _quote_ << _comma_
 		<< _quote_ << "rawtime" << _quote_ << _comma_
@@ -171,6 +171,8 @@ void Stopwatch::save_stats (const std::string & fpath)
 		for (std::string & rhs : vals)
 			f << _quote_ << rhs << _quote_ << _comma_;		
 
+	// Additional timig info (uncomment on necessity)
+	/*
 	f << _quote_ << "Total" << _quote_ << _comma_ 
 		<< _quote_ << "All" << _quote_ << _comma_
 		<< _quote_ << "All" << _quote_ << _comma_
@@ -181,6 +183,7 @@ void Stopwatch::save_stats (const std::string & fpath)
 		<< _quote_ << totTime << _quote_ << _comma_
 		<< _quote_ << Nyxus::theEnvironment.n_reduce_threads << _quote_ 
 		<< "\n";
+	*/
 }
 
 namespace Nyxus

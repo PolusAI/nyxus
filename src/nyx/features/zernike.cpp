@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include "specfunc.h" 
 
+#include "../environment.h"
 #include "image_matrix.h" 
 
 #include <unordered_map>
@@ -343,6 +344,13 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 
 void ZernikeFeature::calculate (LR& r)
 {
+	// intercept blank ROIs
+	if (r.aux_min == r.aux_max)
+	{
+		coeffs.resize (ZernikeFeature::NUM_FEATURE_VALS, theEnvironment.nan_substitute);
+		return;
+	}
+
 	// Allocate the results buffer
 	coeffs.resize (ZernikeFeature::NUM_FEATURE_VALS, 0);
 

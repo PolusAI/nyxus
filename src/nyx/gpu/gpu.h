@@ -5,6 +5,7 @@
 #include <cuda_runtime_api.h>
 #include <builtin_types.h>
 #include <iostream>
+#include <stdexcept>
 
 static const int blockSize = 256;
 
@@ -26,25 +27,40 @@ static const int blockSize = 256;
     return false;	\
     };
 
-#else 
+    #define OK(x) if (x == false) \
+    { \
+	    std::cerr << "error in " << __FILE__ << ":" << __LINE__ << "\n"; \
+	    return false; \
+    } \
+
+#else // WITH_PYTHON_H is defined
 
     #define CHECKCUFFTERR(call) \
     if (((call) != CUFFT_SUCCESS)    \
     {	\
-    throw (std::runtime_error(std::string(FILE)+ ":"+std::to_string(LINE)+ ":"+"cuda cuFFT error code "+std::to_string(call)));	\
+    throw (std::runtime_error(std::string(__FILE__)+ ":"+std::to_string(__LINE__)+ ":"+"cuda cuFFT error code "+std::to_string(call)));	\
     return false;	\
     };
 
     #define CHECKERR(ok)	\
     if (ok != cudaSuccess)	\
     {	\
-    throw (std::runtime_error(std::string(FILE)+ ":"+std::to_string(LINE)+ ":"+"cuda error code "+std::to_string(ok)));	\
+    throw (std::runtime_error(std::string(__FILE__)+ ":"+std::to_string(__LINE__)+ ":"+"cuda error code "+std::to_string(ok)));	\
     return false;	\
     };
+
+#define OK(x) if (x == false) \
+    { \
+	    throw (std::runtime_error(std::string(__FILE__)+ ":"+std::to_string(__LINE__)));	\
+	    return false; \
+    } \
 
 #endif
 
 
-bool gpu_initialize(int dev_id);
+namespace NyxusGpu
+{
+    bool gpu_initialize(int dev_id);
 
+}
 

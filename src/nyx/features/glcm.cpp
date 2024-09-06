@@ -141,58 +141,78 @@ void GLCMFeature::parallel_process_1_batch(size_t start, size_t end, std::vector
 		LR& r = (*ptrLabelData)[lab];
 
 		// Skip calculation in case of bad data
-				//
-				// !!! We need to smart-select the greyInfo rather than just theEnvironment.get_coarse_gray_depth()
-				//
-		auto binnedMin = bin_pixel (r.aux_min, r.aux_min, r.aux_max, theEnvironment.get_coarse_gray_depth()); // minI = Nyxus::to_grayscale(r.aux_min, r.aux_min, r.aux_max - r.aux_min, theEnvironment.get_coarse_gray_depth()),
-		auto binnedMax = bin_pixel (r.aux_max, r.aux_min, r.aux_max, theEnvironment.get_coarse_gray_depth()); // Nyxus::to_grayscale(r.aux_max, r.aux_min, r.aux_max - r.aux_min, theEnvironment.get_coarse_gray_depth());
+		
+		//
+		// !!! We need to smart-select the greyInfo rather than just theEnvironment.get_coarse_gray_depth()
+		//
+		auto binnedMin = bin_pixel (r.aux_min, r.aux_min, r.aux_max, theEnvironment.get_coarse_gray_depth());
+		auto binnedMax = bin_pixel (r.aux_max, r.aux_min, r.aux_max, theEnvironment.get_coarse_gray_depth());
 		if (binnedMin == binnedMax)
 		{
-			// Zero out each angled feature value 
+			auto w = theEnvironment.nan_substitute;		// safe NAN
+
+			// assign it to each angled feature value 
 			auto n = angles.size();
-			r.fvals[(int)Feature2D::GLCM_ASM].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_ACOR].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_CLUPROM].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_CLUSHADE].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_CLUTEND].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_CONTRAST].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_CONTRAST_AVE][0] = 0;
-			r.fvals[(int)Feature2D::GLCM_CORRELATION].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_CORRELATION_AVE][0] = 0;
-			r.fvals[(int)Feature2D::GLCM_DIFAVE].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_DIFAVE_AVE][0] = 0;
-			r.fvals[(int)Feature2D::GLCM_DIFENTRO].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_DIFENTRO][0] = 0;
-			r.fvals[(int)Feature2D::GLCM_DIFVAR].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_DIFVAR_AVE][0] = 0;
-			r.fvals[(int)Feature2D::GLCM_DIS].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_ENERGY].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_ENERGY_AVE][0] = 0;
-			r.fvals[(int)Feature2D::GLCM_ENTROPY].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_ENTROPY_AVE][0] = 0;
-			r.fvals[(int)Feature2D::GLCM_HOM1].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_HOM1_AVE][0] = 0;
-			r.fvals[(int)Feature2D::GLCM_HOM2].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_IDMN].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_ID].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_IDN].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_INFOMEAS1].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_INFOMEAS2].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_IDM].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_IDM_AVE][0] = 0;
-			r.fvals[(int)Feature2D::GLCM_IV].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_JAVE].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_JE].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_JMAX].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_JVAR].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_SUMAVERAGE].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_SUMAVERAGE_AVE][0] = 0;
-			r.fvals[(int)Feature2D::GLCM_SUMENTROPY].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_SUMENTROPY_AVE][0] = 0;
-			r.fvals[(int)Feature2D::GLCM_SUMVARIANCE].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_SUMVARIANCE][0] = 0;
-			r.fvals[(int)Feature2D::GLCM_VARIANCE].assign(n, 0);
-			r.fvals[(int)Feature2D::GLCM_VARIANCE_AVE][0] = 0;
+			r.fvals[(int)Feature2D::GLCM_ASM].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_ACOR].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_CLUPROM].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_CLUSHADE].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_CLUTEND].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_CONTRAST].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_CORRELATION].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_DIFAVE].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_DIFENTRO].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_DIFVAR].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_DIS].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_ENERGY].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_ENTROPY].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_HOM1].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_HOM2].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_IDMN].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_ID].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_IDN].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_INFOMEAS1].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_INFOMEAS2].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_IDM].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_IV].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_JAVE].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_JE].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_JMAX].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_JVAR].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_SUMAVERAGE].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_SUMENTROPY].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_SUMVARIANCE].assign(n, w);
+			r.fvals[(int)Feature2D::GLCM_VARIANCE].assign(n, w);
+			r.fvals [(int)Feature2D::GLCM_ASM_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_ACOR_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_CLUPROM_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_CLUSHADE_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_CLUTEND_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_CONTRAST_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_CORRELATION_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_DIFAVE_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_DIFENTRO_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_DIFVAR_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_DIS_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_ENERGY_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_ENTROPY_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_HOM1_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_ID_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_IDN_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_IDM_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_IDMN_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_IV_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_JAVE_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_JE_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_INFOMEAS1_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_INFOMEAS2_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_JMAX_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_JVAR_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_SUMAVERAGE_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_SUMENTROPY_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_SUMVARIANCE_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_VARIANCE_AVE][0] = w;
+
 			// No need to calculate features for this ROI
 			continue;
 		}
@@ -241,36 +261,37 @@ void GLCMFeature::Extract_Texture_Features2(int angle, const ImageMatrix& grays,
 	// Blank cooc-matrix? -- no point to use it, assign each feature value '0' and return.
 	if (sum_p == 0)
 	{
-		fvals_ASM.push_back(0);
-		fvals_acor.push_back(0);
-		fvals_cluprom.push_back(0);
-		fvals_clushade.push_back(0);
-		fvals_clutend.push_back(0);
-		fvals_contrast.push_back(0);
-		fvals_correlation.push_back(0);
-		fvals_diff_avg.push_back(0);
-		fvals_diff_var.push_back(0);
-		fvals_diff_entropy.push_back(0);
-		fvals_dis.push_back(0);
-		fvals_energy.push_back(0);
-		fvals_entropy.push_back(0);
-		fvals_homo.push_back(0);
-		fvals_hom2.push_back(0);
-		fvals_id.push_back(0);
-		fvals_idn.push_back(0);
-		fvals_IDM.push_back(0);
-		fvals_idmn.push_back(0);
-		fvals_meas_corr1.push_back(0);
-		fvals_meas_corr2.push_back(0);
-		fvals_iv.push_back(0);
-		fvals_jave.push_back(0);
-		fvals_je.push_back(0);
-		fvals_jmax.push_back(0);
-		fvals_jvar.push_back(0);
-		fvals_sum_avg.push_back(0);
-		fvals_sum_var.push_back(0);
-		fvals_sum_entropy.push_back(0);
-		fvals_variance.push_back(0);
+		auto _ = theEnvironment.nan_substitute; // safe NAN
+		fvals_ASM.push_back(_);
+		fvals_acor.push_back(_);
+		fvals_cluprom.push_back(_);
+		fvals_clushade.push_back(_);
+		fvals_clutend.push_back(_);
+		fvals_contrast.push_back(_);
+		fvals_correlation.push_back(_);
+		fvals_diff_avg.push_back(_);
+		fvals_diff_var.push_back(_);
+		fvals_diff_entropy.push_back(_);
+		fvals_dis.push_back(_);
+		fvals_energy.push_back(_);
+		fvals_entropy.push_back(_);
+		fvals_homo.push_back(_);
+		fvals_hom2.push_back(_);
+		fvals_id.push_back(_);
+		fvals_idn.push_back(_);
+		fvals_IDM.push_back(_);
+		fvals_idmn.push_back(_);
+		fvals_meas_corr1.push_back(_);
+		fvals_meas_corr2.push_back(_);
+		fvals_iv.push_back(_);
+		fvals_jave.push_back(_);
+		fvals_je.push_back(_);
+		fvals_jmax.push_back(_);
+		fvals_jvar.push_back(_);
+		fvals_sum_avg.push_back(_);
+		fvals_sum_var.push_back(_);
+		fvals_sum_entropy.push_back(_);
+		fvals_variance.push_back(_);
 
 		return;
 	}

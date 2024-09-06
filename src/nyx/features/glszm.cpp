@@ -5,10 +5,35 @@
 #include <unordered_set>
 #include "glszm.h"
 #include "../environment.h"
+#include "../helpers/timing.h"
+
+#ifdef USE_GPU
+	#include "../gpu/glszm.cuh"
+#endif
 
 using namespace Nyxus;
 
 int GLSZMFeature::n_levels = 0;
+
+void GLSZMFeature::invalidate()
+{
+	fv_SAE =
+		fv_LAE =
+		fv_GLN =
+		fv_GLNN =
+		fv_SZN =
+		fv_SZNN =
+		fv_ZP =
+		fv_GLV =
+		fv_ZV =
+		fv_ZE =
+		fv_LGLZE =
+		fv_HGLZE =
+		fv_SALGLE =
+		fv_SAHGLE =
+		fv_LALGLE =
+		fv_LAHGLE = theEnvironment.nan_substitute;
+}
 
 GLSZMFeature::GLSZMFeature() : FeatureMethod("GLSZMFeature")
 {
@@ -87,7 +112,7 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader&)
 				}
 				if (D.safe(y + 1, x + 1) && D.yx(y + 1, x + 1) != VISITED && D.yx(y + 1, x + 1) == pi)
 				{
-					D.set_at (y + 1, x + 1, VISITED);
+					D.set_at(y + 1, x + 1, VISITED);
 					zoneArea++;
 
 					history.push_back({ x,y });
@@ -97,7 +122,7 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader&)
 				}
 				if (D.safe(y + 1, x) && D.yx(y + 1, x) != VISITED && D.yx(y + 1, x) == pi)
 				{
-					D.set_at (y + 1, x, VISITED);
+					D.set_at(y + 1, x, VISITED);
 					zoneArea++;
 
 					history.push_back({ x,y });
@@ -106,7 +131,7 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader&)
 				}
 				if (D.safe(y + 1, x - 1) && D.yx(y + 1, x - 1) != VISITED && D.yx(y + 1, x - 1) == pi)
 				{
-					D.set_at (y + 1, x - 1, VISITED);
+					D.set_at(y + 1, x - 1, VISITED);
 					zoneArea++;
 
 					history.push_back({ x,y });
@@ -144,7 +169,7 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader&)
 
 	// count non-zero pixels
 	int count = 0;
-	for (auto i=0; i<M.size(); i++)
+	for (auto i = 0; i < M.size(); i++)
 	{
 		auto px = M[i];
 		if (px != 0)
@@ -191,9 +216,12 @@ void GLSZMFeature::calculate(LR& r)
 {
 	clear_buffers();
 
-	//==== Check if the ROI is degenerate (equal intensity)
+	// intercept blank ROIs (equal intensity)
 	if (r.aux_min == r.aux_max)
+	{
+		invalidate();
 		return;
+	}
 	 
 	//==== Make a list of intensity clusters (zones)
 	using ACluster = std::pair<PixIntens, int>;
@@ -233,39 +261,42 @@ void GLSZMFeature::calculate(LR& r)
 		std::sort(I.begin(), I.end());
 	}
 
+{ //STOPWATCH("sz01/sz01/T/#raw", "\t=");
+
 	// Number of zones
 	const int VISITED = -1;
-	for (int row=0; row<M.height; row++)
+	for (int row = 0; row < M.height; row++)
+	{
 		for (int col = 0; col < M.width; col++)
 		{
 			// Find a non-blank pixel
 			auto pi = D.yx(row, col);
-			if (pi == 0 || int(pi)==VISITED)
+			if (pi == 0 || int(pi) == VISITED)
 				continue;
 
 			// Found a gray pixel. Find same-intensity neighbourhood of it.
 			std::vector<std::tuple<int, int>> history;
 			int x = col, y = row;
 			int zoneArea = 1;
-			D.yx(y,x) = VISITED;
+			D.yx(y, x) = VISITED;
 
-			for(;;)
+			for (;;)
 			{
-				if (D.safe(y,x+1) && D.yx(y,x+1) != VISITED && D.yx(y,x+1) == pi)
+				if (D.safe(y, x + 1) && D.yx(y, x + 1) != VISITED && D.yx(y, x + 1) == pi)
 				{
-					D.yx(y,x+1) = VISITED;
+					D.yx(y, x + 1) = VISITED;
 					zoneArea++;
 
 					// Remember this pixel
-					history.push_back({x,y});
+					history.push_back({ x,y });
 					// Advance
 					x = x + 1;
 					// Proceed
 					continue;
 				}
-				if (D.safe(y + 1, x + 1) && D.yx(y+1,x+1) != VISITED && D.yx(y + 1, x+1) == pi)
+				if (D.safe(y + 1, x + 1) && D.yx(y + 1, x + 1) != VISITED && D.yx(y + 1, x + 1) == pi)
 				{
-					D.yx(y + 1, x+1) = VISITED;
+					D.yx(y + 1, x + 1) = VISITED;
 					zoneArea++;
 
 					history.push_back({ x,y });
@@ -273,7 +304,7 @@ void GLSZMFeature::calculate(LR& r)
 					y = y + 1;
 					continue;
 				}
-				if (D.safe(y + 1, x) && D.yx(y+1,x) != VISITED && D.yx(y + 1, x) == pi)
+				if (D.safe(y + 1, x) && D.yx(y + 1, x) != VISITED && D.yx(y + 1, x) == pi)
 				{
 					D.yx(y + 1, x) = VISITED;
 					zoneArea++;
@@ -282,9 +313,9 @@ void GLSZMFeature::calculate(LR& r)
 					y = y + 1;
 					continue;
 				}
-				if (D.safe(y + 1, x - 1) && D.yx(y+1,x-1) != VISITED && D.yx(y + 1, x-1) == pi)
+				if (D.safe(y + 1, x - 1) && D.yx(y + 1, x - 1) != VISITED && D.yx(y + 1, x - 1) == pi)
 				{
-					D.yx(y + 1, x-1) = VISITED;
+					D.yx(y + 1, x - 1) = VISITED;
 					zoneArea++;
 
 					history.push_back({ x,y });
@@ -297,7 +328,7 @@ void GLSZMFeature::calculate(LR& r)
 				if (history.size() > 0)
 				{
 					// Recollect the coordinate where we diverted from
-					std::tuple<int, int> prev  = history[history.size() - 1];
+					std::tuple<int, int> prev = history[history.size() - 1];
 					x = std::get<0>(prev);
 					y = std::get<1>(prev);
 					history.pop_back();
@@ -306,7 +337,6 @@ void GLSZMFeature::calculate(LR& r)
 
 				// We are done exploring this cluster
 				break;
-			
 			}
 
 			// Done scanning a cluster. Perform 3 actions:
@@ -317,13 +347,15 @@ void GLSZMFeature::calculate(LR& r)
 			maxZoneArea = std::max(maxZoneArea, zoneArea);
 
 			// --3
-			ACluster clu = {pi, zoneArea};
-			Z.push_back (clu);
+			ACluster clu = { pi, zoneArea };
+			Z.push_back(clu);
 		}
+	}
+
+}//t
 
 	// count non-zero pixels
 	int count = 0;
-
 	for (const auto& px: M.ReadablePixels()) 
 	{
 		if(px != 0) 
@@ -335,7 +367,7 @@ void GLSZMFeature::calculate(LR& r)
 	auto height = M.height;
 	auto width = M.width;
 
-	Ng = Environment::ibsi_compliance ? *std::max_element(I.begin(), I.end()) : I.size(); //		I.size();
+	Ng = Environment::ibsi_compliance ? *std::max_element(I.begin(), I.end()) : I.size();
 	Ns = height * width;
 	Nz = (int)Z.size();
 	Np = count;
@@ -343,6 +375,8 @@ void GLSZMFeature::calculate(LR& r)
 	// --allocate the matrix
 	P.allocate (Ns, Ng);
 	
+{ //STOPWATCH("sz02/sz02/T/#raw", "\t=");
+
 	// --iterate zones and fill the matrix
 	int i = 0;
 	for (auto& z : Z)
@@ -356,12 +390,112 @@ void GLSZMFeature::calculate(LR& r)
 		k++;
 	}
 
+	// Non-informative matrix?
 	sum_p = 0;
-	for (int i = 1; i <= Ng; ++i) {
-		for (int j = 1; j <= Ns; ++j) {
+	for (int i = 1; i <= Ng; ++i) 
+	{
+		for (int j = 1; j <= Ns; ++j) 
+		{
 			sum_p += P.matlab(i, j);
 		}
 	}
+
+	if (sum_p == 0)
+	{
+		invalidate();
+		return;
+	}
+
+}//sz02
+
+{ //STOPWATCH("sz03/sz03/T/#raw", "\t=");
+
+	// Precalculate sums of P
+	#ifdef USE_GPU
+	if (theEnvironment.using_gpu())
+	{
+		if (!NyxusGpu::GLSZMfeature_calc (
+			// out
+			fv_SAE,
+			fv_LAE,
+			fv_GLN,
+			fv_GLNN,
+			fv_SZN,
+			fv_SZNN,
+			fv_ZP,
+			fv_GLV,
+			fv_ZV,
+			fv_ZE,
+			fv_LGLZE,
+			fv_HGLZE,
+			fv_SALGLE,
+			fv_SAHGLE,
+			fv_LALGLE,
+			fv_LAHGLE,
+			// in
+			Ng, Ns, I.data(), P.data(), sum_p, Np, EPS))
+		{
+			std::cerr << "ERROR: GLSZMfeature_calc_sums_of_P failed \n";
+			invalidate();
+			return;
+		}
+	}
+	else
+	{
+		calc_sums_of_P();
+	}
+	#else
+	calc_sums_of_P();
+	#endif
+
+}//sz03
+
+{ //STOPWATCH("sz04/sz04/T/#raw", "\t=");
+
+	// Calculate features
+	#ifdef USE_GPU
+	if (theEnvironment.using_gpu())
+	{
+		// features are calculated in GLSZMfeature_calc_sums_of_P
+	}
+	else
+	{
+		fv_SAE = calc_SAE();
+		fv_LAE = calc_LAE();
+		fv_GLN = calc_GLN();
+		fv_GLNN = calc_GLNN();
+		fv_SZN = calc_SZN();
+		fv_SZNN = calc_SZNN();
+		fv_ZP = calc_ZP();
+		fv_GLV = calc_GLV();
+		fv_ZV = calc_ZV();
+		fv_ZE = calc_ZE();
+		fv_LGLZE = calc_LGLZE();
+		fv_HGLZE = calc_HGLZE();
+		fv_SALGLE = calc_SALGLE();
+		fv_SAHGLE = calc_SAHGLE();
+		fv_LALGLE = calc_LALGLE();
+		fv_LAHGLE = calc_LAHGLE();	
+	}
+	#else
+	fv_SAE = calc_SAE();
+	fv_LAE = calc_LAE();
+	fv_GLN = calc_GLN();
+	fv_GLNN = calc_GLNN();
+	fv_SZN = calc_SZN();
+	fv_SZNN = calc_SZNN();
+	fv_ZP = calc_ZP();
+	fv_GLV = calc_GLV();
+	fv_ZV = calc_ZV();
+	fv_ZE = calc_ZE();
+	fv_LGLZE = calc_LGLZE();
+	fv_HGLZE = calc_HGLZE();
+	fv_SALGLE = calc_SALGLE();
+	fv_SAHGLE = calc_SAHGLE();
+	fv_LALGLE = calc_LALGLE();
+	fv_LAHGLE = calc_LAHGLE();
+	#endif
+}//sz04
 }
 
 void GLSZMFeature::calc_sums_of_P()
@@ -428,80 +562,22 @@ bool GLSZMFeature::need (Nyxus::Feature2D f)
 
 void GLSZMFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
-	// Clear result buffers
-	double val = 0;
-	fvals[(int)Feature2D::GLSZM_SAE][0] = val;
-	fvals[(int)Feature2D::GLSZM_LAE][0] = val;
-	fvals[(int)Feature2D::GLSZM_GLN][0] = val;
-	fvals[(int)Feature2D::GLSZM_GLNN][0] = val;
-	fvals[(int)Feature2D::GLSZM_SZN][0] = val;
-	fvals[(int)Feature2D::GLSZM_SZNN][0] = val;
-	fvals[(int)Feature2D::GLSZM_ZP][0] = val;
-	fvals[(int)Feature2D::GLSZM_GLV][0] = val;
-	fvals[(int)Feature2D::GLSZM_ZV][0] = val;
-	fvals[(int)Feature2D::GLSZM_ZE][0] = val;
-	fvals[(int)Feature2D::GLSZM_LGLZE][0] = val;
-	fvals[(int)Feature2D::GLSZM_HGLZE][0] = val;
-	fvals[(int)Feature2D::GLSZM_SALGLE][0] = val;
-	fvals[(int)Feature2D::GLSZM_SAHGLE][0] = val;
-	fvals[(int)Feature2D::GLSZM_LALGLE][0] = val;
-	fvals[(int)Feature2D::GLSZM_LAHGLE][0] = val;
-
-	// Non-informative matrix?
-	if (sum_p == 0)
-		return;
-
-	// Precalculate sums of P
-	calc_sums_of_P();
-
-	// Calculate features
-	if (need(Feature2D::GLSZM_SAE))
-		fvals[(int)Feature2D::GLSZM_SAE][0] = calc_SAE();
-
-	if (need(Feature2D::GLSZM_LAE))
-		fvals[(int)Feature2D::GLSZM_LAE][0] = calc_LAE();
-	
-	if (need(Feature2D::GLSZM_GLN))
-		fvals[(int)Feature2D::GLSZM_GLN][0] = calc_GLN();
-	
-	if (need(Feature2D::GLSZM_GLNN))
-		fvals[(int)Feature2D::GLSZM_GLNN][0] = calc_GLNN();
-	
-	if (need(Feature2D::GLSZM_SZN))
-		fvals[(int)Feature2D::GLSZM_SZN][0] = calc_SZN();
-	
-	if (need(Feature2D::GLSZM_SZNN))
-		fvals[(int)Feature2D::GLSZM_SZNN][0] = calc_SZNN();
-	
-	if (need(Feature2D::GLSZM_ZP))
-		fvals[(int)Feature2D::GLSZM_ZP][0] = calc_ZP();
-	
-	if (need(Feature2D::GLSZM_GLV))
-		fvals[(int)Feature2D::GLSZM_GLV][0] = calc_GLV();
-	
-	if (need(Feature2D::GLSZM_ZV))
-		fvals[(int)Feature2D::GLSZM_ZV][0] = calc_ZV();
-	
-	if (need(Feature2D::GLSZM_ZE))
-		fvals[(int)Feature2D::GLSZM_ZE][0] = calc_ZE();
-	
-	if (need(Feature2D::GLSZM_LGLZE))
-		fvals[(int)Feature2D::GLSZM_LGLZE][0] = calc_LGLZE();
-	
-	if (need(Feature2D::GLSZM_HGLZE))
-		fvals[(int)Feature2D::GLSZM_HGLZE][0] = calc_HGLZE();
-	
-	if (need(Feature2D::GLSZM_SALGLE))
-		fvals[(int)Feature2D::GLSZM_SALGLE][0] = calc_SALGLE();
-	
-	if (need(Feature2D::GLSZM_SAHGLE))
-		fvals[(int)Feature2D::GLSZM_SAHGLE][0] = calc_SAHGLE();
-	
-	if (need(Feature2D::GLSZM_LALGLE))
-		fvals[(int)Feature2D::GLSZM_LALGLE][0] = calc_LALGLE();
-	
-	if (need(Feature2D::GLSZM_LAHGLE))
-		fvals[(int)Feature2D::GLSZM_LAHGLE][0] = calc_LAHGLE();
+	fvals[(int)Feature2D::GLSZM_SAE][0] = fv_SAE;
+	fvals[(int)Feature2D::GLSZM_LAE][0] = fv_LAE;
+	fvals[(int)Feature2D::GLSZM_GLN][0] = fv_GLN;
+	fvals[(int)Feature2D::GLSZM_GLNN][0] = fv_GLNN;
+	fvals[(int)Feature2D::GLSZM_SZN][0] = fv_SZN;
+	fvals[(int)Feature2D::GLSZM_SZNN][0] = fv_SZNN;
+	fvals[(int)Feature2D::GLSZM_ZP][0] = fv_ZP;
+	fvals[(int)Feature2D::GLSZM_GLV][0] = fv_GLV;
+	fvals[(int)Feature2D::GLSZM_ZV][0] = fv_ZV;
+	fvals[(int)Feature2D::GLSZM_ZE][0] = fv_ZE;
+	fvals[(int)Feature2D::GLSZM_LGLZE][0] = fv_LGLZE;
+	fvals[(int)Feature2D::GLSZM_HGLZE][0] = fv_HGLZE;
+	fvals[(int)Feature2D::GLSZM_SALGLE][0] = fv_SALGLE;
+	fvals[(int)Feature2D::GLSZM_SAHGLE][0] = fv_SAHGLE;
+	fvals[(int)Feature2D::GLSZM_LALGLE][0] = fv_LALGLE;
+	fvals[(int)Feature2D::GLSZM_LAHGLE][0] = fv_LAHGLE;
 }
 
 // 1. Small Area Emphasis
@@ -520,10 +596,6 @@ double GLSZMFeature::calc_SAE()
 // 2. Large Area Emphasis
 double GLSZMFeature::calc_LAE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate feature. 'sj' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int j = 1; j <= Ns; j++)
@@ -537,10 +609,6 @@ double GLSZMFeature::calc_LAE()
 // 3. Gray Level Non - Uniformity
 double GLSZMFeature::calc_GLN()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate feature. 'si' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
@@ -556,10 +624,6 @@ double GLSZMFeature::calc_GLN()
 // 4. Gray Level Non - Uniformity Normalized
 double GLSZMFeature::calc_GLNN()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate feature. 'si' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 
@@ -576,10 +640,6 @@ double GLSZMFeature::calc_GLNN()
 // 5. Size - Zone Non - Uniformity
 double GLSZMFeature::calc_SZN()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate feature. 'sj' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int j = 1; j <= Ns; j++)
@@ -595,10 +655,6 @@ double GLSZMFeature::calc_SZN()
 // 6. Size - Zone Non - Uniformity Normalized
 double GLSZMFeature::calc_SZNN()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate feature. 'sj' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int j = 1; j <= Ns; j++)
@@ -614,10 +670,6 @@ double GLSZMFeature::calc_SZNN()
 // 7. Zone Percentage
 double GLSZMFeature::calc_ZP()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	double retval = sum_p / double(Np);
 	return retval;
 }
@@ -625,10 +677,6 @@ double GLSZMFeature::calc_ZP()
 // 8. Gray Level Variance
 double GLSZMFeature::calc_GLV()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate feature. 'mu_GLV' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
@@ -637,7 +685,7 @@ double GLSZMFeature::calc_GLV()
 		for (int j = 1; j <= Ns; j++)
 		{
 			double d2 = (inten - mu_GLV) * (inten - mu_GLV);
-			f += P.matlab(i,j) / sum_p * d2;
+			f += P.matlab(i, j) / sum_p * d2;
 		}
 	}
 	return f;
@@ -646,10 +694,6 @@ double GLSZMFeature::calc_GLV()
 // 9. Zone Variance
 double GLSZMFeature::calc_ZV()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate feature. 'mu_ZV' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
@@ -666,10 +710,6 @@ double GLSZMFeature::calc_ZV()
 // 10. Zone Entropy
 double GLSZMFeature::calc_ZE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate feature. 'f_ZE' is expected to have been initialized in calc_sums_of_P()
 	double retval = -f_ZE;
 	return retval;
@@ -678,10 +718,6 @@ double GLSZMFeature::calc_ZE()
 // 11. Low Gray Level Zone Emphasis
 double GLSZMFeature::calc_LGLZE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate feature. 'si' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
@@ -697,10 +733,6 @@ double GLSZMFeature::calc_LGLZE()
 // 12. High Gray Level Zone Emphasis
 double GLSZMFeature::calc_HGLZE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate feature. 'si' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
@@ -716,10 +748,6 @@ double GLSZMFeature::calc_HGLZE()
 // 13. Small Area Low Gray Level Emphasis
 double GLSZMFeature::calc_SALGLE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate feature. 'f_SALGLE' is expected to have been initialized in calc_sums_of_P()
 	double retval = f_SALGLE / sum_p;
 	return retval;
@@ -728,10 +756,6 @@ double GLSZMFeature::calc_SALGLE()
 // 14. Small Area High Gray Level Emphasis
 double GLSZMFeature::calc_SAHGLE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate feature. 'f_SAHGLE' is expected to have been initialized in calc_sums_of_P()
 	double retval = f_SAHGLE / sum_p;
 	return retval;
@@ -740,10 +764,6 @@ double GLSZMFeature::calc_SAHGLE()
 // 15. Large Area Low Gray Level Emphasis
 double GLSZMFeature::calc_LALGLE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate feature. 'f_LALGLE' is expected to have been initialized in calc_sums_of_P()
 	double retval = f_LALGLE / sum_p;
 	return retval;
@@ -752,10 +772,6 @@ double GLSZMFeature::calc_LALGLE()
 // 16. Large Area High Gray Level Emphasis
 double GLSZMFeature::calc_LAHGLE()
 {
-	// Prevent using bad data 
-	if (bad_roi_data)
-		return BAD_ROI_FVAL;
-
 	// Calculate feature. 'f_LAHGLE' is expected to have been initialized in calc_sums_of_P()
 	double retval = f_LAHGLE / sum_p;
 	return retval;

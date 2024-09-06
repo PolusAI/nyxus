@@ -204,7 +204,7 @@ public:
 	bool arrow_is_enabled();
 
 	// NAN substitute in feature values
-	double nan_substitute = 0.0;
+	double nan_substitute = -999;
 
 private:
 

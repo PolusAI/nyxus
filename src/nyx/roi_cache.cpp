@@ -2,6 +2,18 @@
 #include "globals.h"
 #include "roi_cache.h"
 
+std::vector<SlideProps> LR::dataset_props;
+size_t LR::dataset_max_combined_roicloud_len = 0;
+size_t LR::dataset_max_n_rois = 0;
+size_t LR::dataset_max_roi_area = 0;
+size_t LR::dataset_max_roi_w = 0;
+size_t LR::dataset_max_roi_h = 0;
+
+void LR::reset_dataset_props()
+{
+	dataset_props.clear();
+}
+
 PixIntens LR::global_min_inten = 0;
 PixIntens LR::global_max_inten = 0;
 

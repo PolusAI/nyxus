@@ -6,7 +6,7 @@
 class GaborOptions
 {
 public:
-	// Parses 'raw*', set 'defined_' and 'ermsg'
+	// Parses 'raw*', set 'defined_' and 'ermsg' members. If successful, sets Gaborfeature static members
 	bool parse_input();	
 
 	// Returns true if all 'raw*' are empty

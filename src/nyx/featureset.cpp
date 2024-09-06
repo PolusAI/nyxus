@@ -25,7 +25,7 @@ namespace Nyxus
 		{ "MASS_DISPLACEMENT", Feature2D::MASS_DISPLACEMENT },
 		{ "MAX", Feature2D::MAX },
 		{ "MEAN", Feature2D::MEAN },
-		{ "MEAN_ABSOLUTE_DEVIATION", Feature2D::MEAN_ABSOLUTE_DEVIATION }, 
+		{ "MEAN_ABSOLUTE_DEVIATION", Feature2D::MEAN_ABSOLUTE_DEVIATION },
 		{ "MEDIAN", Feature2D::MEDIAN },
 		{ "MEDIAN_ABSOLUTE_DEVIATION", Feature2D::MEDIAN_ABSOLUTE_DEVIATION },
 		{ "MIN", Feature2D::MIN },
@@ -128,8 +128,6 @@ namespace Nyxus
 		{ "EXTREMA_P8_Y", Feature2D::EXTREMA_P8_Y},
 
 		// Caliper features:
-		{ "MIN_FERET_DIAMETER", Feature2D::MIN_FERET_DIAMETER},
-		{ "MAX_FERET_DIAMETER", Feature2D::MAX_FERET_DIAMETER},
 		{ "MIN_FERET_ANGLE", Feature2D::MIN_FERET_ANGLE},
 		{ "MAX_FERET_ANGLE", Feature2D::MAX_FERET_ANGLE},
 
@@ -453,6 +451,14 @@ namespace Nyxus
 		{ "HU_M6", Feature2D::HU_M6},
 		{ "HU_M7", Feature2D::HU_M7},
 
+		{ "WT_NORM_CTR_MOM_02", Feature2D::WT_NORM_CTR_MOM_02 },
+		{ "WT_NORM_CTR_MOM_03", Feature2D::WT_NORM_CTR_MOM_03 },
+		{ "WT_NORM_CTR_MOM_11", Feature2D::WT_NORM_CTR_MOM_11 },
+		{ "WT_NORM_CTR_MOM_12", Feature2D::WT_NORM_CTR_MOM_12 },
+		{ "WT_NORM_CTR_MOM_20", Feature2D::WT_NORM_CTR_MOM_20 },
+		{ "WT_NORM_CTR_MOM_21", Feature2D::WT_NORM_CTR_MOM_21 },
+		{ "WT_NORM_CTR_MOM_30", Feature2D::WT_NORM_CTR_MOM_30 },
+
 		{ "WEIGHTED_HU_M1", Feature2D::WEIGHTED_HU_M1},
 		{ "WEIGHTED_HU_M2", Feature2D::WEIGHTED_HU_M2},
 		{ "WEIGHTED_HU_M3", Feature2D::WEIGHTED_HU_M3},
@@ -540,6 +546,12 @@ namespace Nyxus
 		{ "3D_VARIANCE_BIASED", Nyxus::Feature3D::VARIANCE_BIASED },
 
 		// Morphology
+		{ "3D_AREA", Feature3D::AREA },
+		{ "3D_MESH_VOLUME", Feature3D::MESH_VOLUME },
+		{ "3D_VOLUME_CONVEXHULL", Feature3D::VOLUME_CONVEXHULL },
+		{ "3D_DIAMETER_EQUAL_AREA", Feature3D::DIAMETER_EQUAL_AREA },
+		{ "3D_DIAMETER_EQUAL_VOLUME", Feature3D::DIAMETER_EQUAL_VOLUME },
+
 		{ "3D_VOLUME_PIXELS", Feature3D::VOLUME_PIXELS },
 		{ "3D_CENTROID_X", Feature3D::CENTROID_X },
 		{ "3D_CENTROID_Y", Feature3D::CENTROID_Y },
@@ -576,6 +588,7 @@ namespace Nyxus
 		{ "3D_SPAT_MOMENT_22", Feature3D::SPAT_MOMENT_22 },
 		{ "3D_SPAT_MOMENT_23", Feature3D::SPAT_MOMENT_23 },
 		{ "3D_SPAT_MOMENT_30", Feature3D::SPAT_MOMENT_30 },
+
 	};
 
 	std::map <std::string, Fgroup3D> UserFacing3dFeaturegroupNames =

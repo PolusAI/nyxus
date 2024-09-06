@@ -3,6 +3,11 @@
 
 using namespace Nyxus;
 
+namespace NyxusGpu 
+{
+	bool ErosionFeature_calculate_via_gpu(size_t roi_index, size_t roi_w, size_t roi_h, int max_n_erosions, int & fval);
+}
+
 ErosionPixelsFeature::ErosionPixelsFeature() : FeatureMethod("ErosionPixelsFeature")
 {
 	provide_features({ Feature2D::EROSIONS_2_VANISH, Feature2D::EROSIONS_2_VANISH_COMPLEMENT });
@@ -23,9 +28,12 @@ void ErosionPixelsFeature::calculate(LR& r)
 	{
 		auto x = px.x - minx,
 			y = px.y - miny;
-		I2.xy(x,y) = px.inten + 1;	// '+1' does the job: wherever intensity pixels are defined (via raw_pixels), in the MIM we have at least 1 even if the intensity is 0
+		//<--shape erosion, not greyscale!-- 
+		//		I2.xy(x, y) = px.inten + 1;	// '+1' does the job: wherever intensity pixels are defined (via raw_pixels), in the MIM we have at least 1 even if the intensity is 0
+		I2.xy(x, y) = 1;
 	}
 
+	// structural element's half-width and height
 	auto halfHeight = (int)floor(SE_R / 2);
 	auto halfWidth = (int)floor(SE_C / 2);
 
@@ -208,3 +216,32 @@ void ErosionPixelsFeature::parallel_process_1_batch(size_t start, size_t end, st
 	}
 }
 
+#ifdef USE_GPU
+
+void ErosionPixelsFeature::gpu_process_all_rois (
+	const std::vector<int>& L, 
+	std::unordered_map <int, LR>& RoiData,
+	size_t batch_offset,
+	size_t batch_len)
+{
+	for (size_t i = 0; i < batch_len; i++)
+	{
+		size_t far_i = i + batch_offset;
+		auto lab = L[far_i];
+		LR& r = RoiData[lab];
+
+		ErosionPixelsFeature f;
+		f.calculate_via_gpu (r, i, 1000/*SANITY_MAX_NUM_EROSIONS*/, f.numErosions);
+		f.save_value(r.fvals);
+	}
+}
+
+void ErosionPixelsFeature::calculate_via_gpu (LR& r, size_t roiidx, int max_n_erosions, int & fval)
+{
+	bool ok = NyxusGpu::ErosionFeature_calculate_via_gpu (roiidx, r.aabb.get_width(), r.aabb.get_height(), max_n_erosions, fval);
+	if (!ok)
+		std::cerr << "ErosionFeature: error calculating on GPU\n";
+}
+
+
+#endif // USE_GPU

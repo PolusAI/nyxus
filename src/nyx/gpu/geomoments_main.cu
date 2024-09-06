@@ -5,313 +5,153 @@
 #include <builtin_types.h>
 #include <iostream>
 
-#include "../features/image_matrix.h"
 #include "gpu.h"
+#include "geomoments.cuh"
+#include "../gpucache.h"
 
-bool ImageMomentsFeature_calcOrigins(
-    // output
-    double& originOfX, double& originOfY,
-    // input
-    const Pixel2* d_roicloud,
-    size_t cloudlen,
-    StatsInt base_x,
-    StatsInt base_y);
+#include "../helpers/timing.h"
 
-bool ImageMomentsFeature_calcOriginsWeighted(
-    // output
-    double& originOfX, double& originOfY,
-    // input
-    const RealPixIntens* d_realintens,
-    const Pixel2* d_roicloud,
-    size_t cloudlen,
-    StatsInt base_x,
-    StatsInt base_y);
-
-bool ImageMomentsFeature_calcRawMoments(
-    // output
-    double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _13, double& _20, double& _21, double& _22, double& _23, double& _30,
-    // input
-    const Pixel2* d_roicloud,
-    size_t cloud_len, 
-    StatsInt base_x, 
-    StatsInt base_y);
-
-bool ImageMomentsFeature_calcRawMomentsWeighted(
-    // output
-    double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _20, double& _21, double& _30,
-    // input
-    const RealPixIntens* d_realintens,
-    const Pixel2* d_roicloud,
-    size_t cloud_len,
-    StatsInt base_x,
-    StatsInt base_y);
-
-bool ImageMomentsFeature_calcCentralMoments(
-    // output
-    double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _13, double& _20, double& _21, double& _22, double& _23, double& _30, double& _31, double& _32, double& _33,
-    // input
-    const Pixel2* d_roicloud, size_t cloud_len, StatsInt base_x, StatsInt base_y, double origin_x, double origin_y);
-
-bool ImageMomentsFeature_calcCentralMomentsWeighted(
-    // output
-    double& _00, double& _01, double& _02, double& _03, double& _10, double& _11, double& _12, double& _20, double& _21, double& _22, double& _30,
-    // input
-    const RealPixIntens* d_realintens, const Pixel2* d_roicloud, size_t cloud_len, StatsInt base_x, StatsInt base_y, double origin_x, double origin_y);
-
-bool ImageMomentsFeature_calc_weighted_intens(
-    // output
-    RealPixIntens* d_realintens_buf,
-    // input
-    const Pixel2* d_roicloud,
-    size_t cloud_len,
-    const Pixel2* d_roicontour,
-    size_t contour_len);
-
-bool ImageMomentsFeature_calcHuInvariants3(
-    double& h1, double& h2, double& h3, double& h4, double& h5, double& h6, double& h7,   // output
-    double nu02, double nu03, double nu11, double nu12, double nu20, double nu21, double nu30); // reduction helpers
-
-bool ImageMomentsFeature_calcNormCentralMoments3(
-    double& nu02, double& nu03, double& nu11, double& nu12, double& nu20, double& nu21, double& nu30,   // output
-    double cm02, double cm03, double cm11, double cm12, double cm20, double cm21, double cm30,
-    double m00);
-
-bool ImageMomentsFeature_calcNormSpatialMoments3(
-    double& w00, double& w01, double& w02, double& w03, double& w10, double& w11, double& w12, double& w13, double& w20, double& w21, double& w22, double& w23, double& w30, double& w31, double& w32, double& w33, // output
-    double cm00, double cm01, double cm02, double cm03, double cm10, double cm11, double cm12, double cm13, double cm20, double cm21, double cm22, double cm23, double cm30, double cm31, double cm32, double cm33);
-
-namespace Nyxus
+namespace NyxusGpu
 {
-    // Objects implementing GPU-based calculation of geometric moments
-    // -- device-side copy of a ROI cloud
-    Pixel2* devRoiCloudBuffer = nullptr;
-    size_t roi_cloud_len = 0;
-    RealPixIntens* devRealintensBuffer = nullptr;
-    // -- device-side copy of ROI's contour data
-    Pixel2* devContourCloudBuffer = nullptr;
-    size_t contour_cloud_len = 0;
-    // -- result of partial geometric moment expression (before sum-reduce)
-    double* devPrereduce = nullptr;
-    // -- reduce helpers
-    double* d_out = nullptr;
-    void* d_temp_storage = nullptr;
-    size_t temp_storage_bytes = 0;
-}
-
-bool ImageMomentsFeature_calculate (
-    double& m00, double& m01, double& m02, double& m03, double& m10, double& m11, double& m12, double& m13, double& m20, double& m21, double& m22, double& m23, double& m30,   // spatial moments
-    double& cm00, double& cm01, double& cm02, double& cm03, double& cm10, double& cm11, double& cm12, double& cm13, double& cm20, double& cm21, double& cm22, double& cm23, double& cm30, double& cm31, double& cm32, double& cm33,   // central moments
-    double& nu02, double& nu03, double& nu11, double& nu12, double& nu20, double& nu21, double& nu30,    // normalized central moments
-    double& w00, double& w01, double& w02, double& w03, double& w10, double& w11, double& w12, double& w13, double& w20, double& w21, double& w22, double& w23, double& w30, double& w31, double& w32, double& w33,   // normalized spatial moments
-    double& hm1, double& hm2, double& hm3, double& hm4, double& hm5, double& hm6, double& hm7,  // Hu moments
-    double& wm00, double& wm01, double& wm02, double& wm03, double& wm10, double& wm11, double& wm12, double& wm20, double& wm21, double& wm30,   // weighted spatial moments
-    double& wcm02, double& wcm03, double& wcm11, double& wcm12, double& wcm20, double& wcm21, double& wcm30,   // weighted central moments
-    double& whm1, double& whm2, double& whm3, double& whm4, double& whm5, double& whm6, double& whm7,   // weighted Hum moments
-    size_t imOffset,
-    size_t roi_index,
-    StatsInt aabb_min_x,
-    StatsInt aabb_min_y,
-    StatsInt width,
-    StatsInt height)
-{
-    //==== Origin
-    double originX, originY;
-
-    bool good = ImageMomentsFeature_calcOrigins(
+    bool ImageMomentsFeature_calc_weighted_intens(
         // output
-        originX,
-        originY,
+        RealPixIntens* d_realintens_buf,
         // input
-        Nyxus::devRoiCloudBuffer, 
-        Nyxus::roi_cloud_len,
-        aabb_min_x,
-        aabb_min_y);
+        const Pixel2* d_roicloud,
+        size_t cloud_len,
+        const Pixel2* d_roicontour,
+        size_t contour_len);
 
-    if (!good)
-        return false;
+    bool ImageMomentsFeature_calcHuInvariants3(gpureal* d_state, bool weighted);
 
-    //==== Spatial moments
-    good = ImageMomentsFeature_calcRawMoments(
-        m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30,
-        Nyxus::devRoiCloudBuffer, Nyxus::roi_cloud_len, aabb_min_x, aabb_min_y); 
+    bool ImageMomentsFeature_calcNormCentralMoments3(gpureal* d_state, bool weighted);
 
-    if (!good)
-        return false;
+    bool ImageMomentsFeature_calcNormSpatialMoments3(gpureal* d_state);
 
-    //==== Central moments
-    good = ImageMomentsFeature_calcCentralMoments(
-        cm00, cm01, cm02, cm03, cm10, cm11, cm12, cm13, cm20, cm21, cm22, cm23, cm30, cm31, cm32, cm33,
-        Nyxus::devRoiCloudBuffer, Nyxus::roi_cloud_len, aabb_min_x, aabb_min_y, originX, originY);
-
-    if (!good)
-        return false;
-
-    //==== Norm central moments
-    good = ImageMomentsFeature_calcNormCentralMoments3(
-        nu02, nu03, nu11, nu12, nu20, nu21, nu30,   // output
-        cm02, cm03, cm11, cm12, cm20, cm21, cm30,   // central moments
-        m00);    // spatial moment
-
-    if (!good)
-        return false;
-    
-    //==== Norm spatial moments
-    double cm00_ = -1;
-    good = ImageMomentsFeature_calcNormSpatialMoments3(
-        //w00, w01, w02, w03, w10, w11, w12, w13, w20, w21, w22, w23, w30, w31, w32, w33,  // output
-        //cm00_, cm01_, cm02, cm03, cm10_, cm20, cm30, cm22_
-        w00, w01, w02, w03, w10, w11, w12, w13, w20, w21, w22, w23, w30, w31, w32, w33,   // output
-        cm00, cm01, cm02, cm03, cm10, cm11, cm12, cm13, cm20, cm21, cm22, cm23, cm30, cm31, cm32, cm33);
-    if (!good)
-        return false;
-
-    //==== Hu insvariants
-    good = ImageMomentsFeature_calcHuInvariants3(
-        hm1, hm2, hm3, hm4, hm5, hm6, hm7,  // output
-        nu02, nu03, nu11, nu12, nu20, nu21, nu30);
-    if (!good)
-        return false;
-
-    //==== Weighted intensities
-    good = ImageMomentsFeature_calc_weighted_intens(
-        Nyxus::devRealintensBuffer, // output
-        Nyxus::devRoiCloudBuffer,
-        Nyxus::roi_cloud_len,
-        Nyxus::devContourCloudBuffer,
-        Nyxus::contour_cloud_len);
-
-    if (!good)
-        return false;
-
-    //==== Weighted origin
-    good = ImageMomentsFeature_calcOriginsWeighted(
-        // output
-        originX,
-        originY,
-        // input
-        Nyxus::devRealintensBuffer,
-        Nyxus::devRoiCloudBuffer,
-        Nyxus::roi_cloud_len,
-        aabb_min_x,
-        aabb_min_y);
-
-    if (!good)
-        return false;
-
-    //==== Weighted raw moments
-    good = ImageMomentsFeature_calcRawMomentsWeighted (
-        wm00, wm01, wm02, wm03, wm10, wm11, wm12, wm20, wm21, wm30,
-        Nyxus::devRealintensBuffer, Nyxus::devRoiCloudBuffer, Nyxus::roi_cloud_len, aabb_min_x, aabb_min_y);
-
-    if (!good)
-        return false;
-
-    //==== Weighted central moments
-    double wcm00_ = -1, wcm01_ = -1, wcm10_ = -1, wcm22_ = -1;  // needd by norm raw moments, mark with -1 as unassigned
-    good = ImageMomentsFeature_calcCentralMomentsWeighted (
-        wcm00_, wcm01_, wcm02, wcm03, wcm10_, wcm11, wcm12, wcm20, wcm21, wcm22_, wcm30,
-        Nyxus::devRealintensBuffer, Nyxus::devRoiCloudBuffer, Nyxus::roi_cloud_len, aabb_min_x, aabb_min_y, originX, originY);
-
-    if (!good)
-        return false;
-
-    //==== Weighted Hu invariants
-    // --1
-    double wnu02, wnu03, wnu11, wnu12, wnu20, wnu21, wnu30;
-    good = ImageMomentsFeature_calcNormCentralMoments3(
-        wnu02, wnu03, wnu11, wnu12, wnu20, wnu21, wnu30,   // output
-        wcm02, wcm03, wcm11, wcm12, wcm20, wcm21, wcm30,   // weighted central moments
-        m00    // spatial moment
-    );
-    if (!good)
-        return false;
-    // --2
-    good = ImageMomentsFeature_calcHuInvariants3(
-        whm1, whm2, whm3, whm4, whm5, whm6, whm7,  // output
-        wnu02, wnu03, wnu11, wnu12, wnu20, wnu21, wnu30);
-    if (!good)
-        return false;
-
-    return true;
-}
-
-// 'pixcloud_size' is the max pixel cloud of ROIs in a batch allocated in phase 2
-
-bool allocate_2dmoments_buffers_on_gpu (size_t cloudsize)
-{
-    // Save the cloud size
-    Nyxus::roi_cloud_len = cloudsize;
-
-    // Reserve the ROI cloud and contour buffers
-    size_t szb1 = cloudsize * sizeof(Nyxus::devRoiCloudBuffer[0]);
-    auto ok = cudaMalloc (reinterpret_cast<void**> (&Nyxus::devRoiCloudBuffer), szb1);
-    CHECKERR(ok);
-    ok = cudaMalloc(reinterpret_cast<void**> (&Nyxus::devContourCloudBuffer), szb1);
-    CHECKERR(ok);
-
-    // Reserve a buffer for real valued intensities to support weighted moments
-    size_t szb2 = cloudsize * sizeof(Nyxus::devRealintensBuffer[0]);
-    ok = cudaMalloc (reinterpret_cast<void**> (&Nyxus::devRealintensBuffer), szb2);
-    CHECKERR(ok);
-
-    // Allocate the reduction helper buffer
-    size_t szb3 = cloudsize * sizeof(Nyxus::devPrereduce[0]);
-    ok = cudaMalloc (reinterpret_cast<void**> (&Nyxus::devPrereduce), szb3);
-    CHECKERR(ok);
-
-    CHECKERR(cudaMalloc(&Nyxus::d_out, sizeof(double)));
-
-    return true;
-}
-
-bool free_2dmoments_buffers_on_gpu()
-{
-    CHECKERR(cudaFree(Nyxus::devRoiCloudBuffer));
-    CHECKERR(cudaFree(Nyxus::devRealintensBuffer));
-    CHECKERR(cudaFree(Nyxus::devContourCloudBuffer));
-    CHECKERR(cudaFree(Nyxus::devPrereduce));
-
-    CHECKERR(cudaFree(Nyxus::d_out));
-    if (Nyxus::d_temp_storage)
-        CHECKERR(cudaFree(Nyxus::d_temp_storage));
-
-    return true;
-}
-
-bool send_roi_data_2_gpu (Pixel2* data, size_t n)
-{
-    // Save the cloud size
-    Nyxus::roi_cloud_len = n;
-
-    // Transfer the pixel cloud
-    cudaError_t ok = cudaMemcpy(Nyxus::devRoiCloudBuffer, data, Nyxus::roi_cloud_len * sizeof(data[0]), cudaMemcpyHostToDevice);
-    CHECKERR(ok);
-
-    return true;
-}
-
-bool send_contour_data_2_gpu (Pixel2* data, size_t n)
-{
-    // Save the cloud size
-    Nyxus::contour_cloud_len = n;
-
-    // Transfer the pixel cloud
-    size_t szb = n * sizeof(data[0]);
-    cudaError_t ok = cudaMemcpy(Nyxus::devContourCloudBuffer, data, szb, cudaMemcpyHostToDevice);
-    CHECKERR(ok);
-    return true;
-}
-
-bool free_roi_data_on_gpu()
-{
-    if (Nyxus::d_temp_storage)
+    bool ImageMomentsFeature_calculate (size_t roi_index)
     {
-        CHECKERR(cudaFree(Nyxus::d_temp_storage));
-        Nyxus::d_temp_storage = nullptr;
-        Nyxus::temp_storage_bytes = 0;
+        // context of ROI #roi_index:
+        //
+        // proper batch has been sent to gpu-side by this point
+        //
+        gpureal* state = &NyxusGpu::gpu_featurestatebuf.devbuffer[roi_index * GpusideState::__COUNT__];
+        size_t cloud_len = NyxusGpu::gpu_roiclouds_2d.ho_lengths[roi_index];
+        size_t cloud_offset = NyxusGpu::gpu_roiclouds_2d.ho_offsets[roi_index];
+        Pixel2* d_cloud = &NyxusGpu::gpu_roiclouds_2d.devbuffer[cloud_offset];
+        size_t contour_len = NyxusGpu::gpu_roicontours_2d.ho_lengths[roi_index];
+        size_t contour_offset = NyxusGpu::gpu_roicontours_2d.ho_offsets[roi_index];
+        Pixel2* d_contour = &NyxusGpu::gpu_roicontours_2d.devbuffer[contour_offset];
+        double* d_prereduce = NyxusGpu::dev_prereduce;
+        auto& d_devicereduce_tempstorage = NyxusGpu::dev_devicereduce_temp_storage;
+        size_t devicereduce_tempstorage_szb = NyxusGpu::devicereduce_temp_storage_szb;
+        RealPixIntens* d_realintens = NyxusGpu::dev_realintens;
+
+        //==== Raw moments
+
+        // result in Nyxus::d_intermediate [RMpq]
+        if (!ImageMomentsFeature_calcRawMoments__snu(
+            // out
+            state,
+            // in
+            d_cloud,
+            cloud_len,
+            d_prereduce,
+            d_devicereduce_tempstorage,
+            devicereduce_tempstorage_szb))
+            return false;
+
+        // result in Nyxus::d_intermediate [ORGX] and [ORGY]
+        if (!ImageMomentsFeature_calcOrigins (
+            // output
+            state,
+            // input
+            d_cloud,
+            cloud_len,
+            d_prereduce,
+            d_devicereduce_tempstorage,
+            devicereduce_tempstorage_szb))
+            return false;
+
+        // result in Nyxus::d_intermediate [CM00, CM01, ... CM33]
+        if (!ImageMomentsFeature_calcCentralMoments__snu(
+            // out
+            state,
+            // in
+            d_cloud,
+            cloud_len,
+            d_prereduce,
+            d_devicereduce_tempstorage,
+            devicereduce_tempstorage_szb))
+            return false;
+
+        //==== Norm raw moments
+        // result in state [W...]
+        if (!ImageMomentsFeature_calcNormSpatialMoments3(state))
+            return false;
+
+        //==== Norm central moments
+        // result in state [NU...]
+        if (!ImageMomentsFeature_calcNormCentralMoments3(state, false))
+            return false;
+
+        //==== Hu insvariants
+        // result in state[H1...7]
+        if (!ImageMomentsFeature_calcHuInvariants3(state, false))
+            return false;
+
+        //==== Weighted intensities
+        if (!ImageMomentsFeature_calc_weighted_intens(
+            d_realintens, // output
+            d_cloud,
+            cloud_len,
+            d_contour,
+            contour_len))
+            return false;
+
+        //==== Weighted raw moments (result in state[WRM...])
+        if (!ImageMomentsFeature_calcRawMomentsWeighted__snu(
+            state,
+            d_realintens, d_cloud, cloud_len,
+            d_prereduce,
+            d_devicereduce_tempstorage,
+            devicereduce_tempstorage_szb))
+            return false;
+
+        //==== Weighted origin (state[WRM00, 01, 10] ---> state[WORGX] and [WORGY])
+        if (!ImageMomentsFeature_calcOriginsWeighted__snu(
+            // output
+            state,
+            // input
+            NyxusGpu::dev_realintens,
+            d_cloud,
+            cloud_len,
+            d_prereduce,
+            d_devicereduce_tempstorage,
+            devicereduce_tempstorage_szb))
+            return false;
+
+        //==== Weighted central moments (result in state[WCM...])
+        if (!ImageMomentsFeature_calcCentralMomentsWeighted__snu(
+            state,
+            d_realintens, d_cloud, cloud_len, &state[WORGX], &state[WORGY],
+            d_prereduce,
+            d_devicereduce_tempstorage,
+            devicereduce_tempstorage_szb))
+            return false;
+
+        //==== Weighted Hu invariants 
+        // --1: weighted norm central moments (state[WNU...])
+        if (!ImageMomentsFeature_calcNormCentralMoments3(state, true))
+            return false;
+
+        // --2
+        if (!ImageMomentsFeature_calcHuInvariants3(state, true))
+            return false;
+
+        // Check if there's any pending error 
+        CHECKERR(cudaPeekAtLastError());
+
+        return true;
     }
 
-    return true;
 }
-
-
