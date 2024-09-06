@@ -24,8 +24,10 @@ public:
     static void parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
     //=== Non-trivial ROIs ===
+    //=== Non-trivial ROIs ===
     void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
-    void osized_calculate(LR& r, ImageLoader& imloader){};
+    void osized_calculate(LR& r, ImageLoader& imloader);
+    static std::tuple<double, double> get_percent_max_pixels_NT(WriteImageMatrix_nontriv& Im);
 
     // Result saver
     void save_value(std::vector<std::vector<double>>& feature_vals);
