@@ -35,9 +35,9 @@ public:
         nlohmann::json file_attributes, ds_attributes;
         z5::readAttributes(*zarr_ptr_, file_attributes);
 
-         // assume only one dataset is present
-        std::string ds_name = file_attributes["multiscales"][0]["datasets"][0]["path"].get<std::string>();
-        const auto ds_handle = z5::filesystem::handle::Dataset(*zarr_ptr_, ds_name);
+        // assume only one dataset is present
+        ds_name_ = file_attributes["multiscales"][0]["datasets"][0]["path"].get<std::string>();
+        const auto ds_handle = z5::filesystem::handle::Dataset(*zarr_ptr_, ds_name_);
         fs::path metadata_path;
         auto success = z5::filesystem::metadata_detail::getMetadataPath(ds_handle, metadata_path);
         z5::filesystem::metadata_detail::readMetadata(metadata_path, ds_attributes);
@@ -127,9 +127,7 @@ public:
     template<typename FileType>
     void loadTile(std::shared_ptr<std::vector<DataType>> &dest, size_t pixel_row_index, size_t pixel_col_index, size_t pixel_layer_index){
         std::vector<std::string> datasets;
-        zarr_ptr_->keys(datasets);
-        auto ds = z5::openDataset(*zarr_ptr_, datasets[0]);
-        
+        auto ds = z5::openDataset(*zarr_ptr_, ds_name_);
         size_t data_height = tile_height_, data_width = tile_width_;
         if (pixel_row_index + data_height > full_height_) {data_height = full_height_ - pixel_row_index;}
         if (pixel_col_index + data_width > full_width_) {data_width = full_width_ - pixel_col_index;}
@@ -193,5 +191,6 @@ private:
 
     short data_format_ = 0;
     std::unique_ptr<z5::filesystem::handle::File> zarr_ptr_;
+    std::string ds_name_;
 };
 #endif //OMEZARR_SUPPORT
