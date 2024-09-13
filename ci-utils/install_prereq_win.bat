@@ -106,9 +106,9 @@ if "%BUILD_Z5_DEP%" == "1" (
     popd
     popd
 
-    curl -L https://github.com/constantinpape/z5/archive/refs/tags/2.0.16.zip -o 2.0.16.zip
-    tar -xf 2.0.16.zip 
-    pushd z5-2.0.16
+    curl -L https://github.com/constantinpape/z5/archive/refs/tags/2.0.18.zip -o 2.0.18.zip
+    tar -xf 2.0.18.zip 
+    pushd z5-2.0.18
     mkdir build_man
     pushd build_man
     cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF ..
