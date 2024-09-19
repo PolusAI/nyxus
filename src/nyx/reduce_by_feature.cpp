@@ -29,7 +29,7 @@
 #include "features/gldm.h"
 #include "features/hexagonality_polygonality.h"
 #include "features/ngtdm.h"
-#include "features/image_moments.h"
+#include "features/2d_geomoments.h"
 #include "features/intensity.h"
 #include "features/moments.h"
 #include "features/neighbors.h"
@@ -210,24 +210,48 @@ namespace Nyxus
 		}
 
 		//==== Moments
-		if (ImageMomentsFeature::required(theFeatureSet))
+
+		// -- intensity moments
+		if (Imoms2D_feature::required(theFeatureSet))
 		{
 			#ifndef USE_GPU
-				STOPWATCH("Moments/Moments/GM/#FFFACD", "\t=");
-				runParallel(ImageMomentsFeature::parallel_process_1_batch, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
+				STOPWATCH("I-moments/I-moments/GM/#FFFACD", "\t=");
+				runParallel (Imoms2D_feature::parallel_process_1_batch, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
 			#else
 				// Did the user opted out from using GPU?
 				if (theEnvironment.using_gpu() == false)
 				{
 					// Route calculation via the regular CPU-multithreaded way
-					STOPWATCH("Moments/Moments/GM/#FFFACD", "\t=");
-					runParallel(ImageMomentsFeature::parallel_process_1_batch, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
+					STOPWATCH("I-moments/I-moments/GM/#FFFACD", "\t=");
+					runParallel (Imoms2D_feature::parallel_process_1_batch, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
 				}
 				else
 				{
-					// Calculate the feature via GPU
-					STOPWATCH("GPU-Moments/GPU-Moments/GM/#FFFACD", "\t=");
-					ImageMomentsFeature::gpu_process_all_rois(roiLabelsVector, roiData, 0/*batch_offset*/, roiLabelsVector.size()/*batch_len*/);
+					// Calculate the feature via GPGPU
+					STOPWATCH("GPU-I-moments/GPU-I-moments/GM/#FFFACD", "\t=");
+					Imoms2D_feature::gpu_process_all_rois (roiLabelsVector, roiData, 0/*batch_offset*/, roiLabelsVector.size()/*batch_len*/);
+				}
+			#endif
+		}
+		// -- shape moments
+		if (Smoms2D_feature::required (theFeatureSet))
+		{
+			#ifndef USE_GPU
+				STOPWATCH("S-moments/S-moments/GM/#FFFACD", "\t=");
+				runParallel (Smoms2D_feature::parallel_process_1_batch, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
+			#else
+				// Did the user opted out from using GPU?
+				if (theEnvironment.using_gpu() == false)
+				{
+					// Route calculation via the regular CPU-multithreaded way
+					STOPWATCH("S-moments/S-moments/GM/#FFFACD", "\t=");
+					runParallel (Smoms2D_feature::parallel_process_1_batch, nThr, workPerThread, jobSize, &roiLabelsVector, &roiData);
+				}
+				else
+				{
+					// Calculate the feature via GPGPU
+					STOPWATCH("GPU-S-moments/GPU-S-moments/GM/#FFFACD", "\t=");
+					Smoms2D_feature::gpu_process_all_rois (roiLabelsVector, roiData, 0/*batch_offset*/, roiLabelsVector.size()/*batch_len*/);
 				}
 			#endif
 		}

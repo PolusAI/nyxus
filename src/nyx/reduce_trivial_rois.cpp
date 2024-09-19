@@ -33,7 +33,7 @@
 #include "features/hexagonality_polygonality.h"
 #include "features/ngldm.h"
 #include "features/ngtdm.h"
-#include "features/image_moments.h"
+#include "features/2d_geomoments.h"
 #include "features/intensity.h"
 #include "features/moments.h"
 #include "features/neighbors.h"
@@ -85,7 +85,8 @@ namespace Nyxus
 			|| GeodeticLengthThicknessFeature::required(theFeatureSet)
 			|| NeighborsFeature::required(theFeatureSet)
 			|| RoiRadiusFeature::required(theFeatureSet)
-			|| ImageMomentsFeature::required(theFeatureSet))
+			|| Imoms2D_feature::required(theFeatureSet)
+			|| Smoms2D_feature::required(theFeatureSet)	)
 		{
 			STOPWATCH("Morphology/Contour/C/#4aaaea", "\t=");
 			runParallel(ContourFeature::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
@@ -219,10 +220,11 @@ namespace Nyxus
 
 		//==== Share ROI data (clouds, contours) with GPU-enabled features
 
-		bool doMoms = ImageMomentsFeature::required (theFeatureSet),
+		bool doImoms = Imoms2D_feature::required(theFeatureSet),
+			doSmoms = Smoms2D_feature::required(theFeatureSet),
 			doEros = ErosionPixelsFeature::required (theFeatureSet),
 			doGabor = GaborFeature::required (theFeatureSet);
-		if (doEros || doMoms || doGabor)
+		if (doEros || doImoms || doSmoms || doGabor)
 		{
 			if (theEnvironment.using_gpu())
 			{
@@ -248,10 +250,16 @@ namespace Nyxus
 						ErosionPixelsFeature::gpu_process_all_rois(L, roiData, off_this_batch, actual_batch_len);
 					}
 
-					if (doMoms)
+					if (doImoms)
 					{
-						STOPWATCH("GPU-Moments/GPU-Moments/GM/#FFFACD", "\t=");
-						ImageMomentsFeature::gpu_process_all_rois (L, roiData, off_this_batch, actual_batch_len);
+						STOPWATCH("GPU-I-moments/GPU-I-moments/GM/#FFFACD", "\t=");
+						Imoms2D_feature::gpu_process_all_rois (L, roiData, off_this_batch, actual_batch_len);
+					}
+					
+					if (doSmoms)
+					{
+						STOPWATCH("GPU-S-moments/GPU-S-moments/GM/#FFFACD", "\t=");
+						Smoms2D_feature::gpu_process_all_rois (L, roiData, off_this_batch, actual_batch_len);
 					}
 
 					if (doGabor)
@@ -271,10 +279,15 @@ namespace Nyxus
 					STOPWATCH("Morphology/Erosion/Er/#4aaaea", "\t=");
 					runParallel(ErosionPixelsFeature::parallel_process_1_batch, n_threads, work_per_thread, job_size, &L, &roiData);
 				}
-				if (doMoms)
+				if (doImoms)
 				{
-					STOPWATCH("Moments/Moments/GM/#FFFACE", "\t=");
-					runParallel(ImageMomentsFeature::parallel_process_1_batch, n_threads, work_per_thread, job_size, &L, &roiData);
+					STOPWATCH("I-moments/I-moments/GM/#FFFACE", "\t=");
+					runParallel (Imoms2D_feature::parallel_process_1_batch, n_threads, work_per_thread, job_size, &L, &roiData);
+				}
+				if (doSmoms)
+				{
+					STOPWATCH("S-moments/S-moments/GM/#FFFACE", "\t=");
+					runParallel (Smoms2D_feature::parallel_process_1_batch, n_threads, work_per_thread, job_size, &L, &roiData);
 				}
 				if (doGabor)
 				{
@@ -292,10 +305,16 @@ namespace Nyxus
 			runParallel(ErosionPixelsFeature::parallel_process_1_batch, n_threads, work_per_thread, job_size, &L, &roiData);
 		}
 
-		if (ImageMomentsFeature::required(theFeatureSet))
+		if (doImoms)
 		{
-			STOPWATCH("Moments/Moments/GM/#FFFACF", "\t=");
-			runParallel(ImageMomentsFeature::parallel_process_1_batch, n_threads, work_per_thread, job_size, &L, &roiData);
+			STOPWATCH("I-moments/I-moments/GM/#FFFACE", "\t=");
+			runParallel(Imoms2D_feature::parallel_process_1_batch, n_threads, work_per_thread, job_size, &L, &roiData);
+		}
+
+		if (doSmoms)
+		{
+			STOPWATCH("S-moments/S-moments/GM/#FFFACE", "\t=");
+			runParallel(Smoms2D_feature::parallel_process_1_batch, n_threads, work_per_thread, job_size, &L, &roiData);
 		}
 
 		if (GaborFeature::required(theFeatureSet))

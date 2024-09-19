@@ -27,7 +27,7 @@
 #include "features/gldzm.h"
 #include "features/glrlm.h"
 #include "features/glszm.h"
-#include "features/image_moments.h"
+#include "features/2d_geomoments.h"
 #include "features/intensity.h"
 #include "features/neighbors.h"
 #include "features/ngldm.h"
@@ -248,7 +248,8 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 		theFeatureSet.enableAll();
 		theFeatureSet.disableFeatures(GaborFeature::featureset);
 		theFeatureSet.disableFeatures(GLCMFeature::featureset);
-		theFeatureSet.disableFeatures(ImageMomentsFeature::featureset);
+		theFeatureSet.disableFeatures(Imoms2D_feature::featureset);
+		theFeatureSet.disableFeatures(Smoms2D_feature::featureset);
 		return true;
 	}
 
@@ -349,9 +350,22 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 		return true;
 	}
 
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_MOMENTS))
+	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_GEOMOMENTS))
 	{
-		theFeatureSet.enableFeatures(ImageMomentsFeature::featureset);
+		theFeatureSet.enableFeatures (Smoms2D_feature::featureset);
+		theFeatureSet.enableFeatures (Imoms2D_feature::featureset);
+		return true;
+	}
+
+	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_GEOMOMENTS_I))
+	{
+		theFeatureSet.enableFeatures(Imoms2D_feature::featureset);
+		return true;
+	}
+
+	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_GEOMOMENTS_S))
+	{
+		theFeatureSet.enableFeatures(Smoms2D_feature::featureset);
 		return true;
 	}
 

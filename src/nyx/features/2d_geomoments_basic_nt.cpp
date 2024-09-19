@@ -1,6 +1,6 @@
-#include "image_moments.h"
+#include "2d_geomoments.h"
 
-void ImageMomentsFeature::osized_calculate(LR& r, ImageLoader&)
+void BasicGeomoms2D::osized_calculate(LR& r, ImageLoader&)
 {
     // Cache ROI frame of reference
     baseX = r.aabb.get_xmin();
@@ -8,16 +8,16 @@ void ImageMomentsFeature::osized_calculate(LR& r, ImageLoader&)
 
     // Calculate non-weighted moments
     auto& c = r.raw_pixels_NT;
-    calcOrigins (c);
-    calcRawMoments (c);
-    calcCentralMoments (c);
-    calcNormRawMoments (c);
-    calcNormCentralMoments (c);
-    calcHuInvariants (c);
+    calcOrigins(c);
+    calcRawMoments(c);
+    calcCentralMoments(c);
+    calcNormRawMoments(c);
+    calcNormCentralMoments(c);
+    calcHuInvariants(c);
 
     // Prepare weighted pixel cloud
     pixcloud_NT w;
-    w.init(r.label, "ImageMomentsFeature-osized_calculate-w");
+    w.init(r.label, "BasicGeomoms2D-osized_calculate-w");
 
     // Implement apply_dist2contour_weighting (w, r.contour, weighting_epsilon) :
     for (auto p : c)
@@ -36,14 +36,14 @@ void ImageMomentsFeature::osized_calculate(LR& r, ImageLoader&)
     }
 
     // Calculate weighted moments
-    calcOrigins (w);
-    calcWeightedRawMoments (w);
-    calcWeightedCentralMoments (w);
-    calcWeightedHuInvariants (w);
+    calcOrigins(w);
+    calcWeightedRawMoments(w);
+    calcWeightedCentralMoments(w);
+    calcWeightedHuInvariants(w);
 }
 
 /// @brief Calculates the spatial 2D moment of order q,p f ROI pixel cloud
-double ImageMomentsFeature::moment (const pixcloud_NT& cloud, int p, int q)
+double BasicGeomoms2D::moment(const pixcloud_NT& cloud, int p, int q)
 {
     double q_ = q, p_ = p, sum = 0;
     for (auto pxl : cloud)
@@ -51,7 +51,7 @@ double ImageMomentsFeature::moment (const pixcloud_NT& cloud, int p, int q)
     return sum;
 }
 
-void ImageMomentsFeature::calcOrigins(const pixcloud_NT& cloud)
+void BasicGeomoms2D::calcOrigins(const pixcloud_NT& cloud)
 {
     double m00 = moment(cloud, 0, 0);
     originOfX = moment(cloud, 1, 0) / m00;
@@ -59,7 +59,7 @@ void ImageMomentsFeature::calcOrigins(const pixcloud_NT& cloud)
 }
 
 /// @brief Calculates the central 2D moment of order q,p of ROI pixel cloud
-double ImageMomentsFeature::centralMom(const pixcloud_NT& cloud, int p, int q)
+double BasicGeomoms2D::centralMom(const pixcloud_NT& cloud, int p, int q)
 {
     double sum = 0;
     for (auto pxl : cloud)
@@ -68,7 +68,7 @@ double ImageMomentsFeature::centralMom(const pixcloud_NT& cloud, int p, int q)
 }
 
 /// @brief Calculates the normalized spatial 2D moment of order q,p of ROI pixel cloud
-double ImageMomentsFeature::normRawMom(const pixcloud_NT& cloud, int p, int q)
+double BasicGeomoms2D::normRawMom(const pixcloud_NT& cloud, int p, int q)
 {
     double stddev = centralMom(cloud, 2, 2);
     int w = std::max(q, p);
@@ -79,14 +79,14 @@ double ImageMomentsFeature::normRawMom(const pixcloud_NT& cloud, int p, int q)
 }
 
 /// @brief Calculates the normalized central 2D moment of order q,p of ROI pixel cloud
-double ImageMomentsFeature::normCentralMom(const pixcloud_NT& cloud, int p, int q)
+double BasicGeomoms2D::normCentralMom(const pixcloud_NT& cloud, int p, int q)
 {
     double temp = ((double(p) + double(q)) / 2.0) + 1.0;
     double retval = centralMom(cloud, p, q) / pow(moment(cloud, 0, 0), temp);
     return retval;
 }
 
-std::tuple<double, double, double, double, double, double, double> ImageMomentsFeature::calcHuInvariants_imp(const pixcloud_NT& cloud)
+std::tuple<double, double, double, double, double, double, double> BasicGeomoms2D::calcHuInvariants_imp(const pixcloud_NT& cloud)
 {
     // calculate the 7 Hu-1962 invariants
 
@@ -119,17 +119,17 @@ std::tuple<double, double, double, double, double, double, double> ImageMomentsF
     return { h1, h2, h3, h4, h5, h6, h7 };
 }
 
-void ImageMomentsFeature::calcHuInvariants(const pixcloud_NT& cloud)
+void BasicGeomoms2D::calcHuInvariants(const pixcloud_NT& cloud)
 {
     std::tie(hm1, hm2, hm3, hm4, hm5, hm6, hm7) = calcHuInvariants_imp(cloud);
 }
 
-void ImageMomentsFeature::calcWeightedHuInvariants(const pixcloud_NT& cloud)
+void BasicGeomoms2D::calcWeightedHuInvariants(const pixcloud_NT& cloud)
 {
     std::tie(whm1, whm2, whm3, whm4, whm5, whm6, whm7) = calcHuInvariants_imp(cloud);
 }
 
-void ImageMomentsFeature::calcRawMoments(const pixcloud_NT& cloud)
+void BasicGeomoms2D::calcRawMoments(const pixcloud_NT& cloud)
 {
     m00 = moment(cloud, 0, 0);
     m01 = moment(cloud, 0, 1);
@@ -148,7 +148,7 @@ void ImageMomentsFeature::calcRawMoments(const pixcloud_NT& cloud)
 
 /// @brief 
 /// @param cloud Cloud of weighted ROI pixels
-void ImageMomentsFeature::calcWeightedRawMoments(const pixcloud_NT& cloud)
+void BasicGeomoms2D::calcWeightedRawMoments(const pixcloud_NT& cloud)
 {
     wm00 = moment(cloud, 0, 0);
     wm01 = moment(cloud, 0, 1);
@@ -162,7 +162,7 @@ void ImageMomentsFeature::calcWeightedRawMoments(const pixcloud_NT& cloud)
     wm30 = moment(cloud, 3, 0);
 }
 
-void ImageMomentsFeature::calcCentralMoments(const pixcloud_NT& cloud)
+void BasicGeomoms2D::calcCentralMoments(const pixcloud_NT& cloud)
 {
     mu02 = centralMom(cloud, 0, 2);
     mu03 = centralMom(cloud, 0, 3);
@@ -173,7 +173,7 @@ void ImageMomentsFeature::calcCentralMoments(const pixcloud_NT& cloud)
     mu30 = centralMom(cloud, 3, 0);
 }
 
-void ImageMomentsFeature::calcWeightedCentralMoments(const pixcloud_NT& cloud)
+void BasicGeomoms2D::calcWeightedCentralMoments(const pixcloud_NT& cloud)
 {
     wmu02 = centralMom(cloud, 0, 2);
     wmu03 = centralMom(cloud, 0, 3);
@@ -184,7 +184,7 @@ void ImageMomentsFeature::calcWeightedCentralMoments(const pixcloud_NT& cloud)
     wmu30 = centralMom(cloud, 3, 0);
 }
 
-void ImageMomentsFeature::calcNormCentralMoments(const pixcloud_NT& cloud)
+void BasicGeomoms2D::calcNormCentralMoments(const pixcloud_NT& cloud)
 {
     nu02 = normCentralMom(cloud, 0, 2);
     nu03 = normCentralMom(cloud, 0, 3);
@@ -195,7 +195,7 @@ void ImageMomentsFeature::calcNormCentralMoments(const pixcloud_NT& cloud)
     nu30 = normCentralMom(cloud, 3, 0);
 }
 
-void ImageMomentsFeature::calcNormRawMoments(const pixcloud_NT& cloud)
+void BasicGeomoms2D::calcNormRawMoments(const pixcloud_NT& cloud)
 {
     w00 = normRawMom(cloud, 0, 0);
     w01 = normRawMom(cloud, 0, 1);

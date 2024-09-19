@@ -3,6 +3,14 @@
 namespace NyxusGpu
 {
 
+    inline __device__ double int_pow(double a, int b)
+    {
+        double retval = 1.0;
+        for (int i = 0; i < b; i++)
+            retval *= a;
+        return retval;
+    }
+
     bool ImageMomentsFeature_calcOrigins (
         // output
         gpureal* d_intermediate,
@@ -17,6 +25,7 @@ namespace NyxusGpu
         // output
         gpureal* d_intermediate,
         // input
+        bool need_shape_moments,
         const Pixel2* d_roicloud,
         size_t cloud_len,
         double* d_prereduce,    // reduction helper [roi_cloud_len]
@@ -27,6 +36,7 @@ namespace NyxusGpu
         // output
         gpureal* d_intermediate,
         // input
+        bool need_shape_moments,
         const Pixel2* d_roicloud, size_t cloud_len,
         double* d_prereduce,    // reduction helper [roi_cloud_len]
         void* d_temp_storage,

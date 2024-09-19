@@ -28,7 +28,7 @@
 #include "features/gldm.h"
 #include "features/hexagonality_polygonality.h"
 #include "features/ngtdm.h"
-#include "features/image_moments.h"
+#include "features/2d_geomoments.h"
 #include "features/moments.h"
 #include "features/neighbors.h"
 #include "features/caliper.h"
