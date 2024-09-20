@@ -305,13 +305,13 @@ namespace Nyxus
 			runParallel(ErosionPixelsFeature::parallel_process_1_batch, n_threads, work_per_thread, job_size, &L, &roiData);
 		}
 
-		if (doImoms)
+		if (Imoms2D_feature::required(theFeatureSet))
 		{
 			STOPWATCH("I-moments/I-moments/GM/#FFFACE", "\t=");
 			runParallel(Imoms2D_feature::parallel_process_1_batch, n_threads, work_per_thread, job_size, &L, &roiData);
 		}
 
-		if (doSmoms)
+		if (Smoms2D_feature::required(theFeatureSet))
 		{
 			STOPWATCH("S-moments/S-moments/GM/#FFFACE", "\t=");
 			runParallel(Smoms2D_feature::parallel_process_1_batch, n_threads, work_per_thread, job_size, &L, &roiData);
