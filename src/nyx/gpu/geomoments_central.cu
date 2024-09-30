@@ -11,16 +11,6 @@
 namespace NyxusGpu
 {
 
-    __device__ double pow_pos_int_central(double a, int b)
-    {
-        if (b == 0)
-            return 1.0;
-        double retval = 1.0;
-        for (int i = 0; i < b; i++)
-            retval *= a;
-        return retval;
-    }
-
     __global__ void kerCentralMomentAll_snu(
         // out
         double* d_prereduce00,
@@ -40,6 +30,7 @@ namespace NyxusGpu
         double* d_prereduce32,
         double* d_prereduce33,
         // in
+        int ipow,
         const Pixel2* d_roicloud,
         size_t cloudlen,
         gpureal* origin_x,
@@ -50,7 +41,7 @@ namespace NyxusGpu
         if (tid >= cloudlen)
             return;
 
-        float I = 1, // <--shape moments--   d_roicloud[tid].inten,
+        float I = int_pow (d_roicloud[tid].inten, ipow),
             OX = *origin_x,
             OY = *origin_y,
             X = float(d_roicloud[tid].x) - OX,
@@ -160,6 +151,7 @@ namespace NyxusGpu
         // out
         gpureal* d_result,
         // in
+        bool need_shape_moments,
         const Pixel2* d_roicloud,
         size_t cloudlen,
         gpureal* origin_x,
@@ -168,6 +160,9 @@ namespace NyxusGpu
         void* d_devreduce_tempstorage,
         size_t& devreduce_tempstorage_szb)
     {
+        // prepare the shape/intensity selector
+        int ipow = need_shape_moments ? 0 : 1;
+
         // prepare lanes of partial totals
         double* d_pr00 = d_prereduce,
             * d_pr01 = &d_prereduce[cloudlen],
@@ -194,7 +189,7 @@ namespace NyxusGpu
             d_pr20, d_pr21, d_pr22, d_pr23,
             d_pr30, d_pr31, d_pr32, d_pr33,
             // in
-            d_roicloud, cloudlen, origin_x, origin_y);
+            ipow, d_roicloud, cloudlen, origin_x, origin_y);
 
         CHECKERR(cudaDeviceSynchronize());
         CHECKERR(cudaGetLastError());
@@ -286,12 +281,13 @@ namespace NyxusGpu
         // output
         gpureal* d_intermed,
         // input
+        bool need_shape_moments,
         const Pixel2* d_roicloud, size_t cloud_len,
         double* d_prereduce,    // reduction helper [roi_cloud_len]
         void* d_temp_storage,
         size_t& temp_storage_szb)
     {
-        if (drvCentralMomentAll__snu(d_intermed, d_roicloud, cloud_len, &d_intermed[ORGX], &d_intermed[ORGY], d_prereduce, d_temp_storage, temp_storage_szb) == false)
+        if (drvCentralMomentAll__snu(d_intermed, need_shape_moments, d_roicloud, cloud_len, &d_intermed[ORGX], &d_intermed[ORGY], d_prereduce, d_temp_storage, temp_storage_szb) == false)
             return false;
 
         return true;

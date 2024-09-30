@@ -20,7 +20,7 @@
 #include "features/hexagonality_polygonality.h"
 #include "features/ngldm.h"
 #include "features/ngtdm.h"
-#include "features/image_moments.h"
+#include "features/2d_geomoments.h"
 #include "features/intensity.h"
 #include "features/intensity_3d.h"
 #include "features/moments.h"
@@ -60,7 +60,8 @@ FeatureManager::FeatureManager()
 	register_feature (new GLDMFeature());
 	register_feature (new NGLDMfeature());
 	register_feature (new NGTDMFeature());
-	register_feature (new ImageMomentsFeature());
+	register_feature (new Imoms2D_feature());
+	register_feature (new Smoms2D_feature());
 	register_feature (new GaborFeature());
 	register_feature (new ZernikeFeature());
 	register_feature (new RadialDistributionFeature());

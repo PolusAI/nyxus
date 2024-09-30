@@ -161,8 +161,9 @@ set(SOURCE
 	src/nyx/features/hexagonality_polygonality.cpp
 	src/nyx/features/image_matrix.cpp
 	src/nyx/features/image_matrix_nontriv.cpp
-	src/nyx/features/image_moments.cpp
-	src/nyx/features/image_moments_nontriv.cpp
+	src/nyx/features/2d_geomoments.cpp
+	src/nyx/features/2d_geomoments_basic.cpp
+	src/nyx/features/2d_geomoments_basic_nt.cpp
 	src/nyx/features/intensity.cpp
 	src/nyx/features/intensity_3d.cpp
 	src/nyx/features/neighbors.cpp

@@ -40,7 +40,7 @@ and
 represent the center of mass of the image :math:`f(x,y)`. Hu's Uniqueness Theorem states that if :math:`f(x,y)` is piecewise continuous and has nonzero values only in the finite part 
 of the :math:`(x,y)` plane, then geometric moments of all orders exist. It can then be shown that the moment set :math:`{\mu_{pq}}` is 
 uniquely determined by :math:`f(x,y)` and conversely, :math:`f(x,y)` is uniquely determined by :math:`{\mu_{pq}}`. Since an image has 
-finite area, a moment set can be evaluated computationally and used to uniquely describe the information contained in the image. 
+finite area, a moment set can be evaluated computationally and used to uniquely describe the information contained in the image. Nyxus calculates 2 sets of geometric moments: moments where :math:`f(x,y)=1` within the ROI mask and 0 outside the ROI mask define shape moments while moments whose :math:`f(x,y)` are intensity at pixel location :math:`x,y` define intensity moments.
 
 Raw moments
 -----------

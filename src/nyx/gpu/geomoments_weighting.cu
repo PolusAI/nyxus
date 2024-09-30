@@ -7,6 +7,7 @@
 
 #include "../features/image_matrix.h"
 #include "gpu.h"
+#include "geomoments.cuh"
 
 namespace NyxusGpu
 {
@@ -57,6 +58,7 @@ namespace NyxusGpu
         // output
         RealPixIntens* d_realintens,
         // input
+        int ipow,
         const Pixel2* d_roicloud,
         size_t cloud_len,
         const Pixel2* d_roicontour,
@@ -76,20 +78,24 @@ namespace NyxusGpu
         double dist = std::sqrt(mind2);
 
         // weighted intensity
-        d_realintens[pxIdx] = 1.0 / (dist + WEIGHTING_EPSILON);
+        d_realintens[pxIdx] = int_pow(d_roicloud[pxIdx].inten, ipow) / (dist + WEIGHTING_EPSILON);
     }
 
     bool ImageMomentsFeature_calc_weighted_intens(
         // output
         RealPixIntens* d_realintens_buf,
         // input
+        bool need_shape_moments,
         const Pixel2* d_roicloud,
         size_t cloud_len,
         const Pixel2* d_roicontour,
         size_t contour_len)
     {
+        // prepare the shape/intensity selector
+        int ipow = need_shape_moments ? 0 : 1;
+
         int nb = whole_chunks2(cloud_len, blockSize);
-        kerCalcWeightedImage3 << < nb, blockSize >> > (d_realintens_buf, d_roicloud, cloud_len, d_roicontour, contour_len);
+        kerCalcWeightedImage3 << < nb, blockSize >> > (d_realintens_buf, ipow, d_roicloud, cloud_len, d_roicontour, contour_len);
 
         cudaError_t ok = cudaDeviceSynchronize();
         CHECKERR(ok);

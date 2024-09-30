@@ -19,14 +19,6 @@ namespace NyxusGpu
         void* d_devreduce_tempstorage,
         size_t& devreduce_tempstorage_szb);
 
-    __device__ double pow_pos_int_raw(double a, int b)
-    {
-        double retval = 1.0;
-        for (int i = 0; i < b; i++)
-            retval *= a;
-        return retval;
-    }
-
     __global__ void kerRawMoment(
         double* d_prereduce,
         const Pixel2* d_roicloud,
@@ -49,7 +41,7 @@ namespace NyxusGpu
             localX = x_ - x0,
             localY = y_ - y0;
 
-        d_prereduce[tid] = inten_ * pow_pos_int_raw(localX, p) * pow_pos_int_raw(localY, q);
+        d_prereduce[tid] = inten_ * int_pow(localX, p) * int_pow(localY, q);
     }
 
     bool drvRawMoment__snu(
@@ -113,6 +105,7 @@ namespace NyxusGpu
         double* d_prereduce32,
         double* d_prereduce33,
         // in
+        int ipow,
         const Pixel2* d_roicloud,
         size_t cloudlen)
     {
@@ -121,7 +114,7 @@ namespace NyxusGpu
         if (tid >= cloudlen)
             return;
 
-        float I = 1, //<--shape moments, not intensity--    = d_roicloud[tid].inten,
+        float I = int_pow (d_roicloud[tid].inten, ipow),
             X = d_roicloud[tid].x,  // = d_roicloud[tid].x - base_x,
             Y = d_roicloud[tid].y;  // = d_roicloud[tid].y - base_y;
 
@@ -159,12 +152,16 @@ namespace NyxusGpu
         // out
         gpureal* d_result,
         // in
+        bool need_shape_moments,
         const Pixel2* d_roicloud,
         size_t cloudlen,
         double* d_prereduce,
         void* d_devreduce_tempstorage,
         size_t& devreduce_tempstorage_szb)
     {
+        // prepare the shape/intensity selector
+        int ipow = need_shape_moments ? 0 : 1;
+
         // prepare lanes of partial totals
         double* d_pr00 = d_prereduce,
             * d_pr01 = &d_prereduce[cloudlen],
@@ -191,7 +188,7 @@ namespace NyxusGpu
             d_pr20, d_pr21, d_pr22, d_pr23,
             d_pr30, d_pr31, d_pr32, d_pr33,
             // in
-            d_roicloud, cloudlen);
+            ipow, d_roicloud, cloudlen);
 
         CHECKERR(cudaDeviceSynchronize());
         CHECKERR(cudaGetLastError());
@@ -332,12 +329,13 @@ namespace NyxusGpu
         // output
         gpureal* d_intermed,
         // input
+        bool need_shape_moments,
         const Pixel2* d_roicloud, size_t cloud_len,
         double* d_prereduce,    // reduction helper [roi_cloud_len]
         void* d_temp_storage,
         size_t& temp_storage_szb)
     {
-        if (drvRawMomentAll__snu(d_intermed, d_roicloud, cloud_len, d_prereduce, d_temp_storage, temp_storage_szb) == false)
+        if (drvRawMomentAll__snu(d_intermed, need_shape_moments, d_roicloud, cloud_len, d_prereduce, d_temp_storage, temp_storage_szb) == false)
             return false;
 
         return true;

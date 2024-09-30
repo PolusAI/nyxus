@@ -356,7 +356,9 @@ namespace Nyxus
 		RADIAL_CV,
 		ZERNIKE2D,
 
-		// Spatial (raw) moments
+		// Shape geometric moments
+
+		// -- shape raw moments
 		SPAT_MOMENT_00,
 		SPAT_MOMENT_01,
 		SPAT_MOMENT_02,
@@ -371,7 +373,7 @@ namespace Nyxus
 		SPAT_MOMENT_23,
 		SPAT_MOMENT_30,
 
-		// Central moments
+		// -- shape central moments
 		CENTRAL_MOMENT_00,
 		CENTRAL_MOMENT_01,
 		CENTRAL_MOMENT_02,
@@ -389,7 +391,7 @@ namespace Nyxus
 		CENTRAL_MOMENT_32,
 		CENTRAL_MOMENT_33,
 
-		// Normalized (standardized) spatial moments
+		// -- shape normalized raw moments
 		NORM_SPAT_MOMENT_00,
 		NORM_SPAT_MOMENT_01,
 		NORM_SPAT_MOMENT_02,
@@ -407,7 +409,7 @@ namespace Nyxus
 		NORM_SPAT_MOMENT_32,
 		NORM_SPAT_MOMENT_33,
 
-		// Normalized central moments
+		// -- shape normalized central moments
 		NORM_CENTRAL_MOMENT_02,
 		NORM_CENTRAL_MOMENT_03,
 		NORM_CENTRAL_MOMENT_11,
@@ -416,7 +418,7 @@ namespace Nyxus
 		NORM_CENTRAL_MOMENT_21,
 		NORM_CENTRAL_MOMENT_30,
 
-		// Hu's moments 1-7 
+		// -- shape Hu's moments 1-7 
 		HU_M1,
 		HU_M2,
 		HU_M3,
@@ -425,7 +427,7 @@ namespace Nyxus
 		HU_M6,
 		HU_M7,
 
-		// Weighted spatial moments
+		// -- shape weighted raw moments
 		WEIGHTED_SPAT_MOMENT_00,
 		WEIGHTED_SPAT_MOMENT_01,
 		WEIGHTED_SPAT_MOMENT_02,
@@ -437,7 +439,7 @@ namespace Nyxus
 		WEIGHTED_SPAT_MOMENT_21,
 		WEIGHTED_SPAT_MOMENT_30,
 
-		// Weighted central moments
+		// -- shape weighted central moments
 		WEIGHTED_CENTRAL_MOMENT_02,
 		WEIGHTED_CENTRAL_MOMENT_03,
 		WEIGHTED_CENTRAL_MOMENT_11,
@@ -446,7 +448,7 @@ namespace Nyxus
 		WEIGHTED_CENTRAL_MOMENT_21,
 		WEIGHTED_CENTRAL_MOMENT_30,
 
-		// Weighted normalized central moments
+		// -- shape weighted normalized central moments
 		WT_NORM_CTR_MOM_02,
 		WT_NORM_CTR_MOM_03,
 		WT_NORM_CTR_MOM_11,
@@ -455,7 +457,7 @@ namespace Nyxus
 		WT_NORM_CTR_MOM_21,
 		WT_NORM_CTR_MOM_30,
 			
-		// Weighted Hu's moments 1-7 
+		// -- shape weighted Hu's moments 1-7 
 		WEIGHTED_HU_M1,
 		WEIGHTED_HU_M2,
 		WEIGHTED_HU_M3,
@@ -463,6 +465,116 @@ namespace Nyxus
 		WEIGHTED_HU_M5,
 		WEIGHTED_HU_M6,
 		WEIGHTED_HU_M7,
+
+		// Intensity geometric moments
+
+		// -- intensity raw moments
+		IMOM_RM_00,
+		IMOM_RM_01,
+		IMOM_RM_02,
+		IMOM_RM_03,
+		IMOM_RM_10,
+		IMOM_RM_11,
+		IMOM_RM_12,
+		IMOM_RM_13,
+		IMOM_RM_20,
+		IMOM_RM_21,
+		IMOM_RM_22,
+		IMOM_RM_23,
+		IMOM_RM_30,
+
+		// -- intensity central moments
+		IMOM_CM_00,
+		IMOM_CM_01,
+		IMOM_CM_02,
+		IMOM_CM_03,
+		IMOM_CM_10,
+		IMOM_CM_11,
+		IMOM_CM_12,
+		IMOM_CM_13,
+		IMOM_CM_20,
+		IMOM_CM_21,
+		IMOM_CM_22,
+		IMOM_CM_23,
+		IMOM_CM_30,
+		IMOM_CM_31,
+		IMOM_CM_32,
+		IMOM_CM_33,
+
+		// -- intensity normalized raw moments
+		IMOM_NRM_00,
+		IMOM_NRM_01,
+		IMOM_NRM_02,
+		IMOM_NRM_03,
+		IMOM_NRM_10,
+		IMOM_NRM_11,
+		IMOM_NRM_12,
+		IMOM_NRM_13,
+		IMOM_NRM_20,
+		IMOM_NRM_21,
+		IMOM_NRM_22,
+		IMOM_NRM_23,
+		IMOM_NRM_30,
+		IMOM_NRM_31,
+		IMOM_NRM_32,
+		IMOM_NRM_33,
+
+		// -- intensity normalized central moments
+		IMOM_NCM_02,
+		IMOM_NCM_03,
+		IMOM_NCM_11,
+		IMOM_NCM_12,
+		IMOM_NCM_20,
+		IMOM_NCM_21,
+		IMOM_NCM_30,
+
+		// -- intensity Hu's moments 1-7 
+		IMOM_HU1,
+		IMOM_HU2,
+		IMOM_HU3,
+		IMOM_HU4,
+		IMOM_HU5,
+		IMOM_HU6,
+		IMOM_HU7,
+
+		// -- intensity weighted raw moments
+		IMOM_WRM_00,
+		IMOM_WRM_01,
+		IMOM_WRM_02,
+		IMOM_WRM_03,
+		IMOM_WRM_10,
+		IMOM_WRM_11,
+		IMOM_WRM_12,
+		IMOM_WRM_20,
+		IMOM_WRM_21,
+		IMOM_WRM_30,
+
+		// -- intensity weighted central moments
+		IMOM_WCM_02,
+		IMOM_WCM_03,
+		IMOM_WCM_11,
+		IMOM_WCM_12,
+		IMOM_WCM_20,
+		IMOM_WCM_21,
+		IMOM_WCM_30,
+
+		// -- intensity weighted normalized central moments
+		IMOM_WNCM_02,
+		IMOM_WNCM_03,
+		IMOM_WNCM_11,
+		IMOM_WNCM_12,
+		IMOM_WNCM_20,
+		IMOM_WNCM_21,
+		IMOM_WNCM_30,
+
+		// -- intensity weighted Hu's moments 1-7 
+		IMOM_WHU1,
+		IMOM_WHU2,
+		IMOM_WHU3,
+		IMOM_WHU4,
+		IMOM_WHU5,
+		IMOM_WHU6,
+		IMOM_WHU7,
 
 		_COUNT_
 	};
@@ -578,7 +690,9 @@ namespace Nyxus
 		FG2_ALL_BUT_GLCM, 
 		FG2_EASY, 
 		FG2_NEIG,
-		FG2_MOMENTS,
+		FG2_GEOMOMENTS,		// shape and intensity geometric moments
+		FG2_GEOMOMENTS_I,	// intensity geometric moments
+		FG2_GEOMOMENTS_S,	// shape geometric moments
 		_COUNT_
 	};	
 	

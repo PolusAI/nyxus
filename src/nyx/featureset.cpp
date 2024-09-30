@@ -367,7 +367,7 @@ namespace Nyxus
 		{ "MEAN_FRAC", Feature2D::MEAN_FRAC },
 		{ "RADIAL_CV", Feature2D::RADIAL_CV },
 
-		// 2D image moments:
+		// 2D shape geometric moments:
 		{ "SPAT_MOMENT_00", Feature2D::SPAT_MOMENT_00},
 		{ "SPAT_MOMENT_01", Feature2D::SPAT_MOMENT_01},
 		{ "SPAT_MOMENT_02", Feature2D::SPAT_MOMENT_02},
@@ -467,6 +467,116 @@ namespace Nyxus
 		{ "WEIGHTED_HU_M6", Feature2D::WEIGHTED_HU_M6},
 		{ "WEIGHTED_HU_M7", Feature2D::WEIGHTED_HU_M7},
 
+		// 2D intensity geometric moments
+
+		// -- intensity raw moments
+		{ "IMOM_RM_00", Feature2D::IMOM_RM_00 },
+		{ "IMOM_RM_01", Feature2D::IMOM_RM_01 },
+		{ "IMOM_RM_02", Feature2D::IMOM_RM_02 },
+		{ "IMOM_RM_03", Feature2D::IMOM_RM_03 },
+		{ "IMOM_RM_10", Feature2D::IMOM_RM_10 },
+		{ "IMOM_RM_11", Feature2D::IMOM_RM_11 },
+		{ "IMOM_RM_12", Feature2D::IMOM_RM_12 },
+		{ "IMOM_RM_13", Feature2D::IMOM_RM_13 },
+		{ "IMOM_RM_20", Feature2D::IMOM_RM_20 },
+		{ "IMOM_RM_21", Feature2D::IMOM_RM_21 },
+		{ "IMOM_RM_22", Feature2D::IMOM_RM_22 },
+		{ "IMOM_RM_23", Feature2D::IMOM_RM_23 },
+		{ "IMOM_RM_30", Feature2D::IMOM_RM_30 },
+
+		// -- intensity central moments
+		{ "IMOM_CM_00", Feature2D::IMOM_CM_00 },
+		{ "IMOM_CM_01", Feature2D::IMOM_CM_01 },
+		{ "IMOM_CM_02", Feature2D::IMOM_CM_02 },
+		{ "IMOM_CM_03", Feature2D::IMOM_CM_03 },
+		{ "IMOM_CM_10", Feature2D::IMOM_CM_10 },
+		{ "IMOM_CM_11", Feature2D::IMOM_CM_11 },
+		{ "IMOM_CM_12", Feature2D::IMOM_CM_12 },
+		{ "IMOM_CM_13", Feature2D::IMOM_CM_13 },
+		{ "IMOM_CM_20", Feature2D::IMOM_CM_20 },
+		{ "IMOM_CM_21", Feature2D::IMOM_CM_21 },
+		{ "IMOM_CM_22", Feature2D::IMOM_CM_22 },
+		{ "IMOM_CM_23", Feature2D::IMOM_CM_23 },
+		{ "IMOM_CM_30", Feature2D::IMOM_CM_30 },
+		{ "IMOM_CM_31", Feature2D::IMOM_CM_31 },
+		{ "IMOM_CM_32", Feature2D::IMOM_CM_32 },
+		{ "IMOM_CM_33", Feature2D::IMOM_CM_33 },
+
+		// -- intensity normalized raw moments
+		{ "IMOM_NRM_00", Feature2D::IMOM_NRM_00 },
+		{ "IMOM_NRM_01", Feature2D::IMOM_NRM_01 },
+		{ "IMOM_NRM_02", Feature2D::IMOM_NRM_02 },
+		{ "IMOM_NRM_03", Feature2D::IMOM_NRM_03 },
+		{ "IMOM_NRM_10", Feature2D::IMOM_NRM_10 },
+		{ "IMOM_NRM_11", Feature2D::IMOM_NRM_11 },
+		{ "IMOM_NRM_12", Feature2D::IMOM_NRM_12 },
+		{ "IMOM_NRM_13", Feature2D::IMOM_NRM_13 },
+		{ "IMOM_NRM_20", Feature2D::IMOM_NRM_20 },
+		{ "IMOM_NRM_21", Feature2D::IMOM_NRM_21 },
+		{ "IMOM_NRM_22", Feature2D::IMOM_NRM_22 },
+		{ "IMOM_NRM_23", Feature2D::IMOM_NRM_23 },
+		{ "IMOM_NRM_30", Feature2D::IMOM_NRM_30 },
+		{ "IMOM_NRM_31", Feature2D::IMOM_NRM_31 },
+		{ "IMOM_NRM_32", Feature2D::IMOM_NRM_32 },
+		{ "IMOM_NRM_33", Feature2D::IMOM_NRM_33 },
+
+		// -- intensity normalized central moments
+		{ "IMOM_NCM_02", Feature2D::IMOM_NCM_02 },
+		{ "IMOM_NCM_03", Feature2D::IMOM_NCM_03 },
+		{ "IMOM_NCM_11", Feature2D::IMOM_NCM_11 },
+		{ "IMOM_NCM_12", Feature2D::IMOM_NCM_12 },
+		{ "IMOM_NCM_20", Feature2D::IMOM_NCM_20 },
+		{ "IMOM_NCM_21", Feature2D::IMOM_NCM_21 },
+		{ "IMOM_NCM_30", Feature2D::IMOM_NCM_30 },
+
+		// -- intensity Hu's moments 1-7 
+		{ "IMOM_HU1", Feature2D::IMOM_HU1 },
+		{ "IMOM_HU2", Feature2D::IMOM_HU2 },
+		{ "IMOM_HU3", Feature2D::IMOM_HU3 },
+		{ "IMOM_HU4", Feature2D::IMOM_HU4 },
+		{ "IMOM_HU5", Feature2D::IMOM_HU5 },
+		{ "IMOM_HU6", Feature2D::IMOM_HU6 },
+		{ "IMOM_HU7", Feature2D::IMOM_HU7 },
+
+		// -- intensity weighted raw moments
+		{ "IMOM_WRM_00", Feature2D::IMOM_WRM_00 },
+		{ "IMOM_WRM_01", Feature2D::IMOM_WRM_01 },
+		{ "IMOM_WRM_02", Feature2D::IMOM_WRM_02 },
+		{ "IMOM_WRM_03", Feature2D::IMOM_WRM_03 },
+		{ "IMOM_WRM_10", Feature2D::IMOM_WRM_10 },
+		{ "IMOM_WRM_11", Feature2D::IMOM_WRM_11 },
+		{ "IMOM_WRM_12", Feature2D::IMOM_WRM_12 },
+		{ "IMOM_WRM_20", Feature2D::IMOM_WRM_20 },
+		{ "IMOM_WRM_21", Feature2D::IMOM_WRM_21 },
+		{ "IMOM_WRM_30", Feature2D::IMOM_WRM_30 },
+
+		// -- intensity weighted central moments
+		{ "IMOM_WCM_02", Feature2D::IMOM_WCM_02 },
+		{ "IMOM_WCM_03", Feature2D::IMOM_WCM_03 },
+		{ "IMOM_WCM_11", Feature2D::IMOM_WCM_11 },
+		{ "IMOM_WCM_12", Feature2D::IMOM_WCM_12 },
+		{ "IMOM_WCM_20", Feature2D::IMOM_WCM_20 },
+		{ "IMOM_WCM_21", Feature2D::IMOM_WCM_21 },
+		{ "IMOM_WCM_30", Feature2D::IMOM_WCM_30 },
+
+		// -- intensity weighted normalized central moments
+		{ "IMOM_WNCM_02", Feature2D::IMOM_WNCM_02 },
+		{ "IMOM_WNCM_03", Feature2D::IMOM_WNCM_03 },
+		{ "IMOM_WNCM_11", Feature2D::IMOM_WNCM_11 },
+		{ "IMOM_WNCM_12", Feature2D::IMOM_WNCM_12 },
+		{ "IMOM_WNCM_20", Feature2D::IMOM_WNCM_20 },
+		{ "IMOM_WNCM_21", Feature2D::IMOM_WNCM_21 },
+		{ "IMOM_WNCM_30", Feature2D::IMOM_WNCM_30 },
+
+		// -- intensity weighted Hu's moments 1-7 
+		{ "IMOM_WHU1", Feature2D::IMOM_WHU1 },
+		{ "IMOM_WHU2", Feature2D::IMOM_WHU2 },
+		{ "IMOM_WHU3", Feature2D::IMOM_WHU3 },
+		{ "IMOM_WHU4", Feature2D::IMOM_WHU4 },
+		{ "IMOM_WHU5", Feature2D::IMOM_WHU5 },
+		{ "IMOM_WHU6", Feature2D::IMOM_WHU6 },
+		{ "IMOM_WHU7", Feature2D::IMOM_WHU7 },
+
 		// Gabor filter based feature:
 		{ "GABOR", Feature2D::GABOR },
 	};
@@ -502,7 +612,9 @@ namespace Nyxus
 		{ "*ALL_BUT_GLCM*", Fgroup2D::FG2_ALL_BUT_GLCM },
 		{ "*ALL_EASY*", Fgroup2D::FG2_EASY },
 		{ "*ALL_NEIGHBOR*", Fgroup2D::FG2_NEIG },
-		{ "*2DMOMENTS*", Fgroup2D::FG2_MOMENTS },
+		{ "*GEOMOMS*", Fgroup2D::FG2_GEOMOMENTS },
+		{ "*IGEOMOMS*", Fgroup2D::FG2_GEOMOMENTS_I },
+		{ "*SGEOMOMS*", Fgroup2D::FG2_GEOMOMENTS_S },
 	};
 
 	std::map <std::string, Feature3D> UserFacing_3D_featureNames =

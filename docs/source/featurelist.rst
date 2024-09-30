@@ -555,7 +555,7 @@ Nyxus provided features
      - A set of Gabor filters of varying frequencies and orientations
 
 
-**2D image moments:**
+**2D shape image moments:**
 
 ----
 
@@ -689,6 +689,139 @@ Nyxus provided features
    * - WEIGHTED_HU_M7
      - Weighted Hu's moment 7
 
+**2D intensity image moments:**
+
+----
+
+.. list-table::
+   :header-rows: 1
+
+   * - Nyxus feature code
+     - Description
+   * - IMOM_RM_00
+     - Spatial (raw) moments 
+   * - IMOM_RM_01
+     - of order 00, 01, 02, etc
+   * - IMOM_RM_02
+     - 
+   * - IMOM_RM_03
+     - 
+   * - IMOM_RM_10
+     - 
+   * - IMOM_RM_11
+     - 
+   * - IMOM_RM_12
+     - 
+   * - IMOM_RM_20
+     - 
+   * - IMOM_RM_21
+     - 
+   * - IMOM_RM_30
+     - 
+   * - IMOM_WRM_00
+     - Spatial moments weighted by pixel distance to ROI edge
+   * - IMOM_WRM_01
+     - 
+   * - IMOM_WRM_02
+     - 
+   * - IMOM_WRM_03
+     - 
+   * - IMOM_WRM_10
+     - 
+   * - IMOM_WRM_11
+     - 
+   * - IMOM_WRM_12
+     - 
+   * - IMOM_WRM_20
+     - 
+   * - IMOM_WRM_21
+     - 
+   * - IMOM_WRM_30
+     - 
+   * - IMOM_СM_02
+     - Central moments 
+   * - IMOM_СM_03
+     - 
+   * - IMOM_СM_11
+     - 
+   * - IMOM_СM_12
+     - 
+   * - IMOM_СM_20
+     - 
+   * - IMOM_СM_21
+     - 
+   * - IMOM_СM_30
+     - 
+   * - IMOM_WСM_02
+     - Central moments weighted by pixel distance to ROI edge
+   * - IMOM_WСM_03
+     - 
+   * - IMOM_WСM_11
+     - 
+   * - IMOM_WСM_12
+     - 
+   * - IMOM_WСM_20
+     - 
+   * - IMOM_WСM_21
+     - 
+   * - IMOM_WСM_30
+     - 
+   * - IMOM_NСM_02
+     - Normalized central moments
+   * - IMOM_NСM_03
+     - 
+   * - IMOM_NСM_11
+     - 
+   * - IMOM_NСM_
+     - 
+   * - IMOM_NСM_20
+     - 
+   * - IMOM_NСM_21
+     - 
+   * - IMOM_NСM_30
+     - 
+   * - IMOM_NRM_00
+     - Normalized (standardized) spatial moments
+   * - IMOM_NRM_01
+     - 
+   * - IMOM_NRM_02
+     - 
+   * - IMOM_NRM_03
+     - 
+   * - IMOM_NRM_10
+     - 
+   * - IMOM_NRM_20
+     - 
+   * - IMOM_NRM_30
+     - 
+   * - IMOM_HU1
+     - Hu's moment 1
+   * - IMOM_HU2
+     - Hu's moment 2
+   * - IMOM_HU3
+     - Hu's moment 3
+   * - IMOM_HU4
+     - Hu's moment 4
+   * - IMOM_HU5
+     - Hu's moment 5
+   * - IMOM_HU6
+     - Hu's moment 6
+   * - IMOM_HU7
+     - Hu's moment 7
+   * - IMOM_WHU1
+     - Weighted Hu's moment 1
+   * - IMOM_WHU2
+     - Weighted Hu's moment 2
+   * - IMOM_WHU3
+     - Weighted Hu's moment 3
+   * - IMOM_WHU4
+     - Weighted Hu's moment 4
+   * - IMOM_WHU5
+     - Weighted Hu's moment 5
+   * - IMOM_WHU6
+     - Weighted Hu's moment 6
+   * - IMOM_WHU7
+     - Weighted Hu's moment 7
 
 **Neighbor features:**
 
