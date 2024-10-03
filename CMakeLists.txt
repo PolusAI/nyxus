@@ -336,12 +336,11 @@ if(USEGPU)
 	add_library(nyxus_gpu ${GPU_SOURCE_FILES})
 
 	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-		set(CUDA_VERBOSE_BUILD ON)
-		target_compile_options(nyxus_gpu PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC -rdc=true -lcudadevrt>) #--required by DP--
+		target_compile_options(nyxus_gpu PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-fPIC>)
 	endif()
 	list(APPEND Nyxus_LIBRARIES nyxus_gpu)
 	list(APPEND Nyxus_LIBRARIES CUDA::cufft)
-	#--we already link versus cudart_static-- list(APPEND Nyxus_LIBRARIES CUDA::cudart)
+	list(APPEND Nyxus_LIBRARIES CUDA::cudart)
 
 	if(BUILD_LIB)
 		set_target_properties(backend PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCH_LIST} CUDA_RESOLVE_DEVICE_SYMBOLS ON)
