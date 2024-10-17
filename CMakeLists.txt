@@ -332,6 +332,7 @@ if(USEGPU)
 		src/nyx/gpu/geomoments_weighting.cu
 		src/nyx/gpu/glszm.cu
 		src/nyx/gpu/gpucache.cu
+		src/nyx/gpu/reducers.cu
 	)
 	add_library(nyxus_gpu ${GPU_SOURCE_FILES})
 
