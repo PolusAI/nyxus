@@ -18,39 +18,82 @@ using namespace Nyxus;
 
 #endif
 
-    namespace Nyxus
+namespace Nyxus
+{
+    void copy_pixcloud_intensities(reintenvec& dst, const pixcloud& src)
     {
-        void copy_pixcloud_intensities(reintenvec& dst, const pixcloud& src)
-        {
-            dst.reserve(src.size());
-            for (auto pxl : src)
-                dst.push_back(RealPixIntens(pxl.inten));
-        }
-
-        /// @brief Applies to distance-to-contour weighting to intensities of pixel cloud. Saves the result in 'realintens' 
-        void apply_dist2contour_weighting(
-            // input & output
-            reintenvec& realintens,
-            // input
-            const pixcloud& cloud,
-            const pixcloud& contour,
-            const double epsilon)
-        {
-            size_t n = cloud.size();
-            for (size_t i = 0; i < n; i++)
-            {
-                auto& p = cloud[i];
-
-                // pixel distance
-                double mind2 = p.min_sqdist(contour);
-                double dist = std::sqrt(mind2);
-
-                // weighted intensity
-                double I = 1.0; // shape moments => constant intensity within the ROI
-                realintens[i] = I / (dist + epsilon);
-            }
-        }
+        dst.reserve(src.size());
+        for (auto pxl : src)
+            dst.push_back(RealPixIntens(pxl.inten));
     }
+
+}
+
+/// @brief Applies to distance-to-contour weighting to intensities of pixel cloud. Saves the result in 'realintens' 
+void BasicGeomoms2D::apply_dist2contour_weighting(
+    // input & output
+    reintenvec& realintens,
+    // input
+    const pixcloud& cloud,
+    const pixcloud& contour,
+    const double epsilon)
+{
+    size_t n = cloud.size();
+    for (size_t i = 0; i < n; i++)
+    {
+        auto& p = cloud[i];
+
+        // pixel distance
+        double mind2 = p.min_sqdist(contour);
+        double dist = std::sqrt(mind2);
+
+        // weighted intensity
+        double I = INTEN(double(p.inten));
+        realintens[i] = I * std::log(dist + epsilon);
+    }
+}
+
+/// @brief Applies to wholeslide distance-to-contour weighting to intensities of pixel cloud. Saves the result in 'realintens' 
+/// Elements of 'contour' are expected to be four connected vertices of a whole slide
+/// 
+void BasicGeomoms2D::apply_dist2contour_weighting_wholeslide(
+    // input & output
+    reintenvec& realintens,
+    // input
+    const pixcloud& cloud,
+    const pixcloud& contour,
+    const double epsilon)
+{
+    size_t n = cloud.size();
+    for (size_t i = 0; i < n; i++)
+    {
+        auto& p = cloud[i];
+
+        auto& c0 = contour[0],
+            & c1 = contour[1],
+            & c2 = contour[2],
+            & c3 = contour[3];
+
+        // skip contour pixels
+        if (p.aligned(c0) || p.aligned(c1) || p.aligned(c2) || p.aligned(c3))
+        {
+            realintens[i] = epsilon;
+            continue;
+        }
+
+        // min distance
+        double d1 = p.dist_to_segment(c0, c1),
+            d2 = p.dist_to_segment(c1, c2),
+            d3 = p.dist_to_segment(c2, c3),
+            d4 = p.dist_to_segment(c3, c0);
+
+        double dist = std::min(std::min(d1, d2), std::min(d3, d4));
+
+        // weighted intensity
+        double I = INTEN(double(p.inten));
+        realintens[i] = I * std::log(dist + epsilon); 
+    }
+}
 
 void BasicGeomoms2D::calculate(LR& r, intenfunction ifun)
 {
@@ -95,7 +138,10 @@ void BasicGeomoms2D::calculate(LR& r, intenfunction ifun)
     // -- prepare weighted pixel cloud
     std::vector<RealPixIntens> w;
     Nyxus::copy_pixcloud_intensities(w, c);
-    Nyxus::apply_dist2contour_weighting(w, c, r.contour, weighting_epsilon);
+    if (theEnvironment.singleROI)
+        apply_dist2contour_weighting_wholeslide (w, c, r.contour, weighting_epsilon);
+    else
+        apply_dist2contour_weighting (w, c, r.contour, weighting_epsilon);
 
     // -- weighted moments
     calcOrigins(c, w);
@@ -116,12 +162,13 @@ double BasicGeomoms2D::moment(const pixcloud& cloud, int p, int q)
 
 double BasicGeomoms2D::moment(const pixcloud& c, const reintenvec& real_intens, int p, int q)
 {
-    double q_ = q, p_ = p, sum = 0;
+    double q_ = q, p_ = p, sum = 0.0;
     size_t n = c.size();
     for (size_t i = 0; i < n; i++)
     {
         const Pixel2& pxl = c[i];
-        sum += real_intens[i] * pow(double(pxl.x - baseX), p_) * pow(double(pxl.y - baseY), q_);
+        double I = real_intens[i];
+        sum += I * pow(double(pxl.x - baseX), p_) * pow(double(pxl.y - baseY), q_);
     }
     return sum;
 }
@@ -142,12 +189,23 @@ void BasicGeomoms2D::calcOrigins(const pixcloud& cloud, const reintenvec& real_v
     originOfY = moment(cloud, real_valued_intensities, 0, 1) / m00;
 }
 
+inline double int_pow (double a, int b)
+{
+    double retval = 1.0;
+    for (int i = 0; i < b; i++)
+        retval *= a;
+    return retval;
+}
+
 /// @brief Calculates the central 2D moment of order q,p of ROI pixel cloud
 double BasicGeomoms2D::centralMom(const pixcloud& cloud, int p, int q)
 {
     double sum = 0;
     for (auto& pxl : cloud)
-        sum += INTEN(double(pxl.inten)) * pow(double(pxl.x - baseX) - originOfX, p) * pow(double(pxl.y - baseY) - originOfY, q);
+    {
+        double I = INTEN(double(pxl.inten));
+        sum += I * int_pow(double(pxl.x - baseX) - (int)originOfX, p) * int_pow(double(pxl.y - baseY) - (int)originOfY, q);
+    }
     return sum;
 }
 
@@ -159,7 +217,7 @@ double BasicGeomoms2D::centralMom(const pixcloud& cloud, const reintenvec& reali
     for (size_t i = 0; i < n; i++)
     {
         auto& pxl = cloud[i];
-        sum += realintens[i] * pow(double(pxl.x - baseX) - originOfX, p) * pow(double(pxl.y - baseY) - originOfY, q);
+        sum += realintens[i] * int_pow(double(pxl.x - baseX) - (int)originOfX, p) * int_pow(double(pxl.y - baseY) - (int)originOfY, q);
     }
     return sum;
 }
@@ -193,22 +251,22 @@ double BasicGeomoms2D::normCentralMom(const pixcloud& cloud, const reintenvec& r
 std::tuple<double, double, double, double, double, double, double> BasicGeomoms2D::calcHu_imp(double _02, double _03, double _11, double _12, double _20, double _21, double _30)
 {
     double h1 = _20 + _02;
-    double h2 = pow((_20 - _02), 2) + 4 * (pow(_11, 2));
-    double h3 = pow((_30 - 3 * _12), 2) +
-        pow((3 * _21 - _03), 2);
-    double h4 = pow((_30 + _12), 2) +
-        pow((_21 + _03), 2);
+    double h2 = int_pow((_20 - _02), 2) + 4 * (int_pow(_11, 2));
+    double h3 = int_pow((_30 - 3 * _12), 2) +
+        int_pow((3 * _21 - _03), 2);
+    double h4 = int_pow((_30 + _12), 2) +
+        int_pow((_21 + _03), 2);
     double h5 = (_30 - 3 * _12) *
         (_30 + _12) *
-        (pow(_30 + _12, 2) - 3 * pow(_21 + _03, 2)) +
+        (int_pow(_30 + _12, 2) - 3 * int_pow(_21 + _03, 2)) +
         (3 * _21 - _03) * (_21 + _03) *
-        (pow(3 * (_30 + _12), 2) - pow(_21 + _03, 2));
-    double h6 = (_20 - _02) * (pow(_30 + _12, 2) -
-        pow(_21 + _03, 2)) + (4 * _11 * (_30 + _12) *
+        (int_pow(3 * (_30 + _12), 2) - int_pow(_21 + _03, 2));
+    double h6 = (_20 - _02) * (int_pow(_30 + _12, 2) -
+        int_pow(_21 + _03, 2)) + (4 * _11 * (_30 + _12) *
             _21 + _03);
-    double h7 = (3 * _21 - _03) * (_30 + _12) * (pow(_30 + _12, 2) -
-        3 * pow(_21 + _03, 2)) - (_30 - 3 * _12) * (_21 + _03) *
-        (3 * pow(_30 + _12, 2) - pow(_21 + _03, 2));
+    double h7 = (3 * _21 - _03) * (_30 + _12) * (int_pow(_30 + _12, 2) -
+        3 * int_pow(_21 + _03, 2)) - (_30 - 3 * _12) * (_21 + _03) *
+        (3 * int_pow(_30 + _12, 2) - int_pow(_21 + _03, 2));
 
     return { h1, h2, h3, h4, h5,h6, h7 };
 }

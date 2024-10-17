@@ -10,7 +10,6 @@
 
 #include "../helpers/timing.h"
 
-
 namespace NyxusGpu
 {
     __global__ void kerImatFromShapeCloud (PixIntens* d_imat, const Pixel2* d_roicloud, size_t cloudlen, size_t imat_w, int extra_inten)

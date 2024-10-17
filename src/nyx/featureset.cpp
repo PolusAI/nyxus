@@ -720,31 +720,76 @@ FeatureSet::FeatureSet()
 	enableAll(true);
 }
 
-bool FeatureSet::find_2D_FeatureByString (const std::string& featureName, Feature2D& f)
+bool FeatureSet::find_2D_FeatureByString (
+	// [in]
+	const std::string & name, 
+	// [out]
+	int & f)		// signed Feature2D
 {
-	auto it_f = Nyxus::UserFacingFeatureNames.find(featureName);
+	int enable = 1;
+
+	// strip possible set operation '+' or '-'
+	std::string s = name;
+
+	// digest optional unary operator (sign)
+	if (std::ispunct(name[0]))
+		if (name[0] == '-' || name[0] == '+')
+		{
+			s = name.substr(1);
+			enable = name[0] == '+' ? 1 : -1;
+		}
+		else
+			return false; // invalid unary operator
+
+	// search
+	auto it_f = Nyxus::UserFacingFeatureNames.find (s);
 
 	if (it_f == Nyxus::UserFacingFeatureNames.end())
 		return false;
 
-	f = it_f->second;
+	f = enable * (int) it_f->second;
+
 	return true;
 }
 
-bool FeatureSet::find_2D_GroupByString (const std::string & grpName, Fgroup2D & grpCode)
+bool FeatureSet::find_2D_GroupByString (
+	const std::string & name, 
+	int & grpCode)		// signed Fgroup2D
 {
-	auto itr = Nyxus::UserFacing2dFeaturegroupNames.find (grpName);
+	int enable = 1;
+
+	// strip possible set operation '+' or '-'
+	std::string s = name;
+
+	// digest optional unary operator (sign)
+	if (name[0] == '-' || name[0] == '+')
+	{
+		s = name.substr(1);
+		enable = name[0] == '+' ? 1 : -1;
+	}
+
+
+	// search
+	auto itr = Nyxus::UserFacing2dFeaturegroupNames.find (s);
 
 	if (itr == Nyxus::UserFacing2dFeaturegroupNames.end())
 		return false;
 
-	grpCode = itr->second;
+	grpCode = enable * (int) itr->second;
+
 	return true;
 }
 
-bool FeatureSet::find_3D_FeatureByString (const std::string & featureName, Feature3D & f)
+bool FeatureSet::find_3D_FeatureByString (const std::string & name, Feature3D & f)
 {
-	auto it_f = Nyxus::UserFacing_3D_featureNames.find (featureName);
+	// strip possible set operation '+' or '-'
+	std::string s = name;
+
+	if (name[0] == '-' || name[0] == '+')
+		s = name.substr(1);
+
+	// search
+	auto it_f = Nyxus::UserFacing_3D_featureNames.find (s);
 
 	if (it_f == Nyxus::UserFacing_3D_featureNames.end())
 		return false;
@@ -753,9 +798,16 @@ bool FeatureSet::find_3D_FeatureByString (const std::string & featureName, Featu
 	return true;
 }
 
-bool FeatureSet::find_3D_GroupByString (const std::string & grpName, Fgroup3D & grpCode)
+bool FeatureSet::find_3D_GroupByString (const std::string & name, Fgroup3D & grpCode)
 {
-	auto itr = Nyxus::UserFacing3dFeaturegroupNames.find (grpName);
+	// strip possible set operation '+' or '-'
+	std::string s = name;
+
+	if (name[0] == '-' || name[0] == '+')
+		s = name.substr(1);
+
+	// search
+	auto itr = Nyxus::UserFacing3dFeaturegroupNames.find (s);
 
 	if (itr == Nyxus::UserFacing3dFeaturegroupNames.end())
 		return false;
@@ -764,9 +816,16 @@ bool FeatureSet::find_3D_GroupByString (const std::string & grpName, Fgroup3D & 
 	return true;
 }
 
-bool FeatureSet::find_IMQ_FeatureByString (const std::string& featureName, FeatureIMQ& f)
+bool FeatureSet::find_IMQ_FeatureByString (const std::string & name, FeatureIMQ& f)
 {
-	auto it_f = Nyxus::UserFacingIMQFeatureNames.find(featureName);
+	// strip possible set operation '+' or '-'
+	std::string s = name;
+
+	if (name[0] == '-' || name[0] == '+')
+		s = name.substr(1);
+
+	// search
+	auto it_f = Nyxus::UserFacingIMQFeatureNames.find (s);
 
 	if (it_f == Nyxus::UserFacingIMQFeatureNames.end())
 		return false;
@@ -775,9 +834,16 @@ bool FeatureSet::find_IMQ_FeatureByString (const std::string& featureName, Featu
 	return true;
 }
 
-bool FeatureSet::find_IMQ_GroupByString (const std::string & grpName, FgroupIMQ & grpCode)
+bool FeatureSet::find_IMQ_GroupByString (const std::string & name, FgroupIMQ & grpCode)
 {
-	auto itr = Nyxus::UserFacingIMQFeaturegroupNames.find (grpName);
+	// strip possible set operation '+' or '-'
+	std::string s = name;
+
+	if (name[0] == '-' || name[0] == '+')
+		s = name.substr(1);
+
+	// search
+	auto itr = Nyxus::UserFacingIMQFeaturegroupNames.find (s);
 
 	if (itr == Nyxus::UserFacingIMQFeaturegroupNames.end())
 		return false;

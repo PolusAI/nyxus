@@ -273,7 +273,7 @@ namespace CuGabor {
 
         // zero the matrix
         size_t szb = sizeof(NyxusGpu::dev_imat1[0]) * w * h;
-        cudaMemset(NyxusGpu::dev_imat1, 0, szb);
+        CHECKERR(cudaMemset(NyxusGpu::dev_imat1, 0, szb));
 
         // apply the cloud to it
         int nblo = whole_chunks2(cloud_len, blockSize);

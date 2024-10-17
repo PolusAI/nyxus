@@ -71,4 +71,22 @@ namespace NyxusGpu
         void* d_temp_storage,
         size_t& temp_storage_szb);
 
+    bool sumreduce(
+        gpureal* d_result,
+        size_t cloudlen,
+        double* d_prereduce,
+        void* d_devreduce_tempstorage,
+        size_t& devreduce_tempstorage_szb);
+
+    bool sumreduceNV2(
+        // [in]
+        double* g_odata,
+        // [out]
+        const unsigned int n,
+        double* g_idata,
+        void* unused1,  // compatibility with CUB-based sumreduce()
+        size_t unused2);
+
+    void getNumBlocksAndThreads(int whichKernel, int n, int maxBlocks, int maxThreads, int& blocks, int& threads);
+
 }

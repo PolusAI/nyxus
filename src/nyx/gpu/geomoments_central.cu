@@ -36,45 +36,46 @@ namespace NyxusGpu
         gpureal* origin_x,
         gpureal* origin_y)
     {
-        int tid = threadIdx.x + blockIdx.x * blockSize;
+        size_t tid = threadIdx.x + blockIdx.x * blockSize;
 
         if (tid >= cloudlen)
             return;
 
-        float I = int_pow (d_roicloud[tid].inten, ipow),
-            OX = *origin_x,
-            OY = *origin_y,
-            X = float(d_roicloud[tid].x) - OX,
-            Y = float(d_roicloud[tid].y) - OY;
+        double I = int_pow (d_roicloud[tid].inten, ipow),
+            OX = (int) *origin_x,
+            OY = (int) *origin_y,
+            X = double(d_roicloud[tid].x) - OX,
+            Y = double(d_roicloud[tid].y) - OY;
 
-        float P0 = I,
-            P1 = I * X,
-            P2 = I * X * X,
-            P3 = I * X * X * X,
-            Q0 = I,
-            Q1 = I * Y,
-            Q2 = I * Y * Y,
-            Q3 = I * Y * Y * Y;
+        double P0 = 1.0, 
+            P1 = X, 
+            P2 = X * X, 
+            P3 = X * X * X, 
+            Q0 = 1.0, 
+            Q1 = Y, 
+            Q2 = Y * Y, 
+            Q3 = Y * Y * Y; 
 
-        d_prereduce00[tid] = P0 * Q0;
-        d_prereduce01[tid] = P0 * Q1;
-        d_prereduce02[tid] = P0 * Q2;
-        d_prereduce03[tid] = P0 * Q3;
+        d_prereduce00[tid] = I * P0 * Q0;
+        d_prereduce01[tid] = I * P0 * Q1;
+        d_prereduce02[tid] = I * P0 * Q2;
+        d_prereduce03[tid] = I * P0 * Q3;
 
-        d_prereduce10[tid] = P1 * Q0;
-        d_prereduce11[tid] = P1 * Q1;
-        d_prereduce12[tid] = P1 * Q2;
-        d_prereduce13[tid] = P1 * Q3;
+        d_prereduce10[tid] = I * P1 * Q0;
+        d_prereduce11[tid] = I * P1 * Q1;
+        d_prereduce12[tid] = I * P1 * Q2;
+        d_prereduce13[tid] = I * P1 * Q3;
 
-        d_prereduce20[tid] = P2 * Q0;
-        d_prereduce21[tid] = P2 * Q1;
-        d_prereduce22[tid] = P2 * Q2;
-        d_prereduce23[tid] = P2 * Q3;
+        d_prereduce20[tid] = I * P2 * Q0;
+        d_prereduce21[tid] = I * P2 * Q1;
+        d_prereduce22[tid] = I * P2 * Q2;
+        d_prereduce23[tid] = I * P2 * Q3;
 
-        d_prereduce30[tid] = P3 * Q0;
-        d_prereduce31[tid] = P3 * Q1;
-        d_prereduce32[tid] = P3 * Q2;
-        d_prereduce33[tid] = P3 * Q3;
+        d_prereduce30[tid] = I * P3 * Q0;
+        d_prereduce31[tid] = I * P3 * Q1;
+        d_prereduce32[tid] = I * P3 * Q2;
+        d_prereduce33[tid] = I * P3 * Q3;
+
     }
 
     __global__ void kerCentralMomentWeightedAll_snu(
@@ -94,14 +95,14 @@ namespace NyxusGpu
         gpureal* origin_x,
         gpureal* origin_y)
     {
-        int tid = threadIdx.x + blockIdx.x * blockSize;
+        size_t tid = threadIdx.x + blockIdx.x * blockSize;
 
         if (tid >= cloudlen)
             return;
 
         float I = d_realintens[tid],
-            OX = *origin_x,
-            OY = *origin_y,
+            OX = (int) *origin_x,
+            OY = (int) *origin_y,
             X = d_roicloud[tid].x - OX,
             Y = d_roicloud[tid].y - OY;
 
@@ -122,29 +123,6 @@ namespace NyxusGpu
         d_prereduce20[tid] = I * P2 * Q0;
         d_prereduce21[tid] = I * P2 * Q1;
         d_prereduce30[tid] = I * P3 * Q0;
-    }
-
-    bool sumreduce(
-        gpureal* d_result,
-        size_t cloudlen,
-        double* d_prereduce,
-        void* d_devreduce_tempstorage,
-        size_t& devreduce_tempstorage_szb)
-    {
-        size_t szb;
-        CHECKERR(cub::DeviceReduce::Sum(nullptr, szb, d_prereduce/*d_in*/, d_result, cloudlen/*num_items*/));
-        if (devreduce_tempstorage_szb != szb)
-        {
-            // new size, new storage
-            devreduce_tempstorage_szb = szb;
-            CHECKERR(cudaFree(d_devreduce_tempstorage));
-            CHECKERR(cudaMalloc(&d_devreduce_tempstorage, devreduce_tempstorage_szb));
-        }
-
-        // Run sum-reduction
-        cub::DeviceReduce::Sum(d_devreduce_tempstorage, devreduce_tempstorage_szb, d_prereduce/*d_in*/, d_result, cloudlen/*num_items*/);
-
-        return true;
     }
 
     bool drvCentralMomentAll__snu(
@@ -182,14 +160,18 @@ namespace NyxusGpu
             * d_pr33 = &d_prereduce[cloudlen * 15];
 
         int nblo = whole_chunks2(cloudlen, blockSize);
-        kerCentralMomentAll_snu << < nblo, blockSize >> > (
+        kerCentralMomentAll_snu <<< nblo, blockSize >>> (
             // out
             d_pr00, d_pr01, d_pr02, d_pr03,
             d_pr10, d_pr11, d_pr12, d_pr13,
             d_pr20, d_pr21, d_pr22, d_pr23,
             d_pr30, d_pr31, d_pr32, d_pr33,
             // in
-            ipow, d_roicloud, cloudlen, origin_x, origin_y);
+            ipow, 
+            d_roicloud, 
+            cloudlen, 
+            origin_x, 
+            origin_y);
 
         CHECKERR(cudaDeviceSynchronize());
         CHECKERR(cudaGetLastError());
@@ -197,25 +179,25 @@ namespace NyxusGpu
         //=== device-reduce:
 
         bool k; // oK
-        k = sumreduce(&d_result[GpusideState::CM00], cloudlen, d_pr00, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::CM01], cloudlen, d_pr01, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::CM02], cloudlen, d_pr02, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::CM03], cloudlen, d_pr03, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce (&d_result[GpusideState::CM00], cloudlen, d_pr00, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce (&d_result[GpusideState::CM01], cloudlen, d_pr01, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce (&d_result[GpusideState::CM02], cloudlen, d_pr02, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce (&d_result[GpusideState::CM03], cloudlen, d_pr03, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
 
-        k = sumreduce(&d_result[GpusideState::CM10], cloudlen, d_pr10, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::CM11], cloudlen, d_pr11, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::CM12], cloudlen, d_pr12, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::CM13], cloudlen, d_pr13, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce (&d_result[GpusideState::CM10], cloudlen, d_pr10, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce (&d_result[GpusideState::CM11], cloudlen, d_pr11, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce (&d_result[GpusideState::CM12], cloudlen, d_pr12, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce (&d_result[GpusideState::CM13], cloudlen, d_pr13, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
 
-        k = sumreduce(&d_result[GpusideState::CM20], cloudlen, d_pr20, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::CM21], cloudlen, d_pr21, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::CM22], cloudlen, d_pr22, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::CM23], cloudlen, d_pr23, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce (&d_result[GpusideState::CM20], cloudlen, d_pr20, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce (&d_result[GpusideState::CM21], cloudlen, d_pr21, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce (&d_result[GpusideState::CM22], cloudlen, d_pr22, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce (&d_result[GpusideState::CM23], cloudlen, d_pr23, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
 
-        k = sumreduce(&d_result[GpusideState::CM30], cloudlen, d_pr30, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::CM31], cloudlen, d_pr31, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::CM32], cloudlen, d_pr32, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::CM33], cloudlen, d_pr33, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce (&d_result[GpusideState::CM30], cloudlen, d_pr30, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce (&d_result[GpusideState::CM31], cloudlen, d_pr31, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce (&d_result[GpusideState::CM32], cloudlen, d_pr32, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduce (&d_result[GpusideState::CM33], cloudlen, d_pr33, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
 
         return true;
     }

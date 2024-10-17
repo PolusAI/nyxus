@@ -735,9 +735,10 @@ public:
 		for (auto f : desiredFeatures)
 			m_enabledFeatures[(int)f] = false;
 	}
-	void enableFeatures(const std::initializer_list<Nyxus::Feature2D>& desiredFeatures) {
-		for (auto f : desiredFeatures)
-			m_enabledFeatures[(int)f] = true;
+	void enableFeatures(const std::initializer_list<Nyxus::Feature2D>& F, bool enable=true) 
+	{
+		for (auto f : F)
+			m_enabledFeatures[(int)f] = enable;
 	}
 	void enableFeatures(const std::initializer_list<Nyxus::Feature3D>& desiredFeatures) 
 	{
@@ -748,9 +749,14 @@ public:
 		for (auto f : desiredFeatures)
 			m_enabledFeatures[(int)f] = true;
 	}
-	void enableFeature (int f)
+	void enableFeature (int fcode)
 	{
-		m_enabledFeatures [f] = true;
+		if (fcode < 0)
+		{
+			m_enabledFeatures [-fcode] = false;
+		}
+		else
+			m_enabledFeatures [fcode] = true;
 	}
 	void enablePixelIntenStats() {
 		enableAll(false);
@@ -846,8 +852,8 @@ public:
 				cnt++;
 		return cnt;
 	}
-	bool find_2D_FeatureByString (const std::string & feature_name, Nyxus::Feature2D & feature_code);
-	bool find_2D_GroupByString (const std::string & group_name, Nyxus::Fgroup2D & group_code);
+	bool find_2D_FeatureByString (const std::string& name, int& f);		// 'f' is signed Feature2D
+	bool find_2D_GroupByString (const std::string& group_name, int & group_code);	// 'group_code' is signed Nyxus::Fgroup2D
 	bool find_3D_FeatureByString (const std::string & feature_name, Nyxus::Feature3D & feature_code);
 	bool find_3D_GroupByString (const std::string & group_name, Nyxus::Fgroup3D & group_code);
 	bool find_IMQ_FeatureByString (const std::string & feature_name, Nyxus::FeatureIMQ & feature_code);

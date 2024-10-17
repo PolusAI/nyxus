@@ -65,26 +65,87 @@ namespace NyxusGpu
         size_t contour_len)
     {
         // pixel index
-        int pxIdx = threadIdx.x + blockIdx.x * blockSize;
+        size_t pxIdx = threadIdx.x + blockIdx.x * blockSize;
         if (pxIdx >= cloud_len)
             return;
 
-        // intensity is not involved in shape moments: RealPixIntens I = d_roicloud[pxIdx].inten;
         StatsInt x = d_roicloud[pxIdx].x,
             y = d_roicloud[pxIdx].y;
 
-        // pixel distance
+        // distance
         double mind2 = pixel_sqdist_2_contour(x, y, d_roicontour, contour_len);
         double dist = std::sqrt(mind2);
 
         // weighted intensity
-        d_realintens[pxIdx] = int_pow(d_roicloud[pxIdx].inten, ipow) / (dist + WEIGHTING_EPSILON);
+        d_realintens[pxIdx] = int_pow(d_roicloud[pxIdx].inten, ipow) * std::log(dist + WEIGHTING_EPSILON);
+    }
+
+    __device__ bool aligned (const Pixel2& p0, const Pixel2& p)
+    {
+        return p0.x == p.x || p0.y == p.y;
+    }
+
+    __device__ double dist_to_segment (const Pixel2 & p0, const Pixel2& p1, const Pixel2& p2)
+    {
+        double dx = p2.x - p1.x,
+            dy = p2.y - p1.y;
+
+        double h = dx * dx + dy * dy;
+        if (h <= 0)
+            return (double)INT_MAX;
+
+        double retval = std::fabs(dy * p0.x - dx * p0.y + p2.x * p1.y - p2.y * p1.x) / sqrt(h);
+        return retval;
+    }
+
+    __global__ void kerCalcWeightedImageWholeslide (
+        // output
+        RealPixIntens* d_realintens,
+        // input
+        int ipow,
+        const Pixel2* d_roicloud,
+        size_t cloud_len,
+        const Pixel2* d_roicontour,
+        size_t contour_len)
+    {
+        // pixel index
+        size_t pxIdx = threadIdx.x + blockIdx.x * blockSize;
+        if (pxIdx >= cloud_len)
+            return;
+
+        StatsInt x = d_roicloud[pxIdx].x,
+            y = d_roicloud[pxIdx].y;
+
+        const Pixel2 & p = d_roicloud[pxIdx], 
+            & c0 = d_roicontour[0],
+            & c1 = d_roicontour[1],
+            & c2 = d_roicontour[2],
+            & c3 = d_roicontour[3];
+
+        // skip contour pixels
+        if (aligned(p, c0) || aligned(p, c1) || aligned(p, c2) || aligned(p, c3))
+        {
+            d_realintens[pxIdx] = WEIGHTING_EPSILON;
+            return;
+        }
+
+        // min distance. We assume the 4-vertex ROI shape (whole slide)
+        double d1 = dist_to_segment (p, c0, c1),
+            d2 = dist_to_segment (p, c1, c2),
+            d3 = dist_to_segment (p, c2, c3),
+            d4 = dist_to_segment (p, c3, c0);
+
+        double dist = fmin(fmin(d1, d2), fmin(d3, d4));
+
+        // weighted intensity
+        d_realintens[pxIdx] = int_pow(d_roicloud[pxIdx].inten, ipow) * std::log(dist + WEIGHTING_EPSILON);
     }
 
     bool ImageMomentsFeature_calc_weighted_intens(
         // output
         RealPixIntens* d_realintens_buf,
         // input
+        bool wholeslide,
         bool need_shape_moments,
         const Pixel2* d_roicloud,
         size_t cloud_len,
@@ -95,7 +156,11 @@ namespace NyxusGpu
         int ipow = need_shape_moments ? 0 : 1;
 
         int nb = whole_chunks2(cloud_len, blockSize);
-        kerCalcWeightedImage3 << < nb, blockSize >> > (d_realintens_buf, ipow, d_roicloud, cloud_len, d_roicontour, contour_len);
+
+        if (wholeslide)
+            kerCalcWeightedImageWholeslide <<< nb, blockSize >>> (d_realintens_buf, ipow, d_roicloud, cloud_len, d_roicontour, contour_len);
+        else
+            kerCalcWeightedImage3 <<< nb, blockSize >>> (d_realintens_buf, ipow, d_roicloud, cloud_len, d_roicontour, contour_len);
 
         cudaError_t ok = cudaDeviceSynchronize();
         CHECKERR(ok);
