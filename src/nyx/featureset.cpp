@@ -598,6 +598,7 @@ namespace Nyxus
 	std::map <std::string, Fgroup2D> UserFacing2dFeaturegroupNames =
 	{
 		{ "*ALL*", Fgroup2D::FG2_ALL},
+		{ "*WHOLESLIDE*", Fgroup2D::FG2_WHOLESLIDE},
 		{ "*ALL_INTENSITY*", Fgroup2D::FG2_INTENSITY },
 		{ "*ALL_MORPHOLOGY*", Fgroup2D::FG2_MORPHOLOGY },
 		{ "*BASIC_MORPHOLOGY*", Fgroup2D::FG2_BASIC_MORPHOLOGY },

@@ -198,47 +198,51 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 	if ((Fgroup2D)fgcode == Fgroup2D::FG2_ALL)
 	{
 		Nyxus::theFeatureSet.enableAll (enable);
-		return true;	//???????????????
+		return true; 
+	}
+
+	if ((Fgroup2D)fgcode == Fgroup2D::FG2_WHOLESLIDE)
+	{
+		Nyxus::theFeatureSet.enableAll(enable);
 
 		// Handle whole-slide mode differently: disable features irrelevant to this mode (shape, neighbors, etc)
-		if (singleROI && enable)
-		{
-			std::cout << box_text ("Activating whole slide (aka single-ROI) mode\n"
-				"ATTENTION: disabling inappplicable and time-sonsuming features:\n"
-				" - morphological features\n"
-				" - neighbor features\n"
-				" - GLDM, GLDZM, GLRLM, GLSZM, NGLDM, NGTDM");
+		std::cout << box_text(
+			"Activating whole slide (aka single-ROI) mode\n"
+			"Using GPU is advised!\n"
+			"ATTENTION: disabling inappplicable and time-sonsuming features:\n"
+			" - morphological features\n"
+			" - neighbor features\n"
+			" - GLDZM");
 
-			theFeatureSet.disableFeatures(BasicMorphologyFeatures::featureset);
-			theFeatureSet.disableFeatures(EnclosingInscribingCircumscribingCircleFeature::featureset);
-			theFeatureSet.disableFeatures(ContourFeature::featureset);		// and its dependencies below (see file reduce_trivial_rois_manual.cpp)
-			theFeatureSet.disableFeatures(ConvexHullFeature::featureset);				// depends on ContourFeature
-			theFeatureSet.disableFeatures(FractalDimensionFeature::featureset);		// depends on ContourFeature
-			theFeatureSet.disableFeatures(GeodeticLengthThicknessFeature::featureset);	// depends on ContourFeature
-			theFeatureSet.disableFeatures(NeighborsFeature::featureset);				// depends on ContourFeature
-			theFeatureSet.disableFeatures(RoiRadiusFeature::featureset);				// depends on ContourFeature
-			theFeatureSet.disableFeatures(EllipseFittingFeature::featureset);
-			theFeatureSet.disableFeatures(EulerNumberFeature::featureset);
-			theFeatureSet.disableFeatures(ExtremaFeature::featureset);
-			theFeatureSet.disableFeatures(ErosionPixelsFeature::featureset);
-			theFeatureSet.disableFeatures(CaliperFeretFeature::featureset);
-			theFeatureSet.disableFeatures(CaliperMartinFeature::featureset);
-			theFeatureSet.disableFeatures(CaliperNassensteinFeature::featureset);
-			theFeatureSet.disableFeatures(ChordsFeature::featureset);
+		theFeatureSet.disableFeatures (BasicMorphologyFeatures::featureset);
+		theFeatureSet.disableFeatures (EnclosingInscribingCircumscribingCircleFeature::featureset);
+		// enabling ContourFeature (builds a special trivial wholeslide contour)
+		theFeatureSet.disableFeatures (ConvexHullFeature::featureset);				// depends on ContourFeature
+		theFeatureSet.disableFeatures (FractalDimensionFeature::featureset);		// depends on ContourFeature
+		theFeatureSet.disableFeatures (GeodeticLengthThicknessFeature::featureset);	// depends on ContourFeature
+		theFeatureSet.disableFeatures (NeighborsFeature::featureset);				// no neighbors for whole slide; depends on ContourFeature
+		theFeatureSet.disableFeatures (RoiRadiusFeature::featureset);				// depends on ContourFeature
+		theFeatureSet.disableFeatures (EllipseFittingFeature::featureset);
+		theFeatureSet.disableFeatures (EulerNumberFeature::featureset);
+		theFeatureSet.disableFeatures (ExtremaFeature::featureset);
+		theFeatureSet.disableFeatures (ErosionPixelsFeature::featureset);
+		theFeatureSet.disableFeatures (CaliperFeretFeature::featureset);
+		theFeatureSet.disableFeatures (CaliperMartinFeature::featureset);
+		theFeatureSet.disableFeatures (CaliperNassensteinFeature::featureset);
+		theFeatureSet.disableFeatures (ChordsFeature::featureset);
 
-			// enabling GaborFeature
-			// enabling ImageMomentsFeature
-			// enabling GLCMFeature
+		// enabling GaborFeature
+		// enabling ImageMomentsFeature
+		// 
+		// enabling GLCMFeature
+		// enabling GLDMFeature
+		theFeatureSet.disableFeatures(GLDZMFeature::featureset);	// costs about 82 %
+		// enabling GLRLMFeature 
+		// enabling GLSZMFeature
+		// enabling NGLDMfeature
+		// enabling NGTDMFeature
 
-			theFeatureSet.disableFeatures(GLDMFeature::featureset);		// costs about 4.72 %
-			theFeatureSet.disableFeatures(GLDZMFeature::featureset);	// costs about 38.14 %
-			theFeatureSet.disableFeatures(GLRLMFeature::featureset);	// costs about 17.29 %
-			theFeatureSet.disableFeatures(GLSZMFeature::featureset);	// costs about 15.94 %
-			theFeatureSet.disableFeatures(NGLDMfeature::featureset);	// costs about 3.57 %
-			theFeatureSet.disableFeatures(NGTDMFeature::featureset);	// costs about 5.13 %
-		}
-		
-		return true; 
+		return true;
 	}
 
 	if ((Fgroup2D) fgcode == Fgroup2D::FG2_EASY)

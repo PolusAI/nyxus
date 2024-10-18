@@ -676,6 +676,7 @@ namespace Nyxus
 	enum class Fgroup2D
 	{
 		FG2_ALL = 0,
+		FG2_WHOLESLIDE,
 		FG2_INTENSITY, 
 		FG2_MORPHOLOGY, 
 		FG2_BASIC_MORPHOLOGY, 
