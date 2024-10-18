@@ -10,15 +10,6 @@
 
 namespace NyxusGpu
 {
-
-    // geomoments_central.cu
-    bool sumreduce(
-        gpureal* d_result,
-        size_t cloudlen,
-        double* d_prereduce,
-        void* d_devreduce_tempstorage,
-        size_t& devreduce_tempstorage_szb);
-
     __global__ void kerRawMoment(
         double* d_prereduce,
         const Pixel2* d_roicloud,
@@ -114,38 +105,38 @@ namespace NyxusGpu
         if (tid >= cloudlen)
             return;
 
-        float I = int_pow (d_roicloud[tid].inten, ipow),
-            X = d_roicloud[tid].x,  // = d_roicloud[tid].x - base_x,
-            Y = d_roicloud[tid].y;  // = d_roicloud[tid].y - base_y;
+        double I = int_pow (d_roicloud[tid].inten, ipow),
+            X = d_roicloud[tid].x,  
+            Y = d_roicloud[tid].y;  
 
-        float P0 = I,
-            P1 = I * X,
-            P2 = I * X * X,
-            P3 = I * X * X * X,
-            Q0 = I,
-            Q1 = I * Y,
-            Q2 = I * Y * Y,
-            Q3 = I * Y * Y * Y;
+        double P0 = 1.0,
+            P1 = X,
+            P2 = X * X,
+            P3 = X * X * X,
+            Q0 = 1.0,
+            Q1 = Y,
+            Q2 =  Y * Y,
+            Q3 = Y * Y * Y;
 
-        d_prereduce00[tid] = P0 * Q0;
-        d_prereduce01[tid] = P0 * Q1;
-        d_prereduce02[tid] = P0 * Q2;
-        d_prereduce03[tid] = P0 * Q3;
+        d_prereduce00[tid] = I * P0 * Q0;
+        d_prereduce01[tid] = I * P0 * Q1;
+        d_prereduce02[tid] = I * P0 * Q2;
+        d_prereduce03[tid] = I * P0 * Q3;
 
-        d_prereduce10[tid] = P1 * Q0;
-        d_prereduce11[tid] = P1 * Q1;
-        d_prereduce12[tid] = P1 * Q2;
-        d_prereduce13[tid] = P1 * Q3;
+        d_prereduce10[tid] = I * P1 * Q0;
+        d_prereduce11[tid] = I * P1 * Q1;
+        d_prereduce12[tid] = I * P1 * Q2;
+        d_prereduce13[tid] = I * P1 * Q3;
 
-        d_prereduce20[tid] = P2 * Q0;
-        d_prereduce21[tid] = P2 * Q1;
-        d_prereduce22[tid] = P2 * Q2;
-        d_prereduce23[tid] = P2 * Q3;
+        d_prereduce20[tid] = I * P2 * Q0;
+        d_prereduce21[tid] = I * P2 * Q1;
+        d_prereduce22[tid] = I * P2 * Q2;
+        d_prereduce23[tid] = I * P2 * Q3;
 
-        d_prereduce30[tid] = P3 * Q0;
-        d_prereduce31[tid] = P3 * Q1;
-        d_prereduce32[tid] = P3 * Q2;
-        d_prereduce33[tid] = P3 * Q3;
+        d_prereduce30[tid] = I * P3 * Q0;
+        d_prereduce31[tid] = I * P3 * Q1;
+        d_prereduce32[tid] = I * P3 * Q2;
+        d_prereduce33[tid] = I * P3 * Q3;
     }
 
     bool drvRawMomentAll__snu(
@@ -236,16 +227,16 @@ namespace NyxusGpu
         const Pixel2* d_roicloud,
         size_t cloudlen)
     {
-        int tid = threadIdx.x + blockIdx.x * blockSize;
+        size_t tid = threadIdx.x + blockIdx.x * blockSize;
 
         if (tid >= cloudlen)
             return;
 
-        float I = d_realintens[tid], // <--shape moments--   d_realintens[tid],
+        double I = d_realintens[tid],
             X = d_roicloud[tid].x,
             Y = d_roicloud[tid].y;
 
-        float P0 = 1,
+        double P0 = 1,
             P1 = X,
             P2 = X * X,
             P3 = X * X * X,
@@ -308,19 +299,19 @@ namespace NyxusGpu
         //=== device-reduce:
 
         bool k; // oK
-        k = sumreduce(&d_result[GpusideState::WRM00], cloudlen, d_pr00, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::WRM01], cloudlen, d_pr01, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::WRM02], cloudlen, d_pr02, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::WRM03], cloudlen, d_pr03, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduceNV2 (&d_result[GpusideState::WRM00], cloudlen, d_pr00, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduceNV2(&d_result[GpusideState::WRM01], cloudlen, d_pr01, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduceNV2(&d_result[GpusideState::WRM02], cloudlen, d_pr02, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduceNV2(&d_result[GpusideState::WRM03], cloudlen, d_pr03, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
 
-        k = sumreduce(&d_result[GpusideState::WRM10], cloudlen, d_pr10, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::WRM11], cloudlen, d_pr11, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::WRM12], cloudlen, d_pr12, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduceNV2(&d_result[GpusideState::WRM10], cloudlen, d_pr10, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduceNV2(&d_result[GpusideState::WRM11], cloudlen, d_pr11, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduceNV2(&d_result[GpusideState::WRM12], cloudlen, d_pr12, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
 
-        k = sumreduce(&d_result[GpusideState::WRM20], cloudlen, d_pr20, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
-        k = sumreduce(&d_result[GpusideState::WRM21], cloudlen, d_pr21, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduceNV2(&d_result[GpusideState::WRM20], cloudlen, d_pr20, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduceNV2(&d_result[GpusideState::WRM21], cloudlen, d_pr21, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
 
-        k = sumreduce(&d_result[GpusideState::WRM30], cloudlen, d_pr30, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
+        k = sumreduceNV2(&d_result[GpusideState::WRM30], cloudlen, d_pr30, d_devreduce_tempstorage, devreduce_tempstorage_szb); OK(k);
 
         return true;
     }

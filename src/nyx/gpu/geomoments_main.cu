@@ -17,6 +17,7 @@ namespace NyxusGpu
         // output
         RealPixIntens* d_realintens_buf,
         // input
+        bool wholeslide,
         bool need_shape_moments,
         const Pixel2* d_roicloud,
         size_t cloud_len,
@@ -29,7 +30,7 @@ namespace NyxusGpu
 
     bool ImageMomentsFeature_calcNormSpatialMoments3(gpureal* d_state);
 
-    bool GeoMoments2D_calculate (size_t roi_index, bool need_shape_moments)
+    bool GeoMoments2D_calculate (size_t roi_index, bool wholeslide, bool need_shape_moments)
     {
         // context of ROI #roi_index:
         //
@@ -102,9 +103,10 @@ namespace NyxusGpu
         if (!ImageMomentsFeature_calcHuInvariants3(state, false))
             return false;
 
-        //==== Weighted intensities
+        //==== Prepare weighted intensities
         if (!ImageMomentsFeature_calc_weighted_intens(
             d_realintens, // output
+            wholeslide,
             need_shape_moments,
             d_cloud,
             cloud_len,

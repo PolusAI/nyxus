@@ -27,7 +27,10 @@ namespace py = pybind11;
 #endif
 #include "dirs_and_files.h"
 #include "environment.h"
+#include "features/contour.h"
+#include "features/erosion.h"
 #include "features/gabor.h"
+#include "features/2d_geomoments.h"
 #include "globals.h"
 #include "helpers/helpers.h"
 #include "helpers/system_resource.h"
@@ -549,12 +552,22 @@ namespace Nyxus
 
 		//********************** prescan ***********************
 
+		#ifdef USE_GPU
+		// what parts of GPU cache we need to bother about ?
+		bool needContour = ContourFeature::required(theFeatureSet),
+			needErosion = ErosionPixelsFeature::required(theFeatureSet),
+			needGabor = GaborFeature::required(theFeatureSet),
+			needImoments = Imoms2D_feature::required(theFeatureSet),
+			needSmoments = Smoms2D_feature::required(theFeatureSet),
+			needMoments = needImoments || needSmoments; // ImageMomentsFeature::required (theFeatureSet);
+		#endif
+
 		// scan the whole dataset for ROI properties, slide properties, and dataset global properties
 		size_t nf = intensFiles.size();
 
 		{ STOPWATCH("prescan/p0/P/#ccbbaa", "\t=");
 
-		std::cout << "phase 0 \n";
+		VERBOSLVL1 (std::cout << "phase 0 (prescanning)\n");
 
 		LR::reset_dataset_props();
 		LR::dataset_props.resize(nf);
@@ -567,12 +580,13 @@ namespace Nyxus
 			p.fname_int = ifp;
 			p.fname_seg = mfp;
 
-			std::cout << "prescanning " << p.fname_int << "\n";
+			VERBOSLVL1 (std::cout << "prescanning " << p.fname_int);
 			if (!scan_intlabel_pair_props(p))
 			{
-				std::cout << "error prescanning pair " << ifp << " and " << mfp << std::endl;
+				VERBOSLVL1 (std::cout << "error prescanning pair " << ifp << " and " << mfp << std::endl);
 				return 1;
 			}
+			VERBOSLVL1 (std::cout << "\tmax ROI " << p.max_roi_w << " x " << p.max_roi_h << "\n");
 		}
 
 		// get global properties
@@ -594,13 +608,14 @@ namespace Nyxus
 			LR::dataset_max_roi_h = (std::max)(LR::dataset_max_roi_h, p.max_roi_h);
 		}
 
-		std::cout << "\t ---done phase 0 \n";
+		VERBOSLVL1 (std::cout << "\t finished phase 0 \n");
 
 		//***********************************************************************************************
 #ifdef USE_GPU
 		if (theEnvironment.using_gpu())
 		{
-			std::cout << "allocate GPU cache \n";
+			// allocate
+			VERBOSLVL1 (std::cout << "allocate GPU cache \n");
 
 			if (!NyxusGpu::allocate_gpu_cache(
 				// out
@@ -619,6 +634,10 @@ namespace Nyxus
 				NyxusGpu::gabor_result,
 				NyxusGpu::gabor_energy_image,
 				// in
+				needContour,
+				needErosion,
+				needGabor,
+				needMoments,
 				LR::dataset_max_combined_roicloud_len, // desired totCloLen,
 				LR::dataset_max_combined_roicloud_len, // desired totKontLen,
 				LR::dataset_max_n_rois,	// labels.size()
@@ -633,7 +652,7 @@ namespace Nyxus
 				return 1;
 			}
 
-			std::cout << "\t ---done allocate GPU cache \n";
+			VERBOSLVL1(std::cout << "\t ---done allocating GPU cache \n");
 		}
 #endif
 		} // prescan timing
@@ -781,6 +800,12 @@ namespace Nyxus
 		if (theEnvironment.using_gpu())
 		{
 			if (!NyxusGpu::free_gpu_cache(
+				/*??????
+				needContour,
+				needErosion,
+				needGabor,
+				needMoments, 
+				*/
 				NyxusGpu::gpu_roiclouds_2d,
 				NyxusGpu::gpu_roicontours_2d,
 				NyxusGpu::dev_realintens,

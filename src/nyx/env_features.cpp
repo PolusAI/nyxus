@@ -85,8 +85,8 @@ bool Environment::spellcheck_raw_featurelist(const std::string& comma_separated_
 		if (dim() == 2)
 		{
 			// Is feature found among 2D features?
-			Fgroup2D afg;
-			bool gnameExists = theFeatureSet.find_2D_GroupByString (s_uppr, afg);
+			int fg; // signed Fgroup2D
+			bool gnameExists = theFeatureSet.find_2D_GroupByString (s_uppr, fg);
 
 			// Intercept an error: 2D feature group exists but requested in the non-2D mode
 			if (gnameExists && dim() != 2)
@@ -103,8 +103,8 @@ bool Environment::spellcheck_raw_featurelist(const std::string& comma_separated_
 				continue;
 			}
 
-			Feature2D af;
-			bool fnameExists = theFeatureSet.find_2D_FeatureByString (s_uppr, af);
+			int fcode;	// signed Feature2D
+			bool fnameExists = theFeatureSet.find_2D_FeatureByString (s_uppr, fcode);
 
 			// 2D feature group requested on a non-2D mode ?
 			if (fnameExists && dim() != 2)
@@ -117,7 +117,7 @@ bool Environment::spellcheck_raw_featurelist(const std::string& comma_separated_
 			if (!fnameExists)
 			{
 				success = false;
-				std::cerr << "Error: expecting '" << s << "' to be a proper 2D feature name or feature file path\n";
+				std::cerr << "Error: expecting '" + s + "' to be a proper 2D feature name or feature file path\n";
 			}
 			else
 				fnames.push_back(s_uppr);
@@ -185,65 +185,67 @@ bool Environment::spellcheck_raw_featurelist(const std::string& comma_separated_
 //
 bool Environment::expand_2D_featuregroup (const std::string & s)
 {
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_ALL))
+	int fgcode;
+	if (! Nyxus::theFeatureSet.find_2D_GroupByString(s, fgcode))
+		return false; // 's' is a feature name
+	bool enable = true;
+	if (fgcode < 0)
 	{
-		Nyxus::theFeatureSet.enableAll();
+		fgcode = -fgcode;
+		enable = false;
+	}
+
+	if ((Fgroup2D)fgcode == Fgroup2D::FG2_ALL)
+	{
+		Nyxus::theFeatureSet.enableAll (enable);
+		return true; 
+	}
+
+	if ((Fgroup2D)fgcode == Fgroup2D::FG2_WHOLESLIDE)
+	{
+		Nyxus::theFeatureSet.enableAll(enable);
 
 		// Handle whole-slide mode differently: disable features irrelevant to this mode (shape, neighbors, etc)
-		if (singleROI)
-		{
-			std::cout << box_text ("Activating whole slide (aka single-ROI) mode\n"
-				"ATTENTION: disabling inappplicable and time-sonsuming features:\n"
-				" - morphological features\n"
-				" - neighbor features\n"
-				" - GLDM, GLDZM, GLRLM, GLSZM, NGLDM, NGTDM");
+		std::cout << box_text(
+			"Activating whole slide (aka single-ROI) mode\n"
+			"Using GPU is advised!\n"
+			"ATTENTION: disabling inappplicable and time-sonsuming features:\n"
+			" - morphological features\n"
+			" - neighbor features\n"
+			" - GLDZM");
 
-			theFeatureSet.disableFeatures(BasicMorphologyFeatures::featureset);
-			theFeatureSet.disableFeatures(EnclosingInscribingCircumscribingCircleFeature::featureset);
-			theFeatureSet.disableFeatures(ContourFeature::featureset);		// and its dependencies below (see file reduce_trivial_rois_manual.cpp)
-			theFeatureSet.disableFeatures(ConvexHullFeature::featureset);				// depends on ContourFeature
-			theFeatureSet.disableFeatures(FractalDimensionFeature::featureset);		// depends on ContourFeature
-			theFeatureSet.disableFeatures(GeodeticLengthThicknessFeature::featureset);	// depends on ContourFeature
-			theFeatureSet.disableFeatures(NeighborsFeature::featureset);				// depends on ContourFeature
-			theFeatureSet.disableFeatures(RoiRadiusFeature::featureset);				// depends on ContourFeature
-			theFeatureSet.disableFeatures(EllipseFittingFeature::featureset);
-			theFeatureSet.disableFeatures(EulerNumberFeature::featureset);
-			theFeatureSet.disableFeatures(ExtremaFeature::featureset);
-			theFeatureSet.disableFeatures(ErosionPixelsFeature::featureset);
-			theFeatureSet.disableFeatures(CaliperFeretFeature::featureset);
-			theFeatureSet.disableFeatures(CaliperMartinFeature::featureset);
-			theFeatureSet.disableFeatures(CaliperNassensteinFeature::featureset);
-			theFeatureSet.disableFeatures(ChordsFeature::featureset);
+		theFeatureSet.disableFeatures (BasicMorphologyFeatures::featureset);
+		theFeatureSet.disableFeatures (EnclosingInscribingCircumscribingCircleFeature::featureset);
+		// enabling ContourFeature (builds a special trivial wholeslide contour)
+		theFeatureSet.disableFeatures (ConvexHullFeature::featureset);				// depends on ContourFeature
+		theFeatureSet.disableFeatures (FractalDimensionFeature::featureset);		// depends on ContourFeature
+		theFeatureSet.disableFeatures (GeodeticLengthThicknessFeature::featureset);	// depends on ContourFeature
+		theFeatureSet.disableFeatures (NeighborsFeature::featureset);				// no neighbors for whole slide; depends on ContourFeature
+		theFeatureSet.disableFeatures (RoiRadiusFeature::featureset);				// depends on ContourFeature
+		theFeatureSet.disableFeatures (EllipseFittingFeature::featureset);
+		theFeatureSet.disableFeatures (EulerNumberFeature::featureset);
+		theFeatureSet.disableFeatures (ExtremaFeature::featureset);
+		theFeatureSet.disableFeatures (ErosionPixelsFeature::featureset);
+		theFeatureSet.disableFeatures (CaliperFeretFeature::featureset);
+		theFeatureSet.disableFeatures (CaliperMartinFeature::featureset);
+		theFeatureSet.disableFeatures (CaliperNassensteinFeature::featureset);
+		theFeatureSet.disableFeatures (ChordsFeature::featureset);
 
-			// enabling GaborFeature
-			// enabling ImageMomentsFeature
-			// enabling GLCMFeature
+		// enabling GaborFeature
+		// enabling ImageMomentsFeature
+		// 
+		// enabling GLCMFeature
+		// enabling GLDMFeature
+		theFeatureSet.disableFeatures(GLDZMFeature::featureset);	// costs about 82 %
+		// enabling GLRLMFeature 
+		// enabling GLSZMFeature
+		// enabling NGLDMfeature
+		// enabling NGTDMFeature
 
-			theFeatureSet.disableFeatures(GLDMFeature::featureset);		// costs about 4.72 %
-			theFeatureSet.disableFeatures(GLDZMFeature::featureset);	// costs about 38.14 %
-			theFeatureSet.disableFeatures(GLRLMFeature::featureset);	// costs about 17.29 %
-			theFeatureSet.disableFeatures(GLSZMFeature::featureset);	// costs about 15.94 %
-			theFeatureSet.disableFeatures(NGLDMfeature::featureset);	// costs about 3.57 %
-			theFeatureSet.disableFeatures(NGTDMFeature::featureset);	// costs about 5.13 %
-		}
-		
-		return true; 
-	}
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_BUT_GABOR))
-	{
-		Nyxus::theFeatureSet.enableAll();
-		auto F = { Feature2D::GABOR };
-		Nyxus::theFeatureSet.disableFeatures(F);
-		return true; 
-	}
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_ALL_BUT_GLCM))
-	{
-		Nyxus::theFeatureSet.enableAll();
-		theFeatureSet.disableFeatures(GLCMFeature::featureset);
 		return true;
 	}
 
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_EASY))
+	if ((Fgroup2D) fgcode == Fgroup2D::FG2_EASY)
 	{
 		theFeatureSet.enableAll();
 		theFeatureSet.disableFeatures(GaborFeature::featureset);
@@ -253,19 +255,18 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 		return true;
 	}
 
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_NEIG))
+	if ((Fgroup2D) fgcode == Fgroup2D::FG2_NEIG)
 	{
-		theFeatureSet.enableAll();
-		theFeatureSet.enableFeatures(NeighborsFeature::featureset);
+		Nyxus::theFeatureSet.enableFeatures (NeighborsFeature::featureset, enable);
 		return true;
 	}
 
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_INTENSITY))
+	if ((Fgroup2D) fgcode == Fgroup2D::FG2_INTENSITY)
 	{
-		theFeatureSet.enableFeatures(PixelIntensityFeatures::featureset);
+		Nyxus::theFeatureSet.enableFeatures (PixelIntensityFeatures::featureset, enable);
 		return true;
 	}
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_MORPHOLOGY))
+	if ((Fgroup2D) fgcode == Fgroup2D::FG2_MORPHOLOGY)
 	{
 		auto F = {
 			Feature2D::AREA_PIXELS_COUNT,
@@ -297,10 +298,10 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 			Feature2D::EDGE_MIN_INTENSITY,
 			Feature2D::CIRCULARITY,
 			Feature2D::MASS_DISPLACEMENT };
-		theFeatureSet.enableFeatures(F);
+		Nyxus::theFeatureSet.enableFeatures (F, enable);
 		return true;
 	}
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_BASIC_MORPHOLOGY))
+	if ((Fgroup2D)fgcode == Fgroup2D::FG2_BASIC_MORPHOLOGY)
 	{
 		auto F = {
 			Feature2D::AREA_PIXELS_COUNT,
@@ -311,61 +312,61 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 			Feature2D::BBOX_XMIN,
 			Feature2D::BBOX_HEIGHT,
 			Feature2D::BBOX_WIDTH };
-		theFeatureSet.enableFeatures(F);
+		Nyxus::theFeatureSet.enableFeatures (F, enable);
 		return true;
 	}
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_GLCM))
+	if ((Fgroup2D)fgcode == Fgroup2D::FG2_GLCM)
 	{
-		theFeatureSet.enableFeatures(GLCMFeature::featureset);
+		Nyxus::theFeatureSet.enableFeatures (GLCMFeature::featureset, enable);
 		return true;
 	}
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_GLRLM))
+	if ((Fgroup2D)fgcode == Fgroup2D::FG2_GLRLM)
 	{
-		theFeatureSet.enableFeatures(GLRLMFeature::featureset);
+		Nyxus::theFeatureSet.enableFeatures (GLRLMFeature::featureset, enable);
 		return true;
 	}
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_GLDZM))
+	if ((Fgroup2D)fgcode == Fgroup2D::FG2_GLDZM)
 	{
-		theFeatureSet.enableFeatures(GLDZMFeature::featureset);
+		Nyxus::theFeatureSet.enableFeatures (GLDZMFeature::featureset, enable);
 		return true;
 	}
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_GLSZM))
+	if ((Fgroup2D)fgcode == Fgroup2D::FG2_GLSZM)
 	{
-		theFeatureSet.enableFeatures(GLSZMFeature::featureset);
+		Nyxus::theFeatureSet.enableFeatures (GLSZMFeature::featureset, enable);
 		return true;
 	}
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_GLDM))
+	if ((Fgroup2D)fgcode == Fgroup2D::FG2_GLDM)
 	{
-		theFeatureSet.enableFeatures(GLDMFeature::featureset);
+		Nyxus::theFeatureSet.enableFeatures(GLDMFeature::featureset, enable);
 		return true;
 	}
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_NGLDM))
+	if ((Fgroup2D)fgcode == Fgroup2D::FG2_NGLDM)
 	{
-		theFeatureSet.enableFeatures(NGLDMfeature::featureset);
+		Nyxus::theFeatureSet.enableFeatures (NGLDMfeature::featureset, enable);
 		return true;
 	}
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_NGTDM))
+	if ((Fgroup2D)fgcode == Fgroup2D::FG2_NGTDM)
 	{
-		theFeatureSet.enableFeatures(NGTDMFeature::featureset);
-		return true;
-	}
-
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_GEOMOMENTS))
-	{
-		theFeatureSet.enableFeatures (Smoms2D_feature::featureset);
-		theFeatureSet.enableFeatures (Imoms2D_feature::featureset);
+		Nyxus::theFeatureSet.enableFeatures (NGTDMFeature::featureset, enable);
 		return true;
 	}
 
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_GEOMOMENTS_I))
+	if ((Fgroup2D)fgcode == Fgroup2D::FG2_GEOMOMENTS)
 	{
-		theFeatureSet.enableFeatures(Imoms2D_feature::featureset);
+		Nyxus::theFeatureSet.enableFeatures (Smoms2D_feature::featureset, enable);
+		Nyxus::theFeatureSet.enableFeatures (Imoms2D_feature::featureset, enable);
 		return true;
 	}
 
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_GEOMOMENTS_S))
+	if ((Fgroup2D)fgcode == Fgroup2D::FG2_GEOMOMENTS_I)
 	{
-		theFeatureSet.enableFeatures(Smoms2D_feature::featureset);
+		Nyxus::theFeatureSet.enableFeatures (Imoms2D_feature::featureset, enable);
+		return true;
+	}
+
+	if ((Fgroup2D)fgcode == Fgroup2D::FG2_GEOMOMENTS_S)
+	{
+		Nyxus::theFeatureSet.enableFeatures (Smoms2D_feature::featureset, enable);
 		return true;
 	}
 
@@ -487,15 +488,14 @@ bool Environment::expand_IMQ_featuregroup (const std::string & s)
 	return false;
 }
 
-
 void Environment::expand_featuregroups()
 {
+	// initially, no features are enabled
 	theFeatureSet.enableAll(false); 
-	for (auto& s : recognizedFeatureNames) // Second, iterate uppercased feature names
-	{
-		// Enforce the feature names to be in uppercase
-		s = Nyxus::toupper(s);
 
+	// enable/disable feature groups and individual features according to user's choice
+	for (auto& s : recognizedFeatureNames)
+	{
 		if (is_imq()) {
 			if (expand_IMQ_featuregroup (s)) 
 				return;
@@ -523,11 +523,12 @@ void Environment::expand_featuregroups()
 		// 's' is an individual feature name, not feature group name. Process it now
 		if (dim() == 2)
 		{
-			Feature2D a;
-			if (!theFeatureSet.find_2D_FeatureByString(s, a))
+			int fcode; // signed Feature2D
+			if (!theFeatureSet.find_2D_FeatureByString (s, fcode))
 				throw std::invalid_argument("Error: '" + s + "' is not a valid 2D feature name \n");
 
-			theFeatureSet.enableFeature (int(a));
+			theFeatureSet.enableFeature (fcode);
+
 			continue;
 		}
 

@@ -117,7 +117,9 @@ namespace NyxusGpu
 	extern GpuCache <PixIntens> gabor_energy_image; // (img_plus_ker_size* n_filters);
 
 	// these need to be called after "prescan"
+
 	bool gpu_get_free_mem(size_t& amt);
+
 	bool allocate_gpu_cache(
 		// out
 		GpuCache<Pixel2>& clouds,
@@ -135,6 +137,10 @@ namespace NyxusGpu
 		GpuCache <cufftDoubleComplex> & gabor_linear_kernel,
 		GpuCache <PixIntens> & gabor_energy,
 			// in
+		bool needContour,
+		bool needErosion,
+		bool needGabor,
+		bool needMoments,
 		size_t roi_cloud_len,
 		size_t roi_kontur_cloud_len,
 		size_t n_rois,
@@ -143,7 +149,14 @@ namespace NyxusGpu
 		size_t roi_h,
 		int gabor_n_filters,
 		int gabor_ker_side);
+
 	bool free_gpu_cache(
+		/*?????
+		bool needContour,
+		bool needErosion,
+		bool needGabor,
+		bool needMoments, 
+		*/
 		GpuCache<Pixel2>& clouds,
 		GpuCache<Pixel2>& konturs,
 		RealPixIntens*& realintens,
@@ -160,7 +173,9 @@ namespace NyxusGpu
 
 	// these need to be called in "reduce_trivial"
 	void send_roi_data_gpuside(const std::vector<int>& ptrLabels, std::unordered_map <int, LR>& ptrLabelData, size_t off_this_batch, size_t actual_batch_len);
-	void free_roi_data_gpuside();
+	
+	//????????????????	void free_roi_data_gpuside();
+	
 	void send_roi_batch_data_2_gpu(
 		// out
 		GpuCache<Pixel2>& cloud,
@@ -175,6 +190,15 @@ namespace NyxusGpu
 		std::unordered_map <int, LR>& roi_data,
 		size_t batch_offset,
 		size_t batch_len);
+
+	// general purpose low-level helpers
+
+	bool gpu_delete(void* devptr);
+	bool allocate_on_device(void** ptr, size_t szb);
+	bool upload_on_device(void* devbuffer, void* hobuffer, size_t szb);
+	bool download_on_host(void* hobuffer, void* devbuffer, size_t szb);
+	bool devicereduce_evaluate_buffer_szb(size_t& devicereduce_buf_szb, size_t maxLen);
+	bool gpu_get_free_mem(size_t& amt);
 
 #endif
 

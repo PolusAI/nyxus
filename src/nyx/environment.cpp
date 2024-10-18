@@ -779,7 +779,10 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		rawFeatures = featureList;
 	}
 
-	// --Make sure all the feature names are legal and cast to uppercase (class FeatureSet understands uppercase names)
+	// -- uppercase it (class FeatureSet understands uppercase names)
+	rawFeatures = Nyxus::toupper (rawFeatures);
+	
+	// --Make sure all the feature names are correct
 	if (!spellcheck_raw_featurelist(rawFeatures, recognizedFeatureNames))
 	{
 		std::cerr << "Stopping due to errors while parsing user requested features\n";
@@ -794,6 +797,13 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	catch (std::exception& e)
 	{
 		std::cerr << e.what();
+		return false;
+	}
+
+	// -- check if any feature is enablesd as a result of expanding user's choice
+	if (theFeatureSet.numOfEnabled() == 0)
+	{
+		std::cerr << "Error: no features are selected. Stopping \n";
 		return false;
 	}
 

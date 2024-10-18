@@ -86,6 +86,24 @@ protected:
     void calcWeightedCentralMoments(const pixcloud_NT& cloud);
     void calcHuInvariants(const pixcloud_NT& cloud);
     void calcWeightedHuInvariants(const pixcloud_NT& cloud);
+
+    // helpers
+
+    void apply_dist2contour_weighting (
+        // input & output
+        reintenvec& realintens,
+        // input
+        const pixcloud& cloud,
+        const pixcloud& contour,
+        const double epsilon);
+
+    void apply_dist2contour_weighting_wholeslide (
+        // input & output
+        reintenvec& realintens,
+        // input
+        const pixcloud& cloud,
+        const pixcloud& contour,
+        const double epsilon);
 };
 
 // 2D intensity geometric features
@@ -375,7 +393,7 @@ private:
 
 namespace NyxusGpu
 {
-    bool GeoMoments2D_calculate (size_t roi_idx, bool need_shape_moments);
+    bool GeoMoments2D_calculate (size_t roi_idx, bool wholeslide, bool need_shape_moments);
 }
 
 #endif
