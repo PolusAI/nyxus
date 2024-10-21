@@ -800,12 +800,6 @@ namespace Nyxus
 		if (theEnvironment.using_gpu())
 		{
 			if (!NyxusGpu::free_gpu_cache(
-				/*??????
-				needContour,
-				needErosion,
-				needGabor,
-				needMoments, 
-				*/
 				NyxusGpu::gpu_roiclouds_2d,
 				NyxusGpu::gpu_roicontours_2d,
 				NyxusGpu::dev_realintens,

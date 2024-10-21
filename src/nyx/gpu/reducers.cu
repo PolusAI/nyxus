@@ -81,8 +81,7 @@ namespace NyxusGpu
         const T* g_idata) 
     {
         // Handle to thread block group
-        //???   cg::thread_block cta = cg::this_thread_block();
-        T* sdata = SharedMemory<T>();
+        T* sdata = SharedMemory<T>();   // cg::thread_block cta = cg::this_thread_block();
 
         // load shared mem
         unsigned int tid = threadIdx.x;
@@ -90,7 +89,7 @@ namespace NyxusGpu
 
         sdata[tid] = (i < n) ? g_idata[i] : 0;
 
-        __syncthreads(); //???   cg::sync(cta);
+        __syncthreads(); // cg::sync(cta);
 
         // do reduction in shared mem
         for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) 
@@ -100,7 +99,7 @@ namespace NyxusGpu
                 sdata[tid] += sdata[tid + s];
             }
 
-            __syncthreads(); //???   cg::sync(cta);
+            __syncthreads(); // cg::sync(cta);
         }
 
         // write result for this block to global mem

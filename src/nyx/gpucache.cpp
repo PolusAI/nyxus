@@ -509,7 +509,7 @@ namespace NyxusGpu
 		VERBOSLVL1(std::cout << "szb for " << Nyxus::virguler(n_rois) << " ROIs (ideal ROI px:" << Nyxus::virguler(roi_cloud_len) << ", ideal contour px:" << Nyxus::virguler(roi_kontur_cloud_len) << ") = " << Nyxus::virguler(szb) << "\n");
 
 		batch_len = n_rois;
-		size_t critAmt = amt * 0.95; // amt / 2;	// 50% GPU RAM as critical RAM
+		size_t critAmt = amt * 0.75; // 75% GPU RAM as critical RAM
 
 		VERBOSLVL1(std::cout << "critical GPU RAM amt = " << Nyxus::virguler(critAmt) << "\n");
 
@@ -540,7 +540,7 @@ namespace NyxusGpu
 
 				if (critAmt > try_szb)
 				{
-					VERBOSLVL1(std::cout << "good! batch_len=" << try_nrois << "\n");
+					VERBOSLVL1(std::cout << "batching is successful, batch_len=" << try_nrois << "\n");
 					batch_len = try_nrois;
 					break;
 				}
@@ -728,12 +728,6 @@ namespace NyxusGpu
 	}
 
 	bool free_gpu_cache (
-		/*??????????
-		bool needContour,
-		bool needErosion,
-		bool needGabor,
-		bool needMoments, 
-		*/
 		GpuCache<Pixel2>& clouds,
 		GpuCache<Pixel2>& konturs,
 		RealPixIntens* & realintens,
