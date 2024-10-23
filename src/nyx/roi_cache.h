@@ -7,6 +7,7 @@
 #include "features/aabb.h"
 #include "features/image_matrix.h"
 #include "features/image_matrix_nontriv.h"
+#include "features/image_cube.h"
 #include "features/pixel.h"
 #include "featureset.h"
 #include "roi_cache_basic.h"
@@ -77,9 +78,13 @@ public:
 
 	std::vector<int> aux_neighboring_labels;
 
+	// 2D
 	// needed by Contour, Erosions, GLCM, GLRLM, GLSZM, GLDM, NGTDM, Radial distribution, Gabor, Moments, ROI radius
 	ImageMatrix aux_image_matrix;
 	size_t im_buffer_offset;
+
+	// 3D
+	SimpleCube<PixIntens> aux_image_cube;
 
 	// Stats across ROI pixels of the whole image
 	static PixIntens global_min_inten;
