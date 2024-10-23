@@ -701,6 +701,24 @@ namespace Nyxus
 		{ "3D_SPAT_MOMENT_23", Feature3D::SPAT_MOMENT_23 },
 		{ "3D_SPAT_MOMENT_30", Feature3D::SPAT_MOMENT_30 },
 
+		{ "3D_GLDZM_SDE", Feature3D::GLDZM_SDE},		// Small Distance Emphasis
+		{ "3D_GLDZM_LDE", Feature3D::GLDZM_LDE },		// Large Distance Emphasis
+		{ "3D_GLDZM_LGLZE", Feature3D::GLDZM_LGLZE },		// Low Grey Level Zone Emphasis
+		{ "3D_GLDZM_HGLZE", Feature3D::GLDZM_HGLZE },		// High Grey Level Zone Emphasis
+		{ "3D_GLDZM_SDLGLE", Feature3D::GLDZM_SDLGLE },	// Small Distance Low Grey Level Emphasis
+		{ "3D_GLDZM_SDHGLE", Feature3D::GLDZM_SDHGLE },	// Small Distance High GreyLevel Emphasis
+		{ "3D_GLDZM_LDLGLE", Feature3D::GLDZM_LDLGLE },	// Large Distance Low Grey Level Emphasis
+		{ "3D_GLDZM_LDHGLE", Feature3D::GLDZM_LDHGLE },	// Large Distance High Grey Level Emphasis
+		{ "3D_GLDZM_GLNU", Feature3D::GLDZM_GLNU },		// Grey Level Non Uniformity
+		{ "3D_GLDZM_GLNUN", Feature3D::GLDZM_GLNUN },	// Grey Level Non Uniformity Normalized
+		{ "3D_GLDZM_ZDNU", Feature3D::GLDZM_ZDNU },		// Zone Distance Non Uniformity
+		{ "3D_GLDZM_ZDNUN", Feature3D::GLDZM_ZDNUN },	// Zone Distance Non Uniformity Normalized
+		{ "3D_GLDZM_ZP", Feature3D::GLDZM_ZP },		// Zone Percentage
+		{ "3D_GLDZM_GLM", Feature3D::GLDZM_GLM },		// Grey Level Mean
+		{ "3D_GLDZM_GLV", Feature3D::GLDZM_GLV },		// Grey Level Variance
+		{ "3D_GLDZM_ZDM", Feature3D::GLDZM_ZDM },		// Zone Distance Mean
+		{ "3D_GLDZM_ZDV", Feature3D::GLDZM_ZDV },		// Zone Distance Variance
+		{ "3D_GLDZM_ZDE", Feature3D::GLDZM_ZDE },		// Zone Distance Entropy
 	};
 
 	std::map <std::string, Fgroup3D> UserFacing3dFeaturegroupNames =
@@ -709,6 +727,7 @@ namespace Nyxus
 		{ "*3D_ALL_INTENSITY*", Fgroup3D::FG3_INTENSITY },
 		{ "*3D_ALL_MORPHOLOGY*", Fgroup3D::FG3_MORPHOLOGY },
 		{ "*3D_ALL_TEXTURE*", Fgroup3D::FG3_TEXTURE },
+		{ "*3D_GLDZM*", Fgroup3D::FG3_GLDZM },
 		{ "*3D_ALL_NEIGHBOR*", Fgroup3D::FG3_NEIG },
 		{ "*3D_MOMENTS*", Fgroup3D::FG3_MOMENTS },
 	};
