@@ -94,6 +94,12 @@ struct Pixel2 : public Point2i
 		return p; 
 	}
 
+	// vertically or horizontally aligned
+	bool aligned (const Pixel2 & p) const
+	{
+		return this->x == p.x || this->y == p.y;
+	}
+
 	/// @brief Returns squared distance between 'x' and 'y'
 	double sqdist(int x, int y) const;
 
@@ -105,6 +111,9 @@ struct Pixel2 : public Point2i
 
 	/// @brief Returns the squared distance from this pixel to segment 'p1,p2'
 	double sqdist_to_segment(const Pixel2& p1, const Pixel2& p2) const;
+
+	/// @brief Returns the distance from this pixel to segment 'p1,p2'
+		double dist_to_segment (const Pixel2 & p1, const Pixel2 & p2) const;
 
 	/// @brief Returns true if this and 'other' pixels share the same location
 	bool colocating(const Pixel2& other) const

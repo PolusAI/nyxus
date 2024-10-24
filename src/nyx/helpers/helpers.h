@@ -395,4 +395,41 @@ namespace Nyxus
 
 		return { smallest, largest };
 	}
+
+	inline std::string virguler (size_t x)
+	{
+		const char SEP = ',';
+
+		std::string s1 = std::to_string(x);
+		size_t s1_len = s1.length(),
+			n_vir = s1_len / 3,
+			s2_len = s1.length() + n_vir;
+		std::string s2(s2_len, '_');
+
+		size_t k = s2_len - 1;
+		for (size_t i = s1_len; i >= 1; i--)
+		{
+			char c1 = s1[i - 1];
+			s2[k--] = c1;
+			if ((s1_len - i) && (s1_len - i + 1) % 3 == 0)
+				s2[k--] = SEP;
+			continue;
+		}
+
+		// case where s1_len % 3 != 0
+		if (s2[0] == SEP)
+			s2.erase(0, 1);
+
+		return s2;
+	}
+
+	inline std::string remove_whitespaces (const std::string & s)
+	{
+		std::string s2;
+		for (char c : s) 
+			if (!std::isspace(c)) 
+				s2 += c;
+		return s2;
+	}
+
 }

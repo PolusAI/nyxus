@@ -1,3 +1,4 @@
+#include <climits>
 #include "pixel.h"
 
 bool operator == (const Pixel2& p1, const Pixel2& p2)
@@ -162,12 +163,25 @@ bool Pixel2::belongs_to(const std::vector<Pixel2>& cloud) const
 	return false;
 }
 
-double Pixel2::sqdist_to_segment(const Pixel2& p1, const Pixel2& p2) const
+double Pixel2::sqdist_to_segment (const Pixel2& p1, const Pixel2& p2) const
 {
 	double x21 = p2.x - p1.x,
 		y21 = p2.y - p1.y;
 	double retval = (x21 * (p1.y - this->y) - (p1.x - this->x) * y21) / std::sqrt(x21 * x21 + y21 * y21);
 	return std::abs(retval);
+}
+
+double Pixel2::dist_to_segment (const Pixel2 & p1, const Pixel2 & p2) const
+{
+	double dx = p2.x - p1.x,
+		dy = p2.y - p1.y;
+
+	double h = dx * dx + dy * dy;
+	if (h <= 0)
+		return (double)INT_MAX;
+
+	double retval = std::fabs(dy*this->x - dx*this->y + p2.x*p1.y - p2.y*p1.x) / sqrt(h);
+	return retval;
 }
 
 double Pixel2::sum_sqdist(const std::vector<Pixel2>& cloud) const

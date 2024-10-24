@@ -6,6 +6,7 @@
 #endif
 
 #include "2d_geomoments.h"
+#include "../environment.h"
 
 
 //********************** i-moms
@@ -182,7 +183,10 @@ void Imoms2D_feature::gpu_process_all_rois(
 
 void Imoms2D_feature::calculate_via_gpu(LR& r, size_t roi_idx)
 {
-    bool ok = NyxusGpu::GeoMoments2D_calculate(roi_idx, false);
+    bool ok = NyxusGpu::GeoMoments2D_calculate(
+        roi_idx, 
+        Nyxus::theEnvironment.singleROI, 
+        false);
     if (!ok)
         std::cerr << "Geometric moments: error calculating features on GPU\n";
 }
@@ -307,8 +311,6 @@ void Imoms2D_feature::save_values_from_gpu_buffer(
 
 #endif
 
-
-
 //********************** s-moms
 
 Smoms2D_feature::Smoms2D_feature() : FeatureMethod("Smoms2D")
@@ -408,22 +410,22 @@ void Smoms2D_feature::save_value(std::vector<std::vector<double>>& fvals)
     fvals[(int)Nyxus::Feature2D::NORM_CENTRAL_MOMENT_21][0] = nu21;
     fvals[(int)Nyxus::Feature2D::NORM_CENTRAL_MOMENT_30][0] = nu30;
 
-    fvals[(int)Nyxus::Feature2D::IMOM_NRM_00][0] = w00;
-    fvals[(int)Nyxus::Feature2D::IMOM_NRM_01][0] = w01;
-    fvals[(int)Nyxus::Feature2D::IMOM_NRM_02][0] = w02;
-    fvals[(int)Nyxus::Feature2D::IMOM_NRM_03][0] = w03;
-    fvals[(int)Nyxus::Feature2D::IMOM_NRM_10][0] = w10;
-    fvals[(int)Nyxus::Feature2D::IMOM_NRM_11][0] = w11;
-    fvals[(int)Nyxus::Feature2D::IMOM_NRM_12][0] = w12;
-    fvals[(int)Nyxus::Feature2D::IMOM_NRM_13][0] = w13;
-    fvals[(int)Nyxus::Feature2D::IMOM_NRM_20][0] = w20;
-    fvals[(int)Nyxus::Feature2D::IMOM_NRM_21][0] = w21;
-    fvals[(int)Nyxus::Feature2D::IMOM_NRM_22][0] = w22;
-    fvals[(int)Nyxus::Feature2D::IMOM_NRM_23][0] = w23;
-    fvals[(int)Nyxus::Feature2D::IMOM_NRM_30][0] = w30;
-    fvals[(int)Nyxus::Feature2D::IMOM_NRM_31][0] = w31;
-    fvals[(int)Nyxus::Feature2D::IMOM_NRM_32][0] = w32;
-    fvals[(int)Nyxus::Feature2D::IMOM_NRM_33][0] = w33;
+    fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_00][0] = w00;
+    fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_01][0] = w01;
+    fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_02][0] = w02;
+    fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_03][0] = w03;
+    fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_10][0] = w10;
+    fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_11][0] = w11;
+    fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_12][0] = w12;
+    fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_13][0] = w13;
+    fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_20][0] = w20;
+    fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_21][0] = w21;
+    fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_22][0] = w22;
+    fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_23][0] = w23;
+    fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_30][0] = w30;
+    fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_31][0] = w31;
+    fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_32][0] = w32;
+    fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_33][0] = w33;
 
     fvals[(int)Nyxus::Feature2D::HU_M1][0] = hm1;
     fvals[(int)Nyxus::Feature2D::HU_M2][0] = hm2;
@@ -483,7 +485,10 @@ void Smoms2D_feature::gpu_process_all_rois(
 
 void Smoms2D_feature::calculate_via_gpu(LR& r, size_t roi_idx)
 {
-    bool ok = NyxusGpu::GeoMoments2D_calculate(roi_idx, true);
+    bool ok = NyxusGpu::GeoMoments2D_calculate(
+        roi_idx,  
+        Nyxus::theEnvironment.singleROI,
+        true);
     if (!ok)
         std::cerr << "Geometric moments: error calculating features on GPU\n";
 }
@@ -536,22 +541,22 @@ void Smoms2D_feature::save_values_from_gpu_buffer(
         fvals[(int)Nyxus::Feature2D::CENTRAL_MOMENT_32][0] = ptrBuf[GpusideState::CM32];
         fvals[(int)Nyxus::Feature2D::CENTRAL_MOMENT_33][0] = ptrBuf[GpusideState::CM33];
 
-        fvals[(int)Nyxus::Feature2D::IMOM_NRM_00][0] = ptrBuf[GpusideState::W00];
-        fvals[(int)Nyxus::Feature2D::IMOM_NRM_01][0] = ptrBuf[GpusideState::W01];
-        fvals[(int)Nyxus::Feature2D::IMOM_NRM_02][0] = ptrBuf[GpusideState::W02];
-        fvals[(int)Nyxus::Feature2D::IMOM_NRM_03][0] = ptrBuf[GpusideState::W03];
-        fvals[(int)Nyxus::Feature2D::IMOM_NRM_10][0] = ptrBuf[GpusideState::W10];
-        fvals[(int)Nyxus::Feature2D::IMOM_NRM_11][0] = ptrBuf[GpusideState::W11];
-        fvals[(int)Nyxus::Feature2D::IMOM_NRM_12][0] = ptrBuf[GpusideState::W12];
-        fvals[(int)Nyxus::Feature2D::IMOM_NRM_13][0] = ptrBuf[GpusideState::W13];
-        fvals[(int)Nyxus::Feature2D::IMOM_NRM_20][0] = ptrBuf[GpusideState::W20];
-        fvals[(int)Nyxus::Feature2D::IMOM_NRM_21][0] = ptrBuf[GpusideState::W21];
-        fvals[(int)Nyxus::Feature2D::IMOM_NRM_22][0] = ptrBuf[GpusideState::W22];
-        fvals[(int)Nyxus::Feature2D::IMOM_NRM_23][0] = ptrBuf[GpusideState::W23];
-        fvals[(int)Nyxus::Feature2D::IMOM_NRM_30][0] = ptrBuf[GpusideState::W30];
-        fvals[(int)Nyxus::Feature2D::IMOM_NRM_31][0] = ptrBuf[GpusideState::W31];
-        fvals[(int)Nyxus::Feature2D::IMOM_NRM_32][0] = ptrBuf[GpusideState::W32];
-        fvals[(int)Nyxus::Feature2D::IMOM_NRM_33][0] = ptrBuf[GpusideState::W33];
+        fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_00][0] = ptrBuf[GpusideState::W00];
+        fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_01][0] = ptrBuf[GpusideState::W01];
+        fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_02][0] = ptrBuf[GpusideState::W02];
+        fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_03][0] = ptrBuf[GpusideState::W03];
+        fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_10][0] = ptrBuf[GpusideState::W10];
+        fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_11][0] = ptrBuf[GpusideState::W11];
+        fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_12][0] = ptrBuf[GpusideState::W12];
+        fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_13][0] = ptrBuf[GpusideState::W13];
+        fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_20][0] = ptrBuf[GpusideState::W20];
+        fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_21][0] = ptrBuf[GpusideState::W21];
+        fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_22][0] = ptrBuf[GpusideState::W22];
+        fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_23][0] = ptrBuf[GpusideState::W23];
+        fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_30][0] = ptrBuf[GpusideState::W30];
+        fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_31][0] = ptrBuf[GpusideState::W31];
+        fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_32][0] = ptrBuf[GpusideState::W32];
+        fvals[(int)Nyxus::Feature2D::NORM_SPAT_MOMENT_33][0] = ptrBuf[GpusideState::W33];
 
         fvals[(int)Nyxus::Feature2D::NORM_CENTRAL_MOMENT_02][0] = ptrBuf[GpusideState::NU02];
         fvals[(int)Nyxus::Feature2D::NORM_CENTRAL_MOMENT_03][0] = ptrBuf[GpusideState::NU03];
