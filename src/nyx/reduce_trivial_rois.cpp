@@ -40,8 +40,11 @@
 #include "features/caliper.h"
 #include "features/roi_radius.h"
 #include "features/zernike.h"
-#include "features/intensity_3d.h"
+
+#include "features/3d_intensity.h"
+#include "features/3d_gldzm.h"
 //--future-- #include "features/3d_surface.h"
+
 #include "features/focus_score.h"
 #include "features/power_spectrum.h"
 #include "features/saturation.h"
@@ -363,12 +366,20 @@ namespace Nyxus
 
 	void reduce_trivial_3d (std::vector<int>& L, int n_threads, size_t work_per_thread, size_t job_size)
 	{
-		//==== Intensity
-		if (PixelIntensityFeatures_3D::required(theFeatureSet))
+		//==== intensity
+		if (D3_PixelIntensityFeatures::required(theFeatureSet))
 		{
 			STOPWATCH("3D intensity/3Dintensity/3DI/#FFFF00", "\t=");
-			runParallel(PixelIntensityFeatures_3D::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
+			runParallel (D3_PixelIntensityFeatures::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
 		}
+		//==== texture
+		if (D3_GLDZM_feature::required(theFeatureSet))
+		{
+			STOPWATCH("3D GLDZM/3DGLDZM/3DGLDZM/#FFFF00", "\t=");
+			runParallel (D3_GLDZM_feature::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
+		}		
+
+
 		//==== morphology/surface
 		//--future--
 		//		if (D3_SurfaceFeature::required(theFeatureSet))

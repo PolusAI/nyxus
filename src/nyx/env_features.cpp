@@ -470,6 +470,38 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 		return true;
 	}
 
+	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_GLDZM))
+	{
+		theFeatureSet.enableAll(false);
+
+		auto F =
+		{
+			Feature3D::GLDZM_SDE,
+			Feature3D::GLDZM_LDE,
+			Feature3D::GLDZM_LGLZE,
+			Feature3D::GLDZM_HGLZE,
+			Feature3D::GLDZM_SDLGLE,
+			Feature3D::GLDZM_SDHGLE,
+			Feature3D::GLDZM_LDLGLE,
+			Feature3D::GLDZM_LDHGLE,
+			Feature3D::GLDZM_GLNU,
+			Feature3D::GLDZM_GLNUN,
+			Feature3D::GLDZM_ZDNU,
+			Feature3D::GLDZM_ZDNUN,
+			Feature3D::GLDZM_ZP,
+			Feature3D::GLDZM_GLM,
+			Feature3D::GLDZM_GLV,
+			Feature3D::GLDZM_ZDM,
+			Feature3D::GLDZM_ZDV,
+			Feature3D::GLDZM_ZDE
+		};
+
+		theFeatureSet.enableFeatures(F);
+		return true;
+	}
+
+
+
 	return false;
 }
 

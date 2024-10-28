@@ -658,6 +658,26 @@ namespace Nyxus
 		SPAT_MOMENT_23,
 		SPAT_MOMENT_30,
 
+		// Texture / GLDZM
+		GLDZM_SDE,		// Small Distance Emphasis
+		GLDZM_LDE,		// Large Distance Emphasis
+		GLDZM_LGLZE,		// Low Grey Level Zone Emphasis
+		GLDZM_HGLZE,		// High Grey Level Zone Emphasis
+		GLDZM_SDLGLE,	// Small Distance Low Grey Level Emphasis
+		GLDZM_SDHGLE,	// Small Distance High GreyLevel Emphasis
+		GLDZM_LDLGLE,	// Large Distance Low Grey Level Emphasis
+		GLDZM_LDHGLE,	// Large Distance High Grey Level Emphasis
+		GLDZM_GLNU,		// Grey Level Non Uniformity
+		GLDZM_GLNUN,	// Grey Level Non Uniformity Normalized
+		GLDZM_ZDNU,		// Zone Distance Non Uniformity
+		GLDZM_ZDNUN,	// Zone Distance Non Uniformity Normalized
+		GLDZM_ZP,		// Zone Percentage
+		GLDZM_GLM,		// Grey Level Mean
+		GLDZM_GLV,		// Grey Level Variance
+		GLDZM_ZDM,		// Zone Distance Mean
+		GLDZM_ZDV,		// Zone Distance Variance
+		GLDZM_ZDE,		// Zone Distance Entropy
+
 		_COUNT_
 	};
 
@@ -702,7 +722,8 @@ namespace Nyxus
 		FG3_ALL = (int) Fgroup2D::_COUNT_,
 		FG3_INTENSITY,
 		FG3_MORPHOLOGY,
-		FG3_TEXTURE,
+		FG3_TEXTURE,			// 3D_GLCM + 3D_GLRLM + 3D_DLSZM + etc
+		FG3_GLDZM,
 		FG3_NEIG,
 		FG3_MOMENTS,
 		_COUNT_

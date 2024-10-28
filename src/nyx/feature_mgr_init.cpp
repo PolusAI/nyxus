@@ -22,12 +22,15 @@
 #include "features/ngtdm.h"
 #include "features/2d_geomoments.h"
 #include "features/intensity.h"
-#include "features/intensity_3d.h"
 #include "features/moments.h"
 #include "features/neighbors.h"
 #include "features/caliper.h"
 #include "features/roi_radius.h"
 #include "features/zernike.h"
+
+#include "features/3d_intensity.h"
+#include "features/3d_gldzm.h"
+
 #include "features/focus_score.h"
 #include "features/power_spectrum.h"
 #include "features/saturation.h"
@@ -35,6 +38,7 @@
 
 FeatureManager::FeatureManager()
 {
+	// 2D
 	register_feature (new PixelIntensityFeatures());
 	register_feature (new BasicMorphologyFeatures());
 	register_feature (new NeighborsFeature());
@@ -65,7 +69,11 @@ FeatureManager::FeatureManager()
 	register_feature (new GaborFeature());
 	register_feature (new ZernikeFeature());
 	register_feature (new RadialDistributionFeature());
-	register_feature (new PixelIntensityFeatures_3D());
+	// 3D
+	register_feature (new D3_PixelIntensityFeatures());
+	register_feature (new D3_GLDZM_feature());
+
+	// image quality
 	register_feature (new FocusScoreFeature());
 	register_feature (new PowerSpectrumFeature());
 	register_feature (new SaturationFeature());

@@ -46,6 +46,8 @@ public:
 	inline StatsInt get_xmax() const { return xmax; }
 	inline StatsInt get_ymin() const { return ymin; }
 	inline StatsInt get_ymax() const { return ymax; }
+	inline StatsInt get_zmin() const { return zmin; }
+	inline StatsInt get_zmax() const { return zmax; }
 
 	void init_from_widthheight (StatsInt w, StatsInt h)
 	{

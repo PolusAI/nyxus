@@ -376,8 +376,8 @@ namespace Nyxus
 			r.aux_image_matrix.bind_to_buffer(ImageMatrixBuffer + baseIdx, ImageMatrixBuffer + baseIdx + imatrSize);
 			baseIdx += imatrSize;	
 
-			// Calculate the image matrix in the external buffer
-			r.aux_image_matrix.calculate_from_pixelcloud(r.raw_pixels, r.aabb);
+			// Calculate the image matrix or cube 
+			r.aux_image_matrix.calculate_from_pixelcloud (r.raw_pixels, r.aabb);
 		}
 	}
 
@@ -400,6 +400,11 @@ namespace Nyxus
 		//
 		// Preallocate image matrices and cubes here (in the future).
 		//
+		for (auto lab : roi_labels)
+		{
+			LR& r = roiData[lab];
+			r.aux_image_cube.calculate_from_pixelcloud (r.raw_pixels_3D, r.aabb);
+		}
 	}
 
 	void freeTrivialRoisBuffers(const std::vector<int>& roi_labels)
