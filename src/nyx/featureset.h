@@ -709,7 +709,6 @@ namespace Nyxus
 		FG2_NGTDM,
 		FG2_BUT_GABOR,
 		FG2_ALL_BUT_GLCM, 
-		FG2_EASY, 
 		FG2_NEIG,
 		FG2_GEOMOMENTS,		// shape and intensity geometric moments
 		FG2_GEOMOMENTS_I,	// intensity geometric moments

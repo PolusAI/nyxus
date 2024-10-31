@@ -611,7 +611,6 @@ namespace Nyxus
 		{ "*ALL_NGTDM*", Fgroup2D::FG2_NGTDM },
 		{ "*ALL_BUT_GABOR*", Fgroup2D::FG2_BUT_GABOR },
 		{ "*ALL_BUT_GLCM*", Fgroup2D::FG2_ALL_BUT_GLCM },
-		{ "*ALL_EASY*", Fgroup2D::FG2_EASY },
 		{ "*ALL_NEIGHBOR*", Fgroup2D::FG2_NEIG },
 		{ "*GEOMOMS*", Fgroup2D::FG2_GEOMOMENTS },
 		{ "*IGEOMOMS*", Fgroup2D::FG2_GEOMOMENTS_I },
