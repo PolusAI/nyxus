@@ -343,7 +343,7 @@ Apart from defining your feature set by explicitly specifying comma-separated fe
 | \*all_glszm\* | glszm_sae, glszm_lae, glszm_gln, glszm_glnn, glszm_szn, glszm_sznn, glszm_zp, glszm_glv, glszm_zv, glszm_ze, glszm_lglze, glszm_hglze, glszm_salgle, glszm_sahgle, glszm_lalgle, glszm_lahgle
 | \*all_gldm\* | gldm_sde, gldm_lde, gldm_gln, gldm_dn, gldm_dnn, gldm_glv, gldm_dv, gldm_de, gldm_lgle, gldm_hgle, gldm_sdlgle, gldm_sdhgle, gldm_ldlgle, gldm_ldhgle
 | \*all_ngtdm\* | ngtdm_coarseness, ngtdm_contrast, ngtdm_busyness, ngtdm_complexity, ngtdm_strength
-| \*all_easy\* | All the features except the most time-consuming GABOR, GLCM, and the group of 2D moment features
+| \*wholeslide\* | All the features except those irrelevant for the whole-slide use case (BasicMorphology, EnclosingInscribingCircumscribingCircle, ConvexHull, FractalDimension, GeodeticLengthThickness, Neighbor, RoiRadius, EllipseFitting, EulerNumber, Extrema, ErosionPixel, CaliperFeret, CaliperMartin, CaliperNassenstein, and Chords)
 | \*all\* | All the features 
 
 ## Command line usage

@@ -245,16 +245,6 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 		return true;
 	}
 
-	if ((Fgroup2D) fgcode == Fgroup2D::FG2_EASY)
-	{
-		theFeatureSet.enableAll();
-		theFeatureSet.disableFeatures(GaborFeature::featureset);
-		theFeatureSet.disableFeatures(GLCMFeature::featureset);
-		theFeatureSet.disableFeatures(Imoms2D_feature::featureset);
-		theFeatureSet.disableFeatures(Smoms2D_feature::featureset);
-		return true;
-	}
-
 	if ((Fgroup2D) fgcode == Fgroup2D::FG2_NEIG)
 	{
 		Nyxus::theFeatureSet.enableFeatures (NeighborsFeature::featureset, enable);
@@ -268,51 +258,28 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 	}
 	if ((Fgroup2D) fgcode == Fgroup2D::FG2_MORPHOLOGY)
 	{
-		auto F = {
-			Feature2D::AREA_PIXELS_COUNT,
-			Feature2D::AREA_UM2,
-			Feature2D::CENTROID_X,
-			Feature2D::CENTROID_Y,
-			Feature2D::DIAMETER_EQUAL_AREA,
-			Feature2D::WEIGHTED_CENTROID_Y,
-			Feature2D::WEIGHTED_CENTROID_X,
-			Feature2D::COMPACTNESS,
-			Feature2D::BBOX_YMIN,
-			Feature2D::BBOX_XMIN,
-			Feature2D::BBOX_HEIGHT,
-			Feature2D::BBOX_WIDTH,
-			Feature2D::MAJOR_AXIS_LENGTH,
-			Feature2D::MINOR_AXIS_LENGTH,
-			Feature2D::ECCENTRICITY,
-			Feature2D::ORIENTATION,
-			Feature2D::ROUNDNESS,
-			Feature2D::EXTENT,
-			Feature2D::ASPECT_RATIO,
-			Feature2D::DIAMETER_EQUAL_PERIMETER,
-			Feature2D::CONVEX_HULL_AREA,
-			Feature2D::SOLIDITY,
-			Feature2D::PERIMETER,
-			Feature2D::EDGE_MEAN_INTENSITY,
-			Feature2D::EDGE_STDDEV_INTENSITY,
-			Feature2D::EDGE_MAX_INTENSITY,
-			Feature2D::EDGE_MIN_INTENSITY,
-			Feature2D::CIRCULARITY,
-			Feature2D::MASS_DISPLACEMENT };
-		Nyxus::theFeatureSet.enableFeatures (F, enable);
+		theFeatureSet.enableFeatures (BasicMorphologyFeatures::featureset, enable);
+		theFeatureSet.enableFeatures (EnclosingInscribingCircumscribingCircleFeature::featureset, enable);
+		theFeatureSet.enableFeatures (ContourFeature::featureset, enable);
+		theFeatureSet.enableFeatures (ConvexHullFeature::featureset, enable);	
+		theFeatureSet.enableFeatures (FractalDimensionFeature::featureset, enable);
+		theFeatureSet.enableFeatures (GeodeticLengthThicknessFeature::featureset, enable);	
+		theFeatureSet.enableFeatures (NeighborsFeature::featureset, enable);
+		theFeatureSet.enableFeatures (RoiRadiusFeature::featureset, enable);
+		theFeatureSet.enableFeatures (EllipseFittingFeature::featureset, enable);
+		theFeatureSet.enableFeatures (EulerNumberFeature::featureset, enable);
+		theFeatureSet.enableFeatures (ExtremaFeature::featureset, enable);
+		theFeatureSet.enableFeatures (ErosionPixelsFeature::featureset, enable);
+		theFeatureSet.enableFeatures (CaliperFeretFeature::featureset, enable);
+		theFeatureSet.enableFeatures (CaliperMartinFeature::featureset, enable);
+		theFeatureSet.enableFeatures (CaliperNassensteinFeature::featureset, enable);
+		theFeatureSet.enableFeatures (ChordsFeature::featureset, enable);
+
 		return true;
 	}
 	if ((Fgroup2D)fgcode == Fgroup2D::FG2_BASIC_MORPHOLOGY)
 	{
-		auto F = {
-			Feature2D::AREA_PIXELS_COUNT,
-			Feature2D::AREA_UM2,
-			Feature2D::CENTROID_X,
-			Feature2D::CENTROID_Y,
-			Feature2D::BBOX_YMIN,
-			Feature2D::BBOX_XMIN,
-			Feature2D::BBOX_HEIGHT,
-			Feature2D::BBOX_WIDTH };
-		Nyxus::theFeatureSet.enableFeatures (F, enable);
+		theFeatureSet.enableFeatures (BasicMorphologyFeatures::featureset, enable);
 		return true;
 	}
 	if ((Fgroup2D)fgcode == Fgroup2D::FG2_GLCM)
