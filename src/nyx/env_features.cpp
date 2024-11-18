@@ -232,11 +232,11 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 		theFeatureSet.disableFeatures (ChordsFeature::featureset);
 
 		// enabling GaborFeature
-		// enabling ImageMomentsFeature
-		// 
+		// enabling only intensity image moments
+		theFeatureSet.disableFeatures (Smoms2D_feature::featureset);
 		// enabling GLCMFeature
 		// enabling GLDMFeature
-		theFeatureSet.disableFeatures(GLDZMFeature::featureset);	// costs about 82 %
+		theFeatureSet.disableFeatures (GLDZMFeature::featureset);	// costs about 82 %
 		// enabling GLRLMFeature 
 		// enabling GLSZMFeature
 		// enabling NGLDMfeature
