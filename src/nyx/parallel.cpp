@@ -112,6 +112,7 @@ namespace Nyxus
 		NyxusGrayscaleTiffTileLoader<uint32_t> I(
 			num_fastloader_threads, 
 			intens_fpath, 
+			true,
 			Nyxus::theEnvironment.fpimageOptions.min_intensity(),
 			Nyxus::theEnvironment.fpimageOptions.max_intensity(),
 			Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
@@ -132,6 +133,7 @@ namespace Nyxus
 		NyxusGrayscaleTiffTileLoader<uint32_t> L(
 			num_fastloader_threads, 
 			label_fpath,
+			false,
 			Nyxus::theEnvironment.fpimageOptions.min_intensity(),
 			Nyxus::theEnvironment.fpimageOptions.max_intensity(),
 			Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
