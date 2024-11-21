@@ -29,6 +29,7 @@ public:
 	{ 
 		return max_intensity_;  
 	}
+
 	float target_dyn_range() const 
 	{ 
 		return target_dyn_range_; 

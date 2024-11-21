@@ -78,6 +78,7 @@ int main (int argc, char** argv)
 	{
 		// Scan intensity and mask directories, apply fileppatern, make intensity-mask image file pairs
 		std::vector <std::string> intensFiles, labelFiles;
+		std::string ermsg;
 		int errorCode = Nyxus::read_2D_dataset(
 			theEnvironment.intensity_dir,
 			theEnvironment.labels_dir,
@@ -86,10 +87,16 @@ int main (int argc, char** argv)
 			theEnvironment.intSegMapDir,
 			theEnvironment.intSegMapFile,
 			true,
-			intensFiles, labelFiles);
+			intensFiles, 
+			labelFiles,
+			ermsg);
 		if (errorCode)
 		{
-			std::cout << "Dataset structure error\n";
+			#ifdef WITH_PYTHON_H
+				throw std::runtime_error (ermsg);
+			#endif
+
+			std::cerr << "Errors while reading the dataset:\n" << ermsg << "\n";
 			return 1;
 		}
 

@@ -6,13 +6,14 @@
 #include <string>
 #include <vector>
 #include "abs_tile_loader.h"
+#include "slideprops.h"
 
 /// @brief Incapsulates access to an intensity and mask image file pair
 class ImageLoader
 {
 public:
 	ImageLoader();
-	bool open(const std::string & int_fpath, const std::string & seg_fpath);
+	bool open (SlideProps & p);
 	void close();
 	bool load_tile (size_t tile_idx);
 	bool load_tile (size_t tile_row, size_t tile_col);
@@ -53,3 +54,4 @@ private:
 	int lvl = 0,	// Pyramid level
 		lyr = 0;	//	Layer
 };
+

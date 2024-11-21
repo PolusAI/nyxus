@@ -195,7 +195,10 @@ namespace Nyxus
 			theSegFname = mfpath;
 
 			// Scan this Z intensity-mask pair 
-			if (theImLoader.open(theIntFname, theSegFname) == false)
+			SlideProps p;
+			p.fname_int = ifpath;
+			p.fname_seg = mfpath;
+			if (! theImLoader.open(p))
 			{
 				std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
 				return false;

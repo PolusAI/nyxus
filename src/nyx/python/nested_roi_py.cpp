@@ -85,7 +85,7 @@ bool gatherRoisMetrics_H(const std::string& fpath, std::unordered_set <int>& uni
 	int lvl = 0, // Pyramid level
 		lyr = 0; //	Layer
 
-	// Open an image pair
+	// Open a mask image
 	ImageLoader1x imlo;
 	bool ok = imlo.open(fpath);
 	if (!ok)

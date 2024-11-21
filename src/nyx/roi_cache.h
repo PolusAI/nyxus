@@ -11,22 +11,11 @@
 #include "features/pixel.h"
 #include "featureset.h"
 #include "roi_cache_basic.h"
+#include "slideprops.h"
 
 // Label record - structure aggregating label's cached data and calculated features
 #define DFLT0 -0.0	// default unassigned value
 #define DFLT0i -0	// default unassigned value
-
-struct SlideProps
-{
-	PixIntens min_inten;
-	PixIntens max_inten;
-	size_t max_roi_area;
-	size_t n_rois;
-	size_t max_roi_w;
-	size_t max_roi_h;
-	std::string fname_int;
-	std::string fname_seg;
-};
 
 enum RoiDataCacheItem
 {
@@ -86,9 +75,9 @@ public:
 	// 3D
 	SimpleCube<PixIntens> aux_image_cube;
 
-	// Stats across ROI pixels of the whole image
-	static PixIntens global_min_inten;
-	static PixIntens global_max_inten;
+	// Stats across ROI pixels of the slide
+	static PixIntens slide_min_inten;
+	static PixIntens slide_max_inten;
 	static void reset_global_stats();
 	// Dataset properties
 	static std::vector<SlideProps> dataset_props;

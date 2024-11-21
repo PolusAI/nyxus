@@ -22,9 +22,11 @@ namespace Nyxus
 	bool existsOnFilesystem(const std::string& dir);
 	
 	/// @brief Reads all the files in a directory with respect to a file pattern
+	/// @return 0 if success, otherwise an error code (error details in 'error_message')
 	/// @param dir 
 	/// @param file_pattern 
 	/// @param files 
+	/// 
 
 	int read_2D_dataset(
 		// input:
@@ -37,7 +39,8 @@ namespace Nyxus
 		bool mustCheckDirOut,
 		// output:
 		std::vector <std::string>& intensFiles,
-		std::vector <std::string>& labelFiles);
+		std::vector <std::string>& labelFiles,
+		std::string & error_message);
 
 	struct Imgfile3D_layoutA
 	{

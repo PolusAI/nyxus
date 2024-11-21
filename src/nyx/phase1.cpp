@@ -124,8 +124,13 @@ namespace Nyxus
 			std::string ifpath = std::regex_replace (intens_fpath, std::regex("\\*"), zValue),
 				mfpath = std::regex_replace (mask_fpath, std::regex("\\*"), zValue);
 
+			// temp SlideProps object
+			SlideProps sprp;
+			sprp.fname_int = ifpath;
+			sprp.fname_seg = mfpath;
+
 			// Extract features from this intensity-mask pair 
-			if (theImLoader.open(ifpath, mfpath) == false)
+			if (theImLoader.open(sprp) == false)	//???????????????????? ifpath, mfpath
 			{
 				std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
 				return false;

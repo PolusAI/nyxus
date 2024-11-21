@@ -31,10 +31,12 @@ public:
     NyxusGrayscaleTiffTileLoader(
         size_t numberThreads, 
         std::string const& filePath, 
+        bool permit_fp,
         float _floatpt_image_min_intensity,
         float _floatpt_image_max_intensity,
         float _floatpt_image_target_dyn_range)
         : AbstractTileLoader<DataType>("NyxusGrayscaleTiffTileLoader", numberThreads, filePath), 
+        permit_floatpt_pixels (permit_fp),
         floatpt_image_min_intensity(_floatpt_image_min_intensity),
         floatpt_image_max_intensity(_floatpt_image_max_intensity),
         floatpt_image_target_dyn_range(_floatpt_image_target_dyn_range)
@@ -72,11 +74,6 @@ public:
                 message << "Tile Loader ERROR: The file is not greyscale: SamplesPerPixel = " << samplesPerPixel << ".";
                 throw (std::runtime_error(message.str()));
             }
-            // Interpret undefined data format as unsigned integer data
-            if (sampleFormat_ < 1 || sampleFormat_ > 3) 
-            { 
-                sampleFormat_ = 1; 
-            }
         }
         else 
         { 
@@ -106,6 +103,8 @@ public:
         size_t indexLayerGlobalTile,
         size_t level) override
     {
+        std::string err;
+
         // Get ahold of the logical (feature extraction facing) tile buffer from its smart pointer
         std::vector<DataType>& tileDataVec = *tile;
 
@@ -119,14 +118,18 @@ public:
                 memset (tiffTile, 0, t_szb);    
             else // something else
             {
-                std::stringstream message;
-                message
-                    << "Tile Loader ERROR: error reading tile data returning code "
-                    << errcode;
-                throw (std::runtime_error(message.str()));
+                err = "Tile Loader ERROR: error reading tile data returning code " + std::to_string (errcode);
+                throw (err);
             }
         }
-        std::stringstream message;
+
+        // check if FP pixels are permitted
+        if (permit_floatpt_pixels == false && sampleFormat_ >= 3)
+        {
+            err = "This file is not permitted to have TIFF sample format (" + std::to_string(sampleFormat_) + ")";
+            throw (err);
+        }
+
         switch (sampleFormat_) 
         {
         case 1:
@@ -145,10 +148,8 @@ public:
                 loadTile <uint64_t> (tiffTile, tileDataVec);
                 break;
             default:
-                message
-                    << "Tile Loader ERROR: The data format is not supported for unsigned integer, number bits per pixel = "
-                    << bitsPerSample_;
-                throw (std::runtime_error(message.str()));
+                err = "Tile Loader ERROR: The data format is not supported for unsigned integer, number bits per pixel = " + std::to_string(bitsPerSample_);
+                throw (err);
             }
             break;
         case 2:
@@ -167,10 +168,8 @@ public:
                 loadTile<int64_t>(tiffTile, tileDataVec);
                 break;
             default:
-                message
-                    << "Tile Loader ERROR: The data format is not supported for signed integer, number bits per pixel = "
-                    << bitsPerSample_;
-                throw (std::runtime_error(message.str()));
+                err = "Tile Loader ERROR: The data format is not supported for signed integer, number bits per pixel = " + std::to_string(bitsPerSample_);
+                throw (err);
             }
             break;
         case 3:
@@ -185,15 +184,13 @@ public:
                 loadTile_real_intens <double> (tiffTile, tileDataVec);
                 break;
             default:
-                message
-                    << "Tile Loader ERROR: The data format is not supported for float, number bits per pixel = "
-                    << bitsPerSample_;
-                throw (std::runtime_error(message.str()));
+                err = "Tile Loader ERROR: The data format is not supported for float, number bits per pixel = " + std::to_string(bitsPerSample_);
+                throw (err);
             }
             break;
         default:
-            message << "Tile Loader ERROR: The data format is not supported, sample format = " << sampleFormat_;
-            throw (std::runtime_error(message.str()));
+            err = "Tile Loader ERROR: The data format is not supported, sample format = " + std::to_string(sampleFormat_);
+            throw (std::runtime_error(err));
         }
 
         _TIFFfree(tiffTile);
@@ -309,11 +306,13 @@ private:
                         physOffs = r * tileWidth_ + c;
 
                     // Prevent real-valued intensities smaller than 1.0 from being cast to integer 0
-                    auto tmp1 = * (((FileType*)src) + physOffs);    // real-valued intensity e.g. 0.0724
-                    if (tmp1 < floatpt_image_min_intensity || tmp1 > floatpt_image_max_intensity)
-                        throw std::runtime_error("Expecting a pixel intensity in range [" + std::to_string(floatpt_image_min_intensity) + "," + std::to_string(floatpt_image_max_intensity) + "]. Please rerun with different expected intensity bounds");
+                    auto tmp1 = * (((FileType*)src) + physOffs);    // real-valued raw (uncast) intensity e.g. 0.0724
+
+                    // hard sigmoid
+                    tmp1 = tmp1 < floatpt_image_min_intensity ? floatpt_image_min_intensity : tmp1;
+                    tmp1 = tmp1 > floatpt_image_max_intensity ? floatpt_image_max_intensity : tmp1;
                     auto tmp2 = floatpt_image_target_dyn_range * (tmp1 - floatpt_image_min_intensity) / (floatpt_image_max_intensity - floatpt_image_min_intensity);
-                    auto tmp3 = (DataType) tmp2; // integer-valued intensity
+                    auto tmp3 = (DataType) tmp2; // integer-typed (of DataType) intensity
                     *(dest + logOffs) = tmp3;
                 }
         }
@@ -325,8 +324,10 @@ private:
                 {
                     // Prevent real-valued intensities smaller than 1.0 from being cast to integer 0
                     auto tmp1 = * (((FileType*)src) + i);           // real-valued intensity e.g. 0.0724
-                    if (tmp1 < floatpt_image_min_intensity || tmp1 > floatpt_image_max_intensity)
-                        throw std::runtime_error("Expecting a pixel intensity in range [" + std::to_string(floatpt_image_min_intensity) + "," + std::to_string(floatpt_image_max_intensity) + "]. Please rerun with different expected intensity bounds");
+
+                    // hard sigmoid
+                    tmp1 = tmp1 < floatpt_image_min_intensity ? floatpt_image_min_intensity : tmp1;
+                    tmp1 = tmp1 > floatpt_image_max_intensity ? floatpt_image_max_intensity : tmp1;
                     auto tmp2 = floatpt_image_target_dyn_range * (tmp1 - floatpt_image_min_intensity) / (floatpt_image_max_intensity - floatpt_image_min_intensity);
                     auto tmp3 = (DataType) tmp2; // integer-valued intensity
                     *(dest + i) = tmp3;
@@ -346,6 +347,8 @@ private:
     short
         sampleFormat_ = 0,          ///< Sample format as defined by libtiff
         bitsPerSample_ = 0;         ///< Bit Per Sample as defined by libtiff
+
+    bool permit_floatpt_pixels = true;  // whether image pixels can be real-valued (intensity image files) or not (mask image files)
 
     float floatpt_image_min_intensity = 0.0,
         floatpt_image_max_intensity = 1.0,
