@@ -1,11 +1,10 @@
-#ifdef OMEZARR_SUPPORT
 #pragma once
 
+#ifdef OMEZARR_SUPPORT
+
 #include <algorithm>
-#include "abs_tile_loader.h"
 #include "nlohmann/json.hpp"
 #include "xtensor/xarray.hpp"
-
 
 // factory functions to create files, groups and datasets
 #include "z5/factory.hxx"
@@ -18,17 +17,11 @@
 
 #include "raw_format.h"
 
-class RawNyxusOmeZarrLoader : RawFormatLoader
+class RawOmezarrLoader: public RawFormatLoader
 {
 public:
 
-    /// @brief NyxusOmeZarrLoader constructor
-    /// @param numberThreads Number of threads associated
-    /// @param filePath Path of zarr file
-    RawNyxusOmeZarrLoader(
-        size_t numberThreads,
-        std::string const& filePath)
-        : RawFormatLoader
+    RawOmezarrLoader (std::string const& filePath): RawFormatLoader("RawOmezarrLoader", filePath)
     {
         // Open the file
         zarr_ptr_ = std::make_unique<z5::filesystem::handle::File>(filePath.c_str());
@@ -63,19 +56,12 @@ public:
         else { data_format_ = 2; } //uint16_t
     }
 
-    /// @brief NyxusOmeZarrLoader destructor
-    ~RawNyxusOmeZarrLoader() override
+    ~RawOmezarrLoader() override
     {
         zarr_ptr_ = nullptr;
     }
 
-    /// @brief Load a tiff tile from a view
-    /// @param tile Tile to copy into
-    /// @param indexRowGlobalTile Tile row index
-    /// @param indexColGlobalTile Tile column index
-    /// @param indexLayerGlobalTile Tile layer index
-    /// @param level Tile's level
-    void loadTileFromFile(std::shared_ptr<std::vector<DataType>> tile,
+    void loadTileFromFile(
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
         size_t indexLayerGlobalTile,
@@ -85,47 +71,63 @@ public:
         size_t pixel_col_index = indexColGlobalTile * tile_width_;
         size_t pixel_layer_index = indexLayerGlobalTile * tile_depth_;
 
-
         switch (data_format_)
         {
         case 1:
-            loadTile<uint8_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<uint8_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
             break;
         case 2:
-            loadTile<uint16_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<uint16_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
             break;
         case 3:
-            loadTile<uint32_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<uint32_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
             break;
         case 4:
-            loadTile<uint64_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<uint64_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
             break;
         case 5:
-            loadTile<int8_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<int8_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
             break;
         case 6:
-            loadTile<int16_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<int16_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
             break;
         case 7:
-            loadTile<int32_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<int32_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
             break;
         case 8:
-            loadTile<int64_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<int64_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
             break;
         case 9:
-            loadTile<float>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<float>(pixel_row_index, pixel_col_index, pixel_layer_index);
             break;
         case 10:
-            loadTile<double>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<double>(pixel_row_index, pixel_col_index, pixel_layer_index);
             break;
         default:
-            loadTile<uint16_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<uint16_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
             break;
         }
     }
 
+    void free_tile() override
+    {
+    }
+
+    uint32_t get_uint32_pixel (size_t idx) const
+    {
+        uint32_t rv = dest[idx];
+        return rv;
+    }
+
+    double get_dpequiv_pixel (size_t idx) const
+    {
+        double rv = (double) dest[idx];
+        return rv;    
+    }
+
     template<typename FileType>
-    void loadTile(std::shared_ptr<std::vector<DataType>>& dest, size_t pixel_row_index, size_t pixel_col_index, size_t pixel_layer_index) {
+    void loadTile (size_t pixel_row_index, size_t pixel_col_index, size_t pixel_layer_index) 
+    {
         std::vector<std::string> datasets;
         auto ds = z5::openDataset(*zarr_ptr_, ds_name_);
         size_t data_height = tile_height_, data_width = tile_width_;
@@ -136,14 +138,13 @@ public:
         z5::types::ShapeType offset = { 0,0,pixel_layer_index, pixel_row_index, pixel_col_index };
         xt::xarray<FileType> array(shape);
         z5::multiarray::readSubarray<FileType>(ds, array, offset.begin());
-        std::vector<DataType> tmp = std::vector<DataType>(array.begin(), array.end());
-
+        std::vector<uint32_t> tmp = std::vector<uint32_t> (array.begin(), array.end());
 
         for (size_t k = 0; k < data_height; ++k)
         {
-            std::copy(tmp.begin() + k * data_width, tmp.begin() + (k + 1) * data_width, dest->begin() + k * tile_width_);
+            std::copy(tmp.begin() + k * data_width, tmp.begin() + (k + 1) * data_width, dest.begin() + k * tile_width_);
         }
-        //*dest = std::vector<DataType> (array.begin(), array.end());
+        dest = std::vector<uint32_t> (array.begin(), array.end());
     }
 
     /// @brief Tiff file height
@@ -192,5 +193,7 @@ private:
     short data_format_ = 0;
     std::unique_ptr<z5::filesystem::handle::File> zarr_ptr_;
     std::string ds_name_;
+
+    std::vector<uint32_t> dest;
 };
 #endif //OMEZARR_SUPPORT

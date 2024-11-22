@@ -1,4 +1,7 @@
 #include <iostream>
+
+#define NOMINMAX 
+
 #include "dirs_and_files.h"
 #include "helpers/fsystem.h"
 #include "raw_image_loader.h"
@@ -17,7 +20,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 		if (fs::path(int_fpath).extension() == ".zarr")
 		{
 #ifdef OMEZARR_SUPPORT
-			intFL = new RawNyxusOmeZarrLoader (n_threads, int_fpath);
+			intFL = new RawOmezarrLoader (int_fpath);
 #else
 			std::cout << "This version of Nyxus was not build with OmeZarr support." << std::endl;
 #endif
@@ -54,7 +57,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 		if (fs::path(seg_fpath).extension() == ".zarr")
 		{
 #ifdef OMEZARR_SUPPORT
-			segFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, seg_fpath);
+			segFL = new RawOmezarrLoader (seg_fpath);
 #else
 			std::cout << "This version of Nyxus was not build with OmeZarr support." << std::endl;
 #endif
