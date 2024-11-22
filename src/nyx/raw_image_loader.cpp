@@ -24,7 +24,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 		}
 		else if (fs::path(int_fpath).extension() == ".dcm" | fs::path(int_fpath).extension() == ".dicom") {
 #ifdef DICOM_SUPPORT
-			intFL = new RawNyxusGrayscaleDicomLoader (n_threads, int_fpath);
+			intFL = new RawDicomLoader (int_fpath);
 #else
 			std::cout << "This version of Nyxus was not build with DICOM support." << std::endl;
 #endif
@@ -61,7 +61,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 		}
 		else if (fs::path(seg_fpath).extension() == ".dcm" | fs::path(seg_fpath).extension() == ".dicom") {
 #ifdef DICOM_SUPPORT
-			segFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, seg_fpath);
+			segFL = new RawDicomLoader (seg_fpath);
 #else
 			std::cout << "This version of Nyxus was not build with DICOM support." << std::endl;
 #endif

@@ -1,6 +1,6 @@
-#ifdef DICOM_SUPPORT
 #pragma once
-#include "abs_tile_loader.h"
+
+#ifdef DICOM_SUPPORT
 #include "dcmtk/dcmdata/dctk.h"
 #include "dcmtk/dcmjpeg/djdecode.h"  /* for JPEG decoders */
 #include "dcmtk/dcmjpls/djdecode.h"  /* for JPEG-LS decoders */
@@ -15,17 +15,14 @@
 
 #include "raw_format.h"
 
-class NyxusGrayscaleDicomLoader : RawFormatLoader
+class RawDicomLoader : public RawFormatLoader
 {
 public:
 
     /// @brief NyxusGrayscaleDicomLoader constructor
     /// @param numberThreads Number of threads associated
     /// @param filePath Path of dicom file
-    NyxusGrayscaleDicomLoader(
-        size_t numberThreads,
-        std::string const& filePath)
-        RawFormatLoader
+    RawDicomLoader (std::string const& filePath) : RawFormatLoader("name", filePath)
     {
         // register JPEG decoder
         DJDecoderRegistration::registerCodecs();
@@ -104,7 +101,7 @@ public:
     }
 
     /// @brief NyxusGrayscaleDicomLoader destructor
-    ~NyxusGrayscaleDicomLoader() override
+    ~RawDicomLoader() override
     {
         dcm_ff_.clear();
         DJDecoderRegistration::cleanup();
@@ -121,14 +118,16 @@ public:
     /// @param indexColGlobalTile Tile column index
     /// @param indexLayerGlobalTile Tile layer index
     /// @param level Tile's level
-    void loadTileFromFile(std::shared_ptr<std::vector<DataType>> tile,
+    void loadTileFromFile(
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
         size_t indexLayerGlobalTile,
         [[maybe_unused]] size_t level) override
     {
-        // Get ahold of the logical (feature extraction facing) tile buffer from its smart pointer
-        std::vector<DataType>& tileDataVec = *tile;
+        tile.resize (tileWidth_ * tileHeight_);
+        std::fill (tile.begin(), tile.end(), 0);
+
+        std::vector<uint32_t>& tileDataVec = tile;
         uint32_t frame_no = indexRowGlobalTile * numCols_ + indexColGlobalTile;
         if (frame_no >= numFrames_) {
             std::stringstream message;
@@ -141,10 +140,10 @@ public:
         if (isSigned_) {
             switch (bitsPerSample_) {
             case 8:
-                copyFrame<int8_t>(*tile, frame_no);
+                copyFrame<int8_t>(tile, frame_no);
                 break;
             case 16:
-                copyFrame<int16_t>(*tile, frame_no);
+                copyFrame<int16_t>(tile, frame_no);
                 break;
             default:
                 std::stringstream message;
@@ -157,13 +156,13 @@ public:
         else {
             switch (bitsPerSample_) {
             case 1:
-                copyBinaryFrame(*tile, frame_no);
+                copyBinaryFrame(tile, frame_no);
                 break;
             case 8:
-                copyFrame<uint8_t>(*tile, frame_no);
+                copyFrame<uint8_t>(tile, frame_no);
                 break;
             case 16:
-                copyFrame<uint16_t>(*tile, frame_no);
+                copyFrame<uint16_t>(tile, frame_no);
                 break;
             default:
                 std::stringstream message;
@@ -176,6 +175,21 @@ public:
 
     }
 
+    void free_tile () override
+    {
+    }
+
+    uint32_t get_uint32_pixel(size_t idx) const
+    {
+        uint32_t rv = tile [idx];
+        return rv;
+    }
+
+    double get_dpequiv_pixel (size_t idx) const
+    {
+        double rv = (double) tile [idx];
+        return rv;
+    }
 
     /// @brief Tiff file height
     /// @param level Tiff level [not used]
@@ -218,7 +232,7 @@ private:
     /// @param frame_no Frame to copy
     template<typename FileType>
     void copyFrame(
-        std::vector<DataType>& dest_as_vector,
+        std::vector<uint32_t>& dest_as_vector,
         uint32_t frame_no)
     {
         size_t data_length = tileHeight_ * tileWidth_;
@@ -250,11 +264,12 @@ private:
                 frame_size,
                 decompressed_color_model, NULL);
 
-            if (status.good()) {
+            if (status.good()) 
+            {
                 // Get ahold of the raw pointer
-                DataType* dest = dest_as_vector.data();
+                uint32_t* dest = dest_as_vector.data();
                 for (size_t i = 0; i < data_length; i++) {
-                    *(dest + i) = static_cast<DataType>(buffer[i]);
+                    *(dest + i) = static_cast<uint32_t>(buffer[i]);
                 }
             }
             else {
@@ -273,7 +288,7 @@ private:
     /// @param dest_as_vector Feature extraction facing buffer to fill
     /// @param frame_no Frame to copy
     void copyBinaryFrame(
-        std::vector<DataType>& dest_as_vector,
+        std::vector<uint32_t>& dest_as_vector,
         uint32_t frame_no)
     {
         DcmDataset* ds = dcm_ff_.getDataset();
@@ -294,9 +309,9 @@ private:
                         << unpacked_frame->length << ").";
                     throw (std::runtime_error(message.str()));
                 }
-                DataType* dest = dest_as_vector.data();
+                uint32_t* dest = dest_as_vector.data();
                 for (size_t i = 0; i < unpacked_frame->length; ++i) {
-                    *(dest + i) = static_cast<DataType>(unpacked_frame->pixData[i]);
+                    *(dest + i) = static_cast<uint32_t>(unpacked_frame->pixData[i]);
                 }
                 delete unpacked_frame;
             }
@@ -318,5 +333,7 @@ private:
     short samplesPerPixel_ = 0, bitsPerSample_ = 0;
     int32_t numFrames_ = 0;
     bool isSigned_ = false;
+
+    std::vector<uint32_t> tile;
 };
 #endif // DICOM_SUPPORT
