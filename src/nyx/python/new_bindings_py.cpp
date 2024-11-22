@@ -205,6 +205,7 @@ py::tuple featurize_directory_imp (
 
     // Read image pairs from the intensity and label directories applying the filepattern
     std::vector<std::string> intensFiles, labelFiles;
+    std::string ermsg;
     int errorCode = Nyxus::read_2D_dataset(
         intensity_dir,
         labels_dir,
@@ -213,10 +214,12 @@ py::tuple featurize_directory_imp (
         theEnvironment.intSegMapDir,
         theEnvironment.intSegMapFile,
         true,
-        intensFiles, labelFiles);
+        intensFiles, 
+        labelFiles, 
+        ermsg);
 
     if (errorCode)
-       throw std::runtime_error("Error traversing the dataset");
+       throw std::runtime_error ("Error traversing the dataset: " + ermsg);
 
     // We're good to extract features. Reset the feature results cache
     theResultsCache.clear();
@@ -286,6 +289,7 @@ py::tuple featurize_directory_imq_imp (
 
     // Read image pairs from the intensity and label directories applying the filepattern
     std::vector<std::string> intensFiles, labelFiles;
+    std::string ermsg;
     int errorCode = Nyxus::read_2D_dataset(
         intensity_dir,
         labels_dir,
@@ -294,10 +298,11 @@ py::tuple featurize_directory_imq_imp (
         theEnvironment.intSegMapDir,
         theEnvironment.intSegMapFile,
         true,
-        intensFiles, labelFiles);
+        intensFiles, labelFiles,
+        ermsg);
 
     if (errorCode)
-       throw std::runtime_error("Error traversing the dataset");
+       throw std::runtime_error ("Error traversing the dataset: " + ermsg);
 
     // We're good to extract features. Reset the feature results cache
     theResultsCache.clear();
