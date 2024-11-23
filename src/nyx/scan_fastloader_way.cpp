@@ -370,7 +370,7 @@ namespace Nyxus
 #endif
 
 	bool gatherRoisMetrics_2_slideprops (
-		RawImageLoader& ilo,	//???????????? ImageLoader& ilo, 
+		RawImageLoader& ilo,
 		SlideProps& p)
 	{
 		bool wholeslide = p.fname_int == p.fname_seg;
@@ -415,10 +415,6 @@ namespace Nyxus
 				// Get ahold of tile's pixel buffer
 				auto tidx = row * nth + col;
 				
-				//????????????
-				//		auto data_I = ilo.get_int_tile_buffer(),
-				//			data_L = ilo.get_seg_tile_buffer();
-
 				// Iterate pixels
 				for (size_t i = 0; i < tileSize; i++)
 				{
@@ -428,10 +424,10 @@ namespace Nyxus
 					slide_I_min = (std::min) (slide_I_min, dxequiv_I);
 
 					// Mask
-					uint32_t msk = ilo.get_cur_tile_seg_pixel (i); //??????????? data_L [i];
-					// Collapse all the labels to one if single-ROI mde is requested
-					if (wholeslide)
-						msk = 1;
+					uint32_t msk = 1; // wholeslide by default
+					if (! wholeslide)
+						msk = ilo.get_cur_tile_seg_pixel(i);
+
 					// Skip non-mask pixels					
 					if (!msk)
 					{
@@ -459,8 +455,7 @@ namespace Nyxus
 						//		- mocking init_label_record_2(newData, theSegFname, theIntFname, x, y, label, intensity, tile_index)
 						// Initialize basic counters
 						r.aux_area = 1;
-						//??????????? auto inten = data_I[i];
-						r.aux_min = r.aux_max = 0; //we don't have uint-cast intensities at this moment //?????????????? r.aux_min = r.aux_max = inten;
+						r.aux_min = r.aux_max = 0; //we don't have uint-cast intensities at this moment
 						r.init_aabb(x, y);
 						// Cache the ROI label
 						r.label = msk;
@@ -479,10 +474,6 @@ namespace Nyxus
 						
 						// Per-ROI 
 						r.aux_area++;
-
-						//????????????	auto inten = data_I[i];
-						//???????????? r.aux_min = (std::min) (r.aux_min, inten);
-						//???????????? r.aux_max = (std::max) (r.aux_max, inten);
 
 						// save
 						r.update_aabb(x, y);
@@ -527,7 +518,7 @@ namespace Nyxus
 
 	bool scan_intlabel_pair_props (SlideProps & p)
 	{
-		RawImageLoader ilo;	//??????????? ImageLoader ilo;
+		RawImageLoader ilo;
 		if (!ilo.open(p.fname_int, p.fname_seg))
 		{
 			std::cerr << "error opening an ImageLoader for " << p.fname_int << " | " << p.fname_seg << "\n";
@@ -587,7 +578,7 @@ namespace Nyxus
 				VERBOSLVL1(std::cout << "error prescanning pair " << ifp << " and " << mfp << std::endl);
 				return 1;
 			}
-			VERBOSLVL1(std::cout << "\tmax ROI " << p.max_roi_w << " x " << p.max_roi_h << "\n");
+			VERBOSLVL1(std::cout << "\tmax ROI " << p.max_roi_w << " x " << p.max_roi_h << "\tmin-max I " << p.min_preroi_inten << "-" << p.max_preroi_inten <<  "\n");
 		}
 
 		// get global properties
@@ -712,7 +703,7 @@ namespace Nyxus
 
 			// Scan one label-intensity pair 
 			SlideProps& p = LR::dataset_props[i];
-			ok = theImLoader.open (p);	//?????????????? theImLoader.open(theIntFname, theSegFname);
+			ok = theImLoader.open (p);
 			if (ok == false)
 			{
 				std::cerr << "Terminating\n";
