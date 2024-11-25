@@ -53,14 +53,19 @@ namespace Nyxus
 
 				// Get ahold of tile's pixel buffer
 				auto tileIdx = row * nth + col;
-				auto dataI = theImLoader.get_int_tile_buffer(),
-					dataL = theImLoader.get_seg_tile_buffer();
+				const std::vector<uint32_t>& dataI = theImLoader.get_int_tile_buffer();
+				const std::shared_ptr<std::vector<uint32_t>>& spL = theImLoader.get_seg_tile_sptr();
+				bool wholeslide = spL == nullptr; // alternatively, theEnvironment.singleROI
 
 				// Iterate pixels
 				for (size_t i = 0; i < tileSize; i++)
 				{
+					// mask label if not in the wholeslide mode
+					PixIntens label = 1;
+					if (!wholeslide)
+						label = (*spL)[i];
+
 					// Skip non-mask pixels
-					auto label = dataL[i];
 					if (!label)
 					{
 						// Update zero-background area
@@ -76,10 +81,6 @@ namespace Nyxus
 					if (x >= fullwidth || y >= fullheight)
 						continue;
 
-					// Collapse all the labels to one if single-ROI mde is requested
-					if (theEnvironment.singleROI)
-						label = 1;
-					
 					// Update pixel's ROI metrics
 					feed_pixel_2_metrics (x, y, dataI[i], label, tileIdx); // Updates 'uniqueLabels' and 'roiData'
 				}

@@ -72,6 +72,14 @@ namespace Nyxus
 	{
 		err = "";
 
+		// check the output directory
+		if (!existsOnFilesystem(dirOut))
+		{
+			err = "cannot access directory " + dirOut;
+			return 1;
+		}
+
+
 		// Check directories
 
 		if (!existsOnFilesystem(dirIntens))
@@ -79,50 +87,60 @@ namespace Nyxus
 			err = "cannot access directory " + dirIntens;
 			return 1;
 		}
-		if (!existsOnFilesystem(dirLabels))
-		{
-			err = "cannot access directory " + dirLabels;
-			return 1;
-		}
-		if (!existsOnFilesystem(dirOut))
-		{
-			err = "cannot access directory " + dirOut;
-			return 1;
-		}
+
+
 
 		if (intLabMappingFile.empty())
 		{
-			// Common case - no ad hoc intensity-label file mapping, 1-to-1 correspondence instead
 			std::vector<std::string> purefnames_i, purefnames_m; // we need these temp sets to check the 1:1 matching
 			readDirectoryFiles_2D (dirIntens, filePatt, intensFiles, purefnames_i);
-			readDirectoryFiles_2D (dirLabels, filePatt, labelFiles, purefnames_m);
 
-			// Check if the dataset is meaningful
-			if (intensFiles.size() == 0 || labelFiles.size() == 0)
-			{
-				err = "no intensity and/or label files to process, probably due to file pattern " + filePatt;
-				return 2;
-			}
-			if (intensFiles.size() != labelFiles.size())
-			{
-				err = "mismatch: " + std::to_string(intensFiles.size()) + " intensity images vs " + std::to_string(labelFiles.size()) + " mask images";
-				return 3;
-			}
+			// -- whole slide ?
+			bool wholeslide = (dirIntens == dirLabels) || dirLabels.empty();
 
-			// Sort the files to produce an intuitive sequence
-			std::sort(intensFiles.begin(), intensFiles.end());
-			std::sort(labelFiles.begin(), labelFiles.end());
-
-			// Check if intensity and mask images are matching 
-			auto nf = purefnames_i.size();
-			for (int i = 0; i < nf; i++)
+			if (wholeslide)
 			{
-				auto& ifile = purefnames_i[i];
-				if (std::find(purefnames_m.begin(), purefnames_m.end(), ifile) == purefnames_m.end())
-					err += "cannot find the mask counterpart for " + ifile + "\n";
+				// populate with empty mask file names
+				labelFiles.insert (labelFiles.begin(), intensFiles.size(), "");
 			}
-			if (!err.empty())
-				return 4;
+			else
+			{
+				// read segmentation counterparts
+				readDirectoryFiles_2D(dirLabels, filePatt, labelFiles, purefnames_m);
+
+				if (!wholeslide && !existsOnFilesystem(dirLabels))
+				{
+					err = "cannot access directory " + dirLabels;
+					return 1;
+				}
+
+				// Check if the dataset is meaningful
+				if (intensFiles.size() == 0 || labelFiles.size() == 0)
+				{
+					err = "no intensity and/or label files to process, probably due to file pattern " + filePatt;
+					return 2;
+				}
+				if (intensFiles.size() != labelFiles.size())
+				{
+					err = "mismatch: " + std::to_string(intensFiles.size()) + " intensity images vs " + std::to_string(labelFiles.size()) + " mask images";
+					return 3;
+				}
+
+				// Sort the files to produce an intuitive sequence
+				std::sort(intensFiles.begin(), intensFiles.end());
+				std::sort(labelFiles.begin(), labelFiles.end());
+
+				// Check if intensity and mask images are matching 
+				auto nf = purefnames_i.size();
+				for (int i = 0; i < nf; i++)
+				{
+					auto& ifile = purefnames_i[i];
+					if (std::find(purefnames_m.begin(), purefnames_m.end(), ifile) == purefnames_m.end())
+						err += "cannot find the mask counterpart for " + ifile + "\n";
+				}
+				if (!err.empty())
+					return 4;
+			}
 		}
 		else
 		{

@@ -120,16 +120,17 @@ namespace Nyxus
 				}
 
 				// Get ahold of tile's pixel buffer
-				auto dataI = theImLoader.get_int_tile_buffer(),
-					dataL = theImLoader.get_seg_tile_buffer();
+				const std::vector<uint32_t>& dataI = theImLoader.get_int_tile_buffer();
+				const std::shared_ptr<std::vector<uint32_t>>& spL = theImLoader.get_seg_tile_sptr();
+				bool wholeslide = spL == nullptr; // alternatively, theEnvironment.singleROI
 
 				// Iterate pixels
 				for (unsigned long i = 0; i < tileSize; i++)
 				{
-					// Skip non-mask pixels
-					auto label = dataL[i];
-					if (! label)
-						continue;
+					// mask label if not in the wholeslide mode
+					PixIntens label = 1;
+					if (!wholeslide)
+						label = (*spL)[i];
 
 					// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
 					if (! theEnvironment.singleROI && ! std::binary_search(whiteList.begin(), whiteList.end(), label))
@@ -142,10 +143,6 @@ namespace Nyxus
 					// Skip tile buffer pixels beyond the image's bounds
 					if (x >= fullwidth || y >= fullheight)
 						continue;
-
-					// Collapse all the labels to one if single-ROI mde is requested
-					if (theEnvironment.singleROI)
-						label = 1;
 
 					// Cache this pixel 
 					feed_pixel_2_cache (x, y, dataI[i], label);

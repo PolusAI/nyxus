@@ -53,6 +53,26 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 	if (intFL == nullptr)
 		return false;
 
+	// File #1 (intensity)
+	th = intFL->tileHeight(lvl);
+	tw = intFL->tileWidth(lvl);
+	td = intFL->tileDepth(lvl);
+	tileSize = th * tw;
+
+	fh = intFL->fullHeight(lvl);
+	fw = intFL->fullWidth(lvl);
+	fd = intFL->fullDepth(lvl);
+
+	ntw = intFL->numberTileWidth(lvl);
+	nth = intFL->numberTileHeight(lvl);
+	ntd = intFL->numberTileDepth(lvl);
+
+	// wholeslide
+	if (seg_fpath.empty())
+		return true;
+
+	// segmented slide
+
 	try {
 		if (fs::path(seg_fpath).extension() == ".zarr")
 		{
@@ -89,20 +109,6 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 
 	if (segFL == nullptr)
 		return false;
-
-	// File #1 (intensity)
-	th = intFL->tileHeight(lvl);
-	tw = intFL->tileWidth(lvl);
-	td = intFL->tileDepth(lvl);
-	tileSize = th * tw;
-
-	fh = intFL->fullHeight(lvl);
-	fw = intFL->fullWidth(lvl);
-	fd = intFL->fullDepth(lvl);
-
-	ntw = intFL->numberTileWidth(lvl);
-	nth = intFL->numberTileHeight(lvl);
-	ntd = intFL->numberTileDepth(lvl);
 
 	// File #2 (labels)
 
@@ -151,8 +157,12 @@ bool RawImageLoader::load_tile(size_t tile_idx)
 
 	auto row = tile_idx / ntw;
 	auto col = tile_idx % ntw;
+
 	intFL->loadTileFromFile (row, col, lyr, lvl);
-	segFL->loadTileFromFile (row, col, lyr, lvl);
+
+	// segmentation loader is not available in wholeslide
+	if (segFL)
+		segFL->loadTileFromFile (row, col, lyr, lvl);
 
 	return true;
 }
@@ -163,7 +173,11 @@ bool RawImageLoader::load_tile(size_t tile_row, size_t tile_col)
 		return false;
 
 	intFL->loadTileFromFile (tile_row, tile_col, lyr, lvl);
-	segFL->loadTileFromFile (tile_row, tile_col, lyr, lvl);
+	
+	// segmentation loader is not available in wholeslide
+	if (segFL)
+		segFL->loadTileFromFile (tile_row, tile_col, lyr, lvl);
+	
 	return true;
 }
 

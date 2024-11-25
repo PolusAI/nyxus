@@ -81,7 +81,28 @@ bool ImageLoader::open (SlideProps & p)	//????????????? (const std::string& int_
 	if (intFL == nullptr)
 		return false;
 
-	// mask image
+	// File #1 (intensity)
+	th = intFL->tileHeight(lvl);
+	tw = intFL->tileWidth(lvl);
+	td = intFL->tileDepth(lvl);
+	tileSize = th * tw;
+
+	fh = intFL->fullHeight(lvl);
+	fw = intFL->fullWidth(lvl);
+	fd = intFL->fullDepth(lvl);
+
+	ntw = intFL->numberTileWidth(lvl);
+	nth = intFL->numberTileHeight(lvl);
+	ntd = intFL->numberTileDepth(lvl);
+
+	ptrI = std::make_shared<std::vector<uint32_t>>(tileSize);
+
+	// wholeslide
+	if (seg_fpath.empty())
+		return true;
+
+	// segmented slide
+
 	try 
 	{
 		if 	(fs::path(seg_fpath).extension() == ".zarr")
@@ -127,20 +148,6 @@ bool ImageLoader::open (SlideProps & p)	//????????????? (const std::string& int_
 
 	if (segFL == nullptr)
 		return false;
-	
-	// File #1 (intensity)
-	th = intFL->tileHeight(lvl);
-	tw = intFL->tileWidth(lvl);
-	td = intFL->tileDepth(lvl);
-	tileSize = th * tw;
-
-	fh = intFL->fullHeight(lvl);
-	fw = intFL->fullWidth(lvl);
-	fd = intFL->fullDepth(lvl);
-
-	ntw = intFL->numberTileWidth(lvl);
-	nth = intFL->numberTileHeight(lvl);
-	ntd = intFL->numberTileDepth(lvl);
 
 	// File #2 (labels)
 
@@ -176,7 +183,6 @@ bool ImageLoader::open (SlideProps & p)	//????????????? (const std::string& int_
 	auto& dataL = *ptrL;
 #endif
 
-	ptrI = std::make_shared<std::vector<uint32_t>>(tileSize);
 	ptrL = std::make_shared<std::vector<uint32_t>>(tileSize);
 
 	return true;
@@ -204,8 +210,12 @@ bool ImageLoader::load_tile(size_t tile_idx)
 
 	auto row = tile_idx / ntw;
 	auto col = tile_idx % ntw;
+	
 	intFL->loadTileFromFile (ptrI, row, col, lyr, lvl);
-	segFL->loadTileFromFile (ptrL, row, col, lyr, lvl);
+
+	// segmentation loader is not available in wholeslide
+	if (segFL)
+		segFL->loadTileFromFile (ptrL, row, col, lyr, lvl);
 	
 	return true;
 }
@@ -216,7 +226,11 @@ bool ImageLoader::load_tile (size_t tile_row, size_t tile_col)
 		return false;
 
 	intFL->loadTileFromFile (ptrI, tile_row, tile_col, lyr, lvl);
-	segFL->loadTileFromFile (ptrL, tile_row, tile_col, lyr, lvl);
+
+	// segmentation loader is not available in wholeslide
+	if (segFL)
+		segFL->loadTileFromFile (ptrL, tile_row, tile_col, lyr, lvl);
+
 	return true;
 }
 const std::vector<uint32_t>& ImageLoader::get_int_tile_buffer()
@@ -227,6 +241,11 @@ const std::vector<uint32_t>& ImageLoader::get_int_tile_buffer()
 const std::vector<uint32_t>& ImageLoader::get_seg_tile_buffer()
 {
 	return *ptrL;
+}
+
+const std::shared_ptr<std::vector<uint32_t>> & ImageLoader::get_seg_tile_sptr()
+{
+	return ptrL;
 }
 
 size_t ImageLoader::get_tile_size()

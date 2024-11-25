@@ -19,6 +19,7 @@ public:
 	bool load_tile (size_t tile_row, size_t tile_col);
 	const std::vector<uint32_t>& get_int_tile_buffer();
 	const std::vector<uint32_t>& get_seg_tile_buffer();
+	const std::shared_ptr<std::vector<uint32_t>>& get_seg_tile_sptr();
 	size_t get_tile_size();
 	size_t get_num_tiles_vert();
 	size_t get_num_tiles_hor();

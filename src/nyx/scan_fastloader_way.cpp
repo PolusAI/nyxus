@@ -373,7 +373,7 @@ namespace Nyxus
 		RawImageLoader& ilo,
 		SlideProps& p)
 	{
-		bool wholeslide = p.fname_int == p.fname_seg;
+		bool wholeslide = p.fname_seg.empty();
 
 		double slide_I_max = (std::numeric_limits<double>::min)(),
 			slide_I_min = (std::numeric_limits<double>::max)();
@@ -418,7 +418,7 @@ namespace Nyxus
 				// Iterate pixels
 				for (size_t i = 0; i < tileSize; i++)
 				{
-					// Intensity as double for accumulating tile intensity range (both within-ROI and off-ROI)
+					// dynamic range within- and off-ROI
 					double dxequiv_I = ilo.get_cur_tile_dpequiv_pixel (i);
 					slide_I_max = (std::max) (slide_I_max, dxequiv_I);
 					slide_I_min = (std::min) (slide_I_min, dxequiv_I);
@@ -519,13 +519,13 @@ namespace Nyxus
 	bool scan_intlabel_pair_props (SlideProps & p)
 	{
 		RawImageLoader ilo;
-		if (!ilo.open(p.fname_int, p.fname_seg))
+		if (! ilo.open(p.fname_int, p.fname_seg))
 		{
 			std::cerr << "error opening an ImageLoader for " << p.fname_int << " | " << p.fname_seg << "\n";
 			return false;
 		}
 
-		if (!gatherRoisMetrics_2_slideprops(ilo, p))
+		if (! gatherRoisMetrics_2_slideprops(ilo, p))
 		{
 			std::cerr << "error in gatherRoisMetrics_2_slideprops() \n";
 			return false;
@@ -554,7 +554,7 @@ namespace Nyxus
 
 		//********************** prescan ***********************
 
-		// scan the whole dataset for ROI properties, slide properties, and dataset global properties
+		// slide properties
 		size_t nf = intensFiles.size();
 
 		{ STOPWATCH("prescan/p0/P/#ccbbaa", "\t=");
@@ -565,23 +565,22 @@ namespace Nyxus
 		LR::dataset_props.resize(nf);
 		for (size_t i = 0; i < nf; i++)
 		{
-			auto& ifp = intensFiles[i],
-				& mfp = labelFiles[i];
-
+			// slide file names
 			SlideProps& p = LR::dataset_props[i];
-			p.fname_int = ifp;
-			p.fname_seg = mfp;
+			p.fname_int = intensFiles[i];
+			p.fname_seg = labelFiles[i];
 
+			// slide metrics
 			VERBOSLVL1(std::cout << "prescanning " << p.fname_int);
 			if (!scan_intlabel_pair_props(p))
 			{
-				VERBOSLVL1(std::cout << "error prescanning pair " << ifp << " and " << mfp << std::endl);
+				VERBOSLVL1(std::cout << "error prescanning pair " << p.fname_int << " and " << p.fname_seg << std::endl);
 				return 1;
 			}
 			VERBOSLVL1(std::cout << "\tmax ROI " << p.max_roi_w << " x " << p.max_roi_h << "\tmin-max I " << p.min_preroi_inten << "-" << p.max_preroi_inten <<  "\n");
 		}
 
-		// get global properties
+		// global properties
 		LR::dataset_max_combined_roicloud_len = 0;
 		LR::dataset_max_n_rois = 0;
 		LR::dataset_max_roi_area = 0;
@@ -618,7 +617,7 @@ namespace Nyxus
 		if (theEnvironment.using_gpu())
 		{
 			// allocate
-			VERBOSLVL1 (std::cout << "allocate GPU cache \n");
+			VERBOSLVL1 (std::cout << "allocating GPU cache \n");
 
 			if (!NyxusGpu::allocate_gpu_cache(
 				// out

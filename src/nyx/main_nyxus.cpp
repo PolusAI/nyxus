@@ -76,7 +76,7 @@ int main (int argc, char** argv)
 		
 	if (theEnvironment.dim() == 2)
 	{
-		// Scan intensity and mask directories, apply fileppatern, make intensity-mask image file pairs
+		// Scan intensity and mask directories, apply fileppatern, make intensity-mask image file pairs (if not in wholeslide mode)
 		std::vector <std::string> intensFiles, labelFiles;
 		std::string ermsg;
 		int errorCode = Nyxus::read_2D_dataset(

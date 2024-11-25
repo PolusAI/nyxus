@@ -60,6 +60,84 @@ public:
                 message << "Tile Loader ERROR: The file is not greyscale: SamplesPerPixel = " << samplesPerPixel << ".";
                 throw (std::runtime_error(message.str()));
             }
+
+            // prepare the right typed getter function
+            std::string message;
+            switch (sampleFormat_)
+            {
+            case 1:
+                switch (bitsPerSample_)
+                {
+                case 8:
+                    get_uint32_pixel_typeresolved = get_uint32_pixel_imp <uint8_t>;
+                    get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <uint8_t>;
+                    break;
+                case 16:
+                    get_uint32_pixel_typeresolved = get_uint32_pixel_imp <uint16_t>;
+                    get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <uint16_t>;
+                    break;
+                case 32:
+                    get_uint32_pixel_typeresolved = get_uint32_pixel_imp <uint32_t>;
+                    get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <uint32_t>;
+                    break;
+                case 64:
+                    get_uint32_pixel_typeresolved = get_uint32_pixel_imp <uint64_t>;
+                    get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <uint64_t>;
+                    break;
+                default:
+                    message =
+                        "Tile Loader ERROR: The data format is not supported for unsigned integer, number bits per pixel = "
+                        + bitsPerSample_;
+                    throw (std::runtime_error(message));
+                }
+                break;
+            case 2:
+                switch (bitsPerSample_)
+                {
+                case 8:
+                    get_uint32_pixel_typeresolved = get_uint32_pixel_imp <int8_t>;
+                    get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <int8_t>;
+                    break;
+                case 16:
+                    get_uint32_pixel_typeresolved = get_uint32_pixel_imp <int16_t>;
+                    get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <int16_t>;
+                    break;
+                case 32:
+                    get_uint32_pixel_typeresolved = get_uint32_pixel_imp <int32_t>;
+                    get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <int32_t>;
+                    break;
+                case 64:
+                    get_uint32_pixel_typeresolved = get_uint32_pixel_imp <int64_t>;
+                    get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <int64_t>;
+                    break;
+                default:
+                    message =
+                        "Tile Loader ERROR: The data format is not supported for signed integer, number bits per pixel = " + std::to_string(bitsPerSample_);
+                    throw (std::runtime_error(message));
+                }
+                break;
+            case 3:
+                switch (bitsPerSample_) 
+                {
+                case 8:
+                case 16:
+                case 32:
+                    get_uint32_pixel_typeresolved = get_uint32_pixel_imp <float>;
+                    get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <float>;
+                    break;
+                case 64:
+                    get_uint32_pixel_typeresolved = get_uint32_pixel_imp <double>;
+                    get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <double>;
+                    break;
+                default:
+                    message = "Tile Loader ERROR: The data format is not supported for float, number bits per pixel = " + std::to_string(bitsPerSample_);
+                    throw (std::runtime_error(message));
+                }
+                break;
+            default:
+                message = "Tile Loader ERROR: The data format is not supported, sample format = " + std::to_string(sampleFormat_);
+                throw (std::runtime_error(message));
+            }
         }
         else 
         { 
@@ -103,77 +181,6 @@ public:
                 throw (std::runtime_error(message.str()));
             }
         }
-
-        std::stringstream message;
-        switch (sampleFormat_) 
-        {
-        case 1:
-            switch (bitsPerSample_) 
-            {
-            case 8:
-                scan_typed_minmax <uint8_t> (tiffTile);
-                break;
-            case 16:
-                scan_typed_minmax <uint16_t> (tiffTile);
-                break;
-            case 32:
-                scan_typed_minmax <uint32_t> (tiffTile);
-                break;
-            case 64:
-                scan_typed_minmax <uint64_t> (tiffTile);
-                break;
-            default:
-                message
-                    << "Tile Loader ERROR: The data format is not supported for unsigned integer, number bits per pixel = "
-                    << bitsPerSample_;
-                throw (std::runtime_error(message.str()));
-            }
-            break;
-        case 2:
-            switch (bitsPerSample_) 
-            {
-            case 8:
-                scan_typed_minmax <int8_t>(tiffTile);
-                break;
-            case 16:
-                scan_typed_minmax <int16_t>(tiffTile);
-                break;
-            case 32:
-                scan_typed_minmax <int32_t>(tiffTile);
-                break;
-            case 64:
-                scan_typed_minmax <int64_t>(tiffTile);
-                break;
-            default:
-                message
-                    << "Tile Loader ERROR: The data format is not supported for signed integer, number bits per pixel = "
-                    << bitsPerSample_;
-                throw (std::runtime_error(message.str()));
-            }
-            break;
-        case 3:
-            switch (bitsPerSample_) 
-            {
-            case 8:
-            case 16:
-            case 32:
-                scan_typed_minmax <float> (tiffTile);
-                break;
-            case 64:
-                scan_typed_minmax <double> (tiffTile);
-                break;
-            default:
-                message
-                    << "Tile Loader ERROR: The data format is not supported for float, number bits per pixel = "
-                    << bitsPerSample_;
-                throw (std::runtime_error(message.str()));
-            }
-            break;
-        default:
-            message << "Tile Loader ERROR: The data format is not supported, sample format = " << sampleFormat_;
-            throw (std::runtime_error(message.str()));
-        }
-
     }
 
     void free_tile() override
@@ -183,165 +190,21 @@ public:
 
     uint32_t get_uint32_pixel (size_t idx) const
     {
-        uint32_t rv = 0;
-
-        std::string message;
-        switch (sampleFormat_)
-        {
-        case 1:
-            switch (bitsPerSample_)
-            {
-            case 8:
-                rv = get_uint32_pixel_imp <uint8_t>(tiffTile, idx);
-                break;
-            case 16:
-                rv = get_uint32_pixel_imp <uint16_t>(tiffTile, idx);
-                break;
-            case 32:
-                rv = get_uint32_pixel_imp <uint32_t>(tiffTile, idx);
-                break;
-            case 64:
-                rv = get_uint32_pixel_imp <uint64_t>(tiffTile, idx);
-                break;
-            default:
-                message = 
-                    "Tile Loader ERROR: The data format is not supported for unsigned integer, number bits per pixel = "
-                    + bitsPerSample_;
-                throw (std::runtime_error(message));
-            }
-            break;
-        case 2:
-            switch (bitsPerSample_)
-            {
-            case 8:
-                rv = get_uint32_pixel_imp <int8_t>(tiffTile, idx);
-                break;
-            case 16:
-                rv = get_uint32_pixel_imp <int16_t>(tiffTile, idx);
-                break;
-            case 32:
-                rv = get_uint32_pixel_imp <int32_t>(tiffTile, idx);
-                break;
-            case 64:
-                rv = get_uint32_pixel_imp <int64_t>(tiffTile, idx);
-                break;
-            default:
-                message = 
-                    "Tile Loader ERROR: The data format is not supported for signed integer, number bits per pixel = "
-                    + bitsPerSample_;
-                throw (std::runtime_error(message));
-            }
-            break;
-        case 3: // we are not interpreting floating point pixels
-            message = "Expecting an integer pixel, sample format = " + sampleFormat_;
-            throw (std::runtime_error(message));
-            break;
-        default:
-            message = "Tile Loader ERROR: The data format is not supported, sample format = " + sampleFormat_;
-            throw (std::runtime_error(message));
-        }
-
+        uint32_t rv = get_uint32_pixel_typeresolved (tiffTile, idx);
         return rv;
     }
 
     double get_dpequiv_pixel (size_t idx) const
     {
-        double rv = 0;
-
-        std::string message;
-        switch (sampleFormat_)
-        {
-        case 1:
-            switch (bitsPerSample_)
-            {
-            case 8:
-                rv = get_dp_pixel_imp <uint8_t>(tiffTile, idx);
-                break;
-            case 16:
-                rv = get_dp_pixel_imp <uint16_t>(tiffTile, idx);
-                break;
-            case 32:
-                rv = get_dp_pixel_imp <uint32_t>(tiffTile, idx);
-                break;
-            case 64:
-                rv = get_dp_pixel_imp <uint64_t>(tiffTile, idx);
-                break;
-            default:
-                message =
-                    "Tile Loader ERROR: The data format is not supported for unsigned integer, number bits per pixel = "
-                    + bitsPerSample_;
-                throw (std::runtime_error(message));
-            }
-            break;
-        case 2:
-            switch (bitsPerSample_)
-            {
-            case 8:
-                rv = get_dp_pixel_imp <int8_t>(tiffTile, idx);
-                break;
-            case 16:
-                rv = get_dp_pixel_imp <int16_t>(tiffTile, idx);
-                break;
-            case 32:
-                rv = get_dp_pixel_imp <int32_t>(tiffTile, idx);
-                break;
-            case 64:
-                rv = get_dp_pixel_imp <int64_t>(tiffTile, idx);
-                break;
-            default:
-                message =
-                    "Tile Loader ERROR: The data format is not supported for signed integer, number bits per pixel = "
-                    + bitsPerSample_;
-                throw (std::runtime_error(message));
-            }
-            break;
-        case 3:
-            switch (bitsPerSample_)
-            {
-            case 8:
-            case 16:
-            case 32:
-                rv = get_dp_pixel_imp <float>(tiffTile, idx);
-                break;
-            case 64:
-                rv = get_dp_pixel_imp <double>(tiffTile, idx);
-                break;
-            default:
-                message = 
-                    "Tile Loader ERROR: The data format is not supported for float, number bits per pixel = "
-                    + bitsPerSample_;
-                throw (std::runtime_error(message));
-            }
-            break;
-        default:
-            message = "Tile Loader ERROR: The data format is not supported, sample format = " + sampleFormat_;
-            throw (std::runtime_error(message));
-        }
-
+        double rv = get_dpequiv_pixel_typeresolved (tiffTile, idx);
         return rv;
     }
 
-    /// @brief Tiff file height
-    /// @param level Tiff level [not used]
-    /// @return Full height
     [[nodiscard]] size_t fullHeight([[maybe_unused]] size_t level) const { return fullHeight_; }
-    /// @brief Tiff full width
-    /// @param level Tiff level [not used]
-    /// @return Full width
     [[nodiscard]] size_t fullWidth([[maybe_unused]] size_t level) const { return fullWidth_; }
-    /// @brief Tiff tile width
-    /// @param level Tiff level [not used]
-    /// @return Tile width
     [[nodiscard]] size_t tileWidth([[maybe_unused]] size_t level) const { return tileWidth_; }
-    /// @brief Tiff tile height
-    /// @param level Tiff level [not used]
-    /// @return Tile height
     [[nodiscard]] size_t tileHeight([[maybe_unused]] size_t level) const { return tileHeight_; }
-    /// @brief Tiff bits per sample
-    /// @return Size of a sample in bits
     [[nodiscard]] short bitsPerSample() const { return bitsPerSample_; }
-    /// @brief Level accessor
-    /// @return 1
     [[nodiscard]] size_t numberPyramidLevels() const { return 1; }
 
 private:
@@ -380,19 +243,21 @@ private:
     }
 
     template<typename FileType>
-    uint32_t get_uint32_pixel_imp (tdata_t src, size_t idx) const
+    static uint32_t get_uint32_pixel_imp (tdata_t src, size_t idx)
     {
         FileType x = *(((FileType*)src) + idx);
         return (uint32_t) x;
     }
 
     template<typename FileType>
-    double get_dp_pixel_imp (tdata_t src, size_t idx) const
+    static double get_dp_pixel_imp (tdata_t src, size_t idx)
     {
         FileType x = *(((FileType*)src) + idx);
         return (double) x;
     }
 
+    double (*get_dpequiv_pixel_typeresolved) (tdata_t src, size_t idx) = nullptr;
+    uint32_t (*get_uint32_pixel_typeresolved) (tdata_t src, size_t idx) = nullptr;
 
     size_t STRIP_TILE_HEIGHT = 1024;
     size_t STRIP_TILE_WIDTH = 1024;
@@ -466,7 +331,6 @@ public:
         }
     }
 
-    /// @brief NyxusGrayscaleTiffTileLoader destructor
     ~RawTiffStripLoader() override
     {
         if (tiff_)
@@ -563,37 +427,13 @@ public:
         }
     }
 
-    /// @brief Tiff file height
-    /// @param level Tiff level [not used]
-    /// @return Full height
     [[nodiscard]] size_t fullHeight([[maybe_unused]] size_t level) const override { return fullHeight_; }
-    /// @brief Tiff full width
-    /// @param level Tiff level [not used]
-    /// @return Full width
     [[nodiscard]] size_t fullWidth([[maybe_unused]] size_t level) const override { return fullWidth_; }
-    /// @brief Tiff full depth
-    /// @param level Tiff level [not used]
-    /// @return Full Depth
     [[nodiscard]] size_t fullDepth([[maybe_unused]] size_t level) const override { return fullDepth_; }
-
-    /// @brief Tiff tile width
-    /// @param level Tiff level [not used]
-    /// @return Tile width
     [[nodiscard]] size_t tileWidth([[maybe_unused]] size_t level) const override { return tileWidth_; }
-    /// @brief Tiff tile height
-    /// @param level Tiff level [not used]
-    /// @return Tile height
     [[nodiscard]] size_t tileHeight([[maybe_unused]] size_t level) const override { return tileHeight_; }
-    /// @brief Tiff tile depth
-    /// @param level Tiff level [not used]
-    /// @return Tile depth
     [[nodiscard]] size_t tileDepth([[maybe_unused]] size_t level) const override { return tileDepth_; }
-
-    /// @brief Tiff bits per sample
-    /// @return Size of a sample in bits
     [[nodiscard]] short bitsPerSample() const override { return bitsPerSample_; }
-    /// @brief Level accessor
-    /// @return 1
     [[nodiscard]] size_t numberPyramidLevels() const override { return 1; }
 
     void free_tile() override
@@ -618,14 +458,6 @@ public:
 
 private:
 
-    /// @brief Private function to copy and cast the values
-    /// @tparam FileType Type inside the file
-    /// @param src Piece of memory coming from libtiff
-    /// @param dest_as_vector Feature extraction facing buffer to fill
-    /// @param layer Destination layer
-    /// @param row Destination row
-    /// @param startCol Starting column tile to copy
-    /// @param endCol End column tile to copy
     template<typename FileType>
     void scan_row_minmax (tdata_t src,
         size_t layer,
