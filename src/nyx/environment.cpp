@@ -801,7 +801,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	}
 
 	// -- check if any feature is enablesd as a result of expanding user's choice
-	if (theFeatureSet.numOfEnabled() == 0)
+	if (theFeatureSet.numOfEnabled(dim()) == 0)
 	{
 		std::cerr << "Error: no features are selected. Stopping \n";
 		return false;

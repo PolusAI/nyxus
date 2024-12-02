@@ -153,14 +153,7 @@ private:
 		PixIntens max_val,
 		bool normalize);
 
-	void Extract_Texture_Features(
-		int distance,
-		int angle,
-		const SimpleMatrix<uint8_t>& grays);	// 'grays' is 0-255 grays 
-	void Extract_Texture_Features2(int angle, const ImageMatrix& grays, PixIntens min_val, PixIntens max_val);
-
-	void calculate_normalized_graytone_matrix(SimpleMatrix<uint8_t>& G, int minI, int maxI, const ImageMatrix& Im);
-	void calculate_normalized_graytone_matrix(OOR_ReadMatrix& G, int minI, int maxI, const ImageMatrix& Im);
+	void Extract_Texture_Features2 (int angle, const ImageMatrix& grays, PixIntens min_val, PixIntens max_val);
 
 	void calculateCoocMatAtAngle(
 		// out

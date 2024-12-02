@@ -32,6 +32,7 @@
 #include "features/neighbors.h"
 #include "features/ngldm.h"
 #include "features/ngtdm.h"
+#include "features/3d_glcm.h"
 #include "features/roi_radius.h"
 #include "helpers/helpers.h"
 #include "helpers/system_resource.h"
@@ -437,6 +438,14 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 		return true;
 	}
 
+	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_GLCM))
+	{
+		theFeatureSet.enableAll (false);
+
+		theFeatureSet.enableFeatures (D3_GLCM_feature::featureset);
+		return true;
+	}
+
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_GLDZM))
 	{
 		theFeatureSet.enableAll(false);
@@ -466,8 +475,6 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 		theFeatureSet.enableFeatures(F);
 		return true;
 	}
-
-
 
 	return false;
 }

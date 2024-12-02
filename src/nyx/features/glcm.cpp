@@ -228,9 +228,6 @@ void GLCMFeature::Extract_Texture_Features2(int angle, const ImageMatrix& grays,
 	int nrows = grays.height;
 	int ncols = grays.width;
 
-	// Mean of marginal totals of GLCM
-	double mean_x;
-
 	// Compute the gray-tone spatial dependence matrix 
 	int dx, dy;
 	switch (angle)
