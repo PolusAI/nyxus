@@ -11,7 +11,7 @@ private:
 
 public:
 
-    RawFormatLoader (std::string_view const& name, std::string filePath)
+    RawFormatLoader (const std::string_view & name, const std::string & filePath)
         : name_(name), filePath_(filePath) {}
 
     virtual ~RawFormatLoader() = default;
