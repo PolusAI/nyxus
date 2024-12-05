@@ -53,6 +53,7 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 	// -- Zones (intensity clusters)
 	std::vector<IDZ_cluster_indo> Z;
 
+	// -- binned intensities
 	SimpleCube<PixIntens> D;
 	D.allocate (r.aux_image_cube.width(), r.aux_image_cube.height(), r.aux_image_cube.depth());
 

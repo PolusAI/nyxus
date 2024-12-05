@@ -658,6 +658,67 @@ namespace Nyxus
 		SPAT_MOMENT_23,
 		SPAT_MOMENT_30,
 
+		// Texture / GLCM
+		GLCM_ACOR,		// Autocorrelation, IBSI # QWB0
+		GLCM_ASM,		// Angular second moment	IBSI # 8ZQL
+		GLCM_CLUPROM,	// Cluster prominence, IBSI # AE86
+		GLCM_CLUSHADE,	// Cluster shade, IBSI # 7NFM
+		GLCM_CLUTEND,	// Cluster tendency, IBSI # DG8W
+		GLCM_CONTRAST,	// Contrast, IBSI # ACUI
+		GLCM_CORRELATION,	// Correlation, IBSI # NI2N
+		GLCM_DIFAVE,	// Difference average, IBSI # TF7R
+		GLCM_DIFENTRO,	// Difference entropy, IBSI # NTRS
+		GLCM_DIFVAR,	// Difference variance, IBSI # D3YU
+		GLCM_DIS,		// Dissimilarity, IBSI # 8S9J
+		GLCM_ENERGY,	// Energy
+		GLCM_ENTROPY,	// Entropy
+		GLCM_HOM1,		// Homogeneity-1 (PyR)
+		GLCM_HOM2,		// Homogeneity-2 (PyR)
+		GLCM_ID,		// Inv diff, IBSI # IB1Z
+		GLCM_IDN,		// Inv diff normalized, IBSI # NDRX
+		GLCM_IDM,		// Inv diff mom, IBSI # WF0Z
+		GLCM_IDMN,		// Inv diff mom normalized, IBSI # 1QCO
+		GLCM_INFOMEAS1,	// Information measure of correlation 1, IBSI # R8DG
+		GLCM_INFOMEAS2,	// Information measure of correlation 2, IBSI # JN9H
+		GLCM_IV,		// Inv variance, IBSI # E8JP
+		GLCM_JAVE,		// Joint average, IBSI # 60VM
+		GLCM_JE,		// Joint entropy, IBSI # TU9B
+		GLCM_JMAX,		// Joint max (aka PyR max probability), IBSI # GYBY
+		GLCM_JVAR,		// Joint var (aka PyR Sum of Squares), IBSI # UR99
+		GLCM_SUMAVERAGE,	// Sum average, IBSI # ZGXS
+		GLCM_SUMENTROPY,	// Sum entropy, IBSI # P6QZ
+		GLCM_SUMVARIANCE,	// Sum variance, IBSI # OEEB
+		GLCM_VARIANCE,	// Variance
+		GLCM_ASM_AVE,
+		GLCM_ACOR_AVE,
+		GLCM_CLUPROM_AVE,
+		GLCM_CLUSHADE_AVE,
+		GLCM_CLUTEND_AVE,
+		GLCM_CONTRAST_AVE,
+		GLCM_CORRELATION_AVE,
+		GLCM_DIFAVE_AVE,
+		GLCM_DIFENTRO_AVE,
+		GLCM_DIFVAR_AVE,
+		GLCM_DIS_AVE,
+		GLCM_ENERGY_AVE,
+		GLCM_ENTROPY_AVE,
+		GLCM_HOM1_AVE,
+		GLCM_ID_AVE,
+		GLCM_IDN_AVE,
+		GLCM_IDM_AVE,
+		GLCM_IDMN_AVE,
+		GLCM_IV_AVE,
+		GLCM_JAVE_AVE,
+		GLCM_JE_AVE,
+		GLCM_INFOMEAS1_AVE,
+		GLCM_INFOMEAS2_AVE,
+		GLCM_VARIANCE_AVE,
+		GLCM_JMAX_AVE,
+		GLCM_JVAR_AVE,
+		GLCM_SUMAVERAGE_AVE,
+		GLCM_SUMENTROPY_AVE,
+		GLCM_SUMVARIANCE_AVE,
+
 		// Texture / GLDZM
 		GLDZM_SDE,		// Small Distance Emphasis
 		GLDZM_LDE,		// Large Distance Emphasis
@@ -722,6 +783,7 @@ namespace Nyxus
 		FG3_INTENSITY,
 		FG3_MORPHOLOGY,
 		FG3_TEXTURE,			// 3D_GLCM + 3D_GLRLM + 3D_DLSZM + etc
+		FG3_GLCM,
 		FG3_GLDZM,
 		FG3_NEIG,
 		FG3_MOMENTS,
@@ -866,9 +928,11 @@ public:
 				return true;
 		return false;
 	}
-	int numOfEnabled() {
+	int numOfEnabled (int dim) 
+	{
 		int cnt = 0;
-		for (int i = 0; i < (int) Nyxus::Feature2D::_COUNT_; i++)
+		int n = dim == 2 ? (int)Nyxus::Feature2D::_COUNT_ : (int)Nyxus::Feature3D::_COUNT_;
+		for (int i = 0; i < n; i++)
 			if (m_enabledFeatures[i])
 				cnt++;
 		return cnt;

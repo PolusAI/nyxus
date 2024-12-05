@@ -42,6 +42,7 @@
 #include "features/zernike.h"
 
 #include "features/3d_intensity.h"
+#include "features/3d_glcm.h"
 #include "features/3d_gldzm.h"
 //--future-- #include "features/3d_surface.h"
 
@@ -372,7 +373,12 @@ namespace Nyxus
 			STOPWATCH("3D intensity/3Dintensity/3DI/#FFFF00", "\t=");
 			runParallel (D3_PixelIntensityFeatures::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
 		}
-		//==== texture
+		//==== texture		
+		if (D3_GLCM_feature::required(theFeatureSet))
+		{
+			STOPWATCH("3D GLCM/3DGLCM/3DGLCM/#FFFF00", "\t=");
+			runParallel (D3_GLCM_feature::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
+		}		
 		if (D3_GLDZM_feature::required(theFeatureSet))
 		{
 			STOPWATCH("3D GLDZM/3DGLDZM/3DGLDZM/#FFFF00", "\t=");

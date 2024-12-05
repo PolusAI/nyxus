@@ -130,7 +130,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 #== GTest 
 option(RUN_GTEST "Downloads google unit test API and runs google test scripts to test Nyxus" OFF)
 
-
 #==== Source files
 set(SOURCE
 	src/nyx/arrow_output_stream.cpp
@@ -166,6 +165,8 @@ set(SOURCE
 	src/nyx/features/2d_geomoments_basic_nt.cpp
 	src/nyx/features/3d_intensity.cpp
 	src/nyx/features/3d_gldzm.cpp
+	src/nyx/features/3d_glcm.cpp
+	src/nyx/features/3d_glcm_nontriv.cpp
 	src/nyx/features/intensity.cpp
 	src/nyx/features/neighbors.cpp
 	src/nyx/features/ngldm.cpp
