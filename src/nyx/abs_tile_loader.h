@@ -2,6 +2,7 @@
 #include <cmath>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 template <typename DataType>

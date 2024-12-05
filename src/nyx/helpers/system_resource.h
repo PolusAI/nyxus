@@ -30,6 +30,7 @@ namespace Nyxus
 #endif
 
 #ifdef _WIN32
+    #define NOMINMAX	// Prevent converting std::min(), max(), ... into macros
     #include<windows.h>
     inline unsigned long long getAvailPhysMemory()
     {

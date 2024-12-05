@@ -1,3 +1,4 @@
+#include <climits>
 #include <stack>
 #include "../environment.h"
 #include "3d_gldzm.h"

@@ -1,15 +1,7 @@
 //
 // This file is a collection of drivers of tiled TIFF file scanning from the FastLoader side
 //
-#if __has_include(<filesystem>)
-  #include <filesystem>
-  namespace fs = std::filesystem;
-#elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
-  namespace fs = std::experimental::filesystem;
-#else
-  error "Missing the <filesystem> header."
-#endif
+#include "helpers/fsystem.h"
 #include <fstream>
 #include <string>
 #include <iomanip>
@@ -18,12 +10,13 @@
 #include <array>
 #include <regex>
 #include <string>
+#include <limits>
 
 #ifdef WITH_PYTHON_H
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/numpy.h>
-namespace py = pybind11;
+	#include <pybind11/pybind11.h>
+	#include <pybind11/stl.h>
+	#include <pybind11/numpy.h>
+	namespace py = pybind11;
 #endif
 #include "dirs_and_files.h"
 #include "environment.h"
@@ -35,6 +28,8 @@ namespace py = pybind11;
 #include "helpers/helpers.h"
 #include "helpers/system_resource.h"
 #include "helpers/timing.h"
+
+#include "raw_image_loader.h"
 
 #ifdef USE_GPU
 	#include "gpucache.h"
@@ -374,9 +369,14 @@ namespace Nyxus
 	}
 #endif
 
-	bool gatherRoisMetrics_2_slideprops (ImageLoader & ilo, SlideProps & p)
+	bool gatherRoisMetrics_2_slideprops (
+		RawImageLoader& ilo,
+		SlideProps& p)
 	{
-		bool wholeslide = p.fname_int == p.fname_seg;
+		bool wholeslide = p.fname_seg.empty();
+
+		double slide_I_max = (std::numeric_limits<double>::min)(),
+			slide_I_min = (std::numeric_limits<double>::max)();
 
 		std::unordered_set<int> U;	// unique ROI mask labels
 		std::unordered_map <int, LR> R;	// ROI data
@@ -401,8 +401,8 @@ namespace Nyxus
 		for (unsigned int row = 0; row < nth; row++)
 			for (unsigned int col = 0; col < ntv; col++)
 			{
-				// Fetch the tile 
-				bool ok = ilo.load_tile(row, col);
+				// Fetch the tile
+				bool ok = ilo.load_tile (row, col);
 				if (!ok)
 				{
 #ifdef WITH_PYTHON_H
@@ -414,24 +414,27 @@ namespace Nyxus
 
 				// Get ahold of tile's pixel buffer
 				auto tidx = row * nth + col;
-				auto data_I = ilo.get_int_tile_buffer(),
-					data_L = ilo.get_seg_tile_buffer();
-
+				
 				// Iterate pixels
 				for (size_t i = 0; i < tileSize; i++)
 				{
-					// Skip non-mask pixels
-					auto msk = data_L [i];
+					// dynamic range within- and off-ROI
+					double dxequiv_I = ilo.get_cur_tile_dpequiv_pixel (i);
+					slide_I_max = (std::max) (slide_I_max, dxequiv_I);
+					slide_I_min = (std::min) (slide_I_min, dxequiv_I);
+
+					// Mask
+					uint32_t msk = 1; // wholeslide by default
+					if (! wholeslide)
+						msk = ilo.get_cur_tile_seg_pixel(i);
+
+					// Skip non-mask pixels					
 					if (!msk)
 					{
-						// Update zero-background area
+						// update zero-background area
 						zero_background_area++;
 						continue;
 					}
-
-					// Collapse all the labels to one if single-ROI mde is requested
-					if (wholeslide)
-						msk = 1;
 
 					int y = row * th + i / tw,
 						x = col * tw + i % tw;
@@ -439,8 +442,6 @@ namespace Nyxus
 					// Skip tile buffer pixels beyond the image's bounds
 					if (x >= fullwidth || y >= fullheight)
 						continue;
-
-					auto inten = data_I [i];
 
 					// Update pixel's ROI metrics
 					//		- the following block mocks feed_pixel_2_metrics (x, y, dataI[i], msk, tidx)
@@ -454,7 +455,7 @@ namespace Nyxus
 						//		- mocking init_label_record_2(newData, theSegFname, theIntFname, x, y, label, intensity, tile_index)
 						// Initialize basic counters
 						r.aux_area = 1;
-						r.aux_min = r.aux_max = inten;
+						r.aux_min = r.aux_max = 0; //we don't have uint-cast intensities at this moment
 						r.init_aabb(x, y);
 						// Cache the ROI label
 						r.label = msk;
@@ -473,9 +474,6 @@ namespace Nyxus
 						
 						// Per-ROI 
 						r.aux_area++;
-
-						r.aux_min = (std::min) (r.aux_min, inten);
-						r.aux_max = (std::max) (r.aux_max, inten);
 
 						// save
 						r.update_aabb(x, y);
@@ -506,6 +504,10 @@ namespace Nyxus
 			max_w = max_w > r.aabb.get_width() ? max_w : r.aabb.get_width();
 			max_h = max_h > r.aabb.get_height() ? max_h : r.aabb.get_height();
 		}
+
+		p.max_preroi_inten = slide_I_max;
+		p.min_preroi_inten = slide_I_min;
+
 		p.max_roi_area = maxArea;
 		p.n_rois = R.size();
 		p.max_roi_w = max_w;
@@ -516,14 +518,14 @@ namespace Nyxus
 
 	bool scan_intlabel_pair_props (SlideProps & p)
 	{
-		ImageLoader ilo;
-		if (!ilo.open(p.fname_int, p.fname_seg))
+		RawImageLoader ilo;
+		if (! ilo.open(p.fname_int, p.fname_seg))
 		{
 			std::cerr << "error opening an ImageLoader for " << p.fname_int << " | " << p.fname_seg << "\n";
 			return false;
 		}
 
-		if (!gatherRoisMetrics_2_slideprops(ilo, p))
+		if (! gatherRoisMetrics_2_slideprops(ilo, p))
 		{
 			std::cerr << "error in gatherRoisMetrics_2_slideprops() \n";
 			return false;
@@ -552,44 +554,33 @@ namespace Nyxus
 
 		//********************** prescan ***********************
 
-		#ifdef USE_GPU
-		// what parts of GPU cache we need to bother about ?
-		bool needContour = ContourFeature::required(theFeatureSet),
-			needErosion = ErosionPixelsFeature::required(theFeatureSet),
-			needGabor = GaborFeature::required(theFeatureSet),
-			needImoments = Imoms2D_feature::required(theFeatureSet),
-			needSmoments = Smoms2D_feature::required(theFeatureSet),
-			needMoments = needImoments || needSmoments; // ImageMomentsFeature::required (theFeatureSet);
-		#endif
-
-		// scan the whole dataset for ROI properties, slide properties, and dataset global properties
+		// slide properties
 		size_t nf = intensFiles.size();
 
 		{ STOPWATCH("prescan/p0/P/#ccbbaa", "\t=");
 
-		VERBOSLVL1 (std::cout << "phase 0 (prescanning)\n");
+		VERBOSLVL1(std::cout << "phase 0 (prescanning)\n");
 
 		LR::reset_dataset_props();
 		LR::dataset_props.resize(nf);
 		for (size_t i = 0; i < nf; i++)
 		{
-			auto& ifp = intensFiles[i],
-				& mfp = labelFiles[i];
-
+			// slide file names
 			SlideProps& p = LR::dataset_props[i];
-			p.fname_int = ifp;
-			p.fname_seg = mfp;
+			p.fname_int = intensFiles[i];
+			p.fname_seg = labelFiles[i];
 
-			VERBOSLVL1 (std::cout << "prescanning " << p.fname_int);
+			// slide metrics
+			VERBOSLVL1(std::cout << "prescanning " << p.fname_int);
 			if (!scan_intlabel_pair_props(p))
 			{
-				VERBOSLVL1 (std::cout << "error prescanning pair " << ifp << " and " << mfp << std::endl);
+				VERBOSLVL1(std::cout << "error prescanning pair " << p.fname_int << " and " << p.fname_seg << std::endl);
 				return 1;
 			}
-			VERBOSLVL1 (std::cout << "\tmax ROI " << p.max_roi_w << " x " << p.max_roi_h << "\n");
+			VERBOSLVL1(std::cout << "\tmax ROI " << p.max_roi_w << " x " << p.max_roi_h << "\tmin-max I " << p.min_preroi_inten << "-" << p.max_preroi_inten <<  "\n");
 		}
 
-		// get global properties
+		// global properties
 		LR::dataset_max_combined_roicloud_len = 0;
 		LR::dataset_max_n_rois = 0;
 		LR::dataset_max_roi_area = 0;
@@ -604,18 +595,29 @@ namespace Nyxus
 			LR::dataset_max_n_rois = (std::max)(LR::dataset_max_n_rois, p.n_rois);
 			LR::dataset_max_roi_area = (std::max)(LR::dataset_max_roi_area, p.max_roi_area);
 
-			LR::dataset_max_roi_w = (std::max) (LR::dataset_max_roi_w, p.max_roi_w);
+			LR::dataset_max_roi_w = (std::max)(LR::dataset_max_roi_w, p.max_roi_w);
 			LR::dataset_max_roi_h = (std::max)(LR::dataset_max_roi_h, p.max_roi_h);
 		}
 
-		VERBOSLVL1 (std::cout << "\t finished phase 0 \n");
+		VERBOSLVL1(std::cout << "\t finished prescanning \n");
 
-		//***********************************************************************************************
-#ifdef USE_GPU
+		//********************** allocate the GPU cache ***********************
+
+		#ifdef USE_GPU
+		// what parts of GPU cache we need to bother about ?
+		bool needContour = ContourFeature::required(theFeatureSet),
+			needErosion = ErosionPixelsFeature::required(theFeatureSet),
+			needGabor = GaborFeature::required(theFeatureSet),
+			needImoments = Imoms2D_feature::required(theFeatureSet),
+			needSmoments = Smoms2D_feature::required(theFeatureSet),
+			needMoments = needImoments || needSmoments; // ImageMomentsFeature::required (theFeatureSet);
+		#endif
+
+		#ifdef USE_GPU
 		if (theEnvironment.using_gpu())
 		{
 			// allocate
-			VERBOSLVL1 (std::cout << "allocate GPU cache \n");
+			VERBOSLVL1 (std::cout << "allocating GPU cache \n");
 
 			if (!NyxusGpu::allocate_gpu_cache(
 				// out
@@ -679,7 +681,7 @@ namespace Nyxus
 
 		bool ok = true;
 
-		// Iterate file pattern-filtered images of the dataset
+		// Iterate intensity-segmentation pairs and process ROIs
 		for (int i = 0; i < nf; i++)
 		{
 #ifdef CHECKTIMING
@@ -699,10 +701,11 @@ namespace Nyxus
 			theIntFname = p_int.string();
 
 			// Scan one label-intensity pair 
-			ok = theImLoader.open(theIntFname, theSegFname);
+			SlideProps& p = LR::dataset_props[i];
+			ok = theImLoader.open (p);
 			if (ok == false)
 			{
-				std::cout << "Terminating\n";
+				std::cerr << "Terminating\n";
 				return 1;
 			}
 

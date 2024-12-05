@@ -99,7 +99,7 @@ void D3_PixelIntensityFeatures::calculate(LR& r)
 	val_RANGE = val_MAX - val_MIN;
 
 	// --COVERED_IMAGE_INTENSITY_RANGE
-	val_COVERED_IMAGE_INTENSITY_RANGE = double(r.aux_max - r.aux_min) / double(LR::global_max_inten - LR::global_min_inten);
+	val_COVERED_IMAGE_INTENSITY_RANGE = double(r.aux_max - r.aux_min) / double(LR::slide_max_inten - LR::slide_min_inten);
 
 	double n = r.aux_area;
 
@@ -216,7 +216,7 @@ void D3_PixelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	val_RANGE = val_MAX - val_MIN;
 
 	// --COVERED_IMAGE_INTENSITY_RANGE
-	val_COVERED_IMAGE_INTENSITY_RANGE = (r.aux_max - r.aux_min) / (LR::global_max_inten - LR::global_min_inten);
+	val_COVERED_IMAGE_INTENSITY_RANGE = (r.aux_max - r.aux_min) / (LR::slide_max_inten - LR::slide_min_inten);
 
 	double n = r.aux_area;
 

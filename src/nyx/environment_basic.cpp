@@ -30,7 +30,7 @@ bool BasicEnvironment::check_2d_file_pattern(const std::string& pat)
 	}
 	catch (...)
 	{
-		std::cerr << "Exception checking file pattern " << pat << "\n";
+		std::cerr << "Exception while checking file pattern " << pat << "\n";
 		return false;
 	}
 

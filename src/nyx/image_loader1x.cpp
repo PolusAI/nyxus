@@ -44,8 +44,9 @@ bool ImageLoader1x::open(const std::string& fpath)
 				FL = std::make_unique<NyxusGrayscaleTiffTileLoader<uint32_t>> (
 					n_threads, 
 					fpath, 
-					Nyxus::theEnvironment.fpimageOptions.min_intensity(),
-					Nyxus::theEnvironment.fpimageOptions.max_intensity(),
+					false, // prohibit real-valued intensities, as we are in the mask image scenario
+					0.0, // dummy min
+					999.0, // dummy max
 					Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
 			else
 			{

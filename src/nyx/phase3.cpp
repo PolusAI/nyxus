@@ -31,8 +31,10 @@ namespace Nyxus
 			VERBOSLVL1(std::cout << "processing oversized ROI " << lab << "\n");
 
 			// Scan one label-intensity pair 
-			bool ok = theImLoader.open(intens_fpath, label_fpath);
-			if (ok == false)
+			SlideProps p;
+			p.fname_int = intens_fpath;
+			p.fname_seg = label_fpath;
+			if (! theImLoader.open(p))
 			{
 				std::cout << "Terminating\n";
 				return false;

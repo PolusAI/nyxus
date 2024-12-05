@@ -11,6 +11,7 @@
 #include "environment.h"
 #include "image_loader.h"
 #include "grayscale_tiff.h"
+#include "raw_tiff.h"
 #include "omezarr.h"
 #include "nyxus_dicom_loader.h"
 #include "dirs_and_files.h"
@@ -19,10 +20,14 @@
 
 ImageLoader::ImageLoader() {}
 
-bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpath)
+bool ImageLoader::open (SlideProps & p)	//????????????? (const std::string& int_fpath, const std::string& seg_fpath)
 {
 	int n_threads = 1;
 
+	std::string & int_fpath = p.fname_int,
+		& seg_fpath = p.fname_seg;
+
+	// intensity image
 	try 
 	{
 		if 	(fs::path(int_fpath).extension() == ".zarr")
@@ -42,13 +47,23 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 		}
 		else 
 		{
+			// automatic or overriden FP dynamic range
+			double fpmin = p.min_preroi_inten,
+				fpmax = p.max_preroi_inten;
+			if (!Nyxus::theEnvironment.fpimageOptions.empty())
+			{
+				fpmin = Nyxus::theEnvironment.fpimageOptions.min_intensity();
+				fpmax = Nyxus::theEnvironment.fpimageOptions.max_intensity();
+			}
+
 			if (Nyxus::check_tile_status(int_fpath))
 			{
 				intFL = new NyxusGrayscaleTiffTileLoader<uint32_t> (
 					n_threads, 
 					int_fpath, 
-					Nyxus::theEnvironment.fpimageOptions.min_intensity(),
-					Nyxus::theEnvironment.fpimageOptions.max_intensity(),
+					true,
+					fpmin,
+					fpmax,
 					Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
 			} 
 			else 
@@ -66,50 +81,6 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 	if (intFL == nullptr)
 		return false;
 
-	try {
-		if 	(fs::path(seg_fpath).extension() == ".zarr")
-		{
-			#ifdef OMEZARR_SUPPORT
-			segFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, seg_fpath);
-			#else
-			std::cout << "This version of Nyxus was not build with OmeZarr support." <<std::endl;
-			#endif
-		}
-		else if(fs::path(seg_fpath).extension() == ".dcm" | fs::path(seg_fpath).extension() == ".dicom"){
-			#ifdef DICOM_SUPPORT
-			segFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, seg_fpath);
-			#else
-			std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl; 
-			#endif
-		}
-		else
-		{
-			if (Nyxus::check_tile_status(seg_fpath))
-			{
-				segFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(
-					n_threads, 
-					seg_fpath, 
-					Nyxus::theEnvironment.fpimageOptions.min_intensity(),
-					Nyxus::theEnvironment.fpimageOptions.max_intensity(),
-					Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
-			} 
-			else 
-			{
-				segFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, seg_fpath);
-			}
-		}
-
-
-	}
-	catch (std::exception const& e)	
-	{
-		std::cout << "Error while initializing the image loader for mask image file " <<  seg_fpath << ": " << e.what() << "\n";
-		return false;
-	}
-
-	if (segFL == nullptr)
-		return false;
-	
 	// File #1 (intensity)
 	th = intFL->tileHeight(lvl);
 	tw = intFL->tileWidth(lvl);
@@ -123,6 +94,60 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 	ntw = intFL->numberTileWidth(lvl);
 	nth = intFL->numberTileHeight(lvl);
 	ntd = intFL->numberTileDepth(lvl);
+
+	ptrI = std::make_shared<std::vector<uint32_t>>(tileSize);
+
+	// wholeslide
+	if (seg_fpath.empty())
+		return true;
+
+	// segmented slide
+
+	try 
+	{
+		if 	(fs::path(seg_fpath).extension() == ".zarr")
+		{
+			#ifdef OMEZARR_SUPPORT
+				segFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, seg_fpath);
+			#else
+				std::cout << "This version of Nyxus was not build with OmeZarr support." <<std::endl;
+			#endif
+		}
+		else 
+			if (fs::path(seg_fpath).extension() == ".dcm" | fs::path(seg_fpath).extension() == ".dicom")
+			{
+			#ifdef DICOM_SUPPORT
+				segFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, seg_fpath);
+			#else
+				std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl; 
+			#endif
+			}
+			else
+			{
+				if (Nyxus::check_tile_status(seg_fpath))
+				{
+					segFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(
+						n_threads, 
+						seg_fpath, 
+						false,
+						0.0, // dummy min
+						1.0, // dummy max
+						Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
+				} 
+				else 
+				{
+					segFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, seg_fpath);
+				}
+			}
+	}
+	catch (std::exception const& e)	
+	{
+		std::cout << "Error while initializing the image loader for mask image file " <<  seg_fpath << ": " << e.what() << "\n";
+		return false;
+	}
+
+	if (segFL == nullptr)
+		return false;
 
 	// File #2 (labels)
 
@@ -158,7 +183,6 @@ bool ImageLoader::open(const std::string& int_fpath, const std::string& seg_fpat
 	auto& dataL = *ptrL;
 #endif
 
-	ptrI = std::make_shared<std::vector<uint32_t>>(tileSize);
 	ptrL = std::make_shared<std::vector<uint32_t>>(tileSize);
 
 	return true;
@@ -186,8 +210,12 @@ bool ImageLoader::load_tile(size_t tile_idx)
 
 	auto row = tile_idx / ntw;
 	auto col = tile_idx % ntw;
+	
 	intFL->loadTileFromFile (ptrI, row, col, lyr, lvl);
-	segFL->loadTileFromFile (ptrL, row, col, lyr, lvl);
+
+	// segmentation loader is not available in wholeslide
+	if (segFL)
+		segFL->loadTileFromFile (ptrL, row, col, lyr, lvl);
 	
 	return true;
 }
@@ -198,7 +226,11 @@ bool ImageLoader::load_tile (size_t tile_row, size_t tile_col)
 		return false;
 
 	intFL->loadTileFromFile (ptrI, tile_row, tile_col, lyr, lvl);
-	segFL->loadTileFromFile (ptrL, tile_row, tile_col, lyr, lvl);
+
+	// segmentation loader is not available in wholeslide
+	if (segFL)
+		segFL->loadTileFromFile (ptrL, tile_row, tile_col, lyr, lvl);
+
 	return true;
 }
 const std::vector<uint32_t>& ImageLoader::get_int_tile_buffer()
@@ -209,6 +241,11 @@ const std::vector<uint32_t>& ImageLoader::get_int_tile_buffer()
 const std::vector<uint32_t>& ImageLoader::get_seg_tile_buffer()
 {
 	return *ptrL;
+}
+
+const std::shared_ptr<std::vector<uint32_t>> & ImageLoader::get_seg_tile_sptr()
+{
+	return ptrL;
 }
 
 size_t ImageLoader::get_tile_size()

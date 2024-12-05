@@ -37,10 +37,7 @@ namespace Nyxus
 	extern FeatureManager theFeatureMgr;
 	extern ImageLoader theImLoader;
 
-	bool scanFilePairParallel(const std::string& intens_fpath, const std::string& label_fpath, int num_fastloader_threads, int num_sensemaker_threads, int filepair_index, int tot_num_filepairs);
 	std::string getPureFname(const std::string& fpath);
-//	int processDataset(const std::vector<std::string>& intensFiles, const std::vector<std::string>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int numReduceThreads, int min_online_roi_size, const SaveOption saveOption, const std::string& outputPath);
-//	int processDataset_3D(const std::vector <Imgfile3D_layoutA>& intensFiles, const std::vector <Imgfile3D_layoutA>& labelFiles, int numFastloaderThreads, int numSensemakerThreads, int numReduceThreads, int min_online_roi_size, const SaveOption saveOption, const std::string& outputPath);
 	bool gatherRoisMetrics(const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads);
 	bool gatherRoisMetrics_3D(const std::string& intens_fpath, const std::string& label_fpath, const std::vector<std::string>& z_indices);	
 	bool processTrivialRois(const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit);

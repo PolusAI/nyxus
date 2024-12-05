@@ -32,7 +32,7 @@ namespace Nyxus
 		return fs::exists(p);
 	}
 
-	void readDirectoryFiles_2D (const std::string& dir, const std::string& file_pattern, std::vector<std::string>& files)
+	void readDirectoryFiles_2D (const std::string& dir, const std::string& file_pattern, std::vector<std::string>& fullpaths, std::vector<std::string>& purefnames)
 	{
 		std::regex re(file_pattern);
 
@@ -49,7 +49,10 @@ namespace Nyxus
 				pureFname = entry.path().filename().string();
 			
 			if (std::regex_match(pureFname, re))
-				files.push_back(fullPath);
+			{
+				fullpaths.push_back (fullPath);
+				purefnames.push_back (pureFname);
+			}
 		}
 	}
 
@@ -64,65 +67,98 @@ namespace Nyxus
 		bool mustCheckDirOut,
 		// output
 		std::vector <std::string>& intensFiles, 
-		std::vector <std::string>& labelFiles)
+		std::vector <std::string>& labelFiles, 
+		std::string & err)
 	{
+		err = "";
+
+		// check the output directory
+		if (!existsOnFilesystem(dirOut))
+		{
+			err = "cannot access directory " + dirOut;
+			return 1;
+		}
+
+
 		// Check directories
 
 		if (!existsOnFilesystem(dirIntens))
 		{
-			std::cout << "Error: nonexisting directory " << dirIntens << std::endl;
+			err = "cannot access directory " + dirIntens;
 			return 1;
 		}
-		if (!existsOnFilesystem(dirLabels))
-		{
-			std::cout << "Error: nonexisting directory " << dirLabels << std::endl;
-			return 1;
-		}
-		if (!existsOnFilesystem(dirOut))
-		{
-			std::cout << "Error: nonexisting directory " << dirOut << std::endl;
-			return 1;
-		}
+
+
 
 		if (intLabMappingFile.empty())
 		{
-			// Common case - no ad hoc intensity-label file mapping, 1-to-1 correspondence instead
-			readDirectoryFiles_2D (dirIntens, filePatt, intensFiles);
-			readDirectoryFiles_2D (dirLabels, filePatt, labelFiles);
+			std::vector<std::string> purefnames_i, purefnames_m; // we need these temp sets to check the 1:1 matching
+			readDirectoryFiles_2D (dirIntens, filePatt, intensFiles, purefnames_i);
 
-			// Check if the dataset is meaningful
-			if (intensFiles.size() == 0 || labelFiles.size() == 0)
-			{
-				std::cout << "No intensity and/or label files to process, probably due to file pattern " << filePatt << std::endl;
-				return 2;
-			}
-			if (intensFiles.size() != labelFiles.size())
-			{
-				std::cout << "Mismatch: " << intensFiles.size() << " intensity images vs " << labelFiles.size() << " mask images\n";
-				return 3;
-			}
+			// -- whole slide ?
+			bool wholeslide = (dirIntens == dirLabels) || dirLabels.empty();
 
-			// Sort the files to produce an intuitive sequence
-			std::sort(intensFiles.begin(), intensFiles.end());
-			std::sort(labelFiles.begin(), labelFiles.end());
+			if (wholeslide)
+			{
+				// populate with empty mask file names
+				labelFiles.insert (labelFiles.begin(), intensFiles.size(), "");
+			}
+			else
+			{
+				// read segmentation counterparts
+				readDirectoryFiles_2D(dirLabels, filePatt, labelFiles, purefnames_m);
+
+				if (!wholeslide && !existsOnFilesystem(dirLabels))
+				{
+					err = "cannot access directory " + dirLabels;
+					return 1;
+				}
+
+				// Check if the dataset is meaningful
+				if (intensFiles.size() == 0 || labelFiles.size() == 0)
+				{
+					err = "no intensity and/or label files to process, probably due to file pattern " + filePatt;
+					return 2;
+				}
+				if (intensFiles.size() != labelFiles.size())
+				{
+					err = "mismatch: " + std::to_string(intensFiles.size()) + " intensity images vs " + std::to_string(labelFiles.size()) + " mask images";
+					return 3;
+				}
+
+				// Sort the files to produce an intuitive sequence
+				std::sort(intensFiles.begin(), intensFiles.end());
+				std::sort(labelFiles.begin(), labelFiles.end());
+
+				// Check if intensity and mask images are matching 
+				auto nf = purefnames_i.size();
+				for (int i = 0; i < nf; i++)
+				{
+					auto& ifile = purefnames_i[i];
+					if (std::find(purefnames_m.begin(), purefnames_m.end(), ifile) == purefnames_m.end())
+						err += "cannot find the mask counterpart for " + ifile + "\n";
+				}
+				if (!err.empty())
+					return 4;
+			}
 		}
 		else
 		{
 			// Special case - using intensity and label file pairs defined with the mapping file
 			if (!existsOnFilesystem(intLabMappingDir))
 			{
-				std::cout << "Error: nonexisting directory " << intLabMappingDir << std::endl;
+				err = "cannot access directory " + intLabMappingDir;
 				return 1;
 			}
 
 			std::string mapPath = intLabMappingDir + "/" + intLabMappingFile;
 			if (!existsOnFilesystem(mapPath))
 			{
-				std::cout << "Error: nonexisting file " << mapPath << std::endl;
+				err = "cannot access file " + mapPath;
 				return 1;
 			}		
 
-			// Read 
+			// Read the text file of intensity-mask matching
 			std::ifstream file(mapPath);
 			std::string ln, intFile, segFile;
 			int lineNo = 1;
@@ -133,7 +169,7 @@ namespace Nyxus
 				bool pairOk = ss >> intFname && ss >> segFname;
 				if (!pairOk)
 				{
-					std::cout << "Error: cannot recognize a file name pair in line #" << lineNo << " - " << ln << std::endl;
+					err = "cannot recognize a file name pair in line #" + std::to_string(lineNo) + " - " + ln;
 					return 1;
 				}
 
@@ -142,14 +178,14 @@ namespace Nyxus
 				std::string intFpath = dirIntens + "/" + intFname;
 				if (!existsOnFilesystem(intFpath))
 				{
-					std::cout << "Error: nonexisting file " << intFpath << std::endl;
+					err = "cannot access file file " + intFpath;
 					return 1;
 				}
 
 				std::string segFpath = dirLabels + "/" + segFname;
 				if (!existsOnFilesystem(intFpath))
 				{
-					std::cout << "Error: nonexisting file " << intFpath << std::endl;
+					err + "cannot access file " + intFpath;
 					return 1;
 				}
 
@@ -161,7 +197,7 @@ namespace Nyxus
 			// Check if we have pairs to process
 			if (intensFiles.size() == 0)
 			{
-				std::cout << "Special mapping " << mapPath << " produced no intensity-label file pairs" << std::endl;
+				err = "special mapping " + mapPath + " produced no intensity-label file pairs";
 				return 1;
 			}
 
@@ -170,6 +206,10 @@ namespace Nyxus
 			for (int i = 0; i < intensFiles.size(); i++)
 				std::cout << "\tintensity: " << intensFiles[i] << "\tlabels: " << labelFiles[i] << std::endl;
 		}
+
+		// just in case
+		if (!err.empty())
+			return 9;
 
 		return 0; // success
 	}

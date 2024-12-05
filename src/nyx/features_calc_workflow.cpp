@@ -154,7 +154,7 @@ namespace Nyxus
 	}
 
 	// This function 'digests' the 2nd and the following pixel of a label and updates the label's feature calculation state - the instance of structure 'LR'
-	void update_label_record(LR& lr, int x, int y, int label, PixIntens intensity)
+	void update_label_record (LR& lr, int x, int y, int label, PixIntens intensity)
 	{
 		// Save the pixel
 		if (lr.caching_permitted())
@@ -170,8 +170,8 @@ namespace Nyxus
 		lr.update_aabb(x, y);
 
 		// Per-image 
-		LR::global_min_inten = std::min(LR::global_min_inten, intensity);
-		LR::global_max_inten = std::max(LR::global_max_inten, intensity);
+		LR::slide_min_inten = std::min (LR::slide_min_inten, intensity);
+		LR::slide_max_inten = std::max (LR::slide_max_inten, intensity);
 	}
 
 	void update_label_record_2 (LR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index)
@@ -184,9 +184,9 @@ namespace Nyxus
 
 		lr.update_aabb (x,y);
 
-		// Per-image
-		LR::global_min_inten = std::min(LR::global_min_inten, intensity);
-		LR::global_max_inten = std::max(LR::global_max_inten, intensity);
+		// Per-slide UINT32 intensity range (conversion is done in theImLoader.load_tile(row, col) / LoadImage)
+		LR::slide_min_inten = std::min (LR::slide_min_inten, intensity);
+		LR::slide_max_inten = std::max (LR::slide_max_inten, intensity);
 	}
 
 	void update_label_record_3D (LR& lr, int x, int y, int z, int label, PixIntens intensity, unsigned int tile_index)
@@ -200,7 +200,7 @@ namespace Nyxus
 		lr.update_aabb_3D (x, y, z);
 
 		// Per-image
-		LR::global_min_inten = std::min(LR::global_min_inten, intensity);
-		LR::global_max_inten = std::max(LR::global_max_inten, intensity);
+		LR::slide_min_inten = std::min (LR::slide_min_inten, intensity);
+		LR::slide_max_inten = std::max (LR::slide_max_inten, intensity);
 	}
 }
