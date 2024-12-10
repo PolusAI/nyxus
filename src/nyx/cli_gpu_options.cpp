@@ -1,6 +1,15 @@
-#include <cuda_runtime.h>
 #include "cli_gpu_options.h"
 #include "helpers/helpers.h"
+
+namespace NyxusGpu
+{
+	bool get_best_device(
+		// in
+		const std::vector<int>& devIds,
+		// out
+		int& best_id,
+		std::string& lastCuErmsg);
+}
 
 bool GpuOptions::empty()
 {
@@ -81,35 +90,9 @@ bool GpuOptions::parse_input (std::string & ermsg)
 				devIds.push_back (0); // user did not requested a specific ID, so default it to 0
 
 			// given a set of suggested devices, choose the least memory-busy one
-			size_t max_freemem_amt = 0;
 			int best_id = -1;
 			std::string lastCuErmsg;
-			for (int k : devIds)
-			{
-				if (cudaSetDevice(k) != cudaSuccess)
-				{
-					lastCuErmsg = "invalid device ID " + std::to_string(k);
-					continue;
-				}
-
-				size_t f, t; // free and total bytes
-				auto e = cudaMemGetInfo(&f, &t);
-				if (e != cudaSuccess)
-				{
-					lastCuErmsg = "cuda error " + std::to_string(e) + " : " + cudaGetErrorString(e);
-					continue;
-				}
-
-				// this device worked
-				if (f > max_freemem_amt)
-				{
-					max_freemem_amt = f;
-					best_id = k;
-				}
-			}
-
-			// did user's dev-ID list reference at least one workable GPU device?
-			if (best_id < 0)
+			if (! NyxusGpu::get_best_device(devIds, best_id, lastCuErmsg))
 			{
 				ermsg = "cannot use any of GPU devices in " + Nyxus::virguler<int> (devIds) + " due to " + lastCuErmsg;
 				return false;

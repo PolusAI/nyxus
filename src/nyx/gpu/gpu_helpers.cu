@@ -50,4 +50,40 @@ namespace NyxusGpu
 		return props;
 	}
 
+	bool get_best_device (
+		// in
+		const std::vector<int> & devIds, 
+		// out
+		int & best_id,
+		std::string & lastCuErmsg)
+	{
+		// given a set of suggested devices, choose the least memory-busy one
+		size_t max_freemem_amt = 0;
+		for (int k : devIds)
+		{
+			if (cudaSetDevice(k) != cudaSuccess)
+			{
+				lastCuErmsg = "invalid device ID " + std::to_string(k);
+				continue;
+			}
+
+			size_t f, t; // free and total bytes
+			auto e = cudaMemGetInfo(&f, &t);
+			if (e != cudaSuccess)
+			{
+				lastCuErmsg = "cuda error " + std::to_string(e) + " : " + cudaGetErrorString(e);
+				continue;
+			}
+
+			// this device worked
+			if (f > max_freemem_amt)
+			{
+				max_freemem_amt = f;
+				best_id = k;
+			}
+		}
+
+		return best_id >= 0;
+	}
+
 }
