@@ -105,15 +105,19 @@ void initialize_environment(
     if (ram_limit_mb >= 0) theEnvironment.set_ram_limit(ram_limit_mb);
 
     #ifdef USE_GPU
-        if(using_gpu == -1) {
-            theEnvironment.set_use_gpu(false);
-        } else {
+        if(using_gpu == -1) 
+        {
+            theEnvironment.set_using_gpu(false);
+        } 
+        else 
+        {
             theEnvironment.set_gpu_device_id(using_gpu);
-            theEnvironment.set_use_gpu(true);
+            theEnvironment.set_using_gpu(true);
         }
     #else 
-        if (using_gpu != -1) {
-            std::cout << "No gpu available." << std::endl;
+        if (using_gpu != -1) 
+        {
+            throw std::runtime_error ("this Nyxus backend was built without the GPU support");
         }
     #endif
 }
@@ -644,11 +648,12 @@ py::tuple findrelations_imp(
  * 
  * @param yes True to use gpu
  */
-void use_gpu(bool yes){
+void use_gpu(bool yes)
+{
     #ifdef USE_GPU
-        theEnvironment.set_use_gpu(yes);
+        theEnvironment.set_using_gpu(yes);
     #else 
-        std::cout << "GPU is not available." << std::endl;
+        throw std::runtime_error("this Nyxus backend was built without the GPU support");
     #endif
 }
 

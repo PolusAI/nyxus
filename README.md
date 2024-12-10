@@ -358,23 +358,25 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 --intDir | Directory of intensity image collection | path
 --outDir | Output directory | path
 --segDir | Directory of labeled image collection | path
---coarseGrayDepth | (optional) Custom number of greyscale level bins used in texture features. Default: '--coarseGrayDepth=256' | integer
---glcmAngles | (optional) Enabled direction angles of the GLCM feature. Superset of values: 0, 45, 90, and 135. Default: '--glcmAngles=0,45,90,135' | list of integer constants
---intSegMapDir | (optional) Data collection of the ad-hoc intensity-to-mask file mapping. Must be used in combination with parameter '--intSegMapFile' | path
---intSegMapFile | (optional) Name of the text file containing an ad-hoc intensity-to-mask file mapping. The files are assumed to reside in corresponding intensity and label collections. Must be used in combination with parameter '--intSegMapDir' | string
---pixelDistance | (optional) Number of pixels to treat ROIs within specified distance as neighbors. Default value: '--pixelDistance=5' | integer
---pixelsPerCentimeter | (optional) Number of pixels in centimeter used by unit length-related features. Default value: 0 | real
---ramLimit | (optional) Amount of memory not to exceed by Nyxus, in megabytes. Default value: 50\% of available memory. Example: '--ramLimit=2000' to use 2,000 megabytes | integer
---reduceThreads | (optional) Number of CPU threads used on the feature calculation step. Default: '--reduceThreads=1' | integer
---skiproi | (optional) Skip ROIs having specified labels. Example: '--skiproi=image1.tif:2,3,4;image2.tif:45,56' | string
---tempDir | (optional) Directory used by temporary out-of-RAM objects. Default value: system temporary directory | path
---hsig | (optional) Channel signature Example: "--hsig=_c" to match images whose file names have channel info starting substring '_c' like in 'p0_y1_r1_c1.ome.tiff' | string
---hpar | (optional) Channel number that should be used as a provider of parent segments. Example: '--hpar=1' | integer
---hchi | (optional) Channel number that should be used as a provider of child segments. Example: '--hchi=0' | integer
---hag | (optional) Name of a method how to aggregate features of segments recognized as children of same parent segment. Valid options are 'SUM', 'MEAN', 'MIN', 'MAX', 'WMA' (weighted mean average), and 'NONE' (no aggregation, instead, same parent child segments will be laid out horizontally) | string
---fpimgdr | (optional) Desired dynamic range of voxels of a floating point TIFF image. Example: --fpimgdr=240 makes intensities be read in range 0-240. Default value: 10e4 | unsigned integer
---fpimgmin | (optional) Minimum intensity of voxels of a floating point TIFF image. Default value: 0.0 | real
---fpimgdr | (optional) Maximum intensity of voxels of a floating point TIFF image. Default value: 1.0 | real
+--useGpu | ${\color{red}\textsf{(optional)}}$ Calculate compute-expensive features on an NVIDIA GPU device specified by parameter --gpuDeviceID. Default: '--useGpu=false'. Example: --useGpu=true | boolean
+--gpuDeviceID | ${\color{red}\textsf{(optional)}}$ ID of a GPU device to be used when '--useGpu=true'. Default: '--gpuDeviceID=0'. Example 1 (single GPU device): '--useGpu=true --gpuDeviceID=2' to strictly use device 2. Example 2 (multiple GPU devices, usually in SLURM scenarios): '--useGpu=true --gpuDeviceID=0,1,3' to use the GPU device having maximum free RAM of devices 0, 1, and 3. | integer or list of integers
+--coarseGrayDepth | ${\color{red}\textsf{(optional)}}$ Custom number of greyscale level bins used in texture features. Default: '--coarseGrayDepth=256' | integer
+--glcmAngles | ${\color{red}\textsf{(optional)}}$ Enabled direction angles of the GLCM feature. Superset of values: 0, 45, 90, and 135. Default: '--glcmAngles=0,45,90,135' | list of integers
+--intSegMapDir | ${\color{red}\textsf{(optional)}}$ Data collection of the ad-hoc intensity-to-mask file mapping. Must be used in combination with parameter '--intSegMapFile' | path
+--intSegMapFile | ${\color{red}\textsf{(optional)}}$ Name of the text file containing an ad-hoc intensity-to-mask file mapping. The files are assumed to reside in corresponding intensity and label collections. Must be used in combination with parameter '--intSegMapDir' | string
+--pixelDistance | ${\color{red}\textsf{(optional)}}$ Number of pixels to treat ROIs within specified distance as neighbors. Default value: '--pixelDistance=5' | integer
+--pixelsPerCentimeter | ${\color{red}\textsf{(optional)}}$ Number of pixels in centimeter used by unit length-related features. Default value: 0 | real
+--ramLimit | ${\color{red}\textsf{(optional)}}$ Amount of memory not to exceed by Nyxus, in megabytes. Default value: 50\% of available memory. Example: '--ramLimit=2000' to use 2,000 megabytes | integer
+--reduceThreads | ${\color{red}\textsf{(optional)}}$ Number of CPU threads used on the feature calculation step. Default: '--reduceThreads=1' | integer
+--skiproi | ${\color{red}\textsf{(optional)}}$ Skip ROIs having specified labels. Example: '--skiproi=image1.tif:2,3,4;image2.tif:45,56' | string
+--tempDir | ${\color{red}\textsf{(optional)}}$ Directory used by temporary out-of-RAM objects. Default value: system temporary directory | path
+--hsig | ${\color{red}\textsf{(optional)}}$ Channel signature Example: "--hsig=_c" to match images whose file names have channel info starting substring '_c' like in 'p0_y1_r1_c1.ome.tiff' | string
+--hpar | ${\color{red}\textsf{(optional)}}$ Channel number that should be used as a provider of parent segments. Example: '--hpar=1' | integer
+--hchi | ${\color{red}\textsf{(optional)}}$ Channel number that should be used as a provider of child segments. Example: '--hchi=0' | integer
+--hag | ${\color{red}\textsf{(optional)}}$ Name of a method how to aggregate features of segments recognized as children of same parent segment. Valid options are 'SUM', 'MEAN', 'MIN', 'MAX', 'WMA' (weighted mean average), and 'NONE' (no aggregation, instead, same parent child segments will be laid out horizontally) | string
+--fpimgdr | ${\color{red}\textsf{(optional)}}$ Desired dynamic range of voxels of a floating point TIFF image. Example: --fpimgdr=240 makes intensities be read in range 0-240. Default value: 10e4 | unsigned integer
+--fpimgmin | ${\color{red}\textsf{(optional)}}$ Minimum intensity of voxels of a floating point TIFF image. Default value: 0.0 | real
+--fpimgdr | ${\color{red}\textsf{(optional)}}$ Maximum intensity of voxels of a floating point TIFF image. Default value: 1.0 | real
 
 ---
 
@@ -595,7 +597,7 @@ These packages also have underlying dependencies and at times, these dependency 
 
 By default, Nyxus can be built with a minimal set of dependecies (Tiff support and Python interface). To build Nyxus with all the supported IO options mentioned above, pass `-DALLEXTRAS=ON` in the `cmake` command.
 
-### __GPU Support__
+### __Adding GPU Support__
 Nyxus also can be build with NVIDIA GPU support. To do so, a `CUDA` Development toolkit compatible with the host `C++` compiler need to be present in the system. For building with GPU support, pass `-DUSEGPU=ON` flag in the `cmake` command. 
 
 ### __Inside Conda__

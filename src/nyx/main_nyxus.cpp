@@ -46,10 +46,10 @@ int main (int argc, char** argv)
 	#ifdef USE_GPU
 	if (theEnvironment.using_gpu())
 	{
-		int gpuDevNo = theEnvironment.get_gpu_device_choice();
-		if (gpuDevNo >= 0 && NyxusGpu::gpu_initialize(gpuDevNo) == false)
+		int devid = theEnvironment.get_gpu_device_choice();
+		if (NyxusGpu::gpu_initialize(devid) == false)
 		{
-			std::cerr << "Error: cannot use GPU device ID " << gpuDevNo << ". You can disable GPU usage via command line option " << USEGPU << "=false\n";
+			std::cerr << "Error: cannot use GPU device ID " << devid << ". You can disable GPU usage via command line option " << USEGPU << "=false\n";
 			return 1;
 		}
 	}
