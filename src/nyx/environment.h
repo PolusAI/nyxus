@@ -15,6 +15,7 @@
 
 #ifdef USE_GPU
 	#include <cuda_runtime.h>
+	#include "cli_gpu_options.h"
 #endif
 
 // Command line arguments
@@ -162,12 +163,14 @@ public:
 	void set_ibsi_compliance(bool skip);
 
 #ifdef USE_GPU
-	/// @brief Returns GPU device ID of choice
-	/// @return 0-based GPU device ID (default: 0) or -1 not to use GPU even if it is available
+	GpuOptions gpuOptions;
+	bool parse_gpu_options_raw_string (const std::string& raw_params_string, std::string& error_message);
+
+	// these are called from Python API's side
 	int get_gpu_device_choice();
-	void set_gpu_device_id(int choice);
-	void set_use_gpu(bool yes);
+	void set_gpu_device_id (int id);
 	bool using_gpu();	
+	void set_using_gpu (bool yes);
 	static std::vector<std::map<std::string, std::string>> get_gpu_properties();
 #endif
 
@@ -215,14 +218,6 @@ private:
 	bool spellcheck_raw_featurelist (const std::string & comma_separated_fnames, std::vector<std::string> & fnames);
 
 	std::string rawTempDirPath = "";
-
-#ifdef USE_GPU
-	std::string rawUseGpu = "";		// boolean
-	bool use_gpu_ = false;
-	std::string rawGpuDeviceID = "";		// integer
-	int gpu_device_id_ = -1;
-	std::vector<std::map<std::string, std::string>> gpu_props_;
-#endif
 
 	int floating_point_precision = 10;	
 

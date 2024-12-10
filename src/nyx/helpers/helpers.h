@@ -423,6 +423,15 @@ namespace Nyxus
 		return s2;
 	}
 
+	template <typename T>
+	inline std::string virguler (const std::vector<T> & x)
+	{
+		std::string rv;
+		for (auto i = 0; i < x.size(); i++)
+			rv += (i ? "," : "") + std::to_string(x[i]);
+		return rv;
+	}
+
 	inline std::string remove_whitespaces (const std::string & s)
 	{
 		std::string s2;

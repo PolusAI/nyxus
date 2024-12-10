@@ -14,6 +14,10 @@
 #include "helpers/timing.h"
 #include "version.h"
 
+#ifdef USE_GPU
+	std::vector<std::map<std::string, std::string>> get_gpu_properties();
+#endif
+
 namespace Nyxus
 {
 	bool existsOnFilesystem(const std::string&);
@@ -172,7 +176,7 @@ void Environment::show_cmdline_help()
 		<< "\tnyxus --help\tDisplay help info\n";
 
 #ifdef USE_GPU
-	std::cout << " [" << USEGPU << "=<true or false>" << " [" << GPUDEVICEID << "=<valid GPU device ID>] ]\n";
+	std::cout << " [" << USEGPU << "=<true or false>" << " [" << GPUDEVICEID << "=<comma separated GPU device ID>] ]\n";
 #endif
 }
 
@@ -197,9 +201,10 @@ void Environment::show_summary(const std::string& head, const std::string& tail)
 		<< "\tverbosity level\t" << verbosity_level << "\n";
 
 #ifdef USE_GPU
-	std::cout << "\tusing GPU\t" << (using_gpu() ? "yes" : "no") << "\n";
-	if (using_gpu())
-		std::cout << "\tGPU device ID \t" << get_gpu_device_choice() << "\n";
+	std::cout << "\tusing GPU\t" << (gpuOptions.get_using_gpu() ? "yes" : "no") << "\n";
+	if (gpuOptions.get_using_gpu())
+		std::cout << "\trequested GPU device IDs: " << (gpuOptions.raw_requested_device_ids.empty() ? "(blank)" : gpuOptions.raw_requested_device_ids) << "\n"
+			"\tbest GPU device ID: " << gpuOptions.get_single_device_id() << "\n";
 #endif
 
 	// Features
@@ -388,8 +393,8 @@ bool Environment::parse_cmdline(int argc, char** argv)
 #endif
 
 #ifdef USE_GPU
-			|| find_string_argument(i, USEGPU, rawUseGpu)
-			|| find_string_argument(i, GPUDEVICEID, rawGpuDeviceID)
+			|| find_string_argument(i, USEGPU, gpuOptions.raw_use_gpu)
+			|| find_string_argument(i, GPUDEVICEID, gpuOptions.raw_requested_device_ids)
 #endif
 			))
 			unrecognizedArgs.push_back(*i);
@@ -700,7 +705,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	}
 
 	//==== Parse exclusive-inclusive timing
-#ifdef CHECKTIMING
+	#ifdef CHECKTIMING
 	if (!rawExclusiveTiming.empty())
 	{
 		std::transform(rawExclusiveTiming.begin(), rawExclusiveTiming.end(), rawExclusiveTiming.begin(), ::tolower);
@@ -709,44 +714,20 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		else
 			Stopwatch::set_inclusive(true);
 	}
-#endif
+	#endif
 
 	//==== Using GPU
-#ifdef USE_GPU
-	auto rawUseGpuUC = Nyxus::toupper(rawUseGpu);
-	if (rawUseGpuUC.length() == 0)
+	#ifdef USE_GPU
+	if (!gpuOptions.empty())
 	{
-		set_use_gpu(false);
-		std::cout << "\n!\n! Not using GPU. To involve GPU, use command line option " << USEGPU << "=true\n!\n\n";
-	}
-	else
-	{
-		auto validUsegpu1 = Nyxus::toupper("true"),
-			validUsegpu2 = Nyxus::toupper("false");
-		if (rawUseGpuUC != validUsegpu1 && rawUseGpuUC != validUsegpu2)
+		std::string ermsg;
+		if (!gpuOptions.parse_input(ermsg))
 		{
-			std::cerr << "Error: valid values of " << USEGPU << " are " << validUsegpu1 << " or " << validUsegpu2 << "\n";
+			std::cerr << ermsg << "\n";
 			return false;
 		}
-		use_gpu_ = rawUseGpuUC == validUsegpu1;
-
-		// Process user's GPU device choice
-		if (use_gpu_)
-		{
-			if (!rawGpuDeviceID.empty())
-			{
-				// string -> integer
-				if (sscanf(rawGpuDeviceID.c_str(), "%d", &gpu_device_id_) != 1 || gpu_device_id_ < 0)
-				{
-					std::cerr << "Error: " << GPUDEVICEID << "=" << gpu_device_id_ << ": expecting 0 or positive integer constant\n";
-					return false;
-				}
-			}
-			else
-				gpu_device_id_ = 0;	// Specific GPU device ID was not requested, defaulting to 0
-		}
 	}
-#endif
+	#endif
 
 	//==== Parse desired features
 
@@ -970,48 +951,50 @@ bool Environment::arrow_is_enabled()
 
 void Environment::set_gpu_device_id (int choice) 
 {
-	auto n_gpus = get_gpu_properties().size();
-	if (n_gpus == 0) 
+	auto prp = get_gpu_properties();
+	auto n= prp.size();
+	if (n == 0) 
 	{
 		std::cerr << "Error: no GPU devices available \n";
 		return;
 	}
 
-	if (choice > get_gpu_properties().size() - 1) 
+	if (choice >= n) 
 	{
 		std::cerr << "Warning: GPU choice (" << choice << ") is out of range. Defaulting to device 0 \n";
-		gpu_device_id_ = 0;
-		return;
+		gpuOptions.set_single_device_id (0);
 	}
-
-	gpu_device_id_ = choice;
+	else
+		gpuOptions.set_single_device_id (choice);
 }
 
 int Environment::get_gpu_device_choice()
 {
 	if (using_gpu())
-		return gpu_device_id_;
+		return gpuOptions.get_single_device_id();
 	else
 		return -1;  // GPU was not requested so return an invalid device ID -1
 }
 
-void Environment::set_use_gpu(bool yes)
+void Environment::set_using_gpu (bool yes)
 {
-	use_gpu_ = yes;
+	gpuOptions.set_using_gpu (yes);
 }
 
 bool Environment::using_gpu()
 {
-	return use_gpu_;
+	return gpuOptions.get_using_gpu();
 }
 
-std::vector<std::map<std::string, std::string>> Environment::get_gpu_properties() {
+std::vector<std::map<std::string, std::string>> Environment::get_gpu_properties() 
+{
 	int n_devices;
 	std::vector<std::map<std::string, std::string>> props;
 
 	cudaGetDeviceCount(&n_devices);
 
-	for (int i = 0; i < n_devices; ++i) {
+	for (int i = 0; i < n_devices; ++i) 
+	{
 		cudaDeviceProp prop;
 		cudaGetDeviceProperties(&prop, i);
 
