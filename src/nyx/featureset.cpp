@@ -772,7 +772,7 @@ namespace Nyxus
 		{ "3GLDZM_LDHGLE", Feature3D::GLDZM_LDHGLE },
 		{ "3GLDZM_GLNU", Feature3D::GLDZM_GLNU },
 		{ "3GLDZM_GLNUN", Feature3D::GLDZM_GLNUN },
-		{ "3GLDZM_ZDNU", Feature3D::GLDZM_ZDNU },	
+		{ "3GLDZM_ZDNU", Feature3D::GLDZM_ZDNU },
 		{ "3GLDZM_ZDNUN", Feature3D::GLDZM_ZDNUN },
 		{ "3GLDZM_ZP", Feature3D::GLDZM_ZP },
 		{ "3GLDZM_GLM", Feature3D::GLDZM_GLM },
@@ -780,6 +780,23 @@ namespace Nyxus
 		{ "3GLDZM_ZDM", Feature3D::GLDZM_ZDM },
 		{ "3GLDZM_ZDV", Feature3D::GLDZM_ZDV },
 		{ "3GLDZM_ZDE", Feature3D::GLDZM_ZDE },
+
+		{ "GLSZM_SAE", Feature3D::GLSZM_SAE },
+		{ "GLSZM_LAE", Feature3D::GLSZM_LAE },
+		{ "GLSZM_GLN", Feature3D::GLSZM_GLN },
+		{ "GLSZM_GLNN", Feature3D::GLSZM_GLNN },
+		{ "GLSZM_SZN", Feature3D::GLSZM_SZN },
+		{ "GLSZM_SZNN", Feature3D::GLSZM_SZNN },
+		{ "GLSZM_ZP", Feature3D::GLSZM_ZP },
+		{ "GLSZM_GLV", Feature3D::GLSZM_GLV },
+		{ "GLSZM_ZV", Feature3D::GLSZM_ZV },
+		{ "GLSZM_ZE", Feature3D::GLSZM_ZE },
+		{ "GLSZM_LGLZE", Feature3D::GLSZM_LGLZE },
+		{ "GLSZM_HGLZE", Feature3D::GLSZM_HGLZE },
+		{ "GLSZM_SALGLE", Feature3D::GLSZM_SALGLE },
+		{ "GLSZM_SAHGLE", Feature3D::GLSZM_SAHGLE },
+		{ "GLSZM_LALGLE", Feature3D::GLSZM_LALGLE },
+		{ "GLSZM_LAHGLE", Feature3D::GLSZM_LAHGLE }
 	};
 
 	std::map <std::string, Fgroup3D> UserFacing3dFeaturegroupNames =
@@ -790,6 +807,7 @@ namespace Nyxus
 		{ "*3D_ALL_TEXTURE*", Fgroup3D::FG3_TEXTURE },
 		{ "*3D_GLCM*", Fgroup3D::FG3_GLCM },
 		{ "*3D_GLDZM*", Fgroup3D::FG3_GLDZM },
+		{ "*3D_GLSZM*", Fgroup3D::FG3_GLSZM },
 		{ "*3D_ALL_NEIGHBOR*", Fgroup3D::FG3_NEIG },
 		{ "*3D_MOMENTS*", Fgroup3D::FG3_MOMENTS },
 	};
