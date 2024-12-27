@@ -263,9 +263,6 @@ void GLSZMFeature::calculate(LR& r)
 
 { //STOPWATCH("sz01/sz01/T/#raw", "\t=");
 
-	// zero (backround) intensity at given grey binning method
-	PixIntens zeroI = matlab_grey_binning(greyInfo) ? 1 : 0;
-		
 	// Number of zones
 	const int VISITED = -1;
 	for (int row = 0; row < M.height; row++)
@@ -274,7 +271,7 @@ void GLSZMFeature::calculate(LR& r)
 		{
 			// Find a non-blank pixel
 			auto pi = D.yx(row, col);
-			if (pi == zeroI || int(pi) == VISITED)
+			if (pi == 0 || int(pi) == VISITED)
 				continue;
 
 			// Found a gray pixel. Find same-intensity neighbourhood of it.
