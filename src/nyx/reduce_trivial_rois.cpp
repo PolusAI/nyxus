@@ -47,6 +47,7 @@
 #include "features/3d_gldzm.h"
 #include "features/3d_ngldm.h"
 #include "features/3d_ngtdm.h"
+#include "features/3d_glrlm.h"
 //--future-- #include "features/3d_surface.h"
 
 #include "features/focus_score.h"
@@ -392,7 +393,6 @@ namespace Nyxus
 			STOPWATCH("3D GLDZM/3DGLDZM/3DGLDZM/#FFFF00", "\t=");
 			runParallel (D3_GLDZM_feature::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
 		}		
-
 		if (D3_NGLDM_feature::required(theFeatureSet))
 		{
 			STOPWATCH("3D NGLDM/3DNGLDM/3DNGLDM/#FFFF00", "\t=");
@@ -402,6 +402,11 @@ namespace Nyxus
 		{
 			STOPWATCH("3D NGTDM/3DNGTDM/3DNGTDM/#FFFF00", "\t=");
 			runParallel(D3_NGTDM_feature::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
+		}
+		if (D3_GLRLM_feature::required(theFeatureSet))
+		{
+			STOPWATCH("3D GLRLM/3DGLRLM/3DGLRLM/#FFFF00", "\t=");
+			runParallel(D3_GLRLM_feature::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
 		}
 
 		//==== morphology/surface

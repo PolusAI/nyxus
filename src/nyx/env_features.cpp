@@ -469,6 +469,77 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 		return true;
 	}
 
+	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_GLCM))
+	{
+		theFeatureSet.enableAll (false);
+
+		auto F =
+		{
+			Nyxus::Feature3D::GLCM_ACOR,	
+			Nyxus::Feature3D::GLCM_ASM,
+			Nyxus::Feature3D::GLCM_CLUPROM,
+			Nyxus::Feature3D::GLCM_CLUSHADE,
+			Nyxus::Feature3D::GLCM_CLUTEND,
+			Nyxus::Feature3D::GLCM_CONTRAST,	
+			Nyxus::Feature3D::GLCM_CORRELATION,
+			Nyxus::Feature3D::GLCM_DIFAVE,
+			Nyxus::Feature3D::GLCM_DIFENTRO,
+			Nyxus::Feature3D::GLCM_DIFVAR,
+			Nyxus::Feature3D::GLCM_DIS,
+			Nyxus::Feature3D::GLCM_ENERGY,
+			Nyxus::Feature3D::GLCM_ENTROPY,
+			Nyxus::Feature3D::GLCM_HOM1,
+			Nyxus::Feature3D::GLCM_HOM2,
+			Nyxus::Feature3D::GLCM_ID,
+			Nyxus::Feature3D::GLCM_IDN,
+			Nyxus::Feature3D::GLCM_IDM,
+			Nyxus::Feature3D::GLCM_IDMN,	
+			Nyxus::Feature3D::GLCM_INFOMEAS1,
+			Nyxus::Feature3D::GLCM_INFOMEAS2,
+			Nyxus::Feature3D::GLCM_IV,
+			Nyxus::Feature3D::GLCM_JAVE,
+			Nyxus::Feature3D::GLCM_JE,
+			Nyxus::Feature3D::GLCM_JMAX,
+			Nyxus::Feature3D::GLCM_JVAR,
+			Nyxus::Feature3D::GLCM_SUMAVERAGE,	
+			Nyxus::Feature3D::GLCM_SUMENTROPY,	
+			Nyxus::Feature3D::GLCM_SUMVARIANCE,
+			Nyxus::Feature3D::GLCM_VARIANCE,
+			Nyxus::Feature3D::GLCM_ASM_AVE,
+			Nyxus::Feature3D::GLCM_ACOR_AVE,
+			Nyxus::Feature3D::GLCM_CLUPROM_AVE,
+			Nyxus::Feature3D::GLCM_CLUSHADE_AVE,
+			Nyxus::Feature3D::GLCM_CLUTEND_AVE,
+			Nyxus::Feature3D::GLCM_CONTRAST_AVE,
+			Nyxus::Feature3D::GLCM_CORRELATION_AVE,
+			Nyxus::Feature3D::GLCM_DIFAVE_AVE,
+			Nyxus::Feature3D::GLCM_DIFENTRO_AVE,
+			Nyxus::Feature3D::GLCM_DIFVAR_AVE,
+			Nyxus::Feature3D::GLCM_DIS_AVE,
+			Nyxus::Feature3D::GLCM_ENERGY_AVE,
+			Nyxus::Feature3D::GLCM_ENTROPY_AVE,
+			Nyxus::Feature3D::GLCM_HOM1_AVE,
+			Nyxus::Feature3D::GLCM_ID_AVE,
+			Nyxus::Feature3D::GLCM_IDN_AVE,
+			Nyxus::Feature3D::GLCM_IDM_AVE,
+			Nyxus::Feature3D::GLCM_IDMN_AVE,
+			Nyxus::Feature3D::GLCM_IV_AVE,
+			Nyxus::Feature3D::GLCM_JAVE_AVE,
+			Nyxus::Feature3D::GLCM_JE_AVE,
+			Nyxus::Feature3D::GLCM_INFOMEAS1_AVE,
+			Nyxus::Feature3D::GLCM_INFOMEAS2_AVE,
+			Nyxus::Feature3D::GLCM_VARIANCE_AVE,
+			Nyxus::Feature3D::GLCM_JMAX_AVE,
+			Nyxus::Feature3D::GLCM_JVAR_AVE,
+			Nyxus::Feature3D::GLCM_SUMAVERAGE_AVE,
+			Nyxus::Feature3D::GLCM_SUMENTROPY_AVE,
+			Nyxus::Feature3D::GLCM_SUMVARIANCE_AVE
+		};
+
+		theFeatureSet.enableFeatures(F);
+		return true;
+	}
+
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_GLDZM))
 	{
 		theFeatureSet.enableAll(false);
@@ -499,6 +570,50 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 		return true;
 	}
 
+	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_GLRLM))
+	{
+		theFeatureSet.enableAll(false);
+
+		auto F =
+		{
+			Nyxus::Feature3D::GLRLM_SRE,	
+			Nyxus::Feature3D::GLRLM_LRE, 
+			Nyxus::Feature3D::GLRLM_GLN, 
+			Nyxus::Feature3D::GLRLM_GLNN, 
+			Nyxus::Feature3D::GLRLM_RLN,
+			Nyxus::Feature3D::GLRLM_RLNN, 
+			Nyxus::Feature3D::GLRLM_RP,
+			Nyxus::Feature3D::GLRLM_GLV, 
+			Nyxus::Feature3D::GLRLM_RV, 
+			Nyxus::Feature3D::GLRLM_RE, 
+			Nyxus::Feature3D::GLRLM_LGLRE, 
+			Nyxus::Feature3D::GLRLM_HGLRE, 
+			Nyxus::Feature3D::GLRLM_SRLGLE, 
+			Nyxus::Feature3D::GLRLM_SRHGLE, 
+			Nyxus::Feature3D::GLRLM_LRLGLE, 
+			Nyxus::Feature3D::GLRLM_LRHGLE, 
+			
+			Nyxus::Feature3D::GLRLM_SRE_AVE,
+			Nyxus::Feature3D::GLRLM_LRE_AVE,
+			Nyxus::Feature3D::GLRLM_GLN_AVE,
+			Nyxus::Feature3D::GLRLM_GLNN_AVE,
+			Nyxus::Feature3D::GLRLM_RLN_AVE,
+			Nyxus::Feature3D::GLRLM_RLNN_AVE,
+			Nyxus::Feature3D::GLRLM_RP_AVE,
+			Nyxus::Feature3D::GLRLM_GLV_AVE,
+			Nyxus::Feature3D::GLRLM_RV_AVE,
+			Nyxus::Feature3D::GLRLM_RE_AVE,
+			Nyxus::Feature3D::GLRLM_LGLRE_AVE,
+			Nyxus::Feature3D::GLRLM_HGLRE_AVE,
+			Nyxus::Feature3D::GLRLM_SRLGLE_AVE,
+			Nyxus::Feature3D::GLRLM_SRHGLE_AVE,
+			Nyxus::Feature3D::GLRLM_LRLGLE_AVE,
+			Nyxus::Feature3D::GLRLM_LRHGLE_AVE
+		};
+
+		theFeatureSet.enableFeatures(F);
+		return true;
+	}
 	return false;
 }
 

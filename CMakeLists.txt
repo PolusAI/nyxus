@@ -170,6 +170,8 @@ set(SOURCE
 	src/nyx/features/3d_gldm.cpp
 	src/nyx/features/3d_ngldm.cpp
 	src/nyx/features/3d_ngtdm.cpp
+	src/nyx/features/3d_glrlm.cpp
+	src/nyx/features/3d_glrlm_nontriv.cpp
 	src/nyx/features/intensity.cpp
 	src/nyx/features/neighbors.cpp
 	src/nyx/features/ngldm.cpp

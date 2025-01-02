@@ -783,6 +783,41 @@ namespace Nyxus
 		NGTDM_COMPLEXITY,
 		NGTDM_STRENGTH,
 
+		// texture / GLRLM
+		GLRLM_SRE,	// Short Run Emphasis 
+		GLRLM_LRE,	// Long Run Emphasis 
+		GLRLM_GLN,	// Gray Level Non-Uniformity 
+		GLRLM_GLNN,	// Gray Level Non-Uniformity Normalized 
+		GLRLM_RLN,	// Run Length Non-Uniformity
+		GLRLM_RLNN,	// Run Length Non-Uniformity Normalized 
+		GLRLM_RP,	// Run Percentage
+		GLRLM_GLV,	// Gray Level Variance 
+		GLRLM_RV,	// Run Variance 
+		GLRLM_RE,	// Run Entropy 
+		GLRLM_LGLRE,	// Low Gray Level Run Emphasis 
+		GLRLM_HGLRE,	// High Gray Level Run Emphasis 
+		GLRLM_SRLGLE,	// Short Run Low Gray Level Emphasis 
+		GLRLM_SRHGLE,	// Short Run High Gray Level Emphasis 
+		GLRLM_LRLGLE,	// Long Run Low Gray Level Emphasis 
+		GLRLM_LRHGLE,	// Long Run High Gray Level Emphasis 
+		// -- averages --
+		GLRLM_SRE_AVE,
+		GLRLM_LRE_AVE,
+		GLRLM_GLN_AVE,
+		GLRLM_GLNN_AVE,
+		GLRLM_RLN_AVE,
+		GLRLM_RLNN_AVE,
+		GLRLM_RP_AVE,
+		GLRLM_GLV_AVE,
+		GLRLM_RV_AVE,
+		GLRLM_RE_AVE,
+		GLRLM_LGLRE_AVE,
+		GLRLM_HGLRE_AVE,
+		GLRLM_SRLGLE_AVE,
+		GLRLM_SRHGLE_AVE,
+		GLRLM_LRLGLE_AVE,
+		GLRLM_LRHGLE_AVE,
+
 		_COUNT_
 	};
 
@@ -832,6 +867,7 @@ namespace Nyxus
 		FG3_GLDZM,
 		FG3_NGLDM,
 		FG3_NGTDM,
+		FG3_GLRLM,
 		FG3_NEIG,
 		FG3_MOMENTS,
 		_COUNT_

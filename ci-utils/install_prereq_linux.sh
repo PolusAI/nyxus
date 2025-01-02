@@ -69,7 +69,7 @@ cd ../../
 if [[ $BUILD_BOOST_DEP -eq 1 ]]; then
     for i in {1..5}
     do
-        curl -L https://boostorg.jfrog.io/artifactory/main/release/1.79.0/source/boost_1_79_0.tar.bz2 -o boost_1_79_0.tar.bz2 
+        curl -L https://archives.boost.io/release/1.79.0/source/boost_1_79_0.tar.bz2 -o boost_1_79_0.tar.bz2 
         if [ -f "boost_1_79_0.tar.bz2" ] ; then
             break
         fi
