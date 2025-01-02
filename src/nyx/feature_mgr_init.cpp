@@ -32,6 +32,7 @@
 #include "features/3d_glcm.h"
 #include "features/3d_gldzm.h"
 #include "features/3d_glszm.h"
+#include "features/3d_glrlm.h"
 
 #include "features/focus_score.h"
 #include "features/power_spectrum.h"
@@ -76,6 +77,7 @@ FeatureManager::FeatureManager()
 	register_feature (new D3_GLCM_feature());
 	register_feature (new D3_GLDZM_feature());
 	register_feature (new D3_GLSZM_feature());
+	register_feature (new D3_GLRLM_feature());
 
 	// image quality
 	register_feature (new FocusScoreFeature());

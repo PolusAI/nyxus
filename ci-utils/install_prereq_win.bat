@@ -42,7 +42,7 @@ popd
 
 if "%BUILD_Z5_DEP%" == "1" (
     for /l %%x in (1, 1, 5) do (
-        curl -L https://boostorg.jfrog.io/artifactory/main/release/1.79.0/source/boost_1_79_0.zip -o boost_1_79_0.zip
+        curl -L https://archives.boost.io/release/1.79.0/source/boost_1_79_0.zip -o boost_1_79_0.zip
         if  exist boost_1_79_0.zip (
             goto :continue_boost
         )

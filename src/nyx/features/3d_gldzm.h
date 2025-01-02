@@ -1,13 +1,11 @@
 #pragma once
 
-#pragma once
-
 #include "../feature_method.h"
 #include "texture_feature.h"
 
 /// @brief Grey Level Distance Zone (GLDZM) features
 /// 
-/// Grey Level Dsitance Zone (GLDZM) quantifies distances zones of same intensity to the ROI border
+/// GLDZM quantifies distance zones of same intensity to the ROI border
 
 class D3_GLDZM_feature : public FeatureMethod, public TextureFeature
 {
