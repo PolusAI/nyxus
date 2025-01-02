@@ -147,7 +147,7 @@ curl -L http://www.ijg.org/files/jpegsrc.v9f.tar.gz -o jpegsrc.v9f.tar.gz
 tar -xzf jpegsrc.v9f.tar.gz
 cd jpeg-9f
 ./configure --prefix="$JPEG_INSTALL_PATH"/"$LOCAL_INSTALL_DIR"
-make install-lib
+make install -j4
 cd ..
 
 if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
