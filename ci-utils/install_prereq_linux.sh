@@ -142,17 +142,15 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cd ../../
 fi
 
+JPEG_INSTALL_PATH=$PWD
+curl -L http://www.ijg.org/files/jpegsrc.v9f.tar.gz -o jpegsrc.v9f.tar.gz
+tar -xzf jpegsrc.v9f.tar.gz
+cd jpeg-9f
+./configure --prefix="$JPEG_INSTALL_PATH"/"$LOCAL_INSTALL_DIR"
+make install -j4
+cd ..
 
 if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
-    JPEG_INSTALL_PATH=$PWD
-    curl -L http://www.ijg.org/files/jpegsrc.v9e.tar.gz -o jpegsrc.v9e.tar.gz
-    tar -xzf jpegsrc.v9e.tar.gz
-    cd jpeg-9e
-    ./configure --prefix=
-    make DESTDIR="$JPEG_INSTALL_PATH"/"$LOCAL_INSTALL_DIR" install
-    ./libtool --finish "$JPEG_INSTALL_PATH"/"$LOCAL_INSTALL_DIR"/lib
-    cd ..
-
     curl -L  https://github.com/glennrp/libpng/archive/refs/tags/v1.6.39.zip -o v1.6.39.zip
     unzip v1.6.39.zip
     cd libpng-1.6.39
@@ -194,7 +192,7 @@ unzip tiff-4.6.0.zip
 cd tiff-4.6.0
 mkdir build_man
 cd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/   ..
+cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DJPEG_LIBRARIES=../../"$LOCAL_INSTALL_DIR"/lib -DJPEG_INCLUDE_DIRS=../../"$LOCAL_INSTALL_DIR"/ ..
 make install -j4
 cd ../../
 
