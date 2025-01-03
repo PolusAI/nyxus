@@ -33,6 +33,9 @@
 #include "features/ngldm.h"
 #include "features/ngtdm.h"
 #include "features/3d_glcm.h"
+#include "features/3d_gldm.h"
+#include "features/3d_ngldm.h"
+#include "features/3d_ngtdm.h"
 #include "features/3d_gldzm.h"
 #include "features/3d_glszm.h"
 #include "features/roi_radius.h"
@@ -451,6 +454,27 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 		return true;
 	}
 
+	if (s == Nyxus::theFeatureSet.findGroupNameByCode (Fgroup3D::FG3_GLDM))
+	{
+		theFeatureSet.enableAll (false);
+		theFeatureSet.enableFeatures (D3_GLDM_feature::featureset);
+		return true;
+	}
+
+	if (s == Nyxus::theFeatureSet.findGroupNameByCode (Fgroup3D::FG3_NGLDM))
+	{
+		theFeatureSet.enableAll (false);
+		theFeatureSet.enableFeatures (D3_NGLDM_feature::featureset);
+		return true;
+	}
+
+	if (s == Nyxus::theFeatureSet.findGroupNameByCode (Fgroup3D::FG3_NGTDM))
+	{
+		theFeatureSet.enableAll (false);
+		theFeatureSet.enableFeatures (D3_NGTDM_feature::featureset);
+		return true;
+	}
+
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_GLCM))
 	{
 		theFeatureSet.enableAll (false);
@@ -521,6 +545,7 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 		theFeatureSet.enableFeatures(F);
 		return true;
 	}
+
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_GLDZM))
 	{
 		theFeatureSet.enableAll (false);

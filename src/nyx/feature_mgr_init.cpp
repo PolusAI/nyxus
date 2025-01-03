@@ -30,7 +30,10 @@
 
 #include "features/3d_intensity.h"
 #include "features/3d_glcm.h"
+#include "features/3d_gldm.h"
 #include "features/3d_gldzm.h"
+#include "features/3d_ngldm.h"
+#include "features/3d_ngtdm.h"
 #include "features/3d_glszm.h"
 #include "features/3d_glrlm.h"
 
@@ -75,7 +78,10 @@ FeatureManager::FeatureManager()
 	// 3D
 	register_feature (new D3_PixelIntensityFeatures());
 	register_feature (new D3_GLCM_feature());
+	register_feature (new D3_GLDM_feature());
 	register_feature (new D3_GLDZM_feature());
+	register_feature (new D3_NGLDM_feature());
+	register_feature (new D3_NGTDM_feature());
 	register_feature (new D3_GLSZM_feature());
 	register_feature (new D3_GLRLM_feature());
 

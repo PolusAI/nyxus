@@ -43,7 +43,10 @@
 
 #include "features/3d_intensity.h"
 #include "features/3d_glcm.h"
+#include "features/3d_gldm.h"
 #include "features/3d_gldzm.h"
+#include "features/3d_ngldm.h"
+#include "features/3d_ngtdm.h"
 #include "features/3d_glszm.h"
 #include "features/3d_glrlm.h"
 //--future-- #include "features/3d_surface.h"
@@ -381,11 +384,26 @@ namespace Nyxus
 			STOPWATCH("3D GLCM/3DGLCM/3DGLCM/#FFFF00", "\t=");
 			runParallel (D3_GLCM_feature::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
 		}		
+		if (D3_GLDM_feature::required(theFeatureSet))
+		{
+			STOPWATCH("3D GLDM/3DGLDM/3DGLDM/#FFFF00", "\t=");
+			runParallel (D3_GLDM_feature::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
+		}	
 		if (D3_GLDZM_feature::required(theFeatureSet))
 		{
 			STOPWATCH("3D GLDZM/3DGLDZM/3DGLDZM/#FFFF00", "\t=");
 			runParallel (D3_GLDZM_feature::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
 		}		
+		if (D3_NGLDM_feature::required(theFeatureSet))
+		{
+			STOPWATCH("3D NGLDM/3DNGLDM/3DNGLDM/#FFFF00", "\t=");
+			runParallel(D3_NGLDM_feature::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
+		}
+		if (D3_NGTDM_feature::required(theFeatureSet))
+		{
+			STOPWATCH("3D NGTDM/3DNGTDM/3DNGTDM/#FFFF00", "\t=");
+			runParallel(D3_NGTDM_feature::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
+		}
 		if (D3_GLSZM_feature::required(theFeatureSet))
 		{
 			STOPWATCH("3D GLSZM/3DGLSZM/3DGLSZM/#FFFF00", "\t=");
