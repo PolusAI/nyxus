@@ -33,6 +33,8 @@
 #include "features/ngldm.h"
 #include "features/ngtdm.h"
 #include "features/3d_glcm.h"
+#include "features/3d_gldzm.h"
+#include "features/3d_glszm.h"
 #include "features/roi_radius.h"
 #include "helpers/helpers.h"
 #include "helpers/system_resource.h"
@@ -434,14 +436,17 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 #endif
 		};
 
-		theFeatureSet.enableFeatures(F);
+		theFeatureSet.enableFeatures (F);
+		theFeatureSet.enableFeatures (D3_GLCM_feature::featureset);
+		theFeatureSet.enableFeatures (D3_GLDZM_feature::featureset);
+		theFeatureSet.enableFeatures (D3_GLSZM_feature::featureset);
+
 		return true;
 	}
 
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_GLCM))
 	{
 		theFeatureSet.enableAll (false);
-
 		theFeatureSet.enableFeatures (D3_GLCM_feature::featureset);
 		return true;
 	}
@@ -518,34 +523,18 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 	}
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_GLDZM))
 	{
-		theFeatureSet.enableAll(false);
-
-		auto F =
-		{
-			Feature3D::GLDZM_SDE,
-			Feature3D::GLDZM_LDE,
-			Feature3D::GLDZM_LGLZE,
-			Feature3D::GLDZM_HGLZE,
-			Feature3D::GLDZM_SDLGLE,
-			Feature3D::GLDZM_SDHGLE,
-			Feature3D::GLDZM_LDLGLE,
-			Feature3D::GLDZM_LDHGLE,
-			Feature3D::GLDZM_GLNU,
-			Feature3D::GLDZM_GLNUN,
-			Feature3D::GLDZM_ZDNU,
-			Feature3D::GLDZM_ZDNUN,
-			Feature3D::GLDZM_ZP,
-			Feature3D::GLDZM_GLM,
-			Feature3D::GLDZM_GLV,
-			Feature3D::GLDZM_ZDM,
-			Feature3D::GLDZM_ZDV,
-			Feature3D::GLDZM_ZDE
-		};
-
-		theFeatureSet.enableFeatures(F);
+		theFeatureSet.enableAll (false);
+		theFeatureSet.enableFeatures (D3_GLDZM_feature::featureset);
 		return true;
 	}
 
+	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_GLSZM))
+	{
+		theFeatureSet.enableAll (false);
+		theFeatureSet.enableFeatures (D3_GLSZM_feature::featureset);
+		return true;
+	}	
+	
 	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_GLRLM))
 	{
 		theFeatureSet.enableAll(false);
@@ -590,6 +579,7 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 		theFeatureSet.enableFeatures(F);
 		return true;
 	}
+
 	return false;
 }
 

@@ -44,6 +44,7 @@
 #include "features/3d_intensity.h"
 #include "features/3d_glcm.h"
 #include "features/3d_gldzm.h"
+#include "features/3d_glszm.h"
 #include "features/3d_glrlm.h"
 //--future-- #include "features/3d_surface.h"
 
@@ -384,6 +385,11 @@ namespace Nyxus
 		{
 			STOPWATCH("3D GLDZM/3DGLDZM/3DGLDZM/#FFFF00", "\t=");
 			runParallel (D3_GLDZM_feature::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
+		}		
+		if (D3_GLSZM_feature::required(theFeatureSet))
+		{
+			STOPWATCH("3D GLSZM/3DGLSZM/3DGLSZM/#FFFF00", "\t=");
+			runParallel (D3_GLSZM_feature::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
 		}		
 		if (D3_GLRLM_feature::required(theFeatureSet))
 		{

@@ -6,52 +6,44 @@
 #include "../feature_method.h"
 #include "texture_feature.h"
 
-/// @brief Gray Level Size Zone(GLSZM) features
-/// Gray Level Size Zone(GLSZM) quantifies gray level zones in an image.A gray level zone is defined as a the number
-/// of connected voxels that share the same gray level intensity.A voxel is considered connected if the distance is 1
-/// according to the infinity norm(26 - connected region in a 3D, 8 - connected region in 2D).
-/// In a gray level size zone matrix : math:`P(i, j)` the :math:`(i, j)^ {\text{ th }}` element equals the number of zones
-/// with gray level : math:`i`and size :math:`j` appear in image.Contrary to GLCMand GLRLM, the GLSZM is rotation
-/// independent, with only one matrix calculated for all directions in the ROI.
-
-class GLSZMFeature: public FeatureMethod, public TextureFeature
+class D3_GLSZM_feature : public FeatureMethod, public TextureFeature
 {
 public:
 
 	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
 	// in the feature group nickname expansion, and in the feature value output 
-	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset = 
-	{ 
-		Nyxus::Feature2D::GLSZM_SAE,		// Small Area Emphasis
-		Nyxus::Feature2D::GLSZM_LAE,		// Large Area Emphasis
-		Nyxus::Feature2D::GLSZM_GLN,		// Gray Level Non - Uniformity
-		Nyxus::Feature2D::GLSZM_GLNN,		// Gray Level Non - Uniformity Normalized
-		Nyxus::Feature2D::GLSZM_SZN,		// Size - Zone Non - Uniformity
-		Nyxus::Feature2D::GLSZM_SZNN,		// Size - Zone Non - Uniformity Normalized
-		Nyxus::Feature2D::GLSZM_ZP,		// Zone Percentage
-		Nyxus::Feature2D::GLSZM_GLV,		// Gray Level Variance
-		Nyxus::Feature2D::GLSZM_ZV,		// Zone Variance
-		Nyxus::Feature2D::GLSZM_ZE,		// Zone Entropy
-		Nyxus::Feature2D::GLSZM_LGLZE,	// Low Gray Level Zone Emphasis
-		Nyxus::Feature2D::GLSZM_HGLZE,	// High Gray Level Zone Emphasis
-		Nyxus::Feature2D::GLSZM_SALGLE,	// Small Area Low Gray Level Emphasis
-		Nyxus::Feature2D::GLSZM_SAHGLE,	// Small Area High Gray Level Emphasis
-		Nyxus::Feature2D::GLSZM_LALGLE,	// Large Area Low Gray Level Emphasis
-		Nyxus::Feature2D::GLSZM_LAHGLE,	// Large Area High Gray Level Emphasis
+	const constexpr static std::initializer_list<Nyxus::Feature3D> featureset =
+	{
+		Nyxus::Feature3D::GLSZM_SAE,		// Small Area Emphasis
+		Nyxus::Feature3D::GLSZM_LAE,		// Large Area Emphasis
+		Nyxus::Feature3D::GLSZM_GLN,		// Gray Level Non - Uniformity
+		Nyxus::Feature3D::GLSZM_GLNN,		// Gray Level Non - Uniformity Normalized
+		Nyxus::Feature3D::GLSZM_SZN,		// Size - Zone Non - Uniformity
+		Nyxus::Feature3D::GLSZM_SZNN,		// Size - Zone Non - Uniformity Normalized
+		Nyxus::Feature3D::GLSZM_ZP,		// Zone Percentage
+		Nyxus::Feature3D::GLSZM_GLV,		// Gray Level Variance
+		Nyxus::Feature3D::GLSZM_ZV,		// Zone Variance
+		Nyxus::Feature3D::GLSZM_ZE,		// Zone Entropy
+		Nyxus::Feature3D::GLSZM_LGLZE,	// Low Gray Level Zone Emphasis
+		Nyxus::Feature3D::GLSZM_HGLZE,	// High Gray Level Zone Emphasis
+		Nyxus::Feature3D::GLSZM_SALGLE,	// Small Area Low Gray Level Emphasis
+		Nyxus::Feature3D::GLSZM_SAHGLE,	// Small Area High Gray Level Emphasis
+		Nyxus::Feature3D::GLSZM_LALGLE,	// Large Area Low Gray Level Emphasis
+		Nyxus::Feature3D::GLSZM_LAHGLE,	// Large Area High Gray Level Emphasis
 	};
 
-	GLSZMFeature ();
+	D3_GLSZM_feature();
 
 	void calculate(LR& r);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
 	void osized_calculate(LR& r, ImageLoader& imloader);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
-	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 	// Compatibility with the manual reduce
-	static bool required (const FeatureSet& fs) 
+	static bool required(const FeatureSet& fs)
 	{
-		return fs.anyEnabled (GLSZMFeature::featureset);
+		return fs.anyEnabled (D3_GLSZM_feature::featureset);
 	}
 
 	// Small Area Emphasis
@@ -114,7 +106,7 @@ private:
 	std::vector<PixIntens> I;	// sorted unique intensities
 
 	// Helper to check if feature is requested by user
-	bool need (Nyxus::Feature2D f);
+	bool need (Nyxus::Feature3D f);
 
 	// Sum of P required by GLN, GLNN, LGLZE, HGLZE
 	std::vector<double> sj;
@@ -130,7 +122,7 @@ private:
 		Np = 0; // number of voxels in the image
 		Nz = 0; // number of zones in the ROI, 1<=Nz<=Np
 		P.clear();
-		sum_p = 0;	
+		sum_p = 0;
 	}
 
 	const double EPS = 2.2e-16;
