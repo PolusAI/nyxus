@@ -658,7 +658,7 @@ namespace Nyxus
 		SPAT_MOMENT_23,
 		SPAT_MOMENT_30,
 
-		// Texture / GLCM
+		// texture / GLCM
 		GLCM_ACOR,		// Autocorrelation, IBSI # QWB0
 		GLCM_ASM,		// Angular second moment	IBSI # 8ZQL
 		GLCM_CLUPROM,	// Cluster prominence, IBSI # AE86
@@ -719,7 +719,23 @@ namespace Nyxus
 		GLCM_SUMENTROPY_AVE,
 		GLCM_SUMVARIANCE_AVE,
 
-		// Texture / GLDZM
+		// texture / GLDM
+		GLDM_SDE,		// Small Dependence Emphasis
+		GLDM_LDE,		// Large Dependence Emphasis
+		GLDM_GLN,		// Gray Level Non-Uniformity
+		GLDM_DN,		// Dependence Non-Uniformity
+		GLDM_DNN,		// Dependence Non-Uniformity Normalized
+		GLDM_GLV,		// Gray Level Variance
+		GLDM_DV,		// Dependence Variance
+		GLDM_DE,		// Dependence Entropy
+		GLDM_LGLE,		// Low Gray Level Emphasis
+		GLDM_HGLE,		// High Gray Level Emphasis
+		GLDM_SDLGLE,	// Small Dependence Low Gray Level Emphasis
+		GLDM_SDHGLE,	// Small Dependence High Gray Level Emphasis
+		GLDM_LDLGLE,	// Large Dependence Low Gray Level Emphasis
+		GLDM_LDHGLE,	// Large Dependence High Gray Level Emphasis
+
+		// texture / GLDZM
 		GLDZM_SDE,		// Small Distance Emphasis
 		GLDZM_LDE,		// Large Distance Emphasis
 		GLDZM_LGLZE,		// Low Grey Level Zone Emphasis
@@ -739,6 +755,34 @@ namespace Nyxus
 		GLDZM_ZDV,		// Zone Distance Variance
 		GLDZM_ZDE,		// Zone Distance Entropy
 
+		// texture / NGLDM
+		NGLDM_LDE,		// Low Dependence Emphasis (IBSI # SODN)
+		NGLDM_HDE,		// High Dependence Emphasis (IBSI # IMOQ)
+		NGLDM_LGLCE,	// Low Grey Level Count Emphasis (IBSI # TL9H)
+		NGLDM_HGLCE,	// High Grey Level Count Emphasis (IBSI # OAE7)
+		NGLDM_LDLGLE,	// Low Dependence Low Grey Level Emphasis (IBSI # EQ3F)
+		NGLDM_LDHGLE,	// Low Dependence High Grey Level Emphasis (IBSI # JA6D)
+		NGLDM_HDLGLE,	// High Dependence Low Grey Level Emphasis (IBSI # NBZI)
+		NGLDM_HDHGLE,	// High Dependence High Grey Level Emphasis (IBSI # 9QMG)
+		NGLDM_GLNU,		// Grey Level Non-Uniformity (IBSI # FP8K)
+		NGLDM_GLNUN,	// Grey Level Non-Uniformity Normalised (IBSI # 5SPA)
+		NGLDM_DCNU,		// Dependence Count Non-Uniformity (IBSI # Z87G)
+		NGLDM_DCNUN,	// Dependence Count Non-Uniformity Normalised (IBSI # OKJI)
+		NGLDM_DCP,		// Dependence Count Percentage (IBSI # 6XV8)
+		NGLDM_GLM,		// Grey Level Mean
+		NGLDM_GLV,		// Grey Level Variance (IBSI # 1PFV)
+		NGLDM_DCM,		// Dependence Count Mean
+		NGLDM_DCV,		// Dependence Count Variance (IBSI # DNX2)
+		NGLDM_DCENT,	// Dependence Count Entropy (IBSI # FCBV)
+		NGLDM_DCENE,	// Dependence Count Energy (IBSI # CAS9)
+
+		// texture / NGTDM
+		NGTDM_COARSENESS,
+		NGTDM_CONTRAST,
+		NGTDM_BUSYNESS,
+		NGTDM_COMPLEXITY,
+		NGTDM_STRENGTH,
+
 		// texture/glszm
 		GLSZM_SAE,		// Small Area Emphasis
 		GLSZM_LAE,		// Large Area Emphasis
@@ -757,7 +801,7 @@ namespace Nyxus
 		GLSZM_LALGLE,	// Large Area Low Gray Level Emphasis
 		GLSZM_LAHGLE,	// Large Area High Gray Level Emphasis
 
-		// GLRLM:
+		// texture / GLRLM
 		GLRLM_SRE,	// Short Run Emphasis 
 		GLRLM_LRE,	// Long Run Emphasis 
 		GLRLM_GLN,	// Gray Level Non-Uniformity 
@@ -837,7 +881,10 @@ namespace Nyxus
 		FG3_MORPHOLOGY,
 		FG3_TEXTURE,			// 3D_GLCM + 3D_GLRLM + 3D_GLSZM + etc
 		FG3_GLCM,
+		FG3_GLDM,
 		FG3_GLDZM,
+		FG3_NGLDM,
+		FG3_NGTDM,
 		FG3_GLSZM,
 		FG3_GLRLM,
 		FG3_NEIG,
