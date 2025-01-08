@@ -184,14 +184,14 @@ cd ../../
 
 for i in {1..5}
 do
-    curl -L https://download.osgeo.org/libtiff/tiff-4.6.0.zip -o tiff-4.6.0.zip 
-    if [ -f "tiff-4.6.0.zip" ] ; then
+    curl -L https://download.osgeo.org/libtiff/tiff-4.7.0.zip -o tiff-4.7.0.zip 
+    if [ -f "tiff-4.7.0.zip" ] ; then
         break
     fi
 done
 
-unzip tiff-4.6.0.zip
-cd tiff-4.6.0
+unzip tiff-4.7.0.zip
+cd tiff-4.7.0
 mkdir build_man
 cd build_man
 if [[ "$OSTYPE" == "darwin"* ]]; then

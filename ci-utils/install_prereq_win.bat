@@ -168,15 +168,25 @@ cmake --build . --config Release --target install --parallel 4
 popd
 popd
 
+curl -L https://github.com/libjpeg-turbo/libjpeg-turbo/archive/refs/tags/3.1.0.zip -o 3.1.0.zip
+tar -xf 3.1.0.zip
+pushd libjpeg-turbo-3.1.0
+mkdir build_man
+pushd build_man
+cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/  ..
+cmake --build . --config Release --target install --parallel 4
+popd
+popd
+
 for /l %%x in (1, 1, 5) do (
-    curl -L https://download.osgeo.org/libtiff/tiff-4.6.0.zip -o tiff-4.6.0.zip
-    if  exist tiff-4.6.0.zip (
+    curl -L https://download.osgeo.org/libtiff/tiff-4.7.0.zip -o tiff-4.7.0.zip
+    if  exist tiff-4.7.0.zip (
         goto :continue_tiff
     )
 )
 :continue_tiff
-tar -xf tiff-4.6.0.zip
-pushd tiff-4.6.0
+tar -xf tiff-4.7.0.zip
+pushd tiff-4.7.0
 mkdir build_man
 pushd build_man
 cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/  ..
