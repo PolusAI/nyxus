@@ -195,7 +195,7 @@ cd tiff-4.6.0
 mkdir build_man
 cd build_man
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DJPEG_LIBRARY_RELEASE=../../"$LOCAL_INSTALL_DIR"/lib/libjpeg.dylib -DJPEG_INCLUDE_DIRS=../../"$LOCAL_INSTALL_DIR"/include ..
+    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DJPEG_LIBRARY_RELEASE=../../"$LOCAL_INSTALL_DIR"/lib/libjpeg.dylib -DJPEG_INCLUDE_DIRS=../../"$LOCAL_INSTALL_DIR"/include ..
 else
     cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ ..
 fi
@@ -216,7 +216,11 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     cd ..
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF  ..
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF -DJPEG_LIBRARY_RELEASE=../../"$LOCAL_INSTALL_DIR"/lib/libjpeg.dylib -DJPEG_INCLUDE_DIRS=../../"$LOCAL_INSTALL_DIR"/include ..
+    else
+        cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF  ..
+    fi
     make install -j4
     cd ../../
 
