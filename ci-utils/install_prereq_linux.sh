@@ -143,16 +143,16 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
 fi
 
 
-if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
-    JPEG_INSTALL_PATH=$PWD
-    curl -L http://www.ijg.org/files/jpegsrc.v9e.tar.gz -o jpegsrc.v9e.tar.gz
-    tar -xzf jpegsrc.v9e.tar.gz
-    cd jpeg-9e
-    ./configure --prefix=
-    make DESTDIR="$JPEG_INSTALL_PATH"/"$LOCAL_INSTALL_DIR" install
-    ./libtool --finish "$JPEG_INSTALL_PATH"/"$LOCAL_INSTALL_DIR"/lib
-    cd ..
+curl -L https://github.com/libjpeg-turbo/libjpeg-turbo/archive/refs/tags/3.1.0.zip -o 3.1.0.zip
+unzip 3.1.0.zip
+cd libjpeg-turbo-3.1.0
+mkdir build_man
+cd build_man
+cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/   ..
+make install -j4
+cd ../../
 
+if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     curl -L  https://github.com/glennrp/libpng/archive/refs/tags/v1.6.39.zip -o v1.6.39.zip
     unzip v1.6.39.zip
     cd libpng-1.6.39
@@ -184,17 +184,21 @@ cd ../../
 
 for i in {1..5}
 do
-    curl -L https://download.osgeo.org/libtiff/tiff-4.6.0.zip -o tiff-4.6.0.zip 
-    if [ -f "tiff-4.6.0.zip" ] ; then
+    curl -L https://download.osgeo.org/libtiff/tiff-4.7.0.zip -o tiff-4.7.0.zip 
+    if [ -f "tiff-4.7.0.zip" ] ; then
         break
     fi
 done
 
-unzip tiff-4.6.0.zip
-cd tiff-4.6.0
+unzip tiff-4.7.0.zip
+cd tiff-4.7.0
 mkdir build_man
 cd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/   ..
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DJPEG_LIBRARY_RELEASE=../../"$LOCAL_INSTALL_DIR"/lib/libjpeg.dylib -DJPEG_INCLUDE_DIRS=../../"$LOCAL_INSTALL_DIR"/include ..
+else
+    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ ..
+fi
 make install -j4
 cd ../../
 
@@ -212,7 +216,11 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     cd ..
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF  ..
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF -DJPEG_LIBRARY_RELEASE=../../"$LOCAL_INSTALL_DIR"/lib/libjpeg.dylib -DJPEG_INCLUDE_DIRS=../../"$LOCAL_INSTALL_DIR"/include ..
+    else
+        cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF  ..
+    fi
     make install -j4
     cd ../../
 
