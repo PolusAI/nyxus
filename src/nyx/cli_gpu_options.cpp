@@ -1,6 +1,7 @@
 #include "cli_gpu_options.h"
 #include "helpers/helpers.h"
 
+#ifdef USE_GPU
 namespace NyxusGpu
 {
 	bool get_best_device(
@@ -10,6 +11,7 @@ namespace NyxusGpu
 		int& best_id,
 		std::string& lastCuErmsg);
 }
+#endif
 
 bool GpuOptions::empty()
 {
@@ -44,6 +46,8 @@ int GpuOptions::get_single_device_id()
 
 bool GpuOptions::parse_input (std::string & ermsg)
 {
+#ifdef USE_GPU
+
 	auto u = Nyxus::toupper (this->raw_use_gpu);
 	if (u.length() == 0)
 	{
@@ -104,4 +108,12 @@ bool GpuOptions::parse_input (std::string & ermsg)
 	}
 
 	return true;
+
+#else
+	
+	ermsg = "To have GPU options available, use a Nyxus version with GPU support enabled";
+	set_using_gpu (false);
+	return false;
+
+#endif
 }
