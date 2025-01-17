@@ -854,7 +854,7 @@ namespace Nyxus
 	enum class Fgroup2D
 	{
 		FG2_ALL = 0,
-		FG2_WHOLESLIDE,
+		FG2_WHOLESLIDE,			// FG2_WHOLESLIDE is FG2_ALL for whole slides
 		FG2_INTENSITY, 
 		FG2_MORPHOLOGY, 
 		FG2_BASIC_MORPHOLOGY, 
@@ -925,10 +925,10 @@ public:
 		for (auto f : F)
 			m_enabledFeatures[(int)f] = enable;
 	}
-	void enableFeatures(const std::initializer_list<Nyxus::Feature3D>& desiredFeatures) 
+	void enableFeatures(const std::initializer_list<Nyxus::Feature3D>& F, bool enable = true)
 	{
-		for (auto f : desiredFeatures)
-			m_enabledFeatures[(int)f] = true;
+		for (auto f : F)
+			m_enabledFeatures[(int)f] = enable;
 	}
 	void enableFeatures(const std::initializer_list<Nyxus::FeatureIMQ>& desiredFeatures) {
 		for (auto f : desiredFeatures)
@@ -1039,10 +1039,10 @@ public:
 				cnt++;
 		return cnt;
 	}
-	bool find_2D_FeatureByString (const std::string& name, int& f);		// 'f' is signed Feature2D
+	bool find_2D_FeatureByString (const std::string & name, int & f);		// 'f' is signed Feature2D
 	bool find_2D_GroupByString (const std::string& group_name, int & group_code);	// 'group_code' is signed Nyxus::Fgroup2D
-	bool find_3D_FeatureByString (const std::string & feature_name, Nyxus::Feature3D & feature_code);
-	bool find_3D_GroupByString (const std::string & group_name, Nyxus::Fgroup3D & group_code);
+	bool find_3D_FeatureByString (const std::string & feature_name, int & feature_code);
+	bool find_3D_GroupByString (const std::string & group_name, int & group_code);
 	bool find_IMQ_FeatureByString (const std::string & feature_name, Nyxus::FeatureIMQ & feature_code);
 	bool find_IMQ_GroupByString (const std::string & group_name, Nyxus::FgroupIMQ & group_code);
 
