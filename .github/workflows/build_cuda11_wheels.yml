@@ -78,8 +78,8 @@ jobs:
           CIBW_TEST_COMMAND: python -m pip check
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: nyxus-cuda11-wheels
+          name: nyxus-cuda11-wheels-${{ matrix.os }}-${{ matrix.cibw_archs }}-${{ matrix.cibw_build }}
           path: dist/*.whl
           retention-days: 1

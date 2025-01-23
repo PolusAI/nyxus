@@ -66,9 +66,9 @@ jobs:
           CIBW_TEST_COMMAND: pytest -vv {project}/tests/python
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: nyxus-wheels
+          name: nyxus-wheels-${{ matrix.os }}-${{ matrix.cibw_archs }}-${{ matrix.cibw_build }}
           path: dist/*.whl
           retention-days: 1
 
@@ -117,8 +117,8 @@ jobs:
           CIBW_TEST_COMMAND: pytest -vv {project}/tests/python
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: nyxus-wheels-apple-arm64
+          name: nyxus-wheels-${{ matrix.os }}-${{ matrix.cibw_archs }}-${{ matrix.cibw_build }}
           path: dist/*.whl
           retention-days: 1
