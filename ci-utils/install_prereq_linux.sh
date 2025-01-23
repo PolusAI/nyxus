@@ -245,8 +245,7 @@ if [[ $BUILD_ARROW_DEP -eq 1 ]]; then
     cd build
     cmake -DCMAKE_INSTALL_PREFIX=../../../"$LOCAL_INSTALL_DIR"/ \
             -DCMAKE_PREFIX_PATH=../../../"$LOCAL_INSTALL_DIR"/ \
-            -DCMAKE_INSTALL_LIBDIR=lib \
-            -DCMAKE_BUILD_TYPE=Release \
+            -DARROW_OPTIONAL_INSTALL=ON \
             -DARROW_COMPUTE=ON \
             -DARROW_CSV=ON \
             -DARROW_DATASET=ON \
