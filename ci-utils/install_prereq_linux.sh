@@ -233,7 +233,7 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DFMJPEG2K="$ROOTDIR"/"$LOCAL_INSTALL_DIR"/  ..
     make install -j4
     cd ../../
-fis
+fi
 
 if [[ $BUILD_ARROW_DEP -eq 1 ]]; then
 
