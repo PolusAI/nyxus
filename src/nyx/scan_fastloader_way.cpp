@@ -228,8 +228,9 @@ namespace Nyxus
 				static unsigned long long initial_freeRamAmt = 0;
 				if (initial_freeRamAmt == 0)
 					initial_freeRamAmt = freeRamAmt;
-				double memDiff = double(freeRamAmt) - double(initial_freeRamAmt);
-				VERBOSLVL1(std::cout << std::setw(15) << freeRamAmt << " bytes free (" << "consumed=" << memDiff << ") ")
+				unsigned long long diff = std::max (freeRamAmt, initial_freeRamAmt) - std::min (freeRamAmt, initial_freeRamAmt);
+				char diffSgn = freeRamAmt > initial_freeRamAmt ? '-' : '+';
+				VERBOSLVL1(std::cout << std::setw(15) << virguler(freeRamAmt) << " bytes free (" << "consumed=" << diffSgn << virguler(diff) << ") ")
 
 				// Display (1) dataset progress info and (2) file pair info
 				int digits = 2, k = std::pow(10.f, digits);
