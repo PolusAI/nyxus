@@ -16,7 +16,7 @@ jobs:
       matrix:
         os: [ubuntu-20.04, macos-13, windows-latest]
         cibw_archs: ["auto64"]
-        cibw_build: ["cp39-*", "cp310-*", "cp311-*", "cp312-*"]
+        cibw_build: ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*"]
 
     steps:
       - uses: actions/checkout@v3
@@ -34,7 +34,7 @@ jobs:
 
       - name: Install cibuildwheel
         run: |
-          python -m pip install cibuildwheel==2.16.2 delvewheel wheel
+          python -m pip install cibuildwheel delvewheel wheel
 
       - name: Building wheels 
         run: |
@@ -85,7 +85,7 @@ jobs:
       matrix:
         os: [macos-13-xlarge]
         cibw_archs: ["arm64"]
-        cibw_build: ["cp39-*", "cp310-*", "cp311-*", "cp312-*"]
+        cibw_build: ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*"]
 
     steps:
       - uses: actions/checkout@v3
@@ -98,7 +98,7 @@ jobs:
   
       - name: Install cibuildwheel
         run: |
-          python -m pip install cibuildwheel==2.16.2 delocate wheel
+          python -m pip install cibuildwheel delocate wheel
 
       - name: Building wheels 
         run: |
