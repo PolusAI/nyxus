@@ -12,7 +12,7 @@ jobs:
       matrix:
         os: [windows-2019, ubuntu-20.04]
         cibw_archs: ["auto64"]
-        cibw_build: ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*"]
+        cibw_build: ["cp39", "cp310", "cp311", "cp312", "cp313"]
 
     steps:
       - uses: actions/checkout@v3
@@ -53,7 +53,7 @@ jobs:
         run: |
           python -m cibuildwheel --output-dir dist
         env:
-          CIBW_BUILD: ${{ matrix.cibw_build }}
+          CIBW_BUILD: ${{ matrix.cibw_build }}-*
           CIBW_SKIP: "*musllinux*"
           CIBW_BUILD_VERBOSITY: 3
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
