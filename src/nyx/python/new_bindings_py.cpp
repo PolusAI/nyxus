@@ -21,7 +21,8 @@ namespace py = pybind11;
 using namespace Nyxus;
 
 namespace Nyxus {
-    int processDataset(
+
+    int processDataset_2D_segmented (
         const std::vector<std::string>& intensFiles,
         const std::vector<std::string>& labelFiles,
         int numFastloaderThreads,
@@ -30,8 +31,16 @@ namespace Nyxus {
         int min_online_roi_size,
         const SaveOption saveOption,
         const std::string& outputPath);
+    
+    int processDataset_2D_wholeslide (
+        const std::vector<std::string>& intensFiles,
+        const std::vector<std::string>& labelFiles,
+        int n_threads,
+        int min_online_roi_size,
+        const SaveOption saveOption,
+        const std::string& outputPath);
 
-    int processDataset_3D(
+    int processDataset_3D_segmented (
         const std::vector <Imgfile3D_layoutA>& intensFiles,
         const std::vector <Imgfile3D_layoutA>& labelFiles,
         int numFastloaderThreads,
@@ -40,6 +49,7 @@ namespace Nyxus {
         int min_online_roi_size,
         const SaveOption saveOption,
         const std::string& outputPath);
+
 };
 
 using ParameterTypes = std::variant<int, float, double, unsigned int, std::vector<double>, std::vector<std::string>>;
@@ -80,13 +90,14 @@ void initialize_environment(
     float min_intensity,
     float max_intensity,
     bool is_imq,
-    int ram_limit_mb)
+    int ram_limit_mb,
+    int verb_lvl)
 {
     theEnvironment.set_imq(is_imq);
     theEnvironment.set_dim(n_dim);
     theEnvironment.recognizedFeatureNames = features;
     theEnvironment.set_pixel_distance(neighbor_distance);
-    theEnvironment.set_verbosity_level (0);
+    theEnvironment.set_verbosity_level (verb_lvl);
     theEnvironment.xyRes = theEnvironment.pixelSizeUm = pixels_per_micron;
     theEnvironment.set_coarse_gray_depth(coarse_gray_depth);
     theEnvironment.n_reduce_threads = n_reduce_threads;
@@ -134,12 +145,12 @@ void set_environment_params_imp (
     uint32_t n_reduce_threads = 0,
     uint32_t n_loader_threads = 0,
     int using_gpu = -2,
-    int verb_level = 0,
     float dynamic_range = -1,
     float min_intensity = -1,
     float max_intensity = -1,
-    int ram_limit_mb = -1
-) {
+    int ram_limit_mb = -1,
+    int verb_level = 0)
+{
     if (features.size() > 0) {
         theEnvironment.recognizedFeatureNames = features;
     }
@@ -176,9 +187,12 @@ void set_environment_params_imp (
         theEnvironment.fpimageOptions.set_max_intensity(max_intensity);
     }
 
-    if (verb_level >= 0) {
+    if (verb_level >= 0) 
+    {
         theEnvironment.set_verbosity_level (verb_level);
-    } else {
+    } 
+    else 
+    {
         std::cerr << "Error: verbosity (" + std::to_string(verb_level) + ") should be a non-negative value" << std::endl;
     }
 
@@ -233,23 +247,42 @@ py::tuple featurize_directory_imp (
     // Process the image sdata
     int min_online_roi_size = 0;
 
-    theEnvironment.saveOption = [&output_type](){
-        if (output_type == "arrowipc") {
+    theEnvironment.saveOption = [&output_type]()
+    {
+        if (output_type == "arrowipc") 
+        {
             return SaveOption::saveArrowIPC;
-	    } else if (output_type == "parquet") {
-            return SaveOption::saveParquet;
-        } else {return SaveOption::saveBuffer;}
+	    } 
+        else 
+            if (output_type == "parquet") 
+            {
+                return SaveOption::saveParquet;
+            } 
+            else 
+            {
+                return SaveOption::saveBuffer;
+            }
 	}();
 
-    errorCode = processDataset(
-        intensFiles,
-        labelFiles,
-        theEnvironment.n_loader_threads,
-        theEnvironment.n_pixel_scan_threads,
-        theEnvironment.n_reduce_threads,
-        min_online_roi_size,
-        theEnvironment.saveOption,
-        output_path);
+    if (theEnvironment.singleROI)
+        errorCode = processDataset_2D_wholeslide (
+            intensFiles,
+            labelFiles,
+            theEnvironment.n_reduce_threads,
+            min_online_roi_size,
+            theEnvironment.saveOption,
+            output_path
+        );
+    else
+        errorCode = processDataset_2D_segmented (
+            intensFiles,
+            labelFiles,
+            theEnvironment.n_loader_threads,
+            theEnvironment.n_pixel_scan_threads,
+            theEnvironment.n_reduce_threads,
+            min_online_roi_size,
+            theEnvironment.saveOption,
+            output_path);
 
     if (errorCode)
         throw std::runtime_error("Error " + std::to_string(errorCode) + " occurred during dataset processing");
@@ -263,6 +296,7 @@ py::tuple featurize_directory_imp (
 
         // Shape the user-facing dataframe
         auto nRows = theResultsCache.get_num_rows();
+
         pyStrData = pyStrData.reshape ({nRows, pyStrData.size() / nRows});
         pyNumData = pyNumData.reshape ({ nRows, pyNumData.size() / nRows });
 
@@ -324,7 +358,7 @@ py::tuple featurize_directory_imq_imp (
         } else {return SaveOption::saveBuffer;}
 	}();
 
-    errorCode = processDataset(
+    errorCode = processDataset_2D_segmented (
         intensFiles,
         labelFiles,
         theEnvironment.n_loader_threads,
@@ -414,7 +448,7 @@ py::tuple featurize_directory_3D_imp(
         else { return SaveOption::saveBuffer; }
     }();
 
-    errorCode = processDataset_3D(
+    errorCode = processDataset_3D_segmented (
         intensFiles,
         labelFiles,
         theEnvironment.n_loader_threads,
@@ -482,7 +516,7 @@ py::tuple featurize_montage_imp (
     theEnvironment.labels_dir = "__NONE__";
 
     // One-time initialization
-    init_feature_buffers();
+    init_slide_rois();
 
     theResultsCache.clear();
 
@@ -582,7 +616,7 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
 		} else {return SaveOption::saveBuffer;}
 	}();
 
-    errorCode = processDataset(
+    errorCode = processDataset_2D_segmented (
         intensFiles,
         labelFiles,
         theEnvironment.n_loader_threads,
@@ -827,60 +861,5 @@ PYBIND11_MODULE(backend, m)
     m.def("get_parquet_file_imp", &get_parquet_file_imp, "Returns path to parquet file");
 }
 
-///
-/// The following code block is a quick & simple manual test of the Python interface 
-/// invocable from from the command line. It lets you bypass building and installing the Python library.
-/// To use it, 
-///     #define TESTING_PY_INTERFACE, 
-///     exclude file main_nyxus.cpp from build, and 
-///     rebuild the CLI target.
-/// 
-#ifdef TESTING_PY_INTERFACE
-//
-// Testing Python interface
-//
-void initialize_environment(
-    const std::vector<std::string>& features,
-    int neighbor_distance,
-    float pixels_per_micron,
-    uint32_t coarse_gray_depth,
-    uint32_t n_reduce_threads,
-    uint32_t n_loader_threads);
 
-py::tuple featurize_directory_imp(
-    const std::string& intensity_dir,
-    const std::string& labels_dir,
-    const std::string& file_pattern);
-
-py::tuple featurize_directory_3D_imp(
-    const std::string& intensity_dir,
-    const std::string& labels_dir,
-    const std::string& file_pattern);
-
-int main(int argc, char** argv)
-{
-    std::cout << "main() \n";
-
-    // Test feature extraction
-    
-    //  initialize_environment({ "*ALL*" }, 5, 120, 1, 1);
-    //
-    //  py::tuple result = featurize_directory_imp(
-    //      "C:\\WORK\\AXLE\\data\\mini\\int", // intensity_dir,
-    //      "C:\\WORK\\AXLE\\data\\mini\\seg", // const std::string & labels_dir,
-    //      "p0_y1_r1_c0\\.ome\\.tif"); // const std::string & file_pattern
-
-    // Test nested segments functionality
-
-    py::tuple result = findrelations_imp(
-        "C:\\WORK\\AXLE\\data\\mini\\seg",  // label_dir, 
-        ".*", // file_pattern,
-        "_c", // channel_signature, 
-        "1", // parent_channel, 
-        "0"); // child_channel
-
-    std::cout << "finishing \n";
-}
-
-#endif
 

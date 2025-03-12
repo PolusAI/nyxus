@@ -209,16 +209,7 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 
 	if ((Fgroup2D)fgcode == Fgroup2D::FG2_WHOLESLIDE)
 	{
-		Nyxus::theFeatureSet.enableAll(enable);
-
-		// Handle whole-slide mode differently: disable features irrelevant to this mode (shape, neighbors, etc)
-		std::cout << box_text(
-			"Activating whole slide (aka single-ROI) mode\n"
-			"Using GPU is advised!\n"
-			"ATTENTION: disabling inappplicable and time-sonsuming features:\n"
-			" - morphological features\n"
-			" - neighbor features\n"
-			" - GLDZM");
+		Nyxus::theFeatureSet.enableAll (enable);
 
 		theFeatureSet.disableFeatures (BasicMorphologyFeatures::featureset);
 		theFeatureSet.disableFeatures (EnclosingInscribingCircumscribingCircleFeature::featureset);

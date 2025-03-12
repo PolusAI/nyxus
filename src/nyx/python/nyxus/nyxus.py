@@ -37,7 +37,7 @@ class Nyxus:
             coarse_gray_depth= 256, 
             n_feature_calc_threads = 4,
             n_loader_threads = 1,
-            using_gpu = -1,
+            use_gpu_device = 2,
             ibsi = False,
             gabor_kersize = 16,
             gabor_gamma = 0.1,
@@ -80,7 +80,7 @@ class Nyxus:
         Number of threads to use for loading image tiles from disk. Note: image loading
         multithreading is very memory intensive. You should consider optimizing
         `n_feature_calc_threads` before increasing `n_loader_threads`.
-    using_gpu: int (optional, default -1)
+    use_gpu_device: int (optional, default -1)
         Id of the gpu to use. To find available gpus along with ids, using nyxus.get_gpu_properties().
         The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
         thread for feature calculation. 
@@ -117,6 +117,8 @@ class Nyxus:
         Maximum intensity of voxels of a floating point TIFF image.
     ram_limit: int (optional)
         Maximum amount of ram to be used by Nyxus in megabytes
+    verbose: int (optional, default 0)
+        Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
     """
 
     def __init__(
@@ -126,11 +128,11 @@ class Nyxus:
         ):
         valid_keys = {
             'neighbor_distance', 'pixels_per_micron', 'coarse_gray_depth',
-            'n_feature_calc_threads', 'n_loader_threads', 'using_gpu', 'ibsi',
+            'n_feature_calc_threads', 'n_loader_threads', 'use_gpu_device', 'ibsi',
             'gabor_kersize', 'gabor_gamma', 'gabor_sig2lam', 'gabor_f0',
             'gabor_thold', 'gabor_thetas', 'gabor_freqs', 'channel_signature', 
             'parent_channel', 'child_channel', 'aggregate', 'dynamic_range', 'min_intensity',
-            'max_intensity', 'ram_limit'
+            'max_intensity', 'ram_limit', 'verbose'
         }
 
         # Check for unexpected keyword arguments
@@ -145,7 +147,7 @@ class Nyxus:
         coarse_gray_depth = kwargs.get('coarse_gray_depth', 64)
         n_feature_calc_threads = kwargs.get('n_feature_calc_threads', 4)
         n_loader_threads = kwargs.get('n_loader_threads', 1)
-        using_gpu = kwargs.get('using_gpu', -1)
+        use_gpu_device = kwargs.get('use_gpu_device', -1)
         ibsi = kwargs.get('ibsi', False)
         gabor_kersize = kwargs.get('gabor_kersize', 16)
         gabor_gamma = kwargs.get('gabor_gamma', 0.1)
@@ -158,6 +160,7 @@ class Nyxus:
         min_intensity = kwargs.get('min_intensity', 0.0)
         max_intensity = kwargs.get('max_intensity', 1.0)
         ram_limit = kwargs.get('ram_limit', -1)
+        verb_lvl = kwargs.get('verbose', 0)
         
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
@@ -173,15 +176,12 @@ class Nyxus:
 
         if n_loader_threads < 1:
             raise ValueError("There must be at least one loader thread.")
-        
-        if(using_gpu > -1 and n_feature_calc_threads != 1):
-            print("Gpu features only support a single thread. Defaulting to one thread.")
-            n_feature_calc_threads = 1
-            
-        if(using_gpu > -1 and not gpu_available()):
-            print("No gpu available.")
-            using_gpu = -1
-    
+                    
+        if use_gpu_device > -1 and not gpu_available():
+            raise ValueError ("No need to set GPU device ID because GPU is unavailable")
+
+        if verb_lvl < 0:
+            raise ValueError ("verbosity must be non-negative")
 
         initialize_environment(
             2, # 2D
@@ -191,13 +191,14 @@ class Nyxus:
             coarse_gray_depth, 
             n_feature_calc_threads,
             n_loader_threads,
-            using_gpu,
+            use_gpu_device,
             ibsi,
             dynamic_range,
             min_intensity,
             max_intensity,
             False,
-            ram_limit)
+            ram_limit,
+            verb_lvl)
         
         self.set_gabor_feature_params(
             kersize = gabor_kersize,
@@ -426,8 +427,8 @@ class Nyxus:
             return get_arrow_file_imp() # return path to file
                 
     
-    def using_gpu(self, gpu_on: bool):
-        use_gpu(gpu_on)
+    def use_gpu_device (self, gpu_device_id: int):
+        use_gpu (gpu_device_id)
 
     def featurize_files (
         self,
@@ -622,14 +623,8 @@ class Nyxus:
             Custom number of levels in grayscale denoising used in texture features.
         * n_feature_calc_threads: int (optional, default 4)
             Number of threads to use for feature calculation parallelization purposes.
-        * n_loader_threads: int )
-            Number of threads to use for loading image tiles from disk. Note: image loading
-            multithreading is very memory intensive. You should consider optimizing
-            `n_feature_calc_threads` before increasing `n_loader_threads`.
-        * using_gpu: int 
-            Id of the gpu to use. To find available gpus along with ids, using nyxus.get_gpu_properties().
-            The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
-            thread for feature calculation. 
+        * use_gpu_device: int (optional, default -1)
+            GPU device -1 means GPU is not used
         * verbose: int (optional, non-negative, default 0)
             Level of diagnostic output shown in the console. Set '0' to disable any diagnostic output.
         * ram_limit: int (optional)
@@ -642,8 +637,7 @@ class Nyxus:
             'pixels_per_micron',
             'coarse_gray_depth',
             'n_feature_calc_threads',
-            'n_loader_threads',
-            'using_gpu',
+            'use_gpu_device',
             'verbose',
             'dynamic_range',
             'min_intensity',
@@ -660,26 +654,27 @@ class Nyxus:
         pixels_per_micron = params.get ('pixels_per_micron', -1)
         coarse_gray_depth = params.get ('coarse_gray_depth', 0)
         n_reduce_threads = params.get ('n_feature_calc_threads', 0)
-        n_loader_threads = params.get ('n_loader_threads', 0)
-        using_gpu = params.get ('using_gpu', -2)
-        verbosity_lvl = params.get ('verbose', 0)
+        n_loader_threads = 1
+        use_gpu_device = params.get ('use_gpu_device', -1)
+        verb_lvl = params.get ('verbose', 0)
         dynamic_range = params.get('dynamic_range', -1)
         min_intensity = params.get('min_intensity', -1)
         max_intensity = params.get('max_intensity', -1)
         ram_limit = params.get('ram_limit', -1)
         
-        set_environment_params_imp(features, 
+        set_environment_params_imp (
+                                   features, 
                                    neighbor_distance, 
                                    pixels_per_micron,
                                    coarse_gray_depth,
                                    n_reduce_threads,
                                    n_loader_threads,
-                                   using_gpu,
-                                   verbosity_lvl,
+                                   use_gpu_device,
                                    dynamic_range,
                                    min_intensity,
                                    max_intensity,
-                                   ram_limit,)
+                                   ram_limit,
+                                   verb_lvl)
         
     def set_params(self, **params):
         """Sets parameters of the Nyxus class
@@ -692,7 +687,7 @@ class Nyxus:
         * coarse_gray_depth
         * n_feature_calc_threads
         * n_loader_threads
-        * using_gpu
+        * use_gpu_device
         * ibsi: bool
         * dynamic_range (float): Desired dynamic range of voxels of a floating point TIFF image.
         * min_intensity (float): Minimum intensity of voxels of a floating point TIFF image.
@@ -714,12 +709,13 @@ class Nyxus:
             "coarse_gray_depth",
             "n_feature_calc_threads",
             "n_loader_threads",
-            "using_gpu",
+            "use_gpu_device",
             "ibsi",
             "dynamic_range",
             "min_intensity",
             "max_intensity",
             "ram_limit",
+            "verbose"
         ]
         
         environment_params = {}
@@ -735,7 +731,7 @@ class Nyxus:
             
             else:
                 if (key not in available_environment_params):
-                    raise ValueError(f"Invalid parameter {key}.")
+                    raise ValueError ("Invalid parameter: ", key)
                 else:
                     environment_params[key] = value
                 
@@ -758,6 +754,7 @@ class Nyxus:
         * n_feature_calc_threads
         * n_loader_threads
         * using_gpu
+        * gpu_device_id
         * ibsi: bool
         * dynamic_range (float): Desired dynamic range of voxels of a floating point TIFF image.
         * min_intensity (float): Minimum intensity of voxels of a floating point TIFF image.
@@ -848,7 +845,7 @@ class Nyxus3D:
             pixels_per_micron = 1.0,
             coarse_gray_depth= 64, 
             n_feature_calc_threads = 4,
-            using_gpu = -1,
+            use_gpu_device = -1,
             ibsi = False,
             gabor_kersize = 16,
             gabor_gamma = 0.1,
@@ -878,7 +875,7 @@ class Nyxus3D:
         Custom number of levels in grayscale denoising used in texture features.
     n_feature_calc_threads: int (optional, default 4)
         Number of threads to use for feature calculation parallelization purposes.
-    using_gpu: int (optional, default -1)
+    use_gpu_device: int (optional, default -1)
         Id of the gpu to use. To find available gpus along with ids, using nyxus.get_gpu_properties().
         The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
         thread for feature calculation. 
@@ -890,6 +887,8 @@ class Nyxus3D:
         Minimum intensity of voxels of a floating point TIFF image.
     max_intensity: (optional, default 1.0)
         Maximum intensity of voxels of a floating point TIFF image.
+    verbose: int (optional, default 0)
+        Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
     """
 
     def __init__(
@@ -899,7 +898,7 @@ class Nyxus3D:
         ):
         valid_keys = {
             'neighbor_distance', 'pixels_per_micron', 'coarse_gray_depth',
-            'n_feature_calc_threads', 'using_gpu', 'ibsi', 'channel_signature', 
+            'n_feature_calc_threads', 'use_gpu_device', 'ibsi', 'channel_signature', 
             'parent_channel', 'child_channel', 'aggregate', 
             'dynamic_range', 'min_intensity', 'max_intensity', 'ram_limit'
         }
@@ -915,11 +914,12 @@ class Nyxus3D:
         pixels_per_micron = kwargs.get('pixels_per_micron', 1.0)
         coarse_gray_depth = kwargs.get('coarse_gray_depth', 64)
         n_feature_calc_threads = kwargs.get('n_feature_calc_threads', 4)
-        using_gpu = kwargs.get('using_gpu', -1)
+        use_gpu_device = kwargs.get('use_gpu_device', -1)
         ibsi = kwargs.get('ibsi', False)
         dynamic_range = kwargs.get('dynamic_range', 10000)
         min_intensity = kwargs.get('min_intensity', 0.0)
         max_intensity = kwargs.get('max_intensity', 1.0)
+        verb_lvl = kwargs.get ('verbose', 0)
         
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
@@ -943,6 +943,9 @@ class Nyxus3D:
 
         ram_limit = kwargs.get('ram_limit', -1)
 
+        if verb_lvl < 0:
+            raise ValueError ("verbosity must be non-negative")
+
         initialize_environment(
             3, # 3D
             features,
@@ -957,7 +960,8 @@ class Nyxus3D:
             min_intensity,
             max_intensity,
             False,
-            ram_limit)
+            ram_limit,
+            verb_lvl)
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
@@ -1052,7 +1056,7 @@ class Nyxus3D:
             Custom number of levels in grayscale denoising used in texture features.
         * n_feature_calc_threads: int (optional, default 4)
             Number of threads to use for feature calculation parallelization purposes.
-        * using_gpu: int 
+        * use_gpu_device: int 
             Id of the gpu to use. To find available gpus along with ids, using nyxus.get_gpu_properties().
             The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
             thread for feature calculation. 
@@ -1066,7 +1070,7 @@ class Nyxus3D:
             'pixels_per_micron',
             'coarse_gray_depth',
             'n_feature_calc_threads',
-            'using_gpu',
+            'use_gpu_device',
             'verbose',
             'dynamic_range',
             'min_intensity',
@@ -1082,23 +1086,26 @@ class Nyxus3D:
         pixels_per_micron = params.get ('pixels_per_micron', -1)
         coarse_gray_depth = params.get ('coarse_gray_depth', 0)
         n_reduce_threads = params.get ('n_feature_calc_threads', 0)
-        using_gpu = params.get ('using_gpu', -2)
-        verbosity_lvl = params.get ('verbose', 0)
+        n_loader_threads = 1
+        use_gpu_device = params.get ('use_gpu_device', -1)
+        verb_lvl = params.get ('verbose', 0)
         dynamic_range = params.get('dynamic_range', -1)
         min_intensity = params.get('min_intensity', -1)
         max_intensity = params.get('max_intensity', -1)
+        ram_limit = -1 # no limit
         
         set_environment_params_imp(features, 
                                    neighbor_distance, 
                                    pixels_per_micron,
                                    coarse_gray_depth,
                                    n_reduce_threads,
-                                   1, # n_loader_threads,
-                                   using_gpu,
-                                   verbosity_lvl,
+                                   n_loader_threads,
+                                   use_gpu_device,
                                    dynamic_range,
                                    min_intensity,
-                                   max_intensity)
+                                   max_intensity,
+                                   ram_limit,
+                                   verb_lvl)
         
     def set_params(self, **params):
         """Sets parameters of the Nyxus class
@@ -1284,6 +1291,8 @@ class ImageQuality:
         Minimum intensity of voxels of a floating point TIFF image.
     max_intensity: (optional, default 1.0)
         Maximum intensity of voxels of a floating point TIFF image.
+    verbose: int (optional, default 0)
+        Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
     """
 
     def __init__(
@@ -1317,6 +1326,7 @@ class ImageQuality:
         min_intensity = kwargs.get('min_intensity', 0.0)
         max_intensity = kwargs.get('max_intensity', 1.0)
         ram_limit = kwargs.get('ram_limit', -1)
+        verb_lvl = kwargs.get ('verbose', 0)
         
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
@@ -1341,6 +1351,9 @@ class ImageQuality:
             print("No gpu available.")
             using_gpu = -1
 
+        if verb_lvl < 0:
+            raise ValueError ("verbosity must be non-negative")
+
         initialize_environment(
             2, # 2D
             features,
@@ -1355,7 +1368,8 @@ class ImageQuality:
             min_intensity,
             max_intensity,
             True,
-            ram_limit)
+            ram_limit,
+            verb_lvl)
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
@@ -1770,11 +1784,7 @@ class ImageQuality:
             Custom number of levels in grayscale denoising used in texture features.
         * n_feature_calc_threads: int (optional, default 4)
             Number of threads to use for feature calculation parallelization purposes.
-        * n_loader_threads: int )
-            Number of threads to use for loading image tiles from disk. Note: image loading
-            multithreading is very memory intensive. You should consider optimizing
-            `n_feature_calc_threads` before increasing `n_loader_threads`.
-        * using_gpu: int 
+        * use_gpu_device: int 
             Id of the gpu to use. To find available gpus along with ids, using nyxus.get_gpu_properties().
             The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
             thread for feature calculation. 
@@ -1788,8 +1798,7 @@ class ImageQuality:
             'pixels_per_micron',
             'coarse_gray_depth',
             'n_feature_calc_threads',
-            'n_loader_threads',
-            'using_gpu',
+            'use_gpu_device',
             'verbose',
             'dynamic_range',
             'min_intensity',
@@ -1805,12 +1814,13 @@ class ImageQuality:
         pixels_per_micron = params.get ('pixels_per_micron', -1)
         coarse_gray_depth = params.get ('coarse_gray_depth', 0)
         n_reduce_threads = params.get ('n_feature_calc_threads', 0)
-        n_loader_threads = params.get ('n_loader_threads', 0)
-        using_gpu = params.get ('using_gpu', -2)
-        verbosity_lvl = params.get ('verbose', 0)
+        n_loader_threads = 1
+        use_gpu_device = params.get ('use_gpu_device', -1)
+        verb_lvl = params.get ('verbose', 0)
         dynamic_range = params.get('dynamic_range', -1)
         min_intensity = params.get('min_intensity', -1)
         max_intensity = params.get('max_intensity', -1)
+        ram_limit = -1 # no limit
         
         set_environment_params_imp(features, 
                                    neighbor_distance, 
@@ -1818,11 +1828,12 @@ class ImageQuality:
                                    coarse_gray_depth,
                                    n_reduce_threads,
                                    n_loader_threads,
-                                   using_gpu,
-                                   verbosity_lvl,
+                                   use_gpu_device,
                                    dynamic_range,
                                    min_intensity,
-                                   max_intensity)
+                                   max_intensity,
+                                   ram_limit,
+                                   verb_lvl)
         
     def set_params(self, **params):
         """Sets parameters of the Nyxus class

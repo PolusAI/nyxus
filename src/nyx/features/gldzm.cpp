@@ -499,6 +499,13 @@ void GLDZMFeature::save_value (std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature2D::GLDZM_ZDE][0] = f_ZDE;
 }
 
+void GLDZMFeature::extract (LR& r)
+{
+	GLDZMFeature f;
+	f.calculate (r);
+	f.save_value (r.fvals);
+}
+
 void GLDZMFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	// Iterate ROIs of this batch
@@ -507,11 +514,7 @@ void GLDZMFeature::parallel_process_1_batch(size_t start, size_t end, std::vecto
 		// Get ahold of ROI's cached data
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-
-		// Calculate feature of this ROI
-		GLDZMFeature f;
-		f.calculate (r);
-		f.save_value (r.fvals);
+		extract (r);
 	}
 }
 

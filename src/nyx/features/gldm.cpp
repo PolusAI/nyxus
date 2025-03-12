@@ -680,6 +680,13 @@ double GLDMFeature::calc_LDHGLE()
 	return retval;
 }
 
+void GLDMFeature::extract (LR& r)
+{		
+	GLDMFeature gldm;
+	gldm.calculate(r);
+	gldm.save_value(r.fvals);
+}
+
 void GLDMFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)

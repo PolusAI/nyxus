@@ -54,6 +54,7 @@ public:
 	// Strength
 	double calc_Strength();
 
+	static void extract (LR& roi);
 	static void parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 	// Comaptibility with manual reduce

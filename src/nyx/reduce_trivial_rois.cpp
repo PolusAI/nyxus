@@ -370,6 +370,239 @@ namespace Nyxus
 		}
 	}
 
+	void reduce_trivial_2d_wholeslide (LR & r)
+	{
+		//==== Pixel intensity stats
+		if (PixelIntensityFeatures::required(theFeatureSet))
+		{
+			STOPWATCH("Intensity/Intensity/Int/#FFFF00", "\t=");
+			PixelIntensityFeatures::extract (r);
+		}
+
+		//==== Basic morphology
+		if (BasicMorphologyFeatures::required(theFeatureSet))
+		{
+			STOPWATCH("Morphology/Basic/E/#4aaaea", "\t=");
+			BasicMorphologyFeatures::extract (r);
+		}
+
+		//==== Fitting an ellipse
+		if (EllipseFittingFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Morphology/Ellipticity/E/#4aaaea", "\t=");
+			EllipseFittingFeature::extract (r);
+		}
+
+		//==== Contour-related ROI perimeter, equivalent circle diameter
+		if (ContourFeature::required(theFeatureSet)
+			|| ConvexHullFeature::required(theFeatureSet)
+			|| FractalDimensionFeature::required(theFeatureSet)
+			|| GeodeticLengthThicknessFeature::required(theFeatureSet)
+			|| NeighborsFeature::required(theFeatureSet)
+			|| RoiRadiusFeature::required(theFeatureSet)
+			|| Imoms2D_feature::required(theFeatureSet)
+			|| Smoms2D_feature::required(theFeatureSet))
+		{
+			STOPWATCH("Morphology/Contour/C/#4aaaea", "\t=");
+			ContourFeature::extract (r);
+		}
+
+		//==== Convex hull related solidity, circularity
+		if (ConvexHullFeature::required(theFeatureSet)
+			|| CaliperFeretFeature::required(theFeatureSet)
+			|| CaliperMartinFeature::required(theFeatureSet)
+			|| CaliperNassensteinFeature::required(theFeatureSet)
+			|| HexagonalityPolygonalityFeature::required(theFeatureSet))
+		{
+			// CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY // depends on feature PERIMETER
+			STOPWATCH("Morphology/Hull/H/#4aaaea", "\t=");
+			ConvexHullFeature::extract(r);
+		}
+
+		//==== Extrema 
+		if (ExtremaFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Morphology/Extrema/Ex/#4aaaea", "\t=");
+			ExtremaFeature::extract(r);
+		}
+
+		//==== Euler 
+		if (EulerNumberFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Morphology/Euler/Eu/#4aaaea", "\t=");
+			EulerNumberFeature::extract(r);
+		}
+
+		//==== Feret diameters and angles
+		if (CaliperFeretFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Morphology/Feret/F/#4aaaea", "\t=");
+			CaliperFeretFeature::extract(r);
+		}
+
+		//==== Martin diameters
+		if (CaliperMartinFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Morphology/Martin/M/#4aaaea", "\t=");
+			CaliperMartinFeature::extract(r);
+		}
+
+		//==== Nassenstein diameters
+		if (CaliperNassensteinFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Morphology/Nassenstein/N/#4aaaea", "\t=");
+			CaliperNassensteinFeature::extract (r);
+		}
+
+		//==== Chords
+		if (ChordsFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Morphology/Chords/Ch/#4aaaea", "\t=");
+			ChordsFeature::extract (r);
+		}
+
+		//==== Geodetic length and thickness
+		if (GeodeticLengthThicknessFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Morphology/HexPolygEncloInsCircleGeodetLenThickness/HP/#4aaaea", "\t=");
+			GeodeticLengthThicknessFeature::extract (r);
+		}
+
+		//==== ROI radius
+		if (RoiRadiusFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Morphology/RoiR/R/#4aaaea", "\t=");
+			RoiRadiusFeature::extract (r);
+		}
+
+		//==== Fractal dimension
+		if (FractalDimensionFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Morphology/Fractal dimension/Fd/#4aaaea", "\t=");
+			FractalDimensionFeature::extract (r);
+		}
+
+		//==== GLCM aka Haralick 2D 
+		if (GLCMFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Texture/GLCM/GLCM/#bbbbbb", "\t=");
+			GLCMFeature::extract (r);
+		}
+
+		//==== GLRLM
+		if (GLRLMFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Texture/GLRLM/RL/#bbbbbb", "\t=");
+			GLRLMFeature::extract (r);
+		}
+
+		//==== GLDZM
+		if (GLDZMFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Texture/GLDZM/DZ/#bbbbbb", "\t=");
+			GLDZMFeature::extract (r);
+		}
+
+		//==== GLSZM
+		if (GLSZMFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Texture/GLSZM/SZ/#bbbbbb", "\t=");
+			GLSZMFeature::extract (r);
+		}
+
+		//==== GLDM
+		if (GLDMFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Texture/GLDM/D/#bbbbbb", "\t=");
+			GLDMFeature::extract (r);
+		}
+
+		//==== NGLDM
+		if (NGLDMfeature::required(theFeatureSet))
+		{
+			STOPWATCH("Texture/NGLDM/NG/#bbbbbb", "\t=");
+			NGLDMfeature::extract (r);
+		}
+
+		//==== NGTDM
+		if (NGTDMFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Texture/NGTDM/NG/#bbbbbb", "\t=");
+			NGTDMFeature::extract (r);
+		}
+
+		//
+		// future: run expensive features on available GPU devices
+		//
+		// future: otherwise, run expensive features CPU-side
+		//
+
+		if (ErosionPixelsFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Morphology/Erosion/Er/#4aaaea", "\t=");
+			ErosionPixelsFeature::extract (r);
+		}
+
+		if (Imoms2D_feature::required(theFeatureSet))
+		{
+			STOPWATCH("I-moments/I-moments/GM/#FFFACE", "\t=");
+			Imoms2D_feature::extract (r);
+		}
+
+		if (Smoms2D_feature::required(theFeatureSet))
+		{
+			STOPWATCH("S-moments/S-moments/GM/#FFFACE", "\t=");
+			Smoms2D_feature::extract (r);
+		}
+
+		if (GaborFeature::required(theFeatureSet))
+		{
+			STOPWATCH("Gabor/Gabor/Gabor/#f58231", "\t=");
+			GaborFeature::extract (r);
+		}
+
+		//
+		// future: end run expensive features on available GPU devices
+		//
+
+		//==== Radial distribution / Zernike 2D 
+		if (ZernikeFeature::required(theFeatureSet))
+		{
+			STOPWATCH("RDistribution/Zernike/Rz/#00FFFF", "\t=");
+			ZernikeFeature::extract (r);
+		}
+
+		//==== Radial distribution / FracAtD, MeanFraq, and RadialCV
+		if (RadialDistributionFeature::required(theFeatureSet))
+		{
+			STOPWATCH("RDistribution/Rdist/Rd/#00FFFF", "\t=");
+			RadialDistributionFeature::extract (r);
+		}
+
+		//==== Image quality features
+		if (FocusScoreFeature::required(theFeatureSet))
+		{
+			STOPWATCH("ImageQuality/FocusScore/Rd/#00FFFF", "\t=");
+			FocusScoreFeature::extract (r);
+		}
+
+		if (PowerSpectrumFeature::required(theFeatureSet)) {
+			STOPWATCH("ImageQuality/PowerSpectrum/Rd/#00FFFF", "\t=");
+			PowerSpectrumFeature::extract (r);
+		}
+
+		if (SaturationFeature::required(theFeatureSet)) {
+			STOPWATCH("ImageQuality/Saturation/Rd/#00FFFF", "\t=");
+			SaturationFeature::extract (r);
+		}
+
+		if (SharpnessFeature::required(theFeatureSet)) {
+			STOPWATCH("ImageQuality/Sharpness/Rd/#00FFFF", "\t=");
+			SharpnessFeature::extract (r);
+		}
+	}
+
+
 	void reduce_trivial_3d (std::vector<int>& L, int n_threads, size_t work_per_thread, size_t job_size)
 	{
 		//==== intensity
@@ -450,7 +683,38 @@ namespace Nyxus
 		}
 	}
 
-	void reduce_neighbors_and_dependencies_manual ()
+	// Calculates features sequentially
+	void reduce_trivial_wholeslide (LR & fakeroi)
+	{
+
+
+		//==== Parallel execution parameters 
+		int n_reduce_threads = 1;
+		size_t jobSize = 1,
+			workPerThread = jobSize / n_reduce_threads;
+
+		switch (theEnvironment.dim())
+		{
+		case 2:
+			reduce_trivial_2d_wholeslide (fakeroi); // reduce_trivial_2d()
+			break;
+		case 3:
+			{
+				std::vector<int> p = { 1 };
+				reduce_trivial_3d(p, n_reduce_threads, workPerThread, jobSize);
+			}
+			break;
+		default:
+			std::string msg = "ERROR: unsupported dimension " + std::to_string(theEnvironment.dim());
+			#ifdef WITH_PYTHON_H
+				throw std::out_of_range(msg.c_str());
+			#endif			
+			std::cerr << msg << "\n";
+			break;
+		}
+	}
+
+	void reduce_neighbors_and_dependencies_manual()
 	{
 		// A (ll) L (abels)
 		std::vector <int> AL;
@@ -458,7 +722,7 @@ namespace Nyxus
 		AL.insert (AL.end(), uniqueLabels.begin(), uniqueLabels.end());
 
 		//==== Parallel execution parameters 
-		int n_reduce_threads = theEnvironment.n_reduce_threads;		
+		int n_reduce_threads = 1;		
 		size_t jobSize = AL.size(),
 			workPerThread = jobSize / n_reduce_threads;
 

@@ -602,18 +602,20 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
 }
 #endif
 
+void GaborFeature::extract (LR& r)
+{
+    GaborFeature gf;
+    gf.calculate (r);
+    gf.save_value (r.fvals);
+}
+
 void GaborFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
     for (auto i = start; i < end; i++)
     {
         int lab = (*ptrLabels)[i];
         LR& r = (*ptrLabelData)[lab];
-
-        GaborFeature gf;
-
-        gf.calculate (r);
-
-        gf.save_value (r.fvals);
+        extract (r);
     }
 }
 

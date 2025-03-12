@@ -1,5 +1,6 @@
 #pragma once
 #include <cmath>
+#include <ctime>
 #include <iostream>
 #include <string>
 #include <tuple>
@@ -247,7 +248,12 @@ namespace Nyxus
 		std::cout << "]\n";
 	}
 
-	std::string getTimeStr(const std::string& head = "", const std::string& tail = "");
+	std::time_t getCurTime();
+
+	// returns seconds
+	double getTimeDiff(std::time_t beg, std::time_t end);
+	
+	std::string getTimeStr (std::time_t t = getCurTime());
 
 	// Inherited from WNDCHRM, used for Feret and Martin statistics calculation
 	struct Statistics

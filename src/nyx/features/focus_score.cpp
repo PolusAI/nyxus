@@ -34,6 +34,13 @@ void FocusScoreFeature::parallel_process(std::vector<int>& roi_labels, std::unor
 	runParallel(FocusScoreFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
 }
 
+void FocusScoreFeature::extract (LR& r)
+{
+	FocusScoreFeature f;
+	f.calculate(r);
+	f.save_value(r.fvals);
+}
+
 void FocusScoreFeature::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	// Calculate the feature for each batch ROI item 
@@ -48,9 +55,7 @@ void FocusScoreFeature::parallel_process_1_batch(size_t firstitem, size_t lastit
 			continue;
 
 		// Calculate the feature and save it in ROI's csv-friendly buffer 'fvals'
-		FocusScoreFeature f;
-		f.calculate(r);
-		f.save_value(r.fvals);
+		extract (r);
 	}
 }
 

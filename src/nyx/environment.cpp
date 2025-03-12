@@ -183,7 +183,7 @@ void Environment::show_cmdline_help()
 void Environment::show_summary(const std::string& head, const std::string& tail)
 {
 	std::cout << head;
-	std::cout << "Using " << get_ram_limit() << " bytes of memory\n\n";
+	std::cout << "Available memory: " << Nyxus::virguler(get_ram_limit()) << " bytes\n\n";
 	std::cout << "Work plan:\n"
 		<< "\tdimensionality: " << dim() << "\n"
 		<< "\tlabels\t" << labels_dir << "\n"

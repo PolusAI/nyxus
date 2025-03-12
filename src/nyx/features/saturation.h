@@ -21,6 +21,7 @@ public:
     void calculate(LR& r);
 
     void parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads);
+    static void extract (LR& roi);
     static void parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
     //=== Non-trivial ROIs ===

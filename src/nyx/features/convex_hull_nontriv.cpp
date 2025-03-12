@@ -184,6 +184,13 @@ void ConvexHullFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	circularity = sqrt(4.0 * M_PI * s_roi / (p * p));
 }
 
+void ConvexHullFeature::extract (LR& r)
+{
+	ConvexHullFeature f;
+	f.calculate (r);
+	f.save_value (r.fvals);
+}
+
 namespace Nyxus
 {
 	void parallelReduceConvHull (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)

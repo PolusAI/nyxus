@@ -27,6 +27,13 @@ void SharpnessFeature::parallel_process(std::vector<int>& roi_labels, std::unord
 	runParallel(SharpnessFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
 }
 
+void SharpnessFeature::extract (LR& r)
+{
+	SharpnessFeature f;
+	f.calculate(r);
+	f.save_value(r.fvals);
+}
+
 void SharpnessFeature::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	// Calculate the feature for each batch ROI item 
@@ -41,9 +48,7 @@ void SharpnessFeature::parallel_process_1_batch(size_t firstitem, size_t lastite
 			continue;
 
 		// Calculate the feature and save it in ROI's csv-friendly b uffer 'fvals'
-		SharpnessFeature f;
-		f.calculate(r);
-		f.save_value(r.fvals);
+		extract (r);
 	}
 }
 

@@ -195,6 +195,13 @@ void ErosionPixelsFeature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature2D::EROSIONS_2_VANISH][0] = numErosions;
 }
 
+void ErosionPixelsFeature::extract (LR& r)
+{		
+	ErosionPixelsFeature epix;
+	epix.calculate(r);
+	epix.save_value(r.fvals);
+}
+
 void ErosionPixelsFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
@@ -210,9 +217,7 @@ void ErosionPixelsFeature::parallel_process_1_batch(size_t start, size_t end, st
 			continue;
 
 		// Calculate feature
-		ErosionPixelsFeature epix;
-		epix.calculate(r);
-		epix.save_value(r.fvals);
+		extract (r);
 	}
 }
 

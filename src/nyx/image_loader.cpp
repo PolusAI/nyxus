@@ -20,7 +20,7 @@
 
 ImageLoader::ImageLoader() {}
 
-bool ImageLoader::open (SlideProps & p)	//????????????? (const std::string& int_fpath, const std::string& seg_fpath)
+bool ImageLoader::open (SlideProps & p)	
 {
 	int n_threads = 1;
 

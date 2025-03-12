@@ -20,6 +20,78 @@ void GLCMFeature::calculate(LR& r)
 	// Clear the feature values buffers
 	clear_result_buffers();
 
+	// Skip feature calculation in case of bad data
+	// (We need to smart-select the greyInfo rather than just theEnvironment.get_coarse_gray_depth())
+	auto binnedMin = bin_pixel(r.aux_min, r.aux_min, r.aux_max, theEnvironment.get_coarse_gray_depth());
+	auto binnedMax = bin_pixel(r.aux_max, r.aux_min, r.aux_max, theEnvironment.get_coarse_gray_depth());
+	if (binnedMin == binnedMax)
+	{
+		auto w = theEnvironment.nan_substitute;		// safe NAN
+
+		// assign it to each angled feature value 
+		auto n = angles.size();
+		r.fvals[(int)Feature2D::GLCM_ASM].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_ACOR].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_CLUPROM].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_CLUSHADE].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_CLUTEND].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_CONTRAST].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_CORRELATION].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_DIFAVE].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_DIFENTRO].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_DIFVAR].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_DIS].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_ENERGY].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_ENTROPY].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_HOM1].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_HOM2].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_IDMN].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_ID].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_IDN].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_INFOMEAS1].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_INFOMEAS2].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_IDM].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_IV].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_JAVE].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_JE].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_JMAX].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_JVAR].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_SUMAVERAGE].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_SUMENTROPY].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_SUMVARIANCE].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_VARIANCE].assign(n, w);
+		r.fvals[(int)Feature2D::GLCM_ASM_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_ACOR_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_CLUPROM_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_CLUSHADE_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_CLUTEND_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_CONTRAST_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_CORRELATION_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_DIFAVE_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_DIFENTRO_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_DIFVAR_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_DIS_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_ENERGY_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_ENTROPY_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_HOM1_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_ID_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_IDN_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_IDM_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_IDMN_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_IV_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_JAVE_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_JE_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_INFOMEAS1_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_INFOMEAS2_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_JMAX_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_JVAR_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_SUMAVERAGE_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_SUMENTROPY_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_SUMVARIANCE_AVE][0] =
+			r.fvals[(int)Feature2D::GLCM_VARIANCE_AVE][0] = w;
+		return;
+	}
+
 	// Calculate features for all the directions
 	for (auto a : angles)
 		Extract_Texture_Features2 (a, r.aux_image_matrix, r.aux_min, r.aux_max);
@@ -133,93 +205,20 @@ void GLCMFeature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature2D::GLCM_VARIANCE_AVE][0] = calc_ave(fvals_variance);
 }
 
+void GLCMFeature::extract (LR& r)
+{
+	GLCMFeature f;
+	f.calculate(r);
+	f.save_value(r.fvals);
+}
+
 void GLCMFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-
-		// Skip calculation in case of bad data
-		
-		//
-		// !!! We need to smart-select the greyInfo rather than just theEnvironment.get_coarse_gray_depth()
-		//
-		auto binnedMin = bin_pixel (r.aux_min, r.aux_min, r.aux_max, theEnvironment.get_coarse_gray_depth());
-		auto binnedMax = bin_pixel (r.aux_max, r.aux_min, r.aux_max, theEnvironment.get_coarse_gray_depth());
-		if (binnedMin == binnedMax)
-		{
-			auto w = theEnvironment.nan_substitute;		// safe NAN
-
-			// assign it to each angled feature value 
-			auto n = angles.size();
-			r.fvals[(int)Feature2D::GLCM_ASM].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_ACOR].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_CLUPROM].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_CLUSHADE].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_CLUTEND].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_CONTRAST].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_CORRELATION].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_DIFAVE].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_DIFENTRO].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_DIFVAR].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_DIS].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_ENERGY].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_ENTROPY].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_HOM1].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_HOM2].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_IDMN].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_ID].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_IDN].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_INFOMEAS1].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_INFOMEAS2].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_IDM].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_IV].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_JAVE].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_JE].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_JMAX].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_JVAR].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_SUMAVERAGE].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_SUMENTROPY].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_SUMVARIANCE].assign(n, w);
-			r.fvals[(int)Feature2D::GLCM_VARIANCE].assign(n, w);
-			r.fvals [(int)Feature2D::GLCM_ASM_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_ACOR_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_CLUPROM_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_CLUSHADE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_CLUTEND_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_CONTRAST_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_CORRELATION_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_DIFAVE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_DIFENTRO_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_DIFVAR_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_DIS_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_ENERGY_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_ENTROPY_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_HOM1_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_ID_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_IDN_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_IDM_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_IDMN_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_IV_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_JAVE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_JE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_INFOMEAS1_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_INFOMEAS2_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_JMAX_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_JVAR_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_SUMAVERAGE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_SUMENTROPY_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_SUMVARIANCE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_VARIANCE_AVE][0] = w;
-
-			// No need to calculate features for this ROI
-			continue;
-		}
-
-		GLCMFeature f;
-		f.calculate(r);
-		f.save_value(r.fvals);
+		extract (r);
 	}
 }
 

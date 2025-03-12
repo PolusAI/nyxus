@@ -2,18 +2,10 @@
 #include <unordered_map>
 #include <unordered_set> 
 #include <algorithm>
-#if __has_include(<filesystem>)
-#include <filesystem>
-namespace fs = std::filesystem;
-#elif __has_include(<experimental/filesystem>)
-#include <experimental/filesystem> 
-namespace fs = std::experimental::filesystem;
-#else
-error "Missing the <filesystem> header."
-#endif
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <mutex>
 #include <set>
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,6 +16,7 @@ error "Missing the <filesystem> header."
 #include "features/glrlm.h"
 #include "features/zernike.h"
 #include "globals.h"
+#include "helpers/fsystem.h"
 
 namespace Nyxus
 {
@@ -185,10 +178,220 @@ namespace Nyxus
 		return retval;
 	}
 
-	const std::vector<std::string> mandatory_output_columns{ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label };
+	const std::vector<std::string> mandatory_output_columns
+	{
+		Nyxus::colname_intensity_image, 
+		Nyxus::colname_mask_image, 
+		Nyxus::colname_roi_label 
+	};
+
+	static std::mutex mutex1;
+
+	bool save_features_2_csv_wholeslide (
+		const LR & r, 
+		const std::string & ifpath, 
+		const std::string & mfpath, 
+		const std::string & outdir)
+	{
+		std::lock_guard<std::mutex> lg (mutex1); // Lock the mutex
+
+		// Non-exotic formatting for compatibility with the buffer output (Python API, Apache)
+		constexpr int VAL_BUF_LEN = 450;
+		char rvbuf[VAL_BUF_LEN]; // real value buffer large enough to fit a float64 value in range (2.2250738585072014E-308 to 1.79769313486231570e+308)
+		const char rvfmt[] = "%g"; // instead of "%20.12f" which produces a too massive output
+
+		/*static ??????????*/ bool mustRenderHeader = true;	// In 'singlecsv' scenario this flag flips from 'T' to 'F' when necessary (after the header is rendered)
+
+		// Make the file name and write mode
+		std::string fullPath = get_feature_output_fname (ifpath, mfpath);
+		VERBOSLVL2(std::cout << "\t--> " << fullPath << "\n");
+
+		// Single CSV: create or continue?
+		const char* mode = "w";
+		if (!theEnvironment.separateCsv)
+			mode = mustRenderHeader ? "w" : "a";
+
+		// Open it
+		FILE* fp = nullptr;
+		fopen_s(&fp, fullPath.c_str(), mode);
+
+		if (!fp)
+		{
+			std::string errmsg = "Cannot open file " + fullPath + " for writing";
+			std::perror(errmsg.c_str());
+			return false;
+		}
+
+		// -- Configure buffered write
+		if (std::setvbuf(fp, nullptr, _IOFBF, 32768) != 0) {
+			std::perror("setvbuf failed");
+			return false;
+		}
+
+		// Learn what features need to be displayed
+		std::vector<std::tuple<std::string, int>> F = theFeatureSet.getEnabledFeatures();
+
+		// ********** Header
+
+		if (mustRenderHeader)
+		{
+			std::stringstream ssHead;
+
+			auto head_vector = Nyxus::get_header(F);
+
+			// Make sure that the header is in format "column1","column2",...,"columnN" without spaces
+			for (int i = 0; i < head_vector.size(); i++)
+			{
+				const auto& column = head_vector[i];
+				if (i)
+					ssHead << ',';
+				ssHead << '\"' << column << '\"';
+			}
+
+			auto head_string = ssHead.str();
+			fprintf(fp, "%s\n", head_string.c_str());
+
+			// Prevent rendering the header again for another image's portion of labels
+			if (theEnvironment.separateCsv == false)
+				mustRenderHeader = false;
+		}
+
+		// ********** Values
+
+		if (! r.blacklisted)
+		{
+			std::stringstream ssVals;
+
+			// Floating point precision
+			ssVals << std::fixed;
+
+			// Tear off pure file names from segment and intensity file paths
+			fs::path pseg(r.segFname), pint(r.intFname);
+			ssVals << pint.filename() << "," << pseg.filename() << "," << r.label;
+
+			for (auto& enabdF : F)
+			{
+				auto fc = std::get<1>(enabdF);
+				auto fn = std::get<0>(enabdF);	// ???????????? debug
+				auto vv = r.get_fvals(fc);
+
+				// Parameterized feature
+				// --GLCM family
+				bool glcmFeature = std::find(GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), (Feature2D)fc) != GLCMFeature::featureset.end();
+				bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), (Feature2D)fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
+				if (glcmFeature && nonAngledGlcmFeature == false)
+				{
+					// Mock angled values if they haven't been calculated for some error reason
+					if (vv.size() < GLCMFeature::angles.size())
+						vv.resize(GLCMFeature::angles.size(), 0.0);
+					// Output the sub-values
+					int nAng = (int)GLCMFeature::angles.size();
+					for (int i = 0; i < nAng; i++)
+					{
+						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
+						ssVals << "," << rvbuf;
+					}
+					// Proceed with other features
+					continue;
+				}
+
+				// --GLRLM family
+				bool glrlmFeature = std::find(GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), (Feature2D)fc) != GLRLMFeature::featureset.end();
+				bool nonAngledGlrlmFeature = std::find(GLRLMFeature::nonAngledFeatures.begin(), GLRLMFeature::nonAngledFeatures.end(), (Feature2D)fc) != GLRLMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
+				if (glrlmFeature && nonAngledGlrlmFeature == false)
+				{
+					// Populate with angles
+					int nAng = 4;
+					for (int i = 0; i < nAng; i++)
+					{
+						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
+						ssVals << "," << rvbuf;
+					}
+					// Proceed with other features
+					continue;
+				}
+
+				// --Gabor
+				if (fc == (int)Feature2D::GABOR)
+				{
+					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
+					{
+						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
+						ssVals << "," << rvbuf;
+					}
+
+					// Proceed with other features
+					continue;
+				}
+
+				// --Zernike feature values
+				if (fc == (int)Feature2D::ZERNIKE2D)
+				{
+					for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
+					{
+						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
+						ssVals << "," << rvbuf;
+					}
+
+					// Proceed with other features
+					continue;
+				}
+
+				// --Radial distribution features
+				if (fc == (int)Feature2D::FRAC_AT_D)
+				{
+					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
+					{
+						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
+						ssVals << "," << rvbuf;
+					}
+					// Proceed with other features
+					continue;
+				}
+				if (fc == (int)Feature2D::MEAN_FRAC)
+				{
+					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
+					{
+						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
+						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
+						ssVals << "," << rvbuf;
+					}
+					// Proceed with other features
+					continue;
+				}
+				if (fc == (int)Feature2D::RADIAL_CV)
+				{
+					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
+					{
+						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.nan_substitute);	// safe feature value (no NAN, no inf)
+						snprintf (rvbuf, VAL_BUF_LEN, rvfmt, fv);
+						ssVals << "," << rvbuf;
+					}
+					// Proceed with other features
+					continue;
+				}
+
+				// Regular feature
+				snprintf (rvbuf, VAL_BUF_LEN, rvfmt, Nyxus::force_finite_number(vv[0], theEnvironment.nan_substitute));
+				ssVals << "," << rvbuf; // Alternatively: auto_precision(ssVals, vv[0]);
+			}
+
+			fprintf(fp, "%s\n", ssVals.str().c_str());
+		}
+
+		std::fflush(fp);
+		std::fclose(fp);
+
+		return true;
+	}
 
 	// Saves the result of image scanning and feature calculation. Must be called after the reduction phase.
-	bool save_features_2_csv(const std::string& intFpath, const std::string& segFpath, const std::string& outputDir)
+	bool save_features_2_csv (const std::string& intFpath, const std::string& segFpath, const std::string& outputDir)
 	{
 		// Non-exotic formatting for compatibility with the buffer output (Python API, Apache)
 		constexpr int VAL_BUF_LEN = 450;
@@ -430,40 +633,130 @@ namespace Nyxus
 		std::fflush(fp);
 		std::fclose(fp);
 
-#ifdef SANITY_CHECK_INTENSITIES_FOR_LABEL
-		// Output label's intensities for debug
-		for (auto l : L)
-		{
-			if (l != SANITY_CHECK_INTENSITIES_FOR_LABEL)
-				continue;
-
-			std::stringstream ss;
-			LR& lr = roiData[l];
-			auto& I = lr.raw_intensities;
-			ss << outputDir << "/" << "intensities_label_" << l << ".txt";
-			fullPath = ss.str();
-			std::cout << "Dumping intensities of label " << l << " to file " << fullPath << std::endl;
-
-
-			fopen_s(&fp, fullPath.c_str(), "w");
-			if (fp)
-			{
-				ss.clear();
-				ss << "I_" << l << " = [\n";
-				for (auto w : I)
-					ss << "\t" << w << ", \n";
-				ss << "\t]; \n";
-				fprintf(fp, "%s\n", ss.str().c_str());
-				std::fclose(fp);
-			}
-		}
-#endif
-
 		return true;
 	}
 
-	std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> get_feature_values() {
+	std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> get_feature_values_roi (
+		const LR& r,
+		const std::string& ifpath,
+		const std::string& mfpath)
+	{
+		std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> features;
 
+		// user's feature selection
+		std::vector<std::tuple<std::string, int>> F = theFeatureSet.getEnabledFeatures();
+
+		// numeric columns
+		std::vector<double> fvals;
+
+		for (auto& enabdF : F)
+		{
+			auto fc = std::get<1>(enabdF);
+			auto vv = r.get_fvals(std::get<1>(enabdF));
+
+			// Parameterized feature
+			// --GLCM family
+			bool glcmFeature = std::find(GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), (Feature2D)fc) != GLCMFeature::featureset.end();
+			bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), (Feature2D)fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
+			if (glcmFeature && nonAngledGlcmFeature == false)
+			{
+				// Mock angled values if they haven't been calculated for some error reason
+				if (vv.size() < GLCMFeature::angles.size())
+					vv.resize(GLCMFeature::angles.size(), 0.0);
+				// Output the sub-values
+				int nAng = (int)GLCMFeature::angles.size();
+				for (int i = 0; i < nAng; i++)
+				{
+					fvals.push_back(vv[i]);
+				}
+				// Proceed with other features
+				continue;
+			}
+
+			// --GLRLM family
+			bool glrlmFeature = std::find(GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), (Feature2D)fc) != GLRLMFeature::featureset.end();
+			bool nonAngledGlrlmFeature = std::find(GLRLMFeature::nonAngledFeatures.begin(), GLRLMFeature::nonAngledFeatures.end(), (Feature2D)fc) != GLRLMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
+			if (glrlmFeature && nonAngledGlrlmFeature == false)
+			{
+				// Polulate with angles
+				int nAng = 4;
+				for (int i = 0; i < nAng; i++)
+				{
+					fvals.push_back(vv[i]);
+				}
+				// Proceed with other features
+				continue;
+			}
+
+			// --Gabor
+			if (fc == (int)Feature2D::GABOR)
+			{
+				for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
+				{
+					fvals.push_back(vv[i]);
+				}
+
+				// Proceed with other features
+				continue;
+			}
+
+			// --Zernike feature values
+			if (fc == (int)Feature2D::ZERNIKE2D)
+			{
+				for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
+				{
+					fvals.push_back(vv[i]);
+				}
+
+				// Proceed with other features
+				continue;
+			}
+
+			// --Radial distribution features
+			if (fc == (int)Feature2D::FRAC_AT_D)
+			{
+				for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
+				{
+					fvals.push_back(vv[i]);
+				}
+				// Proceed with other features
+				continue;
+			}
+			if (fc == (int)Feature2D::MEAN_FRAC)
+			{
+				for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
+				{
+					fvals.push_back(vv[i]);
+				}
+				// Proceed with other features
+				continue;
+			}
+			if (fc == (int)Feature2D::RADIAL_CV)
+			{
+				for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
+				{
+					fvals.push_back(vv[i]);
+				}
+				// Proceed with other features
+				continue;
+			}
+
+			fvals.push_back(vv[0]);
+		}
+
+		// other columns
+		std::vector<std::string> textcols;
+		textcols.push_back ((fs::path(ifpath)).filename().u8string());
+		textcols.push_back ("");
+		int roilabl = 1; // whole-slide roi #
+
+		features.push_back (std::make_tuple(textcols, roilabl, fvals));
+
+		return features;
+	}
+
+	std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> get_feature_values() 
+	{
 		std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> features;
 
 		// Sort the labels

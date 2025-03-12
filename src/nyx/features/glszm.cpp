@@ -777,6 +777,13 @@ double GLSZMFeature::calc_LAHGLE()
 	return retval;
 }
 
+void GLSZMFeature::extract (LR& r)
+{
+	GLSZMFeature f;
+	f.calculate(r);
+	f.save_value(r.fvals);
+}
+
 void GLSZMFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
@@ -787,9 +794,7 @@ void GLSZMFeature::parallel_process_1_batch (size_t start, size_t end, std::vect
 		if (r.has_bad_data())
 			continue;
 
-		GLSZMFeature f;
-		f.calculate(r);
-		f.save_value(r.fvals);
+		extract (r);
 	}
 }
 

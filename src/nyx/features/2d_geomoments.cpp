@@ -32,6 +32,13 @@ void Imoms2D_feature::osized_calculate(LR& r, ImageLoader& imloader)
     BasicGeomoms2D::osized_calculate(r, imloader);
 }
 
+void Imoms2D_feature::extract (LR& r)
+{
+    Imoms2D_feature f;
+    f.calculate(r);
+    f.save_value(r.fvals);
+}
+
 void Imoms2D_feature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
     for (auto i = start; i < end; i++)
@@ -42,9 +49,7 @@ void Imoms2D_feature::parallel_process_1_batch(size_t start, size_t end, std::ve
         if (r.has_bad_data())
             continue;
 
-        Imoms2D_feature f;
-        f.calculate(r);
-        f.save_value(r.fvals);
+        extract (r);
     }
 }
 
@@ -334,6 +339,13 @@ void Smoms2D_feature::osized_calculate(LR& r, ImageLoader& imloader)
     BasicGeomoms2D::osized_calculate(r, imloader);
 }
 
+void Smoms2D_feature::extract (LR& r)
+{
+    Smoms2D_feature f;
+    f.calculate(r);
+    f.save_value(r.fvals);
+}
+
 void Smoms2D_feature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
     for (auto i = start; i < end; i++)
@@ -344,9 +356,7 @@ void Smoms2D_feature::parallel_process_1_batch(size_t start, size_t end, std::ve
         if (r.has_bad_data())
             continue;
 
-        Smoms2D_feature f;
-        f.calculate(r);
-        f.save_value(r.fvals);
+        extract (r);
     }
 }
 

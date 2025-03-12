@@ -1,42 +1,17 @@
 #include <algorithm>
-#include "version.h"
-#include "dirs_and_files.h"
-#include "environment.h"
+#include <iomanip>
 #include "globals.h"
-#include "save_option.h"
-#include "arrow_output_stream.h"
+#include "environment.h"
+#include "version.h"
 #ifdef USE_GPU
 	#include "gpu/gpu.h"
 #endif
 
-
 using namespace Nyxus;
-
-namespace Nyxus {
-	int processDataset(
-		const std::vector<std::string>& intensFiles, 
-		const std::vector<std::string>& labelFiles, 
-		int numFastloaderThreads, 
-		int numSensemakerThreads, 
-		int numReduceThreads, 
-		int min_online_roi_size, 
-		const SaveOption saveOption, 
-		const std::string& outputPath);
-
-	int processDataset_3D(
-		const std::vector <Imgfile3D_layoutA>& intensFiles,
-		const std::vector <Imgfile3D_layoutA>& labelFiles,
-		int numFastloaderThreads,
-		int numSensemakerThreads,
-		int numReduceThreads,
-		int min_online_roi_size,
-		const SaveOption saveOption,
-		const std::string& outputPath);
-};
 
 int main (int argc, char** argv)
 {
-	VERBOSLVL1 (std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021-2023 Axle Informatics" << " Build of " << __TIMESTAMP__ << "\n")
+	VERBOSLVL1 (std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021-2025 Axle Research" << " Build of " << __TIMESTAMP__ << "\n")
 
 	if (! theEnvironment.parse_cmdline(argc, argv))
 		return 1;
@@ -64,8 +39,8 @@ int main (int argc, char** argv)
 	theFeatureMgr.apply_user_selection();
 
 	// Current time stamp #1
-	auto startTS = getTimeStr();
-	VERBOSLVL1 (std::cout << "\n>>> STARTING >>> " << startTS << "\n");
+	auto tsStart = Nyxus::getCurTime();
+	VERBOSLVL1 (std::cout << "\n>>> STARTING >>> " << Nyxus::getTimeStr(tsStart) << "\n");
 
 	// Initialize feature classes 
 	if (! theFeatureMgr.init_feature_classes())
@@ -103,15 +78,24 @@ int main (int argc, char** argv)
 		// Process the image data
 		int min_online_roi_size = 0;
 
-		errorCode = processDataset(
-			intensFiles,
-			labelFiles,
-			theEnvironment.n_loader_threads,
-			theEnvironment.n_pixel_scan_threads,
-			theEnvironment.n_reduce_threads,
-			min_online_roi_size,
-			theEnvironment.saveOption,
-			theEnvironment.output_dir);
+		if (theEnvironment.singleROI)
+			errorCode = processDataset_2D_wholeslide (
+				intensFiles,
+				labelFiles,
+				theEnvironment.n_reduce_threads,
+				min_online_roi_size,
+				theEnvironment.saveOption,
+				theEnvironment.output_dir);
+		else
+			errorCode = processDataset_2D_segmented (
+				intensFiles,
+				labelFiles,
+				theEnvironment.n_loader_threads,
+				theEnvironment.n_pixel_scan_threads,
+				theEnvironment.n_reduce_threads,
+				min_online_roi_size,
+				theEnvironment.saveOption,
+				theEnvironment.output_dir);
 
 
 		// Report feature extraction error, if any
@@ -181,7 +165,7 @@ int main (int argc, char** argv)
 			// Process the image data
 			int min_online_roi_size = 0;
 
-			errorCode = processDataset_3D (
+			errorCode = processDataset_3D_segmented (
 				intensFiles,
 				labelFiles,
 				theEnvironment.n_loader_threads,
@@ -216,7 +200,13 @@ int main (int argc, char** argv)
 		} // 3D
 
 	// Current time stamp #2
-	VERBOSLVL1(std::cout << "\n>>> STARTED >>>\t" << startTS << "\n>>> FINISHED >>>\t" << getTimeStr() << "\n";)
+	auto tsEnd = Nyxus::getCurTime();
+	VERBOSLVL1(
+		std::cout << "\n";
+		std::cout << ">>> STARTED  >>>\t" << getTimeStr(tsStart) << "\n";
+		std::cout << ">>> FINISHED >>>\t" << getTimeStr(tsEnd) << "\n";
+		std::cout << "\tGROSS ELAPSED [s]\t" << Nyxus::getTimeDiff(tsStart, tsEnd) << "\n"
+		);
 
 	return 0;
 }

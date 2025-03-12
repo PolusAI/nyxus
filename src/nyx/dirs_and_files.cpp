@@ -40,10 +40,7 @@ namespace Nyxus
 		{
 			// Skip hidden objects, e.g. directories '.DS_store' in OSX
 			if (entry.path().filename().string()[0] == '.')
-			{
-				std::cout << "Skipping " << entry.path().filename().string() << "\n";
 				continue; 
-			}
 
 			std::string fullPath = entry.path().string(),
 				pureFname = entry.path().filename().string();
@@ -79,7 +76,6 @@ namespace Nyxus
 			return 1;
 		}
 
-
 		// Check directories
 
 		if (!existsOnFilesystem(dirIntens))
@@ -87,8 +83,6 @@ namespace Nyxus
 			err = "cannot access directory " + dirIntens;
 			return 1;
 		}
-
-
 
 		if (intLabMappingFile.empty())
 		{
@@ -239,8 +233,6 @@ namespace Nyxus
 		}
 		else { throw (std::runtime_error("Tile Loader ERROR: The file can not be opened.")); }
 	}
-
-
 	
 	bool readDirectoryFiles_3D (const std::string & dir, const StringPattern & filePatt, std::vector <Imgfile3D_layoutA> & files)
 	{
@@ -259,7 +251,7 @@ namespace Nyxus
 			std::string ermsg;
 			if (!filePatt.match(pureFname, imgDirs, ermsg))
 			{
-				std::cerr << "Error parsing file name " << pureFname << ": " << ermsg << '\n';
+				std::cerr << "Error parsing file name " << fpath << " : " << ermsg << '\n';
 				break;
 			}
 
