@@ -729,7 +729,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	}
 	#endif
 
-	//==== Parse desired features
+	//==== Parse user's feature selection
 
 	// --Try to pick up features from a text file treating 'rawFeatures' as a feature file path-name
 	if (rawFeatures.length() > 0 && Nyxus::existsOnFilesystem(rawFeatures))
@@ -746,7 +746,6 @@ bool Environment::parse_cmdline(int argc, char** argv)
 				continue;
 
 			// Consume the purified feature name
-			// --insert comma after 1st item
 			if (featureList.length() > 0)
 				// --no need for inserted comma if the item came with its own comma
 				if (pureLn[pureLn.size() - 1] != ',')

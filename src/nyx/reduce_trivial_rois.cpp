@@ -684,24 +684,17 @@ namespace Nyxus
 	}
 
 	// Calculates features sequentially
-	void reduce_trivial_wholeslide (LR & fakeroi)
+	void reduce_trivial_wholeslide (LR & vroi)
 	{
-
-
-		//==== Parallel execution parameters 
-		int n_reduce_threads = 1;
-		size_t jobSize = 1,
-			workPerThread = jobSize / n_reduce_threads;
-
 		switch (theEnvironment.dim())
 		{
 		case 2:
-			reduce_trivial_2d_wholeslide (fakeroi); // reduce_trivial_2d()
+			reduce_trivial_2d_wholeslide (vroi); // reduce_trivial_2d()
 			break;
 		case 3:
 			{
 				std::vector<int> p = { 1 };
-				reduce_trivial_3d(p, n_reduce_threads, workPerThread, jobSize);
+				reduce_trivial_3d (p, 1, 1, 1);
 			}
 			break;
 		default:

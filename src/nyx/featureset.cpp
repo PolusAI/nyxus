@@ -945,7 +945,6 @@ bool FeatureSet::find_2D_GroupByString (
 		enable = name[0] == '+' ? 1 : -1;
 	}
 
-
 	// search
 	auto itr = Nyxus::UserFacing2dFeaturegroupNames.find (s);
 
@@ -993,7 +992,7 @@ bool FeatureSet::find_3D_GroupByString (const std::string & name, Fgroup3D & grp
 	return true;
 }
 
-bool FeatureSet::find_IMQ_FeatureByString (const std::string & name, FeatureIMQ& f)
+bool FeatureSet::find_IMQ_FeatureByString (const std::string & name, int & f)
 {
 	// strip possible set operation '+' or '-'
 	std::string s = name;
@@ -1007,11 +1006,11 @@ bool FeatureSet::find_IMQ_FeatureByString (const std::string & name, FeatureIMQ&
 	if (it_f == Nyxus::UserFacingIMQFeatureNames.end())
 		return false;
 
-	f = it_f->second;
+	f = (int) it_f->second;
 	return true;
 }
 
-bool FeatureSet::find_IMQ_GroupByString (const std::string & name, FgroupIMQ & grpCode)
+bool FeatureSet::find_IMQ_GroupByString (const std::string & name, int & grpCode)
 {
 	// strip possible set operation '+' or '-'
 	std::string s = name;
@@ -1025,7 +1024,7 @@ bool FeatureSet::find_IMQ_GroupByString (const std::string & name, FgroupIMQ & g
 	if (itr == Nyxus::UserFacingIMQFeaturegroupNames.end())
 		return false;
 
-	grpCode = itr->second;
+	grpCode = (int) itr->second;
 	return true;
 }
 

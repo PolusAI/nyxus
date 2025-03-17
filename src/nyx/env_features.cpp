@@ -90,43 +90,57 @@ bool Environment::spellcheck_raw_featurelist(const std::string& comma_separated_
 		auto s_uppr = Nyxus::toupper(s);
 		if (dim() == 2)
 		{
-			// Is feature found among 2D features?
-			int fg; // signed Fgroup2D
-			bool gnameExists = theFeatureSet.find_2D_GroupByString (s_uppr, fg);
+			//==== feature group ?
+			
+			int _; // feature code, unused
+			bool gfound1 = theFeatureSet.find_2D_GroupByString (s_uppr, _),
+				gfound2 = theFeatureSet.find_IMQ_GroupByString (s_uppr, _);
 
-			// Intercept an error: 2D feature group exists but requested in the non-2D mode
-			if (gnameExists && dim() != 2)
+			// intercept the non-2D mode
+			if (dim() != 2 && (gfound1 || gfound2))
 			{
 				success = false;
-				std::cerr << "Error: 2D feature group '" << s << "' in non-2D mode\n";
+				std::cerr << "Error: referenceing 2D feature group " << s << " in non-2D mode\n";
 				continue;
 			}
 
-			// If a group is found, register it
-			if (gnameExists)
+			// if a group is found, register it and skip checking it as an individual feature name
+			if (gfound1 || gfound2)
 			{
-				fnames.push_back(s_uppr);
+				if (gfound2)
+					theEnvironment.set_imq (true);
+
+				fnames.push_back (s_uppr);
 				continue;
 			}
 
-			int fcode;	// signed Feature2D
-			bool fnameExists = theFeatureSet.find_2D_FeatureByString (s_uppr, fcode);
+			//==== individual feature ?
 
-			// 2D feature group requested on a non-2D mode ?
-			if (fnameExists && dim() != 2)
+			bool ffound1 = theFeatureSet.find_2D_FeatureByString (s_uppr, _),
+				ffound2 = theFeatureSet.find_IMQ_FeatureByString (s_uppr, _);
+
+			// intercept the non-2D mode ?
+			if (dim() != 2 && (ffound1 || ffound2))
 			{
 				success = false;
-				std::cerr << "Error: 2D feature '" << s << "' in non-2D mode\n";
+				std::cerr << "Error: referencing 2D feature " << s << " in non-2D mode\n";
 				continue;
 			}
 
-			if (!fnameExists)
+			// if a feature is found, register it
+			if (! (ffound1 || ffound2))
 			{
 				success = false;
-				std::cerr << "Error: expecting '" + s + "' to be a proper 2D feature name or feature file path\n";
+				std::cerr << "Error: expecting " + s + " to be a proper 2D feature name or feature file path\n";
 			}
 			else
+			{
+				if (ffound2)
+					theEnvironment.set_imq (true);
+
 				fnames.push_back(s_uppr);
+			}
+
 		} // 2D
 
 		if (dim() == 3)
@@ -626,11 +640,11 @@ void Environment::expand_featuregroups()
 			if (expand_IMQ_featuregroup (s)) 
 				return;
 
-			FeatureIMQ a;
+			int a;
 			if (!theFeatureSet.find_IMQ_FeatureByString(s, a))
 				throw std::invalid_argument("Error: '" + s + "' is not a valid Image Quality feature name \n");
 
-			theFeatureSet.enableFeature (int(a));
+			theFeatureSet.enableFeature (a);
 			continue;
 		}
 
