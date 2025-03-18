@@ -116,8 +116,6 @@ void Environment::show_cmdline_help()
 		<< "\t\t" << OPT << XYRESOLUTION << "=<number of pixels per centimeter, an integer or floating point number> \n"
 		<< "\t\t" << OPT << EMBPIXSZ << "=<number> \n"
 		<< "\t\t\tDefault: 0 \n"
-		<< "\t\t" << OPT << LOADERTHREADS << "=<number of image loader threads> \n"
-		<< "\t\t\tDefault: 1 \n"
 		<< "\t\t" << OPT << REDUCETHREADS << "=<number of feature reduction threads> \n"
 		<< "\t\t\tDefault: 1 \n"
 		<< "\t\t" << OPT << PXLDIST << "=<number of pixels as neighbor features radius> \n"
@@ -194,8 +192,6 @@ void Environment::show_summary(const std::string& head, const std::string& tail)
 		<< "\tfile pattern\t" << rawFilePattern << "\n"
 		<< "\tembedded pixel size\t" << embedded_pixel_size << "\n"
 		<< "\toutput type\t" << rawOutpType << "\n"
-		<< "\t# of image loader threads\t" << n_loader_threads << "\n"
-		<< "\t# of pixel scanner threads\t" << n_pixel_scan_threads << "\n"
 		<< "\t# of post-processing threads\t" << n_reduce_threads << "\n"
 		<< "\tpixel distance\t" << n_pixel_distance << "\n"
 		<< "\tverbosity level\t" << verbosity_level << "\n";
@@ -359,8 +355,6 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			find_string_argument(i, FILEPATTERN, rawFilePattern) ||
 			find_string_argument(i, OUTPUTTYPE, rawOutpType) ||
 			find_string_argument(i, EMBPIXSZ, embedded_pixel_size) ||
-			find_string_argument(i, LOADERTHREADS, loader_threads) ||
-			find_string_argument(i, PXLSCANTHREADS, pixel_scan_threads) ||
 			find_string_argument(i, REDUCETHREADS, reduce_threads) ||
 			find_string_argument(i, GLCMANGLES, glcmOptions.rawAngles) ||
 			find_string_argument(i, GLCMOFFSET, glcmOptions.rawOffs) ||
@@ -552,25 +546,6 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	}
 
 	//==== Check numeric parameters
-	if (!loader_threads.empty())
-	{
-		// string -> integer
-		if (sscanf(loader_threads.c_str(), "%d", &n_loader_threads) != 1 || n_loader_threads <= 0)
-		{
-			std::cerr << "Error: " << LOADERTHREADS << "=" << loader_threads << ": expecting a positive integer constant\n";
-			return false;
-		}
-	}
-
-	if (!pixel_scan_threads.empty())
-	{
-		// string -> integer
-		if (sscanf(pixel_scan_threads.c_str(), "%d", &n_pixel_scan_threads) != 1 || n_pixel_scan_threads <= 0)
-		{
-			std::cerr << "Error: " << PXLSCANTHREADS << "=" << pixel_scan_threads << ": expecting a positive integer constant\n";
-			return false;
-		}
-	}
 
 	if (!reduce_threads.empty())
 	{

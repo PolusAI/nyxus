@@ -87,7 +87,6 @@ namespace Nyxus
 		const std::vector<int>& batch_labels, 
 		const std::string& intens_fpath, 
 		const std::string& label_fpath, 
-		int num_FL_threads, 
 		ImageLoader & ldr)
 	{
 		// Sort the batch's labels to enable binary searching in it
@@ -521,7 +520,7 @@ namespace Nyxus
 //		delete ImageMatrixBuffer;
 	}
 
-	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit)
+	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit)
 	{
 		std::vector<int> Pending;
 		size_t batchDemand = 0;
@@ -551,7 +550,7 @@ namespace Nyxus
 						else
 							std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				)
-					scanTrivialRois (Pending, intens_fpath, label_fpath, num_FL_threads, theImLoader);
+					scanTrivialRois (Pending, intens_fpath, label_fpath, theImLoader);
 
 				// Allocate memory
 				VERBOSLVL2(std::cout << "\tallocating ROI buffers\n";)
@@ -601,7 +600,7 @@ namespace Nyxus
 				else
 					std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				)
-			scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads, theImLoader);
+			scanTrivialRois (Pending, intens_fpath, label_fpath, theImLoader);
 
 			// Allocate memory
 			VERBOSLVL2(std::cout << "\tallocating ROI buffers\n";)

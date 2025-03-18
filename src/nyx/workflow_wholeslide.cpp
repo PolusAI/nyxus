@@ -107,7 +107,7 @@ namespace Nyxus
 				<< ")\n"
 			);
 
-			std::cout << p.fname_int << ": slide is non-trivial \n";
+			std::cerr << p.fname_int << ": slide is non-trivial \n";
 			return false;
 		}
 
@@ -143,16 +143,17 @@ namespace Nyxus
 		LR vroi; // virtual ROI representing the whole slide
 		if (featurize_wholeslide (slide_idx, imlo, vroi) == false)	// non-wsi counterpart: processIntSegImagePair()
 		{
-			std::cout << "processIntSegImagePair() returned an error code while processing slide " << p.fname_int << "\n";
+			std::cerr << "processIntSegImagePair() returned an error code while processing slide " << p.fname_int << "\n";
 			rv = 1;
 		}
 
+		// thread-safely save results
 		if (write_apache) 
 		{
 			auto [status, msg] = save_features_2_apache_wholeslide (vroi, p.fname_int);
 			if (! status) 
 			{
-				std::cout << "Error writing Arrow file: " << msg.value() << std::endl;
+				std::cerr << "Error writing Arrow file: " << msg.value() << std::endl;
 				rv = 2;
 			}
 		}
@@ -161,7 +162,7 @@ namespace Nyxus
 			{
 				if (save_features_2_csv_wholeslide(vroi, p.fname_int, "", outputPath) == false)
 				{
-					std::cout << "save_features_2_csv() returned an error code" << std::endl;
+					std::cerr << "save_features_2_csv() returned an error code" << std::endl;
 					rv = 2;
 				}
 			}
@@ -170,7 +171,7 @@ namespace Nyxus
 				// pulls feature values from 'vroi' and appends them to global object 'theResultsCache' exposed to Python API
 				if (save_features_2_buffer_wholeslide(Nyxus::theResultsCache, vroi, p.fname_int, "") == false)
 				{
-					std::cout << "save_features_2_buffer() returned an error code" << std::endl;
+					std::cerr << "save_features_2_buffer() returned an error code" << std::endl;
 					rv = 2;
 				}
 			}
@@ -254,6 +255,9 @@ namespace Nyxus
 
 		bool write_apache = (saveOption == SaveOption::saveArrowIPC || saveOption == SaveOption::saveParquet);
 
+		// initialize buffer output
+		Nyxus::theResultsCache.clear();
+
 		// initialize Apache output
 		if (write_apache) 
 		{
@@ -264,7 +268,7 @@ namespace Nyxus
 
 			if (!status) 
 			{
-				std::cout << "Error creating Arrow file: " << msg.value() << std::endl;
+				std::cerr << "Error creating Arrow file: " << msg.value() << std::endl;
 				return 1;
 			}
 		}
@@ -273,7 +277,7 @@ namespace Nyxus
 		size_t n_jobs = (nf + n_threads - 1) / n_threads;
 		for (size_t j=0; j<n_jobs; j++)
 		{
-			std::cout << "job " << j+1 << "/" << n_jobs << "\n";
+			VERBOSLVL1 (std::cout << "whole-slide job " << j+1 << "/" << n_jobs << "\n");
 
 			std::vector<std::future<void>> T;
 			for (int t=0; t < n_threads; t++)
@@ -306,7 +310,7 @@ namespace Nyxus
 			auto [status, msg] = theEnvironment.arrow_stream.close_arrow_file();
 			if (!status) 
 			{
-				std::cout << "Error closing Arrow file: " << msg.value() << std::endl;
+				std::cerr << "Error closing Arrow file: " << msg.value() << std::endl;
 				return 2;
 			}
 		}

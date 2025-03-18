@@ -25,8 +25,6 @@ namespace Nyxus {
     int processDataset_2D_segmented (
         const std::vector<std::string>& intensFiles,
         const std::vector<std::string>& labelFiles,
-        int numFastloaderThreads,
-        int numSensemakerThreads,
         int numReduceThreads,
         int min_online_roi_size,
         const SaveOption saveOption,
@@ -43,8 +41,6 @@ namespace Nyxus {
     int processDataset_3D_segmented (
         const std::vector <Imgfile3D_layoutA>& intensFiles,
         const std::vector <Imgfile3D_layoutA>& labelFiles,
-        int numFastloaderThreads,
-        int numSensemakerThreads,
         int numReduceThreads,
         int min_online_roi_size,
         const SaveOption saveOption,
@@ -83,7 +79,6 @@ void initialize_environment(
     float pixels_per_micron,
     uint32_t coarse_gray_depth, 
     uint32_t n_reduce_threads,
-    uint32_t n_loader_threads,
     int using_gpu,
     bool ibsi,
     float dynamic_range,
@@ -101,7 +96,6 @@ void initialize_environment(
     theEnvironment.xyRes = theEnvironment.pixelSizeUm = pixels_per_micron;
     theEnvironment.set_coarse_gray_depth(coarse_gray_depth);
     theEnvironment.n_reduce_threads = n_reduce_threads;
-    theEnvironment.n_loader_threads = n_loader_threads;
     theEnvironment.ibsi_compliance = ibsi;
 
     // Throws exception if invalid feature is supplied.
@@ -143,7 +137,6 @@ void set_environment_params_imp (
     float pixels_per_micron = -1,
     uint32_t coarse_gray_depth = 0, 
     uint32_t n_reduce_threads = 0,
-    uint32_t n_loader_threads = 0,
     int using_gpu = -2,
     float dynamic_range = -1,
     float min_intensity = -1,
@@ -171,10 +164,6 @@ void set_environment_params_imp (
         theEnvironment.n_reduce_threads = n_reduce_threads;
     }
     
-    if (n_loader_threads != 0) {
-        theEnvironment.n_loader_threads = n_loader_threads;
-    }
-
     if (dynamic_range >= 0) {
         theEnvironment.fpimageOptions.set_target_dyn_range(dynamic_range);
     }
@@ -277,8 +266,6 @@ py::tuple featurize_directory_imp (
         errorCode = processDataset_2D_segmented (
             intensFiles,
             labelFiles,
-            theEnvironment.n_loader_threads,
-            theEnvironment.n_pixel_scan_threads,
             theEnvironment.n_reduce_threads,
             min_online_roi_size,
             theEnvironment.saveOption,
@@ -361,8 +348,6 @@ py::tuple featurize_directory_imq_imp (
     errorCode = processDataset_2D_segmented (
         intensFiles,
         labelFiles,
-        theEnvironment.n_loader_threads,
-        theEnvironment.n_pixel_scan_threads,
         theEnvironment.n_reduce_threads,
         min_online_roi_size,
         theEnvironment.saveOption,
@@ -451,8 +436,6 @@ py::tuple featurize_directory_3D_imp(
     errorCode = processDataset_3D_segmented (
         intensFiles,
         labelFiles,
-        theEnvironment.n_loader_threads,
-        theEnvironment.n_pixel_scan_threads,
         theEnvironment.n_reduce_threads,
         min_online_roi_size,
         theEnvironment.saveOption,
@@ -619,8 +602,6 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
     errorCode = processDataset_2D_segmented (
         intensFiles,
         labelFiles,
-        theEnvironment.n_loader_threads,
-        theEnvironment.n_pixel_scan_threads,
         theEnvironment.n_reduce_threads,
         min_online_roi_size,
         theEnvironment.saveOption,
@@ -764,7 +745,6 @@ std::map<std::string, ParameterTypes> get_params_imp(const std::vector<std::stri
     params["pixels_per_micron"] = theEnvironment.xyRes;
     params["coarse_gray_depth"] = theEnvironment.get_coarse_gray_depth();
     params["n_feature_calc_threads"] = theEnvironment.n_reduce_threads;
-    params["n_loader_threads"] = theEnvironment.n_loader_threads;
     params["ibsi"] = theEnvironment.ibsi_compliance;
 
     params["gabor_kersize"] = GaborFeature::n;

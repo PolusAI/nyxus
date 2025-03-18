@@ -161,7 +161,6 @@ class TestNyxus():
                 'gabor_thold': 0.025,
                 'ibsi': 0,
                 'n_feature_calc_threads': 4,
-                'n_loader_threads': 1, 
                 'neighbor_distance': 5, 
                 'pixels_per_micron': 1.0,
                 'dynamic_range': 10000,
@@ -211,7 +210,6 @@ class TestNyxus():
                         'gabor_sig2lam': 0.8, 
                         'gabor_thold': 0.025, 
                         'ibsi': 0, 
-                        'n_loader_threads': 1, 
                         'n_feature_calc_threads': 4, 
                         'neighbor_distance': 5, 
                         'pixels_per_micron': 1.0,
@@ -253,7 +251,6 @@ class TestNyxus():
                 pixels_per_micron = 2,
                 coarse_gray_depth = 2,
                 n_feature_calc_threads = 2,
-                n_loader_threads = 2,
                 dynamic_range = 1000,
                 min_intensity = 0.1,
                 max_intensity = 0.9
@@ -268,8 +265,7 @@ class TestNyxus():
                 'neighbor_distance': 2,
                 'pixels_per_micron': 2,
                 'coarse_gray_depth': 2,
-                'n_feature_calc_threads': 2,
-                'n_loader_threads': 2
+                'n_feature_calc_threads': 2
             }
                 
             # compare
@@ -305,7 +301,6 @@ class TestNyxus():
                       'gabor_thetas': [10, 20, 30, 40, 50], 
                       'gabor_thold': 1, 
                       'ibsi': 0, 
-                      'n_loader_threads': 1, 
                       'n_feature_calc_threads': 4, 
                       'neighbor_distance': 5, 
                       'pixels_per_micron': 1.0,

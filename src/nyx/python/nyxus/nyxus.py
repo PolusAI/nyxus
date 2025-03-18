@@ -36,7 +36,6 @@ class Nyxus:
             pixels_per_micron = 1.0,
             coarse_gray_depth= 256, 
             n_feature_calc_threads = 4,
-            n_loader_threads = 1,
             use_gpu_device = 2,
             ibsi = False,
             gabor_kersize = 16,
@@ -76,10 +75,6 @@ class Nyxus:
         Custom number of levels in grayscale denoising used in texture features.
     n_feature_calc_threads: int (optional, default 4)
         Number of threads to use for feature calculation parallelization purposes.
-    n_loader_threads: int (optional, default 1)
-        Number of threads to use for loading image tiles from disk. Note: image loading
-        multithreading is very memory intensive. You should consider optimizing
-        `n_feature_calc_threads` before increasing `n_loader_threads`.
     use_gpu_device: int (optional, default -1)
         Id of the gpu to use. To find available gpus along with ids, using nyxus.get_gpu_properties().
         The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
@@ -128,7 +123,7 @@ class Nyxus:
         ):
         valid_keys = {
             'neighbor_distance', 'pixels_per_micron', 'coarse_gray_depth',
-            'n_feature_calc_threads', 'n_loader_threads', 'use_gpu_device', 'ibsi',
+            'n_feature_calc_threads', 'use_gpu_device', 'ibsi',
             'gabor_kersize', 'gabor_gamma', 'gabor_sig2lam', 'gabor_f0',
             'gabor_thold', 'gabor_thetas', 'gabor_freqs', 'channel_signature', 
             'parent_channel', 'child_channel', 'aggregate', 'dynamic_range', 'min_intensity',
@@ -146,7 +141,6 @@ class Nyxus:
         pixels_per_micron = kwargs.get('pixels_per_micron', 1.0)
         coarse_gray_depth = kwargs.get('coarse_gray_depth', 64)
         n_feature_calc_threads = kwargs.get('n_feature_calc_threads', 4)
-        n_loader_threads = kwargs.get('n_loader_threads', 1)
         use_gpu_device = kwargs.get('use_gpu_device', -1)
         ibsi = kwargs.get('ibsi', False)
         gabor_kersize = kwargs.get('gabor_kersize', 16)
@@ -174,9 +168,6 @@ class Nyxus:
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
 
-        if n_loader_threads < 1:
-            raise ValueError("There must be at least one loader thread.")
-                    
         if use_gpu_device > -1 and not gpu_available():
             raise ValueError ("No need to set GPU device ID because GPU is unavailable")
 
@@ -190,7 +181,6 @@ class Nyxus:
             pixels_per_micron,
             coarse_gray_depth, 
             n_feature_calc_threads,
-            n_loader_threads,
             use_gpu_device,
             ibsi,
             dynamic_range,
@@ -654,7 +644,6 @@ class Nyxus:
         pixels_per_micron = params.get ('pixels_per_micron', -1)
         coarse_gray_depth = params.get ('coarse_gray_depth', 0)
         n_reduce_threads = params.get ('n_feature_calc_threads', 0)
-        n_loader_threads = 1
         use_gpu_device = params.get ('use_gpu_device', -1)
         verb_lvl = params.get ('verbose', 0)
         dynamic_range = params.get('dynamic_range', -1)
@@ -668,7 +657,6 @@ class Nyxus:
                                    pixels_per_micron,
                                    coarse_gray_depth,
                                    n_reduce_threads,
-                                   n_loader_threads,
                                    use_gpu_device,
                                    dynamic_range,
                                    min_intensity,
@@ -686,7 +674,6 @@ class Nyxus:
         * pixels_per_micron
         * coarse_gray_depth
         * n_feature_calc_threads
-        * n_loader_threads
         * use_gpu_device
         * ibsi: bool
         * dynamic_range (float): Desired dynamic range of voxels of a floating point TIFF image.
@@ -708,7 +695,6 @@ class Nyxus:
             "pixels_per_micron",
             "coarse_gray_depth",
             "n_feature_calc_threads",
-            "n_loader_threads",
             "use_gpu_device",
             "ibsi",
             "dynamic_range",
@@ -752,7 +738,6 @@ class Nyxus:
         * pixels_per_micron
         * coarse_gray_depth
         * n_feature_calc_threads
-        * n_loader_threads
         * using_gpu
         * gpu_device_id
         * ibsi: bool
@@ -953,7 +938,6 @@ class Nyxus3D:
             pixels_per_micron,
             coarse_gray_depth, 
             n_feature_calc_threads,
-            1, # n_loader_threads
             using_gpu,
             ibsi,
             dynamic_range,
@@ -1086,7 +1070,6 @@ class Nyxus3D:
         pixels_per_micron = params.get ('pixels_per_micron', -1)
         coarse_gray_depth = params.get ('coarse_gray_depth', 0)
         n_reduce_threads = params.get ('n_feature_calc_threads', 0)
-        n_loader_threads = 1
         use_gpu_device = params.get ('use_gpu_device', -1)
         verb_lvl = params.get ('verbose', 0)
         dynamic_range = params.get('dynamic_range', -1)
@@ -1099,7 +1082,6 @@ class Nyxus3D:
                                    pixels_per_micron,
                                    coarse_gray_depth,
                                    n_reduce_threads,
-                                   n_loader_threads,
                                    use_gpu_device,
                                    dynamic_range,
                                    min_intensity,
@@ -1251,7 +1233,6 @@ class ImageQuality:
             pixels_per_micron = 1.0,
             coarse_gray_depth= 256, 
             n_feature_calc_threads = 4,
-            n_loader_threads = 1,
             ibsi = False,
         )
 
@@ -1273,10 +1254,6 @@ class ImageQuality:
         Custom number of levels in grayscale denoising used in texture features.
     n_feature_calc_threads: int (optional, default 4)
         Number of threads to use for feature calculation parallelization purposes.
-    n_loader_threads: int (optional, default 1)
-        Number of threads to use for loading image tiles from disk. Note: image loading
-        multithreading is very memory intensive. You should consider optimizing
-        `n_feature_calc_threads` before increasing `n_loader_threads`.
     ibsi: bool (optional, default false)
        IBSI available features will be IBSI compliant when true.
     channel_signature: (optional)
@@ -1303,9 +1280,10 @@ class ImageQuality:
         
         valid_keys = {
             'neighbor_distance', 'pixels_per_micron', 'coarse_gray_depth',
-            'n_feature_calc_threads', 'n_loader_threads', 'ibsi',
+            'n_feature_calc_threads', 'ibsi',
             'gabor_kersize', 'gabor_gamma', 'gabor_sig2lam', 'gabor_f0',
             'channel_signature', 'min_intensity', 'max_intensity', 'ram_limit',
+            'verbose'
         }
 
         # Check for unexpected keyword arguments
@@ -1319,7 +1297,6 @@ class ImageQuality:
         pixels_per_micron = kwargs.get('pixels_per_micron', 1.0)
         coarse_gray_depth = kwargs.get('coarse_gray_depth', 256)
         n_feature_calc_threads = kwargs.get('n_feature_calc_threads', 4)
-        n_loader_threads = kwargs.get('n_loader_threads', 1)
         using_gpu = kwargs.get('using_gpu', -1)
         ibsi = kwargs.get('ibsi', False)
         dynamic_range = kwargs.get('dynamic_range', 10000)
@@ -1340,9 +1317,6 @@ class ImageQuality:
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
 
-        if n_loader_threads < 1:
-            raise ValueError("There must be at least one loader thread.")
-        
         if(using_gpu > -1 and n_feature_calc_threads != 1):
             print("Gpu features only support a single thread. Defaulting to one thread.")
             n_feature_calc_threads = 1
@@ -1361,7 +1335,6 @@ class ImageQuality:
             pixels_per_micron,
             coarse_gray_depth, 
             n_feature_calc_threads,
-            n_loader_threads,
             using_gpu,
             ibsi,
             dynamic_range,
@@ -1814,7 +1787,6 @@ class ImageQuality:
         pixels_per_micron = params.get ('pixels_per_micron', -1)
         coarse_gray_depth = params.get ('coarse_gray_depth', 0)
         n_reduce_threads = params.get ('n_feature_calc_threads', 0)
-        n_loader_threads = 1
         use_gpu_device = params.get ('use_gpu_device', -1)
         verb_lvl = params.get ('verbose', 0)
         dynamic_range = params.get('dynamic_range', -1)
@@ -1827,7 +1799,6 @@ class ImageQuality:
                                    pixels_per_micron,
                                    coarse_gray_depth,
                                    n_reduce_threads,
-                                   n_loader_threads,
                                    use_gpu_device,
                                    dynamic_range,
                                    min_intensity,
@@ -1845,7 +1816,6 @@ class ImageQuality:
         * pixels_per_micron
         * coarse_gray_depth
         * n_feature_calc_threads
-        * n_loader_threads
         * using_gpu
         * ibsi: bool
         * dynamic_range (float): Desired dynamic range of voxels of a floating point TIFF image.
@@ -1867,12 +1837,12 @@ class ImageQuality:
             "pixels_per_micron",
             "coarse_gray_depth",
             "n_feature_calc_threads",
-            "n_loader_threads",
             "using_gpu",
             "ibsi",
             "dynamic_range",
             "min_intensity",
-            "max_intensity"
+            "max_intensity",
+            "verbose"
         ]
         
         environment_params = {}
@@ -1889,7 +1859,7 @@ class ImageQuality:
             
             else:
                 if (key not in available_environment_params):
-                    raise ValueError(f"Invalid parameter {key}.")
+                    raise ValueError(f"Invalid parameter {key}")
                 else:
                     environment_params[key] = value
                 
@@ -1910,7 +1880,6 @@ class ImageQuality:
         * pixels_per_micron
         * coarse_gray_depth
         * n_feature_calc_threads
-        * n_loader_threads
         * using_gpu
         * ibsi: bool
         * dynamic_range (float): Desired dynamic range of voxels of a floating point TIFF image.

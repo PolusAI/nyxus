@@ -35,7 +35,7 @@
 namespace Nyxus
 {
 
-	bool processIntSegImagePair (const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, int filepair_index, int tot_num_filepairs)
+	bool processIntSegImagePair (const std::string& intens_fpath, const std::string& label_fpath, int filepair_index, int tot_num_filepairs)
 	{
 		std::vector<int> trivRoiLabels, nontrivRoiLabels;
 
@@ -146,14 +146,14 @@ namespace Nyxus
 		if (trivRoiLabels.size())
 		{
 			VERBOSLVL2(std::cout << "Processing trivial ROIs\n";)
-				processTrivialRois(trivRoiLabels, intens_fpath, label_fpath, num_FL_threads, theEnvironment.get_ram_limit());
+				processTrivialRois (trivRoiLabels, intens_fpath, label_fpath, theEnvironment.get_ram_limit());
 		}
 
 		// Phase 3: process nontrivial (oversized) ROIs, if any
 		if (nontrivRoiLabels.size())
 		{
 			VERBOSLVL2(std::cout << "Processing oversized ROIs\n";)
-				processNontrivialRois(nontrivRoiLabels, intens_fpath, label_fpath, num_FL_threads);
+				processNontrivialRois (nontrivRoiLabels, intens_fpath, label_fpath);
 		}
 
 		return true;
@@ -162,8 +162,6 @@ namespace Nyxus
 	int processDataset_2D_segmented (
 		const std::vector<std::string>& intensFiles,
 		const std::vector<std::string>& labelFiles,
-		int numFastloaderThreads,
-		int numSensemakerThreads,
 		int numReduceThreads,
 		int min_online_roi_size,
 		const SaveOption saveOption,
@@ -334,7 +332,7 @@ namespace Nyxus
 			}
 
 			// Do phased processing: prescan, trivial ROI processing, oversized ROI processing
-			ok = processIntSegImagePair(ifp, lfp, numFastloaderThreads, i, nf);
+			ok = processIntSegImagePair (ifp, lfp, i, nf);
 
 			if (ok == false)
 			{

@@ -18,7 +18,7 @@ namespace Nyxus
 	/// @param memory_limit RAM limit in bytes
 	/// @return Success status
 	/// 
-	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads)
+	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath)
 	{
 		// Sort labels for reproducibility with function's trivial counterpart. Nontrivial part of the workflow isn't time-critical anyway
 		auto L = nontrivRoiLabels;

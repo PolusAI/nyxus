@@ -129,7 +129,7 @@ namespace Nyxus
 		if (nontrivRoiLabels.size())
 		{
 			VERBOSLVL2(std::cout << "Processing oversized ROIs\n";)
-				processNontrivialRois(nontrivRoiLabels, intens_fpath, label_fpath, 1/*num_FL_threads*/);
+				processNontrivialRois(nontrivRoiLabels, intens_fpath, label_fpath);
 		}
 
 		return true;
@@ -138,8 +138,6 @@ namespace Nyxus
 	int processDataset_3D_segmented (
 		const std::vector <Imgfile3D_layoutA>& intensFiles,
 		const std::vector <Imgfile3D_layoutA>& labelFiles,
-		int numFastloaderThreads,
-		int numSensemakerThreads,
 		int numReduceThreads,
 		int min_online_roi_size,
 		const SaveOption saveOption,

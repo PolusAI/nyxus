@@ -45,8 +45,6 @@ namespace Nyxus
 	int processDataset_2D_segmented(
 		const std::vector<std::string>& intensFiles,
 		const std::vector<std::string>& labelFiles,
-		int numFastloaderThreads,
-		int numSensemakerThreads,
 		int numReduceThreads,
 		int min_online_roi_size,
 		const SaveOption saveOption,
@@ -65,8 +63,6 @@ namespace Nyxus
 	int processDataset_3D_segmented(
 		const std::vector <Imgfile3D_layoutA>& intensFiles,
 		const std::vector <Imgfile3D_layoutA>& labelFiles,
-		int numFastloaderThreads,
-		int numSensemakerThreads,
 		int numReduceThreads,
 		int min_online_roi_size,
 		const SaveOption saveOption,
@@ -76,9 +72,9 @@ namespace Nyxus
 	bool gatherRoisMetrics(const std::string& intens_fpath, const std::string& label_fpath, ImageLoader & L);
 	bool gather_wholeslide_metrics(const std::string& intens_fpath, ImageLoader& L, LR& roi);
 	bool gatherRoisMetrics_3D(const std::string& intens_fpath, const std::string& label_fpath, const std::vector<std::string>& z_indices);	
-	bool processTrivialRois(const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit);
+	bool processTrivialRois(const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit);
 	bool processTrivialRois_3D(const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit, const std::vector<std::string>& z_indices);
-	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads);
+	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath);
 	bool scan_trivial_wholeslide (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr);	// reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
 	void dump_roi_metrics(const std::string & label_fpath);
 	void dump_roi_pixels(const std::vector<int> & batch_labels, const std::string & label_fpath);

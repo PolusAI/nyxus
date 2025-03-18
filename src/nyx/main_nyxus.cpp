@@ -90,8 +90,6 @@ int main (int argc, char** argv)
 			errorCode = processDataset_2D_segmented (
 				intensFiles,
 				labelFiles,
-				theEnvironment.n_loader_threads,
-				theEnvironment.n_pixel_scan_threads,
 				theEnvironment.n_reduce_threads,
 				min_online_roi_size,
 				theEnvironment.saveOption,
@@ -168,8 +166,6 @@ int main (int argc, char** argv)
 			errorCode = processDataset_3D_segmented (
 				intensFiles,
 				labelFiles,
-				theEnvironment.n_loader_threads,
-				theEnvironment.n_pixel_scan_threads,
 				theEnvironment.n_reduce_threads,
 				min_online_roi_size,
 				theEnvironment.saveOption,
