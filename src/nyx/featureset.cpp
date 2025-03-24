@@ -959,7 +959,7 @@ bool FeatureSet::find_2D_GroupByString (
 	return true;
 }
 
-bool FeatureSet::find_3D_FeatureByString (const std::string& name, int& f)
+bool FeatureSet::find_3D_FeatureByString (const std::string & name, int & f)
 {
 	int enable = 1;
 
@@ -987,7 +987,7 @@ bool FeatureSet::find_3D_FeatureByString (const std::string& name, int& f)
 	return true;
 }
 
-bool FeatureSet::find_3D_GroupByString (const std::string& name, int& grpCode)
+bool FeatureSet::find_3D_GroupByString (const std::string & name, int & grpCode)
 {
 	int enable = 1;
 

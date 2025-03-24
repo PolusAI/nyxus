@@ -37,6 +37,7 @@
 #include "features/3d_ngldm.h"
 #include "features/3d_ngtdm.h"
 #include "features/3d_gldzm.h"
+#include "features/3d_glrlm.h"
 #include "features/3d_glszm.h"
 #include "features/radial_distribution.h"
 #include "features/roi_radius.h"
@@ -139,7 +140,7 @@ bool Environment::spellcheck_raw_featurelist (const std::string & comma_separate
 
 		if (dim() == 3)
 		{
-			// Is feature found among 2D features?
+			// Is feature found among 3D features?
 			int afg; // signed Fgroup3D
 			bool gnameExists = theFeatureSet.find_3D_GroupByString (s_uppr, afg);
 
@@ -320,11 +321,19 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 //
 bool Environment::expand_3D_featuregroup (const std::string& s)
 {
-	// mutually exclusive groups:
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_ALL))
+	int fgcode;
+	if (!Nyxus::theFeatureSet.find_3D_GroupByString(s, fgcode))
+		return false; // 's' is a feature name
+	bool enable = true;
+	if (fgcode < 0)
 	{
-		theFeatureSet.enableAll(false);
+		fgcode = -fgcode;
+		enable = false;
+	}
 
+	// mutually exclusive groups:
+	if ((Fgroup3D)fgcode == Fgroup3D::FG3_ALL)
+	{
 		auto F =
 		{
 			Feature3D::COV,
@@ -406,172 +415,61 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 #endif
 		};
 
-		theFeatureSet.enableFeatures (F);
-		theFeatureSet.enableFeatures (D3_GLCM_feature::featureset);
-		theFeatureSet.enableFeatures (D3_GLDZM_feature::featureset);
-		theFeatureSet.enableFeatures (D3_GLSZM_feature::featureset);
+		theFeatureSet.enableFeatures (F, enable);
+		theFeatureSet.enableFeatures (D3_GLCM_feature::featureset, enable);
+		theFeatureSet.enableFeatures (D3_GLDM_feature::featureset, enable);
+		theFeatureSet.enableFeatures (D3_GLDZM_feature::featureset, enable);
+		theFeatureSet.enableFeatures (D3_GLRLM_feature::featureset, enable);
+		theFeatureSet.enableFeatures (D3_GLSZM_feature::featureset, enable);
+		theFeatureSet.enableFeatures (D3_NGLDM_feature::featureset, enable);
+		theFeatureSet.enableFeatures (D3_NGTDM_feature::featureset, enable);
 
 		return true;
 	}
 
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_GLCM))
+	if ((Fgroup3D)fgcode == Fgroup3D::FG3_GLCM)
 	{
-		theFeatureSet.enableAll (false);
-		theFeatureSet.enableFeatures (D3_GLCM_feature::featureset);
+		theFeatureSet.enableFeatures (D3_GLCM_feature::featureset, enable);
 		return true;
 	}
 
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode (Fgroup3D::FG3_GLDM))
+	if ((Fgroup3D)fgcode == Fgroup3D::FG3_GLDM)
 	{
-		theFeatureSet.enableAll (false);
-		theFeatureSet.enableFeatures (D3_GLDM_feature::featureset);
+		theFeatureSet.enableFeatures (D3_GLDM_feature::featureset, enable);
 		return true;
 	}
 
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode (Fgroup3D::FG3_NGLDM))
+	if ((Fgroup3D)fgcode == Fgroup3D::FG3_NGLDM)
 	{
-		theFeatureSet.enableAll (false);
-		theFeatureSet.enableFeatures (D3_NGLDM_feature::featureset);
+		theFeatureSet.enableFeatures (D3_NGLDM_feature::featureset, enable);
 		return true;
 	}
 
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode (Fgroup3D::FG3_NGTDM))
+	if ((Fgroup3D)fgcode == Fgroup3D::FG3_NGTDM)
 	{
-		theFeatureSet.enableAll (false);
-		theFeatureSet.enableFeatures (D3_NGTDM_feature::featureset);
+		theFeatureSet.enableFeatures (D3_NGTDM_feature::featureset, enable);
 		return true;
 	}
 
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_GLCM))
+	if ((Fgroup3D)fgcode == Fgroup3D::FG3_GLDZM)
 	{
-		theFeatureSet.enableAll (false);
-
-		auto F =
-		{
-			Nyxus::Feature3D::GLCM_ACOR,	
-			Nyxus::Feature3D::GLCM_ASM,
-			Nyxus::Feature3D::GLCM_CLUPROM,
-			Nyxus::Feature3D::GLCM_CLUSHADE,
-			Nyxus::Feature3D::GLCM_CLUTEND,
-			Nyxus::Feature3D::GLCM_CONTRAST,	
-			Nyxus::Feature3D::GLCM_CORRELATION,
-			Nyxus::Feature3D::GLCM_DIFAVE,
-			Nyxus::Feature3D::GLCM_DIFENTRO,
-			Nyxus::Feature3D::GLCM_DIFVAR,
-			Nyxus::Feature3D::GLCM_DIS,
-			Nyxus::Feature3D::GLCM_ENERGY,
-			Nyxus::Feature3D::GLCM_ENTROPY,
-			Nyxus::Feature3D::GLCM_HOM1,
-			Nyxus::Feature3D::GLCM_HOM2,
-			Nyxus::Feature3D::GLCM_ID,
-			Nyxus::Feature3D::GLCM_IDN,
-			Nyxus::Feature3D::GLCM_IDM,
-			Nyxus::Feature3D::GLCM_IDMN,	
-			Nyxus::Feature3D::GLCM_INFOMEAS1,
-			Nyxus::Feature3D::GLCM_INFOMEAS2,
-			Nyxus::Feature3D::GLCM_IV,
-			Nyxus::Feature3D::GLCM_JAVE,
-			Nyxus::Feature3D::GLCM_JE,
-			Nyxus::Feature3D::GLCM_JMAX,
-			Nyxus::Feature3D::GLCM_JVAR,
-			Nyxus::Feature3D::GLCM_SUMAVERAGE,	
-			Nyxus::Feature3D::GLCM_SUMENTROPY,	
-			Nyxus::Feature3D::GLCM_SUMVARIANCE,
-			Nyxus::Feature3D::GLCM_VARIANCE,
-			Nyxus::Feature3D::GLCM_ASM_AVE,
-			Nyxus::Feature3D::GLCM_ACOR_AVE,
-			Nyxus::Feature3D::GLCM_CLUPROM_AVE,
-			Nyxus::Feature3D::GLCM_CLUSHADE_AVE,
-			Nyxus::Feature3D::GLCM_CLUTEND_AVE,
-			Nyxus::Feature3D::GLCM_CONTRAST_AVE,
-			Nyxus::Feature3D::GLCM_CORRELATION_AVE,
-			Nyxus::Feature3D::GLCM_DIFAVE_AVE,
-			Nyxus::Feature3D::GLCM_DIFENTRO_AVE,
-			Nyxus::Feature3D::GLCM_DIFVAR_AVE,
-			Nyxus::Feature3D::GLCM_DIS_AVE,
-			Nyxus::Feature3D::GLCM_ENERGY_AVE,
-			Nyxus::Feature3D::GLCM_ENTROPY_AVE,
-			Nyxus::Feature3D::GLCM_HOM1_AVE,
-			Nyxus::Feature3D::GLCM_ID_AVE,
-			Nyxus::Feature3D::GLCM_IDN_AVE,
-			Nyxus::Feature3D::GLCM_IDM_AVE,
-			Nyxus::Feature3D::GLCM_IDMN_AVE,
-			Nyxus::Feature3D::GLCM_IV_AVE,
-			Nyxus::Feature3D::GLCM_JAVE_AVE,
-			Nyxus::Feature3D::GLCM_JE_AVE,
-			Nyxus::Feature3D::GLCM_INFOMEAS1_AVE,
-			Nyxus::Feature3D::GLCM_INFOMEAS2_AVE,
-			Nyxus::Feature3D::GLCM_VARIANCE_AVE,
-			Nyxus::Feature3D::GLCM_JMAX_AVE,
-			Nyxus::Feature3D::GLCM_JVAR_AVE,
-			Nyxus::Feature3D::GLCM_SUMAVERAGE_AVE,
-			Nyxus::Feature3D::GLCM_SUMENTROPY_AVE,
-			Nyxus::Feature3D::GLCM_SUMVARIANCE_AVE
-		};
-
-		theFeatureSet.enableFeatures(F);
+		theFeatureSet.enableFeatures (D3_GLDZM_feature::featureset, enable);
 		return true;
 	}
 
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_GLDZM))
+	if ((Fgroup3D)fgcode == Fgroup3D::FG3_GLSZM)
 	{
-		theFeatureSet.enableAll (false);
-		theFeatureSet.enableFeatures (D3_GLDZM_feature::featureset);
-		return true;
-	}
-
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_GLSZM))
-	{
-		theFeatureSet.enableAll (false);
-		theFeatureSet.enableFeatures (D3_GLSZM_feature::featureset);
+		theFeatureSet.enableFeatures (D3_GLSZM_feature::featureset, enable);
 		return true;
 	}	
 	
-	if (s == Nyxus::theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_GLRLM))
+	if ((Fgroup3D)fgcode == Fgroup3D::FG3_GLRLM)
 	{
-		theFeatureSet.enableAll(false);
-
-		auto F =
-		{
-			Nyxus::Feature3D::GLRLM_SRE,	
-			Nyxus::Feature3D::GLRLM_LRE, 
-			Nyxus::Feature3D::GLRLM_GLN, 
-			Nyxus::Feature3D::GLRLM_GLNN, 
-			Nyxus::Feature3D::GLRLM_RLN,
-			Nyxus::Feature3D::GLRLM_RLNN, 
-			Nyxus::Feature3D::GLRLM_RP,
-			Nyxus::Feature3D::GLRLM_GLV, 
-			Nyxus::Feature3D::GLRLM_RV, 
-			Nyxus::Feature3D::GLRLM_RE, 
-			Nyxus::Feature3D::GLRLM_LGLRE, 
-			Nyxus::Feature3D::GLRLM_HGLRE, 
-			Nyxus::Feature3D::GLRLM_SRLGLE, 
-			Nyxus::Feature3D::GLRLM_SRHGLE, 
-			Nyxus::Feature3D::GLRLM_LRLGLE, 
-			Nyxus::Feature3D::GLRLM_LRHGLE, 
-			
-			Nyxus::Feature3D::GLRLM_SRE_AVE,
-			Nyxus::Feature3D::GLRLM_LRE_AVE,
-			Nyxus::Feature3D::GLRLM_GLN_AVE,
-			Nyxus::Feature3D::GLRLM_GLNN_AVE,
-			Nyxus::Feature3D::GLRLM_RLN_AVE,
-			Nyxus::Feature3D::GLRLM_RLNN_AVE,
-			Nyxus::Feature3D::GLRLM_RP_AVE,
-			Nyxus::Feature3D::GLRLM_GLV_AVE,
-			Nyxus::Feature3D::GLRLM_RV_AVE,
-			Nyxus::Feature3D::GLRLM_RE_AVE,
-			Nyxus::Feature3D::GLRLM_LGLRE_AVE,
-			Nyxus::Feature3D::GLRLM_HGLRE_AVE,
-			Nyxus::Feature3D::GLRLM_SRLGLE_AVE,
-			Nyxus::Feature3D::GLRLM_SRHGLE_AVE,
-			Nyxus::Feature3D::GLRLM_LRLGLE_AVE,
-			Nyxus::Feature3D::GLRLM_LRHGLE_AVE
-		};
-
-		theFeatureSet.enableFeatures(F);
+		theFeatureSet.enableFeatures (D3_GLRLM_feature::featureset, enable);
 		return true;
 	}
 
+	// unrecognized feature group
 	return false;
 }
 
@@ -610,6 +508,8 @@ void Environment::expand_featuregroups()
 			continue;
 		}
 
+		// try to interpret 's' as a group name
+
 		if (dim() == 2)
 		{
 			if (expand_2D_featuregroup (s))
@@ -623,13 +523,14 @@ void Environment::expand_featuregroups()
 		}
 
 		// 's' is an individual feature name, not feature group name. Process it now
+
 		if (dim() == 2)
 		{
 			int fcode; // signed Feature2D
-			if (!theFeatureSet.find_2D_FeatureByString (s, fcode))
+			if (!Nyxus::theFeatureSet.find_2D_FeatureByString (s, fcode))
 				throw std::invalid_argument("Error: '" + s + "' is not a valid 2D feature name \n");
 
-			theFeatureSet.enableFeature (fcode);
+			Nyxus::theFeatureSet.enableFeature (fcode);
 
 			continue;
 		}
@@ -639,7 +540,6 @@ void Environment::expand_featuregroups()
 			int a; // signed Feature3D
 			if (!theFeatureSet.find_3D_FeatureByString(s, a))
 				throw std::invalid_argument("Error: '" + s + "' is not a valid 3D feature name \n");
-
 			theFeatureSet.enableFeature (a);
 			continue;
 		}

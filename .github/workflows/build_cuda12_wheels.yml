@@ -62,8 +62,7 @@ jobs:
                                    sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo && 
                                    yum install -y llvm libevent-devel openssl-devel && 
                                    bash ci-utils/install_cuda_yum.sh 12 && 
-                                   bash ci-utils/install_arrow_yum.sh &&
-                                   bash ci-utils/install_prereq_linux.sh --build_arrow no &&
+                                   bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
                                    mkdir -p /tmp/nyxus_bld &&
                                    cp -r local_install /tmp/nyxus_bld
           CIBW_BEFORE_ALL_WINDOWS: nvcc -V &&

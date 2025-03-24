@@ -121,9 +121,9 @@ if "%BUILD_Z5_DEP%" == "1" (
 set _ROOTDIR=%ROOTDIR:\=/%
 if "%BUILD_ARROW%" == "1" (
 
-    curl -L https://github.com/apache/arrow/archive/refs/tags/apache-arrow-13.0.0.zip -o  arrow-apache-arrow-13.0.0.zip
-    unzip arrow-apache-arrow-13.0.0.zip
-    pushd arrow-apache-arrow-13.0.0
+    curl -L https://github.com/apache/arrow/archive/refs/tags/apache-arrow-19.0.0.zip -o  arrow-apache-arrow-19.0.0.zip
+    unzip arrow-apache-arrow-19.0.0.zip
+    pushd arrow-apache-arrow-19.0.0
     pushd cpp
     mkdir build
     pushd build
