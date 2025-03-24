@@ -1066,12 +1066,12 @@ public:
 
 		return cnt;
 	}
-	bool find_2D_FeatureByString (const std::string& name, int& f);					// 'f' is signed Feature2D
-	bool find_2D_GroupByString (const std::string& group_name, int & gc);			// 'gc' is signed Nyxus::Fgroup2D
-	bool find_3D_FeatureByString (const std::string & feature_name, Nyxus::Feature3D & feature_code);
-	bool find_3D_GroupByString (const std::string & group_name, Nyxus::Fgroup3D & group_code);
-	bool find_IMQ_FeatureByString (const std::string & feature_name, int & f);	// 'f' is signed Nyxus::FeatureIMQ
-	bool find_IMQ_GroupByString (const std::string & group_name, int & gc);		// 'gc' is signed Nyxus::FgroupIMQ
+	bool find_2D_FeatureByString (const std::string& name, int & f);					// 'f' is signed Feature2D
+	bool find_2D_GroupByString (const std::string& group_name, int & gc);			// 'gc' is signed Fgroup2D
+	bool find_3D_FeatureByString (const std::string & feature_name, int & f);		// 'f' is signed Feature3D
+	bool find_3D_GroupByString (const std::string & group_name, int & gc);		// 'gc' is signed Fgroup3D
+	bool find_IMQ_FeatureByString (const std::string & feature_name, int & f);	// 'f' is signed FeatureIMQ
+	bool find_IMQ_GroupByString (const std::string & group_name, int & gc);		// 'gc' is signed FgroupIMQ
 
 	std::string findFeatureNameByCode (Nyxus::Feature2D code);
 	std::string findFeatureNameByCode (Nyxus::Feature3D fcode);

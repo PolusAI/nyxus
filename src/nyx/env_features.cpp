@@ -148,7 +148,7 @@ bool Environment::spellcheck_raw_featurelist(const std::string& comma_separated_
 		if (dim() == 3)
 		{
 			// Is feature found among 2D features?
-			Fgroup3D afg;
+			int afg; // signed Fgroup3D
 			bool gnameExists = theFeatureSet.find_3D_GroupByString (s_uppr, afg);
 
 			// Intercept an error: 3D feature group exists but requested in the non-3D mode
@@ -166,7 +166,7 @@ bool Environment::spellcheck_raw_featurelist(const std::string& comma_separated_
 				continue;
 			}
 
-			Feature3D af;
+			int af; // signed Feature3D
 			bool fnameExists = theFeatureSet.find_3D_FeatureByString (s_uppr, af);
 
 			// 3D feature group requested on a non-3D mode ?
@@ -660,11 +660,11 @@ void Environment::expand_featuregroups()
 
 		if (dim() == 3)
 		{
-			Feature3D a;
+			int a; // signed Feature3D
 			if (!theFeatureSet.find_3D_FeatureByString(s, a))
 				throw std::invalid_argument("Error: '" + s + "' is not a valid 3D feature name \n");
 
-			theFeatureSet.enableFeature (int(a));
+			theFeatureSet.enableFeature (a);
 			continue;
 		}
 	}
