@@ -48,7 +48,12 @@
 
 using namespace Nyxus;
 
-bool Environment::spellcheck_raw_featurelist(const std::string& comma_separated_fnames, std::vector<std::string>& fnames)
+// The purpose of this methos is checking user's feature request but not changing the state of the Environment instance.
+// Specifically, it:
+// (1) splits 'comma_separated_fnames' into identifiers, 
+// (2) checks if they are known feature and group names in the corresponding context (2D or 3D), and 
+// (3) saves them in vector 'fnames'
+bool Environment::spellcheck_raw_featurelist (const std::string & comma_separated_fnames, std::vector<std::string> & fnames)
 {
 	fnames.clear();
 
@@ -77,19 +82,20 @@ bool Environment::spellcheck_raw_featurelist(const std::string& comma_separated_
 
 	}
 
-	// Chop the CS-list
+	// Chop the comma-separated feature list
 	bool success = true;
 	std::vector<std::string> strings;
-	parse_delimited_string(comma_separated_fnames, ",", strings);
+	parse_delimited_string (comma_separated_fnames, ",", strings);
 
 	// Check names of features and feature-groups
-	for (const std::string& s : strings)
+	for (const std::string & s : strings)
 	{
 		// Forgive user's typos of consecutive commas e.g. MIN,MAX,,MEDIAN
 		if (s.empty())
 			continue;
 
 		auto s_uppr = Nyxus::toupper(s);
+
 		if (dim() == 2)
 		{
 			//==== feature group ?
@@ -98,17 +104,10 @@ bool Environment::spellcheck_raw_featurelist(const std::string& comma_separated_
 			bool gfound1 = theFeatureSet.find_2D_GroupByString (s_uppr, _),
 				gfound2 = theFeatureSet.find_IMQ_GroupByString (s_uppr, _);
 
-			// intercept the non-2D mode
-			if (dim() != 2 && (gfound1 || gfound2))
-			{
-				success = false;
-				std::cerr << "Error: referenceing 2D feature group " << s << " in non-2D mode\n";
-				continue;
-			}
-
-			// if a group is found, register it and skip checking it as an individual feature name
+			// if 's' is recognized as a group, register it and skip checking it as an individual feature name
 			if (gfound1 || gfound2)
 			{
+				// set the IMQ flag if applicable
 				if (gfound2)
 					theEnvironment.set_imq (true);
 
@@ -121,14 +120,6 @@ bool Environment::spellcheck_raw_featurelist(const std::string& comma_separated_
 			bool ffound1 = theFeatureSet.find_2D_FeatureByString (s_uppr, _),
 				ffound2 = theFeatureSet.find_IMQ_FeatureByString (s_uppr, _);
 
-			// intercept the non-2D mode ?
-			if (dim() != 2 && (ffound1 || ffound2))
-			{
-				success = false;
-				std::cerr << "Error: referencing 2D feature " << s << " in non-2D mode\n";
-				continue;
-			}
-
 			// if a feature is found, register it
 			if (! (ffound1 || ffound2))
 			{
@@ -137,6 +128,7 @@ bool Environment::spellcheck_raw_featurelist(const std::string& comma_separated_
 			}
 			else
 			{
+				// set the IMQ flag if applicable
 				if (ffound2)
 					theEnvironment.set_imq (true);
 
@@ -151,39 +143,23 @@ bool Environment::spellcheck_raw_featurelist(const std::string& comma_separated_
 			int afg; // signed Fgroup3D
 			bool gnameExists = theFeatureSet.find_3D_GroupByString (s_uppr, afg);
 
-			// Intercept an error: 3D feature group exists but requested in the non-3D mode
-			if (gnameExists && dim() != 3)
-			{
-				success = false;
-				std::cerr << "Error: 3D feature group '" << s << "' in non-3D mode\n";
-				continue;
-			}
-
 			// If a group is found, register it
 			if (gnameExists)
 			{
-				fnames.push_back(s_uppr);
+				fnames.push_back (s_uppr);
 				continue;
 			}
 
 			int af; // signed Feature3D
 			bool fnameExists = theFeatureSet.find_3D_FeatureByString (s_uppr, af);
 
-			// 3D feature group requested on a non-3D mode ?
-			if (fnameExists && dim() != 3)
-			{
-				success = false;
-				std::cerr << "Error: 3D feature '" << s << "' in non-3D mode\n";
-				continue;
-			}
-
-			if (!fnameExists)
+			if (! fnameExists)
 			{
 				success = false;
 				std::cerr << "Error: expecting '" << s << "' to be a proper 3D feature name or feature file path\n";
 			}
 			else
-				fnames.push_back(s_uppr);
+				fnames.push_back (s_uppr);
 		} // 3D
 	}
 
