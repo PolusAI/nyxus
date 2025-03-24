@@ -1,5 +1,5 @@
 #include <fstream>
-#include "../src/nyx/helpers/fsystem.h"
+#include <gtest/gtest.h>
 #include "../src/nyx/features/gabor.h"
 #include "../src/nyx/features/intensity.h"
 #include "test_gabor.h"
