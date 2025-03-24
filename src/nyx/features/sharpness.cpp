@@ -380,4 +380,5 @@ double SharpnessFeature::sharpness(const ImageMatrix& Im, int width) {
     double ry = n_sharpy / (n_edgey + EPSILON);
 
     return std::sqrt((rx * rx) + (ry * ry));
+
 }

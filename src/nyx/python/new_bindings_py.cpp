@@ -98,7 +98,7 @@ void initialize_environment(
     theEnvironment.n_reduce_threads = n_reduce_threads;
     theEnvironment.ibsi_compliance = ibsi;
 
-    // Throws exception if invalid feature is supplied.
+    // Throws exception if invalid feature is passed
     theEnvironment.expand_featuregroups();
     theFeatureMgr.compile();
     theFeatureMgr.apply_user_selection();
@@ -277,16 +277,36 @@ py::tuple featurize_directory_imp (
     // Output the result
     if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
     {
+        // has the backend produced any result ?
+        auto nRows = theResultsCache.get_num_rows();
+        if (nRows == 0)
+        {
+            VERBOSLVL2 (std::cerr << "\nfeaturize_directory_imp(): returning a blank tuple\n");
+
+            // return a blank dataframe
+            std::vector<std::string> h ({ "column1", "column2", "column3", "column4"});
+            std::vector<std::string> s ({ "blank", "blank" });
+            std::vector<double> n ({ 0, 0 });
+
+            pybind11::array pyH = py::array(py::cast(h));
+            pybind11::array pySD = py::array(py::cast(s));
+            pybind11::array pyND = as_pyarray(std::move(n));
+
+            size_t nr = 1;
+            pySD = pySD.reshape({ nr, pySD.size() / nr });
+            pyND = pyND.reshape({ nr, pyND.size() / nr });
+            return py::make_tuple (pyH, pySD, pyND);
+            
+        }
+
+        // we have informative result, package it
         auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
         auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
         auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
 
-        // Shape the user-facing dataframe
-        auto nRows = theResultsCache.get_num_rows();
-
+        // - shape the user-facing dataframe
         pyStrData = pyStrData.reshape ({nRows, pyStrData.size() / nRows});
         pyNumData = pyNumData.reshape ({ nRows, pyNumData.size() / nRows });
-
         return py::make_tuple (pyHeader, pyStrData, pyNumData);
     } 
 

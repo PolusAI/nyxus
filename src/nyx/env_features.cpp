@@ -38,7 +38,9 @@
 #include "features/3d_ngtdm.h"
 #include "features/3d_gldzm.h"
 #include "features/3d_glszm.h"
+#include "features/radial_distribution.h"
 #include "features/roi_radius.h"
+#include "features/zernike.h"
 #include "helpers/helpers.h"
 #include "helpers/system_resource.h"
 #include "helpers/timing.h"
@@ -217,42 +219,26 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 
 	if ((Fgroup2D)fgcode == Fgroup2D::FG2_ALL)
 	{
-		Nyxus::theFeatureSet.enableAll (enable);
+		// enable just the 2D part of the feature set
+		for (int i = (int) Nyxus::Feature2D::_FIRST_; i < (int) Nyxus::Feature2D::_COUNT_; i++)
+			Nyxus::theFeatureSet.enableFeature (i);
 		return true; 
 	}
 
 	if ((Fgroup2D)fgcode == Fgroup2D::FG2_WHOLESLIDE)
 	{
-		Nyxus::theFeatureSet.enableAll (enable);
-
-		theFeatureSet.disableFeatures (BasicMorphologyFeatures::featureset);
-		theFeatureSet.disableFeatures (EnclosingInscribingCircumscribingCircleFeature::featureset);
-		// enabling ContourFeature (builds a special trivial wholeslide contour)
-		theFeatureSet.disableFeatures (ConvexHullFeature::featureset);				// depends on ContourFeature
-		theFeatureSet.disableFeatures (FractalDimensionFeature::featureset);		// depends on ContourFeature
-		theFeatureSet.disableFeatures (GeodeticLengthThicknessFeature::featureset);	// depends on ContourFeature
-		theFeatureSet.disableFeatures (NeighborsFeature::featureset);				// no neighbors for whole slide; depends on ContourFeature
-		theFeatureSet.disableFeatures (RoiRadiusFeature::featureset);				// depends on ContourFeature
-		theFeatureSet.disableFeatures (EllipseFittingFeature::featureset);
-		theFeatureSet.disableFeatures (EulerNumberFeature::featureset);
-		theFeatureSet.disableFeatures (ExtremaFeature::featureset);
-		theFeatureSet.disableFeatures (ErosionPixelsFeature::featureset);
-		theFeatureSet.disableFeatures (CaliperFeretFeature::featureset);
-		theFeatureSet.disableFeatures (CaliperMartinFeature::featureset);
-		theFeatureSet.disableFeatures (CaliperNassensteinFeature::featureset);
-		theFeatureSet.disableFeatures (ChordsFeature::featureset);
-
-		// enabling GaborFeature
-		// enabling only intensity image moments
-		theFeatureSet.disableFeatures (Smoms2D_feature::featureset);
-		// enabling GLCMFeature
-		// enabling GLDMFeature
-		theFeatureSet.disableFeatures (GLDZMFeature::featureset);	// costs about 82 %
-		// enabling GLRLMFeature 
-		// enabling GLSZMFeature
-		// enabling NGLDMfeature
-		// enabling NGTDMFeature
-
+		theFeatureSet.enableFeatures (ContourFeature::featureset, enable);
+		theFeatureSet.enableFeatures (PixelIntensityFeatures::featureset, enable);
+		theFeatureSet.enableFeatures (GLCMFeature::featureset, enable);
+		theFeatureSet.enableFeatures (GLDMFeature::featureset, enable);
+		theFeatureSet.enableFeatures (GLRLMFeature::featureset, enable);
+		theFeatureSet.enableFeatures (GLSZMFeature::featureset, enable);
+		theFeatureSet.enableFeatures (NGLDMfeature::featureset, enable);
+		theFeatureSet.enableFeatures (NGTDMFeature::featureset, enable);
+		theFeatureSet.enableFeatures (GaborFeature::featureset, enable);
+		theFeatureSet.enableFeatures(Imoms2D_feature::featureset, enable);
+		theFeatureSet.enableFeatures (RadialDistributionFeature::featureset, enable);
+		theFeatureSet.enableFeatures (ZernikeFeature::featureset, enable);
 		return true;
 	}
 

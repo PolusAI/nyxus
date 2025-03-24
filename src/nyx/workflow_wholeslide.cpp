@@ -61,7 +61,8 @@ namespace Nyxus
 
 		// free memory
 		VERBOSLVL2(std::cout << "\tfreeing vROI buffers\n");
-		std::vector<PixIntens>().swap(vroi.aux_image_matrix._pix_plane);
+		if (vroi.aux_image_matrix._pix_plane.size())
+			std::vector<PixIntens>().swap(vroi.aux_image_matrix._pix_plane);
 
 		// allow heyboard interrupt
 		#ifdef WITH_PYTHON_H
@@ -79,7 +80,7 @@ namespace Nyxus
 	bool featurize_wholeslide (size_t sidx, ImageLoader& imlo, LR& vroi)
 	{
 		// phase 1: gather ROI metrics
-		VERBOSLVL2(std::cout << "Gathering ROI metrics\n");
+		VERBOSLVL2(std::cout << "Gathering vROI metrics\n");
 
 		// phase 1: copy ROI metrics from the slide properties, thanks to the WSI scenario
 		// instead of gather_wholeslide_metrics (p.fname_int, imlo, vroi)	// segmented counterpart: gatherRoisMetrics()
@@ -103,8 +104,8 @@ namespace Nyxus
 				<< " (S=" << vroi.aux_area
 				<< " W=" << vroi.aabb.get_width()
 				<< " H=" << vroi.aabb.get_height()
-				<< " px footprint=" << roiFootprint << " b"
-				<< ")\n"
+				<< " px footprint=" << Nyxus::virguler(roiFootprint) << " b"
+				<< ") while RAM limit is " << Nyxus::virguler(ramLim) << "\n"
 			);
 
 			std::cerr << p.fname_int << ": slide is non-trivial \n";
@@ -127,9 +128,6 @@ namespace Nyxus
 		Nyxus::SaveOption saveOption,
 		int & rv)
 	{
-		// clear ROI data cached for the previous image
-		clear_slide_rois();
-
 		SlideProps & p = LR::dataset_props [slide_idx];
 
 		// scan one slide
@@ -140,14 +138,15 @@ namespace Nyxus
 			rv = 1;
 		}
 
-		LR vroi; // virtual ROI representing the whole slide
+		LR vroi (1); // virtual ROI representing the whole slide ROI-labelled as '1'
+
 		if (featurize_wholeslide (slide_idx, imlo, vroi) == false)	// non-wsi counterpart: processIntSegImagePair()
 		{
 			std::cerr << "processIntSegImagePair() returned an error code while processing slide " << p.fname_int << "\n";
 			rv = 1;
 		}
 
-		// thread-safely save results
+		// thread-safely save results of this single slide
 		if (write_apache) 
 		{
 			auto [status, msg] = save_features_2_apache_wholeslide (vroi, p.fname_int);
@@ -169,9 +168,9 @@ namespace Nyxus
 			else
 			{
 				// pulls feature values from 'vroi' and appends them to global object 'theResultsCache' exposed to Python API
-				if (save_features_2_buffer_wholeslide(Nyxus::theResultsCache, vroi, p.fname_int, "") == false)
+				if (save_features_2_buffer_wholeslide (Nyxus::theResultsCache, vroi, p.fname_int, "") == false)
 				{
-					std::cerr << "save_features_2_buffer() returned an error code" << std::endl;
+					std::cerr << "Error saving features to the results buffer" << std::endl;
 					rv = 2;
 				}
 			}
@@ -202,7 +201,6 @@ namespace Nyxus
 		const SaveOption saveOption,
 		const std::string& outputPath)
 	{
-
 		//**** prescan all slides
 
 		size_t nf = intensFiles.size();

@@ -25,7 +25,7 @@ namespace Nyxus
 			uniqueLabels.insert(label);
 
 			// Initialize the ROI label record
-			LR newData;
+			LR newData (label);
 			init_label_record_2(newData, theSegFname, theIntFname, x, y, label, intensity, tile_index);
 			roiData[label] = newData;
 		}
@@ -45,7 +45,7 @@ namespace Nyxus
 			uniqueLabels.insert(label);
 
 			// Initialize the ROI label record
-			LR newData;
+			LR newData (label);
 			init_label_record_3D (newData, theSegFname, theIntFname, x, y, z, label, intensity, tile_index);
 			roiData[label] = newData;
 		}

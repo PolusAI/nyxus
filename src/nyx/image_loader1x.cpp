@@ -1,12 +1,3 @@
-#if __has_include(<filesystem>)
-  #include <filesystem>
-  namespace fs = std::filesystem;
-#elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
-  namespace fs = std::experimental::filesystem;
-#else
-  error "Missing the <filesystem> header."
-#endif
 #include <iostream>
 #include "environment.h"
 #include "image_loader1x.h"
@@ -14,6 +5,7 @@
 #include "omezarr.h"
 #include "nyxus_dicom_loader.h"
 #include "dirs_and_files.h"
+#include "helpers/fsystem.h"
 
 ImageLoader1x::ImageLoader1x() {}
 

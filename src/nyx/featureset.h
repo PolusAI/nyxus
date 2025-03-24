@@ -615,6 +615,8 @@ namespace Nyxus
 		UNIFORMITY,
 		UNIFORMITY_PIU,
 
+		// 3D features planned for a future PR
+#if 0
 		// Morphology:
 		VOLUME_PIXELS,
 		CENTROID_X,
@@ -658,6 +660,7 @@ namespace Nyxus
 		SPAT_MOMENT_22,
 		SPAT_MOMENT_23,
 		SPAT_MOMENT_30,
+#endif
 
 		// texture / GLCM
 		GLCM_ACOR,		// Autocorrelation, IBSI # QWB0
@@ -908,13 +911,18 @@ class FeatureSet
 {
 public:
 	FeatureSet();
-	void enableAll(bool newStatus = true) 
+
+	// sets the flag for all the features - 2D, 3D, IMQ
+	void enableAll (bool newStatus = true) 
 	{ 
-		for (int i = 0; i < int(Nyxus::Feature2D::_COUNT_); i++) m_enabledFeatures[i] = newStatus; 
+		for (auto i = 0; i < sizeof(m_enabledFeatures); i++)
+			m_enabledFeatures[i] = newStatus; 
 	}
+
 	void enableAllIMQ(bool newStatus = true)
 	{
-		for (int i = int(Nyxus::Feature3D::_COUNT_); i < int(Nyxus::FeatureIMQ::_COUNT_); i++) {
+		for (int i = int(Nyxus::FeatureIMQ::_FIRST_); i < int(Nyxus::FeatureIMQ::_COUNT_); i++) 
+		{
 			m_enabledFeatures[i] = newStatus; 
 		}
 	}

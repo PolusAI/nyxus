@@ -162,9 +162,12 @@ namespace Nyxus
 
 		rescache.inc_num_rows();
 
-		rescache.add_string (fs::path(ifpath).filename().string());
+		// - slide info
+		rescache.add_string (ifpath);
 		rescache.add_string (mfpath);
-		rescache.add_numeric (1); // dummy ROI label of a whole-slide image
+		rescache.add_numeric (r.label);
+
+		// - features
 		for (auto& enabdF : F)
 		{
 			auto fc = std::get<1>(enabdF);

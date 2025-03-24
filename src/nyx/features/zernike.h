@@ -11,6 +11,11 @@
 class ZernikeFeature: public FeatureMethod
 {
 public:
+	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+	{
+		Nyxus::Feature2D::ZERNIKE2D
+	};
+
 	ZernikeFeature();
 
 	void calculate(LR& r);
@@ -23,7 +28,7 @@ public:
 	static const short ZERNIKE2D_ORDER = 9, NUM_FEATURE_VALS = 30;
 
 	// Compatibility with manual reduce
-	static bool required(const FeatureSet& fs) { return fs.isEnabled(Nyxus::Feature2D::ZERNIKE2D); }
+	static bool required(const FeatureSet& fs) { return fs.anyEnabled(featureset); }
 
 private:
 

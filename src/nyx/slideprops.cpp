@@ -81,14 +81,12 @@ namespace Nyxus
 						U.insert(msk);
 
 						// Initialize the ROI label record
-						LR r;
+						LR r (msk);
 						//		- mocking init_label_record_2(newData, theSegFname, theIntFname, x, y, label, intensity, tile_index)
 						// Initialize basic counters
 						r.aux_area = 1;
 						r.aux_min = r.aux_max = 0; //we don't have uint-cast intensities at this moment
 						r.init_aabb(x, y);
-						// Cache the ROI label
-						r.label = msk;
 
 						//		- not storing file names (r.segFname = segFile, r.intFname = intFile) but will do so in the future
 

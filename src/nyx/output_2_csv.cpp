@@ -200,7 +200,7 @@ namespace Nyxus
 		char rvbuf[VAL_BUF_LEN]; // real value buffer large enough to fit a float64 value in range (2.2250738585072014E-308 to 1.79769313486231570e+308)
 		const char rvfmt[] = "%g"; // instead of "%20.12f" which produces a too massive output
 
-		/*static ??????????*/ bool mustRenderHeader = true;	// In 'singlecsv' scenario this flag flips from 'T' to 'F' when necessary (after the header is rendered)
+		static bool mustRenderHeader = true;	// In 'singlecsv' scenario this flag flips from 'T' to 'F' when necessary (after the header is rendered)
 
 		// Make the file name and write mode
 		std::string fullPath = get_feature_output_fname (ifpath, mfpath);
@@ -222,11 +222,9 @@ namespace Nyxus
 			return false;
 		}
 
-		// -- Configure buffered write
-		if (std::setvbuf(fp, nullptr, _IOFBF, 32768) != 0) {
+		// configure buffered write
+		if (std::setvbuf(fp, nullptr, _IOFBF, 32768) != 0) 
 			std::perror("setvbuf failed");
-			return false;
-		}
 
 		// Learn what features need to be displayed
 		std::vector<std::tuple<std::string, int>> F = theFeatureSet.getEnabledFeatures();
@@ -265,14 +263,14 @@ namespace Nyxus
 			// Floating point precision
 			ssVals << std::fixed;
 
-			// Tear off pure file names from segment and intensity file paths
-			fs::path pseg(r.segFname), pint(r.intFname);
-			ssVals << pint.filename() << "," << pseg.filename() << "," << r.label;
+			// slide info
+			ssVals << ifpath << "," << mfpath << "," << r.label;
 
+			// features
 			for (auto& enabdF : F)
 			{
 				auto fc = std::get<1>(enabdF);
-				auto fn = std::get<0>(enabdF);	// ???????????? debug
+				auto fn = std::get<0>(enabdF);	// feature name, for debugging
 				auto vv = r.get_fvals(fc);
 
 				// Parameterized feature

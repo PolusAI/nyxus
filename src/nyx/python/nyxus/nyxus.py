@@ -1425,9 +1425,7 @@ class ImageQuality:
         else:
             
             featurize_directory_imp(intensity_dir, label_dir, file_pattern, output_type, output_path)
-            
             return get_arrow_file_imp() # return path to file
-
 
     def featurize(
         self,

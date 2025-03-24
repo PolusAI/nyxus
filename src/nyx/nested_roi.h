@@ -4,9 +4,10 @@
 #include "roi_cache.h"
 
 /// @brief Segment data cache for finding segment hierarchies 
-class HieLR: public BasicLR //: public LR
+class HieLR: public BasicLR
 {
 public:
+	HieLR() : BasicLR(-1) {} // using default label '-1'
 	std::vector<int> child_segs;
 	std::string get_output_csv_fname();
 	std::string segFname;

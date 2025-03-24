@@ -14,7 +14,8 @@ void LR::reset_dataset_props()
 	dataset_props.clear();
 }
 
-LR::LR()
+LR::LR (int lab):
+	BasicLR(lab)
 {
 	slide_idx = -1;
 }

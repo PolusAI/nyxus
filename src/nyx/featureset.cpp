@@ -657,6 +657,8 @@ namespace Nyxus
 		{ "3VARIANCE", Nyxus::Feature3D::VARIANCE },
 		{ "3VARIANCE_BIASED", Nyxus::Feature3D::VARIANCE_BIASED },
 
+		
+		#if 0 // 3D features planned for a future PR
 		// Morphology
 		{ "3AREA", Feature3D::AREA },
 		{ "3MESH_VOLUME", Feature3D::MESH_VOLUME },
@@ -700,6 +702,7 @@ namespace Nyxus
 		{ "3SPAT_MOMENT_22", Feature3D::SPAT_MOMENT_22 },
 		{ "3SPAT_MOMENT_23", Feature3D::SPAT_MOMENT_23 },
 		{ "3SPAT_MOMENT_30", Feature3D::SPAT_MOMENT_30 },
+		#endif	
 
 		// Texture / GLCM
 		{ "3GLCM_ACOR", Feature3D::GLCM_ACOR },
