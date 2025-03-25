@@ -853,6 +853,13 @@ std::tuple<double, double, double, double> ContourFeature::calc_min_max_mean_std
 	return { min_, max_, mean_, stddev_ };
 }
 
+void ContourFeature::extract (LR& r)
+{
+	ContourFeature f;
+	f.calculate (r);
+	f.save_value (r.fvals);
+}
+
 void ContourFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)

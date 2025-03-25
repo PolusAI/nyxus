@@ -472,7 +472,7 @@ private:
         for (size_t col = start_col; col < end_col; col++)
         {
             // Logic to prevent "noise" in images whose dimensions are smaller than the default tile buffer size 1024x1024
-            FileType x = 0.0; // Zero-fill gaps
+            FileType x = (FileType) 0.0; // Zero-fill gaps
 
             // - Informative zone of the strip
             if (layer < fullDepth_ && row < fullHeight_ && col < fullWidth_)

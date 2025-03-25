@@ -358,16 +358,20 @@ void ZernikeFeature::calculate (LR& r)
 	mb_zernike2D (r.aux_image_matrix, ZernikeFeature::ZERNIKE2D_ORDER, 0/*rad*/, coeffs.data());
 }
 
+void ZernikeFeature::extract (LR& r)
+{
+	ZernikeFeature f;
+	f.calculate (r);
+	f.save_value(r.fvals);
+}
+
 void ZernikeFeature::parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = firstitem; i < lastitem; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-
-		ZernikeFeature f;
-		f.calculate (r);
-		f.save_value(r.fvals);
+		extract (r);
 	}
 }
 

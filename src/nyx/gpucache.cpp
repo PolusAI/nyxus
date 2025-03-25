@@ -474,8 +474,8 @@ namespace NyxusGpu
 		bool needErosion,
 		bool needGabor,
 		bool needMoments,
-		size_t roi_cloud_len,				// ideal
-		size_t roi_kontur_cloud_len,	// ideal
+		size_t roi_cloud_len,
+		size_t roi_kontur_cloud_len,
 		size_t n_rois,
 		size_t roi_area,
 		size_t roi_w,
@@ -504,7 +504,9 @@ namespace NyxusGpu
 			needErosion,
 			needGabor,
 			needMoments,
-			ccl0, ccl0, n_rois, roi_w, roi_h, n_gabFilters, gabor_ker_side);
+			ccl0, 
+			roi_kontur_cloud_len, 
+			n_rois, roi_w, roi_h, n_gabFilters, gabor_ker_side);
 
 		VERBOSLVL1(std::cout << "szb for " << Nyxus::virguler(n_rois) << " ROIs (ideal ROI px:" << Nyxus::virguler(roi_cloud_len) << ", ideal contour px:" << Nyxus::virguler(roi_kontur_cloud_len) << ") = " << Nyxus::virguler(szb) << "\n");
 

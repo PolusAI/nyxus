@@ -33,8 +33,6 @@ public:
 	// Result saver
 	void save_value(std::vector<std::vector<double>>& feature_vals);
 
-
-
 	/// @brief Major axis length of Legendre's ellipse of inertia
 	/// @return 
 	double get_major_axis_length();
@@ -60,6 +58,7 @@ public:
 	double get_roundness();
 
 	static bool required (const FeatureSet& fs); 
+	static void extract (LR& roi); // extracts the feature of- and saves to ROI
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 private:

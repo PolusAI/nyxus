@@ -36,6 +36,8 @@ public:
 		return fs.anyEnabled (ConvexHullFeature::featureset); 
 	}
 
+	static void extract(LR& roi); // extracts the feature of- and saves to ROI
+
 private:
 	void build_convex_hull(const std::vector<Pixel2>& contour, std::vector<Pixel2>& convhull);
 	void build_convex_hull(const OutOfRamPixelCloud& roi_cloud, std::vector<Pixel2>& convhull);

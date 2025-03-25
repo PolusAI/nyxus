@@ -122,7 +122,10 @@ bool StringPattern::match (const std::string& s, std::map<std::string, std::vect
 
 	// check if 's' matches the grammar in the number of tokens
 	if (tokCodes.size() != grammar_.size())
+	{
+		external_ermsg = "actual tokens: " + std::to_string(tokCodes.size()) + ", expecting: " + std::to_string(grammar_.size());
 		return false;
+	}
 
 	// check the file name string versus a grammar of 3D layout A
 	std::string aggrValue;

@@ -104,6 +104,13 @@ void ChordsFeature::calculate (LR & r)
 	allchords_max_angle = ACang[idxmax];
 }
 
+void ChordsFeature::extract (LR& r)
+{
+	ChordsFeature f;
+	f.calculate(r);
+	f.save_value(r.fvals);
+}
+
 void ChordsFeature::process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)

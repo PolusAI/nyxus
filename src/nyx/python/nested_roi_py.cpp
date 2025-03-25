@@ -1,12 +1,3 @@
-#if __has_include(<filesystem>)
-  #include <filesystem>
-  namespace fs = std::filesystem;
-#elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
-  namespace fs = std::experimental::filesystem;
-#else
-  error "Missing the <filesystem> header."
-#endif
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -25,6 +16,7 @@
 #include "../dirs_and_files.h"
 #include "../image_loader1x.h"
 #include "../results_cache.h"
+#include "../helpers/fsystem.h"
 #include "../helpers/helpers.h"
 
 namespace Nyxus

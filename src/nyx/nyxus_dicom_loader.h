@@ -65,9 +65,9 @@ public:
 
             unsigned int total_height = 0, total_width = 0;
             OFCondition status = ds->findAndGetUint32(DCM_TotalPixelMatrixRows, total_height);
-            if (status.bad() | total_height == 0) fullHeight_ = tileHeight_;
+            if (status.bad() || total_height == 0) fullHeight_ = tileHeight_;
             status = ds->findAndGetUint32(DCM_TotalPixelMatrixColumns, total_width);
-            if (status.bad() | total_width == 0) fullWidth_ = tileWidth_;
+            if (status.bad() || total_width == 0) fullWidth_ = tileWidth_;
 
             numCols_ = static_cast<size_t>(ceil(fullWidth_/tileWidth_));
             numRows_ = static_cast<size_t>(ceil(fullHeight_/tileHeight_));
@@ -80,7 +80,7 @@ public:
             // this comes into play for WSI and also for sanity check
             int32_t num_frames = 0;
             status = ds->findAndGetSint32(DCM_NumberOfFrames, numFrames_);
-            if (status.bad() | numFrames_ == 0) numFrames_ = numCols_*numRows_;
+            if (status.bad() || numFrames_ == 0) numFrames_ = numCols_*numRows_;
 
             tmp = 0;
             ds->findAndGetUint16(DCM_BitsAllocated, tmp);

@@ -97,7 +97,15 @@ void PixelIntensityFeatures::calculate(LR& r)
 	val_RANGE = val_MAX - val_MIN;
 
 	// --COVERED_IMAGE_INTENSITY_RANGE
-	val_COVERED_IMAGE_INTENSITY_RANGE = double(r.aux_max - r.aux_min) / double(LR::slide_max_inten - LR::slide_min_inten);
+	val_COVERED_IMAGE_INTENSITY_RANGE = 1;
+#if 0
+	if (r.slide_idx >= 0)
+	{
+		const SlideProps& p = LR::dataset_props[r.slide_idx];
+		double sir = (p.max_preroi_inten - p.min_preroi_inten); // slide intensity range
+		val_COVERED_IMAGE_INTENSITY_RANGE = double(r.aux_max - r.aux_min) / sir;
+	}
+#endif
 
 	double n = r.aux_area;
 
@@ -212,7 +220,14 @@ void PixelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	val_RANGE = val_MAX - val_MIN;
 
 	// --COVERED_IMAGE_INTENSITY_RANGE
-	val_COVERED_IMAGE_INTENSITY_RANGE = (r.aux_max - r.aux_min) / (LR::slide_max_inten - LR::slide_min_inten);
+	if (r.slide_idx >= 0)
+	{
+		const SlideProps& p = LR::dataset_props[r.slide_idx];
+		double sir = (p.max_preroi_inten - p.min_preroi_inten); // slide intensity range
+		val_COVERED_IMAGE_INTENSITY_RANGE = (r.aux_max - r.aux_min) / sir;
+	}
+	else
+		val_COVERED_IMAGE_INTENSITY_RANGE = 1;
 
 	double n = r.aux_area;
 
@@ -382,15 +397,20 @@ void PixelIntensityFeatures::parallel_process_1_batch(size_t firstitem, size_t l
 	}
 }
 
-void PixelIntensityFeatures::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void PixelIntensityFeatures::extract (LR& r)
+{		
+	PixelIntensityFeatures f;
+	f.calculate (r);
+	f.save_value (r.fvals);
+}
+
+void PixelIntensityFeatures::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-		PixelIntensityFeatures f;
-		f.calculate(r);
-		f.save_value(r.fvals);
+		extract(r);
 	}
 }
 

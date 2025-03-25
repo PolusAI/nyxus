@@ -219,23 +219,21 @@ void BasicMorphologyFeatures::parallel_process(std::vector<int>& roi_labels, std
 	runParallel(BasicMorphologyFeatures::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
 }
 
+void BasicMorphologyFeatures::extract (LR& r)
+{
+	BasicMorphologyFeatures f;
+	f.calculate(r);
+	f.save_value(r.fvals);	
+}
+
 void BasicMorphologyFeatures::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	// Calculate the feature for each batch ROI item 
 	for (auto i = firstitem; i < lastitem; i++)
 	{
-		// Get ahold of ROI's label and cache
 		int roiLabel = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[roiLabel];
-
-		// Skip the ROI if its data is invalid to prevent nans and infs in the output
-		//if (r.has_bad_data())
-		//	continue;
-
-		// Calculate the feature and save it in ROI's csv-friendly buffer 'fvals'
-		BasicMorphologyFeatures f;
-		f.calculate(r);
-		f.save_value(r.fvals);
+		extract (r);
 	}
 }
 

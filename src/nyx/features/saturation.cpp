@@ -32,6 +32,13 @@ void SaturationFeature::parallel_process(std::vector<int>& roi_labels, std::unor
 	runParallel(SaturationFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
 }
 
+void SaturationFeature::extract (LR& r)
+{
+	SaturationFeature f;
+	f.calculate(r);
+	f.save_value(r.fvals);
+}
+
 void SaturationFeature::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	// Calculate the feature for each batch ROI item 

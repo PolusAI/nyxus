@@ -1,8 +1,6 @@
-#include <sstream>
-
 #define _USE_MATH_DEFINES	// For M_PI, etc.
 #include <cmath>
-
+#include <sstream>
 #include "radial_distribution.h"
 #include "image_matrix.h"
 #include "../globals.h"
@@ -189,17 +187,20 @@ void RadialDistributionFeature::save_value(std::vector<std::vector<double>>& fva
 	fvals[(int)Feature2D::RADIAL_CV] = values_RadialCV;
 }
 
+void RadialDistributionFeature::extract (LR& r)
+{
+	RadialDistributionFeature rdf;
+	rdf.calculate(r);
+	rdf.save_value(r.fvals);
+}
+
 void RadialDistributionFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-
-		// Calculate the radial distribution
-		RadialDistributionFeature rdf;
-		rdf.calculate(r);
-		rdf.save_value(r.fvals);
+		extract (r);
 	}
 }
 

@@ -182,6 +182,13 @@ void FractalDimensionFeature::save_value(std::vector<std::vector<double>>& fvals
 	fvals[(int)Feature2D::FRACT_DIM_PERIMETER][0] = perim_fd;
 }
 
+void FractalDimensionFeature::extract (LR& r)
+{
+	FractalDimensionFeature fd;
+	fd.calculate(r);
+	fd.save_value(r.fvals);
+}
+
 void FractalDimensionFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
@@ -192,10 +199,7 @@ void FractalDimensionFeature::parallel_process_1_batch(size_t start, size_t end,
 		if (r.has_bad_data())
 			continue;
 
-		// Calculate feature
-		FractalDimensionFeature fd;
-		fd.calculate(r);
-		fd.save_value(r.fvals);
+		extract (r);
 	}
 }
 

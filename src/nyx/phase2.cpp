@@ -83,7 +83,11 @@ namespace Nyxus
 	}
 	#endif
 
-	bool scanTrivialRois (const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads)
+	bool scanTrivialRois (
+		const std::vector<int>& batch_labels, 
+		const std::string& intens_fpath, 
+		const std::string& label_fpath, 
+		ImageLoader & ldr)
 	{
 		// Sort the batch's labels to enable binary searching in it
 		std::vector<int> whiteList = batch_labels;
@@ -93,21 +97,21 @@ namespace Nyxus
 			lyr = 0;	//	Layer
 
 		// Read the tiffs
-		size_t nth = theImLoader.get_num_tiles_hor(),
-			ntv = theImLoader.get_num_tiles_vert(),
-			fw = theImLoader.get_tile_width(),
-			th = theImLoader.get_tile_height(),
-			tw = theImLoader.get_tile_width(),
-			tileSize = theImLoader.get_tile_size(),
-			fullwidth = theImLoader.get_full_width(),
-			fullheight = theImLoader.get_full_height();
+		size_t nth = ldr.get_num_tiles_hor(),
+			ntv = ldr.get_num_tiles_vert(),
+			fw = ldr.get_tile_width(),
+			th = ldr.get_tile_height(),
+			tw = ldr.get_tile_width(),
+			tileSize = ldr.get_tile_size(),
+			fullwidth = ldr.get_full_width(),
+			fullheight = ldr.get_full_height();
 
 		int cnt = 1;
 		for (unsigned int row = 0; row < nth; row++)
 			for (unsigned int col = 0; col < ntv; col++)
 			{
 				// Fetch the tile 
-				bool ok = theImLoader.load_tile(row, col);
+				bool ok = ldr.load_tile(row, col);
 				if (!ok)
 				{
 					std::stringstream ss;
@@ -120,8 +124,8 @@ namespace Nyxus
 				}
 
 				// Get ahold of tile's pixel buffer
-				const std::vector<uint32_t>& dataI = theImLoader.get_int_tile_buffer();
-				const std::shared_ptr<std::vector<uint32_t>>& spL = theImLoader.get_seg_tile_sptr();
+				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
+				const std::shared_ptr<std::vector<uint32_t>>& spL = ldr.get_seg_tile_sptr();
 				bool wholeslide = spL == nullptr; // alternatively, theEnvironment.singleROI
 
 				// Iterate pixels
@@ -167,6 +171,80 @@ namespace Nyxus
 		VERBOSLVL5(dump_roi_pixels(batch_labels, label_fpath))
 			
 		return true;
+	}
+
+	//
+	// Reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
+	//
+	bool scan_trivial_wholeslide (
+		LR & vroi,
+		const std::string& intens_fpath,
+		ImageLoader& ldr)
+	{
+		int lvl = 0,	// Pyramid level
+			lyr = 0;	//	Layer
+
+		// Read the tiffs
+		size_t nth = ldr.get_num_tiles_hor(),
+			ntv = ldr.get_num_tiles_vert(),
+			fw = ldr.get_tile_width(),
+			th = ldr.get_tile_height(),
+			tw = ldr.get_tile_width(),
+			tileSize = ldr.get_tile_size(),
+			fullwidth = ldr.get_full_width(),
+			fullheight = ldr.get_full_height();
+
+		int cnt = 1;
+		for (unsigned int row = 0; row < nth; row++)
+			for (unsigned int col = 0; col < ntv; col++)
+			{
+				// Fetch the tile 
+				bool ok = ldr.load_tile(row, col);
+				if (!ok)
+				{
+					std::stringstream ss;
+					ss << "Error fetching tile row=" << row << " col=" << col;
+#ifdef WITH_PYTHON_H
+					throw ss.str();
+#endif	
+					std::cerr << ss.str() << "\n";
+					return false;
+				}
+
+				// Get ahold of tile's pixel buffer
+				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
+
+				// Iterate pixels
+				for (unsigned long i = 0; i < tileSize; i++)
+				{
+					auto inten = dataI[i];
+					int y = row * th + i / tw,
+						x = col * tw + i % tw;
+
+					// Skip tile buffer pixels beyond the image's bounds
+					if (x >= fullwidth || y >= fullheight)
+						continue;
+
+					// Cache this pixel 
+					feed_pixel_2_cache_LR (x, y, dataI[i], vroi);
+				}
+
+				VERBOSLVL2(
+					// Show stayalive progress info
+					if (cnt++ % 4 == 0)
+					{
+						static int prevIntPc = 0;
+						float pc = int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100.;
+						if (int(pc) != prevIntPc)
+						{
+							std::cout << "\t scan trivial " << int(pc) << " %\n";
+							prevIntPc = int(pc);
+						}
+					}
+				)
+			}
+
+			return true;
 	}
 
 	bool scanTrivialRois_3D (const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, const std::vector<std::string> & z_indices)
@@ -368,9 +446,6 @@ namespace Nyxus
 		{
 			LR& r = roiData[lab];
 
-			// matrix data offset
-			r.im_buffer_offset = baseIdx;
-
 			// matrix data
 			size_t imatrSize = r.aabb.get_width() * r.aabb.get_height();
 			r.aux_image_matrix.bind_to_buffer(ImageMatrixBuffer + baseIdx, ImageMatrixBuffer + baseIdx + imatrSize);
@@ -445,7 +520,7 @@ namespace Nyxus
 //		delete ImageMatrixBuffer;
 	}
 
-	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, int num_FL_threads, size_t memory_limit)
+	bool processTrivialRois (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit)
 	{
 		std::vector<int> Pending;
 		size_t batchDemand = 0;
@@ -460,12 +535,13 @@ namespace Nyxus
 			// Check if we are good to accumulate this ROI in the current batch or should close the batch and reduce it
 			if (batchDemand + itemFootprint < memory_limit)
 			{
+				// There is room in the ROI batch. Insert another ROI in it
 				Pending.push_back(lab);
 				batchDemand += itemFootprint;
 			}
 			else
 			{
-				// Scan pixels of pending trivial ROIs 
+				// The ROI batch is full. Let's process it 
 				std::sort(Pending.begin(), Pending.end());
 				VERBOSLVL2(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of total " << uniqueLabels.size() << " ROIs\n";)
 					VERBOSLVL2(
@@ -474,28 +550,28 @@ namespace Nyxus
 						else
 							std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				)
-					scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
+					scanTrivialRois (Pending, intens_fpath, label_fpath, theImLoader);
 
 				// Allocate memory
 				VERBOSLVL2(std::cout << "\tallocating ROI buffers\n";)
-					allocateTrivialRoisBuffers(Pending);
+					allocateTrivialRoisBuffers (Pending);
 
 				// Reduce them
 				VERBOSLVL2(std::cout << "\treducing ROIs\n";)
 					// reduce_trivial_rois(Pending);	
-					reduce_trivial_rois_manual(Pending);
+					reduce_trivial_rois_manual (Pending);
 
 				// Free memory
 				VERBOSLVL2(std::cout << "\tfreeing ROI buffers\n";)
-					freeTrivialRoisBuffers(Pending);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
+					freeTrivialRoisBuffers (Pending);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
 
-					// Reset the RAM footprint accumulator
+				// Reset the RAM footprint accumulator
 				batchDemand = 0;
 
 				// Clear the freshly processed ROIs from pending list 
 				Pending.clear();
 
-				// Start a new pending set by adding the stopper ROI 
+				// Start a new pending set by adding the batch-overflowing ROI 
 				Pending.push_back(lab);
 
 				// Advance the batch counter
@@ -524,7 +600,7 @@ namespace Nyxus
 				else
 					std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				)
-			scanTrivialRois(Pending, intens_fpath, label_fpath, num_FL_threads);
+			scanTrivialRois (Pending, intens_fpath, label_fpath, theImLoader);
 
 			// Allocate memory
 			VERBOSLVL2(std::cout << "\tallocating ROI buffers\n";)

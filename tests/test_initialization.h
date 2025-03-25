@@ -5,16 +5,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <iostream>
-#if __has_include(<filesystem>)
-  #include <filesystem>
-  namespace fs = std::filesystem;
-#elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
-  namespace fs = std::experimental::filesystem;
-#else
-  error "Missing the <filesystem> header."
-#endif
-
+#include "../src/nyx/helpers/fsystem.h"
 #include "../src/nyx/dirs_and_files.h"
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"

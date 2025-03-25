@@ -116,7 +116,9 @@ namespace NyxusGpu
 	extern GpuCache <cufftDoubleComplex> gabor_linear_kernel; // (img_plus_ker_size* n_filters);
 	extern GpuCache <PixIntens> gabor_energy_image; // (img_plus_ker_size* n_filters);
 
-	// these need to be called after "prescan"
+	//
+	// these need to be called after "prescan" (phase 0)
+	//
 
 	bool gpu_get_free_mem(size_t& amt);
 
@@ -151,12 +153,6 @@ namespace NyxusGpu
 		int gabor_ker_side);
 
 	bool free_gpu_cache(
-		/*?????
-		bool needContour,
-		bool needErosion,
-		bool needGabor,
-		bool needMoments, 
-		*/
 		GpuCache<Pixel2>& clouds,
 		GpuCache<Pixel2>& konturs,
 		RealPixIntens*& realintens,
@@ -173,8 +169,6 @@ namespace NyxusGpu
 
 	// these need to be called in "reduce_trivial"
 	void send_roi_data_gpuside(const std::vector<int>& ptrLabels, std::unordered_map <int, LR>& ptrLabelData, size_t off_this_batch, size_t actual_batch_len);
-	
-	//????????????????	void free_roi_data_gpuside();
 	
 	void send_roi_batch_data_2_gpu(
 		// out

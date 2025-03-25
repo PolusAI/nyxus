@@ -28,8 +28,6 @@
 #define FILEPATTERN "--filePattern"				// Environment :: file_pattern
 #define OUTPUTTYPE "--outputType"				// Environment :: Output type for feature values (speratecsv, singlecsv, arrow, parquet)
 #define EMBPIXSZ "--embeddedpixelsize"			// Environment :: embedded_pixel_size
-#define LOADERTHREADS "--loaderThreads"			// Environment :: n_loader_threads
-#define PXLSCANTHREADS "--pxlscanThreads"		// Environment :: n_pixel_scan_threads
 #define REDUCETHREADS "--reduceThreads"			// Environment :: n_reduce_threads
 #define VERBOSITY "--verbose"					// Environment :: verbosity_level	-- Example: --verbosity=3
 #define ONLINESTATSTHRESH "--onlineStatsThresh" // Environment :: onlineStatsThreshold	-- Example: --onlineStatsThresh=150
@@ -119,12 +117,6 @@ public:
 
 	std::string rawFeatures;
 	std::vector<std::string> recognizedFeatureNames;
-
-	std::string loader_threads = "";
-	int n_loader_threads = 1;
-
-	std::string pixel_scan_threads = "";
-	int n_pixel_scan_threads = 1;
 
 	std::string reduce_threads = "";
 	int n_reduce_threads = 4;

@@ -47,6 +47,7 @@ public:
 	static bool required(const FeatureSet& fs);
 
 	std::tuple<int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int> get_values();
+	static void extract (LR& roi);
 	static void reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 
 private:

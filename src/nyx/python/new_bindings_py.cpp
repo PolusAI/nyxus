@@ -21,25 +21,31 @@ namespace py = pybind11;
 using namespace Nyxus;
 
 namespace Nyxus {
-    int processDataset(
+
+    int processDataset_2D_segmented (
         const std::vector<std::string>& intensFiles,
         const std::vector<std::string>& labelFiles,
-        int numFastloaderThreads,
-        int numSensemakerThreads,
+        int numReduceThreads,
+        int min_online_roi_size,
+        const SaveOption saveOption,
+        const std::string& outputPath);
+    
+    int processDataset_2D_wholeslide (
+        const std::vector<std::string>& intensFiles,
+        const std::vector<std::string>& labelFiles,
+        int n_threads,
+        int min_online_roi_size,
+        const SaveOption saveOption,
+        const std::string& outputPath);
+
+    int processDataset_3D_segmented (
+        const std::vector <Imgfile3D_layoutA>& intensFiles,
+        const std::vector <Imgfile3D_layoutA>& labelFiles,
         int numReduceThreads,
         int min_online_roi_size,
         const SaveOption saveOption,
         const std::string& outputPath);
 
-    int processDataset_3D(
-        const std::vector <Imgfile3D_layoutA>& intensFiles,
-        const std::vector <Imgfile3D_layoutA>& labelFiles,
-        int numFastloaderThreads,
-        int numSensemakerThreads,
-        int numReduceThreads,
-        int min_online_roi_size,
-        const SaveOption saveOption,
-        const std::string& outputPath);
 };
 
 using ParameterTypes = std::variant<int, float, double, unsigned int, std::vector<double>, std::vector<std::string>>;
@@ -73,27 +79,26 @@ void initialize_environment(
     float pixels_per_micron,
     uint32_t coarse_gray_depth, 
     uint32_t n_reduce_threads,
-    uint32_t n_loader_threads,
     int using_gpu,
     bool ibsi,
     float dynamic_range,
     float min_intensity,
     float max_intensity,
     bool is_imq,
-    int ram_limit_mb)
+    int ram_limit_mb,
+    int verb_lvl)
 {
     theEnvironment.set_imq(is_imq);
     theEnvironment.set_dim(n_dim);
     theEnvironment.recognizedFeatureNames = features;
     theEnvironment.set_pixel_distance(neighbor_distance);
-    theEnvironment.set_verbosity_level (0);
+    theEnvironment.set_verbosity_level (verb_lvl);
     theEnvironment.xyRes = theEnvironment.pixelSizeUm = pixels_per_micron;
     theEnvironment.set_coarse_gray_depth(coarse_gray_depth);
     theEnvironment.n_reduce_threads = n_reduce_threads;
-    theEnvironment.n_loader_threads = n_loader_threads;
     theEnvironment.ibsi_compliance = ibsi;
 
-    // Throws exception if invalid feature is supplied.
+    // Throws exception if invalid feature is passed
     theEnvironment.expand_featuregroups();
     theFeatureMgr.compile();
     theFeatureMgr.apply_user_selection();
@@ -132,14 +137,13 @@ void set_environment_params_imp (
     float pixels_per_micron = -1,
     uint32_t coarse_gray_depth = 0, 
     uint32_t n_reduce_threads = 0,
-    uint32_t n_loader_threads = 0,
     int using_gpu = -2,
-    int verb_level = 0,
     float dynamic_range = -1,
     float min_intensity = -1,
     float max_intensity = -1,
-    int ram_limit_mb = -1
-) {
+    int ram_limit_mb = -1,
+    int verb_level = 0)
+{
     if (features.size() > 0) {
         theEnvironment.recognizedFeatureNames = features;
     }
@@ -160,10 +164,6 @@ void set_environment_params_imp (
         theEnvironment.n_reduce_threads = n_reduce_threads;
     }
     
-    if (n_loader_threads != 0) {
-        theEnvironment.n_loader_threads = n_loader_threads;
-    }
-
     if (dynamic_range >= 0) {
         theEnvironment.fpimageOptions.set_target_dyn_range(dynamic_range);
     }
@@ -176,9 +176,12 @@ void set_environment_params_imp (
         theEnvironment.fpimageOptions.set_max_intensity(max_intensity);
     }
 
-    if (verb_level >= 0) {
+    if (verb_level >= 0) 
+    {
         theEnvironment.set_verbosity_level (verb_level);
-    } else {
+    } 
+    else 
+    {
         std::cerr << "Error: verbosity (" + std::to_string(verb_level) + ") should be a non-negative value" << std::endl;
     }
 
@@ -233,23 +236,40 @@ py::tuple featurize_directory_imp (
     // Process the image sdata
     int min_online_roi_size = 0;
 
-    theEnvironment.saveOption = [&output_type](){
-        if (output_type == "arrowipc") {
+    theEnvironment.saveOption = [&output_type]()
+    {
+        if (output_type == "arrowipc") 
+        {
             return SaveOption::saveArrowIPC;
-	    } else if (output_type == "parquet") {
-            return SaveOption::saveParquet;
-        } else {return SaveOption::saveBuffer;}
+	    } 
+        else 
+            if (output_type == "parquet") 
+            {
+                return SaveOption::saveParquet;
+            } 
+            else 
+            {
+                return SaveOption::saveBuffer;
+            }
 	}();
 
-    errorCode = processDataset(
-        intensFiles,
-        labelFiles,
-        theEnvironment.n_loader_threads,
-        theEnvironment.n_pixel_scan_threads,
-        theEnvironment.n_reduce_threads,
-        min_online_roi_size,
-        theEnvironment.saveOption,
-        output_path);
+    if (theEnvironment.singleROI)
+        errorCode = processDataset_2D_wholeslide (
+            intensFiles,
+            labelFiles,
+            theEnvironment.n_reduce_threads,
+            min_online_roi_size,
+            theEnvironment.saveOption,
+            output_path
+        );
+    else
+        errorCode = processDataset_2D_segmented (
+            intensFiles,
+            labelFiles,
+            theEnvironment.n_reduce_threads,
+            min_online_roi_size,
+            theEnvironment.saveOption,
+            output_path);
 
     if (errorCode)
         throw std::runtime_error("Error " + std::to_string(errorCode) + " occurred during dataset processing");
@@ -257,15 +277,36 @@ py::tuple featurize_directory_imp (
     // Output the result
     if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
     {
+        // has the backend produced any result ?
+        auto nRows = theResultsCache.get_num_rows();
+        if (nRows == 0)
+        {
+            VERBOSLVL2 (std::cerr << "\nfeaturize_directory_imp(): returning a blank tuple\n");
+
+            // return a blank dataframe
+            std::vector<std::string> h ({ "column1", "column2", "column3", "column4"});
+            std::vector<std::string> s ({ "blank", "blank" });
+            std::vector<double> n ({ 0, 0 });
+
+            pybind11::array pyH = py::array(py::cast(h));
+            pybind11::array pySD = py::array(py::cast(s));
+            pybind11::array pyND = as_pyarray(std::move(n));
+
+            size_t nr = 1;
+            pySD = pySD.reshape({ nr, pySD.size() / nr });
+            pyND = pyND.reshape({ nr, pyND.size() / nr });
+            return py::make_tuple (pyH, pySD, pyND);
+            
+        }
+
+        // we have informative result, package it
         auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
         auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
         auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
 
-        // Shape the user-facing dataframe
-        auto nRows = theResultsCache.get_num_rows();
+        // - shape the user-facing dataframe
         pyStrData = pyStrData.reshape ({nRows, pyStrData.size() / nRows});
         pyNumData = pyNumData.reshape ({ nRows, pyNumData.size() / nRows });
-
         return py::make_tuple (pyHeader, pyStrData, pyNumData);
     } 
 
@@ -324,11 +365,9 @@ py::tuple featurize_directory_imq_imp (
         } else {return SaveOption::saveBuffer;}
 	}();
 
-    errorCode = processDataset(
+    errorCode = processDataset_2D_segmented (
         intensFiles,
         labelFiles,
-        theEnvironment.n_loader_threads,
-        theEnvironment.n_pixel_scan_threads,
         theEnvironment.n_reduce_threads,
         min_online_roi_size,
         theEnvironment.saveOption,
@@ -414,11 +453,9 @@ py::tuple featurize_directory_3D_imp(
         else { return SaveOption::saveBuffer; }
     }();
 
-    errorCode = processDataset_3D(
+    errorCode = processDataset_3D_segmented (
         intensFiles,
         labelFiles,
-        theEnvironment.n_loader_threads,
-        theEnvironment.n_pixel_scan_threads,
         theEnvironment.n_reduce_threads,
         min_online_roi_size,
         theEnvironment.saveOption,
@@ -482,7 +519,7 @@ py::tuple featurize_montage_imp (
     theEnvironment.labels_dir = "__NONE__";
 
     // One-time initialization
-    init_feature_buffers();
+    init_slide_rois();
 
     theResultsCache.clear();
 
@@ -582,11 +619,9 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
 		} else {return SaveOption::saveBuffer;}
 	}();
 
-    errorCode = processDataset(
+    errorCode = processDataset_2D_segmented (
         intensFiles,
         labelFiles,
-        theEnvironment.n_loader_threads,
-        theEnvironment.n_pixel_scan_threads,
         theEnvironment.n_reduce_threads,
         min_online_roi_size,
         theEnvironment.saveOption,
@@ -730,7 +765,6 @@ std::map<std::string, ParameterTypes> get_params_imp(const std::vector<std::stri
     params["pixels_per_micron"] = theEnvironment.xyRes;
     params["coarse_gray_depth"] = theEnvironment.get_coarse_gray_depth();
     params["n_feature_calc_threads"] = theEnvironment.n_reduce_threads;
-    params["n_loader_threads"] = theEnvironment.n_loader_threads;
     params["ibsi"] = theEnvironment.ibsi_compliance;
 
     params["gabor_kersize"] = GaborFeature::n;
@@ -827,60 +861,5 @@ PYBIND11_MODULE(backend, m)
     m.def("get_parquet_file_imp", &get_parquet_file_imp, "Returns path to parquet file");
 }
 
-///
-/// The following code block is a quick & simple manual test of the Python interface 
-/// invocable from from the command line. It lets you bypass building and installing the Python library.
-/// To use it, 
-///     #define TESTING_PY_INTERFACE, 
-///     exclude file main_nyxus.cpp from build, and 
-///     rebuild the CLI target.
-/// 
-#ifdef TESTING_PY_INTERFACE
-//
-// Testing Python interface
-//
-void initialize_environment(
-    const std::vector<std::string>& features,
-    int neighbor_distance,
-    float pixels_per_micron,
-    uint32_t coarse_gray_depth,
-    uint32_t n_reduce_threads,
-    uint32_t n_loader_threads);
 
-py::tuple featurize_directory_imp(
-    const std::string& intensity_dir,
-    const std::string& labels_dir,
-    const std::string& file_pattern);
-
-py::tuple featurize_directory_3D_imp(
-    const std::string& intensity_dir,
-    const std::string& labels_dir,
-    const std::string& file_pattern);
-
-int main(int argc, char** argv)
-{
-    std::cout << "main() \n";
-
-    // Test feature extraction
-    
-    //  initialize_environment({ "*ALL*" }, 5, 120, 1, 1);
-    //
-    //  py::tuple result = featurize_directory_imp(
-    //      "C:\\WORK\\AXLE\\data\\mini\\int", // intensity_dir,
-    //      "C:\\WORK\\AXLE\\data\\mini\\seg", // const std::string & labels_dir,
-    //      "p0_y1_r1_c0\\.ome\\.tif"); // const std::string & file_pattern
-
-    // Test nested segments functionality
-
-    py::tuple result = findrelations_imp(
-        "C:\\WORK\\AXLE\\data\\mini\\seg",  // label_dir, 
-        ".*", // file_pattern,
-        "_c", // channel_signature, 
-        "1", // parent_channel, 
-        "0"); // child_channel
-
-    std::cout << "finishing \n";
-}
-
-#endif
 

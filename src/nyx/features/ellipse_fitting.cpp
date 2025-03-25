@@ -111,6 +111,13 @@ double EllipseFittingFeature::get_roundness()
 	return roundness;
 }
 
+void EllipseFittingFeature::extract (LR& r)
+{
+	EllipseFittingFeature f;
+	f.calculate (r);
+	f.save_value (r.fvals);
+}
+
 void EllipseFittingFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
@@ -121,9 +128,7 @@ void EllipseFittingFeature::reduce (size_t start, size_t end, std::vector<int>* 
 		if (r.has_bad_data())
 			continue;
 
-		EllipseFittingFeature f;
-		f.calculate (r);
-		f.save_value (r.fvals);
+		extract (r);
 	}
 }
 

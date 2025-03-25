@@ -479,6 +479,13 @@ double NGTDMFeature::calc_Strength()
 	return retval;
 }
 
+void NGTDMFeature::extract (LR& r)
+{
+	NGTDMFeature f;
+	f.calculate(r);
+	f.save_value(r.fvals);
+}
+
 void NGTDMFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
@@ -489,9 +496,7 @@ void NGTDMFeature::parallel_process_1_batch (size_t start, size_t end, std::vect
 		if (r.has_bad_data())
 			continue;
 
-		NGTDMFeature f;
-		f.calculate(r);
-		f.save_value(r.fvals);
+		extract (r);
 	}
 }
 

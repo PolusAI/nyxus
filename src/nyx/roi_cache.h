@@ -32,7 +32,8 @@ class LR: public BasicLR
 public:
 	static constexpr const RoiDataCacheItem CachedObjects[] = { RAW_PIXELS,	CONTOUR, CONVEX_HULL, IMAGE_MATRIX, NEIGHBOR_ROI_LABELS };
 
-	LR();
+	LR (int lbl);
+	LR(): BasicLR(-1) {}	// use default label '-1'
 	bool nontrivial_roi (size_t memory_limit);
 	bool has_bad_data();
 	size_t get_ram_footprint_estimate();
@@ -57,7 +58,7 @@ public:
 	std::vector<Pixel2> convHull_CH;
 
 	std::vector<std::vector<StatsReal>> fvals;
-	std::vector<StatsReal> get_fvals (int fcode);
+	std::vector<StatsReal> get_fvals (int fcode) const;
 	void initialize_fvals();
 
 	StatsReal aux_M2,
@@ -68,17 +69,13 @@ public:
 	std::vector<int> aux_neighboring_labels;
 
 	// 2D
-	// needed by Contour, Erosions, GLCM, GLRLM, GLSZM, GLDM, NGTDM, Radial distribution, Gabor, Moments, ROI radius
-	ImageMatrix aux_image_matrix;
-	size_t im_buffer_offset;
+	ImageMatrix aux_image_matrix;	// helper for contour, erosions, texture features, radial distribution, Gabor, moments, ROI radius
 
 	// 3D
-	SimpleCube<PixIntens> aux_image_cube;
+	SimpleCube<PixIntens> aux_image_cube;	// helper for texture features and moments
 
-	// Stats across ROI pixels of the slide
-	static PixIntens slide_min_inten;
-	static PixIntens slide_max_inten;
-	static void reset_global_stats();
+	int slide_idx; // index in LR::dataset_props, links a ROI to a slide
+
 	// Dataset properties
 	static std::vector<SlideProps> dataset_props;
 	static size_t dataset_max_combined_roicloud_len;
@@ -93,14 +90,14 @@ public:
 class NestedLR: public BasicLR
 {
 public:
-	NestedLR(const LR& r) 
+	NestedLR(const LR& r):
+		BasicLR (r.label)
 	{
 		this->aabb = r.aabb;
-		this->label = r.label;
 		this->segFname = r.segFname;
 		this->intFname = r.intFname;
 	}
-	NestedLR() {}
+	NestedLR(): BasicLR(-1) {} // use default label '-1'
 	std::vector<int> children;
 	std::string segFname;
 };

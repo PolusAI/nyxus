@@ -1,18 +1,9 @@
-#if __has_include(<filesystem>)
-  #include <filesystem>
-  namespace fs = std::filesystem;
-#elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
-  namespace fs = std::experimental::filesystem;
-#else
-  error "Missing the <filesystem> header."
-#endif
-
 #include <errno.h>
 #include <iostream>
 #include <sstream>
 #include <thread>
 #include "../environment.h"
+#include "../helpers/fsystem.h"
 #include "../helpers/helpers.h"
 #include "image_matrix_nontriv.h"
 

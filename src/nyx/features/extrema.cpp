@@ -172,6 +172,13 @@ void ExtremaFeature::save_value (std::vector<std::vector<double>>& fvals)
 	fvals [(int)Feature2D::EXTREMA_P8_X][0] = x8;
 }
 
+void ExtremaFeature::extract (LR& r)
+{
+	ExtremaFeature ef;
+	ef.calculate (r);
+	ef.save_value(r.fvals);
+}
+
 void ExtremaFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
@@ -182,9 +189,7 @@ void ExtremaFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabe
 		if (r.has_bad_data())
 			continue;
 
-		ExtremaFeature ef;
-		ef.calculate (r);
-		ef.save_value(r.fvals);
+		extract (r);
 	}
 }
 

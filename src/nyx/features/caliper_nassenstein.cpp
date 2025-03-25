@@ -209,6 +209,13 @@ void CaliperNassensteinFeature::parallel_process (std::vector<int>& roi_labels, 
 	runParallel(CaliperNassensteinFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
 }
 
+void CaliperNassensteinFeature::extract (LR& r)
+{
+	CaliperNassensteinFeature f;
+	f.calculate(r);
+	f.save_value(r.fvals);
+}
+
 void CaliperNassensteinFeature::parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	// Calculate the feature for each batch ROI item 

@@ -576,7 +576,8 @@ namespace Nyxus
 		IMOM_WHU6,
 		IMOM_WHU7,
 
-		_COUNT_
+		_COUNT_,
+		_FIRST_ = COV
 	};
 
 	enum class Feature3D
@@ -614,6 +615,8 @@ namespace Nyxus
 		UNIFORMITY,
 		UNIFORMITY_PIU,
 
+		// 3D features planned for a future PR
+#if 0
 		// Morphology:
 		VOLUME_PIXELS,
 		CENTROID_X,
@@ -657,6 +660,7 @@ namespace Nyxus
 		SPAT_MOMENT_22,
 		SPAT_MOMENT_23,
 		SPAT_MOMENT_30,
+#endif
 
 		// texture / GLCM
 		GLCM_ACOR,		// Autocorrelation, IBSI # QWB0
@@ -836,7 +840,8 @@ namespace Nyxus
 		GLRLM_LRLGLE_AVE,
 		GLRLM_LRHGLE_AVE,
 
-		_COUNT_
+		_COUNT_,
+		_FIRST_ = COV
 	};
 
 	enum class FeatureIMQ {
@@ -848,7 +853,8 @@ namespace Nyxus
 		MIN_SATURATION,
 		SHARPNESS,
 
-		_COUNT_
+		_COUNT_,
+		_FIRST_ = FOCUS_SCORE
 	};
 
 	enum class Fgroup2D
@@ -905,13 +911,18 @@ class FeatureSet
 {
 public:
 	FeatureSet();
-	void enableAll(bool newStatus = true) 
+
+	// sets the flag for all the features - 2D, 3D, IMQ
+	void enableAll (bool newStatus = true) 
 	{ 
-		for (int i = 0; i < int(Nyxus::Feature2D::_COUNT_); i++) m_enabledFeatures[i] = newStatus; 
+		for (auto i = 0; i < sizeof(m_enabledFeatures); i++)
+			m_enabledFeatures[i] = newStatus; 
 	}
+
 	void enableAllIMQ(bool newStatus = true)
 	{
-		for (int i = int(Nyxus::Feature3D::_COUNT_); i < int(Nyxus::FeatureIMQ::_COUNT_); i++) {
+		for (int i = int(Nyxus::FeatureIMQ::_FIRST_); i < int(Nyxus::FeatureIMQ::_COUNT_); i++) 
+		{
 			m_enabledFeatures[i] = newStatus; 
 		}
 	}
@@ -1030,21 +1041,38 @@ public:
 				return true;
 		return false;
 	}
+	// returns the number of enabled features resolved by dimensionality
 	int numOfEnabled (int dim) 
 	{
 		int cnt = 0;
-		int n = dim == 2 ? (int)Nyxus::Feature2D::_COUNT_ : (int)Nyxus::Feature3D::_COUNT_;
-		for (int i = 0; i < n; i++)
-			if (m_enabledFeatures[i])
-				cnt++;
+
+		if (dim == 2)
+		{
+			// regular features
+			for (int i = (int) Nyxus::Feature2D::_FIRST_; i < (int) Nyxus::Feature2D::_COUNT_ ; i++)
+				if (m_enabledFeatures[i])
+					cnt++;
+			// quality features
+			for (int i = (int) Nyxus::FeatureIMQ::_FIRST_; i < (int) Nyxus::FeatureIMQ::_COUNT_; i++)
+				if (m_enabledFeatures[i])
+					cnt++;
+		}
+		else // 3D
+		{
+			for (int i = (int)Nyxus::Feature3D::_FIRST_; i < (int) Nyxus::Feature3D::_COUNT_; i++)
+				if (m_enabledFeatures[i])
+					cnt++;
+		}
+
 		return cnt;
 	}
-	bool find_2D_FeatureByString (const std::string & name, int & f);		// 'f' is signed Feature2D
-	bool find_2D_GroupByString (const std::string& group_name, int & group_code);	// 'group_code' is signed Nyxus::Fgroup2D
-	bool find_3D_FeatureByString (const std::string & feature_name, int & feature_code);
-	bool find_3D_GroupByString (const std::string & group_name, int & group_code);
-	bool find_IMQ_FeatureByString (const std::string & feature_name, Nyxus::FeatureIMQ & feature_code);
-	bool find_IMQ_GroupByString (const std::string & group_name, Nyxus::FgroupIMQ & group_code);
+
+  bool find_2D_FeatureByString (const std::string& name, int & f);					// 'f' is signed Feature2D
+	bool find_2D_GroupByString (const std::string& group_name, int & gc);			// 'gc' is signed Fgroup2D
+	bool find_3D_FeatureByString (const std::string & feature_name, int & f);		// 'f' is signed Feature3D
+	bool find_3D_GroupByString (const std::string & group_name, int & gc);		// 'gc' is signed Fgroup3D
+	bool find_IMQ_FeatureByString (const std::string & feature_name, int & f);	// 'f' is signed FeatureIMQ
+	bool find_IMQ_GroupByString (const std::string & group_name, int & gc);		// 'gc' is signed FgroupIMQ
 
 	std::string findFeatureNameByCode (Nyxus::Feature2D code);
 	std::string findFeatureNameByCode (Nyxus::Feature3D fcode);

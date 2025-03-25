@@ -1115,16 +1115,20 @@ void GLRLMFeature::calc_LRHGLE(AngledFtrs& af)
 	}
 }
 
+void GLRLMFeature::extract (LR& r)
+{
+	GLRLMFeature glrlm;
+	glrlm.calculate(r);
+	glrlm.save_value(r.fvals);
+}
+
 void GLRLMFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-
-		GLRLMFeature glrlm;
-		glrlm.calculate(r);
-		glrlm.save_value(r.fvals);
+		extract (r);
 	}
 }
 
