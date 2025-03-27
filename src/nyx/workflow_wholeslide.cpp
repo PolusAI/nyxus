@@ -273,7 +273,7 @@ namespace Nyxus
 
 		// run batches of threads
 		#ifdef WITH_PYTHON_H
-		py::gil_scoped_release
+		py::gil_scoped_release;
 		#endif
 		size_t n_jobs = (nf + n_threads - 1) / n_threads;
 		for (size_t j=0; j<n_jobs; j++)
@@ -303,7 +303,7 @@ namespace Nyxus
 			}
 		}
 		#ifdef WITH_PYTHON_H
-		py::gil_scoped_acquire
+		py::gil_scoped_acquire;
 		#endif
 		//**** finalize Apache output
 
