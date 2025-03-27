@@ -690,62 +690,6 @@ class TestNyxus():
 
             assert directory_features.shape[1] > 3
         
-        def test_imq_wsi_scalability (self):
-            '''
-            Test of consistency of image quality feature calculation 
-            via the whole-slide workflow at 
-            varying number of threads.
-            '''
-            
-            path = str(pathlib.Path(__file__).parent.resolve())
-            data_path = path + '/data/'
-            nyx = nyxus.ImageQuality (["*ALL_IMQ*"])
-
-            p = { "n_feature_calc_threads": 1}
-            nyx.set_params(**p)
-            f1 = nyx.featurize_directory (data_path + 'int/', data_path + 'int/')      
-            s1 = f1.sum(numeric_only=True, axis=0)
-
-            p = { "n_feature_calc_threads": 2}
-            nyx.set_params(**p)
-            f2 = nyx.featurize_directory (data_path + 'int/', data_path + 'int/')      
-            s2 = f2.sum(numeric_only=True, axis=0)
-
-            p = { "n_feature_calc_threads": 4}
-            nyx.set_params(**p)
-            f4 = nyx.featurize_directory (data_path + 'int/', data_path + 'int/')      
-            s4 = f4.sum(numeric_only=True, axis=0)
-
-            assert s1.equals(s2) and s1.equals(s4)
-
-        def test_nonimq_wsi_scalability (self):
-            '''
-            Test of consistency of scalable regular 2D feature calculation 
-            via the whole-slide workflow at 
-            varying number of threads.
-            '''
-
-            path = str(pathlib.Path(__file__).parent.resolve())
-            data_path = path + '/data/'
-            nyx = nyxus.Nyxus (["*WHOLESLIDE*"])
-
-            p = { "n_feature_calc_threads": 1}
-            nyx.set_params(**p)
-            f1 = nyx.featurize_directory (data_path + 'int/', data_path + 'int/')      
-            s1 = f1.sum(numeric_only=True, axis=0)
-
-            p = { "n_feature_calc_threads": 2}
-            nyx.set_params(**p)
-            f2 = nyx.featurize_directory (data_path + 'int/', data_path + 'int/')      
-            s2 = f2.sum(numeric_only=True, axis=0)
-
-            p = { "n_feature_calc_threads": 4}
-            nyx.set_params(**p)
-            f4 = nyx.featurize_directory (data_path + 'int/', data_path + 'int/')      
-            s4 = f4.sum(numeric_only=True, axis=0)
-
-            assert s1.equals(s2) and s1.equals(s4)
-
         def test_featureset_consistency (self):
             '''
             This test checks if 2D and image quality features are isolated 

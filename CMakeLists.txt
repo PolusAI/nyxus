@@ -188,7 +188,9 @@ set(SOURCE
 	src/nyx/features/texture_feature.cpp
 	src/nyx/features/zernike.cpp
 	src/nyx/features/zernike_nontriv.cpp
+	src/nyx/helpers/diag.cpp
 	src/nyx/helpers/timing.cpp
+	src/nyx/arrow_helpers.cpp
 	src/nyx/cli_fpimage_options.cpp
 	src/nyx/cli_gabor_options.cpp
 	src/nyx/cli_glcm_options.cpp
@@ -221,10 +223,10 @@ set(SOURCE
 	src/nyx/roi_blacklist.cpp
 	src/nyx/roi_cache.cpp
 	src/nyx/roi_cache_basic.cpp
-	src/nyx/scan_fastloader_way.cpp
 	src/nyx/slideprops.cpp
 	src/nyx/strpat.cpp
 	src/nyx/workflow_3d.cpp
+	src/nyx/workflow_pythonapi.cpp
 	src/nyx/workflow_segmented.cpp
 	src/nyx/workflow_wholeslide.cpp
 )

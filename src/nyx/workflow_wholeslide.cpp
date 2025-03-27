@@ -287,16 +287,31 @@ namespace Nyxus
 					break;
 
 				int rval = 0;
-				T.push_back (std::async(std::launch::async, 
-					featurize_wsi_thread,
-					intensFiles,
-					labelFiles,
-					idx,
-					nf,
-					outputPath,
-					write_apache,
-					saveOption,
-					std::ref(rval)));
+				if (n_threads > 1)
+				{
+					T.push_back(std::async(std::launch::async,
+						featurize_wsi_thread,
+						intensFiles,
+						labelFiles,
+						idx,
+						nf,
+						outputPath,
+						write_apache,
+						saveOption,
+						std::ref(rval)));
+				}
+				else
+				{
+					featurize_wsi_thread (
+						intensFiles,
+						labelFiles,
+						idx,
+						nf,
+						outputPath,
+						write_apache,
+						saveOption,
+						rval);
+				}
 			}
 		}
 
