@@ -347,7 +347,7 @@ namespace Nyxus
 					label = 1;
 				
 				// Update pixel's ROI metrics
-				feed_pixel_2_metrics (row, col, dataI[start_idx + row * height + col], label, 200); // Updates 'uniqueLabels' and 'roiData'
+				feed_pixel_2_metrics (row, col, dataI[start_idx + row * height + col], label); // Updates 'uniqueLabels' and 'roiData'
 				
 
 				if (PyErr_CheckSignals() != 0)
