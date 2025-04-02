@@ -173,6 +173,107 @@ namespace Nyxus
 		return true;
 	}
 
+	bool scanTrivialRois_anisotropic (
+		const std::vector<int>& batch_labels,
+		const std::string& intens_fpath,
+		const std::string& label_fpath,
+		ImageLoader& ldr,
+		double sf_x, 
+		double sf_y)
+	{
+		// Sort the batch's labels to enable binary searching in it
+		std::vector<int> whiteList = batch_labels;
+		std::sort(whiteList.begin(), whiteList.end());
+
+		int lvl = 0,	// pyramid level
+			lyr = 0;	//	layer
+
+		// physical slide properties
+		size_t nth = ldr.get_num_tiles_hor(),
+			ntv = ldr.get_num_tiles_vert(),
+			fw = ldr.get_tile_width(),
+			th = ldr.get_tile_height(),
+			tw = ldr.get_tile_width(),
+			tileSize = ldr.get_tile_size(),
+			fullwidth = ldr.get_full_width(),
+			fullheight = ldr.get_full_height();
+
+		// virtual slide properties
+		size_t vh = (size_t) (double(fullheight) * sf_y),
+			vw = (size_t) (double(fullwidth) * sf_x),
+			vth = (size_t)(double(th) * sf_y),
+			vtw = (size_t)(double(tw) * sf_x);
+
+		// current tile to skip tile reloads
+		size_t curt_x = 999, curt_y = 999;
+
+		for (size_t vr = 0; vr < vh; vr++)
+		{
+			for (size_t vc = 0; vc < vw; vc++)
+			{
+				// tile position
+				size_t tidx_y = size_t(vr / vth),
+					tidx_x = size_t(vc / vtw);
+
+				// load it
+				if (tidx_y != curt_y || tidx_x != curt_x)
+				{
+					bool ok = ldr.load_tile(tidx_y, tidx_x);
+					if (!ok)
+					{
+						std::string s = "Error fetching tile row=" + std::to_string(tidx_y) + " col=" + std::to_string(tidx_x);
+#ifdef WITH_PYTHON_H
+						throw s;
+#endif	
+						std::cerr << s << "\n";
+						return false;
+					}
+
+					// cache tile position to avoid reloading
+					curt_y = tidx_y;
+					curt_x = tidx_x;
+				}
+
+				// within-tile virtual pixel position
+				size_t vx = vc - tidx_x * vtw,
+					vy = vr - tidx_y * vth;
+
+				// within-tile physical pixel position
+				size_t ph_x = size_t (double(vx) / sf_x), 
+					ph_y = size_t (double(vy) / sf_y),
+					i = ph_y * tw + ph_x;
+
+				// read buffered physical pixel 
+				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
+				const std::shared_ptr<std::vector<uint32_t>>& spL = ldr.get_seg_tile_sptr();
+				bool wholeslide = spL == nullptr; // alternatively, theEnvironment.singleROI
+
+				PixIntens label = 1;
+				if (!wholeslide)
+					label = (*spL)[i];
+
+				// not a ROI ?
+				if (!label)
+					continue;
+
+				// skip this ROI if the label isn't in the to-do list 'whiteList' that's only possible in multi-ROI mode
+				if (wholeslide==false && !std::binary_search(whiteList.begin(), whiteList.end(), label))
+					continue;
+
+				auto inten = dataI[i];
+
+				// cache this pixel 
+				// (ROI 'label' is known to the cache by means of gatherRoisMetrics() called previously.)
+				feed_pixel_2_cache (vc, vr, inten, label);
+			}
+		}
+
+		// Dump ROI pixel clouds to the output directory
+		VERBOSLVL5(dump_roi_pixels(batch_labels, label_fpath))
+
+		return true;
+	}
+
 	//
 	// Reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
 	//
@@ -245,6 +346,88 @@ namespace Nyxus
 			}
 
 			return true;
+	}
+
+	//
+	// Reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi' 
+	// performing anisotropy correction
+	//
+	bool scan_trivial_wholeslide_anisotropic (
+		LR& vroi,
+		const std::string& intens_fpath,
+		ImageLoader& ldr,
+		double aniso_x,
+		double aniso_y)
+	{
+		int lvl = 0,	// Pyramid level
+			lyr = 0;	//	Layer
+
+		// physical slide properties
+		size_t nth = ldr.get_num_tiles_hor(),
+			ntv = ldr.get_num_tiles_vert(),
+			fw = ldr.get_tile_width(),
+			th = ldr.get_tile_height(),
+			tw = ldr.get_tile_width(),
+			tileSize = ldr.get_tile_size(),
+			fullwidth = ldr.get_full_width(),
+			fullheight = ldr.get_full_height();
+
+		// virtual slide properties
+		size_t vh = (size_t)(double(fullheight) * aniso_y),
+			vw = (size_t)(double(fullwidth) * aniso_x),
+			vth = (size_t)(double(th) * aniso_y),
+			vtw = (size_t)(double(tw) * aniso_x);
+
+		// current tile to skip tile reloads
+		size_t curt_x = 999, curt_y = 999;
+
+		for (size_t vr = 0; vr < vh; vr++)
+		{
+			for (size_t vc = 0; vc < vw; vc++)
+			{
+				// tile position for virtual pixel (vc, vr)
+				size_t tidx_y = size_t(vr / vth),
+					tidx_x = size_t(vc / vtw);
+
+				// load it
+				if (tidx_y != curt_y || tidx_x != curt_x)
+				{
+					bool ok = ldr.load_tile(tidx_y, tidx_x);
+					if (!ok)
+					{
+						std::string s = "Error fetching tile row=" + std::to_string(tidx_y) + " col=" + std::to_string(tidx_x);
+#ifdef WITH_PYTHON_H
+						throw s;
+#endif	
+						std::cerr << s << "\n";
+						return false;
+					}
+
+					// cache tile position to avoid reloading
+					curt_y = tidx_y;
+					curt_x = tidx_x;
+				}
+
+				// within-tile virtual pixel position
+				size_t vx = vc - tidx_x * vtw,
+					vy = vr - tidx_y * vth;
+
+				// within-tile physical pixel position
+				size_t ph_x = size_t(double(vx) / aniso_x),
+					ph_y = size_t(double(vy) / aniso_y),
+					i = ph_y * tw + ph_x;
+
+				// read buffered physical pixel 
+				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
+				const std::shared_ptr<std::vector<uint32_t>>& spL = ldr.get_seg_tile_sptr();
+				bool wholeslide = spL == nullptr; // alternatively, theEnvironment.singleROI
+
+				// Cache this pixel 
+				feed_pixel_2_cache_LR (vc, vr, dataI[i], vroi);
+			}
+		}
+
+		return true;
 	}
 
 	bool scanTrivialRois_3D (const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, const std::vector<std::string> & z_indices)
@@ -363,6 +546,141 @@ namespace Nyxus
 
 		return true;
 	}
+
+	bool scanTrivialRois_3D_anisotropic (
+		const std::vector<int>& batch_labels, 
+		const std::string& intens_fpath, 
+		const std::string& label_fpath, 
+		const std::vector<std::string> & z_indices,
+		double aniso_x, 
+		double aniso_y, 
+		double aniso_z)
+	{
+		// Sort the batch's labels to enable binary searching in it
+		std::vector<int> whiteList = batch_labels;
+		std::sort(whiteList.begin(), whiteList.end());
+
+		int lvl = 0,	// pyramid level
+			lyr = 0;	//	layer
+
+		size_t vD = (size_t)(double(z_indices.size()) * aniso_z);	// virtual depth
+
+		for (size_t vz = 0; vz < vD; vz++)
+		{
+			size_t z = size_t (double(vz) / aniso_z);	// physical z
+
+			// prepare the physical file 
+			// 
+			// ifile and mfile contain a placeholder for the z-index. We need to turn them to physical filesystem files
+			auto zValue = z_indices[z];	// realistic dataset's z-values may be arbitrary (non-zer-based and non-contiguous), so use the actual value
+			std::string ifpath = std::regex_replace(intens_fpath, std::regex("\\*"), zValue),
+				mfpath = std::regex_replace(label_fpath, std::regex("\\*"), zValue);
+
+			// Cache the file names to be picked up by labels to know their file origin
+			theIntFname = ifpath;
+			theSegFname = mfpath;
+
+			// Scan this Z intensity-mask pair 
+			SlideProps p;
+			p.fname_int = ifpath;
+			p.fname_seg = mfpath;
+			if (! theImLoader.open(p))
+			{
+				std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
+				return false;
+			}
+
+			size_t nth = theImLoader.get_num_tiles_hor(),
+				ntv = theImLoader.get_num_tiles_vert(),
+				fw = theImLoader.get_tile_width(),
+				th = theImLoader.get_tile_height(),
+				tw = theImLoader.get_tile_width(),
+				tileSize = theImLoader.get_tile_size(),
+				fullwidth = theImLoader.get_full_width(),
+				fullheight = theImLoader.get_full_height();
+
+			// virtual slide properties
+			size_t vh = (size_t) (double(fullheight) * aniso_y),
+				vw = (size_t) (double(fullwidth) * aniso_x),
+				vth = (size_t) (double(th) * aniso_y),
+				vtw = (size_t) (double(tw) * aniso_x);
+
+			// current tile to skip tile reloads
+			size_t curt_x = 999, curt_y = 999;
+
+			for (size_t vr = 0; vr < vh; vr++)
+			{
+				for (size_t vc = 0; vc < vw; vc++)
+				{
+					// tile position
+					size_t tidx_y = size_t (vr/vth),
+						tidx_x = size_t (vc/vtw);
+
+					// load it
+					if (tidx_y != curt_y || tidx_x != curt_x)
+					{
+						bool ok = theImLoader.load_tile(tidx_y, tidx_x);
+						if (!ok)
+						{
+							std::string s = "Error fetching tile row=" + std::to_string(tidx_y) + " col=" + std::to_string(tidx_x);
+							#ifdef WITH_PYTHON_H
+								throw s;
+							#endif	
+							std::cerr << s << "\n";
+							return false;
+						}
+
+						// cache tile position to avoid reloading
+						curt_y = tidx_y;
+						curt_x = tidx_x;
+					}
+
+					// within-tile virtual pixel position
+					size_t vx = vc - tidx_x * vtw,
+						vy = vr - tidx_y * vth;
+
+					// within-tile physical pixel position
+					size_t ph_x = size_t(double(vx) / aniso_x),
+						ph_y = size_t(double(vy) / aniso_y),
+						i = ph_y * tw + ph_x;
+
+					// read buffered physical pixel 
+					auto dataI = theImLoader.get_int_tile_buffer(),
+						dataL = theImLoader.get_seg_tile_buffer();
+
+					// skip non-mask pixels
+					auto label = dataL[i];
+					if (!label)
+						continue;
+
+					// skip this ROI if the label isn't in the pending set of a multi-ROI mode
+					if (!theEnvironment.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))
+						continue;
+
+					// skip tile buffer pixels beyond the image's bounds
+					if (vc >= fullwidth || vr >= fullheight)
+						continue;
+
+					// collapse all the labels to one if single-ROI mde is requested
+					if (theEnvironment.singleROI)
+						label = 1;
+
+					// cache this voxel 
+					auto inten = dataI[i];
+					feed_pixel_2_cache_3D (vc, vr, vz, dataI[i], label);
+				}
+			}
+
+			// Close the image pair
+			theImLoader.close();
+		}
+
+		// Dump ROI pixel clouds to the output directory
+		VERBOSLVL5(dump_roi_pixels(batch_labels, label_fpath))
+
+		return true;
+	}
+
 
 #ifdef WITH_PYTHON_H
 	bool scanTrivialRoisInMemory (const std::vector<int>& batch_labels, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens_images, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images, int start_idx)
@@ -550,7 +868,13 @@ namespace Nyxus
 						else
 							std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				)
-					scanTrivialRois (Pending, intens_fpath, label_fpath, theImLoader);
+					if (theEnvironment.anisoOptions.empty())
+						scanTrivialRois (Pending, intens_fpath, label_fpath, theImLoader);
+					else
+					{
+						double ax = theEnvironment.anisoOptions.get_aniso_x(), ay = theEnvironment.anisoOptions.get_aniso_y();
+						scanTrivialRois_anisotropic (Pending, intens_fpath, label_fpath, theImLoader, ax, ay);
+					}
 
 				// Allocate memory
 				VERBOSLVL2(std::cout << "\tallocating ROI buffers\n";)
@@ -600,7 +924,17 @@ namespace Nyxus
 				else
 					std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				)
-			scanTrivialRois (Pending, intens_fpath, label_fpath, theImLoader);
+
+				if (theEnvironment.anisoOptions.empty())
+				{
+					scanTrivialRois (Pending, intens_fpath, label_fpath, theImLoader);
+				}
+				else
+				{
+					double	ax = theEnvironment.anisoOptions.get_aniso_x(), 
+								ay = theEnvironment.anisoOptions.get_aniso_y();
+					scanTrivialRois_anisotropic (Pending, intens_fpath, label_fpath, theImLoader, ax, ay);
+				}
 
 			// Allocate memory
 			VERBOSLVL2(std::cout << "\tallocating ROI buffers\n";)
@@ -665,7 +999,18 @@ namespace Nyxus
 						else
 							std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				)
+
+				if (theEnvironment.anisoOptions.empty())
+				{
 					scanTrivialRois_3D (Pending, intens_fpath, label_fpath, z_indices);
+				}
+				else
+				{
+					double	ax = theEnvironment.anisoOptions.get_aniso_x(),
+						ay = theEnvironment.anisoOptions.get_aniso_y(), 
+						az = theEnvironment.anisoOptions.get_aniso_z();
+					scanTrivialRois_3D_anisotropic (Pending, intens_fpath, label_fpath, z_indices, ax, ay, az);
+				}
 
 				// Allocate memory
 				VERBOSLVL2(std::cout << "\tallocating ROI buffers\n";)

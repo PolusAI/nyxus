@@ -55,7 +55,7 @@ namespace Nyxus
 		roiData.clear();
 	}
 
-	void init_label_record_2 (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity, unsigned int tile_index)
+	void init_label_record_2 (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity)
 	{
 		// Initialize basic counters
 		r.aux_area = 1;
@@ -70,7 +70,7 @@ namespace Nyxus
 		r.intFname = intFile;
 	}
 
-	void init_label_record_3D (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int z, int label, PixIntens intensity, unsigned int tile_index)
+	void init_label_record_3D (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int z, int label, PixIntens intensity)
 	{
 		// Initialize basic counters
 		r.aux_area = 1;
@@ -85,7 +85,7 @@ namespace Nyxus
 		r.intFname = intFile;
 	}
 
-	void update_label_record_2 (LR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index)
+	void update_label_record_2 (LR& lr, int x, int y, int label, PixIntens intensity)
 	{
 		// Per-ROI 
 		lr.aux_area++;
@@ -96,7 +96,7 @@ namespace Nyxus
 		lr.update_aabb (x,y);
 	}
 
-	void update_label_record_3D (LR& lr, int x, int y, int z, int label, PixIntens intensity, unsigned int tile_index)
+	void update_label_record_3D (LR& lr, int x, int y, int z, int label, PixIntens intensity)
 	{
 		// Per-ROI 
 		lr.aux_area++;

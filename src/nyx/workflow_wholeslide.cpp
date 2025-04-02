@@ -44,13 +44,25 @@ namespace Nyxus
 			return false;
 		}
 
-		// read a pixel cloud
-		scan_trivial_wholeslide (vroi, ifpath, imlo); // counterpart of segmented scanTrivialRois ()
+		// read the slide into a pixel cloud
+		if (theEnvironment.anisoOptions.empty())
+		{
+			VERBOSLVL2(std::cout << "\nscan_trivial_wholeslide()\n");
+			scan_trivial_wholeslide (vroi, ifpath, imlo); // counterpart of segmented scanTrivialRois ()
+		}
+		else
+		{
+			VERBOSLVL2(std::cout << "\nscan_trivial_wholeslide_ANISO()\n");
+			double aniso_x = theEnvironment.anisoOptions.get_aniso_x(),
+				aniso_y = theEnvironment.anisoOptions.get_aniso_y();
+			scan_trivial_wholeslide_anisotropic (vroi, ifpath, imlo, aniso_x, aniso_y); // counterpart of segmented scanTrivialRois ()
+		}
 
 		// allocate memory for feature helpers (image matrix, etc)
 		VERBOSLVL2(std::cout << "\tallocating vROI buffers\n");
-		size_t len = vroi.aabb.get_width() * vroi.aabb.get_height();
-		vroi.aux_image_matrix.allocate(vroi.aabb.get_width(), vroi.aabb.get_height());
+		size_t h = vroi.aabb.get_height(), w = vroi.aabb.get_width();
+		size_t len = w * h;
+		vroi.aux_image_matrix.allocate (w, h);
 
 		// calculate the image matrix or cube 
 		vroi.aux_image_matrix.calculate_from_pixelcloud (vroi.raw_pixels, vroi.aabb);
@@ -91,13 +103,19 @@ namespace Nyxus
 		vroi.aux_min = (PixIntens) p.min_preroi_inten;
 		vroi.aux_max = (PixIntens) p.max_preroi_inten;
 
+		// fix the AABB with respect to anisotropy
+		if (theEnvironment.anisoOptions.empty() == false)
+			vroi.aabb.apply_anisotropy(
+				theEnvironment.anisoOptions.get_aniso_x(), 
+				theEnvironment.anisoOptions.get_aniso_y());
+
 		// prepare (zero) ROI's feature value buffer
 		vroi.initialize_fvals();
 
 		// assess ROI's memory footprint and check if we can featurize it as phase 2 (trivially) ?
-		if (size_t roiFootprint = vroi.get_ram_footprint_estimate(),
+		size_t roiFootprint = vroi.get_ram_footprint_estimate(),
 			ramLim = theEnvironment.get_ram_limit();
-			roiFootprint >= ramLim)
+		if (roiFootprint >= ramLim)
 		{
 			VERBOSLVL2(
 				std::cout << "oversized slide "

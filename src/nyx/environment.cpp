@@ -162,6 +162,13 @@ void Environment::show_cmdline_help()
 		<< "\t\t" << OPT << GABOR_THRESHOLD << "=<lower threshold of the filtered image to baseline ratio> \n"
 		<< "\t\t\tDefault: 0.025 \n";
 
+	std::cout << "\t\t" << OPT << ANISO_X << "=<x anisotropy> \n"
+		<< "\t\t\tDefault: 1 \n"
+		<< "\t\t" << OPT << ANISO_Y << "=<y anisotropy> \n"
+		<< "\t\t\tDefault: 1 \n"
+		<< "\t\t" << OPT << ANISO_Z << "=<z anisotropy> \n"
+		<< "\t\t\tDefault: 1 \n";
+
 	std::cout << "\t\t" << OPT << NESTEDROI_CHNL_SIGNATURE << "=<comma separated denominators of \\pi> \n"
 		<< "\t\t" << OPT << NESTEDROI_PARENT_CHNL << "=<number of the parent channel e.g. 1\n"
 		<< "\t\t" << OPT << NESTEDROI_CHILD_CHNL << "=<number of the child channel e.g. 0\n"
@@ -244,6 +251,9 @@ void Environment::show_summary(const std::string& head, const std::string& tail)
 
 	if (!gaborOptions.empty())
 		std::cout << "\tGabor feature options: " << gaborOptions.get_summary_text() << "\n";
+
+	if (!anisoOptions.empty())
+		std::cout << "\tAnisotropy options: " << anisoOptions.get_summary_text() << "\n";
 
 	// Real valued TIFF
 	if (!fpimageOptions.empty())
@@ -372,6 +382,9 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			find_string_argument(i, GABOR_F0, gaborOptions.rawF0) ||
 			find_string_argument(i, GABOR_THETA, gaborOptions.rawTheta) ||
 			find_string_argument(i, GABOR_THRESHOLD, gaborOptions.rawGrayThreshold)
+			|| find_string_argument (i, ANISO_X, anisoOptions.raw_aniso_x)
+			|| find_string_argument (i, ANISO_Y, anisoOptions.raw_aniso_y)
+			|| find_string_argument (i, ANISO_Z, anisoOptions.raw_aniso_z)
 			|| find_string_argument(i, NESTEDROI_CHNL_SIGNATURE, nestedOptions.rawChannelSignature)
 			|| find_string_argument(i, NESTEDROI_PARENT_CHNL, nestedOptions.rawParentChannelNo)
 			|| find_string_argument(i, NESTEDROI_CHILD_CHNL, nestedOptions.rawChildChannelNo)
@@ -668,6 +681,17 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		}
 	}
 
+	//==== parse anisotropy options
+	if (!anisoOptions.empty())
+	{
+		auto [ok, msg] = parse_aniso_options_raw_inputs();
+		if (!ok)
+		{
+			std::cerr << *msg << "\n";
+			return false;
+		}
+	}
+
 	//==== Parse nested ROI options
 	if (!nestedOptions.empty())
 	{
@@ -893,6 +917,12 @@ bool Environment::parse_fpimage_options_raw_inputs(std::string& error_message)
 		return false;
 	}
 	return true;
+}
+
+std::tuple<bool, std::optional<std::string>> Environment::parse_aniso_options_raw_inputs()
+{
+	auto [ok, msg] = anisoOptions.parse_input();
+	return { ok, msg };
 }
 
 bool Environment::parse_nested_options_raw_inputs(std::string& error_message)

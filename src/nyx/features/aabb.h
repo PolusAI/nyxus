@@ -77,6 +77,28 @@ public:
 		return retval;
 	}
 
+	inline void apply_anisotropy (double ax, double ay, double az = 1.0)
+	{
+		xmin = StatsInt(xmin * ax);
+		ymin = StatsInt(ymin * ay);
+		zmin = StatsInt(zmin * az);
+		
+		auto orgMax = xmax;
+		xmax = StatsInt(xmax * ax);
+		if (StatsInt(double(xmax + 1) / ax) == orgMax)
+			xmax = xmax+1;
+
+		orgMax = ymax;
+		ymax = StatsInt(ymax * ay);
+		if (StatsInt(double(ymax + 1) / ay) == orgMax)
+			ymax = ymax + 1;
+
+		orgMax = zmax;
+		zmax = StatsInt(zmax * az);
+		if (StatsInt(double(zmax + 1) / az) == orgMax)
+			zmax =zmax + 1;
+	}
+
 private:
 	StatsInt xmin = INT32_MAX, xmax = INT32_MIN, ymin = INT32_MAX, ymax = INT32_MIN, zmin = INT32_MAX, zmax = INT32_MIN;
 };
