@@ -377,7 +377,9 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 --fpimgdr | ${\color{red}\textsf{(optional)}}$ Desired dynamic range of voxels of a floating point TIFF image. Example: --fpimgdr=240 makes intensities be read in range 0-240. Default value: 10e4 | unsigned integer
 --fpimgmin | ${\color{red}\textsf{(optional)}}$ Minimum intensity of voxels of a floating point TIFF image. Default value: 0.0 | real
 --fpimgdr | ${\color{red}\textsf{(optional)}}$ Maximum intensity of voxels of a floating point TIFF image. Default value: 1.0 | real
-
+--anisox | ${\color{red}\textsf{(optional)}}$ x-anisotropy. Default value: 1.0 | real
+--anisoy | ${\color{red}\textsf{(optional)}}$ y-anisotropy. Default value: 1.0 | real
+--anisoz | ${\color{red}\textsf{(optional)}}$ z-anisotropy (for 3D datasets). Default value: 1.0 | real
 ---
 
 ## Examples
