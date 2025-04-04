@@ -740,6 +740,7 @@ namespace Nyxus
 		for (auto lab : Pending)
 		{
 			LR& r = roiData[lab];
+
 			size_t w = r.aabb.get_width(), 
 				h = r.aabb.get_height(), 
 				imatrSize = w * h;
@@ -1120,7 +1121,6 @@ namespace Nyxus
 			{
 				// Scan pixels of pending trivial ROIs 
 				std::sort (Pending.begin(), Pending.end());
-
 				scanTrivialRoisInMemory(Pending, intens, label, start_idx);
 
 				// Allocate memory
@@ -1156,8 +1156,7 @@ namespace Nyxus
 		{
 			// Scan pixels of pending trivial ROIs 
 			std::sort (Pending.begin(), Pending.end());
-			
-			scanTrivialRoisInMemory(Pending, intens, label, start_idx);
+			scanTrivialRoisInMemory (Pending, intens, label, start_idx);
 
 			// Allocate memory
 			allocateTrivialRoisBuffers(Pending);
