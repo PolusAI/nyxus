@@ -659,22 +659,22 @@ class TestNyxus():
 
             assert directory_features.shape[1] > 3
 
-        # @pytest.mark.skipif(sys.version_info == (3, 12), reason="Skipped for Python 3.12")    
-        # def test_image_quality_single_roi(self):
-        #     '''
-        #     Test that ImageQuality class can be imported and will calculated features.
-        #     Numerical tests are in C++ tests
-        #     '''
+        @pytest.mark.skipif(sys.version_info[:2] == (3, 12), reason="Skipped for Python 3.12")    
+        def test_image_quality_single_roi(self):
+            '''
+            Test that ImageQuality class can be imported and will calculated features.
+            Numerical tests are in C++ tests
+            '''
             
-        #     path = str(pathlib.Path(__file__).parent.resolve())
+            path = str(pathlib.Path(__file__).parent.resolve())
             
-        #     data_path = path + '/data/'
+            data_path = path + '/data/'
             
-        #     nyx = nyxus.ImageQuality (["*ALL_IMQ*"])
+            nyx = nyxus.ImageQuality (["*ALL_IMQ*"])
 
-        #     directory_features = nyx.featurize_directory(data_path + 'int/', data_path + 'int/')      
+            directory_features = nyx.featurize_directory(data_path + 'int/', data_path + 'int/')      
 
-        #     assert directory_features.shape[1] > 3
+            assert directory_features.shape[1] > 3
 
         def test_image_quality_montage_single_roi(self):
             '''
