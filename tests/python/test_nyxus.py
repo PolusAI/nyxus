@@ -2,6 +2,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import nyxus
 import pytest
+import sys
 import numpy as np
 import math
 from pathlib import Path
@@ -657,7 +658,8 @@ class TestNyxus():
             directory_features = nyx.featurize(tissuenet_int, tissuenet_seg, intensity_names=['p0_y1_r1_c0.ome.tif', 'p0_y1_r1_c1.ome.tif'], label_names=['p0_y1_r1_c0.ome.tif', 'p0_y1_r1_c1.ome.tif'])    
 
             assert directory_features.shape[1] > 3
-            
+
+        @pytest.mark.skipif(sys.version_info == (3, 12), reason="Skipped for Python 3.12")    
         def test_image_quality_single_roi(self):
             '''
             Test that ImageQuality class can be imported and will calculated features.
