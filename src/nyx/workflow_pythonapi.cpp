@@ -97,7 +97,6 @@ namespace Nyxus
 		const SaveOption saveOption,
 		const std::string& outputPath)
 	{	
-
 		bool write_apache = (saveOption == SaveOption::saveArrowIPC || saveOption == SaveOption::saveParquet);
 
 		if (write_apache) 
@@ -127,6 +126,7 @@ namespace Nyxus
 			auto image_idx = i * width * height;	// image offset in memory
 
 			std::vector<int> unprocessed_rois;
+
 			if (! processIntSegImagePairInMemory (intensity_images, label_images, image_idx, intensity_names[i], seg_names[i], unprocessed_rois))
 			{
 				error_message = "processIntSegImagePairInMemory() returned an error code while processing file pair";
@@ -140,7 +140,9 @@ namespace Nyxus
 					std::cout << "Error writing Arrow file: " << msg.value() << std::endl;
 					return 2;
 				}
-			} else 
+
+			} 
+      else 
 			{
 				if (!save_features_2_buffer(theResultsCache))
 				{
