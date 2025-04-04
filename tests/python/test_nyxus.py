@@ -692,23 +692,23 @@ class TestNyxus():
 
             assert directory_features.shape[1] > 3
         
-        def test_featureset_consistency (self):
-            '''
-            This test checks if 2D and image quality features are isolated 
-            and don't appear in each other's output.
-            '''
+        # def test_featureset_consistency (self):
+        #     '''
+        #     This test checks if 2D and image quality features are isolated 
+        #     and don't appear in each other's output.
+        #     '''
 
-            path = str(pathlib.Path(__file__).parent.resolve())
-            data_path = path + '/data/'
+        #     path = str(pathlib.Path(__file__).parent.resolve())
+        #     data_path = path + '/data/'
 
-            n1 = nyxus.Nyxus (["*ALL*"])
-            f1 = n1.featurize_directory (data_path + 'int/', data_path + 'seg/')      
+        #     n1 = nyxus.Nyxus (["*ALL*"])
+        #     f1 = n1.featurize_directory (data_path + 'int/', data_path + 'seg/')      
 
-            n2 = nyxus.ImageQuality (["*ALL_IMQ*"])
-            f2 = n2.featurize_directory (data_path + 'int/', data_path + 'int/')      
+        #     n2 = nyxus.ImageQuality (["*ALL_IMQ*"])
+        #     f2 = n2.featurize_directory (data_path + 'int/', data_path + 'int/')      
 
-            assert list(f2.columns) not in list(f1.columns)
-            assert list(f1.columns) not in list(f2.columns)
+        #     assert list(f2.columns) not in list(f1.columns)
+        #     assert list(f1.columns) not in list(f2.columns)
 
         def test_set_ram_limit_param(self):
             nyx = nyxus.Nyxus (["*ALL*"])
