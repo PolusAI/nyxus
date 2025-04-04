@@ -691,24 +691,25 @@ class TestNyxus():
             directory_features = nyx.featurize(tissuenet_int, intensity_names=['p0_y1_r1_c0.ome.tif', 'p0_y1_r1_c1.ome.tif'], label_names=['p0_y1_r1_c0.ome.tif', 'p0_y1_r1_c1.ome.tif'])    
 
             assert directory_features.shape[1] > 3
-        
-        # def test_featureset_consistency (self):
-        #     '''
-        #     This test checks if 2D and image quality features are isolated 
-        #     and don't appear in each other's output.
-        #     '''
 
-        #     path = str(pathlib.Path(__file__).parent.resolve())
-        #     data_path = path + '/data/'
+        @pytest.mark.skipif(sys.version_info[:2] == (3, 12), reason="Skipped for Python 3.12")            
+        def test_featureset_consistency (self):
+            '''
+            This test checks if 2D and image quality features are isolated 
+            and don't appear in each other's output.
+            '''
 
-        #     n1 = nyxus.Nyxus (["*ALL*"])
-        #     f1 = n1.featurize_directory (data_path + 'int/', data_path + 'seg/')      
+            path = str(pathlib.Path(__file__).parent.resolve())
+            data_path = path + '/data/'
 
-        #     n2 = nyxus.ImageQuality (["*ALL_IMQ*"])
-        #     f2 = n2.featurize_directory (data_path + 'int/', data_path + 'int/')      
+            n1 = nyxus.Nyxus (["*ALL*"])
+            f1 = n1.featurize_directory (data_path + 'int/', data_path + 'seg/')      
 
-        #     assert list(f2.columns) not in list(f1.columns)
-        #     assert list(f1.columns) not in list(f2.columns)
+            n2 = nyxus.ImageQuality (["*ALL_IMQ*"])
+            f2 = n2.featurize_directory (data_path + 'int/', data_path + 'int/')      
+
+            assert list(f2.columns) not in list(f1.columns)
+            assert list(f1.columns) not in list(f2.columns)
 
         def test_set_ram_limit_param(self):
             nyx = nyxus.Nyxus (["*ALL*"])
