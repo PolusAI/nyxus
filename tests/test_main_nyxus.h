@@ -75,6 +75,10 @@ namespace Nyxus
             // -- mocking feed_pixel_2_cache ():
             roidata.raw_pixels.push_back(Pixel2(px.x, px.y, px.intensity));
         }
+
+        // Anisotropy (none)
+        roidata.make_nonanisotropic_aabb();
+
         // -- allocating the image matrix (roidata.aux_image_matrix)
         //      (Phase 1 creates roidata.aabb giving us ROI's dimensions)
         roidata.aux_image_matrix.allocate(
@@ -111,6 +115,10 @@ namespace Nyxus
             ++i;
         }
 
+        // Anisotropy (none)
+        roidata.make_nonanisotropic_aabb();
+
+        // image matrix
         if (allocate_IM)
             roidata.aux_image_matrix = ImageMatrix(roidata.raw_pixels);
 

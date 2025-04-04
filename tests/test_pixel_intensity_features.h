@@ -19,6 +19,9 @@ void test_pixel_intensity_integrated_intensity()
     LR roidata;
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData)/sizeof(NyxusPixel));
 
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
+
     // Calculate features
     PixelIntensityFeatures f;
     ASSERT_NO_THROW(f.calculate(roidata));
@@ -36,6 +39,9 @@ void test_pixel_intensity_min_max_range()
     // Feed data to the ROI
     LR roidata;
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
+
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -57,6 +63,9 @@ void test_pixel_intensity_mean()
     LR roidata;
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
+
     // Calculate features
     PixelIntensityFeatures f;
     ASSERT_NO_THROW(f.calculate(roidata));
@@ -74,6 +83,9 @@ void test_pixel_intensity_median()
     // Feed data to the ROI
     LR roidata;
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
+
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -93,6 +105,9 @@ void test_pixel_intensity_mode()
     LR roidata;
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
+
     // Calculate features
     PixelIntensityFeatures f;
     ASSERT_NO_THROW(f.calculate(roidata));
@@ -110,6 +125,9 @@ void test_pixel_intensity_standard_deviation()
     // Feed data to the ROI
     LR roidata;
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
+
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -129,6 +147,9 @@ void test_pixel_intensity_skewness()
     LR roidata;
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
+
     // Calculate features
     PixelIntensityFeatures f;
     ASSERT_NO_THROW(f.calculate(roidata));
@@ -146,6 +167,9 @@ void test_pixel_intensity_kurtosis()
     // Feed data to the ROI
     LR roidata;
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
+
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -165,6 +189,9 @@ void test_pixel_intensity_hyperskewness()
     LR roidata;
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
+
     // Calculate features
     PixelIntensityFeatures f;
     ASSERT_NO_THROW(f.calculate(roidata));
@@ -182,6 +209,9 @@ void test_pixel_intensity_hyperflatness()
     // Feed data to the ROI
     LR roidata;
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
+
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -201,6 +231,9 @@ void test_pixel_intensity_mean_absolute_deviation()
     LR roidata;
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
+
     // Calculate features
     PixelIntensityFeatures f;
     ASSERT_NO_THROW(f.calculate(roidata));
@@ -218,6 +251,9 @@ void test_pixel_intensity_robust_mean_absolute_deviation()
     // Feed data to the ROI
     LR roidata;
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
+
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -237,6 +273,9 @@ void test_pixel_intensity_standard_error()
     LR roidata;
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
+
     // Calculate features
     PixelIntensityFeatures f;
     ASSERT_NO_THROW(f.calculate(roidata));
@@ -254,6 +293,9 @@ void test_pixel_intensity_root_mean_squared()
     // Feed data to the ROI
     LR roidata;
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
+
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
 
     // Calculate features
     PixelIntensityFeatures f;
@@ -273,6 +315,9 @@ void test_pixel_intensity_entropy()
     LR roidata;
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
+
     // Calculate features
     PixelIntensityFeatures f;
     ASSERT_NO_THROW(f.calculate(roidata));
@@ -291,6 +336,9 @@ void test_pixel_intensity_energy()
     LR roidata;
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
+
     // Calculate features
     PixelIntensityFeatures f;
     ASSERT_NO_THROW(f.calculate(roidata));
@@ -308,6 +356,9 @@ void test_pixel_intensity_uniformity()
     // Feed data to the ROI
     LR roidata;
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
+
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
 
     // Calculate features
     PixelIntensityFeatures f;
