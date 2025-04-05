@@ -6,6 +6,7 @@
 
 #include "arrow_output_stream.h"
 #include "environment_basic.h"
+#include "cli_anisotropy_options.h"
 #include "cli_fpimage_options.h"
 #include "cli_gabor_options.h"
 #include "cli_glcm_options.h"
@@ -73,6 +74,11 @@
 #define FPIMAGE_TARGET_DYNRANGE "--fpimgdr"		// Desired dynamic range of the integer voxel intensities converted from floating-point intensities
 #define FPIMAGE_MIN "--fpimgmin"				// Expected voxel min intensity
 #define FPIMAGE_MAX "--fpimgmax"				// Expected voxel max intensity
+
+// Anisotropy
+#define ANISO_X "--anisox"
+#define ANISO_Y "--anisoy"
+#define ANISO_Z "--anisoz"
 
 // Valid values of 'OUTPUTTYPE'
 #define OT_SEPCSV "separatecsv"
@@ -194,6 +200,9 @@ public:
 	// implementation of floating point image options
 	bool parse_fpimage_options_raw_inputs (std::string& error_message);
 	FpImageOptions fpimageOptions;
+
+	std::tuple<bool, std::optional<std::string>> parse_aniso_options_raw_inputs ();
+	AnisotropyOptions anisoOptions;
 
 	// implementation of Apache options
 	bool arrow_is_enabled();

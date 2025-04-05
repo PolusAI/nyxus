@@ -120,6 +120,28 @@ namespace Nyxus
 				);
 			} // foreach tile
 
+		//****** fix ROIs' AABBs with respect to anisotropy
+
+		if (theEnvironment.anisoOptions.empty())
+		{
+			for (auto& pair : R)
+			{
+				LR& r = pair.second;
+				r.make_nonanisotropic_aabb();
+			}
+		}
+		else
+		{
+			double	ax = theEnvironment.anisoOptions.get_aniso_x(),
+				ay = theEnvironment.anisoOptions.get_aniso_y();
+
+			for (auto& pair : R)
+			{
+				LR& r = pair.second;
+				r.make_anisotropic_aabb(ax, ay);
+			}
+		}
+			  
 		//****** Analysis
 
 		// slide-wide (max ROI area) x (number of ROIs)
@@ -129,8 +151,11 @@ namespace Nyxus
 		{
 			const LR& r = pair.second;
 			maxArea = maxArea > r.aux_area ? maxArea : r.aux_area; //std::max (maxArea, r.aux_area);
-			max_w = max_w > r.aabb.get_width() ? max_w : r.aabb.get_width();
-			max_h = max_h > r.aabb.get_height() ? max_h : r.aabb.get_height();
+			const AABB& bb = r.aabb;
+			auto w = bb.get_width();
+			auto h = bb.get_height();
+			max_w = max_w > w ? max_w : w;
+			max_h = max_h > h ? max_h : h;
 		}
 
 		p.max_preroi_inten = slide_I_max;

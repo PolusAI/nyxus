@@ -39,9 +39,17 @@ namespace Nyxus
 		std::vector<int> trivRoiLabels;
 
 		// Phase 1: gather ROI metrics
-		bool okGather = gatherRoisMetricsInMemory(intens, label, filepair_index);	// Output - set of ROI labels, label-ROI cache mappings
-		if (!okGather)
+
+		if (! gatherRoisMetricsInMemory(intens, label, filepair_index))	// Output - set of ROI labels, label-ROI cache mappings
 			return false;
+
+		// ROI metrics are gathered, let's publish them non-anisotropically into ROI's AABB
+		// (Montage does not support anisotropy by design leaving it to Python user's control.)
+		for (auto lab : uniqueLabels)
+		{
+			LR& r = roiData[lab];
+			r.make_nonanisotropic_aabb();
+		}
 
 		// Allocate each ROI's feature value buffer
 		for (auto lab : uniqueLabels)
@@ -91,11 +99,12 @@ namespace Nyxus
 	{	
 		bool write_apache = (saveOption == SaveOption::saveArrowIPC || saveOption == SaveOption::saveParquet);
 
-		if (write_apache) {
-
+		if (write_apache) 
+		{
 			theEnvironment.arrow_stream = ArrowOutputStream();
-			auto [status, msg] = theEnvironment.arrow_stream.create_arrow_file(saveOption, get_arrow_filename(outputPath, theEnvironment.nyxus_result_fname, saveOption), Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
-			if (!status) {
+			auto [status, msg] = theEnvironment.arrow_stream.create_arrow_file (saveOption, get_arrow_filename(outputPath, theEnvironment.nyxus_result_fname, saveOption), Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+			if (!status) 
+			{
 				std::cout << "Error creating Arrow file: " << msg.value() << std::endl;
 				return 1;
 			}
@@ -117,8 +126,8 @@ namespace Nyxus
 			auto image_idx = i * width * height;	// image offset in memory
 
 			std::vector<int> unprocessed_rois;
-			auto ok = processIntSegImagePairInMemory (intensity_images, label_images, image_idx, intensity_names[i], seg_names[i], unprocessed_rois);		// Phased processing
-			if (ok == false)
+
+			if (! processIntSegImagePairInMemory (intensity_images, label_images, image_idx, intensity_names[i], seg_names[i], unprocessed_rois))
 			{
 				error_message = "processIntSegImagePairInMemory() returned an error code while processing file pair";
 				return 1;
@@ -131,11 +140,11 @@ namespace Nyxus
 					std::cout << "Error writing Arrow file: " << msg.value() << std::endl;
 					return 2;
 				}
-			} else {
 
-				ok = save_features_2_buffer(theResultsCache);
-
-				if (ok == false)
+			} 
+      else 
+			{
+				if (!save_features_2_buffer(theResultsCache))
 				{
 					error_message = "save_features_2_buffer() failed";
 					return 2;
@@ -143,9 +152,11 @@ namespace Nyxus
 
 			}
 
-			if (unprocessed_rois.size() > 0) {
+			if (unprocessed_rois.size() > 0) 
+			{
 				error_message = "The following ROIS are oversized and cannot be processed: ";
-				for (const auto& roi: unprocessed_rois){
+				for (const auto& roi: unprocessed_rois)
+				{
 					error_message += roi;
 					error_message += ", ";
 				}
@@ -160,10 +171,12 @@ namespace Nyxus
                 		throw pybind11::error_already_set();
 		}
 
-		if (write_apache) {
+		if (write_apache) 
+		{
 			// close arrow file after use
 			auto [status, msg] = theEnvironment.arrow_stream.close_arrow_file();
-			if (!status) {
+			if (!status) 
+			{
 				std::cout << "Error closing Arrow file: " << msg.value() << std::endl;
 				return 2;
 			}

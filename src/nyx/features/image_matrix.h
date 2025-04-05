@@ -290,7 +290,7 @@ public:
 		height = original_aabb.get_height();
 
 		// Zero the matrix
-		_pix_plane.initialize_without_allocation (width, height, 0);
+		_pix_plane.initialize_without_allocation (width, height, 0);	
 
 		// Read pixels
 		auto xmin = original_aabb.get_xmin(),

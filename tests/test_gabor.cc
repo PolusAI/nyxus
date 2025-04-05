@@ -19,6 +19,9 @@ void test_gabor(bool gpu)
         // Feed data to the ROI
         load_test_roi_data(roidata, i);
 
+        // Anisotropy (none)
+        roidata.make_nonanisotropic_aabb();
+
         // Calculate features
         GaborFeature f;
         if(gpu) 

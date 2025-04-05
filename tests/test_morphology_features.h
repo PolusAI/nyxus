@@ -21,6 +21,9 @@ void test_morphology_perimeter()
     LR roidata;
     load_test_roi_data (roidata, roiDataForPerimeterTest, sizeof(roiDataForPerimeterTest)/sizeof(NyxusPixel));
 
+    // Anisotropy (none)
+    roidata.make_nonanisotropic_aabb();
+
     // Calculate features
     ContourFeature f;
     ASSERT_NO_THROW(f.calculate(roidata));
