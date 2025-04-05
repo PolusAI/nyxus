@@ -191,6 +191,7 @@ set(SOURCE
 	src/nyx/helpers/diag.cpp
 	src/nyx/helpers/timing.cpp
 	src/nyx/arrow_helpers.cpp
+	src/nyx/cli_anisotropy_options.cpp
 	src/nyx/cli_fpimage_options.cpp
 	src/nyx/cli_gabor_options.cpp
 	src/nyx/cli_glcm_options.cpp

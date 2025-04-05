@@ -76,7 +76,8 @@ namespace Nyxus
 	bool processTrivialRois_3D(const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit, const std::vector<std::string>& z_indices);
 	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath);
 	bool scan_trivial_wholeslide (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr);	// reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
-	void dump_roi_metrics(const std::string & label_fpath);
+	bool scan_trivial_wholeslide_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y);
+	void dump_roi_metrics(const std::string& label_fpath);
 	void dump_roi_pixels(const std::vector<int> & batch_labels, const std::string & label_fpath);
 
 	// Shows a message in CLI ('send_to_stderr': stdout or stderr) or Python terminal
@@ -129,10 +130,10 @@ namespace Nyxus
 	void reduce_trivial_wholeslide (LR & slideroi);
 	void reduce_neighbors_and_dependencies_manual ();
 
-	void init_label_record_2(LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity, unsigned int tile_index);
-	void init_label_record_3D (LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int z, int label, PixIntens intensity, unsigned int tile_index);
-	void update_label_record_2(LR& lr, int x, int y, int label, PixIntens intensity, unsigned int tile_index);
-	void update_label_record_3D (LR& lr, int x, int y, int z, int label, PixIntens intensity, unsigned int tile_index);
+	void init_label_record_2(LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity);
+	void init_label_record_3D (LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int z, int label, PixIntens intensity);
+	void update_label_record_2(LR& lr, int x, int y, int label, PixIntens intensity);
+	void update_label_record_3D (LR& lr, int x, int y, int z, int label, PixIntens intensity);
 
 	void allocateTrivialRoisBuffers(const std::vector<int>& roi_labels);
 	void allocateTrivialRoisBuffers_3D(const std::vector<int>& roi_labels);
@@ -149,9 +150,8 @@ namespace Nyxus
 	/// @param y -- y-coordinate of the pixel in the image
 	/// @param label -- label of pixel's segment 
 	/// @param intensity -- pixel's intensity
-	/// @param tile_index -- index of pixel's tile in the image
-	void feed_pixel_2_metrics(int x, int y, PixIntens intensity, int label, unsigned int tile_index);
-	void feed_pixel_2_metrics_3D (int x, int y, int z, PixIntens intensity, int label, unsigned int tile_index);
+	void feed_pixel_2_metrics(int x, int y, PixIntens intensity, int label);
+	void feed_pixel_2_metrics_3D (int x, int y, int z, PixIntens intensity, int label);
 
 	/// @brief Copies a pixel to the ROI's cache. 
 	/// @param x -- x-coordinate of the pixel in the image
