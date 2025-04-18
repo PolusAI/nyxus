@@ -54,6 +54,9 @@ public:
         else if (dtype_str == "<f4") { data_format_ = 9; } //float
         else if (dtype_str == "<f8") { data_format_ = 10; } //double
         else { data_format_ = 2; } //uint16_t
+
+        // allocate the buffer
+        dest = std::vector<uint32_t> (tile_height_ * tile_width_);
     }
 
     ~RawOmezarrLoader() override
@@ -131,8 +134,15 @@ public:
         std::vector<std::string> datasets;
         auto ds = z5::openDataset(*zarr_ptr_, ds_name_);
         size_t data_height = tile_height_, data_width = tile_width_;
-        if (pixel_row_index + data_height > full_height_) { data_height = full_height_ - pixel_row_index; }
-        if (pixel_col_index + data_width > full_width_) { data_width = full_width_ - pixel_col_index; }
+
+        if (pixel_row_index + data_height > full_height_) 
+        { 
+            data_height = full_height_ - pixel_row_index; 
+        }
+        if (pixel_col_index + data_width > full_width_) 
+        { 
+            data_width = full_width_ - pixel_col_index; 
+        }
 
         typename xt::xarray<FileType>::shape_type shape = { 1,1,1,data_height,data_width };
         z5::types::ShapeType offset = { 0,0,pixel_layer_index, pixel_row_index, pixel_col_index };
@@ -140,11 +150,14 @@ public:
         z5::multiarray::readSubarray<FileType>(ds, array, offset.begin());
         std::vector<uint32_t> tmp = std::vector<uint32_t> (array.begin(), array.end());
 
+        // zero-fill the buffer foreseeing its partial filling at incomplete (tail) tiles
+        std::fill (dest.begin(), dest.end(), 0);
+        
+        // save this chunk of z5 tile data in the buffer
         for (size_t k = 0; k < data_height; ++k)
         {
-            std::copy(tmp.begin() + k * data_width, tmp.begin() + (k + 1) * data_width, dest.begin() + k * tile_width_);
+                std::copy(tmp.begin() + k * data_width, tmp.begin() + (k + 1) * data_width, dest.begin() + k * tile_width_);
         }
-        dest = std::vector<uint32_t> (array.begin(), array.end());
     }
 
     /// @brief Tiff file height
