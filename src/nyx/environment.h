@@ -11,6 +11,7 @@
 #include "cli_gabor_options.h"
 #include "cli_glcm_options.h"
 #include "cli_nested_roi_options.h"
+#include "cli_result_options.h"
 #include "roi_blacklist.h"
 #include "save_option.h"
 
@@ -79,6 +80,13 @@
 #define ANISO_X "--anisox"
 #define ANISO_Y "--anisoy"
 #define ANISO_Z "--anisoz"
+
+// Result options
+#define NOVAL "--noval"						// -> raw_noval
+#define TINYVAL "--tinyval"					// -> raw_tiny
+#define AGGREGATE "--aggr"				// -> raw_aggregate
+#define ANNOTATE "--annot"				// -> raw_annotate
+#define ANNOT_SEP "--annotsep"		// -> raw_anno_separator
 
 // Valid values of 'OUTPUTTYPE'
 #define OT_SEPCSV "separatecsv"
@@ -152,7 +160,6 @@ public:
 
 	void expand_IMQ_featuregroups();
 
-
 	static bool gpu_is_available();
 
 	static bool ibsi_compliance;
@@ -207,8 +214,9 @@ public:
 	// implementation of Apache options
 	bool arrow_is_enabled();
 
-	// NAN substitute in feature values
-	double nan_substitute = -999;
+	// feature result options (yes/no to annotation columns, yes/no to aggregate by slide, NAN substitute, etc)
+	ResultOptions resultOptions;
+	std::tuple<bool, std::optional<std::string>> parse_result_options_4cli ();
 
 private:
 

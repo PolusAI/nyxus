@@ -70,7 +70,7 @@ void D3_GLDM_feature::calculate(LR& r)
 			fv_SDLGLE =
 			fv_SDHGLE =
 			fv_LDLGLE =
-			fv_LDHGLE = theEnvironment.nan_substitute;
+			fv_LDHGLE = theEnvironment.resultOptions.noval();
 
 		return;
 	}
@@ -206,7 +206,7 @@ void D3_GLDM_feature::calculate(LR& r)
 			fv_SDLGLE =
 			fv_SDHGLE =
 			fv_LDLGLE =
-			fv_LDHGLE = theEnvironment.nan_substitute;
+			fv_LDHGLE = theEnvironment.resultOptions.noval();
 	}
 	else
 	{

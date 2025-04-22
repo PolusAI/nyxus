@@ -18,7 +18,7 @@
 
 namespace Nyxus
 {
-	bool gatherRoisMetrics (const std::string & intens_fpath, const std::string & label_fpath, ImageLoader & L)
+	bool gatherRoisMetrics (int sidx, const std::string & intens_fpath, const std::string & label_fpath, ImageLoader & L)
 	{
 		// Reset per-image counters and extrema
 		//	 -- disabling this due to new prescan functionality-->	LR::reset_global_stats();
@@ -78,7 +78,7 @@ namespace Nyxus
 						continue;
 
 					// Update pixel's ROI metrics
-					feed_pixel_2_metrics (x, y, dataI[i], label); // Updates 'uniqueLabels' and 'roiData'
+					feed_pixel_2_metrics (x, y, dataI[i], label, sidx); // Updates 'uniqueLabels' and 'roiData'
 				}
 
 #ifdef WITH_PYTHON_H
@@ -94,7 +94,7 @@ namespace Nyxus
 			}
 
 		// fix ROIs' AABBs with respect to anisotropy
-		if (theEnvironment.anisoOptions.empty())
+		if (theEnvironment.anisoOptions.customized())
 		{
 			for (auto& rd : roiData)
 			{
@@ -297,7 +297,7 @@ namespace Nyxus
 		}
 
 		// fix ROIs' AABBs with respect to anisotropy
-		if (theEnvironment.anisoOptions.empty())
+		if (theEnvironment.anisoOptions.customized())
 		{
 			for (auto& rd : roiData)
 			{
@@ -347,7 +347,7 @@ namespace Nyxus
 					label = 1;
 				
 				// Update pixel's ROI metrics
-				feed_pixel_2_metrics (row, col, dataI[start_idx + row * height + col], label); // Updates 'uniqueLabels' and 'roiData'
+				feed_pixel_2_metrics (row, col, dataI[start_idx + row * height + col], label, -1); // Updates 'uniqueLabels' and 'roiData'. Using slide_idx=-1
 				
 
 				if (PyErr_CheckSignals() != 0)

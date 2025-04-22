@@ -1,4 +1,5 @@
 #pragma once
+#include <cfloat>	// FLT_EPSILON
 #include <cmath>
 #include <ctime>
 #include <iostream>
@@ -12,13 +13,21 @@
 
 namespace Nyxus
 {
+	constexpr double INF = 10E200;	// Cautious infinity
+
 	// String manipulation
+
+	inline std::string toupper (const std::string& s)
+	{
+		auto s_uppr = s;
+		for (auto& c : s_uppr)
+			c = ::toupper(c);
+		return s_uppr;
+	}
 
 	inline void parse_delimited_string(const std::string& rawString, const std::string& delim, std::vector<std::string>& result)
 	{
 		result.clear();
-
-		std::vector<std::string> S;
 
 		std::string raw = rawString;    // a safe copy
 		size_t pos = 0;
@@ -107,6 +116,17 @@ namespace Nyxus
 		return true;
 	}
 
+	inline bool parse_as_bool (const std::string& raw, bool& result)
+	{
+		auto uraw = Nyxus::toupper(raw);
+		if (!(uraw == "TRUE" || uraw == "FALSE" || uraw == "T" || uraw == "F"))
+			return false;
+
+		result = (uraw == "TRUE" || uraw == "T");
+
+		return true;
+	}
+
 	inline bool parse_delimited_string_list_to_ints(const std::string& rawString, std::vector<int>& result, std::string& error_msg)
 	{
 		// Blank list is legal
@@ -153,14 +173,6 @@ namespace Nyxus
 				result.push_back(v);
 		}
 		return true;
-	}
-
-	inline std::string toupper(const std::string& s)
-	{
-		auto s_uppr = s;
-		for (auto& c : s_uppr)
-			c = ::toupper(c);
-		return s_uppr;
 	}
 
 	// File path manipulation
@@ -214,10 +226,6 @@ namespace Nyxus
 
 		return mode;
 	}
-
-	// General helpers
-
-#define INF 10E200	// Cautious infinity
 
 	inline double round2(const double a)
 	{
@@ -445,6 +453,11 @@ namespace Nyxus
 			if (!std::isspace(c)) 
 				s2 += c;
 		return s2;
+	}
+
+	inline bool near_eq (double a, double b)
+	{
+		return std::abs(a - b) <= FLT_EPSILON;
 	}
 
 }

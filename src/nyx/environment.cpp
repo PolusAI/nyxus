@@ -169,6 +169,12 @@ void Environment::show_cmdline_help()
 		<< "\t\t" << OPT << ANISO_Z << "=<z anisotropy> \n"
 		<< "\t\t\tDefault: 1 \n";
 
+	std::cout << "\t\t" << OPT << NOVAL << "=<no-value substitute> \n\t\t\tDefault: 0.0 \n" 
+		<< "\t\t" << TINYVAL << "=<tiny-value substitute> \n\t\t\tDefault: 1e-10 \n"
+		<< "\t\t" << AGGREGATE << "=<true or false to aggregate features by slide> \n\t\t\tDefault: false \n"
+		<< "\t\t" << ANNOTATE << "=<true or false to extract annotations from slide names and repoer as feature table columns> \n\t\t\tDefault: false \n"
+		<< "\t\t" << ANNOT_SEP << "=<character used as annotation field separator> \n\t\t\tDefault: _ \n";
+
 	std::cout << "\t\t" << OPT << NESTEDROI_CHNL_SIGNATURE << "=<comma separated denominators of \\pi> \n"
 		<< "\t\t" << OPT << NESTEDROI_PARENT_CHNL << "=<number of the parent channel e.g. 1\n"
 		<< "\t\t" << OPT << NESTEDROI_CHILD_CHNL << "=<number of the child channel e.g. 0\n"
@@ -252,7 +258,7 @@ void Environment::show_summary(const std::string& head, const std::string& tail)
 	if (!gaborOptions.empty())
 		std::cout << "\tGabor feature options: " << gaborOptions.get_summary_text() << "\n";
 
-	if (!anisoOptions.empty())
+	if (!anisoOptions.nothing2parse())
 		std::cout << "\tAnisotropy options: " << anisoOptions.get_summary_text() << "\n";
 
 	// Real valued TIFF
@@ -325,8 +331,6 @@ bool Environment::find_int_argument(std::vector<std::string>::iterator& i, const
 	return false;
 }
 
-
-
 /**
  * @brief Parses the command line. Caller needn't display command line help screen to the user after call
  *
@@ -382,9 +386,17 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			find_string_argument(i, GABOR_F0, gaborOptions.rawF0) ||
 			find_string_argument(i, GABOR_THETA, gaborOptions.rawTheta) ||
 			find_string_argument(i, GABOR_THRESHOLD, gaborOptions.rawGrayThreshold)
+
 			|| find_string_argument (i, ANISO_X, anisoOptions.raw_aniso_x)
 			|| find_string_argument (i, ANISO_Y, anisoOptions.raw_aniso_y)
 			|| find_string_argument (i, ANISO_Z, anisoOptions.raw_aniso_z)
+
+			|| find_string_argument(i, NOVAL, resultOptions.raw_noval)
+			|| find_string_argument(i, TINYVAL, resultOptions.raw_tiny)
+			|| find_string_argument(i, AGGREGATE, resultOptions.raw_aggregate)
+			|| find_string_argument(i, ANNOTATE, resultOptions.raw_annotate)
+			|| find_string_argument(i, ANNOT_SEP, resultOptions.raw_anno_separator)
+
 			|| find_string_argument(i, NESTEDROI_CHNL_SIGNATURE, nestedOptions.rawChannelSignature)
 			|| find_string_argument(i, NESTEDROI_PARENT_CHNL, nestedOptions.rawParentChannelNo)
 			|| find_string_argument(i, NESTEDROI_CHILD_CHNL, nestedOptions.rawChildChannelNo)
@@ -682,9 +694,20 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	}
 
 	//==== parse anisotropy options
-	if (!anisoOptions.empty())
+	if (!anisoOptions.nothing2parse())
 	{
 		auto [ok, msg] = parse_aniso_options_raw_inputs();
+		if (!ok)
+		{
+			std::cerr << *msg << "\n";
+			return false;
+		}
+	}
+
+	//==== parse result options
+	if (!resultOptions.nothing2parse())
+	{
+		auto [ok, msg] = parse_result_options_4cli();
 		if (!ok)
 		{
 			std::cerr << *msg << "\n";
@@ -922,6 +945,12 @@ bool Environment::parse_fpimage_options_raw_inputs(std::string& error_message)
 std::tuple<bool, std::optional<std::string>> Environment::parse_aniso_options_raw_inputs()
 {
 	auto [ok, msg] = anisoOptions.parse_input();
+	return { ok, msg };
+}
+
+std::tuple<bool, std::optional<std::string>>  Environment::parse_result_options_4cli()
+{
+	auto [ok, msg] = resultOptions.parse_input();
 	return { ok, msg };
 }
 

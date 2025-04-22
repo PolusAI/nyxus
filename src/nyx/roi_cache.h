@@ -83,6 +83,8 @@ public:
 	static size_t dataset_max_roi_area;
 	static size_t dataset_max_roi_w;
 	static size_t dataset_max_roi_h;
+
+	// clears dataset's slide list
 	static void reset_dataset_props();
 };
 

@@ -207,7 +207,7 @@ namespace Nyxus
 			}
 			else if (saveOption == SaveOption::saveCSV)
 			{
-				ok = save_features_2_csv(ifile.fname, mfile.fname, outputPath);
+				ok = save_features_2_csv(ifile.fname, mfile.fname, outputPath, theEnvironment.resultOptions.need_aggregation());
 
 				if (ok == false)
 				{

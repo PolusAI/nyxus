@@ -25,7 +25,7 @@ void CaliperFeretFeature::calculate(LR& r)
 		_mean =
 		_median =
 		_stdev =
-		_mode = theEnvironment.nan_substitute;
+		_mode = theEnvironment.resultOptions.noval();
 
 		return;
 	}
@@ -61,7 +61,7 @@ void CaliperFeretFeature::calculate(LR& r)
 		_mean =
 		_median =
 		_stdev =
-		_mode = theEnvironment.nan_substitute;
+		_mode = theEnvironment.resultOptions.noval();
 	}
 }
 

@@ -137,7 +137,7 @@ void ImageMatrix::print (std::ofstream& f, const std::string& head, const std::s
 void ImageMatrix::histogram(double* bins, unsigned short nbins, bool imhist, const Moments2& in_stats) const 
 {
 	unsigned long a, bin, num = width * height;
-	double val, h_min = INF, h_max = -INF, h_scale;
+	double val, h_min = Nyxus::INF, h_max = -Nyxus::INF, h_scale;
 	readOnlyPixels pix_plane = ReadablePixels();
 
 	// find the minimum and maximum 

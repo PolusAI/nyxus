@@ -73,7 +73,7 @@ void NGTDMFeature::calculate (LR& r)
 		_contrast = 
 		_busyness = 
 		_complexity = 
-		_strength = theEnvironment.nan_substitute;
+		_strength = theEnvironment.resultOptions.noval();
 		return;
 	}
 	 

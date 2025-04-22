@@ -64,16 +64,18 @@ namespace Nyxus
 				std::cout << std::setw(15) << freeRamAmt << " b free (" << sgn << memDiff << ") ";
 			)
 				// Display (1) dataset progress info and (2) file pair info
-				int digits = 2, k = std::pow(10.f, digits);
-				float perCent = float(filepair_index) * 100. * k / float(tot_num_filepairs) / float(k);
-				VERBOSLVL1(std::cout << "[ " << filepair_index << " = " << std::setw(digits + 2) << perCent << "% ]\t" << intens_fpath << "\n")
+				int digits = std::log10(tot_num_filepairs/100.) + 1,
+					k = std::pow(10.f, digits);
+				float perCent = float(filepair_index + 1) * 100. / float(tot_num_filepairs);
+				perCent = std::round(perCent * k) / k;
+				VERBOSLVL1(std::cout << "[ " << filepair_index+1 << " = " << std::setw(digits + 2) << perCent << "% ]\t" << intens_fpath << "\n")
 				VERBOSLVL2(std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << intens_fpath << " SEG: " << label_fpath << "\n")
 			}
 
 			{ STOPWATCH("Image scan2a/scan2a/s2a/#aabbcc", "\t=");
 				// Phase 1: gather ROI metrics
 				VERBOSLVL2(std::cout << "Gathering ROI metrics\n");
-				bool okGather = gatherRoisMetrics(intens_fpath, label_fpath, theImLoader);	// Output - set of ROI labels, label-ROI cache mappings
+				bool okGather = gatherRoisMetrics (filepair_index, intens_fpath, label_fpath, theImLoader);	// Output - set of ROI labels, label-ROI cache mappings
 				if (!okGather)
 				{
 					std::string msg = "Error gathering ROI metrics from " + intens_fpath + " / " + label_fpath + "\n";
@@ -193,12 +195,12 @@ namespace Nyxus
 
 			// slide metrics
 			VERBOSLVL1(std::cout << "prescanning " << p.fname_int);
-			if (! scan_slide_props(p))
+			if (! scan_slide_props(p, theEnvironment.resultOptions.need_annotation()))
 			{
 				VERBOSLVL1(std::cout << "error prescanning pair " << p.fname_int << " and " << p.fname_seg << std::endl);
 				return 1;
 			}
-			VERBOSLVL1(std::cout << "\tmax ROI " << p.max_roi_w << " x " << p.max_roi_h << "\tmin-max I " << p.min_preroi_inten << "-" << p.max_preroi_inten << "\n");
+			VERBOSLVL1(std::cout << "\t " << p.slide_w << " W x " << p.slide_h << " H\tmax ROI " << p.max_roi_w << " x " << p.max_roi_h << "\tmin-max I " << p.min_preroi_inten << "-" << p.max_preroi_inten << "\n");
 		}
 
 		// global properties
@@ -317,6 +319,13 @@ namespace Nyxus
 			auto& ifp = intensFiles[i],
 				& lfp = labelFiles[i];
 
+			//???????????????????
+			if (ifp != LR::dataset_props[i].fname_int || lfp != LR::dataset_props[i].fname_seg)
+			{
+				std::cout << "\nMISMATCH! " << ifp << ":" << LR::dataset_props[i].fname_int << ":" << lfp << ":" << LR::dataset_props[i].fname_seg << "\n";
+			}
+			//
+
 			// Cache the file names to be picked up by labels to know their file origin
 			fs::path p_int(ifp), p_seg(lfp);
 			theSegFname = p_seg.string();
@@ -332,11 +341,9 @@ namespace Nyxus
 			}
 
 			// Do phased processing: prescan, trivial ROI processing, oversized ROI processing
-			ok = processIntSegImagePair (ifp, lfp, i, nf);
-
-			if (ok == false)
+			if (! processIntSegImagePair(ifp, lfp, i, nf))
 			{
-				std::cout << "processIntSegImagePair() returned an error code while processing file pair " << ifp << " and " << lfp << std::endl;
+				std::cerr << "Error featurizing segmented slide " << ifp << " @ " << __FILE__ << ":" << __LINE__ << "\n";
 				return 1;
 			}
 
@@ -349,26 +356,27 @@ namespace Nyxus
 					return 2;
 				}
 			}
-			else if (saveOption == SaveOption::saveCSV)
-			{
-				ok = save_features_2_csv(ifp, lfp, outputPath);
-
-				if (ok == false)
+			else 
+				if (saveOption == SaveOption::saveCSV)
 				{
-					std::cout << "save_features_2_csv() returned an error code" << std::endl;
-					return 2;
-				}
-			}
-			else
-			{
-				ok = save_features_2_buffer(theResultsCache);
+					ok = save_features_2_csv (ifp, lfp, outputPath, theEnvironment.resultOptions.need_aggregation());
 
-				if (ok == false)
-				{
-					std::cout << "save_features_2_buffer() returned an error code" << std::endl;
-					return 2;
+					if (ok == false)
+					{
+						std::cout << "save_features_2_csv() returned an error code" << std::endl;
+						return 2;
+					}
 				}
-			}
+				else
+				{
+					ok = save_features_2_buffer(theResultsCache);
+
+					if (ok == false)
+					{
+						std::cout << "save_features_2_buffer() returned an error code" << std::endl;
+						return 2;
+					}
+				}
 
 			theImLoader.close();
 
