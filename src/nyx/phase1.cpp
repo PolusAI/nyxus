@@ -341,14 +341,12 @@ namespace Nyxus
 				if (!label)
 					continue;
 
-
 				// Collapse all the labels to one if single-ROI mde is requested
 				if (theEnvironment.singleROI)
 					label = 1;
-				
+
 				// Update pixel's ROI metrics
 				feed_pixel_2_metrics (row, col, dataI[start_idx + row * height + col], label, -1); // Updates 'uniqueLabels' and 'roiData'. Using slide_idx=-1
-				
 
 				if (PyErr_CheckSignals() != 0)
 					throw pybind11::error_already_set();

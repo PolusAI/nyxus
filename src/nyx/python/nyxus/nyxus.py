@@ -1587,7 +1587,6 @@ class ImageQuality:
         if (label_images.shape[0] != len(label_names)):
             raise ValueError("Number of segmentation names must be the same as the number of images.")
         
-    
         if (output_type == 'pandas'):
                 
             header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, "")
