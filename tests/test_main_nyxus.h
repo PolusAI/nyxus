@@ -47,7 +47,7 @@ namespace Nyxus
 
     static void load_masked_test_roi_data (LR& roidata, const NyxusPixel* intensityData, const NyxusPixel* maskData, size_t count)
     {
-        int dummyLabel = 100;
+        //xxxxxx    int dummyLabel = 100;
         // -- mocking phase 1, gatherRoisMetrics():
         for (auto i = 0; i < count; i++)
         {
@@ -59,9 +59,9 @@ namespace Nyxus
             const NyxusPixel& px = intensityData[i];
             // -- mocking feed_pixel_2_metrics ():
             if (roidata.aux_area == 0)
-                init_label_record_2(roidata, "theSegFname", "theIntFname", px.x, px.y, dummyLabel, px.intensity);
+                init_label_record_3(roidata, px.x, px.y, px.intensity); //xxxxxx    init_label_record_2(roidata, "theSegFname", "theIntFname", px.x, px.y, dummyLabel, px.intensity);
             else
-                update_label_record_2(roidata, px.x, px.y, dummyLabel, px.intensity);
+                update_label_record_3(roidata, px.x, px.y, px.intensity);   //xxxxxx    update_label_record_2(roidata, px.x, px.y, dummyLabel, px.intensity);
         }
         // -- mocking phase 2, scanTrivialRois():
         for (auto i = 0; i < count; i++)
