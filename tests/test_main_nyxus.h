@@ -23,7 +23,7 @@ namespace Nyxus
 
     static void load_test_roi_data (LR& roidata, const NyxusPixel* testData, size_t count)
     {
-        int dummyLabel = 100;
+        //xxxxxx    int dummyLabel = 100;
 
         // -- mocking gatherRoisMetrics():
         for (auto i=0; i<count; i++)
@@ -31,9 +31,9 @@ namespace Nyxus
             const NyxusPixel& px = testData[i];
             // -- mocking feed_pixel_2_metrics ():
             if (roidata.aux_area == 0)
-                init_label_record_2(roidata, "theSegFname", "theIntFname", px.x, px.y, dummyLabel, px.intensity);
+                init_label_record_3 (roidata, px.x, px.y, px.intensity); //xxxxxx    init_label_record_2(roidata, "theSegFname", "theIntFname", px.x, px.y, dummyLabel, px.intensity);
             else
-                update_label_record_2(roidata, px.x, px.y, dummyLabel, px.intensity);
+                update_label_record_3 (roidata, px.x, px.y, px.intensity);   //xxxxxx    update_label_record_2(roidata, px.x, px.y, dummyLabel, px.intensity);
         }
 
         // -- mocking scanTrivialRois():

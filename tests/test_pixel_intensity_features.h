@@ -16,8 +16,9 @@ using namespace Nyxus;
 void test_pixel_intensity_integrated_intensity()
 {
     // Feed data to the ROI
-    LR roidata;
-    load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData)/sizeof(NyxusPixel));
+    LR roidata (100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
+    load_test_roi_data (roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData)/sizeof(NyxusPixel));
 
     // Anisotropy (none)
     roidata.make_nonanisotropic_aabb();
@@ -37,7 +38,8 @@ void test_pixel_intensity_integrated_intensity()
 void test_pixel_intensity_min_max_range()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Anisotropy (none)
@@ -60,7 +62,8 @@ void test_pixel_intensity_min_max_range()
 void test_pixel_intensity_mean()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Anisotropy (none)
@@ -81,7 +84,8 @@ void test_pixel_intensity_mean()
 void test_pixel_intensity_median()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Anisotropy (none)
@@ -102,7 +106,8 @@ void test_pixel_intensity_median()
 void test_pixel_intensity_mode()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Anisotropy (none)
@@ -123,7 +128,8 @@ void test_pixel_intensity_mode()
 void test_pixel_intensity_standard_deviation()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Anisotropy (none)
@@ -144,7 +150,8 @@ void test_pixel_intensity_standard_deviation()
 void test_pixel_intensity_skewness()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Anisotropy (none)
@@ -165,7 +172,8 @@ void test_pixel_intensity_skewness()
 void test_pixel_intensity_kurtosis()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Anisotropy (none)
@@ -186,7 +194,8 @@ void test_pixel_intensity_kurtosis()
 void test_pixel_intensity_hyperskewness()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Anisotropy (none)
@@ -207,7 +216,8 @@ void test_pixel_intensity_hyperskewness()
 void test_pixel_intensity_hyperflatness()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Anisotropy (none)
@@ -228,7 +238,8 @@ void test_pixel_intensity_hyperflatness()
 void test_pixel_intensity_mean_absolute_deviation()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Anisotropy (none)
@@ -249,7 +260,8 @@ void test_pixel_intensity_mean_absolute_deviation()
 void test_pixel_intensity_robust_mean_absolute_deviation()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Anisotropy (none)
@@ -270,7 +282,8 @@ void test_pixel_intensity_robust_mean_absolute_deviation()
 void test_pixel_intensity_standard_error()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Anisotropy (none)
@@ -291,7 +304,8 @@ void test_pixel_intensity_standard_error()
 void test_pixel_intensity_root_mean_squared()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Anisotropy (none)
@@ -312,7 +326,8 @@ void test_pixel_intensity_root_mean_squared()
 void test_pixel_intensity_entropy()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Anisotropy (none)
@@ -333,7 +348,8 @@ void test_pixel_intensity_entropy()
 void test_pixel_intensity_energy()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Anisotropy (none)
@@ -354,7 +370,8 @@ void test_pixel_intensity_energy()
 void test_pixel_intensity_uniformity()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Anisotropy (none)
@@ -375,7 +392,8 @@ void test_pixel_intensity_uniformity()
 void test_pixel_intensity_uniformity_piu()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
@@ -393,7 +411,8 @@ void test_pixel_intensity_uniformity_piu()
 void test_pixel_intensity_percentiles_iqr()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
