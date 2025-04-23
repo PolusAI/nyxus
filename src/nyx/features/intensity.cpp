@@ -97,8 +97,7 @@ void PixelIntensityFeatures::calculate(LR& r)
 	val_RANGE = val_MAX - val_MIN;
 
 	// --COVERED_IMAGE_INTENSITY_RANGE
-//xxxxx	val_COVERED_IMAGE_INTENSITY_RANGE = 1;
-	if (r.slide_idx >= 0)
+	if (r.slide_idx >= 0)	// slide may not always be available in varoius scenarios (segmented, wsi, in-memory, etc.)
 	{
 		const SlideProps& p = LR::dataset_props[r.slide_idx];
 		double sir = (p.max_preroi_inten - p.min_preroi_inten); // slide intensity range
