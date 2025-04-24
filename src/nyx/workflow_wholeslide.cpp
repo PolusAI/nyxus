@@ -45,7 +45,7 @@ namespace Nyxus
 		}
 
 		// read the slide into a pixel cloud
-		if (theEnvironment.anisoOptions.empty())
+		if (theEnvironment.anisoOptions.customized())
 		{
 			VERBOSLVL2(std::cout << "\nscan_trivial_wholeslide()\n");
 			scan_trivial_wholeslide (vroi, ifpath, imlo); // counterpart of segmented scanTrivialRois ()
@@ -104,7 +104,7 @@ namespace Nyxus
 		vroi.aux_max = (PixIntens) p.max_preroi_inten;
 
 		// fix the AABB with respect to anisotropy
-		if (theEnvironment.anisoOptions.empty() == false)
+		if (theEnvironment.anisoOptions.customized() == false)
 			vroi.aabb.apply_anisotropy(
 				theEnvironment.anisoOptions.get_aniso_x(), 
 				theEnvironment.anisoOptions.get_aniso_y());
@@ -160,7 +160,7 @@ namespace Nyxus
 
 		if (featurize_wholeslide (slide_idx, imlo, vroi) == false)	// non-wsi counterpart: processIntSegImagePair()
 		{
-			std::cerr << "processIntSegImagePair() returned an error code while processing slide " << p.fname_int << "\n";
+			std::cerr << "Error featurizing slide " << p.fname_int << " @ " << __FILE__ << ":" << __LINE__ << "\n";
 			rv = 1;
 		}
 
@@ -236,7 +236,7 @@ namespace Nyxus
 
 			// slide metrics
 			VERBOSLVL1(std::cout << "prescanning " << p.fname_int);
-			if (! scan_slide_props(p))
+			if (! scan_slide_props(p, theEnvironment.resultOptions.need_annotation()))
 			{
 				VERBOSLVL1(std::cout << "error prescanning pair " << p.fname_int << " and " << p.fname_seg << std::endl);
 				return 1;

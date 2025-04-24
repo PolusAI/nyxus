@@ -32,7 +32,7 @@ void D3_GLSZM_feature::invalidate()
 		fv_SALGLE =
 		fv_SAHGLE =
 		fv_LALGLE =
-		fv_LAHGLE = theEnvironment.nan_substitute;
+		fv_LAHGLE = theEnvironment.resultOptions.noval();
 }
 
 D3_GLSZM_feature::D3_GLSZM_feature() : FeatureMethod("D3_GLSZM_feature")

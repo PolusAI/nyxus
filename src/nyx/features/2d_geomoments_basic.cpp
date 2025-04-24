@@ -117,7 +117,7 @@ void BasicGeomoms2D::calculate(LR& r, intenfunction ifun)
             // Hu invariants
             hm1 = hm2 = hm3 = hm4 = hm5 = hm6 = hm7 =
             // weighted Hu invariants
-            whm1 = whm2 = whm3 = whm4 = whm5 = whm6 = whm7 = theEnvironment.nan_substitute;
+            whm1 = whm2 = whm3 = whm4 = whm5 = whm6 = whm7 = theEnvironment.resultOptions.noval();
 
         return;
     }

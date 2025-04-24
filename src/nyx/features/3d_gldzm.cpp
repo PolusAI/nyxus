@@ -520,7 +520,7 @@ void D3_GLDZM_feature::calculate (LR& r)
 		f_ZDM =
 		f_ZDV =
 		f_ZDE =
-		f_GLE = Nyxus::theEnvironment.nan_substitute;
+		f_GLE = Nyxus::theEnvironment.resultOptions.noval();
 
 		return;
 	}

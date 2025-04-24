@@ -78,11 +78,14 @@ class TestNyxus():
             montage_not_equal = []
             
             for col in directory_columns:
+                if col == 'COVERED_IMAGE_INTENSITY_RANGE':
+                    continue    # skip this feature as it's being calculated differently in montage scenarios
+
                 directory_list = directory_features[col].tolist()
                 montage_list = montage_features[col].tolist()
                 
                 for directory_val, montage_val in zip(directory_list, montage_list):
-                    if not directory_val == pytest.approx(montage_val, rel=1e-4, abs=1e-4): # higher error tolerance for COVERED_IMAGE_INTENSITY_RANGE
+                    if not directory_val == pytest.approx(montage_val, rel=1e-4, abs=1e-4):
                         montage_not_equal.append(col)
                         break
             

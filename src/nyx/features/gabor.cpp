@@ -89,7 +89,7 @@ void GaborFeature::calculate (LR& r)
     if (maxval == cmpval)
     {
         for (int i = 0; i < nFreqs; i++)
-            fvals[i] = theEnvironment.nan_substitute;
+            fvals[i] = theEnvironment.resultOptions.noval();
 
         return;
     }

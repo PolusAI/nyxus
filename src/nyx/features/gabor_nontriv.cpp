@@ -52,7 +52,7 @@ void GaborFeature::osized_calculate (LR& r, ImageLoader&)
 
         size_t afterGaborScore = 0;
         GaborEnergy_NT2 (Im0, auxG.data(), f0, sig2lam, gamma, theta, n, false/*request count*/, cmp_a/*threshold*/, max0/*out*/, afterGaborScore/*out*/);
-        fvals[i] = (double)afterGaborScore / (double)originalScore;
+        fvals[i] = (double)afterGaborScore / ((double)originalScore + theEnvironment.resultOptions.tiny());
 
         VERBOSLVL3 (std::cout << "\t\tfeature [" << i << "] = " << fvals[i] << "\n");
     }

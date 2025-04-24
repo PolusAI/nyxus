@@ -70,6 +70,21 @@ namespace Nyxus
 		r.intFname = intFile;
 	}
 
+	void init_label_record_3 (LR& r, int x, int y, PixIntens intensity)
+	{
+		// Initialize basic counters
+		r.aux_area = 1;
+		r.aux_min = r.aux_max = intensity;
+		r.init_aabb(x, y);
+
+		// File names, if they are available via a legit slide index
+		if (r.slide_idx >= 0)	// slide is unavailable to inmemory featurization where slide_idx<0
+		{
+			r.segFname = LR::dataset_props[r.slide_idx].fname_seg;
+			r.intFname = LR::dataset_props[r.slide_idx].fname_int;
+		}
+	}
+
 	void init_label_record_3D (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int z, int label, PixIntens intensity)
 	{
 		// Initialize basic counters
@@ -93,6 +108,14 @@ namespace Nyxus
 		lr.aux_min = std::min(lr.aux_min, intensity);
 		lr.aux_max = std::max(lr.aux_max, intensity);
 
+		lr.update_aabb (x,y);
+	}
+
+	void update_label_record_3 (LR& lr, int x, int y, PixIntens intensity)
+	{
+		lr.aux_area++;
+		lr.aux_min = std::min (lr.aux_min, intensity);
+		lr.aux_max = std::max (lr.aux_max, intensity);
 		lr.update_aabb (x,y);
 	}
 

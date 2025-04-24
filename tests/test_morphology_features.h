@@ -18,7 +18,8 @@
 void test_morphology_perimeter()
 {
     // Feed data to the ROI
-    LR roidata;
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data (roidata, roiDataForPerimeterTest, sizeof(roiDataForPerimeterTest)/sizeof(NyxusPixel));
 
     // Anisotropy (none)

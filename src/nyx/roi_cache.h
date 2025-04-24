@@ -33,7 +33,7 @@ public:
 	static constexpr const RoiDataCacheItem CachedObjects[] = { RAW_PIXELS,	CONTOUR, CONVEX_HULL, IMAGE_MATRIX, NEIGHBOR_ROI_LABELS };
 
 	LR (int lbl);
-	LR(): BasicLR(-1) {}	// use default label '-1'
+	LR() : BasicLR(-1) { slide_idx = -1; }	// use default label '-1' and slide index '-1' (no slide available)
 	bool nontrivial_roi (size_t memory_limit);
 	bool has_bad_data();
 	size_t get_ram_footprint_estimate();
@@ -83,6 +83,8 @@ public:
 	static size_t dataset_max_roi_area;
 	static size_t dataset_max_roi_w;
 	static size_t dataset_max_roi_h;
+
+	// clears dataset's slide list
 	static void reset_dataset_props();
 };
 

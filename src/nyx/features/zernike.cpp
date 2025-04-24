@@ -347,7 +347,7 @@ void ZernikeFeature::calculate (LR& r)
 	// intercept blank ROIs
 	if (r.aux_min == r.aux_max)
 	{
-		coeffs.resize (ZernikeFeature::NUM_FEATURE_VALS, theEnvironment.nan_substitute);
+		coeffs.resize (ZernikeFeature::NUM_FEATURE_VALS, theEnvironment.resultOptions.noval());
 		return;
 	}
 

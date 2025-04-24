@@ -29,7 +29,7 @@ void D3_GLRLM_feature::calculate(LR& r)
 	if (minI == maxI)
 	{
 		// insert a non-NAN value for all 4 angles to make the output expecting 4-angled values happy
-		auto w = theEnvironment.nan_substitute;	// safe NAN
+		auto w = theEnvironment.resultOptions.noval();	// safe NAN
 		angled_SRE.resize(4, w);
 		angled_LRE.resize(4, w);
 		angled_GLN.resize(4, w);

@@ -32,7 +32,7 @@ void GLSZMFeature::invalidate()
 		fv_SALGLE =
 		fv_SAHGLE =
 		fv_LALGLE =
-		fv_LAHGLE = theEnvironment.nan_substitute;
+		fv_LAHGLE = theEnvironment.resultOptions.noval();
 }
 
 GLSZMFeature::GLSZMFeature() : FeatureMethod("GLSZMFeature")

@@ -3,6 +3,7 @@
 #include <vector>
 #include "environment.h"
 #include "globals.h"
+#include "helpers/fsystem.h"
 #include "helpers/timing.h"
 #include "raw_image_loader.h"
 
@@ -122,7 +123,7 @@ namespace Nyxus
 
 		//****** fix ROIs' AABBs with respect to anisotropy
 
-		if (theEnvironment.anisoOptions.empty())
+		if (theEnvironment.anisoOptions.customized())
 		{
 			for (auto& pair : R)
 			{
@@ -158,6 +159,9 @@ namespace Nyxus
 			max_h = max_h > h ? max_h : h;
 		}
 
+		p.slide_w = fullwidth;
+		p.slide_h = fullheight;
+
 		p.max_preroi_inten = slide_I_max;
 		p.min_preroi_inten = slide_I_min;
 
@@ -169,10 +173,29 @@ namespace Nyxus
 		return true;
 	}
 
+	std::pair <std::string, std::string> split_alnum (const std::string & annot)
+	{
+		std::string A = annot; // a string that we can edit
+		std::string al;
+		for (auto c : A)
+		{
+			if (!std::isdigit(c))
+				al += c;
+			else
+			{
+				A.erase (0, al.size());
+				break;
+			}
+		}
+
+		return {al, A};
+	}
+
+
 	//
 	// prerequisite: initialized fields fname_int and  fname_seg
 	//
-	bool scan_slide_props (SlideProps & p)
+	bool scan_slide_props (SlideProps & p, bool need_annot)
 	{
 		RawImageLoader ilo;
 		if (! ilo.open(p.fname_int, p.fname_seg))
@@ -188,6 +211,28 @@ namespace Nyxus
 		}
 
 		ilo.close();
+
+		// annotations
+		if (need_annot)
+		{
+			// throw away the directory part
+			fs::path pth(p.fname_seg);
+			auto purefn = pth.filename().string();
+
+			// LHS part till the 1st dot is the annotation info that we need to parse
+			std::vector<std::string>toks1;
+			Nyxus::parse_delimited_string (purefn, ".", toks1);
+
+			// the result tokens is the annotation info that we need
+			p.annots.clear();
+			Nyxus::parse_delimited_string (toks1[0], "_", p.annots);
+
+			// prune blank annotations (usually caused by multiple separator e.g. '__' in 'slide_blah1_bla_2__something3.ome.tiff')
+			p.annots.erase (
+				std::remove_if (p.annots.begin(), p.annots.end(), [](const std::string & s) { return s.empty(); }),
+				p.annots.end());
+		}
+
 
 		return true;
 	}

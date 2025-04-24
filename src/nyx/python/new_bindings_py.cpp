@@ -86,7 +86,10 @@ void initialize_environment(
     float max_intensity,
     bool is_imq,
     int ram_limit_mb,
-    int verb_lvl)
+    int verb_lvl,
+    float aniso_x,
+    float aniso_y,
+    float aniso_z)
 {
     theEnvironment.set_imq(is_imq);
     theEnvironment.set_dim(n_dim);
@@ -103,12 +106,21 @@ void initialize_environment(
     theFeatureMgr.compile();
     theFeatureMgr.apply_user_selection();
 
+    // real-valued range hints
     theEnvironment.fpimageOptions.set_target_dyn_range(dynamic_range);
     theEnvironment.fpimageOptions.set_min_intensity(min_intensity);
     theEnvironment.fpimageOptions.set_max_intensity(max_intensity);
 
-    if (ram_limit_mb >= 0) theEnvironment.set_ram_limit(ram_limit_mb);
+    // RAM limit controlling trivial-nontrivial featurization
+    if (ram_limit_mb >= 0) 
+        theEnvironment.set_ram_limit(ram_limit_mb);
 
+    // anisotropy
+    theEnvironment.anisoOptions.set_aniso_x (aniso_x);
+    theEnvironment.anisoOptions.set_aniso_y (aniso_y);
+    theEnvironment.anisoOptions.set_aniso_z (aniso_z);
+
+    // GPU related
     #ifdef USE_GPU
         if(using_gpu == -1) 
         {

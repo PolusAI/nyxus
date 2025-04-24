@@ -114,6 +114,10 @@ class Nyxus:
         Maximum amount of ram to be used by Nyxus in megabytes
     verbose: int (optional, default 0)
         Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
+    anisotropy_x: float (optional, default 1.0)
+        X-dimension scale factor
+    anisotropy_y: float (optional, default 1.0)
+        Y-dimension scale factor
     """
 
     def __init__(
@@ -127,7 +131,8 @@ class Nyxus:
             'gabor_kersize', 'gabor_gamma', 'gabor_sig2lam', 'gabor_f0',
             'gabor_thold', 'gabor_thetas', 'gabor_freqs', 'channel_signature', 
             'parent_channel', 'child_channel', 'aggregate', 'dynamic_range', 'min_intensity',
-            'max_intensity', 'ram_limit', 'verbose'
+            'max_intensity', 'ram_limit', 'verbose',
+            'anisotropy_x', 'anisotropy_y'
         }
 
         # Check for unexpected keyword arguments
@@ -155,6 +160,8 @@ class Nyxus:
         max_intensity = kwargs.get('max_intensity', 1.0)
         ram_limit = kwargs.get('ram_limit', -1)
         verb_lvl = kwargs.get('verbose', 0)
+        aniso_x = kwargs.get('anisotropy_x', 1.0)
+        aniso_y = kwargs.get('anisotropy_y', 1.0)
         
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
@@ -174,6 +181,14 @@ class Nyxus:
         if verb_lvl < 0:
             raise ValueError ("verbosity must be non-negative")
 
+        if aniso_x <= 0:
+            raise ValueError ("anisotropy_x must be positive")
+
+        if aniso_y <= 0:
+            raise ValueError ("anisotropy_y must be positive")
+
+        aniso_z = 1.0   # not used in 2D
+
         initialize_environment(
             2, # 2D
             features,
@@ -188,7 +203,10 @@ class Nyxus:
             max_intensity,
             False,
             ram_limit,
-            verb_lvl)
+            verb_lvl,
+            aniso_x,
+            aniso_y,
+            aniso_z) 
         
         self.set_gabor_feature_params(
             kersize = gabor_kersize,
@@ -872,6 +890,12 @@ class Nyxus3D:
         Maximum intensity of voxels of a floating point TIFF image.
     verbose: int (optional, default 0)
         Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
+    anisotropy_x: float (optional, default 1.0)
+        X-dimension scale factor
+    anisotropy_y: float (optional, default 1.0)
+        Y-dimension scale factor
+    anisotropy_z: float (optional, default 1.0)
+        Z-dimension scale factor
     """
 
     def __init__(
@@ -883,7 +907,10 @@ class Nyxus3D:
             'neighbor_distance', 'pixels_per_micron', 'coarse_gray_depth',
             'n_feature_calc_threads', 'use_gpu_device', 'ibsi', 'channel_signature', 
             'parent_channel', 'child_channel', 'aggregate', 
-            'dynamic_range', 'min_intensity', 'max_intensity', 'ram_limit'
+            'dynamic_range', 'min_intensity', 'max_intensity', 'ram_limit',
+            'anisotropy_x', 
+            'anisotropy_y',
+            'anisotropy_z'
         }
 
         # Check for unexpected keyword arguments
@@ -903,6 +930,9 @@ class Nyxus3D:
         min_intensity = kwargs.get('min_intensity', 0.0)
         max_intensity = kwargs.get('max_intensity', 1.0)
         verb_lvl = kwargs.get ('verbose', 0)
+        aniso_x = kwargs.get('anisotropy_x', 1.0)
+        aniso_y = kwargs.get('anisotropy_y', 1.0)
+        aniso_z = kwargs.get('anisotropy_z', 1.0)
         
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
@@ -929,6 +959,15 @@ class Nyxus3D:
         if verb_lvl < 0:
             raise ValueError ("verbosity must be non-negative")
 
+        if aniso_x <= 0:
+            raise ValueError ("anisotropy_x must be positive")
+
+        if aniso_y <= 0:
+            raise ValueError ("anisotropy_y must be positive")
+
+        if aniso_z <= 0:
+            raise ValueError ("anisotropy_z must be positive")
+
         initialize_environment(
             3, # 3D
             features,
@@ -943,7 +982,10 @@ class Nyxus3D:
             max_intensity,
             False,
             ram_limit,
-            verb_lvl)
+            verb_lvl,
+            aniso_x,
+            aniso_y,
+            aniso_z)
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
@@ -1268,6 +1310,10 @@ class ImageQuality:
         Maximum intensity of voxels of a floating point TIFF image.
     verbose: int (optional, default 0)
         Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
+    anisotropy_x: float (optional, default 1.0)
+        X-dimension scale factor
+    anisotropy_y: float (optional, default 1.0)
+        Y-dimension scale factor
     """
 
     def __init__(
@@ -1281,7 +1327,9 @@ class ImageQuality:
             'n_feature_calc_threads', 'ibsi',
             'gabor_kersize', 'gabor_gamma', 'gabor_sig2lam', 'gabor_f0',
             'channel_signature', 'min_intensity', 'max_intensity', 'ram_limit',
-            'verbose'
+            'verbose',
+            'anisotropy_x', 
+            'anisotropy_y'
         }
 
         # Check for unexpected keyword arguments
@@ -1302,6 +1350,8 @@ class ImageQuality:
         max_intensity = kwargs.get('max_intensity', 1.0)
         ram_limit = kwargs.get('ram_limit', -1)
         verb_lvl = kwargs.get ('verbose', 0)
+        aniso_x = kwargs.get('anisotropy_x', 1.0)
+        aniso_y = kwargs.get('anisotropy_y', 1.0)
         
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
@@ -1326,6 +1376,14 @@ class ImageQuality:
         if verb_lvl < 0:
             raise ValueError ("verbosity must be non-negative")
 
+        if aniso_x <= 0:
+            raise ValueError ("anisotropy_x must be positive")
+
+        if aniso_y <= 0:
+            raise ValueError ("anisotropy_y must be positive")
+
+        aniso_z = 1.0   # not used in 2D image quality assessment
+
         initialize_environment(
             2, # 2D
             features,
@@ -1340,7 +1398,10 @@ class ImageQuality:
             max_intensity,
             True,
             ram_limit,
-            verb_lvl)
+            verb_lvl,
+            aniso_x,
+            aniso_y,
+            aniso_z)
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
@@ -1526,7 +1587,6 @@ class ImageQuality:
         if (label_images.shape[0] != len(label_names)):
             raise ValueError("Number of segmentation names must be the same as the number of images.")
         
-    
         if (output_type == 'pandas'):
                 
             header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, "")

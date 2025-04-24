@@ -166,7 +166,7 @@ void NGLDMfeature::calculate (LR& r)
 		f_DCP =
 		f_DCV =
 		f_DCENT =
-		f_DCENE = theEnvironment.nan_substitute;
+		f_DCENE = theEnvironment.resultOptions.noval();
 
 		return;
 	}

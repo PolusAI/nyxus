@@ -283,7 +283,7 @@ void GLDZMFeature::calculate(LR& r)
 		f_ZDM =
 		f_ZDV =
 		f_ZDE =
-		f_GLE = theEnvironment.nan_substitute;
+		f_GLE = theEnvironment.resultOptions.noval();
 
 		return;
 	}

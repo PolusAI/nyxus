@@ -79,7 +79,7 @@ void D3_NGTDM_feature::calculate(LR& r)
 			_contrast =
 			_busyness =
 			_complexity =
-			_strength = theEnvironment.nan_substitute;
+			_strength = theEnvironment.resultOptions.noval();
 		return;
 	}
 

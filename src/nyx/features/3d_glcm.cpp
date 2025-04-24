@@ -167,7 +167,7 @@ void D3_GLCM_feature::parallel_process_1_batch (size_t start, size_t end, std::v
 		auto binnedMax = bin_pixel(r.aux_max, r.aux_min, r.aux_max, theEnvironment.get_coarse_gray_depth());
 		if (binnedMin == binnedMax)
 		{
-			auto w = theEnvironment.nan_substitute;		// safe NAN
+			auto w = theEnvironment.resultOptions.noval();		// safe NAN
 
 			// assign it to each angled feature value 
 			auto n = angles.size();
@@ -278,7 +278,7 @@ void D3_GLCM_feature::extract_texture_features_at_angle (int angle, const Simple
 		// Blank cooc-matrix? -- no point to use it, assign each feature value '0' and return.
 		if (sum_p == 0)
 		{
-			auto _ = theEnvironment.nan_substitute; // safe NAN
+			auto _ = theEnvironment.resultOptions.noval(); // safe NAN
 			fvals_ASM.push_back(_);
 			fvals_acor.push_back(_);
 			fvals_cluprom.push_back(_);
@@ -1052,7 +1052,7 @@ double D3_GLCM_feature::f_GLCM_CLUTEND()
 	//
 	//	if (theEnvironment.ibsi_compliance)
 	//		// According to IBSI, feature "cluster tendency" is equivalent to "sum variance"
-	//		f = f_svar(P_matrix, -999.999, this->Pxpy);
+	//		f = f_svar(P_matrix, theEnv.NovalOptions.noval(), this->Pxpy);
 	//	else
 
 		// Calculate it the radiomics way: cluster tendency = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} (i + j - \mu_x - \mu_y) ^2 p(i,j)
