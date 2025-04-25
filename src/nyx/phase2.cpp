@@ -869,7 +869,7 @@ namespace Nyxus
 						else
 							std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				)
-					if (theEnvironment.anisoOptions.customized())
+					if (theEnvironment.anisoOptions.customized() == false)
 						scanTrivialRois (Pending, intens_fpath, label_fpath, theImLoader);
 					else
 					{
@@ -926,7 +926,7 @@ namespace Nyxus
 					std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				)
 
-				if (theEnvironment.anisoOptions.customized())
+				if (theEnvironment.anisoOptions.customized() == false)
 				{
 					scanTrivialRois (Pending, intens_fpath, label_fpath, theImLoader);
 				}
@@ -1001,7 +1001,7 @@ namespace Nyxus
 							std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				)
 
-				if (theEnvironment.anisoOptions.customized())
+				if (theEnvironment.anisoOptions.customized() == false)
 				{
 					scanTrivialRois_3D (Pending, intens_fpath, label_fpath, z_indices);
 				}

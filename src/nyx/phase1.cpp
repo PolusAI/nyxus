@@ -94,7 +94,7 @@ namespace Nyxus
 			}
 
 		// fix ROIs' AABBs with respect to anisotropy
-		if (theEnvironment.anisoOptions.customized())
+		if (theEnvironment.anisoOptions.customized() == false)
 		{
 			for (auto& rd : roiData)
 			{
@@ -297,7 +297,7 @@ namespace Nyxus
 		}
 
 		// fix ROIs' AABBs with respect to anisotropy
-		if (theEnvironment.anisoOptions.customized())
+		if (theEnvironment.anisoOptions.customized() == false)
 		{
 			for (auto& rd : roiData)
 			{

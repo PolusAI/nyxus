@@ -10,6 +10,7 @@
 class RawImageLoader
 {
 public:
+
 	RawImageLoader();
 	bool open(const std::string& int_fpath, const std::string& seg_fpath);
 	void close();
@@ -29,7 +30,10 @@ public:
 	size_t get_within_tile_idx(size_t pixel_row, size_t pixel_col);
 	size_t get_full_width();
 	size_t get_full_height();
+	std::string get_slide_descr();
+
 private:
+	
 	RawFormatLoader* segFL = nullptr, * intFL = nullptr;	// RawTiffTileLoader, RawOmezarrLoader, RawDicomLoader
 
 	// Tile height, width, and depth
@@ -52,5 +56,6 @@ private:
 
 	int lvl = 0,	// Pyramid level
 		lyr = 0;	//	Layer
+
 };
 
