@@ -5,16 +5,14 @@
 
 class RawFormatLoader
 {
-private:
-    std::string name_, filePath_;
-    size_t numberThreads_;
-
 public:
 
     RawFormatLoader (const std::string_view & name, const std::string & filePath)
-        : name_(name), filePath_(filePath) {}
+        : infostring_(name), filePath_(filePath) {}
 
     virtual ~RawFormatLoader() = default;
+
+    std::string get_infostring() { return infostring_; }
 
     virtual void loadTileFromFile (
         size_t indexRowGlobalTile,
@@ -63,5 +61,11 @@ public:
     [[nodiscard]] size_t numberTileDepth(size_t level = 0) const {
         return (size_t)std::ceil((double)(fullDepth(level)) / tileDepth(level));
     }
+
+private:
+
+    std::string infostring_, filePath_;
+    size_t numberThreads_;
+
 };
 

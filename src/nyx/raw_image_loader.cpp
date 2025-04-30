@@ -245,3 +245,12 @@ size_t RawImageLoader::get_full_height()
 {
 	return fh;
 }
+
+std::string RawImageLoader::get_slide_descr()
+{
+	std::string rv = intFL->get_infostring() + " (int) ";
+	if (segFL != nullptr)
+		rv += segFL->get_infostring() + " (seg) ";
+	return rv;
+}
+

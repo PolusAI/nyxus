@@ -15,11 +15,15 @@ struct SlideProps
 	size_t max_roi_w;
 	size_t max_roi_h;
 
-	std::string fname_int;
-	std::string fname_seg;
+	// slide file names
+	std::string fname_int, fname_seg;
+
+	// low-level slide description (tiled or stripe, pixel intensity type, etc)
+	std::string lolvl_slide_descr;
 
 	// annotation
 	std::vector<std::string> annots;
+
 };
 
 namespace Nyxus

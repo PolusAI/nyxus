@@ -22,7 +22,7 @@ public:
     /// @brief NyxusGrayscaleDicomLoader constructor
     /// @param numberThreads Number of threads associated
     /// @param filePath Path of dicom file
-    RawDicomLoader (std::string const& filePath) : RawFormatLoader("name", filePath)
+    RawDicomLoader (std::string const& filePath) : RawFormatLoader("RawDicomLoader", filePath)
     {
         // register JPEG decoder
         DJDecoderRegistration::registerCodecs();

@@ -45,7 +45,7 @@ namespace Nyxus
 		}
 
 		// read the slide into a pixel cloud
-		if (theEnvironment.anisoOptions.customized())
+		if (theEnvironment.anisoOptions.customized() == false)
 		{
 			VERBOSLVL2(std::cout << "\nscan_trivial_wholeslide()\n");
 			scan_trivial_wholeslide (vroi, ifpath, imlo); // counterpart of segmented scanTrivialRois ()
@@ -241,7 +241,8 @@ namespace Nyxus
 				VERBOSLVL1(std::cout << "error prescanning pair " << p.fname_int << " and " << p.fname_seg << std::endl);
 				return 1;
 			}
-			VERBOSLVL1(std::cout << "\tmax ROI " << p.max_roi_w << " x " << p.max_roi_h << "\tmin-max I " << p.min_preroi_inten << "-" << p.max_preroi_inten << "\n");
+			VERBOSLVL1(std::cout << "\t " << p.slide_w << " W x " << p.slide_h << " H\tmax ROI " << p.max_roi_w << " x " << p.max_roi_h << "\tmin-max I " << Nyxus::virguler(p.min_preroi_inten) << "-" << Nyxus::virguler(p.max_preroi_inten) << "\t" << p.lolvl_slide_descr << "\n");
+
 		}
 
 		// global properties

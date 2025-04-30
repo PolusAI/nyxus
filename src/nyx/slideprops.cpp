@@ -11,6 +11,11 @@ namespace Nyxus
 {
 	bool gatherRoisMetrics_2_slideprops (RawImageLoader & ilo, SlideProps & p)
 	{
+		// low-level slide properties (intensity and mask, if available)
+		p.lolvl_slide_descr = ilo.get_slide_descr();
+
+		// scan intensity slide's data
+
 		bool wholeslide = p.fname_seg.empty();
 
 		double slide_I_max = (std::numeric_limits<double>::min)(),
@@ -32,6 +37,7 @@ namespace Nyxus
 			fullwidth = ilo.get_full_width(),
 			fullheight = ilo.get_full_height();
 
+		// iterate abstract tiles (in a tiled slide /e.g. tiled tiff/ they correspond to physical tiles, in a nontiled slide /e.g. scanline tiff or strip tiff/ they correspond to )
 		int cnt = 1;
 		for (unsigned int row = 0; row < nth; row++)
 			for (unsigned int col = 0; col < ntv; col++)
@@ -83,6 +89,7 @@ namespace Nyxus
 
 						// Initialize the ROI label record
 						LR r (msk);
+
 						//		- mocking init_label_record_2(newData, theSegFname, theIntFname, x, y, label, intensity, tile_index)
 						// Initialize basic counters
 						r.aux_area = 1;
@@ -123,7 +130,7 @@ namespace Nyxus
 
 		//****** fix ROIs' AABBs with respect to anisotropy
 
-		if (theEnvironment.anisoOptions.customized())
+		if (theEnvironment.anisoOptions.customized() == false)
 		{
 			for (auto& pair : R)
 			{
