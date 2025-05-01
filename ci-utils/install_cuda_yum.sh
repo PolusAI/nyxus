@@ -1,7 +1,7 @@
 #!/bin/bash
 # Usage: $bash install_cuda_yum.sh <VERSION>
 
-dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda-rhel8.repo &&
+dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel8/x86_64/cuda-rhel8.repo &&
 dnf clean all &&
 dnf -y module install nvidia-driver:latest-dkms
 
