@@ -56,10 +56,8 @@ jobs:
           CIBW_BUILD: ${{ matrix.cibw_build }}-*
           CIBW_SKIP: "*musllinux*"
           CIBW_BUILD_VERBOSITY: 3
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
-          CIBW_BEFORE_ALL_LINUX:  rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux &&
-                                   dnf clean all &&
-                                   dnf -y install llvm libevent-devel openssl-devel && 
+          CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64:latest
+          CIBW_BEFORE_ALL_LINUX:  dnf -y install llvm libevent-devel openssl-devel && 
                                    bash ci-utils/install_cuda_yum.sh 11 && 
                                    bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
                                    mkdir -p /tmp/nyxus_bld &&
