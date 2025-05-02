@@ -237,9 +237,9 @@ fi
 
 if [[ $BUILD_ARROW_DEP -eq 1 ]]; then
 
-    curl -L https://github.com/apache/arrow/archive/refs/tags/apache-arrow-19.0.0.zip -o  arrow-apache-arrow-19.0.0.zip
-    unzip arrow-apache-arrow-19.0.0.zip
-    cd arrow-apache-arrow-19.0.0
+    curl -L https://github.com/apache/arrow/archive/refs/tags/apache-arrow-20.0.0.zip -o  arrow-apache-arrow-20.0.0.zip
+    unzip arrow-apache-arrow-20.0.0.zip
+    cd arrow-apache-arrow-20.0.0
     cd cpp
     mkdir build
     cd build
