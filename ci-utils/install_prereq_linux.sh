@@ -253,6 +253,8 @@ if [[ $BUILD_ARROW_DEP -eq 1 ]]; then
             -DARROW_PARQUET=ON \
             -DARROW_WITH_SNAPPY=ON \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DARROW_IPC=ON \
+            -DARROW_JSON=ON \
             .. 
     make -j4
     make install
