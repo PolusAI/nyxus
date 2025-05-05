@@ -132,9 +132,9 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     make install/fast
     cd ../../
 
-    curl -L https://github.com/constantinpape/z5/archive/refs/heads/master.zip -o z5.zip
-    unzip z5.zip 
-    cd z5-master
+    curl -L https://github.com/constantinpape/z5/archive/refs/tags/2.0.19.zip -o 2.0.19.zip
+    unzip 2.0.19.zip
+    cd z5-2.0.19
     mkdir build_man
     cd build_man
     cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF  ..
