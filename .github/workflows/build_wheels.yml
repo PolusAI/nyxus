@@ -41,15 +41,12 @@ jobs:
           CIBW_BUILD: ${{ matrix.cibw_build }}-*
           CIBW_SKIP: "*musllinux*"
           CIBW_BUILD_VERBOSITY: 3
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+          CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64:latest
           CIBW_BEFORE_ALL_MACOS:  brew install llvm@16 && 
                                    bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
                                    mkdir -p /tmp/nyxus_bld &&
                                    cp -r local_install /tmp/nyxus_bld 
-          CIBW_BEFORE_ALL_LINUX:  sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo &&
-                                   sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo &&
-                                   sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo && 
-                                   yum install -y llvm libevent-devel openssl-devel && 
+          CIBW_BEFORE_ALL_LINUX:  dnf -y install llvm libevent-devel openssl-devel && 
                                    bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
                                    mkdir -p /tmp/nyxus_bld &&
                                    cp -r local_install /tmp/nyxus_bld

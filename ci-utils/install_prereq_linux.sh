@@ -52,7 +52,7 @@ unzip v2.12.0.zip
 cd pybind11-2.12.0
 mkdir build_man
 cd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/  -DPYBIND11_TEST=OFF ..
+cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/  -DPYBIND11_TEST=OFF ..
 make install -j4
 cd ../../
 
@@ -61,7 +61,7 @@ unzip zlib13.zip
 cd zlib-1.3
 mkdir build_man
 cd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
+cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
 cmake --build . 
 cmake --build . --target install 
 cd ../../
@@ -88,7 +88,7 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cd c-blosc-1.21.5
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
     cmake --build . 
     cmake --build . --target install 
     cd ../../
@@ -98,7 +98,7 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cd xtl-0.7.5 
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
     cmake --build . 
     cmake --build . --target install 
     cd ../../
@@ -108,7 +108,7 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cd xtensor-0.24.7
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
     cmake --build . 
     cmake --build . --target install 
     cd ../../
@@ -118,7 +118,7 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cd xsimd-11.1.0 
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
     cmake --build . 
     cmake --build . --target install 
     cd ../../
@@ -128,7 +128,7 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cd json-3.11.2
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
     make install/fast
     cd ../../
 
@@ -137,7 +137,7 @@ if [[ $BUILD_Z5_DEP -eq 1 ]]; then
     cd z5-master
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF  ..
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF  ..
     make install -j4
     cd ../../
 fi
@@ -158,7 +158,7 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     cd libpng-1.6.39
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/   ..
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/   ..
     make install -j4
     cd ../../
 
@@ -167,7 +167,7 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     cd openjpeg-2.5.0
     mkdir build_man
     cd build_man
-    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DBUILD_CODEC=OFF   ..
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DBUILD_CODEC=OFF   ..
     make install -j4
     cd ../../
 fi
@@ -195,9 +195,9 @@ cd tiff-4.7.0
 mkdir build_man
 cd build_man
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DJPEG_LIBRARY_RELEASE=../../"$LOCAL_INSTALL_DIR"/lib/libjpeg.dylib -DJPEG_INCLUDE_DIRS=../../"$LOCAL_INSTALL_DIR"/include ..
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DJPEG_LIBRARY_RELEASE=../../"$LOCAL_INSTALL_DIR"/lib/libjpeg.dylib -DJPEG_INCLUDE_DIRS=../../"$LOCAL_INSTALL_DIR"/include ..
 else
-    cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ ..
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ ..
 fi
 make install -j4
 cd ../../
@@ -237,9 +237,9 @@ fi
 
 if [[ $BUILD_ARROW_DEP -eq 1 ]]; then
 
-    curl -L https://github.com/apache/arrow/archive/refs/tags/apache-arrow-19.0.0.zip -o  arrow-apache-arrow-19.0.0.zip
-    unzip arrow-apache-arrow-19.0.0.zip
-    cd arrow-apache-arrow-19.0.0
+    curl -L https://github.com/apache/arrow/archive/refs/tags/apache-arrow-20.0.0.zip -o  arrow-apache-arrow-20.0.0.zip
+    unzip arrow-apache-arrow-20.0.0.zip
+    cd arrow-apache-arrow-20.0.0
     cd cpp
     mkdir build
     cd build
@@ -252,6 +252,9 @@ if [[ $BUILD_ARROW_DEP -eq 1 ]]; then
             -DARROW_ACERO=ON \
             -DARROW_PARQUET=ON \
             -DARROW_WITH_SNAPPY=ON \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DARROW_IPC=ON \
+            -DARROW_JSON=ON \
             .. 
     make -j4
     make install
