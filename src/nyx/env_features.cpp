@@ -39,6 +39,8 @@
 #include "features/3d_gldzm.h"
 #include "features/3d_glrlm.h"
 #include "features/3d_glszm.h"
+#include "features/3d_intensity.h"
+#include "features/3d_surface.h"
 #include "features/radial_distribution.h"
 #include "features/roi_radius.h"
 #include "features/zernike.h"
@@ -334,42 +336,10 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 	// mutually exclusive groups:
 	if ((Fgroup3D)fgcode == Fgroup3D::FG3_ALL)
 	{
-		auto F =
-		{
-			Feature3D::COV,
-			Feature3D::COVERED_IMAGE_INTENSITY_RANGE,
-			Feature3D::ENERGY,
-			Feature3D::ENTROPY,
-			Feature3D::EXCESS_KURTOSIS,
-			Feature3D::HYPERFLATNESS,
-			Feature3D::HYPERSKEWNESS,
-			Feature3D::INTEGRATED_INTENSITY,
-			Feature3D::INTERQUARTILE_RANGE,
-			Feature3D::KURTOSIS,
-			Feature3D::MAX,
-			Feature3D::MEAN,
-			Feature3D::MEAN_ABSOLUTE_DEVIATION,
-			Feature3D::MEDIAN,
-			Feature3D::MEDIAN_ABSOLUTE_DEVIATION,
-			Feature3D::MIN,
-			Feature3D::MODE,
-			Feature3D::P01, Feature3D::P10, Feature3D::P25, Feature3D::P75, Feature3D::P90, Feature3D::P99,
-			Feature3D::QCOD,
-			Feature3D::RANGE,
-			Feature3D::ROBUST_MEAN,
-			Feature3D::ROBUST_MEAN_ABSOLUTE_DEVIATION,
-			Feature3D::ROOT_MEAN_SQUARED,
-			Feature3D::SKEWNESS,
-			Feature3D::STANDARD_DEVIATION,
-			Feature3D::STANDARD_DEVIATION_BIASED,
-			Feature3D::STANDARD_ERROR,
-			Feature3D::VARIANCE,
-			Feature3D::VARIANCE_BIASED,
-			Feature3D::UNIFORMITY,
-			Feature3D::UNIFORMITY_PIU,
 
-			// 3D features planned for a future PR
 #if 0
+		// 3D features planned for a future PR
+		
 			Feature3D::AREA,
 			Feature3D::MESH_VOLUME,
 			Feature3D::VOLUME_CONVEXHULL,
@@ -413,9 +383,8 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 			Feature3D::SPAT_MOMENT_23,
 			Feature3D::SPAT_MOMENT_30
 #endif
-		};
 
-		theFeatureSet.enableFeatures (F, enable);
+		theFeatureSet.enableFeatures (D3_PixelIntensityFeatures::featureset, enable);
 		theFeatureSet.enableFeatures (D3_GLCM_feature::featureset, enable);
 		theFeatureSet.enableFeatures (D3_GLDM_feature::featureset, enable);
 		theFeatureSet.enableFeatures (D3_GLDZM_feature::featureset, enable);
@@ -423,6 +392,7 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 		theFeatureSet.enableFeatures (D3_GLSZM_feature::featureset, enable);
 		theFeatureSet.enableFeatures (D3_NGLDM_feature::featureset, enable);
 		theFeatureSet.enableFeatures (D3_NGTDM_feature::featureset, enable);
+		theFeatureSet.enableFeatures (D3_SurfaceFeature::featureset, enable);
 
 		return true;
 	}

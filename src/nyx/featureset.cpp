@@ -657,16 +657,19 @@ namespace Nyxus
 		{ "3VARIANCE", Nyxus::Feature3D::VARIANCE },
 		{ "3VARIANCE_BIASED", Nyxus::Feature3D::VARIANCE_BIASED },
 
-		
-		#if 0 // 3D features planned for a future PR
-		// Morphology
+		// shape
 		{ "3AREA", Feature3D::AREA },
+		{ "3AREA_2_VOLUME", Feature3D::AREA_2_VOLUME },
+		{ "3COMPACTNESS1", Feature3D::COMPACTNESS1 },
+		{ "3COMPACTNESS2", Feature3D::COMPACTNESS2 },
 		{ "3MESH_VOLUME", Feature3D::MESH_VOLUME },
+		{ "3SPHERICAL_DISPROPORTION", Feature3D::SPHERICAL_DISPROPORTION },
+		{ "3SPHERICITY", Feature3D::SPHERICITY },
 		{ "3VOLUME_CONVEXHULL", Feature3D::VOLUME_CONVEXHULL },
-		{ "3DIAMETER_EQUAL_AREA", Feature3D::DIAMETER_EQUAL_AREA },
-		{ "3DIAMETER_EQUAL_VOLUME", Feature3D::DIAMETER_EQUAL_VOLUME },
+		{ "3VOXEL_VOLUME", Feature3D::VOXEL_VOLUME },
 
-		{ "3VOLUME_PIXELS", Feature3D::VOLUME_PIXELS },
+		#if 0 // 3D features planned for a future PR
+
 		{ "3CENTROID_X", Feature3D::CENTROID_X },
 		{ "3CENTROID_Y", Feature3D::CENTROID_Y },
 		{ "3CENTROID_Z", Feature3D::CENTROID_Z },
