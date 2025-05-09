@@ -17,6 +17,46 @@ public:
 	// list dependencies of this class
 	static bool required (const FeatureSet& fs);
 
+	const constexpr static std::initializer_list<Nyxus::Feature3D> featureset =
+	{
+			Nyxus::Feature3D::COV,
+			Nyxus::Feature3D::COVERED_IMAGE_INTENSITY_RANGE,
+			Nyxus::Feature3D::ENERGY,
+			Nyxus::Feature3D::ENTROPY,
+			Nyxus::Feature3D::EXCESS_KURTOSIS,
+			Nyxus::Feature3D::HYPERFLATNESS,
+			Nyxus::Feature3D::HYPERSKEWNESS,
+			Nyxus::Feature3D::INTEGRATED_INTENSITY,
+			Nyxus::Feature3D::INTERQUARTILE_RANGE,
+			Nyxus::Feature3D::KURTOSIS,
+			Nyxus::Feature3D::MAX,
+			Nyxus::Feature3D::MEAN,
+			Nyxus::Feature3D::MEAN_ABSOLUTE_DEVIATION,
+			Nyxus::Feature3D::MEDIAN,
+			Nyxus::Feature3D::MEDIAN_ABSOLUTE_DEVIATION,
+			Nyxus::Feature3D::MIN,
+			Nyxus::Feature3D::MODE,
+			Nyxus::Feature3D::P01,
+			Nyxus::Feature3D::P10,
+			Nyxus::Feature3D::P25,
+			Nyxus::Feature3D::P75,
+			Nyxus::Feature3D::P90,
+			Nyxus::Feature3D::P99,
+			Nyxus::Feature3D::QCOD,
+			Nyxus::Feature3D::RANGE,
+			Nyxus::Feature3D::ROBUST_MEAN,
+			Nyxus::Feature3D::ROBUST_MEAN_ABSOLUTE_DEVIATION,
+			Nyxus::Feature3D::ROOT_MEAN_SQUARED,
+			Nyxus::Feature3D::SKEWNESS,
+			Nyxus::Feature3D::STANDARD_DEVIATION,
+			Nyxus::Feature3D::STANDARD_DEVIATION_BIASED,
+			Nyxus::Feature3D::STANDARD_ERROR,
+			Nyxus::Feature3D::VARIANCE,
+			Nyxus::Feature3D::VARIANCE_BIASED,
+			Nyxus::Feature3D::UNIFORMITY,
+			Nyxus::Feature3D::UNIFORMITY_PIU
+	};
+
 private:
 	double
 		val_INTEGRATED_INTENSITY = 0,

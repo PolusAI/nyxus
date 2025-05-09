@@ -49,7 +49,7 @@
 #include "features/3d_ngtdm.h"
 #include "features/3d_glszm.h"
 #include "features/3d_glrlm.h"
-//--future-- #include "features/3d_surface.h"
+#include "features/3d_surface.h"
 
 #include "features/focus_score.h"
 #include "features/power_spectrum.h"
@@ -581,6 +581,12 @@ namespace Nyxus
 		{
 			STOPWATCH("3D intensity/3Dintensity/3DI/#FFFF00", "\t=");
 			runParallel (D3_PixelIntensityFeatures::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
+		}
+		//==== shape
+		if (D3_SurfaceFeature::required(theFeatureSet))
+		{
+			STOPWATCH("3D shape/3Dshape/3Dsh/#FFFF00", "\t=");
+			runParallel (D3_SurfaceFeature::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
 		}
 		//==== texture		
 		if (D3_GLCM_feature::required(theFeatureSet))

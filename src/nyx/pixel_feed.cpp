@@ -76,8 +76,23 @@ namespace Nyxus
 
 	void feed_pixel_2_cache_3D (int x, int y, int z, PixIntens intensity, int label)
 	{
-		// Update basic ROI info (info that doesn't require costly calculations)
+		// update basic ROI info (info that doesn't require costly calculations)
 		LR& r = roiData[label];
-		r.raw_pixels_3D.push_back (Pixel3(x, y, z, intensity));
+		r.raw_pixels_3D.push_back(Pixel3(x, y, z, intensity));
+
+		// save the index in its z-plane
+		size_t idx = r.raw_pixels_3D.size() - 1;
+		auto itr = r.zplanes.find(z);
+		if (itr == r.zplanes.end())
+		{
+			std::vector<size_t> newPlane;
+			newPlane.push_back(idx);
+			r.zplanes[z] = newPlane;
+		}
+		else
+		{
+			std::vector<size_t>& existingPlane = (*itr).second;
+			existingPlane.push_back(idx);
+		}
 	}
 }

@@ -460,4 +460,25 @@ namespace Nyxus
 		return std::abs(a - b) <= FLT_EPSILON;
 	}
 
+	inline double det4(
+		double m00, double m01, double m02, double m03,
+		double m10, double m11, double m12, double m13,
+		double m20, double m21, double m22, double m23,
+		double m30, double m31, double m32, double m33)
+	{
+		double retval = m03 * m12 * m21 * m30 - m02 * m13 * m21 * m30 -
+			m03 * m11 * m22 * m30 + m01 * m13 * m22 * m30 +
+			m02 * m11 * m23 * m30 - m01 * m12 * m23 * m30 -
+			m03 * m12 * m20 * m31 + m02 * m13 * m20 * m31 +
+			m03 * m10 * m22 * m31 - m00 * m13 * m22 * m31 -
+			m02 * m10 * m23 * m31 + m00 * m12 * m23 * m31 +
+			m03 * m11 * m20 * m32 - m01 * m13 * m20 * m32 -
+			m03 * m10 * m21 * m32 + m00 * m13 * m21 * m32 +
+			m01 * m10 * m23 * m32 - m00 * m11 * m23 * m32 -
+			m02 * m11 * m20 * m33 + m01 * m12 * m20 * m33 +
+			m02 * m10 * m21 * m33 - m00 * m12 * m21 * m33 -
+			m01 * m10 * m22 * m33 + m00 * m11 * m22 * m33;
+		return retval;
+	}
+
 }

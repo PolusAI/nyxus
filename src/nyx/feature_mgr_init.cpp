@@ -36,6 +36,7 @@
 #include "features/3d_ngtdm.h"
 #include "features/3d_glszm.h"
 #include "features/3d_glrlm.h"
+#include "features/3d_surface.h"
 
 #include "features/focus_score.h"
 #include "features/power_spectrum.h"
@@ -77,6 +78,7 @@ FeatureManager::FeatureManager()
 	register_feature (new RadialDistributionFeature());
 	// 3D
 	register_feature (new D3_PixelIntensityFeatures());
+	register_feature (new D3_SurfaceFeature());
 	register_feature (new D3_GLCM_feature());
 	register_feature (new D3_GLDM_feature());
 	register_feature (new D3_GLDZM_feature());
