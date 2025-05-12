@@ -615,6 +615,17 @@ namespace Nyxus
 		UNIFORMITY,
 		UNIFORMITY_PIU,
 
+		// Shape
+		AREA,										// IBSI name: surface area
+		AREA_2_VOLUME,
+		COMPACTNESS1,
+		COMPACTNESS2,
+		MESH_VOLUME,
+		SPHERICAL_DISPROPORTION,
+		SPHERICITY,
+		VOLUME_CONVEXHULL,
+		VOXEL_VOLUME,						// IBSI name: approximate volume
+
 		// 3D features planned for a future PR
 #if 0
 		// Morphology:
@@ -628,12 +639,6 @@ namespace Nyxus
 		BBOX_HEIGHT,
 		BBOX_WIDTH,
 		BBOX_DEPTH,
-		// morphology related to surface
-		AREA,
-		MESH_VOLUME,
-		VOLUME_CONVEXHULL,
-		DIAMETER_EQUAL_AREA,
-		DIAMETER_EQUAL_VOLUME,
 
 		// Neighbor features
 		NUM_NEIGHBORS,
