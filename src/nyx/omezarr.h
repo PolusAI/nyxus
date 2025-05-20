@@ -5,7 +5,7 @@
 #include <algorithm>
 #include "abs_tile_loader.h"
 #include "nlohmann/json.hpp"
-#include "xtensor.hpp"
+#include "xtensor/containers/xarray.hpp"
 
 // factory functions to create files, groups and datasets
 #include "z5/factory.hxx"
