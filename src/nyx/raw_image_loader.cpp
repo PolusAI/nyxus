@@ -6,6 +6,7 @@
 #include "helpers/fsystem.h"
 #include "raw_image_loader.h"
 #include "raw_dicom.h"
+#include "raw_nifti.h"
 #include "raw_omezarr.h"
 #include "raw_tiff.h"
 
@@ -13,8 +14,6 @@ RawImageLoader::RawImageLoader() {}
 
 bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_fpath)
 {
-	int n_threads = 1;
-
 	try
 	{
 		if (fs::path(int_fpath).extension() == ".zarr")
@@ -25,13 +24,20 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 			std::cout << "This version of Nyxus was not build with OmeZarr support." << std::endl;
 #endif
 		}
-		else if (fs::path(int_fpath).extension() == ".dcm" | fs::path(int_fpath).extension() == ".dicom") {
+		else 
+			if (fs::path(int_fpath).extension() == ".dcm" | fs::path(int_fpath).extension() == ".dicom") {
 #ifdef DICOM_SUPPORT
 			intFL = new RawDicomLoader (int_fpath);
 #else
 			std::cout << "This version of Nyxus was not build with DICOM support." << std::endl;
 #endif
 		}
+			else
+				if (fs::path(int_fpath).extension() == ".nii" || fs::path(int_fpath).extension() == ".nii.gz")
+				{
+					intFL = new RawNiftiLoader (int_fpath);
+				}
+
 		else
 		{
 			if (Nyxus::check_tile_status(int_fpath))
@@ -40,7 +46,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 			}
 			else
 			{
-				intFL = new RawTiffStripLoader (n_threads, int_fpath);
+				intFL = new RawTiffStripLoader (1/*n_threads*/, int_fpath);
 			}
 		}
 	}
@@ -90,6 +96,11 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 #endif
 		}
 		else
+			if (fs::path(int_fpath).extension() == ".nii" || fs::path(int_fpath).extension() == ".nii.gz")
+			{
+				intFL = new RawNiftiLoader (int_fpath);
+			}
+			else
 		{
 			if (Nyxus::check_tile_status(seg_fpath))
 			{
@@ -97,7 +108,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 			}
 			else
 			{
-				segFL = new RawTiffStripLoader (n_threads, seg_fpath);
+				segFL = new RawTiffStripLoader (1/*n_threads*/, seg_fpath);
 			}
 		}
 	}

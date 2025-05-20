@@ -28,8 +28,15 @@ bool BasicEnvironment::check_2d_file_pattern(const std::string& pat)
 	return true;
 }
 
-bool BasicEnvironment::check_3d_file_pattern(const std::string& pat)
+bool BasicEnvironment::check_3d_file_pattern (const std::string& pat)
 {
+	/*
+	if (file_pattern_3D.is_layoutA_fpattern(pat))
+		return file_pattern_3D.set_filepattern (pat);	// example: {c+}_{d+}_z{set d+}_t{d+}.ome.tif
+	else
+		return check_2d_file_pattern (pat);	// example: *\.nii\.gz
+	*/
+
 	return file_pattern_3D.set_filepattern (pat);
 }
 
