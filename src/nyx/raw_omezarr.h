@@ -4,7 +4,7 @@
 
 #include <algorithm>
 #include "nlohmann/json.hpp"
-#include "xtensor/xarray.hpp"
+#include "xtensor.hpp"
 
 // factory functions to create files, groups and datasets
 #include "z5/factory.hxx"
