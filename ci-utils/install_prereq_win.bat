@@ -66,9 +66,9 @@ if "%BUILD_Z5_DEP%" == "1" (
     popd
     popd
 
-    curl -L https://github.com/xtensor-stack/xtl/archive/refs/tags/0.7.5.zip -o 0.7.5.zip
-    tar -xf 0.7.5.zip
-    pushd xtl-0.7.5 
+    curl -L https://github.com/xtensor-stack/xtl/archive/refs/tags/0.8.0.zip -o 0.8.0.zip
+    tar -xf 0.8.0.zip
+    pushd xtl-0.8.0 
     mkdir build_man
     pushd build_man
     cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
@@ -76,9 +76,9 @@ if "%BUILD_Z5_DEP%" == "1" (
     popd
     popd
 
-    curl -L https://github.com/xtensor-stack/xtensor/archive/refs/tags/0.24.7.zip -o 0.24.7.zip
-    tar -xf 0.24.7.zip
-    pushd xtensor-0.24.7
+    curl -L https://github.com/xtensor-stack/xtensor/archive/refs/tags/0.26.0.zip -o 0.26.0.zip
+    tar -xf 0.26.0.zip
+    pushd xtensor-0.26.0
     mkdir build_man
     pushd build_man
     cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
@@ -86,9 +86,9 @@ if "%BUILD_Z5_DEP%" == "1" (
     popd
     popd
 
-    curl -L https://github.com/xtensor-stack/xsimd/archive/refs/tags/11.1.0.zip -o 11.1.0.zip
-    tar -xf 11.1.0.zip 
-    pushd xsimd-11.1.0 
+    curl -L https://github.com/xtensor-stack/xsimd/archive/refs/tags/13.2.0.zip -o 13.2.0.zip
+    tar -xf 13.2.0.zip 
+    pushd xsimd-13.2.0 
     mkdir build_man
     pushd build_man
     cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
@@ -106,9 +106,9 @@ if "%BUILD_Z5_DEP%" == "1" (
     popd
     popd
 
-    curl -L https://github.com/constantinpape/z5/archive/refs/tags/2.0.19.zip -o 2.0.19.zip
-    tar -xf 2.0.19.zip 
-    pushd z5-2.0.19
+    curl -L https://github.com/constantinpape/z5/archive/refs/tags/2.0.20.zip -o 2.0.20.zip
+    tar -xf 2.0.20.zip 
+    pushd z5-2.0.20
     mkdir build_man
     pushd build_man
     cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/ -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF ..
