@@ -277,6 +277,7 @@ if(USE_Z5)
 	if (ZLIB_FOUND)
 		list(APPEND Nyxus_LIBRARIES ${ZLIB_LIBRARIES} )
 		include_directories (${ZLIB_INCLUDE_DIR})
+		add_definitions(-DHAVE_ZLIB)
 	endif()
 	
 	if(nlohmann_json_FOUND)
