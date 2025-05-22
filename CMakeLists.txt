@@ -191,6 +191,9 @@ set(SOURCE
 	src/nyx/features/zernike_nontriv.cpp
 	src/nyx/helpers/diag.cpp
 	src/nyx/helpers/timing.cpp
+	src/nyx/io/nifti/laynii_lib.cpp
+	src/nyx/io/nifti/nifti2_io.cpp
+	src/nyx/io/nifti/znzlib.cpp
 	src/nyx/arrow_helpers.cpp
 	src/nyx/cli_anisotropy_options.cpp
 	src/nyx/cli_fpimage_options.cpp
@@ -216,7 +219,9 @@ set(SOURCE
 	src/nyx/output_2_csv.cpp
 	src/nyx/output_writers.cpp
 	src/nyx/phase1.cpp
-	src/nyx/phase2.cpp
+	src/nyx/phase2_2d.cpp
+	src/nyx/phase2_25d.cpp
+	src/nyx/phase2_3d.cpp
 	src/nyx/phase3.cpp
 	src/nyx/pixel_feed.cpp
 	src/nyx/raw_image_loader.cpp
@@ -272,6 +277,7 @@ if(USE_Z5)
 	if (ZLIB_FOUND)
 		list(APPEND Nyxus_LIBRARIES ${ZLIB_LIBRARIES} )
 		include_directories (${ZLIB_INCLUDE_DIR})
+		add_definitions(-DHAVE_ZLIB)	# telling NIFTI code of zlib availability, otherwise it'll support only uncompressed NIFTI
 	endif()
 	
 	if(nlohmann_json_FOUND)

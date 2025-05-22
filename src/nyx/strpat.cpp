@@ -6,9 +6,34 @@ StringPattern::StringPattern()
 {
 }
 
+bool StringPattern::is_layoutA_fpattern (const std::string & p) const
+{
+	bool rv = p.find ("set d+") != std::string::npos;
+	return rv;
+}
+
 // Example of a valid pat: BRATS_{d+}_z{set d+}_t{d+}.ome.tif for BRATS_001_z004_t002.ome.tif
 bool StringPattern::set_filepattern (const std::string & pat)
 {
+	if (is_layoutA_fpattern(pat) == false)
+	{
+		// cache the pattern string no matter if it's correct or not
+		cached_pattern_string = pat;
+
+		// then check it
+		try
+		{
+			std::regex re(pat);
+		}
+		catch (...)
+		{
+			ermsg_ = "Exception while checking file pattern " + pat;
+			return false;
+		}
+
+		return true;
+	}
+
 	// parse a Polus-style filepattern 
 	const std::string magicAnyStr = "mzmzmzmzmzmzmzmzmzmzmzm",	// a string highly unlikely to happen to be a part of file name
 		magicAnyNum = "18446744073709551615" "000",	// int value that will never occur (max 64-bit int \times 10^3)

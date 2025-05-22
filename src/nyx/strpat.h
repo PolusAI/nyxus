@@ -8,6 +8,13 @@ class StringPattern
 public:
 	StringPattern();
 
+	// Returns true if 'p' is a file pattern of a 3D image in 
+	// layout-A (example: BRATS_{d+}_z{set d+}_t{d+}.ome.tif).
+	// The alternative file pattern is regex pattern (example: *\.nii\.gz)
+	bool is_layoutA_fpattern (const std::string& p) const;
+
+	inline bool is_25D() const { return is_layoutA_fpattern(cached_pattern_string); }
+
 	// Initialize the instance using a Polus-stype filepattern (example: BRATS_{d+}_z{set d+}_t{d+}.ome.tif)
 	// Error details are available via get_ermsg()
 	bool set_filepattern(const std::string & pat);

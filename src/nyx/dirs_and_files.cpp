@@ -171,7 +171,7 @@ namespace Nyxus
 				std::string segFpath = dirLabels + "/" + segFname;
 				if (!existsOnFilesystem(intFpath))
 				{
-					err + "cannot access file " + intFpath;
+					err = "cannot access file " + intFpath;
 					return 1;
 				}
 
@@ -223,10 +223,15 @@ namespace Nyxus
 				return true;
 			}
 		}
-		else { throw (std::runtime_error("Tile Loader ERROR: The file can not be opened.")); }
+		else 
+		{ 
+			std::string erm = "\nError: cannot open file " + filePath + "\tDetails: " + __FILE__ + ":" + std::to_string(__LINE__) + "\n";
+			std::cerr << erm;
+			throw (std::runtime_error(erm)); 
+		}
 	}
-	
-	bool readDirectoryFiles_3D (const std::string & dir, const StringPattern & filePatt, std::vector <Imgfile3D_layoutA> & files)
+
+	bool read_volumetric_filenames_as_25D (const std::string& dir, const StringPattern& filePatt, std::vector <Imgfile3D_layoutA>& files)
 	{
 		// grammar is OK to read data
 		std::map<std::string, std::vector<std::string>> imgDirs;
@@ -252,7 +257,7 @@ namespace Nyxus
 		// copy the file info to the external container
 		files.clear();
 		size_t i = 0;
-		for (const auto & x : imgDirs)
+		for (const auto& x : imgDirs)
 		{
 			Nyxus::Imgfile3D_layoutA img3;
 			img3.fname = x.first;	// image name
@@ -261,6 +266,36 @@ namespace Nyxus
 		}
 
 		return true;
+	}
+
+	bool read_volumetric_filenames (const std::string& dir, const StringPattern& filePatt, std::vector <Imgfile3D_layoutA>& files)
+	{
+		// read file names into a plain vector of strings
+		std::vector<std::string> fn1, fn2;
+		std::string p = filePatt.get_cached_pattern_string();
+		readDirectoryFiles_2D (dir, p, fn1, fn2);
+
+		// repackage it into a vector of extended file info (Imgfile3D_layoutA)
+		files.clear();
+		size_t i = 0;
+		for (const auto& x : fn2)	// pure file names
+		{
+			Nyxus::Imgfile3D_layoutA img3;
+			img3.fname = x;
+			img3.fdir = dir;
+			// intentionally leaving 'img3.z_indices' blank as we are not in 'layoutA' scenario
+			files.push_back(img3);
+		}
+
+		return true;
+	}
+
+	bool readDirectoryFiles_3D (const std::string & dir, const StringPattern & fpatt, std::vector <Imgfile3D_layoutA> & fnames)
+	{
+		if (fpatt.is_25D())
+			return read_volumetric_filenames_as_25D (dir, fpatt, fnames);
+		else
+			return read_volumetric_filenames (dir, fpatt, fnames);
 	}
 
 	int read_3D_dataset(
@@ -298,7 +333,7 @@ namespace Nyxus
 			std::cerr << "Error reading directory " << dirIntens << '\n';
 			return 1;
 		}
-		if (!readDirectoryFiles_3D (dirLabels, filePatt, labelFiles))
+		if (!readDirectoryFiles_3D(dirLabels, filePatt, labelFiles))
 		{
 			std::cerr << "Error reading directory " << dirLabels << '\n';
 			return 1;

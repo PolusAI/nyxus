@@ -9,3 +9,16 @@
 #else
 	error "Missing the <filesystem> header."
 #endif
+
+namespace Nyxus
+{
+	// returns big file extension e.g. ".nii.gz"
+	inline std::string get_big_extension (const std::string & fpath)
+	{
+		auto smallExt = fs::path(fpath).extension();
+		auto st = fs::path(fpath).stem();
+		std::string ext = fs::path(st).has_extension() ? fs::path(st).extension().string() + smallExt.string() : smallExt.string();
+		return ext;
+	}
+
+}
