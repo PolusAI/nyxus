@@ -27,12 +27,15 @@ void test_nifti_loader ()
     ASSERT_TRUE(h == 512);
 
     // compressed
-    auto ldr2 = NiftiLoader<uint32_t>(data2_p.string());
-    h = w = d = 0;
-    ASSERT_NO_THROW(d = ldr2.fullDepth(0));
-    ASSERT_NO_THROW(w = ldr2.fullWidth(0));
-    ASSERT_NO_THROW(h = ldr2.fullHeight(0));
-    ASSERT_TRUE(d == 20);
-    ASSERT_TRUE(w == 512);
-    ASSERT_TRUE(h == 512);
+    if (nifti_is_gzfile(data2_p.string().c_str()))  // bypass .gz checks if zlib option is disabled
+    {
+        auto ldr2 = NiftiLoader<uint32_t>(data2_p.string());
+        h = w = d = 0;
+        ASSERT_NO_THROW(d = ldr2.fullDepth(0));
+        ASSERT_NO_THROW(w = ldr2.fullWidth(0));
+        ASSERT_NO_THROW(h = ldr2.fullHeight(0));
+        ASSERT_TRUE(d == 20);
+        ASSERT_TRUE(w == 512);
+        ASSERT_TRUE(h == 512);
+    }
 }

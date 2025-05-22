@@ -277,7 +277,7 @@ if(USE_Z5)
 	if (ZLIB_FOUND)
 		list(APPEND Nyxus_LIBRARIES ${ZLIB_LIBRARIES} )
 		include_directories (${ZLIB_INCLUDE_DIR})
-		add_definitions(-DHAVE_ZLIB)
+		add_definitions(-DHAVE_ZLIB)	# telling NIFTI code of zlib availability, otherwise it'll support only uncompressed NIFTI
 	endif()
 	
 	if(nlohmann_json_FOUND)
