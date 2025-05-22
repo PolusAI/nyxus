@@ -18,13 +18,21 @@ void test_nifti_loader ()
 
     // uncompressed
     auto ldr1 = NiftiLoader<uint32_t> (data1_p.string());
-    ASSERT_NO_THROW (auto d = ldr1.fullDepth(0), d==20);
-    ASSERT_NO_THROW (auto w = ldr1.fullWidth(0), w==512);
-    ASSERT_NO_THROW (auto f = ldr1.fullHeight(0), h==512);
+    size_t h=0, w=0, d=0;
+    ASSERT_NO_THROW(d = ldr1.fullDepth(0));
+    ASSERT_NO_THROW(w = ldr1.fullWidth(0));
+    ASSERT_NO_THROW(h = ldr1.fullHeight(0));
+    ASSERT_TRUE(d == 20);
+    ASSERT_TRUE(w == 512);
+    ASSERT_TRUE(h == 512);
 
     // compressed
     auto ldr2 = NiftiLoader<uint32_t>(data2_p.string());
-    ASSERT_NO_THROW(auto d = ldr2.fullDepth(0), d == 20);
-    ASSERT_NO_THROW(auto w = ldr2.fullWidth(0), w == 512);
-    ASSERT_NO_THROW(auto f = ldr2.fullHeight(0), h == 512);
+    h = w = d = 0;
+    ASSERT_NO_THROW(d = ldr2.fullDepth(0));
+    ASSERT_NO_THROW(w = ldr2.fullWidth(0));
+    ASSERT_NO_THROW(h = ldr2.fullHeight(0));
+    ASSERT_TRUE(d == 20);
+    ASSERT_TRUE(w == 512);
+    ASSERT_TRUE(h == 512);
 }
