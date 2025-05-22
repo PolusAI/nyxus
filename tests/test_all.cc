@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "test_gabor.h"
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
@@ -22,7 +23,11 @@
 #include "test_arrow.h"
 #include "test_arrow_file_name.h"
 #include "test_image_quality.h"
+#include "test_nifti.h"
 
+TEST(TEST_NYXUS, TEST_NIFTY_LOADER) {
+	test_nifti_loader();
+}
 
 TEST(TEST_NYXUS, TEST_ARROW_FILE_NAME) {
 	test_file_naming();
