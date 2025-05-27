@@ -145,77 +145,34 @@ public:
         // cache
         size_t nr_voxels = nii->nvox;
         if (nii->datatype == 2) {  // NIFTI_TYPE_UINT8
-            uint8_t* nii_data = static_cast<uint8_t*>(nii->data);
-            for (int i = 0; i < nr_voxels; ++i) {
-                dataCache[i] = static_cast<int32_t>(*(nii_data + i));
-            }
+            unhounsfield <uint32_t, uint8_t>(dataCache, static_cast<uint8_t*> (nii->data), nr_voxels);
         }
         else if (nii->datatype == 512) {  // NIFTI_TYPE_UINT16
-            uint16_t* nii_data = static_cast<uint16_t*>(nii->data);
-            for (int i = 0; i < nr_voxels; ++i) {
-                dataCache[i] = static_cast<int32_t>(*(nii_data + i));
-            }
+            unhounsfield <uint32_t, uint16_t>(dataCache, static_cast<uint16_t*> (nii->data), nr_voxels);
         }
         else if (nii->datatype == 768) {  // NIFTI_TYPE_UINT32
-            uint32_t* nii_data = static_cast<uint32_t*>(nii->data);
-            for (int i = 0; i < nr_voxels; ++i) {
-                dataCache[i] = static_cast<int32_t>(*(nii_data + i));
-            }
+            unhounsfield <uint32_t, uint32_t>(dataCache, static_cast<uint32_t*> (nii->data), nr_voxels);
         }
         else if (nii->datatype == 1280) {  // NIFTI_TYPE_UINT64
-            uint64_t* nii_data = static_cast<uint64_t*>(nii->data);
-            for (int i = 0; i < nr_voxels; ++i) {
-                dataCache[i] = static_cast<int32_t>(*(nii_data + i));
-            }
+            unhounsfield <uint32_t, uint64_t>(dataCache, static_cast<uint64_t*> (nii->data), nr_voxels);
         }
         else if (nii->datatype == 256) {  // NIFTI_TYPE_INT8
-            int8_t* nii_data = static_cast<int8_t*>(nii->data);
-            for (int i = 0; i < nr_voxels; ++i) {
-                dataCache[i] = static_cast<int32_t>(*(nii_data + i));
-            }
+            unhounsfield <uint32_t, int8_t>(dataCache, static_cast<int8_t*> (nii->data), nr_voxels);
         }
         else if (nii->datatype == 4) {  // NIFTI_TYPE_INT16
-            int16_t* nii_data = static_cast<int16_t*>(nii->data);
-            for (int i = 0; i < nr_voxels; ++i) {
-                dataCache[i] = static_cast<int32_t>(*(nii_data + i));
-            }
+            unhounsfield <uint32_t, int16_t>(dataCache, static_cast<int16_t*> (nii->data), nr_voxels);
         }
         else if (nii->datatype == 8) {  // NIFTI_TYPE_INT32
-            int32_t* nii_data = static_cast<int32_t*>(nii->data);
-            for (int i = 0; i < nr_voxels; ++i) {
-                dataCache[i] = static_cast<int32_t>(*(nii_data + i));
-            }
+            unhounsfield <uint32_t, int32_t>(dataCache, static_cast<int32_t*> (nii->data), nr_voxels);
         }
         else if (nii->datatype == 1024) {  // NIFTI_TYPE_INT64
-            int64_t* nii_data = static_cast<int64_t*>(nii->data);
-            for (int i = 0; i < nr_voxels; ++i) {
-                dataCache[i] = static_cast<int32_t>(*(nii_data + i));
-            }
+            unhounsfield <uint32_t, int64_t>(dataCache, static_cast<int64_t*> (nii->data), nr_voxels);
         }
         else if (nii->datatype == 16) {  // NIFTI_TYPE_FLOAT32
-            float* nii_data = static_cast<float*>(nii->data);
-            for (int i = 0; i < nr_voxels; ++i) {
-                dataCache[i] = static_cast<int32_t>(*(nii_data + i));
-            }
+            unhounsfield <uint32_t, float>(dataCache, static_cast<float*> (nii->data), nr_voxels);
         }
         else if (nii->datatype == 64) {  // NIFTI_TYPE_FLOAT64
-            double* nii_data = static_cast<double*>(nii->data);
-
-            // -- min, max
-            double mi = nii_data[0],
-                mx = mi;
-            for (size_t i = 0; i < nr_voxels; i++)
-            {
-                double a = *(nii_data + i);
-                mi = (std::min)(mi, a);
-                mx = (std::max)(mx, a);
-            }
-
-            for (int i = 0; i < nr_voxels; ++i) {
-                double a = *(nii_data + i) - mi;
-
-                dataCache[i] = static_cast<uint32_t>(a);
-            }
+            unhounsfield <uint32_t, double> (dataCache, static_cast<double*> (nii->data), nr_voxels);
         }
         else {
             std::string erm = "error: unrecognized NIFTI data type in " + slide_path_;
@@ -258,4 +215,31 @@ private:
 
     std::vector<uint32_t> tile;
     std::string slide_path_;
+
+   template <class til, class fra>
+   void unhounsfield (std::vector<til>& nyxbuf, const fra* houbuf, size_t n)
+   {
+       // -- widest typed min and max expecting min to be the background radiodensity or so
+       double mi = houbuf[0],
+           mx = mi;
+       for (size_t i = 0; i < n; i++)
+       {
+           double a = *(houbuf + i);
+           mi = (std::min)(mi, a);
+           mx = (std::max)(mx, a);
+       }
+
+       // -- convert
+       if (mi < 0.0)
+           for (int i = 0; i < n; ++i) 
+           {
+               double a = *(houbuf + i) - mi;
+               nyxbuf[i] = static_cast<til>(a);
+           }
+       else
+           for (int i = 0; i < n; ++i)
+           {
+               nyxbuf[i] = static_cast<til>(houbuf[i]);
+           }
+   }
 };
