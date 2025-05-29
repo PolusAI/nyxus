@@ -20,10 +20,8 @@
 #include "test_glszm.h"
 #include "test_ngtdm.h"
 #include "test_roi_blacklist.h"
-
-//xxxxxxxxxxxx	#include "test_arrow.h"
-//xxxxxxxxxxxx	#include "test_arrow_file_name.h"
-
+#include "test_arrow.h"
+#include "test_arrow_file_name.h"
 #include "test_image_quality.h"
 #include "test_nifti.h"
 
@@ -35,18 +33,17 @@ TEST(TEST_NYXUS, TEST_NIFTY_DACC_CONSISTENCY) {
 	test_nifti_data_access_consistency();
 }
 
-//xxxxxxxxxxxx
-//TEST(TEST_NYXUS, TEST_ARROW_FILE_NAME) {
-//	test_file_naming();
-//}
-//
-//TEST(TEST_NYXUS, TEST_ARROW) {
-//	test_arrow();
-//}
-//
-//TEST(TEST_NYXUS, TEST_PARQUET) {
-//	test_parquet();
-//}
+TEST(TEST_NYXUS, TEST_ARROW_FILE_NAME) {
+	test_file_naming();
+}
+
+TEST(TEST_NYXUS, TEST_ARROW) {
+	test_arrow();
+}
+
+TEST(TEST_NYXUS, TEST_PARQUET) {
+	test_parquet();
+}
 
 TEST(TEST_NYXUS, TEST_GABOR){
     test_gabor();
