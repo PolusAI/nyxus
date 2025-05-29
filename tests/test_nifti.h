@@ -39,3 +39,29 @@ void test_nifti_loader ()
         ASSERT_TRUE(h == 512);
     }
 }
+
+void test_nifti_data_access_consistency()
+{
+    fs::path p(__FILE__);
+    fs::path pp = p.parent_path();
+    fs::path f("/data/nifti/phantoms/2torus.nii");
+    fs::path data1_p = (pp.string() + f.make_preferred().string());
+    ASSERT_TRUE(fs::exists(data1_p));
+
+    auto ldr1 = NiftiLoader<uint32_t>(data1_p.string());
+
+    size_t h = 0, w = 0, d = 0;
+    ASSERT_NO_THROW(d = ldr1.fullDepth(0));
+    ASSERT_NO_THROW(w = ldr1.fullWidth(0));
+    ASSERT_NO_THROW(h = ldr1.fullHeight(0));
+
+    auto t = std::make_shared<std::vector<uint32_t>> (d*w*h);
+    ASSERT_NO_THROW (ldr1.loadTileFromFile (t, 0, 0, 0, 0));
+
+    // stats
+    std::vector<uint32_t>& databuf = *t;
+    double tot = 0;
+    for (auto x : databuf)
+        tot += x;
+    ASSERT_TRUE(tot == 544286216);
+}
