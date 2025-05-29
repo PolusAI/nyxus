@@ -346,43 +346,61 @@ namespace Nyxus
 			return 2;
 		}
 
+		// There can be 2 layouts: 
+		//		(1) 1-1 intensity-mask correspondence
+		//		(2) 1-N intensity-mask correspondence
+
 		// Shallow consistency check 
-		if (intensFiles.size() != labelFiles.size())
-		{
-			std::cout << "Mismatch: " << intensFiles.size() << " intensity images vs " << labelFiles.size() << " mask images\n";
-			return 3;
-		}
+		// -- we check this only in layout (2)
+		if (intensFiles.size() > 1)
+			if (intensFiles.size() != labelFiles.size())
+			{
+				std::cout << "Mismatch: " << intensFiles.size() << " intensity images vs " << labelFiles.size() << " mask images\n";
+				return 3;
+			}
 
 		// Deep consistency check 
-		auto nf = intensFiles.size();
-		for (auto i = 0; i < nf; i++)
+		auto nf = labelFiles.size();
+		if (intensFiles.size() > 1)
 		{
-			auto& file_i = intensFiles[i],
-				& file_m = labelFiles[i];
-
-			// name mismatch ?
-			if (file_i.fname != file_m.fname)
+			// -- layout #1: 1:1 correspondence
+			for (auto i = 0; i < nf; i++)
 			{
-				std::cerr << "Mismatch: intensity " << file_i.fname << " mask " << file_m.fname << '\n';
-				return 3;
-			}
+				auto& file_i = intensFiles[i],
+					& file_m = labelFiles[i];
 
-			// z-stack size mismatch ?
-			if (file_i.z_indices.size() != file_m.z_indices.size())
-			{
-				std::cerr << "Z-stack size mismatch: intensity " << file_i.z_indices.size() << " mask " << file_m.z_indices.size() << '\n';
-				return 3;
-			}
-
-			// z-stack indices mismatch ?
-			std::sort (file_i.z_indices.begin(), file_i.z_indices.end());
-			std::sort (file_m.z_indices.begin(), file_m.z_indices.end());
-			for (auto j=0; j< file_i.z_indices.size(); j++)
-				if (file_i.z_indices[j] != file_m.z_indices[j])
+				// name mismatch ?
+				if (file_i.fname != file_m.fname)
 				{
-					std::cerr << "Mismatch in z-stack indices: " << file_i.fname << "[" << j << "] != " << file_m.fname << "[" << j << "]\n";
+					std::cerr << "Mismatch: intensity " << file_i.fname << " mask " << file_m.fname << '\n';
 					return 3;
 				}
+
+				// z-stack size mismatch ?
+				if (file_i.z_indices.size() != file_m.z_indices.size())
+				{
+					std::cerr << "Z-stack size mismatch: intensity " << file_i.z_indices.size() << " mask " << file_m.z_indices.size() << '\n';
+					return 3;
+				}
+
+				// z-stack indices mismatch ?
+				std::sort(file_i.z_indices.begin(), file_i.z_indices.end());
+				std::sort(file_m.z_indices.begin(), file_m.z_indices.end());
+				for (auto j = 0; j < file_i.z_indices.size(); j++)
+					if (file_i.z_indices[j] != file_m.z_indices[j])
+					{
+						std::cerr << "Mismatch in z-stack indices: " << file_i.fname << "[" << j << "] != " << file_m.fname << "[" << j << "]\n";
+						return 3;
+					}
+			}
+		}
+		else
+		{
+			// layout #2: 1:N correspondence
+			const auto ifile = intensFiles[0];
+			intensFiles.clear();
+			for (size_t i = 0; i < nf; i++)
+				intensFiles.push_back(ifile);
 		}
 
 		// let each file know its directory
