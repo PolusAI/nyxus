@@ -255,10 +255,6 @@ if [[ $BUILD_ARROW_DEP -eq 1 ]]; then
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DARROW_IPC=ON \
             -DARROW_JSON=ON \
-            -DARROW_WITH_GANDIVA=OFF \
-            -DARROW_FLIGHT=OFF \
-            -DARROW_WITH_OPENSSL=OFF \
-            -DARROW_WITH_LIBEVENT=OFF \
             .. 
     make -j4
     make install
