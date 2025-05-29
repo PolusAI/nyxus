@@ -12,7 +12,7 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
     strategy:
       matrix:
-        os: [ubuntu-22.04, macos-13, windows-latest]
+        os: [ubuntu-22.04, macos-13, windows-latest, ubuntu-22.04-arm]
         cibw_archs: ["auto64"]
         cibw_build: ["cp39", "cp310", "cp311", "cp312"]
 
@@ -28,7 +28,7 @@ jobs:
       - uses: actions/setup-python@v4
         name: Install Python
         with:
-          python-version: '3.9'
+          python-version: '3.11'
  
       - name: Install cibuildwheel
         run: |
@@ -42,6 +42,7 @@ jobs:
           CIBW_SKIP: "*musllinux*"
           CIBW_BUILD_VERBOSITY: 3
           CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64:latest
+          CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64:latest
           CIBW_BEFORE_ALL_MACOS:  brew install llvm@16 && 
                                    bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
                                    mkdir -p /tmp/nyxus_bld &&

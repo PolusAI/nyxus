@@ -45,7 +45,7 @@ jobs:
       - uses: actions/setup-python@v4
         name: Install Python
         with:
-          python-version: '3.9'
+          python-version: '3.11'
  
       - name: Install cibuildwheel
         run: |
@@ -59,7 +59,7 @@ jobs:
           CIBW_SKIP: "*musllinux*"
           CIBW_BUILD_VERBOSITY: 3
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
-          CIBW_BEFORE_ALL_LINUX:  sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo &&
+          CIBW_BEFORE_ALL_LINUX: sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo &&
                                    sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo &&
                                    sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo && 
                                    yum install -y llvm libevent-devel openssl-devel && 
