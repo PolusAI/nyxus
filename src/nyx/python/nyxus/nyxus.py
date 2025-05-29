@@ -841,7 +841,7 @@ class Nyxus3D:
     
     Example:
     nyx = Nyxus3D(
-            features = [["*ALL*"]],
+            features = [["*3D_ALL*"]],
             neighbor_distance = 5,
             pixels_per_micron = 1.0,
             coarse_gray_depth= 64, 
@@ -946,13 +946,13 @@ class Nyxus3D:
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
         
-        if(using_gpu > -1 and n_feature_calc_threads != 1):
+        if(use_gpu_device > -1 and n_feature_calc_threads != 1):
             print("Gpu features only support a single thread. Defaulting to one thread.")
             n_feature_calc_threads = 1
             
-        if(using_gpu > -1 and not gpu_available()):
+        if(use_gpu_device > -1 and not gpu_available()):
             print("No gpu available.")
-            using_gpu = -1
+            use_gpu_device = -1
 
         ram_limit = kwargs.get('ram_limit', -1)
 
@@ -975,7 +975,7 @@ class Nyxus3D:
             pixels_per_micron,
             coarse_gray_depth, 
             n_feature_calc_threads,
-            using_gpu,
+            use_gpu_device,
             ibsi,
             dynamic_range,
             min_intensity,
