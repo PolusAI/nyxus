@@ -55,7 +55,11 @@ namespace Nyxus
 		{ STOPWATCH("Image scan2a/scan2a/s2a/#aabbcc", "\t=");
 		// Phase 1: gather ROI metrics
 		VERBOSLVL2(std::cout << "Gathering ROI metrics\n");
-		bool okGather = gatherRoisMetrics_3D(intens_fpath, label_fpath, z_indices);
+		bool okGather = false;
+		if (z_indices.size())
+			okGather = gatherRoisMetrics_25D (intens_fpath, label_fpath, z_indices);
+		else
+			okGather = gatherRoisMetrics_3D (intens_fpath, label_fpath);
 		if (!okGather)
 		{
 			std::string msg = "Error gathering ROI metrics from " + intens_fpath + " / " + label_fpath + "\n";
@@ -63,6 +67,13 @@ namespace Nyxus
 			throw (std::runtime_error(msg));
 			return false;
 		}
+		}
+
+		// are there any ROI to extract features from ?
+		if (Nyxus::uniqueLabels.size() == 0)
+		{
+			VERBOSLVL2(std::cout << "warning: no ROIs in I:" + intens_fpath + " M:" + label_fpath);
+			return true;
 		}
 
 		{ STOPWATCH("Image scan2b/scan2b/s2b/#aabbcc", "\t=");
@@ -123,14 +134,17 @@ namespace Nyxus
 		if (trivRoiLabels.size())
 		{
 			VERBOSLVL2(std::cout << "Processing trivial ROIs\n";)
-				processTrivialRois_3D(trivRoiLabels, intens_fpath, label_fpath, theEnvironment.get_ram_limit(), z_indices);
+			if (z_indices.size())
+				processTrivialRois_25D (trivRoiLabels, intens_fpath, label_fpath, theEnvironment.get_ram_limit(), z_indices);
+			else
+				processTrivialRois_3D (trivRoiLabels, intens_fpath, label_fpath, theEnvironment.get_ram_limit());
 		}
 
 		// Phase 3: process nontrivial (oversized) ROIs, if any
 		if (nontrivRoiLabels.size())
 		{
 			VERBOSLVL2(std::cout << "Processing oversized ROIs\n";)
-				processNontrivialRois(nontrivRoiLabels, intens_fpath, label_fpath);
+			processNontrivialRois(nontrivRoiLabels, intens_fpath, label_fpath);
 		}
 
 		return true;
@@ -188,7 +202,10 @@ namespace Nyxus
 				& mfile = labelFiles[i];	// mask
 
 			// Do phased processing: prescan, trivial ROI processing, oversized ROI processing
-			ok = processIntSegImagePair_3D(ifile.fdir + ifile.fname, mfile.fdir + mfile.fname, i, nf, intensFiles[i].z_indices);
+			// Expecting 2 cases of intensFiles[i].z_indices :
+			// -- non-empty indicating a 2.5D case (aka layoutA)
+			// -- empty indicating a 3D case (.nii, .dcm, etc)
+			ok = processIntSegImagePair_3D (ifile.fdir + ifile.fname, mfile.fdir + mfile.fname, i, nf, intensFiles[i].z_indices);
 			if (ok == false)
 			{
 				std::cerr << "processIntSegImagePair() returned an error code while processing file pair " << ifile.fname << " - " << mfile.fname << '\n';
@@ -215,10 +232,9 @@ namespace Nyxus
 					return 2;
 				}
 			}
-			else {
-				ok = save_features_2_buffer(theResultsCache);
-
-				if (ok == false)
+			else 
+			{
+				if (! save_features_2_buffer(theResultsCache))
 				{
 					std::cout << "save_features_2_buffer() returned an error code" << std::endl;
 					return 2;

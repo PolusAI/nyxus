@@ -12,6 +12,7 @@
 class ImageLoader
 {
 public:
+
 	ImageLoader();
 	bool open (SlideProps & p);
 	void close();
@@ -30,7 +31,10 @@ public:
 	size_t get_within_tile_idx (size_t pixel_row, size_t pixel_col);
 	size_t get_full_width();
 	size_t get_full_height();
+	size_t get_full_depth();
+
 private:
+
 	AbstractTileLoader<uint32_t> *segFL = nullptr, *intFL = nullptr; 
 	std::shared_ptr<std::vector<uint32_t>> ptrI = nullptr; 
 	std::shared_ptr<std::vector<uint32_t>> ptrL = nullptr; 

@@ -32,21 +32,28 @@ or
 conda install nyxus -c conda-forge
 ```
 
-Usage is very straightforward. Given `intensities` and `labels` folders, Nyxus pairs up intensity-label images and extracts features from all of them. A summary of the available feature are [listed below](#available-features).
+## Usage
+
+The library provides class `Nyxus` for 2-dimensional TIFF, OME.TIFF, OME.ZARR, and DICOM slides and intensity-mask slide pairs, and class `Nyxus3D` for NIFTI volumes and intensity-volume volume pairs. Additionally to a single-file representation, a volume can be represented by its z-slices residing in separate 2-dimensional TIFF or ONE.TIFF slides (so called "layout A"). Slides and volumes can be featurized as all the files in a  directory filtered with a file pattern passed specified. Alternatively, explicit file name pairs and pair lists can be featurized. Alternatively, 2D and 3D NumPy arrays can be featurized. 
+
+### 2D usage
+
+Given `intensities` and `labels` folders, Nyxus pairs up intensity-segmentation mask images and extracts features from all of them. A summary of the available feature are [listed below](#available-features).
 
 ```python 
 from nyxus import Nyxus
-nyx = Nyxus(["*ALL*"])
+nyx = Nyxus (["*ALL*"])
 intensityDir = "/path/to/images/intensities/"
 maskDir = "/path/to/images/labels/"
-features = nyx.featurize_directory (intensityDir, maskDir)
+features = nyx.featurize_directory (intensityDir, maskDir) # selecting all the .ome.tif slides (default)
 ```
 
-Alternatively, Nyxus can process explicitly defined pairs of intensity-mask images thus specifying custom 1:N and M:N mapping between label and intensity image files. The following example extracts features from intensity images 'i1', 'i2', and 'i3' related with mask images 'm1' and 'm2' via a custom mapping:
+Alternatively, Nyxus can process explicitly defined pairs of intensity-mask images thus specifying custom 1:N and M:N mapping between segmentation mask and intensity image files. 
+The following example extracts all the features (note parameter "*ALL*") from intensity images 'i1', 'i2', and 'i3' related with mask images 'm1' and 'm2' via a custom mapping:
 
 ```python 
 from nyxus import Nyxus
-nyx = Nyxus(["*ALL*"])
+nyx = Nyxus (["*ALL*"])
 features = nyx.featurize_files(
     [
         "/path/to/images/intensities/i1.ome.tif", 
@@ -58,10 +65,10 @@ features = nyx.featurize_files(
         "/path/to/images/labels/m2.ome.tif",
         "/path/to/images/labels/m2.ome.tif"
     ],
-	False)
+	False) # pass True to featurize intensity files as whole segments
 ```
 
-The `features` variable is a Pandas dataframe similar to what is shown below.
+The result `features` variable is a Pandas dataframe similar to what is shown below. Note that if multiple segments are stored in a segmentation mask file, each segment's features in the resultcan be identified by the mask file name and segment mask label.
 
 |     | mask_image           | intensity_image      |   label |    MEAN |   MEDIAN |...|    GABOR_6 |
 |----:|:---------------------|:---------------------|--------:|--------:|---------:|--:|-----------:|
@@ -73,14 +80,14 @@ The `features` variable is a Pandas dataframe similar to what is shown below.
 | ... | ...                  | ...                  |     ... | ...     |  ...     |...|   ...      |
 | 734 | p5_y0_r51_c0.ome.tif | p5_y0_r51_c0.ome.tif |     223 | 54573.3 |  54573.3 |...|   0.980769 |
 
-Nyxus can also process intensity-mask pairs that are loaded as Numpy arrays using the `featurize` method. This method takes in either a single pair of 2D intensity-mask pairs
+Nyxus can also process intensity-mask pairs that are loaded as NumPy arrays using the `featurize` method. This method takes in either a single pair of 2D intensity-mask pairs
 or a pair of 3D arrays containing 2D intensity and mask images. There is also two optional parameters to supply names to the resulting dataframe, . 
 
 ```python 
 from nyxus import Nyxus
 import numpy as np
 
-nyx = Nyxus(["*ALL*"])
+nyx = Nyxus (["*ALL*"])
 
 intens = np.array([
     [[1, 4, 4, 1, 1],
@@ -130,6 +137,44 @@ The `features` variable will now use the custom names, as shown below
 | ... | ...              | ...                      |   ... | ...     |  ...     |...|   ...      |
 |  14 | seg2 | int2      |     6 | 54573.3 |  54573.3 |...|   0.980769 |
 
+### 3D usage
+
+Featurizing a directory of volume files is similar to the 2D case except class `Nyxus3D` should be used, and the "all" feature group nickname string should be passed as "*3D_ALL*":
+
+```python
+import nyxus
+nyx = nyxus.Nyxus3D (["*3D_ALL*"])
+
+# dataset
+idir = "/dataset1/input"
+mdir = "/dataset1/masks"
+
+# selecting only uncompressed NIFTI files
+features1 = nyx.featurize_directory (idir, mdir, file_pattern=".*\.nii")
+
+# selecting only compressed NIFTI files
+features2 = nyx.featurize_directory (idir, mdir, file_pattern=".*\.nii\.gz")
+```
+Featurizing explicitly specified volume files is straightforward, too:
+
+```python
+import nyxus
+nyx = nyxus.Nyxus3D (["*3D_ALL*"])
+
+idir = [
+	"/patient123/mri.nii.gz", 
+	"/patient123/mri.nii.gz", 
+	"/patient123/mri.nii.gz"]
+
+mdir = [
+	"/patient123/segmentation/kidney_right.nii.gz", 
+	"/patient123/segmentation/liver.nii.gz", 
+	"/patient123/segmentation/kidney_left.nii.gz"]
+
+nyx.featurize_files (idir, mdir, False) # pass True to featurize intensity files as whole segments
+```
+
+## Further steps
 
 For more information on all of the available options and features, check out [the documentation](#).
 

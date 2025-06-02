@@ -7,6 +7,7 @@
 #include "nyxus_dicom_loader.h"
 #include "dirs_and_files.h"
 #include "helpers/fsystem.h"
+#include "raw_nifti.h"
 
 
 ImageLoader::ImageLoader() {}
@@ -21,47 +22,58 @@ bool ImageLoader::open (SlideProps & p)
 	// intensity image
 	try 
 	{
-		if 	(fs::path(int_fpath).extension() == ".zarr")
+		std::string ext = Nyxus::get_big_extension (int_fpath);
+
+		if (ext == ".zarr")
 		{
 			#ifdef OMEZARR_SUPPORT
-			intFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, int_fpath);
+				intFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, int_fpath);
 			#else
-			std::cout << "This version of Nyxus was not build with OmeZarr support." <<std::endl; 
-			#endif
-		}
-		else if(fs::path(int_fpath).extension() == ".dcm" | fs::path(int_fpath).extension() == ".dicom"){
-			#ifdef DICOM_SUPPORT
-			intFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, int_fpath);
-			#else
-			std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl; 
+				std::cout << "This version of Nyxus was not build with OmeZarr support." <<std::endl; 
 			#endif
 		}
 		else 
-		{
-			// automatic or overriden FP dynamic range
-			double fpmin = p.min_preroi_inten,
-				fpmax = p.max_preroi_inten;
-			if (!Nyxus::theEnvironment.fpimageOptions.empty())
+			if (ext == ".dcm" || ext == ".dicom")
 			{
-				fpmin = Nyxus::theEnvironment.fpimageOptions.min_intensity();
-				fpmax = Nyxus::theEnvironment.fpimageOptions.max_intensity();
+				#ifdef DICOM_SUPPORT
+					intFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, int_fpath);
+				#else
+					std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl; 
+				#endif
 			}
+			else
+				if (ext == ".nii" || ext == ".nii.gz")
+				{
+					intFL = new NiftiLoader<uint32_t> (int_fpath);
+				}
+				else 
+				{
+					// flavors of TIFF (TIFF, OME.TIFF)
+					
+					// automatic or overriden FP dynamic range
+					double fpmin = p.min_preroi_inten,
+						fpmax = p.max_preroi_inten;
+					if (!Nyxus::theEnvironment.fpimageOptions.empty())
+					{
+						fpmin = Nyxus::theEnvironment.fpimageOptions.min_intensity();
+						fpmax = Nyxus::theEnvironment.fpimageOptions.max_intensity();
+					}
 
-			if (Nyxus::check_tile_status(int_fpath))
-			{
-				intFL = new NyxusGrayscaleTiffTileLoader<uint32_t> (
-					n_threads, 
-					int_fpath, 
-					true,
-					fpmin,
-					fpmax,
-					Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
-			} 
-			else 
-			{
-				intFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, int_fpath);
-			}
-		}
+					if (Nyxus::check_tile_status(int_fpath))
+					{
+						intFL = new NyxusGrayscaleTiffTileLoader<uint32_t> (
+							n_threads, 
+							int_fpath, 
+							true,
+							fpmin,
+							fpmax,
+							Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
+					} 
+					else 
+					{
+						intFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, int_fpath);
+					}
+				}
 	}
 	catch (std::exception const& e)	
 	{
@@ -72,11 +84,11 @@ bool ImageLoader::open (SlideProps & p)
 	if (intFL == nullptr)
 		return false;
 
-	// File #1 (intensity)
+	// Intensity slide
 	th = intFL->tileHeight(lvl);
 	tw = intFL->tileWidth(lvl);
 	td = intFL->tileDepth(lvl);
-	tileSize = th * tw;
+	tileSize = th * tw * td;
 
 	fh = intFL->fullHeight(lvl);
 	fw = intFL->fullWidth(lvl);
@@ -96,7 +108,9 @@ bool ImageLoader::open (SlideProps & p)
 
 	try 
 	{
-		if 	(fs::path(seg_fpath).extension() == ".zarr")
+		std::string ext = Nyxus::get_big_extension(seg_fpath);
+
+		if (ext == ".zarr")
 		{
 			#ifdef OMEZARR_SUPPORT
 				segFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, seg_fpath);
@@ -105,31 +119,38 @@ bool ImageLoader::open (SlideProps & p)
 			#endif
 		}
 		else 
-			if (fs::path(seg_fpath).extension() == ".dcm" | fs::path(seg_fpath).extension() == ".dicom")
+			if (ext == ".dcm" || ext == ".dicom")
 			{
-			#ifdef DICOM_SUPPORT
-				segFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, seg_fpath);
-			#else
-				std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl; 
-			#endif
+				#ifdef DICOM_SUPPORT
+					segFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, seg_fpath);
+				#else
+					std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl; 
+				#endif
 			}
 			else
-			{
-				if (Nyxus::check_tile_status(seg_fpath))
+				if (ext == ".nii" || ext == ".nii.gz")
 				{
-					segFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(
-						n_threads, 
-						seg_fpath, 
-						false,
-						0.0, // dummy min
-						1.0, // dummy max
-						Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
-				} 
-				else 
-				{
-					segFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, seg_fpath);
+					segFL = new NiftiLoader <uint32_t> (seg_fpath);
 				}
-			}
+				else
+				{
+					// flavors of TIFF
+
+					if (Nyxus::check_tile_status(seg_fpath))
+					{
+						segFL = new NyxusGrayscaleTiffTileLoader<uint32_t>(
+							n_threads, 
+							seg_fpath, 
+							false,
+							0.0, // dummy min
+							1.0, // dummy max
+							Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
+					} 
+					else 
+					{
+						segFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, seg_fpath);
+					}
+				}
 	}
 	catch (std::exception const& e)	
 	{
@@ -162,18 +183,6 @@ bool ImageLoader::open (SlideProps & p)
 		return false;
 	}
 
-#if 0 // Tests
-	ptrI = std::make_shared<std::vector<uint32_t>>(tileSize);
-	// Experiment
-	ptrL = std::make_shared<std::vector<uint32_t>>(tileSize);
-	segFL->loadTileFromFile(ptrL, 
-		0, //row, 
-		0, //col, 
-		0, //lyr, 
-		0); // lvl);
-	auto& dataL = *ptrL;
-#endif
-
 	ptrL = std::make_shared<std::vector<uint32_t>>(tileSize);
 
 	return true;
@@ -199,14 +208,14 @@ bool ImageLoader::load_tile(size_t tile_idx)
 	if (tile_idx >= ntw * nth * ntd)
 		return false;
 
-	auto row = tile_idx / ntw;
-	auto col = tile_idx % ntw;
+	auto tRow = tile_idx / ntw;
+	auto tCol = tile_idx % ntw;
 	
-	intFL->loadTileFromFile (ptrI, row, col, lyr, lvl);
+	intFL->loadTileFromFile (ptrI, tRow, tCol, lyr, lvl);
 
 	// segmentation loader is not available in wholeslide
 	if (segFL)
-		segFL->loadTileFromFile (ptrL, row, col, lyr, lvl);
+		segFL->loadTileFromFile (ptrL, tRow, tCol, lyr, lvl);
 	
 	return true;
 }
@@ -292,4 +301,9 @@ size_t ImageLoader::get_full_width()
 size_t ImageLoader::get_full_height()
 {
 	return fh;
+}
+
+size_t ImageLoader::get_full_depth()
+{
+	return fd;
 }
