@@ -415,4 +415,18 @@ namespace Nyxus
 		return 0;
 	}
 
+	Imgfile3D_layoutA::Imgfile3D_layoutA(const std::string& possibly_full_path)
+	{
+		auto p = fs::path(possibly_full_path);
+		fname = p.filename().string();
+		fdir = p.parent_path().string() + "/";
+	}
+
+	Imgfile3D_layoutA::Imgfile3D_layoutA()
+	{
+		fname = "";
+		fdir = "";
+	}
+
+
 } // namespace Nyxus

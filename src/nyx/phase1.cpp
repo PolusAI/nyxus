@@ -1,5 +1,4 @@
 #include <string>
-#include <sstream>
 #include <vector>
 #include <map>
 #include <array>
@@ -47,12 +46,11 @@ namespace Nyxus
 				bool ok = L.load_tile(row, col);
 				if (!ok)
 				{
-					std::stringstream ss;
-					ss << "Error fetching tile row=" << row << " col=" << col;
+					std::string erm = "Error fetching tile row:" + std::to_string(row) + " col:" + std::to_string(col) + " from I:" + intens_fpath + " M:" + label_fpath;
 					#ifdef WITH_PYTHON_H
-						throw ss.str();
+						throw erm;
 					#endif	
-					std::cerr << ss.str() << "\n";
+					std::cerr << erm << "\n";
 					return false;
 				}
 
@@ -150,12 +148,11 @@ namespace Nyxus
 				bool ok = L.load_tile(row, col);
 				if (!ok)
 				{
-					std::stringstream ss;
-					ss << "Error fetching tile row=" << row << " col=" << col;
-#ifdef WITH_PYTHON_H
-					throw ss.str();
-#endif	
-					std::cerr << ss.str() << "\n";
+					std::string erm = "Error fetching tile row:" + std::to_string(row) + " col:" + std::to_string(col) + " from " + intens_fpath;
+					#ifdef WITH_PYTHON_H
+						throw erm;
+					#endif	
+					std::cerr << erm << "\n";
 					return false;
 				}
 
@@ -252,12 +249,11 @@ namespace Nyxus
 					bool ok = theImLoader.load_tile (row, col);
 					if (!ok)
 					{
-						std::stringstream ss;
-						ss << "Error fetching tile row=" << row << " col=" << col;
+						std::string erm = "Error fetching tile row:" + std::to_string(row) + " col:" + std::to_string(col) + " from I:" + ifpath + " M:" + mfpath;
 						#ifdef WITH_PYTHON_H
-						throw ss.str();
+							throw erm;
 						#endif	
-						std::cerr << ss.str() << "\n";
+						std::cerr << erm << "\n";
 						return false;
 					}
 
@@ -342,7 +338,6 @@ namespace Nyxus
 		int lvl = 0, // Pyramid level
 			lyr = 0; //	Layer
 
-
 		// temp SlideProps object
 		SlideProps sprp;
 		sprp.fname_int = intens_fpath;
@@ -376,12 +371,11 @@ namespace Nyxus
 				bool ok = theImLoader.load_tile(row, col);
 				if (!ok)
 				{
-					std::stringstream ss;
-					ss << "Error fetching tile row=" << row << " col=" << col;
-#ifdef WITH_PYTHON_H
-					throw ss.str();
-#endif	
-					std::cerr << ss.str() << "\n";
+					std::string erm = "Error fetching tile row:" + std::to_string(row) + " col:" + std::to_string(col) + " from I:" + intens_fpath + " M:" + mask_fpath;
+					#ifdef WITH_PYTHON_H
+						throw erm;
+					#endif	
+					std::cerr << erm << "\n";
 					return false;
 				}
 

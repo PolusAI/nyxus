@@ -45,6 +45,10 @@ namespace Nyxus
 	struct Imgfile3D_layoutA
 	{
 	public:
+		
+		Imgfile3D_layoutA (const std::string& possibly_full_path);
+		Imgfile3D_layoutA();
+
 		std::string fname, fdir;
 		std::vector<std::string> z_indices;
 	};

@@ -69,6 +69,13 @@ namespace Nyxus
 		}
 		}
 
+		// are there any ROI to extract features from ?
+		if (Nyxus::uniqueLabels.size() == 0)
+		{
+			VERBOSLVL2(std::cout << "warning: no ROIs in I:" + intens_fpath + " M:" + label_fpath);
+			return true;
+		}
+
 		{ STOPWATCH("Image scan2b/scan2b/s2b/#aabbcc", "\t=");
 
 		// Allocate each ROI's feature value buffer
@@ -225,10 +232,9 @@ namespace Nyxus
 					return 2;
 				}
 			}
-			else {
-				ok = save_features_2_buffer(theResultsCache);
-
-				if (ok == false)
+			else 
+			{
+				if (! save_features_2_buffer(theResultsCache))
 				{
 					std::cout << "save_features_2_buffer() returned an error code" << std::endl;
 					return 2;

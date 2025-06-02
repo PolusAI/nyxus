@@ -449,7 +449,7 @@ py::tuple featurize_directory_3D_imp(
     // We're good to extract features. Reset the feature results cache
     theResultsCache.clear();
 
-    // Enforce flag 'separateCsv' to be TRUE to prevent flushing intermediate results after each input image. We're going to return the result in a buffer, not leave file(s)
+    // Enforce flag 'separateCsv' to be FALSE to prevent flushing intermediate results after each input image. We're going to return the result in a buffer, not leave file(s)
     theEnvironment.separateCsv = false;
 
     // Process the image sdata
@@ -479,7 +479,6 @@ py::tuple featurize_directory_3D_imp(
     // Output the result
     if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
     {
-
         auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
         auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
         auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
@@ -639,7 +638,6 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
         theEnvironment.saveOption,
         output_path);
 
-
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing.");
 
@@ -658,6 +656,107 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
     } 
 
     // Return "nothing" when output will be an Arrow format
+    return py::make_tuple();
+}
+
+py::tuple featurize_fname_lists_3D_imp (
+    const py::list& pyside_int_fnames, 
+    const py::list& pyside_seg_fnames, 
+    bool single_roi, 
+    const std::string& output_type, 
+    const std::string& output_path)
+{
+    // set the whole-slide/multi-ROI flag
+    theEnvironment.singleROI = single_roi;
+
+    // python-side file name lists to c++ vectors 
+    std::vector <Imgfile3D_layoutA> ifiles, mfiles;
+    for (auto it = pyside_int_fnames.begin(); it != pyside_int_fnames.end(); ++it)
+    {
+        std::string fn = it->cast<std::string>();
+        Imgfile3D_layoutA f(fn);
+        ifiles.push_back(f);
+    }
+    for (auto it = pyside_seg_fnames.begin(); it != pyside_seg_fnames.end(); ++it)
+    {
+        std::string fn = it->cast<std::string>();
+        Imgfile3D_layoutA f(fn);
+        mfiles.push_back(f);
+    }
+
+    // check the file name sets 
+    if (ifiles.size() == 0)
+        throw std::runtime_error("Intensity file list is blank");
+    if (mfiles.size() == 0)
+        throw std::runtime_error("Mask file list is blank");
+    if (ifiles.size() != mfiles.size())
+        throw std::runtime_error("Imbalanced intensity and segmentation mask file lists");
+    for (auto i = 0; i < ifiles.size(); i++)
+    {
+        const std::string& i_fname = ifiles[i].fdir + ifiles[i].fname;		// .fdir ends with /
+        const std::string& s_fname = mfiles[i].fdir + mfiles[i].fname;
+
+        if (!existsOnFilesystem(i_fname))
+        {
+            auto msg = "File does not exist: " + i_fname;
+            throw std::runtime_error(msg);
+        }
+        if (!existsOnFilesystem(s_fname))
+        {
+            auto msg = "File does not exist: " + s_fname;
+            throw std::runtime_error(msg);
+        }
+    }
+
+    theResultsCache.clear();
+
+    // featurize
+    int min_online_roi_size = 0;
+    int errorCode;
+
+    theEnvironment.saveOption = [&output_type]()
+    {
+        if (output_type == "arrowipc")
+        {
+            return SaveOption::saveArrowIPC;
+        }
+        else
+            if (output_type == "parquet")
+            {
+                return SaveOption::saveParquet;
+            }
+            else
+            {
+                return SaveOption::saveBuffer;
+            }
+    }();
+
+    errorCode = processDataset_3D_segmented(
+        ifiles,
+        mfiles,
+        theEnvironment.n_reduce_threads,
+        min_online_roi_size,
+        theEnvironment.saveOption,
+        output_path);
+
+    if (errorCode)
+        throw std::runtime_error("Error occurred during dataset processing");
+
+    // save the result
+    if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
+    {
+        auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
+        auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
+        auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+
+        auto nRows = theResultsCache.get_num_rows();
+        pyStrData = pyStrData.reshape({ nRows, pyStrData.size() / nRows });
+        pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+
+        return py::make_tuple(pyHeader, pyStrData, pyNumData);
+    }
+
+    // return "nothing" when output will be an Arrow format
     return py::make_tuple();
 }
 
@@ -857,6 +956,7 @@ PYBIND11_MODULE(backend, m)
     m.def("featurize_directory_3D_imp", &featurize_directory_3D_imp, "Calculate 3D features of images defined by intensity and mask image collection directories");
     m.def("featurize_montage_imp", &featurize_montage_imp, "Calculate features of images defined by intensity and mask image collection directories");
     m.def("featurize_fname_lists_imp", &featurize_fname_lists_imp, "Calculate features of intensity-mask image pairs defined by lists of image file names");
+    m.def("featurize_fname_lists_3D_imp", &featurize_fname_lists_3D_imp, "Calculate 3D features of intensity-mask volume pairs defined by lists of file names");
     m.def("findrelations_imp", &findrelations_imp, "Find relations in segmentation mask images");
     m.def("gpu_available", &Environment::gpu_is_available, "Check if CUDA gpu is available");
     m.def("use_gpu", &use_gpu, "Enable/disable GPU features");

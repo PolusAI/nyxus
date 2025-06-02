@@ -4,6 +4,7 @@ from .backend import (
     featurize_directory_3D_imp,
     featurize_montage_imp,
     featurize_fname_lists_imp,
+    featurize_fname_lists_3D_imp,
     findrelations_imp,
     use_gpu,
     gpu_available,
@@ -1063,6 +1064,77 @@ class Nyxus3D:
         else:
             featurize_directory_3D_imp (intensity_dir, label_dir, file_pattern, output_type, output_path)
             return get_arrow_file_imp() # return path to file
+
+
+    def featurize_files (
+        self,
+        intensity_files: list,
+        mask_files: list,
+        single_roi: bool,
+        output_type: Optional[str] = "pandas",
+        output_path: Optional[str] = "",
+    ):
+        """Extract features from image file pairs passed as lists
+
+        Extracts all the requested features at the image level from the intensity images
+        present in list `intensity_files` with respect to region of interest masks presented in 
+        list `mask_files`. Single-ROI feature extraction is enforced via passing 'True' as parameter 'single_roi'
+
+        Parameters
+        ----------
+        intensity_files : list of intensity image file paths
+        mask_files : list of mask image file paths
+        single_roi : 'True' to treat items of 'intensity_files' as single-ROI ('mask_files' will be ignored), 'False' to treat items of 'intensity_files' and 'mask_files' as intensity/segmentation image pairs
+        output_type: str (optional, default "pandas")
+            Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
+        output_path: str (optional, default "")
+            Output filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
+            The output_path can either be to a directory or filename. For example,
+                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created. If the directory does not exist, it will be created.
+                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. If the directory does not exist, it will also be created.
+                - If 'output_path=some_file_name.arrow' then this file will be created in the current working directory.
+
+        Returns
+        -------
+        df : pd.DataFrame or str
+            if output_type == pandas
+            Pandas DataFrame containing the requested features with one row per label
+            per image.
+            Otherwise, arrow file path
+        """
+
+        if intensity_files is None:
+            raise IOError ("The list of intensity file paths is empty")
+
+        if mask_files is None:
+            raise IOError ("The list of segment file paths is empty")
+        
+        if (output_type not in self._valid_output_types):
+            raise  ValueError(f'Invalid output type {output_type}. Valid output types are {self._valid_output_types}')
+
+        if (output_type == 'pandas'):
+            
+            header, string_data, numeric_data = featurize_fname_lists_3D_imp (intensity_files, mask_files, single_roi, output_type, "")
+
+            df = pd.concat(
+                [
+                    pd.DataFrame(string_data, columns=header[: string_data.shape[1]]),
+                    pd.DataFrame(numeric_data, columns=header[string_data.shape[1] :]),
+                ],
+                axis=1,
+            )
+
+            # Labels should always be uint.
+            if "label" in df.columns:
+                df["label"] = df.label.astype(np.uint32)
+
+            return df
+        
+        else:
+            
+            featurize_fname_lists_3D_imp (intensity_files, mask_files, single_roi, output_type, output_path)
+            
+            return get_arrow_file_imp()
 
     
     def set_environment_params (self, **params):

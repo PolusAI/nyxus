@@ -61,11 +61,6 @@ public:
 	std::vector<StatsReal> get_fvals (int fcode) const;
 	void initialize_fvals();
 
-	StatsReal aux_M2,
-		aux_M3,
-		aux_M4,
-		aux_variance;
-
 	std::vector<int> aux_neighboring_labels;
 
 	// 2D
