@@ -15,7 +15,7 @@ Nyxus is a feature-rich, highly optimized, Python/C++ application capable of ana
 
 Nyxus can be used via Python or command line and is available in containerized form for reproducible execution. Nyxus computes over 450 combined intensity, texture, and morphological features at the ROI or whole image level with more in development. Key features that make Nyxus unique among other image feature extraction applications is its ability to operate at any scale, its highly validated algorithms, and its modular nature that makes the addition of new features straightforward.
 
-Currently, Nyxus can read image data from OME-TIFF, OME-Zarr and DICOM 2D Grayscale images. It also has a Python API to support in-memory image data via Numpy array. 
+Currently, Nyxus can read 2-dimensional images in TIFF, OME-TIFF, OME-Zarr, and DICOM 2D Grayscale formats. Nyxus can also read compressed and uncompressed NIFTI volume files as well as assemble 3-dimensional arrays from z-slices residing in separate TIFF or OME-TIFF files. It also has a Python API to featurize 2-dimensional NumPy arrays. 
 
 The docs can be found at [Read the Docs](https://nyxus.readthedocs.io/en/latest/).
 
@@ -172,6 +172,25 @@ mdir = [
 	"/patient123/segmentation/kidney_left.nii.gz"]
 
 nyx.featurize_files (idir, mdir, False) # pass True to featurize intensity files as whole segments
+```
+## Anisotropy
+
+Anisotropy correction of input data is available via both python API and command-line variants, independent by x, y, and z dimensions. 
+Example (python API):
+
+```python
+import nyxus
+nyx = nyxus.Nyxus3D (["*3D_ALL*"], anisotropy_x=1.0, anisotropy_y=1.2, anisotropy_z=1.5)
+
+# dataset
+idir = "/dataset1/input"
+mdir = "/dataset1/masks"
+f = nyx.featurize_directory (idir, mdir, file_pattern=".*\.nii\.gz")
+```
+
+Another example (via command line):
+```
+--dim=3 --anisox=1.5  --anisoy=2  --anisoz=2.5 --filePattern=".*\.nii\.gz"  --features=*3D_GLCM*  --resultFname=f_3d_glcm --outputType=singlecsv --intDir=/dataset1/int --segDir=/dataset1/seg --outDir=/out/OUTPUT-3D
 ```
 
 ## Further steps
@@ -615,7 +634,7 @@ df = nest.find_relations(seg_path, 'p{r}_y{c}_r{z}_c1.ome.tif', 'p{r}_y{c}_r{z}_
 df2 = nest.featurize(df, features)
 ```
 
-the parent-child map remains the same but the `featurize` result becomes
+the parent-child map remains the same but the `featurize` result becomes (intentionally putting NaN at undefined combinations):
 
 ``` bash
                      GABOR_0                                                                ...    
