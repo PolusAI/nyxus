@@ -344,6 +344,8 @@ The feature extraction plugin extracts morphology and intensity based features f
 
 Nyxus provides a set of pixel intensity, morphology, texture, intensity distribution features, digital filter based features and image moments
 
+### 2D features
+
 ------------------
 | Nyxus feature code | Description |
 |--------|-------|
@@ -389,12 +391,12 @@ Nyxus provides a set of pixel intensity, morphology, texture, intensity distribu
 
 For the complete list of features see [Nyxus provided features](docs/source/featurelist.rst)
 
-## Feature groups
+## 2D feature groups
 
 Apart from defining your feature set by explicitly specifying comma-separated feature code, Nyxus lets a user specify popular feature groups. Supported feature groups are:
 
 ------------------------------------
-| Group code | Belonging features |
+| Group code | Member features |
 |--------------------|-------------|
 | \*all_intensity\* | integrated_intensity, mean, median, min, max, range, standard_deviation, standard_error, uniformity, skewness, kurtosis, hyperskewness, hyperflatness, mean_absolute_deviation, energy, root_mean_squared, entropy, mode, uniformity, p01, p10, p25, p75, p90, p99, interquartile_range, robust_mean_absolute_deviation, mass_displacement
 | \*all_morphology\* | area_pixels_count, area_um2, centroid_x, centroid_y, weighted_centroid_y, weighted_centroid_x, compactness, bbox_ymin, bbox_xmin, bbox_height, bbox_width, major_axis_length, minor_axis_length, eccentricity, orientation, num_neighbors, extent, aspect_ratio, equivalent_diameter, convex_hull_area, solidity, perimeter, edge_mean_intensity, edge_stddev_intensity, edge_max_intensity, edge_min_intensity, circularity
@@ -409,6 +411,64 @@ Apart from defining your feature set by explicitly specifying comma-separated fe
 | \*all_ngtdm\* | ngtdm_coarseness, ngtdm_contrast, ngtdm_busyness, ngtdm_complexity, ngtdm_strength
 | \*wholeslide\* | All the features except those irrelevant for the whole-slide use case (BasicMorphology, EnclosingInscribingCircumscribingCircle, ConvexHull, FractalDimension, GeodeticLengthThickness, Neighbor, RoiRadius, EllipseFitting, EulerNumber, Extrema, ErosionPixel, CaliperFeret, CaliperMartin, CaliperNassenstein, and Chords)
 | \*all\* | All the features 
+
+### 3D features
+
+------------------
+| Nyxus feature code | Description |
+|--------|-------|
+| **--- intensity ---** | 
+| 3COV | covariance
+| 3COVERED_IMAGE_INTENSITY_RANGE | covered volume intensity range
+| 3ENERGY | energy
+| 3ENTROPY | entrupy
+| 3EXCESS_KURTOSIS | excess kurtosis
+| 3HYPERFLATNESS | hyperflatness
+| 3HYPERSKEWNESS | hyperskewness
+| 3INTEGRATED_INTENSITY | integrated intensity
+| 3INTERQUARTILE_RANGE | interquartile range
+| 3KURTOSIS, 3SKEWNESS | kurtosis, skewness
+| 3MAX, 3MEAN, 3MIN, 3MODE, 3RANGE  | maximum, mean, minimum, mode, range
+| 3MEAN_ABSOLUTE_DEVIATION | mean absolute deviation
+| 3MEDIAN | median
+| 3MEDIAN_ABSOLUTE_DEVIATION | median absolute deviation
+| 3P01, 3P10, 3P25, 3P75, 3P90, 3P99 | percentiles
+| 3QCOD | quantile coefficient of dispersion
+| 3ROBUST_MEAN | robust mean
+| 3ROBUST_MEAN_ABSOLUTE_DEVIATION | robust mean absolute deviation
+| 3ROOT_MEAN_SQUARED | root mean squared
+| 3STANDARD_DEVIATION, 3STANDARD_DEVIATION_BIASED | standard deviation (unbiased and biased)
+| 3STANDARD_ERROR | standard error
+| 3UNIFORMITY | uniformity
+| 3VARIANCE, 3VARIANCE_BIASED | variance (unbiased and biased)
+| **--- shape ---** |
+| 3AREA | surface area
+| 3AREA_2_VOLUME | area to volume ratio
+| 3COMPACTNESS1, 3COMPACTNESS1 | compactness 1 and 2
+| 3MESH_VOLUME | mesh volume
+| 3SPHERICAL_DISPROPORTION | spherical disproportion
+| 3SPHERICITY | sphericity
+| 3VOLUME_CONVEXHULL | volume of the convex hull
+| VOXEL_VOLUME | total voxel volume
+| **--- texture ---** | 
+| 3GLCM_\<feature\> | GLCM features (cluster prominence, cluster shade, joint entropy, etc)
+| 3GLDM_\<feature\> | GLDM features (grey level variance, etc)
+| 3GLDZM_\<feature\> | GLDZM features (small distance high grey level emphasis, zone distance entropy, etc)
+| 3GLSZM_\<feature\> | GLSZM features (size zone non-uniformity, high grey level zone emphasis)
+| 3NGLDM_\<feature\> | NGLDM features (low dependence emphasis, dependence count energy, etc)
+| 3NGTDM_\<feature\> | NGTDM features (coarseness, busyness, etc)
+| 3GLRLM_\<feature\> | GLRLM features (run length non-uniformity, run entropy, etc)
+
+### 3D feature groups
+
+------------------------------------
+| Group code | Member features |
+|--------------------|-------------|
+| \*3D_ALL\* | all the features
+| \*3D_ALL_INTENSITY\* | all intensity features
+| \*3D_ALL_MORPHOLOGY\* | all shape features
+| \*3D_ALL_TEXTURE\* | all texture features
+
 
 ## Command line usage
 
