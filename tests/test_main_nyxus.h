@@ -118,6 +118,6 @@ namespace Nyxus
         // image matrix
         if (allocate_IM)
             roidata.aux_image_matrix = ImageMatrix(roidata.raw_pixels);
-
     }
+
 }

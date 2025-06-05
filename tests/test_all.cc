@@ -25,18 +25,10 @@
 #include "test_image_quality.h"
 #include "test_3d_nifti.h"
 #include "test_3d_glcm.h"
-
-TEST(TEST_NYXUS, TEST_3D_NIFTY_LOADER) {
-	test_3d_nifti_loader();
-}
-
-TEST(TEST_NYXUS, TEST_3D_NIFTY_DACC_CONSISTENCY) {
-	test_3d_nifti_data_access_consistency();
-}
-
-TEST(TEST_NYXUS, TEST_3D_GLCM) {
-	test_3d_glcm_feature();
-}
+#include "test_3d_gldm.h"
+#include "test_3d_glrlm.h"
+#include "test_3d_glszm.h"
+#include "test_3d_ngtdm.h"
 
 TEST(TEST_NYXUS, TEST_ARROW_FILE_NAME) {
 	test_file_naming();
@@ -56,7 +48,6 @@ TEST(TEST_NYXUS, TEST_GABOR){
 	#ifdef USE_GPU
 		test_gabor(true);
 	#endif
-	
 }
 
 TEST(TEST_NYXUS, TEST_INITIALIZATION) {
@@ -1113,6 +1104,329 @@ TEST(TEST_IMAGE_QUALITY, TEST_SHARPNESS)
 {
 	ASSERT_NO_THROW(test_sharpness_feature());
 }
+
+TEST(TEST_NYXUS, TEST_3D_NIFTY_LOADER) {
+	test_3d_nifti_loader();
+}
+
+TEST(TEST_NYXUS, TEST_3D_NIFTY_DACC_CONSISTENCY) {
+	test_3d_nifti_data_access_consistency();
+}
+
+// ***** 3D GLCM *****
+
+TEST(TEST_NYXUS, TEST_3GLCM_ACOR) {
+	ASSERT_NO_THROW(test_3glcm_ACOR());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_ANGULAR_2D_MOMENT) {
+	ASSERT_NO_THROW(test_3glcm_angular_2d_moment());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_CLUPROM) {
+	ASSERT_NO_THROW(test_3glcm_CLUPROM());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_CLUSHADE) {
+	ASSERT_NO_THROW(test_3glcm_CLUSHADE());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_CLUTEND) {
+	ASSERT_NO_THROW(test_3glcm_CLUTEND());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_CONTRAST) {
+	ASSERT_NO_THROW(test_3glcm_contrast());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_CORRELATION) {
+	ASSERT_NO_THROW(test_3glcm_correlation());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_DIFFERENCE_AVERAGE) {
+	ASSERT_NO_THROW(test_3glcm_difference_average());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_DIFFERENCE_VARIANCE) {
+	ASSERT_NO_THROW(test_3glcm_difference_variance());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_DIFFERENCE_ENTROPY) {
+	ASSERT_NO_THROW(test_3glcm_difference_entropy());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_DIS) {
+	ASSERT_NO_THROW(test_3glcm_DIS());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_DIFFERENCE_ID) {
+	ASSERT_NO_THROW(test_3glcm_ID());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_DIFFERENCE_IDN) {
+	ASSERT_NO_THROW(test_3glcm_IDN());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_DIFFERENCE_IDM) {
+	ASSERT_NO_THROW(test_3glcm_IDM());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_DIFFERENCE_IDMN) {
+	ASSERT_NO_THROW(test_3glcm_IDMN());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_INFOMEAS1) {
+	ASSERT_NO_THROW(test_3glcm_infomeas1());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_INFOMEAS2) {
+	ASSERT_NO_THROW(test_3glcm_infomeas2());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_IV) {
+	ASSERT_NO_THROW(test_3glcm_IV());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_JAVE) {
+	ASSERT_NO_THROW(test_3glcm_JAVE());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_JE) {
+	ASSERT_NO_THROW(test_3glcm_JE());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_JMAX) {
+	ASSERT_NO_THROW(test_3glcm_JMAX());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_JVAR) {
+	ASSERT_NO_THROW(test_3glcm_JVAR());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_SUM_AVERAGE) {
+	ASSERT_NO_THROW(test_3glcm_sum_average());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_SUM_VARIANCE) {
+	ASSERT_NO_THROW(test_3glcm_sum_variance());
+}
+
+TEST(TEST_NYXUS, TEST_3GLCM_SUM_ENTROPY) {
+	ASSERT_NO_THROW(test_3glcm_sum_entropy());
+}
+
+// ***** 3D GLDM *****
+
+TEST(TEST_NYXUS, TEST_3GLDM_SDE) {
+	ASSERT_NO_THROW(test_3gldm_sde());
+}
+
+TEST(TEST_NYXUS, TEST_3GLDM_LDE) {
+	ASSERT_NO_THROW(test_3gldm_lde());
+}
+
+TEST(TEST_NYXUS, TEST_3GLDM_LGLE) {
+	ASSERT_NO_THROW(test_3gldm_lgle());
+}
+
+TEST(TEST_NYXUS, TEST_3GLDM_HGLE) {
+	ASSERT_NO_THROW(test_3gldm_hgle());
+}
+
+TEST(TEST_NYXUS, TEST_3GLDM_SDLGLE) {
+	ASSERT_NO_THROW(test_3gldm_sdlgle());
+}
+
+TEST(TEST_NYXUS, TEST_3GLDM_SDHGLE) {
+	ASSERT_NO_THROW(test_3gldm_sdhgle());
+}
+
+TEST(TEST_NYXUS, TEST_3GLDM_LDLGLE) {
+	ASSERT_NO_THROW(test_3gldm_ldlgle());
+}
+
+TEST(TEST_NYXUS, TEST_3GLDM_LDHGLE) {
+	ASSERT_NO_THROW(test_3gldm_ldhgle());
+}
+
+TEST(TEST_NYXUS, TEST_3GLDM_GLN) {
+	ASSERT_NO_THROW(test_3gldm_gln());
+}
+
+TEST(TEST_NYXUS, TEST_3GLDM_DN) {
+	ASSERT_NO_THROW(test_3gldm_dn());
+}
+
+TEST(TEST_NYXUS, TEST_3GLDM_DNN) {
+	ASSERT_NO_THROW(test_3gldm_dnn());
+}
+
+TEST(TEST_NYXUS, TEST_3GLDM_GLV) {
+	ASSERT_NO_THROW(test_3gldm_glv());
+}
+
+TEST(TEST_NYXUS, TEST_3GLDM_DV) {
+	ASSERT_NO_THROW(test_3gldm_dv());
+}
+
+TEST(TEST_NYXUS, TEST_3GLDM_DE) {
+	ASSERT_NO_THROW(test_3gldm_de());
+}
+
+// ***** 3D GLRLM *****
+
+TEST(TEST_NYXUS, TEST_3GLRLM_SRE) {
+	ASSERT_NO_THROW(test_3glrlm_sre());
+}
+
+TEST(TEST_NYXUS, TEST_3GLRLM_LRE) {
+	ASSERT_NO_THROW(test_3glrlm_lre());
+}
+
+TEST(TEST_NYXUS, TEST_3GLRLM_LGLRE) {
+	ASSERT_NO_THROW(test_3glrlm_lglre());
+}
+
+TEST(TEST_NYXUS, TEST_3GLRLM_HGLRE) {
+	ASSERT_NO_THROW(test_3glrlm_hglre());
+}
+
+TEST(TEST_NYXUS, TEST_3GLRLM_SRLGLE) {
+	ASSERT_NO_THROW(test_3glrlm_srlgle());
+}
+
+TEST(TEST_NYXUS, TEST_3GLRLM_SRHGLE) {
+	ASSERT_NO_THROW(test_3glrlm_srhgle());
+}
+
+TEST(TEST_NYXUS, TEST_3GLRLM_LRLGLE) {
+	ASSERT_NO_THROW(test_3glrlm_lrlgle());
+}
+
+TEST(TEST_NYXUS, TEST_3GLRLM_LRHGLE) {
+	ASSERT_NO_THROW(test_3glrlm_lrhgle());
+}
+
+TEST(TEST_NYXUS, TEST_3GLRLM_GLN) {
+	ASSERT_NO_THROW(test_3glrlm_gln());
+}
+
+TEST(TEST_NYXUS, TEST_3GLRLM_GLNN) {
+	ASSERT_NO_THROW(test_3glrlm_glnn());
+}
+
+TEST(TEST_NYXUS, TEST_3GLRLM_RLN) {
+	ASSERT_NO_THROW(test_3glrlm_rln());
+}
+
+TEST(TEST_NYXUS, TEST_3GLRLM_RLNN) {
+	ASSERT_NO_THROW(test_3glrlm_rlnn());
+}
+
+TEST(TEST_NYXUS, TEST_3GLRLM_RP) {
+	ASSERT_NO_THROW(test_3glrlm_rp());
+}
+
+TEST(TEST_NYXUS, TEST_3GLRLM_GLV) {
+	ASSERT_NO_THROW(test_3glrlm_glv());
+}
+
+TEST(TEST_NYXUS, TEST_3GLRLM_RV) {
+	ASSERT_NO_THROW(test_3glrlm_rv());
+}
+
+TEST(TEST_NYXUS, TEST_3GLRLM_RE) {
+	ASSERT_NO_THROW(test_3glrlm_re());
+}
+
+// ***** 3D GLSZM *****
+
+TEST(TEST_NYXUS, TEST_3GLSZM_SAE) {
+	ASSERT_NO_THROW(test_3glszm_sae());
+}
+
+TEST(TEST_NYXUS, TEST_3GLSZM_LAE) {
+	ASSERT_NO_THROW(test_3glszm_lae());
+}
+
+TEST(TEST_NYXUS, TEST_3GLSZM_LGLZE) {
+	ASSERT_NO_THROW(test_3glszm_lglze());
+}
+
+TEST(TEST_NYXUS, TEST_3GLSZM_HGLZE) {
+	ASSERT_NO_THROW(test_3glszm_hglze());
+}
+
+TEST(TEST_NYXUS, TEST_3GLSZM_SALGLZE) {
+	ASSERT_NO_THROW(test_3glszm_salgle());
+}
+
+TEST(TEST_NYXUS, TEST_3GLSZM_SAHGLZE) {
+	ASSERT_NO_THROW(test_3glszm_sahgle());
+}
+
+TEST(TEST_NYXUS, TEST_3GLSZM_LALGLE) {
+	ASSERT_NO_THROW(test_3glszm_lalgle());
+}
+
+TEST(TEST_NYXUS, TEST_3GLSZM_LAHGLE) {
+	ASSERT_NO_THROW(test_3glszm_lahgle());
+}
+
+TEST(TEST_NYXUS, TEST_3GLSZM_gln) {
+	ASSERT_NO_THROW(test_3glszm_gln());
+}
+
+TEST(TEST_NYXUS, TEST_3GLSZM_glnn) {
+	ASSERT_NO_THROW(test_3glszm_glnn());
+}
+
+TEST(TEST_NYXUS, TEST_3GLSZM_szn) {
+	ASSERT_NO_THROW(test_3glszm_szn());
+}
+
+TEST(TEST_NYXUS, TEST_3GLSZM_SZNN) {
+	ASSERT_NO_THROW(test_3glszm_sznn());
+}
+
+TEST(TEST_NYXUS, TEST_3GLSZM_ZP) {
+	ASSERT_NO_THROW(test_3glszm_zp());
+}
+
+TEST(TEST_NYXUS, TEST_3GLSZM_GLV) {
+	ASSERT_NO_THROW(test_3glszm_glv());
+}
+
+TEST(TEST_NYXUS, TEST_3GLSZM_ZV) {
+	ASSERT_NO_THROW(test_3glszm_zv());
+}
+
+TEST(TEST_NYXUS, TEST_3GLSZM_ZE) {
+	ASSERT_NO_THROW(test_3glszm_ze());
+}
+
+// ***** 3D NGTDM *****
+
+TEST(TEST_NYXUS, TEST_3NGTDM_COARSENESS) {
+	ASSERT_NO_THROW(test_3ngtdm_coarseness());
+}
+
+TEST(TEST_NYXUS, TEST_3NGTDM_CONTRAST) {
+	ASSERT_NO_THROW(test_3ngtdm_contrast());
+}
+
+TEST(TEST_NYXUS, TEST_3NGTDM_BUSYNESS) {
+	ASSERT_NO_THROW(test_3ngtdm_busyness());
+}
+
+TEST(TEST_NYXUS, TEST_3NGTDM_COMPLEXITY) {
+	ASSERT_NO_THROW(test_3ngtdm_complexity());
+}
+
+TEST(TEST_NYXUS, TEST_3NGTDM_STRENGTH) {
+	ASSERT_NO_THROW(test_3ngtdm_strength());
+}
+
 
 int main(int argc, char **argv) 
 {
