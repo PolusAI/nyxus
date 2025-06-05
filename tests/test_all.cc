@@ -29,6 +29,7 @@
 #include "test_3d_glrlm.h"
 #include "test_3d_glszm.h"
 #include "test_3d_ngtdm.h"
+#include "test_3d_shape.h"
 
 TEST(TEST_NYXUS, TEST_ARROW_FILE_NAME) {
 	test_file_naming();
@@ -1105,12 +1106,53 @@ TEST(TEST_IMAGE_QUALITY, TEST_SHARPNESS)
 	ASSERT_NO_THROW(test_sharpness_feature());
 }
 
+// ***** 3D i/o *****
+
 TEST(TEST_NYXUS, TEST_3D_NIFTY_LOADER) {
-	test_3d_nifti_loader();
+	ASSERT_NO_THROW (test_3d_nifti_loader());
 }
 
 TEST(TEST_NYXUS, TEST_3D_NIFTY_DACC_CONSISTENCY) {
-	test_3d_nifti_data_access_consistency();
+	ASSERT_NO_THROW (test_3d_nifti_data_access_consistency());
+}
+
+// ***** 3D shape *****
+
+
+TEST(TEST_NYXUS, TEST_3AREA) {
+	ASSERT_NO_THROW (test_3shape_area());
+}
+
+TEST(TEST_NYXUS, TEST_3AREA_2_VOLUME) {
+	ASSERT_NO_THROW (test_3shape_area2volume());
+}
+
+TEST(TEST_NYXUS, TEST_3COMPACTNESS1) {
+	ASSERT_NO_THROW (test_3shape_compactness1());
+}
+
+TEST(TEST_NYXUS, TEST_3COMPACTNESS2) {
+	ASSERT_NO_THROW (test_3shape_compactness2());
+}
+
+TEST(TEST_NYXUS, TEST_3MESH_VOLUME) {
+	ASSERT_NO_THROW (test_3shape_meshvolume());
+}
+
+TEST(TEST_NYXUS, TEST_3SPHERICAL_DISPROPORTION) {
+	ASSERT_NO_THROW (test_3shape_sprericaldisproportion());
+}
+
+TEST(TEST_NYXUS, TEST_3SPHERICITY) {
+	ASSERT_NO_THROW (test_3shape_sphericity());
+}
+
+TEST(TEST_NYXUS, TEST_3VOLUME_CONVEXHULL) {
+	ASSERT_NO_THROW (test_3shape_volumeconvhull());
+}
+
+TEST(TEST_NYXUS, TEST_3VOXEL_VOLUME) {
+	ASSERT_NO_THROW (test_3shape_voxelvolume());
 }
 
 // ***** 3D GLCM *****
