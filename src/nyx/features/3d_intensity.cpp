@@ -6,17 +6,17 @@
 
 using namespace Nyxus;
 
-bool D3_PixelIntensityFeatures::required (const FeatureSet & fs)
+bool D3_VoxelIntensityFeatures::required (const FeatureSet & fs)
 {
-	return fs.anyEnabled ({D3_PixelIntensityFeatures::featureset});
+	return fs.anyEnabled ({D3_VoxelIntensityFeatures::featureset});
 }
 
-D3_PixelIntensityFeatures::D3_PixelIntensityFeatures() : FeatureMethod("PixelIntensityFeatures_3D")
+D3_VoxelIntensityFeatures::D3_VoxelIntensityFeatures() : FeatureMethod("PixelIntensityFeatures_3D")
 {
-	provide_features ({D3_PixelIntensityFeatures::featureset});
+	provide_features ({D3_VoxelIntensityFeatures::featureset});
 }
 
-void D3_PixelIntensityFeatures::calculate(LR& r)
+void D3_VoxelIntensityFeatures::calculate(LR& r)
 {
 	// --MIN, MAX
 	val_MIN = r.aux_min;
@@ -137,10 +137,10 @@ void D3_PixelIntensityFeatures::calculate(LR& r)
 	val_HYPERFLATNESS = denom == 0. ? 0. : sumPow6 / denom;
 }
 
-void D3_PixelIntensityFeatures::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
+void D3_VoxelIntensityFeatures::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
 {}
 
-void D3_PixelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
+void D3_VoxelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 {
 	// --MIN, MAX
 	val_MIN = r.aux_min;
@@ -256,7 +256,7 @@ void D3_PixelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	val_HYPERFLATNESS = mom.hyperflatness();
 }
 
-void D3_PixelIntensityFeatures::save_value(std::vector<std::vector<double>>& fvals)
+void D3_VoxelIntensityFeatures::save_value(std::vector<std::vector<double>>& fvals)
 {
 	fvals[(int)Feature3D::INTEGRATED_INTENSITY][0] = val_INTEGRATED_INTENSITY;
 	fvals[(int)Feature3D::MEAN][0] = val_MEAN;
@@ -297,15 +297,15 @@ void D3_PixelIntensityFeatures::save_value(std::vector<std::vector<double>>& fva
 	fvals[(int)Feature3D::VARIANCE_BIASED][0] = val_VARIANCE_BIASED;
 }
 
-void D3_PixelIntensityFeatures::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
+void D3_VoxelIntensityFeatures::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
 {
 	size_t jobSize = roi_labels.size(),
 		workPerThread = jobSize / n_threads;
 
-	runParallel(D3_PixelIntensityFeatures::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
+	runParallel(D3_VoxelIntensityFeatures::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
 }
 
-void D3_PixelIntensityFeatures::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void D3_VoxelIntensityFeatures::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	// Calculate the feature for each batch ROI item 
 	for (auto i = firstitem; i < lastitem; i++)
@@ -319,25 +319,25 @@ void D3_PixelIntensityFeatures::parallel_process_1_batch(size_t firstitem, size_
 			continue;
 
 		// Calculate the feature and save it in ROI's csv-friendly buffer 'fvals'
-		D3_PixelIntensityFeatures f;
+		D3_VoxelIntensityFeatures f;
 		f.calculate(r);
 		f.save_value(r.fvals);
 	}
 }
 
-void D3_PixelIntensityFeatures::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void D3_VoxelIntensityFeatures::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-		D3_PixelIntensityFeatures f;
+		D3_VoxelIntensityFeatures f;
 		f.calculate(r);
 		f.save_value(r.fvals);
 	}
 }
 
-void D3_PixelIntensityFeatures::cleanup_instance()
+void D3_VoxelIntensityFeatures::cleanup_instance()
 {
 	val_INTEGRATED_INTENSITY = 0;
 	val_MEAN = 0;

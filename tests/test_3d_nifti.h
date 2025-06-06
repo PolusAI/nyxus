@@ -2,7 +2,7 @@
 #include "../src/nyx/raw_nifti.h"
 #include "../src/nyx/helpers/fsystem.h"
 
-void test_nifti_loader () 
+void test_3d_nifti_loader () 
 {
     fs::path p(__FILE__);
     fs::path pp = p.parent_path();
@@ -40,7 +40,7 @@ void test_nifti_loader ()
     }
 }
 
-void test_nifti_data_access_consistency()
+void test_3d_nifti_data_access_consistency()
 {
     fs::path p(__FILE__);
     fs::path pp = p.parent_path();

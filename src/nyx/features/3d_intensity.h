@@ -1,10 +1,10 @@
 #pragma once
 #include "../feature_method.h"
 
-class D3_PixelIntensityFeatures : public FeatureMethod
+class D3_VoxelIntensityFeatures : public FeatureMethod
 {
 public:
-	D3_PixelIntensityFeatures();
+	D3_VoxelIntensityFeatures();
 	void calculate(LR& r);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
 	void osized_calculate(LR& r, ImageLoader& imloader);

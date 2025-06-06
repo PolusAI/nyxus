@@ -77,7 +77,7 @@ FeatureManager::FeatureManager()
 	register_feature (new ZernikeFeature());
 	register_feature (new RadialDistributionFeature());
 	// 3D
-	register_feature (new D3_PixelIntensityFeatures());
+	register_feature (new D3_VoxelIntensityFeatures());
 	register_feature (new D3_SurfaceFeature());
 	register_feature (new D3_GLCM_feature());
 	register_feature (new D3_GLDM_feature());

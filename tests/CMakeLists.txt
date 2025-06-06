@@ -19,7 +19,7 @@ set(TEST_SRC
 	test_gabor.cc
 	test_gabor.h
 	test_initialization.h
-	test_nifti.h
+	test_3d_nifti.h
 	${TEST_SOURCE_FILES}
 )
 add_executable(runAllTests ${TEST_SRC})
