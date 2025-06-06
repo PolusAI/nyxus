@@ -23,6 +23,7 @@
 #include "test_arrow.h"
 #include "test_arrow_file_name.h"
 #include "test_image_quality.h"
+#include "test_3d_inten.h"
 #include "test_3d_nifti.h"
 #include "test_3d_glcm.h"
 #include "test_3d_gldm.h"
@@ -1114,6 +1115,152 @@ TEST(TEST_NYXUS, TEST_3D_NIFTY_LOADER) {
 
 TEST(TEST_NYXUS, TEST_3D_NIFTY_DACC_CONSISTENCY) {
 	ASSERT_NO_THROW (test_3d_nifti_data_access_consistency());
+}
+
+// ***** 3D voxels intensity *****
+
+TEST(TEST_NYXUS, TEST_3INTEN_COV) {
+	ASSERT_NO_THROW (test_3inten_cov());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_CIIR) {
+	ASSERT_NO_THROW (test_3inten_ciir());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_ENERGY) {
+	ASSERT_NO_THROW (test_3inten_energy());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_ENTROPY) {
+	ASSERT_NO_THROW (test_3inten_entropy());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_EXCKURTOSIS) {
+	ASSERT_NO_THROW (test_3inten_exckurtosis());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_HYPERFLATNESS) {
+	ASSERT_NO_THROW (test_3inten_hyperflatness());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_HYPERSKEWNESS) {
+	ASSERT_NO_THROW (test_3inten_hyperskewness());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_II) {
+	ASSERT_NO_THROW (test_3inten_ii());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_IQR) {
+	ASSERT_NO_THROW (test_3inten_iqr());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_KURTOSIS) {
+	ASSERT_NO_THROW (test_3inten_kurtosis());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_MAX) {
+	ASSERT_NO_THROW (test_3inten_max());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_MEAN) {
+	ASSERT_NO_THROW (test_3inten_mean());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_MAD) {
+	ASSERT_NO_THROW (test_3inten_mad());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_MEDIAN) {
+	ASSERT_NO_THROW (test_3inten_median());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_MEDIANABSDEV) {
+	ASSERT_NO_THROW (test_3inten_medianabsdev());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_MIN) {
+	ASSERT_NO_THROW (test_3inten_min());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_MODE) {
+	ASSERT_NO_THROW (test_3inten_mode());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_P01) {
+	ASSERT_NO_THROW (test_3inten_p01());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_P10) {
+	ASSERT_NO_THROW (test_3inten_p10());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_P25) {
+	ASSERT_NO_THROW (test_3inten_p25());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_P75) {
+	ASSERT_NO_THROW (test_3inten_p75());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_P90) {
+	ASSERT_NO_THROW (test_3inten_p90());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_P99) {
+	ASSERT_NO_THROW (test_3inten_p99());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_QCOD) {
+	ASSERT_NO_THROW (test_3inten_qcod());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_RANGE) {
+	ASSERT_NO_THROW (test_3inten_range());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_ROBUSTMEAN) {
+	ASSERT_NO_THROW (test_3inten_robustmean());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_ROBUSTMAD) {
+	ASSERT_NO_THROW (test_3inten_dobustmad());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_RMS) {
+	ASSERT_NO_THROW (test_3inten_rms());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_SKEWNESS) {
+	ASSERT_NO_THROW (test_3inten_skewness());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_STD) {
+	ASSERT_NO_THROW (test_3inten_std());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_STDBIASED) {
+	ASSERT_NO_THROW (test_3inten_stdbiased());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_SE) {
+	ASSERT_NO_THROW (test_3inten_se());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_UNIFORMITY) {
+	ASSERT_NO_THROW (test_3inten_uniformity());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_UNIFORMITYPIU) {
+	ASSERT_NO_THROW (test_3inten_uniformitypiu());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_VARIANCE) {
+	ASSERT_NO_THROW (test_3inten_variance());
+}
+
+TEST(TEST_NYXUS, TEST_3INTEN_VARIANCEBIASED) {
+	ASSERT_NO_THROW (test_3inten_variancebiased());
 }
 
 // ***** 3D shape *****

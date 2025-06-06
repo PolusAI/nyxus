@@ -577,10 +577,10 @@ namespace Nyxus
 	void reduce_trivial_3d (std::vector<int>& L, int n_threads, size_t work_per_thread, size_t job_size)
 	{
 		//==== intensity
-		if (D3_PixelIntensityFeatures::required(theFeatureSet))
+		if (D3_VoxelIntensityFeatures::required(theFeatureSet))
 		{
 			STOPWATCH("3D intensity/3Dintensity/3DI/#FFFF00", "\t=");
-			runParallel (D3_PixelIntensityFeatures::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
+			runParallel (D3_VoxelIntensityFeatures::reduce, n_threads, work_per_thread, job_size, &L, &roiData);
 		}
 		//==== shape
 		if (D3_SurfaceFeature::required(theFeatureSet))
