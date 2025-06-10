@@ -30,6 +30,7 @@
 #include "test_3d_gldzm.h"
 #include "test_3d_glrlm.h"
 #include "test_3d_glszm.h"
+#include "test_3d_ngldm.h"
 #include "test_3d_ngtdm.h"
 #include "test_3d_shape.h"
 
@@ -1664,6 +1665,84 @@ TEST(TEST_NYXUS, TEST_3GLSZM_ZV) {
 
 TEST(TEST_NYXUS, TEST_3GLSZM_ZE) {
 	ASSERT_NO_THROW(test_3glszm_ze());
+}
+
+// ***** 3D NGLDM *****
+
+TEST(TEST_NYXUS, TEST_3NGLDM_LDE) {
+	ASSERT_NO_THROW (test_3ngldm_lde());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_HDE) {
+	ASSERT_NO_THROW (test_3ngldm_hde());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_LGLCE) {
+	ASSERT_NO_THROW (test_3ngldm_lglce());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_HGLCE) {
+	ASSERT_NO_THROW (test_3ngldm_hglce());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_LDLGLE) {
+	ASSERT_NO_THROW (test_3ngldm_ldlgle());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_LDHGLE) {
+	ASSERT_NO_THROW (test_3ngldm_ldhgle());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_HDLGLE) {
+	ASSERT_NO_THROW (test_3ngldm_hdlgle());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_HDHGLE) {
+	ASSERT_NO_THROW (test_3ngldm_hdhgle());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_GLNU) {
+	ASSERT_NO_THROW (test_3ngldm_glnu());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_GLNUN) {
+	ASSERT_NO_THROW (test_3ngldm_glnun());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_DCNU) {
+	ASSERT_NO_THROW (test_3ngldm_dcnu());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_DCNUN) {
+	ASSERT_NO_THROW (test_3ngldm_dcnun());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_DCP) {
+	ASSERT_NO_THROW (test_3ngldm_dcp());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_GLM) {
+	ASSERT_NO_THROW (test_3ngldm_glm());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_GLV) {
+	ASSERT_NO_THROW (test_3ngldm_glv());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_DCM) {
+	ASSERT_NO_THROW (test_3ngldm_dcm());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_DCV) {
+	ASSERT_NO_THROW (test_3ngldm_dcv());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_DCENT) {
+	ASSERT_NO_THROW (test_3ngldm_dcent());
+}
+
+TEST(TEST_NYXUS, TEST_3NGLDM_DCENE) {
+	ASSERT_NO_THROW (test_3ngldm_dcene());
 }
 
 // ***** 3D NGTDM *****
