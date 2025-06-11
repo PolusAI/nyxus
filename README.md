@@ -508,6 +508,20 @@ features = nyx.featurize_directory (intensity_dir="/path/to/intensity/images", l
 
 See also methods __clear_roi_blacklist()__ and __roi_blacklist_get_summary()__ .
 
+
+<span style="color:blue">Example 6:</span> __Specifying anisotropy in 3D (via command line)__
+
+Applying a 1.5 x 2.0 x 2.5 anisotropy correction to all the volumes in a compressed NIFTI dataset:
+```
+--anisox=1.5  --anisoy=2  --anisoz=2.5 --dim=3 --filePattern="*\.nii\.gz"  --features=*3D_ALL*  --resultFname=3d-features --outputType=singlecsv --intDir=/data/patient123/intensity --segDir=/data/patient123/masks --outDir=/output/patient123
+```
+
+2D compatibility: 
+
+```
+--anisox=1.5  --anisoy=2 --filePattern="*\.ome\.tiff" --features=*ALL*  --resultFname=features1 --outputType=singlecsv --intDir=/data/plate123/int --segDir=/data/plate123/seg --outDir=/output/plate123
+```
+
 ## Nested ROIs 
 
 Hierarchical ROI analysis in a form of finding ROIs nested geometrically as nested AABBs and aggregating features of child ROIs within corresponding parent is available as an optional extra step after the feature extraction of the whole image set is finished. To enable this step, all the command line options '--hsig', '--hpar', '--hchi', and '--hag' need to have non-blank valid values. 
