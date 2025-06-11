@@ -1,9 +1,8 @@
 
-Nyxus provided features
+Nyxus-provided features
 =======================
 
-**2D pixel intensity features:**
-
+**2D intensity features:**
 
 .. list-table::
    :header-rows: 1
@@ -550,236 +549,58 @@ Nyxus provided features
      - A set of Gabor filters of varying frequencies and orientations
 
 
-**2D shape image moments:**
-
-
-.. list-table::
-   :header-rows: 1
-
-   * - Nyxus feature code
-     - Description
-   * - SPAT_MOMENT_00
-     - Spatial (raw) moments 
-   * - SPAT_MOMENT_01
-     - of order 00, 01, 02, etc
-   * - SPAT_MOMENT_02
-     - 
-   * - SPAT_MOMENT_03
-     - 
-   * - SPAT_MOMENT_10
-     - 
-   * - SPAT_MOMENT_11
-     - 
-   * - SPAT_MOMENT_12
-     - 
-   * - SPAT_MOMENT_20
-     - 
-   * - SPAT_MOMENT_21
-     - 
-   * - SPAT_MOMENT_30
-     - 
-   * - WEIGHTED_SPAT_MOMENT_00
-     - Spatial moments weighted by pixel distance to ROI edge
-   * - WEIGHTED_SPAT_MOMENT_01
-     - 
-   * - WEIGHTED_SPAT_MOMENT_02
-     - 
-   * - WEIGHTED_SPAT_MOMENT_03
-     - 
-   * - WEIGHTED_SPAT_MOMENT_10
-     - 
-   * - WEIGHTED_SPAT_MOMENT_11
-     - 
-   * - WEIGHTED_SPAT_MOMENT_12
-     - 
-   * - WEIGHTED_SPAT_MOMENT_20
-     - 
-   * - WEIGHTED_SPAT_MOMENT_21
-     - 
-   * - WEIGHTED_SPAT_MOMENT_30
-     - 
-   * - CENTRAL_MOMENT_02
-     - Central moments 
-   * - CENTRAL_MOMENT_03
-     - 
-   * - CENTRAL_MOMENT_11
-     - 
-   * - CENTRAL_MOMENT_12
-     - 
-   * - CENTRAL_MOMENT_20
-     - 
-   * - CENTRAL_MOMENT_21
-     - 
-   * - CENTRAL_MOMENT_30
-     - 
-   * - WEIGHTED_CENTRAL_MOMENT_02
-     - Central moments weighted by pixel distance to ROI edge
-   * - WEIGHTED_CENTRAL_MOMENT_03
-     - 
-   * - WEIGHTED_CENTRAL_MOMENT_11
-     - 
-   * - WEIGHTED_CENTRAL_MOMENT_12
-     - 
-   * - WEIGHTED_CENTRAL_MOMENT_20
-     - 
-   * - WEIGHTED_CENTRAL_MOMENT_21
-     - 
-   * - WEIGHTED_CENTRAL_MOMENT_30
-     - 
-   * - NORM_CENTRAL_MOMENT_02
-     - Normalized central moments
-   * - NORM_CENTRAL_MOMENT_03
-     - 
-   * - NORM_CENTRAL_MOMENT_11
-     - 
-   * - NORM_CENTRAL_MOMENT_12
-     - 
-   * - NORM_CENTRAL_MOMENT_20
-     - 
-   * - NORM_CENTRAL_MOMENT_21
-     - 
-   * - NORM_CENTRAL_MOMENT_30
-     - 
-   * - NORM_SPAT_MOMENT_00
-     - Normalized (standardized) spatial moments
-   * - NORM_SPAT_MOMENT_01
-     - 
-   * - NORM_SPAT_MOMENT_02
-     - 
-   * - NORM_SPAT_MOMENT_03
-     - 
-   * - NORM_SPAT_MOMENT_10
-     - 
-   * - NORM_SPAT_MOMENT_20
-     - 
-   * - NORM_SPAT_MOMENT_30
-     - 
-   * - HU_M1
-     - Hu's moment 1
-   * - HU_M2
-     - Hu's moment 2
-   * - HU_M3
-     - Hu's moment 3
-   * - HU_M4
-     - Hu's moment 4
-   * - HU_M5
-     - Hu's moment 5
-   * - HU_M6
-     - Hu's moment 6
-   * - HU_M7
-     - Hu's moment 7
-   * - WEIGHTED_HU_M1
-     - Weighted Hu's moment 1
-   * - WEIGHTED_HU_M2
-     - Weighted Hu's moment 2
-   * - WEIGHTED_HU_M3
-     - Weighted Hu's moment 3
-   * - WEIGHTED_HU_M4
-     - Weighted Hu's moment 4
-   * - WEIGHTED_HU_M5
-     - Weighted Hu's moment 5
-   * - WEIGHTED_HU_M6
-     - Weighted Hu's moment 6
-   * - WEIGHTED_HU_M7
-     - Weighted Hu's moment 7
-
-**2D intensity image moments:**
-
+**2D shape image moments (calculated with constant pixel intensity 1.0 within the ROI segment):**
 
 .. list-table::
    :header-rows: 1
 
    * - Nyxus feature code
      - Description
-   * - IMOM_RM_00
-     - Spatial (raw) moments 
+   * - SPAT_MOMENT_<order>
+     - Spatial (raw) moments of order 00, 01, 02, 03, 10, 11, 12, 20, 21, 30
+   * - WEIGHTED_SPAT_MOMENT_<order>
+     - Spatial moments weighted by pixel distance to ROI edge of order 00, 01, 02, 03, 10, 11, 20, 21, 30
+   * - CENTRAL_MOMENT_<order>
+     - Central moments of order 02, 03, 11, 12, 20, 21, 30
+   * - WEIGHTED_CENTRAL_MOMENT_<order>
+     - Central moments weighted by pixel distance to ROI edge of order 02, 03, 11, 12, 20, 21, 30
+   * - NORM_CENTRAL_MOMENT_<order>
+     - Normalized central moments of order 02, 03, 11, 12, 20, 21, 30
+   * - NORM_SPAT_MOMENT_<order>
+     - Normalized (standardized) spatial moments of order 00, 01, 02, 03, 10, 20, 30
+   * - HU_M<1-7>
+     - Hu's moments of order 1 to 7
+   * - WEIGHTED_HU_M<1-7>
+     - Weighted Hu's moment of order 1-7
+
+**2D intensity image moments (calculated with respect to pixels' actual intensities within the ROI segment):**
+
+.. list-table::
+   :header-rows: 1
+
+   * - Nyxus feature code
+     - Description
+   * - IMOM_RM_<order>
+     - Spatial (raw) moments of order 00, 01, 02, 03, 10, 11, 12, 20, 21, 30
    * - IMOM_RM_01
      - of order 00, 01, 02, etc
-   * - IMOM_RM_02
-     - 
-   * - IMOM_RM_03
-     - 
-   * - IMOM_RM_10
-     - 
-   * - IMOM_RM_11
-     - 
-   * - IMOM_RM_12
-     - 
-   * - IMOM_RM_20
-     - 
-   * - IMOM_RM_21
-     - 
-   * - IMOM_RM_30
-     - 
-   * - IMOM_WRM_00
-     - Spatial moments weighted by pixel distance to ROI edge
-   * - IMOM_WRM_01
-     - 
-   * - IMOM_WRM_02
-     - 
-   * - IMOM_WRM_03
-     - 
-   * - IMOM_WRM_10
-     - 
-   * - IMOM_WRM_11
-     - 
-   * - IMOM_WRM_12
-     - 
-   * - IMOM_WRM_20
-     - 
-   * - IMOM_WRM_21
-     - 
-   * - IMOM_WRM_30
-     - 
-   * - IMOM_СM_02
-     - Central moments 
-   * - IMOM_СM_03
-     - 
-   * - IMOM_СM_11
-     - 
-   * - IMOM_СM_12
-     - 
-   * - IMOM_СM_20
-     - 
-   * - IMOM_СM_21
-     - 
-   * - IMOM_СM_30
-     - 
-   * - IMOM_WСM_02
-     - Central moments weighted by pixel distance to ROI edge
-   * - IMOM_WСM_03
-     - 
-   * - IMOM_WСM_11
-     - 
-   * - IMOM_WСM_12
-     - 
-   * - IMOM_WСM_20
-     - 
-   * - IMOM_WСM_21
-     - 
-   * - IMOM_WСM_30
-     - 
-   * - IMOM_NСM_02
-     - Normalized central moments
-   * - IMOM_NСM_03
-     - 
-   * - IMOM_NСM_11
-     - 
-   * - IMOM_NСM_20
-     - 
-   * - IMOM_NСM_21
-     - 
-   * - IMOM_NСM_30
-     - 
-   * - IMOM_NRM_<00, 01, 02, 03, 10, 20, 30>
-     - Normalized (standardized) spatial moments 00, 01, 02, 03, 10, 20, 30
+   * - IMOM_WRM_<order>
+     - Spatial moments weighted by pixel distance to ROI edge of order 00, 01, 02, 03, 10, 11, 12, 20, 21, 30
+   * - IMOM_СM_<order>
+     - Central moments of order 02, 03, 11, 12, 20, 21, 30 
+   * - IMOM_WСM_<order>
+     - Central moments weighted by pixel distance to ROI edge of order 02, 03, 11, 12, 20, 21, 30
+   * - IMOM_NСM_<order>
+     - Normalized central moments of order 02, 03, 11, 20, 21, 30
+   * - IMOM_NRM_<order>
+     - Normalized (standardized) spatial moments of order 00, 01, 02, 03, 10, 20, 30
    * - IMOM_HU<1-7>
      - Hu's moment 1-7
    * - IMOM_WHU<1-7>
      - Weighted Hu's moment 1-7
 
-**2D neighbor features:**
 
+**2D neighbor features:**
 
 .. list-table::
    :header-rows: 1
@@ -806,8 +627,7 @@ Nyxus provided features
      - Mode value in degrees of angles between ROI's centroid and centroids of its neighboring ROIs
 
 
-**3D pixel intensity features:**
-
+**3D voxel intensity features:**
 
 .. list-table::
    :header-rows: 1
@@ -874,7 +694,6 @@ Nyxus provided features
 
 **3D shape features:**
 
-
 .. list-table::
    :header-rows: 1
 
@@ -901,7 +720,6 @@ Nyxus provided features
 
 
 **3D texture features:**
-
 
 .. list-table::
    :header-rows: 1

@@ -155,6 +155,8 @@ features1 = nyx.featurize_directory (idir, mdir, file_pattern=".*\.nii")
 # selecting only compressed NIFTI files
 features2 = nyx.featurize_directory (idir, mdir, file_pattern=".*\.nii\.gz")
 ```
+<u>Note on CT datasets:</u> voxel intensities recorded in the Hounsfield units are automatically read by Nyxus as 0-based values by adding the minimum value of an original file (typically -1024).
+
 Featurizing explicitly specified volume files is straightforward, too:
 
 ```python
