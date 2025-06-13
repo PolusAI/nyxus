@@ -384,7 +384,7 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 			Feature3D::SPAT_MOMENT_30
 #endif
 
-		theFeatureSet.enableFeatures (D3_PixelIntensityFeatures::featureset, enable);
+		theFeatureSet.enableFeatures (D3_VoxelIntensityFeatures::featureset, enable);
 		theFeatureSet.enableFeatures (D3_GLCM_feature::featureset, enable);
 		theFeatureSet.enableFeatures (D3_GLDM_feature::featureset, enable);
 		theFeatureSet.enableFeatures (D3_GLDZM_feature::featureset, enable);

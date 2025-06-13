@@ -1,10 +1,8 @@
 
-Nyxus provided features
+Nyxus-provided features
 =======================
 
-**Pixel intensity features:**
-
-----
+**2D intensity features:**
 
 .. list-table::
    :header-rows: 1
@@ -62,7 +60,7 @@ Nyxus provided features
    * - P01, P10, P25, P75, P90, P99
      - 1%, 10%, 25%, 75%, 90%, and 99% percentiles of intensity distribution
    * - QCOD 
-     - quantile coefficient of dispersion
+     - quartile coefficient of dispersion
    * - INTERQUARTILE_RANGE
      - Distribution's interquartile range
    * - ROBUST_MEAN_ABSOLUTE_DEVIATION
@@ -71,9 +69,8 @@ Nyxus provided features
      - ROI mass displacement
 
 
-**Morphology features:**
+**2D morphology features:**
 
-----
 
 .. list-table::
    :header-rows: 1
@@ -276,9 +273,8 @@ Nyxus provided features
      - Median value of centroid to edge distances
 
 
-**Texture features:**
+**2D texture features:**
 
-----
 
 .. list-table::
    :header-rows: 1
@@ -523,9 +519,8 @@ Nyxus provided features
      - NGTDM, Strength
 
 
-**Radial intensity distribution features:**
+**2D radial intensity distribution features:**
 
-----
 
 .. list-table::
    :header-rows: 1
@@ -542,9 +537,8 @@ Nyxus provided features
      - Coefficient of variation of intensity within a ring (band), calculated across $n$ slices
 
 
-**Frequency and orientational features:**
+**2D frequency and orientational features:**
 
-----
 
 .. list-table::
    :header-rows: 1
@@ -555,277 +549,58 @@ Nyxus provided features
      - A set of Gabor filters of varying frequencies and orientations
 
 
-**2D shape image moments:**
-
-----
+**2D shape image moments (calculated with constant pixel intensity 1.0 within the ROI segment):**
 
 .. list-table::
    :header-rows: 1
 
    * - Nyxus feature code
      - Description
-   * - SPAT_MOMENT_00
-     - Spatial (raw) moments 
-   * - SPAT_MOMENT_01
-     - of order 00, 01, 02, etc
-   * - SPAT_MOMENT_02
-     - 
-   * - SPAT_MOMENT_03
-     - 
-   * - SPAT_MOMENT_10
-     - 
-   * - SPAT_MOMENT_11
-     - 
-   * - SPAT_MOMENT_12
-     - 
-   * - SPAT_MOMENT_20
-     - 
-   * - SPAT_MOMENT_21
-     - 
-   * - SPAT_MOMENT_30
-     - 
-   * - WEIGHTED_SPAT_MOMENT_00
-     - Spatial moments weighted by pixel distance to ROI edge
-   * - WEIGHTED_SPAT_MOMENT_01
-     - 
-   * - WEIGHTED_SPAT_MOMENT_02
-     - 
-   * - WEIGHTED_SPAT_MOMENT_03
-     - 
-   * - WEIGHTED_SPAT_MOMENT_10
-     - 
-   * - WEIGHTED_SPAT_MOMENT_11
-     - 
-   * - WEIGHTED_SPAT_MOMENT_12
-     - 
-   * - WEIGHTED_SPAT_MOMENT_20
-     - 
-   * - WEIGHTED_SPAT_MOMENT_21
-     - 
-   * - WEIGHTED_SPAT_MOMENT_30
-     - 
-   * - CENTRAL_MOMENT_02
-     - Central moments 
-   * - CENTRAL_MOMENT_03
-     - 
-   * - CENTRAL_MOMENT_11
-     - 
-   * - CENTRAL_MOMENT_12
-     - 
-   * - CENTRAL_MOMENT_20
-     - 
-   * - CENTRAL_MOMENT_21
-     - 
-   * - CENTRAL_MOMENT_30
-     - 
-   * - WEIGHTED_CENTRAL_MOMENT_02
-     - Central moments weighted by pixel distance to ROI edge
-   * - WEIGHTED_CENTRAL_MOMENT_03
-     - 
-   * - WEIGHTED_CENTRAL_MOMENT_11
-     - 
-   * - WEIGHTED_CENTRAL_MOMENT_12
-     - 
-   * - WEIGHTED_CENTRAL_MOMENT_20
-     - 
-   * - WEIGHTED_CENTRAL_MOMENT_21
-     - 
-   * - WEIGHTED_CENTRAL_MOMENT_30
-     - 
-   * - NORM_CENTRAL_MOMENT_02
-     - Normalized central moments
-   * - NORM_CENTRAL_MOMENT_03
-     - 
-   * - NORM_CENTRAL_MOMENT_11
-     - 
-   * - NORM_CENTRAL_MOMENT_12
-     - 
-   * - NORM_CENTRAL_MOMENT_20
-     - 
-   * - NORM_CENTRAL_MOMENT_21
-     - 
-   * - NORM_CENTRAL_MOMENT_30
-     - 
-   * - NORM_SPAT_MOMENT_00
-     - Normalized (standardized) spatial moments
-   * - NORM_SPAT_MOMENT_01
-     - 
-   * - NORM_SPAT_MOMENT_02
-     - 
-   * - NORM_SPAT_MOMENT_03
-     - 
-   * - NORM_SPAT_MOMENT_10
-     - 
-   * - NORM_SPAT_MOMENT_20
-     - 
-   * - NORM_SPAT_MOMENT_30
-     - 
-   * - HU_M1
-     - Hu's moment 1
-   * - HU_M2
-     - Hu's moment 2
-   * - HU_M3
-     - Hu's moment 3
-   * - HU_M4
-     - Hu's moment 4
-   * - HU_M5
-     - Hu's moment 5
-   * - HU_M6
-     - Hu's moment 6
-   * - HU_M7
-     - Hu's moment 7
-   * - WEIGHTED_HU_M1
-     - Weighted Hu's moment 1
-   * - WEIGHTED_HU_M2
-     - Weighted Hu's moment 2
-   * - WEIGHTED_HU_M3
-     - Weighted Hu's moment 3
-   * - WEIGHTED_HU_M4
-     - Weighted Hu's moment 4
-   * - WEIGHTED_HU_M5
-     - Weighted Hu's moment 5
-   * - WEIGHTED_HU_M6
-     - Weighted Hu's moment 6
-   * - WEIGHTED_HU_M7
-     - Weighted Hu's moment 7
+   * - SPAT_MOMENT_<order>
+     - Spatial (raw) moments of order 00, 01, 02, 03, 10, 11, 12, 20, 21, 30
+   * - WEIGHTED_SPAT_MOMENT_<order>
+     - Spatial moments weighted by pixel distance to ROI edge of order 00, 01, 02, 03, 10, 11, 20, 21, 30
+   * - CENTRAL_MOMENT_<order>
+     - Central moments of order 02, 03, 11, 12, 20, 21, 30
+   * - WEIGHTED_CENTRAL_MOMENT_<order>
+     - Central moments weighted by pixel distance to ROI edge of order 02, 03, 11, 12, 20, 21, 30
+   * - NORM_CENTRAL_MOMENT_<order>
+     - Normalized central moments of order 02, 03, 11, 12, 20, 21, 30
+   * - NORM_SPAT_MOMENT_<order>
+     - Normalized (standardized) spatial moments of order 00, 01, 02, 03, 10, 20, 30
+   * - HU_M<1-7>
+     - Hu's moments of order 1 to 7
+   * - WEIGHTED_HU_M<1-7>
+     - Weighted Hu's moment of order 1-7
 
-**2D intensity image moments:**
-
-----
+**2D intensity image moments (calculated with respect to pixels' actual intensities within the ROI segment):**
 
 .. list-table::
    :header-rows: 1
 
    * - Nyxus feature code
      - Description
-   * - IMOM_RM_00
-     - Spatial (raw) moments 
+   * - IMOM_RM_<order>
+     - Spatial (raw) moments of order 00, 01, 02, 03, 10, 11, 12, 20, 21, 30
    * - IMOM_RM_01
      - of order 00, 01, 02, etc
-   * - IMOM_RM_02
-     - 
-   * - IMOM_RM_03
-     - 
-   * - IMOM_RM_10
-     - 
-   * - IMOM_RM_11
-     - 
-   * - IMOM_RM_12
-     - 
-   * - IMOM_RM_20
-     - 
-   * - IMOM_RM_21
-     - 
-   * - IMOM_RM_30
-     - 
-   * - IMOM_WRM_00
-     - Spatial moments weighted by pixel distance to ROI edge
-   * - IMOM_WRM_01
-     - 
-   * - IMOM_WRM_02
-     - 
-   * - IMOM_WRM_03
-     - 
-   * - IMOM_WRM_10
-     - 
-   * - IMOM_WRM_11
-     - 
-   * - IMOM_WRM_12
-     - 
-   * - IMOM_WRM_20
-     - 
-   * - IMOM_WRM_21
-     - 
-   * - IMOM_WRM_30
-     - 
-   * - IMOM_СM_02
-     - Central moments 
-   * - IMOM_СM_03
-     - 
-   * - IMOM_СM_11
-     - 
-   * - IMOM_СM_12
-     - 
-   * - IMOM_СM_20
-     - 
-   * - IMOM_СM_21
-     - 
-   * - IMOM_СM_30
-     - 
-   * - IMOM_WСM_02
-     - Central moments weighted by pixel distance to ROI edge
-   * - IMOM_WСM_03
-     - 
-   * - IMOM_WСM_11
-     - 
-   * - IMOM_WСM_12
-     - 
-   * - IMOM_WСM_20
-     - 
-   * - IMOM_WСM_21
-     - 
-   * - IMOM_WСM_30
-     - 
-   * - IMOM_NСM_02
-     - Normalized central moments
-   * - IMOM_NСM_03
-     - 
-   * - IMOM_NСM_11
-     - 
-   * - IMOM_NСM_
-     - 
-   * - IMOM_NСM_20
-     - 
-   * - IMOM_NСM_21
-     - 
-   * - IMOM_NСM_30
-     - 
-   * - IMOM_NRM_00
-     - Normalized (standardized) spatial moments
-   * - IMOM_NRM_01
-     - 
-   * - IMOM_NRM_02
-     - 
-   * - IMOM_NRM_03
-     - 
-   * - IMOM_NRM_10
-     - 
-   * - IMOM_NRM_20
-     - 
-   * - IMOM_NRM_30
-     - 
-   * - IMOM_HU1
-     - Hu's moment 1
-   * - IMOM_HU2
-     - Hu's moment 2
-   * - IMOM_HU3
-     - Hu's moment 3
-   * - IMOM_HU4
-     - Hu's moment 4
-   * - IMOM_HU5
-     - Hu's moment 5
-   * - IMOM_HU6
-     - Hu's moment 6
-   * - IMOM_HU7
-     - Hu's moment 7
-   * - IMOM_WHU1
-     - Weighted Hu's moment 1
-   * - IMOM_WHU2
-     - Weighted Hu's moment 2
-   * - IMOM_WHU3
-     - Weighted Hu's moment 3
-   * - IMOM_WHU4
-     - Weighted Hu's moment 4
-   * - IMOM_WHU5
-     - Weighted Hu's moment 5
-   * - IMOM_WHU6
-     - Weighted Hu's moment 6
-   * - IMOM_WHU7
-     - Weighted Hu's moment 7
+   * - IMOM_WRM_<order>
+     - Spatial moments weighted by pixel distance to ROI edge of order 00, 01, 02, 03, 10, 11, 12, 20, 21, 30
+   * - IMOM_СM_<order>
+     - Central moments of order 02, 03, 11, 12, 20, 21, 30 
+   * - IMOM_WСM_<order>
+     - Central moments weighted by pixel distance to ROI edge of order 02, 03, 11, 12, 20, 21, 30
+   * - IMOM_NСM_<order>
+     - Normalized central moments of order 02, 03, 11, 20, 21, 30
+   * - IMOM_NRM_<order>
+     - Normalized (standardized) spatial moments of order 00, 01, 02, 03, 10, 20, 30
+   * - IMOM_HU<1-7>
+     - Hu's moment 1-7
+   * - IMOM_WHU<1-7>
+     - Weighted Hu's moment 1-7
 
-**Neighbor features:**
 
-----
+**2D neighbor features:**
 
 .. list-table::
    :header-rows: 1
@@ -850,4 +625,119 @@ Nyxus provided features
      - Standard deviation in degrees of angles between ROI's centroid and centroids of its neighboring ROIs
    * - ANG_BW_NEIGHBORS_MODE
      - Mode value in degrees of angles between ROI's centroid and centroids of its neighboring ROIs
+
+
+**3D voxel intensity features:**
+
+.. list-table::
+   :header-rows: 1
+
+   * - Nyxus feature code
+     - Description
+   * - 3COV
+     - Coefficient of variation
+   * - 3COVERED_IMAGE_INTENSITY_RANGE
+     - intensity range of the ROI to intensity range of all the ROIs
+   * - 3ENERGY
+     - ROI energy
+   * - 3ENTROPY
+     - ROI entropy - a measure of the amount of information (that is, randomness) in the ROI
+   * - 3EXCESS_KURTOSIS
+     - measure of how ROI intensity distribution's tails deviate from those of a normal distribution
+   * - 3HYPERFLATNESS
+     - 6th standardized moment
+   * - 3HYPERSKEWNESS
+     - 5th standardized moment
+   * - 3INTEGRATED_INTENSITY
+     - total signal within the ROI
+   * - 3INTERQUARTILE_RANGE
+     - difference between the 75th and 25th percentiles
+   * - 3KURTOSIS
+     - 4th standardized moment
+   * - 3MAX, 3MEAN, 3MEDIAN, 3MIN
+     - minimum, mean, median, and minimum signal value within the ROI
+   * - 3MEAN_ABSOLUTE_DEVIATION
+     - measure of dispersion around the mean value
+   * - 3MEDIAN_ABSOLUTE_DEVIATION
+     - measure of dispersion around the median value
+   * - 3MODE
+     - mode value of voxels signal within the ROI (the most abundant signal value within the ROI)
+   * - 3P01, 3P10, 3P25, 3P75, 3P90, 3P99
+     - 1%, 10%, 25%, 75%, 90%, and 99% percentiles of intensity distribution
+   * - 3QCOD 
+     - quartile coefficient of dispersion - measure of statistical dispersion that focuses on the middle 50% of the data, making it robust to outliers
+   * - 3RANGE
+     - range between the 3MAX and 3MIN
+   * - 3ROBUST_MEAN
+     - the mean calculated after discarding outliers
+   * - 3ROBUST_MEAN_ABSOLUTE_DEVIATION
+     - the mean absolute deviation calculated after discarding outliers
+   * - 3ROOT_MEAN_SQUARED
+     - root of mean squared deviation
+   * - 3SKEWNESS
+     - 3rd standardized moment
+   * - 3STANDARD_DEVIATION
+     - standard deviation (unbiased)
+   * - 3STANDARD_DEVIATION_BIASED
+     - biased standard deviation
+   * - 3STANDARD_ERROR
+     - standard error
+   * - 3UNIFORMITY
+     - measure of how uniform the distribution of ROI intensities is
+   * - 3UNIFORMITY_PIU
+     - the uniformity expressed in the units of percent image uniformity (PIU)
+   * - 3VARIANCE
+     - variance
+   * - 3VARIANCE_BIASED
+     - variance calculated with respect to biased sample mean
+
+
+**3D shape features:**
+
+.. list-table::
+   :header-rows: 1
+
+   * - Nyxus feature code
+     - Description
+   * - 3AREA
+     - total of areas of surface faces
+   * - 3AREA_2_VOLUME
+     - ratio of the surface area to the voxel volume (lower values correspond to more sphere-like ROIs)
+   * - 3COMPACTNESS1
+     - measure of how compact the shape of the ROI is to a sphere
+   * - 3COMPACTNESS2
+     - another measure of how compact the shape of the ROI is to a sphere
+   * - 3MESH_VOLUME
+     - volume of the triangle mesh of the ROI
+   * - 3SPHERICAL_DISPROPORTION
+     - ratio of ROI's surface area to the surface area of a sphere of the same volume as the ROI (value of 1 corresponds to a perfect square)
+   * - 3SPHERICITY
+     - measure of the ROI shape's roundness relative to a sphere (value of 1 is a perfect sphere)
+   * - 3VOLUME_CONVEXHULL
+     - volume of the triangle mesh of ROI's convex hull
+   * - 3VOXEL_VOLUME
+     - total of volumes of voxels of the ROI
+
+
+**3D texture features:**
+
+.. list-table::
+   :header-rows: 1
+
+   * - Nyxus feature code
+     - Description
+   * - 3GLCM_<name>
+     - 3-dimensional version of the GLCM feature (name = ACOR, ASM, CLUPROM, CLUSHADE, CLUTEND, CONTRAST, CORRELATION, DIFAVE, DIFENTRO, DIFVAR, DIS, ID, IDN, IDM, IDMN, INFOMEAS1, INFOMEAS2, IV, JAVE, JE, JMAX, JVAR, SUMAVERAGE, SUMENTROPY, or SUMVARIANCE)
+   * - 3GLDM_<name>
+     - 3-dimensional version of the GLDM feature (name = SDE, LDE, LGLE, HGLE, SDLGLE, SDHGLE, LDLGLE, LDHGLE, GLN, DN, DNN, GLV, DV, or DE)
+   * - 3GLDZM_<name>
+     - 3-dimensional version of the GLDZM feature (name = SDE, LDE, LGLZE, HGLZE, SDLGLE, SDHGLE, LDLGLE, LDHGLE, GLNU, GLNUN, ZDNU, ZDNUN, ZP, GLM, GLV, ZDM, ZDV, or ZDE)
+   * - 3GLRLM_<name>
+     - 3-dimensional version of the GLRLM feature (name = SRE, LRE, LGLRE, HGLRE, SRLGLE, SRHGLE, LRLGLE, LRHGLE, GLN, GLNN, RLN, RLNN, RP, GLV, RV, or RE)
+   * - 3GLSZM_<name>
+     - 3-dimensional version of the GLSZM feature (name = SAE, LAE, LGLZE, HGLZE, SALGLE, SAHGLE, LALGLE, LAHGLE, GLN, GLNN, SZN, SZNN, ZP, GLV, ZV, or ZE)
+   * - 3NGLDM_<name>
+     - 3-dimensional version of the NGLDM feature (name = LDE, HDE, LGLCE, HGLCE, LDLGLE, LDHGLE, HDLGLE, HDHGLE, GLNU, GLNUN, DCNU, DCNUN, DCP, GLM, GLV, DCM, DCV, DCENT, or DCENE)
+   * - 3NGTDM_<name>
+     - 3-dimensional version of the NGTDM feature (name = COARSENESS, CONTRAST, BUSYNESS, COMPLEXITY, or STRENGTH)
 
