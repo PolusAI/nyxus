@@ -28,7 +28,7 @@ static std::unordered_map<std::string, float> d3glszm_GT{
     {"3GLSZM_ZE",   7.44}
 };
 
-std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
+static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
 void test_3glszm_feature (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {

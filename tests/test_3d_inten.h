@@ -46,7 +46,7 @@ static std::unordered_map<std::string, float> d3inten_GT {
 		{ "3VARIANCE_BIASED",		341996 },
 };
 
-std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
+static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
 void test_3inten_feature (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
 {

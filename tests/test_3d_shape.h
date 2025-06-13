@@ -19,7 +19,7 @@ static std::unordered_map<std::string, float> d3shape_GT{
     { "3VOXEL_VOLUME",  274431 }
 };
 
-std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
+static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
 void test_3shape_feature (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
 {

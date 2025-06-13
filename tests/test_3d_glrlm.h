@@ -28,7 +28,7 @@ static std::unordered_map<std::string, float> d3glrlm_GT{
     {"3GLRLM_RE", 6.4}
 };
 
-std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
+static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
 void test_3glrlm_feature (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {

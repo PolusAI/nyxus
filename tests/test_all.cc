@@ -20,8 +20,6 @@
 #include "test_glszm.h"
 #include "test_ngtdm.h"
 #include "test_roi_blacklist.h"
-#include "test_arrow.h"
-#include "test_arrow_file_name.h"
 #include "test_image_quality.h"
 #include "test_3d_inten.h"
 #include "test_3d_nifti.h"
@@ -33,6 +31,8 @@
 #include "test_3d_ngldm.h"
 #include "test_3d_ngtdm.h"
 #include "test_3d_shape.h"
+#include "test_arrow.h"
+#include "test_arrow_file_name.h"
 
 TEST(TEST_NYXUS, TEST_ARROW_FILE_NAME) {
 	test_file_naming();

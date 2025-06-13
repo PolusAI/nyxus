@@ -29,7 +29,7 @@ static std::unordered_map<std::string, float> d3ngldm_GT{
 		{ "3NGLDM_DCENE",	0.14 }
 };
 
-std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
+static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
 void test_3ngldm_feature (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
 {

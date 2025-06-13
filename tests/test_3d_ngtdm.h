@@ -17,7 +17,7 @@ static std::unordered_map<std::string, float> d3ngtdm_GT {
     {"3NGTDM_STRENGTH",     0.024}
 };
 
-std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
+static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
 void test_3ngtdm_feature(const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
