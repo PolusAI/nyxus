@@ -54,7 +54,7 @@ public:
 	unsigned int aux_area = 0;
 	PixIntens aux_min, aux_max;
 	std::vector<Pixel2> contour;	
-	std::unordered_map<int, std::vector<size_t>> contours_3D; // std::unordered_map<int, std::vector<Pixel3>> contours_3D;
+	std::vector<std::vector<size_t>> contours_3D;
 	std::vector<Pixel2> convHull_CH;
 
 	std::vector<std::vector<StatsReal>> fvals;
