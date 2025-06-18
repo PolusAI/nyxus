@@ -887,13 +887,15 @@ namespace Nyxus
 		{ "*3D_ALL_TEXTURE*", Fgroup3D::FG3_TEXTURE },
 		{ "*3D_GLCM*", Fgroup3D::FG3_GLCM },
 		{ "*3D_GLDM*", Fgroup3D::FG3_GLDM },
-		{ "*3D_NGLDM*", Fgroup3D::FG3_NGLDM },
-		{ "*3D_NGTDM*", Fgroup3D::FG3_NGTDM },
 		{ "*3D_GLDZM*", Fgroup3D::FG3_GLDZM },
 		{ "*3D_GLSZM*", Fgroup3D::FG3_GLSZM },
 		{ "*3D_GLRLM*", Fgroup3D::FG3_GLRLM },
+		{ "*3D_NGLDM*", Fgroup3D::FG3_NGLDM },
+		{ "*3D_NGTDM*", Fgroup3D::FG3_NGTDM },
+		#if 0 // 3D features planned for a future PR
 		{ "*3D_ALL_NEIGHBOR*", Fgroup3D::FG3_NEIG },
 		{ "*3D_MOMENTS*", Fgroup3D::FG3_MOMENTS },
+		#endif
 	};
 
 } // namespace Nyxus

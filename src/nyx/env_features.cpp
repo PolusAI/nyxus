@@ -336,55 +336,8 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 	// mutually exclusive groups:
 	if ((Fgroup3D)fgcode == Fgroup3D::FG3_ALL)
 	{
-
-#if 0
-		// 3D features planned for a future PR
-		
-			Feature3D::AREA,
-			Feature3D::MESH_VOLUME,
-			Feature3D::VOLUME_CONVEXHULL,
-			Feature3D::DIAMETER_EQUAL_AREA,
-			Feature3D::DIAMETER_EQUAL_VOLUME,
-
-			Feature3D::VOLUME_PIXELS,
-			Feature3D::CENTROID_X,
-			Feature3D::CENTROID_Y,
-			Feature3D::CENTROID_Z,
-			Feature3D::BBOX_XMIN,
-			Feature3D::BBOX_YMIN,
-			Feature3D::BBOX_ZMIN,
-			Feature3D::BBOX_HEIGHT,
-			Feature3D::BBOX_WIDTH,
-			Feature3D::BBOX_DEPTH,
-
-			// Neighbor features
-			Feature3D::NUM_NEIGHBORS,
-			Feature3D::PERCENT_TOUCHING,
-			Feature3D::CLOSEST_NEIGHBOR1_DIST,
-			Feature3D::CLOSEST_NEIGHBOR1_ANG,
-			Feature3D::CLOSEST_NEIGHBOR2_DIST,
-			Feature3D::CLOSEST_NEIGHBOR2_ANG,
-			Feature3D::ANG_BW_NEIGHBORS_MEAN,
-			Feature3D::ANG_BW_NEIGHBORS_STDDEV,
-			Feature3D::ANG_BW_NEIGHBORS_MODE,
-
-			// Spatial (raw) moments
-			Feature3D::SPAT_MOMENT_00,
-			Feature3D::SPAT_MOMENT_01,
-			Feature3D::SPAT_MOMENT_02,
-			Feature3D::SPAT_MOMENT_03,
-			Feature3D::SPAT_MOMENT_10,
-			Feature3D::SPAT_MOMENT_11,
-			Feature3D::SPAT_MOMENT_12,
-			Feature3D::SPAT_MOMENT_13,
-			Feature3D::SPAT_MOMENT_20,
-			Feature3D::SPAT_MOMENT_21,
-			Feature3D::SPAT_MOMENT_22,
-			Feature3D::SPAT_MOMENT_23,
-			Feature3D::SPAT_MOMENT_30
-#endif
-
 		theFeatureSet.enableFeatures (D3_VoxelIntensityFeatures::featureset, enable);
+		theFeatureSet.enableFeatures (D3_SurfaceFeature::featureset, enable);
 		theFeatureSet.enableFeatures (D3_GLCM_feature::featureset, enable);
 		theFeatureSet.enableFeatures (D3_GLDM_feature::featureset, enable);
 		theFeatureSet.enableFeatures (D3_GLDZM_feature::featureset, enable);
@@ -392,8 +345,31 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 		theFeatureSet.enableFeatures (D3_GLSZM_feature::featureset, enable);
 		theFeatureSet.enableFeatures (D3_NGLDM_feature::featureset, enable);
 		theFeatureSet.enableFeatures (D3_NGTDM_feature::featureset, enable);
-		theFeatureSet.enableFeatures (D3_SurfaceFeature::featureset, enable);
 
+		return true;
+	}
+
+	if ((Fgroup3D)fgcode == Fgroup3D::FG3_INTENSITY)
+	{
+		theFeatureSet.enableFeatures (D3_VoxelIntensityFeatures::featureset, enable);
+		return true;
+	}
+
+	if ((Fgroup3D)fgcode == Fgroup3D::FG3_MORPHOLOGY)
+	{
+		theFeatureSet.enableFeatures (D3_SurfaceFeature::featureset, enable);
+		return true;
+	}
+
+	if ((Fgroup3D)fgcode == Fgroup3D::FG3_TEXTURE)
+	{
+		theFeatureSet.enableFeatures (D3_GLCM_feature::featureset, enable);
+		theFeatureSet.enableFeatures (D3_GLDM_feature::featureset, enable);
+		theFeatureSet.enableFeatures (D3_GLDZM_feature::featureset, enable);
+		theFeatureSet.enableFeatures (D3_GLRLM_feature::featureset, enable);
+		theFeatureSet.enableFeatures (D3_GLSZM_feature::featureset, enable);
+		theFeatureSet.enableFeatures (D3_NGLDM_feature::featureset, enable);
+		theFeatureSet.enableFeatures (D3_NGTDM_feature::featureset, enable);
 		return true;
 	}
 

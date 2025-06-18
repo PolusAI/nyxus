@@ -429,14 +429,6 @@ void D3_SurfaceFeature::calculate (LR& r)
 	fval_COMPACTNESS2 = 36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME / (fval_AREA * fval_AREA * fval_AREA);
 	fval_SPHERICAL_DISPROPORTION = fval_AREA / std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.);
 	fval_SPHERICITY = std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.) / fval_AREA;
-
-	// diagnostics
-	std::cout << "\n---D3_SurfaceFeature---\n" <<
-		"\n||r.raw_pixels_3D||=" << r.raw_pixels_3D.size() <<
-		"\n||r.zplanes||=" << r.zplanes.size() <<
-		"\n||r.contours_3D||=" << r.contours_3D.size() <<
-		"\n||hull_complex||=" << hull_complex.size() <<
-		"\n---\n";
 }
 
 void D3_SurfaceFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
