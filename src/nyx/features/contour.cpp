@@ -761,11 +761,12 @@ void ContourFeature::buildRegularContour_nontriv(LR& r)
 
 void ContourFeature::buildWholeSlideContour(LR& r)
 {
-	// Push the 4 slide vertices of dummy intensity 999
-	Pixel2 tl (r.aabb.get_xmin(), r.aabb.get_ymin(), 999),
-		tr (r.aabb.get_xmax(), r.aabb.get_ymin(), 999), 
-		bl (r.aabb.get_xmin(), r.aabb.get_ymax(), 999), 
-		br (r.aabb.get_xmax(), r.aabb.get_ymax(), 999);
+	// Create 4 slide corner vertices of slide's max intensity
+	PixIntens maxI = r.aux_max;
+	Pixel2 tl (r.aabb.get_xmin(), r.aabb.get_ymin(), maxI),
+		tr (r.aabb.get_xmax(), r.aabb.get_ymin(), maxI),
+		bl (r.aabb.get_xmin(), r.aabb.get_ymax(), maxI),
+		br (r.aabb.get_xmax(), r.aabb.get_ymax(), maxI);
 	r.contour.push_back(tl);
 	r.contour.push_back(tr);
 	r.contour.push_back(br);
@@ -780,7 +781,24 @@ void ContourFeature::calculate(LR& r)
 		buildRegularContour(r);
 
 	//=== Calculate the features
-	fval_PERIMETER = (StatsInt)r.contour.size();
+	fval_PERIMETER = 0;
+	size_t contlen = r.contour.size();
+	for (size_t i = 0; i < contlen; i++)
+	{
+		if (i == 0)
+		{
+			Pixel2& p1 = r.contour[contlen-1],
+				& p2 = r.contour[i];
+			fval_PERIMETER += std::sqrt(p1.sqdist(p2));
+		}
+		else
+		{
+			Pixel2& p1 = r.contour[i - 1],
+				& p2 = r.contour[i];
+			fval_PERIMETER += std::sqrt(p1.sqdist(p2));
+		}
+	}
+
 	fval_DIAMETER_EQUAL_PERIMETER = fval_PERIMETER / M_PI;
 	auto [cmin, cmax, cmean, cstddev] = calc_min_max_mean_stddev_intensity (r.contour);
 	fval_EDGE_MEAN_INTENSITY = cmean;

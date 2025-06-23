@@ -650,29 +650,23 @@ namespace Nyxus
 
 #ifdef WITH_PYTHON_H
 
-	bool scanTrivialRoisInMemory(const std::vector<int>& batch_labels, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens_images, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images, int start_idx)
+	bool scanTrivialRoisInMemory(const std::vector<int>& batch_labels, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens_images, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images, int pair_idx)
 	{
 		// Sort the batch's labels to enable binary searching in it
 		std::vector<int> whiteList = batch_labels;
 		std::sort(whiteList.begin(), whiteList.end());
 
-
-		auto intens_buffer = intens_images.request();
-		auto label_buffer = label_images.request();
-
-		auto width = intens_buffer.shape[1];
-		auto height = intens_buffer.shape[2];
-
-		unsigned int* dataL = static_cast<unsigned int*>(label_buffer.ptr);
-		unsigned int* dataI = static_cast<unsigned int*>(intens_buffer.ptr);
+		auto rI = intens_images.unchecked<3>();
+		auto rL = label_images.unchecked<3>();
+		size_t width = rI.shape(1);
+		size_t height = rI.shape(2);
 
 		int cnt = 1;
-		for (unsigned int row = 0; row < width; row++)
-			for (unsigned int col = 0; col < height; col++)
+		for (size_t col = 0; col < width; col++)
+			for (size_t row = 0; row < height; row++)
 			{
-
 				// Skip non-mask pixels
-				auto label = dataL[start_idx + row * height + col];
+				auto label = rL (pair_idx, row, col);
 				if (!label)
 					continue;
 
@@ -680,21 +674,20 @@ namespace Nyxus
 				if (!theEnvironment.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))
 					continue;
 
-				auto inten = dataI[start_idx + row * height + col];
+				auto inten = rI (pair_idx, row, col);
 
 				// Collapse all the labels to one if single-ROI mde is requested
 				if (theEnvironment.singleROI)
 					label = 1;
 
 				// Cache this pixel 
-				feed_pixel_2_cache(row, col, inten, label);
-
+				feed_pixel_2_cache (col, row, inten, label);
 			}
 
 		return true;
 	}
 
-	bool processTrivialRoisInMemory (const std::vector<int>& trivRoiLabels, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label, int start_idx, size_t memory_limit)
+	bool processTrivialRoisInMemory (const std::vector<int>& trivRoiLabels, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label, int pair_idx, size_t memory_limit)
 	{
 		std::vector<int> Pending;
 		size_t batchDemand = 0;
@@ -716,7 +709,7 @@ namespace Nyxus
 			{
 				// Scan pixels of pending trivial ROIs 
 				std::sort(Pending.begin(), Pending.end());
-				scanTrivialRoisInMemory(Pending, intens, label, start_idx);
+				scanTrivialRoisInMemory (Pending, intens, label, pair_idx);
 
 				// Allocate memory
 				allocateTrivialRoisBuffers(Pending);
@@ -751,7 +744,7 @@ namespace Nyxus
 		{
 			// Scan pixels of pending trivial ROIs 
 			std::sort(Pending.begin(), Pending.end());
-			scanTrivialRoisInMemory(Pending, intens, label, start_idx);
+			scanTrivialRoisInMemory(Pending, intens, label, pair_idx);
 
 			// Allocate memory
 			allocateTrivialRoisBuffers(Pending);

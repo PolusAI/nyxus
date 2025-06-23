@@ -91,14 +91,14 @@ namespace Nyxus
 			}
 			else
 			{
-				// read segmentation counterparts
-				readDirectoryFiles_2D(dirLabels, filePatt, labelFiles, purefnames_m);
-
 				if (!wholeslide && !existsOnFilesystem(dirLabels))
 				{
 					err = "cannot access directory " + dirLabels;
 					return 1;
 				}
+
+				// read segmentation counterparts
+				readDirectoryFiles_2D(dirLabels, filePatt, labelFiles, purefnames_m);
 
 				// Check if the dataset is meaningful
 				if (intensFiles.size() == 0 || labelFiles.size() == 0)
