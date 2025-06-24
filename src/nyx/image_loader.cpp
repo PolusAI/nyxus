@@ -24,12 +24,16 @@ bool ImageLoader::open (SlideProps & p)
 	{
 		std::string ext = Nyxus::get_big_extension (int_fpath);
 
-		if (ext == ".zarr")
+		if (ext == ".zarr" || ext == ".ome.zarr")
 		{
 			#ifdef OMEZARR_SUPPORT
 				intFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, int_fpath);
 			#else
-				std::cout << "This version of Nyxus was not build with OmeZarr support." <<std::endl; 
+				std::string erm = "This version of Nyxus was not build with OmeZarr support";
+				#ifdef WITH_PYTHON_H
+					throw std::runtime_error (erm);
+				#endif	
+				std::cerr << erm << "\n";
 			#endif
 		}
 		else 
@@ -38,8 +42,12 @@ bool ImageLoader::open (SlideProps & p)
 				#ifdef DICOM_SUPPORT
 					intFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, int_fpath);
 				#else
-					std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl; 
-				#endif
+					std::string erm = "This version of Nyxus was not build with DICOM support";
+					#ifdef WITH_PYTHON_H
+						throw std::runtime_error(erm);
+					#endif	
+						std::cerr << erm << "\n";
+					#endif
 			}
 			else
 				if (ext == ".nii" || ext == ".nii.gz")
