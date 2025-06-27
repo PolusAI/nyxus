@@ -115,6 +115,8 @@ namespace Nyxus
 		
 		for (int i_pair = 0; i_pair < n_pairs; i_pair++)
 		{
+			VERBOSLVL4(std::cout << "processMontage() pair " << i_pair << "/" << n_pairs << "\n");
+
 			clear_slide_rois();	// Clear ROI label list, ROI data, etc.
 
 			std::vector<int> unprocessed_rois;

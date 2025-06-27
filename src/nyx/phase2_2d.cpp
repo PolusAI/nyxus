@@ -658,8 +658,8 @@ namespace Nyxus
 
 		auto rI = intens_images.unchecked<3>();
 		auto rL = label_images.unchecked<3>();
-		size_t width = rI.shape(1);
-		size_t height = rI.shape(2);
+		size_t width = rI.shape(2);
+		size_t height = rI.shape(1);
 
 		int cnt = 1;
 		for (size_t col = 0; col < width; col++)
@@ -689,6 +689,8 @@ namespace Nyxus
 
 	bool processTrivialRoisInMemory (const std::vector<int>& trivRoiLabels, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label, int pair_idx, size_t memory_limit)
 	{
+		VERBOSLVL4(std::cout << "processTrivialRoisInMemory (pair_idx=" << pair_idx << ") \n");
+
 		std::vector<int> Pending;
 		size_t batchDemand = 0;
 		int roiBatchNo = 1;

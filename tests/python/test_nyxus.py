@@ -362,7 +362,7 @@ class TestNyxus():
             assert pytest.approx(averaged_results[1], 0.01) == 5.28 # contrast 
             assert pytest.approx(averaged_results[2], 0.01) == -0.0121 # correlation
             assert pytest.approx(averaged_results[4], 0.01) == 1.40 # difference entropy
-            assert pytest.approx(averaged_results[5], 0.1) == 2.90 # difference variance#
+            assert pytest.approx(averaged_results[5], 0.1) == 2.90 # difference variance
             
         @pytest.mark.arrow        
         def test_parquet_writer(self):

@@ -452,7 +452,7 @@ namespace Nyxus
 	//
 	bool gatherRoisMetricsInMemory (const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens_images, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images, int pair_index)
 	{
-		auto intens_buffer = intens_images.request();
+		VERBOSLVL4(std::cout << "gatherRoisMetricsInMemory (pair_index=" << pair_index << ") \n");
 
 		auto rI = intens_images.unchecked<3>();
 		auto rL = label_images.unchecked<3>();

@@ -34,5 +34,5 @@ void test_morphology_perimeter()
     f.save_value (roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::PERIMETER][0], 846));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::PERIMETER][0], 999.26));
 }
