@@ -6,10 +6,10 @@
 [![Conda](https://img.shields.io/conda/v/conda-forge/nyxus)](https://anaconda.org/conda-forge/nyxus)
 [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/nyxus?label=Conda%20downloads)](https://anaconda.org/conda-forge/nyxus)
 
-A scalable library for calculating features from intensity-label image data
+Scalable Python library for calculating engineered geometric features from segmented and whole-slide images and volumes
 
 ## Overview
-Nyxus is a feature-rich, highly optimized, Python/C++ application capable of analyzing images of arbitrary size and assembling complex regions of interest (ROIs) split across multiple image tiles and files. This accomplished through multi-threaded tile prefetching and a three phase analysis pipeline shown below. 
+Nyxus is a feature-rich, optimized, Python/C++ application capable of analyzing images of arbitrary size and assembling complex regions of interest (ROIs) split across multiple image tiles and files. This accomplished through multi-threaded tile prefetching and a three phase analysis pipeline shown below. 
 
 ![](docs/source/nyxus_workflow.jpg)
 
