@@ -386,8 +386,7 @@ class Nyxus:
             
             for i in range(intensity_images.shape[0]):
                 intensity_names.append(int_name + str(i))
-        
-        
+       
         if (label_names == []):
             seg_name = "Segmentation"
             
@@ -395,7 +394,7 @@ class Nyxus:
                 label_names.append(seg_name + str(i))
                 
         if (intensity_images.shape[0] != len(intensity_names)):
-            raise ValueError("Number of image names must be the same as the number of images.")
+            raise ValueError ("Number of _intensity image names_ (" + str(len(intensity_names)) + ") must be the same as the number of intensity images (" + str(intensity_images.shape[0]) + ")")
         
         if (label_images.shape[0] != len(label_names)):
             raise ValueError("Number of segmentation names must be the same as the number of images.")

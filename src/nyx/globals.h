@@ -79,9 +79,26 @@ namespace Nyxus
 	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath);
 	bool scan_trivial_wholeslide (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr);	// reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
 	bool scan_trivial_wholeslide_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y);
+	bool scanTrivialRois_3D (const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath);
 	void dump_roi_metrics(const std::string& label_fpath);
 	void dump_roi_pixels(const std::vector<int> & batch_labels, const std::string & label_fpath);
-
+	void dump_2d_image_with_halfcontour(
+		const std::vector<PixIntens>& I, // border image
+		const std::list<Pixel2>& unordered, // unordered contour pixels
+		const std::vector<Pixel2>& ordered, // already ordered pixels
+		const Pixel2& pxTip, // tip of ordering
+		const int W,
+		const int H,
+		const std::string& head,
+		const std::string& tail);
+	void dump_2d_image_with_vertex_chain(
+		const std::vector<PixIntens>& I,
+		const std::vector<Pixel2>& V,
+		const int W,
+		const int H,
+		const std::string& head,
+		const std::string& tail);
+	void dump_2d_image_1d_layout(const std::vector<PixIntens>& I, const int W, const int H, const std::string& head, const std::string& tail);
 	// Shows a message in CLI ('send_to_stderr': stdout or stderr) or Python terminal
 	void sureprint(const std::string& msg, bool send_to_stderr=false);
 

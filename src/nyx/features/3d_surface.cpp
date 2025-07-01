@@ -278,7 +278,7 @@ void D3_SurfaceFeature::build_surface (LR & r)
 	Points P;
 	for (auto& plane : r.contours_3D)
 	{
-		for (auto ip : plane.second)
+		for (auto ip : plane)
 		{
 			auto v = r.raw_pixels_3D[ip];
 			P.push_back (std::array<float, 3>({ (float)v.x, (float)v.y, (float)v.z }));
@@ -324,17 +324,33 @@ void D3_SurfaceFeature::calculate (LR& r)
 
 	// surface
 	
+	// -- order z-planes' indices
+	std::vector<int> zindices;
+	for (auto& plane : r.zplanes)
+		zindices.push_back (plane.first);
+	std::sort (zindices.begin(), zindices.end());
+
 	// -- calculate contours
 	r.contours_3D.clear();
 
-	for (auto& plane : r.zplanes)
+	for (auto zi : zindices)
 	{
+		auto& planeVoxs = r.zplanes[zi];	// deterministically indexed plane
+
 		// skinny contour
 		std::vector<size_t> K;	// indices in the cloud
-		build_contour_imp (K, r.raw_pixels_3D, plane.second, plane.first, r.aabb.get_width(), r.aabb.get_height(), r.aabb.get_xmin(), r.aabb.get_ymin());
+		build_contour_imp (
+			K, 
+			r.raw_pixels_3D, 
+			planeVoxs,
+			zi,
+			r.aabb.get_width(), 
+			r.aabb.get_height(), 
+			r.aabb.get_xmin(), 
+			r.aabb.get_ymin());
 
 		// store it
-		r.contours_3D[plane.first] = K;
+		r.contours_3D.push_back (K);
 	}
 
 	// -- build the hull complex
@@ -369,7 +385,7 @@ void D3_SurfaceFeature::calculate (LR& r)
 	size_t hullCloudLen = 0;
 	for (auto& plane : r.contours_3D)
 	{
-		for (auto ip : plane.second)
+		for (auto ip : plane)
 		{
 			auto v = r.raw_pixels_3D[ip];
 			cx += v.x;

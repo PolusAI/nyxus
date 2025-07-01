@@ -898,8 +898,10 @@ namespace Nyxus
 		FG3_NGTDM,
 		FG3_GLSZM,
 		FG3_GLRLM,
+		#if 0 // 3D features planned for a future PR
 		FG3_NEIG,
 		FG3_MOMENTS,
+		#endif
 		_COUNT_
 	};
 

@@ -6,16 +6,16 @@
 [![Conda](https://img.shields.io/conda/v/conda-forge/nyxus)](https://anaconda.org/conda-forge/nyxus)
 [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/nyxus?label=Conda%20downloads)](https://anaconda.org/conda-forge/nyxus)
 
-A scalable library for calculating features from intensity-label image data
+Scalable Python library for calculating engineered geometric features from segmented and whole-slide images and volumes
 
 ## Overview
-Nyxus is a feature-rich, highly optimized, Python/C++ application capable of analyzing images of arbitrary size and assembling complex regions of interest (ROIs) split across multiple image tiles and files. This accomplished through multi-threaded tile prefetching and a three phase analysis pipeline shown below. 
+Nyxus is a feature-rich, optimized, Python/C++ application capable of analyzing images of arbitrary size and assembling complex regions of interest (ROIs) split across multiple image tiles and files. This accomplished through multi-threaded tile prefetching and a three phase analysis pipeline shown below. 
 
 ![](docs/source/nyxus_workflow.jpg)
 
 Nyxus can be used via Python or command line and is available in containerized form for reproducible execution. Nyxus computes over 450 combined intensity, texture, and morphological features at the ROI or whole image level with more in development. Key features that make Nyxus unique among other image feature extraction applications is its ability to operate at any scale, its highly validated algorithms, and its modular nature that makes the addition of new features straightforward.
 
-Currently, Nyxus can read 2-dimensional images in TIFF, OME-TIFF, OME-Zarr, and DICOM 2D Grayscale formats. Nyxus can also read compressed and uncompressed NIFTI volume files as well as assemble 3-dimensional arrays from z-slices residing in separate TIFF or OME-TIFF files. It also has a Python API to featurize 2-dimensional NumPy arrays. 
+Currently, Nyxus can read image data from OME-TIFF, OME-Zarr and DICOM 2D Grayscale images. It also has a Python API to support in-memory image data via Numpy array. 
 
 The docs can be found at [Read the Docs](https://nyxus.readthedocs.io/en/latest/).
 
@@ -155,6 +155,8 @@ features1 = nyx.featurize_directory (idir, mdir, file_pattern=".*\.nii")
 # selecting only compressed NIFTI files
 features2 = nyx.featurize_directory (idir, mdir, file_pattern=".*\.nii\.gz")
 ```
+<u>Note on CT datasets:</u> voxel intensities recorded in the Hounsfield units are automatically read by Nyxus as 0-based values by adding the minimum value of an original file (typically -1024).
+
 Featurizing explicitly specified volume files is straightforward, too:
 
 ```python
@@ -172,25 +174,6 @@ mdir = [
 	"/patient123/segmentation/kidney_left.nii.gz"]
 
 nyx.featurize_files (idir, mdir, False) # pass True to featurize intensity files as whole segments
-```
-## Anisotropy
-
-Anisotropy correction of input data is available via both python API and command-line variants, independent by x, y, and z dimensions. 
-Example (python API):
-
-```python
-import nyxus
-nyx = nyxus.Nyxus3D (["*3D_ALL*"], anisotropy_x=1.0, anisotropy_y=1.2, anisotropy_z=1.5)
-
-# dataset
-idir = "/dataset1/input"
-mdir = "/dataset1/masks"
-f = nyx.featurize_directory (idir, mdir, file_pattern=".*\.nii\.gz")
-```
-
-Another example (via command line):
-```
---dim=3 --anisox=1.5  --anisoy=2  --anisoz=2.5 --filePattern=".*\.nii\.gz"  --features=*3D_GLCM*  --resultFname=f_3d_glcm --outputType=singlecsv --intDir=/dataset1/int --segDir=/dataset1/seg --outDir=/out/OUTPUT-3D
 ```
 
 ## Further steps
@@ -344,8 +327,6 @@ The feature extraction plugin extracts morphology and intensity based features f
 
 Nyxus provides a set of pixel intensity, morphology, texture, intensity distribution features, digital filter based features and image moments
 
-### 2D features
-
 ------------------
 | Nyxus feature code | Description |
 |--------|-------|
@@ -391,12 +372,12 @@ Nyxus provides a set of pixel intensity, morphology, texture, intensity distribu
 
 For the complete list of features see [Nyxus provided features](docs/source/featurelist.rst)
 
-## 2D feature groups
+## Feature groups
 
 Apart from defining your feature set by explicitly specifying comma-separated feature code, Nyxus lets a user specify popular feature groups. Supported feature groups are:
 
 ------------------------------------
-| Group code | Member features |
+| Group code | Belonging features |
 |--------------------|-------------|
 | \*all_intensity\* | integrated_intensity, mean, median, min, max, range, standard_deviation, standard_error, uniformity, skewness, kurtosis, hyperskewness, hyperflatness, mean_absolute_deviation, energy, root_mean_squared, entropy, mode, uniformity, p01, p10, p25, p75, p90, p99, interquartile_range, robust_mean_absolute_deviation, mass_displacement
 | \*all_morphology\* | area_pixels_count, area_um2, centroid_x, centroid_y, weighted_centroid_y, weighted_centroid_x, compactness, bbox_ymin, bbox_xmin, bbox_height, bbox_width, major_axis_length, minor_axis_length, eccentricity, orientation, num_neighbors, extent, aspect_ratio, equivalent_diameter, convex_hull_area, solidity, perimeter, edge_mean_intensity, edge_stddev_intensity, edge_max_intensity, edge_min_intensity, circularity
@@ -411,64 +392,6 @@ Apart from defining your feature set by explicitly specifying comma-separated fe
 | \*all_ngtdm\* | ngtdm_coarseness, ngtdm_contrast, ngtdm_busyness, ngtdm_complexity, ngtdm_strength
 | \*wholeslide\* | All the features except those irrelevant for the whole-slide use case (BasicMorphology, EnclosingInscribingCircumscribingCircle, ConvexHull, FractalDimension, GeodeticLengthThickness, Neighbor, RoiRadius, EllipseFitting, EulerNumber, Extrema, ErosionPixel, CaliperFeret, CaliperMartin, CaliperNassenstein, and Chords)
 | \*all\* | All the features 
-
-### 3D features
-
-------------------
-| Nyxus feature code | Description |
-|--------|-------|
-| **--- intensity ---** | 
-| 3COV | covariance
-| 3COVERED_IMAGE_INTENSITY_RANGE | covered volume intensity range
-| 3ENERGY | energy
-| 3ENTROPY | entrupy
-| 3EXCESS_KURTOSIS | excess kurtosis
-| 3HYPERFLATNESS | hyperflatness
-| 3HYPERSKEWNESS | hyperskewness
-| 3INTEGRATED_INTENSITY | integrated intensity
-| 3INTERQUARTILE_RANGE | interquartile range
-| 3KURTOSIS, 3SKEWNESS | kurtosis, skewness
-| 3MAX, 3MEAN, 3MIN, 3MODE, 3RANGE  | maximum, mean, minimum, mode, range
-| 3MEAN_ABSOLUTE_DEVIATION | mean absolute deviation
-| 3MEDIAN | median
-| 3MEDIAN_ABSOLUTE_DEVIATION | median absolute deviation
-| 3P01, 3P10, 3P25, 3P75, 3P90, 3P99 | percentiles
-| 3QCOD | quantile coefficient of dispersion
-| 3ROBUST_MEAN | robust mean
-| 3ROBUST_MEAN_ABSOLUTE_DEVIATION | robust mean absolute deviation
-| 3ROOT_MEAN_SQUARED | root mean squared
-| 3STANDARD_DEVIATION, 3STANDARD_DEVIATION_BIASED | standard deviation (unbiased and biased)
-| 3STANDARD_ERROR | standard error
-| 3UNIFORMITY | uniformity
-| 3VARIANCE, 3VARIANCE_BIASED | variance (unbiased and biased)
-| **--- shape ---** |
-| 3AREA | surface area
-| 3AREA_2_VOLUME | area to volume ratio
-| 3COMPACTNESS1, 3COMPACTNESS1 | compactness 1 and 2
-| 3MESH_VOLUME | mesh volume
-| 3SPHERICAL_DISPROPORTION | spherical disproportion
-| 3SPHERICITY | sphericity
-| 3VOLUME_CONVEXHULL | volume of the convex hull
-| VOXEL_VOLUME | total voxel volume
-| **--- texture ---** | 
-| 3GLCM_\<feature\> | GLCM features (cluster prominence, cluster shade, joint entropy, etc)
-| 3GLDM_\<feature\> | GLDM features (grey level variance, etc)
-| 3GLDZM_\<feature\> | GLDZM features (small distance high grey level emphasis, zone distance entropy, etc)
-| 3GLSZM_\<feature\> | GLSZM features (size zone non-uniformity, high grey level zone emphasis)
-| 3NGLDM_\<feature\> | NGLDM features (low dependence emphasis, dependence count energy, etc)
-| 3NGTDM_\<feature\> | NGTDM features (coarseness, busyness, etc)
-| 3GLRLM_\<feature\> | GLRLM features (run length non-uniformity, run entropy, etc)
-
-### 3D feature groups
-
-------------------------------------
-| Group code | Member features |
-|--------------------|-------------|
-| \*3D_ALL\* | all the features
-| \*3D_ALL_INTENSITY\* | all intensity features
-| \*3D_ALL_MORPHOLOGY\* | all shape features
-| \*3D_ALL_TEXTURE\* | all texture features
-
 
 ## Command line usage
 
@@ -587,6 +510,20 @@ features = nyx.featurize_directory (intensity_dir="/path/to/intensity/images", l
 
 See also methods __clear_roi_blacklist()__ and __roi_blacklist_get_summary()__ .
 
+
+<span style="color:blue">Example 6:</span> __Specifying anisotropy in 3D (via command line)__
+
+Applying a 1.5 x 2.0 x 2.5 anisotropy correction to all the volumes in a compressed NIFTI dataset:
+```
+--anisox=1.5  --anisoy=2  --anisoz=2.5 --dim=3 --filePattern="*\.nii\.gz"  --features=*3D_ALL*  --resultFname=3d-features --outputType=singlecsv --intDir=/data/patient123/intensity --segDir=/data/patient123/masks --outDir=/output/patient123
+```
+
+2D compatibility: 
+
+```
+--anisox=1.5  --anisoy=2 --filePattern="*\.ome\.tiff" --features=*ALL*  --resultFname=features1 --outputType=singlecsv --intDir=/data/plate123/int --segDir=/data/plate123/seg --outDir=/output/plate123
+```
+
 ## Nested ROIs 
 
 Hierarchical ROI analysis in a form of finding ROIs nested geometrically as nested AABBs and aggregating features of child ROIs within corresponding parent is available as an optional extra step after the feature extraction of the whole image set is finished. To enable this step, all the command line options '--hsig', '--hpar', '--hchi', and '--hag' need to have non-blank valid values. 
@@ -694,7 +631,7 @@ df = nest.find_relations(seg_path, 'p{r}_y{c}_r{z}_c1.ome.tif', 'p{r}_y{c}_r{z}_
 df2 = nest.featurize(df, features)
 ```
 
-the parent-child map remains the same but the `featurize` result becomes (intentionally putting NaN at undefined combinations):
+the parent-child map remains the same but the `featurize` result becomes
 
 ``` bash
                      GABOR_0                                                                ...    
@@ -845,3 +782,4 @@ The output is a csv file containing the value of features required.
 
 For more information on WIPP, visit the [official WIPP page](https://github.com/usnistgov/WIPP/tree/master/user-guide).
 
+  

@@ -34,13 +34,13 @@ namespace py = pybind11;
 namespace Nyxus
 {
 
-	bool processIntSegImagePairInMemory (const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label, int filepair_index, const std::string& intens_name, const std::string& seg_name, std::vector<int> unprocessed_rois)
+	bool processIntSegImagePairInMemory (const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label, int pair_index, const std::string& intens_name, const std::string& seg_name, std::vector<int> unprocessed_rois)
 	{
 		std::vector<int> trivRoiLabels;
 
 		// Phase 1: gather ROI metrics
 
-		if (! gatherRoisMetricsInMemory(intens, label, filepair_index))	// Output - set of ROI labels, label-ROI cache mappings
+		if (! gatherRoisMetricsInMemory(intens, label, pair_index))	// Output - set of ROI labels, label-ROI cache mappings
 			return false;
 
 		// ROI metrics are gathered, let's publish them non-anisotropically into ROI's AABB
@@ -79,7 +79,7 @@ namespace Nyxus
 		// Phase 2: process trivial-sized ROIs
 		if (trivRoiLabels.size())
 		{
-			processTrivialRoisInMemory (trivRoiLabels, intens, label, filepair_index, theEnvironment.get_ram_limit());
+			processTrivialRoisInMemory (trivRoiLabels, intens, label, pair_index, theEnvironment.get_ram_limit());
 		}
 
 		// Phase 3: skip nontrivial ROIs
@@ -110,24 +110,18 @@ namespace Nyxus
 			}
 		}
 
-		auto intens_buffer = intensity_images.request();
-		auto label_buffer = label_images.request();
-
-		auto width = intens_buffer.shape[1];
-		auto height = intens_buffer.shape[2];
-
-		auto nf = intens_buffer.shape[0];
+		auto rI = intensity_images.unchecked<3>();
+		size_t n_pairs = rI.shape(0);
 		
-		for (int i = 0; i < nf; i++)
+		for (int i_pair = 0; i_pair < n_pairs; i_pair++)
 		{
-			// Clear ROI label list, ROI data, etc.
-			clear_slide_rois();
+			VERBOSLVL4(std::cout << "processMontage() pair " << i_pair << "/" << n_pairs << "\n");
 
-			auto image_idx = i * width * height;	// image offset in memory
+			clear_slide_rois();	// Clear ROI label list, ROI data, etc.
 
 			std::vector<int> unprocessed_rois;
 
-			if (! processIntSegImagePairInMemory (intensity_images, label_images, image_idx, intensity_names[i], seg_names[i], unprocessed_rois))
+			if (! processIntSegImagePairInMemory (intensity_images, label_images, i_pair, intensity_names[i_pair], seg_names[i_pair], unprocessed_rois))
 			{
 				error_message = "processIntSegImagePairInMemory() returned an error code while processing file pair";
 				return 1;
@@ -149,7 +143,6 @@ namespace Nyxus
 					error_message = "save_features_2_buffer() failed";
 					return 2;
 				}
-
 			}
 
 			if (unprocessed_rois.size() > 0) 

@@ -281,10 +281,10 @@ bool StringPattern::tokenize (
 	}
 
 	// count tokens' characters to check if all the input string characters were digested
-	size_t totLen = 0;
-	for (const auto& v : tokVals)
-		totLen += v.length();
-	if (totLen == s.length())
+	size_t totParsedLen = 0;
+	for (const auto& tv : tokVals)
+		totParsedLen += tv.length();
+	if (totParsedLen == s.length())
 		return true;
 	else
 		return false;

@@ -450,21 +450,21 @@ namespace Nyxus
 	//
 	// segmented 2D case
 	//
-	bool gatherRoisMetricsInMemory (const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens_images, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images, int start_idx)
+	bool gatherRoisMetricsInMemory (const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens_images, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images, int pair_index)
 	{
-		auto intens_buffer = intens_images.request();
+		VERBOSLVL4(std::cout << "gatherRoisMetricsInMemory (pair_index=" << pair_index << ") \n");
 
-		unsigned int* dataL = static_cast<unsigned int*>(label_images.request().ptr);
-		unsigned int* dataI = static_cast<unsigned int*>(intens_buffer.ptr);
-		
-		auto width = intens_buffer.shape[1];
-   		auto height = intens_buffer.shape[2];
+		auto rI = intens_images.unchecked<3>();
+		auto rL = label_images.unchecked<3>();
 
-		for (int row = 0; row < width; row++)
-			for (int col = 0; col < height; col++)
+		size_t w = rI.shape(2);
+		size_t h = rI.shape(1);
+
+		for (size_t col = 0; col < w; col++)
+			for (size_t row = 0; row < h; row++)
 			{
 				// Skip non-mask pixels
-				auto label = dataL[start_idx + row * height + col];
+				auto label = rL (pair_index, row, col);
 				if (!label)
 					continue;
 
@@ -473,7 +473,8 @@ namespace Nyxus
 					label = 1;
 
 				// Update pixel's ROI metrics
-				feed_pixel_2_metrics (row, col, dataI[start_idx + row * height + col], label, -1); // Updates 'uniqueLabels' and 'roiData'. Using slide_idx=-1
+				auto inten = rI (pair_index, row, col);
+				feed_pixel_2_metrics (col, row, inten, label, -1); // Updates 'uniqueLabels' and 'roiData'. Using slide_idx=-1
 
 				if (PyErr_CheckSignals() != 0)
 					throw pybind11::error_already_set();
