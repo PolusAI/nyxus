@@ -259,9 +259,15 @@ size_t RawImageLoader::get_full_height()
 
 std::string RawImageLoader::get_slide_descr()
 {
-	std::string rv = intFL->get_infostring() + " (int) ";
+	std::string rv = get_fp_phys_pixvoxels() ? "R-" : "N-";
+	rv += intFL->get_infostring() + " I ";
 	if (segFL != nullptr)
-		rv += segFL->get_infostring() + " (seg) ";
+		rv += segFL->get_infostring() + " M ";
 	return rv;
+}
+
+bool RawImageLoader::get_fp_phys_pixvoxels()
+{
+	return intFL->get_fp_pixels();
 }
 

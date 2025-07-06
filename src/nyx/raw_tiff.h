@@ -117,6 +117,8 @@ public:
                 }
                 break;
             case 3:
+                this->fp_pixels_ = true;
+
                 switch (bitsPerSample_) 
                 {
                 case 8:
@@ -381,6 +383,8 @@ public:
                 }
                 break;
             case 3:
+                this->fp_pixels_ = true;
+
                 switch (bitsPerSample_)
                 {
                 case 8:
