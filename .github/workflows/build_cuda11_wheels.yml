@@ -10,7 +10,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019, ubuntu-22.04]
+        os: [windows-2022, ubuntu-22.04]
         cibw_archs: ["auto64"]
         cibw_build: ["cp39", "cp310", "cp311", "cp312"]
 
@@ -27,7 +27,7 @@ jobs:
         if: runner.os == 'Windows'
         env: 
           cuda: "11.8.0"
-          visual_studio: "Visual Studio 16 2019"
+          visual_studio: "Visual Studio 17 2022"
         shell: powershell
         run: .\ci-utils\install_cuda_windows.ps1
 
