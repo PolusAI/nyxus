@@ -410,7 +410,7 @@ namespace Nyxus
 		return { smallest, largest };
 	}
 
-	inline std::string virguler (size_t x)
+	inline std::string virguler_ulong (size_t x)
 	{
 		const char SEP = ',';
 
@@ -437,7 +437,7 @@ namespace Nyxus
 		return s2;
 	}
 
-	inline std::string virguler (double x)
+	inline std::string virguler_real (double x)
 	{
 		// integer part
 		size_t y = (size_t)x;
@@ -450,7 +450,7 @@ namespace Nyxus
 			frac = frac.erase(0, 1);
 		
 		// all together
-		s += virguler(y) + frac;
+		s += virguler_ulong(y) + frac;
 		return s;
 	}
 
