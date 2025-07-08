@@ -74,7 +74,8 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel} --no-dll cufft64_11.dll;cufftw64_11.dll;cudart32_120.dll;cudart64_120.dll"
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: auditwheel repair --exclude=libcufft.so --exclude=libcufft.so.11 --exclude=libcufft.so.11.0.12.1  --exclude=libcudart.so --exclude=libcudart.so.12 --exclude=libcudart.so.12.3.101  -w {dest_dir} {wheel}
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
-          CIBW_TEST_REQUIRES: numpy==2.0.0 pandas pyarrow pytest bfio
+          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
+          CIBW_TEST_REQUIRES_LINUX: numpy==2.2.6 pandas pyarrow pytest bfio
           CIBW_BEFORE_TEST_WINDOWS: xcopy /E /I /y "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.0\bin" %SystemRoot%\System32
           CIBW_TEST_COMMAND: python -m pip check
 
