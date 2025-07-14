@@ -30,7 +30,12 @@ public:
 		Nyxus::Feature3D::SPHERICAL_DISPROPORTION,
 		Nyxus::Feature3D::SPHERICITY,
 		Nyxus::Feature3D::VOLUME_CONVEXHULL,
-		Nyxus::Feature3D::VOXEL_VOLUME
+		Nyxus::Feature3D::VOXEL_VOLUME,
+		Nyxus::Feature3D::MAJOR_AXIS_LEN,
+		Nyxus::Feature3D::MINOR_AXIS_LEN,
+		Nyxus::Feature3D::LEAST_AXIS_LEN,
+		Nyxus::Feature3D::ELONGATION,
+		Nyxus::Feature3D::FLATNESS
 	};
 
 private:
@@ -61,7 +66,12 @@ private:
 		fval_SPHERICAL_DISPROPORTION,
 		fval_SPHERICITY,
 		fval_VOLUME_CONVEXHULL,
-		fval_VOXEL_VOLUME;
+		fval_VOXEL_VOLUME,
+		fval_MAJOR_AXIS_LEN,
+		fval_MINOR_AXIS_LEN,
+		fval_LEAST_AXIS_LEN,
+		fval_ELONGATION,
+		fval_FLATNESS;
 
 };
 

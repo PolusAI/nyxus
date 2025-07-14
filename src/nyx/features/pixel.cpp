@@ -1,5 +1,7 @@
+#include <numeric>
 #include <climits>
 #include "pixel.h"
+#include "../helpers/helpers.h"
 
 bool operator == (const Pixel2& p1, const Pixel2& p2)
 {
@@ -120,7 +122,7 @@ double Pixel2::max_sqdist(const std::vector<Pixel2>& cloud) const
 	return extrem_d;
 }
 
-int Pixel2::find_center (const std::vector<Pixel2>& cloud, const std::vector<Pixel2>& contour)
+/*static*/ int Pixel2::find_center(const std::vector<Pixel2>& cloud, const std::vector<Pixel2>& contour)
 {
 	int idxMinDif = 0;
 	auto minmaxDist = cloud[idxMinDif].min_max_sqdist(contour);
@@ -209,8 +211,31 @@ double Pixel2::sqdist(int x, int y) const
 	return retval;
 }
 
+/*static*/ std::tuple<double, double, double> Pixel3::centroid(const std::vector<Pixel3>& A)
+{
+	double n = A.size(), 
+		cx = std::accumulate (A.begin(), A.end(), 0.0, [](double sum, const Pixel3& p) {return sum + p.x;}),
+		cy = std::accumulate (A.begin(), A.end(), 0.0, [](double sum, const Pixel3& p) {return sum + p.y;}), 
+		cz = std::accumulate (A.begin(), A.end(), 0.0, [](double sum, const Pixel3& p) {return sum + p.z;});
+	cx /= n;
+	cy /= n;
+	cz /= n;
+	return { cx, cy, cz };
+}
 
+/*static*/ void Pixel3::calc_cov_matrix (double Sigma[3][3], const std::vector<Pixel3>& cloud)
+{
+	auto [ccx, ccy, ccz] = Pixel3::centroid (cloud);
+	double n = cloud.size();
+	std::vector<std::vector<double>> table;
+	for (auto vox : cloud)
+	{
+		std::vector<double> voxRow = { ((double)vox.x - ccx) / n, ((double)vox.y - ccy) / n, ((double)vox.z - ccz) / n };
+		table.push_back({ voxRow });
+	}
 
+	Nyxus::calc_cov_matrix (Sigma, table);
+}
 
 
 

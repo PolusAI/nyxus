@@ -481,4 +481,11 @@ namespace Nyxus
 		return retval;
 	}
 
+	double calc_mean (const std::vector<double>& series);
+
+	double calc_covariance (const std::vector<double>& series1, double mean1, const std::vector<double>& series2, double mean2);
+
+	void calc_cov_matrix (double Sigma[3][3], const std::vector<std::vector<double>>& table_N_by_3);
+
+	bool calc_eigvals (double w[3], const double A[3][3]);
 }
