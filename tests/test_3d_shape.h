@@ -94,4 +94,67 @@ void test_3shape_voxelvolume() {
     test_3shape_feature ("3VOXEL_VOLUME", Feature3D::VOXEL_VOLUME);
 }
 
+void test_3shape_covmatrix() {
+    std::vector<Pixel3> cloud = 
+    {
+        // layout: X, Y, Z, intensity
+        {9,     96,     4,      1000},
+        {26,    55,     89,     1000},
+        {80,    52,     91,	1000 },
+        {3,     23,	80,	1000},
+        {93,    49,	10,	1000},
+        {73,    62,	26,	1000},
+        {49,    68,	34,	1000},
+        {58,    40,	68,	1000},
+        {24,    37,	14,	1000},
+        {46,    99,	72,	1000}
+    };
+
+    double K[3][3];
+    Pixel3::calc_cov_matrix (K, cloud);
+
+    // verdict
+    /*
+            producing the ground truth with MATLAB:
+            cloud = [
+                9    96     4,
+                26    55    89,
+                80    52    91,
+                3    23    80,
+                93    49    10,
+                73    62    26,
+                49    68    34,
+                58    40    68,
+                24    37    14,
+                46    99    72] ;
+            cov(cloud)
+            >>
+                ans =
+                1.0e+03 *
+                0.9277 - 0.0093 - 0.0601
+                - 0.0093    0.5952 - 0.1913
+                - 0.0601 - 0.1913    1.1933
+    */
+    double gt[3][3] =
+    {
+        { 0.9277e3,    -0.0093e3,    -0.0601e3 },
+        { -0.0093e3,   0.5952e3,     -0.1913e3 },
+        { -0.0601e3,   -0.1913e3,    1.1933e3 }
+    };
+
+    double tol = 1.0;
+    ASSERT_TRUE (agrees_gt (K[0][0], gt[0][0], tol));
+    ASSERT_TRUE (agrees_gt (K[0][1], gt[0][1], tol));
+    ASSERT_TRUE (agrees_gt (K[0][2], gt[0][2], tol));
+
+    ASSERT_TRUE (agrees_gt (K[1][0], gt[1][0], tol));
+    ASSERT_TRUE (agrees_gt (K[1][1], gt[1][1], tol));
+    ASSERT_TRUE (agrees_gt (K[1][2], gt[1][2], tol));
+
+    ASSERT_TRUE (agrees_gt (K[2][0], gt[2][0], tol));
+    ASSERT_TRUE (agrees_gt (K[2][1], gt[2][1], tol));
+    ASSERT_TRUE (agrees_gt (K[2][2], gt[2][2], tol));
+
+}
+
 

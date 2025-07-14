@@ -230,7 +230,7 @@ double Pixel2::sqdist(int x, int y) const
 	std::vector<std::vector<double>> table;
 	for (auto vox : cloud)
 	{
-		std::vector<double> voxRow = { ((double)vox.x - ccx) / n, ((double)vox.y - ccy) / n, ((double)vox.z - ccz) / n };
+		std::vector<double> voxRow = { (double)vox.x - ccx, (double)vox.y - ccy, (double)vox.z - ccz };
 		table.push_back({ voxRow });
 	}
 

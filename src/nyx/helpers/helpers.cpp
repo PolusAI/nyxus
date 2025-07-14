@@ -56,12 +56,13 @@ namespace Nyxus
 
 	double calc_covariance (const std::vector<double>& data1, double mean1, const std::vector<double>& data2, double mean2)
 	{
-		double sum_of_products = 0.0;
+		double normfactor = (double)(data1.size() - 1),  // sample covariance
+			sum_of_products = 0.0;
 
 		for (size_t i = 0; i < data1.size(); i++)
 			sum_of_products += (data1[i] - mean1) * (data2[i] - mean2);
 
-		return sum_of_products / (double) (data1.size() - 1); // sample covariance
+		return sum_of_products / normfactor;
 	}
 
 	#define cswap(a,b) do { if(a < b) { double tmp = a; a = b; b = tmp; } } while(0)

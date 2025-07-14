@@ -1304,6 +1304,12 @@ TEST(TEST_NYXUS, TEST_3SHAPE_3VOXEL_VOLUME) {
 	ASSERT_NO_THROW (test_3shape_voxelvolume());
 }
 
+TEST(TEST_NYXUS, TEST_3SHAPE_COVMATRIX) {
+	ASSERT_NO_THROW (test_3shape_covmatrix());
+}
+
+
+
 // ***** 3D GLCM *****
 
 TEST(TEST_NYXUS, TEST_3GLCM_ACOR) {
