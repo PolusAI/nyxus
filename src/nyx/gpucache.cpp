@@ -493,7 +493,7 @@ namespace NyxusGpu
 		size_t amt = 0; 
 		OK(gpu_get_free_mem(amt));
 
-		VERBOSLVL1(std::cout << "GPU RAM amt = " << Nyxus::virguler(amt) << "\n");
+		VERBOSLVL1(std::cout << "GPU RAM amt = " << Nyxus::virguler_ulong(amt) << "\n");
 
 		int n_gabFilters = n_gabor_filters + 1;		// '+1': an extra filter for the baseline signal
 
@@ -508,16 +508,16 @@ namespace NyxusGpu
 			roi_kontur_cloud_len, 
 			n_rois, roi_w, roi_h, n_gabFilters, gabor_ker_side);
 
-		VERBOSLVL1(std::cout << "szb for " << Nyxus::virguler(n_rois) << " ROIs (ideal ROI px:" << Nyxus::virguler(roi_cloud_len) << ", ideal contour px:" << Nyxus::virguler(roi_kontur_cloud_len) << ") = " << Nyxus::virguler(szb) << "\n");
+		VERBOSLVL1(std::cout << "szb for " << Nyxus::virguler_ulong(n_rois) << " ROIs (ideal ROI px:" << Nyxus::virguler_ulong(roi_cloud_len) << ", ideal contour px:" << Nyxus::virguler_ulong(roi_kontur_cloud_len) << ") = " << Nyxus::virguler_ulong(szb) << "\n");
 
 		batch_len = n_rois;
 		size_t critAmt = amt * 0.75; // 75% GPU RAM as critical RAM
 
-		VERBOSLVL1(std::cout << "critical GPU RAM amt = " << Nyxus::virguler(critAmt) << "\n");
+		VERBOSLVL1(std::cout << "critical GPU RAM amt = " << Nyxus::virguler_ulong(critAmt) << "\n");
 
 		if (critAmt < szb)
 		{
-			VERBOSLVL1(std::cout << "Need to split " << Nyxus::virguler(n_rois)  << " ROIs into batches \n");
+			VERBOSLVL1(std::cout << "Need to split " << Nyxus::virguler_ulong(n_rois)  << " ROIs into batches \n");
 
 			size_t try_nrois = 0;
 			for (try_nrois = n_rois; try_nrois>=0; try_nrois--)

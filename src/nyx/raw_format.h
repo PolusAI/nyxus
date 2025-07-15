@@ -8,11 +8,13 @@ class RawFormatLoader
 public:
 
     RawFormatLoader (const std::string_view & name, const std::string & filePath)
-        : infostring_(name), filePath_(filePath) {}
+        : infostring_(name), filePath_(filePath), fp_pixels_(false) {}
 
     virtual ~RawFormatLoader() = default;
 
     std::string get_infostring() { return infostring_; }
+
+    bool get_fp_pixels() { return fp_pixels_; }
 
     virtual void loadTileFromFile (
         size_t indexRowGlobalTile,
@@ -61,6 +63,10 @@ public:
     [[nodiscard]] size_t numberTileDepth(size_t level = 0) const {
         return (size_t)std::ceil((double)(fullDepth(level)) / tileDepth(level));
     }
+
+protected:
+
+    bool fp_pixels_;
 
 private:
 

@@ -7,6 +7,24 @@ struct SlideProps
 	double min_preroi_inten;
 	double max_preroi_inten;
 
+	// unsigned int grey-minning
+	static unsigned int uint_friendly_dynrange;
+	bool fp_phys_pivoxels = false;
+
+	// casting x in real range [min_preroi_inten, max_preroi_inten] -> uint [0, uint_dynrange]
+	unsigned int uint_friendly_inten (double x, double uint_dynrange) const
+	{
+		if (fp_phys_pivoxels)
+		{
+			double y = x < min_preroi_inten ? min_preroi_inten : x;
+			y = y > max_preroi_inten ? max_preroi_inten : y;
+			y = uint_dynrange * (y - min_preroi_inten) / (max_preroi_inten - min_preroi_inten);
+			return (unsigned int)y;
+		}
+		else
+			return (unsigned int) x;
+	}
+
 	// geometric
 	size_t slide_w;
 	size_t slide_h;

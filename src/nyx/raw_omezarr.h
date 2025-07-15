@@ -50,9 +50,9 @@ public:
         else if (dtype_str == "<i2") { data_format_ = 6; } //int16_t
         else if (dtype_str == "<i4") { data_format_ = 7; } //int32_t
         else if (dtype_str == "<i8") { data_format_ = 8; } //int64_t
-        else if (dtype_str == "<f2") { data_format_ = 9; } //float
-        else if (dtype_str == "<f4") { data_format_ = 9; } //float
-        else if (dtype_str == "<f8") { data_format_ = 10; } //double
+        else if (dtype_str == "<f2") { data_format_ = 9; fp_pixels_ = true; } //float
+        else if (dtype_str == "<f4") { data_format_ = 9; fp_pixels_ = true; } //float
+        else if (dtype_str == "<f8") { data_format_ = 10; fp_pixels_ = true; } //double
         else { data_format_ = 2; } //uint16_t
 
         // allocate the buffer

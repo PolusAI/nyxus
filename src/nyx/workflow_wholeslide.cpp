@@ -40,7 +40,7 @@ namespace Nyxus
 		size_t footp = vroi.get_ram_footprint_estimate();
 		if (footp > memory_limit)
 		{
-			std::cerr << "Error: cannot process slide " << ifpath << " , reason: its memory footprint " << virguler(footp) << " exceeds available memory " << virguler(memory_limit) << "\n";
+			std::cerr << "Error: cannot process slide " << ifpath << " , reason: its memory footprint " << virguler_ulong(footp) << " exceeds available memory " << virguler_ulong(memory_limit) << "\n";
 			return false;
 		}
 
@@ -95,13 +95,14 @@ namespace Nyxus
 		VERBOSLVL2(std::cout << "Gathering vROI metrics\n");
 
 		// phase 1: copy ROI metrics from the slide properties, thanks to the WSI scenario
-		// instead of gather_wholeslide_metrics (p.fname_int, imlo, vroi)	// segmented counterpart: gatherRoisMetrics()
+		// instead of gather_wholeslide_metrics (p.fname_int, imlo, vroi)
 		vroi.slide_idx = (decltype(vroi.slide_idx)) sidx;
 		const SlideProps & p = LR::dataset_props [sidx];
 		vroi.aux_area = p.max_roi_area;
 		vroi.aabb.init_from_widthheight (p.max_roi_w, p.max_roi_h);
-		vroi.aux_min = (PixIntens) p.min_preroi_inten;
-		vroi.aux_max = (PixIntens) p.max_preroi_inten;
+		// tell ROI the actual uint rynamic range or greybinned one depending on the slide's low-level properties
+		vroi.aux_min = (PixIntens) p.fp_phys_pivoxels ? 0 : (PixIntens) p.min_preroi_inten; 
+		vroi.aux_max = (PixIntens) p.fp_phys_pivoxels ? (PixIntens) Nyxus::theEnvironment.fpimageOptions.target_dyn_range() : (PixIntens) p.max_preroi_inten;
 
 		// fix the AABB with respect to anisotropy
 		if (theEnvironment.anisoOptions.customized() == false)
@@ -122,8 +123,8 @@ namespace Nyxus
 				<< " (S=" << vroi.aux_area
 				<< " W=" << vroi.aabb.get_width()
 				<< " H=" << vroi.aabb.get_height()
-				<< " px footprint=" << Nyxus::virguler(roiFootprint) << " b"
-				<< ") while RAM limit is " << Nyxus::virguler(ramLim) << "\n"
+				<< " px footprint=" << Nyxus::virguler_ulong(roiFootprint) << " b"
+				<< ") while RAM limit is " << Nyxus::virguler_ulong(ramLim) << "\n"
 			);
 
 			std::cerr << p.fname_int << ": slide is non-trivial \n";
@@ -241,7 +242,10 @@ namespace Nyxus
 				VERBOSLVL1(std::cout << "error prescanning pair " << p.fname_int << " and " << p.fname_seg << std::endl);
 				return 1;
 			}
-			VERBOSLVL1(std::cout << "\t " << p.slide_w << " W x " << p.slide_h << " H\tmax ROI " << p.max_roi_w << " x " << p.max_roi_h << "\tmin-max I " << Nyxus::virguler(p.min_preroi_inten) << "-" << Nyxus::virguler(p.max_preroi_inten) << "\t" << p.lolvl_slide_descr << "\n");
+			VERBOSLVL1(std::cout << " " << p.slide_w << " W x" << p.slide_h << " H max ROI " << p.max_roi_w << "x" << p.max_roi_h 
+				<< " DR " << Nyxus::virguler_real(p.min_preroi_inten) 
+				<< "-" << Nyxus::virguler_real(p.max_preroi_inten) 
+				<< " " << p.lolvl_slide_descr << "\n");
 
 		}
 

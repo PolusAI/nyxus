@@ -13,6 +13,7 @@ namespace Nyxus
 	{
 		// low-level slide properties (intensity and mask, if available)
 		p.lolvl_slide_descr = ilo.get_slide_descr();
+		p.fp_phys_pivoxels = ilo.get_fp_phys_pixvoxels();
 
 		// scan intensity slide's data
 
@@ -27,7 +28,7 @@ namespace Nyxus
 		int lvl = 0, // pyramid level
 			lyr = 0; //	layer
 
-		// Read the tiff. The image loader is put in the open state in processDataset_XX_YY ()
+		// Read the image/volume. The image loader is put in the open state in processDataset_XX_YY ()
 		size_t nth = ilo.get_num_tiles_hor(),
 			ntv = ilo.get_num_tiles_vert(),
 			fw = ilo.get_tile_width(),
@@ -43,8 +44,7 @@ namespace Nyxus
 			for (unsigned int col = 0; col < ntv; col++)
 			{
 				// Fetch the tile
-				bool ok = ilo.load_tile(row, col);
-				if (!ok)
+				if (! ilo.load_tile(row, col))
 				{
 #ifdef WITH_PYTHON_H
 					throw "Error fetching tile";
@@ -59,11 +59,6 @@ namespace Nyxus
 				// Iterate pixels
 				for (size_t i = 0; i < tileSize; i++)
 				{
-					// dynamic range within- and off-ROI
-					double dxequiv_I = ilo.get_cur_tile_dpequiv_pixel(i);
-					slide_I_max = (std::max)(slide_I_max, dxequiv_I);
-					slide_I_min = (std::min)(slide_I_min, dxequiv_I);
-
 					// Mask
 					uint32_t msk = 1; // wholeslide by default
 					if (!wholeslide)
@@ -79,6 +74,11 @@ namespace Nyxus
 					// Skip tile buffer pixels beyond the image's bounds
 					if (x >= fullwidth || y >= fullheight)
 						continue;
+
+					// dynamic range within- and off-ROI
+					double dxequiv_I = ilo.get_cur_tile_dpequiv_pixel(i);
+					slide_I_max = (std::max)(slide_I_max, dxequiv_I);
+					slide_I_min = (std::min)(slide_I_min, dxequiv_I);
 
 					// Update pixel's ROI metrics
 					//		- the following block mocks feed_pixel_2_metrics (x, y, dataI[i], msk, tidx)
@@ -169,8 +169,8 @@ namespace Nyxus
 		p.slide_w = fullwidth;
 		p.slide_h = fullheight;
 
-		p.max_preroi_inten = slide_I_max;
-		p.min_preroi_inten = slide_I_min;
+		p.max_preroi_inten = slide_I_max;		// in case fp_phys_pivoxels==true, max/min _preroi_inten 
+		p.min_preroi_inten = slide_I_min;		// needs adjusting (grey-binning) before using in wsi scenarios (assigning ROI's min and max)
 
 		p.max_roi_area = maxArea;
 		p.n_rois = R.size();
