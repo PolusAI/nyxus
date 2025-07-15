@@ -58,12 +58,12 @@ namespace Nyxus
 		DIAMETER_EQUAL_AREA,
 		EXTENT,
 		ASPECT_RATIO,
-		// -- Legendre inertia ellipse
+		// -- ev-based
 		MAJOR_AXIS_LENGTH,
 		MINOR_AXIS_LENGTH,
+		ELONGATION,
 		// -- ellipticity related
 		ECCENTRICITY,
-		ELONGATION,
 		ORIENTATION,
 		ROUNDNESS,
 

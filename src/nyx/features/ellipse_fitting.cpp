@@ -54,7 +54,7 @@ void EllipseFittingFeature::calculate (LR& r)
 	majorAxisLength = 2. * sqrt(2.) * sqrt(uxx + uyy + common);
 	minorAxisLength = 2. * sqrt(2.) * sqrt(uxx + uyy - common);
 	eccentricity = sqrt (1.0 - minorAxisLength * minorAxisLength / (majorAxisLength * majorAxisLength));
-	elongation = sqrt(minorAxisLength/majorAxisLength);
+	elongation = minorAxisLength / majorAxisLength;
 	roundness = (4. * area) / (M_PI * majorAxisLength * majorAxisLength);
 
 	// Calculate orientation [-90,90]
