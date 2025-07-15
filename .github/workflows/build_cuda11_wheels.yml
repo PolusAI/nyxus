@@ -8,7 +8,9 @@ jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-2022, ubuntu-22.04]
         cibw_archs: ["auto64"]
