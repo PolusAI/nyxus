@@ -667,6 +667,11 @@ namespace Nyxus
 		{ "3SPHERICITY", Feature3D::SPHERICITY },
 		{ "3VOLUME_CONVEXHULL", Feature3D::VOLUME_CONVEXHULL },
 		{ "3VOXEL_VOLUME", Feature3D::VOXEL_VOLUME },
+		{"3MAJOR_AXIS_LEN", Feature3D::MAJOR_AXIS_LEN },
+		{"3MINOR_AXIS_LEN", Feature3D::MINOR_AXIS_LEN },
+		{ "3LEAST_AXIS_LEN", Feature3D::LEAST_AXIS_LEN },
+		{ "3ELONGATION", Feature3D::ELONGATION },
+		{ "3FLATNESS", Feature3D::FLATNESS },
 
 		#if 0 // 3D features planned for a future PR
 

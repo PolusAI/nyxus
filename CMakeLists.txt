@@ -132,6 +132,7 @@ option(RUN_GTEST "Downloads google unit test API and runs google test scripts to
 
 #==== Source files
 set(SOURCE
+	src/nyx/3rdparty/dsyevj3.cpp
 	src/nyx/arrow_output_stream.cpp
 	src/nyx/features/basic_morphology.cpp
 	src/nyx/features/caliper_feret.cpp
@@ -190,6 +191,7 @@ set(SOURCE
 	src/nyx/features/zernike.cpp
 	src/nyx/features/zernike_nontriv.cpp
 	src/nyx/helpers/diag.cpp
+	src/nyx/helpers/helpers.cpp
 	src/nyx/helpers/timing.cpp
 	src/nyx/io/nifti/laynii_lib.cpp
 	src/nyx/io/nifti/nifti2_io.cpp

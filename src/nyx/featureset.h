@@ -58,12 +58,12 @@ namespace Nyxus
 		DIAMETER_EQUAL_AREA,
 		EXTENT,
 		ASPECT_RATIO,
-		// -- Legendre inertia ellipse
+		// -- ev-based
 		MAJOR_AXIS_LENGTH,
 		MINOR_AXIS_LENGTH,
+		ELONGATION,
 		// -- ellipticity related
 		ECCENTRICITY,
-		ELONGATION,
 		ORIENTATION,
 		ROUNDNESS,
 
@@ -625,11 +625,19 @@ namespace Nyxus
 		SPHERICITY,
 		VOLUME_CONVEXHULL,
 		VOXEL_VOLUME,						// IBSI name: approximate volume
+		// -- ev-based
+		MAJOR_AXIS_LEN,
+		MINOR_AXIS_LEN,
+		LEAST_AXIS_LEN,
+		ELONGATION,
+		FLATNESS,
 
 		// 3D features planned for a future PR
 #if 0
 		// Morphology:
-		VOLUME_PIXELS,
+		Maximum 2D diameter(Row) // defined as the largest pairwise Euclidean distance between tumor surface mesh vertices in the column-slice (usually the sagittal) plane
+		Maximum 2D diameter(Column) // defined as the largest pairwise Euclidean distance between tumor surface mesh vertices in the row-slice (usually the coronal) plane
+		Maximum 2D diameter(Slice) // defined as the largest pairwise Euclidean distance between tumor surface mesh vertices in the row-column (generally the axial) plane
 		CENTROID_X,
 		CENTROID_Y,
 		CENTROID_Z,

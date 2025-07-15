@@ -236,5 +236,11 @@ struct Pixel3 : public Point3i
 	/// @brief Returns the angle in radians between this pixel and 'other' relative to the origin 
 	double angle(const Pixel3& other) const;
 
+	/// @brief Returns Cartesian coordinate of cloud's center
+	static std::tuple<double, double, double> centroid (const std::vector<Pixel3>& cloud);
+
+	/// @brief Calculates a covariance matrix of a voxel cloud
+	static void calc_cov_matrix (double Sigma[3][3], const std::vector<Pixel3>& cloud);
+
 };
 

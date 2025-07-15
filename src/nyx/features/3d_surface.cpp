@@ -3,8 +3,9 @@
 #include "../featureset.h"
 #include "../environment.h"	
 #include "../parallel.h"
+#include "../3rdparty/quickhull.hpp"
+#include "../3rdparty/dsyevj3.h"
 #include "3d_surface.h"
-#include "quickhull.hpp"
 
 bool D3_SurfaceFeature::required (const FeatureSet & fs)
 {
@@ -422,20 +423,40 @@ void D3_SurfaceFeature::calculate (LR& r)
 
 		fval_VOLUME_CONVEXHULL += d / 6;
 	}
-	// other features
+
+	// volume-area ratio features
 	fval_MESH_VOLUME = fval_VOLUME_CONVEXHULL;
 	fval_AREA_2_VOLUME = fval_AREA / fval_VOXEL_VOLUME;
 	fval_COMPACTNESS1 = fval_VOXEL_VOLUME / std::sqrt(M_PI * fval_AREA * fval_AREA * fval_AREA);
 	fval_COMPACTNESS2 = 36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME / (fval_AREA * fval_AREA * fval_AREA);
 	fval_SPHERICAL_DISPROPORTION = fval_AREA / std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.);
 	fval_SPHERICITY = std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.) / fval_AREA;
+
+	// pca features
+	double K[3][3];
+	Pixel3::calc_cov_matrix (K, r.raw_pixels_3D);
+	double L[3];
+	if (Nyxus::calc_eigvals(L, K))
+	{
+		fval_MAJOR_AXIS_LEN = 4.0 * sqrt(L[1]);
+		fval_MINOR_AXIS_LEN = 4.0 * sqrt(L[2]);
+		fval_LEAST_AXIS_LEN = 4.0 * sqrt(L[0]);
+		fval_ELONGATION = sqrt(L[2] / L[1]);
+		fval_FLATNESS = sqrt(L[0] / L[1]);
+	}
+	else
+	{
+		fval_MAJOR_AXIS_LEN = 
+		fval_MINOR_AXIS_LEN = 
+		fval_LEAST_AXIS_LEN = 
+		fval_ELONGATION = 
+		fval_FLATNESS = 0.0;
+	}
 }
 
 void D3_SurfaceFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
 
-void D3_SurfaceFeature::osized_calculate(LR& r, ImageLoader& imloader)
-{
-}
+void D3_SurfaceFeature::osized_calculate(LR& r, ImageLoader& imloader) {}
 
 void D3_SurfaceFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
@@ -448,6 +469,12 @@ void D3_SurfaceFeature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Nyxus::Feature3D::SPHERICITY][0] = fval_SPHERICITY;
 	fvals[(int)Nyxus::Feature3D::VOLUME_CONVEXHULL][0] = fval_VOLUME_CONVEXHULL;
 	fvals[(int)Nyxus::Feature3D::VOXEL_VOLUME][0] = fval_VOXEL_VOLUME;
+
+	fvals[(int)Nyxus::Feature3D::MAJOR_AXIS_LEN][0] = fval_MAJOR_AXIS_LEN;
+	fvals[(int)Nyxus::Feature3D::MINOR_AXIS_LEN][0] = fval_MINOR_AXIS_LEN;
+	fvals[(int)Nyxus::Feature3D::LEAST_AXIS_LEN][0] = fval_LEAST_AXIS_LEN;
+	fvals[(int)Nyxus::Feature3D::ELONGATION][0] = fval_ELONGATION;
+	fvals[(int)Nyxus::Feature3D::FLATNESS][0] = fval_FLATNESS;
 }
 
 void D3_SurfaceFeature::cleanup_instance()
@@ -460,7 +487,12 @@ void D3_SurfaceFeature::cleanup_instance()
 	fval_SPHERICAL_DISPROPORTION = 
 	fval_SPHERICITY = 
 	fval_VOLUME_CONVEXHULL = 
-	fval_VOXEL_VOLUME = 0;
+	fval_VOXEL_VOLUME = 
+	fval_MAJOR_AXIS_LEN,
+	fval_MINOR_AXIS_LEN,
+	fval_LEAST_AXIS_LEN,
+	fval_ELONGATION,
+	fval_FLATNESS = 0;
 }
 
 void D3_SurfaceFeature::parallel_process (std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
