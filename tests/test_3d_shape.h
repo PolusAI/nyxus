@@ -94,7 +94,7 @@ void test_3shape_voxelvolume() {
     test_3shape_feature ("3VOXEL_VOLUME", Feature3D::VOXEL_VOLUME);
 }
 
-void test_3shape_covmatrix() {
+void test_3shape_covmatrix_and_eigenvals() {
     std::vector<Pixel3> cloud = 
     {
         // layout: X, Y, Z, intensity
