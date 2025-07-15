@@ -24,7 +24,13 @@ jobs:
 
       - uses: ilammy/msvc-dev-cmd@v1
         name: Add MSVS Path
-
+        
+      - name: List installed MSVC toolsets
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          dir "C:\Program Files (x86)\Microsoft Visual Studio\2022\*\VC\Tools\MSVC"
+          
       - name: Install CUDA
         if: runner.os == 'Windows'
         env: 
