@@ -48,7 +48,7 @@ $CUDA_KNOWN_URLS = @{
 
 # @todo - change this to be based on _MSC_VER intead, or invert it to be CUDA keyed instead
 $VISUAL_STUDIO_MIN_CUDA = @{
-    "2022" = "11.6.0";
+    "2022" = "11.3.0";
     "2019" = "10.1";
     "2017" = "10.0"; # Depends on which version of 2017! 9.0 to 10.0 depending on version
     "2015" = "8.0";  # Might support older, unsure. Depracated as of 11.1, unsupported in 11.2
