@@ -52,7 +52,7 @@ if "%BUILD_Z5_DEP%" == "1" (
     pushd boost_1_79_0 
     call bootstrap.bat 
     .\b2 headers --prefix=../local_install
-    .\b2 install --prefix=../local_install
+    .\b2 -j %NUMBER_OF_PROCESSORS% variant=release link=shared runtime-link=shared threading=multi install --prefix=../local_install
     xcopy /E /I /y boost ..\local_install\include\boost
     popd
 
