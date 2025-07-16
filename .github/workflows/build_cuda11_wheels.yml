@@ -48,6 +48,22 @@ jobs:
           ls $env:CUDA_PATH\bin
           ls $env:CUDA_PATH\include
 
+      - name: Verify MSVC and CUDA integration
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" -vcvars_ver=14.29
+          echo === MSVC version ===
+          cl
+          echo === CUDA version ===
+          nvcc --version
+          echo === Test CUDA compilation ===
+          echo #include <cuda_runtime.h> > test.cu
+          echo int main() { return 0; } >> test.cu
+          nvcc -c test.cu -o test.obj
+          if errorlevel 1 exit 1
+          echo CUDA successfully compiled a test file
+
       - uses: actions/setup-python@v4
         name: Install Python
         with:
