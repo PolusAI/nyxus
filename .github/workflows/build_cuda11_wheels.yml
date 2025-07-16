@@ -58,7 +58,7 @@ jobs:
           echo === CUDA version ===
           nvcc --version
           echo === Test CUDA compilation ===
-          echo #include <cuda_runtime.h> > test.cu
+          echo #include ^<cuda_runtime.h^> > test.cu
           echo int main() { return 0; } >> test.cu
           nvcc -c test.cu -o test.obj
           if errorlevel 1 exit 1
