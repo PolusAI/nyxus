@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022, ubuntu-22.04]
+        os: [ubuntu-22.04]
         cibw_archs: ["auto64"]
         cibw_build: ["cp39", "cp310", "cp311", "cp312"]
 
@@ -21,48 +21,6 @@ jobs:
         name: Check out
         with:
           submodules: recursive    
-
-      - uses: ilammy/msvc-dev-cmd@v1
-        name: Add MSVS Path
-        
-      - name: List installed MSVC toolsets
-        if: runner.os == 'Windows'
-        shell: cmd
-        run: |
-          dir "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC"
-
-      - name: Install CUDA
-        if: runner.os == 'Windows'
-        env: 
-          cuda: "11.3.0"
-          visual_studio: "Visual Studio 17 2022"
-        shell: powershell
-        run: .\ci-utils\install_cuda_windows.ps1
-
-      - name: nvcc check
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: |
-          nvcc -V
-          ls $env:CUDA_PATH
-          ls $env:CUDA_PATH\bin
-          ls $env:CUDA_PATH\include
-
-      - name: Verify MSVC and CUDA integration
-        if: runner.os == 'Windows'
-        shell: cmd
-        run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" -vcvars_ver=14.29
-          echo === MSVC version ===
-          cl
-          echo === CUDA version ===
-          nvcc --version
-          echo === Test CUDA compilation ===
-          echo #include ^<cuda_runtime.h^> > test.cu
-          echo int main() { return 0; } >> test.cu
-          nvcc -c test.cu -o test.obj
-          if errorlevel 1 exit 1
-          echo CUDA successfully compiled a test file
 
       - uses: actions/setup-python@v4
         name: Install Python
@@ -73,28 +31,8 @@ jobs:
         run: |
           python -m pip install cibuildwheel==2.16.2 delvewheel wheel
 
-      - name: Building wheels on Windows
-        if: runner.os == 'Windows'
-        shell: cmd
-        run: |
-              call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" -vcvars_ver=14.29
-              python -m cibuildwheel --output-dir dist
 
-        env:
-          CIBW_BUILD: ${{ matrix.cibw_build }}-*
-          CIBW_BUILD_VERBOSITY: 3
-          CIBW_BEFORE_ALL_WINDOWS: nvcc -V &&
-                                   ci-utils\install_prereq_win.bat &&
-                                   xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install
-          CIBW_ENVIRONMENT_WINDOWS: PATH="C:\\TEMP\\nyxus_bld\\local_install\\bin;$PATH" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install" CMAKE_ARGS="-DUSEGPU=ON" NYXUS_GPU_WHEEL="ON" 
-          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -vv -w {dest_dir} {wheel} --no-dll=cufft64_10.dll;cufftw64_10.dll;cudart32_110.dll;cudart64_110.dll"
-          CIBW_ARCHS: ${{ matrix.cibw_archs }}
-          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
-          CIBW_BEFORE_TEST_WINDOWS: xcopy /E /I /y "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.3\bin" %SystemRoot%\System32
-          CIBW_TEST_COMMAND: python -m pip check
-
-      - name: Building wheels on non-windows 
-        if: runner.os != 'Windows'
+      - name: Building wheels on Linux
         run: |
               python -m cibuildwheel --output-dir dist
         env:
