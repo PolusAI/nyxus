@@ -34,7 +34,7 @@ jobs:
       - name: Install CUDA
         if: runner.os == 'Windows'
         env: 
-          cuda: "11.8.0"
+          cuda: "11.3.0"
           visual_studio: "Visual Studio 17 2022"
         shell: powershell
         run: .\ci-utils\install_cuda_windows.ps1
@@ -59,7 +59,13 @@ jobs:
 
       - name: Building wheels 
         run: |
-          python -m cibuildwheel --output-dir dist
+            if [[ "$RUNNER_OS" == "Windows" ]]; then
+              REM Activate MSVC 14.29 toolset
+              call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" -vcvars_ver=14.29
+              python -m cibuildwheel --output-dir dist
+            else
+              python -m cibuildwheel --output-dir dist
+            fi
         env:
           CIBW_BUILD: ${{ matrix.cibw_build }}-*
           CIBW_SKIP: "*musllinux*"
@@ -85,7 +91,7 @@ jobs:
           CIBW_BEFORE_TEST_LINUX: >-
             pip install "numpy<2.3.1" --only-binary=:all:
           CIBW_TEST_REQUIRES_LINUX: pandas pyarrow pytest bfio
-          CIBW_BEFORE_TEST_WINDOWS: xcopy /E /I /y "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin" %SystemRoot%\System32
+          CIBW_BEFORE_TEST_WINDOWS: xcopy /E /I /y "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.3\bin" %SystemRoot%\System32
           CIBW_TEST_COMMAND: python -m pip check
 
       - name: Upload Artifact
