@@ -76,15 +76,6 @@ namespace Nyxus
 		if (vroi.aux_image_matrix._pix_plane.size())
 			std::vector<PixIntens>().swap(vroi.aux_image_matrix._pix_plane);
 
-		// allow heyboard interrupt
-		#ifdef WITH_PYTHON_H
-		if (PyErr_CheckSignals() != 0)
-		{
-			sureprint("\nAborting per user input\n");
-			throw pybind11::error_already_set();
-		}
-		#endif
-
 		// no need to calculate neighbor features in WSI, returning
 		return true;
 	}
@@ -199,15 +190,6 @@ namespace Nyxus
 		//
 		// Not saving nested ROI related info because this image is single-ROI (whole-slide)
 		//
-
-		// allow heyboard interrupt
-		#ifdef WITH_PYTHON_H
-		if (PyErr_CheckSignals() != 0)
-		{
-			sureprint("\nAborting per user input\n");
-			throw pybind11::error_already_set();
-		}
-		#endif
 
 		rv = 0; // success
 	}
@@ -336,6 +318,15 @@ namespace Nyxus
 						rval);
 				}
 			}
+
+			// allow keyboard interrupt
+			#ifdef WITH_PYTHON_H
+			if (PyErr_CheckSignals() != 0)
+			{
+				sureprint("\nAborting per user input\n");
+				throw pybind11::error_already_set();
+			}
+			#endif		
 		}
 
 		//**** finalize Apache output
