@@ -12,7 +12,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-22.04]
+        os: [ubuntu-22.04]
         cibw_archs: ["auto64"]
         cibw_build: ["cp39-*", "cp310-*", "cp311-*", "cp312-*"]
 
