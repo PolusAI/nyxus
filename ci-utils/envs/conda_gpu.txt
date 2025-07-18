@@ -1,2 +1,2 @@
-cudatoolkit=11.4.0
-cudatoolkit-dev=11.4.0
+cudatoolkit=11.5.0
+cudatoolkit-dev=11.5.0
