@@ -17,7 +17,7 @@ MINICONDA=$PWD/miniconda-for-nyxus # Modify this to your preferred location for 
 CPP_BUILD_DIR=$PWD
 SRC_ROOT=$1 #source dir location
 NYXUS_ROOT=$SRC_ROOT
-PYTHON=3.11
+PYTHON=3.9
 
 git config --global --add safe.directory $NYXUS_ROOT
 
