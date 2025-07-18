@@ -31,7 +31,7 @@ jobs:
     - name: Copy 3rd-party libraries to staging directory
       working-directory: ${{github.workspace}}
       run: |
-        bash ci-utils/docker_copy_3rd_party_libs.sh ${{github.workspace}}/miniconda-for-nyxus/envs/nyxus-3.11
+        bash ci-utils/docker_copy_3rd_party_libs.sh ${{github.workspace}}/miniconda-for-nyxus/envs/nyxus-3.9
 
     - name: Create Version File
       run: python setup.py --version| grep -v init > VERSION
