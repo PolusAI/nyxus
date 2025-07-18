@@ -54,7 +54,7 @@ jobs:
           CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
           CIBW_BEFORE_TEST_LINUX: >-
             pip install "numpy<2.3.1" --only-binary=:all:
-          CIBW_TEST_REQUIRES_LINUX: pandas pyarrow pytest bfio
+          CIBW_TEST_REQUIRES_LINUX: pandas pyarrow<21.0.0 pytest bfio
           CIBW_TEST_COMMAND: python -m pip check
 
       - name: Upload Artifact
