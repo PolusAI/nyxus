@@ -127,6 +127,7 @@ public:
 	void save_value(std::vector<std::vector<double>>& feature_vals);
 	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 	static void reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+	static void extract(LR& r);
 
 private:
 

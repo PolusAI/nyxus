@@ -535,4 +535,11 @@ void D3_SurfaceFeature::reduce(size_t start, size_t end, std::vector<int>* ptrLa
 	}
 }
 
+/*static*/ void D3_SurfaceFeature::extract (LR& r)
+{
+	D3_SurfaceFeature f;
+	f.calculate(r);
+	f.save_value(r.fvals);
+}
+
 

@@ -68,6 +68,14 @@ namespace Nyxus
 		const SaveOption saveOption,
 		const std::string& outputPath);
 
+	// single-segment 3D workflow
+	std::tuple<bool, std::optional<std::string>> processDataset_3D_wholevolume(
+		const std::vector <std::string>& intensFiles,
+		int n_threads,
+		int min_online_roi_size,
+		const SaveOption saveOption,
+		const std::string& outputPath);
+
 	std::string getPureFname(const std::string& fpath);
 	bool gatherRoisMetrics(int slide_idx, const std::string& intens_fpath, const std::string& label_fpath, ImageLoader & L);
 	bool gather_wholeslide_metrics(const std::string& intens_fpath, ImageLoader& L, LR& roi);
@@ -79,6 +87,10 @@ namespace Nyxus
 	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath);
 	bool scan_trivial_wholeslide (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr);	// reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
 	bool scan_trivial_wholeslide_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y);
+
+	bool scan_trivial_wholevolume (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr);	
+	bool scan_trivial_wholevolume_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y);
+
 	bool scanTrivialRois_3D (const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath);
 	void dump_roi_metrics(const std::string& label_fpath);
 	void dump_roi_pixels(const std::vector<int> & batch_labels, const std::string & label_fpath);
@@ -148,6 +160,7 @@ namespace Nyxus
 	void reduce_trivial_rois (std::vector<int>& PendingRoisLabels);
 	void reduce_trivial_rois_manual (std::vector<int>& PendingRoisLabels);
 	void reduce_trivial_wholeslide (LR & slideroi);
+	void reduce_trivial_3d_wholevolume (LR& r);
 	void reduce_neighbors_and_dependencies_manual ();
 
 	void init_label_record_2(LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity);

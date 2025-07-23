@@ -542,3 +542,9 @@ void D3_GLDM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLab
 	}
 }
 
+/*static*/ void D3_GLDM_feature::extract (LR& r)
+{
+	D3_GLDM_feature f;
+	f.calculate(r);
+	f.save_value(r.fvals);
+}

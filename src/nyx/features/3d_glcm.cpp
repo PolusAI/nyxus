@@ -1253,3 +1253,12 @@ void D3_GLCM_feature::reduce(size_t start, size_t end, std::vector<int>* ptrLabe
 		f.save_value(r.fvals);
 	}
 }
+
+/*static*/ void D3_GLCM_feature::extract (LR& r)
+{
+	D3_GLCM_feature f;
+	f.calculate(r);
+	f.save_value(r.fvals);
+}
+
+
