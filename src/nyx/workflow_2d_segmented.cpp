@@ -195,7 +195,7 @@ namespace Nyxus
 
 			// slide metrics
 			VERBOSLVL1(std::cout << "prescanning " << p.fname_int);
-			if (! scan_slide_props(p, theEnvironment.resultOptions.need_annotation()))
+			if (! scan_slide_props(p, 2, theEnvironment.resultOptions.need_annotation()))
 			{
 				VERBOSLVL1(std::cout << "error prescanning pair " << p.fname_int << " and " << p.fname_seg << std::endl);
 				return 1;

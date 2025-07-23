@@ -47,5 +47,5 @@ struct SlideProps
 namespace Nyxus
 {
 	// Scans segmented slide p.fname_int / p.fname_seg and fills other fields of 'p'
-	bool scan_slide_props (SlideProps & p, bool need_annotations);
+	bool scan_slide_props (SlideProps & p, int dim, bool need_annotations);
 }

@@ -40,6 +40,7 @@ public:
 	double calc_Strength();
 
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+	static void extract (LR& r);
 
 	// Comaptibility with manual reduce
 	static bool required(const FeatureSet& fs)

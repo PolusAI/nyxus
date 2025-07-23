@@ -717,7 +717,16 @@ Nyxus-provided features
      - volume of the triangle mesh of ROI's convex hull
    * - 3VOXEL_VOLUME
      - total of volumes of voxels of the ROI
-
+   * - 3MAJOR_AXIS_LEN
+     - measure of the largest principal component of the ROI voxel cloud
+   * - 3MINOR_AXIS_LEN
+     - measure of the 2nd largest principal component of the ROI voxel cloud
+   * - 3LEAST_AXIS_LEN
+     - measure of the smallest principal component of the ROI voxel cloud
+   * - 3ELONGATION
+     - ratio of the two largest principal components of the ROI voxel cloud
+    * - 3FLATNESS
+     - ratio of the largest and smallest principal components of the ROI voxel cloud
 
 **3D texture features:**
 
