@@ -234,10 +234,11 @@ set(SOURCE
 	src/nyx/roi_cache_basic.cpp
 	src/nyx/slideprops.cpp
 	src/nyx/strpat.cpp
-	src/nyx/workflow_3d.cpp
+	src/nyx/workflow_2d_segmented.cpp
+	src/nyx/workflow_2d_whole.cpp
+	src/nyx/workflow_3d_segmented.cpp
+	src/nyx/workflow_3d_whole.cpp
 	src/nyx/workflow_pythonapi.cpp
-	src/nyx/workflow_segmented.cpp
-	src/nyx/workflow_wholeslide.cpp
 )
 
 # CLI

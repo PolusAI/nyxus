@@ -696,3 +696,10 @@ void D3_GLSZM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLa
 	}
 }
 
+/*static*/ void D3_GLSZM_feature::extract(LR& r)
+{
+	D3_GLSZM_feature f;
+	f.calculate(r);
+	f.save_value(r.fvals);
+}
+

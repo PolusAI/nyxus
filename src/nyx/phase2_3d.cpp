@@ -256,6 +256,163 @@ namespace Nyxus
 			return true;
 	}
 
+	//
+	// Reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
+	//
+	bool scan_trivial_wholevolume (
+		LR& vroi,
+		const std::string& intens_fpath,
+		ImageLoader& ldr)
+	{
+		int lvl = 0,	// Pyramid level
+			lyr = 0;	//	Layer
+
+		// Read the tiffs
+		size_t nth = ldr.get_num_tiles_hor(),
+			ntv = ldr.get_num_tiles_vert(),
+			fw = ldr.get_tile_width(),
+			th = ldr.get_tile_height(),
+			tw = ldr.get_tile_width(),
+			tileSize = ldr.get_tile_size(),
+			fullwidth = ldr.get_full_width(),
+			fullheight = ldr.get_full_height();
+
+		int cnt = 1;
+		for (unsigned int row = 0; row < nth; row++)
+			for (unsigned int col = 0; col < ntv; col++)
+			{
+				// Fetch the tile 
+				bool ok = ldr.load_tile(row, col);
+				if (!ok)
+				{
+					std::stringstream ss;
+					ss << "Error fetching tile row=" << row << " col=" << col;
+#ifdef WITH_PYTHON_H
+					throw ss.str();
+#endif	
+					std::cerr << ss.str() << "\n";
+					return false;
+				}
+
+				// Get ahold of tile's pixel buffer
+				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
+
+				// Iterate pixels
+				for (unsigned long i = 0; i < tileSize; i++)
+				{
+					auto inten = dataI[i];
+					int y = row * th + i / tw,
+						x = col * tw + i % tw;
+
+					// Skip tile buffer pixels beyond the image's bounds
+					if (x >= fullwidth || y >= fullheight)
+						continue;
+
+					// Cache this pixel 
+					feed_pixel_2_cache_LR(x, y, dataI[i], vroi);
+				}
+
+				VERBOSLVL2(
+					// Show stayalive progress info
+					if (cnt++ % 4 == 0)
+					{
+						static int prevIntPc = 0;
+						float pc = int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100.;
+						if (int(pc) != prevIntPc)
+						{
+							std::cout << "\t scan trivial " << int(pc) << " %\n";
+							prevIntPc = int(pc);
+						}
+					}
+				)
+			}
+
+		return true;
+	}
+
+	//
+	// Reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi' 
+	// performing anisotropy correction
+	//
+	bool scan_trivial_wholevolume_anisotropic(
+		LR& vroi,
+		const std::string& intens_fpath,
+		ImageLoader& ldr,
+		double aniso_x,
+		double aniso_y)
+	{
+		int lvl = 0,	// Pyramid level
+			lyr = 0;	//	Layer
+
+		// physical slide properties
+		size_t nth = ldr.get_num_tiles_hor(),
+			ntv = ldr.get_num_tiles_vert(),
+			fw = ldr.get_tile_width(),
+			th = ldr.get_tile_height(),
+			tw = ldr.get_tile_width(),
+			tileSize = ldr.get_tile_size(),
+			fullwidth = ldr.get_full_width(),
+			fullheight = ldr.get_full_height();
+
+		// virtual slide properties
+		size_t vh = (size_t)(double(fullheight) * aniso_y),
+			vw = (size_t)(double(fullwidth) * aniso_x),
+			vth = (size_t)(double(th) * aniso_y),
+			vtw = (size_t)(double(tw) * aniso_x);
+
+		// current tile to skip tile reloads
+		size_t curt_x = 999, curt_y = 999;
+
+		for (size_t vr = 0; vr < vh; vr++)
+		{
+			for (size_t vc = 0; vc < vw; vc++)
+			{
+				// tile position for virtual pixel (vc, vr)
+				size_t tidx_y = size_t(vr / vth),
+					tidx_x = size_t(vc / vtw);
+
+				// load it
+				if (tidx_y != curt_y || tidx_x != curt_x)
+				{
+					bool ok = ldr.load_tile(tidx_y, tidx_x);
+					if (!ok)
+					{
+						std::string s = "Error fetching tile row=" + std::to_string(tidx_y) + " col=" + std::to_string(tidx_x);
+#ifdef WITH_PYTHON_H
+						throw s;
+#endif	
+						std::cerr << s << "\n";
+						return false;
+					}
+
+					// cache tile position to avoid reloading
+					curt_y = tidx_y;
+					curt_x = tidx_x;
+				}
+
+				// within-tile virtual pixel position
+				size_t vx = vc - tidx_x * vtw,
+					vy = vr - tidx_y * vth;
+
+				// within-tile physical pixel position
+				size_t ph_x = size_t(double(vx) / aniso_x),
+					ph_y = size_t(double(vy) / aniso_y),
+					i = ph_y * tw + ph_x;
+
+				// read buffered physical pixel 
+				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
+				const std::shared_ptr<std::vector<uint32_t>>& spL = ldr.get_seg_tile_sptr();
+				bool wholeslide = spL == nullptr; // alternatively, theEnvironment.singleROI
+
+				// Cache this pixel 
+				feed_pixel_2_cache_LR(vc, vr, dataI[i], vroi);
+			}
+		}
+
+		return true;
+	}
+
+
 	bool processTrivialRois_3D(const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit)
 	{
 		std::vector<int> Pending;

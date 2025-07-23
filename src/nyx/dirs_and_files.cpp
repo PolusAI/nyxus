@@ -415,6 +415,42 @@ namespace Nyxus
 		return 0;
 	}
 
+	int read_3D_dataset_wholevolume (
+		// input:
+		const std::string& dirIntens,
+		const StringPattern& filePatt,
+		const std::string& dirOut,
+		// output:
+		std::vector <std::string>& intensFiles)
+	{
+		if (!existsOnFilesystem(dirIntens))
+		{
+			std::cout << "Error: nonexisting directory " << dirIntens << std::endl;
+			return 1;
+		}
+		if (!existsOnFilesystem(dirOut))
+		{
+			std::cout << "Error: nonexisting directory " << dirOut << std::endl;
+			return 1;
+		}
+
+		// Common case - no ad hoc intensity-label file mapping, 1-to-1 correspondence instead
+
+		// read file names into a plain vector of strings (non-wholevolume counterpart: readDirectoryFiles_3D() )
+		std::vector<std::string> fnamesOnly;
+		std::string p = filePatt.get_cached_pattern_string();
+		readDirectoryFiles_2D (dirIntens, p, intensFiles, fnamesOnly);
+
+		// Check if the dataset isn't blank
+		if (intensFiles.size() == 0)
+		{
+			std::cout << "No intensity file pairs to process, probably due to file pattern " << filePatt.get_cached_pattern_string() << std::endl;
+			return 2;
+		}
+
+		return 0;
+	}
+
 	Imgfile3D_layoutA::Imgfile3D_layoutA(const std::string& possibly_full_path)
 	{
 		auto p = fs::path(possibly_full_path);
