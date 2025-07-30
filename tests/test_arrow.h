@@ -4,6 +4,7 @@
 
 #include <arrow/api.h>
 #include <arrow/io/api.h>
+#include <arrow/status.h>
 #include <parquet/arrow/reader.h>
 #include <parquet/arrow/writer.h>
 #include <parquet/exception.h>
@@ -37,23 +38,14 @@ std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path) {
         arrow::MemoryPool* pool = arrow::default_memory_pool();
 
         std::shared_ptr<arrow::io::RandomAccessFile> input;
-
-        //auto status = this->open(input, file_path);
-        input = arrow::io::ReadableFile::Open(file_path).ValueOrDie();
+        ARROW_ASSIGN_OR_RAISE(input, arrow::io::ReadableFile::Open(file_path));
         
         std::unique_ptr<parquet::arrow::FileReader> arrow_reader;
         ARROW_ASSIGN_OR_RAISE(arrow_reader, parquet::arrow::OpenFile(input, pool));
 
         // Read entire file as a single Arrow table
         std::shared_ptr<arrow::Table> table;
-
-        auto status = arrow_reader->ReadTable(&table);
-
-        if (!status.ok()) {
-                // Handle read error
-            auto err = status.ToString();
-            throw std::runtime_error("Error reading Arrow file: " + err);
-        }
+        ARROW_RETURN_NOT_OK(arrow_reader->ReadTable(&table));
 
         return table;
 
@@ -62,27 +54,22 @@ std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path) {
         // Create a memory-mapped file for reading.
 
         std::shared_ptr<arrow::io::ReadableFile> input;
-
-        input = arrow::io::ReadableFile::Open(file_path).ValueOrDie();
+        ARROW_ASSIGN_OR_RAISE(input, arrow::io::ReadableFile::Open(file_path));
 
         // Create an IPC reader.
-        auto result = arrow::ipc::RecordBatchFileReader::Open(input.get());
-
-        if (!result.ok()) {
-            std::cerr << "Error opening IPC file: " << result.status().ToString() << std::endl;
-        }
+        std::unique_ptr<arrow::ipc::RecordBatchFileReader> reader;
+        ARROW_ASSIGN_OR_RAISE(reader, arrow::ipc::RecordBatchFileReader::Open(input.get()));
 
         std::vector<std::shared_ptr<arrow::RecordBatch>> batches;
 
-        auto reader = result.ValueOrDie();
-
         for(int i = 0; i < reader->num_record_batches(); ++i) {
-            auto batch = reader->ReadRecordBatch(i).ValueOrDie();
-
+            std::shared_ptr<arrow::RecordBatch> batch;
+            ARROW_ASSIGN_OR_RAISE(batch, reader->ReadRecordBatch(i));
             batches.push_back(batch);
         }
 
-        auto table = arrow::Table::FromRecordBatches(batches).ValueOrDie();
+        std::shared_ptr<arrow::Table> table;
+        ARROW_ASSIGN_OR_RAISE(table, arrow::Table::FromRecordBatches(batches));
 
         return table;
         
