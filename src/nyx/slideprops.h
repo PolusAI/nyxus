@@ -26,12 +26,14 @@ struct SlideProps
 	}
 
 	// geometric
-	size_t slide_w;
-	size_t slide_h;
-	size_t max_roi_area;
-	size_t n_rois;
-	size_t max_roi_w;
-	size_t max_roi_h;
+	size_t slide_w,
+		slide_h,
+		volume_d,
+		max_roi_area,
+		n_rois,
+		max_roi_w,
+		max_roi_h,
+		max_roi_d;
 
 	// slide file names
 	std::string fname_int, fname_seg;

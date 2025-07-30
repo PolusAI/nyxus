@@ -19,7 +19,7 @@ namespace Nyxus
 
 		bool wholeslide = p.fname_seg.empty();
 
-		double slide_I_max = (std::numeric_limits<double>::min)(),
+		double slide_I_max = (std::numeric_limits<double>::lowest)(),
 			slide_I_min = (std::numeric_limits<double>::max)();
 
 		std::unordered_set<int> U;	// unique ROI mask labels
@@ -190,7 +190,7 @@ namespace Nyxus
 
 		bool wholeslide = p.fname_seg.empty();
 
-		double slide_I_max = (std::numeric_limits<double>::min)(),
+		double slide_I_max = (std::numeric_limits<double>::lowest)(),
 			slide_I_min = (std::numeric_limits<double>::max)();
 
 		std::unordered_set<int> U;	// unique ROI mask labels
@@ -199,109 +199,93 @@ namespace Nyxus
 		int lvl = 0, // pyramid level
 			lyr = 0; //	layer
 
-		// Read the image/volume. The image loader is put in the open state in processDataset_XX_YY ()
-		size_t nth = ilo.get_num_tiles_hor(),
-			ntv = ilo.get_num_tiles_vert(),
-			fw = ilo.get_tile_width(),
-			th = ilo.get_tile_height(),
-			tw = ilo.get_tile_width(),
-			tileSize = ilo.get_tile_size(),
-			fullwidth = ilo.get_full_width(),
-			fullheight = ilo.get_full_height(),
-			fullD = theImLoader.get_full_depth(),
-			sliceSize = fullwidth * fullheight,
+		// Read the volume. The image loader is in the open state by previously called processDataset_XX_YY ()
+		size_t fullW = ilo.get_full_width(),
+			fullH = ilo.get_full_height(),
+			fullD = ilo.get_full_depth(),
+			sliceSize = fullW * fullH,
 			nVox = sliceSize * fullD;
+
+		// in the 3D case tiling is a formality, so fetch the only tile in the file
+		if (! ilo.load_tile(0, 0))
+		{
+#ifdef WITH_PYTHON_H
+			throw "Error fetching tile";
+#endif	
+			std::cerr << "Error fetching tile\n";
+			return false;
+		}
 
 		// iterate abstract tiles (in a tiled slide /e.g. tiled tiff/ they correspond to physical tiles, in a nontiled slide /e.g. scanline tiff or strip tiff/ they correspond to )
 		int cnt = 1;
-		for (unsigned int row = 0; row < nth; row++)
-			for (unsigned int col = 0; col < ntv; col++)
+
+		// iterate voxels
+		for (size_t i = 0; i < nVox; i++)
+		{
+			// Mask
+			uint32_t msk = 1; // wholeslide by default
+			if (!wholeslide)
+				msk = ilo.get_cur_tile_seg_pixel(i);
+
+			// Skip non-mask pixels					
+			if (!msk)
+				continue;
+
+			int z = i / sliceSize,
+				y = (i - z * sliceSize) / fullW,
+				x = (i - z * sliceSize) % fullW;
+
+			// Skip tile buffer pixels beyond the image's bounds
+			if (x >= fullW || y >= fullH || z >= fullD)
+				continue;
+
+			// dynamic range within- and off-ROI
+			double dxequiv_I = ilo.get_cur_tile_dpequiv_pixel(i);
+			slide_I_max = (std::max)(slide_I_max, dxequiv_I);
+			slide_I_min = (std::min)(slide_I_min, dxequiv_I);
+
+			// Update pixel's ROI metrics
+			//		- the following block mocks feed_pixel_2_metrics (x, y, dataI[i], msk, tidx)
+			if (U.find(msk) == U.end())
 			{
-				// Fetch the tile
-				if (!ilo.load_tile(row, col))
-				{
-#ifdef WITH_PYTHON_H
-					throw "Error fetching tile";
-#endif	
-					std::cerr << "Error fetching tile\n";
-					return false;
-				}
+				// Remember this label
+				U.insert(msk);
 
-				// Get ahold of tile's pixel buffer
-				auto tidx = row * nth + col;
+				// Initialize the ROI label record
+				LR r(msk);
 
-				// Iterate pixels
-				for (size_t i = 0; i < nVox; i++)
-				{
-					// Mask
-					uint32_t msk = 1; // wholeslide by default
-					if (!wholeslide)
-						msk = ilo.get_cur_tile_seg_pixel(i);
+				//		- mocking init_label_record_2(newData, theSegFname, theIntFname, x, y, label, intensity, tile_index)
+				// Initialize basic counters
+				r.aux_area = 1;
+				r.aux_min = r.aux_max = 0; //we don't have uint-cast intensities at this moment
+				r.init_aabb_3D (x, y, z);
 
-					// Skip non-mask pixels					
-					if (!msk)
-						continue;
+				//		- not storing file names (r.segFname = segFile, r.intFname = intFile) but will do so in the future
 
-					int z = i / sliceSize,
-						y = (i - z * sliceSize) / tw,
-						x = (i - z * sliceSize) % tw;
+				// Attach
+				R[msk] = r;
+			}
+			else
+			{
+				// Update basic ROI info (info that doesn't require costly calculations)
+				LR& r = R[msk];
 
-					// Skip tile buffer pixels beyond the image's bounds
-					if (x >= fullwidth || y >= fullheight || z >= fullD)
-						continue;
+				//		- mocking update_label_record_2 (r, x, y, label, intensity, tile_index)
 
-					// dynamic range within- and off-ROI
-					double dxequiv_I = ilo.get_cur_tile_dpequiv_pixel(i);
-					slide_I_max = (std::max)(slide_I_max, dxequiv_I);
-					slide_I_min = (std::min)(slide_I_min, dxequiv_I);
+				// Per-ROI 
+				r.aux_area++;
 
-					// Update pixel's ROI metrics
-					//		- the following block mocks feed_pixel_2_metrics (x, y, dataI[i], msk, tidx)
-					if (U.find(msk) == U.end())
-					{
-						// Remember this label
-						U.insert(msk);
-
-						// Initialize the ROI label record
-						LR r(msk);
-
-						//		- mocking init_label_record_2(newData, theSegFname, theIntFname, x, y, label, intensity, tile_index)
-						// Initialize basic counters
-						r.aux_area = 1;
-						r.aux_min = r.aux_max = 0; //we don't have uint-cast intensities at this moment
-						r.init_aabb(x, y);
-
-						//		- not storing file names (r.segFname = segFile, r.intFname = intFile) but will do so in the future
-
-						// Attach
-						R[msk] = r;
-					}
-					else
-					{
-						// Update basic ROI info (info that doesn't require costly calculations)
-						LR& r = R[msk];
-
-						//		- mocking update_label_record_2 (r, x, y, label, intensity, tile_index)
-
-						// Per-ROI 
-						r.aux_area++;
-
-						// save
-						r.update_aabb(x, y);
-					}
-				} // scan tile
+				// save
+				r.update_aabb_3D (x, y, z);
+			}
 
 #ifdef WITH_PYTHON_H
-				if (PyErr_CheckSignals() != 0)
-					throw pybind11::error_already_set();
+			// keyboard interrupt
+			if (PyErr_CheckSignals() != 0)
+				throw pybind11::error_already_set();
 #endif
 
-				// Show stayalive progress info
-				VERBOSLVL2(
-					if (cnt++ % 4 == 0)
-						std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n";
-				);
-			} // foreach tile
+		} //- all voxels
 
 		//****** fix ROIs' AABBs with respect to anisotropy
 
@@ -329,20 +313,23 @@ namespace Nyxus
 
 		// slide-wide (max ROI area) x (number of ROIs)
 		size_t maxArea = 0;
-		size_t max_w = 0, max_h = 0;
+		size_t max_w = 0, max_h = 0, max_d = 0;
 		for (const auto& pair : R)
 		{
 			const LR& r = pair.second;
-			maxArea = maxArea > r.aux_area ? maxArea : r.aux_area; //std::max (maxArea, r.aux_area);
+			maxArea = (std::max) (maxArea, (size_t)r.aux_area);
 			const AABB& bb = r.aabb;
 			auto w = bb.get_width();
 			auto h = bb.get_height();
-			max_w = max_w > w ? max_w : w;
-			max_h = max_h > h ? max_h : h;
+			auto d = bb.get_z_depth();
+			max_w = (std::max) (max_w, (size_t)w);
+			max_h = (std::max) (max_h, (size_t)h);
+			max_d = (std::max) (max_d, (size_t)d);
 		}
 
-		p.slide_w = fullwidth;
-		p.slide_h = fullheight;
+		p.slide_w = fullW;
+		p.slide_h = fullH;
+		p.volume_d = fullD;
 
 		p.max_preroi_inten = slide_I_max;		// in case fp_phys_pivoxels==true, max/min _preroi_inten 
 		p.min_preroi_inten = slide_I_min;		// needs adjusting (grey-binning) before using in wsi scenarios (assigning ROI's min and max)
@@ -351,6 +338,7 @@ namespace Nyxus
 		p.n_rois = R.size();
 		p.max_roi_w = max_w;
 		p.max_roi_h = max_h;
+		p.max_roi_d = max_d;
 
 		return true;
 	}

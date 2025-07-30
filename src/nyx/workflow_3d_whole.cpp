@@ -57,9 +57,13 @@ namespace Nyxus
 		else
 		{
 			VERBOSLVL2(std::cout << "\nscan_trivial_wholeslide_ANISO()\n");
-			double aniso_x = theEnvironment.anisoOptions.get_aniso_x(),
-				aniso_y = theEnvironment.anisoOptions.get_aniso_y();
-			scan_trivial_wholevolume_anisotropic (vroi, ifpath, imlo, aniso_x, aniso_y);
+			scan_trivial_wholevolume_anisotropic (
+				vroi, 
+				ifpath, 
+				imlo, 
+				theEnvironment.anisoOptions.get_aniso_x(),
+				theEnvironment.anisoOptions.get_aniso_y(),
+				theEnvironment.anisoOptions.get_aniso_z());
 		}
 
 		// allocate memory for feature helpers (image matrix, etc)
@@ -85,18 +89,19 @@ namespace Nyxus
 
 	bool featurize_wholevolume (size_t sidx, ImageLoader& imlo, LR& vroi)
 	{
-		// phase 1: gather ROI metrics
-		VERBOSLVL2(std::cout << "Gathering vROI metrics\n");
+		//***** phase 1: copy ROI metrics from the slide properties, thanks to the WSI scenario
+		const SlideProps& p = LR::dataset_props[sidx];
+		VERBOSLVL2(std::cout << "Gathering vROI metrics " + fs::path(p.fname_int).filename().string() + "\n");
 
-		// phase 1: copy ROI metrics from the slide properties, thanks to the WSI scenario
 		// instead of gather_wholeslide_metrics (p.fname_int, imlo, vroi)
 		vroi.slide_idx = (decltype(vroi.slide_idx))sidx;
-		const SlideProps& p = LR::dataset_props[sidx];
 		vroi.aux_area = p.max_roi_area;
-		vroi.aabb.init_from_widthheight(p.max_roi_w, p.max_roi_h);
+		vroi.aabb.init_from_whd (p.max_roi_w, p.max_roi_h, p.max_roi_d);
+
 		// tell ROI the actual uint rynamic range or greybinned one depending on the slide's low-level properties
-		vroi.aux_min = (PixIntens)p.fp_phys_pivoxels ? 0 : (PixIntens)p.min_preroi_inten;
-		vroi.aux_max = (PixIntens)p.fp_phys_pivoxels ? (PixIntens)Nyxus::theEnvironment.fpimageOptions.target_dyn_range() : (PixIntens)p.max_preroi_inten;
+		// with the Hounsfield adjustment
+		vroi.aux_min = (PixIntens) (p.min_preroi_inten - p.min_preroi_inten); // in CT datasets p.min_preroi_inten can be -1024.0
+		vroi.aux_max = (PixIntens) (p.max_preroi_inten - p.min_preroi_inten);
 
 		// fix the AABB with respect to anisotropy
 		if (theEnvironment.anisoOptions.customized() == false)
@@ -126,7 +131,7 @@ namespace Nyxus
 			return false;
 		}
 
-		// phase 2: extract features
+		//***** phase 2: extract features
 		featurize_triv_wholevolume (sidx, imlo, theEnvironment.get_ram_limit(), vroi); // segmented counterpart: phase2.cpp / processTrivialRois ()
 
 		return true;
@@ -222,38 +227,22 @@ namespace Nyxus
 			p.fname_seg = "";
 
 			// slide metrics
-			VERBOSLVL1(std::cout << "prescanning " << p.fname_int);
-			if (!scan_slide_props(p, 3, theEnvironment.resultOptions.need_annotation()))
-			{
-				std::string erm = "error prescanning " + p.fname_int;
-				return { false, erm };
-			}
+			VERBOSLVL1(std::cout << "prescanning " << fs::path(p.fname_int).filename().string());
 
-			VERBOSLVL1(std::cout << " " << p.slide_w << " W x" << p.slide_h << " H max ROI " << p.max_roi_w << "x" << p.max_roi_h
+			if (! scan_slide_props(p, 3, theEnvironment.resultOptions.need_annotation()))
+				return { false, "error prescanning " + p.fname_int };
+
+			VERBOSLVL1(std::cout << " " 
+				<< p.slide_w << " W x" << p.slide_h << " H x" << p.volume_d << " D"
 				<< " DR " << Nyxus::virguler_real(p.min_preroi_inten)
 				<< "-" << Nyxus::virguler_real(p.max_preroi_inten)
 				<< " " << p.lolvl_slide_descr << "\n");
-
 		}
 
 		// global properties
-		LR::dataset_max_combined_roicloud_len = 0;
-		LR::dataset_max_n_rois = 0;
-		LR::dataset_max_roi_area = 0;
-		LR::dataset_max_roi_w = 0;
-		LR::dataset_max_roi_h = 0;
+		LR::update_dataset_props_extrema();
 
-		for (SlideProps& p : LR::dataset_props)
-		{
-			size_t sup_s_n = p.n_rois * p.max_roi_area;
-			LR::dataset_max_combined_roicloud_len = (std::max)(LR::dataset_max_combined_roicloud_len, sup_s_n);
-			LR::dataset_max_n_rois = (std::max)(LR::dataset_max_n_rois, p.n_rois);
-			LR::dataset_max_roi_area = (std::max)(LR::dataset_max_roi_area, p.max_roi_area);
-			LR::dataset_max_roi_w = (std::max)(LR::dataset_max_roi_w, p.max_roi_w);
-			LR::dataset_max_roi_h = (std::max)(LR::dataset_max_roi_h, p.max_roi_h);
-		}
-
-		VERBOSLVL1(std::cout << "\t finished prescanning \n");
+		VERBOSLVL1(std::cout << "finished prescanning \n");
 
 		//
 		// future: allocate GPU cache for all participating devices

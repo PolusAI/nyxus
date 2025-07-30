@@ -104,7 +104,8 @@ namespace Nyxus
 						label = 1;
 
 					// Cache this pixel 
-					feed_pixel_2_cache_3D(x, y, z, dataI[i], label);
+					LR& r = roiData[label];
+					feed_pixel_2_cache_3D_LR (x, y, z, dataI[i], r);
 				}
 
 #ifdef WITH_PYTHON_H
@@ -242,7 +243,8 @@ namespace Nyxus
 
 					// cache this voxel 
 					auto inten = dataI[i];
-					feed_pixel_2_cache_3D (vc, vr, vz, dataI[i], label);
+					LR& r = roiData[label];
+					feed_pixel_2_cache_3D_LR (vc, vr, vz, dataI[i], r);
 				}
 			}
 
@@ -262,70 +264,118 @@ namespace Nyxus
 	bool scan_trivial_wholevolume (
 		LR& vroi,
 		const std::string& intens_fpath,
-		ImageLoader& ldr)
+		ImageLoader& ilo)
 	{
 		int lvl = 0,	// Pyramid level
 			lyr = 0;	//	Layer
 
 		// Read the tiffs
-		size_t nth = ldr.get_num_tiles_hor(),
-			ntv = ldr.get_num_tiles_vert(),
-			fw = ldr.get_tile_width(),
-			th = ldr.get_tile_height(),
-			tw = ldr.get_tile_width(),
-			tileSize = ldr.get_tile_size(),
-			fullwidth = ldr.get_full_width(),
-			fullheight = ldr.get_full_height();
 
-		int cnt = 1;
-		for (unsigned int row = 0; row < nth; row++)
-			for (unsigned int col = 0; col < ntv; col++)
-			{
-				// Fetch the tile 
-				bool ok = ldr.load_tile(row, col);
-				if (!ok)
-				{
-					std::stringstream ss;
-					ss << "Error fetching tile row=" << row << " col=" << col;
+		size_t fullwidth = ilo.get_full_width(),
+			fullheight = ilo.get_full_height(),
+			fullD = ilo.get_full_depth(),
+			sliceSize = fullwidth * fullheight,
+			nVox = sliceSize * fullD;
+
+		// in the 3D case tiling is a formality, so fetch the only tile in the file
+		if (!ilo.load_tile(0, 0))
+		{
 #ifdef WITH_PYTHON_H
-					throw ss.str();
+			throw "Error fetching tile";
 #endif	
-					std::cerr << ss.str() << "\n";
-					return false;
-				}
+			std::cerr << "Error fetching tile\n";
+			return false;
+		}
 
-				// Get ahold of tile's pixel buffer
-				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
+		// Get ahold of tile's pixel buffer
+		const std::vector<uint32_t>& dataI = ilo.get_int_tile_buffer();
 
-				// Iterate pixels
-				for (unsigned long i = 0; i < tileSize; i++)
-				{
-					auto inten = dataI[i];
-					int y = row * th + i / tw,
-						x = col * tw + i % tw;
+		// iterate abstract tiles (in a tiled slide /e.g. tiled tiff/ they correspond to physical tiles, in a nontiled slide /e.g. scanline tiff or strip tiff/ they correspond to )
+		int cnt = 1;
 
-					// Skip tile buffer pixels beyond the image's bounds
-					if (x >= fullwidth || y >= fullheight)
-						continue;
+		// iterate voxels
+		for (size_t i = 0; i < nVox; i++)
+		{
+			int z = i / sliceSize,
+				y = (i - z * sliceSize) / fullwidth,
+				x = (i - z * sliceSize) % fullwidth;
 
-					// Cache this pixel 
-					feed_pixel_2_cache_LR(x, y, dataI[i], vroi);
-				}
+			// Skip tile buffer pixels beyond the image's bounds
+			if (x >= fullwidth || y >= fullheight || z >= fullD)
+				continue;
 
-				VERBOSLVL2(
-					// Show stayalive progress info
-					if (cnt++ % 4 == 0)
-					{
-						static int prevIntPc = 0;
-						float pc = int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100.;
-						if (int(pc) != prevIntPc)
-						{
-							std::cout << "\t scan trivial " << int(pc) << " %\n";
-							prevIntPc = int(pc);
-						}
-					}
-				)
-			}
+			// dynamic range within- and off-ROI
+			auto inten = dataI[i];
+
+			// Cache this pixel 
+			feed_pixel_2_cache_3D_LR (x, y, z, inten, vroi);
+
+		} //- all voxels
+
+		return true;
+	}
+
+	//
+	// Reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
+	//
+	bool scan_trivial_wholevolume_anisotropic (
+		LR& vroi,
+		const std::string& intens_fpath,
+		ImageLoader& ilo,
+		double aniso_x,
+		double aniso_y,
+		double aniso_z)
+	{
+		int lvl = 0,	// Pyramid level
+			lyr = 0;	//	Layer
+
+		// Read the tiffs
+
+		size_t fullW = ilo.get_full_width(),
+			fullH = ilo.get_full_height(),
+			fullD = ilo.get_full_depth(),
+			sliceSize = fullW * fullH;
+		//xxxxxxxxxxxxxxxxxxx ,
+		//	sliceSize = fullW * fullH,
+		//	nVox = sliceSize * fullD;
+
+		size_t vh = (size_t) (double(fullH) * aniso_y),
+			vw = (size_t) (double(fullW) * aniso_x),
+			vd = (size_t) (double(fullD) * aniso_z);
+
+		// in the 3D case tiling is a formality, so fetch the only tile in the file
+		if (! ilo.load_tile(0, 0))
+		{
+#ifdef WITH_PYTHON_H
+			throw "Error loading volume data";
+#endif	
+			std::cerr << "Error loading volume data\n";
+			return false;
+		}
+
+		// Get ahold of tile's pixel buffer
+		const std::vector<uint32_t>& dataI = ilo.get_int_tile_buffer();
+
+		// iterate virtual voxels
+		size_t vSliceSize = vh * vw, 
+			nVox = vh * vw * vd;
+		for (size_t i = 0; i < nVox; i++)
+		{
+			// virtual voxel position
+			int z = i / vSliceSize,
+				y = (i - z * vSliceSize) / vw,
+				x = (i - z * vSliceSize) % vw;
+
+			// physical voxel position
+			size_t ph_x = (size_t) (double(x) / aniso_x),
+				ph_y = (size_t) (double(y) / aniso_y),
+				ph_z = (size_t) (double(z) / aniso_z);
+				i = ph_z * sliceSize + ph_y * fullH + ph_x;
+
+			// Cache this pixel 
+			feed_pixel_2_cache_3D_LR (x, y, z, dataI[i], vroi);
+
+		}
 
 		return true;
 	}
@@ -334,7 +384,7 @@ namespace Nyxus
 	// Reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi' 
 	// performing anisotropy correction
 	//
-	bool scan_trivial_wholevolume_anisotropic(
+	bool scan_trivial_wholevolume_anisotropic__OLD(
 		LR& vroi,
 		const std::string& intens_fpath,
 		ImageLoader& ldr,

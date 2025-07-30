@@ -89,7 +89,7 @@ namespace Nyxus
 	bool scan_trivial_wholeslide_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y);
 
 	bool scan_trivial_wholevolume (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr);	
-	bool scan_trivial_wholevolume_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y);
+	bool scan_trivial_wholevolume_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y, double aniso_z);
 
 	bool scanTrivialRois_3D (const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath);
 	void dump_roi_metrics(const std::string& label_fpath);
@@ -195,7 +195,7 @@ namespace Nyxus
 	/// @param intensity -- pixel's intensity
 	void feed_pixel_2_cache(int x, int y, PixIntens intensity, int label);
 	void feed_pixel_2_cache_LR(int x, int y, PixIntens intensity, LR& r);
-	void feed_pixel_2_cache_3D(int x, int y, int z, PixIntens intensity, int label);
+	void feed_pixel_2_cache_3D_LR (int x, int y, int z, PixIntens intensity, LR& r);
 
 	// Nested ROI
 

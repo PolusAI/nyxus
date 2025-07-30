@@ -94,7 +94,7 @@ namespace Nyxus
 		vroi.slide_idx = (decltype(vroi.slide_idx)) sidx;
 		const SlideProps & p = LR::dataset_props [sidx];
 		vroi.aux_area = p.max_roi_area;
-		vroi.aabb.init_from_widthheight (p.max_roi_w, p.max_roi_h);
+		vroi.aabb.init_from_wh (p.max_roi_w, p.max_roi_h);
 		// tell ROI the actual uint rynamic range or greybinned one depending on the slide's low-level properties
 		vroi.aux_min = (PixIntens) p.fp_phys_pivoxels ? 0 : (PixIntens) p.min_preroi_inten; 
 		vroi.aux_max = (PixIntens) p.fp_phys_pivoxels ? (PixIntens) Nyxus::theEnvironment.fpimageOptions.target_dyn_range() : (PixIntens) p.max_preroi_inten;
@@ -214,6 +214,7 @@ namespace Nyxus
 
 		LR::reset_dataset_props();
 		LR::dataset_props.resize(nf);
+
 		for (size_t i=0; i<nf; i++)
 		{
 			// slide file names
