@@ -42,14 +42,7 @@ std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path) {
         input = arrow::io::ReadableFile::Open(file_path).ValueOrDie();
         
         std::unique_ptr<parquet::arrow::FileReader> arrow_reader;
-
-        auto result = parquet::arrow::OpenFile(input, pool);
-        if (!result.ok()) {
-                // Handle read error
-            auto err = result.status().ToString();
-            throw std::runtime_error("Error reading Arrow file: " + err);
-        }
-        arrow_reader = result.ValueOrDie();
+        ARROW_ASSIGN_OR_RAISE(arrow_reader, parquet::arrow::OpenFile(input, pool));
 
         // Read entire file as a single Arrow table
         std::shared_ptr<arrow::Table> table;
