@@ -30,44 +30,11 @@ jobs:
         channels: conda-forge
         auto-activate-base: false
 
-    - name: Ensure patch is available
-      run: |
-        set -euxo pipefail
-        if ! command -v patch >/dev/null 2>&1; then
-          echo "patch not found; installing GNU patch via Homebrew"
-          brew update
-          brew install gpatch
-          echo "Note: GNU patch will be available as 'gpatch'. Use 'gpatch' instead of 'patch'."
-        else
-          echo "patch found at $(command -v patch)"
-          patch --version || true   # BSD patch doesn’t always show a version; ignore failure
-        fi
 
     - name: Install Conda Dependencies
       run: |
         conda install mamba
-        mamba install patch compilers --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt
-
-    - name: Apply DCMTK ofutil.h patch (Clang 19 fix)
-      shell: bash -l {0}
-      run: |
-        # Try to apply our patch. We enable whitespace and fuzz tolerance.
-        conda install -y dcmtk clangxx  # add other deps you need
-        echo "CONDA_PREFIX=$CONDA_PREFIX"
-        ls -l "$CONDA_PREFIX/include/dcmtk/ofstd/ofutil.h"
-        patch -N -l -p0 --verbose \
-          "$CONDA_PREFIX/include/dcmtk/ofstd/ofutil.h" \
-          < ci-utils/patches/dcmtk-ofutil-clang19.patch \
-        || {
-          echo "Patch failed; showing context:"
-          grep -n "class type" -n "$CONDA_PREFIX/include/dcmtk/ofstd/ofutil.h" || true
-          exit 1
-        }
-
-        echo "Patched file diff:"
-        # Show the changed region for debugging
-        awk 'BEGIN{p=0} /class type/{p=1} p{print} /};/{if(p){exit}}' \
-          "$CONDA_PREFIX/include/dcmtk/ofstd/ofutil.h" || true
+        mamba install compilers=1.10.0 --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON -DRUN_GTEST=ON -DALLEXTRAS=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
@@ -101,44 +68,11 @@ jobs:
         channels: conda-forge
         auto-activate-base: false
 
-    - name: Ensure patch is available
-      run: |
-        set -euxo pipefail
-        if ! command -v patch >/dev/null 2>&1; then
-          echo "patch not found; installing GNU patch via Homebrew"
-          brew update
-          brew install gpatch
-          echo "Note: GNU patch will be available as 'gpatch'. Use 'gpatch' instead of 'patch'."
-        else
-          echo "patch found at $(command -v patch)"
-          patch --version || true   # BSD patch doesn’t always show a version; ignore failure
-        fi
-
     - name: Install Conda Dependencies
       run: |
         conda install mamba
-        mamba install compilers pytest bfio --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt --file ${{github.workspace}}/ci-utils/envs/conda_py.txt 
-    - name: Apply DCMTK ofutil.h patch (Clang 19 fix)
-      shell: bash -l {0}
-      run: |
-        # Try to apply our patch. We enable whitespace and fuzz tolerance.
-        conda install -y dcmtk clangxx  # add other deps you need
-        echo "CONDA_PREFIX=$CONDA_PREFIX"
-        ls -l "$CONDA_PREFIX/include/dcmtk/ofstd/ofutil.h"
-        patch -N -l -p0 --verbose \
-          "$CONDA_PREFIX/include/dcmtk/ofstd/ofutil.h" \
-          < ci-utils/patches/dcmtk-ofutil-clang19.patch \
-        || {
-          echo "Patch failed; showing context:"
-          grep -n "class type" -n "$CONDA_PREFIX/include/dcmtk/ofstd/ofutil.h" || true
-          exit 1
-        }
+        mamba install compilers=1.10.0 pytest bfio --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt --file ${{github.workspace}}/ci-utils/envs/conda_py.txt
 
-        echo "Patched file diff:"
-        # Show the changed region for debugging
-        awk 'BEGIN{p=0} /class type/{p=1} p{print} /};/{if(p){exit}}' \
-          "$CONDA_PREFIX/include/dcmtk/ofstd/ofutil.h" || true
-  
     - name: Install Nyxus
       working-directory: ${{github.workspace}}
       run: CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DALLEXTRAS=ON" python -m pip install . -vv
