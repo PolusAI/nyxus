@@ -43,18 +43,18 @@ std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path) {
         
         std::unique_ptr<parquet::arrow::FileReader> arrow_reader;
 
-        auto status = parquet::arrow::OpenFile(input, pool, &arrow_reader);
-
-        if (!status.ok()) {
+        auto result = parquet::arrow::OpenFile(input, pool);
+        if (!result.ok()) {
                 // Handle read error
-            auto err = status.ToString();
+            auto err = result.status().ToString();
             throw std::runtime_error("Error reading Arrow file: " + err);
         }
+        arrow_reader = result.ValueOrDie();
 
         // Read entire file as a single Arrow table
         std::shared_ptr<arrow::Table> table;
 
-        status = arrow_reader->ReadTable(&table);
+        auto status = arrow_reader->ReadTable(&table);
 
         if (!status.ok()) {
                 // Handle read error
