@@ -329,7 +329,6 @@ public:
             }
 
             // prepare the right typed getter function
-            std::string message;
             switch (sampleFormat_)
             {
             case 1:
@@ -352,10 +351,9 @@ public:
                     get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <uint64_t>;
                     break;
                 default:
-                    message =
-                        "Tile Loader ERROR: The data format is not supported for unsigned integer, number bits per pixel = "
-                        + bitsPerSample_;
-                    throw (std::runtime_error(message));
+                    std::string erm = "RawTiffStripLoader error: data format is not supported for sampleFormat_=" + std::to_string(sampleFormat_) + ", bitsPerSample_ = " + std::to_string(bitsPerSample_);
+                    std::cerr << erm << "\n";
+                    throw std::runtime_error(erm);
                 }
                 break;
             case 2:
@@ -378,9 +376,9 @@ public:
                     get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <int64_t>;
                     break;
                 default:
-                    message =
-                        "Tile Loader ERROR: The data format is not supported for signed integer, number bits per pixel = " + std::to_string(bitsPerSample_);
-                    throw (std::runtime_error(message));
+                    std::string erm = "RawTiffStripLoader error: data format is not supported for sampleFormat_=" + std::to_string(sampleFormat_) + ", bitsPerSample_ = " + std::to_string(bitsPerSample_);
+                    std::cerr << erm << "\n";
+                    throw std::runtime_error(erm);
                 }
                 break;
             case 3:
@@ -399,13 +397,15 @@ public:
                     get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <double>;
                     break;
                 default:
-                    message = "Tile Loader ERROR: The data format is not supported for float, number bits per pixel = " + std::to_string(bitsPerSample_);
-                    throw (std::runtime_error(message));
+                    std::string erm = "RawTiffStripLoader error: data format is not supported for sampleFormat_=" + std::to_string(sampleFormat_) + ", bitsPerSample_ = " + std::to_string(bitsPerSample_);
+                    std::cerr << erm << "\n";
+                    throw std::runtime_error(erm);
                 }
                 break;
             default:
-                message = "Tile Loader ERROR: The data format is not supported, sample format = " + std::to_string(sampleFormat_);
-                throw (std::runtime_error(message));
+                std::string erm = "RawTiffStripLoader error: unsupported sampleFormat_=" + std::to_string(sampleFormat_);
+                std::cerr << erm << "\n";
+                throw std::runtime_error(erm);
             }
 
             scanline_szb = TIFFScanlineSize(tiff_);
@@ -414,7 +414,7 @@ public:
         }
         else
         {
-            throw (std::runtime_error("Tile Loader ERROR: The file can not be opened."));
+            throw std::runtime_error("RawTiffStripLoader error: file " + filePath + " cannot be opened");
         }
     }
 
@@ -460,7 +460,6 @@ public:
                 throw (std::runtime_error(erm));
             }
         }
-
     }
 
     [[nodiscard]] size_t fullHeight([[maybe_unused]] size_t level) const override { return fullHeight_; }
@@ -488,7 +487,6 @@ public:
         double rv = get_dpequiv_pixel_typeresolved (buf, idx);
         return rv;
     }
-
 
 private:
 
