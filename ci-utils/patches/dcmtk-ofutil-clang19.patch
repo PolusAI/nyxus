@@ -1,0 +1,53 @@
+*** $CONDA_PREFIX/include/dcmtk/ofstd/ofutil.h.orig
+--- $CONDA_PREFIX/include/dcmtk/ofstd/ofutil.h
+***************
+*** 1,16 ****
+  {
+      // Helper template to wrap types that we can't derive from,
+      // e.g. primitive types.
+      class type
+      {
+      public:
+          // copy constructor should be fine for primitive types.
+          inline type(const T& pt)
+          : t( pt ) {}
+-         inline type(const OFrvalue_storage& rhs)
+-         : t( rhs.pt ) {}
++         inline type(const type& rhs)
++         : t( rhs.t ) {}
+  
+          // automatic conversion to the underlying type
+-         inline operator T&() const { return OFconst_cast( T&, t ); }
++         operator T&() { return t; }
++         operator const T&() const { return t; }
+  
+      private:
+          // the actual object
+          T t;
+      };
+  };
+--- 1,16 ----
+  {
+      // Helper template to wrap types that we can't derive from,
+      // e.g. primitive types.
+      class type
+      {
+      public:
+          // copy constructor should be fine for primitive types.
+          inline type(const T& pt)
+          : t( pt ) {}
+-         inline type(const OFrvalue_storage& rhs)
+-         : t( rhs.pt ) {}
++         inline type(const type& rhs)
++         : t( rhs.t ) {}
+  
+          // automatic conversion to the underlying type
+-         inline operator T&() const { return OFconst_cast( T&, t ); }
++         operator T&() { return t; }
++         operator const T&() const { return t; }
+  
+      private:
+          // the actual object
+          T t;
+      };
+  };
