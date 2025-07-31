@@ -137,9 +137,9 @@ if "%BUILD_ARROW%" == "1" (
 
 
 if "%BUILD_DCMTK_DEP%" == "1" (
-    curl -L https://github.com/glennrp/libpng/archive/refs/tags/v1.6.39.zip -o v1.6.39.zip
-    tar -xvf v1.6.39.zip
-    pushd libpng-1.6.39
+    curl -L https://github.com/glennrp/libpng/archive/refs/tags/v1.6.46.zip -o v1.6.46.zip
+    tar -xvf v1.6.46.zip
+    pushd libpng-1.6.46
     mkdir build_man
     pushd build_man
     cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/   ..
