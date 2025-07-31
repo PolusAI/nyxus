@@ -4,6 +4,7 @@
 
 #include <arrow/api.h>
 #include <arrow/io/api.h>
+#include <arrow/status.h>
 #include <parquet/arrow/reader.h>
 #include <parquet/arrow/writer.h>
 #include <parquet/exception.h>
@@ -29,74 +30,40 @@
   error "Missing the <filesystem> header."
 #endif
 
-std::shared_ptr<arrow::Table> get_arrow_table(const std::string& file_path) {
-
+arrow::Result<std::shared_ptr<arrow::Table>> get_arrow_table(const std::string& file_path) {
     auto file_extension = fs::path(file_path).extension().u8string();
 
     if (file_extension == ".parquet") {
         arrow::MemoryPool* pool = arrow::default_memory_pool();
 
-        std::shared_ptr<arrow::io::RandomAccessFile> input;
+        ARROW_ASSIGN_OR_RAISE(auto input, arrow::io::ReadableFile::Open(file_path));
 
-        //auto status = this->open(input, file_path);
-        input = arrow::io::ReadableFile::Open(file_path).ValueOrDie();
-        
         std::unique_ptr<parquet::arrow::FileReader> arrow_reader;
+        ARROW_ASSIGN_OR_RAISE(arrow_reader, parquet::arrow::OpenFile(input, pool));
 
-        auto status = parquet::arrow::OpenFile(input, pool, &arrow_reader);
-
-        if (!status.ok()) {
-                // Handle read error
-            auto err = status.ToString();
-            throw std::runtime_error("Error reading Arrow file: " + err);
-        }
-
-        // Read entire file as a single Arrow table
         std::shared_ptr<arrow::Table> table;
-
-        status = arrow_reader->ReadTable(&table);
-
-        if (!status.ok()) {
-                // Handle read error
-            auto err = status.ToString();
-            throw std::runtime_error("Error reading Arrow file: " + err);
-        }
+        ARROW_RETURN_NOT_OK(arrow_reader->ReadTable(&table));
 
         return table;
 
     } else if (file_extension == ".arrow") {
-        
-        // Create a memory-mapped file for reading.
+        ARROW_ASSIGN_OR_RAISE(auto input, arrow::io::ReadableFile::Open(file_path));
 
-        std::shared_ptr<arrow::io::ReadableFile> input;
-
-        input = arrow::io::ReadableFile::Open(file_path).ValueOrDie();
-
-        // Create an IPC reader.
-        auto result = arrow::ipc::RecordBatchFileReader::Open(input.get());
-
-        if (!result.ok()) {
-            std::cerr << "Error opening IPC file: " << result.status().ToString() << std::endl;
-        }
+        std::shared_ptr<arrow::ipc::RecordBatchFileReader> reader;
+        ARROW_ASSIGN_OR_RAISE(reader, arrow::ipc::RecordBatchFileReader::Open(input.get()));
 
         std::vector<std::shared_ptr<arrow::RecordBatch>> batches;
-
-        auto reader = result.ValueOrDie();
-
-        for(int i = 0; i < reader->num_record_batches(); ++i) {
-            auto batch = reader->ReadRecordBatch(i).ValueOrDie();
-
+        for (int i = 0; i < reader->num_record_batches(); ++i) {
+            ARROW_ASSIGN_OR_RAISE(auto batch, reader->ReadRecordBatch(i));
             batches.push_back(batch);
         }
 
-        auto table = arrow::Table::FromRecordBatches(batches).ValueOrDie();
-
+        ARROW_ASSIGN_OR_RAISE(auto table, arrow::Table::FromRecordBatches(batches));
         return table;
-        
-    } else {
-        throw std::invalid_argument("Error: file must either be an Arrow or Parquet file.");
-    }
 
+    } else {
+        return arrow::Status::Invalid("Error: file must either be an Arrow or Parquet file.");
+    }
 }
 
 std::shared_ptr<arrow::Table> create_features_table(const std::vector<std::string> &header,
@@ -253,7 +220,11 @@ void test_arrow() {
         FAIL() << "Error closing Arrow file: " << msg2.value() << std::endl;
     }
 
-    auto results_table = get_arrow_table(outputPath);
+    auto results_table_result = get_arrow_table(outputPath);
+    if (!results_table_result.ok()) {
+        FAIL() << "Error reading Arrow file: " << results_table_result.status().ToString() << std::endl;
+    }
+    auto results_table = results_table_result.ValueOrDie();
 
     auto& row_data = std::get<1>(features);
     std::vector<std::string> string_columns;
@@ -319,7 +290,11 @@ void test_parquet() {
         FAIL() << "Error closing Arrow file: " << msg2.value() << std::endl;
     }
 
-    auto results_table = get_arrow_table(outputPath);
+    auto results_table_result = get_arrow_table(outputPath);
+    if (!results_table_result.ok()) {
+        FAIL() << "Error reading Parquet file: " << results_table_result.status().ToString() << std::endl;
+    }
+    auto results_table = results_table_result.ValueOrDie();
 
     auto& row_data = std::get<1>(features);
     std::vector<std::string> string_columns;
