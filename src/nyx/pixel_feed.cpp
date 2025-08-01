@@ -74,10 +74,9 @@ namespace Nyxus
 		feed_pixel_2_cache_LR(x, y, intensity, r);
 	}
 
-	void feed_pixel_2_cache_3D (int x, int y, int z, PixIntens intensity, int label)
+	void feed_pixel_2_cache_3D_LR (int x, int y, int z, PixIntens intensity, LR& r)
 	{
 		// update basic ROI info (info that doesn't require costly calculations)
-		LR& r = roiData[label];
 		r.raw_pixels_3D.push_back(Pixel3(x, y, z, intensity));
 
 		// save the index in its z-plane

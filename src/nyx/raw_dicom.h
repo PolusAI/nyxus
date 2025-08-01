@@ -1,7 +1,6 @@
 #pragma once
 
 #ifdef DICOM_SUPPORT
-#include "dcmtk/dcmdata/dctk.h"
 #include "dcmtk/dcmjpeg/djdecode.h"  /* for JPEG decoders */
 #include "dcmtk/dcmjpls/djdecode.h"  /* for JPEG-LS decoders */
 #include "dcmtk/dcmdata/dcrledrg.h"  /* for RLE decoder */

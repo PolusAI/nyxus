@@ -26,7 +26,6 @@ namespace Nyxus {
         const std::vector<std::string>& intensFiles,
         const std::vector<std::string>& labelFiles,
         int numReduceThreads,
-        int min_online_roi_size,
         const SaveOption saveOption,
         const std::string& outputPath);
     
@@ -34,7 +33,6 @@ namespace Nyxus {
         const std::vector<std::string>& intensFiles,
         const std::vector<std::string>& labelFiles,
         int n_threads,
-        int min_online_roi_size,
         const SaveOption saveOption,
         const std::string& outputPath);
 
@@ -42,7 +40,12 @@ namespace Nyxus {
         const std::vector <Imgfile3D_layoutA>& intensFiles,
         const std::vector <Imgfile3D_layoutA>& labelFiles,
         int numReduceThreads,
-        int min_online_roi_size,
+        const SaveOption saveOption,
+        const std::string& outputPath);
+
+    std::tuple<bool, std::optional<std::string>> processDataset_3D_wholevolume(
+        const std::vector <std::string>& intensFiles,
+        int n_threads,
         const SaveOption saveOption,
         const std::string& outputPath);
 
@@ -209,7 +212,6 @@ py::tuple featurize_directory_imp (
     const std::string &output_type,
     const std::string &output_path="")
 {
-
     // Check and cache the file pattern
     if (! theEnvironment.check_2d_file_pattern(file_pattern))
         throw std::invalid_argument ("Invalid filepattern " + file_pattern);
@@ -246,7 +248,6 @@ py::tuple featurize_directory_imp (
     theEnvironment.separateCsv = false;
 
     // Process the image sdata
-    int min_online_roi_size = 0;
 
     theEnvironment.saveOption = [&output_type]()
     {
@@ -270,7 +271,6 @@ py::tuple featurize_directory_imp (
             intensFiles,
             labelFiles,
             theEnvironment.n_reduce_threads,
-            min_online_roi_size,
             theEnvironment.saveOption,
             output_path
         );
@@ -279,7 +279,6 @@ py::tuple featurize_directory_imp (
             intensFiles,
             labelFiles,
             theEnvironment.n_reduce_threads,
-            min_online_roi_size,
             theEnvironment.saveOption,
             output_path);
 
@@ -381,7 +380,6 @@ py::tuple featurize_directory_imq_imp (
         intensFiles,
         labelFiles,
         theEnvironment.n_reduce_threads,
-        min_online_roi_size,
         theEnvironment.saveOption,
         output_path);
 
@@ -431,21 +429,6 @@ py::tuple featurize_directory_3D_imp(
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = intensity_dir == labels_dir;
 
-    // Read image pairs from the intensity and label directories applying the filepattern
-    std::vector <Imgfile3D_layoutA> intensFiles, labelFiles;
-    int errorCode = Nyxus::read_3D_dataset(
-        intensity_dir,
-        labels_dir,
-        theEnvironment.file_pattern_3D,
-        "./",   // output directory
-        theEnvironment.intSegMapDir,
-        theEnvironment.intSegMapFile,
-        true,
-        intensFiles, labelFiles);
-
-    if (errorCode)
-        throw std::runtime_error("Error traversing the dataset");
-
     // We're good to extract features. Reset the feature results cache
     theResultsCache.clear();
 
@@ -453,7 +436,6 @@ py::tuple featurize_directory_3D_imp(
     theEnvironment.separateCsv = false;
 
     // Process the image sdata
-    int min_online_roi_size = 0;
 
     theEnvironment.saveOption = [&output_type]() {
         if (output_type == "arrowipc") {
@@ -465,16 +447,53 @@ py::tuple featurize_directory_3D_imp(
         else { return SaveOption::saveBuffer; }
     }();
 
-    errorCode = processDataset_3D_segmented (
-        intensFiles,
-        labelFiles,
-        theEnvironment.n_reduce_threads,
-        min_online_roi_size,
-        theEnvironment.saveOption,
-        output_path);
+    if (theEnvironment.singleROI)
+    {
+        std::vector<std::string> ifiles;
 
-    if (errorCode)
-        throw std::runtime_error("Error " + std::to_string(errorCode) + " occurred during dataset processing");
+        int errorCode = Nyxus::read_3D_dataset_wholevolume(
+            theEnvironment.intensity_dir,
+            theEnvironment.file_pattern_3D,
+            "./", // theEnvironment.output_dir,
+            ifiles);
+        if (errorCode)
+            throw std::runtime_error ("error reading whole volume dataset " + theEnvironment.intensity_dir + " , error code " + std::to_string(errorCode));
+
+        auto [ok, erm] = processDataset_3D_wholevolume(
+            ifiles,
+            theEnvironment.n_reduce_threads,
+            theEnvironment.saveOption,
+            output_path);
+        if (!ok)
+            throw std::runtime_error (*erm);
+    }
+    else
+    {
+        // Read image pairs from the intensity and label directories applying the filepattern
+        std::vector <Imgfile3D_layoutA> intensFiles, labelFiles;
+        int errorCode = Nyxus::read_3D_dataset(
+            intensity_dir,
+            labels_dir,
+            theEnvironment.file_pattern_3D,
+            "./",   // output directory
+            theEnvironment.intSegMapDir,
+            theEnvironment.intSegMapFile,
+            true,
+            intensFiles, labelFiles);
+
+        if (errorCode)
+            throw std::runtime_error("Error traversing the dataset");
+
+        errorCode = processDataset_3D_segmented(
+            intensFiles,
+            labelFiles,
+            theEnvironment.n_reduce_threads,
+            theEnvironment.saveOption,
+            output_path);
+
+        if (errorCode)
+            throw std::runtime_error ("Error " + std::to_string(errorCode) + " occurred during dataset processing");
+    }
 
     // Output the result
     if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
@@ -634,7 +653,6 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
         intensFiles,
         labelFiles,
         theEnvironment.n_reduce_threads,
-        min_online_roi_size,
         theEnvironment.saveOption,
         output_path);
 
@@ -735,7 +753,6 @@ py::tuple featurize_fname_lists_3D_imp (
         ifiles,
         mfiles,
         theEnvironment.n_reduce_threads,
-        min_online_roi_size,
         theEnvironment.saveOption,
         output_path);
 

@@ -103,7 +103,8 @@ namespace Nyxus
 							label = 1;
 
 						// Cache this pixel 
-						feed_pixel_2_cache_3D(x, y, z, dataI[i], label);
+						LR& r = roiData[label];
+						feed_pixel_2_cache_3D_LR (x, y, z, dataI[i], r);
 					}
 
 					VERBOSLVL2(
@@ -252,7 +253,8 @@ namespace Nyxus
 
 					// cache this voxel 
 					auto inten = dataI[i];
-					feed_pixel_2_cache_3D(vc, vr, vz, dataI[i], label);
+					LR& r = roiData[label];
+					feed_pixel_2_cache_3D_LR (vc, vr, vz, dataI[i], r);
 				}
 			}
 

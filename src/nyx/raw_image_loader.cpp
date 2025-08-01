@@ -16,7 +16,9 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 {
 	try
 	{
-		if (fs::path(int_fpath).extension() == ".zarr")
+		std::string ext = Nyxus::get_big_extension(int_fpath);
+
+		if (ext == ".zarr")
 		{
 #ifdef OMEZARR_SUPPORT
 			intFL = new RawOmezarrLoader (int_fpath);
@@ -25,7 +27,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 #endif
 		}
 		else 
-			if (fs::path(int_fpath).extension() == ".dcm" | fs::path(int_fpath).extension() == ".dicom") {
+			if (ext == ".dcm" | ext == ".dicom") {
 #ifdef DICOM_SUPPORT
 			intFL = new RawDicomLoader (int_fpath);
 #else
@@ -33,22 +35,22 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 #endif
 		}
 			else
-				if (fs::path(int_fpath).extension() == ".nii" || fs::path(int_fpath).extension() == ".nii.gz")
+				if (ext == ".nii" || ext == ".nii.gz")
 				{
 					intFL = new RawNiftiLoader (int_fpath);
 				}
-
-		else
-		{
-			if (Nyxus::check_tile_status(int_fpath))
-			{
- 				intFL = new RawTiffTileLoader (int_fpath);
-			}
-			else
-			{
-				intFL = new RawTiffStripLoader (1/*n_threads*/, int_fpath);
-			}
-		}
+				else
+				{
+					// flavors of TIFF
+					if (Nyxus::check_tile_status(int_fpath))
+					{
+ 						intFL = new RawTiffTileLoader (int_fpath);
+					}
+					else
+					{
+						intFL = new RawTiffStripLoader (1/*n_threads*/, int_fpath);
+					}
+				}
 	}
 	catch (std::exception const& e)
 	{
@@ -80,7 +82,8 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 	// segmented slide
 
 	try {
-		if (fs::path(seg_fpath).extension() == ".zarr")
+		std::string ext = Nyxus::get_big_extension(seg_fpath);
+		if (ext == ".zarr")
 		{
 #ifdef OMEZARR_SUPPORT
 			segFL = new RawOmezarrLoader (seg_fpath);
@@ -88,29 +91,32 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 			std::cout << "This version of Nyxus was not build with OmeZarr support." << std::endl;
 #endif
 		}
-		else if (fs::path(seg_fpath).extension() == ".dcm" | fs::path(seg_fpath).extension() == ".dicom") {
+		else 
+			if (ext == ".dcm" | ext == ".dicom") 
+			{
 #ifdef DICOM_SUPPORT
-			segFL = new RawDicomLoader (seg_fpath);
+				segFL = new RawDicomLoader (seg_fpath);
 #else
-			std::cout << "This version of Nyxus was not build with DICOM support." << std::endl;
+				std::cout << "This version of Nyxus was not build with DICOM support." << std::endl;
 #endif
-		}
-		else
-			if (fs::path(int_fpath).extension() == ".nii" || fs::path(int_fpath).extension() == ".nii.gz")
-			{
-				intFL = new RawNiftiLoader (int_fpath);
 			}
 			else
-		{
-			if (Nyxus::check_tile_status(seg_fpath))
-			{
-				segFL = new RawTiffTileLoader(seg_fpath);
-			}
-			else
-			{
-				segFL = new RawTiffStripLoader (1/*n_threads*/, seg_fpath);
-			}
-		}
+				if (ext == ".nii" || ext == ".nii.gz")
+				{
+					intFL = new RawNiftiLoader (int_fpath);
+				}
+				else
+				{
+					// flavors of TIFF
+					if (Nyxus::check_tile_status(seg_fpath))
+					{
+						segFL = new RawTiffTileLoader(seg_fpath);
+					}
+					else
+					{
+						segFL = new RawTiffStripLoader (1/*n_threads*/, seg_fpath);
+					}
+				}
 	}
 	catch (std::exception const& e)
 	{
@@ -257,13 +263,18 @@ size_t RawImageLoader::get_full_height()
 	return fh;
 }
 
+size_t RawImageLoader::get_full_depth()
+{
+	return fd;
+}
+
 std::string RawImageLoader::get_slide_descr()
 {
-	std::string rv = get_fp_phys_pixvoxels() ? "R-" : "N-";
-	rv += intFL->get_infostring() + " I ";
+	std::string s = get_fp_phys_pixvoxels() ? "R-" : "N-";
+	s += intFL->get_infostring() + " I ";
 	if (segFL != nullptr)
-		rv += segFL->get_infostring() + " M ";
-	return rv;
+		s += segFL->get_infostring() + " M ";
+	return s;
 }
 
 bool RawImageLoader::get_fp_phys_pixvoxels()

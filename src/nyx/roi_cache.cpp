@@ -8,6 +8,28 @@ size_t LR::dataset_max_n_rois = 0;
 size_t LR::dataset_max_roi_area = 0;
 size_t LR::dataset_max_roi_w = 0;
 size_t LR::dataset_max_roi_h = 0;
+size_t LR::dataset_max_roi_d = 0;
+
+/*static*/ void LR::update_dataset_props_extrema()
+{
+	LR::dataset_max_combined_roicloud_len = 0;
+	LR::dataset_max_n_rois = 0;
+	LR::dataset_max_roi_area = 0;
+	LR::dataset_max_roi_w = 0;
+	LR::dataset_max_roi_h = 0;
+	LR::dataset_max_roi_d = 0;
+
+	for (SlideProps& p : LR::dataset_props)
+	{
+		size_t sup_s_n = p.n_rois * p.max_roi_area;
+		LR::dataset_max_combined_roicloud_len = (std::max)(LR::dataset_max_combined_roicloud_len, sup_s_n);
+		LR::dataset_max_n_rois = (std::max)(LR::dataset_max_n_rois, p.n_rois);
+		LR::dataset_max_roi_area = (std::max)(LR::dataset_max_roi_area, p.max_roi_area);
+		LR::dataset_max_roi_w = (std::max)(LR::dataset_max_roi_w, p.max_roi_w);
+		LR::dataset_max_roi_h = (std::max)(LR::dataset_max_roi_h, p.max_roi_h);
+		LR::dataset_max_roi_d = (std::max)(LR::dataset_max_roi_d, p.max_roi_d);
+	}
+}
 
 void LR::reset_dataset_props()
 {

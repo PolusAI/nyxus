@@ -574,6 +574,49 @@ namespace Nyxus
 		}
 	}
 
+	void reduce_trivial_3d_wholevolume (LR& r)
+	{
+		//==== intensity
+		if (D3_VoxelIntensityFeatures::required(theFeatureSet))
+		{
+			D3_VoxelIntensityFeatures::extract (r);
+		}
+		//==== shape
+		if (D3_SurfaceFeature::required(theFeatureSet))
+		{
+			D3_SurfaceFeature::extract(r);
+		}
+		//==== texture		
+		if (D3_GLCM_feature::required(theFeatureSet))
+		{
+			D3_GLCM_feature::extract(r);
+		}
+		if (D3_GLDM_feature::required(theFeatureSet))
+		{
+			D3_GLDM_feature::extract(r);
+		}
+		if (D3_GLDZM_feature::required(theFeatureSet))
+		{
+			D3_GLDZM_feature::extract(r);
+		}
+		if (D3_NGLDM_feature::required(theFeatureSet))
+		{
+			D3_NGLDM_feature::extract(r);
+		}
+		if (D3_NGTDM_feature::required(theFeatureSet))
+		{
+			D3_NGTDM_feature::extract(r);
+		}
+		if (D3_GLSZM_feature::required(theFeatureSet))
+		{
+			D3_GLSZM_feature::extract(r);
+		}
+		if (D3_GLRLM_feature::required(theFeatureSet))
+		{
+			D3_GLRLM_feature::extract(r);
+		}
+	}
+
 	void reduce_trivial_3d (std::vector<int>& L, int n_threads, size_t work_per_thread, size_t job_size)
 	{
 		//==== intensity

@@ -314,6 +314,36 @@ void D3_SurfaceFeature::build_surface (LR & r)
 
 void D3_SurfaceFeature::calculate (LR& r)
 {
+	// is shape data non-informative ?
+	if (r.raw_pixels_3D.size() == 0)
+	{
+		cleanup_instance();
+		return;
+	}
+
+	if (Nyxus::theEnvironment.singleROI)
+	{
+		auto w = r.aabb.get_width(),
+			h = r.aabb.get_height(),
+			d = r.aabb.get_z_depth();
+
+		fval_AREA = 2 * (w*h + h*d + w*d);
+		fval_VOLUME_CONVEXHULL = fval_VOXEL_VOLUME = fval_MESH_VOLUME = w * h * d;
+		fval_AREA_2_VOLUME = fval_AREA / fval_VOXEL_VOLUME;
+		fval_COMPACTNESS1 = fval_VOXEL_VOLUME / std::sqrt(M_PI * fval_AREA * fval_AREA * fval_AREA);
+		fval_COMPACTNESS2 = 36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME / (fval_AREA * fval_AREA * fval_AREA);
+		fval_SPHERICAL_DISPROPORTION = fval_AREA / std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.);
+		fval_SPHERICITY = std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.) / fval_AREA;
+
+		fval_MAJOR_AXIS_LEN =
+		fval_MINOR_AXIS_LEN =
+		fval_LEAST_AXIS_LEN =
+		fval_ELONGATION =
+		fval_FLATNESS = 0;
+
+		return;
+	}
+
 	// volume
 	
 	// (fast approximation based on cubic lattice packaging of balls)
@@ -479,19 +509,19 @@ void D3_SurfaceFeature::save_value(std::vector<std::vector<double>>& fvals)
 
 void D3_SurfaceFeature::cleanup_instance()
 {
-	fval_AREA  = 
-	fval_AREA_2_VOLUME = 
-	fval_COMPACTNESS1 = 
-	fval_COMPACTNESS2 = 
-	fval_MESH_VOLUME = 
-	fval_SPHERICAL_DISPROPORTION = 
-	fval_SPHERICITY = 
-	fval_VOLUME_CONVEXHULL = 
-	fval_VOXEL_VOLUME = 
-	fval_MAJOR_AXIS_LEN,
-	fval_MINOR_AXIS_LEN,
-	fval_LEAST_AXIS_LEN,
-	fval_ELONGATION,
+	fval_AREA =
+	fval_AREA_2_VOLUME =
+	fval_COMPACTNESS1 =
+	fval_COMPACTNESS2 =
+	fval_MESH_VOLUME =
+	fval_SPHERICAL_DISPROPORTION =
+	fval_SPHERICITY =
+	fval_VOLUME_CONVEXHULL =
+	fval_VOXEL_VOLUME =
+	fval_MAJOR_AXIS_LEN =
+	fval_MINOR_AXIS_LEN =
+	fval_LEAST_AXIS_LEN =
+	fval_ELONGATION =
 	fval_FLATNESS = 0;
 }
 
@@ -533,6 +563,13 @@ void D3_SurfaceFeature::reduce(size_t start, size_t end, std::vector<int>* ptrLa
 		f.calculate(r);
 		f.save_value(r.fvals);
 	}
+}
+
+/*static*/ void D3_SurfaceFeature::extract (LR& r)
+{
+	D3_SurfaceFeature f;
+	f.calculate(r);
+	f.save_value(r.fvals);
 }
 
 

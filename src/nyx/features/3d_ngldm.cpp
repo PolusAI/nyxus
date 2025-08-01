@@ -398,6 +398,13 @@ void D3_NGLDM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLa
 	}
 }
 
+/*static*/ void D3_NGLDM_feature::extract(LR& r)
+{
+	D3_NGLDM_feature f;
+	f.calculate(r);
+	f.save_value(r.fvals);
+}
+
 void D3_NGLDM_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
 
 void D3_NGLDM_feature::osized_calculate(LR& r, ImageLoader&)

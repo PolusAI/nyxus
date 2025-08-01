@@ -30,6 +30,7 @@ public:
 	size_t get_within_tile_idx(size_t pixel_row, size_t pixel_col);
 	size_t get_full_width();
 	size_t get_full_height();
+	size_t get_full_depth();
 	std::string get_slide_descr();
 	bool get_fp_phys_pixvoxels();
 

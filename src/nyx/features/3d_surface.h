@@ -18,6 +18,7 @@ public:
 	static void parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
 	void cleanup_instance();
 	static void reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+	static void extract(LR& r);
 	static bool required(const FeatureSet& fs);
 
 	const constexpr static std::initializer_list<Nyxus::Feature3D> featureset =
