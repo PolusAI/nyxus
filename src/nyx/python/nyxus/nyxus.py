@@ -908,6 +908,7 @@ class Nyxus3D:
             'n_feature_calc_threads', 'use_gpu_device', 'ibsi', 'channel_signature', 
             'parent_channel', 'child_channel', 'aggregate', 
             'dynamic_range', 'min_intensity', 'max_intensity', 'ram_limit',
+            'verbose',
             'anisotropy_x', 
             'anisotropy_y',
             'anisotropy_z'

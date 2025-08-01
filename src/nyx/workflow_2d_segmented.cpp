@@ -165,7 +165,6 @@ namespace Nyxus
 		const std::vector<std::string>& intensFiles,
 		const std::vector<std::string>& labelFiles,
 		int numReduceThreads,
-		int min_online_roi_size,
 		const SaveOption saveOption,
 		const std::string& outputPath)
 	{
@@ -320,12 +319,10 @@ namespace Nyxus
 			auto& ifp = intensFiles[i],
 				& lfp = labelFiles[i];
 
-			//???????????????????
 			if (ifp != LR::dataset_props[i].fname_int || lfp != LR::dataset_props[i].fname_seg)
 			{
 				std::cout << "\nMISMATCH! " << ifp << ":" << LR::dataset_props[i].fname_int << ":" << lfp << ":" << LR::dataset_props[i].fname_seg << "\n";
 			}
-			//
 
 			// Cache the file names to be picked up by labels to know their file origin
 			fs::path p_int(ifp), p_seg(lfp);

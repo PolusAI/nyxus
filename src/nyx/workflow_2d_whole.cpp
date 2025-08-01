@@ -202,7 +202,6 @@ namespace Nyxus
 		const std::vector<std::string>& intensFiles,
 		const std::vector<std::string>& labelFiles,
 		int n_threads,
-		int min_online_roi_size,
 		const SaveOption saveOption,
 		const std::string& outputPath)
 	{

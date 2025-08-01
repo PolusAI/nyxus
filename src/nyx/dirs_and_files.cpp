@@ -431,7 +431,7 @@ namespace Nyxus
 		if (!existsOnFilesystem(dirOut))
 		{
 			std::cout << "Error: nonexisting directory " << dirOut << std::endl;
-			return 1;
+			return 2;
 		}
 
 		// Common case - no ad hoc intensity-label file mapping, 1-to-1 correspondence instead
@@ -445,7 +445,7 @@ namespace Nyxus
 		if (intensFiles.size() == 0)
 		{
 			std::cout << "No intensity file pairs to process, probably due to file pattern " << filePatt.get_cached_pattern_string() << std::endl;
-			return 2;
+			return 3;
 		}
 
 		return 0;

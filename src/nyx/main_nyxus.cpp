@@ -76,14 +76,12 @@ int main (int argc, char** argv)
 		}
 
 		// Process the image data
-		int min_online_roi_size = 0;
 
 		if (theEnvironment.singleROI)
 			errorCode = processDataset_2D_wholeslide (
 				intensFiles,
 				labelFiles,
 				theEnvironment.n_reduce_threads,
-				min_online_roi_size,
 				theEnvironment.saveOption,
 				theEnvironment.output_dir);
 		else
@@ -91,7 +89,6 @@ int main (int argc, char** argv)
 				intensFiles,
 				labelFiles,
 				theEnvironment.n_reduce_threads,
-				min_online_roi_size,
 				theEnvironment.saveOption,
 				theEnvironment.output_dir);
 
@@ -141,10 +138,6 @@ int main (int argc, char** argv)
 	else
 		if (theEnvironment.dim() == 3)
 		{
-
-			// Process the image data
-			int min_online_roi_size = 0;
-
 			if (theEnvironment.singleROI)
 			{
 				std::vector<std::string> ifiles;
@@ -160,7 +153,7 @@ int main (int argc, char** argv)
 					return 1;
 				}
 
-				auto [ok, erm] = processDataset_3D_wholevolume (ifiles, theEnvironment.n_reduce_threads, min_online_roi_size, theEnvironment.saveOption, theEnvironment.output_dir);
+				auto [ok, erm] = processDataset_3D_wholevolume (ifiles, theEnvironment.n_reduce_threads, theEnvironment.saveOption, theEnvironment.output_dir);
 				if (!ok)
 				{
 					std::cerr << *erm << "\n";
@@ -192,7 +185,6 @@ int main (int argc, char** argv)
 					intensFiles,
 					labelFiles,
 					theEnvironment.n_reduce_threads,
-					min_online_roi_size,
 					theEnvironment.saveOption,
 					theEnvironment.output_dir);
 

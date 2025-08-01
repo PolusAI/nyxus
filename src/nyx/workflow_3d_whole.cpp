@@ -208,7 +208,6 @@ namespace Nyxus
 	std::tuple<bool, std::optional<std::string>> processDataset_3D_wholevolume (
 		const std::vector <std::string>& intensFiles,
 		int n_threads,
-		int min_online_roi_size,
 		const SaveOption saveOption,
 		const std::string& outputPath)
 	{

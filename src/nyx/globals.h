@@ -46,7 +46,6 @@ namespace Nyxus
 		const std::vector<std::string>& intensFiles,
 		const std::vector<std::string>& labelFiles,
 		int numReduceThreads,
-		int min_online_roi_size,
 		const SaveOption saveOption,
 		const std::string& outputPath);
 
@@ -55,7 +54,6 @@ namespace Nyxus
 		const std::vector<std::string>& intensFiles,
 		const std::vector<std::string>& labelFiles,
 		int n_threads,
-		int min_online_roi_size,
 		const SaveOption saveOption,
 		const std::string& outputPath);
 
@@ -64,7 +62,6 @@ namespace Nyxus
 		const std::vector <Imgfile3D_layoutA>& intensFiles,
 		const std::vector <Imgfile3D_layoutA>& labelFiles,
 		int numReduceThreads,
-		int min_online_roi_size,
 		const SaveOption saveOption,
 		const std::string& outputPath);
 
@@ -72,7 +69,6 @@ namespace Nyxus
 	std::tuple<bool, std::optional<std::string>> processDataset_3D_wholevolume(
 		const std::vector <std::string>& intensFiles,
 		int n_threads,
-		int min_online_roi_size,
 		const SaveOption saveOption,
 		const std::string& outputPath);
 

@@ -154,7 +154,6 @@ namespace Nyxus
 		const std::vector <Imgfile3D_layoutA>& intensFiles,
 		const std::vector <Imgfile3D_layoutA>& labelFiles,
 		int numReduceThreads,
-		int min_online_roi_size,
 		const SaveOption saveOption,
 		const std::string& outputPath)
 	{
