@@ -10,7 +10,7 @@ Uint32 getFrameSize(DcmDataset* dataset)
         return 0;
 
     Uint32 frameSize = 0;
-#if DCMTK_VERSION_NUMBER >= 0x036800
+#if OFFIS_DCMTK_VERSION_NUMBER >= 0x036800
     // DCMTK 3.6.8+ expects a boolean indicating uncompressed state
     OFBool isUncompressed = (pixelData->transferState() == ERW_memory);
     status = pixelData->getUncompressedFrameSize(dataset, frameSize, isUncompressed);
