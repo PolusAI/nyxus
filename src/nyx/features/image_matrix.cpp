@@ -273,7 +273,7 @@ void apply_dist2contour_weighting(
 
 void ImageMatrix::calculate_from_array (const PixIntens* bufr, const size_t len, int w, int h)
 {
-	original_aabb.init_from_widthheight (w, h);
+	original_aabb.init_from_wh (w, h);
 
 	// Dimensions
 	width = original_aabb.get_width();

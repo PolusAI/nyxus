@@ -46,7 +46,6 @@ namespace Nyxus
 		const std::vector<std::string>& intensFiles,
 		const std::vector<std::string>& labelFiles,
 		int numReduceThreads,
-		int min_online_roi_size,
 		const SaveOption saveOption,
 		const std::string& outputPath);
 
@@ -55,7 +54,6 @@ namespace Nyxus
 		const std::vector<std::string>& intensFiles,
 		const std::vector<std::string>& labelFiles,
 		int n_threads,
-		int min_online_roi_size,
 		const SaveOption saveOption,
 		const std::string& outputPath);
 
@@ -64,7 +62,13 @@ namespace Nyxus
 		const std::vector <Imgfile3D_layoutA>& intensFiles,
 		const std::vector <Imgfile3D_layoutA>& labelFiles,
 		int numReduceThreads,
-		int min_online_roi_size,
+		const SaveOption saveOption,
+		const std::string& outputPath);
+
+	// single-segment 3D workflow
+	std::tuple<bool, std::optional<std::string>> processDataset_3D_wholevolume(
+		const std::vector <std::string>& intensFiles,
+		int n_threads,
 		const SaveOption saveOption,
 		const std::string& outputPath);
 
@@ -79,6 +83,10 @@ namespace Nyxus
 	bool processNontrivialRois (const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath);
 	bool scan_trivial_wholeslide (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr);	// reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
 	bool scan_trivial_wholeslide_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y);
+
+	bool scan_trivial_wholevolume (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr);	
+	bool scan_trivial_wholevolume_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y, double aniso_z);
+
 	bool scanTrivialRois_3D (const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath);
 	void dump_roi_metrics(const std::string& label_fpath);
 	void dump_roi_pixels(const std::vector<int> & batch_labels, const std::string & label_fpath);
@@ -148,6 +156,7 @@ namespace Nyxus
 	void reduce_trivial_rois (std::vector<int>& PendingRoisLabels);
 	void reduce_trivial_rois_manual (std::vector<int>& PendingRoisLabels);
 	void reduce_trivial_wholeslide (LR & slideroi);
+	void reduce_trivial_3d_wholevolume (LR& r);
 	void reduce_neighbors_and_dependencies_manual ();
 
 	void init_label_record_2(LR& lr, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity);
@@ -182,7 +191,7 @@ namespace Nyxus
 	/// @param intensity -- pixel's intensity
 	void feed_pixel_2_cache(int x, int y, PixIntens intensity, int label);
 	void feed_pixel_2_cache_LR(int x, int y, PixIntens intensity, LR& r);
-	void feed_pixel_2_cache_3D(int x, int y, int z, PixIntens intensity, int label);
+	void feed_pixel_2_cache_3D_LR (int x, int y, int z, PixIntens intensity, LR& r);
 
 	// Nested ROI
 

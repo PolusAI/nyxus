@@ -165,7 +165,6 @@ namespace Nyxus
 		const std::vector<std::string>& intensFiles,
 		const std::vector<std::string>& labelFiles,
 		int numReduceThreads,
-		int min_online_roi_size,
 		const SaveOption saveOption,
 		const std::string& outputPath)
 	{
@@ -195,7 +194,7 @@ namespace Nyxus
 
 			// slide metrics
 			VERBOSLVL1(std::cout << "prescanning " << p.fname_int);
-			if (! scan_slide_props(p, theEnvironment.resultOptions.need_annotation()))
+			if (! scan_slide_props(p, 2, theEnvironment.resultOptions.need_annotation()))
 			{
 				VERBOSLVL1(std::cout << "error prescanning pair " << p.fname_int << " and " << p.fname_seg << std::endl);
 				return 1;
@@ -320,12 +319,10 @@ namespace Nyxus
 			auto& ifp = intensFiles[i],
 				& lfp = labelFiles[i];
 
-			//???????????????????
 			if (ifp != LR::dataset_props[i].fname_int || lfp != LR::dataset_props[i].fname_seg)
 			{
 				std::cout << "\nMISMATCH! " << ifp << ":" << LR::dataset_props[i].fname_int << ":" << lfp << ":" << LR::dataset_props[i].fname_seg << "\n";
 			}
-			//
 
 			// Cache the file names to be picked up by labels to know their file origin
 			fs::path p_int(ifp), p_seg(lfp);

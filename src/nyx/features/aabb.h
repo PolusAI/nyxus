@@ -49,12 +49,22 @@ public:
 	inline StatsInt get_zmin() const { return zmin; }
 	inline StatsInt get_zmax() const { return zmax; }
 
-	void init_from_widthheight (StatsInt w, StatsInt h)
+	void init_from_wh (StatsInt w, StatsInt h)
 	{
 		xmin = 0;
 		xmax = w;
 		ymin = 0;
 		ymax = h;
+	}
+
+	void init_from_whd (StatsInt w, StatsInt h, StatsInt d)
+	{
+		xmin = 0;
+		xmax = w;
+		ymin = 0;
+		ymax = h;
+		zmin = 0;
+		zmax = d;
 	}
 
 	static std::tuple<StatsInt, StatsInt, StatsInt, StatsInt> from_pixelcloud (const std::vector<Pixel2>& P)
@@ -100,5 +110,10 @@ public:
 	}
 
 private:
-	StatsInt xmin = INT32_MAX, xmax = INT32_MIN, ymin = INT32_MAX, ymax = INT32_MIN, zmin = INT32_MAX, zmax = INT32_MIN;
+	StatsInt xmin = INT32_MAX, 
+		xmax = INT32_MIN, 
+		ymin = INT32_MAX, 
+		ymax = INT32_MIN, 
+		zmin = INT32_MAX, 
+		zmax = INT32_MIN;
 };

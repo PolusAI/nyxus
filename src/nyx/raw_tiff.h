@@ -10,11 +10,11 @@
     #include <tiffio.h>
 #endif
 #include <cstring>
-#include <sstream>
 #include <limits.h>
 
 #pragma once
 #include <cmath>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -35,8 +35,11 @@ public:
         {
             if (TIFFIsTiled(tiff_) == 0) 
             { 
-                throw (std::runtime_error("Tile Loader ERROR: The file is not tiled.")); 
+                std::string erm = "RawTiffTileLoader error: file " + filePath +" is not tiled";
+                std::cerr << erm << "\n";
+                throw (std::runtime_error(erm)); 
             }
+
             // Load/parse header
             uint32_t temp;  // Using this variable to correctly read 'uint32_t' TIFF field values into 'size_t' variables
             uint16_t compression;
@@ -56,12 +59,12 @@ public:
             // Test if the file is greyscale
             if (samplesPerPixel != 1) 
             {
-                std::stringstream message;
-                message << "Tile Loader ERROR: The file is not greyscale: SamplesPerPixel = " << samplesPerPixel << ".";
-                throw (std::runtime_error(message.str()));
+                std::string erm = "RawTiffTileLoader error: file " + filePath + " is not greyscale, SamplesPerPixel = " + std::to_string(samplesPerPixel);
+                std::cerr << erm << "\n";
+                throw (std::runtime_error(erm));
             }
 
-            // prepare the right typed getter function
+            // Prepare the right typed getter function
             std::string message;
             switch (sampleFormat_)
             {
@@ -176,11 +179,9 @@ public:
                 memset (tiffTile, 0, t_szb);    
             else // something else
             {
-                std::stringstream message;
-                message
-                    << "Tile Loader ERROR: error reading tile data returning code "
-                    << errcode;
-                throw (std::runtime_error(message.str()));
+                std::string erm = "Tile Loader ERROR: error reading tile data returning code " + std::to_string(errcode);
+                std::cerr << erm << "\n";
+                throw std::runtime_error(erm);
             }
         }
     }
@@ -215,7 +216,7 @@ private:
     void scan_typed_minmax (tdata_t src)
     {
         minval = (std::numeric_limits<double>::max)();
-        maxval = (std::numeric_limits<double>::min)();
+        maxval = (std::numeric_limits<double>::lowest)();
 
         // Special case of tileWidth_ (e.g. 1024) > fullWidth_ (e.g. 256)
         if (tileWidth_ > fullWidth_ && tileHeight_ > fullHeight_)
@@ -317,9 +318,9 @@ public:
             if (samplesPerPixel > 1)
             {
                 // Sometimes we have images whose samplesPerPixel==0:  if (samplesPerPixel != 1) {
-                std::stringstream message;
-                message << "Tile Loader ERROR: The file is not grayscale: SamplesPerPixel = " << samplesPerPixel << ".";
-                throw (std::runtime_error(message.str()));
+                std::string erm = "Tile Loader ERROR: The file is not grayscale: SamplesPerPixel = " + std::to_string(samplesPerPixel);
+                std::cerr << erm + "\n";
+                throw std::runtime_error(erm);
             }
             // Interpret undefined data format as unsigned integer data
             if (sampleFormat_ < 1 || sampleFormat_ > 3)
@@ -328,7 +329,6 @@ public:
             }
 
             // prepare the right typed getter function
-            std::string message;
             switch (sampleFormat_)
             {
             case 1:
@@ -351,10 +351,9 @@ public:
                     get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <uint64_t>;
                     break;
                 default:
-                    message =
-                        "Tile Loader ERROR: The data format is not supported for unsigned integer, number bits per pixel = "
-                        + bitsPerSample_;
-                    throw (std::runtime_error(message));
+                    std::string erm = "RawTiffStripLoader error: data format is not supported for sampleFormat_=" + std::to_string(sampleFormat_) + ", bitsPerSample_ = " + std::to_string(bitsPerSample_);
+                    std::cerr << erm << "\n";
+                    throw std::runtime_error(erm);
                 }
                 break;
             case 2:
@@ -377,9 +376,9 @@ public:
                     get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <int64_t>;
                     break;
                 default:
-                    message =
-                        "Tile Loader ERROR: The data format is not supported for signed integer, number bits per pixel = " + std::to_string(bitsPerSample_);
-                    throw (std::runtime_error(message));
+                    std::string erm = "RawTiffStripLoader error: data format is not supported for sampleFormat_=" + std::to_string(sampleFormat_) + ", bitsPerSample_ = " + std::to_string(bitsPerSample_);
+                    std::cerr << erm << "\n";
+                    throw std::runtime_error(erm);
                 }
                 break;
             case 3:
@@ -398,13 +397,15 @@ public:
                     get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <double>;
                     break;
                 default:
-                    message = "Tile Loader ERROR: The data format is not supported for float, number bits per pixel = " + std::to_string(bitsPerSample_);
-                    throw (std::runtime_error(message));
+                    std::string erm = "RawTiffStripLoader error: data format is not supported for sampleFormat_=" + std::to_string(sampleFormat_) + ", bitsPerSample_ = " + std::to_string(bitsPerSample_);
+                    std::cerr << erm << "\n";
+                    throw std::runtime_error(erm);
                 }
                 break;
             default:
-                message = "Tile Loader ERROR: The data format is not supported, sample format = " + std::to_string(sampleFormat_);
-                throw (std::runtime_error(message));
+                std::string erm = "RawTiffStripLoader error: unsupported sampleFormat_=" + std::to_string(sampleFormat_);
+                std::cerr << erm << "\n";
+                throw std::runtime_error(erm);
             }
 
             scanline_szb = TIFFScanlineSize(tiff_);
@@ -413,7 +414,7 @@ public:
         }
         else
         {
-            throw (std::runtime_error("Tile Loader ERROR: The file can not be opened."));
+            throw std::runtime_error("RawTiffStripLoader error: file " + filePath + " cannot be opened");
         }
     }
 
@@ -459,7 +460,6 @@ public:
                 throw (std::runtime_error(erm));
             }
         }
-
     }
 
     [[nodiscard]] size_t fullHeight([[maybe_unused]] size_t level) const override { return fullHeight_; }
@@ -488,7 +488,6 @@ public:
         return rv;
     }
 
-
 private:
 
     template<typename FileType>
@@ -500,7 +499,7 @@ private:
     {
         // Get ahold of the raw pointer
         minval = (std::numeric_limits<double>::max)();
-        maxval = (std::numeric_limits<double>::min)();
+        maxval = (std::numeric_limits<double>::lowest)();
 
         for (size_t col = start_col; col < end_col; col++)
         {

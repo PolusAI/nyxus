@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdexcept>
+#include <tuple>
 #include <vector>
 #include "abs_tile_loader.h"
 #include "raw_format.h"
@@ -12,47 +13,113 @@ public:
 
     RawNiftiLoader (std::string const& filePath) : RawFormatLoader("RawNiftiLoader", filePath)
     {
-        // Read input dataset, including data
-        nifti_image* niiData = nifti_image_read (filePath.c_str(), 1);
-        if (!niiData)
+        slide_path_ = filePath;
+
+        nii_ = nifti_image_read (filePath.c_str(), 1);
+        if (!nii_)
         {
             std::string erm = "error: failed to read NIfTI image from " + filePath;
             std::cerr << erm << "\n";
             throw (std::runtime_error(erm));
         }
 
-        fullHeight_ = niiData->ny;
-        fullWidth_ = niiData->nx;
-        fullDepth_ = niiData->nz;
+        switch (nii_->datatype)
+        {
+        case 2: // NIFTI_TYPE_UINT8
+                get_uint32_pixel_typeresolved = get_uint32_pixel_imp <uint8_t>;
+                get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <uint8_t>;
+                break;
+        case 512: // NIFTI_TYPE_UINT16
+                get_uint32_pixel_typeresolved = get_uint32_pixel_imp <uint16_t>;
+                get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <uint16_t>;
+                break;
+        case 768: // NIFTI_TYPE_UINT32
+                //unhounsfield <uint32_t, uint32_t>(dataCache, static_cast<uint32_t*> (nii->data), nr_voxels);
+                get_uint32_pixel_typeresolved = get_uint32_pixel_imp <uint32_t>;
+                get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <uint32_t>;
+                break;
+        case 1280: // NIFTI_TYPE_UINT64
+                get_uint32_pixel_typeresolved = get_uint32_pixel_imp <uint64_t>;
+                get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <uint64_t>;
+                break;
+        case 256: // NIFTI_TYPE_INT8
+                get_uint32_pixel_typeresolved = get_uint32_pixel_imp <int8_t>;
+                get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <int8_t>;
+                break;
+        case 4: // NIFTI_TYPE_INT16
+                get_uint32_pixel_typeresolved = get_uint32_pixel_imp <int16_t>;
+                get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <int16_t>;
+                break;
+        case 8: // NIFTI_TYPE_INT32
+                get_uint32_pixel_typeresolved = get_uint32_pixel_imp <int32_t>;
+                get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <int32_t>;
+                break;
+        case 1024: // NIFTI_TYPE_INT64
+                get_uint32_pixel_typeresolved = get_uint32_pixel_imp <int64_t>;
+                get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <int64_t>;
+                break;
+        case 16: // NIFTI_TYPE_FLOAT32
+                get_uint32_pixel_typeresolved = get_uint32_pixel_imp <float>;
+                get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <float>;
+                break;
+        case 64: // NIFTI_TYPE_FLOAT64
+                get_uint32_pixel_typeresolved = get_uint32_pixel_imp <double>;
+                get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <double>;
+                break;
+        default:
+                std::string erm = "error: unrecognized NIFTI data type " + std::to_string(nii_->datatype) + " in " + slide_path_;
+                std::cerr << erm << "\n";
+                throw std::runtime_error(erm);
+                break;
+        }
+
+        tileHeight_ = fullHeight_ = nii_->ny;
+        tileWidth_ = fullWidth_ = nii_->nx;
+        tileDepth_ = fullDepth_ = nii_->nz;
     }
 
     ~RawNiftiLoader() override
     {
+        if (nii_)
+        {
+            nifti_image_free (nii_);
+            nii_ = nullptr;
+        }
     }
 
+    // NIFTI is not tiled so the actual data loading is performed in constructor
     void loadTileFromFile(
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
         size_t indexLayerGlobalTile,
-        [[maybe_unused]] size_t level) override
-    {
-        tile.resize(tileWidth_ * tileHeight_);
-        std::fill(tile.begin(), tile.end(), 0);
+        [[maybe_unused]] size_t level) override {}
 
-        std::vector<uint32_t>& tileDataVec = tile;
+    // NIFTI is not tiled
+    void free_tile() override {}
+
+    template<typename FileType>
+    static uint32_t get_uint32_pixel_imp (const void* src, size_t idx)
+    {
+        FileType x = *(((FileType*)src) + idx);
+        return (uint32_t)x;
     }
 
-    void free_tile() override {}
+    template<typename FileType>
+    static double get_dp_pixel_imp (const void* src, size_t idx)
+    {
+        FileType x = *(((FileType*)src) + idx);
+        return (double)x;
+    }
 
     uint32_t get_uint32_pixel (size_t idx) const
     {
-        uint32_t rv = tile[idx];
+        uint32_t rv = get_uint32_pixel_typeresolved (nii_->data, idx);
         return rv;
     }
 
     double get_dpequiv_pixel (size_t idx) const
     {
-        double rv = (double)tile[idx];
+        double rv = get_dpequiv_pixel_typeresolved (nii_->data, idx);
         return rv;
     }
 
@@ -73,6 +140,10 @@ public:
     [[nodiscard]] size_t numberPyramidLevels() const override { return 1; }
 
 private:
+    
+    nifti_image* nii_ = nullptr;
+    double (*get_dpequiv_pixel_typeresolved) (const void* src, size_t idx) = nullptr;
+    uint32_t(*get_uint32_pixel_typeresolved) (const void* src, size_t idx) = nullptr;
 
     size_t
         fullHeight_ = 0,          ///< Full height in pixel
@@ -87,7 +158,7 @@ private:
     int32_t numFrames_ = 0;
     int bitsPerSample_ = 1;
 
-    std::vector<uint32_t> tile;
+    std::string slide_path_;
 };
 
 template<class DataType>

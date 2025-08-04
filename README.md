@@ -176,6 +176,29 @@ mdir = [
 nyx.featurize_files (idir, mdir, False) # pass True to featurize intensity files as whole segments
 ```
 
+### Whole-slide and whole-volume feature extraction
+
+Nyxus provides dedicated workflows for extracting features from whole 2D slides and volumes. The workflows scale across CPU cores as controlled by constructor parameter `n_feature_calc_threads` of classes Nyxus and Nyxus3D.
+
+Example -- whole-slide featurization with 4 threads: 
+
+```
+dir = "/2d_dataset/intensity"
+import nyxus
+nyx = nyxus.Nyxus (features=["*ALL*"], n_feature_calc_threads=4)
+f = nyx.featurize_directory (intensity_dir=dir, label_dir=dir)
+```
+
+Example -- whole-volume featurization of a NIFTI dataset with 4 threads:
+
+```
+dir = "/3d_dataset"
+import nyxus
+nyx = nyxus.Nyxus3D (features=["*3D_ALL*"], n_feature_calc_threads=4)
+f = nyx.featurize_directory (intensity_dir=dir, label_dir=dir, file_pattern=".*\\.nii\\.gz")
+```
+
+
 ## Further steps
 
 For more information on all of the available options and features, check out [the documentation](#).

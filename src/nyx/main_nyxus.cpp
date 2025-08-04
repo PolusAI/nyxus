@@ -76,14 +76,12 @@ int main (int argc, char** argv)
 		}
 
 		// Process the image data
-		int min_online_roi_size = 0;
 
 		if (theEnvironment.singleROI)
 			errorCode = processDataset_2D_wholeslide (
 				intensFiles,
 				labelFiles,
 				theEnvironment.n_reduce_threads,
-				min_online_roi_size,
 				theEnvironment.saveOption,
 				theEnvironment.output_dir);
 		else
@@ -91,7 +89,6 @@ int main (int argc, char** argv)
 				intensFiles,
 				labelFiles,
 				theEnvironment.n_reduce_threads,
-				min_online_roi_size,
 				theEnvironment.saveOption,
 				theEnvironment.output_dir);
 
@@ -141,56 +138,76 @@ int main (int argc, char** argv)
 	else
 		if (theEnvironment.dim() == 3)
 		{
-			// Scan intensity and mask directories, apply fileppatern, make intensity-mask image file pairs
-			std::vector <Imgfile3D_layoutA> intensFiles, labelFiles;
-
-			int errorCode = Nyxus::read_3D_dataset (
-				theEnvironment.intensity_dir,
-				theEnvironment.labels_dir,
-				theEnvironment.file_pattern_3D,
-				theEnvironment.output_dir,
-				theEnvironment.intSegMapDir,
-				theEnvironment.intSegMapFile,
-				true,
-				intensFiles, 
-				labelFiles);
-			if (errorCode)
+			if (theEnvironment.singleROI)
 			{
-				std::cout << "Dataset error\n";
-				return 1;
+				std::vector<std::string> ifiles;
+
+				int errorCode = Nyxus::read_3D_dataset_wholevolume (
+					theEnvironment.intensity_dir,
+					theEnvironment.file_pattern_3D,
+					theEnvironment.output_dir,
+					ifiles);
+				if (errorCode)
+				{
+					std::cout << "Dataset error\n";
+					return 1;
+				}
+
+				auto [ok, erm] = processDataset_3D_wholevolume (ifiles, theEnvironment.n_reduce_threads, theEnvironment.saveOption, theEnvironment.output_dir);
+				if (!ok)
+				{
+					std::cerr << *erm << "\n";
+					return 1;
+				}
 			}
-
-			// Process the image data
-			int min_online_roi_size = 0;
-
-			errorCode = processDataset_3D_segmented (
-				intensFiles,
-				labelFiles,
-				theEnvironment.n_reduce_threads,
-				min_online_roi_size,
-				theEnvironment.saveOption,
-				theEnvironment.output_dir);
-
-
-			// Report feature extraction error, if any
-			switch (errorCode)
+			else
 			{
-			case 0:		// Success
-				break;
-			case 1:		// Dataset structure error e.g. intensity-label file name mismatch
-				std::cout << std::endl << "Input data error" << std::endl;
-				break;
-			case 2:		// Internal FastLoader error e.g. TIFF access error
-				std::cout << std::endl << "Result output error" << std::endl;
-				break;
-			case 3:		// Memory error
-				std::cout << std::endl << "Memory error" << std::endl;
-				break;
-			case 4:
-				std::cout << std::endl << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enabled to use this functionality." << std::endl;
-			default:	// Any other error
-				std::cout << std::endl << "Error #" << errorCode << std::endl;
-				break;
+				// Scan intensity and mask directories, apply fileppatern, make intensity-mask image file pairs
+				std::vector <Imgfile3D_layoutA> intensFiles, labelFiles;
+
+				int errorCode = Nyxus::read_3D_dataset(
+					theEnvironment.intensity_dir,
+					theEnvironment.labels_dir,
+					theEnvironment.file_pattern_3D,
+					theEnvironment.output_dir,
+					theEnvironment.intSegMapDir,
+					theEnvironment.intSegMapFile,
+					true,
+					intensFiles,
+					labelFiles);
+				if (errorCode)
+				{
+					std::cout << "Dataset error\n";
+					return 1;
+				}
+
+				errorCode = processDataset_3D_segmented(
+					intensFiles,
+					labelFiles,
+					theEnvironment.n_reduce_threads,
+					theEnvironment.saveOption,
+					theEnvironment.output_dir);
+
+				// Report feature extraction error, if any
+				switch (errorCode)
+				{
+				case 0:		// Success
+					break;
+				case 1:		// Dataset structure error e.g. intensity-label file name mismatch
+					std::cout << std::endl << "Input data error" << std::endl;
+					break;
+				case 2:		// Internal FastLoader error e.g. TIFF access error
+					std::cout << std::endl << "Result output error" << std::endl;
+					break;
+				case 3:		// Memory error
+					std::cout << std::endl << "Memory error" << std::endl;
+					break;
+				case 4:
+					std::cout << std::endl << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enabled to use this functionality." << std::endl;
+				default:	// Any other error
+					std::cout << std::endl << "Error #" << errorCode << std::endl;
+					break;
+				}
 			}
 
 		} // 3D

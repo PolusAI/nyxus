@@ -66,6 +66,14 @@ namespace Nyxus
 		std::vector <Imgfile3D_layoutA>& intensFiles,
 		std::vector <Imgfile3D_layoutA>& labelFiles);
 
+	int read_3D_dataset_wholevolume(
+		// input:
+		const std::string& dirIntens,
+		const StringPattern& filePatt,
+		const std::string& dirOut,
+		// output:
+		std::vector <std::string>& intensFiles);
+
 	/// @brief checks if the Tiff file is tiled or not
 	/// @param filePath File name with complete path
 	bool check_tile_status(const std::string& filePath);

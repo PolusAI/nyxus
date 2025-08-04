@@ -337,6 +337,13 @@ void D3_VoxelIntensityFeatures::reduce(size_t start, size_t end, std::vector<int
 	}
 }
 
+/*static*/ void D3_VoxelIntensityFeatures::extract(LR& r)
+{
+	D3_VoxelIntensityFeatures f;
+	f.calculate (r);
+	f.save_value (r.fvals);
+}
+
 void D3_VoxelIntensityFeatures::cleanup_instance()
 {
 	val_INTEGRATED_INTENSITY = 0;

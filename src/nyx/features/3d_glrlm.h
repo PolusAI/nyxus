@@ -84,6 +84,7 @@ public:
 	void osized_calculate(LR& r, ImageLoader& imloader);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
 	static void reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+	static void extract (LR& r);
 
 	// Compatibility with the manual reduce
 	static int required(const FeatureSet& fs)

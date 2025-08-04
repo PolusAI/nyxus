@@ -24,6 +24,13 @@ void D3_GLDZM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLa
 	}
 }
 
+/*static*/ void D3_GLDZM_feature::extract(LR& r)
+{
+	D3_GLDZM_feature f;
+	f.calculate(r);
+	f.save_value(r.fvals);
+}
+
 void D3_GLDZM_feature::clear_buffers()
 {
 	f_SDE =
