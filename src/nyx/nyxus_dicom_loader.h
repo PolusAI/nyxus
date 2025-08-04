@@ -1,7 +1,7 @@
 #ifdef DICOM_SUPPORT
 #pragma once
 #include "abs_tile_loader.h"
-#include "dcmtk/dcmdata/dctk.h"
+#include "dicom_util.h"
 #include "dcmtk/dcmjpeg/djdecode.h"  /* for JPEG decoders */
 #include "dcmtk/dcmjpls/djdecode.h"  /* for JPEG-LS decoders */
 #include "dcmtk/dcmdata/dcrledrg.h"  /* for RLE decoder */
@@ -232,8 +232,7 @@ private:
         auto status = ds->findAndGetElement(DCM_PixelData, pixel_data_ptr);
         if(status.good()){
             DcmPixelData* pixel_data = OFreinterpret_cast(DcmPixelData*, pixel_data_ptr);
-            uint32_t frame_size = 0;
-            pixel_data->getUncompressedFrameSize(ds,frame_size);
+            uint32_t frame_size = getFrameSize(ds);
             frame_size % 2 == 0 ? frame_size = frame_size : frame_size = frame_size + 1; // need to be even
 
             auto buffer = std::vector<FileType>(data_length);
