@@ -1,3 +1,5 @@
+#pragma once
+
 #include "dcmtk/config/osconfig.h"
 #include "dcmtk/dcmdata/dctk.h"
 #include "dcmtk/dcmdata/dcpixel.h"
