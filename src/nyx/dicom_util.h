@@ -1,16 +1,33 @@
-#include "dcmtk/config/osconfig.h"    // For DCMTK_VERSION_NUMBER and config macros
-#include "dcmtk/dcmdata/dctk.h"       // Core DICOM toolkit (includes DcmDataset, DcmPixelData, etc.)
-#include "dcmtk/dcmdata/dcpixel.h"    // For DcmPixelData
-#include "dcmtk/dcmdata/dcdeftag.h"   // For DCM_PixelData tag
+#include "dcmtk/config/osconfig.h"
+#include "dcmtk/dcmdata/dctk.h"
+#include "dcmtk/dcmdata/dcpixel.h"
+#include "dcmtk/dcmdata/dcdeftag.h"
+
+// Helper: Determine if the transfer syntax is uncompressed
+bool isUncompressedXfer(E_TransferSyntax xfer)
+{
+    return xfer == EXS_LittleEndianExplicit ||
+           xfer == EXS_LittleEndianImplicit ||
+           xfer == EXS_BigEndianExplicit;
+}
 
 Uint32 getFrameSize(DcmDataset* dataset)
 {
-    DcmPixelData* pixelData = nullptr;
-    if (dataset->findAndGetElement(DCM_PixelData, pixelData).bad() || !pixelData)
+    DcmElement* elem = nullptr;
+    if (dataset->findAndGetElement(DCM_PixelData, elem).bad() || !elem)
+        return 0;
+
+    DcmPixelData* pixelData = dynamic_cast<DcmPixelData*>(elem);
+    if (!pixelData)
         return 0;
 
     Uint32 frameSize = 0;
-    OFBool isUncompressed = (pixelData->transferState() == ERW_memory);
+    OFCondition status;
+
+    E_TransferSyntax xfer = dataset->getOriginalXfer();
+    bool isUncompressed = isUncompressedXfer(xfer);
+
+
     status = pixelData->getUncompressedFrameSize(dataset, frameSize, isUncompressed);
 
     return status.good() ? frameSize : 0;
