@@ -7,7 +7,7 @@ pybind11 >= 2.12.0
 xtensor >=0.26,<0.27
 xsimd >=13,<14
 cmake
-dcmtk >=3.6.7
+dcmtk >=3.6.9
 fmjpeg2koj >=1.0.3
 libarrow
 libparquet
