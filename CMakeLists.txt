@@ -239,7 +239,6 @@ set(SOURCE
 	src/nyx/workflow_3d_segmented.cpp
 	src/nyx/workflow_3d_whole.cpp
 	src/nyx/workflow_pythonapi.cpp
-	src/nyx/dicom_util.cpp
 )
 
 # CLI

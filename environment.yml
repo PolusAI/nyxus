@@ -13,7 +13,7 @@ dependencies:
   - xtensor[version='>=0.24,<0.25']
   - libtiff
   - pybind11[version='>=2.10.0']
-  - dcmtk[version='>=3.6.7']
+  - dcmtk[version='>=3.6.9']
   - blosc
   - pandas
   - numpy
