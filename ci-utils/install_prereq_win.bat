@@ -215,7 +215,7 @@ if "%BUILD_DCMTK_DEP%" == "1" (
     pushd fmjpeg2koj-fix_cmake
     mkdir build_man
     pushd build_man
-    cmake -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_FLAGS_RELEASE="/MT /O2 /D NDEBUG" -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/  -DFMJPEG2K=%ROOTDIR%\local_install\  ..
+    cmake -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_FLAGS_RELEASE="/MT /O2 /D NDEBUG /Zc:__cplusplus" -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=../../local_install/  -DFMJPEG2K=%ROOTDIR%\local_install\  ..
     cmake --build . --config Release --target install --parallel 4
     popd
     popd
