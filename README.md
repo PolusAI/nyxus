@@ -185,17 +185,19 @@ Example -- whole-slide featurization with 4 threads:
 ```
 dir = "/2d_dataset/intensity"
 import nyxus
-nyx = nyxus.Nyxus (features=["*ALL*"], n_feature_calc_threads=4)
+nyx = nyxus.Nyxus (features=["*WHOLESLIDE*"], n_feature_calc_threads=4)
 f = nyx.featurize_directory (intensity_dir=dir, label_dir=dir)
 ```
 
-Example -- whole-volume featurization of a NIFTI dataset with 4 threads:
+Note: feature group `*WHOLESLIDE*` but not `*ALL*` is used to avoid calculation of shape features meaningless in case of the trivial rectangular shape of unsegmented slides. particularly, group `*WHOLESLIDE*` disables the time-consuming group GLDZM, basic morphology features (AREA_PIXELS_COUNT, AREA_UM2, ASPECT_RATIO, BBOX_XMIN, BBOX_YMIN, BBOX_WIDTH, BBOX_HEIGHT, CENTROID_X, CENTROID_Y, COMPACTNESS, DIAMETER_EQUAL_AREA, EXTENT, MASS_DISPLACEMENT, WEIGHTED_CENTROID_X, WEIGHTED_CENTROID_Y), enclosing/inscribing/circumscribing circle features, convex hull based features (CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY, POLYGONALITY_AVE, HEXAGONALITY_AVE, HEXAGONALITY_STDDEV),  fractal dimension features, geodetic  features, ROI neighbor features, ROI radius features, ellipse fitting features, extrema features, morphological erosion features, Caliper and chords features. 
+
+Disabled features can be requested by explicitly specifying them, for example enforcing calculation of the grey level distance zone matrix based (GLDZM) features:
 
 ```
-dir = "/3d_dataset"
+dir = "/2d_dataset/intensity"
 import nyxus
-nyx = nyxus.Nyxus3D (features=["*3D_ALL*"], n_feature_calc_threads=4)
-f = nyx.featurize_directory (intensity_dir=dir, label_dir=dir, file_pattern=".*\\.nii\\.gz")
+nyx = nyxus.Nyxus (features=["*WHOLESLIDE*", "*ALL_GLDZM*"], n_feature_calc_threads=4)
+f = nyx.featurize_directory (intensity_dir=dir, label_dir=dir)
 ```
 
 
@@ -413,7 +415,7 @@ Apart from defining your feature set by explicitly specifying comma-separated fe
 | \*all_glszm\* | glszm_sae, glszm_lae, glszm_gln, glszm_glnn, glszm_szn, glszm_sznn, glszm_zp, glszm_glv, glszm_zv, glszm_ze, glszm_lglze, glszm_hglze, glszm_salgle, glszm_sahgle, glszm_lalgle, glszm_lahgle
 | \*all_gldm\* | gldm_sde, gldm_lde, gldm_gln, gldm_dn, gldm_dnn, gldm_glv, gldm_dv, gldm_de, gldm_lgle, gldm_hgle, gldm_sdlgle, gldm_sdhgle, gldm_ldlgle, gldm_ldhgle
 | \*all_ngtdm\* | ngtdm_coarseness, ngtdm_contrast, ngtdm_busyness, ngtdm_complexity, ngtdm_strength
-| \*wholeslide\* | All the features except those irrelevant for the whole-slide use case (BasicMorphology, EnclosingInscribingCircumscribingCircle, ConvexHull, FractalDimension, GeodeticLengthThickness, Neighbor, RoiRadius, EllipseFitting, EulerNumber, Extrema, ErosionPixel, CaliperFeret, CaliperMartin, CaliperNassenstein, and Chords)
+| \*wholeslide\* | Only features relevant to the whole-slides whose single ROIs match the images themselves, except shape features meaningless in the whole-slide use case and certain time-consuming texture features (GLDZM features).
 | \*all\* | All the features 
 
 ## Command line usage
