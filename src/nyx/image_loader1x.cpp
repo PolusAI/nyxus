@@ -1,4 +1,7 @@
 #include <iostream>
+
+#define NOMINMAX
+
 #include "environment.h"
 #include "image_loader1x.h"
 #include "grayscale_tiff.h"
