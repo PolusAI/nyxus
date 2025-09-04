@@ -34,7 +34,7 @@ jobs:
     - name: Install Conda Dependencies
       run: |
         conda install mamba
-        mamba install compilers=1.10.0 --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt
+        mamba install compilers --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON -DRUN_GTEST=ON -DALLEXTRAS=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
@@ -71,7 +71,7 @@ jobs:
     - name: Install Conda Dependencies
       run: |
         conda install mamba
-        mamba install compilers=1.10.0 pytest bfio --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt --file ${{github.workspace}}/ci-utils/envs/conda_py.txt
+        mamba install compilers pytest bfio --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt --file ${{github.workspace}}/ci-utils/envs/conda_py.txt
 
     - name: Install Nyxus
       working-directory: ${{github.workspace}}
