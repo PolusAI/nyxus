@@ -99,29 +99,6 @@ void BasicGeomoms2D::calculate(LR& r, intenfunction ifun)
 {
     INTEN = ifun;
 
-    // intercept blank ROIs
-    if (r.aux_max == r.aux_min)
-    {
-        // spatial moments
-        m00 = m01 = m02 = m03 = m10 = m11 = m12 = m13 = m20 = m21 = m22 = m23 = m30 =
-            // weighted spatial moments
-            wm00 = wm01 = wm02 = wm03 = wm10 = wm11 = wm12 = wm20 = wm21 = wm30 =
-            // normalized spatial moments
-            w00 = w01 = w02 = w03 = w10 = w11 = w12 = w13 = w20 = w21 = w22 = w23 = w30 = w31 = w32 = w33 =
-            // normalized central moments
-            nu02 = nu03 = nu11 = nu12 = nu20 = nu21 = nu30 =
-            // central moments
-            mu00 = mu01 = mu02 = mu03 = mu10 = mu11 = mu12 = mu13 = mu20 = mu21 = mu22 = mu23 = mu30 = mu31 = mu32 = mu33 =
-            // weighted central moments
-            wmu02 = wmu03 = wmu11 = wmu12 = wmu20 = wmu21 = wmu30 =
-            // Hu invariants
-            hm1 = hm2 = hm3 = hm4 = hm5 = hm6 = hm7 =
-            // weighted Hu invariants
-            whm1 = whm2 = whm3 = whm4 = whm5 = whm6 = whm7 = theEnvironment.resultOptions.noval();
-
-        return;
-    }
-
     // Cache ROI frame of reference
     baseX = r.aabb.get_xmin();
     baseY = r.aabb.get_ymin();
