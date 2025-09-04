@@ -5,7 +5,6 @@
 #include "dcmtk/dcmjpeg/djdecode.h"  /* for JPEG decoders */
 #include "dcmtk/dcmjpls/djdecode.h"  /* for JPEG-LS decoders */
 #include "dcmtk/dcmdata/dcrledrg.h"  /* for RLE decoder */
-#include "dcmtk/dcmdata/dcpixel.h"  /* for RLE decoder */
 #include "dcmtk/dcmjpeg/dipijpeg.h"  /* for dcmimage JPEG plugin */
 #include "dcmtk/dcmseg/segdoc.h"
 #include "dcmtk/dcmseg/segment.h"
