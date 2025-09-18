@@ -11,7 +11,8 @@ from test_data import intens, seg
 import shutil
 import pandas as pd
 
-from test_tissuenet_data import tissuenet_int, tissuenet_seg, ct_zslice_hounsfeld_inten, ct_zslice_hounsfeld_mask
+from test_tissuenet_data import tissuenet_int, tissuenet_seg
+from test_data import ct_zslice_hounsfeld_inten, ct_zslice_hounsfeld_mask
 
 class TestImport():
     def test_import(self):
