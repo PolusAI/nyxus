@@ -742,7 +742,7 @@ class TestNyxus():
             assert list(f1.columns) not in list(f2.columns)
 
         def test_set_ram_limit_param(self):
-        nyx = nyxus.Nyxus (["*ALL*"])
+            nyx = nyxus.Nyxus (["*ALL*"])
             assert nyx is not None
             nyx.set_params (ram_limit = 1)
             actual = nyx.get_params()
