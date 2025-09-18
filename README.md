@@ -15,7 +15,7 @@ Nyxus is a feature-rich, optimized, Python/C++ application capable of analyzing 
 
 Nyxus can be used via Python or command line and is available in containerized form for reproducible execution. Nyxus computes over 450 combined intensity, texture, and morphological features at the ROI or whole image level with more in development. Key features that make Nyxus unique among other image feature extraction applications is its ability to operate at any scale, its highly validated algorithms, and its modular nature that makes the addition of new features straightforward.
 
-Currently, Nyxus can read image data from OME-TIFF, OME-Zarr and DICOM 2D Grayscale images. It also has a Python API to support in-memory image data via Numpy array. 
+Currently, Nyxus can read 2D image data from OME-TIFF, OME-Zarr, and DICOM 2D Grayscale images. Nyxus also reads compressed and uncompressed NIFTI 3D files. Nyxus Python API supports featurizing in-memory 2D image data represented by NumPy arrays. 
 
 The docs can be found at [Read the Docs](https://nyxus.readthedocs.io/en/latest/).
 
@@ -40,6 +40,8 @@ The library provides class `Nyxus` for 2-dimensional TIFF, OME.TIFF, OME.ZARR, a
 
 Given `intensities` and `labels` folders, Nyxus pairs up intensity-segmentation mask images and extracts features from all of them. A summary of the available feature are [listed below](#available-features).
 
+#### featurizing data in file system directories
+
 ```python 
 from nyxus import Nyxus
 nyx = Nyxus (["*ALL*"])
@@ -48,6 +50,7 @@ maskDir = "/path/to/images/labels/"
 features = nyx.featurize_directory (intensityDir, maskDir) # selecting all the .ome.tif slides (default)
 ```
 
+#### featurizing explicitly defined lists of files
 Alternatively, Nyxus can process explicitly defined pairs of intensity-mask images thus specifying custom 1:N and M:N mapping between segmentation mask and intensity image files. 
 The following example extracts all the features (note parameter "*ALL*") from intensity images 'i1', 'i2', and 'i3' related with mask images 'm1' and 'm2' via a custom mapping:
 
@@ -68,7 +71,7 @@ features = nyx.featurize_files(
 	False) # pass True to featurize intensity files as whole segments
 ```
 
-The result `features` variable is a Pandas dataframe similar to what is shown below. Note that if multiple segments are stored in a segmentation mask file, each segment's features in the resultcan be identified by the mask file name and segment mask label.
+The result variable `features` is a Pandas dataframe similar to what is shown below. Note that if multiple segments are stored in a segmentation mask file, each segment's features in the resultcan be identified by the mask file name and segment mask label.
 
 |     | mask_image           | intensity_image      |   label |    MEAN |   MEDIAN |...|    GABOR_6 |
 |----:|:---------------------|:---------------------|--------:|--------:|---------:|--:|-----------:|
@@ -80,7 +83,9 @@ The result `features` variable is a Pandas dataframe similar to what is shown be
 | ... | ...                  | ...                  |     ... | ...     |  ...     |...|   ...      |
 | 734 | p5_y0_r51_c0.ome.tif | p5_y0_r51_c0.ome.tif |     223 | 54573.3 |  54573.3 |...|   0.980769 |
 
-Nyxus can also process intensity-mask pairs that are loaded as NumPy arrays using the `featurize` method. This method takes in either a single pair of 2D intensity-mask pairs
+#### featurizing in-memory 2D images; featurizing a montage
+
+Nyxus can also featurize in-memory intensity-mask pairs that are loaded as NumPy arrays using the `featurize` method. This method takes in either a single pair of 2D intensity-mask pairs
 or a pair of 3D arrays containing 2D intensity and mask images. There is also two optional parameters to supply names to the resulting dataframe, . 
 
 ```python 
@@ -105,6 +110,34 @@ seg = np.array([
 
 features = nyx.featurize(intens, seg)
 ```
+
+<u>Note:</u> if array `intens` contains negative values similarly to intensities in Hounsfeld units observed in CT-scan datasets, method `featurize()` automatically adjusts values of of array `intens` while passing them to Nyxus backend so as to make them zero-based, like in the following example:
+
+```
+import numpy as np
+import nyxus
+I = np.array([
+  [-1024.74,      -1019.67,      -1005.70,       -998.60,       -998.66,      -1005.82,      -1019.65,      -1024.72],
+  [-1019.44,      -1001.22,      -1023.82,      -1034.34,      -1035.81,      -1027.00,      -1001.89,      -1019.62],
+  [-1011.86,      -1002.17,       -724.06,       -521.43,       -471.04,       -671.30,      -1006.98,      -1010.62],
+  [-1008.78,       -703.58,         21.66,         44.32,        130.35,        113.37,       -608.11,      -1056.33],
+  [-415.46,       -106.08,         69.80,         59.70,         97.64,        120.62,        -49.77,       -480.57],
+  [-464.06,       -176.81,         76.79,         93.34,        131.99,         73.16,       -106.70,       -348.06],
+  [-1012.75,       -740.21,       -502.72,       -370.36,       -377.42,       -497.65,       -719.82,      -1000.82],
+  [-1032.57,       -979.63,       -867.71,       -815.30,       -830.90,       -875.08,       -983.76,      -1033.78]], np.float64)
+M = np.array([
+  [0,      0,      0,       0,       0,      0,      0,      0],
+  [0,      0,      1,       1,       1,      1,      0,      0],
+  [0,      1,      1,       1,       1,      1,      1,      0],
+  [0,      1,      1,       1,       1,      1,      1,      0],
+  [0,      1,      1,       1,       1,      1,      1,      0],
+  [0,      1,      1,       1,       1,      1,      1,      0],
+  [0,      0,      1,       1,       1,      1,      0,      0],
+  [0,      0,      0,       0,       0,      0,      0,      0]], np.uint16)
+nyx = nyxus.Nyxus (["*ALL_INTENSITY*"])
+f = nyx.featurize (I, M, intensity_names=['I'], label_names=['M'])
+```
+
 
 The `features` variable is a Pandas dataframe similar to what is shown below.
 

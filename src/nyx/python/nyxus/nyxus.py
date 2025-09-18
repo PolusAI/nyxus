@@ -399,9 +399,21 @@ class Nyxus:
         if (label_images.shape[0] != len(label_names)):
             raise ValueError("Number of segmentation names must be the same as the number of images.")
         
+        # (1) check if the intensities are represented in Hounsfeld type scale, and (2) adjust them into the unsigned integer scale
+        I = intensity_images
+        min_raw_I = np.min (intensity_images)
+        if (min_raw_I < 0):
+            I -= min_raw_I
+        if (not isinstance(I.flat[0], np.uint32)):
+            I = np.astype (I, np.uint32)
+
+        # cast mask data to unsigned integer, too
+        M = np.astype (label_images, np.uint32)
+
+        # featurize
         if (output_type == 'pandas'):
                 
-            header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, "")
+            header, string_data, numeric_data, error_message = featurize_montage_imp (I, M, intensity_names, label_names, output_type, "")
             
             self.error_message = error_message
             if(error_message != ''):
@@ -423,7 +435,7 @@ class Nyxus:
             
         else:
             
-            ret = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, output_path)
+            ret = featurize_montage_imp (I, M, intensity_names, label_names, output_type, output_path)
             
             self.error_message = ret[0]
             
