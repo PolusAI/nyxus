@@ -42,14 +42,14 @@ popd
 
 if "%BUILD_Z5_DEP%" == "1" (
     for /l %%x in (1, 1, 5) do (
-        curl -L https://archives.boost.io/release/1.79.0/source/boost_1_79_0.zip -o boost_1_79_0.zip
-        if  exist boost_1_79_0.zip (
+        curl -L https://archives.boost.io/release/1.79.0/source/boost_1_88_0.zip -o boost_1_88_0.zip
+        if  exist boost_1_88_0.zip (
             goto :continue_boost
         )
     )
     :continue_boost
-    tar  -xf boost_1_79_0.zip
-    pushd boost_1_79_0 
+    tar  -xf boost_1_88_0.zip
+    pushd boost_1_88_0 
     call bootstrap.bat 
     .\b2 headers --prefix=../local_install
     .\b2 -j %NUMBER_OF_PROCESSORS% variant=release link=shared runtime-link=shared threading=multi install --prefix=../local_install
@@ -127,7 +127,7 @@ if "%BUILD_ARROW%" == "1" (
     pushd cpp
     mkdir build
     pushd build
-    cmake .. -A x64 -DCMAKE_INSTALL_PREFIX=../../../local_install/ -DCMAKE_PREFIX_PATH=../../../local_install/ -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON -DBOOST_ROOT=%_ROOTDIR%/boost_1_79_0
+    cmake .. -A x64 -DCMAKE_INSTALL_PREFIX=../../../local_install/ -DCMAKE_PREFIX_PATH=../../../local_install/ -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON -DARROW_BUILD_TESTS=OFF -DBOOST_ROOT=%_ROOTDIR%/boost_1_88_0
     cmake --build . --config Release --target install --parallel 4
     popd 
     popd
