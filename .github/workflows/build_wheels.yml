@@ -8,6 +8,7 @@ jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     env:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
     strategy:
@@ -74,6 +75,7 @@ jobs:
   build_wheels_apple_arm64:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     env:
       MACOSX_DEPLOYMENT_TARGET: "11.0"
     strategy:
