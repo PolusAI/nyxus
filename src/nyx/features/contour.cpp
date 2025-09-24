@@ -381,6 +381,51 @@ void ContourFeature::buildRegularContour(LR& r)
 			auto inte = borderImage.at(idx);
 			if (inte)
 			{
+				// register a pixel only if it has any immediate neighbor
+				bool hasNeig = false;
+				if (x > 0)	// left neighbor
+				{
+					size_t idxNeig = (x-1) + y * (width+2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (x < width-1)	// right neighbor
+				{
+					size_t idxNeig = (x+1) + y * (width+2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (y > 0)	// upper neighbor
+				{
+					size_t idxNeig = x + (y-1) * (width+2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (y < height-1)	// lower neighbor
+				{
+					size_t idxNeig = x + (y+1) * (width+2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (x>0 && y > 0)	// upper left neighbor
+				{
+					size_t idxNeig = (x-1) + (y-1) * (width+2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (x < width-1 && y > 0)	// upper right neighbor
+				{
+					size_t idxNeig = (x+1) + (y-1) * (width+2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (x>0 && y < height-1)	// lower left neighbor
+				{
+					size_t idxNeig = (x-1) + (y+1) * (width+2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (x < width-1 && y < height-1)	// lower right neighbor
+				{
+					size_t idxNeig = (x+1) + (y+1) * (width+2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (!hasNeig)
+					continue;
+				// pixel is good, save it
 				Pixel2 p(x, y, inte - 1);
 				r.contour.push_back(p);
 			}
