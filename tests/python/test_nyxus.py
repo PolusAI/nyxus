@@ -762,4 +762,26 @@ class TestNyxus():
             'VARIANCE', 'UNIFORMITY']].sum().sum()
             assert np.isclose (checksum, 212872.71320641672, rtol=1.e-5, atol=1.e-8)
 
+        def test_bad_contour (self):
+            '''
+            Testing Nyxus ability to not crash ingesting a segment without any contour e.g. speckles only
+            '''
+            I = np.random.randint(10, 50, size=(10, 10))    # nonzero everywhere
+            M = np.array([
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                [0, 0, 1, 0, 0, 0, 0, 0, 0, 0], 
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                [0, 0, 0, 0, 0, 0, 0, 1, 0, 0], 
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                [0, 0, 0, 0, 1, 0, 0, 0, 0, 0], 
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                [0, 0, 0, 0, 0, 0, 1, 0, 0, 0], 
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
+            nyx = nyxus.Nyxus (["PERIMETER", "DIAMETER_EQUAL_PERIMETER", "EDGE_MEAN_INTENSITY"])
+            assert nyx is not None
+            f = nyx.featurize (I, M)
+            assert f["PERIMETER"] == 0
+            assert f["DIAMETER_EQUAL_PERIMETER"] == 0
+            assert f["EDGE_MEAN_INTENSITY"] != 0
 

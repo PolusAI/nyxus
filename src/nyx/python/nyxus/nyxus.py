@@ -435,9 +435,7 @@ class Nyxus:
         else:
             
             ret = featurize_montage_imp (I, M, intensity_names, label_names, output_type, output_path)
-            
             self.error_message = ret[0]
-            
             if(self.error_message != ''):
                 raise RuntimeError('Error calculating features: ' + error_message[0])
             
