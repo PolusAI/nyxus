@@ -291,9 +291,9 @@ class Nyxus:
                 axis=1,
             )
 
-            # Labels should always be uint.
+            # Labels should always be uint
             if "ROI_label" in df.columns:
-                df["ROI_label"] = df.ROI_label.astype(np.uint32)
+                df.ROI_label = df.ROI_label.astype(np.uint32)
 
             return df
         
@@ -399,13 +399,24 @@ class Nyxus:
         if (label_images.shape[0] != len(label_names)):
             raise ValueError("Number of segmentation names must be the same as the number of images.")
         
+        # (1) check if the intensities are represented in Hounsfeld type scale, and (2) adjust them into the unsigned integer scale
+        I = intensity_images
+        min_raw_I = np.min (intensity_images)
+        if (min_raw_I < 0):
+            I -= min_raw_I
+        if (not isinstance(I.flat[0], np.uint32)):
+            I = I.astype (np.uint32)
+
+        # cast mask data to unsigned integer, too
+        M = label_images.astype (np.uint32)
+
+        # featurize
         if (output_type == 'pandas'):
                 
-            header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, "")
-            
+            header, string_data, numeric_data, error_message = featurize_montage_imp (I, M, intensity_names, label_names, output_type, "")
             self.error_message = error_message
-            if(error_message != ''):
-                print(error_message)
+            if error_message != '':
+                print (error_message)
 
             df = pd.concat(
                 [
@@ -415,18 +426,16 @@ class Nyxus:
                 axis=1,
             )
 
-            # Labels should always be uint.
-            if "label" in df.columns:
-                df["label"] = df.label.astype(np.uint32)
+            # labels should always be uint
+            if "ROI_label" in df.columns:
+                df.ROI_label = df.ROI_label.astype(np.uint32)
 
             return df
             
         else:
             
-            ret = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, output_path)
-            
+            ret = featurize_montage_imp (I, M, intensity_names, label_names, output_type, output_path)
             self.error_message = ret[0]
-            
             if(self.error_message != ''):
                 raise RuntimeError('Error calculating features: ' + error_message[0])
             
@@ -494,9 +503,9 @@ class Nyxus:
                 axis=1,
             )
 
-            # Labels should always be uint.
-            if "label" in df.columns:
-                df["label"] = df.label.astype(np.uint32)
+            # Labels should always be uint
+            if "ROI_label" in df.columns:
+                df.ROI_label = df.ROI_label.astype(np.uint32)
 
             return df
         
@@ -1057,9 +1066,9 @@ class Nyxus3D:
                 ],
                 axis=1,
             )
-            # Labels should always be uint.
-            if "label" in df.columns:
-                df["label"] = df.label.astype(np.uint32)
+            # Labels should always be uint
+            if "ROI_label" in df.columns:
+                df.ROI_label = df.ROI_label.astype(np.uint32)
             return df
         else:
             featurize_directory_3D_imp (intensity_dir, label_dir, file_pattern, output_type, output_path)
@@ -1124,9 +1133,9 @@ class Nyxus3D:
                 axis=1,
             )
 
-            # Labels should always be uint.
-            if "label" in df.columns:
-                df["label"] = df.label.astype(np.uint32)
+            # Labels should always be uint
+            if "ROI_label" in df.columns:
+                df.ROI_label = df.ROI_label.astype(np.uint32)
 
             return df
         
