@@ -781,7 +781,7 @@ class TestNyxus():
             nyx = nyxus.Nyxus (["PERIMETER", "DIAMETER_EQUAL_PERIMETER", "EDGE_MEAN_INTENSITY"])
             assert nyx is not None
             f = nyx.featurize (I, M, intensity_names=['I'], label_names=['M'])
-            assert f["PERIMETER"] == 0
-            assert f["DIAMETER_EQUAL_PERIMETER"] == 0
-            assert f["EDGE_MEAN_INTENSITY"] != 0
+            assert f.at[0, "PERIMETER"] == 0
+            assert f.at[0, "DIAMETER_EQUAL_PERIMETER"] == 0
+            assert f.at[0, "EDGE_MEAN_INTENSITY"] != 0
 
