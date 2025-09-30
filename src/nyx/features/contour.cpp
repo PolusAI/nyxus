@@ -374,6 +374,7 @@ void ContourFeature::buildRegularContour(LR& r)
 	r.contour.clear();
 
 	// gather contour pixels undecorating their intensities back to original values
+	Pixel2 lastNonzeroPx (0, 0, 0);
 	for (int y = 0; y < height + 2; y++)
 		for (int x = 0; x < width + 2; x++)
 		{
@@ -381,6 +382,56 @@ void ContourFeature::buildRegularContour(LR& r)
 			auto inte = borderImage.at(idx);
 			if (inte)
 			{
+				// this pixel may happen to be isolated (a speckle), nonetheless, remember it 
+				// as we'll need to report it as a degenerate contour if no properly neighbored 
+				// pixel group is found
+				lastNonzeroPx = { x, y, inte - 1 };
+				
+				// register a pixel only if it has any immediate neighbor
+				bool hasNeig = false;
+				if (x > 0)	// left neighbor
+				{
+					size_t idxNeig = (x-1) + y * (width+2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (x < width-1)	// right neighbor
+				{
+					size_t idxNeig = (x+1) + y * (width+2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (y > 0)	// upper neighbor
+				{
+					size_t idxNeig = x + (y-1) * (width+2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (y < height-1)	// lower neighbor
+				{
+					size_t idxNeig = x + (y+1) * (width+2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (x>0 && y > 0)	// upper left neighbor
+				{
+					size_t idxNeig = (x-1) + (y-1) * (width+2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (x < width-1 && y > 0)	// upper right neighbor
+				{
+					size_t idxNeig = (x+1) + (y-1) * (width+2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (x>0 && y < height-1)	// lower left neighbor
+				{
+					size_t idxNeig = (x-1) + (y+1) * (width+2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (x < width-1 && y < height-1)	// lower right neighbor
+				{
+					size_t idxNeig = (x+1) + (y+1) * (width+2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (!hasNeig)
+					continue;
+				// pixel is good, save it
 				Pixel2 p(x, y, inte - 1);
 				r.contour.push_back(p);
 			}
@@ -390,65 +441,71 @@ void ContourFeature::buildRegularContour(LR& r)
 
 	//==== Reorder the contour cloud
 
-	//	--containers for unordered (temp) and ordered (result) pixels
-	std::list<Pixel2> unordered(r.contour.begin(), r.contour.end());
-	std::vector<Pixel2> ordered;
-	ordered.reserve(unordered.size());
-	std::vector<Pixel2> pants;
-
-	//	--initialize vector 'ordered' with 1st pixel of 'unordered'
-	auto itBeg = unordered.begin();
-	Pixel2 pxTip = *itBeg;
-	ordered.push_back(pxTip);
-	unordered.remove(pxTip);
-
-	//	-- tip of the ordered contour
-	pxTip = ordered.at(0);
-
-	//	-- harvest items of 'unordered' 
-	while (unordered.size())
+	// are there any good candidate pixels ?
+	if (r.contour.size())
 	{
-		//	--find tip's neighbors 
-		std::vector<Pixel2> cands = find_cands (unordered, pxTip);
-		if (cands.empty())
+		//	--containers for unordered (temp) and ordered (result) pixels
+		std::list<Pixel2> unordered (r.contour.begin(), r.contour.end());
+		std::vector<Pixel2> ordered;
+		ordered.reserve (unordered.size());
+		std::vector<Pixel2> pants;
+
+		//	--initialize vector 'ordered' with 1st pixel of 'unordered'
+		auto itBeg = unordered.begin();
+		Pixel2 pxTip = *itBeg;
+		ordered.push_back(pxTip);
+		unordered.remove(pxTip);
+
+		//	-- tip of the ordered contour
+		pxTip = ordered.at(0);
+
+		//	-- harvest items of 'unordered' 
+		while (unordered.size())
 		{
-			// -- we have a gap and need to fix it
-			VERBOSLVL4(dump_2d_image_with_halfcontour(borderImage, unordered, ordered, pxTip, width + 2, height + 2, "\nhalfcontour:\n", ""));
-				
-			// -- no 'break;' ,instead, jump the tip to the closest U-pixel
-			Pixel2 pxPants;
-			pxPants = pants.back();
-			pxTip = pxPants;
-			Pixel2 closest = find_closest (unordered, pxTip);
+			//	--find tip's neighbors 
+			std::vector<Pixel2> cands = find_cands(unordered, pxTip);
+			if (cands.empty())
+			{
+				// -- we have a gap and need to fix it
+				VERBOSLVL4(dump_2d_image_with_halfcontour(borderImage, unordered, ordered, pxTip, width + 2, height + 2, "\nhalfcontour:\n", ""));
 
-			// -- discharge
-			ordered.push_back (closest);
-			unordered.remove (closest);
-			pxTip = ordered.at(ordered.size() - 1);
+				// -- no 'break;' ,instead, jump the tip to the closest U-pixel
+				Pixel2 pxPants;
+				pxPants = pants.back();
+				pxTip = pxPants;
+				Pixel2 closest = find_closest(unordered, pxTip);
+
+				// -- discharge
+				ordered.push_back(closest);
+				unordered.remove(closest);
+				pxTip = ordered.at(ordered.size() - 1);
+			}
+			else
+			{
+				// -- register pants
+				if (cands.size() >= 2)
+					pants.push_back(pxTip);
+
+				// -- score thems
+				std::vector<int> candScores = score_cands(cands, pxTip);
+
+				// -- choose the best
+				auto itBest = std::min_element(candScores.begin(), candScores.end());
+				int idxBest = (int)std::distance(candScores.begin(), itBest);
+
+				// -- discharge the found pixel from set 'unordered' and update the tip
+				Pixel2& px = cands.at(idxBest);
+				ordered.push_back(px);
+				unordered.remove(px);
+				pxTip = ordered.at(ordered.size() - 1);
+			}
 		}
-		else
-		{
-			// -- register pants
-			if (cands.size() >= 2)
-				pants.push_back(pxTip);
 
-			// -- score thems
-			std::vector<int> candScores = score_cands(cands, pxTip);
-
-			// -- choose the best
-			auto itBest = std::min_element (candScores.begin(), candScores.end());
-			int idxBest = (int)std::distance (candScores.begin(), itBest);
-
-			// -- discharge the found pixel from set 'unordered' and update the tip
-			Pixel2& px = cands.at(idxBest);
-			ordered.push_back(px);
-			unordered.remove(px);
-			pxTip = ordered.at(ordered.size() - 1);
-		}
+		// done sorting. Now set the ordered contour in the ROI
+		r.contour = ordered;
 	}
-
-	// done sorting. Now set the ordered contour in the ROI
-	r.contour = ordered;
+	else
+		r.contour.push_back(lastNonzeroPx);	// just use the last speckle as a contour because we have no legit contour
 
 	VERBOSLVL4(dump_2d_image_with_vertex_chain(borderImage, r.contour, width + 2, height + 2, "\n\n-- ContourFeature / buildRegularContour / Padded contour image + sorted contour--\n", "\n\n"));
 

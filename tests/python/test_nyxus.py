@@ -12,6 +12,7 @@ import shutil
 import pandas as pd
 
 from test_tissuenet_data import tissuenet_int, tissuenet_seg
+from test_data import ct_zslice_hounsfeld_inten, ct_zslice_hounsfeld_mask
 
 class TestImport():
     def test_import(self):
@@ -748,4 +749,39 @@ class TestNyxus():
             actual = nyx.get_params()
             expected = {'ram_limit': 1}
             assert actual['ram_limit'] == expected['ram_limit']
+
+        def test_montage_hounsfeld_data (self):
+            '''
+            Testing Nyxus ability to ingest data in Hounsfeld units and featurize it without NANs
+            '''
+            nyx = nyxus.Nyxus (["*ALL_INTENSITY*"])
+            assert nyx is not None
+            f = nyx.featurize (ct_zslice_hounsfeld_inten, ct_zslice_hounsfeld_mask, intensity_names=['I'], label_names=['M'])
+            checksum = f[['COV', 'ENTROPY', 'KURTOSIS', 'MEAN', 'MEAN_ABSOLUTE_DEVIATION', 'MEDIAN', 'MODE', 
+            'P25', 'ROBUST_MEAN', 'SKEWNESS', 'STANDARD_DEVIATION', 'STANDARD_ERROR', 
+            'VARIANCE', 'UNIFORMITY']].sum().sum()
+            assert np.isclose (checksum, 212872.71320641672, rtol=1.e-5, atol=1.e-8)
+
+        def test_bad_contour (self):
+            '''
+            Testing Nyxus ability to not crash ingesting a segment without any contour e.g. speckles only
+            '''
+            I = np.random.randint(10, 50, size=(10, 10))    # nonzero everywhere
+            M = np.array([
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                [0, 0, 1, 0, 0, 0, 0, 0, 0, 0], 
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                [0, 0, 0, 0, 0, 0, 0, 1, 0, 0], 
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                [0, 0, 0, 0, 1, 0, 0, 0, 0, 0], 
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                [0, 0, 0, 0, 0, 0, 1, 0, 0, 0], 
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
+            nyx = nyxus.Nyxus (["PERIMETER", "DIAMETER_EQUAL_PERIMETER", "EDGE_MEAN_INTENSITY"])
+            assert nyx is not None
+            f = nyx.featurize (I, M, intensity_names=['I'], label_names=['M'])
+            assert f.at[0, "PERIMETER"] == 0
+            assert f.at[0, "DIAMETER_EQUAL_PERIMETER"] == 0
+            assert f.at[0, "EDGE_MEAN_INTENSITY"] != 0
 
