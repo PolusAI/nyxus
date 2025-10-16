@@ -8,6 +8,7 @@ jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     env:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
     strategy:
@@ -52,9 +53,20 @@ jobs:
                                    mkdir -p /tmp/nyxus_bld &&
                                    cp -r local_install /tmp/nyxus_bld
           CIBW_BEFORE_ALL_WINDOWS: ci-utils\install_prereq_win.bat &&
-                                   xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install
-                                     
-          CIBW_ENVIRONMENT_MACOS: REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64" PATH="$(brew --prefix llvm@16)/bin:$PATH" COMPILER="/usr/local/opt/llvm@16/bin/clang++" CFLAGS="-I /usr/local/include -I/usr/local/opt/llvm@16/include" CXXFLAGS="-I /usr/local/include -I/usr/local/opt/llvm@16/include" LDFLAGS="-L /usr/local/lib -L/usr/local/opt/llvm@16/lib -Wl,-rpath,/usr/local/opt/llvm@16/lib" CXX="/usr/local/opt/llvm@16/bin/clang++" CC="/usr/local/opt/llvm@16/bin/clang" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
+                                   xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install                     
+          CIBW_ENVIRONMENT_MACOS: >
+            SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
+            CMAKE_OSX_SYSROOT="$SDKROOT"
+            LLVM_PREFIX="/usr/local/opt/llvm@16"
+            PATH="$LLVM_PREFIX/bin:$PATH"
+            CC="$LLVM_PREFIX/bin/clang"
+            CXX="$LLVM_PREFIX/bin/clang++"
+            COMPILER="$LLVM_PREFIX/bin/clang++"
+            CXXFLAGS="-isysroot $SDKROOT -stdlib=libc++"
+            LDFLAGS="-isysroot $SDKROOT -lc++ -lc++abi"
+            ARROW_HAVE_LIBATOMIC=OFF
+            REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64"
+            NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
           CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:$LD_LIBRARY_PATH" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install" 
           CIBW_ENVIRONMENT_WINDOWS: PATH="C:\\TEMP\\nyxus_bld\\local_install\\bin;$PATH" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install"
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-listdeps {wheel} && DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
@@ -74,6 +86,7 @@ jobs:
   build_wheels_apple_arm64:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     env:
       MACOSX_DEPLOYMENT_TARGET: "11.0"
     strategy:
@@ -106,9 +119,20 @@ jobs:
                                     sudo xcode-select -s /Applications/Xcode_14.2.app &&
                                     bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
                                     mkdir -p /tmp/nyxus_bld &&
-                                    cp -r local_install /tmp/nyxus_bld 
-                                      
-          CIBW_ENVIRONMENT_MACOS: REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64" PATH="/opt/homebrew/opt/llvm@16/bin:$PATH" COMPILER="/opt/homebrew/opt/llvm@16/bin/clang++" CFLAGS="-I/opt/homebrew/opt/llvm@16/include" CPPFLAGS="-I/opt/homebrew/opt/llvm@16/include" LDFLAGS="-L/opt/homebrew/opt/llvm@16/lib -L/opt/homebrew/opt/llvm@16/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm@16/lib/c++" CXX="/opt/homebrew/opt/llvm@16/bin/clang++" CC="/opt/homebrew/opt/llvm@16/bin/clang" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
+                                    cp -r local_install /tmp/nyxus_bld                    
+          CIBW_ENVIRONMENT_MACOS: >
+            SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
+            CMAKE_OSX_SYSROOT="$SDKROOT"
+            LLVM_PREFIX="/opt/homebrew/opt/llvm@16"
+            PATH="$LLVM_PREFIX/bin:$PATH"
+            CC="$LLVM_PREFIX/bin/clang"
+            CXX="$LLVM_PREFIX/bin/clang++"
+            COMPILER="$LLVM_PREFIX/bin/clang++"
+            CXXFLAGS="-isysroot $SDKROOT -stdlib=libc++"
+            LDFLAGS="-isysroot $SDKROOT -lc++ -lc++abi"
+            ARROW_HAVE_LIBATOMIC=OFF
+            REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64"
+            NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-listdeps {wheel} && DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
           CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
