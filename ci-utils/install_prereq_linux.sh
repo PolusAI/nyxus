@@ -256,7 +256,6 @@ if [[ $BUILD_ARROW_DEP -eq 1 ]]; then
             -DARROW_IPC=ON \
             -DARROW_JSON=ON \
             .. 
-
     make -j4
     make install
 
