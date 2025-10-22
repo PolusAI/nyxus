@@ -962,7 +962,7 @@ To build the command line interface, pass `-DBUILD_CLI=ON` in the `cmake` comman
 Below is an example of how to build Nyxus inside a `conda` environment on Linux.
 
 ```bash
-conda create -n nyxus_build python=3.10
+conda create -n nyxus_build python=3.12
 conda activate nyxus_build
 git clone https://github.com/PolusAI/nyxus.git
 cd nyxus
@@ -977,7 +977,7 @@ make -j4
 
 To install the python package in the `conda` environment on Linux, use the following direction.
 ```bash
-conda create -n nyxus_build python=3.10
+conda create -n nyxus_build python=3.12
 conda activate nyxus_build
 git clone https://github.com/PolusAI/nyxus.git
 cd nyxus
@@ -985,6 +985,15 @@ conda install mamba -c conda-forge
 mamba install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_py.txt
 export NYXUS_DEP_DIR=$CONDA_PREFIX
 CMAKE_ARGS="-DUSEGPU=ON -DALLEXTRAS=ON -DPython_ROOT_DIR=$CONDA_PREFIX -DPython_FIND_VIRTUALENV=ONLY" python -m pip install . -vv
+```
+
+If there's no system wide compatible C++ compiler, we may install it using conda and the configuration script will pick it up.
+```bash
+...
+conda activate nyxus_build
+conda install cxx-compiler -y 
+export NYXUS_DEP_DIR=$CONDA_PREFIX
+...
 ```
 
 ### __Without Using Conda__
