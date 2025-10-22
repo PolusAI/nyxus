@@ -42,6 +42,25 @@ jobs:
           ls $env:CUDA_PATH\bin
           ls $env:CUDA_PATH\include
 
+      # ---------- Linux-only: reclaim space on the host BEFORE Docker pulls ----------
+      - name: Free disk space on Linux host
+        if: runner.os == 'Linux'
+        uses: jlumbroso/free-disk-space@main
+        with:
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+          tool-cache: false
+
+      - name: Prune Docker (pre-build)
+        if: runner.os == 'Linux'
+        run: |
+          docker system prune -af || true
+          docker builder prune -af || true
+
       - uses: actions/setup-python@v4
         name: Install Python
         with:
