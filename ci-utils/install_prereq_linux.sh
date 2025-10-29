@@ -153,9 +153,9 @@ make install -j4
 cd ../../
 
 if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
-    curl -L  https://github.com/glennrp/libpng/archive/refs/tags/v1.6.39.zip -o v1.6.39.zip
-    unzip v1.6.39.zip
-    cd libpng-1.6.39
+    curl -L  https://github.com/glennrp/libpng/archive/refs/tags/v1.6.46.zip -o v1.6.46.zip
+    unzip v1.6.46.zip
+    cd libpng-1.6.46
     mkdir build_man
     cd build_man
     cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/   ..
