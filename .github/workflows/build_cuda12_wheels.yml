@@ -14,7 +14,7 @@ jobs:
       matrix:
         os: [windows-2022, ubuntu-22.04]
         cibw_archs: ["auto64"]
-        cibw_build: ["cp39", "cp310", "cp311", "cp312"]
+        cibw_build: ["cp310", "cp311", "cp312", "cp313"]
 
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
           ls $env:CUDA_PATH\bin
           ls $env:CUDA_PATH\include
 
-      # ---------- Linux-only: reclaim space on the host BEFORE Docker pulls ----------
+
       - name: Free disk space on Linux host
         if: runner.os == 'Linux'
         uses: jlumbroso/free-disk-space@main
@@ -65,9 +65,10 @@ jobs:
 
       - name: Install cibuildwheel
         run: |
-          python -m pip install cibuildwheel==2.16.2 delvewheel wheel
+          python -m pip install --upgrade pip
+          python -m pip install cibuildwheel==3.0.0 delvewheel wheel
 
-      - name: Building wheels 
+      - name: Building wheels
         run: |
           python -m cibuildwheel --output-dir dist
         env:
@@ -75,18 +76,33 @@ jobs:
           CIBW_SKIP: "*musllinux*"
           CIBW_BUILD_VERBOSITY: 3
           CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64:latest
-          CIBW_BEFORE_ALL_LINUX: dnf -y install llvm libevent-devel openssl-devel && 
-                                   bash ci-utils/install_cuda_yum.sh 12 && 
-                                   bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
-                                   mkdir -p /tmp/nyxus_bld &&
-                                   cp -r local_install /tmp/nyxus_bld
-          CIBW_BEFORE_ALL_WINDOWS: nvcc -V &&
-                                   ci-utils\install_prereq_win.bat &&
-                                   xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install
-          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:/usr/local/cuda/targets/x86_64-linux/lib:$LD_LIBRARY_PATH" CPATH="/usr/local/cuda/targets/x86_64-linux/include:$CPATH" PATH="/usr/local/cuda/bin:$PATH" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install" CXXFLAGS="-I /usr/local/cuda/include" CMAKE_ARGS="-DUSEGPU=ON -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc -DCMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES=/usr/local/cuda/include" NYXUS_GPU_WHEEL="ON" 
-          CIBW_ENVIRONMENT_WINDOWS: PATH="C:\\TEMP\\nyxus_bld\\local_install\\bin;$PATH" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install" CMAKE_ARGS="-DUSEGPU=ON" NYXUS_GPU_WHEEL="ON" 
-          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel} --no-dll cufft64_11.dll;cufftw64_11.dll;cudart32_120.dll;cudart64_120.dll"
-          CIBW_REPAIR_WHEEL_COMMAND_LINUX: auditwheel repair --exclude=libcufft.so --exclude=libcufft.so.11 --exclude=libcufft.so.11.0.12.1  --exclude=libcudart.so --exclude=libcudart.so.12 --exclude=libcudart.so.12.3.101  -w {dest_dir} {wheel}
+          CIBW_BEFORE_ALL_LINUX: >
+            dnf -y install llvm libevent-devel openssl-devel &&
+            bash ci-utils/install_cuda_yum.sh 12 &&
+            bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
+            mkdir -p /tmp/nyxus_bld &&
+            cp -r local_install /tmp/nyxus_bld
+          CIBW_BEFORE_ALL_WINDOWS: >
+            nvcc -V &&
+            ci-utils\install_prereq_win.bat &&
+            xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install
+          CIBW_ENVIRONMENT_LINUX: >
+            LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:/usr/local/cuda/targets/x86_64-linux/lib:$LD_LIBRARY_PATH"
+            CPATH="/usr/local/cuda/targets/x86_64-linux/include:$CPATH"
+            PATH="/usr/local/cuda/bin:$PATH"
+            NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
+            CXXFLAGS="-I /usr/local/cuda/include"
+            CMAKE_ARGS="-DUSEGPU=ON -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc -DCMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES=/usr/local/cuda/include"
+            NYXUS_GPU_WHEEL="ON"
+          CIBW_ENVIRONMENT_WINDOWS: >
+            PATH="C:\\TEMP\\nyxus_bld\\local_install\\bin;$PATH"
+            NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install"
+            CMAKE_ARGS="-DUSEGPU=ON"
+            NYXUS_GPU_WHEEL="ON"
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >
+            delvewheel repair -w {dest_dir} {wheel} --no-dll cufft64_11.dll;cufftw64_11.dll;cudart32_120.dll;cudart64_120.dll
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
+            auditwheel repair --exclude=libcufft.so --exclude=libcufft.so.11 --exclude=libcufft.so.11.0.12.1 --exclude=libcudart.so --exclude=libcudart.so.12 --exclude=libcudart.so.12.3.101 -w {dest_dir} {wheel}
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
           CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
           CIBW_BEFORE_TEST_WINDOWS: xcopy /E /I /y "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.4\bin" %SystemRoot%\System32
