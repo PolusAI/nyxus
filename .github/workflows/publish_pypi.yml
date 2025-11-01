@@ -16,7 +16,7 @@ jobs:
       matrix:
         os: [ubuntu-22.04, macos-13, windows-latest, ubuntu-22.04-arm]
         cibw_archs: ["auto64"]
-        cibw_build: ["cp39-*", "cp310-*", "cp311-*", "cp312-*"]
+        cibw_build: ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*"]
 
     steps:
       - uses: actions/checkout@v3
@@ -34,13 +34,18 @@ jobs:
 
       - name: Install cibuildwheel
         run: |
-          python -m pip install cibuildwheel==2.16.2 delvewheel wheel
+          python -m pip install --upgrade pip
+          python -m pip install cibuildwheel==3.0.0 delvewheel wheel
 
       - name: Building wheels 
         run: |
           python -m cibuildwheel --output-dir dist
         env:
+          # build one Python series per matrix cell
           CIBW_BUILD: ${{ matrix.cibw_build }}
+          # if 3.14 is prerelease on any platform, allow it; harmless if not used
+          CIBW_PRERELEASE_PYTHONS: "1"
+          # ------------------------------------------------
           CIBW_SKIP: "*musllinux*"
           CIBW_BUILD_VERBOSITY: 3
           CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64:latest
