@@ -142,7 +142,7 @@ namespace Nyxus
 			int v;
 			if (!parse_as_int(s, v))
 			{
-				error_msg = "Error: in '" + rawString + "' expecting '" + s + "' to be an integer number";
+				error_msg = "syntax error";
 				return false;
 			}
 			else

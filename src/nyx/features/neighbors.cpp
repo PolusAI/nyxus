@@ -24,33 +24,27 @@ NeighborsFeature::NeighborsFeature(): FeatureMethod("NeighborsFeature")
 	provide_features (NeighborsFeature::featureset);
 }
 
-void NeighborsFeature::calculate(LR& r)
-{}
+void NeighborsFeature::calculate (LR& r, const Fsettings& s)
+{} //xxxx fix this!
 
 void NeighborsFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} 
 
-void NeighborsFeature::osized_calculate(LR& r, ImageLoader& imloader)
+void NeighborsFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader)
 {
-	calculate(r);
+	calculate(r, s);
 }
 
-/// @brief All the logic is in parallel_process()
+/// @brief 
 /// @param feature_vals 
 void NeighborsFeature::save_value(std::vector<std::vector<double>>& feature_vals) {}
 
-/// @brief All the logic is in parallel_process()
+/// @brief 
 /// @param start 
 /// @param end 
 /// @param ptrLabels 
 /// @param ptrLabelData 
-void NeighborsFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData) 
+void NeighborsFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings& s) 
 {
-}
-
-// Calculates the features using spatial hashing approach (indirectly)
-void NeighborsFeature::parallel_process (std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
-{
-	manual_reduce();
 }
 
 /// @brief Implements the narrow phase
@@ -58,10 +52,15 @@ void NeighborsFeature::parallel_process (std::vector<int>& roi_labels, std::unor
 /// @param end 
 /// @param ptrLabels 
 /// @param ptrLabelData 
-void parallel_process_1_batch_of_collision_pairs (size_t start, size_t end, std::vector<std::pair<int, int>>* ptrCollisionPairsVec, std::unordered_map <int, LR>* ptrLabelData)
+void parallel_process_1_batch_of_collision_pairs (
+	// out
+	Roidata& roiData, 
+	// in
+	size_t start, 
+	size_t end, 
+	std::vector<std::pair<int, int>>* ptrCollisionPairsVec, 
+	int radius)
 {
-	int radius = theEnvironment.get_pixel_distance();
-
 	size_t radius2 = radius * radius;	// We will compare radius with L2 distances
 
 	for (auto i = start; i < end; i++)
@@ -69,8 +68,8 @@ void parallel_process_1_batch_of_collision_pairs (size_t start, size_t end, std:
 		auto colpair = (*ptrCollisionPairsVec)[i];
 		auto l1 = colpair.first;
 		auto l2 = colpair.second;
-		LR& r1 = roiData[l1];
-		LR& r2 = roiData[l2];
+		LR& r1 = roiData.at (l1);
+		LR& r2 = roiData.at (l2);
 
 		// Make sure that segment's outer pixels are available
 		if (r1.contour.size() == 0)
@@ -103,18 +102,14 @@ void parallel_process_1_batch_of_collision_pairs (size_t start, size_t end, std:
 }
 
 // Calculates the features using spatial hashing approach
-void NeighborsFeature::manual_reduce()
+void NeighborsFeature::manual_reduce (
+	// out
+	Roidata& roiData,
+	// in
+	const Fsettings& s, 
+	const std::unordered_set<int> & uniqueLabels)
 {
-	//DEBUG - track possible weird collision candidates
-	//{
-	//	int lab2track = 3;
-	//	LR& r = roiData[lab2track];
-	//	ImageMatrix imCont (r.raw_pixels);
-	//	auto&& hdr = "ROI " + std::to_string(lab2track);
-	//	imCont.print (hdr, "t");
-	//}
-
-	int radius = theEnvironment.get_pixel_distance();
+	int radius = STNGS_PIXELDISTANCE(s);	// former theEnvironment.get_pixel_distance()
 	int n_threads = 1; 
 
 	//==== Collision detection, method 1 (greedy)
@@ -127,16 +122,10 @@ void NeighborsFeature::manual_reduce()
 	std::vector <std::pair<int, int>> CM2;
 	CM2.reserve (n_ul * n_ul / 4);	// estimate: 25% of the segment population
 
-	//DEBUG
-	//	int n_aabb_collis = 0;
-
-	//DEBUG
-	//	auto startTime = std::chrono::system_clock::now();
-
 	for (size_t i1 = 0; i1 < n_ul; i1++) 
 	{
 		auto l1 = LabsVec[i1];
-		LR& r1 = roiData[l1];
+		LR& r1 = roiData.at (l1);
 
 		for (size_t i2 = 0; i2 < n_ul; i2++) 
 		{
@@ -158,13 +147,6 @@ void NeighborsFeature::manual_reduce()
 			}
 		}
 	}
-
-	//DEBUG
-	//	double pcAabbCollis = 100.0 * double(n_aabb_collis) / double(nul* nul);
-
-	//DEBUG
-	//	auto broPhaseTime = std::chrono::system_clock::now();
-
 
 	// Harvest collision pairs v #1
 #if 0
@@ -291,12 +273,9 @@ void NeighborsFeature::manual_reduce()
 				idxE = idxS + workPerThread;
 			if (t == n_threads - 1)
 				idxE = jobSize; // include the tail
-			T.push_back (std::async(std::launch::async, parallel_process_1_batch_of_collision_pairs, idxS, idxE, &CM2, &roiData));
+			T.push_back (std::async(std::launch::async, parallel_process_1_batch_of_collision_pairs, std::ref(roiData), idxS, idxE, &CM2, radius));
 		}
 	}
-
-	//DEBUG
-	//auto narPhaseTime = std::chrono::system_clock::now();
 
 // Collision detection method #1 (kept for the record)
 #if 0 
@@ -306,9 +285,9 @@ void NeighborsFeature::manual_reduce()
 	int m = 100;
 	std::vector <std::vector<int>> HT(m);
 
-	for (auto l : Nyxus::uniqueLabels)
+	for (auto l : env.uniqueLabels)
 	{
-		LR& r = Nyxus::roiData[l];
+		LR& r = env.roiData[l];
 
 		/*
 		auto h1 = spat_hash_2d(r.aabb.get_xmin(), r.aabb.get_ymin(), m),
@@ -380,13 +359,13 @@ void NeighborsFeature::manual_reduce()
 		// Perform the N^2 check
 		for (auto& l1 : bin)
 		{
-			LR& r1 = Nyxus::roiData[l1];
+			LR& r1 = env.roiData[l1];
 
 			for (auto& l2 : bin)
 			{
 				if (l1 < l2)	// Lower triangle 
 				{
-					LR& r2 = Nyxus::roiData[l2];
+					LR& r2 = env.roiData[l2];
 					bool overlap = !aabbNoOverlap(r1, r2, radius);
 					if (overlap)
 					{
@@ -405,9 +384,9 @@ void NeighborsFeature::manual_reduce()
 #endif
 
 	// Closest neighbors
-	for (auto l : Nyxus::uniqueLabels)
+	for (auto l : uniqueLabels)
 	{
-		LR& r = Nyxus::roiData[l];
+		LR& r = roiData[l];
 		int n_neigs = int(r.fvals[(int)Feature2D::NUM_NEIGHBORS][0]);
 
 		// Any neighbors of this ROI ?
@@ -421,7 +400,7 @@ void NeighborsFeature::manual_reduce()
 		dists.reserve(r.aux_neighboring_labels.size());
 		for (auto l_neig : r.aux_neighboring_labels)
 		{
-			LR& r_neig = Nyxus::roiData[l_neig];
+			LR& r_neig = roiData[l_neig];
 			double cenx_n = r_neig.fvals[(int)Feature2D::CENTROID_X][0],
 				ceny_n = r_neig.fvals[(int)Feature2D::CENTROID_Y][0],
 				dx = cenx - cenx_n,
@@ -439,7 +418,7 @@ void NeighborsFeature::manual_reduce()
 		r.fvals[(int)Feature2D::CLOSEST_NEIGHBOR1_DIST][0] = dists[closest_1_idx];
 
 		// Save angle with neighbor #1
-		LR& r1 = Nyxus::roiData[closest1label];
+		LR& r1 = roiData[closest1label];
 		r.fvals[(int)Feature2D::CLOSEST_NEIGHBOR1_ANG][0] = 180.0 * angle(cenx, ceny, r1.fvals[(int)Feature2D::CENTROID_X][0], r1.fvals[(int)Feature2D::CENTROID_X][0]);
 
 		// Find idx of 2nd minimum
@@ -457,7 +436,7 @@ void NeighborsFeature::manual_reduce()
 			r.fvals[(int)Feature2D::CLOSEST_NEIGHBOR2_DIST][0] = dists[closest_2_idx];
 
 			// Save angle with neighbor #2
-			LR& r2 = Nyxus::roiData[closest2label];
+			LR& r2 = roiData[closest2label];
 			r.fvals[(int)Feature2D::CLOSEST_NEIGHBOR2_ANG][0] = 180.0 * angle(cenx, ceny, r2.fvals[(int)Feature2D::CENTROID_X][0], r2.fvals[(int)Feature2D::CENTROID_X][0]);
 		}
 	}
@@ -465,9 +444,9 @@ void NeighborsFeature::manual_reduce()
 	// Angle between neighbors
 	Moments2 mom2;
 	std::vector<int> anglesRounded;
-	for (auto l : Nyxus::uniqueLabels)
+	for (auto l : uniqueLabels)
 	{
-		LR& r = Nyxus::roiData[l];
+		LR& r = roiData[l];
 		int n_neigs = int(r.fvals[(int)Feature2D::NUM_NEIGHBORS][0]);
 
 		// Any neighbors of this ROI ?
@@ -480,7 +459,7 @@ void NeighborsFeature::manual_reduce()
 		// Iterate all the neighbors
 		for (auto l_neig : r.aux_neighboring_labels)
 		{
-			LR& r_neig = Nyxus::roiData[l_neig];
+			LR& r_neig = roiData[l_neig];
 			double cenx_n = r_neig.fvals[(int)Feature2D::CENTROID_X][0],
 				ceny_n = r_neig.fvals[(int)Feature2D::CENTROID_Y][0];
 
@@ -493,17 +472,6 @@ void NeighborsFeature::manual_reduce()
 		r.fvals[(int)Feature2D::ANG_BW_NEIGHBORS_STDDEV][0] = mom2.std();
 		r.fvals[(int)Feature2D::ANG_BW_NEIGHBORS_MODE][0] = mode(anglesRounded);
 	}
-
-	//DEBUG
-	//	auto endTime = std::chrono::system_clock::now();
-	//	std::chrono::duration<double, std::micro> elap1 = broPhaseTime - startTime;
-	//	std::chrono::duration<double, std::micro> elap2 = narPhaseTime - broPhaseTime;
-	//	std::chrono::duration<double, std::micro> elap3 = endTime - narPhaseTime;
-	//	auto totElap = elap1.count() + elap2.count() + elap3.count();
-	//	std::cout << "=== neighbor features broadPhase x" << n_threads << "_threads  = " << elap1.count() << " us " << round2(elap1.count() / totElap *100.) << "%\n";
-	//	std::cout << "=== neighbor features narrowPhase x" << n_threads << "_threads  = " << elap2.count() << " us " << round2(elap2.count() / totElap * 100.) << "%\n";
-	//	std::cout << "=== neighbor features angles x" << n_threads << "_threads  = " << elap3.count() << " us " << round2(elap3.count() / totElap * 100.) << "%\n";
-	//
 }
 
 // Spatial hashing

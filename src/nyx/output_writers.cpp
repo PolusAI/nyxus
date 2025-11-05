@@ -1,3 +1,4 @@
+#include "globals.h"
 #include "output_writers.h"
 
 // prevent NANs in the output
@@ -51,7 +52,10 @@ arrow::Status ParquetWriter::setup(const std::vector<std::string> &header) {
 
 
 
-ParquetWriter::ParquetWriter(const std::string& output_file, const std::vector<std::string>& header) : output_file_(output_file) {
+ParquetWriter::ParquetWriter(const std::string& output_file, const std::vector<std::string>& header, double soft_noval) : 
+    output_file_(output_file),
+    soft_noval_(soft_noval)
+{
 
     auto status = this->setup(header);
 
@@ -61,8 +65,8 @@ ParquetWriter::ParquetWriter(const std::string& output_file, const std::vector<s
     }
 }
 
-        
-arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features) {
+arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features) 
+{
 
     int num_rows = features.size();
 
@@ -70,7 +74,6 @@ arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std
 
     arrow::StringBuilder string_builder;
     std::shared_ptr<arrow::Array> intensity_array;
-
 
     arrow::Status append_status;
     // construct intensity column
@@ -88,7 +91,6 @@ arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std
             // Handle read error
             return append_status;
         }
-    
 
     arrays.push_back(intensity_array);
     string_builder.Reset();
@@ -142,7 +144,7 @@ arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std
         {
             // prevent NANs in the output
             double fval = std::get<2>(features[i])[j];
-            fval = Nyxus::force_finite_number (fval, Nyxus::theEnvironment.resultOptions.noval());
+            fval = Nyxus::force_finite_number (fval, soft_noval_);
             append_status = builder.Append (fval);
 
             if (!append_status.ok()) {
@@ -192,13 +194,13 @@ arrow::Status ParquetWriter::close () {
 arrow::Status ArrowIPCWriter::setup(const std::vector<std::string> &header) {
 
     std::vector<std::shared_ptr<arrow::Field>> fields;
-    
 
-    fields.push_back(arrow::field("intensity_image", arrow::utf8()));
-    fields.push_back(arrow::field("mask_image", arrow::utf8()));
-    fields.push_back(arrow::field("ROI_label", arrow::int32()));
+    fields.push_back(arrow::field(Nyxus::colname_intensity_image, arrow::utf8()));
+    fields.push_back(arrow::field(Nyxus::colname_mask_image, arrow::utf8()));
+    fields.push_back(arrow::field(Nyxus::colname_roi_label, arrow::int32()));
+    fields.push_back(arrow::field(Nyxus::colname_timeframe_index, arrow::int32()));
 
-    for (int i = 3; i < header.size(); ++i)
+    for (int i=fields.size(); i<header.size(); i++)
     {
         fields.push_back(arrow::field(header[i], arrow::float64()));
     }
@@ -214,25 +216,21 @@ arrow::Status ArrowIPCWriter::setup(const std::vector<std::string> &header) {
     return arrow::Status::OK();
 }
 
-
-
-ArrowIPCWriter::ArrowIPCWriter(const std::string& output_file, const std::vector<std::string> &header) : output_file_(output_file) {
-
+ArrowIPCWriter::ArrowIPCWriter (const std::string& output_file, const std::vector<std::string> &header, double soft_noval) : 
+    output_file_(output_file),
+    soft_noval_(soft_noval)
+{
     auto status = this->setup(header);
-
 }    
 
-
-arrow::Status ArrowIPCWriter::write (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features) {
-
-
+arrow::Status ArrowIPCWriter::write (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features) 
+{
     int num_rows = features.size();
 
     std::vector<std::shared_ptr<arrow::Array>> arrays;
 
     arrow::StringBuilder string_builder;
     std::shared_ptr<arrow::Array> intensity_array;
-
 
     arrow::Status append_status;
     // construct intensity column
@@ -250,7 +248,6 @@ arrow::Status ArrowIPCWriter::write (const std::vector<std::tuple<std::vector<st
             // Handle read error
             return append_status;
         }
-    
 
     arrays.push_back(intensity_array);
     string_builder.Reset();
@@ -304,7 +301,7 @@ arrow::Status ArrowIPCWriter::write (const std::vector<std::tuple<std::vector<st
         {
             // prevent NANs in the output
             double fval = std::get<2>(features[i])[j];
-            fval = Nyxus::force_finite_number (fval, Nyxus::theEnvironment.resultOptions.noval());
+            fval = Nyxus::force_finite_number (fval, soft_noval_);
             append_status = builder.Append (fval);
 
             if (!append_status.ok()) {
@@ -353,19 +350,18 @@ arrow::Status ArrowIPCWriter::close () {
     }
 
     return arrow::Status::OK();
-    
 }
 
 
-std::tuple<std::unique_ptr<ApacheArrowWriter>, std::optional<std::string>> WriterFactory::create_writer(const std::string &output_file, const std::vector<std::string> &header) {
+std::tuple<std::unique_ptr<ApacheArrowWriter>, std::optional<std::string>> WriterFactory::create_writer (const std::string &output_file, const std::vector<std::string> &header, double soft_noval) {
     
     if (Nyxus::ends_with_substr(output_file, ".parquet")) {
         
-        return {std::make_unique<ParquetWriter>(output_file, header), std::nullopt};
+        return {std::make_unique<ParquetWriter>(output_file, header, soft_noval), std::nullopt};
 
     } else if (Nyxus::ends_with_substr(output_file, ".arrow") || Nyxus::ends_with_substr(output_file, ".feather")) {
         
-        return {std::make_unique<ArrowIPCWriter>(output_file, header), std::nullopt};
+        return {std::make_unique<ArrowIPCWriter>(output_file, header, soft_noval), std::nullopt};
 
     } else {
 

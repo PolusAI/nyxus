@@ -14,19 +14,16 @@
 #include "moments.h"
 #include "contour.h"
 #include "../globals.h"
-
 #include "../roi_cache.h"	// Required by the reduction function
-#include "../parallel.h"
-
 #include "../environment.h"		// regular or whole slide mode
 #include "image_matrix_nontriv.h"
 
 using namespace Nyxus;
 
-bool ContourFeature::required(const FeatureSet& fs)
+bool ContourFeature::required (const FeatureSet & fset)
 {
-
-	return theFeatureSet.anyEnabled({
+	return fset.anyEnabled(
+		{
 		// own features
 		Feature2D::PERIMETER,
 		Feature2D::DIAMETER_EQUAL_PERIMETER,
@@ -238,7 +235,7 @@ std::vector<int> score_cands (const std::vector<Pixel2>& cands, const Pixel2& px
 	return S;
 }
 
-void ContourFeature::buildRegularContour(LR& r)
+void ContourFeature::buildRegularContour (LR& r, const Fsettings& s)
 {
 	//==== Pad the image
 
@@ -255,7 +252,8 @@ void ContourFeature::buildRegularContour(LR& r)
 		paddedImage.at(x + y * (width + 2)) = px.inten + 1;	// we build a contour keeping corresponding intensities
 	}
 
-	VERBOSLVL4 (dump_2d_image_1d_layout(paddedImage, width + 2, height + 2, "\n\n\n ContourFeature / buildRegularContour / Padded image ROI " + std::to_string(r.aabb.get_width()) + " W " + std::to_string(r.aabb.get_height()) + " H \n",  "\n\n\n"));
+	if (s[(int)NyxSetting::VERBOSLVL].ival >= 4)
+		dump_2d_image_1d_layout(paddedImage, width + 2, height + 2, "\n\n\n ContourFeature / buildRegularContour / Padded image ROI " + std::to_string(r.aabb.get_width()) + " W " + std::to_string(r.aabb.get_height()) + " H \n", "\n\n\n");
 
 	const int BLANK = 0;
 	bool inside = false;
@@ -368,12 +366,14 @@ void ContourFeature::buildRegularContour(LR& r)
 		}
 	}
 
-	VERBOSLVL4(dump_2d_image_1d_layout (borderImage, width + 2, height + 2, "\n\n-- ContourFeature / buildRegularContour / Padded contour image --\n", "\n\n"));
+	if (s[(int)NyxSetting::VERBOSLVL].ival >= 4)
+		dump_2d_image_1d_layout(borderImage, width + 2, height + 2, "\n\n-- ContourFeature / buildRegularContour / Padded contour image --\n", "\n\n");
 
 	//==== remove padding 
 	r.contour.clear();
 
 	// gather contour pixels undecorating their intensities back to original values
+	Pixel2 lastNonzeroPx(0, 0, 0);
 	for (int y = 0; y < height + 2; y++)
 		for (int x = 0; x < width + 2; x++)
 		{
@@ -381,76 +381,135 @@ void ContourFeature::buildRegularContour(LR& r)
 			auto inte = borderImage.at(idx);
 			if (inte)
 			{
+				// this pixel may happen to be isolated (a speckle), nonetheless, remember it 
+				// as we'll need to report it as a degenerate contour if no properly neighbored 
+				// pixel group is found
+				lastNonzeroPx = { x, y, inte - 1 };
+
+				// register a pixel only if it has any immediate neighbor
+				bool hasNeig = false;
+				if (x > 0)	// left neighbor
+				{
+					size_t idxNeig = (x - 1) + y * (width + 2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (x < width - 1)	// right neighbor
+				{
+					size_t idxNeig = (x + 1) + y * (width + 2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (y > 0)	// upper neighbor
+				{
+					size_t idxNeig = x + (y - 1) * (width + 2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (y < height - 1)	// lower neighbor
+				{
+					size_t idxNeig = x + (y + 1) * (width + 2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (x > 0 && y > 0)	// upper left neighbor
+				{
+					size_t idxNeig = (x - 1) + (y - 1) * (width + 2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (x < width - 1 && y > 0)	// upper right neighbor
+				{
+					size_t idxNeig = (x + 1) + (y - 1) * (width + 2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (x > 0 && y < height - 1)	// lower left neighbor
+				{
+					size_t idxNeig = (x - 1) + (y + 1) * (width + 2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (x < width - 1 && y < height - 1)	// lower right neighbor
+				{
+					size_t idxNeig = (x + 1) + (y + 1) * (width + 2);
+					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
+				}
+				if (!hasNeig)
+					continue;
+				// pixel is good, save it
 				Pixel2 p(x, y, inte - 1);
 				r.contour.push_back(p);
 			}
 		}
 
-	VERBOSLVL4(dump_2d_image_with_vertex_chain(borderImage, r.contour, width + 2, height + 2, "\n\n-- ContourFeature / buildRegularContour / Padded contour image + UNsorted contour--\n", "\n\n"));
+	if (s[(int)NyxSetting::VERBOSLVL].ival >= 4)
+		dump_2d_image_with_vertex_chain(borderImage, r.contour, width + 2, height + 2, "\n\n-- ContourFeature / buildRegularContour / Padded contour image + UNsorted contour--\n", "\n\n");
 
 	//==== Reorder the contour cloud
 
-	//	--containers for unordered (temp) and ordered (result) pixels
-	std::list<Pixel2> unordered(r.contour.begin(), r.contour.end());
-	std::vector<Pixel2> ordered;
-	ordered.reserve(unordered.size());
-	std::vector<Pixel2> pants;
-
-	//	--initialize vector 'ordered' with 1st pixel of 'unordered'
-	auto itBeg = unordered.begin();
-	Pixel2 pxTip = *itBeg;
-	ordered.push_back(pxTip);
-	unordered.remove(pxTip);
-
-	//	-- tip of the ordered contour
-	pxTip = ordered.at(0);
-
-	//	-- harvest items of 'unordered' 
-	while (unordered.size())
+	// are there any good candidate pixels ?
+	if (r.contour.size())
 	{
-		//	--find tip's neighbors 
-		std::vector<Pixel2> cands = find_cands (unordered, pxTip);
-		if (cands.empty())
+		//	--containers for unordered (temp) and ordered (result) pixels
+		std::list<Pixel2> unordered(r.contour.begin(), r.contour.end());
+		std::vector<Pixel2> ordered;
+		ordered.reserve(unordered.size());
+		std::vector<Pixel2> pants;
+
+		//	--initialize vector 'ordered' with 1st pixel of 'unordered'
+		auto itBeg = unordered.begin();
+		Pixel2 pxTip = *itBeg;
+		ordered.push_back(pxTip);
+		unordered.remove(pxTip);
+
+		//	-- tip of the ordered contour
+		pxTip = ordered.at(0);
+
+		//	-- harvest items of 'unordered' 
+		while (unordered.size())
 		{
-			// -- we have a gap and need to fix it
-			VERBOSLVL4(dump_2d_image_with_halfcontour(borderImage, unordered, ordered, pxTip, width + 2, height + 2, "\nhalfcontour:\n", ""));
-				
-			// -- no 'break;' ,instead, jump the tip to the closest U-pixel
-			Pixel2 pxPants;
-			pxPants = pants.back();
-			pxTip = pxPants;
-			Pixel2 closest = find_closest (unordered, pxTip);
+			//	--find tip's neighbors 
+			std::vector<Pixel2> cands = find_cands(unordered, pxTip);
+			if (cands.empty())
+			{
+				// -- we have a gap and need to fix it
+				if (s[(int)NyxSetting::VERBOSLVL].ival >= 4)
+					dump_2d_image_with_halfcontour(borderImage, unordered, ordered, pxTip, width + 2, height + 2, "\nhalfcontour:\n", "");
 
-			// -- discharge
-			ordered.push_back (closest);
-			unordered.remove (closest);
-			pxTip = ordered.at(ordered.size() - 1);
+				// -- no 'break;' ,instead, jump the tip to the closest U-pixel
+				Pixel2 pxPants;
+				pxPants = pants.back();
+				pxTip = pxPants;
+				Pixel2 closest = find_closest(unordered, pxTip);
+
+				// -- discharge
+				ordered.push_back(closest);
+				unordered.remove(closest);
+				pxTip = ordered.at(ordered.size() - 1);
+			}
+			else
+			{
+				// -- register pants
+				if (cands.size() >= 2)
+					pants.push_back(pxTip);
+
+				// -- score thems
+				std::vector<int> candScores = score_cands(cands, pxTip);
+
+				// -- choose the best
+				auto itBest = std::min_element(candScores.begin(), candScores.end());
+				int idxBest = (int)std::distance(candScores.begin(), itBest);
+
+				// -- discharge the found pixel from set 'unordered' and update the tip
+				Pixel2& px = cands.at(idxBest);
+				ordered.push_back(px);
+				unordered.remove(px);
+				pxTip = ordered.at(ordered.size() - 1);
+			}
 		}
-		else
-		{
-			// -- register pants
-			if (cands.size() >= 2)
-				pants.push_back(pxTip);
 
-			// -- score thems
-			std::vector<int> candScores = score_cands(cands, pxTip);
-
-			// -- choose the best
-			auto itBest = std::min_element (candScores.begin(), candScores.end());
-			int idxBest = (int)std::distance (candScores.begin(), itBest);
-
-			// -- discharge the found pixel from set 'unordered' and update the tip
-			Pixel2& px = cands.at(idxBest);
-			ordered.push_back(px);
-			unordered.remove(px);
-			pxTip = ordered.at(ordered.size() - 1);
-		}
+		// done sorting. Now set the ordered contour in the ROI
+		r.contour = ordered;
 	}
+	else
+		r.contour.push_back(lastNonzeroPx);	// just use the last speckle as a contour because we have no legit contour
 
-	// done sorting. Now set the ordered contour in the ROI
-	r.contour = ordered;
-
-	VERBOSLVL4(dump_2d_image_with_vertex_chain(borderImage, r.contour, width + 2, height + 2, "\n\n-- ContourFeature / buildRegularContour / Padded contour image + sorted contour--\n", "\n\n"));
+	if (s[(int)NyxSetting::VERBOSLVL].ival >= 4)
+		dump_2d_image_with_vertex_chain(borderImage, r.contour, width + 2, height + 2, "\n\n-- ContourFeature / buildRegularContour / Padded contour image + sorted contour--\n", "\n\n");
 
 	// finally, fix pixel positions back to absolute
 	for (Pixel2& p : r.contour)
@@ -460,7 +519,7 @@ void ContourFeature::buildRegularContour(LR& r)
 	}
 }
 
-void ContourFeature::buildRegularContour_nontriv(LR& r)
+void ContourFeature::buildRegularContour_nontriv (LR& r, const Fsettings& s)
 {
 	//==== Pad the image
 
@@ -658,33 +717,34 @@ void ContourFeature::buildRegularContour_nontriv(LR& r)
 		else //	--any gaps left by the contour algorithm?
 		{
 			// Most likely cause is the closing pixel is in 'ordered' already and the pixels in 'unordered' are redundant due to the Moore based algorithm above
-			VERBOSLVL4(
+			if (s[(int)NyxSetting::VERBOSLVL].ival >= 4)
+			{
 				std::cerr << "gap in contour!\n" << "tip pixel: " << pxTip.x << "," << pxTip.y << "\n";
-			std::cerr << "ordered:\n";
-			int i = 1;
-			for (auto& pxo : ordered)
-			{
-				std::cerr << "\t" << pxo.x << "," << pxo.y;
-				if (i++ % 10 == 0)
-					std::cerr << "\n";
-			}
-			std::cerr << "\n";
+				std::cerr << "ordered:\n";
+				int i = 1;
+				for (auto& pxo : ordered)
+				{
+					std::cerr << "\t" << pxo.x << "," << pxo.y;
+					if (i++ % 10 == 0)
+						std::cerr << "\n";
+				}
+				std::cerr << "\n";
 
-			int neigR2 = 400;	// squared
-			std::cerr << "unordered around the tip (R^2=" << neigR2 << "):\n";
-			i = 1;
-			for (auto& pxu : unordered)
-			{
-				// filter out the far neighborhood
-				if (pxTip.sqdist(pxu) > neigR2)
-					continue;
+				int neigR2 = 400;	// squared
+				std::cerr << "unordered around the tip (R^2=" << neigR2 << "):\n";
+				i = 1;
+				for (auto& pxu : unordered)
+				{
+					// filter out the far neighborhood
+					if (pxTip.sqdist(pxu) > neigR2)
+						continue;
 
-				std::cerr << "\t" << pxu.x << "," << pxu.y;
-				if (i++ % 10 == 0)
-					std::cerr << "\n";
+					std::cerr << "\t" << pxu.x << "," << pxu.y;
+					if (i++ % 10 == 0)
+						std::cerr << "\n";
+				}
+				std::cerr << "\n";
 			}
-			std::cerr << "\n";
-			);
 			break;
 		}
 	}
@@ -708,12 +768,12 @@ void ContourFeature::buildWholeSlideContour(LR& r)
 	r.contour.push_back(bl);
 }
 
-void ContourFeature::calculate(LR& r)
+void ContourFeature::calculate (LR& r, const Fsettings& s)
 {
-	if (Nyxus::theEnvironment.singleROI)
+	if (s[(int)NyxSetting::SINGLEROI].bval)	// former Nyxus::theEnvironment.singleROI
 		buildWholeSlideContour(r);
 	else
-		buildRegularContour(r);
+		buildRegularContour (r, s);
 
 	//=== Calculate the features
 	fval_PERIMETER = 0;
@@ -747,9 +807,9 @@ void ContourFeature::calculate(LR& r)
 void ContourFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
 {}
 
-void ContourFeature::osized_calculate(LR& r, ImageLoader& imloader)
+void ContourFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader)
 {
-	buildRegularContour_nontriv(r);	// leaves the contour pixels in field 'contour'
+	buildRegularContour_nontriv(r, s);	// leaves the contour pixels in field 'contour'
 
 	//=== Calculate the features
 	fval_PERIMETER = (StatsInt)r.contour.size();
@@ -776,17 +836,6 @@ void ContourFeature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature2D::EDGE_INTEGRATED_INTENSITY][0] = fval_EDGE_INTEGRATEDINTENSITY;
 }
 
-void ContourFeature::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
-{	
-	size_t jobSize = roi_labels.size(),
-		workPerThread = jobSize / n_threads;
-
-	runParallel (ContourFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
-}
-
-void ContourFeature::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
-{}
-
 void ContourFeature::cleanup_instance()
 {}
 
@@ -804,14 +853,14 @@ std::tuple<double, double, double, double> ContourFeature::calc_min_max_mean_std
 	return { min_, max_, mean_, stddev_ };
 }
 
-void ContourFeature::extract (LR& r)
+void ContourFeature::extract (LR& r, const Fsettings& s)
 {
 	ContourFeature f;
-	f.calculate (r);
+	f.calculate (r, s);
 	f.save_value (r.fvals);
 }
 
-void ContourFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void ContourFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & fst, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -819,7 +868,9 @@ void ContourFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabe
 		LR& r = (*ptrLabelData)[lab];
 
 		ContourFeature f;
-		f.calculate (r);
+		f.calculate (r, fst);
 		f.save_value (r.fvals);
 	}
 }
+
+

@@ -204,6 +204,7 @@ set(SOURCE
 	src/nyx/cli_gpu_options.cpp
 	src/nyx/cli_nested_roi_options.cpp
 	src/nyx/common_stats.cpp
+	src/nyx/dataset.cpp
 	src/nyx/dirs_and_files.cpp
 	src/nyx/environment.cpp
 	src/nyx/environment_basic.cpp
@@ -227,7 +228,6 @@ set(SOURCE
 	src/nyx/phase3.cpp
 	src/nyx/pixel_feed.cpp
 	src/nyx/raw_image_loader.cpp
-	src/nyx/reduce_by_feature.cpp
 	src/nyx/reduce_trivial_rois.cpp
 	src/nyx/roi_blacklist.cpp
 	src/nyx/roi_cache.cpp

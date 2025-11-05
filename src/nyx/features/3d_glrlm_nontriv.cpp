@@ -4,8 +4,8 @@
 
 using namespace Nyxus;
 
-void D3_GLRLM_feature::osized_calculate (LR& r, ImageLoader& imloader)
+void D3_GLRLM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
-	calculate(r);
+	calculate (r, s);
 }
 

@@ -186,7 +186,9 @@ bool are_tables_equal(const arrow::Table& table1, const arrow::Table& table2) {
 }
 
 
-void test_arrow() {
+void test_arrow() 
+{
+    Environment e;
 
     auto temp = fs::temp_directory_path()/"nyxus_temp/";
 
@@ -203,19 +205,19 @@ void test_arrow() {
     Nyxus::SaveOption saveOption = Nyxus::SaveOption::saveArrowIPC;
 
     // create arrow writer
-    auto [status, msg] = theEnvironment.arrow_stream.create_arrow_file(saveOption, outputPath, std::get<0>(features));
+    auto [status, msg] = e.arrow_stream.create_arrow_file(saveOption, outputPath, std::get<0>(features), 0.0/*soft noval*/);
     if (!status) {
         FAIL() << "Error creating Arrow file: " << msg.value() << std::endl;
     }
 
     // write features
-    auto [status1, msg1] = theEnvironment.arrow_stream.write_arrow_file(std::get<1>(features));
+    auto [status1, msg1] = e.arrow_stream.write_arrow_file(std::get<1>(features));
     if (!status1) {
         FAIL() << "Error writing Arrow file: " << msg1.value() << std::endl;
     }
 
     // close arrow file after use
-    auto [status2, msg2] = theEnvironment.arrow_stream.close_arrow_file();
+    auto [status2, msg2] = e.arrow_stream.close_arrow_file();
     if (!status2) {
         FAIL() << "Error closing Arrow file: " << msg2.value() << std::endl;
     }
@@ -256,7 +258,9 @@ void test_arrow() {
     }
 }
 
-void test_parquet() {
+void test_parquet() 
+{
+    Environment e;
 
     auto temp = fs::temp_directory_path()/"nyxus_temp/";
 
@@ -273,19 +277,19 @@ void test_parquet() {
     Nyxus::SaveOption saveOption = Nyxus::SaveOption::saveParquet;
 
     // create arrow writer
-    auto [status, msg] = theEnvironment.arrow_stream.create_arrow_file(saveOption, outputPath, std::get<0>(features));
+    auto [status, msg] = e.arrow_stream.create_arrow_file(saveOption, outputPath, std::get<0>(features), 0.0/*soft noval*/);
     if (!status) {
         FAIL() << "Error creating Arrow file: " << msg.value() << std::endl;
     }
 
     // write features
-    auto [status1, msg1] = theEnvironment.arrow_stream.write_arrow_file(std::get<1>(features));
+    auto [status1, msg1] = e.arrow_stream.write_arrow_file(std::get<1>(features));
     if (!status1) {
         FAIL() << "Error writing Arrow file: " << msg1.value() << std::endl;
     }
 
     // close arrow file after use
-    auto [status2, msg2] = theEnvironment.arrow_stream.close_arrow_file();
+    auto [status2, msg2] = e.arrow_stream.close_arrow_file();
     if (!status2) {
         FAIL() << "Error closing Arrow file: " << msg2.value() << std::endl;
     }

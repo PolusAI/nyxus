@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "../src/nyx/roi_cache.h"
-#include "../src/nyx/parallel.h"
 #include "../src/nyx/features/intensity.h"
 #include "../src/nyx/features/pixel.h"
 #include "test_data.h"
@@ -60,13 +59,17 @@ void test_intensity_feature(const Feature2D& feature, const std::string& feature
 
     double total = 0;
     
+    Dataset ds;
+    ds.dataset_props.push_back (SlideProps("",""));
+
     LR roidata;
+    Fsettings s;
     PixelIntensityFeatures f;
 
     // image 1
 
     load_masked_test_roi_data (roidata, combined_image.data(), combined_mask.data(),  combined_image.size());
-    ASSERT_NO_THROW(f.calculate(roidata));
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Initialize per-ROI feature value buffer with zeros
     roidata.initialize_fvals();

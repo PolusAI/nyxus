@@ -8,14 +8,14 @@
 namespace Nyxus
 {
 
-void dump_roi_metrics(const std::string& label_fpath)
+void dump_roi_metrics (const int dim, const std::string & output_dir, const size_t ram_limit, const std::string& label_fpath, const Uniqueids & uniqueLabels, const Roidata & roiData)
 {
 	// are we amidst a 3D scenario ?
-	bool dim3 = theEnvironment.dim();
+	bool dim3 = (dim==3);
 
 	// prepare the file name
 	fs::path pseg(label_fpath);
-	std::string fpath = theEnvironment.output_dir + "/roi_metrics_" + pseg.stem().string() + ".csv";
+	std::string fpath = output_dir + "/roi_metrics_" + pseg.stem().string() + ".csv";
 
 	// fix the special 3D file name character if needed
 	if (dim3)
@@ -40,9 +40,9 @@ void dump_roi_metrics(const std::string& label_fpath)
 	// body
 	for (auto lab : sortedLabs)
 	{
-		LR& r = roiData[lab];
-		auto szb = r.get_ram_footprint_estimate();
-		std::string ovsz = szb < theEnvironment.get_ram_limit() ? "TRIVIAL" : "OVERSIZE";
+		const LR& r = roiData.at (lab);
+		auto szb = r.get_ram_footprint_estimate (uniqueLabels.size());
+		std::string ovsz = szb < ram_limit ? "TRIVIAL" : "OVERSIZE";
 		f << lab << ", "
 			<< r.aux_area << ", "
 			<< r.aabb.get_xmin() << ", "
@@ -61,7 +61,7 @@ void dump_roi_metrics(const std::string& label_fpath)
 	f.flush();
 }
 
-void dump_roi_pixels(const std::vector<int>& batch_labels, const std::string& label_fpath)
+void dump_roi_pixels (const int dim, const std::string& output_dir, const std::vector<int>& batch_labels, const std::string& label_fpath, const Uniqueids& uniqueLabels, const Roidata& roiData)
 {
 	// no data ?
 	if (batch_labels.size() == 0)
@@ -75,11 +75,11 @@ void dump_roi_pixels(const std::vector<int>& batch_labels, const std::string& la
 	std::sort(srt_L.begin(), srt_L.end());
 
 	// are we amidst a 3D scenario ?
-	bool dim3 = theEnvironment.dim();
+	bool dim3 = (dim == 3);
 
 	// prepare the file name
 	fs::path pseg(label_fpath);
-	std::string fpath = theEnvironment.output_dir + "/roi_pixels_" + pseg.stem().string() + "_batch" + std::to_string(srt_L[0]) + '-' + std::to_string(srt_L[srt_L.size() - 1]) + ".csv";
+	std::string fpath = output_dir + "/roi_pixels_" + pseg.stem().string() + "_batch" + std::to_string(srt_L[0]) + '-' + std::to_string(srt_L[srt_L.size() - 1]) + ".csv";
 
 	// fix the special 3D file name character if needed
 	if (dim3)
@@ -102,7 +102,7 @@ void dump_roi_pixels(const std::vector<int>& batch_labels, const std::string& la
 	// body
 	for (auto lab : srt_L)
 	{
-		LR& r = roiData[lab];
+		const LR& r = roiData.at (lab);
 		if (dim3)
 			for (auto& plane : r.zplanes)
 				for (auto idx : plane.second)

@@ -29,9 +29,11 @@ namespace Nyxus
     std::string arrow_output_type_ = "";
 
   public:
-      std::tuple<bool, std::optional<std::string>> create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
-                                                          const std::string& output_path,
-                                                          const std::vector<std::string>& header);
+      std::tuple<bool, std::optional<std::string>> create_arrow_file(
+            const Nyxus::SaveOption& arrow_file_type,
+            const std::string& output_path,
+            const std::vector<std::string>& header,
+            double soft_noval);
       std::string get_arrow_path();
       std::tuple<bool, std::optional<std::string>> write_arrow_file (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features);
       std::tuple<bool, std::optional<std::string>> close_arrow_file ();
@@ -48,9 +50,11 @@ namespace Nyxus
   class ArrowOutputStream {
 
   public:
-      std::tuple<bool, std::optional<std::string>> create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
-                                                          const std::string& arrow_file_path,
-                                                          const std::vector<std::string>& header);
+      std::tuple<bool, std::optional<std::string>> create_arrow_file(
+          const Nyxus::SaveOption& arrow_file_type,
+          const std::string& arrow_file_path,
+          const std::vector<std::string>& header,
+          double soft_noval);
       std::tuple<bool, std::optional<std::string>> write_arrow_file (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features);
       std::tuple<bool, std::optional<std::string>> close_arrow_file ();
   };

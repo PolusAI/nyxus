@@ -1,5 +1,5 @@
 #include <iostream>
-#include "environment.h"
+#include "cli_fpimage_options.h"
 #include "image_loader.h"
 #include "grayscale_tiff.h"
 #include "raw_tiff.h"
@@ -12,7 +12,7 @@
 
 ImageLoader::ImageLoader() {}
 
-bool ImageLoader::open (SlideProps & p)	
+bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 {
 	int n_threads = 1;
 
@@ -61,10 +61,10 @@ bool ImageLoader::open (SlideProps & p)
 					// automatic or overriden FP dynamic range
 					double fpmin = p.min_preroi_inten,
 						fpmax = p.max_preroi_inten;
-					if (!Nyxus::theEnvironment.fpimageOptions.empty())
+					if (! fpopts.empty())
 					{
-						fpmin = Nyxus::theEnvironment.fpimageOptions.min_intensity();
-						fpmax = Nyxus::theEnvironment.fpimageOptions.max_intensity();
+						fpmin = fpopts.min_intensity();
+						fpmax = fpopts.max_intensity();
 					}
 
 					if (Nyxus::check_tile_status(int_fpath))
@@ -75,7 +75,7 @@ bool ImageLoader::open (SlideProps & p)
 							true,
 							fpmin,
 							fpmax,
-							Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
+							fpopts.target_dyn_range());
 					} 
 					else 
 					{
@@ -93,14 +93,17 @@ bool ImageLoader::open (SlideProps & p)
 		return false;
 
 	// Intensity slide
-	th = intFL->tileHeight(lvl);
-	tw = intFL->tileWidth(lvl);
-	td = intFL->tileDepth(lvl);
-	tileSize = th * tw * td;
+	th = intFL->tileHeight (lvl);
+	tw = intFL->tileWidth (lvl);
+	td = intFL->tileDepth (lvl);
+	tt = intFL->tileTimestamps (lvl);
 
-	fh = intFL->fullHeight(lvl);
-	fw = intFL->fullWidth(lvl);
-	fd = intFL->fullDepth(lvl);
+	tileSize = th * tw * td * tt;
+
+	fh = intFL->fullHeight (lvl);
+	fw = intFL->fullWidth (lvl);
+	fd = intFL->fullDepth (lvl);
+	ft = intFL->fullTimestamps (lvl);
 
 	ntw = intFL->numberTileWidth(lvl);
 	nth = intFL->numberTileHeight(lvl);
@@ -152,7 +155,7 @@ bool ImageLoader::open (SlideProps & p)
 							false,
 							0.0, // dummy min
 							1.0, // dummy max
-							Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
+							fpopts.target_dyn_range());
 					} 
 					else 
 					{
@@ -314,4 +317,14 @@ size_t ImageLoader::get_full_height()
 size_t ImageLoader::get_full_depth()
 {
 	return fd;
+}
+
+size_t ImageLoader::get_inten_time()
+{
+	return intFL->fullTimestamps(0);
+}
+
+size_t ImageLoader::get_mask_time()
+{
+	return segFL->fullTimestamps(0);
 }

@@ -1,7 +1,7 @@
-
 #pragma once
 
 #ifdef USE_ARROW
+
 #include <vector>
 #include <string>
 #include <memory>
@@ -12,6 +12,8 @@
 #include <arrow/io/api.h>
 #include <arrow/ipc/api.h>
 #include <parquet/arrow/writer.h>
+
+class Environment;
 
 /**
  * @brief Base class for creating Apache Arrow output writers
@@ -57,13 +59,13 @@ class ParquetWriter : public ApacheArrowWriter {
         std::shared_ptr<arrow::Schema> schema_;
         std::shared_ptr<arrow::io::FileOutputStream> output_stream_;
         std::unique_ptr<parquet::arrow::FileWriter> writer_;
+        double soft_noval_;
 
         arrow::Status setup(const std::vector<std::string> &header);
 
     public:
 
-        ParquetWriter(const std::string& output_file, const std::vector<std::string>& header);
-
+        ParquetWriter (const std::string& output_file, const std::vector<std::string>& header, double soft_noval);
         
         arrow::Status write (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features) override;
 
@@ -83,12 +85,13 @@ class ArrowIPCWriter : public ApacheArrowWriter {
         std::shared_ptr<arrow::Schema> schema_;
         std::shared_ptr<arrow::io::FileOutputStream> output_stream_;
         arrow::Result<std::shared_ptr<arrow::ipc::RecordBatchWriter>> writer_;
+        double soft_noval_;
 
         arrow::Status setup(const std::vector<std::string> &header);
 
     public:
 
-        ArrowIPCWriter(const std::string& output_file, const std::vector<std::string> &header);
+        ArrowIPCWriter (const std::string& output_file, const std::vector<std::string> &header, double soft_noval);
 
         /**
          * @brief Write to Arrow IPC
@@ -119,6 +122,7 @@ class WriterFactory {
          * @param output_file Path to output file (.arrow or .parquet)
          * @return std::unique_ptr<ApacheArrowWriter> 
          */
-        static std::tuple<std::unique_ptr<ApacheArrowWriter>, std::optional<std::string>> create_writer(const std::string &output_file, const std::vector<std::string> &header);
+        static std::tuple<std::unique_ptr<ApacheArrowWriter>, std::optional<std::string>> create_writer (const std::string &output_file, const std::vector<std::string> &header, double soft_noval);
 };
+
 #endif

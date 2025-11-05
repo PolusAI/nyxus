@@ -10,10 +10,10 @@
 #include <vector>
 
 #ifdef WITH_PYTHON_H
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/numpy.h>
-namespace py = pybind11;
+	#include <pybind11/pybind11.h>
+	#include <pybind11/stl.h>
+	#include <pybind11/numpy.h>
+	namespace py = pybind11;
 #endif
 
 #include "dirs_and_files.h"
@@ -32,12 +32,12 @@ namespace py = pybind11;
 
 namespace Nyxus
 {
-	bool featurize_triv_wholevolume (size_t sidx, ImageLoader& imlo, size_t memory_limit, LR& vroi)
+	bool featurize_triv_wholevolume (Environment & env, size_t sidx, ImageLoader& imlo, size_t memory_limit, LR& vroi)
 	{
-		const std::string& ifpath = LR::dataset_props[sidx].fname_int;
+		const std::string& ifpath = env.dataset.dataset_props[sidx].fname_int;
 
 		// can we process this slide ?
-		size_t footp = vroi.get_ram_footprint_estimate();
+		size_t footp = vroi.get_ram_footprint_estimate (1);	// 1 since single-ROI
 		if (footp > memory_limit)
 		{
 			std::string erm = "Error: cannot process slide " + ifpath + " , reason: its memory footprint " + virguler_ulong(footp) + " exceeds available memory " + virguler_ulong(memory_limit);
@@ -49,25 +49,25 @@ namespace Nyxus
 		}
 
 		// read the slide into a pixel cloud
-		if (theEnvironment.anisoOptions.customized() == false)
+		if (env.anisoOptions.customized() == false)
 		{
-			VERBOSLVL2(std::cout << "\nscan_trivial_wholeslide()\n");
+			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide()\n");
 			scan_trivial_wholevolume (vroi, ifpath, imlo);
 		}
 		else
 		{
-			VERBOSLVL2(std::cout << "\nscan_trivial_wholeslide_ANISO()\n");
+			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide_ANISO()\n");
 			scan_trivial_wholevolume_anisotropic (
 				vroi, 
 				ifpath, 
 				imlo, 
-				theEnvironment.anisoOptions.get_aniso_x(),
-				theEnvironment.anisoOptions.get_aniso_y(),
-				theEnvironment.anisoOptions.get_aniso_z());
+				env.anisoOptions.get_aniso_x(),
+				env.anisoOptions.get_aniso_y(),
+				env.anisoOptions.get_aniso_z());
 		}
 
 		// allocate memory for feature helpers (image matrix, etc)
-		VERBOSLVL2(std::cout << "\tallocating vROI buffers\n");
+		VERBOSLVL2(env.get_verbosity_level(), std::cout << "\tallocating vROI buffers\n");
 		size_t h = vroi.aabb.get_height(), w = vroi.aabb.get_width(), d = vroi.aabb.get_z_depth();
 		vroi.aux_image_cube.allocate (w, h, d);
 
@@ -75,11 +75,11 @@ namespace Nyxus
 		vroi.aux_image_cube.calculate_from_pixelcloud (vroi.raw_pixels_3D, vroi.aabb);
 
 		// calculate features 
-		VERBOSLVL2(std::cout << "\treducing whole slide\n");
-		reduce_trivial_3d_wholevolume (vroi);
+		VERBOSLVL2(env.get_verbosity_level(), std::cout << "\treducing whole slide\n");
+		reduce_trivial_3d_wholevolume (env, vroi);
 
 		// free memory
-		VERBOSLVL2(std::cout << "\tfreeing vROI buffers\n");
+		VERBOSLVL2(env.get_verbosity_level(), std::cout << "\tfreeing vROI buffers\n");
 		if (vroi.aux_image_matrix._pix_plane.size())
 			std::vector<Pixel3>().swap (vroi.raw_pixels_3D);
 
@@ -87,11 +87,11 @@ namespace Nyxus
 		return true;
 	}
 
-	bool featurize_wholevolume (size_t sidx, ImageLoader& imlo, LR& vroi)
+	bool featurize_wholevolume (Environment & env, size_t sidx, ImageLoader& imlo, LR& vroi)
 	{
 		//***** phase 1: copy ROI metrics from the slide properties, thanks to the WSI scenario
-		const SlideProps& p = LR::dataset_props[sidx];
-		VERBOSLVL2(std::cout << "Gathering vROI metrics " + fs::path(p.fname_int).filename().string() + "\n");
+		const SlideProps& p = env.dataset.dataset_props[sidx];
+		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "Gathering vROI metrics " + fs::path(p.fname_int).filename().string() + "\n");
 
 		// instead of gather_wholeslide_metrics (p.fname_int, imlo, vroi)
 		vroi.slide_idx = (decltype(vroi.slide_idx))sidx;
@@ -104,20 +104,20 @@ namespace Nyxus
 		vroi.aux_max = (PixIntens) (p.max_preroi_inten - p.min_preroi_inten);
 
 		// fix the AABB with respect to anisotropy
-		if (theEnvironment.anisoOptions.customized() == false)
+		if (env.anisoOptions.customized() == false)
 			vroi.aabb.apply_anisotropy(
-				theEnvironment.anisoOptions.get_aniso_x(),
-				theEnvironment.anisoOptions.get_aniso_y());
+				env.anisoOptions.get_aniso_x(),
+				env.anisoOptions.get_aniso_y());
 
 		// prepare (zero) ROI's feature value buffer
 		vroi.initialize_fvals();
 
 		// assess ROI's memory footprint and check if we can featurize it as phase 2 (trivially) ?
-		size_t roiFootprint = vroi.get_ram_footprint_estimate(),
-			ramLim = theEnvironment.get_ram_limit();
+		size_t roiFootprint = vroi.get_ram_footprint_estimate (1),		// 1 since single-ROI
+			ramLim = env.get_ram_limit();
 		if (roiFootprint >= ramLim)
 		{
-			VERBOSLVL2(
+			VERBOSLVL2(env.get_verbosity_level(),
 				std::cout << "oversized slide "
 				<< " (S=" << vroi.aux_area
 				<< " W=" << vroi.aabb.get_width()
@@ -132,12 +132,13 @@ namespace Nyxus
 		}
 
 		//***** phase 2: extract features
-		featurize_triv_wholevolume (sidx, imlo, theEnvironment.get_ram_limit(), vroi); // segmented counterpart: phase2.cpp / processTrivialRois ()
+		featurize_triv_wholevolume (env, sidx, imlo, env.get_ram_limit(), vroi); // segmented counterpart: phase2.cpp / processTrivialRois ()
 
 		return true;
 	}
 
 	void featurize_3d_wv_thread(
+		Environment & env,
 		const std::vector<std::string>& intensFiles,
 		const std::vector<std::string>& labelFiles,
 		size_t slide_idx,
@@ -147,11 +148,11 @@ namespace Nyxus
 		Nyxus::SaveOption saveOption,
 		int& rv)
 	{
-		SlideProps& p = LR::dataset_props[slide_idx];
+		SlideProps& p = env.dataset.dataset_props[slide_idx];
 
 		// scan one slide
 		ImageLoader imlo;
-		if (imlo.open(p) == false)
+		if (imlo.open(p, env.fpimageOptions) == false)
 		{
 			std::cerr << "Terminating\n";
 			rv = 1;
@@ -159,7 +160,7 @@ namespace Nyxus
 
 		LR vroi(1); // virtual ROI representing the whole slide ROI-labelled as '1'
 
-		if (featurize_wholevolume (slide_idx, imlo, vroi) == false)	// non-wsi counterpart: processIntSegImagePair()
+		if (featurize_wholevolume (env, slide_idx, imlo, vroi) == false)	// non-wsi counterpart: processIntSegImagePair()
 		{
 			std::cerr << "Error featurizing slide " << p.fname_int << " @ " << __FILE__ << ":" << __LINE__ << "\n";
 			rv = 1;
@@ -168,7 +169,7 @@ namespace Nyxus
 		// thread-safely save results of this single slide
 		if (write_apache)
 		{
-			auto [status, msg] = save_features_2_apache_wholeslide(vroi, p.fname_int);
+			auto [status, msg] = save_features_2_apache_wholeslide (env, vroi, p.fname_int);
 			if (!status)
 			{
 				std::cerr << "Error writing Arrow file: " << msg.value() << std::endl;
@@ -178,16 +179,18 @@ namespace Nyxus
 		else
 			if (saveOption == SaveOption::saveCSV)
 			{
-				if (save_features_2_csv_wholeslide(vroi, p.fname_int, "", outputPath) == false)
+				if (save_features_2_csv_wholeslide (env, vroi, p.fname_int, "", outputPath,
+					0 // pass 0 as t_index
+					) == false)
 				{
-					std::cerr << "save_features_2_csv() returned an error code" << std::endl;
+					std::cout << "error saving results to CSV file, details: " << __FILE__ << ":" << __LINE__ << std::endl;
 					rv = 2;
 				}
 			}
 			else
 			{
 				// pulls feature values from 'vroi' and appends them to global object 'theResultsCache' exposed to Python API
-				if (save_features_2_buffer_wholeslide(Nyxus::theResultsCache, vroi, p.fname_int, "") == false)
+				if (save_features_2_buffer_wholeslide (env.theResultsCache, env, vroi, p.fname_int, "") == false)
 				{
 					std::cerr << "Error saving features to the results buffer" << std::endl;
 					rv = 2;
@@ -206,6 +209,7 @@ namespace Nyxus
 
 
 	std::tuple<bool, std::optional<std::string>> processDataset_3D_wholevolume (
+		Environment & env,
 		const std::vector <std::string>& intensFiles,
 		int n_threads,
 		const SaveOption saveOption,
@@ -213,25 +217,22 @@ namespace Nyxus
 	{
 		//**** prescan all files
 
-		VERBOSLVL1(std::cout << "phase 0 (prescanning)\n");
+		VERBOSLVL1 (env.get_verbosity_level(), std::cout << "phase 0 (prescanning)\n");
 
-		LR::reset_dataset_props();
+		env.dataset.reset_dataset_props();
 		size_t nf = intensFiles.size();
-		LR::dataset_props.resize(nf);
 		for (size_t i = 0; i < nf; i++)
 		{
 			// slide file names
-			SlideProps& p = LR::dataset_props[i];
-			p.fname_int = intensFiles[i];
-			p.fname_seg = "";
+			SlideProps& p = env.dataset.dataset_props.emplace_back(intensFiles[i], "");
 
 			// slide metrics
-			VERBOSLVL1(std::cout << "prescanning " << fs::path(p.fname_int).filename().string());
+			VERBOSLVL1 (env.get_verbosity_level(), std::cout << "prescanning " << fs::path(p.fname_int).filename().string());
 
-			if (! scan_slide_props(p, 3, theEnvironment.resultOptions.need_annotation()))
+			if (! scan_slide_props(p, 3, env.anisoOptions, env.resultOptions.need_annotation()))
 				return { false, "error prescanning " + p.fname_int };
 
-			VERBOSLVL1(std::cout << " " 
+			VERBOSLVL1 (env.get_verbosity_level(), std::cout << " " 
 				<< p.slide_w << " W x" << p.slide_h << " H x" << p.volume_d << " D"
 				<< " DR " << Nyxus::virguler_real(p.min_preroi_inten)
 				<< "-" << Nyxus::virguler_real(p.max_preroi_inten)
@@ -239,9 +240,9 @@ namespace Nyxus
 		}
 
 		// global properties
-		LR::update_dataset_props_extrema();
+		env.dataset.update_dataset_props_extrema();
 
-		VERBOSLVL1(std::cout << "finished prescanning \n");
+		VERBOSLVL1 (env.get_verbosity_level(), std::cout << "finished prescanning \n");
 
 		//
 		// future: allocate GPU cache for all participating devices
@@ -254,11 +255,12 @@ namespace Nyxus
 		// initialize arrow writer if needed
 		if (write_apache)
 		{
-			theEnvironment.arrow_stream = ArrowOutputStream();
-			auto [status, msg] = theEnvironment.arrow_stream.create_arrow_file(
+			env.arrow_stream = ArrowOutputStream();
+			auto [status, msg] = env.arrow_stream.create_arrow_file(
 				saveOption,
-				get_arrow_filename(outputPath, theEnvironment.nyxus_result_fname, saveOption),
-				Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+				get_arrow_filename(outputPath, env.nyxus_result_fname, saveOption),
+				Nyxus::get_header (env),
+				env.resultOptions.noval());
 
 			if (!status)
 			{
@@ -272,7 +274,7 @@ namespace Nyxus
 		size_t n_jobs = (nf + n_threads - 1) / n_threads;
 		for (size_t j = 0; j < n_jobs; j++)
 		{
-			VERBOSLVL1(std::cout << "whole-slide job " << j + 1 << "/" << n_jobs << "\n");
+			VERBOSLVL1 (env.get_verbosity_level(), std::cout << "whole-slide job " << j + 1 << "/" << n_jobs << "\n");
 
 			std::vector<std::future<void>> T;
 			for (int t = 0; t < n_threads; t++)
@@ -288,6 +290,7 @@ namespace Nyxus
 				{
 					T.push_back(std::async(std::launch::async,
 						featurize_3d_wv_thread,
+						std::ref(env),
 						intensFiles,
 						intensFiles,
 						idx,
@@ -300,6 +303,7 @@ namespace Nyxus
 				else
 				{
 					featurize_3d_wv_thread(
+						env,
 						intensFiles,
 						intensFiles,
 						idx,
@@ -327,7 +331,7 @@ namespace Nyxus
 		if (write_apache)
 		{
 			// close arrow file after use
-			auto [status, msg] = theEnvironment.arrow_stream.close_arrow_file();
+			auto [status, msg] = env.arrow_stream.close_arrow_file();
 			if (!status)
 			{
 				std::string erm = "Error closing Arrow file: " + msg.value();

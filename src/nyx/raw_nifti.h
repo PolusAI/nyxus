@@ -76,6 +76,8 @@ public:
         tileHeight_ = fullHeight_ = nii_->ny;
         tileWidth_ = fullWidth_ = nii_->nx;
         tileDepth_ = fullDepth_ = nii_->nz;
+        numTimeFrames_ = nii_->nt;
+
     }
 
     ~RawNiftiLoader() override
@@ -129,6 +131,11 @@ public:
 
     [[nodiscard]] size_t fullDepth([[maybe_unused]] size_t level) const override { return fullDepth_; }
 
+    [[nodiscard]] size_t fullTimestamps([[maybe_unused]] size_t level) const override 
+    { 
+        return numTimeFrames_; 
+    }
+
     [[nodiscard]] size_t tileWidth([[maybe_unused]] size_t level) const override { return tileWidth_; }
 
     [[nodiscard]] size_t tileHeight([[maybe_unused]] size_t level) const override { return tileHeight_; }
@@ -155,7 +162,8 @@ private:
         numCols_ = 0,
         numRows_ = 0;
 
-    int32_t numFrames_ = 0;
+    size_t numTimeFrames_ = 0;
+
     int bitsPerSample_ = 1;
 
     std::string slide_path_;
@@ -183,6 +191,7 @@ public:
         tile_height_ = full_height_ = niiData->ny;
         tile_width_ = full_width_ = niiData->nx;
         tile_depth_ = full_depth_ = niiData->nz;
+        numTimeFrames_ = niiData->nt;
 
         nifti_image_free (niiData);
     }
@@ -198,7 +207,7 @@ public:
         size_t indexLayerGlobalTile,
         [[maybe_unused]] size_t level) override
     {
-        tile->resize (tile_width_ * tile_height_ * tile_depth_);
+        tile->resize (tile_width_ * tile_height_ * tile_depth_ * numTimeFrames_);
         std::fill(tile->begin(), tile->end(), 0);
 
         std::vector<uint32_t>& dataCache = *tile;
@@ -214,38 +223,38 @@ public:
         }
 
         // cache
-        size_t nr_voxels = nii->nvox;
         if (nii->datatype == 2) {  // NIFTI_TYPE_UINT8
-            unhounsfield <uint32_t, uint8_t>(dataCache, static_cast<uint8_t*> (nii->data), nr_voxels);
+            unhounsfield <uint32_t, uint8_t>(dataCache, static_cast<uint8_t*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 512) {  // NIFTI_TYPE_UINT16
-            unhounsfield <uint32_t, uint16_t>(dataCache, static_cast<uint16_t*> (nii->data), nr_voxels);
+            unhounsfield <uint32_t, uint16_t>(dataCache, static_cast<uint16_t*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 768) {  // NIFTI_TYPE_UINT32
-            unhounsfield <uint32_t, uint32_t>(dataCache, static_cast<uint32_t*> (nii->data), nr_voxels);
+            unhounsfield <uint32_t, uint32_t>(dataCache, static_cast<uint32_t*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 1280) {  // NIFTI_TYPE_UINT64
-            unhounsfield <uint32_t, uint64_t>(dataCache, static_cast<uint64_t*> (nii->data), nr_voxels);
+            unhounsfield <uint32_t, uint64_t>(dataCache, static_cast<uint64_t*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 256) {  // NIFTI_TYPE_INT8
-            unhounsfield <uint32_t, int8_t>(dataCache, static_cast<int8_t*> (nii->data), nr_voxels);
+            unhounsfield <uint32_t, int8_t>(dataCache, static_cast<int8_t*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 4) {  // NIFTI_TYPE_INT16
-            unhounsfield <uint32_t, int16_t>(dataCache, static_cast<int16_t*> (nii->data), nr_voxels);
+            unhounsfield <uint32_t, int16_t>(dataCache, static_cast<int16_t*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 8) {  // NIFTI_TYPE_INT32
-            unhounsfield <uint32_t, int32_t>(dataCache, static_cast<int32_t*> (nii->data), nr_voxels);
+            unhounsfield <uint32_t, int32_t>(dataCache, static_cast<int32_t*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 1024) {  // NIFTI_TYPE_INT64
-            unhounsfield <uint32_t, int64_t>(dataCache, static_cast<int64_t*> (nii->data), nr_voxels);
+            unhounsfield <uint32_t, int64_t>(dataCache, static_cast<int64_t*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 16) {  // NIFTI_TYPE_FLOAT32
-            unhounsfield <uint32_t, float>(dataCache, static_cast<float*> (nii->data), nr_voxels);
+            unhounsfield <uint32_t, float>(dataCache, static_cast<float*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 64) {  // NIFTI_TYPE_FLOAT64
-            unhounsfield <uint32_t, double> (dataCache, static_cast<double*> (nii->data), nr_voxels);
+            unhounsfield <uint32_t, double> (dataCache, static_cast<double*> (nii->data), nii->nvox);
         }
-        else {
+        else 
+        {
             std::string erm = "error: unrecognized NIFTI data type in " + slide_path_;
             std::cerr << erm << "\n";
             throw (std::runtime_error(erm));
@@ -255,17 +264,21 @@ public:
         nifti_image_free (nii);
     }
 
-    [[nodiscard]] size_t fullHeight([[maybe_unused]] size_t level) const override { return full_height_; }
+    [[nodiscard]] size_t fullHeight ([[maybe_unused]] size_t level) const override { return full_height_; }
 
-    [[nodiscard]] size_t fullWidth([[maybe_unused]] size_t level) const override { return full_width_; }
+    [[nodiscard]] size_t fullWidth ([[maybe_unused]] size_t level) const override { return full_width_; }
 
-    [[nodiscard]] size_t fullDepth([[maybe_unused]] size_t level) const override { return full_depth_; }
+    [[nodiscard]] size_t fullDepth ([[maybe_unused]] size_t level) const override { return full_depth_; }
 
-    [[nodiscard]] size_t tileWidth([[maybe_unused]] size_t level) const override { return tile_width_; }
+    [[nodiscard]] size_t fullTimestamps ([[maybe_unused]] size_t level) const override { return numTimeFrames_; }
 
-    [[nodiscard]] size_t tileHeight([[maybe_unused]] size_t level) const override { return tile_height_; }
+    [[nodiscard]] size_t tileWidth ([[maybe_unused]] size_t level) const override { return tile_width_; }
 
-    [[nodiscard]] size_t tileDepth([[maybe_unused]] size_t level) const override { return tile_depth_; }
+    [[nodiscard]] size_t tileHeight ([[maybe_unused]] size_t level) const override { return tile_height_; }
+
+    [[nodiscard]] size_t tileDepth ([[maybe_unused]] size_t level) const override { return tile_depth_; }
+
+    [[nodiscard]] size_t tileTimestamps ([[maybe_unused]] size_t level) const override { return numTimeFrames_; }
 
     [[nodiscard]] short bitsPerSample() const override { return 1; }
 
@@ -281,7 +294,8 @@ private:
         tile_height_ = 0,          ///< Tile height
         tile_depth_ = 0;           ///< Tile depth
 
-    int32_t numFrames_ = 0;
+    size_t numTimeFrames_ = 0;
+
     int bitsPerSample_ = 1;
 
     std::vector<uint32_t> tile;

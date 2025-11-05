@@ -1,9 +1,12 @@
 #pragma once
 
 #include <unordered_map>
+#include "../cache.h"
+#include "../dataset.h"
 #include "../roi_cache.h"
 #include "image_matrix.h"
 #include "../feature_method.h"
+#include "../feature_settings.h"
 
 /// @brief Determine number of erosions that are necessary to fully erase all the pixels in a binary image.
 class ErosionPixelsFeature: public FeatureMethod
@@ -17,19 +20,19 @@ public:
 
 	ErosionPixelsFeature();
 
-	void calculate(LR& r);
+	void calculate (LR& r, const Fsettings& s);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
-	void osized_calculate(LR& r, ImageLoader& imloader);
+	void osized_calculate(LR& r, const Fsettings& s, ImageLoader& imloader);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
-	static void extract (LR& roi);
-	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+	static void extract (LR& roi, const Fsettings& s);
+	static void parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
 
 #ifdef USE_GPU
 	/// @brief Calculates the features for all the ROIs in a single thread (for calculating via GPU) 
 	/// @param ptrLabels ROI label vector
 	/// @param ptrLabelData ROI data
-	static void gpu_process_all_rois (const std::vector<int>& L, std::unordered_map <int, LR>& RoiData, size_t batch_offset, size_t batch_len);
-	static void calculate_via_gpu (LR& r, size_t roi_index, int max_n_erosions, int& fval);
+	static void gpu_process_all_rois (const std::vector<int>& L, std::unordered_map <int, LR>& RoiData, size_t batch_offset, size_t batch_len, GpusideCache & cache);
+	static void calculate_via_gpu (LR& r, size_t roi_index, int max_n_erosions, int& fval, GpusideCache& devside);
 #endif // USE_GPU
 
 	static bool required(FeatureSet& fs) { return fs.anyEnabled({ Nyxus::Feature2D::EROSIONS_2_VANISH, Nyxus::Feature2D::EROSIONS_2_VANISH_COMPLEMENT }); }

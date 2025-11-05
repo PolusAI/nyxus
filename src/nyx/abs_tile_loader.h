@@ -57,6 +57,13 @@ public:
     return 1;
   }
 
+  /// \brief Getter to the length of full time series (default 1) usually used in NIFTI
+  /// @param level file's level considered
+  /// \return Number of timestamps in file's time series
+  [[nodiscard]] virtual size_t fullTimestamps ([[maybe_unused]] size_t level) const {
+      return 1;
+  }
+
   /// \brief Getter to the number of channels (default 1)
   /// \return Number of pixel's channels
   [[nodiscard]] virtual size_t numberChannels() const {
@@ -77,6 +84,13 @@ public:
   /// @param level tile's level considered
   /// \return Tile Height
   [[nodiscard]] virtual size_t tileDepth([[maybe_unused]] size_t level) const {
+    return 1;
+  }
+
+  /// \brief Getter to the length of tile's time series (default 1) usually used in NIFTI
+  /// @param level tile's level considered
+  /// \return Number of timestamps in tile's time series
+  [[nodiscard]] virtual size_t tileTimestamps ([[maybe_unused]] size_t level) const {
     return 1;
   }
 

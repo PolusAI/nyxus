@@ -5,12 +5,16 @@
 
 BasicEnvironment::BasicEnvironment()
 {
+}
+
+void BasicEnvironment::init_temp_dir_path()
+{
 	temp_dir_path = fs::temp_directory_path().string();
 
-	// Add slash to path if needed
+	// add slash to path if needed
 	if (!temp_dir_path.empty() && temp_dir_path.back() != fs::path::preferred_separator) {
-        temp_dir_path += fs::path::preferred_separator;
-    }
+		temp_dir_path += fs::path::preferred_separator;
+	}
 }
 
 bool BasicEnvironment::check_2d_file_pattern(const std::string& pat)

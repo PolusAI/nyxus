@@ -1,9 +1,11 @@
 #pragma once
 
 #include <unordered_map>
+#include "../dataset.h"
 #include "../roi_cache.h"
 #include "image_matrix.h"
 #include "../feature_method.h"
+#include "../feature_settings.h"
 #include "texture_feature.h"
 
 class D3_GLSZM_feature : public FeatureMethod, public TextureFeature
@@ -34,12 +36,12 @@ public:
 
 	D3_GLSZM_feature();
 
-	void calculate(LR& r);
+	void calculate (LR& r, const Fsettings& s);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
-	void osized_calculate(LR& r, ImageLoader& imloader);
+	void osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
-	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
-	static void extract (LR& r);
+	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
+	static void extract (LR& r, const Fsettings& s);
 
 	// Compatibility with the manual reduce
 	static bool required(const FeatureSet& fs)
@@ -98,6 +100,7 @@ public:
 	static int n_levels;	// default value: 8
 
 private:
+
 	int Ng = 0;	// number of discrete intensity values in the image
 	int Ns = 0; // number of discrete zone sizes in the image
 	int Np = 0; // number of voxels in the image
@@ -105,9 +108,6 @@ private:
 	SimpleMatrix<int> P;
 	double sum_p = 0;
 	std::vector<PixIntens> I;	// sorted unique intensities
-
-	// Helper to check if feature is requested by user
-	bool need (Nyxus::Feature3D f);
 
 	// Sum of P required by GLN, GLNN, LGLZE, HGLZE
 	std::vector<double> sj;
@@ -148,5 +148,5 @@ private:
 		fv_LALGLE,
 		fv_LAHGLE;
 
-	void invalidate();	// assigns each cached feature value a safe NAN
+	void invalidate (double soft_nan);	// assigns each cached feature value a safe NAN
 };

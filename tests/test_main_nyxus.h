@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../src/nyx/roi_cache.h"
-#include "../src/nyx/parallel.h"
+#include "../src/nyx/globals.h"
 #include "test_dsb2018_data.h"
 #include "test_data.h"
 
@@ -97,9 +97,9 @@ namespace Nyxus
         {
             // -- mocking feed_pixel_2_metrics ():
             if (roidata.aux_area == 0)
-                init_label_record_2(roidata, "theSegFname", "theIntFname", i%w, i/w, dummyLabel, px);
+                init_label_record_hierarchical (roidata, "theSegFname", "theIntFname", i%w, i/w, dummyLabel, px);
             else
-                update_label_record_2(roidata, i%w, i/w, dummyLabel, px);
+                update_label_record_2 (roidata, i%w, i/w, dummyLabel, px);
 
             ++i;
         }

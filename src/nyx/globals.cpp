@@ -1,32 +1,17 @@
 #include "environment.h"
 #include "globals.h"
-#ifdef USE_GPU
-	#include "gpucache.h"
-#endif
 #include "helpers/timing.h"
 
 namespace Nyxus
 {
-	// Command line info and default values
-	Environment theEnvironment;
-
-	// Everything related to images
-	ImageLoader theImLoader;
-	std::string theSegFname, theIntFname;
-
-	// Everything related to ROI data
-	std::unordered_set <int> uniqueLabels;
-	std::unordered_map <int, LR> roiData;
-
 	// Nested ROI
 	std::unordered_map <std::string, NestableRois> nestedRoiData;
 
-	// Features
-	FeatureSet theFeatureSet;
-	FeatureManager theFeatureMgr;
-
-	// Results cache serving Nyxus' CLI & Python API, NyxusHie's CLI & Python API
-	ResultsCache theResultsCache;
+	// Objects that are used by allocateTrivialRoisBuffers() and then by the GPU platform code 
+	// to transfer image matrices of all the image's ROIs
+	PixIntens* ImageMatrixBuffer = nullptr;	// Solid buffer of all the image matrices in the image
+	size_t imageMatrixBufferLen = 0;		// Combined size of all ROIs' image matrices in the image
+	size_t largest_roi_imatr_buf_len = 0;
 
 	// Shows a message in CLI or Python terminal 
 	void sureprint (const std::string& msg, bool send_to_stderr)

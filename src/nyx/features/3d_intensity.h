@@ -1,18 +1,20 @@
 #pragma once
+#include "../dataset.h"
 #include "../feature_method.h"
+#include "../feature_settings.h"
 
-class D3_VoxelIntensityFeatures : public FeatureMethod
+class D3_VoxelIntensityFeatures: public FeatureMethod
 {
 public:
 	D3_VoxelIntensityFeatures();
-	void calculate(LR& r);
+	void calculate(LR& r, const Fsettings& s, const Dataset& ds);
+	void calculate(LR& r, const Fsettings& s) { throw std::runtime_error("illegal call of D3_VoxelIntensityFeatures::calculate(LR&, const Fsettings&)"); }
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
-	void osized_calculate(LR& r, ImageLoader& imloader);
+	void osized_calculate(LR& r, const Fsettings& s, ImageLoader& ldr) { throw std::runtime_error("illegal call of D3_VoxelIntensityFeatures::osized_calculate(LR&, const Fsettings&, ImageLoader&)"); }
+	void osized_calculate(LR& r, const Fsettings& s, const Dataset& ds, ImageLoader& ldr);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
-	void parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads);
-	static void parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
-	static void reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
-	static void extract (LR& r);
+	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
+	static void extract (LR& r, const Fsettings& s);
 	void cleanup_instance();
 
 	// list dependencies of this class

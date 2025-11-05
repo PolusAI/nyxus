@@ -7,7 +7,7 @@ from .backend import (
     featurize_fname_lists_3D_imp,
     findrelations_imp,
     use_gpu,
-    gpu_available,
+    gpu_available_imp,
     blacklist_roi_imp,
     clear_roi_blacklist_imp,
     roi_blacklist_get_summary_imp,
@@ -17,8 +17,7 @@ from .backend import (
     get_params_imp,
     arrow_is_enabled_imp,
     get_arrow_file_imp, 
-    get_parquet_file_imp,
-    )
+    get_parquet_file_imp)
 
 import os
 import numpy as np
@@ -176,7 +175,7 @@ class Nyxus:
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
 
-        if use_gpu_device > -1 and not gpu_available():
+        if use_gpu_device > -1 and not gpu_available_imp(id(self)):
             raise ValueError ("No need to set GPU device ID because GPU is unavailable")
 
         if verb_lvl < 0:
@@ -191,6 +190,7 @@ class Nyxus:
         aniso_z = 1.0   # not used in 2D
 
         initialize_environment(
+            id(self),
             2, # 2D
             features,
             neighbor_distance,
@@ -208,7 +208,7 @@ class Nyxus:
             aniso_x,
             aniso_y,
             aniso_z) 
-        
+
         self.set_gabor_feature_params(
             kersize = gabor_kersize,
             gamma = gabor_gamma,
@@ -281,7 +281,7 @@ class Nyxus:
             
         if (output_type == 'pandas'):
             
-            header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern, output_type, "")
+            header, string_data, numeric_data = featurize_directory_imp (id(self), intensity_dir, label_dir, file_pattern, output_type, "")
 
             df = pd.concat(
                 [
@@ -299,9 +299,9 @@ class Nyxus:
         
         else:
             
-            featurize_directory_imp(intensity_dir, label_dir, file_pattern, output_type, output_path)
+            featurize_directory_imp (id(self), intensity_dir, label_dir, file_pattern, output_type, output_path)
             
-            return get_arrow_file_imp() # return path to file
+            return get_arrow_file_imp (id(self)) # return path to file
 
 
     def featurize(
@@ -401,7 +401,7 @@ class Nyxus:
         
         if (output_type == 'pandas'):
                 
-            header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, "")
+            header, string_data, numeric_data, error_message = featurize_montage_imp (id(self), intensity_images, label_images, intensity_names, label_names, output_type, "")
             
             self.error_message = error_message
             if(error_message != ''):
@@ -423,18 +423,18 @@ class Nyxus:
             
         else:
             
-            ret = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, output_path)
+            ret = featurize_montage_imp (id(self), intensity_images, label_images, intensity_names, label_names, output_type, output_path)
             
             self.error_message = ret[0]
             
             if(self.error_message != ''):
                 raise RuntimeError('Error calculating features: ' + error_message[0])
             
-            return get_arrow_file_imp() # return path to file
+            return get_arrow_file_imp (id(self)) # return path to file
                 
     
     def use_gpu_device (self, gpu_device_id: int):
-        use_gpu (gpu_device_id)
+        use_gpu (id(self), gpu_device_id)
 
     def featurize_files (
         self,
@@ -484,7 +484,7 @@ class Nyxus:
 
         if (output_type == 'pandas'):
             
-            header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, "")
+            header, string_data, numeric_data = featurize_fname_lists_imp (id(self), intensity_files, mask_files, single_roi, output_type, "")
 
             df = pd.concat(
                 [
@@ -502,9 +502,8 @@ class Nyxus:
         
         else:
             
-            featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, output_path)
-            
-            return get_arrow_file_imp()
+            featurize_fname_lists_imp (id(self), intensity_files, mask_files, single_roi, output_type, output_path)
+            return get_arrow_file_imp (id(self))
 
 
     def blacklist_roi(self, blacklist:str):
@@ -529,7 +528,7 @@ class Nyxus:
         if len(blacklist.strip()) == 0:
             raise IOError ("ROI blacklist argument is non-informative")
 
-        blacklist_roi_imp (blacklist)
+        blacklist_roi_imp (id(self), blacklist)
 
     def clear_roi_blacklist(self):
         """Clears the ROI blacklist
@@ -543,7 +542,7 @@ class Nyxus:
         None
 
         """
-        clear_roi_blacklist_imp ()
+        clear_roi_blacklist_imp (id(self))
 
     def roi_blacklist_get_summary (self):
         """Returns a human-friendly text of the summary of the application-wide ROI blacklist
@@ -557,7 +556,7 @@ class Nyxus:
         text of blacklist summary (string)
 
         """ 
-        s = roi_blacklist_get_summary_imp()
+        s = roi_blacklist_get_summary_imp (id(self))
         s = s.strip()
         if len(s) == 0:
             return None
@@ -611,7 +610,7 @@ class Nyxus:
         else:
             thetas = ",".join(str(i) for i in thetas)
 
-        customize_gabor_feature_imp (kersize, gamma, sig2lam, f0, thetas, thold, freqs)
+        customize_gabor_feature_imp (id(self), kersize, gamma, sig2lam, f0, thetas, thold, freqs)
 
     
     def set_environment_params (self, **params):
@@ -667,7 +666,7 @@ class Nyxus:
         max_intensity = params.get('max_intensity', -1)
         ram_limit = params.get('ram_limit', -1)
         
-        set_environment_params_imp (
+        set_environment_params_imp (id(self),
                                    features, 
                                    neighbor_distance, 
                                    pixels_per_micron,
@@ -729,7 +728,7 @@ class Nyxus:
                 gabor_params[key[len("gabor_"):]] = value
             
             elif (key == "ibsi"):
-                set_if_ibsi_imp(value)
+                set_if_ibsi_imp (id(self), value)
             
             else:
                 if (key not in available_environment_params):
@@ -778,7 +777,7 @@ class Nyxus:
         """
         vars = list(args)
         
-        return get_params_imp(vars)
+        return get_params_imp (id(self), vars)
         
     
     def get_arrow_ipc_file(self):
@@ -795,7 +794,7 @@ class Nyxus:
         """
         
         if self.arrow_is_enabled():
-            return get_arrow_file_imp()
+            return get_arrow_file_imp (id(self))
         else:
             raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
         
@@ -812,7 +811,7 @@ class Nyxus:
 
         """
         if self.arrow_is_enabled():
-            return get_parquet_file_imp()
+            return get_parquet_file_imp (id(self))
         else:
             raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
     
@@ -831,7 +830,7 @@ class Nyxus:
         """
         
 
-        return arrow_is_enabled_imp()
+        return arrow_is_enabled_imp (id(self))
        
 
 class Nyxus3D:
@@ -951,7 +950,7 @@ class Nyxus3D:
             print("Gpu features only support a single thread. Defaulting to one thread.")
             n_feature_calc_threads = 1
             
-        if(use_gpu_device > -1 and not gpu_available()):
+        if(use_gpu_device > -1 and not gpu_available_imp(id(self))):
             print("No gpu available.")
             use_gpu_device = -1
 
@@ -970,6 +969,7 @@ class Nyxus3D:
             raise ValueError ("anisotropy_z must be positive")
 
         initialize_environment(
+            id(self),
             3, # 3D
             features,
             neighbor_distance,
@@ -1049,7 +1049,7 @@ class Nyxus3D:
             raise  ValueError(f'Invalid output type {output_type}. Valid output types are {self._valid_output_types}.')
             
         if (output_type == 'pandas'):
-            header, string_data, numeric_data = featurize_directory_3D_imp (intensity_dir, label_dir, file_pattern, output_type, "")
+            header, string_data, numeric_data = featurize_directory_3D_imp (id(self), intensity_dir, label_dir, file_pattern, output_type, "")
             df = pd.concat(
                 [
                     pd.DataFrame(string_data, columns=header[: string_data.shape[1]]),
@@ -1062,8 +1062,8 @@ class Nyxus3D:
                 df["label"] = df.label.astype(np.uint32)
             return df
         else:
-            featurize_directory_3D_imp (intensity_dir, label_dir, file_pattern, output_type, output_path)
-            return get_arrow_file_imp() # return path to file
+            featurize_directory_3D_imp (id(self), intensity_dir, label_dir, file_pattern, output_type, output_path)
+            return get_arrow_file_imp (id(self)) # return path to file
 
 
     def featurize_files (
@@ -1114,7 +1114,7 @@ class Nyxus3D:
 
         if (output_type == 'pandas'):
             
-            header, string_data, numeric_data = featurize_fname_lists_3D_imp (intensity_files, mask_files, single_roi, output_type, "")
+            header, string_data, numeric_data = featurize_fname_lists_3D_imp (id(self), intensity_files, mask_files, single_roi, output_type, "")
 
             df = pd.concat(
                 [
@@ -1132,9 +1132,8 @@ class Nyxus3D:
         
         else:
             
-            featurize_fname_lists_3D_imp (intensity_files, mask_files, single_roi, output_type, output_path)
-            
-            return get_arrow_file_imp()
+            featurize_fname_lists_3D_imp (id(self), intensity_files, mask_files, single_roi, output_type, output_path)
+            return get_arrow_file_imp (id(self))
 
     
     def set_environment_params (self, **params):
@@ -1189,7 +1188,8 @@ class Nyxus3D:
         max_intensity = params.get('max_intensity', -1)
         ram_limit = -1 # no limit
         
-        set_environment_params_imp(features, 
+        set_environment_params_imp (id(self),
+                                   features, 
                                    neighbor_distance, 
                                    pixels_per_micron,
                                    coarse_gray_depth,
@@ -1240,7 +1240,7 @@ class Nyxus3D:
         for key, value in params.items():
            
             if (key == "ibsi"):
-                set_if_ibsi_imp(value)
+                set_if_ibsi_imp (id(self), value)
             
             else:
                 if (key not in available_environment_params):
@@ -1277,7 +1277,7 @@ class Nyxus3D:
         """
         vars = list(args)
         
-        return get_params_imp(vars)
+        return get_params_imp (id(self), vars)
         
     
     def get_arrow_ipc_file(self):
@@ -1294,7 +1294,7 @@ class Nyxus3D:
         """
         
         if self.arrow_is_enabled():
-            return get_arrow_file_imp()
+            return get_arrow_file_imp (id(self))
         else:
             raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
         
@@ -1311,7 +1311,7 @@ class Nyxus3D:
 
         """
         if self.arrow_is_enabled():
-            return get_parquet_file_imp()
+            return get_parquet_file_imp (id(self))
         else:
             raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
     
@@ -1330,7 +1330,7 @@ class Nyxus3D:
         """
         
 
-        return arrow_is_enabled_imp()
+        return arrow_is_enabled_imp (id(self))
 
 class ImageQuality:
     """Image quality extraction library
@@ -1441,7 +1441,7 @@ class ImageQuality:
             print("Gpu features only support a single thread. Defaulting to one thread.")
             n_feature_calc_threads = 1
             
-        if(using_gpu > -1 and not gpu_available()):
+        if(using_gpu > -1 and not gpu_available_imp(id(self))):
             print("No gpu available.")
             using_gpu = -1
 
@@ -1457,6 +1457,7 @@ class ImageQuality:
         aniso_z = 1.0   # not used in 2D image quality assessment
 
         initialize_environment(
+            id(self),
             2, # 2D
             features,
             neighbor_distance,
@@ -1537,7 +1538,7 @@ class ImageQuality:
             
         if (output_type == 'pandas'):
             
-            header, string_data, numeric_data = featurize_directory_imp (intensity_dir, label_dir, file_pattern, output_type, "")
+            header, string_data, numeric_data = featurize_directory_imp (id(self), intensity_dir, label_dir, file_pattern, output_type, "")
 
             df = pd.concat(
                 [
@@ -1555,8 +1556,8 @@ class ImageQuality:
         
         else:
             
-            featurize_directory_imp(intensity_dir, label_dir, file_pattern, output_type, output_path)
-            return get_arrow_file_imp() # return path to file
+            featurize_directory_imp (id(self), intensity_dir, label_dir, file_pattern, output_type, output_path)
+            return get_arrow_file_imp (id(self)) # return path to file
 
     def featurize(
         self,
@@ -1661,7 +1662,7 @@ class ImageQuality:
         
         if (output_type == 'pandas'):
                 
-            header, string_data, numeric_data, error_message = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, "")
+            header, string_data, numeric_data, error_message = featurize_montage_imp (id(self), intensity_images, label_images, intensity_names, label_names, output_type, "")
             
             self.error_message = error_message
             if(error_message != ''):
@@ -1683,14 +1684,14 @@ class ImageQuality:
             
         else:
             
-            ret = featurize_montage_imp (intensity_images, label_images, intensity_names, label_names, output_type, output_path)
+            ret = featurize_montage_imp (id(self), intensity_images, label_images, intensity_names, label_names, output_type, output_path)
             
             self.error_message = ret[0]
             
             if(self.error_message != ''):
                 raise RuntimeError('Error calculating features: ' + error_message[0])
             
-            return get_arrow_file_imp() # return path to file
+            return get_arrow_file_imp (id(self)) # return path to file
                 
     def featurize_files (
         self,
@@ -1740,7 +1741,7 @@ class ImageQuality:
 
         if (output_type == 'pandas'):
             
-            header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, "")
+            header, string_data, numeric_data = featurize_fname_lists_imp (id(self), intensity_files, mask_files, single_roi, output_type, "")
 
             df = pd.concat(
                 [
@@ -1758,9 +1759,8 @@ class ImageQuality:
         
         else:
             
-            featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, output_path)
-            
-            return get_arrow_file_imp()
+            featurize_fname_lists_imp (id(self), intensity_files, mask_files, single_roi, output_type, output_path)
+            return get_arrow_file_imp (id(self))
 
 
     def blacklist_roi(self, blacklist:str):
@@ -1785,7 +1785,7 @@ class ImageQuality:
         if len(blacklist.strip()) == 0:
             raise IOError ("ROI blacklist argument is non-informative")
 
-        blacklist_roi_imp (blacklist)
+        blacklist_roi_imp (id(self), blacklist)
 
     def clear_roi_blacklist(self):
         """Clears the ROI blacklist
@@ -1799,7 +1799,7 @@ class ImageQuality:
         None
 
         """
-        clear_roi_blacklist_imp ()
+        clear_roi_blacklist_imp (id(self))
 
     def roi_blacklist_get_summary (self):
         """Returns a human-friendly text of the summary of the application-wide ROI blacklist
@@ -1813,7 +1813,7 @@ class ImageQuality:
         text of blacklist summary (string)
 
         """ 
-        s = roi_blacklist_get_summary_imp()
+        s = roi_blacklist_get_summary_imp (id(self))
         s = s.strip()
         if len(s) == 0:
             return None
@@ -1867,7 +1867,7 @@ class ImageQuality:
         else:
             thetas = ",".join(str(i) for i in thetas)
 
-        customize_gabor_feature_imp (kersize, gamma, sig2lam, f0, thetas, thold, freqs)
+        customize_gabor_feature_imp (id(self), kersize, gamma, sig2lam, f0, thetas, thold, freqs)
 
     
     def set_environment_params (self, **params):
@@ -1922,7 +1922,8 @@ class ImageQuality:
         max_intensity = params.get('max_intensity', -1)
         ram_limit = -1 # no limit
         
-        set_environment_params_imp(features, 
+        set_environment_params_imp (id(self),
+                                   features,
                                    neighbor_distance, 
                                    pixels_per_micron,
                                    coarse_gray_depth,
@@ -1983,7 +1984,7 @@ class ImageQuality:
                 gabor_params[key[len("gabor_"):]] = value
             
             elif (key == "ibsi"):
-                set_if_ibsi_imp(value)
+                set_if_ibsi_imp (id(self), value)
             
             else:
                 if (key not in available_environment_params):
@@ -2031,7 +2032,7 @@ class ImageQuality:
         """
         vars = list(args)
         
-        return get_params_imp(vars)
+        return get_params_imp (id(self), vars)
 
 
 class Nested:
@@ -2102,7 +2103,7 @@ class Nested:
         if not os.path.exists(label_dir):
             raise IOError (f"Provided label image directory '{label_dir}' does not exist.")
 
-        header, string_data, numeric_data = findrelations_imp(label_dir, parent_file_pattern, child_file_pattern)
+        header, string_data, numeric_data = findrelations_imp (id(self), label_dir, parent_file_pattern, child_file_pattern)
 
         df = pd.concat(
             [

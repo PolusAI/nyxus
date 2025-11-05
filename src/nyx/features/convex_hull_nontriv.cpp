@@ -1,6 +1,8 @@
 #define _USE_MATH_DEFINES	// For M_PI, etc.
 #include <cmath>
+#include "../dataset.h"
 #include "../feature_method.h"
+#include "../feature_settings.h"
 #include "image_matrix_nontriv.h"
 #include "convex_hull.h"
 
@@ -24,7 +26,7 @@ void ConvexHullFeature::cleanup_instance()
 	area = solidity = circularity = 0.0;
 }
 
-void ConvexHullFeature::calculate (LR& r)
+void ConvexHullFeature::calculate (LR& r, const Fsettings& s)
 {
 	// Build the convex hull
 	build_convex_hull(r.raw_pixels, r.convHull_CH);
@@ -170,7 +172,7 @@ double ConvexHullFeature::polygon_area (const std::vector<Pixel2>& vertices)
 	return area;
 }
 
-void ConvexHullFeature::osized_calculate (LR& r, ImageLoader& imloader)
+void ConvexHullFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader)
 {
 	// Build the convex hull
 	build_convex_hull (r.raw_pixels_NT, r.convHull_CH);
@@ -184,16 +186,16 @@ void ConvexHullFeature::osized_calculate (LR& r, ImageLoader& imloader)
 	circularity = sqrt(4.0 * M_PI * s_roi / (p * p));
 }
 
-void ConvexHullFeature::extract (LR& r)
+void ConvexHullFeature::extract (LR& r, const Fsettings& s)
 {
 	ConvexHullFeature f;
-	f.calculate (r);
+	f.calculate (r, s);
 	f.save_value (r.fvals);
 }
 
 namespace Nyxus
 {
-	void parallelReduceConvHull (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+	void parallelReduceConvHull (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 	{
 		for (auto i = start; i < end; i++)
 		{
@@ -203,9 +205,9 @@ namespace Nyxus
 			if (r.has_bad_data())
 				continue;
 
-			ConvexHullFeature fea;
-			fea.calculate (r);
-			fea.save_value (r.fvals);
+			ConvexHullFeature f;
+			f.calculate (r, s);
+			f.save_value (r.fvals);
 		}
 	}
 }

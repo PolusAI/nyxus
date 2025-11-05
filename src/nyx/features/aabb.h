@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 #include <tuple>
 #include <utility>
@@ -76,6 +77,30 @@ public:
 			bb.update_y(p.y);
 		}
 		return {bb.get_xmin(), bb.get_ymin(), bb.get_xmax(), bb.get_ymax()};
+	}
+
+	void update_from_voxelcloud (const std::vector<Pixel3> & V)
+	{
+		auto cmpX = [](const Pixel3& p1, const Pixel3& p2) {return p1.x < p2.x; };
+		StatsInt minx = (*std::min_element(V.begin(), V.end(), cmpX)).x;
+		StatsInt maxx = (*std::max_element(V.begin(), V.end(), cmpX)).x;
+
+		auto cmpY = [](const Pixel3& p1, const Pixel3& p2) {return p1.y < p2.y; };
+		StatsInt miny = (*std::min_element(V.begin(), V.end(), cmpY)).y;
+		StatsInt maxy = (*std::max_element(V.begin(), V.end(), cmpY)).y;
+
+		auto cmpZ = [](const Pixel3& p1, const Pixel3& p2) {return p1.z < p2.z; };
+		StatsInt minz = (*std::min_element(V.begin(), V.end(), cmpZ)).z;
+		StatsInt maxz = (*std::max_element(V.begin(), V.end(), cmpZ)).z;
+
+		this->xmin = minx;
+		this->xmax = maxx;
+
+		this->ymin = miny;
+		this->ymax = maxy;
+
+		this->zmin = minz;
+		this->zmax = maxz;
 	}
 
 	inline bool contains(const AABB& other)

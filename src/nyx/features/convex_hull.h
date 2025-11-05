@@ -22,11 +22,11 @@ public:
 	ConvexHullFeature();
 
 	// Trivial ROI
-	void calculate(LR& r);
+	void calculate (LR& r, const Fsettings& s);
 
 	// Non-trivial ROI
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
-	void osized_calculate (LR& r, ImageLoader& imloader);
+	void osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader);
 	void save_value (std::vector<std::vector<double>>& feature_vals);
 	void cleanup_instance();
 
@@ -36,7 +36,7 @@ public:
 		return fs.anyEnabled (ConvexHullFeature::featureset); 
 	}
 
-	static void extract(LR& roi); // extracts the feature of- and saves to ROI
+	static void extract (LR& roi, const Fsettings& s); // extracts the feature of- and saves to ROI
 
 private:
 	void build_convex_hull(const std::vector<Pixel2>& contour, std::vector<Pixel2>& convhull);

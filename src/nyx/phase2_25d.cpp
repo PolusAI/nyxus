@@ -5,17 +5,20 @@
 #include <map>
 #include <array>
 #include <regex>
+
 #ifdef WITH_PYTHON_H
-#include <pybind11/pybind11.h>
+	#include <pybind11/pybind11.h>
 #endif
+
 #include "environment.h"
+#include "helpers/fsystem.h"
 #include "globals.h"
 #include "helpers/timing.h"
 
 namespace Nyxus
 {
 
-	bool scanTrivialRois_25D (const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, const std::vector<std::string>& z_indices)
+	bool scanTrivialRois_25D (Environment & env, const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, const std::vector<std::string>& z_indices)
 	{
 		// Sort the batch's labels to enable binary searching in it
 		std::vector<int> whiteList = batch_labels;
@@ -33,28 +36,22 @@ namespace Nyxus
 			std::string ifpath = std::regex_replace(intens_fpath, std::regex("\\*"), zValue),
 				mfpath = std::regex_replace(label_fpath, std::regex("\\*"), zValue);
 
-			// Cache the file names to be picked up by labels to know their file origin
-			theIntFname = ifpath;
-			theSegFname = mfpath;
-
 			// Scan this Z intensity-mask pair 
-			SlideProps p;
-			p.fname_int = ifpath;
-			p.fname_seg = mfpath;
-			if (!theImLoader.open(p))
+			SlideProps p (ifpath, mfpath);
+			if (! env.theImLoader.open(p, env.fpimageOptions))
 			{
 				std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
 				return false;
 			}
 
-			size_t nth = theImLoader.get_num_tiles_hor(),
-				ntv = theImLoader.get_num_tiles_vert(),
-				fw = theImLoader.get_tile_width(),
-				th = theImLoader.get_tile_height(),
-				tw = theImLoader.get_tile_width(),
-				tileSize = theImLoader.get_tile_size(),
-				fullwidth = theImLoader.get_full_width(),
-				fullheight = theImLoader.get_full_height();
+			size_t nth = env.theImLoader.get_num_tiles_hor(),
+				ntv = env.theImLoader.get_num_tiles_vert(),
+				fw = env.theImLoader.get_tile_width(),
+				th = env.theImLoader.get_tile_height(),
+				tw = env.theImLoader.get_tile_width(),
+				tileSize = env.theImLoader.get_tile_size(),
+				fullwidth = env.theImLoader.get_full_width(),
+				fullheight = env.theImLoader.get_full_height();
 
 			int cnt = 1;
 			for (unsigned int row = 0; row < nth; row++)
@@ -62,7 +59,7 @@ namespace Nyxus
 				for (unsigned int col = 0; col < ntv; col++)
 				{
 					// Fetch the tile 
-					bool ok = theImLoader.load_tile(row, col);
+					bool ok = env.theImLoader.load_tile(row, col);
 					if (!ok)
 					{
 						std::stringstream ss;
@@ -75,8 +72,8 @@ namespace Nyxus
 					}
 
 					// Get ahold of tile's pixel buffer
-					auto dataI = theImLoader.get_int_tile_buffer(),
-						dataL = theImLoader.get_seg_tile_buffer();
+					auto dataI = env.theImLoader.get_int_tile_buffer(),
+						dataL = env.theImLoader.get_seg_tile_buffer();
 
 					// Iterate pixels
 					for (unsigned long i = 0; i < tileSize; i++)
@@ -87,7 +84,7 @@ namespace Nyxus
 							continue;
 
 						// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
-						if (!theEnvironment.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))
+						if (!env.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))
 							continue;
 
 						auto inten = dataI[i];
@@ -99,15 +96,15 @@ namespace Nyxus
 							continue;
 
 						// Collapse all the labels to one if single-ROI mde is requested
-						if (theEnvironment.singleROI)
+						if (env.singleROI)
 							label = 1;
 
 						// Cache this pixel 
-						LR& r = roiData[label];
+						LR& r = env.roiData[label];
 						feed_pixel_2_cache_3D_LR (x, y, z, dataI[i], r);
 					}
 
-					VERBOSLVL2(
+					VERBOSLVL2(env.get_verbosity_level(),
 						// Show stayalive progress info
 						if (cnt++ % 4 == 0)
 						{
@@ -119,21 +116,22 @@ namespace Nyxus
 								prevIntPc = int(pc);
 							}
 						}
-					)
+					);
 				}
 			}
 
 			// Close the image pair
-			theImLoader.close();
+			env.theImLoader.close();
 		}
 
 		// Dump ROI pixel clouds to the output directory
-		VERBOSLVL5(dump_roi_pixels(batch_labels, label_fpath))
+		VERBOSLVL5 (env.get_verbosity_level(), dump_roi_pixels(env.dim(), Nyxus::get_temp_dir_path(), batch_labels, label_fpath, env.uniqueLabels, env.roiData));
 
-			return true;
+		return true;
 	}
 
 	bool scanTrivialRois_25D_anisotropic (
+		Environment & env,
 		const std::vector<int>& batch_labels,
 		const std::string& intens_fpath,
 		const std::string& label_fpath,
@@ -162,28 +160,22 @@ namespace Nyxus
 			std::string ifpath = std::regex_replace(intens_fpath, std::regex("\\*"), zValue),
 				mfpath = std::regex_replace(label_fpath, std::regex("\\*"), zValue);
 
-			// Cache the file names to be picked up by labels to know their file origin
-			theIntFname = ifpath;
-			theSegFname = mfpath;
-
 			// Scan this Z intensity-mask pair 
-			SlideProps p;
-			p.fname_int = ifpath;
-			p.fname_seg = mfpath;
-			if (!theImLoader.open(p))
+			SlideProps p (ifpath, mfpath);
+			if (! env.theImLoader.open(p, env.fpimageOptions))
 			{
 				std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
 				return false;
 			}
 
-			size_t nth = theImLoader.get_num_tiles_hor(),
-				ntv = theImLoader.get_num_tiles_vert(),
-				fw = theImLoader.get_tile_width(),
-				th = theImLoader.get_tile_height(),
-				tw = theImLoader.get_tile_width(),
-				tileSize = theImLoader.get_tile_size(),
-				fullwidth = theImLoader.get_full_width(),
-				fullheight = theImLoader.get_full_height();
+			size_t nth = env.theImLoader.get_num_tiles_hor(),
+				ntv = env.theImLoader.get_num_tiles_vert(),
+				fw = env.theImLoader.get_tile_width(),
+				th = env.theImLoader.get_tile_height(),
+				tw = env.theImLoader.get_tile_width(),
+				tileSize = env.theImLoader.get_tile_size(),
+				fullwidth = env.theImLoader.get_full_width(),
+				fullheight = env.theImLoader.get_full_height();
 
 			// virtual slide properties
 			size_t vh = (size_t)(double(fullheight) * aniso_y),
@@ -205,7 +197,7 @@ namespace Nyxus
 					// load it
 					if (tidx_y != curt_y || tidx_x != curt_x)
 					{
-						bool ok = theImLoader.load_tile(tidx_y, tidx_x);
+						bool ok = env.theImLoader.load_tile(tidx_y, tidx_x);
 						if (!ok)
 						{
 							std::string s = "Error fetching tile row=" + std::to_string(tidx_y) + " col=" + std::to_string(tidx_x);
@@ -231,8 +223,8 @@ namespace Nyxus
 						i = ph_y * tw + ph_x;
 
 					// read buffered physical pixel 
-					auto dataI = theImLoader.get_int_tile_buffer(),
-						dataL = theImLoader.get_seg_tile_buffer();
+					auto dataI = env.theImLoader.get_int_tile_buffer(),
+						dataL = env.theImLoader.get_seg_tile_buffer();
 
 					// skip non-mask pixels
 					auto label = dataL[i];
@@ -240,7 +232,7 @@ namespace Nyxus
 						continue;
 
 					// skip this ROI if the label isn't in the pending set of a multi-ROI mode
-					if (!theEnvironment.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))
+					if (!env.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))
 						continue;
 
 					// skip tile buffer pixels beyond the image's bounds
@@ -248,27 +240,27 @@ namespace Nyxus
 						continue;
 
 					// collapse all the labels to one if single-ROI mde is requested
-					if (theEnvironment.singleROI)
+					if (env.singleROI)
 						label = 1;
 
 					// cache this voxel 
 					auto inten = dataI[i];
-					LR& r = roiData[label];
+					LR& r = env.roiData[label];
 					feed_pixel_2_cache_3D_LR (vc, vr, vz, dataI[i], r);
 				}
 			}
 
 			// Close the image pair
-			theImLoader.close();
+			env.theImLoader.close();
 		}
 
 		// Dump ROI pixel clouds to the output directory
-		VERBOSLVL5(dump_roi_pixels(batch_labels, label_fpath))
+		VERBOSLVL5 (env.get_verbosity_level(), dump_roi_pixels(env.dim(), Nyxus::get_temp_dir_path(), batch_labels, label_fpath, env.uniqueLabels, env.roiData));
 
 			return true;
 	}
 
-	bool processTrivialRois_25D (const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit, const std::vector<std::string>& z_indices)
+	bool processTrivialRois_25D (Environment & env, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit, const std::vector<std::string>& z_indices)
 	{
 		std::vector<int> Pending;
 		size_t batchDemand = 0;
@@ -276,9 +268,9 @@ namespace Nyxus
 
 		for (auto lab : trivRoiLabels)
 		{
-			LR& r = roiData[lab];
+			LR& r = env.roiData[lab];
 
-			size_t itemFootprint = r.get_ram_footprint_estimate();
+			size_t itemFootprint = r.get_ram_footprint_estimate (trivRoiLabels.size());
 
 			// Check if we are good to accumulate this ROI in the current batch or should close the batch and reduce it
 			if (batchDemand + itemFootprint < memory_limit)
@@ -290,38 +282,38 @@ namespace Nyxus
 			{
 				// Scan pixels of pending trivial ROIs 
 				std::sort(Pending.begin(), Pending.end());
-				VERBOSLVL2(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of total " << uniqueLabels.size() << " ROIs\n";)
-					VERBOSLVL2(
+				VERBOSLVL2 (env.get_verbosity_level(), std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of total " << env.uniqueLabels.size() << " ROIs\n");
+				VERBOSLVL2 (env.get_verbosity_level(),
 						if (Pending.size() == 1)
 							std::cout << ">>> (single ROI label " << Pending[0] << ")\n";
 						else
 							std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
-				)
+					);
 
-					if (theEnvironment.anisoOptions.customized() == false)
+					if (env.anisoOptions.customized() == false)
 					{
-						scanTrivialRois_25D(Pending, intens_fpath, label_fpath, z_indices);
+						scanTrivialRois_25D (env, Pending, intens_fpath, label_fpath, z_indices);
 					}
 					else
 					{
-						double	ax = theEnvironment.anisoOptions.get_aniso_x(),
-							ay = theEnvironment.anisoOptions.get_aniso_y(),
-							az = theEnvironment.anisoOptions.get_aniso_z();
-						scanTrivialRois_25D_anisotropic(Pending, intens_fpath, label_fpath, z_indices, ax, ay, az);
+						double	ax = env.anisoOptions.get_aniso_x(),
+							ay = env.anisoOptions.get_aniso_y(),
+							az = env.anisoOptions.get_aniso_z();
+						scanTrivialRois_25D_anisotropic (env, Pending, intens_fpath, label_fpath, z_indices, ax, ay, az);
 					}
 
 				// Allocate memory
-				VERBOSLVL2(std::cout << "\tallocating ROI buffers\n";)
-					allocateTrivialRoisBuffers_3D(Pending);
+				VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tallocating ROI buffers\n");
+				allocateTrivialRoisBuffers_3D (Pending, env.roiData, env.hostCache);
 
 				// Reduce them
-				VERBOSLVL2(std::cout << "\treducing ROIs\n";)
-					// reduce_trivial_rois(Pending);	
-					reduce_trivial_rois_manual(Pending);
+				VERBOSLVL2(env.get_verbosity_level(), std::cout << "\treducing ROIs\n");
+				// reduce_trivial_rois(Pending):
+				reduce_trivial_rois_manual (Pending, env);
 
 				// Free memory
-				VERBOSLVL2(std::cout << "\tfreeing ROI buffers\n";)
-					freeTrivialRoisBuffers_3D(Pending);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
+				VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tfreeing ROI buffers\n");
+				freeTrivialRoisBuffers_3D (Pending, env.roiData);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
 
 					// Reset the RAM footprint accumulator
 				batchDemand = 0;
@@ -336,7 +328,7 @@ namespace Nyxus
 				roiBatchNo++;
 			}
 
-			// Allow heyboard interrupt.
+			// Allow keyboard interrupt
 #ifdef WITH_PYTHON_H
 			if (PyErr_CheckSignals() != 0)
 			{
@@ -351,28 +343,28 @@ namespace Nyxus
 		{
 			// Read raw pixels of pending trivial ROIs 
 			std::sort(Pending.begin(), Pending.end());
-			VERBOSLVL2(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";)
-				VERBOSLVL2(
+			VERBOSLVL2 (env.get_verbosity_level(), std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << env.uniqueLabels.size() << " all ROIs\n");
+			VERBOSLVL2 (env.get_verbosity_level(),
 					if (Pending.size() == 1)
 						std::cout << ">>> (single ROI " << Pending[0] << ")\n";
 					else
 						std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
-			)
-				if (theEnvironment.anisoOptions.customized() == false)
-				{
-					scanTrivialRois_25D (Pending, intens_fpath, label_fpath, z_indices);
-				}
-				else
-				{
-					double	ax = theEnvironment.anisoOptions.get_aniso_x(),
-						ay = theEnvironment.anisoOptions.get_aniso_y(),
-						az = theEnvironment.anisoOptions.get_aniso_z();
-					scanTrivialRois_25D_anisotropic (Pending, intens_fpath, label_fpath, z_indices, ax, ay, az);
-				}
+				);
+			if (env.anisoOptions.customized() == false)
+			{
+				scanTrivialRois_25D (env, Pending, intens_fpath, label_fpath, z_indices);
+			}
+			else
+			{
+				double	ax = env.anisoOptions.get_aniso_x(),
+					ay = env.anisoOptions.get_aniso_y(),
+					az = env.anisoOptions.get_aniso_z();
+				scanTrivialRois_25D_anisotropic (env, Pending, intens_fpath, label_fpath, z_indices, ax, ay, az);
+			}
 
 			// Allocate memory
-			VERBOSLVL2(std::cout << "\tallocating ROI buffers\n";)
-				allocateTrivialRoisBuffers_3D(Pending);
+			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tallocating ROI buffers\n");
+			allocateTrivialRoisBuffers_3D (Pending, env.roiData, env.hostCache);
 
 			// Dump ROIs for use in unit testing
 #ifdef DUMP_ALL_ROI
@@ -380,16 +372,16 @@ namespace Nyxus
 #endif
 
 			// Reduce them
-			VERBOSLVL2(std::cout << "\treducing ROIs\n";)
-				//reduce_trivial_rois(Pending);	
-				reduce_trivial_rois_manual(Pending);
+			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\treducing ROIs\n");
+			//reduce_trivial_rois(Pending):
+			reduce_trivial_rois_manual (Pending, env);
 
 			// Free memory
-			VERBOSLVL2(std::cout << "\tfreeing ROI buffers\n";)
-				freeTrivialRoisBuffers_3D(Pending);
+			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tfreeing ROI buffers\n");
+			freeTrivialRoisBuffers_3D (Pending, env.roiData);
 
 #ifdef WITH_PYTHON_H
-			// Allow heyboard interrupt.
+			// Allow keyboard interrupt
 			if (PyErr_CheckSignals() != 0)
 			{
 				sureprint("\nAborting per user input\n");
@@ -398,8 +390,8 @@ namespace Nyxus
 #endif
 		}
 
-		VERBOSLVL2(std::cout << "\treducing neighbor features and their depends for all ROIs\n")
-			reduce_neighbors_and_dependencies_manual();
+		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\treducing neighbor features and their depends for all ROIs\n");
+		reduce_neighbors_and_dependencies_manual (env);
 
 		return true;
 	}

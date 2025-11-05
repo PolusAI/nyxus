@@ -5,9 +5,12 @@
 namespace Nyxus {
 
 #ifdef USE_ARROW
-    std::tuple<bool, std::optional<std::string>> ArrowOutputStream::create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
-                                                            const std::string& output_path,
-                                                            const std::vector<std::string>& header) {
+    std::tuple<bool, std::optional<std::string>> ArrowOutputStream::create_arrow_file(
+        const Nyxus::SaveOption& arrow_file_type,
+        const std::string& output_path,
+        const std::vector<std::string>& header,
+        double soft_noval) 
+    {
 
         if (output_path == ""){
             return {false, "No path provided for Arrow file."};
@@ -24,10 +27,13 @@ namespace Nyxus {
         } 
 
         std::optional<std::string> error_msg;
-        std::tie(writer_, error_msg) = WriterFactory::create_writer(arrow_file_path_, header);
-        if (writer_) {
+        std::tie(writer_, error_msg) = WriterFactory::create_writer (arrow_file_path_, header, soft_noval);
+        if (writer_) 
+        {
             return {true, std::nullopt};
-        } else {
+        } 
+        else 
+        {
             return {false, error_msg};
         }
     }
@@ -63,10 +69,13 @@ namespace Nyxus {
     }
 
     #else 
-    std::tuple<bool, std::optional<std::string>> ArrowOutputStream::create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
-                                                            const std::string& arrow_file_path,
-                                                            const std::vector<std::string>& header) {
-        
+
+    std::tuple<bool, std::optional<std::string>> ArrowOutputStream::create_arrow_file(
+        const Nyxus::SaveOption& arrow_file_type,
+        const std::string& arrow_file_path,
+        const std::vector<std::string>& header,
+        double soft_noval) 
+    {
         std::cerr << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enabled to use this functionality." << std::endl;
 
         return {false, "Apache Arrow functionality is not available."};

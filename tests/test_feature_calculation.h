@@ -2,7 +2,6 @@
 
 
 #include "../src/nyx/roi_cache.h"
-#include "../src/nyx/parallel.h"
 #include "../src/nyx/features/pixel.h"
 #include "../src/nyx/environment.h"
 #include "test_data.h"
@@ -22,9 +21,10 @@ namespace Nyxus
         LR roidata;
         // Calculate features
         T f;
+        Fsettings s;
 
         load_masked_test_roi_data (roidata, intensity_data, mask_data, image_size);
-        ASSERT_NO_THROW(f.calculate(roidata));
+        ASSERT_NO_THROW(f.calculate(roidata, s));
 
         // Initialize per-ROI feature value buffer with zeros
         roidata.initialize_fvals();

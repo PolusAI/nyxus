@@ -11,7 +11,7 @@ HexagonalityPolygonalityFeature::HexagonalityPolygonalityFeature() : FeatureMeth
     add_dependencies({ Feature2D::NUM_NEIGHBORS, Feature2D::PERIMETER, Feature2D::CONVEX_HULL_AREA, Feature2D::STAT_FERET_DIAM_MAX, Feature2D::STAT_FERET_DIAM_MIN });
 }
 
-void HexagonalityPolygonalityFeature::calculate (LR& r)
+void HexagonalityPolygonalityFeature::calculate (LR& r, const Fsettings& s)
 {
     // The whole calculation is inspired by calculation of this feature in POLUS feature extraction plugin 
     // https://github.com/PolusAI/image-tools/tree/master/features/polus-feature-extraction-plugin
@@ -166,10 +166,10 @@ void HexagonalityPolygonalityFeature::calculate (LR& r)
 
 void HexagonalityPolygonalityFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
 
-void HexagonalityPolygonalityFeature::osized_calculate(LR& r, ImageLoader&)
+void HexagonalityPolygonalityFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
     // This feature doesn't contain ROI size-critical sections, so we're using the trivial ROI's calculate()
-    calculate (r);
+    calculate (r, s);
 }
 
 void HexagonalityPolygonalityFeature::save_value(std::vector<std::vector<double>>& fvals)
@@ -179,7 +179,7 @@ void HexagonalityPolygonalityFeature::save_value(std::vector<std::vector<double>
     fvals[(int)Feature2D::HEXAGONALITY_STDDEV][0] = hexSd;
 }
 
-void HexagonalityPolygonalityFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void HexagonalityPolygonalityFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
     for (auto i = start; i < end; i++)
     {
@@ -210,9 +210,9 @@ void HexagonalityPolygonalityFeature::parallel_process_1_batch (size_t start, si
             continue;
         }
 
-        HexagonalityPolygonalityFeature hexpo;
-        hexpo.calculate(r);
-        hexpo.save_value(r.fvals);
+        HexagonalityPolygonalityFeature f;
+        f.calculate (r, s);
+        f.save_value (r.fvals);
     }
 }
 

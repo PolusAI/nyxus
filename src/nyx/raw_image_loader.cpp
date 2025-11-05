@@ -103,7 +103,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 			else
 				if (ext == ".nii" || ext == ".nii.gz")
 				{
-					intFL = new RawNiftiLoader (int_fpath);
+					segFL = new RawNiftiLoader (seg_fpath);
 				}
 				else
 				{
@@ -266,6 +266,16 @@ size_t RawImageLoader::get_full_height()
 size_t RawImageLoader::get_full_depth()
 {
 	return fd;
+}
+
+size_t RawImageLoader::get_inten_time()
+{
+	return intFL->fullTimestamps(0);
+}
+
+size_t RawImageLoader::get_mask_time()
+{
+	return segFL->fullTimestamps(0);
 }
 
 std::string RawImageLoader::get_slide_descr()

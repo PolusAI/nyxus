@@ -22,32 +22,25 @@ using namespace Nyxus;
 
 namespace Nyxus {
 
-    int processDataset_2D_segmented (
-        const std::vector<std::string>& intensFiles,
-        const std::vector<std::string>& labelFiles,
-        int numReduceThreads,
-        const SaveOption saveOption,
-        const std::string& outputPath);
-    
-    int processDataset_2D_wholeslide (
-        const std::vector<std::string>& intensFiles,
-        const std::vector<std::string>& labelFiles,
-        int n_threads,
-        const SaveOption saveOption,
-        const std::string& outputPath);
+    std::unordered_set<uint64_t> unique_pynyxus_ids;
+    std::unordered_map<uint64_t, Environment> pynyxus_cache;
 
-    int processDataset_3D_segmented (
-        const std::vector <Imgfile3D_layoutA>& intensFiles,
-        const std::vector <Imgfile3D_layoutA>& labelFiles,
-        int numReduceThreads,
-        const SaveOption saveOption,
-        const std::string& outputPath);
+    Environment & findenv (uint64_t instid)
+    {
+        // create if missing
+        
+        //if (Nyxus::unique_pynyxus_ids.find(instid) == Nyxus::unique_pynyxus_ids.end())
+        //{
+        //    Environment newEnv;
+        //    Nyxus::pynyxus_cache [instid] = newEnv;
+        //}
 
-    std::tuple<bool, std::optional<std::string>> processDataset_3D_wholevolume(
-        const std::vector <std::string>& intensFiles,
-        int n_threads,
-        const SaveOption saveOption,
-        const std::string& outputPath);
+        auto [it, inserted] = Nyxus::pynyxus_cache.try_emplace(instid);
+        
+        // find
+        Environment& env = Nyxus::pynyxus_cache [instid];
+        return env;
+    }
 
 };
 
@@ -55,6 +48,7 @@ using ParameterTypes = std::variant<int, float, double, unsigned int, std::vecto
 
 // Defined in nested.cpp
 bool mine_segment_relations (
+    ResultsCache & res_cache,
 	bool output2python, 
 	const std::string& label_dir,
 	const std::string& parent_file_pattern,
@@ -76,6 +70,7 @@ inline py::array_t<typename Sequence::value_type> as_pyarray(Sequence &&seq)
 }
 
 void initialize_environment(
+    uint64_t instid,
     int n_dim,
     const std::vector<std::string> &features,
     int neighbor_distance,
@@ -94,6 +89,8 @@ void initialize_environment(
     float aniso_y,
     float aniso_z)
 {
+    Environment & theEnvironment = Nyxus::findenv (instid);
+
     theEnvironment.set_imq(is_imq);
     theEnvironment.set_dim(n_dim);
     theEnvironment.recognizedFeatureNames = features;
@@ -106,8 +103,12 @@ void initialize_environment(
 
     // Throws exception if invalid feature is passed
     theEnvironment.expand_featuregroups();
-    theFeatureMgr.compile();
-    theFeatureMgr.apply_user_selection();
+    if (!theEnvironment.theFeatureMgr.compile())
+        throw std::runtime_error ("Error: compiling feature methods");
+    theEnvironment.theFeatureMgr.apply_user_selection (theEnvironment.theFeatureSet);
+
+    // prepare feature settings
+    theEnvironment.compile_feature_settings();
 
     // real-valued range hints
     theEnvironment.fpimageOptions.set_target_dyn_range(dynamic_range);
@@ -140,13 +141,17 @@ void initialize_environment(
             throw std::runtime_error ("this Nyxus backend was built without the GPU support");
         }
     #endif
+
 }
 
-void set_if_ibsi_imp(bool ibsi) {
-    theEnvironment.set_ibsi_compliance(ibsi);
+void set_if_ibsi_imp (uint64_t instid, bool ibsi)
+{
+    Environment & env = Nyxus::findenv (instid);
+    env.set_ibsi_compliance (ibsi);
 }
 
 void set_environment_params_imp (
+    uint64_t instid,
     const std::vector<std::string> &features = {},
     int neighbor_distance = -1,
     float pixels_per_micron = -1,
@@ -159,6 +164,8 @@ void set_environment_params_imp (
     int ram_limit_mb = -1,
     int verb_level = 0)
 {
+    Environment & theEnvironment = Nyxus::findenv (instid);
+
     if (features.size() > 0) {
         theEnvironment.recognizedFeatureNames = features;
     }
@@ -205,99 +212,105 @@ void set_environment_params_imp (
     }
 }
 
-py::tuple featurize_directory_imp (
-    const std::string &intensity_dir,
-    const std::string &labels_dir,
-    const std::string &file_pattern,
-    const std::string &output_type,
-    const std::string &output_path="")
+py::tuple featurize_directory_imp(
+    uint64_t instid,
+    const std::string& intensity_dir,
+    const std::string& labels_dir,
+    const std::string& file_pattern,
+    const std::string& output_type,
+    const std::string& output_path = "")
 {
-    // Check and cache the file pattern
-    if (! theEnvironment.check_2d_file_pattern(file_pattern))
+    Environment& env = Nyxus::findenv (instid);
+
+    // user's input
+    env.separateCsv = false;
+
+    // (file pattern)
+    if (! env.check_2d_file_pattern(file_pattern))
         throw std::invalid_argument ("Invalid filepattern " + file_pattern);
-    theEnvironment.set_file_pattern(file_pattern);
+    env.set_file_pattern (file_pattern);
 
-    // Cache the directories
-    theEnvironment.intensity_dir = intensity_dir;
-    theEnvironment.labels_dir = labels_dir;
+    // (directories)
+    env.intensity_dir = intensity_dir;
+    env.labels_dir = labels_dir;
 
-    // Set the whole-slide/multi-ROI flag
-    theEnvironment.singleROI = intensity_dir == labels_dir;
+    // (whole-slide flag)
+    env.singleROI = (intensity_dir == labels_dir);
 
-    // Read image pairs from the intensity and label directories applying the filepattern
+    // read the dataset directory (file names, file pairs)
     std::vector<std::string> intensFiles, labelFiles;
-    std::string ermsg;
-    int errorCode = Nyxus::read_2D_dataset(
+    std::optional<std::string> mayBerror = Nyxus::read_2D_dataset(
         intensity_dir,
         labels_dir,
-        theEnvironment.get_file_pattern(), 
+        env.get_file_pattern(),
         "./",   // output directory
-        theEnvironment.intSegMapDir,
-        theEnvironment.intSegMapFile,
+        env.intSegMapDir,
+        env.intSegMapFile,
         true,
-        intensFiles, 
-        labelFiles, 
-        ermsg);
+        intensFiles,
+        labelFiles);
 
-    if (errorCode)
-       throw std::runtime_error ("Error traversing the dataset: " + ermsg);
+    if (mayBerror.has_value())
+        throw std::runtime_error("Error reading the dataset: " + *mayBerror);
 
-    // We're good to extract features. Reset the feature results cache
-    theResultsCache.clear();
+    // prepare the output objects
+    env.theResultsCache.clear();
 
-    theEnvironment.separateCsv = false;
-
-    // Process the image sdata
-
-    theEnvironment.saveOption = [&output_type]()
+    env.saveOption = [&output_type]()
     {
-        if (output_type == "arrowipc") 
+        if (output_type == "arrowipc")
         {
             return SaveOption::saveArrowIPC;
-	    } 
-        else 
-            if (output_type == "parquet") 
+        }
+        else
+            if (output_type == "parquet")
             {
                 return SaveOption::saveParquet;
-            } 
-            else 
+            }
+            else
             {
                 return SaveOption::saveBuffer;
             }
-	}();
+    }();
 
-    if (theEnvironment.singleROI)
-        errorCode = processDataset_2D_wholeslide (
+    // run the workflow
+    int ercode = 0;
+    if (env.singleROI)
+        ercode = processDataset_2D_wholeslide(
+            env,
             intensFiles,
             labelFiles,
-            theEnvironment.n_reduce_threads,
-            theEnvironment.saveOption,
-            output_path
-        );
+            env.n_reduce_threads,
+            env.saveOption,
+            output_path);
     else
-        errorCode = processDataset_2D_segmented (
+        ercode = processDataset_2D_segmented(
+            env,
             intensFiles,
             labelFiles,
-            theEnvironment.n_reduce_threads,
-            theEnvironment.saveOption,
+            env.n_reduce_threads,
+            env.saveOption,
             output_path);
 
-    if (errorCode)
-        throw std::runtime_error("Error " + std::to_string(errorCode) + " occurred during dataset processing");
+    if (ercode)
+        throw std::runtime_error("Error: " + std::to_string(ercode));
 
-    // Output the result
-    if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
+    // shut down the output structures
+
+    // shape the resulting data frame
+    
+    if (env.saveOption == Nyxus::SaveOption::saveBuffer)
     {
         // has the backend produced any result ?
-        auto nRows = theResultsCache.get_num_rows();
+        auto nRows = env.theResultsCache.get_num_rows();
         if (nRows == 0)
         {
-            VERBOSLVL2 (std::cerr << "\nfeaturize_directory_imp(): returning a blank tuple\n");
+            VERBOSLVL2 (env.get_verbosity_level(), std::cerr << "\nfeaturize_directory_imp(): returning a blank tuple\n");
 
             // return a blank dataframe
-            std::vector<std::string> h ({ "column1", "column2", "column3", "column4"});
-            std::vector<std::string> s ({ "blank", "blank" });
-            std::vector<double> n ({ 0, 0 });
+            std::vector<std::string> h({ "column1", "column2", "column3", "column4" });
+            std::vector<std::string> s({ "blank", "blank" });
+            std::vector<double> n({ 0, 0 });
 
             pybind11::array pyH = py::array(py::cast(h));
             pybind11::array pySD = py::array(py::cast(s));
@@ -306,31 +319,49 @@ py::tuple featurize_directory_imp (
             size_t nr = 1;
             pySD = pySD.reshape({ nr, pySD.size() / nr });
             pyND = pyND.reshape({ nr, pyND.size() / nr });
-            return py::make_tuple (pyH, pySD, pyND);
-            
+            return py::make_tuple(pyH, pySD, pyND);
         }
 
         // we have informative result, package it
-        auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
-        auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
-        auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+        auto pyHeader = py::array(py::cast(env.theResultsCache.get_headerBuf()));
+        auto pyStrData = py::array(py::cast(env.theResultsCache.get_stringColBuf()));
+        auto pyNumData = as_pyarray(std::move(env.theResultsCache.get_calcResultBuf()));
 
         // - shape the user-facing dataframe
-        pyStrData = pyStrData.reshape ({nRows, pyStrData.size() / nRows});
-        pyNumData = pyNumData.reshape ({ nRows, pyNumData.size() / nRows });
-        return py::make_tuple (pyHeader, pyStrData, pyNumData);
-    } 
+        pyStrData = pyStrData.reshape({ nRows, pyStrData.size() / nRows });
+        pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
+        return py::make_tuple(pyHeader, pyStrData, pyNumData);
+    }
 
     return py::make_tuple();
+    
+    //
+    //
+
+
+
+
+
+
+    // Process the image sdata
+
+
+
+
+    // Output the result
+
 }
 
 py::tuple featurize_directory_imq_imp (
+    uint64_t instid,
     const std::string &intensity_dir,
     const std::string &labels_dir,
     const std::string &file_pattern,
     const std::string &output_type,
     const std::string &output_path="")
 {
+    Environment& theEnvironment = Nyxus::findenv (instid);
+
     // Check and cache the file pattern
     if (! theEnvironment.check_2d_file_pattern(file_pattern))
         throw std::invalid_argument ("Invalid filepattern " + file_pattern);
@@ -346,7 +377,7 @@ py::tuple featurize_directory_imq_imp (
     // Read image pairs from the intensity and label directories applying the filepattern
     std::vector<std::string> intensFiles, labelFiles;
     std::string ermsg;
-    int errorCode = Nyxus::read_2D_dataset(
+    auto mayBerror = Nyxus::read_2D_dataset(
         intensity_dir,
         labels_dir,
         theEnvironment.get_file_pattern(), 
@@ -354,14 +385,13 @@ py::tuple featurize_directory_imq_imp (
         theEnvironment.intSegMapDir,
         theEnvironment.intSegMapFile,
         true,
-        intensFiles, labelFiles,
-        ermsg);
+        intensFiles, labelFiles);
 
-    if (errorCode)
-       throw std::runtime_error ("Error traversing the dataset: " + ermsg);
+    if (mayBerror.has_value())
+       throw std::runtime_error ("Error traversing the dataset: " + *mayBerror);
 
     // We're good to extract features. Reset the feature results cache
-    theResultsCache.clear();
+    theEnvironment.theResultsCache.clear();
 
     theEnvironment.separateCsv = false;
 
@@ -376,7 +406,8 @@ py::tuple featurize_directory_imq_imp (
         } else {return SaveOption::saveBuffer;}
 	}();
 
-    errorCode = processDataset_2D_segmented (
+    int errorCode = processDataset_2D_segmented (
+        theEnvironment,
         intensFiles,
         labelFiles,
         theEnvironment.n_reduce_threads,
@@ -389,12 +420,12 @@ py::tuple featurize_directory_imq_imp (
     // Output the result
     if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
     {
-        auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
-        auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
-        auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+        auto pyHeader = py::array(py::cast(theEnvironment.theResultsCache.get_headerBuf()));
+        auto pyStrData = py::array(py::cast(theEnvironment.theResultsCache.get_stringColBuf()));
+        auto pyNumData = as_pyarray(std::move(theEnvironment.theResultsCache.get_calcResultBuf()));
 
         // Shape the user-facing dataframe
-        auto nRows = theResultsCache.get_num_rows();
+        auto nRows = theEnvironment.theResultsCache.get_num_rows();
         pyStrData = pyStrData.reshape ({nRows, pyStrData.size() / nRows});
         pyNumData = pyNumData.reshape ({ nRows, pyNumData.size() / nRows });
 
@@ -405,12 +436,15 @@ py::tuple featurize_directory_imq_imp (
 }
 
 py::tuple featurize_directory_3D_imp(
+    uint64_t instid,
     const std::string& intensity_dir,
     const std::string& labels_dir,
     const std::string& file_pattern,
     const std::string& output_type,
     const std::string& output_path = "")
 {
+    Environment& theEnvironment = Nyxus::findenv (instid);
+
     // Set dimensionality =3 to let all the modules know the context
     theEnvironment.set_dim(3);
     
@@ -430,7 +464,7 @@ py::tuple featurize_directory_3D_imp(
     theEnvironment.singleROI = intensity_dir == labels_dir;
 
     // We're good to extract features. Reset the feature results cache
-    theResultsCache.clear();
+    theEnvironment.theResultsCache.clear();
 
     // Enforce flag 'separateCsv' to be FALSE to prevent flushing intermediate results after each input image. We're going to return the result in a buffer, not leave file(s)
     theEnvironment.separateCsv = false;
@@ -451,15 +485,16 @@ py::tuple featurize_directory_3D_imp(
     {
         std::vector<std::string> ifiles;
 
-        int errorCode = Nyxus::read_3D_dataset_wholevolume(
+        std::optional<std::string> mayBerror = Nyxus::read_3D_dataset_wholevolume(
             theEnvironment.intensity_dir,
             theEnvironment.file_pattern_3D,
             "./", // theEnvironment.output_dir,
             ifiles);
-        if (errorCode)
-            throw std::runtime_error ("error reading whole volume dataset " + theEnvironment.intensity_dir + " , error code " + std::to_string(errorCode));
+        if (mayBerror.has_value())
+            throw std::runtime_error ("error reading whole volume dataset " + theEnvironment.intensity_dir + " , error " + *mayBerror);
 
         auto [ok, erm] = processDataset_3D_wholevolume(
+            theEnvironment,
             ifiles,
             theEnvironment.n_reduce_threads,
             theEnvironment.saveOption,
@@ -471,7 +506,7 @@ py::tuple featurize_directory_3D_imp(
     {
         // Read image pairs from the intensity and label directories applying the filepattern
         std::vector <Imgfile3D_layoutA> intensFiles, labelFiles;
-        int errorCode = Nyxus::read_3D_dataset(
+        std::optional<std::string> mayBerror= Nyxus::read_3D_dataset(
             intensity_dir,
             labels_dir,
             theEnvironment.file_pattern_3D,
@@ -481,10 +516,11 @@ py::tuple featurize_directory_3D_imp(
             true,
             intensFiles, labelFiles);
 
-        if (errorCode)
-            throw std::runtime_error("Error traversing the dataset");
+        if (mayBerror.has_value())
+            throw std::runtime_error ("Error traversing dataset: " + *mayBerror);
 
-        errorCode = processDataset_3D_segmented(
+        int errorCode = processDataset_3D_segmented(
+            theEnvironment,
             intensFiles,
             labelFiles,
             theEnvironment.n_reduce_threads,
@@ -498,12 +534,12 @@ py::tuple featurize_directory_3D_imp(
     // Output the result
     if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
     {
-        auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
-        auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
-        auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+        auto pyHeader = py::array(py::cast(theEnvironment.theResultsCache.get_headerBuf()));
+        auto pyStrData = py::array(py::cast(theEnvironment.theResultsCache.get_stringColBuf()));
+        auto pyNumData = as_pyarray(std::move(theEnvironment.theResultsCache.get_calcResultBuf()));
 
         // Shape the user-facing dataframe
-        auto nRows = theResultsCache.get_num_rows();
+        auto nRows = theEnvironment.theResultsCache.get_num_rows();
         pyStrData = pyStrData.reshape({ nRows, pyStrData.size() / nRows });
         pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
         return py::make_tuple(pyHeader, pyStrData, pyNumData);
@@ -513,6 +549,7 @@ py::tuple featurize_directory_3D_imp(
 }
 
 py::tuple featurize_montage_imp (
+    uint64_t instid,
     const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intensity_images,
     const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images,
     const std::vector<std::string>& intensity_names,
@@ -520,6 +557,8 @@ py::tuple featurize_montage_imp (
     const std::string output_type="",
     const std::string output_path="")
 {  
+    Environment& theEnvironment = Nyxus::findenv (instid);
+
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = false;
 
@@ -549,9 +588,9 @@ py::tuple featurize_montage_imp (
     theEnvironment.labels_dir = "__NONE__";
 
     // One-time initialization
-    init_slide_rois();
+    init_slide_rois (theEnvironment.uniqueLabels, theEnvironment.roiData);
 
-    theResultsCache.clear();
+    theEnvironment.theResultsCache.clear();
 
     // Process the image sdata
     std::string error_message = "";
@@ -564,38 +603,39 @@ py::tuple featurize_montage_imp (
 		} else {return SaveOption::saveBuffer;}
 	}();
 
-    int errorCode = processMontage(
+    std::optional<std::string> mayBerror = processMontage(
+        theEnvironment,
         intensity_images,
         label_images,
         theEnvironment.n_reduce_threads,
         intensity_names,
         label_names,
-        error_message,
         theEnvironment.saveOption,
         output_path);
 
-    if (errorCode)
-        throw std::runtime_error("Error #" + std::to_string(errorCode) + " " + error_message + " occurred during dataset processing.");
+    if (mayBerror.has_value())
+        throw std::runtime_error ("Error occurred during dataset processing: " + *mayBerror);
 
     if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer) {
 
-        auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
-        auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
-        auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+        auto pyHeader = py::array(py::cast(theEnvironment.theResultsCache.get_headerBuf()));
+        auto pyStrData = py::array(py::cast(theEnvironment.theResultsCache.get_stringColBuf()));
+        auto pyNumData = as_pyarray(std::move(theEnvironment.theResultsCache.get_calcResultBuf()));
 
-        auto nRows = theResultsCache.get_num_rows();
+        auto nRows = theEnvironment.theResultsCache.get_num_rows();
         pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
         pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
 
         return py::make_tuple(pyHeader, pyStrData, pyNumData, error_message);
-    
     } 
 
     return py::make_tuple(error_message);
 }
 
-py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list & seg_fnames, bool single_roi, const std::string& output_type, const std::string& output_path)
+py::tuple featurize_fname_lists_imp (uint64_t instid, const py::list& int_fnames, const py::list & seg_fnames, bool single_roi, const std::string& output_type, const std::string& output_path)
 {
+    Environment & theEnvironment = Nyxus::findenv(instid);
+
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = single_roi;
 
@@ -635,7 +675,7 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
         }
     }
 
-    theResultsCache.clear();
+    theEnvironment.theResultsCache.clear();
 
     // Process the image sdata
     int min_online_roi_size = 0;
@@ -650,6 +690,7 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
 	}();
 
     errorCode = processDataset_2D_segmented (
+        theEnvironment,
         intensFiles,
         labelFiles,
         theEnvironment.n_reduce_threads,
@@ -661,16 +702,15 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
 
     if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer) {
 
-            auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
-            auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
-            auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+            auto pyHeader = py::array(py::cast(theEnvironment.theResultsCache.get_headerBuf()));
+            auto pyStrData = py::array(py::cast(theEnvironment.theResultsCache.get_stringColBuf()));
+            auto pyNumData = as_pyarray(std::move(theEnvironment.theResultsCache.get_calcResultBuf()));
 
-            auto nRows = theResultsCache.get_num_rows();
+            auto nRows = theEnvironment.theResultsCache.get_num_rows();
             pyStrData = pyStrData.reshape({nRows, pyStrData.size() / nRows});
             pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
 
             return py::make_tuple(pyHeader, pyStrData, pyNumData);
-
     } 
 
     // Return "nothing" when output will be an Arrow format
@@ -678,12 +718,15 @@ py::tuple featurize_fname_lists_imp (const py::list& int_fnames, const py::list 
 }
 
 py::tuple featurize_fname_lists_3D_imp (
+    uint64_t instid,
     const py::list& pyside_int_fnames, 
     const py::list& pyside_seg_fnames, 
     bool single_roi, 
     const std::string& output_type, 
     const std::string& output_path)
 {
+    Environment& theEnvironment = Nyxus::findenv(instid);
+
     // set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = single_roi;
 
@@ -726,7 +769,7 @@ py::tuple featurize_fname_lists_3D_imp (
         }
     }
 
-    theResultsCache.clear();
+    theEnvironment.theResultsCache.clear();
 
     // featurize
     int min_online_roi_size = 0;
@@ -750,6 +793,7 @@ py::tuple featurize_fname_lists_3D_imp (
     }();
 
     errorCode = processDataset_3D_segmented(
+        theEnvironment,
         ifiles,
         mfiles,
         theEnvironment.n_reduce_threads,
@@ -762,11 +806,11 @@ py::tuple featurize_fname_lists_3D_imp (
     // save the result
     if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
     {
-        auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
-        auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
-        auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
+        auto pyHeader = py::array(py::cast(theEnvironment.theResultsCache.get_headerBuf()));
+        auto pyStrData = py::array(py::cast(theEnvironment.theResultsCache.get_stringColBuf()));
+        auto pyNumData = as_pyarray(std::move(theEnvironment.theResultsCache.get_calcResultBuf()));
 
-        auto nRows = theResultsCache.get_num_rows();
+        auto nRows = theEnvironment.theResultsCache.get_num_rows();
         pyStrData = pyStrData.reshape({ nRows, pyStrData.size() / nRows });
         pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
 
@@ -778,43 +822,51 @@ py::tuple featurize_fname_lists_3D_imp (
 }
 
 py::tuple findrelations_imp(
-        std::string& label_dir,
-        std::string& parent_file_pattern,
-        std::string& child_file_pattern
-    )
+    uint64_t instid,
+    std::string& label_dir,
+    std::string& parent_file_pattern,
+    std::string& child_file_pattern)
 {
-    if (! theEnvironment.check_2d_file_pattern(parent_file_pattern) || ! theEnvironment.check_2d_file_pattern(child_file_pattern))
+    Environment& env = Nyxus::findenv (instid);
+
+    if (! env.check_2d_file_pattern(parent_file_pattern) || ! env.check_2d_file_pattern(child_file_pattern))
         throw std::invalid_argument("Filepattern provided is not valid.");
 
-    theResultsCache.clear();
+    env.theResultsCache.clear();
 
     // Result -> headerBuf, stringColBuf, calcResultBuf
     ChildFeatureAggregation aggr;
-    bool mineOK = mine_segment_relations (true, label_dir, parent_file_pattern, child_file_pattern, ".", aggr, theEnvironment.get_verbosity_level());  // the 'outdir' parameter is not used if 'output2python' is true
+    bool mineOK = mine_segment_relations (env.theResultsCache, true, label_dir, parent_file_pattern, child_file_pattern, ".", aggr, env.get_verbosity_level());  // the 'outdir' parameter is not used if 'output2python' is true
 
     if (! mineOK)
         throw std::runtime_error("Error occurred during dataset processing: mine_segment_relations() returned false");
     
-    auto pyHeader = py::array(py::cast(theResultsCache.get_headerBuf()));
-    auto pyStrData = py::array(py::cast(theResultsCache.get_stringColBuf()));
-    auto pyNumData = as_pyarray(std::move(theResultsCache.get_calcResultBuf()));
-    auto nRows = theResultsCache.get_num_rows();
+    auto pyHeader = py::array(py::cast(env.theResultsCache.get_headerBuf()));
+    auto pyStrData = py::array(py::cast(env.theResultsCache.get_stringColBuf()));
+    auto pyNumData = as_pyarray(std::move(env.theResultsCache.get_calcResultBuf()));
+    auto nRows = env.theResultsCache.get_num_rows();
     pyStrData = pyStrData.reshape({ nRows, pyStrData.size() / nRows });
     pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
 
     return py::make_tuple(pyHeader, pyStrData, pyNumData);
 }
 
+bool gpu_available_imp (uint64_t instid)
+{
+    Environment & env = Nyxus::findenv(instid);
+    return env.gpu_is_available();
+}
 
 /**
  * @brief Set whether to use the gpu for available gpu features
  * 
  * @param yes True to use gpu
  */
-void use_gpu(bool yes)
+void use_gpu (uint64_t instid, bool yes)
 {
     #ifdef USE_GPU
-        theEnvironment.set_using_gpu(yes);
+    Environment & env = Nyxus::findenv(instid);
+    env.set_using_gpu(yes);
     #else 
         throw std::runtime_error("this Nyxus backend was built without the GPU support");
     #endif
@@ -834,33 +886,38 @@ static std::vector<std::map<std::string, std::string>> get_gpu_properties() {
     #endif
 }
 
-void blacklist_roi_imp (std::string raw_blacklist)
+void blacklist_roi_imp (uint64_t instid, std::string raw_blacklist)
 {
     // After successfully parsing the blacklist, Nyxus runtime becomes able 
     // to skip blacklisted ROIs until the cached blacklist is cleared 
     // with Environment::clear_roi_blacklist()
 
+    Environment & env = Nyxus::findenv (instid);
+
     std::string lastError;
-    if (! theEnvironment.parse_roi_blacklist_raw_string (raw_blacklist, lastError))
+    if (! env.parse_roi_blacklist_raw_string (raw_blacklist, lastError))
     {
         std::string ermsg = "Error parsing ROI blacklist definition: " + lastError;
         throw std::runtime_error(ermsg);
     }
 }
 
-void clear_roi_blacklist_imp()
+void clear_roi_blacklist_imp (uint64_t instid)
 {
-    theEnvironment.clear_roi_blacklist();
+    Environment & env = Nyxus::findenv (instid);
+    env.clear_roi_blacklist();
 }
 
-py::str roi_blacklist_get_summary_imp()
+py::str roi_blacklist_get_summary_imp (uint64_t instid)
 {
+    Environment & env = Nyxus::findenv (instid);
     std::string response;
-    theEnvironment.get_roi_blacklist_summary(response);
+    env.get_roi_blacklist_summary(response);
     return py::str(response);
 }
 
 void customize_gabor_feature_imp(
+    uint64_t instid,
     const std::string& kersize,
     const std::string& gamma,
     const std::string& sig2lam,
@@ -869,23 +926,27 @@ void customize_gabor_feature_imp(
     const std::string& thold,
     const std::string& freqs)
 {
+    Environment & env = Nyxus::findenv (instid);
 
     // Step 1 - set raw strings of parameter values
-    theEnvironment.gaborOptions.rawKerSize = kersize;
-    theEnvironment.gaborOptions.rawGamma = gamma;
-    theEnvironment.gaborOptions.rawSig2lam = sig2lam;
-    theEnvironment.gaborOptions.rawF0 = f0;
-    theEnvironment.gaborOptions.rawTheta = theta;
-    theEnvironment.gaborOptions.rawGrayThreshold = thold;
-    theEnvironment.gaborOptions.rawFreqs = freqs;
+    env.gaborOptions.rawKerSize = kersize;
+    env.gaborOptions.rawGamma = gamma;
+    env.gaborOptions.rawSig2lam = sig2lam;
+    env.gaborOptions.rawF0 = f0;
+    env.gaborOptions.rawTheta = theta;
+    env.gaborOptions.rawGrayThreshold = thold;
+    env.gaborOptions.rawFreqs = freqs;
 
     // Step 2 - validate them and consume if all are valid
     std::string ermsg;
-    if (!theEnvironment.parse_gabor_options_raw_inputs(ermsg))
+    if (! env.parse_gabor_options_raw_inputs(ermsg))
         throw std::invalid_argument("Invalid GABOR parameter value: " + ermsg);
 }
 
-std::map<std::string, ParameterTypes> get_params_imp(const std::vector<std::string>& vars ) {
+std::map<std::string, ParameterTypes> get_params_imp (uint64_t instid, const std::vector<std::string>& vars )
+{
+    Environment & theEnvironment = Nyxus::findenv (instid);
+
     std::map<std::string, ParameterTypes> params;
 
     params["features"] = theEnvironment.recognizedFeatureNames;
@@ -933,10 +994,12 @@ std::map<std::string, ParameterTypes> get_params_imp(const std::vector<std::stri
 
 }
 
-std::string get_arrow_file_imp() {
+std::string get_arrow_file_imp (uint64_t instid)
+{
 #ifdef USE_ARROW
 
-    return theEnvironment.arrow_stream.get_arrow_path();
+    Environment & env = Nyxus::findenv (instid);
+    return env.arrow_stream.get_arrow_path();
 
 #else
     
@@ -945,11 +1008,12 @@ std::string get_arrow_file_imp() {
 #endif
 }
 
-std::string get_parquet_file_imp() {
-
+std::string get_parquet_file_imp (uint64_t instid)
+{
 #ifdef USE_ARROW
 
-    return theEnvironment.arrow_stream.get_arrow_path();
+    Environment & env = Nyxus::findenv (instid);
+    return env.arrow_stream.get_arrow_path();
 
 #else
     
@@ -958,36 +1022,36 @@ std::string get_parquet_file_imp() {
 #endif
 }
 
-
-bool arrow_is_enabled_imp() {
-    return theEnvironment.arrow_is_enabled();
+bool arrow_is_enabled_imp (uint64_t instid)
+{
+    Environment & env = Nyxus::findenv (instid);
+    return env.arrow_is_enabled();
 }
-
 
 PYBIND11_MODULE(backend, m)
 {
     m.doc() = "Nyxus";
     
-    m.def("initialize_environment", &initialize_environment, "Environment initialization");
-    m.def("featurize_directory_imp", &featurize_directory_imp, "Calculate features of images defined by intensity and mask image collection directories");
-    m.def("featurize_directory_3D_imp", &featurize_directory_3D_imp, "Calculate 3D features of images defined by intensity and mask image collection directories");
-    m.def("featurize_montage_imp", &featurize_montage_imp, "Calculate features of images defined by intensity and mask image collection directories");
-    m.def("featurize_fname_lists_imp", &featurize_fname_lists_imp, "Calculate features of intensity-mask image pairs defined by lists of image file names");
-    m.def("featurize_fname_lists_3D_imp", &featurize_fname_lists_3D_imp, "Calculate 3D features of intensity-mask volume pairs defined by lists of file names");
-    m.def("findrelations_imp", &findrelations_imp, "Find relations in segmentation mask images");
-    m.def("gpu_available", &Environment::gpu_is_available, "Check if CUDA gpu is available");
-    m.def("use_gpu", &use_gpu, "Enable/disable GPU features");
-    m.def("get_gpu_props", &get_gpu_properties, "Get properties of CUDA gpu");
-    m.def("blacklist_roi_imp", &blacklist_roi_imp, "Set up a global or per-mask file blacklist definition");
-    m.def("clear_roi_blacklist_imp", &clear_roi_blacklist_imp, "Clear the ROI black list");
-    m.def("roi_blacklist_get_summary_imp", &roi_blacklist_get_summary_imp, "Returns a summary of the ROI blacklist");
-    m.def("customize_gabor_feature_imp", &customize_gabor_feature_imp, "Sets custom GABOR feature's parameters");
-    m.def("set_if_ibsi_imp", &set_if_ibsi_imp, "Set if the features will be ibsi compliant");
-    m.def("set_environment_params_imp", &set_environment_params_imp, "Set the environment variables of Nyxus");
-    m.def("get_params_imp", &get_params_imp, "Get parameters of Nyxus");
-    m.def("arrow_is_enabled_imp", &arrow_is_enabled_imp, "Check if arrow is enabled.");
-    m.def("get_arrow_file_imp", &get_arrow_file_imp, "Get path to arrow file");
-    m.def("get_parquet_file_imp", &get_parquet_file_imp, "Returns path to parquet file");
+    m.def("initialize_environment",     &initialize_environment,    "Environment initialization");
+    m.def("featurize_directory_imp",    &featurize_directory_imp,   "Calculate features of images defined by intensity and mask image collection directories");
+    m.def("featurize_directory_3D_imp", &featurize_directory_3D_imp,    "Calculate 3D features of images defined by intensity and mask image collection directories");
+    m.def("featurize_montage_imp",      &featurize_montage_imp,     "Calculate features of images defined by intensity and mask image collection directories");
+    m.def("featurize_fname_lists_imp",  &featurize_fname_lists_imp, "Calculate features of intensity-mask image pairs defined by lists of image file names");
+    m.def("featurize_fname_lists_3D_imp",   &featurize_fname_lists_3D_imp,  "Calculate 3D features of intensity-mask volume pairs defined by lists of file names");
+    m.def("findrelations_imp",          &findrelations_imp,         "Find relations in segmentation mask images");
+    m.def("gpu_available_imp",          &gpu_available_imp,         "Check if CUDA gpu is available");
+    m.def("use_gpu",                    &use_gpu,                   "Enable/disable GPU features");
+    m.def("get_gpu_props",              &get_gpu_properties,        "Get properties of CUDA gpu");
+    m.def("blacklist_roi_imp",          &blacklist_roi_imp,         "Set up a global or per-mask file blacklist definition");
+    m.def("clear_roi_blacklist_imp",    &clear_roi_blacklist_imp,   "Clear the ROI black list");
+    m.def("roi_blacklist_get_summary_imp",  &roi_blacklist_get_summary_imp, "Returns a summary of the ROI blacklist");
+    m.def("customize_gabor_feature_imp",    &customize_gabor_feature_imp,   "Sets custom GABOR feature's parameters");
+    m.def("set_if_ibsi_imp",            &set_if_ibsi_imp,           "Set if the features will be ibsi compliant");
+    m.def("set_environment_params_imp", &set_environment_params_imp,    "Set the environment variables of Nyxus");
+    m.def("get_params_imp",             &get_params_imp,            "Get parameters of Nyxus");
+    m.def("arrow_is_enabled_imp",       &arrow_is_enabled_imp,      "Check if arrow is enabled.");
+    m.def("get_arrow_file_imp",         &get_arrow_file_imp,        "Get path to arrow file");
+    m.def("get_parquet_file_imp",       &get_parquet_file_imp,      "Returns path to parquet file");
 }
 
 

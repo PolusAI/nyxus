@@ -10,10 +10,10 @@
 #include <vector>
 
 #ifdef WITH_PYTHON_H
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/numpy.h>
-namespace py = pybind11;
+	#include <pybind11/pybind11.h>
+	#include <pybind11/stl.h>
+	#include <pybind11/numpy.h>
+	namespace py = pybind11;
 #endif
 
 #include "dirs_and_files.h"
@@ -32,90 +32,78 @@ namespace py = pybind11;
 
 namespace Nyxus
 {
-	bool processIntSegImagePair_3D(const std::string& intens_fpath, const std::string& label_fpath, size_t filepair_index, size_t tot_num_filepairs, const std::vector<std::string>& z_indices)
+	bool processIntSegImagePair_3D (Environment & env, const std::string& intens_fpath, const std::string& label_fpath, size_t filepair_index, size_t t_index, const std::vector<std::string>& z_indices)
 	{
-		std::vector<int> trivRoiLabels, nontrivRoiLabels;
+		std::vector<int> trivRois, nontrivRois;
 
-		{ STOPWATCH("Image scan1/scan1/s1/#aabbcc", "\t=");
-			// Report the amount of free RAM
-			unsigned long long freeRamAmt = Nyxus::getAvailPhysMemory();
-			static unsigned long long initial_freeRamAmt = 0;
-			if (initial_freeRamAmt == 0)
-				initial_freeRamAmt = freeRamAmt;
-			unsigned long long memDiff = std::max (freeRamAmt, initial_freeRamAmt) - std::min(freeRamAmt, initial_freeRamAmt);
-			char diffSign = freeRamAmt < initial_freeRamAmt ? '-' : '+';
-			VERBOSLVL1(std::cout << std::setw(15) << Nyxus::virguler_ulong(freeRamAmt) << " bytes free (" << "consumed=" << diffSign << Nyxus::virguler_ulong(memDiff) << ") ")
+		// Report the amount of free RAM
+		unsigned long long freeRamAmt = Nyxus::getAvailPhysMemory();
+		static unsigned long long initial_freeRamAmt = 0;
+		if (initial_freeRamAmt == 0)
+			initial_freeRamAmt = freeRamAmt;
+		unsigned long long memDiff = std::max (freeRamAmt, initial_freeRamAmt) - std::min(freeRamAmt, initial_freeRamAmt);
+		char diffSign = freeRamAmt < initial_freeRamAmt ? '-' : '+';
+		VERBOSLVL1 (env.get_verbosity_level(), std::cout << std::setw(15) << Nyxus::virguler_ulong(freeRamAmt) << " bytes free (" << "consumed=" << diffSign << Nyxus::virguler_ulong(memDiff) << ") ")
 
-			// Display (1) dataset progress info and (2) file pair info
-			int digits = 2, k = (int) std::pow(10.f, digits);
-			float perCent = float(filepair_index * 100 * k / tot_num_filepairs) / float(k);
-			VERBOSLVL1(std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << intens_fpath << " SEG: " << label_fpath << "\n")
-		}
-
-		{ STOPWATCH("Image scan2a/scan2a/s2a/#aabbcc", "\t=");
 		// Phase 1: gather ROI metrics
-		VERBOSLVL2(std::cout << "Gathering ROI metrics\n");
+		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "Gathering ROI metrics\n");
 		bool okGather = false;
 		if (z_indices.size())
-			okGather = gatherRoisMetrics_25D (intens_fpath, label_fpath, z_indices);
+			okGather = gatherRoisMetrics_25D (env, filepair_index, intens_fpath, label_fpath, z_indices);
 		else
-			okGather = gatherRoisMetrics_3D (intens_fpath, label_fpath);
+			okGather = gatherRoisMetrics_3D (env, filepair_index, intens_fpath, label_fpath, t_index);
 		if (!okGather)
 		{
 			std::string msg = "Error gathering ROI metrics from " + intens_fpath + " / " + label_fpath + "\n";
-			std::cerr << msg;
+#ifndef WITH_PYTHON_H
 			throw (std::runtime_error(msg));
+#endif
+			std::cerr << msg;
 			return false;
-		}
 		}
 
 		// are there any ROI to extract features from ?
-		if (Nyxus::uniqueLabels.size() == 0)
+		if (env.uniqueLabels.size() == 0)
 		{
-			VERBOSLVL2(std::cout << "warning: no ROIs in I:" + intens_fpath + " M:" + label_fpath);
+			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "warning: no ROIs in I:" + intens_fpath + " M:" + label_fpath);
 			return true;
 		}
 
-		{ STOPWATCH("Image scan2b/scan2b/s2b/#aabbcc", "\t=");
-
-		// Allocate each ROI's feature value buffer
-		for (auto lab : uniqueLabels)
+		// prepare each ROI's feature value buffer
+		for (auto lab : env.uniqueLabels)
 		{
-			LR& r = roiData[lab];
+			LR& r = env.roiData[lab];
 			r.initialize_fvals();
 		}
 
 #ifndef WITH_PYTHON_H
 		// Dump ROI metrics to the output directory
-		VERBOSLVL2(dump_roi_metrics(label_fpath))
+		VERBOSLVL2 (env.get_verbosity_level(), dump_roi_metrics(env.dim(), env.output_dir, env.get_ram_limit(), label_fpath, env.uniqueLabels, env.roiData))
 #endif		
-		}
-
-		{ STOPWATCH("Image scan3/scan3/s3/#aabbcc", "\t=");
 
 		// Support of ROI blacklist
 		fs::path fp(label_fpath);
 		std::string shortSegFname = fp.stem().string() + fp.extension().string();
 
 		// Distribute ROIs among phases
-		for (auto lab : uniqueLabels)
+		for (auto lab : env.uniqueLabels)
 		{
-			LR& r = roiData[lab];
+			LR& r = env.roiData[lab];
 
 			// Skip blacklisted ROI
-			if (theEnvironment.roi_is_blacklisted(shortSegFname, lab))
+			if (env.roi_is_blacklisted(shortSegFname, lab))
 			{
 				r.blacklisted = true;
-				VERBOSLVL2(std::cout << "Skipping blacklisted ROI " << lab << " for mask " << shortSegFname << "\n");
+				VERBOSLVL2 (env.get_verbosity_level(), std::cout << "Skipping blacklisted ROI " << lab << " for mask " << shortSegFname << "\n");
 				continue;
 			}
 
 			// Examine ROI's memory footprint
-			if (size_t roiFootprint = r.get_ram_footprint_estimate_3D(),
-				ramLim = theEnvironment.get_ram_limit();
+			if (size_t roiFootprint = r.get_ram_footprint_estimate_3D (env.uniqueLabels.size()),
+				ramLim = env.get_ram_limit();
 				roiFootprint >= ramLim)
 			{
-				VERBOSLVL2(
+				VERBOSLVL2 (env.get_verbosity_level(),
 					std::cout << "oversized ROI " << lab
 					<< " (S=" << r.aux_area
 					<< " W=" << r.aabb.get_width()
@@ -123,58 +111,83 @@ namespace Nyxus
 					<< " px footprint=" << roiFootprint << " b"
 					<< ")\n"
 				);
-				nontrivRoiLabels.push_back(lab);
+				nontrivRois.push_back(lab);
 			}
 			else
-				trivRoiLabels.push_back(lab);
-		}
+				trivRois.push_back(lab);
 		}
 
 		// Phase 2: process trivial-sized ROIs
-		if (trivRoiLabels.size())
+		if (trivRois.size())
 		{
-			VERBOSLVL2(std::cout << "Processing trivial ROIs\n";)
+			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "Processing trivial ROIs\n";)
 			if (z_indices.size())
-				processTrivialRois_25D (trivRoiLabels, intens_fpath, label_fpath, theEnvironment.get_ram_limit(), z_indices);
+				processTrivialRois_25D (env, trivRois, intens_fpath, label_fpath, env.get_ram_limit(), z_indices);
 			else
-				processTrivialRois_3D (trivRoiLabels, intens_fpath, label_fpath, theEnvironment.get_ram_limit());
+				processTrivialRois_3D (env, filepair_index, t_index, trivRois, intens_fpath, label_fpath, env.get_ram_limit());
 		}
 
 		// Phase 3: process nontrivial (oversized) ROIs, if any
-		if (nontrivRoiLabels.size())
+		if (nontrivRois.size())
 		{
-			VERBOSLVL2(std::cout << "Processing oversized ROIs\n";)
-			processNontrivialRois(nontrivRoiLabels, intens_fpath, label_fpath);
+			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "Processing oversized ROIs\n";)
+			processNontrivialRois (env, nontrivRois, intens_fpath, label_fpath);
 		}
 
 		return true;
 	}
 
 	int processDataset_3D_segmented (
+		Environment & env,
 		const std::vector <Imgfile3D_layoutA>& intensFiles,
 		const std::vector <Imgfile3D_layoutA>& labelFiles,
 		int numReduceThreads,
 		const SaveOption saveOption,
 		const std::string& outputPath)
 	{
-#ifdef CHECKTIMING
-		if (Stopwatch::inclusive())
-			Stopwatch::reset();
-#endif		
+		//********************** prescan ***********************
+
+		// slide properties
+		VERBOSLVL1(env.get_verbosity_level(), std::cout << "phase 0 (3D prescanning)\n");
+		size_t nf = intensFiles.size();
+		env.dataset.reset_dataset_props();
+
+		for (size_t i = 0; i < nf; i++)
+		{
+			// slide file names
+			SlideProps& p = env.dataset.dataset_props.emplace_back (intensFiles[i].fdir + intensFiles[i].fname, labelFiles[i].fdir + labelFiles[i].fname);
+
+			// slide metrics
+			VERBOSLVL1(env.get_verbosity_level(), std::cout << "prescanning " << p.fname_int);
+			if (! scan_slide_props(p, 3, env.anisoOptions, env.resultOptions.need_annotation()))
+			{
+				VERBOSLVL1(env.get_verbosity_level(), std::cout << "error prescanning pair " << p.fname_int << " and " << p.fname_seg << std::endl);
+				return 1;
+			}
+			VERBOSLVL1(env.get_verbosity_level(), std::cout << "\t " << p.slide_w << " W x " << p.slide_h << " H\tmax ROI " << p.max_roi_w << " x " << p.max_roi_h << "\tmin-max I " << Nyxus::virguler_real(p.min_preroi_inten) << "-" << Nyxus::virguler_real(p.max_preroi_inten) << "\t" << p.lolvl_slide_descr << "\n");
+		}
+
+		// update whole dataset's summary
+		env.dataset.update_dataset_props_extrema();
+
+		VERBOSLVL1(env.get_verbosity_level(), std::cout << "\t finished prescanning \n");
+
+		//***** feature extraction
 
 		// One-time initialization
-		init_slide_rois();
+		init_slide_rois (env.uniqueLabels, env.roiData);
 
-		bool write_apache = (saveOption == SaveOption::saveArrowIPC || saveOption == SaveOption::saveParquet);
+		bool writeApache = (saveOption == SaveOption::saveArrowIPC || saveOption == SaveOption::saveParquet);
 
-		// initialize arrow writer if needed
-		if (write_apache)
+		// initialize an Arrow writer if needed
+		if (writeApache)
 		{
-			theEnvironment.arrow_stream = ArrowOutputStream();
-			auto [status, msg] = theEnvironment.arrow_stream.create_arrow_file(
+			env.arrow_stream = ArrowOutputStream();
+			auto [status, msg] = env.arrow_stream.create_arrow_file(
 				saveOption,
-				get_arrow_filename(outputPath, theEnvironment.nyxus_result_fname, saveOption),
-				Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+				get_arrow_filename(outputPath, env.nyxus_result_fname, saveOption),
+				Nyxus::get_header(env),
+				env.resultOptions.noval());
 
 			if (!status)
 			{
@@ -183,96 +196,82 @@ namespace Nyxus
 			}
 		}
 
-		bool ok = true;
-
-		// Iterate intensity-mask image pairs
-		size_t nf = intensFiles.size();
-		for (size_t i = 0; i < nf; i++)
+		// iterate intensity-mask pairs
+		for (size_t i=0; i<nf; i++)
 		{
-#ifdef CHECKTIMING
-			if (Stopwatch::exclusive())
-				Stopwatch::reset();
-#endif
-
-			// Clear slide's ROI labels and cache allocated the previous image
-			clear_slide_rois();
-
-			auto& ifile = intensFiles[i],	// intensity
-				& mfile = labelFiles[i];	// mask
-
-			// Do phased processing: prescan, trivial ROI processing, oversized ROI processing
-			// Expecting 2 cases of intensFiles[i].z_indices :
-			// -- non-empty indicating a 2.5D case (aka layoutA)
-			// -- empty indicating a 3D case (.nii, .dcm, etc)
-			ok = processIntSegImagePair_3D (ifile.fdir + ifile.fname, mfile.fdir + mfile.fname, i, nf, intensFiles[i].z_indices);
-			if (ok == false)
+			// iterate time frames
+			for (size_t t=0; t < env.dataset.dataset_props[i].inten_time; t++)
 			{
-				std::cerr << "processIntSegImagePair() returned an error code while processing file pair " << ifile.fname << " - " << mfile.fname << '\n';
-				return 1;
-			}
+				// Clear slide's ROI labels and cache allocated the previous image
+				clear_slide_rois (env.uniqueLabels, env.roiData);
 
-			// Output features
-			if (write_apache) {
+				auto& ifile = intensFiles[i],	// intensity
+					& mfile = labelFiles[i];	// mask
 
-				auto [status, msg] = theEnvironment.arrow_stream.write_arrow_file(Nyxus::get_feature_values());
-
-				if (!status) {
-					std::cout << "Error writing Arrow file: " << msg.value() << std::endl;
-					return 2;
-				}
-			}
-			else if (saveOption == SaveOption::saveCSV)
-			{
-				ok = save_features_2_csv(ifile.fname, mfile.fname, outputPath, theEnvironment.resultOptions.need_aggregation());
-
+			   // Do phased processing: prescan, trivial ROI processing, oversized ROI processing
+			   // Expecting 2 cases of intensFiles[i].z_indices :
+			   // -- non-empty indicating a 2.5D case (aka layoutA)
+			   // -- empty indicating a 3D case (.nii, .dcm, etc)
+			   
+				// Display (1) dataset progress info and (2) file pair info
+				int digits = 2, k = (int)std::pow(10.f, digits);
+				float perCent = float(i * 100 * k / nf) / float(k);
+				VERBOSLVL1(env.get_verbosity_level(), std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << ifile.fname << " SEG: " << mfile.fname << " T:" << t << "\n")
+					
+				bool ok = processIntSegImagePair_3D (env, ifile.fdir+ifile.fname, mfile.fdir+mfile.fname, i, t, intensFiles[i].z_indices);
 				if (ok == false)
 				{
-					std::cout << "save_features_2_csv() returned an error code" << std::endl;
-					return 2;
+					std::cerr << "processIntSegImagePair() returned an error code while processing file pair " << ifile.fname << " - " << mfile.fname << '\n';
+					return 1;
 				}
-			}
-			else 
-			{
-				if (! save_features_2_buffer(theResultsCache))
+
+				// Output features
+				if (writeApache)
 				{
-					std::cout << "save_features_2_buffer() returned an error code" << std::endl;
-					return 2;
+					auto [status, msg] = env.arrow_stream.write_arrow_file(Nyxus::get_feature_values(env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset));
+					if (!status)
+					{
+						std::cout << "Error writing Arrow file: " << msg.value() << std::endl;
+						return 2;
+					}
 				}
-			}
+				else
+					if (saveOption == SaveOption::saveCSV)
+					{
+						if (!save_features_2_csv(env, ifile.fname, mfile.fname, outputPath, t, env.resultOptions.need_aggregation()))
+						{
+							std::cout << "error saving results to CSV file, details: " << __FILE__ << ":" << __LINE__ << std::endl;
+							return 2;
+						}
+					}
+					else
+					{
+						if (!save_features_2_buffer(env.theResultsCache, env))
+						{
+							std::cout << "error saving results to a buffer, details: " << __FILE__ << ":" << __LINE__ << std::endl;
+							return 2;
+						}
+					}
 
-			// Save nested ROI related info of this image
-			if (theEnvironment.nestedOptions.defined())
-				save_nested_roi_info(nestedRoiData, uniqueLabels, roiData);
+				// Save nested ROI related info of this image
+				if (env.nestedOptions.defined())
+					save_nested_roi_info(nestedRoiData, env.uniqueLabels, env.roiData, env.dataset);
 
-#ifdef WITH_PYTHON_H
-			// Allow heyboard interrupt.
-			if (PyErr_CheckSignals() != 0)
-			{
-				sureprint("\nAborting per user input\n");
-				throw pybind11::error_already_set();
-			}
-#endif
+				#ifdef WITH_PYTHON_H
+				// Allow keyboard interrupt.
+				if (PyErr_CheckSignals() != 0)
+				{
+					sureprint("\nAborting per user input\n");
+					throw pybind11::error_already_set();
+				}
+				#endif
+			} //- time frames
+		} //- inten-mask pairs
 
-		} //- pairs
-
-#ifdef CHECKTIMING
-		if (Stopwatch::inclusive())
-		{
-			// Detailed timing - on the screen
-			VERBOSLVL1(Stopwatch::print_stats());
-
-			// Details - also to a file
-			VERBOSLVL3(
-				fs::path p(theSegFname);
-			Stopwatch::save_stats(theEnvironment.output_dir + "/inclusive_nyxustiming.csv");
-			);
-		}
-#endif
-
-		if (write_apache)
+		if (writeApache)
 		{
 			// close arrow file after use
-			auto [status, msg] = theEnvironment.arrow_stream.close_arrow_file();
+			auto [status, msg] = env.arrow_stream.close_arrow_file();
 			if (!status)
 			{
 				std::cout << "Error closing Arrow file: " << msg.value() << std::endl;
