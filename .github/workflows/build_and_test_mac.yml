@@ -6,9 +6,6 @@ on:
   pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 env:
   BUILD_TYPE: Release
 
@@ -32,22 +29,6 @@ jobs:
           python-version: "3.10"
           channels: conda-forge
           auto-activate-base: false
-
-      # - name: Ensure Rosetta 2 (mac)
-      #   if: runner.os == 'macOS'
-      #   run: |
-      #       sudo softwareupdate --install-rosetta --agree-to-license || true
-
-      # # Recreate the env as x86_64 so dcmtk/fmjpeg2koj resolve from conda-forge
-      # - name: Recreate Conda env as osx-64 (Rosetta)
-      #   if: runner.os == 'macOS'
-      #   shell: bash -el {0}
-      #   run: |
-      #     conda deactivate || true
-      #     conda env remove -n anaconda-client-env || true
-      #     CONDA_SUBDIR=osx-64 conda create -y -n anaconda-client-env python=3.10 -c conda-forge
-      #     conda activate anaconda-client-env
-      #     conda config --env --set subdir osx-64
 
       - name: Install Conda Dependencies
         run: |

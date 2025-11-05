@@ -47,7 +47,7 @@ jobs:
         uses: jlumbroso/free-disk-space@main
         with:
           large-packages: true
-          docker-images: true
+          docker-images: false
           swap-storage: true
           tool-cache: false
 
