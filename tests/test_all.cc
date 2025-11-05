@@ -31,9 +31,6 @@
 #include "test_3d_ngldm.h"
 #include "test_3d_ngtdm.h"
 #include "test_3d_shape.h"
-
-#if 0	//xxxxxxxxxxxxxxxxx
-
 #include "test_arrow.h"
 #include "test_arrow_file_name.h"
 
@@ -48,8 +45,6 @@ TEST(TEST_NYXUS, TEST_ARROW) {
 TEST(TEST_NYXUS, TEST_PARQUET) {
 	test_parquet();
 }
-
-#endif
 
 // ***** 3D shape *****
 

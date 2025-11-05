@@ -39,9 +39,11 @@ int main (int argc, char** argv)
 	}
 	env.theFeatureMgr.apply_user_selection (env.theFeatureSet);
 
+#ifdef CHECKTIMING
 	// Current time stamp #1
 	auto tsStart = Nyxus::getCurTime();
 	VERBOSLVL1 (env.get_verbosity_level(), std::cout << "\n>>> STARTING >>> " << Nyxus::getTimeStr(tsStart) << "\n");
+#endif
 
 	// Initialize feature classes 
 	if (! env.theFeatureMgr.init_feature_classes())
@@ -222,6 +224,7 @@ int main (int argc, char** argv)
 
 		} // 3D
 
+#ifdef CHECKTIMING
 	// Current time stamp #2
 	auto tsEnd = Nyxus::getCurTime();
 	VERBOSLVL1(env.get_verbosity_level(),
@@ -230,6 +233,7 @@ int main (int argc, char** argv)
 			<< ">>> FINISHED >>>\t" << getTimeStr(tsEnd) << "\n"
 			<< "\tGROSS ELAPSED [s]\t" << Nyxus::getTimeDiff(tsStart, tsEnd) << "\n"
 		);
+#endif
 
 	return 0;
 }
