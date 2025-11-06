@@ -326,5 +326,8 @@ size_t ImageLoader::get_inten_time()
 
 size_t ImageLoader::get_mask_time()
 {
-	return segFL->fullTimestamps(0);
+	if (segFL)
+		return segFL->fullTimestamps(0);	// masked mode
+	else
+		return 0;	// whole-slide mode
 }

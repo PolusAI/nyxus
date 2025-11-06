@@ -33,12 +33,10 @@ namespace Nyxus
 	using Uniqueids = std::unordered_set<int>;
 	using Roidata = std::unordered_map<int, LR>;
 
-
 	// Permanent column names of the feature output table
 	const char colname_intensity_image[] = "intensity_file",
 		colname_mask_image[] = "mask_file",
-		colname_roi_label[] = "ROI_label",
-		colname_timeframe_index[] = "timeframe_index";
+		colname_roi_label[] = "ROI_label";
 
 	// segmented 2D workflow
 	int processDataset_2D_segmented(

@@ -13,20 +13,15 @@
 #include "helpers/helpers.h"
 
 
-arrow::Status ParquetWriter::setup(const std::vector<std::string> &header) {
-
-
+arrow::Status ParquetWriter::setup(const std::vector<std::string> &header) 
+{
     std::vector<std::shared_ptr<arrow::Field>> fields;
-    
-
     fields.push_back(arrow::field(header[0], arrow::utf8()));
     fields.push_back(arrow::field(header[1], arrow::utf8()));
     fields.push_back(arrow::field(header[2], arrow::int32()));
 
-    for (int i = 3; i < header.size(); ++i)
-    {
+    for (int i = fields.size(); i < header.size(); ++i)
         fields.push_back(arrow::field(header[i], arrow::float64()));
-    }
 
     schema_ = arrow::schema(fields);
 
@@ -198,7 +193,6 @@ arrow::Status ArrowIPCWriter::setup(const std::vector<std::string> &header) {
     fields.push_back(arrow::field(Nyxus::colname_intensity_image, arrow::utf8()));
     fields.push_back(arrow::field(Nyxus::colname_mask_image, arrow::utf8()));
     fields.push_back(arrow::field(Nyxus::colname_roi_label, arrow::int32()));
-    fields.push_back(arrow::field(Nyxus::colname_timeframe_index, arrow::int32()));
 
     for (int i=fields.size(); i<header.size(); i++)
     {

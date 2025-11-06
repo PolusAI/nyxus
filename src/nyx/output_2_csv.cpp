@@ -61,7 +61,6 @@ namespace Nyxus
 		head.clear();
 		head.push_back (Nyxus::colname_intensity_image);
 		head.push_back (Nyxus::colname_mask_image);
-		head.push_back (Nyxus::colname_timeframe_index);
 
 		// Annotation columns
 		if (env.resultOptions.need_annotation())

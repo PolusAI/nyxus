@@ -275,7 +275,10 @@ size_t RawImageLoader::get_inten_time()
 
 size_t RawImageLoader::get_mask_time()
 {
-	return segFL->fullTimestamps(0);
+	if (segFL)
+		return segFL->fullTimestamps(0);	// masked mode
+	else
+		return 0;	// whole-slide mode
 }
 
 std::string RawImageLoader::get_slide_descr()

@@ -257,7 +257,7 @@ namespace Nyxus
 			sliceSize = w * h,
 			timeFrameSize = sliceSize * d,
 			timeI = env.theImLoader.get_inten_time(),
-			timeM = env.theImLoader.get_mask_time(),
+			timeM = env.theImLoader.get_mask_time(),	// may be ==0 for WSI
 			nVoxI = timeFrameSize * timeI,
 			nVoxM = timeFrameSize * timeM;
 
@@ -302,7 +302,7 @@ namespace Nyxus
 		}
 
 		// Iterate voxels
-		for (size_t i=0; i<nVoxM; i++)
+		for (size_t i=0; i<timeFrameSize; i++)
 		{
 			size_t k = i + baseM;	// absolute index of mask voxel
 			size_t j = i + baseI;	// absolute index of intensity voxel
