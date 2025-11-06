@@ -228,7 +228,7 @@ namespace Nyxus
 
 		// Open it
 		FILE* fp = nullptr;
-		errno_t eno = fopen_s (&fp, fullPath.c_str(), mode);
+		auto /*assuming errno_t*/ eno = fopen_s(&fp, fullPath.c_str(), mode);
 
 		if (!fp)
 		{
@@ -434,7 +434,7 @@ namespace Nyxus
 
 		// Open it
 		FILE* fp = nullptr;
-		errno_t eno = fopen_s (&fp, fullPath.c_str(), mode);
+		errno_t /*assuming errno_t*/ eno = fopen_s (&fp, fullPath.c_str(), mode);
 
 		if (!fp)
 		{
