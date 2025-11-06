@@ -6,9 +6,9 @@ class SlideProps
 {
 public:
 
-	SlideProps (const std::string & ifile, const std::string & mfile)
+	SlideProps (const std::string & ifile, const std::string & mfile):
+		SlideProps()
 	{
-		SlideProps::SlideProps();
 		fname_int = ifile;
 		fname_seg = mfile;
 	}
