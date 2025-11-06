@@ -24,29 +24,14 @@ namespace Nyxus
 		//==== Pad the image
 
 		int paddingColor = 0;
-		std::vector<PixIntens> paddedImage ((height + 2) * (width + 2), paddingColor);
-		std::fill (paddedImage.begin(), paddedImage.end(), paddingColor);
+		std::vector<PixIntens> paddedImage((height + 2) * (width + 2), paddingColor);
 		for (auto idx : plane) // 'zplane' is indices of the z-plane to build the contour for
+
 		{
 			auto& px = cloud[idx];
-			assert (px.x >= minx);
-			assert (px.y >= miny);
-
 			auto x = px.x - minx + 1,
 				y = px.y - miny + 1;
-			size_t idx = x + y * (width + 2);
-
-			//???????????????????????  erro starts when y<0
-			if (y<0)
-			{
-				bool debugbreak = true;
-			}
-			if (idx == 40)
-			{
-				bool debugbreak = true;
-			}
-
-			paddedImage.at (idx) = px.inten + 1; //????????????? oct 29 ????		idx/*px.inten*/ + 1;	// Decorate the intensity
+			paddedImage[x + y * (width + 2)] = idx/*px.inten*/ + 1;	// Decorate the intensity
 		}
 
 		VERBOSLVL4(verbose_level,
