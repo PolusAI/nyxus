@@ -373,7 +373,7 @@ void ContourFeature::buildRegularContour (LR& r, const Fsettings& s)
 	r.contour.clear();
 
 	// gather contour pixels undecorating their intensities back to original values
-	Pixel2 lastNonzeroPx(0, 0, 0);
+	Pixel2 lastNonzeroPx (0, 0, 0);
 	for (int y = 0; y < height + 2; y++)
 		for (int x = 0; x < width + 2; x++)
 		{
@@ -385,7 +385,7 @@ void ContourFeature::buildRegularContour (LR& r, const Fsettings& s)
 				// as we'll need to report it as a degenerate contour if no properly neighbored 
 				// pixel group is found
 				lastNonzeroPx = { x, y, inte - 1 };
-
+				
 				// register a pixel only if it has any immediate neighbor
 				bool hasNeig = false;
 				if (x > 0)	// left neighbor
@@ -400,32 +400,32 @@ void ContourFeature::buildRegularContour (LR& r, const Fsettings& s)
 				}
 				if (y > 0)	// upper neighbor
 				{
-					size_t idxNeig = x + (y - 1) * (width + 2);
+					size_t idxNeig = x + (y-1) * (width+2);
 					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
 				}
-				if (y < height - 1)	// lower neighbor
+				if (y < height-1)	// lower neighbor
 				{
-					size_t idxNeig = x + (y + 1) * (width + 2);
+					size_t idxNeig = x + (y+1) * (width+2);
 					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
 				}
-				if (x > 0 && y > 0)	// upper left neighbor
+				if (x>0 && y > 0)	// upper left neighbor
 				{
-					size_t idxNeig = (x - 1) + (y - 1) * (width + 2);
+					size_t idxNeig = (x-1) + (y-1) * (width+2);
 					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
 				}
-				if (x < width - 1 && y > 0)	// upper right neighbor
+				if (x < width-1 && y > 0)	// upper right neighbor
 				{
-					size_t idxNeig = (x + 1) + (y - 1) * (width + 2);
+					size_t idxNeig = (x+1) + (y-1) * (width+2);
 					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
 				}
-				if (x > 0 && y < height - 1)	// lower left neighbor
+				if (x>0 && y < height-1)	// lower left neighbor
 				{
-					size_t idxNeig = (x - 1) + (y + 1) * (width + 2);
+					size_t idxNeig = (x-1) + (y+1) * (width+2);
 					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
 				}
-				if (x < width - 1 && y < height - 1)	// lower right neighbor
+				if (x < width-1 && y < height-1)	// lower right neighbor
 				{
-					size_t idxNeig = (x + 1) + (y + 1) * (width + 2);
+					size_t idxNeig = (x+1) + (y+1) * (width+2);
 					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
 				}
 				if (!hasNeig)
@@ -445,9 +445,9 @@ void ContourFeature::buildRegularContour (LR& r, const Fsettings& s)
 	if (r.contour.size())
 	{
 		//	--containers for unordered (temp) and ordered (result) pixels
-		std::list<Pixel2> unordered(r.contour.begin(), r.contour.end());
+		std::list<Pixel2> unordered (r.contour.begin(), r.contour.end());
 		std::vector<Pixel2> ordered;
-		ordered.reserve(unordered.size());
+		ordered.reserve (unordered.size());
 		std::vector<Pixel2> pants;
 
 		//	--initialize vector 'ordered' with 1st pixel of 'unordered'

@@ -15,7 +15,7 @@ Nyxus is a feature-rich, optimized, Python/C++ application capable of analyzing 
 
 Nyxus can be used via Python or command line and is available in containerized form for reproducible execution. Nyxus computes over 450 combined intensity, texture, and morphological features at the ROI or whole image level with more in development. Key features that make Nyxus unique among other image feature extraction applications is its ability to operate at any scale, its highly validated algorithms, and its modular nature that makes the addition of new features straightforward.
 
-Currently, Nyxus can read image data from OME-TIFF, OME-Zarr and DICOM 2D Grayscale images. It also has a Python API to support in-memory image data via Numpy array. 
+Currently, Nyxus can read 2D image data from OME-TIFF, OME-Zarr, and DICOM 2D Grayscale images. Nyxus also reads compressed and uncompressed NIFTI 3D files. Nyxus Python API supports featurizing in-memory 2D image data represented by NumPy arrays. 
 
 The docs can be found at [Read the Docs](https://nyxus.readthedocs.io/en/latest/).
 
@@ -40,6 +40,8 @@ The library provides class `Nyxus` for 2-dimensional TIFF, OME.TIFF, OME.ZARR, a
 
 Given `intensities` and `labels` folders, Nyxus pairs up intensity-segmentation mask images and extracts features from all of them. A summary of the available feature are [listed below](#available-features).
 
+#### featurizing data in file system directories
+
 ```python 
 from nyxus import Nyxus
 nyx = Nyxus (["*ALL*"])
@@ -48,6 +50,7 @@ maskDir = "/path/to/images/labels/"
 features = nyx.featurize_directory (intensityDir, maskDir) # selecting all the .ome.tif slides (default)
 ```
 
+#### featurizing explicitly defined lists of files
 Alternatively, Nyxus can process explicitly defined pairs of intensity-mask images thus specifying custom 1:N and M:N mapping between segmentation mask and intensity image files. 
 The following example extracts all the features (note parameter "*ALL*") from intensity images 'i1', 'i2', and 'i3' related with mask images 'm1' and 'm2' via a custom mapping:
 
@@ -68,7 +71,7 @@ features = nyx.featurize_files(
 	False) # pass True to featurize intensity files as whole segments
 ```
 
-The result `features` variable is a Pandas dataframe similar to what is shown below. Note that if multiple segments are stored in a segmentation mask file, each segment's features in the resultcan be identified by the mask file name and segment mask label.
+The result variable `features` is a Pandas dataframe similar to what is shown below. Note that if multiple segments are stored in a segmentation mask file, each segment's features in the resultcan be identified by the mask file name and segment mask label.
 
 |     | mask_image           | intensity_image      |   label |    MEAN |   MEDIAN |...|    GABOR_6 |
 |----:|:---------------------|:---------------------|--------:|--------:|---------:|--:|-----------:|
@@ -80,7 +83,9 @@ The result `features` variable is a Pandas dataframe similar to what is shown be
 | ... | ...                  | ...                  |     ... | ...     |  ...     |...|   ...      |
 | 734 | p5_y0_r51_c0.ome.tif | p5_y0_r51_c0.ome.tif |     223 | 54573.3 |  54573.3 |...|   0.980769 |
 
-Nyxus can also process intensity-mask pairs that are loaded as NumPy arrays using the `featurize` method. This method takes in either a single pair of 2D intensity-mask pairs
+#### featurizing in-memory 2D images; featurizing a montage
+
+Nyxus can also featurize in-memory intensity-mask pairs that are loaded as NumPy arrays using the `featurize` method. This method takes in either a single pair of 2D intensity-mask pairs
 or a pair of 3D arrays containing 2D intensity and mask images. There is also two optional parameters to supply names to the resulting dataframe, . 
 
 ```python 
@@ -105,6 +110,34 @@ seg = np.array([
 
 features = nyx.featurize(intens, seg)
 ```
+
+<u>Note:</u> if array `intens` contains negative values similarly to intensities in Hounsfeld units observed in CT-scan datasets, method `featurize()` automatically adjusts values of of array `intens` while passing them to Nyxus backend so as to make them zero-based, like in the following example:
+
+```
+import numpy as np
+import nyxus
+I = np.array([
+  [-1024.74,      -1019.67,      -1005.70,       -998.60,       -998.66,      -1005.82,      -1019.65,      -1024.72],
+  [-1019.44,      -1001.22,      -1023.82,      -1034.34,      -1035.81,      -1027.00,      -1001.89,      -1019.62],
+  [-1011.86,      -1002.17,       -724.06,       -521.43,       -471.04,       -671.30,      -1006.98,      -1010.62],
+  [-1008.78,       -703.58,         21.66,         44.32,        130.35,        113.37,       -608.11,      -1056.33],
+  [-415.46,       -106.08,         69.80,         59.70,         97.64,        120.62,        -49.77,       -480.57],
+  [-464.06,       -176.81,         76.79,         93.34,        131.99,         73.16,       -106.70,       -348.06],
+  [-1012.75,       -740.21,       -502.72,       -370.36,       -377.42,       -497.65,       -719.82,      -1000.82],
+  [-1032.57,       -979.63,       -867.71,       -815.30,       -830.90,       -875.08,       -983.76,      -1033.78]], np.float64)
+M = np.array([
+  [0,      0,      0,       0,       0,      0,      0,      0],
+  [0,      0,      1,       1,       1,      1,      0,      0],
+  [0,      1,      1,       1,       1,      1,      1,      0],
+  [0,      1,      1,       1,       1,      1,      1,      0],
+  [0,      1,      1,       1,       1,      1,      1,      0],
+  [0,      1,      1,       1,       1,      1,      1,      0],
+  [0,      0,      1,       1,       1,      1,      0,      0],
+  [0,      0,      0,       0,       0,      0,      0,      0]], np.uint16)
+nyx = nyxus.Nyxus (["*ALL_INTENSITY*"])
+f = nyx.featurize (I, M, intensity_names=['I'], label_names=['M'])
+```
+
 
 The `features` variable is a Pandas dataframe similar to what is shown below.
 
@@ -185,17 +218,19 @@ Example -- whole-slide featurization with 4 threads:
 ```
 dir = "/2d_dataset/intensity"
 import nyxus
-nyx = nyxus.Nyxus (features=["*ALL*"], n_feature_calc_threads=4)
+nyx = nyxus.Nyxus (features=["*WHOLESLIDE*"], n_feature_calc_threads=4)
 f = nyx.featurize_directory (intensity_dir=dir, label_dir=dir)
 ```
 
-Example -- whole-volume featurization of a NIFTI dataset with 4 threads:
+Note: feature group `*WHOLESLIDE*` but not `*ALL*` is used to avoid calculation of shape features meaningless in case of the trivial rectangular shape of unsegmented slides. particularly, group `*WHOLESLIDE*` disables the time-consuming group GLDZM, basic morphology features (AREA_PIXELS_COUNT, AREA_UM2, ASPECT_RATIO, BBOX_XMIN, BBOX_YMIN, BBOX_WIDTH, BBOX_HEIGHT, CENTROID_X, CENTROID_Y, COMPACTNESS, DIAMETER_EQUAL_AREA, EXTENT, MASS_DISPLACEMENT, WEIGHTED_CENTROID_X, WEIGHTED_CENTROID_Y), enclosing/inscribing/circumscribing circle features, convex hull based features (CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY, POLYGONALITY_AVE, HEXAGONALITY_AVE, HEXAGONALITY_STDDEV),  fractal dimension features, geodetic  features, ROI neighbor features, ROI radius features, ellipse fitting features, extrema features, morphological erosion features, Caliper and chords features. 
+
+Disabled features can be requested by explicitly specifying them, for example enforcing calculation of the grey level distance zone matrix based (GLDZM) features:
 
 ```
-dir = "/3d_dataset"
+dir = "/2d_dataset/intensity"
 import nyxus
-nyx = nyxus.Nyxus3D (features=["*3D_ALL*"], n_feature_calc_threads=4)
-f = nyx.featurize_directory (intensity_dir=dir, label_dir=dir, file_pattern=".*\\.nii\\.gz")
+nyx = nyxus.Nyxus (features=["*WHOLESLIDE*", "*ALL_GLDZM*"], n_feature_calc_threads=4)
+f = nyx.featurize_directory (intensity_dir=dir, label_dir=dir)
 ```
 
 
@@ -345,7 +380,7 @@ The output is:
 
 This functionality is also available in the through the command line using the flag `--outputType`. If this flag is set to `--outputType=arrowipc` then the results will be written to an Arrow IPC file in the output directory and `--outputType=parquet` will write to a Parquet file.
 
-## Available features 
+## Available 2D features 
 The feature extraction plugin extracts morphology and intensity based features from pairs of intensity/binary mask images and produces a csv file output. The input image should be in tiled [OME TIFF format](https://docs.openmicroscopy.org/ome-model/6.2.0/ome-tiff/specification.html).  The plugin extracts the following features:
 
 Nyxus provides a set of pixel intensity, morphology, texture, intensity distribution features, digital filter based features and image moments
@@ -395,7 +430,7 @@ Nyxus provides a set of pixel intensity, morphology, texture, intensity distribu
 
 For the complete list of features see [Nyxus provided features](docs/source/featurelist.rst)
 
-## Feature groups
+## 2D feature groups
 
 Apart from defining your feature set by explicitly specifying comma-separated feature code, Nyxus lets a user specify popular feature groups. Supported feature groups are:
 
@@ -413,8 +448,242 @@ Apart from defining your feature set by explicitly specifying comma-separated fe
 | \*all_glszm\* | glszm_sae, glszm_lae, glszm_gln, glszm_glnn, glszm_szn, glszm_sznn, glszm_zp, glszm_glv, glszm_zv, glszm_ze, glszm_lglze, glszm_hglze, glszm_salgle, glszm_sahgle, glszm_lalgle, glszm_lahgle
 | \*all_gldm\* | gldm_sde, gldm_lde, gldm_gln, gldm_dn, gldm_dnn, gldm_glv, gldm_dv, gldm_de, gldm_lgle, gldm_hgle, gldm_sdlgle, gldm_sdhgle, gldm_ldlgle, gldm_ldhgle
 | \*all_ngtdm\* | ngtdm_coarseness, ngtdm_contrast, ngtdm_busyness, ngtdm_complexity, ngtdm_strength
-| \*wholeslide\* | All the features except those irrelevant for the whole-slide use case (BasicMorphology, EnclosingInscribingCircumscribingCircle, ConvexHull, FractalDimension, GeodeticLengthThickness, Neighbor, RoiRadius, EllipseFitting, EulerNumber, Extrema, ErosionPixel, CaliperFeret, CaliperMartin, CaliperNassenstein, and Chords)
+| \*wholeslide\* | Only features relevant to the whole-slides whose single ROIs match the images themselves, except shape features meaningless in the whole-slide use case and certain time-consuming texture features (GLDZM features).
 | \*all\* | All the features 
+
+## Available 3D features 
+------------------
+| Nyxus feature code | Description |
+|--------|-------|
+| <b>Intensity</b> | |
+| 3COV | Coefficient of variation|
+| 3COVERED_IMAGE_INTENSITY_RANGE | Covered image intensity range |
+| 3ENERGY | Energy |
+| 3ENTROPY | Entropy |
+| 3EXCESS_KURTOSIS | Excess kurtosis |
+| 3HYPERFLATNESS | Hyperflatness |
+| 3HYPERSKEWNESS | Hyperskewness |
+| 3INTEGRATED_INTENSITY | Integrated intensity |
+| 3INTERQUARTILE_RANGE | Interquartile range |
+| 3KURTOSIS | Kurtosis |
+| 3MAX | Max |
+| 3MEAN | Mean |
+| 3MEAN_ABSOLUTE_DEVIATION | Mean absolute deviation |
+| 3MEDIAN | Median |
+| 3MEDIAN_ABSOLUTE_DEVIATION | Median absolute deviation |
+| 3MIN | Min |
+| 3MODE | Mode |
+| 3P01, 3P10, 3P25, 3P75, 3P90, 3P99 | 1%, 10%, 25%, 75%, 90%, 99% percentiles |
+| 3QCOD | Quantile coefficient of dispersion |
+| 3RANGE | Range |
+| 3ROBUST_MEAN | Robust mean |
+| 3ROBUST_MEAN_ABSOLUTE_DEVIATION | Robust mean absolute deviation |
+| 3ROOT_MEAN_SQUARED | Root mean squared |
+| 3SKEWNESS | Skewness |
+| 3STANDARD_DEVIATION | Standard deviation |
+| 3STANDARD_DEVIATION_BIASED | Biased standard deviation |
+| 3STANDARD_ERROR | Standard error |
+| 3UNIFORMITY | Uniformity |
+| 3UNIFORMITY_PIU | Uniformity in PIU units |
+| 3VARIANCE | Variance |
+| 3VARIANCE_BIASED | Biased variance |
+| <b>shape</b> |  |
+| 3AREA | Surface area |
+| 3AREA_2_VOLUME | Surface area to volume ratio |
+| 3COMPACTNESS1 | Compactness1 |
+| 3COMPACTNESS2 | Compactness2 |
+| 3MESH_VOLUME | Mesh volume |
+| 3SPHERICAL_DISPROPORTION | Spherical disproportion |
+| 3SPHERICITY | Sphericity |
+| 3VOLUME_CONVEXHULL | Volume of the convex hull |
+| 3VOXEL_VOLUME | Volume as total of volumes of voxels |
+| 3MAJOR_AXIS_LEN | Major axis length |
+| 3MINOR_AXIS_LEN | Minor axis length |
+| 3LEAST_AXIS_LEN | Least axis length |
+| 3ELONGATION | Elongation |
+| 3FLATNESS | Flatness |
+| <b>texture</b> | |
+| 3GLCM_ACOR | Autocorrelation (grey level co-occurrence matrix) |
+| 3GLCM_ASM | Angular second moment (grey level co-occurrence matrix) |
+| 3GLCM_CLUPROM | Cluster prominence (grey level co-occurrence matrix) |
+| 3GLCM_CLUSHADE | Cluster shade (grey level co-occurrence matrix) |
+| 3GLCM_CLUTEND | Cluster tendency (grey level co-occurrence matrix) |
+| 3GLCM_CONTRAST | Contrast (grey level co-occurrence matrix) |
+| 3GLCM_CORRELATION | Correlation (grey level co-occurrence matrix) |
+| 3GLCM_DIFAVE | Defference average (grey level co-occurrence matrix) |
+| 3GLCM_DIFENTRO | Difference entropy (grey level co-occurrence matrix) |
+| 3GLCM_DIFVAR | Difference variance (grey level co-occurrence matrix) |
+| 3GLCM_DIS | Dissimilarity (grey level co-occurrence matrix) |
+| 3GLCM_ENERGY | Energy (grey level co-occurrence matrix) |
+| 3GLCM_ENTROPY | Entropy (grey level co-occurrence matrix) |
+| 3GLCM_HOM1 | Homogeneity-1 (grey level co-occurrence matrix) |
+| 3GLCM_HOM2 | Homogeneity-2 (grey level co-occurrence matrix) |
+| 3GLCM_ID | Inverse difference (grey level co-occurrence matrix) |
+| 3GLCM_IDN | Normalized inverse difference (grey level co-occurrence matrix) |
+| 3GLCM_IDM | Inverse difference moment (grey level co-occurrence matrix) |
+| 3GLCM_IDMN | Normalized inverse difference moment (grey level co-occurrence matrix) |
+| 3GLCM_INFOMEAS1 | 1st information measure of correlation (grey level co-occurrence matrix) |
+| 3GLCM_INFOMEAS2 | 2nd information measure of correlation (grey level co-occurrence matrix) |
+| 3GLCM_IV | Inverse variance (grey level co-occurrence matrix) |
+| 3GLCM_JAVE | Joint average (grey level co-occurrence matrix) |
+| 3GLCM_JE | Joint entropy (grey level co-occurrence matrix) |
+| 3GLCM_JMAX | Joint maximum aka "max probability" (grey level co-occurrence matrix) |
+| 3GLCM_JVAR | Joint variance aka "sum of squares" (grey level co-occurrence matrix) |
+| 3GLCM_SUMAVERAGE | Sum average (grey level co-occurrence matrix) |
+| 3GLCM_SUMENTROPY | Sum entropy (grey level co-occurrence matrix) |
+| 3GLCM_SUMVARIANCE | Sum variance (grey level co-occurrence matrix) |
+| 3GLCM_VARIANCE | Variance (grey level co-occurrence matrix) |
+| 3GLCM_ASM_AVE | directional average of 3GLCM_ASM |
+| 3GLCM_ACOR_AVE | directional average of 3GLCM_ACOR |
+| 3GLCM_CLUPROM_AVE | directional average of 3GLCM_CLUPROM |
+| 3GLCM_CLUSHADE_AVE | directional average of 3GLCM_CLUSHADE |
+| 3GLCM_CLUTEND_AVE | directional average of 3GLCM_CLUTEND |
+| 3GLCM_CONTRAST_AVE | directional average of 3GLCM_CONTRAST |
+| 3GLCM_CORRELATION_AVE | directional average of 3GLCM_CORRELATION |
+| 3GLCM_DIFAVE_AVE | directional average of 3GLCM_DIFAVE |
+| 3GLCM_DIFENTRO_AVE | directional average of 3GLCM_DIFENTRO |
+| 3GLCM_DIFVAR_AVE | directional average of 3GLCM_DIFVAR |
+| 3GLCM_DIS_AVE | directional average of 3GLCM_DIS |
+| 3GLCM_ENERGY_AVE | directional average of 3GLCM_ENERGY |
+| 3GLCM_ENTROPY_AVE | directional average of 3GLCM_ENTROPY |
+| 3GLCM_HOM1_AVE | directional average of 3GLCM_HOM1 |
+| 3GLCM_ID_AVE | directional average of 3GLCM_ID |
+| 3GLCM_IDN_AVE | directional average of 3GLCM_IDN |
+| 3GLCM_IDM_AVE | directional average of 3GLCM_IDM |
+| 3GLCM_IDMN_AVE | directional average of 3GLCM_IDMN |
+| 3GLCM_IV_AVE | directional average of 3GLCM_IV |
+| 3GLCM_JAVE_AVE | directional average of 3GLCM_JAVE |
+| 3GLCM_JE_AVE | directional average of 3GLCM_JE |
+| 3GLCM_INFOMEAS1_AVE | directional average of 3GLCM_INFOMEAS1 |
+| 3GLCM_INFOMEAS2_AVE | directional average of 3GLCM_INFOMEAS2 |
+| 3GLCM_VARIANCE_AVE | directional average of 3GLCM_VARIANCE |
+| 3GLCM_JMAX_AVE | directional average of 3GLCM_JMAX |
+| 3GLCM_JVAR_AVE | directional average of 3GLCM_JVAR |
+| 3GLCM_SUMAVERAGE_AVE | directional average of 3GLCM_SUMAVERAGE |
+| 3GLCM_SUMENTROPY_AVE | directional average of 3GLCM_SUMENTROPY |
+| 3GLCM_SUMVARIANCE_AVE | directional average of 3GLCM_SUMVARIANCE |
+| 3GLDM_SDE | Small dependence emphasis (grey level dependence matrix) |
+| 3GLDM_LDE | Large dependence emphasis (grey level dependence matrix) |
+| 3GLDM_GLN | Gray level non-uniformity (grey level dependence matrix) |
+| 3GLDM_DN | Dependence non-uniformity (grey level dependence matrix) |
+| 3GLDM_DNN | Normalized dependence non-uniformity (grey level dependence matrix) |
+| 3GLDM_GLV | Gray level variance (grey level dependence matrix) |
+| 3GLDM_DV | Dependence variance (grey level dependence matrix) |
+| 3GLDM_DE | Dependence entropy (grey level dependence matrix) |
+| 3GLDM_LGLE | Low gray level emphasis (grey level dependence matrix) |
+| 3GLDM_HGLE | High gray level emphasis (grey level dependence matrix) |
+| 3GLDM_SDLGLE | Small dependence low gray level emphasis (grey level dependence matrix) |
+| 3GLDM_SDHGLE | Small dependence high gray level emphasis (grey level dependence matrix) |
+| 3GLDM_LDLGLE | Large dependence low gray level emphasis (grey level dependence matrix) |
+| 3GLDM_LDHGLE | Large dependence high gray level emphasis (grey level dependence matrix) |
+| 3GLDZM_SDE | Small distance emphasis (grey level distance zone matrix) |
+| 3GLDZM_LDE | Large distance emphasis (grey level distance zone matrix) |
+| 3GLDZM_LGLZE | Low grey level zone emphasis (grey level distance zone matrix) |
+| 3GLDZM_HGLZE | High grey level zone emphasis (grey level distance zone matrix) |
+| 3GLDZM_SDLGLE | Small distance low grey level emphasis (grey level distance zone matrix) |
+| 3GLDZM_SDHGLE | Small distance high grey level emphasis (grey level distance zone matrix) |
+| 3GLDZM_LDLGLE | Large distance low grey level emphasis (grey level distance zone matrix) |
+| 3GLDZM_LDHGLE | Large distance high grey level emphasis (grey level distance zone matrix) |
+| 3GLDZM_GLNU | Grey level non uniformity (grey level distance zone matrix) |
+| 3GLDZM_GLNUN | Normalized grey level non uniformity (grey level distance zone matrix) |
+| 3GLDZM_ZDNU | Zone distance non uniformity (grey level distance zone matrix) |
+| 3GLDZM_ZDNUN | Normalized zone distance non uniformity (grey level distance zone matrix) |
+| 3GLDZM_ZP | Zone percentage (grey level distance zone matrix) |
+| 3GLDZM_GLM | Grey level mean (grey level distance zone matrix) |
+| 3GLDZM_GLV | Grey level variance (grey level distance zone matrix) |
+| 3GLDZM_ZDM | Zone distance mean (grey level distance zone matrix) |
+| 3GLDZM_ZDV | Zone distance variance (grey level distance zone matrix) |
+| 3GLDZM_ZDE | Zone distance entropy (grey level distance zone matrix) |
+| 3GLRLM_SRE | Short run emphasis (grey level run length matrix) |
+| 3GLRLM_LRE | Long run emphasis (grey level run length matrix) |
+| 3GLRLM_GLN | Gray level non-uniformity (grey level run length matrix) |
+| 3GLRLM_GLNN | Normalized gray level non-uniformity (grey level run length matrix) |
+| 3GLRLM_RLN | Run length non-uniformity (grey level run length matrix) |
+| 3GLRLM_RLNN | Normalized run length non-uniformity (grey level run length matrix) |
+| 3GLRLM_RP | Run percentage (grey level run length matrix) |
+| 3GLRLM_GLV | Gray level variance (grey level run length matrix) |
+| 3GLRLM_RV | Run variance (grey level run length matrix) |
+| 3GLRLM_RE | Run entropy (grey level run length matrix) |
+| 3GLRLM_LGLRE | Low gray level run emphasis (grey level run length matrix) |
+| 3GLRLM_HGLRE | High gray level run emphasis (grey level run length matrix) |
+| 3GLRLM_SRLGLE | Short run low gray level emphasis (grey level run length matrix) |
+| 3GLRLM_SRHGLE | Short run high gray level emphasis (grey level run length matrix) |
+| 3GLRLM_LRLGLE | Long run low gray level emphasis (grey level run length matrix) |
+| 3GLRLM_LRHGLE | Long run high gray level emphasis (grey level run length matrix) |
+| 3GLRLM_SRE_AVE | directional average of 3GLRLM_SRE  |
+| 3GLRLM_LRE_AVE | directional average of 3GLRLM_LRE  |
+| 3GLRLM_GLN_AVE | directional average of 3GLRLM_GLN  |
+| 3GLRLM_GLNN_AVE | directional average of 3GLRLM_GLNN | 
+| 3GLRLM_RLN_AVE | directional average of 3GLRLM_RLN |
+| 3GLRLM_RLNN_AVE | directional average of 3GLRLM_RLNN |
+| 3GLRLM_RP_AVE | directional average of 3GLRLM_RP |
+| 3GLRLM_GLV_AVE | directional average of 3GLRLM_GLV |
+| 3GLRLM_RV_AVE | directional average of 3GLRLM_RV |
+| 3GLRLM_RE_AVE | directional average of 3GLRLM_RE |
+| 3GLRLM_LGLRE_AVE | directional average of 3GLRLM_LGLRE |
+| 3GLRLM_HGLRE_AVE | directional average of 3GLRLM_HGLRE |
+| 3GLRLM_SRLGLE_AVE | directional average of 3GLRLM_SRLGLE |
+| 3GLRLM_SRHGLE_AVE | directional average of 3GLRLM_SRHGLE |
+| 3GLRLM_LRLGLE_AVE | directional average of 3GLRLM_LRLGLE |
+| 3GLRLM_LRHGLE_AVE | directional average of 3GLRLM_LRHGLE |
+| 3GLSZM_SAE | Small area emphasis (grey level size zone matrix) |
+| 3GLSZM_LAE | Large area emphasis (grey level size zone matrix) |
+| 3GLSZM_GLN | Gray level non-uniformity (grey level size zone matrix) |
+| 3GLSZM_GLNN | Normalized gray level non-uniformity (grey level size zone matrix) |
+| 3GLSZM_SZN | Size-zone non-uniformity (grey level size zone matrix) |
+| 3GLSZM_SZNN | Normalized size-zone non-uniformity (grey level size zone matrix) |
+| 3GLSZM_ZP | Zone percentage (grey level size zone matrix) |
+| 3GLSZM_GLV | Gray level variance (grey level size zone matrix) |
+| 3GLSZM_ZV | Zone variance (grey level size zone matrix) |
+| 3GLSZM_ZE | Zone entropy (grey level size zone matrix) |
+| 3GLSZM_LGLZE | Low gray level zone emphasis (grey level size zone matrix) |
+| 3GLSZM_HGLZE | High gray level zone emphasis (grey level size zone matrix) |
+| 3GLSZM_SALGLE | Small area low gray level emphasis (grey level size zone matrix) |
+| 3GLSZM_SAHGLE | Small area high gray level emphasis (grey level size zone matrix) |
+| 3GLSZM_LALGLE | Large area low gray level emphasis (grey level size zone matrix) |
+| 3GLSZM_LAHGLE | Large area high gray level emphasis (grey level size zone matrix) |
+| 3NGLDM_LDE | Low dependence emphasis (neighbouring grey level dependence matrix) |
+| 3NGLDM_HDE | High dependence emphasis (neighbouring grey level dependence matrix) |
+| 3NGLDM_LGLCE | Low grey level count emphasis (neighbouring grey level dependence matrix) |
+| 3NGLDM_HGLCE | High grey level count emphasis (neighbouring grey level dependence matrix) |
+| 3NGLDM_LDLGLE | Low dependence low grey level emphasis (neighbouring grey level dependence matrix) |
+| 3NGLDM_LDHGLE | Low dependence high grey level emphasis (neighbouring grey level dependence matrix) |
+| 3NGLDM_HDLGLE | High dependence low grey level emphasis (neighbouring grey level dependence matrix) |
+| 3NGLDM_HDHGLE | High dependence high grey level emphasis (neighbouring grey level dependence matrix) |
+| 3NGLDM_GLNU | Grey level non-uniformity (neighbouring grey level dependence matrix) |
+| 3NGLDM_GLNUN | Grey level non-uniformity normalised (neighbouring grey level dependence matrix) |
+| 3NGLDM_DCNU | Dependence count non-uniformity (neighbouring grey level dependence matrix) |
+| 3NGLDM_DCNUN | Dependence count non-uniformity normalised (neighbouring grey level dependence matrix) |
+| 3NGLDM_DCP | Dependence count percentage (neighbouring grey level dependence matrix) |
+| 3NGLDM_GLM | Grey level mean (neighbouring grey level dependence matrix) |
+| 3NGLDM_GLV | Grey level variance (neighbouring grey level dependence matrix) |
+| 3NGLDM_DCM | Dependence count mean (neighbouring grey level dependence matrix) |
+| 3NGLDM_DCV | Dependence count variance (neighbouring grey level dependence matrix) |
+| 3NGLDM_DCENT | Dependence count entropy (neighbouring grey level dependence matrix) |
+| 3NGLDM_DCENE | Dependence count energy (neighbouring grey level dependence matrix) |
+| 3NGTDM_COARSENESS | Coarseness (neighbouring grey tone difference matrix) |
+| 3NGTDM_CONTRAST | Contrast (neighbouring grey tone difference matrix) |
+| 3NGTDM_BUSYNESS | Busyness (neighbouring grey tone difference matrix) |
+| 3NGTDM_COMPLEXITY | Complexity (neighbouring grey tone difference matrix) |
+| 3NGTDM_STRENGTH | Strength (neighbouring grey tone difference matrix) |
+
+
+## 3D feature groups
+------------------------------------
+| Group code | Belonging features |
+|--------------------|-------------|
+| \*3D_ALL\* | All the 3D features | 
+| \*3D_ALL_INTENSITY\* | 3COV, 3COVERED_IMAGE_INTENSITY_RANGE, 3ENERGY, 3ENTROPY, 3EXCESS_KURTOSIS, 3HYPERFLATNESS, 3HYPERSKEWNESS, 3INTEGRATED_INTENSITY, 3INTERQUARTILE_RANGE, 3KURTOSIS, 3MAX, 3MEAN, 3MEAN_ABSOLUTE_DEVIATION, 3MEDIAN, 3MEDIAN_ABSOLUTE_DEVIATION, 3MIN, 3MODE, 3P01, 3P10, 3P25, 3P75, 3P90, 3P99, 3QCOD, 3RANGE, 3ROBUST_MEAN, 3ROBUST_MEAN_ABSOLUTE_DEVIATION, 3ROOT_MEAN_SQUARED, 3SKEWNESS, 3STANDARD_DEVIATION, 3STANDARD_DEVIATION_BIASED, 3STANDARD_ERROR, 3UNIFORMITY, 3UNIFORMITY_PIU, 3VARIANCE, and 3VARIANCE_BIASED |
+| \*3D_ALL_MORPHOLOGY\* | 3AREA, 3AREA_2_VOLUME, 3COMPACTNESS1 and -2, 3MESH_VOLUME, 3SPHERICAL_DISPROPORTION, 3SPHERICITY, 3VOLUME_CONVEXHULL, 3VOXEL_VOLUME, 3MAJOR_AXIS_LEN, 3MINOR_AXIS_LEN, 3LEAST_AXIS_LEN, 3ELONGATION, and 3FLATNESS |
+| \*3D_ALL_TEXTURE\* | All the 3GLCM_... 3GLDM_... 3GLDZM_... 3GLSZM_... 3GLRLM_... 3NGLDM_... and 3NGTDM_... features |
+| \*3D_GLCM\* | All the 3GLCM_... features |
+| \*3D_GLDM\* | All the 3GLDM_... features |
+| \*3D_GLDZM\* | All the 3GLDZM_... features |
+| \*3D_GLSZM\* | All the 3GLSZM_... features |
+| \*3D_GLRLM\* | All the 3GLRLM_... features |
+| \*3D_NGLDM\* | All the 3NGLDM_... features |
+| \*3D_NGTDM\* | All the 3NGTDM_... features |
+
 
 ## Command line usage
 
@@ -693,7 +962,7 @@ To build the command line interface, pass `-DBUILD_CLI=ON` in the `cmake` comman
 Below is an example of how to build Nyxus inside a `conda` environment on Linux.
 
 ```bash
-conda create -n nyxus_build python=3.10
+conda create -n nyxus_build python=3.12
 conda activate nyxus_build
 git clone https://github.com/PolusAI/nyxus.git
 cd nyxus
@@ -708,7 +977,7 @@ make -j4
 
 To install the python package in the `conda` environment on Linux, use the following direction.
 ```bash
-conda create -n nyxus_build python=3.10
+conda create -n nyxus_build python=3.12
 conda activate nyxus_build
 git clone https://github.com/PolusAI/nyxus.git
 cd nyxus
@@ -716,6 +985,15 @@ conda install mamba -c conda-forge
 mamba install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_py.txt
 export NYXUS_DEP_DIR=$CONDA_PREFIX
 CMAKE_ARGS="-DUSEGPU=ON -DALLEXTRAS=ON -DPython_ROOT_DIR=$CONDA_PREFIX -DPython_FIND_VIRTUALENV=ONLY" python -m pip install . -vv
+```
+
+If there's no system wide compatible C++ compiler, we may install it using conda and the configuration script will pick it up.
+```bash
+...
+conda activate nyxus_build
+conda install cxx-compiler -y 
+export NYXUS_DEP_DIR=$CONDA_PREFIX
+...
 ```
 
 ### __Without Using Conda__

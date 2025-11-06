@@ -1,5 +1,4 @@
 #include <iostream>
-#include "cli_fpimage_options.h"
 #include "image_loader.h"
 #include "grayscale_tiff.h"
 #include "raw_tiff.h"
@@ -8,7 +7,6 @@
 #include "dirs_and_files.h"
 #include "helpers/fsystem.h"
 #include "raw_nifti.h"
-
 
 ImageLoader::ImageLoader() {}
 
@@ -20,6 +18,7 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 		& seg_fpath = p.fname_seg;
 
 	// intensity image
+  
 	try 
 	{
 		std::string ext = Nyxus::get_big_extension (int_fpath);
