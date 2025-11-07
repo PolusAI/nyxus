@@ -3,7 +3,7 @@ name: Build And Run Test on Mac
 on:
   push:
     branches: [ main ]
-  pull_request: 
+  pull_request:
   workflow_dispatch:
 
 env:
@@ -12,71 +12,81 @@ env:
 jobs:
   Build_and_Run_GTest:
     name: Build and Run GoogleTest
-    runs-on: macos-13
+    runs-on: macos-14-large
     defaults:
       run:
-        shell: bash -l {0}
+        shell: bash -el {0}
 
     steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: recursive
-        
-    - uses: conda-incubator/setup-miniconda@v3
-      with:
-        activate-environment: anaconda-client-env
-        miniconda-version: "latest"
-        python-version: "3.10"
-        channels: conda-forge
-        auto-activate-base: false
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: anaconda-client-env
+          miniconda-version: "latest"
+          python-version: "3.10"
+          channels: conda-forge
+          auto-activate-base: false
 
-    - name: Install Conda Dependencies
-      run: |
-        conda install mamba
-        mamba install compilers --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt
+      - name: Install Conda Dependencies
+        run: |
+          conda install -y mamba
+          mamba install -y compilers --file "${{ github.workspace }}/ci-utils/envs/conda_cpp.txt"
 
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON -DRUN_GTEST=ON -DALLEXTRAS=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
+      - name: Configure CMake
+        run: >
+          cmake -B "${{ github.workspace }}"
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+          -DBUILD_CLI=ON
+          -DRUN_GTEST=ON
+          -DALLEXTRAS=ON
+          -DCMAKE_PREFIX_PATH="$CONDA_PREFIX"
+          -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX"
 
-    - name: Build
-      run: cmake --build ${{github.workspace}} --config ${{env.BUILD_TYPE}} --parallel 2
+      - name: Build
+        run: cmake --build "${{ github.workspace }}" --config "${{ env.BUILD_TYPE }}" --parallel 2
 
-    - name: Run GTest Suite
-      working-directory: ${{github.workspace}}
-      # Execute tests.  
-      run: ./tests/runAllTests  -C ${{env.BUILD_TYPE}}
-      
+      - name: Run GTest Suite
+        working-directory: ${{ github.workspace }}
+        run: ./tests/runAllTests -C "${{ env.BUILD_TYPE }}"
 
   Build_and_Run_PyTest:
     name: Build and Run PyTest
-    runs-on: macos-13
+    runs-on: macos-14-large
     defaults:
       run:
-        shell: bash -l {0}
+        shell: bash -el {0}
 
     steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: recursive
-        
-    - uses: conda-incubator/setup-miniconda@v3
-      with:
-        activate-environment: anaconda-client-env
-        miniconda-version: "latest"
-        python-version: "3.10"
-        channels: conda-forge
-        auto-activate-base: false
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-    - name: Install Conda Dependencies
-      run: |
-        conda install mamba
-        mamba install compilers pytest bfio --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt --file ${{github.workspace}}/ci-utils/envs/conda_py.txt
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: anaconda-client-env
+          miniconda-version: "latest"
+          python-version: "3.10"
+          channels: conda-forge
+          auto-activate-base: false
 
-    - name: Install Nyxus
-      working-directory: ${{github.workspace}}
-      run: CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DALLEXTRAS=ON" python -m pip install . -vv
+      - name: Install Conda Dependencies
+        run: |
+          conda install -y mamba
+          mamba install -y compilers pytest bfio \
+            --file "${{ github.workspace }}/ci-utils/envs/conda_cpp.txt" \
+            --file "${{ github.workspace }}/ci-utils/envs/conda_py.txt"
 
-    - name: Run PyTest
-      working-directory: ${{github.workspace}}
-      run: python -m pytest tests/python/ -vv
+      - name: Install Nyxus
+        working-directory: ${{ github.workspace }}
+        run: >
+          CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$CONDA_PREFIX
+          -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
+          -DALLEXTRAS=ON"
+          python -m pip install . -vv
+
+      - name: Run PyTest
+        working-directory: ${{ github.workspace }}
+        run: python -m pytest tests/python/ -vv
