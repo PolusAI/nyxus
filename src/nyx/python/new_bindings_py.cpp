@@ -877,9 +877,11 @@ void use_gpu (uint64_t instid, bool yes)
  * 
  * @return std::vector<std::map<std::string, std::string>> Properties of gpu
  */
-static std::vector<std::map<std::string, std::string>> get_gpu_properties() {
+static std::vector<std::map<std::string, std::string>> get_gpu_properties(uint64_t instid) 
+{
     #ifdef USE_GPU
-        return theEnvironment.get_gpu_properties();
+    Environment& env = Nyxus::findenv(instid);
+    return env.get_gpu_properties();
     #else 
         std::vector<std::map<std::string, std::string>> empty;
         return empty;
@@ -1041,7 +1043,7 @@ PYBIND11_MODULE(backend, m)
     m.def("findrelations_imp",          &findrelations_imp,         "Find relations in segmentation mask images");
     m.def("gpu_available_imp",          &gpu_available_imp,         "Check if CUDA gpu is available");
     m.def("use_gpu",                    &use_gpu,                   "Enable/disable GPU features");
-    m.def("get_gpu_props",              &get_gpu_properties,        "Get properties of CUDA gpu");
+    m.def("get_gpu_props",              &get_gpu_properties,        "Get properties of the active CUDA gpu device");
     m.def("blacklist_roi_imp",          &blacklist_roi_imp,         "Set up a global or per-mask file blacklist definition");
     m.def("clear_roi_blacklist_imp",    &clear_roi_blacklist_imp,   "Clear the ROI black list");
     m.def("roi_blacklist_get_summary_imp",  &roi_blacklist_get_summary_imp, "Returns a summary of the ROI blacklist");

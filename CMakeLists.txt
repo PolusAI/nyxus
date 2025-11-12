@@ -133,7 +133,6 @@ option(RUN_GTEST "Downloads google unit test API and runs google test scripts to
 #==== Source files
 set(SOURCE
 	src/nyx/3rdparty/dsyevj3.cpp
-	src/nyx/arrow_output_stream.cpp
 	src/nyx/features/basic_morphology.cpp
 	src/nyx/features/caliper_feret.cpp
 	src/nyx/features/caliper_martin.cpp
@@ -197,6 +196,8 @@ set(SOURCE
 	src/nyx/io/nifti/nifti2_io.cpp
 	src/nyx/io/nifti/znzlib.cpp
 	src/nyx/arrow_helpers.cpp
+	src/nyx/arrow_output_stream.cpp
+	src/nyx/cache.cpp
 	src/nyx/cli_anisotropy_options.cpp
 	src/nyx/cli_fpimage_options.cpp
 	src/nyx/cli_gabor_options.cpp
@@ -347,6 +348,7 @@ if(USEGPU)
 
 	include_directories("${CUDAToolkit_INCLUDE_DIRS}")
 	set(GPU_SOURCE_FILES
+		src/nyx/gpu/cache.cu
 		src/nyx/gpu/erosion.cu
 		src/nyx/gpu/gabor.cu
 		src/nyx/gpu/gpu_helpers.cu
