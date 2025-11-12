@@ -34,8 +34,8 @@ namespace Nyxus
 	using Roidata = std::unordered_map<int, LR>;
 
 	// Permanent column names of the feature output table
-	const char colname_intensity_image[] = "intensity_file",
-		colname_mask_image[] = "mask_file",
+	const char colname_intensity_image[] = "intensity_image",
+		colname_mask_image[] = "mask_image",
 		colname_roi_label[] = "ROI_label";
 
 	// segmented 2D workflow
