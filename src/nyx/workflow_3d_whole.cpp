@@ -259,8 +259,7 @@ namespace Nyxus
 			auto [status, msg] = env.arrow_stream.create_arrow_file(
 				saveOption,
 				get_arrow_filename(outputPath, env.nyxus_result_fname, saveOption),
-				Nyxus::get_header (env),
-				env.resultOptions.noval());
+				Nyxus::get_header (env));
 
 			if (!status)
 			{

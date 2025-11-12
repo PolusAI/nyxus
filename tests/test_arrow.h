@@ -185,14 +185,11 @@ bool are_tables_equal(const arrow::Table& table1, const arrow::Table& table2) {
     return true;
 }
 
-
 void test_arrow() 
 {
-    Environment e;
+    auto temp = fs::temp_directory_path() / "nyxus_temp/";
 
-    auto temp = fs::temp_directory_path()/"nyxus_temp/";
-
-    if(!fs::exists(temp)) {
+    if (!fs::exists(temp)) {
         auto created = fs::create_directory(temp);
     }
 
@@ -205,19 +202,19 @@ void test_arrow()
     Nyxus::SaveOption saveOption = Nyxus::SaveOption::saveArrowIPC;
 
     // create arrow writer
-    auto [status, msg] = e.arrow_stream.create_arrow_file(saveOption, outputPath, std::get<0>(features), 0.0/*soft noval*/);
+    auto [status, msg] = arrow_stream.create_arrow_file(saveOption, outputPath, std::get<0>(features));
     if (!status) {
         FAIL() << "Error creating Arrow file: " << msg.value() << std::endl;
     }
 
     // write features
-    auto [status1, msg1] = e.arrow_stream.write_arrow_file(std::get<1>(features));
+    auto [status1, msg1] = arrow_stream.write_arrow_file(std::get<1>(features));
     if (!status1) {
         FAIL() << "Error writing Arrow file: " << msg1.value() << std::endl;
     }
 
     // close arrow file after use
-    auto [status2, msg2] = e.arrow_stream.close_arrow_file();
+    auto [status2, msg2] = arrow_stream.close_arrow_file();
     if (!status2) {
         FAIL() << "Error closing Arrow file: " << msg2.value() << std::endl;
     }
@@ -233,35 +230,31 @@ void test_arrow()
     std::vector<double> numeric_columns;
     int number_of_rows = row_data.size();
 
-    for(const auto& row: row_data){
+    for (const auto& row : row_data) {
         string_columns.push_back(std::get<0>(row)[0]);
         string_columns.push_back(std::get<0>(row)[1]);
         numeric_columns.push_back(std::get<1>(row));
-        for (const auto& data: std::get<2>(row)) {
+        for (const auto& data : std::get<2>(row)) {
             numeric_columns.push_back(data);
         }
     }
 
     auto features_table = create_features_table(std::get<0>(features),
-                                                string_columns,
-                                                numeric_columns,
-                                                number_of_rows);
-
+        string_columns,
+        numeric_columns,
+        number_of_rows);
 
     ASSERT_TRUE(are_tables_equal(*results_table, *features_table));
 
-
     auto is_deleted = fs::remove_all(temp);
 
-    if(!is_deleted) {
+    if (!is_deleted) {
         FAIL() << "Error deleting arrow file." << std::endl;
     }
 }
 
 void test_parquet() 
 {
-    Environment e;
-
     auto temp = fs::temp_directory_path()/"nyxus_temp/";
 
     if(!fs::exists(temp)) {
@@ -277,19 +270,19 @@ void test_parquet()
     Nyxus::SaveOption saveOption = Nyxus::SaveOption::saveParquet;
 
     // create arrow writer
-    auto [status, msg] = e.arrow_stream.create_arrow_file(saveOption, outputPath, std::get<0>(features), 0.0/*soft noval*/);
+    auto [status, msg] = arrow_stream.create_arrow_file(saveOption, outputPath, std::get<0>(features));
     if (!status) {
         FAIL() << "Error creating Arrow file: " << msg.value() << std::endl;
     }
 
     // write features
-    auto [status1, msg1] = e.arrow_stream.write_arrow_file(std::get<1>(features));
+    auto [status1, msg1] = arrow_stream.write_arrow_file(std::get<1>(features));
     if (!status1) {
         FAIL() << "Error writing Arrow file: " << msg1.value() << std::endl;
     }
 
     // close arrow file after use
-    auto [status2, msg2] = e.arrow_stream.close_arrow_file();
+    auto [status2, msg2] = arrow_stream.close_arrow_file();
     if (!status2) {
         FAIL() << "Error closing Arrow file: " << msg2.value() << std::endl;
     }
