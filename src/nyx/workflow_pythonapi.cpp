@@ -98,7 +98,7 @@ namespace Nyxus
 		if (write_apache) 
 		{
 			env.arrow_stream = ArrowOutputStream();
-			auto [status, msg] = env.arrow_stream.create_arrow_file (saveOption, get_arrow_filename(outputPath, env.nyxus_result_fname, saveOption), Nyxus::get_header(env), env.resultOptions.noval());
+			auto [status, msg] = env.arrow_stream.create_arrow_file (saveOption, get_arrow_filename(outputPath, env.nyxus_result_fname, saveOption), Nyxus::get_header(env));
 			if (!status) 
 				return { "error creating Arrow file: " + msg.value() };
 		}
