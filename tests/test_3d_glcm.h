@@ -61,51 +61,6 @@ static std::tuple<std::string, std::string, int> get_3d_segmented_phantom()
 
 void test_3glcm_feature (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
-#if 0
-    Fsettings s;
-
-    // get segment info
-    auto [ipath, mpath, label] = get_3d_segmented_phantom();
-    ASSERT_TRUE(fs::exists(ipath));
-    ASSERT_TRUE(fs::exists(mpath));
-
-    // mock the 3D workflow
-    Environment e;
-    clear_slide_rois(e.uniqueLabels, e.roiData);
-    ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/));
-    std::vector<int> batch = { label };   // expecting this roi label after metrics gathering
-    ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/));
-    ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
-
-    // make it find the feature code by name
-    int fcode = -1;
-    ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(fname, fcode));
-    // ... and that it's the feature we expect
-    ASSERT_TRUE((int)expecting_fcode == fcode);
-
-    // set feature's state
-    D3_GLCM_feature::n_levels = 100;
-    D3_GLCM_feature::offset = 1;
-    D3_GLCM_feature::symmetric_glcm = false;
-    D3_GLCM_feature::angles = { 0, 45, 90, 135 };
-    Environment::ibsi_compliance = false;
-
-    // extract the feature
-    LR & r = e.roiData[label];
-    ASSERT_NO_THROW(r.initialize_fvals());
-    D3_GLCM_feature f;
-    ASSERT_NO_THROW(f.calculate(r, s));
-    f.save_value(r.fvals);
-
-    // aggregate all the angles
-    double atot = r.fvals[fcode][0] + r.fvals[fcode][1] + r.fvals[fcode][2] + r.fvals[fcode][3];
-
-    // verdict
-    ASSERT_TRUE(agrees_gt(atot, d3glcm_GT[fname], 10.));
-
-    *****************************
-    #endif
-
     // get segment info
     auto [ipath, mpath, label] = get_3d_segmented_phantom();
     ASSERT_TRUE(fs::exists(ipath));

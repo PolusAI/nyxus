@@ -14,6 +14,7 @@
 
 #include <arrow/csv/api.h>
 
+#include "../src/nyx/output_types.h"
 #include "test_data.h"
 
 #include "../src/nyx/arrow_output_stream.h"
@@ -234,7 +235,7 @@ void test_arrow()
         string_columns.push_back(std::get<0>(row)[0]);
         string_columns.push_back(std::get<0>(row)[1]);
         numeric_columns.push_back(std::get<1>(row));
-        for (const auto& data : std::get<2>(row)) {
+        for (const auto& data : std::get<3>(row)) {
             numeric_columns.push_back(data);
         }
     }
@@ -302,7 +303,7 @@ void test_parquet()
         string_columns.push_back(std::get<0>(row)[0]);
         string_columns.push_back(std::get<0>(row)[1]);
         numeric_columns.push_back(std::get<1>(row));
-        for (const auto& data: std::get<2>(row)) {
+        for (const auto& data: std::get<3>(row)) {
             numeric_columns.push_back(data);
         }
     }
