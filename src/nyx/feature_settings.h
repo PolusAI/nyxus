@@ -26,6 +26,12 @@ enum class NyxSetting : int
 	USEGPU,
 	VERBOSLVL,
 	IBSI,
+	// GLCM
+	GLCM_GREYDEPTH,
+	GLCM_OFFSET,
+	GLCM_NUMANG,
+	GLCM_SPARSEINTENS,
+	//
 	__COUNT__
 };
 

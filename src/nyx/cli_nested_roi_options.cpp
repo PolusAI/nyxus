@@ -105,6 +105,14 @@ std::string NestedRoiOptions::get_last_er_msg()
 
 namespace Nyxus 
 {
+	const std::vector<std::string> mandatory_output_columns
+	{
+		Nyxus::colname_intensity_image,
+		Nyxus::colname_mask_image,
+		Nyxus::colname_roi_label,
+		Nyxus::colname_t_index
+	};
+
 	std::unordered_map <int, std::vector<int>> parentsChildren;
 	std::unordered_map <int, HieLR> roiDataP, roiDataC;
 

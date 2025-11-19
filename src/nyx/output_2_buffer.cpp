@@ -43,7 +43,7 @@ namespace Nyxus
 
 		if (fill_header)
 		{
-			rescache.add_to_header({ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label });
+			rescache.add_to_header({ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label, Nyxus::colname_t_index });
 
 			for (auto& enabdF : F)
 			{
@@ -167,6 +167,7 @@ namespace Nyxus
 		rescache.add_string (ifpath);
 		rescache.add_string (mfpath);
 		rescache.add_numeric (r.label);
+		rescache.add_numeric (-999.888);
 
 		// - features
 		for (auto& enabdF : F)
@@ -284,7 +285,7 @@ namespace Nyxus
 		// -- Header
 		if (fill_header)
 		{
-			rescache.add_to_header({ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label });
+			rescache.add_to_header({ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label, Nyxus::colname_t_index });
 
 			for (auto& enabdF : F)
 			{
@@ -418,9 +419,11 @@ namespace Nyxus
 			std::string segfname = pseg.filename().string(),
 				intfname = pint.filename().string();
 
-			rescache.add_string(intfname);
-			rescache.add_string(segfname);
-			rescache.add_numeric(l);
+			rescache.add_string (intfname);
+			rescache.add_string (segfname);
+			rescache.add_numeric (l);
+			rescache.add_numeric (-999.888);
+
 			for (auto& enabdF : F)
 			{
 				auto fc = std::get<1>(enabdF);

@@ -1,9 +1,10 @@
+#define NOMINMAX
 #include <iostream>
+#include "nyxus_dicom_loader.h"
 #include "image_loader.h"
 #include "grayscale_tiff.h"
 #include "raw_tiff.h"
 #include "omezarr.h"
-#include "nyxus_dicom_loader.h"
 #include "dirs_and_files.h"
 #include "helpers/fsystem.h"
 #include "raw_nifti.h"

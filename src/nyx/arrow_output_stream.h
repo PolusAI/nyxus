@@ -6,6 +6,7 @@
 #include <tuple>
 #include <vector>
 
+#include "output_types.h"
 #include "output_writers.h"
 #include "save_option.h"
 
@@ -33,7 +34,7 @@ namespace Nyxus
             const std::string& output_path,
             const std::vector<std::string>& header);
         std::string get_arrow_path();
-        std::tuple<bool, std::optional<std::string>> write_arrow_file(const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features);
+        std::tuple<bool, std::optional<std::string>> write_arrow_file(const std::vector<FtableRow>& features);
         std::tuple<bool, std::optional<std::string>> close_arrow_file();
     };
 

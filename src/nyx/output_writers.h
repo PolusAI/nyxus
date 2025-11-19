@@ -11,6 +11,7 @@
 #include <arrow/io/api.h>
 #include <arrow/ipc/api.h>
 #include <parquet/arrow/writer.h>
+#include "output_types.h"
 
 /**
  * @brief Base class for creating Apache Arrow output writers
@@ -35,7 +36,7 @@ public:
      * @param number_of_rows Number of rows
      * @return arrow::Status
      */
-    virtual arrow::Status write(const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features) = 0;
+    virtual arrow::Status write(const std::vector<FtableRow> & features) = 0;
 
     virtual arrow::Status close() = 0;
 
@@ -64,7 +65,7 @@ public:
     ParquetWriter(const std::string& output_file, const std::vector<std::string>& header);
 
 
-    arrow::Status write(const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features) override;
+    arrow::Status write(const std::vector<FtableRow> & features) override;
 
     arrow::Status close() override;
 };
@@ -98,7 +99,7 @@ public:
      * @param number_of_rows Number of rows
      * @return arrow::Status
      */
-    arrow::Status write(const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features) override;
+    arrow::Status write(const std::vector<FtableRow> & features) override;
 
 
     arrow::Status close() override;

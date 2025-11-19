@@ -174,9 +174,7 @@ namespace Nyxus
 		else 
 			if (saveOption == SaveOption::saveCSV)
 			{
-				if (save_features_2_csv_wholeslide(env, vroi, p.fname_int, "", outputPath, 
-					0 // pass 0 as t_index, unused in 2D scenario
-					) == false)
+				if (save_features_2_csv_wholeslide(env, vroi, p.fname_int, "", outputPath, 0 /*pass 0 as t_index is not used in 2D scenario*/) == false)
 				{
 					std::cout << "error saving results to CSV file, details: " << __FILE__ << ":" << __LINE__ << std::endl;
 					rv = 2;

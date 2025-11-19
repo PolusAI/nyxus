@@ -61,9 +61,9 @@ ParquetWriter::ParquetWriter(const std::string& output_file, const std::vector<s
     }
 }
 
-arrow::Status ParquetWriter::write(const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features) {
+arrow::Status ParquetWriter::write(const std::vector<FtableRow> & features) {
 
-    int num_rows = features.size();
+    auto num_rows = features.size();
 
     std::vector<std::shared_ptr<arrow::Array>> arrays;
 
@@ -73,7 +73,7 @@ arrow::Status ParquetWriter::write(const std::vector<std::tuple<std::vector<std:
 
     arrow::Status append_status;
     // construct intensity column
-    for (int i = 0; i < num_rows; ++i) {
+    for (auto i = 0; i < num_rows; ++i) {
         append_status = string_builder.Append(std::get<0>(features[i])[0]);
 
         if (!append_status.ok()) {
@@ -132,7 +132,7 @@ arrow::Status ParquetWriter::write(const std::vector<std::tuple<std::vector<std:
     arrays.push_back(labels_array);
 
     // construct columns for each feature 
-    for (int j = 0; j < std::get<2>(features[0]).size(); ++j) {
+    for (int j = 0; j < std::get<3>(features[0]).size(); ++j) {
 
         arrow::DoubleBuilder builder;
         std::shared_ptr<arrow::Array> double_array;
@@ -140,7 +140,7 @@ arrow::Status ParquetWriter::write(const std::vector<std::tuple<std::vector<std:
         for (int i = 0; i < num_rows; ++i)
         {
             // prevent NANs in the output
-            double fval = std::get<2>(features[i])[j];
+            double fval = std::get<3>(features[i])[j];
             fval = Nyxus::force_finite_number(fval, /*xxx Nyxus::theEnvironment.resultOptions.noval()*/0.00);
             append_status = builder.Append(fval);
 
@@ -222,7 +222,7 @@ ArrowIPCWriter::ArrowIPCWriter(const std::string& output_file, const std::vector
 }
 
 
-arrow::Status ArrowIPCWriter::write(const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features) {
+arrow::Status ArrowIPCWriter::write(const std::vector<FtableRow> & features) {
 
 
     int num_rows = features.size();
@@ -294,7 +294,7 @@ arrow::Status ArrowIPCWriter::write(const std::vector<std::tuple<std::vector<std
     arrays.push_back(labels_array);
 
     // construct columns for each feature 
-    for (int j = 0; j < std::get<2>(features[0]).size(); ++j) {
+    for (int j = 0; j < std::get<3>(features[0]).size(); ++j) {
 
         arrow::DoubleBuilder builder;
         std::shared_ptr<arrow::Array> double_array;
@@ -302,7 +302,7 @@ arrow::Status ArrowIPCWriter::write(const std::vector<std::tuple<std::vector<std
         for (int i = 0; i < num_rows; ++i)
         {
             // prevent NANs in the output
-            double fval = std::get<2>(features[i])[j];
+            double fval = std::get<3>(features[i])[j];
             fval = Nyxus::force_finite_number(fval, /* xxx Nyxus::theEnvironment.resultOptions.noval()*/ 0.00);
             append_status = builder.Append(fval);
 

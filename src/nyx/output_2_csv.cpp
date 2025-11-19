@@ -76,6 +76,9 @@ namespace Nyxus
 		// ROI label
 		head.push_back (Nyxus::colname_roi_label);
 
+		// time
+		head.push_back (Nyxus::colname_t_index);
+
 		// Optional columns
 		for (auto& enabdF : F)
 		{
@@ -190,13 +193,6 @@ namespace Nyxus
 			retval = env.output_dir + "/" + env.nyxus_result_fname + ".csv";
 		return retval;
 	}
-
-	const std::vector<std::string> mandatory_output_columns
-	{
-		Nyxus::colname_intensity_image, 
-		Nyxus::colname_mask_image, 
-		Nyxus::colname_roi_label 
-	};
 
 	static std::mutex mutex1;
 
@@ -483,7 +479,7 @@ namespace Nyxus
 			{
 				// aggregate
 				const auto& tup0 = allres[0];
-				const auto& v0 = std::get<2>(tup0);
+				const auto& v0 = std::get<3>(tup0);
 				auto n_feats = v0.size();
 
 				std::vector<double> a (n_feats);
@@ -495,7 +491,7 @@ namespace Nyxus
 					// we ned to add Skipping blacklisted ROI 
 					// ...
 
-					const auto& v = std::get<2>(tup);
+					const auto& v = std::get<3>(tup);
 					for (size_t i = 0; i < n_feats; i++)
 					{
 						double x = v[i],
@@ -549,9 +545,6 @@ namespace Nyxus
 				fs::path pseg (sli.fname_seg), 
 					pint (sli.fname_int);
 				ssVals << pint.filename() << "," << pseg.filename();
-
-				// time frame index
-				ssVals << "," << t_index;
 
 				// annotation
 				if (env.resultOptions.need_annotation())
@@ -725,13 +718,13 @@ namespace Nyxus
 		return true;
 	}
 
-	std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> get_feature_values_roi (
+	std::vector<FtableRow> get_feature_values_roi (
 		const FeatureSet & fset,
-		const LR& r,
-		const std::string& ifpath,
-		const std::string& mfpath)
+		const LR & r,
+		const std::string & ifpath,
+		const std::string & mfpath)
 	{
-		std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> features;
+		std::vector<FtableRow> features;
 
 		// user's feature selection
 		std::vector<std::tuple<std::string, int>> F = fset.getEnabledFeatures();
@@ -840,18 +833,18 @@ namespace Nyxus
 		textcols.push_back ("");
 		int roilabl = r.label; // whole-slide roi #
 
-		features.push_back (std::make_tuple(textcols, roilabl, fvals));
+		features.push_back (std::make_tuple(textcols, roilabl, -999.88, fvals));
 
 		return features;
 	}
 
-	std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> get_feature_values (
+	std::vector<FtableRow> get_feature_values (
 		const FeatureSet & fset, 
 		const Uniqueids & uniqueLabels, 
 		const Roidata & roiData,
 		const Dataset & dataset)
 	{
-		std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> features;
+		std::vector<FtableRow> features;
 
 		// Sort the labels
 		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
@@ -974,7 +967,7 @@ namespace Nyxus
 				feature_values.push_back(vv[0]);
 			}
 
-			features.push_back(std::make_tuple(filenames, l, feature_values));
+			features.push_back (std::make_tuple(filenames, l, -999.888, feature_values));
 		}
 
 		return features;

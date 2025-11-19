@@ -3,6 +3,7 @@
 #include <cmath>
 #include <ctime>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -439,6 +440,14 @@ namespace Nyxus
 
 	inline std::string virguler_real (double x)
 	{
+		// is 'x' special or weird?
+		double lowest = (std::numeric_limits<double>::lowest)();
+		if (x == lowest)
+			return "<LOWEST>";
+		double biggest = (std::numeric_limits<double>::max)();
+		if (x == biggest)
+			return "<BIGGEST>";
+
 		// integer part
 		size_t y = (size_t) std::abs(x);
 

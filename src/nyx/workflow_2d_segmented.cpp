@@ -328,9 +328,7 @@ namespace Nyxus
 			else 
 				if (saveOption == SaveOption::saveCSV)
 				{
-					ok = save_features_2_csv (env, ifp, lfp, outputPath, 
-						0,	// pass 0 as t_index, unused in 2D scenario
-						env.resultOptions.need_aggregation());
+					ok = save_features_2_csv (env, ifp, lfp, outputPath, 0/*pass 0 as t_index is not used in 2D scenario*/ , env.resultOptions.need_aggregation());
 
 					if (ok == false)
 					{

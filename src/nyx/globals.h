@@ -20,6 +20,7 @@
 #include "arrow_output_stream.h"
 #include "nested_feature_aggregation.h" // Nested ROI
 #include "cli_nested_roi_options.h"
+#include "output_types.h"
 
 #ifdef WITH_PYTHON_H
 	#include <pybind11/pybind11.h>
@@ -36,7 +37,8 @@ namespace Nyxus
 	// Permanent column names of the feature output table
 	const char colname_intensity_image[] = "intensity_image",
 		colname_mask_image[] = "mask_image",
-		colname_roi_label[] = "ROI_label";
+		colname_roi_label[] = "ROI_label",
+		colname_t_index[] = "t_index";
 
 	// segmented 2D workflow
 	int processDataset_2D_segmented(
@@ -135,16 +137,18 @@ namespace Nyxus
 		const std::string& mfpath);
 	std::tuple<bool, std::optional<std::string>> save_features_2_apache_wholeslide (Environment & env, const LR & wsi_roi, const std::string & wsi_path);
 
-	std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> get_feature_values (
+	std::vector<FtableRow> get_feature_values (
 		const FeatureSet & user_selected_features, 
 		const Uniqueids & uniqueLabels, 
 		const Roidata & roiData,
 		const Dataset & dataset);
-	std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> get_feature_values_roi (
+
+	std::vector<FtableRow> get_feature_values_roi (
 		const FeatureSet & fset,
 		const LR& r,
-		const std::string& ifpath,
-		const std::string& mfpath);
+		const std::string & ifpath,
+		const std::string & mfpath);
+
 	std::vector<std::string> get_header (Environment & env);
 	std::string get_arrow_filename(const std::string& output_path, const std::string& default_filename, const SaveOption& arrow_file_type);
 
