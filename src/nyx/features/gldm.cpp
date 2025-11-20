@@ -13,7 +13,7 @@ GLDMFeature::GLDMFeature() : FeatureMethod("GLDMFeature")
 	provide_features (GLDMFeature::featureset);
 }
 
-void GLDMFeature::calculate(LR& r)
+void GLDMFeature::calculate (LR& r, const Fsettings& s)
 {	
 	clear_buffers();
 
@@ -33,7 +33,7 @@ void GLDMFeature::calculate(LR& r)
 		fv_SDLGLE =
 		fv_SDHGLE =
 		fv_LDLGLE =
-		fv_LDHGLE = theEnvironment.resultOptions.noval();
+		fv_LDHGLE = STNGS_NAN(s);
 
 		return;
 	}
@@ -47,8 +47,8 @@ void GLDMFeature::calculate(LR& r)
 	pixData& D = M.WriteablePixels();
 
 	// bin intensities
-	auto greyInfo = theEnvironment.get_coarse_gray_depth();
-	if (Nyxus::theEnvironment.ibsi_compliance)
+	auto greyInfo = STNGS_NGREYS(s); // former theEnvironment.get_coarse_gray_depth()
+	if (STNGS_IBSI(s))	// Nyxus::theEnvironment.ibsi_compliance
 		greyInfo = 0;
 	auto& imR = r.aux_image_matrix.ReadablePixels();
 	bin_intensities (D, imR, r.aux_min, r.aux_max, greyInfo);
@@ -220,7 +220,7 @@ void GLDMFeature::calculate(LR& r)
 		fv_SDLGLE =
 		fv_SDHGLE =
 		fv_LDLGLE =
-		fv_LDHGLE = theEnvironment.resultOptions.noval();
+		fv_LDHGLE = STNGS_NAN(s);
 	}
 	else
 	{
@@ -255,7 +255,7 @@ void GLDMFeature::clear_buffers()
 
 void GLDMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
 
-void GLDMFeature::osized_calculate (LR& r, ImageLoader&)
+void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
 	clear_buffers();
 
@@ -275,7 +275,7 @@ void GLDMFeature::osized_calculate (LR& r, ImageLoader&)
 	// Prepare ROI's intensity range for normalize_I()
 	PixIntens piRange = r.aux_max - r.aux_min;
 
-	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+	unsigned int nGrays = STNGS_NGREYS(s); // former theEnvironment.get_coarse_gray_depth()
 
 	size_t height = D.get_height(),
 		width = D.get_width();
@@ -285,7 +285,7 @@ void GLDMFeature::osized_calculate (LR& r, ImageLoader&)
 		for (size_t col = 0; col < width; col++)
 		{
 			// Find a non-blank pixel
-			PixIntens pi = Nyxus::to_grayscale((unsigned int) D.yx(row, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+			PixIntens pi = Nyxus::to_grayscale((unsigned int) D.yx(row, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));		// former Environment::ibsi_compliance
 
 			if (pi == 0)
 				continue;
@@ -680,14 +680,14 @@ double GLDMFeature::calc_LDHGLE()
 	return retval;
 }
 
-void GLDMFeature::extract (LR& r)
+void GLDMFeature::extract (LR& r, const Fsettings& s)
 {		
 	GLDMFeature gldm;
-	gldm.calculate(r);
-	gldm.save_value(r.fvals);
+	gldm.calculate (r, s);
+	gldm.save_value (r.fvals);
 }
 
-void GLDMFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void GLDMFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -698,8 +698,8 @@ void GLDMFeature::parallel_process_1_batch (size_t start, size_t end, std::vecto
 			continue;
 
 		GLDMFeature gldm;
-		gldm.calculate(r);
-		gldm.save_value(r.fvals);
+		gldm.calculate (r, s);
+		gldm.save_value (r.fvals);
 	}
 }
 

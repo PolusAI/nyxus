@@ -1,7 +1,6 @@
 #include "caliper.h"
 #include "../environment.h"
 #include "../helpers/helpers.h"
-#include "../parallel.h"
 #include "rotation.h"
 
 using namespace Nyxus;
@@ -13,7 +12,7 @@ CaliperFeretFeature::CaliperFeretFeature() : FeatureMethod("CaliperFeretFeature"
 	add_dependencies ({ Feature2D::CONVEX_HULL_AREA });
 }
 
-void CaliperFeretFeature::calculate(LR& r)
+void CaliperFeretFeature::calculate (LR& r, const Fsettings& s)
 {
 	// intercept void ROIs
 	if (r.convHull_CH.size() == 0)
@@ -25,7 +24,7 @@ void CaliperFeretFeature::calculate(LR& r)
 		_mean =
 		_median =
 		_stdev =
-		_mode = theEnvironment.resultOptions.noval();
+		_mode = s[(int)NyxSetting::SOFTNAN].rval; // former theEnvironment.resultOptions.noval()
 
 		return;
 	}
@@ -61,7 +60,7 @@ void CaliperFeretFeature::calculate(LR& r)
 		_mean =
 		_median =
 		_stdev =
-		_mode = theEnvironment.resultOptions.noval();
+		_mode = s[(int)NyxSetting::SOFTNAN].rval;	// former theEnvironment.resultOptions.noval()
 	}
 }
 
@@ -101,29 +100,21 @@ void CaliperFeretFeature::calculate_angled_caliper_measurements (const std::vect
 	}
 }
 
-void CaliperFeretFeature::osized_calculate(LR& r, ImageLoader&)
+void CaliperFeretFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
 	// Calculating this feature does not require access to the massive ROI pixel cloud, 
 	// so we can reuse the trivial calculate()
-	calculate(r);
+	calculate (r, s);
 }
 
-void CaliperFeretFeature::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
-{
-	size_t jobSize = roi_labels.size(),
-		workPerThread = jobSize / n_threads;
-
-	runParallel(CaliperFeretFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
-}
-
-void CaliperFeretFeature::extract (LR& r)
+void CaliperFeretFeature::extract (LR& r, const Fsettings& s)
 {
 		CaliperFeretFeature f;
-		f.calculate(r);
-		f.save_value(r.fvals);
+		f.calculate (r, s);
+		f.save_value (r.fvals);
 }
 
-void CaliperFeretFeature::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void CaliperFeretFeature::parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	// Calculate the feature for each batch ROI item 
 	for (auto i = firstitem; i < lastitem; i++)
@@ -137,6 +128,6 @@ void CaliperFeretFeature::parallel_process_1_batch(size_t firstitem, size_t last
 			continue;
 
 		// Calculate the feature and save it in ROI's csv-friendly buffer 'fvals'
-		extract(r);
+		extract (r, s);
 	}
 }

@@ -1,9 +1,11 @@
 #pragma once
 
 #include <unordered_map>
+#include "../dataset.h"
 #include "../roi_cache.h"
 #include "image_matrix.h"
 #include "../feature_method.h"
+#include "../feature_settings.h"
 #include "texture_feature.h"
 
 
@@ -122,7 +124,6 @@ public:
 	};
 
 	static int offset;	// default value: 1
-	static int n_levels;	// default value: 0
 	static bool symmetric_glcm;	// default value: false
 	static std::vector<int> angles;	// default value: {0,45,90,135} (the supreset)
 	double sum_p = 0; // sum of P matrix for normalization
@@ -133,16 +134,16 @@ public:
 	}
 
 	GLCMFeature();
-	void calculate(LR& r);
+	void calculate (LR& roi, const Fsettings& settings);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
-	void osized_calculate(LR& r, ImageLoader& imloader);
+	void osized_calculate (LR& roi, const Fsettings& settings, ImageLoader& imloader);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
-	static void extract (LR& roi);
-	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+	static void extract (LR& roi, const Fsettings& settings);
+	static void parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & fst, const Dataset & ds);
 
 private:
 
-	void Extract_Texture_Features2_NT(int angle, WriteImageMatrix_nontriv& grays, PixIntens min_val, PixIntens max_val);
+	void Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nontriv& grays, PixIntens min_val, PixIntens max_val);
 	void calculateCoocMatAtAngle_NT(
 		// out
 		SimpleMatrix<double>& matrix,
@@ -154,12 +155,13 @@ private:
 		PixIntens max_val,
 		bool normalize);
 
-	void Extract_Texture_Features2 (int angle, const ImageMatrix& grays, PixIntens min_val, PixIntens max_val);
+	void Extract_Texture_Features2 (const Fsettings& settings, int angle, const ImageMatrix& grays, PixIntens min_val, PixIntens max_val);
 
 	void calculateCoocMatAtAngle(
 		// out
 		SimpleMatrix<double>& p_matrix,
 		// in
+		const Fsettings& settings,
 		int dx, int dy,
 		const ImageMatrix& grays,
 		PixIntens min_val,

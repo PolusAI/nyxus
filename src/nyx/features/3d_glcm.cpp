@@ -6,7 +6,6 @@
 using namespace Nyxus;
 
 int D3_GLCM_feature::offset = 1;
-int D3_GLCM_feature::n_levels = 0;
 bool D3_GLCM_feature::symmetric_glcm = false;
 std::vector<int> D3_GLCM_feature::angles = { 0, 45, 90, 135 };
 
@@ -15,7 +14,7 @@ D3_GLCM_feature::D3_GLCM_feature() : FeatureMethod("D3_GLCM_feature")
 	provide_features (D3_GLCM_feature::featureset);
 }
 
-void D3_GLCM_feature::calculate (LR& r)
+void D3_GLCM_feature::calculate (LR& r, const Fsettings& s)
 {
 	// clear the feature values buffers
 	clear_result_buffers();
@@ -28,18 +27,15 @@ void D3_GLCM_feature::calculate (LR& r)
 	SimpleCube<PixIntens> D;
 	D.allocate (w, h, d);
 
-	auto greyInfo = Nyxus::theEnvironment.get_coarse_gray_depth();
-	auto greyInfo_localFeature = D3_GLCM_feature::n_levels;
-	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
-		greyInfo = greyInfo_localFeature;
-	if (Nyxus::theEnvironment.ibsi_compliance)
+	auto greyInfo = STNGS_NGREYS(s);	// former Nyxus::theEnvironment.get_coarse_gray_depth()
+	if (STNGS_IBSI(s))	// former Nyxus::theEnvironment.ibsi_compliance
 		greyInfo = 0;
 
 	bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo);
 
 	// calculate features for all the directions
 	for (auto a : D3_GLCM_feature::angles)
-		extract_texture_features_at_angle (a, D, r.aux_min, r.aux_max);
+		extract_texture_features_at_angle (a, D, r.aux_min, r.aux_max, STNGS_NGREYS(s), STNGS_IBSI(s), STNGS_NAN(s));
 }
 
 void D3_GLCM_feature::clear_result_buffers()
@@ -151,98 +147,7 @@ void D3_GLCM_feature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature3D::GLCM_VARIANCE_AVE][0] = calc_ave(fvals_variance);
 }
 
-void D3_GLCM_feature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
-{
-	for (auto i = start; i < end; i++)
-	{
-		int lab = (*ptrLabels)[i];
-		LR& r = (*ptrLabelData)[lab];
-
-		// Skip calculation in case of bad data
-
-		//
-		// !!! We need to smart-select the greyInfo rather than just theEnvironment.get_coarse_gray_depth()
-		//
-		auto binnedMin = bin_pixel(r.aux_min, r.aux_min, r.aux_max, theEnvironment.get_coarse_gray_depth());
-		auto binnedMax = bin_pixel(r.aux_max, r.aux_min, r.aux_max, theEnvironment.get_coarse_gray_depth());
-		if (binnedMin == binnedMax)
-		{
-			auto w = theEnvironment.resultOptions.noval();		// safe NAN
-
-			// assign it to each angled feature value 
-			auto n = angles.size();
-			r.fvals[(int)Feature3D::GLCM_ASM].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_ACOR].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_CLUPROM].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_CLUSHADE].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_CLUTEND].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_CONTRAST].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_CORRELATION].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_DIFAVE].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_DIFENTRO].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_DIFVAR].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_DIS].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_ENERGY].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_ENTROPY].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_HOM1].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_HOM2].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_IDMN].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_ID].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_IDN].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_INFOMEAS1].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_INFOMEAS2].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_IDM].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_IV].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_JAVE].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_JE].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_JMAX].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_JVAR].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_SUMAVERAGE].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_SUMENTROPY].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_SUMVARIANCE].assign(n, w);
-			r.fvals[(int)Feature3D::GLCM_VARIANCE].assign(n, w);
-
-			r.fvals[(int)Feature3D::GLCM_ASM_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_ACOR_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_CLUPROM_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_CLUSHADE_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_CLUTEND_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_CONTRAST_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_CORRELATION_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_DIFAVE_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_DIFENTRO_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_DIFVAR_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_DIS_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_ENERGY_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_ENTROPY_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_HOM1_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_ID_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_IDN_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_IDM_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_IDMN_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_IV_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_JAVE_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_JE_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_INFOMEAS1_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_INFOMEAS2_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_JMAX_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_JVAR_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_SUMAVERAGE_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_SUMENTROPY_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_SUMVARIANCE_AVE][0] =
-				r.fvals[(int)Feature3D::GLCM_VARIANCE_AVE][0] = w;
-
-			// No need to calculate features for this ROI
-			continue;
-		}
-
-		D3_GLCM_feature f;
-		f.calculate(r);
-		f.save_value(r.fvals);
-	}
-}
-
-void D3_GLCM_feature::extract_texture_features_at_angle (int angle, const SimpleCube<PixIntens> & binned_greys, PixIntens min_val, PixIntens max_val)
+void D3_GLCM_feature::extract_texture_features_at_angle (int angle, const SimpleCube<PixIntens> & binned_greys, PixIntens min_val, PixIntens max_val, int n_greys, bool ibsi, double soft_nan)
 {
 	for (int kdz = 0; kdz <= 1; kdz++)
 	{
@@ -273,12 +178,12 @@ void D3_GLCM_feature::extract_texture_features_at_angle (int angle, const Simple
 			return;
 		}
 
-		calculateCoocMatAtAngle (P_matrix, dx, dy, dz, binned_greys, min_val, max_val);
+		calculateCoocMatAtAngle (P_matrix, dx, dy, dz, binned_greys, min_val, max_val, n_greys, ibsi);
 
 		// Blank cooc-matrix? -- no point to use it, assign each feature value '0' and return.
 		if (sum_p == 0)
 		{
-			auto _ = theEnvironment.resultOptions.noval(); // safe NAN
+			auto _ = soft_nan;
 			fvals_ASM.push_back(_);
 			fvals_acor.push_back(_);
 			fvals_cluprom.push_back(_);
@@ -319,96 +224,38 @@ void D3_GLCM_feature::extract_texture_features_at_angle (int angle, const Simple
 		calculate_by_row_mean();
 
 		// Compute Haralick statistics 
-		double f;
-		f = theFeatureSet.isEnabled(Feature3D::GLCM_ASM) ? f_asm(P_matrix) : 0.0;
-		fvals_ASM.push_back(f);
-
-		f = theFeatureSet.isEnabled(Feature3D::GLCM_CONTRAST) ? f_contrast(P_matrix) : 0.0;
-		fvals_contrast.push_back(f);
-
-		f = theFeatureSet.isEnabled(Feature3D::GLCM_CORRELATION) ? f_corr() : 0.0;
-		fvals_correlation.push_back(f);
-
-		f = theFeatureSet.isEnabled(Feature3D::GLCM_ENERGY) ? f_energy(P_matrix) : 0.0;
-		fvals_energy.push_back(f);
-
-		f = theFeatureSet.isEnabled(Feature3D::GLCM_HOM1) ? f_homogeneity() : 0.0;
-		fvals_homo.push_back(f);
-
-		f = theFeatureSet.isEnabled(Feature3D::GLCM_VARIANCE) ? f_var(P_matrix) : 0.0;
-		fvals_variance.push_back(f);
-
-		f = theFeatureSet.isEnabled(Feature3D::GLCM_IDM) ? f_idm() : 0.0;
-		fvals_IDM.push_back(f);
-
-		f = theFeatureSet.isEnabled(Feature3D::GLCM_SUMAVERAGE) ? f_savg() : 0.0;
-		fvals_sum_avg.push_back(f);
-
-		f = theFeatureSet.isEnabled(Feature3D::GLCM_SUMENTROPY) ? f_sentropy() : 0.0;
-		fvals_sum_entropy.push_back(f);
-
-		f = theFeatureSet.isEnabled(Feature3D::GLCM_ENTROPY) ? f_entropy(P_matrix) : 0.0;
-		fvals_entropy.push_back(f);
-
-		f = theFeatureSet.isEnabled(Feature3D::GLCM_DIFVAR) ? f_dvar(P_matrix) : 0.0;
-		fvals_diff_var.push_back(f);
-
-		f = theFeatureSet.isEnabled(Feature3D::GLCM_DIFENTRO) ? f_dentropy(P_matrix) : 0.0;
-		fvals_diff_entropy.push_back(f);
-
-		f = theFeatureSet.isEnabled(Feature3D::GLCM_DIFAVE) ? f_difference_avg() : 0.0;
-		fvals_diff_avg.push_back(f);
-
-		f = theFeatureSet.isEnabled(Feature3D::GLCM_INFOMEAS1) ? f_info_meas_corr1(P_matrix) : 0.0;
-		fvals_meas_corr1.push_back(f);
-
-		f = theFeatureSet.isEnabled(Feature3D::GLCM_INFOMEAS2) ? f_info_meas_corr2(P_matrix) : 0.0;
-		fvals_meas_corr2.push_back(f);
-
-		f = !theFeatureSet.isEnabled(Feature3D::GLCM_ACOR) ? 0 : f_GLCM_ACOR(P_matrix);
-		fvals_acor.push_back(f);
-
-		f = !theFeatureSet.isEnabled(Feature3D::GLCM_CLUPROM) ? 0 : f_GLCM_CLUPROM();
-		fvals_cluprom.push_back(f);
-
-		f = !theFeatureSet.isEnabled(Feature3D::GLCM_CLUSHADE) ? 0 : f_GLCM_CLUSHADE();
-		fvals_clushade.push_back(f);
-
-		// 'cluster tendency' is equivalent to 'sum variance', so calculate it once
-		f = (theFeatureSet.isEnabled(Feature3D::GLCM_CLUTEND) || theFeatureSet.isEnabled(Feature3D::GLCM_SUMVARIANCE)) ? f_GLCM_CLUTEND() : 0.0;
-		fvals_clutend.push_back(f);
-		fvals_sum_var.push_back(f);
-
-		f = !theFeatureSet.isEnabled(Feature3D::GLCM_DIS) ? 0 : f_GLCM_DIS(P_matrix);
-		fvals_dis.push_back(f);
-
-		f = !theFeatureSet.isEnabled(Feature3D::GLCM_HOM2) ? 0 : f_GLCM_HOM2(P_matrix);
-		fvals_hom2.push_back(f);
-
-		f = !theFeatureSet.isEnabled(Feature3D::GLCM_IDMN) ? 0 : f_GLCM_IDMN();
-		fvals_idmn.push_back(f);
-
-		f = !theFeatureSet.isEnabled(Feature3D::GLCM_ID) ? 0 : f_GLCM_ID();
-		fvals_id.push_back(f);
-
-		f = !theFeatureSet.isEnabled(Feature3D::GLCM_IDN) ? 0 : f_GLCM_IDN();
-		fvals_idn.push_back(f);
-
-		f = !theFeatureSet.isEnabled(Feature3D::GLCM_IV) ? 0 : f_GLCM_IV();
-		fvals_iv.push_back(f);
-
-		f = !theFeatureSet.isEnabled(Feature3D::GLCM_JAVE) ? 0 : f_GLCM_JAVE();
-		fvals_jave.push_back(f);
-		auto jave = f;
-
-		f = !theFeatureSet.isEnabled(Feature3D::GLCM_JE) ? 0 : f_GLCM_JE(P_matrix);
-		fvals_je.push_back(f);
-
-		f = !theFeatureSet.isEnabled(Feature3D::GLCM_JMAX) ? 0 : f_GLCM_JMAX(P_matrix);
-		fvals_jmax.push_back(f);
-
-		f = !theFeatureSet.isEnabled(Feature3D::GLCM_JVAR) ? 0 : f_GLCM_JVAR(P_matrix, jave);
-		fvals_jvar.push_back(f);
+		fvals_ASM.push_back (f_asm(P_matrix));
+		fvals_contrast.push_back (f_contrast(P_matrix));
+		fvals_correlation.push_back (f_corr());
+		fvals_energy.push_back (f_energy(P_matrix));
+		fvals_homo.push_back (f_homogeneity());
+		fvals_variance.push_back (f_var(P_matrix));
+		fvals_IDM.push_back (f_idm());
+		fvals_sum_avg.push_back (f_savg());
+		fvals_sum_entropy.push_back (f_sentropy());
+		fvals_entropy.push_back (f_entropy(P_matrix));
+		fvals_diff_var.push_back (f_dvar(P_matrix));
+		fvals_diff_entropy.push_back (f_dentropy(P_matrix));
+		fvals_diff_avg.push_back (f_difference_avg());
+		fvals_meas_corr1.push_back (f_info_meas_corr1(P_matrix));
+		fvals_meas_corr2.push_back (f_info_meas_corr2(P_matrix));
+		fvals_acor.push_back (f_GLCM_ACOR(P_matrix));
+		fvals_cluprom.push_back (f_GLCM_CLUPROM());
+		fvals_clushade.push_back (f_GLCM_CLUSHADE());
+		double clutend = f_GLCM_CLUTEND();		// 'cluster tendency' is equivalent to 'sum variance', so calculate it once
+		fvals_clutend.push_back (clutend);
+		fvals_sum_var.push_back (clutend);
+		fvals_dis.push_back (f_GLCM_DIS(P_matrix));
+		fvals_hom2.push_back (f_GLCM_HOM2(P_matrix));
+		fvals_idmn.push_back (f_GLCM_IDMN());
+		fvals_id.push_back (f_GLCM_ID());
+		fvals_idn.push_back (f_GLCM_IDN());
+		fvals_iv.push_back (f_GLCM_IV());
+		double jave = f_GLCM_JAVE();
+		fvals_jave.push_back (jave);
+		fvals_je.push_back (f_GLCM_JE(P_matrix));
+		fvals_jmax.push_back (f_GLCM_JMAX(P_matrix));
+		fvals_jvar.push_back (f_GLCM_JVAR(P_matrix, jave));
 	}
 }
 
@@ -422,18 +269,17 @@ void D3_GLCM_feature::calculateCoocMatAtAngle(
 	int dz,
 	const SimpleCube<PixIntens> & D,		// grey-binned ROI
 	PixIntens grays_min_val,
-	PixIntens grays_max_val)
+	PixIntens grays_max_val,
+	int n_greys,
+	bool ibsi)
 {
 	int w = D.width(),
 		h = D.height(),
 		d = D.depth();
 
 	// we need the following info about how 'D' was grey-binned
-	auto greyInfo = Nyxus::theEnvironment.get_coarse_gray_depth();
-	auto greyInfo_localFeature = D3_GLCM_feature::n_levels;
-	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
-		greyInfo = greyInfo_localFeature;
-	if (Nyxus::theEnvironment.ibsi_compliance)
+	auto greyInfo = n_greys;
+	if (ibsi)
 		greyInfo = 0;
 
 	// allocate the cooc and intensities matrices
@@ -1242,23 +1088,23 @@ double D3_GLCM_feature::calc_ave(const std::vector<double>& afv)
 	return ave;
 }
 
-void D3_GLCM_feature::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void D3_GLCM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 		D3_GLCM_feature f;
-		f.calculate(r);
-		f.save_value(r.fvals);
+		f.calculate (r, s);
+		f.save_value (r.fvals);
 	}
 }
 
-/*static*/ void D3_GLCM_feature::extract (LR& r)
+/*static*/ void D3_GLCM_feature::extract (LR& r, const Fsettings& s)
 {
 	D3_GLCM_feature f;
-	f.calculate(r);
-	f.save_value(r.fvals);
+	f.calculate (r, s);
+	f.save_value (r.fvals);
 }
 
 

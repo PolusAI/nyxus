@@ -9,7 +9,7 @@ EnclosingInscribingCircumscribingCircleFeature::EnclosingInscribingCircumscribin
     add_dependencies({ Feature2D::PERIMETER, Feature2D::CENTROID_X, Feature2D::CENTROID_Y });    // Availability of feature 'PERIMETER' ensures availability of LR::contour
 }
 
-void EnclosingInscribingCircumscribingCircleFeature::calculate(LR& r)
+void EnclosingInscribingCircumscribingCircleFeature::calculate (LR& r, const Fsettings& s)
 {
     d_minEnclo = calculate_min_enclosing_circle_diam (r.contour);
     std::tie(d_inscr, d_circum) = calculate_inscribing_circumscribing_circle (r.contour, r.fvals[(int)Feature2D::CENTROID_X][0], r.fvals[(int)Feature2D::CENTROID_Y][0]);
@@ -240,7 +240,7 @@ std::tuple <double, double> EnclosingInscribingCircumscribingCircleFeature::calc
     return { diameter_inscribing_circle, diameter_circumscribing_circle };
 }
 
-void EnclosingInscribingCircumscribingCircleFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void EnclosingInscribingCircumscribingCircleFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
     for (auto i = start; i < end; i++)
     {
@@ -254,16 +254,16 @@ void EnclosingInscribingCircumscribingCircleFeature::parallel_process_1_batch (s
         if (r.contour.size() == 0)
             continue;
 
-        EnclosingInscribingCircumscribingCircleFeature cir;
-        cir.calculate(r);
-        cir.save_value(r.fvals);
+        EnclosingInscribingCircumscribingCircleFeature f;
+        f.calculate (r, s);
+        f.save_value (r.fvals);
     }
 }
 
 // Not using the online mode for this feature
 void EnclosingInscribingCircumscribingCircleFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} // Not supporting the online mode for this class
 
-void EnclosingInscribingCircumscribingCircleFeature::osized_calculate (LR& r, ImageLoader& imloader)
+void EnclosingInscribingCircumscribingCircleFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr)
 {
-    calculate(r);
+    calculate (r, s);
 }

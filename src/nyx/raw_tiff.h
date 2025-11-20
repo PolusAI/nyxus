@@ -90,7 +90,7 @@ public:
                 default:
                     message =
                         "Tile Loader ERROR: The data format is not supported for unsigned integer, number bits per pixel = "
-                        + bitsPerSample_;
+                        + std::to_string (bitsPerSample_);
                     throw (std::runtime_error(message));
                 }
                 break;

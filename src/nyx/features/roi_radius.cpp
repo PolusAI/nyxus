@@ -8,7 +8,7 @@ RoiRadiusFeature::RoiRadiusFeature() : FeatureMethod("RoiRadiusFeature")
 	add_dependencies ({ Feature2D::PERIMETER});
 }
 
-void RoiRadiusFeature::calculate (LR& r)
+void RoiRadiusFeature::calculate (LR& r, const Fsettings& s)
 {
 	const std::vector<Pixel2>& cloud = r.raw_pixels;
 	const std::vector<Pixel2>& contour = r.contour;
@@ -36,7 +36,7 @@ void RoiRadiusFeature::calculate (LR& r)
 
 void RoiRadiusFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
 
-void RoiRadiusFeature::osized_calculate (LR& r, ImageLoader& imloader)
+void RoiRadiusFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader)
 {
 	const auto& cloud = r.raw_pixels_NT; 
 	const std::vector<Pixel2>& contour = r.contour;
@@ -70,20 +70,20 @@ void RoiRadiusFeature::save_value (std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature2D::ROI_RADIUS_MEDIAN][0] = median_r;
 }
 
-void RoiRadiusFeature::extract (LR& r)
+void RoiRadiusFeature::extract (LR& r, const Fsettings& s)
 {
-	RoiRadiusFeature rrf;
-	rrf.calculate(r);
-	rrf.save_value(r.fvals);
+	RoiRadiusFeature f;
+	f.calculate (r, s);
+	f.save_value (r.fvals);
 }
 
-void RoiRadiusFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void RoiRadiusFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 
-		extract (r);
+		extract (r, s);
 	}
 }

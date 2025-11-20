@@ -32,7 +32,7 @@
 #include "../roi_cache.h"
 #include "zernike.h"
 
-void ZernikeFeature::osized_calculate (LR& r, ImageLoader& imloader)
+void ZernikeFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader)
 {
 	// Prepare the image matrix
 	WriteImageMatrix_nontriv I ("ZernikeFeature-osized_calculate-I", r.label);

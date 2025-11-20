@@ -139,25 +139,25 @@ std::string GaborOptions::get_summary_text()
 	std::string s, eq = "=", sep = "\n";
 
 	if (!rawFreqs.empty())
-		s += GABOR_FREQS + eq + rawFreqs + sep;
+		s += clo_GABOR_FREQS + eq + rawFreqs + sep;
 
 	if (!rawGamma.empty())
-		s += GABOR_GAMMA + eq + rawGamma + sep;
+		s += clo_GABOR_GAMMA + eq + rawGamma + sep;
 
 	if (!rawSig2lam.empty())
-		s += GABOR_SIG2LAM + eq + rawSig2lam + sep;
+		s += clo_GABOR_SIG2LAM + eq + rawSig2lam + sep;
 
 	if (!rawKerSize.empty())
-		s += GABOR_KERSIZE + eq + rawKerSize + sep;
+		s += clo_GABOR_KERSIZE + eq + rawKerSize + sep;
 
 	if (!rawF0.empty())
-		s += GABOR_F0 + eq + rawF0 + sep;
+		s += clo_GABOR_F0 + eq + rawF0 + sep;
 
 	if (!rawTheta.empty())
-		s += GABOR_THETA + eq + rawTheta + sep;
+		s += clo_GABOR_THETA + eq + rawTheta + sep;
 
 	if (!rawGrayThreshold.empty())
-		s += GABOR_THRESHOLD + eq + rawGrayThreshold + sep;
+		s += clo_GABOR_THRESHOLD + eq + rawGrayThreshold + sep;
 
 	return s;
 }

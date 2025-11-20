@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include "abs_tile_loader.h"
+#include "cli_fpimage_options.h"
 #include "slideprops.h"
 
 /// @brief Incapsulates access to an intensity and mask image file pair
@@ -14,7 +15,7 @@ class ImageLoader
 public:
 
 	ImageLoader();
-	bool open (SlideProps & p);
+	bool open (SlideProps & p, const FpImageOptions& fpopts);
 	void close();
 	bool load_tile (size_t tile_idx);
 	bool load_tile (size_t tile_row, size_t tile_col);
@@ -32,24 +33,29 @@ public:
 	size_t get_full_width();
 	size_t get_full_height();
 	size_t get_full_depth();
+	size_t get_inten_time();
+	size_t get_mask_time();
 
 private:
 
 	AbstractTileLoader<uint32_t> *segFL = nullptr, *intFL = nullptr; 
 	std::shared_ptr<std::vector<uint32_t>> ptrI = nullptr; 
 	std::shared_ptr<std::vector<uint32_t>> ptrL = nullptr; 
-	// Tile height, width, and depth
+
+	// Tile height, width, depth, and number of time frames
 	size_t th,
 		tw,
-		td;
+		td,
+		tt;
 
 	// 2D tile size
 	size_t tileSize;	
 
-	// Full height, width, and depth
+	// Full height, width, depth, and number of time frames
 	size_t fh,
 		fw,
-		fd;
+		fd,
+		ft;
 
 	// Number of tiles along width, height, and depth
 	size_t ntw,

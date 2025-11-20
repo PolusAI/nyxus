@@ -1,12 +1,14 @@
 #pragma once
 
 #include <unordered_map>
+#include "../dataset.h"
 #include "../roi_cache.h"
 
 #include <vector>
 #include "pixel.h"
 #include "aabb.h"
 #include "../feature_method.h"
+#include "../feature_settings.h"
 
 /// @brief The Euler characteristic of a ROI. Equal to the number of 'objects' in the image minus the number of holes in those objects. For modules built to date, the number of 'objects' in the image is always 1.
 class EulerNumberFeature: public FeatureMethod
@@ -18,17 +20,17 @@ public:
 	EulerNumberFeature();
 	
 	// Trivial ROI
-	void calculate(LR& r);
+	void calculate (LR& r, const Fsettings& s);
 
 	// Non-trivial ROI
 	void osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {}
-	void osized_calculate (LR& r, ImageLoader& imloader);
+	void osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr);
 
 	// Result saver
 	void save_value (std::vector<std::vector<double>>& feature_vals);
 
-	static void extract (LR& roi); // extracts the feature of- and saves to ROI
-	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+	static void extract (LR& roi, const Fsettings& s); // extracts the feature of- and saves to ROI
+	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
 	static bool required (const FeatureSet& fs) { return fs.isEnabled(Nyxus::Feature2D::EULER_NUMBER); }
 
 private:

@@ -8,7 +8,7 @@
 #include "image_matrix.h"
 #include "rotation.h"
 
-void ChordsFeature::calculate (LR & r)
+void ChordsFeature::calculate (LR & r, const Fsettings& s)
 {
 	// Center
 	double cenx = (r.aabb.get_xmin() + r.aabb.get_xmax()) / 2.0,
@@ -104,14 +104,14 @@ void ChordsFeature::calculate (LR & r)
 	allchords_max_angle = ACang[idxmax];
 }
 
-void ChordsFeature::extract (LR& r)
+void ChordsFeature::extract (LR& r, const Fsettings& s)
 {
 	ChordsFeature f;
-	f.calculate(r);
-	f.save_value(r.fvals);
+	f.calculate (r, s);
+	f.save_value (r.fvals);
 }
 
-void ChordsFeature::process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void ChordsFeature::process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -122,8 +122,8 @@ void ChordsFeature::process_1_batch (size_t start, size_t end, std::vector<int>*
 			continue;
 
 		ChordsFeature f;
-		f.calculate(r);
-		f.save_value(r.fvals);
+		f.calculate (r, s);
+		f.save_value (r.fvals);
 	}
 }
 

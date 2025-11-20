@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 #include "aabb.h"
+#include "../globals.h"
 #include "pixel.h"
 #include "../roi_cache.h"
 #include "../feature_method.h"
@@ -27,15 +28,19 @@ public:
 
 	NeighborsFeature();
 
-	void calculate(LR& r);
+	void calculate (LR& r, const Fsettings& s);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
-	void osized_calculate(LR& r, ImageLoader& imloader);
+	void osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
-	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
-	void parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads);
+	static void parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings& s);
 
 	// Compatibility with manual reduce
-	static void manual_reduce();
+	static void manual_reduce (	
+		// out
+		Nyxus::Roidata& roiData,
+		// in
+		const Fsettings& s,
+		const std::unordered_set<int>& uniqueLabels);
 	static bool required(const FeatureSet& fs);
 
 private:

@@ -2,7 +2,7 @@
 #include <cmath>
 #include "gabor.h"
 #ifdef USE_GPU
-    #include "../gpucache.h"
+    #include "../cache.h"
 #endif
 
 using namespace Nyxus;
@@ -40,7 +40,7 @@ bool GaborFeature::required(const FeatureSet& fs)
     return fs.isEnabled (Feature2D::GABOR); 
 }
 
-void GaborFeature::calculate (LR& r)
+void GaborFeature::calculate (LR& r, const Fsettings& s)
 {
     // Number of frequencies (feature values) calculated
     int nFreqs = (int) GaborFeature::f0_theta_pairs.size();
@@ -89,8 +89,7 @@ void GaborFeature::calculate (LR& r)
     if (maxval == cmpval)
     {
         for (int i = 0; i < nFreqs; i++)
-            fvals[i] = theEnvironment.resultOptions.noval();
-
+            fvals[i] = STNGS_NAN(s);
         return;
     }
 
@@ -128,7 +127,7 @@ void GaborFeature::calculate (LR& r)
 
 namespace CuGabor
 {
-    bool drvImatFromCloud(size_t ri, size_t w, size_t h);
+    bool drvImatFromCloud(size_t ri, size_t w, size_t h, GpusideCache& devsideCache);
 }
 
 void GaborFeature::calculate_gpu (LR& r)
@@ -207,7 +206,7 @@ void GaborFeature::calculate_gpu (LR& r)
     }
 }
 
-void GaborFeature::calculate_gpu_multi_filter (LR& r, size_t roiidx)
+void GaborFeature::calculate_gpu_multi_filter (LR & r, size_t roiidx, GpusideCache & devsideCache)
 {
     // Number of frequencies (feature values) calculated
     int nFreqs = (int)GaborFeature::f0_theta_pairs.size();
@@ -224,7 +223,7 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r, size_t roiidx)
     }
 
     // create a GPU-side image matrix
-    if (!CuGabor::drvImatFromCloud (roiidx, r.aabb.get_width(), r.aabb.get_height()))
+    if (!CuGabor::drvImatFromCloud (roiidx, r.aabb.get_width(), r.aabb.get_height(), devsideCache))
     {
         std::cerr << "ERROR: image matrix from pixel cloud failed \n";
         return;
@@ -268,7 +267,7 @@ void GaborFeature::calculate_gpu_multi_filter (LR& r, size_t roiidx)
 
     // Calculate low-passed baseline and high-passed filter responses
     //      'responses' is montage of Gabor energy of filter responses
-    GaborEnergyGPUMultiFilter (Im0, responses, auxC.data(), auxG.data(), freqs, sig2lam, gamma, thetas, n, freqs.size());
+    GaborEnergyGPUMultiFilter (Im0, responses, auxC.data(), auxG.data(), freqs, sig2lam, gamma, thetas, n, freqs.size(), devsideCache);
 
     // Examine the baseline signal
 
@@ -566,7 +565,8 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
     double gamma, 
     const std::vector<double>& thetas, // thetas matching frequencies in 'f0s'
     int kerside,
-    int num_filters) 
+    int num_filters,
+    GpusideCache & devside) 
 {
     readOnlyPixels pix_plane = Im.ReadablePixels();
 
@@ -581,7 +581,8 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
         kerside,
         kerside,
         num_filters,
-        GaborFeature::dev_filterbank);
+        GaborFeature::dev_filterbank,
+        devside);
     if (!success)
     {
         std::cerr << "\n\n\nUnable to calculate Gabor features on GPU \n\n\n";
@@ -596,26 +597,26 @@ void GaborFeature::GaborEnergyGPUMultiFilter (
     {
         size_t skip = f * wh;
         for (size_t i = 0; i < wh; i++)
-            out[f][i] = NyxusGpu::gabor_energy_image.hobuffer [skip + i];
+            out[f][i] = devside.gabor_energy_image.hobuffer [skip + i];
     }
 
 }
 #endif
 
-void GaborFeature::extract (LR& r)
+void GaborFeature::extract (LR& r, const Fsettings& s)
 {
     GaborFeature gf;
-    gf.calculate (r);
+    gf.calculate (r, s);
     gf.save_value (r.fvals);
 }
 
-void GaborFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void GaborFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
     for (auto i = start; i < end; i++)
     {
         int lab = (*ptrLabels)[i];
         LR& r = (*ptrLabelData)[lab];
-        extract (r);
+        extract (r, s);
     }
 }
 
@@ -624,7 +625,8 @@ void GaborFeature::gpu_process_all_rois(
     std::vector<int>& L, 
     std::unordered_map <int, LR>& RoiData, 
     size_t batch_offset,
-    size_t batch_len)
+    size_t batch_len,
+    GpusideCache & devsideCache)
 {
     for (size_t i = 0; i < batch_len; i++)
     {
@@ -634,7 +636,7 @@ void GaborFeature::gpu_process_all_rois(
 
         // Calculate features        
         GaborFeature f;
-        f.calculate_gpu_multi_filter (r, i);
+        f.calculate_gpu_multi_filter (r, i, devsideCache);
         f.save_value (r.fvals);
     }
 }

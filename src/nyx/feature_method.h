@@ -1,5 +1,6 @@
 #pragma once
 #include <unordered_map>
+#include "feature_settings.h"
 #include "roi_cache.h"
 #include "image_loader.h"
 #include "features/image_matrix_nontriv.h"
@@ -18,16 +19,17 @@ public:
 	
 	//=== Trivial ROI
 	// Calculate the feature for one ROI using cached data and probably caching data
-	virtual void calculate (LR& r) = 0;
+	virtual void calculate (LR& roi, const Fsettings & settings) = 0;
+
 	// Calculate the feature for a vector of ROIs 
 	virtual void parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)  {}
 
 	//=== Oversized ROI
-	virtual void osized_scan_whole_image (LR& r, ImageLoader& imloader);
+	virtual void osized_scan_whole_image (LR& roi, const Fsettings& s, ImageLoader& ldr);
 
 	virtual void osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) = 0;	// Called each time the ROI pixel is being scanned in the raster order
 	virtual void osized_reduce() final {};	// Get rid of this method in all derived
-	virtual void osized_calculate (LR& r, ImageLoader& imloader) = 0;	// Called once right after having scanned the ROI in the raster order. Put your reduction or summarization of data gathered in osized_add_online_pixel()
+	virtual void osized_calculate (LR& roi, const Fsettings& settings, ImageLoader& imloader) = 0;	// Called once right after having scanned the ROI in the raster order. Put your reduction or summarization of data gathered in osized_add_online_pixel()
 
 	// Put method-dependent set of calculation results in the standard feature results list further saveable as CSV-file
 	virtual void save_value(std::vector<std::vector<double>>& feature_vals) = 0;

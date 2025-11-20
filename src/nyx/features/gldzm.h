@@ -1,6 +1,8 @@
 #pragma once
 
+#include "../dataset.h"
 #include "../feature_method.h"
+#include "../feature_settings.h"
 #include "texture_feature.h"
 
 /// @brief Grey Level Distance Zone (GLDZM) features
@@ -37,18 +39,18 @@ public:
 
 	GLDZMFeature();
 
-	void calculate(LR& r);
+	void calculate (LR& r, const Fsettings& s);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
-	void osized_calculate(LR& r, ImageLoader& imloader);
+	void osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
-	static void extract(LR& roi);
-	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+	static void extract (LR& roi, const Fsettings& s);
+	static void parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
 
 	// Support of manual reduce
 	static bool required(const FeatureSet& fs) { return fs.anyEnabled (GLDZMFeature::featureset); }
 
 	// Calculates the GLDZ-matrix, its dimensions, and a vector of sorted grey levels
-	void prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, int& Ng, int& Nd, std::vector<PixIntens>& greyLevelsLUT, LR& r);
+	void prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, int& Ng, int& Nd, std::vector<PixIntens>& greyLevelsLUT, LR& r, int n_greys, bool ibsi);
 
 	static int n_levels; // default value: 0
 

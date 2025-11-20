@@ -31,6 +31,9 @@ public:
 	size_t get_full_width();
 	size_t get_full_height();
 	size_t get_full_depth();
+	size_t get_inten_time();
+	size_t get_mask_time();
+
 	std::string get_slide_descr();
 	bool get_fp_phys_pixvoxels();
 

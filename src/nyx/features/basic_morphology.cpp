@@ -1,6 +1,5 @@
 #define _USE_MATH_DEFINES	// For M_PI, etc.
 #include "../environment.h"
-#include "../parallel.h"
 #include "histogram.h"
 #include "basic_morphology.h"
 #include "pixel.h"
@@ -17,14 +16,16 @@ BasicMorphologyFeatures::BasicMorphologyFeatures(): FeatureMethod("BasicMorpholo
 	provide_features (BasicMorphologyFeatures::featureset);
 }
 
-void BasicMorphologyFeatures::calculate(LR& r)
+void BasicMorphologyFeatures::calculate (LR& r, const Fsettings& sett)
 {
 	double n = r.aux_area;
 
 	// --AREA
+	double xyres = sett[(int)NyxSetting::XYRES].rval,
+		pxsize = sett[(int)NyxSetting::PIXELSIZEUM].rval;
 	val_AREA_PIXELS_COUNT = n;
-	if (theEnvironment.xyRes > 0.0)
-			val_AREA_UM2  = n * std::pow(theEnvironment.pixelSizeUm, 2);
+	if (xyres > 0.0)	// former theEnvironment.xyRes
+			val_AREA_UM2  = n * std::pow(pxsize, 2);	// former theEnvironment.pixelSizeUm
 
 	// --DIAMETER_EQUAL_AREA
 	val_DIAMETER_EQUAL_AREA = double(val_AREA_PIXELS_COUNT) / M_PI * 4.0;
@@ -103,14 +104,16 @@ void BasicMorphologyFeatures::calculate(LR& r)
 
 void BasicMorphologyFeatures::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} // Not providing online calculation for these group of features
 
-void BasicMorphologyFeatures::osized_calculate(LR& r, ImageLoader& imloader)
+void BasicMorphologyFeatures::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader)
 {
 	double n = r.aux_area;
 
 	// --AREA
+	double xyres = s[(int)NyxSetting::XYRES].rval,
+		pxsize = s[(int)NyxSetting::PIXELSIZEUM].rval;
 	val_AREA_PIXELS_COUNT = n;
-	if (theEnvironment.xyRes > 0.0)
-		val_AREA_UM2 = n * std::pow(theEnvironment.pixelSizeUm, 2);
+	if (xyres > 0.0)
+		val_AREA_UM2 = n * std::pow(pxsize, 2);
 
 	// --DIAMETER_EQUAL_AREA
 	val_DIAMETER_EQUAL_AREA = double(val_AREA_PIXELS_COUNT) / M_PI * 4.0;
@@ -211,29 +214,21 @@ void BasicMorphologyFeatures::save_value(std::vector<std::vector<double>>& fvals
 	fvals[(int)Feature2D::WEIGHTED_CENTROID_Y][0] = val_WEIGHTED_CENTROID_Y;
 }
 
-void BasicMorphologyFeatures::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
-{
-	size_t jobSize = roi_labels.size(),
-		workPerThread = jobSize / n_threads;
-
-	runParallel(BasicMorphologyFeatures::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
-}
-
-void BasicMorphologyFeatures::extract (LR& r)
+void BasicMorphologyFeatures::extract (LR & r, const Fsettings & s)
 {
 	BasicMorphologyFeatures f;
-	f.calculate(r);
-	f.save_value(r.fvals);	
+	f.calculate (r, s);
+	f.save_value (r.fvals);	
 }
 
-void BasicMorphologyFeatures::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void BasicMorphologyFeatures::parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	// Calculate the feature for each batch ROI item 
 	for (auto i = firstitem; i < lastitem; i++)
 	{
 		int roiLabel = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[roiLabel];
-		extract (r);
+		extract (r, s);
 	}
 }
 

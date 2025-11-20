@@ -1,6 +1,6 @@
 #include <vector>
 #include "gabor.cuh"
-#include "../gpucache.h"
+#include "../cache.h"     //xxxxxxxxxxxx      ../gpucache.h"
 
 using namespace std;
 
@@ -265,19 +265,19 @@ namespace CuGabor {
     }
 
     // result in NyxusGpu::dev_imat1
-    bool drvImatFromCloud(size_t roiidx, size_t w, size_t h)
+    bool drvImatFromCloud (size_t roiidx, size_t w, size_t h, GpusideCache& devside)
     {
-        size_t cloud_len = NyxusGpu::gpu_roiclouds_2d.ho_lengths[roiidx];
-        size_t cloud_offset = NyxusGpu::gpu_roiclouds_2d.ho_offsets[roiidx];
-        Pixel2* d_cloud = &NyxusGpu::gpu_roiclouds_2d.devbuffer[cloud_offset];
+        size_t cloud_len = devside.gpu_roiclouds_2d.ho_lengths[roiidx];
+        size_t cloud_offset = devside.gpu_roiclouds_2d.ho_offsets[roiidx];
+        Pixel2* d_cloud = &devside.gpu_roiclouds_2d.devbuffer[cloud_offset];
 
         // zero the matrix
-        size_t szb = sizeof(NyxusGpu::dev_imat1[0]) * w * h;
-        CHECKERR(cudaMemset(NyxusGpu::dev_imat1, 0, szb));
+        size_t szb = sizeof(devside.dev_imat1[0]) * w * h;
+        CHECKERR(cudaMemset(devside.dev_imat1, 0, szb));
 
         // apply the cloud to it
         int nblo = whole_chunks2(cloud_len, blockSize);
-        kerImatFromCloud << < nblo, blockSize >> > (NyxusGpu::dev_imat1, d_cloud, cloud_len, w);
+        kerImatFromCloud << < nblo, blockSize >> > (devside.dev_imat1, d_cloud, cloud_len, w);
 
         CHECKERR(cudaDeviceSynchronize());
         CHECKERR(cudaGetLastError());
@@ -332,7 +332,8 @@ namespace CuGabor {
         int kernel_w, 
         int kernel_h,
         int n_filters,
-        double* dev_filterbank)
+        double* dev_filterbank,
+        GpusideCache& devside)
     {
         // calculate new size of image based on padding size
         int row_size = image_h + kernel_h - 1;
@@ -351,12 +352,12 @@ namespace CuGabor {
             return false;
         }
 
-        cufftDoubleComplex* result = NyxusGpu::gabor_result.hobuffer;
-        cufftDoubleComplex* linear_kernel = NyxusGpu::gabor_linear_kernel.hobuffer;
+        cufftDoubleComplex* result = devside.gabor_result.hobuffer;
+        cufftDoubleComplex* linear_kernel = devside.gabor_linear_kernel.hobuffer;
 
-        cufftDoubleComplex* d_image = NyxusGpu::gabor_linear_image.devbuffer;
-        cufftDoubleComplex* d_result = NyxusGpu::gabor_result.devbuffer;
-        cufftDoubleComplex* d_kernel = NyxusGpu::gabor_linear_kernel.devbuffer;
+        cufftDoubleComplex* d_image = devside.gabor_linear_image.devbuffer;
+        cufftDoubleComplex* d_result = devside.gabor_result.devbuffer;
+        cufftDoubleComplex* d_kernel = devside.gabor_linear_kernel.devbuffer;
         cudaError_t ok;
 
         // prepare the image
@@ -368,7 +369,7 @@ namespace CuGabor {
             dim3 tpb(block, block);
             dim3 bpg(ceil(row_size / block) + 1, ceil(col_size / block) + 1);
 
-            re_2_complex_img << <bpg, tpb >> > (d_image, row_size, col_size, image_h, image_w, NyxusGpu::dev_imat1, batch_idx);
+            re_2_complex_img << <bpg, tpb >> > (d_image, row_size, col_size, image_h, image_w, devside.dev_imat1, batch_idx);
 
             CHECKERR(cudaDeviceSynchronize());
             CHECKERR(cudaGetLastError());
@@ -440,7 +441,7 @@ namespace CuGabor {
 
             kerCalcEnergy <<< bpg, tpb >>> (
                 // out
-                NyxusGpu::gabor_energy_image.devbuffer,
+                devside.gabor_energy_image.devbuffer,
                 // in
                 d_result,
                 padded_off,
@@ -456,8 +457,8 @@ namespace CuGabor {
         }
 
         // download energy on host
-        size_t szb = n_filters * image_h * image_w * sizeof(NyxusGpu::gabor_energy_image.hobuffer[0]);
-        CHECKERR(cudaMemcpy(NyxusGpu::gabor_energy_image.hobuffer, NyxusGpu::gabor_energy_image.devbuffer, szb, cudaMemcpyDeviceToHost));
+        size_t szb = n_filters * image_h * image_w * sizeof(devside.gabor_energy_image.hobuffer[0]);
+        CHECKERR(cudaMemcpy(devside.gabor_energy_image.hobuffer, devside.gabor_energy_image.devbuffer, szb, cudaMemcpyDeviceToHost));
 
         /* The above parallel code implements the following single - thread logic :
         * (Converting big complex -> small energy)

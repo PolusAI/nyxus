@@ -2,9 +2,11 @@
 
 #include <unordered_map>
 #include <vector>
+#include "../dataset.h"
 #include "../roi_cache.h"
 #include "pixel.h"
 #include "../feature_method.h"
+#include "../feature_settings.h"
 
 class CaliperNassensteinFeature : public FeatureMethod
 {
@@ -20,13 +22,12 @@ public:
 	};
 
 	CaliperNassensteinFeature();
-	void calculate (LR& r);
+	void calculate (LR& r, const Fsettings& s);
 	void osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {};		// No online mode for this feature
-	void osized_calculate (LR& r, ImageLoader& imloader);
+	void osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader);
 	void save_value (std::vector<std::vector<double>>& feature_vals);
-	static void extract (LR& roi);
-	static void parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
-	void parallel_process (std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads);
+	static void extract (LR& roi, const Fsettings& s);
+	static void parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & fst, const Dataset & ds);
 
 	// Compatibility with manual reduce
 	static bool required(const FeatureSet& fs) 
@@ -61,13 +62,12 @@ public:
 	};
 
 	CaliperFeretFeature();
-	void calculate(LR& r);
+	void calculate (LR& roi, const Fsettings& s);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {};		// No online mode for this feature
-	void osized_calculate(LR& r, ImageLoader& imloader);
+	void osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
-	static void extract(LR& roi);
-	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
-	void parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads);
+	static void extract (LR& roi, const Fsettings& s);
+	static void parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & fst, const Dataset & ds);
 
 	// Compatibility with manual reduce
 	static bool required(const FeatureSet& fs) 
@@ -108,13 +108,12 @@ public:
 	};
 
 	CaliperMartinFeature();
-	void calculate(LR& r);
+	void calculate(LR& r, const Fsettings& s);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {};		
-	void osized_calculate(LR& r, ImageLoader& imloader);
+	void osized_calculate(LR& r, const Fsettings& s, ImageLoader& imloader);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
-	static void extract(LR& roi);
-	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
-	void parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads);
+	static void extract(LR& roi, const Fsettings& s);
+	static void parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & fst, const Dataset & ds);
 
 	// Compatibility with manual reduce
 	static bool required(const FeatureSet& fs) 

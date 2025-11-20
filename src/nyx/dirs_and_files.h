@@ -5,6 +5,7 @@
 //
 
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 #include "strpat.h"
@@ -28,7 +29,7 @@ namespace Nyxus
 	/// @param files 
 	/// 
 
-	int read_2D_dataset(
+	std::optional<std::string> read_2D_dataset(
 		// input:
 		const std::string& dirIntens,
 		const std::string& dirLabels,
@@ -39,8 +40,7 @@ namespace Nyxus
 		bool mustCheckDirOut,
 		// output:
 		std::vector <std::string>& intensFiles,
-		std::vector <std::string>& labelFiles,
-		std::string & error_message);
+		std::vector <std::string>& labelFiles);
 
 	struct Imgfile3D_layoutA
 	{
@@ -53,7 +53,7 @@ namespace Nyxus
 		std::vector<std::string> z_indices;
 	};
 		
-	int read_3D_dataset(
+	std::optional<std::string> read_3D_dataset(
 		// input:
 		const std::string& dirIntens,
 		const std::string& dirLabels,
@@ -66,7 +66,7 @@ namespace Nyxus
 		std::vector <Imgfile3D_layoutA>& intensFiles,
 		std::vector <Imgfile3D_layoutA>& labelFiles);
 
-	int read_3D_dataset_wholevolume(
+	std::optional<std::string> read_3D_dataset_wholevolume(
 		// input:
 		const std::string& dirIntens,
 		const StringPattern& filePatt,

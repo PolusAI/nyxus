@@ -1,15 +1,39 @@
 #pragma once
 #include <string>
+#include "cli_anisotropy_options.h"
 
-struct SlideProps
+class SlideProps
 {
+public:
+
+	SlideProps (const std::string & ifile, const std::string & mfile):
+		SlideProps()
+	{
+		fname_int = ifile;
+		fname_seg = mfile;
+	}
+	SlideProps()
+	{
+		fname_int = "";
+		fname_seg = "";
+		min_preroi_inten = -1;
+		max_preroi_inten = -1;
+		fp_phys_pivoxels = false;
+		slide_w = slide_h = volume_d = 0;
+		max_roi_area = 0;
+		n_rois = 0;
+		max_roi_w = 0;
+		max_roi_h = 0;
+		max_roi_d = 0;
+		inten_time = mask_time = 0;
+	}
+
 	// pre-ROI intensity range in DP
 	double min_preroi_inten;
 	double max_preroi_inten;
 
 	// unsigned int grey-minning
-	static unsigned int uint_friendly_dynrange;
-	bool fp_phys_pivoxels = false;
+	bool fp_phys_pivoxels;
 
 	// casting x in real range [min_preroi_inten, max_preroi_inten] -> uint [0, uint_dynrange]
 	unsigned int uint_friendly_inten (double x, double uint_dynrange) const
@@ -44,10 +68,12 @@ struct SlideProps
 	// annotation
 	std::vector<std::string> annots;
 
+	// time series
+	size_t inten_time, mask_time;	// number of time frames
 };
 
 namespace Nyxus
 {
 	// Scans segmented slide p.fname_int / p.fname_seg and fills other fields of 'p'
-	bool scan_slide_props (SlideProps & p, int dim, bool need_annotations);
+	bool scan_slide_props (SlideProps & p, int dim, const AnisotropyOptions & aniso, bool need_annotations);
 }

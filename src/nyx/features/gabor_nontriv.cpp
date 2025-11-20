@@ -10,7 +10,7 @@ GaborFeature::GaborFeature() : FeatureMethod("GaborFeature")
     provide_features ({ Feature2D::GABOR });
 }
 
-void GaborFeature::osized_calculate (LR& r, ImageLoader&)
+void GaborFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
     int nF = (int)GaborFeature::f0_theta_pairs.size();
 
@@ -43,7 +43,8 @@ void GaborFeature::osized_calculate (LR& r, ImageLoader&)
     size_t originalScore = 0;
     for (int i=0; i < nF; i++)
     {
-        VERBOSLVL3 (std::cout << "\tcalculating Gabor frequency " << i+1 << "/" << nF << "\n");
+        if (STNGS_VERBOSLVL(s) == 3)     // former VERBOSLVL3
+            std::cout << "\tcalculating Gabor frequency " << i+1 << "/" << nF << "\n";
 
         // -- unpack a frequency-angle pair
         const auto& ft = f0_theta_pairs[i];
@@ -52,9 +53,10 @@ void GaborFeature::osized_calculate (LR& r, ImageLoader&)
 
         size_t afterGaborScore = 0;
         GaborEnergy_NT2 (Im0, auxG.data(), f0, sig2lam, gamma, theta, n, false/*request count*/, cmp_a/*threshold*/, max0/*out*/, afterGaborScore/*out*/);
-        fvals[i] = (double)afterGaborScore / ((double)originalScore + theEnvironment.resultOptions.tiny());
+        fvals[i] = (double)afterGaborScore / ((double)originalScore + STNGS_TINY(s));   // former theEnvironment.resultOptions.tiny()
 
-        VERBOSLVL3 (std::cout << "\t\tfeature [" << i << "] = " << fvals[i] << "\n");
+        if (STNGS_VERBOSLVL(s) == 3)     // former VERBOSLVL3
+            std::cout << "\t\tfeature [" << i << "] = " << fvals[i] << "\n";
     }
 }
 

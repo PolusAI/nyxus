@@ -8,7 +8,7 @@
 #include "../features/pixel.h"
 
 #include "gpu.h"
-#include "../gpucache.h"
+#include "../cache.h"		//xxxxxxxxxxxx	#include "../gpucache.h"
 
 #include "../helpers/timing.h"
 

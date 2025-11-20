@@ -48,13 +48,26 @@ void test_ibsi_ngld_matrix_ibsi ()
 
     // In this test, we only calculate and examine the NGLD-matrix without calculating features
     NGLDMfeature f;
-    
+
+    // featue settings for this particular test
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
+    s[(int)NyxSetting::TINY].rval = 0.0;
+    s[(int)NyxSetting::SINGLEROI].bval = false;
+    s[(int)NyxSetting::GREYDEPTH].ival = 128;
+    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
+    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::VERBOSLVL].ival = 0;
+    s[(int)NyxSetting::IBSI].bval = true;
+
     // Have the feature object to create the NGLDM matrix kit (matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and NGLDM's dimensions)
     std::vector<PixIntens> greyLevelsLUT;
     SimpleMatrix<unsigned int> NGLDM;
     int Ng = -1,	// number of grey levels
         Nr = -1;	// maximum number of non-zero dependencies
-    ASSERT_NO_THROW (f.prepare_NGLDM_matrix_kit (NGLDM, greyLevelsLUT, Ng, Nr, roidata));
+    ASSERT_NO_THROW (f.prepare_NGLDM_matrix_kit (NGLDM, greyLevelsLUT, Ng, Nr, roidata, STNGS_NGREYS(s), STNGS_IBSI(s)));
 
     // Count discrepancies
     int n_mismatches = 0;
@@ -89,12 +102,25 @@ void test_ibsi_ngld_matrix_nonibsi()
     // In this test, we only calculate and examine the NGLD-matrix without calculating features
     NGLDMfeature f;
 
+    // featue settings for this particular test
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
+    s[(int)NyxSetting::TINY].rval = 0.0;
+    s[(int)NyxSetting::SINGLEROI].bval = false;
+    s[(int)NyxSetting::GREYDEPTH].ival = 128;
+    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
+    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::VERBOSLVL].ival = 0;
+    s[(int)NyxSetting::IBSI].bval = true;
+
     // Have the feature object to create the NGLDM matrix kit (matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and NGLDM's dimensions)
     std::vector<PixIntens> greyLevelsLUT;
     SimpleMatrix<unsigned int> NGLDM;
     int Ng = -1,	// number of grey levels
         Nr = -1;	// maximum number of non-zero dependencies
-    ASSERT_NO_THROW(f.prepare_NGLDM_matrix_kit(NGLDM, greyLevelsLUT, Ng, Nr, roidata));
+    ASSERT_NO_THROW(f.prepare_NGLDM_matrix_kit(NGLDM, greyLevelsLUT, Ng, Nr, roidata, STNGS_NGREYS(s), STNGS_IBSI(s)));
 
     // Count discrepancies
     int n_mismatches = 0;
@@ -115,6 +141,7 @@ void test_ibsi_ngld_matrix_nonibsi()
 
 void test_ibsi_ngldm_feature (const Feature2D& feature_, const std::string& feature_name) 
 {
+    Fsettings s;
     int feature = int(feature_);
 
     // Activate the IBSI compliance mode
@@ -133,7 +160,7 @@ void test_ibsi_ngldm_feature (const Feature2D& feature_, const std::string& feat
 
     // Calculate features
     NGLDMfeature f1;
-    ASSERT_NO_THROW (f1.calculate(roidata1));
+    ASSERT_NO_THROW (f1.calculate(roidata1, s));
 
     // Initialize per-ROI feature value buffer with zeros
     roidata1.initialize_fvals();
@@ -151,7 +178,7 @@ void test_ibsi_ngldm_feature (const Feature2D& feature_, const std::string& feat
 
     // Calculate features
     NGLDMfeature f2;
-    ASSERT_NO_THROW(f2.calculate(roidata2));
+    ASSERT_NO_THROW(f2.calculate(roidata2, s));
 
     // Initialize per-ROI feature value buffer with zeros
     roidata2.initialize_fvals();
@@ -169,7 +196,7 @@ void test_ibsi_ngldm_feature (const Feature2D& feature_, const std::string& feat
 
     // Calculate features
     NGLDMfeature f3;
-    ASSERT_NO_THROW(f3.calculate(roidata3));
+    ASSERT_NO_THROW(f3.calculate(roidata3, s));
 
     // Initialize per-ROI feature value buffer with zeros
     roidata3.initialize_fvals();
@@ -187,7 +214,7 @@ void test_ibsi_ngldm_feature (const Feature2D& feature_, const std::string& feat
 
     // Calculate features
     NGLDMfeature f4;
-    ASSERT_NO_THROW(f4.calculate(roidata4));
+    ASSERT_NO_THROW(f4.calculate(roidata4, s));
 
     // Initialize per-ROI feature value buffer with zeros
     roidata4.initialize_fvals();

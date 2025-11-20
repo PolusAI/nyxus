@@ -5,8 +5,10 @@
 #include <vector>
 #include "aabb.h"
 #include "pixel.h"
+#include "../dataset.h"
 #include "../roi_cache.h"
 #include "../feature_method.h"
+#include "../feature_settings.h"
 
 /// @brief Class encapsulating calculating "allchords" and "maxchors" features. 
 /// An "all chord" refers to all the chords for all ROI rotations. 
@@ -39,14 +41,14 @@ public:
 	ChordsFeature();
 
 	// Trivial
-	void calculate(LR& r);
+	void calculate (LR& roi, const Fsettings& s);
 
 	// Non-trivial 
 	void osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {}
-	void osized_calculate (LR& r, ImageLoader& imloader);
+	void osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader);
 	void save_value (std::vector<std::vector<double>>& feature_vals);
-	static void extract (LR& roi);
-	static void process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+	static void extract (LR& roi, const Fsettings& s);
+	static void process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
 
 	// Support of "manual" phase 2 
 	static bool required(const FeatureSet& fs)

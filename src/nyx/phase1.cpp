@@ -20,7 +20,7 @@ namespace Nyxus
 	//
 	// segmented 2D case
 	//
-	bool gatherRoisMetrics (int sidx, const std::string & intens_fpath, const std::string & label_fpath, ImageLoader & L)
+	bool gatherRoisMetrics (int sidx, const std::string & intens_fpath, const std::string & label_fpath, Environment & env, ImageLoader & L)
 	{
 		// Reset per-image counters and extrema
 		//	 -- disabling this due to new prescan functionality-->	LR::reset_global_stats();
@@ -57,7 +57,7 @@ namespace Nyxus
 				// Get ahold of tile's pixel buffer
 				const std::vector<uint32_t>& dataI = L.get_int_tile_buffer();
 				const std::shared_ptr<std::vector<uint32_t>>& spL = L.get_seg_tile_sptr();
-				bool wholeslide = spL == nullptr; // alternatively, theEnvironment.singleROI
+				bool wholeslide = spL == nullptr; 
 
 				// Iterate pixels
 				for (size_t i = 0; i < tileSize; i++)
@@ -79,7 +79,7 @@ namespace Nyxus
 						continue;
 
 					// Update pixel's ROI metrics
-					feed_pixel_2_metrics (x, y, dataI[i], label, sidx); // Updates 'uniqueLabels' and 'roiData'
+					feed_pixel_2_metrics (env.uniqueLabels, env.roiData, x, y, dataI[i], label, sidx);
 				}
 
 #ifdef WITH_PYTHON_H
@@ -88,16 +88,16 @@ namespace Nyxus
 #endif
 
 				// Show progress info
-				VERBOSLVL2(
+				VERBOSLVL2 (env.get_verbosity_level(),
 					if (cnt++ % 4 == 0)
-						std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n";
+						std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << env.uniqueLabels.size() << " ROIs" << "\n";
 				);
 			}
 
 		// fix ROIs' AABBs with respect to anisotropy
-		if (theEnvironment.anisoOptions.customized() == false)
+		if (env.anisoOptions.customized() == false)
 		{
-			for (auto& rd : roiData)
+			for (auto& rd : env.roiData)
 			{
 				LR& r = rd.second;
 				r.make_nonanisotropic_aabb ();
@@ -105,10 +105,10 @@ namespace Nyxus
 		}
 		else
 		{
-			double	ax = theEnvironment.anisoOptions.get_aniso_x(),
-						ay = theEnvironment.anisoOptions.get_aniso_y();
+			double	ax = env.anisoOptions.get_aniso_x(),
+						ay = env.anisoOptions.get_aniso_y();
 
-			for (auto& rd : roiData)
+			for (auto& rd : env.roiData)
 			{
 				LR& r = rd.second;
 				r.make_anisotropic_aabb (ax, ay);
@@ -120,18 +120,10 @@ namespace Nyxus
 
 	//
 	// segmented 2.5D case (aka layoutA, collections of 2D slice images e.g. blah_z1_blah.ome.tif, blah_z2_blah.ome.tif, ..., blah_z500_blah.ome.tif)
-	// prerequisite: 'theImLoader' needs to be pre-opened !
+	// prerequisite: 'env.theImLoader' needs to be pre-opened !
 	//
-	bool gatherRoisMetrics_25D (const std::string& intens_fpath, const std::string& mask_fpath, const std::vector<std::string>& z_indices)
+	bool gatherRoisMetrics_25D (Environment & env, size_t sidx, const std::string& intens_fpath, const std::string& mask_fpath, const std::vector<std::string>& z_indices)
 	{
-		// Cache the file names in global variables '' to be picked up 
-		// by labels in feed_pixel_2_metrics_3D() to link ROIs with their image file origins
-		theIntFname = intens_fpath;
-		theSegFname = mask_fpath;
-
-		int lvl = 0, // Pyramid level
-			lyr = 0; //	Layer
-
 		for (size_t z=0; z<z_indices.size(); z++)
 		{ 
 			// prepare the physical file 
@@ -142,33 +134,31 @@ namespace Nyxus
 				mfpath = std::regex_replace (mask_fpath, std::regex("\\*"), zValue);
 
 			// temp SlideProps object
-			SlideProps sprp;
-			sprp.fname_int = ifpath;
-			sprp.fname_seg = mfpath;
+			SlideProps sprp (ifpath, mfpath);
 
 			// Extract features from this intensity-mask pair 
-			if (theImLoader.open(sprp) == false)
+			if (env.theImLoader.open(sprp, env.fpimageOptions) == false)
 			{
 				std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
 				return false;
 			}
 
 			// Read the tiff. The image loader is put in the open state in processDataset()
-			size_t nth = theImLoader.get_num_tiles_hor(),
-				ntv = theImLoader.get_num_tiles_vert(),
-				fw = theImLoader.get_tile_width(),
-				th = theImLoader.get_tile_height(),
-				tw = theImLoader.get_tile_width(),
-				tileSize = theImLoader.get_tile_size(),
-				fullwidth = theImLoader.get_full_width(),
-				fullheight = theImLoader.get_full_height();
+			size_t nth = env.theImLoader.get_num_tiles_hor(),
+				ntv = env.theImLoader.get_num_tiles_vert(),
+				fw = env.theImLoader.get_tile_width(),
+				th = env.theImLoader.get_tile_height(),
+				tw = env.theImLoader.get_tile_width(),
+				tileSize = env.theImLoader.get_tile_size(),
+				fullwidth = env.theImLoader.get_full_width(),
+				fullheight = env.theImLoader.get_full_height();
 
 			int cnt = 1;
 			for (unsigned int row = 0; row < nth; row++)
 				for (unsigned int col = 0; col < ntv; col++)
 				{
 					// Fetch a tile 
-					bool ok = theImLoader.load_tile (row, col);
+					bool ok = env.theImLoader.load_tile (row, col);
 					if (!ok)
 					{
 						std::string erm = "Error fetching tile row:" + std::to_string(row) + " col:" + std::to_string(col) + " from I:" + ifpath + " M:" + mfpath;
@@ -180,8 +170,8 @@ namespace Nyxus
 					}
 
 					// Get ahold of tile's pixel buffer
-					auto dataI = theImLoader.get_int_tile_buffer(),
-						dataL = theImLoader.get_seg_tile_buffer();
+					auto dataI = env.theImLoader.get_int_tile_buffer(),
+						dataL = env.theImLoader.get_seg_tile_buffer();
 
 					// Iterate pixels
 					for (size_t i = 0; i < tileSize; i++)
@@ -199,11 +189,11 @@ namespace Nyxus
 							continue;
 
 						// Collapse all the labels to one if single-ROI mde is requested
-						if (theEnvironment.singleROI)
+						if (env.singleROI)
 							label = 1;
 
 						// Update pixel's ROI metrics
-						feed_pixel_2_metrics_3D  (x, y, z, dataI[i], label); // Updates 'uniqueLabels' and 'roiData'
+						feed_pixel_2_metrics_3D  (env.uniqueLabels, env.roiData, x, y, z, dataI[i], label, sidx); // Updates 'uniqueLabels' and 'roiData'
 					}
 
 					#ifdef WITH_PYTHON_H
@@ -212,19 +202,19 @@ namespace Nyxus
 					#endif
 
 					// Show stayalive progress info
-					VERBOSLVL2(
+					VERBOSLVL2 (env.get_verbosity_level(),
 						if (cnt++ % 4 == 0)
-							std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n";
+							std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << env.uniqueLabels.size() << " ROIs" << "\n";
 					);
 				}
 
-			theImLoader.close();
+			env.theImLoader.close();
 		}
 
 		// fix ROIs' AABBs with respect to anisotropy
-		if (theEnvironment.anisoOptions.customized() == false)
+		if (env.anisoOptions.customized() == false)
 		{
-			for (auto& rd : roiData)
+			for (auto& rd : env.roiData)
 			{
 				LR& r = rd.second;
 				r.make_nonanisotropic_aabb();
@@ -232,11 +222,11 @@ namespace Nyxus
 		}
 		else
 		{
-			double	ax = theEnvironment.anisoOptions.get_aniso_x(),
-				ay = theEnvironment.anisoOptions.get_aniso_y(), 
-				az = theEnvironment.anisoOptions.get_aniso_z();
+			double	ax = env.anisoOptions.get_aniso_x(),
+				ay = env.anisoOptions.get_aniso_y(),
+				az = env.anisoOptions.get_aniso_z();
 
-			for (auto& rd : roiData)
+			for (auto& rd : env.roiData)
 			{
 				LR& r = rd.second;
 				r.make_anisotropic_aabb (ax, ay, az);
@@ -248,105 +238,107 @@ namespace Nyxus
 
 	//
 	// segmented 3D case (true volumetric images e.g. .nii, .nii.gz, .dcm, etc)
-	// prerequisite: 'theImLoader' needs to be pre-opened !
+	// prerequisite: 'env.theImLoader' needs to be pre-opened !
 	//
-	bool gatherRoisMetrics_3D (const std::string& intens_fpath, const std::string& mask_fpath)
+	bool gatherRoisMetrics_3D (Environment& env, size_t sidx, const std::string& intens_fpath, const std::string& mask_fpath, size_t t_index)
 	{
-		// Cache the file names in global variables '' to be picked up 
-		// by labels in feed_pixel_2_metrics_3D() to link ROIs with their image file origins
-		theIntFname = intens_fpath;
-		theSegFname = mask_fpath;
-
-		int lvl = 0, // Pyramid level
-			lyr = 0; //	Layer
-
-		// temp SlideProps object
-		SlideProps sprp;
-		sprp.fname_int = intens_fpath;
-		sprp.fname_seg = mask_fpath;
-
-		// Extract features from this intensity-mask pair 
-		if (theImLoader.open(sprp) == false)
+		SlideProps & sprp = env.dataset.dataset_props [sidx];
+		if (! env.theImLoader.open(sprp, env.fpimageOptions))
 		{
 			std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
 			return false;
 		}
 
 		// Read the tiff. The image loader is put in the open state in processDataset()
-		size_t nth = theImLoader.get_num_tiles_hor(),
-			ntv = theImLoader.get_num_tiles_vert(),
-			fw = theImLoader.get_tile_width(),
-			th = theImLoader.get_tile_height(),
-			tw = theImLoader.get_tile_width(),
-			tileSize = theImLoader.get_tile_size(),
-			fullwidth = theImLoader.get_full_width(),
-			fullheight = theImLoader.get_full_height(),
-			fullD = theImLoader.get_full_depth(),
-			sliceSize = fullwidth * fullheight,
-			nVox = sliceSize * fullD;
+		size_t 
+			w = env.theImLoader.get_full_width(),
+			h = env.theImLoader.get_full_height(),
+			d = env.theImLoader.get_full_depth(),
+			sliceSize = w * h,
+			timeFrameSize = sliceSize * d,
+			timeI = env.theImLoader.get_inten_time(),
+			timeM = env.theImLoader.get_mask_time(),	// may be ==0 for WSI
+			nVoxI = timeFrameSize * timeI,
+			nVoxM = timeFrameSize * timeM;
+
+		// is this intensity-mask pair's shape supported?
+		if (nVoxI < nVoxM)
+		{
+			std::string erm = "Error: unsupported shape - intensity file: " + std::to_string(nVoxI) + ", mask file: " + std::to_string(nVoxM);
+#ifdef WITH_PYTHON_H
+			throw erm;
+#endif	
+			std::cerr << erm << "\n";
+			return false;
+		}
 
 		int cnt = 1;
-		for (size_t row = 0; row < nth; row++)
-			for (size_t col = 0; col < ntv; col++)
-			{
-				// Fetch a tile 
-				bool ok = theImLoader.load_tile(row, col);
-				if (!ok)
-				{
-					std::string erm = "Error fetching tile row:" + std::to_string(row) + " col:" + std::to_string(col) + " from I:" + intens_fpath + " M:" + mask_fpath;
-					#ifdef WITH_PYTHON_H
-						throw erm;
-					#endif	
-					std::cerr << erm << "\n";
-					return false;
-				}
 
-				// Get ahold of tile's pixel buffer
-				auto dataI = theImLoader.get_int_tile_buffer(),
-					dataL = theImLoader.get_seg_tile_buffer();
+		// Fetch a tile 
+		bool ok = env.theImLoader.load_tile (0/*row*/ , 0/*col*/);
+		if (!ok)
+		{
+			std::string erm = "Error fetching tile (0,0) from I:" + intens_fpath + " M:" + mask_fpath;
+			#ifdef WITH_PYTHON_H
+				throw erm;
+			#endif	
+			std::cerr << erm << "\n";
+			return false;
+		}
 
-				// Iterate voxels
-				for (size_t i = 0; i < nVox; i++)
-				{
-					// Skip non-mask pixels
-					auto label = dataL[i];
-					if (!label)
-						continue;
+		// Get ahold of tile's pixel buffer
+		auto dataI = env.theImLoader.get_int_tile_buffer(),
+			dataL = env.theImLoader.get_seg_tile_buffer();
 
-					int z = i / sliceSize,
-						y = (i - z*sliceSize) / tw,
-						x = (i - z * sliceSize) % tw;
+		size_t baseI, baseM;
+		if (nVoxI == nVoxM)
+		{
+			baseM = baseI = t_index * timeFrameSize;
+		}
+		else // nVoxI > nVoxM
+		{
+			baseM = 0;
+			baseI = t_index * timeFrameSize;
+		}
 
-					// Skip tile buffer pixels beyond the image's bounds
-					if (x >= fullwidth || y >= fullheight || z >= fullD)
-						continue;
+		// Iterate voxels
+		for (size_t i=0; i<timeFrameSize; i++)
+		{
+			size_t k = i + baseM;	// absolute index of mask voxel
+			size_t j = i + baseI;	// absolute index of intensity voxel
+									
+			// Skip non-mask pixels
+			auto label = dataL[k];
+			if (!label)
+				continue;
 
-					// Collapse all the labels to one if single-ROI mde is requested
-					if (theEnvironment.singleROI)
-						label = 1;
+			int z = k / sliceSize,
+				y = (k - z*sliceSize) / w,
+				x = (k - z * sliceSize) % w;
 
-					// Update pixel's ROI metrics
-					feed_pixel_2_metrics_3D (x, y, z, dataI[i], label); // Updates 'uniqueLabels' and 'roiData'
-				}
+			// Skip tile buffer pixels beyond the image's bounds
+			if (x >= w || y >= h || z >= d)
+				continue;
+
+			// Collapse all the labels to one if single-ROI mde is requested
+			if (env.singleROI)
+				label = 1;
+
+			// Update pixel's ROI metrics
+			feed_pixel_2_metrics_3D (env.uniqueLabels, env.roiData, x, y, z, dataI[j], label, sidx);
+		}
 
 #ifdef WITH_PYTHON_H
-				if (PyErr_CheckSignals() != 0)
-					throw pybind11::error_already_set();
+		if (PyErr_CheckSignals() != 0)
+			throw pybind11::error_already_set();
 #endif
 
-				// Show stayalive progress info
-				VERBOSLVL2(
-					if (cnt++ % 4 == 0)
-						std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n";
-				);
-			}
-
-		theImLoader.close();
+		env.theImLoader.close();
 
 		// fix ROIs' AABBs with respect to anisotropy
-		if (theEnvironment.anisoOptions.customized() == false)
+		if (env.anisoOptions.customized() == false)
 		{
-			for (auto& rd : roiData)
+			for (auto& rd : env.roiData)
 			{
 				LR& r = rd.second;
 				r.make_nonanisotropic_aabb();
@@ -354,11 +346,11 @@ namespace Nyxus
 		}
 		else
 		{
-			double	ax = theEnvironment.anisoOptions.get_aniso_x(),
-				ay = theEnvironment.anisoOptions.get_aniso_y(),
-				az = theEnvironment.anisoOptions.get_aniso_z();
+			double	ax = env.anisoOptions.get_aniso_x(),
+				ay = env.anisoOptions.get_aniso_y(),
+				az = env.anisoOptions.get_aniso_z();
 
-			for (auto& rd : roiData)
+			for (auto& rd : env.roiData)
 			{
 				LR& r = rd.second;
 				r.make_anisotropic_aabb(ax, ay, az);
@@ -369,12 +361,13 @@ namespace Nyxus
 	}
 
 #ifdef WITH_PYTHON_H
+
 	//
 	// segmented 2D case
 	//
-	bool gatherRoisMetricsInMemory (const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens_images, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images, int pair_index)
+	bool gatherRoisMetricsInMemory (Environment & env, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens_images, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images, int pair_index)
 	{
-		VERBOSLVL4(std::cout << "gatherRoisMetricsInMemory (pair_index=" << pair_index << ") \n");
+		VERBOSLVL4 (env.get_verbosity_level(), std::cout << "gatherRoisMetricsInMemory (pair_index=" << pair_index << ") \n");
 
 		auto rI = intens_images.unchecked<3>();
 		auto rL = label_images.unchecked<3>();
@@ -391,12 +384,12 @@ namespace Nyxus
 					continue;
 
 				// Collapse all the labels to one if single-ROI mde is requested
-				if (theEnvironment.singleROI)
+				if (env.singleROI)
 					label = 1;
 
 				// Update pixel's ROI metrics
 				auto inten = rI (pair_index, row, col);
-				feed_pixel_2_metrics (col, row, inten, label, -1); // Updates 'uniqueLabels' and 'roiData'. Using slide_idx=-1
+				feed_pixel_2_metrics (env.uniqueLabels, env.roiData, col, row, inten, label, pair_index); // Updates 'uniqueLabels' and 'roiData'
 
 				if (PyErr_CheckSignals() != 0)
 					throw pybind11::error_already_set();
@@ -404,5 +397,6 @@ namespace Nyxus
 
 		return true;
 	}
+
 #endif
 }

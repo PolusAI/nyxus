@@ -7,7 +7,7 @@
 
 #include "../features/image_matrix.h"
 #include "gpu.h"
-#include "../gpucache.h"
+#include "../cache.h"   //xxxxxxxxxx    #include "../gpucache.h"
 #include "geomoments.cuh"
 
 namespace NyxusGpu

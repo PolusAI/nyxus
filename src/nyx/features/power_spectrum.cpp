@@ -4,12 +4,10 @@
 #include <numeric>
 #include <map>
 #include <set>
-
 #include "power_spectrum.h"
 #include "../helpers/helpers.h"
 #include "../helpers/fft.h"
 #include "../helpers/lstsq.h"
-#include "../parallel.h"
 
 using namespace Nyxus;
 
@@ -17,8 +15,8 @@ PowerSpectrumFeature::PowerSpectrumFeature() : FeatureMethod("PowerSpectrumFeatu
     provide_features({ FeatureIMQ::POWER_SPECTRUM_SLOPE });
 }
 
-void PowerSpectrumFeature::calculate(LR& r) {
-
+void PowerSpectrumFeature::calculate (LR& r, const Fsettings& s)
+{
     // Get ahold of the ROI image matrix
     const ImageMatrix& Im0 = r.aux_image_matrix;
 
@@ -30,39 +28,15 @@ bool PowerSpectrumFeature::required(const FeatureSet& fs)
     return fs.isEnabled(FeatureIMQ::POWER_SPECTRUM_SLOPE);
 }
 
-void PowerSpectrumFeature::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
-{
-    for (auto i = start; i < end; i++)
-    {
-        int lab = (*ptrLabels)[i];
-        LR& r = (*ptrLabelData)[lab];
-
-        PowerSpectrumFeature fsf;
-
-        fsf.calculate(r);
-
-        fsf.save_value(r.fvals);
-    }
-}
-
-void PowerSpectrumFeature::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
-{
-    size_t jobSize = roi_labels.size(),
-        workPerThread = jobSize / n_threads;
-
-    runParallel(PowerSpectrumFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
-}
-
-void PowerSpectrumFeature::extract(LR& r)
+void PowerSpectrumFeature::extract (LR& r, const Fsettings& s)
 {
     PowerSpectrumFeature f;
-    f.calculate(r);
-    f.save_value(r.fvals);
+    f.calculate (r, s);
+    f.save_value (r.fvals);
 }
 
-void PowerSpectrumFeature::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void PowerSpectrumFeature::parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
-
     // Calculate the feature for each batch ROI item 
     for (auto i = firstitem; i < lastitem; i++)
     {
@@ -76,7 +50,7 @@ void PowerSpectrumFeature::parallel_process_1_batch(size_t firstitem, size_t las
             continue;
 
         // Calculate the feature and save it in ROI's csv-friendly b uffer 'fvals'
-        extract(r);
+        extract (r, s);
     }
 }
 

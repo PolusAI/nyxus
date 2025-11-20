@@ -192,8 +192,10 @@ std::string RoiBlacklist::get_summary_text()
 
 void RoiBlacklist::clear()
 {
-	globalBlackList.clear();
-	fileBlackList.clear();
+	if (globalBlackList.size())
+		globalBlackList.clear();
+	if (fileBlackList.size())
+		fileBlackList.clear();
 	defined_ = false;
 	ermsg = "";
 }

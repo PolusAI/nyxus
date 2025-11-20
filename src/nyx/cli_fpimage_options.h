@@ -10,7 +10,7 @@ public:
 	bool parse_input();
 
 	// Returns true if all 'raw*' are empty
-	bool empty();
+	bool empty() const;
 
 	std::string get_summary_text();
 	std::string get_last_er_msg();

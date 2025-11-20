@@ -1,8 +1,24 @@
 #pragma once
 
-#include <cufftXt.h>
-#include "features/pixel.h"
-#include <unordered_map>
+#ifdef USE_GPU
+	#include <cufftXt.h>
+	#include <unordered_map>
+	#include "features/pixel.h"
+#endif
+
+class CpusideCache
+{
+public:
+	CpusideCache() {}
+
+	size_t imageMatrixBufferLen = 0;
+	size_t largest_roi_imatr_buf_len = 0;
+
+protected:
+
+};
+
+#ifdef USE_GPU
 
 // 1 instance of this per each ROI cached in device memory
 enum GpusideState
@@ -11,7 +27,7 @@ enum GpusideState
 
 	N_EROSIONS = 0,
 	N_EROSIONS_COMPLEMENT,
-	
+
 	// * * * * *	2D geometric moments
 
 	FEATURE_GEOMOM_STATUS,
@@ -48,7 +64,7 @@ enum GpusideState
 	// weighted raw moments
 	WRM00, WRM01, WRM02, WRM03,
 	WRM10, WRM11, WRM12,
-	WRM20, WRM21, 
+	WRM20, WRM21,
 	WRM30,
 	// weighted central moments
 	WCM00, // necessary for WNCM_pq
@@ -57,19 +73,18 @@ enum GpusideState
 	WCM20, WCM21,
 	WCM30,
 	// weighted normed central moments
-	WNU02, WNU03, 
-	WNU11, WNU12, 
-	WNU20, WNU21, 
+	WNU02, WNU03,
+	WNU11, WNU12,
+	WNU20, WNU21,
 	WNU30,
 	// weighted Hu
 	WH1, WH2, WH3, WH4, WH5, WH6, WH7,
 	__COUNT__
 };
 
-
 class LR;
 
-template <class T> 
+template <class T>
 class GpuCache
 {
 public:
@@ -80,47 +95,58 @@ public:
 	size_t* dev_offsets = nullptr;
 	size_t total_len, num_rois;
 	bool alloc(size_t total_len) { OK(alloc(total_len, 1)); return true; };
-	bool alloc (size_t total_len, size_t num_rois);
-	static size_t szb (size_t total_len, size_t num_rois);
+	bool alloc(size_t total_len, size_t num_rois);
+	static size_t szb(size_t total_len, size_t num_rois);
 	bool upload();
 	bool download();
 	bool clear();
 	~GpuCache() { clear(); }
 };
 
-namespace NyxusGpu
+class GpusideCache
 {
-
-#ifdef USE_GPU
+public:
+	GpusideCache() {}
 
 	// state buffer shared by all GPU-enabled features
-	extern GpuCache<gpureal> gpu_featurestatebuf;	// n_rois * GeomomentsState::__COUNT__
+	/*--extern--*/ GpuCache<gpureal> gpu_featurestatebuf;	// n_rois * GeomomentsState::__COUNT__
 
-	extern GpuCache<Pixel2> gpu_roiclouds_2d;	// continuous ROI clouds
-	extern GpuCache<Pixel2> gpu_roicontours_2d;	// continuous ROI contours
+	/*--extern--*/ GpuCache<Pixel2> gpu_roiclouds_2d;	// continuous ROI clouds
+	/*--extern--*/ GpuCache<Pixel2> gpu_roicontours_2d;	// continuous ROI contours
 
 	// helper buffers of 2D moments features
-	extern RealPixIntens* dev_realintens;	// max cloud size over batch
-	extern double* dev_prereduce;	// --"--
-	extern void* dev_devicereduce_temp_storage;	// allocated [] elements by cub::DeviceReduce::Sum()
-	extern size_t devicereduce_temp_storage_szb;
-	extern size_t gpu_batch_len;
+	/*--extern--*/ RealPixIntens* dev_realintens = nullptr;	// max cloud size over batch
+	/*--extern--*/ double* dev_prereduce = nullptr;	// --"--
+	/*--extern--*/ void* dev_devicereduce_temp_storage = nullptr;	// allocated [] elements by cub::DeviceReduce::Sum()
+	/*--extern--*/ size_t devicereduce_temp_storage_szb;
+	/*--extern--*/ size_t gpu_batch_len;
 
 	// helper buffers of erosion features (single instance shared by all batch ROIs)
-	extern PixIntens* dev_imat1;
-	extern PixIntens* dev_imat2;
+	/*--extern--*/ PixIntens* dev_imat1 = nullptr;
+	/*--extern--*/ PixIntens* dev_imat2 = nullptr;
 
 	// helper buffers of Gabor
-	extern GpuCache <cufftDoubleComplex> gabor_linear_image; // (img_plus_ker_size* n_filters); // ROI + kernel image
-	extern GpuCache <cufftDoubleComplex> gabor_result; // (img_plus_ker_size* n_filters);
-	extern GpuCache <cufftDoubleComplex> gabor_linear_kernel; // (img_plus_ker_size* n_filters);
-	extern GpuCache <PixIntens> gabor_energy_image; // (img_plus_ker_size* n_filters);
+	/*--extern--*/ GpuCache <cufftDoubleComplex> gabor_linear_image; // (img_plus_ker_size* n_filters); // ROI + kernel image
+	/*--extern--*/ GpuCache <cufftDoubleComplex> gabor_result; // (img_plus_ker_size* n_filters);
+	/*--extern--*/ GpuCache <cufftDoubleComplex> gabor_linear_kernel; // (img_plus_ker_size* n_filters);
+	/*--extern--*/ GpuCache <PixIntens> gabor_energy_image; // (img_plus_ker_size* n_filters);
 
 	//
 	// these need to be called after "prescan" (phase 0)
 	//
 
-	bool gpu_get_free_mem(size_t& amt);
+	size_t ram_comsumption_szb(
+		bool needContour,
+		bool needErosion,
+		bool needGabor,
+		bool needMoments,
+		size_t roi_cloud_len,
+		size_t roi_kontur_cloud_len,
+		size_t n_rois,
+		size_t roi_w,
+		size_t roi_h,
+		int n_gabor_filters,
+		int gabor_ker_side);
 
 	bool allocate_gpu_cache(
 		// out
@@ -134,11 +160,11 @@ namespace NyxusGpu
 		size_t& gpu_batch_len,
 		PixIntens** imat1,
 		PixIntens** imat2,
-		GpuCache <cufftDoubleComplex> & gabor_linear_image,
-		GpuCache <cufftDoubleComplex> & gabor_result,
-		GpuCache <cufftDoubleComplex> & gabor_linear_kernel,
-		GpuCache <PixIntens> & gabor_energy,
-			// in
+		GpuCache <cufftDoubleComplex>& gabor_linear_image,
+		GpuCache <cufftDoubleComplex>& gabor_result,
+		GpuCache <cufftDoubleComplex>& gabor_linear_kernel,
+		GpuCache <PixIntens>& gabor_energy,
+		// in
 		bool needContour,
 		bool needErosion,
 		bool needGabor,
@@ -164,12 +190,12 @@ namespace NyxusGpu
 		GpuCache <cufftDoubleComplex>& gabor_linear_image,
 		GpuCache <cufftDoubleComplex>& gabor_result,
 		GpuCache <cufftDoubleComplex>& gabor_linear_kernel,
-		GpuCache <PixIntens> & gabor_energy_image
+		GpuCache <PixIntens>& gabor_energy_image
 	);
 
 	// these need to be called in "reduce_trivial"
-	void send_roi_data_gpuside(const std::vector<int>& ptrLabels, std::unordered_map <int, LR>& ptrLabelData, size_t off_this_batch, size_t actual_batch_len);
-	
+	void send_roi_data_gpuside (const std::vector<int>& ptrLabels, std::unordered_map <int, LR>& ptrLabelData, size_t off_this_batch, size_t actual_batch_len);
+
 	void send_roi_batch_data_2_gpu(
 		// out
 		GpuCache<Pixel2>& cloud,
@@ -187,13 +213,20 @@ namespace NyxusGpu
 
 	// general purpose low-level helpers
 
-	bool gpu_delete(void* devptr);
-	bool allocate_on_device(void** ptr, size_t szb);
-	bool upload_on_device(void* devbuffer, void* hobuffer, size_t szb);
-	bool download_on_host(void* hobuffer, void* devbuffer, size_t szb);
-	bool devicereduce_evaluate_buffer_szb(size_t& devicereduce_buf_szb, size_t maxLen);
-	bool gpu_get_free_mem(size_t& amt);
+	static bool gpu_delete(void* devptr);
+	static bool allocate_on_device(void** ptr, size_t szb);
+	static bool upload_on_device(void* devbuffer, void* hobuffer, size_t szb);
+	static bool download_on_host(void* hobuffer, void* devbuffer, size_t szb);
+	static bool devicereduce_evaluate_buffer_szb(size_t& devicereduce_buf_szb, size_t maxLen);
+	static bool gpu_get_free_mem(size_t& amt);
+
+protected:
+
+	bool using_contour = false,
+		using_erosion = false,
+		using_gabor = false,
+		using_moments = false;
+
+};
 
 #endif
-
-} // NyxusGpu

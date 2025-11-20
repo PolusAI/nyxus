@@ -13,26 +13,24 @@
 
 using namespace Nyxus;
 
-int GLSZMFeature::n_levels = 0;
-
-void GLSZMFeature::invalidate()
+void GLSZMFeature::invalidate (double default_val)
 {
 	fv_SAE =
-		fv_LAE =
-		fv_GLN =
-		fv_GLNN =
-		fv_SZN =
-		fv_SZNN =
-		fv_ZP =
-		fv_GLV =
-		fv_ZV =
-		fv_ZE =
-		fv_LGLZE =
-		fv_HGLZE =
-		fv_SALGLE =
-		fv_SAHGLE =
-		fv_LALGLE =
-		fv_LAHGLE = theEnvironment.resultOptions.noval();
+	fv_LAE =
+	fv_GLN =
+	fv_GLNN =
+	fv_SZN =
+	fv_SZNN =
+	fv_ZP =
+	fv_GLV =
+	fv_ZV =
+	fv_ZE =
+	fv_LGLZE =
+	fv_HGLZE =
+	fv_SALGLE =
+	fv_SAHGLE =
+	fv_LALGLE =
+	fv_LAHGLE = default_val;
 }
 
 GLSZMFeature::GLSZMFeature() : FeatureMethod("GLSZMFeature")
@@ -42,7 +40,7 @@ GLSZMFeature::GLSZMFeature() : FeatureMethod("GLSZMFeature")
 
 void GLSZMFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {} // Not supporting
 
-void GLSZMFeature::osized_calculate (LR& r, ImageLoader&)
+void GLSZMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
 	clear_buffers();
 
@@ -75,7 +73,7 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader&)
 
 	// Squeeze the intensity range
 	PixIntens piRange = r.aux_max - r.aux_min;		// Prepare ROI's intensity range
-	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+	unsigned int nGrays = STNGS_NGREYS(s); // former theEnvironment.get_coarse_gray_depth()
 
 	for (size_t i = 0; i < D.size(); i++)
 		D.set_at(i, Nyxus::to_grayscale(D[i], r.aux_min, piRange, nGrays, Environment::ibsi_compliance));
@@ -212,14 +210,14 @@ void GLSZMFeature::osized_calculate (LR& r, ImageLoader&)
 
 }
 
-void GLSZMFeature::calculate(LR& r)
+void GLSZMFeature::calculate (LR& r, const Fsettings& s)
 {
 	clear_buffers();
 
 	// intercept blank ROIs (equal intensity)
 	if (r.aux_min == r.aux_max)
 	{
-		invalidate();
+		invalidate(STNGS_NAN(s));
 		return;
 	}
 	 
@@ -239,8 +237,8 @@ void GLSZMFeature::calculate(LR& r)
 	pixData & D = M.WriteablePixels();
 
 	// Squeeze the intensity range
-	auto greyInfo = theEnvironment.get_coarse_gray_depth();
-	if (Nyxus::theEnvironment.ibsi_compliance)
+	auto greyInfo = STNGS_NGREYS(s);	// former theEnvironment.get_coarse_gray_depth()
+	if (STNGS_IBSI(s))	// former Nyxus::theEnvironment.ibsi_compliance
 		greyInfo = 0;
 	auto& imR = r.aux_image_matrix.ReadablePixels();
 	bin_intensities (D, imR, r.aux_min, r.aux_max, greyInfo);
@@ -402,7 +400,7 @@ void GLSZMFeature::calculate(LR& r)
 
 	if (sum_p == 0)
 	{
-		invalidate();
+		invalidate(STNGS_NAN(s));
 		return;
 	}
 
@@ -412,7 +410,7 @@ void GLSZMFeature::calculate(LR& r)
 
 	// Precalculate sums of P
 	#ifdef USE_GPU
-	if (theEnvironment.using_gpu())
+	if (STNGS_USEGPU(s))	// former theEnvironment.using_gpu()
 	{
 		if (!NyxusGpu::GLSZMfeature_calc (
 			// out
@@ -436,7 +434,7 @@ void GLSZMFeature::calculate(LR& r)
 			Ng, Ns, I.data(), P.data(), sum_p, Np, EPS))
 		{
 			std::cerr << "ERROR: GLSZMfeature_calc_sums_of_P failed \n";
-			invalidate();
+			invalidate (STNGS_NAN(s));
 			return;
 		}
 	}
@@ -454,7 +452,7 @@ void GLSZMFeature::calculate(LR& r)
 
 	// Calculate features
 	#ifdef USE_GPU
-	if (theEnvironment.using_gpu())
+	if (STNGS_USEGPU(s))	// former theEnvironment.using_gpu()
 	{
 		// features are calculated in GLSZMfeature_calc_sums_of_P
 	}
@@ -553,11 +551,6 @@ void GLSZMFeature::calc_sums_of_P()
 			sum += P.matlab (i,j);
 		sj[j] = sum;
 	}
-}
-
-bool GLSZMFeature::need (Nyxus::Feature2D f)
-{
-	return theFeatureSet.isEnabled (f);
 }
 
 void GLSZMFeature::save_value (std::vector<std::vector<double>>& fvals)
@@ -777,14 +770,14 @@ double GLSZMFeature::calc_LAHGLE()
 	return retval;
 }
 
-void GLSZMFeature::extract (LR& r)
+void GLSZMFeature::extract (LR& r, const Fsettings& s)
 {
 	GLSZMFeature f;
-	f.calculate(r);
-	f.save_value(r.fvals);
+	f.calculate (r, s);
+	f.save_value (r.fvals);
 }
 
-void GLSZMFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void GLSZMFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -794,7 +787,7 @@ void GLSZMFeature::parallel_process_1_batch (size_t start, size_t end, std::vect
 		if (r.has_bad_data())
 			continue;
 
-		extract (r);
+		extract (r, s);
 	}
 }
 

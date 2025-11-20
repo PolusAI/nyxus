@@ -40,7 +40,7 @@ void RadialDistributionFeature::reset_buffers()
 	values_RadialCV.resize(n, 0);
 }
 
-void RadialDistributionFeature::calculate(LR& r)
+void RadialDistributionFeature::calculate (LR& r, const Fsettings& s)
 {
 	reset_buffers();
 
@@ -122,7 +122,7 @@ size_t RadialDistributionFeature::find_center_NT (const OutOfRamPixelCloud& clou
 	return idxMinDif;
 }
 
-void RadialDistributionFeature::osized_calculate(LR& r, ImageLoader& imlo)
+void RadialDistributionFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imlo)
 {
 	reset_buffers();
 
@@ -187,20 +187,20 @@ void RadialDistributionFeature::save_value(std::vector<std::vector<double>>& fva
 	fvals[(int)Feature2D::RADIAL_CV] = values_RadialCV;
 }
 
-void RadialDistributionFeature::extract (LR& r)
+void RadialDistributionFeature::extract (LR& r, const Fsettings& s)
 {
 	RadialDistributionFeature rdf;
-	rdf.calculate(r);
-	rdf.save_value(r.fvals);
+	rdf.calculate (r, s);
+	rdf.save_value (r.fvals);
 }
 
-void RadialDistributionFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void RadialDistributionFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-		extract (r);
+		extract (r, s);
 	}
 }
 

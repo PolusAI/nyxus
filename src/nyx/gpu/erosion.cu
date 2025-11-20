@@ -6,7 +6,7 @@
 #include <iostream>
 
 #include "gpu.h"
-#include "../gpucache.h"
+#include "../cache.h"   //xxxxxxxxxx    #include "../gpucache.h"
 
 #include "../helpers/timing.h"
 
@@ -164,19 +164,19 @@ namespace NyxusGpu
             d_prereduce[0] = y + double(x) / pow(10, ceil(log10(double(x)))); // flag "nnz > 0"
     }
 
-    bool ErosionFeature_calculate_via_gpu(size_t roi_index, size_t roi_w, size_t roi_h, int max_n_erosions, int & fval)
+    bool ErosionFeature_calculate_via_gpu (size_t roi_index, size_t roi_w, size_t roi_h, int max_n_erosions, int & fval, GpusideCache & devside)
     {
         // context of ROI #roi_index:
         //
         // proper batch has been sent to gpu-side by this point
         //
-        gpureal* state = &NyxusGpu::gpu_featurestatebuf.devbuffer[roi_index * GpusideState::__COUNT__];
-        size_t cloud_len = NyxusGpu::gpu_roiclouds_2d.ho_lengths[roi_index];
-        size_t cloud_offset = NyxusGpu::gpu_roiclouds_2d.ho_offsets[roi_index];
-        Pixel2* d_cloud = &NyxusGpu::gpu_roiclouds_2d.devbuffer[cloud_offset];
-        PixIntens* d_imat1 = NyxusGpu::dev_imat1,
-            * d_imat2 = NyxusGpu::dev_imat2;
-        double* d_prereduce = NyxusGpu::dev_prereduce;
+        gpureal* state = &devside.gpu_featurestatebuf.devbuffer[roi_index * GpusideState::__COUNT__];
+        size_t cloud_len = devside.gpu_roiclouds_2d.ho_lengths[roi_index];
+        size_t cloud_offset = devside.gpu_roiclouds_2d.ho_offsets[roi_index];
+        Pixel2* d_cloud = &devside.gpu_roiclouds_2d.devbuffer[cloud_offset];
+        PixIntens* d_imat1 = devside.dev_imat1,
+            * d_imat2 = devside.dev_imat2;
+        double* d_prereduce = devside.dev_prereduce;
 
         //***** zero imat2
         size_t szb = roi_w * roi_h * sizeof(d_imat2[0]);
