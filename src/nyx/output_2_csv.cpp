@@ -828,7 +828,7 @@ namespace Nyxus
 
 		// other columns
 		std::vector<std::string> textcols;
-		textcols.push_back ((fs::path(ifpath)).filename().u8string());
+		textcols.push_back ((fs::path(ifpath)).filename().string());
 		textcols.push_back ("");
 		int roilabl = r.label; // whole-slide roi #
 
@@ -862,8 +862,8 @@ namespace Nyxus
 			// Tear off pure file names from segment and intensity file paths
 			fs::path pseg(r.segFname), pint(r.intFname);
 			std::vector<std::string> filenames;
-			filenames.push_back(pint.filename().u8string());
-			filenames.push_back(pseg.filename().u8string());
+			filenames.push_back(pint.filename().string());
+			filenames.push_back(pseg.filename().string());
 
 			for (auto& enabdF : F)
 			{
