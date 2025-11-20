@@ -50,7 +50,7 @@ D3_GLDM_feature::D3_GLDM_feature() : FeatureMethod("D3_GLDM_feature")
 	provide_features (D3_GLDM_feature::featureset);
 }
 
-void D3_GLDM_feature::calculate(LR& r)
+void D3_GLDM_feature::calculate (LR& r, const Fsettings& s)
 {
 	clear_buffers();
 
@@ -58,19 +58,19 @@ void D3_GLDM_feature::calculate(LR& r)
 	if (r.aux_min == r.aux_max)
 	{
 		fv_SDE =
-			fv_LDE =
-			fv_GLN =
-			fv_DN =
-			fv_DNN =
-			fv_GLV =
-			fv_DV =
-			fv_DE =
-			fv_LGLE =
-			fv_HGLE =
-			fv_SDLGLE =
-			fv_SDHGLE =
-			fv_LDLGLE =
-			fv_LDHGLE = theEnvironment.resultOptions.noval();
+		fv_LDE =
+		fv_GLN =
+		fv_DN =
+		fv_DNN =
+		fv_GLV =
+		fv_DV =
+		fv_DE =
+		fv_LGLE =
+		fv_HGLE =
+		fv_SDLGLE =
+		fv_SDHGLE =
+		fv_LDLGLE =
+		fv_LDHGLE = STNGS_NAN(s);
 
 		return;
 	}
@@ -87,8 +87,8 @@ void D3_GLDM_feature::calculate(LR& r)
 	SimpleCube<PixIntens> D;
 	D.allocate(w, h, d);
 
-	auto greyInfo = Nyxus::theEnvironment.get_coarse_gray_depth();
-	if (Nyxus::theEnvironment.ibsi_compliance)
+	auto greyInfo = STNGS_NGREYS(s);	// former Nyxus::theEnvironment.get_coarse_gray_depth()
+	if (STNGS_IBSI(s))	// former Nyxus::theEnvironment.ibsi_compliance
 		greyInfo = 0;
 
 	bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo);
@@ -194,19 +194,19 @@ void D3_GLDM_feature::calculate(LR& r)
 	{
 		// degenerate case
 		fv_SDE =
-			fv_LDE =
-			fv_GLN =
-			fv_DN =
-			fv_DNN =
-			fv_GLV =
-			fv_DV =
-			fv_DE =
-			fv_LGLE =
-			fv_HGLE =
-			fv_SDLGLE =
-			fv_SDHGLE =
-			fv_LDLGLE =
-			fv_LDHGLE = theEnvironment.resultOptions.noval();
+		fv_LDE =
+		fv_GLN =
+		fv_DN =
+		fv_DNN =
+		fv_GLV =
+		fv_DV =
+		fv_DE =
+		fv_LGLE =
+		fv_HGLE =
+		fv_SDLGLE =
+		fv_SDHGLE =
+		fv_LDLGLE =
+		fv_LDHGLE = STNGS_NAN(s);
 	}
 	else
 	{
@@ -241,9 +241,9 @@ void D3_GLDM_feature::clear_buffers()
 
 void D3_GLDM_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
 
-void D3_GLDM_feature::osized_calculate(LR& r, ImageLoader&)
+void D3_GLDM_feature::osized_calculate(LR& r, const Fsettings& s, ImageLoader&)
 {
-	calculate(r);
+	calculate (r, s);
 }
 
 void D3_GLDM_feature::save_value(std::vector<std::vector<double>>& fvals)
@@ -526,7 +526,7 @@ double D3_GLDM_feature::calc_LDHGLE()
 	return retval;
 }
 
-void D3_GLDM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void D3_GLDM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -537,14 +537,14 @@ void D3_GLDM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLab
 			continue;
 
 		D3_GLDM_feature gldm;
-		gldm.calculate(r);
-		gldm.save_value(r.fvals);
+		gldm.calculate (r, s);
+		gldm.save_value (r.fvals);
 	}
 }
 
-/*static*/ void D3_GLDM_feature::extract (LR& r)
+/*static*/ void D3_GLDM_feature::extract (LR& r, const Fsettings& s)
 {
 	D3_GLDM_feature f;
-	f.calculate(r);
-	f.save_value(r.fvals);
+	f.calculate (r, s);
+	f.save_value (r.fvals);
 }

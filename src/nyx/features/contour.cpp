@@ -14,19 +14,16 @@
 #include "moments.h"
 #include "contour.h"
 #include "../globals.h"
-
 #include "../roi_cache.h"	// Required by the reduction function
-#include "../parallel.h"
-
 #include "../environment.h"		// regular or whole slide mode
 #include "image_matrix_nontriv.h"
 
 using namespace Nyxus;
 
-bool ContourFeature::required(const FeatureSet& fs)
+bool ContourFeature::required (const FeatureSet & fset)
 {
-
-	return theFeatureSet.anyEnabled({
+	return fset.anyEnabled(
+		{
 		// own features
 		Feature2D::PERIMETER,
 		Feature2D::DIAMETER_EQUAL_PERIMETER,
@@ -238,7 +235,7 @@ std::vector<int> score_cands (const std::vector<Pixel2>& cands, const Pixel2& px
 	return S;
 }
 
-void ContourFeature::buildRegularContour(LR& r)
+void ContourFeature::buildRegularContour (LR& r, const Fsettings& s)
 {
 	//==== Pad the image
 
@@ -255,7 +252,8 @@ void ContourFeature::buildRegularContour(LR& r)
 		paddedImage.at(x + y * (width + 2)) = px.inten + 1;	// we build a contour keeping corresponding intensities
 	}
 
-	VERBOSLVL4 (dump_2d_image_1d_layout(paddedImage, width + 2, height + 2, "\n\n\n ContourFeature / buildRegularContour / Padded image ROI " + std::to_string(r.aabb.get_width()) + " W " + std::to_string(r.aabb.get_height()) + " H \n",  "\n\n\n"));
+	if (s[(int)NyxSetting::VERBOSLVL].ival >= 4)
+		dump_2d_image_1d_layout(paddedImage, width + 2, height + 2, "\n\n\n ContourFeature / buildRegularContour / Padded image ROI " + std::to_string(r.aabb.get_width()) + " W " + std::to_string(r.aabb.get_height()) + " H \n", "\n\n\n");
 
 	const int BLANK = 0;
 	bool inside = false;
@@ -368,7 +366,8 @@ void ContourFeature::buildRegularContour(LR& r)
 		}
 	}
 
-	VERBOSLVL4(dump_2d_image_1d_layout (borderImage, width + 2, height + 2, "\n\n-- ContourFeature / buildRegularContour / Padded contour image --\n", "\n\n"));
+	if (s[(int)NyxSetting::VERBOSLVL].ival >= 4)
+		dump_2d_image_1d_layout(borderImage, width + 2, height + 2, "\n\n-- ContourFeature / buildRegularContour / Padded contour image --\n", "\n\n");
 
 	//==== remove padding 
 	r.contour.clear();
@@ -391,12 +390,12 @@ void ContourFeature::buildRegularContour(LR& r)
 				bool hasNeig = false;
 				if (x > 0)	// left neighbor
 				{
-					size_t idxNeig = (x-1) + y * (width+2);
+					size_t idxNeig = (x - 1) + y * (width + 2);
 					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
 				}
-				if (x < width-1)	// right neighbor
+				if (x < width - 1)	// right neighbor
 				{
-					size_t idxNeig = (x+1) + y * (width+2);
+					size_t idxNeig = (x + 1) + y * (width + 2);
 					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
 				}
 				if (y > 0)	// upper neighbor
@@ -437,7 +436,8 @@ void ContourFeature::buildRegularContour(LR& r)
 			}
 		}
 
-	VERBOSLVL4(dump_2d_image_with_vertex_chain(borderImage, r.contour, width + 2, height + 2, "\n\n-- ContourFeature / buildRegularContour / Padded contour image + UNsorted contour--\n", "\n\n"));
+	if (s[(int)NyxSetting::VERBOSLVL].ival >= 4)
+		dump_2d_image_with_vertex_chain(borderImage, r.contour, width + 2, height + 2, "\n\n-- ContourFeature / buildRegularContour / Padded contour image + UNsorted contour--\n", "\n\n");
 
 	//==== Reorder the contour cloud
 
@@ -467,7 +467,8 @@ void ContourFeature::buildRegularContour(LR& r)
 			if (cands.empty())
 			{
 				// -- we have a gap and need to fix it
-				VERBOSLVL4(dump_2d_image_with_halfcontour(borderImage, unordered, ordered, pxTip, width + 2, height + 2, "\nhalfcontour:\n", ""));
+				if (s[(int)NyxSetting::VERBOSLVL].ival >= 4)
+					dump_2d_image_with_halfcontour(borderImage, unordered, ordered, pxTip, width + 2, height + 2, "\nhalfcontour:\n", "");
 
 				// -- no 'break;' ,instead, jump the tip to the closest U-pixel
 				Pixel2 pxPants;
@@ -507,7 +508,8 @@ void ContourFeature::buildRegularContour(LR& r)
 	else
 		r.contour.push_back(lastNonzeroPx);	// just use the last speckle as a contour because we have no legit contour
 
-	VERBOSLVL4(dump_2d_image_with_vertex_chain(borderImage, r.contour, width + 2, height + 2, "\n\n-- ContourFeature / buildRegularContour / Padded contour image + sorted contour--\n", "\n\n"));
+	if (s[(int)NyxSetting::VERBOSLVL].ival >= 4)
+		dump_2d_image_with_vertex_chain(borderImage, r.contour, width + 2, height + 2, "\n\n-- ContourFeature / buildRegularContour / Padded contour image + sorted contour--\n", "\n\n");
 
 	// finally, fix pixel positions back to absolute
 	for (Pixel2& p : r.contour)
@@ -517,7 +519,7 @@ void ContourFeature::buildRegularContour(LR& r)
 	}
 }
 
-void ContourFeature::buildRegularContour_nontriv(LR& r)
+void ContourFeature::buildRegularContour_nontriv (LR& r, const Fsettings& s)
 {
 	//==== Pad the image
 
@@ -715,33 +717,34 @@ void ContourFeature::buildRegularContour_nontriv(LR& r)
 		else //	--any gaps left by the contour algorithm?
 		{
 			// Most likely cause is the closing pixel is in 'ordered' already and the pixels in 'unordered' are redundant due to the Moore based algorithm above
-			VERBOSLVL4(
+			if (s[(int)NyxSetting::VERBOSLVL].ival >= 4)
+			{
 				std::cerr << "gap in contour!\n" << "tip pixel: " << pxTip.x << "," << pxTip.y << "\n";
-			std::cerr << "ordered:\n";
-			int i = 1;
-			for (auto& pxo : ordered)
-			{
-				std::cerr << "\t" << pxo.x << "," << pxo.y;
-				if (i++ % 10 == 0)
-					std::cerr << "\n";
-			}
-			std::cerr << "\n";
+				std::cerr << "ordered:\n";
+				int i = 1;
+				for (auto& pxo : ordered)
+				{
+					std::cerr << "\t" << pxo.x << "," << pxo.y;
+					if (i++ % 10 == 0)
+						std::cerr << "\n";
+				}
+				std::cerr << "\n";
 
-			int neigR2 = 400;	// squared
-			std::cerr << "unordered around the tip (R^2=" << neigR2 << "):\n";
-			i = 1;
-			for (auto& pxu : unordered)
-			{
-				// filter out the far neighborhood
-				if (pxTip.sqdist(pxu) > neigR2)
-					continue;
+				int neigR2 = 400;	// squared
+				std::cerr << "unordered around the tip (R^2=" << neigR2 << "):\n";
+				i = 1;
+				for (auto& pxu : unordered)
+				{
+					// filter out the far neighborhood
+					if (pxTip.sqdist(pxu) > neigR2)
+						continue;
 
-				std::cerr << "\t" << pxu.x << "," << pxu.y;
-				if (i++ % 10 == 0)
-					std::cerr << "\n";
+					std::cerr << "\t" << pxu.x << "," << pxu.y;
+					if (i++ % 10 == 0)
+						std::cerr << "\n";
+				}
+				std::cerr << "\n";
 			}
-			std::cerr << "\n";
-			);
 			break;
 		}
 	}
@@ -765,12 +768,12 @@ void ContourFeature::buildWholeSlideContour(LR& r)
 	r.contour.push_back(bl);
 }
 
-void ContourFeature::calculate(LR& r)
+void ContourFeature::calculate (LR& r, const Fsettings& s)
 {
-	if (Nyxus::theEnvironment.singleROI)
+	if (s[(int)NyxSetting::SINGLEROI].bval)	// former Nyxus::theEnvironment.singleROI
 		buildWholeSlideContour(r);
 	else
-		buildRegularContour(r);
+		buildRegularContour (r, s);
 
 	//=== Calculate the features
 	fval_PERIMETER = 0;
@@ -804,9 +807,9 @@ void ContourFeature::calculate(LR& r)
 void ContourFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
 {}
 
-void ContourFeature::osized_calculate(LR& r, ImageLoader& imloader)
+void ContourFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader)
 {
-	buildRegularContour_nontriv(r);	// leaves the contour pixels in field 'contour'
+	buildRegularContour_nontriv(r, s);	// leaves the contour pixels in field 'contour'
 
 	//=== Calculate the features
 	fval_PERIMETER = (StatsInt)r.contour.size();
@@ -833,17 +836,6 @@ void ContourFeature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature2D::EDGE_INTEGRATED_INTENSITY][0] = fval_EDGE_INTEGRATEDINTENSITY;
 }
 
-void ContourFeature::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
-{	
-	size_t jobSize = roi_labels.size(),
-		workPerThread = jobSize / n_threads;
-
-	runParallel (ContourFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
-}
-
-void ContourFeature::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
-{}
-
 void ContourFeature::cleanup_instance()
 {}
 
@@ -861,14 +853,14 @@ std::tuple<double, double, double, double> ContourFeature::calc_min_max_mean_std
 	return { min_, max_, mean_, stddev_ };
 }
 
-void ContourFeature::extract (LR& r)
+void ContourFeature::extract (LR& r, const Fsettings& s)
 {
 	ContourFeature f;
-	f.calculate (r);
+	f.calculate (r, s);
 	f.save_value (r.fvals);
 }
 
-void ContourFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void ContourFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & fst, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -876,7 +868,9 @@ void ContourFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabe
 		LR& r = (*ptrLabelData)[lab];
 
 		ContourFeature f;
-		f.calculate (r);
+		f.calculate (r, fst);
 		f.save_value (r.fvals);
 	}
 }
+
+

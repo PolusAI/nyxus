@@ -2,10 +2,206 @@
 #include <regex>
 #include "../featureset.h"
 #include "../environment.h"	
-#include "../parallel.h"
 #include "../3rdparty/quickhull.hpp"
 #include "../3rdparty/dsyevj3.h"
 #include "3d_surface.h"
+
+namespace Nyxus
+{
+	void build_contour_imp(
+		// out
+		std::vector <size_t>& contour,	// indices in the cloud
+		// in
+		const std::vector <Pixel3>& cloud,	// achtung! coordinates need fixing wrt AABB!
+		const std::vector <size_t>& plane,
+		int z,
+		int width,
+		int height,
+		int minx,
+		int miny,
+		int verbose_level)
+	{
+		//==== Pad the image
+
+		int paddingColor = 0;
+		std::vector<PixIntens> paddedImage((height + 2) * (width + 2), paddingColor);
+		for (auto idx : plane) // 'zplane' is indices of the z-plane to build the contour for
+
+		{
+			auto& px = cloud[idx];
+			auto x = px.x - minx + 1,
+				y = px.y - miny + 1;
+			paddedImage[x + y * (width + 2)] = idx/*px.inten*/ + 1;	// Decorate the intensity
+		}
+
+		VERBOSLVL4(verbose_level,
+			std::cout << "\n\n\n" << "-- build_contour_imp() / z=" << z << "/ Padded image--\n";
+		for (int y = 0; y < height + 2; y++)
+		{
+			for (int x = 0; x < width + 2; x++)
+			{
+				size_t idx = x + y * (width + 2);
+				auto inte = paddedImage[idx];
+				if (inte)
+					std::cout << '*';
+				else
+					std::cout << '.';
+			}
+			std::cout << "\n";
+		}
+		std::cout << "\n\n\n";
+		);
+
+		const int BLANK = 0;
+		bool inside = false;
+		int pos = 0;
+
+		//==== Prepare the contour ("border") image
+		std::vector<PixIntens> borderImage((height + 2) * (width + 2), 0);
+
+		// Initialize the entire image to blank
+		for (int y = 0; y < (height + 2); y++)
+			for (int x = 0; x < (width + 2); x++)
+				borderImage[x + y * (width + 2)] = BLANK;
+
+		//==== Scan the padded image and fill the border one
+		for (int y = 0; y < (height + 2); y++)
+			for (int x = 0; x < (width + 2); x++)
+			{
+				pos = x + y * (width + 2);
+
+				// Scan for a non-blank pixel
+				if (borderImage[pos] != 0 && !inside)		// Entering an already discovered border
+				{
+					inside = true;
+				}
+				else if (paddedImage[pos] != 0 && inside)	// Already discovered border point
+				{
+					continue;
+				}
+				else if (paddedImage[pos] == BLANK && inside)	// Leaving a border
+				{
+					inside = false;
+				}
+				else if (paddedImage[pos] != 0 && !inside)	// Undiscovered border point
+				{
+					borderImage[pos] = paddedImage[pos];	// Non-blank
+
+					int checkLocationNr = 1;	// The neighbor number of the location we want to check for a new border point
+					int checkPosition;			// The corresponding absolute array address of checkLocationNr
+					int newCheckLocationNr; 	// Variable that holds the neighborhood position we want to check if we find a new border at checkLocationNr
+					int startPos = pos;			// Set start position
+					int counter = 0; 			// Counter is used for the jacobi stop criterion
+					int counter2 = 0; 			// Counter2 is used to determine if the point we have discovered is one single point
+
+					// Defines the neighborhood offset position from current position and the neighborhood
+					// position we want to check next if we find a new border at checkLocationNr
+					int neighborhood[8][2] = {
+							{-1,7},
+							{-3 - width,7},
+							{-width - 2,1},
+							{-1 - width,1},
+							{1,3},
+							{3 + width,3},
+							{width + 2,5},
+							{1 + width,5}
+					};
+
+					// Trace around the neighborhood
+					while (true)
+					{
+						checkPosition = pos + neighborhood[checkLocationNr - 1][0];
+						newCheckLocationNr = neighborhood[checkLocationNr - 1][1];
+
+						if (paddedImage[checkPosition] != 0) // Next border point found?
+						{
+							if (checkPosition == startPos)
+							{
+								counter++;
+
+								// Stopping criterion (jacob)
+								if (newCheckLocationNr == 1 || counter >= 3)
+								{
+									// Close loop
+									inside = true; // Since we are starting the search at were we first started we must set inside to true
+									break;
+								}
+							}
+
+							checkLocationNr = newCheckLocationNr; // Update which neighborhood position we should check next
+							pos = checkPosition;
+							counter2 = 0; 						// Reset the counter that keeps track of how many neighbors we have visited
+							borderImage[checkPosition] = paddedImage[checkPosition]; // Non-blank
+						}
+						else
+						{
+							// Rotate clockwise in the neighborhood
+							checkLocationNr = 1 + (checkLocationNr % 8);
+							if (counter2 > 8)
+							{
+								// If counter2 is above 8, we have sought around the neighborhood and
+								// therefore the border is a single non-blank pixel, and we can exit
+								counter2 = 0;
+								break;
+							}
+							else
+							{
+								counter2++;
+							}
+						}
+					}
+				}
+			}
+
+		VERBOSLVL4(verbose_level,
+			std::cout << "\n\n\n" << "-- ContourFeature / buildRegularContour / Contour image --\n";
+		// header
+		std::cout << "\t";	// indent
+		for (int i = 0; i < width; i++)
+			if (i % 10 == 0)
+				std::cout << '|';
+			else
+				std::cout << '_';
+		std::cout << "\n";
+		//---
+		for (int y = 0; y < height + 2; y++)
+		{
+			std::cout << "y=" << y << "\t";
+			for (int x = 0; x < width + 2; x++)
+			{
+				size_t idx = x + y * (width + 2);
+				auto inte = borderImage[idx];
+				if (inte)
+					std::cout << ' ';
+				else
+					std::cout << '+';
+			}
+			std::cout << "\n";
+		}
+		std::cout << "\n\n\n";
+		);
+
+		//==== Remove padding and save the contour image as a vector of non-blank pixels
+
+		contour.clear();
+
+		for (int y = 0; y < height + 2; y++)
+			for (int x = 0; x < width + 2; x++)
+			{
+				size_t idx = x + y * (width + 2);
+				auto ix = borderImage[idx];
+				PixIntens inte = 0;
+				if (ix)
+					inte = cloud[ix - 1].inten;
+				if (inte)
+				{
+					//Pixel3 p(x + minx, y + miny, z, inte); // indexed scenario: '..., z, inte-1'		// Cast pixel position from relative to absolute and undecorate its intensity
+					contour.push_back(ix - 1); // push_back(p);
+				}
+			}
+	}
+
+}	//- namespace Nyxus
 
 bool D3_SurfaceFeature::required (const FeatureSet & fs)
 {
@@ -15,198 +211,6 @@ bool D3_SurfaceFeature::required (const FeatureSet & fs)
 D3_SurfaceFeature::D3_SurfaceFeature() : FeatureMethod("D3_SurfaceFeature")
 {
 	provide_features (D3_SurfaceFeature::featureset);
-}
-
-void build_contour_imp (
-	// out
-	std::vector <size_t>& contour,	// indices in the cloud
-	// in
-	const std::vector <Pixel3>& cloud,	// achtung! coordinates need fixing wrt AABB!
-	const std::vector <size_t>& plane,
-	int z,
-	int width,
-	int height,
-	int minx,
-	int miny)
-{
-	//==== Pad the image
-
-	int paddingColor = 0;
-	std::vector<PixIntens> paddedImage((height + 2) * (width + 2), paddingColor);
-	for (auto idx : plane) // 'zplane' is indices of the z-plane to build the contour for
-
-	{
-		auto& px = cloud[idx];
-		auto x = px.x - minx + 1,
-			y = px.y - miny + 1;
-		paddedImage[x + y * (width + 2)] = idx/*px.inten*/ + 1;	// Decorate the intensity
-	}
-
-	VERBOSLVL4(
-		std::cout << "\n\n\n" << "-- ContourFeature / buildRegularContour / Padded image --\n";
-	for (int y = 0; y < height + 2; y++)
-	{
-		for (int x = 0; x < width + 2; x++)
-		{
-			size_t idx = x + y * (width + 2);
-			auto inte = paddedImage[idx];
-			if (inte)
-				std::cout << '*';
-			else
-				std::cout << '.';
-		}
-		std::cout << "\n";
-	}
-	std::cout << "\n\n\n";
-	);
-
-	const int BLANK = 0;
-	bool inside = false;
-	int pos = 0;
-
-	//==== Prepare the contour ("border") image
-	std::vector<PixIntens> borderImage((height + 2) * (width + 2), 0);
-
-	// Initialize the entire image to blank
-	for (int y = 0; y < (height + 2); y++)
-		for (int x = 0; x < (width + 2); x++)
-			borderImage[x + y * (width + 2)] = BLANK;
-
-	//==== Scan the padded image and fill the border one
-	for (int y = 0; y < (height + 2); y++)
-		for (int x = 0; x < (width + 2); x++)
-		{
-			pos = x + y * (width + 2);
-
-			// Scan for a non-blank pixel
-			if (borderImage[pos] != 0 && !inside)		// Entering an already discovered border
-			{
-				inside = true;
-			}
-			else if (paddedImage[pos] != 0 && inside)	// Already discovered border point
-			{
-				continue;
-			}
-			else if (paddedImage[pos] == BLANK && inside)	// Leaving a border
-			{
-				inside = false;
-			}
-			else if (paddedImage[pos] != 0 && !inside)	// Undiscovered border point
-			{
-				borderImage[pos] = paddedImage[pos];	// Non-blank
-
-				int checkLocationNr = 1;	// The neighbor number of the location we want to check for a new border point
-				int checkPosition;			// The corresponding absolute array address of checkLocationNr
-				int newCheckLocationNr; 	// Variable that holds the neighborhood position we want to check if we find a new border at checkLocationNr
-				int startPos = pos;			// Set start position
-				int counter = 0; 			// Counter is used for the jacobi stop criterion
-				int counter2 = 0; 			// Counter2 is used to determine if the point we have discovered is one single point
-
-				// Defines the neighborhood offset position from current position and the neighborhood
-				// position we want to check next if we find a new border at checkLocationNr
-				int neighborhood[8][2] = {
-						{-1,7},
-						{-3 - width,7},
-						{-width - 2,1},
-						{-1 - width,1},
-						{1,3},
-						{3 + width,3},
-						{width + 2,5},
-						{1 + width,5}
-				};
-
-				// Trace around the neighborhood
-				while (true)
-				{
-					checkPosition = pos + neighborhood[checkLocationNr - 1][0];
-					newCheckLocationNr = neighborhood[checkLocationNr - 1][1];
-
-					if (paddedImage[checkPosition] != 0) // Next border point found?
-					{
-						if (checkPosition == startPos)
-						{
-							counter++;
-
-							// Stopping criterion (jacob)
-							if (newCheckLocationNr == 1 || counter >= 3)
-							{
-								// Close loop
-								inside = true; // Since we are starting the search at were we first started we must set inside to true
-								break;
-							}
-						}
-
-						checkLocationNr = newCheckLocationNr; // Update which neighborhood position we should check next
-						pos = checkPosition;
-						counter2 = 0; 						// Reset the counter that keeps track of how many neighbors we have visited
-						borderImage[checkPosition] = paddedImage[checkPosition]; // Non-blank
-					}
-					else
-					{
-						// Rotate clockwise in the neighborhood
-						checkLocationNr = 1 + (checkLocationNr % 8);
-						if (counter2 > 8)
-						{
-							// If counter2 is above 8, we have sought around the neighborhood and
-							// therefore the border is a single non-blank pixel, and we can exit
-							counter2 = 0;
-							break;
-						}
-						else
-						{
-							counter2++;
-						}
-					}
-				}
-			}
-		}
-
-	VERBOSLVL4(
-		std::cout << "\n\n\n" << "-- ContourFeature / buildRegularContour / Contour image --\n";
-	// header
-	std::cout << "\t";	// indent
-	for (int i = 0; i < width; i++)
-		if (i % 10 == 0)
-			std::cout << '|';
-		else
-			std::cout << '_';
-	std::cout << "\n";
-	//---
-	for (int y = 0; y < height + 2; y++)
-	{
-		std::cout << "y=" << y << "\t";
-		for (int x = 0; x < width + 2; x++)
-		{
-			size_t idx = x + y * (width + 2);
-			auto inte = borderImage[idx];
-			if (inte)
-				std::cout << ' ';
-			else
-				std::cout << '+';
-		}
-		std::cout << "\n";
-	}
-	std::cout << "\n\n\n";
-	);
-
-	//==== Remove padding and save the contour image as a vector of non-blank pixels
-
-	contour.clear();
-
-	for (int y = 0; y < height + 2; y++)
-		for (int x = 0; x < width + 2; x++)
-		{
-			size_t idx = x + y * (width + 2);
-			auto ix = borderImage[idx];
-			PixIntens inte = 0;
-			if (ix)
-				inte = cloud[ix - 1].inten;
-			if (inte)
-			{
-				//Pixel3 p(x + minx, y + miny, z, inte); // indexed scenario: '..., z, inte-1'		// Cast pixel position from relative to absolute and undecorate its intensity
-				contour.push_back(ix-1); // push_back(p);
-			}
-		}
 }
 
 void dump_skinny_contour_3D (
@@ -292,7 +296,10 @@ void D3_SurfaceFeature::build_surface (LR & r)
 	auto initial_simplex = qh.get_affine_basis();
 	if (initial_simplex.size() < dim + 1) 
 	{
-		VERBOSLVL1 (std::cerr << "degenerate convex shell input \n");
+#ifdef WITH_PYTHON_H
+		throw std::runtime_error ("degenerate convex shell input");
+#endif
+		std::cerr << "degenerate convex shell input \n";
 		return;
 	}
 	qh.create_initial_simplex(std::cbegin(initial_simplex), std::prev(std::cend(initial_simplex)));
@@ -312,7 +319,7 @@ void D3_SurfaceFeature::build_surface (LR & r)
 	}
 }
 
-void D3_SurfaceFeature::calculate (LR& r)
+void D3_SurfaceFeature::calculate (LR& r, const Fsettings& s)
 {
 	// is shape data non-informative ?
 	if (r.raw_pixels_3D.size() == 0)
@@ -321,7 +328,7 @@ void D3_SurfaceFeature::calculate (LR& r)
 		return;
 	}
 
-	if (Nyxus::theEnvironment.singleROI)
+	if (STNGS_SINGLEROI(s))	// former Nyxus::theEnvironment.singleROI
 	{
 		auto w = r.aabb.get_width(),
 			h = r.aabb.get_height(),
@@ -370,7 +377,7 @@ void D3_SurfaceFeature::calculate (LR& r)
 
 		// skinny contour
 		std::vector<size_t> K;	// indices in the cloud
-		build_contour_imp (
+		Nyxus::build_contour_imp (
 			K, 
 			r.raw_pixels_3D, 
 			planeVoxs,
@@ -378,7 +385,8 @@ void D3_SurfaceFeature::calculate (LR& r)
 			r.aabb.get_width(), 
 			r.aabb.get_height(), 
 			r.aabb.get_xmin(), 
-			r.aabb.get_ymin());
+			r.aabb.get_ymin(),
+			STNGS_VERBOSLVL(s));
 
 		// store it
 		r.contours_3D.push_back (K);
@@ -486,7 +494,7 @@ void D3_SurfaceFeature::calculate (LR& r)
 
 void D3_SurfaceFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
 
-void D3_SurfaceFeature::osized_calculate(LR& r, ImageLoader& imloader) {}
+void D3_SurfaceFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr) {}
 
 void D3_SurfaceFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
@@ -525,51 +533,23 @@ void D3_SurfaceFeature::cleanup_instance()
 	fval_FLATNESS = 0;
 }
 
-void D3_SurfaceFeature::parallel_process (std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
-{
-	size_t jobSize = roi_labels.size(),
-		workPerThread = jobSize / n_threads;
-
-	Nyxus::runParallel (D3_SurfaceFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
-}
-
-void D3_SurfaceFeature::parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
-{
-	// Calculate the feature for each batch ROI item 
-	for (auto i = firstitem; i < lastitem; i++)
-	{
-		// Get ahold of ROI's label and cache
-		int roiLabel = (*ptrLabels)[i];
-		LR& r = (*ptrLabelData)[roiLabel];
-
-		// Skip the ROI if its data is invalid to prevent nans and infs in the output
-		if (r.has_bad_data())
-			continue;
-
-		// Calculate the feature and save it in ROI's csv-friendly buffer 'fvals'
-		D3_SurfaceFeature f;
-		f.calculate(r);
-		f.save_value(r.fvals);
-	}
-}
-
-void D3_SurfaceFeature::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void D3_SurfaceFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 		D3_SurfaceFeature f;
-		f.calculate(r);
-		f.save_value(r.fvals);
+		f.calculate (r, s);
+		f.save_value (r.fvals);
 	}
 }
 
-/*static*/ void D3_SurfaceFeature::extract (LR& r)
+/*static*/ void D3_SurfaceFeature::extract (LR& r, const Fsettings& s)
 {
 	D3_SurfaceFeature f;
-	f.calculate(r);
-	f.save_value(r.fvals);
+	f.calculate (r, s);
+	f.save_value (r.fvals);
 }
 
 

@@ -1,6 +1,6 @@
 #include "2d_geomoments.h"
 
-void BasicGeomoms2D::osized_calculate(LR& r, ImageLoader&)
+void BasicGeomoms2D::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
     // Cache ROI frame of reference
     baseX = r.aabb.get_xmin();

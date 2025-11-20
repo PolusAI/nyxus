@@ -1,6 +1,5 @@
 #ifdef DICOM_SUPPORT
 #pragma once
-#include "abs_tile_loader.h"
 #include "dcmtk/dcmdata/dctk.h"
 #include "dcmtk/dcmjpeg/djdecode.h"  /* for JPEG decoders */
 #include "dcmtk/dcmjpls/djdecode.h"  /* for JPEG-LS decoders */
@@ -9,9 +8,12 @@
 #include "dcmtk/dcmseg/segdoc.h"
 #include "dcmtk/dcmseg/segment.h"
 #include "dcmtk/dcmseg/segutils.h"
+#include "abs_tile_loader.h"
+
 #ifdef JPEG2K_SUPPORT
-#include "fmjpeg2k/djdecode.h"
+    #include "fmjpeg2k/djdecode.h"
 #endif
+
 template<class DataType>
 class NyxusGrayscaleDicomLoader : public AbstractTileLoader<DataType> 
 {

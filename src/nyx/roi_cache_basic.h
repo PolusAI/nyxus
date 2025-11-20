@@ -6,7 +6,11 @@
 class BasicLR
 {
 public:
-	BasicLR (int lab) : label(lab) {}
+	BasicLR (int lab) : label(lab)
+	{
+		// use default label '-1' and slide index '-1' (no slide available)
+		slide_idx = -1;
+	}
 	void init_aabb (StatsInt x, StatsInt y);
 	void update_aabb (StatsInt x, StatsInt y);
 	void init_aabb_3D (StatsInt x, StatsInt y, StatsInt z);
@@ -21,7 +25,9 @@ public:
 	AABB ph_aabb;
 	AABB aabb;
 	int label;
-	std::string segFname, intFname;	// full paths
+
+	// index in the dataset properties container, that is a vector of slide properties, linking a ROI to its slide
+	int slide_idx;
 
 };
 

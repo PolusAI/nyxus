@@ -23,7 +23,7 @@ EllipseFittingFeature::EllipseFittingFeature() : FeatureMethod("EllipseFittingFe
 }
 
 //EllipseFittingFeature::EllipseFittingFeature(const std::vector<Pixel2>& roi_pixels, double centroid_x, double centroid_y, double area)
-void EllipseFittingFeature::calculate (LR& r)
+void EllipseFittingFeature::calculate (LR& r, const Fsettings& s)
 {
 	// Idea: calculate normalized second central moments for the region. 1/12 is the normalized second central moment of a pixel with unit length.
 
@@ -111,14 +111,14 @@ double EllipseFittingFeature::get_roundness()
 	return roundness;
 }
 
-void EllipseFittingFeature::extract (LR& r)
+void EllipseFittingFeature::extract (LR& r, const Fsettings& s)
 {
 	EllipseFittingFeature f;
-	f.calculate (r);
+	f.calculate (r, s);
 	f.save_value (r.fvals);
 }
 
-void EllipseFittingFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void EllipseFittingFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -128,11 +128,11 @@ void EllipseFittingFeature::reduce (size_t start, size_t end, std::vector<int>* 
 		if (r.has_bad_data())
 			continue;
 
-		extract (r);
+		extract (r, s);
 	}
 }
 
-void EllipseFittingFeature::osized_calculate (LR& r, ImageLoader& imloader)
+void EllipseFittingFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader)
 {
 	// Idea: calculate normalized second central moments for the region. 1/12 is the normalized second central moment of a pixel with unit length.
 

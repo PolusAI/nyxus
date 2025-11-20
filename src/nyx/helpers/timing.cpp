@@ -1,3 +1,5 @@
+#ifdef CHECKTIMING
+
 #include <fstream>
 #include "../environment.h"
 #include "fsystem.h"
@@ -32,15 +34,15 @@ Stopwatch::Stopwatch (const std::string& header_, const std::string& tail_)
 
 	start = std::chrono::system_clock::now();
 	if (header.length() > 0)
-		VERBOSLVL2(std::cout << header << "\n";)
+		std::cout << header << "\n";
 }
 
 Stopwatch::~Stopwatch()
 {
 	end = std::chrono::system_clock::now();
 	std::chrono::duration<double, Unit> elap = end - start;
-	VERBOSLVL2(std::cout << tail << " " << elap.count() << " us\n"; )
-		totals[header] = totals[header] + elap.count();
+	std::cout << tail << " " << elap.count() << " us\n"; 
+	totals[header] = totals[header] + elap.count();
 }
 
 void Stopwatch::reset() 
@@ -152,7 +154,6 @@ void Stopwatch::save_stats (const std::string & fpath)
 			<< _quote_ << facro << _quote_ << _comma_ //" " << Nyxus::round2(perc) << "%" << _quote_ << _comma_
 			<< _quote_ << t.second << _quote_ << _comma_
 			<< _quote_ << totTime << _quote_ << _comma_
-			<< _quote_ << Nyxus::theEnvironment.n_reduce_threads << _quote_
 			<< "\n";
 	}
 
@@ -161,20 +162,6 @@ void Stopwatch::save_stats (const std::string & fpath)
 	if (! vals.empty())
 		for (std::string & rhs : vals)
 			f << _quote_ << rhs << _quote_ << _comma_;		
-
-	// Additional timig info (uncomment on necessity)
-	/*
-	f << _quote_ << "Total" << _quote_ << _comma_ 
-		<< _quote_ << "All" << _quote_ << _comma_
-		<< _quote_ << "All" << _quote_ << _comma_
-		<< _quote_ << "100" << _quote_ << _comma_
-		<< _quote_ << "#000000" << _quote_ << _comma_ 
-		<< _quote_ << "TOTL" << _quote_ << _comma_ //" " << Nyxus::round2(100) << "%" << _quote_ << _comma_
-		<< _quote_ << totTime << _quote_ << _comma_
-		<< _quote_ << totTime << _quote_ << _comma_
-		<< _quote_ << Nyxus::theEnvironment.n_reduce_threads << _quote_ 
-		<< "\n";
-	*/
 }
 
 namespace Nyxus
@@ -205,3 +192,5 @@ namespace Nyxus
 		return s;
 	}
 }
+
+#endif

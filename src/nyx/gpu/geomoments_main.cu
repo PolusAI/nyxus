@@ -7,7 +7,7 @@
 
 #include "gpu.h"
 #include "geomoments.cuh"
-#include "../gpucache.h"
+#include "../cache.h"   //xxxxxxxxxxxxx     #include "../gpucache.h"
 
 #include "../helpers/timing.h"
 
@@ -30,23 +30,23 @@ namespace NyxusGpu
 
     bool ImageMomentsFeature_calcNormSpatialMoments3(gpureal* d_state);
 
-    bool GeoMoments2D_calculate (size_t roi_index, bool wholeslide, bool need_shape_moments)
+    bool GeoMoments2D_calculate (size_t roi_index, bool wholeslide, bool need_shape_moments, GpusideCache & devside)
     {
         // context of ROI #roi_index:
         //
         // proper batch has been sent to gpu-side by this point
         //
-        gpureal* state = &NyxusGpu::gpu_featurestatebuf.devbuffer[roi_index * GpusideState::__COUNT__];
-        size_t cloud_len = NyxusGpu::gpu_roiclouds_2d.ho_lengths[roi_index];
-        size_t cloud_offset = NyxusGpu::gpu_roiclouds_2d.ho_offsets[roi_index];
-        Pixel2* d_cloud = &NyxusGpu::gpu_roiclouds_2d.devbuffer[cloud_offset];
-        size_t contour_len = NyxusGpu::gpu_roicontours_2d.ho_lengths[roi_index];
-        size_t contour_offset = NyxusGpu::gpu_roicontours_2d.ho_offsets[roi_index];
-        Pixel2* d_contour = &NyxusGpu::gpu_roicontours_2d.devbuffer[contour_offset];
-        double* d_prereduce = NyxusGpu::dev_prereduce;
-        auto& d_devicereduce_tempstorage = NyxusGpu::dev_devicereduce_temp_storage;
-        size_t devicereduce_tempstorage_szb = NyxusGpu::devicereduce_temp_storage_szb;
-        RealPixIntens* d_realintens = NyxusGpu::dev_realintens;
+        gpureal* state = &devside.gpu_featurestatebuf.devbuffer[roi_index * GpusideState::__COUNT__];
+        size_t cloud_len = devside.gpu_roiclouds_2d.ho_lengths[roi_index];
+        size_t cloud_offset = devside.gpu_roiclouds_2d.ho_offsets[roi_index];
+        Pixel2* d_cloud = &devside.gpu_roiclouds_2d.devbuffer[cloud_offset];
+        size_t contour_len = devside.gpu_roicontours_2d.ho_lengths[roi_index];
+        size_t contour_offset = devside.gpu_roicontours_2d.ho_offsets[roi_index];
+        Pixel2* d_contour = &devside.gpu_roicontours_2d.devbuffer[contour_offset];
+        double* d_prereduce = devside.dev_prereduce;
+        auto& d_devicereduce_tempstorage = devside.dev_devicereduce_temp_storage;
+        size_t devicereduce_tempstorage_szb = devside.devicereduce_temp_storage_szb;
+        RealPixIntens* d_realintens = devside.dev_realintens;
 
         //==== Raw moments
 
@@ -128,7 +128,7 @@ namespace NyxusGpu
             // output
             state,
             // input
-            NyxusGpu::dev_realintens,
+            devside.dev_realintens,
             d_cloud,
             cloud_len,
             d_prereduce,

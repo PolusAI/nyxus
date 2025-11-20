@@ -14,12 +14,12 @@ public:
 	bool nothing2parse() { return raw_aniso_x.empty() && raw_aniso_y.empty() && raw_aniso_z.empty(); }
 
 	// true if x-, y, or z-anisotropy is non-default
-	bool customized() { return customized_; }
+	bool customized() const { return customized_; } 
 
 	// getters
-	double get_aniso_x() { return aniso_x; }
-	double get_aniso_y() { return aniso_y; }
-	double get_aniso_z() { return aniso_z; }
+	double get_aniso_x() const { return aniso_x; }
+	double get_aniso_y() const { return aniso_y; }
+	double get_aniso_z() const { return aniso_z; }
 
 	// setters (Python API scenario)
 	void set_aniso_x(double a) { if (!Nyxus::near_eq(a, 1.0)) { aniso_x = a; customized_ = true; } }

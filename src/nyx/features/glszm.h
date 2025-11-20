@@ -1,9 +1,11 @@
 #pragma once
 
 #include <unordered_map>
+#include "../dataset.h"
 #include "../roi_cache.h"
 #include "image_matrix.h"
 #include "../feature_method.h"
+#include "../feature_settings.h"
 #include "texture_feature.h"
 
 /// @brief Gray Level Size Zone(GLSZM) features
@@ -42,12 +44,12 @@ public:
 
 	GLSZMFeature ();
 
-	void calculate(LR& r);
+	void calculate (LR& r, const Fsettings& s);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
-	void osized_calculate(LR& r, ImageLoader& imloader);
+	void osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
-	static void extract (LR& roi);
-	static void parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+	static void extract (LR& roi, const Fsettings& s);
+	static void parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
 
 	// Compatibility with the manual reduce
 	static bool required (const FeatureSet& fs) 
@@ -103,9 +105,8 @@ public:
 	// Large Area High Gray Level Emphasis
 	double calc_LAHGLE();
 
-	static int n_levels;	// default value: 8
-
 private:
+
 	int Ng = 0;	// number of discrete intensity values in the image
 	int Ns = 0; // number of discrete zone sizes in the image
 	int Np = 0; // number of voxels in the image
@@ -156,5 +157,5 @@ private:
 		fv_LALGLE,
 		fv_LAHGLE;
 
-	void invalidate();	// assigns each cached feature value a safe NAN
+	void invalidate (double default_val);	// assigns each cached feature the default value specified
 };

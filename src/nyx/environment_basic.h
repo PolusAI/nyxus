@@ -18,6 +18,7 @@ public:
 	int get_verbosity_level();
 	void set_verbosity_level(int vl);
 
+	void init_temp_dir_path();
 	std::string get_temp_dir_path() const;
 
 	StringPattern file_pattern_3D;

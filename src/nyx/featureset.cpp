@@ -1144,7 +1144,7 @@ std::string FeatureSet::findGroupNameByCode (FgroupIMQ code)
 }
 
 // Relying on RVO rather than std::move
-std::vector<std::tuple<std::string, int>> FeatureSet::getEnabledFeatures()
+std::vector<std::tuple<std::string, int>> FeatureSet::getEnabledFeatures() const
 {
 	std::vector<std::tuple<std::string, int>> F;
 

@@ -27,7 +27,7 @@ ChordsFeature::ChordsFeature() : FeatureMethod("ChordsFeature")
 		Nyxus::Feature2D::ALLCHORDS_STDDEV });
 }
 
-void ChordsFeature::osized_calculate(LR& r, ImageLoader& imloader)
+void ChordsFeature::osized_calculate (LR& r, const Fsettings& stng, ImageLoader& imloader)
 {
 	// Center
 	double cenx = (r.aabb.get_xmin() + r.aabb.get_xmax()) / 2.0,
@@ -46,7 +46,7 @@ void ChordsFeature::osized_calculate(LR& r, ImageLoader& imloader)
 
 		// Container for rotated pixel cloud
 		OutOfRamPixelCloud R;
-		R.init(r.label, "ChordsFeature-osized_calculate-R");
+		R.init (r.label, "ChordsFeature-osized_calculate-R");
 
 		// Rotate the cloud and save as image matrix
 		Rotation::rotate_cloud_NT (

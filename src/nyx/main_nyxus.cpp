@@ -11,97 +11,105 @@ using namespace Nyxus;
 
 int main (int argc, char** argv)
 {
-	VERBOSLVL1 (std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021-2025 Axle Research" << " Build of " << __TIMESTAMP__ << "\n")
+	Environment env;
+	VERBOSLVL1 (env.get_verbosity_level(), std::cout << PROJECT_NAME << " /// " << PROJECT_VER << " /// (c) 2021-2025 Axle Research" << " Build of " << __TIMESTAMP__ << "\n");
 
-	if (! theEnvironment.parse_cmdline(argc, argv))
+	if (! env.parse_cmdline(argc, argv))
 		return 1;
 
-	VERBOSLVL1 (theEnvironment.show_summary("\n"/*head*/, "\n"/*tail*/))
+	VERBOSLVL1 (env.get_verbosity_level(), env.show_summary());
 
 	#ifdef USE_GPU
-	if (theEnvironment.using_gpu())
+	if (env.using_gpu())
 	{
-		int devid = theEnvironment.get_gpu_device_choice();
+		int devid = env.get_gpu_device_choice();
 		if (NyxusGpu::gpu_initialize(devid) == false)
 		{
-			std::cerr << "Error: cannot use GPU device ID " << devid << ". You can disable GPU usage via command line option " << USEGPU << "=false\n";
+			std::cerr << "Error: cannot use GPU device ID " << devid << ". You can disable GPU usage via command line option " << clo_USEGPU << "=false\n";
 			return 1;
 		}
 	}
 	#endif
 
 	// Have the feature manager prepare the feature toolset reflecting user's selection
-	if (!theFeatureMgr.compile())
+	if (!env.theFeatureMgr.compile())
 	{
 		std::cerr << "Error: compiling feature methods failed\n";
 		return 1;
 	}
-	theFeatureMgr.apply_user_selection();
+	env.theFeatureMgr.apply_user_selection (env.theFeatureSet);
 
+#ifdef CHECKTIMING
 	// Current time stamp #1
 	auto tsStart = Nyxus::getCurTime();
-	VERBOSLVL1 (std::cout << "\n>>> STARTING >>> " << Nyxus::getTimeStr(tsStart) << "\n");
+	VERBOSLVL1 (env.get_verbosity_level(), std::cout << "\n>>> STARTING >>> " << Nyxus::getTimeStr(tsStart) << "\n");
+#endif
 
 	// Initialize feature classes 
-	if (! theFeatureMgr.init_feature_classes())
+	if (! env.theFeatureMgr.init_feature_classes())
 	{
 		std::cerr << "Error: initializing feature classes failed\n";
 		return 1;
 	}
+
+	// prepare feature settings
+	env.compile_feature_settings();
 		
-	if (theEnvironment.dim() == 2)
+	if (env.dim() == 2)
 	{
 		// Scan intensity and mask directories, apply fileppatern, make intensity-mask image file pairs (if not in wholeslide mode)
 		std::vector <std::string> intensFiles, labelFiles;
-		std::string ermsg;
-		int errorCode = Nyxus::read_2D_dataset(
-			theEnvironment.intensity_dir,
-			theEnvironment.labels_dir,
-			theEnvironment.get_file_pattern(),
-			theEnvironment.output_dir,
-			theEnvironment.intSegMapDir,
-			theEnvironment.intSegMapFile,
+		auto maybeError = Nyxus::read_2D_dataset(
+			env.intensity_dir,
+			env.labels_dir,
+			env.get_file_pattern(),
+			env.output_dir,
+			env.intSegMapDir,
+			env.intSegMapFile,
 			true,
 			intensFiles, 
-			labelFiles,
-			ermsg);
-		if (errorCode)
+			labelFiles);
+		if (maybeError.has_value())
 		{
 			#ifdef WITH_PYTHON_H
-				throw std::runtime_error (ermsg);
+				throw std::runtime_error (*maybeError);
 			#endif
-
-			std::cerr << "Errors while reading the dataset:\n" << ermsg << "\n";
+			std::cerr << "Errors while reading the dataset:\n" << *maybeError << "\n";
 			return 1;
 		}
 
 		// Process the image data
-
-		if (theEnvironment.singleROI)
-			errorCode = processDataset_2D_wholeslide (
+		int errorCode = 0;
+		if (env.singleROI)
+		{
+			errorCode = processDataset_2D_wholeslide(
+				env,
 				intensFiles,
 				labelFiles,
-				theEnvironment.n_reduce_threads,
-				theEnvironment.saveOption,
-				theEnvironment.output_dir);
+				env.n_reduce_threads,
+				env.saveOption,
+				env.output_dir);
+		}
 		else
-			errorCode = processDataset_2D_segmented (
+		{
+			errorCode = processDataset_2D_segmented(
+				env,
 				intensFiles,
 				labelFiles,
-				theEnvironment.n_reduce_threads,
-				theEnvironment.saveOption,
-				theEnvironment.output_dir);
-
+				env.n_reduce_threads,
+				env.saveOption,
+				env.output_dir);
+		}
 
 		// Report feature extraction error, if any
 		switch (errorCode)
 		{
 		case 0:		// Success
 			break;
-		case 1:		// Dataset structure error e.g. intensity-label file name mismatch
+		case 1:		// Dataset structure error env.g. intensity-label file name mismatch
 			std::cout << std::endl << "Input data error" << std::endl;
 			break;
-		case 2:		// Internal FastLoader error e.g. TIFF access error
+		case 2:		// Internal FastLoader error env.g. TIFF access error
 			std::cout << std::endl << "Result output error" << std::endl;
 			break;
 		case 3:		// Memory error
@@ -115,17 +123,20 @@ int main (int argc, char** argv)
 		}
 
 		// Process nested ROIs
-		if (theEnvironment.nestedOptions.defined())
+		if (env.nestedOptions.defined())
 		{
 			bool mineOK = mine_segment_relations2(
-				labelFiles,
-				theEnvironment.get_file_pattern(),
-				theEnvironment.nestedOptions.rawChannelSignature, //---.channel_signature(),
-				theEnvironment.nestedOptions.parent_channel_number(),
-				theEnvironment.nestedOptions.child_channel_number(),
-				theEnvironment.output_dir,
-				theEnvironment.nestedOptions.aggregation_method(),
-				theEnvironment.get_verbosity_level());
+				env,
+				//xxxxxxxxxxxxxx		env.theFeatureSet,
+				labelFiles
+				//xxxxxxxxxxx		env.get_file_pattern(),
+				//xxxxxxxxxxx		env.nestedOptions.rawChannelSignature, //---.channel_signature(),
+				//xxxxxxxxxxx		env.nestedOptions.parent_channel_number(),
+				//xxxxxxxxxxx		env.nestedOptions.child_channel_number(),
+				//xxxxxxxxxxx		env.output_dir,
+				//xxxxxxxxxxx		env.nestedOptions.aggregation_method(),
+				//xxxxxxxxxxx		env.get_verbosity_level()
+				);
 
 			// Report nested ROI errors, if any
 			if (!mineOK)
@@ -136,24 +147,24 @@ int main (int argc, char** argv)
 		}
 	} // 2D
 	else
-		if (theEnvironment.dim() == 3)
+		if (env.dim() == 3)
 		{
-			if (theEnvironment.singleROI)
+			if (env.singleROI)
 			{
 				std::vector<std::string> ifiles;
 
-				int errorCode = Nyxus::read_3D_dataset_wholevolume (
-					theEnvironment.intensity_dir,
-					theEnvironment.file_pattern_3D,
-					theEnvironment.output_dir,
+				auto mayBerror = Nyxus::read_3D_dataset_wholevolume (
+					env.intensity_dir,
+					env.file_pattern_3D,
+					env.output_dir,
 					ifiles);
-				if (errorCode)
+				if (mayBerror.has_value())
 				{
-					std::cout << "Dataset error\n";
+					std::cout << "Dataset error: " + *mayBerror + "\n";
 					return 1;
 				}
 
-				auto [ok, erm] = processDataset_3D_wholevolume (ifiles, theEnvironment.n_reduce_threads, theEnvironment.saveOption, theEnvironment.output_dir);
+				auto [ok, erm] = processDataset_3D_wholevolume (env, ifiles, env.n_reduce_threads, env.saveOption, env.output_dir);
 				if (!ok)
 				{
 					std::cerr << *erm << "\n";
@@ -165,38 +176,39 @@ int main (int argc, char** argv)
 				// Scan intensity and mask directories, apply fileppatern, make intensity-mask image file pairs
 				std::vector <Imgfile3D_layoutA> intensFiles, labelFiles;
 
-				int errorCode = Nyxus::read_3D_dataset(
-					theEnvironment.intensity_dir,
-					theEnvironment.labels_dir,
-					theEnvironment.file_pattern_3D,
-					theEnvironment.output_dir,
-					theEnvironment.intSegMapDir,
-					theEnvironment.intSegMapFile,
+				auto mayBerror = Nyxus::read_3D_dataset(
+					env.intensity_dir,
+					env.labels_dir,
+					env.file_pattern_3D,
+					env.output_dir,
+					env.intSegMapDir,
+					env.intSegMapFile,
 					true,
 					intensFiles,
 					labelFiles);
-				if (errorCode)
+				if (mayBerror.has_value())
 				{
-					std::cout << "Dataset error\n";
+					std::cout << "Dataset error: " + *mayBerror + "\n";
 					return 1;
 				}
 
-				errorCode = processDataset_3D_segmented(
+				int errorCode = processDataset_3D_segmented(
+					env,
 					intensFiles,
 					labelFiles,
-					theEnvironment.n_reduce_threads,
-					theEnvironment.saveOption,
-					theEnvironment.output_dir);
+					env.n_reduce_threads,
+					env.saveOption,
+					env.output_dir);
 
 				// Report feature extraction error, if any
 				switch (errorCode)
 				{
 				case 0:		// Success
 					break;
-				case 1:		// Dataset structure error e.g. intensity-label file name mismatch
+				case 1:		// Dataset structure error env.g. intensity-label file name mismatch
 					std::cout << std::endl << "Input data error" << std::endl;
 					break;
-				case 2:		// Internal FastLoader error e.g. TIFF access error
+				case 2:		// Internal FastLoader error env.g. TIFF access error
 					std::cout << std::endl << "Result output error" << std::endl;
 					break;
 				case 3:		// Memory error
@@ -212,14 +224,16 @@ int main (int argc, char** argv)
 
 		} // 3D
 
+#ifdef CHECKTIMING
 	// Current time stamp #2
 	auto tsEnd = Nyxus::getCurTime();
-	VERBOSLVL1(
-		std::cout << "\n";
-		std::cout << ">>> STARTED  >>>\t" << getTimeStr(tsStart) << "\n";
-		std::cout << ">>> FINISHED >>>\t" << getTimeStr(tsEnd) << "\n";
-		std::cout << "\tGROSS ELAPSED [s]\t" << Nyxus::getTimeDiff(tsStart, tsEnd) << "\n"
+	VERBOSLVL1(env.get_verbosity_level(),
+		std::cout << "\n"
+			<< ">>> STARTED  >>>\t" << getTimeStr(tsStart) << "\n"
+			<< ">>> FINISHED >>>\t" << getTimeStr(tsEnd) << "\n"
+			<< "\tGROSS ELAPSED [s]\t" << Nyxus::getTimeDiff(tsStart, tsEnd) << "\n"
 		);
+#endif
 
 	return 0;
 }

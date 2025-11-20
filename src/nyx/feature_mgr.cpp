@@ -48,16 +48,18 @@ FeatureMethod* FeatureManager::get_feature_method(int idx)
 	return user_requested_features[idx];
 }
 
-void FeatureManager::apply_user_selection()
+void FeatureManager::apply_user_selection (FeatureSet & fset)
 {
-	build_user_requested_set();	// The result is 'user_requested_features'
+	build_user_requested_set (fset);	// the result will be stored in member 'user_requested_features'
 }
 
 // This test checks every feature code 
 bool FeatureManager::check_11_correspondence()
 {
+	FeatureSet fset;
 	bool success = true;
 
+	// check the 2D featureset	//xxxx what about 3D and IMQ?
 	for (int i_fcode = 0; i_fcode < (int) Nyxus::Feature2D::_COUNT_; i_fcode++)
 	{
 		int nProviders = 0;
@@ -70,15 +72,15 @@ bool FeatureManager::check_11_correspondence()
 		if (nProviders == 1)
 			continue;	// OK
 		else
-			if (nProviders > 1)	// error - ambiguous provider
+			if (nProviders > 1)	// error - ambiguous provider (as a class 'XYZ_feature') of a feature (as a code)
 			{
 				success = false;
-				std::cout << "Error: ambiguous provider of feature " << theFeatureSet.findFeatureNameByCode((Feature2D)i_fcode) << " (code " << i_fcode << ").  (Feature is provided by multiple feature methods.) \n";
+				std::cout << "Error: ambiguous provider of feature " << fset.findFeatureNameByCode((Feature2D)i_fcode) << " (code " << i_fcode << ").  (Feature is provided by multiple feature methods.) \n";
 			}
 			else	// error - no providers
 			{
 				success = false;
-				std::cout << "Error: feature " << theFeatureSet.findFeatureNameByCode((Feature2D)i_fcode) << " (code " << i_fcode << ") is not provided by any feature method. Check constructor of class FeatureManager\n";
+				std::cout << "Error: feature " << fset.findFeatureNameByCode((Feature2D)i_fcode) << " (code " << i_fcode << ") is not provided by any feature method. Check constructor of class FeatureManager\n";
 			}
 	}
 
@@ -86,8 +88,10 @@ bool FeatureManager::check_11_correspondence()
 }
 
 // This test checks for cyclic feature dependencies
-bool FeatureManager::gather_dependencies()
+bool FeatureManager::gather_dependencies ()
 {
+	FeatureSet fset;
+
 	xdeps.clear();
 
 	bool success = true;	// Success in terms of no cycles
@@ -105,17 +109,17 @@ bool FeatureManager::gather_dependencies()
 			continue;
 		}
 
-		VERBOSLVL2(
-			// Feature method instance is good
-			std::cout << fm->feature_info << ": " << n_deps << " depends\n";
+#ifdef _DEBUG
+		// Feature method instance is good
+		std::cout << fm->feature_info << ": " << n_deps << " depends\n";
 
-			// Show the user method's extended dependencies 
-			for (auto fcode : extendedDependencies)
-			{
-				std::string fn = fcode < (int)Feature2D::_COUNT_ ? theFeatureSet.findFeatureNameByCode((Feature2D)fcode) : theFeatureSet.findFeatureNameByCode((Feature3D)fcode);
-				std::cout << "\t" << fn << "\n";
-			}
-		)
+		// Show the user method's extended dependencies 
+		for (auto fcode : extendedDependencies)
+		{
+			std::string fn = fcode < (int)Feature2D::_COUNT_ ? fset.findFeatureNameByCode((Feature2D)fcode) : fset.findFeatureNameByCode((Feature3D)fcode);
+			std::cout << "\t" << fn << "\n";
+		}
+#endif
 
 		// Bind 'fm' to feature methods implementing fm's extended dependency set
 		xdeps.push_back (extendedDependencies);
@@ -189,12 +193,12 @@ FeatureMethod* FeatureManager::get_feature_method_by_code (int fcode)
 }
 
 // Builds the requested set by copying items of 'featureset' requested via the command line into 'requested_features'
-void FeatureManager::build_user_requested_set()
+void FeatureManager::build_user_requested_set (FeatureSet & fset)
 {
 	user_requested_features.clear();
 
 	// Requested feature codes (as integer constants)
-	std::vector<std::tuple<std::string, int>> rfc = theFeatureSet.getEnabledFeatures();
+	std::vector<std::tuple<std::string, int>> rfc = fset.getEnabledFeatures();
 
 	// Find feature methods implementing them
 	for (auto f_info : rfc)

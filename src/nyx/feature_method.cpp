@@ -43,9 +43,9 @@ void FeatureMethod::add_dependencies(const std::initializer_list<Nyxus::Feature3
 		dependencies.push_back((int)f);
 }
 
-void FeatureMethod::osized_scan_whole_image (LR& r, ImageLoader& imloader)
+void FeatureMethod::osized_scan_whole_image (LR& r, const Fsettings& s, ImageLoader& ldr)
 {
-	this->osized_calculate (r, imloader);
+	this->osized_calculate (r, s, ldr);
 	this->save_value (r.fvals);
 }
 

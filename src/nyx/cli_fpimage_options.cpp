@@ -58,7 +58,7 @@ bool FpImageOptions::parse_input()
 	return true;
 }
 
-bool FpImageOptions::empty()
+bool FpImageOptions::empty() const
 {
 	return raw_max_intensity.empty() 
 		&& raw_min_intensity.empty() 
@@ -70,13 +70,13 @@ std::string FpImageOptions::get_summary_text()
 	std::string s, eq = "=", sep = "\n";
 
 	if (!raw_min_intensity.empty())
-		s += FPIMAGE_MIN + eq + raw_min_intensity + sep;
+		s += clo_FPIMAGE_MIN + eq + raw_min_intensity + sep;
 
 	if (!raw_max_intensity.empty())
-		s += FPIMAGE_MAX + eq + raw_max_intensity + sep;
+		s += clo_FPIMAGE_MAX + eq + raw_max_intensity + sep;
 
 	if (!raw_target_dyn_range.empty())
-		s += FPIMAGE_TARGET_DYNRANGE + eq + raw_target_dyn_range + sep;
+		s += clo_FPIMAGE_TARGET_DYNRANGE + eq + raw_target_dyn_range + sep;
 
 	return s;
 }

@@ -14,7 +14,7 @@ GeodeticLengthThicknessFeature::GeodeticLengthThicknessFeature() : FeatureMethod
 	add_dependencies ({ Feature2D::AREA_PIXELS_COUNT, Feature2D::PERIMETER });
 }
 
-void GeodeticLengthThicknessFeature::calculate (LR& r)
+void GeodeticLengthThicknessFeature::calculate (LR& r, const Fsettings& s)
 {
 	size_t roiArea = r.aux_area,
 		roiPerimeter = r.fvals[(int)Feature2D::PERIMETER][0];
@@ -32,9 +32,9 @@ void GeodeticLengthThicknessFeature::calculate (LR& r)
 	thickness = roiPerimeter / 2 - geodetic_length;
 }
 
-void GeodeticLengthThicknessFeature::osized_calculate (LR& r, ImageLoader&)
+void GeodeticLengthThicknessFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
-	calculate(r);	// This feature is not critical to ROI size
+	calculate (r, s);	// This feature is not critical to ROI size
 }
 
 void GeodeticLengthThicknessFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {}
@@ -45,14 +45,14 @@ void GeodeticLengthThicknessFeature::save_value (std::vector<std::vector<double>
 	fvals[(int)Feature2D::THICKNESS][0] = thickness;
 }
 
-void GeodeticLengthThicknessFeature::extract (LR& r)
+void GeodeticLengthThicknessFeature::extract (LR& r, const Fsettings& s)
 {
 	GeodeticLengthThicknessFeature glt;
-	glt.calculate(r);
-	glt.save_value(r.fvals);
+	glt.calculate (r, s);
+	glt.save_value (r.fvals);
 }
 
-void GeodeticLengthThicknessFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void GeodeticLengthThicknessFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -62,7 +62,7 @@ void GeodeticLengthThicknessFeature::parallel_process_1_batch (size_t start, siz
 		if (r.has_bad_data())
 			continue;
 
-		extract (r);
+		extract (r, s);
 	}
 }
 
