@@ -12,23 +12,23 @@ D3_GLDZM_feature::D3_GLDZM_feature() : FeatureMethod("D3_GLDZM_feature")
 	provide_features (D3_GLDZM_feature::featureset);
 }
 
-void D3_GLDZM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void D3_GLDZM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings& s, const Dataset & ds)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 		D3_GLDZM_feature f;
-		f.calculate(r);
-		f.save_value(r.fvals);
+		f.calculate (r, s);
+		f.save_value (r.fvals);
 	}
 }
 
-/*static*/ void D3_GLDZM_feature::extract(LR& r)
+/*static*/ void D3_GLDZM_feature::extract (LR& r, const Fsettings& s)
 {
 	D3_GLDZM_feature f;
-	f.calculate(r);
-	f.save_value(r.fvals);
+	f.calculate (r, s);
+	f.save_value (r.fvals);
 }
 
 void D3_GLDZM_feature::clear_buffers()
@@ -54,7 +54,7 @@ void D3_GLDZM_feature::clear_buffers()
 		f_GLE = 0;
 }
 
-void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, int& Ng, int& Nd, std::vector<PixIntens>& greysLUT, LR& r)
+void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, int& Ng, int& Nd, std::vector<PixIntens>& greysLUT, LR& r, const Fsettings& s)
 {
 	//==== Compose the distance matrix
 
@@ -65,11 +65,11 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 	SimpleCube<PixIntens> D;
 	D.allocate (r.aux_image_cube.width(), r.aux_image_cube.height(), r.aux_image_cube.depth());
 
-	auto greyInfo = Nyxus::theEnvironment.get_coarse_gray_depth();
+	auto greyInfo = STNGS_NGREYS(s); // former Nyxus::theEnvironment.get_coarse_gray_depth()
 	auto greyInfo_localFeature = D3_GLDZM_feature::n_levels;
 	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
 		greyInfo = greyInfo_localFeature;
-	if (Nyxus::theEnvironment.ibsi_compliance)
+	if (STNGS_IBSI(s))	// former Nyxus::theEnvironment.ibsi_compliance
 		greyInfo = 0;
 
 	auto& imR = r.aux_image_cube;
@@ -502,7 +502,7 @@ template <class Imgmatrx> void D3_GLDZM_feature::calc_features (const std::vecto
 }
 
 
-void D3_GLDZM_feature::calculate (LR& r)
+void D3_GLDZM_feature::calculate (LR& r, const Fsettings& s)
 {
 	clear_buffers();
 
@@ -527,7 +527,7 @@ void D3_GLDZM_feature::calculate (LR& r)
 		f_ZDM =
 		f_ZDV =
 		f_ZDE =
-		f_GLE = Nyxus::theEnvironment.resultOptions.noval();
+		f_GLE = STNGS_NAN(s);
 
 		return;
 	}
@@ -537,7 +537,7 @@ void D3_GLDZM_feature::calculate (LR& r)
 	SimpleMatrix<unsigned int> GLDZM;
 	int Ng,	// number of grey levels
 		Nd;	// maximum number of non-zero dependencies
-	prepare_GLDZM_matrix_kit (GLDZM, Ng, Nd, greyLevelsLUT, r);
+	prepare_GLDZM_matrix_kit (GLDZM, Ng, Nd, greyLevelsLUT, r, s);
 
 	// calculate vectors of totals by intensity (Mx) and by distance (Md)
 	std::vector<double> Mx, Md;
@@ -571,7 +571,7 @@ void D3_GLDZM_feature::save_value (std::vector<std::vector<double>> & fvals)
 
 void D3_GLDZM_feature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {}
 
-void D3_GLDZM_feature::osized_calculate (LR& r, ImageLoader&)
+void D3_GLDZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
-	calculate(r);
+	calculate (r, s);
 }

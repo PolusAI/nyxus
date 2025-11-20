@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <iostream>
+#include <optional>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -45,7 +46,7 @@ namespace Nyxus
 		}
 	}
 
-	int read_2D_dataset (
+	std::optional<std::string> read_2D_dataset (
 		// input
 		const std::string& dirIntens, 
 		const std::string& dirLabels, 
@@ -56,25 +57,16 @@ namespace Nyxus
 		bool mustCheckDirOut,
 		// output
 		std::vector <std::string>& intensFiles, 
-		std::vector <std::string>& labelFiles, 
-		std::string & err)
+		std::vector <std::string>& labelFiles)
 	{
-		err = "";
-
 		// check the output directory
 		if (!existsOnFilesystem(dirOut))
-		{
-			err = "cannot access directory " + dirOut;
-			return 1;
-		}
+			return { "cannot access directory " + dirOut };
 
 		// Check directories
 
 		if (!existsOnFilesystem(dirIntens))
-		{
-			err = "cannot access directory " + dirIntens;
-			return 1;
-		}
+			return { "cannot access directory " + dirIntens };
 
 		if (intLabMappingFile.empty())
 		{
@@ -92,25 +84,16 @@ namespace Nyxus
 			else
 			{
 				if (!wholeslide && !existsOnFilesystem(dirLabels))
-				{
-					err = "cannot access directory " + dirLabels;
-					return 1;
-				}
+					return { "cannot access directory " + dirLabels };
 
 				// read segmentation counterparts
 				readDirectoryFiles_2D(dirLabels, filePatt, labelFiles, purefnames_m);
 
 				// Check if the dataset is meaningful
 				if (intensFiles.size() == 0 || labelFiles.size() == 0)
-				{
-					err = "no intensity and/or label files to process, probably due to file pattern " + filePatt;
-					return 2;
-				}
+					return { "no intensity and/or label files to process, probably due to file pattern " + filePatt };
 				if (intensFiles.size() != labelFiles.size())
-				{
-					err = "mismatch: " + std::to_string(intensFiles.size()) + " intensity images vs " + std::to_string(labelFiles.size()) + " mask images";
-					return 3;
-				}
+					return { "mismatch: " + std::to_string(intensFiles.size()) + " intensity images vs " + std::to_string(labelFiles.size()) + " mask images" };
 
 				// Sort the files to produce an intuitive sequence
 				std::sort(intensFiles.begin(), intensFiles.end());
@@ -118,31 +101,26 @@ namespace Nyxus
 
 				// Check if intensity and mask images are matching 
 				auto nf = purefnames_i.size();
+				std::string err;
 				for (int i = 0; i < nf; i++)
 				{
 					auto& ifile = purefnames_i[i];
 					if (std::find(purefnames_m.begin(), purefnames_m.end(), ifile) == purefnames_m.end())
-						err += "cannot find the mask counterpart for " + ifile + "\n";
+						err += "cannot find the mask counterpart for " + ifile + "; ";
 				}
 				if (!err.empty())
-					return 4;
+					return { err };
 			}
 		}
 		else
 		{
 			// Special case - using intensity and label file pairs defined with the mapping file
 			if (!existsOnFilesystem(intLabMappingDir))
-			{
-				err = "cannot access directory " + intLabMappingDir;
-				return 1;
-			}
+				return { "cannot access directory " + intLabMappingDir };
 
 			std::string mapPath = intLabMappingDir + "/" + intLabMappingFile;
 			if (!existsOnFilesystem(mapPath))
-			{
-				err = "cannot access file " + mapPath;
-				return 1;
-			}		
+				return { "cannot access file " + mapPath };
 
 			// Read the text file of intensity-mask matching
 			std::ifstream file(mapPath);
@@ -154,26 +132,17 @@ namespace Nyxus
 				std::string intFname, segFname;
 				bool pairOk = ss >> intFname && ss >> segFname;
 				if (!pairOk)
-				{
-					err = "cannot recognize a file name pair in line #" + std::to_string(lineNo) + " - " + ln;
-					return 1;
-				}
+					return { "cannot recognize a file name pair in line #" + std::to_string(lineNo) + " - " + ln };
 
 				// We have a pair of file names. Let's check if they exist
 				lineNo++;
 				std::string intFpath = dirIntens + "/" + intFname;
 				if (!existsOnFilesystem(intFpath))
-				{
-					err = "cannot access file file " + intFpath;
-					return 1;
-				}
+					return { "cannot access file file " + intFpath };
 
 				std::string segFpath = dirLabels + "/" + segFname;
 				if (!existsOnFilesystem(intFpath))
-				{
-					err = "cannot access file " + intFpath;
-					return 1;
-				}
+					return { "cannot access file " + intFpath };
 
 				// Save the file pair
 				intensFiles.push_back (intFpath);
@@ -182,22 +151,10 @@ namespace Nyxus
 
 			// Check if we have pairs to process
 			if (intensFiles.size() == 0)
-			{
-				err = "special mapping " + mapPath + " produced no intensity-label file pairs";
-				return 1;
-			}
-
-			// Inform the user
-			std::cout << "Using special mapped intensity-label pairs:" << std::endl;
-			for (int i = 0; i < intensFiles.size(); i++)
-				std::cout << "\tintensity: " << intensFiles[i] << "\tlabels: " << labelFiles[i] << std::endl;
+				return { "special mapping " + mapPath + " produced no intensity-label file pairs" };
 		}
 
-		// just in case
-		if (!err.empty())
-			return 9;
-
-		return 0; // success
+		return { std::nullopt };
 	}
 
 	std::string getPureFname(const std::string& fpath)
@@ -298,7 +255,7 @@ namespace Nyxus
 			return read_volumetric_filenames (dir, fpatt, fnames);
 	}
 
-	int read_3D_dataset(
+	std::optional<std::string> read_3D_dataset(
 		// input:
 		const std::string& dirIntens,
 		const std::string& dirLabels,
@@ -312,39 +269,21 @@ namespace Nyxus
 		std::vector <Imgfile3D_layoutA>& labelFiles)
 	{
 		if (!existsOnFilesystem(dirIntens))
-		{
-			std::cout << "Error: nonexisting directory " << dirIntens << std::endl;
-			return 1;
-		}
+			return { "Error: nonexisting directory " + dirIntens };
 		if (!existsOnFilesystem(dirLabels))
-		{
-			std::cout << "Error: nonexisting directory " << dirLabels << std::endl;
-			return 1;
-		}
+			return { "Error: nonexisting directory " + dirLabels };
 		if (!existsOnFilesystem(dirOut))
-		{
-			std::cout << "Error: nonexisting directory " << dirOut << std::endl;
-			return 1;
-		}
+			return { "Error: nonexisting directory " + dirOut };
 
 		// Common case - no ad hoc intensity-label file mapping, 1-to-1 correspondence instead
 		if (!readDirectoryFiles_3D(dirIntens, filePatt, intensFiles))
-		{
-			std::cerr << "Error reading directory " << dirIntens << '\n';
-			return 1;
-		}
+			return { "Error reading directory " + dirIntens };
 		if (!readDirectoryFiles_3D(dirLabels, filePatt, labelFiles))
-		{
-			std::cerr << "Error reading directory " << dirLabels << '\n';
-			return 1;
-		}
+			return { "Error reading directory " + dirLabels };
 
 		// Check if the dataset isn't blank
 		if (intensFiles.size() == 0 || labelFiles.size() == 0)
-		{
-			std::cout << "No intensity and/or label file pairs to process, probably due to file pattern " << filePatt.get_cached_pattern_string() << std::endl;
-			return 2;
-		}
+			return { "No intensity and/or label file pairs to process, probably due to file pattern " + filePatt.get_cached_pattern_string() };
 
 		// There can be 2 layouts: 
 		//		(1) 1-1 intensity-mask correspondence
@@ -354,10 +293,7 @@ namespace Nyxus
 		// -- we check this only in layout (2)
 		if (intensFiles.size() > 1)
 			if (intensFiles.size() != labelFiles.size())
-			{
-				std::cout << "Mismatch: " << intensFiles.size() << " intensity images vs " << labelFiles.size() << " mask images\n";
-				return 3;
-			}
+				return { "Mismatch: " + std::to_string(intensFiles.size()) + " intensity images vs " + std::to_string(labelFiles.size()) + " mask images" };
 
 		// Deep consistency check 
 		auto nf = labelFiles.size();
@@ -371,27 +307,18 @@ namespace Nyxus
 
 				// name mismatch ?
 				if (file_i.fname != file_m.fname)
-				{
-					std::cerr << "Mismatch: intensity " << file_i.fname << " mask " << file_m.fname << '\n';
-					return 3;
-				}
+					return { "Mismatch: intensity " + file_i.fname + " mask " + file_m.fname };
 
 				// z-stack size mismatch ?
 				if (file_i.z_indices.size() != file_m.z_indices.size())
-				{
-					std::cerr << "Z-stack size mismatch: intensity " << file_i.z_indices.size() << " mask " << file_m.z_indices.size() << '\n';
-					return 3;
-				}
+					return { "Z-stack size mismatch: intensity " + std::to_string(file_i.z_indices.size()) + " mask " + std::to_string(file_m.z_indices.size()) };
 
 				// z-stack indices mismatch ?
 				std::sort(file_i.z_indices.begin(), file_i.z_indices.end());
 				std::sort(file_m.z_indices.begin(), file_m.z_indices.end());
 				for (auto j = 0; j < file_i.z_indices.size(); j++)
 					if (file_i.z_indices[j] != file_m.z_indices[j])
-					{
-						std::cerr << "Mismatch in z-stack indices: " << file_i.fname << "[" << j << "] != " << file_m.fname << "[" << j << "]\n";
-						return 3;
-					}
+						return { "Mismatch in z-stack indices: " + file_i.fname + "[" + std::to_string(j) + "] != " + file_m.fname + "[" + std::to_string(j) + "]" };
 			}
 		}
 		else
@@ -412,10 +339,10 @@ namespace Nyxus
 			file_m.fdir = dirLabels + '/';
 		}
 
-		return 0;
+		return { std::nullopt };
 	}
 
-	int read_3D_dataset_wholevolume (
+	std::optional<std::string> read_3D_dataset_wholevolume (
 		// input:
 		const std::string& dirIntens,
 		const StringPattern& filePatt,
@@ -424,31 +351,22 @@ namespace Nyxus
 		std::vector <std::string>& intensFiles)
 	{
 		if (!existsOnFilesystem(dirIntens))
-		{
-			std::cout << "Error: nonexisting directory " << dirIntens << std::endl;
-			return 1;
-		}
+			return { "Error: nonexisting directory " + dirIntens };
 		if (!existsOnFilesystem(dirOut))
-		{
-			std::cout << "Error: nonexisting directory " << dirOut << std::endl;
-			return 2;
-		}
+			return { "Error: nonexisting directory " + dirOut };
 
-		// Common case - no ad hoc intensity-label file mapping, 1-to-1 correspondence instead
+		// Common case - no adhoc intensity-label file mapping, 1-to-1 correspondence instead
 
 		// read file names into a plain vector of strings (non-wholevolume counterpart: readDirectoryFiles_3D() )
 		std::vector<std::string> fnamesOnly;
 		std::string p = filePatt.get_cached_pattern_string();
 		readDirectoryFiles_2D (dirIntens, p, intensFiles, fnamesOnly);
 
-		// Check if the dataset isn't blank
+		// Check if the dataset is blank
 		if (intensFiles.size() == 0)
-		{
-			std::cout << "No intensity file pairs to process, probably due to file pattern " << filePatt.get_cached_pattern_string() << std::endl;
-			return 3;
-		}
+			return { "No intensity file pairs to process, probably due to file pattern " + filePatt.get_cached_pattern_string() };
 
-		return 0;
+		return std::nullopt;
 	}
 
 	Imgfile3D_layoutA::Imgfile3D_layoutA(const std::string& possibly_full_path)

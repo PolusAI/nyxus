@@ -8,7 +8,9 @@
 #define _USE_MATH_DEFINES	// For M_PI, etc.
 #include <cmath>
 #include "../feature_method.h"
+#include "../feature_settings.h"
 #include "../environment.h"
+
 #ifdef USE_GPU
     #include "../gpu/gabor.cuh"
 #endif
@@ -25,24 +27,24 @@ public:
     static bool required(const FeatureSet& fs);
    
     //=== Trivial ROIs ===
-    void calculate(LR& r);
+    void calculate (LR& r, const Fsettings& s);
 
     // Trivial ROI on GPU
     #ifdef USE_GPU
         void calculate_gpu(LR& r);
-        void calculate_gpu_multi_filter (LR& r, size_t roiidx);
-        static void gpu_process_all_rois (std::vector<int>& ptrLabels, std::unordered_map <int, LR>& ptrLabelData, size_t batch_offset, size_t batch_len);
+        void calculate_gpu_multi_filter (LR & r, size_t roiidx, GpusideCache & devsideCache);
+        static void gpu_process_all_rois (std::vector<int>& ptrLabels, std::unordered_map <int, LR>& ptrLabelData, size_t batch_offset, size_t batch_len, GpusideCache& devsideCache);
     #endif
 
     //=== Non-trivial ROIs ===
     void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
-    void osized_calculate(LR& r, ImageLoader& imloader);
+    void osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr);
 
     // Result saver
     void save_value(std::vector<std::vector<double>>& feature_vals);
 
-    static void extract (LR& roi);
-    static void reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+    static void extract (LR& roi, const Fsettings& s);
+    static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
 
     //-------------- - User interface
 
@@ -124,7 +126,8 @@ private:
         double gamma,
         const std::vector<double>& thetas, // thetas matching frequencies in 'f'
         int n,
-        int num_filters);
+        int num_filters,
+        GpusideCache & devside);
     #endif
 
     //=== Nontrivial ROIs ===

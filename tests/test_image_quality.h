@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
 #include "../src/nyx/roi_cache.h"
-#include "../src/nyx/parallel.h"
 #include "../src/nyx/features/pixel.h"
 #include "../src/nyx/environment.h"
 #include "test_data.h"

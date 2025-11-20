@@ -1,7 +1,7 @@
 #include "../environment.h"
 #ifdef USE_GPU
-#include "../gpucache.h"
-#include "../gpu/geomoments.cuh"
+    #include "../cache.h"
+    #include "../gpu/geomoments.cuh"
 #endif
 #include "2d_geomoments.h"
 
@@ -95,10 +95,10 @@ void BasicGeomoms2D::apply_dist2contour_weighting_wholeslide(
     }
 }
 
-void BasicGeomoms2D::calculate(LR& r, intenfunction ifun)
+void BasicGeomoms2D::calculate(LR& r, const Fsettings& s, intenfunction ifun)
 {
     INTEN = ifun;
-
+  
     // Cache ROI frame of reference
     baseX = r.aabb.get_xmin();
     baseY = r.aabb.get_ymin();
@@ -115,7 +115,7 @@ void BasicGeomoms2D::calculate(LR& r, intenfunction ifun)
     // -- prepare weighted pixel cloud
     std::vector<RealPixIntens> w;
     Nyxus::copy_pixcloud_intensities(w, c);
-    if (theEnvironment.singleROI)
+    if (STNGS_SINGLEROI(s))   // former theEnvironment.singleROI
         apply_dist2contour_weighting_wholeslide (w, c, r.contour, weighting_epsilon);
     else
         apply_dist2contour_weighting (w, c, r.contour, weighting_epsilon);

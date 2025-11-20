@@ -8,7 +8,7 @@ EulerNumberFeature::EulerNumberFeature() : FeatureMethod("EulerNumberFeature")
 	provide_features (EulerNumberFeature::featureset);
 }
 
-void EulerNumberFeature::calculate (LR& r)
+void EulerNumberFeature::calculate (LR& r, const Fsettings& s)
 {
 	if (!(mode == 4 || mode == 8))
 	{
@@ -102,14 +102,14 @@ void EulerNumberFeature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature2D::EULER_NUMBER][0] = euler_number;
 }
 
-void EulerNumberFeature::extract (LR& r)
+void EulerNumberFeature::extract (LR& r, const Fsettings& s)
 {
 	EulerNumberFeature f;
-	f.calculate(r);
-	f.save_value(r.fvals);
+	f.calculate (r, s);
+	f.save_value (r.fvals);
 }
 
-void EulerNumberFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void EulerNumberFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -119,11 +119,11 @@ void EulerNumberFeature::reduce (size_t start, size_t end, std::vector<int>* ptr
 		if (r.has_bad_data())
 			continue;
 
-		extract(r);
+		extract (r, s);
 	}
 }
 
-void EulerNumberFeature::osized_calculate (LR& r, ImageLoader& imloader)
+void EulerNumberFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader)
 {
 	if (!(mode == 4 || mode == 8))
 	{

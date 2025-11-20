@@ -4,6 +4,7 @@
 #include "../roi_cache.h"
 #include "image_matrix.h"
 #include "../feature_method.h"
+#include "../feature_settings.h"
 #include "../environment.h"
 
 class SaturationFeature : public FeatureMethod 
@@ -18,24 +19,21 @@ public:
     static bool required(const FeatureSet& fs);
    
     //=== Trivial ROIs ===
-    void calculate(LR& r);
+    void calculate (LR& r, const Fsettings& s);
 
-    void parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads);
-    static void extract (LR& roi);
-    static void parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+    static void extract (LR& roi, const Fsettings& s);
+    static void parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
 
     //=== Non-trivial ROIs ===
     //=== Non-trivial ROIs ===
     void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
-    void osized_calculate(LR& r, ImageLoader& imloader);
+    void osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr);
     static std::tuple<double, double> get_percent_max_pixels_NT(WriteImageMatrix_nontriv& Im);
 
     // Result saver
     void save_value(std::vector<std::vector<double>>& feature_vals);
 
-    static void reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
-
-    //-------------- - User interface
+    // User interface
     static int ksize;
 
 private:

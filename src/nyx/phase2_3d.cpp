@@ -1,3 +1,4 @@
+#include <cassert>
 #include <fstream>
 #include <string>
 #include <sstream>
@@ -5,132 +6,147 @@
 #include <map>
 #include <array>
 #include <regex>
+
 #ifdef WITH_PYTHON_H
-#include <pybind11/pybind11.h>
+	#include <pybind11/pybind11.h>
 #endif
+
 #include "environment.h"
 #include "globals.h"
+#include "helpers/fsystem.h"
 #include "helpers/timing.h"
 
 namespace Nyxus
 {
-
-	// Objects that are used by allocateTrivialRoisBuffers() and then by the GPU platform code 
-	// to transfer image matrices of all the image's ROIs
-	extern PixIntens* ImageMatrixBuffer;
-	extern size_t imageMatrixBufferLen;
-	extern size_t largest_roi_imatr_buf_len;
-
-	bool scanTrivialRois_3D (const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath)
+	//
+	// Loads ROI voxels into voxel clouds
+	//
+	bool scanTrivialRois_3D (Environment & env, const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, size_t t_index)
 	{
 		// Sort the batch's labels to enable binary searching in it
 		std::vector<int> whiteList = batch_labels;
 		std::sort(whiteList.begin(), whiteList.end());
 
-		int lvl = 0,	// Pyramid level
-			lyr = 0;	//	Layer
-
 		// Scan this Z intensity-mask pair 
-		SlideProps p;
-		p.fname_int = intens_fpath;
-		p.fname_seg = label_fpath;
-		if (!theImLoader.open(p))
+		SlideProps p (intens_fpath, label_fpath);
+		if (! env.theImLoader.open(p, env.fpimageOptions))
 		{
 			std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
 			return false;
 		}
 
-		// Cache the file names to be picked up by labels to know their file origin
-		theIntFname = intens_fpath;
-		theSegFname = label_fpath;
+		// thanks to ImageLoader::open() we are guaranteed that the mask and intensity volumes' 
+		// width, height, and depth match. Mask and intensity may only differ in the number of 
+		// time frames: 1:1, 1:N, and N:1 cases are permitted.
+		size_t 
+			/*
+			nth = env.theImLoader.get_num_tiles_hor(),
+			ntv = env.theImLoader.get_num_tiles_vert(),
+			fw = env.theImLoader.get_tile_width(),
+			th = env.theImLoader.get_tile_height(),
+			tw = env.theImLoader.get_tile_width(),
+			tileSize = env.theImLoader.get_tile_size(),
+			*/
+			w = env.theImLoader.get_full_width(),
+			h = env.theImLoader.get_full_height(),
+			d = env.theImLoader.get_full_depth(),
+			sliceSize = w * h,
+			timeFrameSize = sliceSize * d,
+			timeI = env.theImLoader.get_inten_time(),
+			timeM = env.theImLoader.get_mask_time(),
+			nVoxI = timeFrameSize * timeI,
+			nVoxM = timeFrameSize * timeM;
 
-		size_t nth = theImLoader.get_num_tiles_hor(),
-			ntv = theImLoader.get_num_tiles_vert(),
-			fw = theImLoader.get_tile_width(),
-			th = theImLoader.get_tile_height(),
-			tw = theImLoader.get_tile_width(),
-			tileSize = theImLoader.get_tile_size(),
-			fullwidth = theImLoader.get_full_width(),
-			fullheight = theImLoader.get_full_height(),
-			fullD = theImLoader.get_full_depth(),
-			sliceSize = fullwidth * fullheight,
-			nVox = sliceSize * fullD;	
+		// is this intensity-mask pair's shape supported?
+		if (nVoxI < nVoxM)
+		{
+			std::string erm = "Error: unsupported shape - intensity file: " + std::to_string(nVoxI) + ", mask file: " + std::to_string(nVoxM);
+#ifdef WITH_PYTHON_H
+			throw erm;
+#endif	
+			std::cerr << erm << "\n";
+			return false;
+		}
 
 		int cnt = 1;
-		for (unsigned int row = 0; row < nth; row++)
+
+		// fetch 3D data 
+		bool ok = env.theImLoader.load_tile (0/*row*/, 0/*col*/);
+		if (!ok)
 		{
-			for (unsigned int col = 0; col < ntv; col++)
-			{
-				// Fetch the tile 
-				bool ok = theImLoader.load_tile(row, col);
-				if (!ok)
-				{
-					std::stringstream ss;
-					ss << "Error fetching tile row=" << row << " col=" << col;
+			std::string erm = "Error fetching segmented data from " + intens_fpath + "(I) " + label_fpath + "(M)";
 #ifdef WITH_PYTHON_H
-					throw ss.str();
+			throw erm;
 #endif	
-					std::cerr << ss.str() << "\n";
-					return false;
-				}
+			std::cerr << erm << "\n";
+			return false;
+		}
 
-				// Get ahold of tile's pixel buffer
-				auto dataI = theImLoader.get_int_tile_buffer(),
-					dataL = theImLoader.get_seg_tile_buffer();
+		// Get ahold of tile's pixel buffer
+		auto dataI = env.theImLoader.get_int_tile_buffer(),
+			dataL = env.theImLoader.get_seg_tile_buffer();
 
-				// Iterate voxels
-				for (size_t i = 0; i < nVox; i++)
-				{
-					// Skip non-mask pixels
-					auto label = dataL[i];
-					if (!label)
-						continue;
+		size_t baseI, baseM;
+		if (timeI == timeM)
+		{			
+			baseM = baseI = t_index * timeFrameSize;
+		}
+		else // nVoxI > nVoxM
+		{
+			baseM = 0;
+			baseI = t_index * timeFrameSize;
+		}
 
-					// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
-					if (!theEnvironment.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))
-						continue;
+		// Iterate voxels
+		for (size_t i=0; i<nVoxM; i++)
+		{
+			size_t k = i + baseM;	// absolute index of mask voxel
+			size_t j = i + baseI;	// absolute index of intensity voxel
 
+			// Skip non-mask pixels
+			auto label = dataL[k];
+			if (!label)
+				continue;
 
-					int z = i / sliceSize,
-						y = (i - z * sliceSize) / tw,
-						x = (i - z * sliceSize) % tw;
+			// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
+			if (! env.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))
+				continue;
 
-					// Skip tile buffer pixels beyond the image's bounds
-					if (x >= fullwidth || y >= fullheight || z >= fullD)
-						continue;
+			int z = k / sliceSize,
+				y = (k - z * sliceSize) / w,
+				x = (k - z * sliceSize) % w;
 
-					// Collapse all the labels to one if single-ROI mde is requested
-					if (theEnvironment.singleROI)
-						label = 1;
+			//
 
-					// Cache this pixel 
-					LR& r = roiData[label];
-					feed_pixel_2_cache_3D_LR (x, y, z, dataI[i], r);
-				}
+			// Skip tile buffer pixels beyond the image's bounds
+			if (x >= w || y >= h || z >= d)
+				continue;
+
+			// Collapse all the labels to one if single-ROI mde is requested
+			if (env.singleROI)
+				label = 1;
+
+			// Cache this pixel 
+			LR& r = env.roiData[label];
+			feed_pixel_2_cache_3D_LR (x, y, z, dataI[j], r);
+		}
 
 #ifdef WITH_PYTHON_H
-				if (PyErr_CheckSignals() != 0)
-					throw pybind11::error_already_set();
+		if (PyErr_CheckSignals() != 0)
+			throw pybind11::error_already_set();
 #endif
 
-				// Show stayalive progress info
-				VERBOSLVL2(
-					if (cnt++ % 4 == 0)
-						std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n";
-				);
-			} // tile cols
-		} // tile rows
-
 		// Close the image pair
-		theImLoader.close();
+		env.theImLoader.close();
 
 		// Dump ROI pixel clouds to the output directory
-		VERBOSLVL5(dump_roi_pixels(batch_labels, label_fpath))
+		VERBOSLVL5 (env.get_verbosity_level(), dump_roi_pixels(env.dim(), Nyxus::get_temp_dir_path(), batch_labels, label_fpath, env.uniqueLabels, env.roiData));
 
 		return true;
 	}
 
-	bool scanTrivialRois_3D_anisotropic(
+	bool scanTrivialRois_3D_anisotropic__BEFORE4D(
+		Environment & env,
 		const std::vector<int>& batch_labels,
 		const std::string& intens_fpath,
 		const std::string& label_fpath,
@@ -146,28 +162,22 @@ namespace Nyxus
 			lyr = 0;	//	layer
 
 		// Scan this Z intensity-mask pair 
-		SlideProps p;
-		p.fname_int = intens_fpath;
-		p.fname_seg = label_fpath;
-		if (!theImLoader.open(p))
+		SlideProps p (intens_fpath, label_fpath);
+		if (! env.theImLoader.open(p, env.fpimageOptions))
 		{
 			std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
 			return false;
 		}
 
-		// Cache the file names to be picked up by labels to know their file origin
-		theIntFname = intens_fpath;
-		theSegFname = label_fpath;
-
-		size_t nth = theImLoader.get_num_tiles_hor(),
-			ntv = theImLoader.get_num_tiles_vert(),
-			fw = theImLoader.get_tile_width(),
-			th = theImLoader.get_tile_height(),
-			tw = theImLoader.get_tile_width(),
-			tileSize = theImLoader.get_tile_size(),
-			fullW = theImLoader.get_full_width(),
-			fullH = theImLoader.get_full_height(),
-			fullD = theImLoader.get_full_depth();
+		size_t nth = env.theImLoader.get_num_tiles_hor(),
+			ntv = env.theImLoader.get_num_tiles_vert(),
+			fw = env.theImLoader.get_tile_width(),
+			th = env.theImLoader.get_tile_height(),
+			tw = env.theImLoader.get_tile_width(),
+			tileSize = env.theImLoader.get_tile_size(),
+			fullW = env.theImLoader.get_full_width(),
+			fullH = env.theImLoader.get_full_height(),
+			fullD = env.theImLoader.get_full_depth();
 
 		size_t vD = (size_t)(double(fullD) * aniso_z);	// virtual depth
 
@@ -195,7 +205,7 @@ namespace Nyxus
 					// load it
 					if (tidx_y != curt_y || tidx_x != curt_x)
 					{
-						bool ok = theImLoader.load_tile(tidx_y, tidx_x);
+						bool ok = env.theImLoader.load_tile(tidx_y, tidx_x);
 						if (!ok)
 						{
 							std::string s = "Error fetching tile row=" + std::to_string(tidx_y) + " col=" + std::to_string(tidx_x);
@@ -221,8 +231,8 @@ namespace Nyxus
 						i = ph_y * tw + ph_x;
 
 					// read buffered physical pixel 
-					auto dataI = theImLoader.get_int_tile_buffer(),
-						dataL = theImLoader.get_seg_tile_buffer();
+					auto dataI = env.theImLoader.get_int_tile_buffer(),
+						dataL = env.theImLoader.get_seg_tile_buffer();
 
 					// skip non-mask pixels
 					auto label = dataL[i];
@@ -230,7 +240,7 @@ namespace Nyxus
 						continue;
 
 					// skip this ROI if the label isn't in the pending set of a multi-ROI mode
-					if (!theEnvironment.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))
+					if (!env.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))
 						continue;
 
 					// skip tile buffer pixels beyond the image's bounds
@@ -238,24 +248,182 @@ namespace Nyxus
 						continue;
 
 					// collapse all the labels to one if single-ROI mde is requested
-					if (theEnvironment.singleROI)
+					if (env.singleROI)
 						label = 1;
 
 					// cache this voxel 
 					auto inten = dataI[i];
-					LR& r = roiData[label];
+					LR& r = env.roiData[label];
 					feed_pixel_2_cache_3D_LR (vc, vr, vz, dataI[i], r);
 				}
 			}
 
 			// Close the image pair
-			theImLoader.close();
+			env.theImLoader.close();
 		}
 
 		// Dump ROI pixel clouds to the output directory
-		VERBOSLVL5(dump_roi_pixels(batch_labels, label_fpath))
+		VERBOSLVL5 (env.get_verbosity_level(), dump_roi_pixels(env.dim(), Nyxus::get_temp_dir_path(), batch_labels, label_fpath, env.uniqueLabels, env.roiData));
 
 			return true;
+	}
+
+	//
+	// Loads ROI voxels into voxel clouds
+	//
+	bool scanTrivialRois_3D_anisotropic(
+		Environment& env,
+		const std::vector<int>& batch_labels,
+		const std::string& intens_fpath,
+		const std::string& label_fpath,
+		size_t t_index,
+		double aniso_x,
+		double aniso_y,
+		double aniso_z)
+	{
+		// Sort the batch's labels to enable binary searching in it
+		std::vector<int> whiteList = batch_labels;
+		std::sort (whiteList.begin(), whiteList.end());
+
+		// temp slideprops instance to pass some into to ImageLoader
+		SlideProps p (intens_fpath, label_fpath);
+		if (!env.theImLoader.open(p, env.fpimageOptions))
+		{
+			std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
+			return false;
+		}
+
+		// thanks to ImageLoader::open() we are guaranteed that the mask's and intensity's  
+		// W, H, and D match. Mask and intensity may only differ in the number of 
+		// time frames: 1:1, 1:N, and N:1 cases are permitted
+		size_t
+			w = env.theImLoader.get_full_width(),
+			h = env.theImLoader.get_full_height(),
+			d = env.theImLoader.get_full_depth(),
+			slice = w * h,
+			timeFrameSize = slice * d,
+			timeI = env.theImLoader.get_inten_time(),
+			timeM = env.theImLoader.get_mask_time(),
+			nVoxI = timeFrameSize * timeI,
+			nVoxM = timeFrameSize * timeM;
+
+		// is this intensity-mask pair's shape supported?
+		if (nVoxI < nVoxM)
+		{
+			std::string erm = "Error: unsupported shape - intensity file: " + std::to_string(nVoxI) + ", mask file: " + std::to_string(nVoxM);
+	#ifdef WITH_PYTHON_H
+			throw erm;
+	#endif	
+			std::cerr << erm << "\n";
+			return false;
+		}
+
+		int cnt = 1;
+
+		// fetch 3D data 
+		if (!env.theImLoader.load_tile (0/*row*/, 0/*col*/))
+		{
+			std::string erm = "Error fetching data from file pair " + intens_fpath + "(I) " + label_fpath + "(M)";
+	#ifdef WITH_PYTHON_H
+			throw erm;
+	#endif	
+			std::cerr << erm << "\n";
+			return false;
+		}
+
+		// get ahold of voxel buffers
+		auto dataI = env.theImLoader.get_int_tile_buffer(),
+			dataL = env.theImLoader.get_seg_tile_buffer();
+
+		// align time frame's mask and intensity volumes
+		size_t baseI, baseM;
+		if (timeI == timeM)
+		{
+			// trivial N mask : N intensity
+			baseM = 
+			baseI = t_index * timeFrameSize;
+		}
+		else
+		{
+			// nontrivial 1 mask : N intensity
+			baseM = 0;
+			baseI = t_index * timeFrameSize;
+		}
+
+		// virtual dimensions
+		size_t virt_h = h * aniso_y,
+			virt_w = w * aniso_x,
+			virt_d = d * aniso_z;
+		size_t vSliceLen = virt_h * virt_w,
+			virt_v = vSliceLen * virt_d;
+
+		// iterate virtual voxels and fill them with corresponding physical intensities
+		for (size_t vIdx = 0; vIdx < virt_v; vIdx++)
+		{
+			// virtual Cartesian position
+			size_t vZ = vIdx / vSliceLen, 
+				vLastSliceLen = vIdx % vSliceLen,
+				vY = vLastSliceLen / virt_w,
+				vX = vLastSliceLen % virt_w;
+
+			// physical Cartesian position
+			size_t pZ = vZ / aniso_z + 0.5,
+				pY = vY / aniso_y + 0.5,
+				pX = vX / aniso_x + 0.5;
+
+			// skip a position outside the bounds
+			// (since we are casting coorinates from virtual to physical,
+			// we may get positions outside the physical bounds)
+			if (pX >= w || pY >= h || pZ >= d)
+				continue;
+
+			// physical offset
+			size_t i = pZ * slice + pY * w + pX;
+
+			//
+			// interpret the mask intensity
+			//
+
+			// skip non-mask pixels
+			auto lbl = dataL[baseM + i];
+			if (!lbl)
+				continue;
+
+			// skip this ROI if the label isn't in the pending set of a multi-ROI mode
+			if (!env.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), lbl))
+				continue;
+
+			// collapse all the labels to one if single-ROI mde is requested
+			if (env.singleROI)
+				lbl = 1;
+
+#if !defined(NDEBUG)
+			if (vZ >= virt_d)
+				std::cout << "vZ=" << vZ << " < virt_d =" << virt_d << "\n";
+			assert(vZ < virt_d);
+			if (vY >= virt_h)
+				std::cout << "vY=" << vY << " < virt_h =" << virt_h << "\n";
+			assert(vY < virt_h);
+			if (vX >= virt_w)
+				std::cout << "vX=" << vX << " < virt_w =" << virt_w << "\n";
+			assert(vX < virt_w);
+#endif
+
+			// cache this voxel 
+			auto inten = dataI[baseI + i];
+			LR& r = env.roiData[lbl];
+			feed_pixel_2_cache_3D_LR (vX, vY, vZ, inten, r);
+		}
+
+	#ifdef WITH_PYTHON_H
+		// allow keyboard interrupt
+		if (PyErr_CheckSignals() != 0)
+			throw pybind11::error_already_set();
+	#endif
+
+		// Close the image pair
+		env.theImLoader.close();
+		return true;
 	}
 
 	//
@@ -335,9 +503,6 @@ namespace Nyxus
 			fullH = ilo.get_full_height(),
 			fullD = ilo.get_full_depth(),
 			sliceSize = fullW * fullH;
-		//xxxxxxxxxxxxxxxxxxx ,
-		//	sliceSize = fullW * fullH,
-		//	nVox = sliceSize * fullD;
 
 		size_t vh = (size_t) (double(fullH) * aniso_y),
 			vw = (size_t) (double(fullW) * aniso_x),
@@ -463,7 +628,7 @@ namespace Nyxus
 	}
 
 
-	bool processTrivialRois_3D(const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit)
+	bool processTrivialRois_3D (Environment & env, size_t sidx, size_t t_index, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit)
 	{
 		std::vector<int> Pending;
 		size_t batchDemand = 0;
@@ -471,9 +636,9 @@ namespace Nyxus
 
 		for (auto lab : trivRoiLabels)
 		{
-			LR& r = roiData[lab];
+			LR& r = env.roiData[lab];
 
-			size_t itemFootprint = r.get_ram_footprint_estimate();
+			size_t itemFootprint = r.get_ram_footprint_estimate (Pending.size());
 
 			// Check if we are good to accumulate this ROI in the current batch or should close the batch and reduce it
 			if (batchDemand + itemFootprint < memory_limit)
@@ -484,39 +649,47 @@ namespace Nyxus
 			else
 			{
 				// Scan pixels of pending trivial ROIs 
-				std::sort(Pending.begin(), Pending.end());
-				VERBOSLVL2(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of total " << uniqueLabels.size() << " ROIs\n";)
-					VERBOSLVL2(
-						if (Pending.size() == 1)
-							std::cout << ">>> (single ROI label " << Pending[0] << ")\n";
-						else
-							std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
-				)
+				std::sort (Pending.begin(), Pending.end());
 
-					if (theEnvironment.anisoOptions.customized() == false)
-					{
-						scanTrivialRois_3D(Pending, intens_fpath, label_fpath);
-					}
+				VERBOSLVL2 (env.get_verbosity_level(), std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of total " << env.uniqueLabels.size() << " ROIs\n");
+				VERBOSLVL2 (env.get_verbosity_level(),
+					if (Pending.size() == 1)
+						std::cout << ">>> (single ROI label " << Pending[0] << ")\n";
 					else
+						std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
+				);
+
+				if (env.anisoOptions.customized() == false)
+				{
+					scanTrivialRois_3D (env, Pending, intens_fpath, label_fpath, t_index);
+				}
+				else
+				{
+					double	ax = env.anisoOptions.get_aniso_x(),
+						ay = env.anisoOptions.get_aniso_y(),
+						az = env.anisoOptions.get_aniso_z();
+					scanTrivialRois_3D_anisotropic (env, Pending, intens_fpath, label_fpath, t_index, ax, ay, az);
+
+					// rescan and update ROI's AABB
+					for (auto lbl : Pending)
 					{
-						double	ax = theEnvironment.anisoOptions.get_aniso_x(),
-							ay = theEnvironment.anisoOptions.get_aniso_y(),
-							az = theEnvironment.anisoOptions.get_aniso_z();
-						scanTrivialRois_3D_anisotropic(Pending, intens_fpath, label_fpath, ax, ay, az);
+						LR& r = env.roiData[lbl];
+						r.aabb.update_from_voxelcloud (r.raw_pixels_3D);
 					}
+				}
 
 				// Allocate memory
-				VERBOSLVL2(std::cout << "\tallocating ROI buffers\n";)
-					allocateTrivialRoisBuffers_3D(Pending);
+				VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tallocating ROI buffers\n";)
+					allocateTrivialRoisBuffers_3D (Pending, env.roiData, env.hostCache);
 
 				// Reduce them
-				VERBOSLVL2(std::cout << "\treducing ROIs\n";)
+				VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\treducing ROIs\n";)
 					// reduce_trivial_rois(Pending);	
-					reduce_trivial_rois_manual(Pending);
+					reduce_trivial_rois_manual (Pending, env);
 
 				// Free memory
-				VERBOSLVL2(std::cout << "\tfreeing ROI buffers\n";)
-					freeTrivialRoisBuffers_3D(Pending);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
+				VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tfreeing ROI buffers\n";)
+				freeTrivialRoisBuffers_3D (Pending, env.roiData);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
 
 					// Reset the RAM footprint accumulator
 				batchDemand = 0;
@@ -531,7 +704,7 @@ namespace Nyxus
 				roiBatchNo++;
 			}
 
-			// Allow heyboard interrupt.
+			// Allow keyboard interrupt
 #ifdef WITH_PYTHON_H
 			if (PyErr_CheckSignals() != 0)
 			{
@@ -546,28 +719,48 @@ namespace Nyxus
 		{
 			// Read raw pixels of pending trivial ROIs 
 			std::sort(Pending.begin(), Pending.end());
-			VERBOSLVL2(std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << " pending ROIs of " << uniqueLabels.size() << " all ROIs\n";)
-				VERBOSLVL2(
-					if (Pending.size() == 1)
-						std::cout << ">>> (single ROI " << Pending[0] << ")\n";
-					else
-						std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
-			)
-				if (theEnvironment.anisoOptions.customized() == false)
+			
+			VERBOSLVL2(env.get_verbosity_level(),
+				std::cout << ">>> Scanning batch #" << roiBatchNo << " of " << Pending.size() << "(" << env.uniqueLabels.size() << ") ROIs\n";
+				std::cout << ">>> (labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
+				);
+
+			if (env.anisoOptions.customized() == false)
+			{
+				scanTrivialRois_3D (env, Pending, intens_fpath, label_fpath, t_index);
+			}
+			else
+			{
+				double	ax = env.anisoOptions.get_aniso_x(),
+					ay = env.anisoOptions.get_aniso_y(),
+					az = env.anisoOptions.get_aniso_z();
+				scanTrivialRois_3D_anisotropic (env, Pending, intens_fpath, label_fpath, t_index, ax, ay, az);
+
+				// rescan and update ROI's AABB
+				for (auto lbl : Pending)
 				{
-					scanTrivialRois_3D(Pending, intens_fpath, label_fpath);
+					LR& r = env.roiData[lbl];
+					r.aabb.update_from_voxelcloud(r.raw_pixels_3D);
 				}
-				else
+			}
+
+			for (auto lab : Pending)
+			{
+				LR& r = env.roiData[lab];
+				for (Pixel3& vox : r.raw_pixels_3D)
 				{
-					double	ax = theEnvironment.anisoOptions.get_aniso_x(),
-						ay = theEnvironment.anisoOptions.get_aniso_y(),
-						az = theEnvironment.anisoOptions.get_aniso_z();
-					scanTrivialRois_3D_anisotropic(Pending, intens_fpath, label_fpath, ax, ay, az);
+					assert (vox.x >= r.aabb.get_xmin());
+					assert (vox.x <= r.aabb.get_xmax());
+					assert (vox.y >= r.aabb.get_ymin());
+					assert (vox.y <= r.aabb.get_ymax());
+					assert (vox.z >= r.aabb.get_zmin());
+					assert (vox.z <= r.aabb.get_zmax());
 				}
+			}
 
 			// Allocate memory
-			VERBOSLVL2(std::cout << "\tallocating ROI buffers\n";)
-				allocateTrivialRoisBuffers_3D(Pending);
+			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tallocating ROI buffers\n");
+			allocateTrivialRoisBuffers_3D (Pending, env.roiData, env.hostCache);
 
 			// Dump ROIs for use in unit testing
 #ifdef DUMP_ALL_ROI
@@ -575,16 +768,16 @@ namespace Nyxus
 #endif
 
 			// Reduce them
-			VERBOSLVL2(std::cout << "\treducing ROIs\n";)
-				//reduce_trivial_rois(Pending);	
-				reduce_trivial_rois_manual(Pending);
+			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\treducing ROIs\n");
+			//reduce_trivial_rois(Pending);	
+			reduce_trivial_rois_manual (Pending, env);
 
 			// Free memory
-			VERBOSLVL2(std::cout << "\tfreeing ROI buffers\n";)
-				freeTrivialRoisBuffers_3D(Pending);
+			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tfreeing ROI buffers\n");
+			freeTrivialRoisBuffers_3D (Pending, env.roiData);
 
 #ifdef WITH_PYTHON_H
-			// Allow heyboard interrupt.
+			// Allow keyboard interrupt
 			if (PyErr_CheckSignals() != 0)
 			{
 				sureprint("\nAborting per user input\n");
@@ -593,26 +786,26 @@ namespace Nyxus
 #endif
 		}
 
-		VERBOSLVL2(std::cout << "\treducing neighbor features and their depends for all ROIs\n")
-			reduce_neighbors_and_dependencies_manual();
+		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\treducing neighbor features and their depends for all ROIs\n");
+		reduce_neighbors_and_dependencies_manual (env);
 
 		return true;
 	}
 
-	void allocateTrivialRoisBuffers_3D(const std::vector<int>& roi_labels)
+	void allocateTrivialRoisBuffers_3D (const std::vector<int>& roi_labels, Roidata& roiData, CpusideCache & cache)
 	{
 		// Calculate the total memory demand (in # of items) of all segments' image matrices
-		imageMatrixBufferLen = 0;
+		cache.imageMatrixBufferLen = 0;
 		for (auto lab : roi_labels)
 		{
 			LR& r = roiData[lab];
 			size_t w = r.aabb.get_width(),
 				h = r.aabb.get_height(),
 				d = r.aabb.get_z_depth(),
-				cubeSize = w * h * d;
-			imageMatrixBufferLen += cubeSize;
+				v = w * h * d;
+			cache.imageMatrixBufferLen += v;
 
-			largest_roi_imatr_buf_len = largest_roi_imatr_buf_len == 0 ? cubeSize : std::max(largest_roi_imatr_buf_len, cubeSize);
+			cache.largest_roi_imatr_buf_len = cache.largest_roi_imatr_buf_len == 0 ? v : std::max (cache.largest_roi_imatr_buf_len, v);
 		}
 
 		//

@@ -27,47 +27,41 @@ namespace py = pybind11;
 #include "helpers/system_resource.h"
 #include "helpers/timing.h"
 
-#ifdef USE_GPU
-	#include "gpucache.h"
-#endif
 
 namespace Nyxus
 {
+	bool scan_slide_props_montage(SlideProps& p, int dim, const AnisotropyOptions& aniso);
 
-	bool processIntSegImagePairInMemory (const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label, int pair_index, const std::string& intens_name, const std::string& seg_name, std::vector<int> unprocessed_rois)
+	bool processIntSegImagePairInMemory (Environment & env, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label, int pair_index, const std::string& intens_name, const std::string& seg_name, std::vector<int> unprocessed_rois)
 	{
 		std::vector<int> trivRoiLabels;
 
 		// Phase 1: gather ROI metrics
 
-		if (! gatherRoisMetricsInMemory(intens, label, pair_index))	// Output - set of ROI labels, label-ROI cache mappings
+		if (! gatherRoisMetricsInMemory (env, intens, label, pair_index))	// Output - set of ROI labels, label-ROI cache mappings
 			return false;
 
 		// ROI metrics are gathered, let's publish them non-anisotropically into ROI's AABB
 		// (Montage does not support anisotropy by design leaving it to Python user's control.)
-		for (auto lab : uniqueLabels)
+		for (auto lab : env.uniqueLabels)
 		{
-			LR& r = roiData[lab];
+			LR& r = env.roiData[lab];
 			r.make_nonanisotropic_aabb();
 		}
 
 		// Allocate each ROI's feature value buffer
-		for (auto lab : uniqueLabels)
+		for (auto lab : env.uniqueLabels)
 		{
-			LR& r = roiData[lab];
-
-			r.intFname = intens_name;
-			r.segFname = seg_name;
-
+			LR& r = env.roiData[lab];
 			r.initialize_fvals();
 		}
 
 		// Distribute ROIs among phases
-		for (auto lab : uniqueLabels)
+		for (auto lab : env.uniqueLabels)
 		{
-			LR& r = roiData[lab];
-			if (size_t roiFootprint = r.get_ram_footprint_estimate(), 
-				ramLim = theEnvironment.get_ram_limit(); 
+			LR& r = env.roiData[lab];
+			if (size_t roiFootprint = r.get_ram_footprint_estimate(env.uniqueLabels.size()), 
+				ramLim = env.get_ram_limit(); 
 				roiFootprint >= ramLim)
 			{
 				unprocessed_rois.push_back(lab);
@@ -79,7 +73,7 @@ namespace Nyxus
 		// Phase 2: process trivial-sized ROIs
 		if (trivRoiLabels.size())
 		{
-			processTrivialRoisInMemory (trivRoiLabels, intens, label, pair_index, theEnvironment.get_ram_limit());
+			processTrivialRoisInMemory (env, trivRoiLabels, intens, label, pair_index, env.get_ram_limit());
 		}
 
 		// Phase 3: skip nontrivial ROIs
@@ -87,94 +81,106 @@ namespace Nyxus
 		return true;
 	}
 	
-	int processMontage(
+	std::optional<std::string> processMontage(
+		Environment & env,
 		const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intensity_images,
 		const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label_images,
 		int numReduceThreads,
 		const std::vector<std::string>& intensity_names,
 		const std::vector<std::string>& seg_names,
-		std::string& error_message,
 		const SaveOption saveOption,
 		const std::string& outputPath)
 	{	
+		// prepare the output
+
 		bool write_apache = (saveOption == SaveOption::saveArrowIPC || saveOption == SaveOption::saveParquet);
 
 		if (write_apache) 
 		{
-			theEnvironment.arrow_stream = ArrowOutputStream();
-			auto [status, msg] = theEnvironment.arrow_stream.create_arrow_file (saveOption, get_arrow_filename(outputPath, theEnvironment.nyxus_result_fname, saveOption), Nyxus::get_header(theFeatureSet.getEnabledFeatures()));
+			env.arrow_stream = ArrowOutputStream();
+			auto [status, msg] = env.arrow_stream.create_arrow_file (saveOption, get_arrow_filename(outputPath, env.nyxus_result_fname, saveOption), Nyxus::get_header(env));
 			if (!status) 
-			{
-				std::cout << "Error creating Arrow file: " << msg.value() << std::endl;
-				return 1;
-			}
+				return { "error creating Arrow file: " + msg.value() };
 		}
 
 		auto rI = intensity_images.unchecked<3>();
 		size_t n_pairs = rI.shape(0);
+
+		//****** prescan
+
+		env.dataset.reset_dataset_props();
+
+		for (size_t i = 0; i < n_pairs; i++)
+		{
+			SlideProps& p = env.dataset.dataset_props.emplace_back (intensity_names[i], seg_names[i]);
+
+			// slide metrics
+			if (!scan_slide_props_montage(p, 2, env.anisoOptions))
+			{
+				VERBOSLVL1(env.get_verbosity_level(), std::cout << "error prescanning pair " << p.fname_int << " and " << p.fname_seg << std::endl);
+				return {"error prescanning montage slide "+ std::to_string(i)};
+			}
+			VERBOSLVL1(env.get_verbosity_level(), std::cout << "\t " << p.slide_w << " W x " << p.slide_h << " H\tmax ROI " << p.max_roi_w << " x " << p.max_roi_h << "\tmin-max I " << Nyxus::virguler_real(p.min_preroi_inten) << "-" << Nyxus::virguler_real(p.max_preroi_inten) << "\t" << p.lolvl_slide_descr << "\n");
+		}
+
+		// update dataset's summary
+		env.dataset.update_dataset_props_extrema();
+		VERBOSLVL1(env.get_verbosity_level(), std::cout << "\t finished prescanning \n");
+
+		//****** extract features
 		
 		for (int i_pair = 0; i_pair < n_pairs; i_pair++)
 		{
-			VERBOSLVL4(std::cout << "processMontage() pair " << i_pair << "/" << n_pairs << "\n");
+			VERBOSLVL4 (env.get_verbosity_level(), std::cout << "processMontage() pair " << i_pair << "/" << n_pairs << "\n");
 
-			clear_slide_rois();	// Clear ROI label list, ROI data, etc.
+			clear_slide_rois (env.uniqueLabels, env.roiData);	// Clear ROI label list, ROI data, etc.
 
 			std::vector<int> unprocessed_rois;
 
-			if (! processIntSegImagePairInMemory (intensity_images, label_images, i_pair, intensity_names[i_pair], seg_names[i_pair], unprocessed_rois))
+			if (! processIntSegImagePairInMemory (env, intensity_images, label_images, i_pair, intensity_names[i_pair], seg_names[i_pair], unprocessed_rois))
+				return { "error processing a slide pair" };
+
+			if (write_apache) 
 			{
-				error_message = "processIntSegImagePairInMemory() returned an error code while processing file pair";
-				return 1;
-			}
-
-			if (write_apache) {
-			
-				auto [status, msg] = theEnvironment.arrow_stream.write_arrow_file(Nyxus::get_feature_values());
-				if (!status) {
-					std::cout << "Error writing Arrow file: " << msg.value() << std::endl;
-					return 2;
-				}
-
+				auto [status, msg] = env.arrow_stream.write_arrow_file (Nyxus::get_feature_values(env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset));
+				if (!status) 
+					return { "error writing Arrow file: " + msg.value() };
 			} 
-      else 
+			else 
 			{
-				if (!save_features_2_buffer(theResultsCache))
-				{
-					error_message = "save_features_2_buffer() failed";
-					return 2;
-				}
+				if (! save_features_2_buffer(env.theResultsCache, env))
+					return { "error saving results to a buffer" };
 			}
 
 			if (unprocessed_rois.size() > 0) 
 			{
-				error_message = "The following ROIS are oversized and cannot be processed: ";
+				std::string erm = "the following ROIS are oversized and cannot be processed: ";
 				for (const auto& roi: unprocessed_rois)
 				{
-					error_message += roi;
-					error_message += ", ";
+					erm += std::to_string(roi);
+					erm += ", ";
 				}
 				
 				// remove trailing space and comma
-				error_message.pop_back();
-				error_message.pop_back();
+				erm.pop_back();
+				erm.pop_back();
+
+				return { erm };
 			}
 
-			// Allow heyboard interrupt.
+			// allow keyboard interrupt
 			if (PyErr_CheckSignals() != 0)
-                		throw pybind11::error_already_set();
+				throw pybind11::error_already_set();
 		}
 
 		if (write_apache) 
 		{
 			// close arrow file after use
-			auto [status, msg] = theEnvironment.arrow_stream.close_arrow_file();
-			if (!status) 
-			{
-				std::cout << "Error closing Arrow file: " << msg.value() << std::endl;
-				return 2;
-			}
+			auto [status, msg] = env.arrow_stream.close_arrow_file();
+			if (!status)
+				return { "error closing Arrow file: " + msg.value() };
 		}
-		return 0; // success
+		return std::nullopt; // success
 	}
 
 }

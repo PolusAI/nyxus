@@ -12,7 +12,7 @@ public:
 	OutOfRamPixelCloud();
 	OutOfRamPixelCloud(const OutOfRamPixelCloud&) = delete;	// Instead, use init() and copy()
 	~OutOfRamPixelCloud();
-	void init (unsigned int _roi_label, std::string name);
+	void init (unsigned int _roi_label, const std::string & name);	// relies on get_temp_dir_path() to create a file system object
 	void clear();
 	void add_pixel (const Pixel2& p);
 	void close();
@@ -146,7 +146,7 @@ private:
 class WriteImageMatrix_nontriv
 {
 public:
-	WriteImageMatrix_nontriv (const std::string&  _name, unsigned int _roi_label);
+	WriteImageMatrix_nontriv (const std::string &  _name, unsigned int _roi_label);
 	~WriteImageMatrix_nontriv();
 	
 	// Initialization

@@ -2,6 +2,7 @@
 #include "helpers/helpers.h"
 
 #include <sstream>
+#include "dataset.h"
 #include "dirs_and_files.h"
 #include "environment.h"
 #include "globals.h"
@@ -104,6 +105,14 @@ std::string NestedRoiOptions::get_last_er_msg()
 
 namespace Nyxus 
 {
+	const std::vector<std::string> mandatory_output_columns
+	{
+		Nyxus::colname_intensity_image,
+		Nyxus::colname_mask_image,
+		Nyxus::colname_roi_label,
+		Nyxus::colname_t_index
+	};
+
 	std::unordered_map <int, std::vector<int>> parentsChildren;
 	std::unordered_map <int, HieLR> roiDataP, roiDataC;
 
@@ -211,8 +220,6 @@ namespace Nyxus
 		// Make the relational table file name
 		std::string fPath = outdir + "/" + parent_fname + "_nested_relations.csv";	// output file path
 
-		VERBOSLVL2(std::cout << "\nWriting relational structure to file " << fPath << "\n");	
-
 		// Write a header
 		std::ofstream ofile;
 		ofile.open(fPath);
@@ -230,7 +237,7 @@ namespace Nyxus
 		ofile.close();	
 	}
 
-	bool find_hierarchy(std::vector<int>& P, const std::string& par_fname, const std::string& chi_fname, int verbosity_level)
+	bool find_hierarchy (Uniqueids& uniqueLabels, Roidata& roiData, std::vector<int>& P, const std::string& par_fname, const std::string& chi_fname, int verbosity_level, const Dataset& ds)
 	{
 		if (verbosity_level >= 1)
 			std::cout << "\nUsing \n\t" << par_fname << " as container (parent) segment provider, \n\t" << chi_fname << " as child segment provider\n";
@@ -246,7 +253,8 @@ namespace Nyxus
 		{
 			// Check if 'lp' is parent
 			LR& rp = roiData[lp];
-			std::string baseFN = baseFname (rp.segFname);
+			const std::string& sfile = ds.dataset_props[rp.slide_idx].fname_seg;
+			std::string baseFN = baseFname (sfile);
 			if (baseFN != base_parFname)
 				continue;
 
@@ -262,7 +270,8 @@ namespace Nyxus
 		{
 			// Check if 'lc' is child
 			LR& rc = roiData[lc];
-			std::string baseFN = baseFname (rc.segFname);
+			const std::string& sfile = ds.dataset_props[rc.slide_idx].fname_seg;
+			std::string baseFN = baseFname (sfile);
 			if (baseFN != base_chiFname)
 				continue;
 
@@ -273,7 +282,8 @@ namespace Nyxus
 			{
 				// Check if 'lp' is parent
 				LR& rp = roiData[lp];
-				if (rp.segFname != par_fname)
+				const std::string& sfile = ds.dataset_props[rp.slide_idx].fname_seg;
+				if (sfile != par_fname)
 					continue;
 
 				// Get ahold of this parent's children list
@@ -306,7 +316,8 @@ namespace Nyxus
 		{
 			// Check if 'lp' is parent
 			LR& rp = roiData[lp];
-			if (rp.segFname != par_fname)
+			const std::string& sfile = ds.dataset_props[rp.slide_idx].fname_seg;
+			if (sfile != par_fname)
 				continue;
 
 			// Its children data
@@ -321,7 +332,8 @@ namespace Nyxus
 		{
 			// Check if 'lp' is parent
 			LR& rp = roiData[lp];
-			if (rp.segFname != par_fname)
+			const std::string& sfile = ds.dataset_props[rp.slide_idx].fname_seg;
+			if (sfile != par_fname)
 				continue;
 
 			// Its children data
@@ -350,12 +362,20 @@ namespace Nyxus
 
 	/// @brief Scans the feature database and aggregates features of labels in parameter "P" 
 	/// according to aggregation "aggrs". The result goes to directory "outdir" 
-	bool aggregate_features2 (Nyxus::NestableRois& P, Nyxus::NestableRois& C, const std::string& outdir, const std::string& parentFname, const NestedRoiOptions::Aggregations& aggr)
+	bool aggregate_features2 (
+		Environment& env,
+		const FeatureSet & fset,
+		Nyxus::NestableRois& P, 
+		Nyxus::NestableRois& C, 
+		const std::string& outdir, 
+		const std::string& parentFname, 
+		const NestedRoiOptions::Aggregations& aggr, 
+		int verbose_level)
 	{
 		// Anything to do at all?
 		if (P.size() == 0)
 		{
-			VERBOSLVL2(std::cout << "Error: empty parent set\n");
+			VERBOSLVL2(verbose_level, std::cout << "Error: empty parent set\n");
 			return true;
 		}
 
@@ -378,7 +398,7 @@ namespace Nyxus
 		// Make the output table file name
 		std::string fPath = outdir + "/" + parentFname + "_nested_features.csv";	// output file path
 
-		VERBOSLVL2(std::cout << "\nWriting aligned nested features to file " << fPath << "\n");
+		VERBOSLVL2(verbose_level, std::cout << "\nWriting aligned nested features to file " << fPath << "\n");
 
 		std::ofstream ofile;
 		ofile.open (fPath);
@@ -389,7 +409,7 @@ namespace Nyxus
 			ofile << s << ",";
 
 		// User feature selection
-		std::vector<std::tuple<std::string, int>> F = theFeatureSet.getEnabledFeatures();
+		std::vector<std::tuple<std::string, int>> F = fset.getEnabledFeatures();
 		for (auto& f : F)
 		{
 			auto fn = std::get<0>(f);	// feature name
@@ -434,7 +454,9 @@ namespace Nyxus
 			auto nCh = r.children.size();
 
 			// Search this parent's feature extraction result record 
-			std::string csvFP = get_feature_output_fname(r.intFname, r.segFname);
+			const std::string& sfile = env.dataset.dataset_props [r.slide_idx].fname_seg, 
+				& ifile = env.dataset.dataset_props [r.slide_idx].fname_int;
+			std::string csvFP = get_feature_output_fname (env, ifile, sfile);
 			std::string csvWholeline;
 			std::vector<std::string> csvHeader, csvFields;
 			bool ok = find_csv_record2 (csvWholeline, csvHeader, csvFields, csvFP, lPar);
@@ -474,7 +496,9 @@ namespace Nyxus
 				for (auto lChi : r.children)
 				{
 					const auto& rChi = C[lChi];
-					std::string fpath = get_feature_output_fname (rChi.intFname, rChi.segFname);
+					const std::string& sfile = env.dataset.dataset_props [rChi.slide_idx].fname_seg,
+						& ifile = env.dataset.dataset_props [rChi.slide_idx].fname_int;
+					std::string fpath = get_feature_output_fname (env, ifile, sfile);
 
 					// read child's feature CSV file
 					std::string rawLine;
@@ -512,7 +536,9 @@ namespace Nyxus
 				{
 					// File where child's features reside
 					const auto& r_chi = C[lChi];
-					std::string csvFP_chi = get_feature_output_fname (r_chi.intFname, r_chi.segFname);
+					const std::string& sfile = env.dataset.dataset_props [r_chi.slide_idx].fname_seg,
+						& ifile = env.dataset.dataset_props[r_chi.slide_idx].fname_int;
+					std::string csvFP_chi = get_feature_output_fname (env, ifile, sfile);
 
 					// Read child's features
 					std::string csvWholeline_chi;
@@ -544,7 +570,7 @@ namespace Nyxus
 				// Handle a special case of no children: in that case, we need to zero-fill 
 				// the common table's cells
 				int n_chi = aggrBuf.size();
-				VERBOSLVL2(std::cout << "Parent " << lPar << ": " << n_chi << " child ROIs\n");
+				VERBOSLVL2(verbose_level, std::cout << "Parent " << lPar << ": " << n_chi << " child ROIs\n");
 				if (n_chi == 0)
 				{
 					// Zero-fill child cells
@@ -607,16 +633,17 @@ namespace Nyxus
 	}
 
 /// @brief Finds related (nested) segments and sets global variables 'pyHeader', 'pyStrData', and 'pyNumData' consumed by Python binding function findrelations_imp()
-bool mine_segment_relations2 (
-	const std::vector <std::string>& seg_files,
-	const std::string& file_pattern,
-	const std::string& channel_signature,
-	const int parent_channel,
-	const int child_channel,
-	const std::string& outdir,
-	const NestedRoiOptions::Aggregations& aggr,
-	int verbosity_level)
+bool mine_segment_relations2 (Environment& env, const std::vector <std::string>& seg_files)
 {
+	const FeatureSet& fset = env.theFeatureSet;
+	const std::string& file_pattern = env.get_file_pattern();
+	const std::string& channel_signature = env.nestedOptions.rawChannelSignature;
+	const int parent_channel = env.nestedOptions.parent_channel_number();
+	const int child_channel = env.nestedOptions.child_channel_number();
+	const std::string& outdir = env.output_dir;
+	const NestedRoiOptions::Aggregations& aggr = env.nestedOptions.aggregation_method();
+	int verbosity_level = env.get_verbosity_level();
+
 	// Check if the dataset is meaningful
 	if (seg_files.size() == 0)
 		throw std::runtime_error("No label files to process");
@@ -691,10 +718,10 @@ bool mine_segment_relations2 (
 
 	// Prepare the buffers. 
 	// 'totalNumLabels', 'stringColBuf', and 'calcResultBuf' will be updated with every call of output_roi_relational_table()
-	theResultsCache.clear();
+	env.theResultsCache.clear();
 
 	// Prepare the header
-	theResultsCache.add_to_header({ "Image", "Parent_Label", "Child_Label" });
+	env.theResultsCache.add_to_header({ "Image", "Parent_Label", "Child_Label" });
 
 	// Mine parent-child relations 
 	for (auto& parStemInfo : Stems)
@@ -706,7 +733,7 @@ bool mine_segment_relations2 (
 		std::string parFname = stem + std::to_string(parent_channel) + tail + ext;
 		std::string chiFname = stem + std::to_string(child_channel) + tail + ext;
 
-		VERBOSLVL2(std::cout << stem << "analyzing parent provider " << parFname << " vs children provider " << chiFname << "\n");
+		VERBOSLVL2(verbosity_level, std::cout << stem << "analyzing parent provider " << parFname << " vs children provider " << chiFname << "\n");
 
 		// Analyze geometric relationships and recognize the hierarchy
 		std::vector<int> parCandidates, chiCandidates;
@@ -727,8 +754,8 @@ bool mine_segment_relations2 (
 		output_roi_relations_2_csv (purePrntFname, pData, outdir);
 
 		// Aggregate features
-		VERBOSLVL2(std::cout << "Aggregating nested ROI in " + parFname + " : " + std::to_string(pData.size()) + " parents\n");
-		bool ok = aggregate_features2 (pData, cData, outdir, purePrntFname, aggr);
+		VERBOSLVL2(verbosity_level, std::cout << "Aggregating nested ROI in " + parFname + " : " + std::to_string(pData.size()) + " parents\n");
+		bool ok = aggregate_features2 (env, fset, pData, cData, outdir, purePrntFname, aggr, verbosity_level);
 		if (!ok)
 			throw std::runtime_error("Error aggregating features");
 	} //- stems
@@ -736,12 +763,13 @@ bool mine_segment_relations2 (
 	return true; // success
 }
 
-void save_nested_roi_info (std::unordered_map <std::string, NestableRois>& dst_nestedRoiData, const std::unordered_set<int> & src_labels, std::unordered_map <int, LR>& src_roiData)
+void save_nested_roi_info (std::unordered_map <std::string, NestableRois>& dst_nestedRoiData, const std::unordered_set<int> & src_labels, std::unordered_map <int, LR>& src_roiData, const Dataset & ds)
 {
 	for (auto l : src_labels)
 	{
 		LR & r = src_roiData[l];
-		const auto& fname = baseFname (r.segFname);
+		const std::string& sfile = ds.dataset_props[r.slide_idx].fname_seg;
+		const auto& fname = baseFname (sfile);
 
 		auto cnt = dst_nestedRoiData.count(fname);
 		if (!cnt)

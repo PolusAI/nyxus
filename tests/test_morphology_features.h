@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "../src/nyx/roi_cache.h"
-#include "../src/nyx/parallel.h"
 #include "../src/nyx/features/contour.h"
 #include "../src/nyx/features/pixel.h"
 #include "test_data.h"
@@ -17,6 +16,19 @@
 //
 void test_morphology_perimeter()
 {
+    // featue settings for this particular test
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
+    s[(int)NyxSetting::TINY].rval = 0.0;
+    s[(int)NyxSetting::SINGLEROI].bval = false;
+    s[(int)NyxSetting::GREYDEPTH].ival = 128;
+    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
+    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::VERBOSLVL].ival = 0;
+    s[(int)NyxSetting::IBSI].bval = false;
+
     // Feed data to the ROI
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
@@ -27,7 +39,7 @@ void test_morphology_perimeter()
 
     // Calculate features
     ContourFeature f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    ASSERT_NO_THROW(f.calculate(roidata, s));
 
     // Retrieve the feature values
     roidata.initialize_fvals();

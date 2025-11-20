@@ -12,6 +12,8 @@
 typedef float2 Complex;
 typedef cufftComplex CuComplex;
 
+class GpusideCache;
+
 #define CUFFT_MAX_SIZE pow(2,27)
 
 namespace CuGabor{
@@ -82,7 +84,8 @@ namespace CuGabor{
                     const unsigned int* image, 
                     double* kernel, 
                     int image_n, int image_m, int kernel_n, int kernel_m, int batch_size,
-                    double* dev_filterbank);
+                    double* dev_filterbank,
+                    GpusideCache & devside);
     /**
     * @brief Allocates device memory and sends there a host-side precalculated filter bank 'ho_filterbank' 
     */

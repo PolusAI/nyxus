@@ -1,6 +1,5 @@
 #include "caliper.h"
 #include "../environment.h"
-#include "../parallel.h"
 #include "rotation.h"
 
 using namespace Nyxus;
@@ -11,7 +10,7 @@ CaliperNassensteinFeature::CaliperNassensteinFeature() : FeatureMethod("CaliperN
 	provide_features (CaliperNassensteinFeature::featureset);
 }
 
-void CaliperNassensteinFeature::calculate (LR& r)
+void CaliperNassensteinFeature::calculate (LR& r, const Fsettings& settings)
 {
 	// intercept void ROIs
 	if (r.convHull_CH.size() == 0)
@@ -21,7 +20,7 @@ void CaliperNassensteinFeature::calculate (LR& r)
 		_mean =
 		_median =
 		_stdev =
-		_mode = theEnvironment.resultOptions.noval(); 
+		_mode = settings [(int)NyxSetting::SOFTNAN].rval;	// former theEnvironment.resultOptions.noval()
 		
 		return;
 	}
@@ -120,7 +119,7 @@ void CaliperNassensteinFeature::calculate_imp (const std::vector<Pixel2>& convex
 	}
 }
 
-void CaliperNassensteinFeature::osized_calculate (LR& r, ImageLoader&)
+void CaliperNassensteinFeature::osized_calculate (LR& r, const Fsettings& settings, ImageLoader&)
 {
 	// Rotated convex hull
 	std::vector<Pixel2> CH_rot;
@@ -201,22 +200,14 @@ void CaliperNassensteinFeature::osized_calculate (LR& r, ImageLoader&)
 	_mode = (double)s.mode;
 }
 
-void CaliperNassensteinFeature::parallel_process (std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
-{
-	size_t jobSize = roi_labels.size(),
-		workPerThread = jobSize / n_threads;
-
-	runParallel(CaliperNassensteinFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
-}
-
-void CaliperNassensteinFeature::extract (LR& r)
+void CaliperNassensteinFeature::extract (LR& r, const Fsettings& s)
 {
 	CaliperNassensteinFeature f;
-	f.calculate(r);
-	f.save_value(r.fvals);
+	f.calculate (r, s);
+	f.save_value (r.fvals);
 }
 
-void CaliperNassensteinFeature::parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void CaliperNassensteinFeature::parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings& s, const Dataset & _)
 {
 	// Calculate the feature for each batch ROI item 
 	for (auto i = firstitem; i < lastitem; i++)
@@ -231,7 +222,7 @@ void CaliperNassensteinFeature::parallel_process_1_batch (size_t firstitem, size
 
 		// Calculate the feature and save it in ROI's csv-friendly buffer 'fvals'
 		CaliperNassensteinFeature f;
-		f.calculate(r);
-		f.save_value(r.fvals);
+		f.calculate (r, s);
+		f.save_value (r.fvals);
 	}
 }

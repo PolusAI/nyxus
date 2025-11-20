@@ -1,9 +1,7 @@
 #include <vector>
 #include <iostream>
 #include <numeric>
-
 #include "sharpness.h"
-#include "../parallel.h"
 #include "../helpers/helpers.h"
 
 using namespace Nyxus;
@@ -12,29 +10,21 @@ SharpnessFeature::SharpnessFeature() : FeatureMethod("SharpnessFeature") {
     provide_features({FeatureIMQ::SHARPNESS});
 }
 
-void SharpnessFeature::calculate(LR& r) {
-
+void SharpnessFeature::calculate (LR& r, const Fsettings& s) 
+{
     // Get ahold of the ROI image matrix
     const ImageMatrix& Im0 = r.aux_image_matrix;
     sharpness_ = sharpness(Im0);
 }
 
-void SharpnessFeature::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
-{
-	size_t jobSize = roi_labels.size(),
-		workPerThread = jobSize / n_threads;
-
-	runParallel(SharpnessFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
-}
-
-void SharpnessFeature::extract (LR& r)
+void SharpnessFeature::extract (LR& r, const Fsettings& s)
 {
 	SharpnessFeature f;
-	f.calculate(r);
-	f.save_value(r.fvals);
+	f.calculate (r, s);
+	f.save_value (r.fvals);
 }
 
-void SharpnessFeature::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void SharpnessFeature::parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	// Calculate the feature for each batch ROI item 
 	for (auto i = firstitem; i < lastitem; i++)
@@ -48,28 +38,13 @@ void SharpnessFeature::parallel_process_1_batch(size_t firstitem, size_t lastite
 			continue;
 
 		// Calculate the feature and save it in ROI's csv-friendly b uffer 'fvals'
-		extract (r);
+		extract (r, s);
 	}
 }
 
 bool SharpnessFeature::required(const FeatureSet& fs) 
 { 
     return fs.isEnabled (FeatureIMQ::SHARPNESS); 
-}
-
-void SharpnessFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
-{
-    for (auto i = start; i < end; i++)
-    {
-        int lab = (*ptrLabels)[i];
-        LR& r = (*ptrLabelData)[lab];
-
-        SharpnessFeature sf;
-
-        sf.calculate (r);
-
-        sf.save_value (r.fvals);
-    }
 }
 
 void SharpnessFeature::save_value(std::vector<std::vector<double>>& feature_vals) {

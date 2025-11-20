@@ -1,5 +1,4 @@
 #include "focus_score.h"
-#include "../parallel.h"
 
 using namespace Nyxus;
 
@@ -11,8 +10,8 @@ FocusScoreFeature::FocusScoreFeature() : FeatureMethod("FocusScoreFeature") {
     provide_features(FocusScoreFeature::featureset);
 }
 
-void FocusScoreFeature::calculate(LR& r) {
-
+void FocusScoreFeature::calculate (LR& r, const Fsettings& s) 
+{
     // Get ahold of the ROI image matrix
     const ImageMatrix& Im0 = r.aux_image_matrix;
 
@@ -23,25 +22,16 @@ void FocusScoreFeature::calculate(LR& r) {
     focus_score_ = this->variance(laplacian_vec);
 
     local_focus_score_ = this->get_local_focus_score(Im0.ReadablePixels(), Im0.height, Im0.width);
-
 }
 
-void FocusScoreFeature::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
-{
-	size_t jobSize = roi_labels.size(),
-		workPerThread = jobSize / n_threads;
-
-	runParallel(FocusScoreFeature::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
-}
-
-void FocusScoreFeature::extract (LR& r)
+void FocusScoreFeature::extract (LR& r, const Fsettings& s)
 {
 	FocusScoreFeature f;
-	f.calculate(r);
-	f.save_value(r.fvals);
+	f.calculate (r, s);
+	f.save_value (r.fvals);
 }
 
-void FocusScoreFeature::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void FocusScoreFeature::parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	// Calculate the feature for each batch ROI item 
 	for (auto i = firstitem; i < lastitem; i++)
@@ -55,7 +45,7 @@ void FocusScoreFeature::parallel_process_1_batch(size_t firstitem, size_t lastit
 			continue;
 
 		// Calculate the feature and save it in ROI's csv-friendly buffer 'fvals'
-		extract (r);
+		extract (r, s);
 	}
 }
 
@@ -64,23 +54,21 @@ bool FocusScoreFeature::required(const FeatureSet& fs)
     return fs.anyEnabled (FocusScoreFeature::featureset); 
 }
 
-void FocusScoreFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void FocusScoreFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s)
 {
     for (auto i = start; i < end; i++)
     {
         int lab = (*ptrLabels)[i];
         LR& r = (*ptrLabelData)[lab];
 
-        FocusScoreFeature fsf;
-
-        fsf.calculate (r);
-
-        fsf.save_value (r.fvals);
+        FocusScoreFeature f;
+        f.calculate (r, s);
+        f.save_value (r.fvals);
     }
 }
 
-void FocusScoreFeature::osized_calculate(LR& r, ImageLoader& imloader) {
-
+void FocusScoreFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr) 
+{
     // Skip calculation in case of noninformative data
     if (r.aux_max == r.aux_min) return;
 

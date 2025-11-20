@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "../src/nyx/roi_cache.h"
-#include "../src/nyx/parallel.h"
 #include "../src/nyx/features/ngtdm.h"
 #include "../src/nyx/features/pixel.h"
 #include "../src/nyx/environment.h"
@@ -23,6 +22,20 @@ static std::unordered_map<std::string, float> IBSI_ngtdm_values {
 
 void test_ibsi_ngtdm_feature (const Feature2D& feature_, const std::string& feature_name) 
 {
+    // featue settings for this particular test
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
+    s[(int)NyxSetting::TINY].rval = 0.0;
+    s[(int)NyxSetting::SINGLEROI].bval = false;
+    s[(int)NyxSetting::GREYDEPTH].ival = 128;
+    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
+    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::VERBOSLVL].ival = 0;
+    s[(int)NyxSetting::IBSI].bval = true;
+    //
+
     int feature = int(feature_);
 
     double total = 0;
@@ -34,7 +47,7 @@ void test_ibsi_ngtdm_feature (const Feature2D& feature_, const std::string& feat
     // image 1
 
     load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
-    ASSERT_NO_THROW(f.calculate(roidata));
+    ASSERT_NO_THROW(f.calculate(roidata, s));
 
     // Initialize per-ROI feature value buffer with zeros
     roidata.initialize_fvals();
@@ -52,7 +65,7 @@ void test_ibsi_ngtdm_feature (const Feature2D& feature_, const std::string& feat
 
     load_masked_test_roi_data (roidata1, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask,  sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
 
-    ASSERT_NO_THROW(f1.calculate(roidata1));
+    ASSERT_NO_THROW(f1.calculate(roidata1, s));
 
     // Initialize per-ROI feature value buffer with zeros
     roidata1.initialize_fvals();
@@ -70,7 +83,7 @@ void test_ibsi_ngtdm_feature (const Feature2D& feature_, const std::string& feat
 
     load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
 
-    ASSERT_NO_THROW(f2.calculate(roidata2));
+    ASSERT_NO_THROW(f2.calculate(roidata2, s));
 
     // Initialize per-ROI feature value buffer with zeros
     roidata2.initialize_fvals();
@@ -88,7 +101,7 @@ void test_ibsi_ngtdm_feature (const Feature2D& feature_, const std::string& feat
 
     load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
 
-    ASSERT_NO_THROW(f3.calculate(roidata3));
+    ASSERT_NO_THROW(f3.calculate(roidata3, s));
 
     // Initialize per-ROI feature value buffer with zeros
     roidata3.initialize_fvals();

@@ -3,7 +3,9 @@
 #include <vector>
 #include "aabb.h"
 #include "pixel.h"
+#include "../dataset.h"
 #include "../feature_method.h"
+#include "../feature_settings.h"
 
 
 /// @brief Zernike features characterize the distribution of intensity across the object. Code originally written by Michael Boland and adapted by Ilya Goldberg
@@ -18,12 +20,12 @@ public:
 
 	ZernikeFeature();
 
-	void calculate(LR& r);
+	void calculate (LR& roi, const Fsettings& s);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
-	void osized_calculate(LR& r, ImageLoader& imloader);
+	void osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
-	static void extract (LR& roi);
-	static void parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
+	static void extract (LR& roi, const Fsettings& s);
+	static void parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
 
 	static const short ZERNIKE2D_ORDER = 9, NUM_FEATURE_VALS = 30;
 

@@ -21,4 +21,17 @@ namespace Nyxus
 		return ext;
 	}
 
+	// returns system temp directory as string
+	inline std::string get_temp_dir_path()
+	{
+		std::string t = fs::temp_directory_path().string();
+
+		// add slash to path if needed
+		if (! t.empty() && t.back() != fs::path::preferred_separator) {
+			t += fs::path::preferred_separator;
+		}
+
+		return t;
+	}
+
 }

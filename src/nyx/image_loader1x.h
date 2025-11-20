@@ -12,7 +12,7 @@ class ImageLoader1x
 {
 public:
 	ImageLoader1x();
-	bool open(const std::string& fpath);
+	bool open(const std::string& fpath, const FpImageOptions& fpopts);
 	void close();
 	bool load_tile(size_t tile_idx);
 	bool load_tile(size_t tile_row, size_t tile_col);

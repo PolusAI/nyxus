@@ -67,33 +67,54 @@ void test_3glcm_feature (const Nyxus::Feature3D& expecting_fcode, const std::str
     ASSERT_TRUE(fs::exists(mpath));
 
     // mock the 3D workflow
-    clear_slide_rois();
-    ASSERT_TRUE(gatherRoisMetrics_3D(ipath, mpath));
+    Environment e;
+    // (1) slide -> dataset -> prescan 
+    e.dataset.dataset_props.reserve(1);
+    SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
+    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+    e.dataset.update_dataset_props_extrema();
+    // (2) properties of specific ROIs sitting in 'e.uniqueLabels'
+    clear_slide_rois(e.uniqueLabels, e.roiData);
+    ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/));
+    // (3) voxel clouds
     std::vector<int> batch = { label };   // expecting this roi label after metrics gathering
-    ASSERT_TRUE(scanTrivialRois_3D(batch, ipath, mpath));
-    ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch));
+    ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/));
+    // (4) buffers
+    ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
+
+    // (5) feature settings
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
+    s[(int)NyxSetting::TINY].rval = 0.0;
+    s[(int)NyxSetting::SINGLEROI].bval = false;
+    s[(int)NyxSetting::GREYDEPTH].ival = 100;
+    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
+    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::VERBOSLVL].ival = 0;
+    s[(int)NyxSetting::IBSI].bval = false;
+    //
+
+    // (6) feature extraction
 
     // make it find the feature code by name
     int fcode = -1;
-    ASSERT_TRUE(theFeatureSet.find_3D_FeatureByString(fname, fcode));
+    ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(fname, fcode));
     // ... and that it's the feature we expect
     ASSERT_TRUE((int)expecting_fcode == fcode);
 
-    // set feature's state
-    D3_GLCM_feature::n_levels = 100;
-    D3_GLCM_feature::offset = 1;
-    D3_GLCM_feature::symmetric_glcm = false;
-    D3_GLCM_feature::angles = { 0, 45, 90, 135 };
-    Environment::ibsi_compliance = false;
-
     // extract the feature
-    LR & r = Nyxus::roiData[label];
+    LR& r = e.roiData[label];
     ASSERT_NO_THROW(r.initialize_fvals());
     D3_GLCM_feature f;
-    ASSERT_NO_THROW(f.calculate(r));
+    ASSERT_NO_THROW(f.calculate(r, s));
+
+    // (6) saving values
+
     f.save_value(r.fvals);
 
-    // aggregate all the angles
+    // aggregate subfeatures
     double atot = r.fvals[fcode][0] + r.fvals[fcode][1] + r.fvals[fcode][2] + r.fvals[fcode][3];
 
     // verdict

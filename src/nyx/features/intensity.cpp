@@ -1,5 +1,4 @@
 #include "../environment.h"
-#include "../parallel.h"
 #include "histogram.h"
 #include "intensity.h"
 #include "pixel.h"
@@ -50,7 +49,7 @@ PixelIntensityFeatures::PixelIntensityFeatures() : FeatureMethod("PixelIntensity
 	provide_features (PixelIntensityFeatures::featureset);
 }
 
-void PixelIntensityFeatures::calculate(LR& r)
+void PixelIntensityFeatures::calculate (LR& r, const Fsettings & fsett, const Dataset & ds)
 {
 	// intercept blank ROIs
 	if (r.aux_max == r.aux_min)
@@ -86,7 +85,7 @@ void PixelIntensityFeatures::calculate(LR& r)
 			val_COV =
 			val_STANDARD_DEVIATION_BIASED =
 			val_VARIANCE =
-			val_VARIANCE_BIASED = theEnvironment.resultOptions.noval();
+			val_VARIANCE_BIASED = fsett[(int)NyxSetting::SOFTNAN].rval; // former theEnvironment.resultOptions.noval();
 
 		return;
 	}
@@ -99,7 +98,7 @@ void PixelIntensityFeatures::calculate(LR& r)
 	// --COVERED_IMAGE_INTENSITY_RANGE
 	if (r.slide_idx >= 0)	// slide may not always be available in varoius scenarios (segmented, wsi, in-memory, etc.)
 	{
-		const SlideProps& p = LR::dataset_props[r.slide_idx];
+		const SlideProps& p = ds.dataset_props [r.slide_idx];
 		double sir = (p.max_preroi_inten - p.min_preroi_inten); // slide intensity range
 		val_COVERED_IMAGE_INTENSITY_RANGE = double(r.aux_max - r.aux_min) / sir;
 	}
@@ -209,7 +208,7 @@ void PixelIntensityFeatures::calculate(LR& r)
 void PixelIntensityFeatures::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
 {}
 
-void PixelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
+void PixelIntensityFeatures::osized_calculate (LR& r, const Fsettings& stng, const Dataset& ds, ImageLoader& imloader)
 {
 	// --MIN, MAX
 	val_MIN = r.aux_min;
@@ -219,7 +218,7 @@ void PixelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	// --COVERED_IMAGE_INTENSITY_RANGE
 	if (r.slide_idx >= 0)
 	{
-		const SlideProps& p = LR::dataset_props[r.slide_idx];
+		const SlideProps& p = ds.dataset_props [r.slide_idx];
 		double sir = (p.max_preroi_inten - p.min_preroi_inten); // slide intensity range
 		val_COVERED_IMAGE_INTENSITY_RANGE = (r.aux_max - r.aux_min) / sir;
 	}
@@ -366,48 +365,26 @@ void PixelIntensityFeatures::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature2D::VARIANCE_BIASED][0] = val_VARIANCE_BIASED;
 }
 
-void PixelIntensityFeatures::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
-{
-	size_t jobSize = roi_labels.size(),
-		workPerThread = jobSize / n_threads;
-
-	runParallel(PixelIntensityFeatures::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
-}
-
-void PixelIntensityFeatures::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
-{
-	// Calculate the feature for each batch ROI item 
-	for (auto i = firstitem; i < lastitem; i++)
-	{
-		// Get ahold of ROI's label and cache
-		int roiLabel = (*ptrLabels)[i];
-		LR& r = (*ptrLabelData)[roiLabel];
-
-		// Skip the ROI if its data is invalid to prevent nans and infs in the output
-		if (r.has_bad_data())
-			continue;
-
-		// Calculate the feature and save it in ROI's csv-friendly buffer 'fvals'
-		PixelIntensityFeatures f;
-		f.calculate(r);
-		f.save_value(r.fvals);
-	}
-}
-
-void PixelIntensityFeatures::extract (LR& r)
+void PixelIntensityFeatures::extract (LR& r, const Fsettings & fs, const Dataset & ds)
 {		
 	PixelIntensityFeatures f;
-	f.calculate (r);
+	f.calculate (r, fs, ds);
 	f.save_value (r.fvals);
 }
 
-void PixelIntensityFeatures::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void PixelIntensityFeatures::reduce (
+	size_t start, 
+	size_t end, 
+	std::vector<int>* roi_labels, 
+	std::unordered_map <int, LR>* roi_data, 
+	const Fsettings & fsett,
+	const Dataset & ds)
 {
 	for (auto i = start; i < end; i++)
 	{
-		int lab = (*ptrLabels)[i];
-		LR& r = (*ptrLabelData)[lab];
-		extract(r);
+		int lab = (*roi_labels)[i];
+		LR& r = (*roi_data)[lab];
+		extract (r, fsett, ds);
 	}
 }
 

@@ -2,70 +2,36 @@
 #include "globals.h"
 #include "roi_cache.h"
 
-std::vector<SlideProps> LR::dataset_props;
-size_t LR::dataset_max_combined_roicloud_len = 0;
-size_t LR::dataset_max_n_rois = 0;
-size_t LR::dataset_max_roi_area = 0;
-size_t LR::dataset_max_roi_w = 0;
-size_t LR::dataset_max_roi_h = 0;
-size_t LR::dataset_max_roi_d = 0;
-
-/*static*/ void LR::update_dataset_props_extrema()
-{
-	LR::dataset_max_combined_roicloud_len = 0;
-	LR::dataset_max_n_rois = 0;
-	LR::dataset_max_roi_area = 0;
-	LR::dataset_max_roi_w = 0;
-	LR::dataset_max_roi_h = 0;
-	LR::dataset_max_roi_d = 0;
-
-	for (SlideProps& p : LR::dataset_props)
-	{
-		size_t sup_s_n = p.n_rois * p.max_roi_area;
-		LR::dataset_max_combined_roicloud_len = (std::max)(LR::dataset_max_combined_roicloud_len, sup_s_n);
-		LR::dataset_max_n_rois = (std::max)(LR::dataset_max_n_rois, p.n_rois);
-		LR::dataset_max_roi_area = (std::max)(LR::dataset_max_roi_area, p.max_roi_area);
-		LR::dataset_max_roi_w = (std::max)(LR::dataset_max_roi_w, p.max_roi_w);
-		LR::dataset_max_roi_h = (std::max)(LR::dataset_max_roi_h, p.max_roi_h);
-		LR::dataset_max_roi_d = (std::max)(LR::dataset_max_roi_d, p.max_roi_d);
-	}
-}
-
-void LR::reset_dataset_props()
-{
-	dataset_props.clear();
-}
-
 LR::LR (int lab):
 	BasicLR(lab)
 {
 	slide_idx = -1;
 }
 
-bool LR::nontrivial_roi (size_t memory_limit) 
+bool LR::nontrivial_roi (size_t n_rois, size_t limit) 
 { 
-	size_t footprint = get_ram_footprint_estimate();
-	bool nonTriv = footprint >= memory_limit;
+	size_t footprint = get_ram_footprint_estimate (n_rois);
+	bool nonTriv = (footprint >= limit);
 	return nonTriv; 
 }
 
-size_t LR::get_ram_footprint_estimate()
+size_t LR::get_ram_footprint_estimate (size_t n_slide_rois) const
 {
 	size_t sz =
 		int(Nyxus::FeatureIMQ::_COUNT_) * 10 * sizeof(double) + // feature values (approximately 10 each)
 		aabb.get_width() * aabb.get_height() * sizeof(Pixel2) +	// image matrix
 		aux_area * sizeof(Pixel2) +	// raw pixels
-		(Nyxus::uniqueLabels.size() - 1) * sizeof(int);	// neighbors
+		(n_slide_rois - 1) * sizeof(int);	// neighbors
 	return sz;
 }
 
-size_t LR::get_ram_footprint_estimate_3D()
+size_t LR::get_ram_footprint_estimate_3D (size_t n_volume_rois) const
 {
 	size_t sz =
 		int(Nyxus::FeatureIMQ::_COUNT_) * 10 * sizeof(double) + // feature values (approximately 10 each)
 		aabb.get_width() * aabb.get_height() * aabb.get_z_depth() * sizeof(Pixel2) +	// image matrix
 		aux_area * sizeof(Pixel2) +	// raw pixels
-		(Nyxus::uniqueLabels.size() - 1) * sizeof(int);	// neighbors
+		(n_volume_rois - 1) * sizeof(int);	// neighbors
 	return sz;
 }
 

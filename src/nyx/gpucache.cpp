@@ -2,12 +2,12 @@
 
 #include <unordered_map>
 #include "environment.h"
-#include "gpucache.h"
+#include "cache.h"
 #include "gpu/geomoments.cuh"
 #include "helpers/helpers.h"
 #include "roi_cache.h"
 
-
+#if 0
 // functions implemented in gpucache.cu :
 namespace NyxusGpu
 {
@@ -17,6 +17,7 @@ namespace NyxusGpu
 	bool download_on_host(void* hobuffer, void* devbuffer, size_t szb);
 	bool devicereduce_evaluate_buffer_szb(size_t& devicereduce_buf_szb, size_t maxLen);
 }
+#endif
 
 #define OK(x) if (x == false) \
 { \
@@ -39,7 +40,7 @@ bool GpuCache<Pixel2>::clear()
 		hobuffer = nullptr;
 
 		// device side buffer
-		if (!NyxusGpu::gpu_delete(devbuffer))
+		if (!GpusideCache::gpu_delete(devbuffer))
 			return false;
 		devbuffer = nullptr;
 	}
@@ -56,7 +57,7 @@ bool GpuCache<Pixel2>::clear()
 		ho_offsets = nullptr;
 
 		// device side buffer
-		if (!NyxusGpu::gpu_delete(dev_offsets))
+		if (!GpusideCache::gpu_delete(dev_offsets))
 			return false;
 		dev_offsets = nullptr;
 	}
@@ -73,7 +74,7 @@ bool GpuCache<gpureal>::clear()
 		hobuffer = nullptr;
 
 		// device side buffer
-		if (!NyxusGpu::gpu_delete(devbuffer))
+		if (!GpusideCache::gpu_delete(devbuffer))
 			return false;
 		devbuffer = nullptr;
 	}
@@ -90,7 +91,7 @@ bool GpuCache<gpureal>::clear()
 		ho_offsets = nullptr;
 
 		// device side buffer
-		if (!NyxusGpu::gpu_delete(dev_offsets))
+		if (!GpusideCache::gpu_delete(dev_offsets))
 			return false;
 		dev_offsets = nullptr;
 	}
@@ -112,27 +113,22 @@ bool GpuCache<Pixel2>::alloc (size_t total_len__, size_t num_rois__)
 	num_rois = num_rois__;
 
 	// allocate on device
-	VERBOSLVL1(std::cout << "GPU cache: allocate on device ... \n");
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	VERBOSLVL1(std::cout << "GPU cache: allocating on device [" << total_len << "] " << szb << "\n");
-	if (!NyxusGpu::allocate_on_device ((void**)&devbuffer, szb))
+	if (! GpusideCache::allocate_on_device ((void**)&devbuffer, szb))
 		return false;
 
 	szb = num_rois * sizeof(dev_offsets[0]);
-	if (!NyxusGpu::allocate_on_device ((void**)&dev_offsets, szb))
+	if (! GpusideCache::allocate_on_device ((void**)&dev_offsets, szb))
 		return false;
 
 	// allocate on host	
-	VERBOSLVL1(std::cout << "GPU cache: hobuffer := new Pixel2 " << total_len << "=" << sizeof(Pixel2)*total_len << "\n");
 	
 	hobuffer = (Pixel2*) std::malloc(total_len * sizeof(hobuffer[0])); 
 	if (!hobuffer) return false;
 	
-	VERBOSLVL1(std::cout << "GPU cache: ho_lengths := new size_t " << num_rois << "\n");
 	ho_lengths = (size_t*) std::malloc(num_rois * sizeof(ho_lengths[0])); 
 	if (!ho_lengths) return false;
 
-	VERBOSLVL1(std::cout << "ho_offsets := new size_t " << num_rois << "\n");
 	ho_offsets = (size_t*) std::malloc(num_rois * sizeof(ho_offsets[0])); 
 	
 	return true;
@@ -161,7 +157,7 @@ bool GpuCache<gpureal>::alloc(size_t roi_buf_len, size_t num_rois__)
 
 	// allocate on device
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	if (!NyxusGpu::allocate_on_device((void**)&devbuffer, szb))
+	if (!GpusideCache::allocate_on_device((void**)&devbuffer, szb))
 		return false;
 
 	//		not allocating dev_offsets
@@ -180,11 +176,11 @@ template<>
 bool GpuCache<Pixel2>::upload()
 {
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	if (!NyxusGpu::upload_on_device((void*)devbuffer, (void*)hobuffer, szb))
+	if (!GpusideCache::upload_on_device((void*)devbuffer, (void*)hobuffer, szb))
 		return false;
 
 	szb = num_rois * sizeof(dev_offsets[0]);
-	if (!NyxusGpu::upload_on_device((void*)dev_offsets, (void*)ho_offsets, szb))
+	if (!GpusideCache::upload_on_device((void*)dev_offsets, (void*)ho_offsets, szb))
 		return false;
 
 	return true;
@@ -194,7 +190,7 @@ template<>
 bool GpuCache<gpureal>::download()
 {
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	if (!NyxusGpu::download_on_host ((void*)hobuffer, (void*)devbuffer, szb))
+	if (!GpusideCache::download_on_host ((void*)hobuffer, (void*)devbuffer, szb))
 		return false;
 
 	return true;
@@ -209,7 +205,7 @@ bool GpuCache<cufftDoubleComplex>::clear()
 		hobuffer = nullptr;
 
 		// device side buffer
-		if (!NyxusGpu::gpu_delete(devbuffer))
+		if (!GpusideCache::gpu_delete(devbuffer))
 			return false;
 		devbuffer = nullptr;
 	}
@@ -226,7 +222,7 @@ bool GpuCache<cufftDoubleComplex>::clear()
 		ho_offsets = nullptr;
 
 		// device side buffer
-		if (!NyxusGpu::gpu_delete(dev_offsets))
+		if (!GpusideCache::gpu_delete(dev_offsets))
 			return false;
 		dev_offsets = nullptr;
 	}
@@ -248,7 +244,7 @@ bool GpuCache<cufftDoubleComplex>::alloc(size_t roi_buf_len, size_t num_rois__)
 
 	// allocate on device
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	if (!NyxusGpu::allocate_on_device((void**)&devbuffer, szb))
+	if (!GpusideCache::allocate_on_device((void**)&devbuffer, szb))
 		return false;
 
 	//		not allocating dev_offsets
@@ -260,7 +256,7 @@ template<>
 bool GpuCache<cufftDoubleComplex>::download()
 {
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	if (!NyxusGpu::download_on_host((void*)hobuffer, (void*)devbuffer, szb))
+	if (!GpusideCache::download_on_host((void*)hobuffer, (void*)devbuffer, szb))
 		return false;
 
 	return true;
@@ -275,7 +271,7 @@ bool GpuCache<PixIntens>::clear()
 		hobuffer = nullptr;
 
 		// device side buffer
-		if (!NyxusGpu::gpu_delete(devbuffer))
+		if (!GpusideCache::gpu_delete(devbuffer))
 			return false;
 		devbuffer = nullptr;
 	}
@@ -292,7 +288,7 @@ bool GpuCache<PixIntens>::clear()
 		ho_offsets = nullptr;
 
 		// device side buffer
-		if (!NyxusGpu::gpu_delete(dev_offsets))
+		if (!GpusideCache::gpu_delete(dev_offsets))
 			return false;
 		dev_offsets = nullptr;
 	}
@@ -314,7 +310,7 @@ bool GpuCache<PixIntens>::alloc(size_t roi_buf_len, size_t num_rois__)
 
 	// allocate on device
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	if (!NyxusGpu::allocate_on_device((void**)&devbuffer, szb))
+	if (!GpusideCache::allocate_on_device((void**)&devbuffer, szb))
 		return false;
 
 	return true;
@@ -331,7 +327,7 @@ bool GpuCache<float>::clear()
 		hobuffer = nullptr;
 
 		// device side buffer
-		if (!NyxusGpu::gpu_delete(devbuffer))
+		if (!GpusideCache::gpu_delete(devbuffer))
 			return false;
 		devbuffer = nullptr;
 	}
@@ -348,7 +344,7 @@ bool GpuCache<float>::clear()
 		ho_offsets = nullptr;
 
 		// device side buffer
-		if (!NyxusGpu::gpu_delete(dev_offsets))
+		if (!GpusideCache::gpu_delete(dev_offsets))
 			return false;
 		dev_offsets = nullptr;
 	}
@@ -370,7 +366,7 @@ bool GpuCache<float>::alloc(size_t roi_buf_len, size_t num_rois__)
 
 	// allocate on device
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	if (!NyxusGpu::allocate_on_device((void**)&devbuffer, szb))
+	if (!GpusideCache::allocate_on_device((void**)&devbuffer, szb))
 		return false;
 
 	return true;
@@ -380,19 +376,15 @@ template<>
 bool GpuCache<float>::download()
 {
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	if (!NyxusGpu::download_on_host((void*)hobuffer, (void*)devbuffer, szb))
+	if (!GpusideCache::download_on_host((void*)hobuffer, (void*)devbuffer, szb))
 		return false;
 
 	return true;
 }
 
+#if 0
 namespace NyxusGpu
 {
-	bool using_contour = false,
-		using_erosion = false,
-		using_gabor = false,
-		using_moments = false;
-
 	size_t ram_comsumption_szb(
 		bool needContour,
 		bool needErosion,
@@ -493,8 +485,6 @@ namespace NyxusGpu
 		size_t amt = 0; 
 		OK(gpu_get_free_mem(amt));
 
-		VERBOSLVL1(std::cout << "GPU RAM amt = " << Nyxus::virguler_ulong(amt) << "\n");
-
 		int n_gabFilters = n_gabor_filters + 1;		// '+1': an extra filter for the baseline signal
 
 		// Calculate the amt of required memory
@@ -508,24 +498,18 @@ namespace NyxusGpu
 			roi_kontur_cloud_len, 
 			n_rois, roi_w, roi_h, n_gabFilters, gabor_ker_side);
 
-		VERBOSLVL1(std::cout << "szb for " << Nyxus::virguler_ulong(n_rois) << " ROIs (ideal ROI px:" << Nyxus::virguler_ulong(roi_cloud_len) << ", ideal contour px:" << Nyxus::virguler_ulong(roi_kontur_cloud_len) << ") = " << Nyxus::virguler_ulong(szb) << "\n");
-
 		batch_len = n_rois;
 		size_t critAmt = amt * 0.75; // 75% GPU RAM as critical RAM
 
-		VERBOSLVL1(std::cout << "critical GPU RAM amt = " << Nyxus::virguler_ulong(critAmt) << "\n");
-
 		if (critAmt < szb)
 		{
-			VERBOSLVL1(std::cout << "Need to split " << Nyxus::virguler_ulong(n_rois)  << " ROIs into batches \n");
-
 			size_t try_nrois = 0;
 			for (try_nrois = n_rois; try_nrois>=0; try_nrois--)
 			{
 				// failed to find a batch ?
 				if (try_nrois == 0)
 				{
-					VERBOSLVL1(std::cerr << "error: cannot make a ROI batch \n");
+					std::cerr << "error: cannot make a ROI batch \n";
 					return false;
 				}
 
@@ -537,12 +521,8 @@ namespace NyxusGpu
 					needMoments,
 					ccl, ccl, try_nrois, roi_w, roi_h, n_gabFilters, gabor_ker_side);
 
-				if (try_nrois % 10 == 0)
-					VERBOSLVL1(std::cout << "try_szb (" << ccl << ", " << ccl << ", " << try_nrois << ") = " << try_szb << "\n");
-
 				if (critAmt > try_szb)
 				{
-					VERBOSLVL1(std::cout << "batching is successful, batch_len=" << try_nrois << "\n");
 					batch_len = try_nrois;
 					break;
 				}
@@ -551,15 +531,12 @@ namespace NyxusGpu
 			// have we found a compromise ?
 			if (batch_len < n_rois)
 			{
-				VERBOSLVL1(std::cerr << "error: cannot make a ROI batch \n");
+				std::cerr << "Error: cannot make a ROI batch \n";
 				return false;
 			}
 		}
 
 		size_t batch_roi_cloud_len = roi_area * batch_len;
-
-		VERBOSLVL1(std::cout << "batch_len = " << batch_len << " of ideal " << n_rois << "\n");
-		VERBOSLVL1(std::cout << "batch_roi_cloud_len = " << batch_roi_cloud_len  << "\n");
 
 		//****** allocate
 	
@@ -843,5 +820,6 @@ namespace NyxusGpu
 #endif
 
 } // NyxusGpu
+#endif
 
 #endif

@@ -1,7 +1,6 @@
 #include <limits>
 #include <string>
 #include <vector>
-#include "environment.h"
 #include "globals.h"
 #include "helpers/fsystem.h"
 #include "helpers/timing.h"
@@ -9,11 +8,93 @@
 
 namespace Nyxus
 {
-	bool gatherRoisMetrics_2_slideprops_2D (RawImageLoader & ilo, SlideProps & p)
+	bool gatherRoisMetrics_2_slideprops_2D_montage (
+		// in
+		const AnisotropyOptions& aniso,
+		// out
+		SlideProps& p)
+	{
+		// low-level slide properties (intensity and mask, if available)
+		p.lolvl_slide_descr = "from montage";
+		p.fp_phys_pivoxels = false;
+
+		// time series
+		p.inten_time = 0;
+		p.mask_time = 0;
+
+		// scan intensity slide's data
+
+		bool wholeslide = false;
+
+		double slide_I_max = (std::numeric_limits<double>::lowest)(),
+			slide_I_min = (std::numeric_limits<double>::max)();
+
+		std::unordered_set<int> U;	// unique ROI mask labels
+		std::unordered_map <int, LR> R;	// ROI data
+
+		//****** fix ROIs' AABBs with respect to anisotropy
+
+		if (!aniso.customized())
+		{
+			for (auto& pair : R)
+			{
+				LR& r = pair.second;
+				r.make_nonanisotropic_aabb();
+			}
+		}
+		else
+		{
+			for (auto& pair : R)
+			{
+				LR& r = pair.second;
+				r.make_anisotropic_aabb(aniso.get_aniso_x(), aniso.get_aniso_y());
+			}
+		}
+
+		//****** Analysis
+
+		// slide-wide (max ROI area) x (number of ROIs)
+		size_t maxArea = 0;
+		size_t max_w = 0, max_h = 0;
+		for (const auto& pair : R)
+		{
+			const LR& r = pair.second;
+			maxArea = maxArea > r.aux_area ? maxArea : r.aux_area; //std::max (maxArea, r.aux_area);
+			const AABB& bb = r.aabb;
+			auto w = bb.get_width();
+			auto h = bb.get_height();
+			max_w = max_w > w ? max_w : w;
+			max_h = max_h > h ? max_h : h;
+		}
+
+		p.slide_w = 2;
+		p.slide_h = 2;
+
+		p.max_preroi_inten = slide_I_max;		// in case fp_phys_pivoxels==true, max/min _preroi_inten 
+		p.min_preroi_inten = slide_I_min;		// needs adjusting (grey-binning) before using in wsi scenarios (assigning ROI's min and max)
+
+		p.max_roi_area = maxArea;
+		p.n_rois = R.size();
+		p.max_roi_w = max_w;
+		p.max_roi_h = max_h;
+
+		return true;
+	}
+
+	bool gatherRoisMetrics_2_slideprops_2D(
+		// in
+		RawImageLoader& ilo,
+		const AnisotropyOptions& aniso,
+		// out
+		SlideProps& p)
 	{
 		// low-level slide properties (intensity and mask, if available)
 		p.lolvl_slide_descr = ilo.get_slide_descr();
 		p.fp_phys_pivoxels = ilo.get_fp_phys_pixvoxels();
+
+		// time series
+		p.inten_time = ilo.get_inten_time();
+		p.mask_time = ilo.get_mask_time();
 
 		// scan intensity slide's data
 
@@ -44,7 +125,7 @@ namespace Nyxus
 			for (unsigned int col = 0; col < ntv; col++)
 			{
 				// Fetch the tile
-				if (! ilo.load_tile(row, col))
+				if (!ilo.load_tile(row, col))
 				{
 #ifdef WITH_PYTHON_H
 					throw "Error fetching tile";
@@ -88,9 +169,9 @@ namespace Nyxus
 						U.insert(msk);
 
 						// Initialize the ROI label record
-						LR r (msk);
+						LR r(msk);
 
-						//		- mocking init_label_record_2(newData, theSegFname, theIntFname, x, y, label, intensity, tile_index)
+						//		- mocking init_label_record_3 (roi, theSegFname, theIntFname, x, y, label, intensity, tile_index)
 						// Initialize basic counters
 						r.aux_area = 1;
 						r.aux_min = r.aux_max = 0; //we don't have uint-cast intensities at this moment
@@ -121,16 +202,11 @@ namespace Nyxus
 					throw pybind11::error_already_set();
 #endif
 
-				// Show stayalive progress info
-				VERBOSLVL2(
-					if (cnt++ % 4 == 0)
-						std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n";
-				);
 			} // foreach tile
 
 		//****** fix ROIs' AABBs with respect to anisotropy
 
-		if (theEnvironment.anisoOptions.customized() == false)
+		if (!aniso.customized())
 		{
 			for (auto& pair : R)
 			{
@@ -140,16 +216,13 @@ namespace Nyxus
 		}
 		else
 		{
-			double	ax = theEnvironment.anisoOptions.get_aniso_x(),
-				ay = theEnvironment.anisoOptions.get_aniso_y();
-
 			for (auto& pair : R)
 			{
 				LR& r = pair.second;
-				r.make_anisotropic_aabb(ax, ay);
+				r.make_anisotropic_aabb(aniso.get_aniso_x(), aniso.get_aniso_y());
 			}
 		}
-			  
+
 		//****** Analysis
 
 		// slide-wide (max ROI area) x (number of ROIs)
@@ -180,11 +253,20 @@ namespace Nyxus
 		return true;
 	}
 
-	bool gatherRoisMetrics_2_slideprops_3D (RawImageLoader& ilo, SlideProps& p)
+	bool gatherRoisMetrics_2_slideprops_3D(
+		// in
+		RawImageLoader& ilo,
+		const AnisotropyOptions& aniso,
+		// out
+		SlideProps& p)
 	{
 		// low-level slide properties (intensity and mask, if available)
 		p.lolvl_slide_descr = ilo.get_slide_descr();
 		p.fp_phys_pivoxels = ilo.get_fp_phys_pixvoxels();
+
+		// time series
+		p.inten_time = ilo.get_inten_time();
+		p.mask_time = ilo.get_mask_time();
 
 		// scan intensity slide's data
 
@@ -196,9 +278,6 @@ namespace Nyxus
 		std::unordered_set<int> U;	// unique ROI mask labels
 		std::unordered_map <int, LR> R;	// ROI data
 
-		int lvl = 0, // pyramid level
-			lyr = 0; //	layer
-
 		// Read the volume. The image loader is in the open state by previously called processDataset_XX_YY ()
 		size_t fullW = ilo.get_full_width(),
 			fullH = ilo.get_full_height(),
@@ -207,7 +286,7 @@ namespace Nyxus
 			nVox = sliceSize * fullD;
 
 		// in the 3D case tiling is a formality, so fetch the only tile in the file
-		if (! ilo.load_tile(0, 0))
+		if (!ilo.load_tile(0, 0))
 		{
 #ifdef WITH_PYTHON_H
 			throw "Error fetching tile";
@@ -254,11 +333,11 @@ namespace Nyxus
 				// Initialize the ROI label record
 				LR r(msk);
 
-				//		- mocking init_label_record_2(newData, theSegFname, theIntFname, x, y, label, intensity, tile_index)
+				//		- mocking init_label_record_3 (newData, theSegFname, theIntFname, x, y, label, intensity, tile_index)
 				// Initialize basic counters
 				r.aux_area = 1;
 				r.aux_min = r.aux_max = 0; //we don't have uint-cast intensities at this moment
-				r.init_aabb_3D (x, y, z);
+				r.init_aabb_3D(x, y, z);
 
 				//		- not storing file names (r.segFname = segFile, r.intFname = intFile) but will do so in the future
 
@@ -276,7 +355,7 @@ namespace Nyxus
 				r.aux_area++;
 
 				// save
-				r.update_aabb_3D (x, y, z);
+				r.update_aabb_3D(x, y, z);
 			}
 
 #ifdef WITH_PYTHON_H
@@ -289,7 +368,7 @@ namespace Nyxus
 
 		//****** fix ROIs' AABBs with respect to anisotropy
 
-		if (theEnvironment.anisoOptions.customized() == false)
+		if (!aniso.customized())
 		{
 			for (auto& pair : R)
 			{
@@ -299,13 +378,10 @@ namespace Nyxus
 		}
 		else
 		{
-			double	ax = theEnvironment.anisoOptions.get_aniso_x(),
-				ay = theEnvironment.anisoOptions.get_aniso_y();
-
 			for (auto& pair : R)
 			{
 				LR& r = pair.second;
-				r.make_anisotropic_aabb(ax, ay);
+				r.make_anisotropic_aabb(aniso.get_aniso_x(), aniso.get_aniso_y(), aniso.get_aniso_z());
 			}
 		}
 
@@ -317,14 +393,14 @@ namespace Nyxus
 		for (const auto& pair : R)
 		{
 			const LR& r = pair.second;
-			maxArea = (std::max) (maxArea, (size_t)r.aux_area);
+			maxArea = (std::max)(maxArea, (size_t)r.aux_area);
 			const AABB& bb = r.aabb;
 			auto w = bb.get_width();
 			auto h = bb.get_height();
 			auto d = bb.get_z_depth();
-			max_w = (std::max) (max_w, (size_t)w);
-			max_h = (std::max) (max_h, (size_t)h);
-			max_d = (std::max) (max_d, (size_t)d);
+			max_w = (std::max)(max_w, (size_t)w);
+			max_h = (std::max)(max_h, (size_t)h);
+			max_d = (std::max)(max_d, (size_t)d);
 		}
 
 		p.slide_w = fullW;
@@ -343,7 +419,7 @@ namespace Nyxus
 		return true;
 	}
 
-	std::pair <std::string, std::string> split_alnum (const std::string & annot)
+	std::pair <std::string, std::string> split_alnum(const std::string& annot)
 	{
 		std::string A = annot; // a string that we can edit
 		std::string al;
@@ -353,19 +429,28 @@ namespace Nyxus
 				al += c;
 			else
 			{
-				A.erase (0, al.size());
+				A.erase(0, al.size());
 				break;
 			}
 		}
 
-		return {al, A};
+		return { al, A };
 	}
 
+	bool scan_slide_props_montage (SlideProps & p, int dim, const AnisotropyOptions & aniso)
+	{
+		if (dim != 2)
+			return false;
+
+		gatherRoisMetrics_2_slideprops_2D_montage (aniso, p);
+
+		return true;
+	}
 
 	//
 	// prerequisite: initialized fields fname_int and  fname_seg
 	//
-	bool scan_slide_props (SlideProps & p, int dim, bool need_annot)
+	bool scan_slide_props (SlideProps & p, int dim, const AnisotropyOptions & aniso, bool need_annot)
 	{
 		RawImageLoader ilo;
 		if (! ilo.open(p.fname_int, p.fname_seg))
@@ -374,7 +459,7 @@ namespace Nyxus
 			return false;
 		}
 
-		bool ok = dim==2 ? gatherRoisMetrics_2_slideprops_2D(ilo, p) : gatherRoisMetrics_2_slideprops_3D(ilo, p);
+		bool ok = dim==2 ? gatherRoisMetrics_2_slideprops_2D(ilo, aniso, p) : gatherRoisMetrics_2_slideprops_3D(ilo, aniso, p);
 		if (!ok)
 		{
 			std::cerr << "error gathering ROI metrics to slide/volume props \n";

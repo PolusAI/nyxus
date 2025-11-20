@@ -41,9 +41,3 @@ private:
 	size_t totalNumLabels_ = 0;
 	std::vector<std::string> stringColBuf_, headerBuf_;
 };
-
-// Global feature extraction results table
-namespace Nyxus
-{
-	extern ResultsCache theResultsCache;
-}

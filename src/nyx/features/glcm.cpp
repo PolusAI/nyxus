@@ -6,7 +6,6 @@
 using namespace Nyxus;
 
 int GLCMFeature::offset = 1;
-int GLCMFeature::n_levels = 0;
 bool GLCMFeature::symmetric_glcm = false;
 std::vector<int> GLCMFeature::angles = { 0, 45, 90, 135 };
 
@@ -15,18 +14,21 @@ GLCMFeature::GLCMFeature() : FeatureMethod("GLCMFeature")
 	provide_features(GLCMFeature::featureset);
 }
 
-void GLCMFeature::calculate(LR& r)
+void GLCMFeature::calculate (LR& r, const Fsettings& s)
 {
 	// Clear the feature values buffers
 	clear_result_buffers();
 
 	// Skip feature calculation in case of bad data
 	// (We need to smart-select the greyInfo rather than just theEnvironment.get_coarse_gray_depth())
-	auto binnedMin = bin_pixel(r.aux_min, r.aux_min, r.aux_max, theEnvironment.get_coarse_gray_depth());
-	auto binnedMax = bin_pixel(r.aux_max, r.aux_min, r.aux_max, theEnvironment.get_coarse_gray_depth());
+	int nGreys = s[(int)NyxSetting::GREYDEPTH].ival;
+	double softNAN = s[(int)NyxSetting::SOFTNAN].rval;
+
+	auto binnedMin = bin_pixel(r.aux_min, r.aux_min, r.aux_max, nGreys);
+	auto binnedMax = bin_pixel(r.aux_max, r.aux_min, r.aux_max, nGreys);
 	if (binnedMin == binnedMax)
 	{
-		auto w = theEnvironment.resultOptions.noval();		// safe NAN
+		auto w = softNAN;		// safe NAN
 
 		// assign it to each angled feature value 
 		auto n = angles.size();
@@ -94,7 +96,7 @@ void GLCMFeature::calculate(LR& r)
 
 	// Calculate features for all the directions
 	for (auto a : angles)
-		Extract_Texture_Features2 (a, r.aux_image_matrix, r.aux_min, r.aux_max);
+		Extract_Texture_Features2 (s, a, r.aux_image_matrix, r.aux_min, r.aux_max);
 }
 
 void GLCMFeature::clear_result_buffers()
@@ -205,24 +207,24 @@ void GLCMFeature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature2D::GLCM_VARIANCE_AVE][0] = calc_ave(fvals_variance);
 }
 
-void GLCMFeature::extract (LR& r)
+void GLCMFeature::extract (LR& r, const Fsettings& s)
 {
 	GLCMFeature f;
-	f.calculate(r);
-	f.save_value(r.fvals);
+	f.calculate (r, s);
+	f.save_value (r.fvals);
 }
 
-void GLCMFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void GLCMFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-		extract (r);
+		extract (r, s);
 	}
 }
 
-void GLCMFeature::Extract_Texture_Features2(int angle, const ImageMatrix& grays, PixIntens min_val, PixIntens max_val)
+void GLCMFeature::Extract_Texture_Features2 (const Fsettings& s, int angle, const ImageMatrix& grays, PixIntens min_val, PixIntens max_val)
 {
 	int nrows = grays.height;
 	int ncols = grays.width;
@@ -252,12 +254,12 @@ void GLCMFeature::Extract_Texture_Features2(int angle, const ImageMatrix& grays,
 		return;
 	}
 
-	calculateCoocMatAtAngle (P_matrix, dx, dy, grays, min_val, max_val);
+	calculateCoocMatAtAngle (P_matrix, s, dx, dy, grays, min_val, max_val);
 
 	// Blank cooc-matrix? -- no point to use it, assign each feature value '0' and return.
 	if (sum_p == 0)
 	{
-		auto _ = theEnvironment.resultOptions.noval(); // safe NAN
+		double _ = s[(int)NyxSetting::SOFTNAN].rval;
 		fvals_ASM.push_back(_);
 		fvals_acor.push_back(_);
 		fvals_cluprom.push_back(_);
@@ -299,112 +301,62 @@ void GLCMFeature::Extract_Texture_Features2(int angle, const ImageMatrix& grays,
 	calculate_by_row_mean();
 
 	// Compute Haralick statistics 
-	double f;
-	f = theFeatureSet.isEnabled(Feature2D::GLCM_ASM) ? f_asm(P_matrix) : 0.0;
-	fvals_ASM.push_back(f);
-
-	f = theFeatureSet.isEnabled(Feature2D::GLCM_CONTRAST) ? f_contrast(P_matrix) : 0.0;
-	fvals_contrast.push_back(f);
-
-	f = theFeatureSet.isEnabled(Feature2D::GLCM_CORRELATION) ? f_corr() : 0.0;
-	fvals_correlation.push_back(f);
-
-	f = theFeatureSet.isEnabled(Feature2D::GLCM_ENERGY) ? f_energy(P_matrix) : 0.0;
-	fvals_energy.push_back(f);
-
-	f = theFeatureSet.isEnabled(Feature2D::GLCM_HOM1) ? f_homogeneity() : 0.0;
-	fvals_homo.push_back(f);
-
-	f = theFeatureSet.isEnabled(Feature2D::GLCM_VARIANCE) ? f_var(P_matrix) : 0.0;
-	fvals_variance.push_back(f);
-
-	f = theFeatureSet.isEnabled(Feature2D::GLCM_IDM) ? f_idm() : 0.0;
-	fvals_IDM.push_back(f);
-
-	f = theFeatureSet.isEnabled(Feature2D::GLCM_SUMAVERAGE) ? f_savg() : 0.0;
-	fvals_sum_avg.push_back(f);
-
-	f = theFeatureSet.isEnabled(Feature2D::GLCM_SUMENTROPY) ? f_sentropy() : 0.0;
-	fvals_sum_entropy.push_back(f);
-
-	f = theFeatureSet.isEnabled(Feature2D::GLCM_ENTROPY) ? f_entropy(P_matrix) : 0.0;
-	fvals_entropy.push_back(f);
-
-	f = theFeatureSet.isEnabled(Feature2D::GLCM_DIFVAR) ? f_dvar(P_matrix) : 0.0;
-	fvals_diff_var.push_back(f);
-
-	f = theFeatureSet.isEnabled(Feature2D::GLCM_DIFENTRO) ? f_dentropy(P_matrix) : 0.0;
-	fvals_diff_entropy.push_back(f);
-
-	f = theFeatureSet.isEnabled(Feature2D::GLCM_DIFAVE) ? f_difference_avg() : 0.0;
-	fvals_diff_avg.push_back(f);
-
-	f = theFeatureSet.isEnabled(Feature2D::GLCM_INFOMEAS1) ? f_info_meas_corr1(P_matrix) : 0.0;
-	fvals_meas_corr1.push_back(f);
-
-	f = theFeatureSet.isEnabled(Feature2D::GLCM_INFOMEAS2) ? f_info_meas_corr2(P_matrix) : 0.0;
-	fvals_meas_corr2.push_back(f);
-
-	f = !theFeatureSet.isEnabled(Feature2D::GLCM_ACOR) ? 0 : f_GLCM_ACOR(P_matrix);
-	fvals_acor.push_back(f);
-
-	f = !theFeatureSet.isEnabled(Feature2D::GLCM_CLUPROM) ? 0 : f_GLCM_CLUPROM();
-	fvals_cluprom.push_back(f);
-
-	f = !theFeatureSet.isEnabled(Feature2D::GLCM_CLUSHADE) ? 0 : f_GLCM_CLUSHADE();
-	fvals_clushade.push_back(f);
+	fvals_ASM.push_back (f_asm(P_matrix));
+	fvals_contrast.push_back (f_contrast(P_matrix));
+	fvals_correlation.push_back (f_corr());
+	fvals_energy.push_back (f_energy(P_matrix));
+	fvals_homo.push_back (f_homogeneity());
+	fvals_variance.push_back (f_var(P_matrix));
+	fvals_IDM.push_back (f_idm());
+	fvals_sum_avg.push_back (f_savg());
+	fvals_sum_entropy.push_back (f_sentropy());
+	fvals_entropy.push_back (f_entropy(P_matrix));
+	fvals_diff_var.push_back (f_dvar(P_matrix));
+	fvals_diff_entropy.push_back (f_dentropy(P_matrix));
+	fvals_diff_avg.push_back (f_difference_avg());
+	fvals_meas_corr1.push_back (f_info_meas_corr1(P_matrix));
+	fvals_meas_corr2.push_back (f_info_meas_corr2(P_matrix));
+	fvals_acor.push_back (f_GLCM_ACOR(P_matrix));
+	fvals_cluprom.push_back (f_GLCM_CLUPROM());
+	fvals_clushade.push_back (f_GLCM_CLUSHADE());
 
 	// 'cluster tendency' is equivalent to 'sum variance', so calculate it once
-	f = (theFeatureSet.isEnabled(Feature2D::GLCM_CLUTEND) || theFeatureSet.isEnabled(Feature2D::GLCM_SUMVARIANCE)) ? f_GLCM_CLUTEND() : 0.0;
-	fvals_clutend.push_back(f);
-	fvals_sum_var.push_back(f);
+	double clutend = f_GLCM_CLUTEND();
+	fvals_clutend.push_back (clutend);
+	fvals_sum_var.push_back (clutend);
 
-	f = !theFeatureSet.isEnabled(Feature2D::GLCM_DIS) ? 0 : f_GLCM_DIS(P_matrix);
-	fvals_dis.push_back(f);
+	fvals_dis.push_back (f_GLCM_DIS(P_matrix));
+	fvals_hom2.push_back (f_GLCM_HOM2(P_matrix));
+	fvals_idmn.push_back (f_GLCM_IDMN());
+	fvals_id.push_back (f_GLCM_ID());
+	fvals_idn.push_back (f_GLCM_IDN());
+	fvals_iv.push_back (f_GLCM_IV());
 
-	f = !theFeatureSet.isEnabled(Feature2D::GLCM_HOM2) ? 0 : f_GLCM_HOM2(P_matrix);
-	fvals_hom2.push_back(f);
+	double jave = f_GLCM_JAVE();
+	fvals_jave.push_back (jave);
 
-	f = !theFeatureSet.isEnabled(Feature2D::GLCM_IDMN) ? 0 : f_GLCM_IDMN();
-	fvals_idmn.push_back(f);
-
-	f = !theFeatureSet.isEnabled(Feature2D::GLCM_ID) ? 0 : f_GLCM_ID();
-	fvals_id.push_back(f);
-
-	f = !theFeatureSet.isEnabled(Feature2D::GLCM_IDN) ? 0 : f_GLCM_IDN();
-	fvals_idn.push_back(f);
-
-	f = !theFeatureSet.isEnabled(Feature2D::GLCM_IV) ? 0 : f_GLCM_IV();
-	fvals_iv.push_back(f);
-
-	f = !theFeatureSet.isEnabled(Feature2D::GLCM_JAVE) ? 0 : f_GLCM_JAVE();
-	fvals_jave.push_back(f);
-	auto jave = f;
-
-	f = !theFeatureSet.isEnabled(Feature2D::GLCM_JE) ? 0 : f_GLCM_JE(P_matrix);
-	fvals_je.push_back(f);
-
-	f = !theFeatureSet.isEnabled(Feature2D::GLCM_JMAX) ? 0 : f_GLCM_JMAX(P_matrix);
-	fvals_jmax.push_back(f);
-
-	f = !theFeatureSet.isEnabled(Feature2D::GLCM_JVAR) ? 0 : f_GLCM_JVAR(P_matrix, jave);
-	fvals_jvar.push_back(f);
+	fvals_je.push_back (f_GLCM_JE(P_matrix));
+	fvals_jmax.push_back (f_GLCM_JMAX(P_matrix));
+	fvals_jvar.push_back (f_GLCM_JVAR(P_matrix, jave));
 }
 
 void GLCMFeature::calculateCoocMatAtAngle(
 	// out
 	SimpleMatrix<double>& GLCM,
 	// in
+	const Fsettings& s,
 	int dx,
 	int dy,
 	const ImageMatrix& grays,
 	PixIntens grays_min_val,
 	PixIntens grays_max_val)
 {
+	int nGreys = s[(int)NyxSetting::GREYDEPTH].ival;
+	bool ibsi = s[(int)NyxSetting::IBSI].bval;
+
 	//--- grey bining ---
 	int rows = grays.height,
 		cols = grays.width;
-
 
 	ImageMatrix M;
 	M.allocate(grays.width, grays.height);
@@ -424,11 +376,11 @@ void GLCMFeature::calculateCoocMatAtAngle(
 	//
 
 	// bin intensities
-	auto greyInfo = theEnvironment.get_coarse_gray_depth();
-	auto greyInfo_localFeature = GLCMFeature::n_levels;
+	auto greyInfo = nGreys;
+	auto greyInfo_localFeature = nGreys;
 	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
 		greyInfo = greyInfo_localFeature;
-	if (Nyxus::theEnvironment.ibsi_compliance)
+	if (ibsi)
 		greyInfo = 0;
 	bin_intensities (D, imR, grays_min_val, grays_max_val, greyInfo);
 

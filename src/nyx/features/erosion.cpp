@@ -1,12 +1,15 @@
 #include <algorithm>
+#include "../cache.h"
 #include "erosion.h"
 
 using namespace Nyxus;
 
+#ifdef USE_GPU
 namespace NyxusGpu 
 {
-	bool ErosionFeature_calculate_via_gpu(size_t roi_index, size_t roi_w, size_t roi_h, int max_n_erosions, int & fval);
+	bool ErosionFeature_calculate_via_gpu (size_t roi_index, size_t roi_w, size_t roi_h, int max_n_erosions, int & fval, GpusideCache & devside);
 }
+#endif
 
 ErosionPixelsFeature::ErosionPixelsFeature() : FeatureMethod("ErosionPixelsFeature")
 {
@@ -14,7 +17,7 @@ ErosionPixelsFeature::ErosionPixelsFeature() : FeatureMethod("ErosionPixelsFeatu
 	add_dependencies({ Feature2D::CONVEX_HULL_AREA });	// Feature EROSIONS_2_VANISH_COMPLEMENT requires the convex hull
 }
 
-void ErosionPixelsFeature::calculate(LR& r)
+void ErosionPixelsFeature::calculate (LR& r, const Fsettings& s)
 {
 	// Build the mask image matrix 'I2'
 	auto width = r.aabb.get_width(),
@@ -107,7 +110,7 @@ void ErosionPixelsFeature::calculate(LR& r)
 
 void ErosionPixelsFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {} // Not supporting online for erosions
 
-void ErosionPixelsFeature::osized_calculate (LR& r, ImageLoader& imloader)
+void ErosionPixelsFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader)
 {
 	// Build the mask image matrix 'I2'
 	auto width = r.aabb.get_width(),
@@ -195,14 +198,14 @@ void ErosionPixelsFeature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature2D::EROSIONS_2_VANISH][0] = numErosions;
 }
 
-void ErosionPixelsFeature::extract (LR& r)
+void ErosionPixelsFeature::extract (LR& r, const Fsettings& s)
 {		
 	ErosionPixelsFeature epix;
-	epix.calculate(r);
-	epix.save_value(r.fvals);
+	epix.calculate (r, s);
+	epix.save_value (r.fvals);
 }
 
-void ErosionPixelsFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void ErosionPixelsFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -217,7 +220,7 @@ void ErosionPixelsFeature::parallel_process_1_batch(size_t start, size_t end, st
 			continue;
 
 		// Calculate feature
-		extract (r);
+		extract (r, s);
 	}
 }
 
@@ -227,7 +230,8 @@ void ErosionPixelsFeature::gpu_process_all_rois (
 	const std::vector<int>& L, 
 	std::unordered_map <int, LR>& RoiData,
 	size_t batch_offset,
-	size_t batch_len)
+	size_t batch_len,
+	GpusideCache & devside)
 {
 	for (size_t i = 0; i < batch_len; i++)
 	{
@@ -236,14 +240,14 @@ void ErosionPixelsFeature::gpu_process_all_rois (
 		LR& r = RoiData[lab];
 
 		ErosionPixelsFeature f;
-		f.calculate_via_gpu (r, i, 1000/*SANITY_MAX_NUM_EROSIONS*/, f.numErosions);
+		f.calculate_via_gpu (r, i, 1000/*SANITY_MAX_NUM_EROSIONS*/, f.numErosions, devside);
 		f.save_value(r.fvals);
 	}
 }
 
-void ErosionPixelsFeature::calculate_via_gpu (LR& r, size_t roiidx, int max_n_erosions, int & fval)
+void ErosionPixelsFeature::calculate_via_gpu (LR& r, size_t roiidx, int max_n_erosions, int & fval, GpusideCache & devside)
 {
-	bool ok = NyxusGpu::ErosionFeature_calculate_via_gpu (roiidx, r.aabb.get_width(), r.aabb.get_height(), max_n_erosions, fval);
+	bool ok = NyxusGpu::ErosionFeature_calculate_via_gpu (roiidx, r.aabb.get_width(), r.aabb.get_height(), max_n_erosions, fval, devside);
 	if (!ok)
 		std::cerr << "ErosionFeature: error calculating on GPU\n";
 }

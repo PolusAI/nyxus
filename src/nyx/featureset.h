@@ -1098,7 +1098,7 @@ public:
 	void show_help();
 
 	// Relying on RVO rather than std::move
-	std::vector<std::tuple<std::string, int>> getEnabledFeatures();
+	std::vector<std::tuple<std::string, int>> getEnabledFeatures() const;
 
 private:
 	bool m_enabledFeatures [(int) Nyxus::FeatureIMQ::_COUNT_];
@@ -1106,7 +1106,7 @@ private:
 
 namespace Nyxus
 {
-	extern FeatureSet theFeatureSet;
+	// directories of feature names and name to code mappings
 	extern std::map <std::string, Nyxus::Feature2D> UserFacingFeatureNames;
 	extern std::map <std::string, Nyxus::FeatureIMQ> UserFacingIMQFeatureGroupNames;
 	extern std::map <std::string, Nyxus::Fgroup2D> UserFacing2dFeaturegroupNames;

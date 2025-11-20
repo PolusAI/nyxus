@@ -7,13 +7,12 @@ bool ExtremaFeature::required(const FeatureSet& fs)
 	return fs.anyEnabled (ExtremaFeature::featureset);
 }
 
-
 ExtremaFeature::ExtremaFeature() : FeatureMethod("ExtremaFeature") 
 {
 	provide_features (ExtremaFeature::featureset);
 }
 
-void ExtremaFeature::calculate (LR& r)
+void ExtremaFeature::calculate (LR& r, const Fsettings& s)
 {
 	int TopMost = r.aabb.get_ymin();
 	int Lowest = r.aabb.get_ymax();
@@ -74,7 +73,7 @@ void ExtremaFeature::calculate (LR& r)
 	x8 = LeftMost;
 }
 
-void ExtremaFeature::osized_calculate (LR& r, ImageLoader& imloader)
+void ExtremaFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader)
 {
 	int TopMost = r.aabb.get_ymin();
 	int Lowest = r.aabb.get_ymax();
@@ -172,14 +171,14 @@ void ExtremaFeature::save_value (std::vector<std::vector<double>>& fvals)
 	fvals [(int)Feature2D::EXTREMA_P8_X][0] = x8;
 }
 
-void ExtremaFeature::extract (LR& r)
+void ExtremaFeature::extract (LR& r, const Fsettings& s)
 {
 	ExtremaFeature ef;
-	ef.calculate (r);
-	ef.save_value(r.fvals);
+	ef.calculate (r, s);
+	ef.save_value (r.fvals);
 }
 
-void ExtremaFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void ExtremaFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -189,7 +188,7 @@ void ExtremaFeature::reduce (size_t start, size_t end, std::vector<int>* ptrLabe
 		if (r.has_bad_data())
 			continue;
 
-		extract (r);
+		extract (r, s);
 	}
 }
 
