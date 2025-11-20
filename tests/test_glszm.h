@@ -49,7 +49,6 @@ void test_glszm_feature(const Feature2D& feature_, const std::string& feature_na
 
     // Set feature's state
     Environment::ibsi_compliance = false;
-    //xxxxxxxxxxx   GLSZMFeature::n_levels = 100;
 
     int feature = int(feature_);
 

@@ -192,12 +192,12 @@ arrow::Status ArrowIPCWriter::setup(const std::vector<std::string>& header) {
 
     std::vector<std::shared_ptr<arrow::Field>> fields;
 
-
     fields.push_back(arrow::field("intensity_image", arrow::utf8()));
     fields.push_back(arrow::field("mask_image", arrow::utf8()));
     fields.push_back(arrow::field("ROI_label", arrow::int32()));
+    fields.push_back(arrow::field("time", arrow::float64()));
 
-    for (int i = 3; i < header.size(); ++i)
+    for (int i = 4; i < header.size(); ++i)
     {
         fields.push_back(arrow::field(header[i], arrow::float64()));
     }

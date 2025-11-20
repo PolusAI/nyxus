@@ -10,9 +10,6 @@
 #include "../src/nyx/cache.h"
 #include "../src/nyx/globals.h"
 
-//xxxxxxxxxx using Nyxus::allocateTrivialRoisBuffers;
-//xxxxxxxxx using Nyxus::freeTrivialRoisBuffers;
-
 void test_initialization() 
 {
     Nyxus::Roidata roiData;

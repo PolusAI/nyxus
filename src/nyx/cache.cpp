@@ -116,8 +116,6 @@
 		size_t amt = 0;
 		OK(gpu_get_free_mem(amt));
 
-		//xxxxxx	VERBOSLVL1(std::cout << "GPU RAM amt = " << Nyxus::virguler_ulong(amt) << "\n");
-
 		int n_gabFilters = n_gabor_filters + 1;		// '+1': an extra filter for the baseline signal
 
 		// Calculate the amt of required memory
@@ -131,24 +129,17 @@
 			roi_kontur_cloud_len,
 			n_rois, roi_w, roi_h, n_gabFilters, gabor_ker_side);
 
-		//xxxxxx	VERBOSLVL1(std::cout << "szb for " << Nyxus::virguler_ulong(n_rois) << " ROIs (ideal ROI px:" << Nyxus::virguler_ulong(roi_cloud_len) << ", ideal contour px:" << Nyxus::virguler_ulong(roi_kontur_cloud_len) << ") = " << Nyxus::virguler_ulong(szb) << "\n");
-
 		batch_len = n_rois;
 		size_t critAmt = amt * 0.75; // 75% GPU RAM as critical RAM
 
-		//xxxxxx	VERBOSLVL1(std::cout << "critical GPU RAM amt = " << Nyxus::virguler_ulong(critAmt) << "\n");
-
 		if (critAmt < szb)
 		{
-			//xxxxxx	VERBOSLVL1(std::cout << "Need to split " << Nyxus::virguler_ulong(n_rois)  << " ROIs into batches \n");
-
 			size_t try_nrois = 0;
 			for (try_nrois = n_rois; try_nrois >= 0; try_nrois--)
 			{
 				// failed to find a batch ?
 				if (try_nrois == 0)
 				{
-					//xxxxxx	VERBOSLVL1(std::cerr << "error: cannot make a ROI batch \n");
 					std::cerr << "error: cannot make a ROI batch \n";
 					return false;
 				}
@@ -161,11 +152,8 @@
 					needMoments,
 					ccl, ccl, try_nrois, roi_w, roi_h, n_gabFilters, gabor_ker_side);
 
-				//xxxxxx	if (try_nrois % 10 == 0) VERBOSLVL1(std::cout << "try_szb (" << ccl << ", " << ccl << ", " << try_nrois << ") = " << try_szb << "\n");
-
 				if (critAmt > try_szb)
 				{
-					//xxxxxx	VERBOSLVL1(std::cout << "batching is successful, batch_len=" << try_nrois << "\n");
 					batch_len = try_nrois;
 					break;
 				}
@@ -174,15 +162,11 @@
 			// have we found a compromise ?
 			if (batch_len < n_rois)
 			{
-				//xxxxxx	VERBOSLVL1(std::cerr << "error: cannot make a ROI batch \n");
 				return false;
 			}
 		}
 
 		size_t batch_roi_cloud_len = roi_area * batch_len;
-
-		//xxxxxx	VERBOSLVL1(std::cout << "batch_len = " << batch_len << " of ideal " << n_rois << "\n");
-		//xxxxxx	VERBOSLVL1(std::cout << "batch_roi_cloud_len = " << batch_roi_cloud_len  << "\n");
 
 		//****** allocate
 
