@@ -100,7 +100,7 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: "11.0"
     strategy:
       matrix:
-        os: [macos-14-xlarge]
+        os: [macos-14]
         cibw_archs: ["arm64"]
         cibw_build: ["cp310-*", "cp311-*", "cp312-*", "cp313-*"]
 
