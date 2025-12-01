@@ -349,7 +349,8 @@ class TestNyxus():
 
             mean_values = means.tolist()
 
-            mean_values.pop(0)
+            mean_values.pop(0) # get rid of leftmost ROI label column
+            mean_values.pop(0) # get rid of leftmost time column
 
             averaged_results = []
 
