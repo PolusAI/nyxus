@@ -5,7 +5,9 @@
 namespace Nyxus {
 
 #ifdef USE_ARROW
-    std::tuple<bool, std::optional<std::string>> ArrowOutputStream::create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
+
+    std::tuple<bool, std::optional<std::string>> ArrowOutputStream::create_arrow_file(
+        const Nyxus::SaveOption& arrow_file_type,
         const std::string& output_path,
         const std::vector<std::string>& header) {
 
@@ -34,12 +36,13 @@ namespace Nyxus {
         }
     }
 
-
-    std::string ArrowOutputStream::get_arrow_path() {
+    std::string ArrowOutputStream::get_arrow_path()
+    {
         return arrow_file_path_;
     }
 
-    std::tuple<bool, std::optional<std::string>> ArrowOutputStream::write_arrow_file(const std::vector<FtableRow>& features) {
+    std::tuple<bool, std::optional<std::string>> ArrowOutputStream::write_arrow_file(
+        const std::vector<FTABLE_RECORD>& features) {
         if (writer_) {
             auto status = writer_->write(features);
             if (status.ok()) {
@@ -65,24 +68,28 @@ namespace Nyxus {
     }
 
 #else 
-    std::tuple<bool, std::optional<std::string>> ArrowOutputStream::create_arrow_file(const Nyxus::SaveOption& arrow_file_type,
+
+    // stubs
+
+    std::tuple<bool, std::optional<std::string>> ArrowOutputStream::create_arrow_file(
+        const Nyxus::SaveOption& arrow_file_type,
         const std::string& arrow_file_path,
-        const std::vector<std::string>& header) {
-
-        std::cerr << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enabled to use this functionality." << std::endl;
-
-        return { false, "Apache Arrow functionality is not available." };
-    }
-
-    std::tuple<bool, std::optional<std::string>> ArrowOutputStream::write_arrow_file(const std::vector<FtableRow>& features) {
-        std::cerr << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enabled to use this functionality." << std::endl;
-        return { false, "Apache Arrow functionality is not available." };
-    }
-    std::tuple<bool, std::optional<std::string>> ArrowOutputStream::close_arrow_file() {
+        const std::vector<std::string>& header) 
+    {
         std::cerr << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enabled to use this functionality." << std::endl;
         return { false, "Apache Arrow functionality is not available." };
     }
 
+    std::tuple<bool, std::optional<std::string>> ArrowOutputStream::write_arrow_file (const std::vector<FTABLE_RECORD>& features)
+    {
+        std::cerr << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enabled to use this functionality." << std::endl;
+        return { false, "Apache Arrow functionality is not available." };
+    }
+    std::tuple<bool, std::optional<std::string>> ArrowOutputStream::close_arrow_file() 
+    {
+        std::cerr << "Apache Arrow functionality is not available. Please install Nyxus with Arrow enabled to use this functionality." << std::endl;
+        return { false, "Apache Arrow functionality is not available." };
+    }
 
 #endif
 };

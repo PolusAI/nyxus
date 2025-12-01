@@ -100,7 +100,7 @@ void FractalDimensionFeature::calculate_perimeter_fdim (LR& r)
 		}
 
 		// save this approximation
-		coverage.push_back({ s, p });
+		coverage.push_back({ s, (int)p });
 	}
 	perim_fd = calc_lyapunov_slope(coverage);
 }
