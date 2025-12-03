@@ -76,7 +76,7 @@ void GLSZMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 	unsigned int nGrays = STNGS_NGREYS(s); // former theEnvironment.get_coarse_gray_depth()
 
 	for (size_t i = 0; i < D.size(); i++)
-		D.set_at(i, Nyxus::to_grayscale(D[i], r.aux_min, piRange, nGrays, Environment::ibsi_compliance));
+		D.set_at(i, Nyxus::to_grayscale(D[i], r.aux_min, piRange, nGrays, STNGS_IBSI(s)));
 
 	// Number of zones
 	const int VISITED = -1;
@@ -194,7 +194,7 @@ void GLSZMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 	{
 		// row
 		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = (Environment::ibsi_compliance) ? z.first - 1 : int(iter - I.begin());
+		int row = STNGS_IBSI(s) ? z.first - 1 : int(iter - I.begin());
 		// col
 		int col = z.second - 1;	// 0-based => -1
 		auto& k = P.xy(col, row);
@@ -365,7 +365,7 @@ void GLSZMFeature::calculate (LR& r, const Fsettings& s)
 	auto height = M.height;
 	auto width = M.width;
 
-	Ng = Environment::ibsi_compliance ? *std::max_element(I.begin(), I.end()) : I.size();
+	Ng = STNGS_IBSI(s) ? *std::max_element(I.begin(), I.end()) : I.size();
 	Ns = height * width;
 	Nz = (int)Z.size();
 	Np = count;
@@ -381,7 +381,7 @@ void GLSZMFeature::calculate (LR& r, const Fsettings& s)
 	{
 		// row
 		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = (Environment::ibsi_compliance) ? z.first-1 : int (iter - I.begin());
+		int row = STNGS_IBSI(s) ? z.first-1 : int (iter - I.begin());
 		// col
 		int col = z.second - 1;	// 0-based => -1
 		auto & k = P.xy(col, row);

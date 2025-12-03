@@ -290,7 +290,7 @@ void D3_GLSZM_feature::calculate (LR& r, const Fsettings& s)
 		{
 			// row of P-matrix
 			auto iter = std::find(I.begin(), I.end(), z.first);
-			int row = (Environment::ibsi_compliance) ? z.first - 1 : int(iter - I.begin());
+			int row = STNGS_IBSI(s) ? z.first - 1 : int(iter - I.begin());
 			// column of P-matrix
 			int col = z.second - 1;	// 0-based => -1
 			auto& k = P.xy(col, row);

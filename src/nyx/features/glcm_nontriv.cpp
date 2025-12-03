@@ -14,10 +14,10 @@ void GLCMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imlo
 	G.allocate_from_cloud(r.raw_pixels_NT, r.aabb, false);
 
 	for (auto a : angles)
-		Extract_Texture_Features2_NT(a, G, r.aux_min, r.aux_max);
+		Extract_Texture_Features2_NT(a, G, r.aux_min, r.aux_max, STNGS_IBSI(s));
 }
 
-void GLCMFeature::Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nontriv& grays, PixIntens min_val, PixIntens max_val)
+void GLCMFeature::Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nontriv& grays, PixIntens min_val, PixIntens max_val, bool ibsi)
 {
 	int nrows = grays.get_height();
 	int ncols = grays.get_width();
@@ -50,7 +50,7 @@ void GLCMFeature::Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nont
 		return;
 	}
 
-	calculateCoocMatAtAngle_NT (P_matrix, dx, dy, grays, min_val, max_val, false);
+	calculateCoocMatAtAngle_NT (P_matrix, dx, dy, grays, min_val, max_val, false, ibsi);
 
 	// Zero all feature values for blank ROI
 	if (sum_p == 0) 
@@ -127,7 +127,8 @@ void GLCMFeature::calculateCoocMatAtAngle_NT(
 	WriteImageMatrix_nontriv& grays,
 	PixIntens min_val,
 	PixIntens max_val,
-	bool normalize)
+	bool normalize,
+	bool ibsi)
 {
 	matrix.allocate ((int)I.size(), (int)I.size());
 	matrix.fill (0.0);
@@ -157,7 +158,7 @@ void GLCMFeature::calculateCoocMatAtAngle_NT(
 					y = raw_lvl_y - 1;
 
 				// Cast intensities on the 1-n_levels scale
-				if (Environment::ibsi_compliance == false)
+				if (ibsi == false)
 				{
 					x = GLCMFeature::cast_to_range(raw_lvl_x, min_val, max_val, 1, (int)I.size()) - 1;
 					y = GLCMFeature::cast_to_range(raw_lvl_y, min_val, max_val, 1, (int)I.size()) - 1;

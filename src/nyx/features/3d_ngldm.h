@@ -50,14 +50,14 @@ public:
 	}
 
 	// Support of unit testing
-	void prepare_NGLDM_matrix_kit (SimpleMatrix<unsigned int>& NGLDM, std::vector<PixIntens>& grey_levels_LUT, int& Ng, int& Nr, LR& r, int n_greys);
+	void prepare_NGLDM_matrix_kit (SimpleMatrix<unsigned int>& NGLDM, std::vector<PixIntens>& grey_levels_LUT, int& Ng, int& Nr, LR& r, int n_greys, bool ibsi);
 
 private:
 
 	void clear_buffers();
-	template <class Pixelcloud> void gather_unique_intensities (std::vector<PixIntens>& V, Pixelcloud& C, PixIntens max_i, int n_greys);
-	void gather_unique_intensities2 (std::vector<PixIntens>& V, const SimpleCube<PixIntens> & I, PixIntens max_inten, int n_greys);
-	void calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int& max_dep, SimpleCube<PixIntens>& I, const std::vector<PixIntens>& V, PixIntens max_inten, int n_greys);
+	template <class Pixelcloud> void gather_unique_intensities (std::vector<PixIntens>& V, Pixelcloud& C, PixIntens max_i, int n_greys, bool ibsi);
+	void gather_unique_intensities2 (std::vector<PixIntens>& V, const SimpleCube<PixIntens> & I, PixIntens max_inten, int n_greys, bool ibsi);
+	void calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int& max_dep, SimpleCube<PixIntens>& I, const std::vector<PixIntens>& V, PixIntens max_inten, int n_greys, bool ibsi);
 	void calc_rowwise_and_columnwise_totals(std::vector<double>& Mg, std::vector<double>& Mr, const SimpleMatrix<unsigned int>& NGLDM, const int Ng, const int Nr);
 	void calc_features(const std::vector<double>& Mx, const std::vector<double>& Md, SimpleMatrix<unsigned int>& NGLDM, int Nr, const std::vector<PixIntens> U, unsigned int roi_area);
 

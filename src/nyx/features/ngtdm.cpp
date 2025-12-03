@@ -147,7 +147,7 @@ void NGTDMFeature::calculate (LR& r, const Fsettings& s)
 
 	// Fill the matrix
 	// --dimensions
-	Ng = (int) I.size();	//---pre 2024---> Ng = Environment::ibsi_compliance ? *std::max_element(std::begin(im.ReadablePixels()), std::end(im.ReadablePixels())) : (int) U.size();
+	Ng = (int) I.size();	//---pre 2024---> Ng = STNGS_IBSI(s) ? *std::max_element(std::begin(im.ReadablePixels()), std::end(im.ReadablePixels())) : (int) U.size();
 	Ngp = (int) U.size();
 
 	// --allocate the matrix
@@ -161,7 +161,7 @@ void NGTDMFeature::calculate (LR& r, const Fsettings& s)
 		// row (grey level)
 		auto inten = z.first;
 		int row = -1;
-		if (Environment::ibsi_compliance)
+		if (STNGS_IBSI(s))
 			row = inten;
 		else
 		{
@@ -242,7 +242,7 @@ void NGTDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 		for (int col = 0; col < D.get_width(); col++)
 		{
 			// Find a non-blank pixel 
-			PixIntens pi = Nyxus::to_grayscale(D.yx(row, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+			PixIntens pi = Nyxus::to_grayscale(D.yx(row, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 			if (pi == 0)
 				continue;
 
@@ -256,44 +256,44 @@ void NGTDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 			if (D.safe(row - 1, col) && D.yx(row - 1, col) != 0)	// North
 			{
-				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 				nd++;
 			}
 
 			if (D.safe(row - 1, col + 1) && D.yx(row - 1, col + 1) != 0)	// North-East
 			{
-				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 				nd++;
 			}
 
 			if (D.safe(row, col + 1) && D.yx(row, col + 1) != 0)	// East
 			{
-				neigsI += Nyxus::to_grayscale(D.yx(row, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += Nyxus::to_grayscale(D.yx(row, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 				nd++;
 			}
 			if (D.safe(row + 1, col + 1) && D.yx(row + 1, col + 1) != 0)	// South-East
 			{
-				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 				nd++;
 			}
 			if (D.safe(row + 1, col) && D.yx(row + 1, col) != 0)	// South
 			{
-				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 				nd++;
 			}
 			if (D.safe(row + 1, col - 1) && D.yx(row + 1, col - 1) != 0)	// South-West
 			{
-				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 				nd++;
 			}
 			if (D.safe(row, col - 1) && D.yx(row, col - 1) != 0)	// West
 			{
-				neigsI += Nyxus::to_grayscale(D.yx(row, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += Nyxus::to_grayscale(D.yx(row, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 				nd++;
 			}
 			if (D.safe(row - 1, col - 1) && D.yx(row - 1, col - 1) != 0)	// North-West
 			{
-				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 				nd++;
 			}
 
@@ -325,7 +325,7 @@ void NGTDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 	{
 		// row
 		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = (Environment::ibsi_compliance) ?
+		int row = (STNGS_IBSI(s)) ?
 			z.first : int(iter - I.begin());
 		// col
 		int col = (int)z.second;	// 1-based

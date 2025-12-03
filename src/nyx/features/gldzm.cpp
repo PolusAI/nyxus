@@ -555,7 +555,7 @@ void GLDZMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 		if (Ir == 0)
 			continue;
 		// binned intensity
-		unsigned int Ib = Nyxus::to_grayscale (Ir, 0, piRange, nGrays, Environment::ibsi_compliance);
+		unsigned int Ib = Nyxus::to_grayscale (Ir, 0, piRange, nGrays, STNGS_IBSI(s));
 		D.set_at (i, Ib);
 		// update the set of unique intensities
 		U.insert(Ib);

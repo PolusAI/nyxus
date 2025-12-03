@@ -48,7 +48,6 @@ void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_na
     s[(int)NyxSetting::IBSI].bval = false;
     
     // Set feature's state
-    Environment::ibsi_compliance = false;
     GLRLMFeature::n_levels = 100;
 
     int feature = int(feature_);

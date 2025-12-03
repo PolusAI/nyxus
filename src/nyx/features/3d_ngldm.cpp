@@ -69,14 +69,14 @@ void D3_NGLDM_feature::clear_buffers()
 		f_DCENE = 0;
 }
 
-template <class PixelCloud> void D3_NGLDM_feature::gather_unique_intensities (std::vector<PixIntens>& V, PixelCloud& C, PixIntens max_inten, int nGrays)
+template <class PixelCloud> void D3_NGLDM_feature::gather_unique_intensities (std::vector<PixIntens>& V, PixelCloud& C, PixIntens max_inten, int nGrays, bool ibsi)
 {
 	// Find unique intensities
 	std::unordered_set<PixIntens> U;
 	PixIntens range = max_inten - 0;
 	for (Pixel2 p : C)
 	{
-		PixIntens inten_ = Nyxus::to_grayscale(p.inten, 0, range, nGrays, Environment::ibsi_compliance);
+		PixIntens inten_ = Nyxus::to_grayscale(p.inten, 0, range, nGrays, ibsi);
 		U.insert(inten_);
 	}
 
@@ -85,13 +85,13 @@ template <class PixelCloud> void D3_NGLDM_feature::gather_unique_intensities (st
 	std::sort(V.begin(), V.end());
 }
 
-void D3_NGLDM_feature::gather_unique_intensities2 (std::vector<PixIntens>& V, const SimpleCube<PixIntens> & C, PixIntens max_inten, int nGrays)
+void D3_NGLDM_feature::gather_unique_intensities2 (std::vector<PixIntens>& V, const SimpleCube<PixIntens> & C, PixIntens max_inten, int nGrays, bool ibsi)
 {
 	std::unordered_set<PixIntens> U;
 	PixIntens range = max_inten - 0;
 	for (auto p : C)
 	{
-		PixIntens inten_ = Nyxus::to_grayscale(p, 0, range, nGrays, Environment::ibsi_compliance);
+		PixIntens inten_ = Nyxus::to_grayscale(p, 0, range, nGrays, ibsi);
 		U.insert(inten_);
 	}
 
@@ -110,7 +110,7 @@ void D3_NGLDM_feature::gather_unique_intensities2 (std::vector<PixIntens>& V, co
  * @param max_inten	Maximum intensity
  */
 
-void D3_NGLDM_feature::calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int& Nr, /*not const*/ SimpleCube<PixIntens>& I, const std::vector<PixIntens>& U, PixIntens max_inten, int nGrays)
+void D3_NGLDM_feature::calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int& Nr, /*not const*/ SimpleCube<PixIntens>& I, const std::vector<PixIntens>& U, PixIntens max_inten, int nGrays, bool ibsi)
 {
 	// Temps
 	PixIntens range = max_inten - 0;
@@ -134,7 +134,7 @@ void D3_NGLDM_feature::calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int&
 				//		continue;
 
 				// Binned intensity
-				PixIntens cpi_ = Nyxus::to_grayscale (cpi, 0, range, nGrays, Environment::ibsi_compliance);	// binned 'cpi'
+				PixIntens cpi_ = Nyxus::to_grayscale (cpi, 0, range, nGrays, ibsi);	// binned 'cpi'
 
 				// Get a dense index value for sparse binned intensity cpi_
 				auto iter = std::find(U.begin(), U.end(), cpi_);
@@ -147,7 +147,7 @@ void D3_NGLDM_feature::calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int&
 					if (I.safe(z+shifts[i].dz, y+shifts[i].dy, x+shifts[i].dx))
 					{
 						PixIntens npi = I.zyx (z+shifts[i].dz, y+shifts[i].dy, x+shifts[i].dx);	// neighboring voxel intensity
-						PixIntens npi_ = Nyxus::to_grayscale (npi, 0, range, nGrays, Environment::ibsi_compliance);	// binned 'npi'
+						PixIntens npi_ = Nyxus::to_grayscale (npi, 0, range, nGrays, ibsi);	// binned 'npi'
 						if (cpi_ == npi_)
 							n_matches++;
 					}
@@ -200,7 +200,7 @@ void D3_NGLDM_feature::calculate (LR& r, const Fsettings& s)
 	SimpleMatrix<unsigned int> NGLDM;
 	int Ng,	// number of grey levels
 		Nr;	// maximum number of non-zero dependencies
-	prepare_NGLDM_matrix_kit (NGLDM, greyLevelsLUT, Ng, Nr, r, STNGS_NGREYS(s));
+	prepare_NGLDM_matrix_kit (NGLDM, greyLevelsLUT, Ng, Nr, r, STNGS_NGREYS(s), STNGS_IBSI(s));
 
 	//==== Calculate vectors of totals by intensity and by dependence
 	std::vector<double> Sg, Sr;
@@ -210,13 +210,13 @@ void D3_NGLDM_feature::calculate (LR& r, const Fsettings& s)
 	calc_features(Sg, Sr, NGLDM, Nr, greyLevelsLUT, r.aux_area);
 }
 
-void D3_NGLDM_feature::prepare_NGLDM_matrix_kit (SimpleMatrix<unsigned int>& NGLDM, std::vector<PixIntens>& grey_levels_LUT, int& Ng, int& Nr, LR& r, int n_greys)
+void D3_NGLDM_feature::prepare_NGLDM_matrix_kit (SimpleMatrix<unsigned int>& NGLDM, std::vector<PixIntens>& grey_levels_LUT, int& Ng, int& Nr, LR& r, int n_greys, bool ibsi)
 {
 	//==== Temps
 	/*const*/ SimpleCube<PixIntens> & I = r.aux_image_cube;
 
 	//==== Unique binned intensities gathered from the image matrix, not from raw pixels
-	gather_unique_intensities2 (grey_levels_LUT, I, r.aux_max, n_greys);
+	gather_unique_intensities2 (grey_levels_LUT, I, r.aux_max, n_greys, ibsi);
 	Ng = grey_levels_LUT.size();
 
 	int maxNr = nsh + 1;	// max number of columns in the NGLDM = max dependence 8 (due to 8 neighbors) + zero
@@ -225,7 +225,7 @@ void D3_NGLDM_feature::prepare_NGLDM_matrix_kit (SimpleMatrix<unsigned int>& NGL
 	//==== NGLD-matrix
 	NGLDM.allocate(maxNr, Ng);	// Ng rows, maxNr columns, but we may end up having fewer informative columns after the NGLD-matrix calculation
 	NGLDM.fill(0);
-	calc_ngld_matrix (NGLDM, Nr, I, grey_levels_LUT, r.aux_max, n_greys);	// sets the actual max dependency 'Nr'
+	calc_ngld_matrix (NGLDM, Nr, I, grey_levels_LUT, r.aux_max, n_greys, ibsi);	// sets the actual max dependency 'Nr'
 }
 
 void D3_NGLDM_feature::calc_rowwise_and_columnwise_totals(

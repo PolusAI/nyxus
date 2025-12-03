@@ -176,7 +176,7 @@ void GLDMFeature::calculate (LR& r, const Fsettings& s)
 		// row (grey level)
 		auto inten = z.first;
 		int row = -1;
-		if (Environment::ibsi_compliance)
+		if (STNGS_IBSI(s))
 			row = inten - 1;
 		else
 		{
@@ -295,7 +295,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 			PixIntens piQ; // Pixel intensity of questionn
 			if (D.safe(row - 1, col)) {
 
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// North
+				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// North
 
 				if (piQ == pi)
 					nd++;
@@ -303,7 +303,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 			if (D.safe(row - 1, col + 1)) {
 
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// North-East
+				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// North-East
 
 				if (piQ == pi)
 					nd++;
@@ -311,7 +311,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 			if (D.safe(row, col + 1)) {
 
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// East
+				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// East
 
 				if (piQ == pi)
 					nd++;
@@ -319,7 +319,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 			if (D.safe(row + 1, col + 1)) {
 
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// South-East
+				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// South-East
 
 				if (piQ == pi)
 					nd++;
@@ -327,7 +327,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 			if (D.safe(row + 1, col)) {
 
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);		// South
+				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));		// South
 
 				if (piQ == pi)
 					nd++;
@@ -335,7 +335,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 			if (D.safe(row + 1, col - 1)) {
 
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// South-West
+				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// South-West
 
 				if (piQ == pi)
 					nd++;
@@ -343,7 +343,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 			if (D.safe(row, col - 1)) {
 
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);		// West
+				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));		// West
 
 				if (piQ == pi)
 					nd++;
@@ -351,7 +351,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 			if (D.safe(row - 1, col - 1)) {
 
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);	// North-West
+				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// North-West
 
 				if (piQ == pi)
 					nd++;
@@ -382,7 +382,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 	{
 		// row
 		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = (Environment::ibsi_compliance) ? z.first - 1 : int(iter - I.begin());
+		int row = STNGS_IBSI(s) ? z.first - 1 : int(iter - I.begin());
 		// col
 		int col = z.second - 1;	// 1-based
 		// increment

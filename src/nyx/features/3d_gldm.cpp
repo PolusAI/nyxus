@@ -162,7 +162,7 @@ void D3_GLDM_feature::calculate (LR& r, const Fsettings& s)
 		// row (grey level)
 		auto inten = z.first;
 		int row = -1;
-		if (Environment::ibsi_compliance)
+		if (STNGS_IBSI(s))
 			row = inten - 1;
 		else
 		{

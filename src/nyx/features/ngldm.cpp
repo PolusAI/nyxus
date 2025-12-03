@@ -32,14 +32,14 @@ void NGLDMfeature::clear_buffers()
 		f_DCENE = 0;
 }
 
-template <class PixelCloud> void NGLDMfeature::gather_unique_intensities (std::vector<PixIntens> & V, PixelCloud & C, PixIntens max_inten, int nGrays)
+template <class PixelCloud> void NGLDMfeature::gather_unique_intensities (std::vector<PixIntens> & V, PixelCloud & C, PixIntens max_inten, int nGrays, bool ibsi)
 {
 	// Find unique intensities
 	std::unordered_set<PixIntens> U;
 	PixIntens range = max_inten - 0;
 	for (Pixel2 p : C)
 	{
-		PixIntens inten_ = Nyxus::to_grayscale (p.inten, 0, range, nGrays, Environment::ibsi_compliance);
+		PixIntens inten_ = Nyxus::to_grayscale (p.inten, 0, range, nGrays, ibsi);
 		U.insert(inten_);
 	}
 
@@ -401,7 +401,7 @@ void NGLDMfeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 	//==== Unique binned intensities
 	std::vector<PixIntens> V;
-	gather_unique_intensities (V, r.raw_pixels_NT, r.aux_max, STNGS_NGREYS(s));
+	gather_unique_intensities (V, r.raw_pixels_NT, r.aux_max, STNGS_NGREYS(s), STNGS_IBSI(s));
 
 	//==== Image matrix
 	WriteImageMatrix_nontriv I ("NGLDMfeature-osized_calculate-I", r.label);

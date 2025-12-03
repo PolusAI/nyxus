@@ -47,9 +47,6 @@ void test_glszm_feature(const Feature2D& feature_, const std::string& feature_na
     s[(int)NyxSetting::VERBOSLVL].ival = 0;
     s[(int)NyxSetting::IBSI].bval = false;
 
-    // Set feature's state
-    Environment::ibsi_compliance = false;
-
     int feature = int(feature_);
 
     double total = 0;
@@ -73,7 +70,6 @@ void test_glszm_feature(const Feature2D& feature_, const std::string& feature_na
 
     LR roidata1;
     GLSZMFeature f1;
-    Environment::ibsi_compliance = false;
 
     load_masked_test_roi_data (roidata1, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask,  sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
 
@@ -91,7 +87,6 @@ void test_glszm_feature(const Feature2D& feature_, const std::string& feature_na
 
     LR roidata2;
     GLSZMFeature f2;
-    Environment::ibsi_compliance = false;
     load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f2.calculate(roidata2, s));
@@ -108,8 +103,6 @@ void test_glszm_feature(const Feature2D& feature_, const std::string& feature_na
     
     LR roidata3;
     GLSZMFeature f3;
-    Environment::ibsi_compliance = false;
-
     load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f3.calculate(roidata3, s));

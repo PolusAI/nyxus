@@ -39,9 +39,6 @@ static std::unordered_map<std::string, float> ibsi_ngldm_gtruth
 
 void test_ibsi_ngld_matrix_ibsi ()
 {
-    // Activate the IBSI compliance mode
-    Environment::ibsi_compliance = true;
-
     // Load a test image
     LR roidata;
     load_masked_test_roi_data (roidata, ibsi_fig3_19_ngldm_sample_image_int, ibsi_fig3_19_ngldm_sample_image_mask, sizeof(ibsi_fig3_19_ngldm_sample_image_mask) / sizeof(NyxusPixel));
@@ -60,7 +57,7 @@ void test_ibsi_ngld_matrix_ibsi ()
     s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
     s[(int)NyxSetting::USEGPU].bval = false;
     s[(int)NyxSetting::VERBOSLVL].ival = 0;
-    s[(int)NyxSetting::IBSI].bval = true;
+    s[(int)NyxSetting::IBSI].bval = true;   // activate the IBSI compliance mode
 
     // Have the feature object to create the NGLDM matrix kit (matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and NGLDM's dimensions)
     std::vector<PixIntens> greyLevelsLUT;
@@ -92,9 +89,6 @@ void test_ibsi_ngld_matrix_ibsi ()
 
 void test_ibsi_ngld_matrix_nonibsi()
 {
-    // Disable the IBSI compliance mode
-    Environment::ibsi_compliance = false;
-
     // Load a test image
     LR roidata;
     load_masked_test_roi_data (roidata, nonibsi_rayryeng_ngldm_sample_image_int, nonibsi_rayryeng_ngldm_sample_image_mask, sizeof(nonibsi_rayryeng_ngldm_sample_image_mask) / sizeof(NyxusPixel));
@@ -141,11 +135,20 @@ void test_ibsi_ngld_matrix_nonibsi()
 
 void test_ibsi_ngldm_feature (const Feature2D& feature_, const std::string& feature_name) 
 {
+    // featue settings for this particular test
     Fsettings s;
-    int feature = int(feature_);
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
+    s[(int)NyxSetting::TINY].rval = 0.0;
+    s[(int)NyxSetting::SINGLEROI].bval = false;
+    s[(int)NyxSetting::GREYDEPTH].ival = 128;
+    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
+    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::VERBOSLVL].ival = 0;
+    s[(int)NyxSetting::IBSI].bval = true;   // activate the IBSI compliance mode
 
-    // Activate the IBSI compliance mode
-    Environment::ibsi_compliance = true;
+    int feature = int(feature_);
 
     // Check if ground truth is available for the feature
     ASSERT_TRUE(ibsi_ngldm_gtruth.count(feature_name) > 0);
