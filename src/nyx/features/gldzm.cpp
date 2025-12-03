@@ -50,7 +50,7 @@ void GLDZMFeature::calc_gldzm_matrix (SimpleMatrix<unsigned int> & GLDZM, const 
 	}
 }
 
-void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, int& Ng, int& Nd, std::vector<PixIntens>& greysLUT, LR& r)
+void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, int& Ng, int& Nd, std::vector<PixIntens>& greysLUT, LR& r, int n_greys, bool ibsi)
 {
 	//==== Compose the distance matrix
 
@@ -61,11 +61,11 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 	M.allocate(r.aux_image_matrix.width, r.aux_image_matrix.height);
 	pixData& D = M.WriteablePixels();
 
-	auto greyInfo = theEnvironment.get_coarse_gray_depth();
+	auto greyInfo = n_greys; // former theEnvironment.get_coarse_gray_depth()
 	auto greyInfo_localFeature = GLDZMFeature::n_levels;
 	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
 		greyInfo = greyInfo_localFeature;
-	if (Nyxus::theEnvironment.ibsi_compliance)
+	if (ibsi)	// former Nyxus::theEnvironment.ibsi_compliance
 		greyInfo = 0;
 
 	auto& imR = r.aux_image_matrix.ReadablePixels();
@@ -258,7 +258,7 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 	calc_gldzm_matrix (GLDZM, Z, greysLUT);
 }
 
-void GLDZMFeature::calculate(LR& r)
+void GLDZMFeature::calculate (LR& r, const Fsettings& s)
 {
 	clear_buffers();
 
@@ -283,7 +283,7 @@ void GLDZMFeature::calculate(LR& r)
 		f_ZDM =
 		f_ZDV =
 		f_ZDE =
-		f_GLE = theEnvironment.resultOptions.noval();
+		f_GLE = STNGS_NAN(s);
 
 		return;
 	}
@@ -293,7 +293,7 @@ void GLDZMFeature::calculate(LR& r)
 	SimpleMatrix<unsigned int> GLDZM;
 	int Ng,	// number of grey levels
 		Nd;	// maximum number of non-zero dependencies
-	prepare_GLDZM_matrix_kit (GLDZM, Ng, Nd, greyLevelsLUT, r);
+	prepare_GLDZM_matrix_kit (GLDZM, Ng, Nd, greyLevelsLUT, r, STNGS_NGREYS(s), STNGS_IBSI(s));
 
 	//==== Calculate vectors of totals by intensity (Mx) and by distance (Md)
 	std::vector<double> Mx, Md;
@@ -499,14 +499,14 @@ void GLDZMFeature::save_value (std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature2D::GLDZM_ZDE][0] = f_ZDE;
 }
 
-void GLDZMFeature::extract (LR& r)
+void GLDZMFeature::extract (LR& r, const Fsettings& s)
 {
 	GLDZMFeature f;
-	f.calculate (r);
+	f.calculate (r, s);
 	f.save_value (r.fvals);
 }
 
-void GLDZMFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void GLDZMFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	// Iterate ROIs of this batch
 	for (auto i = start; i < end; i++)
@@ -514,13 +514,13 @@ void GLDZMFeature::parallel_process_1_batch(size_t start, size_t end, std::vecto
 		// Get ahold of ROI's cached data
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-		extract (r);
+		extract (r, s);
 	}
 }
 
 void GLDZMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
 
-void GLDZMFeature::osized_calculate (LR& r, ImageLoader&)
+void GLDZMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
 	clear_buffers();
 
@@ -546,7 +546,7 @@ void GLDZMFeature::osized_calculate (LR& r, ImageLoader&)
 
 	// -- Squeeze pixels' intensity range for getting more prominent zones 
 	PixIntens piRange = r.aux_max - 0;	// reflecting the fact that the original image's pixel intensity range is [0-r.aux_max] where 0 represents off-ROI pixels
-	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+	unsigned int nGrays = STNGS_NGREYS(s);	// former theEnvironment.get_coarse_gray_depth()
 	for (size_t i = 0; i < D.size(); i++)
 	{
 		// raw intensity
@@ -555,7 +555,7 @@ void GLDZMFeature::osized_calculate (LR& r, ImageLoader&)
 		if (Ir == 0)
 			continue;
 		// binned intensity
-		unsigned int Ib = Nyxus::to_grayscale (Ir, 0, piRange, nGrays, Environment::ibsi_compliance);
+		unsigned int Ib = Nyxus::to_grayscale (Ir, 0, piRange, nGrays, STNGS_IBSI(s));
 		D.set_at (i, Ib);
 		// update the set of unique intensities
 		U.insert(Ib);

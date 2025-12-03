@@ -15,24 +15,24 @@ using namespace Nyxus;
 
 int D3_GLSZM_feature::n_levels = 0;
 
-void D3_GLSZM_feature::invalidate()
+void D3_GLSZM_feature::invalidate (double soft_nan)
 {
 	fv_SAE =
-		fv_LAE =
-		fv_GLN =
-		fv_GLNN =
-		fv_SZN =
-		fv_SZNN =
-		fv_ZP =
-		fv_GLV =
-		fv_ZV =
-		fv_ZE =
-		fv_LGLZE =
-		fv_HGLZE =
-		fv_SALGLE =
-		fv_SAHGLE =
-		fv_LALGLE =
-		fv_LAHGLE = theEnvironment.resultOptions.noval();
+	fv_LAE =
+	fv_GLN =
+	fv_GLNN =
+	fv_SZN =
+	fv_SZNN =
+	fv_ZP =
+	fv_GLV =
+	fv_ZV =
+	fv_ZE =
+	fv_LGLZE =
+	fv_HGLZE =
+	fv_SALGLE =
+	fv_SAHGLE =
+	fv_LALGLE =
+	fv_LAHGLE = soft_nan;
 }
 
 D3_GLSZM_feature::D3_GLSZM_feature() : FeatureMethod("D3_GLSZM_feature")
@@ -42,19 +42,19 @@ D3_GLSZM_feature::D3_GLSZM_feature() : FeatureMethod("D3_GLSZM_feature")
 
 void D3_GLSZM_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} // Not supporting
 
-void D3_GLSZM_feature::osized_calculate(LR& r, ImageLoader&)
+void D3_GLSZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
-	calculate(r);
+	calculate (r, s);
 }
 
-void D3_GLSZM_feature::calculate(LR& r)
+void D3_GLSZM_feature::calculate (LR& r, const Fsettings& s)
 {
 	clear_buffers();
 
 	// intercept blank ROIs (equal intensity)
 	if (r.aux_min == r.aux_max)
 	{
-		invalidate();
+		invalidate (STNGS_NAN(s));
 		return;
 	}
 
@@ -76,11 +76,11 @@ void D3_GLSZM_feature::calculate(LR& r)
 	SimpleCube<PixIntens> D;
 	D.allocate(w, h, d);
 
-	auto greyInfo = Nyxus::theEnvironment.get_coarse_gray_depth();
+	auto greyInfo = STNGS_NGREYS(s); // former Nyxus::theEnvironment.get_coarse_gray_depth()
 	auto greyInfo_localFeature = D3_GLSZM_feature::n_levels;
 	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
 		greyInfo = greyInfo_localFeature;
-	if (Nyxus::theEnvironment.ibsi_compliance)
+	if (STNGS_IBSI(s)) // former Nyxus::theEnvironment.ibsi_compliance
 		greyInfo = 0;
 
 	bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo);
@@ -274,7 +274,7 @@ void D3_GLSZM_feature::calculate(LR& r)
 	auto height = h;
 	auto width = w;
 
-	Ng = Environment::ibsi_compliance ? *std::max_element(I.begin(), I.end()) : I.size();
+	Ng = STNGS_IBSI(s) ? *std::max_element(I.begin(), I.end()) : I.size();	// former Environment::ibsi_compliance
 	Ns = height * width;
 	Nz = (int)Z.size();
 	Np = count;
@@ -290,7 +290,7 @@ void D3_GLSZM_feature::calculate(LR& r)
 		{
 			// row of P-matrix
 			auto iter = std::find(I.begin(), I.end(), z.first);
-			int row = (Environment::ibsi_compliance) ? z.first - 1 : int(iter - I.begin());
+			int row = STNGS_IBSI(s) ? z.first - 1 : int(iter - I.begin());
 			// column of P-matrix
 			int col = z.second - 1;	// 0-based => -1
 			auto& k = P.xy(col, row);
@@ -309,7 +309,7 @@ void D3_GLSZM_feature::calculate(LR& r)
 
 		if (sum_p == 0)
 		{
-			invalidate();
+			invalidate (STNGS_NAN(s));
 			return;
 		}
 
@@ -319,7 +319,7 @@ void D3_GLSZM_feature::calculate(LR& r)
 
 		// Precalculate sums of P
 #ifdef USE_GPU
-		if (theEnvironment.using_gpu())
+		if (STNGS_USEGPU(s))	// former theEnvironment.using_gpu()
 		{
 			if (! NyxusGpu::GLSZMfeature_calc(
 				// out
@@ -343,7 +343,7 @@ void D3_GLSZM_feature::calculate(LR& r)
 				Ng, Ns, I.data(), P.data(), sum_p, Np, EPS))
 			{
 				std::cerr << "ERROR: D3_GLSZM_feature_calc_sums_of_P failed \n";
-				invalidate();
+				invalidate (STNGS_NAN(s));
 				return;
 			}
 		}
@@ -361,7 +361,7 @@ void D3_GLSZM_feature::calculate(LR& r)
 
 		// Calculate features
 #ifdef USE_GPU
-		if (theEnvironment.using_gpu())
+		if (STNGS_USEGPU(s))	// former theEnvironment.using_gpu()
 		{
 			// features are calculated in D3_GLSZM_feature_calc_sums_of_P
 		}
@@ -460,11 +460,6 @@ void D3_GLSZM_feature::calc_sums_of_P()
 			sum += P.matlab(i, j);
 		sj[j] = sum;
 	}
-}
-
-bool D3_GLSZM_feature::need (Nyxus::Feature3D f)
-{
-	return theFeatureSet.isEnabled(f);
 }
 
 void D3_GLSZM_feature::save_value(std::vector<std::vector<double>>& fvals)
@@ -684,22 +679,22 @@ double D3_GLSZM_feature::calc_LAHGLE()
 	return retval;
 }
 
-void D3_GLSZM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void D3_GLSZM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 		D3_GLSZM_feature f;
-		f.calculate(r);
-		f.save_value(r.fvals);
+		f.calculate (r, s);
+		f.save_value (r.fvals);
 	}
 }
 
-/*static*/ void D3_GLSZM_feature::extract(LR& r)
+/*static*/ void D3_GLSZM_feature::extract (LR& r, const Fsettings& s)
 {
 	D3_GLSZM_feature f;
-	f.calculate(r);
-	f.save_value(r.fvals);
+	f.calculate (r, s);
+	f.save_value (r.fvals);
 }
 

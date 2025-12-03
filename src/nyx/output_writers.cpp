@@ -12,11 +12,11 @@
 #include "helpers/helpers.h"
 
 
-arrow::Status ParquetWriter::setup(const std::vector<std::string> &header) {
+arrow::Status ParquetWriter::setup(const std::vector<std::string>& header) {
 
 
     std::vector<std::shared_ptr<arrow::Field>> fields;
-    
+
 
     fields.push_back(arrow::field(header[0], arrow::utf8()));
     fields.push_back(arrow::field(header[1], arrow::utf8()));
@@ -40,11 +40,11 @@ arrow::Status ParquetWriter::setup(const std::vector<std::string> &header) {
     // Opt to store Arrow schema for easier reads back into Arrow
     std::shared_ptr<parquet::ArrowWriterProperties> arrow_props =
         parquet::ArrowWriterProperties::Builder().store_schema()->build();
-    
+
     ARROW_ASSIGN_OR_RAISE(
         writer_, parquet::arrow::FileWriter::Open(*schema_,
-                                                arrow::default_memory_pool(), output_stream_,
-                                                props, arrow_props));
+            arrow::default_memory_pool(), output_stream_,
+            props, arrow_props));
 
     return arrow::Status::OK();
 }
@@ -61,138 +61,169 @@ ParquetWriter::ParquetWriter(const std::string& output_file, const std::vector<s
     }
 }
 
-        
-arrow::Status ParquetWriter::write (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features) {
+arrow::Status ParquetWriter::write (const std::vector<FTABLE_RECORD>& features) {
 
     int num_rows = features.size();
 
-    std::vector<std::shared_ptr<arrow::Array>> arrays;
-
-    arrow::StringBuilder string_builder;
-    std::shared_ptr<arrow::Array> intensity_array;
-
-
+    std::vector<std::shared_ptr<arrow::Array>> A;
     arrow::Status append_status;
-    // construct intensity column
-    for (int i = 0; i < num_rows; ++i) {
-        append_status = string_builder.Append(std::get<0>(features[i])[0]);
 
-        if (!append_status.ok()) {
-            // Handle read error
-            return append_status;
-        }
-    }
+    //cccccccc intensity
+    {
+        arrow::StringBuilder b;
+        std::shared_ptr<arrow::Array> A_i;
 
-    append_status = string_builder.Finish(&intensity_array);
-    if (!append_status.ok()) {
-            // Handle read error
-            return append_status;
-        }
-    
-
-    arrays.push_back(intensity_array);
-    string_builder.Reset();
-
-    std::shared_ptr<arrow::Array> segmentation_array;
-
-    // construct intensity column
-    for (int i = 0; i < num_rows; ++i) {
-        append_status = string_builder.Append(std::get<0>(features[i])[1]);
-
-        if (!append_status.ok()) {
-            // Handle read error
-            return append_status;
-        }
-    }
-
-    append_status = string_builder.Finish(&segmentation_array);
-
-    if (!append_status.ok()) {
-        // Handle read error
-        return append_status;
-    }
-
-    arrays.push_back(segmentation_array);
-
-    arrow::Int32Builder int_builder;
-    std::shared_ptr<arrow::Array> labels_array;
-    // construct label column
-    for (int i = 0; i < num_rows; ++i) {
-        append_status = int_builder.Append(std::get<1>(features[i]));
-        if (!append_status.ok()) {
-            // Handle read error
-            return append_status;
-        }
-    }
-
-    append_status = int_builder.Finish(&labels_array);
-    if (!append_status.ok()) {
-        // Handle read error
-        return append_status;
-    }
-    arrays.push_back(labels_array);
-
-    // construct columns for each feature 
-    for (int j = 0; j < std::get<2>(features[0]).size(); ++j) {
-
-        arrow::DoubleBuilder builder;   
-        std::shared_ptr<arrow::Array> double_array;
-
-        for (int i = 0; i < num_rows; ++i) 
-        {
-            // prevent NANs in the output
-            double fval = std::get<2>(features[i])[j];
-            fval = Nyxus::force_finite_number (fval, Nyxus::theEnvironment.resultOptions.noval());
-            append_status = builder.Append (fval);
+        // construct intensity column
+        for (int i = 0; i < num_rows; ++i) {
+            append_status = b.Append (std::get<FTABLE_INTSEG>(features[i])[0]);
 
             if (!append_status.ok()) {
                 // Handle read error
-            return append_status;
+                return append_status;
             }
         }
 
-        append_status =  builder.Finish(&double_array);
+        append_status = b.Finish (&A_i);
+        if (!append_status.ok()) {
+            // Handle read error
+            return append_status;
+        }
+
+        A.push_back (A_i);
+        b.Reset();
+
+        //cccccccc segment
+
+        std::shared_ptr<arrow::Array> A_s;
+
+        // construct intensity column
+        for (int i = 0; i < num_rows; ++i) {
+            append_status = b.Append (std::get<FTABLE_INTSEG>(features[i])[1]);
+
+            if (!append_status.ok()) {
+                // Handle read error
+                return append_status;
+            }
+        }
+
+        append_status = b.Finish (&A_s);
 
         if (!append_status.ok()) {
             // Handle read error
             return append_status;
         }
 
-        arrays.push_back(double_array);
+        A.push_back (A_s);
     }
 
-    std::shared_ptr<arrow::RecordBatch> batch = arrow::RecordBatch::Make(schema_, num_rows, arrays);
+    //cccccccc ROI label
+    {
+        arrow::Int32Builder b;
+        std::shared_ptr<arrow::Array> A_lbl;
+        // construct label column
+        for (int i = 0; i < num_rows; ++i) {
+            append_status = b.Append (std::get<FTABLE_ROILBL>(features[i]));
+            if (!append_status.ok()) {
+                // Handle read error
+                return append_status;
+            }
+        }
+
+        append_status = b.Finish (&A_lbl);
+        if (!append_status.ok()) {
+            // Handle read error
+            return append_status;
+        }
+        A.push_back (A_lbl);
+    }
+
+    //cccccccc time
+    {
+        arrow::DoubleBuilder b;
+        std::shared_ptr<arrow::Array> A_t;
+        // construct time column
+        for (int i = 0; i < num_rows; ++i)
+        {
+            append_status = b.Append (std::get<FTABLE_TIMEPOS>(features[i]));
+            if (!append_status.ok()) {
+                // Handle read error
+                return append_status;
+            }
+        }
+
+        append_status = b.Finish (&A_t);
+        if (!append_status.ok())
+        {
+            // Handle read error
+            return append_status;
+        }
+        A.push_back (A_t);
+    }
+
+    //cccccccc features
+    {
+        // construct columns for each feature 
+        for (int j = 0; j < std::get<FTABLE_FBEGIN>(features[0]).size(); ++j) {
+
+            arrow::DoubleBuilder b;
+            std::shared_ptr<arrow::Array> A_fv;
+
+            for (int i = 0; i < num_rows; ++i)
+            {
+                // prevent NANs in the output
+                double fval = std::get<FTABLE_FBEGIN> (features[i])[j];
+                fval = Nyxus::force_finite_number (fval, FTABLE_SAFENAN);
+                append_status = b.Append (fval);
+
+                if (!append_status.ok()) {
+                    // Handle read error
+                    return append_status;
+                }
+            }
+
+            append_status = b.Finish (&A_fv);
+
+            if (!append_status.ok()) {
+                // Handle read error
+                return append_status;
+            }
+
+            A.push_back (A_fv);
+        }
+    }
+
+    std::shared_ptr<arrow::RecordBatch> batch = arrow::RecordBatch::Make(schema_, num_rows, A);
 
     ARROW_ASSIGN_OR_RAISE(auto table,
-                arrow::Table::FromRecordBatches(schema_, {batch}));
+        arrow::Table::FromRecordBatches(schema_, { batch }));
 
     ARROW_RETURN_NOT_OK(writer_->WriteTable(*table.get(), batch->num_rows()));
 
     return arrow::Status::OK();
 }
 
-arrow::Status ParquetWriter::close () {
+arrow::Status ParquetWriter::close() {
     auto status = writer_->Close();
 
     if (!status.ok()) {
         // Handle read error
-        return status; 
+        return status;
     }
 
     status = output_stream_->Close();
 
     if (!status.ok()) {
         // Handle read error
-        return status; 
+        return status;
     }
-    
+
     return arrow::Status::OK();
 }
 
-arrow::Status ArrowIPCWriter::setup(const std::vector<std::string> &header) {
+arrow::Status ArrowIPCWriter::setup(const std::vector<std::string>& header) {
 
     std::vector<std::shared_ptr<arrow::Field>> fields;
-    
+
 
     fields.push_back(arrow::field("intensity_image", arrow::utf8()));
     fields.push_back(arrow::field("mask_image", arrow::utf8()));
@@ -208,104 +239,35 @@ arrow::Status ArrowIPCWriter::setup(const std::vector<std::string> &header) {
     ARROW_ASSIGN_OR_RAISE(
         output_stream_, arrow::io::FileOutputStream::Open(output_file_)
     );
-    
-    writer_ = arrow::ipc::MakeFileWriter(output_stream_,  schema_);
+
+    writer_ = arrow::ipc::MakeFileWriter(output_stream_, schema_);
 
     return arrow::Status::OK();
 }
 
 
 
-ArrowIPCWriter::ArrowIPCWriter(const std::string& output_file, const std::vector<std::string> &header) : output_file_(output_file) {
+ArrowIPCWriter::ArrowIPCWriter(const std::string& output_file, const std::vector<std::string>& header) : output_file_(output_file) {
 
     auto status = this->setup(header);
 
-}    
+}
 
-
-arrow::Status ArrowIPCWriter::write (const std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>& features) {
-
-
+arrow::Status ArrowIPCWriter::write (const std::vector<FTABLE_RECORD>& features)
+{
     int num_rows = features.size();
 
-    std::vector<std::shared_ptr<arrow::Array>> arrays;
-
-    arrow::StringBuilder string_builder;
-    std::shared_ptr<arrow::Array> intensity_array;
-
-
+    std::vector<std::shared_ptr<arrow::Array>> A;
     arrow::Status append_status;
-    // construct intensity column
-    for (int i = 0; i < num_rows; ++i) {
-        append_status = string_builder.Append(std::get<0>(features[i])[0]);
 
-        if (!append_status.ok()) {
-            // Handle read error
-            return append_status;
-        }
-    }
+    //cccccccc intensity
+    {
+        arrow::StringBuilder b;
+        std::shared_ptr<arrow::Array> A_i;
 
-    append_status = string_builder.Finish(&intensity_array);
-    if (!append_status.ok()) {
-            // Handle read error
-            return append_status;
-        }
-    
-
-    arrays.push_back(intensity_array);
-    string_builder.Reset();
-
-    std::shared_ptr<arrow::Array> segmentation_array;
-
-    // construct intensity column
-    for (int i = 0; i < num_rows; ++i) {
-        append_status = string_builder.Append(std::get<0>(features[i])[1]);
-
-        if (!append_status.ok()) {
-            // Handle read error
-            return append_status;
-        }
-    }
-
-    append_status = string_builder.Finish(&segmentation_array);
-
-    if (!append_status.ok()) {
-        // Handle read error
-        return append_status;
-    }
-
-    arrays.push_back(segmentation_array);
-
-    arrow::Int32Builder int_builder;
-    std::shared_ptr<arrow::Array> labels_array;
-    // construct label column
-    for (int i = 0; i < num_rows; ++i) {
-        append_status = int_builder.Append(std::get<1>(features[i]));
-        if (!append_status.ok()) {
-            // Handle read error
-            return append_status;
-        }
-    }
-
-    append_status = int_builder.Finish(&labels_array);
-    if (!append_status.ok()) {
-        // Handle read error
-        return append_status;
-    }
-    arrays.push_back(labels_array);
-
-    // construct columns for each feature 
-    for (int j = 0; j < std::get<2>(features[0]).size(); ++j) {
-
-        arrow::DoubleBuilder builder;   
-        std::shared_ptr<arrow::Array> double_array;
-
-        for (int i = 0; i < num_rows; ++i) 
-        {
-            // prevent NANs in the output
-            double fval = std::get<2>(features[i])[j];
-            fval = Nyxus::force_finite_number (fval, Nyxus::theEnvironment.resultOptions.noval());
-            append_status = builder.Append (fval);
+        // construct intensity column
+        for (int i = 0; i < num_rows; ++i) {
+            append_status = b.Append (std::get<FTABLE_INTSEG>(features[i])[0]);
 
             if (!append_status.ok()) {
                 // Handle read error
@@ -313,17 +275,115 @@ arrow::Status ArrowIPCWriter::write (const std::vector<std::tuple<std::vector<st
             }
         }
 
-        append_status =  builder.Finish(&double_array);
+        append_status = b.Finish (&A_i);
+        if (!append_status.ok()) {
+            // Handle read error
+            return append_status;
+        }
+
+        A.push_back(A_i);
+        b.Reset();
+
+        //cccccccc segment
+
+        std::shared_ptr<arrow::Array> A_s;
+
+        // construct mask column
+        for (int i = 0; i < num_rows; ++i) {
+            append_status = b.Append (std::get<FTABLE_INTSEG>(features[i])[1]);
+
+            if (!append_status.ok()) {
+                // Handle read error
+                return append_status;
+            }
+        }
+
+        append_status = b.Finish (&A_s);
 
         if (!append_status.ok()) {
             // Handle read error
             return append_status;
         }
 
-        arrays.push_back(double_array);
+        A.push_back (A_s);
     }
 
-    std::shared_ptr<arrow::RecordBatch> batch = arrow::RecordBatch::Make(schema_, num_rows, arrays);
+    //cccccccc ROI label
+    {
+        arrow::Int32Builder b;
+        std::shared_ptr<arrow::Array> A_lbl;
+
+        // construct label column
+        for (int i = 0; i < num_rows; ++i) {
+            append_status = b.Append(std::get<FTABLE_ROILBL>(features[i]));
+            if (!append_status.ok()) {
+                // Handle read error
+                return append_status;
+            }
+        }
+
+        append_status = b.Finish (&A_lbl);
+        if (!append_status.ok()) {
+            // Handle read error
+            return append_status;
+        }
+        A.push_back (A_lbl);
+    }
+
+    //cccccccc time
+    {
+        arrow::DoubleBuilder b;
+        std::shared_ptr<arrow::Array> A_t;
+        // construct label column
+        for (int i = 0; i < num_rows; ++i) {
+            append_status = b.Append (std::get<FTABLE_TIMEPOS>(features[i]));
+            if (!append_status.ok()) {
+                // Handle read error
+                return append_status;
+            }
+        }
+
+        append_status = b.Finish (&A_t);
+        if (!append_status.ok()) {
+            // Handle read error
+            return append_status;
+        }
+        A.push_back (A_t);
+    }
+
+    //cccccccc feature values
+    {
+        // construct columns for each feature 
+        for (int j = 0; j < std::get<FTABLE_FBEGIN>(features[0]).size(); ++j) {
+
+            arrow::DoubleBuilder b;
+            std::shared_ptr<arrow::Array> A_fv;
+
+            for (int i = 0; i < num_rows; ++i)
+            {
+                // prevent NANs in the output
+                double fval = std::get<FTABLE_FBEGIN>(features[i])[j];
+                fval = Nyxus::force_finite_number(fval, FTABLE_SAFENAN);
+                append_status = b.Append(fval);
+
+                if (!append_status.ok()) {
+                    // Handle read error
+                    return append_status;
+                }
+            }
+
+            append_status = b.Finish (&A_fv);
+
+            if (!append_status.ok()) {
+                // Handle read error
+                return append_status;
+            }
+
+            A.push_back (A_fv);
+        }
+    }
+
+    std::shared_ptr<arrow::RecordBatch> batch = arrow::RecordBatch::Make(schema_, num_rows, A);
 
     auto status = writer_->get()->WriteRecordBatch(*batch);
 
@@ -335,8 +395,7 @@ arrow::Status ArrowIPCWriter::write (const std::vector<std::tuple<std::vector<st
     return arrow::Status::OK();
 }
 
-
-arrow::Status ArrowIPCWriter::close () {
+arrow::Status ArrowIPCWriter::close() {
 
     arrow::Status status = writer_->get()->Close();
 
@@ -349,38 +408,42 @@ arrow::Status ArrowIPCWriter::close () {
 
     if (!status.ok()) {
         // Handle read error
-        return status; 
+        return status;
     }
 
     return arrow::Status::OK();
-    
+
 }
 
 
-std::tuple<std::unique_ptr<ApacheArrowWriter>, std::optional<std::string>> WriterFactory::create_writer(const std::string &output_file, const std::vector<std::string> &header) {
-    
+std::tuple<std::unique_ptr<ApacheArrowWriter>, std::optional<std::string>> WriterFactory::create_writer(const std::string& output_file, const std::vector<std::string>& header) {
+
     if (Nyxus::ends_with_substr(output_file, ".parquet")) {
-        
-        return {std::make_unique<ParquetWriter>(output_file, header), std::nullopt};
 
-    } else if (Nyxus::ends_with_substr(output_file, ".arrow") || Nyxus::ends_with_substr(output_file, ".feather")) {
-        
-        return {std::make_unique<ArrowIPCWriter>(output_file, header), std::nullopt};
+        return { std::make_unique<ParquetWriter>(output_file, header), std::nullopt };
 
-    } else {
+    }
+    else if (Nyxus::ends_with_substr(output_file, ".arrow") || Nyxus::ends_with_substr(output_file, ".feather")) {
+
+        return { std::make_unique<ArrowIPCWriter>(output_file, header), std::nullopt };
+
+    }
+    else {
 
         fs::path path(output_file);
 
-        auto error_msg = [&path](){        
-            if (path.has_extension()) 
+        auto error_msg = [&path]() {
+            if (path.has_extension())
             {
                 return "No writer option for extension \"" + path.extension().string() + "\". Valid options are \".parquet\" or \".arrow\".";
-            } else {
-                return std::string{"No extension type was provided in the path."};
             }
-        }; 
+            else {
+                return std::string{ "No extension type was provided in the path." };
+            }
+        };
 
-        return {nullptr, error_msg()};
+        return { nullptr, error_msg() };
     }
 }
 #endif
+

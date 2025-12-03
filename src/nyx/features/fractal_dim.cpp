@@ -9,13 +9,10 @@ FractalDimensionFeature::FractalDimensionFeature() : FeatureMethod("FractalDimen
 	add_dependencies({ Feature2D::PERIMETER });	// FRACT_DIM_PERIMETER requires perimeter's pixels
 }
 
-void FractalDimensionFeature::calculate(LR& r)
+void FractalDimensionFeature::calculate (LR& r, const Fsettings& s)
 {
-	if (theFeatureSet.isEnabled(Feature2D::FRACT_DIM_BOXCOUNT))
-		calculate_boxcount_fdim(r);
-
-	if (theFeatureSet.isEnabled(Feature2D::FRACT_DIM_PERIMETER))
-		calculate_perimeter_fdim(r);
+	calculate_boxcount_fdim (r);
+	calculate_perimeter_fdim (r);
 }
 
 void FractalDimensionFeature::calculate_boxcount_fdim (LR & r)
@@ -103,7 +100,7 @@ void FractalDimensionFeature::calculate_perimeter_fdim (LR& r)
 		}
 
 		// save this approximation
-		coverage.push_back({ s, p });
+		coverage.push_back({ s, (int)p });
 	}
 	perim_fd = calc_lyapunov_slope(coverage);
 }
@@ -167,13 +164,10 @@ double FractalDimensionFeature::calc_lyapunov_slope (const std::vector<std::pair
 void FractalDimensionFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
 {}
 
-void FractalDimensionFeature::osized_calculate(LR& r, ImageLoader& imloader)
+void FractalDimensionFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader)
 {
-	if (theFeatureSet.isEnabled(Feature2D::FRACT_DIM_BOXCOUNT))
-		calculate_boxcount_fdim_oversized (r);
-
-	if (theFeatureSet.isEnabled(Feature2D::FRACT_DIM_PERIMETER))
-		calculate_perimeter_fdim(r);
+	calculate_boxcount_fdim_oversized (r);
+	calculate_perimeter_fdim (r);
 }
 
 void FractalDimensionFeature::save_value(std::vector<std::vector<double>>& fvals)
@@ -182,14 +176,14 @@ void FractalDimensionFeature::save_value(std::vector<std::vector<double>>& fvals
 	fvals[(int)Feature2D::FRACT_DIM_PERIMETER][0] = perim_fd;
 }
 
-void FractalDimensionFeature::extract (LR& r)
+void FractalDimensionFeature::extract (LR& r, const Fsettings& s)
 {
 	FractalDimensionFeature fd;
-	fd.calculate(r);
-	fd.save_value(r.fvals);
+	fd.calculate (r, s);
+	fd.save_value (r.fvals);
 }
 
-void FractalDimensionFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void FractalDimensionFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -199,7 +193,7 @@ void FractalDimensionFeature::parallel_process_1_batch(size_t start, size_t end,
 		if (r.has_bad_data())
 			continue;
 
-		extract (r);
+		extract (r, s);
 	}
 }
 

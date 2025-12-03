@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "../src/nyx/roi_cache.h"
-#include "../src/nyx/parallel.h"
 #include "../src/nyx/features/gldm.h"
 #include "../src/nyx/features/pixel.h"
 #include "../src/nyx/environment.h"
@@ -33,16 +32,29 @@ static std::unordered_map<std::string, float> gldm_values {
 /// @brief Smoke test of GLDM
 void test_gldm_feature(const Feature2D& feature, const std::string& feature_name) 
 {
+    // featue settings for this particular test
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
+    s[(int)NyxSetting::TINY].rval = 0.0;
+    s[(int)NyxSetting::SINGLEROI].bval = false;
+    s[(int)NyxSetting::GREYDEPTH].ival = 128;
+    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
+    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::VERBOSLVL].ival = 0;
+    s[(int)NyxSetting::IBSI].bval = false;
+    //    
+    
     LR roidata;
 
     // Calculate features
     GLDMFeature f;
-    Environment::ibsi_compliance = false;
 
     // image pair
     load_masked_test_roi_data(roidata, cat2500_int, cat2500_seg, sizeof(cat2500_seg) / sizeof(NyxusPixel));
 
-    ASSERT_NO_THROW(f.calculate(roidata));
+    ASSERT_NO_THROW(f.calculate(roidata, s));
 
     // Initialize per-ROI feature value buffer with zeros
     roidata.initialize_fvals();

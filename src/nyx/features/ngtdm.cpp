@@ -30,7 +30,7 @@ void NGTDMFeature::clear_buffers()
 	N.clear();
 }
 
-void NGTDMFeature::calculate (LR& r)
+void NGTDMFeature::calculate (LR& r, const Fsettings& s)
 {
 	// Clear variables
 	clear_buffers();
@@ -41,11 +41,11 @@ void NGTDMFeature::calculate (LR& r)
 	auto& imR = r.aux_image_matrix.ReadablePixels();
 
 	// bin intensities		
-	auto greyInfo = theEnvironment.get_coarse_gray_depth();
+	auto greyInfo = STNGS_NGREYS(s); // former theEnvironment.get_coarse_gray_depth()
 	auto greyInfo_localFeature = NGTDMFeature::n_levels;
 	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
 		greyInfo = greyInfo_localFeature;
-	if (Nyxus::theEnvironment.ibsi_compliance)
+	if (STNGS_IBSI(s))		// fomer Nyxus::theEnvironment.ibsi_compliance
 		greyInfo = 0;
 	bin_intensities (D, imR, r.aux_min, r.aux_max, greyInfo);
 
@@ -69,11 +69,11 @@ void NGTDMFeature::calculate (LR& r)
 	// is binned data informative?
 	if (I.size() < 2)
 	{
-		_coarseness = 
-		_contrast = 
-		_busyness = 
-		_complexity = 
-		_strength = theEnvironment.resultOptions.noval();
+		_coarseness =
+		_contrast =
+		_busyness =
+		_complexity =
+		_strength = STNGS_NAN(s);
 		return;
 	}
 	 
@@ -147,7 +147,7 @@ void NGTDMFeature::calculate (LR& r)
 
 	// Fill the matrix
 	// --dimensions
-	Ng = (int) I.size();	//---pre 2024---> Ng = Environment::ibsi_compliance ? *std::max_element(std::begin(im.ReadablePixels()), std::end(im.ReadablePixels())) : (int) U.size();
+	Ng = (int) I.size();	//---pre 2024---> Ng = STNGS_IBSI(s) ? *std::max_element(std::begin(im.ReadablePixels()), std::end(im.ReadablePixels())) : (int) U.size();
 	Ngp = (int) U.size();
 
 	// --allocate the matrix
@@ -161,7 +161,7 @@ void NGTDMFeature::calculate (LR& r)
 		// row (grey level)
 		auto inten = z.first;
 		int row = -1;
-		if (Environment::ibsi_compliance)
+		if (STNGS_IBSI(s))
 			row = inten;
 		else
 		{
@@ -210,7 +210,7 @@ void NGTDMFeature::save_value(std::vector<std::vector<double>>& fvals)
 
 void NGTDMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} // Not supporting
 
-void NGTDMFeature::osized_calculate (LR& r, ImageLoader&)
+void NGTDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
 	// Clear variables
 	clear_buffers();
@@ -237,12 +237,12 @@ void NGTDMFeature::osized_calculate (LR& r, ImageLoader&)
 	D.allocate_from_cloud (r.raw_pixels_NT, r.aabb, false);
 
 	// Gather zones
-	unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+	unsigned int nGrays = STNGS_NGREYS(s);	// former theEnvironment.get_coarse_gray_depth()
 	for (int row = 0; row < D.get_height(); row++)
 		for (int col = 0; col < D.get_width(); col++)
 		{
 			// Find a non-blank pixel 
-			PixIntens pi = Nyxus::to_grayscale(D.yx(row, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+			PixIntens pi = Nyxus::to_grayscale(D.yx(row, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 			if (pi == 0)
 				continue;
 
@@ -256,44 +256,44 @@ void NGTDMFeature::osized_calculate (LR& r, ImageLoader&)
 
 			if (D.safe(row - 1, col) && D.yx(row - 1, col) != 0)	// North
 			{
-				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 				nd++;
 			}
 
 			if (D.safe(row - 1, col + 1) && D.yx(row - 1, col + 1) != 0)	// North-East
 			{
-				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 				nd++;
 			}
 
 			if (D.safe(row, col + 1) && D.yx(row, col + 1) != 0)	// East
 			{
-				neigsI += Nyxus::to_grayscale(D.yx(row, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += Nyxus::to_grayscale(D.yx(row, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 				nd++;
 			}
 			if (D.safe(row + 1, col + 1) && D.yx(row + 1, col + 1) != 0)	// South-East
 			{
-				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 				nd++;
 			}
 			if (D.safe(row + 1, col) && D.yx(row + 1, col) != 0)	// South
 			{
-				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 				nd++;
 			}
 			if (D.safe(row + 1, col - 1) && D.yx(row + 1, col - 1) != 0)	// South-West
 			{
-				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 				nd++;
 			}
 			if (D.safe(row, col - 1) && D.yx(row, col - 1) != 0)	// West
 			{
-				neigsI += Nyxus::to_grayscale(D.yx(row, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += Nyxus::to_grayscale(D.yx(row, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 				nd++;
 			}
 			if (D.safe(row - 1, col - 1) && D.yx(row - 1, col - 1) != 0)	// North-West
 			{
-				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays, Environment::ibsi_compliance);
+				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
 				nd++;
 			}
 
@@ -325,7 +325,7 @@ void NGTDMFeature::osized_calculate (LR& r, ImageLoader&)
 	{
 		// row
 		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = (Environment::ibsi_compliance) ?
+		int row = (STNGS_IBSI(s)) ?
 			z.first : int(iter - I.begin());
 		// col
 		int col = (int)z.second;	// 1-based
@@ -479,14 +479,14 @@ double NGTDMFeature::calc_Strength()
 	return retval;
 }
 
-void NGTDMFeature::extract (LR& r)
+void NGTDMFeature::extract (LR& r, const Fsettings& s)
 {
 	NGTDMFeature f;
-	f.calculate(r);
-	f.save_value(r.fvals);
+	f.calculate (r, s);
+	f.save_value (r.fvals);
 }
 
-void NGTDMFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void NGTDMFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -496,7 +496,7 @@ void NGTDMFeature::parallel_process_1_batch (size_t start, size_t end, std::vect
 		if (r.has_bad_data())
 			continue;
 
-		extract (r);
+		extract (r, s);
 	}
 }
 

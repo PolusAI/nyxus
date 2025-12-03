@@ -36,26 +36,22 @@
 
 namespace Nyxus
 {
-	// Label buffer size related constants
-	constexpr int N2R = 100 * 1000;
-	constexpr int N2R_2 = 100 * 1000;
-
 	// Preallocates the intensely accessed main containers
-	void init_slide_rois()
+	void init_slide_rois (Uniqueids & L, Roidata & D)
 	{
-		uniqueLabels.reserve(N2R);
-		roiData.reserve(N2R);
+		L.reserve (100 * 1000);
+		D.reserve (100 * 1000);
 	}
 
 	// Resets the main containers
-	void clear_slide_rois()
+	void clear_slide_rois (Uniqueids & L, Roidata & D)
 	{
 		// Reset per-image buffers
-		uniqueLabels.clear();
-		roiData.clear();
+		L.clear();
+		D.clear();
 	}
 
-	void init_label_record_2 (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity)
+	void init_label_record_hierarchical (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int label, PixIntens intensity)
 	{
 		// Initialize basic counters
 		r.aux_area = 1;
@@ -64,10 +60,6 @@ namespace Nyxus
 
 		// Cache the ROI label
 		r.label = label;
-
-		// File names
-		r.segFname = segFile;
-		r.intFname = intFile;
 	}
 
 	void init_label_record_3 (LR& r, int x, int y, PixIntens intensity)
@@ -76,16 +68,13 @@ namespace Nyxus
 		r.aux_area = 1;
 		r.aux_min = r.aux_max = intensity;
 		r.init_aabb(x, y);
-
-		// File names, if they are available via a legit slide index
-		if (r.slide_idx >= 0)	// slide is unavailable to inmemory featurization where slide_idx<0
-		{
-			r.segFname = LR::dataset_props[r.slide_idx].fname_seg;
-			r.intFname = LR::dataset_props[r.slide_idx].fname_int;
-		}
 	}
 
-	void init_label_record_3D (LR& r, const std::string& segFile, const std::string& intFile, int x, int y, int z, int label, PixIntens intensity)
+	void init_label_record_3D (
+		/*out*/ 
+		LR & r, 
+		/*in*/
+		int x, int y, int z, int label, PixIntens intensity)
 	{
 		// Initialize basic counters
 		r.aux_area = 1;
@@ -94,10 +83,6 @@ namespace Nyxus
 
 		// Cache the ROI label
 		r.label = label;
-
-		// File names
-		r.segFname = segFile;
-		r.intFname = intFile;
 	}
 
 	void update_label_record_2 (LR& lr, int x, int y, int label, PixIntens intensity)

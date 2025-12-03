@@ -24,18 +24,19 @@ void test_gabor(bool gpu)
 
         // Calculate features
         GaborFeature f;
+        Fsettings s;
         if(gpu) 
         {
             #ifdef USE_GPU
                 ASSERT_NO_THROW(f.calculate_gpu_multi_filter(roidata));
             #else
                 std::cerr << "GPU build is not enabled. Defaulting to CPU version." << std::endl;
-                ASSERT_NO_THROW(f.calculate(roidata));
+                ASSERT_NO_THROW(f.calculate(roidata, s));
             #endif
         } 
         else 
         {
-            ASSERT_NO_THROW(f.calculate(roidata));
+            ASSERT_NO_THROW(f.calculate(roidata, s));
         }
 
         f.save_value (roidata.fvals);

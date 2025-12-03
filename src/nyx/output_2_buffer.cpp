@@ -26,13 +26,14 @@ namespace Nyxus
 		// out
 		ResultsCache & rescache, 
 		// in
+		Environment & env,
 		const LR & r,
 		const std::string& ifpath,
 		const std::string& mfpath)
 	{
 		std::lock_guard<std::mutex> lg (mx1);
 
-		std::vector<std::tuple<std::string, int>> F = theFeatureSet.getEnabledFeatures();
+		std::vector<std::tuple<std::string, int>> F = env.theFeatureSet.getEnabledFeatures();
 
 		// We only fill in the header once.
 		// We depend on the caller to manage headerBuf contents and clear it appropriately...
@@ -42,7 +43,7 @@ namespace Nyxus
 
 		if (fill_header)
 		{
-			rescache.add_to_header({ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label });
+			rescache.add_to_header({ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label, Nyxus::colname_t_index });
 
 			for (auto& enabdF : F)
 			{
@@ -60,7 +61,7 @@ namespace Nyxus
 				if (glcmFeature && nonAngledGlcmFeature == false)
 				{
 					// Populate with angles
-					for (auto ang : theEnvironment.glcmOptions.glcmAngles)
+					for (auto ang : env.glcmOptions.glcmAngles)
 					{
 						std::string col = fn + "_" + std::to_string(ang);
 						rescache.add_to_header(col);
@@ -166,6 +167,7 @@ namespace Nyxus
 		rescache.add_string (ifpath);
 		rescache.add_string (mfpath);
 		rescache.add_numeric (r.label);
+		rescache.add_numeric (-999.888);
 
 		// - features
 		for (auto& enabdF : F)
@@ -189,7 +191,7 @@ namespace Nyxus
 				int nAng = GLCMFeature::angles.size();
 				for (int i = 0; i < nAng; i++)
 				{
-					rescache.add_numeric(Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval()));
+					rescache.add_numeric(Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
 				}
 
 				// Proceed with other features
@@ -205,7 +207,7 @@ namespace Nyxus
 				int nAng = 4; // check GLRLMFeature::rotAngles
 				for (int i = 0; i < nAng; i++)
 				{
-					rescache.add_numeric(Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval()));
+					rescache.add_numeric(Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
 				}
 				// Proceed with other features
 				continue;
@@ -216,7 +218,7 @@ namespace Nyxus
 			{
 				for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
 				{
-					rescache.add_numeric(Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval()));
+					rescache.add_numeric(Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
 				}
 				// Proceed with other features
 				continue;
@@ -227,7 +229,7 @@ namespace Nyxus
 			{
 				for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
 				{
-					rescache.add_numeric(Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval()));
+					rescache.add_numeric(Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
 				}
 				// Proceed with other features
 				continue;
@@ -238,7 +240,7 @@ namespace Nyxus
 			{
 				for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
 				{
-					rescache.add_numeric(Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval()));
+					rescache.add_numeric(Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
 				}
 				// Proceed with other features
 				continue;
@@ -247,7 +249,7 @@ namespace Nyxus
 			{
 				for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
 				{
-					rescache.add_numeric(Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval()));
+					rescache.add_numeric(Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
 				}
 				// Proceed with other features
 				continue;
@@ -256,25 +258,25 @@ namespace Nyxus
 			{
 				for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
 				{
-					rescache.add_numeric(Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval()));
+					rescache.add_numeric(Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
 				}
 				// Proceed with other features
 				continue;
 			}
 
 			// Regular feature
-			rescache.add_numeric(Nyxus::force_finite_number(vv[0], theEnvironment.resultOptions.noval()));
+			rescache.add_numeric(Nyxus::force_finite_number(vv[0], env.resultOptions.noval()));
 		}
 
 		return true;
 	}
 
 	/// @brief Copies ROIs' feature values into a ResultsCache structure that will then shape them as a table
-	bool save_features_2_buffer(ResultsCache& rescache)
+	bool save_features_2_buffer (ResultsCache& rescache, Environment & env)
 	{
-		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
+		std::vector<int> L{ env.uniqueLabels.begin(), env.uniqueLabels.end() };
 		std::sort(L.begin(), L.end());
-		std::vector<std::tuple<std::string, int>> F = theFeatureSet.getEnabledFeatures();
+		std::vector<std::tuple<std::string, int>> F = env.theFeatureSet.getEnabledFeatures();
 
 		// We only fill in the header once.
 		// We depend on the caller to manage headerBuf contents and clear it appropriately...
@@ -283,7 +285,7 @@ namespace Nyxus
 		// -- Header
 		if (fill_header)
 		{
-			rescache.add_to_header({ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label });
+			rescache.add_to_header({ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label, Nyxus::colname_t_index });
 
 			for (auto& enabdF : F)
 			{
@@ -301,7 +303,7 @@ namespace Nyxus
 				if (glcmFeature && nonAngledGlcmFeature == false)
 				{
 					// Populate with angles
-					for (auto ang : theEnvironment.glcmOptions.glcmAngles)
+					for (auto ang : env.glcmOptions.glcmAngles)
 					{
 						std::string col = fn + "_" + std::to_string(ang);
 						rescache.add_to_header(col);
@@ -402,7 +404,7 @@ namespace Nyxus
 		// -- Values
 		for (auto l : L)
 		{
-			LR& r = roiData[l];
+			LR& r = env.roiData[l];
 
 			// Skip blacklisted ROI
 			if (r.blacklisted)
@@ -411,13 +413,17 @@ namespace Nyxus
 			rescache.inc_num_rows();
 
 			// Tear off pure file names from segment and intensity file paths
-			fs::path pseg(r.segFname), pint(r.intFname);
+			const SlideProps & slide = env.dataset.dataset_props[r.slide_idx];
+			fs::path pseg(slide.fname_seg), 
+				pint(slide.fname_int);
 			std::string segfname = pseg.filename().string(),
 				intfname = pint.filename().string();
 
-			rescache.add_string(intfname);
-			rescache.add_string(segfname);
-			rescache.add_numeric(l);
+			rescache.add_string (intfname);
+			rescache.add_string (segfname);
+			rescache.add_numeric (l);
+			rescache.add_numeric (-999.888);
+
 			for (auto& enabdF : F)
 			{
 				auto fc = std::get<1>(enabdF);
@@ -439,7 +445,7 @@ namespace Nyxus
 					int nAng = GLCMFeature::angles.size();
 					for (int i = 0; i < nAng; i++)
 					{
-						rescache.add_numeric (Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval()));
+						rescache.add_numeric (Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
 					}
 
 					// Proceed with other features
@@ -455,7 +461,7 @@ namespace Nyxus
 					int nAng = 4; // check GLRLMFeature::rotAngles
 					for (int i = 0; i < nAng; i++)
 					{
-						rescache.add_numeric (Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval()));
+						rescache.add_numeric (Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
 					}
 					// Proceed with other features
 					continue;
@@ -466,7 +472,7 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
 					{
-						rescache.add_numeric (Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval()));
+						rescache.add_numeric (Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
 					}
 					// Proceed with other features
 					continue;
@@ -477,7 +483,7 @@ namespace Nyxus
 				{
 					for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
 					{
-						rescache.add_numeric (Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval()));
+						rescache.add_numeric (Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
 					}
 					// Proceed with other features
 					continue;
@@ -488,7 +494,7 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
 					{
-						rescache.add_numeric (Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval()));
+						rescache.add_numeric (Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
 					}
 					// Proceed with other features
 					continue;
@@ -497,7 +503,7 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
 					{
-						rescache.add_numeric (Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval()));
+						rescache.add_numeric (Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
 					}
 					// Proceed with other features
 					continue;
@@ -506,14 +512,14 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
 					{
-						rescache.add_numeric (Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval()));
+						rescache.add_numeric (Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
 					}
 					// Proceed with other features
 					continue;
 				}
 
 				// Regular feature
-				rescache.add_numeric (Nyxus::force_finite_number(vv[0], theEnvironment.resultOptions.noval()));
+				rescache.add_numeric (Nyxus::force_finite_number(vv[0], env.resultOptions.noval()));
 			}
 		}
 

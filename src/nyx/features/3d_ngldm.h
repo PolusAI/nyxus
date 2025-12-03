@@ -1,6 +1,8 @@
 #pragma once
 
+#include "../dataset.h"
 #include "../feature_method.h"
+#include "../feature_settings.h"
 
 class D3_NGLDM_feature : public FeatureMethod
 {
@@ -34,12 +36,12 @@ public:
 	D3_NGLDM_feature();
 
 	// Overrides
-	void calculate(LR& r);
+	void calculate (LR& r, const Fsettings& s);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
-	void osized_calculate(LR& r, ImageLoader& imloader);
+	void osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
-	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData);
-	static void extract (LR& r);
+	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
+	static void extract (LR& r, const Fsettings& s);
 
 	// Support of manual reduce
 	static bool required(const FeatureSet& fs)
@@ -48,14 +50,14 @@ public:
 	}
 
 	// Support of unit testing
-	void prepare_NGLDM_matrix_kit (SimpleMatrix<unsigned int>& NGLDM, std::vector<PixIntens>& grey_levels_LUT, int& Ng, int& Nr, LR& r);
+	void prepare_NGLDM_matrix_kit (SimpleMatrix<unsigned int>& NGLDM, std::vector<PixIntens>& grey_levels_LUT, int& Ng, int& Nr, LR& r, int n_greys, bool ibsi);
 
 private:
 
 	void clear_buffers();
-	template <class Pixelcloud> void gather_unique_intensities (std::vector<PixIntens>& V, Pixelcloud& C, PixIntens max_i);
-	void gather_unique_intensities2 (std::vector<PixIntens>& V, const SimpleCube<PixIntens> & I, PixIntens max_inten);
-	void calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int& max_dep, SimpleCube<PixIntens>& I, const std::vector<PixIntens>& V, PixIntens max_inten);
+	template <class Pixelcloud> void gather_unique_intensities (std::vector<PixIntens>& V, Pixelcloud& C, PixIntens max_i, int n_greys, bool ibsi);
+	void gather_unique_intensities2 (std::vector<PixIntens>& V, const SimpleCube<PixIntens> & I, PixIntens max_inten, int n_greys, bool ibsi);
+	void calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int& max_dep, SimpleCube<PixIntens>& I, const std::vector<PixIntens>& V, PixIntens max_inten, int n_greys, bool ibsi);
 	void calc_rowwise_and_columnwise_totals(std::vector<double>& Mg, std::vector<double>& Mr, const SimpleMatrix<unsigned int>& NGLDM, const int Ng, const int Nr);
 	void calc_features(const std::vector<double>& Mx, const std::vector<double>& Md, SimpleMatrix<unsigned int>& NGLDM, int Nr, const std::vector<PixIntens> U, unsigned int roi_area);
 

@@ -32,8 +32,18 @@ static std::unordered_map<std::string, float> ibsi_gldzm_gtruth
 
 void test_ibsi_gldzm_matrix()
 {
-    // Activate the IBSI compliance mode
-    Environment::ibsi_compliance = true;
+    // featue settings for this particular test
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
+    s[(int)NyxSetting::TINY].rval = 0.0;
+    s[(int)NyxSetting::SINGLEROI].bval = false;
+    s[(int)NyxSetting::GREYDEPTH].ival = 128;
+    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
+    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::VERBOSLVL].ival = 0;
+    s[(int)NyxSetting::IBSI].bval = true;   // activate the IBSI compliance mode
 
     // Load a test image
     LR roidata;
@@ -47,7 +57,7 @@ void test_ibsi_gldzm_matrix()
     SimpleMatrix<unsigned int> GLDZM;
     int Ng,	// number of grey levels
         Nd;	// maximum number of non-zero dependencies
-    ASSERT_NO_THROW(f.prepare_GLDZM_matrix_kit (GLDZM, Ng, Nd, greysLUT, roidata));
+    ASSERT_NO_THROW(f.prepare_GLDZM_matrix_kit (GLDZM, Ng, Nd, greysLUT, roidata, STNGS_NGREYS(s), STNGS_IBSI(s)));
 
     // Count discrepancies
     int n_mismatches = 0;
@@ -68,10 +78,20 @@ void test_ibsi_gldzm_matrix()
 
 void test_ibsi_gldzm_feature (const Feature2D& feature_, const std::string& feature_name)
 {
-    int feature = int(feature_);
+    // featue settings for this particular test
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
+    s[(int)NyxSetting::TINY].rval = 0.0;
+    s[(int)NyxSetting::SINGLEROI].bval = false;
+    s[(int)NyxSetting::GREYDEPTH].ival = 128;
+    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
+    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::VERBOSLVL].ival = 0;
+    s[(int)NyxSetting::IBSI].bval = true;   // activate the IBSI compliance mode
 
-    // Activate the IBSI compliance mode
-    Environment::ibsi_compliance = true;
+    int feature = int(feature_);
 
     // Check if ground truth is available for the feature
     ASSERT_TRUE (ibsi_gldzm_gtruth.count(feature_name) > 0);
@@ -86,7 +106,7 @@ void test_ibsi_gldzm_feature (const Feature2D& feature_, const std::string& feat
 
     // Calculate features
     GLDZMFeature f1;
-    ASSERT_NO_THROW(f1.calculate(roidata1));
+    ASSERT_NO_THROW(f1.calculate(roidata1, s));
 
     // Initialize per-ROI feature value buffer with zeros
     roidata1.initialize_fvals();
@@ -104,7 +124,7 @@ void test_ibsi_gldzm_feature (const Feature2D& feature_, const std::string& feat
 
     // Calculate features
     GLDZMFeature f2;
-    ASSERT_NO_THROW(f2.calculate(roidata2));
+    ASSERT_NO_THROW(f2.calculate(roidata2, s));
 
     // Initialize per-ROI feature value buffer with zeros
     roidata2.initialize_fvals();
@@ -122,7 +142,7 @@ void test_ibsi_gldzm_feature (const Feature2D& feature_, const std::string& feat
 
     // Calculate features
     GLDZMFeature f3;
-    ASSERT_NO_THROW(f3.calculate(roidata3));
+    ASSERT_NO_THROW(f3.calculate(roidata3, s));
 
     // Initialize per-ROI feature value buffer with zeros
     roidata3.initialize_fvals();
@@ -140,7 +160,7 @@ void test_ibsi_gldzm_feature (const Feature2D& feature_, const std::string& feat
 
     // Calculate features
     GLDZMFeature f4;
-    ASSERT_NO_THROW(f4.calculate(roidata4));
+    ASSERT_NO_THROW(f4.calculate(roidata4, s));
 
     // Initialize per-ROI feature value buffer with zeros
     roidata4.initialize_fvals();

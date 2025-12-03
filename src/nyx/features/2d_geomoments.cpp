@@ -1,8 +1,8 @@
 #include "../featureset.h"
 
 #ifdef USE_GPU
-#include "../gpucache.h"
-#include "../gpu/geomoments.cuh"
+    #include "../cache.h"
+    #include "../gpu/geomoments.cuh"
 #endif
 
 #include "2d_geomoments.h"
@@ -17,9 +17,9 @@ Imoms2D_feature::Imoms2D_feature() : FeatureMethod("Imoms2D")
     add_dependencies({ Nyxus::Feature2D::PERIMETER });
 }
 
-void Imoms2D_feature::calculate(LR& r)
+void Imoms2D_feature::calculate (LR& r, const Fsettings& s)
 {
-    BasicGeomoms2D::calculate(r, intenAsInten);
+    BasicGeomoms2D::calculate(r, s, intenAsInten);
 }
 
 void Imoms2D_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
@@ -27,19 +27,19 @@ void Imoms2D_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t inten
     BasicGeomoms2D::osized_add_online_pixel(x, y, intensity);
 }
 
-void Imoms2D_feature::osized_calculate(LR& r, ImageLoader& imloader)
+void Imoms2D_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr)
 {
-    BasicGeomoms2D::osized_calculate(r, imloader);
+    BasicGeomoms2D::osized_calculate (r, s, ldr);
 }
 
-void Imoms2D_feature::extract (LR& r)
+void Imoms2D_feature::extract (LR& r, const Fsettings& s)
 {
     Imoms2D_feature f;
-    f.calculate(r);
-    f.save_value(r.fvals);
+    f.calculate (r, s);
+    f.save_value (r.fvals);
 }
 
-void Imoms2D_feature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void Imoms2D_feature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
     for (auto i = start; i < end; i++)
     {
@@ -49,7 +49,7 @@ void Imoms2D_feature::parallel_process_1_batch(size_t start, size_t end, std::ve
         if (r.has_bad_data())
             continue;
 
-        extract (r);
+        extract (r, s);
     }
 }
 
@@ -161,7 +161,9 @@ void Imoms2D_feature::gpu_process_all_rois(
     const std::vector<int>& Labels,
     std::unordered_map <int, LR>& RoiData,
     size_t batch_offset,
-    size_t batch_len)
+    size_t batch_len, 
+    bool wholeslide,
+    GpusideCache& devside)
 {
     for (auto i = 0; i < batch_len; i++)
     {
@@ -171,29 +173,35 @@ void Imoms2D_feature::gpu_process_all_rois(
 
         // Calculate features        
         Imoms2D_feature f;
-        f.calculate_via_gpu(r, i);
+        f.calculate_via_gpu (r, i, wholeslide, devside);
 
         //---delayed until we process all the ROIs on GPU-side--->  imf.save_value (r.fvals);
 
         // Pull the result from GPU cache and save it
-        if (!NyxusGpu::gpu_featurestatebuf.download())
+        if (!devside.gpu_featurestatebuf.download())
         {
             std::cerr << "error in " << __FILE__ << ":" << __LINE__ << "\n";
             return;
         }
 
-        save_values_from_gpu_buffer (RoiData, Labels, NyxusGpu::gpu_featurestatebuf, batch_offset, batch_len);
+        save_values_from_gpu_buffer (RoiData, Labels, devside.gpu_featurestatebuf, batch_offset, batch_len);
     }
 }
 
-void Imoms2D_feature::calculate_via_gpu(LR& r, size_t roi_idx)
+void Imoms2D_feature::calculate_via_gpu (LR& r, size_t roi_idx, bool wholeslide, GpusideCache& devside)
 {
     bool ok = NyxusGpu::GeoMoments2D_calculate(
         roi_idx, 
-        Nyxus::theEnvironment.singleROI, 
-        false);
+        wholeslide, 
+        false,
+        devside);
     if (!ok)
+    {
         std::cerr << "Geometric moments: error calculating features on GPU\n";
+#ifdef WITH_PYTHON_H
+        throw std::runtime_error ("Geometric moments: error calculating features on GPU");
+#endif	    
+    }
 }
 
 void Imoms2D_feature::save_values_from_gpu_buffer(
@@ -324,9 +332,9 @@ Smoms2D_feature::Smoms2D_feature() : FeatureMethod("Smoms2D")
     add_dependencies({ Nyxus::Feature2D::PERIMETER });
 }
 
-void Smoms2D_feature::calculate(LR& r)
+void Smoms2D_feature::calculate (LR& r, const Fsettings& s)
 {
-    BasicGeomoms2D::calculate(r, intenAsShape);
+    BasicGeomoms2D::calculate(r, s, intenAsShape);
 }
 
 void Smoms2D_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
@@ -334,19 +342,19 @@ void Smoms2D_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t inten
     BasicGeomoms2D::osized_add_online_pixel(x, y, intensity);
 }
 
-void Smoms2D_feature::osized_calculate(LR& r, ImageLoader& imloader)
+void Smoms2D_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr)
 {
-    BasicGeomoms2D::osized_calculate(r, imloader);
+    BasicGeomoms2D::osized_calculate (r, s, ldr);
 }
 
-void Smoms2D_feature::extract (LR& r)
+void Smoms2D_feature::extract (LR& r, const Fsettings& s)
 {
     Smoms2D_feature f;
-    f.calculate(r);
-    f.save_value(r.fvals);
+    f.calculate (r, s);
+    f.save_value (r.fvals);
 }
 
-void Smoms2D_feature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void Smoms2D_feature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
     for (auto i = start; i < end; i++)
     {
@@ -356,7 +364,7 @@ void Smoms2D_feature::parallel_process_1_batch(size_t start, size_t end, std::ve
         if (r.has_bad_data())
             continue;
 
-        extract (r);
+        extract (r, s);
     }
 }
 
@@ -468,7 +476,9 @@ void Smoms2D_feature::gpu_process_all_rois(
     const std::vector<int>& Labels,
     std::unordered_map <int, LR>& RoiData,
     size_t batch_offset,
-    size_t batch_len)
+    size_t batch_len,
+    bool wholeslide,
+    GpusideCache& devside)
 {
     for (auto i = 0; i < batch_len; i++)
     {
@@ -478,29 +488,35 @@ void Smoms2D_feature::gpu_process_all_rois(
 
         // Calculate features        
         Smoms2D_feature f;
-        f.calculate_via_gpu(r, i);
+        f.calculate_via_gpu (r, i, wholeslide, devside);
 
         //---delayed until we process all the ROIs on GPU-side--->  imf.save_value (r.fvals);
 
         // Pull the result from GPU cache and save it
-        if (!NyxusGpu::gpu_featurestatebuf.download())
+        if (!devside.gpu_featurestatebuf.download())
         {
             std::cerr << "error in " << __FILE__ << ":" << __LINE__ << "\n";
             return;
         }
 
-        save_values_from_gpu_buffer(RoiData, Labels, NyxusGpu::gpu_featurestatebuf, batch_offset, batch_len);
+        save_values_from_gpu_buffer(RoiData, Labels, devside.gpu_featurestatebuf, batch_offset, batch_len);
     }
 }
 
-void Smoms2D_feature::calculate_via_gpu(LR& r, size_t roi_idx)
+void Smoms2D_feature::calculate_via_gpu (LR & r, size_t roi_idx, bool wholeslide, GpusideCache & devside)
 {
     bool ok = NyxusGpu::GeoMoments2D_calculate(
         roi_idx,  
-        Nyxus::theEnvironment.singleROI,
-        true);
+        wholeslide,
+        true,
+        devside);
     if (!ok)
+    {
         std::cerr << "Geometric moments: error calculating features on GPU\n";
+#ifdef WITH_PYTHON_H
+        throw std::runtime_error("Geometric moments: error calculating features on GPU");
+#endif	    
+    }
 }
 
 void Smoms2D_feature::save_values_from_gpu_buffer(

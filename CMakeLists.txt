@@ -133,7 +133,6 @@ option(RUN_GTEST "Downloads google unit test API and runs google test scripts to
 #==== Source files
 set(SOURCE
 	src/nyx/3rdparty/dsyevj3.cpp
-	src/nyx/arrow_output_stream.cpp
 	src/nyx/features/basic_morphology.cpp
 	src/nyx/features/caliper_feret.cpp
 	src/nyx/features/caliper_martin.cpp
@@ -197,6 +196,8 @@ set(SOURCE
 	src/nyx/io/nifti/nifti2_io.cpp
 	src/nyx/io/nifti/znzlib.cpp
 	src/nyx/arrow_helpers.cpp
+	src/nyx/arrow_output_stream.cpp
+	src/nyx/cache.cpp
 	src/nyx/cli_anisotropy_options.cpp
 	src/nyx/cli_fpimage_options.cpp
 	src/nyx/cli_gabor_options.cpp
@@ -204,6 +205,7 @@ set(SOURCE
 	src/nyx/cli_gpu_options.cpp
 	src/nyx/cli_nested_roi_options.cpp
 	src/nyx/common_stats.cpp
+	src/nyx/dataset.cpp
 	src/nyx/dirs_and_files.cpp
 	src/nyx/environment.cpp
 	src/nyx/environment_basic.cpp
@@ -227,7 +229,6 @@ set(SOURCE
 	src/nyx/phase3.cpp
 	src/nyx/pixel_feed.cpp
 	src/nyx/raw_image_loader.cpp
-	src/nyx/reduce_by_feature.cpp
 	src/nyx/reduce_trivial_rois.cpp
 	src/nyx/roi_blacklist.cpp
 	src/nyx/roi_cache.cpp
@@ -347,6 +348,7 @@ if(USEGPU)
 
 	include_directories("${CUDAToolkit_INCLUDE_DIRS}")
 	set(GPU_SOURCE_FILES
+		src/nyx/gpu/cache.cu
 		src/nyx/gpu/erosion.cu
 		src/nyx/gpu/gabor.cu
 		src/nyx/gpu/gpu_helpers.cu

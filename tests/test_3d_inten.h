@@ -46,39 +46,53 @@ static std::unordered_map<std::string, float> d3inten_GT {
 		{ "3VARIANCE_BIASED",		341996 },
 };
 
+// returns intensity file path, mask file path, and ROI label
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
 void test_3inten_feature (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
 {
-    // get segment info
+	Fsettings s;
+	
+	// get segment info
     auto [ipath, mpath, label] = get_3d_segmented_phantom();
     ASSERT_TRUE(fs::exists(ipath));
     ASSERT_TRUE(fs::exists(mpath));
 
     // mock the 3D workflow
-    clear_slide_rois();
-    ASSERT_TRUE(gatherRoisMetrics_3D(ipath, mpath));
+	Environment e;
+	// (1) slide -> dataset -> prescan 
+	e.dataset.dataset_props.reserve(1);
+	SlideProps& sp = e.dataset.dataset_props.emplace_back (ipath, mpath);
+	ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	e.dataset.update_dataset_props_extrema();
+	// (2) properties of specific ROIs sitting in 'e.uniqueLabels'
+	clear_slide_rois (e.uniqueLabels, e.roiData);
+	ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/));
+	// (3) voxel clouds
     std::vector<int> batch = { label };   // expecting this roi label after metrics gathering
-    ASSERT_TRUE(scanTrivialRois_3D(batch, ipath, mpath));
-    ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch));
+    ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/));
+	// (4) buffers
+    ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
 
+	// (5) feature extraction
+	
     // make it find the feature code by name
     int fcode = -1;
-    ASSERT_TRUE(theFeatureSet.find_3D_FeatureByString(fname, fcode));
+    ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(fname, fcode));
     // ... and that it's the feature we expect
     ASSERT_TRUE((int)expecting_fcode == fcode);
 
-    // set feature's state
-    Environment::ibsi_compliance = false;
-
     // extract the feature
-    LR& r = Nyxus::roiData[label];
+    LR& r = e.roiData[label];
     ASSERT_NO_THROW(r.initialize_fvals());
 	D3_VoxelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(r));
+    ASSERT_NO_THROW(f.calculate(r, s, e.dataset));
+
+	// (6) saving values
+
     f.save_value(r.fvals);
 
-    // aggregate all the angles
+    // we don't expect subfeatures so using subfeature [0]
     double atot = r.fvals[fcode][0];
 
     // verdict

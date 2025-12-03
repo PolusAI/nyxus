@@ -26,14 +26,14 @@ void OutOfRamPixelCloud::check_io_ok() const
 		throw (std::runtime_error("ERROR in add_pixel() - file might not be open with init()"));
 }
 
-void OutOfRamPixelCloud::init (unsigned int _roi_label, std::string name)
+void OutOfRamPixelCloud::init (unsigned int _roi_label, const std::string & name)
 {
 	n_items = 0;	
 	
 	auto tid = std::this_thread::get_id();
 
 	std::stringstream ssPath;
-	ssPath << Nyxus::theEnvironment.get_temp_dir_path() << name << "_roi" << _roi_label << "_tid" << tid << ".vec.nyxus";
+	ssPath << Nyxus::get_temp_dir_path() << name << "_roi" << _roi_label << "_tid" << tid << ".vec.nyxus";
 	filepath = ssPath.str();
 	
 	errno = 0;	
@@ -99,7 +99,8 @@ WriteImageMatrix_nontriv::WriteImageMatrix_nontriv (const std::string& _name, un
 	auto tid = std::this_thread::get_id();
 
 	std::stringstream ssPath;
-	ssPath << Nyxus::theEnvironment.get_temp_dir_path() << name << "_roi" << _roi_label << "_tid" << tid << ".mat.nyxus";
+	std::string dir = Nyxus::get_temp_dir_path();
+	ssPath << dir << name << "_roi" << _roi_label << "_tid" << tid << ".mat.nyxus";
 	filepath = ssPath.str();
 
 	errno = 0;
@@ -429,7 +430,7 @@ bool ReadImageMatrix_nontriv::safe(size_t x, size_t y) const
 /// @param base_level Set {0,1}
 /// @param attenuation Value in the interval (0,1]
 Power2PaddedImageMatrix_NT::Power2PaddedImageMatrix_NT (const std::string& _name, unsigned int _roi_label, const OutOfRamPixelCloud& raw_pixels, const AABB& aabb, PixIntens base_level, double attenuation) :
-	WriteImageMatrix_nontriv(_name, _roi_label)
+	WriteImageMatrix_nontriv (_name, _roi_label)
 {
 	// Cache AABB
 	original_aabb = aabb;

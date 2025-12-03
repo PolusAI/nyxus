@@ -17,7 +17,7 @@ D3_GLRLM_feature::D3_GLRLM_feature() : FeatureMethod("D3_GLRLM_feature")
 	provide_features(D3_GLRLM_feature::featureset);
 }
 
-void D3_GLRLM_feature::calculate(LR& r)
+void D3_GLRLM_feature::calculate (LR& r, const Fsettings& s)
 {
 	//==== Clear the feature values buffers
 	clear_buffers();
@@ -29,7 +29,7 @@ void D3_GLRLM_feature::calculate(LR& r)
 	if (minI == maxI)
 	{
 		// insert a non-NAN value for all 4 angles to make the output expecting 4-angled values happy
-		auto w = theEnvironment.resultOptions.noval();	// safe NAN
+		double w = STNGS_NAN(s);
 		angled_SRE.resize(4, w);
 		angled_LRE.resize(4, w);
 		angled_GLN.resize(4, w);
@@ -78,11 +78,11 @@ void D3_GLRLM_feature::calculate(LR& r)
 		D.allocate (w, h, d);
 
 		// Squeeze the intensity range
-		auto greyInfo = theEnvironment.get_coarse_gray_depth();
+		auto greyInfo = STNGS_NGREYS(s); // former theEnvironment.get_coarse_gray_depth()
 		auto greyInfo_localFeature = D3_GLRLM_feature::n_levels;
 		if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
 			greyInfo = greyInfo_localFeature;
-		if (Nyxus::theEnvironment.ibsi_compliance)
+		if (STNGS_IBSI(s))		// former Nyxus::theEnvironment.ibsi_compliance
 			greyInfo = 0;
 
 		bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo);
@@ -264,7 +264,7 @@ void D3_GLRLM_feature::calculate(LR& r)
 
 		//==== Create a zone matrix
 
-		int Ng = Environment::ibsi_compliance ? *std::max_element(I.begin(), I.end()) : I.size();
+		int Ng = STNGS_IBSI(s) ? *std::max_element(I.begin(), I.end()) : I.size();
 		int Nr = maxZoneArea;
 		int Nz = (int)Z.size();
 		int Np = count;
@@ -279,7 +279,7 @@ void D3_GLRLM_feature::calculate(LR& r)
 			auto inten = z.first;
 			// row (grey level)
 			int row = -1;
-			if (Environment::ibsi_compliance)
+			if (STNGS_IBSI(s))
 				row = inten - 1;
 			else
 			{
@@ -927,7 +927,7 @@ void D3_GLRLM_feature::calc_LRHGLE(AngledFtrs& af)
 	}
 }
 
-void D3_GLRLM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void D3_GLRLM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -935,16 +935,16 @@ void D3_GLRLM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLa
 		LR& r = (*ptrLabelData)[lab];
 
 		D3_GLRLM_feature glrlm;
-		glrlm.calculate(r);
-		glrlm.save_value(r.fvals);
+		glrlm.calculate (r, s);
+		glrlm.save_value (r.fvals);
 	}
 }
 
-/*static*/ void D3_GLRLM_feature::extract (LR& r)
+/*static*/ void D3_GLRLM_feature::extract (LR& r, const Fsettings& s)
 {
 	D3_GLRLM_feature f;
-	f.calculate(r);
-	f.save_value(r.fvals);
+	f.calculate (r, s);
+	f.save_value (r.fvals);
 }
 
 // 'afv' is angled feature values

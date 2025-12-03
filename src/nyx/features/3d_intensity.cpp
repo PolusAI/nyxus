@@ -1,5 +1,5 @@
+#include <cassert>
 #include "../environment.h"
-#include "../parallel.h"
 #include "histogram.h"
 #include "3d_intensity.h"
 #include "pixel.h"
@@ -16,7 +16,7 @@ D3_VoxelIntensityFeatures::D3_VoxelIntensityFeatures() : FeatureMethod("PixelInt
 	provide_features ({D3_VoxelIntensityFeatures::featureset});
 }
 
-void D3_VoxelIntensityFeatures::calculate(LR& r)
+void D3_VoxelIntensityFeatures::calculate (LR& r, const Fsettings& s, const Dataset & ds)
 {
 	// --MIN, MAX
 	val_MIN = r.aux_min;
@@ -26,7 +26,7 @@ void D3_VoxelIntensityFeatures::calculate(LR& r)
 	// --COVERED_IMAGE_INTENSITY_RANGE
 	if (r.slide_idx >= 0)
 	{
-		const SlideProps& p = LR::dataset_props[r.slide_idx];
+		const SlideProps& p = ds.dataset_props [r.slide_idx];
 		double sir = (p.max_preroi_inten - p.min_preroi_inten); // slide intensity range
 		val_COVERED_IMAGE_INTENSITY_RANGE = double(r.aux_max - r.aux_min) / sir;
 	}
@@ -140,7 +140,7 @@ void D3_VoxelIntensityFeatures::calculate(LR& r)
 void D3_VoxelIntensityFeatures::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
 {}
 
-void D3_VoxelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
+void D3_VoxelIntensityFeatures::osized_calculate (LR & r, const Fsettings & s, const Dataset & ds, ImageLoader & ldr)
 {
 	// --MIN, MAX
 	val_MIN = r.aux_min;
@@ -150,7 +150,7 @@ void D3_VoxelIntensityFeatures::osized_calculate(LR& r, ImageLoader& imloader)
 	// --COVERED_IMAGE_INTENSITY_RANGE
 	if (r.slide_idx >= 0)
 	{
-		const SlideProps& p = LR::dataset_props[r.slide_idx];
+		const SlideProps& p = ds.dataset_props [r.slide_idx];
 		double sir = (p.max_preroi_inten - p.min_preroi_inten); // slide intensity range
 		val_COVERED_IMAGE_INTENSITY_RANGE = (r.aux_max - r.aux_min) / sir;
 	}
@@ -297,50 +297,22 @@ void D3_VoxelIntensityFeatures::save_value(std::vector<std::vector<double>>& fva
 	fvals[(int)Feature3D::VARIANCE_BIASED][0] = val_VARIANCE_BIASED;
 }
 
-void D3_VoxelIntensityFeatures::parallel_process(std::vector<int>& roi_labels, std::unordered_map <int, LR>& roiData, int n_threads)
-{
-	size_t jobSize = roi_labels.size(),
-		workPerThread = jobSize / n_threads;
-
-	runParallel(D3_VoxelIntensityFeatures::parallel_process_1_batch, n_threads, workPerThread, jobSize, &roi_labels, &roiData);
-}
-
-void D3_VoxelIntensityFeatures::parallel_process_1_batch(size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
-{
-	// Calculate the feature for each batch ROI item 
-	for (auto i = firstitem; i < lastitem; i++)
-	{
-		// Get ahold of ROI's label and cache
-		int roiLabel = (*ptrLabels)[i];
-		LR& r = (*ptrLabelData)[roiLabel];
-
-		// Skip the ROI if its data is invalid to prevent nans and infs in the output
-		if (r.has_bad_data())
-			continue;
-
-		// Calculate the feature and save it in ROI's csv-friendly buffer 'fvals'
-		D3_VoxelIntensityFeatures f;
-		f.calculate(r);
-		f.save_value(r.fvals);
-	}
-}
-
-void D3_VoxelIntensityFeatures::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void D3_VoxelIntensityFeatures::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 		D3_VoxelIntensityFeatures f;
-		f.calculate(r);
-		f.save_value(r.fvals);
+		f.calculate (r, s, ds);
+		f.save_value (r.fvals);
 	}
 }
 
-/*static*/ void D3_VoxelIntensityFeatures::extract(LR& r)
+/*static*/ void D3_VoxelIntensityFeatures::extract (LR& r, const Fsettings& s)
 {
 	D3_VoxelIntensityFeatures f;
-	f.calculate (r);
+	f.calculate (r, s);
 	f.save_value (r.fvals);
 }
 

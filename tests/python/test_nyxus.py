@@ -96,13 +96,13 @@ class TestNyxus():
         def test_gabor_gpu(self):
             # cpu gabor
             cpu_nyx = nyxus.Nyxus(["GABOR"])
-            if (nyxus.gpu_is_available()):
+            if (nyxus.gpu_is_available(id(cpu_nyx))):
                 cpu_nyx.using_gpu(False)
             cpu_features = cpu_nyx.featurize(intens, seg)
             
             assert cpu_nyx.error_message == ''
 
-            if (nyxus.gpu_is_available()):
+            if (nyxus.gpu_is_available(id(cpu_nyx))):
                 # gpu gabor
                 gpu_nyx = nyxus.Nyxus(["GABOR"], using_gpu=0)
                 gpu_nyx.using_gpu(True)
@@ -349,7 +349,8 @@ class TestNyxus():
 
             mean_values = means.tolist()
 
-            mean_values.pop(0)
+            mean_values.pop(0) # get rid of leftmost ROI label column
+            mean_values.pop(0) # get rid of leftmost time column
 
             averaged_results = []
 

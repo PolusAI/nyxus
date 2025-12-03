@@ -1,21 +1,17 @@
-#include <iostream>
-
 #define NOMINMAX
-
-#include "environment.h"
+#include <iostream>
+#include "nyxus_dicom_loader.h"
 #include "image_loader.h"
 #include "grayscale_tiff.h"
 #include "raw_tiff.h"
 #include "omezarr.h"
-#include "nyxus_dicom_loader.h"
 #include "dirs_and_files.h"
 #include "helpers/fsystem.h"
 #include "raw_nifti.h"
 
-
 ImageLoader::ImageLoader() {}
 
-bool ImageLoader::open (SlideProps & p)	
+bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 {
 	int n_threads = 1;
 
@@ -23,6 +19,7 @@ bool ImageLoader::open (SlideProps & p)
 		& seg_fpath = p.fname_seg;
 
 	// intensity image
+  
 	try 
 	{
 		std::string ext = Nyxus::get_big_extension (int_fpath);
@@ -64,10 +61,10 @@ bool ImageLoader::open (SlideProps & p)
 					// automatic or overriden FP dynamic range
 					double fpmin = p.min_preroi_inten,
 						fpmax = p.max_preroi_inten;
-					if (!Nyxus::theEnvironment.fpimageOptions.empty())
+					if (! fpopts.empty())
 					{
-						fpmin = Nyxus::theEnvironment.fpimageOptions.min_intensity();
-						fpmax = Nyxus::theEnvironment.fpimageOptions.max_intensity();
+						fpmin = fpopts.min_intensity();
+						fpmax = fpopts.max_intensity();
 					}
 
 					if (Nyxus::check_tile_status(int_fpath))
@@ -78,7 +75,7 @@ bool ImageLoader::open (SlideProps & p)
 							true,
 							fpmin,
 							fpmax,
-							Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
+							fpopts.target_dyn_range());
 					} 
 					else 
 					{
@@ -96,14 +93,17 @@ bool ImageLoader::open (SlideProps & p)
 		return false;
 
 	// Intensity slide
-	th = intFL->tileHeight(lvl);
-	tw = intFL->tileWidth(lvl);
-	td = intFL->tileDepth(lvl);
-	tileSize = th * tw * td;
+	th = intFL->tileHeight (lvl);
+	tw = intFL->tileWidth (lvl);
+	td = intFL->tileDepth (lvl);
+	tt = intFL->tileTimestamps (lvl);
 
-	fh = intFL->fullHeight(lvl);
-	fw = intFL->fullWidth(lvl);
-	fd = intFL->fullDepth(lvl);
+	tileSize = th * tw * td * tt;
+
+	fh = intFL->fullHeight (lvl);
+	fw = intFL->fullWidth (lvl);
+	fd = intFL->fullDepth (lvl);
+	ft = intFL->fullTimestamps (lvl);
 
 	ntw = intFL->numberTileWidth(lvl);
 	nth = intFL->numberTileHeight(lvl);
@@ -155,7 +155,7 @@ bool ImageLoader::open (SlideProps & p)
 							false,
 							0.0, // dummy min
 							1.0, // dummy max
-							Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
+							fpopts.target_dyn_range());
 					} 
 					else 
 					{
@@ -317,4 +317,17 @@ size_t ImageLoader::get_full_height()
 size_t ImageLoader::get_full_depth()
 {
 	return fd;
+}
+
+size_t ImageLoader::get_inten_time()
+{
+	return intFL->fullTimestamps(0);
+}
+
+size_t ImageLoader::get_mask_time()
+{
+	if (segFL)
+		return segFL->fullTimestamps(0);	// masked mode
+	else
+		return 0;	// whole-slide mode
 }

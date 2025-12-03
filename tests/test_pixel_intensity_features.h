@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include "../src/nyx/dataset.h"
 #include "../src/nyx/roi_cache.h"
-#include "../src/nyx/parallel.h"
 #include "../src/nyx/features/intensity.h"
 #include "../src/nyx/features/pixel.h"
 #include "test_data.h"
@@ -16,8 +16,11 @@ using namespace Nyxus;
 void test_pixel_intensity_integrated_intensity()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back (SlideProps("",""));
+
     LR roidata (100);   // dummy label 100
-    roidata.slide_idx = -1; // we don't have a real slide for this test ROI
+    roidata.slide_idx = 0; // just 1 slide that we've just added to 'ds.dataset_props'
     load_test_roi_data (roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData)/sizeof(NyxusPixel));
 
     // Anisotropy (none)
@@ -25,7 +28,8 @@ void test_pixel_intensity_integrated_intensity()
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -38,6 +42,9 @@ void test_pixel_intensity_integrated_intensity()
 void test_pixel_intensity_min_max_range()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
@@ -47,7 +54,8 @@ void test_pixel_intensity_min_max_range()
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -62,6 +70,9 @@ void test_pixel_intensity_min_max_range()
 void test_pixel_intensity_mean()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
@@ -71,7 +82,8 @@ void test_pixel_intensity_mean()
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -84,6 +96,9 @@ void test_pixel_intensity_mean()
 void test_pixel_intensity_median()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
@@ -93,7 +108,8 @@ void test_pixel_intensity_median()
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -106,6 +122,9 @@ void test_pixel_intensity_median()
 void test_pixel_intensity_mode()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
@@ -115,7 +134,8 @@ void test_pixel_intensity_mode()
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -128,6 +148,9 @@ void test_pixel_intensity_mode()
 void test_pixel_intensity_standard_deviation()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
@@ -137,7 +160,8 @@ void test_pixel_intensity_standard_deviation()
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -150,6 +174,9 @@ void test_pixel_intensity_standard_deviation()
 void test_pixel_intensity_skewness()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
@@ -159,7 +186,8 @@ void test_pixel_intensity_skewness()
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -172,6 +200,9 @@ void test_pixel_intensity_skewness()
 void test_pixel_intensity_kurtosis()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
@@ -181,7 +212,8 @@ void test_pixel_intensity_kurtosis()
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -194,6 +226,9 @@ void test_pixel_intensity_kurtosis()
 void test_pixel_intensity_hyperskewness()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
@@ -203,7 +238,8 @@ void test_pixel_intensity_hyperskewness()
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -216,6 +252,9 @@ void test_pixel_intensity_hyperskewness()
 void test_pixel_intensity_hyperflatness()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
@@ -225,7 +264,8 @@ void test_pixel_intensity_hyperflatness()
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -238,6 +278,9 @@ void test_pixel_intensity_hyperflatness()
 void test_pixel_intensity_mean_absolute_deviation()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
@@ -247,7 +290,8 @@ void test_pixel_intensity_mean_absolute_deviation()
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -260,6 +304,9 @@ void test_pixel_intensity_mean_absolute_deviation()
 void test_pixel_intensity_robust_mean_absolute_deviation()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
@@ -269,7 +316,8 @@ void test_pixel_intensity_robust_mean_absolute_deviation()
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -282,6 +330,9 @@ void test_pixel_intensity_robust_mean_absolute_deviation()
 void test_pixel_intensity_standard_error()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
@@ -291,7 +342,8 @@ void test_pixel_intensity_standard_error()
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -304,6 +356,9 @@ void test_pixel_intensity_standard_error()
 void test_pixel_intensity_root_mean_squared()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
@@ -313,7 +368,8 @@ void test_pixel_intensity_root_mean_squared()
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -326,6 +382,9 @@ void test_pixel_intensity_root_mean_squared()
 void test_pixel_intensity_entropy()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
@@ -335,7 +394,8 @@ void test_pixel_intensity_entropy()
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -348,6 +408,9 @@ void test_pixel_intensity_entropy()
 void test_pixel_intensity_energy()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
@@ -357,7 +420,8 @@ void test_pixel_intensity_energy()
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -370,6 +434,9 @@ void test_pixel_intensity_energy()
 void test_pixel_intensity_uniformity()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
@@ -379,7 +446,8 @@ void test_pixel_intensity_uniformity()
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -392,13 +460,17 @@ void test_pixel_intensity_uniformity()
 void test_pixel_intensity_uniformity_piu()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();
@@ -411,13 +483,17 @@ void test_pixel_intensity_uniformity_piu()
 void test_pixel_intensity_percentiles_iqr()
 {
     // Feed data to the ROI
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("",""));
+
     LR roidata(100);   // dummy label 100
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
     // Calculate features
     PixelIntensityFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata));
+    Fsettings s;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
     roidata.initialize_fvals();

@@ -25,10 +25,10 @@ namespace Nyxus
 #define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),(mode)))==NULL
 #endif
 
-	double auto_precision(std::stringstream& ss, double x)
+	double auto_precision (Environment & env, std::stringstream& ss, double x)
 	{
 		if (std::abs(x) >= 1.0)
-			ss << std::setprecision(theEnvironment.get_floating_point_precision());
+			ss << std::setprecision (env.get_floating_point_precision());
 		else
 			if (x == 0.0)
 				ss << std::setprecision(1);
@@ -42,14 +42,17 @@ namespace Nyxus
 					tmp4 = tmp3 + 0.5;
 				int n = int(tmp4);
 
-				ss << std::setprecision(theEnvironment.get_floating_point_precision() + n);
+				ss << std::setprecision (env.get_floating_point_precision() + n);
 			}
 
 		return x;
 	}
 
-	std::vector<std::string> get_header(const std::vector<std::tuple<std::string, int>>& F) 
+	std::vector<std::string> get_header (Environment & env) 
 	{
+		// user's feature selection
+		std::vector<std::tuple<std::string, int>> F = env.theFeatureSet.getEnabledFeatures();
+
 		std::stringstream ssHead;
 
 		std::vector<std::string> head;
@@ -60,9 +63,9 @@ namespace Nyxus
 		head.push_back (Nyxus::colname_mask_image);
 
 		// Annotation columns
-		if (theEnvironment.resultOptions.need_annotation())
+		if (env.resultOptions.need_annotation())
 		{
-			auto slp = LR::dataset_props[0];
+			auto slp = env.dataset.dataset_props[0];
 			for (auto i = 0; i < slp.annots.size(); i++)
 			{
 				std::string colnm = "anno" + std::to_string(i);
@@ -72,6 +75,9 @@ namespace Nyxus
 
 		// ROI label
 		head.push_back (Nyxus::colname_roi_label);
+
+		// time
+		head.push_back (Nyxus::colname_t_index);
 
 		// Optional columns
 		for (auto& enabdF : F)
@@ -94,10 +100,10 @@ namespace Nyxus
 			if (glcmFeature && nonAngledGlcmFeature == false)
 			{
 				// Populate with angles
-				for (auto ang : theEnvironment.glcmOptions.glcmAngles)
+				for (auto ang : env.glcmOptions.glcmAngles)
 				{
 					// CSV separator
-					//if (ang != theEnvironment.rotAngles[0])
+					//if (ang != env.rotAngles[0])
 					//	ssHead << ",";
 					head.emplace_back(fn + "_" + std::to_string(ang));
 				}
@@ -178,34 +184,25 @@ namespace Nyxus
 		return head;
 	}
 
-	std::string get_feature_output_fname(const std::string& intFpath, const std::string& segFpath)
+	std::string get_feature_output_fname (Environment& env, const std::string& intFpath, const std::string& segFpath)
 	{
 		std::string retval;
-		if (theEnvironment.separateCsv)
-		{
-			retval = theEnvironment.output_dir + "/_INT_" + getPureFname(intFpath) + "_SEG_" + getPureFname(segFpath) + ".csv";
-		}
+		if (env.separateCsv)
+			retval = env.output_dir + "/_INT_" + getPureFname(intFpath) + "_SEG_" + getPureFname(segFpath) + ".csv";
 		else
-		{
-			retval = theEnvironment.output_dir + "/" + theEnvironment.nyxus_result_fname + ".csv";
-		}
+			retval = env.output_dir + "/" + env.nyxus_result_fname + ".csv";
 		return retval;
 	}
-
-	const std::vector<std::string> mandatory_output_columns
-	{
-		Nyxus::colname_intensity_image, 
-		Nyxus::colname_mask_image, 
-		Nyxus::colname_roi_label 
-	};
 
 	static std::mutex mutex1;
 
 	bool save_features_2_csv_wholeslide (
+		Environment & env,
 		const LR & r, 
 		const std::string & ifpath, 
 		const std::string & mfpath, 
-		const std::string & outdir)
+		const std::string & outdir,
+		size_t t_index)
 	{
 		std::lock_guard<std::mutex> lg (mutex1); // Lock the mutex
 
@@ -217,31 +214,31 @@ namespace Nyxus
 		static bool mustRenderHeader = true;	// In 'singlecsv' scenario this flag flips from 'T' to 'F' when necessary (after the header is rendered)
 
 		// Make the file name and write mode
-		std::string fullPath = get_feature_output_fname (ifpath, mfpath);
-		VERBOSLVL2(std::cout << "\t--> " << fullPath << "\n");
+		std::string fullPath = get_feature_output_fname (env, ifpath, mfpath);
+		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\t--> " << fullPath << "\n");
 
 		// Single CSV: create or continue?
 		const char* mode = "w";
-		if (!theEnvironment.separateCsv)
+		if (!env.separateCsv)
 			mode = mustRenderHeader ? "w" : "a";
 
 		// Open it
 		FILE* fp = nullptr;
-		fopen_s(&fp, fullPath.c_str(), mode);
+		auto /*assuming errno_t*/ eno = fopen_s(&fp, fullPath.c_str(), mode);
 
 		if (!fp)
 		{
-			std::string errmsg = "Cannot open file " + fullPath + " for writing";
-			std::perror(errmsg.c_str());
+			std::string errmsg = "Cannot open file " + fullPath + " for writing. Errno=" + std::to_string(eno);
+			std::cerr << errmsg << "\n";
 			return false;
 		}
 
 		// configure buffered write
 		if (std::setvbuf(fp, nullptr, _IOFBF, 32768) != 0) 
-			std::perror("setvbuf failed");
+			std::cerr << "setvbuf failed \n";
 
 		// Learn what features need to be displayed
-		std::vector<std::tuple<std::string, int>> F = theFeatureSet.getEnabledFeatures();
+		std::vector<std::tuple<std::string, int>> F = env.theFeatureSet.getEnabledFeatures();
 
 		// ********** Header
 
@@ -249,7 +246,7 @@ namespace Nyxus
 		{
 			std::stringstream ssHead;
 
-			auto head_vector = Nyxus::get_header(F);
+			auto head_vector = Nyxus::get_header (env);
 
 			// Make sure that the header is in format "column1","column2",...,"columnN" without spaces
 			for (int i = 0; i < head_vector.size(); i++)
@@ -264,7 +261,7 @@ namespace Nyxus
 			fprintf(fp, "%s\n", head_string.c_str());
 
 			// Prevent rendering the header again for another image's portion of labels
-			if (theEnvironment.separateCsv == false)
+			if (env.separateCsv == false)
 				mustRenderHeader = false;
 		}
 
@@ -278,7 +275,10 @@ namespace Nyxus
 			ssVals << std::fixed;
 
 			// slide info
-			ssVals << ifpath << "," << mfpath << "," << r.label;
+			ssVals << ifpath << "," << mfpath;
+			
+			// ROI and time
+			ssVals << "," << r.label << "," << t_index;
 
 			// features
 			for (auto& enabdF : F)
@@ -300,7 +300,7 @@ namespace Nyxus
 					int nAng = (int)GLCMFeature::angles.size();
 					for (int i = 0; i < nAng; i++)
 					{
-						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval());	// safe feature value (no NAN, no inf)
+						double fv = Nyxus::force_finite_number(vv[i], env.resultOptions.noval());	// safe feature value (no NAN, no inf)
 						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 						ssVals << "," << rvbuf;
 					}
@@ -317,7 +317,7 @@ namespace Nyxus
 					int nAng = 4;
 					for (int i = 0; i < nAng; i++)
 					{
-						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval());	// safe feature value (no NAN, no inf)
+						double fv = Nyxus::force_finite_number(vv[i], env.resultOptions.noval());	// safe feature value (no NAN, no inf)
 						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 						ssVals << "," << rvbuf;
 					}
@@ -330,7 +330,7 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
 					{
-						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval());	// safe feature value (no NAN, no inf)
+						double fv = Nyxus::force_finite_number(vv[i], env.resultOptions.noval());	// safe feature value (no NAN, no inf)
 						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 						ssVals << "," << rvbuf;
 					}
@@ -344,7 +344,7 @@ namespace Nyxus
 				{
 					for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
 					{
-						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval());	// safe feature value (no NAN, no inf)
+						double fv = Nyxus::force_finite_number(vv[i], env.resultOptions.noval());	// safe feature value (no NAN, no inf)
 						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 						ssVals << "," << rvbuf;
 					}
@@ -358,7 +358,7 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
 					{
-						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval());	// safe feature value (no NAN, no inf)
+						double fv = Nyxus::force_finite_number(vv[i], env.resultOptions.noval());	// safe feature value (no NAN, no inf)
 						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 						ssVals << "," << rvbuf;
 					}
@@ -369,7 +369,7 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
 					{
-						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval());	// safe feature value (no NAN, no inf)
+						double fv = Nyxus::force_finite_number(vv[i], env.resultOptions.noval());	// safe feature value (no NAN, no inf)
 						snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 						ssVals << "," << rvbuf;
 					}
@@ -380,7 +380,7 @@ namespace Nyxus
 				{
 					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
 					{
-						double fv = Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval());	// safe feature value (no NAN, no inf)
+						double fv = Nyxus::force_finite_number(vv[i], env.resultOptions.noval());	// safe feature value (no NAN, no inf)
 						snprintf (rvbuf, VAL_BUF_LEN, rvfmt, fv);
 						ssVals << "," << rvbuf;
 					}
@@ -389,7 +389,7 @@ namespace Nyxus
 				}
 
 				// Regular feature
-				snprintf (rvbuf, VAL_BUF_LEN, rvfmt, Nyxus::force_finite_number(vv[0], theEnvironment.resultOptions.noval()));
+				snprintf (rvbuf, VAL_BUF_LEN, rvfmt, Nyxus::force_finite_number(vv[0], env.resultOptions.noval()));
 				ssVals << "," << rvbuf; // Alternatively: auto_precision(ssVals, vv[0]);
 			}
 
@@ -404,9 +404,11 @@ namespace Nyxus
 
 	// Saves the result of image scanning and feature calculation. Must be called after the reduction phase.
 	bool save_features_2_csv (
+		Environment & env,
 		const std::string& intFpath, 
 		const std::string& segFpath, 
 		const std::string& outputDir,
+		size_t t_index,
 		bool need_aggregation)
 	{
 		// Non-exotic formatting for compatibility with the buffer output (Python API, Apache)
@@ -415,46 +417,46 @@ namespace Nyxus
 		const char rvfmt[] = "%g"; // instead of "%20.12f" which produces a too massive output
 
 		// Sort the labels
-		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
+		std::vector<int> L{ env.uniqueLabels.begin(), env.uniqueLabels.end() };
 		std::sort(L.begin(), L.end());
 
 		static bool mustRenderHeader = true;	// In 'singlecsv' scenario this flag flips from 'T' to 'F' when necessary (after the header is rendered)
 
 		// Make the file name and write mode
-		std::string fullPath = get_feature_output_fname(intFpath, segFpath);
-		VERBOSLVL2(std::cout << "\t--> " << fullPath << "\n");
+		std::string fullPath = get_feature_output_fname (env, intFpath, segFpath);
+		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\t--> " << fullPath << "\n");
 
 		// Single CSV: create or continue?
 		const char* mode = "w";
-		if (!theEnvironment.separateCsv)
+		if (!env.separateCsv)
 			mode = mustRenderHeader ? "w" : "a";
 
 		// Open it
 		FILE* fp = nullptr;
-		fopen_s(&fp, fullPath.c_str(), mode);
+		auto /*assuming errno_t*/ eno = fopen_s (&fp, fullPath.c_str(), mode);
 
 		if (!fp)
 		{
-			std::string errmsg = "Cannot open file " + fullPath + " for writing";
-			std::perror(errmsg.c_str());
+			std::string errmsg = "Cannot open file " + fullPath + " for writing. Errno=" + std::to_string(eno);
+			std::cerr << errmsg << "\n";
 			return false;
 		}
 
 		// -- Configure buffered write
 		if (std::setvbuf(fp, nullptr, _IOFBF, 32768) != 0) {
-			std::perror("setvbuf failed");
+			std::cerr << "setvbuf failed \n";
 			return false;
 		}
 
 		// Learn what features need to be displayed
-		std::vector<std::tuple<std::string, int>> F = theFeatureSet.getEnabledFeatures();
+		std::vector<std::tuple<std::string, int>> F = env.theFeatureSet.getEnabledFeatures();
 
 		// -- Header
 		if (mustRenderHeader)
 		{
 			std::stringstream ssHead;
 
-			auto head_vector = Nyxus::get_header(F);
+			auto head_vector = Nyxus::get_header (env);
 
 			// Make sure that the header is in format "column1","column2",...,"columnN" without spaces
 			for (int i = 0; i < head_vector.size(); i++)
@@ -469,18 +471,18 @@ namespace Nyxus
 			fprintf(fp, "%s\n", head_string.c_str());
 
 			// Prevent rendering the header again for another image's portion of labels
-			if (theEnvironment.separateCsv == false)
+			if (env.separateCsv == false)
 				mustRenderHeader = false;
 		}
 
 		if (need_aggregation)
 		{
-			auto allres = Nyxus::get_feature_values();	// shape: td::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>
+			auto allres = Nyxus::get_feature_values (env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset);	// shape: td::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>
 			if (allres.size())
 			{
 				// aggregate
 				const auto& tup0 = allres[0];
-				const auto& v0 = std::get<2>(tup0);
+				const auto& v0 = std::get<3>(tup0);
 				auto n_feats = v0.size();
 
 				std::vector<double> a (n_feats);
@@ -492,7 +494,7 @@ namespace Nyxus
 					// we ned to add Skipping blacklisted ROI 
 					// ...
 
-					const auto& v = std::get<2>(tup);
+					const auto& v = std::get<3>(tup);
 					for (size_t i = 0; i < n_feats; i++)
 					{
 						double x = v[i],
@@ -500,7 +502,7 @@ namespace Nyxus
 						
 						// handle likely NAN
 						if (ai != ai)
-							ai = theEnvironment.resultOptions.noval();
+							ai = env.resultOptions.noval();
 
 						a[i] += ai;
 					}
@@ -513,8 +515,8 @@ namespace Nyxus
 				ssVals << fnames[0] << "," << fnames[1];
 				// ... annotation info
 				auto lab0 = std::get<1>(tup0);	// annotation info is per slide, so OK to grab it from the 1st ROI
-				LR& r0 = roiData [lab0];
-				auto slp = LR::dataset_props [r0.slide_idx];
+				LR& r0 = env.roiData [lab0];
+				auto slp = env.dataset.dataset_props [r0.slide_idx];
 				for (const auto& a : slp.annots)
 					ssVals << "," << a;
 				// ... ROI id
@@ -530,7 +532,7 @@ namespace Nyxus
 			// -- Values
 			for (auto l : L)
 			{
-				LR& r = roiData[l];
+				LR& r = env.roiData[l];
 
 				// Skip blacklisted ROI
 				if (r.blacklisted)
@@ -542,19 +544,20 @@ namespace Nyxus
 				ssVals << std::fixed;
 
 				// Tear off pure file names from segment and intensity file paths
-				fs::path pseg(r.segFname), pint(r.intFname);
+				const SlideProps& sli = env.dataset.dataset_props [r.slide_idx];
+				fs::path pseg (sli.fname_seg), 
+					pint (sli.fname_int);
 				ssVals << pint.filename() << "," << pseg.filename();
 
 				// annotation
-				if (theEnvironment.resultOptions.need_annotation())
+				if (env.resultOptions.need_annotation())
 				{
-					auto slp = LR::dataset_props [r.slide_idx];
-					for (const auto & a: slp.annots)
+					for (const auto & a: sli.annots)
 						ssVals << "," << a;
 				}
 
-				// ROI label
-				ssVals << "," << l;
+				// ROI label and time
+				ssVals << "," << l << "," << t_index;
 
 				for (auto& enabdF : F)
 				{
@@ -575,7 +578,7 @@ namespace Nyxus
 						int nAng = (int) GLCMFeature::angles.size();
 						for (int i = 0; i < nAng; i++)
 						{
-							double fv = Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval());	// safe feature value (no NAN, no inf)
+							double fv = Nyxus::force_finite_number(vv[i], env.resultOptions.noval());	// safe feature value (no NAN, no inf)
 							snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 	#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
@@ -597,7 +600,7 @@ namespace Nyxus
 						int nAng = 4;
 						for (int i = 0; i < nAng; i++)
 						{
-							double fv = Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval());	// safe feature value (no NAN, no inf)
+							double fv = Nyxus::force_finite_number(vv[i], env.resultOptions.noval());	// safe feature value (no NAN, no inf)
 							snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 	#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
@@ -615,7 +618,7 @@ namespace Nyxus
 					{
 						for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
 						{
-							double fv = Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval());	// safe feature value (no NAN, no inf)
+							double fv = Nyxus::force_finite_number(vv[i], env.resultOptions.noval());	// safe feature value (no NAN, no inf)
 							snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 	#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
@@ -634,7 +637,7 @@ namespace Nyxus
 					{
 						for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
 						{
-							double fv = Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval());	// safe feature value (no NAN, no inf)
+							double fv = Nyxus::force_finite_number(vv[i], env.resultOptions.noval());	// safe feature value (no NAN, no inf)
 							snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 	#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
@@ -653,7 +656,7 @@ namespace Nyxus
 					{
 						for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
 						{
-							double fv = Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval());	// safe feature value (no NAN, no inf)
+							double fv = Nyxus::force_finite_number(vv[i], env.resultOptions.noval());	// safe feature value (no NAN, no inf)
 							snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 	#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
@@ -669,7 +672,7 @@ namespace Nyxus
 					{
 						for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
 						{
-							double fv = Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval());	// safe feature value (no NAN, no inf)
+							double fv = Nyxus::force_finite_number(vv[i], env.resultOptions.noval());	// safe feature value (no NAN, no inf)
 							snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 	#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
@@ -685,7 +688,7 @@ namespace Nyxus
 					{
 						for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
 						{
-							double fv = Nyxus::force_finite_number(vv[i], theEnvironment.resultOptions.noval());	// safe feature value (no NAN, no inf)
+							double fv = Nyxus::force_finite_number(vv[i], env.resultOptions.noval());	// safe feature value (no NAN, no inf)
 							snprintf(rvbuf, VAL_BUF_LEN, rvfmt, fv);
 	#ifndef DIAGNOSE_NYXUS_OUTPUT
 							ssVals << "," << rvbuf;
@@ -699,7 +702,7 @@ namespace Nyxus
 					}
 
 					// Regular feature
-					snprintf(rvbuf, VAL_BUF_LEN, rvfmt, Nyxus::force_finite_number(vv[0], theEnvironment.resultOptions.noval()));
+					snprintf(rvbuf, VAL_BUF_LEN, rvfmt, Nyxus::force_finite_number(vv[0], env.resultOptions.noval()));
 	#ifndef DIAGNOSE_NYXUS_OUTPUT
 					ssVals << "," << rvbuf; // Alternatively: auto_precision(ssVals, vv[0]);
 	#else
@@ -718,15 +721,16 @@ namespace Nyxus
 		return true;
 	}
 
-	std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> get_feature_values_roi (
-		const LR& r,
-		const std::string& ifpath,
-		const std::string& mfpath)
+	std::vector<FTABLE_RECORD> get_feature_values_roi (
+		const FeatureSet & fset,
+		const LR & r,
+		const std::string & ifpath,
+		const std::string & mfpath)
 	{
-		std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> features;
+		std::vector<FTABLE_RECORD> features;
 
 		// user's feature selection
-		std::vector<std::tuple<std::string, int>> F = theFeatureSet.getEnabledFeatures();
+		std::vector<std::tuple<std::string, int>> F = fset.getEnabledFeatures();
 
 		// numeric columns
 		std::vector<double> fvals;
@@ -832,26 +836,30 @@ namespace Nyxus
 		textcols.push_back ("");
 		int roilabl = r.label; // whole-slide roi #
 
-		features.push_back (std::make_tuple(textcols, roilabl, fvals));
+		features.push_back (std::make_tuple(textcols, roilabl, -999.88, fvals));
 
 		return features;
 	}
 
-	std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> get_feature_values() 
+	std::vector<FTABLE_RECORD> get_feature_values (
+		const FeatureSet & fset, 
+		const Uniqueids & uniqueLabels, 
+		const Roidata & roiData,
+		const Dataset & dataset)
 	{
-		std::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>> features;
+		std::vector<FTABLE_RECORD> features;
 
 		// Sort the labels
 		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };
 		std::sort(L.begin(), L.end());
 
 		// Learn what features need to be displayed
-		std::vector<std::tuple<std::string, int>> F = theFeatureSet.getEnabledFeatures();
+		std::vector<std::tuple<std::string, int>> F = fset.getEnabledFeatures();
 
 		// -- Values
-		for (auto l : L)
+		for (const auto l : L)
 		{
-			LR& r = roiData[l];
+			const LR& r = roiData.at (l);
 
 			std::vector<double> feature_values;
 
@@ -860,7 +868,9 @@ namespace Nyxus
 				continue;
 
 			// Tear off pure file names from segment and intensity file paths
-			fs::path pseg(r.segFname), pint(r.intFname);
+			const SlideProps& sli = dataset.dataset_props [r.slide_idx];
+			fs::path pseg (sli.fname_seg), 
+				pint (sli.fname_int);
 			std::vector<std::string> filenames;
 			filenames.push_back(pint.filename().u8string());
 			filenames.push_back(pseg.filename().u8string());
@@ -960,7 +970,7 @@ namespace Nyxus
 				feature_values.push_back(vv[0]);
 			}
 
-			features.push_back(std::make_tuple(filenames, l, feature_values));
+			features.push_back (std::make_tuple(filenames, l, -999.888, feature_values));
 		}
 
 		return features;

@@ -19,16 +19,7 @@
 #include "../src/nyx/arrow_output_stream.h"
 #include "../src/nyx/output_writers.h"
 #include "../src/nyx/save_option.h"
-
-#if __has_include(<filesystem>)
-  #include <filesystem>
-  namespace fs = std::filesystem;
-#elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
-  namespace fs = std::experimental::filesystem;
-#else
-  error "Missing the <filesystem> header."
-#endif
+#include "../src/nyx/helpers//fsystem.h"
 
 arrow::Result<std::shared_ptr<arrow::Table>> get_arrow_table(const std::string& file_path) {
     auto file_extension = fs::path(file_path).extension().u8string();
@@ -185,12 +176,11 @@ bool are_tables_equal(const arrow::Table& table1, const arrow::Table& table2) {
     return true;
 }
 
+void test_arrow() 
+{
+    auto temp = fs::temp_directory_path() / "nyxus_temp/";
 
-void test_arrow() {
-
-    auto temp = fs::temp_directory_path()/"nyxus_temp/";
-
-    if(!fs::exists(temp)) {
+    if (!fs::exists(temp)) {
         auto created = fs::create_directory(temp);
     }
 
@@ -203,19 +193,19 @@ void test_arrow() {
     Nyxus::SaveOption saveOption = Nyxus::SaveOption::saveArrowIPC;
 
     // create arrow writer
-    auto [status, msg] = theEnvironment.arrow_stream.create_arrow_file(saveOption, outputPath, std::get<0>(features));
+    auto [status, msg] = arrow_stream.create_arrow_file(saveOption, outputPath, std::get<0>(features888));
     if (!status) {
         FAIL() << "Error creating Arrow file: " << msg.value() << std::endl;
     }
 
     // write features
-    auto [status1, msg1] = theEnvironment.arrow_stream.write_arrow_file(std::get<1>(features));
+    auto [status1, msg1] = arrow_stream.write_arrow_file(std::get<1>(features888));
     if (!status1) {
         FAIL() << "Error writing Arrow file: " << msg1.value() << std::endl;
     }
 
     // close arrow file after use
-    auto [status2, msg2] = theEnvironment.arrow_stream.close_arrow_file();
+    auto [status2, msg2] = arrow_stream.close_arrow_file();
     if (!status2) {
         FAIL() << "Error closing Arrow file: " << msg2.value() << std::endl;
     }
@@ -226,24 +216,25 @@ void test_arrow() {
     }
     auto results_table = results_table_result.ValueOrDie();
 
-    auto& row_data = std::get<1>(features);
+    auto& row_data = std::get<1>(features888);
     std::vector<std::string> string_columns;
     std::vector<double> numeric_columns;
     int number_of_rows = row_data.size();
 
-    for(const auto& row: row_data){
+    for (const auto& row : row_data) {
         string_columns.push_back(std::get<0>(row)[0]);
         string_columns.push_back(std::get<0>(row)[1]);
-        numeric_columns.push_back(std::get<1>(row));
-        for (const auto& data: std::get<2>(row)) {
+        numeric_columns.push_back(std::get<1>(row));    // ROI label
+        numeric_columns.push_back(std::get<2>(row));    // time
+        for (const auto& data : std::get<FTABLE_FBEGIN>(row)) {
             numeric_columns.push_back(data);
         }
     }
 
-    auto features_table = create_features_table(std::get<0>(features),
-                                                string_columns,
-                                                numeric_columns,
-                                                number_of_rows);
+    auto features_table = create_features_table(std::get<0>(features888),
+        string_columns,
+        numeric_columns,
+        number_of_rows);
 
 
     ASSERT_TRUE(are_tables_equal(*results_table, *features_table));
@@ -251,21 +242,21 @@ void test_arrow() {
 
     auto is_deleted = fs::remove_all(temp);
 
-    if(!is_deleted) {
+    if (!is_deleted) {
         FAIL() << "Error deleting arrow file." << std::endl;
     }
 }
 
 void test_parquet() {
 
-    auto temp = fs::temp_directory_path()/"nyxus_temp/";
+    auto temp = fs::temp_directory_path() / "nyxus_temp/";
 
-    if(!fs::exists(temp)) {
+    if (!fs::exists(temp)) {
         auto created = fs::create_directory(temp);
     }
 
     fs::permissions(temp, fs::perms::all);
-    
+
     std::string outputPath = temp.u8string() + "NyxusFeatures.parquet";
 
     auto arrow_stream = ArrowOutputStream();
@@ -273,19 +264,19 @@ void test_parquet() {
     Nyxus::SaveOption saveOption = Nyxus::SaveOption::saveParquet;
 
     // create arrow writer
-    auto [status, msg] = theEnvironment.arrow_stream.create_arrow_file(saveOption, outputPath, std::get<0>(features));
+    auto [status, msg] = arrow_stream.create_arrow_file(saveOption, outputPath, std::get<0>(features888));
     if (!status) {
         FAIL() << "Error creating Arrow file: " << msg.value() << std::endl;
     }
 
     // write features
-    auto [status1, msg1] = theEnvironment.arrow_stream.write_arrow_file(std::get<1>(features));
+    auto [status1, msg1] = arrow_stream.write_arrow_file(std::get<1>(features888));
     if (!status1) {
         FAIL() << "Error writing Arrow file: " << msg1.value() << std::endl;
     }
 
     // close arrow file after use
-    auto [status2, msg2] = theEnvironment.arrow_stream.close_arrow_file();
+    auto [status2, msg2] = arrow_stream.close_arrow_file();
     if (!status2) {
         FAIL() << "Error closing Arrow file: " << msg2.value() << std::endl;
     }
@@ -296,24 +287,25 @@ void test_parquet() {
     }
     auto results_table = results_table_result.ValueOrDie();
 
-    auto& row_data = std::get<1>(features);
+    auto& row_data = std::get<1>(features888);
     std::vector<std::string> string_columns;
     std::vector<double> numeric_columns;
     int number_of_rows = row_data.size();
 
-    for(const auto& row: row_data){
+    for (const auto& row : row_data) {
         string_columns.push_back(std::get<0>(row)[0]);
         string_columns.push_back(std::get<0>(row)[1]);
-        numeric_columns.push_back(std::get<1>(row));
-        for (const auto& data: std::get<2>(row)) {
+        numeric_columns.push_back(std::get<1>(row));    // ROI label
+        numeric_columns.push_back(std::get<2>(row));    // time
+        for (const auto& data : std::get<FTABLE_FBEGIN>(row)) {
             numeric_columns.push_back(data);
         }
     }
 
-    auto features_table = create_features_table(std::get<0>(features),
-                                                string_columns,
-                                                numeric_columns,
-                                                number_of_rows);
+    auto features_table = create_features_table(std::get<0>(features888),
+        string_columns,
+        numeric_columns,
+        number_of_rows);
 
 
     ASSERT_TRUE(are_tables_equal(*results_table, *features_table));
@@ -321,7 +313,8 @@ void test_parquet() {
 
     auto is_deleted = fs::remove_all(temp);
 
-    if(!is_deleted) {
+    if (!is_deleted) {
         FAIL() << "Error deleting arrow file." << std::endl;
     }
 }
+

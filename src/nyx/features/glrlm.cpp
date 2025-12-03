@@ -17,7 +17,7 @@ GLRLMFeature::GLRLMFeature() : FeatureMethod("GLRLMFeature")
 	provide_features(GLRLMFeature::featureset);
 }
 
-void GLRLMFeature::calculate(LR& r)
+void GLRLMFeature::calculate (LR& r, const Fsettings& s)
 {
 	//==== Clear the feature values buffers
 	clear_buffers();
@@ -29,7 +29,7 @@ void GLRLMFeature::calculate(LR& r)
 	if (minI == maxI)
 	{
 		// insert a non-NAN value for all 4 angles to make the output expecting 4-angled values happy
-		auto w = theEnvironment.resultOptions.noval();	// safe NAN
+		auto w = STNGS_NAN(s); // former theEnvironment.resultOptions.noval();	// safe NAN
 		angled_SRE.resize(4, w);
 		angled_LRE.resize(4, w);
 		angled_GLN.resize(4, w);
@@ -78,11 +78,11 @@ void GLRLMFeature::calculate(LR& r)
 		pixData & D = M.WriteablePixels();
 
 		// Squeeze the intensity range
-		auto greyInfo = theEnvironment.get_coarse_gray_depth();
+		auto greyInfo = STNGS_NGREYS(s);	// former theEnvironment.get_coarse_gray_depth()
 		auto greyInfo_localFeature = GLRLMFeature::n_levels;
 		if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
 			greyInfo = greyInfo_localFeature;
-		if (Nyxus::theEnvironment.ibsi_compliance)
+		if (STNGS_IBSI(s))	// former Nyxus::theEnvironment.ibsi_compliance
 			greyInfo = 0;
 
 		auto& imR = r.aux_image_matrix.ReadablePixels();
@@ -205,7 +205,7 @@ void GLRLMFeature::calculate(LR& r)
 
 		//==== Create a zone matrix
 
-		int Ng = Environment::ibsi_compliance ? *std::max_element(I.begin(), I.end()) : I.size();
+		int Ng = STNGS_IBSI(s) ? *std::max_element(I.begin(), I.end()) : I.size();
 		int Nr = maxZoneArea;
 		int Nz = (int) Z.size();
 		int Np = count;
@@ -220,7 +220,7 @@ void GLRLMFeature::calculate(LR& r)
 			auto inten = z.first;
 			// row (grey level)
 			int row = -1;
-			if (Environment::ibsi_compliance)
+			if (STNGS_IBSI(s))
 				row = inten - 1;
 			else
 			{
@@ -300,7 +300,7 @@ void GLRLMFeature::clear_buffers()
 // Not supporting the online mode
 void GLRLMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} // Not supporting
 
-void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
+void GLRLMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
 	//==== Clear the feature values buffers
 	clear_buffers();
@@ -368,10 +368,10 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 		D.copy(im);
 
 		// Squeeze the intensity range
-		unsigned int nGrays = theEnvironment.get_coarse_gray_depth();
+		unsigned int nGrays = STNGS_NGREYS(s); // former theEnvironment.get_coarse_gray_depth()
 
 		for (size_t i = 0; i < D.size(); i++)
-			D.set_at(i, Nyxus::to_grayscale(D[i], r.aux_min, piRange, nGrays, Environment::ibsi_compliance));
+			D.set_at(i, Nyxus::to_grayscale(D[i], r.aux_min, piRange, nGrays, STNGS_IBSI(s)));
 
 		// Number of zones
 		const int VISITED = -1;
@@ -487,7 +487,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 
 		//==== Fill the zone matrix
 
-		int Ng = Environment::ibsi_compliance ? im.get_max() : (decltype(Ng))U.size();
+		int Ng = STNGS_IBSI(s) ? im.get_max() : (decltype(Ng))U.size();
 		int Nr = maxZoneArea;
 		int Nz = (decltype(Nz))Z.size();
 		int Np = count;
@@ -505,7 +505,7 @@ void GLRLMFeature::osized_calculate(LR& r, ImageLoader&)
 		{
 			// row
 			auto iter = std::find(I.begin(), I.end(), z.first);
-			int row = (Environment::ibsi_compliance) ? z.first - 1 : int(iter - I.begin());
+			int row = STNGS_IBSI(s) ? z.first - 1 : int(iter - I.begin());
 			// col
 			int col = z.second - 1;	// 0-based => -1
 			// update the matrix
@@ -1115,20 +1115,20 @@ void GLRLMFeature::calc_LRHGLE(AngledFtrs& af)
 	}
 }
 
-void GLRLMFeature::extract (LR& r)
+void GLRLMFeature::extract (LR& r, const Fsettings& s)
 {
 	GLRLMFeature glrlm;
-	glrlm.calculate(r);
-	glrlm.save_value(r.fvals);
+	glrlm.calculate (r, s);
+	glrlm.save_value (r.fvals);
 }
 
-void GLRLMFeature::parallel_process_1_batch(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData)
+void GLRLMFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
-		extract (r);
+		extract (r, s);
 	}
 }
 

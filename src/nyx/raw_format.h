@@ -36,6 +36,10 @@ public:
         return 1;
     }
 
+    [[nodiscard]] virtual size_t fullTimestamps([[maybe_unused]] size_t level) const {
+        return 1;
+    }
+
     [[nodiscard]] virtual size_t numberChannels() const {
         return 1;
     }

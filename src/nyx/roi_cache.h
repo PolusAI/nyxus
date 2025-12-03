@@ -26,18 +26,18 @@ enum RoiDataCacheItem
 	NEIGHBOR_ROI_LABELS
 };
 
-/// @brief Encapsulates data cached per each ROI
+/// @brief Encapsulates ROI properties
 class LR: public BasicLR
 {
 public:
 	static constexpr const RoiDataCacheItem CachedObjects[] = { RAW_PIXELS,	CONTOUR, CONVEX_HULL, IMAGE_MATRIX, NEIGHBOR_ROI_LABELS };
 
-	LR (int lbl);
-	LR() : BasicLR(-1) { slide_idx = -1; }	// use default label '-1' and slide index '-1' (no slide available)
-	bool nontrivial_roi (size_t memory_limit);
+	LR (int roi_label);
+	LR() : BasicLR(-1) {}	
+	bool nontrivial_roi (size_t n_rois, size_t max_ram_bytes);
 	bool has_bad_data();
-	size_t get_ram_footprint_estimate();
-	size_t get_ram_footprint_estimate_3D();
+	size_t get_ram_footprint_estimate (size_t n_slide_rois) const;
+	size_t get_ram_footprint_estimate_3D (size_t n_volume_rois) const;
 	void recycle_aux_obj (RoiDataCacheItem itm);
 	bool have_oversize_roi();
 	bool caching_permitted();
@@ -46,7 +46,6 @@ public:
 	bool blacklisted = false;
 
 	std::vector <Pixel2> raw_pixels;
-
 	std::vector <Pixel3> raw_pixels_3D;
 	std::unordered_map<int, std::vector<size_t>> zplanes;  
 
@@ -68,21 +67,6 @@ public:
 
 	// 3D
 	SimpleCube<PixIntens> aux_image_cube;	// helper for texture features and moments
-
-	int slide_idx; // index in LR::dataset_props, links a ROI to a slide
-
-	// Dataset properties
-	static std::vector<SlideProps> dataset_props;
-	static size_t dataset_max_combined_roicloud_len;
-	static size_t dataset_max_n_rois;
-	static size_t dataset_max_roi_area;
-	static size_t dataset_max_roi_w;
-	static size_t dataset_max_roi_h;
-	static size_t dataset_max_roi_d;
-	static void update_dataset_props_extrema();
-
-	// clears dataset's slide list
-	static void reset_dataset_props();
 };
 
 /// @brief Encapsulates ROI data related to ROI nesting
@@ -93,8 +77,7 @@ public:
 		BasicLR (r.label)
 	{
 		this->aabb = r.aabb;
-		this->segFname = r.segFname;
-		this->intFname = r.intFname;
+		this->slide_idx = r.slide_idx;
 	}
 	NestedLR(): BasicLR(-1) {} // use default label '-1'
 	std::vector<int> children;

@@ -65,13 +65,82 @@ namespace Nyxus
 
 using namespace Nyxus;
 
-bool Environment::ibsi_compliance = false;
-std::string Environment::raw_ibsi_compliance = ""; // string for input
-
 Environment::Environment() : BasicEnvironment()
 {
+	init_temp_dir_path();
+
+	labels_dir = "";
+	intensity_dir = "";
+	output_dir = "";
+	intSegMapDir = "";
+	intSegMapFile = "";
+	nyxus_result_fname = "NyxusFeatures";	// Default file name without extension ".csv", ".arrow", etc
+
+	singleROI = false; // Applies to dim()==2: singleROI is set to 'true' parse_cmdline() if labels_dir==intensity_dir
+
+	embedded_pixel_size = "";
+
+	reduce_threads = "";
+	n_reduce_threads = 4;
+
+	pixel_distance = "";
+	n_pixel_distance = 5;
+
+	rawVerbosity = "";	// 'verbosity_level' is inherited from BasicEnvironment
+
+	rawOnlineStatsThresh = "";
+	onlineStatsTreshold = 0;
+
+	rawOutpType = ""; // Valid values: "separatecsv", "singlecsv", "arrow", "parquet"
+	separateCsv = true;
+
+	// x- and y- resolution in pixels per centimeter
+	rawXYRes = "";
+	xyRes = 0.0;
+	pixelSizeUm = 0.0;
+
+	rawTempDirPath = "";
+
+	floating_point_precision = 10;
+
+	coarse_grayscale_depth = 64;
+	raw_coarse_grayscale_depth = "";
+
+	// data members implementing RAMLIMIT
+	rawRamLimit = "";
+	ramLimit = 0;
+
+	// data members implementing TEMPDIR
+	rawTempDir = "";
+
+	// implementation of SKIPROI
+	rawBlacklistedRois = "";
+
+	// IBSI mode switch
+	ibsi_compliance = false;
+	raw_ibsi_compliance = "";
+
+	// Dataset's dimensionality. Valid values: 2 and 3
+	dim_ = 2;
+	raw_dim = "";
+
+	is_imq_ = false;
+
+	// data members implementing exclusive-inclusive timing switch
+#ifdef CHECKTIMING
+	rawExclusiveTiming = "";
+#endif
+
+	//
+	// platform-dependent free RAM check
+	//
 	unsigned long long availMem = Nyxus::getAvailPhysMemory();
 	ramLimit = availMem / 2;	// Safely require 50% of available memory
+}
+
+Environment::~Environment()
+{
+	VERBOSLVL4(verbosity_level, std::cout << "\nShutting down the environment\n");
 }
 
 size_t Environment::get_ram_limit()
@@ -98,87 +167,87 @@ void Environment::show_cmdline_help()
 	const char OPT[] = "(optional) ";
 	std::cout
 		<< "Usage:\t" << "nyxus"
-		<< "\t" << FILEPATTERN << "=<file pattern regular expression> \n"
+		<< "\t" << clo_FILEPATTERN << "=<file pattern regular expression> \n"
 		<< "\t\t\tDefault: .* \n"
-		<< "\t\t\tExample: " << FILEPATTERN << "=.* for all files, " << FILEPATTERN << "=*.tif for .tif files \n"
-		<< "\t\t" << OUTPUTTYPE << "=<separatecsv or singlecsv for csv output. arrowipc or parquet for arrow output> \n"
+		<< "\t\t\tExample: " << clo_FILEPATTERN << "=.* for all files, " << clo_FILEPATTERN << "=*.tif for .tif files \n"
+		<< "\t\t" << clo_OUTPUTTYPE << "=<separatecsv or singlecsv for csv output. arrowipc or parquet for arrow output> \n"
 		<< "\t\t\tDefault: separatecsv \n"
-		<< "\t\t" << SEGDIR << "=<directory of segmentation mask images> \n"
-		<< "\t\t" << INTDIR << "=<directory of intensity images> \n"
-		<< "\t\t" << OUTDIR << "=<output directory> \n"
-		<< "\t\t" << OPT << FEATURES << "=<specific feature or comma-separated features or feature group> \n"
-		<< "\t\t\tDefault: " << Nyxus::theFeatureSet.findGroupNameByCode(Nyxus::Fgroup2D::FG2_ALL) << " \n"
-		<< "\t\t\tExample 1: " << FEATURES << "=" << theFeatureSet.findFeatureNameByCode(Feature2D::PERIMETER) << " \n"
-		<< "\t\t\tExample 2: " << FEATURES << "=" << theFeatureSet.findFeatureNameByCode(Feature2D::PERIMETER) << "," << theFeatureSet.findFeatureNameByCode(Feature2D::CIRCULARITY) << "," << theFeatureSet.findFeatureNameByCode(Feature2D::GABOR) << " \n"
-		<< "\t\t\tExample 3: " << FEATURES << "=" << Nyxus::theFeatureSet.findGroupNameByCode(Nyxus::Fgroup2D::FG2_INTENSITY) << " \n"
-		<< "\t\t\tExample 4: " << FEATURES << "=" << Nyxus::theFeatureSet.findGroupNameByCode(Nyxus::Fgroup2D::FG2_BASIC_MORPHOLOGY) << " \n"
-		<< "\t\t\tExample 5: " << FEATURES << "=" << Nyxus::theFeatureSet.findGroupNameByCode(Nyxus::Fgroup2D::FG2_ALL) << " \n"
-		<< "\t\t" << OPT << XYRESOLUTION << "=<number of pixels per centimeter, an integer or floating point number> \n"
-		<< "\t\t" << OPT << EMBPIXSZ << "=<number> \n"
+		<< "\t\t" << clo_SEGDIR << "=<directory of segmentation mask images> \n"
+		<< "\t\t" << clo_INTDIR << "=<directory of intensity images> \n"
+		<< "\t\t" << clo_OUTDIR << "=<output directory> \n"
+		<< "\t\t" << OPT << clo_FEATURES << "=<specific feature or comma-separated features or feature group> \n"
+		<< "\t\t\tDefault: " << theFeatureSet.findGroupNameByCode(Nyxus::Fgroup2D::FG2_ALL) << " \n"
+		<< "\t\t\tExample 1: " << clo_FEATURES << "=" << theFeatureSet.findFeatureNameByCode(Feature2D::PERIMETER) << " \n"
+		<< "\t\t\tExample 2: " << clo_FEATURES << "=" << theFeatureSet.findFeatureNameByCode(Feature2D::PERIMETER) << "," << theFeatureSet.findFeatureNameByCode(Feature2D::CIRCULARITY) << "," << theFeatureSet.findFeatureNameByCode(Feature2D::GABOR) << " \n"
+		<< "\t\t\tExample 3: " << clo_FEATURES << "=" << theFeatureSet.findGroupNameByCode(Nyxus::Fgroup2D::FG2_INTENSITY) << " \n"
+		<< "\t\t\tExample 4: " << clo_FEATURES << "=" << theFeatureSet.findGroupNameByCode(Nyxus::Fgroup2D::FG2_BASIC_MORPHOLOGY) << " \n"
+		<< "\t\t\tExample 5: " << clo_FEATURES << "=" << theFeatureSet.findGroupNameByCode(Nyxus::Fgroup2D::FG2_ALL) << " \n"
+		<< "\t\t" << OPT << clo_XYRESOLUTION << "=<number of pixels per centimeter, an integer or floating point number> \n"
+		<< "\t\t" << OPT << clo_EMBPIXSZ << "=<number> \n"
 		<< "\t\t\tDefault: 0 \n"
-		<< "\t\t" << OPT << REDUCETHREADS << "=<number of feature reduction threads> \n"
+		<< "\t\t" << OPT << clo_REDUCETHREADS << "=<number of feature reduction threads> \n"
 		<< "\t\t\tDefault: 1 \n"
-		<< "\t\t" << OPT << PXLDIST << "=<number of pixels as neighbor features radius> \n"
+		<< "\t\t" << OPT << clo_PXLDIST << "=<number of pixels as neighbor features radius> \n"
 		<< "\t\t\tDefault: 5 \n"
-		<< "\t\t" << OPT << COARSEGRAYDEPTH << "=<custom number of grayscale levels> \n"
+		<< "\t\t" << OPT << clo_COARSEGRAYDEPTH << "=<custom number of grayscale levels> \n"
 		<< "\t\t\tDefault: 64 \n"
-		<< "\t\t" << OPT << GLCMANGLES << "=<one or more comma separated rotation angles from set {0, 45, 90, and 135}> \n"
+		<< "\t\t" << OPT << clo_GLCMANGLES << "=<one or more comma separated rotation angles from set {0, 45, 90, and 135}> \n"
 		<< "\t\t\tDefault: 0,45,90,135 \n"
-		<< "\t\t" << OPT << VERBOSITY << "=<levels of verbosity 0 (silence), 1 (minimum output), 2 (1 + timing), 3 (2 + roi metrics + more timing), 4 (3 + diagnostic information)> \n"
+		<< "\t\t" << OPT << clo_VERBOSITY << "=<levels of verbosity 0 (silence), 1 (minimum output), 2 (1 + timing), 3 (2 + roi metrics + more timing), 4 (3 + diagnostic information)> \n"
 		<< "\t\t\tDefault: 0 \n"
-		<< "\t\t" << OPT << IBSICOMPLIANCE << "=<false or true> Enable IBSI compliance mode \n"
+		<< "\t\t" << OPT << clo_IBSICOMPLIANCE << "=<false or true> Enable IBSI compliance mode \n"
 		<< "\t\t\tDefault: false \n"
-		<< "\t\t\tNote: " << IBSICOMPLIANCE << "=true may reduce performance \n"
-		<< "\t\t" << OPT << RAMLIMIT << "=<megabytes> \n"
+		<< "\t\t\tNote: " << clo_IBSICOMPLIANCE << "=true may reduce performance \n"
+		<< "\t\t" << OPT << clo_RAMLIMIT << "=<megabytes> \n"
 		<< "\t\t\tDefault: 50% of available memory \n"
-		<< "\t\t" << OPT << TEMPDIR << "=<slash-terminating temporary directory path> \n"
+		<< "\t\t" << OPT << clo_TEMPDIR << "=<slash-terminating temporary directory path> \n"
 		<< "\t\t\tDefault: default system temp directory \n"
-		<< "\t\t" << OPT << SKIPROI << "=<ROI blacklist> \n"
+		<< "\t\t" << OPT << clo_SKIPROI << "=<ROI blacklist> \n"
 		<< "\t\t\tDefault: void blacklist \n"
-		<< "\t\t\tExample 1: " << SKIPROI << "=34,35,36 \n"
-		<< "\t\t\tExample 2: " << SKIPROI << "=image1.ome.tif:34,35,36;image2.ome.tif:42,43 \n"
-		<< "\t\t" << OPT << RESULTFNAME << "=<file name without extension> \n"
+		<< "\t\t\tExample 1: " << clo_SKIPROI << "=34,35,36 \n"
+		<< "\t\t\tExample 2: " << clo_SKIPROI << "=image1.ome.tif:34,35,36;image2.ome.tif:42,43 \n"
+		<< "\t\t" << OPT << clo_RESULTFNAME << "=<file name without extension> \n"
 		<< "\t\t\tDefault: NyxusFeatures \n"
-		<< "\t\t\tExample: " << RESULTFNAME << "=training_set_features";
+		<< "\t\t\tExample: " << clo_RESULTFNAME << "=training_set_features";
 
 #ifdef CHECKTIMING
-	std::cout << "\t\t" << OPT << EXCLUSIVETIMING << "=<false or true> \n"
+	std::cout << "\t\t" << OPT << clo_EXCLUSIVETIMING << "=<false or true> \n"
 		<< "\t\t\tDefault: false \n"
-		<< "\t\t\tUse " << EXCLUSIVETIMING << "=false to measure time of the whole image collection, " << EXCLUSIVETIMING << "=true to measure time per image pair \n";
+		<< "\t\t\tUse " << clo_EXCLUSIVETIMING << "=false to measure time of the whole image collection, " << clo_EXCLUSIVETIMING << "=true to measure time per image pair \n";
 #endif
 
-	std::cout << "\t\t" << OPT << GABOR_FREQS << "=<comma separated denominators of \\pi> \n"
+	std::cout << "\t\t" << OPT << clo_GABOR_FREQS << "=<comma separated denominators of \\pi> \n"
 		<< "\t\t\tDefault: 1,2,4,8,16,32,64 \n"
-		<< "\t\t" << OPT << GABOR_GAMMA << "=<anisotropy of the Gaussian> \n"
+		<< "\t\t" << OPT << clo_GABOR_GAMMA << "=<anisotropy of the Gaussian> \n"
 		<< "\t\t\tDefault: 0.1 \n"
-		<< "\t\t" << OPT << GABOR_SIG2LAM << "=<spatial frequency bandwidth (sigma over lambda)> \n"
+		<< "\t\t" << OPT << clo_GABOR_SIG2LAM << "=<spatial frequency bandwidth (sigma over lambda)> \n"
 		<< "\t\t\tDefault: 0.8 \n"
-		<< "\t\t" << OPT << GABOR_KERSIZE << "=<dimension of the 2D kernel> \n"
+		<< "\t\t" << OPT << clo_GABOR_KERSIZE << "=<dimension of the 2D kernel> \n"
 		<< "\t\t\tDefault: 16 \n"
-		<< "\t\t" << OPT << GABOR_F0 << "=<frequency of the baseline lowpass filter as denominator of \\pi> \n"
+		<< "\t\t" << OPT << clo_GABOR_F0 << "=<frequency of the baseline lowpass filter as denominator of \\pi> \n"
 		<< "\t\t\tDefault: 0.1 \n"
-		<< "\t\t" << OPT << GABOR_THETA << "=<orientation of the Gaussian in degrees 0-180> \n"
+		<< "\t\t" << OPT << clo_GABOR_THETA << "=<orientation of the Gaussian in degrees 0-180> \n"
 		<< "\t\t\tDefault: 45 \n"
-		<< "\t\t" << OPT << GABOR_THRESHOLD << "=<lower threshold of the filtered image to baseline ratio> \n"
+		<< "\t\t" << OPT << clo_GABOR_THRESHOLD << "=<lower threshold of the filtered image to baseline ratio> \n"
 		<< "\t\t\tDefault: 0.025 \n";
 
-	std::cout << "\t\t" << OPT << ANISO_X << "=<x anisotropy> \n"
+	std::cout << "\t\t" << OPT << clo_ANISO_X << "=<x anisotropy> \n"
 		<< "\t\t\tDefault: 1 \n"
-		<< "\t\t" << OPT << ANISO_Y << "=<y anisotropy> \n"
+		<< "\t\t" << OPT << clo_ANISO_Y << "=<y anisotropy> \n"
 		<< "\t\t\tDefault: 1 \n"
-		<< "\t\t" << OPT << ANISO_Z << "=<z anisotropy> \n"
+		<< "\t\t" << OPT << clo_ANISO_Z << "=<z anisotropy> \n"
 		<< "\t\t\tDefault: 1 \n";
 
-	std::cout << "\t\t" << OPT << NOVAL << "=<no-value substitute> \n\t\t\tDefault: 0.0 \n" 
-		<< "\t\t" << TINYVAL << "=<tiny-value substitute> \n\t\t\tDefault: 1e-10 \n"
-		<< "\t\t" << AGGREGATE << "=<true or false to aggregate features by slide> \n\t\t\tDefault: false \n"
-		<< "\t\t" << ANNOTATE << "=<true or false to extract annotations from slide names and repoer as feature table columns> \n\t\t\tDefault: false \n"
-		<< "\t\t" << ANNOT_SEP << "=<character used as annotation field separator> \n\t\t\tDefault: _ \n";
+	std::cout << "\t\t" << OPT << clo_NOVAL << "=<no-value substitute> \n\t\t\tDefault: 0.0 \n"
+		<< "\t\t" << clo_TINYVAL << "=<tiny-value substitute> \n\t\t\tDefault: 1e-10 \n"
+		<< "\t\t" << clo_AGGREGATE << "=<true or false to aggregate features by slide> \n\t\t\tDefault: false \n"
+		<< "\t\t" << clo_ANNOTATE << "=<true or false to extract annotations from slide names and repoer as feature table columns> \n\t\t\tDefault: false \n"
+		<< "\t\t" << clo_ANNOT_SEP << "=<character used as annotation field separator> \n\t\t\tDefault: _ \n";
 
-	std::cout << "\t\t" << OPT << NESTEDROI_CHNL_SIGNATURE << "=<comma separated denominators of \\pi> \n"
-		<< "\t\t" << OPT << NESTEDROI_PARENT_CHNL << "=<number of the parent channel e.g. 1\n"
-		<< "\t\t" << OPT << NESTEDROI_CHILD_CHNL << "=<number of the child channel e.g. 0\n"
-		<< "\t\t" << OPT << NESTEDROI_AGGREGATION_METHOD << "=<SUM, MEAN, MIN, MAX, WMA, or NONE>\n"
+	std::cout << "\t\t" << OPT << clo_NESTEDROI_CHNL_SIGNATURE << "=<comma separated denominators of \\pi> \n"
+		<< "\t\t" << OPT << clo_NESTEDROI_PARENT_CHNL << "=<number of the parent channel e.g. 1\n"
+		<< "\t\t" << OPT << clo_NESTEDROI_CHILD_CHNL << "=<number of the child channel e.g. 0\n"
+		<< "\t\t" << OPT << clo_NESTEDROI_AGGREGATION_METHOD << "=<SUM, MEAN, MIN, MAX, WMA, or NONE>\n"
 		<< ""
 		<< "\t\t\tDefault: 0.1 \n";
 
@@ -187,13 +256,12 @@ void Environment::show_cmdline_help()
 		<< "\tnyxus --help\tDisplay help info\n";
 
 #ifdef USE_GPU
-	std::cout << " [" << USEGPU << "=<true or false>" << " [" << GPUDEVICEID << "=<comma separated GPU device ID>] ]\n";
+	std::cout << " [" << clo_USEGPU << "=<true or false>" << " [" << clo_GPUDEVICEID << "=<comma separated GPU device ID>] ]\n";
 #endif
 }
 
-void Environment::show_summary(const std::string& head, const std::string& tail)
+void Environment::show_summary ()
 {
-	std::cout << head;
 	std::cout << "Available memory: " << Nyxus::virguler_ulong(get_ram_limit()) << " bytes\n\n";
 	std::cout << "Work plan:\n"
 		<< "\tdimensionality: " << dim() << "\n"
@@ -241,10 +309,10 @@ void Environment::show_summary(const std::string& head, const std::string& tail)
 	std::cout << "\n";
 
 	// Oversized ROI limit
-	std::cout << "\tbatch and oversized ROI lower limit " << theEnvironment.get_ram_limit() << " bytes\n";
+	std::cout << "\tbatch and oversized ROI lower limit " << get_ram_limit() << " bytes\n";
 
 	// Temp directory
-	std::cout << "\ttemp directory " << theEnvironment.get_temp_dir_path() << "\n";
+	std::cout << "\ttemp directory " << get_temp_dir_path() << "\n";
 
 	// Blacklisted ROIs
 	if (roiBlacklist.defined())
@@ -264,7 +332,6 @@ void Environment::show_summary(const std::string& head, const std::string& tail)
 	// Real valued TIFF
 	if (!fpimageOptions.empty())
 		std::cout << "\tImage-wide expected \n" << fpimageOptions.get_summary_text() << "\n";
-	std::cout << tail;
 }
 
 bool Environment::find_string_argument(std::vector<std::string>::iterator& i, const char* arg, std::string& arg_value)
@@ -359,61 +426,61 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		}
 
 		if (!(
-			find_string_argument(i, INTDIR, intensity_dir) ||
-			find_string_argument(i, SEGDIR, labels_dir) ||
-			find_string_argument(i, OUTDIR, output_dir) ||
-			find_string_argument(i, INTSEGMAPDIR, intSegMapDir) ||
-			find_string_argument(i, INTSEGMAPFILE, intSegMapFile) ||
-			find_string_argument(i, FEATURES, rawFeatures) ||
-			find_string_argument(i, XYRESOLUTION, rawXYRes) ||
-			find_string_argument(i, FILEPATTERN, rawFilePattern) ||
-			find_string_argument(i, OUTPUTTYPE, rawOutpType) ||
-			find_string_argument(i, EMBPIXSZ, embedded_pixel_size) ||
-			find_string_argument(i, REDUCETHREADS, reduce_threads) ||
-			find_string_argument(i, GLCMANGLES, glcmOptions.rawAngles) ||
-			find_string_argument(i, GLCMOFFSET, glcmOptions.rawOffs) ||
-			find_string_argument(i, PXLDIST, pixel_distance) ||
-			find_string_argument(i, COARSEGRAYDEPTH, raw_coarse_grayscale_depth) ||
-			find_string_argument(i, VERBOSITY, rawVerbosity) ||
-			find_string_argument(i, IBSICOMPLIANCE, raw_ibsi_compliance) ||
-			find_string_argument(i, RAMLIMIT, rawRamLimit) ||
-			find_string_argument(i, TEMPDIR, rawTempDir) ||
-			find_string_argument(i, SKIPROI, rawBlacklistedRois) ||
-			find_string_argument(i, GABOR_FREQS, gaborOptions.rawFreqs) ||
-			find_string_argument(i, GABOR_GAMMA, gaborOptions.rawGamma) ||
-			find_string_argument(i, GABOR_SIG2LAM, gaborOptions.rawSig2lam) ||
-			find_string_argument(i, GABOR_KERSIZE, gaborOptions.rawKerSize) ||
-			find_string_argument(i, GABOR_F0, gaborOptions.rawF0) ||
-			find_string_argument(i, GABOR_THETA, gaborOptions.rawTheta) ||
-			find_string_argument(i, GABOR_THRESHOLD, gaborOptions.rawGrayThreshold)
+			find_string_argument(i, clo_INTDIR, intensity_dir) ||
+			find_string_argument(i, clo_SEGDIR, labels_dir) ||
+			find_string_argument(i, clo_OUTDIR, output_dir) ||
+			find_string_argument(i, clo_INTSEGMAPDIR, intSegMapDir) ||
+			find_string_argument(i, clo_INTSEGMAPFILE, intSegMapFile) ||
+			find_string_argument(i, clo_FEATURES, rawFeatures) ||
+			find_string_argument(i, clo_XYRESOLUTION, rawXYRes) ||
+			find_string_argument(i, clo_FILEPATTERN, rawFilePattern) ||
+			find_string_argument(i, clo_OUTPUTTYPE, rawOutpType) ||
+			find_string_argument(i, clo_EMBPIXSZ, embedded_pixel_size) ||
+			find_string_argument(i, clo_REDUCETHREADS, reduce_threads) ||
+			find_string_argument(i, clo_GLCMANGLES, glcmOptions.rawAngles) ||
+			find_string_argument(i, clo_GLCMOFFSET, glcmOptions.rawOffs) ||
+			find_string_argument(i, clo_PXLDIST, pixel_distance) ||
+			find_string_argument(i, clo_COARSEGRAYDEPTH, raw_coarse_grayscale_depth) ||
+			find_string_argument(i, clo_VERBOSITY, rawVerbosity) ||
+			find_string_argument(i, clo_IBSICOMPLIANCE, raw_ibsi_compliance) ||
+			find_string_argument(i, clo_RAMLIMIT, rawRamLimit) ||
+			find_string_argument(i, clo_TEMPDIR, rawTempDir) ||
+			find_string_argument(i, clo_SKIPROI, rawBlacklistedRois) ||
+			find_string_argument(i, clo_GABOR_FREQS, gaborOptions.rawFreqs) ||
+			find_string_argument(i, clo_GABOR_GAMMA, gaborOptions.rawGamma) ||
+			find_string_argument(i, clo_GABOR_SIG2LAM, gaborOptions.rawSig2lam) ||
+			find_string_argument(i, clo_GABOR_KERSIZE, gaborOptions.rawKerSize) ||
+			find_string_argument(i, clo_GABOR_F0, gaborOptions.rawF0) ||
+			find_string_argument(i, clo_GABOR_THETA, gaborOptions.rawTheta) ||
+			find_string_argument(i, clo_GABOR_THRESHOLD, gaborOptions.rawGrayThreshold)
 
-			|| find_string_argument (i, ANISO_X, anisoOptions.raw_aniso_x)
-			|| find_string_argument (i, ANISO_Y, anisoOptions.raw_aniso_y)
-			|| find_string_argument (i, ANISO_Z, anisoOptions.raw_aniso_z)
+			|| find_string_argument (i, clo_ANISO_X, anisoOptions.raw_aniso_x)
+			|| find_string_argument (i, clo_ANISO_Y, anisoOptions.raw_aniso_y)
+			|| find_string_argument (i, clo_ANISO_Z, anisoOptions.raw_aniso_z)
 
-			|| find_string_argument(i, NOVAL, resultOptions.raw_noval)
-			|| find_string_argument(i, TINYVAL, resultOptions.raw_tiny)
-			|| find_string_argument(i, AGGREGATE, resultOptions.raw_aggregate)
-			|| find_string_argument(i, ANNOTATE, resultOptions.raw_annotate)
-			|| find_string_argument(i, ANNOT_SEP, resultOptions.raw_anno_separator)
+			|| find_string_argument(i, clo_NOVAL, resultOptions.raw_noval)
+			|| find_string_argument(i, clo_TINYVAL, resultOptions.raw_tiny)
+			|| find_string_argument(i, clo_AGGREGATE, resultOptions.raw_aggregate)
+			|| find_string_argument(i, clo_ANNOTATE, resultOptions.raw_annotate)
+			|| find_string_argument(i, clo_ANNOT_SEP, resultOptions.raw_anno_separator)
 
-			|| find_string_argument(i, NESTEDROI_CHNL_SIGNATURE, nestedOptions.rawChannelSignature)
-			|| find_string_argument(i, NESTEDROI_PARENT_CHNL, nestedOptions.rawParentChannelNo)
-			|| find_string_argument(i, NESTEDROI_CHILD_CHNL, nestedOptions.rawChildChannelNo)
-			|| find_string_argument(i, NESTEDROI_AGGREGATION_METHOD, nestedOptions.rawAggregationMethod)
-			|| find_string_argument(i, FPIMAGE_TARGET_DYNRANGE, fpimageOptions.raw_target_dyn_range)
-			|| find_string_argument(i, FPIMAGE_MIN, fpimageOptions.raw_min_intensity)
-			|| find_string_argument(i, FPIMAGE_MAX, fpimageOptions.raw_max_intensity)
-			|| find_string_argument(i, RESULTFNAME, nyxus_result_fname)
-			|| find_string_argument(i, CLI_DIM, raw_dim)
+			|| find_string_argument(i, clo_NESTEDROI_CHNL_SIGNATURE, nestedOptions.rawChannelSignature)
+			|| find_string_argument(i, clo_NESTEDROI_PARENT_CHNL, nestedOptions.rawParentChannelNo)
+			|| find_string_argument(i, clo_NESTEDROI_CHILD_CHNL, nestedOptions.rawChildChannelNo)
+			|| find_string_argument(i, clo_NESTEDROI_AGGREGATION_METHOD, nestedOptions.rawAggregationMethod)
+			|| find_string_argument(i, clo_FPIMAGE_TARGET_DYNRANGE, fpimageOptions.raw_target_dyn_range)
+			|| find_string_argument(i, clo_FPIMAGE_MIN, fpimageOptions.raw_min_intensity)
+			|| find_string_argument(i, clo_FPIMAGE_MAX, fpimageOptions.raw_max_intensity)
+			|| find_string_argument(i, clo_RESULTFNAME, nyxus_result_fname)
+			|| find_string_argument(i, clo_CLI_DIM, raw_dim)
 
 #ifdef CHECKTIMING
-			|| find_string_argument(i, EXCLUSIVETIMING, rawExclusiveTiming)
+			|| find_string_argument(i, clo_EXCLUSIVETIMING, rawExclusiveTiming)
 #endif
 
 #ifdef USE_GPU
-			|| find_string_argument(i, USEGPU, gpuOptions.raw_use_gpu)
-			|| find_string_argument(i, GPUDEVICEID, gpuOptions.raw_requested_device_ids)
+			|| find_string_argument(i, clo_USEGPU, gpuOptions.raw_use_gpu)
+			|| find_string_argument(i, clo_GPUDEVICEID, gpuOptions.raw_requested_device_ids)
 #endif
 			))
 			unrecognizedArgs.push_back(*i);
@@ -448,7 +515,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 
 	if (rawFilePattern == "")
 	{
-		std::cerr << "Error: Missing argument " << FILEPATTERN << "\n";
+		std::cerr << "Error: Missing argument " << clo_FILEPATTERN << "\n";
 		return false;
 	}
 
@@ -459,7 +526,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		// string -> integer
 		if (sscanf(raw_dim.c_str(), "%d", &dim_) != 1 || !(dim_==2 || dim_==3))
 		{
-			std::cerr << "Error: " << CLI_DIM << "=" << raw_dim << ": expecting 2 or 3\n";
+			std::cerr << "Error: " << clo_CLI_DIM << "=" << raw_dim << ": expecting 2 or 3\n";
 			return false;
 		}
 	}
@@ -487,17 +554,17 @@ bool Environment::parse_cmdline(int argc, char** argv)
 
 	if (labels_dir == "")
 	{
-		std::cerr << "Error: Missing argument " << SEGDIR << "\n";
+		std::cerr << "Error: Missing argument " << clo_SEGDIR << "\n";
 		return false;
 	}
 	if (intensity_dir == "")
 	{
-		std::cerr << "Error: Missing argument " << INTDIR << "\n";
+		std::cerr << "Error: Missing argument " << clo_INTDIR << "\n";
 		return false;
 	}
 	if (output_dir == "")
 	{
-		std::cerr << "Error: Missing argument " << OUTDIR << "\n";
+		std::cerr << "Error: Missing argument " << clo_OUTDIR << "\n";
 		return false;
 	}
 
@@ -510,7 +577,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 
 	if (rawOutpType == "")
 	{
-		std::cerr << "Error: Missing argument " << OUTPUTTYPE << "\n";
+		std::cerr << "Error: Missing argument " << clo_OUTPUTTYPE << "\n";
 		return false;
 	}
 
@@ -520,38 +587,38 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			rawFeatures = theFeatureSet.findGroupNameByCode(Fgroup3D::FG3_ALL);
 		else
 			rawFeatures = theFeatureSet.findGroupNameByCode(Fgroup2D::FG2_ALL);
-		std::cerr << "Warning: " << FEATURES << "=<empty string>, defaulting to " << rawFeatures << '\n';
+		std::cerr << "Warning: " << clo_FEATURES << "=<empty string>, defaulting to " << rawFeatures << '\n';
 	}
 
 	//==== Parse optional result file name
 	if (nyxus_result_fname == "")
 	{
-		std::cerr << "Error: void argument " << RESULTFNAME << "\n";
+		std::cerr << "Error: void argument " << clo_RESULTFNAME << "\n";
 		return false;
 	}
 
 	//==== Output type
 	auto rawOutpTypeUC = Nyxus::toupper(rawOutpType);
-	if (!((rawOutpTypeUC == Nyxus::toupper(OT_SINGLECSV)) ||
-		(rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV)) ||
-		(rawOutpTypeUC == Nyxus::toupper(OT_ARROWIPC)) ||
-		(rawOutpTypeUC == Nyxus::toupper(OT_PARQUET))
+	if (!((rawOutpTypeUC == Nyxus::toupper(clo_OT_SINGLECSV)) ||
+		(rawOutpTypeUC == Nyxus::toupper(clo_OT_SEPCSV)) ||
+		(rawOutpTypeUC == Nyxus::toupper(clo_OT_ARROWIPC)) ||
+		(rawOutpTypeUC == Nyxus::toupper(clo_OT_PARQUET))
 		))
 	{
-		std::cerr << "Error: valid values of " << OUTPUTTYPE << " are " << OT_SEPCSV << ", "
-			<< OT_SINGLECSV << ", "
+		std::cerr << "Error: valid values of " << clo_OUTPUTTYPE << " are " << clo_OT_SEPCSV << ", "
+			<< clo_OT_SINGLECSV << ", "
 #ifdef USE_ARROW
-			<< OT_ARROWIPC << ", or" << OT_PARQUET <<
+			<< clo_OT_ARROWIPC << ", or" << clo_OT_PARQUET <<
 #endif 
 			"."  "\n";
 		return false;
 	}
 
-	SaveOption saveOption = [&rawOutpTypeUC]() {
-		if (rawOutpTypeUC == Nyxus::toupper(OT_ARROWIPC)) {
+	this->saveOption = [&rawOutpTypeUC]() {
+		if (rawOutpTypeUC == Nyxus::toupper(clo_OT_ARROWIPC)) {
 			return SaveOption::saveArrowIPC;
 		}
-		else if (rawOutpTypeUC == Nyxus::toupper(OT_PARQUET)) {
+		else if (rawOutpTypeUC == Nyxus::toupper(clo_OT_PARQUET)) {
 			return SaveOption::saveParquet;
 		}
 		else {
@@ -567,7 +634,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 #endif
 
 	if (saveOption == SaveOption::saveCSV) {
-		separateCsv = rawOutpTypeUC == Nyxus::toupper(OT_SEPCSV);
+		separateCsv = rawOutpTypeUC == Nyxus::toupper(clo_OT_SEPCSV);
 	}
 
 	//==== Check numeric parameters
@@ -577,7 +644,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		// string -> integer
 		if (sscanf(reduce_threads.c_str(), "%d", &n_reduce_threads) != 1 || n_reduce_threads <= 0)
 		{
-			std::cerr << "Error: " << REDUCETHREADS << "=" << reduce_threads << ": expecting a positive integer constant\n";
+			std::cerr << "Error: " << clo_REDUCETHREADS << "=" << reduce_threads << ": expecting a positive integer constant\n";
 			return false;
 		}
 	}
@@ -587,7 +654,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		// string -> integer
 		if (sscanf(pixel_distance.c_str(), "%d", &n_pixel_distance) != 1 || n_pixel_distance <= 0)
 		{
-			std::cerr << "Error: " << PXLDIST << "=" << pixel_distance << ": expecting a positive integer constant\n";
+			std::cerr << "Error: " << clo_PXLDIST << "=" << pixel_distance << ": expecting a positive integer constant\n";
 			return false;
 		}
 	}
@@ -598,7 +665,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		// string -> integer
 		if (sscanf(raw_coarse_grayscale_depth.c_str(), "%d", &coarse_grayscale_depth) != 1)
 		{
-			std::cerr << "Error: " << COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": expecting an integer constant\n";
+			std::cerr << "Error: " << clo_COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": expecting an integer constant\n";
 			return false;
 		}
 	}
@@ -608,7 +675,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		// string -> integer
 		if (sscanf(rawVerbosity.c_str(), "%d", &verbosity_level) != 1 || verbosity_level < 0)
 		{
-			std::cerr << "Error: " << VERBOSITY << "=" << reduce_threads << ": expecting a positive integer constant\n";
+			std::cerr << "Error: " << clo_VERBOSITY << "=" << reduce_threads << ": expecting a positive integer constant\n";
 			return false;
 		}
 	}
@@ -621,7 +688,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		auto scanfResult = sscanf(rawRamLimit.c_str(), "%d", &value);
 		if (scanfResult != 1 || value < 0)
 		{
-			std::cerr << "Error: " << RAMLIMIT << "=" << rawRamLimit << ": expecting a non-negative integer constant (RAM limit in megabytes)\n";
+			std::cerr << "Error: " << clo_RAMLIMIT << "=" << rawRamLimit << ": expecting a non-negative integer constant (RAM limit in megabytes)\n";
 			return false;
 		}
 
@@ -641,7 +708,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		// Check the path
 		if (!existsOnFilesystem(rawTempDir))
 		{
-			std::cerr << "Error :" << TEMPDIR << "=" << rawTempDir << ": nonexisting directory\n";
+			std::cerr << "Error :" << clo_TEMPDIR << "=" << rawTempDir << ": nonexisting directory\n";
 			return false;
 		}
 
@@ -815,7 +882,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		// string -> number
 		if (sscanf(rawXYRes.c_str(), "%f", &xyRes) != 1 || xyRes <= 0)
 		{
-			std::cerr << "Error: " << XYRESOLUTION << "=" << xyRes << ": expecting a positive numeric constant\n";
+			std::cerr << "Error: " << clo_XYRESOLUTION << "=" << xyRes << ": expecting a positive numeric constant\n";
 			return false;
 		}
 		// pixel size
@@ -871,7 +938,8 @@ bool Environment::set_ram_limit(size_t megabytes) {
 	return true;
 }
 
-bool Environment::gpu_is_available() {
+bool Environment::gpu_is_available() 
+{
 #ifdef USE_GPU
 	return get_gpu_properties().size() > 0 ? true : false;
 #else
@@ -979,7 +1047,6 @@ bool Environment::arrow_is_enabled()
 #endif
 }
 
-
 #ifdef USE_GPU
 
 void Environment::set_gpu_device_id (int choice) 
@@ -1042,6 +1109,13 @@ std::vector<std::map<std::string, std::string>> Environment::get_gpu_properties(
 	}
 
 	return props;
+}
+
+#else
+
+bool Environment::using_gpu()
+{
+	return false;
 }
 
 #endif

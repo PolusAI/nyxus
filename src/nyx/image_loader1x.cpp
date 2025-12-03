@@ -12,7 +12,7 @@
 
 ImageLoader1x::ImageLoader1x() {}
 
-bool ImageLoader1x::open(const std::string& fpath)
+bool ImageLoader1x::open (const std::string& fpath, const FpImageOptions & fpopts)
 {
 	int n_threads = 1;
 
@@ -42,7 +42,7 @@ bool ImageLoader1x::open(const std::string& fpath)
 					false, // prohibit real-valued intensities, as we are in the mask image scenario
 					0.0, // dummy min
 					999.0, // dummy max
-					Nyxus::theEnvironment.fpimageOptions.target_dyn_range());
+					fpopts.target_dyn_range());
 			else
 			{
 				FL = std::make_unique<NyxusGrayscaleTiffStripLoader<uint32_t>> (
