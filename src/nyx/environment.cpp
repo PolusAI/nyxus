@@ -65,9 +65,6 @@ namespace Nyxus
 
 using namespace Nyxus;
 
-bool Environment::ibsi_compliance = false;
-std::string Environment::raw_ibsi_compliance = ""; // string for input
-
 Environment::Environment() : BasicEnvironment()
 {
 	init_temp_dir_path();
@@ -102,7 +99,6 @@ Environment::Environment() : BasicEnvironment()
 	xyRes = 0.0;
 	pixelSizeUm = 0.0;
 
-
 	rawTempDirPath = "";
 
 	floating_point_precision = 10;
@@ -119,6 +115,10 @@ Environment::Environment() : BasicEnvironment()
 
 	// implementation of SKIPROI
 	rawBlacklistedRois = "";
+
+	// IBSI mode switch
+	ibsi_compliance = false;
+	raw_ibsi_compliance = "";
 
 	// Dataset's dimensionality. Valid values: 2 and 3
 	dim_ = 2;

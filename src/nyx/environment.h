@@ -90,9 +90,9 @@ public:
 
 	bool gpu_is_available();
 
-	static bool ibsi_compliance;
-	static std::string raw_ibsi_compliance; // string for input
-
+	// IBSI mode switch
+	bool ibsi_compliance;
+	std::string raw_ibsi_compliance;
 	void set_ibsi_compliance(bool skip);
 
 #ifdef USE_GPU

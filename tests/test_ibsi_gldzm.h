@@ -43,10 +43,7 @@ void test_ibsi_gldzm_matrix()
     s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
     s[(int)NyxSetting::USEGPU].bval = false;
     s[(int)NyxSetting::VERBOSLVL].ival = 0;
-    s[(int)NyxSetting::IBSI].bval = true;
-
-    // Activate the IBSI compliance mode
-    Environment::ibsi_compliance = true;
+    s[(int)NyxSetting::IBSI].bval = true;   // activate the IBSI compliance mode
 
     // Load a test image
     LR roidata;
@@ -92,12 +89,9 @@ void test_ibsi_gldzm_feature (const Feature2D& feature_, const std::string& feat
     s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
     s[(int)NyxSetting::USEGPU].bval = false;
     s[(int)NyxSetting::VERBOSLVL].ival = 0;
-    s[(int)NyxSetting::IBSI].bval = true;
+    s[(int)NyxSetting::IBSI].bval = true;   // activate the IBSI compliance mode
 
     int feature = int(feature_);
-
-    // Activate the IBSI compliance mode
-    Environment::ibsi_compliance = true;
 
     // Check if ground truth is available for the feature
     ASSERT_TRUE (ibsi_gldzm_gtruth.count(feature_name) > 0);

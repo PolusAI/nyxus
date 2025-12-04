@@ -125,18 +125,7 @@ int main (int argc, char** argv)
 		// Process nested ROIs
 		if (env.nestedOptions.defined())
 		{
-			bool mineOK = mine_segment_relations2(
-				env,
-				//xxxxxxxxxxxxxx		env.theFeatureSet,
-				labelFiles
-				//xxxxxxxxxxx		env.get_file_pattern(),
-				//xxxxxxxxxxx		env.nestedOptions.rawChannelSignature, //---.channel_signature(),
-				//xxxxxxxxxxx		env.nestedOptions.parent_channel_number(),
-				//xxxxxxxxxxx		env.nestedOptions.child_channel_number(),
-				//xxxxxxxxxxx		env.output_dir,
-				//xxxxxxxxxxx		env.nestedOptions.aggregation_method(),
-				//xxxxxxxxxxx		env.get_verbosity_level()
-				);
+			bool mineOK = mine_segment_relations2 (env, labelFiles);
 
 			// Report nested ROI errors, if any
 			if (!mineOK)

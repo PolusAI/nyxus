@@ -264,7 +264,7 @@ void D3_GLRLM_feature::calculate (LR& r, const Fsettings& s)
 
 		//==== Create a zone matrix
 
-		int Ng = Environment::ibsi_compliance ? *std::max_element(I.begin(), I.end()) : I.size();
+		int Ng = STNGS_IBSI(s) ? *std::max_element(I.begin(), I.end()) : I.size();
 		int Nr = maxZoneArea;
 		int Nz = (int)Z.size();
 		int Np = count;
@@ -279,7 +279,7 @@ void D3_GLRLM_feature::calculate (LR& r, const Fsettings& s)
 			auto inten = z.first;
 			// row (grey level)
 			int row = -1;
-			if (Environment::ibsi_compliance)
+			if (STNGS_IBSI(s))
 				row = inten - 1;
 			else
 			{

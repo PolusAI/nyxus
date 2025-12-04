@@ -275,7 +275,10 @@ namespace Nyxus
 			ssVals << std::fixed;
 
 			// slide info
-			ssVals << ifpath << "," << mfpath << "," << r.label;
+			ssVals << ifpath << "," << mfpath;
+			
+			// ROI and time
+			ssVals << "," << r.label << "," << t_index;
 
 			// features
 			for (auto& enabdF : F)
@@ -553,8 +556,8 @@ namespace Nyxus
 						ssVals << "," << a;
 				}
 
-				// ROI label
-				ssVals << "," << l;
+				// ROI label and time
+				ssVals << "," << l << "," << t_index;
 
 				for (auto& enabdF : F)
 				{
@@ -718,13 +721,13 @@ namespace Nyxus
 		return true;
 	}
 
-	std::vector<FtableRow> get_feature_values_roi (
+	std::vector<FTABLE_RECORD> get_feature_values_roi (
 		const FeatureSet & fset,
 		const LR & r,
 		const std::string & ifpath,
 		const std::string & mfpath)
 	{
-		std::vector<FtableRow> features;
+		std::vector<FTABLE_RECORD> features;
 
 		// user's feature selection
 		std::vector<std::tuple<std::string, int>> F = fset.getEnabledFeatures();
@@ -838,13 +841,13 @@ namespace Nyxus
 		return features;
 	}
 
-	std::vector<FtableRow> get_feature_values (
+	std::vector<FTABLE_RECORD> get_feature_values (
 		const FeatureSet & fset, 
 		const Uniqueids & uniqueLabels, 
 		const Roidata & roiData,
 		const Dataset & dataset)
 	{
-		std::vector<FtableRow> features;
+		std::vector<FTABLE_RECORD> features;
 
 		// Sort the labels
 		std::vector<int> L{ uniqueLabels.begin(), uniqueLabels.end() };

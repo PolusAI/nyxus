@@ -43,12 +43,9 @@ void test_ibsi_gldm_feature(const Feature2D& feature_, const std::string& featur
     s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
     s[(int)NyxSetting::USEGPU].bval = false;
     s[(int)NyxSetting::VERBOSLVL].ival = 0;
-    s[(int)NyxSetting::IBSI].bval = true;
+    s[(int)NyxSetting::IBSI].bval = true;   // activate the IBSI compliance mode
     //
     
-    // Activate IBSI globally 
-    Environment::ibsi_compliance = true;
-
     int feature = int(feature_);
 
     double total = 0;

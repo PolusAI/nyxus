@@ -59,7 +59,7 @@ public:
 private:
 
 	void clear_buffers();
-	template <class Pixelcloud> void gather_unique_intensities (std::vector<PixIntens> & V, Pixelcloud& C, PixIntens max_i, int n_greys);
+	template <class Pixelcloud> void gather_unique_intensities (std::vector<PixIntens> & V, Pixelcloud& C, PixIntens max_i, int n_greys, bool ibsi);
 	
 	void gather_unique_intensities2 (
 		// out

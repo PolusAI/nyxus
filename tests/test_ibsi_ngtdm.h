@@ -33,7 +33,7 @@ void test_ibsi_ngtdm_feature (const Feature2D& feature_, const std::string& feat
     s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
     s[(int)NyxSetting::USEGPU].bval = false;
     s[(int)NyxSetting::VERBOSLVL].ival = 0;
-    s[(int)NyxSetting::IBSI].bval = true;
+    s[(int)NyxSetting::IBSI].bval = true;   // activate the IBSI compliance mode
     //
 
     int feature = int(feature_);
@@ -42,7 +42,6 @@ void test_ibsi_ngtdm_feature (const Feature2D& feature_, const std::string& feat
     
     LR roidata;
     NGTDMFeature f;
-    Environment::ibsi_compliance = true;
 
     // image 1
 
@@ -61,7 +60,6 @@ void test_ibsi_ngtdm_feature (const Feature2D& feature_, const std::string& feat
 
     LR roidata1;
     NGTDMFeature f1;
-    Environment::ibsi_compliance = true;
 
     load_masked_test_roi_data (roidata1, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask,  sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
 
@@ -79,7 +77,6 @@ void test_ibsi_ngtdm_feature (const Feature2D& feature_, const std::string& feat
 
     LR roidata2;
     NGTDMFeature f2;
-    Environment::ibsi_compliance = true;
 
     load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
 
@@ -97,7 +94,6 @@ void test_ibsi_ngtdm_feature (const Feature2D& feature_, const std::string& feat
     
     LR roidata3;
     NGTDMFeature f3;
-    Environment::ibsi_compliance = true;
 
     load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
 

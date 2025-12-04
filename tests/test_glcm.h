@@ -61,7 +61,6 @@ void test_glcm_feature(const Feature2D& feature_, const std::string& feature_nam
     // Set feature's state
     GLCMFeature::offset = 1;
     GLCMFeature::symmetric_glcm = false;
-    Environment::ibsi_compliance = false;
     GLCMFeature::angles = { 0, 45, 90, 135 };
 
     int feature = int(feature_);

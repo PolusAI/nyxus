@@ -20,7 +20,6 @@
 #include "arrow_output_stream.h"
 #include "nested_feature_aggregation.h" // Nested ROI
 #include "cli_nested_roi_options.h"
-#include "output_types.h"
 
 #ifdef WITH_PYTHON_H
 	#include <pybind11/pybind11.h>
@@ -137,13 +136,13 @@ namespace Nyxus
 		const std::string& mfpath);
 	std::tuple<bool, std::optional<std::string>> save_features_2_apache_wholeslide (Environment & env, const LR & wsi_roi, const std::string & wsi_path);
 
-	std::vector<FtableRow> get_feature_values (
+	std::vector<FTABLE_RECORD> get_feature_values (
 		const FeatureSet & user_selected_features, 
 		const Uniqueids & uniqueLabels, 
 		const Roidata & roiData,
 		const Dataset & dataset);
 
-	std::vector<FtableRow> get_feature_values_roi (
+	std::vector<FTABLE_RECORD> get_feature_values_roi (
 		const FeatureSet & fset,
 		const LR& r,
 		const std::string & ifpath,

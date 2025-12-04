@@ -50,7 +50,6 @@ void test_gldm_feature(const Feature2D& feature, const std::string& feature_name
 
     // Calculate features
     GLDMFeature f;
-    Environment::ibsi_compliance = false;
 
     // image pair
     load_masked_test_roi_data(roidata, cat2500_int, cat2500_seg, sizeof(cat2500_seg) / sizeof(NyxusPixel));
