@@ -4,17 +4,7 @@
 #include <string>
 #include "../src/nyx/globals.h"
 #include "../src/nyx/save_option.h"
-
-#if __has_include(<filesystem>)
-  #include <filesystem>
-  namespace fs = std::filesystem;
-#elif __has_include(<experimental/filesystem>)
-  #include <experimental/filesystem> 
-  namespace fs = std::experimental::filesystem;
-#else
-  error "Missing the <filesystem> header."
-#endif
-
+#include "../src/nyx/helpers/fsystem.h"
 
 /*
             output_path			condition			verdict

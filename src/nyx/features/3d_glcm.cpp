@@ -9,33 +9,65 @@ int D3_GLCM_feature::offset = 1;
 bool D3_GLCM_feature::symmetric_glcm = false;
 std::vector<int> D3_GLCM_feature::angles = { 0, 45, 90, 135 };
 
+struct ShiftToNeighbor
+{
+	int dx, dy, dz;
+};
+const static ShiftToNeighbor shifts[] =
+{
+	{1,  1,  1},
+	{1,  1,  0},
+	{1,  1, -1},
+	{1,  0,  1},
+	{1,  0,  0},
+	{1,  0, -1},
+	{1, -1,  1},
+	{1, -1,  0},
+	{1, -1, -1},
+	{0,  1,  1},
+	{0,  1,  0},
+	{0,  1, -1},
+	{0,  0,  1}
+};
+
 D3_GLCM_feature::D3_GLCM_feature() : FeatureMethod("D3_GLCM_feature")
 {
-	provide_features (D3_GLCM_feature::featureset);
+	provide_features(D3_GLCM_feature::featureset);
 }
 
-void D3_GLCM_feature::calculate (LR& r, const Fsettings& s)
+void D3_GLCM_feature::calculate(LR& r, const Fsettings& s)
 {
 	// clear the feature values buffers
 	clear_result_buffers();
 
+	// grey-bin intensities
 	int w = r.aux_image_cube.width(),
 		h = r.aux_image_cube.height(),
 		d = r.aux_image_cube.depth();
 
-	// -- grey-bin intensities
 	SimpleCube<PixIntens> D;
-	D.allocate (w, h, d);
+	D.allocate (w,h,d);
 
-	auto greyInfo = STNGS_NGREYS(s);	// former Nyxus::theEnvironment.get_coarse_gray_depth()
+	auto greyBinningInfo = STNGS_GLCM_GREYDEPTH(s);	// former Nyxus::theEnvironment.get_coarse_gray_depth()
 	if (STNGS_IBSI(s))	// former Nyxus::theEnvironment.ibsi_compliance
-		greyInfo = 0;
+		greyBinningInfo = 0;
 
-	bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo);
+	bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyBinningInfo);
 
-	// calculate features for all the directions
-	for (auto a : D3_GLCM_feature::angles)
-		extract_texture_features_at_angle (a, D, r.aux_min, r.aux_max, STNGS_NGREYS(s), STNGS_IBSI(s), STNGS_NAN(s));
+	// calculate features for all the 13 directions
+	for (const ShiftToNeighbor & sh : shifts)
+	{
+		extract_texture_features_at_angle(
+			sh.dx * offset,
+			sh.dy * offset,
+			sh.dz * offset,
+			D,
+			r.aux_min,
+			r.aux_max,
+			STNGS_GLCM_GREYDEPTH(s),
+			STNGS_IBSI(s),
+			STNGS_NAN(s));
+	}
 }
 
 void D3_GLCM_feature::clear_result_buffers()
@@ -82,10 +114,7 @@ void D3_GLCM_feature::copyfvals(AngledFeatures& dst, const AngledFeatures& src)
 void D3_GLCM_feature::save_value(std::vector<std::vector<double>>& fvals)
 {
 	copyfvals(fvals[(int)Feature3D::GLCM_ASM], fvals_ASM);
-
 	copyfvals(fvals[(int)Feature3D::GLCM_ACOR], fvals_acor);
-	copyfvals(fvals[(int)Feature3D::GLCM_ACOR], fvals_acor);
-
 	copyfvals(fvals[(int)Feature3D::GLCM_CLUPROM], fvals_cluprom);
 	copyfvals(fvals[(int)Feature3D::GLCM_CLUSHADE], fvals_clushade);
 	copyfvals(fvals[(int)Feature3D::GLCM_CLUTEND], fvals_clutend);
@@ -144,119 +173,119 @@ void D3_GLCM_feature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature3D::GLCM_SUMAVERAGE_AVE][0] = calc_ave(fvals_sum_avg);
 	fvals[(int)Feature3D::GLCM_SUMVARIANCE_AVE][0] = calc_ave(fvals_sum_var);
 	fvals[(int)Feature3D::GLCM_SUMENTROPY_AVE][0] = calc_ave(fvals_sum_entropy);
-	fvals[(int)Feature3D::GLCM_VARIANCE_AVE][0] = calc_ave(fvals_variance);
+//xxxxxxxxxxxxxxxxx-------------	fvals[(int)Feature3D::GLCM_VARIANCE_AVE][0] = calc_ave(fvals_variance);
 }
 
-void D3_GLCM_feature::extract_texture_features_at_angle (int angle, const SimpleCube<PixIntens> & binned_greys, PixIntens min_val, PixIntens max_val, int n_greys, bool ibsi, double soft_nan)
+void print_SimpleMatrix(const SimpleMatrix<double>& C)
 {
-	for (int kdz = 0; kdz <= 1; kdz++)
+	std::cout << "\n";
+	std::cout << " H=" << C.height() << " W=" << C.width() << "\n";
+
+	for (int y = 0; y < C.height(); y++)
 	{
-		int dz = offset * kdz;
-
-		// Compute the gray-tone spatial dependence matrix 
-		int dx, dy;
-		switch (angle)
+		for (int x = 0; x < C.width(); x++)
 		{
-		case 0:
-			dx = offset;
-			dy = 0;
-			break;
-		case 45:
-			dx = offset;
-			dy = offset;
-			break;
-		case 90:
-			dx = 0;
-			dy = offset;
-			break;
-		case 135:
-			dx = -offset;
-			dy = offset;
-			break;
-		default:
-			std::cerr << "Cannot create co-occurence matrix for angle " << angle << ": unsupported angle\n";
-			return;
+			std::cout << "\t" << C.yx(y, x);
 		}
-
-		calculateCoocMatAtAngle (P_matrix, dx, dy, dz, binned_greys, min_val, max_val, n_greys, ibsi);
-
-		// Blank cooc-matrix? -- no point to use it, assign each feature value '0' and return.
-		if (sum_p == 0)
-		{
-			auto _ = soft_nan;
-			fvals_ASM.push_back(_);
-			fvals_acor.push_back(_);
-			fvals_cluprom.push_back(_);
-			fvals_clushade.push_back(_);
-			fvals_clutend.push_back(_);
-			fvals_contrast.push_back(_);
-			fvals_correlation.push_back(_);
-			fvals_diff_avg.push_back(_);
-			fvals_diff_var.push_back(_);
-			fvals_diff_entropy.push_back(_);
-			fvals_dis.push_back(_);
-			fvals_energy.push_back(_);
-			fvals_entropy.push_back(_);
-			fvals_homo.push_back(_);
-			fvals_hom2.push_back(_);
-			fvals_id.push_back(_);
-			fvals_idn.push_back(_);
-			fvals_IDM.push_back(_);
-			fvals_idmn.push_back(_);
-			fvals_meas_corr1.push_back(_);
-			fvals_meas_corr2.push_back(_);
-			fvals_iv.push_back(_);
-			fvals_jave.push_back(_);
-			fvals_je.push_back(_);
-			fvals_jmax.push_back(_);
-			fvals_jvar.push_back(_);
-			fvals_sum_avg.push_back(_);
-			fvals_sum_var.push_back(_);
-			fvals_sum_entropy.push_back(_);
-			fvals_variance.push_back(_);
-			return;
-		}
-
-		// Output - 'Pxpy' (meaning: 'x plus y') and 'Pxmy' (meaning: 'x minus y')
-		calculatePxpmy();
-
-		// Calculate by-row mean. (Output - 'by_row_mean')
-		calculate_by_row_mean();
-
-		// Compute Haralick statistics 
-		fvals_ASM.push_back (f_asm(P_matrix));
-		fvals_contrast.push_back (f_contrast(P_matrix));
-		fvals_correlation.push_back (f_corr());
-		fvals_energy.push_back (f_energy(P_matrix));
-		fvals_homo.push_back (f_homogeneity());
-		fvals_variance.push_back (f_var(P_matrix));
-		fvals_IDM.push_back (f_idm());
-		fvals_sum_avg.push_back (f_savg());
-		fvals_sum_entropy.push_back (f_sentropy());
-		fvals_entropy.push_back (f_entropy(P_matrix));
-		fvals_diff_var.push_back (f_dvar(P_matrix));
-		fvals_diff_entropy.push_back (f_dentropy(P_matrix));
-		fvals_diff_avg.push_back (f_difference_avg());
-		fvals_meas_corr1.push_back (f_info_meas_corr1(P_matrix));
-		fvals_meas_corr2.push_back (f_info_meas_corr2(P_matrix));
-		fvals_acor.push_back (f_GLCM_ACOR(P_matrix));
-		fvals_cluprom.push_back (f_GLCM_CLUPROM());
-		fvals_clushade.push_back (f_GLCM_CLUSHADE());
-		double clutend = f_GLCM_CLUTEND();		// 'cluster tendency' is equivalent to 'sum variance', so calculate it once
-		fvals_clutend.push_back (clutend);
-		fvals_sum_var.push_back (clutend);
-		fvals_dis.push_back (f_GLCM_DIS(P_matrix));
-		fvals_hom2.push_back (f_GLCM_HOM2(P_matrix));
-		fvals_idmn.push_back (f_GLCM_IDMN());
-		fvals_id.push_back (f_GLCM_ID());
-		fvals_idn.push_back (f_GLCM_IDN());
-		fvals_iv.push_back (f_GLCM_IV());
-		double jave = f_GLCM_JAVE();
-		fvals_jave.push_back (jave);
-		fvals_je.push_back (f_GLCM_JE(P_matrix));
-		fvals_jmax.push_back (f_GLCM_JMAX(P_matrix));
-		fvals_jvar.push_back (f_GLCM_JVAR(P_matrix, jave));
+		std::cout << " ; \n";
 	}
+	std::cout << "\n";
+}
+
+void D3_GLCM_feature::extract_texture_features_at_angle(int dx, int dy, int dz, const SimpleCube<PixIntens>& binned_greys, PixIntens min_val, PixIntens max_val, int n_greys, bool ibsi, double soft_nan)
+{
+	calculateCoocMatAtAngle (P_matrix, dx, dy, dz, binned_greys, min_val, max_val, n_greys, ibsi);
+
+	//xxxxxxxxxxxxxxxxxxxxx diag
+	auto P = P_matrix; // normed
+
+	//	for (int i = 0; i < P.width(); ++i)
+	//		for (int j = 0; j < P.height(); ++j)
+	//			P.xy(i, j) = P.xy(i, j) / sum_p;
+	// 
+	//------------- std::cout << "\ndx=" << dx << " dy=" << dy << " dz=" << dz << "\n";
+	//------------- std::cout << "sum_p=" << sum_p << "\n";
+	//------------- std::cout << "binned_greys.shape xyz=" << binned_greys.width() << "," << binned_greys.height() << "," << binned_greys.depth() << "\n";
+	//------------- std::cout << "sum(binned_greys)=" << std::accumulate(binned_greys.begin(), binned_greys.end(), 0.0) << "\n";
+	//------------- print_SimpleMatrix (P);
+	//
+
+	// Blank cooc-matrix? -- no point to use it, assign each feature value '0' and return.
+	if (sum_p == 0)
+	{
+		auto _ = soft_nan;
+		fvals_ASM.push_back(_);
+		fvals_acor.push_back(_);
+		fvals_cluprom.push_back(_);
+		fvals_clushade.push_back(_);
+		fvals_clutend.push_back(_);
+		fvals_contrast.push_back(_);
+		fvals_correlation.push_back(_);
+		fvals_diff_avg.push_back(_);
+		fvals_diff_var.push_back(_);
+		fvals_diff_entropy.push_back(_);
+		fvals_dis.push_back(_);
+		fvals_energy.push_back(_);
+		fvals_entropy.push_back(_);
+		fvals_homo.push_back(_);
+		fvals_hom2.push_back(_);
+		fvals_id.push_back(_);
+		fvals_idn.push_back(_);
+		fvals_IDM.push_back(_);
+		fvals_idmn.push_back(_);
+		fvals_meas_corr1.push_back(_);
+		fvals_meas_corr2.push_back(_);
+		fvals_iv.push_back(_);
+		fvals_jave.push_back(_);
+		fvals_je.push_back(_);
+		fvals_jmax.push_back(_);
+		fvals_jvar.push_back(_);
+		fvals_sum_avg.push_back(_);
+		fvals_sum_var.push_back(_);
+		fvals_sum_entropy.push_back(_);
+		fvals_variance.push_back(_);
+		return;
+	}
+
+	// Output - 'Pxpy' (meaning: 'x plus y') and 'Pxmy' (meaning: 'x minus y')
+	calculatePxpmy();
+
+	// Calculate by-row mean
+	calculate_by_row_mean();
+
+	// Compute Haralick statistics 
+	fvals_ASM.push_back(f_asm(P_matrix));
+	fvals_contrast.push_back(f_contrast(P_matrix));
+	fvals_correlation.push_back(f_corr());
+	fvals_energy.push_back(f_energy(P_matrix));
+	fvals_homo.push_back(f_homogeneity());
+	fvals_variance.push_back(f_var(P_matrix));
+	fvals_IDM.push_back(f_idm());
+	fvals_sum_avg.push_back(f_savg());
+	fvals_sum_entropy.push_back(f_sentropy());
+	fvals_entropy.push_back(f_entropy(P_matrix));
+	fvals_diff_var.push_back(f_dvar(P_matrix));
+	fvals_diff_entropy.push_back(f_dentropy(P_matrix));
+	fvals_diff_avg.push_back(f_difference_avg());
+	fvals_meas_corr1.push_back(f_info_meas_corr1(P_matrix));
+	fvals_meas_corr2.push_back(f_info_meas_corr2(P_matrix));
+	fvals_acor.push_back(f_GLCM_ACOR(P_matrix));
+	fvals_cluprom.push_back(f_GLCM_CLUPROM());
+	fvals_clushade.push_back(f_GLCM_CLUSHADE());
+	double clutend = f_GLCM_CLUTEND();		// 'cluster tendency' is equivalent to 'sum variance', so calculate it once
+	fvals_clutend.push_back(clutend);
+	fvals_sum_var.push_back(clutend);
+	fvals_dis.push_back(f_GLCM_DIS(P_matrix));
+	fvals_hom2.push_back(f_GLCM_HOM2(P_matrix));
+	fvals_idmn.push_back(f_GLCM_IDMN());
+	fvals_id.push_back(f_GLCM_ID());
+	fvals_idn.push_back(f_GLCM_IDN());
+	fvals_iv.push_back(f_GLCM_IV());
+	double jave = f_GLCM_JAVE();
+	fvals_jave.push_back(jave);
+	fvals_je.push_back(f_GLCM_JE(P_matrix));
+	fvals_jmax.push_back(f_GLCM_JMAX(P_matrix));
+	fvals_jvar.push_back(f_GLCM_JVAR(P_matrix, jave));
 }
 
 // prerequisite: needs previously grey-binned ROI. No grey binning is done in this method
@@ -267,7 +296,7 @@ void D3_GLCM_feature::calculateCoocMatAtAngle(
 	int dx,
 	int dy,
 	int dz,
-	const SimpleCube<PixIntens> & D,		// grey-binned ROI
+	const SimpleCube<PixIntens>& D,		// grey-binned ROI
 	PixIntens grays_min_val,
 	PixIntens grays_max_val,
 	int n_greys,
@@ -286,7 +315,7 @@ void D3_GLCM_feature::calculateCoocMatAtAngle(
 	if (radiomics_grey_binning(greyInfo))
 	{
 		// unique intensities
-		std::unordered_set<PixIntens> U (D.begin(), D.end());
+		std::unordered_set<PixIntens> U(D.begin(), D.end());
 		U.erase(0);	// discard intensity '0'
 
 		I.assign(U.begin(), U.end());
@@ -307,7 +336,7 @@ void D3_GLCM_feature::calculateCoocMatAtAngle(
 		else
 		{
 			// IBSI
-			auto ibsi_levels_it = std::max_element (D.begin(), D.end());
+			auto ibsi_levels_it = std::max_element(D.begin(), D.end());
 			auto n_ibsi_levels = *ibsi_levels_it;
 
 			I.resize(n_ibsi_levels);
@@ -322,60 +351,59 @@ void D3_GLCM_feature::calculateCoocMatAtAngle(
 		throw std::runtime_error("Allocation error in GLCMFeature::calculateCoocMatAtAngle(): requested " + std::to_string(GLCM.width() * GLCM.height()) + " but received " + std::to_string(GLCM.capacity()));
 	}
 
-	std::fill (GLCM.begin(), GLCM.end(), 0.0);
+	std::fill(GLCM.begin(), GLCM.end(), 0.0);
 
-	for (int zslice=0; zslice < d; zslice++)
-	for (int row = 0; row < h; row++)
-		for (int col = 0; col < w; col++)
-		{
-			if (D.safe(zslice+dz, row+dy, col+dx))
+	for (int zslice = 0; zslice < d; zslice++)
+		for (int row = 0; row < h; row++)
+			for (int col = 0; col < w; col++)
 			{
-				// Raw intensities
-				PixIntens lvl_b = D.zyx(zslice, row, col),
-					lvl_a = D.zyx (zslice + dz, row + dy, col + dx);
-
-				// Skip 0-intensity pixels (usually out of mask pixels)
-				if (ibsi_grey_binning(greyInfo))
-					if (lvl_a == 0 || lvl_b == 0)
-						continue;
-
-				// 0-based grey tone indices, hence '-1'
-				int a = lvl_a,
-					b = lvl_b;
-
-				// raw intensities need to be modified for different grey binning paradigms (Matlab, PyRadiomics, IBSI)
-				if (radiomics_grey_binning(greyInfo))
+				if (D.safe(zslice + dz, row + dy, col + dx))
 				{
-					// skip zeroes
-					if (a == 0 || b == 0)
-						continue;
+					// Raw intensities
+					PixIntens lvl_b = D.zyx(zslice, row, col),
+						lvl_a = D.zyx(zslice + dz, row + dy, col + dx);
 
-					// index of 'a'
-					auto lower = std::lower_bound(I.begin(), I.end(), a);	// enjoy sorted vector 'I'
-					a = int(lower - I.begin());	// intensity index in array of unique intensities 'I'
-					// index of 'b'
-					lower = std::lower_bound(I.begin(), I.end(), b);	// enjoy sorted vector 'I'
-					b = int(lower - I.begin());	// intensity index in array of unique intensities 'I'
+					// Skip 0-intensity pixels (usually out of mask pixels)
+					if (ibsi_grey_binning(greyInfo))
+						if (lvl_a == 0 || lvl_b == 0)
+							continue;
+
+					// 0-based grey tone indices, hence '-1'
+					int a = lvl_a,
+						b = lvl_b;
+
+					// raw intensities need to be modified for different grey binning paradigms (Matlab, PyRadiomics, IBSI)
+					if (radiomics_grey_binning(greyInfo))
+					{
+						// skip zeroes
+						if (a == 0 || b == 0)
+							continue;
+
+						// index of 'a'
+						auto lower = std::lower_bound(I.begin(), I.end(), a);	// enjoy sorted vector 'I'
+						a = int(lower - I.begin());	// intensity index in array of unique intensities 'I'
+						// index of 'b'
+						lower = std::lower_bound(I.begin(), I.end(), b);	// enjoy sorted vector 'I'
+						b = int(lower - I.begin());	// intensity index in array of unique intensities 'I'
+					}
+					else // matlab and IBSI
+					{
+						a = a - 1;
+						b = b - 1;
+					}
+
+					(GLCM.xy(a, b))++;
+
+					// Radiomics GLCM is symmetric, Matlab one is not
+					if (D3_GLCM_feature::symmetric_glcm || radiomics_grey_binning(greyInfo) || ibsi_grey_binning(greyInfo))
+						(GLCM.xy(b, a))++;
 				}
-				else // matlab and IBSI
-				{
-					a = a - 1;
-					b = b - 1;
-				}
-
-				(GLCM.xy(a, b))++;
-
-				// Radiomics GLCM is symmetric, Matlab one is not
-				if (D3_GLCM_feature::symmetric_glcm || radiomics_grey_binning(greyInfo) || ibsi_grey_binning(greyInfo))
-					(GLCM.xy(b, a))++;
 			}
-		}
 
 	// Calculate sum of GLCM for feature calculations
 	sum_p = 0;
-	for (int i = 0; i < GLCM.width(); ++i)
-		for (int j = 0; j < GLCM.height(); ++j)
-			sum_p += GLCM.xy(i, j);
+	for (double a : GLCM)
+		sum_p += a;
 }
 
 void D3_GLCM_feature::calculatePxpmy()
@@ -895,21 +923,15 @@ double D3_GLCM_feature::f_GLCM_CLUTEND()
 
 	double f = 0;
 
-	//
-	//	if (theEnvironment.ibsi_compliance)
-	//		// According to IBSI, feature "cluster tendency" is equivalent to "sum variance"
-	//		f = f_svar(P_matrix, theEnv.NovalOptions.noval(), this->Pxpy);
-	//	else
-
-		// Calculate it the radiomics way: cluster tendency = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} (i + j - \mu_x - \mu_y) ^2 p(i,j)
+	// Calculate it the radiomics way: cluster tendency = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} (i + j - \mu_x - \mu_y) ^2 p(i,j)
 	for (int x = 0; x < n_levels; x++)
 	{
 		double xval = I[x];
 		for (int y = 0; y < n_levels; y++)
 		{
 			double yval = I[y];
-			double m = xval + yval - by_row_mean * 2.0;
-			f += m * m * P_matrix.xy(x, y) / sum_p;
+			double m = xval + yval - by_row_mean - by_row_mean;
+			f += m * m * P_matrix.xy(x,y) / sum_p;
 		}
 	}
 
@@ -1068,8 +1090,9 @@ double D3_GLCM_feature::f_GLCM_JVAR(const SimpleMatrix<double>& P_matrix, double
 	double f = 0;
 	for (int x = 0; x < n_levels; x++)
 	{
-		double d = double(x + 1) - joint_ave,
+		double d = double(x+1) - joint_ave,
 			d2 = d * d;
+
 		for (int y = 0; y < n_levels; y++)
 			f += d2 * P_matrix.xy(x, y) / sum_p;
 	}
@@ -1088,23 +1111,23 @@ double D3_GLCM_feature::calc_ave(const std::vector<double>& afv)
 	return ave;
 }
 
-void D3_GLCM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
+void D3_GLCM_feature::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings& s, const Dataset& _)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 		D3_GLCM_feature f;
-		f.calculate (r, s);
-		f.save_value (r.fvals);
+		f.calculate(r, s);
+		f.save_value(r.fvals);
 	}
 }
 
-/*static*/ void D3_GLCM_feature::extract (LR& r, const Fsettings& s)
+/*static*/ void D3_GLCM_feature::extract(LR& r, const Fsettings& s)
 {
 	D3_GLCM_feature f;
-	f.calculate (r, s);
-	f.save_value (r.fvals);
+	f.calculate(r, s);
+	f.save_value(r.fvals);
 }
 
 

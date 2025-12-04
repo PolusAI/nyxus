@@ -3,6 +3,9 @@
 #include "image_matrix.h"
 #include "image_cube.h"
 
+void print_simplecube(const SimpleCube<PixIntens>& A, int fieldwidth); //xxxxxxxxxxxxxxxxxxx
+
+
 class TextureFeature
 {
 public:
@@ -22,7 +25,7 @@ public:
 			// radiomics binning
 			auto n = I.size();
 			for (size_t i = 0; i < n; i++)
-				S[i] = to_grayscale_radiomix (I[i], min_I_inten);
+				S[i] = to_grayscale_radiomix (I[i], min_I_inten, max_I_inten, std::abs(greybin_info));
 			return;
 		}
 		if (matlab_grey_binning(greybin_info))
@@ -51,7 +54,24 @@ public:
 			// radiomics binning
 			auto n = I.size();
 			for (size_t i = 0; i < n; i++)
-				S[i] = to_grayscale_radiomix(I[i], min_I_inten);
+			{
+				//xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+				// investigate [x15 y34 z0]
+				size_t xy_plane = I.width() * I.height(),
+					z = i / xy_plane,
+					last_z = i - z * xy_plane,
+					y = last_z / I.width(),
+					x = last_z % I.width();
+				if (x == 15 && y == 34 && z == 0)
+				{
+					auto x = I[i];
+					bool debugbreak = true;
+				}
+				//________________________________
+
+				S[i] = to_grayscale_radiomix(I[i], min_I_inten, max_I_inten, std::abs(greybin_info));
+			}
+			//---------- print_simplecube (S, 3); //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 			return;
 		}
 		if (matlab_grey_binning(greybin_info))
@@ -78,7 +98,7 @@ public:
 		if (radiomics_grey_binning(greybin_info))
 		{
 			// radiomics binning
-			auto y = to_grayscale_radiomix (x, min_I_inten);
+			auto y = to_grayscale_radiomix (x, min_I_inten, max_I_inten, std::abs(greybin_info));
 			return y;
 		}
 		else
@@ -100,14 +120,17 @@ public:
 	static inline bool radiomics_grey_binning (int greybinning_info) { return greybinning_info < 0; }
 	static inline bool ibsi_grey_binning (int greybinning_info) { return greybinning_info == 0; }
 
-	static double radiomics_bin_width;	// default: 25
+	//xxxxxxx--------	static double radiomics_bin_width;	// default: 25
 
-	//---------------------- binning by Leijenaar RTH, Nalbantov G, Carvalho et al. (PyRadiomics)
-	static inline PixIntens to_grayscale_radiomix (PixIntens x, PixIntens min__)
+	// returns 1-based bin indices
+	static inline PixIntens to_grayscale_radiomix (PixIntens x, PixIntens min__, PixIntens max__, int binCount)
 	{
+		double binW = double(max__ - min__) / double (binCount);
 		if (x)
 		{
-			PixIntens y = (unsigned int)(double(x - min__) / TextureFeature::radiomics_bin_width) + 1;
+			PixIntens y = (PixIntens) (double(x - min__) / binW + 1);
+			if (y > binCount)
+				y = binCount;	// the last bin is +1 unit wider
 			return y;
 		}
 		else

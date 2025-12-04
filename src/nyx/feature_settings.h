@@ -43,3 +43,6 @@ enum class NyxSetting : int
 #define STNGS_SINGLEROI(obj) (obj[(int)NyxSetting::SINGLEROI].bval)
 #define STNGS_PIXELDISTANCE(obj) (obj[(int)NyxSetting::PIXELDISTANCE].ival)
 #define STNGS_VERBOSLVL(obj) (obj[(int)NyxSetting::VERBOSLVL].ival)
+
+#define STNGS_GLCM_GREYDEPTH(obj) (obj[(int)NyxSetting::GLCM_GREYDEPTH].ival)
+
