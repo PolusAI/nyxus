@@ -6,10 +6,15 @@ on:
   pull_request: 
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
 env:
   BUILD_TYPE: Release
 
 jobs:
+
   Build_and_Run_GTest:
     name: Build and Run GoogleTest
     runs-on: windows-latest

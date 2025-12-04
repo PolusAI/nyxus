@@ -35,7 +35,7 @@ D3_GLCM_feature::D3_GLCM_feature() : FeatureMethod("D3_GLCM_feature")
 	provide_features(D3_GLCM_feature::featureset);
 }
 
-void D3_GLCM_feature::calculate(LR& r, const Fsettings& s)
+void D3_GLCM_feature::calculate (LR& r, const Fsettings& s)
 {
 	// clear the feature values buffers
 	clear_result_buffers();
@@ -173,42 +173,12 @@ void D3_GLCM_feature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature3D::GLCM_SUMAVERAGE_AVE][0] = calc_ave(fvals_sum_avg);
 	fvals[(int)Feature3D::GLCM_SUMVARIANCE_AVE][0] = calc_ave(fvals_sum_var);
 	fvals[(int)Feature3D::GLCM_SUMENTROPY_AVE][0] = calc_ave(fvals_sum_entropy);
-//xxxxxxxxxxxxxxxxx-------------	fvals[(int)Feature3D::GLCM_VARIANCE_AVE][0] = calc_ave(fvals_variance);
-}
-
-void print_SimpleMatrix(const SimpleMatrix<double>& C)
-{
-	std::cout << "\n";
-	std::cout << " H=" << C.height() << " W=" << C.width() << "\n";
-
-	for (int y = 0; y < C.height(); y++)
-	{
-		for (int x = 0; x < C.width(); x++)
-		{
-			std::cout << "\t" << C.yx(y, x);
-		}
-		std::cout << " ; \n";
-	}
-	std::cout << "\n";
+  //xxxx deprecated in PyR xxxx	fvals[(int)Feature3D::GLCM_VARIANCE_AVE][0] = calc_ave(fvals_variance);
 }
 
 void D3_GLCM_feature::extract_texture_features_at_angle(int dx, int dy, int dz, const SimpleCube<PixIntens>& binned_greys, PixIntens min_val, PixIntens max_val, int n_greys, bool ibsi, double soft_nan)
 {
 	calculateCoocMatAtAngle (P_matrix, dx, dy, dz, binned_greys, min_val, max_val, n_greys, ibsi);
-
-	//xxxxxxxxxxxxxxxxxxxxx diag
-	auto P = P_matrix; // normed
-
-	//	for (int i = 0; i < P.width(); ++i)
-	//		for (int j = 0; j < P.height(); ++j)
-	//			P.xy(i, j) = P.xy(i, j) / sum_p;
-	// 
-	//------------- std::cout << "\ndx=" << dx << " dy=" << dy << " dz=" << dz << "\n";
-	//------------- std::cout << "sum_p=" << sum_p << "\n";
-	//------------- std::cout << "binned_greys.shape xyz=" << binned_greys.width() << "," << binned_greys.height() << "," << binned_greys.depth() << "\n";
-	//------------- std::cout << "sum(binned_greys)=" << std::accumulate(binned_greys.begin(), binned_greys.end(), 0.0) << "\n";
-	//------------- print_SimpleMatrix (P);
-	//
 
 	// Blank cooc-matrix? -- no point to use it, assign each feature value '0' and return.
 	if (sum_p == 0)
@@ -1111,23 +1081,23 @@ double D3_GLCM_feature::calc_ave(const std::vector<double>& afv)
 	return ave;
 }
 
-void D3_GLCM_feature::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings& s, const Dataset& _)
+void D3_GLCM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)
 	{
 		int lab = (*ptrLabels)[i];
 		LR& r = (*ptrLabelData)[lab];
 		D3_GLCM_feature f;
-		f.calculate(r, s);
-		f.save_value(r.fvals);
+		f.calculate (r, s);
+		f.save_value (r.fvals);
 	}
 }
 
-/*static*/ void D3_GLCM_feature::extract(LR& r, const Fsettings& s)
+/*static*/ void D3_GLCM_feature::extract (LR& r, const Fsettings& s)
 {
 	D3_GLCM_feature f;
-	f.calculate(r, s);
-	f.save_value(r.fvals);
+	f.calculate (r, s);
+	f.save_value (r.fvals);
 }
 
 
