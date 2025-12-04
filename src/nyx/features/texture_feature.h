@@ -3,9 +3,6 @@
 #include "image_matrix.h"
 #include "image_cube.h"
 
-void print_simplecube(const SimpleCube<PixIntens>& A, int fieldwidth); //xxxxxxxxxxxxxxxxxxx
-
-
 class TextureFeature
 {
 public:
@@ -54,24 +51,7 @@ public:
 			// radiomics binning
 			auto n = I.size();
 			for (size_t i = 0; i < n; i++)
-			{
-				//xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-				// investigate [x15 y34 z0]
-				size_t xy_plane = I.width() * I.height(),
-					z = i / xy_plane,
-					last_z = i - z * xy_plane,
-					y = last_z / I.width(),
-					x = last_z % I.width();
-				if (x == 15 && y == 34 && z == 0)
-				{
-					auto x = I[i];
-					bool debugbreak = true;
-				}
-				//________________________________
-
 				S[i] = to_grayscale_radiomix(I[i], min_I_inten, max_I_inten, std::abs(greybin_info));
-			}
-			//---------- print_simplecube (S, 3); //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 			return;
 		}
 		if (matlab_grey_binning(greybin_info))
@@ -79,7 +59,6 @@ public:
 			// matlab binning
 			auto n = I.size();
 			int n_matlab_levels = greybin_info;
-
 			prep_bin_array_matlab(max_I_inten, n_matlab_levels);
 			for (size_t i = 0; i < n; i++)
 				S[i] = bin_array_matlab(I[i]);
@@ -120,8 +99,6 @@ public:
 	static inline bool radiomics_grey_binning (int greybinning_info) { return greybinning_info < 0; }
 	static inline bool ibsi_grey_binning (int greybinning_info) { return greybinning_info == 0; }
 
-	//xxxxxxx--------	static double radiomics_bin_width;	// default: 25
-
 	// returns 1-based bin indices
 	static inline PixIntens to_grayscale_radiomix (PixIntens x, PixIntens min__, PixIntens max__, int binCount)
 	{
@@ -139,7 +116,7 @@ public:
 
 private:
 
-	//---------------------- Matlab binning --------------------------------
+	// Matlab binning 
 	unsigned int cached_n_levels;	// initialized in prep_grayscale_binning(), referenced in to_grayscale_2024_v2()
 	double slope = 0.;
 	double intercept = 0.;

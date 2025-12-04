@@ -16,41 +16,41 @@
 // 
 // where file "settings1.yaml" is:
 // 
-//setting:
-//#disabled - binWidth: 25
-//binCount : 20
-//label : 1
-//interpolator : 'sitkBSpline'
-//resampledPixelSpacing :
-//weightingNorm: 
+//  setting:
+//  #disabled - binWidth: 25
+//  binCount : 20
+//  label : 1
+//  interpolator : 'sitkBSpline'
+//  resampledPixelSpacing :
+//  weightingNorm: 
 //
-//imageType :
-//    Original : {} 
-//featureClass :
-//  glcm:
-//      - 'Autocorrelation'
-//      - 'JointAverage'
-//      - 'ClusterProminence'
-//      - 'ClusterShade'
-//      - 'ClusterTendency'
-//      - 'Contrast'
-//      - 'Correlation'
-//      - 'DifferenceAverage'
-//      - 'DifferenceEntropy'
-//      - 'DifferenceVariance'
-//      - 'JointEnergy'
-//      - 'JointEntropy'
-//      - 'Imc1'
-//      - 'Imc2'
-//      - 'Idm'
-//      - 'Idmn'
-//      - 'Id'
-//      - 'Idn'
-//      - 'InverseVariance'
-//      - 'MaximumProbability'
-//      - 'SumAverage'
-//      - 'SumEntropy'
-//      - 'SumSquares'
+//  imageType :
+//        Original : {} 
+//  featureClass :
+//      glcm:
+//        - 'Autocorrelation'
+//        - 'JointAverage'
+//        - 'ClusterProminence'
+//        - 'ClusterShade'
+//        - 'ClusterTendency'
+//        - 'Contrast'
+//        - 'Correlation'
+//        - 'DifferenceAverage'
+//        - 'DifferenceEntropy'
+//        - 'DifferenceVariance'
+//        - 'JointEnergy'
+//        - 'JointEntropy'
+//        - 'Imc1'
+//        - 'Imc2'
+//        - 'Idm'
+//        - 'Idmn'
+//        - 'Id'
+//        - 'Idn'
+//        - 'InverseVariance'
+//        - 'MaximumProbability'
+//        - 'SumAverage'
+//        - 'SumEntropy'
+//        - 'SumSquares'
 //
 
 static std::unordered_map<std::string, float> compat_d3glcm_GT
