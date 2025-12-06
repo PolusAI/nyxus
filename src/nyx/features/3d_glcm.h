@@ -128,6 +128,7 @@ public:
 	void save_value(std::vector<std::vector<double>>& feature_vals);
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
 	static void extract (LR& r, const Fsettings& s);
+	double calc_ave (const std::vector<double>& angled_feature_vals);
 
 private:
 
@@ -144,7 +145,7 @@ private:
 		PixIntens max_val,
 		bool normalize);
 
-	void extract_texture_features_at_angle (int angle, const SimpleCube<PixIntens> & grays, PixIntens min_val, PixIntens max_val, int n_greys, bool ibsi, double soft_nan);
+	void extract_texture_features_at_angle (int dx, int dy, int dz, const SimpleCube<PixIntens> & grays, PixIntens min_val, PixIntens max_val, int n_greys, bool ibsi, double soft_nan);
 
 	void calculateCoocMatAtAngle(
 		// out
@@ -193,8 +194,6 @@ private:
 	double f_GLCM_JE(const SimpleMatrix<double>& P_matrix);
 	double f_GLCM_JMAX(const SimpleMatrix<double>& P_matrix);
 	double f_GLCM_JVAR(const SimpleMatrix<double>& P_matrix, double mean_x);
-
-	double calc_ave(const std::vector<double>& angled_feature_vals);
 
 	using AngledFeatures = std::vector<double>;
 	void copyfvals(AngledFeatures& dst, const AngledFeatures& src);

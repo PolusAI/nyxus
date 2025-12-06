@@ -6,6 +6,7 @@
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_glcm.h"
+#include "../src/nyx/helpers/fsystem.h"
 
 // Feature values calculated on intensity ut_inten.nii and mask ut_inten.nii, label 57:
 // (100 grey levels, offset 1, and asymmetric cooc matrix)
@@ -61,28 +62,40 @@ static std::tuple<std::string, std::string, int> get_3d_segmented_phantom()
 
 void test_3glcm_feature (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
+    // (1) prepare
+
+    // check that requested feature exists
+    auto iter = d3glcm_GT.find(fname);
+    ASSERT_TRUE(iter != d3glcm_GT.end());
+
     // get segment info
     auto [ipath, mpath, label] = get_3d_segmented_phantom();
     ASSERT_TRUE(fs::exists(ipath));
     ASSERT_TRUE(fs::exists(mpath));
 
-    // mock the 3D workflow
+    // (2) mock the 3D workflow
+
     Environment e;
-    // (1) slide -> dataset -> prescan 
+
+    // slide -> dataset -> prescan 
     e.dataset.dataset_props.reserve(1);
     SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
     ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
     e.dataset.update_dataset_props_extrema();
-    // (2) properties of specific ROIs sitting in 'e.uniqueLabels'
+
+    // properties of specific ROIs sitting in 'e.uniqueLabels'
     clear_slide_rois(e.uniqueLabels, e.roiData);
     ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/));
-    // (3) voxel clouds
+
+    // voxel clouds
     std::vector<int> batch = { label };   // expecting this roi label after metrics gathering
     ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/));
-    // (4) buffers
+
+    // buffers
     ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
 
-    // (5) feature settings
+    // (3) common feature extraction settings
+
     Fsettings s;
     s.resize((int)NyxSetting::__COUNT__);
     s[(int)NyxSetting::SOFTNAN].rval = 0.0;
@@ -94,9 +107,14 @@ void test_3glcm_feature (const Nyxus::Feature3D& expecting_fcode, const std::str
     s[(int)NyxSetting::USEGPU].bval = false;
     s[(int)NyxSetting::VERBOSLVL].ival = 0;
     s[(int)NyxSetting::IBSI].bval = false;
-    //
 
-    // (6) feature extraction
+    // (4) GLCM-specific feature settings mocking default pyRadiomics settings
+
+    s[(int)NyxSetting::GLCM_GREYDEPTH].ival = -100;  // intentionally negative to activate radiomics binCount-based grey-binning
+    s[(int)NyxSetting::GLCM_OFFSET].ival = 1;
+    s[(int)NyxSetting::GLCM_SPARSEINTENS].bval = true;
+
+    // (5) feature extraction
 
     // make it find the feature code by name
     int fcode = -1;
@@ -110,14 +128,14 @@ void test_3glcm_feature (const Nyxus::Feature3D& expecting_fcode, const std::str
     D3_GLCM_feature f;
     ASSERT_NO_THROW(f.calculate(r, s));
 
-    // (6) saving values
+    // (6) get values
 
     f.save_value(r.fvals);
 
-    // aggregate subfeatures
-    double atot = r.fvals[fcode][0] + r.fvals[fcode][1] + r.fvals[fcode][2] + r.fvals[fcode][3];
+    // aggregate angled subfeatures (13 angles for 3D)
+    double atot = f.calc_ave(r.fvals[fcode]);
 
-    // verdict
+    // (7) verdict
     ASSERT_TRUE(agrees_gt(atot, d3glcm_GT[fname], 10.));
 }
 
