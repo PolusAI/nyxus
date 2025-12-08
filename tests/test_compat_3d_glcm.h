@@ -6,6 +6,8 @@
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_glcm.h"
+#include "../src/nyx/raw_nifti.h"
+
 #include "../src/nyx/helpers/fsystem.h"
 
 // Feature values calculated on intensity ut_inten.nii and mask ut_inten.nii, label 57:
@@ -90,11 +92,9 @@ static std::tuple<std::string, std::string, int> get_3d_segmented_phantom()
 
     fs::path f1("/data/nifti/phantoms/ut_inten.nii");
     fs::path i_phys_path = (pp.string() + f1.make_preferred().string());
-    //ASSERT_TRUE(fs::exists(i_phys_path));
 
     fs::path f2("/data/nifti/phantoms/ut_mask57.nii");
     fs::path m_phys_path = (pp.string() + f2.make_preferred().string());
-    //ASSERT_TRUE(fs::exists(m_phys_path));
 
     std::string ipath = i_phys_path.string(),
         mpath = m_phys_path.string();
@@ -132,8 +132,10 @@ void test_compat_3glcm_feature (const Nyxus::Feature3D& expecting_fcode, const s
 
     // get segment info
     auto [ipath, mpath, label] = get_3d_compat_phantom();
+    std::cout << "\n\ntest_compat_3glcm_feature():\n__FILE__=" << __FILE__ << "\nipath = " << ipath << "\nmpath = " << mpath << "\n";  //xxxxxxxxxxxxxxxxx
     ASSERT_TRUE(fs::exists(ipath));
     ASSERT_TRUE(fs::exists(mpath));
+    std::cout << "Tested that this^^^ stuff exists in the file system\n\n";
 
     // (2) mock the 3D workflow
 
