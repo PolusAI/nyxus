@@ -34,6 +34,12 @@
 #include "test_arrow_file_name.h"
 #include "test_compat_3d_glcm.h"
 
+// ***** old workable test *****
+TEST(TEST_NYXUS, TEST_OLDGOOD_3NGTDM_COARSENESS) {
+	ASSERT_NO_THROW(test_3ngtdm_coarseness());
+}
+
+
 // ***** 3D GLCM compatibility *****
 
 TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_ACOR) {

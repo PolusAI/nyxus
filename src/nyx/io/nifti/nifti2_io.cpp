@@ -3758,6 +3758,7 @@ char * nifti_findhdrname(const char* fname)
    /**- if nothing has been found, return NULL */
    free(basename);
    free(hdrname);
+   fprintf(stderr, "\nnifti_findhdrname(): nothing has been found, return NULL\n\n");
    return NULL;
 }
 
