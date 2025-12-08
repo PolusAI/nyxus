@@ -56,9 +56,9 @@ cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_IN
 make install -j4
 cd ../../
 
-curl -L https://github.com/madler/zlib/releases/download/v1.3/zlib13.zip -o zlib13.zip
-unzip zlib13.zip
-cd zlib-1.3
+curl -L https://github.com/madler/zlib/releases/download/v1.3.1/zlib131.zip -o zlib131.zip
+unzip zlib131.zip
+cd zlib-1.3.1
 mkdir build_man
 cd build_man
 cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
@@ -83,9 +83,9 @@ if [[ $BUILD_BOOST_DEP -eq 1 ]]; then
 fi
 
 if [[ $BUILD_Z5_DEP -eq 1 ]]; then
-    curl -L https://github.com/Blosc/c-blosc/archive/refs/tags/v1.21.5.zip -o v1.21.5.zip
-    unzip v1.21.5.zip
-    cd c-blosc-1.21.5
+    curl -L https://github.com/Blosc/c-blosc/archive/refs/tags/v1.21.6.zip -o v1.21.6.zip
+    unzip v1.21.6.zip
+    cd c-blosc-1.21.6
     mkdir build_man
     cd build_man
     cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/ ..  
@@ -153,9 +153,9 @@ make install -j4
 cd ../../
 
 if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
-    curl -L  https://github.com/glennrp/libpng/archive/refs/tags/v1.6.39.zip -o v1.6.39.zip
-    unzip v1.6.39.zip
-    cd libpng-1.6.39
+    curl -L  https://github.com/glennrp/libpng/archive/refs/tags/v1.6.53.zip -o v1.6.53.zip
+    unzip v1.6.53.zip
+    cd libpng-1.6.53
     mkdir build_man
     cd build_man
     cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/   ..

@@ -16,7 +16,7 @@ env:
 jobs:
   Build_and_Run_GTest:
     name: Build and Run GoogleTest
-    runs-on: macos-14-large
+    runs-on: macos-15-intel
     defaults:
       run:
         shell: bash -el {0}
@@ -58,7 +58,7 @@ jobs:
 
   Build_and_Run_PyTest:
     name: Build and Run PyTest
-    runs-on: macos-14-large
+    runs-on: macos-15-intel
     defaults:
       run:
         shell: bash -el {0}

@@ -30,9 +30,9 @@ cmake --build . --config Release --target install
 popd
 popd
 
-curl -L https://github.com/madler/zlib/releases/download/v1.3/zlib13.zip -o zlib13.zip
-tar -xvf zlib13.zip
-pushd zlib-1.3
+curl -L https://github.com/madler/zlib/releases/download/v1.3.1/zlib131.zip -o zlib131.zip
+tar -xvf zlib131.zip
+pushd zlib-1.3.1
 mkdir build_man
 pushd build_man
 cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
@@ -56,9 +56,9 @@ if "%BUILD_Z5_DEP%" == "1" (
     xcopy /E /I /y boost ..\local_install\include\boost
     popd
 
-    curl -L https://github.com/Blosc/c-blosc/archive/refs/tags/v1.21.5.zip -o v1.21.5.zip
-    tar -xf v1.21.5.zip
-    pushd c-blosc-1.21.5
+    curl -L https://github.com/Blosc/c-blosc/archive/refs/tags/v1.21.6.zip -o v1.21.6.zip
+    tar -xf v1.21.6.zip
+    pushd c-blosc-1.21.6
     mkdir build_man
     pushd build_man
     cmake -DCMAKE_INSTALL_PREFIX=../../local_install/ ..   
