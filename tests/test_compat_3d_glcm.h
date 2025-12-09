@@ -109,10 +109,10 @@ static std::tuple<std::string, std::string, int> get_3d_compat_phantom()
     fs::path this_fpath(__FILE__);
     fs::path pp = this_fpath.parent_path();
 
-    fs::path f1("/data/nifti/compat_int/compat_int_mri.nii.gz");
+    fs::path f1("/data/nifti/compat_int/compat_int_mri.nii");
     fs::path i_phys_path = (pp.string() + f1.make_preferred().string());
 
-    fs::path f2("/data/nifti/compat_seg/compat_seg_liver.nii.gz");
+    fs::path f2("/data/nifti/compat_seg/compat_seg_liver.nii");
     fs::path m_phys_path = (pp.string() + f2.make_preferred().string());
 
     std::string ipath = i_phys_path.string(),
