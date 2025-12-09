@@ -53,7 +53,7 @@ jobs:
           CIBW_BEFORE_ALL_MACOS: |
                                    bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
                                    mkdir -p /tmp/nyxus_bld &&
-                                   cp -r local_install /tmp/nyxus_bld 
+                                   cp -r local_install /tmp/nyxus_bld
           CIBW_BEFORE_ALL_LINUX:  dnf -y install llvm libevent-devel openssl-devel && 
                                    bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
                                    mkdir -p /tmp/nyxus_bld &&
