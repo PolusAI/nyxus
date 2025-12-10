@@ -132,10 +132,8 @@ void test_compat_3glcm_feature (const Nyxus::Feature3D& expecting_fcode, const s
 
     // get segment info
     auto [ipath, mpath, label] = get_3d_compat_phantom();
-    std::cout << "\n\ntest_compat_3glcm_feature():\n__FILE__=" << __FILE__ << "\nipath = " << ipath << "\nmpath = " << mpath << "\n";  //xxxxxxxxxxxxxxxxx
     ASSERT_TRUE(fs::exists(ipath));
     ASSERT_TRUE(fs::exists(mpath));
-    std::cout << "Tested that this^^^ stuff exists in the file system\n\n";
 
     // (2) mock the 3D workflow
 
