@@ -3668,10 +3668,18 @@ char * nifti_findhdrname(const char* fname)
    int   eisupper = 0;  /* init to lowercase extensions */
 
    /**- check input file(s) for sanity */
-   if( !nifti_validfilename(fname) ) return NULL;
+   if (!nifti_validfilename(fname))
+   {
+       fprintf (stderr, "\nnifti_findhdrname(): NOT nifti_validfilename()\n\n");
+       return NULL;
+   }
 
    basename = nifti_makebasename(fname);
-   if( !basename ) return NULL;   /* only on string alloc failure */
+   if (!basename)
+   {
+       fprintf (stderr, "\nnifti_findhdrname(): NOT nifti_makebasename()\n\n");
+       return NULL;   /* only on string alloc failure */
+   }
 
    /**- return filename if it has a valid extension and exists
          (except if it is an .img file (and maybe .gz)) */
@@ -3750,6 +3758,7 @@ char * nifti_findhdrname(const char* fname)
    /**- if nothing has been found, return NULL */
    free(basename);
    free(hdrname);
+   fprintf(stderr, "\nnifti_findhdrname(): nothing has been found, return NULL\n\n");
    return NULL;
 }
 
