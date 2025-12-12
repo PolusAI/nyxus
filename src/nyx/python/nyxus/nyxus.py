@@ -17,7 +17,9 @@ from .backend import (
     get_params_imp,
     arrow_is_enabled_imp,
     get_arrow_file_imp, 
-    get_parquet_file_imp)
+    get_parquet_file_imp,
+    set_metaparam_imp,
+    get_metaparam_imp)
 
 import os
 import numpy as np
@@ -997,6 +999,43 @@ class Nyxus3D:
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
+
+    def set_metaparam(
+        self, 
+        paramval: str):
+        """ Sets feature-specific parameter to a new value
+
+        Parameters
+        -------------
+        paramval : str
+        feature-specific value, for example: "3glcm/greydepth=25"
+
+        Returns
+        ---------
+        success and optional error details
+        """
+        ok,errordetails = set_metaparam_imp (id(self), paramval)
+        if ok==False:
+            raise  ValueError (f'Invalid metaparameter value {paramval}: {errordetails}')
+
+    def get_metaparam (
+        self, 
+        paramname: str):
+        """ Gets feature-specific parameter
+
+        Parameters
+        -------------
+        paramval : str
+        feature-specific value, for example: "3glcm/greydepth"
+
+        Returns
+        ---------
+        requested value or throws an exception
+        """
+        val,errordetails = get_metaparam_imp (id(self), paramname)
+        if len(errordetails) > 0:
+            raise  NameError (f'Invalid metaparameter name {paramname}: {errordetails}')
+        return val
 
     def featurize_directory(
         self,

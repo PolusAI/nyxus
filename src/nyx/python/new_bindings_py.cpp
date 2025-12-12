@@ -1030,10 +1030,32 @@ bool arrow_is_enabled_imp (uint64_t instid)
     return env.arrow_is_enabled();
 }
 
+py::tuple set_metaparam_imp (uint64_t instid, const std::string p_val)
+{
+    Environment & env = Nyxus::findenv (instid);
+    std::optional<std::string> mayBerror = env.set_metaparam (p_val);
+    if (mayBerror.has_value())
+        return py::make_tuple (false, mayBerror.value());
+    else
+        return py::make_tuple (true, "success");
+}
+
+py::tuple get_metaparam_imp (uint64_t instid, const std::string p_name)
+{
+    Environment& env = Nyxus::findenv(instid);
+    double p_val;
+    std::optional<std::string> mayBerror = env.get_metaparam (p_val, p_name);
+    if (mayBerror.has_value())
+        return py::make_tuple (false, mayBerror.value());
+    else
+        return py::make_tuple (p_val, "");
+}
+
+
+
 PYBIND11_MODULE(backend, m)
 {
     m.doc() = "Nyxus";
-    
     m.def("initialize_environment",     &initialize_environment,    "Environment initialization");
     m.def("featurize_directory_imp",    &featurize_directory_imp,   "Calculate features of images defined by intensity and mask image collection directories");
     m.def("featurize_directory_3D_imp", &featurize_directory_3D_imp,    "Calculate 3D features of images defined by intensity and mask image collection directories");
@@ -1054,6 +1076,8 @@ PYBIND11_MODULE(backend, m)
     m.def("arrow_is_enabled_imp",       &arrow_is_enabled_imp,      "Check if arrow is enabled.");
     m.def("get_arrow_file_imp",         &get_arrow_file_imp,        "Get path to arrow file");
     m.def("get_parquet_file_imp",       &get_parquet_file_imp,      "Returns path to parquet file");
+    m.def("set_metaparam_imp", &set_metaparam_imp, "Setting a common or feature-specific metaparameter");
+    m.def("get_metaparam_imp", &get_metaparam_imp, "Getting a common or feature-specific metaparameter value");
 }
 
 
