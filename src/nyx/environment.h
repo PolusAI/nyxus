@@ -200,6 +200,10 @@ public:
 	void compile_feature_settings();
 	const Fsettings & get_feature_settings (const std::type_info& ftype);
 
+	// Meta-parameters
+	std::optional<std::string> set_metaparam (const std::string & p_val);
+	std::optional<std::string> get_metaparam(double& p_val, const std::string& p_name);
+
 	// Features
 	FeatureSet theFeatureSet;
 	FeatureManager theFeatureMgr;

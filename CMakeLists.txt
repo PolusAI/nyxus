@@ -210,6 +210,7 @@ set(SOURCE
 	src/nyx/environment.cpp
 	src/nyx/environment_basic.cpp
 	src/nyx/env_features.cpp
+	src/nyx/env_metaparams.cpp
 	src/nyx/feature_method.cpp
 	src/nyx/feature_mgr.cpp
 	src/nyx/feature_mgr_init.cpp
