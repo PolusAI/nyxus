@@ -787,9 +787,9 @@ class TestNyxus():
             assert f.at[0, "EDGE_MEAN_INTENSITY"] != 0
 
         def test_montage_hounsfeld_data (self):
-        '''
-        Testing Nyxus 3D GLCM features compatibility with Radiomics library
-        '''
+            '''
+            Testing Nyxus 3D GLCM features compatibility with Radiomics library
+            '''
 
             nyx = nyxus.Nyxus3D (["*3D_GLCM*"])
             assert nyx is not None
