@@ -28,15 +28,7 @@ namespace Nyxus {
     Environment & findenv (uint64_t instid)
     {
         // create if missing
-        
-        //if (Nyxus::unique_pynyxus_ids.find(instid) == Nyxus::unique_pynyxus_ids.end())
-        //{
-        //    Environment newEnv;
-        //    Nyxus::pynyxus_cache [instid] = newEnv;
-        //}
-
         auto [it, inserted] = Nyxus::pynyxus_cache.try_emplace(instid);
-        
         // find
         Environment& env = Nyxus::pynyxus_cache [instid];
         return env;

@@ -90,6 +90,36 @@ std::optional<std::string> Environment::set_metaparam (const std::string & p_val
 				}
 				STNGS_GLCM_GREYDEPTH (fsett_D3_GLCM) = n_greys;
 			}
+			else if (ppath[1] == "offset")
+			{
+				// interpret eq_sides[1] as int
+				int offs;
+				if (Nyxus::parse_as_int(eq_sides[1], offs) == false)
+				{
+					return "error: cannot parse value \"" + eq_sides[1] + "\" of 3glcm/offset: expecting an integer";
+				}
+				STNGS_GLCM_OFFSET (fsett_D3_GLCM) = offs;
+			}
+			else if (ppath[1] == "numang")
+			{
+				// interpret eq_sides[1] as int
+				int n_angs;
+				if (Nyxus::parse_as_int(eq_sides[1], n_angs) == false)
+				{
+					return "error: cannot parse value \"" + eq_sides[1] + "\" of 3glcm/numang: expecting an integer";
+				}
+				STNGS_GLCM_NUMANG(fsett_D3_GLCM) = n_angs;
+			}
+			else if (ppath[1] == "sparseintensities")
+			{
+				// interpret eq_sides[1] as boolean
+				bool bval;
+				if (Nyxus::parse_as_bool(eq_sides[1], bval) == false)
+				{
+					return "error: cannot parse value \"" + eq_sides[1] + "\" of 3glcm/sparseintensities: expecting a boolean (\"true\" or \"false\")";
+				}
+				STNGS_GLCM_SPARSEINTENS(fsett_D3_GLCM) = bval;
+			}
 			else
 			{
 				return "error: unrecognized feature parameter of feature 3glcm: \"" + ppath[1] + "\"";
@@ -121,8 +151,26 @@ std::optional<std::string> Environment::get_metaparam (double & p_val, const std
 			if (ppath[1] == "greydepth")
 			{
 				// interpret eq_sides[1] as int
-				int n_greys = STNGS_GLCM_GREYDEPTH(fsett_D3_GLCM);
-				p_val = (double) n_greys;
+				int ival = STNGS_GLCM_GREYDEPTH(fsett_D3_GLCM);
+				p_val = (double) ival;
+			}
+			else if (ppath[1] == "offset")
+			{
+				// interpret eq_sides[1] as int
+				int ival = STNGS_GLCM_OFFSET(fsett_D3_GLCM);
+				p_val = (double)ival;
+			}
+			else if (ppath[1] == "numang")
+			{
+				// interpret eq_sides[1] as int
+				int ival = STNGS_GLCM_NUMANG(fsett_D3_GLCM);
+				p_val = (double)ival;
+			}
+			else if (ppath[1] == "sparseintensities")
+			{
+				// interpret eq_sides[1] as boolean
+				bool bval = STNGS_GLCM_SPARSEINTENS(fsett_D3_GLCM);
+				p_val = (double)bval;
 			}
 			else
 			{
