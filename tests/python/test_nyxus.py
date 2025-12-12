@@ -786,7 +786,7 @@ class TestNyxus():
             assert f.at[0, "DIAMETER_EQUAL_PERIMETER"] == 0
             assert f.at[0, "EDGE_MEAN_INTENSITY"] != 0
 
-        def test_montage_hounsfeld_data (self):
+        def test_3d_glcm_compatibility (self):
             '''
             Testing Nyxus 3D GLCM features compatibility with Radiomics library
             '''
@@ -801,11 +801,10 @@ class TestNyxus():
             nyx.set_metaparam ("3glcm/sparseintensities=true")
 
             # calculate features
-            path = str (pathlib.Path(__file__).parent.parent.resolve()) # parent.parent to reach the data owned by c++ tests
-            data_path = path + '/data'
+            testsRoot = str (pathlib.Path(__file__).parent.parent.resolve()) # parent.parent to reach the data owned by c++ tests
             f = nyx.featurize_files(
-                [data_path + "/nifti/compat_int/compat_int_mri.nii"], 
-                [data_path + "/nifti/compat_int/compat_seg_liver.nii"], 
+                [testsRoot + "/data/nifti/compat_int/compat_int_mri.nii"], 
+                [testsRoot + "/data/nifti/compat_seg/compat_seg_liver.nii"], 
                 False)
 
             # check the result versus radiomics results calculated with the same data
