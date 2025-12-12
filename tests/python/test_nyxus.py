@@ -801,7 +801,7 @@ class TestNyxus():
             nyx.set_metaparam ("3glcm/sparseintensities=true")
 
             # calculate features
-            path = str (pathlib.Path(__file__).parent.resolve())
+            path = str (pathlib.Path(__file__).parent.parent.resolve()) # parent.parent to reach the data owned by c++ tests
             data_path = path + '/data'
             f = nyx.featurize_files(
                 [data_path + "/nifti/compat_int/compat_int_mri.nii"], 
