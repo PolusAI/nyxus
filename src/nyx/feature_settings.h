@@ -31,6 +31,8 @@ enum class NyxSetting : int
 	GLCM_OFFSET,
 	GLCM_NUMANG,
 	GLCM_SPARSEINTENS,
+	// GLDM
+	GLDM_GREYDEPTH,
 	//
 	__COUNT__
 };
@@ -50,4 +52,5 @@ enum class NyxSetting : int
 #define STNGS_GLCM_OFFSET(obj) (obj[(int)NyxSetting::GLCM_OFFSET].ival)
 #define STNGS_GLCM_NUMANG(obj) (obj[(int)NyxSetting::GLCM_NUMANG].ival)
 #define STNGS_GLCM_SPARSEINTENS(obj) (obj[(int)NyxSetting::GLCM_SPARSEINTENS].ival)
+#define STNGS_GLDM_GREYDEPTH(obj) (obj[(int)NyxSetting::GLDM_GREYDEPTH].ival)
 

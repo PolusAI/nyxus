@@ -33,6 +33,65 @@
 #include "test_arrow.h"
 #include "test_arrow_file_name.h"
 #include "test_compat_3d_glcm.h"
+#include "test_compat_3d_gldm.h"
+
+// ***** 3D GLDM compatibility *****
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_DE) {
+	ASSERT_NO_THROW (test_compat_3GLDM_DE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_DN) {
+	ASSERT_NO_THROW (test_compat_3GLDM_DN()); 
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_DNN) {
+	ASSERT_NO_THROW (test_compat_3GLDM_DNN());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_DV) {
+	ASSERT_NO_THROW (test_compat_3GLDM_DV());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_GLN) {
+	ASSERT_NO_THROW (test_compat_3GLDM_GLN());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_GLV) {
+	ASSERT_NO_THROW (test_compat_3GLDM_GLV());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_HGLE) { 
+	ASSERT_NO_THROW (test_compat_3GLDM_HGLE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_LDE) { 
+	ASSERT_NO_THROW (test_compat_3GLDM_LDE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_LDHGLE) { 
+	ASSERT_NO_THROW (test_compat_3GLDM_LDHGLE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_LDLGLE) { 
+	ASSERT_NO_THROW (test_compat_3GLDM_LDLGLE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_LGLE) { 
+	ASSERT_NO_THROW (test_compat_3GLDM_LGLE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_SDE) { 
+	ASSERT_NO_THROW (test_compat_3GLDM_SDE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_SDHGLE) { 
+	ASSERT_NO_THROW (test_compat_3GLDM_SDHGLE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_SDLGLE) { 
+	ASSERT_NO_THROW (test_compat_3GLDM_SDLGLE());
+}
 
 // ***** 3D GLCM compatibility *****
 
@@ -180,63 +239,6 @@ TEST(TEST_NYXUS, TEST_3SHAPE_COVMATRIX_AND_EIGENVALS) {
 	ASSERT_NO_THROW(test_3shape_covmatrix_and_eigenvals());
 }
 
-// ***** 3D GLDM *****
-
-TEST(TEST_NYXUS, TEST_3GLDM_SDE) {
-	ASSERT_NO_THROW(test_3gldm_sde());
-}
-
-TEST(TEST_NYXUS, TEST_3GLDM_LDE) {
-	ASSERT_NO_THROW(test_3gldm_lde());
-}
-
-TEST(TEST_NYXUS, TEST_3GLDM_LGLE) {
-	ASSERT_NO_THROW(test_3gldm_lgle());
-}
-
-TEST(TEST_NYXUS, TEST_3GLDM_HGLE) {
-	ASSERT_NO_THROW(test_3gldm_hgle());
-}
-
-TEST(TEST_NYXUS, TEST_3GLDM_SDLGLE) {
-	ASSERT_NO_THROW(test_3gldm_sdlgle());
-}
-
-TEST(TEST_NYXUS, TEST_3GLDM_SDHGLE) {
-	ASSERT_NO_THROW(test_3gldm_sdhgle());
-}
-
-TEST(TEST_NYXUS, TEST_3GLDM_LDLGLE) {
-	ASSERT_NO_THROW(test_3gldm_ldlgle());
-}
-
-TEST(TEST_NYXUS, TEST_3GLDM_LDHGLE) {
-	ASSERT_NO_THROW(test_3gldm_ldhgle());
-}
-
-TEST(TEST_NYXUS, TEST_3GLDM_GLN) {
-	ASSERT_NO_THROW(test_3gldm_gln());
-}
-
-TEST(TEST_NYXUS, TEST_3GLDM_DN) {
-	ASSERT_NO_THROW(test_3gldm_dn());
-}
-
-TEST(TEST_NYXUS, TEST_3GLDM_DNN) {
-	ASSERT_NO_THROW(test_3gldm_dnn());
-}
-
-TEST(TEST_NYXUS, TEST_3GLDM_GLV) {
-	ASSERT_NO_THROW(test_3gldm_glv());
-}
-
-TEST(TEST_NYXUS, TEST_3GLDM_DV) {
-	ASSERT_NO_THROW(test_3gldm_dv());
-}
-
-TEST(TEST_NYXUS, TEST_3GLDM_DE) {
-	ASSERT_NO_THROW(test_3gldm_de());
-}
 
 // ***** 3D GLDZM *****
 

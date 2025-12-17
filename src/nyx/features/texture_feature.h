@@ -114,6 +114,18 @@ public:
 			return 0;
 	}
 
+	// 'afv' is angled feature values
+	double calc_ave (const std::vector<double>& afv)
+	{
+		if (afv.empty())
+			return 0;
+
+		double n = static_cast<double> (afv.size()),
+			ave = std::reduce(afv.begin(), afv.end()) / n;
+
+		return ave;
+	}
+
 private:
 
 	// Matlab binning 
