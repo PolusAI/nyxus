@@ -858,3 +858,58 @@ class TestNyxus():
             assert np.isclose (f.at[0, "3GLCM_SUMAVERAGE_AVE"],		radiomics_gt["Case-1_original_glcm_SumAverage"], rtol=1.e-5, atol=1.e-8)
             assert np.isclose (f.at[0, "3GLCM_SUMENTROPY_AVE"],		radiomics_gt["Case-1_original_glcm_SumEntropy"], rtol=1.e-2, atol=1.e-3)
 
+        def test_3d_gldm_compatibility (self):
+            '''
+            Testing Nyxus 3D GLDM features compatibility with Radiomics library
+            '''
+
+            nyx = nyxus.Nyxus3D (["*3D_GLDM*"])
+            assert nyx is not None
+
+            # configure Nyxus 3D GLDM to mock Radiomics
+            nyx.set_metaparam ("3gldm/greydepth=-20")	# corresponds to Radiomics setting "binCount:20"
+
+            # calculate features
+            testsRoot = str (pathlib.Path(__file__).parent.parent.resolve()) # parent.parent to reach the data owned by c++ tests
+            f = nyx.featurize_files(
+                [testsRoot + "/data/nifti/compat_int/compat_int_mri.nii"], 
+                [testsRoot + "/data/nifti/compat_seg/compat_seg_liver.nii"], 
+                False)
+
+            # check the result versus radiomics results calculated with the same data
+            radiomics_gt = {
+                "Case-1_original_gldm_DependenceEntropy" : 6.60487318745419,
+                "Case-1_original_gldm_DependenceNonUniformity" : 620.2816666666666,
+                "Case-1_original_gldm_DependenceNonUniformityNormalized" : 0.12922534722222223,
+                "Case-1_original_gldm_DependenceVariance" : 5.425478993055556,
+                "Case-1_original_gldm_GrayLevelNonUniformity" : 481.78125, 
+                "Case-1_original_gldm_GrayLevelVariance" : 8.728494401041667,
+                "Case-1_original_gldm_HighGrayLevelEmphasis" : 129.87979166666668,
+                "Case-1_original_gldm_LargeDependenceEmphasis" : 24.279166666666665,
+                "Case-1_original_gldm_LargeDependenceHighGrayLevelEmphasis" : 3061.1764583333334,
+                "Case-1_original_gldm_LargeDependenceLowGrayLevelEmphasis" : 0.252649584876794,
+                "Case-1_original_gldm_LowGrayLevelEmphasis" : 0.012371308742463947,
+                "Case-1_original_gldm_SmallDependenceEmphasis" : 0.1635035514256671,
+                "Case-1_original_gldm_SmallDependenceHighGrayLevelEmphasis" : 21.9586484612667,
+                "Case-1_original_gldm_SmallDependenceLowGrayLevelEmphasis" : 0.0024445083605478196
+            }
+
+            assert np.isclose (f.at[0, "3GLDM_DE"],     radiomics_gt["Case-1_original_gldm_DependenceEntropy"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLDM_DN"],     radiomics_gt["Case-1_original_gldm_DependenceNonUniformity"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLDM_DNN"],    radiomics_gt["Case-1_original_gldm_DependenceNonUniformityNormalized"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLDM_DV"],     radiomics_gt["Case-1_original_gldm_DependenceVariance"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLDM_GLN"],    radiomics_gt["Case-1_original_gldm_GrayLevelNonUniformity"], rtol=1.e-5, atol=1.e-8)
+            assert np.isclose (f.at[0, "3GLDM_GLV"],    radiomics_gt["Case-1_original_gldm_GrayLevelVariance"], rtol=1.e-5, atol=1.e-8)
+            assert np.isclose (f.at[0, "3GLDM_HGLE"],   radiomics_gt["Case-1_original_gldm_HighGrayLevelEmphasis"], rtol=1.e-5, atol=1.e-8)
+            assert np.isclose (f.at[0, "3GLDM_LDE"],    radiomics_gt["Case-1_original_gldm_LargeDependenceEmphasis"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLDM_LDHGLE"], radiomics_gt["Case-1_original_gldm_LargeDependenceHighGrayLevelEmphasis"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLDM_LDLGLE"], radiomics_gt["Case-1_original_gldm_LargeDependenceLowGrayLevelEmphasis"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLDM_LGLE"],   radiomics_gt["Case-1_original_gldm_LowGrayLevelEmphasis"], rtol=1.e-5, atol=1.e-8)
+            assert np.isclose (f.at[0, "3GLDM_SDE"],    radiomics_gt["Case-1_original_gldm_SmallDependenceEmphasis"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLDM_SDHGLE"], radiomics_gt["Case-1_original_gldm_SmallDependenceHighGrayLevelEmphasis"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLDM_SDLGLE"], radiomics_gt["Case-1_original_gldm_SmallDependenceLowGrayLevelEmphasis"], rtol=1.e-1, atol=1.e-2)
+
+
+
+
+

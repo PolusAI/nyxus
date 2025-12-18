@@ -125,6 +125,24 @@ std::optional<std::string> Environment::set_metaparam (const std::string & p_val
 				return "error: unrecognized feature parameter of feature 3glcm: \"" + ppath[1] + "\"";
 			}
 		}
+		else if (ppath[0] == "3gldm")
+		{
+			// check feature-specific parameter name
+			if (ppath[1] == "greydepth")
+			{
+				// interpret eq_sides[1] as int
+				int n_greys;
+				if (Nyxus::parse_as_int(eq_sides[1], n_greys) == false)
+				{
+					return "error: cannot parse value \"" + eq_sides[1] + "\" of 3gldm/greydepth: expecting an integer";
+				}
+				STNGS_GLDM_GREYDEPTH (fsett_D3_GLDM) = n_greys;
+			}
+			else
+			{
+				return "error: unrecognized feature parameter of feature 3gldm: \"" + ppath[1] + "\"";
+			}
+		}
 		else
 		{
 			return "error: unrecognized feature \"" + ppath[0] + "\"";
