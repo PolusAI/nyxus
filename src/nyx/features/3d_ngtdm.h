@@ -50,7 +50,7 @@ public:
 		return fs.anyEnabled (D3_NGTDM_feature::featureset);
 	}
 
-	static int n_levels; // default value: 0
+	//xxxxxxxxxxxxxxx	static int n_levels; // default value: 0
 
 private:
 

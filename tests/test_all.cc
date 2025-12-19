@@ -34,6 +34,30 @@
 #include "test_arrow_file_name.h"
 #include "test_compat_3d_glcm.h"
 #include "test_compat_3d_gldm.h"
+#include "test_compat_3d_ngtdm.h"
+
+// ***** 3D NGTDM *****
+
+TEST(TEST_NYXUS, TEST_COMPAT_3NGTDM_BUSYNESS) {
+	ASSERT_NO_THROW(test_compat_3NGTDM_BUSYNESS());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3NGTDM_COARSENESS) {
+	ASSERT_NO_THROW(test_compat_3NGTDM_COARSENESS());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3NGTDM_COMPLEXITY) {
+	ASSERT_NO_THROW(test_compat_3NGTDM_COMPLEXITY());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3NGTDM_CONTRAST) {
+	ASSERT_NO_THROW (test_compat_3NGTDM_CONTRAST());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3NGTDM_STRENGTH) {
+	ASSERT_NO_THROW (test_compat_3NGTDM_STRENGTH());
+}
+
 
 // ***** 3D GLDM compatibility *****
 

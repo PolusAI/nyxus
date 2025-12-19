@@ -5,7 +5,7 @@
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/3d_glcm.h"
+#include "../src/nyx/features/3d_gldm.h"
 #include "../src/nyx/raw_nifti.h"
 
 #include "../src/nyx/helpers/fsystem.h"
@@ -34,20 +34,20 @@
 
 static std::unordered_map<std::string, float> compat_3gldm_GT
 {
-    {"3GLDM_DE", 6.60487318745419}, // Case - 1_original_gldm_DependenceEntropy
-    {"3GLDM_DN", 620.2816666666666}, // Case - 1_original_gldm_DependenceNonUniformity
-    {"3GLDM_DNN", 0.12922534722222223}, // Case - 1_original_gldm_DependenceNonUniformityNormalized
-    {"3GLDM_DV", 5.425478993055556}, // Case - 1_original_gldm_DependenceVariance
-    {"3GLDM_GLN", 481.78125}, // Case - 1_original_gldm_GrayLevelNonUniformity
-    {"3GLDM_GLV", 8.728494401041667}, // Case - 1_original_gldm_GrayLevelVariance
-    {"3GLDM_HGLE", 129.87979166666668}, // Case - 1_original_gldm_HighGrayLevelEmphasis
-    {"3GLDM_LDE", 24.279166666666665}, // Case - 1_original_gldm_LargeDependenceEmphasis
-    {"3GLDM_LDHGLE", 3061.1764583333334}, // Case - 1_original_gldm_LargeDependenceHighGrayLevelEmphasis
-    {"3GLDM_LDLGLE", 0.252649584876794}, // Case - 1_original_gldm_LargeDependenceLowGrayLevelEmphasis
-    {"3GLDM_LGLE", 0.012371308742463947}, // Case - 1_original_gldm_LowGrayLevelEmphasis
-    {"3GLDM_SDE", 0.1635035514256671}, // Case - 1_original_gldm_SmallDependenceEmphasis
-    {"3GLDM_SDHGLE", 21.9586484612667}, // Case - 1_original_gldm_SmallDependenceHighGrayLevelEmphasis
-    {"3GLDM_SDLGLE", 0.0024445083605478196}  // Case - 1_original_gldm_SmallDependenceLowGrayLevelEmphasis
+    {"3GLDM_DE", 6.60487318745419},         // Case - 1_original_gldm_DependenceEntropy
+    {"3GLDM_DN", 620.2816666666666},        // Case - 1_original_gldm_DependenceNonUniformity
+    {"3GLDM_DNN", 0.12922534722222223},     // Case - 1_original_gldm_DependenceNonUniformityNormalized
+    {"3GLDM_DV", 5.425478993055556},        // Case - 1_original_gldm_DependenceVariance
+    {"3GLDM_GLN", 481.78125},               // Case - 1_original_gldm_GrayLevelNonUniformity
+    {"3GLDM_GLV", 8.728494401041667},       // Case - 1_original_gldm_GrayLevelVariance
+    {"3GLDM_HGLE", 129.87979166666668},     // Case - 1_original_gldm_HighGrayLevelEmphasis
+    {"3GLDM_LDE", 24.279166666666665},      // Case - 1_original_gldm_LargeDependenceEmphasis
+    {"3GLDM_LDHGLE", 3061.1764583333334},   // Case - 1_original_gldm_LargeDependenceHighGrayLevelEmphasis
+    {"3GLDM_LDLGLE", 0.252649584876794},    // Case - 1_original_gldm_LargeDependenceLowGrayLevelEmphasis
+    {"3GLDM_LGLE", 0.012371308742463947},   // Case - 1_original_gldm_LowGrayLevelEmphasis
+    {"3GLDM_SDE", 0.1635035514256671},      // Case - 1_original_gldm_SmallDependenceEmphasis
+    {"3GLDM_SDHGLE", 21.9586484612667},     // Case - 1_original_gldm_SmallDependenceHighGrayLevelEmphasis
+    {"3GLDM_SDLGLE", 0.0024445083605478196} // Case - 1_original_gldm_SmallDependenceLowGrayLevelEmphasis
 };
 
 void test_compat_3gldm_feature (const Nyxus::Feature3D & expecting_fcode, const std::string & fname)
