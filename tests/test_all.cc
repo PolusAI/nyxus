@@ -23,20 +23,151 @@
 #include "test_image_quality.h"
 #include "test_3d_inten.h"
 #include "test_3d_nifti.h"
-#include "test_3d_gldm.h"
-#include "test_3d_gldzm.h"
-#include "test_3d_glrlm.h"
-#include "test_3d_glszm.h"
-#include "test_3d_ngldm.h"
-#include "test_3d_ngtdm.h"
 #include "test_3d_shape.h"
-#include "test_arrow.h"
-#include "test_arrow_file_name.h"
+#include "test_3d_gldzm.h"
+#include "test_3d_ngldm.h"
 #include "test_compat_3d_glcm.h"
 #include "test_compat_3d_gldm.h"
 #include "test_compat_3d_ngtdm.h"
+#include "test_compat_3d_glrlm.h"
+#include "test_compat_3d_glszm.h"
+#include "test_arrow.h"
+#include "test_arrow_file_name.h"
 
-// ***** 3D NGTDM *****
+// ***** 3D GLSZM compatibility *****
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_SAE) {
+	ASSERT_NO_THROW(test_compat_3glszm_sae());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_LAE) {
+	ASSERT_NO_THROW(test_compat_3glszm_lae());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_LGLZE) {
+	ASSERT_NO_THROW(test_compat_3glszm_lglze());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_HGLZE) {
+	ASSERT_NO_THROW(test_compat_3glszm_hglze());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_SALGLZE) {
+	ASSERT_NO_THROW(test_compat_3glszm_salgle());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_SAHGLZE) {
+	ASSERT_NO_THROW(test_compat_3glszm_sahgle());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_LALGLE) {
+	ASSERT_NO_THROW(test_compat_3glszm_lalgle());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_LAHGLE) {
+	ASSERT_NO_THROW(test_compat_3glszm_lahgle());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_gln) {
+	ASSERT_NO_THROW(test_compat_3glszm_gln());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_glnn) {
+	ASSERT_NO_THROW(test_compat_3glszm_glnn());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_szn) {
+	ASSERT_NO_THROW(test_compat_3glszm_szn());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_SZNN) {
+	ASSERT_NO_THROW(test_compat_3glszm_sznn());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_ZP) {
+	ASSERT_NO_THROW(test_compat_3glszm_zp());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_GLV) {
+	ASSERT_NO_THROW(test_compat_3glszm_glv());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_ZV) {
+	ASSERT_NO_THROW(test_compat_3glszm_zv());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_ZE) {
+	ASSERT_NO_THROW(test_compat_3glszm_ze());
+}
+
+// ***** 3D GLRLM compatibility *****
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_GLN) {
+	ASSERT_NO_THROW (test_compat_3GLRLM_GLN());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_GLNN) {
+	ASSERT_NO_THROW (test_compat_3GLRLM_GLNN());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_GLV) {
+	ASSERT_NO_THROW (test_compat_3GLRLM_GLV());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_HGLRE) {
+	ASSERT_NO_THROW (test_compat_3GLRLM_HGLRE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_LRE) {
+	ASSERT_NO_THROW (test_compat_3GLRLM_LRE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_LRHGLE) {
+	ASSERT_NO_THROW (test_compat_3GLRLM_LRHGLE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_LRLGLE) {
+	ASSERT_NO_THROW (test_compat_3GLRLM_LRLGLE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_LGLRE) {
+	ASSERT_NO_THROW (test_compat_3GLRLM_LGLRE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_RE) {
+	ASSERT_NO_THROW (test_compat_3GLRLM_RE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_RLN) {
+	ASSERT_NO_THROW (test_compat_3GLRLM_RLN());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_RLNN) {
+	ASSERT_NO_THROW (test_compat_3GLRLM_RLNN());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_RP) {
+	ASSERT_NO_THROW (test_compat_3GLRLM_RP());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_RV) {
+	ASSERT_NO_THROW (test_compat_3GLRLM_RV());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_SRE) {
+	ASSERT_NO_THROW (test_compat_3GLRLM_SRE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_SRHGLE) {
+	ASSERT_NO_THROW (test_compat_3GLRLM_SRHGLE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_SRLGLE) {
+	ASSERT_NO_THROW (test_compat_3GLRLM_SRLGLE());
+}
+
+
+// ***** 3D NGTDM compatibility *****
 
 TEST(TEST_NYXUS, TEST_COMPAT_3NGTDM_BUSYNESS) {
 	ASSERT_NO_THROW(test_compat_3NGTDM_BUSYNESS());
@@ -334,139 +465,6 @@ TEST(TEST_NYXUS, TEST_3GLDZM_ZDE) {
 	ASSERT_NO_THROW(test_3GLDZM_ZDE());
 }
 
-
-// ***** 3D GLRLM *****
-
-TEST(TEST_NYXUS, TEST_3GLRLM_SRE) {
-	ASSERT_NO_THROW(test_3glrlm_sre());
-}
-
-TEST(TEST_NYXUS, TEST_3GLRLM_LRE) {
-	ASSERT_NO_THROW(test_3glrlm_lre());
-}
-
-TEST(TEST_NYXUS, TEST_3GLRLM_LGLRE) {
-	ASSERT_NO_THROW(test_3glrlm_lglre());
-}
-
-TEST(TEST_NYXUS, TEST_3GLRLM_HGLRE) {
-	ASSERT_NO_THROW(test_3glrlm_hglre());
-}
-
-TEST(TEST_NYXUS, TEST_3GLRLM_SRLGLE) {
-	ASSERT_NO_THROW(test_3glrlm_srlgle());
-}
-
-TEST(TEST_NYXUS, TEST_3GLRLM_SRHGLE) {
-	ASSERT_NO_THROW(test_3glrlm_srhgle());
-}
-
-TEST(TEST_NYXUS, TEST_3GLRLM_LRLGLE) {
-	ASSERT_NO_THROW(test_3glrlm_lrlgle());
-}
-
-TEST(TEST_NYXUS, TEST_3GLRLM_LRHGLE) {
-	ASSERT_NO_THROW(test_3glrlm_lrhgle());
-}
-
-TEST(TEST_NYXUS, TEST_3GLRLM_GLN) {
-	ASSERT_NO_THROW(test_3glrlm_gln());
-}
-
-TEST(TEST_NYXUS, TEST_3GLRLM_GLNN) {
-	ASSERT_NO_THROW(test_3glrlm_glnn());
-}
-
-TEST(TEST_NYXUS, TEST_3GLRLM_RLN) {
-	ASSERT_NO_THROW(test_3glrlm_rln());
-}
-
-TEST(TEST_NYXUS, TEST_3GLRLM_RLNN) {
-	ASSERT_NO_THROW(test_3glrlm_rlnn());
-}
-
-TEST(TEST_NYXUS, TEST_3GLRLM_RP) {
-	ASSERT_NO_THROW(test_3glrlm_rp());
-}
-
-TEST(TEST_NYXUS, TEST_3GLRLM_GLV) {
-	ASSERT_NO_THROW(test_3glrlm_glv());
-}
-
-TEST(TEST_NYXUS, TEST_3GLRLM_RV) {
-	ASSERT_NO_THROW(test_3glrlm_rv());
-}
-
-TEST(TEST_NYXUS, TEST_3GLRLM_RE) {
-	ASSERT_NO_THROW(test_3glrlm_re());
-}
-
-// ***** 3D GLSZM *****
-
-TEST(TEST_NYXUS, TEST_3GLSZM_SAE) {
-	ASSERT_NO_THROW(test_3glszm_sae());
-}
-
-TEST(TEST_NYXUS, TEST_3GLSZM_LAE) {
-	ASSERT_NO_THROW(test_3glszm_lae());
-}
-
-TEST(TEST_NYXUS, TEST_3GLSZM_LGLZE) {
-	ASSERT_NO_THROW(test_3glszm_lglze());
-}
-
-TEST(TEST_NYXUS, TEST_3GLSZM_HGLZE) {
-	ASSERT_NO_THROW(test_3glszm_hglze());
-}
-
-TEST(TEST_NYXUS, TEST_3GLSZM_SALGLZE) {
-	ASSERT_NO_THROW(test_3glszm_salgle());
-}
-
-TEST(TEST_NYXUS, TEST_3GLSZM_SAHGLZE) {
-	ASSERT_NO_THROW(test_3glszm_sahgle());
-}
-
-TEST(TEST_NYXUS, TEST_3GLSZM_LALGLE) {
-	ASSERT_NO_THROW(test_3glszm_lalgle());
-}
-
-TEST(TEST_NYXUS, TEST_3GLSZM_LAHGLE) {
-	ASSERT_NO_THROW(test_3glszm_lahgle());
-}
-
-TEST(TEST_NYXUS, TEST_3GLSZM_gln) {
-	ASSERT_NO_THROW(test_3glszm_gln());
-}
-
-TEST(TEST_NYXUS, TEST_3GLSZM_glnn) {
-	ASSERT_NO_THROW(test_3glszm_glnn());
-}
-
-TEST(TEST_NYXUS, TEST_3GLSZM_szn) {
-	ASSERT_NO_THROW(test_3glszm_szn());
-}
-
-TEST(TEST_NYXUS, TEST_3GLSZM_SZNN) {
-	ASSERT_NO_THROW(test_3glszm_sznn());
-}
-
-TEST(TEST_NYXUS, TEST_3GLSZM_ZP) {
-	ASSERT_NO_THROW(test_3glszm_zp());
-}
-
-TEST(TEST_NYXUS, TEST_3GLSZM_GLV) {
-	ASSERT_NO_THROW(test_3glszm_glv());
-}
-
-TEST(TEST_NYXUS, TEST_3GLSZM_ZV) {
-	ASSERT_NO_THROW(test_3glszm_zv());
-}
-
-TEST(TEST_NYXUS, TEST_3GLSZM_ZE) {
-	ASSERT_NO_THROW(test_3glszm_ze());
-}
-
 // ***** 3D NGLDM *****
 
 TEST(TEST_NYXUS, TEST_3NGLDM_LDE) {
@@ -543,28 +541,6 @@ TEST(TEST_NYXUS, TEST_3NGLDM_DCENT) {
 
 TEST(TEST_NYXUS, TEST_3NGLDM_DCENE) {
 	ASSERT_NO_THROW(test_3ngldm_dcene());
-}
-
-// ***** 3D NGTDM *****
-
-TEST(TEST_NYXUS, TEST_3NGTDM_COARSENESS) {
-	ASSERT_NO_THROW(test_3ngtdm_coarseness());
-}
-
-TEST(TEST_NYXUS, TEST_3NGTDM_CONTRAST) {
-	ASSERT_NO_THROW(test_3ngtdm_contrast());
-}
-
-TEST(TEST_NYXUS, TEST_3NGTDM_BUSYNESS) {
-	ASSERT_NO_THROW(test_3ngtdm_busyness());
-}
-
-TEST(TEST_NYXUS, TEST_3NGTDM_COMPLEXITY) {
-	ASSERT_NO_THROW(test_3ngtdm_complexity());
-}
-
-TEST(TEST_NYXUS, TEST_3NGTDM_STRENGTH) {
-	ASSERT_NO_THROW(test_3ngtdm_strength());
 }
 
 //*************************

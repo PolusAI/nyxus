@@ -947,14 +947,3 @@ void D3_GLRLM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLa
 	f.save_value (r.fvals);
 }
 
-// 'afv' is angled feature values
-double D3_GLRLM_feature::calc_ave(const std::vector<double>& afv)
-{
-	if (afv.empty())
-		return 0;
-
-	double n = static_cast<double> (afv.size()),
-		ave = std::reduce(afv.begin(), afv.end()) / n;
-
-	return ave;
-}

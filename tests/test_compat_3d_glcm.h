@@ -194,10 +194,10 @@ void test_compat_3glcm_feature (const Nyxus::Feature3D& expecting_fcode, const s
 
     f.save_value(r.fvals);
 
-    // aggregate angled subfeatures (13 angles for 3D)
+    // (7) aggregate angled subfeatures
     double atot = f.calc_ave (r.fvals[fcode]);
 
-    // (7) verdict
+    // (8) verdict
     ASSERT_TRUE(agrees_gt(atot, compat_d3glcm_GT[fname], 10.));
 }
 

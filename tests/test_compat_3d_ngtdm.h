@@ -33,33 +33,12 @@
 
 static std::unordered_map<std::string, float> compat_3ngtdm_GT
 {
-    {"3NGTDM_BUSYNESS", 2.6196986487523657 },       // Case-1_original_ngtdm_Busyness: 
-    {"3NGTDM_COARSENESS", 0.0015636093329879858},   // Case-1_original_ngtdm_Coarseness: 
-    {"3NGTDM_COMPLEXITY", 253.33660508988459},      // Case-1_original_ngtdm_Complexity: 
-    {"3NGTDM_CONTRAST", 0.07186017922215597},       // Case-1_original_ngtdm_Contrast: 
-    {"3NGTDM_STRENGTH", 0.22500541896088058}        // Case-1_original_ngtdm_Strength: 
+    {"3NGTDM_BUSYNESS", 2.6196986487523657 },       // Case-1_original_ngtdm_Busyness
+    {"3NGTDM_COARSENESS", 0.0015636093329879858},   // Case-1_original_ngtdm_Coarseness
+    {"3NGTDM_COMPLEXITY", 253.33660508988459},      // Case-1_original_ngtdm_Complexity
+    {"3NGTDM_CONTRAST", 0.07186017922215597},       // Case-1_original_ngtdm_Contrast
+    {"3NGTDM_STRENGTH", 0.22500541896088058}        // Case-1_original_ngtdm_Strength
 };
-
-#if 0
-static std::tuple<std::string, std::string, int> get_3d_compat_phantom()
-{
-    // physical paths of the phantoms
-    fs::path this_fpath(__FILE__);
-    fs::path pp = this_fpath.parent_path();
-
-    fs::path f1("/data/nifti/compat_int/compat_int_mri.nii");
-    fs::path i_phys_path = (pp.string() + f1.make_preferred().string());
-
-    fs::path f2("/data/nifti/compat_seg/compat_seg_liver.nii");
-    fs::path m_phys_path = (pp.string() + f2.make_preferred().string());
-
-    std::string ipath = i_phys_path.string(),
-        mpath = m_phys_path.string();
-
-    // ROI sitting in the mask phantom
-    return { ipath, mpath, 1 };
-}
-#endif
 
 void test_compat_3ngtdm_feature (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {

@@ -152,8 +152,6 @@ private:
 		angled_LRLGLE,
 		angled_LRHGLE;
 
-	double calc_ave(const std::vector<double>& angled_feature_vals);
-
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
 	std::vector<int> angles_Ng;	// number of discrete intensity values in the image
 	std::vector<int> angles_Nr; // number of discrete run lengths in the image

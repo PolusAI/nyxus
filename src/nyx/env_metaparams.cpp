@@ -161,6 +161,42 @@ std::optional<std::string> Environment::set_metaparam (const std::string & p_val
 				return "error: unrecognized feature parameter of feature 3gldm: \"" + ppath[1] + "\"";
 			}
 		}
+		else if (ppath[0] == "3glrlm")
+		{
+			// check feature-specific parameter name
+			if (ppath[1] == "greydepth")
+			{
+				// interpret eq_sides[1] as int
+				int n_greys;
+				if (Nyxus::parse_as_int(eq_sides[1], n_greys) == false)
+				{
+					return "error: cannot parse value \"" + eq_sides[1] + "\" of 3glrlm/greydepth: expecting an integer";
+				}
+				STNGS_GLRLM_GREYDEPTH (fsett_D3_GLRLM) = n_greys;
+			}
+			else
+			{
+				return "error: unrecognized feature parameter of feature 3glrlm: \"" + ppath[1] + "\"";
+			}
+		}
+		else if (ppath[0] == "3glszm")
+		{
+			// check feature-specific parameter name
+			if (ppath[1] == "greydepth")
+			{
+				// interpret eq_sides[1] as int
+				int n_greys;
+				if (Nyxus::parse_as_int(eq_sides[1], n_greys) == false)
+				{
+					return "error: cannot parse value \"" + eq_sides[1] + "\" of 3glszm/greydepth: expecting an integer";
+				}
+				STNGS_GLSZM_GREYDEPTH(fsett_D3_GLSZM) = n_greys;
+			}
+			else
+			{
+				return "error: unrecognized feature parameter of feature 3glrlm: \"" + ppath[1] + "\"";
+			}
+		}
 		else
 		{
 			return "error: unrecognized feature \"" + ppath[0] + "\"";
@@ -239,6 +275,34 @@ std::optional<std::string> Environment::get_metaparam (double & p_val, const std
 			else
 			{
 				return "error: unrecognized feature parameter of feature 3gldm: \"" + ppath[1] + "\"";
+			}
+		}
+		else if (ppath[0] == "3glrlm")
+		{
+			// check feature-specific parameter name
+			if (ppath[1] == "greydepth")
+			{
+				// interpret eq_sides[1] as int
+				int ival = STNGS_GLRLM_GREYDEPTH (fsett_D3_GLRLM);
+				p_val = (double)ival;
+			}
+			else
+			{
+				return "error: unrecognized feature parameter of feature 3glrlm: \"" + ppath[1] + "\"";
+			}
+		}
+		else if (ppath[0] == "3glsz")
+		{
+			// check feature-specific parameter name
+			if (ppath[1] == "greydepth")
+			{
+				// interpret eq_sides[1] as int
+				int ival = STNGS_GLSZM_GREYDEPTH (fsett_D3_GLSZM);
+				p_val = (double)ival;
+			}
+			else
+			{
+				return "error: unrecognized feature parameter of feature 3glszm: \"" + ppath[1] + "\"";
 			}
 		}
 		else
