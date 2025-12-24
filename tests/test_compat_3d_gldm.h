@@ -32,7 +32,7 @@
 //      gldm:
 //
 
-static std::unordered_map<std::string, float> compat_3gldm_GT
+static std::unordered_map<std::string, double> compat_3gldm_GT
 {
     {"3GLDM_DE", 6.60487318745419},         // Case - 1_original_gldm_DependenceEntropy
     {"3GLDM_DN", 620.2816666666666},        // Case - 1_original_gldm_DependenceNonUniformity

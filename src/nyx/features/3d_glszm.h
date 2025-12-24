@@ -97,7 +97,7 @@ public:
 	// Large Area High Gray Level Emphasis
 	double calc_LAHGLE();
 
-	static int n_levels;	// default value: 8
+	static void gather_size_zones (std::vector<std::pair<PixIntens, int>> & zones, SimpleCube <PixIntens> & greybinned_image, PixIntens zero_intensity);
 
 private:
 
@@ -106,7 +106,7 @@ private:
 	int Np = 0; // number of voxels in the image
 	int Nz = 0; // number of zones in the ROI, 1<=Nz<=Np
 	SimpleMatrix<int> P;
-	double sum_p = 0;
+	double sum_p = 0;	// number of zones (= total of GLSZM)
 	std::vector<PixIntens> I;	// sorted unique intensities
 
 	// Sum of P required by GLN, GLNN, LGLZE, HGLZE

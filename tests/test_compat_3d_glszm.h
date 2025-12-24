@@ -31,7 +31,7 @@
 //      glszm:
 //
 
-static std::unordered_map<std::string, float> compat_3glszm_GT
+static std::unordered_map<std::string, double> compat_3glszm_GT
 {
     {"3GLSZM_GLN", 61.77441860465116},  // Case-1_original_glszm_GrayLevelNonUniformity
     {"3GLSZM_GLNN", 0.07183071930773391},  // Case-1_original_glszm_GrayLevelNonUniformityNormalized
@@ -113,9 +113,9 @@ void test_compat_3glszm_feature (const Nyxus::Feature3D& expecting_fcode, const 
 
     // extract the feature
     LR& r = e.roiData[label];
-    ASSERT_NO_THROW(r.initialize_fvals());
+    ASSERT_NO_THROW (r.initialize_fvals());
     D3_GLSZM_feature f;
-    ASSERT_NO_THROW(f.calculate(r, s));
+    ASSERT_NO_THROW (f.calculate(r, s));
 
     // (6) get values
 
@@ -126,6 +126,82 @@ void test_compat_3glszm_feature (const Nyxus::Feature3D& expecting_fcode, const 
 
     // (7) verdict
     ASSERT_TRUE (agrees_gt(atot, compat_3glszm_GT[fname], 10.));
+}
+
+void test_glc_matrix_correctness()
+{
+    // data
+
+    std::vector<PixIntens> rawVolume =
+    {
+        // z=0
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        // z=1
+        1, 2, 3, 4,
+        1, 3, 4, 4,
+        3, 2, 2, 2,
+        4, 1, 4, 1,
+        // z=2
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0 
+    };
+
+    SimpleCube <PixIntens> D (rawVolume, 4/*width*/, 4/*height*/, 3/*depth*/);
+    PixIntens zeroI = 0;
+    // --- unique intensities
+    std::unordered_set<PixIntens> U (rawVolume.begin(), rawVolume.end());
+    U.erase (0);
+    // --- sorted non-zero (i.e. non-mask) intensities
+    std::vector<PixIntens> I (U.begin(), U.end());
+
+    // zones
+
+    std::vector <std::pair<PixIntens, int>> zones;
+    D3_GLSZM_feature::gather_size_zones (zones, D, zeroI);
+
+    // zone stats
+    
+    int maxZoneArea = 0;    // width of GLSZM matrix 
+    for (const std::pair<PixIntens, int>& zo : zones)
+        maxZoneArea = (std::max) (maxZoneArea, zo.second);
+
+    // GLSZM
+    SimpleMatrix <int> P;
+    P.allocate (maxZoneArea /*width*/, I.size() /*height*/);
+    P.fill(0);
+
+    // --iterate zones and fill the matrix
+    for (const auto& zone : zones)
+    {
+        // row of P-matrix
+        auto itr = std::find (I.begin(), I.end(), zone.first);
+        int row = (int) (itr - I.begin());
+
+        // column of P-matrix
+        int col = zone.second - 1;	// need a 0-based index
+        auto& k = P.xy (col, row);
+        k++;
+    }
+
+    //
+    // Expecting the following GLSZM:
+    // 
+    //         [size=1 size=2 size=3]
+    //
+    // [inten=1]     2      1      0
+    // [inten=2]     1      0      1
+    // [inten=3]     0      0      1
+    // [inten=4]     2      0      1
+    //
+    ASSERT_TRUE(P.yx(0,0)==2);     ASSERT_TRUE(P.yx(0,1)==1);   ASSERT_TRUE(P.yx(0,2)==0);
+    ASSERT_TRUE(P.yx(1,0)==1);     ASSERT_TRUE(P.yx(1,1)==0);   ASSERT_TRUE(P.yx(1,2)==1);
+    ASSERT_TRUE(P.yx(2,0)==0);     ASSERT_TRUE(P.yx(2,1)==0);   ASSERT_TRUE(P.yx(2,2)==1);
+    ASSERT_TRUE(P.yx(3,0)==2);     ASSERT_TRUE(P.yx(3,1)==0);   ASSERT_TRUE(P.yx(3,2)==1);
 }
 
 void test_compat_3glszm_sae()

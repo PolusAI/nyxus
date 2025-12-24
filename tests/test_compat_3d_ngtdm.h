@@ -31,7 +31,7 @@
 //      ngtdm:
 //
 
-static std::unordered_map<std::string, float> compat_3ngtdm_GT
+static std::unordered_map<std::string, double> compat_3ngtdm_GT
 {
     {"3NGTDM_BUSYNESS", 2.6196986487523657 },       // Case-1_original_ngtdm_Busyness
     {"3NGTDM_COARSENESS", 0.0015636093329879858},   // Case-1_original_ngtdm_Coarseness

@@ -36,6 +36,10 @@
 
 // ***** 3D GLSZM compatibility *****
 
+TEST(TEST_NYXUS, TEST_COMPAT_3GLSZ_MATRIX_CORRECTNESS) {
+	ASSERT_NO_THROW (test_glc_matrix_correctness());
+}
+
 TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_SAE) {
 	ASSERT_NO_THROW(test_compat_3glszm_sae());
 }

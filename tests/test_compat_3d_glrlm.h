@@ -31,7 +31,7 @@
 //      glrlm:
 //
 
-static std::unordered_map<std::string, float> compat_3glrlm_GT
+static std::unordered_map<std::string, double> compat_3glrlm_GT
 {
     {"3GLRLM_GLN", 406.68709120394277}, // Case-1_original_glrlm_GrayLevelNonUniformity
     {"3GLRLM_GLNN", 0.09722976558135092}, // Case-1_original_glrlm_GrayLevelNonUniformityNormalized

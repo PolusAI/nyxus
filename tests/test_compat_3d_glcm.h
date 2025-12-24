@@ -55,7 +55,7 @@
 //        - 'SumSquares'
 //
 
-static std::unordered_map<std::string, float> compat_d3glcm_GT
+static std::unordered_map<std::string, double> compat_d3glcm_GT
 {
     {"3GLCM_ACOR", 122.14708306342365},         // Case-1_original_glcm_Autocorrelation
     {"3GLCM_ASM", 0.0143339715631298},          // Case-1_original_glcm_JointEnergy
