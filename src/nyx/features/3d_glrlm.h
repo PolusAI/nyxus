@@ -94,46 +94,48 @@ public:
 		return fs.anyEnabled(D3_GLRLM_feature::featureset);
 	}
 
-	static int n_levels;	// default value: 0
 	using P_matrix = SimpleMatrix<int>;
 	using AngledFtrs = std::vector<double>;
 
 	// 1. Short Run Emphasis 
-	void calc_SRE(AngledFtrs& af);
+	double calc_SRE (const SimpleMatrix<int>& P, const double sum_p);
 	// 2. Long Run Emphasis 
-	void calc_LRE(AngledFtrs& af);
+	double calc_LRE (const SimpleMatrix<int>& P, const double sum_p);
 	// 3. Gray Level Non-Uniformity 
-	void calc_GLN(AngledFtrs& af);
+	double calc_GLN (const SimpleMatrix<int>& P, const double sum_p);
 	// 4. Gray Level Non-Uniformity Normalized 
-	void calc_GLNN(AngledFtrs& af);
+	double calc_GLNN (const SimpleMatrix<int>& P, const double sum_p);
 	// 5. Run Length Non-Uniformity
-	void calc_RLN(AngledFtrs& af);
+	double calc_RLN (const SimpleMatrix<int>& P, const double sum_p);
 	// 6. Run Length Non-Uniformity Normalized 
-	void calc_RLNN(AngledFtrs& af);
+	double calc_RLNN (const SimpleMatrix<int>& P, const double sum_p);
 	// 7. Run Percentage
-	void calc_RP(AngledFtrs& af);
 	// 8. Gray Level Variance 
-	void calc_GLV(AngledFtrs& af);
+	double calc_GLV (const SimpleMatrix<int>& P, const std::vector<PixIntens>& I, const double sum_p);
 	// 9. Run Variance 
-	void calc_RV(AngledFtrs& af);
+	double calc_RV (const SimpleMatrix<int>& P, const double sum_p);
 	// 10. Run Entropy 
-	void calc_RE(AngledFtrs& af);
+	double calc_RE (const SimpleMatrix<int>& P, const double sum_p);
 	// 11. Low Gray Level Run Emphasis 
-	void calc_LGLRE(AngledFtrs& af);
+	double calc_LGLRE (const SimpleMatrix<int>& P, const std::vector<PixIntens>& I, const double sum_p);
 	// 12. High Gray Level Run Emphasis 
-	void calc_HGLRE(AngledFtrs& af);
+	double calc_HGLRE (const SimpleMatrix<int>& P, const std::vector<PixIntens>& I, const double sum_p);
 	// 13. Short Run Low Gray Level Emphasis 
-	void calc_SRLGLE(AngledFtrs& af);
+	double calc_SRLGLE (const SimpleMatrix<int>& P, const std::vector<PixIntens>& I, const double sum_p);
 	// 14. Short Run High Gray Level Emphasis 
-	void calc_SRHGLE(AngledFtrs& af);
+	double calc_SRHGLE (const SimpleMatrix<int>& P, const std::vector<PixIntens>& I, const double sum_p);
 	// 15. Long Run Low Gray Level Emphasis 
-	void calc_LRLGLE(AngledFtrs& af);
+	double calc_LRLGLE (const SimpleMatrix<int>& P, const std::vector<PixIntens>& I, const double sum_p);
 	// 16. Long Run High Gray Level Emphasis 
-	void calc_LRHGLE(AngledFtrs& af);
+	double calc_LRHGLE (const SimpleMatrix<int>& P, const std::vector<PixIntens>& I, const double sum_p);
 
-	constexpr static int rotAngles[] = { 0, 45, 90, 135 };
+	constexpr static int rotAngles[] = {0, 45, 90, 135, 0, 45, 90, 135, 0, 45, 90, 135, 0};	// used to name featureset columns
+
+	static void gather_rl_zones (std::vector<std::pair<PixIntens, int>> &Zones, const AngleShift &sh, SimpleCube <PixIntens> &D, PixIntens zeroI);
 
 private:
+
+	int n_angles_ = -1; // dependent on user-specified settings, set in calculate(settings)
 
 	std::vector<double> angled_SRE,
 		angled_LRE,
@@ -151,14 +153,6 @@ private:
 		angled_SRHGLE,
 		angled_LRLGLE,
 		angled_LRHGLE;
-
-	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
-	std::vector<int> angles_Ng;	// number of discrete intensity values in the image
-	std::vector<int> angles_Nr; // number of discrete run lengths in the image
-	std::vector<int> angles_Np; // number of voxels in the image
-	std::vector<P_matrix> angles_P;
-	std::vector<double> sum_p;
-	std::vector<PixIntens> I;	// sorted unique intensities
 
 	void clear_buffers();
 

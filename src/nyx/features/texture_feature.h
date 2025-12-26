@@ -3,6 +3,11 @@
 #include "image_matrix.h"
 #include "image_cube.h"
 
+struct AngleShift
+{
+	int dz, dy, dx;
+};
+
 class TextureFeature
 {
 public:

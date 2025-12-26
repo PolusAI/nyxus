@@ -33,23 +33,107 @@
 
 static std::unordered_map<std::string, double> compat_3glrlm_GT
 {
-    {"3GLRLM_GLN", 406.68709120394277}, // Case-1_original_glrlm_GrayLevelNonUniformity
-    {"3GLRLM_GLNN", 0.09722976558135092}, // Case-1_original_glrlm_GrayLevelNonUniformityNormalized
-    {"3GLRLM_GLV", 9.100102904831404}, // Case-1_original_glrlm_GrayLevelVariance
-    {"3GLRLM_HGLRE", 130.25347348795043}, // Case-1_original_glrlm_HighGrayLevelRunEmphasis
-    {"3GLRLM_LRE", 1.5538285862328314}, // Case-1_original_glrlm_LongRunEmphasis
-    {"3GLRLM_LRHGLE", 200.98033929654184}, // Case-1_original_glrlm_LongRunHighGrayLevelEmphasis
+    {"3GLRLM_GLN", 406.68709120394277},     // Case-1_original_glrlm_GrayLevelNonUniformity
+    {"3GLRLM_GLNN", 0.09722976558135092},   // Case-1_original_glrlm_GrayLevelNonUniformityNormalized
+    {"3GLRLM_GLV", 9.100102904831404},      // Case-1_original_glrlm_GrayLevelVariance
+    {"3GLRLM_HGLRE", 130.25347348795043},   // Case-1_original_glrlm_HighGrayLevelRunEmphasis
+    {"3GLRLM_LRE", 1.5538285862328314},     // Case-1_original_glrlm_LongRunEmphasis
+    {"3GLRLM_LRHGLE", 200.98033929654184},  // Case-1_original_glrlm_LongRunHighGrayLevelEmphasis
     {"3GLRLM_LRLGLE", 0.01863138831176311}, // Case-1_original_glrlm_LongRunLowGrayLevelEmphasis
     {"3GLRLM_LGLRE", 0.012578735424633676}, // Case-1_original_glrlm_LowGrayLevelRunEmphasis
-    {"3GLRLM_RE", 4.228290966541947}, // Case-1_original_glrlm_RunEntropy
-    {"3GLRLM_RLN", 3309.7814564084974}, // Case-1_original_glrlm_RunLengthNonUniformity
-    {"3GLRLM_RLNN", 0.7807974007564221}, // Case-1_original_glrlm_RunLengthNonUniformityNormalized
-    {"3GLRLM_RP", 0.8714583333333334}, // Case-1_original_glrlm_RunPercentage
-    {"3GLRLM_RV", 0.19950155996777244}, // Case-1_original_glrlm_RunVariance
-    {"3GLRLM_SRE", 0.9003824440228139}, // Case-1_original_glrlm_ShortRunEmphasis
-    {"3GLRLM_SRHGLE", 117.56903884692184}, // Case-1_original_glrlm_ShortRunHighGrayLevelEmphasis
+    {"3GLRLM_RE", 4.228290966541947},       // Case-1_original_glrlm_RunEntropy
+    {"3GLRLM_RLN", 3309.7814564084974},     // Case-1_original_glrlm_RunLengthNonUniformity
+    {"3GLRLM_RLNN", 0.7807974007564221},    // Case-1_original_glrlm_RunLengthNonUniformityNormalized
+    {"3GLRLM_RP", 0.8714583333333334},      // Case-1_original_glrlm_RunPercentage
+    {"3GLRLM_RV", 0.19950155996777244},     // Case-1_original_glrlm_RunVariance
+    {"3GLRLM_SRE", 0.9003824440228139},     // Case-1_original_glrlm_ShortRunEmphasis
+    {"3GLRLM_SRHGLE", 117.56903884692184},  // Case-1_original_glrlm_ShortRunHighGrayLevelEmphasis
     {"3GLRLM_SRLGLE", 0.011465297979291003} // Case-1_original_glrlm_ShortRunLowGrayLevelEmphasis
 };
+
+void test_glrl_matrix_correctness()
+{
+    // data (data and gt source: pyradiomics web page)
+
+    std::vector<PixIntens> rawVolume =
+    {
+        // z=0
+        0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
+        // z=1
+        5, 2, 5, 4, 4,
+        3, 3, 3, 1, 3,
+        2, 1, 1, 1, 3,
+        4, 2, 2, 2, 3,
+        3, 5, 3, 3, 2,
+        // z=2
+        0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0
+    };
+
+    SimpleCube <PixIntens> D(rawVolume, 5/*width*/, 5/*height*/, 3/*depth*/);
+    PixIntens zeroI = 0;
+    // --- unique intensities
+    std::unordered_set<PixIntens> U (rawVolume.begin(), rawVolume.end());
+    U.erase (0);
+    // --- sorted non-zero (i.e. non-mask) intensities
+    std::vector<PixIntens> I (U.begin(), U.end());
+    std::sort (I.begin(), I.end());
+
+    // zones
+
+    std::vector <std::pair<PixIntens, int>> zones;
+    AngleShift ash = {0, 0, 1}; // layout: dz,dy,dx
+    D3_GLRLM_feature::gather_rl_zones (zones, ash, D, zeroI);
+
+    // zone stats
+
+    int maxZoneArea = 0;    // matrix width 
+    for (const std::pair<PixIntens, int>& zo : zones)
+        maxZoneArea = (std::max)(maxZoneArea, zo.second);
+
+    // GLRLM
+    SimpleMatrix <int> P;
+    P.allocate (maxZoneArea /*width*/, I.size() /*height*/);
+    P.fill (0);
+
+    // --iterate zones and fill the matrix
+    for (const auto& zone : zones)
+    {
+        // row of P-matrix
+        auto itr = std::find (I.begin(), I.end(), zone.first);
+        int row = (int) (itr - I.begin());
+
+        // column of P-matrix
+        int col = zone.second - 1;	// need a 0-based index
+        auto& k = P.xy (col, row);
+        k++;
+    }
+
+    //
+    // Expecting the following GLRLM as the GT:
+    // 
+    //               rl=1   rl=2   rl=3
+    //
+    // [inten=1]     1      0      1
+    // [inten=1]     3      0      1
+    // [inten=1]     4      1      1
+    // [inten=1]     1      1      0
+    // [inten=1]     3      0      0
+    // 
+    //
+    ASSERT_TRUE(P.yx(0, 0) == 1);     ASSERT_TRUE(P.yx(0, 1) == 0);   ASSERT_TRUE(P.yx(0, 2) == 1);
+    ASSERT_TRUE(P.yx(1, 0) == 3);     ASSERT_TRUE(P.yx(1, 1) == 0);   ASSERT_TRUE(P.yx(1, 2) == 1);
+    ASSERT_TRUE(P.yx(2, 0) == 4);     ASSERT_TRUE(P.yx(2, 1) == 1);   ASSERT_TRUE(P.yx(2, 2) == 1);
+    ASSERT_TRUE(P.yx(3, 0) == 1);     ASSERT_TRUE(P.yx(3, 1) == 1);   ASSERT_TRUE(P.yx(3, 2) == 0);
+    ASSERT_TRUE(P.yx(4, 0) == 3);     ASSERT_TRUE(P.yx(4, 1) == 0);   ASSERT_TRUE(P.yx(4, 2) == 0);
+}
 
 void test_compat_3glrlm_feature(const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {

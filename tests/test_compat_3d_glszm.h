@@ -128,7 +128,7 @@ void test_compat_3glszm_feature (const Nyxus::Feature3D& expecting_fcode, const 
     ASSERT_TRUE (agrees_gt(atot, compat_3glszm_GT[fname], 10.));
 }
 
-void test_glc_matrix_correctness()
+void test_glsz_matrix_correctness()
 {
     // data
 
@@ -158,6 +158,7 @@ void test_glc_matrix_correctness()
     U.erase (0);
     // --- sorted non-zero (i.e. non-mask) intensities
     std::vector<PixIntens> I (U.begin(), U.end());
+    std::sort (I.begin(), I.end());
 
     // zones
 
