@@ -13,7 +13,7 @@
 
 // dig. phantom values for intensity based features
 // Calculated at grey scalefactlr 100
-static std::unordered_map<std::string, float> ngtdm_values {
+static std::unordered_map<std::string, double> ngtdm_values {
     {"NGTDM_COARSENESS", 0.008374068},
     {"NGTDM_CONTRAST", 3169.92908},
     {"NGTDM_BUSYNESS", 1.444571},

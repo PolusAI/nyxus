@@ -11,7 +11,7 @@
 #include <unordered_map> 
 
 // dig. phantom values for intensity based features
-static std::unordered_map<std::string, float> IBSI_glszm_values {
+static std::unordered_map<std::string, double> IBSI_glszm_values {
     {"GLSZM_SAE", 0.363},
     {"GLSZM_LAE", 43.9},
     {"GLSZM_LGLZE", 0.371},

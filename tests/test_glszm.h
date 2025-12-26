@@ -13,7 +13,7 @@
 
 // dig. phantom values for intensity based features
 // Calculated at 100 grey levels
-static std::unordered_map<std::string, float> glszm_values {
+static std::unordered_map<std::string, double> glszm_values {
     {"GLSZM_SAE", 0.38873},
     {"GLSZM_LAE", 32.5},
     {"GLSZM_LGLZE", 0.1962550},

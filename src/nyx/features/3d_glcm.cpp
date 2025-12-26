@@ -1069,18 +1069,6 @@ double D3_GLCM_feature::f_GLCM_JVAR(const SimpleMatrix<double>& P_matrix, double
 	return f;
 }
 
-// 'afv' is angled feature values
-double D3_GLCM_feature::calc_ave(const std::vector<double>& afv)
-{
-	if (afv.empty())
-		return 0;
-
-	double n = static_cast<double> (afv.size()),
-		ave = std::reduce(afv.begin(), afv.end()) / n;
-
-	return ave;
-}
-
 void D3_GLCM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	for (auto i = start; i < end; i++)

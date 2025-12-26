@@ -87,7 +87,7 @@ void D3_GLDM_feature::calculate (LR& r, const Fsettings& s)
 	SimpleCube<PixIntens> D;
 	D.allocate(w, h, d);
 
-	auto greyInfo = STNGS_NGREYS(s);	// former Nyxus::theEnvironment.get_coarse_gray_depth()
+	auto greyInfo = STNGS_GLDM_GREYDEPTH(s);	// former Nyxus::theEnvironment.get_coarse_gray_depth()
 	if (STNGS_IBSI(s))	// former Nyxus::theEnvironment.ibsi_compliance
 		greyInfo = 0;
 

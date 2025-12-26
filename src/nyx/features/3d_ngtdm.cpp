@@ -9,8 +9,6 @@
 
 using namespace Nyxus;
 
-int D3_NGTDM_feature::n_levels = 0;
-
 D3_NGTDM_feature::D3_NGTDM_feature() : FeatureMethod("D3_NGTDM_feature")
 {
 	provide_features(D3_NGTDM_feature::featureset);
@@ -43,11 +41,8 @@ void D3_NGTDM_feature::calculate (LR& r, const Fsettings& s)
 	SimpleCube<PixIntens> D;
 	D.allocate(w, h, d);
 
-	auto greyInfo = STNGS_NGREYS(s);	// former Nyxus::theEnvironment.get_coarse_gray_depth()
-	auto greyInfo_localFeature = D3_NGTDM_feature::n_levels;
-	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
-		greyInfo = greyInfo_localFeature;
-	if (STNGS_IBSI(s))		// former Nyxus::theEnvironment.ibsi_compliance
+	auto greyInfo = STNGS_NGTDM_GREYDEPTH(s);
+	if (STNGS_IBSI(s))
 		greyInfo = 0;
 
 	bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo);
@@ -90,32 +85,32 @@ void D3_NGTDM_feature::calculate (LR& r, const Fsettings& s)
 	};
 	const static ShiftToNeighbor shifts[] =
 	{
-		{-1,		0,			0},		// West
-		{-1,		-1,		0},		// North-West
+		{-1,	0,		0},		// West
+		{-1,	-1,		0},		// North-West
 		{0,		-1,		0},		// North
-		{+1,		-1,		0},		// North-East
-		{+1,		0,			0},		// East
-		{+1,		+1,		0},		// South-East
+		{+1,	-1,		0},		// North-East
+		{+1,	0,		0},		// East
+		{+1,	+1,		0},		// South-East
 		{0,		+1,		0},		// South
-		{-1,		+1,		0}	,		// South-West
+		{-1,	+1,		0},		// South-West
 
-		{-1,		0,			+1},		// West
-		{-1,		-1,		+1},		// North-West
-		{0,		-1,		+1},		// North
-		{+1,		-1,		+1},		// North-East
-		{+1,		0,			+1},		// East
-		{+1,		+1,		+1},		// South-East
-		{0,		+1,		+1},		// South
-		{-1,		+1,		+1},		// South-West	
+		{-1,	0,		+1},	// West
+		{-1,	-1,		+1},	// North-West
+		{0,		-1,		+1},	// North
+		{+1,	-1,		+1},	// North-East
+		{+1,	0,		+1},	// East
+		{+1,	+1,		+1},	// South-East
+		{0,		+1,		+1},	// South
+		{-1,	+1,		+1},	// South-West	
 
-		{-1,		0,			-1},		// West
-		{-1,		-1,		-1},		// North-West
-		{0,		-1,		-1},		// North
-		{+1,		-1,		-1},		// North-East
-		{+1,		0,			-1},		// East
-		{+1,		+1,		-1},		// South-East
-		{0,		+1,		-1},		// South
-		{-1,		+1,		-1}		// South-West	
+		{-1,	0,		-1},	// West
+		{-1,	-1,		-1},	// North-West
+		{0,		-1,		-1},	// North
+		{+1,	-1,		-1},	// North-East
+		{+1,	0,		-1},	// East
+		{+1,	+1,		-1},	// South-East
+		{0,		+1,		-1},	// South
+		{-1,	+1,		-1}		// South-West	
 	};
 
 	int nsh = sizeof(shifts) / sizeof(ShiftToNeighbor);
@@ -380,7 +375,7 @@ void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	D.allocate_from_cloud(r.raw_pixels_NT, r.aabb, false);
 
 	// Gather zones
-	unsigned int nGrays = STNGS_NGREYS(s);	 // former theEnvironment.get_coarse_gray_depth()
+	unsigned int nGrays = STNGS_NGTDM_GREYDEPTH(s);	 // former theEnvironment.get_coarse_gray_depth()
 	for (int row = 0; row < D.get_height(); row++)
 		for (int col = 0; col < D.get_width(); col++)
 		{

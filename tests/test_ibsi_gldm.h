@@ -12,7 +12,7 @@
 #include <unordered_map> 
 
 // dig. phantom values for intensity based features
-static std::unordered_map<std::string, float> IBSI_gldm_values {
+static std::unordered_map<std::string, double> IBSI_gldm_values {
     {"GLDM_SDE", 0.158},
     {"GLDM_LDE", 19.2},
     {"GLDM_LGLE", 0.702},

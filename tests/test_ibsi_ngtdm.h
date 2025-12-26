@@ -12,7 +12,7 @@
 #include <unordered_map> 
 
 // dig. phantom values for intensity based features
-static std::unordered_map<std::string, float> IBSI_ngtdm_values {
+static std::unordered_map<std::string, double> IBSI_ngtdm_values {
     {"NGTDM_COARSENESS", 0.121},
     {"NGTDM_CONTRAST", 0.925},
     {"NGTDM_BUSYNESS", 2.99},

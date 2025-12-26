@@ -7,7 +7,7 @@
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_ngldm.h"
 
-static std::unordered_map<std::string, float> d3ngldm_GT{
+static std::unordered_map<std::string, double> d3ngldm_GT{
 		{ "3NGLDM_LDE",	0.1 },
 		{ "3NGLDM_HDE",	261.0 },
 		{ "3NGLDM_LGLCE",	0.00036 },

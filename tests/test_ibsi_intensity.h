@@ -11,7 +11,7 @@
 #include <unordered_map> 
 
 // dig. phantom values for intensity based features
-static std::unordered_map<std::string, float> IBSI_intensity_values {
+static std::unordered_map<std::string, double> IBSI_intensity_values {
     {"MEAN", 2.15},
     {"VARIANCE", 3.05},
     {"SKEWNESS", 1.08},
