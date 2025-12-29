@@ -919,7 +919,8 @@ class TestNyxus():
             assert nyx is not None
 
             # configure Nyxus 3D NGTDM to mock Radiomics
-            nyx.set_metaparam ("3ngtdm/greydepth=-20")	# corresponds to Radiomics setting "binCount:20"
+            nyx.set_metaparam ("3ngtdm/greydepth=0")	# matching Radiomics setting "binWidth:1"
+            nyx.set_metaparam ("3ngtdm/radius=1")
 
             # calculate features
             testsRoot = str (pathlib.Path(__file__).parent.parent.resolve()) # parent.parent to reach the data owned by c++ tests
@@ -982,22 +983,22 @@ class TestNyxus():
                 "Case-1_original_glrlm_ShortRunLowGrayLevelEmphasis" : 0.011465297979291003
             }
 
-            assert np.isclose (f.at[0, "3GLRLM_GLN"],     radiomics_gt["Case-1_original_glrlm_GrayLevelNonUniformity"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLRLM_GLNN"],     radiomics_gt["Case-1_original_glrlm_GrayLevelNonUniformityNormalized"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLRLM_GLV"],     radiomics_gt["Case-1_original_glrlm_GrayLevelVariance"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLRLM_HGLRE"],     radiomics_gt["Case-1_original_glrlm_HighGrayLevelRunEmphasis"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLRLM_LRE"],     radiomics_gt["Case-1_original_glrlm_LongRunEmphasis"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLRLM_LRHGLE"],     radiomics_gt["Case-1_original_glrlm_LongRunHighGrayLevelEmphasis"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLRLM_LRLGLE"],     radiomics_gt["Case-1_original_glrlm_LongRunLowGrayLevelEmphasis"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLRLM_LGLRE"],     radiomics_gt["Case-1_original_glrlm_LowGrayLevelRunEmphasis"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLRLM_RE"],     radiomics_gt["Case-1_original_glrlm_RunEntropy"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLRLM_RLN"],     radiomics_gt["Case-1_original_glrlm_RunLengthNonUniformity"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLRLM_RLNN"],     radiomics_gt["Case-1_original_glrlm_RunLengthNonUniformityNormalized"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLRLM_RP"],     radiomics_gt["Case-1_original_glrlm_RunPercentage"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLRLM_RV"],     radiomics_gt["Case-1_original_glrlm_RunVariance"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLRLM_SRE"],     radiomics_gt["Case-1_original_glrlm_ShortRunEmphasis"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLRLM_SRHGLE"],     radiomics_gt["Case-1_original_glrlm_ShortRunHighGrayLevelEmphasis"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLRLM_SRLGLE"],     radiomics_gt["Case-1_original_glrlm_ShortRunLowGrayLevelEmphasis"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLRLM_GLN_AVE"],     radiomics_gt["Case-1_original_glrlm_GrayLevelNonUniformity"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLRLM_GLNN_AVE"],     radiomics_gt["Case-1_original_glrlm_GrayLevelNonUniformityNormalized"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLRLM_GLV_AVE"],     radiomics_gt["Case-1_original_glrlm_GrayLevelVariance"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLRLM_HGLRE_AVE"],     radiomics_gt["Case-1_original_glrlm_HighGrayLevelRunEmphasis"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLRLM_LRE_AVE"],     radiomics_gt["Case-1_original_glrlm_LongRunEmphasis"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLRLM_LRHGLE_AVE"],     radiomics_gt["Case-1_original_glrlm_LongRunHighGrayLevelEmphasis"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLRLM_LRLGLE_AVE"],     radiomics_gt["Case-1_original_glrlm_LongRunLowGrayLevelEmphasis"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLRLM_LGLRE_AVE"],     radiomics_gt["Case-1_original_glrlm_LowGrayLevelRunEmphasis"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLRLM_RE_AVE"],     radiomics_gt["Case-1_original_glrlm_RunEntropy"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLRLM_RLN_AVE"],     radiomics_gt["Case-1_original_glrlm_RunLengthNonUniformity"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLRLM_RLNN_AVE"],     radiomics_gt["Case-1_original_glrlm_RunLengthNonUniformityNormalized"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLRLM_RP_AVE"],     radiomics_gt["Case-1_original_glrlm_RunPercentage"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLRLM_RV_AVE"],     radiomics_gt["Case-1_original_glrlm_RunVariance"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLRLM_SRE_AVE"],     radiomics_gt["Case-1_original_glrlm_ShortRunEmphasis"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLRLM_SRHGLE_AVE"],     radiomics_gt["Case-1_original_glrlm_ShortRunHighGrayLevelEmphasis"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLRLM_SRLGLE_AVE"],     radiomics_gt["Case-1_original_glrlm_ShortRunLowGrayLevelEmphasis"], rtol=1.e-1, atol=1.e-2)
 
 
         def test_3d_glszm_compatibility (self):

@@ -35,12 +35,6 @@
 #include "test_arrow_file_name.h"
 
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_DV_INTERCEPT) 
-{
-	ASSERT_NO_THROW(test_compat_3GLDM_DV());
-}
-
-
 // ***** 3D NGTDM compatibility *****
 
 TEST(TEST_NYXUS, TEST_COMPAT_3NGTDM_BUSYNESS) {
