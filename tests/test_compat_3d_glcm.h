@@ -118,7 +118,8 @@ static std::tuple<std::string, std::string, int> get_3d_compat_phantom()
     std::string ipath = i_phys_path.string(),
         mpath = m_phys_path.string();
 
-    // ROI sitting in the mask phantom
+    //xxxxxxxxxxx   return { "C:\\WORK\\AXLE\\OUT\\OUT_synthetic_nifti\\phantom_ngtdm_inten.nii", "C:\\WORK\\AXLE\\OUT\\OUT_synthetic_nifti\\phantom_ngtdm_mask.nii", 57 }; //xxxxxxxxxxxxxxxxxxxxxxxxx
+
     return { ipath, mpath, 1 };
 }
 

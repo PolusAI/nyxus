@@ -18,9 +18,9 @@
 // where file "settings1.yaml" is:
 // 
 //  setting:
-//  #disabled - binWidth: 25
-//  binCount : 20
-//  label : 1
+//  binWidth: 1
+//  ### binCount : 20
+//  label : 57
 //  interpolator : 'sitkBSpline'
 //  resampledPixelSpacing :
 //  weightingNorm: 
@@ -31,13 +31,31 @@
 //      ngtdm:
 //
 
+static std::tuple<std::string, std::string, int> get_3d_compat_ngtdm_phantom()
+{
+    // physical paths of the phantoms
+    fs::path this_fpath(__FILE__);
+    fs::path pp = this_fpath.parent_path();
+
+    fs::path f1("/data/nifti/compat_int/compat_int_ngtdm_3d.nii");
+    fs::path i_phys_path = (pp.string() + f1.make_preferred().string());
+
+    fs::path f2("/data/nifti/compat_seg/compat_seg_ngtdm_3d.nii");
+    fs::path m_phys_path = (pp.string() + f2.make_preferred().string());
+
+    std::string ipath = i_phys_path.string(),
+        mpath = m_phys_path.string();
+
+    return { ipath, mpath, 57 };
+}
+
 static std::unordered_map<std::string, double> compat_3ngtdm_GT
 {
-    {"3NGTDM_BUSYNESS", 2.6196986487523657 },       // Case-1_original_ngtdm_Busyness
-    {"3NGTDM_COARSENESS", 0.0015636093329879858},   // Case-1_original_ngtdm_Coarseness
-    {"3NGTDM_COMPLEXITY", 253.33660508988459},      // Case-1_original_ngtdm_Complexity
-    {"3NGTDM_CONTRAST", 0.07186017922215597},       // Case-1_original_ngtdm_Contrast
-    {"3NGTDM_STRENGTH", 0.22500541896088058}        // Case-1_original_ngtdm_Strength
+    {"3NGTDM_BUSYNESS", 4.553401556426767},         // Case-1_original_ngtdm_Busyness
+    {"3NGTDM_COARSENESS", 0.030118770647251797},    // Case-1_original_ngtdm_Coarseness
+    {"3NGTDM_COMPLEXITY", 32.13037220400344},       // Case-1_original_ngtdm_Complexity
+    {"3NGTDM_CONTRAST", 0.23138014315250832},       // Case-1_original_ngtdm_Contrast
+    {"3NGTDM_STRENGTH", 1.245800596888454}          // Case-1_original_ngtdm_Strength
 };
 
 void test_compat_3ngtdm_feature (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
@@ -49,7 +67,7 @@ void test_compat_3ngtdm_feature (const Nyxus::Feature3D& expecting_fcode, const 
     ASSERT_TRUE(iter != compat_3ngtdm_GT.end());
 
     // get segment info
-    auto [ipath, mpath, label] = get_3d_compat_phantom();
+    auto [ipath, mpath, label] = get_3d_compat_ngtdm_phantom();
     ASSERT_TRUE(fs::exists(ipath));
     ASSERT_TRUE(fs::exists(mpath));
 
@@ -90,7 +108,8 @@ void test_compat_3ngtdm_feature (const Nyxus::Feature3D& expecting_fcode, const 
 
     // (4) NGTDM-specific feature settings mocking default pyRadiomics settings
 
-    s[(int)NyxSetting::NGTDM_GREYDEPTH].ival = -20;  // intentionally negative to activate radiomics binCount-based grey-binning
+    s[(int)NyxSetting::NGTDM_GREYDEPTH].ival = 0/*no binning*/; //xxxxxxxxxx -20;  // intentionally negative to activate radiomics binCount-based grey-binning
+    s[(int)NyxSetting::NGTDM_RADIUS].ival = 1;
 
     // (5) feature extraction
 
@@ -114,6 +133,57 @@ void test_compat_3ngtdm_feature (const Nyxus::Feature3D& expecting_fcode, const 
     auto x1 = r.fvals[fcode];
     auto x2 = compat_3ngtdm_GT[fname];
     ASSERT_TRUE (agrees_gt(x1[0], x2, 10.));
+}
+
+void test_ngtd_matrix_correctness()
+{
+    // data (data and gt source: pyradiomics web page)
+
+    std::vector<PixIntens> rawVolume =
+    {
+        1, 2, 5, 2,
+        3, 5, 1, 3,
+        1, 3, 5, 5,
+        3, 1, 1, 1
+    };
+
+    SimpleCube <PixIntens> D (rawVolume, 4/*width*/, 4/*height*/, 1/*depth*/);
+    PixIntens zeroI = 0;
+    // --- unique intensities
+    std::unordered_set<PixIntens> U (rawVolume.begin(), rawVolume.end());
+    U.erase (0);
+    // --- sorted non-zero (i.e. non-mask) intensities
+    std::vector<PixIntens> I (U.begin(), U.end());
+    std::sort (I.begin(), I.end());
+
+    // zones
+
+    std::vector <std::pair<PixIntens, double>> Zones;
+    D3_NGTDM_feature::gather_zones (Zones, D, 1 /*radius*/, zeroI);
+
+    // matrix
+
+    std::vector <int> N;
+    std::vector <double> P, S;
+    double Nvp = D3_NGTDM_feature::calc_NGTDM (N, P, S, Zones, I);
+
+    //
+    // Expecting the following NGTDM:
+    // 
+    // I       N       P       S
+    // -------------------------------
+    // 1       6       0.375   13.35
+    // 2       2       0.125   2.00
+    // 3       4       0.25    3.03
+    // 4       0       0       0
+    // 5       4       0.25    10.075
+    //
+
+    ASSERT_TRUE(N[0] == 6);         ASSERT_TRUE(N[1] == 2);         ASSERT_TRUE(N[2] == 4);         ASSERT_TRUE(N[3] == 4);
+
+    ASSERT_TRUE(agrees_gt(P[0], 0.375, 1));     ASSERT_TRUE(agrees_gt(P[1], 0.125, 1));     ASSERT_TRUE(agrees_gt(P[2], 0.25, 1));      ASSERT_TRUE(agrees_gt(P[3], 0.25, 1));
+
+    ASSERT_TRUE(agrees_gt(S[0], 13.35, 1));     ASSERT_TRUE(agrees_gt(S[1], 2.0, 1));       ASSERT_TRUE(agrees_gt(S[2], 3.03, 1));      ASSERT_TRUE(agrees_gt(S[3], 10.075, 1));
 }
 
 void test_compat_3NGTDM_BUSYNESS() {

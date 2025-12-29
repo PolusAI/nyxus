@@ -50,7 +50,17 @@ public:
 		return fs.anyEnabled (D3_NGTDM_feature::featureset);
 	}
 
-	//xxxxxxxxxxxxxxx	static int n_levels; // default value: 0
+	static void gather_zones (std::vector<std::pair<PixIntens, double>> &Z, SimpleCube<PixIntens> &D, int cheby_radius, PixIntens zeroI);
+
+	// returns Nvp
+	static double calc_NGTDM(
+		// out
+		std::vector <int>& N,
+		std::vector <double>& P,
+		std::vector <double>& S,
+		// in
+		const std::vector<std::pair<PixIntens, double>>& Z,
+		const std::vector<PixIntens>& I);
 
 private:
 

@@ -71,9 +71,7 @@ public:
 			else
 			{
 				// no binning (IBSI)
-				auto n = I.size();
-				for (size_t i = 0; i < n; i++)
-					S[i] = I[i];
+				S.assign (I.begin(), I.end());
 			}
 	}
 
@@ -107,9 +105,9 @@ public:
 	// returns 1-based bin indices
 	static inline PixIntens to_grayscale_radiomix (PixIntens x, PixIntens min__, PixIntens max__, int binCount)
 	{
-		double binW = double(max__ - min__) / double (binCount);
 		if (x)
 		{
+			double binW = double(max__ - min__) / double(binCount);
 			PixIntens y = (PixIntens) (double(x - min__) / binW + 1);
 			if (y > binCount)
 				y = binCount;	// the last bin is +1 unit wider

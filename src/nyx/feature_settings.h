@@ -35,6 +35,7 @@ enum class NyxSetting : int
 	GLDM_GREYDEPTH,
 	// NGTDM
 	NGTDM_GREYDEPTH,
+	NGTDM_RADIUS,
 	// GLRLM
 	GLRLM_GREYDEPTH,
 	// GLSZM
@@ -62,4 +63,6 @@ enum class NyxSetting : int
 #define STNGS_GLRLM_GREYDEPTH(obj) (obj[(int)NyxSetting::GLRLM_GREYDEPTH].ival)
 #define STNGS_GLSZM_GREYDEPTH(obj) (obj[(int)NyxSetting::GLSZM_GREYDEPTH].ival)
 #define STNGS_NGTDM_GREYDEPTH(obj) (obj[(int)NyxSetting::NGTDM_GREYDEPTH].ival)
+#define STNGS_NGTDM_RADIUS(obj) (obj[(int)NyxSetting::NGTDM_RADIUS].ival)
+
 

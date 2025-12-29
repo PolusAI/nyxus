@@ -208,8 +208,8 @@ void D3_GLRLM_feature::calculate (LR& r, const Fsettings& s)
 				row = inten - 1;
 			else
 			{
-				auto lower = std::lower_bound(I.begin(), I.end(), inten);	// enjoy sorted vector 'I'
-				row = int(lower - I.begin());	// intensity index in array of unique intensities 'I'
+				auto lower = std::lower_bound(I.begin(), I.end(), inten);	// enjoying sorted vector I
+				row = int(lower - I.begin());
 			}
 			
 			// col

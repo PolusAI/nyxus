@@ -924,17 +924,17 @@ class TestNyxus():
             # calculate features
             testsRoot = str (pathlib.Path(__file__).parent.parent.resolve()) # parent.parent to reach the data owned by c++ tests
             f = nyx.featurize_files(
-                [testsRoot + "/data/nifti/compat_int/compat_int_mri.nii"], 
-                [testsRoot + "/data/nifti/compat_seg/compat_seg_liver.nii"], 
+                [testsRoot + "/data/nifti/compat_int/compat_int_ngtdm_3d.nii"], 
+                [testsRoot + "/data/nifti/compat_seg/compat_seg_ngtdm_3d.nii"], 
                 False)
 
             # check the result versus radiomics results calculated with the same data
             radiomics_gt = {
-                "Case-1_original_ngtdm_Busyness" : 2.6196986487523657,
-                "Case-1_original_ngtdm_Coarseness" : 0.0015636093329879858,
-                "Case-1_original_ngtdm_Complexity" : 253.33660508988459,
-                "Case-1_original_ngtdm_Contrast" : 0.07186017922215597,
-                "Case-1_original_ngtdm_Strength" : 0.22500541896088058
+                "Case-1_original_ngtdm_Busyness" : 4.553401556426767,
+                "Case-1_original_ngtdm_Coarseness" : 0.030118770647251797,
+                "Case-1_original_ngtdm_Complexity" : 32.13037220400344,
+                "Case-1_original_ngtdm_Contrast" : 0.23138014315250832,
+                "Case-1_original_ngtdm_Strength" : 1.245800596888454
             }
 
             assert np.isclose (f.at[0, "3NGTDM_BUSYNESS"],     radiomics_gt["Case-1_original_ngtdm_Busyness"], rtol=1.e-1, atol=1.e-2)

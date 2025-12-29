@@ -157,6 +157,17 @@ std::optional<std::string> Environment::set_metaparam (const std::string & p_val
 				STNGS_NGTDM_GREYDEPTH(fsett_D3_NGTDM) = n_greys;
 			}
 			else
+			if (ppath[1] == "radius")
+			{
+				// interpret eq_sides[1] as int
+				int radius = -1;
+				if (Nyxus::parse_as_int(eq_sides[1], radius) == false || radius <= 0)
+				{
+					return "error: cannot parse value \"" + eq_sides[1] + "\" of 3ngtdm/radius: expecting a positive integer";
+				}
+				STNGS_NGTDM_RADIUS(fsett_D3_NGTDM) = radius;
+			}
+			else
 			{
 				return "error: unrecognized feature parameter of feature 3gldm: \"" + ppath[1] + "\"";
 			}
@@ -272,6 +283,13 @@ std::optional<std::string> Environment::get_metaparam (double & p_val, const std
 				int ival = STNGS_NGTDM_GREYDEPTH (fsett_D3_NGTDM);
 				p_val = (double)ival;
 			}
+			else
+			if (ppath[1] == "radius")
+			{
+				// interpret eq_sides[1] as int
+				int ival = STNGS_NGTDM_RADIUS (fsett_D3_NGTDM);
+				p_val = (double)ival;
+			}			
 			else
 			{
 				return "error: unrecognized feature parameter of feature 3gldm: \"" + ppath[1] + "\"";
