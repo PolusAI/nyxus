@@ -31,9 +31,10 @@
 #include "test_compat_3d_ngtdm.h"
 #include "test_compat_3d_glrlm.h"
 #include "test_compat_3d_glszm.h"
-#include "test_arrow.h"
-#include "test_arrow_file_name.h"
-
+#ifdef USE_ARROW
+    #include "test_arrow.h"
+    #include "test_arrow_file_name.h"
+#endif
 
 // ***** 3D NGTDM compatibility *****
 
@@ -354,6 +355,8 @@ TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_SUM_ENTROPY) {
 
 // ***** Apache I/O tests *****
 
+#ifdef USE_ARROW
+
 TEST(TEST_NYXUS, TEST_ARROW_FILE_NAME) {
 	test_file_naming();
 }
@@ -365,6 +368,8 @@ TEST(TEST_NYXUS, TEST_ARROW) {
 TEST(TEST_NYXUS, TEST_PARQUET) {
 	test_parquet();
 }
+
+#endif
 
 // ***** 3D shape *****
 

@@ -108,7 +108,7 @@ void test_compat_3ngtdm_feature (const Nyxus::Feature3D& expecting_fcode, const 
 
     // (4) NGTDM-specific feature settings mocking default pyRadiomics settings
 
-    s[(int)NyxSetting::NGTDM_GREYDEPTH].ival = 0/*no binning*/; //xxxxxxxxxx -20;  // intentionally negative to activate radiomics binCount-based grey-binning
+    s[(int)NyxSetting::NGTDM_GREYDEPTH].ival = 0/*no binning*/;
     s[(int)NyxSetting::NGTDM_RADIUS].ival = 1;
 
     // (5) feature extraction

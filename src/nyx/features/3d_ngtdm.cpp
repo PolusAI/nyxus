@@ -1,3 +1,4 @@
+
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
@@ -37,29 +38,29 @@ const static ShiftToNeighbor shifts[] =
 {
 	{-1,	0,		0},		// West
 	{-1,	-1,		0},		// North-West
-	{0,		-1,		0},		// North
+	{0,     -1,		0},		// North
 	{+1,	-1,		0},		// North-East
 	{+1,	0,		0},		// East
 	{+1,	+1,		0},		// South-East
-	{0,		+1,		0},		// South
+	{0,     +1,		0},		// South
 	{-1,	+1,		0},		// South-West
 
 	{-1,	0,		+1},	// West
 	{-1,	-1,		+1},	// North-West
-	{0,		-1,		+1},	// North
+	{0,	-1,		+1},	// North
 	{+1,	-1,		+1},	// North-East
 	{+1,	0,		+1},	// East
 	{+1,	+1,		+1},	// South-East
-	{0,		+1,		+1},	// South
+	{0,	+1,		+1},	// South
 	{-1,	+1,		+1},	// South-West	
 
 	{-1,	0,		-1},	// West
 	{-1,	-1,		-1},	// North-West
-	{0,		-1,		-1},	// North
+	{0,	-1,		-1},	// North
 	{+1,	-1,		-1},	// North-East
 	{+1,	0,		-1},	// East
 	{+1,	+1,		-1},	// South-East
-	{0,		+1,		-1},	// South
+	{0,	+1,		-1},	// South
 	{-1,	+1,		-1}		// South-West	
 };
 
@@ -214,6 +215,8 @@ void D3_NGTDM_feature::calculate (LR& r, const Fsettings& s)
 		I.assign (U.begin(), U.end());
 	}
 
+	std::sort (I.begin(), I.end());
+
 	// correct zero min for NGTDM
 	if (I[0] == 0)
 	{
@@ -222,8 +225,6 @@ void D3_NGTDM_feature::calculate (LR& r, const Fsettings& s)
 		// fix data
 		std::for_each (D.begin(), D.end(), [](PixIntens& x) {x += 1;});
 	}
-
-	std::sort(I.begin(), I.end());
 
 	// zero (backround) intensity at given grey binning method
 	PixIntens zeroI = matlab_grey_binning(greyInfo) ? 1 : 0;
