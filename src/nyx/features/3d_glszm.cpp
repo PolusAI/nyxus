@@ -7,13 +7,7 @@
 #include "../environment.h"
 #include "../helpers/timing.h"
 
-#ifdef USE_GPU
-#include "../gpu/glszm.cuh"
-#endif
-
 using namespace Nyxus;
-
-int D3_GLSZM_feature::n_levels = 0;
 
 void D3_GLSZM_feature::invalidate (double soft_nan)
 {
@@ -47,6 +41,433 @@ void D3_GLSZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	calculate (r, s);
 }
 
+/*static*/ void D3_GLSZM_feature::gather_size_zones (std::vector<std::pair<PixIntens, int>> & Zones, SimpleCube <PixIntens> & D, PixIntens zeroI)
+{
+	size_t w = D.width(),
+		h = D.height(),
+		d = D.depth();
+
+	// Number of zones
+	const int VISITED = -1;
+	for (int zslice = 0; zslice < d; zslice++)
+	{
+		for (int row = 0; row < h; row++)
+		{
+			for (int col = 0; col < w; col++)
+			{
+				// Find a non-blank pixel
+				PixIntens pi = D.zyx (zslice, row, col);
+				if (pi == zeroI || int(pi) == VISITED)
+					continue;
+
+				// Found a gray pixel. Find same-intensity neighbourhood of it.
+				std::vector<std::tuple<int, int, int>> history; // dimension order: x,y,z
+				int x = col, y = row, z = zslice;
+				int zoneArea = 1;
+				D.zyx (z,y,x) = VISITED;
+
+				int dx, dy, dz;
+				for (;;)
+				{
+					//***** same Z
+					dz = 0;
+					// 1
+					dy = 0;	dx = 1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 2
+					dy = 1;	dx = 1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 3
+					dy = 1;	dx = 0;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 4
+					dy = 1;	dx = -1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 5
+					dy = 0;	dx = -1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 6
+					dy = -1;	dx = -1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 7
+					dy = -1;	dx = 0;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 8
+					dy = -1;	dx = 1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+
+					//***** upper Z
+					dz = 1;
+					// 1
+					dy = 0;	dx = 1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 2
+					dy = 1;	dx = 1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 3
+					dy = 1;	dx = 0;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 4
+					dy = 1;	dx = -1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 5
+					dy = 0;	dx = -1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 6
+					dy = -1;	dx = -1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 7
+					dy = -1;	dx = 0;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 8
+					dy = -1;	dx = 1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+
+					//***** lower Z
+					dz = -1;
+					// 1
+					dy = 0;	dx = 1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 2
+					dy = 1;	dx = 1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 3
+					dy = 1;	dx = 0;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 4
+					dy = 1;	dx = -1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 5
+					dy = 0;	dx = -1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 6
+					dy = -1;	dx = -1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 7
+					dy = -1;	dx = 0;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+					// 8
+					dy = -1;	dx = 1;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+
+					//***** strictly upper Z
+					dz = 1;	dy = 0;	dx = 0;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+
+					//***** strictly lower Z
+					dz = -1;	dy = 0;	dx = 0;
+					if (D.safe(z+dz, y+dy, x+dx) && D.zyx(z+dz, y+dy, x+dx) != VISITED && D.zyx(z+dz, y+dy, x+dx) == pi)
+					{
+						D.zyx(z+dz, y+dy, x+dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance
+						z += dz;	y += dy;	x += dx;
+						// Proceed
+						continue;
+					}
+
+					// Return from the branch
+					if (history.size() > 0)
+					{
+						// Recollect the coordinate where we diverted from
+						std::tuple<int, int, int> prev = history[history.size() - 1];
+						x = std::get<0>(prev);
+						y = std::get<1>(prev);
+						z = std::get<2>(prev);
+						history.pop_back();
+						continue;
+					}
+
+					// done exploring this cluster
+					break;
+				}
+
+				// save this intensity cluster
+				std::pair <PixIntens, int> zo = { pi, zoneArea };
+				Zones.push_back (zo);
+			} // columns
+		} // rows
+	} // z-slices
+}
+
 void D3_GLSZM_feature::calculate (LR& r, const Fsettings& s)
 {
 	clear_buffers();
@@ -58,351 +479,112 @@ void D3_GLSZM_feature::calculate (LR& r, const Fsettings& s)
 		return;
 	}
 
-	//==== Make a list of intensity clusters (zones)
-	using ACluster = std::pair<PixIntens, int>;
-	std::vector<ACluster> Z;
-
-	//==== While scanning clusters, learn unique intensities 
-	std::unordered_set<PixIntens> U;
-
-	// Width of the intensity - zone area matrix 
-	int maxZoneArea = 0;
-
-	// grey-bin intensities
+	// bin intensities
 	int w = r.aux_image_cube.width(),
 		h = r.aux_image_cube.height(),
 		d = r.aux_image_cube.depth();
 
-	SimpleCube<PixIntens> D;
+	SimpleCube <PixIntens> D;
 	D.allocate(w, h, d);
 
-	auto greyInfo = STNGS_NGREYS(s); // former Nyxus::theEnvironment.get_coarse_gray_depth()
-	auto greyInfo_localFeature = D3_GLSZM_feature::n_levels;
-	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
-		greyInfo = greyInfo_localFeature;
+	auto greyInfo = STNGS_GLSZM_GREYDEPTH(s); // former Nyxus::theEnvironment.get_coarse_gray_depth()
 	if (STNGS_IBSI(s)) // former Nyxus::theEnvironment.ibsi_compliance
 		greyInfo = 0;
 
 	bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo);
 
-	// allocate the matrix of intensities
+	// gather unique intensities
+	std::unordered_set <PixIntens> U;
+
 	if (ibsi_grey_binning(greyInfo))
 	{
+		// ibsi approach to intensities
 		auto n_ibsi_levels = *std::max_element(D.begin(), D.end());
 		I.resize(n_ibsi_levels);
 		for (int i = 0; i < n_ibsi_levels; i++)
 			I[i] = i + 1;
 	}
-	else // radiomics and matlab
+	else
 	{
-		std::unordered_set<PixIntens> U(D.begin(), D.end());
+		// radiomics and matlab approach to intensities
+		std::unordered_set <PixIntens> U(D.begin(), D.end());
 		U.erase(0);	// discard intensity '0'
 		I.assign(U.begin(), U.end());
 		std::sort(I.begin(), I.end());
 	}
 
-	{ //STOPWATCH("sz01/sz01/T/#raw", "\t=");
-
-		// zero (backround) intensity at given grey binning method
-		PixIntens zeroI = matlab_grey_binning(greyInfo) ? 1 : 0;
+	// zero (backround) intensity at given grey binning approach
+	PixIntens zeroI = matlab_grey_binning (greyInfo) ? 1 : 0;
 		
-		// Number of zones
-		const int VISITED = -1;
-		for (int zslice = 0; zslice < d; zslice++)
-		{
-			for (int row = 0; row < h; row++)
-			{
-				for (int col = 0; col < w; col++)
-				{
-					// Find a non-blank pixel
-					auto pi = D.zyx (zslice, row, col);
-					if (pi == zeroI || int(pi) == VISITED)
-						continue;
+	// gather intensity zones
+	std::vector <std::pair<PixIntens, int>> Zones;
+	D3_GLSZM_feature::gather_size_zones (Zones, D, zeroI);
 
-					// Found a gray pixel. Find same-intensity neighbourhood of it.
-					std::vector<std::tuple<int, int, int>> history; // dimension order: x,y,z
-					int x = col, y = row, z = zslice;
-					int zoneArea = 1;
-					D.zyx (z, y, x) = VISITED;
+	// width of GLSZM matrix 
+	int maxZoneArea = 0;
+	for (const std::pair<PixIntens, int> & zo : Zones)
+		maxZoneArea = (std::max) (maxZoneArea, zo.second);
 
-					for (;;)
-					{
-						// dz == 0
-						if (D.safe(z, y, x + 1) && D.zyx(z, y, x + 1) != VISITED && D.zyx(z, y, x + 1) == pi)
-						{
-							D.zyx (z, y, x + 1) = VISITED;
-							zoneArea++;
-
-							// Remember this pixel
-							history.push_back ({ x,y,z });
-							// Advance
-							x = x + 1;
-							// Proceed
-							continue;
-						}
-						if (D.safe(z, y + 1, x + 1) && D.zyx(z, y + 1, x + 1) != VISITED && D.zyx(z, y + 1, x + 1) == pi)
-						{
-							D.zyx (z, y + 1, x + 1) = VISITED;
-							zoneArea++;
-
-							history.push_back ({ x,y,z });
-							x = x + 1;
-							y = y + 1;
-							continue;
-						}
-						if (D.safe(z, y + 1, x) && D.zyx(z, y + 1, x) != VISITED && D.zyx(z, y + 1, x) == pi)
-						{
-							D.zyx (z, y + 1, x) = VISITED;
-							zoneArea++;
-
-							history.push_back ({ x,y,z });
-							y = y + 1;
-							continue;
-						}
-						if (D.safe(z, y + 1, x - 1) && D.zyx(z, y + 1, x - 1) != VISITED && D.zyx(z, y + 1, x - 1) == pi)
-						{
-							D.zyx (z, y + 1, x - 1) = VISITED;
-							zoneArea++;
-
-							history.push_back ({ x,y,z });
-							x = x - 1;
-							y = y + 1;
-							continue;
-						}
-
-						// dz == +1
-						if (D.safe(z+1, y, x) && D.zyx(z+1, y, x) != VISITED && D.zyx(z+1, y, x) == pi)
-						{
-							D.zyx (z+1, y, x) = VISITED;
-							zoneArea++;
-
-							// Remember this pixel
-							history.push_back ({ x,y,z });
-							// Advance
-							z = z + 1;
-							// Proceed
-							continue;
-						}
-						if (D.safe(z+1, y, x+1) && D.zyx(z+1, y, x+1) != VISITED && D.zyx(z+1, y, x+1) == pi)
-						{
-							D.zyx (z+1, y, x+1) = VISITED;
-							zoneArea++;
-
-							// Remember this pixel
-							history.push_back ({ x,y,z });
-							// Advance
-							x = x + 1;
-							z = z + 1;
-							// Proceed
-							continue;
-						}
-						if (D.safe(z+1, y+1, x+1) && D.zyx(z+1, y+1, x+1) != VISITED && D.zyx(z+1, y+1, x+1) == pi)
-						{
-							D.zyx (z+1, y+1, x+1) = VISITED;
-							zoneArea++;
-
-							history.push_back ({ x,y,z });
-							x = x + 1;
-							y = y + 1;
-							z = z + 1;
-							continue;
-						}
-						if (D.safe(z+1, y+1, x) && D.zyx(z+1, y+1, x) != VISITED && D.zyx(z+1, y+1, x) == pi)
-						{
-							D.zyx (z+1, y+1, x) = VISITED;
-							zoneArea++;
-
-							history.push_back ({ x,y,z });
-							y = y + 1;
-							z = z + 1;
-							continue;
-						}
-						if (D.safe(z+1, y+1, x-1) && D.zyx(z+1, y+1, x-1) != VISITED && D.zyx(z+1, y+1, x-1) == pi)
-						{
-							D.zyx (z+1, y+1, x-1) = VISITED;
-							zoneArea++;
-
-							history.push_back ({ x,y,z });
-							x = x - 1;
-							y = y + 1;
-							z = z + 1;
-							continue;
-						}
-
-						// Return from the branch
-						if (history.size() > 0)
-						{
-							// Recollect the coordinate where we diverted from
-							std::tuple<int, int, int> prev = history[history.size() - 1];
-							x = std::get<0>(prev);
-							y = std::get<1>(prev);
-							z = std::get<2>(prev);
-							history.pop_back();
-							continue;
-						}
-
-						// We are done exploring this cluster
-						break;
-					}
-
-					// Done scanning a cluster. Perform 3 actions:
-					// --1
-					U.insert(pi);
-
-					// --2
-					maxZoneArea = std::max(maxZoneArea, zoneArea);
-
-					// --3
-					ACluster clu = { pi, zoneArea };
-					Z.push_back(clu);
-				}
-			}
-		}
-
-	}//t
-
-	// count non-zero pixels
-	int count = 0;
-	for (const auto& px : r.aux_image_cube)	// 'D' is dirty so use 'r.aux_image_cube'
-	{
-		if (px != 0)
-			++count;
-	}
+	// non-zero pixels
+	size_t nnzVoxels = r.raw_pixels_3D.size();
 
 	//==== Fill the SZ-matrix
 
-	auto height = h;
-	auto width = w;
+	Ng = STNGS_IBSI(s) ? *std::max_element (I.begin(), I.end()) : I.size();	// former Environment::ibsi_compliance
+	Ns = maxZoneArea;
+	Nz = (int) Zones.size();
+	Np = nnzVoxels;
 
-	Ng = STNGS_IBSI(s) ? *std::max_element(I.begin(), I.end()) : I.size();	// former Environment::ibsi_compliance
-	Ns = height * width;
-	Nz = (int)Z.size();
-	Np = count;
+	// --allocate GLSZ-matrix
+	P.allocate (Ns, Ng);
+	P.fill (0);
 
-	// --allocate the matrix
-	P.allocate(Ns, Ng);
+	// --iterate zones and fill the matrix
+	int i = 0;
+	for (const auto & zone : Zones)
+	{
+		// row of P-matrix
+		auto iter = std::find (I.begin(), I.end(), zone.first);
+		int row = STNGS_IBSI(s) ? zone.first - 1 : int(iter - I.begin());
 
-	{ //STOPWATCH("sz02/sz02/T/#raw", "\t=");
+		// column of P-matrix
+		int col = zone.second - 1;	// 0-based => -1
+		auto & k = P.xy (col, row);
+		k++;
+	}
 
-		// --iterate zones and fill the matrix
-		int i = 0;
-		for (auto& z : Z) // 'z' stands for zone, not z-slice
-		{
-			// row of P-matrix
-			auto iter = std::find(I.begin(), I.end(), z.first);
-			int row = STNGS_IBSI(s) ? z.first - 1 : int(iter - I.begin());
-			// column of P-matrix
-			int col = z.second - 1;	// 0-based => -1
-			auto& k = P.xy(col, row);
-			k++;
-		}
+	// normalizing coefficient (must be ==Nz)
+	sum_p = 0;
+	for (auto a : P)
+		sum_p += a;
 
-		// Non-informative matrix?
-		sum_p = 0;
-		for (int i = 1; i <= Ng; ++i)
-		{
-			for (int j = 1; j <= Ns; ++j)
-			{
-				sum_p += P.matlab(i, j);
-			}
-		}
+	// check if the P-matrix is informative
+	if (sum_p == 0)
+	{
+		invalidate (STNGS_NAN(s));
+		return;
+	}
 
-		if (sum_p == 0)
-		{
-			invalidate (STNGS_NAN(s));
-			return;
-		}
+	// Precalculate sums of P
+	calc_sums_of_P();
 
-	}//sz02
-
-	{ //STOPWATCH("sz03/sz03/T/#raw", "\t=");
-
-		// Precalculate sums of P
-#ifdef USE_GPU
-		if (STNGS_USEGPU(s))	// former theEnvironment.using_gpu()
-		{
-			if (! NyxusGpu::GLSZMfeature_calc(
-				// out
-				fv_SAE,
-				fv_LAE,
-				fv_GLN,
-				fv_GLNN,
-				fv_SZN,
-				fv_SZNN,
-				fv_ZP,
-				fv_GLV,
-				fv_ZV,
-				fv_ZE,
-				fv_LGLZE,
-				fv_HGLZE,
-				fv_SALGLE,
-				fv_SAHGLE,
-				fv_LALGLE,
-				fv_LAHGLE,
-				// in
-				Ng, Ns, I.data(), P.data(), sum_p, Np, EPS))
-			{
-				std::cerr << "ERROR: D3_GLSZM_feature_calc_sums_of_P failed \n";
-				invalidate (STNGS_NAN(s));
-				return;
-			}
-		}
-		else
-		{
-			calc_sums_of_P();
-		}
-#else
-		calc_sums_of_P();
-#endif
-
-	}//sz03
-
-	{ //STOPWATCH("sz04/sz04/T/#raw", "\t=");
-
-		// Calculate features
-#ifdef USE_GPU
-		if (STNGS_USEGPU(s))	// former theEnvironment.using_gpu()
-		{
-			// features are calculated in D3_GLSZM_feature_calc_sums_of_P
-		}
-		else
-		{
-			fv_SAE = calc_SAE();
-			fv_LAE = calc_LAE();
-			fv_GLN = calc_GLN();
-			fv_GLNN = calc_GLNN();
-			fv_SZN = calc_SZN();
-			fv_SZNN = calc_SZNN();
-			fv_ZP = calc_ZP();
-			fv_GLV = calc_GLV();
-			fv_ZV = calc_ZV();
-			fv_ZE = calc_ZE();
-			fv_LGLZE = calc_LGLZE();
-			fv_HGLZE = calc_HGLZE();
-			fv_SALGLE = calc_SALGLE();
-			fv_SAHGLE = calc_SAHGLE();
-			fv_LALGLE = calc_LALGLE();
-			fv_LAHGLE = calc_LAHGLE();
-		}
-#else
-		fv_SAE = calc_SAE();
-		fv_LAE = calc_LAE();
-		fv_GLN = calc_GLN();
-		fv_GLNN = calc_GLNN();
-		fv_SZN = calc_SZN();
-		fv_SZNN = calc_SZNN();
-		fv_ZP = calc_ZP();
-		fv_GLV = calc_GLV();
-		fv_ZV = calc_ZV();
-		fv_ZE = calc_ZE();
-		fv_LGLZE = calc_LGLZE();
-		fv_HGLZE = calc_HGLZE();
-		fv_SALGLE = calc_SALGLE();
-		fv_SAHGLE = calc_SAHGLE();
-		fv_LALGLE = calc_LALGLE();
-		fv_LAHGLE = calc_LAHGLE();
-#endif
-	}//sz04
+	// Calculate features
+	fv_SAE = calc_SAE();
+	fv_LAE = calc_LAE();
+	fv_GLN = calc_GLN();
+	fv_GLNN = calc_GLNN();
+	fv_SZN = calc_SZN();
+	fv_SZNN = calc_SZNN();
+	fv_ZP = calc_ZP();
+	fv_GLV = calc_GLV();
+	fv_ZV = calc_ZV();
+	fv_ZE = calc_ZE();
+	fv_LGLZE = calc_LGLZE();
+	fv_HGLZE = calc_HGLZE();
+	fv_SALGLE = calc_SALGLE();
+	fv_SAHGLE = calc_SAHGLE();
+	fv_LALGLE = calc_LALGLE();
+	fv_LAHGLE = calc_LAHGLE();
 }
 
 void D3_GLSZM_feature::calc_sums_of_P()
@@ -426,7 +608,7 @@ void D3_GLSZM_feature::calc_sums_of_P()
 	{
 		double inten = (double)I[i - 1];
 		double sum = 0;
-		for (int j = 1; j <= Ns; ++j)
+		for (int j = 1; j <= /*Ns*/P.width(); ++j)
 		{
 			double p = P.matlab(i, j);
 			sum += p;
@@ -453,7 +635,7 @@ void D3_GLSZM_feature::calc_sums_of_P()
 	sj.clear();
 	sj.resize(Ns + 1);
 	std::fill(sj.begin(), sj.end(), 0.0);
-	for (int j = 1; j <= Ns; ++j)
+	for (int j = 1; j <= /*Ns*/P.width(); ++j)
 	{
 		double sum = 0;
 		for (int i = 1; i <= Ng; ++i)
@@ -485,26 +667,48 @@ void D3_GLSZM_feature::save_value(std::vector<std::vector<double>>& fvals)
 // 1. Small Area Emphasis
 double D3_GLSZM_feature::calc_SAE()
 {
+#if 0
 	// Calculate feature. 'sj' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
-	for (int j = 1; j <= Ns; j++)
+	for (int j = 1; j <= /*Ns*/P.width(); j++)
 	{
 		f += sj[j] / (j * j);
 	}
 	double retval = f / sum_p;
+	return retval;
+#endif
+
+	double tot = 0;
+	for (int i=1; i<=Ng; i++)
+	{
+		for (int j=1; j<=P.width(); j++)
+			tot += double(P.matlab(i,j)) / double(j*j);
+	}
+	double retval = tot / Nz;
 	return retval;
 }
 
 // 2. Large Area Emphasis
 double D3_GLSZM_feature::calc_LAE()
 {
+#if 0
 	// Calculate feature. 'sj' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
-	for (int j = 1; j <= Ns; j++)
+	for (int j = 1; j <= /*Ns*/P.width(); j++)
 	{
 		f += sj[j] * (j * j);
 	}
 	double retval = f / sum_p;
+	return retval;
+#endif
+
+	double tot = 0;
+	for (int i = 1; i <= Ng; i++)
+	{
+		for (int j = 1; j <= P.width(); j++)
+			tot += double(P.matlab(i,j)) * double(j*j);
+	}
+	double retval = tot / Nz;
 	return retval;
 }
 

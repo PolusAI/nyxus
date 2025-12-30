@@ -55,7 +55,7 @@
 //        - 'SumSquares'
 //
 
-static std::unordered_map<std::string, float> compat_d3glcm_GT
+static std::unordered_map<std::string, double> compat_d3glcm_GT
 {
     {"3GLCM_ACOR", 122.14708306342365},         // Case-1_original_glcm_Autocorrelation
     {"3GLCM_ASM", 0.0143339715631298},          // Case-1_original_glcm_JointEnergy
@@ -118,7 +118,8 @@ static std::tuple<std::string, std::string, int> get_3d_compat_phantom()
     std::string ipath = i_phys_path.string(),
         mpath = m_phys_path.string();
 
-    // ROI sitting in the mask phantom
+    //xxxxxxxxxxx   return { "C:\\WORK\\AXLE\\OUT\\OUT_synthetic_nifti\\phantom_ngtdm_inten.nii", "C:\\WORK\\AXLE\\OUT\\OUT_synthetic_nifti\\phantom_ngtdm_mask.nii", 57 }; //xxxxxxxxxxxxxxxxxxxxxxxxx
+
     return { ipath, mpath, 1 };
 }
 
@@ -194,10 +195,10 @@ void test_compat_3glcm_feature (const Nyxus::Feature3D& expecting_fcode, const s
 
     f.save_value(r.fvals);
 
-    // aggregate angled subfeatures (13 angles for 3D)
+    // (7) aggregate angled subfeatures
     double atot = f.calc_ave (r.fvals[fcode]);
 
-    // (7) verdict
+    // (8) verdict
     ASSERT_TRUE(agrees_gt(atot, compat_d3glcm_GT[fname], 10.));
 }
 

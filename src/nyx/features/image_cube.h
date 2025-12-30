@@ -9,9 +9,24 @@ template <class T>
 class SimpleCube : public std::vector<T>
 {
 public:
-	SimpleCube(int _w, int _h, int _d) : W(_w), H(_h), D(_d)
+
+	SimpleCube (int _w, int _h, int _d) : 
+		W(_w), H(_h), D(_d)
 	{
-		this->resize (W * H * D, 0);
+		this->resize (W*H*D);
+		std::fill (this->begin(), this->end(), 0);
+	}
+
+	SimpleCube (const std::vector<T> & volume_data, int _w, int _h, int _d) : 
+		W(_w), H(_h), D(_d)
+	{
+		this->assign (volume_data.begin(), volume_data.end());
+	}
+
+	SimpleCube (const SimpleCube<T> &other) :
+		W (other.width()), H (other.height()), D (other.depth())
+	{
+		this->assign (other.begin(), other.end());
 	}
 
 	SimpleCube() {}

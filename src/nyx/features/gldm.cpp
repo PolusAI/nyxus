@@ -243,7 +243,6 @@ void GLDMFeature::calculate (LR& r, const Fsettings& s)
 
 void GLDMFeature::clear_buffers()
 {
-	bad_roi_data = false;
 	int Ng = 0;
 	int Nd = 0;
 	int Nz = 0;

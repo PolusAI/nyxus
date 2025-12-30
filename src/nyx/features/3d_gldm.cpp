@@ -15,32 +15,35 @@ struct ShiftToNeighbor
 };
 const static ShiftToNeighbor shifts[] =
 {
-	{-1,		0,			0},		// West
-	{-1,		-1,		0},		// North-West
-	{0,		-1,		0},		// North
-	{+1,		-1,		0},		// North-East
-	{+1,		0,			0},		// East
-	{+1,		+1,		0},		// South-East
-	{0,		+1,		0},		// South
-	{-1,		+1,		0}	,		// South-West
+	{-1,    0,    0},		// West
+	{-1,   -1,    0},		// North-West
+	{ 0,   -1,    0},		// North
+	{+1,   -1,    0},		// North-East
+	{+1,    0,    0},		// East
+	{+1,   +1,    0},		// South-East
+	{ 0,   +1,    0},		// South
+	{-1,   +1,    0},		// South-West
 
-	{-1,		0,			+1},		// West
-	{-1,		-1,		+1},		// North-West
-	{0,		-1,		+1},		// North
-	{+1,		-1,		+1},		// North-East
-	{+1,		0,			+1},		// East
-	{+1,		+1,		+1},		// South-East
-	{0,		+1,		+1},		// South
-	{-1,		+1,		+1},		// South-West	
+	{-1,    0,   +1},		// West
+	{-1,   -1,   +1},		// North-West
+	{ 0,   -1,   +1},		// North
+	{+1,   -1,   +1},		// North-East
+	{+1,    0,   +1},		// East
+	{+1,   +1,   +1},		// South-East
+	{ 0,   +1,   +1},		// South
+	{-1,   +1,   +1},		// South-West	
 
-	{-1,		0,			-1},		// West
-	{-1,		-1,		-1},		// North-West
-	{0,		-1,		-1},		// North
-	{+1,		-1,		-1},		// North-East
-	{+1,		0,			-1},		// East
-	{+1,		+1,		-1},		// South-East
-	{0,		+1,		-1},		// South
-	{-1,		+1,		-1}		// South-West	
+	{-1,    0,   -1},		// West
+	{-1,   -1,   -1},		// North-West
+	{ 0,   -1,   -1},		// North
+	{+1,   -1,   -1},		// North-East
+	{+1,    0,   -1},		// East
+	{+1,   +1,   -1},		// South-East
+	{ 0,   +1,   -1},		// South
+	{-1,   +1,   -1},		// South-West	
+
+	{ 0,    0,   +1},		// up	
+	{ 0,    0,   -1}		// down
 };
 
 const static int nsh = sizeof(shifts) / sizeof(ShiftToNeighbor);
@@ -87,7 +90,7 @@ void D3_GLDM_feature::calculate (LR& r, const Fsettings& s)
 	SimpleCube<PixIntens> D;
 	D.allocate(w, h, d);
 
-	auto greyInfo = STNGS_NGREYS(s);	// former Nyxus::theEnvironment.get_coarse_gray_depth()
+	auto greyInfo = STNGS_GLDM_GREYDEPTH(s);	// former Nyxus::theEnvironment.get_coarse_gray_depth()
 	if (STNGS_IBSI(s))	// former Nyxus::theEnvironment.ibsi_compliance
 		greyInfo = 0;
 
@@ -177,7 +180,7 @@ void D3_GLDM_feature::calculate (LR& r, const Fsettings& s)
 		k++;
 
 		// update max referenced dependency
-		max_Nd = std::max(max_Nd, col + 1);
+		max_Nd = (std::max) (max_Nd, z.second);
 	}
 
 	// If not IBSI mode, adjust Nd. No need to iterate the GLDM beyond 'max_Nd'

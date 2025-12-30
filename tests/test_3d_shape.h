@@ -7,7 +7,7 @@
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_surface.h"
 
-static std::unordered_map<std::string, float> d3shape_GT{
+static std::unordered_map<std::string, double> d3shape_GT{
     { "3AREA",  58457 },
     { "3AREA_2_VOLUME", 0.21 },
     { "3COMPACTNESS1",  0.011 },

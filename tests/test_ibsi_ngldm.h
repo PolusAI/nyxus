@@ -10,7 +10,7 @@
 // Digital phantom values for intensity based features
 // (Reference: IBSI Documentation, Release 0.0.1dev Dec 13, 2021. https://ibsi.readthedocs.io/en/latest/03_Image_features.html
 // Dataset: dig phantom. Aggr. method: 2D, averaged)
-static std::unordered_map<std::string, float> ibsi_ngldm_gtruth
+static std::unordered_map<std::string, double> ibsi_ngldm_gtruth
 {
 	{"NGLDM_LDE",		0.158},	// Low dependence emphasis, p.120, consensus - strong
 	{"NGLDM_HDE",		19.2},	// High dependence emphasis, p.121

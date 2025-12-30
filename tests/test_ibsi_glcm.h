@@ -13,7 +13,7 @@
 
 // Digital phantom values for intensity based features
 // (Reference: IBSI Documentation, Release 0.0.1dev Dec 13, 2021. Dataset: dig phantom. Aggr. method: 2D, averaged)
-static std::unordered_map<std::string, float> IBSI_glcm_values {
+static std::unordered_map<std::string, double> IBSI_glcm_values {
     {"GLCM_ACOR", 5.09},    // p. 76, consensus: very strong
     {"GLCM_ASM", 0.368},    // p. 68, consensus: very strong
     {"GLCM_CLUPROM", 79.1}, // p. 79, consensus: very strong
