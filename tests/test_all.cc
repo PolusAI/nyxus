@@ -31,8 +31,43 @@
 #include "test_3d_ngldm.h"
 #include "test_3d_ngtdm.h"
 #include "test_3d_shape.h"
-#include "test_arrow.h"
-#include "test_arrow_file_name.h"
+#include "test_contour.h"
+#ifdef USE_ARROW
+	#include "test_arrow.h"
+	#include "test_arrow_file_name.h"
+#endif
+
+// ***** 2D contour and multicontour *****
+
+
+TEST(TEST_NYXUS, TEST_CONTOUR_MULTI_1)
+{
+	ASSERT_NO_THROW(test_contour_multi_disconnected());
+}
+
+TEST(TEST_NYXUS, TEST_CONTOUR_SINGLE)
+{
+	ASSERT_NO_THROW(test_contour_single());
+}
+
+TEST(TEST_NYXUS, TEST_CONTOUR_SINGLE_TAILED)
+{
+	ASSERT_NO_THROW(test_contour_single_tailed());
+}
+
+TEST(TEST_NYXUS, TEST_CONTOUR_VOID)
+{
+	ASSERT_NO_THROW(test_contour_void());
+}
+
+TEST(TEST_NYXUS, TEST_CONTOUR_MULTI_2)
+{
+	ASSERT_NO_THROW(test_contour_multi_connected());
+}
+
+// ***** Apache formats I/O *****
+
+#ifdef USE_ARROW
 
 TEST(TEST_NYXUS, TEST_ARROW_FILE_NAME) {
 	test_file_naming();
@@ -45,6 +80,8 @@ TEST(TEST_NYXUS, TEST_ARROW) {
 TEST(TEST_NYXUS, TEST_PARQUET) {
 	test_parquet();
 }
+
+#endif
 
 // ***** 3D shape *****
 

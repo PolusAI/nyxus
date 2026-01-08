@@ -54,7 +54,7 @@ void LR::recycle_aux_obj (RoiDataCacheItem itm)
 		raw_pixels.clear();
 		break;
 	case CONTOUR:
-		contour.clear();
+		multicontour_.clear();
 		break;
 	case CONVEX_HULL:
 		convHull_CH.clear();
@@ -89,5 +89,14 @@ void LR::initialize_fvals()
 	for (auto& valVec : fvals)
 		valVec.push_back(0.0);
 }
+
+void LR::merge_multicontour (std::vector<Pixel2> &super_c) const
+{
+	super_c.clear();
+
+	for (const std::vector<Pixel2> &c : multicontour_)
+		super_c.insert (std::end(super_c), std::begin(c), std::end(c));
+}
+
 
 

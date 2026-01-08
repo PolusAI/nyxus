@@ -112,13 +112,17 @@ void BasicGeomoms2D::calculate(LR& r, const Fsettings& s, intenfunction ifun)
     calcNormCentralMoments(c);
     calcHuInvariants(c);
 
+    // flat multicontour
+    std::vector<Pixel2> K;
+    r.merge_multicontour(K);
+
     // -- prepare weighted pixel cloud
     std::vector<RealPixIntens> w;
     Nyxus::copy_pixcloud_intensities(w, c);
     if (STNGS_SINGLEROI(s))   // former theEnvironment.singleROI
-        apply_dist2contour_weighting_wholeslide (w, c, r.contour, weighting_epsilon);
+        apply_dist2contour_weighting_wholeslide (w, c, K, weighting_epsilon);
     else
-        apply_dist2contour_weighting (w, c, r.contour, weighting_epsilon);
+        apply_dist2contour_weighting (w, c, K, weighting_epsilon);
 
     // -- weighted moments
     calcOrigins(c, w);

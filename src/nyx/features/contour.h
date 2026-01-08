@@ -32,8 +32,35 @@ public:
 
 	static bool required(const FeatureSet& fs);
 
+	// contour LEGO:
+
+	static void buildRegularContour (LR &r, const Fsettings &s);
+
+	static void gather_multicontour (
+		// out
+		std::vector<std::vector<Pixel2>> &multicountour,
+		// in
+		std::vector<PixIntens> padded_img,
+		size_t w,
+		size_t h,
+		int verbose);
+
+	static std::vector<Pixel2> find_cands (const std::list<Pixel2> &unordered, const Pixel2 &tip);
+
+	static int get_dial_pos (const Pixel2 &d);
+
+	static bool better_step (const Pixel2 &org, const Pixel2 &cand1, const Pixel2 &cand2);
+
+	static bool prune_cands (std::vector<Pixel2> &cands, const Pixel2 &org);
+
+	static int check_loop(
+		// out
+		std::vector<Pixel2> &S,
+		// in
+		const std::list<Pixel2> &R,
+		const Pixel2 &origin);
+
 private:
-	void buildRegularContour(LR& r, const Fsettings& s);
 	void buildRegularContour_nontriv (LR& roi, const Fsettings& settings);
 	void buildWholeSlideContour(LR& r);
 	std::tuple<double, double, double, double> calc_min_max_mean_stddev_intensity (const std::vector<Pixel2> & contour_pixels);
