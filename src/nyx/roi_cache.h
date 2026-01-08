@@ -53,8 +53,8 @@ public:
 	unsigned int aux_area = 0;
 	PixIntens aux_min, aux_max;
 
-	std::vector<std::vector<Pixel2>> multicontour_; //xxxxxxxxxxxxxxx std::vector<Pixel2> contour;
-	void merge_multicontour (std::vector<Pixel2> &supercontour) const;
+	std::vector<std::vector<Pixel2>> multicontour_;
+	void merge_multicontour (std::vector<Pixel2> &flattened_contour) const;
 
 	std::vector<std::vector<size_t>> contours_3D;
 

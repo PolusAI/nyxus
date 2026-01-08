@@ -1,4 +1,8 @@
 #pragma once
+#include <list>
+#include <tuple>
+#include <vector>
+#include <unordered_map>
 #include "../dataset.h"
 #include "../featureset.h"
 #include "../feature_method.h"
@@ -41,8 +45,8 @@ public:
 		std::vector<std::vector<Pixel2>> &multicountour,
 		// in
 		std::vector<PixIntens> padded_img,
-		size_t w,
-		size_t h,
+		int w,
+		int h,
 		int verbose);
 
 	static std::vector<Pixel2> find_cands (const std::list<Pixel2> &unordered, const Pixel2 &tip);

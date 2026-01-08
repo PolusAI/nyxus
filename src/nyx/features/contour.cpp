@@ -386,8 +386,8 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 	std::vector<std::vector<Pixel2>>& multicountour,
 	// in
 	std::vector<PixIntens> P,	// padded image
-	size_t w,
-	size_t h,
+	int w,
+	int h,
 	int verbose)
 {
 	const int BLANK = 0;
