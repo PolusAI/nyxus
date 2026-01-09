@@ -23,6 +23,7 @@
 #include "test_image_quality.h"
 #include "test_3d_inten.h"
 #include "test_3d_nifti.h"
+#include "test_compat_3d_glcm.h"
 #include "test_3d_gldm.h"
 #include "test_3d_gldzm.h"
 #include "test_3d_glrlm.h"
