@@ -14,6 +14,7 @@ endforeach()
 
 set(TEST_SRC
 	test_all.cc
+	test_contour.h
 	test_pixel_intensity_features.h
 	test_data.h
 	test_gabor.cc

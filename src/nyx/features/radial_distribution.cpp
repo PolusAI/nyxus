@@ -47,17 +47,19 @@ void RadialDistributionFeature::calculate (LR& r, const Fsettings& s)
 	auto n = RadialDistributionFeature::num_bins;
 
 	auto& raw_pixels = r.raw_pixels;
-	auto& contour_pixels = r.contour;
+
+	std::vector<Pixel2> K;
+	r.merge_multicontour(K);
 
 	// Skip calculation if we have insofficient informative data 
-	if (raw_pixels.size() == 0 || contour_pixels.size() == 0)
+	if (raw_pixels.size() == 0 || K.size() == 0)
 		return;
 
 	// Cache the pixels count
 	this->cached_num_pixels = raw_pixels.size();
 
 	// Find the center (most distant pixel from the edge)
-	int idxO = Pixel2::find_center(raw_pixels, contour_pixels);
+	int idxO = Pixel2::find_center(raw_pixels, K);
 
 	// Cache it
 	this->cached_center_x = raw_pixels[idxO].x;
@@ -67,7 +69,7 @@ void RadialDistributionFeature::calculate (LR& r, const Fsettings& s)
 	const Pixel2& pxO = raw_pixels[idxO];
 
 	// Max radius
-	double dstOC = std::sqrt (pxO.max_sqdist (contour_pixels)); //std::sqrt(pxContour.sqdist(pxO));
+	double dstOC = std::sqrt (pxO.max_sqdist (K)); //std::sqrt(pxContour.sqdist(pxO));
 
 	for (auto& pxA : raw_pixels)
 	{
@@ -128,15 +130,18 @@ void RadialDistributionFeature::osized_calculate (LR& r, const Fsettings& s, Ima
 
 	auto n = RadialDistributionFeature::num_bins;
 
+	std::vector<Pixel2> K;
+	r.merge_multicontour(K);
+
 	// Skip calculation if we have insofficient informative data 
-	if (r.raw_pixels_NT.size() == 0 || r.contour.size() == 0)
+	if (r.raw_pixels_NT.size() == 0 || K.size() == 0)
 		return;
 
 	// Cache the pixels count
 	this->cached_num_pixels = r.raw_pixels_NT.size();
 
 	// Find the center (most distant pixel from the edge)
-	int idxO = find_center_NT (r.raw_pixels_NT, r.contour);
+	int idxO = find_center_NT (r.raw_pixels_NT, K);
 
 	// Cache it
 	this->cached_center_x = r.raw_pixels_NT[idxO].x;
@@ -146,7 +151,7 @@ void RadialDistributionFeature::osized_calculate (LR& r, const Fsettings& s, Ima
 	const Pixel2 pxO = r.raw_pixels_NT[idxO];
 
 	// Max radius
-	double dstOC = std::sqrt(pxO.max_sqdist(r.contour)); 
+	double dstOC = std::sqrt(pxO.max_sqdist(K)); 
 
 	for (auto pxA : r.raw_pixels_NT)
 	{

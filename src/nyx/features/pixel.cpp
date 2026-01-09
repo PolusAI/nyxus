@@ -36,6 +36,10 @@ double Pixel2::min_sqdist(const std::vector<Pixel2>& cloud) const
 	//
 	// v2
 	//
+
+	if (cloud.empty())
+		return 0.0;
+
 	size_t n = cloud.size();
 	size_t a = 0, b = n;
 	auto extrem_d = sqdist(cloud[a]);

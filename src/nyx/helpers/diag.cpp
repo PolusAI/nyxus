@@ -1,5 +1,7 @@
 #include <fstream>
 #include <iostream>
+#include <list>
+#include <vector>
 #include "../environment.h"
 #include "../globals.h"
 #include "../roi_cache.h"
@@ -184,13 +186,12 @@ void dump_2d_image_with_vertex_chain(
 			{
 				std::string valMarker = "O"; // default
 				// find a vertex with this (x,y)
-				int vidx = -1;
 				for (size_t vidx = 0; vidx < V.size(); vidx++)
 				{
 					const auto& v = V[vidx];
 					if (v.x == x && v.y == y)
 					{
-						valMarker = char('a' + vidx);
+						valMarker = char('a' + vidx%26);
 						break;
 					}
 				}
@@ -199,7 +200,60 @@ void dump_2d_image_with_vertex_chain(
 			else
 				std::cout << char(250); // spacer
 		}
-		std::cout << " " << y << "=y\n";
+		std::cout << " " << y << "\n";
+	}
+
+	std::cout << tail;
+}
+
+void dump_2d_image_with_vertex_set (
+	const std::vector<PixIntens>& I,
+	const std::list<Pixel2>& V,
+	const int W,
+	const int H,
+	const std::string& head,
+	const std::string& tail)
+{
+	std::cout << head;
+
+	// header
+	for (int i = 0; i < W; i++)
+		std::cout << i % 10;
+	std::cout << " =X\n";
+	for (int i = 0; i < W; i++)
+		if (i % 10 == 0)
+			std::cout << '|';
+		else
+			std::cout << '_';
+	std::cout << "\n";
+
+	// body
+	for (int y = 0; y < H; y++)
+	{
+		for (int x = 0; x < W; x++)
+		{
+			size_t idx = x + y * (W);
+			auto inte = I.at(idx);
+			if (inte)
+			{
+				std::string valMarker = "O"; // default
+				// find a vertex with this (x,y)
+				size_t vidx = 0;
+				for (const auto& v : V)
+				{
+					if (v.x == x && v.y == y)
+					{
+						valMarker = char('a' + vidx % 26);
+						break;
+					}
+					vidx++;
+				}
+				std::cout << valMarker;
+			}
+			else
+				std::cout << char(250); // spacer
+		}
+		std::cout << " " << y << "\n";
 	}
 
 	std::cout << tail;

@@ -784,7 +784,7 @@ class TestNyxus():
             f = nyx.featurize (I, M, intensity_names=['I'], label_names=['M'])
             assert f.at[0, "PERIMETER"] == 0
             assert f.at[0, "DIAMETER_EQUAL_PERIMETER"] == 0
-            assert f.at[0, "EDGE_MEAN_INTENSITY"] != 0
+            assert f.at[0, "EDGE_MEAN_INTENSITY"] == 0
 
         def test_3d_glcm_compatibility (self):
             '''

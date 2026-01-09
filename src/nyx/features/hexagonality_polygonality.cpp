@@ -199,7 +199,7 @@ void HexagonalityPolygonalityFeature::parallel_process_1_batch (size_t start, si
         }
 
         // Feasibility check #2
-        if (r.contour.size() == 0 || r.fvals[(int)Feature2D::CONVEX_HULL_AREA][0] == 0 || r.fvals[(int)Feature2D::NUM_NEIGHBORS][0] == 0)
+        if (r.multicontour_.empty() || r.multicontour_[0].empty() || r.fvals[(int)Feature2D::CONVEX_HULL_AREA][0] == 0 || r.fvals[(int)Feature2D::NUM_NEIGHBORS][0] == 0)
         {
             // Explicitly assign dummy yet valid values to indicate that features weren't calculated. Better than NAN - less data cleaning before training
             HexagonalityPolygonalityFeature hexpo;

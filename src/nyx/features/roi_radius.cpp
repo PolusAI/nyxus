@@ -11,13 +11,15 @@ RoiRadiusFeature::RoiRadiusFeature() : FeatureMethod("RoiRadiusFeature")
 void RoiRadiusFeature::calculate (LR& r, const Fsettings& s)
 {
 	const std::vector<Pixel2>& cloud = r.raw_pixels;
-	const std::vector<Pixel2>& contour = r.contour;
+
+	std::vector<Pixel2> K;
+	r.merge_multicontour (K);
 
 	Moments2 mom2;
 	std::vector<HistoItem> dists;
 	for (auto& pxA : cloud)
 	{
-		auto minSD = pxA.min_sqdist(contour);
+		auto minSD = pxA.min_sqdist(K);
 		mom2.add(minSD);
 		dists.push_back(minSD);
 	}
@@ -39,14 +41,16 @@ void RoiRadiusFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t inte
 void RoiRadiusFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader)
 {
 	const auto& cloud = r.raw_pixels_NT; 
-	const std::vector<Pixel2>& contour = r.contour;
+
+	std::vector<Pixel2> K;
+	r.merge_multicontour(K);
 
 	Moments2 mom2;
 	std::vector<HistoItem> dists;
 	for (size_t i=0; i<cloud.size(); i++) 
 	{
 		Pixel2 pxA = cloud.get_at(i);
-		auto [minSD, maxSD] = pxA.min_max_sqdist(contour);
+		auto [minSD, maxSD] = pxA.min_max_sqdist(K);
 		mom2.add(minSD);
 		dists.push_back(minSD);
 	}

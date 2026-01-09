@@ -77,15 +77,18 @@ void FractalDimensionFeature::calculate_perimeter_fdim (LR& r)
 {
 	std::vector<std::pair<int, int>> coverage;
 
-	auto conLen = r.contour.size();
+	std::vector<Pixel2> K;
+	r.merge_multicontour(K);
+
+	auto conLen = K.size();
 	for (size_t s = conLen / 4; s > 0; s /= 2)
 	{
 		// calculate the s-approximated perimeter
 		double p = 0;
 		for (size_t i = s; i < conLen; i += s)
 		{
-			auto& px1 = r.contour[i - s],
-				px2 = r.contour[i];
+			auto& px1 = K [i-s],
+				px2 = K [i];
 			double dist = std::sqrt(px1.sqdist(px2));
 			p += dist;
 		}
@@ -93,8 +96,8 @@ void FractalDimensionFeature::calculate_perimeter_fdim (LR& r)
 		auto tail = conLen % s;
 		if (tail)
 		{
-			auto& px1 = r.contour[conLen - tail],
-				px2 = r.contour[0];
+			auto& px1 = K [conLen - tail],
+				px2 = K [0];
 			double dist = px1.sqdist(px2);
 			p += dist;
 		}

@@ -72,15 +72,22 @@ void parallel_process_1_batch_of_collision_pairs (
 		LR& r2 = roiData.at (l2);
 
 		// Make sure that segment's outer pixels are available
-		if (r1.contour.size() == 0)
+		if (r1.multicontour_.empty())
+			continue;
+
+		std::vector<Pixel2> K1, K2;
+		r1.merge_multicontour (K1);
+		r2.merge_multicontour (K2);
+
+		if (K1.empty())
 			continue;
 
 		// Iterate r1's outer pixels
-		double mind = r1.contour[0].min_sqdist(r2.contour);
+		double mind = K1[0].min_sqdist(K2);
 		size_t n_touchingOuterPixels = 0;
-		for (auto& cp : r1.contour)
+		for (auto& cp : K1)
 		{
-			double minD = cp.min_sqdist(r2.contour);
+			double minD = cp.min_sqdist(K2);
 			mind = std::min(mind, minD);		//--We aren't interested in max distance-->	maxd = std::max(maxd, maxD);
 
 			// Maintain touching pixels stats
@@ -216,20 +223,24 @@ void NeighborsFeature::manual_reduce (
 			LR& r1 = roiData[l1];
 			LR& r2 = roiData[l2];
 
+			std::vector<Pixel2> K1, K2;
+			r1.merge_multicontour(K1);
+			r2.merge_multicontour(K2);
+
 			// Make sure that segment's outer pixels are available
-			if (r1.contour.size() == 0)
+			if (K1.size() == 0)
 				continue;
 
 			// Make sure that the other ROI's pixel cloud is non-empty
-			if (r2.contour.size() == 0)
+			if (K2.size() == 0)
 				continue;
 
 			// Iterate r1's outer pixels
-			double mind = r1.contour[0].min_sqdist(r2.contour);
+			double mind = K1[0].min_sqdist(K2);
 			size_t n_touchingOuterPixels = 0;
-			for (auto& cp : r1.contour)
+			for (auto& cp : K1)
 			{
-				double minD = cp.min_sqdist(r2.contour);
+				double minD = cp.min_sqdist(K2);
 				mind = std::min(mind, minD);		//--We aren't interested in max distance-->	maxd = std::max(maxd, maxD);
 
 				// Maintain touching pixels stats
@@ -256,8 +267,12 @@ void NeighborsFeature::manual_reduce (
 		{
 			auto l1 = pa.first;
 			LR& r1 = roiData[l1];
+
+			std::vector<Pixel2> K1;
+			r1.merge_multicontour(K1);
+
 			// Finalize the % touching calculation
-			r1.fvals[(int)Feature2D::PERCENT_TOUCHING][0] = 100.0 * double(r1.fvals[(int)Feature2D::PERCENT_TOUCHING][0]) / double(r1.contour.size());
+			r1.fvals[(int)Feature2D::PERCENT_TOUCHING][0] = 100.0 * double(r1.fvals[(int)Feature2D::PERCENT_TOUCHING][0]) / double(K1.size());
 		}
 	}
 	else
