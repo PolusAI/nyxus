@@ -927,7 +927,20 @@ void ContourFeature::calculate (LR& r, const Fsettings& s)
 	std::vector<Pixel2> K;
 	r.merge_multicontour(K);
 
-	//=== Calculate the features
+	// is there any contour?
+	if (K.empty())
+	{
+		fval_PERIMETER =
+		fval_DIAMETER_EQUAL_PERIMETER =
+		fval_EDGE_MEAN_INTENSITY =
+		fval_EDGE_STDDEV_INTENSITY =
+		fval_EDGE_MAX_INTENSITY =
+		fval_EDGE_MIN_INTENSITY =
+		fval_EDGE_INTEGRATEDINTENSITY = 0;
+		return;
+	}
+
+	// ok to calculate features
 	fval_PERIMETER = 0;
 	size_t clen = K.size();
 	for (size_t i = 0; i < clen; i++)
