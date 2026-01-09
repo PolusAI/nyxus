@@ -276,7 +276,11 @@
 			{
 				int lbl = labels[i];
 				LR& roi = roi_data[lbl];
-				totKontLen += roi.contour.size();
+
+				std::vector<Pixel2> K;
+				roi.merge_multicontour(K);
+
+				totKontLen += K.size();
 			}
 		}
 
@@ -314,14 +318,17 @@
 				int lbl = labels[i];
 				LR& roi = roi_data[lbl];
 
-				konturs.ho_lengths[roiIdx] = roi.contour.size();
+				std::vector<Pixel2> K;
+				roi.merge_multicontour(K);
+
+				konturs.ho_lengths[roiIdx] = K.size();
 				konturs.ho_offsets[roiIdx] = off;
 				roiIdx++;
 
 				// save to buffer fixing pixel coordinates
 				auto xmin = roi.aabb.get_xmin();
 				auto ymin = roi.aabb.get_ymin();
-				for (Pixel2 p : roi.contour)	// copy, not reference
+				for (Pixel2 p : K)	// copy, not reference
 				{
 					p.x -= xmin;
 					p.y -= ymin;
