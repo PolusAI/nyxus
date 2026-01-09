@@ -35,6 +35,7 @@ enum class NyxSetting : int
 	__COUNT__
 };
 
+// common settings
 #define STNGS_NAN(obj) (obj[(int)NyxSetting::SOFTNAN].rval)
 #define STNGS_TINY(obj) (obj[(int)NyxSetting::TINY].rval)
 #define STNGS_NGREYS(obj) (obj[(int)NyxSetting::GREYDEPTH].ival)
@@ -43,3 +44,10 @@ enum class NyxSetting : int
 #define STNGS_SINGLEROI(obj) (obj[(int)NyxSetting::SINGLEROI].bval)
 #define STNGS_PIXELDISTANCE(obj) (obj[(int)NyxSetting::PIXELDISTANCE].ival)
 #define STNGS_VERBOSLVL(obj) (obj[(int)NyxSetting::VERBOSLVL].ival)
+
+// feature-specific settings
+#define STNGS_GLCM_GREYDEPTH(obj) (obj[(int)NyxSetting::GLCM_GREYDEPTH].ival)
+#define STNGS_GLCM_OFFSET(obj) (obj[(int)NyxSetting::GLCM_OFFSET].ival)
+#define STNGS_GLCM_NUMANG(obj) (obj[(int)NyxSetting::GLCM_NUMANG].ival)
+#define STNGS_GLCM_SPARSEINTENS(obj) (obj[(int)NyxSetting::GLCM_SPARSEINTENS].ival)
+

@@ -786,3 +786,75 @@ class TestNyxus():
             assert f.at[0, "DIAMETER_EQUAL_PERIMETER"] == 0
             assert f.at[0, "EDGE_MEAN_INTENSITY"] == 0
 
+        def test_3d_glcm_compatibility (self):
+            '''
+            Testing Nyxus 3D GLCM features compatibility with Radiomics library
+            '''
+
+            nyx = nyxus.Nyxus3D (["*3D_GLCM*"])
+            assert nyx is not None
+
+            # configure Nyxus 3D GLCM to mock Radiomics
+            nyx.set_metaparam ("3glcm/greydepth=-20")	# corresponds to Radiomics setting "binCount:20"
+            nyx.set_metaparam ("3glcm/offset=1")
+            nyx.set_metaparam ("3glcm/numang=13")
+            nyx.set_metaparam ("3glcm/sparseintensities=true")
+
+            # calculate features
+            testsRoot = str (pathlib.Path(__file__).parent.parent.resolve()) # parent.parent to reach the data owned by c++ tests
+            f = nyx.featurize_files(
+                [testsRoot + "/data/nifti/compat_int/compat_int_mri.nii"], 
+                [testsRoot + "/data/nifti/compat_seg/compat_seg_liver.nii"], 
+                False)
+
+            # check the result versus radiomics results calculated with the same data
+            radiomics_gt = {
+                "Case-1_original_glcm_Autocorrelation" : 122.14708306342365,
+                "Case-1_original_glcm_JointEnergy" : 0.0143339715631298,
+                "Case-1_original_glcm_ClusterProminence" : 1870.768741955177,
+                "Case-1_original_glcm_ClusterShade" : 8.755242780815239,
+                "Case-1_original_glcm_ClusterTendency" : 23.113911920055934,
+                "Case-1_original_glcm_Contrast" : 8.76143159022662,
+                "Case-1_original_glcm_Correlation" : 0.4305477709920443,
+                "Case-1_original_glcm_DifferenceAverage" : 2.2143984613019545,
+                "Case-1_original_glcm_DifferenceEntropy" : 2.645537347146111,
+                "Case-1_original_glcm_DifferenceVariance" : 3.4395235149928194,
+                "Case-1_original_glcm_Id" : 0.47211428859469606,
+                "Case-1_original_glcm_Idn" : 0.9822362042997563,
+                "Case-1_original_glcm_Idm" : 0.4040020605537021,
+                "Case-1_original_glcm_Idmn" : 0.9822362042997563,
+                "Case-1_original_glcm_Imc1" : -0.09924883901268647,
+                "Case-1_original_glcm_Imc2" : 0.5781205730305887,
+                "Case-1_original_glcm_InverseVariance" : 0.36184532347527026,
+                "Case-1_original_glcm_JointAverage" : 10.888107083238083,
+                "Case-1_original_glcm_JointEntropy" : 6.701464036118752,
+                "Case-1_original_glcm_MaximumProbability" : 0.036309525310650057,
+                "Case-1_original_glcm_SumSquares" : 7.968835877570637,
+                "Case-1_original_glcm_SumAverage" : 21.776214166476173,
+                "Case-1_original_glcm_SumEntropy" : 4.27263829307018
+            }
+
+            assert np.isclose (f.at[0, "3GLCM_ACOR_AVE"],			radiomics_gt["Case-1_original_glcm_Autocorrelation"], rtol=1.e-5, atol=1.e-8)
+            assert np.isclose (f.at[0, "3GLCM_ASM_AVE"],			radiomics_gt["Case-1_original_glcm_JointEnergy"], rtol=1.e-5, atol=1.e-8)
+            assert np.isclose (f.at[0, "3GLCM_CLUPROM_AVE"],		radiomics_gt["Case-1_original_glcm_ClusterProminence"], rtol=1.e-5, atol=1.e-8)
+            assert np.isclose (f.at[0, "3GLCM_CLUSHADE_AVE"],		radiomics_gt["Case-1_original_glcm_ClusterShade"], rtol=1.e-5, atol=1.e-8)
+            assert np.isclose (f.at[0, "3GLCM_CLUTEND_AVE"],		radiomics_gt["Case-1_original_glcm_ClusterTendency"], rtol=1.e-5, atol=1.e-8)
+            assert np.isclose (f.at[0, "3GLCM_CONTRAST_AVE"],		radiomics_gt["Case-1_original_glcm_Contrast"], rtol=1.e-5, atol=1.e-8)
+            assert np.isclose (f.at[0, "3GLCM_CORRELATION_AVE"],	radiomics_gt["Case-1_original_glcm_Correlation"], rtol=1.e-2, atol=1.e-3)
+            assert np.isclose (f.at[0, "3GLCM_DIFAVE_AVE"],			radiomics_gt["Case-1_original_glcm_DifferenceAverage"], rtol=1.e-5, atol=1.e-8)
+            assert np.isclose (f.at[0, "3GLCM_DIFENTRO_AVE"],		radiomics_gt["Case-1_original_glcm_DifferenceEntropy"], rtol=1.e-2, atol=1.e-3)
+            assert np.isclose (f.at[0, "3GLCM_DIFVAR_AVE"],			radiomics_gt["Case-1_original_glcm_DifferenceVariance"], rtol=1.e-5, atol=1.e-8)
+            assert np.isclose (f.at[0, "3GLCM_ID_AVE"],				radiomics_gt["Case-1_original_glcm_Id"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLCM_IDN_AVE"],			radiomics_gt["Case-1_original_glcm_Idn"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLCM_IDM_AVE"],			radiomics_gt["Case-1_original_glcm_Idm"], rtol=1.e-1, atol=1.e-2)
+            assert np.isclose (f.at[0, "3GLCM_IDMN_AVE"],			radiomics_gt["Case-1_original_glcm_Idmn"], rtol=1.e-2, atol=1.e-3)
+            assert np.isclose (f.at[0, "3GLCM_INFOMEAS1_AVE"],		radiomics_gt["Case-1_original_glcm_Imc1"], rtol=1.e-2, atol=1.e-3)
+            assert np.isclose (f.at[0, "3GLCM_INFOMEAS2_AVE"],		radiomics_gt["Case-1_original_glcm_Imc2"], rtol=1.e-2, atol=1.e-3)
+            assert np.isclose (f.at[0, "3GLCM_IV_AVE"],				radiomics_gt["Case-1_original_glcm_InverseVariance"], rtol=1.e-5, atol=1.e-8)
+            assert np.isclose (f.at[0, "3GLCM_JAVE_AVE"],			radiomics_gt["Case-1_original_glcm_JointAverage"], rtol=1.e-5, atol=1.e-8)
+            assert np.isclose (f.at[0, "3GLCM_JE_AVE"],				radiomics_gt["Case-1_original_glcm_JointEntropy"], rtol=1.e-2, atol=1.e-3)
+            assert np.isclose (f.at[0, "3GLCM_JMAX_AVE"],			radiomics_gt["Case-1_original_glcm_MaximumProbability"], rtol=1.e-5, atol=1.e-8)
+            assert np.isclose (f.at[0, "3GLCM_JVAR_AVE"],			radiomics_gt["Case-1_original_glcm_SumSquares"], rtol=1.e-5, atol=1.e-8)
+            assert np.isclose (f.at[0, "3GLCM_SUMAVERAGE_AVE"],		radiomics_gt["Case-1_original_glcm_SumAverage"], rtol=1.e-5, atol=1.e-8)
+            assert np.isclose (f.at[0, "3GLCM_SUMENTROPY_AVE"],		radiomics_gt["Case-1_original_glcm_SumEntropy"], rtol=1.e-2, atol=1.e-3)
+

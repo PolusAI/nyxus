@@ -22,7 +22,7 @@ public:
 			// radiomics binning
 			auto n = I.size();
 			for (size_t i = 0; i < n; i++)
-				S[i] = to_grayscale_radiomix (I[i], min_I_inten);
+				S[i] = to_grayscale_radiomix (I[i], min_I_inten, max_I_inten, std::abs(greybin_info));
 			return;
 		}
 		if (matlab_grey_binning(greybin_info))
@@ -51,7 +51,7 @@ public:
 			// radiomics binning
 			auto n = I.size();
 			for (size_t i = 0; i < n; i++)
-				S[i] = to_grayscale_radiomix(I[i], min_I_inten);
+				S[i] = to_grayscale_radiomix(I[i], min_I_inten, max_I_inten, std::abs(greybin_info));
 			return;
 		}
 		if (matlab_grey_binning(greybin_info))
@@ -59,7 +59,6 @@ public:
 			// matlab binning
 			auto n = I.size();
 			int n_matlab_levels = greybin_info;
-
 			prep_bin_array_matlab(max_I_inten, n_matlab_levels);
 			for (size_t i = 0; i < n; i++)
 				S[i] = bin_array_matlab(I[i]);
@@ -78,7 +77,7 @@ public:
 		if (radiomics_grey_binning(greybin_info))
 		{
 			// radiomics binning
-			auto y = to_grayscale_radiomix (x, min_I_inten);
+			auto y = to_grayscale_radiomix (x, min_I_inten, max_I_inten, std::abs(greybin_info));
 			return y;
 		}
 		else
@@ -100,14 +99,15 @@ public:
 	static inline bool radiomics_grey_binning (int greybinning_info) { return greybinning_info < 0; }
 	static inline bool ibsi_grey_binning (int greybinning_info) { return greybinning_info == 0; }
 
-	static double radiomics_bin_width;	// default: 25
-
-	//---------------------- binning by Leijenaar RTH, Nalbantov G, Carvalho et al. (PyRadiomics)
-	static inline PixIntens to_grayscale_radiomix (PixIntens x, PixIntens min__)
+	// returns 1-based bin indices
+	static inline PixIntens to_grayscale_radiomix (PixIntens x, PixIntens min__, PixIntens max__, int binCount)
 	{
+		double binW = double(max__ - min__) / double (binCount);
 		if (x)
 		{
-			PixIntens y = (unsigned int)(double(x - min__) / TextureFeature::radiomics_bin_width) + 1;
+			PixIntens y = (PixIntens) (double(x - min__) / binW + 1);
+			if (y > binCount)
+				y = binCount;	// the last bin is +1 unit wider
 			return y;
 		}
 		else
@@ -116,7 +116,7 @@ public:
 
 private:
 
-	//---------------------- Matlab binning --------------------------------
+	// Matlab binning 
 	unsigned int cached_n_levels;	// initialized in prep_grayscale_binning(), referenced in to_grayscale_2024_v2()
 	double slope = 0.;
 	double intercept = 0.;

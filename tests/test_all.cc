@@ -23,7 +23,6 @@
 #include "test_image_quality.h"
 #include "test_3d_inten.h"
 #include "test_3d_nifti.h"
-#include "test_3d_glcm.h"
 #include "test_3d_gldm.h"
 #include "test_3d_gldzm.h"
 #include "test_3d_glrlm.h"
@@ -39,7 +38,6 @@
 
 
 // ***** 2D contour and multicontour *****
-
 
 TEST(TEST_NYXUS, TEST_CONTOUR_MULTI_1)
 {
@@ -66,7 +64,99 @@ TEST(TEST_NYXUS, TEST_CONTOUR_MULTI_2)
 	ASSERT_NO_THROW(test_contour_multi_connected());
 }
 
-// ***** Apache formats I/O *****
+
+// ***** 3D GLCM compatibility *****
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_ACOR) {
+	ASSERT_NO_THROW(test_compat_3glcm_ACOR());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_ANGULAR_2D_MOMENT) {
+	ASSERT_NO_THROW(test_compat_3glcm_angular_2d_moment());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_CLUPROM) {
+	ASSERT_NO_THROW(test_compat_3glcm_CLUPROM());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_CLUSHADE) {
+	ASSERT_NO_THROW(test_compat_3glcm_CLUSHADE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_CLUTEND) {
+	ASSERT_NO_THROW(test_compat_3glcm_CLUTEND());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_CONTRAST) {
+	ASSERT_NO_THROW(test_compat_3glcm_contrast());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_CORRELATION) {
+	ASSERT_NO_THROW(test_compat_3glcm_correlation());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_DIFFERENCE_AVERAGE) {
+	ASSERT_NO_THROW(test_compat_3glcm_difference_average());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_DIFFERENCE_VARIANCE) {
+	ASSERT_NO_THROW(test_compat_3glcm_difference_variance());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_DIFFERENCE_ENTROPY) {
+	ASSERT_NO_THROW(test_compat_3glcm_difference_entropy());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_DIFFERENCE_ID) {
+	ASSERT_NO_THROW(test_compat_3glcm_ID());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_DIFFERENCE_IDN) {
+	ASSERT_NO_THROW(test_compat_3glcm_IDN());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_DIFFERENCE_IDM) {
+	ASSERT_NO_THROW(test_compat_3glcm_IDM());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_DIFFERENCE_IDMN) {
+	ASSERT_NO_THROW(test_compat_3glcm_IDMN());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_INFOMEAS1) {
+	ASSERT_NO_THROW(test_compat_3glcm_infomeas1());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_INFOMEAS2) {
+	ASSERT_NO_THROW(test_compat_3glcm_infomeas2());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_IV) {
+	ASSERT_NO_THROW(test_compat_3glcm_IV());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_JAVE) {
+	ASSERT_NO_THROW(test_compat_3glcm_JAVE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_JE) {
+	ASSERT_NO_THROW(test_compat_3glcm_JE());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_JMAX) {
+	ASSERT_NO_THROW(test_compat_3glcm_JMAX());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_SUM_AVERAGE) {
+	ASSERT_NO_THROW(test_compat_3glcm_sum_average());
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_SUM_ENTROPY) {
+	ASSERT_NO_THROW(test_compat_3glcm_sum_entropy());
+}
+
+
+// ***** Apache I/O tests *****
 
 #ifdef USE_ARROW
 
@@ -83,6 +173,7 @@ TEST(TEST_NYXUS, TEST_PARQUET) {
 }
 
 #endif
+
 
 // ***** 3D shape *****
 
@@ -124,108 +215,6 @@ TEST(TEST_NYXUS, TEST_3SHAPE_3VOXEL_VOLUME) {
 
 TEST(TEST_NYXUS, TEST_3SHAPE_COVMATRIX_AND_EIGENVALS) {
 	ASSERT_NO_THROW(test_3shape_covmatrix_and_eigenvals());
-}
-
-// ***** 3D GLCM *****
-
-TEST(TEST_NYXUS, TEST_3GLCM_ACOR) {
-	ASSERT_NO_THROW(test_3glcm_ACOR());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_ANGULAR_2D_MOMENT) {
-	ASSERT_NO_THROW(test_3glcm_angular_2d_moment());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_CLUPROM) {
-	ASSERT_NO_THROW(test_3glcm_CLUPROM());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_CLUSHADE) {
-	ASSERT_NO_THROW(test_3glcm_CLUSHADE());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_CLUTEND) {
-	ASSERT_NO_THROW(test_3glcm_CLUTEND());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_CONTRAST) {
-	ASSERT_NO_THROW(test_3glcm_contrast());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_CORRELATION) {
-	ASSERT_NO_THROW(test_3glcm_correlation());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_DIFFERENCE_AVERAGE) {
-	ASSERT_NO_THROW(test_3glcm_difference_average());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_DIFFERENCE_VARIANCE) {
-	ASSERT_NO_THROW(test_3glcm_difference_variance());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_DIFFERENCE_ENTROPY) {
-	ASSERT_NO_THROW(test_3glcm_difference_entropy());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_DIS) {
-	ASSERT_NO_THROW(test_3glcm_DIS());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_DIFFERENCE_ID) {
-	ASSERT_NO_THROW(test_3glcm_ID());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_DIFFERENCE_IDN) {
-	ASSERT_NO_THROW(test_3glcm_IDN());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_DIFFERENCE_IDM) {
-	ASSERT_NO_THROW(test_3glcm_IDM());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_DIFFERENCE_IDMN) {
-	ASSERT_NO_THROW(test_3glcm_IDMN());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_INFOMEAS1) {
-	ASSERT_NO_THROW(test_3glcm_infomeas1());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_INFOMEAS2) {
-	ASSERT_NO_THROW(test_3glcm_infomeas2());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_IV) {
-	ASSERT_NO_THROW(test_3glcm_IV());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_JAVE) {
-	ASSERT_NO_THROW(test_3glcm_JAVE());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_JE) {
-	ASSERT_NO_THROW(test_3glcm_JE());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_JMAX) {
-	ASSERT_NO_THROW(test_3glcm_JMAX());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_JVAR) {
-	ASSERT_NO_THROW(test_3glcm_JVAR());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_SUM_AVERAGE) {
-	ASSERT_NO_THROW(test_3glcm_sum_average());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_SUM_VARIANCE) {
-	ASSERT_NO_THROW(test_3glcm_sum_variance());
-}
-
-TEST(TEST_NYXUS, TEST_3GLCM_SUM_ENTROPY) {
-	ASSERT_NO_THROW(test_3glcm_sum_entropy());
 }
 
 // ***** 3D GLDM *****
@@ -1169,134 +1158,6 @@ TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_ROOT_MEAN_SQUARED)
 }
 
 //==== Tests of texture feature extraction without binning
-
-// GLCM tests
-
-TEST(TEST_NYXUS, TEST_GLCM_ACOR)
-{
-	ASSERT_NO_THROW(test_glcm_ACOR());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_ANGULAR_2D_MOMENT)
-{
-	ASSERT_NO_THROW(test_glcm_angular_2d_moment());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_CLUPROM)
-{
-	ASSERT_NO_THROW(test_glcm_CLUPROM());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_CLUSHADE)
-{
-	ASSERT_NO_THROW(test_glcm_CLUSHADE());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_CLUTEND)
-{
-	ASSERT_NO_THROW(test_glcm_CLUTEND());
-}
-
-TEST(TEST_NYXUS, TEST_CONTRAST)
-{
-	ASSERT_NO_THROW(test_glcm_contrast());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_CORRELATION)
-{
-	ASSERT_NO_THROW(test_glcm_correlation());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_AVERAGE)
-{
-	ASSERT_NO_THROW(test_glcm_difference_average());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_VARIANCE)
-{
-	ASSERT_NO_THROW(test_glcm_difference_variance());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_ENTROPY)
-{
-	ASSERT_NO_THROW(test_glcm_difference_entropy());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_DIS)
-{
-	ASSERT_NO_THROW(test_glcm_DIS());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_ID)
-{
-	ASSERT_NO_THROW(test_glcm_ID());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_IDN)
-{
-	ASSERT_NO_THROW(test_glcm_IDN());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_IDM)
-{
-	ASSERT_NO_THROW(test_glcm_IDM());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_DIFFERENCE_IDMN)
-{
-	ASSERT_NO_THROW(test_glcm_IDMN());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_INFOMEAS1)
-{
-	ASSERT_NO_THROW(test_glcm_infomeas1());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_INFOMEAS2)
-{
-	ASSERT_NO_THROW(test_glcm_infomeas2());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_IV)
-{
-	ASSERT_NO_THROW(test_glcm_IV());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_JAVE)
-{
-	ASSERT_NO_THROW(test_glcm_JAVE());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_JE)
-{
-	ASSERT_NO_THROW(test_glcm_JE());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_JMAX)
-{
-	ASSERT_NO_THROW(test_glcm_JMAX());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_JVAR)
-{
-	ASSERT_NO_THROW(test_glcm_JVAR());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_SUM_AVERAGE)
-{
-	ASSERT_NO_THROW(test_glcm_sum_average());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_SUM_VARIANCE)
-{
-	ASSERT_NO_THROW(test_glcm_sum_variance());
-}
-
-TEST(TEST_NYXUS, TEST_GLCM_SUM_ENTROPY)
-{
-	ASSERT_NO_THROW(test_glcm_sum_entropy());
-}
-
 
 // GLDM tests
 
