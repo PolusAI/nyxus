@@ -7,7 +7,7 @@
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_intensity.h"
 
-static std::unordered_map<std::string, float> d3inten_GT {
+static std::unordered_map<std::string, double> d3inten_GT {
 		{ "3COV",	0.3 },
 		{ "3COVERED_IMAGE_INTENSITY_RANGE",	1.0 },
 		{ "3ENERGY",		1173350000000.0 },

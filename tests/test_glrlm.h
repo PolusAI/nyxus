@@ -13,7 +13,7 @@
 
 // dig. phantom values for intensity based features
 // Calculated at 100 grey levels
-static std::unordered_map<std::string, float> glrlm_values {
+static std::unordered_map<std::string, double> glrlm_values {
     {"GLRLM_SRE", 0.677679}, 
     {"GLRLM_LRE", 3.41805}, 
     {"GLRLM_LGLRE", 0.11546}, 

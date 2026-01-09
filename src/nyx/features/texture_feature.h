@@ -3,6 +3,11 @@
 #include "image_matrix.h"
 #include "image_cube.h"
 
+struct AngleShift
+{
+	int dz, dy, dx;
+};
+
 class TextureFeature
 {
 public:
@@ -52,24 +57,22 @@ public:
 			auto n = I.size();
 			for (size_t i = 0; i < n; i++)
 				S[i] = to_grayscale_radiomix(I[i], min_I_inten, max_I_inten, std::abs(greybin_info));
-			return;
 		}
-		if (matlab_grey_binning(greybin_info))
-		{
-			// matlab binning
-			auto n = I.size();
-			int n_matlab_levels = greybin_info;
-			prep_bin_array_matlab(max_I_inten, n_matlab_levels);
-			for (size_t i = 0; i < n; i++)
-				S[i] = bin_array_matlab(I[i]);
-		}
-		else
-		{
-			// no binning (IBSI)
-			auto n = I.size();
-			for (size_t i = 0; i < n; i++)
-				S[i] = I[i];
-		}
+		else 
+			if (matlab_grey_binning(greybin_info))
+			{
+				// matlab binning
+				auto n = I.size();
+				int n_matlab_levels = greybin_info;
+				prep_bin_array_matlab(max_I_inten, n_matlab_levels);
+				for (size_t i = 0; i < n; i++)
+					S[i] = bin_array_matlab(I[i]);
+			}
+			else
+			{
+				// no binning (IBSI)
+				S.assign (I.begin(), I.end());
+			}
 	}
 
 	static PixIntens bin_pixel (PixIntens x, PixIntens min_I_inten, PixIntens max_I_inten, int greybin_info)
@@ -102,9 +105,9 @@ public:
 	// returns 1-based bin indices
 	static inline PixIntens to_grayscale_radiomix (PixIntens x, PixIntens min__, PixIntens max__, int binCount)
 	{
-		double binW = double(max__ - min__) / double (binCount);
 		if (x)
 		{
+			double binW = double(max__ - min__) / double(binCount);
 			PixIntens y = (PixIntens) (double(x - min__) / binW + 1);
 			if (y > binCount)
 				y = binCount;	// the last bin is +1 unit wider
@@ -112,6 +115,18 @@ public:
 		}
 		else
 			return 0;
+	}
+
+	// 'afv' is angled feature values
+	double calc_ave (const std::vector<double>& afv)
+	{
+		if (afv.empty())
+			return 0;
+
+		double n = static_cast<double> (afv.size()),
+			ave = std::reduce(afv.begin(), afv.end()) / n;
+
+		return ave;
 	}
 
 private:
