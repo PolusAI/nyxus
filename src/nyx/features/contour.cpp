@@ -651,7 +651,7 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 		dump_2d_image_1d_layout(paddedImage, width + 2, height + 2, "\n\n\n ContourFeature / buildRegularContour / Padded image ROI " + std::to_string(r.aabb.get_width()) + " W " + std::to_string(r.aabb.get_height()) + " H \n", "\n\n\n");
 
 	// gather all the contours
-	gather_multicontour (r.multicontour_, paddedImage, width+2, height+2, STNGS_VERBOSLVL(s));
+	gather_multicontour (r.multicontour_, paddedImage, width, height, STNGS_VERBOSLVL(s));
 
 	// fix pixel positions back to absolute
 	for (std::vector<Pixel2> &K : r.multicontour_)
