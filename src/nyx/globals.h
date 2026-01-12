@@ -1,6 +1,7 @@
 #pragma once
 
 #include <climits>
+#include <list>
 #include <memory>
 #include <optional>
 #include <string>

@@ -128,7 +128,6 @@ public:
 	void save_value(std::vector<std::vector<double>>& feature_vals);
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
 	static void extract (LR& r, const Fsettings& s);
-	double calc_ave (const std::vector<double>& angled_feature_vals);
 
 private:
 

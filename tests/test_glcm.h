@@ -13,7 +13,7 @@
 
 // Digital phantom values for intensity based features
 // Calculated at 100 grey levels, offset 1, and asymmetric cooc matrix
-static std::unordered_map<std::string, float> glcm_values 
+static std::unordered_map<std::string, double> glcm_values 
 {
     {"GLCM_ACOR", 1340.12},
     {"GLCM_ASM", 0.29},
