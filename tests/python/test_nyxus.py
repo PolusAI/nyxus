@@ -19,12 +19,50 @@ class TestImport():
         assert nyxus.__name__ == "nyxus"  
         
 class TestNyxus():     
-        def test_featurize_all(self):
+
+        def test_featurize_all_singlethread (self):
             path = str(pathlib.Path(__file__).parent.resolve())
             
             data_path = path + '/data/'
             
-            nyx = nyxus.Nyxus (["*ALL*"])
+            nyx = nyxus.Nyxus (features=["*ALL*"],  n_feature_calc_threads=1)
+            assert nyx is not None
+            
+            directory_features = nyx.featurize_directory(data_path + 'int/', data_path + 'seg/')
+            directory_features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+            
+            files_features = nyx.featurize_files(
+                [data_path + 'int/p0_y1_r1_c0.ome.tif', data_path + 'int/p0_y1_r1_c1.ome.tif'],
+                [data_path + 'seg/p0_y1_r1_c0.ome.tif', data_path + 'seg/p0_y1_r1_c1.ome.tif'],
+                single_roi=False,
+            )
+            
+            files_features.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+            
+            directory_columns = directory_features.columns
+            files_columns = files_features.columns
+            
+            assert len(directory_columns) == len(files_columns)
+            
+            files_not_equal = []
+            
+            for col in directory_columns:
+                directory_list = directory_features[col].tolist()
+                files_list = files_features[col].tolist()
+                
+                for directory_val, files_val in zip(directory_list, files_list):
+                    if not directory_val == pytest.approx(files_val, rel=1e-5, abs=1e-5):
+                        files_not_equal.append(col)
+                        break
+            
+            assert len(files_not_equal) == 0
+
+        def test_featurize_all_multithreaded (self):
+            path = str(pathlib.Path(__file__).parent.resolve())
+            
+            data_path = path + '/data/'
+            
+            nyx = nyxus.Nyxus (features=["*ALL*"],  n_feature_calc_threads=4)
             assert nyx is not None
             
             directory_features = nyx.featurize_directory(data_path + 'int/', data_path + 'seg/')

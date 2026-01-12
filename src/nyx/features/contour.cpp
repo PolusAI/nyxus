@@ -624,8 +624,13 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 		}
 		else
 		{
-			// failed loop, look into why it failed
-			dump_2d_image_with_vertex_chain (borderImage, S, w+2, h+2, "\n\nfailed loop\n", "||S||=" + std::to_string(S.size()) + "\n");
+			// failed loop, optionally look into why it failed
+			if (verbose >= 5)
+				dump_2d_image_with_vertex_chain (borderImage, S, w+2, h+2, "\n\nfailed loop\n", "||S||=" + std::to_string(S.size()) + "\n");
+
+			// subtract the failed loop from U
+			for (Pixel2& p : S)
+				U.remove(p);
 		}
 	}
 }
