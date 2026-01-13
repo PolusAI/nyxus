@@ -9,6 +9,7 @@
 #include <set>
 #include <stdlib.h>
 #include <stdio.h>
+#include "constants.h"
 #include "globals.h"
 #include "environment.h"
 #include "features/radial_distribution.h"
@@ -167,7 +168,7 @@ namespace Nyxus
 		rescache.add_string (ifpath);
 		rescache.add_string (mfpath);
 		rescache.add_numeric (r.label);
-		rescache.add_numeric (-999.888);
+		rescache.add_numeric (DEFAULT_T_INDEX);
 
 		// - features
 		for (auto& enabdF : F)
@@ -422,7 +423,7 @@ namespace Nyxus
 			rescache.add_string (intfname);
 			rescache.add_string (segfname);
 			rescache.add_numeric (l);
-			rescache.add_numeric (-999.888);
+			rescache.add_numeric (DEFAULT_T_INDEX);
 
 			for (auto& enabdF : F)
 			{
