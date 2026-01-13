@@ -9,16 +9,102 @@
 
 using namespace Nyxus;
 
-int D3_GLRLM_feature::n_levels = 0;
-
-
 D3_GLRLM_feature::D3_GLRLM_feature() : FeatureMethod("D3_GLRLM_feature")
 {
 	provide_features(D3_GLRLM_feature::featureset);
 }
 
+const static AngleShift shifts13 [] =
+{
+	{1,  1,  1},
+	{1,  1,  0},
+	{1,  1, -1},
+	{1,  0,  1},
+	{1,  0,  0},
+	{1,  0, -1},
+	{1, -1,  1},
+	{1, -1,  0},
+	{1, -1, -1},
+	{0,  1,  1},
+	{0,  1,  0},
+	{0,  1, -1},
+	{0,  0,  1}
+};
+
+/*static*/ void D3_GLRLM_feature::gather_rl_zones (
+	// out
+	std::vector<std::pair<PixIntens, int>> &Zones, 
+	// in
+	const AngleShift &sh,
+	SimpleCube <PixIntens> &D, 
+	PixIntens zeroI)
+{
+	size_t w = D.width(),
+		h = D.height(),
+		d = D.depth();
+
+	// Number of zones
+	const int VISITED = -1;
+
+	for (int zslice = 0; zslice < d; zslice++)
+	{
+		for (int row = 0; row < h; row++)
+		{
+			for (int col = 0; col < w; col++)
+			{
+				// Find a non-blank pixel
+				auto pi = D.zyx(zslice, row, col);
+				if (pi == 0 || int(pi) == VISITED)
+					continue;
+
+				// Found a non-blank pixel. Find same-intensity neighbourhood of it.
+				std::vector<std::tuple<int, int, int>> history;
+				int x = col, y = row, z = zslice;
+				int zoneArea = 1;
+				D.zyx(z, y, x) = VISITED;
+
+				// State machine scanning the rest of the cluster
+				for (;;)
+				{
+					if (D.safe(z+sh.dz, y+sh.dy, x+sh.dx) && D.zyx(z+sh.dz, y+sh.dy, x+sh.dx) != VISITED && D.zyx(z+sh.dz, y+sh.dy, x+sh.dx) == pi)
+					{
+						D.zyx(z+sh.dz, y+sh.dy, x+sh.dx) = VISITED;
+						zoneArea++;
+
+						// Remember this pixel
+						history.push_back({ x,y,z });
+						// Advance 
+						z += sh.dz;
+						y += sh.dy;
+						x += sh.dx;
+						// Proceed
+						continue;
+					}
+
+					// Return from the branch
+					if (history.size() > 0)
+					{
+						// Recollect the coordinate where we diverted from
+						std::tuple<int, int, int> prev = history[history.size() - 1];
+						history.pop_back();
+					}
+
+					// We are done exploring this cluster
+					break;
+				}
+
+				// --3
+				std::pair <PixIntens, int> zo = { pi, zoneArea };
+				Zones.push_back(zo);
+			}
+		}
+	}
+}
+
 void D3_GLRLM_feature::calculate (LR& r, const Fsettings& s)
 {
+	n_angles_ = sizeof(shifts13) / sizeof(AngleShift);
+
 	//==== Clear the feature values buffers
 	clear_buffers();
 
@@ -30,314 +116,153 @@ void D3_GLRLM_feature::calculate (LR& r, const Fsettings& s)
 	{
 		// insert a non-NAN value for all 4 angles to make the output expecting 4-angled values happy
 		double w = STNGS_NAN(s);
-		angled_SRE.resize(4, w);
-		angled_LRE.resize(4, w);
-		angled_GLN.resize(4, w);
-		angled_GLNN.resize(4, w);
-		angled_RLN.resize(4, w);
-		angled_RLNN.resize(4, w);
-		angled_RP.resize(4, w);
-		angled_GLV.resize(4, w);
-		angled_RV.resize(4, w);
-		angled_RE.resize(4, w);
-		angled_LGLRE.resize(4, w);
-		angled_HGLRE.resize(4, w);
-		angled_SRLGLE.resize(4, w);
-		angled_SRHGLE.resize(4, w);
-		angled_LRLGLE.resize(4, w);
-		angled_LRHGLE.resize(4, w);
-
-		bad_roi_data = true;
+		angled_SRE.resize (n_angles_, w);
+		angled_LRE.resize (n_angles_, w);
+		angled_GLN.resize (n_angles_, w);
+		angled_GLNN.resize (n_angles_, w);
+		angled_RLN.resize (n_angles_, w);
+		angled_RLNN.resize (n_angles_, w);
+		angled_RP.resize (n_angles_, w);
+		angled_GLV.resize (n_angles_, w);
+		angled_RV.resize (n_angles_, w);
+		angled_RE.resize (n_angles_, w);
+		angled_LGLRE.resize (n_angles_, w);
+		angled_HGLRE.resize (n_angles_, w);
+		angled_SRLGLE.resize (n_angles_, w);
+		angled_SRHGLE.resize (n_angles_, w);
+		angled_LRLGLE.resize (n_angles_, w);
+		angled_LRHGLE.resize (n_angles_, w);
 		return;
 	}
 
-	//==== Make a list of intensity clusters (zones)
-	using ACluster = std::pair<PixIntens, int>;
-	using AngleZones = std::vector<ACluster>;
+	// grey-bin
 
-	//==== While scanning clusters, learn unique intensities 
-	using AngleUniqInte = std::unordered_set<PixIntens>;
+	int w = r.aux_image_cube.width(),
+		h = r.aux_image_cube.height(),
+		d = r.aux_image_cube.depth();
+
+	SimpleCube <PixIntens> G;
+	G.allocate (w,h,d);
+
+	auto greyInfo = STNGS_GLRLM_GREYDEPTH(s);
+	if (STNGS_IBSI(s))
+		greyInfo = 0;
+
+	bin_intensities_3d (G, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo);
+
+	// sorted intensities
+
+	std::vector <PixIntens> I;
+	if (ibsi_grey_binning(greyInfo))
+	{
+		auto n_ibsi_levels = *std::max_element (G.begin(), G.end());
+		I.resize (n_ibsi_levels);
+		for (int i=0; i<n_ibsi_levels; i++)
+			I[i] = i+1;
+	}
+	else // radiomics and matlab
+	{
+		std::unordered_set<PixIntens> U (G.begin(), G.end());
+		U.erase (0);	// discard intensity '0'
+		I.assign (U.begin(), U.end());
+		std::sort (I.begin(), I.end());
+	}
 
 	//==== Iterate angles 
-	for (int angleIdx = 0; angleIdx < 8; angleIdx++)
+	for (const AngleShift & ash : shifts13)
 	{
-		// Clusters at angle 'angleIdx'
-		AngleZones Z;
+		// a scratch copy
 
-		// Unique intensities at angle 'angleIdx'
-		AngleUniqInte U;
+		SimpleCube <PixIntens> D(G);
 
-		// We need it to estimate the x-dimension of matrix P
+		// find zones
+
+		std::vector <std::pair<PixIntens, int>> Zones;
+		PixIntens zeroI = 0;
+		D3_GLRLM_feature::gather_rl_zones (Zones, ash, D, zeroI);
+
+		// zone stats
 		int maxZoneArea = 0;
+		for (const std::pair <PixIntens, int> &zo : Zones)
+			maxZoneArea = (std::max) (maxZoneArea, zo.second);
 
-		// Copy the image matrix. We'll use it to maintain state of cluster scanning 
-		int w = r.aux_image_cube.width(),
-			h = r.aux_image_cube.height(),
-			d = r.aux_image_cube.depth();
-		SimpleCube<PixIntens> D;
-		D.allocate (w, h, d);
-
-		// Squeeze the intensity range
-		auto greyInfo = STNGS_NGREYS(s); // former theEnvironment.get_coarse_gray_depth()
-		auto greyInfo_localFeature = D3_GLRLM_feature::n_levels;
-		if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
-			greyInfo = greyInfo_localFeature;
-		if (STNGS_IBSI(s))		// former Nyxus::theEnvironment.ibsi_compliance
-			greyInfo = 0;
-
-		bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo);
-
-		// allocate intensities matrix
-		if (ibsi_grey_binning(greyInfo))
-		{
-			auto n_ibsi_levels = *std::max_element(D.begin(), D.end());
-			I.resize(n_ibsi_levels);
-			for (int i = 0; i < n_ibsi_levels; i++)
-				I[i] = i + 1;
-		}
-		else // radiomics and matlab
-		{
-			std::unordered_set<PixIntens> U(D.begin(), D.end());
-			U.erase(0);	// discard intensity '0'
-			I.assign(U.begin(), U.end());
-			std::sort(I.begin(), I.end());
-		}
-
-		// Find zones
-		const int VISITED = -1;
-
-		// --- Scan the image and check non-blank pixels' clusters
-		for (int zslice = 0; zslice < d; zslice++)
-		{
-			for (int row = 0; row < h; row++)
-			{
-				for (int col = 0; col < w; col++)
-				{
-					// Find a non-blank pixel
-					auto pi = D.zyx (zslice, row, col);
-					if (pi == 0 || int(pi) == VISITED)
-						continue;
-
-					// Found a non-blank pixel. Find same-intensity neighbourhood of it.
-					std::vector<std::tuple<int, int, int>> history;
-					int x = col, y = row, z = zslice;
-					int zoneArea = 1;
-					D.zyx (z, y, x) = VISITED;
-
-					// State machine scanning the rest of the cluster
-					for (;;)
-					{
-						int dx, dy, dz;
-
-						//********** ang XY,Z = 0
-						// ang X,Y = 0
-						if (angleIdx == 0 && D.safe(z, y, x+1) && D.zyx(z, y, x+1) == pi)
-						{
-							D.zyx(z, y, x + 1) = VISITED;
-							zoneArea++;
-
-							// Remember this pixel
-							history.push_back({ x,y,z });
-							// Advance 
-							x = x + 1;
-							// Proceed
-							continue;
-						}
-
-						// ang X,Y = 45
-						if (angleIdx == 1 && D.safe(z, y+1, x+1) && D.zyx(z, y+1, x+1) == pi)
-						{
-							D.zyx (z, y+1, x+1) = VISITED;
-							zoneArea++;
-
-							history.push_back({ x,y,z });
-							x = x + 1;
-							y = y + 1;
-							continue;
-						}
-
-						// ang X,Y = 90
-						if (angleIdx == 2 && D.safe(z, y+1, x) && D.zyx(z, y+1, x) == pi)
-						{
-							D.zyx(z, y+1, x) = VISITED;
-							zoneArea++;
-
-							history.push_back({ x,y,z });
-							y = y + 1;
-							continue;
-						}
-
-						// ang X,Y = 135
-						if (angleIdx == 3 && D.safe(z, y+1, x-1) && D.zyx(z, y+1, x-1) == pi)
-						{
-							D.zyx(z, y+1, x-1) = VISITED;
-							zoneArea++;
-
-							history.push_back({ x,y,z });
-							x = x - 1;
-							y = y + 1;
-							continue;
-						}
-
-						//********** ang XY,Z != 0
-						// ang X,Y = 0
-						if (angleIdx == 4 && D.safe(z+1, y, x) && D.zyx(z+1, y, x) == pi)
-						{
-							D.zyx(z+1, y, x) = VISITED;
-							zoneArea++;
-
-							// remember this pixel
-							history.push_back({ x,y,z });
-							// advance 
-							z = z + 1;
-							// proceed
-							continue;
-						}
-
-						// ang X,Y = 45
-						if (angleIdx == 5 && D.safe(z+1, y+1, x) && D.zyx(z+1, y+1, x) == pi)
-						{
-							D.zyx(z+1, y+1, x) = VISITED;
-							zoneArea++;
-
-							history.push_back({ x,y,z });
-							z = z + 1;
-							y = y + 1;
-							continue;
-						}
-
-						// ang X,Y = 90
-						if (angleIdx == 6 && D.safe(z+1, y, x+1) && D.zyx(z+1, y, x+1) == pi)
-						{
-							D.zyx(z+1, y, x+1) = VISITED;
-							zoneArea++;
-
-							history.push_back({ x,y,z });
-							z = z + 1;
-							x = x + 1;
-							continue;
-						}
-
-						// ang X,Y = 135
-						if (angleIdx == 7 && D.safe(z+1, y+1, x-1) && D.zyx(z+1, y+1, x-1) == pi)
-						{
-							D.zyx(z+1, y+1, x-1) = VISITED;
-							zoneArea++;
-
-							history.push_back({ x,y,z });
-							z = z + 1;
-							y = y + 1;
-							x = x - 1;
-							continue;
-						}
-
-						// Return from the branch
-						if (history.size() > 0)
-						{
-							// Recollect the coordinate where we diverted from
-							std::tuple<int, int, int> prev = history [history.size() - 1];
-							history.pop_back();
-						}
-
-						// We are done exploring this cluster
-						break;
-					}
-
-					// --2
-					maxZoneArea = std::max(maxZoneArea, zoneArea);
-
-					// --3
-					ACluster clu = { pi, zoneArea };
-					Z.push_back(clu);
-				}
-			}
-		}
-
-		// count non-zero pixels
-		int count = 0;
-
-		for (const auto& px : r.aux_image_cube)
-		{
-			if (px != 0)
-				count++;
-		}
-
-		//==== Create a zone matrix
+		//==== create the matrix
 
 		int Ng = STNGS_IBSI(s) ? *std::max_element(I.begin(), I.end()) : I.size();
 		int Nr = maxZoneArea;
-		int Nz = (int)Z.size();
-		int Np = count;
+		int Nz = (int) Zones.size();
+		size_t Np = r.raw_pixels_3D.size();
 
 		// --allocate the matrix
 		P_matrix P;
-		P.allocate(Nr, Ng);	// w = Nr, h = card(I) aka Ng
+		P.allocate (Nr /*cols*/, Ng /*rows*/);
 
 		// --iterate zones and fill the matrix
-		for (auto& z : Z)
+		for (const auto &z : Zones)
 		{
 			auto inten = z.first;
+
 			// row (grey level)
 			int row = -1;
 			if (STNGS_IBSI(s))
 				row = inten - 1;
 			else
 			{
-				auto lower = std::lower_bound(I.begin(), I.end(), inten);	// enjoy sorted vector 'I'
-				row = int(lower - I.begin());	// intensity index in array of unique intensities 'I'
+				auto lower = std::lower_bound(I.begin(), I.end(), inten);	// enjoying sorted vector I
+				row = int(lower - I.begin());
 			}
+			
 			// col
 			int col = z.second - 1;	// 0-based => -1
+			
 			// update the matrix
-			auto& k = P.xy(col, row);
+			auto &k = P.xy (col, row);
 			k++;
 		}
 
-		// --save this angle's results
-		angles_P.push_back(P);
-		angles_Ng.push_back(Ng);
-		angles_Nr.push_back(Nr);
-		angles_Np.push_back(Np);
-
+		// GLRL-matrix stats
 		double sum = 0;
-		for (int i = 1; i <= P.height(); ++i)
-			for (int j = 1; j <= P.width(); ++j)
-				sum += P.matlab(i, j);
-		sum = 0;
 		for (auto p : P)
 			sum += p;
 
-		sum_p.push_back(sum);
-	} //- angles
+		double sre = calc_SRE (P, sum),
+			lre = calc_LRE (P, sum),
+			gln = calc_GLN (P, sum),
+			glnn = calc_GLNN (P, sum),
+			rln = calc_RLN (P, sum),
+			rlnn = calc_RLNN (P, sum),
+			rp = Np > 0 ? sum/double(Np) : STNGS_NAN(s),
+			glv = calc_GLV (P, I, sum),
+			rv = calc_RV (P, sum),
+			re = calc_RE (P, sum),
+			lglre = calc_LGLRE (P, I, sum),
+			hglre = calc_HGLRE (P, I, sum),
+			srlgle = calc_SRLGLE (P, I, sum),
+			srhgle = calc_SRHGLE (P, I, sum),
+			lrlgle = calc_LRLGLE (P, I, sum),
+			lrhgle = calc_LRHGLE (P, I, sum);
+		angled_SRE.push_back (sre);
+		angled_LRE.push_back (lre);
+		angled_GLN.push_back (gln);
+		angled_GLNN.push_back (glnn);
+		angled_RLN.push_back (rln);
+		angled_RLNN.push_back(rlnn);
+		angled_RP.push_back (rp);
+		angled_GLV.push_back (glv);
+		angled_RV.push_back (rv);
+		angled_RE.push_back (re);
+		angled_LGLRE.push_back (lglre);
+		angled_HGLRE.push_back (hglre);
+		angled_SRLGLE.push_back (srlgle);
+		angled_SRHGLE.push_back (srhgle);
+		angled_LRLGLE.push_back (lrlgle);
+		angled_LRHGLE.push_back (lrhgle);
+	} // angles
 
-	calc_SRE(angled_SRE);
-	calc_LRE(angled_LRE);
-	calc_GLN(angled_GLN);
-	calc_GLNN(angled_GLNN);
-	calc_RLN(angled_RLN);
-	calc_RLNN(angled_RLNN);
-	calc_RP(angled_RP);
-	calc_GLV(angled_GLV);
-	calc_RV(angled_RV);
-	calc_RE(angled_RE);
-	calc_LGLRE(angled_LGLRE);
-	calc_HGLRE(angled_HGLRE);
-	calc_SRLGLE(angled_SRLGLE);
-	calc_SRHGLE(angled_SRHGLE);
-	calc_LRLGLE(angled_LRLGLE);
-	calc_LRHGLE(angled_LRHGLE);
 }
 
 void D3_GLRLM_feature::clear_buffers()
 {
-	bad_roi_data = false;
-	angles_Ng.clear();
-	angles_Nr.clear();
-	angles_Np.clear();
-	angles_P.clear();
-	sum_p.clear();
-	I.clear();
-
 	angled_SRE.clear();
 	angled_LRE.clear();
 	angled_GLN.clear();
@@ -397,537 +322,388 @@ void D3_GLRLM_feature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature3D::GLRLM_LRHGLE_AVE][0] = calc_ave(angled_LRHGLE);
 }
 
-
 // 1. Short Run Emphasis 
-// ai - angle index
-void D3_GLRLM_feature::calc_SRE(AngledFtrs& af)
+
+double D3_GLRLM_feature::calc_SRE (const SimpleMatrix<int> &P, const double sum_p)
 {
-	af.clear();
+	if (sum_p == 0)
+		return 0.0;
 
-	for (int ai = 0; ai < 4; ai++)
+	int Ng = P.height(),
+		Nr = P.width();
+
+	double f = 0.;
+	std::vector<double> rj(Nr + 1, 0.);
+	for (int i = 1; i <= Ng; ++i) 
 	{
-		if (sum_p[ai] == 0) {
-			af.push_back(0.0);
-			continue;
+		for (int j = 1; j <= Nr; ++j) 
+		{
+			rj[j] += P.matlab(i, j);
 		}
-
-		// Get ahold of the requested angle's matrix and its related N parameters 
-		int Ng = angles_Ng[ai],
-			Nr = angles_Nr[ai];
-		const SimpleMatrix<int>& P = angles_P[ai];
-
-		double f = 0.;
-		std::vector<double> rj(Nr + 1, 0.);
-		for (int i = 1; i <= Ng; ++i) {
-			for (int j = 1; j <= Nr; ++j) {
-				rj[j] += P.matlab(i, j);
-			}
-		}
-
-		for (int j = 1; j <= Nr; ++j) {
-			f += rj[j] / (j * j);
-		}
-
-		double retval = f / double(sum_p[ai]);
-		af.push_back(retval);
 	}
+
+	for (int j = 1; j <= Nr; ++j) 
+	{
+		f += rj[j] / double(j * j);
+	}
+
+	double retval = f / sum_p;
+	return retval;
 }
 
 // 2. Long Run Emphasis 
-void D3_GLRLM_feature::calc_LRE(AngledFtrs& af)
+
+double D3_GLRLM_feature::calc_LRE (const SimpleMatrix<int> &P, const double sum_p)
 {
-	af.clear();
+	if (sum_p == 0)
+		return 0.0;
 
-	for (int ai = 0; ai < 4; ai++)
+	int Ng = P.height(),
+		Nr = P.width();
+
+	double f = 0.0;
+	for (int i = 1; i <= Ng; i++)
 	{
-		if (sum_p[ai] == 0) {
-			af.push_back(0.0);
-			continue;
-		}
-
-		// Get ahold of the requested angle's matrix and its related N parameters 
-		int Ng = angles_Ng[ai],
-			Nr = angles_Nr[ai];
-		const SimpleMatrix<int>& P = angles_P[ai];
-
-		// Calculate
-		double f = 0.0;
-		for (int i = 1; i <= Ng; i++)
+		for (int j = 1; j <= Nr; j++)
 		{
-			for (int j = 1; j <= Nr; j++)
-			{
-				f += P.matlab(i, j) * j * j;
-			}
+			f += P.matlab(i, j) * double(j * j);
 		}
-
-		double retval = f / double(sum_p[ai]);
-		af.push_back(retval);
 	}
+
+	double retval = f / sum_p;
+	return retval;
 }
 
 // 3. Gray Level Non-Uniformity 
-void D3_GLRLM_feature::calc_GLN(AngledFtrs& af)
+
+double D3_GLRLM_feature::calc_GLN (const SimpleMatrix<int> &P, const double sum_p)
 {
-	af.clear();
+	if (sum_p == 0)
+		return 0.0;
 
-	for (int ai = 0; ai < 4; ai++)
+	int Ng = P.height(),
+		Nr = P.width();
+
+	double f = 0.0;
+	for (int i = 1; i <= Ng; i++)
 	{
-		if (sum_p[ai] == 0) {
-			af.push_back(0.0);
-			continue;
-		}
-
-		// Get ahold of the requested angle's matrix and its related N parameters 
-		int Ng = angles_Ng[ai],
-			Nr = angles_Nr[ai];
-		const SimpleMatrix<int>& P = angles_P[ai];
-
-		// Calculate
-		double f = 0.0;
-		for (int i = 1; i <= Ng; i++)
+		double sum = 0.0;
+		for (int j = 1; j <= Nr; j++)
 		{
-			double sum = 0.0;
-			for (int j = 1; j <= Nr; j++)
-			{
-				sum += P.matlab(i, j);
-			}
-			f += sum * sum;
+			sum += P.matlab(i, j);
 		}
-
-		double retval = f / double(sum_p[ai]);
-		af.push_back(retval);
+		f += sum * sum;
 	}
+
+	double retval = f / sum_p;
+	return retval;
 }
 
 // 4. Gray Level Non-Uniformity Normalized 
-void D3_GLRLM_feature::calc_GLNN(AngledFtrs& af)
+
+double D3_GLRLM_feature::calc_GLNN (const SimpleMatrix<int> &P, const double sum_p)
 {
-	af.clear();
+	if (sum_p == 0)
+		return 0.0;
 
-	for (int ai = 0; ai < 4; ai++)
+	int Ng = P.height(),
+		Nr = P.width();
+
+	double f = 0.0;
+	for (int i = 1; i <= Ng; i++)
 	{
-		if (sum_p[ai] == 0) {
-			af.push_back(0.0);
-			continue;
-		}
-
-		// Get ahold of the requested angle's matrix and its related N parameters 
-		int Ng = angles_Ng[ai],
-			Nr = angles_Nr[ai];
-		const SimpleMatrix<int>& P = angles_P[ai];
-
-		// Calculate
-		double f = 0.0;
-		for (int i = 1; i <= Ng; i++)
+		double sum = 0.0;
+		for (int j = 1; j <= Nr; j++)
 		{
-			double sum = 0.0;
-			for (int j = 1; j <= Nr; j++)
-			{
-				sum += P.matlab(i, j);
-			}
-			f += sum * sum;
+			sum += P.matlab(i, j);
 		}
-
-		double retval = f / double(sum_p[ai] * sum_p[ai]);
-		af.push_back(retval);
+		f += sum * sum;
 	}
+
+	double retval = f / (sum_p * sum_p);
+	return retval;
 }
 
 // 5. Run Length Non-Uniformity
-void D3_GLRLM_feature::calc_RLN(AngledFtrs& af)
+
+double D3_GLRLM_feature::calc_RLN (const SimpleMatrix<int> &P, const double sum_p)
 {
-	af.clear();
+	if (sum_p == 0)
+		return 0.0;
 
-	for (int ai = 0; ai < 4; ai++)
+	int Ng = P.height(),
+		Nr = P.width();
+
+	double f = 0.0;
+	for (int x=1; x<= Nr; x++)
 	{
-		if (sum_p[ai] == 0) {
-			af.push_back(0.0);
-			continue;
-		}
+		double sumI = 0.0;	// total of intensities at given run-length
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
-		int Ng = angles_Ng[ai],
-			Nr = angles_Nr[ai];
-		const SimpleMatrix<int>& P = angles_P[ai];
+		for (int y=1; y<=Ng; y++)
+			sumI += P.matlab (y,x);
 
-		// Calculate
-		double f = 0.0;
-		for (int j = 1; j <= Nr; j++)
-		{
-			double sum = 0.0;
-			for (int i = 1; i <= Ng; i++)
-			{
-				sum += P.matlab(i, j);
-			}
-			f += sum * sum;
-		}
-
-		double retval = f / double(sum_p[ai]);
-		af.push_back(retval);
+		f += sumI * sumI;
 	}
+
+	double retval = f / sum_p;
+	return retval;
 }
+
 
 // 6. Run Length Non-Uniformity Normalized 
-void D3_GLRLM_feature::calc_RLNN(AngledFtrs& af)
+
+double D3_GLRLM_feature::calc_RLNN (const SimpleMatrix<int> &P, const double sum_p)
 {
-	af.clear();
+	if (sum_p == 0)
+		return 0.0;
 
-	for (int ai = 0; ai < 4; ai++)
+	int Ng = P.height(),
+		Nr = P.width();
+
+	double f = 0.0;
+	for (int j = 1; j <= Nr; j++)
 	{
-		if (sum_p[ai] == 0) {
-			af.push_back(0.0);
-			continue;
-		}
-
-		// Get ahold of the requested angle's matrix and its related N parameters 
-		int Ng = angles_Ng[ai],
-			Nr = angles_Nr[ai];
-		const SimpleMatrix<int>& P = angles_P[ai];
-
-		// Calculate
-		double f = 0.0;
-		for (int j = 1; j <= Nr; j++)
+		double sum = 0.0;
+		for (int i = 1; i <= Ng; i++)
 		{
-			double sum = 0.0;
-			for (int i = 1; i <= Ng; i++)
-			{
-				sum += P.matlab(i, j);
-			}
-			f += sum * sum;
+			sum += P.matlab(i, j);
 		}
-
-		double retval = f / double(sum_p[ai] * sum_p[ai]);
-		af.push_back(retval);
+		f += sum * sum;
 	}
+
+	double retval = f / (sum_p * sum_p);
+	return retval;
 }
 
-// 7. Run Percentage
-void D3_GLRLM_feature::calc_RP(AngledFtrs& af)
-{
-	af.clear();
-
-	for (int ai = 0; ai < 4; ai++)
-	{
-		if (sum_p[ai] == 0) {
-			af.push_back(0.0);
-			continue;
-		}
-
-		// Get ahold of the requested angle's matrix and its related N parameters 
-		int Np = angles_Np[ai];
-
-		double retval = double(sum_p[ai] / Np);
-		af.push_back(retval);
-	}
-}
+// 7. Run Percentage (trivial math)
 
 // 8. Gray Level Variance 
-void D3_GLRLM_feature::calc_GLV(AngledFtrs& af)
+
+double D3_GLRLM_feature::calc_GLV (const SimpleMatrix<int> &P, const std::vector<PixIntens> &I, const double sum_p)
 {
-	af.clear();
+	if (sum_p == 0)
+		return 0.0;
 
-	for (int ai = 0; ai < 4; ai++)
+	int Ng = P.height(),
+		Nr = P.width();
+
+	double mu = 0.0;
+	for (int i = 1; i <= Ng; i++)
 	{
-		if (sum_p[ai] == 0)
+		auto inten = I[i - 1];
+		for (int j = 1; j <= Nr; j++)
 		{
-			af.push_back(0.0);
-			continue;
+			mu += P.matlab(i, j) / sum_p * inten;
 		}
-
-		// Get ahold of the requested angle's matrix and its related N parameters 
-		int Ng = angles_Ng[ai],
-			Nr = angles_Nr[ai];
-		const SimpleMatrix<int>& P = angles_P[ai];
-
-		// Calculate
-		double mu = 0.0;
-		for (int i = 1; i <= Ng; i++)
-		{
-			auto inten = I[i - 1];
-			for (int j = 1; j <= Nr; j++)
-			{
-				mu += P.matlab(i, j) / sum_p[ai] * inten;
-			}
-		}
-
-		double f = 0.0;
-		for (int i = 1; i <= Ng; i++)
-		{
-			auto inten = I[i - 1];
-			for (int j = 1; j <= Nr; j++)
-			{
-				double mu2 = (inten - mu) * (inten - mu);
-				f += P.matlab(i, j) / sum_p[ai] * mu2;
-			}
-		}
-		af.push_back(f);
 	}
+
+	double f = 0.0;
+	for (int i = 1; i <= Ng; i++)
+	{
+		auto inten = I[i - 1];
+		for (int j = 1; j <= Nr; j++)
+		{
+			double mu2 = (inten - mu) * (inten - mu);
+			f += P.matlab(i, j) / sum_p * mu2;
+		}
+	}
+	return f;
 }
 
 // 9. Run Variance 
-void D3_GLRLM_feature::calc_RV(AngledFtrs& af)
+
+double D3_GLRLM_feature::calc_RV (const SimpleMatrix<int> &P, const double sum_p)
 {
-	af.clear();
+	if (sum_p == 0)
+		return 0.0;
 
-	for (int ai = 0; ai < 4; ai++)
+	int Ng = P.height(),
+		Nr = P.width();
+
+	double mu = 0.0;
+	for (int i = 1; i <= Ng; i++)
 	{
-		if (sum_p[ai] == 0) {
-			af.push_back(0.0);
-			continue;
-		}
-
-		// Get ahold of the requested angle's matrix and its related N parameters 
-		int Ng = angles_Ng[ai],
-			Nr = angles_Nr[ai];
-		const SimpleMatrix<int>& P = angles_P[ai];
-
-		// Calculate
-		double mu = 0.0;
-		for (int i = 1; i <= Ng; i++)
+		for (int j = 1; j <= Nr; j++)
 		{
-			for (int j = 1; j <= Nr; j++)
-			{
-				mu += P.matlab(i, j) / sum_p[ai] * j;
-			}
+			mu += P.matlab(i, j) / sum_p * j;
 		}
-
-		double f = 0.0;
-		for (int i = 1; i <= Ng; i++)
-		{
-			for (int j = 1; j <= Nr; j++)
-			{
-				double mu2 = (j - mu) * (j - mu);
-				f += P.matlab(i, j) / sum_p[ai] * mu2;
-			}
-		}
-		af.push_back(f);
 	}
+
+	double f = 0.0;
+	for (int i = 1; i <= Ng; i++)
+	{
+		for (int j = 1; j <= Nr; j++)
+		{
+			double mu2 = (j - mu) * (j - mu);
+			f += P.matlab(i, j) / sum_p * mu2;
+		}
+	}
+
+	return f;
 }
 
 // 10. Run Entropy 
-void D3_GLRLM_feature::calc_RE(AngledFtrs& af)
+
+double D3_GLRLM_feature::calc_RE (const SimpleMatrix<int> &P, const double sum_p)
 {
-	af.clear();
+	if (sum_p == 0)
+		return 0.0;
 
-	for (int ai = 0; ai < 4; ai++)
+	int Ng = P.height(),
+		Nr = P.width();
+
+	double f = 0.0;
+	for (int i = 1; i <= Ng; i++)
 	{
-		if (sum_p[ai] == 0) {
-			af.push_back(0.0);
-			continue;
-		}
-
-		// Get ahold of the requested angle's matrix and its related N parameters 
-		int Ng = angles_Ng[ai],
-			Nr = angles_Nr[ai];
-		const SimpleMatrix<int>& P = angles_P[ai];
-
-		// Calculate
-		double f = 0.0;
-		for (int i = 1; i <= Ng; i++)
+		for (int j = 1; j <= Nr; j++)
 		{
-			for (int j = 1; j <= Nr; j++)
-			{
-				double entrTerm = fast_log10(P.matlab(i, j) / sum_p[ai] + EPS) / LOG10_2;
-				f += P.matlab(i, j) / sum_p[ai] * entrTerm;
-			}
+			double entrTerm = fast_log10(P.matlab(i, j) / sum_p + EPS) / LOG10_2;
+			f += P.matlab(i, j) / sum_p * entrTerm;
 		}
-		double retval = -f;
-		af.push_back(retval);
 	}
+	double retval = -f;
+	return retval;
 }
 
 // 11. Low Gray Level Run Emphasis 
-void D3_GLRLM_feature::calc_LGLRE(AngledFtrs& af)
+
+double D3_GLRLM_feature::calc_LGLRE (const SimpleMatrix<int> &P, const std::vector<PixIntens> &I, const double sum_p)
 {
-	af.clear();
+	if (sum_p == 0)
+		return 0.0;
 
-	for (int ai = 0; ai < 4; ai++)
+	int Ng = P.height(),
+		Nr = P.width();
+
+	double f = 0.0;
+	for (int i = 1; i <= Ng; i++)
 	{
-		if (sum_p[ai] == 0) {
-			af.push_back(0.0);
-			continue;
-		}
-
-		// Get ahold of the requested angle's matrix and its related N parameters 
-		int Ng = angles_Ng[ai],
-			Nr = angles_Nr[ai];
-		const SimpleMatrix<int>& P = angles_P[ai];
-
-		// Calculate
-		double f = 0.0;
-		for (int i = 1; i <= Ng; i++)
+		auto inten = I[i - 1];
+		for (int j = 1; j <= Nr; j++)
 		{
-			auto inten = I[i - 1];
-			for (int j = 1; j <= Nr; j++)
-			{
-				f += P.matlab(i, j) / double(inten * inten);
-			}
+			f += P.matlab(i, j) / double(inten * inten);
 		}
-		double retval = f / double(sum_p[ai]);
-		af.push_back(retval);
 	}
+	double retval = f / double(sum_p);
+	return retval;
 }
 
 // 12. High Gray Level Run Emphasis 
-void D3_GLRLM_feature::calc_HGLRE(AngledFtrs& af)
+
+double D3_GLRLM_feature::calc_HGLRE (const SimpleMatrix<int> &P, const std::vector<PixIntens> &I, const double sum_p)
 {
-	af.clear();
+	if (sum_p == 0)
+		return 0.0;
 
-	for (int ai = 0; ai < 4; ai++)
+	int Ng = P.height(),
+		Nr = P.width();
+
+	double f = 0.0;
+	for (int i = 1; i <= Ng; i++)
 	{
-		if (sum_p[ai] == 0) {
-			af.push_back(0.0);
-			continue;
-		}
-
-		// Get ahold of the requested angle's matrix and its related N parameters 
-		int Ng = angles_Ng[ai],
-			Nr = angles_Nr[ai];
-		const SimpleMatrix<int>& P = angles_P[ai];
-
-		// Calculate
-		double f = 0.0;
-		for (int i = 1; i <= Ng; i++)
+		auto inten = I[i - 1];
+		for (int j = 1; j <= Nr; j++)
 		{
-			auto inten = I[i - 1];
-			for (int j = 1; j <= Nr; j++)
-			{
-				f += P.matlab(i, j) * double(inten * inten);
-			}
+			f += P.matlab(i, j) * double(inten) * double(inten);
 		}
-		double retval = f / double(sum_p[ai]);
-		af.push_back(retval);
 	}
+	double retval = f / double(sum_p);
+	return retval;
 }
 
 // 13. Short Run Low Gray Level Emphasis 
-void D3_GLRLM_feature::calc_SRLGLE(AngledFtrs& af)
+
+double D3_GLRLM_feature::calc_SRLGLE (const SimpleMatrix<int> &P, const std::vector<PixIntens> &I, const double sum_p)
 {
-	af.clear();
+	if (sum_p == 0)
+		return 0.0;
 
-	for (int ai = 0; ai < 4; ai++)
-	{
-		if (sum_p[ai] == 0) {
-			af.push_back(0.0);
-			continue;
-		}
+	int Ng = P.height(),
+		Nr = P.width();
 
-		// Get ahold of the requested angle's matrix and its related N parameters 
-		int Ng = angles_Ng[ai],
-			Nr = angles_Nr[ai];
-		const SimpleMatrix<int>& P = angles_P[ai];
-
-		// Calculate
 		double f = 0.0;
 		for (int i = 1; i <= Ng; i++)
 		{
-			auto inten = I[i - 1];
+			auto inten = I [i-1];
 			for (int j = 1; j <= Nr; j++)
 			{
 				f += P.matlab(i, j) / double(inten * inten * j * j);
 			}
 		}
-		double retval = f / double(sum_p[ai]);
-		af.push_back(retval);
-	}
+		double retval = f / sum_p;
+		return retval;
 }
 
 // 14. Short Run High Gray Level Emphasis 
-void D3_GLRLM_feature::calc_SRHGLE(AngledFtrs& af)
+
+double D3_GLRLM_feature::calc_SRHGLE (const SimpleMatrix<int> &P, const std::vector<PixIntens> &I, const double sum_p)
 {
-	af.clear();
+	if (sum_p == 0)
+		return 0.0;
 
-	for (int ai = 0; ai < 4; ai++)
+	int Ng = P.height(),
+		Nr = P.width();
+	
+	double f = 0.0;
+	for (int i = 1; i <= Ng; i++)
 	{
-		if (sum_p[ai] == 0) {
-			af.push_back(0.0);
-			continue;
-		}
-
-		// Get ahold of the requested angle's matrix and its related N parameters 
-		int Ng = angles_Ng[ai],
-			Nr = angles_Nr[ai];
-		const SimpleMatrix<int>& P = angles_P[ai];
-
-		// Calculate
-		double f = 0.0;
-		for (int i = 1; i <= Ng; i++)
+		auto inten = I[i - 1];
+		for (int j = 1; j <= Nr; j++)
 		{
-			auto inten = I[i - 1];
-			for (int j = 1; j <= Nr; j++)
-			{
-				f += P.matlab(i, j) * double(inten * inten) / double(j * j);
-			}
+			f += P.matlab(i, j) * double(inten * inten) / double(j * j);
 		}
-		double retval = f / double(sum_p[ai]);
-		af.push_back(retval);
 	}
+	double retval = f / sum_p;
+	return retval;
 }
 
 // 15. Long Run Low Gray Level Emphasis 
-void D3_GLRLM_feature::calc_LRLGLE(AngledFtrs& af)
+
+double D3_GLRLM_feature::calc_LRLGLE (const SimpleMatrix<int> &P, const std::vector<PixIntens> &I, const double sum_p)
 {
-	af.clear();
+	if (sum_p == 0)
+		return 0.0;
 
-	for (int ai = 0; ai < 4; ai++)
+	int Ng = P.height(),
+		Nr = P.width();
+
+	double f = 0.0;
+	for (int i = 1; i <= Ng; i++)
 	{
-		if (sum_p[ai] == 0)
+		auto inten = I[i - 1];
+		for (int j = 1; j <= Nr; j++)
 		{
-			af.push_back(0.0);
-			continue;
+			f += P.matlab(i, j) * double(j * j) / double(inten * inten);
 		}
-
-		int Ng = angles_Ng[ai],
-			Nr = angles_Nr[ai];
-		const SimpleMatrix<int>& P = angles_P[ai];
-
-		double f = 0.0;
-		for (int i = 1; i <= Ng; i++)
-		{
-			auto inten = I[i - 1];
-			for (int j = 1; j <= Nr; j++)
-			{
-				f += P.matlab(i, j) * double(j * j) / double(inten * inten);
-			}
-		}
-		double retval = f / double(sum_p[ai]);
-		af.push_back(retval);
 	}
+	double retval = f / sum_p;
+	return retval; 
 }
 
 // 16. Long Run High Gray Level Emphasis 
-void D3_GLRLM_feature::calc_LRHGLE(AngledFtrs& af)
+
+double D3_GLRLM_feature::calc_LRHGLE (const SimpleMatrix<int> &P, const std::vector<PixIntens> &I, const double sum_p)
 {
-	af.clear();
+	if (sum_p == 0)
+		return 0.0;
 
-	for (int ai = 0; ai < 4; ai++)
+	int Ng = P.height(),
+		Nr = P.width();
+
+	double f = 0.0;
+	for (int i = 1; i <= Ng; i++)
 	{
-		if (sum_p[ai] == 0) {
-			af.push_back(0.0);
-			continue;
-		}
-
-		// Get ahold of the requested angle's matrix and its related N parameters 
-		int Ng = angles_Ng[ai],
-			Nr = angles_Nr[ai];
-		const SimpleMatrix<int>& P = angles_P[ai];
-
-		// Calculate
-		double f = 0.0;
-		for (int i = 1; i <= Ng; i++)
+		auto inten = I[i - 1];
+		for (int j = 1; j <= Nr; j++)
 		{
-			auto inten = I[i - 1];
-			for (int j = 1; j <= Nr; j++)
-			{
-				f += P.matlab(i, j) * double(inten * inten * j * j);
-			}
+			f += P.matlab(i, j) * double(inten * inten * j * j);
 		}
-		double retval = f / double(sum_p[ai]);
-		af.push_back(retval);
 	}
+	double retval = f / sum_p;
+	return retval;
 }
 
-void D3_GLRLM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
+/*static*/ void D3_GLRLM_feature::reduce(size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings& s, const Dataset& _)
 {
 	for (auto i = start; i < end; i++)
 	{
@@ -947,14 +723,3 @@ void D3_GLRLM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLa
 	f.save_value (r.fvals);
 }
 
-// 'afv' is angled feature values
-double D3_GLRLM_feature::calc_ave(const std::vector<double>& afv)
-{
-	if (afv.empty())
-		return 0;
-
-	double n = static_cast<double> (afv.size()),
-		ave = std::reduce(afv.begin(), afv.end()) / n;
-
-	return ave;
-}
