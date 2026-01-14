@@ -9,6 +9,7 @@
 #include <set>
 #include <stdlib.h>
 #include <stdio.h>
+#include "constants.h"
 #include "environment.h"
 #include "features/radial_distribution.h"
 #include "features/gabor.h"
@@ -970,7 +971,7 @@ namespace Nyxus
 				feature_values.push_back(vv[0]);
 			}
 
-			features.push_back (std::make_tuple(filenames, l, -999.888, feature_values));
+			features.push_back (std::make_tuple(filenames, l, DEFAULT_T_INDEX, feature_values));
 		}
 
 		return features;

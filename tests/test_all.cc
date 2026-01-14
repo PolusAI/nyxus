@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
-
 #include "test_gabor.h"
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
+#include "test_contour.h"
 #include "test_pixel_intensity_features.h"
 #include "test_morphology_features.h"
 #include "test_initialization.h"
@@ -36,7 +36,31 @@
     #include "test_arrow_file_name.h"
 #endif
 
-// ***** 3D NGTDM compatibility *****
+
+//***** 2D contour and multicontour *****
+
+TEST(TEST_NYXUS, TEST_CONTOUR_MULTI_1) {
+	ASSERT_NO_THROW(test_contour_multi_disconnected());
+}
+
+TEST(TEST_NYXUS, TEST_CONTOUR_SINGLE) {
+	ASSERT_NO_THROW(test_contour_single());
+}
+
+TEST(TEST_NYXUS, TEST_CONTOUR_SINGLE_TAILED) {
+	ASSERT_NO_THROW(test_contour_single_tailed());
+}
+
+TEST(TEST_NYXUS, TEST_CONTOUR_VOID) {
+	ASSERT_NO_THROW(test_contour_void());
+}
+
+TEST(TEST_NYXUS, TEST_CONTOUR_MULTI_2) {
+	ASSERT_NO_THROW(test_contour_multi_connected());
+}
+
+
+//***** 3D NGTDM compatibility *****
 
 TEST(TEST_NYXUS, TEST_COMPAT_3NGTDM_BUSYNESS) {
 	ASSERT_NO_THROW(test_compat_3NGTDM_BUSYNESS());
@@ -63,7 +87,7 @@ TEST(TEST_NYXUS, TEST_3NGTD_MATRIX_CORRECTNESS) {
 }
 
 
-// ***** 3D GLRLM compatibility *****
+//***** 3D GLRLM compatibility *****
 
 TEST(TEST_NYXUS, TEST_COMPAT_3GLRL_MATRIX_CORRECTNESS) {
 	ASSERT_NO_THROW(test_glrl_matrix_correctness());
@@ -134,7 +158,7 @@ TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_SRLGLE) {
 }
 
 
-// ***** 3D GLSZM compatibility *****
+//***** 3D GLSZM compatibility *****
 
 TEST(TEST_NYXUS, TEST_COMPAT_3GLSZ_MATRIX_CORRECTNESS) {
 	ASSERT_NO_THROW (test_glsz_matrix_correctness());
@@ -205,7 +229,7 @@ TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_ZE) {
 }
 
 
-// ***** 3D GLDM compatibility *****
+//***** 3D GLDM compatibility *****
 
 TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_DE) {
 	ASSERT_NO_THROW (test_compat_3GLDM_DE());
@@ -263,7 +287,7 @@ TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_SDLGLE) {
 	ASSERT_NO_THROW (test_compat_3GLDM_SDLGLE());
 }
 
-// ***** 3D GLCM compatibility *****
+//***** 3D GLCM compatibility *****
 
 TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_ACOR) {
 	ASSERT_NO_THROW(test_compat_3glcm_ACOR());
@@ -353,7 +377,8 @@ TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_SUM_ENTROPY) {
 	ASSERT_NO_THROW(test_compat_3glcm_sum_entropy());
 }
 
-// ***** Apache I/O tests *****
+
+//***** Apache I/O tests *****
 
 #ifdef USE_ARROW
 
@@ -371,7 +396,8 @@ TEST(TEST_NYXUS, TEST_PARQUET) {
 
 #endif
 
-// ***** 3D shape *****
+
+//***** 3D shape *****
 
 TEST(TEST_NYXUS, TEST_3SHAPE_3MESH_VOLUME) {
 	ASSERT_NO_THROW(test_3shape_meshvolume());
@@ -414,7 +440,7 @@ TEST(TEST_NYXUS, TEST_3SHAPE_COVMATRIX_AND_EIGENVALS) {
 }
 
 
-// ***** 3D GLDZM *****
+//***** 3D GLDZM regression *****
 
 TEST(TEST_NYXUS, TEST_3GLDZM_GLM) {
 	ASSERT_NO_THROW(test_3GLDZM_GLM());
@@ -484,7 +510,8 @@ TEST(TEST_NYXUS, TEST_3GLDZM_ZDE) {
 	ASSERT_NO_THROW(test_3GLDZM_ZDE());
 }
 
-// ***** 3D NGLDM *****
+
+//***** 3D NGLDM regression *****
 
 TEST(TEST_NYXUS, TEST_3NGLDM_LDE) {
 	ASSERT_NO_THROW(test_3ngldm_lde());
@@ -562,28 +589,31 @@ TEST(TEST_NYXUS, TEST_3NGLDM_DCENE) {
 	ASSERT_NO_THROW(test_3ngldm_dcene());
 }
 
-//*************************
+
+//***** Gabor regression ***** 
+
+TEST(TEST_NYXUS, TEST_GABOR){
+    test_gabor();
+	
+    #ifdef USE_GPU
+        test_gabor(true);
+    #endif
+}
+
+
+//***** helper functionality ***** 
 
 TEST(TEST_NYXUS, TEST_ROI_BLACKLISTING)
 {
 	ASSERT_NO_THROW(test_roi_blacklist());
 }
 
-TEST(TEST_NYXUS, TEST_GABOR){
-    test_gabor();
-	
-	#ifdef USE_GPU
-		test_gabor(true);
-	#endif
-}
-
 TEST(TEST_NYXUS, TEST_INITIALIZATION) {
 	test_initialization();
 }
 
-//
-//==== Pixel intensity features
-//
+
+//***** Pixel intensity features ***** 
 
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_INTEGRATED_INTENSITY) 
 {
@@ -670,20 +700,16 @@ TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_UNIFORMITY_PIU)
 	ASSERT_NO_THROW(test_pixel_intensity_uniformity_piu());
 }
 
-//
-//==== Morphology features
-//
+
+//***** Morphology features ***** 
 
 TEST(TEST_NYXUS, TEST_MORPHOLOGY_PERIMETER) 
 {
 	ASSERT_NO_THROW(test_morphology_perimeter());
 }
 
-//
-//==== IBSI tests
-//
 
-// NGTDM
+//***** IBSI tests of NGTDM
 
 TEST(TEST_NYXUS, TEST_IBSI_NGTDM_COARSENESS)
 {
@@ -711,8 +737,7 @@ TEST(TEST_NYXUS, TEST_IBSI_NGTDM_STRENGTH)
 }
 
 
-
-// GLCM tests
+//***** IBSI tests of GLCM ***** 
 
 TEST(TEST_NYXUS, TEST_IBSI_GLCM_ACOR)
 {
@@ -844,7 +869,7 @@ TEST(TEST_NYXUS, TEST_IBSI_GLCM_SUM_ENTROPY)
 	ASSERT_NO_THROW(test_ibsi_glcm_sum_entropy());
 }
 
-// GLDM tests
+//***** IBSI tests of GLDM ***** 
 
 TEST(TEST_NYXUS, TEST_IBSI_GLDM_SDE) 
 {
@@ -916,7 +941,8 @@ TEST(TEST_NYXUS, TEST_IBSI_GLDM_DE)
 	ASSERT_NO_THROW(test_ibsi_gldm_de());
 }
 
-// GLRLM
+
+//***** IBSI tests of GLRLM ***** 
 
 TEST(TEST_NYXUS, TEST_IBSI_GLRLM_SRE)
 {
@@ -983,12 +1009,10 @@ TEST(TEST_NYXUS, TEST_IBSI_GLRLM_RP)
 	ASSERT_NO_THROW(test_ibsi_glrlm_rp());
 }
 
-
 TEST(TEST_NYXUS, TEST_IBSI_GLRLM_GLV)
 {
 	ASSERT_NO_THROW(test_ibsi_glrlm_glv());
 }
-
 
 TEST(TEST_NYXUS, TEST_IBSI_GLRLM_RV)
 {
@@ -1000,7 +1024,8 @@ TEST(TEST_NYXUS, TEST_IBSI_GLRLM_RE)
 	ASSERT_NO_THROW(test_ibsi_glrlm_re());
 }
 
-// GLSZM
+
+//***** IBSI tests of GLSZM ***** 
 
 TEST(TEST_NYXUS, TEST_IBSI_GLSZM_SAE) {
 	ASSERT_NO_THROW(test_ibsi_glszm_sae());
@@ -1066,7 +1091,8 @@ TEST(TEST_NYXUS, TEST_IBSI_GLSZM_ZE) {
 	ASSERT_NO_THROW(test_ibsi_glszm_ze());
 }
 
-//------ NGLDM
+
+//***** IBSI tests of NGLDM ***** 
 
 TEST(TEST_NYXUS, TEST_IBSI_NGLDM_MATRIX_CORRECTNESS_IBSI)
 {
@@ -1078,7 +1104,8 @@ TEST(TEST_NYXUS, TEST_IBSI_NGLDM_MATRIX_CORRECTNESS_NONIBSI)
 	ASSERT_NO_THROW(test_ibsi_NGLDM_matrix_correctness_NONIBSI());
 }
 
-// INTENSITY
+
+//***** 2D intensity ***** 
 
 TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_MEAN) 
 {
@@ -1089,7 +1116,6 @@ TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_SKEWNESS)
 {
 	ASSERT_NO_THROW(test_ibsi_skewness_intensity());
 }
-
 
 TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_KURTOSIS) 
 {
@@ -1141,9 +1167,8 @@ TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_ROOT_MEAN_SQUARED)
 	ASSERT_NO_THROW(test_ibsi_root_mean_squared_intensity());
 }
 
-//==== Tests of texture feature extraction without binning
 
-// GLDM tests
+//***** 2D GLDM regression ***** 
 
 TEST(TEST_NYXUS, TEST_GLDM_SDE) 
 {
@@ -1215,7 +1240,8 @@ TEST(TEST_NYXUS, TEST_GLDM_DE)
 	ASSERT_NO_THROW(test_gldm_de());
 }
 
-// GLRLM
+
+//***** 2D GLRLM regression ***** 
 
 TEST(TEST_NYXUS, TEST_GLRLM_SRE)
 {
@@ -1297,7 +1323,8 @@ TEST(TEST_NYXUS, TEST_GLRLM_RE)
 	ASSERT_NO_THROW(test_glrlm_re());
 }
 
-//------ GLDZM
+
+//***** 2D GLDZM regression ***** 
 
 TEST(TEST_NYXUS, TEST_IBSI_GLDZM_MATRIX_CORRECTNESS)
 {
@@ -1374,7 +1401,8 @@ TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_ZDE)
 	ASSERT_NO_THROW(test_ibsi_GLDZM_ZDE());
 }
 
-// GLSZM
+
+//***** 2D GLSZM regression ***** 
 
 TEST(TEST_NYXUS, TEST_GLSZM_SAE) {
 	ASSERT_NO_THROW(test_glszm_sae());
@@ -1440,7 +1468,8 @@ TEST(TEST_NYXUS, TEST_GLSZM_ZE) {
 	ASSERT_NO_THROW(test_glszm_ze());
 }
 
-// NGTDM
+
+//***** 2D NGTDM regression ***** 
 
 TEST(TEST_NYXUS, TEST_NGTDM_COARSENESS) 
 {
@@ -1497,7 +1526,8 @@ TEST(TEST_IMAGE_QUALITY, TEST_SHARPNESS)
 	ASSERT_NO_THROW(test_sharpness_feature());
 }
 
-// ***** 3D i/o *****
+
+//***** 3D i/o ***** 
 
 TEST(TEST_NYXUS, TEST_3D_NIFTY_LOADER) {
 	ASSERT_NO_THROW (test_3d_nifti_loader());
@@ -1507,7 +1537,8 @@ TEST(TEST_NYXUS, TEST_3D_NIFTY_DACC_CONSISTENCY) {
 	ASSERT_NO_THROW (test_3d_nifti_data_access_consistency());
 }
 
-// ***** 3D voxels intensity *****
+
+//***** 3D intensity *****
 
 TEST(TEST_NYXUS, TEST_3INTEN_COV) {
 	ASSERT_NO_THROW (test_3inten_cov());
@@ -1652,6 +1683,7 @@ TEST(TEST_NYXUS, TEST_3INTEN_VARIANCE) {
 TEST(TEST_NYXUS, TEST_3INTEN_VARIANCEBIASED) {
 	ASSERT_NO_THROW (test_3inten_variancebiased());
 }
+
 
 int main(int argc, char **argv) 
 {

@@ -15,6 +15,10 @@ void BasicGeomoms2D::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
     calcNormCentralMoments(c);
     calcHuInvariants(c);
 
+    // flattened multicontour
+    std::vector<Pixel2> K;
+    r.merge_multicontour(K);
+
     // Prepare weighted pixel cloud
     pixcloud_NT w;
     w.init(r.label, "BasicGeomoms2D-osized_calculate-w");
@@ -23,7 +27,7 @@ void BasicGeomoms2D::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
     for (auto p : c)
     {
         // pixel distance
-        auto mind2 = p.min_sqdist(r.contour);
+        auto mind2 = p.min_sqdist (K);
         double dist = std::sqrt(mind2);
 
         // adjusted intensity

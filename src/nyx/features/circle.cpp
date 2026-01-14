@@ -11,8 +11,11 @@ EnclosingInscribingCircumscribingCircleFeature::EnclosingInscribingCircumscribin
 
 void EnclosingInscribingCircumscribingCircleFeature::calculate (LR& r, const Fsettings& s)
 {
-    d_minEnclo = calculate_min_enclosing_circle_diam (r.contour);
-    std::tie(d_inscr, d_circum) = calculate_inscribing_circumscribing_circle (r.contour, r.fvals[(int)Feature2D::CENTROID_X][0], r.fvals[(int)Feature2D::CENTROID_Y][0]);
+    std::vector<Pixel2> K;
+    r.merge_multicontour(K);
+
+    d_minEnclo = calculate_min_enclosing_circle_diam (K);
+    std::tie(d_inscr, d_circum) = calculate_inscribing_circumscribing_circle (K, r.fvals[(int)Feature2D::CENTROID_X][0], r.fvals[(int)Feature2D::CENTROID_Y][0]);
 }
 
 void EnclosingInscribingCircumscribingCircleFeature::save_value(std::vector<std::vector<double>>& fvals)
@@ -251,7 +254,7 @@ void EnclosingInscribingCircumscribingCircleFeature::parallel_process_1_batch (s
             continue;
 
         // Skip if the contour, convex hull, and neighbors are unavailable, otherwise the related features will be == NAN. Those feature will be equal to the default unassigned value.
-        if (r.contour.size() == 0)
+        if (r.multicontour_.empty() || r.multicontour_[0].empty())
             continue;
 
         EnclosingInscribingCircumscribingCircleFeature f;

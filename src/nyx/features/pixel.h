@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <string>
 #include <vector>
 
 using PixIntens = unsigned int;
@@ -137,6 +138,13 @@ struct Pixel2 : public Point2i
 
 	/// @brief Returns the angle in radians between this pixel and 'other' relative to the origin 
 	double angle(const Pixel2& other) const;
+
+	/// @brief Returns readable position and intensity
+	std::string to_string () const
+	{
+		std::string s = std::to_string(this->x) + "," + std::to_string(this->y) + "=" + std::to_string(this->inten);
+		return s;
+	}
 
 };
 

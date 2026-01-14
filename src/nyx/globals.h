@@ -109,6 +109,13 @@ namespace Nyxus
 		const int H,
 		const std::string& head,
 		const std::string& tail);
+	void dump_2d_image_with_vertex_set (
+		const std::vector<PixIntens>& I,
+		const std::list<Pixel2>& U,
+		const int W,
+		const int H,
+		const std::string& head,
+		const std::string& tail);
 	void dump_2d_image_1d_layout(const std::vector<PixIntens>& I, const int W, const int H, const std::string& head, const std::string& tail);
 	// Shows a message in CLI ('send_to_stderr': stdout or stderr) or Python terminal
 	void sureprint(const std::string& msg, bool send_to_stderr=false);
