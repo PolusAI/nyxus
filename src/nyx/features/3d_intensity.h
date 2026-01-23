@@ -8,7 +8,11 @@ class D3_VoxelIntensityFeatures: public FeatureMethod
 public:
 	D3_VoxelIntensityFeatures();
 	void calculate(LR& r, const Fsettings& s, const Dataset& ds);
-	void calculate(LR& r, const Fsettings& s) { throw std::runtime_error("illegal call of D3_VoxelIntensityFeatures::calculate(LR&, const Fsettings&)"); }
+	void calculate(LR& r, const Fsettings& s) { 
+		std::string erm = std::string("error: illegal call of D3_VoxelIntensityFeatures::calculate(LR&, const Fsettings&) @ ") + std::string(__FILE__) + std::string(":") + std::to_string(__LINE__);
+		std::cerr << "\n\n" << erm << "\n\n"; 
+		throw std::runtime_error(erm); 
+	}
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
 	void osized_calculate(LR& r, const Fsettings& s, ImageLoader& ldr) { throw std::runtime_error("illegal call of D3_VoxelIntensityFeatures::osized_calculate(LR&, const Fsettings&, ImageLoader&)"); }
 	void osized_calculate(LR& r, const Fsettings& s, const Dataset& ds, ImageLoader& ldr);

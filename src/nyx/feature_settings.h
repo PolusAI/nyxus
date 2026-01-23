@@ -45,6 +45,7 @@ enum class NyxSetting : int
 };
 
 // common settings
+#define STNGS_MISSING(obj) (obj.size() < (int)NyxSetting::__COUNT__)
 #define STNGS_NAN(obj) (obj[(int)NyxSetting::SOFTNAN].rval)
 #define STNGS_TINY(obj) (obj[(int)NyxSetting::TINY].rval)
 #define STNGS_NGREYS(obj) (obj[(int)NyxSetting::GREYDEPTH].ival)
