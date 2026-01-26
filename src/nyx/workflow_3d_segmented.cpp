@@ -245,7 +245,7 @@ namespace Nyxus
 					}
 					else
 					{
-						if (!save_features_2_buffer(env.theResultsCache, env))
+						if (!save_features_2_buffer(env.theResultsCache, env, t))
 						{
 							std::cout << "error saving results to a buffer, details: " << __FILE__ << ":" << __LINE__ << std::endl;
 							return 2;
