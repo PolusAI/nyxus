@@ -21,11 +21,11 @@
 #include "test_ngtdm.h"
 #include "test_roi_blacklist.h"
 #include "test_image_quality.h"
-#include "test_3d_inten.h"
 #include "test_3d_nifti.h"
 #include "test_3d_shape.h"
 #include "test_3d_gldzm.h"
 #include "test_3d_ngldm.h"
+#include "test_compat_3d_fo_radiomics.h"
 #include "test_compat_3d_glcm.h"
 #include "test_compat_3d_gldm.h"
 #include "test_compat_3d_ngtdm.h"
@@ -57,6 +57,77 @@ TEST(TEST_NYXUS, TEST_CONTOUR_VOID) {
 
 TEST(TEST_NYXUS, TEST_CONTOUR_MULTI_2) {
 	ASSERT_NO_THROW(test_contour_multi_connected());
+}
+
+
+//***** first-order compatibility *****
+
+TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3P10) {
+	ASSERT_NO_THROW(test_compat_radiomics_3fo_feature(Nyxus::Feature3D::P10, "3P10"));
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3P90) {
+	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::P90, "3P90"));
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3ENERGY) {
+	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::ENERGY, "3ENERGY"));
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3ENTROPY) {
+	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::ENTROPY, "3ENTROPY"));
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3INTERQUARTILE_RANGE) {
+	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::INTERQUARTILE_RANGE, "3INTERQUARTILE_RANGE"));
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3KURTOSIS) {
+	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::KURTOSIS, "3KURTOSIS"));
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3MAX) {
+	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::MAX, "3MAX"));
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3MEAN_ABSOLUTE_DEVIATION) {
+	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::MEAN_ABSOLUTE_DEVIATION, "3MEAN_ABSOLUTE_DEVIATION"));
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3MEAN) {
+	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::MEAN, "3MEAN"));
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3MEDIAN) {
+	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::MEDIAN, "3MEDIAN"));
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3MIN) {
+	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::MIN, "3MIN"));
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3RANGE) {
+	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::RANGE, "3RANGE"));
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3ROBUST_MEAN_ABSOLUTE_DEVIATION) {
+	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::ROBUST_MEAN_ABSOLUTE_DEVIATION, "3ROBUST_MEAN_ABSOLUTE_DEVIATION"));
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3ROOT_MEAN_SQUARED) {
+	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::ROOT_MEAN_SQUARED, "3ROOT_MEAN_SQUARED"));
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3SKEWNESS) {
+	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::SKEWNESS, "3SKEWNESS"));
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3UNIFORMITY) {
+	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::UNIFORMITY, "3UNIFORMITY"));
+}
+
+TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3VARIANCE) {
+	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::VARIANCE, "3VARIANCE"));
 }
 
 
@@ -1535,153 +1606,6 @@ TEST(TEST_NYXUS, TEST_3D_NIFTY_LOADER) {
 
 TEST(TEST_NYXUS, TEST_3D_NIFTY_DACC_CONSISTENCY) {
 	ASSERT_NO_THROW (test_3d_nifti_data_access_consistency());
-}
-
-
-//***** 3D intensity *****
-
-TEST(TEST_NYXUS, TEST_3INTEN_COV) {
-	ASSERT_NO_THROW (test_3inten_cov());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_CIIR) {
-	ASSERT_NO_THROW (test_3inten_ciir());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_ENERGY) {
-	ASSERT_NO_THROW (test_3inten_energy());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_ENTROPY) {
-	ASSERT_NO_THROW (test_3inten_entropy());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_EXCKURTOSIS) {
-	ASSERT_NO_THROW (test_3inten_exckurtosis());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_HYPERFLATNESS) {
-	ASSERT_NO_THROW (test_3inten_hyperflatness());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_HYPERSKEWNESS) {
-	ASSERT_NO_THROW (test_3inten_hyperskewness());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_II) {
-	ASSERT_NO_THROW (test_3inten_ii());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_IQR) {
-	ASSERT_NO_THROW (test_3inten_iqr());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_KURTOSIS) {
-	ASSERT_NO_THROW (test_3inten_kurtosis());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_MAX) {
-	ASSERT_NO_THROW (test_3inten_max());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_MEAN) {
-	ASSERT_NO_THROW (test_3inten_mean());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_MAD) {
-	ASSERT_NO_THROW (test_3inten_mad());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_MEDIAN) {
-	ASSERT_NO_THROW (test_3inten_median());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_MEDIANABSDEV) {
-	ASSERT_NO_THROW (test_3inten_medianabsdev());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_MIN) {
-	ASSERT_NO_THROW (test_3inten_min());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_MODE) {
-	ASSERT_NO_THROW (test_3inten_mode());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_P01) {
-	ASSERT_NO_THROW (test_3inten_p01());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_P10) {
-	ASSERT_NO_THROW (test_3inten_p10());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_P25) {
-	ASSERT_NO_THROW (test_3inten_p25());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_P75) {
-	ASSERT_NO_THROW (test_3inten_p75());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_P90) {
-	ASSERT_NO_THROW (test_3inten_p90());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_P99) {
-	ASSERT_NO_THROW (test_3inten_p99());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_QCOD) {
-	ASSERT_NO_THROW (test_3inten_qcod());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_RANGE) {
-	ASSERT_NO_THROW (test_3inten_range());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_ROBUSTMEAN) {
-	ASSERT_NO_THROW (test_3inten_robustmean());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_ROBUSTMAD) {
-	ASSERT_NO_THROW (test_3inten_dobustmad());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_RMS) {
-	ASSERT_NO_THROW (test_3inten_rms());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_SKEWNESS) {
-	ASSERT_NO_THROW (test_3inten_skewness());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_STD) {
-	ASSERT_NO_THROW (test_3inten_std());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_STDBIASED) {
-	ASSERT_NO_THROW (test_3inten_stdbiased());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_SE) {
-	ASSERT_NO_THROW (test_3inten_se());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_UNIFORMITY) {
-	ASSERT_NO_THROW (test_3inten_uniformity());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_UNIFORMITYPIU) {
-	ASSERT_NO_THROW (test_3inten_uniformitypiu());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_VARIANCE) {
-	ASSERT_NO_THROW (test_3inten_variance());
-}
-
-TEST(TEST_NYXUS, TEST_3INTEN_VARIANCEBIASED) {
-	ASSERT_NO_THROW (test_3inten_variancebiased());
 }
 
 

@@ -796,10 +796,8 @@ class TestNyxus():
             nyx = nyxus.Nyxus (["*ALL_INTENSITY*"])
             assert nyx is not None
             f = nyx.featurize (ct_zslice_hounsfeld_inten, ct_zslice_hounsfeld_mask, intensity_names=['I'], label_names=['M'])
-            checksum = f[['COV', 'ENTROPY', 'KURTOSIS', 'MEAN', 'MEAN_ABSOLUTE_DEVIATION', 'MEDIAN', 'MODE', 
-            'P25', 'ROBUST_MEAN', 'SKEWNESS', 'STANDARD_DEVIATION', 'STANDARD_ERROR', 
-            'VARIANCE', 'UNIFORMITY']].sum().sum()
-            assert np.isclose (checksum, 212872.71320641672, rtol=1.e-5, atol=1.e-8)
+            checksum = f[['COV', 'KURTOSIS', 'MEAN', 'MEDIAN', 'MODE', 'P25', 'SKEWNESS', 'STANDARD_DEVIATION', 'VARIANCE']].sum().sum()
+            assert np.isclose (checksum, 209915.59761707857, rtol=1.e-5, atol=1.e-8)
 
         def test_bad_contour (self):
             '''

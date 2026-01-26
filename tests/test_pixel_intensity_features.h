@@ -26,9 +26,15 @@ void test_pixel_intensity_integrated_intensity()
     // Anisotropy (none)
     roidata.make_nonanisotropic_aabb();
 
+    // settings important for this feature
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::GREYDEPTH].ival = 20;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::IBSI].bval = false;
+
     // Calculate features
     PixelIntensityFeatures f;
-    Fsettings s;
     ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
@@ -392,9 +398,15 @@ void test_pixel_intensity_entropy()
     // Anisotropy (none)
     roidata.make_nonanisotropic_aabb();
 
+    // settings important for this feature
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::GREYDEPTH].ival = 20;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::IBSI].bval = false;
+
     // Calculate features
     PixelIntensityFeatures f;
-    Fsettings s;
     ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
@@ -402,7 +414,7 @@ void test_pixel_intensity_entropy()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::ENTROPY][0], 2.898016861688313));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::ENTROPY][0], 4.12733));
 }
 
 void test_pixel_intensity_energy()
@@ -444,9 +456,15 @@ void test_pixel_intensity_uniformity()
     // Anisotropy (none)
     roidata.make_nonanisotropic_aabb();
 
+    // settings important for this feature
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::GREYDEPTH].ival = 20;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::IBSI].bval = false;
+
     // Calculate features
     PixelIntensityFeatures f;
-    Fsettings s;
     ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values
@@ -454,7 +472,7 @@ void test_pixel_intensity_uniformity()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::UNIFORMITY][0], 322, 100)); // Using 1% tolerance vs MATLAB
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::UNIFORMITY][0], 0.0647664, 100)); // Using 1% tolerance vs MATLAB
 }
 
 void test_pixel_intensity_uniformity_piu()
@@ -467,9 +485,15 @@ void test_pixel_intensity_uniformity_piu()
     roidata.slide_idx = -1; // we don't have a real slide for this test ROI
     load_test_roi_data(roidata, pixelIntensityFeaturesTestData, sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
 
+    // settings important for this feature
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::GREYDEPTH].ival = 20;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::IBSI].bval = false;
+
     // Calculate features
     PixelIntensityFeatures f;
-    Fsettings s;
     ASSERT_NO_THROW(f.calculate(roidata, s, ds));
 
     // Retrieve the feature values

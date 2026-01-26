@@ -1,3 +1,4 @@
+#include "../constants.h"
 #include "../environment.h"
 #include "histogram.h"
 #include "intensity.h"
@@ -149,8 +150,9 @@ void PixelIntensityFeatures::calculate (LR& r, const Fsettings & fsett, const Da
 		return;
 
 	// P10, 25, 75, 90, IQR, QCOD, RMAD, entropy, uniformity
+	int n_radiomicsGreyBins = STNGS_MISSING(fsett) ? DEFAULT_NUM_HISTO_BINS : STNGS_NGREYS(fsett);
 	TrivialHistogram H;
-	H.initialize(r.aux_min, r.aux_max, r.raw_pixels);
+	H.initialize (n_radiomicsGreyBins, r.aux_min, r.aux_max, r.raw_pixels);
 	auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
 	val_MEDIAN = median_;
 	val_P01 = p01_;
@@ -272,8 +274,9 @@ void PixelIntensityFeatures::osized_calculate (LR& r, const Fsettings& stng, con
 		return;
 
 	// P10, 25, 75, 90, IQR, QCOD, RMAD, entropy, uniformity
+	int n_greybins = STNGS_NGREYS(stng);
 	TrivialHistogram H;
-	H.initialize(r.aux_min, r.aux_max, r.raw_pixels_NT);
+	H.initialize (n_greybins, r.aux_min, r.aux_max, r.raw_pixels_NT);
 	auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
 	val_MEDIAN = median_;
 	val_P01 = p01_;
