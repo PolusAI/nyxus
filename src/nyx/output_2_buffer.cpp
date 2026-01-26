@@ -273,7 +273,7 @@ namespace Nyxus
 	}
 
 	/// @brief Copies ROIs' feature values into a ResultsCache structure that will then shape them as a table
-	bool save_features_2_buffer (ResultsCache& rescache, Environment & env)
+	bool save_features_2_buffer (ResultsCache& rescache, Environment & env, size_t t_index)
 	{
 		std::vector<int> L{ env.uniqueLabels.begin(), env.uniqueLabels.end() };
 		std::sort(L.begin(), L.end());
@@ -423,7 +423,7 @@ namespace Nyxus
 			rescache.add_string (intfname);
 			rescache.add_string (segfname);
 			rescache.add_numeric (l);
-			rescache.add_numeric (DEFAULT_T_INDEX);
+			rescache.add_numeric (t_index);
 
 			for (auto& enabdF : F)
 			{

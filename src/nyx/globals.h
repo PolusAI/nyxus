@@ -135,7 +135,7 @@ namespace Nyxus
 	extern const std::vector<std::string> mandatory_output_columns;
 	bool save_features_2_csv (Environment & env, const std::string & intFpath, const std::string & segFpath, const std::string & outputDir, size_t t_index, bool need_aggregation);
 	bool save_features_2_csv_wholeslide (Environment & env, const LR & r, const std::string & ifpath, const std::string & mfpath, const std::string & outdir, size_t t_index);
-	bool save_features_2_buffer (ResultsCache& results_cache, Environment& env);
+	bool save_features_2_buffer (ResultsCache &results_cache, Environment &env, size_t t_index);
 	bool save_features_2_buffer_wholeslide(
 		ResultsCache& rescache,
 		Environment& env, 

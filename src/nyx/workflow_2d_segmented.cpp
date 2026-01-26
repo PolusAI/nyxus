@@ -16,6 +16,7 @@
 	namespace py = pybind11;
 #endif
 
+#include "constants.h"
 #include "dirs_and_files.h"
 #include "environment.h"
 #include "features/contour.h"
@@ -338,7 +339,7 @@ namespace Nyxus
 				}
 				else
 				{
-					ok = save_features_2_buffer (env.theResultsCache, env);
+					ok = save_features_2_buffer (env.theResultsCache, env, DEFAULT_T_INDEX);
 
 					if (ok == false)
 					{

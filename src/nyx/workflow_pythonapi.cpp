@@ -14,6 +14,7 @@
 #include <pybind11/numpy.h>
 namespace py = pybind11;
 
+#include "constants.h"
 #include "dirs_and_files.h"
 #include "environment.h"
 #include "globals.h"
@@ -148,7 +149,7 @@ namespace Nyxus
 			} 
 			else 
 			{
-				if (! save_features_2_buffer(env.theResultsCache, env))
+				if (! save_features_2_buffer(env.theResultsCache, env, DEFAULT_T_INDEX))
 					return { "error saving results to a buffer" };
 			}
 
