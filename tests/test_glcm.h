@@ -59,7 +59,8 @@ void test_glcm_feature(const Feature2D& feature_, const std::string& feature_nam
     //
 
     // Set feature's state
-    GLCMFeature::offset = 1;
+    s[(int)NyxSetting::GLCM_GREYDEPTH].ival = 100;   // important
+    s[(int)NyxSetting::GLCM_OFFSET].ival = 1;   // important
     GLCMFeature::symmetric_glcm = false;
     GLCMFeature::angles = { 0, 45, 90, 135 };
 

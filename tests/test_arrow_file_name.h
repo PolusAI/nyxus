@@ -54,7 +54,7 @@ void test_file_naming () {
     auto num_deleted = fs::remove_all(temp);
 
     if (num_deleted == 0) {
-        std::cerr << "WARNING: Temporary directory at " << temp.u8string() << " could not be deleted." << std::endl;
+        std::cerr << "WARNING: Temporary directory at " << temp.string() << " could not be deleted." << std::endl;
     }
 }
 
@@ -80,9 +80,9 @@ void test_file_naming_case_1 (const fs::path& temp_dir) {
         }
     }
 
-    auto result = get_arrow_filename(output_path.u8string(), "NyxusFeatures", SaveOption::saveArrowIPC);
+    auto result = get_arrow_filename(output_path.string(), "NyxusFeatures", SaveOption::saveArrowIPC);
 
-    std::string expected = temp_dir.u8string() + "foo1/bar1/NyxusFeatures.arrow";
+    std::string expected = temp_dir.string() + "foo1/bar1/NyxusFeatures.arrow";
 
     ASSERT_TRUE(result == expected);
 }
@@ -101,9 +101,9 @@ void test_file_naming_case_2 (const fs::path& temp_dir) {
 
     output_path = output_path / "bar2";
 
-    auto result = get_arrow_filename(output_path.u8string(), "NyxusFeatures", SaveOption::saveArrowIPC);
+    auto result = get_arrow_filename(output_path.string(), "NyxusFeatures", SaveOption::saveArrowIPC);
 
-    std::string expected = temp_dir.u8string() + "foo2/bar2.arrow";
+    std::string expected = temp_dir.string() + "foo2/bar2.arrow";
 
     ASSERT_TRUE(result == expected);
 }
@@ -111,9 +111,9 @@ void test_file_naming_case_2 (const fs::path& temp_dir) {
 void test_file_naming_case_3 (const fs::path& temp_dir) {
     fs::path output_path = temp_dir/"foo3/bar3/";
 
-    auto result = get_arrow_filename(output_path.u8string(), "NyxusFeatures", SaveOption::saveArrowIPC);
+    auto result = get_arrow_filename(output_path.string(), "NyxusFeatures", SaveOption::saveArrowIPC);
 
-    std::string expected = temp_dir.u8string() + "foo3/bar3/NyxusFeatures.arrow";
+    std::string expected = temp_dir.string() + "foo3/bar3/NyxusFeatures.arrow";
 
     ASSERT_TRUE(result == expected);
 }
@@ -140,9 +140,9 @@ void test_file_naming_case_4 (const fs::path& temp_dir) {
         }
     }
 
-    auto result = get_arrow_filename(output_path.u8string(), "NyxusFeatures", SaveOption::saveArrowIPC);
+    auto result = get_arrow_filename(output_path.string(), "NyxusFeatures", SaveOption::saveArrowIPC);
 
-    std::string expected = temp_dir.u8string() + "foo4/bar4.ext/NyxusFeatures.arrow";
+    std::string expected = temp_dir.string() + "foo4/bar4.ext/NyxusFeatures.arrow";
 
     ASSERT_TRUE(result == expected);
     
@@ -161,9 +161,9 @@ void test_file_naming_case_5 (const fs::path& temp_dir) {
 
     output_path = output_path / "bar4.arrow";
 
-    auto result = get_arrow_filename(output_path.u8string(), "NyxusFeatures", SaveOption::saveArrowIPC);
+    auto result = get_arrow_filename(output_path.string(), "NyxusFeatures", SaveOption::saveArrowIPC);
 
-    std::string expected = temp_dir.u8string() + "foo4/bar4.arrow";
+    std::string expected = temp_dir.string() + "foo4/bar4.arrow";
 
     ASSERT_TRUE(result == expected);
 }

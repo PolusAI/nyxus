@@ -833,7 +833,7 @@ namespace Nyxus
 
 		// other columns
 		std::vector<std::string> textcols;
-		textcols.push_back ((fs::path(ifpath)).filename().u8string());
+		textcols.push_back ((fs::path(ifpath)).filename().string());
 		textcols.push_back ("");
 		int roilabl = r.label; // whole-slide roi #
 
@@ -873,8 +873,8 @@ namespace Nyxus
 			fs::path pseg (sli.fname_seg), 
 				pint (sli.fname_int);
 			std::vector<std::string> filenames;
-			filenames.push_back(pint.filename().u8string());
-			filenames.push_back(pseg.filename().u8string());
+			filenames.push_back(pint.filename().string());
+			filenames.push_back(pseg.filename().string());
 
 			for (auto& enabdF : F)
 			{

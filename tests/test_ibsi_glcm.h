@@ -55,6 +55,10 @@ void test_ibsi_glcm_feature(const Feature2D& feature_, const std::string& featur
     s[(int)NyxSetting::USEGPU].bval = false;
     s[(int)NyxSetting::VERBOSLVL].ival = 0;
     s[(int)NyxSetting::IBSI].bval = true;   // activate the IBSI compliance mode
+
+    s[(int)NyxSetting::GLCM_GREYDEPTH].ival = 0;   // needs to be ==0 in the IBSI mode
+    s[(int)NyxSetting::GLCM_OFFSET].ival = 1;   // important
+
     //
     
     int feature = int(feature_);

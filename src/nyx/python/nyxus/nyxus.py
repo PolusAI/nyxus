@@ -224,6 +224,46 @@ class Nyxus:
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
 
+
+    def set_metaparam(
+        self, 
+        paramval: str):
+        """ Sets feature-specific parameter to a new value
+        Example: nyx.set_metaparam("glcm/greydepth=25")
+
+        Parameters
+        -------------
+        paramval : str
+        feature-specific value, for example: "3glcm/greydepth=25"
+
+        Returns
+        ---------
+        success and optional error details
+        """
+        ok,errordetails = set_metaparam_imp (id(self), paramval)
+        if ok==False:
+            raise  ValueError (f'Invalid metaparameter value {paramval}: {errordetails}')
+
+    def get_metaparam (
+        self, 
+        paramname: str):
+        """ Gets feature-specific parameter
+        Example: n_greys = nyx.get_metaparam("glcm/greydepth")
+
+        Parameters
+        -------------
+        paramval : str
+        feature-specific value, for example: "3glcm/greydepth"
+
+        Returns
+        ---------
+        requested value or throws an exception
+        """
+        val,errordetails = get_metaparam_imp (id(self), paramname)
+        if len(errordetails) > 0:
+            raise  NameError (f'Invalid metaparameter name {paramname}: {errordetails}')
+        return val
+
     def featurize_directory(
         self,
         intensity_dir: str,
@@ -1004,6 +1044,7 @@ class Nyxus3D:
         self, 
         paramval: str):
         """ Sets feature-specific parameter to a new value
+        Example: nyx.set_metaparam("3glcm/greydepth=25")
 
         Parameters
         -------------
@@ -1022,6 +1063,7 @@ class Nyxus3D:
         self, 
         paramname: str):
         """ Gets feature-specific parameter
+        Example: n_greys = nyx.get_metaparam("3glcm/greydepth")
 
         Parameters
         -------------

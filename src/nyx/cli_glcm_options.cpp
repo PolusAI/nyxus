@@ -34,7 +34,7 @@ bool GLCMoptions::parse_input()
 		}
 
 		// set feature class parameter
-		GLCMFeature::offset = x;
+		offset_ = x;
 	}
 
 	return true;
