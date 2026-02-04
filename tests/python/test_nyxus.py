@@ -379,6 +379,8 @@ class TestNyxus():
             
             names = ["test_name_1", "test_name_2", "test_name_3", "test_name_4"]
 
+            cpu_nyx.set_metaparam ("glcm/greydepth=100")
+            cpu_nyx.set_metaparam ("glcm/offset=1")
             cpu_features = cpu_nyx.featurize(intens, seg, names, names)
             
             assert cpu_nyx.error_message == ''
