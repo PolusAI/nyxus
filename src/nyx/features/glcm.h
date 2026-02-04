@@ -123,7 +123,6 @@ public:
 		Nyxus::Feature2D::GLCM_SUMVARIANCE_AVE
 	};
 
-	static int offset;	// default value: 1
 	static bool symmetric_glcm;	// default value: false
 	static std::vector<int> angles;	// default value: {0,45,90,135} (the supreset)
 	double sum_p = 0; // sum of P matrix for normalization
@@ -143,7 +142,7 @@ public:
 
 private:
 
-	void Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nontriv& grays, PixIntens min_val, PixIntens max_val, bool ibsi);
+	void Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nontriv& grays, int offset, PixIntens min_val, PixIntens max_val, bool ibsi);
 	void calculateCoocMatAtAngle_NT(
 		// out
 		SimpleMatrix<double>& matrix,
@@ -156,7 +155,7 @@ private:
 		bool normalize,
 		bool ibsi);
 
-	void Extract_Texture_Features2 (const Fsettings& settings, int angle, const ImageMatrix& grays, PixIntens min_val, PixIntens max_val);
+	void Extract_Texture_Features2 (const Fsettings& settings, int angle, const ImageMatrix& grays, int offset, PixIntens min_val, PixIntens max_val);
 
 	void calculateCoocMatAtAngle(
 		// out

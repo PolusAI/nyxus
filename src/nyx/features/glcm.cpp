@@ -5,7 +5,6 @@
 
 using namespace Nyxus;
 
-int GLCMFeature::offset = 1;
 bool GLCMFeature::symmetric_glcm = false;
 std::vector<int> GLCMFeature::angles = { 0, 45, 90, 135 };
 
@@ -21,7 +20,8 @@ void GLCMFeature::calculate (LR& r, const Fsettings& s)
 
 	// Skip feature calculation in case of bad data
 	// (We need to smart-select the greyInfo rather than just theEnvironment.get_coarse_gray_depth())
-	int nGreys = s[(int)NyxSetting::GREYDEPTH].ival;
+	int nGreys = STNGS_GLCM_GREYDEPTH(s),
+		offset = STNGS_GLCM_OFFSET(s);
 	double softNAN = s[(int)NyxSetting::SOFTNAN].rval;
 
 	auto binnedMin = bin_pixel(r.aux_min, r.aux_min, r.aux_max, nGreys);
@@ -96,7 +96,7 @@ void GLCMFeature::calculate (LR& r, const Fsettings& s)
 
 	// Calculate features for all the directions
 	for (auto a : angles)
-		Extract_Texture_Features2 (s, a, r.aux_image_matrix, r.aux_min, r.aux_max);
+		Extract_Texture_Features2 (s, a, r.aux_image_matrix, offset, r.aux_min, r.aux_max);
 }
 
 void GLCMFeature::clear_result_buffers()
@@ -224,7 +224,7 @@ void GLCMFeature::parallel_process_1_batch (size_t start, size_t end, std::vecto
 	}
 }
 
-void GLCMFeature::Extract_Texture_Features2 (const Fsettings& s, int angle, const ImageMatrix& grays, PixIntens min_val, PixIntens max_val)
+void GLCMFeature::Extract_Texture_Features2 (const Fsettings& s, int angle, const ImageMatrix& grays, int offset, PixIntens min_val, PixIntens max_val)
 {
 	int nrows = grays.height;
 	int ncols = grays.width;

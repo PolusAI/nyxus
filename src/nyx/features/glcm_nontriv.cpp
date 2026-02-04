@@ -9,15 +9,17 @@ void GLCMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imlo
 	// Clear the feature values buffers
 	clear_result_buffers();
 
+	int offset = STNGS_GLCM_OFFSET(s);
+
 	// Prepare the tone-binned image matrix
 	WriteImageMatrix_nontriv G("GLCMFeature-osized_calculate-G", r.label);
 	G.allocate_from_cloud(r.raw_pixels_NT, r.aabb, false);
 
 	for (auto a : angles)
-		Extract_Texture_Features2_NT(a, G, r.aux_min, r.aux_max, STNGS_IBSI(s));
+		Extract_Texture_Features2_NT(a, G, offset, r.aux_min, r.aux_max, STNGS_IBSI(s));
 }
 
-void GLCMFeature::Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nontriv& grays, PixIntens min_val, PixIntens max_val, bool ibsi)
+void GLCMFeature::Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nontriv& grays, int offset, PixIntens min_val, PixIntens max_val, bool ibsi)
 {
 	int nrows = grays.get_height();
 	int ncols = grays.get_width();
@@ -133,7 +135,6 @@ void GLCMFeature::calculateCoocMatAtAngle_NT(
 	matrix.allocate ((int)I.size(), (int)I.size());
 	matrix.fill (0.0);
 
-	int d = GLCMFeature::offset;
 	int count = 0;	// normalizing factor 
 
 	int rows = grays.get_height(),

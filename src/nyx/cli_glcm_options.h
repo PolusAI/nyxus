@@ -17,6 +17,7 @@ public:
 	std::string rawOffs = "",	// matches GLCMOFFSET
 		rawAngles = "";			// matches GLCMANGLES
 
+	int offset_ = 1;
 	std::vector<int> glcmAngles = { 0, 45, 90, 135 };
 
 private:
