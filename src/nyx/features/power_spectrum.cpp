@@ -69,7 +69,7 @@ double PowerSpectrumFeature::power_spectrum_slope(const ImageMatrix& Im) {
 
     std::vector<double> magnitude, raw_power, power, radii;
 
-    double max_width = std::min(rows, cols) / 8.;
+    double max_width = std::max(rows, cols);
 
     std::vector<int> raw_radii(std::floor(max_width));
     std::iota(raw_radii.begin(), raw_radii.end(), 2);
@@ -82,7 +82,6 @@ double PowerSpectrumFeature::power_spectrum_slope(const ImageMatrix& Im) {
     if (std::accumulate(magnitude.begin(), magnitude.end(), 0.) > 0 &&
         !image.empty()) {
 
-        //----------- BUG {
         for (int i = 0; i < magnitude.size(); ++i) {
 
             if (magnitude[i] > 0 && std::isfinite(std::log(raw_power[i]))) {
@@ -90,7 +89,6 @@ double PowerSpectrumFeature::power_spectrum_slope(const ImageMatrix& Im) {
                 radii.push_back(raw_radii[i]);
             }
         }
-        //----------- BUG }
 
         if (radii.size() > 1) {
             std::vector<std::vector<double>> A(radii.size(), std::vector<double>(2, 1));
