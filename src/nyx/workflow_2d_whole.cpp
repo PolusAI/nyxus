@@ -274,6 +274,7 @@ namespace Nyxus
 			VERBOSLVL1 (env.get_verbosity_level(), std::cout << "whole-slide job " << j+1 << "/" << n_jobs << "\n");
 
 			std::vector<std::future<void>> T;
+			std::vector<int> rvals(n_threads, 0);
 			for (int t=0; t < n_threads; t++)
 			{
 				size_t idx = j * n_threads + t;
@@ -282,7 +283,6 @@ namespace Nyxus
 				if (idx + 1 > nf)
 					break;
 
-				int rval = 0;
 				if (n_threads > 1)
 				{
 					T.push_back(std::async(std::launch::async,
@@ -295,7 +295,7 @@ namespace Nyxus
 						outputPath,
 						write_apache,
 						saveOption,
-						std::ref(rval)));
+						std::ref(rvals[t])));
 				}
 				else
 				{
@@ -308,9 +308,13 @@ namespace Nyxus
 						outputPath,
 						write_apache,
 						saveOption,
-						rval);
+						rvals[t]);
 				}
 			}
+
+			// wait for all threads to complete before proceeding
+			for (auto& f : T)
+				f.get();
 
 			// allow keyboard interrupt
 			#ifdef WITH_PYTHON_H
@@ -319,7 +323,7 @@ namespace Nyxus
 				sureprint("\nAborting per user input\n");
 				throw pybind11::error_already_set();
 			}
-			#endif		
+			#endif
 		}
 
 		//**** finalize Apache output
