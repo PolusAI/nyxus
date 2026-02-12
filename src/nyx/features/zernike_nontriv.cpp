@@ -24,6 +24,7 @@
 #include <cfloat> // Has definition of DBL_EPSILON
 #include <assert.h>
 #include <stdio.h>
+#include <mutex>
 #include "specfunc.h" 
 
 #include "image_matrix.h" 
@@ -54,7 +55,7 @@ void ZernikeFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& i
 
 /*
   Algorithms for fast computation of Zernike moments and their numerical stability
-  Chandan Singh and Ekta Walia, Image and Vision Computing 29 (2011) 251–259
+  Chandan Singh and Ekta Walia, Image and Vision Computing 29 (2011) 251ï¿½259
 
   Implemented from pseudo-code by Ilya Goldberg 2011-04-27
   This code is 10x faster than the previous code, and 50x faster than previous unoptimized code.
@@ -91,7 +92,7 @@ void ZernikeFeature::mb_zernike2D_nontriv (WriteImageMatrix_nontriv& I, double o
 	static double H1[MAX_L][MAX_L];
 	static double H2[MAX_L][MAX_L];
 	static double H3[MAX_L][MAX_L];
-	static char init = 1;
+	static std::once_flag init_flag;
 
 	double COST[MAX_L], SINT[MAX_L], R[MAX_L];
 	double Rn, Rnm, Rnm2, Rnnm2, Rnmp2, Rnmp4;
@@ -121,7 +122,7 @@ void ZernikeFeature::mb_zernike2D_nontriv (WriteImageMatrix_nontriv& I, double o
 	double m01_m00 = moment01 / moment00;
 
 	// Pre-initialization of statics
-	if (init)
+	std::call_once(init_flag, [&]()
 	{
 		for (n = 0; n < MAX_L; n++)
 		{
@@ -135,8 +136,7 @@ void ZernikeFeature::mb_zernike2D_nontriv (WriteImageMatrix_nontriv& I, double o
 				}
 			}
 		}
-		init = 0;
-	}
+	});
 
 	// Zero-out the Zernike moment accumulators
 	for (n = 0; n <= L; n++)

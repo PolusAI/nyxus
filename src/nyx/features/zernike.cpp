@@ -24,6 +24,7 @@
 #include <cfloat> // Has definition of DBL_EPSILON
 #include <assert.h>
 #include <stdio.h>
+#include <mutex>
 #include "specfunc.h" 
 
 #include "../environment.h"
@@ -68,7 +69,7 @@ void ZernikeFeature::mb_Znl (double* X, double* Y, double* P, int size, double D
 {
 	static double LUT[MAX_LUT];
 	static int n_s[MAX_Z], l_s[MAX_Z];
-	static char init_lut = 0;
+	static std::once_flag init_lut_flag;
 
 	double x, y, p;   /* individual values of X, Y, P */
 	int i, m, theZ, theLUT, numZ = 0;
@@ -84,17 +85,17 @@ void ZernikeFeature::mb_Znl (double* X, double* Y, double* P, int size, double D
 	// Other hard-coded D values should just need changing MAX_D, MAX_Z and MAX_LUT above.
 	assert(D == MAX_D);
 
-	if (! init_lut) 
+	std::call_once(init_lut_flag, [&]()
 	{
 		theZ = 0;
 		theLUT = 0;
-		for (n = 0; n <= MAX_D; n++) 
+		for (n = 0; n <= MAX_D; n++)
 		{
-			for (l = 0; l <= n; l++) 
+			for (l = 0; l <= n; l++)
 			{
-				if ((n - l) % 2 == 0) 
+				if ((n - l) % 2 == 0)
 				{
-					for (m = 0; m <= (n - l) / 2; m++) 
+					for (m = 0; m <= (n - l) / 2; m++)
 					{
 						LUT[theLUT] = pow((double)-1.0, (double)m) * ((long double)gsl_sf_fact(n - m) / ((long double)gsl_sf_fact(m) * (long double)gsl_sf_fact((n - 2 * m + l) / 2) *
 							(long double)gsl_sf_fact((n - 2 * m - l) / 2)));
@@ -106,8 +107,7 @@ void ZernikeFeature::mb_Znl (double* X, double* Y, double* P, int size, double D
 				}
 			}
 		}
-		init_lut = 1;
-	}
+	});
 
 	// Get the number of Z values, and clear the sums.
 	for (n = 0; n <= D; n++) 
@@ -160,7 +160,7 @@ void ZernikeFeature::mb_Znl (double* X, double* Y, double* P, int size, double D
 
 /*
   Algorithms for fast computation of Zernike moments and their numerical stability
-  Chandan Singh and Ekta Walia, Image and Vision Computing 29 (2011) 251–259
+  Chandan Singh and Ekta Walia, Image and Vision Computing 29 (2011) 251ï¿½259
 
   Implemented from pseudo-code by Ilya Goldberg 2011-04-27
   This code is 10x faster than the previous code, and 50x faster than previous unoptimized code.

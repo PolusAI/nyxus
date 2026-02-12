@@ -1,3 +1,4 @@
+#include <atomic>
 #include <fstream>
 #include <string>
 #include <sstream>
@@ -161,7 +162,7 @@ namespace Nyxus
 					// Show stayalive progress info
 					if (cnt++ % 4 == 0)
 					{
-						static int prevIntPc = 0;
+						static std::atomic<int> prevIntPc{0};
 						float pc = int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100.;
 						if (int(pc) != prevIntPc)
 						{

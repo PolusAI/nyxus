@@ -290,6 +290,9 @@ void NeighborsFeature::manual_reduce (
 				idxE = jobSize; // include the tail
 			T.push_back (std::async(std::launch::async, parallel_process_1_batch_of_collision_pairs, std::ref(roiData), idxS, idxE, &CM2, radius));
 		}
+
+		for (auto& f : T)
+			f.get();
 	}
 
 // Collision detection method #1 (kept for the record)

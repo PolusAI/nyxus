@@ -39,6 +39,9 @@ namespace Nyxus
 				idxE = datasetSize; // include the tail
 			T.push_back(std::async(std::launch::async, f, idxS, idxE, ptrLabels, ptrLabelData, std::cref(f_settings), std::cref(dataset)));
 		}
+
+		for (auto& f : T)
+			f.get();
 	}
 
 	void parallelReduceConvHull (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & fst, const Dataset & ds);
