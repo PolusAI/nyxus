@@ -902,7 +902,6 @@ void ContourFeature::buildRegularContour_nontriv (LR& r, const Fsettings& s)
 	r.multicontour_[0] = ordered;
 }
 
-
 void ContourFeature::buildWholeSlideContour(LR& r)
 {
 	// Create 4 slide corner vertices of slide's max intensity
@@ -917,16 +916,16 @@ void ContourFeature::buildWholeSlideContour(LR& r)
 	K.push_back(tr);
 	K.push_back(br);
 	K.push_back(bl);
-	K.clear();
+	r.multicontour_.clear();
 	r.multicontour_.push_back (K);
 }
 
 void ContourFeature::calculate (LR& r, const Fsettings& s)
 {
-	if (s[(int)NyxSetting::SINGLEROI].bval)	// former Nyxus::theEnvironment.singleROI
+	if (STNGS_SINGLEROI(s))
 		buildWholeSlideContour(r);
 	else
-		buildRegularContour (r, s);
+		buildRegularContour(r, s);
 
 	// flat representation
 	std::vector<Pixel2> K;
