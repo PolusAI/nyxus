@@ -35,6 +35,10 @@ jobs:
               bash ci-utils/install_prereq_linux.sh --build_arrow yes
             "
 
+      - name: Validate prereqs
+        shell: bash
+        run: bash ci-utils/validate_prereqs.sh
+
       - name: Compress prereqs
         run: tar -czf prereqs.tar.gz local_install
 
