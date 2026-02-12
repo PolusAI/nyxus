@@ -29,7 +29,7 @@ echo "-- Z5 support (CMakeLists.txt: find_package ZLIB, BLOSC, Boost, nlohmann_j
 check "Z5 header"             "$LOCAL_INSTALL/include/z5/z5.hxx"
 check "Boost headers"         "$LOCAL_INSTALL/include/boost/version.hpp"
 check "nlohmann_json headers" "$LOCAL_INSTALL/include/nlohmann/json.hpp"
-check "xtensor headers"       "$LOCAL_INSTALL/include/xtensor/xtensor.hpp"
+check "xtensor headers"       "$LOCAL_INSTALL/include/xtensor/containers/xtensor.hpp"
 check "blosc header"          "$LOCAL_INSTALL/include/blosc.h"
 
 echo ""
