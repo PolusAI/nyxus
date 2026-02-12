@@ -76,6 +76,7 @@ jobs:
         run: tar -xzf prereqs.tar.gz
 
       - name: Free disk space on Linux host
+        if: runner.os == 'Linux'
         uses: jlumbroso/free-disk-space@main
         with:
           large-packages: true
