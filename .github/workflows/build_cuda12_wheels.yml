@@ -9,12 +9,61 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  
+
+  build_prereqs:
+    name: Build prereqs for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            container_image: quay.io/pypa/manylinux_2_28_x86_64:latest
+          - os: windows-2022
+            container_image: ""
+
+    steps:
+      - uses: actions/checkout@v4
+        name: Check out
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows'
+        name: Add MSVS Path
+
+      - name: Build prereqs (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            ${{ matrix.container_image }} \
+            bash -c "
+              dnf -y install llvm libevent-devel openssl-devel &&
+              bash ci-utils/install_prereq_linux.sh --build_arrow yes
+            "
+
+      - name: Build prereqs (Windows)
+        if: runner.os == 'Windows'
+        run: ci-utils\install_prereq_win.bat
+
+      - name: Compress prereqs
+        run: tar -czf prereqs.tar.gz local_install
+
+      - name: Upload prereqs
+        uses: actions/upload-artifact@v4
+        with:
+          name: prereqs-cuda12-${{ matrix.os }}
+          path: prereqs.tar.gz
+          retention-days: 1
+
+
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    needs: build_prereqs
     continue-on-error: true
-    
+
     strategy:
       fail-fast: false
       matrix:
@@ -28,12 +77,21 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Download prereqs
+        uses: actions/download-artifact@v4
+        with:
+          name: prereqs-cuda12-${{ matrix.os }}
+          path: .
+
+      - name: Extract prereqs
+        run: tar -xzf prereqs.tar.gz
+
       - uses: ilammy/msvc-dev-cmd@v1
         name: Add MSVS Path
 
       - name: Install CUDA
         if: runner.os == 'Windows'
-        env: 
+        env:
           cuda: "12.4.0"
           visual_studio: "Visual Studio 17 2022"
         shell: powershell
@@ -85,12 +143,10 @@ jobs:
           CIBW_BEFORE_ALL_LINUX: >
             dnf -y install llvm libevent-devel openssl-devel &&
             bash ci-utils/install_cuda_yum.sh 12 &&
-            bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
             mkdir -p /tmp/nyxus_bld &&
-            cp -r local_install /tmp/nyxus_bld
+            cp -a local_install /tmp/nyxus_bld
           CIBW_BEFORE_ALL_WINDOWS: >
             nvcc -V &&
-            ci-utils\install_prereq_win.bat &&
             xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install
           CIBW_ENVIRONMENT_LINUX: >
             LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:/usr/local/cuda/targets/x86_64-linux/lib:$LD_LIBRARY_PATH"

@@ -10,9 +10,44 @@ concurrency:
 
 jobs:
 
+  build_prereqs:
+    name: Build prereqs for CUDA 11
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+        name: Check out
+
+      - name: Build prereqs (Linux)
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            quay.io/pypa/manylinux2014_x86_64:latest \
+            bash -c "
+              sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo &&
+              sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo &&
+              sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo &&
+              yum install -y llvm libevent-devel openssl-devel &&
+              bash ci-utils/install_prereq_linux.sh --build_arrow yes
+            "
+
+      - name: Compress prereqs
+        run: tar -czf prereqs.tar.gz local_install
+
+      - name: Upload prereqs
+        uses: actions/upload-artifact@v4
+        with:
+          name: prereqs-cuda11-ubuntu-22.04
+          path: prereqs.tar.gz
+          retention-days: 1
+
+
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    needs: build_prereqs
     continue-on-error: true
 
     strategy:
@@ -28,6 +63,14 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Download prereqs
+        uses: actions/download-artifact@v4
+        with:
+          name: prereqs-cuda11-ubuntu-22.04
+          path: .
+
+      - name: Extract prereqs
+        run: tar -xzf prereqs.tar.gz
 
       - name: Free disk space on Linux host
         uses: jlumbroso/free-disk-space@main
@@ -63,12 +106,11 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           CIBW_BEFORE_ALL_LINUX: sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo &&
                                    sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo &&
-                                   sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo && 
-                                   yum install -y llvm libevent-devel openssl-devel && 
-                                   bash ci-utils/install_cuda_yum.sh 11 && 
-                                   bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
+                                   sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo &&
+                                   yum install -y llvm libevent-devel openssl-devel &&
+                                   bash ci-utils/install_cuda_yum.sh 11 &&
                                    mkdir -p /tmp/nyxus_bld &&
-                                   cp -r local_install /tmp/nyxus_bld
+                                   cp -a local_install /tmp/nyxus_bld
           CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:/usr/local/cuda/targets/x86_64-linux/lib:$LD_LIBRARY_PATH" CPATH="/usr/local/cuda/targets/x86_64-linux/include:$CPATH" PATH="/usr/local/cuda/bin:$PATH" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install" CXXFLAGS="-I /usr/local/cuda/include" CMAKE_ARGS="-DUSEGPU=ON -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc -DCMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES=/usr/local/cuda/include" NYXUS_GPU_WHEEL="ON" PIP_ONLY_BINARY=":all:"
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: "auditwheel repair --exclude=libcufft.so --exclude=libcufft.so.10 --exclude=libcufft.so.10.4.2.109 --exclude=libcudart.so --exclude=libcudart.so.11.0 --exclude=libcudart.so.11.3.109  -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
