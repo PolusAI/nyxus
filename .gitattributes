@@ -1,1 +1,2 @@
 src/nyx/python/nyxus/_version.py export-subst
+*.sh text eol=lf

@@ -9,16 +9,81 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  
-  build_wheels:
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+
+  prereqs_ubuntu:
+    name: Build prereqs for ubuntu-22.04
+    runs-on: ubuntu-22.04
     continue-on-error: true
-    
+
+    steps:
+      - uses: actions/checkout@v4
+        name: Check out
+
+      - name: Build prereqs (Linux)
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            quay.io/pypa/manylinux_2_28_x86_64:latest \
+            bash -c "
+              dnf -y install llvm libevent-devel openssl-devel &&
+              bash ci-utils/install_prereq_linux.sh --build_arrow yes
+            "
+
+      - name: Validate prereqs
+        shell: bash
+        run: bash ci-utils/validate_prereqs.sh
+
+      - name: Compress prereqs
+        run: tar -czf prereqs.tar.gz local_install
+
+      - name: Upload prereqs
+        uses: actions/upload-artifact@v4
+        with:
+          name: prereqs-cuda12-ubuntu-22.04
+          path: prereqs.tar.gz
+          retention-days: 1
+
+
+  prereqs_windows:
+    name: Build prereqs for windows-2022
+    runs-on: windows-2022
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+        name: Check out
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        name: Add MSVS Path
+
+      - name: Build prereqs (Windows)
+        run: ci-utils\install_prereq_win.bat
+
+      - name: Validate prereqs
+        shell: bash
+        run: bash ci-utils/validate_prereqs.sh
+
+      - name: Compress prereqs
+        run: tar -czf prereqs.tar.gz local_install
+
+      - name: Upload prereqs
+        uses: actions/upload-artifact@v4
+        with:
+          name: prereqs-cuda12-windows-2022
+          path: prereqs.tar.gz
+          retention-days: 1
+
+
+  wheels_ubuntu:
+    name: Build wheels on ubuntu-22.04
+    runs-on: ubuntu-22.04
+    needs: prereqs_ubuntu
+    continue-on-error: true
+
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022, ubuntu-22.04]
         cibw_archs: ["auto64"]
         cibw_build: ["cp310", "cp311", "cp312", "cp313"]
 
@@ -28,29 +93,16 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: ilammy/msvc-dev-cmd@v1
-        name: Add MSVS Path
+      - name: Download prereqs
+        uses: actions/download-artifact@v4
+        with:
+          name: prereqs-cuda12-ubuntu-22.04
+          path: .
 
-      - name: Install CUDA
-        if: runner.os == 'Windows'
-        env: 
-          cuda: "12.4.0"
-          visual_studio: "Visual Studio 17 2022"
-        shell: powershell
-        run: .\ci-utils\install_cuda_windows.ps1
-
-      - name: nvcc check
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: |
-          nvcc -V
-          ls $env:CUDA_PATH
-          ls $env:CUDA_PATH\bin
-          ls $env:CUDA_PATH\include
-
+      - name: Extract prereqs
+        run: tar -xzf prereqs.tar.gz
 
       - name: Free disk space on Linux host
-        if: runner.os == 'Linux'
         uses: jlumbroso/free-disk-space@main
         with:
           large-packages: true
@@ -59,7 +111,6 @@ jobs:
           tool-cache: false
 
       - name: Prune Docker (pre-build)
-        if: runner.os == 'Linux'
         run: |
           docker system prune -af || true
           docker builder prune -af || true
@@ -85,13 +136,8 @@ jobs:
           CIBW_BEFORE_ALL_LINUX: >
             dnf -y install llvm libevent-devel openssl-devel &&
             bash ci-utils/install_cuda_yum.sh 12 &&
-            bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
             mkdir -p /tmp/nyxus_bld &&
-            cp -r local_install /tmp/nyxus_bld
-          CIBW_BEFORE_ALL_WINDOWS: >
-            nvcc -V &&
-            ci-utils\install_prereq_win.bat &&
-            xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install
+            cp -a local_install /tmp/nyxus_bld
           CIBW_ENVIRONMENT_LINUX: >
             LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:/usr/local/cuda/targets/x86_64-linux/lib:$LD_LIBRARY_PATH"
             CPATH="/usr/local/cuda/targets/x86_64-linux/include:$CPATH"
@@ -100,6 +146,85 @@ jobs:
             CXXFLAGS="-I /usr/local/cuda/include"
             CMAKE_ARGS="-DUSEGPU=ON -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc -DCMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES=/usr/local/cuda/include"
             NYXUS_GPU_WHEEL="ON"
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
+            auditwheel repair --exclude=libcufft.so --exclude=libcufft.so.11 --exclude=libcufft.so.11.0.12.1 --exclude=libcudart.so --exclude=libcudart.so.12 --exclude=libcudart.so.12.3.101 -w {dest_dir} {wheel}
+          CIBW_ARCHS: ${{ matrix.cibw_archs }}
+          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
+          CIBW_TEST_COMMAND: python -m pip check
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nyxus-cuda12-wheels-ubuntu-22.04-${{ matrix.cibw_archs }}-${{ matrix.cibw_build }}
+          path: dist/*.whl
+          retention-days: 1
+
+
+  wheels_windows:
+    name: Build wheels on windows-2022
+    runs-on: windows-2022
+    needs: prereqs_windows
+    continue-on-error: true
+
+    strategy:
+      fail-fast: false
+      matrix:
+        cibw_archs: ["auto64"]
+        cibw_build: ["cp310", "cp311", "cp312", "cp313"]
+
+    steps:
+      - uses: actions/checkout@v4
+        name: Check out
+        with:
+          submodules: recursive
+
+      - name: Download prereqs
+        uses: actions/download-artifact@v4
+        with:
+          name: prereqs-cuda12-windows-2022
+          path: .
+
+      - name: Extract prereqs
+        run: tar -xzf prereqs.tar.gz
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        name: Add MSVS Path
+
+      - name: Install CUDA
+        env:
+          cuda: "12.4.0"
+          visual_studio: "Visual Studio 17 2022"
+        shell: powershell
+        run: .\ci-utils\install_cuda_windows.ps1
+
+      - name: nvcc check
+        shell: powershell
+        run: |
+          nvcc -V
+          ls $env:CUDA_PATH
+          ls $env:CUDA_PATH\bin
+          ls $env:CUDA_PATH\include
+
+      - uses: actions/setup-python@v4
+        name: Install Python
+        with:
+          python-version: '3.11'
+
+      - name: Install cibuildwheel
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install cibuildwheel==3.0.0 delvewheel wheel
+
+      - name: Building wheels
+        run: |
+          python -m cibuildwheel --output-dir dist
+        env:
+          CIBW_BUILD: ${{ matrix.cibw_build }}-*
+          CIBW_SKIP: "*musllinux*"
+          CIBW_BUILD_VERBOSITY: 3
+          CIBW_BEFORE_ALL_WINDOWS: >
+            nvcc -V &&
+            xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install
           CIBW_ENVIRONMENT_WINDOWS: >
             PATH="C:\\TEMP\\nyxus_bld\\local_install\\bin;$PATH"
             NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install"
@@ -107,8 +232,6 @@ jobs:
             NYXUS_GPU_WHEEL="ON"
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >
             delvewheel repair -w {dest_dir} {wheel} --no-dll cufft64_11.dll;cufftw64_11.dll;cudart32_120.dll;cudart64_120.dll
-          CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
-            auditwheel repair --exclude=libcufft.so --exclude=libcufft.so.11 --exclude=libcufft.so.11.0.12.1 --exclude=libcudart.so --exclude=libcudart.so.12 --exclude=libcudart.so.12.3.101 -w {dest_dir} {wheel}
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
           CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
           CIBW_BEFORE_TEST_WINDOWS: xcopy /E /I /y "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.4\bin" %SystemRoot%\System32
@@ -117,6 +240,6 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: nyxus-cuda12-wheels-${{ matrix.os }}-${{ matrix.cibw_archs }}-${{ matrix.cibw_build }}
+          name: nyxus-cuda12-wheels-windows-2022-${{ matrix.cibw_archs }}-${{ matrix.cibw_build }}
           path: dist/*.whl
           retention-days: 1

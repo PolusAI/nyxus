@@ -10,56 +10,339 @@ concurrency:
 
 jobs:
 
-  build_wheels:
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+  # ============================================================
+  # Prereq jobs — one per OS, all start in parallel
+  # ============================================================
+
+  prereqs_ubuntu:
+    name: Build prereqs (ubuntu-22.04)
+    runs-on: ubuntu-22.04
     continue-on-error: true
-    env:
-      MACOSX_DEPLOYMENT_TARGET: "10.15"
+    steps:
+      - uses: actions/checkout@v3
+        name: Check out
+      - name: Build prereqs
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            quay.io/pypa/manylinux_2_28_x86_64:latest \
+            bash -c "
+              dnf -y install llvm libevent-devel openssl-devel &&
+              bash ci-utils/install_prereq_linux.sh --build_arrow yes
+            "
+      - name: Validate prereqs
+        shell: bash
+        run: bash ci-utils/validate_prereqs.sh
+      - name: Compress prereqs
+        run: tar -czf prereqs.tar.gz local_install
+      - name: Upload prereqs
+        uses: actions/upload-artifact@v4
+        with:
+          name: prereqs-ubuntu-22.04
+          path: prereqs.tar.gz
+          retention-days: 1
+
+
+  prereqs_ubuntu_arm:
+    name: Build prereqs (ubuntu-22.04-arm)
+    runs-on: ubuntu-22.04-arm
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v3
+        name: Check out
+      - name: Build prereqs
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            quay.io/pypa/manylinux_2_28_aarch64:latest \
+            bash -c "
+              dnf -y install llvm libevent-devel openssl-devel &&
+              bash ci-utils/install_prereq_linux.sh --build_arrow yes
+            "
+      - name: Validate prereqs
+        shell: bash
+        run: bash ci-utils/validate_prereqs.sh
+      - name: Compress prereqs
+        run: tar -czf prereqs.tar.gz local_install
+      - name: Upload prereqs
+        uses: actions/upload-artifact@v4
+        with:
+          name: prereqs-ubuntu-22.04-arm
+          path: prereqs.tar.gz
+          retention-days: 1
+
+
+  prereqs_windows:
+    name: Build prereqs (windows-latest)
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v3
+        name: Check out
+      - uses: ilammy/msvc-dev-cmd@v1
+        name: Add MSVS Path
+      - name: Build prereqs
+        run: ci-utils\install_prereq_win.bat
+      - name: Validate prereqs
+        shell: bash
+        run: bash ci-utils/validate_prereqs.sh
+      - name: Compress prereqs
+        run: tar -czf prereqs.tar.gz local_install
+      - name: Upload prereqs
+        uses: actions/upload-artifact@v4
+        with:
+          name: prereqs-windows-latest
+          path: prereqs.tar.gz
+          retention-days: 1
+
+
+  prereqs_macos_intel:
+    name: Build prereqs (macos-15-intel)
+    runs-on: macos-15-intel
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v3
+        name: Check out
+      - name: Build prereqs
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "10.15"
+        run: bash ci-utils/install_prereq_linux.sh --build_arrow yes
+      - name: Validate prereqs
+        shell: bash
+        run: bash ci-utils/validate_prereqs.sh
+      - name: Compress prereqs
+        run: tar -czf prereqs.tar.gz local_install
+      - name: Upload prereqs
+        uses: actions/upload-artifact@v4
+        with:
+          name: prereqs-macos-15-intel
+          path: prereqs.tar.gz
+          retention-days: 1
+
+
+  prereqs_macos_arm64:
+    name: Build prereqs (macos-14)
+    runs-on: macos-14
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v3
+        name: Check out
+      - name: Build prereqs
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "11.0"
+        run: bash ci-utils/install_prereq_linux.sh --build_arrow yes
+      - name: Validate prereqs
+        shell: bash
+        run: bash ci-utils/validate_prereqs.sh
+      - name: Compress prereqs
+        run: tar -czf prereqs.tar.gz local_install
+      - name: Upload prereqs
+        uses: actions/upload-artifact@v4
+        with:
+          name: prereqs-macos-14
+          path: prereqs.tar.gz
+          retention-days: 1
+
+
+  # ============================================================
+  # Wheel build jobs — each starts as soon as its prereq finishes
+  # ============================================================
+
+  wheels_ubuntu:
+    name: Build wheels (ubuntu-22.04 / ${{ matrix.cibw_build }})
+    runs-on: ubuntu-22.04
+    needs: prereqs_ubuntu
+    continue-on-error: true
     strategy:
       matrix:
-        os: [ubuntu-22.04, windows-latest, macos-15-intel, ubuntu-22.04-arm]
-        cibw_archs: ["auto64"]
         cibw_build: ["cp310", "cp311", "cp312", "cp313"]
-
     steps:
       - uses: actions/checkout@v3
         name: Check out
         with:
-          submodules: recursive    
-
-      - uses: ilammy/msvc-dev-cmd@v1
-        name: Add MSVS Path
-
+          submodules: recursive
+      - name: Download prereqs
+        uses: actions/download-artifact@v4
+        with:
+          name: prereqs-ubuntu-22.04
+          path: .
+      - name: Extract prereqs
+        run: tar -xzf prereqs.tar.gz
       - uses: actions/setup-python@v4
         name: Install Python
         with:
           python-version: '3.11'
- 
       - name: Install cibuildwheel
         run: |
           python -m pip install --upgrade pip
           python -m pip install cibuildwheel==3.0.0 delvewheel wheel
-
-      - name: Building wheels 
-        run: |
-          python -m cibuildwheel --output-dir dist
+      - name: Building wheels
+        run: python -m cibuildwheel --output-dir dist
         env:
           CIBW_BUILD: ${{ matrix.cibw_build }}-*
           CIBW_SKIP: "*musllinux*"
           CIBW_BUILD_VERBOSITY: 3
           CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64:latest
+          CIBW_BEFORE_ALL_LINUX: >
+            dnf -y install llvm libevent-devel openssl-devel &&
+            mkdir -p /tmp/nyxus_bld &&
+            cp -a local_install /tmp/nyxus_bld
+          CIBW_ENVIRONMENT_LINUX: >
+            LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:$LD_LIBRARY_PATH"
+            NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
+          CIBW_ARCHS: auto64
+          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
+          CIBW_TEST_COMMAND: pytest -vv {project}/tests/python
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nyxus-wheels-ubuntu-22.04-auto64-${{ matrix.cibw_build }}
+          path: dist/*.whl
+          retention-days: 1
+
+
+  wheels_ubuntu_arm:
+    name: Build wheels (ubuntu-22.04-arm / ${{ matrix.cibw_build }})
+    runs-on: ubuntu-22.04-arm
+    needs: prereqs_ubuntu_arm
+    continue-on-error: true
+    strategy:
+      matrix:
+        cibw_build: ["cp310", "cp311", "cp312", "cp313"]
+    steps:
+      - uses: actions/checkout@v3
+        name: Check out
+        with:
+          submodules: recursive
+      - name: Download prereqs
+        uses: actions/download-artifact@v4
+        with:
+          name: prereqs-ubuntu-22.04-arm
+          path: .
+      - name: Extract prereqs
+        run: tar -xzf prereqs.tar.gz
+      - uses: actions/setup-python@v4
+        name: Install Python
+        with:
+          python-version: '3.11'
+      - name: Install cibuildwheel
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install cibuildwheel==3.0.0 delvewheel wheel
+      - name: Building wheels
+        run: python -m cibuildwheel --output-dir dist
+        env:
+          CIBW_BUILD: ${{ matrix.cibw_build }}-*
+          CIBW_SKIP: "*musllinux*"
+          CIBW_BUILD_VERBOSITY: 3
           CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64:latest
+          CIBW_BEFORE_ALL_LINUX: >
+            dnf -y install llvm libevent-devel openssl-devel &&
+            mkdir -p /tmp/nyxus_bld &&
+            cp -a local_install /tmp/nyxus_bld
+          CIBW_ENVIRONMENT_LINUX: >
+            LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:$LD_LIBRARY_PATH"
+            NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
+          CIBW_ARCHS: auto64
+          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
+          CIBW_TEST_COMMAND: pytest -vv {project}/tests/python
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nyxus-wheels-ubuntu-22.04-arm-auto64-${{ matrix.cibw_build }}
+          path: dist/*.whl
+          retention-days: 1
+
+
+  wheels_windows:
+    name: Build wheels (windows-latest / ${{ matrix.cibw_build }})
+    runs-on: windows-latest
+    needs: prereqs_windows
+    continue-on-error: true
+    strategy:
+      matrix:
+        cibw_build: ["cp310", "cp311", "cp312", "cp313"]
+    steps:
+      - uses: actions/checkout@v3
+        name: Check out
+        with:
+          submodules: recursive
+      - name: Download prereqs
+        uses: actions/download-artifact@v4
+        with:
+          name: prereqs-windows-latest
+          path: .
+      - name: Extract prereqs
+        run: tar -xzf prereqs.tar.gz
+      - uses: ilammy/msvc-dev-cmd@v1
+        name: Add MSVS Path
+      - uses: actions/setup-python@v4
+        name: Install Python
+        with:
+          python-version: '3.11'
+      - name: Install cibuildwheel
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install cibuildwheel==3.0.0 delvewheel wheel
+      - name: Building wheels
+        run: python -m cibuildwheel --output-dir dist
+        env:
+          CIBW_BUILD: ${{ matrix.cibw_build }}-*
+          CIBW_BUILD_VERBOSITY: 3
+          CIBW_BEFORE_ALL_WINDOWS: xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install
+          CIBW_ENVIRONMENT_WINDOWS: PATH="C:\\TEMP\\nyxus_bld\\local_install\\bin;$PATH" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install"
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
+          CIBW_ARCHS: auto64
+          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
+          CIBW_TEST_COMMAND: pytest -vv {project}/tests/python
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nyxus-wheels-windows-latest-auto64-${{ matrix.cibw_build }}
+          path: dist/*.whl
+          retention-days: 1
+
+
+  wheels_macos_intel:
+    name: Build wheels (macos-15-intel / ${{ matrix.cibw_build }})
+    runs-on: macos-15-intel
+    needs: prereqs_macos_intel
+    continue-on-error: true
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "10.15"
+    strategy:
+      matrix:
+        cibw_build: ["cp310", "cp311", "cp312", "cp313"]
+    steps:
+      - uses: actions/checkout@v3
+        name: Check out
+        with:
+          submodules: recursive
+      - name: Download prereqs
+        uses: actions/download-artifact@v4
+        with:
+          name: prereqs-macos-15-intel
+          path: .
+      - name: Extract prereqs
+        run: tar -xzf prereqs.tar.gz
+      - uses: actions/setup-python@v4
+        name: Install Python
+        with:
+          python-version: '3.11'
+      - name: Install cibuildwheel
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install cibuildwheel==3.0.0 delvewheel wheel
+      - name: Building wheels
+        run: python -m cibuildwheel --output-dir dist
+        env:
+          CIBW_BUILD: ${{ matrix.cibw_build }}-*
+          CIBW_BUILD_VERBOSITY: 3
           CIBW_BEFORE_ALL_MACOS: |
-                                   bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
-                                   mkdir -p /tmp/nyxus_bld &&
-                                   cp -r local_install /tmp/nyxus_bld
-          CIBW_BEFORE_ALL_LINUX:  dnf -y install llvm libevent-devel openssl-devel && 
-                                   bash ci-utils/install_prereq_linux.sh --build_arrow yes &&
-                                   mkdir -p /tmp/nyxus_bld &&
-                                   cp -r local_install /tmp/nyxus_bld
-          CIBW_BEFORE_ALL_WINDOWS: ci-utils\install_prereq_win.bat &&
-                                   xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install                     
+            mkdir -p /tmp/nyxus_bld &&
+            cp -a local_install /tmp/nyxus_bld
           CIBW_ENVIRONMENT_MACOS: >
             MACOSX_DEPLOYMENT_TARGET=10.15
             SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
@@ -73,8 +356,6 @@ jobs:
             ARROW_HAVE_LIBATOMIC=OFF
             REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64"
             NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
-          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:$LD_LIBRARY_PATH" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install" 
-          CIBW_ENVIRONMENT_WINDOWS: PATH="C:\\TEMP\\nyxus_bld\\local_install\\bin;$PATH" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install"
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: |
             DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-listdeps {wheel} &&
             MACOSX_DEPLOYMENT_TARGET=10.15 DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-wheel \
@@ -82,55 +363,53 @@ jobs:
             --require-target-macos-version $MACOSX_DEPLOYMENT_TARGET \
             -w {dest_dir} {wheel} \
             -e libssl -e libzstd -e libcrypto -e libwebp -e libsharpyuv
-          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
-          CIBW_ARCHS: ${{ matrix.cibw_archs }}
+          CIBW_ARCHS: auto64
           CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
           CIBW_TEST_COMMAND: pytest -vv {project}/tests/python
-
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: nyxus-wheels-${{ matrix.os }}-${{ matrix.cibw_archs }}-${{ matrix.cibw_build }}
+          name: nyxus-wheels-macos-15-intel-auto64-${{ matrix.cibw_build }}
           path: dist/*.whl
           retention-days: 1
 
 
-  build_wheels_apple_arm64:
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+  wheels_macos_arm64:
+    name: Build wheels (macos-14 / ${{ matrix.cibw_build }})
+    runs-on: macos-14
+    needs: prereqs_macos_arm64
     continue-on-error: true
     env:
       MACOSX_DEPLOYMENT_TARGET: "11.0"
     strategy:
       matrix:
-        os: [macos-14]
-        cibw_archs: ["arm64"]
-        cibw_build: ["cp310", "cp311",  "cp312", "cp313"]
-
+        cibw_build: ["cp310", "cp311", "cp312", "cp313"]
     steps:
       - uses: actions/checkout@v3
         name: Check out
-
+      - name: Download prereqs
+        uses: actions/download-artifact@v4
+        with:
+          name: prereqs-macos-14
+          path: .
+      - name: Extract prereqs
+        run: tar -xzf prereqs.tar.gz
       - uses: actions/setup-python@v4
         name: Install Python
         with:
           python-version: '3.11'
-  
       - name: Install cibuildwheel
         run: |
           python -m pip install --upgrade pip
           python -m pip install cibuildwheel==3.0.0 delvewheel wheel
-
-      - name: Building wheels 
-        run: |
-          python -m cibuildwheel --output-dir dist
+      - name: Building wheels
+        run: python -m cibuildwheel --output-dir dist
         env:
           CIBW_BUILD: ${{ matrix.cibw_build }}-*
           CIBW_BUILD_VERBOSITY: 3
           CIBW_ARCHS_MACOS: arm64
           CIBW_BEFORE_ALL_MACOS: |
-            bash ci-utils/install_prereq_linux.sh --build_arrow yes || true
-            mkdir -p /tmp/nyxus_bld && cp -r local_install /tmp/nyxus_bld || true
+            mkdir -p /tmp/nyxus_bld && cp -a local_install /tmp/nyxus_bld || true
           CIBW_ENVIRONMENT_MACOS: >
             MACOSX_DEPLOYMENT_TARGET=11.0
             SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
@@ -148,13 +427,12 @@ jobs:
             --require-target-macos-version $MACOSX_DEPLOYMENT_TARGET \
             -w {dest_dir} {wheel} \
             -e libssl -e libzstd -e libcrypto
-          CIBW_ARCHS: ${{ matrix.cibw_archs }}
+          CIBW_ARCHS: arm64
           CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
           CIBW_TEST_COMMAND: pytest -vv {project}/tests/python
-
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: nyxus-wheels-apple-arm64-${{ matrix.os }}-${{ matrix.cibw_archs }}-${{ matrix.cibw_build }}
+          name: nyxus-wheels-macos-14-arm64-${{ matrix.cibw_build }}
           path: dist/*.whl
           retention-days: 1
