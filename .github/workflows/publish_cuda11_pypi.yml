@@ -54,6 +54,7 @@ jobs:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     needs: build_prereqs
+    continue-on-error: true
     strategy:
       matrix:
         os: [ubuntu-22.04]
