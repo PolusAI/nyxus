@@ -2,11 +2,20 @@ name: Build CUDA 12 Wheels
 
 on:
   workflow_dispatch:
+    inputs:
+      force_prereqs:
+        description: 'Force rebuild prereqs (ignore cache)'
+        type: boolean
+        default: false
   pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
+
+permissions:
+  actions: write
+  contents: read
 
 jobs:
 
@@ -19,7 +28,28 @@ jobs:
       - uses: actions/checkout@v4
         name: Check out
 
+      - name: Compute cache key
+        id: cache-key
+        run: echo "key=prereqs-cuda12-ubuntu-22.04-${{ hashFiles('ci-utils/install_prereq_linux.sh', 'ci-utils/install_prereq_win.bat', 'ci-utils/validate_prereqs.sh') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Delete prereq cache (force rebuild)
+        if: inputs.force_prereqs == true
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh actions-cache delete "${{ steps.cache-key.outputs.key }}" \
+            -R ${{ github.repository }} --confirm || true
+
+      - name: Restore cached prereqs
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: prereqs.tar.gz
+          key: ${{ steps.cache-key.outputs.key }}
+
       - name: Build prereqs (Linux)
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           docker run --rm \
             -v "${{ github.workspace }}:/work" \
@@ -31,11 +61,20 @@ jobs:
             "
 
       - name: Validate prereqs
+        if: steps.cache.outputs.cache-hit != 'true'
         shell: bash
         run: bash ci-utils/validate_prereqs.sh
 
       - name: Compress prereqs
+        if: steps.cache.outputs.cache-hit != 'true'
         run: tar -czf prereqs.tar.gz local_install
+
+      - name: Save prereqs cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: prereqs.tar.gz
+          key: ${{ steps.cache-key.outputs.key }}
 
       - name: Upload prereqs
         uses: actions/upload-artifact@v4
@@ -54,18 +93,51 @@ jobs:
       - uses: actions/checkout@v4
         name: Check out
 
+      - name: Compute cache key
+        id: cache-key
+        shell: bash
+        run: echo "key=prereqs-cuda12-windows-2022-${{ hashFiles('ci-utils/install_prereq_linux.sh', 'ci-utils/install_prereq_win.bat', 'ci-utils/validate_prereqs.sh') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Delete prereq cache (force rebuild)
+        if: inputs.force_prereqs == true
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh actions-cache delete "${{ steps.cache-key.outputs.key }}" \
+            -R ${{ github.repository }} --confirm || true
+
+      - name: Restore cached prereqs
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: prereqs.tar.gz
+          key: ${{ steps.cache-key.outputs.key }}
+
       - uses: ilammy/msvc-dev-cmd@v1
+        if: steps.cache.outputs.cache-hit != 'true'
         name: Add MSVS Path
 
       - name: Build prereqs (Windows)
+        if: steps.cache.outputs.cache-hit != 'true'
         run: ci-utils\install_prereq_win.bat
 
       - name: Validate prereqs
+        if: steps.cache.outputs.cache-hit != 'true'
         shell: bash
         run: bash ci-utils/validate_prereqs.sh
 
       - name: Compress prereqs
+        if: steps.cache.outputs.cache-hit != 'true'
         run: tar -czf prereqs.tar.gz local_install
+
+      - name: Save prereqs cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: prereqs.tar.gz
+          key: ${{ steps.cache-key.outputs.key }}
 
       - name: Upload prereqs
         uses: actions/upload-artifact@v4
