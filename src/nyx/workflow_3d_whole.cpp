@@ -217,10 +217,10 @@ namespace Nyxus
 	{
 		//**** prescan all files
 
-		VERBOSLVL1 (env.get_verbosity_level(), std::cout << "phase 0 (prescanning)\n");
-
-		env.dataset.reset_dataset_props();
 		size_t nf = intensFiles.size();
+		VERBOSLVL1 (env.get_verbosity_level(), std::cout << "phase 0: prescanning " << nf << " slides \n");
+		env.dataset.reset_dataset_props();
+
 		for (size_t i = 0; i < nf; i++)
 		{
 			// slide file names

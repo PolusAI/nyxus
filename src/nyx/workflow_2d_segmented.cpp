@@ -61,8 +61,8 @@ namespace Nyxus
 				std::cout << std::setw(15) << freeRamAmt << " b free (" << sgn << memDiff << ") ";
 			)
 				// Display (1) dataset progress info and (2) file pair info
-				int digits = std::log10(tot_num_filepairs/100.) + 1,
-					k = std::pow(10.f, digits);
+				int digits = std::log10(float(tot_num_filepairs)/100.) + 1,
+					k = std::pow(10.f, std::abs(digits));
 				float perCent = float(filepair_index + 1) * 100. / float(tot_num_filepairs);
 				perCent = std::round(perCent * k) / k;
 				VERBOSLVL1 (env.get_verbosity_level(), std::cout << "[ " << filepair_index+1 << " = " << std::setw(digits + 2) << perCent << "% ]\t" << intens_fpath << "\n")
@@ -178,7 +178,7 @@ namespace Nyxus
 		size_t nf = intensFiles.size();
 
 		{ STOPWATCH("prescan/p0/P/#ccbbaa", "\t=");
-		VERBOSLVL1 (env.get_verbosity_level(), std::cout << "phase 0 (prescanning)\n");
+		VERBOSLVL1 (env.get_verbosity_level(), std::cout << "phase 0: prescanning " << nf << " slides \n");
 
 		env.dataset.reset_dataset_props();
 
@@ -218,8 +218,7 @@ namespace Nyxus
 		{
 			// allocate
 			VERBOSLVL1 (env.get_verbosity_level(), std::cout << "allocating GPU cache \n");
-
-			if (! env.devCache.allocate_gpu_cache(
+			auto allocErr = env.devCache.allocate_gpu_cache(
 				// out
 				env.devCache.gpu_roiclouds_2d,
 				env.devCache.gpu_roicontours_2d,
@@ -247,10 +246,10 @@ namespace Nyxus
 				env.dataset.dataset_max_roi_w,
 				env.dataset.dataset_max_roi_h,
 				GaborFeature::f0_theta_pairs.size(),
-				GaborFeature::n
-			))	// we need max ROI area inside the function to calculate the batch size if 'dataset_max_combined_roicloud_len' doesn't fit in RAM
+				GaborFeature::n);
+			if (allocErr.has_value())	// we need max ROI area inside the function to calculate the batch size if 'dataset_max_combined_roicloud_len' doesn't fit in RAM
 			{
-				std::cerr << "error in " << __FILE__ << ":" << __LINE__ << "\n";
+				std::cerr << "allocating GPU cache failed: " << allocErr.value() << "\n";
 				return 1;
 			}
 
