@@ -587,7 +587,7 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 
 	// fix X-crossing points
 	int n_xxings = 0;
-	for (Pixel2 p : U)
+	for (const Pixel2 & p : U)
 	{
 		Pixel2 pN (p.x, p.y-1, p.inten),
 			pS (p.x, p.y+1, p.inten),

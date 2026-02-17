@@ -178,7 +178,7 @@ namespace Nyxus
 		size_t nf = intensFiles.size();
 
 		{ STOPWATCH("prescan/p0/P/#ccbbaa", "\t=");
-		VERBOSLVL1 (env.get_verbosity_level(), std::cout << "phase 0: prescanning " << nf << " slides \n");
+		VERBOSLVL1 (env.get_verbosity_level(), std::cout << "\nphase 0: prescanning " << nf << " slides \n");
 
 		env.dataset.reset_dataset_props();
 
