@@ -7,7 +7,7 @@
 
 #include "gpu.h"
 #include "geomoments.cuh"
-#include "../cache.h"   //xxxxxxxxxxxxx     #include "../gpucache.h"
+#include "../cache.h"
 
 #include "../helpers/timing.h"
 

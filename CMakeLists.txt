@@ -134,6 +134,9 @@ option(RUN_GTEST "Downloads google unit test API and runs google test scripts to
 
 #==== Source files
 set(SOURCE
+	# headers
+	src/nyx/raw_tiff.h
+	# sources
 	src/nyx/3rdparty/dsyevj3.cpp
 	src/nyx/features/basic_morphology.cpp
 	src/nyx/features/caliper_feret.cpp

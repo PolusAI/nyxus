@@ -6,7 +6,7 @@
 #include <iostream>
 
 #include "gpu.h"
-#include "../cache.h"   //xxxxxxxxxx    #include "../gpucache.h"
+#include "../cache.h"
 
 #include "../helpers/timing.h"
 
