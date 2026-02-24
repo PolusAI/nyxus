@@ -57,6 +57,8 @@ if(USEGPU)
 		endif()
 	elseif (CUDAToolkit_VERSION_MAJOR STREQUAL "12")
 		set(CUDA_ARCH_LIST "50;52;53;60;61;62;70;72;75;80;86;89;90")
+	elseif (CUDAToolkit_VERSION_MAJOR STREQUAL "13")
+		set(CUDA_ARCH_LIST "75;80;86;87;89;90;100;101;103;120;121")
 	else() # some old CUDA version (<10)
 		set(CUDA_ARCH_LIST "50") # 5.0 is the oldest non-deprecated CC as of 2024-09-06
 	endif()
@@ -132,6 +134,9 @@ option(RUN_GTEST "Downloads google unit test API and runs google test scripts to
 
 #==== Source files
 set(SOURCE
+	# headers
+	src/nyx/raw_tiff.h
+	# sources
 	src/nyx/3rdparty/dsyevj3.cpp
 	src/nyx/features/basic_morphology.cpp
 	src/nyx/features/caliper_feret.cpp

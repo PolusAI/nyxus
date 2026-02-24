@@ -152,6 +152,14 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 	return true;
 }
 
+void RawImageLoader::free_tile_buffers()
+{
+	if (intFL)
+		intFL->free_tile();
+	if (segFL)
+		segFL->free_tile();
+}
+
 void RawImageLoader::close()
 {
 	if (segFL)

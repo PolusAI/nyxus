@@ -148,8 +148,8 @@ namespace Nyxus
 		//********************** prescan ***********************
 
 		// slide properties
-		VERBOSLVL1(env.get_verbosity_level(), std::cout << "phase 0 (3D prescanning)\n");
 		size_t nf = intensFiles.size();
+		VERBOSLVL1(env.get_verbosity_level(), std::cout << "\nphase 0: prescanning " << nf << " slides \n");
 		env.dataset.reset_dataset_props();
 
 		for (size_t i = 0; i < nf; i++)

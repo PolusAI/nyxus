@@ -40,6 +40,8 @@ namespace Nyxus
 		// time frames: 1:1, 1:N, and N:1 cases are permitted.
 		size_t 
 			/*
+			* we don't need these in the 3D scenario:
+			* 
 			nth = env.theImLoader.get_num_tiles_hor(),
 			ntv = env.theImLoader.get_num_tiles_vert(),
 			fw = env.theImLoader.get_tile_width(),
