@@ -73,7 +73,7 @@ void GLSZMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 	// Squeeze the intensity range
 	PixIntens piRange = r.aux_max - r.aux_min;		// Prepare ROI's intensity range
-	unsigned int nGrays = STNGS_NGREYS(s); // former theEnvironment.get_coarse_gray_depth()
+	int nGrays = STNGS_NGREYS(s); // former theEnvironment.get_coarse_gray_depth()
 
 	for (size_t i = 0; i < D.size(); i++)
 		D.set_at(i, Nyxus::to_grayscale(D[i], r.aux_min, piRange, nGrays, STNGS_IBSI(s)));

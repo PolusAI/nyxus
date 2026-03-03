@@ -39,6 +39,11 @@ namespace Nyxus
 				idxE = datasetSize; // include the tail
 			T.push_back(std::async(std::launch::async, f, idxS, idxE, ptrLabels, ptrLabelData, std::cref(f_settings), std::cref(dataset)));
 		}
+		// Wait for all threads to complete before returning.
+		// Critical for fmaps mode where EnvRoiSwapGuard will move
+		// env.roiData on scope exit — threads must finish first.
+		for (auto& fut : T)
+			fut.get();
 	}
 
 	void parallelReduceConvHull (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & fst, const Dataset & ds);

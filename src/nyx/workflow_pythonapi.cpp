@@ -82,6 +82,140 @@ namespace Nyxus
 		return true;
 	}
 	
+	/// @brief In-memory feature maps processing for a single image pair.
+	/// Gathers parent ROIs, generates child ROIs per kernel, computes features, saves to buffer.
+	/// @param globalChildLabel [in/out] Running child label counter, persists across file pairs to avoid label collisions.
+	bool processIntSegImagePairInMemory_fmaps (
+		Environment & env,
+		const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens,
+		const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label,
+		int pair_index,
+		const std::string& intens_name,
+		const std::string& seg_name,
+		int64_t & globalChildLabel)
+	{
+		// Phase 1: gather parent ROI metrics
+		if (! gatherRoisMetricsInMemory (env, intens, label, pair_index))
+			return false;
+
+		if (env.uniqueLabels.size() == 0)
+			return true;
+
+		// Set up parent ROIs
+		for (auto lab : env.uniqueLabels)
+		{
+			LR& r = env.roiData[lab];
+			r.make_nonanisotropic_aabb();
+			r.initialize_fvals();
+		}
+
+		// Collect parent labels, skipping blacklisted and oversized ROIs
+		std::vector<int> parentLabels;
+		for (auto lab : env.uniqueLabels)
+		{
+			LR& r = env.roiData[lab];
+			if (env.roi_is_blacklisted("", lab))
+			{
+				r.blacklisted = true;
+				continue;
+			}
+
+			// Skip oversized ROIs that exceed RAM limit (matching non-fmaps behavior)
+			size_t roiFootprint = r.get_ram_footprint_estimate(env.uniqueLabels.size());
+			size_t ramLim = env.get_ram_limit();
+			if (roiFootprint >= ramLim)
+			{
+				VERBOSLVL1 (env.get_verbosity_level(),
+					std::cout << "Skipping oversized ROI " << lab
+						<< " (estimated " << roiFootprint << " bytes >= RAM limit " << ramLim << " bytes)\n");
+				continue;
+			}
+
+			parentLabels.push_back(lab);
+		}
+
+		// Phase 2: process each parent ROI
+		for (auto parentLab : parentLabels)
+		{
+			LR& parentROI = env.roiData[parentLab];
+
+			int parentW = parentROI.aabb.get_width();
+			int parentH = parentROI.aabb.get_height();
+			if (parentW < env.fmaps_kernel_size() || parentH < env.fmaps_kernel_size())
+			{
+				VERBOSLVL2 (env.get_verbosity_level(),
+					std::cout << "Skipping ROI " << parentLab
+						<< " (too small for kernel: " << parentW << "x" << parentH
+						<< " < " << env.fmaps_kernel_size() << ")\n");
+				continue;
+			}
+
+			// Scan parent ROI pixels from in-memory arrays
+			std::vector<int> singleParent = { parentLab };
+			scanTrivialRoisInMemory (singleParent, intens, label, pair_index, env);
+
+			// Allocate image matrix for parent
+			allocateTrivialRoisBuffers (singleParent, env.roiData, env.hostCache);
+
+			// Generate child ROIs
+			std::unordered_set<int> childLabels;
+			std::unordered_map<int, LR> childRoiData;
+			std::unordered_map<int, FmapChildInfo> childToParentMap;
+
+			int nChildren = generateChildRois (
+				parentROI,
+				env.fmaps_kernel_size(),
+				childLabels,
+				childRoiData,
+				childToParentMap,
+				globalChildLabel);
+
+			VERBOSLVL2 (env.get_verbosity_level(),
+				std::cout << "ROI " << parentLab << ": generated " << nChildren << " child ROIs\n");
+
+			globalChildLabel += nChildren;
+
+			if (nChildren > 0)
+			{
+				// Capture parent geometry before the swap invalidates the reference
+				int parentXmin = parentROI.aabb.get_xmin();
+				int parentYmin = parentROI.aabb.get_ymin();
+
+				// RAII guard swaps env's ROI data with child data and restores on scope exit (even on exception)
+				EnvRoiSwapGuard guard (env, std::move(childLabels), std::move(childRoiData));
+
+				std::vector<int> childLabelVec(env.uniqueLabels.begin(), env.uniqueLabels.end());
+				std::sort(childLabelVec.begin(), childLabelVec.end());
+
+				// Compute features on child ROIs
+				reduce_trivial_rois_manual (childLabelVec, env);
+
+				// Save as spatial feature map arrays
+				save_features_2_fmap_arrays (
+					env.theResultsCache,
+					env,
+					intens_name,
+					seg_name,
+					parentLab,
+					parentXmin, parentYmin,
+					parentW, parentH,
+					env.fmaps_kernel_size(),
+					env.uniqueLabels,
+					env.roiData,
+					childToParentMap);
+			}
+
+			// Free parent ROI buffers
+			freeTrivialRoisBuffers (singleParent, env.roiData);
+
+			// Allow keyboard interrupt
+			if (PyErr_CheckSignals() != 0)
+				throw pybind11::error_already_set();
+		}
+
+		return true;
+	}
+
 	std::optional<std::string> processMontage(
 		Environment & env,
 		const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intensity_images,
@@ -91,16 +225,19 @@ namespace Nyxus
 		const std::vector<std::string>& seg_names,
 		const SaveOption saveOption,
 		const std::string& outputPath)
-	{	
+	{
 		// prepare the output
 
 		bool write_apache = (saveOption == SaveOption::saveArrowIPC || saveOption == SaveOption::saveParquet);
 
-		if (write_apache) 
+		if (env.fmaps_prevents_arrow())
+			return { "Arrow/Parquet output is not supported in feature maps (fmaps) mode. Use CSV or buffer output instead." };
+
+		if (write_apache)
 		{
 			env.arrow_stream = ArrowOutputStream();
 			auto [status, msg] = env.arrow_stream.create_arrow_file (saveOption, get_arrow_filename(outputPath, env.nyxus_result_fname, saveOption), Nyxus::get_header(env));
-			if (!status) 
+			if (!status)
 				return { "error creating Arrow file: " + msg.value() };
 		}
 
@@ -129,44 +266,55 @@ namespace Nyxus
 		VERBOSLVL1(env.get_verbosity_level(), std::cout << "\t finished prescanning \n");
 
 		//****** extract features
-		
+
+		int64_t globalChildLabel = 1;	// Persists across file pairs to avoid label collisions in fmaps mode
+
 		for (int i_pair = 0; i_pair < n_pairs; i_pair++)
 		{
 			VERBOSLVL4 (env.get_verbosity_level(), std::cout << "processMontage() pair " << i_pair << "/" << n_pairs << "\n");
 
 			clear_slide_rois (env.uniqueLabels, env.roiData);	// Clear ROI label list, ROI data, etc.
 
-			std::vector<int> unprocessed_rois;
-
-			if (! processIntSegImagePairInMemory (env, intensity_images, label_images, i_pair, intensity_names[i_pair], seg_names[i_pair], unprocessed_rois))
-				return { "error processing a slide pair" };
-
-			if (write_apache) 
+			if (env.fmaps_mode)
 			{
-				auto [status, msg] = env.arrow_stream.write_arrow_file (Nyxus::get_feature_values(env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset));
-				if (!status) 
-					return { "error writing Arrow file: " + msg.value() };
-			} 
-			else 
-			{
-				if (! save_features_2_buffer(env.theResultsCache, env, DEFAULT_T_INDEX))
-					return { "error saving results to a buffer" };
+				// Feature maps mode: generate child ROIs and compute features
+				if (! processIntSegImagePairInMemory_fmaps (env, intensity_images, label_images, i_pair, intensity_names[i_pair], seg_names[i_pair], globalChildLabel))
+					return { "error processing fmaps for a slide pair" };
 			}
-
-			if (unprocessed_rois.size() > 0) 
+			else
 			{
-				std::string erm = "the following ROIS are oversized and cannot be processed: ";
-				for (const auto& roi: unprocessed_rois)
-				{
-					erm += std::to_string(roi);
-					erm += ", ";
-				}
-				
-				// remove trailing space and comma
-				erm.pop_back();
-				erm.pop_back();
+				std::vector<int> unprocessed_rois;
 
-				return { erm };
+				if (! processIntSegImagePairInMemory (env, intensity_images, label_images, i_pair, intensity_names[i_pair], seg_names[i_pair], unprocessed_rois))
+					return { "error processing a slide pair" };
+
+				if (write_apache)
+				{
+					auto [status, msg] = env.arrow_stream.write_arrow_file (Nyxus::get_feature_values(env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset));
+					if (!status)
+						return { "error writing Arrow file: " + msg.value() };
+				}
+				else
+				{
+					if (! save_features_2_buffer(env.theResultsCache, env, DEFAULT_T_INDEX))
+						return { "error saving results to a buffer" };
+				}
+
+				if (unprocessed_rois.size() > 0)
+				{
+					std::string erm = "the following ROIS are oversized and cannot be processed: ";
+					for (const auto& roi: unprocessed_rois)
+					{
+						erm += std::to_string(roi);
+						erm += ", ";
+					}
+
+					// remove trailing space and comma
+					erm.pop_back();
+					erm.pop_back();
+
+					return { erm };
+				}
 			}
 
 			// allow keyboard interrupt
@@ -174,7 +322,7 @@ namespace Nyxus
 				throw pybind11::error_already_set();
 		}
 
-		if (write_apache) 
+		if (write_apache)
 		{
 			// close arrow file after use
 			auto [status, msg] = env.arrow_stream.close_arrow_file();

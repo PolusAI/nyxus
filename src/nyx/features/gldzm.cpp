@@ -546,7 +546,7 @@ void GLDZMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 	// -- Squeeze pixels' intensity range for getting more prominent zones 
 	PixIntens piRange = r.aux_max - 0;	// reflecting the fact that the original image's pixel intensity range is [0-r.aux_max] where 0 represents off-ROI pixels
-	unsigned int nGrays = STNGS_NGREYS(s);	// former theEnvironment.get_coarse_gray_depth()
+	int nGrays = STNGS_NGREYS(s);	// former theEnvironment.get_coarse_gray_depth()
 	for (size_t i = 0; i < D.size(); i++)
 	{
 		// raw intensity

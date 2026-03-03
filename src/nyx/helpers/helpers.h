@@ -334,12 +334,13 @@ namespace Nyxus
 	/// @param min_i Minimum ROI's intensity
 	/// @param i_range Precalculated ROI's intensity range (= max-min)
 	/// @return Squeezed intensity within range [0,255]
-	inline unsigned int to_grayscale (unsigned int i, unsigned int min_i, unsigned int i_range, unsigned int n_levels, bool disable_binning=false)
+	inline unsigned int to_grayscale (unsigned int i, unsigned int min_i, unsigned int i_range, int n_levels, bool disable_binning=false)
 	{
-		if (disable_binning) 
+		if (disable_binning)
 			return i;
-		
-		double pi = ((double(i-min_i) / double(i_range) * double(n_levels)));
+
+		unsigned int abs_n = (unsigned int)std::abs(n_levels);
+		double pi = ((double(i-min_i) / double(i_range) * double(abs_n)));
 		unsigned int new_pi = (unsigned int)pi;
 		return new_pi;
 	}

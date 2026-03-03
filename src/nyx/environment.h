@@ -112,7 +112,7 @@ public:
 	int get_floating_point_precision();
 
 	int get_coarse_gray_depth();
-	void set_coarse_gray_depth(unsigned int new_depth);
+	void set_coarse_gray_depth(int new_depth);
 
 	// implementation of SKIPROI
 	bool roi_is_blacklisted (const std::string& fname, int roi_label);
@@ -147,6 +147,21 @@ public:
 	// feature result options (yes/no to annotation columns, yes/no to aggregate by slide, NAN substitute, etc)
 	ResultOptions resultOptions;
 	std::tuple<bool, std::optional<std::string>> parse_result_options_4cli ();
+
+	// feature maps options
+	bool fmaps_mode = false;
+	int fmaps_kernel_radius = 2;
+	std::string raw_fmaps;
+	std::string raw_fmaps_radius;
+
+	/// @brief Returns the kernel side length: 2*radius+1
+	int fmaps_kernel_size() const { return 2 * fmaps_kernel_radius + 1; }
+
+	/// @brief Returns true if fmaps mode conflicts with the current save option.
+	bool fmaps_prevents_arrow() const
+	{
+		return fmaps_mode && (saveOption == Nyxus::SaveOption::saveArrowIPC || saveOption == Nyxus::SaveOption::saveParquet);
+	}
 
 	// feature settings
 	Fsettings fsett_PixelIntensity,
@@ -242,6 +257,7 @@ private:
 
 	int coarse_grayscale_depth; //= 64;
 	std::string raw_coarse_grayscale_depth; //= "";
+	std::string raw_binning_origin; //= "" (default "zero"; alternative "min")
 
 	// data members implementing RAMLIMIT
 	std::string rawRamLimit; //= "";
