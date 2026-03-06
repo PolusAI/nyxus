@@ -80,7 +80,22 @@ int main (int argc, char** argv)
 
 		// Process the image data
 		int errorCode = 0;
-		if (env.singleROI)
+		if (env.fmaps_prevents_arrow())
+		{
+			std::cerr << "Error: Arrow/Parquet output is not supported in feature maps (fmaps) mode. Use CSV output instead.\n";
+			return 1;
+		}
+		if (env.fmaps_mode)
+		{
+			errorCode = processDataset_2D_fmaps(
+				env,
+				intensFiles,
+				labelFiles,
+				env.n_reduce_threads,
+				env.saveOption,
+				env.output_dir);
+		}
+		else if (env.singleROI)
 		{
 			errorCode = processDataset_2D_wholeslide(
 				env,
@@ -181,13 +196,32 @@ int main (int argc, char** argv)
 					return 1;
 				}
 
-				int errorCode = processDataset_3D_segmented(
-					env,
-					intensFiles,
-					labelFiles,
-					env.n_reduce_threads,
-					env.saveOption,
-					env.output_dir);
+				int errorCode = 0;
+				if (env.fmaps_prevents_arrow())
+				{
+					std::cerr << "Error: Arrow/Parquet output is not supported in feature maps (fmaps) mode. Use CSV output instead.\n";
+					return 1;
+				}
+				if (env.fmaps_mode)
+				{
+					errorCode = processDataset_3D_fmaps(
+						env,
+						intensFiles,
+						labelFiles,
+						env.n_reduce_threads,
+						env.saveOption,
+						env.output_dir);
+				}
+				else
+				{
+					errorCode = processDataset_3D_segmented(
+						env,
+						intensFiles,
+						labelFiles,
+						env.n_reduce_threads,
+						env.saveOption,
+						env.output_dir);
+				}
 
 				// Report feature extraction error, if any
 				switch (errorCode)

@@ -237,7 +237,7 @@ void NGTDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 	D.allocate_from_cloud (r.raw_pixels_NT, r.aabb, false);
 
 	// Gather zones
-	unsigned int nGrays = STNGS_NGREYS(s);	// former theEnvironment.get_coarse_gray_depth()
+	int nGrays = STNGS_NGREYS(s);	// former theEnvironment.get_coarse_gray_depth()
 	for (int row = 0; row < D.get_height(); row++)
 		for (int col = 0; col < D.get_width(); col++)
 		{

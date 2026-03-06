@@ -31,11 +31,101 @@
 #include "test_compat_3d_ngtdm.h"
 #include "test_compat_3d_glrlm.h"
 #include "test_compat_3d_glszm.h"
+#include "test_fmaps.h"
+#include "test_fmaps_3d.h"
+#include "test_binning_origin.h"
 #ifdef USE_ARROW
     #include "test_arrow.h"
     #include "test_arrow_file_name.h"
 #endif
 
+
+//***** Feature maps *****
+
+TEST(TEST_NYXUS, TEST_FMAPS_CHILD_ROI_COUNT) {
+	ASSERT_NO_THROW(Nyxus::test_fmaps_child_roi_count());
+}
+
+TEST(TEST_NYXUS, TEST_FMAPS_CHILD_ROI_DIMENSIONS) {
+	ASSERT_NO_THROW(Nyxus::test_fmaps_child_roi_dimensions());
+}
+
+TEST(TEST_NYXUS, TEST_FMAPS_PARENT_MAPPING) {
+	ASSERT_NO_THROW(Nyxus::test_fmaps_parent_mapping());
+}
+
+TEST(TEST_NYXUS, TEST_FMAPS_CHILD_PIXEL_VALUES) {
+	ASSERT_NO_THROW(Nyxus::test_fmaps_child_pixel_values());
+}
+
+TEST(TEST_NYXUS, TEST_FMAPS_NONORIGIN_PARENT) {
+	ASSERT_NO_THROW(Nyxus::test_fmaps_nonorigin_parent());
+}
+
+TEST(TEST_NYXUS, TEST_FMAPS_SPARSE_MASK) {
+	ASSERT_NO_THROW(Nyxus::test_fmaps_sparse_mask());
+}
+
+TEST(TEST_NYXUS, TEST_FMAPS_PARENT_TOO_SMALL) {
+	ASSERT_NO_THROW(Nyxus::test_fmaps_parent_too_small());
+}
+
+TEST(TEST_NYXUS, TEST_FMAPS_START_LABEL_OFFSET) {
+	ASSERT_NO_THROW(Nyxus::test_fmaps_start_label_offset());
+}
+
+//***** 3D Feature maps *****
+
+TEST(TEST_NYXUS, TEST_FMAPS3D_CHILD_ROI_COUNT) {
+	ASSERT_NO_THROW(Nyxus::test_fmaps3d_child_roi_count());
+}
+
+TEST(TEST_NYXUS, TEST_FMAPS3D_CHILD_ROI_DIMENSIONS) {
+	ASSERT_NO_THROW(Nyxus::test_fmaps3d_child_roi_dimensions());
+}
+
+TEST(TEST_NYXUS, TEST_FMAPS3D_PARENT_MAPPING) {
+	ASSERT_NO_THROW(Nyxus::test_fmaps3d_parent_mapping());
+}
+
+TEST(TEST_NYXUS, TEST_FMAPS3D_CHILD_VOXEL_VALUES) {
+	ASSERT_NO_THROW(Nyxus::test_fmaps3d_child_voxel_values());
+}
+
+TEST(TEST_NYXUS, TEST_FMAPS3D_NONORIGIN_PARENT) {
+	ASSERT_NO_THROW(Nyxus::test_fmaps3d_nonorigin_parent());
+}
+
+TEST(TEST_NYXUS, TEST_FMAPS3D_SPARSE_MASK) {
+	ASSERT_NO_THROW(Nyxus::test_fmaps3d_sparse_mask());
+}
+
+TEST(TEST_NYXUS, TEST_FMAPS3D_PARENT_TOO_SMALL) {
+	ASSERT_NO_THROW(Nyxus::test_fmaps3d_parent_too_small());
+}
+
+TEST(TEST_NYXUS, TEST_FMAPS3D_START_LABEL_OFFSET) {
+	ASSERT_NO_THROW(Nyxus::test_fmaps3d_start_label_offset());
+}
+
+
+//***** Binning origin *****
+
+TEST(TEST_NYXUS, TEST_BIN_PIXEL_ZERO_ORIGIN) {
+	ASSERT_NO_THROW(Nyxus::test_bin_pixel_zero_origin());
+}
+
+TEST(TEST_NYXUS, TEST_BIN_PIXEL_MIN_ORIGIN) {
+	ASSERT_NO_THROW(Nyxus::test_bin_pixel_min_origin());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_BINNING_ORIGIN_DIVERGENCE) {
+	ASSERT_NO_THROW(Nyxus::test_glcm_binning_origin_divergence());
+}
+
+TEST(TEST_NYXUS, TEST_NGTDM_BINNING_ORIGIN_DIVERGENCE) {
+	ASSERT_NO_THROW(Nyxus::test_ngtdm_binning_origin_divergence());
+}
 
 //***** 2D contour and multicontour *****
 

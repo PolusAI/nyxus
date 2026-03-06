@@ -49,6 +49,24 @@ namespace Nyxus
 		const SaveOption saveOption,
 		const std::string& outputPath);
 
+	// feature maps 2D workflow
+	int processDataset_2D_fmaps(
+		Environment& env,
+		const std::vector<std::string>& intensFiles,
+		const std::vector<std::string>& labelFiles,
+		int numReduceThreads,
+		const SaveOption saveOption,
+		const std::string& outputPath);
+
+	// feature maps 3D workflow
+	int processDataset_3D_fmaps(
+		Environment& env,
+		const std::vector <Imgfile3D_layoutA>& intensFiles,
+		const std::vector <Imgfile3D_layoutA>& labelFiles,
+		int numReduceThreads,
+		const SaveOption saveOption,
+		const std::string& outputPath);
+
 	// single-segment 2D workflow
 	int processDataset_2D_wholeslide(
 		Environment & env,
@@ -75,6 +93,10 @@ namespace Nyxus
 		const SaveOption saveOption,
 		const std::string& outputPath);
 
+	// Reset CSV header state between workflow invocations (fixes static flag persistence).
+	// Must be called before any worker threads begin processing (not thread-safe).
+	void reset_csv_header_state();
+
 	std::string getPureFname(const std::string& fpath);
 	bool gatherRoisMetrics(int slide_idx, const std::string& intens_fpath, const std::string& label_fpath, Environment & env, ImageLoader & L);
 	bool gather_wholeslide_metrics(const std::string& intens_fpath, ImageLoader& L, LR& roi);
@@ -90,7 +112,10 @@ namespace Nyxus
 	bool scan_trivial_wholevolume (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr);	
 	bool scan_trivial_wholevolume_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y, double aniso_z);
 
+	bool scanTrivialRois (const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, Environment & env, ImageLoader & ldr);
+	bool scanTrivialRois_anisotropic (const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, Environment & env, ImageLoader & ldr, double sf_x, double sf_y);
 	bool scanTrivialRois_3D (Environment& env, const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, size_t t_index);
+	bool scanTrivialRois_3D_anisotropic (Environment& env, const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, size_t t_index, double aniso_x, double aniso_y, double aniso_z);
 	void dump_roi_metrics (const int dim, const std::string& output_dir, const size_t ram_limit, const std::string& seg_fpath, const Uniqueids& uniqueLabels, const Roidata& roiData);
 	void dump_roi_pixels (const int dim, const std::string& output_dir, const std::vector<int>& batch_labels, const std::string& seg_fpath, const Uniqueids& uniqueLabels, const Roidata& roiData);
 	void dump_2d_image_with_halfcontour(
@@ -135,7 +160,103 @@ namespace Nyxus
 	extern const std::vector<std::string> mandatory_output_columns;
 	bool save_features_2_csv (Environment & env, const std::string & intFpath, const std::string & segFpath, const std::string & outputDir, size_t t_index, bool need_aggregation);
 	bool save_features_2_csv_wholeslide (Environment & env, const LR & r, const std::string & ifpath, const std::string & mfpath, const std::string & outdir, size_t t_index);
+
+	// Shared helpers for feature column names and value collection (eliminates duplication across output paths)
+	std::vector<std::string> get_feature_column_names (Environment & env, const std::vector<std::tuple<std::string, int>> & F);
+	std::vector<double> collect_feature_values (const LR & r, const std::vector<std::tuple<std::string, int>> & F);
+
+	/// @brief RAII guard that temporarily replaces env's ROI data with child data and restores on destruction.
+	/// Ensures env is restored even if an exception is thrown during child ROI processing.
+	struct EnvRoiSwapGuard
+	{
+		Environment & env;
+		Uniqueids savedUniqueLabels;
+		Roidata savedRoiData;
+
+		EnvRoiSwapGuard (Environment & e, std::unordered_set<int> childLabels, std::unordered_map<int, LR> childRoiData)
+			: env(e)
+		{
+			savedUniqueLabels = std::move(env.uniqueLabels);
+			savedRoiData = std::move(env.roiData);
+			env.uniqueLabels = std::move(childLabels);
+			env.roiData = std::move(childRoiData);
+		}
+
+		~EnvRoiSwapGuard ()
+		{
+			env.uniqueLabels = std::move(savedUniqueLabels);
+			env.roiData = std::move(savedRoiData);
+		}
+
+		EnvRoiSwapGuard (const EnvRoiSwapGuard &) = delete;
+		EnvRoiSwapGuard & operator= (const EnvRoiSwapGuard &) = delete;
+	};
+
+	// Feature maps
+	struct FmapChildInfo
+	{
+		int parent_label;
+		int center_x;
+		int center_y;
+		int center_z = 0;	// unused in 2D
+	};
+
+	int generateChildRois (
+		const LR & parent,
+		int kernel_size,
+		std::unordered_set<int> & childLabels,
+		std::unordered_map<int, LR> & childRoiData,
+		std::unordered_map<int, FmapChildInfo> & childToParentMap,
+		int64_t startLabel);
+	int generateChildRois_3D (
+		const LR & parent,
+		int kernel_size,
+		std::unordered_set<int> & childLabels,
+		std::unordered_map<int, LR> & childRoiData,
+		std::unordered_map<int, FmapChildInfo> & childToParentMap,
+		int64_t startLabel);
+	bool save_features_2_csv_fmaps (
+		Environment & env,
+		const std::string & intFpath,
+		const std::string & segFpath,
+		const std::string & outputDir,
+		int slide_idx,
+		const std::unordered_set<int> & childLabels,
+		const std::unordered_map<int, LR> & childRoiData,
+		const std::unordered_map<int, FmapChildInfo> & childToParentMap);
 	bool save_features_2_buffer (ResultsCache &results_cache, Environment &env, size_t t_index);
+	bool save_features_2_buffer_fmaps (
+		ResultsCache & rescache,
+		Environment & env,
+		const std::string & intens_name,
+		const std::string & seg_name,
+		const std::unordered_set<int> & childLabels,
+		const std::unordered_map<int, LR> & childRoiData,
+		const std::unordered_map<int, FmapChildInfo> & childToParentMap);
+	void save_features_2_fmap_arrays (
+		ResultsCache & rescache,
+		Environment & env,
+		const std::string & intens_name,
+		const std::string & seg_name,
+		int parent_label,
+		int parent_xmin, int parent_ymin,
+		int parent_w, int parent_h,
+		int kernel_size,
+		const std::unordered_set<int> & childLabels,
+		const std::unordered_map<int, LR> & childRoiData,
+		const std::unordered_map<int, FmapChildInfo> & childToParentMap);
+	void save_features_2_fmap_arrays_3D (
+		ResultsCache & rescache,
+		Environment & env,
+		const std::string & intens_name,
+		const std::string & seg_name,
+		int parent_label,
+		int parent_xmin, int parent_ymin, int parent_zmin,
+		int parent_w, int parent_h, int parent_d,
+		int kernel_size,
+		const std::unordered_set<int> & childLabels,
+		const std::unordered_map<int, LR> & childRoiData,
+		const std::unordered_map<int, FmapChildInfo> & childToParentMap);
 	bool save_features_2_buffer_wholeslide(
 		ResultsCache& rescache,
 		Environment& env, 

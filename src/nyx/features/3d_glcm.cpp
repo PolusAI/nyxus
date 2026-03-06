@@ -48,8 +48,11 @@ void D3_GLCM_feature::calculate (LR& r, const Fsettings& s)
 	SimpleCube<PixIntens> D;
 	D.allocate (w,h,d);
 
-	auto greyBinningInfo = STNGS_GLCM_GREYDEPTH(s);	// former Nyxus::theEnvironment.get_coarse_gray_depth()
-	if (STNGS_IBSI(s))	// former Nyxus::theEnvironment.ibsi_compliance
+	// Use GLCM-specific grey depth if set via metaparams, otherwise fall back to global
+	auto greyBinningInfo = STNGS_GLCM_GREYDEPTH(s);
+	if (greyBinningInfo == 0)
+		greyBinningInfo = s[(int)NyxSetting::GREYDEPTH].ival;
+	if (STNGS_IBSI(s))
 		greyBinningInfo = 0;
 
 	bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyBinningInfo);
@@ -64,7 +67,7 @@ void D3_GLCM_feature::calculate (LR& r, const Fsettings& s)
 			D,
 			r.aux_min,
 			r.aux_max,
-			STNGS_GLCM_GREYDEPTH(s),
+			greyBinningInfo,
 			STNGS_IBSI(s),
 			STNGS_NAN(s));
 	}

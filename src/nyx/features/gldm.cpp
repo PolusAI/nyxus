@@ -274,7 +274,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 	// Prepare ROI's intensity range for normalize_I()
 	PixIntens piRange = r.aux_max - r.aux_min;
 
-	unsigned int nGrays = STNGS_NGREYS(s); // former theEnvironment.get_coarse_gray_depth()
+	int nGrays = STNGS_NGREYS(s); // former theEnvironment.get_coarse_gray_depth()
 
 	size_t height = D.get_height(),
 		width = D.get_width();

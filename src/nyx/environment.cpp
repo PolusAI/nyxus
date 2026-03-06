@@ -191,6 +191,8 @@ void Environment::show_cmdline_help()
 		<< "\t\t\tDefault: 5 \n"
 		<< "\t\t" << OPT << clo_COARSEGRAYDEPTH << "=<custom number of grayscale levels> \n"
 		<< "\t\t\tDefault: 64 \n"
+		<< "\t\t" << OPT << clo_BINNINGORIGIN << "=<zero|min> Origin of intensity binning range \n"
+		<< "\t\t\t'zero' bins from [0, max] (default), 'min' bins from [min, max] (PyRadiomics-compatible) \n"
 		<< "\t\t" << OPT << clo_GLCMANGLES << "=<one or more comma separated rotation angles from set {0, 45, 90, and 135}> \n"
 		<< "\t\t\tDefault: 0,45,90,135 \n"
 		<< "\t\t" << OPT << clo_VERBOSITY << "=<levels of verbosity 0 (silence), 1 (minimum output), 2 (1 + timing), 3 (2 + roi metrics + more timing), 4 (3 + diagnostic information)> \n"
@@ -441,6 +443,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			find_string_argument(i, clo_GLCMOFFSET, glcmOptions.rawOffs) ||
 			find_string_argument(i, clo_PXLDIST, pixel_distance) ||
 			find_string_argument(i, clo_COARSEGRAYDEPTH, raw_coarse_grayscale_depth) ||
+			find_string_argument(i, clo_BINNINGORIGIN, raw_binning_origin) ||
 			find_string_argument(i, clo_VERBOSITY, rawVerbosity) ||
 			find_string_argument(i, clo_IBSICOMPLIANCE, raw_ibsi_compliance) ||
 			find_string_argument(i, clo_RAMLIMIT, rawRamLimit) ||
@@ -473,6 +476,9 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			|| find_string_argument(i, clo_FPIMAGE_MAX, fpimageOptions.raw_max_intensity)
 			|| find_string_argument(i, clo_RESULTFNAME, nyxus_result_fname)
 			|| find_string_argument(i, clo_CLI_DIM, raw_dim)
+
+			|| find_string_argument(i, clo_FMAPS, raw_fmaps)
+			|| find_string_argument(i, clo_FMAPS_RADIUS, raw_fmaps_radius)
 
 #ifdef CHECKTIMING
 			|| find_string_argument(i, clo_EXCLUSIVETIMING, rawExclusiveTiming)
@@ -663,9 +669,21 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	if (!raw_coarse_grayscale_depth.empty())
 	{
 		// string -> integer
-		if (sscanf(raw_coarse_grayscale_depth.c_str(), "%d", &coarse_grayscale_depth) != 1)
+		if (sscanf(raw_coarse_grayscale_depth.c_str(), "%d", &coarse_grayscale_depth) != 1 || coarse_grayscale_depth < 1)
 		{
-			std::cerr << "Error: " << clo_COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": expecting an integer constant\n";
+			std::cerr << "Error: " << clo_COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": expecting a positive integer constant\n";
+			return false;
+		}
+	}
+
+	// parse BINNINGORIGIN -- negate coarse_grayscale_depth for "min" origin (PyRadiomics-style)
+	if (!raw_binning_origin.empty())
+	{
+		if (raw_binning_origin == "min")
+			coarse_grayscale_depth = -std::abs(coarse_grayscale_depth);
+		else if (raw_binning_origin != "zero")
+		{
+			std::cerr << "Error: " << clo_BINNINGORIGIN << "=" << raw_binning_origin << ": expecting 'zero' or 'min'\n";
 			return false;
 		}
 	}
@@ -900,6 +918,25 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		ibsi_compliance = false;
 	}
 
+	//==== Parse feature maps options
+	if (!raw_fmaps.empty())
+	{
+		std::string tmp = raw_fmaps;
+		std::transform(tmp.begin(), tmp.end(), tmp.begin(), ::tolower);
+		fmaps_mode = (tmp == "true" || tmp == "1" || tmp == "on");
+	}
+
+	if (!raw_fmaps_radius.empty())
+	{
+		int r = 0;
+		if (sscanf(raw_fmaps_radius.c_str(), "%d", &r) != 1 || r < 1)
+		{
+			std::cerr << "Error: " << clo_FMAPS_RADIUS << "=" << raw_fmaps_radius << ": expecting an integer >= 1\n";
+			return false;
+		}
+		fmaps_kernel_radius = r;
+	}
+
 	// Success
 	return true;
 }
@@ -915,7 +952,7 @@ int Environment::get_coarse_gray_depth()
 	return coarse_grayscale_depth;
 }
 
-void Environment::set_coarse_gray_depth(unsigned int new_depth)
+void Environment::set_coarse_gray_depth(int new_depth)
 {
 	coarse_grayscale_depth = new_depth;
 }

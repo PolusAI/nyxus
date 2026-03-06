@@ -53,6 +53,11 @@ should adhere to columns "WIPP I/O role" and "WIPP type".
      - integer
      - input
      - integer
+   * - --binningOrigin
+     - (Optional) Origin of the intensity binning range for texture features. 'zero' bins span [0, max] (default). 'min' bins span [min, max], adapting to the actual data range (PyRadiomics-compatible). Default: '--binningOrigin=zero'
+     - string constant
+     - input
+     - enum
    * - --gaborfreqs
      - (Optional) Feature GABOR: custom denominators of :math:`\pi` as frequencies of Gabor filter's harmonic factor. Default: '--gaborfreqs=1,2,4,8,16,32,64'
      - list of integer constants
@@ -135,9 +140,19 @@ should adhere to columns "WIPP I/O role" and "WIPP type".
      - path
    * - --arrowOutputType
      - (Optional) Type of Arrow file to write the feature results to. Current options are 'arrow' for Arrow IPC or 'parquet' for Parquet
-     - string 
+     - string
      - output
      - enum
+   * - --fmaps
+     - (Optional) Enable feature maps mode. When enabled, a sliding kernel is moved across each ROI and features are computed at every position, producing spatial feature maps instead of a single feature vector per ROI. Acceptable values: true, false. Default: '--fmaps=false'. Not compatible with Arrow/Parquet output.
+     - string constant
+     - input
+     - enum
+   * - --fmapsRadius
+     - (Optional) Radius of the sliding kernel in feature maps mode. The kernel size is (2 * radius + 1). For example, '--fmapsRadius=2' produces a 5x5 kernel (2D) or 5x5x5 kernel (3D). Default: '--fmapsRadius=2'
+     - integer
+     - input
+     - integer
 
 Examples
 ========
@@ -378,19 +393,20 @@ will print the dictionary
 
 .. code-block:: bash
 
-   {'coarse_gray_depth': 256, 
-   'features': ['*ALL*'], 
-   'gabor_f0': 0.1, 
-   'gabor_freqs': [1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0], 
-   'gabor_gamma': 0.1, 
-   'gabor_kersize': 16, 
-   'gabor_sig2lam': 0.8, 
-   'gabor_theta': 45.0, 
-   'gabor_thold': 0.025, 
-   'ibsi': 0, 
-   'n_loader_threads': 1, 
-   'n_feature_calc_threads': 4, 
-   'neighbor_distance': 5, 
+   {'binning_origin': 'zero',
+   'coarse_gray_depth': 256,
+   'features': ['*ALL*'],
+   'gabor_f0': 0.1,
+   'gabor_freqs': [1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0],
+   'gabor_gamma': 0.1,
+   'gabor_kersize': 16,
+   'gabor_sig2lam': 0.8,
+   'gabor_theta': 45.0,
+   'gabor_thold': 0.025,
+   'ibsi': 0,
+   'n_loader_threads': 1,
+   'n_feature_calc_threads': 4,
+   'neighbor_distance': 5,
    'pixels_per_micron': 1.0}
 
 There is also the option to pass arguments to this function to only receive a subset of parameter values. The arguments should be 

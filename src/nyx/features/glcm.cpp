@@ -18,10 +18,11 @@ void GLCMFeature::calculate (LR& r, const Fsettings& s)
 	// Clear the feature values buffers
 	clear_result_buffers();
 
-	// Skip feature calculation in case of bad data
-	// (We need to smart-select the greyInfo rather than just theEnvironment.get_coarse_gray_depth())
-	int nGreys = STNGS_GLCM_GREYDEPTH(s),
-		offset = STNGS_GLCM_OFFSET(s);
+	// Use GLCM-specific grey depth if set via metaparams, otherwise fall back to global
+	int nGreys = STNGS_GLCM_GREYDEPTH(s);
+	if (nGreys == 0)
+		nGreys = s[(int)NyxSetting::GREYDEPTH].ival;
+	int offset = STNGS_GLCM_OFFSET(s);
 	double softNAN = s[(int)NyxSetting::SOFTNAN].rval;
 
 	auto binnedMin = bin_pixel(r.aux_min, r.aux_min, r.aux_max, nGreys);

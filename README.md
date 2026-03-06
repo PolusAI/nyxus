@@ -234,6 +234,54 @@ f = nyx.featurize_directory (intensity_dir=dir, label_dir=dir)
 ```
 
 
+### Feature maps (sliding kernel) mode
+
+Feature maps mode computes features at every position of a sliding kernel across each ROI, producing spatial feature maps instead of a single feature vector per ROI. This is useful for generating spatially resolved feature representations for downstream analysis or machine learning.
+
+#### 2D feature maps
+
+```python
+from nyxus import Nyxus, save_fmaps_to_tiff
+
+nyx = Nyxus(["*ALL_INTENSITY*"], fmaps=True, fmaps_radius=2)  # 5x5 kernel
+results = nyx.featurize_directory("/path/to/intensities", "/path/to/labels")
+
+# results is a list of dicts, one per parent ROI:
+# [
+#     {
+#         "parent_roi_label": 1,
+#         "intensity_image": "img1.tif",
+#         "mask_image": "seg1.tif",
+#         "origin_x": 10, "origin_y": 20,
+#         "features": {
+#             "MEAN": numpy.array(shape=(map_h, map_w)),
+#             "STDDEV": numpy.array(shape=(map_h, map_w)),
+#             ...
+#         }
+#     },
+#     ...
+# ]
+
+# Save feature maps as TIFF stacks (requires tifffile)
+save_fmaps_to_tiff(results, "output/tiff/")
+```
+
+#### 3D feature maps
+
+```python
+from nyxus import Nyxus3D, save_fmaps_to_nifti
+
+nyx = Nyxus3D(["*3D_ALL_INTENSITY*"], fmaps=True, fmaps_radius=1)  # 3x3x3 kernel
+results = nyx.featurize_directory("/path/to/volumes", "/path/to/masks")
+
+# Each feature map is a 3D numpy array shaped (map_d, map_h, map_w)
+
+# Save as NIfTI volumes (requires nibabel)
+save_fmaps_to_nifti(results, "output/nifti/", voxel_size=(0.5, 0.5, 1.0))
+```
+
+Note: Feature maps mode returns numpy arrays rather than DataFrames, since the output is inherently image-shaped. Arrow/Parquet output is not supported in this mode.
+
 ## Further steps
 
 For more information on all of the available options and features, check out [the documentation](#).
@@ -271,19 +319,20 @@ print(nyx.get_params())
 will print the dictionary
 
 ```bash
-{'coarse_gray_depth': 256, 
-'features': ['*ALL*'], 
-'gabor_f0': 0.1, 
-'gabor_freqs': [1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0], 
-'gabor_gamma': 0.1, 
-'gabor_kersize': 16, 
-'gabor_sig2lam': 0.8, 
-'gabor_theta': 45.0, 
-'gabor_thold': 0.025, 
-'ibsi': 0, 
-'n_loader_threads': 1, 
-'n_feature_calc_threads': 4, 
-'neighbor_distance': 5, 
+{'binning_origin': 'zero',
+'coarse_gray_depth': 256,
+'features': ['*ALL*'],
+'gabor_f0': 0.1,
+'gabor_freqs': [1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0],
+'gabor_gamma': 0.1,
+'gabor_kersize': 16,
+'gabor_sig2lam': 0.8,
+'gabor_theta': 45.0,
+'gabor_thold': 0.025,
+'ibsi': 0,
+'n_loader_threads': 1,
+'n_feature_calc_threads': 4,
+'neighbor_distance': 5,
 'pixels_per_micron': 1.0}
 ```
 
