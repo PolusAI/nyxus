@@ -525,7 +525,7 @@ class Nyxus:
         if intensity_files is None:
             raise IOError ("The list of intensity file paths is empty")
 
-        if mask_files is None:
+        if single_roi == False and mask_files is None:
             raise IOError ("The list of segment file paths is empty")
         
         if (output_type not in self._valid_output_types):

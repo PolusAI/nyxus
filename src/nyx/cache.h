@@ -6,6 +6,9 @@
 	#include "features/pixel.h"
 #endif
 
+#include <optional>
+#include <string>
+
 class CpusideCache
 {
 public:
@@ -148,7 +151,7 @@ public:
 		int n_gabor_filters,
 		int gabor_ker_side);
 
-	bool allocate_gpu_cache(
+	std::optional<std::string> allocate_gpu_cache(
 		// out
 		GpuCache<Pixel2>& clouds,
 		GpuCache<Pixel2>& konturs,

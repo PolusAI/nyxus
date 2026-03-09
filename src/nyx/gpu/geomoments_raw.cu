@@ -4,7 +4,7 @@
 #include <cuda_runtime_api.h>
 #include <builtin_types.h>
 #include "gpu.h"
-#include "../cache.h"   //xxxxxxxxx     #include "../gpucache.h"
+#include "../cache.h"
 #include "geomoments.cuh"
 #include "../features/pixel.h"
 

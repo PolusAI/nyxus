@@ -286,12 +286,12 @@ size_t ImageLoader::get_within_tile_idx (size_t pixel_row, size_t pixel_col)
 
 size_t ImageLoader::get_num_tiles_vert()
 {
-	return ntw;
+	return nth;
 }
 
 size_t ImageLoader::get_num_tiles_hor()
 {
-	return nth;
+	return ntw;
 }
 
 size_t ImageLoader::get_tile_height()

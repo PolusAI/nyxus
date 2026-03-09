@@ -16,6 +16,7 @@ public:
 	void close();
 	bool load_tile(size_t tile_idx);
 	bool load_tile(size_t tile_row, size_t tile_col);
+	void free_tile_buffers();
 
 	uint32_t get_cur_tile_seg_pixel(size_t pixel_idx);
 	double get_cur_tile_dpequiv_pixel(size_t idx);
