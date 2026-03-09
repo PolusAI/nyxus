@@ -58,7 +58,7 @@ if(USEGPU)
 	elseif (CUDAToolkit_VERSION_MAJOR STREQUAL "12")
 		set(CUDA_ARCH_LIST "50;52;53;60;61;62;70;72;75;80;86;89;90")
 	elseif (CUDAToolkit_VERSION_MAJOR STREQUAL "13")
-		set(CUDA_ARCH_LIST "75;80;86;87;89;90;100;101;103;120;121")
+		set(CUDA_ARCH_LIST "75;80;86;87;88;89;90;100;103;120;121")
 	else() # some old CUDA version (<10)
 		set(CUDA_ARCH_LIST "50") # 5.0 is the oldest non-deprecated CC as of 2024-09-06
 	endif()
