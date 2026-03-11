@@ -18,14 +18,18 @@ void GLCMFeature::calculate (LR& r, const Fsettings& s)
 	// Clear the feature values buffers
 	clear_result_buffers();
 
-	// Skip feature calculation in case of bad data
-	// (We need to smart-select the greyInfo rather than just theEnvironment.get_coarse_gray_depth())
-	int nGreys = STNGS_GLCM_GREYDEPTH(s),
-		offset = STNGS_GLCM_OFFSET(s);
+	// Use GLCM-specific grey depth if set via metaparams, otherwise fall back to global.
+	// GLCM_GREYDEPTH defaults to 0 when not explicitly configured (e.g. no metaparams
+	// set), so fall back to the global GREYDEPTH to avoid treating it as IBSI mode.
+	int nGreys = STNGS_GLCM_GREYDEPTH(s);
+	if (nGreys == 0)
+		nGreys = s[(int)NyxSetting::GREYDEPTH].ival;
+	auto binOrigin = STNGS_BINNING_ORIGIN(s);	// zero-based (Nyxus/MATLAB) or min-based (PyRadiomics)
+	int offset = STNGS_GLCM_OFFSET(s);
 	double softNAN = s[(int)NyxSetting::SOFTNAN].rval;
 
-	auto binnedMin = bin_pixel(r.aux_min, r.aux_min, r.aux_max, nGreys);
-	auto binnedMax = bin_pixel(r.aux_max, r.aux_min, r.aux_max, nGreys);
+	auto binnedMin = bin_pixel(r.aux_min, r.aux_min, r.aux_max, nGreys, binOrigin);
+	auto binnedMax = bin_pixel(r.aux_max, r.aux_min, r.aux_max, nGreys, binOrigin);
 	if (binnedMin == binnedMax)
 	{
 		auto w = softNAN;		// safe NAN
@@ -353,6 +357,7 @@ void GLCMFeature::calculateCoocMatAtAngle(
 {
 	int nGreys = s[(int)NyxSetting::GREYDEPTH].ival;
 	bool ibsi = s[(int)NyxSetting::IBSI].bval;
+	auto binOrigin = STNGS_BINNING_ORIGIN(s);	// zero-based (Nyxus/MATLAB) or min-based (PyRadiomics)
 
 	//--- grey bining ---
 	int rows = grays.height,
@@ -382,10 +387,13 @@ void GLCMFeature::calculateCoocMatAtAngle(
 		greyInfo = greyInfo_localFeature;
 	if (ibsi)
 		greyInfo = 0;
-	bin_intensities (D, imR, grays_min_val, grays_max_val, greyInfo);
+	bin_intensities (D, imR, grays_min_val, grays_max_val, greyInfo, binOrigin);
 
-	// allocate the cooc and intensities matrices
-	if (radiomics_grey_binning(greyInfo))
+	// Allocate the cooc and intensities matrices.
+	// The '&& !ibsi' guard is needed because IBSI mode sets n_levels=0 (handled by
+	// the else/IBSI branch below) regardless of binOrigin. Without this guard, an
+	// IBSI run with binOrigin==min_based would incorrectly enter the radiomics path.
+	if ((binOrigin == BinningOrigin::min_based && !ibsi))
 	{
 		// unique intensities
 		std::unordered_set<PixIntens> U(D.begin(), D.end());
@@ -397,7 +405,7 @@ void GLCMFeature::calculateCoocMatAtAngle(
 		GLCM.allocate((int)I.size(), (int)I.size());
 	}
 	else
-		if (matlab_grey_binning(greyInfo))
+		if ((binOrigin == BinningOrigin::zero && !ibsi))	// zero-based (MATLAB) binning; !ibsi excludes IBSI which uses its own branch
 		{
 			auto n_matlab_levels = greyInfo;
 			I.resize (n_matlab_levels);
@@ -438,7 +446,7 @@ void GLCMFeature::calculateCoocMatAtAngle(
 					lvl_a = D.yx(row + dy, col + dx);
 
 				// Skip 0-intensity pixels (usually out of mask pixels)
-				if (ibsi_grey_binning(greyInfo))
+				if (ibsi)
 					if (lvl_a == 0 || lvl_b == 0)
 						continue;
 
@@ -446,8 +454,9 @@ void GLCMFeature::calculateCoocMatAtAngle(
 				int a = lvl_a,
 					b = lvl_b;
 
-				// raw intensities need to be modified for different grey binning paradigms (Matlab, PyRadiomics, IBSI)
-				if (radiomics_grey_binning(greyInfo))
+				// Raw intensities need to be modified for different grey binning paradigms.
+				// '&& !ibsi' ensures IBSI mode falls through to the else (matlab/IBSI) branch.
+				if ((binOrigin == BinningOrigin::min_based && !ibsi))
 				{
 					// skip zeroes
 					if (a == 0 || b == 0)
@@ -468,8 +477,9 @@ void GLCMFeature::calculateCoocMatAtAngle(
 
 				(GLCM.xy(a,b)) ++;
 
-				// Radiomics GLCM is symmetric, Matlab one is not
-				if (GLCMFeature::symmetric_glcm || radiomics_grey_binning(greyInfo) || ibsi_grey_binning(greyInfo))
+				// Radiomics and IBSI GLCMs are symmetric; Matlab is not.
+			// The condition is equivalent to the old: symmetric_glcm || radiomics || ibsi
+				if (GLCMFeature::symmetric_glcm || (binOrigin == BinningOrigin::min_based && !ibsi) || ibsi)
 					(GLCM.xy(b, a))++;
 			}
 		}
