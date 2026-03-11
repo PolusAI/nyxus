@@ -61,6 +61,10 @@
 #define clo_ANISO_Y "--anisoy"
 #define clo_ANISO_Z "--anisoz"
 
+// Feature maps
+#define clo_FMAPS "--fmaps"						// Enable feature maps mode. "true" or "false"
+#define clo_FMAPS_RADIUS "--fmapsRadius"		// Kernel radius for feature maps. Integer >= 1. Example: "2" (produces 5x5 kernel)
+
 // Result options
 #define clo_NOVAL "--noval"						// -> raw_noval
 #define clo_TINYVAL "--tinyval"					// -> raw_tiny

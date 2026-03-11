@@ -207,6 +207,8 @@ namespace Nyxus
 		const SaveOption saveOption,
 		const std::string& outputPath)
 	{
+		reset_csv_header_state();
+
 		//**** prescan all slides
 
 		size_t nf = intensFiles.size();
