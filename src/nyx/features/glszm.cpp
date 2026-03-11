@@ -238,13 +238,15 @@ void GLSZMFeature::calculate (LR& r, const Fsettings& s)
 
 	// Squeeze the intensity range
 	auto greyInfo = STNGS_NGREYS(s);	// former theEnvironment.get_coarse_gray_depth()
-	if (STNGS_IBSI(s))	// former Nyxus::theEnvironment.ibsi_compliance
+	auto binOrigin = STNGS_BINNING_ORIGIN(s);	// zero-based (Nyxus/MATLAB) or min-based (PyRadiomics)
+	bool ibsi = STNGS_IBSI(s);
+	if (ibsi)
 		greyInfo = 0;
 	auto& imR = r.aux_image_matrix.ReadablePixels();
-	bin_intensities (D, imR, r.aux_min, r.aux_max, greyInfo);
+	bin_intensities (D, imR, r.aux_min, r.aux_max, greyInfo, binOrigin);
 
 	// allocate intensities matrix
-	if (ibsi_grey_binning(greyInfo))
+	if (ibsi)
 	{
 		auto n_ibsi_levels = *std::max_element(D.begin(), D.end());
 		I.resize(n_ibsi_levels);

@@ -120,6 +120,11 @@ class Nyxus:
         X-dimension scale factor
     anisotropy_y: float (optional, default 1.0)
         Y-dimension scale factor
+    binning_origin: str (optional, default "zero")
+        Origin of the intensity binning range for texture features.
+        "zero" - bins span [0, max] (default Nyxus/MATLAB behavior).
+        "min"  - bins span [min, max], adapting to the actual data range
+            (PyRadiomics-compatible behavior).
     """
 
     def __init__(
@@ -131,10 +136,11 @@ class Nyxus:
             'neighbor_distance', 'pixels_per_micron', 'coarse_gray_depth',
             'n_feature_calc_threads', 'use_gpu_device', 'ibsi',
             'gabor_kersize', 'gabor_gamma', 'gabor_sig2lam', 'gabor_f0',
-            'gabor_thold', 'gabor_thetas', 'gabor_freqs', 'channel_signature', 
+            'gabor_thold', 'gabor_thetas', 'gabor_freqs', 'channel_signature',
             'parent_channel', 'child_channel', 'aggregate', 'dynamic_range', 'min_intensity',
             'max_intensity', 'ram_limit', 'verbose',
-            'anisotropy_x', 'anisotropy_y'
+            'anisotropy_x', 'anisotropy_y',
+            'binning_origin'
         }
 
         # Check for unexpected keyword arguments
@@ -164,15 +170,19 @@ class Nyxus:
         verb_lvl = kwargs.get('verbose', 0)
         aniso_x = kwargs.get('anisotropy_x', 1.0)
         aniso_y = kwargs.get('anisotropy_y', 1.0)
-        
+        binning_origin = kwargs.get('binning_origin', 'zero')
+
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
 
         if pixels_per_micron <= 0:
             raise ValueError("Pixels per micron must be greater than zero.")
 
-        if coarse_gray_depth <= 0:
-            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=64) must be non-negative.")
+        if coarse_gray_depth < 1:
+            raise ValueError("coarse_gray_depth must be >= 1.")
+
+        if binning_origin not in ('zero', 'min'):
+            raise ValueError("binning_origin must be 'zero' or 'min'.")
 
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
@@ -209,7 +219,8 @@ class Nyxus:
             verb_lvl,
             aniso_x,
             aniso_y,
-            aniso_z) 
+            aniso_z,
+            binning_origin)
 
         self.set_gabor_feature_params(
             kersize = gabor_kersize,
@@ -697,12 +708,13 @@ class Nyxus:
             'min_intensity',
             'max_intensity',
             'ram_limit',
+            'binning_origin',
         ]
-        
+
         for key in params:
             if key not in valid_params:
                 raise ValueError(f'Invalid environment parameter {key}. Value parameters are {params}')
-        
+
         features = params.get('features', [])
         neighbor_distance = params.get ('neighbor_distance', -1)
         pixels_per_micron = params.get ('pixels_per_micron', -1)
@@ -714,10 +726,11 @@ class Nyxus:
         min_intensity = params.get('min_intensity', -1)
         max_intensity = params.get('max_intensity', -1)
         ram_limit = params.get('ram_limit', -1)
-        
+        binning_origin = params.get('binning_origin', "")
+
         set_environment_params_imp (id(self),
-                                   features, 
-                                   neighbor_distance, 
+                                   features,
+                                   neighbor_distance,
                                    pixels_per_micron,
                                    coarse_gray_depth,
                                    n_reduce_threads,
@@ -726,13 +739,14 @@ class Nyxus:
                                    min_intensity,
                                    max_intensity,
                                    ram_limit,
-                                   verb_lvl)
-        
+                                   verb_lvl,
+                                   binning_origin)
+
     def set_params(self, **params):
         """Sets parameters of the Nyxus class
 
         Keyword args:
-        
+
         * features: List[str],
         * neighbor_distance
         * pixels_per_micron
@@ -778,16 +792,21 @@ class Nyxus:
             
             elif (key == "ibsi"):
                 set_if_ibsi_imp (id(self), value)
-            
+
+            elif key == "binning_origin":
+                if value not in ('zero', 'min'):
+                    raise ValueError("binning_origin must be 'zero' or 'min'.")
+                environment_params["binning_origin"] = value
+
             else:
                 if (key not in available_environment_params):
                     raise ValueError ("Invalid parameter: ", key)
                 else:
                     environment_params[key] = value
-                
+
         if (len(gabor_params) > 0):
             self.set_gabor_feature_params(**gabor_params)
-        
+
         if (len(environment_params) > 0):
             self.set_environment_params(**environment_params)
 
@@ -944,6 +963,11 @@ class Nyxus3D:
         Y-dimension scale factor
     anisotropy_z: float (optional, default 1.0)
         Z-dimension scale factor
+    binning_origin: str (optional, default "zero")
+        Origin of the intensity binning range for texture features.
+        "zero" - bins span [0, max] (default Nyxus/MATLAB behavior).
+        "min"  - bins span [min, max], adapting to the actual data range
+            (PyRadiomics-compatible behavior).
     """
 
     def __init__(
@@ -953,13 +977,14 @@ class Nyxus3D:
         ):
         valid_keys = {
             'neighbor_distance', 'pixels_per_micron', 'coarse_gray_depth',
-            'n_feature_calc_threads', 'use_gpu_device', 'ibsi', 'channel_signature', 
-            'parent_channel', 'child_channel', 'aggregate', 
+            'n_feature_calc_threads', 'use_gpu_device', 'ibsi', 'channel_signature',
+            'parent_channel', 'child_channel', 'aggregate',
             'dynamic_range', 'min_intensity', 'max_intensity', 'ram_limit',
             'verbose',
-            'anisotropy_x', 
+            'anisotropy_x',
             'anisotropy_y',
-            'anisotropy_z'
+            'anisotropy_z',
+            'binning_origin'
         }
 
         # Check for unexpected keyword arguments
@@ -982,15 +1007,19 @@ class Nyxus3D:
         aniso_x = kwargs.get('anisotropy_x', 1.0)
         aniso_y = kwargs.get('anisotropy_y', 1.0)
         aniso_z = kwargs.get('anisotropy_z', 1.0)
-        
+        binning_origin = kwargs.get('binning_origin', 'zero')
+
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
 
         if pixels_per_micron <= 0:
             raise ValueError("Pixels per micron must be greater than zero.")
 
-        if coarse_gray_depth <= 0:
-            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=64) must be non-negative.")
+        if coarse_gray_depth < 1:
+            raise ValueError("coarse_gray_depth must be >= 1.")
+
+        if binning_origin not in ('zero', 'min'):
+            raise ValueError("binning_origin must be 'zero' or 'min'.")
 
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
@@ -1035,8 +1064,9 @@ class Nyxus3D:
             verb_lvl,
             aniso_x,
             aniso_y,
-            aniso_z)
-        
+            aniso_z,
+            binning_origin)
+
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
 
@@ -1257,13 +1287,14 @@ class Nyxus3D:
             'verbose',
             'dynamic_range',
             'min_intensity',
-            'max_intensity'
+            'max_intensity',
+            'binning_origin',
         ]
-        
+
         for key in params:
             if key not in valid_params:
                 raise ValueError(f'Invalid environment parameter {key}. Value parameters are {params}')
-        
+
         features = params.get('features', [])
         neighbor_distance = params.get ('neighbor_distance', -1)
         pixels_per_micron = params.get ('pixels_per_micron', -1)
@@ -1275,10 +1306,11 @@ class Nyxus3D:
         min_intensity = params.get('min_intensity', -1)
         max_intensity = params.get('max_intensity', -1)
         ram_limit = -1 # no limit
-        
+        binning_origin = params.get('binning_origin', "")
+
         set_environment_params_imp (id(self),
-                                   features, 
-                                   neighbor_distance, 
+                                   features,
+                                   neighbor_distance,
                                    pixels_per_micron,
                                    coarse_gray_depth,
                                    n_reduce_threads,
@@ -1287,13 +1319,14 @@ class Nyxus3D:
                                    min_intensity,
                                    max_intensity,
                                    ram_limit,
-                                   verb_lvl)
-        
+                                   verb_lvl,
+                                   binning_origin)
+
     def set_params(self, **params):
         """Sets parameters of the Nyxus class
 
         Keyword args:
-        
+
         * features: List[str],
         * neighbor_distance
         * pixels_per_micron
@@ -1304,9 +1337,9 @@ class Nyxus3D:
         * dynamic_range (float): Desired dynamic range of voxels of a floating point TIFF image.
         * min_intensity (float): Minimum intensity of voxels of a floating point TIFF image.
         * max_intensity (float): Maximum intensity of voxels of a floating point TIFF image.
-    
+
         """
-        
+
         available_environment_params = [
             "features",
             "neighbor_distance",
@@ -1319,24 +1352,28 @@ class Nyxus3D:
             "min_intensity",
             "max_intensity"
         ]
-        
+
         environment_params = {}
-        
+
         gabor_params = {}
-        
-        
+
+
         for key, value in params.items():
-           
+
             if (key == "ibsi"):
                 set_if_ibsi_imp (id(self), value)
-            
+
+            elif key == "binning_origin":
+                if value not in ('zero', 'min'):
+                    raise ValueError("binning_origin must be 'zero' or 'min'.")
+                environment_params["binning_origin"] = value
+
             else:
                 if (key not in available_environment_params):
                     raise ValueError(f"Invalid parameter {key}.")
                 else:
                     environment_params[key] = value
-                
-                        
+
         if (len(environment_params) > 0):
             self.set_environment_params(**environment_params)
     
@@ -1562,8 +1599,9 @@ class ImageQuality:
             verb_lvl,
             aniso_x,
             aniso_y,
-            aniso_z)
-        
+            aniso_z,
+            "zero")
+
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
 
@@ -1991,13 +2029,14 @@ class ImageQuality:
             'verbose',
             'dynamic_range',
             'min_intensity',
-            'max_intensity'
+            'max_intensity',
+            'binning_origin',
         ]
-        
+
         for key in params:
             if key not in valid_params:
                 raise ValueError(f'Invalid environment parameter {key}. Value parameters are {params}')
-        
+
         features = params.get('features', [])
         neighbor_distance = params.get ('neighbor_distance', -1)
         pixels_per_micron = params.get ('pixels_per_micron', -1)
@@ -2009,10 +2048,11 @@ class ImageQuality:
         min_intensity = params.get('min_intensity', -1)
         max_intensity = params.get('max_intensity', -1)
         ram_limit = -1 # no limit
-        
+        binning_origin = params.get('binning_origin', "")
+
         set_environment_params_imp (id(self),
                                    features,
-                                   neighbor_distance, 
+                                   neighbor_distance,
                                    pixels_per_micron,
                                    coarse_gray_depth,
                                    n_reduce_threads,
@@ -2021,13 +2061,14 @@ class ImageQuality:
                                    min_intensity,
                                    max_intensity,
                                    ram_limit,
-                                   verb_lvl)
-        
+                                   verb_lvl,
+                                   binning_origin)
+
     def set_params(self, **params):
         """Sets parameters of the Nyxus class
 
         Keyword args:
-        
+
         * features: List[str],
         * neighbor_distance
         * pixels_per_micron

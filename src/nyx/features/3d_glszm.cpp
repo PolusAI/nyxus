@@ -488,15 +488,17 @@ void D3_GLSZM_feature::calculate (LR& r, const Fsettings& s)
 	D.allocate(w, h, d);
 
 	auto greyInfo = STNGS_GLSZM_GREYDEPTH(s); // former Nyxus::theEnvironment.get_coarse_gray_depth()
-	if (STNGS_IBSI(s)) // former Nyxus::theEnvironment.ibsi_compliance
+	auto binOrigin = STNGS_BINNING_ORIGIN(s);	// zero-based (Nyxus/MATLAB) or min-based (PyRadiomics)
+	bool ibsi = STNGS_IBSI(s);
+	if (ibsi)
 		greyInfo = 0;
 
-	bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo);
+	bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo, binOrigin);
 
 	// gather unique intensities
 	std::unordered_set <PixIntens> U;
 
-	if (ibsi_grey_binning(greyInfo))
+	if (ibsi)
 	{
 		// ibsi approach to intensities
 		auto n_ibsi_levels = *std::max_element(D.begin(), D.end());
@@ -513,8 +515,13 @@ void D3_GLSZM_feature::calculate (LR& r, const Fsettings& s)
 		std::sort(I.begin(), I.end());
 	}
 
-	// zero (backround) intensity at given grey binning approach
-	PixIntens zeroI = matlab_grey_binning (greyInfo) ? 1 : 0;
+	// Determine the background intensity value. In zero-based (MATLAB) binning,
+	// intensity 0 gets mapped to bin 1, so background becomes 1. In all other
+	// modes (min-based radiomics, IBSI) background stays at 0. The three-part
+	// condition: greyInfo>0 confirms binning is active, BinningOrigin::zero
+	// selects MATLAB mode, and !ibsi excludes IBSI which handles background
+	// via its own 0-intensity skip logic.
+	PixIntens zeroI = (greyInfo > 0 && binOrigin == BinningOrigin::zero && !ibsi) ? 1 : 0;
 		
 	// gather intensity zones
 	std::vector <std::pair<PixIntens, int>> Zones;

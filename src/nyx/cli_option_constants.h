@@ -16,6 +16,7 @@
 #define clo_XYRESOLUTION "--pixelsPerCentimeter"	// pixels per centimeter
 #define clo_PXLDIST "--pixelDistance"				// used in neighbor features
 #define clo_COARSEGRAYDEPTH "--coarseGrayDepth"		// Environment :: raw_coarse_grayscale_depth
+#define clo_BINNINGORIGIN "--binningOrigin"			// Environment :: "zero" (default) or "min" (PyRadiomics-style)
 #define clo_RAMLIMIT "--ramLimit"					// Optional. Limit for treating ROIs as non-trivial and for setting the batch size of trivial ROIs. Default - amount of available system RAM
 #define clo_TEMPDIR "--tempDir"						// Optional. Used in processing non-trivial features. Default - system temp directory
 #define clo_IBSICOMPLIANCE "--ibsi" // skip binning for grey level and grey tone features

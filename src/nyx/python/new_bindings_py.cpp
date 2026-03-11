@@ -36,7 +36,7 @@ namespace Nyxus {
 
 };
 
-using ParameterTypes = std::variant<int, float, double, unsigned int, std::vector<double>, std::vector<std::string>>;
+using ParameterTypes = std::variant<int, float, double, unsigned int, std::string, std::vector<double>, std::vector<std::string>>;
 
 // Defined in nested.cpp
 bool mine_segment_relations (
@@ -67,7 +67,7 @@ void initialize_environment(
     const std::vector<std::string> &features,
     int neighbor_distance,
     float pixels_per_micron,
-    uint32_t coarse_gray_depth, 
+    uint32_t coarse_gray_depth,
     uint32_t n_reduce_threads,
     int using_gpu,
     bool ibsi,
@@ -79,7 +79,8 @@ void initialize_environment(
     int verb_lvl,
     float aniso_x,
     float aniso_y,
-    float aniso_z)
+    float aniso_z,
+    const std::string& binning_origin = "zero")
 {
     Environment & theEnvironment = Nyxus::findenv (instid);
 
@@ -92,6 +93,7 @@ void initialize_environment(
     theEnvironment.set_coarse_gray_depth(coarse_gray_depth);
     theEnvironment.n_reduce_threads = n_reduce_threads;
     theEnvironment.ibsi_compliance = ibsi;
+    theEnvironment.set_binning_origin(binning_origin == "min" ? BinningOrigin::min_based : BinningOrigin::zero);
 
     // Throws exception if invalid feature is passed
     theEnvironment.expand_featuregroups();
@@ -147,14 +149,15 @@ void set_environment_params_imp (
     const std::vector<std::string> &features = {},
     int neighbor_distance = -1,
     float pixels_per_micron = -1,
-    uint32_t coarse_gray_depth = 0, 
+    uint32_t coarse_gray_depth = 0,
     uint32_t n_reduce_threads = 0,
     int using_gpu = -2,
     float dynamic_range = -1,
     float min_intensity = -1,
     float max_intensity = -1,
     int ram_limit_mb = -1,
-    int verb_level = 0)
+    int verb_level = 0,
+    const std::string& binning_origin = "")
 {
     Environment & theEnvironment = Nyxus::findenv (instid);
 
@@ -172,6 +175,10 @@ void set_environment_params_imp (
 
     if (coarse_gray_depth != 0) {
         theEnvironment.set_coarse_gray_depth(coarse_gray_depth);
+    }
+
+    if (!binning_origin.empty()) {
+        theEnvironment.set_binning_origin(binning_origin == "min" ? BinningOrigin::min_based : BinningOrigin::zero);
     }
 
     if (n_reduce_threads != 0) {
@@ -965,6 +972,7 @@ std::map<std::string, ParameterTypes> get_params_imp (uint64_t instid, const std
     params["neighbor_distance"] = theEnvironment.n_pixel_distance;
     params["pixels_per_micron"] = theEnvironment.xyRes;
     params["coarse_gray_depth"] = theEnvironment.get_coarse_gray_depth();
+    params["binning_origin"] = std::string(theEnvironment.get_binning_origin() == BinningOrigin::min_based ? "min" : "zero");
     params["n_feature_calc_threads"] = theEnvironment.n_reduce_threads;
     params["ibsi"] = theEnvironment.ibsi_compliance;
 

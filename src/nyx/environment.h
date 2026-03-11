@@ -111,8 +111,13 @@ public:
 
 	int get_floating_point_precision();
 
-	int get_coarse_gray_depth();
-	void set_coarse_gray_depth(unsigned int new_depth);
+	uint32_t get_coarse_gray_depth();
+	// Validation of negative values happens during parsing using a temporary int,
+	// but the stored value is uint32_t since gray depth is always positive.
+	void set_coarse_gray_depth(uint32_t new_depth);
+
+	BinningOrigin get_binning_origin() const;
+	void set_binning_origin(BinningOrigin bo);
 
 	// implementation of SKIPROI
 	bool roi_is_blacklisted (const std::string& fname, int roi_label);
@@ -240,8 +245,10 @@ private:
 
 	int floating_point_precision; //= 10;
 
-	int coarse_grayscale_depth; //= 64;
+	uint32_t coarse_grayscale_depth; //= 64;
 	std::string raw_coarse_grayscale_depth; //= "";
+	std::string raw_binning_origin; //= "" (default "zero"; alternative "min")
+	BinningOrigin binning_origin_ = BinningOrigin::zero;
 
 	// data members implementing RAMLIMIT
 	std::string rawRamLimit; //= "";
