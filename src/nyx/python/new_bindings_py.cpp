@@ -52,13 +52,60 @@ bool mine_segment_relations (
 template <typename Sequence>
 inline py::array_t<typename Sequence::value_type> as_pyarray(Sequence &&seq)
 {
-    auto size = seq.size();
-    auto data = seq.data();
-    std::unique_ptr<Sequence> seq_ptr = std::make_unique<Sequence>(std::move(seq));
-    auto capsule = py::capsule(seq_ptr.get(), [](void *p)
-                               { std::unique_ptr<Sequence>(reinterpret_cast<Sequence *>(p)); });
-    seq_ptr.release();
-    return py::array(size, data, capsule);
+    // Copy data into a numpy-owned array rather than wrapping the C++ memory
+    // with a pybind11 capsule. A capsule's destructor is compiled code inside
+    // this .so — if Python's GC frees the array after the .so is unloaded
+    // (e.g. during interpreter shutdown), the destructor call jumps to
+    // unmapped memory and segfaults. Copying avoids that by letting numpy
+    // manage the memory entirely with no reference back to this module.
+    using T = typename Sequence::value_type;
+    py::array_t<T> arr(seq.size());
+    std::copy(seq.begin(), seq.end(), arr.mutable_data());
+    return arr;
+}
+
+/// @brief Converts accumulated FmapArrayResult entries into a Python list of dicts.
+/// Each dict contains: parent_roi_label, intensity_image, mask_image, origin_x, origin_y,
+/// and a 'features' dict mapping feature names to numpy arrays.
+/// For 2D: arrays are (map_h, map_w). For 3D: arrays are (map_d, map_h, map_w).
+py::list fmap_results_to_python(ResultsCache & rescache)
+{
+    py::list result;
+    for (auto & fr : rescache.get_fmapArrayResults())
+    {
+        py::dict d;
+        d["parent_roi_label"] = fr.parent_label;
+        d["intensity_image"] = fr.intens_name;
+        d["mask_image"] = fr.seg_name;
+        d["origin_x"] = fr.origin_x;
+        d["origin_y"] = fr.origin_y;
+
+        bool is_3d = fr.map_d > 1;
+        if (is_3d)
+            d["origin_z"] = fr.origin_z;
+
+        size_t map_size = (size_t)fr.map_d * fr.map_h * fr.map_w;
+        size_t n_features = fr.feature_names.size();
+
+        py::dict features;
+        for (size_t fi = 0; fi < n_features; fi++)
+        {
+            py::array_t<double> arr;
+            if (is_3d)
+                arr = py::array_t<double>({fr.map_d, fr.map_h, fr.map_w});
+            else
+                arr = py::array_t<double>({fr.map_h, fr.map_w});
+            auto ptr = arr.mutable_data();
+            std::copy(
+                fr.feature_data.begin() + fi * map_size,
+                fr.feature_data.begin() + (fi + 1) * map_size,
+                ptr);
+            features[py::str(fr.feature_names[fi])] = arr;
+        }
+        d["features"] = features;
+        result.append(d);
+    }
+    return result;
 }
 
 void initialize_environment(
@@ -79,7 +126,9 @@ void initialize_environment(
     int verb_lvl,
     float aniso_x,
     float aniso_y,
-    float aniso_z)
+    float aniso_z,
+    bool fmaps = false,
+    int fmaps_radius = 2)
 {
     Environment & theEnvironment = Nyxus::findenv (instid);
 
@@ -92,6 +141,11 @@ void initialize_environment(
     theEnvironment.set_coarse_gray_depth(coarse_gray_depth);
     theEnvironment.n_reduce_threads = n_reduce_threads;
     theEnvironment.ibsi_compliance = ibsi;
+
+    // feature maps
+    theEnvironment.fmaps_mode = fmaps;
+    if (fmaps_radius >= 1)
+        theEnvironment.fmaps_kernel_radius = fmaps_radius;
 
     // Throws exception if invalid feature is passed
     theEnvironment.expand_featuregroups();
@@ -140,6 +194,23 @@ void set_if_ibsi_imp (uint64_t instid, bool ibsi)
 {
     Environment & env = Nyxus::findenv (instid);
     env.set_ibsi_compliance (ibsi);
+}
+
+void set_fmaps_imp (uint64_t instid, int set_mode, int radius)
+{
+    Environment & env = Nyxus::findenv (instid);
+    // Always validate radius when explicitly provided (not sentinel -1),
+    // even if fmaps_mode is false, to prevent stale invalid values
+    if (radius != -1)
+    {
+        if (radius >= 1)
+            env.fmaps_kernel_radius = radius;
+        else
+            throw std::invalid_argument("fmaps_radius must be an integer >= 1");
+    }
+    // set_mode: 0=disable, 1=enable, -1=leave unchanged (radius-only update)
+    if (set_mode >= 0)
+        env.fmaps_mode = (set_mode != 0);
 }
 
 void set_environment_params_imp (
@@ -267,7 +338,18 @@ py::tuple featurize_directory_imp(
 
     // run the workflow
     int ercode = 0;
-    if (env.singleROI)
+    if (env.fmaps_prevents_arrow())
+        throw std::runtime_error("Arrow/Parquet output is not supported in feature maps (fmaps) mode.");
+
+    if (env.fmaps_mode)
+        ercode = processDataset_2D_fmaps(
+            env,
+            intensFiles,
+            labelFiles,
+            env.n_reduce_threads,
+            env.saveOption,
+            output_path);
+    else if (env.singleROI)
         ercode = processDataset_2D_wholeslide(
             env,
             intensFiles,
@@ -287,10 +369,15 @@ py::tuple featurize_directory_imp(
     if (ercode)
         throw std::runtime_error("Error: " + std::to_string(ercode));
 
-    // shut down the output structures
+    // Fmaps mode returns spatial arrays, not a DataFrame
+    if (env.fmaps_mode && env.saveOption == Nyxus::SaveOption::saveBuffer)
+    {
+        auto fmaps = fmap_results_to_python(env.theResultsCache);
+        return py::make_tuple(fmaps);
+    }
 
     // shape the resulting data frame
-    
+
     if (env.saveOption == Nyxus::SaveOption::saveBuffer)
     {
         // has the backend produced any result ?
@@ -511,19 +598,39 @@ py::tuple featurize_directory_3D_imp(
         if (mayBerror.has_value())
             throw std::runtime_error ("Error traversing dataset: " + *mayBerror);
 
-        int errorCode = processDataset_3D_segmented(
-            theEnvironment,
-            intensFiles,
-            labelFiles,
-            theEnvironment.n_reduce_threads,
-            theEnvironment.saveOption,
-            output_path);
+        int errorCode = 0;
+        if (theEnvironment.fmaps_mode)
+        {
+            errorCode = processDataset_3D_fmaps(
+                theEnvironment,
+                intensFiles,
+                labelFiles,
+                theEnvironment.n_reduce_threads,
+                theEnvironment.saveOption,
+                output_path);
+        }
+        else
+        {
+            errorCode = processDataset_3D_segmented(
+                theEnvironment,
+                intensFiles,
+                labelFiles,
+                theEnvironment.n_reduce_threads,
+                theEnvironment.saveOption,
+                output_path);
+        }
 
         if (errorCode)
             throw std::runtime_error ("Error " + std::to_string(errorCode) + " occurred during dataset processing");
     }
 
     // Output the result
+    if (theEnvironment.fmaps_mode && theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
+    {
+        py::list fmaps = fmap_results_to_python(theEnvironment.theResultsCache);
+        return py::make_tuple(fmaps);
+    }
+
     if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
     {
         auto pyHeader = py::array(py::cast(theEnvironment.theResultsCache.get_headerBuf()));
@@ -608,6 +715,12 @@ py::tuple featurize_montage_imp (
     if (mayBerror.has_value())
         throw std::runtime_error ("Error occurred during dataset processing: " + *mayBerror);
 
+    if (theEnvironment.fmaps_mode)
+    {
+        auto fmaps = fmap_results_to_python(theEnvironment.theResultsCache);
+        return py::make_tuple(fmaps, error_message);
+    }
+
     if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer) {
 
         auto pyHeader = py::array(py::cast(theEnvironment.theResultsCache.get_headerBuf()));
@@ -619,7 +732,7 @@ py::tuple featurize_montage_imp (
         pyNumData = pyNumData.reshape({ nRows, pyNumData.size() / nRows });
 
         return py::make_tuple(pyHeader, pyStrData, pyNumData, error_message);
-    } 
+    }
 
     return py::make_tuple(error_message);
 }
@@ -681,16 +794,34 @@ py::tuple featurize_fname_lists_imp (uint64_t instid, const py::list& int_fnames
 		} else {return SaveOption::saveBuffer;}
 	}();
 
-    errorCode = processDataset_2D_segmented (
-        theEnvironment,
-        intensFiles,
-        labelFiles,
-        theEnvironment.n_reduce_threads,
-        theEnvironment.saveOption,
-        output_path);
+    if (theEnvironment.fmaps_prevents_arrow())
+        throw std::runtime_error("Arrow/Parquet output is not supported in feature maps (fmaps) mode.");
+
+    if (theEnvironment.fmaps_mode)
+        errorCode = processDataset_2D_fmaps (
+            theEnvironment,
+            intensFiles,
+            labelFiles,
+            theEnvironment.n_reduce_threads,
+            theEnvironment.saveOption,
+            output_path);
+    else
+        errorCode = processDataset_2D_segmented (
+            theEnvironment,
+            intensFiles,
+            labelFiles,
+            theEnvironment.n_reduce_threads,
+            theEnvironment.saveOption,
+            output_path);
 
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing.");
+
+    if (theEnvironment.fmaps_mode && theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
+    {
+        auto fmaps = fmap_results_to_python(theEnvironment.theResultsCache);
+        return py::make_tuple(fmaps);
+    }
 
     if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer) {
 
@@ -784,18 +915,37 @@ py::tuple featurize_fname_lists_3D_imp (
             }
     }();
 
-    errorCode = processDataset_3D_segmented(
-        theEnvironment,
-        ifiles,
-        mfiles,
-        theEnvironment.n_reduce_threads,
-        theEnvironment.saveOption,
-        output_path);
+    if (theEnvironment.fmaps_mode)
+    {
+        errorCode = processDataset_3D_fmaps(
+            theEnvironment,
+            ifiles,
+            mfiles,
+            theEnvironment.n_reduce_threads,
+            theEnvironment.saveOption,
+            output_path);
+    }
+    else
+    {
+        errorCode = processDataset_3D_segmented(
+            theEnvironment,
+            ifiles,
+            mfiles,
+            theEnvironment.n_reduce_threads,
+            theEnvironment.saveOption,
+            output_path);
+    }
 
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing");
 
     // save the result
+    if (theEnvironment.fmaps_mode && theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
+    {
+        py::list fmaps = fmap_results_to_python(theEnvironment.theResultsCache);
+        return py::make_tuple(fmaps);
+    }
+
     if (theEnvironment.saveOption == Nyxus::SaveOption::saveBuffer)
     {
         auto pyHeader = py::array(py::cast(theEnvironment.theResultsCache.get_headerBuf()));
@@ -970,7 +1120,10 @@ std::map<std::string, ParameterTypes> get_params_imp (uint64_t instid, const std
     params["max_intensity"] = theEnvironment.fpimageOptions.max_intensity();
     params["ram_limit"] = (int)(theEnvironment.get_ram_limit()/1048576); // convert from bytes to megabytes
 
-    if (vars.size() == 0) 
+    params["fmaps"] = theEnvironment.fmaps_mode;
+    params["fmaps_radius"] = theEnvironment.fmaps_kernel_radius;
+
+    if (vars.size() == 0)
         return params;
 
     std::map<std::string, ParameterTypes> params_subset;
@@ -1048,6 +1201,18 @@ py::tuple get_metaparam_imp (uint64_t instid, const std::string p_name)
 PYBIND11_MODULE(backend, m)
 {
     m.doc() = "Nyxus";
+
+    // Register an atexit handler to destroy all Environment objects while
+    // the Python interpreter is still alive.  Without this, the global
+    // pynyxus_cache is destroyed during C++ static destruction — after
+    // Python has already torn down modules — causing segfaults from
+    // stale references in LR/ImageMatrix/ResultsCache destructors.
+    auto atexit = py::module_::import("atexit");
+    atexit.attr("register")(py::cpp_function([]() {
+        Nyxus::pynyxus_cache.clear();
+        Nyxus::unique_pynyxus_ids.clear();
+    }));
+
     m.def("initialize_environment",     &initialize_environment,    "Environment initialization");
     m.def("featurize_directory_imp",    &featurize_directory_imp,   "Calculate features of images defined by intensity and mask image collection directories");
     m.def("featurize_directory_3D_imp", &featurize_directory_3D_imp,    "Calculate 3D features of images defined by intensity and mask image collection directories");
@@ -1063,6 +1228,7 @@ PYBIND11_MODULE(backend, m)
     m.def("roi_blacklist_get_summary_imp",  &roi_blacklist_get_summary_imp, "Returns a summary of the ROI blacklist");
     m.def("customize_gabor_feature_imp",    &customize_gabor_feature_imp,   "Sets custom GABOR feature's parameters");
     m.def("set_if_ibsi_imp",            &set_if_ibsi_imp,           "Set if the features will be ibsi compliant");
+    m.def("set_fmaps_imp",              &set_fmaps_imp,             "Enable/disable feature maps mode and set kernel radius");
     m.def("set_environment_params_imp", &set_environment_params_imp,    "Set the environment variables of Nyxus");
     m.def("get_params_imp",             &get_params_imp,            "Get parameters of Nyxus");
     m.def("arrow_is_enabled_imp",       &arrow_is_enabled_imp,      "Check if arrow is enabled.");
