@@ -78,6 +78,7 @@ namespace Nyxus
 
 			if (wholeslide)
 			{
+				theEnvironment.singleROI = true;
 				// populate with empty mask file names
 				labelFiles.insert (labelFiles.begin(), intensFiles.size(), "");
 			}

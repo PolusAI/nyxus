@@ -643,28 +643,26 @@ py::tuple featurize_fname_lists_imp (uint64_t instid, const py::list& int_fnames
         labelFiles.push_back(fn);
     }
 
-    // Check the file names 
+    // Check the file names
     if (intensFiles.size() == 0)
         throw std::runtime_error("Intensity file list is blank");
-    if (labelFiles.size() == 0)
-        throw std::runtime_error("Segmentation mask file list is blank");
-    if (intensFiles.size() != labelFiles.size())
-        throw std::runtime_error("Imbalanced intensity and segmentation mask file lists");
-    for (auto i = 0; i < intensFiles.size(); i++)
-    {
-        const std::string& i_fname = intensFiles[i];
-        const std::string& s_fname = labelFiles[i];
 
-        if (!existsOnFilesystem(i_fname))
-        {
-            auto msg = "File does not exist: " + i_fname;
-            throw std::runtime_error(msg);
-        }
-        if (!existsOnFilesystem(s_fname))
-        {
-            auto msg = "File does not exist: " + s_fname;
-            throw std::runtime_error(msg);
-        }
+    if (single_roi)
+        labelFiles.assign(intensFiles.size(), "");   // wholeslide — ignore any provided seg files
+    else
+    {
+        if (labelFiles.size() == 0)
+            throw std::runtime_error("Segmentation mask file list is blank");
+        if (intensFiles.size() != labelFiles.size())
+            throw std::runtime_error("Imbalanced intensity and segmentation mask file lists");
+    }
+
+    for (size_t i = 0; i < intensFiles.size(); i++)
+    {
+        if (!existsOnFilesystem(intensFiles[i]))
+            throw std::runtime_error("File does not exist: " + intensFiles[i]);
+        if (!labelFiles[i].empty() && !existsOnFilesystem(labelFiles[i]))
+            throw std::runtime_error("File does not exist: " + labelFiles[i]);
     }
 
     theEnvironment.theResultsCache.clear();

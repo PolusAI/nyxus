@@ -98,8 +98,7 @@ namespace Nyxus
 
 		// scan intensity slide's data
 
-		bool wholeslide = p.fname_seg.empty();
-
+		bool wholeslide = env.singleROI;
 		double slide_I_max = (std::numeric_limits<double>::lowest)(),
 			slide_I_min = (std::numeric_limits<double>::max)();
 
@@ -270,7 +269,7 @@ namespace Nyxus
 
 		// scan intensity slide's data
 
-		bool wholeslide = p.fname_seg.empty();
+		bool wholeslide = env.singleROI;
 
 		double slide_I_max = (std::numeric_limits<double>::lowest)(),
 			slide_I_min = (std::numeric_limits<double>::max)();
