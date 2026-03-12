@@ -2,6 +2,13 @@
 
 #include <vector>
 
+// Binning origin strategy for texture features
+enum class BinningOrigin : int
+{
+	zero = 0,		// bins span [0, max] (default Nyxus/MATLAB behavior)
+	min_based = 1	// bins span [min, max] (PyRadiomics-compatible behavior)
+};
+
 // feature settings
 union FeatureSetting
 {
@@ -40,6 +47,8 @@ enum class NyxSetting : int
 	GLRLM_GREYDEPTH,
 	// GLSZM
 	GLSZM_GREYDEPTH,
+	// Binning origin
+	BINNING_ORIGIN,
 	//
 	__COUNT__
 };
@@ -65,5 +74,6 @@ enum class NyxSetting : int
 #define STNGS_GLSZM_GREYDEPTH(obj) (obj[(int)NyxSetting::GLSZM_GREYDEPTH].ival)
 #define STNGS_NGTDM_GREYDEPTH(obj) (obj[(int)NyxSetting::NGTDM_GREYDEPTH].ival)
 #define STNGS_NGTDM_RADIUS(obj) (obj[(int)NyxSetting::NGTDM_RADIUS].ival)
+#define STNGS_BINNING_ORIGIN(obj) (static_cast<BinningOrigin>(obj[(int)NyxSetting::BINNING_ORIGIN].ival))
 
 

@@ -829,11 +829,11 @@ class TestNyxus():
             Testing Nyxus 3D GLCM features compatibility with Radiomics library
             '''
 
-            nyx = nyxus.Nyxus3D (["*3D_GLCM*"])
+            nyx = nyxus.Nyxus3D (["*3D_GLCM*"], binning_origin="min")
             assert nyx is not None
 
             # configure Nyxus 3D GLCM to mock Radiomics
-            nyx.set_metaparam ("3glcm/greydepth=-20")	# corresponds to Radiomics setting "binCount:20"
+            nyx.set_metaparam ("3glcm/greydepth=20")	# corresponds to Radiomics setting "binCount:20"
             nyx.set_metaparam ("3glcm/offset=1")
             nyx.set_metaparam ("3glcm/numang=13")
             nyx.set_metaparam ("3glcm/sparseintensities=true")
@@ -901,11 +901,11 @@ class TestNyxus():
             Testing Nyxus 3D GLDM features compatibility with Radiomics library
             '''
 
-            nyx = nyxus.Nyxus3D (["*3D_GLDM*"])
+            nyx = nyxus.Nyxus3D (["*3D_GLDM*"], binning_origin="min")
             assert nyx is not None
 
             # configure Nyxus 3D GLDM to mock Radiomics
-            nyx.set_metaparam ("3gldm/greydepth=-20")	# corresponds to Radiomics setting "binCount:20"
+            nyx.set_metaparam ("3gldm/greydepth=20")	# corresponds to Radiomics setting "binCount:20"
 
             # calculate features
             testsRoot = str (pathlib.Path(__file__).parent.parent.resolve()) # parent.parent to reach the data owned by c++ tests
@@ -988,11 +988,11 @@ class TestNyxus():
             Testing Nyxus 3D GLRLM features compatibility with Radiomics library
             '''
 
-            nyx = nyxus.Nyxus3D (["*3D_GLRLM*"])
+            nyx = nyxus.Nyxus3D (["*3D_GLRLM*"], binning_origin="min")
             assert nyx is not None
 
             # configure Nyxus 3D GLRLM to mock Radiomics
-            nyx.set_metaparam ("3glrlm/greydepth=-20")	# corresponds to Radiomics setting "binCount:20"
+            nyx.set_metaparam ("3glrlm/greydepth=20")	# corresponds to Radiomics setting "binCount:20"
 
             # calculate features
             testsRoot = str (pathlib.Path(__file__).parent.parent.resolve()) # parent.parent to reach the data owned by c++ tests
@@ -1044,11 +1044,11 @@ class TestNyxus():
             Testing Nyxus 3D GLSZM features compatibility with Radiomics library
             '''
 
-            nyx = nyxus.Nyxus3D (["*3D_GLSZM*"])
+            nyx = nyxus.Nyxus3D (["*3D_GLSZM*"], binning_origin="min")
             assert nyx is not None
 
             # configure Nyxus 3D GLSZM to mock Radiomics
-            nyx.set_metaparam ("3glszm/greydepth=-20")	# corresponds to Radiomics setting "binCount:20"
+            nyx.set_metaparam ("3glszm/greydepth=20")	# corresponds to Radiomics setting "binCount:20"
 
             # calculate features
             testsRoot = str (pathlib.Path(__file__).parent.parent.resolve()) # parent.parent to reach the data owned by c++ tests

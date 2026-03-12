@@ -191,6 +191,8 @@ void Environment::show_cmdline_help()
 		<< "\t\t\tDefault: 5 \n"
 		<< "\t\t" << OPT << clo_COARSEGRAYDEPTH << "=<custom number of grayscale levels> \n"
 		<< "\t\t\tDefault: 64 \n"
+		<< "\t\t" << OPT << clo_BINNINGORIGIN << "=<zero|min> Origin of intensity binning range \n"
+		<< "\t\t\t'zero' bins from [0, max] (default), 'min' bins from [min, max] (PyRadiomics-compatible) \n"
 		<< "\t\t" << OPT << clo_GLCMANGLES << "=<one or more comma separated rotation angles from set {0, 45, 90, and 135}> \n"
 		<< "\t\t\tDefault: 0,45,90,135 \n"
 		<< "\t\t" << OPT << clo_VERBOSITY << "=<levels of verbosity 0 (silence), 1 (minimum output), 2 (1 + timing), 3 (2 + roi metrics + more timing), 4 (3 + diagnostic information)> \n"
@@ -441,6 +443,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			find_string_argument(i, clo_GLCMOFFSET, glcmOptions.rawOffs) ||
 			find_string_argument(i, clo_PXLDIST, pixel_distance) ||
 			find_string_argument(i, clo_COARSEGRAYDEPTH, raw_coarse_grayscale_depth) ||
+			find_string_argument(i, clo_BINNINGORIGIN, raw_binning_origin) ||
 			find_string_argument(i, clo_VERBOSITY, rawVerbosity) ||
 			find_string_argument(i, clo_IBSICOMPLIANCE, raw_ibsi_compliance) ||
 			find_string_argument(i, clo_RAMLIMIT, rawRamLimit) ||
@@ -663,9 +666,27 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	if (!raw_coarse_grayscale_depth.empty())
 	{
 		// string -> integer
-		if (sscanf(raw_coarse_grayscale_depth.c_str(), "%d", &coarse_grayscale_depth) != 1)
+		// Reject zero and negative values — grey depth must be at least 1
+		// for valid binning. Previously only parse failure was checked,
+		// which allowed depth=0 to slip through and be misinterpreted
+		// as IBSI mode.
+		if (sscanf(raw_coarse_grayscale_depth.c_str(), "%d", &coarse_grayscale_depth) != 1 || coarse_grayscale_depth < 1)
 		{
-			std::cerr << "Error: " << clo_COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": expecting an integer constant\n";
+			std::cerr << "Error: " << clo_COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": expecting a positive integer constant\n";
+			return false;
+		}
+	}
+
+	// parse BINNINGORIGIN
+	if (!raw_binning_origin.empty())
+	{
+		if (raw_binning_origin == "min")
+			binning_origin_ = BinningOrigin::min_based;
+		else if (raw_binning_origin == "zero")
+			binning_origin_ = BinningOrigin::zero;
+		else
+		{
+			std::cerr << "Error: " << clo_BINNINGORIGIN << "=" << raw_binning_origin << ": expecting 'zero' or 'min'\n";
 			return false;
 		}
 	}
@@ -915,9 +936,19 @@ int Environment::get_coarse_gray_depth()
 	return coarse_grayscale_depth;
 }
 
-void Environment::set_coarse_gray_depth(unsigned int new_depth)
+void Environment::set_coarse_gray_depth(int new_depth)
 {
 	coarse_grayscale_depth = new_depth;
+}
+
+BinningOrigin Environment::get_binning_origin() const
+{
+	return binning_origin_;
+}
+
+void Environment::set_binning_origin(BinningOrigin bo)
+{
+	binning_origin_ = bo;
 }
 
 bool Environment::set_ram_limit(size_t megabytes) {

@@ -145,15 +145,17 @@ void D3_GLRLM_feature::calculate (LR& r, const Fsettings& s)
 	G.allocate (w,h,d);
 
 	auto greyInfo = STNGS_GLRLM_GREYDEPTH(s);
-	if (STNGS_IBSI(s))
+	auto binOrigin = STNGS_BINNING_ORIGIN(s);	// zero-based (Nyxus/MATLAB) or min-based (PyRadiomics)
+	bool ibsi = STNGS_IBSI(s);
+	if (ibsi)
 		greyInfo = 0;
 
-	bin_intensities_3d (G, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo);
+	bin_intensities_3d (G, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo, binOrigin);
 
 	// sorted intensities
 
 	std::vector <PixIntens> I;
-	if (ibsi_grey_binning(greyInfo))
+	if (ibsi)
 	{
 		auto n_ibsi_levels = *std::max_element (G.begin(), G.end());
 		I.resize (n_ibsi_levels);

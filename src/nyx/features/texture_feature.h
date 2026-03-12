@@ -2,6 +2,7 @@
 
 #include "image_matrix.h"
 #include "image_cube.h"
+#include "../feature_settings.h"
 
 struct AngleShift
 {
@@ -20,87 +21,75 @@ public:
 		return target_I;
 	}
 
-	void bin_intensities (pixData& S, const pixData& I, PixIntens min_I_inten, PixIntens max_I_inten, int greybin_info)
+	// Bin intensities using the explicit BinningOrigin enum.
+	// Replaces the former tri-state integer encoding (greybin_info > 0 = matlab,
+	// < 0 = radiomics, == 0 = IBSI) with clearer dispatch: n_levels==0 means IBSI
+	// (no binning), then BinningOrigin selects min-based (PyRadiomics) vs zero-based
+	// (Nyxus/MATLAB) binning. Dispatch order: IBSI first because n_levels==0 is
+	// unambiguous, then min_based, then zero as the default.
+	void bin_intensities (pixData& S, const pixData& I, PixIntens min_I_inten, PixIntens max_I_inten, int n_levels, BinningOrigin bo)
 	{
-		if (radiomics_grey_binning(greybin_info))
-		{
-			// radiomics binning
-			auto n = I.size();
-			for (size_t i = 0; i < n; i++)
-				S[i] = to_grayscale_radiomix (I[i], min_I_inten, max_I_inten, std::abs(greybin_info));
-			return;
-		}
-		if (matlab_grey_binning(greybin_info))
-		{
-			// matlab binning
-			auto n = I.size();
-			int n_matlab_levels = greybin_info;
-
-			prep_bin_array_matlab (max_I_inten, n_matlab_levels);
-			for (size_t i = 0; i < n; i++)
-				S[i] = bin_array_matlab (I[i]);
-		}
-		else
+		if (n_levels == 0)
 		{
 			// no binning (IBSI)
 			auto n = I.size();
 			for (size_t i = 0; i < n; i++)
 				S[i] = I[i];
+			return;
 		}
-	}
-
-	void bin_intensities_3d (SimpleCube<PixIntens> & S, const SimpleCube<PixIntens> & I, PixIntens min_I_inten, PixIntens max_I_inten, int greybin_info)
-	{
-		if (radiomics_grey_binning(greybin_info))
+		if (bo == BinningOrigin::min_based)
 		{
 			// radiomics binning
 			auto n = I.size();
 			for (size_t i = 0; i < n; i++)
-				S[i] = to_grayscale_radiomix(I[i], min_I_inten, max_I_inten, std::abs(greybin_info));
+				S[i] = to_grayscale_radiomix (I[i], min_I_inten, max_I_inten, n_levels);
+			return;
 		}
-		else 
-			if (matlab_grey_binning(greybin_info))
-			{
-				// matlab binning
-				auto n = I.size();
-				int n_matlab_levels = greybin_info;
-				prep_bin_array_matlab(max_I_inten, n_matlab_levels);
-				for (size_t i = 0; i < n; i++)
-					S[i] = bin_array_matlab(I[i]);
-			}
-			else
-			{
-				// no binning (IBSI)
-				S.assign (I.begin(), I.end());
-			}
+		// matlab binning (BinningOrigin::zero)
+		auto n = I.size();
+		prep_bin_array_matlab (max_I_inten, n_levels);
+		for (size_t i = 0; i < n; i++)
+			S[i] = bin_array_matlab (I[i]);
 	}
 
-	static PixIntens bin_pixel (PixIntens x, PixIntens min_I_inten, PixIntens max_I_inten, int greybin_info)
+	void bin_intensities_3d (SimpleCube<PixIntens> & S, const SimpleCube<PixIntens> & I, PixIntens min_I_inten, PixIntens max_I_inten, int n_levels, BinningOrigin bo)
 	{
-		if (radiomics_grey_binning(greybin_info))
+		if (n_levels == 0)
+		{
+			// no binning (IBSI)
+			S.assign (I.begin(), I.end());
+			return;
+		}
+		if (bo == BinningOrigin::min_based)
 		{
 			// radiomics binning
-			auto y = to_grayscale_radiomix (x, min_I_inten, max_I_inten, std::abs(greybin_info));
-			return y;
+			auto n = I.size();
+			for (size_t i = 0; i < n; i++)
+				S[i] = to_grayscale_radiomix(I[i], min_I_inten, max_I_inten, n_levels);
+			return;
 		}
-		else
-		if (matlab_grey_binning(greybin_info))
-		{
-			// matlab binning
-			int n_matlab_levels = greybin_info;
-			auto y = bin_pixel_matlab(x, max_I_inten, n_matlab_levels); //to_grayscale_matlab (x, n_matlab_levels);
-			return y;
-		}
-		else
+		// matlab binning (BinningOrigin::zero)
+		auto n = I.size();
+		prep_bin_array_matlab(max_I_inten, n_levels);
+		for (size_t i = 0; i < n; i++)
+			S[i] = bin_array_matlab(I[i]);
+	}
+
+	static PixIntens bin_pixel (PixIntens x, PixIntens min_I_inten, PixIntens max_I_inten, int n_levels, BinningOrigin bo)
+	{
+		if (n_levels == 0)
 		{
 			// no binning (IBSI)
 			return x;
 		}
+		if (bo == BinningOrigin::min_based)
+		{
+			// radiomics binning
+			return to_grayscale_radiomix (x, min_I_inten, max_I_inten, n_levels);
+		}
+		// matlab binning (BinningOrigin::zero)
+		return bin_pixel_matlab(x, max_I_inten, n_levels);
 	}
-
-	static inline bool matlab_grey_binning (int greybinning_info) { return greybinning_info > 0; }
-	static inline bool radiomics_grey_binning (int greybinning_info) { return greybinning_info < 0; }
-	static inline bool ibsi_grey_binning (int greybinning_info) { return greybinning_info == 0; }
 
 	// returns 1-based bin indices
 	static inline PixIntens to_grayscale_radiomix (PixIntens x, PixIntens min__, PixIntens max__, int binCount)

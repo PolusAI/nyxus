@@ -57,7 +57,7 @@ void test_ibsi_gldzm_matrix()
     SimpleMatrix<unsigned int> GLDZM;
     int Ng,	// number of grey levels
         Nd;	// maximum number of non-zero dependencies
-    ASSERT_NO_THROW(f.prepare_GLDZM_matrix_kit (GLDZM, Ng, Nd, greysLUT, roidata, STNGS_NGREYS(s), STNGS_IBSI(s)));
+    ASSERT_NO_THROW(f.prepare_GLDZM_matrix_kit (GLDZM, Ng, Nd, greysLUT, roidata, STNGS_NGREYS(s), STNGS_IBSI(s), STNGS_BINNING_ORIGIN(s)));
 
     // Count discrepancies
     int n_mismatches = 0;
