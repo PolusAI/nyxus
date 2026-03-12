@@ -458,15 +458,17 @@ class Nyxus:
         if intensity_files is None:
             raise IOError ("The list of intensity file paths is empty")
 
-        if mask_files is None:
-            raise IOError ("The list of segment file paths is empty")
-        
+        if mask_files is None and not single_roi:
+            raise IOError ("The list of segment file paths is empty. Supply mask images or set single_roi to True")
+
         if (output_type not in self._valid_output_types):
             raise  ValueError(f'Invalid output type {output_type}. Valid output types are {self._valid_output_types}')
 
+        mask_files_arg = mask_files if mask_files is not None else []
+
         if (output_type == 'pandas'):
-            
-            header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, "")
+
+            header, string_data, numeric_data = featurize_fname_lists_imp (intensity_files, mask_files_arg, single_roi, output_type, "")
 
             df = pd.concat(
                 [
@@ -481,10 +483,10 @@ class Nyxus:
                 df["label"] = df.label.astype(np.uint32)
 
             return df
-        
+
         else:
-            
-            featurize_fname_lists_imp (intensity_files, mask_files, single_roi, output_type, output_path)
+
+            featurize_fname_lists_imp (intensity_files, mask_files_arg, single_roi, output_type, output_path)
             
             return get_arrow_file_imp()
 

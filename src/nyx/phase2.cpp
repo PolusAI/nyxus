@@ -126,7 +126,7 @@ namespace Nyxus
 				// Get ahold of tile's pixel buffer
 				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
 				const std::shared_ptr<std::vector<uint32_t>>& spL = ldr.get_seg_tile_sptr();
-				bool wholeslide = spL == nullptr; // alternatively, theEnvironment.singleROI
+				bool wholeslide = theEnvironment.singleROI;
 
 				// Iterate pixels
 				for (unsigned long i = 0; i < tileSize; i++)
@@ -246,7 +246,7 @@ namespace Nyxus
 				// read buffered physical pixel 
 				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
 				const std::shared_ptr<std::vector<uint32_t>>& spL = ldr.get_seg_tile_sptr();
-				bool wholeslide = spL == nullptr; // alternatively, theEnvironment.singleROI
+				bool wholeslide = theEnvironment.singleROI;
 
 				PixIntens label = 1;
 				if (!wholeslide)
@@ -420,7 +420,7 @@ namespace Nyxus
 				// read buffered physical pixel 
 				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
 				const std::shared_ptr<std::vector<uint32_t>>& spL = ldr.get_seg_tile_sptr();
-				bool wholeslide = spL == nullptr; // alternatively, theEnvironment.singleROI
+				bool wholeslide = theEnvironment.singleROI;
 
 				// Cache this pixel 
 				feed_pixel_2_cache_LR (vc, vr, dataI[i], vroi);

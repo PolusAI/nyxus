@@ -10,7 +10,7 @@ namespace Nyxus
 {
 	bool gatherRoisMetrics_2_slideprops (RawImageLoader & ilo, SlideProps & p)
 	{
-		bool wholeslide = p.fname_seg.empty();
+		bool wholeslide = theEnvironment.singleROI;
 
 		double slide_I_max = (std::numeric_limits<double>::min)(),
 			slide_I_min = (std::numeric_limits<double>::max)();

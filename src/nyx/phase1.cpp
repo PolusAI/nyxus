@@ -56,7 +56,7 @@ namespace Nyxus
 				// Get ahold of tile's pixel buffer
 				const std::vector<uint32_t>& dataI = L.get_int_tile_buffer();
 				const std::shared_ptr<std::vector<uint32_t>>& spL = L.get_seg_tile_sptr();
-				bool wholeslide = spL == nullptr; // alternatively, theEnvironment.singleROI
+				bool wholeslide = theEnvironment.singleROI;
 
 				// Iterate pixels
 				for (size_t i = 0; i < tileSize; i++)
