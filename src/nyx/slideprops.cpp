@@ -99,7 +99,6 @@ namespace Nyxus
 		// scan intensity slide's data
 
 		bool wholeslide = p.fname_seg.empty();
-
 		double slide_I_max = (std::numeric_limits<double>::lowest)(),
 			slide_I_min = (std::numeric_limits<double>::max)();
 
