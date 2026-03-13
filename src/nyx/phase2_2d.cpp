@@ -404,12 +404,10 @@ namespace Nyxus
 					ph_y = size_t(double(vy) / aniso_y),
 					i = ph_y * tw + ph_x;
 
-				// read buffered physical pixel 
+				// read buffered physical pixel
 				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
-				const std::shared_ptr<std::vector<uint32_t>>& spL = ldr.get_seg_tile_sptr();
-				bool wholeslide = env.singleROI;
 
-				// Cache this pixel 
+				// Cache this pixel
 				feed_pixel_2_cache_LR (vc, vr, dataI[i], vroi);
 			}
 		}
