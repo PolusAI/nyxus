@@ -1118,7 +1118,7 @@ class TestSingleRoi():
         assert df is not None
         # one row per intensity file, all with label == 1
         assert len(df) == len(self.int_files)
-        assert (df["label"] == 1).all()
+        assert (df["ROI_label"] == 1).all()
 
     def test_single_roi_mask_ignored(self):
         """featurize_files with single_roi=True should produce the same result whether or not mask files are supplied."""
@@ -1147,7 +1147,8 @@ class TestSingleRoi():
 
     def test_single_roi_consistent_with_featurize_directory(self):
         """single_roi=True via featurize_files should match featurize_directory when no seg dir is given."""
-        df_dir = self.nyx.featurize_directory(self.data_path + 'int/', '')
+        # Pass the same dir as label dir — polus detects same-dir as wholeslide
+        df_dir = self.nyx.featurize_directory(self.data_path + 'int/', self.data_path + 'int/')
         df_files = self.nyx.featurize_files(self.int_files, None, single_roi=True)
 
         df_dir.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
