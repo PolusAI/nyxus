@@ -390,10 +390,9 @@ namespace Nyxus
 				// Update pixel's ROI metrics
 				auto inten = rI (pair_index, row, col);
 				feed_pixel_2_metrics (env.uniqueLabels, env.roiData, col, row, inten, label, pair_index); // Updates 'uniqueLabels' and 'roiData'
-
-				if (PyErr_CheckSignals() != 0)
-					throw pybind11::error_already_set();
 			}
+		if (PyErr_CheckSignals() != 0)
+			throw pybind11::error_already_set();
 
 		return true;
 	}
