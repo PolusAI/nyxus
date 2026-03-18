@@ -9,5 +9,5 @@ xsimd >=13,<14
 cmake
 dcmtk >=3.6.9
 fmjpeg2koj >=1.0.3
-libarrow
-libparquet
+libarrow <=23.0.0
+libparquet <=23.0.0
