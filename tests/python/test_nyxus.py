@@ -1158,7 +1158,9 @@ class TestSingleRoi():
         df_dir = df_dir.sort_values("intensity_image").reset_index(drop=True)
         df_files = df_files.sort_values("intensity_image").reset_index(drop=True)
 
-        shared_cols = [c for c in df_dir.columns if c in df_files.columns]
+        # Exclude path/string columns — they legitimately differ in format (full path vs basename)
+        string_cols = {"intensity_image", "mask_image"}
+        shared_cols = [c for c in df_dir.columns if c in df_files.columns and c not in string_cols]
         not_equal = []
         for col in shared_cols:
             for v1, v2 in zip(df_dir[col].tolist(), df_files[col].tolist()):
