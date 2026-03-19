@@ -23,7 +23,7 @@ namespace NyxusGpu
         // Request the scratch space size and make sure that we have preallocated enough of it
         size_t szb;
         CHECKERR(cub::DeviceReduce::Sum(nullptr, szb, d_prereduce/*d_in*/, d_result, cloudlen/*num_items*/));
-        if (devreduce_tempstorage_szb != szb)
+        if (devreduce_tempstorage_szb < szb)
         {
             // new size, new storage
             devreduce_tempstorage_szb = szb;
