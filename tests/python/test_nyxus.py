@@ -20,6 +20,45 @@ class TestImport():
         
 class TestNyxus():     
 
+        def test_featurize_filelist_masked (self):
+            path = str(pathlib.Path(__file__).parent.resolve())
+            
+            data_path = path + '/data/'
+            
+            nyx = nyxus.Nyxus (features=["MEAN"],  n_feature_calc_threads=1)
+            assert nyx is not None
+                        
+            f = nyx.featurize_files(
+                intensity_files = [data_path + 'int/p0_y1_r1_c0.ome.tif', data_path + 'int/p0_y1_r1_c1.ome.tif'],
+                mask_files = [data_path + 'seg/p0_y1_r1_c0.ome.tif', data_path + 'seg/p0_y1_r1_c1.ome.tif'],
+                single_roi = False)
+                        
+            assert f.shape[0] == 139
+            
+
+        def test_featurize_filelist_wholeslide (self):
+            path = str(pathlib.Path(__file__).parent.resolve())
+            
+            data_path = path + '/data/'
+            
+            nyx = nyxus.Nyxus (features=["MEAN"],  n_feature_calc_threads=1)
+            assert nyx is not None
+                        
+            f1 = nyx.featurize_files(
+                intensity_files = [data_path + 'int/p0_y1_r1_c0.ome.tif', data_path + 'int/p0_y1_r1_c1.ome.tif'],
+                mask_files = ['blah1', 'blah2', 'blah3'],
+                single_roi = True)
+                        
+            assert f1.shape[0] == 2
+
+            f2 = nyx.featurize_files(
+                intensity_files = [data_path + 'int/p0_y1_r1_c0.ome.tif', data_path + 'int/p0_y1_r1_c1.ome.tif'],
+                mask_files = [],
+                single_roi = True)
+                        
+            assert f2.shape[0] == 2
+
+
         def test_featurize_all_singlethread (self):
             path = str(pathlib.Path(__file__).parent.resolve())
             

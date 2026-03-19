@@ -53,7 +53,6 @@ namespace Nyxus
 	int processDataset_2D_wholeslide(
 		Environment & env,
 		const std::vector<std::string>& intensFiles,
-		const std::vector<std::string>& labelFiles,
 		int n_threads,
 		const SaveOption saveOption,
 		const std::string& outputPath);

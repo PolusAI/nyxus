@@ -271,7 +271,6 @@ py::tuple featurize_directory_imp(
         ercode = processDataset_2D_wholeslide(
             env,
             intensFiles,
-            labelFiles,
             env.n_reduce_threads,
             env.saveOption,
             output_path);
@@ -631,45 +630,32 @@ py::tuple featurize_fname_lists_imp (uint64_t instid, const py::list& int_fnames
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = single_roi;
 
-    std::vector<std::string> intensFiles, labelFiles;
+    // Check intensity file names 
+    std::vector<std::string> intensFiles;
     for (auto it = int_fnames.begin(); it != int_fnames.end(); ++it)
     {
         std::string fn = it->cast<std::string>();
         intensFiles.push_back(fn);
     }
-    for (auto it = seg_fnames.begin(); it != seg_fnames.end(); ++it)
-    {
-        std::string fn = it->cast<std::string>();
-        labelFiles.push_back(fn);
-    }
 
-    // Check the file names 
     if (intensFiles.size() == 0)
-        throw std::runtime_error("Intensity file list is blank");
-    if (labelFiles.size() == 0)
-        throw std::runtime_error("Segmentation mask file list is blank");
-    if (intensFiles.size() != labelFiles.size())
-        throw std::runtime_error("Imbalanced intensity and segmentation mask file lists");
+        throw std::runtime_error("Intensity file name list is blank");
+
     for (auto i = 0; i < intensFiles.size(); i++)
     {
         const std::string& i_fname = intensFiles[i];
-        const std::string& s_fname = labelFiles[i];
 
         if (!existsOnFilesystem(i_fname))
         {
             auto msg = "File does not exist: " + i_fname;
             throw std::runtime_error(msg);
         }
-        if (!existsOnFilesystem(s_fname))
-        {
-            auto msg = "File does not exist: " + s_fname;
-            throw std::runtime_error(msg);
-        }
     }
 
+    // clear result buffers
     theEnvironment.theResultsCache.clear();
 
-    // Process the image sdata
+    // Process slides
     int min_online_roi_size = 0;
     int errorCode;
 
@@ -681,13 +667,45 @@ py::tuple featurize_fname_lists_imp (uint64_t instid, const py::list& int_fnames
 		} else {return SaveOption::saveBuffer;}
 	}();
 
-    errorCode = processDataset_2D_segmented (
-        theEnvironment,
-        intensFiles,
-        labelFiles,
-        theEnvironment.n_reduce_threads,
-        theEnvironment.saveOption,
-        output_path);
+    if (single_roi)
+        errorCode = processDataset_2D_wholeslide (
+            theEnvironment,
+            intensFiles,
+            theEnvironment.n_reduce_threads,
+            theEnvironment.saveOption,
+            output_path);
+    else
+    {
+        // check mask file names
+        std::vector<std::string> labelFiles;
+        for (auto it = seg_fnames.begin(); it != seg_fnames.end(); ++it)
+        {
+            std::string fn = it->cast<std::string>();
+            labelFiles.push_back(fn);
+        }
+
+        if (intensFiles.size() != labelFiles.size())
+            throw std::runtime_error("Imbalanced intensity (" + std::to_string(intensFiles.size()) + " items) and segmentation mask (" + std::to_string(labelFiles.size()) + " items) file lists");
+
+        for (auto i = 0; i < labelFiles.size(); i++)
+        {
+            const std::string& s_fname = labelFiles[i];
+            if (!existsOnFilesystem(s_fname))
+            {
+                auto msg = "File does not exist: " + s_fname;
+                throw std::runtime_error(msg);
+            }
+        }
+
+        // we're good to extract features
+        errorCode = processDataset_2D_segmented(
+            theEnvironment,
+            intensFiles,
+            labelFiles,
+            theEnvironment.n_reduce_threads,
+            theEnvironment.saveOption,
+            output_path);
+    }
 
     if (errorCode)
         throw std::runtime_error("Error occurred during dataset processing.");
