@@ -85,7 +85,6 @@ int main (int argc, char** argv)
 			errorCode = processDataset_2D_wholeslide(
 				env,
 				intensFiles,
-				labelFiles,
 				env.n_reduce_threads,
 				env.saveOption,
 				env.output_dir);

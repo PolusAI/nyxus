@@ -101,8 +101,8 @@ namespace Nyxus
 			lyr = 0;	//	Layer
 
 		// Read the tiffs
-		size_t nth = ldr.get_num_tiles_hor(),
-			ntv = ldr.get_num_tiles_vert(),
+		size_t ntHor = ldr.get_num_tiles_hor(),
+			ntVert = ldr.get_num_tiles_vert(),
 			fw = ldr.get_tile_width(),
 			th = ldr.get_tile_height(),
 			tw = ldr.get_tile_width(),
@@ -110,9 +110,9 @@ namespace Nyxus
 			fullwidth = ldr.get_full_width(),
 			fullheight = ldr.get_full_height();
 
-		int cnt = 1;
-		for (unsigned int row = 0; row < nth; row++)
-			for (unsigned int col = 0; col < ntv; col++)
+		size_t cnt = 1;
+		for (size_t row = 0; row < ntVert; row++)
+			for (size_t col = 0; col < ntHor; col++)
 			{
 				// Fetch the tile 
 				bool ok = ldr.load_tile(row, col);
@@ -162,10 +162,10 @@ namespace Nyxus
 					if (cnt++ % 4 == 0)
 					{
 						static int prevIntPc = 0;
-						float pc = int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100.;
+						float pc = Nyxus::round2(100. * float(row * ntHor + col) / float(ntHor * ntVert));
 						if (int(pc) != prevIntPc)
 						{
-							std::cout << "\t scan trivial " << int(pc) << " %\n";
+							std::cout << "\t" << "scan trivial " << int(pc) << " % \n";
 							prevIntPc = int(pc);
 						}
 					}
@@ -192,8 +192,8 @@ namespace Nyxus
 			lyr = 0;	//	layer
 
 		// physical slide properties
-		size_t nth = ldr.get_num_tiles_hor(),
-			ntv = ldr.get_num_tiles_vert(),
+		size_t ntHor = ldr.get_num_tiles_hor(),
+			ntVert = ldr.get_num_tiles_vert(),
 			fw = ldr.get_tile_width(),
 			th = ldr.get_tile_height(),
 			tw = ldr.get_tile_width(),

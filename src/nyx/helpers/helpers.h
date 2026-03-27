@@ -48,7 +48,7 @@ namespace Nyxus
 		std::vector<std::string> L;
 		parse_delimited_string(txt, "\n", L);
 
-		size_t maxlen = 0, curlen = 0;
+		size_t maxlen = 0;
 		for (const auto& l : L)
 		{
 			auto len = l.size();

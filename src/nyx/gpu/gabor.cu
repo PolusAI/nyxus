@@ -1,6 +1,6 @@
 #include <vector>
 #include "gabor.cuh"
-#include "../cache.h"     //xxxxxxxxxxxx      ../gpucache.h"
+#include "../cache.h"
 
 using namespace std;
 
