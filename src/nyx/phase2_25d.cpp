@@ -112,7 +112,7 @@ namespace Nyxus
 							float pc = int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100.;
 							if (int(pc) != prevIntPc)
 							{
-								std::cout << "\t scan trivial " << int(pc) << " %\n";
+								std::cout << "\t" << "scan trivial " << int(pc) << " % \n";
 								prevIntPc = int(pc);
 							}
 						}

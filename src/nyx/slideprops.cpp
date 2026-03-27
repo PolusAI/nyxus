@@ -197,6 +197,9 @@ namespace Nyxus
 					}
 				} // scan tile
 
+				// free tile buffers
+				ilo.free_tile_buffers();
+
 #ifdef WITH_PYTHON_H
 				if (PyErr_CheckSignals() != 0)
 					throw pybind11::error_already_set();

@@ -113,7 +113,7 @@ namespace NyxusGpu
         if (pxIdx >= cloud_len)
             return;
 
-        StatsInt x = d_roicloud[pxIdx].x,
+        [[maybe_unused]] StatsInt x = d_roicloud[pxIdx].x,
             y = d_roicloud[pxIdx].y;
 
         const Pixel2 & p = d_roicloud[pxIdx], 

@@ -9,6 +9,11 @@
 	return false; \
 } \
 
+#define OKDETL(x,detl) if (x == false) \
+{ \
+	return std::string("error due to ") + detl + " at " + __FILE__ + ":" + std::to_string(__LINE__); \
+} \
+
 #define OKV(x) if (x == false) \
 { \
 	std::cerr << "gpu cache related error in " << __FILE__ << ":" << __LINE__; \
@@ -76,7 +81,7 @@
 		return szb;
 	}
 
-	bool GpusideCache::allocate_gpu_cache(
+	std::optional<std::string> GpusideCache::allocate_gpu_cache(
 		// out
 		GpuCache<Pixel2>& clouds,	// geo moments
 		GpuCache<Pixel2>& konturs,
@@ -107,14 +112,13 @@
 		int gabor_ker_side)
 	{
 		using_contour =
-		using_erosion =
-		using_gabor =
-		using_moments = false;
+			using_erosion =
+			using_gabor =
+			using_moments = false;
 
 		//****** plan GPU memory
-
 		size_t amt = 0;
-		OK(gpu_get_free_mem(amt));
+		OKDETL(gpu_get_free_mem(amt), "gpu_get_free_mem()");
 
 		int n_gabFilters = n_gabor_filters + 1;		// '+1': an extra filter for the baseline signal
 
@@ -130,7 +134,7 @@
 			n_rois, roi_w, roi_h, n_gabFilters, gabor_ker_side);
 
 		batch_len = n_rois;
-		size_t critAmt = amt * 0.75; // 75% GPU RAM as critical RAM
+		size_t critAmt = float(amt) * 0.75; // 75% GPU RAM as critical RAM
 
 		if (critAmt < szb)
 		{
@@ -139,10 +143,7 @@
 			{
 				// failed to find a batch ?
 				if (try_nrois == 0)
-				{
-					std::cerr << "error: cannot make a ROI batch \n";
-					return false;
-				}
+					return "cannot rightsize a ROI batch: even 1 ROI requires over critical memory amount " + std::to_string(critAmt);
 
 				size_t ccl = roi_area * try_nrois;	// combined cloud length
 				size_t try_szb = ram_comsumption_szb(
@@ -162,7 +163,7 @@
 			// have we found a compromise ?
 			if (batch_len < n_rois)
 			{
-				return false;
+				return "cannot rightsize a ROI batch: batch_len " + std::to_string(batch_len) + " < n_rois " + std::to_string(n_rois);
 			}
 		}
 
@@ -172,8 +173,8 @@
 
 		// ROI clouds (always on)
 
-		OK(clouds.clear());
-		OK(clouds.alloc(batch_roi_cloud_len, batch_len));
+		OKDETL(clouds.clear(), "clouds.clear()");
+		OKDETL(clouds.alloc(batch_roi_cloud_len, batch_len), "clouds.alloc()");
 
 		// contours
 
@@ -181,8 +182,8 @@
 		{
 			using_contour = true;
 
-			OK(konturs.clear());
-			OK(konturs.alloc(batch_roi_cloud_len, batch_len));
+			OKDETL(konturs.clear(), "konturs.clear()");
+			OKDETL(konturs.alloc(batch_roi_cloud_len, batch_len), "konturs.alloc()");
 		}
 
 		// moments
@@ -192,17 +193,17 @@
 			using_moments = true;
 
 			// moments / real intensities
-			OK(allocate_on_device((void**)realintens, sizeof(RealPixIntens) * batch_roi_cloud_len));
+			OKDETL(allocate_on_device((void**)realintens, sizeof(RealPixIntens) * batch_roi_cloud_len), "allocate_on_device(moments1)");
 
 			// moments / pre-reduce
-			OK(allocate_on_device((void**)prereduce, sizeof(double) * batch_roi_cloud_len * 16));	// 16 is the max number of simultaneous totals calculated by a kernel, e.g. RM00-33
+			OKDETL(allocate_on_device((void**)prereduce, sizeof(double) * batch_roi_cloud_len * 16), "allocate_on_device(moments2)");	// 16 is the max number of simultaneous totals calculated by a kernel, e.g. RM00-33
 
 			// moments / intermediate
-			OK(intermediate.alloc(GpusideState::__COUNT__, batch_len));
+			OKDETL(intermediate.alloc(GpusideState::__COUNT__, batch_len), "allocate_on_device(moments3)");
 
 			// moments / CUB DeviceReduce's temp buffer
-			OK(devicereduce_evaluate_buffer_szb(devicereduce_buf_szb, batch_roi_cloud_len));
-			OK(allocate_on_device((void**)devicereduce_buf, devicereduce_buf_szb));
+			OKDETL(devicereduce_evaluate_buffer_szb(devicereduce_buf_szb, batch_roi_cloud_len), "allocate_on_device(moments4)");
+			OKDETL(allocate_on_device((void**)devicereduce_buf, devicereduce_buf_szb), "allocate_on_device(moments5)");
 		}
 
 		// erosion / image matrices 1 and 2
@@ -213,9 +214,9 @@
 
 			// imat1 is shared by erosion and Gabor
 			if (!*imat1)
-				OK(allocate_on_device((void**)imat1, sizeof(imat1[0]) * roi_w * roi_h));
+				OKDETL(allocate_on_device((void**)imat1, sizeof(imat1[0]) * roi_w * roi_h), "allocate_on_device(eros1)");
 
-			OK(allocate_on_device((void**)imat2, sizeof(imat2[0]) * roi_w * roi_h));
+			OKDETL(allocate_on_device((void**)imat2, sizeof(imat2[0]) * roi_w * roi_h), "allocate_on_device(eros2)");
 		}
 
 		// Gabor
@@ -226,16 +227,16 @@
 
 			// imat1 is shared by erosion and Gabor
 			if (!*imat1)
-				OK(allocate_on_device((void**)imat1, sizeof(imat1[0]) * roi_w * roi_h));
+				OKDETL(allocate_on_device((void**)imat1, sizeof(imat1[0]) * roi_w * roi_h), "allocate_on_device(gabor)");
 
 			size_t gabTotlen = (roi_w + gabor_ker_side - 1) * (roi_h + gabor_ker_side - 1) * n_gabFilters;
-			OK(gabor_linear_image.alloc(gabTotlen, 1));
-			OK(gabor_result.alloc(gabTotlen, 1));
-			OK(gabor_linear_kernel.alloc(gabTotlen, 1));
-			OK(gabor_energy_image.alloc(gabTotlen, 1));
+			OKDETL(gabor_linear_image.alloc(gabTotlen, 1), "gabor_linear_image.alloc()");
+			OKDETL(gabor_result.alloc(gabTotlen, 1), "gabor_result.alloc()");
+			OKDETL(gabor_linear_kernel.alloc(gabTotlen, 1), "gabor_linear_kernel.alloc()");
+			OKDETL(gabor_energy_image.alloc(gabTotlen, 1), "gabor_energy_image.alloc()");
 		}
 
-		return true;
+		return std::nullopt;
 	}
 
 	void GpusideCache::send_roi_batch_data_2_gpu(

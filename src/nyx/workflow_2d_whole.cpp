@@ -202,22 +202,26 @@ namespace Nyxus
 	int processDataset_2D_wholeslide (
 		Environment & env,
 		const std::vector<std::string>& intensFiles,
-		const std::vector<std::string>& labelFiles,
 		int n_threads,
 		const SaveOption saveOption,
 		const std::string& outputPath)
 	{
+		// create a vector of blank mask file names. Blank mask counterparts 
+		// of intensity files will serve as the condition of the whole-slide scenario in the prescan phase
+		std::vector<std::string> labelFiles (intensFiles.size());
+
 		//**** prescan all slides
 
 		size_t nf = intensFiles.size();
-
-		VERBOSLVL1 (env.get_verbosity_level(), std::cout << "phase 0 (prescanning)\n");
-
+		VERBOSLVL1 (env.get_verbosity_level(), std::cout << "\nphase 0: prescanning " << nf << " slides \n");
 		env.dataset.reset_dataset_props();
 
 		for (size_t i=0; i<nf; i++)
 		{
 			// slide file names
+			// Note: condition (p.fname_seg == "") activates the wholeslide-aware prescanning, 
+			// particularly, setting slide's intensity min := 0 (i.e. off-mask background min) 
+			// rather than setting min as within-mask min
 			SlideProps& p = env.dataset.dataset_props.emplace_back (intensFiles[i], labelFiles[i]);
 
 			// slide metrics
