@@ -446,8 +446,8 @@ class Nyxus:
         min_raw_I = np.min (intensity_images)
         if (min_raw_I < 0):
             I -= min_raw_I
-        if (not isinstance(I.flat[0], np.uint32)):
-            I = I.astype (np.uint32)
+        if I.dtype != np.uint32:
+            I = I.astype(np.uint32)
 
         # cast mask data to unsigned integer, too
         M = label_images.astype (np.uint32)
