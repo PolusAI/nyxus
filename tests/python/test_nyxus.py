@@ -1167,6 +1167,11 @@ class TestSingleRoi():
         df_no_mask.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
         df_with_mask.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
 
+        # Sort by intensity_image to get a deterministic row order (multithreaded
+        # processing can return rows in different completion order between calls)
+        df_no_mask = df_no_mask.sort_values("intensity_image").reset_index(drop=True)
+        df_with_mask = df_with_mask.sort_values("intensity_image").reset_index(drop=True)
+
         assert list(df_no_mask.columns) == list(df_with_mask.columns)
         for col in df_no_mask.columns:
             for v1, v2 in zip(df_no_mask[col].tolist(), df_with_mask[col].tolist()):
