@@ -13,6 +13,7 @@
 #include "../globals.h"
 #include "../nested_feature_aggregation.h"
 #include "../features/gabor.h"
+#include "../features/glcm.h"
 #include "../output_writers.h" 
 #include "../arrow_output_stream.h"
 #include "../strpat.h"
@@ -128,7 +129,8 @@ void initialize_environment(
     float aniso_y,
     float aniso_z,
     bool fmaps = false,
-    int fmaps_radius = 2)
+    int fmaps_radius = 2,
+    const std::string& glcm_direction_field = "")
 {
     Environment & theEnvironment = Nyxus::findenv (instid);
 
@@ -146,6 +148,18 @@ void initialize_environment(
     theEnvironment.fmaps_mode = fmaps;
     if (fmaps_radius >= 1)
         theEnvironment.fmaps_kernel_radius = fmaps_radius;
+
+    // GLCM direction field
+    if (!glcm_direction_field.empty())
+    {
+        theEnvironment.glcmOptions.rawDirectionField = glcm_direction_field;
+        std::string ermsg;
+        if (!theEnvironment.parse_glcm_options_raw_inputs(ermsg))
+            throw std::invalid_argument("Invalid GLCM direction field: " + ermsg);
+        
+        // Load the direction field immediately after parsing
+        theEnvironment.load_glcm_direction_field();
+    }
 
     // Throws exception if invalid feature is passed
     theEnvironment.expand_featuregroups();
@@ -811,13 +825,22 @@ py::tuple featurize_fname_lists_imp (uint64_t instid, const py::list& int_fnames
         }
 
         // we're good to extract features
-        errorCode = processDataset_2D_segmented(
-            theEnvironment,
-            intensFiles,
-            labelFiles,
-            theEnvironment.n_reduce_threads,
-            theEnvironment.saveOption,
-            output_path);
+        if (theEnvironment.fmaps_mode)
+            errorCode = processDataset_2D_fmaps(
+                theEnvironment,
+                intensFiles,
+                labelFiles,
+                theEnvironment.n_reduce_threads,
+                theEnvironment.saveOption,
+                output_path);
+        else
+            errorCode = processDataset_2D_segmented(
+                theEnvironment,
+                intensFiles,
+                labelFiles,
+                theEnvironment.n_reduce_threads,
+                theEnvironment.saveOption,
+                output_path);
     }
 
     if (errorCode)
@@ -1093,6 +1116,67 @@ void customize_gabor_feature_imp(
         throw std::invalid_argument("Invalid GABOR parameter value: " + ermsg);
 }
 
+void set_glcm_direction_field_imp(
+    uint64_t instid,
+    const std::string& direction_field_path)
+{
+    Environment & env = Nyxus::findenv (instid);
+
+    // Set the raw direction field path
+    env.glcmOptions.rawDirectionField = direction_field_path;
+
+    // Validate and parse
+    std::string ermsg;
+    if (!env.parse_glcm_options_raw_inputs(ermsg))
+        throw std::invalid_argument("Invalid GLCM direction field path: " + ermsg);
+    
+    // Load the direction field immediately
+    env.load_glcm_direction_field();
+}
+
+void set_glcm_direction_field_array_imp(
+    uint64_t instid,
+    py::array_t<float> direction_array)
+{
+    Environment & env = Nyxus::findenv (instid);
+    
+    auto buf = direction_array.request();
+    
+    // Validate dimensions: should be (height, width, 2) or (height, width, 3)
+    if (buf.ndim != 3)
+        throw std::invalid_argument("Direction field array must be 3-dimensional (height, width, channels)");
+    
+    int height = buf.shape[0];
+    int width = buf.shape[1];
+    int channels = buf.shape[2];
+    
+    if (channels < 2 || channels > 3)
+        throw std::invalid_argument("Direction field must have 2 or 3 channels (dx, dy[, dz])");
+    
+    // Create SimpleCube and copy data
+    env.glcm_direction_field_data = std::make_unique<SimpleCube<float>>(width, height, channels);
+    
+    float* src = static_cast<float*>(buf.ptr);
+    for (int ch = 0; ch < channels; ch++)
+    {
+        for (int row = 0; row < height; row++)
+        {
+            for (int col = 0; col < width; col++)
+            {
+                // numpy array is (row, col, channel), SimpleCube uses zyx(channel, row, col)
+                size_t src_idx = row * width * channels + col * channels + ch;
+                env.glcm_direction_field_data->zyx(ch, row, col) = src[src_idx];
+            }
+        }
+    }
+    
+    // Note: Normalization is not needed here because find_closest_canonical_direction()
+    // in glcm.cpp normalizes vectors internally before computing dot products
+    
+    // Set it on the GLCMFeature class
+    GLCMFeature::direction_field = env.glcm_direction_field_data.get();
+}
+
 std::map<std::string, ParameterTypes> get_params_imp (uint64_t instid, const std::vector<std::string>& vars )
 {
     Environment & theEnvironment = Nyxus::findenv (instid);
@@ -1233,6 +1317,8 @@ PYBIND11_MODULE(backend, m)
     m.def("clear_roi_blacklist_imp",    &clear_roi_blacklist_imp,   "Clear the ROI black list");
     m.def("roi_blacklist_get_summary_imp",  &roi_blacklist_get_summary_imp, "Returns a summary of the ROI blacklist");
     m.def("customize_gabor_feature_imp",    &customize_gabor_feature_imp,   "Sets custom GABOR feature's parameters");
+    m.def("set_glcm_direction_field_imp",   &set_glcm_direction_field_imp,  "Sets GLCM custom direction field path");
+    m.def("set_glcm_direction_field_array_imp", &set_glcm_direction_field_array_imp, "Sets GLCM custom direction field from numpy array");
     m.def("set_if_ibsi_imp",            &set_if_ibsi_imp,           "Set if the features will be ibsi compliant");
     m.def("set_fmaps_imp",              &set_fmaps_imp,             "Enable/disable feature maps mode and set kernel radius");
     m.def("set_environment_params_imp", &set_environment_params_imp,    "Set the environment variables of Nyxus");

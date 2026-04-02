@@ -14,11 +14,13 @@ public:
 	bool empty();
 
 	// intentionally public to be accessed by Environment
-	std::string rawOffs = "",	// matches GLCMOFFSET
-		rawAngles = "";			// matches GLCMANGLES
+	std::string rawOffs = "",		// matches GLCMOFFSET
+		rawAngles = "",			// matches GLCMANGLES
+		rawDirectionField = "";	// matches GLCM_DIRFIELD - path to direction field image
 
 	int offset_ = 1;
 	std::vector<int> glcmAngles = { 0, 45, 90, 135 };
+	std::string directionFieldPath = "";  // parsed path to direction field file
 
 private:
 	bool defined_ = false;

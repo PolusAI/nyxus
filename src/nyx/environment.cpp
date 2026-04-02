@@ -13,6 +13,7 @@
 #include "helpers/system_resource.h"
 #include "helpers/timing.h"
 #include "version.h"
+#include "direction_field_loader.h"
 
 #ifdef USE_GPU
 	std::vector<std::map<std::string, std::string>> get_gpu_properties();
@@ -439,6 +440,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			find_string_argument(i, clo_REDUCETHREADS, reduce_threads) ||
 			find_string_argument(i, clo_GLCMANGLES, glcmOptions.rawAngles) ||
 			find_string_argument(i, clo_GLCMOFFSET, glcmOptions.rawOffs) ||
+			find_string_argument(i, clo_GLCM_DIRFIELD, glcmOptions.rawDirectionField) ||
 			find_string_argument(i, clo_PXLDIST, pixel_distance) ||
 			find_string_argument(i, clo_COARSEGRAYDEPTH, raw_coarse_grayscale_depth) ||
 			find_string_argument(i, clo_VERBOSITY, rawVerbosity) ||
@@ -1022,6 +1024,39 @@ bool Environment::parse_glcm_options_raw_inputs (std::string& error_message)
 		return false;
 	}
 	return true;
+}
+
+void Environment::load_glcm_direction_field()
+{
+	if (glcmOptions.directionFieldPath.empty())
+		return;
+
+	try
+	{
+		// Load the direction field from file (normalization handled internally during binning)
+		glcm_direction_field_data = DirectionFieldLoader::load(glcmOptions.directionFieldPath);
+		
+		// Set it on the GLCMFeature class (static member)
+		GLCMFeature::direction_field = glcm_direction_field_data.get();
+		
+		VERBOSLVL2(get_verbosity_level(), 
+			std::cout << "Loaded GLCM direction field from " << glcmOptions.directionFieldPath 
+				<< " (" << glcm_direction_field_data->width() << "x" 
+				<< glcm_direction_field_data->height() << "x" 
+				<< glcm_direction_field_data->depth() << ")" << std::endl
+		);
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Error loading GLCM direction field: " << e.what() << std::endl;
+		throw;
+	}
+}
+
+void Environment::clear_glcm_direction_field()
+{
+	GLCMFeature::direction_field = nullptr;
+	glcm_direction_field_data.reset();
 }
 
 bool Environment::parse_fpimage_options_raw_inputs(std::string& error_message)

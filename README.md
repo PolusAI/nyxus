@@ -209,6 +209,82 @@ mdir = [
 nyx.featurize_files (idir, mdir, False) # pass True to featurize intensity files as whole segments
 ```
 
+### GLCM with Custom Direction Fields
+
+Nyxus supports computing GLCM texture features using custom, spatially-varying directions instead of traditional fixed angles (0°, 45°, 90°, 135°). This is useful when analyzing anisotropic structures where texture orientation varies across the image.
+
+**Important:** Direction field support requires **feature maps (fmaps) mode** to be enabled, as it produces spatially-resolved texture maps following local tissue orientation.
+
+**Python API:
+
+```python
+from nyxus import Nyxus
+
+# REQUIRED: Enable feature maps mode for direction field support
+nyx = Nyxus(['*ALL_GLCM*'], fmaps=True, fmaps_radius=2)
+
+# Option 1: Load direction field from file (NIfTI or TIFF)
+nyx.set_glcm_direction_field('path/to/direction_field.nii.gz')
+
+# Option 2: Provide direction field as NumPy array
+import numpy as np
+direction_array = np.load('directions.npy')  # Shape: (height, width, 2)
+nyx.set_glcm_direction_field_array(direction_array)
+
+# Extract features (returns feature maps, not scalar values)
+features = nyx.featurize_directory(
+    intensity_dir='/path/to/intensity',
+    label_dir='/path/to/masks'
+)
+
+# Results are spatial arrays, one per parent ROI:
+# results[0]['features']['GLCM_CONTRAST_0'] -> numpy array (map_h, map_w)
+```
+
+**File Format Requirements:**
+
+*NIfTI files (.nii, .nii.gz):*
+- Shape: `(width, height, depth, components)` where `depth=1` for 2D, `components=2` for (dx, dy)
+- Data type: float32 or float64
+
+*TIFF files:*
+- Multi-channel TIFF with 2 channels
+- Shape: `(height, width, 2)`
+- Data type: float32 or float64
+
+*NumPy arrays:*
+- Shape: `(height, width, 2)` for 2D
+- Last dimension contains `[dx, dy]` direction components
+
+**How It Works:**
+
+In feature maps mode with a direction field:
+
+1. **Per-pixel direction binning:** Each pixel's direction vector is binned to the nearest canonical angle (0°, 45°, 90°, 135°)
+2. **Directional GLCMs:** Four separate GLCMs are built within each kernel window, one per canonical direction
+3. **Selective pixel inclusion:** Only pixels whose direction bins to a specific angle contribute to that angle's GLCM
+4. **Feature map output:** Texture features are computed for each canonical direction at every kernel position, producing 4 feature maps per GLCM feature (one per angle)
+
+This produces texture maps that follow the local tissue structure at each position.
+
+**Direction Quantization:**
+
+Direction vectors are binned to the nearest canonical angle using GLCM's 180° rotational symmetry:
+
+**Lower hemisphere (0°-180°):**
+- Right (±22.5°) → 0°
+- Down-right (22.5° to 67.5°) → 45°
+- Down (67.5° to 112.5°) → 90°
+- Down-left (112.5° to 157.5°) → 135°
+
+**Upper hemisphere (180°-360°) - flipped to equivalent lower angles:**
+- Left (180°) → 0° (equivalent)
+- Up-left (225°) → 45° (equivalent)
+- Up (270°) → 90° (equivalent)
+- Up-right (315°) → 135° (equivalent)
+
+This handles GLCM's inherent symmetry: a co-occurrence from pixel A→B at angle θ is the same as B→A at angle θ+180°.
+
 ### Whole-slide and whole-volume feature extraction
 
 Nyxus provides dedicated workflows for extracting features from whole 2D slides and volumes. The workflows scale across CPU cores as controlled by constructor parameter `n_feature_calc_threads` of classes Nyxus and Nyxus3D.
@@ -468,6 +544,7 @@ Nyxus provides a set of pixel intensity, morphology, texture, intensity distribu
 | EROSIONS_2_VANISH_COMPLEMENT | Number of erosion operations for a ROI to vanish in its convex hull |
 | FRACT_DIM_BOXCOUNT, FRACT_DIM_PERIMETER | Fractal dimension features |
 | GLCM | Grey level co-occurrence Matrix features |
+| GLCM with custom direction field | GLCM features computed using spatially-varying directions (e.g., following tissue fiber orientation, gradients, or DTI) instead of fixed angles |
 | GLRLM | Grey level run-length matrix based features |
 | GLDZM | Grey level distance zone matrix based features |
 | GLSZM | Grey level size zone matrix based features |
@@ -749,6 +826,7 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 --gpuDeviceID | ${\color{red}\textsf{(optional)}}$ ID of a GPU device to be used when '--useGpu=true'. Default: '--gpuDeviceID=0'. Example 1 (single GPU device): '--useGpu=true --gpuDeviceID=2' to strictly use device 2. Example 2 (multiple GPU devices, usually in SLURM scenarios): '--useGpu=true --gpuDeviceID=0,1,3' to use the GPU device having maximum free RAM of devices 0, 1, and 3. | integer or list of integers
 --coarseGrayDepth | ${\color{red}\textsf{(optional)}}$ Custom number of greyscale level bins used in texture features. Default: '--coarseGrayDepth=256' | integer
 --glcmAngles | ${\color{red}\textsf{(optional)}}$ Enabled direction angles of the GLCM feature. Superset of values: 0, 45, 90, and 135. Default: '--glcmAngles=0,45,90,135' | list of integers
+--glcmDirectionField | ${\color{red}\textsf{(optional)}}$ Path to a NIfTI or multi-channel TIFF file containing custom per-pixel GLCM directions. When specified, GLCM features use spatially-varying directions instead of fixed angles. File should contain 2D direction vectors (dx, dy). Example: '--glcmDirectionField=/path/to/directions.nii.gz' | path
 --intSegMapDir | ${\color{red}\textsf{(optional)}}$ Data collection of the ad-hoc intensity-to-mask file mapping. Must be used in combination with parameter '--intSegMapFile' | path
 --intSegMapFile | ${\color{red}\textsf{(optional)}}$ Name of the text file containing an ad-hoc intensity-to-mask file mapping. The files are assumed to reside in corresponding intensity and label collections. Must be used in combination with parameter '--intSegMapDir' | string
 --pixelDistance | ${\color{red}\textsf{(optional)}}$ Number of pixels to treat ROIs within specified distance as neighbors. Default value: '--pixelDistance=5' | integer

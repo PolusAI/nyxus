@@ -128,7 +128,10 @@ public:
 
 	// implementation of GLCM feature options
 	bool parse_glcm_options_raw_inputs (std::string& error_message);
+	void load_glcm_direction_field();
+	void clear_glcm_direction_field();
 	GLCMoptions glcmOptions;
+	std::unique_ptr<SimpleCube<float>> glcm_direction_field_data;
 
 	// implementation of nested ROI options
 	bool parse_nested_options_raw_inputs (std::string& error_message);

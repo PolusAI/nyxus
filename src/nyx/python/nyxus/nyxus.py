@@ -12,6 +12,8 @@ from .backend import (
     clear_roi_blacklist_imp,
     roi_blacklist_get_summary_imp,
     customize_gabor_feature_imp,
+    set_glcm_direction_field_imp,
+    set_glcm_direction_field_array_imp,
     set_if_ibsi_imp,
     set_fmaps_imp,
     set_environment_params_imp,
@@ -223,14 +225,16 @@ class Nyxus:
             dynamic_range,
             min_intensity,
             max_intensity,
-            False,
+            False,  # is_imq
             ram_limit,
             verb_lvl,
             aniso_x,
             aniso_y,
             aniso_z,
             fmaps,
-            fmaps_radius)
+            fmaps_radius,
+            ""  # glcm_direction_field
+        )
 
         self.set_gabor_feature_params(
             kersize = gabor_kersize,
@@ -697,6 +701,32 @@ class Nyxus:
 
         customize_gabor_feature_imp (id(self), kersize, gamma, sig2lam, f0, thetas, thold, freqs)
 
+    def set_glcm_direction_field(self, direction_field_path: str):
+        """Set the path to a NIfTI or TIFF file containing custom GLCM direction field.
+        
+        The direction field should be a multi-channel file with 2 channels for 2D (dx, dy)
+        or 3 channels for 3D (dx, dy, dz).
+        
+        Parameters
+        ----------
+        direction_field_path : str
+            Path to the TIFF or NIfTI file containing the direction field
+        """
+        set_glcm_direction_field_imp(id(self), direction_field_path)
+    
+    def set_glcm_direction_field_array(self, direction_array):
+        """Set custom GLCM direction field from a numpy array.
+        
+        The direction array should have shape (height, width, 2) for 2D
+        or (depth, height, width, 3) for 3D, where the last dimension
+        contains the direction components (dx, dy[, dz]).
+        
+        Parameters
+        ----------
+        direction_array : np.ndarray
+            Array containing direction vectors
+        """
+        set_glcm_direction_field_array_imp(id(self), direction_array)
     
     def set_environment_params (self, **params):
         """Sets parameters of the environment for Nyxus
@@ -1096,14 +1126,16 @@ class Nyxus3D:
             dynamic_range,
             min_intensity,
             max_intensity,
-            False,
+            False,  # is_imq
             ram_limit,
             verb_lvl,
             aniso_x,
             aniso_y,
             aniso_z,
             fmaps,
-            fmaps_radius)
+            fmaps_radius,
+            ""  # glcm_direction_field
+        )
 
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
@@ -1632,14 +1664,16 @@ class ImageQuality:
             dynamic_range,
             min_intensity,
             max_intensity,
-            True,
+            True,  # is_imq
             ram_limit,
             verb_lvl,
             aniso_x,
             aniso_y,
             aniso_z,
-            False,
-            2)
+            False,  # fmaps
+            2,      # fmaps_radius
+            ""      # glcm_direction_field
+        )
 
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
@@ -2034,8 +2068,6 @@ class ImageQuality:
 
         customize_gabor_feature_imp (id(self), kersize, gamma, sig2lam, f0, thetas, thold, freqs)
 
-    
-    def set_environment_params (self, **params):
         """Sets parameters of the environment for Nyxus
         
         Keyword args:

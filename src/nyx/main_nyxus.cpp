@@ -54,6 +54,13 @@ int main (int argc, char** argv)
 
 	// prepare feature settings
 	env.compile_feature_settings();
+
+	// Load GLCM direction field if specified via command line
+	if (!env.glcmOptions.directionFieldPath.empty())
+	{
+		VERBOSLVL1(env.get_verbosity_level(), std::cout << "Loading GLCM direction field from command line...\n");
+		env.load_glcm_direction_field();
+	}
 		
 	if (env.dim() == 2)
 	{

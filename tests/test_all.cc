@@ -15,6 +15,7 @@
 #include "test_ibsi_ngldm.h"
 #include "test_ibsi_ngtdm.h"
 #include "test_glcm.h"
+#include "test_glcm_custom_direction.h"
 #include "test_gldm.h"
 #include "test_glrlm.h"
 #include "test_glszm.h"
@@ -1309,6 +1310,28 @@ TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_ROOT_MEAN_SQUARED)
 	ASSERT_NO_THROW(test_ibsi_root_mean_squared_intensity());
 }
 
+
+//***** 2D GLCM Custom Direction Tests *****
+
+TEST(TEST_NYXUS, TEST_GLCM_CUSTOM_DIRECTION_ACTIVATION)
+{
+	ASSERT_NO_THROW(test_glcm_custom_direction_activation());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_CUSTOM_DIRECTION_VS_TRADITIONAL_0DEG)
+{
+	ASSERT_NO_THROW(test_glcm_custom_direction_vs_traditional_0deg());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_CUSTOM_DIRECTION_DIFFERENT_DIRECTIONS)
+{
+	ASSERT_NO_THROW(test_glcm_custom_direction_different_directions());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_CUSTOM_DIRECTION_RESPECTS_MASK)
+{
+	ASSERT_NO_THROW(test_glcm_custom_direction_respects_mask());
+}
 
 //***** 2D GLDM regression ***** 
 

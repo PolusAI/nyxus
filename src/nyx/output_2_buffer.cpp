@@ -153,14 +153,17 @@ namespace Nyxus
 		const std::unordered_map<int, LR> & childRoiData,
 		const std::unordered_map<int, FmapChildInfo> & childToParentMap)
 	{
+
 		int half = kernel_size / 2;
-		// Map dimensions = valid convolution output size
+		// 2D/3D aware map size calculation
+		bool is3d = (parent_d > 1);
 		int map_w = parent_w - kernel_size + 1;
 		int map_h = parent_h - kernel_size + 1;
-		int map_d = parent_d - kernel_size + 1;
+		int map_d = is3d ? (parent_d - kernel_size + 1) : 1;
 
-		if (map_w <= 0 || map_h <= 0 || map_d <= 0)
+		if (map_w <= 0 || map_h <= 0 || (is3d && map_d <= 0)) {
 			return;
+		}
 
 		std::vector<std::tuple<std::string, int>> F = env.theFeatureSet.getEnabledFeatures();
 		std::vector<std::string> feature_names = get_feature_column_names(env, F);
@@ -171,34 +174,40 @@ namespace Nyxus
 		std::vector<double> feature_data(n_features * map_size, std::numeric_limits<double>::quiet_NaN());
 
 		// Fill in values from child ROIs
+				
+
 		for (auto l : childLabels)
 		{
 			auto it_roi = childRoiData.find(l);
-			if (it_roi == childRoiData.end())
+			if (it_roi == childRoiData.end()) {
 				continue;
+			}
 			const LR& r = it_roi->second;
-			if (r.blacklisted)
+			if (r.blacklisted) {
 				continue;
+			}
 
 			auto it_map = childToParentMap.find(l);
-			if (it_map == childToParentMap.end())
+			if (it_map == childToParentMap.end()) {
 				continue;
+			}
 
 			const FmapChildInfo& info = it_map->second;
 
 			// Convert global center coords to map indices
 			int map_col = info.center_x - parent_xmin - half;
 			int map_row = info.center_y - parent_ymin - half;
-			int map_z   = info.center_z - parent_zmin - half;
+			int map_z   = is3d ? (info.center_z - parent_zmin - half) : 0;
 
 			if (map_col < 0 || map_col >= map_w ||
 				map_row < 0 || map_row >= map_h ||
-				map_z < 0 || map_z >= map_d)
+				(is3d && (map_z < 0 || map_z >= map_d))) {
 				continue;
+			}
 
 			size_t voxel_idx = (size_t)map_z * map_h * map_w + (size_t)map_row * map_w + map_col;
 
-			// Collect feature values for this child
+						// Collect feature values for this child
 			auto vals = collect_feature_values(r, F);
 			for (size_t fi = 0; fi < n_features && fi < vals.size(); fi++)
 				feature_data[fi * map_size + voxel_idx] = force_finite_number(vals[fi], env.resultOptions.noval());
@@ -217,7 +226,10 @@ namespace Nyxus
 		result.origin_z = parent_zmin + half;
 		result.feature_names = std::move(feature_names);
 		result.feature_data = std::move(feature_data);
-		rescache.get_fmapArrayResults().push_back(std::move(result));
+        rescache.get_fmapArrayResults().push_back(std::move(result));
 	}
+// end of save_features_2_fmap_arrays
 
-}
+} // namespace Nyxus
+
+

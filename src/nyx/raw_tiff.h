@@ -200,24 +200,24 @@ public:
         tiffTile = nullptr;
     }
 
-    uint32_t get_uint32_pixel (size_t idx) const
+    uint32_t get_uint32_pixel (size_t idx) const override
     {
         uint32_t rv = get_uint32_pixel_typeresolved (tiffTile, idx);
         return rv;
     }
 
-    double get_dpequiv_pixel (size_t idx) const
+    double get_dpequiv_pixel (size_t idx) const override
     {
         double rv = get_dpequiv_pixel_typeresolved (tiffTile, idx);
         return rv;
     }
 
-    [[nodiscard]] size_t fullHeight([[maybe_unused]] size_t level) const { return fullHeight_; }
-    [[nodiscard]] size_t fullWidth([[maybe_unused]] size_t level) const { return fullWidth_; }
-    [[nodiscard]] size_t tileWidth([[maybe_unused]] size_t level) const { return tileWidth_; }
-    [[nodiscard]] size_t tileHeight([[maybe_unused]] size_t level) const { return tileHeight_; }
-    [[nodiscard]] short bitsPerSample() const { return bitsPerSample_; }
-    [[nodiscard]] size_t numberPyramidLevels() const { return 1; }
+    [[nodiscard]] size_t fullHeight([[maybe_unused]] size_t level) const override { return fullHeight_; }
+    [[nodiscard]] size_t fullWidth([[maybe_unused]] size_t level) const override { return fullWidth_; }
+    [[nodiscard]] size_t tileWidth([[maybe_unused]] size_t level) const override { return tileWidth_; }
+    [[nodiscard]] size_t tileHeight([[maybe_unused]] size_t level) const override { return tileHeight_; }
+    [[nodiscard]] short bitsPerSample() const override { return bitsPerSample_; }
+    [[nodiscard]] size_t numberPyramidLevels() const override { return 1; }
 
 private:
 
@@ -457,7 +457,7 @@ public:
             throw (std::runtime_error(erm));
         }
 
-        uint8* fub = (uint8*)buf;
+        uint8_t* fub = (uint8_t*)buf;
         for (size_t r = 0; r < tileHeight_; r++)
         {
             size_t offs = r * scanline_szb;
@@ -485,13 +485,13 @@ public:
         _TIFFfree(buf);
     }
 
-    uint32_t get_uint32_pixel(size_t idx) const
+    uint32_t get_uint32_pixel(size_t idx) const override
     {
         uint32_t rv = get_uint32_pixel_typeresolved (buf, idx);
         return rv;
     }
 
-    double get_dpequiv_pixel(size_t idx) const
+    double get_dpequiv_pixel(size_t idx) const override
     {
         double rv = get_dpequiv_pixel_typeresolved (buf, idx);
         return rv;

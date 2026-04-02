@@ -7,10 +7,94 @@ using namespace Nyxus;
 
 bool GLCMFeature::symmetric_glcm = false;
 std::vector<int> GLCMFeature::angles = { 0, 45, 90, 135 };
+const SimpleCube<float>* GLCMFeature::direction_field = nullptr;
 
 GLCMFeature::GLCMFeature() : FeatureMethod("GLCMFeature")
 {
 	provide_features(GLCMFeature::featureset);
+}
+
+/// @brief Set the custom direction field for GLCM calculation
+/// 
+/// PURPOSE: Enable spatially-varying GLCM directions instead of fixed angles
+/// 
+/// WHAT THIS DOES:
+/// - When direction_field is nullptr: Uses traditional fixed angles (0°, 45°, 90°, 135°)
+/// - When direction_field is set: Uses custom per-pixel directions from the field
+/// 
+/// WHY USE CUSTOM DIRECTIONS?
+/// - Follow tissue structure (e.g., muscle fibers, neural tracts)
+/// - Adapt to image features (e.g., gradient directions)
+/// - Improve texture characterization in anisotropic structures
+/// 
+/// @param dir_field Pointer to a SimpleCube containing direction vectors
+///                  Shape: (width, height, 2) where depth dimension holds [dx, dy]
+///                  Values should be normalized unit vectors (magnitude = 1)
+///                  Pass nullptr to revert to traditional fixed-angle GLCM
+/// 
+/// EXAMPLE:
+///   auto dirField = DirectionFieldLoader::load("myfield.nii.gz");
+///   GLCMFeature::set_direction_field(dirField.get());
+///   // Now GLCM will use custom directions at each pixel
+///   
+///   GLCMFeature::set_direction_field(nullptr);
+///   // Back to traditional fixed angles
+void GLCMFeature::set_direction_field(const SimpleCube<float>* dir_field)
+{
+	direction_field = dir_field;
+}
+
+/// @brief Convert angle (in degrees) to pixel offset for GLCM calculation
+/// 
+/// PURPOSE: Translate user-friendly angle notation to pixel coordinates
+/// 
+/// WHAT IS AN OFFSET?
+/// - GLCM looks at pairs of pixels separated by a direction and distance
+/// - Direction: specified by angle (0°, 45°, 90°, 135°)
+/// - Distance: specified by offset (usually 1 pixel)
+/// - This function converts angle → (dx, dy) pixel offset
+/// 
+/// DIRECTION MAPPING:
+/// - 0°   (→): Look to the right      → dx=offset, dy=0
+/// - 45°  (↗): Look diagonal up-right → dx=offset, dy=offset
+/// - 90°  (↑): Look up                → dx=0, dy=offset
+/// - 135° (↖): Look diagonal up-left  → dx=-offset, dy=offset
+/// 
+/// EXAMPLE:
+///   int dx, dy;
+///   angle_to_offset(45, 2, dx, dy);  // dx=2, dy=2 (diagonal, 2 pixels away)
+///   angle_to_offset(0, 1, dx, dy);   // dx=1, dy=0 (horizontal, 1 pixel away)
+/// 
+/// @param angle One of {0, 45, 90, 135} degrees
+/// @param offset Distance in pixels (usually 1)
+/// @param dx Output: x-component of offset vector
+/// @param dy Output: y-component of offset vector
+/// 
+/// NOTE: Invalid angles default to dx=dy=0 and print error message
+void GLCMFeature::angle_to_offset(int angle, int offset, int& dx, int& dy) const
+{
+	switch (angle)
+	{
+	case 0:
+		dx = offset;
+		dy = 0;
+		break;
+	case 45:
+		dx = offset;
+		dy = offset;
+		break;
+	case 90:
+		dx = 0;
+		dy = offset;
+		break;
+	case 135:
+		dx = -offset;
+		dy = offset;
+		break;
+	default:
+		std::cerr << "Cannot create co-occurence matrix for angle " << angle << ": unsupported angle\n";
+		dx = dy = 0;
+	}
 }
 
 void GLCMFeature::calculate (LR& r, const Fsettings& s)
@@ -94,9 +178,16 @@ void GLCMFeature::calculate (LR& r, const Fsettings& s)
 		return;
 	}
 
-	// Calculate features for all the directions
-	for (auto a : angles)
-		Extract_Texture_Features2 (s, a, r.aux_image_matrix, offset, r.aux_min, r.aux_max);
+		// Calculate features for all the directions
+		// MODE 1: Custom direction field (per-pixel directions)
+		if (direction_field != nullptr) {
+		calculateCoocMatFromDirectionField(s, r.aux_image_matrix, offset, r.aux_min, r.aux_max);
+	}
+	// MODE 2: Traditional angle-based (existing behavior)
+	else {
+		for (auto a : angles)
+			Extract_Texture_Features2 (s, a, r.aux_image_matrix, offset, r.aux_min, r.aux_max);
+	}
 }
 
 void GLCMFeature::clear_result_buffers()
@@ -226,34 +317,16 @@ void GLCMFeature::parallel_process_1_batch (size_t start, size_t end, std::vecto
 
 void GLCMFeature::Extract_Texture_Features2 (const Fsettings& s, int angle, const ImageMatrix& grays, int offset, PixIntens min_val, PixIntens max_val)
 {
-	int nrows = grays.height;
-	int ncols = grays.width;
-
-	// Compute the gray-tone spatial dependence matrix 
+	// Convert angle to direction offset
 	int dx, dy;
-	switch (angle)
-	{
-	case 0:
-		dx = offset;
-		dy = 0;
-		break;
-	case 45:
-		dx = offset;
-		dy = offset;
-		break;
-	case 90:
-		dx = 0;
-		dy = offset;
-		break;
-	case 135:
-		dx = -offset;
-		dy = offset;
-		break;
-	default:
-		std::cerr << "Cannot create co-occurence matrix for angle " << angle << ": unsupported angle\n";
-		return;
-	}
+	angle_to_offset(angle, offset, dx, dy);
+	
+	// Call the direct version
+	Extract_Texture_Features2_Direct(s, dx, dy, grays, min_val, max_val);
+}
 
+void GLCMFeature::Extract_Texture_Features2_Direct (const Fsettings& s, int dx, int dy, const ImageMatrix& grays, PixIntens min_val, PixIntens max_val)
+{
 	calculateCoocMatAtAngle (P_matrix, s, dx, dy, grays, min_val, max_val);
 
 	// Blank cooc-matrix? -- no point to use it, assign each feature value '0' and return.
@@ -474,11 +547,293 @@ void GLCMFeature::calculateCoocMatAtAngle(
 			}
 		}
 
-	// Calculate sum of GLCM for feature calculations
+		// Calculate sum of GLCM for feature calculations
 	sum_p = 0;
 	for (int i = 0; i < GLCM.width(); ++i)
 		for (int j = 0; j < GLCM.height(); ++j)
 			sum_p += GLCM.xy(i, j);
+}
+
+/// @brief Calculate averaged direction from direction field
+/// 
+/// PURPOSE: Convert per-pixel directions into a single representative direction
+/// 
+/// APPROACH:
+/// - Average all dx values across ROI
+/// - Average all dy values across ROI
+/// - Normalize result to unit vector
+/// - Scale by offset
+/// 
+/// @param grays Image to process
+/// @param offset Pixel distance multiplier
+/// @return Pair of (dx, dy) as averaged direction
+
+/// @brief Helper to find closest canonical direction index
+/// Handles GLCM's 180° rotational symmetry by normalizing to lower hemisphere
+/// @param dx, dy Direction vector components
+/// @return Index 0-3 corresponding to angles {0°, 45°, 90°, 135°}
+static int find_closest_canonical_direction(float dx, float dy)
+{
+	// Canonical directions: 0°, 45°, 90°, 135°
+	// In image coordinates: right, down-right, down, down-left
+	const float CANONICAL_DIRS[4][2] = {
+		{1.0f, 0.0f},         // 0° = right
+		{0.707107f, 0.707107f},  // 45° = down-right  
+		{0.0f, 1.0f},         // 90° = down
+		{-0.707107f, 0.707107f}  // 135° = down-left
+	};
+	
+	// Normalize input
+	float mag = std::sqrt(dx*dx + dy*dy);
+	if (mag < 1e-6f) return 0; // degenerate: default to 0°
+	float ndx = dx / mag;
+	float ndy = dy / mag;
+	
+		// Handle GLCM's 180° symmetry: flip vectors pointing upward or left
+	// This ensures 180°→0°, 225°→45°, 270°→90°, 315°→135°
+	// Flip if pointing up (dy<0) OR pointing left on horizontal (dy==0 and dx<0)
+	if (ndy < 0 || (ndy == 0 && ndx < 0))
+	{
+		ndx = -ndx;
+		ndy = -ndy;
+	}
+	
+	// Find direction with highest dot product (most aligned)
+	int best_dir = 0;
+	float best_dot = -1e10f;
+	for (int i = 0; i < 4; i++)
+	{
+		float dot = ndx * CANONICAL_DIRS[i][0] + ndy * CANONICAL_DIRS[i][1];
+		if (dot > best_dot)
+		{
+			best_dot = dot;
+			best_dir = i;
+		}
+	}
+	return best_dir;
+}
+
+void GLCMFeature::calculateCoocMatFromDirectionField(
+	const Fsettings& s,
+	const ImageMatrix& grays,
+	int offset,
+	PixIntens grays_min_val,
+	PixIntens grays_max_val)
+{
+	int nGreys = s[(int)NyxSetting::GREYDEPTH].ival;
+	bool ibsi = s[(int)NyxSetting::IBSI].bval;
+
+	// Grey binning
+	int rows = grays.height,
+		cols = grays.width;
+
+	ImageMatrix M;
+	M.allocate(grays.width, grays.height);
+	pixData& D = M.WriteablePixels();
+	auto& imR = grays.ReadablePixels();
+
+	// Bin intensities
+	auto greyInfo = nGreys;
+	auto greyInfo_localFeature = nGreys;
+	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
+		greyInfo = greyInfo_localFeature;
+	if (ibsi)
+		greyInfo = 0;
+	bin_intensities(D, imR, grays_min_val, grays_max_val, greyInfo);
+
+	// Allocate intensities vector
+	if (radiomics_grey_binning(greyInfo))
+	{
+		std::unordered_set<PixIntens> U(D.begin(), D.end());
+		U.erase(0);
+		I.assign(U.begin(), U.end());
+		std::sort(I.begin(), I.end());
+	}
+	else if (matlab_grey_binning(greyInfo))
+	{
+		auto n_matlab_levels = greyInfo;
+		I.resize(n_matlab_levels);
+		for (int i = 0; i < n_matlab_levels; i++)
+			I[i] = i + 1;
+	}
+	else
+	{
+		auto ibsi_levels_it = std::max_element(D.begin(), D.end());
+		auto n_ibsi_levels = *ibsi_levels_it;
+		I.resize(n_ibsi_levels);
+		for (int i = 0; i < n_ibsi_levels; i++)
+			I[i] = i + 1;
+	}
+
+	// Allocate 4 GLCM matrices, one for each canonical direction
+	SimpleMatrix<double> P_matrices[4];
+	int matrix_size = (int)I.size();
+	for (int dir = 0; dir < 4; dir++)
+	{
+		P_matrices[dir].allocate(matrix_size, matrix_size);
+		std::fill(P_matrices[dir].begin(), P_matrices[dir].end(), 0.0);
+	}
+
+	int w = M.width;
+	int h = M.height;
+
+	// Canonical direction offsets
+	const int CANONICAL_OFFSETS[4][2] = {
+		{offset, 0},      // 0°
+		{offset, offset}, // 45°
+		{0, offset},      // 90°
+		{-offset, offset} // 135°
+	};
+
+	// Track which matrices are actually used
+	bool matrix_used[4] = {false, false, false, false};
+	double matrix_sums[4] = {0.0, 0.0, 0.0, 0.0};
+
+	// Build GLCMs by binning each pixel to its nearest canonical direction
+	for (int row = 0; row < h; row++)
+	{
+		for (int col = 0; col < w; col++)
+		{
+			// Get direction at this pixel
+			float dx_raw = direction_field->zyx(0, row, col);
+			float dy_raw = direction_field->zyx(1, row, col);
+
+			// Find which canonical direction this pixel belongs to
+			int dir_bin = find_closest_canonical_direction(dx_raw, dy_raw);
+
+			// Use the canonical direction offset
+			int dx = CANONICAL_OFFSETS[dir_bin][0];
+			int dy = CANONICAL_OFFSETS[dir_bin][1];
+
+			if (row + dy >= 0 && row + dy < h && col + dx >= 0 && col + dx < w)
+			{
+				PixIntens lvl_b = D.yx(row, col);
+				PixIntens lvl_a = D.yx(row + dy, col + dx);
+
+				if (ibsi_grey_binning(greyInfo) && (lvl_a == 0 || lvl_b == 0))
+					continue;
+
+				int a = lvl_a, b = lvl_b;
+
+				if (radiomics_grey_binning(greyInfo))
+				{
+					if (a == 0 || b == 0) continue;
+					auto lower = std::lower_bound(I.begin(), I.end(), a);
+					a = int(lower - I.begin());
+					lower = std::lower_bound(I.begin(), I.end(), b);
+					b = int(lower - I.begin());
+				}
+				else
+				{
+					a = a - 1;
+					b = b - 1;
+				}
+
+				P_matrices[dir_bin].xy(a, b) += 1.0;
+				matrix_used[dir_bin] = true;
+
+				if (GLCMFeature::symmetric_glcm || radiomics_grey_binning(greyInfo) || ibsi_grey_binning(greyInfo))
+					P_matrices[dir_bin].xy(b, a) += 1.0;
+			}
+		}
+	}
+
+	// Calculate sums for each matrix
+	for (int dir = 0; dir < 4; dir++)
+	{
+		if (!matrix_used[dir]) continue;
+		for (int i = 0; i < matrix_size; ++i)
+			for (int j = 0; j < matrix_size; ++j)
+				matrix_sums[dir] += P_matrices[dir].xy(i, j);
+	}
+
+	// Compute features for each canonical direction (0, 45, 90, 135)
+	// Output exactly 4 values per feature, using NaN for unused directions
+	for (int dir = 0; dir < 4; dir++)
+	{
+		if (!matrix_used[dir] || matrix_sums[dir] == 0)
+		{
+			// Direction not used - output NaN placeholder
+			double nan_val = std::numeric_limits<double>::quiet_NaN();
+			fvals_ASM.push_back(nan_val);
+			fvals_contrast.push_back(nan_val);
+			fvals_correlation.push_back(nan_val);
+			fvals_energy.push_back(nan_val);
+			fvals_homo.push_back(nan_val);
+			fvals_variance.push_back(nan_val);
+			fvals_IDM.push_back(nan_val);
+			fvals_sum_avg.push_back(nan_val);
+			fvals_sum_entropy.push_back(nan_val);
+			fvals_entropy.push_back(nan_val);
+			fvals_diff_var.push_back(nan_val);
+			fvals_diff_entropy.push_back(nan_val);
+			fvals_diff_avg.push_back(nan_val);
+			fvals_meas_corr1.push_back(nan_val);
+			fvals_meas_corr2.push_back(nan_val);
+			fvals_acor.push_back(nan_val);
+			fvals_cluprom.push_back(nan_val);
+			fvals_clushade.push_back(nan_val);
+			fvals_clutend.push_back(nan_val);
+			fvals_sum_var.push_back(nan_val);
+			fvals_dis.push_back(nan_val);
+			fvals_hom2.push_back(nan_val);
+			fvals_idmn.push_back(nan_val);
+			fvals_id.push_back(nan_val);
+			fvals_idn.push_back(nan_val);
+			fvals_iv.push_back(nan_val);
+			fvals_jave.push_back(nan_val);
+			fvals_je.push_back(nan_val);
+			fvals_jmax.push_back(nan_val);
+			fvals_jvar.push_back(nan_val);
+			continue;
+		}
+
+		// Set current matrix and sum for feature calculations
+		P_matrix = P_matrices[dir];
+		sum_p = matrix_sums[dir];
+
+		// Calculate helper values
+		calculatePxpmy();
+		calculate_by_row_mean();
+
+		// Compute all Haralick statistics
+		fvals_ASM.push_back(f_asm(P_matrix));
+		fvals_contrast.push_back(f_contrast(P_matrix));
+		fvals_correlation.push_back(f_corr());
+		fvals_energy.push_back(f_energy(P_matrix));
+		fvals_homo.push_back(f_homogeneity());
+		fvals_variance.push_back(f_var(P_matrix));
+		fvals_IDM.push_back(f_idm());
+		fvals_sum_avg.push_back(f_savg());
+		fvals_sum_entropy.push_back(f_sentropy());
+		fvals_entropy.push_back(f_entropy(P_matrix));
+		fvals_diff_var.push_back(f_dvar(P_matrix));
+		fvals_diff_entropy.push_back(f_dentropy(P_matrix));
+		fvals_diff_avg.push_back(f_difference_avg());
+		fvals_meas_corr1.push_back(f_info_meas_corr1(P_matrix));
+		fvals_meas_corr2.push_back(f_info_meas_corr2(P_matrix));
+		fvals_acor.push_back(f_GLCM_ACOR(P_matrix));
+		fvals_cluprom.push_back(f_GLCM_CLUPROM());
+		fvals_clushade.push_back(f_GLCM_CLUSHADE());
+
+		double clutend = f_GLCM_CLUTEND();
+		fvals_clutend.push_back(clutend);
+		fvals_sum_var.push_back(clutend);
+
+		fvals_dis.push_back(f_GLCM_DIS(P_matrix));
+		fvals_hom2.push_back(f_GLCM_HOM2(P_matrix));
+		fvals_idmn.push_back(f_GLCM_IDMN());
+		fvals_id.push_back(f_GLCM_ID());
+		fvals_idn.push_back(f_GLCM_IDN());
+		fvals_iv.push_back(f_GLCM_IV());
+
+		double jave = f_GLCM_JAVE();
+		fvals_jave.push_back(jave);
+
+		fvals_je.push_back(f_GLCM_JE(P_matrix));
+		fvals_jmax.push_back(f_GLCM_JMAX(P_matrix));
+		fvals_jvar.push_back(f_GLCM_JVAR(P_matrix, jave));
+	}
 }
 
 void GLCMFeature::calculatePxpmy()
@@ -495,7 +850,6 @@ void GLCMFeature::calculatePxpmy()
 	std::fill(kValuesSum.begin(), kValuesSum.end(), 0);
 
 	kValuesDiff.resize (Ng, 0);
-	std::fill (kValuesDiff.begin(), kValuesDiff.end(), 0);
 
 	for (int x = 0; x < Ng; x++)
 		for (int y = 0; y < Ng; y++)

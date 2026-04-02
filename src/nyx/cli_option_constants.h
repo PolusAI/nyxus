@@ -44,6 +44,7 @@
 // GLCM feature
 #define clo_GLCMANGLES "--glcmAngles"				// Environment :: rotAngles
 #define clo_GLCMOFFSET "--glcmOff"					// Environment :: raw_glcm_
+#define clo_GLCM_DIRFIELD "--glcmDirectionField"	// Path to direction field image (multi-channel TIFF: channel 0=dx, 1=dy, 2=dz). 
 
 // Nested ROI functionality
 #define clo_NESTEDROI_CHNL_SIGNATURE "--hsig"		// Channel signature Example: "_c" in "p0_y1_r1_c1.ome.tiff"

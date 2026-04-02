@@ -257,6 +257,7 @@ endif()
 
 # Python bindings.
 if(BUILD_LIB)
+	set(PYBIND11_FINDPYTHON ON)
 	find_package(pybind11 CONFIG REQUIRED)
 	pybind11_add_module(backend 
 		${SOURCE}
