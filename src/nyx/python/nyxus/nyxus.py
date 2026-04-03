@@ -12,11 +12,14 @@ from .backend import (
     clear_roi_blacklist_imp,
     roi_blacklist_get_summary_imp,
     customize_gabor_feature_imp,
+    set_glcm_direction_field_imp,
+    set_glcm_direction_field_array_imp,
     set_if_ibsi_imp,
+    set_fmaps_imp,
     set_environment_params_imp,
     get_params_imp,
     arrow_is_enabled_imp,
-    get_arrow_file_imp, 
+    get_arrow_file_imp,
     get_parquet_file_imp,
     set_metaparam_imp,
     get_metaparam_imp)
@@ -120,6 +123,16 @@ class Nyxus:
         X-dimension scale factor
     anisotropy_y: float (optional, default 1.0)
         Y-dimension scale factor
+    fmaps: bool (optional, default False)
+        Enable feature maps mode. Instead of computing a single feature vector per ROI,
+        a sliding kernel is moved across each ROI and features are computed at every
+        position, producing spatial feature maps as numpy arrays.
+        When enabled, featurize methods return a list of dicts (one per parent ROI)
+        instead of a DataFrame. Each dict contains numpy arrays shaped (map_h, map_w).
+    fmaps_radius: int (optional, default 2)
+        Radius of the sliding kernel used in feature maps mode.
+        The kernel size is (2 * fmaps_radius + 1). For example, fmaps_radius=2
+        produces a 5x5 kernel. Must be >= 1.
     """
 
     def __init__(
@@ -131,10 +144,11 @@ class Nyxus:
             'neighbor_distance', 'pixels_per_micron', 'coarse_gray_depth',
             'n_feature_calc_threads', 'use_gpu_device', 'ibsi',
             'gabor_kersize', 'gabor_gamma', 'gabor_sig2lam', 'gabor_f0',
-            'gabor_thold', 'gabor_thetas', 'gabor_freqs', 'channel_signature', 
+            'gabor_thold', 'gabor_thetas', 'gabor_freqs', 'channel_signature',
             'parent_channel', 'child_channel', 'aggregate', 'dynamic_range', 'min_intensity',
             'max_intensity', 'ram_limit', 'verbose',
-            'anisotropy_x', 'anisotropy_y'
+            'anisotropy_x', 'anisotropy_y',
+            'fmaps', 'fmaps_radius',
         }
 
         # Check for unexpected keyword arguments
@@ -164,7 +178,9 @@ class Nyxus:
         verb_lvl = kwargs.get('verbose', 0)
         aniso_x = kwargs.get('anisotropy_x', 1.0)
         aniso_y = kwargs.get('anisotropy_y', 1.0)
-        
+        fmaps = kwargs.get('fmaps', False)
+        fmaps_radius = kwargs.get('fmaps_radius', 2)
+
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
 
@@ -189,6 +205,11 @@ class Nyxus:
         if aniso_y <= 0:
             raise ValueError ("anisotropy_y must be positive")
 
+        if fmaps and fmaps_radius < 1:
+            raise ValueError("fmaps_radius must be an integer >= 1")
+
+        self._fmaps = fmaps
+
         aniso_z = 1.0   # not used in 2D
 
         initialize_environment(
@@ -197,19 +218,23 @@ class Nyxus:
             features,
             neighbor_distance,
             pixels_per_micron,
-            coarse_gray_depth, 
+            coarse_gray_depth,
             n_feature_calc_threads,
             use_gpu_device,
             ibsi,
             dynamic_range,
             min_intensity,
             max_intensity,
-            False,
+            False,  # is_imq
             ram_limit,
             verb_lvl,
             aniso_x,
             aniso_y,
-            aniso_z) 
+            aniso_z,
+            fmaps,
+            fmaps_radius,
+            ""  # glcm_direction_field
+        )
 
         self.set_gabor_feature_params(
             kersize = gabor_kersize,
@@ -320,9 +345,13 @@ class Nyxus:
 
         if (output_type not in self._valid_output_types):
             raise  ValueError(f'Invalid output type {output_type}. Valid output types are {self._valid_output_types}.')
-            
+
+        if self._fmaps and output_type == 'pandas':
+            result = featurize_directory_imp(id(self), intensity_dir, label_dir, file_pattern, output_type, "")
+            return result[0]  # list of dicts with numpy array feature maps
+
         if (output_type == 'pandas'):
-            
+
             header, string_data, numeric_data = featurize_directory_imp (id(self), intensity_dir, label_dir, file_pattern, output_type, "")
 
             df = pd.concat(
@@ -338,11 +367,11 @@ class Nyxus:
                 df.ROI_label = df.ROI_label.astype(np.uint32)
 
             return df
-        
+
         else:
-            
+
             featurize_directory_imp (id(self), intensity_dir, label_dir, file_pattern, output_type, output_path)
-            
+
             return get_arrow_file_imp (id(self)) # return path to file
 
 
@@ -453,6 +482,13 @@ class Nyxus:
         M = label_images.astype (np.uint32)
 
         # featurize
+        if self._fmaps and output_type == 'pandas':
+            fmaps_list, error_message = featurize_montage_imp(id(self), I, M, intensity_names, label_names, output_type, "")
+            self.error_message = error_message
+            if error_message != '':
+                print(error_message)
+            return fmaps_list  # list of dicts with numpy array feature maps
+
         if (output_type == 'pandas'):
             header, string_data, numeric_data, error_message = featurize_montage_imp (id(self), I, M, intensity_names, label_names, output_type, "")
             self.error_message = error_message
@@ -472,13 +508,13 @@ class Nyxus:
                 df.ROI_label = df.ROI_label.astype(np.uint32)
 
             return df
-            
+
         else:
             ret = featurize_montage_imp (id(self), I, M, intensity_names, label_names, output_type, output_path)
             self.error_message = ret[0]
             if(self.error_message != ''):
                 raise RuntimeError('Error calculating features: ' + error_message[0])
-            
+
             return get_arrow_file_imp (id(self)) # return path to file
                 
     
@@ -531,8 +567,12 @@ class Nyxus:
         if (output_type not in self._valid_output_types):
             raise  ValueError(f'Invalid output type {output_type}. Valid output types are {self._valid_output_types}')
 
+        if self._fmaps and output_type == 'pandas':
+            result = featurize_fname_lists_imp(id(self), intensity_files, mask_files, single_roi, output_type, "")
+            return result[0]  # list of dicts with numpy array feature maps
+
         if (output_type == 'pandas'):
-            
+
             header, string_data, numeric_data = featurize_fname_lists_imp (id(self), intensity_files, mask_files, single_roi, output_type, "")
 
             df = pd.concat(
@@ -548,9 +588,9 @@ class Nyxus:
                 df.ROI_label = df.ROI_label.astype(np.uint32)
 
             return df
-        
+
         else:
-            
+
             featurize_fname_lists_imp (id(self), intensity_files, mask_files, single_roi, output_type, output_path)
             return get_arrow_file_imp (id(self))
 
@@ -661,6 +701,32 @@ class Nyxus:
 
         customize_gabor_feature_imp (id(self), kersize, gamma, sig2lam, f0, thetas, thold, freqs)
 
+    def set_glcm_direction_field(self, direction_field_path: str):
+        """Set the path to a NIfTI or TIFF file containing custom GLCM direction field.
+        
+        The direction field should be a multi-channel file with 2 channels for 2D (dx, dy)
+        or 3 channels for 3D (dx, dy, dz).
+        
+        Parameters
+        ----------
+        direction_field_path : str
+            Path to the TIFF or NIfTI file containing the direction field
+        """
+        set_glcm_direction_field_imp(id(self), direction_field_path)
+    
+    def set_glcm_direction_field_array(self, direction_array):
+        """Set custom GLCM direction field from a numpy array.
+        
+        The direction array should have shape (height, width, 2) for 2D
+        or (depth, height, width, 3) for 3D, where the last dimension
+        contains the direction components (dx, dy[, dz]).
+        
+        Parameters
+        ----------
+        direction_array : np.ndarray
+            Array containing direction vectors
+        """
+        set_glcm_direction_field_array_imp(id(self), direction_array)
     
     def set_environment_params (self, **params):
         """Sets parameters of the environment for Nyxus
@@ -698,11 +764,11 @@ class Nyxus:
             'max_intensity',
             'ram_limit',
         ]
-        
+
         for key in params:
             if key not in valid_params:
                 raise ValueError(f'Invalid environment parameter {key}. Value parameters are {params}')
-        
+
         features = params.get('features', [])
         neighbor_distance = params.get ('neighbor_distance', -1)
         pixels_per_micron = params.get ('pixels_per_micron', -1)
@@ -714,10 +780,10 @@ class Nyxus:
         min_intensity = params.get('min_intensity', -1)
         max_intensity = params.get('max_intensity', -1)
         ram_limit = params.get('ram_limit', -1)
-        
+
         set_environment_params_imp (id(self),
-                                   features, 
-                                   neighbor_distance, 
+                                   features,
+                                   neighbor_distance,
                                    pixels_per_micron,
                                    coarse_gray_depth,
                                    n_reduce_threads,
@@ -775,19 +841,31 @@ class Nyxus:
         for key, value in params.items():
             if key.startswith("gabor_"):
                 gabor_params[key[len("gabor_"):]] = value
-            
+
             elif (key == "ibsi"):
                 set_if_ibsi_imp (id(self), value)
-            
+
+            elif key in ("fmaps", "fmaps_radius"):
+                pass  # handled after loop to avoid double-processing
+
             else:
                 if (key not in available_environment_params):
                     raise ValueError ("Invalid parameter: ", key)
                 else:
                     environment_params[key] = value
-                
+
+        # Update fmaps settings if either param was provided.
+        # -1 sentinel means "leave unchanged" for that param.
+        if "fmaps" in params or "fmaps_radius" in params:
+            mode = int(bool(params["fmaps"])) if "fmaps" in params else -1
+            radius = params.get("fmaps_radius", -1)
+            set_fmaps_imp(id(self), mode, radius)
+            if "fmaps" in params:
+                self._fmaps = bool(params["fmaps"])
+
         if (len(gabor_params) > 0):
             self.set_gabor_feature_params(**gabor_params)
-        
+
         if (len(environment_params) > 0):
             self.set_environment_params(**environment_params)
 
@@ -944,6 +1022,16 @@ class Nyxus3D:
         Y-dimension scale factor
     anisotropy_z: float (optional, default 1.0)
         Z-dimension scale factor
+    fmaps: bool (optional, default False)
+        Enable feature maps mode. Instead of computing a single feature vector per ROI,
+        a sliding kernel is moved across each ROI and features are computed at every
+        voxel position, producing spatial feature maps as numpy arrays.
+        When enabled, featurize methods return a list of dicts (one per parent ROI)
+        instead of a DataFrame. Each dict contains numpy arrays shaped (map_d, map_h, map_w).
+    fmaps_radius: int (optional, default 2)
+        Radius of the sliding kernel used in feature maps mode.
+        The kernel size is (2 * fmaps_radius + 1). For example, fmaps_radius=2
+        produces a 5x5x5 kernel. Must be >= 1.
     """
 
     def __init__(
@@ -953,20 +1041,21 @@ class Nyxus3D:
         ):
         valid_keys = {
             'neighbor_distance', 'pixels_per_micron', 'coarse_gray_depth',
-            'n_feature_calc_threads', 'use_gpu_device', 'ibsi', 'channel_signature', 
-            'parent_channel', 'child_channel', 'aggregate', 
+            'n_feature_calc_threads', 'use_gpu_device', 'ibsi', 'channel_signature',
+            'parent_channel', 'child_channel', 'aggregate',
             'dynamic_range', 'min_intensity', 'max_intensity', 'ram_limit',
             'verbose',
-            'anisotropy_x', 
+            'anisotropy_x',
             'anisotropy_y',
-            'anisotropy_z'
+            'anisotropy_z',
+            'fmaps', 'fmaps_radius',
         }
 
         # Check for unexpected keyword arguments
         invalid_keys = set(kwargs.keys()) - valid_keys
         if invalid_keys:
             print(f"Warning: unexpected keyword argument(s): {', '.join(invalid_keys)}")
-        
+
         # parse kwargs
         features = features
         neighbor_distance = kwargs.get('neighbor_distance', 5)
@@ -982,7 +1071,9 @@ class Nyxus3D:
         aniso_x = kwargs.get('anisotropy_x', 1.0)
         aniso_y = kwargs.get('anisotropy_y', 1.0)
         aniso_z = kwargs.get('anisotropy_z', 1.0)
-        
+        fmaps = kwargs.get('fmaps', False)
+        fmaps_radius = kwargs.get('fmaps_radius', 2)
+
         if neighbor_distance <= 0:
             raise ValueError("Neighbor distance must be greater than zero.")
 
@@ -994,7 +1085,7 @@ class Nyxus3D:
 
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
-        
+
         if(use_gpu_device > -1 and n_feature_calc_threads != 1):
             print("Gpu features only support a single thread. Defaulting to one thread.")
             n_feature_calc_threads = 1
@@ -1017,26 +1108,35 @@ class Nyxus3D:
         if aniso_z <= 0:
             raise ValueError ("anisotropy_z must be positive")
 
+        if fmaps and fmaps_radius < 1:
+            raise ValueError("fmaps_radius must be an integer >= 1")
+
+        self._fmaps = fmaps
+
         initialize_environment(
             id(self),
             3, # 3D
             features,
             neighbor_distance,
             pixels_per_micron,
-            coarse_gray_depth, 
+            coarse_gray_depth,
             n_feature_calc_threads,
             use_gpu_device,
             ibsi,
             dynamic_range,
             min_intensity,
             max_intensity,
-            False,
+            False,  # is_imq
             ram_limit,
             verb_lvl,
             aniso_x,
             aniso_y,
-            aniso_z)
-        
+            aniso_z,
+            fmaps,
+            fmaps_radius,
+            ""  # glcm_direction_field
+        )
+
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
 
@@ -1135,7 +1235,11 @@ class Nyxus3D:
 
         if (output_type not in self._valid_output_types):
             raise  ValueError(f'Invalid output type {output_type}. Valid output types are {self._valid_output_types}.')
-            
+
+        if self._fmaps and output_type == 'pandas':
+            result = featurize_directory_3D_imp(id(self), intensity_dir, label_dir, file_pattern, output_type, "")
+            return result[0]  # list of dicts with numpy array feature maps
+
         if (output_type == 'pandas'):
             header, string_data, numeric_data = featurize_directory_3D_imp (id(self), intensity_dir, label_dir, file_pattern, output_type, "")
             df = pd.concat(
@@ -1200,8 +1304,12 @@ class Nyxus3D:
         if (output_type not in self._valid_output_types):
             raise  ValueError(f'Invalid output type {output_type}. Valid output types are {self._valid_output_types}')
 
+        if self._fmaps and output_type == 'pandas':
+            result = featurize_fname_lists_3D_imp(id(self), intensity_files, mask_files, single_roi, output_type, "")
+            return result[0]  # list of dicts with numpy array feature maps
+
         if (output_type == 'pandas'):
-            
+
             header, string_data, numeric_data = featurize_fname_lists_3D_imp (id(self), intensity_files, mask_files, single_roi, output_type, "")
 
             df = pd.concat(
@@ -1217,9 +1325,9 @@ class Nyxus3D:
                 df.ROI_label = df.ROI_label.astype(np.uint32)
 
             return df
-        
+
         else:
-            
+
             featurize_fname_lists_3D_imp (id(self), intensity_files, mask_files, single_roi, output_type, output_path)
             return get_arrow_file_imp (id(self))
 
@@ -1257,13 +1365,13 @@ class Nyxus3D:
             'verbose',
             'dynamic_range',
             'min_intensity',
-            'max_intensity'
+            'max_intensity',
         ]
-        
+
         for key in params:
             if key not in valid_params:
                 raise ValueError(f'Invalid environment parameter {key}. Value parameters are {params}')
-        
+
         features = params.get('features', [])
         neighbor_distance = params.get ('neighbor_distance', -1)
         pixels_per_micron = params.get ('pixels_per_micron', -1)
@@ -1275,10 +1383,10 @@ class Nyxus3D:
         min_intensity = params.get('min_intensity', -1)
         max_intensity = params.get('max_intensity', -1)
         ram_limit = -1 # no limit
-        
+
         set_environment_params_imp (id(self),
-                                   features, 
-                                   neighbor_distance, 
+                                   features,
+                                   neighbor_distance,
                                    pixels_per_micron,
                                    coarse_gray_depth,
                                    n_reduce_threads,
@@ -1288,12 +1396,12 @@ class Nyxus3D:
                                    max_intensity,
                                    ram_limit,
                                    verb_lvl)
-        
+
     def set_params(self, **params):
         """Sets parameters of the Nyxus class
 
         Keyword args:
-        
+
         * features: List[str],
         * neighbor_distance
         * pixels_per_micron
@@ -1326,17 +1434,16 @@ class Nyxus3D:
         
         
         for key, value in params.items():
-           
+
             if (key == "ibsi"):
                 set_if_ibsi_imp (id(self), value)
-            
+
             else:
                 if (key not in available_environment_params):
                     raise ValueError(f"Invalid parameter {key}.")
                 else:
                     environment_params[key] = value
-                
-                        
+
         if (len(environment_params) > 0):
             self.set_environment_params(**environment_params)
     
@@ -1550,20 +1657,24 @@ class ImageQuality:
             features,
             neighbor_distance,
             pixels_per_micron,
-            coarse_gray_depth, 
+            coarse_gray_depth,
             n_feature_calc_threads,
             using_gpu,
             ibsi,
             dynamic_range,
             min_intensity,
             max_intensity,
-            True,
+            True,  # is_imq
             ram_limit,
             verb_lvl,
             aniso_x,
             aniso_y,
-            aniso_z)
-        
+            aniso_z,
+            False,  # fmaps
+            2,      # fmaps_radius
+            ""      # glcm_direction_field
+        )
+
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
 
@@ -1957,8 +2068,6 @@ class ImageQuality:
 
         customize_gabor_feature_imp (id(self), kersize, gamma, sig2lam, f0, thetas, thold, freqs)
 
-    
-    def set_environment_params (self, **params):
         """Sets parameters of the environment for Nyxus
         
         Keyword args:
@@ -1991,13 +2100,13 @@ class ImageQuality:
             'verbose',
             'dynamic_range',
             'min_intensity',
-            'max_intensity'
+            'max_intensity',
         ]
-        
+
         for key in params:
             if key not in valid_params:
                 raise ValueError(f'Invalid environment parameter {key}. Value parameters are {params}')
-        
+
         features = params.get('features', [])
         neighbor_distance = params.get ('neighbor_distance', -1)
         pixels_per_micron = params.get ('pixels_per_micron', -1)
@@ -2009,10 +2118,10 @@ class ImageQuality:
         min_intensity = params.get('min_intensity', -1)
         max_intensity = params.get('max_intensity', -1)
         ram_limit = -1 # no limit
-        
+
         set_environment_params_imp (id(self),
                                    features,
-                                   neighbor_distance, 
+                                   neighbor_distance,
                                    pixels_per_micron,
                                    coarse_gray_depth,
                                    n_reduce_threads,
@@ -2022,7 +2131,7 @@ class ImageQuality:
                                    max_intensity,
                                    ram_limit,
                                    verb_lvl)
-        
+
     def set_params(self, **params):
         """Sets parameters of the Nyxus class
 

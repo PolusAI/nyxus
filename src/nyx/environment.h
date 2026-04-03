@@ -128,7 +128,10 @@ public:
 
 	// implementation of GLCM feature options
 	bool parse_glcm_options_raw_inputs (std::string& error_message);
+	void load_glcm_direction_field();
+	void clear_glcm_direction_field();
 	GLCMoptions glcmOptions;
+	std::unique_ptr<SimpleCube<float>> glcm_direction_field_data;
 
 	// implementation of nested ROI options
 	bool parse_nested_options_raw_inputs (std::string& error_message);
@@ -147,6 +150,21 @@ public:
 	// feature result options (yes/no to annotation columns, yes/no to aggregate by slide, NAN substitute, etc)
 	ResultOptions resultOptions;
 	std::tuple<bool, std::optional<std::string>> parse_result_options_4cli ();
+
+	// Feature maps (fmaps) options — sliding-kernel feature extraction mode
+	bool fmaps_mode = false;			///< When true, features are computed per kernel position (spatial maps)
+	int fmaps_kernel_radius = 2;		///< Half-width of the kernel; full kernel side = 2*radius+1
+	std::string raw_fmaps;				///< Raw CLI string for --fmaps flag (parsed in process_input)
+	std::string raw_fmaps_radius;		///< Raw CLI string for --fmaps_radius (parsed in process_input)
+
+	/// @brief Returns the kernel side length: 2*radius+1
+	int fmaps_kernel_size() const { return 2 * fmaps_kernel_radius + 1; }
+
+	/// @brief Returns true if fmaps mode conflicts with the current save option.
+	bool fmaps_prevents_arrow() const
+	{
+		return fmaps_mode && (saveOption == Nyxus::SaveOption::saveArrowIPC || saveOption == Nyxus::SaveOption::saveParquet);
+	}
 
 	// feature settings
 	Fsettings fsett_PixelIntensity,

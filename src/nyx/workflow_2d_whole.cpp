@@ -209,6 +209,7 @@ namespace Nyxus
 		// create a vector of blank mask file names. Blank mask counterparts 
 		// of intensity files will serve as the condition of the whole-slide scenario in the prescan phase
 		std::vector<std::string> labelFiles (intensFiles.size());
+		reset_csv_header_state();
 
 		//**** prescan all slides
 

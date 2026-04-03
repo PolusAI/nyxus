@@ -242,7 +242,9 @@ set(SOURCE
 	src/nyx/slideprops.cpp
 	src/nyx/strpat.cpp
 	src/nyx/workflow_2d_segmented.cpp
+	src/nyx/workflow_2d_fmaps.cpp
 	src/nyx/workflow_2d_whole.cpp
+	src/nyx/workflow_3d_fmaps.cpp
 	src/nyx/workflow_3d_segmented.cpp
 	src/nyx/workflow_3d_whole.cpp
 	src/nyx/workflow_pythonapi.cpp
@@ -255,6 +257,7 @@ endif()
 
 # Python bindings.
 if(BUILD_LIB)
+	set(PYBIND11_FINDPYTHON ON)
 	find_package(pybind11 CONFIG REQUIRED)
 	pybind11_add_module(backend 
 		${SOURCE}

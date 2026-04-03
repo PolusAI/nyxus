@@ -113,13 +113,13 @@ public:
         return (double)x;
     }
 
-    uint32_t get_uint32_pixel (size_t idx) const
+    uint32_t get_uint32_pixel (size_t idx) const override
     {
         uint32_t rv = get_uint32_pixel_typeresolved (nii_->data, idx);
         return rv;
     }
 
-    double get_dpequiv_pixel (size_t idx) const
+    double get_dpequiv_pixel (size_t idx) const override
     {
         double rv = get_dpequiv_pixel_typeresolved (nii_->data, idx);
         return rv;

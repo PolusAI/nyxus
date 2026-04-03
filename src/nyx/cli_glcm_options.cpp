@@ -1,5 +1,8 @@
 #include "cli_glcm_options.h"
 #include "features/glcm.h"
+#include "helpers/system_resource.h"
+#include "dirs_and_files.h"
+#include <filesystem>
 
 using namespace Nyxus;
 
@@ -22,7 +25,7 @@ bool GLCMoptions::parse_input()
 		}
 	}
 
-	if (!rawOffs.empty())
+		if (!rawOffs.empty())
 	{
 		// string -> real
 		int x;
@@ -37,12 +40,24 @@ bool GLCMoptions::parse_input()
 		offset_ = x;
 	}
 
+		// Parse direction field path
+	if (!rawDirectionField.empty())
+	{
+		// Check if file exists
+		if (!existsOnFilesystem(rawDirectionField))
+		{
+			ermsg = "Direction field file does not exist: " + rawDirectionField;
+			return false;
+		}
+		directionFieldPath = rawDirectionField;
+	}
+
 	return true;
 }
 
 bool GLCMoptions::empty()
 {
-	return rawAngles.empty() && rawOffs.empty();
+	return rawAngles.empty() && rawOffs.empty() && rawDirectionField.empty();
 }
 
 std::string GLCMoptions::get_last_er_msg()

@@ -44,6 +44,7 @@
 // GLCM feature
 #define clo_GLCMANGLES "--glcmAngles"				// Environment :: rotAngles
 #define clo_GLCMOFFSET "--glcmOff"					// Environment :: raw_glcm_
+#define clo_GLCM_DIRFIELD "--glcmDirectionField"	// Path to direction field image (multi-channel TIFF: channel 0=dx, 1=dy, 2=dz). 
 
 // Nested ROI functionality
 #define clo_NESTEDROI_CHNL_SIGNATURE "--hsig"		// Channel signature Example: "_c" in "p0_y1_r1_c1.ome.tiff"
@@ -60,6 +61,10 @@
 #define clo_ANISO_X "--anisox"
 #define clo_ANISO_Y "--anisoy"
 #define clo_ANISO_Z "--anisoz"
+
+// Feature maps
+#define clo_FMAPS "--fmaps"						// Enable feature maps mode. "true" or "false"
+#define clo_FMAPS_RADIUS "--fmapsRadius"		// Kernel radius for feature maps. Integer >= 1. Example: "2" (produces 5x5 kernel)
 
 // Result options
 #define clo_NOVAL "--noval"						// -> raw_noval

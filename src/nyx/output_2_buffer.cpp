@@ -23,6 +23,31 @@ namespace Nyxus
 {
 	static std::mutex mx1;
 
+	/// @brief Writes feature header columns for all enabled features to a ResultsCache.
+	/// Uses get_feature_column_names() as the single source of truth.
+	void write_feature_header_buffer (
+		ResultsCache & rescache,
+		Environment & env,
+		const std::vector<std::tuple<std::string, int>> & F)
+	{
+		auto cols = get_feature_column_names(env, F);
+		for (const auto& c : cols)
+			rescache.add_to_header(c);
+	}
+
+	/// @brief Writes all feature values for a single ROI to a ResultsCache.
+	/// Uses collect_feature_values() as the single source of truth.
+	void write_feature_values_buffer (
+		ResultsCache & rescache,
+		const LR & r,
+		const std::vector<std::tuple<std::string, int>> & F,
+		Environment & env)
+	{
+		auto vals = collect_feature_values(r, F);
+		for (auto v : vals)
+			rescache.add_numeric(Nyxus::force_finite_number(v, env.resultOptions.noval()));
+	}
+
 	bool save_features_2_buffer_wholeslide (
 		// out
 		ResultsCache & rescache, 
@@ -45,119 +70,7 @@ namespace Nyxus
 		if (fill_header)
 		{
 			rescache.add_to_header({ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label, Nyxus::colname_t_index });
-
-			for (auto& enabdF : F)
-			{
-				auto fn = std::get<0>(enabdF);	// feature name
-				auto fc = std::get<1>(enabdF);	// feature code
-
-				// Handle missing feature name (which is a significant issue!) in order to at least be able to trace back to the feature code
-				if (fn.empty())
-					fn = "feature" + std::to_string(fc);
-
-				// Parameterized feature
-				// --GLCM family
-				bool glcmFeature = std::find(GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), (Feature2D)fc) != GLCMFeature::featureset.end();
-				bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), (Feature2D)fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
-				if (glcmFeature && nonAngledGlcmFeature == false)
-				{
-					// Populate with angles
-					for (auto ang : env.glcmOptions.glcmAngles)
-					{
-						std::string col = fn + "_" + std::to_string(ang);
-						rescache.add_to_header(col);
-					}
-
-					// Proceed with other features
-					continue;
-				}
-
-				// --GLRLM family
-				bool glrlmFeature = std::find(GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), (Feature2D)fc) != GLRLMFeature::featureset.end();
-				bool nonAngledGlrlmFeature = std::find(GLRLMFeature::nonAngledFeatures.begin(), GLRLMFeature::nonAngledFeatures.end(), (Feature2D)fc) != GLRLMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
-				if (glrlmFeature && nonAngledGlrlmFeature == false)
-				{
-					// Populate with angles
-					for (auto ang : GLRLMFeature::rotAngles)
-					{
-						std::string col = fn + "_" + std::to_string(ang);
-						rescache.add_to_header(col);
-					}
-
-					// Proceed with other features
-					continue;
-				}
-
-				// --Gabor
-				if (fc == (int)Feature2D::GABOR)
-				{
-					// Generate the feature value list
-					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
-					{
-						std::string col = fn + "_" + std::to_string(i);
-						rescache.add_to_header(col);
-					}
-
-					// Proceed with other features
-					continue;
-				}
-
-				if (fc == (int)Feature2D::FRAC_AT_D)
-				{
-					// Generate the feature value list
-					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
-					{
-						std::string col = fn + "_" + std::to_string(i);
-						rescache.add_to_header(col);
-					}
-
-					// Proceed with other features
-					continue;
-				}
-
-				if (fc == (int)Feature2D::MEAN_FRAC)
-				{
-					// Generate the feature value list
-					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
-					{
-						std::string col = fn + "_" + std::to_string(i);
-						rescache.add_to_header(col);
-					}
-
-					// Proceed with other features
-					continue;
-				}
-
-				if (fc == (int)Feature2D::RADIAL_CV)
-				{
-					// Generate the feature value list
-					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
-					{
-						std::string col = fn + "_" + std::to_string(i);
-						rescache.add_to_header(col);
-					}
-
-					// Proceed with other features
-					continue;
-				}
-
-				// --Zernike family
-				if (fc == (int)Feature2D::ZERNIKE2D)
-				{
-					// Populate with indices
-					for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
-					{
-						std::string col = fn + "_Z" + std::to_string(i);
-						rescache.add_to_header(col);
-					}
-
-					// Proceed with other features
-					continue;
-				}
-
-				// Regular feature
-				rescache.add_to_header(fn);
-			}
+			write_feature_header_buffer(rescache, env, F);
 		}
 
 		// -- Values
@@ -171,103 +84,7 @@ namespace Nyxus
 		rescache.add_numeric (DEFAULT_T_INDEX);
 
 		// - features
-		for (auto& enabdF : F)
-		{
-			auto fc = std::get<1>(enabdF);
-			auto fn = std::get<0>(enabdF);	// debug
-
-			auto vv = r.get_fvals(fc);
-
-			// Parameterized feature
-			// --GLCM family
-			bool glcmFeature = std::find(GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), (Feature2D)fc) != GLCMFeature::featureset.end();
-			bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), (Feature2D)fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
-			if (glcmFeature && nonAngledGlcmFeature == false)
-			{
-				// Mock angled values if they haven't been calculated for some error reason
-				if (vv.size() < GLCMFeature::angles.size())
-					vv.resize(GLCMFeature::angles.size(), 0.0);
-
-				// Populate with angles
-				int nAng = GLCMFeature::angles.size();
-				for (int i = 0; i < nAng; i++)
-				{
-					rescache.add_numeric(Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
-				}
-
-				// Proceed with other features
-				continue;
-			}
-
-			// --GLRLM family
-			bool glrlmFeature = std::find(GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), (Feature2D)fc) != GLRLMFeature::featureset.end();
-			bool nonAngledGlrlmFeature = std::find(GLRLMFeature::nonAngledFeatures.begin(), GLRLMFeature::nonAngledFeatures.end(), (Feature2D)fc) != GLRLMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
-			if (glrlmFeature && nonAngledGlrlmFeature == false)
-			{
-				// Populate with angles
-				int nAng = 4; // check GLRLMFeature::rotAngles
-				for (int i = 0; i < nAng; i++)
-				{
-					rescache.add_numeric(Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
-				}
-				// Proceed with other features
-				continue;
-			}
-
-			// --Gabor
-			if (fc == (int)Feature2D::GABOR)
-			{
-				for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
-				{
-					rescache.add_numeric(Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
-				}
-				// Proceed with other features
-				continue;
-			}
-
-			// --Zernike family
-			if (fc == (int)Feature2D::ZERNIKE2D)
-			{
-				for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
-				{
-					rescache.add_numeric(Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
-				}
-				// Proceed with other features
-				continue;
-			}
-
-			// --Radial distribution features
-			if (fc == (int)Feature2D::FRAC_AT_D)
-			{
-				for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
-				{
-					rescache.add_numeric(Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
-				}
-				// Proceed with other features
-				continue;
-			}
-			if (fc == (int)Feature2D::MEAN_FRAC)
-			{
-				for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
-				{
-					rescache.add_numeric(Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
-				}
-				// Proceed with other features
-				continue;
-			}
-			if (fc == (int)Feature2D::RADIAL_CV)
-			{
-				for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
-				{
-					rescache.add_numeric(Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
-				}
-				// Proceed with other features
-				continue;
-			}
-
-			// Regular feature
-			rescache.add_numeric(Nyxus::force_finite_number(vv[0], env.resultOptions.noval()));
-		}
+		write_feature_values_buffer(rescache, r, F, env);
 
 		return true;
 	}
@@ -287,119 +104,7 @@ namespace Nyxus
 		if (fill_header)
 		{
 			rescache.add_to_header({ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label, Nyxus::colname_t_index });
-
-			for (auto& enabdF : F)
-			{
-				auto fn = std::get<0>(enabdF);	// feature name
-				auto fc = std::get<1>(enabdF);	// feature code
-
-				// Handle missing feature name (which is a significant issue!) in order to at least be able to trace back to the feature code
-				if (fn.empty())
-					fn = "feature" + std::to_string(fc);
-
-				// Parameterized feature
-				// --GLCM family
-				bool glcmFeature = std::find(GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), (Feature2D)fc) != GLCMFeature::featureset.end();
-				bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), (Feature2D)fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
-				if (glcmFeature && nonAngledGlcmFeature == false)
-				{
-					// Populate with angles
-					for (auto ang : env.glcmOptions.glcmAngles)
-					{
-						std::string col = fn + "_" + std::to_string(ang);
-						rescache.add_to_header(col);
-					}
-
-					// Proceed with other features
-					continue;
-				}
-
-				// --GLRLM family
-				bool glrlmFeature = std::find(GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), (Feature2D)fc) != GLRLMFeature::featureset.end();
-				bool nonAngledGlrlmFeature = std::find(GLRLMFeature::nonAngledFeatures.begin(), GLRLMFeature::nonAngledFeatures.end(), (Feature2D)fc) != GLRLMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
-				if (glrlmFeature && nonAngledGlrlmFeature == false)
-				{
-					// Populate with angles
-					for (auto ang : GLRLMFeature::rotAngles)
-					{
-						std::string col = fn + "_" + std::to_string(ang);
-						rescache.add_to_header(col);
-					}
-
-					// Proceed with other features
-					continue;
-				}
-
-				// --Gabor
-				if (fc == (int) Feature2D::GABOR)
-				{
-					// Generate the feature value list
-					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
-					{
-						std::string col = fn + "_" + std::to_string(i);
-						rescache.add_to_header(col);
-					}
-
-					// Proceed with other features
-					continue;
-				}
-
-				if (fc == (int) Feature2D::FRAC_AT_D)
-				{
-					// Generate the feature value list
-					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
-					{
-						std::string col = fn + "_" + std::to_string(i);
-						rescache.add_to_header(col);
-					}
-
-					// Proceed with other features
-					continue;
-				}
-
-				if (fc == (int) Feature2D::MEAN_FRAC)
-				{
-					// Generate the feature value list
-					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
-					{
-						std::string col = fn + "_" + std::to_string(i);
-						rescache.add_to_header(col);
-					}
-
-					// Proceed with other features
-					continue;
-				}
-
-				if (fc == (int) Feature2D::RADIAL_CV)
-				{
-					// Generate the feature value list
-					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
-					{
-						std::string col = fn + "_" + std::to_string(i);
-						rescache.add_to_header(col);
-					}
-
-					// Proceed with other features
-					continue;
-				}
-
-				// --Zernike family
-				if (fc == (int) Feature2D::ZERNIKE2D)
-				{
-					// Populate with indices
-					for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
-					{
-						std::string col = fn + "_Z" + std::to_string(i);
-						rescache.add_to_header(col);
-					}
-
-					// Proceed with other features
-					continue;
-				}
-
-				// Regular feature
-				rescache.add_to_header(fn);
-			}
+			write_feature_header_buffer(rescache, env, F);
 		}
 
 		// -- Values
@@ -415,7 +120,7 @@ namespace Nyxus
 
 			// Tear off pure file names from segment and intensity file paths
 			const SlideProps & slide = env.dataset.dataset_props[r.slide_idx];
-			fs::path pseg(slide.fname_seg), 
+			fs::path pseg(slide.fname_seg),
 				pint(slide.fname_int);
 			std::string segfname = pseg.filename().string(),
 				intfname = pint.filename().string();
@@ -425,106 +130,106 @@ namespace Nyxus
 			rescache.add_numeric (l);
 			rescache.add_numeric (t_index);
 
-			for (auto& enabdF : F)
-			{
-				auto fc = std::get<1>(enabdF);
-				auto fn = std::get<0>(enabdF);	// debug
-
-				auto vv = r.get_fvals(fc);
-
-				// Parameterized feature
-				// --GLCM family
-				bool glcmFeature = std::find(GLCMFeature::featureset.begin(), GLCMFeature::featureset.end(), (Feature2D)fc) != GLCMFeature::featureset.end();
-				bool nonAngledGlcmFeature = std::find(GLCMFeature::nonAngledFeatures.begin(), GLCMFeature::nonAngledFeatures.end(), (Feature2D)fc) != GLCMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
-				if (glcmFeature && nonAngledGlcmFeature == false)
-				{
-					// Mock angled values if they haven't been calculated for some error reason
-					if (vv.size() < GLCMFeature::angles.size())
-						vv.resize(GLCMFeature::angles.size(), 0.0);
-
-					// Populate with angles
-					int nAng = GLCMFeature::angles.size();
-					for (int i = 0; i < nAng; i++)
-					{
-						rescache.add_numeric (Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
-					}
-
-					// Proceed with other features
-					continue;
-				}
-
-				// --GLRLM family
-				bool glrlmFeature = std::find(GLRLMFeature::featureset.begin(), GLRLMFeature::featureset.end(), (Feature2D)fc) != GLRLMFeature::featureset.end();
-				bool nonAngledGlrlmFeature = std::find(GLRLMFeature::nonAngledFeatures.begin(), GLRLMFeature::nonAngledFeatures.end(), (Feature2D)fc) != GLRLMFeature::nonAngledFeatures.end(); // prevent output of a non-angled feature in an angled way
-				if (glrlmFeature && nonAngledGlrlmFeature == false)
-				{
-					// Populate with angles
-					int nAng = 4; // check GLRLMFeature::rotAngles
-					for (int i = 0; i < nAng; i++)
-					{
-						rescache.add_numeric (Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
-					}
-					// Proceed with other features
-					continue;
-				}
-
-				// --Gabor
-				if (fc == (int) Feature2D::GABOR)
-				{
-					for (auto i = 0; i < GaborFeature::f0_theta_pairs.size(); i++)
-					{
-						rescache.add_numeric (Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
-					}
-					// Proceed with other features
-					continue;
-				}
-
-				// --Zernike family
-				if (fc == (int) Feature2D::ZERNIKE2D)
-				{
-					for (int i = 0; i < ZernikeFeature::NUM_FEATURE_VALS; i++)
-					{
-						rescache.add_numeric (Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
-					}
-					// Proceed with other features
-					continue;
-				}
-
-				// --Radial distribution features
-				if (fc == (int) Feature2D::FRAC_AT_D)
-				{
-					for (auto i = 0; i < RadialDistributionFeature::num_features_FracAtD; i++)
-					{
-						rescache.add_numeric (Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
-					}
-					// Proceed with other features
-					continue;
-				}
-				if (fc == (int) Feature2D::MEAN_FRAC)
-				{
-					for (auto i = 0; i < RadialDistributionFeature::num_features_MeanFrac; i++)
-					{
-						rescache.add_numeric (Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
-					}
-					// Proceed with other features
-					continue;
-				}
-				if (fc == (int) Feature2D::RADIAL_CV)
-				{
-					for (auto i = 0; i < RadialDistributionFeature::num_features_RadialCV; i++)
-					{
-						rescache.add_numeric (Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
-					}
-					// Proceed with other features
-					continue;
-				}
-
-				// Regular feature
-				rescache.add_numeric (Nyxus::force_finite_number(vv[0], env.resultOptions.noval()));
-			}
+			write_feature_values_buffer(rescache, r, F, env);
 		}
 
 		return true;
 	}
 
-}
+	/// @brief Assembles child ROI features into spatial arrays for one parent ROI.
+	/// Produces one FmapArrayResult with n_features arrays of shape (map_d, map_h, map_w).
+	/// Map dimensions are parent_dim - kernel_size + 1 (the valid convolution output size).
+	/// Positions with no valid child ROI remain NaN.
+	void save_features_2_fmap_arrays (
+		ResultsCache & rescache,
+		Environment & env,
+		const std::string & intens_name,
+		const std::string & seg_name,
+		int parent_label,
+		int parent_xmin, int parent_ymin, int parent_zmin,
+		int parent_w, int parent_h, int parent_d,
+		int kernel_size,
+		const std::unordered_set<int> & childLabels,
+		const std::unordered_map<int, LR> & childRoiData,
+		const std::unordered_map<int, FmapChildInfo> & childToParentMap)
+	{
+
+		int half = kernel_size / 2;
+		// 2D/3D aware map size calculation
+		bool is3d = (parent_d > 1);
+		int map_w = parent_w - kernel_size + 1;
+		int map_h = parent_h - kernel_size + 1;
+		int map_d = is3d ? (parent_d - kernel_size + 1) : 1;
+
+		if (map_w <= 0 || map_h <= 0 || (is3d && map_d <= 0)) {
+			return;
+		}
+
+		std::vector<std::tuple<std::string, int>> F = env.theFeatureSet.getEnabledFeatures();
+		std::vector<std::string> feature_names = get_feature_column_names(env, F);
+		size_t n_features = feature_names.size();
+		size_t map_size = (size_t)map_d * map_h * map_w;
+
+		// Initialize with NaN
+		std::vector<double> feature_data(n_features * map_size, std::numeric_limits<double>::quiet_NaN());
+
+		// Fill in values from child ROIs
+				
+
+		for (auto l : childLabels)
+		{
+			auto it_roi = childRoiData.find(l);
+			if (it_roi == childRoiData.end()) {
+				continue;
+			}
+			const LR& r = it_roi->second;
+			if (r.blacklisted) {
+				continue;
+			}
+
+			auto it_map = childToParentMap.find(l);
+			if (it_map == childToParentMap.end()) {
+				continue;
+			}
+
+			const FmapChildInfo& info = it_map->second;
+
+			// Convert global center coords to map indices
+			int map_col = info.center_x - parent_xmin - half;
+			int map_row = info.center_y - parent_ymin - half;
+			int map_z   = is3d ? (info.center_z - parent_zmin - half) : 0;
+
+			if (map_col < 0 || map_col >= map_w ||
+				map_row < 0 || map_row >= map_h ||
+				(is3d && (map_z < 0 || map_z >= map_d))) {
+				continue;
+			}
+
+			size_t voxel_idx = (size_t)map_z * map_h * map_w + (size_t)map_row * map_w + map_col;
+
+						// Collect feature values for this child
+			auto vals = collect_feature_values(r, F);
+			for (size_t fi = 0; fi < n_features && fi < vals.size(); fi++)
+				feature_data[fi * map_size + voxel_idx] = force_finite_number(vals[fi], env.resultOptions.noval());
+		}
+
+		// Store result
+		FmapArrayResult result;
+		result.parent_label = parent_label;
+		result.intens_name = intens_name;
+		result.seg_name = seg_name;
+		result.map_w = map_w;
+		result.map_h = map_h;
+		result.map_d = map_d;
+		result.origin_x = parent_xmin + half;
+		result.origin_y = parent_ymin + half;
+		result.origin_z = parent_zmin + half;
+		result.feature_names = std::move(feature_names);
+		result.feature_data = std::move(feature_data);
+        rescache.get_fmapArrayResults().push_back(std::move(result));
+	}
+// end of save_features_2_fmap_arrays
+
+} // namespace Nyxus
+
+

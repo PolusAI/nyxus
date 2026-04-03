@@ -4,6 +4,7 @@
 #include "../dataset.h"
 #include "../roi_cache.h"
 #include "image_matrix.h"
+#include "image_cube.h"
 #include "../feature_method.h"
 #include "../feature_settings.h"
 #include "texture_feature.h"
@@ -127,13 +128,23 @@ public:
 	static std::vector<int> angles;	// default value: {0,45,90,135} (the supreset)
 	double sum_p = 0; // sum of P matrix for normalization
 
+	// Custom direction field support (static so it's shared across all instances)
+	// SimpleCube with depth=2 for 2D (dx, dy) or depth=3 for 3D (dx, dy, dz)
+	// Access: direction_field->zyx(0, row, col) = dx, direction_field->zyx(1, row, col) = dy
+	static const SimpleCube<float>* direction_field;
+
 	static bool required(const FeatureSet& fs)
 	{
 		return fs.anyEnabled(GLCMFeature::featureset);
 	}
 
-	GLCMFeature();
+		GLCMFeature();
 	void calculate (LR& roi, const Fsettings& settings);
+	
+	// Set custom direction field for per-pixel GLCM directions
+	// For 2D: pass SimpleCube with depth=2 (dx, dy)
+	// For 3D: pass SimpleCube with depth=3 (dx, dy, dz)
+	void set_direction_field(const SimpleCube<float>* dir_field);
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
 	void osized_calculate (LR& roi, const Fsettings& settings, ImageLoader& imloader);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
@@ -156,6 +167,25 @@ private:
 		bool ibsi);
 
 	void Extract_Texture_Features2 (const Fsettings& settings, int angle, const ImageMatrix& grays, int offset, PixIntens min_val, PixIntens max_val);
+	
+	// Refactored version that accepts dx/dy directly
+	void Extract_Texture_Features2_Direct (
+		const Fsettings& settings, 
+		int dx, int dy,
+		const ImageMatrix& grays, 
+		PixIntens min_val, 
+		PixIntens max_val);
+	
+	// Build GLCM from custom direction field
+	void calculateCoocMatFromDirectionField(
+		const Fsettings& settings,
+		const ImageMatrix& grays,
+		int offset,
+		PixIntens min_val,
+		PixIntens max_val);
+	
+	// Helper to convert angle to offset
+	void angle_to_offset(int angle, int offset, int& dx, int& dy) const;
 
 	void calculateCoocMatAtAngle(
 		// out
