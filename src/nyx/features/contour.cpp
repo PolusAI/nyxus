@@ -390,6 +390,11 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 	int h,
 	int verbose)
 {
+	// This function fills the caller-owned contour container from scratch.
+	// Clearing it up front prevents stale contours from surviving the early
+	// return below when a ROI degenerates to isolated speckles.
+	multicountour.clear();
+
 	const int BLANK = 0;
 	bool inside = false;
 	int pos = 0;
@@ -648,6 +653,10 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 		base_y = r.aabb.get_ymin();
 	int paddingColor = 0;
 	std::vector<PixIntens> paddedImage((height + 2) * (width + 2), paddingColor);
+
+	// Rebuild the contour cache from scratch for this ROI.
+	r.multicontour_.clear();
+
 	for (auto px : r.raw_pixels)
 	{
 		auto x = px.x - base_x + 1,
