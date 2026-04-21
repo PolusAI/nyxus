@@ -9,6 +9,7 @@
 #else
     #include <tiffio.h>
 #endif
+#include <cstdint>
 #include <cstring>
 #include <limits.h>
 
@@ -457,7 +458,7 @@ public:
             throw (std::runtime_error(erm));
         }
 
-        uint8* fub = (uint8*)buf;
+        auto* fub = static_cast<std::uint8_t*>(buf);
         for (size_t r = 0; r < tileHeight_; r++)
         {
             size_t offs = r * scanline_szb;

@@ -1132,5 +1132,3 @@ class TestNyxus():
             assert np.isclose (f.at[0, "3GLSZM_ZE"],     radiomics_gt["Case-1_original_glszm_ZoneEntropy"], rtol=1.e-1, atol=1.e-2)
             assert np.isclose (f.at[0, "3GLSZM_ZP"],     radiomics_gt["Case-1_original_glszm_ZonePercentage"], rtol=1.e-1, atol=1.e-2)
             assert np.isclose (f.at[0, "3GLSZM_ZV"],     radiomics_gt["Case-1_original_glszm_ZoneVariance"], rtol=1.e-1, atol=1.e-2)
-
-
