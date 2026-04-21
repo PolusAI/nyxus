@@ -702,6 +702,15 @@ void Environment::compile_feature_settings()
 		}
 }
 
+void Environment::sync_feature_settings_single_roi()
+{
+	for (auto& wrapd_s : f_settings_)
+	{
+		auto& s = wrapd_s.get();
+		s[(int)NyxSetting::SINGLEROI].bval = singleROI;
+	}
+}
+
 const Fsettings& Environment::get_feature_settings (const std::type_info& ftype)
 {
 	size_t h = ftype.hash_code();

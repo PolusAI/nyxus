@@ -228,6 +228,7 @@ py::tuple featurize_directory_imp(
 
     // (whole-slide flag)
     env.singleROI = (intensity_dir == labels_dir);
+    env.sync_feature_settings_single_roi();
 
     // read the dataset directory (file names, file pairs)
     std::vector<std::string> intensFiles, labelFiles;
@@ -364,6 +365,7 @@ py::tuple featurize_directory_imq_imp (
 
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = intensity_dir == labels_dir;
+    theEnvironment.sync_feature_settings_single_roi();
 
     // Read image pairs from the intensity and label directories applying the filepattern
     std::vector<std::string> intensFiles, labelFiles;
@@ -453,6 +455,7 @@ py::tuple featurize_directory_3D_imp(
 
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = intensity_dir == labels_dir;
+    theEnvironment.sync_feature_settings_single_roi();
 
     // We're good to extract features. Reset the feature results cache
     theEnvironment.theResultsCache.clear();
@@ -552,6 +555,7 @@ py::tuple featurize_montage_imp (
 
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = false;
+    theEnvironment.sync_feature_settings_single_roi();
 
     auto intens_buffer = intensity_images.request();
     auto label_buffer = label_images.request();
@@ -629,6 +633,7 @@ py::tuple featurize_fname_lists_imp (uint64_t instid, const py::list& int_fnames
 
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = single_roi;
+    theEnvironment.sync_feature_settings_single_roi();
 
     // Check intensity file names 
     std::vector<std::string> intensFiles;
@@ -739,6 +744,7 @@ py::tuple featurize_fname_lists_3D_imp (
 
     // set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = single_roi;
+    theEnvironment.sync_feature_settings_single_roi();
 
     // python-side file name lists to c++ vectors 
     std::vector <Imgfile3D_layoutA> ifiles, mfiles;
@@ -1089,6 +1095,3 @@ PYBIND11_MODULE(backend, m)
     m.def("set_metaparam_imp", &set_metaparam_imp, "Setting a common or feature-specific metaparameter");
     m.def("get_metaparam_imp", &get_metaparam_imp, "Getting a common or feature-specific metaparameter value");
 }
-
-
-
