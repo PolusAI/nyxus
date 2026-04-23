@@ -554,6 +554,11 @@ void Environment::show_featureset_help()
 
 void Environment::compile_feature_settings()
 {
+	// Clear previous entries so this function is safe to call multiple times
+	// (e.g. when singleROI changes between initialize_environment and featurize)
+	f_settings_.clear();
+	feature2settings_.clear();
+
 	f_settings_.push_back (fsett_PixelIntensity);
 		feature2settings_ [typeid(PixelIntensityFeatures).hash_code()] = f_settings_.size() - 1;
 
@@ -700,6 +705,16 @@ void Environment::compile_feature_settings()
 			s[(int)NyxSetting::VERBOSLVL].ival = get_verbosity_level();
 			s[(int)NyxSetting::IBSI].bval = ibsi_compliance;
 		}
+}
+
+void Environment::refresh_feature_settings_singleroi()
+{
+	for (auto& wrapd_s : f_settings_)
+	{
+		auto& s = wrapd_s.get();
+		if (!s.empty())
+			s[(int)NyxSetting::SINGLEROI].bval = singleROI;
+	}
 }
 
 const Fsettings& Environment::get_feature_settings (const std::type_info& ftype)
