@@ -554,11 +554,6 @@ void Environment::show_featureset_help()
 
 void Environment::compile_feature_settings()
 {
-	// Clear previous entries so this function is safe to call multiple times
-	// (e.g. when singleROI changes between initialize_environment and featurize)
-	f_settings_.clear();
-	feature2settings_.clear();
-
 	f_settings_.push_back (fsett_PixelIntensity);
 		feature2settings_ [typeid(PixelIntensityFeatures).hash_code()] = f_settings_.size() - 1;
 
