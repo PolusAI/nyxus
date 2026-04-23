@@ -58,7 +58,7 @@ namespace Nyxus
 				// Get ahold of tile's pixel buffer
 				const std::vector<uint32_t>& dataI = L.get_int_tile_buffer();
 				const std::shared_ptr<std::vector<uint32_t>>& spL = L.get_seg_tile_sptr();
-				bool wholeslide = spL == nullptr; 
+				bool wholeslide = env.singleROI;
 
 				// Iterate pixels
 				for (size_t i = 0; i < tileSize; i++)
@@ -391,10 +391,9 @@ namespace Nyxus
 				// Update pixel's ROI metrics
 				auto inten = rI (pair_index, row, col);
 				feed_pixel_2_metrics (env.uniqueLabels, env.roiData, col, row, inten, label, pair_index); // Updates 'uniqueLabels' and 'roiData'
-
-				if (PyErr_CheckSignals() != 0)
-					throw pybind11::error_already_set();
 			}
+		if (PyErr_CheckSignals() != 0)
+			throw pybind11::error_already_set();
 
 		return true;
 	}
