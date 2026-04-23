@@ -1132,3 +1132,82 @@ class TestNyxus():
             assert np.isclose (f.at[0, "3GLSZM_ZE"],     radiomics_gt["Case-1_original_glszm_ZoneEntropy"], rtol=1.e-1, atol=1.e-2)
             assert np.isclose (f.at[0, "3GLSZM_ZP"],     radiomics_gt["Case-1_original_glszm_ZonePercentage"], rtol=1.e-1, atol=1.e-2)
             assert np.isclose (f.at[0, "3GLSZM_ZV"],     radiomics_gt["Case-1_original_glszm_ZoneVariance"], rtol=1.e-1, atol=1.e-2)
+
+
+
+class TestSingleRoi():
+    """Regression tests for issue #327: featurize_files with single_roi=True."""
+
+    def setup_method(self):
+        path = str(pathlib.Path(__file__).parent.resolve())
+        self.data_path = path + '/data/'
+        self.int_files = [
+            self.data_path + 'int/p0_y1_r1_c0.ome.tif',
+            self.data_path + 'int/p0_y1_r1_c1.ome.tif',
+        ]
+        self.seg_files = [
+            self.data_path + 'seg/p0_y1_r1_c0.ome.tif',
+            self.data_path + 'seg/p0_y1_r1_c1.ome.tif',
+        ]
+        self.nyx = nyxus.Nyxus(["*ALL_INTENSITY*"])
+
+    def test_single_roi_no_mask_succeeds(self):
+        """featurize_files(int_files, None, single_roi=True) must succeed and return one row per image."""
+        df = self.nyx.featurize_files(self.int_files, None, single_roi=True)
+        assert df is not None
+        # one row per intensity file, all with label == 1
+        assert len(df) == len(self.int_files)
+        assert (df["ROI_label"] == 1).all()
+
+    def test_single_roi_mask_ignored(self):
+        """featurize_files with single_roi=True should produce the same result whether or not mask files are supplied."""
+        df_no_mask = self.nyx.featurize_files(self.int_files, None, single_roi=True)
+        df_with_mask = self.nyx.featurize_files(self.int_files, self.seg_files, single_roi=True)
+
+        df_no_mask.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+        df_with_mask.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+
+        # Sort by filename so row order is stable across OS/filesystem orderings
+        df_no_mask = df_no_mask.sort_values("intensity_image").reset_index(drop=True)
+        df_with_mask = df_with_mask.sort_values("intensity_image").reset_index(drop=True)
+
+        assert list(df_no_mask.columns) == list(df_with_mask.columns)
+        for col in df_no_mask.columns:
+            for v1, v2 in zip(df_no_mask[col].tolist(), df_with_mask[col].tolist()):
+                assert v1 == pytest.approx(v2, rel=1e-5, abs=1e-5)
+
+    def test_single_roi_false_multi_row(self):
+        """featurize_files with single_roi=False (normal segmented mode) must return multiple rows per image."""
+        df = self.nyx.featurize_files(self.int_files, self.seg_files, single_roi=False)
+        assert df is not None
+        # segmented mode produces more than one row per image
+        assert len(df) > len(self.int_files)
+
+    def test_single_roi_false_no_mask_raises(self):
+        """featurize_files(int_files, None, single_roi=False) must raise IOError."""
+        with pytest.raises(IOError):
+            self.nyx.featurize_files(self.int_files, None, single_roi=False)
+
+    def test_single_roi_consistent_with_featurize_directory(self):
+        """single_roi=True via featurize_files should match featurize_directory when no seg dir is given."""
+        # Pass the same dir as label dir — polus detects same-dir as wholeslide
+        df_dir = self.nyx.featurize_directory(self.data_path + 'int/', self.data_path + 'int/')
+        df_files = self.nyx.featurize_files(self.int_files, None, single_roi=True)
+
+        df_dir.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+        df_files.replace([np.inf, -np.inf, np.nan], 0, inplace=True)
+
+        # Sort both by filename so row order is comparable
+        df_dir = df_dir.sort_values("intensity_image").reset_index(drop=True)
+        df_files = df_files.sort_values("intensity_image").reset_index(drop=True)
+
+        # Exclude path/string columns — they legitimately differ in format (full path vs basename)
+        string_cols = {"intensity_image", "mask_image"}
+        shared_cols = [c for c in df_dir.columns if c in df_files.columns and c not in string_cols]
+        not_equal = []
+        for col in shared_cols:
+            for v1, v2 in zip(df_dir[col].tolist(), df_files[col].tolist()):
+                if v1 != pytest.approx(v2, rel=1e-5, abs=1e-5):
+                    not_equal.append(col)
+                    break
+        assert len(not_equal) == 0, f"Columns differ: {not_equal}"

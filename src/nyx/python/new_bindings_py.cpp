@@ -228,6 +228,7 @@ py::tuple featurize_directory_imp(
 
     // (whole-slide flag)
     env.singleROI = (intensity_dir == labels_dir);
+    env.refresh_feature_settings_singleroi();
 
     // read the dataset directory (file names, file pairs)
     std::vector<std::string> intensFiles, labelFiles;
@@ -364,6 +365,7 @@ py::tuple featurize_directory_imq_imp (
 
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = intensity_dir == labels_dir;
+    theEnvironment.refresh_feature_settings_singleroi();
 
     // Read image pairs from the intensity and label directories applying the filepattern
     std::vector<std::string> intensFiles, labelFiles;
@@ -453,6 +455,7 @@ py::tuple featurize_directory_3D_imp(
 
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = intensity_dir == labels_dir;
+    theEnvironment.refresh_feature_settings_singleroi();
 
     // We're good to extract features. Reset the feature results cache
     theEnvironment.theResultsCache.clear();
@@ -552,6 +555,7 @@ py::tuple featurize_montage_imp (
 
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = false;
+    theEnvironment.refresh_feature_settings_singleroi();
 
     auto intens_buffer = intensity_images.request();
     auto label_buffer = label_images.request();
@@ -629,6 +633,7 @@ py::tuple featurize_fname_lists_imp (uint64_t instid, const py::list& int_fnames
 
     // Set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = single_roi;
+    theEnvironment.refresh_feature_settings_singleroi();
 
     // Check intensity file names 
     std::vector<std::string> intensFiles;
@@ -638,8 +643,9 @@ py::tuple featurize_fname_lists_imp (uint64_t instid, const py::list& int_fnames
         intensFiles.push_back(fn);
     }
 
+    // Check the file names
     if (intensFiles.size() == 0)
-        throw std::runtime_error("Intensity file name list is blank");
+        throw std::runtime_error("Intensity file list is blank");
 
     for (auto i = 0; i < intensFiles.size(); i++)
     {
@@ -739,6 +745,7 @@ py::tuple featurize_fname_lists_3D_imp (
 
     // set the whole-slide/multi-ROI flag
     theEnvironment.singleROI = single_roi;
+    theEnvironment.refresh_feature_settings_singleroi();
 
     // python-side file name lists to c++ vectors 
     std::vector <Imgfile3D_layoutA> ifiles, mfiles;
