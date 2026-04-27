@@ -163,6 +163,17 @@ void PixelIntensityFeatures::calculate (LR& r, const Fsettings & fsett, const Da
 	val_P99 = p99_;
 	val_QCOD = (p75_ - p25_) / (p75_ + p25_);
 	val_INTERQUARTILE_RANGE = iqr_;
+	double robustMean = 0.0;
+	size_t robustCount = 0;
+	for (auto& px : r.raw_pixels)
+	{
+		if (px.inten >= p10_ && px.inten <= p90_)
+		{
+			robustMean += px.inten;
+			robustCount++;
+		}
+	}
+	val_ROBUST_MEAN = robustCount ? robustMean / double(robustCount) : 0.0;
 	val_ROBUST_MEAN_ABSOLUTE_DEVIATION = rmad_;
 	val_ENTROPY = entropy_;
 	val_MODE = mode_;
@@ -287,6 +298,18 @@ void PixelIntensityFeatures::osized_calculate (LR& r, const Fsettings& stng, con
 	val_P99 = p99_;
 	val_QCOD = (p75_ - p25_) / (p75_ + p25_);
 	val_INTERQUARTILE_RANGE = iqr_;
+	double robustMean = 0.0;
+	size_t robustCount = 0;
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)
+	{
+		Pixel2 px = r.raw_pixels_NT[i];
+		if (px.inten >= p10_ && px.inten <= p90_)
+		{
+			robustMean += px.inten;
+			robustCount++;
+		}
+	}
+	val_ROBUST_MEAN = robustCount ? robustMean / double(robustCount) : 0.0;
 	val_ROBUST_MEAN_ABSOLUTE_DEVIATION = rmad_;
 	val_ENTROPY = entropy_;
 	val_MODE = mode_;

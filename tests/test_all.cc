@@ -701,6 +701,11 @@ TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_MEAN)
 	ASSERT_NO_THROW(test_pixel_intensity_mean());
 }
 
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_COV)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_cov());
+}
+
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_MEDIAN) 
 {
 	ASSERT_NO_THROW(test_pixel_intensity_median());
@@ -716,14 +721,34 @@ TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_STDDEV)
 	ASSERT_NO_THROW(test_pixel_intensity_standard_deviation());
 }
 
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_STDDEV_BIASED)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_standard_deviation_biased());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VARIANCE)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_variance());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VARIANCE_BIASED)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_variance_biased());
+}
+
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_SKEWNESS) 
 {
 	ASSERT_NO_THROW(test_pixel_intensity_skewness());
 }
 
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_KURTOSIS) 
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_EXCESS_KURTOSIS)
 {
 	ASSERT_NO_THROW(test_pixel_intensity_kurtosis());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_KURTOSIS)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_pearson_kurtosis());
 }
 
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_HYPERSKEWNESS) 
@@ -739,6 +764,21 @@ TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_HYPERFLATNESS)
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_MAD) 
 {
 	ASSERT_NO_THROW(test_pixel_intensity_mean_absolute_deviation());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_MEDIAN_ABSOLUTE_DEVIATION)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_median_absolute_deviation());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_ROBUST_MEAN)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_robust_mean());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_ROBUST_MAD)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_robust_mean_absolute_deviation());
 }
 
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_STANDARD_ERROR) 
@@ -769,6 +809,21 @@ TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_UNIFORMITY)
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_UNIFORMITY_PIU) 
 {
 	ASSERT_NO_THROW(test_pixel_intensity_uniformity_piu());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_PERCENTILES_IQR)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_percentiles_iqr());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_QCOD)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_qcod());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_COVERED_IMAGE_INTENSITY_RANGE)
+{
+	ASSERT_NO_THROW(test_pixel_intensity_covered_image_intensity_range());
 }
 
 
