@@ -39,6 +39,14 @@ namespace Nyxus
 				idxE = datasetSize; // include the tail
 			T.push_back(std::async(std::launch::async, f, idxS, idxE, ptrLabels, ptrLabelData, std::cref(f_settings), std::cref(dataset)));
 		}
+		// Wait for all threads to complete before returning. This is
+		// necessary for correctness in all callers, not just fmaps mode:
+		// without explicit .get(), futures are only awaited by their
+		// destructors, which can race with the caller's scope exit and
+		// cause use-after-free when referenced data (labels, LR map,
+		// settings) is destroyed while threads are still running.
+		for (auto& fut : T)
+			fut.get();
 	}
 
 	void parallelReduceConvHull (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & fst, const Dataset & ds);
