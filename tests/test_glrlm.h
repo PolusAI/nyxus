@@ -32,6 +32,16 @@ static std::unordered_map<std::string, double> glrlm_values {
     {"GLRLM_RE", 2.3747}
 };
 
+static std::string glrlm_truth_key(const std::string& feature_name)
+{
+    static const std::string ave_suffix = "_AVE";
+    if (feature_name.size() > ave_suffix.size() &&
+        feature_name.compare(feature_name.size() - ave_suffix.size(), ave_suffix.size(), ave_suffix) == 0)
+        return feature_name.substr(0, feature_name.size() - ave_suffix.size());
+
+    return feature_name;
+}
+
 void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_name) 
 {
     // featue settings for this particular test
@@ -51,6 +61,9 @@ void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_na
     GLRLMFeature::n_levels = 100;
 
     int feature = int(feature_);
+    const std::string truth_key = glrlm_truth_key(feature_name);
+    ASSERT_TRUE(glrlm_values.count(truth_key) > 0);
+    const bool is_ave_feature = truth_key != feature_name;
 
     double total = 0;
 
@@ -66,10 +79,15 @@ void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_na
     // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
     f.save_value(roidata.fvals);
 
-    total += roidata.fvals[feature][0];
-    total += roidata.fvals[feature][1];
-    total += roidata.fvals[feature][2];
-    total += roidata.fvals[feature][3];
+    if (is_ave_feature)
+        total += roidata.fvals[feature][0];
+    else
+    {
+        total += roidata.fvals[feature][0];
+        total += roidata.fvals[feature][1];
+        total += roidata.fvals[feature][2];
+        total += roidata.fvals[feature][3];
+    }
     
     // image 2
     LR roidata1;
@@ -84,10 +102,15 @@ void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_na
     // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
     f1.save_value(roidata1.fvals);
 
-    total += roidata1.fvals[feature][0];
-    total += roidata1.fvals[feature][1];
-    total += roidata1.fvals[feature][2];
-    total += roidata1.fvals[feature][3];
+    if (is_ave_feature)
+        total += roidata1.fvals[feature][0];
+    else
+    {
+        total += roidata1.fvals[feature][0];
+        total += roidata1.fvals[feature][1];
+        total += roidata1.fvals[feature][2];
+        total += roidata1.fvals[feature][3];
+    }
     
     // image 3
 
@@ -103,10 +126,15 @@ void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_na
     // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
     f2.save_value(roidata2.fvals);
 
-    total += roidata2.fvals[feature][0];
-    total += roidata2.fvals[feature][1];
-    total += roidata2.fvals[feature][2];
-    total += roidata2.fvals[feature][3];
+    if (is_ave_feature)
+        total += roidata2.fvals[feature][0];
+    else
+    {
+        total += roidata2.fvals[feature][0];
+        total += roidata2.fvals[feature][1];
+        total += roidata2.fvals[feature][2];
+        total += roidata2.fvals[feature][3];
+    }
     
     // image 4
     
@@ -123,13 +151,19 @@ void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_na
     f3.save_value(roidata3.fvals);
 
     // Check the feature values vs ground truth
-    total += roidata3.fvals[feature][0];
-    total += roidata3.fvals[feature][1];
-    total += roidata3.fvals[feature][2];
-    total += roidata3.fvals[feature][3];
+    if (is_ave_feature)
+        total += roidata3.fvals[feature][0];
+    else
+    {
+        total += roidata3.fvals[feature][0];
+        total += roidata3.fvals[feature][1];
+        total += roidata3.fvals[feature][2];
+        total += roidata3.fvals[feature][3];
+    }
 
     // Verdict
-    ASSERT_TRUE(agrees_gt(total/16, glrlm_values[feature_name], 100.));
+    const double divisor = is_ave_feature ? 4.0 : 16.0;
+    ASSERT_TRUE(agrees_gt(total / divisor, glrlm_values[truth_key], 100.));
 }
 
 void test_glrlm_sre()
@@ -210,4 +244,84 @@ void test_glrlm_rv()
 void test_glrlm_re()
 {
     test_glrlm_feature(Nyxus::Feature2D::GLRLM_RE, "GLRLM_RE");
+}
+
+void test_glrlm_sre_ave()
+{
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_SRE_AVE, "GLRLM_SRE_AVE");
+}
+
+void test_glrlm_lre_ave()
+{
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_LRE_AVE, "GLRLM_LRE_AVE");
+}
+
+void test_glrlm_gln_ave()
+{
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_GLN_AVE, "GLRLM_GLN_AVE");
+}
+
+void test_glrlm_glnn_ave()
+{
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_GLNN_AVE, "GLRLM_GLNN_AVE");
+}
+
+void test_glrlm_rln_ave()
+{
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RLN_AVE, "GLRLM_RLN_AVE");
+}
+
+void test_glrlm_rlnn_ave()
+{
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RLNN_AVE, "GLRLM_RLNN_AVE");
+}
+
+void test_glrlm_rp_ave()
+{
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RP_AVE, "GLRLM_RP_AVE");
+}
+
+void test_glrlm_glv_ave()
+{
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_GLV_AVE, "GLRLM_GLV_AVE");
+}
+
+void test_glrlm_rv_ave()
+{
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RV_AVE, "GLRLM_RV_AVE");
+}
+
+void test_glrlm_re_ave()
+{
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RE_AVE, "GLRLM_RE_AVE");
+}
+
+void test_glrlm_lglre_ave()
+{
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_LGLRE_AVE, "GLRLM_LGLRE_AVE");
+}
+
+void test_glrlm_hglre_ave()
+{
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_HGLRE_AVE, "GLRLM_HGLRE_AVE");
+}
+
+void test_glrlm_srlgle_ave()
+{
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_SRLGLE_AVE, "GLRLM_SRLGLE_AVE");
+}
+
+void test_glrlm_srhgle_ave()
+{
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_SRHGLE_AVE, "GLRLM_SRHGLE_AVE");
+}
+
+void test_glrlm_lrlgle_ave()
+{
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_LRLGLE_AVE, "GLRLM_LRLGLE_AVE");
+}
+
+void test_glrlm_lrhgle_ave()
+{
+    test_glrlm_feature(Nyxus::Feature2D::GLRLM_LRHGLE_AVE, "GLRLM_LRHGLE_AVE");
 }

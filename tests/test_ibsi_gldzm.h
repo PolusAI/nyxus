@@ -16,7 +16,7 @@ static std::unordered_map<std::string, double> ibsi_gldzm_gtruth
     {"GLDZM_LDE",       1.21},  // Large distance emphasis
     {"GLDZM_LGLZE",     0.371}, // Low grey level zone emphasis
     {"GLDZM_HGLZE",     16.4},  // High grey level zone emphasis
-    {"GLDZM_HGLZE",     0.367}, // Small distance low grey level emphasis
+    {"GLDZM_SDLGLE",    0.34788359788359785}, // Small distance low grey level emphasis
     {"GLDZM_SDHGLE",    15.2},  // Small distance high grey level emphasis
     {"GLDZM_LDLGLE",    0.386}, // Large distance low grey level emphasis
     {"GLDZM_LDHGLE",    21.3},  // Large distance high grey level emphasis
@@ -25,8 +25,10 @@ static std::unordered_map<std::string, double> ibsi_gldzm_gtruth
     {"GLDZM_ZDNU",      3.79},  // Zone distance non-uniformity
     {"GLDZM_ZDNUN",     0.898}, // Normalised zone distance non-uniformity
     {"GLDZM_ZP",        0.24},  // Zone percentage
+    {"GLDZM_GLM",       3.476190476190476}, // Grey level mean
     {"GLDZM_GLV",       3.97},  // Grey level variance
-    {"GLDZM_ZDV",       0.051}, // Zone distance variance
+    {"GLDZM_ZDM",       1.1071428571428572}, // Zone distance mean
+    {"GLDZM_ZDV",       0.0816326530612245}, // Zone distance variance
     {"GLDZM_ZDE",       1.73}   // Zone distance entropy
 };
 
@@ -200,6 +202,11 @@ void test_ibsi_GLDZM_HGLZE()
     test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_HGLZE, "GLDZM_HGLZE");
 }
 
+void test_ibsi_GLDZM_SDLGLE()
+{
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_SDLGLE, "GLDZM_SDLGLE");
+}
+
 void test_ibsi_GLDZM_SDHGLE()
 {
     test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_SDHGLE, "GLDZM_SDHGLE");
@@ -240,9 +247,19 @@ void test_ibsi_GLDZM_ZP()
     test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_ZP, "GLDZM_ZP");
 }
 
+void test_ibsi_GLDZM_GLM()
+{
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_GLM, "GLDZM_GLM");
+}
+
 void test_ibsi_GLDZM_GLV()
 {
     test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_GLV, "GLDZM_GLV");
+}
+
+void test_ibsi_GLDZM_ZDM()
+{
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_ZDM, "GLDZM_ZDM");
 }
 
 void test_ibsi_GLDZM_ZDV()
