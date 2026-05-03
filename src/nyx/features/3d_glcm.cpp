@@ -48,11 +48,18 @@ void D3_GLCM_feature::calculate (LR& r, const Fsettings& s)
 	SimpleCube<PixIntens> D;
 	D.allocate (w,h,d);
 
-	auto greyBinningInfo = STNGS_GLCM_GREYDEPTH(s);	// former Nyxus::theEnvironment.get_coarse_gray_depth()
-	if (STNGS_IBSI(s))	// former Nyxus::theEnvironment.ibsi_compliance
+	// Use GLCM-specific grey depth if set via metaparams, otherwise fall back to global.
+	// GLCM_GREYDEPTH defaults to 0 when not explicitly configured (e.g. no metaparams
+	// set), so fall back to the global GREYDEPTH to avoid treating it as IBSI mode.
+	auto greyBinningInfo = STNGS_GLCM_GREYDEPTH(s);
+	if (greyBinningInfo == 0)
+		greyBinningInfo = s[(int)NyxSetting::GREYDEPTH].ival;
+	auto binOrigin = STNGS_BINNING_ORIGIN(s);	// zero-based (Nyxus/MATLAB) or min-based (PyRadiomics)
+	bool ibsi = STNGS_IBSI(s);
+	if (ibsi)
 		greyBinningInfo = 0;
 
-	bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyBinningInfo);
+	bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyBinningInfo, binOrigin);
 
 	// calculate features for all the 13 directions
 	for (const ShiftToNeighbor & sh : shifts)
@@ -64,8 +71,9 @@ void D3_GLCM_feature::calculate (LR& r, const Fsettings& s)
 			D,
 			r.aux_min,
 			r.aux_max,
-			STNGS_GLCM_GREYDEPTH(s),
-			STNGS_IBSI(s),
+			greyBinningInfo,
+			ibsi,
+			binOrigin,
 			STNGS_NAN(s));
 	}
 }
@@ -176,9 +184,9 @@ void D3_GLCM_feature::save_value(std::vector<std::vector<double>>& fvals)
   //xxxx deprecated in PyR xxxx	fvals[(int)Feature3D::GLCM_VARIANCE_AVE][0] = calc_ave(fvals_variance);
 }
 
-void D3_GLCM_feature::extract_texture_features_at_angle(int dx, int dy, int dz, const SimpleCube<PixIntens>& binned_greys, PixIntens min_val, PixIntens max_val, int n_greys, bool ibsi, double soft_nan)
+void D3_GLCM_feature::extract_texture_features_at_angle(int dx, int dy, int dz, const SimpleCube<PixIntens>& binned_greys, PixIntens min_val, PixIntens max_val, int n_greys, bool ibsi, BinningOrigin binOrigin, double soft_nan)
 {
-	calculateCoocMatAtAngle (P_matrix, dx, dy, dz, binned_greys, min_val, max_val, n_greys, ibsi);
+	calculateCoocMatAtAngle (P_matrix, dx, dy, dz, binned_greys, min_val, max_val, n_greys, ibsi, binOrigin);
 
 	// Blank cooc-matrix? -- no point to use it, assign each feature value '0' and return.
 	if (sum_p == 0)
@@ -270,7 +278,8 @@ void D3_GLCM_feature::calculateCoocMatAtAngle(
 	PixIntens grays_min_val,
 	PixIntens grays_max_val,
 	int n_greys,
-	bool ibsi)
+	bool ibsi,
+	BinningOrigin binOrigin)
 {
 	int w = D.width(),
 		h = D.height(),
@@ -281,8 +290,11 @@ void D3_GLCM_feature::calculateCoocMatAtAngle(
 	if (ibsi)
 		greyInfo = 0;
 
-	// allocate the cooc and intensities matrices
-	if (radiomics_grey_binning(greyInfo))
+	// Allocate the cooc and intensities matrices.
+	// '&& !ibsi' guard: IBSI mode uses n_levels=0 and its own branch below,
+	// regardless of binOrigin. Without the guard, IBSI + min_based would
+	// incorrectly enter the radiomics path.
+	if (binOrigin == BinningOrigin::min_based && !ibsi)
 	{
 		// unique intensities
 		std::unordered_set<PixIntens> U(D.begin(), D.end());
@@ -294,7 +306,7 @@ void D3_GLCM_feature::calculateCoocMatAtAngle(
 		GLCM.allocate((int)I.size(), (int)I.size());
 	}
 	else
-		if (matlab_grey_binning(greyInfo))
+		if (binOrigin == BinningOrigin::zero && !ibsi)	// zero-based (MATLAB) binning; !ibsi excludes IBSI which uses its own branch
 		{
 			auto n_matlab_levels = greyInfo;
 			I.resize(n_matlab_levels);
@@ -334,7 +346,7 @@ void D3_GLCM_feature::calculateCoocMatAtAngle(
 						lvl_a = D.zyx(zslice + dz, row + dy, col + dx);
 
 					// Skip 0-intensity pixels (usually out of mask pixels)
-					if (ibsi_grey_binning(greyInfo))
+					if (ibsi)
 						if (lvl_a == 0 || lvl_b == 0)
 							continue;
 
@@ -342,8 +354,9 @@ void D3_GLCM_feature::calculateCoocMatAtAngle(
 					int a = lvl_a,
 						b = lvl_b;
 
-					// raw intensities need to be modified for different grey binning paradigms (Matlab, PyRadiomics, IBSI)
-					if (radiomics_grey_binning(greyInfo))
+					// Raw intensities need to be modified for different grey binning paradigms.
+				// '&& !ibsi' ensures IBSI mode falls through to the else (matlab/IBSI) branch.
+					if ((binOrigin == BinningOrigin::min_based && !ibsi))
 					{
 						// skip zeroes
 						if (a == 0 || b == 0)
@@ -364,8 +377,9 @@ void D3_GLCM_feature::calculateCoocMatAtAngle(
 
 					(GLCM.xy(a, b))++;
 
-					// Radiomics GLCM is symmetric, Matlab one is not
-					if (D3_GLCM_feature::symmetric_glcm || radiomics_grey_binning(greyInfo) || ibsi_grey_binning(greyInfo))
+					// Radiomics and IBSI GLCMs are symmetric; Matlab is not.
+					// Equivalent to: symmetric_glcm || radiomics || ibsi
+					if (D3_GLCM_feature::symmetric_glcm || (binOrigin == BinningOrigin::min_based && !ibsi) || ibsi)
 						(GLCM.xy(b, a))++;
 				}
 			}
