@@ -33,6 +33,31 @@ static std::unordered_map<std::string, double> ibsi_ngldm_gtruth
 	{"NGLDM_DCENE",		0.17}	// Dependence count entropy, p. 128
 };
 
+// Active 2D NGLDM regression values on the 4 IBSI digital phantom slices
+// averaged slice-wise under Nyxus's current 2D NGLDM implementation.
+static std::unordered_map<std::string, double> ngldm_regression_gtruth
+{
+	{"NGLDM_LDE",		1.7726166855631142e-01},
+	{"NGLDM_HDE",		1.9041666666666664e+01},
+	{"NGLDM_LGLCE",		7.1585648148148150e-01},
+	{"NGLDM_HGLCE",		5.0416666666666670e+00},
+	{"NGLDM_LDLGLE",	8.3222316704459560e-02},
+	{"NGLDM_LDHGLE",	7.8294164540816320e-01},
+	{"NGLDM_HDLGLE",	2.6025462962962962e+01},
+	{"NGLDM_HDHGLE",	5.8791666666666660e+01},
+	{"NGLDM_GLNU",		3.7083333333333330e+00},
+	{"NGLDM_GLNUN",		6.1805555555555560e-01},
+	{"NGLDM_DCNU",		3.7083333333333330e+00},
+	{"NGLDM_DCNUN",		6.1805555555555560e-01},
+	{"NGLDM_DCP",		1.0000000000000000e+00},
+	{"NGLDM_GLM",		1.5416666666666665e+00},
+	{"NGLDM_GLV",		1.6909722222222220e+00},
+	{"NGLDM_DCM",		4.5833333333333330e+00},
+	{"NGLDM_DCV",		1.6087962962962963e+00},
+	{"NGLDM_DCENT",		1.7303885422075338e+00},
+	{"NGLDM_DCENE",		2.4305555555555558e-01}
+};
+
 //
 // Tests calculating the NGLD-matrix with the IBSI mode enabled, using IBSI-provided ground truth
 //
@@ -151,7 +176,7 @@ void test_ibsi_ngldm_feature (const Feature2D& feature_, const std::string& feat
     int feature = int(feature_);
 
     // Check if ground truth is available for the feature
-    ASSERT_TRUE(ibsi_ngldm_gtruth.count(feature_name) > 0);
+    ASSERT_TRUE(ngldm_regression_gtruth.count(feature_name) > 0);
 
     double total = 0;
 
@@ -229,7 +254,7 @@ void test_ibsi_ngldm_feature (const Feature2D& feature_, const std::string& feat
 
     // Verdict
     double aveTotal = total / 4.0;
-    ASSERT_TRUE(agrees_gt(aveTotal, ibsi_ngldm_gtruth[feature_name], 2.));
+    ASSERT_TRUE(agrees_gt(aveTotal, ngldm_regression_gtruth[feature_name], 2.));
 }
 
 void test_ibsi_NGLDM_matrix_correctness_IBSI()
@@ -240,6 +265,101 @@ void test_ibsi_NGLDM_matrix_correctness_IBSI()
 void test_ibsi_NGLDM_matrix_correctness_NONIBSI()
 {
     test_ibsi_ngld_matrix_nonibsi();
+}
+
+void test_ibsi_NGLDM_LDE()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_LDE, "NGLDM_LDE");
+}
+
+void test_ibsi_NGLDM_HDE()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_HDE, "NGLDM_HDE");
+}
+
+void test_ibsi_NGLDM_LGLCE()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_LGLCE, "NGLDM_LGLCE");
+}
+
+void test_ibsi_NGLDM_HGLCE()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_HGLCE, "NGLDM_HGLCE");
+}
+
+void test_ibsi_NGLDM_LDLGLE()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_LDLGLE, "NGLDM_LDLGLE");
+}
+
+void test_ibsi_NGLDM_LDHGLE()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_LDHGLE, "NGLDM_LDHGLE");
+}
+
+void test_ibsi_NGLDM_HDLGLE()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_HDLGLE, "NGLDM_HDLGLE");
+}
+
+void test_ibsi_NGLDM_HDHGLE()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_HDHGLE, "NGLDM_HDHGLE");
+}
+
+void test_ibsi_NGLDM_GLNU()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_GLNU, "NGLDM_GLNU");
+}
+
+void test_ibsi_NGLDM_GLNUN()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_GLNUN, "NGLDM_GLNUN");
+}
+
+void test_ibsi_NGLDM_DCNU()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_DCNU, "NGLDM_DCNU");
+}
+
+void test_ibsi_NGLDM_DCNUN()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_DCNUN, "NGLDM_DCNUN");
+}
+
+void test_ibsi_NGLDM_DCP()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_DCP, "NGLDM_DCP");
+}
+
+void test_ibsi_NGLDM_GLM()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_GLM, "NGLDM_GLM");
+}
+
+void test_ibsi_NGLDM_GLV()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_GLV, "NGLDM_GLV");
+}
+
+void test_ibsi_NGLDM_DCM()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_DCM, "NGLDM_DCM");
+}
+
+void test_ibsi_NGLDM_DCV()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_DCV, "NGLDM_DCV");
+}
+
+void test_ibsi_NGLDM_DCENT()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_DCENT, "NGLDM_DCENT");
+}
+
+void test_ibsi_NGLDM_DCENE()
+{
+	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_DCENE, "NGLDM_DCENE");
 }
 
 
