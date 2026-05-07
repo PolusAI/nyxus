@@ -12,7 +12,10 @@
 #include <unordered_map> 
 
 // Digital phantom values for intensity based features
-// Calculated at 100 grey levels, offset 1, and asymmetric cooc matrix
+// Calculated at 100 grey levels, offset 1, and Nyxus's asymmetric cooc matrix
+// conventions. The JAVE/JVAR/VARIANCE family is sensitive to the stored row/column
+// roles of the non-symmetric matrix (NOT transpose-invariant!), so keep these values aligned with Nyxus's
+// current SimpleMatrix indexing semantics.
 static std::unordered_map<std::string, double> glcm_values 
 {
     {"GLCM_ACOR", 1.3401234375000004e+03},
@@ -37,14 +40,14 @@ static std::unordered_map<std::string, double> glcm_values
     {"GLCM_INFOMEAS1", -2.3913067639121394e-01},
     {"GLCM_INFOMEAS2", 5.9972197335335700e-01},
     {"GLCM_IV", 5.6216708893582570e-04},
-    {"GLCM_JAVE", 3.5266406250000000e+01},
+    {"GLCM_JAVE", 3.3014843750000004e+01},
     {"GLCM_JE", 2.2639111980622557e+00},
     {"GLCM_JMAX", 4.4713541666666670e-01},
-    {"GLCM_JVAR", 7.9056543511284720e+02},
+    {"GLCM_JVAR", 8.1856073459201370e+02},
     {"GLCM_SUMAVERAGE", 6.8281250000000000e+01},
     {"GLCM_SUMENTROPY", 1.9554838705137936e+00},
     {"GLCM_SUMVARIANCE", 1.5639042057291665e+03},
-    {"GLCM_VARIANCE", 7.9056543511284720e+02}
+    {"GLCM_VARIANCE", 6.8579787868923610e+02}
 };
 
 static std::string glcm_truth_key(const std::string& feature_name)
