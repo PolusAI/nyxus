@@ -80,6 +80,13 @@ int main (int argc, char** argv)
 
 		// Process the image data
 		int errorCode = 0;
+		// Feature maps mode outputs spatial arrays and is only supported via the Python API
+		if (env.fmaps_mode)
+		{
+			std::cerr << "Error: feature maps (fmaps) mode is only supported via the Python API.\n";
+			return 1;
+		}
+
 		if (env.singleROI)
 		{
 			errorCode = processDataset_2D_wholeslide(
@@ -180,7 +187,15 @@ int main (int argc, char** argv)
 					return 1;
 				}
 
-				int errorCode = processDataset_3D_segmented(
+				int errorCode = 0;
+				// Feature maps mode outputs spatial arrays and is only supported via the Python API
+				if (env.fmaps_mode)
+				{
+					std::cerr << "Error: feature maps (fmaps) mode is only supported via the Python API.\n";
+					return 1;
+				}
+
+				errorCode = processDataset_3D_segmented(
 					env,
 					intensFiles,
 					labelFiles,

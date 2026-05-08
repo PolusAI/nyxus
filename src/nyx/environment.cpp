@@ -474,6 +474,9 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			|| find_string_argument(i, clo_RESULTFNAME, nyxus_result_fname)
 			|| find_string_argument(i, clo_CLI_DIM, raw_dim)
 
+			|| find_string_argument(i, clo_FMAPS, raw_fmaps)
+			|| find_string_argument(i, clo_FMAPS_RADIUS, raw_fmaps_radius)
+
 #ifdef CHECKTIMING
 			|| find_string_argument(i, clo_EXCLUSIVETIMING, rawExclusiveTiming)
 #endif
@@ -898,6 +901,27 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	else
 	{
 		ibsi_compliance = false;
+	}
+
+	//==== Parse feature maps options
+	// --fmaps: enable/disable sliding-kernel feature extraction
+	if (!raw_fmaps.empty())
+	{
+		std::string tmp = raw_fmaps;
+		std::transform(tmp.begin(), tmp.end(), tmp.begin(), ::tolower);
+		fmaps_mode = (tmp == "true" || tmp == "1" || tmp == "on");
+	}
+
+	// --fmaps_radius: kernel half-width (full kernel size = 2*radius+1)
+	if (!raw_fmaps_radius.empty())
+	{
+		int r = 0;
+		if (sscanf(raw_fmaps_radius.c_str(), "%d", &r) != 1 || r < 1)
+		{
+			std::cerr << "Error: " << clo_FMAPS_RADIUS << "=" << raw_fmaps_radius << ": expecting an integer >= 1\n";
+			return false;
+		}
+		fmaps_kernel_radius = r;
 	}
 
 	// Success

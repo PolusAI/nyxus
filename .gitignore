@@ -562,3 +562,13 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 .DS_Store
+
+# CMake build artifacts (when cmake runs in the repo root)
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Test output files
+*.arrow
+*.parquet

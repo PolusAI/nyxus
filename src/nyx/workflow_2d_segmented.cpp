@@ -166,11 +166,12 @@ namespace Nyxus
 		const SaveOption saveOption,
 		const std::string& outputPath)
 	{
+		reset_csv_header_state();
 
 #ifdef CHECKTIMING
 		if (Stopwatch::inclusive())
 			Stopwatch::reset();
-#endif		
+#endif
 
 		//********************** prescan ***********************
 
