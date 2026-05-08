@@ -144,7 +144,7 @@ private:
 		PixIntens max_val,
 		bool normalize);
 
-	void extract_texture_features_at_angle (int dx, int dy, int dz, const SimpleCube<PixIntens> & grays, PixIntens min_val, PixIntens max_val, int n_greys, bool ibsi, double soft_nan);
+	void extract_texture_features_at_angle (int dx, int dy, int dz, const SimpleCube<PixIntens> & grays, PixIntens min_val, PixIntens max_val, int n_greys, bool ibsi, BinningOrigin binOrigin, double soft_nan);
 
 	void calculateCoocMatAtAngle(
 		// out
@@ -157,7 +157,8 @@ private:
 		PixIntens min_val,
 		PixIntens max_val,
 		int n_greys,
-		bool ibsi);
+		bool ibsi,
+		BinningOrigin binOrigin);
 
 	void calculatePxpmy();
 	void calculate_by_row_mean();

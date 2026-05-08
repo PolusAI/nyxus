@@ -69,15 +69,17 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 	auto greyInfo_localFeature = D3_GLDZM_feature::n_levels;
 	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
 		greyInfo = greyInfo_localFeature;
-	if (STNGS_IBSI(s))	// former Nyxus::theEnvironment.ibsi_compliance
+	auto binOrigin = STNGS_BINNING_ORIGIN(s);	// zero-based (Nyxus/MATLAB) or min-based (PyRadiomics)
+	bool ibsi = STNGS_IBSI(s);
+	if (ibsi)
 		greyInfo = 0;
 
 	auto& imR = r.aux_image_cube;
-	bin_intensities_3d (D, imR, r.aux_min, r.aux_max, greyInfo);
+	bin_intensities_3d (D, imR, r.aux_min, r.aux_max, greyInfo, binOrigin);
 
 	// allocate intensities matrix
 	std::vector<PixIntens> I;
-	if (ibsi_grey_binning(greyInfo))
+	if (ibsi)
 	{
 		auto n_ibsi_levels = *std::max_element(D.begin(), D.end());
 		I.resize(n_ibsi_levels);
@@ -106,7 +108,7 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 				continue;
 
 			// Skip 0-intensity pixels (usually out of mask pixels)
-			if (ibsi_grey_binning(greyInfo))
+			if (ibsi)
 				if (inten == 0)
 					continue;
 

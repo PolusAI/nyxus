@@ -101,7 +101,8 @@ void test_compat_3glszm_feature (const Nyxus::Feature3D& expecting_fcode, const 
 
     // (4) GLCM-specific feature settings mocking default pyRadiomics settings
 
-    s[(int)NyxSetting::GLSZM_GREYDEPTH].ival = -20;  // intentionally negative to activate radiomics binCount-based grey-binning
+    s[(int)NyxSetting::GLSZM_GREYDEPTH].ival = 20;
+    s[(int)NyxSetting::BINNING_ORIGIN].ival = static_cast<int>(BinningOrigin::min_based);
 
     // (5) feature extraction
 

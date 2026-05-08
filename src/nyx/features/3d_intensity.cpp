@@ -17,31 +17,6 @@ D3_VoxelIntensityFeatures::D3_VoxelIntensityFeatures() : FeatureMethod("PixelInt
 	provide_features ({D3_VoxelIntensityFeatures::featureset});
 }
 
-bool matlab_grey_binning (int greybinning_info) { return greybinning_info > 0; }
-bool radiomics_grey_binning (int greybinning_info) { return greybinning_info < 0; }
-// returns 1-based bin indices
-PixIntens to_grayscale_radiomix(PixIntens x, PixIntens min__, PixIntens max__, int binCount)
-{
-	if (x)
-	{
-		double binW = double(max__ - min__) / double(binCount);
-		PixIntens y = (PixIntens)(double(x - min__) / binW + 1);
-		if (y > binCount)
-			y = binCount;	// the last bin is +1 unit wider
-		return y;
-	}
-	else
-		return 0;
-}
-
-void bin_intensities_3d (std::vector <Pixel3> &S, const std::vector <Pixel3> &I, PixIntens min_I_inten, PixIntens max_I_inten, int greybin_info)
-{
-	// radiomics binning
-	auto n = I.size();
-	for (size_t i = 0; i < n; i++)
-		S[i].inten = to_grayscale_radiomix (I[i].inten, min_I_inten, max_I_inten, std::abs(greybin_info));
-}
-
 void D3_VoxelIntensityFeatures::calculate (LR &r, const Fsettings& s, const Dataset &ds)
 {
 	// bin intensities

@@ -31,11 +31,30 @@
 #include "test_compat_3d_ngtdm.h"
 #include "test_compat_3d_glrlm.h"
 #include "test_compat_3d_glszm.h"
+#include "test_binning_origin.h"
 #ifdef USE_ARROW
     #include "test_arrow.h"
     #include "test_arrow_file_name.h"
 #endif
 
+
+//***** Binning origin *****
+
+TEST(TEST_NYXUS, TEST_BIN_PIXEL_ZERO_ORIGIN) {
+	ASSERT_NO_THROW(Nyxus::test_bin_pixel_zero_origin());
+}
+
+TEST(TEST_NYXUS, TEST_BIN_PIXEL_MIN_ORIGIN) {
+	ASSERT_NO_THROW(Nyxus::test_bin_pixel_min_origin());
+}
+
+TEST(TEST_NYXUS, TEST_GLCM_BINNING_ORIGIN_DIVERGENCE) {
+	ASSERT_NO_THROW(Nyxus::test_glcm_binning_origin_divergence());
+}
+
+TEST(TEST_NYXUS, TEST_NGTDM_BINNING_ORIGIN_DIVERGENCE) {
+	ASSERT_NO_THROW(Nyxus::test_ngtdm_binning_origin_divergence());
+}
 
 //***** 2D contour and multicontour *****
 

@@ -40,20 +40,22 @@ void NGTDMFeature::calculate (LR& r, const Fsettings& s)
 	pixData& D = M.WriteablePixels();
 	auto& imR = r.aux_image_matrix.ReadablePixels();
 
-	// bin intensities		
+	// bin intensities
 	auto greyInfo = STNGS_NGREYS(s); // former theEnvironment.get_coarse_gray_depth()
 	auto greyInfo_localFeature = NGTDMFeature::n_levels;
 	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
 		greyInfo = greyInfo_localFeature;
-	if (STNGS_IBSI(s))		// fomer Nyxus::theEnvironment.ibsi_compliance
+	auto binOrigin = STNGS_BINNING_ORIGIN(s);	// zero-based (Nyxus/MATLAB) or min-based (PyRadiomics)
+	bool ibsi = STNGS_IBSI(s);
+	if (ibsi)
 		greyInfo = 0;
-	bin_intensities (D, imR, r.aux_min, r.aux_max, greyInfo);
+	bin_intensities (D, imR, r.aux_min, r.aux_max, greyInfo, binOrigin);
 
 	// unique intensities
 	std::unordered_set<PixIntens> U (D.begin(), D.end());
 	U.erase(0);	// discard intensity '0'
 
-	if (ibsi_grey_binning(greyInfo))
+	if (ibsi)
 	{
 		// intensities 0-max
 		auto max_I = *std::max_element(U.begin(), U.end());

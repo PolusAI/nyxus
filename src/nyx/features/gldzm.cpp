@@ -50,7 +50,7 @@ void GLDZMFeature::calc_gldzm_matrix (SimpleMatrix<unsigned int> & GLDZM, const 
 	}
 }
 
-void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, int& Ng, int& Nd, std::vector<PixIntens>& greysLUT, LR& r, int n_greys, bool ibsi)
+void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, int& Ng, int& Nd, std::vector<PixIntens>& greysLUT, LR& r, int n_greys, bool ibsi, BinningOrigin binOrigin)
 {
 	//==== Compose the distance matrix
 
@@ -69,11 +69,11 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 		greyInfo = 0;
 
 	auto& imR = r.aux_image_matrix.ReadablePixels();
-	bin_intensities (D, imR, r.aux_min, r.aux_max, greyInfo);
+	bin_intensities (D, imR, r.aux_min, r.aux_max, greyInfo, binOrigin);
 
 	// allocate intensities matrix
 	std::vector<PixIntens> I;
-	if (ibsi_grey_binning(greyInfo))
+	if (ibsi)
 	{
 		auto n_ibsi_levels = *std::max_element(D.begin(), D.end());
 		I.resize(n_ibsi_levels);
@@ -101,7 +101,7 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 				continue;
 
 			// Skip 0-intensity pixels (usually out of mask pixels)
-			if (ibsi_grey_binning(greyInfo))
+			if (ibsi)
 				if (inten == 0)
 					continue;
 
@@ -293,7 +293,7 @@ void GLDZMFeature::calculate (LR& r, const Fsettings& s)
 	SimpleMatrix<unsigned int> GLDZM;
 	int Ng,	// number of grey levels
 		Nd;	// maximum number of non-zero dependencies
-	prepare_GLDZM_matrix_kit (GLDZM, Ng, Nd, greyLevelsLUT, r, STNGS_NGREYS(s), STNGS_IBSI(s));
+	prepare_GLDZM_matrix_kit (GLDZM, Ng, Nd, greyLevelsLUT, r, STNGS_NGREYS(s), STNGS_IBSI(s), STNGS_BINNING_ORIGIN(s));
 
 	//==== Calculate vectors of totals by intensity (Mx) and by distance (Md)
 	std::vector<double> Mx, Md;

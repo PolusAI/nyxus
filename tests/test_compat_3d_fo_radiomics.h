@@ -111,7 +111,8 @@ void test_compat_radiomics_3fo_feature (const Nyxus::Feature3D &expected_fcode, 
     s[(int)NyxSetting::SOFTNAN].rval = 0.0;
     s[(int)NyxSetting::TINY].rval = 0.0;
     s[(int)NyxSetting::SINGLEROI].bval = false;
-    s[(int)NyxSetting::GREYDEPTH].ival = -20;   // intentionally negative to activate radiomics binCount-based grey-binning
+    s[(int)NyxSetting::GREYDEPTH].ival = 20;
+    s[(int)NyxSetting::BINNING_ORIGIN].ival = static_cast<int>(BinningOrigin::min_based);
     s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
     s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
     s[(int)NyxSetting::USEGPU].bval = false;

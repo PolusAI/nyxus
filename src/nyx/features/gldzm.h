@@ -50,7 +50,7 @@ public:
 	static bool required(const FeatureSet& fs) { return fs.anyEnabled (GLDZMFeature::featureset); }
 
 	// Calculates the GLDZ-matrix, its dimensions, and a vector of sorted grey levels
-	void prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, int& Ng, int& Nd, std::vector<PixIntens>& greyLevelsLUT, LR& r, int n_greys, bool ibsi);
+	void prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, int& Ng, int& Nd, std::vector<PixIntens>& greyLevelsLUT, LR& r, int n_greys, bool ibsi, BinningOrigin binOrigin);
 
 	static int n_levels; // default value: 0
 

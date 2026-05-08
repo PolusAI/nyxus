@@ -699,6 +699,7 @@ void Environment::compile_feature_settings()
 			s[(int)NyxSetting::USEGPU].bval = using_gpu();
 			s[(int)NyxSetting::VERBOSLVL].ival = get_verbosity_level();
 			s[(int)NyxSetting::IBSI].bval = ibsi_compliance;
+			s[(int)NyxSetting::BINNING_ORIGIN].ival = static_cast<int>(get_binning_origin());	// propagate binning origin to per-feature settings
 		}
 }
 

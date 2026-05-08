@@ -9,7 +9,7 @@
 #
 
 BUILD_Z5_DEP=1
-BULD_DCMTK_DEP=1
+BUILD_DCMTK_DEP=1
 BUILD_ARROW_DEP=0
 BUILD_BOOST_DEP=1
 
@@ -24,7 +24,7 @@ done
 
 if [[ "${min_build,,}" == "yes" ]]; then
     BUILD_Z5_DEP=0
-    BULD_DCMTK_DEP=0
+    BUILD_DCMTK_DEP=0
     BUILD_ARROW_DEP=0
     BUILD_BOOST_DEP=0
 fi
@@ -152,7 +152,7 @@ cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=.
 make install -j4
 cd ../../
 
-if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
+if [[ $BUILD_DCMTK_DEP -eq 1 ]]; then
     curl -L  https://github.com/glennrp/libpng/archive/refs/tags/v1.6.53.zip -o v1.6.53.zip
     unzip v1.6.53.zip
     cd libpng-1.6.53
@@ -202,7 +202,7 @@ fi
 make install -j4
 cd ../../
 
-if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
+if [[ $BUILD_DCMTK_DEP -eq 1 ]]; then
     curl -L https://github.com/DCMTK/dcmtk/archive/refs/tags/DCMTK-3.6.9.zip -o DCMTK-3.6.9.zip
     unzip DCMTK-3.6.9.zip
     cd dcmtk-DCMTK-3.6.9/CMake

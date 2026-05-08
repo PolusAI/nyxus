@@ -116,13 +116,13 @@ public:
     {
     }
 
-    uint32_t get_uint32_pixel (size_t idx) const
+        uint32_t get_uint32_pixel (size_t idx) const override
     {
         uint32_t rv = dest[idx];
         return rv;
     }
 
-    double get_dpequiv_pixel (size_t idx) const
+    double get_dpequiv_pixel (size_t idx) const override
     {
         double rv = (double) dest[idx];
         return rv;    
