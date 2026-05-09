@@ -311,7 +311,7 @@ void D3_SurfaceFeature::build_surface (LR & r)
 	{
 		const auto & V = f.vertices_;
 		auto ax = (*V[0])[0], ay = (*V[0])[1], az = (*V[0])[2];
-		auto bx = (*V[1])[0], by = (*V[1])[1], bz = (*V[2])[2];
+		auto bx = (*V[1])[0], by = (*V[1])[1], bz = (*V[1])[2];
 		auto cx = (*V[2])[0], cy = (*V[2])[1], cz = (*V[2])[2];
 		float a[3] = { ax, ay, az }, b[3] = { bx, by, bz }, c[3] = {cx, cy, cz};
 		Simplex3 s(a, b, c);
@@ -392,29 +392,48 @@ void D3_SurfaceFeature::calculate (LR& r, const Fsettings& s)
 		r.contours_3D.push_back (K);
 	}
 
+	// surface area: count exposed voxel faces in the 6-neighborhood
+	struct VoxelKey
+	{
+		StatsInt x, y, z;
+		bool operator==(const VoxelKey& other) const
+		{
+			return x == other.x && y == other.y && z == other.z;
+		}
+	};
+	struct VoxelKeyHash
+	{
+		std::size_t operator()(const VoxelKey& key) const noexcept
+		{
+			std::size_t h = std::hash<StatsInt>{}(key.x);
+			h ^= std::hash<StatsInt>{}(key.y) + 0x9e3779b9 + (h << 6) + (h >> 2);
+			h ^= std::hash<StatsInt>{}(key.z) + 0x9e3779b9 + (h << 6) + (h >> 2);
+			return h;
+		}
+	};
+	std::unordered_set<VoxelKey, VoxelKeyHash> voxels;
+	voxels.reserve(r.raw_pixels_3D.size() * 2);
+	for (const auto& vox : r.raw_pixels_3D)
+		voxels.insert({ vox.x, vox.y, vox.z });
+
+	static constexpr StatsInt nbr[6][3] = {
+		{ 1, 0, 0 }, { -1, 0, 0 },
+		{ 0, 1, 0 }, { 0, -1, 0 },
+		{ 0, 0, 1 }, { 0, 0, -1 }
+	};
+
+	fval_AREA = 0.0;
+	for (const auto& vox : r.raw_pixels_3D)
+	{
+		for (const auto& d : nbr)
+		{
+			if (voxels.find({ vox.x + d[0], vox.y + d[1], vox.z + d[2] }) == voxels.end())
+				fval_AREA += 1.0;
+		}
+	}
+
 	// -- build the hull complex
 	build_surface (r);
-
-	// -- features
-	fval_AREA = 0;
-	for (const auto& s : hull_complex)
-	{
-		// layout: x:[0], y:[1], z:[2]
-		double AB[3] = { s.b[0] - s.a[0], s.b[1] - s.a[1], s.b[2] - s.a[2] },
-			AC[3] = { s.c[0] - s.a[0], s.c[1] - s.a[1], s.c[2] - s.a[2] };
-
-		// AB x AC = 
-		// 
-		//	|	i		j		k		|
-		//	|	ABx	ABy	ABz	| = 
-		// |	ACx	ACy	ACz	|
-		// 
-		//	= i * (ABy*ACz - ABz*ACy) -j * (ABx*ACz - ABz*ACx) + k * (ABx*ACy - ABy*ACx)
-		double i = AB[1] * AC[2] - AB[2] * AC[1], j = -(AB[0] * AC[2] - AB[2] * AC[0]), k = AB[0] * AC[1] - AB[1] * AC[0];
-		double mag = i * i + j * j + k * k;
-
-		fval_AREA += std::sqrt(mag) / 2.0;
-	}
 
 	// convex hull volume
 

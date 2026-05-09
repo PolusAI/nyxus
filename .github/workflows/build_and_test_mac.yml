@@ -16,7 +16,7 @@ env:
 jobs:
   Build_and_Run_GTest:
     name: Build and Run GoogleTest
-    runs-on: macos-15-intel
+    runs-on: macos-14
     defaults:
       run:
         shell: bash -el {0}
@@ -32,12 +32,13 @@ jobs:
           miniconda-version: "latest"
           python-version: "3.10"
           channels: conda-forge
+          channel-priority: strict
           auto-activate-base: false
 
       - name: Install Conda Dependencies
         run: |
           conda install -y mamba
-          mamba install -y compilers --file "${{ github.workspace }}/ci-utils/envs/conda_cpp.txt"
+          mamba install -y compilers --file "${{ github.workspace }}/ci-utils/envs/conda_cpp_mac.txt"
 
       - name: Configure CMake
         run: >
@@ -58,7 +59,7 @@ jobs:
 
   Build_and_Run_PyTest:
     name: Build and Run PyTest
-    runs-on: macos-15-intel
+    runs-on: macos-14
     defaults:
       run:
         shell: bash -el {0}
@@ -74,13 +75,14 @@ jobs:
           miniconda-version: "latest"
           python-version: "3.10"
           channels: conda-forge
+          channel-priority: strict
           auto-activate-base: false
 
       - name: Install Conda Dependencies
         run: |
           conda install -y mamba
           mamba install -y compilers pytest bfio \
-            --file "${{ github.workspace }}/ci-utils/envs/conda_cpp.txt" \
+            --file "${{ github.workspace }}/ci-utils/envs/conda_cpp_mac.txt" \
             --file "${{ github.workspace }}/ci-utils/envs/conda_py.txt"
 
       - name: Install Nyxus
