@@ -249,6 +249,50 @@ const static int ibsi_fig3_17c_gldzm_ground_truth[] =
 	1, 1
 };
 
+//
+// Synthetic 2D ROI for shape and morphology regression coverage.
+// The mask defines a single irregular concave ROI; the intensity image
+// adds an asymmetric gradient so weighted-centroid and edge-intensity
+// features have non-trivial values.
+//
+
+const static NyxusPixel shape2d_morphology_intensity[] = {
+	{0, 0, 0}, {1, 0, 0}, {2, 0, 12}, {3, 0, 14}, {4, 0, 0}, {5, 0, 0}, {6, 0, 0}, {7, 0, 0},
+	{0, 1, 0}, {1, 1, 18}, {2, 1, 20}, {3, 1, 24}, {4, 1, 26}, {5, 1, 0}, {6, 1, 0}, {7, 1, 0},
+	{0, 2, 30}, {1, 2, 32}, {2, 2, 35}, {3, 2, 38}, {4, 2, 42}, {5, 2, 45}, {6, 2, 0}, {7, 2, 0},
+	{0, 3, 34}, {1, 3, 37}, {2, 3, 40}, {3, 3, 0}, {4, 3, 48}, {5, 3, 52}, {6, 3, 0}, {7, 3, 0},
+	{0, 4, 0}, {1, 4, 44}, {2, 4, 47}, {3, 4, 51}, {4, 4, 55}, {5, 4, 0}, {6, 4, 0}, {7, 4, 0},
+	{0, 5, 0}, {1, 5, 0}, {2, 5, 53}, {3, 5, 58}, {4, 5, 62}, {5, 5, 0}, {6, 5, 0}, {7, 5, 0},
+	{0, 6, 0}, {1, 6, 0}, {2, 6, 0}, {3, 6, 63}, {4, 6, 68}, {5, 6, 0}, {6, 6, 0}, {7, 6, 0},
+	{0, 7, 0}, {1, 7, 0}, {2, 7, 0}, {3, 7, 0}, {4, 7, 0}, {5, 7, 0}, {6, 7, 0}, {7, 7, 0}
+};
+
+const static NyxusPixel shape2d_morphology_mask[] = {
+	{0, 0, 0}, {1, 0, 0}, {2, 0, 1}, {3, 0, 1}, {4, 0, 0}, {5, 0, 0}, {6, 0, 0}, {7, 0, 0},
+	{0, 1, 0}, {1, 1, 1}, {2, 1, 1}, {3, 1, 1}, {4, 1, 1}, {5, 1, 0}, {6, 1, 0}, {7, 1, 0},
+	{0, 2, 1}, {1, 2, 1}, {2, 2, 1}, {3, 2, 1}, {4, 2, 1}, {5, 2, 1}, {6, 2, 0}, {7, 2, 0},
+	{0, 3, 1}, {1, 3, 1}, {2, 3, 1}, {3, 3, 0}, {4, 3, 1}, {5, 3, 1}, {6, 3, 0}, {7, 3, 0},
+	{0, 4, 0}, {1, 4, 1}, {2, 4, 1}, {3, 4, 1}, {4, 4, 1}, {5, 4, 0}, {6, 4, 0}, {7, 4, 0},
+	{0, 5, 0}, {1, 5, 0}, {2, 5, 1}, {3, 5, 1}, {4, 5, 1}, {5, 5, 0}, {6, 5, 0}, {7, 5, 0},
+	{0, 6, 0}, {1, 6, 0}, {2, 6, 0}, {3, 6, 1}, {4, 6, 1}, {5, 6, 0}, {6, 6, 0}, {7, 6, 0},
+	{0, 7, 0}, {1, 7, 0}, {2, 7, 0}, {3, 7, 0}, {4, 7, 0}, {5, 7, 0}, {6, 7, 0}, {7, 7, 0}
+};
+
+//
+// Synthetic multi-label 2D scene for neighborhood/touching regression coverage.
+// Labels are stored in the intensity slot and represent five ROIs:
+// a central 3x3 ROI with left/top/right/bottom neighbors at a 1-pixel
+// contour distance.
+//
+
+const static NyxusPixel neighborhood2d_scene_labels[] = {
+	{4, 2, 3}, {5, 2, 3}, {4, 3, 3}, {5, 3, 3},
+	{2, 4, 2}, {3, 4, 2}, {4, 4, 1}, {5, 4, 1}, {6, 4, 1}, {7, 4, 4}, {8, 4, 4},
+	{2, 5, 2}, {3, 5, 2}, {4, 5, 1}, {5, 5, 1}, {6, 5, 1}, {7, 5, 4}, {8, 5, 4},
+	{4, 6, 1}, {5, 6, 1}, {6, 6, 1}, {7, 6, 4}, {8, 6, 4},
+	{5, 7, 5}, {6, 7, 5}, {5, 8, 5}, {6, 8, 5}
+};
+
 // Phantom for ROI perimeter feature calculation - nonzero pixels of ROI mask generated in Matlab as:
 // BW_noholes = imfill(imread('circles.png', 'holes'))
 const static NyxusPixel roiDataForPerimeterTest[] = {
