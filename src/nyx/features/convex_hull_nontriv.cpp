@@ -1,4 +1,5 @@
 #define _USE_MATH_DEFINES	// For M_PI, etc.
+#include <algorithm>
 #include <cmath>
 #include "../dataset.h"
 #include "../feature_method.h"
@@ -51,33 +52,39 @@ void ConvexHullFeature::build_convex_hull (const std::vector<Pixel2>& cloud, std
 	std::vector<Pixel2>& upperCH = convhull;
 	std::vector<Pixel2> lowerCH;
 
-	size_t n = cloud.size();
-	
-	//	No need to sort pixels because we accumulate them in a raster pattern without multithreading//
-	//	std::vector<Pixel2> cloud = roi_cloud;	// Safely copy the ROI for fear of changing the original pixels order
-	//	std::sort (cloud.begin(), cloud.end(), compare_locations);
-	//
+	// Monotonic-chain hull construction requires x/y-sorted input.
+	// Avoid copying/sorting when the ingestion path already provides it.
+	const std::vector<Pixel2>* orderedCloud = &cloud;
+	std::vector<Pixel2> sortedCloud;
+	if (!std::is_sorted(cloud.begin(), cloud.end(), compare_locations))
+	{
+		sortedCloud = cloud;
+		std::sort(sortedCloud.begin(), sortedCloud.end(), compare_locations);
+		orderedCloud = &sortedCloud;
+	}
+	const std::vector<Pixel2>& ordered = *orderedCloud;
+	size_t n = ordered.size();
 
 	// Computing upper convex hull
-	upperCH.push_back (cloud[0]);
-	upperCH.push_back (cloud[1]);
+	upperCH.push_back (ordered[0]);
+	upperCH.push_back (ordered[1]);
 
 	for (size_t i = 2; i < n; i++)
 	{
-		while (upperCH.size() > 1 && (!right_turn(upperCH[upperCH.size() - 2], upperCH[upperCH.size() - 1], cloud[i])))
+		while (upperCH.size() > 1 && (!right_turn(upperCH[upperCH.size() - 2], upperCH[upperCH.size() - 1], ordered[i])))
 			upperCH.pop_back();
-		upperCH.push_back(cloud[i]);
+		upperCH.push_back(ordered[i]);
 	}
 
 	// Computing lower convex hull
-	lowerCH.push_back(cloud[n - 1]);
-	lowerCH.push_back(cloud[n - 2]);
+	lowerCH.push_back(ordered[n - 1]);
+	lowerCH.push_back(ordered[n - 2]);
 
 	for (size_t i = 2; i < n; i++)
 	{
-		while (lowerCH.size() > 1 && (!right_turn(lowerCH[lowerCH.size() - 2], lowerCH[lowerCH.size() - 1], cloud[n - i - 1])))
+		while (lowerCH.size() > 1 && (!right_turn(lowerCH[lowerCH.size() - 2], lowerCH[lowerCH.size() - 1], ordered[n - i - 1])))
 			lowerCH.pop_back();
-		lowerCH.push_back(cloud[n - i - 1]);
+		lowerCH.push_back(ordered[n - i - 1]);
 	}
 
 	// We could use 
@@ -99,34 +106,43 @@ void ConvexHullFeature::build_convex_hull (const OutOfRamPixelCloud& cloud, std:
 	std::vector<Pixel2>& upperCH = convhull;
 	std::vector<Pixel2> lowerCH;
 
-	size_t n = cloud.size();
-
-//
-//	No need to sort pixels because we accumulate them in a raster pattern without multithreading
-//	std::vector<Pixel2> cloud = roi_cloud;	// Safely copy the ROI for fear of changing the original pixels order
-//	std::sort(cloud.begin(), cloud.end(), compare_locations);
-//
+	// Monotonic-chain hull construction requires x/y-sorted input.
+	// We must materialize out-of-RAM pixels, but can still skip sorting
+	// when their storage order is already monotonic.
+	std::vector<Pixel2> orderedCloud;
+	orderedCloud.reserve(cloud.size());
+	bool alreadySorted = true;
+	for (size_t i = 0; i < cloud.size(); ++i)
+	{
+		Pixel2 px = cloud.get_at(i);
+		if (!orderedCloud.empty() && compare_locations(px, orderedCloud.back()))
+			alreadySorted = false;
+		orderedCloud.push_back(px);
+	}
+	if (!alreadySorted)
+		std::sort(orderedCloud.begin(), orderedCloud.end(), compare_locations);
+	size_t n = orderedCloud.size();
  
 	// Computing upper convex hull
-	upperCH.push_back(cloud[0]);
-	upperCH.push_back(cloud[1]);
+	upperCH.push_back(orderedCloud[0]);
+	upperCH.push_back(orderedCloud[1]);
 
 	for (size_t i = 2; i < n; i++)
 	{
-		while (upperCH.size() > 1 && (!right_turn(upperCH[upperCH.size() - 2], upperCH[upperCH.size() - 1], cloud[i])))
+		while (upperCH.size() > 1 && (!right_turn(upperCH[upperCH.size() - 2], upperCH[upperCH.size() - 1], orderedCloud[i])))
 			upperCH.pop_back();
-		upperCH.push_back(cloud[i]);
+		upperCH.push_back(orderedCloud[i]);
 	}
 
 	// Computing lower convex hull
-	lowerCH.push_back(cloud[n-1]);
-	lowerCH.push_back(cloud[n-2]);
+	lowerCH.push_back(orderedCloud[n-1]);
+	lowerCH.push_back(orderedCloud[n-2]);
 
 	for (size_t i = 2; i < n; i++)
 	{
-		while (lowerCH.size() > 1 && (!right_turn(lowerCH[lowerCH.size() - 2], lowerCH[lowerCH.size() - 1], cloud[n - i - 1])))
+		while (lowerCH.size() > 1 && (!right_turn(lowerCH[lowerCH.size() - 2], lowerCH[lowerCH.size() - 1], orderedCloud[n - i - 1])))
 			lowerCH.pop_back();
-		lowerCH.push_back(cloud[n - i - 1]);
+		lowerCH.push_back(orderedCloud[n - i - 1]);
 	}
 
 	// We could use 

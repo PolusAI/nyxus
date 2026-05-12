@@ -5,6 +5,8 @@
 #include "test_contour.h"
 #include "test_pixel_intensity_features.h"
 #include "test_morphology_features.h"
+#include "test_shape_morphology_2d.h"
+#include "test_neighbors_2d.h"
 #include "test_initialization.h"
 #include "test_ibsi_glcm.h"
 #include "test_ibsi_gldm.h"
@@ -832,6 +834,51 @@ TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_COVERED_IMAGE_INTENSITY_RANGE)
 TEST(TEST_NYXUS, TEST_MORPHOLOGY_PERIMETER) 
 {
 	ASSERT_NO_THROW(test_morphology_perimeter());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_BASIC_MORPHOLOGY_FEATURES)
+{
+	ASSERT_NO_THROW(test_shape2d_basic_morphology_features());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_ELLIPSE_FEATURES)
+{
+	ASSERT_NO_THROW(test_shape2d_ellipse_features());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_CONTOUR_FEATURES)
+{
+	ASSERT_NO_THROW(test_shape2d_contour_features());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_CONVEX_HULL_FEATURES)
+{
+	ASSERT_NO_THROW(test_shape2d_convex_hull_features());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_EXTREMA_FEATURES)
+{
+	ASSERT_NO_THROW(test_shape2d_extrema_features());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_MISC_FEATURES)
+{
+	ASSERT_NO_THROW(test_shape2d_misc_shape_features());
+}
+
+TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_COUNTS_TOUCHING)
+{
+	ASSERT_NO_THROW(test_neighborhood2d_counts_and_touching());
+}
+
+TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_CLOSEST_NEIGHBORS)
+{
+	ASSERT_NO_THROW(test_neighborhood2d_closest_neighbors());
+}
+
+TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_ANGLE_STATS)
+{
+	ASSERT_NO_THROW(test_neighborhood2d_neighbor_angle_stats());
 }
 
 
