@@ -577,6 +577,7 @@ jobs:
             CMAKE_CXX_COMPILER="$CXX"
             CXXFLAGS="-isysroot $SDKROOT -stdlib=libc++ -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET"
             LDFLAGS="-isysroot $SDKROOT -lc++ -lc++abi -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET"
+            PIP_ONLY_BINARY="imagecodecs"
             ARROW_HAVE_LIBATOMIC=OFF
             REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64"
             NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"

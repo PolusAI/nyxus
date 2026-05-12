@@ -99,7 +99,7 @@ void BasicMorphologyFeatures::calculate (LR& r, const Fsettings& sett)
 	val_EXTENT = n / r.aabb.get_area();
 
 	//==== Basic morphology :: Aspect ratio
-	val_ASPECT_RATIO = r.aabb.get_width() / r.aabb.get_height();
+	val_ASPECT_RATIO = static_cast<double>(r.aabb.get_width()) / static_cast<double>(r.aabb.get_height());
 }
 
 void BasicMorphologyFeatures::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} // Not providing online calculation for these group of features
@@ -192,7 +192,7 @@ void BasicMorphologyFeatures::osized_calculate (LR& r, const Fsettings& s, Image
 	val_EXTENT = n / r.aabb.get_area();
 
 	//==== Basic morphology :: Aspect ratio
-	val_ASPECT_RATIO = r.aabb.get_width() / r.aabb.get_height();
+	val_ASPECT_RATIO = static_cast<double>(r.aabb.get_width()) / static_cast<double>(r.aabb.get_height());
 }
 
 void BasicMorphologyFeatures::save_value(std::vector<std::vector<double>>& fvals)

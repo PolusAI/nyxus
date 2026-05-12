@@ -1,4 +1,5 @@
 #define _USE_MATH_DEFINES	// For M_PI, etc.
+#include <array>
 #include <cmath>
 #include <memory>
 #include <unordered_map>
@@ -8,11 +9,23 @@
 #include <chrono>
 #include <thread>
 #include <future>
+#include <limits>
 #include "../globals.h"
 #include "../environment.h"
 #include "neighbors.h"
 
 using namespace Nyxus;
+
+namespace
+{
+	double direction_angle_deg(double x1, double y1, double x2, double y2)
+	{
+		double ang = std::atan2(y2 - y1, x2 - x1) * 180.0 / M_PI;
+		if (ang < 0.0)
+			ang += 360.0;
+		return ang;
+	}
+}
 
 bool NeighborsFeature::required(const FeatureSet& fs)
 {
@@ -117,7 +130,18 @@ void NeighborsFeature::manual_reduce (
 	const std::unordered_set<int> & uniqueLabels)
 {
 	int radius = STNGS_PIXELDISTANCE(s);	// former theEnvironment.get_pixel_distance()
-	int n_threads = 1; 
+	int n_threads = 1;
+	const int percentTouchingIdx = static_cast<int>(Feature2D::PERCENT_TOUCHING);
+	const int numNeighborsIdx = static_cast<int>(Feature2D::NUM_NEIGHBORS);
+	const int centroidXIdx = static_cast<int>(Feature2D::CENTROID_X);
+	const int centroidYIdx = static_cast<int>(Feature2D::CENTROID_Y);
+	const int closestNeighbor1DistIdx = static_cast<int>(Feature2D::CLOSEST_NEIGHBOR1_DIST);
+	const int closestNeighbor1AngIdx = static_cast<int>(Feature2D::CLOSEST_NEIGHBOR1_ANG);
+	const int closestNeighbor2DistIdx = static_cast<int>(Feature2D::CLOSEST_NEIGHBOR2_DIST);
+	const int closestNeighbor2AngIdx = static_cast<int>(Feature2D::CLOSEST_NEIGHBOR2_ANG);
+	const int angBetweenNeighborsMeanIdx = static_cast<int>(Feature2D::ANG_BW_NEIGHBORS_MEAN);
+	const int angBetweenNeighborsStddevIdx = static_cast<int>(Feature2D::ANG_BW_NEIGHBORS_STDDEV);
+	const int angBetweenNeighborsModeIdx = static_cast<int>(Feature2D::ANG_BW_NEIGHBORS_MODE);
 
 	//==== Collision detection, method 1 (greedy)
 	auto n_ul = uniqueLabels.size();
@@ -125,6 +149,7 @@ void NeighborsFeature::manual_reduce (
 	std::vector <int> LabsVec;
 	LabsVec.reserve (uniqueLabels.size());
 	LabsVec.insert (LabsVec.end(), uniqueLabels.begin(), uniqueLabels.end());
+	std::sort(LabsVec.begin(), LabsVec.end());
 
 	std::vector <std::pair<int, int>> CM2;
 	CM2.reserve (n_ul * n_ul / 4);	// estimate: 25% of the segment population
@@ -143,8 +168,7 @@ void NeighborsFeature::manual_reduce (
 				continue;	// No need to check the upper triangle for single-threaded runs. Multi-threaded runs require the upper triangle for thread-safe results.
 
 			LR& r2 = roiData[l2];
-			bool noOverlap = r2.aabb.get_xmin() > r1.aabb.get_xmax() || r2.aabb.get_xmax() < r1.aabb.get_xmin() 
-				|| r2.aabb.get_ymin() > r1.aabb.get_ymax() || r2.aabb.get_ymax() < r1.aabb.get_ymin() ;
+			bool noOverlap = aabbNoOverlap(r1, r2, radius);
 			if (! noOverlap)
 			{
 				CM2.push_back( {l1, l2});
@@ -237,15 +261,23 @@ void NeighborsFeature::manual_reduce (
 
 			// Iterate r1's outer pixels
 			double mind = K1[0].min_sqdist(K2);
-			size_t n_touchingOuterPixels = 0;
+			size_t n_touchingOuterPixels1 = 0;
 			for (auto& cp : K1)
 			{
 				double minD = cp.min_sqdist(K2);
 				mind = std::min(mind, minD);		//--We aren't interested in max distance-->	maxd = std::max(maxd, maxD);
 
 				// Maintain touching pixels stats
-				if (minD == 0) // (minD <= radius2)
-					n_touchingOuterPixels++;
+				if (minD <= radius2)
+					n_touchingOuterPixels1++;
+			}
+
+			size_t n_touchingOuterPixels2 = 0;
+			for (auto& cp : K2)
+			{
+				double minD = cp.min_sqdist(K1);
+				if (minD <= radius2)
+					n_touchingOuterPixels2++;
 			}
 
 			// Check versus the radius
@@ -253,26 +285,27 @@ void NeighborsFeature::manual_reduce (
 				continue;
 
 			// Save partial statis of r1's touching pixel stats
-			r1.fvals[(int)Feature2D::PERCENT_TOUCHING][0] += n_touchingOuterPixels;
+			r1.fvals[percentTouchingIdx][0] += n_touchingOuterPixels1;
+			r2.fvals[percentTouchingIdx][0] += n_touchingOuterPixels2;
 
 			// Definitely neighbors
-			r1.fvals[(int)Feature2D::NUM_NEIGHBORS][0]++;
+			r1.fvals[numNeighborsIdx][0]++;
 			r1.aux_neighboring_labels.push_back(l2);
 
 			// We're single-threaded here so it's safe to update both r1 and r2
-			r2.fvals[(int)Feature2D::NUM_NEIGHBORS][0]++;
+			r2.fvals[numNeighborsIdx][0]++;
 			r2.aux_neighboring_labels.push_back(l1);
 		}
-		for (auto pa : CM2)
+		for (auto l : uniqueLabels)
 		{
-			auto l1 = pa.first;
-			LR& r1 = roiData[l1];
+			LR& r1 = roiData[l];
 
 			std::vector<Pixel2> K1;
 			r1.merge_multicontour(K1);
 
 			// Finalize the % touching calculation
-			r1.fvals[(int)Feature2D::PERCENT_TOUCHING][0] = 100.0 * double(r1.fvals[(int)Feature2D::PERCENT_TOUCHING][0]) / double(K1.size());
+			if (!K1.empty())
+				r1.fvals[percentTouchingIdx][0] = 100.0 * static_cast<double>(r1.fvals[percentTouchingIdx][0]) / static_cast<double>(K1.size());
 		}
 	}
 	else
@@ -402,25 +435,25 @@ void NeighborsFeature::manual_reduce (
 	for (auto l : uniqueLabels)
 	{
 		LR& r = roiData[l];
-		int n_neigs = int(r.fvals[(int)Feature2D::NUM_NEIGHBORS][0]);
+		int n_neigs = static_cast<int>(r.fvals[numNeighborsIdx][0]);
 
 		// Any neighbors of this ROI ?
 		if (n_neigs == 0)
 			continue;
 
-		double cenx = r.fvals[(int)Feature2D::CENTROID_X][0],
-			ceny = r.fvals[(int)Feature2D::CENTROID_Y][0];
+		double cenx = r.fvals[centroidXIdx][0],
+			ceny = r.fvals[centroidYIdx][0];
 
 		std::vector<double> dists;
 		dists.reserve(r.aux_neighboring_labels.size());
 		for (auto l_neig : r.aux_neighboring_labels)
 		{
 			LR& r_neig = roiData[l_neig];
-			double cenx_n = r_neig.fvals[(int)Feature2D::CENTROID_X][0],
-				ceny_n = r_neig.fvals[(int)Feature2D::CENTROID_Y][0],
+			double cenx_n = r_neig.fvals[centroidXIdx][0],
+				ceny_n = r_neig.fvals[centroidYIdx][0],
 				dx = cenx - cenx_n,
 				dy = ceny - ceny_n,
-				dist = dx * dx + dy * dy;
+				dist = std::sqrt(dx * dx + dy * dy);
 			dists.push_back(dist);
 		}
 
@@ -430,62 +463,73 @@ void NeighborsFeature::manual_reduce (
 		auto closest1label = r.aux_neighboring_labels[closest_1_idx];
 
 		// Save distance to neighbor #1
-		r.fvals[(int)Feature2D::CLOSEST_NEIGHBOR1_DIST][0] = dists[closest_1_idx];
+		r.fvals[closestNeighbor1DistIdx][0] = dists[closest_1_idx];
 
 		// Save angle with neighbor #1
 		LR& r1 = roiData[closest1label];
-		r.fvals[(int)Feature2D::CLOSEST_NEIGHBOR1_ANG][0] = 180.0 * angle(cenx, ceny, r1.fvals[(int)Feature2D::CENTROID_X][0], r1.fvals[(int)Feature2D::CENTROID_X][0]);
+		r.fvals[closestNeighbor1AngIdx][0] = direction_angle_deg(cenx, ceny, r1.fvals[centroidXIdx][0], r1.fvals[centroidYIdx][0]);
 
 		// Find idx of 2nd minimum
 		if (n_neigs > 1)
 		{
-			auto lambSkip1st = [&ite1st](double a, double b)
-			{
-				return ((b != (*ite1st)) && (a > b));
-			};
-			auto ite2nd = std::min_element(dists.begin(), dists.end(), lambSkip1st);
-			auto closest_2_idx = std::distance(dists.begin(), ite2nd);
+			std::vector<double> dists_copy = dists;
+			dists_copy[closest_1_idx] = std::numeric_limits<double>::infinity();
+			auto ite2nd = std::min_element(dists_copy.begin(), dists_copy.end());
+			auto closest_2_idx = std::distance(dists_copy.begin(), ite2nd);
 			auto closest2label = r.aux_neighboring_labels[closest_2_idx];
 
 			// Save distance to neighbor #2
-			r.fvals[(int)Feature2D::CLOSEST_NEIGHBOR2_DIST][0] = dists[closest_2_idx];
+			r.fvals[closestNeighbor2DistIdx][0] = dists[closest_2_idx];
 
 			// Save angle with neighbor #2
 			LR& r2 = roiData[closest2label];
-			r.fvals[(int)Feature2D::CLOSEST_NEIGHBOR2_ANG][0] = 180.0 * angle(cenx, ceny, r2.fvals[(int)Feature2D::CENTROID_X][0], r2.fvals[(int)Feature2D::CENTROID_X][0]);
+			r.fvals[closestNeighbor2AngIdx][0] = direction_angle_deg(cenx, ceny, r2.fvals[centroidXIdx][0], r2.fvals[centroidYIdx][0]);
 		}
 	}
 
 	// Angle between neighbors
-	Moments2 mom2;
-	std::vector<int> anglesRounded;
 	for (auto l : uniqueLabels)
 	{
 		LR& r = roiData[l];
-		int n_neigs = int(r.fvals[(int)Feature2D::NUM_NEIGHBORS][0]);
+		int n_neigs = static_cast<int>(r.fvals[numNeighborsIdx][0]);
 
 		// Any neighbors of this ROI ?
 		if (n_neigs == 0)
 			continue;
 
-		double cenx = r.fvals[(int)Feature2D::CENTROID_X][0],
-			ceny = r.fvals[(int)Feature2D::CENTROID_Y][0];
+		double cenx = r.fvals[centroidXIdx][0],
+			ceny = r.fvals[centroidYIdx][0];
+
+		Moments2 mom2;
+		std::array<int, 361> angleCounts{};
 
 		// Iterate all the neighbors
 		for (auto l_neig : r.aux_neighboring_labels)
 		{
 			LR& r_neig = roiData[l_neig];
-			double cenx_n = r_neig.fvals[(int)Feature2D::CENTROID_X][0],
-				ceny_n = r_neig.fvals[(int)Feature2D::CENTROID_Y][0];
+			double cenx_n = r_neig.fvals[centroidXIdx][0],
+				ceny_n = r_neig.fvals[centroidYIdx][0];
 
-			double ang = 180.0 * angle (cenx, ceny, cenx_n, ceny_n);	
+			double ang = direction_angle_deg(cenx, ceny, cenx_n, ceny_n);
 			mom2.add(ang);
-			anglesRounded.push_back(ang);
+			int roundedAngle = static_cast<int>(std::round(ang));
+			roundedAngle = std::max(0, std::min(360, roundedAngle));
+			++angleCounts[roundedAngle];
 		}
 
-		r.fvals[(int)Feature2D::ANG_BW_NEIGHBORS_MEAN][0] = mom2.mean();
-		r.fvals[(int)Feature2D::ANG_BW_NEIGHBORS_STDDEV][0] = mom2.std();
-		r.fvals[(int)Feature2D::ANG_BW_NEIGHBORS_MODE][0] = mode(anglesRounded);
+		int angleMode = 0;
+		int angleModeCount = 0;
+		for (size_t i = 0; i < angleCounts.size(); ++i)
+		{
+			if (angleCounts[i] > angleModeCount)
+			{
+				angleModeCount = angleCounts[i];
+				angleMode = static_cast<int>(i);
+			}
+		}
+		r.fvals[angBetweenNeighborsMeanIdx][0] = mom2.mean();
+		r.fvals[angBetweenNeighborsStddevIdx][0] = mom2.std();
+		r.fvals[angBetweenNeighborsModeIdx][0] = angleMode;
 	}
 }
 
