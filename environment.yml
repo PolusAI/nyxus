@@ -27,7 +27,7 @@ dependencies:
     - sphinx_rtd_theme
     - autodocsumm
     - sphinx-autodoc-typehints
-    - versioneer
+    - setuptools-scm>=8
     - ghapi==0.1.20
     - nox==2022.1.7
     - pytest==6.2.4

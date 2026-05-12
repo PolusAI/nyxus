@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools-scm>=8", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nyxus"
+dynamic = ["version"]
+description = "Scalable library for calculating features from intensity-label image data"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT License"}
+authors = [
+    {name = "Andriy Kharchenko", email = "andriy.kharchenko@axleinfo.com"}
+]
+dependencies = ["numpy", "pandas"]
+
+[project.urls]
+Source = "https://github.com/PolusAI/nyxus"
+
+[tool.setuptools]
+package-dir = {"" = "src/nyx/python"}
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["src/nyx/python"]
+
+[tool.setuptools_scm]
+version_scheme = "no-guess-dev"
+local_scheme = "no-local-version"
+tag_regex = "^v?(?P<version>[0-9]+\\.[0-9]+\\.[0-9]+)$"
+write_to = "src/nyx/python/nyxus/_version.py"
+write_to_template = "__version__ = \"{version}\"\n"

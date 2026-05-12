@@ -346,6 +346,16 @@ jobs:
         name: Check out
         with:
           submodules: recursive
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Fetch git tags
+        run: git fetch --force --tags
+      - name: Update version files
+        run: |
+          python -m pip install setuptools-scm
+          python ci-utils/sync_version.py
+          python -m setuptools_scm
+        shell: bash
       - name: Download prereqs
         uses: actions/download-artifact@v4
         with:
@@ -399,6 +409,16 @@ jobs:
         name: Check out
         with:
           submodules: recursive
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Fetch git tags
+        run: git fetch --force --tags
+      - name: Update version files
+        run: |
+          python -m pip install setuptools-scm
+          python ci-utils/sync_version.py
+          python -m setuptools_scm
+        shell: bash
       - name: Download prereqs
         uses: actions/download-artifact@v4
         with:
@@ -452,6 +472,17 @@ jobs:
         name: Check out
         with:
           submodules: recursive
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Fetch git tags
+        run: git fetch --force --tags
+        shell: bash
+      - name: Update version files
+        run: |
+          python -m pip install setuptools-scm
+          python ci-utils/sync_version.py
+          python -m setuptools_scm
+        shell: bash
       - name: Download prereqs
         uses: actions/download-artifact@v4
         with:
@@ -503,6 +534,16 @@ jobs:
         name: Check out
         with:
           submodules: recursive
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Fetch git tags
+        run: git fetch --force --tags
+      - name: Update version files
+        run: |
+          python -m pip install setuptools-scm
+          python ci-utils/sync_version.py
+          python -m setuptools_scm
+        shell: bash
       - name: Download prereqs
         uses: actions/download-artifact@v4
         with:
@@ -570,6 +611,17 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         name: Check out
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Fetch git tags
+        run: git fetch --force --tags
+      - name: Update version files
+        run: |
+          python -m pip install setuptools-scm
+          python ci-utils/sync_version.py
+          python -m setuptools_scm
+        shell: bash
       - name: Download prereqs
         uses: actions/download-artifact@v4
         with:

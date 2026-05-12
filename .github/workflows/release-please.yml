@@ -1,0 +1,99 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: google-github-actions/release-please-action@v4
+        id: release
+        with:
+          release-type: python
+          package-name: nyxus
+
+      - name: Checkout code
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.tag_name }}
+
+      - name: Set up Python
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Update version files (version.h, plugin.json, .version)
+        if: ${{ steps.release.outputs.release_created }}
+        run: |
+          python ci-utils/sync_version.py --version ${{ steps.release.outputs.version }}
+
+      - name: Upload .version as release asset
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload ${{ steps.release.outputs.tag_name }} .version --clobber
+
+  trigger-publish:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Trigger PyPI publish
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'publish_pypi.yml',
+              ref: '${{ needs.release-please.outputs.tag_name }}'
+            })
+
+      - name: Trigger CUDA 11 PyPI publish
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'publish_cuda11_pypi.yml',
+              ref: '${{ needs.release-please.outputs.tag_name }}'
+            })
+
+      - name: Trigger CUDA 12 PyPI publish
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'publish_cuda12_pypi.yml',
+              ref: '${{ needs.release-please.outputs.tag_name }}'
+            })
+
+      - name: Trigger Docker publish
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'publish_docker.yml',
+              ref: '${{ needs.release-please.outputs.tag_name }}'
+            })
