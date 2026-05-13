@@ -4,5 +4,7 @@ from .nyxus import Nested
 from .nyxus import ImageQuality
 from .functions import gpu_is_available, get_gpu_properties
 
-from . import _version
-__version__ = _version.get_versions()['version']
+try:
+    from ._version import __version__
+except ImportError:
+    __version__ = "0.0.0"
