@@ -75,7 +75,7 @@ void test_gldm_lde()
 
 void test_gldm_lgle()
 {
-   test_gldm_feature(Nyxus::Feature2D::GLDM_SDE, "GLDM_SDE");
+   test_gldm_feature(Nyxus::Feature2D::GLDM_LGLE, "GLDM_LGLE");
 }
 
 void test_gldm_hgle()
