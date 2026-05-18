@@ -131,7 +131,7 @@ void test_ibsi_gldm_lde()
 
 void test_ibsi_gldm_lgle()
 {
-   test_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_SDE, "GLDM_SDE");
+   test_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_LGLE, "GLDM_LGLE");
 }
 
 void test_ibsi_gldm_hgle()
