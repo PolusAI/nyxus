@@ -3,4 +3,4 @@
 #include "../src/nyx/globals.h"
 
 
-void test_gabor(bool gpu=false);
+void test_unvetted_no_direct_oracle_gabor(bool gpu=false);

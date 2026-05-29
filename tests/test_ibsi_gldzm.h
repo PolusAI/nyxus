@@ -247,8 +247,9 @@ void test_ibsi_GLDZM_ZP()
     test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_ZP, "GLDZM_ZP");
 }
 
-void test_ibsi_GLDZM_GLM()
+void test_ibsi_GLDZM_unvetted_no_direct_oracle_GLM()
 {
+    SCOPED_TRACE("UNVETTED_NO_DIRECT_ORACLE__GLDZM_GLM");
     test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_GLM, "GLDZM_GLM");
 }
 
@@ -257,8 +258,9 @@ void test_ibsi_GLDZM_GLV()
     test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_GLV, "GLDZM_GLV");
 }
 
-void test_ibsi_GLDZM_ZDM()
+void test_ibsi_GLDZM_unvetted_no_direct_oracle_ZDM()
 {
+    SCOPED_TRACE("UNVETTED_NO_DIRECT_ORACLE__GLDZM_ZDM");
     test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_ZDM, "GLDZM_ZDM");
 }
 

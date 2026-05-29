@@ -6,6 +6,8 @@
 #include "test_pixel_intensity_features.h"
 #include "test_morphology_features.h"
 #include "test_shape_morphology_2d.h"
+#include "test_2d_geometric_moments.h"
+#include "test_2d_remaining_features.h"
 #include "test_neighbors_2d.h"
 #include "test_initialization.h"
 #include "test_ibsi_glcm.h"
@@ -665,11 +667,11 @@ TEST(TEST_NYXUS, TEST_3NGLDM_DCENE) {
 
 //***** Gabor regression ***** 
 
-TEST(TEST_NYXUS, TEST_GABOR){
-    test_gabor();
-	
+TEST(TEST_NYXUS, TEST_UNVETTED_NO_DIRECT_ORACLE_GABOR){
+    test_unvetted_no_direct_oracle_gabor();
+
     #ifdef USE_GPU
-        test_gabor(true);
+        test_unvetted_no_direct_oracle_gabor(true);
     #endif
 }
 
@@ -753,14 +755,14 @@ TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_KURTOSIS)
 	ASSERT_NO_THROW(test_pixel_intensity_pearson_kurtosis());
 }
 
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_HYPERSKEWNESS) 
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_HYPERSKEWNESS)
 {
-	ASSERT_NO_THROW(test_pixel_intensity_hyperskewness());
+	ASSERT_NO_THROW(test_pixel_intensity_verifiable_with_3p_builtin_oracle_hyperskewness());
 }
 
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_HYPERFLATNESS) 
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_HYPERFLATNESS)
 {
-	ASSERT_NO_THROW(test_pixel_intensity_hyperflatness());
+	ASSERT_NO_THROW(test_pixel_intensity_verifiable_with_3p_builtin_oracle_hyperflatness());
 }
 
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_MAD) 
@@ -773,9 +775,9 @@ TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_MEDIAN_ABSOLUTE_DEVIATION)
 	ASSERT_NO_THROW(test_pixel_intensity_median_absolute_deviation());
 }
 
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_ROBUST_MEAN)
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_ROBUST_MEAN)
 {
-	ASSERT_NO_THROW(test_pixel_intensity_robust_mean());
+	ASSERT_NO_THROW(test_pixel_intensity_verifiable_with_3p_builtin_oracle_robust_mean());
 }
 
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_ROBUST_MAD)
@@ -808,9 +810,9 @@ TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_UNIFORMITY)
 	ASSERT_NO_THROW(test_pixel_intensity_uniformity());
 }
 
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_UNIFORMITY_PIU) 
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_UNIFORMITY_PIU)
 {
-	ASSERT_NO_THROW(test_pixel_intensity_uniformity_piu());
+	ASSERT_NO_THROW(test_pixel_intensity_verifiable_with_3p_builtin_oracle_uniformity_piu());
 }
 
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_PERCENTILES_IQR)
@@ -823,9 +825,9 @@ TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_QCOD)
 	ASSERT_NO_THROW(test_pixel_intensity_qcod());
 }
 
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_COVERED_IMAGE_INTENSITY_RANGE)
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_COVERED_IMAGE_INTENSITY_RANGE)
 {
-	ASSERT_NO_THROW(test_pixel_intensity_covered_image_intensity_range());
+	ASSERT_NO_THROW(test_pixel_intensity_verifiable_with_3p_builtin_oracle_covered_image_intensity_range());
 }
 
 
@@ -851,19 +853,94 @@ TEST(TEST_NYXUS, TEST_SHAPE2D_CONTOUR_FEATURES)
 	ASSERT_NO_THROW(test_shape2d_contour_features());
 }
 
+TEST(TEST_NYXUS, TEST_SHAPE2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_CONTOUR_DIAMETER_EQUAL_PERIMETER)
+{
+	ASSERT_NO_THROW(test_shape2d_verifiable_with_3p_builtin_oracle_contour_diameter_equal_perimeter());
+}
+
 TEST(TEST_NYXUS, TEST_SHAPE2D_CONVEX_HULL_FEATURES)
 {
 	ASSERT_NO_THROW(test_shape2d_convex_hull_features());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_EXTREMA_FEATURES)
+TEST(TEST_NYXUS, TEST_SHAPE2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_EXTREMA_FEATURES)
 {
-	ASSERT_NO_THROW(test_shape2d_extrema_features());
+	ASSERT_NO_THROW(test_shape2d_verifiable_with_3p_builtin_oracle_extrema_features());
 }
 
 TEST(TEST_NYXUS, TEST_SHAPE2D_MISC_FEATURES)
 {
 	ASSERT_NO_THROW(test_shape2d_misc_shape_features());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_FRACTAL_CIRCLE_FEATURES)
+{
+	ASSERT_NO_THROW(test_shape2d_verifiable_with_3p_builtin_oracle_fractal_circle_features());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_UNVETTED_NO_DIRECT_ORACLE_RADIUS_FEATURES)
+{
+	ASSERT_NO_THROW(test_shape2d_unvetted_no_direct_oracle_radius_features());
+}
+
+TEST(TEST_NYXUS, TEST_2D_SHAPE_GEOMETRIC_MOMENTS_MIXED_VERIFIABLE_AND_UNVETTED)
+{
+	ASSERT_NO_THROW(test_2d_shape_geometric_moments_mixed_verifiable_and_unvetted());
+}
+
+TEST(TEST_NYXUS, TEST_2D_SHAPE_WEIGHTED_GEOMETRIC_MOMENTS_UNVETTED_NO_DIRECT_ORACLE)
+{
+	ASSERT_NO_THROW(test_2d_shape_weighted_geometric_moments_unvetted_no_direct_oracle());
+}
+
+TEST(TEST_NYXUS, TEST_2D_INTENSITY_GEOMETRIC_MOMENTS_MIXED_VERIFIABLE_AND_UNVETTED)
+{
+	ASSERT_NO_THROW(test_2d_intensity_geometric_moments_mixed_verifiable_and_unvetted());
+}
+
+TEST(TEST_NYXUS, TEST_2D_INTENSITY_WEIGHTED_GEOMETRIC_MOMENTS_UNVETTED_NO_DIRECT_ORACLE)
+{
+	ASSERT_NO_THROW(test_2d_intensity_weighted_geometric_moments_unvetted_no_direct_oracle());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_GEODETIC_THICKNESS_EROSION)
+{
+	ASSERT_NO_THROW(test_shape2d_verifiable_with_3p_builtin_oracle_geodetic_thickness_erosion_features());
+}
+
+TEST(TEST_NYXUS, TEST_REMAINING2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_EROSION_COMPLEMENT)
+{
+	ASSERT_NO_THROW(test_remaining2d_verifiable_with_3p_builtin_oracle_erosion_complement_feature());
+}
+
+TEST(TEST_NYXUS, TEST_REMAINING2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_CALIPER_FEATURES)
+{
+	ASSERT_NO_THROW(test_remaining2d_verifiable_with_3p_builtin_oracle_caliper_features());
+}
+
+TEST(TEST_NYXUS, TEST_REMAINING2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_CHORD_STAT_FEATURES)
+{
+	ASSERT_NO_THROW(test_remaining2d_verifiable_with_3p_builtin_oracle_chord_stat_features());
+}
+
+TEST(TEST_NYXUS, TEST_REMAINING2D_UNVETTED_NO_DIRECT_ORACLE_CHORD_ANGLE_FEATURES)
+{
+	ASSERT_NO_THROW(test_remaining2d_unvetted_no_direct_oracle_chord_angle_features());
+}
+
+TEST(TEST_NYXUS, TEST_REMAINING2D_UNVETTED_NO_DIRECT_ORACLE_POLYGONALITY_HEXAGONALITY)
+{
+	ASSERT_NO_THROW(test_remaining2d_unvetted_no_direct_oracle_polygonality_hexagonality_features());
+}
+
+TEST(TEST_NYXUS, TEST_REMAINING2D_UNVETTED_NO_DIRECT_ORACLE_RADIAL_DISTRIBUTION)
+{
+	ASSERT_NO_THROW(test_remaining2d_unvetted_no_direct_oracle_radial_distribution_features());
+}
+
+TEST(TEST_NYXUS, TEST_REMAINING2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_ZERNIKE2D)
+{
+	ASSERT_NO_THROW(test_remaining2d_verifiable_with_3p_builtin_oracle_zernike2d_feature());
 }
 
 TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_COUNTS_TOUCHING)
@@ -876,9 +953,14 @@ TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_CLOSEST_NEIGHBORS)
 	ASSERT_NO_THROW(test_neighborhood2d_closest_neighbors());
 }
 
-TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_ANGLE_STATS)
+TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_UNVETTED_NO_DIRECT_ORACLE_CLOSEST_NEIGHBOR_ANGLES)
 {
-	ASSERT_NO_THROW(test_neighborhood2d_neighbor_angle_stats());
+	ASSERT_NO_THROW(test_neighborhood2d_unvetted_no_direct_oracle_closest_neighbor_angles());
+}
+
+TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_UNVETTED_NO_DIRECT_ORACLE_ANGLE_STATS)
+{
+	ASSERT_NO_THROW(test_neighborhood2d_unvetted_no_direct_oracle_neighbor_angle_stats());
 }
 
 
@@ -1640,9 +1722,9 @@ TEST(TEST_NYXUS, TEST_IBSI_NGLDM_DCP)
 	ASSERT_NO_THROW(test_ibsi_NGLDM_DCP());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_NGLDM_GLM)
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_UNVETTED_NO_DIRECT_ORACLE_GLM)
 {
-	ASSERT_NO_THROW(test_ibsi_NGLDM_GLM());
+	ASSERT_NO_THROW(test_ibsi_NGLDM_unvetted_no_direct_oracle_GLM());
 }
 
 TEST(TEST_NYXUS, TEST_IBSI_NGLDM_GLV)
@@ -1650,9 +1732,9 @@ TEST(TEST_NYXUS, TEST_IBSI_NGLDM_GLV)
 	ASSERT_NO_THROW(test_ibsi_NGLDM_GLV());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_NGLDM_DCM)
+TEST(TEST_NYXUS, TEST_IBSI_NGLDM_UNVETTED_NO_DIRECT_ORACLE_DCM)
 {
-	ASSERT_NO_THROW(test_ibsi_NGLDM_DCM());
+	ASSERT_NO_THROW(test_ibsi_NGLDM_unvetted_no_direct_oracle_DCM());
 }
 
 TEST(TEST_NYXUS, TEST_IBSI_NGLDM_DCV)
@@ -2042,9 +2124,9 @@ TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_ZP)
 	ASSERT_NO_THROW(test_ibsi_GLDZM_ZP());
 }
 
-TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_GLM)
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_UNVETTED_NO_DIRECT_ORACLE_GLM)
 {
-	ASSERT_NO_THROW(test_ibsi_GLDZM_GLM());
+	ASSERT_NO_THROW(test_ibsi_GLDZM_unvetted_no_direct_oracle_GLM());
 }
 
 TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_GLV)
@@ -2052,9 +2134,9 @@ TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_GLV)
 	ASSERT_NO_THROW(test_ibsi_GLDZM_GLV());
 }
 
-TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_ZDM)
+TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_UNVETTED_NO_DIRECT_ORACLE_ZDM)
 {
-	ASSERT_NO_THROW(test_ibsi_GLDZM_ZDM());
+	ASSERT_NO_THROW(test_ibsi_GLDZM_unvetted_no_direct_oracle_ZDM());
 }
 
 TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_ZDV)

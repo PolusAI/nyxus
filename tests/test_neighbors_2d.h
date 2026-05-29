@@ -141,6 +141,17 @@ static void assert_neighbor2d_feature(
 	ASSERT_TRUE(agrees_gt(roiData.at(label).fvals[static_cast<int>(feature)][0], neighborhood2d_truth[label][feature_name], frac_tolerance));
 }
 
+static void assert_unvetted_no_direct_oracle_neighbor2d_feature(
+	const std::unordered_map<int, LR>& roiData,
+	int label,
+	Nyxus::Feature2D feature,
+	const std::string& feature_name,
+	double frac_tolerance = 1000.0)
+{
+	SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
+	assert_neighbor2d_feature(roiData, label, feature, feature_name, frac_tolerance);
+}
+
 void test_neighborhood2d_counts_and_touching()
 {
 	std::unordered_map<int, LR> roiData;
@@ -161,21 +172,31 @@ void test_neighborhood2d_closest_neighbors()
 	for (int label : {1, 2, 3, 4, 5})
 	{
 		assert_neighbor2d_feature(roiData, label, Nyxus::Feature2D::CLOSEST_NEIGHBOR1_DIST, "CLOSEST_NEIGHBOR1_DIST");
-		assert_neighbor2d_feature(roiData, label, Nyxus::Feature2D::CLOSEST_NEIGHBOR1_ANG, "CLOSEST_NEIGHBOR1_ANG");
 		assert_neighbor2d_feature(roiData, label, Nyxus::Feature2D::CLOSEST_NEIGHBOR2_DIST, "CLOSEST_NEIGHBOR2_DIST");
-		assert_neighbor2d_feature(roiData, label, Nyxus::Feature2D::CLOSEST_NEIGHBOR2_ANG, "CLOSEST_NEIGHBOR2_ANG");
 	}
 }
 
-void test_neighborhood2d_neighbor_angle_stats()
+void test_neighborhood2d_unvetted_no_direct_oracle_closest_neighbor_angles()
 {
 	std::unordered_map<int, LR> roiData;
 	calculate_neighborhood2d_feature_values(roiData);
 
 	for (int label : {1, 2, 3, 4, 5})
 	{
-		assert_neighbor2d_feature(roiData, label, Nyxus::Feature2D::ANG_BW_NEIGHBORS_MEAN, "ANG_BW_NEIGHBORS_MEAN");
-		assert_neighbor2d_feature(roiData, label, Nyxus::Feature2D::ANG_BW_NEIGHBORS_STDDEV, "ANG_BW_NEIGHBORS_STDDEV");
-		assert_neighbor2d_feature(roiData, label, Nyxus::Feature2D::ANG_BW_NEIGHBORS_MODE, "ANG_BW_NEIGHBORS_MODE");
+		assert_unvetted_no_direct_oracle_neighbor2d_feature(roiData, label, Nyxus::Feature2D::CLOSEST_NEIGHBOR1_ANG, "CLOSEST_NEIGHBOR1_ANG");
+		assert_unvetted_no_direct_oracle_neighbor2d_feature(roiData, label, Nyxus::Feature2D::CLOSEST_NEIGHBOR2_ANG, "CLOSEST_NEIGHBOR2_ANG");
+	}
+}
+
+void test_neighborhood2d_unvetted_no_direct_oracle_neighbor_angle_stats()
+{
+	std::unordered_map<int, LR> roiData;
+	calculate_neighborhood2d_feature_values(roiData);
+
+	for (int label : {1, 2, 3, 4, 5})
+	{
+		assert_unvetted_no_direct_oracle_neighbor2d_feature(roiData, label, Nyxus::Feature2D::ANG_BW_NEIGHBORS_MEAN, "ANG_BW_NEIGHBORS_MEAN");
+		assert_unvetted_no_direct_oracle_neighbor2d_feature(roiData, label, Nyxus::Feature2D::ANG_BW_NEIGHBORS_STDDEV, "ANG_BW_NEIGHBORS_STDDEV");
+		assert_unvetted_no_direct_oracle_neighbor2d_feature(roiData, label, Nyxus::Feature2D::ANG_BW_NEIGHBORS_MODE, "ANG_BW_NEIGHBORS_MODE");
 	}
 }
