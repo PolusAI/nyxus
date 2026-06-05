@@ -181,8 +181,8 @@ double ConvexHullFeature::polygon_area (const std::vector<Pixel2>& vertices)
 			&p2 = vertices[i+1];
 		area += p1.x * p2.y - p1.y * p2.x;
 	}
-	const Pixel2& p1 = vertices[0],
-		& p2 = vertices[n-1];
+	const Pixel2& p1 = vertices[n-1],
+		& p2 = vertices[0];
 	area += p1.x * p2.y - p1.y * p2.x;
 	area = std::abs(area) / 2.0;
 	return area;

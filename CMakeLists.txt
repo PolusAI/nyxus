@@ -131,6 +131,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 #== GTest 
 option(RUN_GTEST "Downloads google unit test API and runs google test scripts to test Nyxus" OFF)
+option(RUN_BENCHMARKS "Build Nyxus benchmark executables" OFF)
 
 #==== Source files
 set(SOURCE
@@ -430,6 +431,15 @@ endif()
 
 if(BUILD_CLI)
 	target_link_libraries(nyxus PRIVATE ${Nyxus_LIBRARIES})
+endif()
+
+if(RUN_BENCHMARKS)
+	add_executable(bench_convex_hull
+		benchmarks/bench_convex_hull.cpp
+		${SOURCE}
+	)
+	target_include_directories(bench_convex_hull PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+	target_link_libraries(bench_convex_hull PRIVATE ${Nyxus_LIBRARIES})
 endif()
 
 message(STATUS "Nyxus Dependencies Summary")
