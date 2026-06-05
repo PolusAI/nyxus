@@ -16,6 +16,8 @@
 #include "../src/nyx/features/euler_number.h"
 #include "../src/nyx/features/fractal_dim.h"
 #include "../src/nyx/features/circle.h"
+#include "../src/nyx/features/geodetic_len_thickness.h"
+#include "../src/nyx/features/erosion.h"
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
@@ -60,6 +62,9 @@ static std::unordered_map<std::string, double> shape2d_truth{
 	{"ROI_RADIUS_MEAN", 1.07692307692308},
 	{"ROI_RADIUS_MAX", 4.0},
 	{"ROI_RADIUS_MEDIAN", 1.0},
+	{"GEODETIC_LENGTH", 10.0},
+	{"THICKNESS", 3.0},
+	{"EROSIONS_2_VANISH", 1.0},
 	{"EXTREMA_P1_X", 2.0},
 	{"EXTREMA_P1_Y", 0.0},
 	{"EXTREMA_P2_X", 3.0},
@@ -143,6 +148,14 @@ static void calculate_shape2d_feature_values(std::vector<std::vector<double>>& f
 	circle.calculate(roidata, s);
 	circle.save_value(roidata.fvals);
 
+	GeodeticLengthThicknessFeature geodetic;
+	geodetic.calculate(roidata, s);
+	geodetic.save_value(roidata.fvals);
+
+	ErosionPixelsFeature erosion;
+	erosion.calculate(roidata, s);
+	erosion.save_value(roidata.fvals);
+
 	fvals = roidata.fvals;
 }
 
@@ -154,6 +167,26 @@ static void assert_shape2d_feature(
 {
 	ASSERT_TRUE(shape2d_truth.count(feature_name) > 0);
 	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], shape2d_truth[feature_name], frac_tolerance));
+}
+
+static void assert_unvetted_no_direct_oracle_shape2d_feature(
+	const std::vector<std::vector<double>>& fvals,
+	Nyxus::Feature2D feature,
+	const std::string& feature_name,
+	double frac_tolerance = 1000.0)
+{
+	SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
+	assert_shape2d_feature(fvals, feature, feature_name, frac_tolerance);
+}
+
+static void assert_verifiable_with_3p_builtin_oracle_shape2d_feature(
+	const std::vector<std::vector<double>>& fvals,
+	Nyxus::Feature2D feature,
+	const std::string& feature_name,
+	double frac_tolerance = 1000.0)
+{
+	SCOPED_TRACE(std::string("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__") + feature_name);
+	assert_shape2d_feature(fvals, feature, feature_name, frac_tolerance);
 }
 
 void test_shape2d_basic_morphology_features()
@@ -197,12 +230,19 @@ void test_shape2d_contour_features()
 	calculate_shape2d_feature_values(fvals);
 
 	assert_shape2d_feature(fvals, Nyxus::Feature2D::PERIMETER, "PERIMETER");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::DIAMETER_EQUAL_PERIMETER, "DIAMETER_EQUAL_PERIMETER");
 	assert_shape2d_feature(fvals, Nyxus::Feature2D::EDGE_MEAN_INTENSITY, "EDGE_MEAN_INTENSITY");
 	assert_shape2d_feature(fvals, Nyxus::Feature2D::EDGE_STDDEV_INTENSITY, "EDGE_STDDEV_INTENSITY");
 	assert_shape2d_feature(fvals, Nyxus::Feature2D::EDGE_MAX_INTENSITY, "EDGE_MAX_INTENSITY");
 	assert_shape2d_feature(fvals, Nyxus::Feature2D::EDGE_MIN_INTENSITY, "EDGE_MIN_INTENSITY");
 	assert_shape2d_feature(fvals, Nyxus::Feature2D::EDGE_INTEGRATED_INTENSITY, "EDGE_INTEGRATED_INTENSITY");
+}
+
+void test_shape2d_verifiable_with_3p_builtin_oracle_contour_diameter_equal_perimeter()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_shape2d_feature_values(fvals);
+
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::DIAMETER_EQUAL_PERIMETER, "DIAMETER_EQUAL_PERIMETER");
 }
 
 void test_shape2d_convex_hull_features()
@@ -215,27 +255,27 @@ void test_shape2d_convex_hull_features()
 	assert_shape2d_feature(fvals, Nyxus::Feature2D::SOLIDITY, "SOLIDITY");
 }
 
-void test_shape2d_extrema_features()
+void test_shape2d_verifiable_with_3p_builtin_oracle_extrema_features()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_shape2d_feature_values(fvals);
 
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P1_X, "EXTREMA_P1_X");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P1_Y, "EXTREMA_P1_Y");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P2_X, "EXTREMA_P2_X");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P2_Y, "EXTREMA_P2_Y");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P3_X, "EXTREMA_P3_X");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P3_Y, "EXTREMA_P3_Y");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P4_X, "EXTREMA_P4_X");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P4_Y, "EXTREMA_P4_Y");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P5_X, "EXTREMA_P5_X");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P5_Y, "EXTREMA_P5_Y");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P6_X, "EXTREMA_P6_X");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P6_Y, "EXTREMA_P6_Y");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P7_X, "EXTREMA_P7_X");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P7_Y, "EXTREMA_P7_Y");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P8_X, "EXTREMA_P8_X");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P8_Y, "EXTREMA_P8_Y");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P1_X, "EXTREMA_P1_X");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P1_Y, "EXTREMA_P1_Y");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P2_X, "EXTREMA_P2_X");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P2_Y, "EXTREMA_P2_Y");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P3_X, "EXTREMA_P3_X");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P3_Y, "EXTREMA_P3_Y");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P4_X, "EXTREMA_P4_X");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P4_Y, "EXTREMA_P4_Y");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P5_X, "EXTREMA_P5_X");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P5_Y, "EXTREMA_P5_Y");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P6_X, "EXTREMA_P6_X");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P6_Y, "EXTREMA_P6_Y");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P7_X, "EXTREMA_P7_X");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P7_Y, "EXTREMA_P7_Y");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P8_X, "EXTREMA_P8_X");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EXTREMA_P8_Y, "EXTREMA_P8_Y");
 }
 
 void test_shape2d_misc_shape_features()
@@ -244,12 +284,35 @@ void test_shape2d_misc_shape_features()
 	calculate_shape2d_feature_values(fvals);
 
 	assert_shape2d_feature(fvals, Nyxus::Feature2D::EULER_NUMBER, "EULER_NUMBER");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::FRACT_DIM_BOXCOUNT, "FRACT_DIM_BOXCOUNT");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::FRACT_DIM_PERIMETER, "FRACT_DIM_PERIMETER");
 	assert_shape2d_feature(fvals, Nyxus::Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE, "DIAMETER_MIN_ENCLOSING_CIRCLE");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::DIAMETER_CIRCUMSCRIBING_CIRCLE, "DIAMETER_CIRCUMSCRIBING_CIRCLE");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::DIAMETER_INSCRIBING_CIRCLE, "DIAMETER_INSCRIBING_CIRCLE");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::ROI_RADIUS_MEAN, "ROI_RADIUS_MEAN");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::ROI_RADIUS_MAX, "ROI_RADIUS_MAX");
-	assert_shape2d_feature(fvals, Nyxus::Feature2D::ROI_RADIUS_MEDIAN, "ROI_RADIUS_MEDIAN");
+}
+
+void test_shape2d_verifiable_with_3p_builtin_oracle_fractal_circle_features()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_shape2d_feature_values(fvals);
+
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::FRACT_DIM_BOXCOUNT, "FRACT_DIM_BOXCOUNT");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::FRACT_DIM_PERIMETER, "FRACT_DIM_PERIMETER");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::DIAMETER_CIRCUMSCRIBING_CIRCLE, "DIAMETER_CIRCUMSCRIBING_CIRCLE");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::DIAMETER_INSCRIBING_CIRCLE, "DIAMETER_INSCRIBING_CIRCLE");
+}
+
+void test_shape2d_unvetted_no_direct_oracle_radius_features()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_shape2d_feature_values(fvals);
+
+	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::ROI_RADIUS_MEAN, "ROI_RADIUS_MEAN");
+	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::ROI_RADIUS_MAX, "ROI_RADIUS_MAX");
+	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::ROI_RADIUS_MEDIAN, "ROI_RADIUS_MEDIAN");
+}
+
+void test_shape2d_verifiable_with_3p_builtin_oracle_geodetic_thickness_erosion_features()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_shape2d_feature_values(fvals);
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::GEODETIC_LENGTH, "GEODETIC_LENGTH");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::THICKNESS, "THICKNESS");
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EROSIONS_2_VANISH, "EROSIONS_2_VANISH");
 }

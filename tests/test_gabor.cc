@@ -9,8 +9,10 @@
 using namespace std;
 using namespace Nyxus;
 
-void test_gabor(bool gpu)
+void test_unvetted_no_direct_oracle_gabor(bool gpu)
 {
+    SCOPED_TRACE("UNVETTED_NO_DIRECT_ORACLE__GABOR");
+
     for(int i = 0; i < dsb_data.size(); ++i) 
     {
         LR roidata;

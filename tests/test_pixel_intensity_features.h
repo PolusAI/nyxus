@@ -248,8 +248,10 @@ void test_pixel_intensity_pearson_kurtosis()
     ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::KURTOSIS][0], 1.927888720710090));
 }
 
-void test_pixel_intensity_hyperskewness()
+void test_pixel_intensity_verifiable_with_3p_builtin_oracle_hyperskewness()
 {
+    SCOPED_TRACE("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__HYPERSKEWNESS");
+
     // Feed data to the ROI
     Dataset ds;
     ds.dataset_props.push_back(SlideProps("",""));
@@ -274,8 +276,10 @@ void test_pixel_intensity_hyperskewness()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::HYPERSKEWNESS][0], 1.978293086605381));
 }
 
-void test_pixel_intensity_hyperflatness()
+void test_pixel_intensity_verifiable_with_3p_builtin_oracle_hyperflatness()
 {
+    SCOPED_TRACE("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__HYPERFLATNESS");
+
     // Feed data to the ROI
     Dataset ds;
     ds.dataset_props.push_back(SlideProps("",""));
@@ -476,8 +480,10 @@ void test_pixel_intensity_uniformity()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::UNIFORMITY][0], 0.0647664, 100)); // Using 1% tolerance vs MATLAB
 }
 
-void test_pixel_intensity_uniformity_piu()
+void test_pixel_intensity_verifiable_with_3p_builtin_oracle_uniformity_piu()
 {
+    SCOPED_TRACE("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__UNIFORMITY_PIU");
+
     // Feed data to the ROI
     Dataset ds;
     ds.dataset_props.push_back(SlideProps("",""));
@@ -527,8 +533,10 @@ void test_pixel_intensity_cov()
     ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::COV][0], 4.523365498399634e-01));
 }
 
-void test_pixel_intensity_covered_image_intensity_range()
+void test_pixel_intensity_verifiable_with_3p_builtin_oracle_covered_image_intensity_range()
 {
+    SCOPED_TRACE("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__COVERED_IMAGE_INTENSITY_RANGE");
+
     std::vector<std::vector<double>> fvals;
     calculate_pixel_intensity_feature_values(fvals, Fsettings(), 0, 0.0, 65535.0);
 
@@ -551,8 +559,10 @@ void test_pixel_intensity_qcod()
     ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::QCOD][0], 4.119607630640470e-01));
 }
 
-void test_pixel_intensity_robust_mean()
+void test_pixel_intensity_verifiable_with_3p_builtin_oracle_robust_mean()
 {
+    SCOPED_TRACE("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__ROBUST_MEAN");
+
     std::vector<std::vector<double>> fvals;
     calculate_pixel_intensity_feature_values(fvals);
 

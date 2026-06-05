@@ -332,8 +332,9 @@ void test_ibsi_NGLDM_DCP()
 	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_DCP, "NGLDM_DCP");
 }
 
-void test_ibsi_NGLDM_GLM()
+void test_ibsi_NGLDM_unvetted_no_direct_oracle_GLM()
 {
+	SCOPED_TRACE("UNVETTED_NO_DIRECT_ORACLE__NGLDM_GLM");
 	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_GLM, "NGLDM_GLM");
 }
 
@@ -342,8 +343,9 @@ void test_ibsi_NGLDM_GLV()
 	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_GLV, "NGLDM_GLV");
 }
 
-void test_ibsi_NGLDM_DCM()
+void test_ibsi_NGLDM_unvetted_no_direct_oracle_DCM()
 {
+	SCOPED_TRACE("UNVETTED_NO_DIRECT_ORACLE__NGLDM_DCM");
 	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_DCM, "NGLDM_DCM");
 }
 
