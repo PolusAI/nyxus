@@ -35,6 +35,7 @@
 #include "test_compat_3d_ngtdm.h"
 #include "test_compat_3d_glrlm.h"
 #include "test_compat_3d_glszm.h"
+#include "test_3d_feature_coverage.h"
 #ifdef USE_ARROW
     #include "test_arrow.h"
     #include "test_arrow_file_name.h"
