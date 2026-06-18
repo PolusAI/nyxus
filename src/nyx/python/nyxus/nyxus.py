@@ -27,7 +27,7 @@ import pandas as pd
 from typing import Optional, List
 
 class Nyxus:
-    """Nyxus image feature extraction library
+    r"""Nyxus image feature extraction library
 
     Scalably extracts features from images.
     
@@ -614,7 +614,7 @@ class Nyxus:
         return s
     
     def set_gabor_feature_params (self, **kwargs):
-        """Sets parameters of feature GABOR
+        r"""Sets parameters of feature GABOR
 
         Keyword args:
         * kersize (int): size of filter kernel's side. Example: customize_gabor_feature(kersize=16)
@@ -731,7 +731,7 @@ class Nyxus:
                                    verb_lvl)
         
     def set_params(self, **params):
-        """Sets parameters of the Nyxus class
+        r"""Sets parameters of the Nyxus class
 
         Keyword args:
         
@@ -795,7 +795,7 @@ class Nyxus:
 
 
     def get_params(self, *args):
-        """Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
+        r"""Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
         
         Valid parameters are:
         
@@ -1292,7 +1292,7 @@ class Nyxus3D:
                                    verb_lvl)
         
     def set_params(self, **params):
-        """Sets parameters of the Nyxus class
+        r"""Sets parameters of the Nyxus class
 
         Keyword args:
         
@@ -1343,7 +1343,7 @@ class Nyxus3D:
             self.set_environment_params(**environment_params)
     
     def get_params(self, *args):
-        """Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
+        r"""Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
         
         Valid parameters are:
         
@@ -1910,7 +1910,7 @@ class ImageQuality:
         return s
     
     def set_gabor_feature_params (self, **kwargs):
-        """Sets parameters of feature GABOR
+        r"""Sets parameters of feature GABOR
 
         Keyword args:
         * kersize (int): size of filter kernel's side. Example: customize_gabor_feature(kersize=16)
@@ -2026,7 +2026,7 @@ class ImageQuality:
                                    verb_lvl)
         
     def set_params(self, **params):
-        """Sets parameters of the Nyxus class
+        r"""Sets parameters of the Nyxus class
 
         Keyword args:
         
@@ -2090,7 +2090,7 @@ class ImageQuality:
             self.set_environment_params(**environment_params)
     
     def get_params(self, *args):
-        """Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
+        r"""Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
         
         Valid parameters are:
         
@@ -2126,7 +2126,7 @@ class ImageQuality:
 
 
 class Nested:
-    """Nyxus image feature extraction library / ROI hierarchy analyzer
+    r"""Nyxus image feature extraction library / ROI hierarchy analyzer
     
     Valid aggregate functions are any functions available in pandas.DatFrame.aggregate,
     e.g. min, max, count, std. Lambda functions can also be passed. To provide a name to
@@ -2171,7 +2171,7 @@ class Nested:
         parent_file_pattern: str, 
         child_file_pattern: str):
     
-        """Finds parent-child relationships.
+        r"""Finds parent-child relationships.
 
         Find parent-child relationships of parent files matching the parent_file_pattern
         and child files matching the child_file_pattern.
