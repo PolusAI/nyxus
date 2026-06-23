@@ -432,14 +432,14 @@ class Nyxus:
         if (intensity_names == []):
             int_name = "Intensity"
             
-            for i in range(intensity_images.shape[0]):
-                intensity_names.append(int_name + str(i))
+            # Rebind to a fresh list (do NOT mutate the shared default arg)
+            intensity_names = [int_name + str(i) for i in range(intensity_images.shape[0])]
        
         if (label_names == []):
             seg_name = "Segmentation"
             
-            for i in range(label_images.shape[0]):
-                label_names.append(seg_name + str(i))
+            # Rebind to a fresh list (do NOT mutate the shared default arg)
+            label_names = [seg_name + str(i) for i in range(label_images.shape[0])]
                 
         if (intensity_images.shape[0] != len(intensity_names)):
             raise ValueError ("Number of _intensity image names_ (" + str(len(intensity_names)) + ") must be the same as the number of intensity images (" + str(intensity_images.shape[0]) + ")")
@@ -1742,15 +1742,15 @@ class ImageQuality:
         if (intensity_names == []):
             int_name = "Intensity"
             
-            for i in range(intensity_images.shape[0]):
-                intensity_names.append(int_name + str(i))
+            # Rebind to a fresh list (do NOT mutate the shared default arg)
+            intensity_names = [int_name + str(i) for i in range(intensity_images.shape[0])]
         
         
         if (label_names == []):
             seg_name = "Segmentation"
             
-            for i in range(label_images.shape[0]):
-                label_names.append(seg_name + str(i))
+            # Rebind to a fresh list (do NOT mutate the shared default arg)
+            label_names = [seg_name + str(i) for i in range(label_images.shape[0])]
                 
         if (intensity_images.shape[0] != len(intensity_names)):
             raise ValueError("Number of image names must be the same as the number of images.")
