@@ -22,6 +22,7 @@
 #include "features/ngtdm.h"
 #include "features/2d_geomoments.h"
 #include "features/intensity.h"
+#include "features/intensity_histogram.h"
 #include "features/moments.h"
 #include "features/neighbors.h"
 #include "features/caliper.h"
@@ -47,6 +48,7 @@ FeatureManager::FeatureManager()
 {
 	// 2D
 	register_feature (new PixelIntensityFeatures());
+	register_feature (new IntensityHistogramFeatures());
 	register_feature (new BasicMorphologyFeatures());
 	register_feature (new NeighborsFeature());
 	register_feature (new ContourFeature());

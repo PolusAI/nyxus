@@ -36,6 +36,7 @@
 #include "features/ngtdm.h"
 #include "features/2d_geomoments.h"
 #include "features/intensity.h"
+#include "features/intensity_histogram.h"
 #include "features/moments.h"
 #include "features/neighbors.h"
 #include "features/caliper.h"
@@ -66,6 +67,14 @@ namespace Nyxus
 			STOPWATCH("Intensity/Intensity/Int/#FFFF00", "\t=");
 			const Fsettings & fst = env.fsett_PixelIntensity;
 			runParallel (PixelIntensityFeatures::reduce, n_threads, work_per_thread, job_size, &L, &env.roiData, fst, env.dataset);
+		}
+
+		//==== IBSI intensity histogram (46 features) -- effective only in IBSI mode
+		if (IntensityHistogramFeatures::required(env.theFeatureSet))
+		{
+			STOPWATCH("Intensity/IntensityHistogram/IH/#FFFF00", "\t=");
+			const Fsettings & fst = env.fsett_PixelIntensity;
+			runParallel (IntensityHistogramFeatures::reduce, n_threads, work_per_thread, job_size, &L, &env.roiData, fst, env.dataset);
 		}
 
 		//==== Basic morphology
@@ -408,6 +417,13 @@ namespace Nyxus
 		{
 			Fsettings& s = env.fsett_PixelIntensity;
 			PixelIntensityFeatures::extract (r, s, env.dataset);
+		}
+
+		//==== IBSI intensity histogram (46 features) -- effective only in IBSI mode
+		if (IntensityHistogramFeatures::required(env.theFeatureSet))
+		{
+			Fsettings& s = env.fsett_PixelIntensity;
+			IntensityHistogramFeatures::extract (r, s, env.dataset);
 		}
 
 		//==== Basic morphology

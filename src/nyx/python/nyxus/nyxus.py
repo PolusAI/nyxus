@@ -82,7 +82,11 @@ class Nyxus:
         The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
         thread for feature calculation. 
     ibsi: bool (optional, default false)
-       IBSI available features will be IBSI compliant when true.
+       IBSI available features will be IBSI compliant when true. Required to enable
+       the Intensity Histogram (IH_*) feature family (*ALL_IH*).
+    mergerois: bool (optional, default false)
+       Merge all nonzero mask labels into a single whole-foreground ROI (background
+       excluded) instead of one ROI per label.
     gabor_kersize: int (optional, default 16)
         Size of filter kernel's side
     gabor_gamma: float (optional, default 0.1)
@@ -134,7 +138,7 @@ class Nyxus:
             'gabor_thold', 'gabor_thetas', 'gabor_freqs', 'channel_signature', 
             'parent_channel', 'child_channel', 'aggregate', 'dynamic_range', 'min_intensity',
             'max_intensity', 'ram_limit', 'verbose',
-            'anisotropy_x', 'anisotropy_y'
+            'anisotropy_x', 'anisotropy_y', 'mergerois'
         }
 
         # Check for unexpected keyword arguments
@@ -190,6 +194,7 @@ class Nyxus:
             raise ValueError ("anisotropy_y must be positive")
 
         aniso_z = 1.0   # not used in 2D
+        mergerois = kwargs.get('mergerois', False)
 
         initialize_environment(
             id(self),
@@ -197,7 +202,7 @@ class Nyxus:
             features,
             neighbor_distance,
             pixels_per_micron,
-            coarse_gray_depth, 
+            coarse_gray_depth,
             n_feature_calc_threads,
             use_gpu_device,
             ibsi,
@@ -209,7 +214,8 @@ class Nyxus:
             verb_lvl,
             aniso_x,
             aniso_y,
-            aniso_z) 
+            aniso_z,
+            mergerois)
 
         self.set_gabor_feature_params(
             kersize = gabor_kersize,
@@ -1025,7 +1031,7 @@ class Nyxus3D:
             features,
             neighbor_distance,
             pixels_per_micron,
-            coarse_gray_depth, 
+            coarse_gray_depth,
             n_feature_calc_threads,
             use_gpu_device,
             ibsi,
@@ -1037,7 +1043,8 @@ class Nyxus3D:
             verb_lvl,
             aniso_x,
             aniso_y,
-            aniso_z)
+            aniso_z,
+            False)  # merge_labels: 2D-segmented only
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
@@ -1552,7 +1559,7 @@ class ImageQuality:
             features,
             neighbor_distance,
             pixels_per_micron,
-            coarse_gray_depth, 
+            coarse_gray_depth,
             n_feature_calc_threads,
             using_gpu,
             ibsi,
@@ -1564,7 +1571,8 @@ class ImageQuality:
             verb_lvl,
             aniso_x,
             aniso_y,
-            aniso_z)
+            aniso_z,
+            False)  # merge_labels: 2D-segmented only
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']

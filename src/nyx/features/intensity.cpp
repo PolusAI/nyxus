@@ -48,6 +48,10 @@ bool PixelIntensityFeatures::required(const FeatureSet& fs)
 PixelIntensityFeatures::PixelIntensityFeatures() : FeatureMethod("PixelIntensityFeatures")
 {
 	provide_features (PixelIntensityFeatures::featureset);
+	// Also produce the multi-valued per-ROI histogram. Kept out of the
+	// PixelIntensityFeatures::featureset list (and hence out of *ALL_INTENSITY*)
+	// so it is opt-in: request "HISTOGRAM" (or *ALL*) to get the per-bin columns.
+	provide_features ({ Nyxus::Feature2D::HISTOGRAM });
 }
 
 void PixelIntensityFeatures::calculate (LR& r, const Fsettings & fsett, const Dataset & ds)
@@ -154,6 +158,7 @@ void PixelIntensityFeatures::calculate (LR& r, const Fsettings & fsett, const Da
 	TrivialHistogram H;
 	H.initialize (n_radiomicsGreyBins, r.aux_min, r.aux_max, r.raw_pixels);
 	auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
+	val_HISTOGRAM = H.get_cust_frequencies (n_radiomicsGreyBins);	// per-bin frequencies
 	val_MEDIAN = median_;
 	val_P01 = p01_;
 	val_P10 = p10_;
@@ -289,6 +294,7 @@ void PixelIntensityFeatures::osized_calculate (LR& r, const Fsettings& stng, con
 	TrivialHistogram H;
 	H.initialize (n_greybins, r.aux_min, r.aux_max, r.raw_pixels_NT);
 	auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
+	val_HISTOGRAM = H.get_cust_frequencies (n_greybins);	// per-bin frequencies
 	val_MEDIAN = median_;
 	val_P01 = p01_;
 	val_P10 = p10_;
@@ -389,6 +395,11 @@ void PixelIntensityFeatures::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature2D::STANDARD_DEVIATION_BIASED][0] = val_STANDARD_DEVIATION_BIASED;
 	fvals[(int)Feature2D::VARIANCE][0] = val_VARIANCE;
 	fvals[(int)Feature2D::VARIANCE_BIASED][0] = val_VARIANCE_BIASED;
+
+	// Multi-valued: one frequency per histogram bin. assign() grows the inner
+	// vector from its default size of 1 to the bin count (empty for blank ROIs;
+	// the CSV writer pads to the bin count with zeros).
+	fvals[(int)Feature2D::HISTOGRAM].assign (val_HISTOGRAM.begin(), val_HISTOGRAM.end());
 }
 
 void PixelIntensityFeatures::extract (LR& r, const Fsettings & fs, const Dataset & ds)

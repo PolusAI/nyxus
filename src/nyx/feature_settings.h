@@ -40,6 +40,15 @@ enum class NyxSetting : int
 	GLRLM_GREYDEPTH,
 	// GLSZM
 	GLSZM_GREYDEPTH,
+	// Floating-point image quantization params (--fpimg*). Used by the IH family to
+	// undo the load-time float->uint quantization and bin in the original float domain.
+	// These MIRROR image_loader.cpp: when fp options are active the loader rescales over
+	// [FPIMG_MIN, FPIMG_MAX] with target dynamic range FPIMG_TARGET_DR; otherwise it uses
+	// the per-slide pre-ROI [min,max].
+	FPIMG_TARGET_DR,
+	FPIMG_MIN,
+	FPIMG_MAX,
+	FPIMG_ACTIVE,	// bool: fp options were supplied (loader uses FPIMG_MIN/MAX, not pre-ROI range)
 	//
 	__COUNT__
 };
@@ -54,6 +63,10 @@ enum class NyxSetting : int
 #define STNGS_SINGLEROI(obj) (obj[(int)NyxSetting::SINGLEROI].bval)
 #define STNGS_PIXELDISTANCE(obj) (obj[(int)NyxSetting::PIXELDISTANCE].ival)
 #define STNGS_VERBOSLVL(obj) (obj[(int)NyxSetting::VERBOSLVL].ival)
+#define STNGS_FPIMG_DR(obj) (obj[(int)NyxSetting::FPIMG_TARGET_DR].rval)
+#define STNGS_FPIMG_MIN(obj) (obj[(int)NyxSetting::FPIMG_MIN].rval)
+#define STNGS_FPIMG_MAX(obj) (obj[(int)NyxSetting::FPIMG_MAX].rval)
+#define STNGS_FPIMG_ACTIVE(obj) (obj[(int)NyxSetting::FPIMG_ACTIVE].bval)
 
 // feature-specific settings
 #define STNGS_GLCM_GREYDEPTH(obj) (obj[(int)NyxSetting::GLCM_GREYDEPTH].ival)

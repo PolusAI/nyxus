@@ -19,6 +19,7 @@
 #define clo_RAMLIMIT "--ramLimit"					// Optional. Limit for treating ROIs as non-trivial and for setting the batch size of trivial ROIs. Default - amount of available system RAM
 #define clo_TEMPDIR "--tempDir"						// Optional. Used in processing non-trivial features. Default - system temp directory
 #define clo_IBSICOMPLIANCE "--ibsi" // skip binning for grey level and grey tone features
+#define clo_MERGEROIS "--mergerois" // merge all nonzero mask labels into one whole-foreground ROI; Environment :: mergeLabels
 #define clo_SKIPROI "--skiproi"		// Optional. Skip ROIs having specified labels. Sybtax: --skiproi <label[,label,label,...]>
 #define clo_RESULTFNAME "--resultFname"				// Environment :: nyxus_result_fname
 #define clo_CLI_DIM "--dim"							// Environment :: raw_dim

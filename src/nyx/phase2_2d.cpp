@@ -140,6 +140,11 @@ namespace Nyxus
 					if (!wholeslide)
 						label = (*spL)[i];
 
+					// Merge all foreground labels into a single ROI if requested (must
+					// happen before the white-list test: only the merged label 1 is pending)
+					if (env.mergeLabels && label)
+						label = 1;
+
 					// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
 					if (! env.singleROI && ! std::binary_search(whiteList.begin(), whiteList.end(), label))
 						continue;
@@ -258,6 +263,10 @@ namespace Nyxus
 				// not a ROI ?
 				if (!label)
 					continue;
+
+				// Merge all foreground labels into a single ROI if requested
+				if (env.mergeLabels)
+					label = 1;
 
 				// skip this ROI if the label isn't in the to-do list 'whiteList' that's only possible in multi-ROI mode
 				if (wholeslide==false && !std::binary_search(whiteList.begin(), whiteList.end(), label))
@@ -650,6 +659,11 @@ namespace Nyxus
 				auto label = rL (pair_idx, row, col);
 				if (!label)
 					continue;
+
+				// Merge all foreground labels into a single ROI if requested (before the
+				// white-list test, which only contains the merged label 1)
+				if (env.mergeLabels)
+					label = 1;
 
 				// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
 				if (! env.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))

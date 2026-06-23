@@ -4,6 +4,7 @@
 #include "../src/nyx/globals.h"
 #include "test_contour.h"
 #include "test_pixel_intensity_features.h"
+#include "test_intensity_histogram.h"
 #include "test_morphology_features.h"
 #include "test_shape_morphology_2d.h"
 #include "test_2d_geometric_moments.h"
@@ -734,6 +735,33 @@ TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_STDDEV_BIASED)
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VARIANCE)
 {
 	ASSERT_NO_THROW(test_pixel_intensity_variance());
+}
+
+//***** IBSI Intensity Histogram (IH) family *****
+
+TEST(TEST_NYXUS, TEST_IH_INTEGER_DOMAIN_VALUES)
+{
+	ASSERT_NO_THROW(test_ih_integer_domain_values());
+}
+
+TEST(TEST_NYXUS, TEST_IH_INDEX_AND_PERCENTILE_BOUNDS)
+{
+	ASSERT_NO_THROW(test_ih_index_and_percentile_bounds());
+}
+
+TEST(TEST_NYXUS, TEST_IH_IBSI_GATE_OFF_RETURNS_NAN)
+{
+	ASSERT_NO_THROW(test_ih_ibsi_gate_off_returns_nan());
+}
+
+TEST(TEST_NYXUS, TEST_IH_FLOAT_DOMAIN_RECONSTRUCTION)
+{
+	ASSERT_NO_THROW(test_ih_float_domain_reconstruction());
+}
+
+TEST(TEST_NYXUS, TEST_IH_REQUIRED_PREDICATE)
+{
+	ASSERT_NO_THROW(test_ih_required_predicate());
 }
 
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VARIANCE_BIASED)

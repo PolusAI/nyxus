@@ -135,9 +135,19 @@ should adhere to columns "WIPP I/O role" and "WIPP type".
      - path
    * - --arrowOutputType
      - (Optional) Type of Arrow file to write the feature results to. Current options are 'arrow' for Arrow IPC or 'parquet' for Parquet
-     - string 
+     - string
      - output
      - enum
+   * - --ibsi
+     - (Optional) Enable IBSI compliance mode. Required to compute the Intensity Histogram (IH_*) feature family. Default: '--ibsi=false'
+     - true or false
+     - input
+     - bool
+   * - --mergerois
+     - (Optional) Merge all nonzero mask labels into a single whole-foreground ROI (background excluded) instead of one ROI per label. Default: '--mergerois=false'
+     - true or false
+     - input
+     - bool
 
 Examples
 ========
@@ -165,11 +175,22 @@ Suppose we need to extract only intensity features basic morphology features:
 3. Mixing specific feature groups and individual features
 ---------------------------------------------------------
 
-Suppose we need to extract intensity features, basic morphology features, and Zernike features: 
+Suppose we need to extract intensity features, basic morphology features, and Zernike features:
 
 .. code-block:: bash
 
    ./nyxus --features=*all_intensity*,*basic_morphology*,zernike2d --intDir=/home/ec2-user/data-ratbrain/int --segDir=/home/ec2-user/data-ratbrain/seg --outDir=/home/ec2-user/work/OUTPUT-ratbrain --filePattern=.* --outputType=singlecsv
+
+3a. Requesting the IBSI Intensity Histogram features
+----------------------------------------------------
+
+The Intensity Histogram (``IH_*``) family requires IBSI mode (``--ibsi=true``) and uses
+``--coarseGrayDepth`` as the histogram bin count. Add ``--mergerois=true`` to compute one
+whole-foreground ROI instead of one ROI per label:
+
+.. code-block:: bash
+
+   ./nyxus --features=*ALL_IH* --ibsi=true --coarseGrayDepth=32 --mergerois=true --intDir=/data/int --segDir=/data/seg --outDir=/data/out --filePattern=.* --outputType=singlecsv
 
 4. Specifying a feature list from with a file instead of command line
 ---------------------------------------------------------------------
