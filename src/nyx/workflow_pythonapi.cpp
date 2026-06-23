@@ -143,7 +143,7 @@ namespace Nyxus
 
 			if (write_apache) 
 			{
-				auto [status, msg] = env.arrow_stream.write_arrow_file (Nyxus::get_feature_values(env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset));
+				auto [status, msg] = env.arrow_stream.write_arrow_file (Nyxus::get_feature_values(env, env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset));
 				if (!status) 
 					return { "error writing Arrow file: " + msg.value() };
 			} 

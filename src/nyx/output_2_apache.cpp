@@ -27,6 +27,6 @@ namespace Nyxus
 	std::tuple<bool, std::optional<std::string>> save_features_2_apache_wholeslide (Environment & env, const LR & wsi_roi, const std::string & wsi_path)
 	{
 		std::lock_guard<std::mutex> lg (mx1);
-		return env.arrow_stream.write_arrow_file (Nyxus::get_feature_values_roi (env.theFeatureSet, wsi_roi, wsi_path, ""));
+		return env.arrow_stream.write_arrow_file (Nyxus::get_feature_values_roi (env, env.theFeatureSet, wsi_roi, wsi_path, ""));
 	}
 }
