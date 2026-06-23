@@ -72,9 +72,13 @@ namespace Nyxus
 					if (! label)
 						continue;
 
+					// Merge all foreground labels into a single ROI if requested
+					if (env.mergeLabels)
+						label = 1;
+
 					int y = row * th + i / tw,
 						x = col * tw + i % tw;
-					
+
 					// Skip tile buffer pixels beyond the image's bounds
 					if (x >= fullwidth || y >= fullheight)
 						continue;
@@ -383,6 +387,10 @@ namespace Nyxus
 				auto label = rL (pair_index, row, col);
 				if (!label)
 					continue;
+
+				// Merge all foreground labels into a single ROI if requested
+				if (env.mergeLabels)
+					label = 1;
 
 				// Collapse all the labels to one if single-ROI mde is requested
 				if (env.singleROI)

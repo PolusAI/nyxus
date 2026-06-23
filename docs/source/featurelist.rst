@@ -69,6 +69,74 @@ Nyxus-provided features
      - ROI mass displacement
 
 
+**2D intensity histogram features (IBSI):**
+
+The Intensity Histogram (IH) family is the IBSI intensity-histogram first-order set.
+All 46 features are derived from a single per-ROI histogram of ``N`` equal-width bins
+spanning the ROI intensity range, where ``N`` is the coarse gray depth
+(``--coarseGrayDepth`` / ``coarse_gray_depth``). For floating-point images the
+histogram is built in the original (unrescaled) float intensity domain.
+
+This family is available only when **IBSI mode is enabled** (``--ibsi=true`` /
+``ibsi=True``). Request it as the group ``*ALL_IH*`` or by individual ``IH_*`` code.
+The ``...VAL`` features are computed over discretised intensities, the ``...IDX``
+features over the (1-based) bin indices.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Nyxus feature code
+     - Description
+   * - IH_MEAN_VAL, IH_MEAN_IDX
+     - Mean of the histogram (over intensities / over bin indices)
+   * - IH_VARIANCE_VAL, IH_VARIANCE_IDX
+     - Variance of the histogram
+   * - IH_SKEWNESS_VAL, IH_SKEWNESS_IDX
+     - Skewness of the histogram
+   * - IH_EXCESS_KURTOSIS_VAL, IH_EXCESS_KURTOSIS_IDX
+     - Excess kurtosis of the histogram
+   * - IH_MEDIAN_VAL, IH_MEDIAN_IDX
+     - Median (center of the bin reaching half the count)
+   * - IH_MINIMUM_VAL, IH_MINIMUM_IDX
+     - Minimum value / its bin index
+   * - IH_MAXIMUM_VAL, IH_MAXIMUM_IDX
+     - Maximum value / its bin index
+   * - IH_P10_VAL, IH_P10_IDX
+     - 10th percentile value / its bin index
+   * - IH_P90_VAL, IH_P90_IDX
+     - 90th percentile value / its bin index
+   * - IH_MODE_VAL, IH_MODE_IDX
+     - Mode (most frequent bin) value / its bin index
+   * - IH_INTERQUANTILE_RANGE_VAL, IH_INTERQUANTILE_RANGE_IDX
+     - Interquartile range (P75 - P25)
+   * - IH_RANGE_VAL, IH_RANGE_IDX
+     - Range (max - min)
+   * - IH_MEAN_ABSOLUTE_DEVIATION_VAL, IH_MEAN_ABSOLUTE_DEVIATION_IDX
+     - Mean absolute deviation
+   * - IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_VAL, IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_IDX
+     - Robust mean absolute deviation (P10-P90 range)
+   * - IH_MEDIAN_ABSOLUTE_DEVIATION_VAL, IH_MEDIAN_ABSOLUTE_DEVIATION_IDX
+     - Median absolute deviation
+   * - IH_COEFFICIENT_OF_VARIATION_VAL, IH_COEFFICIENT_OF_VARIATION_IDX
+     - Coefficient of variation
+   * - IH_QUANTILE_COEFFICIENT_OF_DISPERSION_VAL, IH_QUANTILE_COEFFICIENT_OF_DISPERSION_IDX
+     - Quantile coefficient of dispersion
+   * - IH_ENTROPY_VAL, IH_ENTROPY_IDX
+     - Histogram entropy
+   * - IH_UNIFORMITY_VAL, IH_UNIFORMITY_IDX
+     - Histogram uniformity (energy)
+   * - IH_ROBUST_MEAN_VAL, IH_ROBUST_MEAN_IDX
+     - Robust mean (over the P10-P90 range)
+   * - IH_MAX_GRADIENT, IH_MAX_GRADIENT_IDX
+     - Maximum histogram gradient / its bin index
+   * - IH_MIN_GRADIENT, IH_MIN_GRADIENT_IDX
+     - Minimum histogram gradient / its bin index
+   * - IH_NUM_BINS
+     - Number of histogram bins (N)
+   * - IH_BIN_SIZE
+     - Histogram bin width (range / N)
+
+
 **2D morphology features:**
 
 

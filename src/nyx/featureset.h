@@ -576,6 +576,66 @@ namespace Nyxus
 		IMOM_WHU6,
 		IMOM_WHU7,
 
+		// -- intensity histogram: a single multi-valued feature emitting one
+		//    frequency per bin (bin count = coarse gray depth). Opt-in: not part
+		//    of *ALL_INTENSITY*, but included by *ALL*.
+		HISTOGRAM,
+
+		// -- IBSI Intensity Histogram (IH) family (46 features), all derived from a
+		//    single dedicated N-bin histogram over the per-ROI [min,max].
+		//    Available ONLY when IBSI mode is on (gated in expand_featuregroups()).
+		//    Group: *ALL_IH* (FG2_IH). Bin count N = coarse gray depth.
+		//    Added at the end of Feature2D (before _COUNT_) so existing codes don't shift.
+		// "...Value" family (20) -- over discretised intensities
+		IH_MEAN_VAL,
+		IH_VARIANCE_VAL,
+		IH_SKEWNESS_VAL,
+		IH_EXCESS_KURTOSIS_VAL,
+		IH_MEDIAN_VAL,
+		IH_MINIMUM_VAL,
+		IH_P10_VAL,
+		IH_P90_VAL,
+		IH_MAXIMUM_VAL,
+		IH_MODE_VAL,
+		IH_INTERQUANTILE_RANGE_VAL,
+		IH_RANGE_VAL,
+		IH_MEAN_ABSOLUTE_DEVIATION_VAL,
+		IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_VAL,
+		IH_MEDIAN_ABSOLUTE_DEVIATION_VAL,
+		IH_COEFFICIENT_OF_VARIATION_VAL,
+		IH_QUANTILE_COEFFICIENT_OF_DISPERSION_VAL,
+		IH_ENTROPY_VAL,
+		IH_UNIFORMITY_VAL,
+		IH_ROBUST_MEAN_VAL,
+		// "...Index" family (19) -- over bin indices (1-based)
+		IH_MEAN_IDX,
+		IH_VARIANCE_IDX,
+		IH_SKEWNESS_IDX,
+		IH_EXCESS_KURTOSIS_IDX,
+		IH_MEDIAN_IDX,
+		IH_MINIMUM_IDX,
+		IH_P10_IDX,
+		IH_P90_IDX,
+		IH_MAXIMUM_IDX,
+		IH_MODE_IDX,
+		IH_INTERQUANTILE_RANGE_IDX,
+		IH_RANGE_IDX,
+		IH_MEAN_ABSOLUTE_DEVIATION_IDX,
+		IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_IDX,
+		IH_MEDIAN_ABSOLUTE_DEVIATION_IDX,
+		IH_COEFFICIENT_OF_VARIATION_IDX,
+		IH_QUANTILE_COEFFICIENT_OF_DISPERSION_IDX,
+		IH_ENTROPY_IDX,
+		IH_UNIFORMITY_IDX,
+		// histogram gradient + bookkeeping (7)
+		IH_MAX_GRADIENT,
+		IH_MAX_GRADIENT_IDX,
+		IH_MIN_GRADIENT,
+		IH_MIN_GRADIENT_IDX,
+		IH_ROBUST_MEAN_IDX,
+		IH_NUM_BINS,
+		IH_BIN_SIZE,
+
 		_COUNT_,
 		_FIRST_ = COV
 	};
@@ -887,6 +947,7 @@ namespace Nyxus
 		FG2_BUT_GABOR,
 		FG2_ALL_BUT_GLCM, 
 		FG2_NEIG,
+		FG2_IH,				// IBSI intensity-histogram family (46 features); effective only in IBSI mode
 		FG2_GEOMOMENTS,		// shape and intensity geometric moments
 		FG2_GEOMOMENTS_I,	// intensity geometric moments
 		FG2_GEOMOMENTS_S,	// shape geometric moments

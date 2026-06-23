@@ -261,6 +261,30 @@ public:
 		return median;
 	}
 
+	// --- Histogram bin exposure (per-ROI intensity histogram) -----------------
+	// The "custom-resolution" histogram has 'n_cust_bins' bins spanning
+	// [minVal_, maxVal_]. Bin index of intensity i is floor((i-min)/range*n)
+	// (see Nyxus::to_grayscale), so bin k covers [min + k*range/n, min + (k+1)*range/n)
+	// and its center is min + (k+0.5)*range/n. We expose the raw per-bin
+	// frequencies plus the cached min/max so a caller can reconstruct the bin
+	// edges knowing only the bin count.
+
+	// Per-bin frequencies of the custom-resolution histogram, trimmed to exactly
+	// 'n_cust_bins' bins (the internal vector carries one extra, folded, slot).
+	std::vector<double> get_cust_frequencies (int n_cust_bins) const
+	{
+		int n = std::abs(n_cust_bins);
+		std::vector<double> v;
+		v.reserve(n);
+		for (int k = 0; k < n; k++)
+			v.push_back (k < (int)bins_cust_.size() ? double(bins_cust_[k]) : 0.0);
+		return v;
+	}
+
+	HistoItem get_min_value() const { return minVal_; }
+	HistoItem get_max_value() const { return maxVal_; }
+	size_t get_population() const { return pop_; }
+
 private:
 
 	size_t pop_ = 0;

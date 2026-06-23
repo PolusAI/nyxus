@@ -443,6 +443,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			find_string_argument(i, clo_COARSEGRAYDEPTH, raw_coarse_grayscale_depth) ||
 			find_string_argument(i, clo_VERBOSITY, rawVerbosity) ||
 			find_string_argument(i, clo_IBSICOMPLIANCE, raw_ibsi_compliance) ||
+			find_string_argument(i, clo_MERGEROIS, raw_mergerois) ||
 			find_string_argument(i, clo_RAMLIMIT, rawRamLimit) ||
 			find_string_argument(i, clo_TEMPDIR, rawTempDir) ||
 			find_string_argument(i, clo_SKIPROI, rawBlacklistedRois) ||
@@ -858,6 +859,15 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		return false;
 	}
 
+	// --Resolve IBSI compliance mode BEFORE expanding feature groups: the IH family
+	//   is gated on it inside expand_featuregroups() (available only in IBSI mode).
+	std::transform(raw_ibsi_compliance.begin(), raw_ibsi_compliance.end(), raw_ibsi_compliance.begin(), ::tolower);
+	ibsi_compliance = (raw_ibsi_compliance == "true" || raw_ibsi_compliance == "1" || raw_ibsi_compliance == "on");
+
+	// --mergerois: collapse all nonzero mask labels into one whole-foreground ROI
+	std::transform(raw_mergerois.begin(), raw_mergerois.end(), raw_mergerois.begin(), ::tolower);
+	mergeLabels = (raw_mergerois == "true" || raw_mergerois == "1" || raw_mergerois == "on");
+
 	// --Feature names are ok, now expand feature group nicknames and enable each feature in 'theFeatureSet'
 	try
 	{
@@ -889,16 +899,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		pixelSizeUm = 1e-2f / xyRes / 1e-6f; // 1 cm in meters / pixels per cm / micrometers
 	}
 
-	//==== Parse IBSI compliance mode
-	std::transform(raw_ibsi_compliance.begin(), raw_ibsi_compliance.end(), raw_ibsi_compliance.begin(), ::tolower);
-	if (raw_ibsi_compliance == "true" || raw_ibsi_compliance == "1" || raw_ibsi_compliance == "on")
-	{
-		ibsi_compliance = true;
-	}
-	else
-	{
-		ibsi_compliance = false;
-	}
+	//==== IBSI compliance mode is resolved earlier (before expand_featuregroups), see above.
 
 	// Success
 	return true;

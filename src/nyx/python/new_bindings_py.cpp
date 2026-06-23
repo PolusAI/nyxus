@@ -79,7 +79,8 @@ void initialize_environment(
     int verb_lvl,
     float aniso_x,
     float aniso_y,
-    float aniso_z)
+    float aniso_z,
+    bool merge_labels = false)
 {
     Environment & theEnvironment = Nyxus::findenv (instid);
 
@@ -92,6 +93,14 @@ void initialize_environment(
     theEnvironment.set_coarse_gray_depth(coarse_gray_depth);
     theEnvironment.n_reduce_threads = n_reduce_threads;
     theEnvironment.ibsi_compliance = ibsi;
+    theEnvironment.mergeLabels = merge_labels;
+
+    // Real-valued range hints. Set BEFORE compile_feature_settings() so the FPIMG_*
+    // feature settings (used by the IBSI Intensity Histogram float domain) capture the
+    // requested values rather than defaults.
+    theEnvironment.fpimageOptions.set_target_dyn_range(dynamic_range);
+    theEnvironment.fpimageOptions.set_min_intensity(min_intensity);
+    theEnvironment.fpimageOptions.set_max_intensity(max_intensity);
 
     // Throws exception if invalid feature is passed
     theEnvironment.expand_featuregroups();
@@ -101,11 +110,6 @@ void initialize_environment(
 
     // prepare feature settings
     theEnvironment.compile_feature_settings();
-
-    // real-valued range hints
-    theEnvironment.fpimageOptions.set_target_dyn_range(dynamic_range);
-    theEnvironment.fpimageOptions.set_min_intensity(min_intensity);
-    theEnvironment.fpimageOptions.set_max_intensity(max_intensity);
 
     // RAM limit controlling trivial-nontrivial featurization
     if (ram_limit_mb >= 0) 

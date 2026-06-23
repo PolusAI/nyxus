@@ -53,6 +53,12 @@ public:
 
 	bool singleROI; //= false; // Applies to dim()==2: singleROI is set to 'true' parse_cmdline() if labels_dir==intensity_dir
 
+	// --mergerois: merge all nonzero mask labels into a single whole-foreground ROI
+	// (background label 0 is still excluded). Unlike singleROI/wholeslide, the mask is
+	// still read - only the label identity is collapsed.
+	bool mergeLabels = false;
+	std::string raw_mergerois;
+
 	Nyxus::ArrowOutputStream arrow_stream;
 
 	std::string embedded_pixel_size; //= "";

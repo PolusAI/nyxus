@@ -87,4 +87,8 @@ private:
 		val_STANDARD_DEVIATION_BIASED = 0,
 		val_VARIANCE = 0,
 		val_VARIANCE_BIASED = 0;
+
+	// Per-ROI intensity histogram: one frequency per bin (bin count = coarse gray
+	// depth). Emitted as the multi-valued Feature2D::HISTOGRAM. Empty for blank ROIs.
+	std::vector<double> val_HISTOGRAM;
 };

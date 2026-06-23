@@ -32,6 +32,7 @@
 #include "features/hexagonality_polygonality.h"
 #include "features/2d_geomoments.h"
 #include "features/intensity.h"
+#include "features/intensity_histogram.h"
 #include "features/neighbors.h"
 #include "features/ngldm.h"
 #include "features/ngtdm.h"
@@ -241,6 +242,13 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 	if ((Fgroup2D) fgcode == Fgroup2D::FG2_INTENSITY)
 	{
 		theFeatureSet.enableFeatures (PixelIntensityFeatures::featureset, enable);
+		return true;
+	}
+	if ((Fgroup2D) fgcode == Fgroup2D::FG2_IH)
+	{
+		// IBSI intensity-histogram family. Requested here; if IBSI mode is off it
+		// gets stripped at the end of expand_featuregroups() (available only in IBSI mode).
+		theFeatureSet.enableFeatures (IntensityHistogramFeatures::featureset, enable);
 		return true;
 	}
 	if ((Fgroup2D) fgcode == Fgroup2D::FG2_MORPHOLOGY)
@@ -501,6 +509,23 @@ void Environment::expand_featuregroups()
 			continue;
 		}
 	}
+
+	// IBSI gate: the Intensity-Histogram family (46 features) is available ONLY when
+	// IBSI mode is on. If IBSI is off, strip any IH features the user requested
+	// (individually or via *ALL_IH* / *ALL*).
+	if (dim() == 2 && !ibsi_compliance)
+	{
+		bool anyIH = false;
+		for (auto fc : IntensityHistogramFeatures::featureset)
+			if (theFeatureSet.isEnabled (fc)) { anyIH = true; break; }
+		if (anyIH)
+		{
+			theFeatureSet.enableFeatures (IntensityHistogramFeatures::featureset, false);
+			if (get_verbosity_level() > 0)
+				std::cout << "Warning: Intensity Histogram (IH_*) features require IBSI mode; "
+				             "they are disabled because IBSI compliance is off.\n";
+		}
+	}
 }
 
 void Environment::show_featureset_help()
@@ -699,6 +724,10 @@ void Environment::compile_feature_settings()
 			s[(int)NyxSetting::USEGPU].bval = using_gpu();
 			s[(int)NyxSetting::VERBOSLVL].ival = get_verbosity_level();
 			s[(int)NyxSetting::IBSI].bval = ibsi_compliance;
+			s[(int)NyxSetting::FPIMG_TARGET_DR].rval = fpimageOptions.target_dyn_range();
+			s[(int)NyxSetting::FPIMG_MIN].rval = fpimageOptions.min_intensity();
+			s[(int)NyxSetting::FPIMG_MAX].rval = fpimageOptions.max_intensity();
+			s[(int)NyxSetting::FPIMG_ACTIVE].bval = ! fpimageOptions.empty();
 		}
 }
 
