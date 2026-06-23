@@ -155,6 +155,20 @@ namespace Nyxus
 					continue;
 				}
 
+				// --Intensity histogram: one column per bin (HISTOGRAM_BIN_0 .. _N-1)
+				if (fc == (int)Feature2D::HISTOGRAM)
+				{
+					int nbins = env.get_coarse_gray_depth();
+					for (int i = 0; i < nbins; i++)
+					{
+						std::string col = fn + "_BIN_" + std::to_string(i);
+						rescache.add_to_header(col);
+					}
+
+					// Proceed with other features
+					continue;
+				}
+
 				// Regular feature
 				rescache.add_to_header(fn);
 			}
@@ -261,6 +275,19 @@ namespace Nyxus
 				{
 					rescache.add_numeric(Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
 				}
+				// Proceed with other features
+				continue;
+			}
+
+			// --Intensity histogram (one value per bin); pad blank ROIs to bin count
+			if (fc == (int)Feature2D::HISTOGRAM)
+			{
+				int nbins = env.get_coarse_gray_depth();
+				if ((int)vv.size() < nbins)
+					vv.resize(nbins, 0.0);
+				for (int i = 0; i < nbins; i++)
+					rescache.add_numeric(Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
+
 				// Proceed with other features
 				continue;
 			}
@@ -397,6 +424,20 @@ namespace Nyxus
 					continue;
 				}
 
+				// --Intensity histogram: one column per bin (HISTOGRAM_BIN_0 .. _N-1)
+				if (fc == (int) Feature2D::HISTOGRAM)
+				{
+					int nbins = env.get_coarse_gray_depth();
+					for (int i = 0; i < nbins; i++)
+					{
+						std::string col = fn + "_BIN_" + std::to_string(i);
+						rescache.add_to_header(col);
+					}
+
+					// Proceed with other features
+					continue;
+				}
+
 				// Regular feature
 				rescache.add_to_header(fn);
 			}
@@ -515,6 +556,19 @@ namespace Nyxus
 					{
 						rescache.add_numeric (Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
 					}
+					// Proceed with other features
+					continue;
+				}
+
+				// --Intensity histogram (one value per bin); pad blank ROIs to bin count
+				if (fc == (int) Feature2D::HISTOGRAM)
+				{
+					int nbins = env.get_coarse_gray_depth();
+					if ((int)vv.size() < nbins)
+						vv.resize(nbins, 0.0);
+					for (int i = 0; i < nbins; i++)
+						rescache.add_numeric (Nyxus::force_finite_number(vv[i], env.resultOptions.noval()));
+
 					// Proceed with other features
 					continue;
 				}
