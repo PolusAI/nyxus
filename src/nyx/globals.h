@@ -144,12 +144,14 @@ namespace Nyxus
 	std::tuple<bool, std::optional<std::string>> save_features_2_apache_wholeslide (Environment & env, const LR & wsi_roi, const std::string & wsi_path);
 
 	std::vector<FTABLE_RECORD> get_feature_values (
-		const FeatureSet & user_selected_features, 
-		const Uniqueids & uniqueLabels, 
+		Environment & env,
+		const FeatureSet & user_selected_features,
+		const Uniqueids & uniqueLabels,
 		const Roidata & roiData,
 		const Dataset & dataset);
 
 	std::vector<FTABLE_RECORD> get_feature_values_roi (
+		Environment & env,
 		const FeatureSet & fset,
 		const LR& r,
 		const std::string & ifpath,

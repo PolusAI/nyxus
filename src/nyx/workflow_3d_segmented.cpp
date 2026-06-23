@@ -227,7 +227,7 @@ namespace Nyxus
 				// Output features
 				if (writeApache)
 				{
-					auto [status, msg] = env.arrow_stream.write_arrow_file(Nyxus::get_feature_values(env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset));
+					auto [status, msg] = env.arrow_stream.write_arrow_file(Nyxus::get_feature_values(env, env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset));
 					if (!status)
 					{
 						std::cout << "Error writing Arrow file: " << msg.value() << std::endl;

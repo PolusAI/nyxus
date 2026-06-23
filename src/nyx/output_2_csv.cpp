@@ -490,7 +490,7 @@ namespace Nyxus
 
 		if (need_aggregation)
 		{
-			auto allres = Nyxus::get_feature_values (env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset);	// shape: td::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>
+			auto allres = Nyxus::get_feature_values (env, env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset);	// shape: td::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>
 			if (allres.size())
 			{
 				// aggregate
@@ -757,6 +757,7 @@ namespace Nyxus
 	}
 
 	std::vector<FTABLE_RECORD> get_feature_values_roi (
+		Environment & env,
 		const FeatureSet & fset,
 		const LR & r,
 		const std::string & ifpath,
@@ -862,6 +863,18 @@ namespace Nyxus
 				continue;
 			}
 
+			// --Intensity histogram (one value per bin); pad blank ROIs to bin count
+			if (fc == (int)Feature2D::HISTOGRAM)
+			{
+				int nbins = env.get_coarse_gray_depth();
+				if ((int)vv.size() < nbins)
+					vv.resize(nbins, 0.0);
+				for (int i = 0; i < nbins; i++)
+					fvals.push_back(vv[i]);
+				// Proceed with other features
+				continue;
+			}
+
 			fvals.push_back(vv[0]);
 		}
 
@@ -877,8 +890,9 @@ namespace Nyxus
 	}
 
 	std::vector<FTABLE_RECORD> get_feature_values (
-		const FeatureSet & fset, 
-		const Uniqueids & uniqueLabels, 
+		Environment & env,
+		const FeatureSet & fset,
+		const Uniqueids & uniqueLabels,
 		const Roidata & roiData,
 		const Dataset & dataset)
 	{
@@ -998,6 +1012,18 @@ namespace Nyxus
 					{
 						feature_values.push_back(vv[i]);
 					}
+					// Proceed with other features
+					continue;
+				}
+
+				// --Intensity histogram (one value per bin); pad blank ROIs to bin count
+				if (fc == (int) Feature2D::HISTOGRAM)
+				{
+					int nbins = env.get_coarse_gray_depth();
+					if ((int)vv.size() < nbins)
+						vv.resize(nbins, 0.0);
+					for (int i = 0; i < nbins; i++)
+						feature_values.push_back(vv[i]);
 					// Proceed with other features
 					continue;
 				}
