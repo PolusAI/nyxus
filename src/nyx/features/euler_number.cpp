@@ -26,14 +26,14 @@ void EulerNumberFeature::calculate (LR& r, const Fsettings& s)
 		max_y = aabb.get_ymax();
 
 	// Create the image mask matrix
-	int ny = max_y - min_y + 1,
-		nx = max_x - min_x + 1,
+	int ny = max_y - min_y + 3,
+		nx = max_x - min_x + 3,
 		n = nx * ny;
 	std::vector<unsigned char> I(n, 0);
 	for (auto& p : cloud)
 	{
-		int col = p.x - min_x,
-			row = p.y - min_y, 
+		int col = p.x - min_x + 1,
+			row = p.y - min_y + 1,
 			idx = row * nx + col;
 		I[idx] = 1;
 	}
@@ -85,7 +85,7 @@ long EulerNumberFeature::calculate_euler (std::vector<unsigned char> & arr, int 
 					C3++;
 				}
 				else 
-					if (i == 8 && i == 9) { 
+					if (i == 8 || i == 9) {
 						Cd++;
 					}
 		}
@@ -142,8 +142,8 @@ void EulerNumberFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoade
 		max_y = aabb.get_ymax();
 
 	// Create the image mask matrix
-	int height = max_y - min_y + 1,
-		width = max_x - min_x + 1,
+	int height = max_y - min_y + 3,
+		width = max_x - min_x + 3,
 		n = width * height;
 
 	//std::vector<unsigned char> I(n, 0);
@@ -160,8 +160,8 @@ void EulerNumberFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoade
 	for (auto i = 0; i < cloud.size(); i++)
 	{
 		const auto& p = cloud.get_at(i);
-		int col = p.x - min_x,
-			row = p.y - min_y,
+		int col = p.x - min_x + 1,
+			row = p.y - min_y + 1,
 			idx = row * width + col;
 		I.set_at (idx, 1);
 	}
@@ -203,9 +203,9 @@ void EulerNumberFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoade
 					C3++;
 				}
 				else
-					if (i == 8 && i == 9) {
-						Cd++;
-					}
+						if (i == 8 || i == 9) {
+							Cd++;
+						}
 		}
 	}
 
