@@ -28,7 +28,7 @@ void BasicMorphologyFeatures::calculate (LR& r, const Fsettings& sett)
 			val_AREA_UM2  = n * std::pow(pxsize, 2);	// former theEnvironment.pixelSizeUm
 
 	// --DIAMETER_EQUAL_AREA
-	val_DIAMETER_EQUAL_AREA = double(val_AREA_PIXELS_COUNT) / M_PI * 4.0;
+	val_DIAMETER_EQUAL_AREA = 2.0 * std::sqrt(static_cast<double>(val_AREA_PIXELS_COUNT) / M_PI);
 
 	// --CENTROID_XY
 	double cen_x = 0.0,
@@ -39,6 +39,8 @@ void BasicMorphologyFeatures::calculate (LR& r, const Fsettings& sett)
 		cen_y += px.y;
 	}
 
+	cen_x /= n;
+	cen_y /= n;
 	val_CENTROID_X = cen_x;
 	val_CENTROID_Y = cen_y;
 	
@@ -46,7 +48,9 @@ void BasicMorphologyFeatures::calculate (LR& r, const Fsettings& sett)
 	Moments2 mom2;
 	for (auto& px : r.raw_pixels)
 	{
-		double dst = std::sqrt(px.sqdist(cen_x, cen_y));
+		double dx = static_cast<double>(px.x) - cen_x;
+		double dy = static_cast<double>(px.y) - cen_y;
+		double dst = std::sqrt(dx * dx + dy * dy);
 		mom2.add(dst);
 	}
 	val_COMPACTNESS = mom2.std() / n;
@@ -72,9 +76,8 @@ void BasicMorphologyFeatures::calculate (LR& r, const Fsettings& sett)
 
 	for (auto& px : r.raw_pixels)
 	{
-		// the "+1" is only for compatibility with matlab code (where index starts from 1) 
-		x_mass = x_mass + (px.x + 1) * px.inten;
-		y_mass = y_mass + (px.y + 1) * px.inten;
+		x_mass += px.x * px.inten;
+		y_mass += px.y * px.inten;
 		mass += px.inten;
 	}
 
@@ -116,7 +119,7 @@ void BasicMorphologyFeatures::osized_calculate (LR& r, const Fsettings& s, Image
 		val_AREA_UM2 = n * std::pow(pxsize, 2);
 
 	// --DIAMETER_EQUAL_AREA
-	val_DIAMETER_EQUAL_AREA = double(val_AREA_PIXELS_COUNT) / M_PI * 4.0;
+	val_DIAMETER_EQUAL_AREA = 2.0 * std::sqrt(static_cast<double>(val_AREA_PIXELS_COUNT) / M_PI);
 
 	// --CENTROID_XY
 	double cen_x = 0.0,
@@ -129,6 +132,8 @@ void BasicMorphologyFeatures::osized_calculate (LR& r, const Fsettings& s, Image
 		cen_y += px.y;
 	}
 
+	cen_x /= n;
+	cen_y /= n;
 	val_CENTROID_X = cen_x;
 	val_CENTROID_Y = cen_y;
 
@@ -137,7 +142,9 @@ void BasicMorphologyFeatures::osized_calculate (LR& r, const Fsettings& s, Image
 	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)	// for (auto& px : r.raw_pixels)
 	{
 		auto px = r.raw_pixels_NT.get_at(i);
-		double dst = std::sqrt(px.sqdist(cen_x, cen_y));
+		double dx = static_cast<double>(px.x) - cen_x;
+		double dy = static_cast<double>(px.y) - cen_y;
+		double dst = std::sqrt(dx * dx + dy * dy);
 		mom2.add(dst);
 	}
 	val_COMPACTNESS = mom2.std() / n;
@@ -165,9 +172,8 @@ void BasicMorphologyFeatures::osized_calculate (LR& r, const Fsettings& s, Image
 	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)	// for (auto& px : r.raw_pixels)
 	{
 		auto px = r.raw_pixels_NT.get_at(i);
-		// the "+1" is only for compatibility with matlab code (where index starts from 1) 
-		x_mass = x_mass + (px.x + 1) * px.inten;
-		y_mass = y_mass + (px.y + 1) * px.inten;
+		x_mass += px.x * px.inten;
+		y_mass += px.y * px.inten;
 		mass += px.inten;
 	}
 
