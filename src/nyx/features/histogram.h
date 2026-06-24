@@ -277,7 +277,7 @@ public:
 		std::vector<double> v;
 		v.reserve(n);
 		for (int k = 0; k < n; k++)
-			v.push_back (k < (int)bins_cust_.size() ? double(bins_cust_[k]) : 0.0);
+			v.push_back (k < static_cast<int>(bins_cust_.size()) ? static_cast<double>(bins_cust_[k]) : 0.0);
 		return v;
 	}
 
