@@ -515,9 +515,8 @@ void Environment::expand_featuregroups()
 	// (individually or via *ALL_IH* / *ALL*).
 	if (dim() == 2 && !ibsi_compliance)
 	{
-		bool anyIH = false;
-		for (auto fc : IntensityHistogramFeatures::featureset)
-			if (theFeatureSet.isEnabled (fc)) { anyIH = true; break; }
+		bool anyIH = std::ranges::any_of (IntensityHistogramFeatures::featureset,
+			[this](auto fc) { return theFeatureSet.isEnabled (fc); });
 		if (anyIH)
 		{
 			theFeatureSet.enableFeatures (IntensityHistogramFeatures::featureset, false);
