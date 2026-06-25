@@ -30,31 +30,6 @@ void BasicMorphologyFeatures::calculate (LR& r, const Fsettings& sett)
 	// --DIAMETER_EQUAL_AREA
 	val_DIAMETER_EQUAL_AREA = 2.0 * std::sqrt(static_cast<double>(val_AREA_PIXELS_COUNT) / M_PI);
 
-	// --CENTROID_XY
-	double cen_x = 0.0,
-		cen_y = 0.0;
-	for (auto& px : r.raw_pixels)
-	{
-		cen_x += px.x;
-		cen_y += px.y;
-	}
-
-	cen_x /= n;
-	cen_y /= n;
-	val_CENTROID_X = cen_x;
-	val_CENTROID_Y = cen_y;
-	
-	// --COMPACTNESS
-	Moments2 mom2;
-	for (auto& px : r.raw_pixels)
-	{
-		double dx = static_cast<double>(px.x) - cen_x;
-		double dy = static_cast<double>(px.y) - cen_y;
-		double dst = std::sqrt(dx * dx + dy * dy);
-		mom2.add(dst);
-	}
-	val_COMPACTNESS = mom2.std() / n;
-
 	//==== Basic morphology :: Bounding box
 	val_BBOX_XMIN = r.aabb.get_xmin();
 	val_BBOX_YMIN = r.aabb.get_ymin();
@@ -70,6 +45,17 @@ void BasicMorphologyFeatures::calculate (LR& r, const Fsettings& sett)
 	}
 	val_CENTROID_X /= n;
 	val_CENTROID_Y /= n;
+
+	// --COMPACTNESS
+	Moments2 mom2;
+	for (auto& px : r.raw_pixels)
+	{
+		double dx = static_cast<double>(px.x) - val_CENTROID_X;
+		double dy = static_cast<double>(px.y) - val_CENTROID_Y;
+		double dst = std::sqrt(dx * dx + dy * dy);
+		mom2.add(dst);
+	}
+	val_COMPACTNESS = mom2.std() / n;
 
 	//==== Basic morphology :: Weighted centroids
 	double x_mass = 0, y_mass = 0, mass = 0;
@@ -121,34 +107,6 @@ void BasicMorphologyFeatures::osized_calculate (LR& r, const Fsettings& s, Image
 	// --DIAMETER_EQUAL_AREA
 	val_DIAMETER_EQUAL_AREA = 2.0 * std::sqrt(static_cast<double>(val_AREA_PIXELS_COUNT) / M_PI);
 
-	// --CENTROID_XY
-	double cen_x = 0.0,
-		cen_y = 0.0;
-	
-	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)	// for (auto& px : r.raw_pixels)
-	{
-		auto px = r.raw_pixels_NT.get_at(i);
-		cen_x += px.x;
-		cen_y += px.y;
-	}
-
-	cen_x /= n;
-	cen_y /= n;
-	val_CENTROID_X = cen_x;
-	val_CENTROID_Y = cen_y;
-
-	// --COMPACTNESS
-	Moments2 mom2;
-	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)	// for (auto& px : r.raw_pixels)
-	{
-		auto px = r.raw_pixels_NT.get_at(i);
-		double dx = static_cast<double>(px.x) - cen_x;
-		double dy = static_cast<double>(px.y) - cen_y;
-		double dst = std::sqrt(dx * dx + dy * dy);
-		mom2.add(dst);
-	}
-	val_COMPACTNESS = mom2.std() / n;
-
 	//==== Basic morphology :: Bounding box
 	val_BBOX_XMIN = r.aabb.get_xmin();
 	val_BBOX_YMIN = r.aabb.get_ymin();
@@ -165,6 +123,18 @@ void BasicMorphologyFeatures::osized_calculate (LR& r, const Fsettings& s, Image
 	}
 	val_CENTROID_X /= n;
 	val_CENTROID_Y /= n;
+
+	// --COMPACTNESS
+	Moments2 mom2;
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)	// for (auto& px : r.raw_pixels)
+	{
+		auto px = r.raw_pixels_NT.get_at(i);
+		double dx = static_cast<double>(px.x) - val_CENTROID_X;
+		double dy = static_cast<double>(px.y) - val_CENTROID_Y;
+		double dst = std::sqrt(dx * dx + dy * dy);
+		mom2.add(dst);
+	}
+	val_COMPACTNESS = mom2.std() / n;
 
 	//==== Basic morphology :: Weighted centroids
 	double x_mass = 0, y_mass = 0, mass = 0;
