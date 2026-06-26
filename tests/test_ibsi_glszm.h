@@ -11,7 +11,7 @@
 #include <unordered_map> 
 
 // dig. phantom values for intensity based features
-static std::unordered_map<std::string, double> IBSI_glszm_values {
+static std::unordered_map<std::string, double> ibsi_reference_glszm_feature_golden_values {
     {"GLSZM_SAE", 0.363},
     {"GLSZM_LAE", 43.9},
     {"GLSZM_LGLZE", 0.371},
@@ -114,7 +114,7 @@ void test_ibsi_glszm_feature(const Feature2D& feature_, const std::string& featu
     total += roidata3.fvals[feature][0];
 
     // Verdict
-    ASSERT_TRUE(agrees_gt(total/4, IBSI_glszm_values[feature_name], 100.));
+    ASSERT_TRUE(agrees_gt(total/4, ibsi_reference_glszm_feature_golden_values[feature_name], 100.));
 }
 
 void test_ibsi_glszm_sae()

@@ -11,7 +11,7 @@
 #include <unordered_map> 
 
 // dig. phantom values for intensity based features
-static std::unordered_map<std::string, double> IBSI_glrlm_values {
+static std::unordered_map<std::string, double> ibsi_reference_glrlm_feature_golden_values {
     {"GLRLM_SRE", 0.641},
     {"GLRLM_LRE", 3.78},
     {"GLRLM_LGLRE", 0.604},
@@ -127,7 +127,7 @@ void test_ibsi_glrlm_feature(const Feature2D& feature_, const std::string& featu
     total += roidata3.fvals[feature][3];
 
     // Verdict
-    ASSERT_TRUE(agrees_gt(total/16, IBSI_glrlm_values[feature_name], 100.));
+    ASSERT_TRUE(agrees_gt(total/16, ibsi_reference_glrlm_feature_golden_values[feature_name], 100.));
 }
 
 void test_ibsi_glrlm_sre()

@@ -21,7 +21,7 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
-static std::unordered_map<std::string, double> remaining2d_truth{
+static std::unordered_map<std::string, double> oracle_3p_remaining2d_feature_golden_values{
 	{"EROSIONS_2_VANISH_COMPLEMENT", 0.0},
 	{"MIN_FERET_ANGLE", 40.0},
 	{"MAX_FERET_ANGLE", 0.0},
@@ -44,27 +44,30 @@ static std::unordered_map<std::string, double> remaining2d_truth{
 	{"STAT_NASSENSTEIN_DIAM_STDDEV", 2.1985188021518653},
 	{"STAT_NASSENSTEIN_DIAM_MODE", 0.0},
 	{"MAXCHORDS_MAX", 6.0},
-	{"MAXCHORDS_MAX_ANG", 0.94247779607693793},
 	{"MAXCHORDS_MIN", 3.0},
-	{"MAXCHORDS_MIN_ANG", 0.94247779607693793},
 	{"MAXCHORDS_MEDIAN", 4.0},
 	{"MAXCHORDS_MEAN", 4.5500000000000007},
 	{"MAXCHORDS_MODE", 4.0},
 	{"MAXCHORDS_STDDEV", 0.94451324138833304},
 	{"ALLCHORDS_MAX", 6.0},
-	{"ALLCHORDS_MAX_ANG", 0.15707963267948966},
 	{"ALLCHORDS_MIN", 1.0},
-	{"ALLCHORDS_MIN_ANG", 0.15707963267948966},
 	{"ALLCHORDS_MEDIAN", 4.0},
 	{"ALLCHORDS_MEAN", 2.9134615384615379},
 	{"ALLCHORDS_MODE", 4.0},
 	{"ALLCHORDS_STDDEV", 1.3446086298393252},
+};
+
+static std::unordered_map<std::string, double> unvetted_nyxus_regression_remaining2d_feature_golden_values{
 	{"POLYGONALITY_AVE", 2.0833333333333357},
 	{"HEXAGONALITY_AVE", 6.4262878058432173},
 	{"HEXAGONALITY_STDDEV", 0.31438281411429858},
+	{"MAXCHORDS_MAX_ANG", 0.94247779607693793},
+	{"MAXCHORDS_MIN_ANG", 0.94247779607693793},
+	{"ALLCHORDS_MAX_ANG", 0.15707963267948966},
+	{"ALLCHORDS_MIN_ANG", 0.15707963267948966},
 };
 
-static std::unordered_map<std::string, std::vector<double>> remaining2d_vector_truth{
+static std::unordered_map<std::string, std::vector<double>> unvetted_nyxus_regression_remaining2d_vector_feature_golden_values{
 	{"FRAC_AT_D", {
 		0.038461538460059175, 0.0, 0.11538461538017751, 0.1538461538402367,
 		0.3076923076804734, 0.0, 0.11538461538017751, 0.26923076922041422,
@@ -77,6 +80,9 @@ static std::unordered_map<std::string, std::vector<double>> remaining2d_vector_t
 		2.6457513106495707, 0.0, 1.298797520721114, 1.024429214739045,
 		0.64750329537582818, 0.0, 1.3575192606324717, 1.3284260624865412,
 	}},
+};
+
+static std::unordered_map<std::string, std::vector<double>> oracle_3p_remaining2d_vector_feature_golden_values{
 	{"ZERNIKE2D", {
 		0.02049738595695693, 0.035831084484416686, 0.073953766599300461,
 		0.035435050265597692, 0.092323797445497555, 0.011030627605166297,
@@ -226,8 +232,8 @@ static void assert_unvetted_no_direct_oracle_remaining2d_feature(
 	double frac_tolerance = 1000.0)
 {
 	SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
-	ASSERT_TRUE(remaining2d_truth.count(feature_name) > 0);
-	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], remaining2d_truth[feature_name], frac_tolerance));
+	ASSERT_TRUE(unvetted_nyxus_regression_remaining2d_feature_golden_values.count(feature_name) > 0);
+	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], unvetted_nyxus_regression_remaining2d_feature_golden_values[feature_name], frac_tolerance));
 }
 
 static void assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(
@@ -237,8 +243,8 @@ static void assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(
 	double frac_tolerance = 1000.0)
 {
 	SCOPED_TRACE(std::string("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__") + feature_name);
-	ASSERT_TRUE(remaining2d_truth.count(feature_name) > 0);
-	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], remaining2d_truth[feature_name], frac_tolerance));
+	ASSERT_TRUE(oracle_3p_remaining2d_feature_golden_values.count(feature_name) > 0);
+	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], oracle_3p_remaining2d_feature_golden_values[feature_name], frac_tolerance));
 }
 
 static void assert_unvetted_no_direct_oracle_remaining2d_polygonality_feature(
@@ -275,12 +281,12 @@ static void assert_unvetted_no_direct_oracle_remaining2d_vector_feature(
 	double abs_tolerance = 1e-9)
 {
 	SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
-	ASSERT_TRUE(remaining2d_vector_truth.count(feature_name) > 0);
+	ASSERT_TRUE(unvetted_nyxus_regression_remaining2d_vector_feature_golden_values.count(feature_name) > 0);
 	const auto& actual = fvals[static_cast<int>(feature)];
-	const auto& expected = remaining2d_vector_truth[feature_name];
-	ASSERT_EQ(actual.size(), expected.size());
-	for (size_t i = 0; i < expected.size(); ++i)
-		ASSERT_NEAR(actual[i], expected[i], abs_tolerance) << feature_name << "[" << i << "]";
+	const auto& golden_values = unvetted_nyxus_regression_remaining2d_vector_feature_golden_values[feature_name];
+	ASSERT_EQ(actual.size(), golden_values.size());
+	for (size_t i = 0; i < golden_values.size(); ++i)
+		ASSERT_NEAR(actual[i], golden_values[i], abs_tolerance) << feature_name << "[" << i << "]";
 }
 
 static void assert_verifiable_with_3p_builtin_oracle_remaining2d_vector_feature(
@@ -290,12 +296,12 @@ static void assert_verifiable_with_3p_builtin_oracle_remaining2d_vector_feature(
 	double abs_tolerance = 1e-9)
 {
 	SCOPED_TRACE(std::string("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__") + feature_name);
-	ASSERT_TRUE(remaining2d_vector_truth.count(feature_name) > 0);
+	ASSERT_TRUE(oracle_3p_remaining2d_vector_feature_golden_values.count(feature_name) > 0);
 	const auto& actual = fvals[static_cast<int>(feature)];
-	const auto& expected = remaining2d_vector_truth[feature_name];
-	ASSERT_EQ(actual.size(), expected.size());
-	for (size_t i = 0; i < expected.size(); ++i)
-		ASSERT_NEAR(actual[i], expected[i], abs_tolerance) << feature_name << "[" << i << "]";
+	const auto& golden_values = oracle_3p_remaining2d_vector_feature_golden_values[feature_name];
+	ASSERT_EQ(actual.size(), golden_values.size());
+	for (size_t i = 0; i < golden_values.size(); ++i)
+		ASSERT_NEAR(actual[i], golden_values[i], abs_tolerance) << feature_name << "[" << i << "]";
 }
 
 void test_remaining2d_verifiable_with_3p_builtin_oracle_erosion_complement_feature()

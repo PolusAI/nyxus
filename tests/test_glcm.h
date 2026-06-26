@@ -16,7 +16,7 @@
 // conventions. The JAVE/JVAR/VARIANCE family is sensitive to the stored row/column
 // roles of the non-symmetric matrix (NOT transpose-invariant!), so keep these values aligned with Nyxus's
 // current SimpleMatrix indexing semantics.
-static std::unordered_map<std::string, double> glcm_values 
+static std::unordered_map<std::string, double> unvetted_nyxus_convention_regression_glcm_feature_golden_values 
 {
     {"GLCM_ACOR", 1.3401234375000004e+03},
     {"GLCM_ASM", 2.8767361111111111e-01},
@@ -50,7 +50,7 @@ static std::unordered_map<std::string, double> glcm_values
     {"GLCM_VARIANCE", 6.8579787868923610e+02}
 };
 
-static std::string glcm_truth_key(const std::string& feature_name)
+static std::string unvetted_nyxus_convention_regression_glcm_feature_golden_key(const std::string& feature_name)
 {
     static const std::string ave_suffix = "_AVE";
     if (feature_name.size() > ave_suffix.size() &&
@@ -83,8 +83,8 @@ void test_glcm_feature(const Feature2D& feature_, const std::string& feature_nam
     GLCMFeature::angles = { 0, 45, 90, 135 };
 
     int feature = int(feature_);
-    const std::string truth_key = glcm_truth_key(feature_name);
-    ASSERT_TRUE(glcm_values.count(truth_key) > 0);
+    const std::string truth_key = unvetted_nyxus_convention_regression_glcm_feature_golden_key(feature_name);
+    ASSERT_TRUE(unvetted_nyxus_convention_regression_glcm_feature_golden_values.count(truth_key) > 0);
     const bool is_ave_feature = truth_key != feature_name;
 
     double total = 0;
@@ -187,7 +187,7 @@ void test_glcm_feature(const Feature2D& feature_, const std::string& feature_nam
 
     // Verdict
     const double divisor = is_ave_feature ? 4.0 : 16.0;
-    ASSERT_TRUE(agrees_gt(total / divisor, glcm_values[truth_key], 100.));
+    ASSERT_TRUE(agrees_gt(total / divisor, unvetted_nyxus_convention_regression_glcm_feature_golden_values[truth_key], 100.));
 }
 
 void test_glcm_ACOR()

@@ -10,7 +10,7 @@
 // Digital phantom values for intensity based features
 // (Reference: IBSI Documentation, Release 0.0.1dev Dec 13, 2021. https://ibsi.readthedocs.io/en/latest/03_Image_features.html
 // Dataset: dig phantom. Aggr. method: 2D, averaged)
-static std::unordered_map<std::string, double> ibsi_ngldm_gtruth
+static std::unordered_map<std::string, double> ibsi_reference_ngldm_feature_reference_values
 {
 	{"NGLDM_LDE",		0.158},	// Low dependence emphasis, p.120, consensus - strong
 	{"NGLDM_HDE",		19.2},	// High dependence emphasis, p.121
@@ -35,7 +35,7 @@ static std::unordered_map<std::string, double> ibsi_ngldm_gtruth
 
 // Active 2D NGLDM regression values on the 4 IBSI digital phantom slices
 // averaged slice-wise under Nyxus's current 2D NGLDM implementation.
-static std::unordered_map<std::string, double> ngldm_regression_gtruth
+static std::unordered_map<std::string, double> unvetted_nyxus_regression_ngldm_feature_golden_values
 {
 	{"NGLDM_LDE",		1.7726166855631142e-01},
 	{"NGLDM_HDE",		1.9041666666666664e+01},
@@ -96,12 +96,12 @@ void test_ibsi_ngld_matrix_ibsi ()
     for (int g=0; g<Ng; g++)
         for (int r = 0; r < Nr; r++)
         {
-            auto gtruth = ibsi_fig3_19_ngldm_ground_truth[g * Nr + r];
+            auto ibsi_reference_matrix_value = ibsi_fig3_19_ngldm_reference_matrix[g * Nr + r];
             auto actual = NGLDM.yx(g, r);
-            if (gtruth != actual)
+            if (ibsi_reference_matrix_value != actual)
             {
                 n_mismatches++;
-                std::cout << "NGLD-matrix #1 mismatch! Expecting [g=" << g << ", r=" << r << "] = " << gtruth << " not " << actual << "\n";
+                std::cout << "NGLD-matrix #1 mismatch! Expecting [g=" << g << ", r=" << r << "] = " << ibsi_reference_matrix_value << " not " << actual << "\n";
             }
         }
 
@@ -146,12 +146,12 @@ void test_ibsi_ngld_matrix_nonibsi()
     for (int g = 0; g < Ng; g++)
         for (int r = 0; r < Nr; r++)
         {
-            auto gtruth = nonibsi_rayryeng_ngldm_ground_truth[g * Nr + r];
+            auto rayryeng_reference_matrix_value = nonibsi_rayryeng_ngldm_reference_matrix[g * Nr + r];
             auto actual = NGLDM.yx(g, r);
-            if (gtruth != actual)
+            if (rayryeng_reference_matrix_value != actual)
             {
                 n_mismatches++;
-                std::cout << "NGLD-matrix #2 mismatch! Expecting [g=" << g << ", r=" << r << "] = " << gtruth << " not " << actual << "\n";
+                std::cout << "NGLD-matrix #2 mismatch! Expecting [g=" << g << ", r=" << r << "] = " << rayryeng_reference_matrix_value << " not " << actual << "\n";
             }
         }
 
@@ -175,8 +175,8 @@ void test_ibsi_ngldm_feature (const Feature2D& feature_, const std::string& feat
 
     int feature = int(feature_);
 
-    // Check if ground truth is available for the feature
-    ASSERT_TRUE(ngldm_regression_gtruth.count(feature_name) > 0);
+    SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
+    ASSERT_TRUE(unvetted_nyxus_regression_ngldm_feature_golden_values.count(feature_name) > 0);
 
     double total = 0;
 
@@ -254,7 +254,7 @@ void test_ibsi_ngldm_feature (const Feature2D& feature_, const std::string& feat
 
     // Verdict
     double aveTotal = total / 4.0;
-    ASSERT_TRUE(agrees_gt(aveTotal, ngldm_regression_gtruth[feature_name], 2.));
+    ASSERT_TRUE(agrees_gt(aveTotal, unvetted_nyxus_regression_ngldm_feature_golden_values[feature_name], 2.));
 }
 
 void test_ibsi_NGLDM_matrix_correctness_IBSI()

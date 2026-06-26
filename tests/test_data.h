@@ -56,53 +56,67 @@ const static NyxusPixel pixelIntensityFeaturesTestData[] = {
 	{7, 16, 16666}, 	{2, 17, 20563}, 	{3, 17, 17664}, 	{4, 17, 16666},
 	{5, 17, 16666}, };
 
-//
-//==== IBSI test data converted from https://github.com/theibsi/data_sets/tree/master/ibsi_1_digital_phantom/dicom
-//
-//
-// Conversion code:
-// 
-//	% -- intensity --
-//	inten_info = dicominfo('/path/to/ibsi_1_digital_phantom/image/phantom.dcm');
-//	I_dcm = dicomread(inten_info);
-//	sz_I = size(I_dcm);
-//	for (z = 1 : sz_I(4)) % slice index is size(4)
-//		fpath_I = ['/path/to/ibsi_1_digital_phantom_converted/image/phantom' sprintf('_z%d', z) '.tiff'];
-//		save2tif(fpath_I, I_dcm(:, : , 1, z));
-//
-//		% G - test friendly format :
-//		lineOfCode = sprintf('const static NyxusPixel ibsi_phantom_z%d_intensity[] = {\n', z);
-//		for y = 1:sz_I(2)
-//			for x = 1 : sz_I(1)
-//				lineOfCode = [lineOfCode sprintf('{/*x*/%d, /*y*/%d, %d}, ', x, y, I_dcm(x, y, 1, z))];
-//			end
-//			lineOfCode = [lineOfCode '\n'];
-//		end
-//		lineOfCode = [lineOfCode ' };\n\n'];
-//		fprintf(1, lineOfCode);
-//	end
-//
-//	% -- mask --
-//	mask_info = dicominfo('/path/to/ibsi_1_digital_phantom/mask/mask.dcm');
-//	M_dcm = dicomread(mask_info);
-//	sz_M = size(M_dcm);
-//	for (z = 1 : sz_M(4)) % slice index is size(4)
-//		fpath_M = ['/path/to/ibsi_1_digital_phantom_converted/mask/phantom' sprintf('_z%d', z) '.tiff'];
-//		save2tif(fpath_M, M_dcm(:, : , 1, z));
-//
-//		% G - test friendly format :
-//		lineOfCode = sprintf('const static NyxusPixel ibsi_phantom_z%d_mask[] = {\n', z);
-//		for y = 1:sz_M(2)
-//			for x = 1 : sz_M(1)
-//				lineOfCode = [lineOfCode sprintf('{/*x*/%d, /*y*/%d, %d}, ', x, y, M_dcm(x, y, 1, z))];
-//			end
-//			lineOfCode = [lineOfCode '\n'];
-//		end
-//		lineOfCode = [lineOfCode ' };\n\n'];
-//		fprintf(1, lineOfCode);
-//	end
-//
+/*
+==== IBSI digital phantom data
 
+Source repository: https://github.com/theibsi/data_sets
+Source commit: 6da96021bc91faf4c0cb7fd7fa56a4225d2064a8
+Image URL:
+https://raw.githubusercontent.com/theibsi/data_sets/6da96021bc91faf4c0cb7fd7fa56a4225d2064a8/ibsi_1_digital_phantom/nifti/image/phantom.nii.gz
+Mask URL:
+https://raw.githubusercontent.com/theibsi/data_sets/6da96021bc91faf4c0cb7fd7fa56a4225d2064a8/ibsi_1_digital_phantom/nifti/mask/mask.nii.gz
+
+The arrays below are generated from the pinned upstream NIfTI files. The
+script intentionally uses only the Python standard library, because the
+phantom is tiny and the NIfTI payload is a simple unscaled int16 volume.
+
+Copy and run the script below with python3:
+
+import gzip
+import struct
+import urllib.request
+
+COMMIT = "6da96021bc91faf4c0cb7fd7fa56a4225d2064a8"
+BASE = (
+    "https://raw.githubusercontent.com/theibsi/data_sets/"
+    f"{COMMIT}/ibsi_1_digital_phantom/nifti"
+)
+SOURCES = {
+    "intensity": f"{BASE}/image/phantom.nii.gz",
+    "mask": f"{BASE}/mask/mask.nii.gz",
+}
+FORMATS = {2: "B", 4: "h", 8: "i", 16: "f", 64: "d", 256: "b", 512: "H", 768: "I"}
+
+def read_nifti(url):
+    raw = gzip.decompress(urllib.request.urlopen(url).read())
+    endian = "<" if struct.unpack("<i", raw[:4])[0] == 348 else ">"
+    assert struct.unpack(endian + "i", raw[:4])[0] == 348
+    dims = struct.unpack(endian + "8h", raw[40:56])
+    datatype = struct.unpack(endian + "h", raw[70:72])[0]
+    bitpix = struct.unpack(endian + "h", raw[72:74])[0]
+    vox_offset = int(struct.unpack(endian + "f", raw[108:112])[0])
+    nx, ny, nz = dims[1], dims[2], dims[3]
+    count = nx * ny * nz
+    step = bitpix // 8
+    payload = raw[vox_offset : vox_offset + count * step]
+    return (nx, ny, nz), struct.unpack(endian + FORMATS[datatype] * count, payload)
+
+def emit(kind, url):
+    (nx, ny, nz), data = read_nifti(url)
+    for z in range(nz):
+        print(f"const static NyxusPixel ibsi_phantom_z{z + 1}_{kind}[] = {{")
+        for y in range(ny):
+            row = []
+            for x in range(nx):
+                value = data[(z * ny + y) * nx + x]
+                row.append(f"{{{x + 1}, {y + 1}, {int(value)}}}")
+            suffix = "," if y + 1 < ny else ""
+            print(", ".join(row) + suffix)
+        print("};\n")
+
+for kind, url in SOURCES.items():
+    emit(kind, url)
+*/
 
 const static NyxusPixel ibsi_phantom_z1_intensity[] = {
 {1, 1, 1}, {2, 1, 4}, {3, 1, 4}, {4, 1, 1}, {5, 1, 1},
@@ -121,7 +135,7 @@ const static NyxusPixel ibsi_phantom_z2_intensity[] = {
 const static NyxusPixel ibsi_phantom_z3_intensity[] = {
 {1, 1, 1}, {2, 1, 4}, {3, 1, 4}, {4, 1, 1}, {5, 1, 1},
 {1, 2, 1}, {2, 2, 1}, {3, 2, 1}, {4, 2, 1}, {5, 2, 1},
-{1, 3, 1}, {2, 3, 1}, {3, 3, 6}, {4, 3, 1}, {5, 3, 1},
+{1, 3, 1}, {2, 3, 1}, {3, 3, 9}, {4, 3, 1}, {5, 3, 1},
 {1, 4, 1}, {2, 4, 1}, {3, 4, 6}, {4, 4, 1}, {5, 4, 1}
 };
 
@@ -181,7 +195,7 @@ const static NyxusPixel ibsi_fig3_19_ngldm_sample_image_mask[] =
 	{1, 4, 1}, {2, 4, 1}, {3, 4, 1}, {4, 4, 1}
 };
 
-const static int ibsi_fig3_19_ngldm_ground_truth[] =
+const static int ibsi_fig3_19_ngldm_reference_matrix[] =
 {
 	0, 0, 0, 0,
 	0, 0, 1, 1,
@@ -212,7 +226,7 @@ const static NyxusPixel nonibsi_rayryeng_ngldm_sample_image_mask[] =
 	{1,5, 1}, {2,5, 1}, {3,5, 1}, {4,5, 1}, {5,5, 1}
 };
 
-const static int nonibsi_rayryeng_ngldm_ground_truth[] =
+const static int nonibsi_rayryeng_ngldm_reference_matrix[] =
 {
 	0, 0, 1, 0, 0, 0,
 	0, 0, 1, 1, 0, 0,
@@ -241,7 +255,7 @@ const static NyxusPixel ibsi_fig3_17a_gldzm_sample_image_mask[] =
 	{1, 4, 1}, {2, 4, 1}, {3, 4, 1}, {4, 4, 1}
 };
 
-const static int ibsi_fig3_17c_gldzm_ground_truth[] =
+const static int ibsi_fig3_17c_gldzm_reference_matrix[] =
 {
 	3, 0,
 	2, 0,

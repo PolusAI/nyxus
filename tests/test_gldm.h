@@ -12,7 +12,7 @@
 #include <unordered_map> 
 
 // values for each feature produced by Nyxus on 01/18/23 after IBSI updates
-static std::unordered_map<std::string, double> gldm_values {
+static std::unordered_map<std::string, double> unvetted_nyxus_regression_gldm_feature_golden_values {
     {"GLDM_SDE", 0.419444},
     {"GLDM_LDE", 4.33864},
     {"GLDM_LGLE", 0.419444},

@@ -12,6 +12,12 @@
 using namespace Nyxus;
 
 // ROI pixel accumulation routines implemented in Nyxus
+static constexpr double oracle_3p_builtin_hyperskewness_feature_golden_value = 1.978293086605381;
+static constexpr double oracle_3p_builtin_hyperflatness_feature_golden_value = 5.126659243028459;
+static constexpr double oracle_3p_matlab_uniformity_feature_golden_value = 0.0647664;
+static constexpr double oracle_3p_builtin_uniformity_piu_feature_golden_value = 29.477577192725725;
+static constexpr double oracle_3p_builtin_covered_image_intensity_range_feature_golden_value = 8.088960097657740e-01;
+static constexpr double oracle_3p_builtin_robust_mean_feature_golden_value = 3.142136800000000e+04;
 
 static void calculate_pixel_intensity_feature_values(
     std::vector<std::vector<double>>& fvals,
@@ -273,7 +279,7 @@ void test_pixel_intensity_verifiable_with_3p_builtin_oracle_hyperskewness()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::HYPERSKEWNESS][0], 1.978293086605381));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::HYPERSKEWNESS][0], oracle_3p_builtin_hyperskewness_feature_golden_value));
 }
 
 void test_pixel_intensity_verifiable_with_3p_builtin_oracle_hyperflatness()
@@ -301,7 +307,7 @@ void test_pixel_intensity_verifiable_with_3p_builtin_oracle_hyperflatness()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::HYPERFLATNESS][0], 5.126659243028459));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::HYPERFLATNESS][0], oracle_3p_builtin_hyperflatness_feature_golden_value));
 }
 
 void test_pixel_intensity_mean_absolute_deviation()
@@ -477,7 +483,7 @@ void test_pixel_intensity_uniformity()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::UNIFORMITY][0], 0.0647664, 100)); // Using 1% tolerance vs MATLAB
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::UNIFORMITY][0], oracle_3p_matlab_uniformity_feature_golden_value, 100)); // Using 1% tolerance vs MATLAB
 }
 
 void test_pixel_intensity_verifiable_with_3p_builtin_oracle_uniformity_piu()
@@ -508,7 +514,7 @@ void test_pixel_intensity_verifiable_with_3p_builtin_oracle_uniformity_piu()
     f.save_value(roidata.fvals);
 
     // Check the feature values vs ground truth
-    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::UNIFORMITY_PIU][0], 29.477577192725725));
+    ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::UNIFORMITY_PIU][0], oracle_3p_builtin_uniformity_piu_feature_golden_value));
 }
 
 void test_pixel_intensity_percentiles_iqr()
@@ -540,7 +546,7 @@ void test_pixel_intensity_verifiable_with_3p_builtin_oracle_covered_image_intens
     std::vector<std::vector<double>> fvals;
     calculate_pixel_intensity_feature_values(fvals, Fsettings(), 0, 0.0, 65535.0);
 
-    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::COVERED_IMAGE_INTENSITY_RANGE][0], 8.088960097657740e-01));
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::COVERED_IMAGE_INTENSITY_RANGE][0], oracle_3p_builtin_covered_image_intensity_range_feature_golden_value));
 }
 
 void test_pixel_intensity_median_absolute_deviation()
@@ -566,7 +572,7 @@ void test_pixel_intensity_verifiable_with_3p_builtin_oracle_robust_mean()
     std::vector<std::vector<double>> fvals;
     calculate_pixel_intensity_feature_values(fvals);
 
-    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::ROBUST_MEAN][0], 3.142136800000000e+04));
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::ROBUST_MEAN][0], oracle_3p_builtin_robust_mean_feature_golden_value));
 }
 
 void test_pixel_intensity_standard_deviation_biased()
