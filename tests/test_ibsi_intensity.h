@@ -11,7 +11,7 @@
 #include <unordered_map> 
 
 // dig. phantom values for intensity based features
-static std::unordered_map<std::string, double> IBSI_intensity_values {
+static std::unordered_map<std::string, double> ibsi_reference_intensity_feature_golden_values {
     {"MEAN", 2.15},
     {"VARIANCE", 3.05},
     {"SKEWNESS", 1.08},
@@ -81,7 +81,7 @@ void test_intensity_feature(const Feature2D& feature, const std::string& feature
 
     if (round) total = std::round(total);
 
-    ASSERT_TRUE(agrees_gt(total, IBSI_intensity_values[feature_name], 100.));
+    ASSERT_TRUE(agrees_gt(total, ibsi_reference_intensity_feature_golden_values[feature_name], 100.));
 }
 
 void test_ibsi_mean_intensity()

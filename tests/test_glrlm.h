@@ -13,7 +13,7 @@
 
 // dig. phantom values for intensity based features
 // Calculated at 100 grey levels
-static std::unordered_map<std::string, double> glrlm_values {
+static std::unordered_map<std::string, double> unvetted_nyxus_regression_glrlm_feature_golden_values {
     {"GLRLM_SRE", 0.677679}, 
     {"GLRLM_LRE", 3.41805}, 
     {"GLRLM_LGLRE", 0.11546}, 
@@ -32,7 +32,7 @@ static std::unordered_map<std::string, double> glrlm_values {
     {"GLRLM_RE", 2.3747}
 };
 
-static std::string glrlm_truth_key(const std::string& feature_name)
+static std::string unvetted_nyxus_regression_glrlm_feature_golden_key(const std::string& feature_name)
 {
     static const std::string ave_suffix = "_AVE";
     if (feature_name.size() > ave_suffix.size() &&
@@ -61,8 +61,8 @@ void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_na
     GLRLMFeature::n_levels = 100;
 
     int feature = int(feature_);
-    const std::string truth_key = glrlm_truth_key(feature_name);
-    ASSERT_TRUE(glrlm_values.count(truth_key) > 0);
+    const std::string truth_key = unvetted_nyxus_regression_glrlm_feature_golden_key(feature_name);
+    ASSERT_TRUE(unvetted_nyxus_regression_glrlm_feature_golden_values.count(truth_key) > 0);
     const bool is_ave_feature = truth_key != feature_name;
 
     double total = 0;
@@ -163,7 +163,7 @@ void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_na
 
     // Verdict
     const double divisor = is_ave_feature ? 4.0 : 16.0;
-    ASSERT_TRUE(agrees_gt(total / divisor, glrlm_values[truth_key], 100.));
+    ASSERT_TRUE(agrees_gt(total / divisor, unvetted_nyxus_regression_glrlm_feature_golden_values[truth_key], 100.));
 }
 
 void test_glrlm_sre()

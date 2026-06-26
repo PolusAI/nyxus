@@ -13,7 +13,7 @@
 
 // dig. phantom values for intensity based features
 // Calculated at grey scalefactlr 100
-static std::unordered_map<std::string, double> ngtdm_values {
+static std::unordered_map<std::string, double> unvetted_nyxus_regression_ngtdm_feature_golden_values {
     {"NGTDM_COARSENESS", 0.008374068},
     {"NGTDM_CONTRAST", 3169.92908},
     {"NGTDM_BUSYNESS", 1.444571},
@@ -111,7 +111,7 @@ void test_ngtdm_feature(const Feature2D& feature_, const std::string& feature_na
     total += roidata3.fvals[feature][0];
 
     // Verdict
-    ASSERT_TRUE(agrees_gt(total/4, ngtdm_values[feature_name], 100.));
+    ASSERT_TRUE(agrees_gt(total/4, unvetted_nyxus_regression_ngtdm_feature_golden_values[feature_name], 100.));
 }
 
 void test_ngtdm_coarseness()

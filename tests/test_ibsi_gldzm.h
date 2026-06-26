@@ -10,7 +10,7 @@
 // Digital phantom values for intensity based features
 // (Reference: IBSI Documentation, Release 0.0.1dev Dec 13, 2021. https://ibsi.readthedocs.io/en/latest/03_Image_features.html
 // Dataset: dig phantom. Aggr. method: 2D, averaged)
-static std::unordered_map<std::string, double> ibsi_gldzm_gtruth
+static std::unordered_map<std::string, double> ibsi_reference_gldzm_feature_golden_values
 {
     {"GLDZM_SDE",		0.946}, // Small distance emphasis
     {"GLDZM_LDE",       1.21},  // Large distance emphasis
@@ -25,11 +25,15 @@ static std::unordered_map<std::string, double> ibsi_gldzm_gtruth
     {"GLDZM_ZDNU",      3.79},  // Zone distance non-uniformity
     {"GLDZM_ZDNUN",     0.898}, // Normalised zone distance non-uniformity
     {"GLDZM_ZP",        0.24},  // Zone percentage
-    {"GLDZM_GLM",       3.476190476190476}, // Grey level mean
     {"GLDZM_GLV",       3.97},  // Grey level variance
-    {"GLDZM_ZDM",       1.1071428571428572}, // Zone distance mean
     {"GLDZM_ZDV",       0.0816326530612245}, // Zone distance variance
     {"GLDZM_ZDE",       1.73}   // Zone distance entropy
+};
+
+static std::unordered_map<std::string, double> unvetted_nyxus_regression_gldzm_feature_golden_values
+{
+    {"GLDZM_GLM",       3.476190476190476}, // Grey level mean
+    {"GLDZM_ZDM",       1.1071428571428572}, // Zone distance mean
 };
 
 void test_ibsi_gldzm_matrix()
@@ -66,19 +70,22 @@ void test_ibsi_gldzm_matrix()
     for (int g = 0; g < Ng; g++)
         for (int d = 0; d < Nd; d++)
         {
-            auto gtruth = ibsi_fig3_17c_gldzm_ground_truth [g * Nd + d];
+            auto ibsi_reference_matrix_value = ibsi_fig3_17c_gldzm_reference_matrix [g * Nd + d];
             auto actual = GLDZM.yx (g,d);
-            if (gtruth != actual)
+            if (ibsi_reference_matrix_value != actual)
             {
                 n_mismatches++;
-                std::cout << "GLDZ-matrix mismatch! Expecting [g=" << g << ", d=" << d << "] = " << gtruth << " not " << actual << "\n";
+                std::cout << "GLDZ-matrix mismatch! Expecting [g=" << g << ", d=" << d << "] = " << ibsi_reference_matrix_value << " not " << actual << "\n";
             }
         }
 
     ASSERT_TRUE(n_mismatches == 0);
 }
 
-void test_ibsi_gldzm_feature (const Feature2D& feature_, const std::string& feature_name)
+void test_ibsi_gldzm_feature_against_golden_values(
+    const Feature2D& feature_,
+    const std::string& feature_name,
+    const std::unordered_map<std::string, double>& feature_golden_values)
 {
     // featue settings for this particular test
     Fsettings s;
@@ -95,8 +102,7 @@ void test_ibsi_gldzm_feature (const Feature2D& feature_, const std::string& feat
 
     int feature = int(feature_);
 
-    // Check if ground truth is available for the feature
-    ASSERT_TRUE (ibsi_gldzm_gtruth.count(feature_name) > 0);
+    ASSERT_TRUE (feature_golden_values.count(feature_name) > 0);
 
     double total = 0;
 
@@ -174,7 +180,18 @@ void test_ibsi_gldzm_feature (const Feature2D& feature_, const std::string& feat
 
     // Verdict
     double aveTotal = total / 4.0;
-    ASSERT_TRUE (agrees_gt(aveTotal, ibsi_gldzm_gtruth[feature_name], 2.));
+    ASSERT_TRUE (agrees_gt(aveTotal, feature_golden_values.at(feature_name), 2.));
+}
+
+void test_ibsi_gldzm_feature (const Feature2D& feature_, const std::string& feature_name)
+{
+    test_ibsi_gldzm_feature_against_golden_values(feature_, feature_name, ibsi_reference_gldzm_feature_golden_values);
+}
+
+void test_ibsi_gldzm_unvetted_nyxus_regression_feature(const Feature2D& feature_, const std::string& feature_name)
+{
+    SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
+    test_ibsi_gldzm_feature_against_golden_values(feature_, feature_name, unvetted_nyxus_regression_gldzm_feature_golden_values);
 }
 
 void test_ibsi_GLDZM_matrix_correctness()
@@ -249,8 +266,7 @@ void test_ibsi_GLDZM_ZP()
 
 void test_ibsi_GLDZM_unvetted_no_direct_oracle_GLM()
 {
-    SCOPED_TRACE("UNVETTED_NO_DIRECT_ORACLE__GLDZM_GLM");
-    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_GLM, "GLDZM_GLM");
+    test_ibsi_gldzm_unvetted_nyxus_regression_feature(Nyxus::Feature2D::GLDZM_GLM, "GLDZM_GLM");
 }
 
 void test_ibsi_GLDZM_GLV()
@@ -260,8 +276,7 @@ void test_ibsi_GLDZM_GLV()
 
 void test_ibsi_GLDZM_unvetted_no_direct_oracle_ZDM()
 {
-    SCOPED_TRACE("UNVETTED_NO_DIRECT_ORACLE__GLDZM_ZDM");
-    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_ZDM, "GLDZM_ZDM");
+    test_ibsi_gldzm_unvetted_nyxus_regression_feature(Nyxus::Feature2D::GLDZM_ZDM, "GLDZM_ZDM");
 }
 
 void test_ibsi_GLDZM_ZDV()

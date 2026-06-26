@@ -12,7 +12,7 @@
 #include <unordered_map> 
 
 // dig. phantom values for intensity based features
-static std::unordered_map<std::string, double> IBSI_ngtdm_values {
+static std::unordered_map<std::string, double> ibsi_reference_ngtdm_feature_golden_values {
     {"NGTDM_COARSENESS", 0.121},
     {"NGTDM_CONTRAST", 0.925},
     {"NGTDM_BUSYNESS", 2.99},
@@ -110,7 +110,7 @@ void test_ibsi_ngtdm_feature (const Feature2D& feature_, const std::string& feat
 
     // Verdict
     double ave = total / 4;
-    ASSERT_TRUE(agrees_gt(ave, IBSI_ngtdm_values[feature_name], 100.));
+    ASSERT_TRUE(agrees_gt(ave, ibsi_reference_ngtdm_feature_golden_values[feature_name], 100.));
 }
 
 void test_ibsi_ngtdm_coarseness()

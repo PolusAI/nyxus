@@ -13,7 +13,7 @@
 
 // dig. phantom values for intensity based features
 // Calculated at 100 grey levels
-static std::unordered_map<std::string, double> glszm_values {
+static std::unordered_map<std::string, double> unvetted_nyxus_regression_glszm_feature_golden_values {
     {"GLSZM_SAE", 0.38873},
     {"GLSZM_LAE", 32.5},
     {"GLSZM_LGLZE", 0.1962550},
@@ -116,7 +116,7 @@ void test_glszm_feature(const Feature2D& feature_, const std::string& feature_na
     total += roidata3.fvals[feature][0];
 
     // Verdict
-    ASSERT_TRUE(agrees_gt(total/4, glszm_values[feature_name], 100.));
+    ASSERT_TRUE(agrees_gt(total/4, unvetted_nyxus_regression_glszm_feature_golden_values[feature_name], 100.));
 }
 
 void test_glszm_sae()
