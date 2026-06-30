@@ -1,7 +1,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <unordered_map> 
+#include <unordered_map>
 #include "../src/nyx/environment.h"
 #include "../src/nyx/features/ngldm.h"
 #include "test_data.h"
@@ -29,33 +29,16 @@ static std::unordered_map<std::string, double> ibsi_reference_ngldm_feature_refe
 	//--not in IBSI-- {"NGLDM_DCM",		-1},    // Dependency count mean
 	{"NGLDM_DCP", 1.0},	    // Dependence count percentage, p. 126
 	{"NGLDM_DCV",		2.73},	// Dependence count variance, p. 127
-	{"NGLDM_DCENT",		2.71},	// Dependence count energy, p. 128
-	{"NGLDM_DCENE",		0.17}	// Dependence count entropy, p. 128
+	{"NGLDM_DCENT",		2.71},	// Dependence count entropy, p. 128
+	{"NGLDM_DCENE",		0.17}	// Dependence count energy, p. 128
 };
 
-// Active 2D NGLDM regression values on the 4 IBSI digital phantom slices
-// averaged slice-wise under Nyxus's current 2D NGLDM implementation.
-static std::unordered_map<std::string, double> unvetted_nyxus_regression_ngldm_feature_golden_values
+// GLM and DCM are Nyxus mean-style rows that are not defined in the IBSI
+// NGLDM table, so only those two remain local regression references here.
+static std::unordered_map<std::string, double> unvetted_nyxus_regression_ngldm_feature_reference_values
 {
-	{"NGLDM_LDE",		1.7726166855631142e-01},
-	{"NGLDM_HDE",		1.9041666666666664e+01},
-	{"NGLDM_LGLCE",		7.1585648148148150e-01},
-	{"NGLDM_HGLCE",		5.0416666666666670e+00},
-	{"NGLDM_LDLGLE",	8.3222316704459560e-02},
-	{"NGLDM_LDHGLE",	7.8294164540816320e-01},
-	{"NGLDM_HDLGLE",	2.6025462962962962e+01},
-	{"NGLDM_HDHGLE",	5.8791666666666660e+01},
-	{"NGLDM_GLNU",		3.7083333333333330e+00},
-	{"NGLDM_GLNUN",		6.1805555555555560e-01},
-	{"NGLDM_DCNU",		3.7083333333333330e+00},
-	{"NGLDM_DCNUN",		6.1805555555555560e-01},
-	{"NGLDM_DCP",		1.0000000000000000e+00},
-	{"NGLDM_GLM",		1.5416666666666665e+00},
-	{"NGLDM_GLV",		1.6909722222222220e+00},
-	{"NGLDM_DCM",		4.5833333333333330e+00},
-	{"NGLDM_DCV",		1.6087962962962963e+00},
-	{"NGLDM_DCENT",		1.7303885422075338e+00},
-	{"NGLDM_DCENE",		2.4305555555555558e-01}
+	{"NGLDM_GLM",		2.1178319573443410e+00},
+	{"NGLDM_DCM",		3.9832043343653250e+00}
 };
 
 //
@@ -132,7 +115,7 @@ void test_ibsi_ngld_matrix_nonibsi()
     s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
     s[(int)NyxSetting::USEGPU].bval = false;
     s[(int)NyxSetting::VERBOSLVL].ival = 0;
-    s[(int)NyxSetting::IBSI].bval = true;
+    s[(int)NyxSetting::IBSI].bval = false;
 
     // Have the feature object to create the NGLDM matrix kit (matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and NGLDM's dimensions)
     std::vector<PixIntens> greyLevelsLUT;
@@ -158,7 +141,11 @@ void test_ibsi_ngld_matrix_nonibsi()
     ASSERT_TRUE(n_mismatches == 0);
 }
 
-void test_ibsi_ngldm_feature (const Feature2D& feature_, const std::string& feature_name) 
+void test_ibsi_ngldm_feature(
+    const Feature2D& feature_,
+    const std::string& feature_name,
+    const std::unordered_map<std::string, double>& feature_reference_values,
+    const std::string& review_prefix)
 {
     // featue settings for this particular test
     Fsettings s;
@@ -175,8 +162,8 @@ void test_ibsi_ngldm_feature (const Feature2D& feature_, const std::string& feat
 
     int feature = int(feature_);
 
-    SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
-    ASSERT_TRUE(unvetted_nyxus_regression_ngldm_feature_golden_values.count(feature_name) > 0);
+    SCOPED_TRACE(review_prefix + feature_name);
+    ASSERT_TRUE(feature_reference_values.count(feature_name) > 0);
 
     double total = 0;
 
@@ -254,7 +241,25 @@ void test_ibsi_ngldm_feature (const Feature2D& feature_, const std::string& feat
 
     // Verdict
     double aveTotal = total / 4.0;
-    ASSERT_TRUE(agrees_gt(aveTotal, unvetted_nyxus_regression_ngldm_feature_golden_values[feature_name], 2.));
+    ASSERT_TRUE(agrees_gt(aveTotal, feature_reference_values.at(feature_name), 2.));
+}
+
+void test_ibsi_ngldm_ibsi_reference_feature(const Feature2D& feature_, const std::string& feature_name)
+{
+	test_ibsi_ngldm_feature(
+		feature_,
+		feature_name,
+		ibsi_reference_ngldm_feature_reference_values,
+		"VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
+}
+
+void test_ibsi_ngldm_unvetted_nyxus_regression_feature(const Feature2D& feature_, const std::string& feature_name)
+{
+	test_ibsi_ngldm_feature(
+		feature_,
+		feature_name,
+		unvetted_nyxus_regression_ngldm_feature_reference_values,
+		"UNVETTED_NO_DIRECT_ORACLE__");
 }
 
 void test_ibsi_NGLDM_matrix_correctness_IBSI()
@@ -269,99 +274,97 @@ void test_ibsi_NGLDM_matrix_correctness_NONIBSI()
 
 void test_ibsi_NGLDM_LDE()
 {
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_LDE, "NGLDM_LDE");
+	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_LDE, "NGLDM_LDE");
 }
 
 void test_ibsi_NGLDM_HDE()
 {
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_HDE, "NGLDM_HDE");
+	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_HDE, "NGLDM_HDE");
 }
 
 void test_ibsi_NGLDM_LGLCE()
 {
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_LGLCE, "NGLDM_LGLCE");
+	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_LGLCE, "NGLDM_LGLCE");
 }
 
 void test_ibsi_NGLDM_HGLCE()
 {
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_HGLCE, "NGLDM_HGLCE");
+	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_HGLCE, "NGLDM_HGLCE");
 }
 
 void test_ibsi_NGLDM_LDLGLE()
 {
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_LDLGLE, "NGLDM_LDLGLE");
+	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_LDLGLE, "NGLDM_LDLGLE");
 }
 
 void test_ibsi_NGLDM_LDHGLE()
 {
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_LDHGLE, "NGLDM_LDHGLE");
+	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_LDHGLE, "NGLDM_LDHGLE");
 }
 
 void test_ibsi_NGLDM_HDLGLE()
 {
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_HDLGLE, "NGLDM_HDLGLE");
+	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_HDLGLE, "NGLDM_HDLGLE");
 }
 
 void test_ibsi_NGLDM_HDHGLE()
 {
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_HDHGLE, "NGLDM_HDHGLE");
+	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_HDHGLE, "NGLDM_HDHGLE");
 }
 
 void test_ibsi_NGLDM_GLNU()
 {
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_GLNU, "NGLDM_GLNU");
+	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_GLNU, "NGLDM_GLNU");
 }
 
 void test_ibsi_NGLDM_GLNUN()
 {
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_GLNUN, "NGLDM_GLNUN");
+	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_GLNUN, "NGLDM_GLNUN");
 }
 
 void test_ibsi_NGLDM_DCNU()
 {
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_DCNU, "NGLDM_DCNU");
+	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCNU, "NGLDM_DCNU");
 }
 
 void test_ibsi_NGLDM_DCNUN()
 {
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_DCNUN, "NGLDM_DCNUN");
+	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCNUN, "NGLDM_DCNUN");
 }
 
 void test_ibsi_NGLDM_DCP()
 {
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_DCP, "NGLDM_DCP");
+	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCP, "NGLDM_DCP");
 }
 
 void test_ibsi_NGLDM_unvetted_no_direct_oracle_GLM()
 {
-	SCOPED_TRACE("UNVETTED_NO_DIRECT_ORACLE__NGLDM_GLM");
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_GLM, "NGLDM_GLM");
+	test_ibsi_ngldm_unvetted_nyxus_regression_feature(Nyxus::Feature2D::NGLDM_GLM, "NGLDM_GLM");
 }
 
 void test_ibsi_NGLDM_GLV()
 {
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_GLV, "NGLDM_GLV");
+	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_GLV, "NGLDM_GLV");
 }
 
 void test_ibsi_NGLDM_unvetted_no_direct_oracle_DCM()
 {
-	SCOPED_TRACE("UNVETTED_NO_DIRECT_ORACLE__NGLDM_DCM");
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_DCM, "NGLDM_DCM");
+	test_ibsi_ngldm_unvetted_nyxus_regression_feature(Nyxus::Feature2D::NGLDM_DCM, "NGLDM_DCM");
 }
 
 void test_ibsi_NGLDM_DCV()
 {
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_DCV, "NGLDM_DCV");
+	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCV, "NGLDM_DCV");
 }
 
 void test_ibsi_NGLDM_DCENT()
 {
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_DCENT, "NGLDM_DCENT");
+	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCENT, "NGLDM_DCENT");
 }
 
 void test_ibsi_NGLDM_DCENE()
 {
-	test_ibsi_ngldm_feature(Nyxus::Feature2D::NGLDM_DCENE, "NGLDM_DCENE");
+	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCENE, "NGLDM_DCENE");
 }
 
 

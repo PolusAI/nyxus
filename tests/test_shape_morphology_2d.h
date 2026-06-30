@@ -21,6 +21,14 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
+// "Unvetted" means this table is not claiming an accepted independent
+// built-in/package oracle for these rows. Some entries, such as area,
+// centroids, and bounding-box limits, are easy to inspect on this small
+// fixture; that kind of hand recomputation is useful as a sanity check but is
+// not V&V by our tracker definition, because it restates the fixture geometry
+// and Nyxus coordinate/spacing conventions rather than using a third-party
+// oracle. Rows with accepted external built-in/API comparators live in the
+// oracle_3p table below.
 static std::unordered_map<std::string, double> unvetted_nyxus_regression_shape2d_feature_golden_values{
 	{"AREA_PIXELS_COUNT", 26.0},
 	{"AREA_UM2", 104.0},

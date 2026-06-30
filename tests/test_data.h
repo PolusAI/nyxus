@@ -197,10 +197,10 @@ const static NyxusPixel ibsi_fig3_19_ngldm_sample_image_mask[] =
 
 const static int ibsi_fig3_19_ngldm_reference_matrix[] =
 {
-	0, 0, 0, 0,
-	0, 0, 1, 1,
-	0, 0, 1, 0,
-	1, 0, 0, 0
+	2, 2, 0, 0,
+	0, 1, 3, 1,
+	1, 0, 3, 0,
+	1, 2, 0, 0
 };
 
 //
@@ -228,10 +228,10 @@ const static NyxusPixel nonibsi_rayryeng_ngldm_sample_image_mask[] =
 
 const static int nonibsi_rayryeng_ngldm_reference_matrix[] =
 {
-	0, 0, 1, 0, 0, 0,
-	0, 0, 1, 1, 0, 0,
-	0, 0, 0, 0, 4, 1,
-	0, 1, 0, 0, 0, 0
+	1, 2, 3, 0, 0, 0,
+	1, 2, 3, 2, 0, 0,
+	0, 1, 2, 0, 4, 1,
+	1, 2, 0, 0, 0, 0
 };
 
 //

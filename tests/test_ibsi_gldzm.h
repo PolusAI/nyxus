@@ -25,15 +25,14 @@ static std::unordered_map<std::string, double> ibsi_reference_gldzm_feature_gold
     {"GLDZM_ZDNU",      3.79},  // Zone distance non-uniformity
     {"GLDZM_ZDNUN",     0.898}, // Normalised zone distance non-uniformity
     {"GLDZM_ZP",        0.24},  // Zone percentage
+    // IBSI defines GLM and ZDM for GLDZM. Keep them in the reference table;
+    // external V&V also reconciles them through MIRP-owned MatrixDZM
+    // primitives because MIRP does not expose direct feature columns for them.
+    {"GLDZM_GLM",       3.476190476190476}, // Grey level mean
     {"GLDZM_GLV",       3.97},  // Grey level variance
+    {"GLDZM_ZDM",       1.1071428571428572}, // Zone distance mean
     {"GLDZM_ZDV",       0.0816326530612245}, // Zone distance variance
     {"GLDZM_ZDE",       1.73}   // Zone distance entropy
-};
-
-static std::unordered_map<std::string, double> unvetted_nyxus_regression_gldzm_feature_golden_values
-{
-    {"GLDZM_GLM",       3.476190476190476}, // Grey level mean
-    {"GLDZM_ZDM",       1.1071428571428572}, // Zone distance mean
 };
 
 void test_ibsi_gldzm_matrix()
@@ -185,13 +184,8 @@ void test_ibsi_gldzm_feature_against_golden_values(
 
 void test_ibsi_gldzm_feature (const Feature2D& feature_, const std::string& feature_name)
 {
+    SCOPED_TRACE(std::string("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__") + feature_name);
     test_ibsi_gldzm_feature_against_golden_values(feature_, feature_name, ibsi_reference_gldzm_feature_golden_values);
-}
-
-void test_ibsi_gldzm_unvetted_nyxus_regression_feature(const Feature2D& feature_, const std::string& feature_name)
-{
-    SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
-    test_ibsi_gldzm_feature_against_golden_values(feature_, feature_name, unvetted_nyxus_regression_gldzm_feature_golden_values);
 }
 
 void test_ibsi_GLDZM_matrix_correctness()
@@ -264,9 +258,9 @@ void test_ibsi_GLDZM_ZP()
     test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_ZP, "GLDZM_ZP");
 }
 
-void test_ibsi_GLDZM_unvetted_no_direct_oracle_GLM()
+void test_ibsi_GLDZM_GLM()
 {
-    test_ibsi_gldzm_unvetted_nyxus_regression_feature(Nyxus::Feature2D::GLDZM_GLM, "GLDZM_GLM");
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_GLM, "GLDZM_GLM");
 }
 
 void test_ibsi_GLDZM_GLV()
@@ -274,9 +268,9 @@ void test_ibsi_GLDZM_GLV()
     test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_GLV, "GLDZM_GLV");
 }
 
-void test_ibsi_GLDZM_unvetted_no_direct_oracle_ZDM()
+void test_ibsi_GLDZM_ZDM()
 {
-    test_ibsi_gldzm_unvetted_nyxus_regression_feature(Nyxus::Feature2D::GLDZM_ZDM, "GLDZM_ZDM");
+    test_ibsi_gldzm_feature(Nyxus::Feature2D::GLDZM_ZDM, "GLDZM_ZDM");
 }
 
 void test_ibsi_GLDZM_ZDV()
