@@ -17,7 +17,7 @@ MINICONDA=$PWD/miniconda-for-nyxus # Modify this to your preferred location for 
 CPP_BUILD_DIR=$PWD
 SRC_ROOT=$1 #source dir location
 NYXUS_ROOT=$SRC_ROOT
-PYTHON=3.9
+PYTHON=3.11
 
 git config --global --add safe.directory $NYXUS_ROOT
 
@@ -66,6 +66,7 @@ mkdir -p $CPP_BUILD_DIR
 pushd $CPP_BUILD_DIR
 cmake -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
       -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+      -DCMAKE_CUDA_COMPILER=$CONDA_PREFIX/bin/nvcc \
       -DBUILD_CLI=ON \
       -DUSEGPU=ON \
       -DALLEXTRAS=ON \
