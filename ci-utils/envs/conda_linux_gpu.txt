@@ -1,2 +1,4 @@
-cudatoolkit=11.5.0
-cudatoolkit-dev=11.5.0
+cuda-version=12.6
+cuda-nvcc=12.6
+cuda-cudart-dev=12.6
+libcufft-dev
