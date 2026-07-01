@@ -78,7 +78,9 @@ void ChordsFeature::calculate (LR & r, const Fsettings& s)
 	maxchords_min_angle = MCang[idxmin];
 
 	auto iteMax = std::max_element(MC.begin(), MC.end());
-	auto idxmax = std::distance(MC.begin(), iteMin);
+	// FIX: index the LONGEST max-chord (iteMax). Previously used iteMin, so
+	// maxchords_max_angle always equalled maxchords_min_angle.
+	auto idxmax = std::distance(MC.begin(), iteMax);
 	maxchords_max_angle = MCang[idxmax];
 
 	// Analyze all chords
@@ -91,16 +93,20 @@ void ChordsFeature::calculate (LR & r, const Fsettings& s)
 	allchords_mean = mom2.mean();
 	allchords_stddev = mom2.std();
 
-	histo.initialize_uniques(MC); 
-	allchords_mode = histo.get_mode(); 
-	allchords_median = histo.get_median(); 
+	// FIX: build the all-chords histogram from AC (all chords). Previously it
+	// reused MC (max-chords), so all-chords mode/median were the max-chords ones.
+	histo.initialize_uniques(AC);
+	allchords_mode = histo.get_mode();
+	allchords_median = histo.get_median();
 
 	iteMin = std::min_element(AC.begin(), AC.end());
 	idxmin = std::distance(AC.begin(), iteMin);
 	allchords_min_angle = ACang[idxmin];
 
 	iteMax = std::max_element(AC.begin(), AC.end());
-	idxmax = std::distance(AC.begin(), iteMin);
+	// FIX: index the LONGEST all-chord (iteMax). Previously used iteMin, so
+	// allchords_max_angle always equalled allchords_min_angle.
+	idxmax = std::distance(AC.begin(), iteMax);
 	allchords_max_angle = ACang[idxmax];
 }
 

@@ -51,9 +51,10 @@ static std::unordered_map<std::string, double> oracle_3p_remaining2d_feature_gol
 	{"MAXCHORDS_STDDEV", 0.94451324138833304},
 	{"ALLCHORDS_MAX", 6.0},
 	{"ALLCHORDS_MIN", 1.0},
-	{"ALLCHORDS_MEDIAN", 4.0},
+	// FIXED (chords.cpp histo built from MC): all-chords median/mode now computed over ALL chords, not max-chords
+	{"ALLCHORDS_MEDIAN", 3.0},
 	{"ALLCHORDS_MEAN", 2.9134615384615379},
-	{"ALLCHORDS_MODE", 4.0},
+	{"ALLCHORDS_MODE", 3.0},
 	{"ALLCHORDS_STDDEV", 1.3446086298393252},
 };
 
@@ -61,9 +62,10 @@ static std::unordered_map<std::string, double> unvetted_nyxus_regression_remaini
 	{"POLYGONALITY_AVE", 2.0833333333333357},
 	{"HEXAGONALITY_AVE", 6.4262878058432173},
 	{"HEXAGONALITY_STDDEV", 0.31438281411429858},
-	{"MAXCHORDS_MAX_ANG", 0.94247779607693793},
+	// FIXED (chords.cpp idxmax used iteMin): max-angle now indexes the longest chord (angle 0), not the min
+	{"MAXCHORDS_MAX_ANG", 0.0},
 	{"MAXCHORDS_MIN_ANG", 0.94247779607693793},
-	{"ALLCHORDS_MAX_ANG", 0.15707963267948966},
+	{"ALLCHORDS_MAX_ANG", 0.0},
 	{"ALLCHORDS_MIN_ANG", 0.15707963267948966},
 };
 
