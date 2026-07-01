@@ -382,15 +382,30 @@ if(USE_ARROW)
 	endif()
 	
 	find_package(Parquet)
-	if (NOT Parquet_FOUND) 
+	if (NOT Parquet_FOUND)
 		message(WARNING "The Parquet library was not found. The build will continue without Arrow support.")
 		set(USE_ARROW OFF)
+	endif()
+
+	# Building Arrow support pulls in Boost headers. Try to locate Boost so we can
+	# add its include dirs, but do NOT gate Arrow on find_package(Boost) succeeding:
+	# some prereq layouts ship Boost as headers-only under the common include prefix
+	# (no CMake config / no Boost_INCLUDE_DIR), which is enough to build against.
+	find_package(Boost QUIET)
+	if(NOT Boost_FOUND)
+		message(STATUS "Boost was not found via find_package; relying on Boost headers on the include path for Arrow support.")
 	endif()
 
 endif()
 
 if(USE_ARROW)
 	add_definitions(-DUSE_ARROW)
+	if(Boost_FOUND)
+		include_directories(${Boost_INCLUDE_DIRS})
+	elseif(DEFINED ENV{NYXUS_DEP_DIR})
+		# headers-only Boost shipped under the dependency prefix (no CMake config)
+		include_directories("$ENV{NYXUS_DEP_DIR}/include")
+	endif()
 	list(APPEND Nyxus_LIBRARIES arrow_shared)
 	list(APPEND Nyxus_LIBRARIES parquet_shared)
 endif()
