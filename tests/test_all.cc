@@ -39,6 +39,7 @@
 #include "test_compat_3d_glrlm.h"
 #include "test_compat_3d_glszm.h"
 #include "test_3d_feature_coverage.h"
+#include "test_glcm_oracle.h"
 #ifdef USE_ARROW
     #include "test_arrow.h"
     #include "test_arrow_file_name.h"
@@ -1451,6 +1452,13 @@ TEST(TEST_NYXUS, TEST_GLCM_SUMENTROPY_AVE)
 TEST(TEST_NYXUS, TEST_GLCM_SUMVARIANCE_AVE)
 {
 	ASSERT_NO_THROW(test_glcm_SUMVARIANCE_AVE());
+}
+
+// Regression guard: GLCM co-occurrence distance must default to 1 via the production
+// settings path (exposes the offset=0 default defect that the hard-coded tests above miss).
+TEST(TEST_NYXUS, TEST_GLCM_BUG_OFFSET_DEFAULT)
+{
+	ASSERT_NO_THROW(test_glcm_bug_offset_default_is_one());
 }
 
 //***** IBSI tests of GLDM ***** 
