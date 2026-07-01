@@ -105,7 +105,8 @@ void FractalDimensionFeature::calculate_perimeter_fdim (LR& r)
 		// save this approximation
 		coverage.push_back({ s, (int)p });
 	}
-	perim_fd = calc_lyapunov_slope(coverage);
+	// Richardson divider method: log(perimeter) vs log(ruler) has slope (1 - D), so D = 1 - slope
+	perim_fd = 1.0 - calc_lyapunov_slope(coverage);
 }
 
 double FractalDimensionFeature::calc_lyapunov_slope (const std::vector<std::pair<int, int>> & coverage)
@@ -144,24 +145,16 @@ double FractalDimensionFeature::calc_lyapunov_slope (const std::vector<std::pair
 		Lambda.push_back(lambda);
 	}
 
-	// Estimate the slope of the series Lambda[k]
-	// (given y = a + bx, the slope b = \frac {n \sum{xy} - \sum{x} \sum{y}} {n \sum{x^2} - \sum{x}^2})
-	double sum_x = 0,
-		sum_y = 0,
-		sum_xy = 0,
-		sum_x2 = 0;
-	int n = Dn.size();
-	for (auto i = 0; i < n; i++)
-	{
-		double x = double(i),
-			y = Lambda[i];
-		sum_x += x;
-		sum_y += y;
-		sum_xy += x * y;
-		sum_x2 += x * x;
-	}
-	double slope = (sum_xy * double(n) - sum_x * sum_y) / (sum_x2 * double(n) - sum_x * sum_x);
-	return slope;
+	// The box-counting / Richardson dimension is the (average) slope of log(count) vs log(scale),
+	// i.e. the MEAN of the local slopes Lambda[]. The previous code returned the least-squares
+	// slope of Lambda[] *against its index* (the rate-of-change of the slope), which is ~0 for a
+	// clean power law -> dimension came out ~0 (FRACT_DIM_BOXCOUNT=-0.07). Return the mean slope.
+	if (Lambda.empty())
+		return 0.;
+	double sum = 0.;
+	for (double v : Lambda)
+		sum += v;
+	return sum / double(Lambda.size());
 }
 
 void FractalDimensionFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
