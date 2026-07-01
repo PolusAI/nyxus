@@ -1,0 +1,9 @@
+<OME xmlns="http://www.openmicroscopy.org/Schemas/OME/2016-06" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openmicroscopy.org/Schemas/OME/2016-06 http://www.openmicroscopy.org/Schemas/OME/2016-06/ome.xsd">
+  <Image ID="Image:0">
+    <Pixels ID="Pixels:0" DimensionOrder="XYZCT" Type="uint16" BigEndian="false" SizeX="512" SizeY="512" SizeZ="1" SizeC="1" SizeT="1">
+      <Channel ID="Channel:0" SamplesPerPixel="1"/>
+      <TiffData/>
+      <Plane TheZ="0" TheT="0" TheC="0"/>
+    </Pixels>
+  </Image>
+</OME>

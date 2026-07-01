@@ -27,6 +27,7 @@
 #include "test_roi_blacklist.h"
 #include "test_image_quality.h"
 #include "test_3d_nifti.h"
+#include "test_omezarr.h"
 #include "test_3d_shape.h"
 #include "test_3d_gldzm.h"
 #include "test_3d_ngldm.h"
@@ -2313,6 +2314,37 @@ TEST(TEST_NYXUS, TEST_3D_NIFTY_LOADER) {
 TEST(TEST_NYXUS, TEST_3D_NIFTY_DACC_CONSISTENCY) {
 	ASSERT_NO_THROW (test_3d_nifti_data_access_consistency());
 }
+
+
+//***** OME-Zarr i/o *****
+
+#ifdef OMEZARR_SUPPORT
+
+TEST(TEST_NYXUS, TEST_OMEZARR_TILELOADER_GEOMETRY) {
+	ASSERT_NO_THROW (test_omezarr_tileloader_geometry());
+}
+
+TEST(TEST_NYXUS, TEST_OMEZARR_TILELOADER_CONTENT) {
+	ASSERT_NO_THROW (test_omezarr_tileloader_content());
+}
+
+TEST(TEST_NYXUS, TEST_OMEZARR_TILELOADER_MULTITILE) {
+	ASSERT_NO_THROW (test_omezarr_tileloader_multitile());
+}
+
+TEST(TEST_NYXUS, TEST_RAW_OMEZARR_GEOMETRY) {
+	ASSERT_NO_THROW (test_raw_omezarr_geometry());
+}
+
+TEST(TEST_NYXUS, TEST_RAW_OMEZARR_CONTENT) {
+	ASSERT_NO_THROW (test_raw_omezarr_content());
+}
+
+TEST(TEST_NYXUS, TEST_RAW_OMEZARR_MULTITILE) {
+	ASSERT_NO_THROW (test_raw_omezarr_multitile());
+}
+
+#endif // OMEZARR_SUPPORT
 
 
 int main(int argc, char **argv) 

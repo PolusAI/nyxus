@@ -1,0 +1,16 @@
+{
+  "multiscales": [
+    {
+      "version": "0.1",
+      "name": "multi.ome.zarr",
+      "datasets": [
+        {
+          "path": "0"
+        }
+      ],
+      "metadata": {
+        "method": "mean"
+      }
+    }
+  ]
+}
