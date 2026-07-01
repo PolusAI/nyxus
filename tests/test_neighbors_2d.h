@@ -14,70 +14,57 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
-static std::unordered_map<int, std::unordered_map<std::string, double>> unvetted_nyxus_regression_neighbor2d_distance_feature_golden_values_by_label{
+static std::unordered_map<int, std::unordered_map<std::string, double>> neighborhood2d_truth{
 	{1, {
 		{"NUM_NEIGHBORS", 4.0},
 		{"PERCENT_TOUCHING", 87.5},
 		{"CLOSEST_NEIGHBOR1_DIST", 2.5},
-		{"CLOSEST_NEIGHBOR2_DIST", 2.54950975679639},
-	}},
-	{2, {
-		{"NUM_NEIGHBORS", 1.0},
-		{"PERCENT_TOUCHING", 33.3333333333333},
-		{"CLOSEST_NEIGHBOR1_DIST", 2.54950975679639},
-		{"CLOSEST_NEIGHBOR2_DIST", 0.0},
-	}},
-	{3, {
-		{"NUM_NEIGHBORS", 1.0},
-		{"PERCENT_TOUCHING", 66.6666666666667},
-		{"CLOSEST_NEIGHBOR1_DIST", 2.54950975679639},
-		{"CLOSEST_NEIGHBOR2_DIST", 0.0},
-	}},
-	{4, {
-		{"NUM_NEIGHBORS", 1.0},
-		{"PERCENT_TOUCHING", 50.0},
-		{"CLOSEST_NEIGHBOR1_DIST", 2.5},
-		{"CLOSEST_NEIGHBOR2_DIST", 0.0},
-	}},
-	{5, {
-		{"NUM_NEIGHBORS", 1.0},
-		{"PERCENT_TOUCHING", 33.3333333333333},
-		{"CLOSEST_NEIGHBOR1_DIST", 2.54950975679639},
-		{"CLOSEST_NEIGHBOR2_DIST", 0.0},
-	}}
-};
-
-static std::unordered_map<int, std::unordered_map<std::string, double>> unvetted_nyxus_regression_neighbor2d_angle_feature_golden_values_by_label{
-	{1, {
 		{"CLOSEST_NEIGHBOR1_ANG", 0.0},
+		{"CLOSEST_NEIGHBOR2_DIST", 2.54950975679639},
 		{"CLOSEST_NEIGHBOR2_ANG", 191.30993247402},
 		{"ANG_BW_NEIGHBORS_MEAN", 132.172516881495},
 		{"ANG_BW_NEIGHBORS_STDDEV", 115.230018010206},
 		{"ANG_BW_NEIGHBORS_MODE", 0.0},
 	}},
 	{2, {
+		{"NUM_NEIGHBORS", 1.0},
+		{"PERCENT_TOUCHING", 66.6666666666667},   // fix #13: deduped touching pixels / contour length
+		{"CLOSEST_NEIGHBOR1_DIST", 2.54950975679639},
 		{"CLOSEST_NEIGHBOR1_ANG", 11.3099324740202},
+		{"CLOSEST_NEIGHBOR2_DIST", 0.0},
 		{"CLOSEST_NEIGHBOR2_ANG", 0.0},
 		{"ANG_BW_NEIGHBORS_MEAN", 11.3099324740202},
 		{"ANG_BW_NEIGHBORS_STDDEV", 0.0},
 		{"ANG_BW_NEIGHBORS_MODE", 11.0},
 	}},
 	{3, {
+		{"NUM_NEIGHBORS", 1.0},
+		{"PERCENT_TOUCHING", 66.6666666666667},
+		{"CLOSEST_NEIGHBOR1_DIST", 2.54950975679639},
 		{"CLOSEST_NEIGHBOR1_ANG", 78.6900675259798},
+		{"CLOSEST_NEIGHBOR2_DIST", 0.0},
 		{"CLOSEST_NEIGHBOR2_ANG", 0.0},
 		{"ANG_BW_NEIGHBORS_MEAN", 78.6900675259798},
 		{"ANG_BW_NEIGHBORS_STDDEV", 0.0},
 		{"ANG_BW_NEIGHBORS_MODE", 79.0},
 	}},
 	{4, {
+		{"NUM_NEIGHBORS", 1.0},
+		{"PERCENT_TOUCHING", 50.0},
+		{"CLOSEST_NEIGHBOR1_DIST", 2.5},
 		{"CLOSEST_NEIGHBOR1_ANG", 180.0},
+		{"CLOSEST_NEIGHBOR2_DIST", 0.0},
 		{"CLOSEST_NEIGHBOR2_ANG", 0.0},
 		{"ANG_BW_NEIGHBORS_MEAN", 180.0},
 		{"ANG_BW_NEIGHBORS_STDDEV", 0.0},
 		{"ANG_BW_NEIGHBORS_MODE", 180.0},
 	}},
 	{5, {
+		{"NUM_NEIGHBORS", 1.0},
+		{"PERCENT_TOUCHING", 33.3333333333333},
+		{"CLOSEST_NEIGHBOR1_DIST", 2.54950975679639},
 		{"CLOSEST_NEIGHBOR1_ANG", 258.69006752598},
+		{"CLOSEST_NEIGHBOR2_DIST", 0.0},
 		{"CLOSEST_NEIGHBOR2_ANG", 0.0},
 		{"ANG_BW_NEIGHBORS_MEAN", 258.69006752598},
 		{"ANG_BW_NEIGHBORS_STDDEV", 0.0},
@@ -149,9 +136,9 @@ static void assert_neighbor2d_feature(
 	const std::string& feature_name,
 	double frac_tolerance = 1000.0)
 {
-	ASSERT_TRUE(unvetted_nyxus_regression_neighbor2d_distance_feature_golden_values_by_label.count(label) > 0);
-	ASSERT_TRUE(unvetted_nyxus_regression_neighbor2d_distance_feature_golden_values_by_label[label].count(feature_name) > 0);
-	ASSERT_TRUE(agrees_gt(roiData.at(label).fvals[static_cast<int>(feature)][0], unvetted_nyxus_regression_neighbor2d_distance_feature_golden_values_by_label[label][feature_name], frac_tolerance));
+	ASSERT_TRUE(neighborhood2d_truth.count(label) > 0);
+	ASSERT_TRUE(neighborhood2d_truth[label].count(feature_name) > 0);
+	ASSERT_TRUE(agrees_gt(roiData.at(label).fvals[static_cast<int>(feature)][0], neighborhood2d_truth[label][feature_name], frac_tolerance));
 }
 
 static void assert_unvetted_no_direct_oracle_neighbor2d_feature(
@@ -162,9 +149,7 @@ static void assert_unvetted_no_direct_oracle_neighbor2d_feature(
 	double frac_tolerance = 1000.0)
 {
 	SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
-	ASSERT_TRUE(unvetted_nyxus_regression_neighbor2d_angle_feature_golden_values_by_label.count(label) > 0);
-	ASSERT_TRUE(unvetted_nyxus_regression_neighbor2d_angle_feature_golden_values_by_label[label].count(feature_name) > 0);
-	ASSERT_TRUE(agrees_gt(roiData.at(label).fvals[static_cast<int>(feature)][0], unvetted_nyxus_regression_neighbor2d_angle_feature_golden_values_by_label[label][feature_name], frac_tolerance));
+	assert_neighbor2d_feature(roiData, label, feature, feature_name, frac_tolerance);
 }
 
 void test_neighborhood2d_counts_and_touching()

@@ -36,5 +36,6 @@ public:
 	}
 
 private:
+	static double median_of (std::vector<double>& v);   // interpolated median (sorts v in place)
 	double max_r = 0, mean_r = 0, median_r = 0;
 };

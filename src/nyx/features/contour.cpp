@@ -670,12 +670,17 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 	// gather all the contours
 	gather_multicontour (r.multicontour_, paddedImage, width, height, STNGS_VERBOSLVL(s));
 
-	// fix pixel positions back to absolute
+	// fix pixel positions back to absolute. The contour is built on a 1-px-PADDED image
+	// (local = global - base + 1), so converting back to global must undo BOTH the base offset
+	// and the +1 pad: global = local + base - 1. The previously-missing '-1' left every contour
+	// pixel shifted by (+1,+1), biasing every feature that compares contour coordinates against
+	// the centroid/cloud (circle inscribing/circumscribing, roi_radius, radial centre, and the
+	// distance-to-contour weighted moments).
 	for (std::vector<Pixel2> &K : r.multicontour_)
 		for (Pixel2 &p : K)
 		{
-			p.x += base_x;
-			p.y += base_y;
+			p.x += base_x - 1;
+			p.y += base_y - 1;
 		}
 }
 
@@ -912,6 +917,16 @@ void ContourFeature::buildRegularContour_nontriv (LR& r, const Fsettings& s)
 
 	// replace the unordered contour with ordered one
 	r.multicontour_[0] = ordered;
+
+	// fix pixel positions back to absolute. The contour was built on a 1-px-padded image
+	// (local = global - base + 1); convert to true global with `+= base - 1` (undoing both the
+	// base offset and the +1 pad), matching the trivial buildRegularContour. The out-of-core path
+	// declared base_x/base_y above but never applied them, leaving its contour in the LOCAL frame.
+	for (Pixel2& p : r.multicontour_[0])
+	{
+		p.x += base_x - 1;
+		p.y += base_y - 1;
+	}
 }
 
 void ContourFeature::buildWholeSlideContour(LR& r)

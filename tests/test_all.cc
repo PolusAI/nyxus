@@ -37,6 +37,7 @@
 #include "test_compat_3d_glrlm.h"
 #include "test_compat_3d_glszm.h"
 #include "test_3d_feature_coverage.h"
+#include "test_glcm_bugs.h"
 #ifdef USE_ARROW
     #include "test_arrow.h"
     #include "test_arrow_file_name.h"
@@ -912,24 +913,24 @@ TEST(TEST_NYXUS, TEST_SHAPE2D_UNVETTED_NO_DIRECT_ORACLE_RADIUS_FEATURES)
 	ASSERT_NO_THROW(test_shape2d_unvetted_no_direct_oracle_radius_features());
 }
 
-TEST(TEST_NYXUS, TEST_2D_SHAPE_GEOMETRIC_MOMENTS_VERIFIABLE_WITH_3P_BUILTIN_ORACLE)
+TEST(TEST_NYXUS, TEST_2D_SHAPE_GEOMETRIC_MOMENTS_MIXED_VERIFIABLE_AND_UNVETTED)
 {
-	ASSERT_NO_THROW(test_2d_shape_geometric_moments_verifiable_with_3p_builtin_oracle());
+	ASSERT_NO_THROW(test_2d_shape_geometric_moments_mixed_verifiable_and_unvetted());
 }
 
-TEST(TEST_NYXUS, TEST_2D_SHAPE_GEOMETRIC_MOMENTS_UNVETTED_NO_DIRECT_ORACLE)
+TEST(TEST_NYXUS, TEST_2D_SHAPE_WEIGHTED_GEOMETRIC_MOMENTS_UNVETTED_NO_DIRECT_ORACLE)
 {
-	ASSERT_NO_THROW(test_2d_shape_geometric_moments_unvetted_no_direct_oracle());
+	ASSERT_NO_THROW(test_2d_shape_weighted_geometric_moments_unvetted_no_direct_oracle());
 }
 
-TEST(TEST_NYXUS, TEST_2D_INTENSITY_GEOMETRIC_MOMENTS_VERIFIABLE_WITH_3P_BUILTIN_ORACLE)
+TEST(TEST_NYXUS, TEST_2D_INTENSITY_GEOMETRIC_MOMENTS_MIXED_VERIFIABLE_AND_UNVETTED)
 {
-	ASSERT_NO_THROW(test_2d_intensity_geometric_moments_verifiable_with_3p_builtin_oracle());
+	ASSERT_NO_THROW(test_2d_intensity_geometric_moments_mixed_verifiable_and_unvetted());
 }
 
-TEST(TEST_NYXUS, TEST_2D_INTENSITY_GEOMETRIC_MOMENTS_UNVETTED_NO_DIRECT_ORACLE)
+TEST(TEST_NYXUS, TEST_2D_INTENSITY_WEIGHTED_GEOMETRIC_MOMENTS_UNVETTED_NO_DIRECT_ORACLE)
 {
-	ASSERT_NO_THROW(test_2d_intensity_geometric_moments_unvetted_no_direct_oracle());
+	ASSERT_NO_THROW(test_2d_intensity_weighted_geometric_moments_unvetted_no_direct_oracle());
 }
 
 TEST(TEST_NYXUS, TEST_SHAPE2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_GEODETIC_THICKNESS_EROSION)
@@ -1451,7 +1452,14 @@ TEST(TEST_NYXUS, TEST_GLCM_SUMVARIANCE_AVE)
 	ASSERT_NO_THROW(test_glcm_SUMVARIANCE_AVE());
 }
 
-//***** IBSI tests of GLDM ***** 
+// Regression guard: GLCM co-occurrence distance must default to 1 via the production
+// settings path (exposes the offset=0 default defect that the hard-coded tests above miss).
+TEST(TEST_NYXUS, TEST_GLCM_BUG_OFFSET_DEFAULT)
+{
+	ASSERT_NO_THROW(test_glcm_bug_offset_default_is_one());
+}
+
+//***** IBSI tests of GLDM *****
 
 TEST(TEST_NYXUS, TEST_IBSI_GLDM_SDE) 
 {

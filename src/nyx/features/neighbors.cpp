@@ -239,74 +239,72 @@ void NeighborsFeature::manual_reduce (
 	if (n_threads == 1)
 	{
 		// single thread
-		size_t radius2 = radius * radius;	// We will compare radius with L2 distances
-		for (auto pa : CM2)
-		{
-			auto l1 = pa.first;
-			auto l2 = pa.second;
-			LR& r1 = roiData[l1];
-			LR& r2 = roiData[l2];
-
-			std::vector<Pixel2> K1, K2;
-			r1.merge_multicontour(K1);
-			r2.merge_multicontour(K2);
-
-			// Make sure that segment's outer pixels are available
-			if (K1.size() == 0)
-				continue;
-
-			// Make sure that the other ROI's pixel cloud is non-empty
-			if (K2.size() == 0)
-				continue;
-
-			// Iterate r1's outer pixels
-			double mind = K1[0].min_sqdist(K2);
-			size_t n_touchingOuterPixels1 = 0;
-			for (auto& cp : K1)
+			size_t radius2 = radius * radius;	// We will compare radius with L2 distances
+			const double touchThresh2 = 2.0;	// 8-connected adjacency (sqdist 1 or 2) == actually touching
+			// Per-ROI mask of contour pixels touching ANY neighbor. A deduped mask (rather than summing
+			// per-pair counts as before) guarantees PERCENT_TOUCHING <= 100%: the old code added a count
+			// per neighbor, so a pixel near several neighbors was counted repeatedly and the total could
+			// exceed the contour length (e.g. 127%).
+			std::unordered_map<int, std::vector<char>> touchMask;
+			for (auto pa : CM2)
 			{
-				double minD = cp.min_sqdist(K2);
-				mind = std::min(mind, minD);		//--We aren't interested in max distance-->	maxd = std::max(maxd, maxD);
+				auto l1 = pa.first;
+				auto l2 = pa.second;
+				LR& r1 = roiData[l1];
+				LR& r2 = roiData[l2];
 
-				// Maintain touching pixels stats
-				if (minD <= radius2)
-					n_touchingOuterPixels1++;
+				std::vector<Pixel2> K1, K2;
+				r1.merge_multicontour(K1);
+				r2.merge_multicontour(K2);
+
+				// Both segments' outer pixels must be available
+				if (K1.size() == 0 || K2.size() == 0)
+					continue;
+
+				// PERCENT_TOUCHING is physical contact, independent of the neighbor search radius:
+				// mark each contour pixel that is 8-adjacent to the other ROI (deduped per ROI). Done
+				// for every candidate pair BEFORE the radius gate so diagonal-only contacts still count
+				// even at pixel-distance 1.
+				double mind = K1[0].min_sqdist(K2);
+				auto& tm1 = touchMask[l1];
+				if (tm1.empty()) tm1.assign(K1.size(), 0);
+				for (size_t i = 0; i < K1.size(); i++)
+				{
+					double dq = K1[i].min_sqdist(K2);
+					mind = std::min(mind, dq);
+					if (dq <= touchThresh2) tm1[i] = 1;
+				}
+				auto& tm2 = touchMask[l2];
+				if (tm2.empty()) tm2.assign(K2.size(), 0);
+				for (size_t i = 0; i < K2.size(); i++)
+					if (K2[i].min_sqdist(K1) <= touchThresh2) tm2[i] = 1;
+
+				// NUM_NEIGHBORS / closest-neighbor lists: only ROIs within the search radius
+				if (mind > radius2)
+					continue;
+
+				// Definitely neighbors
+				r1.fvals[numNeighborsIdx][0]++;
+				r1.aux_neighboring_labels.push_back(l2);
+
+				// Single-threaded here, safe to update both r1 and r2
+				r2.fvals[numNeighborsIdx][0]++;
+				r2.aux_neighboring_labels.push_back(l1);
 			}
-
-			size_t n_touchingOuterPixels2 = 0;
-			for (auto& cp : K2)
+			for (auto l : uniqueLabels)
 			{
-				double minD = cp.min_sqdist(K1);
-				if (minD <= radius2)
-					n_touchingOuterPixels2++;
+				LR& r1 = roiData[l];
+
+				std::vector<Pixel2> K1;
+				r1.merge_multicontour(K1);
+
+				// Finalize % touching = distinct touching contour pixels / contour length
+				size_t nt = 0;
+				auto it = touchMask.find(l);
+				if (it != touchMask.end())
+					for (char c : it->second) nt += (c != 0);
+				r1.fvals[percentTouchingIdx][0] = K1.empty() ? 0.0 : 100.0 * double(nt) / double(K1.size());
 			}
-
-			// Check versus the radius
-			if (mind > radius2)
-				continue;
-
-			// Save partial statis of r1's touching pixel stats
-			r1.fvals[percentTouchingIdx][0] += n_touchingOuterPixels1;
-			r2.fvals[percentTouchingIdx][0] += n_touchingOuterPixels2;
-
-			// Definitely neighbors
-			r1.fvals[numNeighborsIdx][0]++;
-			r1.aux_neighboring_labels.push_back(l2);
-
-			// We're single-threaded here so it's safe to update both r1 and r2
-			r2.fvals[numNeighborsIdx][0]++;
-			r2.aux_neighboring_labels.push_back(l1);
-		}
-		for (auto l : uniqueLabels)
-		{
-			LR& r1 = roiData[l];
-
-			std::vector<Pixel2> K1;
-			r1.merge_multicontour(K1);
-
-			// Finalize the % touching calculation
-			if (!K1.empty())
-				r1.fvals[percentTouchingIdx][0] = 100.0 * static_cast<double>(r1.fvals[percentTouchingIdx][0]) / static_cast<double>(K1.size());
-		}
 	}
 	else
 	{
@@ -431,7 +429,17 @@ void NeighborsFeature::manual_reduce (
 	}
 #endif
 
-	// Closest neighbors
+					// Centroids for neighbor geometry. CENTROID_X/Y are computed in fvals because the reduce forces
+		// basic-morphology when neighbor features are requested (reduce_trivial_rois / phase2); previously
+		// they were 0 unless separately requested, collapsing all distances/angles to 0.
+		std::unordered_map<int, std::pair<double, double>> cen;
+		for (auto l : uniqueLabels)
+		{
+			LR& r = roiData[l];
+			cen[l] = std::make_pair(r.fvals[centroidXIdx][0], r.fvals[centroidYIdx][0]);
+		}
+
+		// Closest neighbors
 	for (auto l : uniqueLabels)
 	{
 		LR& r = roiData[l];
@@ -441,16 +449,14 @@ void NeighborsFeature::manual_reduce (
 		if (n_neigs == 0)
 			continue;
 
-		double cenx = r.fvals[centroidXIdx][0],
-			ceny = r.fvals[centroidYIdx][0];
+		double cenx = cen[l].first, ceny = cen[l].second;
 
 		std::vector<double> dists;
 		dists.reserve(r.aux_neighboring_labels.size());
 		for (auto l_neig : r.aux_neighboring_labels)
 		{
 			LR& r_neig = roiData[l_neig];
-			double cenx_n = r_neig.fvals[centroidXIdx][0],
-				ceny_n = r_neig.fvals[centroidYIdx][0],
+			double cenx_n = cen[l_neig].first, ceny_n = cen[l_neig].second,
 				dx = cenx - cenx_n,
 				dy = ceny - ceny_n,
 				dist = std::sqrt(dx * dx + dy * dy);
@@ -466,8 +472,7 @@ void NeighborsFeature::manual_reduce (
 		r.fvals[closestNeighbor1DistIdx][0] = dists[closest_1_idx];
 
 		// Save angle with neighbor #1
-		LR& r1 = roiData[closest1label];
-		r.fvals[closestNeighbor1AngIdx][0] = direction_angle_deg(cenx, ceny, r1.fvals[centroidXIdx][0], r1.fvals[centroidYIdx][0]);
+		r.fvals[closestNeighbor1AngIdx][0] = direction_angle_deg(cenx, ceny, cen[closest1label].first, cen[closest1label].second);
 
 		// Find idx of 2nd minimum
 		if (n_neigs > 1)
@@ -482,8 +487,7 @@ void NeighborsFeature::manual_reduce (
 			r.fvals[closestNeighbor2DistIdx][0] = dists[closest_2_idx];
 
 			// Save angle with neighbor #2
-			LR& r2 = roiData[closest2label];
-			r.fvals[closestNeighbor2AngIdx][0] = direction_angle_deg(cenx, ceny, r2.fvals[centroidXIdx][0], r2.fvals[centroidYIdx][0]);
+			r.fvals[closestNeighbor2AngIdx][0] = direction_angle_deg(cenx, ceny, cen[closest2label].first, cen[closest2label].second);
 		}
 	}
 
@@ -497,8 +501,7 @@ void NeighborsFeature::manual_reduce (
 		if (n_neigs == 0)
 			continue;
 
-		double cenx = r.fvals[centroidXIdx][0],
-			ceny = r.fvals[centroidYIdx][0];
+		double cenx = cen[l].first, ceny = cen[l].second;
 
 		Moments2 mom2;
 		std::array<int, 361> angleCounts{};
@@ -507,8 +510,7 @@ void NeighborsFeature::manual_reduce (
 		for (auto l_neig : r.aux_neighboring_labels)
 		{
 			LR& r_neig = roiData[l_neig];
-			double cenx_n = r_neig.fvals[centroidXIdx][0],
-				ceny_n = r_neig.fvals[centroidYIdx][0];
+			double cenx_n = cen[l_neig].first, ceny_n = cen[l_neig].second;
 
 			double ang = direction_angle_deg(cenx, ceny, cenx_n, ceny_n);
 			mom2.add(ang);

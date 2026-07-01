@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <cmath>
 #include "roi_radius.h"
 
 using namespace Nyxus;
@@ -16,10 +18,13 @@ void RoiRadiusFeature::calculate (LR& r, const Fsettings& s)
 	r.merge_multicontour (K);
 
 	Moments2 mom2;
-	std::vector<HistoItem> dists;
+	std::vector<double> dists;
 	for (auto& pxA : cloud)
 	{
-		auto minSD = pxA.min_sqdist(K);
+		// min_sqdist returns the SQUARED distance to the nearest contour pixel; the ROI radius
+		// is a length, so take the square root (otherwise ROI_RADIUS_MAX is r^2 and can exceed
+		// the image diagonal, e.g. 25 == 5^2).
+		double minSD = std::sqrt((double)pxA.min_sqdist(K));
 		mom2.add(minSD);
 		dists.push_back(minSD);
 	}
@@ -30,10 +35,17 @@ void RoiRadiusFeature::calculate (LR& r, const Fsettings& s)
 	// Max
 	max_r = mom2.max__();
 
-	// Median
-	TrivialHistogram h;
-	h.initialize_uniques(dists);
-	median_r = h.get_median(); 
+	// Median (interpolated, on the fractional radii - an integer histogram would truncate them)
+	median_r = median_of(dists);
+}
+
+double RoiRadiusFeature::median_of (std::vector<double>& v)
+{
+	if (v.empty())
+		return 0.0;
+	std::sort (v.begin(), v.end());
+	size_t m = v.size();
+	return (m % 2) ? v[m / 2] : 0.5 * (v[m / 2 - 1] + v[m / 2]);
 }
 
 void RoiRadiusFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
@@ -46,13 +58,14 @@ void RoiRadiusFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	r.merge_multicontour(K);
 
 	Moments2 mom2;
-	std::vector<HistoItem> dists;
-	for (size_t i=0; i<cloud.size(); i++) 
+	std::vector<double> dists;
+	for (size_t i=0; i<cloud.size(); i++)
 	{
 		Pixel2 pxA = cloud.get_at(i);
 		auto [minSD, maxSD] = pxA.min_max_sqdist(K);
-		mom2.add(minSD);
-		dists.push_back(minSD);
+		double r_ = std::sqrt((double)minSD);   // radius is a length, not a squared distance
+		mom2.add(r_);
+		dists.push_back(r_);
 	}
 
 	// Mean
@@ -61,10 +74,8 @@ void RoiRadiusFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	// Max
 	max_r = mom2.max__();
 
-	// Median
-	TrivialHistogram h;
-	h.initialize_uniques(dists);
-	median_r = h.get_median();
+	// Median (interpolated, on the fractional radii)
+	median_r = median_of(dists);
 }
 
 void RoiRadiusFeature::save_value (std::vector<std::vector<double>>& fvals)

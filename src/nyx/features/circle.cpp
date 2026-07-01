@@ -222,11 +222,14 @@ std::tuple <double, double> EnclosingInscribingCircumscribingCircleFeature::calc
     //-----------------circumscribing and inscribing circle ---------------------------
     //https://git.rwth-aachen.de/ants/sensorlab/imea/-/blob/master/imea/measure_2d/macro.py#L199
 
-    double yCentroid2 = yCentroid - 1;
-    double xCentroid2 = xCentroid - 1;
+    // Centroid (CENTROID_X/Y) and contour pixels are both in true 0-based global coordinates
+    // (ContourFeature::buildRegularContour now undoes the +1 padding offset), so the centroid-
+    // relative radii are measured in the same frame and need no extra correction.
+    double yCentroid2 = yCentroid;
+    double xCentroid2 = xCentroid;
     std::vector <double> distances;
 
-    for (size_t j = 0; j < contours.size(); j++) 
+    for (size_t j = 0; j < contours.size(); j++)
     {
         double tmpx = (contours[j].x - xCentroid2);
         double tmpy = (contours[j].y - yCentroid2);

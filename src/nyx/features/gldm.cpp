@@ -76,13 +76,19 @@ void GLDMFeature::calculate (LR& r, const Fsettings& s)
 		{
 			PixIntens pi = D.yx(row, col);
 
-			if (pi == 0)
+			// Skip background by the ORIGINAL intensity: matlab grey binning maps
+			// off-ROI background (0) to level 1, so the binned value 'pi' is no longer
+			// 0 and a 'pi==0' guard would let background pollute the dependence matrix
+			// (inflating Nz and every count feature). Test on imR like GLCM does.
+			if (imR.yx(row, col) == 0)
 				continue;
 
-			// Count dependencies
+			// Count dependencies. A neighbour is only a valid dependence candidate if it
+			// is itself an ROI pixel (original intensity != 0) -- otherwise a background
+			// neighbour binned to level 1 would spuriously match a level-1 ROI centre.
 			int nd = 1;	// Number of dependencies
 			PixIntens piQ; // Pixel intensity of questionn
-			if (D.safe(row - 1, col)) 
+			if (D.safe(row - 1, col) && imR.yx(row - 1, col) != 0)
 			{
 
 				piQ = D.yx(row - 1, col);	 // North
@@ -91,7 +97,7 @@ void GLDMFeature::calculate (LR& r, const Fsettings& s)
 					nd++;
 			}
 
-			if (D.safe(row - 1, col + 1)) 
+			if (D.safe(row - 1, col + 1) && imR.yx(row - 1, col + 1) != 0)
 			{
 
 				piQ = D.yx(row - 1, col + 1);	// North-East
@@ -100,7 +106,7 @@ void GLDMFeature::calculate (LR& r, const Fsettings& s)
 					nd++;
 			}
 
-			if (D.safe(row, col + 1)) 
+			if (D.safe(row, col + 1) && imR.yx(row, col + 1) != 0)
 			{
 
 				piQ = D.yx(row, col + 1);	// East
@@ -109,7 +115,7 @@ void GLDMFeature::calculate (LR& r, const Fsettings& s)
 					nd++;
 			}
 
-			if (D.safe(row + 1, col + 1)) 
+			if (D.safe(row + 1, col + 1) && imR.yx(row + 1, col + 1) != 0)
 			{
 
 				piQ = D.yx(row + 1, col + 1);	// South-East
@@ -118,7 +124,7 @@ void GLDMFeature::calculate (LR& r, const Fsettings& s)
 					nd++;
 			}
 
-			if (D.safe(row + 1, col)) 
+			if (D.safe(row + 1, col) && imR.yx(row + 1, col) != 0)
 			{
 
 				piQ = D.yx(row + 1, col);		// South
@@ -127,7 +133,7 @@ void GLDMFeature::calculate (LR& r, const Fsettings& s)
 					nd++;
 			}
 
-			if (D.safe(row + 1, col - 1)) 
+			if (D.safe(row + 1, col - 1) && imR.yx(row + 1, col - 1) != 0)
 			{
 
 				piQ = D.yx(row + 1, col - 1);	// South-West
@@ -136,7 +142,7 @@ void GLDMFeature::calculate (LR& r, const Fsettings& s)
 					nd++;
 			}
 
-			if (D.safe(row, col - 1)) 
+			if (D.safe(row, col - 1) && imR.yx(row, col - 1) != 0)
 			{
 
 				piQ = D.yx(row, col - 1);		// West
@@ -145,7 +151,7 @@ void GLDMFeature::calculate (LR& r, const Fsettings& s)
 					nd++;
 			}
 
-			if (D.safe(row - 1, col - 1)) 
+			if (D.safe(row - 1, col - 1) && imR.yx(row - 1, col - 1) != 0)
 			{
 
 				piQ = D.yx(row - 1, col - 1);	// North-West
@@ -283,16 +289,19 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 	for (size_t row = 0; row < height; row++)
 		for (size_t col = 0; col < width; col++)
 		{
+			// Skip background by the ORIGINAL intensity (raw cloud value 0); to_grayscale()
+			// on a 0 underflows (0 - aux_min on unsigned) and would not be 0, so a 'pi==0'
+			// guard cannot reject background here. Mirror the trivial path / GLCM fix.
+			if (D.yx(row, col) == 0)
+				continue;
+
 			// Find a non-blank pixel
 			PixIntens pi = Nyxus::to_grayscale((unsigned int) D.yx(row, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));		// former Environment::ibsi_compliance
 
-			if (pi == 0)
-				continue;
-
-			// Count dependencies
+			// Count dependencies. Only ROI pixels (raw != 0) are valid neighbours.
 			int nd = 1;	// Number of dependencies
 			PixIntens piQ; // Pixel intensity of questionn
-			if (D.safe(row - 1, col)) {
+			if (D.safe(row - 1, col) && D.yx(row - 1, col) != 0) {
 
 				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// North
 
@@ -300,7 +309,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 					nd++;
 			}
 
-			if (D.safe(row - 1, col + 1)) {
+			if (D.safe(row - 1, col + 1) && D.yx(row - 1, col + 1) != 0) {
 
 				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// North-East
 
@@ -308,7 +317,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 					nd++;
 			}
 
-			if (D.safe(row, col + 1)) {
+			if (D.safe(row, col + 1) && D.yx(row, col + 1) != 0) {
 
 				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// East
 
@@ -316,7 +325,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 					nd++;
 			}
 
-			if (D.safe(row + 1, col + 1)) {
+			if (D.safe(row + 1, col + 1) && D.yx(row + 1, col + 1) != 0) {
 
 				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// South-East
 
@@ -324,7 +333,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 					nd++;
 			}
 
-			if (D.safe(row + 1, col)) {
+			if (D.safe(row + 1, col) && D.yx(row + 1, col) != 0) {
 
 				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));		// South
 
@@ -332,7 +341,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 					nd++;
 			}
 
-			if (D.safe(row + 1, col - 1)) {
+			if (D.safe(row + 1, col - 1) && D.yx(row + 1, col - 1) != 0) {
 
 				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// South-West
 
@@ -340,7 +349,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 					nd++;
 			}
 
-			if (D.safe(row, col - 1)) {
+			if (D.safe(row, col - 1) && D.yx(row, col - 1) != 0) {
 
 				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));		// West
 
@@ -348,7 +357,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 					nd++;
 			}
 
-			if (D.safe(row - 1, col - 1)) {
+			if (D.safe(row - 1, col - 1) && D.yx(row - 1, col - 1) != 0) {
 
 				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// North-West
 

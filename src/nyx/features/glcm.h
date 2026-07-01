@@ -178,7 +178,7 @@ private:
 
 	double f_asm(const SimpleMatrix<double>& P_matrix);
 	double f_contrast(const SimpleMatrix<double>& P_matix);
-	double f_corr();
+	double f_corr(double softnan);
 	double f_var(const SimpleMatrix<double>& P_matrix);
 	double f_idm();
 	double f_savg();
@@ -243,7 +243,7 @@ private:
 
 	double hx = -1, hy = -1, hxy = -1, hxy1 = -1, hxy2 = -1;	// Entropies for f12/f13_icorr calculation
 	void calcH(const SimpleMatrix<double>& P_matrix, std::vector<double>& px, std::vector<double>& py);
-	double f_info_meas_corr1(const SimpleMatrix<double>& P_matrix);
+	double f_info_meas_corr1(const SimpleMatrix<double>& P_matrix, double softnan);
 	double f_info_meas_corr2(const SimpleMatrix<double>& P_matrix);
 
 	double f_energy(const SimpleMatrix<double>& P_matrix);

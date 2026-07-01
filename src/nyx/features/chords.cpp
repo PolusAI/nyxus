@@ -78,7 +78,7 @@ void ChordsFeature::calculate (LR & r, const Fsettings& s)
 	maxchords_min_angle = MCang[idxmin];
 
 	auto iteMax = std::max_element(MC.begin(), MC.end());
-	auto idxmax = std::distance(MC.begin(), iteMin);
+	auto idxmax = std::distance(MC.begin(), iteMax);
 	maxchords_max_angle = MCang[idxmax];
 
 	// Analyze all chords
@@ -91,16 +91,16 @@ void ChordsFeature::calculate (LR & r, const Fsettings& s)
 	allchords_mean = mom2.mean();
 	allchords_stddev = mom2.std();
 
-	histo.initialize_uniques(MC); 
-	allchords_mode = histo.get_mode(); 
-	allchords_median = histo.get_median(); 
+	histo.initialize_uniques(AC);
+	allchords_mode = histo.get_mode();
+	allchords_median = histo.get_median();
 
 	iteMin = std::min_element(AC.begin(), AC.end());
 	idxmin = std::distance(AC.begin(), iteMin);
 	allchords_min_angle = ACang[idxmin];
 
 	iteMax = std::max_element(AC.begin(), AC.end());
-	idxmax = std::distance(AC.begin(), iteMin);
+	idxmax = std::distance(AC.begin(), iteMax);
 	allchords_max_angle = ACang[idxmax];
 }
 
