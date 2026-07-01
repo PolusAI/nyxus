@@ -21,6 +21,7 @@
 #include "test_ibsi_ngtdm.h"
 #include "test_glcm.h"
 #include "test_gldm.h"
+#include "test_gldm_bugs.h"
 #include "test_glrlm.h"
 #include "test_glszm.h"
 #include "test_ngtdm.h"
@@ -1916,6 +1917,12 @@ TEST(TEST_NYXUS, TEST_GLDM_DV)
 TEST(TEST_NYXUS, TEST_GLDM_DE) 
 {
 	ASSERT_NO_THROW(test_gldm_de());
+}
+
+// Bug #14b: background inside a concave ROI's bounding box must not enter the dependence matrix
+TEST(TEST_NYXUS, TEST_GLDM_BUG_BACKGROUND_EXCLUDED)
+{
+	ASSERT_NO_THROW(test_gldm_bug_background_excluded());
 }
 
 
