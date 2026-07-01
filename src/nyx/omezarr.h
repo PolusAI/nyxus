@@ -8,6 +8,8 @@
 
 // factory functions to create files, groups and datasets
 #include "z5/factory.hxx"
+// dataset type (cached handle member)
+#include "z5/dataset.hxx"
 // handles for z5 filesystem objects
 #include "z5/filesystem/handle.hxx"
 // z5 multiarray API (ArrayView-based, no xtensor)
@@ -64,11 +66,17 @@ public:
         else if (dtype_str == "<f4") {data_format_=9;} //float
         else if (dtype_str == "<f8") {data_format_=10;} //double
         else {data_format_=2;} //uint16_t
+
+        // Open the dataset once and cache the handle. The dataset metadata is
+        // immutable for the lifetime of this loader, so there is no need to
+        // re-open (and re-parse the .zarray metadata) on every tile read.
+        ds_ = z5::openDataset(*zarr_ptr_, ds_name_);
     }
 
     /// @brief NyxusOmeZarrLoader destructor
-    ~NyxusOmeZarrLoader() override 
+    ~NyxusOmeZarrLoader() override
     {
+        ds_ = nullptr;
         zarr_ptr_ = nullptr;
     }
 
@@ -130,8 +138,6 @@ public:
     template<typename FileType>
     void loadTile(std::shared_ptr<std::vector<DataType>> &dest, size_t pixel_row_index, 
                   size_t pixel_col_index, size_t pixel_layer_index) {
-        auto ds = z5::openDataset(*zarr_ptr_, ds_name_);
-        
         size_t data_height = tile_height_, data_width = tile_width_;
         if (pixel_row_index + data_height > full_height_) {
             data_height = full_height_ - pixel_row_index;
@@ -148,8 +154,8 @@ public:
         auto view = z5::multiarray::makeView(buffer.data(), shape);
         z5::types::ShapeType offset = {0, 0, pixel_layer_index, pixel_row_index, pixel_col_index};
         
-        // Read subarray from z5 dataset
-        z5::multiarray::readSubarray<FileType>(*ds, view, offset.begin());
+        // Read subarray from the cached z5 dataset
+        z5::multiarray::readSubarray<FileType>(*ds_, view, offset.begin());
         
         // Copy from buffer to destination tile, handling partial tiles
         for (size_t k = 0; k < data_height; ++k) {
@@ -205,5 +211,6 @@ private:
     short data_format_ = 0;
     std::unique_ptr<z5::filesystem::handle::File> zarr_ptr_;
     std::string ds_name_;
+    std::unique_ptr<z5::Dataset> ds_;   ///< Cached dataset handle (opened once)
 };
 #endif //OMEZARR_SUPPORT
