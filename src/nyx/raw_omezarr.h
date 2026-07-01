@@ -4,14 +4,16 @@
 
 #include <algorithm>
 #include "nlohmann/json.hpp"
-#include "xtensor/containers/xarray.hpp"
 
 // factory functions to create files, groups and datasets
 #include "z5/factory.hxx"
 // handles for z5 filesystem objects
 #include "z5/filesystem/handle.hxx"
-// io for xtensor multi-arrays
-#include "z5/multiarray/xtensor_access.hxx"
+// z5 multiarray API (ArrayView-based, no xtensor)
+#include "z5/multiarray/array_view.hxx"
+#include "z5/multiarray/array_access.hxx"
+// z5 types
+#include "z5/types/types.hxx"
 // attribute functionality
 #include "z5/attributes.hxx"
 
@@ -129,34 +131,37 @@ public:
     }
 
     template<typename FileType>
-    void loadTile (size_t pixel_row_index, size_t pixel_col_index, size_t pixel_layer_index) 
+    void loadTile(size_t pixel_row_index, size_t pixel_col_index, size_t pixel_layer_index)
     {
-        std::vector<std::string> datasets;
         auto ds = z5::openDataset(*zarr_ptr_, ds_name_);
-        size_t data_height = tile_height_, data_width = tile_width_;
-
-        if (pixel_row_index + data_height > full_height_) 
-        { 
-            data_height = full_height_ - pixel_row_index; 
-        }
-        if (pixel_col_index + data_width > full_width_) 
-        { 
-            data_width = full_width_ - pixel_col_index; 
-        }
-
-        typename xt::xarray<FileType>::shape_type shape = { 1,1,1,data_height,data_width };
-        z5::types::ShapeType offset = { 0,0,pixel_layer_index, pixel_row_index, pixel_col_index };
-        xt::xarray<FileType> array(shape);
-        z5::multiarray::readSubarray<FileType>(ds, array, offset.begin());
-        std::vector<uint32_t> tmp = std::vector<uint32_t> (array.begin(), array.end());
-
-        // zero-fill the buffer foreseeing its partial filling at incomplete (tail) tiles
-        std::fill (dest.begin(), dest.end(), 0);
         
-        // save this chunk of z5 tile data in the buffer
-        for (size_t k = 0; k < data_height; ++k)
-        {
-                std::copy(tmp.begin() + k * data_width, tmp.begin() + (k + 1) * data_width, dest.begin() + k * tile_width_);
+        size_t data_height = tile_height_, data_width = tile_width_;
+        if (pixel_row_index + data_height > full_height_) {
+            data_height = full_height_ - pixel_row_index;
+        }
+        if (pixel_col_index + data_width > full_width_) {
+            data_width = full_width_ - pixel_col_index;
+        }
+
+        // Create a buffer to hold the read data
+        std::vector<FileType> buffer(data_height * data_width);
+        
+        // Create an ArrayView into the buffer (z5 3.0.1 uses ArrayView instead of xtensor)
+        z5::types::ShapeType shape = {1, 1, 1, data_height, data_width};
+        auto view = z5::multiarray::makeView(buffer.data(), shape);
+        z5::types::ShapeType offset = {0, 0, pixel_layer_index, pixel_row_index, pixel_col_index};
+        
+        // Read subarray from z5 dataset
+        z5::multiarray::readSubarray<FileType>(*ds, view, offset.begin());
+        
+        // zero-fill the buffer foreseeing its partial filling at incomplete (tail) tiles
+        std::fill(dest.begin(), dest.end(), 0);
+        
+        // Copy from buffer to destination tile, handling partial tiles and type conversion
+        for (size_t k = 0; k < data_height; ++k) {
+            for (size_t j = 0; j < data_width; ++j) {
+                dest[k * tile_width_ + j] = static_cast<uint32_t>(buffer[k * data_width + j]);
+            }
         }
     }
 
