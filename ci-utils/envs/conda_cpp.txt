@@ -1,11 +1,9 @@
-z5py 
+z5py >=3.0.1
 libtiff <=4.7.0
 boost >=1.63
 nlohmann_json 
 blosc 
 pybind11 >= 2.12.0 
-xtensor >=0.26,<0.27
-xsimd >=13,<14
 cmake
 dcmtk >=3.6.9
 fmjpeg2koj >=1.0.3

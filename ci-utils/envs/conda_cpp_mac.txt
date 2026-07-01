@@ -1,13 +1,11 @@
 # Mac CI does not exercise DICOM support, and conda-forge does not provide a
 # satisfiable combination of dcmtk/fmjpeg2koj with the pinned libtiff stack.
-z5py
+z5py >=3.0.1
 libtiff <=4.7.0
 boost >=1.63
 nlohmann_json
 blosc
 pybind11 >= 2.12.0
-xtensor >=0.26,<0.27
-xsimd >=13,<14
 cmake
 libarrow
 libparquet
