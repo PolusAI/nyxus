@@ -82,7 +82,7 @@ void GLCMFeature::Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nont
 	// Compute Haralick statistics 
 	fvals_ASM.push_back(f_asm(P_matrix));
 	fvals_contrast.push_back(f_contrast(P_matrix));
-	fvals_correlation.push_back(f_corr());
+	fvals_correlation.push_back(f_corr(0.0));   // 0.0 = this path's blank/degenerate convention
 	fvals_energy.push_back(f_energy(P_matrix));
 	fvals_homo.push_back(f_homogeneity());
 	fvals_variance.push_back(f_var(P_matrix));
@@ -93,7 +93,7 @@ void GLCMFeature::Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nont
 	fvals_diff_var.push_back(f_dvar(P_matrix));
 	fvals_diff_entropy.push_back(f_dentropy(P_matrix));
 	fvals_diff_avg.push_back(f_difference_avg());
-	fvals_meas_corr1.push_back(f_info_meas_corr1(P_matrix));
+	fvals_meas_corr1.push_back(f_info_meas_corr1(P_matrix, 0.0));   // 0.0 = this path's blank/degenerate convention
 	fvals_meas_corr2.push_back(f_info_meas_corr2(P_matrix));
 	fvals_acor.push_back(f_GLCM_ACOR(P_matrix));
 	fvals_cluprom.push_back(f_GLCM_CLUPROM());

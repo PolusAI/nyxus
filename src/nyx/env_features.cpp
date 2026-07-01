@@ -723,6 +723,12 @@ void Environment::compile_feature_settings()
 			s[(int)NyxSetting::USEGPU].bval = using_gpu();
 			s[(int)NyxSetting::VERBOSLVL].ival = get_verbosity_level();
 			s[(int)NyxSetting::IBSI].bval = ibsi_compliance;
+			// GLCM-specific defaults (otherwise zero-initialised). GLCM_OFFSET=0 would make
+			// dx=dy=0 -> every pixel co-occurs with itself -> degenerate diagonal matrix
+			// (CONTRAST=0). Default the co-occurrence distance to 1 (IBSI delta=1).
+			s[(int)NyxSetting::GLCM_OFFSET].ival = 1;
+			s[(int)NyxSetting::GLCM_GREYDEPTH].ival = get_coarse_gray_depth();
+			s[(int)NyxSetting::GLCM_NUMANG].ival = (int)GLCMFeature::angles.size();
 			s[(int)NyxSetting::FPIMG_TARGET_DR].rval = fpimageOptions.target_dyn_range();
 			s[(int)NyxSetting::FPIMG_MIN].rval = fpimageOptions.min_intensity();
 			s[(int)NyxSetting::FPIMG_MAX].rval = fpimageOptions.max_intensity();
