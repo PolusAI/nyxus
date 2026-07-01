@@ -57,7 +57,7 @@ class CMakeBuild(build_ext):
         env = os.environ.copy()
         try:
             from setuptools_scm import get_version
-            version = get_version(fallback_version="0.0.0")
+            version = get_version(fallback_version="1.0.0")
         except Exception:
             version = "0.0.0"
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(
