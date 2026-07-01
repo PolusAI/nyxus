@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.5.2-runtime-ubuntu20.04
+FROM nvidia/cuda:12.6.0-runtime-ubuntu22.04
 
 COPY VERSION /
 
