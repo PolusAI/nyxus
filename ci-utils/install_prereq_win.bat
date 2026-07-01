@@ -40,8 +40,21 @@ tar -xvf zlib131.zip
 pushd zlib-1.3.1
 mkdir build_man
 pushd build_man
-cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
-cmake --build . --config Release --target install --parallel 4  
+cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/ ..
+cmake --build . --config Release --target install --parallel 4
+popd
+popd
+
+rem libdeflate is a base dependency (used by libtiff) and is also the gzip/zlib
+rem backend for z5 3.0.1 (find_package(libdeflate CONFIG REQUIRED)), so install it
+rem before the z5 build below.
+curl -L https://github.com/ebiggers/libdeflate/archive/refs/tags/v1.19.zip -o v1.19.zip
+tar -xf v1.19.zip
+pushd libdeflate-1.19
+mkdir build_man
+pushd build_man
+cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=%ABS_INSTALL%  ..
+cmake --build . --config Release --target install --parallel 4
 popd
 popd
 
@@ -71,49 +84,19 @@ if "%BUILD_Z5_DEP%" == "1" (
     popd
     popd
 
-    curl -L https://github.com/xtensor-stack/xtl/archive/refs/tags/0.8.0.zip -o 0.8.0.zip
-    tar -xf 0.8.0.zip
-    pushd xtl-0.8.0 
-    mkdir build_man
-    pushd build_man
-    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
-    cmake --build . --config Release --target install 
-    popd
-    popd
-
-    curl -L https://github.com/xtensor-stack/xtensor/archive/refs/tags/0.26.0.zip -o 0.26.0.zip
-    tar -xf 0.26.0.zip
-    pushd xtensor-0.26.0
-    mkdir build_man
-    pushd build_man
-    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
-    cmake --build . --config Release --target install 
-    popd
-    popd
-
-    curl -L https://github.com/xtensor-stack/xsimd/archive/refs/tags/13.2.0.zip -o 13.2.0.zip
-    tar -xf 13.2.0.zip 
-    pushd xsimd-13.2.0 
-    mkdir build_man
-    pushd build_man
-    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/ ..  
-    cmake --build . --config Release --target install  
-    popd
-    popd
-
     curl -L https://github.com/nlohmann/json/archive/refs/tags/v3.11.2.zip -o v3.11.2.zip
-    tar -xf v3.11.2.zip 
+    tar -xf v3.11.2.zip
     pushd json-3.11.2
     mkdir build_man
     pushd build_man
-    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/ -DJSON_BuildTests=OFF ..  
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/ -DJSON_BuildTests=OFF ..
     cmake --build . --config Release --target install  --parallel 4
     popd
     popd
 
-    curl -L https://github.com/constantinpape/z5/archive/refs/tags/2.0.20.zip -o 2.0.20.zip
-    tar -xf 2.0.20.zip 
-    pushd z5-2.0.20
+    curl -L https://github.com/constantinpape/z5/archive/refs/tags/3.0.1.zip -o 3.0.1.zip
+    tar -xf 3.0.1.zip
+    pushd z5-3.0.1
     mkdir build_man
     pushd build_man
     cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=%ABS_INSTALL% -DWITH_BLOSC=ON -DBUILD_Z5PY=OFF ..
@@ -162,16 +145,6 @@ if "%BUILD_DCMTK_DEP%" == "1" (
     popd
     popd
 )
-
-curl -L https://github.com/ebiggers/libdeflate/archive/refs/tags/v1.19.zip -o v1.19.zip
-tar -xf v1.19.zip
-pushd libdeflate-1.19
-mkdir build_man
-pushd build_man
-cmake -DCMAKE_INSTALL_PREFIX=../../local_install/   -DCMAKE_PREFIX_PATH=%ABS_INSTALL%  ..
-cmake --build . --config Release --target install --parallel 4
-popd
-popd
 
 curl -L https://github.com/libjpeg-turbo/libjpeg-turbo/archive/refs/tags/3.1.0.zip -o 3.1.0.zip
 tar -xf 3.1.0.zip
