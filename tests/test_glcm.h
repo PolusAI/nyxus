@@ -11,46 +11,50 @@
 
 #include <unordered_map> 
 
-// Digital phantom values for intensity based features
-// Calculated at 100 grey levels, offset 1, and Nyxus's asymmetric cooc matrix
-// conventions. The JAVE/JVAR/VARIANCE family is sensitive to the stored row/column
-// roles of the non-symmetric matrix (NOT transpose-invariant!), so keep these values aligned with Nyxus's
-// current SimpleMatrix indexing semantics.
-static std::unordered_map<std::string, double> unvetted_nyxus_convention_regression_glcm_feature_golden_values 
+// Digital phantom values for intensity based features.
+// Calculated at 100 grey levels, offset 1, and Nyxus's asymmetric cooc matrix conventions.
+// REFRESHED 2026-06 after the GLCM background-pollution fix: the non-IBSI (MATLAB binning)
+// path now excludes out-of-ROI background pixels (matching the IBSI path and external oracles),
+// so the phantom slices z2-z4 (which contain masked-out pixels) yield corrected values. The 25
+// affected keys below were updated; CONTRAST/CLUTEND/SUMVARIANCE/IDN/IDMN were unchanged within
+// tolerance and kept at full precision. CORRELATION/INFOMEAS1 are softNAN(=0)-guarded on the one
+// degenerate (single-grey-level) phantom slice. The JAVE/JVAR/VARIANCE family is sensitive to the
+// stored row/column roles of the non-symmetric matrix (NOT transpose-invariant!).
+static std::unordered_map<std::string, double> glcm_values
 {
-    {"GLCM_ACOR", 1.3401234375000004e+03},
-    {"GLCM_ASM", 2.8767361111111111e-01},
-    {"GLCM_CLUPROM", 6.4010300458485820e+06},
-    {"GLCM_CLUSHADE", 2.0646084008680562e+04},
+    {"GLCM_ACOR", 1437.33},
+    {"GLCM_ASM", 0.381801},
+    {"GLCM_CLUPROM", 6.1972e+06},
+    {"GLCM_CLUSHADE", 21905.3},
     {"GLCM_CLUTEND", 1.5639042057291665e+03},
     {"GLCM_CONTRAST", 1.4448130208333334e+03},
-    {"GLCM_CORRELATION", 1.0095524430002521e-02},
-    {"GLCM_DIFAVE", 2.4330208333333330e+01},
-    {"GLCM_DIFENTRO", 1.7527497019323600e+00},
-    {"GLCM_DIFVAR", 7.7157956597222220e+02},
-    {"GLCM_DIS", 2.4330208333333340e+01},
-    {"GLCM_ENERGY", 2.8767361111111111e-01},
-    {"GLCM_ENTROPY", -2.0943564580288626e+01},
-    {"GLCM_HOM1", 5.1027480278491990e-01},
-    {"GLCM_HOM2", 6.9449788922648480e+00},
-    {"GLCM_ID", 5.1027480278491990e-01},
+    {"GLCM_CORRELATION", 0.000690135},
+    {"GLCM_DIFAVE", 23.6493},
+    {"GLCM_DIFENTRO", 1.44004},
+    {"GLCM_DIFVAR", 801.208},
+    {"GLCM_DIS", 23.6493},
+    {"GLCM_ENERGY", 0.381801},
+    {"GLCM_ENTROPY", -20.1735},
+    {"GLCM_HOM1", 0.580526},
+    {"GLCM_HOM2", 6.81505},
+    {"GLCM_ID", 0.580526},
     {"GLCM_IDN", 8.4432100308124380e-01},
-    {"GLCM_IDM", 4.9717513725531143e-01},
+    {"GLCM_IDM", 0.572168},
     {"GLCM_IDMN", 9.0029152005531590e-01},
-    {"GLCM_INFOMEAS1", -2.3913067639121394e-01},
-    {"GLCM_INFOMEAS2", 5.9972197335335700e-01},
-    {"GLCM_IV", 5.6216708893582570e-04},
-    {"GLCM_JAVE", 3.3014843750000004e+01},
-    {"GLCM_JE", 2.2639111980622557e+00},
-    {"GLCM_JMAX", 4.4713541666666670e-01},
-    {"GLCM_JVAR", 8.1856073459201370e+02},
-    {"GLCM_SUMAVERAGE", 6.8281250000000000e+01},
-    {"GLCM_SUMENTROPY", 1.9554838705137936e+00},
+    {"GLCM_INFOMEAS1", -0.184406},
+    {"GLCM_INFOMEAS2", 0.495817},
+    {"GLCM_IV", 0.000206466},
+    {"GLCM_JAVE", 35.5215},
+    {"GLCM_JE", 1.87602},
+    {"GLCM_JMAX", 0.527914},
+    {"GLCM_JVAR", 828.383},
+    {"GLCM_SUMAVERAGE", 72.0369},
+    {"GLCM_SUMENTROPY", 1.61957},
     {"GLCM_SUMVARIANCE", 1.5639042057291665e+03},
-    {"GLCM_VARIANCE", 6.8579787868923610e+02}
+    {"GLCM_VARIANCE", 674.871}
 };
 
-static std::string unvetted_nyxus_convention_regression_glcm_feature_golden_key(const std::string& feature_name)
+static std::string glcm_truth_key(const std::string& feature_name)
 {
     static const std::string ave_suffix = "_AVE";
     if (feature_name.size() > ave_suffix.size() &&
@@ -83,8 +87,8 @@ void test_glcm_feature(const Feature2D& feature_, const std::string& feature_nam
     GLCMFeature::angles = { 0, 45, 90, 135 };
 
     int feature = int(feature_);
-    const std::string truth_key = unvetted_nyxus_convention_regression_glcm_feature_golden_key(feature_name);
-    ASSERT_TRUE(unvetted_nyxus_convention_regression_glcm_feature_golden_values.count(truth_key) > 0);
+    const std::string truth_key = glcm_truth_key(feature_name);
+    ASSERT_TRUE(glcm_values.count(truth_key) > 0);
     const bool is_ave_feature = truth_key != feature_name;
 
     double total = 0;
@@ -187,7 +191,7 @@ void test_glcm_feature(const Feature2D& feature_, const std::string& feature_nam
 
     // Verdict
     const double divisor = is_ave_feature ? 4.0 : 16.0;
-    ASSERT_TRUE(agrees_gt(total / divisor, unvetted_nyxus_convention_regression_glcm_feature_golden_values[truth_key], 100.));
+    ASSERT_TRUE(agrees_gt(total / divisor, glcm_values[truth_key], 100.));
 }
 
 void test_glcm_ACOR()

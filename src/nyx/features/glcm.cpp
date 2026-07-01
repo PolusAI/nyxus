@@ -303,7 +303,7 @@ void GLCMFeature::Extract_Texture_Features2 (const Fsettings& s, int angle, cons
 	// Compute Haralick statistics 
 	fvals_ASM.push_back (f_asm(P_matrix));
 	fvals_contrast.push_back (f_contrast(P_matrix));
-	fvals_correlation.push_back (f_corr());
+	fvals_correlation.push_back (f_corr(s[(int)NyxSetting::SOFTNAN].rval));
 	fvals_energy.push_back (f_energy(P_matrix));
 	fvals_homo.push_back (f_homogeneity());
 	fvals_variance.push_back (f_var(P_matrix));
@@ -314,7 +314,7 @@ void GLCMFeature::Extract_Texture_Features2 (const Fsettings& s, int angle, cons
 	fvals_diff_var.push_back (f_dvar(P_matrix));
 	fvals_diff_entropy.push_back (f_dentropy(P_matrix));
 	fvals_diff_avg.push_back (f_difference_avg());
-	fvals_meas_corr1.push_back (f_info_meas_corr1(P_matrix));
+	fvals_meas_corr1.push_back (f_info_meas_corr1(P_matrix, s[(int)NyxSetting::SOFTNAN].rval));
 	fvals_meas_corr2.push_back (f_info_meas_corr2(P_matrix));
 	fvals_acor.push_back (f_GLCM_ACOR(P_matrix));
 	fvals_cluprom.push_back (f_GLCM_CLUPROM());
@@ -437,10 +437,13 @@ void GLCMFeature::calculateCoocMatAtAngle(
 				PixIntens lvl_b = D.yx(row, col),
 					lvl_a = D.yx(row + dy, col + dx);
 
-				// Skip 0-intensity pixels (usually out of mask pixels)
-				if (ibsi_grey_binning(greyInfo))
-					if (lvl_a == 0 || lvl_b == 0)
-						continue;
+				// Skip out-of-ROI background pixels (original intensity 0) in ALL grey-binning
+				// paths. The MATLAB path maps 0 -> level 1 (see bin_array_matlab), which would
+				// otherwise count background as a real grey tone and flood the co-occurrence
+				// matrix with spurious diagonal mass. The IBSI path keeps 0 and was already
+				// skipping it; here we skip on the *original* intensity so every path agrees.
+				if (imR.yx(row, col) == 0 || imR.yx(row + dy, col + dx) == 0)
+					continue;
 
 				// 0-based grey tone indices, hence '-1'
 				int a = lvl_a,
@@ -587,7 +590,7 @@ double GLCMFeature::f_contrast(const SimpleMatrix<double>& P)
 *
 * Returns marginal totals 'px' and their mean 'meanx'
 */
-double GLCMFeature::f_corr()
+double GLCMFeature::f_corr(double softnan)
 {
 	auto Ng = P_matrix.width();
 
@@ -628,7 +631,14 @@ double GLCMFeature::f_corr()
 	for (int c = 0; c < Ng; c++)
 		for (int r = 0; r < Ng; r++)
 			tmp1 += (double(I[r]) - mr) * (double(I[c]) - mc) * P_matrix.yx(r, c) / sum_p;
-	double cor = tmp1 / (sr * sc);
+	// Correlation is undefined when a grey-tone marginal has zero variance (a single grey
+	// level), i.e. sr*sc == 0 -> 0/0 -> NaN. Return the soft-NAN sentinel instead. (This can
+	// happen on tiny/uniform ROIs once out-of-ROI background pixels are correctly excluded.)
+	double denom = sr * sc;
+	if (!(denom > 0.0))
+		return softnan;
+
+	double cor = tmp1 / denom;
 
 	return cor;
 }
@@ -828,7 +838,7 @@ void GLCMFeature::calcH(const SimpleMatrix<double>& P, std::vector<double>& px, 
 	}
 }
 
-double GLCMFeature::f_info_meas_corr1 (const SimpleMatrix<double>& P)
+double GLCMFeature::f_info_meas_corr1 (const SimpleMatrix<double>& P, double softnan)
 {
 
 	auto Ng = P.width();
@@ -860,7 +870,12 @@ double GLCMFeature::f_info_meas_corr1 (const SimpleMatrix<double>& P)
 
 	}
 
-	return (HXY - HXY1) / HX;
+	// Undefined when a grey-tone marginal is a single level (HX -> 0 -> 0/0 -> NaN), which can
+	// happen on a tiny/uniform ROI once out-of-ROI background is correctly excluded.
+	double r = (HXY - HXY1) / HX;
+	if (!std::isfinite(r))
+		return softnan;
+	return r;
 }
 
 double GLCMFeature::f_info_meas_corr2(const SimpleMatrix<double>& P)
