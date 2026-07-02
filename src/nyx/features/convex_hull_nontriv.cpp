@@ -1,6 +1,7 @@
 #define _USE_MATH_DEFINES	// For M_PI, etc.
 #include <algorithm>
 #include <cmath>
+#include <numeric>
 #include "../dataset.h"
 #include "../feature_method.h"
 #include "../feature_settings.h"
@@ -8,6 +9,28 @@
 #include "convex_hull.h"
 
 using namespace Nyxus;
+
+// Number of integer lattice points lying ON the hull boundary = sum over edges of gcd(|dx|,|dy|).
+// By Pick's theorem the pixel-count-equivalent hull area (matching scikit-image convex_area, which
+// counts the pixels of the rasterised hull) is shoelace_area + boundary_points/2 + 1. The bare
+// shoelace area runs through pixel CENTRES and under-counts coverage, so for small/elongated ROIs
+// it falls below the ROI pixel count -> SOLIDITY > 1 (impossible). This correction fixes that.
+static long hull_boundary_points (const std::vector<Pixel2>& v)
+{
+	size_t n = v.size();
+	if (n < 2)
+		return 0;
+	long B = 0;
+	for (size_t i = 0; i < n; i++)
+	{
+		const Pixel2& p1 = v[i];
+		const Pixel2& p2 = v[(i + 1) % n];
+		long dx = (long)p2.x - (long)p1.x; if (dx < 0) dx = -dx;
+		long dy = (long)p2.y - (long)p1.y; if (dy < 0) dy = -dy;
+		B += std::gcd(dx, dy);
+	}
+	return B;
+}
 
 ConvexHullFeature::ConvexHullFeature() : FeatureMethod("ConvexHullFeature")
 {
@@ -32,12 +55,13 @@ void ConvexHullFeature::calculate (LR& r, const Fsettings& s)
 	// Build the convex hull
 	build_convex_hull(r.raw_pixels, r.convHull_CH);
 
-	// Calculate related features
-	double s_hull = polygon_area(r.convHull_CH),
-		s_roi = r.raw_pixels.size(), 
+	// Calculate related features. Pixel-count-equivalent hull area (Pick's theorem) so the hull is
+	// measured on the same basis as the ROI (pixel count) -> SOLIDITY <= 1.
+	double s_hull = polygon_area(r.convHull_CH) + hull_boundary_points(r.convHull_CH) / 2.0 + 1.0,
+		s_roi = r.raw_pixels.size(),
 		p = r.fvals[(int)Feature2D::PERIMETER][0];
 	area = s_hull;
-	solidity = s_roi / s_hull;
+	solidity = (s_hull > 0.0) ? s_roi / s_hull : 0.0;
 	circularity = sqrt(4.0 * M_PI * s_roi / (p*p));
 }
 
@@ -193,12 +217,12 @@ void ConvexHullFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader
 	// Build the convex hull
 	build_convex_hull (r.raw_pixels_NT, r.convHull_CH);
 
-	// Calculate related features
-	double s_hull = polygon_area(r.convHull_CH),
+	// Calculate related features (Pick's-theorem pixel-count-equivalent hull area; see calculate())
+	double s_hull = polygon_area(r.convHull_CH) + hull_boundary_points(r.convHull_CH) / 2.0 + 1.0,
 		s_roi = r.raw_pixels_NT.size(),
 		p = r.fvals[(int)Feature2D::PERIMETER][0];
 	area = s_hull;
-	solidity = s_roi / s_hull;
+	solidity = (s_hull > 0.0) ? s_roi / s_hull : 0.0;
 	circularity = sqrt(4.0 * M_PI * s_roi / (p * p));
 }
 

@@ -58,8 +58,8 @@ static std::unordered_map<std::string, double> unvetted_nyxus_regression_shape2d
 	{"EDGE_MIN_INTENSITY", 12.0},
 	{"EDGE_INTEGRATED_INTENSITY", 753.0},
 	{"CIRCULARITY", 0.671081973229055},
-	{"CONVEX_HULL_AREA", 20.0},
-	{"SOLIDITY", 1.3},
+	{"CONVEX_HULL_AREA", 27.0},                   // FIX (convex_hull_nontriv.cpp): Pick's-theorem pixel-count hull area (skimage 28, ~4%)
+	{"SOLIDITY", 0.9629629629629629},             // FIX: now <=1 (was 1.3, impossible); skimage 0.929
 	{"EULER_NUMBER", 0.0},
 	{"DIAMETER_MIN_ENCLOSING_CIRCLE", 6.32475519180298},
 	{"ROI_RADIUS_MEAN", 1.07692307692308},
