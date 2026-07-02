@@ -3,7 +3,7 @@
 These exercise the PRODUCTION featurize() path on a GLDM ROI *with background* at the
 DEFAULT (MATLAB grey-binning) settings - the conditions the C++ phantom unit tests miss,
 because those run on fully-masked ROIs where no off-ROI background sits inside the
-bounding box. The C++ counterpart of this file is tests/test_gldm_bugs.h.
+bounding box. The C++ counterpart of this file is tests/test_gldm_oracle.h.
 """
 import re
 from pathlib import Path

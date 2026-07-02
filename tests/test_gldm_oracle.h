@@ -10,7 +10,7 @@
 #include "test_main_nyxus.h"
 
 // Regression guard for the GLDM "background pollutes the dependence matrix" defect (bug #14b,
-// fixed 2026-06). C++ counterpart of tests/python/test_gldm_bugs.py.
+// fixed 2026-06). C++ counterpart of tests/python/test_gldm_oracle.py.
 //
 // The MATLAB grey-binning path (the production default) maps off-ROI background (original
 // intensity 0) to binned level 1, so the GLDM zone loop's old `pi == 0` guard - which tested
