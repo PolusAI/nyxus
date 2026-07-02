@@ -23,7 +23,7 @@ static std::unordered_map<int, std::unordered_map<std::string, double>> unvetted
 	}},
 	{2, {
 		{"NUM_NEIGHBORS", 1.0},
-		{"PERCENT_TOUCHING", 33.3333333333333},
+		{"PERCENT_TOUCHING", 66.6666666666667},   // FIX #13 (neighbors.cpp): deduped adjacency touching pixels / contour length (was 33.33)
 		{"CLOSEST_NEIGHBOR1_DIST", 2.54950975679639},
 		{"CLOSEST_NEIGHBOR2_DIST", 0.0},
 	}},

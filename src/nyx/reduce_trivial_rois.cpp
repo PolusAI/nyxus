@@ -77,8 +77,10 @@ namespace Nyxus
 			runParallel (IntensityHistogramFeatures::reduce, n_threads, work_per_thread, job_size, &L, &env.roiData, fst, env.dataset);
 		}
 
-		//==== Basic morphology
-		if (BasicMorphologyFeatures::required(env.theFeatureSet))
+		//==== Basic morphology. Also run it when neighbor features are requested: the neighbor reduce
+		// needs CENTROID_X/Y (computed here) for the closest-neighbor distances/angles, which would
+		// otherwise be 0 when the user asked only for neighbor features.
+		if (BasicMorphologyFeatures::required(env.theFeatureSet) || NeighborsFeature::required(env.theFeatureSet))
 		{
 			STOPWATCH("Morphology/Basic/E/#4aaaea", "\t=");
 			const Fsettings& fst = env.fsett_BasicMorphology;
