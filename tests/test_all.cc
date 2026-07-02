@@ -21,7 +21,7 @@
 #include "test_ibsi_ngtdm.h"
 #include "test_glcm.h"
 #include "test_gldm.h"
-#include "test_gldm_bugs.h"
+#include "test_gldm_oracle.h"
 #include "test_glrlm.h"
 #include "test_glszm.h"
 #include "test_ngtdm.h"
