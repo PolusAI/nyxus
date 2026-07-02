@@ -69,8 +69,8 @@ static std::unordered_map<std::string, double> unvetted_nyxus_regression_shape2d
 
 static std::unordered_map<std::string, double> oracle_3p_shape2d_feature_golden_values{
 	{"DIAMETER_EQUAL_PERIMETER", 8.57365809435587},
-	{"FRACT_DIM_BOXCOUNT", -0.830074998557687},
-	{"FRACT_DIM_PERIMETER", -1.97227924244155},
+	{"FRACT_DIM_BOXCOUNT", 1.5849625007211565},   // FIX (fractal_dim.cpp): mean log-log slope = log2(3); old -0.83 was slope-of-slopes (~0)
+	{"FRACT_DIM_PERIMETER", 0.3187149603076458},  // FIX: Richardson D = 1 - slope; old -1.97 was the raw slope
 	{"DIAMETER_CIRCUMSCRIBING_CIRCLE", 12.3317073399088},
 	{"DIAMETER_INSCRIBING_CIRCLE", 0.828486893405308},
 	{"GEODETIC_LENGTH", 10.0},
