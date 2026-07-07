@@ -456,7 +456,9 @@ namespace Nyxus
 	bool scan_slide_props (SlideProps & p, int dim, const AnisotropyOptions & aniso, bool need_annot)
 	{
 		RawImageLoader ilo;
-		if (! ilo.open(p.fname_int, p.fname_seg))
+		// p.preserve_hu was set from the CLI/Python option before this scan (see workflow_*.cpp),
+		// so the DICOM scan can compute the slide min/max in the Hounsfield domain.
+		if (! ilo.open(p.fname_int, p.fname_seg, p.preserve_hu))
 		{
 			std::cerr << "error opening an ImageLoader for " << p.fname_int << " | " << p.fname_seg << "\n";
 			return false;

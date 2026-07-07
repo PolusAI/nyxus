@@ -715,7 +715,8 @@ Assuming you [built the Nyxus binary](#building-from-source) as outlined below, 
 --hag | ${\color{red}\textsf{(optional)}}$ Name of a method how to aggregate features of segments recognized as children of same parent segment. Valid options are 'SUM', 'MEAN', 'MIN', 'MAX', 'WMA' (weighted mean average), and 'NONE' (no aggregation, instead, same parent child segments will be laid out horizontally) | string
 --fpimgdr | ${\color{red}\textsf{(optional)}}$ Desired dynamic range of voxels of a floating point TIFF image. Example: --fpimgdr=240 makes intensities be read in range 0-240. Default value: 10e4 | unsigned integer
 --fpimgmin | ${\color{red}\textsf{(optional)}}$ Minimum intensity of voxels of a floating point TIFF image. Default value: 0.0 | real
---fpimgdr | ${\color{red}\textsf{(optional)}}$ Maximum intensity of voxels of a floating point TIFF image. Default value: 1.0 | real
+--fpimgmax | ${\color{red}\textsf{(optional)}}$ Maximum intensity of voxels of a floating point TIFF image. Default value: 1.0 | real
+--preserve-hu | ${\color{red}\textsf{(optional)}}$ CT/Hounsfield mode. Preserves absolute pixel intensities (1 grey level = 1 intensity unit, offset by the global minimum) instead of the min-max rescaling used by --fpimgmin/--fpimgmax/--fpimgdr. Keeps Hounsfield Units intact for CT, fixes the signed-integer wraparound of negative values, and applies DICOM RescaleSlope/RescaleIntercept. Intensity features are then in an offset domain recoverable by adding the global minimum back; Intensity Histogram features are reported in true HU. Example: --preserve-hu=true. Default value: false | boolean
 --anisox | ${\color{red}\textsf{(optional)}}$ x-anisotropy. Default value: 1.0 | real
 --anisoy | ${\color{red}\textsf{(optional)}}$ y-anisotropy. Default value: 1.0 | real
 --anisoz | ${\color{red}\textsf{(optional)}}$ z-anisotropy (for 3D datasets). Default value: 1.0 | real

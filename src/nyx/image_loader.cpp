@@ -40,7 +40,10 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 			if (ext == ".dcm" || ext == ".dicom")
 			{
 				#ifdef DICOM_SUPPORT
-					intFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, int_fpath);
+					// HU offset base: fp override min if supplied, else the scanned (HU-domain) slide min
+					intFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, int_fpath,
+						fpopts.empty() ? p.min_preroi_inten : (double)fpopts.min_intensity(),
+						fpopts.preserve_hu());
 				#else
 					std::string erm = "This version of Nyxus was not build with DICOM support";
 					#ifdef WITH_PYTHON_H
@@ -70,12 +73,13 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 					if (Nyxus::check_tile_status(int_fpath))
 					{
 						intFL = new NyxusGrayscaleTiffTileLoader<uint32_t> (
-							n_threads, 
-							int_fpath, 
+							n_threads,
+							int_fpath,
 							true,
 							fpmin,
 							fpmax,
-							fpopts.target_dyn_range());
+							fpopts.target_dyn_range(),
+							fpopts.preserve_hu());		// CT/HU mode: offset-preserving map
 					} 
 					else 
 					{

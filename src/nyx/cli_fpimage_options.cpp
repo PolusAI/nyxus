@@ -55,6 +55,18 @@ bool FpImageOptions::parse_input()
 		target_dyn_range_ = x;
 	}
 
+	if (!raw_preserve_hu.empty())
+	{
+		// string -> bool (accepts TRUE/FALSE/T/F, case-insensitive)
+		bool b;
+		if (!Nyxus::parse_as_bool (raw_preserve_hu, b))
+		{
+			ermsg = "Error in " + raw_preserve_hu + ": expecting a boolean value";
+			return false;
+		}
+		preserve_hu_ = b;
+	}
+
 	return true;
 }
 

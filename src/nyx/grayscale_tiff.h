@@ -10,6 +10,7 @@
 #else
     #include <tiffio.h>
 #endif
+#include <cmath>    // HU mode: std::floor / std::llround for the offset map
 #include <cstring>
 #include <sstream>
 #include <limits.h> // for INT_MAX 
@@ -34,12 +35,14 @@ public:
         bool permit_fp,
         float _floatpt_image_min_intensity,
         float _floatpt_image_max_intensity,
-        float _floatpt_image_target_dyn_range)
-        : AbstractTileLoader<DataType>("NyxusGrayscaleTiffTileLoader", numberThreads, filePath), 
+        float _floatpt_image_target_dyn_range,
+        bool _preserve_hu = false)			// CT/HU mode: offset-preserving map instead of min-max rescale
+        : AbstractTileLoader<DataType>("NyxusGrayscaleTiffTileLoader", numberThreads, filePath),
         permit_floatpt_pixels (permit_fp),
         floatpt_image_min_intensity(_floatpt_image_min_intensity),
         floatpt_image_max_intensity(_floatpt_image_max_intensity),
-        floatpt_image_target_dyn_range(_floatpt_image_target_dyn_range)
+        floatpt_image_target_dyn_range(_floatpt_image_target_dyn_range),
+        preserve_hu(_preserve_hu)
     {
         short samplesPerPixel = 0;
 
@@ -268,7 +271,9 @@ private:
                 {
                     size_t logOffs = r * tileWidth_ + c,
                         physOffs = r * tileWidth_ + c;
-                    *(dest + logOffs) = (DataType) *(((FileType*)src) + physOffs);
+                    // HU mode: offset-preserve (fixes signed int16 CT wraparound); else native cast
+                    FileType v = *(((FileType*)src) + physOffs);
+                    *(dest + logOffs) = preserve_hu ? hu_offset ((double)v) : (DataType) v;
                 }
         }
         else
@@ -276,7 +281,11 @@ private:
             {
                 size_t n = tileHeight_ * tileWidth_;
                 for (size_t i = 0; i < n; i++)
-                    *(dest + i) = (DataType) *(((FileType*)src) + i);
+                {
+                    // HU mode: offset-preserve (fixes signed int16 CT wraparound); else native cast
+                    FileType v = *(((FileType*)src) + i);
+                    *(dest + i) = preserve_hu ? hu_offset ((double)v) : (DataType) v;
+                }
             }
     }
 
@@ -307,13 +316,7 @@ private:
 
                     // Prevent real-valued intensities smaller than 1.0 from being cast to integer 0
                     auto tmp1 = * (((FileType*)src) + physOffs);    // real-valued raw (uncast) intensity e.g. 0.0724
-
-                    // hard sigmoid
-                    tmp1 = tmp1 < floatpt_image_min_intensity ? floatpt_image_min_intensity : tmp1;
-                    tmp1 = tmp1 > floatpt_image_max_intensity ? floatpt_image_max_intensity : tmp1;
-                    auto tmp2 = floatpt_image_target_dyn_range * (tmp1 - floatpt_image_min_intensity) / (floatpt_image_max_intensity - floatpt_image_min_intensity);
-                    auto tmp3 = (DataType) tmp2; // integer-typed (of DataType) intensity
-                    *(dest + logOffs) = tmp3;
+                    *(dest + logOffs) = map_real_intensity (tmp1);
                 }
         }
         else
@@ -324,13 +327,7 @@ private:
                 {
                     // Prevent real-valued intensities smaller than 1.0 from being cast to integer 0
                     auto tmp1 = * (((FileType*)src) + i);           // real-valued intensity e.g. 0.0724
-
-                    // hard sigmoid
-                    tmp1 = tmp1 < floatpt_image_min_intensity ? floatpt_image_min_intensity : tmp1;
-                    tmp1 = tmp1 > floatpt_image_max_intensity ? floatpt_image_max_intensity : tmp1;
-                    auto tmp2 = floatpt_image_target_dyn_range * (tmp1 - floatpt_image_min_intensity) / (floatpt_image_max_intensity - floatpt_image_min_intensity);
-                    auto tmp3 = (DataType) tmp2; // integer-valued intensity
-                    *(dest + i) = tmp3;
+                    *(dest + i) = map_real_intensity (tmp1);
                 }
             }
     }
@@ -353,6 +350,32 @@ private:
     float floatpt_image_min_intensity = 0.0,
         floatpt_image_max_intensity = 1.0,
         floatpt_image_target_dyn_range = 1e4;
+
+    // CT/HU raw-intensity mode: keep 1 grey level == 1 intensity unit (offset by
+    // floor(min)) so absolute Hounsfield values survive. See SlideProps::uint_friendly_inten.
+    bool preserve_hu = false;
+
+    // HU offset map shared by the float and native-integer paths:
+    // u = round(x - floor(min)), preserving 1 grey level == 1 intensity unit and
+    // clamping sub-min outliers (incl. negative CT values) to 0 instead of wrapping.
+    DataType hu_offset (double x) const
+    {
+        double y = x - std::floor ((double)floatpt_image_min_intensity);
+        if (y < 0.0) y = 0.0;
+        return (DataType) std::llround (y);
+    }
+
+    // Map one real-valued pixel to the integer feature domain, honoring HU mode.
+    // Non-HU: hard-clamp to [min,max] then min-max rescale into [0, target_dyn_range].
+    // HU: slope-1 offset (preserves absolute intensities, e.g. Hounsfield units).
+    DataType map_real_intensity (double x) const
+    {
+        if (preserve_hu)
+            return hu_offset (x);
+        double t = x < floatpt_image_min_intensity ? (double)floatpt_image_min_intensity : x;
+        t = t > floatpt_image_max_intensity ? (double)floatpt_image_max_intensity : t;
+        return (DataType)(floatpt_image_target_dyn_range * (t - floatpt_image_min_intensity) / (floatpt_image_max_intensity - floatpt_image_min_intensity));
+    }
 
 };
 

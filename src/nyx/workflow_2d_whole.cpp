@@ -1,3 +1,4 @@
+#include <cmath>
 #include <fstream>
 #include <future>
 #include <string>
@@ -96,8 +97,20 @@ namespace Nyxus
 		vroi.aux_area = p.max_roi_area;
 		vroi.aabb.init_from_wh (p.max_roi_w, p.max_roi_h);
 		// tell ROI the actual uint rynamic range or greybinned one depending on the slide's low-level properties
-		vroi.aux_min = (PixIntens) p.fp_phys_pivoxels ? 0 : (PixIntens) p.min_preroi_inten; 
-		vroi.aux_max = (PixIntens) p.fp_phys_pivoxels ? (PixIntens) env.fpimageOptions.target_dyn_range() : (PixIntens) p.max_preroi_inten;
+		if (p.preserve_hu)
+		{
+			// CT/HU mode: mirror the loader's offset (u = x - floor(min)) so MIN/MAX land in the
+			// same offset domain as the loaded pixels (as workflow_3d_whole already does), instead
+			// of casting a negative HU straight to PixIntens and wrapping.
+			double off = std::floor (p.min_preroi_inten);
+			vroi.aux_min = (PixIntens) std::llround (p.min_preroi_inten - off);
+			vroi.aux_max = (PixIntens) std::llround (p.max_preroi_inten - off);
+		}
+		else
+		{
+			vroi.aux_min = (PixIntens) p.fp_phys_pivoxels ? 0 : (PixIntens) p.min_preroi_inten;
+			vroi.aux_max = (PixIntens) p.fp_phys_pivoxels ? (PixIntens) env.fpimageOptions.target_dyn_range() : (PixIntens) p.max_preroi_inten;
+		}
 
 		// fix the AABB with respect to anisotropy
 		if (env.anisoOptions.customized() == false)
@@ -223,6 +236,10 @@ namespace Nyxus
 			// particularly, setting slide's intensity min := 0 (i.e. off-mask background min) 
 			// rather than setting min as within-mask min
 			SlideProps& p = env.dataset.dataset_props.emplace_back (intensFiles[i], labelFiles[i]);
+
+			// CT/HU preservation is a global user option; record it on the slide so
+			// IntensityHistogramFeatures::float_domain_map reports features in true HU.
+			p.preserve_hu = env.fpimageOptions.preserve_hu();
 
 			// slide metrics
 			VERBOSLVL1 (env.get_verbosity_level(), std::cout << "prescanning " << p.fname_int);

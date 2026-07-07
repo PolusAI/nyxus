@@ -116,6 +116,14 @@ class Nyxus:
         Minimum intensity of voxels of a floating point TIFF image.
     max_intensity: (optional, default 1.0)
         Maximum intensity of voxels of a floating point TIFF image.
+    preserve_hu: bool (optional, default False)
+        CT/Hounsfield mode. Preserve absolute pixel intensities (1 grey level = 1
+        intensity unit, offset by the global minimum) instead of the min-max rescaling
+        controlled by dynamic_range/min_intensity/max_intensity. Keeps Hounsfield Units
+        intact for CT, fixes the signed-integer wraparound of negative values, and applies
+        DICOM RescaleSlope/RescaleIntercept. Intensity features are then in an offset domain
+        (recoverable by adding the global minimum back); Intensity Histogram features are
+        reported in true HU.
     ram_limit: int (optional)
         Maximum amount of ram to be used by Nyxus in megabytes
     verbose: int (optional, default 0)
@@ -138,7 +146,7 @@ class Nyxus:
             'gabor_thold', 'gabor_thetas', 'gabor_freqs', 'channel_signature', 
             'parent_channel', 'child_channel', 'aggregate', 'dynamic_range', 'min_intensity',
             'max_intensity', 'ram_limit', 'verbose',
-            'anisotropy_x', 'anisotropy_y', 'mergerois'
+            'anisotropy_x', 'anisotropy_y', 'mergerois', 'preserve_hu'
         }
 
         # Check for unexpected keyword arguments
@@ -164,6 +172,7 @@ class Nyxus:
         dynamic_range = kwargs.get('dynamic_range', 10000)
         min_intensity = kwargs.get('min_intensity', 0.0)
         max_intensity = kwargs.get('max_intensity', 1.0)
+        preserve_hu = kwargs.get('preserve_hu', False)   # CT/HU: preserve absolute Hounsfield values
         ram_limit = kwargs.get('ram_limit', -1)
         verb_lvl = kwargs.get('verbose', 0)
         aniso_x = kwargs.get('anisotropy_x', 1.0)
@@ -215,7 +224,8 @@ class Nyxus:
             aniso_x,
             aniso_y,
             aniso_z,
-            mergerois)
+            mergerois,
+            preserve_hu)
 
         self.set_gabor_feature_params(
             kersize = gabor_kersize,
@@ -944,6 +954,14 @@ class Nyxus3D:
         Minimum intensity of voxels of a floating point TIFF image.
     max_intensity: (optional, default 1.0)
         Maximum intensity of voxels of a floating point TIFF image.
+    preserve_hu: bool (optional, default False)
+        CT/Hounsfield mode. Preserve absolute pixel intensities (1 grey level = 1
+        intensity unit, offset by the global minimum) instead of the min-max rescaling
+        controlled by dynamic_range/min_intensity/max_intensity. Keeps Hounsfield Units
+        intact for CT, fixes the signed-integer wraparound of negative values, and applies
+        DICOM RescaleSlope/RescaleIntercept. Intensity features are then in an offset domain
+        (recoverable by adding the global minimum back); Intensity Histogram features are
+        reported in true HU.
     verbose: int (optional, default 0)
         Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
     anisotropy_x: float (optional, default 1.0)
@@ -965,9 +983,9 @@ class Nyxus3D:
             'parent_channel', 'child_channel', 'aggregate', 
             'dynamic_range', 'min_intensity', 'max_intensity', 'ram_limit',
             'verbose',
-            'anisotropy_x', 
+            'anisotropy_x',
             'anisotropy_y',
-            'anisotropy_z'
+            'anisotropy_z', 'preserve_hu'
         }
 
         # Check for unexpected keyword arguments
@@ -986,6 +1004,7 @@ class Nyxus3D:
         dynamic_range = kwargs.get('dynamic_range', 10000)
         min_intensity = kwargs.get('min_intensity', 0.0)
         max_intensity = kwargs.get('max_intensity', 1.0)
+        preserve_hu = kwargs.get('preserve_hu', False)   # CT/HU: preserve absolute Hounsfield values
         verb_lvl = kwargs.get ('verbose', 0)
         aniso_x = kwargs.get('anisotropy_x', 1.0)
         aniso_y = kwargs.get('anisotropy_y', 1.0)
@@ -1044,7 +1063,8 @@ class Nyxus3D:
             aniso_x,
             aniso_y,
             aniso_z,
-            False)  # merge_labels: 2D-segmented only
+            False,  # merge_labels: 2D-segmented only
+            preserve_hu)
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
@@ -1477,6 +1497,14 @@ class ImageQuality:
         Minimum intensity of voxels of a floating point TIFF image.
     max_intensity: (optional, default 1.0)
         Maximum intensity of voxels of a floating point TIFF image.
+    preserve_hu: bool (optional, default False)
+        CT/Hounsfield mode. Preserve absolute pixel intensities (1 grey level = 1
+        intensity unit, offset by the global minimum) instead of the min-max rescaling
+        controlled by dynamic_range/min_intensity/max_intensity. Keeps Hounsfield Units
+        intact for CT, fixes the signed-integer wraparound of negative values, and applies
+        DICOM RescaleSlope/RescaleIntercept. Intensity features are then in an offset domain
+        (recoverable by adding the global minimum back); Intensity Histogram features are
+        reported in true HU.
     verbose: int (optional, default 0)
         Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
     anisotropy_x: float (optional, default 1.0)
@@ -1517,6 +1545,7 @@ class ImageQuality:
         dynamic_range = kwargs.get('dynamic_range', 10000)
         min_intensity = kwargs.get('min_intensity', 0.0)
         max_intensity = kwargs.get('max_intensity', 1.0)
+        preserve_hu = kwargs.get('preserve_hu', False)   # CT/HU: preserve absolute Hounsfield values
         ram_limit = kwargs.get('ram_limit', -1)
         verb_lvl = kwargs.get ('verbose', 0)
         aniso_x = kwargs.get('anisotropy_x', 1.0)
@@ -1572,7 +1601,8 @@ class ImageQuality:
             aniso_x,
             aniso_y,
             aniso_z,
-            False)  # merge_labels: 2D-segmented only
+            False,  # merge_labels: 2D-segmented only
+            preserve_hu)
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']

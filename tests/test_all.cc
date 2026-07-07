@@ -1,3 +1,4 @@
+#define NOMINMAX	// keep Windows min/max macros from breaking dcmtk's OFvariant (DICOM tests)
 #include <gtest/gtest.h>
 #include "test_gabor.h"
 #include "../src/nyx/environment.h"
@@ -5,6 +6,8 @@
 #include "test_contour.h"
 #include "test_pixel_intensity_features.h"
 #include "test_intensity_histogram.h"
+#include "test_hounsfield.h"
+#include "test_hounsfield_loader.h"
 #include "test_morphology_features.h"
 #include "test_shape_morphology_2d.h"
 #include "test_2d_geometric_moments.h"
@@ -768,10 +771,77 @@ TEST(TEST_NYXUS, TEST_IH_FLOAT_DOMAIN_RECONSTRUCTION)
 	ASSERT_NO_THROW(test_ih_float_domain_reconstruction());
 }
 
+TEST(TEST_NYXUS, TEST_IH_FLOAT_DOMAIN_RECONSTRUCTION_NEGATIVE_MIN)
+{
+	ASSERT_NO_THROW(test_ih_float_domain_reconstruction_negative_min());
+}
+
+TEST(TEST_NYXUS, TEST_IH_FLOAT_DOMAIN_RECONSTRUCTION_PRESERVE_HU)
+{
+	ASSERT_NO_THROW(test_ih_float_domain_reconstruction_preserve_hu());
+}
+
 TEST(TEST_NYXUS, TEST_IH_REQUIRED_PREDICATE)
 {
 	ASSERT_NO_THROW(test_ih_required_predicate());
 }
+
+TEST(TEST_NYXUS, TEST_HU_UINT_FRIENDLY_NORMALIZATION_CT_RANGE)
+{
+	ASSERT_NO_THROW(test_hu_uint_friendly_normalization_ct_range());
+}
+
+TEST(TEST_NYXUS, TEST_HU_UINT_FRIENDLY_RAWCAST_NONNEGATIVE)
+{
+	ASSERT_NO_THROW(test_hu_uint_friendly_rawcast_nonnegative());
+}
+
+TEST(TEST_NYXUS, TEST_HU_UINT_FRIENDLY_PRESERVE_OFFSET)
+{
+	ASSERT_NO_THROW(test_hu_uint_friendly_preserve_offset());
+}
+
+TEST(TEST_NYXUS, TEST_HU_FPIMAGE_OPTIONS_PARSE)
+{
+	ASSERT_NO_THROW(test_hu_fpimage_options_parse());
+}
+
+TEST(TEST_NYXUS, TEST_HU_LOADER_INT16_PRESERVE)
+{
+	ASSERT_NO_THROW(test_hu_loader_int16_preserve());
+}
+
+TEST(TEST_NYXUS, TEST_HU_LOADER_FLOAT_PRESERVE)
+{
+	ASSERT_NO_THROW(test_hu_loader_float_preserve());
+}
+
+TEST(TEST_NYXUS, TEST_HU_LOADER_FLOAT_NONPRESERVE_BASELINE)
+{
+	ASSERT_NO_THROW(test_hu_loader_float_nonpreserve_baseline());
+}
+
+#ifdef DICOM_SUPPORT
+TEST(TEST_NYXUS, TEST_HU_LOADER_DICOM_U16_PRESERVE)
+{
+	ASSERT_NO_THROW(test_hu_loader_dicom_u16_preserve());
+}
+
+TEST(TEST_NYXUS, TEST_HU_LOADER_DICOM_I16_PRESERVE)
+{
+	ASSERT_NO_THROW(test_hu_loader_dicom_i16_preserve());
+}
+
+TEST(TEST_NYXUS, TEST_HU_LOADER_DICOM_CT_SMALL_PRESERVE)
+{
+	ASSERT_NO_THROW(test_hu_loader_dicom_ct_small_preserve());
+}
+
+TEST(TEST_NYXUS, TEST_HU_LOADER_DICOM_CT_SMALL_BASELINE)
+{
+	ASSERT_NO_THROW(test_hu_loader_dicom_ct_small_baseline());
+}
+#endif
 
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VARIANCE_BIASED)
 {
@@ -1472,7 +1542,7 @@ TEST(TEST_NYXUS, TEST_GLCM_BUG_OFFSET_DEFAULT)
 	ASSERT_NO_THROW(test_glcm_bug_offset_default_is_one());
 }
 
-//***** IBSI tests of GLDM ***** 
+//***** IBSI tests of GLDM *****
 
 TEST(TEST_NYXUS, TEST_IBSI_GLDM_SDE) 
 {

@@ -68,13 +68,15 @@ static void ih_run(std::vector<std::vector<double>>& fvals,
                    int slide_idx = -1,
                    bool fp_image = false,
                    double slide_min = -1.0,
-                   double slide_max = -1.0)
+                   double slide_max = -1.0,
+                   bool preserve_hu = false)
 {
     Dataset ds;
     ds.dataset_props.push_back(SlideProps("", ""));
     if (slide_idx >= 0)
     {
         ds.dataset_props[slide_idx].fp_phys_pivoxels = fp_image;
+        ds.dataset_props[slide_idx].preserve_hu = preserve_hu;
         ds.dataset_props[slide_idx].min_preroi_inten = slide_min;
         ds.dataset_props[slide_idx].max_preroi_inten = slide_max;
     }
@@ -190,6 +192,54 @@ void test_ih_float_domain_reconstruction()
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_MAXIMUM_VAL), 0.7));
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_RANGE_VAL), 0.6));
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_BIN_SIZE), 0.2));   // (0.7-0.1)/3
+    ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_NUM_BINS), 3.0));
+}
+
+// 4b) Negative-domain (CT / Hounsfield-Unit-like) reconstruction. The float image
+//     spans [fpmin=-1000, fpmax=1000] with DR=10, so the load-time map is
+//       u = DR*(x-fpmin)/(fpmax-fpmin) = (x+1000)/200,
+//     and float_domain_map must invert it with pscale=(fpmax-fpmin)/DR=200,
+//     poffset=fpmin=-1000, i.e. reported = -1000 + 200*u. Stored ROI mn/mx = 1/7:
+//       IH_MINIMUM = -1000 + 200*1 = -800 ; IH_MAXIMUM = -1000 + 200*7 = 400
+//       IH_RANGE = 1200 ; IH_BIN_SIZE = 1200/3 = 400
+//     This exercises the reconstruction with a NEGATIVE offset — the exact regime
+//     Hounsfield-Unit preservation targets (water=0, air=-1000) and which the
+//     original fpmin=0 test never covered.
+void test_ih_float_domain_reconstruction_negative_min()
+{
+    Fsettings s = ih_make_settings(3, true);
+    s[(int)NyxSetting::FPIMG_ACTIVE].bval = true;
+    s[(int)NyxSetting::FPIMG_MIN].rval = -1000.0;
+    s[(int)NyxSetting::FPIMG_MAX].rval = 1000.0;
+    s[(int)NyxSetting::FPIMG_TARGET_DR].rval = 10.0;
+
+    std::vector<std::vector<double>> fv;
+    ih_run(fv, s, /*slide_idx*/ 0, /*fp_image*/ true, /*slide_min*/ -1000.0, /*slide_max*/ 1000.0);
+
+    ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_MINIMUM_VAL), -800.0));
+    ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_MAXIMUM_VAL), 400.0));
+    ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_RANGE_VAL), 1200.0));
+    ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_BIN_SIZE), 400.0));
+    ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_NUM_BINS), 3.0));
+}
+
+// 4c) HU offset-preserving reconstruction. With preserve_hu the load-time map is
+//     the slope-1 offset u = x - floor(min), so float_domain_map must invert it as
+//     reported = floor(min) + u (pscale=1). With min=-1024 and stored ROI mn/mx=1/7:
+//       IH_MINIMUM = -1024 + 1 = -1023 ; IH_MAXIMUM = -1024 + 7 = -1017
+//       IH_RANGE = 6 ; IH_BIN_SIZE = 6/3 = 2  (integer grey spacing preserved)
+//     i.e. features are reported back in absolute Hounsfield units.
+void test_ih_float_domain_reconstruction_preserve_hu()
+{
+    Fsettings s = ih_make_settings(3, true);   // FPIMG knobs irrelevant in HU mode
+    std::vector<std::vector<double>> fv;
+    ih_run(fv, s, /*slide_idx*/ 0, /*fp_image*/ false,
+           /*slide_min*/ -1024.0, /*slide_max*/ 3071.0, /*preserve_hu*/ true);
+
+    ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_MINIMUM_VAL), -1023.0));
+    ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_MAXIMUM_VAL), -1017.0));
+    ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_RANGE_VAL), 6.0));
+    ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_BIN_SIZE), 2.0));
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_NUM_BINS), 3.0));
 }
 

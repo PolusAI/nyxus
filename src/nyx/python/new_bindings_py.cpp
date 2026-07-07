@@ -80,7 +80,8 @@ void initialize_environment(
     float aniso_x,
     float aniso_y,
     float aniso_z,
-    bool merge_labels = false)
+    bool merge_labels = false,
+    bool preserve_hu = false)		// CT/HU: preserve absolute Hounsfield intensities
 {
     Environment & theEnvironment = Nyxus::findenv (instid);
 
@@ -101,6 +102,7 @@ void initialize_environment(
     theEnvironment.fpimageOptions.set_target_dyn_range(dynamic_range);
     theEnvironment.fpimageOptions.set_min_intensity(min_intensity);
     theEnvironment.fpimageOptions.set_max_intensity(max_intensity);
+    theEnvironment.fpimageOptions.set_preserve_hu(preserve_hu);
 
     // Throws exception if invalid feature is passed
     theEnvironment.expand_featuregroups();

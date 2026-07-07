@@ -472,6 +472,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			|| find_string_argument(i, clo_FPIMAGE_TARGET_DYNRANGE, fpimageOptions.raw_target_dyn_range)
 			|| find_string_argument(i, clo_FPIMAGE_MIN, fpimageOptions.raw_min_intensity)
 			|| find_string_argument(i, clo_FPIMAGE_MAX, fpimageOptions.raw_max_intensity)
+			|| find_string_argument(i, clo_PRESERVE_HU, fpimageOptions.raw_preserve_hu)		// CT/HU mode
 			|| find_string_argument(i, clo_RESULTFNAME, nyxus_result_fname)
 			|| find_string_argument(i, clo_CLI_DIM, raw_dim)
 

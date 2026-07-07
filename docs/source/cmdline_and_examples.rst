@@ -148,6 +148,26 @@ should adhere to columns "WIPP I/O role" and "WIPP type".
      - true or false
      - input
      - bool
+   * - --fpimgmin
+     - (Optional) Expected minimum intensity of a floating-point image, used when quantizing its voxels into the internal integer range. Default: '--fpimgmin=0.0'
+     - real
+     - input
+     - float
+   * - --fpimgmax
+     - (Optional) Expected maximum intensity of a floating-point image, used when quantizing its voxels into the internal integer range. Default: '--fpimgmax=1.0'
+     - real
+     - input
+     - float
+   * - --fpimgdr
+     - (Optional) Target integer dynamic range that floating-point voxels are mapped onto. Default: '--fpimgdr=10000'
+     - positive integer
+     - input
+     - int
+   * - --preserve-hu
+     - (Optional) CT/Hounsfield mode. Preserves absolute pixel intensities (1 grey level = 1 intensity unit, offset by the global minimum) instead of the min-max rescaling used by '--fpimgmin'/'--fpimgmax'/'--fpimgdr'. Keeps Hounsfield Units intact for CT, fixes the signed-integer wraparound of negative values, and applies DICOM RescaleSlope/RescaleIntercept. Intensity features are reported in an offset domain (recoverable by adding the global minimum back); Intensity Histogram features are reported in true HU. Default: '--preserve-hu=false'
+     - true or false
+     - input
+     - bool
 
 Examples
 ========

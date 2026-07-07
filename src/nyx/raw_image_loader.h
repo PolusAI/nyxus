@@ -12,7 +12,7 @@ class RawImageLoader
 public:
 
 	RawImageLoader();
-	bool open(const std::string& int_fpath, const std::string& seg_fpath);
+	bool open(const std::string& int_fpath, const std::string& seg_fpath, bool preserve_hu = false);
 	void close();
 	bool load_tile(size_t tile_idx);
 	bool load_tile(size_t tile_row, size_t tile_col);

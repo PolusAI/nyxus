@@ -336,6 +336,16 @@ void IntensityHistogramFeatures::float_domain_map (LR& r, const Fsettings& s, co
 	if (STNGS_MISSING(s) || r.slide_idx < 0)
 		return;
 	const SlideProps& sp = ds.dataset_props[r.slide_idx];
+	if (sp.preserve_hu)
+	{
+		// HU mode inverts the slope-1 offset map applied at load time:
+		// reported = floor(min) + 1*u, recovering absolute Hounsfield units.
+		// Mirror image_loader's fpmin selection so the reconstruction offset
+		// equals the load-time offset (fp options override the scanned min).
+		double fpmin = STNGS_FPIMG_ACTIVE(s) ? STNGS_FPIMG_MIN(s) : sp.min_preroi_inten;
+		poffset = std::floor (fpmin);
+		return;	// pscale stays 1.0
+	}
 	if (! sp.fp_phys_pivoxels)
 		return;	// integer image: stored intensities are already native, no rescale happened
 

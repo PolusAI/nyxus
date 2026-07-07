@@ -18,7 +18,8 @@ public:
 	// intentionally public to be accessed by Environment
 	std::string raw_min_intensity = "",	// matches FPIMAGE_MIN
 		raw_max_intensity = "",			// matches FPIMAGE_MAX
-		raw_target_dyn_range = "";		// matches FPIMAGE_TARGET_DYNRANGE
+		raw_target_dyn_range = "",		// matches FPIMAGE_TARGET_DYNRANGE
+		raw_preserve_hu = "";			// matches clo_PRESERVE_HU (TRUE/FALSE/T/F)
 
 	// value-oriented getters
 	float min_intensity() const 
@@ -47,6 +48,16 @@ public:
 		target_dyn_range_ = target_dyn_range;
 	}
 
+	// CT/HU preservation mode: keep 1 grey level == 1 intensity unit (offset by the
+	// floored global min) instead of min-max rescaling; see SlideProps::uint_friendly_inten.
+	bool preserve_hu() const {
+		return preserve_hu_;
+	}
+
+	void set_preserve_hu(bool v) {
+		preserve_hu_ = v;
+	}
+
 private:
 	bool defined_ = false;
 	std::string ermsg = "";
@@ -54,4 +65,5 @@ private:
 	float min_intensity_ = 0.0,
 		max_intensity_ = 1.0,
 		target_dyn_range_ = 1e4;
+	bool preserve_hu_ = false;			// HU mode off by default
 };
