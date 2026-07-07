@@ -1,5 +1,6 @@
 #ifdef DICOM_SUPPORT
 #pragma once
+#include <cmath>    // HU mode: std::floor / std::llround
 #include "dcmtk/dcmdata/dctk.h"
 #include "dcmtk/dcmjpeg/djdecode.h"  /* for JPEG decoders */
 #include "dcmtk/dcmjpls/djdecode.h"  /* for JPEG-LS decoders */
@@ -24,8 +25,11 @@ public:
     /// @param filePath Path of dicom file
     NyxusGrayscaleDicomLoader(
         size_t numberThreads,
-        std::string const& filePath)
-        : AbstractTileLoader<DataType>("NyxusGrayscaleDicomLoader", numberThreads, filePath) 
+        std::string const& filePath,
+        double fpmin = 0.0,				// HU mode: offset base = floor(global HU min)
+        bool preserve_hu = false)		// CT/HU mode: rescale to true HU then offset-preserve
+        : AbstractTileLoader<DataType>("NyxusGrayscaleDicomLoader", numberThreads, filePath),
+        fpmin_(fpmin), preserve_hu_(preserve_hu)
     {
         // register JPEG decoder
         DJDecoderRegistration::registerCodecs();
@@ -95,6 +99,13 @@ public:
             } else if (tmp == 1) {
                 isSigned_ = true;
             }
+
+            // HU rescale (used only in preserve_hu mode): HU = slope*stored + intercept.
+            // Absent tags default to identity (slope=1, intercept=0).
+            if (ds->findAndGetFloat64(DCM_RescaleSlope, rescaleSlope_).bad())
+                rescaleSlope_ = 1.0;
+            if (ds->findAndGetFloat64(DCM_RescaleIntercept, rescaleIntercept_).bad())
+                rescaleIntercept_ = 0.0;
         }
         else 
         { 
@@ -253,7 +264,17 @@ private:
             // Get ahold of the raw pointer
                 DataType* dest = dest_as_vector.data();
                 for (size_t i=0; i<data_length; i++){
-                    *(dest+i) = static_cast<DataType>(buffer[i]);
+                    if (preserve_hu_)
+                    {
+                        // rescale stored -> true HU, then slope-1 offset by floor(global HU min);
+                        // negatives (below the offset base) clamp to 0 instead of wrapping.
+                        double hu = rescaleSlope_ * (double)buffer[i] + rescaleIntercept_;
+                        double y = hu - std::floor(fpmin_);
+                        if (y < 0.0) y = 0.0;
+                        *(dest+i) = (DataType) std::llround(y);
+                    }
+                    else
+                        *(dest+i) = static_cast<DataType>(buffer[i]);
                 }
             } else {
                 std::stringstream message;
@@ -316,5 +337,10 @@ private:
     short samplesPerPixel_ = 0, bitsPerSample_ = 0;
     int32_t numFrames_ = 0;
     bool isSigned_ = false;
+
+    // HU/CT preservation
+    double rescaleSlope_ = 1.0, rescaleIntercept_ = 0.0;
+    double fpmin_ = 0.0;			// offset base = floor(global HU min)
+    bool preserve_hu_ = false;
 };
 #endif // DICOM_SUPPORT

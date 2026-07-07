@@ -32,10 +32,24 @@ Transfer Syntax UID supports are available in Nyxus by utilizing ``dcmtk`` and `
     * JPEG-LS Lossy
     * JPEG 2000 
 
-* Multi-frame Image 
+* Multi-frame Image
 
     * Explicit VR Little Endian
-    * JPEG 2000 
+    * JPEG 2000
+
+CT / Hounsfield Units
+---------------------
+
+By default Nyxus quantizes floating-point and out-of-range images into its internal
+unsigned-integer intensity range by min-max rescaling, which does not preserve absolute
+CT Hounsfield Unit (HU) values and wraps negative stored values (e.g. air at roughly
+-1000 HU). Passing ``--preserve-hu`` (CLI) or ``preserve_hu=True`` (Python) switches to
+an offset-preserving mode: intensities are kept as ``value - floor(global_min)`` so that
+one grey level equals one intensity unit, negative values no longer wrap, and for DICOM
+the ``RescaleSlope`` / ``RescaleIntercept`` tags are applied to recover true HU before the
+offset. Shape and texture features are unaffected (they are shift-invariant); intensity
+features are reported in the offset domain (recoverable by adding the global minimum back),
+while the Intensity Histogram (IH_*) family is reported directly in true HU.
 
 
 

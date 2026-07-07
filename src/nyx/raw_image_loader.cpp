@@ -12,7 +12,7 @@
 
 RawImageLoader::RawImageLoader() {}
 
-bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_fpath)
+bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_fpath, bool preserve_hu)
 {
 	try
 	{
@@ -29,7 +29,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 		else 
 			if (ext == ".dcm" | ext == ".dicom") {
 #ifdef DICOM_SUPPORT
-			intFL = new RawDicomLoader (int_fpath);
+			intFL = new RawDicomLoader (int_fpath, preserve_hu);		// CT/HU: scan in Hounsfield domain
 #else
 			std::cout << "This version of Nyxus was not build with DICOM support." << std::endl;
 #endif

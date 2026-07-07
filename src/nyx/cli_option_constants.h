@@ -56,6 +56,7 @@
 #define clo_FPIMAGE_TARGET_DYNRANGE "--fpimgdr"		// Desired dynamic range of the integer voxel intensities converted from floating-point intensities
 #define clo_FPIMAGE_MIN "--fpimgmin"				// Expected voxel min intensity
 #define clo_FPIMAGE_MAX "--fpimgmax"				// Expected voxel max intensity
+#define clo_PRESERVE_HU "--preserve-hu"				// CT/HU mode: preserve absolute intensities (1 grey level == 1 HU) instead of min-max rescaling
 
 // Anisotropy
 #define clo_ANISO_X "--anisox"

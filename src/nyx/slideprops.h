@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>          // HU mode: std::floor / std::llround for the offset map
 #include <string>
 #include "cli_anisotropy_options.h"
 
@@ -19,6 +20,7 @@ public:
 		min_preroi_inten = -1;
 		max_preroi_inten = -1;
 		fp_phys_pivoxels = false;
+		preserve_hu = false;			// HU/CT raw-intensity mode off by default
 		slide_w = slide_h = volume_d = 0;
 		max_roi_area = 0;
 		n_rois = 0;
@@ -35,9 +37,23 @@ public:
 	// unsigned int grey-minning
 	bool fp_phys_pivoxels;
 
+	// HU/CT raw-intensity preservation. When set, the load-time map keeps
+	// 1 grey level == 1 intensity unit (offset by the floored global min)
+	// instead of min-max rescaling, so absolute Hounsfield values survive and
+	// negative CT values no longer wrap on the unsigned cast. Inverted for
+	// reporting by IntensityHistogramFeatures::float_domain_map.
+	bool preserve_hu;
+
 	// casting x in real range [min_preroi_inten, max_preroi_inten] -> uint [0, uint_dynrange]
 	unsigned int uint_friendly_inten (double x, double uint_dynrange) const
 	{
+		if (preserve_hu)
+		{
+			// slope-1 offset map: u = round(x - floor(min)). e.g. min=-1024 => HU -1024->0, 0->1024, 3071->4095
+			double y = x - std::floor(min_preroi_inten);
+			if (y < 0.0) y = 0.0;			// clamp rare sub-min outliers to 0 (stay in unsigned range)
+			return (unsigned int) std::llround(y);
+		}
 		if (fp_phys_pivoxels)
 		{
 			double y = x < min_preroi_inten ? min_preroi_inten : x;

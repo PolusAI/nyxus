@@ -22,7 +22,8 @@ public:
     /// @brief NyxusGrayscaleDicomLoader constructor
     /// @param numberThreads Number of threads associated
     /// @param filePath Path of dicom file
-    RawDicomLoader (std::string const& filePath) : RawFormatLoader("RawDicomLoader", filePath)
+    RawDicomLoader (std::string const& filePath, bool preserve_hu = false)
+        : RawFormatLoader("RawDicomLoader", filePath), preserve_hu_(preserve_hu)
     {
         // register JPEG decoder
         DJDecoderRegistration::registerCodecs();
@@ -96,6 +97,13 @@ public:
             else if (tmp == 1) {
                 isSigned_ = true;
             }
+
+            // HU rescale (used only in preserve_hu mode): HU = slope*stored + intercept.
+            // Absent tags default to identity so non-CT DICOM is unaffected.
+            if (ds->findAndGetFloat64(DCM_RescaleSlope, rescaleSlope_).bad())
+                rescaleSlope_ = 1.0;
+            if (ds->findAndGetFloat64(DCM_RescaleIntercept, rescaleIntercept_).bad())
+                rescaleIntercept_ = 0.0;
         }
         else
         {
@@ -190,6 +198,10 @@ public:
 
     double get_dpequiv_pixel (size_t idx) const override
     {
+        // HU mode: return the true Hounsfield value so the scan's slide min/max is
+        // in the HU domain (matches the loader offset + float_domain_map reconstruction).
+        if (preserve_hu_ && idx < hu_tile_.size())
+            return hu_tile_ [idx];
         double rv = (double) tile [idx];
         return rv;
     }
@@ -272,8 +284,13 @@ private:
             {
                 // Get ahold of the raw pointer
                 uint32_t* dest = dest_as_vector.data();
+                if (preserve_hu_) hu_tile_.resize(data_length);
                 for (size_t i = 0; i < data_length; i++) {
                     *(dest + i) = static_cast<uint32_t>(buffer[i]);
+                    // In HU mode keep the TRUE Hounsfield value (rescaled from the signed/unsigned
+                    // stored pixel) so the slide scan computes an HU-domain min/max, not the wrapped uint.
+                    if (preserve_hu_)
+                        hu_tile_[i] = rescaleSlope_ * (double)buffer[i] + rescaleIntercept_;
                 }
             }
             else {
@@ -339,5 +356,11 @@ private:
     bool isSigned_ = false;
 
     std::vector<uint32_t> tile;
+
+    // HU/CT preservation (scan side): true-HU shadow of the current tile so the
+    // slide min/max is computed in the Hounsfield domain, not the wrapped uint.
+    bool preserve_hu_ = false;
+    double rescaleSlope_ = 1.0, rescaleIntercept_ = 0.0;
+    std::vector<double> hu_tile_;
 };
 #endif // DICOM_SUPPORT

@@ -115,6 +115,10 @@ namespace Nyxus
 		{
 			SlideProps& p = env.dataset.dataset_props.emplace_back (intensity_names[i], seg_names[i]);
 
+			// CT/HU preservation is a global user option; record it on the slide so
+			// IntensityHistogramFeatures::float_domain_map reports features in true HU.
+			p.preserve_hu = env.fpimageOptions.preserve_hu();
+
 			// slide metrics
 			if (!scan_slide_props_montage(p, 2, env.anisoOptions))
 			{
