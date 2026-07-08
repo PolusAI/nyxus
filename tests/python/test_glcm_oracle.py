@@ -77,6 +77,10 @@ def test_glcm_background_not_counted():
     q = np.zeros_like(inten, np.uint32)
     q[roi] = lvl                                  # quantized to integer levels 1..64
     row = _one(["*ALL_GLCM*"], q, label.astype(np.uint32), coarse_gray_depth=64, ibsi=False)
+    # rel=0.12 is a deliberately loose bug-discriminator band, not an exact-match check:
+    # nyxus's directional-average + symmetric-matrix CONTRAST differs a few % from the
+    # PyRadiomics/MIRP reference (133.9), so the band [117.8, 150.0] absorbs that gap while
+    # still excluding the ~99 background-polluted value (~26% low) that bug #2 produced.
     assert row["GLCM_CONTRAST_AVE"] == pytest.approx(133.9, rel=0.12), \
         "concave-ROI GLCM contrast must match the reference (background must be excluded)"
     assert row["GLCM_CONTRAST_AVE"] > 115.0, "contrast still diluted by background (bug #2 regressed)"
