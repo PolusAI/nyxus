@@ -26,6 +26,7 @@
 #include "test_glszm.h"
 #include "test_ngtdm.h"
 #include "test_roi_blacklist.h"
+#include "test_tiff_loader.h"
 #include "test_image_quality.h"
 #include "test_3d_nifti.h"
 #include "test_omezarr.h"
@@ -685,6 +686,11 @@ TEST(TEST_NYXUS, TEST_UNVETTED_NO_DIRECT_ORACLE_GABOR){
 TEST(TEST_NYXUS, TEST_ROI_BLACKLISTING)
 {
 	ASSERT_NO_THROW(test_roi_blacklist());
+}
+
+TEST(TEST_NYXUS, TEST_TIFF_UINT32_STRIP_LOADER)
+{
+	ASSERT_NO_THROW(test_uint32_strip_tiff_loader());
 }
 
 TEST(TEST_NYXUS, TEST_INITIALIZATION) {

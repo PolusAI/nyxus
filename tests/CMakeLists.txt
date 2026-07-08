@@ -22,6 +22,7 @@ set(TEST_SRC
 	test_initialization.h
 	test_3d_nifti.h
 	test_omezarr.h
+	test_tiff_loader.h
 	${TEST_SOURCE_FILES}
 )
 add_executable(runAllTests ${TEST_SRC})
