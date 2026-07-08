@@ -464,7 +464,7 @@ public:
                         break;
                     case 16:copyRow<uint16_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
-                    case 32:copyRow<size_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
+                    case 32:copyRow<uint32_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol); // FIX: was copyRow<size_t> (8 bytes on Win64) for a 4-byte sample -> reads 2x past the scanline buffer (AV / heap corruption) and yields wrong pixels; uint32_t matches the 32-bit sample (cf. signed int32_t below, tile-loader uint32_t, raw_tiff.h uint32_t)
                         break;
                     case 64:copyRow<uint64_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                         break;
