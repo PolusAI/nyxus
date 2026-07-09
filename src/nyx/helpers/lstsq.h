@@ -54,7 +54,7 @@ std::vector<double> lstsq(const std::vector<std::vector<double>>& A, const std::
 
         for (int j = i + 1; j < n; ++j) {
 
-            if (abs(AtA[j][i]) > abs(max_value)) {
+            if (std::abs(AtA[j][i]) > std::abs(max_value)) {  // FIX: unqualified abs() picked int abs() on gcc/Linux, truncating the pivot magnitudes to int and mis-selecting the partial pivot; std::abs keeps double precision
                 max_value = AtA[j][i];
                 max_index = j;
             }

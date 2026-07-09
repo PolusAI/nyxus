@@ -48,8 +48,8 @@ void HexagonalityPolygonalityFeature::calculate (LR& r, const Fsettings& s)
     // Polygonality metrics calculated based on the number of sides of the polygon
     if (neighbors > 2)
     {
-        double poly_size_ratio = 1.0 - abs(1.0 - perimeter_neighbors / sqrt((4 * area) / (neighbors / tan(M_PI / neighbors))));
-        double poly_area_ratio = 1.0 - abs(1.0 - area / (0.25 * neighbors * perimeter_neighbors * perimeter_neighbors / tan(M_PI / neighbors)));
+        double poly_size_ratio = 1.0 - std::abs(1.0 - perimeter_neighbors / sqrt((4 * area) / (neighbors / tan(M_PI / neighbors))));  // FIX: unqualified abs() resolved to int abs() on gcc/Linux CI, truncating the double to 0; std::abs keeps double precision
+        double poly_area_ratio = 1.0 - std::abs(1.0 - area / (0.25 * neighbors * perimeter_neighbors * perimeter_neighbors / tan(M_PI / neighbors)));  // FIX: same int-abs() truncation bug -> std::abs
 
         // Calculate Polygonality Score
         double poly_ave = 10 * (poly_size_ratio + poly_area_ratio) / 2;
@@ -85,7 +85,7 @@ void HexagonalityPolygonalityFeature::calculate (LR& r, const Fsettings& s)
         for (int ib = 0; ib < list_area.size(); ++ib)
             for (int ic = ib + 1; ic < list_area.size(); ++ic)
             {
-                double area_ratio = 1.0 - abs(1.0 - list_area[ib] / list_area[ic]);
+                double area_ratio = 1.0 - std::abs(1.0 - list_area[ib] / list_area[ic]);  // FIX: int-abs() truncation on gcc/Linux corrupted the area ratios -> std::abs
                 
                 // skip NANs
                 if (!std::isfinite(area_ratio))
@@ -133,7 +133,7 @@ void HexagonalityPolygonalityFeature::calculate (LR& r, const Fsettings& s)
         for (int ib = 0; ib < list_perim.size(); ++ib)
             for (int ic = ib + 1; ic < list_perim.size(); ++ic)
             {
-                double perim_ratio = 1.0 - abs(1.0 - list_perim[ib] / list_perim[ic]);
+                double perim_ratio = 1.0 - std::abs(1.0 - list_perim[ib] / list_perim[ic]);  // FIX: int-abs() truncation on gcc/Linux corrupted the perimeter ratios -> std::abs
                 perim_array.push_back(perim_ratio);
                 sum2 += perim_ratio;
             }
