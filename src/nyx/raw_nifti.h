@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>          // FIX: HU mode: std::floor / std::llround for the offset map
 #include <stdexcept>
 #include <tuple>
 #include <vector>
@@ -11,7 +12,8 @@ class RawNiftiLoader : public RawFormatLoader
 {
 public:
 
-    RawNiftiLoader (std::string const& filePath) : RawFormatLoader("RawNiftiLoader", filePath)
+    RawNiftiLoader (std::string const& filePath, bool preserve_hu = false)		// FIX: HU mode flag so the slide scan runs in the Hounsfield domain
+        : RawFormatLoader("RawNiftiLoader", filePath), preserve_hu_(preserve_hu)		// FIX: remember whether to rescale to true HU
     {
         slide_path_ = filePath;
 
@@ -22,6 +24,11 @@ public:
             std::cerr << erm << "\n";
             throw (std::runtime_error(erm));
         }
+
+        // FIX: HU rescale (used only in preserve_hu mode): true value = slope*stored + intercept.
+        // Per NIfTI spec scl_slope==0 means "no scaling", so fall back to an identity transform.
+        scl_slope_ = (nii_->scl_slope != 0.0) ? (double)nii_->scl_slope : 1.0;
+        scl_inter_ = (nii_->scl_slope != 0.0) ? (double)nii_->scl_inter : 0.0;
 
         switch (nii_->datatype)
         {
@@ -122,6 +129,10 @@ public:
     double get_dpequiv_pixel (size_t idx) const
     {
         double rv = get_dpequiv_pixel_typeresolved (nii_->data, idx);
+        // FIX: HU mode: return the true Hounsfield value so the scan's slide min/max is in the
+        // HU domain (matches the NiftiLoader offset + float_domain_map reconstruction).
+        if (preserve_hu_)
+            rv = scl_slope_ * rv + scl_inter_;
         return rv;
     }
 
@@ -152,6 +163,11 @@ private:
     double (*get_dpequiv_pixel_typeresolved) (const void* src, size_t idx) = nullptr;
     uint32_t(*get_uint32_pixel_typeresolved) (const void* src, size_t idx) = nullptr;
 
+    // FIX: HU/CT preservation (scan side): when set, get_dpequiv_pixel reports true Hounsfield
+    // values (slope*stored + intercept) so the slide min/max is Hounsfield-domain, not raw stored.
+    bool preserve_hu_ = false;
+    double scl_slope_ = 1.0, scl_inter_ = 0.0;
+
     size_t
         fullHeight_ = 0,          ///< Full height in pixel
         fullWidth_ = 0,           ///< Full width in pixel
@@ -174,7 +190,9 @@ class NiftiLoader : public AbstractTileLoader<DataType>
 {
 public:
 
-    NiftiLoader (std::string const& slide_path) : AbstractTileLoader<DataType>("NiftiLoader", 1/*numberThreads*/, slide_path)
+    NiftiLoader (std::string const& slide_path, double hu_min_base = 0.0, bool preserve_hu = false)		// FIX: HU mode: offset base (floored global HU min) + flag
+        : AbstractTileLoader<DataType>("NiftiLoader", 1/*numberThreads*/, slide_path),
+          preserve_hu_(preserve_hu), hu_min_base_(hu_min_base)		// FIX: remember whether/where to offset-preserve
     {
         slide_path_ = slide_path;
 
@@ -221,6 +239,10 @@ public:
             throw (std::runtime_error("** failed to read an image from " + slide_path_ + "\n"));
 #endif
         }
+
+        // FIX: HU rescale for this read (used only in preserve_hu mode); scl_slope==0 => identity.
+        cur_scl_slope_ = (nii->scl_slope != 0.0) ? (double)nii->scl_slope : 1.0;
+        cur_scl_inter_ = (nii->scl_slope != 0.0) ? (double)nii->scl_inter : 0.0;
 
         // cache
         if (nii->datatype == 2) {  // NIFTI_TYPE_UINT8
@@ -301,9 +323,33 @@ private:
     std::vector<uint32_t> tile;
     std::string slide_path_;
 
+    // FIX: HU/CT preservation (featurization side). When set, loaded voxels are rescaled to true
+    // HU then offset by floor(hu_min_base_) (the scanned Hounsfield-domain slide min). cur_scl_*
+    // hold the current read's rescale (from the NIfTI header) shared with unhounsfield().
+    bool preserve_hu_ = false;
+    double hu_min_base_ = 0.0;
+    double cur_scl_slope_ = 1.0, cur_scl_inter_ = 0.0;
+
    template <class til, class fra>
    void unhounsfield (std::vector<til>& nyxbuf, const fra* houbuf, size_t n)
    {
+       // FIX: HU/CT mode: rescale stored -> true HU (slope*stored + intercept), then slope-1 offset
+       // by floor(global HU min) so 1 grey level == 1 HU and sub-min voxels (incl. negative CT
+       // values) clamp to 0 instead of wrapping on the unsigned cast. Inverted for reporting by
+       // IntensityHistogramFeatures::float_domain_map (uses SlideProps::min_preroi_inten).
+       if (preserve_hu_)
+       {
+           double base = std::floor (hu_min_base_);
+           for (size_t i = 0; i < n; ++i)
+           {
+               double hu = cur_scl_slope_ * (double)houbuf[i] + cur_scl_inter_;
+               double y = hu - base;
+               if (y < 0.0) y = 0.0;
+               nyxbuf[i] = static_cast<til>(std::llround(y));
+           }
+           return;
+       }
+
        // -- widest typed min and max expecting min to be the background radiodensity or so
        double mi = houbuf[0],
            mx = mi;
@@ -316,7 +362,7 @@ private:
 
        // -- convert
        if (mi < 0.0)
-           for (int i = 0; i < n; ++i) 
+           for (int i = 0; i < n; ++i)
            {
                double a = *(houbuf + i) - mi;
                nyxbuf[i] = static_cast<til>(a);
