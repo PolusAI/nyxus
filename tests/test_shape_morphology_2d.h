@@ -58,8 +58,6 @@ static std::unordered_map<std::string, double> unvetted_nyxus_regression_shape2d
 	{"EDGE_MIN_INTENSITY", 12.0},
 	{"EDGE_INTEGRATED_INTENSITY", 753.0},
 	{"CIRCULARITY", 0.671081973229055},
-	{"CONVEX_HULL_AREA", 27.0},                   // FIX (convex_hull_nontriv.cpp): Pick's-theorem pixel-count hull area (skimage 28, ~4%)
-	{"SOLIDITY", 0.9629629629629629},             // FIX: now <=1 (was 1.3, impossible); skimage 0.929
 	{"EULER_NUMBER", 0.0},
 	{"DIAMETER_MIN_ENCLOSING_CIRCLE", 6.32475519180298},
 	{"ROI_RADIUS_MEAN", 1.07692307692308},
@@ -68,6 +66,18 @@ static std::unordered_map<std::string, double> unvetted_nyxus_regression_shape2d
 };
 
 static std::unordered_map<std::string, double> oracle_3p_shape2d_feature_golden_values{
+	// CONVEX_HULL_AREA / SOLIDITY are cross-checked against scikit-image regionprops on this exact
+	// ROI (skimage 0.26: area_convex=28, solidity=26/28=0.9285714). Nyxus computes a Pick's-theorem
+	// pixel-count hull area (convex_hull_nontriv.cpp) = 27, solidity 26/27 = 0.9629630. The ~1 px /
+	// ~3.6% gap is a pure boundary CONVENTION, not an error: Nyxus hulls through pixel CENTRES, which
+	// reproduces skimage's convex_hull_image(offset_coordinates=False) == 27 EXACTLY; skimage's
+	// regionprops default (offset_coordinates=True) first expands every pixel to its +/-0.5 corners,
+	// so its hull rasterises to 28. We assert against skimage's default (28 / 0.9286) with a tolerance
+	// (frac_tolerance=10 => 10%) that comfortably covers this corner-expansion gap while still catching
+	// a real regression. This makes SOLIDITY a real skimage-vetted check (both <= 1, unlike the old
+	// impossible 1.3) rather than a self-referential snapshot of Nyxus's own output.
+	{"CONVEX_HULL_AREA", 28.0},
+	{"SOLIDITY", 0.9285714285714286},
 	{"DIAMETER_EQUAL_PERIMETER", 8.57365809435587},
 	{"FRACT_DIM_BOXCOUNT", -0.830074998557687},
 	{"FRACT_DIM_PERIMETER", -1.97227924244155},
@@ -254,8 +264,10 @@ void test_shape2d_convex_hull_features()
 	calculate_shape2d_feature_values(fvals);
 
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::CIRCULARITY, "CIRCULARITY");
-	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::CONVEX_HULL_AREA, "CONVEX_HULL_AREA");
-	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::SOLIDITY, "SOLIDITY");
+	// CONVEX_HULL_AREA / SOLIDITY are verifiable against scikit-image regionprops (see the oracle_3p
+	// table); 10% tolerance covers the Pick's-vs-rasterisation boundary-convention gap (~1 px).
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::CONVEX_HULL_AREA, "CONVEX_HULL_AREA", 10.0);
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::SOLIDITY, "SOLIDITY", 10.0);
 }
 
 void test_shape2d_verifiable_with_3p_builtin_oracle_extrema_features()

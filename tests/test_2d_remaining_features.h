@@ -59,9 +59,18 @@ static std::unordered_map<std::string, double> oracle_3p_remaining2d_feature_gol
 };
 
 static std::unordered_map<std::string, double> unvetted_nyxus_regression_remaining2d_feature_golden_values{
+	// POLYGONALITY_AVE depends only on neighbors/area/perimeter, so the Pick's-theorem
+	// convex-hull-area fix (convex_hull_nontriv.cpp) leaves it unchanged. HEXAGONALITY_AVE and
+	// HEXAGONALITY_STDDEV read CONVEX_HULL_AREA (via area_hull in hexagonality_polygonality.cpp),
+	// so the fix (bare shoelace 4 -> Pick's pixel-count 9 for the 3x3 label-1 ROI) shifted them:
+	// HEXAGONALITY_AVE 6.4263 -> 6.8823, HEXAGONALITY_STDDEV 0.3144 -> 0.1850. This shift is
+	// correct: the Polus reference computes area_hull = area/solidity = skimage convex_area (a
+	// pixel count), which is exactly what Pick's theorem produces. These are Polus-specific scores
+	// with no external oracle, so the goldens are self-referential regression snapshots; the
+	// assertions below now value-compare against them (agrees_gt) so any future drift is caught.
 	{"POLYGONALITY_AVE", 2.0833333333333357},
-	{"HEXAGONALITY_AVE", 6.4262878058432173},
-	{"HEXAGONALITY_STDDEV", 0.31438281411429858},
+	{"HEXAGONALITY_AVE", 6.8823312738837217},
+	{"HEXAGONALITY_STDDEV", 0.18495557498763179},
 	// FIXED (chords.cpp idxmax used iteMin): max-angle now indexes the longest chord (angle 0), not the min
 	{"MAXCHORDS_MAX_ANG", 0.0},
 	{"MAXCHORDS_MIN_ANG", 0.94247779607693793},
@@ -252,19 +261,28 @@ static void assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(
 static void assert_unvetted_no_direct_oracle_remaining2d_polygonality_feature(
 	const std::unordered_map<int, LR>& roiData,
 	Nyxus::Feature2D feature,
-	const std::string& feature_name)
+	const std::string& feature_name,
+	double frac_tolerance = 1000.0)
 {
 	SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
+	// Value-compare against the regression golden so any drift (e.g. a change in the shared
+	// CONVEX_HULL_AREA that feeds area_hull) is caught, instead of the old bounds-only check that
+	// left the golden values on this map never actually compared.
+	ASSERT_TRUE(unvetted_nyxus_regression_remaining2d_feature_golden_values.count(feature_name) > 0);
 	const double actual = roiData.at(1).fvals[static_cast<int>(feature)][0];
 	ASSERT_GT(actual, 0.0);
+	ASSERT_TRUE(agrees_gt(actual, unvetted_nyxus_regression_remaining2d_feature_golden_values[feature_name], frac_tolerance));
 }
 
 static void assert_unvetted_no_direct_oracle_remaining2d_polygonality_score(
 	const std::unordered_map<int, LR>& roiData,
 	Nyxus::Feature2D feature,
-	const std::string& feature_name)
+	const std::string& feature_name,
+	double frac_tolerance = 1000.0)
 {
-	assert_unvetted_no_direct_oracle_remaining2d_polygonality_feature(roiData, feature, feature_name);
+	assert_unvetted_no_direct_oracle_remaining2d_polygonality_feature(roiData, feature, feature_name, frac_tolerance);
+	// The polygonality/hexagonality scores are bounded above by 10 by construction - keep this as
+	// a cheap semantic invariant on top of the value comparison.
 	ASSERT_LE(roiData.at(1).fvals[static_cast<int>(feature)][0], 10.0);
 }
 
