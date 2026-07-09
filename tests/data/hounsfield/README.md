@@ -19,7 +19,23 @@ Regenerate with:
 ```
 python make_fixtures.py         # TIFF fixtures  (needs numpy + tifffile)
 python make_dicom_fixtures.py   # DICOM fixtures (needs numpy + pydicom)
+python make_nifti_fixtures.py   # NIfTI fixtures (needs numpy only)
 ```
+
+## 3D NIfTI fixtures
+
+Used by `tests/python/test_hounsfield_nifti.py` to verify `preserve_hu` through the 3D NIfTI
+loader path (`RawNiftiLoader`/`NiftiLoader`).
+
+| File | Type | Notes |
+|---|---|---|
+| `ct3d_int16.nii` | 8×8×8 signed int16, `scl_slope=2`, `scl_inter=-1024` | stored `idx-200` (−200..311, crosses 0); true HU = 2·stored−1024 |
+| `mask3d.nii` | 8×8×8 uint8, all ones | single ROI over the whole volume |
+
+The non-unit `scl_slope` makes the HU rescale observable: in HU mode the loader maps each voxel to
+`u = round((2·stored − 1024) − floor(HU min)) = 2·stored + 400` (offset domain 0..1022, mean 511),
+whereas with the flag off it keeps the raw-stored (shifted) values (MAX 511). `make_nifti_fixtures.py`
+writes the 348-byte NIfTI-1 header by hand, so no `nibabel` dependency is needed.
 
 ## Real-scanner fixture
 

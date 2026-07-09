@@ -27,8 +27,19 @@ namespace Nyxus
 		std::vector<int> whiteList = batch_labels;
 		std::sort(whiteList.begin(), whiteList.end());
 
-		// Scan this Z intensity-mask pair 
+		// Scan this Z intensity-mask pair
 		SlideProps p (intens_fpath, label_fpath);
+		// FIX: preserve_hu offset base — a bare SlideProps defaults min_preroi_inten to -1, which
+		// would make the load-time HU offset disagree with the prescan (and the whole-slide pass),
+		// producing out-of-range grey bins and a crash. Inherit the scanned HU-domain min/max + flag.
+		// Guarded on preserve_hu so the default (non-HU) path is byte-for-byte unchanged.
+		if (env.fpimageOptions.preserve_hu() && ! batch_labels.empty())
+		{
+			const SlideProps& scanned = env.dataset.dataset_props [env.roiData[batch_labels[0]].slide_idx];
+			p.min_preroi_inten = scanned.min_preroi_inten;
+			p.max_preroi_inten = scanned.max_preroi_inten;
+			p.preserve_hu = scanned.preserve_hu;
+		}
 		if (! env.theImLoader.open(p, env.fpimageOptions))
 		{
 			std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
@@ -289,6 +300,16 @@ namespace Nyxus
 
 		// temp slideprops instance to pass some into to ImageLoader
 		SlideProps p (intens_fpath, label_fpath);
+		// FIX: preserve_hu offset base — inherit the scanned HU-domain slide min/max + flag so the
+		// load-time HU offset matches the prescan (bare SlideProps defaults min to -1 -> bad bins/crash).
+		// Guarded on preserve_hu so the default (non-HU) path is byte-for-byte unchanged.
+		if (env.fpimageOptions.preserve_hu() && ! batch_labels.empty())
+		{
+			const SlideProps& scanned = env.dataset.dataset_props [env.roiData[batch_labels[0]].slide_idx];
+			p.min_preroi_inten = scanned.min_preroi_inten;
+			p.max_preroi_inten = scanned.max_preroi_inten;
+			p.preserve_hu = scanned.preserve_hu;
+		}
 		if (!env.theImLoader.open(p, env.fpimageOptions))
 		{
 			std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";

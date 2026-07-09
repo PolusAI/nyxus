@@ -37,7 +37,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 			else
 				if (ext == ".nii" || ext == ".nii.gz")
 				{
-					intFL = new RawNiftiLoader (int_fpath);
+					intFL = new RawNiftiLoader (int_fpath, preserve_hu);		// FIX: CT/HU: scan in Hounsfield domain (matches DICOM)
 				}
 				else
 				{

@@ -55,7 +55,9 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 			else
 				if (ext == ".nii" || ext == ".nii.gz")
 				{
-					intFL = new NiftiLoader<uint32_t> (int_fpath);
+					intFL = new NiftiLoader<uint32_t> (int_fpath,
+							fpopts.empty() ? p.min_preroi_inten : (double)fpopts.min_intensity(),		// FIX: CT/HU offset base = override min else scanned HU-domain slide min
+							fpopts.preserve_hu());		// FIX: CT/HU mode: offset-preserving map (matches DICOM/TIFF)
 				}
 				else 
 				{
