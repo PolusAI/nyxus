@@ -1,8 +1,11 @@
-"""Regression / bug-exposure tests for 2D feature defects found during oracle validation
-(2026-06). These exercise the PRODUCTION featurize() path on ROIs *with background* and at
-the DEFAULT settings - the conditions the C++ unit tests miss.
+"""Invariant regression test for the convex-hull / SOLIDITY defect found during oracle
+validation (2026-06). This exercises the PRODUCTION featurize() path on an ROI *with
+background* at the DEFAULT settings - the conditions the C++ unit tests miss.
 
-This module covers the convex-hull / SOLIDITY defect (proposed fix #6): SOLIDITY must be <= 1.
+Note: this asserts a mathematical INVARIANT (SOLIDITY = ROI area / hull area must be <= 1),
+not a match against a third-party oracle - hence "invariants", not "oracle". The skimage
+cross-check on the exact hull-area value lives in the C++ tests (tests/test_shape_morphology_2d.h,
+CONVEX_HULL_AREA / SOLIDITY vs scikit-image regionprops).
 """
 import re
 from pathlib import Path
