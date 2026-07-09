@@ -65,8 +65,9 @@ def test_glcm_background_not_counted():
     """Bug #2 (FIXED): the MATLAB binning path mapped background (0) -> level 1 and counted it,
     polluting the matrix with spurious diagonal mass. This only manifests for a CONCAVE ROI
     (background inside the bounding box). On the canonical irregular ROI, quantized to 1..64 so
-    binning is identity, GLCM_CONTRAST_AVE must match the transparent numpy reference / MIRP /
-    PyRadiomics (~133.9). Pre-fix this ROI gave ~99 (background-diluted); post-fix ~133."""
+    binning is identity, GLCM_CONTRAST_AVE must land in a cross-tool plausibility band around the
+    numpy / MIRP / PyRadiomics value (~133.9) - this is a discriminator, not an oracle match (see
+    the tolerance note below). Pre-fix this ROI gave ~99 (background-diluted); post-fix ~133."""
     c = _canonical_roi()
     if c is None:
         pytest.skip("canonical ROI (tests/test_data.h) not available")
@@ -78,9 +79,12 @@ def test_glcm_background_not_counted():
     q[roi] = lvl                                  # quantized to integer levels 1..64
     row = _one(["*ALL_GLCM*"], q, label.astype(np.uint32), coarse_gray_depth=64, ibsi=False)
     # rel=0.12 is a deliberately loose bug-discriminator band, not an exact-match check:
-    # nyxus's directional-average + symmetric-matrix CONTRAST differs a few % from the
-    # PyRadiomics/MIRP reference (133.9), so the band [117.8, 150.0] absorbs that gap while
-    # still excluding the ~99 background-polluted value (~26% low) that bug #2 produced.
+    # CONTRAST is symmetrization-invariant, so nyxus's asymmetric-vs-symmetric matrix does NOT
+    # cause the gap; the few-% difference from the ~133.9 numpy/MIRP/PyRadiomics reference is
+    # definitional (grey-binning edges + directional-angle aggregation between estimators).
+    # The band [117.8, 150.0] absorbs that gap while still excluding the ~99 background-polluted
+    # value (~26% low) that bug #2 produced.
     assert row["GLCM_CONTRAST_AVE"] == pytest.approx(133.9, rel=0.12), \
-        "concave-ROI GLCM contrast must match the reference (background must be excluded)"
+        "concave-ROI GLCM contrast must fall in the cross-tool discriminator band, not the " \
+        "~99 background-polluted value (this band is a bug discriminator, not an oracle match)"
     assert row["GLCM_CONTRAST_AVE"] > 115.0, "contrast still diluted by background (bug #2 regressed)"

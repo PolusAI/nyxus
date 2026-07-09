@@ -11,16 +11,24 @@
 
 #include <unordered_map> 
 
-// Digital phantom values for intensity based features.
-// Calculated at 100 grey levels, offset 1, and Nyxus's asymmetric cooc matrix conventions.
-// REFRESHED 2026-06 after the GLCM background-pollution fix: the non-IBSI (MATLAB binning)
-// path now excludes out-of-ROI background pixels (matching the IBSI path and external oracles),
-// so the phantom slices z2-z4 (which contain masked-out pixels) yield corrected values. The 25
-// affected keys below were updated; CONTRAST/CLUTEND/SUMVARIANCE/IDN/IDMN were unchanged within
-// tolerance and kept at full precision. CORRELATION/INFOMEAS1 are softNAN(=0)-guarded on the one
-// degenerate (single-grey-level) phantom slice. The JAVE/JVAR/VARIANCE family is sensitive to the
-// stored row/column roles of the non-symmetric matrix (NOT transpose-invariant!).
-static std::unordered_map<std::string, double> glcm_values
+// Nyxus-convention GLCM regression snapshot. These values pin current Nyxus output to catch
+// drift; they do NOT assert correctness against an external definition (cross-tool verification
+// lives in the oracle_/3p_ tests, not here). Calculated at 100 grey levels, offset 1, via the
+// MATLAB-binning path with symmetric_glcm=false, i.e. on an *asymmetric* cooc matrix. That is a
+// configuration choice, NOT an inherent limitation: nyxus symmetrizes on the IBSI and radiomics
+// paths (matching PyRadiomics' symmetricalGLCM=True). As configured here the matrix increments only
+// (a,b), so the convention-sensitive Haralick family (JAVE/JVAR/VARIANCE/ACOR/CLUSHADE/CLUPROM/
+// INFOMEAS) is transpose-sensitive and diverges from a symmetric-matrix tool, while the
+// symmetrization-invariant keys (CONTRAST/CLUTEND/SUMVARIANCE/IDN/IDMN) would coincide with one.
+// These keys are therefore UNVETTED against a third-party oracle *as configured*; they could be
+// vetted by rerunning with symmetric_glcm=true (or the radiomics path) and comparing to PyRadiomics.
+// REFRESHED 2026-06 after the GLCM background-pollution fix: the non-IBSI (MATLAB binning) path
+// now excludes out-of-ROI background pixels (matching the IBSI path), so the phantom slices z2-z4
+// (which contain masked-out pixels) yield corrected snapshot values. The 25 affected keys below
+// were updated; CONTRAST/CLUTEND/SUMVARIANCE/IDN/IDMN were unchanged within tolerance and kept at
+// full precision. CORRELATION/INFOMEAS1 are softNAN(=0)-guarded on the one degenerate
+// (single-grey-level) phantom slice.
+static std::unordered_map<std::string, double> unvetted_nyxus_convention_regression_glcm_feature_golden_values
 {
     {"GLCM_ACOR", 1437.33},
     {"GLCM_ASM", 0.381801},
@@ -54,7 +62,7 @@ static std::unordered_map<std::string, double> glcm_values
     {"GLCM_VARIANCE", 674.871}
 };
 
-static std::string glcm_truth_key(const std::string& feature_name)
+static std::string glcm_golden_key(const std::string& feature_name)
 {
     static const std::string ave_suffix = "_AVE";
     if (feature_name.size() > ave_suffix.size() &&
@@ -87,9 +95,9 @@ void test_glcm_feature(const Feature2D& feature_, const std::string& feature_nam
     GLCMFeature::angles = { 0, 45, 90, 135 };
 
     int feature = int(feature_);
-    const std::string truth_key = glcm_truth_key(feature_name);
-    ASSERT_TRUE(glcm_values.count(truth_key) > 0);
-    const bool is_ave_feature = truth_key != feature_name;
+    const std::string golden_key = glcm_golden_key(feature_name);
+    ASSERT_TRUE(unvetted_nyxus_convention_regression_glcm_feature_golden_values.count(golden_key) > 0);
+    const bool is_ave_feature = golden_key != feature_name;
 
     double total = 0;
 
@@ -191,7 +199,7 @@ void test_glcm_feature(const Feature2D& feature_, const std::string& feature_nam
 
     // Verdict
     const double divisor = is_ave_feature ? 4.0 : 16.0;
-    ASSERT_TRUE(agrees_gt(total / divisor, glcm_values[truth_key], 100.));
+    ASSERT_TRUE(agrees_gt(total / divisor, unvetted_nyxus_convention_regression_glcm_feature_golden_values[golden_key], 100.));
 }
 
 void test_glcm_ACOR()
