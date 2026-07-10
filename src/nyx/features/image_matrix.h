@@ -392,14 +392,18 @@ public:
 		// Cache AABB
 		original_aabb = aabb;
 
-		// Figure out the padded size and allocate
+		// Figure out the padded size and allocate. Use a tight power-of-2 canvas
+		// (ceil_pow2, not closest_pow2 which is strictly greater and wastes an octave).
 		int bigSide = std::max(aabb.get_width(), aabb.get_height());
-		StatsInt paddedSide = Nyxus::closest_pow2 (bigSide);
+		StatsInt paddedSide = Nyxus::ceil_pow2 (bigSide);
 		allocate (paddedSide, paddedSide);
 
-		// Copy pixels
-		int padOffsetX = (paddedSide - original_aabb.get_width()) / 2;
-		int padOffsetY = (paddedSide - original_aabb.get_height()) / 2;
+		// Place the ROI at the grid origin (no centering): box counting is registration
+		// sensitive, and centering misaligns the ROI with the coarse boxes, biasing the
+		// dimension low (a filled square read 1.75 instead of 2.0). Origin alignment +
+		// tight padding recover the exact power law. Validated vs the ImageJ box-count oracle.
+		int padOffsetX = 0;
+		int padOffsetY = 0;
 
 		for (auto& pxl : labels_raw_pixels)
 		{
