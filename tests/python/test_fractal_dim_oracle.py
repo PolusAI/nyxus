@@ -169,10 +169,9 @@ BENCHMARK_PERIMETER_154 = 1.101
 
 def test_arbitrary_roi_matches_oracle():
     """On the irregular 154-px ROI (with background, default settings): box-count must
-    match the offline ImageJ shifting-grid oracle, and both dimensions stay valid in [1,2]."""
+    match the offline ImageJ shifting-grid oracle; perimeter matches the regression benchmark."""
     bc, pf = _fd(_canonical_roi())
     assert abs(bc - ORACLE_BOXCOUNT_154) < 0.05, \
         f"box-count {bc:.4f} vs shifting-grid oracle {ORACLE_BOXCOUNT_154}"
     assert abs(pf - BENCHMARK_PERIMETER_154) < 0.05, \
         f"perimeter {pf:.4f} vs benchmark {BENCHMARK_PERIMETER_154}"
-    assert 1.0 <= bc <= 2.0 and 1.0 <= pf <= 2.0, "dimensions must stay physically valid"

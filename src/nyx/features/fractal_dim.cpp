@@ -31,11 +31,11 @@ void FractalDimensionFeature::calculate_boxcount_fdim (LR & r)
 	{
 		int cnt = 0;
 		int n_tiles = pim.width / s;
-		for (int tr = 0; tr < n_tiles; tr++)
-			for (int tc = 0; tc < n_tiles; tc++)
+		for (int r = 0; r < n_tiles; r++)
+			for (int c = 0; c < n_tiles; c++)
 			{
 				// check the tile for coverage
-				if (pim.tile_contains_signal(tr, tc, s))
+				if (pim.tile_contains_signal(r, c, s))
 					cnt++;
 			}
 
@@ -57,11 +57,11 @@ void FractalDimensionFeature::calculate_boxcount_fdim_oversized (LR & r)
 	{
 		int cnt = 0;
 		int n_tiles = pim.get_width() / s;
-		for (int tr = 0; tr < n_tiles; tr++)
-			for (int tc = 0; tc < n_tiles; tc++)
+		for (int r = 0; r < n_tiles; r++)
+			for (int c = 0; c < n_tiles; c++)
 			{
 				// check the tile for coverage
-				if (pim.tile_contains_signal(tr, tc, s))
+				if (pim.tile_contains_signal(r, c, s))
 					cnt++;
 			}
 
