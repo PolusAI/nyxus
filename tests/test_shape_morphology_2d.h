@@ -82,18 +82,20 @@ static std::unordered_map<std::string, double> oracle_fractal_blob512_golden_val
 };
 
 static std::unordered_map<std::string, double> oracle_3p_shape2d_feature_golden_values{
-	// CONVEX_HULL_AREA / SOLIDITY are cross-checked against scikit-image regionprops on this exact
-	// ROI (skimage 0.26: area_convex=28, solidity=26/28=0.9285714). Nyxus computes a Pick's-theorem
-	// pixel-count hull area (convex_hull_nontriv.cpp) = 27, solidity 26/27 = 0.9629630. The ~1 px /
-	// ~3.6% gap is a pure boundary CONVENTION, not an error: Nyxus hulls through pixel CENTRES, which
-	// reproduces skimage's convex_hull_image(offset_coordinates=False) == 27 EXACTLY; skimage's
-	// regionprops default (offset_coordinates=True) first expands every pixel to its +/-0.5 corners,
-	// so its hull rasterises to 28. We assert against skimage's default (28 / 0.9286) with a tolerance
-	// (frac_tolerance=10 => 10%) that comfortably covers this corner-expansion gap while still catching
-	// a real regression. This makes SOLIDITY a real skimage-vetted check (both <= 1, unlike the old
-	// impossible 1.3) rather than a self-referential snapshot of Nyxus's own output.
-	{"CONVEX_HULL_AREA", 28.0},
-	{"SOLIDITY", 0.9285714285714286},
+	// CONVEX_HULL_AREA / SOLIDITY are cross-checked against scikit-image on this exact ROI. Nyxus
+	// computes a Pick's-theorem pixel-count hull area (convex_hull_nontriv.cpp) = 27, solidity
+	// 26/27 = 0.9629630. Because Nyxus hulls through pixel CENTRES, this reproduces skimage's
+	// convex_hull_image(offset_coordinates=False) == 27 EXACTLY, so we vet against THAT convention
+	// (27 / 0.9629630) with a tight 1% tolerance (frac_tolerance=100). The hull area is a
+	// provably-exact integer lattice count, so 1% is float/platform slack -- not a convention fudge --
+	// and it still catches a >=1 px regression. (skimage's regionprops DEFAULT uses
+	// offset_coordinates=True, which first expands every pixel to its +/-0.5 corners and rasterises
+	// the hull to 28 / 0.9285714; that +1 px is a corner-expansion convention, not an error, and is
+	// why we pin the offset_coordinates=False value rather than the default.) SOLIDITY is thus a real
+	// skimage-vetted <= 1 check (unlike the old impossible 1.3), matched exactly rather than within a
+	// loose band.
+	{"CONVEX_HULL_AREA", 27.0},
+	{"SOLIDITY", 0.9629629629629629},
 	{"DIAMETER_EQUAL_PERIMETER", 8.57365809435587},
 	{"DIAMETER_CIRCUMSCRIBING_CIRCLE", 12.3317073399088},
 	{"DIAMETER_INSCRIBING_CIRCLE", 0.828486893405308},
@@ -278,10 +280,10 @@ void test_shape2d_convex_hull_features()
 	calculate_shape2d_feature_values(fvals);
 
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::CIRCULARITY, "CIRCULARITY");
-	// CONVEX_HULL_AREA / SOLIDITY are verifiable against scikit-image regionprops (see the oracle_3p
-	// table); 10% tolerance covers the Pick's-vs-rasterisation boundary-convention gap (~1 px).
-	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::CONVEX_HULL_AREA, "CONVEX_HULL_AREA", 10.0);
-	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::SOLIDITY, "SOLIDITY", 10.0);
+	// CONVEX_HULL_AREA / SOLIDITY are verifiable against scikit-image convex_hull_image(offset_coordinates=False)
+	// (see the oracle_3p table); Nyxus reproduces that convention exactly, so a tight 1% tolerance suffices.
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::CONVEX_HULL_AREA, "CONVEX_HULL_AREA", 100.0);
+	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::SOLIDITY, "SOLIDITY", 100.0);
 }
 
 void test_shape2d_verifiable_with_3p_builtin_oracle_extrema_features()
