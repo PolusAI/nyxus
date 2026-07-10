@@ -14,8 +14,9 @@ Two kinds of test:
 Background: nyxus' box-count padded to a power of two *strictly larger* than the ROI and
 *centered* it, misaligning it with the box grid and biasing the dimension low (a filled square
 read 1.75 instead of 2.0). The fix aligns the ROI to the grid origin on a tight power-of-two
-canvas and fits the dimension by least squares; the perimeter path was rewritten as a clean
-closed-contour divider. Validated here against analytic ground truth.
+canvas, fits the dimension by least squares, and auto-switches to shifting grids (min box count
+over grid origins, as FracLac does) on small ROIs where registration bias matters; the perimeter
+path was rewritten as a clean closed-contour divider. Validated here against analytic ground truth.
 """
 import re
 import math
@@ -158,11 +159,11 @@ def _canonical_roi():
 
 
 # Offline oracle / benchmark values for the irregular 154-px ROI:
-#   box-count  = ImageJ FracLac-style shifting-grid box count on the SAME 32-padded,
-#                origin-aligned representation nyxus uses (5 box sizes 2..32) -> 1.389.
-#                nyxus computes 1.398; the two independent methods agree to 0.009.
-#   perimeter  = regression benchmark: no software implements the divider (Richardson)
-#                method, so this pins the fixed nyxus value, a valid boundary dimension.
+#   box-count  = ImageJ FracLac-style shifting-grid box count, computed offline on the SAME
+#                32-padded ROI -> 1.389. nyxus auto-switches to shifting grids on small ROIs
+#                (padded side <= 32), so it reproduces this oracle to <0.001.
+#   perimeter  = regression benchmark: no software implements the divider (Richardson) method,
+#                so this pins the fixed nyxus value, a valid boundary dimension.
 ORACLE_BOXCOUNT_154 = 1.389
 BENCHMARK_PERIMETER_154 = 1.101
 
@@ -171,7 +172,7 @@ def test_arbitrary_roi_matches_oracle():
     """On the irregular 154-px ROI (with background, default settings): box-count must
     match the offline ImageJ shifting-grid oracle; perimeter matches the regression benchmark."""
     bc, pf = _fd(_canonical_roi())
-    assert abs(bc - ORACLE_BOXCOUNT_154) < 0.05, \
+    assert abs(bc - ORACLE_BOXCOUNT_154) < 0.02, \
         f"box-count {bc:.4f} vs shifting-grid oracle {ORACLE_BOXCOUNT_154}"
     assert abs(pf - BENCHMARK_PERIMETER_154) < 0.05, \
         f"perimeter {pf:.4f} vs benchmark {BENCHMARK_PERIMETER_154}"

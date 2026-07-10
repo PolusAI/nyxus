@@ -1,5 +1,7 @@
+#include <algorithm>
 #include "fractal_dim.h"
 #include "image_matrix.h"
+#include "../helpers/helpers.h"
 
 using namespace Nyxus;
 
@@ -17,29 +19,76 @@ void FractalDimensionFeature::calculate (LR& r, const Fsettings& s)
 
 void FractalDimensionFeature::calculate_boxcount_fdim (LR & r)
 {
-	Power2PaddedImageMatrix pim(r.raw_pixels, r.aabb, 1, 1.0);	// image matrix of the mask
-
-	// Debug
-	// pim.print("Padded");
-
-	// Square box coverage statistics: number of boxes of side s that contain signal,
-	// for s = width, width/2, ... 2. With the ROI grid-aligned (origin, tight power-of-2
-	// canvas) a filled shape yields the exact power law N(s) ~ s^-D.
-	std::vector<std::pair<double, double>> coverage;
-	int s = pim.width;	// square tile size
-	for (; s > 1; s /= 2)
+	const std::vector<Pixel2>& px = r.raw_pixels;
+	if (px.size() < 2)
 	{
-		int cnt = 0;
-		int n_tiles = pim.width / s;
-		for (int r = 0; r < n_tiles; r++)
-			for (int c = 0; c < n_tiles; c++)
-			{
-				// check the tile for coverage
-				if (pim.tile_contains_signal(r, c, s))
-					cnt++;
-			}
+		box_count_fd = 0.;
+		return;
+	}
 
-		coverage.push_back({ double(s), double(cnt) });
+	// Box counting is registration sensitive: the old code padded to a power of two strictly
+	// larger than the ROI and centered it, misaligning the ROI with the coarse boxes and biasing
+	// the dimension low (a filled square read 1.75 instead of 2.0). We pad tight (ceil_pow2) and
+	// align to the ROI origin. Shifting grids (min count over grid origins, as FracLac does)
+	// remove the residual bias, but that only matters when few box sizes fit (small ROIs), and
+	// those are cheap to shift. So auto-switch:
+	//   - large ROI  -> single origin grid via the padded mask matrix (fast early-exit tile scan)
+	//   - small ROI  -> shift the grid over a few origins and take the minimum box count
+	int bigSide = (int)std::max(r.aabb.get_width(), r.aabb.get_height());
+	int paddedSide = Nyxus::ceil_pow2(bigSide);
+
+	std::vector<std::pair<double, double>> coverage;
+
+	if (paddedSide > 32)
+	{
+		// Large ROI: single aligned grid. tile_contains_signal early-exits on the first non-zero
+		// pixel, so this is O(#tiles) for filled ROIs - much cheaper than visiting every pixel.
+		Power2PaddedImageMatrix pim(px, r.aabb, 1, 1.0);
+		for (int s = pim.width; s > 1; s /= 2)
+		{
+			int cnt = 0, nt = pim.width / s;
+			for (int tr = 0; tr < nt; tr++)
+				for (int tc = 0; tc < nt; tc++)
+					if (pim.tile_contains_signal(tr, tc, s))
+						cnt++;
+			coverage.push_back({ double(s), double(cnt) });
+		}
+	}
+	else
+	{
+		// Small ROI: shifting grids. n_off grid origins per axis ({0, s/2} for 2 -> 4 positions);
+		// box index = coord >> log2(s) since box sizes are powers of two.
+		auto xmin = r.aabb.get_xmin();
+		auto ymin = r.aabb.get_ymin();
+		int n_off = 2;
+		int shift = 0;
+		for (int t = paddedSide; t > 1; t >>= 1)
+			shift++;
+		std::vector<char> occ;
+		for (int s = paddedSide; s > 1; s >>= 1, --shift)
+		{
+			int span = (paddedSide >> shift) + 2;	// boxes per axis (+slack for the origin shift)
+			occ.assign((size_t)span * span, 0);
+			int best = -1;
+			for (int oyi = 0; oyi < n_off; oyi++)
+				for (int oxi = 0; oxi < n_off; oxi++)
+				{
+					int ox = (oxi * s) / n_off, oy = (oyi * s) / n_off;
+					int cnt = 0;
+					for (const Pixel2& p : px)
+					{
+						int col = (int)(p.x - xmin + ox) >> shift;
+						int row = (int)(p.y - ymin + oy) >> shift;
+						size_t idx = (size_t)row * span + col;
+						if (!occ[idx]) { occ[idx] = 1; cnt++; }
+					}
+					if (best < 0 || cnt < best)
+						best = cnt;
+					if (oyi + 1 < n_off || oxi + 1 < n_off)
+						std::fill(occ.begin(), occ.end(), (char)0);	// reset for next origin
+				}
+			coverage.push_back({ double(s), double(best) });
+		}
 	}
 
 	// Box-counting dimension = -slope of log(count) vs log(box size)
