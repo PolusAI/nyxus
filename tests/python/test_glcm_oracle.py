@@ -65,9 +65,16 @@ def test_glcm_background_not_counted():
     """Bug #2 (FIXED): the MATLAB binning path mapped background (0) -> level 1 and counted it,
     polluting the matrix with spurious diagonal mass. This only manifests for a CONCAVE ROI
     (background inside the bounding box). On the canonical irregular ROI, quantized to 1..64 so
-    binning is identity, GLCM_CONTRAST_AVE must land in a cross-tool plausibility band around the
-    numpy / MIRP / PyRadiomics value (~133.9) - this is a discriminator, not an oracle match (see
-    the tolerance note below). Pre-fix this ROI gave ~99 (background-diluted); post-fix ~133."""
+    binning is identity, GLCM_CONTRAST_AVE is an ORACLE-grade match to PyRadiomics: CONTRAST depends
+    only on the grey-level difference |i-j|, so it is invariant to matrix symmetrization AND to the
+    absolute level values -> nyxus and PyRadiomics genuinely agree.
+
+    Measured provenance (PR #356 review, rebuilt backend 2026-07-09, this exact quantized ROID):
+        Nyxus  GLCM_CONTRAST_AVE = 133.4338   (ibsi=False, coarse_gray_depth=64)
+        PyRadiomics Contrast     = 133.8569   (radiomics v3.0.1, symmetricalGLCM=True, binCount=64,
+                                               distances=[1], force2D=True, weightingNorm=None)
+        => agreement 0.32% (was asserted with a ~12% band before; tightened to 1%).
+    Pre-fix this ROI gave ~99 (background-diluted, ~26% low), which rel=1e-2 decisively excludes."""
     c = _canonical_roi()
     if c is None:
         pytest.skip("canonical ROI (tests/test_data.h) not available")
@@ -78,13 +85,46 @@ def test_glcm_background_not_counted():
     q = np.zeros_like(inten, np.uint32)
     q[roi] = lvl                                  # quantized to integer levels 1..64
     row = _one(["*ALL_GLCM*"], q, label.astype(np.uint32), coarse_gray_depth=64, ibsi=False)
-    # rel=0.12 is a deliberately loose bug-discriminator band, not an exact-match check:
-    # CONTRAST is symmetrization-invariant, so nyxus's asymmetric-vs-symmetric matrix does NOT
-    # cause the gap; the few-% difference from the ~133.9 numpy/MIRP/PyRadiomics reference is
-    # definitional (grey-binning edges + directional-angle aggregation between estimators).
-    # The band [117.8, 150.0] absorbs that gap while still excluding the ~99 background-polluted
-    # value (~26% low) that bug #2 produced.
-    assert row["GLCM_CONTRAST_AVE"] == pytest.approx(133.9, rel=0.12), \
-        "concave-ROI GLCM contrast must fall in the cross-tool discriminator band, not the " \
-        "~99 background-polluted value (this band is a bug discriminator, not an oracle match)"
-    assert row["GLCM_CONTRAST_AVE"] > 115.0, "contrast still diluted by background (bug #2 regressed)"
+    # Tight oracle check against the measured PyRadiomics value. The residual 0.32% (nyxus 133.43 vs
+    # PyRadiomics 133.86) is definitional (grey-binning edges + directional-angle aggregation between
+    # estimators), not floating-point; rel=1e-2 leaves ~3x margin over that while still excluding the
+    # background-polluted ~99 that bug #2 produced.
+    assert row["GLCM_CONTRAST_AVE"] == pytest.approx(133.8569, rel=1e-2), \
+        "concave-ROI GLCM contrast must match the PyRadiomics oracle (133.86) to ~1%, not the " \
+        "~99 background-polluted value that bug #2 produced"
+
+
+def test_glcm_acor_family_ibsi_oracle():
+    """PR #356 review (Comment 2): ACOR, SUMAVERAGE, IDN, IDMN depend on the *absolute* grey-level
+    values / Ng (unlike CONTRAST, which depends only on |i-j|). Under the MATLAB-binning path
+    (ibsi=False, the config tests/test_glcm.h uses) those absolute levels are re-mapped, so these
+    four DIVERGE from PyRadiomics by up to ~43% (ACOR) and are NOT oracle-vetted there. They ARE
+    genuinely third-party-vetted on the IBSI path (symmetric matrix + identity binning), which this
+    test pins tightly.
+
+    Dense fixture -- every grey level 1..8 occurs, so PyRadiomics does not drop/re-index levels
+    (which would shift ACOR/SUMAVERAGE and Ng for IDN/IDMN). Frozen phantom img[i,j]=((i+2j)%8)+1,
+    8x8, one-pixel background border; the goldens are specific to it.
+
+    PyRadiomics reference (generated offline, radiomics v3.0.1, symmetricalGLCM=True, binWidth=1
+    [identity on the integer image], distances=[1], force2D=True, force2Ddimension=0,
+    weightingNorm=None, label=1; SumAverage taken as 2 x JointAverage) on the identical array+mask:
+        ACOR=20.512755, SUMAVERAGE=9.020408, IDN=0.779479, IDMN=0.887342
+    (also reproducible to 6 dp by a transparent numpy standard-Haralick reference).
+    Nyxus (ibsi=True) reproduces all four exactly; assert at rel=1e-3."""
+    ii, jj = np.meshgrid(np.arange(8), np.arange(8), indexing="ij")
+    arr = ((ii + 2 * jj) % 8) + 1
+    assert set(np.unique(arr).tolist()) == set(range(1, 9)), \
+        "dense phantom must contain every grey level 1..8 (else PyRadiomics re-indexes)"
+    inten = np.zeros((10, 10), np.uint32)     # 1-px background border around the 8x8 fixture
+    label = np.zeros((10, 10), np.uint32)
+    inten[1:9, 1:9] = arr
+    label[1:9, 1:9] = 1
+    # ibsi=True -> symmetric matrix + identity binning; this is the load-bearing setting (do NOT use
+    # the MATLAB-binning config here, under which these four are convention-bound, not oracle values).
+    row = _one(["*ALL_GLCM*"], inten, label, coarse_gray_depth=8, ibsi=True)
+    goldens = {"GLCM_ACOR_AVE": 20.512755, "GLCM_SUMAVERAGE_AVE": 9.020408,
+               "GLCM_IDN_AVE": 0.779479, "GLCM_IDMN_AVE": 0.887342}
+    for key, gold in goldens.items():
+        assert row[key] == pytest.approx(gold, rel=1e-3), \
+            f"{key}: nyxus(ibsi=True) {row[key]} must match the PyRadiomics/IBSI oracle {gold} to 1e-3"
