@@ -72,11 +72,8 @@ def _disk(r=120, pad=12):
 
 
 def _koch_snowflake(depth=5, size=1400):
-    """Filled Koch snowflake: boundary divider dimension = log4/log3 = 1.2619.
-    Requires PIL for polygon fill; skipped if unavailable."""
-    Image = pytest.importorskip("PIL.Image")
-    ImageDraw = pytest.importorskip("PIL.ImageDraw")
-
+    """Filled Koch snowflake (pure numpy, no external deps): boundary divider
+    dimension = log4/log3 = 1.2619."""
     def koch(p1, p2, d):
         if d == 0:
             return [p1]
@@ -96,9 +93,24 @@ def _koch_snowflake(depth=5, size=1400):
     B = (m + s, m + h * 2 / 3)
     C = (m + s / 2, m + h * 2 / 3 - h)
     poly = (koch(A, B, depth) + koch(B, C, depth) + koch(C, A, depth))
-    img = Image.new("L", (size, size), 0)
-    ImageDraw.Draw(img).polygon(poly, fill=1)
-    return np.asarray(img, np.uint32)
+    # even-odd scanline polygon fill (numpy only)
+    P = np.array(poly, float)
+    x0, y0 = P[:, 0], P[:, 1]
+    x1, y1 = np.roll(x0, -1), np.roll(y0, -1)
+    out = np.zeros((size, size), np.uint32)
+    for row in range(size):
+        cond = ((y0 <= row) & (y1 > row)) | ((y1 <= row) & (y0 > row))
+        idx = np.where(cond)[0]
+        if idx.size == 0:
+            continue
+        tt = (row - y0[idx]) / (y1[idx] - y0[idx])
+        xs = np.sort(x0[idx] + tt * (x1[idx] - x0[idx]))
+        for i in range(0, len(xs) - 1, 2):
+            a = int(np.ceil(xs[i]))
+            b = int(np.floor(xs[i + 1]))
+            if b >= a:
+                out[row, max(0, a):min(size, b + 1)] = 1
+    return out
 
 
 # ============================ box-count oracle ==============================
