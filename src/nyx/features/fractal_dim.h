@@ -34,6 +34,6 @@ private:
 	void calculate_boxcount_fdim (LR& r);
 	void calculate_boxcount_fdim_oversized (LR& r);
 	void calculate_perimeter_fdim (LR& r);
-	double calc_lyapunov_slope (const std::vector<std::pair<int, int>>& coverage_stats);
+	double loglog_slope (const std::vector<std::pair<double, double>>& coverage);
 	double box_count_fd = 0, perim_fd = 0;
 };

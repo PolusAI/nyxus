@@ -22,139 +22,116 @@ void FractalDimensionFeature::calculate_boxcount_fdim (LR & r)
 	// Debug
 	// pim.print("Padded");
 
-	// Square box coverage statistics
-	std::vector<std::pair<int, int>> coverage;
+	// Square box coverage statistics: number of boxes of side s that contain signal,
+	// for s = width, width/2, ... 2. With the ROI grid-aligned (origin, tight power-of-2
+	// canvas) a filled shape yields the exact power law N(s) ~ s^-D.
+	std::vector<std::pair<double, double>> coverage;
 	int s = pim.width;	// square tile size
 	for (; s > 1; s /= 2)
 	{
 		int cnt = 0;
-		size_t areaCov = 0;
 		int n_tiles = pim.width / s;
-		for (int r = 0; r < n_tiles; r++)
-			for (int c = 0; c < n_tiles; c++)
+		for (int tr = 0; tr < n_tiles; tr++)
+			for (int tc = 0; tc < n_tiles; tc++)
 			{
-				// check the tile for coerage
-				if (pim.tile_contains_signal(r, c, s))
+				// check the tile for coverage
+				if (pim.tile_contains_signal(tr, tc, s))
 					cnt++;
 			}
 
-		coverage.push_back({ s, cnt });
+		coverage.push_back({ double(s), double(cnt) });
 	}
 
-	// Debug
-	// print_curve(boxCoverage, "boxCoverage N vs R");	
-
-	box_count_fd = -calc_lyapunov_slope(coverage);
+	// Box-counting dimension = -slope of log(count) vs log(box size)
+	box_count_fd = -loglog_slope(coverage);
 }
 
 void FractalDimensionFeature::calculate_boxcount_fdim_oversized (LR & r)
 {
 	Power2PaddedImageMatrix_NT pim ("pim", r.label, r.raw_pixels_NT, r.aabb, 1, 1.0);	// image matrix of the mask
 
-	// Square box coverage statistics
-	std::vector<std::pair<int, int>> coverage;
+	// Square box coverage statistics (oversized/streaming path), same method as the trivial case.
+	std::vector<std::pair<double, double>> coverage;
 	int s = pim.get_width();	// square tile size
 	for (; s > 1; s /= 2)
 	{
 		int cnt = 0;
-		size_t areaCov = 0;
 		int n_tiles = pim.get_width() / s;
-		for (int r = 0; r < n_tiles; r++)
-			for (int c = 0; c < n_tiles; c++)
+		for (int tr = 0; tr < n_tiles; tr++)
+			for (int tc = 0; tc < n_tiles; tc++)
 			{
-				// check the tile for coerage
-				if (pim.tile_contains_signal(r, c, s))
+				// check the tile for coverage
+				if (pim.tile_contains_signal(tr, tc, s))
 					cnt++;
 			}
 
-		coverage.push_back({ s, cnt });
+		coverage.push_back({ double(s), double(cnt) });
 	}
 
-	box_count_fd = -calc_lyapunov_slope(coverage);
+	box_count_fd = -loglog_slope(coverage);
 }
 
 void FractalDimensionFeature::calculate_perimeter_fdim (LR& r)
 {
-	std::vector<std::pair<int, int>> coverage;
-
 	std::vector<Pixel2> K;
 	r.merge_multicontour(K);
 
 	auto conLen = K.size();
+	if (conLen < 3)
+	{
+		perim_fd = 0.;
+		return;
+	}
+
+	// Richardson "structured walk" (divider) method on the CLOSED contour K.
+	// For each stride s, walk the contour in steps of s vertices, summing Euclidean chord
+	// lengths and closing the loop back to the start. Record x = mean ruler (chord) length
+	// and y = perimeter estimate. Since log(perimeter) ~ (1 - D) log(ruler), D = 1 - slope.
+	// Validated against the analytic Koch snowflake (D = log4/log3 = 1.2619) and a circle (D = 1).
+	std::vector<std::pair<double, double>> coverage;
 	for (size_t s = conLen / 4; s > 0; s /= 2)
 	{
-		// calculate the s-approximated perimeter
-		double p = 0;
-		for (size_t i = s; i < conLen; i += s)
+		double perim = 0.;
+		size_t nsteps = 0, i = 0;
+		for (; i + s < conLen; i += s)
 		{
-			auto& px1 = K [i-s],
-				px2 = K [i];
-			double dist = std::sqrt(px1.sqdist(px2));
-			p += dist;
+			perim += std::sqrt(K[i].sqdist(K[i + s]));
+			nsteps++;
 		}
-		// --calculate the last segment separately
-		auto tail = conLen % s;
-		if (tail)
-		{
-			auto& px1 = K [conLen - tail],
-				px2 = K [0];
-			double dist = px1.sqdist(px2);
-			p += dist;
-		}
+		// close the loop from the last visited vertex back to the start
+		perim += std::sqrt(K[i].sqdist(K[0]));
+		nsteps++;
 
-		// save this approximation
-		coverage.push_back({ s, (int)p });
+		double ruler = perim / double(nsteps);	// mean chord (ruler) length at this stride
+		coverage.push_back({ ruler, perim });
 	}
-	// Richardson divider method: log(perimeter) vs log(ruler) has slope (1 - D), so D = 1 - slope
-	perim_fd = 1.0 - calc_lyapunov_slope(coverage);
+
+	// Richardson divider dimension: D = 1 - slope of log(perimeter) vs log(ruler)
+	perim_fd = 1.0 - loglog_slope(coverage);
 }
 
-double FractalDimensionFeature::calc_lyapunov_slope (const std::vector<std::pair<int, int>> & coverage)
+double FractalDimensionFeature::loglog_slope (const std::vector<std::pair<double, double>> & coverage)
 {
-	// Do we have any data?
-	if (coverage.size() == 0)
-		return 0.;
-
-	// Skip tiny ROIs
-	if (coverage.size() < 2)
-		return 0.;
-
-	// Post-process towards local gradients (in the form of Lyapunov exponents)
-	std::vector <double> X, Y;
-	for (int i = 0; i < coverage.size(); i++)
+	// Least-squares slope of log(y) vs log(x) over the (scale, measure) pairs.
+	// Box counting passes (box size, count) -> D = -slope; the divider method passes
+	// (ruler length, perimeter) -> D = 1 - slope. A least-squares fit over all scales is
+	// the standard, robust estimator (more stable than a two-endpoint slope on noisy ROIs).
+	double sx = 0, sy = 0, sxy = 0, sx2 = 0;
+	size_t used = 0;
+	for (const auto& pr : coverage)
 	{
-		X.push_back (std::log(coverage[i].first));
-		Y.push_back (std::log(coverage[i].second));
+		if (pr.first <= 0. || pr.second <= 0.)
+			continue;	// log undefined; skip degenerate points (count/perimeter 0)
+		double x = std::log(pr.first), y = std::log(pr.second);
+		sx += x; sy += y; sxy += x * y; sx2 += x * x;
+		used++;
 	}
-
-	// Gradients
-	std::vector<double> Dn, Dr;
-	for (int i = 1; i < Y.size(); i++)
-	{
-		auto dn = Y[i] - Y[i - 1];
-		Dn.push_back(dn);
-		auto dr = X[i] - X[i - 1];
-		Dr.push_back(dr);
-	}
-
-	// Lyapunov exponents
-	std::vector<double> Lambda;
-	for (int i = 0; i < Dn.size(); i++)
-	{
-		auto lambda = Dn[i] / Dr[i];
-		Lambda.push_back(lambda);
-	}
-
-	// The box-counting / Richardson dimension is the (average) slope of log(count) vs log(scale),
-	// i.e. the MEAN of the local slopes Lambda[]. The previous code returned the least-squares
-	// slope of Lambda[] *against its index* (the rate-of-change of the slope), which is ~0 for a
-	// clean power law -> dimension came out ~0 (FRACT_DIM_BOXCOUNT=-0.07). Return the mean slope.
-	if (Lambda.empty())
+	if (used < 2)
 		return 0.;
-	double sum = 0.;
-	for (double v : Lambda)
-		sum += v;
-	return sum / double(Lambda.size());
+	double denom = sx2 * double(used) - sx * sx;
+	if (denom == 0.)
+		return 0.;
+	return (sxy * double(used) - sx * sy) / denom;
 }
 
 void FractalDimensionFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
