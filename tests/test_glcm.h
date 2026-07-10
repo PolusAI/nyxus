@@ -23,19 +23,23 @@
 // (which contain masked-out pixels) yield corrected snapshot values. CORRELATION/INFOMEAS1 are
 // softNAN(=0)-guarded on the degenerate (single-grey-marginal) phantom directions.
 //
-// ORACLE-VETTED 2026-07: the 14 keys below were run against third-party symmetric-matrix oracles
-// (PyRadiomics v3.0.1) and a transparent standard-Haralick numpy reference on the *same* per-slice
-// matlab-binned phantom images, aggregated the same way (mean over 4 slices x 4 angles). Each is
-// mathematically symmetrization-invariant (depends only on p_{x+y}, p_{x-y}, or a weighting
-// g(i,j)=g(j,i)), so the asymmetric-matrix snapshot coincides with the symmetric-oracle value to
-// within the test's 1% tolerance. PyRadiomics gives direct bit-agreement for CONTRAST/DIFAVE/DIS/
-// DIFENTRO/DIFVAR/ID/HOM1/IDM/IV/SUMENTROPY; ACOR/IDN/IDMN/SUMAVERAGE are invariant by construction
-// and matched the numpy symmetric reference (PyRadiomics differs on them only by its level-origin /
-// Ng-normalization conventions, not by definition). These are therefore VETTED against an external
+// ORACLE-VETTED 2026-07 (corrected 2026-07-09): the 10 keys below were run against a third-party
+// symmetric-matrix oracle (PyRadiomics v3.0.1) on the *same* per-slice matlab-binned phantom images,
+// aggregated the same way (mean over 4 slices x 4 angles). Each depends only on the grey-level
+// DIFFERENCE p_{x-y} / |i-j| (CONTRAST/DIFAVE/DIS/DIFENTRO/DIFVAR/ID/HOM1/IDM/IV/SUMENTROPY), so it is
+// invariant to BOTH matrix symmetrization AND the absolute level values that matlab binning re-maps
+// -> PyRadiomics agrees within the test's 1% tolerance. These are VETTED against an external
 // definition, not merely pinned.
+// CORRECTION (2026-07-09, PR #356 review): ACOR/IDN/IDMN/SUMAVERAGE were previously listed here as
+// oracle-vetted -- that was WRONG for this ibsi=False / matlab-binning config. They depend on the
+// absolute grey-level values / Ng, which matlab binning re-maps, so under this config they diverge
+// from PyRadiomics by up to ~43% (ACOR; measured on a dense 8-level phantom: Nyxus ibsi=False ACOR
+// 29.25 vs oracle 20.51). They were therefore MOVED to the unvetted snapshot below. They ARE
+// genuinely third-party-vetted on the IBSI path (symmetric matrix, identity binning), where Nyxus
+// ibsi=True == PyRadiomics exactly (ACOR 20.512755, SUMAVERAGE 9.020408, IDN 0.779479, IDMN
+// 0.887342) -- covered by the dense-phantom oracle test in tests/python/test_glcm_oracle.py.
 static std::unordered_map<std::string, double> vetted_nyxus_convention_regression_glcm_feature_golden_values
 {
-    {"GLCM_ACOR", 1437.33},
     {"GLCM_CONTRAST", 1.4448130208333334e+03},
     {"GLCM_DIFAVE", 23.6493},
     {"GLCM_DIFENTRO", 1.44004},
@@ -44,25 +48,32 @@ static std::unordered_map<std::string, double> vetted_nyxus_convention_regressio
     {"GLCM_HOM1", 0.580526},
     {"GLCM_ID", 0.580526},
     {"GLCM_IDM", 0.572168},
-    {"GLCM_IDMN", 9.0029152005531590e-01},
-    {"GLCM_IDN", 8.4432100308124380e-01},
     {"GLCM_IV", 0.000206466},
-    {"GLCM_SUMAVERAGE", 72.0369},
     {"GLCM_SUMENTROPY", 1.61957}
 };
 
-// The remaining keys are transpose-sensitive: they depend on individual matrix entries or on the
-// grey-tone marginal means (mu_x/mu_y), which differ between the asymmetric matrix used here and a
-// symmetric one. As configured (symmetric_glcm=false) they genuinely diverge from any symmetric
-// oracle by >1% (verified: ASM/ENERGY 3.7%, CLUSHADE 46%, CLUTEND/SUMVARIANCE 3.2%, JE 9.3%,
-// JVAR/VARIANCE ~10%, ...), and ENTROPY/HOM2 are computed from raw counts (un-normalized), so they
-// have no probability-normalized oracle counterpart. They remain UNVETTED snapshots and could be
-// vetted only by rerunning with symmetric_glcm=true (or the radiomics/IBSI path) and comparing to
-// PyRadiomics. (Note: CLUTEND/SUMVARIANCE are NOT symmetrization-invariant in Nyxus because they
-// use the single row-marginal mean by_row_mean; the earlier comment listing them as invariant was
-// inaccurate.)
+// These keys are NOT oracle-matched under this config, for one of two reasons.
+// (a) Transpose-sensitive: they depend on individual matrix entries or on the grey-tone marginal
+//     means (mu_x/mu_y), which differ between the asymmetric matrix used here and a symmetric one.
+//     As configured (symmetric_glcm=false) they diverge from any symmetric oracle by >1% (verified:
+//     ASM/ENERGY 3.7%, CLUSHADE 46%, CLUTEND/SUMVARIANCE 3.2%, JE 9.3%, JVAR/VARIANCE ~10%, ...), and
+//     ENTROPY/HOM2 are computed from raw counts (un-normalized), so they have no probability-
+//     normalized oracle counterpart.
+// (b) Absolute-level / Ng-dependent (ACOR/IDN/IDMN/SUMAVERAGE, moved here from the vetted map on
+//     2026-07-09 per PR #356 review): matlab binning re-maps the absolute grey levels and Ng, so on
+//     this ibsi=False config they diverge from PyRadiomics (up to ~43% for ACOR). They ARE genuinely
+//     oracle-vetted on the IBSI path (symmetric matrix, identity binning) -- see the dense-phantom
+//     test in tests/python/test_glcm_oracle.py, which pins them tightly against PyRadiomics.
+// All of the above remain UNVETTED snapshots on this config; the transpose-sensitive group could be
+// vetted by rerunning with symmetric_glcm=true (or the radiomics/IBSI path). (Note: CLUTEND/
+// SUMVARIANCE are NOT symmetrization-invariant in Nyxus because they use the single row-marginal mean
+// by_row_mean; the earlier comment listing them as invariant was inaccurate.)
 static std::unordered_map<std::string, double> unvetted_nyxus_convention_regression_glcm_feature_golden_values
 {
+    {"GLCM_ACOR", 1437.33},                 // moved from vetted 2026-07-09: absolute-level-dependent, ibsi=False != oracle (IBSI-path vetted)
+    {"GLCM_IDMN", 9.0029152005531590e-01},  // moved from vetted 2026-07-09: Ng-dependent, ibsi=False != oracle (IBSI-path vetted)
+    {"GLCM_IDN", 8.4432100308124380e-01},   // moved from vetted 2026-07-09: Ng-dependent, ibsi=False != oracle (IBSI-path vetted)
+    {"GLCM_SUMAVERAGE", 72.0369},           // moved from vetted 2026-07-09: absolute-level-dependent, ibsi=False != oracle (IBSI-path vetted)
     {"GLCM_ASM", 0.381801},
     {"GLCM_CLUPROM", 6.1972e+06},
     {"GLCM_CLUSHADE", 21905.3},
