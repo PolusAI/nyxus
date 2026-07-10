@@ -71,7 +71,7 @@ def _disk(r=120, pad=12):
     return (((xx - c) ** 2 + (yy - c) ** 2) <= r * r).astype(np.uint32)
 
 
-def _koch_snowflake(depth=4, size=600):
+def _koch_snowflake(depth=5, size=1400):
     """Filled Koch snowflake: boundary divider dimension = log4/log3 = 1.2619.
     Requires PIL for polygon fill; skipped if unavailable."""
     Image = pytest.importorskip("PIL.Image")
@@ -119,14 +119,14 @@ def test_boxcount_recovers_known_dimension(name, mask, truth):
 def test_perimeter_disk_is_smooth():
     """A disk has a smooth (non-fractal) boundary -> divider dimension -> 1.0."""
     _, pf = _fd(_disk())
-    assert abs(pf - 1.0) < 0.15, f"disk perimeter D {pf:.3f} vs 1.0"
+    assert abs(pf - 1.0) < 0.05, f"disk perimeter D {pf:.3f} vs 1.0"
 
 
 def test_perimeter_koch_snowflake():
     """Koch snowflake boundary: divider dimension = log4/log3 = 1.2619."""
     truth = math.log(4) / math.log(3)
     _, pf = _fd(_koch_snowflake())
-    assert abs(pf - truth) < 0.15, f"Koch perimeter D {pf:.3f} vs truth {truth:.3f}"
+    assert abs(pf - truth) < 0.05, f"Koch perimeter D {pf:.3f} vs truth {truth:.3f}"
 
 
 # ============================ arbitrary ROI ================================
