@@ -25,11 +25,14 @@
 //
 // ORACLE-VETTED 2026-07 (corrected 2026-07-09): the 10 keys below were run against a third-party
 // symmetric-matrix oracle (PyRadiomics v3.0.1) on the *same* per-slice matlab-binned phantom images,
-// aggregated the same way (mean over 4 slices x 4 angles). Each depends only on the grey-level
-// DIFFERENCE p_{x-y} / |i-j| (CONTRAST/DIFAVE/DIS/DIFENTRO/DIFVAR/ID/HOM1/IDM/IV/SUMENTROPY), so it is
-// invariant to BOTH matrix symmetrization AND the absolute level values that matlab binning re-maps
-// -> PyRadiomics agrees within the test's 1% tolerance. These are VETTED against an external
-// definition, not merely pinned.
+// aggregated the same way (mean over 4 slices x 4 angles). Nine of them depend only on the grey-level
+// DIFFERENCE p_{x-y} / |i-j| (CONTRAST/DIFAVE/DIS/DIFENTRO/DIFVAR/ID/HOM1/IDM/IV); SUMENTROPY is the
+// dimensionless entropy of the SUM distribution p_{x+y}. Both kinds are invariant to matrix
+// symmetrization and to a level RELABELING (origin shift) -- and this phantom's binning relabels
+// levels without RESCALING them, so they coincide with the symmetric-matrix oracle -> PyRadiomics
+// agrees within the test's 1% tolerance. (Difference-based features are NOT invariant to level
+// *scaling*; that only holds here because the binning does not rescale.) These are VETTED against an
+// external definition, not merely pinned.
 // CORRECTION (2026-07-09, PR #356 review): ACOR/IDN/IDMN/SUMAVERAGE were previously listed here as
 // oracle-vetted -- that was WRONG for this ibsi=False / matlab-binning config. They depend on the
 // absolute grey-level values / Ng, which matlab binning re-maps, so under this config they diverge
