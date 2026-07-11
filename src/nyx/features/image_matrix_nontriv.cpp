@@ -435,14 +435,16 @@ Power2PaddedImageMatrix_NT::Power2PaddedImageMatrix_NT (const std::string& _name
 	// Cache AABB
 	original_aabb = aabb;
 
-	// Figure out the padded size and allocate
+	// Figure out the padded size and allocate. Tight power-of-2 canvas (ceil_pow2) and
+	// origin alignment, matching the trivial Power2PaddedImageMatrix, so the oversized
+	// box-counting path recovers the same grid-aligned dimension.
 	int bigSide = std::max(aabb.get_width(), aabb.get_height());
-	StatsInt paddedSide = Nyxus::closest_pow2(bigSide);
+	StatsInt paddedSide = Nyxus::ceil_pow2(bigSide);
 	allocate(paddedSide, paddedSide, 0.0);
 
-	// Copy pixels
-	int padOffsetX = (paddedSide - original_aabb.get_width()) / 2;
-	int padOffsetY = (paddedSide - original_aabb.get_height()) / 2;
+	// Place the ROI at the grid origin (no centering) to avoid box-grid misalignment bias.
+	int padOffsetX = 0;
+	int padOffsetY = 0;
 
 	for (auto pxl : raw_pixels)
 	{

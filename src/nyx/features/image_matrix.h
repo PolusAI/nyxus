@@ -392,14 +392,16 @@ public:
 		// Cache AABB
 		original_aabb = aabb;
 
-		// Figure out the padded size and allocate
+		// Tight power-of-2 canvas (ceil_pow2, not closest_pow2 which is strictly greater and
+		// wastes an octave) with the ROI at the grid origin. Box counting is registration
+		// sensitive; centering on an over-sized canvas misaligned the ROI with the coarse boxes
+		// and biased the dimension low (a filled square read 1.75 instead of 2.0).
 		int bigSide = std::max(aabb.get_width(), aabb.get_height());
-		StatsInt paddedSide = Nyxus::closest_pow2 (bigSide);
+		StatsInt paddedSide = Nyxus::ceil_pow2 (bigSide);
 		allocate (paddedSide, paddedSide);
 
-		// Copy pixels
-		int padOffsetX = (paddedSide - original_aabb.get_width()) / 2;
-		int padOffsetY = (paddedSide - original_aabb.get_height()) / 2;
+		int padOffsetX = 0;
+		int padOffsetY = 0;
 
 		for (auto& pxl : labels_raw_pixels)
 		{
