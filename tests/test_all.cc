@@ -773,6 +773,11 @@ TEST(TEST_NYXUS, TEST_IH_REQUIRED_PREDICATE)
 	ASSERT_NO_THROW(test_ih_required_predicate());
 }
 
+TEST(TEST_NYXUS, TEST_IH_DISPERSION_AND_INDEX_VALUES)
+{
+	ASSERT_NO_THROW(test_ih_dispersion_and_index_values());
+}
+
 TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VARIANCE_BIASED)
 {
 	ASSERT_NO_THROW(test_pixel_intensity_variance_biased());

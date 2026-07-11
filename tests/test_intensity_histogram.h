@@ -45,6 +45,19 @@ static const NyxusPixel intensityHistogramTestData[] =
     {0, 0, 1}, {1, 0, 1}, {2, 0, 3}, {3, 0, 5}, {4, 0, 7}
 };
 
+// Second ROI for the dispersion / robust family. 17 pixels, N=5 bins over [0,40]
+// (binWidth 8, centers {4,12,20,28,36}); freq = {1,5,6,4,1}. Chosen so the robust
+// window [p10Index=1, p90Index=3] strictly trims the two tail bins — unlike the 5-px
+// fixture above, where the window covers all bins and robust == non-robust.
+static const NyxusPixel intensityHistogramRobustData[] =
+{
+    {0,0,0},
+    {1,0,10},{2,0,10},{3,0,10},{4,0,10},{5,0,10},
+    {6,0,20},{7,0,20},{8,0,20},{9,0,20},{10,0,20},{11,0,20},
+    {12,0,30},{13,0,30},{14,0,30},{15,0,30},
+    {16,0,40}
+};
+
 // Builds settings with the common knobs the IH family consumes.
 static Fsettings ih_make_settings(int nbins, bool ibsi, double softnan = -7777.0)
 {
@@ -96,6 +109,41 @@ static void ih_run(std::vector<std::vector<double>>& fvals,
 static double ih_get(const std::vector<std::vector<double>>& fvals, Nyxus::Feature2D fc)
 {
     return fvals[(int)fc][0];
+}
+
+// Integer-domain run on an arbitrary pixel cloud (no slide / float-domain plumbing).
+static void ih_run_px(std::vector<std::vector<double>>& fvals, const Fsettings& s,
+                      const NyxusPixel* px, size_t npx)
+{
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("", ""));
+
+    LR roidata(100);
+    roidata.slide_idx = -1;
+    load_test_roi_data(roidata, px, npx);
+    roidata.make_nonanisotropic_aabb();
+
+    IntensityHistogramFeatures f;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
+
+    roidata.initialize_fvals();
+    f.save_value(roidata.fvals);
+    fvals = roidata.fvals;
+}
+
+// Assert a list of (feature, ground-truth) pairs; exact zeros use an absolute tolerance
+// (agrees_gt scales tolerance by the ground truth, so it cannot check gt==0).
+static void ih_assert_values(const std::vector<std::vector<double>>& fv,
+                             const std::vector<std::pair<Nyxus::Feature2D, double>>& gt)
+{
+    for (const auto& pr : gt)
+    {
+        double v = ih_get(fv, pr.first);
+        if (std::abs(pr.second) < 1e-12)
+            ASSERT_NEAR(v, pr.second, 1e-9) << "IH feature code " << (int)pr.first;
+        else
+            ASSERT_TRUE(agrees_gt(v, pr.second, 1e4)) << "IH feature code " << (int)pr.first;
+    }
 }
 
 // 1) Integer-domain values vs exact hand-computed ground truth.
@@ -201,4 +249,78 @@ void test_ih_required_predicate()
     ASSERT_FALSE(IntensityHistogramFeatures::required(fs));
     fs.enableFeature((int)Feature2D::IH_ENTROPY_VAL);
     ASSERT_TRUE(IntensityHistogramFeatures::required(fs));
+}
+
+// 6) Dispersion + index-domain family: the 21 IH features not covered by test (1).
+//    Ground truth is derived independently from the IBSI first-order definitions applied
+//    to the discretised N-bin histogram — the 7 "...Value" dispersion features (MAD,
+//    robust-MAD, median-AD, IQR, CoV, QCoD, robust-mean) match the IBSI intensity-histogram
+//    definitions; the 14 "...Index" variants are the same statistics over the 1-based bin-index
+//    domain (Nyxus-specific). Reference generator + full derivation:
+//    .planning/test-vetting-audit/ih_oracle_ref.py.
+//
+//    Two ROIs are checked so the robust window is exercised both degenerately and non-trivially:
+//      ROI-1 = {1,1,3,5,7}, N=3  (freq {2,1,2}; robust window covers all bins -> robust==full)
+//      ROI-2 = 17 px,       N=5  (freq {1,5,6,4,1}; robust window trims both tail bins)
+void test_ih_dispersion_and_index_values()
+{
+    // ---- ROI-1 (existing 5-px fixture, N=3) ----
+    std::vector<std::vector<double>> fv1;
+    ih_run_px(fv1, ih_make_settings(/*nbins*/ 3, /*ibsi*/ true),
+              intensityHistogramTestData,
+              sizeof(intensityHistogramTestData) / sizeof(NyxusPixel));
+
+    ih_assert_values(fv1, {
+        // 7 "...Value" dispersion features
+        { Feature2D::IH_INTERQUANTILE_RANGE_VAL,                3.5 },
+        { Feature2D::IH_MEAN_ABSOLUTE_DEVIATION_VAL,            1.6 },
+        { Feature2D::IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_VAL,     1.6 },   // == full MAD here
+        { Feature2D::IH_MEDIAN_ABSOLUTE_DEVIATION_VAL,          1.6 },
+        { Feature2D::IH_COEFFICIENT_OF_VARIATION_VAL,           0.4472135955 },
+        { Feature2D::IH_QUANTILE_COEFFICIENT_OF_DISPERSION_VAL, 0.4375 },
+        { Feature2D::IH_ROBUST_MEAN_VAL,                        4.0 },   // == full mean here
+        // 14 "...Index" variants
+        { Feature2D::IH_VARIANCE_IDX,                           0.8 },
+        { Feature2D::IH_SKEWNESS_IDX,                           0.0 },   // symmetric
+        { Feature2D::IH_EXCESS_KURTOSIS_IDX,                   -1.75 },
+        { Feature2D::IH_INTERQUANTILE_RANGE_IDX,                2.0 },
+        { Feature2D::IH_RANGE_IDX,                              2.0 },
+        { Feature2D::IH_MEAN_ABSOLUTE_DEVIATION_IDX,            0.8 },
+        { Feature2D::IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_IDX,     0.8 },
+        { Feature2D::IH_MEDIAN_ABSOLUTE_DEVIATION_IDX,          0.8 },
+        { Feature2D::IH_COEFFICIENT_OF_VARIATION_IDX,           0.4472135955 },
+        { Feature2D::IH_QUANTILE_COEFFICIENT_OF_DISPERSION_IDX, 0.5 },
+        { Feature2D::IH_ENTROPY_IDX,                            1.521928095 },  // == entropy_val
+        { Feature2D::IH_UNIFORMITY_IDX,                         0.36 },         // == uniformity_val
+        { Feature2D::IH_ROBUST_MEAN_IDX,                        1.0 },
+    });
+
+    // ---- ROI-2 (robust window trims tail bins, N=5) ----
+    std::vector<std::vector<double>> fv2;
+    ih_run_px(fv2, ih_make_settings(/*nbins*/ 5, /*ibsi*/ true),
+              intensityHistogramRobustData,
+              sizeof(intensityHistogramRobustData) / sizeof(NyxusPixel));
+
+    ih_assert_values(fv2, {
+        { Feature2D::IH_INTERQUANTILE_RANGE_VAL,                12.3 },
+        { Feature2D::IH_MEAN_ABSOLUTE_DEVIATION_VAL,            6.256055363 },
+        { Feature2D::IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_VAL,     4.977777778 },  // trimmed != full
+        { Feature2D::IH_MEDIAN_ABSOLUTE_DEVIATION_VAL,          6.117647059 },
+        { Feature2D::IH_COEFFICIENT_OF_VARIATION_VAL,           0.4089292229 },
+        { Feature2D::IH_QUANTILE_COEFFICIENT_OF_DISPERSION_VAL, 0.3178294574 },
+        { Feature2D::IH_ROBUST_MEAN_VAL,                        19.46666667 },  // trimmed mean
+        { Feature2D::IH_VARIANCE_IDX,                           0.9965397924 },
+        { Feature2D::IH_SKEWNESS_IDX,                           0.1178511302 },
+        { Feature2D::IH_EXCESS_KURTOSIS_IDX,                   -0.564525463 },
+        { Feature2D::IH_INTERQUANTILE_RANGE_IDX,                2.0 },
+        { Feature2D::IH_RANGE_IDX,                              4.0 },
+        { Feature2D::IH_MEAN_ABSOLUTE_DEVIATION_IDX,            0.7820069204 },
+        { Feature2D::IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_IDX,     0.6222222222 },
+        { Feature2D::IH_MEDIAN_ABSOLUTE_DEVIATION_IDX,          0.7647058824 },
+        { Feature2D::IH_COEFFICIENT_OF_VARIATION_IDX,           0.339411255 },
+        { Feature2D::IH_QUANTILE_COEFFICIENT_OF_DISPERSION_IDX, 0.3333333333 },
+        { Feature2D::IH_ENTROPY_IDX,                            2.021614872 },
+        { Feature2D::IH_UNIFORMITY_IDX,                         0.2733564014 },
+        { Feature2D::IH_ROBUST_MEAN_IDX,                        1.933333333 },
+    });
 }
