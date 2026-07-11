@@ -247,6 +247,17 @@ namespace Nyxus
 		return retval;
 	}
 
+	// Smallest power of two >= a (a tight ceiling, unlike closest_pow2 which is
+	// strictly greater than a). Used to pad an ROI to a box-counting grid without
+	// wasting an octave: ceil_pow2(256)=256, ceil_pow2(13)=16, ceil_pow2(1)=1.
+	inline int ceil_pow2(const int a)
+	{
+		int p = 1;
+		while (p < a)
+			p <<= 1;
+		return p;
+	}
+
 	inline void print_curve(const std::vector<std::pair<int, int>>& curve, const std::string& name)
 	{
 		std::cout << "\n\n" << name << " = [\n";
