@@ -916,6 +916,11 @@ TEST(TEST_NYXUS, TEST_SHAPE2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_FRACTAL_CIRCLE_F
 	ASSERT_NO_THROW(test_shape2d_verifiable_with_3p_builtin_oracle_fractal_circle_features());
 }
 
+TEST(TEST_NYXUS, TEST_SHAPE2D_FRACTAL_DIMENSION_154PX_ORACLE)
+{
+	ASSERT_NO_THROW(test_shape2d_fractal_dimension_154px_oracle());
+}
+
 TEST(TEST_NYXUS, TEST_SHAPE2D_UNVETTED_NO_DIRECT_ORACLE_RADIUS_FEATURES)
 {
 	ASSERT_NO_THROW(test_shape2d_unvetted_no_direct_oracle_radius_features());

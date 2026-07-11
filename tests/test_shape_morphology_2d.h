@@ -65,6 +65,19 @@ static std::unordered_map<std::string, double> unvetted_nyxus_regression_shape2d
 	{"ROI_RADIUS_MEDIAN", 1.0},
 };
 
+// The fractal dimensions are validated on the larger, irregular 154-px pixelIntensityFeaturesTestData
+// ROI (not the 26-px morphology fixture above): it fits 5 box sizes, enough for BOTH features to be
+// oracle-validated. The 26-px fixture only fits 3 scales, where the perimeter has no convergent
+// oracle. All values are offline ImageJ / FracLac oracles (see tests/python/test_fractal_dim_oracle.py):
+//   FRACT_DIM_BOXCOUNT  = shifting-grid box count of the filled ROI (SAME method as Nyxus) -> 1.3891
+//   FRACT_DIM_PERIMETER = box count of the ROI's EDGE (a DIFFERENT method that estimates the same
+//                         boundary dimension); Nyxus' Richardson divider agrees to ~6% (cross-method
+//                         convergent validity), asserted with a 10% tolerance -> 1.163
+static std::unordered_map<std::string, double> oracle_fractal_154px_golden_values{
+	{"FRACT_DIM_BOXCOUNT", 1.3891},
+	{"FRACT_DIM_PERIMETER", 1.163},
+};
+
 static std::unordered_map<std::string, double> oracle_3p_shape2d_feature_golden_values{
 	// CONVEX_HULL_AREA / SOLIDITY are cross-checked against scikit-image regionprops on this exact
 	// ROI (skimage 0.26: area_convex=28, solidity=26/28=0.9285714). Nyxus computes a Pick's-theorem
@@ -79,8 +92,6 @@ static std::unordered_map<std::string, double> oracle_3p_shape2d_feature_golden_
 	{"CONVEX_HULL_AREA", 28.0},
 	{"SOLIDITY", 0.9285714285714286},
 	{"DIAMETER_EQUAL_PERIMETER", 8.57365809435587},
-	{"FRACT_DIM_BOXCOUNT", 1.5849625007211565},   // FIX (fractal_dim.cpp): mean log-log slope = log2(3); old -0.83 was slope-of-slopes (~0)
-	{"FRACT_DIM_PERIMETER", 0.3187149603076458},  // FIX: Richardson D = 1 - slope; old -1.97 was the raw slope
 	{"DIAMETER_CIRCUMSCRIBING_CIRCLE", 12.3317073399088},
 	{"DIAMETER_INSCRIBING_CIRCLE", 0.828486893405308},
 	{"GEODETIC_LENGTH", 10.0},
@@ -307,10 +318,58 @@ void test_shape2d_verifiable_with_3p_builtin_oracle_fractal_circle_features()
 	std::vector<std::vector<double>> fvals;
 	calculate_shape2d_feature_values(fvals);
 
-	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::FRACT_DIM_BOXCOUNT, "FRACT_DIM_BOXCOUNT");
-	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::FRACT_DIM_PERIMETER, "FRACT_DIM_PERIMETER");
+	// Fractal dimensions moved to test_shape2d_fractal_dimension_154px_oracle (validated on the
+	// larger 154-px ROI). Here we keep the inscribing/circumscribing circle diameters.
 	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::DIAMETER_CIRCUMSCRIBING_CIRCLE, "DIAMETER_CIRCUMSCRIBING_CIRCLE");
 	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::DIAMETER_INSCRIBING_CIRCLE, "DIAMETER_INSCRIBING_CIRCLE");
+}
+
+// Fractal dimensions are validated on the irregular 154-px pixelIntensityFeaturesTestData ROI, which
+// fits enough box sizes for both features to be oracle-validated (the 26-px morphology fixture only
+// fits 3 scales, where the perimeter has no convergent cross-method oracle).
+static void calculate_fractal_154px_feature_values(std::vector<std::vector<double>>& fvals)
+{
+	Fsettings s = make_shape2d_settings();
+
+	LR roidata(102);
+	load_test_roi_data(roidata, pixelIntensityFeaturesTestData,
+		sizeof(pixelIntensityFeaturesTestData) / sizeof(NyxusPixel));
+	// load_test_roi_data only fills raw_pixels; finalize the AABB and image matrix the way the
+	// masked loader does, so the shape features (and the box-count's aabb) are well-defined.
+	roidata.make_nonanisotropic_aabb();
+	roidata.aux_image_matrix.allocate(roidata.aabb.get_width(), roidata.aabb.get_height());
+	roidata.aux_image_matrix.calculate_from_pixelcloud(roidata.raw_pixels, roidata.aabb);
+	roidata.initialize_fvals();
+
+	BasicMorphologyFeatures basic;
+	basic.calculate(roidata, s);
+	basic.save_value(roidata.fvals);
+
+	// FRACT_DIM_PERIMETER walks the contour, so populate it before the fractal feature
+	ContourFeature contour;
+	contour.calculate(roidata, s);
+	contour.save_value(roidata.fvals);
+
+	FractalDimensionFeature fractal;
+	fractal.calculate(roidata, s);
+	fractal.save_value(roidata.fvals);
+
+	fvals = roidata.fvals;
+}
+
+void test_shape2d_fractal_dimension_154px_oracle()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_fractal_154px_feature_values(fvals);
+
+	// FRACT_DIM_BOXCOUNT: SAME method as the oracle (ImageJ/FracLac shifting-grid box count) -> tight.
+	// FRACT_DIM_PERIMETER: CROSS-method (Nyxus divider vs box-count-of-edge, same boundary dimension);
+	// the two agree to ~6% (convergent validity), asserted at 10% tolerance.
+	SCOPED_TRACE("FRACT_DIM_154PX_ORACLE");
+	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(Nyxus::Feature2D::FRACT_DIM_BOXCOUNT)][0],
+		oracle_fractal_154px_golden_values["FRACT_DIM_BOXCOUNT"], 100.0));      // 1% (same method)
+	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(Nyxus::Feature2D::FRACT_DIM_PERIMETER)][0],
+		oracle_fractal_154px_golden_values["FRACT_DIM_PERIMETER"], 10.0));      // 10% (cross method)
 }
 
 void test_shape2d_unvetted_no_direct_oracle_radius_features()
