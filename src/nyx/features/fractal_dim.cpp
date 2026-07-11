@@ -1,5 +1,7 @@
+#include <algorithm>
 #include "fractal_dim.h"
 #include "image_matrix.h"
+#include "../helpers/helpers.h"
 
 using namespace Nyxus;
 
@@ -17,144 +19,169 @@ void FractalDimensionFeature::calculate (LR& r, const Fsettings& s)
 
 void FractalDimensionFeature::calculate_boxcount_fdim (LR & r)
 {
-	Power2PaddedImageMatrix pim(r.raw_pixels, r.aabb, 1, 1.0);	// image matrix of the mask
-
-	// Debug
-	// pim.print("Padded");
-
-	// Square box coverage statistics
-	std::vector<std::pair<int, int>> coverage;
-	int s = pim.width;	// square tile size
-	for (; s > 1; s /= 2)
+	const std::vector<Pixel2>& px = r.raw_pixels;
+	if (px.size() < 2)
 	{
-		int cnt = 0;
-		size_t areaCov = 0;
-		int n_tiles = pim.width / s;
-		for (int r = 0; r < n_tiles; r++)
-			for (int c = 0; c < n_tiles; c++)
-			{
-				// check the tile for coerage
-				if (pim.tile_contains_signal(r, c, s))
-					cnt++;
-			}
-
-		coverage.push_back({ s, cnt });
+		box_count_fd = 0.;
+		return;
 	}
 
-	// Debug
-	// print_curve(boxCoverage, "boxCoverage N vs R");	
+	// Box counting is registration sensitive: the old code padded to a power of two strictly
+	// larger than the ROI and centered it, misaligning the ROI with the coarse boxes and biasing
+	// the dimension low (a filled square read 1.75 instead of 2.0). We pad tight (ceil_pow2) and
+	// align to the ROI origin. Shifting grids (min count over grid origins, as FracLac does)
+	// remove the residual bias, but that only matters when few box sizes fit (small ROIs), and
+	// those are cheap to shift. So auto-switch:
+	//   - large ROI  -> single origin grid via the padded mask matrix (fast early-exit tile scan)
+	//   - small ROI  -> shift the grid over a few origins and take the minimum box count
+	int bigSide = (int)std::max(r.aabb.get_width(), r.aabb.get_height());
+	int paddedSide = Nyxus::ceil_pow2(bigSide);
 
-	box_count_fd = -calc_lyapunov_slope(coverage);
+	std::vector<std::pair<double, double>> coverage;
+
+	if (paddedSide > 32)
+	{
+		// Large ROI: single aligned grid. tile_contains_signal early-exits on the first non-zero
+		// pixel, so this is O(#tiles) for filled ROIs - much cheaper than visiting every pixel.
+		Power2PaddedImageMatrix pim(px, r.aabb, 1, 1.0);
+		for (int s = pim.width; s > 1; s /= 2)
+		{
+			int cnt = 0, nt = pim.width / s;
+			for (int tr = 0; tr < nt; tr++)
+				for (int tc = 0; tc < nt; tc++)
+					if (pim.tile_contains_signal(tr, tc, s))
+						cnt++;
+			coverage.push_back({ double(s), double(cnt) });
+		}
+	}
+	else
+	{
+		// Small ROI: shifting grids. n_off grid origins per axis ({0, s/2} for 2 -> 4 positions);
+		// box index = coord >> log2(s) since box sizes are powers of two.
+		auto xmin = r.aabb.get_xmin();
+		auto ymin = r.aabb.get_ymin();
+		int n_off = 2;
+		int shift = 0;
+		for (int t = paddedSide; t > 1; t >>= 1)
+			shift++;
+		std::vector<char> occ;
+		for (int s = paddedSide; s > 1; s >>= 1, --shift)
+		{
+			int span = (paddedSide >> shift) + 2;	// boxes per axis (+slack for the origin shift)
+			occ.assign((size_t)span * span, 0);
+			int best = -1;
+			for (int oyi = 0; oyi < n_off; oyi++)
+				for (int oxi = 0; oxi < n_off; oxi++)
+				{
+					int ox = (oxi * s) / n_off, oy = (oyi * s) / n_off;
+					int cnt = 0;
+					for (const Pixel2& p : px)
+					{
+						int col = (int)(p.x - xmin + ox) >> shift;
+						int row = (int)(p.y - ymin + oy) >> shift;
+						size_t idx = (size_t)row * span + col;
+						if (!occ[idx]) { occ[idx] = 1; cnt++; }
+					}
+					if (best < 0 || cnt < best)
+						best = cnt;
+					if (oyi + 1 < n_off || oxi + 1 < n_off)
+						std::fill(occ.begin(), occ.end(), (char)0);	// reset for next origin
+				}
+			coverage.push_back({ double(s), double(best) });
+		}
+	}
+
+	// Box-counting dimension = -slope of log(count) vs log(box size)
+	box_count_fd = -loglog_slope(coverage);
 }
 
 void FractalDimensionFeature::calculate_boxcount_fdim_oversized (LR & r)
 {
 	Power2PaddedImageMatrix_NT pim ("pim", r.label, r.raw_pixels_NT, r.aabb, 1, 1.0);	// image matrix of the mask
 
-	// Square box coverage statistics
-	std::vector<std::pair<int, int>> coverage;
+	// Oversized/streaming ROIs are always large, so use a single aligned grid (the same path as
+	// the trivial large-ROI branch); shifting grids are only needed for small ROIs.
+	std::vector<std::pair<double, double>> coverage;
 	int s = pim.get_width();	// square tile size
 	for (; s > 1; s /= 2)
 	{
 		int cnt = 0;
-		size_t areaCov = 0;
 		int n_tiles = pim.get_width() / s;
 		for (int r = 0; r < n_tiles; r++)
 			for (int c = 0; c < n_tiles; c++)
 			{
-				// check the tile for coerage
+				// check the tile for coverage
 				if (pim.tile_contains_signal(r, c, s))
 					cnt++;
 			}
 
-		coverage.push_back({ s, cnt });
+		coverage.push_back({ double(s), double(cnt) });
 	}
 
-	box_count_fd = -calc_lyapunov_slope(coverage);
+	box_count_fd = -loglog_slope(coverage);
 }
 
 void FractalDimensionFeature::calculate_perimeter_fdim (LR& r)
 {
-	std::vector<std::pair<int, int>> coverage;
-
 	std::vector<Pixel2> K;
 	r.merge_multicontour(K);
 
 	auto conLen = K.size();
+	if (conLen < 3)
+	{
+		perim_fd = 0.;
+		return;
+	}
+
+	// Richardson "structured walk" (divider) method on the CLOSED contour K.
+	// For each stride s, walk the contour in steps of s vertices, summing Euclidean chord
+	// lengths and closing the loop back to the start. Record x = mean ruler (chord) length
+	// and y = perimeter estimate. Since log(perimeter) ~ (1 - D) log(ruler), D = 1 - slope.
+	// Validated against the analytic Koch snowflake (D = log4/log3 = 1.2619) and a circle (D = 1).
+	std::vector<std::pair<double, double>> coverage;
 	for (size_t s = conLen / 4; s > 0; s /= 2)
 	{
-		// calculate the s-approximated perimeter
-		double p = 0;
-		for (size_t i = s; i < conLen; i += s)
+		double perim = 0.;
+		size_t nsteps = 0, i = 0;
+		for (; i + s < conLen; i += s)
 		{
-			auto& px1 = K [i-s],
-				px2 = K [i];
-			double dist = std::sqrt(px1.sqdist(px2));
-			p += dist;
+			perim += std::sqrt(K[i].sqdist(K[i + s]));
+			nsteps++;
 		}
-		// --calculate the last segment separately
-		auto tail = conLen % s;
-		if (tail)
-		{
-			auto& px1 = K [conLen - tail],
-				px2 = K [0];
-			double dist = px1.sqdist(px2);
-			p += dist;
-		}
+		// close the loop from the last visited vertex back to the start
+		perim += std::sqrt(K[i].sqdist(K[0]));
+		nsteps++;
 
-		// save this approximation
-		coverage.push_back({ s, (int)p });
+		double ruler = perim / double(nsteps);	// mean chord (ruler) length at this stride
+		coverage.push_back({ ruler, perim });
 	}
-	// Richardson divider method: log(perimeter) vs log(ruler) has slope (1 - D), so D = 1 - slope
-	perim_fd = 1.0 - calc_lyapunov_slope(coverage);
+
+	// Richardson divider dimension: D = 1 - slope of log(perimeter) vs log(ruler)
+	perim_fd = 1.0 - loglog_slope(coverage);
 }
 
-double FractalDimensionFeature::calc_lyapunov_slope (const std::vector<std::pair<int, int>> & coverage)
+double FractalDimensionFeature::loglog_slope (const std::vector<std::pair<double, double>> & coverage)
 {
-	// Do we have any data?
-	if (coverage.size() == 0)
-		return 0.;
-
-	// Skip tiny ROIs
-	if (coverage.size() < 2)
-		return 0.;
-
-	// Post-process towards local gradients (in the form of Lyapunov exponents)
-	std::vector <double> X, Y;
-	for (int i = 0; i < coverage.size(); i++)
+	// Least-squares slope of log(y) vs log(x) over the (scale, measure) pairs.
+	// Box counting passes (box size, count) -> D = -slope; the divider method passes
+	// (ruler length, perimeter) -> D = 1 - slope. A least-squares fit over all scales is
+	// the standard, robust estimator (more stable than a two-endpoint slope on noisy ROIs).
+	double sx = 0, sy = 0, sxy = 0, sx2 = 0;
+	size_t used = 0;
+	for (const auto& pr : coverage)
 	{
-		X.push_back (std::log(coverage[i].first));
-		Y.push_back (std::log(coverage[i].second));
+		if (pr.first <= 0. || pr.second <= 0.)
+			continue;	// log undefined; skip degenerate points (count/perimeter 0)
+		double x = std::log(pr.first), y = std::log(pr.second);
+		sx += x; sy += y; sxy += x * y; sx2 += x * x;
+		used++;
 	}
-
-	// Gradients
-	std::vector<double> Dn, Dr;
-	for (int i = 1; i < Y.size(); i++)
-	{
-		auto dn = Y[i] - Y[i - 1];
-		Dn.push_back(dn);
-		auto dr = X[i] - X[i - 1];
-		Dr.push_back(dr);
-	}
-
-	// Lyapunov exponents
-	std::vector<double> Lambda;
-	for (int i = 0; i < Dn.size(); i++)
-	{
-		auto lambda = Dn[i] / Dr[i];
-		Lambda.push_back(lambda);
-	}
-
-	// The box-counting / Richardson dimension is the (average) slope of log(count) vs log(scale),
-	// i.e. the MEAN of the local slopes Lambda[]. The previous code returned the least-squares
-	// slope of Lambda[] *against its index* (the rate-of-change of the slope), which is ~0 for a
-	// clean power law -> dimension came out ~0 (FRACT_DIM_BOXCOUNT=-0.07). Return the mean slope.
-	if (Lambda.empty())
+	if (used < 2)
 		return 0.;
-	double sum = 0.;
-	for (double v : Lambda)
-		sum += v;
-	return sum / double(Lambda.size());
+	double denom = sx2 * double(used) - sx * sx;
+	if (denom == 0.)
+		return 0.;
+	return (sxy * double(used) - sx * sy) / denom;
 }
 
 void FractalDimensionFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
