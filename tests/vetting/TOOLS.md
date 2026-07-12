@@ -74,13 +74,30 @@ research pass per tool; see per-tool detail below and the setup matrix first.
 | Moments — raw/central/Hu | wndcharm; else analytic (thin — flag) |
 | Gabor / Tamura / radial(Radon) | **wndcharm** (only) |
 | Fractal (box-count) | radiomicsj, imea, fraclac (headless shifting-grid macro), imagej(approx) |
-| Neighbor features | none → analytic |
+| Neighbor: `CLOSEST_NEIGHBOR*_DIST` | **cellprofiler** `MeasureObjectNeighbors` (1:1, centroid-Euclidean) + scipy analytic |
+| Neighbor: `NUM_NEIGHBORS`, `PERCENT_TOUCHING` | **cellprofiler** (with-caveat: disk-dilation vs Euclidean contour-dist; ±1 / perimeter diffs) + scipy analytic (bit-exact) |
+| Neighbor: `*_ANG`, `ANG_BW_NEIGHBORS_*` | scipy/numpy analytic only (CP `AngleBetweenNeighbors` is a different quantity) |
 | Image quality (IMQ) | none → analytic / reference impl |
 
 Takeaway: nearly every family has ≥1 headless oracle. Texture/first-order are richly covered (3–5
 tools); morphology well-covered; the Nyxus-original set (Zernike/Gabor/Tamura/radial) rides on
-`wndcharm`; NGLDM/GLDZM ride on `mirp`/`radiomicsj`. Genuine oracle gaps: **neighbor features** and
-**IMQ** (analytic only), and **raw/central/Hu moments** lean on wndcharm/analytic.
+`wndcharm`; NGLDM/GLDZM ride on `mirp`/`radiomicsj`. **Neighbor features are partly tool-vetted**:
+CellProfiler `MeasureObjectNeighbors` covers the distances (1:1) and count/percent-touching
+(with-caveat), while the angle features use a `scipy.cKDTree`-on-boundary analytic oracle that
+reproduces Nyxus's definitions exactly. Genuine oracle gaps that stay analytic-only: the neighbor
+**angle** features, **IMQ**, and **raw/central/Hu moments** (wndcharm/analytic).
+
+### Neighbor features — CellProfiler reconciliation
+
+`cellprofiler` `MeasureObjectNeighbors` (Docker image already in the catalog) is a real oracle here.
+Config to match Nyxus: objects = neighbors = the label set; method + distance chosen to match Nyxus's
+`PERCENT_TOUCHING` touch definition — **"Within a specified distance", distance=`pixel_distance`**
+matches the radius-based touch (Nyxus `main`), while **"Adjacent"** (`strel_disk(1.5)` = 8-neighborhood)
+matches the 8-connected `sqdist≤2` touch introduced by PR #359. Outputs: `Neighbors_NumberOfNeighbors_*`,
+`Neighbors_PercentTouching_*`, `Neighbors_First/SecondClosestDistance_*`, `Neighbors_AngleBetweenNeighbors_*`
+(the last is NOT Nyxus's `ANG_BW_NEIGHBORS_*` — different quantity). A `scipy.cKDTree` boundary-pixel
+recipe reproduces Nyxus's contour-min-distance, centroid direction-angle, and mode exactly — the
+primary oracle for the angle features and a bit-exact backstop for the rest.
 
 ## Suggested rollout order (easy+high-value first)
 
