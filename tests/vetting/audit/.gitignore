@@ -1,0 +1,9 @@
+# Regenerable byproducts of the audit pipeline (extract_features -> scan_tests -> merge -> report).
+# Tracked artifacts are vetting_report.csv + TEST_VETTING_REPORT.md; everything below rebuilds.
+features.csv
+audit_scan.txt
+vetting_pivot.csv
+gap_not_tested.csv
+gap_claimed_3p.csv
+gap_regression.csv
+__pycache__/

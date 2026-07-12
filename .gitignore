@@ -565,3 +565,4 @@ cython_debug/
 
 # setuptools-scm generated version file
 src/nyx/python/nyxus/_version.py
+.planning/
