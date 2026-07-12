@@ -102,7 +102,7 @@ churn names).
 | `pyradiomics` | PyRadiomics 3.0.1 | GLCM/GLRLM/GLSZM/GLDM/NGTDM, first-order, shape | Python / Docker |
 | `radiomicsj` | RadiomicsJ 2.1.2 | texture, first-order, shape (IBSI-compliant) | Java |
 | `matlab` | MATLAB R2024a Image Processing Toolbox | GLCM (graycomatrix/graycoprops), regionprops (morphology), moments | MATLAB |
-| `cellprofiler` | CellProfiler 4.2.1 | MeasureTexture (Haralick), MeasureObjectSizeShape, intensity | pipeline |
+| `cellprofiler` | CellProfiler 4.2.1 | MeasureTexture (Haralick), MeasureObjectSizeShape, intensity, **MeasureObjectNeighbors** (neighbor count / percent-touching / closest-distance) | pipeline |
 | `mitk` | MITK 2023.04 | texture, first-order, shape | C++ CLI |
 | `feature2djava` | NIST Feature2DJava 1.5.0 (WIPP plugin) | 2D features — sibling implementation, many features 1:1 | Java |
 | `wndcharm` | WND-CHARM 1.60 | Haralick, Tamura, Zernike, Gabor, radial, … (Nyxus lineage) | C++ / Python |
