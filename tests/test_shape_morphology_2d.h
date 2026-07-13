@@ -76,8 +76,8 @@ static std::unordered_map<std::string, double> unvetted_nyxus_regression_shape2d
 //   FRACT_DIM_PERIMETER = box count of the ROI edge (cross-method vs Nyxus' Richardson divider,
 //                         estimating the same boundary dimension) -> 1.0493, asserted at 10%.
 static std::unordered_map<std::string, double> oracle_fractal_blob512_golden_values{
-	{"FRACT_DIM_BOXCOUNT", 1.8706},
-	{"FRACT_DIM_PERIMETER", 1.0493},
+	{"FRACT_DIM_BOXCOUNT", 1.8706},   // self-consistency pin: SAME box-count method as Nyxus, not independent corroboration
+	{"FRACT_DIM_PERIMETER", 1.0493},  // cross-method (edge box-count vs Nyxus' divider): the genuinely independent check
 };
 
 static std::unordered_map<std::string, double> oracle_3p_shape2d_feature_golden_values{
@@ -351,8 +351,10 @@ static void calculate_fractal_blob512_feature_values(std::vector<std::vector<dou
 
 	LR roidata(1);
 	load_test_roi_data(roidata, px.data(), px.size());
-	// load_test_roi_data only fills raw_pixels; finalize the AABB and image matrix the way the
-	// masked loader does, so the shape features (and the box-count's aabb) are well-defined.
+	// KEEP IN SYNC WITH the production masked-ROI finalize (scanTrivialRois / the masked loader):
+	// load_test_roi_data only fills raw_pixels, so we reproduce the finalize steps here. If the
+	// pipeline ever changes how an ROI is finalized (AABB/anisotropy, matrix fill, a normalization
+	// step), update this block too - otherwise the fixture validates an ROI the pipeline never makes.
 	roidata.make_nonanisotropic_aabb();
 	roidata.aux_image_matrix.allocate(roidata.aabb.get_width(), roidata.aabb.get_height());
 	roidata.aux_image_matrix.calculate_from_pixelcloud(roidata.raw_pixels, roidata.aabb);

@@ -39,6 +39,9 @@ void FractalDimensionFeature::calculate_boxcount_fdim (LR & r)
 
 	std::vector<std::pair<double, double>> coverage;
 
+	// 32: paddedSide > 32 (i.e. >= 64) fits at least 6 box sizes (2,4,...,64), enough for a stable
+	// single-grid least-squares fit; at or below it too few scales remain and grid-registration
+	// bias dominates, so we shift the grid over several origins instead.
 	if (paddedSide > 32)
 	{
 		// Large ROI: single aligned grid. tile_contains_signal early-exits on the first non-zero
@@ -123,6 +126,9 @@ void FractalDimensionFeature::calculate_boxcount_fdim_oversized (LR & r)
 
 void FractalDimensionFeature::calculate_perimeter_fdim (LR& r)
 {
+	// The divider walks ONE closed contour. merge_multicontour concatenates every contour of the
+	// ROI, so a multi-contour ROI (holes / disconnected fragments) injects spurious seam chords
+	// between them that bias the dimension; this path assumes a single-contour ROI.
 	std::vector<Pixel2> K;
 	r.merge_multicontour(K);
 
