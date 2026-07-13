@@ -76,8 +76,8 @@ static std::unordered_map<std::string, double> unvetted_nyxus_regression_shape2d
 //   FRACT_DIM_PERIMETER = box count of the ROI edge (cross-method vs Nyxus' Richardson divider,
 //                         estimating the same boundary dimension) -> 1.0493, asserted at 10%.
 static std::unordered_map<std::string, double> oracle_fractal_blob512_golden_values{
-	{"FRACT_DIM_BOXCOUNT", 1.8706},   // self-consistency pin: SAME box-count method as Nyxus, not independent corroboration
-	{"FRACT_DIM_PERIMETER", 1.0493},  // cross-method (edge box-count vs Nyxus' divider): the genuinely independent check
+	{"FRACT_DIM_BOXCOUNT", 1.8706},   // vetted by ImageJ/FracLac: an independent implementation of the same box-count method
+	{"FRACT_DIM_PERIMETER", 1.0493},  // vetted by ImageJ/FracLac edge box-count: cross-method vs Nyxus' divider
 };
 
 static std::unordered_map<std::string, double> oracle_3p_shape2d_feature_golden_values{

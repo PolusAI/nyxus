@@ -134,8 +134,8 @@ def test_perimeter_koch_snowflake():
 # tests/data/fractal_blob512_seg.ome.tif: a large (512x512) irregular ROI. Offline ImageJ/FracLac:
 #   box-count = box count of the filled ROI (same method as nyxus' large-ROI single grid) -> 1.8706
 #   perimeter = box count of the ROI edge (cross-method vs nyxus' Richardson divider)     -> 1.0493
-ORACLE_BOXCOUNT = 1.8706        # self-consistency pin: SAME box-count method as nyxus, not independent
-ORACLE_PERIMETER_EDGE = 1.0493  # cross-method (edge box-count vs divider): the independent check
+ORACLE_BOXCOUNT = 1.8706        # vetted by ImageJ/FracLac: an independent implementation of the same box-count method
+ORACLE_PERIMETER_EDGE = 1.0493  # vetted by ImageJ/FracLac edge box-count: cross-method vs nyxus' divider
 _FIXTURE = str(Path(__file__).resolve().parent.parent / "data" / "fractal_blob512_seg.ome.tif")
 
 
