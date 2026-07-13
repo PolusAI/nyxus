@@ -125,6 +125,38 @@ recipe closes the gap.
 
 ---
 
+## 5.8 Deep-dive oracle research — findings (Phase 2, DONE)
+
+Researched every feature that lacked an oracle (143). Outcome: **108 gained a mainstream oracle**
+the tracker had missed, 21 are genuinely Nyxus-unique, 12 are closed-form only, 1 niche, 1 sentinel.
+Exact metric names + caveats are in `oracle_coverage.csv` (`candidate_oracle`, filter `flag`).
+
+| Cluster | n | Recommended mainstream oracle (exact metric) | Key caveat |
+|---|---|---|---|
+| **Moments** (weighted + non-wt raw/central/norm/Hu) | 62 | **scikit-image** `moments[_weighted][_central/_normalized/_hu]` | skimage transposes indices (row=i,col=j → Nyxus m_{j,i}); weighted moments center on intensity-weighted centroid; Hu returned raw (not log), 2D-only; normalized NaN for order<2 |
+| **3D first-order** (standard) | 12 | **PyRadiomics / MIRP** (native 3D); `3COV`→mirp `stat_cov`, `3MEDIAN_ABSOLUTE_DEVIATION`→mirp `stat_medad` | PyRadiomics kurtosis is +3 vs excess; match fixed-bin-count binning |
+| **3D GLCM** | 7 | **PyRadiomics / MIRP** — `DIS`→DifferenceAverage, `HOM1`→Id, `HOM2`→Idm, `SUMVARIANCE`→ClusterTendency, `ENERGY`→JointEnergy(=ASM), `VAR`→mirp `cm_var` | **config-sensitive**: Nyxus GT is asymmetric/1-offset/100-level; pyradiomics is symmetric+13-direction → needs a matching config recipe or it diverges badly |
+| **3D shape** | 9 | **PyRadiomics 3D shape** — Sphericity, SphericalDisproportion, Major/Minor/LeastAxisLength, Elongation, Flatness, SurfaceVolumeRatio, Compactness1/2 | Compactness1/2 disabled by default (enable); align surface-mesh + voxel spacing |
+| **Intensity-histogram** (IH dispersion/index) | ~17 | **MIRP** (IBSI IH family); `IH_ENTROPY`/`IH_UNIFORMITY` also PyRadiomics | PyRadiomics firstorder is on *non-discretised* values (IBSI intensity-based-stats) → only Entropy/Uniformity match; vet `_IDX` against MIRP, `_VAL` analytic |
+| **Radial distribution** (`RADIAL_CV`,`FRAC_AT_D`,`MEAN_FRAC`) | 3 | **CellProfiler** `MeasureObjectIntensityDistribution` (`RadialDistribution_*`) | Nyxus copied verbatim from CP → near-exact; match center def + 8 bins/slices |
+| **CIRCULARITY** | 1 | **PyRadiomics** 2D `Sphericity` (formula-identical) | any mismatch = real bug or perimeter-convention |
+| **DIAMETER_MIN_ENCLOSING_CIRCLE** | 1 | **OpenCV** `minEnclosingCircle` / **imea** | opencv radius×2 |
+
+**No mainstream oracle → stay analytic/regression (21):** `ROUNDNESS` (Nyxus formula), chord angles
+(`MAXCHORDS/ALLCHORDS_*_ANG` — imea gives lengths not angles), `POLYGONALITY*`/`HEXAGONALITY*`
+(Nyxus/WIPP-unique), `GABOR` (WND-CHARM area-fraction score, no scalar oracle), neighbor angles
+(`CLOSEST_NEIGHBOR*_ANG`, `ANG_BW_NEIGHBORS_*` — CellProfiler's `AngleBetweenNeighbors` is a different
+quantity), 3D GLDZM/NGLDM intermediate means (`3GLDZM_GLM/ZDM`, `3NGLDM_GLM/DCM` — only their
+variances have oracles), `3HYPERSKEWNESS`/`3HYPERFLATNESS` (scipy `moment` only), `3COVERED_IMAGE_INTENSITY_RANGE` (uses image dynamic range).
+**Niche only:** `ZERNIKE2D` → `mahotas.features.zernike_moments` (accept as niche or keep analytic).
+**Analytic-trivial (12):** `3INTEGRATED_INTENSITY`, `3P01/25/75/99` (numpy; IBSI has only P10/P90).
+
+**Token-set impact:** research adds **OpenCV** (min-enclosing-circle) to the tools in play; `skimage`
+and `cellprofiler` already accepted. **Family fix applied:** `ZERNIKE2D`→`zernike`, `GABOR`→`gabor`,
+`RADIAL_*`→`radial` (they were mis-bucketed under `intensity_histogram`).
+
+---
+
 ## 6. Open reconciliation decisions (need a call before Phase 3)
 
 1. **SPEC §4 oracle-token set is incomplete.** Add **`skimage`** (accepted), and decide on tokens for
