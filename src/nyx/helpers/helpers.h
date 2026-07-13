@@ -234,28 +234,17 @@ namespace Nyxus
 		return retval;
 	}
 
-	inline int closest_pow2(const int a)
-	{
-		int n = a;
-		int cnt = 0;
-		for (; n;)
-		{
-			n = n >> 1;
-			cnt++;
-		}
-		int retval = 1 << cnt;
-		return retval;
-	}
-
-	// Smallest power of two >= a (a tight ceiling, unlike closest_pow2 which is
-	// strictly greater than a). Used to pad an ROI to a box-counting grid without
-	// wasting an octave: ceil_pow2(256)=256, ceil_pow2(13)=16, ceil_pow2(1)=1.
+	// Smallest power of two >= a (a tight ceiling). Used to pad an ROI to a box-counting
+	// grid without wasting an octave: ceil_pow2(256)=256, ceil_pow2(13)=16, ceil_pow2(1)=1.
+	// Branch-free bit fill (no shift loop, so an out-of-range a cannot spin into an infinite
+	// loop the way a `while (p < a) p <<= 1` would); correct for all a in [1, 2^30].
 	inline int ceil_pow2(const int a)
 	{
-		int p = 1;
-		while (p < a)
-			p <<= 1;
-		return p;
+		if (a <= 1)
+			return 1;
+		unsigned int x = (unsigned int)(a - 1);
+		x |= x >> 1; x |= x >> 2; x |= x >> 4; x |= x >> 8; x |= x >> 16;
+		return (int)(x + 1);
 	}
 
 	inline void print_curve(const std::vector<std::pair<int, int>>& curve, const std::string& name)
