@@ -46,3 +46,18 @@ scanner slice alongside the synthetic ones. The `TEST_HU_LOADER_DICOM_CT_SMALL_*
 gtests assert pixel values computed independently with pydicom
 (`RescaleSlope*stored + RescaleIntercept`, then offset by floor(HU min) = -896).
 Obtain the original via: `python -c "from pydicom.data import get_testdata_file; print(get_testdata_file('CT_small.dcm'))"`.
+
+## pydicom oracle fixture (feature-level)
+
+| File | Type | Notes |
+|---|---|---|
+| `ct_small_hu.tif` | 128×128 signed int16 | the **true-HU field** of `CT_small.dcm` (HU = slope·stored + intercept), HU range −896..1167 |
+| `ct_small_mask.tif` | 128×128 uint16, all ones | whole-image ROI |
+
+Used by `tests/python/test_hu_ct_small_pydicom.py` — the oracle test that vets HU *feature*
+values (MIN/MAX/MEAN/INTEGRATED) against pydicom (docs/vetting SPEC.md §4 token `pydicom`). The
+pixels come from pydicom's decode of a real scanner slice and the goldens are pinned from
+pydicom+numpy, so it is an independent oracle, not a self-consistency snapshot (§5.2). Regenerate
+with `python make_ct_small_hu_fixture.py` (needs numpy + pydicom + tifffile); CI consumes only the
+committed TIFFs.
+
