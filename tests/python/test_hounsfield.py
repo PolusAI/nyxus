@@ -17,19 +17,20 @@ import nyxus
 
 DATA = pathlib.Path(__file__).resolve().parent.parent / "data" / "hounsfield"
 INTEN = str(DATA / "ct_int16.tif")
+FLOAT = str(DATA / "ct_float.tif")
 MASK = str(DATA / "mask.tif")
 
 pytestmark = pytest.mark.skipif(
-    not (os.path.exists(INTEN) and os.path.exists(MASK)),
+    not (os.path.exists(INTEN) and os.path.exists(FLOAT) and os.path.exists(MASK)),
     reason="Hounsfield TIFF fixtures not present (run tests/data/hounsfield/make_fixtures.py)",
 )
 
 FEATS = ["INTEGRATED_INTENSITY", "MEAN", "MAX", "MIN"]
 
 
-def _featurize(preserve_hu):
+def _featurize(preserve_hu, inten=INTEN):
     nyx = nyxus.Nyxus(FEATS, preserve_hu=preserve_hu)
-    df = nyx.featurize_files([INTEN], [MASK], True)
+    df = nyx.featurize_files([inten], [MASK], True)
     return {c: float(df[c].iloc[0]) for c in FEATS}
 
 
@@ -49,9 +50,16 @@ def test_preserve_hu_no_wraparound():
     assert f["MEAN"] < 1e6
 
 
-def test_preserve_hu_off_differs():
-    # With the flag off the signed values wrap, so results differ hugely from HU mode.
-    on = _featurize(True)
-    off = _featurize(False)
-    assert off["MEAN"] != pytest.approx(on["MEAN"])
-    assert off["MEAN"] > 1e6   # wrapped
+def test_preserve_hu_differs_from_default_mapping():
+    # On a FLOAT CT image both mappings are well-defined and must DIFFER:
+    #   preserve_hu=True  -> slope-1 offset domain          (MEAN 1020)
+    #   preserve_hu=False -> min-max rescale into [0, DR]    (MEAN ~5000)
+    # We compare on the float fixture on purpose: the signed-int16 no-flag path
+    # instead casts -1024 to unsigned and wraps to ~4.29e9, and pushing those absurd
+    # intensities through the pipeline can SEGFAULT on some platforms (macOS) -- which
+    # is exactly the breakage --preserve-hu exists to prevent. So we do NOT featurize
+    # that path here; the correct-HU values are pinned in test_preserve_hu_offset_domain_values.
+    on = _featurize(True, FLOAT)
+    off = _featurize(False, FLOAT)
+    assert on["MEAN"] != pytest.approx(off["MEAN"])
+    assert on["MEAN"] < 1e6 and off["MEAN"] < 1e6   # both stay sane, no wraparound
