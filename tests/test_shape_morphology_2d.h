@@ -349,15 +349,11 @@ static void calculate_fractal_blob512_feature_values(std::vector<std::vector<dou
 				px.push_back(NyxusPixel{ x, y, (unsigned int)v });
 		}
 
+	// Finalize the ROI through the shared masked-loader helper (raw_pixels -> AABB -> image matrix)
+	// instead of re-implementing those steps inline, so this fixture tracks the same finalize path
+	// the other 2D shape tests use. (intensity == mask here: the shape features ignore intensity.)
 	LR roidata(1);
-	load_test_roi_data(roidata, px.data(), px.size());
-	// KEEP IN SYNC WITH the production masked-ROI finalize (scanTrivialRois / the masked loader):
-	// load_test_roi_data only fills raw_pixels, so we reproduce the finalize steps here. If the
-	// pipeline ever changes how an ROI is finalized (AABB/anisotropy, matrix fill, a normalization
-	// step), update this block too - otherwise the fixture validates an ROI the pipeline never makes.
-	roidata.make_nonanisotropic_aabb();
-	roidata.aux_image_matrix.allocate(roidata.aabb.get_width(), roidata.aabb.get_height());
-	roidata.aux_image_matrix.calculate_from_pixelcloud(roidata.raw_pixels, roidata.aabb);
+	load_masked_test_roi_data(roidata, px.data(), px.data(), px.size());
 	roidata.initialize_fvals();
 
 	BasicMorphologyFeatures basic;
