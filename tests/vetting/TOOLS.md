@@ -17,6 +17,7 @@ research pass per tool; see per-tool detail below and the setup matrix first.
 | `imagej` | pinned tarball | **download** Fiji `ImageJ-linux64 --headless` | med-high | morphology/intensity/GLCM headless (GLCM via batch wrapper) |
 | `fraclac` | — | ImageJ plugin (GUI) **+ headless-macro reimpl** | med-high* | plugin is GUI-only, but its shifting-grid method runs headless via our macro (*see reconciliation) |
 | `mitk` | 2023.04 | **build-once Docker** (`ClassificationCmdApps` config) | med | no prebuilt image; ~2–3 h one-time CLI-only build → reusable pinned image |
+| `pydicom` | 3.0.2 | **venv** `pip install pydicom` (pure-Python) | high | DICOM decode + `Rescale*` → HU; offline fixture/golden gen for `--preserve-hu` (CT) |
 
 ## Corrections / notable findings
 
@@ -64,6 +65,7 @@ research pass per tool; see per-tool detail below and the setup matrix first.
 | Nyxus family | headless oracles available |
 |--------------|----------------------------|
 | First-order / intensity | pyradiomics, mirp, radiomicsj, feature2djava, cellprofiler |
+| First-order on CT / Hounsfield (`--preserve-hu`) | **pydicom** (decode + rescale → HU reference) |
 | Intensity histogram | mirp, radiomicsj, (analytic) |
 | GLCM (Haralick) | pyradiomics, mirp, radiomicsj, feature2djava, cellprofiler, imagej, wndcharm |
 | GLRLM / GLSZM / GLDM / NGTDM | pyradiomics, mirp, radiomicsj |

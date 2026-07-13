@@ -2,26 +2,25 @@
 
 #include <gtest/gtest.h>
 #include "../src/nyx/slideprops.h"
-#include "../src/nyx/cli_fpimage_options.h"
 
 // ---------------------------------------------------------------------------
-// Hounsfield-Unit (HU) / CT intensity handling — baseline unit tests.
+// Hounsfield-Unit (HU) / CT intensity handling — ANALYTIC unit tests.
 //
-// These pin down the CURRENT behavior of the single load-time quantization
-// primitive that HU preservation will modify:
+// Oracle: closed form (SPEC.md §4 token `analytic`). These pin the load-time
+// quantization primitive against hand-computed ground truth:
 //
 //     SlideProps::uint_friendly_inten(double x, double uint_dynrange)
 //         (nyxus-src/src/nyx/slideprops.h)
 //
-// Today it has two branches:
+// Three branches:
 //   * fp_phys_pivoxels == true : clamp x to [min_preroi, max_preroi] then
 //     min-max map onto [0, uint_dynrange]  (destroys absolute HU, keeps shape).
-//   * fp_phys_pivoxels == false: raw (unsigned int) cast — which WRAPS for
-//     negative CT stored values (e.g. -1024 HU) and is the bug HU mode fixes.
+//   * fp_phys_pivoxels == false: raw (unsigned int) cast — WRAPS for negative CT
+//     stored values (e.g. -1024 HU); the bug HU mode fixes.
+//   * preserve_hu == true      : slope-1 offset u = round(x - floor(min)), so
+//     1 HU == 1 grey level and negative CT no longer wraps.
 //
-// A future "preserve HU" path will add an offset-preserving branch
-// (u = x - floor(global_min)). Until then these tests are the regression net
-// for the function's existing, well-defined behavior.
+// (Mechanics of the CLI/option plumbing live in test_hu_mechanics.h.)
 // ---------------------------------------------------------------------------
 
 // fp_phys_pivoxels==true: min-max normalization over a CT-like HU span.
@@ -72,28 +71,4 @@ void test_hu_uint_friendly_preserve_offset()
     EXPECT_EQ(p.uint_friendly_inten(3071.0, DR), 4095u);    // bone -> full span
     EXPECT_EQ(p.uint_friendly_inten(100.0, DR), 1124u);     // 1 HU == 1 grey level
     EXPECT_EQ(p.uint_friendly_inten(-2000.0, DR), 0u);      // sub-min outlier clamps to 0
-}
-
-// FpImageOptions parses the --preserve-hu raw string into the preserve_hu() flag
-// via Nyxus::parse_as_bool (accepts TRUE/FALSE/T/F, case-insensitive).
-// Default is off; empty leaves it off; a non-boolean is a parse error.
-void test_hu_fpimage_options_parse()
-{
-    FpImageOptions off;
-    ASSERT_TRUE(off.parse_input());
-    EXPECT_FALSE(off.preserve_hu());             // absent -> default off
-
-    FpImageOptions on;
-    on.raw_preserve_hu = "true";
-    ASSERT_TRUE(on.parse_input());
-    EXPECT_TRUE(on.preserve_hu());
-
-    FpImageOptions onF;
-    onF.raw_preserve_hu = "False";               // case-insensitive
-    ASSERT_TRUE(onF.parse_input());
-    EXPECT_FALSE(onF.preserve_hu());
-
-    FpImageOptions bad;
-    bad.raw_preserve_hu = "banana";
-    EXPECT_FALSE(bad.parse_input());             // non-boolean -> parse error
 }

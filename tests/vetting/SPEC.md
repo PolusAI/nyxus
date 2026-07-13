@@ -45,7 +45,7 @@ Consequences:
 | **Mechanics** | Does the plumbing work (gating, defaults, I/O)? | No | `_mechanics` |
 
 `<oracle>` ∈ the §4 tokens: { `pyradiomics`, `radiomicsj`, `mirp`, `matlab`, `cellprofiler`, `mitk`,
-`feature2djava`, `wndcharm`, `imea`, `imagej`, `fraclac`, `ibsi`, `analytic` }.
+`feature2djava`, `wndcharm`, `imea`, `imagej`, `fraclac`, `pydicom`, `ibsi`, `analytic` }.
 
 A single feature family (e.g. GLCM) typically has: one oracle file per reference that covers it,
 plus one regression file. Correctness lives in the oracle files; the regression file is a pure
@@ -110,6 +110,7 @@ churn names).
 | `imagej` | ImageJ / Fiji | GLCM texture, shape descriptors, intensity | Java / macro |
 | `fraclac` | FracLac (ImageJ plugin) | fractal dimension (box-count) | Java / macro |
 | `mirp` | MIRP | texture, first-order, shape (IBSI-compliant) | Python |
+| `pydicom` | pydicom 3.0.2 | DICOM decode + `RescaleSlope`/`RescaleIntercept` → true HU (CT) | Python |
 | `ibsi` | IBSI reference tables | texture + first-order consensus values | hardcoded |
 | `analytic` | closed-form / hand-computed | any (on tiny fixtures) | in-test |
 
@@ -122,6 +123,12 @@ Notes:
 - **Fractal dimension** (`FRACT_DIM_BOXCOUNT`) → `fraclac` (the ImageJ box-count plugin) is the
   reference; already used on the fractal branch. `FRACT_DIM_PERIMETER` (divider/Richardson) has no
   tool → `analytic` + cross-method convergence.
+- **`pydicom`** is the reference DICOM reader for CT / Hounsfield Units: it decodes the stored
+  pixels and applies `RescaleSlope`/`RescaleIntercept` to true HU. It vets the `--preserve-hu` path —
+  the loader-pixel values and the first-order HU stats (MIN/MAX/MEAN/INTEGRATED) on a real
+  `CT_small.dcm` slice are pinned from pydicom, not recomputed from the Nyxus offset formula, so the
+  assertion is a genuine oracle rather than a self-consistency snapshot (§5.2). Offline generator
+  only; never a CI runtime dependency (the derived TIFF fixture is committed).
 - Flag any family no listed tool covers as we go.
 
 **Rule: reference tools are never CI runtime dependencies.** Goldens are generated *offline* by a
