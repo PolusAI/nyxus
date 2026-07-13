@@ -142,7 +142,7 @@ _FIXTURE = str(Path(__file__).resolve().parent.parent / "data" / "fractal_blob51
 def test_arbitrary_roi_matches_oracle():
     """Large arbitrary ROI read from the committed OME-TIFF (production file path):
       - box-count matches the same-method box-count oracle tightly (1%);
-      - the divider perimeter matches the cross-method edge box-count oracle (10%)."""
+      - the divider perimeter matches the cross-method edge box-count oracle (3%)."""
     nyx = nyxus.Nyxus(features=["*ALL_MORPHOLOGY*"], n_feature_calc_threads=1)
     row = nyx.featurize_files(intensity_files=[_FIXTURE], mask_files=[_FIXTURE],
                               single_roi=False).iloc[0]
@@ -150,5 +150,5 @@ def test_arbitrary_roi_matches_oracle():
     pf = float(row[[c for c in row.index if c.endswith("FRACT_DIM_PERIMETER")][0]])
     assert abs(bc - ORACLE_BOXCOUNT) < ORACLE_BOXCOUNT * 0.01, \
         f"box-count {bc:.4f} vs same-method oracle {ORACLE_BOXCOUNT}"
-    assert abs(pf - ORACLE_PERIMETER_EDGE) < ORACLE_PERIMETER_EDGE * 0.10, \
+    assert abs(pf - ORACLE_PERIMETER_EDGE) < ORACLE_PERIMETER_EDGE * 0.03, \
         f"perimeter {pf:.4f} vs cross-method edge-box-count oracle {ORACLE_PERIMETER_EDGE}"

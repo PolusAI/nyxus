@@ -74,7 +74,8 @@ static std::unordered_map<std::string, double> unvetted_nyxus_regression_shape2d
 //   FRACT_DIM_BOXCOUNT  = box count of the filled ROI (single origin-aligned grid, the same method
 //                         as Nyxus' large-ROI path) -> 1.8706, asserted at 1%.
 //   FRACT_DIM_PERIMETER = box count of the ROI edge (cross-method vs Nyxus' Richardson divider,
-//                         estimating the same boundary dimension) -> 1.0493, asserted at 10%.
+//                         estimating the same boundary dimension) -> 1.0493, asserted at 3%
+//                         (Nyxus divider = 1.0572, a 0.8% gap).
 static std::unordered_map<std::string, double> oracle_fractal_blob512_golden_values{
 	{"FRACT_DIM_BOXCOUNT", 1.8706},   // vetted by ImageJ/FracLac: an independent implementation of the same box-count method
 	{"FRACT_DIM_PERIMETER", 1.0493},  // vetted by ImageJ/FracLac edge box-count: cross-method vs Nyxus' divider
@@ -378,12 +379,12 @@ void test_shape2d_fractal_dimension_blob512_oracle()
 	calculate_fractal_blob512_feature_values(fvals);
 
 	// FRACT_DIM_BOXCOUNT: same method as the oracle (single origin-aligned box count) -> tight.
-	// FRACT_DIM_PERIMETER: cross-method (Nyxus divider vs box-count-of-edge) -> 10% tolerance.
+	// FRACT_DIM_PERIMETER: cross-method (Nyxus divider vs box-count-of-edge) -> 3% tolerance.
 	SCOPED_TRACE("FRACT_DIM_BLOB512_ORACLE");
 	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(Nyxus::Feature2D::FRACT_DIM_BOXCOUNT)][0],
 		oracle_fractal_blob512_golden_values["FRACT_DIM_BOXCOUNT"], 100.0));    // 1% (same method)
 	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(Nyxus::Feature2D::FRACT_DIM_PERIMETER)][0],
-		oracle_fractal_blob512_golden_values["FRACT_DIM_PERIMETER"], 10.0));    // 10% (cross method)
+		oracle_fractal_blob512_golden_values["FRACT_DIM_PERIMETER"], 33.0));    // ~3% (cross method)
 }
 
 void test_shape2d_unvetted_no_direct_oracle_radius_features()
