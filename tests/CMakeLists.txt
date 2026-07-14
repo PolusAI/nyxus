@@ -14,17 +14,14 @@ endforeach()
 
 set(TEST_SRC
 	test_all.cc
-	test_contour.h
-	test_pixel_intensity_features.h
-	test_data.h
 	test_gabor_regression.cc
-	test_gabor_regression.h
-	test_initialization.h
-	test_3d_nifti.h
-	test_omezarr.h
-	test_tiff_loader.h
 	${TEST_SOURCE_FILES}
 )
+# NOTE: individual test_*.h headers are intentionally NOT listed here. They are pulled in via #include
+# (relative to test_all.cc), so listing them adds nothing to the build and only creates reconfigure
+# breakage every time a header is renamed during the vetting migration (e.g. the long-stale
+# test_pixel_intensity_features.h entry, renamed away in Wave 4, that blocked reconfigure). Only real
+# compile units belong here.
 add_executable(runAllTests ${TEST_SRC})
 
 if(USEGPU)

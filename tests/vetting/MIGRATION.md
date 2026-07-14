@@ -311,11 +311,37 @@ TU, so the common header keeps the forward declaration. Verified: **696/696 — 
 - `test_3d_morphology_matlab.h` — `3MESH_VOLUME` (registry matlab/vetted) + the covariance/eigenvalue
   math test (`Pixel3::calc_cov_matrix` / `Nyxus::calc_eigvals`) whose GT is MATLAB `cov()`/`eig()`.
 
-9 registry rows repointed (they also list `test_3d_feature_coverage.h`, which still carries duplicate
-3D-shape assertions until the big cross-cutting split lands).
+9 registry rows repointed (they also list `test_3d_feature_coverage.h`, split in Wave 9).
 
-**Still remaining:** `test_3d_feature_coverage.h` (the 213-assertion cross-cutting 3D split — biggest),
-and the mechanics/fixture renames (§6.3). Then regenerate `coverage_report.md`.
+## 5.17 Wave 9 (`test_3d_feature_coverage.h` per-family split) — executed
+
+The biggest and most delicate migration. This file is not a per-family oracle test but a **parameterized
+completeness sweep**: `INSTANTIATE_TEST_SUITE_P` over all 213 user-facing 3D features (94 with an embedded
+3rd-party oracle + 119 local-regression), plus a global count-guard. Split per family (§6.5):
+- `test_3d_coverage_common.h` (`git mv` from `test_3d_feature_coverage.h`): the whole shared harness
+  (`build_computed_3d_feature_values` cache, GT maps, assert helpers), the two `TestWithParam` fixtures
+  and their `TEST_P` bodies, the `TEST_3D_FEATURE_COVERAGE_COUNTS` guard, plus new
+  `feature_3d_family_table()` / `family_of_3d_feature()` / `feature_3d_cases_for_family()` helpers that
+  classify each feature by first-match on the calculator featuresets.
+- `test_3d_<family>_coverage.h` × 9 (glcm, gldm, gldzm, glrlm, glszm, ngldm, ngtdm, morphology,
+  firstorder): each re-instantiates the two suites filtered to its family, with a unique prefix. Empty
+  (family, kind) pairs (e.g. `GLDM_UNVETTED`, `GLDZM_EMBEDDED`) compile to zero tests without error.
+
+First-match classification guarantees each feature lands in exactly one family, so the 94+119+1 split is
+preserved. Verified: the per-family instance counts (firstorder 36, glcm 59, gldm 14, gldzm 18, glrlm 32,
+glszm 16, morphology 14, ngldm 19, ngtdm 5 = 213) match the registry `family` column exactly; **full
+gtest suite 696/696 — no tests dropped**; 213 registry rows repointed.
+
+**Build-infra fix (long-latent, unblocked this wave):** `tests/CMakeLists.txt` `TEST_SRC` listed
+individual `test_*.h` headers, including `test_pixel_intensity_features.h` which was renamed away in
+Wave 4. Headers are pulled via `#include`, never compiled from the source list, so the stale entry sat
+dormant until a CMakeLists edit forced a reconfigure — then it hard-failed ("Cannot find source file").
+Removed all cosmetic `.h` entries, leaving only real compile units (`test_all.cc`,
+`test_gabor_regression.cc`, `${TEST_SOURCE_FILES}`). This makes the remaining renames (§6.3) safe. (Note:
+because reconfigure had been silently failing, Waves 7–8 were only genuinely compiled once this fix
+landed; the current tree builds clean and passes 696/696.)
+
+**Still remaining:** the mechanics/fixture renames (§6.3). Then regenerate `coverage_report.md`.
 
 ---
 
