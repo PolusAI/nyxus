@@ -185,7 +185,7 @@ double BasicGeomoms2D::centralMom(const pixcloud& cloud, int p, int q)
     for (auto& pxl : cloud)
     {
         double I = INTEN(double(pxl.inten));
-        sum += I * int_pow(double(pxl.x - baseX) - (int)originOfX, p) * int_pow(double(pxl.y - baseY) - (int)originOfY, q);
+        sum += I * int_pow(double(pxl.x - baseX) - originOfX, p) * int_pow(double(pxl.y - baseY) - originOfY, q);
     }
     return sum;
 }
@@ -198,7 +198,7 @@ double BasicGeomoms2D::centralMom(const pixcloud& cloud, const reintenvec& reali
     for (size_t i = 0; i < n; i++)
     {
         auto& pxl = cloud[i];
-        sum += realintens[i] * int_pow(double(pxl.x - baseX) - (int)originOfX, p) * int_pow(double(pxl.y - baseY) - (int)originOfY, q);
+        sum += realintens[i] * int_pow(double(pxl.x - baseX) - originOfX, p) * int_pow(double(pxl.y - baseY) - originOfY, q);
     }
     return sum;
 }
