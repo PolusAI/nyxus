@@ -17,8 +17,8 @@ set(TEST_SRC
 	test_contour.h
 	test_pixel_intensity_features.h
 	test_data.h
-	test_gabor.cc
-	test_gabor.h
+	test_gabor_regression.cc
+	test_gabor_regression.h
 	test_initialization.h
 	test_3d_nifti.h
 	test_omezarr.h

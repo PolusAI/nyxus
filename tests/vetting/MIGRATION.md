@@ -286,8 +286,17 @@ filename. The shared header spans 3 families deliberately — the single compute
 morphology, radial, and zernike features from one ROI, so a per-family common would triplicate it.
 
 **Still remaining:** `test_3d_feature_coverage.h` (the 213-assertion cross-cutting 3D split — biggest),
-`test_3d_shape.h`, `gabor` (`test_gabor.h` → `test_gabor_regression.h`), and the mechanics/fixture
-renames (§6.3). Then regenerate `coverage_report.md`.
+`test_3d_shape.h`, and the mechanics/fixture renames (§6.3). Then regenerate `coverage_report.md`.
+
+## 5.15 Wave 7 (gabor) — executed
+
+Trivial 1-feature family rename (§6.4). The `.h`/`.cc` pair renamed `git mv`:
+`test_gabor.{h,cc}` → `test_gabor_regression.{h,cc}`; `test_gabor_truth.h` (oracle-data fixture)
+left unrenamed like `test_data.h`. Updated the `#include` inside the `.cc`, the `test_all.cc`
+include, and the two CMakeLists `TEST_SRC` lines (the `.cc` is a real compile unit; note pre-existing
+stale header entries there, e.g. `test_pixel_intensity_features.h`, are tolerated by CMake). Registry
+`current_test` for GABOR repointed `test_gabor.cc` → `test_gabor_regression.cc`. Verified: **696/696 —
+no tests dropped.**
 
 ---
 
