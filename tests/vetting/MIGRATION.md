@@ -55,7 +55,7 @@ Naming: `test_[3d_]<family>_<kind>.{h,py}`, one kind per file (SPEC §2). `<kind
 | Family | n (v/r/u) | Oracles | Current files | → Target files |
 |---|---|---|---|---|
 | **moments** | 180 (78/102/0) | skimage | `test_2d_geometric_moments.h` | `test_moments_skimage.h`, `test_moments_regression.h` |
-| **glcm** | 118 (72/46/0) | pyradiomics, matlab, mirp | `test_glcm.h`, `test_glcm_oracle.h`, `test_ibsi_glcm.h`, `test_3d_glcm.h`, `test_compat_3d_glcm.h`, `test_glcm_oracle.py` | `test_glcm_pyradiomics.h`, `test_glcm_matlab.h`, `test_glcm_ibsi.h`, `test_glcm_regression.h`, `test_3d_glcm_pyradiomics.h`, `test_3d_glcm_mirp.h`, `test_3d_glcm_regression.h`, `test_glcm_pyradiomics.py` |
+| **glcm** ✅ DONE (Wave 2) | 118 (72/46/0) | pyradiomics, matlab, mirp | `test_glcm.h`, `test_glcm_oracle.h`, `test_ibsi_glcm.h`, `test_compat_3d_glcm.h`, `test_glcm_oracle.py` (+orphan `test_3d_glcm.h`) | `test_glcm_regression.h`, `test_glcm_mechanics.h`, `test_glcm_ibsi.h`, `test_3d_glcm_pyradiomics.h`, `test_glcm_pyradiomics.py` |
 | **morphology** | 113 (39/74/0) | matlab, cellprofiler, skimage, imea | `test_shape_morphology_2d.h`, `test_2d_remaining_features.h`, `test_3d_shape.h`, `test_feature_oracle.py`, `test_convex_hull_invariants.py`, `test_fractal_dim_oracle.py` | `test_morphology_matlab.h`, `test_morphology_cellprofiler.h`, `test_morphology_skimage.h`, `test_morphology_imea.h`, `test_morphology_regression.h`, `test_morphology_invariant.py`, `test_3d_morphology_*.h` |
 | **firstorder** | 72 (51/21/0) | matlab, pyradiomics | `test_pixel_intensity_features.h`, `test_ibsi_intensity.h`, `test_3d_inten.h`, `test_compat_3d_fo_radiomics.h` | `test_firstorder_matlab.h`, `test_firstorder_pyradiomics.h`, `test_firstorder_regression.h`, `test_3d_firstorder_pyradiomics.h`, `test_3d_firstorder_regression.h` |
 | **glrlm** | 64 (38/26/0) | pyradiomics, mirp | `test_glrlm.h`, `test_ibsi_glrlm.h`, `test_3d_glrlm.h`, `test_compat_3d_glrlm.h` | `test_glrlm_pyradiomics.h`, `test_glrlm_regression.h`, `test_3d_glrlm_pyradiomics.h`, `test_3d_glrlm_mirp.h`, `test_3d_glrlm_regression.h` |
@@ -154,6 +154,29 @@ variances have oracles), `3HYPERSKEWNESS`/`3HYPERFLATNESS` (scipy `moment` only)
 **Token-set impact:** research adds **OpenCV** (min-enclosing-circle) to the tools in play; `skimage`
 and `cellprofiler` already accepted. **Family fix applied:** `ZERNIKE2D`→`zernike`, `GABOR`→`gabor`,
 `RADIAL_*`→`radial` (they were mis-bucketed under `intensity_histogram`).
+
+---
+
+## 5.9 Wave 2 (GLCM) — executed, with map corrections
+
+The GLCM migration (first code wave) is done — 5 live files renamed (history-preserving `git mv`),
+`test_all.cc` includes updated, verified locally: **full gtest suite 696/696 pass, GLCM 166/166**.
+Three corrections to the original map surfaced during execution:
+
+1. **`test_glcm_oracle.h` was mislabeled** — it's not a pyradiomics oracle, it's a *mechanics* guard
+   for the GLCM offset=0 default bug → renamed `test_glcm_mechanics.h` (not `_pyradiomics.h`).
+2. **The 2D pyradiomics oracle is the Python test** `test_glcm_oracle.py` → `test_glcm_pyradiomics.py`.
+   There is no C++ `test_glcm_pyradiomics.h`/`test_glcm_matlab.h`; the C++ GLCM files are
+   regression/mechanics/ibsi snapshots, and the 2D pyradiomics/matlab vetting lives in Python/offline.
+   (The registry's `target_test` for those 2D rows is aspirational until such oracle assertions exist.)
+3. **`test_3d_glcm.h` is orphaned** — not `#include`d in `test_all.cc`; its 26 `test_3glcm_*` functions
+   never run. Left untouched and flagged in the registry `notes` (decision A). Live 3D-GLCM coverage
+   comes from `test_3d_glcm_pyradiomics.h` (ex-`test_compat_3d_glcm.h`) + parameterized
+   `test_3d_feature_coverage.h`. A later triage decides delete-vs-wire-in.
+
+**Lesson for later waves:** don't trust the file's *name* for its kind, and confirm each file is
+actually `#include`d/registered before treating it as live — the audit/tracker inferred kind from
+names and missed both the mechanics mislabel and the orphan.
 
 ---
 
