@@ -83,3 +83,7 @@ jobs:
     - name: Run PyTest
       working-directory: ${{github.workspace}}
       run: python -m pytest tests/python/  -vv
+
+    - name: Validate vetting registry
+      working-directory: ${{github.workspace}}
+      run: python3 tests/vetting/check_coverage.py --check
