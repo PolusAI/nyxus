@@ -343,6 +343,24 @@ landed; the current tree builds clean and passes 696/696.)
 
 **Still remaining:** the mechanics/fixture renames (§6.3). Then regenerate `coverage_report.md`.
 
+## 5.18 Wave 10 (mechanics/fixture renames, §6.3) — executed
+
+Renamed the I/O + plumbing tests to the `_mechanics` suffix (`git mv`, headers only; the test function
+names and their `TEST()` registrations are unchanged, so nothing drops):
+`test_initialization`, `test_roi_blacklist`, `test_tiff_loader`, `test_3d_nifti`, `test_omezarr`,
+`test_arrow`, `test_arrow_file_name` → `*_mechanics.h`. Only the seven `#include` lines in `test_all.cc`
+changed. Pure fixtures/harness (`test_data.h`, `test_main_nyxus.h`, `test_dsb2018_data.h`,
+`test_tissuenet_data.py`) left unrenamed per §6.3. None of these files appear in the registry
+`current_test` (they are plumbing, not feature-oracle rows), so no repoint was needed. Verified: **full
+gtest suite 696/696 — no tests dropped.**
+
+Note: `test_arrow_mechanics.h` / `test_arrow_file_name_mechanics.h` are under `#ifdef USE_ARROW`, which is
+OFF in the local `nyxus-vet` build, so their rename is correct-by-inspection but not compile-exercised
+here. The `test_nyxus.py` API-assertion split (§6.3) is a Python-side follow-up, not done in this wave.
+
+All C++ test files now follow the `test_[3d_]<family>_<kind>.{h}` / `test_<area>_mechanics.h` taxonomy.
+`coverage_report.md` regenerated.
+
 ---
 
 ## 6. Reconciliation decisions (RESOLVED)
