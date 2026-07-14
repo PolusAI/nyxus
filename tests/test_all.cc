@@ -26,6 +26,7 @@
 #include "test_gldzm_ibsi.h"
 #include "test_glszm_ibsi.h"
 #include "test_firstorder_ibsi.h"
+#include "test_firstorder_pyradiomics.h"
 #include "test_ngldm_ibsi.h"
 #include "test_ngtdm_ibsi.h"
 #include "test_glcm_regression.h"
@@ -721,7 +722,12 @@ TEST(TEST_NYXUS, TEST_INITIALIZATION) {
 
 //***** Pixel intensity features ***** 
 
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_INTEGRATED_INTENSITY) 
+TEST(TEST_NYXUS, TEST_FIRSTORDER_PYRADIOMICS_ORACLE)
+{
+	ASSERT_NO_THROW(test_firstorder_pyradiomics_oracle());
+}
+
+TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_INTEGRATED_INTENSITY)
 {
 	ASSERT_NO_THROW(test_pixel_intensity_integrated_intensity());
 }
