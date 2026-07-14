@@ -298,6 +298,25 @@ stale header entries there, e.g. `test_pixel_intensity_features.h`, are tolerate
 `current_test` for GABOR repointed `test_gabor.cc` → `test_gabor_regression.cc`. Verified: **696/696 —
 no tests dropped.**
 
+## 5.16 Wave 8 (`test_3d_shape.h` → 3D morphology) — executed
+
+`test_3d_shape.h` (10 functions, shared `d3shape_GT` map + `test_3shape_feature` helper) split by
+registry `target_test`. `get_3d_segmented_phantom()` is defined once in the live
+`test_3d_glcm_pyradiomics.h` and only forward-declared `static` elsewhere in the single `test_all.cc`
+TU, so the common header keeps the forward declaration. Verified: **696/696 — no tests dropped.**
+- `test_3d_morphology_common.h` (`git mv` from `test_3d_shape.h`): `#pragma once`; `d3shape_GT`, the
+  `get_3d_segmented_phantom` forward decl, and the `test_3shape_feature` helper.
+- `test_3d_morphology_regression.h` — 8 self-referential-snapshot shape features (area, area2volume,
+  compactness1/2, spherical_disproportion, sphericity, volumeconvhull, voxelvolume).
+- `test_3d_morphology_matlab.h` — `3MESH_VOLUME` (registry matlab/vetted) + the covariance/eigenvalue
+  math test (`Pixel3::calc_cov_matrix` / `Nyxus::calc_eigvals`) whose GT is MATLAB `cov()`/`eig()`.
+
+9 registry rows repointed (they also list `test_3d_feature_coverage.h`, which still carries duplicate
+3D-shape assertions until the big cross-cutting split lands).
+
+**Still remaining:** `test_3d_feature_coverage.h` (the 213-assertion cross-cutting 3D split — biggest),
+and the mechanics/fixture renames (§6.3). Then regenerate `coverage_report.md`.
+
 ---
 
 ## 6. Reconciliation decisions (RESOLVED)
