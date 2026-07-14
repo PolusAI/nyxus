@@ -207,6 +207,32 @@ mechanics/fixture renames (§6.3).
 
 ---
 
+## 5.11 Wave 4 (intensity, moments, neighbor, imq) — executed, with the first real split
+
+Migrated: **firstorder, intensity_histogram, moments, neighbor, imq**. Verified locally:
+**full gtest suite 696/696 — no tests dropped.**
+
+- **firstorder** (family not in the filenames): `test_pixel_intensity_features.h` →
+  `test_firstorder_regression.h`; `test_ibsi_intensity.h` → `test_firstorder_ibsi.h`;
+  `test_compat_3d_fo_radiomics.h` → `test_3d_firstorder_pyradiomics.h`. `test_3d_inten.h` is
+  **orphaned** (not `#include`d) → left + flagged (decision A).
+- **intensity_histogram** → `test_intensity_histogram_regression.h`; **neighbor** →
+  `test_neighbor_regression.h`; **imq** → `test_imq_regression.h`. (Conservative `_regression` labels
+  where the C++ file pins goldens; oracle vetting for these is external/offline, refinable later.)
+- **moments — first genuine split.** `test_2d_geometric_moments.h` cleanly separated (4 functions,
+  4 golden vectors) into three files: `test_moments_common.h` (shared fixture/helpers, `#pragma once`),
+  `test_moments_skimage.h` (the two `oracle_3p_*` vectors + `*_verifiable_with_3p_builtin_oracle`
+  functions), `test_moments_regression.h` (the two `unvetted_*` vectors + `*_unvetted_no_direct_oracle`
+  functions). Byte-for-byte preserved (311→315 lines, +4 for the two header preambles); all 4 TESTs
+  still register (696 unchanged). The common-header pattern avoids ODR duplication since both headers
+  compile into the single `test_all.cc` TU.
+
+**Still remaining:** the **morphology mega-split** (`test_shape_morphology_2d.h`, the largest), the
+cross-cutting `test_2d_remaining_features.h` + `test_3d_feature_coverage.h` splits, `test_3d_shape.h`,
+`gabor`/`zernike`/`radial`, and the mechanics/fixture renames (§6.3).
+
+---
+
 ## 6. Reconciliation decisions (RESOLVED)
 
 1. **SPEC §4 oracle-token set** — add **`skimage`** (mainstream; 60+ moment features + circularity).
