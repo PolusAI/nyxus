@@ -157,19 +157,23 @@ and `cellprofiler` already accepted. **Family fix applied:** `ZERNIKE2D`→`zern
 
 ---
 
-## 6. Open reconciliation decisions (need a call before Phase 3)
+## 6. Reconciliation decisions (RESOLVED)
 
-1. **SPEC §4 oracle-token set is incomplete.** Add **`skimage`** (accepted), and decide on tokens for
-   the non-mainstream tools seen in the tracker (`diplib`/`mahotas`/`centrosome`) — currently routed to
-   regression. Recommend: extend §4 to list `skimage`; leave the others unlisted (regression).
-2. **Feature count 758 (featureset.h) vs 705 (tracker).** Confirm `featureset.h` is authoritative; the
-   53 `not-in-tracker` rows are the delta to classify.
-3. **Mechanics/fixture files** (§4 list) — do they get a `_mechanics` suffix and stay in `tests/`, or
-   stay untouched? Recommend: rename the plumbing tests to `test_<area>_mechanics.*`; leave pure
-   fixtures/harness (`test_data.h`, `test_main_nyxus.h`) unrenamed.
-4. **IMQ + Gabor naming.** IMQ → `test_imq_*` (no double prefix); Gabor is a 1-feature family — confirm
-   `test_gabor_*` vs folding into morphology/texture.
-5. **`test_3d_feature_coverage.h` split** — the single biggest mechanical task (213 assertions → per-family 3D files). Confirm this split is in scope for the 3D waves.
+1. **SPEC §4 oracle-token set** — add **`skimage`** (mainstream; 60+ moment features + circularity).
+   `DIAMETER_MIN_ENCLOSING_CIRCLE` vets against **imea** (already a token), not OpenCV. `mahotas`,
+   `DIPlib`, `Centrosome` are **not** accepted → features only they cover stay regression/analytic
+   (so `ZERNIKE2D` is **analytic**, not mahotas-vetted).
+2. **Feature count 758 vs 705** — `featureset.h` is authoritative. The 53-feature delta is fully
+   explained: **47 IH `_VAL` variants** (bin-center twins of the `_IDX` features; analytic per §5.8)
+   **+ 6 IMQ**. No mystery features; no further research.
+3. **Mechanics/fixture files** — rename I/O + plumbing tests to `test_<area>_mechanics.*`
+   (`test_tiff_loader`, `test_omezarr`, `test_arrow*`, `test_3d_nifti`, `test_initialization`,
+   `test_roi_blacklist`, and the API assertions in `test_nyxus.py`). Leave pure fixtures/harness
+   (`test_data.h`, `test_main_nyxus.h`, `test_dsb2018_data.h`, `test_tissuenet_data.py`) **unrenamed**.
+4. **IMQ + Gabor naming** — IMQ → `test_imq_<kind>.h` (single prefix, `imq_imq` glitch fixed). Gabor
+   keeps its own 1-feature family file (`test_gabor_regression.h`); `ZERNIKE2D` → `test_zernike_regression.h`.
+5. **`test_3d_feature_coverage.h` split** — confirmed **in scope** for the 3D waves (213 assertions →
+   per-family `test_3d_<family>_*` files); the single biggest mechanical task.
 
 ---
 
