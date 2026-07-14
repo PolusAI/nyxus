@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include "../src/nyx/features/gabor.h"
 #include "../src/nyx/features/intensity.h"
-#include "test_gabor.h"
+#include "test_gabor_regression.h"
 #include "test_gabor_truth.h"
 #include "test_main_nyxus.h"
 

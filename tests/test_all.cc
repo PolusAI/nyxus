@@ -1,6 +1,6 @@
 #define NOMINMAX	// keep Windows min/max macros from breaking dcmtk's OFvariant (DICOM tests)
 #include <gtest/gtest.h>
-#include "test_gabor.h"
+#include "test_gabor_regression.h"
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
 #include "test_contour.h"
