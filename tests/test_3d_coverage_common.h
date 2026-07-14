@@ -483,6 +483,48 @@ static std::vector<Feature3DCoverageCase> feature_3d_cases(bool require_embedded
 	return out;
 }
 
+// Per-family partition of the coverage sweep. Each public 3D feature belongs to exactly one calculator
+// featureset; first match wins so every case lands in exactly one family (the 94+119 split is preserved
+// regardless of any incidental featureset overlap). The per-family test_3d_<family>_coverage.h files
+// re-instantiate the two parameterized suites below, filtered through feature_3d_cases_for_family().
+static const std::vector<std::pair<std::string, std::set<Nyxus::Feature3D>>>& feature_3d_family_table()
+{
+	static const std::vector<std::pair<std::string, std::set<Nyxus::Feature3D>>> table = [] {
+		auto mk = [](std::initializer_list<Nyxus::Feature3D> fs) {
+			return std::set<Nyxus::Feature3D>(fs.begin(), fs.end());
+		};
+		std::vector<std::pair<std::string, std::set<Nyxus::Feature3D>>> t;
+		t.emplace_back("glcm", mk(D3_GLCM_feature::featureset));
+		t.emplace_back("gldm", mk(D3_GLDM_feature::featureset));
+		t.emplace_back("gldzm", mk(D3_GLDZM_feature::featureset));
+		t.emplace_back("glrlm", mk(D3_GLRLM_feature::featureset));
+		t.emplace_back("glszm", mk(D3_GLSZM_feature::featureset));
+		t.emplace_back("ngldm", mk(D3_NGLDM_feature::featureset));
+		t.emplace_back("ngtdm", mk(D3_NGTDM_feature::featureset));
+		t.emplace_back("morphology", mk(D3_SurfaceFeature::featureset));
+		t.emplace_back("firstorder", mk(D3_VoxelIntensityFeatures::featureset));
+		return t;
+	}();
+	return table;
+}
+
+static std::string family_of_3d_feature(Nyxus::Feature3D code)
+{
+	for (const auto& fam : feature_3d_family_table())
+		if (fam.second.count(code))
+			return fam.first;
+	return "unknown";
+}
+
+static std::vector<Feature3DCoverageCase> feature_3d_cases_for_family(const std::string& family, bool require_embedded_3p_gt)
+{
+	std::vector<Feature3DCoverageCase> out;
+	for (const auto& c : feature_3d_cases(require_embedded_3p_gt))
+		if (family_of_3d_feature(c.code) == family)
+			out.push_back(c);
+	return out;
+}
+
 static void assert_3d_feature_is_registered_and_computable(const Feature3DCoverageCase& c)
 {
 	FeatureSet fs;
@@ -542,11 +584,8 @@ TEST_P(Test3DFeature_WITH_3P_EMBEDDED_GT, PublicFeatureIsComputableAndHasEmbedde
 	assert_embedded_3p_oracle_agreement(c);
 }
 
-INSTANTIATE_TEST_SUITE_P(
-	WITH_3P_EMBEDDED_GT,
-	Test3DFeature_WITH_3P_EMBEDDED_GT,
-	testing::ValuesIn(feature_3d_cases(true)),
-	sanitize_3d_feature_test_name);
+// INSTANTIATE_TEST_SUITE_P for this fixture now lives in the per-family test_3d_<family>_coverage.h
+// files (one instantiation per family, unique prefix), so the coverage sweep is organized by family.
 
 class Test3DFeature_UNVETTED_LOCAL_REGRESSION : public testing::TestWithParam<Feature3DCoverageCase> {};
 
@@ -558,11 +597,7 @@ TEST_P(Test3DFeature_UNVETTED_LOCAL_REGRESSION, PublicFeatureIsComputableButHasN
 	assert_unvetted_local_regression_agreement(c);
 }
 
-INSTANTIATE_TEST_SUITE_P(
-	UNVETTED_LOCAL_REGRESSION,
-	Test3DFeature_UNVETTED_LOCAL_REGRESSION,
-	testing::ValuesIn(feature_3d_cases(false)),
-	sanitize_3d_feature_test_name);
+// INSTANTIATE_TEST_SUITE_P for this fixture likewise lives in the per-family files.
 
 TEST(TEST_NYXUS, TEST_3D_FEATURE_COVERAGE_COUNTS)
 {
