@@ -12,6 +12,7 @@
 #endif
 #include <cmath>    // HU mode: std::floor / std::llround for the offset map
 #include <cstring>
+#include <type_traits>	// std::is_signed_v to guard signed->unsigned wraparound in loadTile
 #include <sstream>
 #include <limits.h> // for INT_MAX 
 
@@ -271,9 +272,20 @@ private:
                 {
                     size_t logOffs = r * tileWidth_ + c,
                         physOffs = r * tileWidth_ + c;
-                    // HU mode: offset-preserve (fixes signed int16 CT wraparound); else native cast
+                    // HU mode: offset-preserve (fixes signed int16 CT wraparound); else native cast.
+                    // FIX(#373): in the native-cast branch, clamp negatives of a signed integer file type to 0
+                    // before the cast to the unsigned pipeline type PixIntens, else int16 CT (negative HU) wraps
+                    // (-1024 -> ~4.29e9), blowing up the max-intensity-driven grey-bin/histogram allocation
+                    // (macOS segfault; garbage MIN/MAX/MEAN elsewhere). Keep the clamp confined to the else
+                    // branch so preserve_hu still retains negatives via hu_offset.
                     FileType v = *(((FileType*)src) + physOffs);
-                    *(dest + logOffs) = preserve_hu ? hu_offset ((double)v) : (DataType) v;
+                    if (preserve_hu)
+                        *(dest + logOffs) = hu_offset ((double)v);
+                    else
+                    {
+                        if constexpr (std::is_signed_v<FileType>) if (v < 0) v = 0;
+                        *(dest + logOffs) = (DataType) v;
+                    }
                 }
         }
         else
@@ -282,9 +294,18 @@ private:
                 size_t n = tileHeight_ * tileWidth_;
                 for (size_t i = 0; i < n; i++)
                 {
-                    // HU mode: offset-preserve (fixes signed int16 CT wraparound); else native cast
+                    // HU mode: offset-preserve; else native cast with the signed-int clamp (see tiled branch).
+                    // FIX(#373): clamp negatives of a signed integer file type before the unsigned cast so int16
+                    // CT (negative HU) doesn't wrap to ~4.29e9; confined to the else branch so preserve_hu keeps
+                    // negatives via hu_offset.
                     FileType v = *(((FileType*)src) + i);
-                    *(dest + i) = preserve_hu ? hu_offset ((double)v) : (DataType) v;
+                    if (preserve_hu)
+                        *(dest + i) = hu_offset ((double)v);
+                    else
+                    {
+                        if constexpr (std::is_signed_v<FileType>) if (v < 0) v = 0;
+                        *(dest + i) = (DataType) v;
+                    }
                 }
             }
     }
@@ -638,7 +659,15 @@ private:
 
             // - Informative zone of the strip
             if (layer < fullDepth_ && row < fullHeight_ && col < fullWidth_)
-                dataItem = (DataType)((FileType*)(src))[col];
+            {
+                // Clamp negatives of a signed integer file type (e.g. int16 CT / negative HU) to 0 before
+                // the cast to the unsigned pipeline type, so -1024 doesn't wrap to ~4.29e9 and blow up the
+                // max-intensity-sized grey-bin/histogram allocation (macOS segfault). This is the
+                // strip-loader twin of the tile-loader guard; proper HU handling is the preserve_hu path.
+                FileType v = ((FileType*)(src))[col];
+                if constexpr (std::is_signed_v<FileType>) if (v < 0) v = 0;
+                dataItem = (DataType) v;
+            }
             
             // - Save the informative or zero-filled value
             dest[
