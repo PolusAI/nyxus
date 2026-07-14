@@ -19,7 +19,7 @@ def validate_rows(rows):
             errs.append(f"missing columns: {missing}")
             return errs
     for r in rows:
-        f = r["feature"]; st = r["status"].strip(); ora = r["oracle"].strip()
+        f = (r.get("feature") or ""); st = (r.get("status") or "").strip(); ora = (r.get("oracle") or "").strip()
         if st not in ALLOWED_STATUS:
             errs.append(f"{f}: bad status {st!r}")
         if ora and ora not in ALLOWED_ORACLES:
@@ -54,3 +54,35 @@ def render_report(rows):
         f = s["by_family"][name]
         lines.append(f"| {name} | {f['total']} | {f['vetted']} | {f['regression']} | {f['untested']} |")
     return "\n".join(lines) + "\n"
+
+def drift_warnings(rows, tests_dir):
+    warns = []
+    for r in rows:
+        tgt = (r.get("target_test") or "").strip()
+        if tgt and not os.path.exists(os.path.join(tests_dir, tgt)):
+            warns.append(f"{r.get('feature', '')}: target_test {tgt} not found in {tests_dir}")
+    return warns
+
+def main(argv=None):
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--registry", default="tests/vetting/oracle_coverage.csv")
+    ap.add_argument("--report", default="tests/vetting/coverage_report.md")
+    ap.add_argument("--check", action="store_true")
+    ap.add_argument("--write", action="store_true")
+    a = ap.parse_args(argv)
+    rows = load_registry(a.registry)
+    errs = validate_rows(rows)
+    if a.check:
+        for e in errs: print("ERROR:", e)
+        return 1 if errs else 0
+    if a.write:
+        if errs:
+            for e in errs: print("ERROR:", e)
+            return 1
+        with open(a.report, "w") as fh: fh.write(render_report(rows))
+        print(f"wrote {a.report}")
+        return 0
+    ap.print_help(); return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
