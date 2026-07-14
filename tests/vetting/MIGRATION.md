@@ -180,6 +180,33 @@ names and missed both the mechanics mislabel and the orphan.
 
 ---
 
+## 5.10 Wave 3 (texture families) — executed
+
+All remaining texture families migrated in one batch (rename-in-place): **GLRLM, GLSZM, GLDM, NGLDM,
+GLDZM, NGTDM** (GLCM was Wave 2). Verified locally: **full gtest suite 696/696 — no tests dropped**
+(the hard invariant this wave was run against). Per-family present: GLCM 166, GLRLM 96, GLSZM 64,
+GLDM 116*, NGLDM 59, GLDZM 54, NGTDM 20 (*GLDM filter overlaps NGLDM by substring; full-suite count is
+the definitive gate).
+
+Patterns confirmed across the family:
+- `test_<fam>.h` → `_regression.h`; `test_ibsi_<fam>.h` → `_ibsi.h`; `test_compat_3d_<fam>.h` →
+  `test_3d_<fam>_pyradiomics.h`. GLDM mirrored GLCM exactly (`test_gldm_oracle.h` is a bug-guard →
+  `test_gldm_mechanics.h`; `test_gldm_oracle.py` → `test_gldm_pyradiomics.py`).
+- **Systemic orphan finding:** `test_3d_<fam>.h` is **orphaned** (never `#include`d, tests never run)
+  for **glcm, glrlm, glszm, gldm, ngtdm** (5 families, ~130 dead 3D-regression assertions). But
+  **ngldm and gldzm have LIVE `test_3d_*` files** (they were `#include`d) → renamed
+  `test_3d_ngldm_ibsi.h` / `test_3d_gldzm_ibsi.h`. This inconsistency (some native 3D texture tests
+  wired, most not) is flagged for a coverage-gap triage; live 3D texture coverage otherwise comes from
+  the `test_3d_<fam>_pyradiomics.h` (ex-compat) files + parameterized `test_3d_feature_coverage.h`.
+- The `test_3d_ngldm_ibsi.h` / `test_3d_gldzm_ibsi.h` kind labels are provisional (IBSI-phantom-based,
+  not fully confirmed); the rename preserved all tests regardless.
+
+**Remaining families for later waves:** moments, morphology, firstorder, intensity_histogram, neighbor,
+imq, gabor, zernike, radial — plus the cross-cutting `test_3d_feature_coverage.h` split (§4) and the
+mechanics/fixture renames (§6.3).
+
+---
+
 ## 6. Reconciliation decisions (RESOLVED)
 
 1. **SPEC §4 oracle-token set** — add **`skimage`** (mainstream; 60+ moment features + circularity).
