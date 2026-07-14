@@ -1088,6 +1088,11 @@ TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_COUNTS_TOUCHING)
 	ASSERT_NO_THROW(test_neighborhood2d_counts_and_touching());
 }
 
+TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_PERCENT_TOUCHING_ENCLOSED_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_neighborhood2d_percent_touching_enclosed_analytic());
+}
+
 TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_CLOSEST_NEIGHBORS)
 {
 	ASSERT_NO_THROW(test_neighborhood2d_closest_neighbors());
