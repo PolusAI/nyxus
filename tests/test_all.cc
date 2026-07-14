@@ -926,6 +926,16 @@ TEST(TEST_NYXUS, TEST_SHAPE2D_UNVETTED_NO_DIRECT_ORACLE_RADIUS_FEATURES)
 	ASSERT_NO_THROW(test_shape2d_unvetted_no_direct_oracle_radius_features());
 }
 
+TEST(TEST_NYXUS, TEST_2D_ASYMMETRIC_SHAPE_CENTRAL_MOMENTS_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_2d_asymmetric_shape_central_moments_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GEOMETRIC_MOMENTS_FIRST_CENTRAL_MOMENT_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_2d_geometric_moments_first_central_moment_analytic());
+}
+
 TEST(TEST_NYXUS, TEST_2D_SHAPE_GEOMETRIC_MOMENTS_VERIFIABLE_WITH_3P_BUILTIN_ORACLE)
 {
 	ASSERT_NO_THROW(test_2d_shape_geometric_moments_verifiable_with_3p_builtin_oracle());
