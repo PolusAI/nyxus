@@ -19,7 +19,7 @@
 #include "test_remaining2d_common.h"
 #include "test_zernike_regression.h"
 #include "test_neighbor_regression.h"
-#include "test_initialization.h"
+#include "test_initialization_mechanics.h"
 #include "test_glcm_ibsi.h"
 #include "test_gldm_ibsi.h"
 #include "test_glrlm_ibsi.h"
@@ -34,11 +34,11 @@
 #include "test_glrlm_regression.h"
 #include "test_glszm_regression.h"
 #include "test_ngtdm_regression.h"
-#include "test_roi_blacklist.h"
-#include "test_tiff_loader.h"
+#include "test_roi_blacklist_mechanics.h"
+#include "test_tiff_loader_mechanics.h"
 #include "test_imq_regression.h"
-#include "test_3d_nifti.h"
-#include "test_omezarr.h"
+#include "test_3d_nifti_mechanics.h"
+#include "test_omezarr_mechanics.h"
 #include "test_3d_morphology_common.h"
 #include "test_3d_morphology_regression.h"
 #include "test_3d_morphology_matlab.h"
@@ -62,8 +62,8 @@
 #include "test_3d_ngtdm_coverage.h"
 #include "test_glcm_mechanics.h"
 #ifdef USE_ARROW
-    #include "test_arrow.h"
-    #include "test_arrow_file_name.h"
+    #include "test_arrow_mechanics.h"
+    #include "test_arrow_file_name_mechanics.h"
 #endif
 
 
