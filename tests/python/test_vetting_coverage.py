@@ -31,3 +31,17 @@ def test_bad_status_and_token_and_invariant_flagged(tmp_path):
     errs = cc.validate_rows(cc.load_registry(path))
     assert len(errs) == 4
     assert any("maybe" in e for e in errs) and any("mahotas" in e for e in errs)
+
+def test_coverage_stats_and_report(tmp_path):
+    path = _write(tmp_path, [
+        {"dim":"2D","feature":"A","family":"glcm","status":"vetted","oracle":"pyradiomics"},
+        {"dim":"2D","feature":"B","family":"glcm","status":"regression","oracle":""},
+        {"dim":"2D","feature":"C","family":"moments","status":"untested","oracle":""},
+    ])
+    rows = cc.load_registry(path)
+    s = cc.coverage_stats(rows)
+    assert s["total"] == 3 and s["vetted"] == 1 and s["regression"] == 1 and s["untested"] == 1
+    assert s["by_family"]["glcm"] == {"total":2,"vetted":1,"regression":1,"untested":0}
+    rep = cc.render_report(rows)
+    assert rep.startswith("# Nyxus Oracle-Vetting Coverage")
+    assert "Features vetted by >=1 oracle: 1/3" in rep
