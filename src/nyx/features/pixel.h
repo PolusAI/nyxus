@@ -133,6 +133,14 @@ struct Pixel2 : public Point2i
 	/// @brief Returns the minimum squared distance squared distance from <this> pixel to the <cloud>
 	double min_sqdist (const std::vector<Pixel2>& cloud) const;
 
+	/// @brief Exact minimum squared distance from <this> pixel to <cloud> via a full linear scan.
+	/// min_sqdist() is an approximate hill-descent (v2) that assumes a locally-unimodal
+	/// ordered contour and can settle in the wrong basin on a closed contour, OVERESTIMATING the
+	/// true minimum. That silently breaks the neighbor touch test (a real 8-adjacent contact is
+	/// missed) and the radius gate. Use this exact O(n) scan wherever correctness matters more than
+	/// per-pixel speed (neighbor touch/percent-touching, radius gate).
+	double exact_min_sqdist (const std::vector<Pixel2>& cloud) const;
+
 	/// @brief Returns the maximum squared distance squared distance from <this> pixel to the <cloud>
 	double max_sqdist (const std::vector<Pixel2>& cloud) const;
 

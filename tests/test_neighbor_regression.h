@@ -17,7 +17,7 @@
 static std::unordered_map<int, std::unordered_map<std::string, double>> unvetted_nyxus_regression_neighbor2d_distance_feature_golden_values_by_label{
 	{1, {
 		{"NUM_NEIGHBORS", 4.0},
-		{"PERCENT_TOUCHING", 87.5},
+		{"PERCENT_TOUCHING", 100.0},   // exact_min_sqdist: all 8 contour pixels of the fully-enclosed 3x3 ROI touch a neighbor; was 87.5 (7/8) because the approximate min_sqdist overestimated one pixel's min distance and missed its true 8-adjacency
 		{"CLOSEST_NEIGHBOR1_DIST", 2.5},
 		{"CLOSEST_NEIGHBOR2_DIST", 2.54950975679639},
 	}},
@@ -177,6 +177,26 @@ void test_neighborhood2d_counts_and_touching()
 		assert_neighbor2d_feature(roiData, label, Nyxus::Feature2D::NUM_NEIGHBORS, "NUM_NEIGHBORS");
 		assert_neighbor2d_feature(roiData, label, Nyxus::Feature2D::PERCENT_TOUCHING, "PERCENT_TOUCHING");
 	}
+}
+
+// ANALYTIC oracle (closed form) for the exact_min_sqdist touch fix: a ROI that is completely surrounded by
+// neighbors on every side has *every* contour pixel 8-adjacent to some neighbor, so PERCENT_TOUCHING
+// must equal exactly 100. Label 1 (the 3x3 center block) is such a ROI in this scene. The approximate
+// min_sqdist v2 returned 87.5 (missed one pixel's true adjacency); the exact scan returns 100. Also
+// checks the hard bound PERCENT_TOUCHING <= 100 for all ROIs (the deduped-mask invariant).
+void test_neighborhood2d_percent_touching_enclosed_analytic()
+{
+	std::unordered_map<int, LR> roiData;
+	calculate_neighborhood2d_feature_values(roiData);
+
+	const int ptIdx = static_cast<int>(Nyxus::Feature2D::PERCENT_TOUCHING);
+
+	// Closed form: fully-enclosed ROI => 100% of contour touches.
+	ASSERT_NEAR(roiData.at(1).fvals[ptIdx][0], 100.0, 1e-9);
+
+	// Invariant bound for every ROI.
+	for (int label : {1, 2, 3, 4, 5})
+		ASSERT_LE(roiData.at(label).fvals[ptIdx][0], 100.0 + 1e-9);
 }
 
 void test_neighborhood2d_closest_neighbors()

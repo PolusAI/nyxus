@@ -96,11 +96,11 @@ void parallel_process_1_batch_of_collision_pairs (
 			continue;
 
 		// Iterate r1's outer pixels
-		double mind = K1[0].min_sqdist(K2);
+		double mind = K1[0].exact_min_sqdist(K2);	// exact min distance (approximate min_sqdist overestimates -> missed real touches)
 		size_t n_touchingOuterPixels = 0;
 		for (auto& cp : K1)
 		{
-			double minD = cp.min_sqdist(K2);
+			double minD = cp.exact_min_sqdist(K2);	// exact min distance (was approximate min_sqdist)
 			mind = std::min(mind, minD);		//--We aren't interested in max distance-->	maxd = std::max(maxd, maxD);
 
 			// Maintain touching pixels stats
@@ -265,19 +265,19 @@ void NeighborsFeature::manual_reduce (
 				// mark each contour pixel that is 8-adjacent to the other ROI (deduped per ROI). Done
 				// for every candidate pair BEFORE the radius gate so diagonal-only contacts still count
 				// even at pixel-distance 1.
-				double mind = K1[0].min_sqdist(K2);
+				double mind = K1[0].exact_min_sqdist(K2);	// exact min distance (approximate min_sqdist overestimates -> missed real touches)
 				auto& tm1 = touchMask[l1];
 				if (tm1.empty()) tm1.assign(K1.size(), 0);
 				for (size_t i = 0; i < K1.size(); i++)
 				{
-					double dq = K1[i].min_sqdist(K2);
+					double dq = K1[i].exact_min_sqdist(K2);	// exact adjacency test (was approximate min_sqdist)
 					mind = std::min(mind, dq);
 					if (dq <= touchThresh2) tm1[i] = 1;
 				}
 				auto& tm2 = touchMask[l2];
 				if (tm2.empty()) tm2.assign(K2.size(), 0);
 				for (size_t i = 0; i < K2.size(); i++)
-					if (K2[i].min_sqdist(K1) <= touchThresh2) tm2[i] = 1;
+					if (K2[i].exact_min_sqdist(K1) <= touchThresh2) tm2[i] = 1;	// exact adjacency test (was approximate min_sqdist)
 
 				// NUM_NEIGHBORS / closest-neighbor lists: only ROIs within the search radius
 				if (mind > radius2)

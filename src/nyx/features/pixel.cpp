@@ -70,6 +70,23 @@ double Pixel2::min_sqdist(const std::vector<Pixel2>& cloud) const
 	return extrem_d;
 }
 
+// exact minimum squared distance via a full linear scan (no ordered-contour assumption).
+// Correct replacement for the approximate min_sqdist() v2 on the neighbor touch / radius-gate paths.
+double Pixel2::exact_min_sqdist(const std::vector<Pixel2>& cloud) const
+{
+	if (cloud.empty())
+		return 0.0;
+
+	auto extrem_d = sqdist(cloud[0]);
+	for (size_t n = cloud.size(), i = 1; i < n; i++)
+	{
+		auto dist = sqdist(cloud[i]);
+		if (dist < extrem_d)
+			extrem_d = dist;
+	}
+	return extrem_d;
+}
+
 double Pixel2::max_sqdist(const std::vector<Pixel2>& cloud) const
 {
 	#if 0	
