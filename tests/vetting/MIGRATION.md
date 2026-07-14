@@ -233,6 +233,39 @@ cross-cutting `test_2d_remaining_features.h` + `test_3d_feature_coverage.h` spli
 
 ---
 
+## 5.12 Wave 5 (morphology mega-split) — executed
+
+The largest split. `test_shape_morphology_2d.h` (11 functions, 3 golden maps) separated into 6 files
+(byte-for-byte preserved, 356→364 non-blank lines = +8 header preambles). Verified: **full gtest
+suite 696/696 — no tests dropped.**
+- `test_morphology_common.h` — `#pragma once`, all 3 maps + 5 shared helpers.
+- `test_morphology_regression.h` — 8 pure-unvetted functions (basic morphology, ellipse, contour,
+  misc, radius + the 3 "verifiable_with_3p" functions whose external tool is unnamed → regression).
+- `test_morphology_skimage.h` — `convex_hull_features` (CONVEX_HULL_AREA/SOLIDITY = skimage; the one
+  interleaved `CIRCULARITY` unvetted assert rides along — flagged).
+- `test_morphology_matlab.h` — `extrema_features` (MATLAB regionprops extrema).
+- `test_morphology_fraclac.h` — `fractal_dimension_blob512_oracle` (the FracLac box-count oracle).
+
+Functions were cleanly kind-pure at the function level (only convex_hull mixed 1 assert), so no
+function had to be split — the common-header holds the shared infra to avoid ODR duplication.
+
+## 5.13 Octave viability for the `matlab` oracle (research)
+
+Investigated `github.com/vjaganat90/external-verif-nyxus` (the external cross-check harness) + Octave.
+Finding: MATLAB is used as a *built-in oracle* for only 3 families — first-order (`prctile`/`iqr`/
+`skewness`/`kurtosis`), a shape subset (`regionprops` 12 props), and a 4-property GLCM
+(`graycomatrix`+`graycoprops`); everything else is `NO_BUILTIN` → already PyRadiomics. **GNU Octave +
+`image`+`statistics` packages is a near-drop-in replacement** — the only real gap is `graycoprops`
+(~15-line reimplementation); `regionprops`, `graycomatrix`, and the stats functions are all present,
+comfortably within the harness's 5% tolerance. **Implication:** the registry's `matlab` rows
+(GLCM_CONTRAST/CORRELATION, morphology EXTREMA → `test_morphology_matlab.h`) become vettable
+**license-free**. Recommend adding an `octave` oracle token (license-free realization of `matlab`) and
+using Octave for those rows when real oracle assertions are wired post-restructure. Install:
+`apt install octave octave-image octave-statistics` or conda-forge `octave` + `pkg install -forge
+image statistics`; invoke headless via `octave-cli --eval "pkg load image statistics; ..."`.
+
+---
+
 ## 6. Reconciliation decisions (RESOLVED)
 
 1. **SPEC §4 oracle-token set** — add **`skimage`** (mainstream; 60+ moment features + circularity).
