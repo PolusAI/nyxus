@@ -264,6 +264,31 @@ using Octave for those rows when real oracle assertions are wired post-restructu
 `apt install octave octave-image octave-statistics` or conda-forge `octave` + `pkg install -forge
 image statistics`; invoke headless via `octave-cli --eval "pkg load image statistics; ..."`.
 
+## 5.14 Wave 6 (`test_2d_remaining_features.h` multi-family split) — executed
+
+The cross-cutting 2D leftover file (7 functions, spanning 3 families that all share one compute pass)
+split by **registry `target_test`**, not by source proximity. Verified: **full gtest suite 696/696 —
+no tests dropped.**
+- `test_remaining2d_common.h` — `#pragma once`; the shared fixture (`make_remaining2d_settings`,
+  `calculate_remaining2d_shape_feature_values`, `calculate_remaining2d_polygonality_feature_values`),
+  the 3 assert-helper families, and all 4 golden maps. `git mv`d from the old file to preserve history.
+- `test_morphology_regression.h` — gained 5 functions: erosion-complement, caliper (feret/martin/
+  nassenstein), chord stats, chord angles, polygonality/hexagonality (all `→ test_morphology_regression.h`
+  in the registry; oracles are definition-review/none, so regression-snapshot).
+- `test_intensity_histogram_regression.h` — gained the radial-distribution function (`FRAC_AT_D`,
+  `MEAN_FRAC`, `RADIAL_CV`; oracle = cellprofiler `MeasureObjectIntensityDistribution`, pending wiring).
+- `test_zernike_regression.h` — **new** 1-function family file for `ZERNIKE2D` (§6.1: mahotas not
+  accepted → analytic/regression).
+
+Function names kept verbatim (`test_remaining2d_*`) so every TEST() in `test_all.cc` still registers;
+the split is purely a file-taxonomy move. 46 registry rows had `current_test` repointed off the old
+filename. The shared header spans 3 families deliberately — the single compute pass produces
+morphology, radial, and zernike features from one ROI, so a per-family common would triplicate it.
+
+**Still remaining:** `test_3d_feature_coverage.h` (the 213-assertion cross-cutting 3D split — biggest),
+`test_3d_shape.h`, `gabor` (`test_gabor.h` → `test_gabor_regression.h`), and the mechanics/fixture
+renames (§6.3). Then regenerate `coverage_report.md`.
+
 ---
 
 ## 6. Reconciliation decisions (RESOLVED)
