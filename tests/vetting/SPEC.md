@@ -44,7 +44,7 @@ Consequences:
 | **Invariant** | Does output obey a required property/bound/relation? | Partial | `_invariant` |
 | **Mechanics** | Does the plumbing work (gating, defaults, I/O)? | No | `_mechanics` |
 
-`<oracle>` ∈ the §4 tokens: { `pyradiomics`, `radiomicsj`, `mirp`, `matlab`, `cellprofiler`, `mitk`,
+`<oracle>` ∈ the §4 tokens: { `pyradiomics`, `radiomicsj`, `skimage`, `mirp`, `matlab`, `cellprofiler`, `mitk`,
 `feature2djava`, `wndcharm`, `imea`, `imagej`, `fraclac`, `pydicom`, `ibsi`, `analytic` }.
 
 A single feature family (e.g. GLCM) typically has: one oracle file per reference that covers it,
@@ -101,6 +101,7 @@ churn names).
 |-------|----------------|-----------------|-----------|
 | `pyradiomics` | PyRadiomics 3.0.1 | GLCM/GLRLM/GLSZM/GLDM/NGTDM, first-order, shape | Python / Docker |
 | `radiomicsj` | RadiomicsJ 2.1.2 | texture, first-order, shape (IBSI-compliant) | Java |
+| `skimage` | scikit-image 0.24+ | moments, shape descriptors | Python |
 | `matlab` | MATLAB R2024a Image Processing Toolbox | GLCM (graycomatrix/graycoprops), regionprops (morphology), moments | MATLAB |
 | `cellprofiler` | CellProfiler 4.2.1 | MeasureTexture (Haralick), MeasureObjectSizeShape, intensity, **MeasureObjectNeighbors** (neighbor count / percent-touching / closest-distance) | pipeline |
 | `mitk` | MITK 2023.04 | texture, first-order, shape | C++ CLI |
@@ -123,6 +124,9 @@ Notes:
 - **Fractal dimension** (`FRACT_DIM_BOXCOUNT`) → `fraclac` (the ImageJ box-count plugin) is the
   reference; already used on the fractal branch. `FRACT_DIM_PERIMETER` (divider/Richardson) has no
   tool → `analytic` + cross-method convergence.
+- scikit-image (`skimage`) is an accepted mainstream oracle (added 2026-07; covers image
+  moments, shape descriptors). `mahotas`, `DIPlib`, and `Centrosome` are NOT accepted — features
+  only they cover remain regression/analytic.
 - **`pydicom`** is the reference DICOM reader for CT / Hounsfield Units: it decodes the stored
   pixels and applies `RescaleSlope`/`RescaleIntercept` to true HU. It vets the `--preserve-hu` path —
   the loader-pixel values and the first-order HU stats (MIN/MAX/MEAN/INTEGRATED) on a real
