@@ -45,3 +45,19 @@ def test_coverage_stats_and_report(tmp_path):
     rep = cc.render_report(rows)
     assert rep.startswith("# Nyxus Oracle-Vetting Coverage")
     assert "Features vetted by >=1 oracle: 1/3" in rep
+
+def test_drift_and_main_write(tmp_path):
+    path = _write(tmp_path, [
+        {"dim":"2D","feature":"A","family":"glcm","status":"vetted","oracle":"pyradiomics",
+         "target_test":"test_glcm_pyradiomics.h"},
+    ])
+    # target file does not exist -> one drift warning
+    assert len(cc.drift_warnings(cc.load_registry(path), str(tmp_path))) == 1
+    # --write emits coverage_report.md next to the registry
+    rc = cc.main(["--write", "--registry", path, "--report", str(tmp_path / "coverage_report.md")])
+    assert rc == 0 and (tmp_path / "coverage_report.md").exists()
+    assert "Features vetted" in (tmp_path / "coverage_report.md").read_text()
+
+def test_main_check_fails_on_bad_row(tmp_path):
+    path = _write(tmp_path, [{"dim":"2D","feature":"A","family":"x","status":"bad","oracle":""}])
+    assert cc.main(["--check", "--registry", path]) == 1
