@@ -340,10 +340,11 @@ void IntensityHistogramFeatures::float_domain_map (LR& r, const Fsettings& s, co
 	{
 		// HU mode inverts the slope-1 offset map applied at load time:
 		// reported = floor(min) + 1*u, recovering absolute Hounsfield units.
-		// Mirror image_loader's fpmin selection so the reconstruction offset
-		// equals the load-time offset (fp options override the scanned min).
-		double fpmin = STNGS_FPIMG_ACTIVE(s) ? STNGS_FPIMG_MIN(s) : sp.min_preroi_inten;
-		poffset = std::floor (fpmin);
+		// The load-time HU offset base is ALWAYS the scanned slide min (image_loader
+		// ignores fp min/max/dr in preserve_hu mode); mirror that here with
+		// sp.min_preroi_inten unconditionally so the reconstructed "true HU" matches the
+		// load-time offset even when --fpimgmin/max/dr are also supplied.
+		poffset = std::floor (sp.min_preroi_inten);
 		return;	// pscale stays 1.0
 	}
 	if (! sp.fp_phys_pivoxels)

@@ -164,7 +164,7 @@ should adhere to columns "WIPP I/O role" and "WIPP type".
      - input
      - int
    * - --preserve-hu
-     - (Optional) CT/Hounsfield mode. Preserves absolute pixel intensities (1 grey level = 1 intensity unit, offset by the global minimum) instead of the min-max rescaling used by '--fpimgmin'/'--fpimgmax'/'--fpimgdr'. Keeps Hounsfield Units intact for CT, fixes the signed-integer wraparound of negative values, and applies DICOM RescaleSlope/RescaleIntercept. Intensity features are reported in an offset domain (recoverable by adding the global minimum back); Intensity Histogram features are reported in true HU. Default: '--preserve-hu=false'
+     - (Optional) CT/Hounsfield mode. Preserves absolute pixel intensities (1 grey level = 1 intensity unit, offset by each slide's floored minimum) instead of the min-max rescaling used by '--fpimgmin'/'--fpimgmax'/'--fpimgdr'. Keeps Hounsfield Units intact for CT, fixes the signed-integer wraparound of negative values, and applies DICOM RescaleSlope/RescaleIntercept. The offset is per-slide (not a dataset-global minimum), so offset-domain values are not comparable across slides. Intensity Histogram (IH_*) features are reported in true HU; shift-invariant features (variance, stddev, skewness, kurtosis, range, IQR) and shape/texture are unaffected; location features (mean, median, mode, percentiles) recover true HU by adding that slide's minimum back; sum/energy features (integrated intensity, energy, RMS, total energy) are not recoverable that simply. Default: '--preserve-hu=false'
      - true or false
      - input
      - bool

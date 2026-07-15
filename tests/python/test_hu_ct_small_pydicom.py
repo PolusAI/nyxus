@@ -5,7 +5,7 @@ same offset formula the loader uses — self-consistency, SPEC.md §5.2), this t
 actual first-order HU features against numbers derived by pydicom from a REAL scanner slice:
 
   fixture : ct_small_hu.tif — the true-HU int16 field of pydicom's CT_small.dcm
-            (128x128, HU range -896..1167), written by make_ct_small_hu_fixture.py.
+            (128x128, HU range -896..1167).
   oracle  : pydicom 3.0.2 — HU = RescaleSlope*stored + RescaleIntercept, then numpy stats.
 
 Nyxus preserve_hu emits the OFFSET domain u = HU - floor(HU_min); floor(HU_min) == HU_MIN
@@ -16,7 +16,7 @@ outputs (docs/vetting SPEC.md §3.1); the other HU tests are analytic / mechanic
 Provenance (record at the golden site, SPEC.md §6.4):
   tool    : pydicom 3.0.2, get_testdata_file('CT_small.dcm')
   config  : RescaleSlope=1.0, RescaleIntercept=-1024.0; whole-image all-ones ROI
-  gen     : tests/data/hounsfield/make_ct_small_hu_fixture.py
+  fixture : tests/data/hounsfield/ct_small_hu.tif
 """
 import os
 import pathlib
@@ -29,7 +29,7 @@ MASK = str(DATA / "ct_small_mask.tif")
 
 pytestmark = pytest.mark.skipif(
     not (os.path.exists(INTEN) and os.path.exists(MASK)),
-    reason="CT_small HU fixtures not present (run tests/data/hounsfield/make_ct_small_hu_fixture.py)",
+    reason="CT_small HU fixtures not present in tests/data/hounsfield",
 )
 
 # --- pydicom-pinned goldens (absolute HU, whole-image ROI) -------------------

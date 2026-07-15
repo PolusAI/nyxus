@@ -118,12 +118,20 @@ class Nyxus:
         Maximum intensity of voxels of a floating point TIFF image.
     preserve_hu: bool (optional, default False)
         CT/Hounsfield mode. Preserve absolute pixel intensities (1 grey level = 1
-        intensity unit, offset by the global minimum) instead of the min-max rescaling
-        controlled by dynamic_range/min_intensity/max_intensity. Keeps Hounsfield Units
-        intact for CT, fixes the signed-integer wraparound of negative values, and applies
-        DICOM RescaleSlope/RescaleIntercept. Intensity features are then in an offset domain
-        (recoverable by adding the global minimum back); Intensity Histogram features are
-        reported in true HU.
+        intensity unit, offset by each slide's floored minimum) instead of the min-max
+        rescaling controlled by dynamic_range/min_intensity/max_intensity. Keeps Hounsfield
+        Units intact for CT, fixes the signed-integer wraparound of negative values, and
+        applies DICOM RescaleSlope/RescaleIntercept. The offset is PER-SLIDE (each slide's
+        own floored minimum, not a dataset-global minimum), so offset-domain values are not
+        directly comparable across slides. How features are reported:
+          * Intensity Histogram (IH_*) features: directly in true HU.
+          * Shift-invariant intensity features (variance, standard deviation, skewness,
+            kurtosis, range, interquartile range) and all shape/texture features: unaffected.
+          * Location intensity features (mean, median, mode, percentiles, min, max): in the
+            offset domain; recover true HU by adding that slide's floored minimum back.
+          * Sum/energy intensity features (integrated intensity, energy, root-mean-squared,
+            total energy): NOT recoverable by simply adding the minimum back — they also
+            depend on the pixel count and the offset.
     ram_limit: int (optional)
         Maximum amount of ram to be used by Nyxus in megabytes
     verbose: int (optional, default 0)
@@ -956,12 +964,20 @@ class Nyxus3D:
         Maximum intensity of voxels of a floating point TIFF image.
     preserve_hu: bool (optional, default False)
         CT/Hounsfield mode. Preserve absolute pixel intensities (1 grey level = 1
-        intensity unit, offset by the global minimum) instead of the min-max rescaling
-        controlled by dynamic_range/min_intensity/max_intensity. Keeps Hounsfield Units
-        intact for CT, fixes the signed-integer wraparound of negative values, and applies
-        DICOM RescaleSlope/RescaleIntercept. Intensity features are then in an offset domain
-        (recoverable by adding the global minimum back); Intensity Histogram features are
-        reported in true HU.
+        intensity unit, offset by each slide's floored minimum) instead of the min-max
+        rescaling controlled by dynamic_range/min_intensity/max_intensity. Keeps Hounsfield
+        Units intact for CT, fixes the signed-integer wraparound of negative values, and
+        applies DICOM RescaleSlope/RescaleIntercept. The offset is PER-SLIDE (each slide's
+        own floored minimum, not a dataset-global minimum), so offset-domain values are not
+        directly comparable across slides. How features are reported:
+          * Intensity Histogram (IH_*) features: directly in true HU.
+          * Shift-invariant intensity features (variance, standard deviation, skewness,
+            kurtosis, range, interquartile range) and all shape/texture features: unaffected.
+          * Location intensity features (mean, median, mode, percentiles, min, max): in the
+            offset domain; recover true HU by adding that slide's floored minimum back.
+          * Sum/energy intensity features (integrated intensity, energy, root-mean-squared,
+            total energy): NOT recoverable by simply adding the minimum back — they also
+            depend on the pixel count and the offset.
     verbose: int (optional, default 0)
         Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
     anisotropy_x: float (optional, default 1.0)
@@ -1499,12 +1515,20 @@ class ImageQuality:
         Maximum intensity of voxels of a floating point TIFF image.
     preserve_hu: bool (optional, default False)
         CT/Hounsfield mode. Preserve absolute pixel intensities (1 grey level = 1
-        intensity unit, offset by the global minimum) instead of the min-max rescaling
-        controlled by dynamic_range/min_intensity/max_intensity. Keeps Hounsfield Units
-        intact for CT, fixes the signed-integer wraparound of negative values, and applies
-        DICOM RescaleSlope/RescaleIntercept. Intensity features are then in an offset domain
-        (recoverable by adding the global minimum back); Intensity Histogram features are
-        reported in true HU.
+        intensity unit, offset by each slide's floored minimum) instead of the min-max
+        rescaling controlled by dynamic_range/min_intensity/max_intensity. Keeps Hounsfield
+        Units intact for CT, fixes the signed-integer wraparound of negative values, and
+        applies DICOM RescaleSlope/RescaleIntercept. The offset is PER-SLIDE (each slide's
+        own floored minimum, not a dataset-global minimum), so offset-domain values are not
+        directly comparable across slides. How features are reported:
+          * Intensity Histogram (IH_*) features: directly in true HU.
+          * Shift-invariant intensity features (variance, standard deviation, skewness,
+            kurtosis, range, interquartile range) and all shape/texture features: unaffected.
+          * Location intensity features (mean, median, mode, percentiles, min, max): in the
+            offset domain; recover true HU by adding that slide's floored minimum back.
+          * Sum/energy intensity features (integrated intensity, energy, root-mean-squared,
+            total energy): NOT recoverable by simply adding the minimum back — they also
+            depend on the pixel count and the offset.
     verbose: int (optional, default 0)
         Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
     anisotropy_x: float (optional, default 1.0)
