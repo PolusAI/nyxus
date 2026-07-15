@@ -16,6 +16,13 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 ## firstorder.pyradiomics_default
 - Non-discretised intensity statistics. Oracle: `pyradiomics` firstorder. Used by: `test_firstorder_pyradiomics.h`.
 
+## firstorder.preserve_hu
+- `--preserve-hu` (CT/Hounsfield mode): the loader applies a slope-1 offset (`value - floor(HU_min)`)
+  instead of min-max rescaling, so first-order intensity features are reported in true Hounsfield units.
+  Not a new feature — a config mode; adds absolute-HU corroboration to the existing MIN/MAX/MEAN/
+  INTEGRATED_INTENSITY features. Oracle: `pydicom` (RescaleSlope/Intercept → HU on a real CT slice).
+  Used by: `test_hu_ct_small_pydicom.py`.
+
 ## ih.mirp_fbn
 - Fixed-bin-number discretised intensity histogram (IBSI IH family). Oracle: `mirp`.
 - Vet `IH_*_IDX` (bin-index domain); `IH_*_VAL` (bin-center value) is analytic vs Nyxus definition.

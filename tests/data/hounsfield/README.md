@@ -1,7 +1,7 @@
 # Hounsfield-Unit (HU) loader test fixtures
 
-Tiny tiled TIFFs used by `tests/test_hounsfield_loader.h` to verify the
-`--preserve-hu` offset mapping through the real TIFF decode path.
+Tiny tiled TIFFs used by the HU loader mechanics tests in `tests/test_hu_mechanics.h`
+to verify the `--preserve-hu` offset mapping through the real TIFF decode path.
 
 | File | Type | Notes |
 |---|---|---|
