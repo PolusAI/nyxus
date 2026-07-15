@@ -8,7 +8,6 @@
 #include "test_intensity_histogram_regression.h"
 #include "test_hu_analytic.h"
 #include "test_hu_mechanics.h"
-#include "test_hounsfield_loader.h"
 #include "test_morphology_features.h"
 #include "test_morphology_regression.h"
 #include "test_morphology_skimage.h"

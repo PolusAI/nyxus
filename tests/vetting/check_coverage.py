@@ -5,7 +5,8 @@ COLUMNS = ["dim","feature","family","status","oracle","agreement","config_recipe
            "tolerance","current_test","target_test","candidate_oracle","flag","source","notes"]
 ALLOWED_STATUS = {"vetted","regression","untested"}
 ALLOWED_ORACLES = {"pyradiomics","radiomicsj","mirp","matlab","cellprofiler","mitk",
-                   "feature2djava","wndcharm","imea","imagej","fraclac","ibsi","analytic","skimage"}
+                   "feature2djava","wndcharm","imea","imagej","fraclac","ibsi","analytic","skimage",
+                   "pydicom"}
 
 def load_registry(path):
     with open(path, newline="") as fh:
