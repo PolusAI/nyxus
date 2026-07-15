@@ -243,6 +243,31 @@ void test_ih_float_domain_reconstruction_preserve_hu()
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_NUM_BINS), 3.0));
 }
 
+// 4d) Regression: preserve_hu combined with active fp-image options
+//     (--fpimgmin/max/dr). In HU mode the load-time offset base is ALWAYS the
+//     scanned slide min, so float_domain_map must IGNORE FPIMG_MIN. Here FPIMG is
+//     active with a misleading FPIMG_MIN=0 (the value --fpimgmin defaults to), yet
+//     the reconstruction must still recover absolute HU from slide_min=-1024:
+//       IH_MINIMUM = -1024 + 1 = -1023 (NOT 0 + 1 = 1, the pre-fix clamp).
+//     Before the fix, poffset=floor(FPIMG_MIN=0)=0 shifted every value up by 1024
+//     and every negative HU was mis-mapped / clamped to 0 at load time.
+void test_ih_float_domain_reconstruction_preserve_hu_fpactive()
+{
+    Fsettings s = ih_make_settings(3, true);
+    s[(int)NyxSetting::FPIMG_ACTIVE].bval = true;    // fp options supplied alongside --preserve-hu
+    s[(int)NyxSetting::FPIMG_MIN].rval = 0.0;        // default --fpimgmin; must be ignored in HU mode
+    s[(int)NyxSetting::FPIMG_MAX].rval = 1.0;
+    s[(int)NyxSetting::FPIMG_TARGET_DR].rval = 10.0;
+    std::vector<std::vector<double>> fv;
+    ih_run(fv, s, /*slide_idx*/ 0, /*fp_image*/ false,
+           /*slide_min*/ -1024.0, /*slide_max*/ 3071.0, /*preserve_hu*/ true);
+
+    ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_MINIMUM_VAL), -1023.0));
+    ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_MAXIMUM_VAL), -1017.0));
+    ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_RANGE_VAL), 6.0));
+    ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_BIN_SIZE), 2.0));
+}
+
 // 5) required(): the class is only "required" when at least one IH feature is enabled.
 void test_ih_required_predicate()
 {

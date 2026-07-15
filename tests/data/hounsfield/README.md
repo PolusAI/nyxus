@@ -14,13 +14,9 @@ All are 16×16, a single tile, encoding the SAME logical HU field
 `HU(r,c) = -1024 + idx*8`, `idx = r*16 + c` (0..255) — a CT/HU-like range
 −1024..1016 crossing 0 (water). In HU mode the loader maps HU → HU + 1024 = idx*8.
 
-Regenerate with:
-
-```
-python make_fixtures.py         # TIFF fixtures  (needs numpy + tifffile)
-python make_dicom_fixtures.py   # DICOM fixtures (needs numpy + pydicom)
-python make_nifti_fixtures.py   # NIfTI fixtures (needs numpy only)
-```
+These fixtures are committed to the repository and consumed as-is. The construction
+of each file is documented in this README so the ground truth the tests assert
+against stays auditable.
 
 ## 3D NIfTI fixtures
 
@@ -34,8 +30,8 @@ loader path (`RawNiftiLoader`/`NiftiLoader`).
 
 The non-unit `scl_slope` makes the HU rescale observable: in HU mode the loader maps each voxel to
 `u = round((2·stored − 1024) − floor(HU min)) = 2·stored + 400` (offset domain 0..1022, mean 511),
-whereas with the flag off it keeps the raw-stored (shifted) values (MAX 511). `make_nifti_fixtures.py`
-writes the 348-byte NIfTI-1 header by hand, so no `nibabel` dependency is needed.
+whereas with the flag off it keeps the raw-stored (shifted) values (MAX 511). The 348-byte
+NIfTI-1 header was written by hand, so the fixtures carry no `nibabel` dependency.
 
 ## Real-scanner fixture
 
@@ -57,7 +53,6 @@ Obtain the original via: `python -c "from pydicom.data import get_testdata_file;
 Used by `tests/python/test_hu_ct_small_pydicom.py` — the oracle test that vets HU *feature*
 values (MIN/MAX/MEAN/INTEGRATED) against pydicom (docs/vetting SPEC.md §4 token `pydicom`). The
 pixels come from pydicom's decode of a real scanner slice and the goldens are pinned from
-pydicom+numpy, so it is an independent oracle, not a self-consistency snapshot (§5.2). Regenerate
-with `python make_ct_small_hu_fixture.py` (needs numpy + pydicom + tifffile); CI consumes only the
-committed TIFFs.
+pydicom+numpy, so it is an independent oracle, not a self-consistency snapshot (§5.2). CI
+consumes only the committed TIFFs.
 

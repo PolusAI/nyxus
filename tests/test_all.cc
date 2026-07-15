@@ -782,6 +782,11 @@ TEST(TEST_NYXUS, TEST_IH_FLOAT_DOMAIN_RECONSTRUCTION_PRESERVE_HU)
 	ASSERT_NO_THROW(test_ih_float_domain_reconstruction_preserve_hu());
 }
 
+TEST(TEST_NYXUS, TEST_IH_FLOAT_DOMAIN_RECONSTRUCTION_PRESERVE_HU_FPACTIVE)
+{
+	ASSERT_NO_THROW(test_ih_float_domain_reconstruction_preserve_hu_fpactive());
+}
+
 TEST(TEST_NYXUS, TEST_IH_REQUIRED_PREDICATE)
 {
 	ASSERT_NO_THROW(test_ih_required_predicate());

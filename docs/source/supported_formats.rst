@@ -44,12 +44,21 @@ By default Nyxus quantizes floating-point and out-of-range images into its inter
 unsigned-integer intensity range by min-max rescaling, which does not preserve absolute
 CT Hounsfield Unit (HU) values and wraps negative stored values (e.g. air at roughly
 -1000 HU). Passing ``--preserve-hu`` (CLI) or ``preserve_hu=True`` (Python) switches to
-an offset-preserving mode: intensities are kept as ``value - floor(global_min)`` so that
+an offset-preserving mode: intensities are kept as ``value - floor(slide_min)`` so that
 one grey level equals one intensity unit, negative values no longer wrap, and for DICOM
 the ``RescaleSlope`` / ``RescaleIntercept`` tags are applied to recover true HU before the
-offset. Shape and texture features are unaffected (they are shift-invariant); intensity
-features are reported in the offset domain (recoverable by adding the global minimum back),
-while the Intensity Histogram (IH_*) family is reported directly in true HU.
+offset. The offset is **per-slide** (each slide's own floored minimum, not a
+dataset-global minimum), so offset-domain intensity values are not directly comparable
+across slides. Which feature families are affected:
+
+* Intensity Histogram (``IH_*``) features are reported directly in true HU.
+* Shift-invariant intensity features (variance, standard deviation, skewness, kurtosis,
+  range, interquartile range) and all shape/texture features are unaffected.
+* Location intensity features (mean, median, mode, percentiles, min, max) are reported in
+  the offset domain and recover true HU by adding that slide's floored minimum back.
+* Sum/energy intensity features (integrated intensity, energy, root-mean-squared, total
+  energy) are **not** recoverable by simply adding the minimum back — they also depend on
+  the pixel count and the offset.
 
 
 

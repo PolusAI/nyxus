@@ -40,9 +40,13 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 			if (ext == ".dcm" || ext == ".dicom")
 			{
 				#ifdef DICOM_SUPPORT
-					// HU offset base: fp override min if supplied, else the scanned (HU-domain) slide min
+					// HU offset base must be the scanned (HU-domain) slide min. In preserve_hu
+					// mode the slope-1 map bypasses fp min/max/dr, so we must NOT take
+					// fpopts.min_intensity() (defaults to 0 when --fpimgmin is absent) — that
+					// would clamp every negative HU to 0. Only the non-HU float path uses the
+					// fp override min.
 					intFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, int_fpath,
-						fpopts.empty() ? p.min_preroi_inten : (double)fpopts.min_intensity(),
+						(fpopts.preserve_hu() || fpopts.empty()) ? p.min_preroi_inten : (double)fpopts.min_intensity(),
 						fpopts.preserve_hu());
 				#else
 					std::string erm = "This version of Nyxus was not build with DICOM support";
@@ -56,8 +60,8 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 				if (ext == ".nii" || ext == ".nii.gz")
 				{
 					intFL = new NiftiLoader<uint32_t> (int_fpath,
-							fpopts.empty() ? p.min_preroi_inten : (double)fpopts.min_intensity(),		// FIX: CT/HU offset base = override min else scanned HU-domain slide min
-							fpopts.preserve_hu());		// FIX: CT/HU mode: offset-preserving map (matches DICOM/TIFF)
+							(fpopts.preserve_hu() || fpopts.empty()) ? p.min_preroi_inten : (double)fpopts.min_intensity(),		// HU offset base = scanned HU-domain slide min; ignore fp min in preserve_hu mode (else negative HU clamps to 0)
+							fpopts.preserve_hu());		// CT/HU mode: offset-preserving map (matches DICOM/TIFF)
 				}
 				else 
 				{
@@ -66,7 +70,11 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 					// automatic or overriden FP dynamic range
 					double fpmin = p.min_preroi_inten,
 						fpmax = p.max_preroi_inten;
-					if (! fpopts.empty())
+					// Only the non-HU float path honors the fp override min/max. In preserve_hu
+					// mode fpmin is the HU offset base and must stay the scanned slide min —
+					// taking fpopts.min_intensity() (0 by default) would clamp every negative
+					// HU to 0. hu_offset() ignores fpmax entirely.
+					if (! fpopts.empty() && ! fpopts.preserve_hu())
 					{
 						fpmin = fpopts.min_intensity();
 						fpmax = fpopts.max_intensity();
