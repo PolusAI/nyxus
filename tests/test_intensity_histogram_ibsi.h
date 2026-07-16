@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/intensity_histogram.h"
+#include "../src/nyx/features/intensity.h"
 #include "test_data.h"
 #include "test_main_nyxus.h"
 #include "test_intensity_histogram_regression.h"
@@ -126,4 +127,69 @@ void test_ih_dispersion_robust_analytic() {
     ASSERT_TRUE(agrees_gt(fv[(int)F::IH_QUANTILE_COEFFICIENT_OF_DISPERSION_VAL][0], 0.3178294574, 1e4)); // oracle=analytic
     // IQR_VAL: not IBSI-anchorable (IQR_IDX bin-floored vs IQR_VAL interpolated) -> analytic golden here.
     ASSERT_TRUE(agrees_gt(fv[(int)F::IH_INTERQUANTILE_RANGE_VAL][0], 12.3, 1e4)); // oracle=analytic
+}
+
+// ---------------------------------------------------------------------------------------------------
+// Analytic vetting of Feature2D::HISTOGRAM -- the multi-valued (vector) per-ROI intensity
+// histogram computed by PixelIntensityFeatures (src/nyx/features/intensity.cpp:
+// val_HISTOGRAM = H.get_cust_frequencies(n_greybins), saved at fvals[(int)Feature2D::HISTOGRAM]
+// in intensity.cpp:402). This is a distinct feature class/registry family from the scalar
+// IntensityHistogramFeatures (IH_*) tested above; it is opt-in (in *ALL*, not *ALL_INTENSITY*,
+// see PixelIntensityFeatures::PixelIntensityFeatures()) and NOT IBSI-gated.
+//
+// Binning contract, read from src/nyx/features/histogram.h (TrivialHistogram::initialize /
+// get_cust_frequencies) and src/nyx/helpers/helpers.h (Nyxus::to_grayscale):
+//   - N = n_cust_bins equal-width bins spanning [minVal_, maxVal_] of the ROI (bin width =
+//     range / N).
+//   - Bin index of intensity i = floor((i - min) / range * N)  [Nyxus::to_grayscale with
+//     disable_binning=false: pi = (i-min)/range*N ; new_pi = (unsigned int)pi, i.e. truncation
+//     toward 0 == floor for non-negative pi].
+//   - The internal accumulator has N+1 slots; a value whose floored index lands exactly on N
+//     (i.e. i == max, since (max-min)/range*N == N) falls into that extra slot, which is then
+//     folded into bin N-1 ("Fix the special last bin": bins_cust_[N-1] += bins_cust_[N]).
+//     So the histogram is top-inclusive: bin N-1 covers [min + (N-1)*range/N, max].
+//   - get_cust_frequencies(N) returns the raw integer bin COUNTS (not normalized frequencies /
+//     probabilities), trimmed to exactly N entries (the folded N-th slot is dropped after the
+//     fold-in above).
+//   - For a plain (non-IBSI) run, n_greybins = STNGS_NGREYS(settings) i.e. the GREYDEPTH
+//     setting (falling back to DEFAULT_NUM_HISTO_BINS=24 only when settings are entirely
+//     unpopulated) -- see intensity.cpp:157.
+//
+// Fixture: intensityHistogramTestData = {1,1,3,5,7} (5 px), N=3 bins over [min=1,max=7]
+// (range=6, binWidth=2). Bin assignment via floor((i-1)/6*3):
+//   i=1 -> floor(0/6*3)=floor(0.0) = 0 -> bin0
+//   i=1 -> floor(0/6*3)=floor(0.0) = 0 -> bin0
+//   i=3 -> floor(2/6*3)=floor(1.0) = 1 -> bin1
+//   i=5 -> floor(4/6*3)=floor(2.0) = 2 -> bin2
+//   i=7 -> floor(6/6*3)=floor(3.0) = 3 -> folds into bin (N-1)=2
+// Expected per-bin COUNTS: bin0=2 (the two 1's), bin1=1 (the 3), bin2=2 (the 5 and the folded 7).
+//   => expected = [2, 1, 2]   (sum = 5 = population; these are raw counts, not probabilities)
+void test_ih_histogram_analytic()
+{
+    using F = Nyxus::Feature2D;
+    const int N = 3;
+    // HISTOGRAM is not IBSI-gated; IBSI is left off here to keep the test independent of that gate.
+    Fsettings s = ih_make_settings(N, /*ibsi*/ false);
+
+    Dataset ds;
+    ds.dataset_props.push_back(SlideProps("", ""));
+
+    LR roidata(100);   // dummy label 100
+    roidata.slide_idx = -1;
+    load_test_roi_data(roidata, intensityHistogramTestData,
+                       sizeof(intensityHistogramTestData) / sizeof(NyxusPixel));
+    roidata.make_nonanisotropic_aabb();
+
+    PixelIntensityFeatures f;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
+
+    roidata.initialize_fvals();
+    f.save_value(roidata.fvals);
+
+    const auto& hist = roidata.fvals[(int)F::HISTOGRAM];
+    ASSERT_EQ(hist.size(), (size_t)N);
+
+    static const double expected[N] = { 2.0, 1.0, 2.0 };
+    for (int k = 0; k < N; k++)
+        ASSERT_TRUE(agrees_gt(hist[k], expected[k], 1e4)) << "bin " << k;
 }
