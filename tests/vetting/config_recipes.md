@@ -27,6 +27,14 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 - Fixed-bin-number discretised intensity histogram (IBSI IH family). Oracle: `mirp`.
 - Vet `IH_*_IDX` (bin-index domain); `IH_*_VAL` (bin-center value) is analytic vs Nyxus definition.
 
+## ih.ibsi_fbn
+- Fixed-bin discretised intensity histogram (IBSI IH family 3.4) on the IBSI digital phantom,
+  GREYDEPTH = <IH_PHANTOM_NBINS>, IBSI=true. Oracle: `ibsi`. Used by: `test_intensity_histogram_ibsi.h`.
+- `IH_*_IDX` vet directly against IBSI IH consensus (index/grey-level domain). `IH_*_VAL` are the
+  same statistics over bin centers = affine transform of the IDX distribution (VAL = binWidth·IDX
+  for spreads; +minVal offset for locations), so they are anchored to the IBSI-vetted IDX values.
+  `ROBUST_MEAN_*` have no IBSI feature -> analytic (see test_ih_dispersion_robust_analytic).
+
 ## moments.skimage_regionprops
 - scikit-image `regionprops` moments. Caveats: skimage transposes row/col indices (skimage m[i,j] =
   Nyxus m_{j,i}); weighted moments center on the intensity-weighted centroid; Hu returned raw (not log),
