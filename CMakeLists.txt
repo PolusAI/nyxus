@@ -127,6 +127,10 @@ set(SOURCE
 	src/nyx/raw_tiff.h
 	# sources
 	src/nyx/3rdparty/dsyevj3.cpp
+	# native OME metadata parsing + unified format detection
+	src/nyx/ome/format_detect.cpp
+	src/nyx/ome/ome_tiff_meta.cpp
+	src/nyx/ome/ome_zarr_meta.cpp
 	src/nyx/features/basic_morphology.cpp
 	src/nyx/features/caliper_feret.cpp
 	src/nyx/features/caliper_martin.cpp

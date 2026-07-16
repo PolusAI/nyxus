@@ -4,6 +4,7 @@
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
 #include "test_contour.h"
+#include "test_ome_meta.h"		// native-OME metadata parsers / OmeAxes descriptor
 #include "test_firstorder_regression.h"
 #include "test_intensity_histogram_regression.h"
 #include "test_intensity_histogram_ibsi.h"
