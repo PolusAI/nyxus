@@ -112,10 +112,10 @@ std::tuple<double, double, double, double, double, double, double> BasicGeomoms2
         (_30 + _12) *
         (pow(_30 + _12, 2) - 3 * pow(_21 + _03, 2)) +
         (3 * _21 - _03) * (_21 + _03) *
-        (pow(3 * (_30 + _12), 2) - pow(_21 + _03, 2));
+        (3 * pow(_30 + _12, 2) - pow(_21 + _03, 2));	// FIX: was pow(3*(_30+_12), 2) == 9*(eta30+eta12)^2; Hu's I5 second bracket is 3*(eta30+eta12)^2 - (eta21+eta03)^2 (same defect as the trivial-ROI sibling; cf. correct h7 below)
     double h6 = (_20 - _02) * (pow(_30 + _12, 2) -
-        pow(_21 + _03, 2)) + (4 * _11 * (_30 + _12) *
-            _21 + _03);
+        pow(_21 + _03, 2)) +
+        4 * _11 * (_30 + _12) * (_21 + _03);	// FIX: was 4*_11*(_30+_12)*_21 + _03 - precedence error left "+_03" outside the product; Hu's I6 last term is 4*eta11*(eta30+eta12)*(eta21+eta03)
     double h7 = (3 * _21 - _03) * (_30 + _12) * (pow(_30 + _12, 2) -
         3 * pow(_21 + _03, 2)) - (_30 - 3 * _12) * (_21 + _03) *
         (3 * pow(_30 + _12, 2) - pow(_21 + _03, 2));
