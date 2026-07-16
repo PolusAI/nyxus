@@ -6,6 +6,7 @@
 #include "test_contour.h"
 #include "test_firstorder_regression.h"
 #include "test_intensity_histogram_regression.h"
+#include "test_intensity_histogram_ibsi.h"
 #include "test_hu_analytic.h"
 #include "test_hu_mechanics.h"
 #include "test_morphology_features.h"
@@ -811,6 +812,11 @@ TEST(TEST_NYXUS, TEST_IH_FLOAT_DOMAIN_RECONSTRUCTION_PRESERVE_HU_FPACTIVE)
 TEST(TEST_NYXUS, TEST_IH_REQUIRED_PREDICATE)
 {
 	ASSERT_NO_THROW(test_ih_required_predicate());
+}
+
+TEST(TEST_NYXUS, TEST_IH_DISPERSION_IBSI)
+{
+	ASSERT_NO_THROW(test_ih_dispersion_ibsi());
 }
 
 TEST(TEST_NYXUS, TEST_HU_UINT_FRIENDLY_NORMALIZATION_CT_RANGE)
