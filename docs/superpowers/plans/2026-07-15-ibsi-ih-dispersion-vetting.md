@@ -221,24 +221,27 @@ git commit -m "test(intensity-histogram): vet 12 IH _IDX features vs IBSI phanto
 **Interfaces:** Consumes `ih_ibsi_run`, `ihg`, the phantom run's `IH_BIN_SIZE`/`IH_MINIMUM_VAL`. Produces the 6 VAL assertions anchored to the IBSI-vetted IDX quantities.
 
 **Anchorability (finalised during self-review):** value = `a + b·index` with `b = binWidth`,
-`a = IH_MINIMUM_VAL + 0.5·b`. Cleanly IBSI-anchorable from exposed features (**5 VAL**):
-- Pure-scale spreads → `VAL = b·IDX`: `INTERQUANTILE_RANGE_VAL`, `MEAN_ABSOLUTE_DEVIATION_VAL`,
-  `ROBUST_MEAN_ABSOLUTE_DEVIATION_VAL`, `MEDIAN_ABSOLUTE_DEVIATION_VAL`.
+`a = IH_MINIMUM_VAL + 0.5·b`. Cleanly IBSI-anchorable from exposed features (**4 VAL**):
+- Pure-scale spreads → `VAL = b·IDX`: `MEAN_ABSOLUTE_DEVIATION_VAL`,
+  `ROBUST_MEAN_ABSOLUTE_DEVIATION_VAL`, `MEDIAN_ABSOLUTE_DEVIATION_VAL`. (These use the per-bin
+  deviation loop with unfloored `i`, so `deltaValue = b·deltaIndex` holds exactly.)
 - Ratio via IBSI variance + exposed value-mean → `COEFFICIENT_OF_VARIATION_VAL = b·sqrt(VARIANCE_IDX)/MEAN_VAL`
   (`VARIANCE_IDX` is the IBSI anchor; `IH_MEAN_VAL` is exposed).
 
-`QUANTILE_COEFFICIENT_OF_DISPERSION_VAL` is **not** cleanly anchorable — it needs the sum
-`P75_VAL + P25_VAL`, and Nyxus exposes only `P10_VAL`/`P90_VAL`, not the quartiles. → it is vetted
-analytically in Task 4, `oracle=analytic`.
+**NOT cleanly anchorable → analytic (Task 4):**
+- `QUANTILE_COEFFICIENT_OF_DISPERSION_VAL` — needs the sum `P75_VAL + P25_VAL`; Nyxus exposes only
+  `P10_VAL`/`P90_VAL`.
+- `INTERQUANTILE_RANGE_VAL` — `IQR_IDX = p75Index − p25Index` uses `getIndexOf()` (floored bin
+  index), while `IQR_VAL = p75Value − p25Value` uses interpolated quantiles, so `IQR_VAL ≠ b·IQR_IDX`
+  (verified empirically: 2.42604 vs 2.5 on the phantom). The `IQR_IDX`-floor / `IQR_VAL`-interpolate
+  inconsistency is recorded as a Nyxus bug (see `docs/known-issues/`).
 
-- [ ] **Step 1: Add the 5 IBSI-anchored VAL assertions** to the end of `test_ih_dispersion_ibsi()`:
+- [ ] **Step 1: Add the 4 IBSI-anchored VAL assertions** to the end of `test_ih_dispersion_ibsi()`:
 
 ```cpp
     // ---- VAL anchored to the IBSI-vetted IDX values (design §5) ----
     double b = ihg(fv, F::IH_BIN_SIZE);                 // binWidth
-    // pure-scale spreads: VAL = b * IDX
-    ASSERT_TRUE(agrees_gt(ihg(fv,F::IH_INTERQUANTILE_RANGE_VAL),
-                          b*ihg(fv,F::IH_INTERQUANTILE_RANGE_IDX), 1e4));
+    // pure-scale spreads: VAL = b * IDX  (IQR_VAL excluded — quantile flooring breaks the identity)
     ASSERT_TRUE(agrees_gt(ihg(fv,F::IH_MEAN_ABSOLUTE_DEVIATION_VAL),
                           b*ihg(fv,F::IH_MEAN_ABSOLUTE_DEVIATION_IDX), 1e4));
     ASSERT_TRUE(agrees_gt(ihg(fv,F::IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_VAL),
@@ -252,13 +255,13 @@ analytically in Task 4, `oracle=analytic`.
 
 - [ ] **Step 2: Build and run.**
   Run: `cmake --build build_gtest --target runAllTests -j && ./build_gtest/tests/runAllTests --gtest_filter='*TEST_IH_DISPERSION_IBSI*'`
-  Expected: PASS — the 5 IBSI-anchored VAL features equal their transforms.
+  Expected: PASS — the 4 IBSI-anchored VAL features equal their transforms.
 
 - [ ] **Step 3: Commit.**
 
 ```bash
 git add tests/test_intensity_histogram_ibsi.h
-git commit -m "test(intensity-histogram): anchor 5 IH _VAL features to IBSI-vetted IDX"
+git commit -m "test(intensity-histogram): anchor 4 IH _VAL features to IBSI-vetted IDX"
 ```
 
 ---
@@ -267,7 +270,7 @@ git commit -m "test(intensity-histogram): anchor 5 IH _VAL features to IBSI-vett
 
 **Files:** Modify `tests/test_intensity_histogram_ibsi.h` (add fixture + `test_ih_dispersion_robust_analytic`); modify `test_all.cc` (register).
 
-**Interfaces:** Produces `intensityHistogramRobustData` fixture + `test_ih_dispersion_robust_analytic()` covering the 3 `oracle=analytic` features — `ROBUST_MEAN_IDX`, `ROBUST_MEAN_VAL` (no IBSI feature), and `QUANTILE_COEFFICIENT_OF_DISPERSION_VAL` (not IBSI-anchorable) — plus the robust-MAD trimming path. All goldens are hand-computed (carried from PR 367, derived independently of `intensity_histogram.cpp`).
+**Interfaces:** Produces `intensityHistogramRobustData` fixture + `test_ih_dispersion_robust_analytic()` covering the 4 `oracle=analytic` features — `ROBUST_MEAN_IDX`, `ROBUST_MEAN_VAL` (no IBSI feature), `QUANTILE_COEFFICIENT_OF_DISPERSION_VAL` and `INTERQUANTILE_RANGE_VAL` (not IBSI-anchorable — quantile flooring) — plus the robust-MAD trimming path. All goldens are hand-computed (carried from PR 367, derived independently of `intensity_histogram.cpp`).
 
 - [ ] **Step 1: Add the discriminating fixture + test.** 17-px ROI, N=5, `freq={1,5,6,4,1}`, robust window `[p10Idx,p90Idx]` trims tail bins (robust ≠ full). Goldens are hand-derived (carried from PR 367, which computed them independently of `intensity_histogram.cpp`):
 
@@ -302,6 +305,8 @@ void test_ih_dispersion_robust_analytic() {
     ASSERT_TRUE(agrees_gt(fv[(int)F::IH_ROBUST_MEAN_IDX][0], 1.933333333, 1e4));         // oracle=analytic
     // QCoD_VAL: not IBSI-anchorable (needs unexposed P25/P75 sum) -> analytic golden here.
     ASSERT_TRUE(agrees_gt(fv[(int)F::IH_QUANTILE_COEFFICIENT_OF_DISPERSION_VAL][0], 0.3178294574, 1e4)); // oracle=analytic
+    // IQR_VAL: not IBSI-anchorable (IQR_IDX bin-floored vs IQR_VAL interpolated) -> analytic golden here.
+    ASSERT_TRUE(agrees_gt(fv[(int)F::IH_INTERQUANTILE_RANGE_VAL][0], 12.3, 1e4)); // oracle=analytic
 }
 ```
 
@@ -350,19 +355,21 @@ git commit -m "test(intensity-histogram): analytic robust-window fixture for IH 
 ```python
 import csv
 PATH="tests/vetting/oracle_coverage.csv"
-IBSI = {  # 17 rows -> oracle=ibsi (12 IDX with IBSI consensus + 5 IBSI-anchored VAL)
+IBSI = {  # 16 rows -> oracle=ibsi (12 IDX with IBSI consensus + 4 IBSI-anchored VAL)
   "IH_VARIANCE_IDX","IH_SKEWNESS_IDX","IH_EXCESS_KURTOSIS_IDX","IH_INTERQUANTILE_RANGE_IDX",
   "IH_RANGE_IDX","IH_MEAN_ABSOLUTE_DEVIATION_IDX","IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_IDX",
   "IH_MEDIAN_ABSOLUTE_DEVIATION_IDX","IH_COEFFICIENT_OF_VARIATION_IDX",
   "IH_QUANTILE_COEFFICIENT_OF_DISPERSION_IDX","IH_ENTROPY_IDX","IH_UNIFORMITY_IDX",
-  "IH_INTERQUANTILE_RANGE_VAL","IH_MEAN_ABSOLUTE_DEVIATION_VAL",
+  "IH_MEAN_ABSOLUTE_DEVIATION_VAL",
   "IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_VAL","IH_MEDIAN_ABSOLUTE_DEVIATION_VAL",
   "IH_COEFFICIENT_OF_VARIATION_VAL",
 }
-# 3 rows -> oracle=analytic: robust-mean pair (no IBSI feature) + QCoD_VAL (not IBSI-anchorable)
-ANALYTIC = {"IH_ROBUST_MEAN_IDX","IH_ROBUST_MEAN_VAL","IH_QUANTILE_COEFFICIENT_OF_DISPERSION_VAL"}
-NOTE_IBSI="vetted by test_ih_dispersion_ibsi (IBSI IH phantom consensus for _IDX; _VAL anchored via affine VAL=transform(IDX), recipe ih.ibsi_fbn)"
-NOTE_AN="vetted by test_ih_dispersion_robust_analytic (robust mean has no IBSI feature; hand-computed on the robust-window discriminating fixture)"
+# 4 rows -> oracle=analytic: robust-mean pair (no IBSI feature) + QCoD_VAL & IQR_VAL (quantile-floored,
+# not IBSI-anchorable). IQR_IDX-floor/IQR_VAL-interpolate inconsistency filed as a Nyxus bug (docs/known-issues/).
+ANALYTIC = {"IH_ROBUST_MEAN_IDX","IH_ROBUST_MEAN_VAL",
+            "IH_QUANTILE_COEFFICIENT_OF_DISPERSION_VAL","IH_INTERQUANTILE_RANGE_VAL"}
+NOTE_IBSI="vetted by test_ih_dispersion_ibsi (IBSI IH phantom consensus for _IDX; the 4 anchorable _VAL via affine VAL=transform(IDX), recipe ih.ibsi_fbn)"
+NOTE_AN="vetted by test_ih_dispersion_robust_analytic (hand-computed on the robust-window discriminating fixture; no clean IBSI anchor - robust-mean has no IBSI feature, QCoD_VAL/IQR_VAL are quantile-floored, see docs/known-issues/)"
 rows=list(csv.DictReader(open(PATH))); cols=rows[0].keys()
 n=0
 for r in rows:

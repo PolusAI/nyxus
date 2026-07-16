@@ -212,17 +212,20 @@ per §4 it is vetted analytically, not against an IBSI number.
   IDX↔IBSI index-domain correspondence and the VAL = transform(IDX) relation).
 - Flip the rows `untested → vetted`, `config_recipe = ih.ibsi_fbn`,
   `current_test = test_intensity_histogram_ibsi.h`, with oracle tokens:
-  - **17 rows → `oracle = ibsi`**: the 12 IDX with published IBSI consensus values, plus the 5
-    cleanly IBSI-anchorable `_VAL` — IQR, MAD, rMAD, medianAD (each `= binWidth·IDX`) and CoV
+  - **16 rows → `oracle = ibsi`**: the 12 IDX with published IBSI consensus values, plus the 4
+    cleanly IBSI-anchorable `_VAL` — MAD, rMAD, medianAD (each `= binWidth·IDX`) and CoV
     (`= binWidth·sqrt(VARIANCE_IDX)/MEAN_VAL`, anchored on the IBSI-vetted `VARIANCE_IDX`). `_VAL`
     notes document the transform.
-  - **3 rows → `oracle = analytic`**: `ROBUST_MEAN_IDX`, `ROBUST_MEAN_VAL` (robust mean is not an
-    IBSI feature), and `QUANTILE_COEFFICIENT_OF_DISPERSION_VAL` (needs the unexposed `P25/P75` sum,
-    so not cleanly IBSI-anchorable). Vetted on the hand-computed discriminating fixture; notes state
+  - **4 rows → `oracle = analytic`**: `ROBUST_MEAN_IDX`, `ROBUST_MEAN_VAL` (robust mean is not an
+    IBSI feature), `QUANTILE_COEFFICIENT_OF_DISPERSION_VAL` (needs the unexposed `P25/P75` sum), and
+    `INTERQUANTILE_RANGE_VAL` (`IQR_IDX` is bin-floored while `IQR_VAL` is interpolated, so
+    `IQR_VAL ≠ binWidth·IQR_IDX`). Vetted on the hand-computed discriminating fixture; notes state
     why no IBSI anchor applies.
 
-  *(Refinement discovered during planning: the design earlier said 18 ibsi + 2 analytic; the
-  value-domain shift-sensitive ratios make it 17 + 3 — `QCoD_VAL` moves to analytic.)*
+  *(Refinements discovered during planning/execution: design first said 18 ibsi + 2 analytic → 17 + 3
+  (planning: `QCoD_VAL` shift-sensitive) → 16 + 4 (Task 3 execution: `IQR_VAL` fails the transform
+  because `IQR_IDX` floors via `getIndexOf()`; the flooring inconsistency is filed as a Nyxus bug in
+  `docs/known-issues/`).)*
 - Regenerate `coverage_report.md` via `check_coverage.py --write`. `--check` stays green (`ibsi`
   is an allowed oracle token).
 
