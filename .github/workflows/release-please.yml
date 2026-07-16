@@ -20,8 +20,12 @@ jobs:
       - uses: google-github-actions/release-please-action@v4
         id: release
         with:
-          release-type: python
-          package-name: nyxus
+          # Use the manifest config so release-please honors bump-minor-pre-major
+          # (0.x breaking changes -> minor, not a jump to 1.0.0). release-type/
+          # package-name live in release-please-config.json; passing them inline put
+          # v4 on the non-manifest path and silently ignored the config.
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
 
       - name: Checkout code
         if: ${{ steps.release.outputs.release_created }}
