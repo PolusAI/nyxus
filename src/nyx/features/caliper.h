@@ -43,7 +43,6 @@ private:
 
 	// Implementation constant
 	const float rot_angle_increment = 10.f;	// degrees
-	const int n_steps = 10;
 };
 
 class CaliperFeretFeature : public FeatureMethod
@@ -91,7 +90,6 @@ private:
 
 	// Implementation constant
 	const double rot_angle_increment = 10.f;	// degrees
-	const int n_steps = 10;
 };
 
 class CaliperMartinFeature : public FeatureMethod
@@ -129,6 +127,5 @@ private:
 
 	// Implementation constant
 	const float rot_angle_increment = 10.f;	// degrees
-	const int n_steps = 10;
 };
 

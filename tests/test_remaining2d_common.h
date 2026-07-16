@@ -11,6 +11,7 @@
 #include "../src/nyx/features/basic_morphology.h"
 #include "../src/nyx/features/caliper.h"
 #include "../src/nyx/features/chords.h"
+#include "../src/nyx/features/circle.h"
 #include "../src/nyx/features/contour.h"
 #include "../src/nyx/features/convex_hull.h"
 #include "../src/nyx/features/erosion.h"
@@ -24,25 +25,38 @@
 static std::unordered_map<std::string, double> oracle_3p_remaining2d_feature_golden_values{
 	{"EROSIONS_2_VANISH_COMPLEMENT", 0.0},
 	{"MIN_FERET_ANGLE", 40.0},
-	{"MAX_FERET_ANGLE", 0.0},
-	{"STAT_FERET_DIAM_MIN", 4.0},
-	{"STAT_FERET_DIAM_MAX", 5.0},
-	{"STAT_FERET_DIAM_MEAN", 4.9473684210526319},
-	{"STAT_FERET_DIAM_MEDIAN", 5.0},
-	{"STAT_FERET_DIAM_STDDEV", 0.22329687826943606},
+	// FIX (caliper float-precision): re-pinned to the float-precision hull-rotation values (see rotation.cpp
+	// rotate_around_center_fp). The old integer-Pixel2 rotation truncated every rotated vertex inward,
+	// so these 8x8-fixture goldens shifted when the truncation was removed. MAX_FERET_ANGLE moved 0->110
+	// because the per-angle Feret ties differently once the diameters are no longer integer-quantized
+	// (the Feret angle is a regression-only Nyxus-frame convention, not oracle-vetted). MODE values are
+	// unchanged. The diameters themselves are vetted vs imea (<=10%) on the ellipse oracle below.
+	{"MAX_FERET_ANGLE", 110.0},
+	{"STAT_FERET_DIAM_MIN", 4.47301},
+	{"STAT_FERET_DIAM_MAX", 6.3222},
+	{"STAT_FERET_DIAM_MEAN", 5.40848},
+	{"STAT_FERET_DIAM_MEDIAN", 5.19615},
+	{"STAT_FERET_DIAM_STDDEV", 0.550668},
 	{"STAT_FERET_DIAM_MODE", 5.0},
-	{"STAT_MARTIN_DIAM_MIN", 0.79999995380639899},
-	{"STAT_MARTIN_DIAM_MAX", 5.0},
-	{"STAT_MARTIN_DIAM_MEAN", 3.1314814727604796},
-	{"STAT_MARTIN_DIAM_MEDIAN", 3.5},
-	{"STAT_MARTIN_DIAM_STDDEV", 1.6662952583978845},
-	{"STAT_MARTIN_DIAM_MODE", 1.0},
-	{"STAT_NASSENSTEIN_DIAM_MIN", 0.0},
-	{"STAT_NASSENSTEIN_DIAM_MAX", 5.0},
-	{"STAT_NASSENSTEIN_DIAM_MEAN", 2.68842592930522},
-	{"STAT_NASSENSTEIN_DIAM_MEDIAN", 3.5},
-	{"STAT_NASSENSTEIN_DIAM_STDDEV", 2.1985188021518653},
-	{"STAT_NASSENSTEIN_DIAM_MODE", 0.0},
+	// FIXED (caliper reimpl): Martin is now the area-bisecting chord and Nassenstein the bottom-tangent
+	// vertical chord (one diameter per angle), not the old min+max of a Y-grid of horizontal chords.
+	// The old goldens pinned the bug (Martin min 0.8, Nassenstein min/mode 0.0 — impossible for a solid
+	// shape). These are the corrected values on the 8x8 fixture; the diameters are vetted vs imea on a
+	// clean ellipse in TEST_SHAPE2D_CALIPER_MARTIN_NASSENSTEIN_IMEA_ELLIPSE_ORACLE.
+	// FIX (caliper float-precision): re-pinned again after the float-precision hull rotation removed the inward
+	// integer-truncation bias (MODE unchanged).
+	{"STAT_MARTIN_DIAM_MIN", 4.25885},
+	{"STAT_MARTIN_DIAM_MAX", 6.12801},
+	{"STAT_MARTIN_DIAM_MEAN", 5.01762},
+	{"STAT_MARTIN_DIAM_MEDIAN", 4.97511},
+	{"STAT_MARTIN_DIAM_STDDEV", 0.553162},
+	{"STAT_MARTIN_DIAM_MODE", 4.0},
+	{"STAT_NASSENSTEIN_DIAM_MIN", 1.67316},
+	{"STAT_NASSENSTEIN_DIAM_MAX", 6.24165},
+	{"STAT_NASSENSTEIN_DIAM_MEAN", 4.77746},
+	{"STAT_NASSENSTEIN_DIAM_MEDIAN", 5.03857},
+	{"STAT_NASSENSTEIN_DIAM_STDDEV", 1.09628},
+	{"STAT_NASSENSTEIN_DIAM_MODE", 4.0},
 	{"MAXCHORDS_MAX", 6.0},
 	{"MAXCHORDS_MIN", 3.0},
 	{"MAXCHORDS_MEDIAN", 4.0},
@@ -70,7 +84,9 @@ static std::unordered_map<std::string, double> unvetted_nyxus_regression_remaini
 	// assertions below now value-compare against them (agrees_gt) so any future drift is caught.
 	{"POLYGONALITY_AVE", 2.0833333333333357},
 	{"HEXAGONALITY_AVE", 6.8823312738837217},
-	{"HEXAGONALITY_STDDEV", 0.18495557498763179},
+	// FIX (caliper float-precision): HEXAGONALITY_STDDEV re-pinned (depends on STAT_FERET_DIAM_MIN/MAX, which
+	// shifted with the float-precision hull rotation); the AVE scores stayed within tolerance.
+	{"HEXAGONALITY_STDDEV", 0.188079},
 	// FIXED (chords.cpp idxmax used iteMin): max-angle now indexes the longest chord (angle 0), not the min
 	{"MAXCHORDS_MAX_ANG", 0.0},
 	{"MAXCHORDS_MIN_ANG", 0.94247779607693793},
@@ -106,6 +122,43 @@ static std::unordered_map<std::string, std::vector<double>> oracle_3p_remaining2
 		0.00016460740533666494, 0.085700825034398798, 0.15183975656312645,
 		0.052012830525298454, 0.0045112452293896111, 0.00015124210515210458,
 	}},
+};
+
+// ---------------------------------------------------------------------------------------------------
+// Martin / Nassenstein caliper vetting vs imea (external oracle).
+//
+// The 8x8 shape2d fixture above is too small/aliased to serve as a tight caliper oracle, so the
+// corrected Martin (area-bisecting chord) and Nassenstein (bottom-tangent vertical chord) diameters
+// are vetted on a clean, larger convex fixture: a filled ellipse a=20, b=10 (same rasterization as
+// morph_oracle/caliper_proto.py). imea (imea.measure_2d.statistical_length, dalpha=10) is the
+// reference. Nyxus rotates the convex hull and measures analytically while imea rotates the filled
+// raster, so the two agree only up to a ~1-2px hull-vs-raster convention gap (same gap already
+// accepted for Feret) — hence a 10% relative tolerance on the robust stats. The point that this pins
+// is that the diameters are now the *correct* quantities (min > 0), not the old min+max-chord bug
+// that produced physically-impossible 0-length Nassenstein diameters.
+static std::unordered_map<std::string, double> imea_ellipse_caliper_oracle{
+	{"STAT_MARTIN_DIAM_MIN", 19.0},
+	{"STAT_MARTIN_DIAM_MAX", 41.0},
+	{"STAT_MARTIN_DIAM_MEAN", 27.61},
+	{"STAT_MARTIN_DIAM_MEDIAN", 25.5},
+	{"STAT_NASSENSTEIN_DIAM_MIN", 16.0},
+	{"STAT_NASSENSTEIN_DIAM_MAX", 41.0},
+	{"STAT_NASSENSTEIN_DIAM_MEAN", 25.17},
+	{"STAT_NASSENSTEIN_DIAM_MEDIAN", 21.5},
+	// Feret is a correct rotating-calipers implementation (unlike the Martin/Nassenstein bug); it
+	// agrees with imea within the same ~1-2px hull-vs-raster convention gap. Reference from imea
+	// (imea.measure_2d.statistical_length feret_diameters, dalpha=10) on the same ellipse.
+	{"STAT_FERET_DIAM_MIN", 21.0},
+	{"STAT_FERET_DIAM_MAX", 41.0},
+	{"STAT_FERET_DIAM_MEAN", 31.72},
+	{"STAT_FERET_DIAM_MEDIAN", 32.5},
+	// Minimum enclosing circle (Welzl / cv2.minEnclosingCircle) is centroid-independent and matches
+	// imea/OpenCV exactly: for the ellipse a=20 its diameter = the major axis = 2a = 40. (The circle
+	// fixture's value 30 is asserted inline.) NOTE: DIAMETER_CIRCUMSCRIBING_CIRCLE and
+	// DIAMETER_INSCRIBING_CIRCLE are NOT here — they are imea's crude max/min centroid-to-contour
+	// distance approximation (not a true geometric circle), sensitive to Nyxus's contour convention +
+	// the centroid-1 offset (a symmetric circle yields 35.6/23.3, not ~30/~30), so they stay regression.
+	{"DIAMETER_MIN_ENCLOSING_CIRCLE", 40.0},
 };
 
 static Fsettings make_remaining2d_settings()
@@ -234,6 +287,125 @@ static void calculate_remaining2d_polygonality_feature_values(std::unordered_map
 		hexpoly.calculate(item.second, s);
 		hexpoly.save_value(item.second.fvals);
 	}
+}
+
+// Build a filled ellipse (a=20, b=10) ROI and compute its caliper features. Mirrors the
+// rasterization in morph_oracle/caliper_proto.py so the imea reference values above line up.
+static void calculate_ellipse_caliper_values(std::vector<std::vector<double>>& fvals)
+{
+	Fsettings s = make_remaining2d_settings();
+
+	LR roi(1);
+	const double a = 20.0, b = 10.0, cx = 26.0, cy = 16.0;	// pad=6, matches the prototype fixture
+	bool first = true;
+	for (int y = 0; y <= 32; y++)
+		for (int x = 0; x <= 52; x++)
+		{
+			double dx = (x - cx) / a, dy = (y - cy) / b;
+			if (dx * dx + dy * dy <= 1.0)
+			{
+				if (first)
+				{
+					init_label_record_3(roi, x, y, 1);
+					first = false;
+				}
+				else
+					update_label_record_3(roi, x, y, 1);
+				roi.raw_pixels.push_back(Pixel2(static_cast<size_t>(x), static_cast<size_t>(y), static_cast<PixIntens>(1)));
+			}
+		}
+	roi.make_nonanisotropic_aabb();
+	roi.aux_image_matrix = ImageMatrix(roi.raw_pixels);
+	roi.initialize_fvals();
+
+	BasicMorphologyFeatures basic;	// provides CENTROID_X/Y for the circle features
+	basic.calculate(roi, s);
+	basic.save_value(roi.fvals);
+
+	ContourFeature contour;
+	contour.calculate(roi, s);
+	contour.save_value(roi.fvals);
+
+	ConvexHullFeature hull;
+	hull.calculate(roi, s);
+	hull.save_value(roi.fvals);
+
+	CaliperFeretFeature feret;
+	feret.calculate(roi, s);
+	feret.save_value(roi.fvals);
+
+	CaliperMartinFeature martin;
+	martin.calculate(roi, s);
+	martin.save_value(roi.fvals);
+
+	CaliperNassensteinFeature nassenstein;
+	nassenstein.calculate(roi, s);
+	nassenstein.save_value(roi.fvals);
+
+	EnclosingInscribingCircumscribingCircleFeature circle;
+	circle.calculate(roi, s);
+	circle.save_value(roi.fvals);
+
+	fvals = roi.fvals;
+}
+
+// Build a filled circle (r=15) ROI and compute basic morphology + contour + the 3 circle diameters.
+static void calculate_circle_shape_values(std::vector<std::vector<double>>& fvals)
+{
+	Fsettings s = make_remaining2d_settings();
+
+	LR roi(2);
+	const double r = 15.0, cx = 21.0, cy = 21.0;	// pad=6
+	bool first = true;
+	for (int y = 0; y <= 42; y++)
+		for (int x = 0; x <= 42; x++)
+		{
+			double dx = (x - cx) / r, dy = (y - cy) / r;
+			if (dx * dx + dy * dy <= 1.0)
+			{
+				if (first) { init_label_record_3(roi, x, y, 1); first = false; }
+				else update_label_record_3(roi, x, y, 1);
+				roi.raw_pixels.push_back(Pixel2(static_cast<size_t>(x), static_cast<size_t>(y), static_cast<PixIntens>(1)));
+			}
+		}
+	roi.make_nonanisotropic_aabb();
+	roi.aux_image_matrix = ImageMatrix(roi.raw_pixels);
+	roi.initialize_fvals();
+
+	BasicMorphologyFeatures basic;
+	basic.calculate(roi, s);
+	basic.save_value(roi.fvals);
+
+	ContourFeature contour;
+	contour.calculate(roi, s);
+	contour.save_value(roi.fvals);
+
+	EnclosingInscribingCircumscribingCircleFeature circle;
+	circle.calculate(roi, s);
+	circle.save_value(roi.fvals);
+
+	fvals = roi.fvals;
+}
+
+// Assert a caliper stat agrees with imea within a relative tolerance (hull-vs-raster convention gap).
+static void assert_caliper_close_to_imea(
+	const std::vector<std::vector<double>>& fvals,
+	Nyxus::Feature2D feature,
+	const std::string& feature_name,
+	// FIX (caliper float-precision): tightened 0.15 -> 0.10 after the float-precision hull rotation removed the
+	// integer-truncation inward bias. Measured residuals on the a=20,b=10 ellipse: Martin 1.8-4.6%,
+	// Feret 1.4-4.8%, Nassenstein 2.4-3.7% except its bottom-tangent MIN (8.9%) and MEDIAN (6.0%). The
+	// floor is the Nassenstein MIN: a near-apex vertical tangent chord measured on the convex hull vs
+	// imea's raster - a definitional hull-vs-raster gap, not a precision loss, so 0.10 is the honest bound.
+	double reltol = 0.10)
+{
+	SCOPED_TRACE(std::string("CALIPER_VS_IMEA__") + feature_name);
+	ASSERT_TRUE(imea_ellipse_caliper_oracle.count(feature_name) > 0);
+	const double imea_ref = imea_ellipse_caliper_oracle[feature_name];
+	const double actual = fvals[static_cast<int>(feature)][0];
+	const double denom = std::max(std::abs(imea_ref), 1e-9);
+	ASSERT_LE(std::abs(actual - imea_ref) / denom, reltol)
+		<< feature_name << " nyxus=" << actual << " imea=" << imea_ref;
 }
 
 static void assert_unvetted_no_direct_oracle_remaining2d_feature(

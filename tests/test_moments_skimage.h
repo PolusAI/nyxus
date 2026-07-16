@@ -43,7 +43,7 @@ static const std::vector<GeomomentGoldenValue> oracle_3p_shape_geomoment_feature
 	{Nyxus::Feature2D::HU_M2, "HU_M2", 0.0009336419753086421},
 	{Nyxus::Feature2D::HU_M3, "HU_M3", 0},
 	{Nyxus::Feature2D::HU_M4, "HU_M4", 0},
-	{Nyxus::Feature2D::HU_M5, "HU_M5", 4.598098572281346e-10},
+	{Nyxus::Feature2D::HU_M5, "HU_M5", 0},	// FIX(h5): oracle-exact 0 on this symmetric fixture (odd etas vanish); the old pin 4.598e-10 was summation noise of the defective h5 formula (gen_moments_skimage.py)
 	{Nyxus::Feature2D::HU_M6, "HU_M6", 0},
 	{Nyxus::Feature2D::HU_M7, "HU_M7", -2.3604559630908652e-10},
 };
@@ -89,10 +89,50 @@ static const std::vector<GeomomentGoldenValue> oracle_3p_intensity_geomoment_fea
 	{Nyxus::Feature2D::IMOM_HU2, "IMOM_HU2", 3.7112807351259333e-08},
 	{Nyxus::Feature2D::IMOM_HU3, "IMOM_HU3", 2.6788774435431954e-11},
 	{Nyxus::Feature2D::IMOM_HU4, "IMOM_HU4", 2.8991603200922661e-12},
-	{Nyxus::Feature2D::IMOM_HU5, "IMOM_HU5", -2.1393783155778043e-23},
-	{Nyxus::Feature2D::IMOM_HU6, "IMOM_HU6", -2.3976723312959013e-06},
+	{Nyxus::Feature2D::IMOM_HU5, "IMOM_HU5", -1.9898126265836865e-22},	// FIX(h5): skimage-oracle value after the calcHu_imp h5 fix; old pin encoded the 9x-bracket defect (gen_moments_skimage.py)
+	{Nyxus::Feature2D::IMOM_HU6, "IMOM_HU6", -6.66827346717698e-17},	// FIX(h6): skimage-oracle value after the calcHu_imp h6 fix; old pin -2.3976723312959013e-06 == IMOM_NCM_03, i.e. the stray "+eta03" of the precedence bug (gen_moments_skimage.py)
 	{Nyxus::Feature2D::IMOM_HU7, "IMOM_HU7", 2.3835594243218353e-23},
 };
+
+// Asymmetric wedge fixture (see load_wedge_fixture in test_moments_common.h): the ONLY fixture in
+// this file whose odd-order etas are big enough to vet Hu h5/h6 against skimage above the assertion
+// tolerance. Provenance: scikit-image 0.26.0 / numpy 2.4.6, generator
+// tests/vetting/oracles/gen_moments_skimage.py (section C), 2026-07-16.
+static const std::vector<GeomomentGoldenValue> wedge_shape_hu_skimage_golden_values{
+	{Nyxus::Feature2D::SPAT_MOMENT_00, "SPAT_MOMENT_00", 180},
+	{Nyxus::Feature2D::SPAT_MOMENT_10, "SPAT_MOMENT_10", 4560},
+	{Nyxus::Feature2D::SPAT_MOMENT_01, "SPAT_MOMENT_01", 420},
+	{Nyxus::Feature2D::CENTRAL_MOMENT_20, "CENTRAL_MOMENT_20", 17860},
+	{Nyxus::Feature2D::CENTRAL_MOMENT_02, "CENTRAL_MOMENT_02", 699.9999999999999},
+	{Nyxus::Feature2D::CENTRAL_MOMENT_11, "CENTRAL_MOMENT_11", 1750},
+	{Nyxus::Feature2D::CENTRAL_MOMENT_30, "CENTRAL_MOMENT_30", -99166.66666666698},
+	{Nyxus::Feature2D::CENTRAL_MOMENT_03, "CENTRAL_MOMENT_03", 793.3333333333339},
+	{Nyxus::Feature2D::CENTRAL_MOMENT_21, "CENTRAL_MOMENT_21", -9916.666666666686},
+	{Nyxus::Feature2D::CENTRAL_MOMENT_12, "CENTRAL_MOMENT_12", 1983.3333333333285},
+	{Nyxus::Feature2D::NORM_CENTRAL_MOMENT_20, "NORM_CENTRAL_MOMENT_20", 0.5512345679012346},
+	{Nyxus::Feature2D::NORM_CENTRAL_MOMENT_02, "NORM_CENTRAL_MOMENT_02", 0.021604938271604934},
+	{Nyxus::Feature2D::NORM_CENTRAL_MOMENT_11, "NORM_CENTRAL_MOMENT_11", 0.05401234567901234},
+	{Nyxus::Feature2D::NORM_CENTRAL_MOMENT_30, "NORM_CENTRAL_MOMENT_30", -0.22813107795136814},
+	{Nyxus::Feature2D::NORM_CENTRAL_MOMENT_03, "NORM_CENTRAL_MOMENT_03", 0.0018250486236109408},
+	{Nyxus::Feature2D::NORM_CENTRAL_MOMENT_21, "NORM_CENTRAL_MOMENT_21", -0.022813107795136785},
+	{Nyxus::Feature2D::NORM_CENTRAL_MOMENT_12, "NORM_CENTRAL_MOMENT_12", 0.004562621559027338},
+	{Nyxus::Feature2D::HU_M1, "HU_M1", 0.5728395061728395},
+	{Nyxus::Feature2D::HU_M2, "HU_M2", 0.2921768785246152},
+	{Nyxus::Feature2D::HU_M3, "HU_M3", 0.06341348298776381},
+	{Nyxus::Feature2D::HU_M4, "HU_M4", 0.05042335332144146},
+	{Nyxus::Feature2D::HU_M5, "HU_M5", 0.002851264767850148},	// defective h5 gives 0.0032935269006466807 (442x tolerance away)
+	{Nyxus::Feature2D::HU_M6, "HU_M6", 0.027252861297278195},	// defective h6 gives 0.02916606310377036 (1913x tolerance away)
+	{Nyxus::Feature2D::HU_M7, "HU_M7", 5.616461607732461e-06},
+};
+
+// Vets Hu h5/h6 (and the full moment chain) against scikit-image on an asymmetric fixture --
+// the historic calcHu_imp h5 9x-bracket / h6 "+eta03"-precedence defects fail this assertion.
+void test_moments_hu_wedge_skimage()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_2d_wedge_geomoment_feature_values(fvals);
+	assert_2d_geomoment_features(fvals, wedge_shape_hu_skimage_golden_values, "VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
+}
 
 void test_2d_shape_geometric_moments_verifiable_with_3p_builtin_oracle()
 {

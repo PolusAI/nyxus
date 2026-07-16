@@ -34,8 +34,41 @@ void Rotation::rotate_around_center(
 	}
 }
 
+void Rotation::rotate_around_center_fp (
+	// in
+	const std::vector<Pixel2>& P,
+	float angle_deg,
+	// out
+	std::vector<Point2f>& P_rot)
+{
+	P_rot.clear();
+
+	// Find the center
+	double cx = 0, cy = 0;
+	for (auto& p : P)
+	{
+		cx += p.x;
+		cy += p.y;
+	}
+	cx /= double(P.size());
+	cy /= double(P.size());
+
+	// Rotate
+	float theta = angle_deg * float(M_PI) / 180.f;
+	double s = sin(theta),
+		c = cos(theta);
+	for (auto& p : P)
+	{
+		double x_rot = (p.x - cx) * c - (p.y - cy) * s + cx;
+		double y_rot = (p.y - cy) * c + (p.x - cx) * s + cy;
+		// FIX (caliper float-precision): store the rotated vertex in floating point (Point2f) instead of the
+		// integer Pixel2 that truncated it inward - the caliper chord math then integrates on exact coords.
+		P_rot.push_back (Point2f ((float)x_rot, (float)y_rot));
+	}
+}
+
 void Rotation::rotate_cloud (
-	// in 
+	// in
 	const std::vector<Pixel2>& P,
 	const double cx, 
 	const double cy,

@@ -47,8 +47,8 @@ static const std::vector<GeomomentGoldenValue> unvetted_nyxus_regression_shape_g
 	{Nyxus::Feature2D::WEIGHTED_HU_M2, "WEIGHTED_HU_M2", 0.00024306185106698786},
 	{Nyxus::Feature2D::WEIGHTED_HU_M3, "WEIGHTED_HU_M3", 1.1262214820995351e-05},
 	{Nyxus::Feature2D::WEIGHTED_HU_M4, "WEIGHTED_HU_M4", 7.674925625409561e-05},
-	{Nyxus::Feature2D::WEIGHTED_HU_M5, "WEIGHTED_HU_M5", -4.0924793325555725e-09},
-	{Nyxus::Feature2D::WEIGHTED_HU_M6, "WEIGHTED_HU_M6", 0.004652261067232659},
+	{Nyxus::Feature2D::WEIGHTED_HU_M5, "WEIGHTED_HU_M5", -1.8387946856938181e-09},	// FIX(h5): snapshot after the calcHu_imp h5 fix (skimage moments_hu on the pinned WT_NORM_CTR_MOM_*; gen_moments_skimage.py)
+	{Nyxus::Feature2D::WEIGHTED_HU_M6, "WEIGHTED_HU_M6", 2.1453724299933224e-07},	// FIX(h6): snapshot after the calcHu_imp h6 fix; old pin 0.004652... == WT_NORM_CTR_MOM_03, i.e. the stray "+eta03" of the precedence bug (gen_moments_skimage.py)
 	{Nyxus::Feature2D::WEIGHTED_HU_M7, "WEIGHTED_HU_M7", -1.3078000499389243e-09},
 };
 
@@ -97,8 +97,8 @@ static const std::vector<GeomomentGoldenValue> unvetted_nyxus_regression_intensi
 	{Nyxus::Feature2D::IMOM_WHU2, "IMOM_WHU2", 5.6161730111679807e-09},
 	{Nyxus::Feature2D::IMOM_WHU3, "IMOM_WHU3", 1.1923046864432925e-12},
 	{Nyxus::Feature2D::IMOM_WHU4, "IMOM_WHU4", 3.1287168309169019e-12},
-	{Nyxus::Feature2D::IMOM_WHU5, "IMOM_WHU5", -5.2494915279842729e-24},
-	{Nyxus::Feature2D::IMOM_WHU6, "IMOM_WHU6", 4.6265447915851515e-07},
+	{Nyxus::Feature2D::IMOM_WHU5, "IMOM_WHU5", -3.578057915124686e-25},	// FIX(h5): snapshot after the calcHu_imp h5 fix (skimage moments_hu on the pinned IMOM_WNCM_*; gen_moments_skimage.py)
+	{Nyxus::Feature2D::IMOM_WHU6, "IMOM_WHU6", 3.297985694277869e-17},	// FIX(h6): snapshot after the calcHu_imp h6 fix; old pin 4.6265447915851515e-07 == IMOM_WNCM_03, i.e. the stray "+eta03" of the precedence bug (gen_moments_skimage.py)
 	{Nyxus::Feature2D::IMOM_WHU7, "IMOM_WHU7", -5.6202519491182231e-24},
 };
 

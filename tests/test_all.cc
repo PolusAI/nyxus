@@ -44,7 +44,7 @@
 #include "test_3d_morphology_regression.h"
 #include "test_3d_morphology_matlab.h"
 #include "test_3d_gldzm_ibsi.h"
-#include "test_3d_ngldm_ibsi.h"
+#include "test_3d_ngldm_regression.h"
 #include "test_3d_firstorder_pyradiomics.h"
 #include "test_3d_glcm_pyradiomics.h"
 #include "test_3d_gldm_pyradiomics.h"
@@ -259,6 +259,10 @@ TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_SRLGLE) {
 	ASSERT_NO_THROW(test_compat_3GLRLM_SRLGLE());
 }
 
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_AVE_FEATURES) {
+	ASSERT_NO_THROW(test_compat_3glrlm_ave_features());
+}
+
 
 //***** 3D GLSZM compatibility *****
 
@@ -390,6 +394,10 @@ TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_SDLGLE) {
 }
 
 //***** 3D GLCM compatibility *****
+
+TEST(TEST_NYXUS, TEST_3DGLCM_EQUIVALENCE_DUMP) {
+	ASSERT_NO_THROW(test_3dglcm_equivalence_dump());
+}
 
 TEST(TEST_NYXUS, TEST_COMPAT_3GLCM_ACOR) {
 	ASSERT_NO_THROW(test_compat_3glcm_ACOR());
@@ -1044,6 +1052,11 @@ TEST(TEST_NYXUS, TEST_2D_SHAPE_GEOMETRIC_MOMENTS_VERIFIABLE_WITH_3P_BUILTIN_ORAC
 	ASSERT_NO_THROW(test_2d_shape_geometric_moments_verifiable_with_3p_builtin_oracle());
 }
 
+TEST(TEST_NYXUS, TEST_MOMENTS_HU_WEDGE_SKIMAGE)
+{
+	ASSERT_NO_THROW(test_moments_hu_wedge_skimage());
+}
+
 TEST(TEST_NYXUS, TEST_2D_SHAPE_GEOMETRIC_MOMENTS_UNVETTED_NO_DIRECT_ORACLE)
 {
 	ASSERT_NO_THROW(test_2d_shape_geometric_moments_unvetted_no_direct_oracle());
@@ -1072,6 +1085,26 @@ TEST(TEST_NYXUS, TEST_REMAINING2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_EROSION_COMP
 TEST(TEST_NYXUS, TEST_REMAINING2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_CALIPER_FEATURES)
 {
 	ASSERT_NO_THROW(test_remaining2d_verifiable_with_3p_builtin_oracle_caliper_features());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_CALIPER_MARTIN_NASSENSTEIN_IMEA_ELLIPSE_ORACLE)
+{
+	ASSERT_NO_THROW(test_shape2d_caliper_martin_nassenstein_imea_ellipse_oracle());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_CALIPER_FERET_IMEA_ELLIPSE_ORACLE)
+{
+	ASSERT_NO_THROW(test_shape2d_caliper_feret_imea_ellipse_oracle());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_MIN_ENCLOSING_CIRCLE_IMEA_ORACLE)
+{
+	ASSERT_NO_THROW(test_shape2d_min_enclosing_circle_imea_oracle());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_DOCUMENTED_FORMULA_CONFORMANCE_NO_EXTERNAL_ORACLE)
+{
+	ASSERT_NO_THROW(test_shape2d_documented_formula_conformance_no_external_oracle());
 }
 
 TEST(TEST_NYXUS, TEST_REMAINING2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_CHORD_STAT_FEATURES)
@@ -1258,6 +1291,16 @@ TEST(TEST_NYXUS, TEST_IBSI_GLCM_JAVE)
 TEST(TEST_NYXUS, TEST_IBSI_GLCM_JE)
 {
 	ASSERT_NO_THROW(test_ibsi_glcm_JE());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_HOM2)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_HOM2());
+}
+
+TEST(TEST_NYXUS, TEST_IBSI_GLCM_ENTROPY)
+{
+	ASSERT_NO_THROW(test_ibsi_glcm_ENTROPY());
 }
 
 TEST(TEST_NYXUS, TEST_IBSI_GLCM_JMAX)
@@ -1704,6 +1747,13 @@ TEST(TEST_NYXUS, TEST_IBSI_GLRLM_LRHGLE)
 {
 	ASSERT_NO_THROW(test_ibsi_glrlm_lrhgle());
 }
+
+TEST(TEST_NYXUS, TEST_IBSI_GLRLM_LGLRE_AVE)  { ASSERT_NO_THROW(test_ibsi_glrlm_lglre_ave()); }
+TEST(TEST_NYXUS, TEST_IBSI_GLRLM_HGLRE_AVE)  { ASSERT_NO_THROW(test_ibsi_glrlm_hglre_ave()); }
+TEST(TEST_NYXUS, TEST_IBSI_GLRLM_SRLGLE_AVE) { ASSERT_NO_THROW(test_ibsi_glrlm_srlgle_ave()); }
+TEST(TEST_NYXUS, TEST_IBSI_GLRLM_SRHGLE_AVE) { ASSERT_NO_THROW(test_ibsi_glrlm_srhgle_ave()); }
+TEST(TEST_NYXUS, TEST_IBSI_GLRLM_LRLGLE_AVE) { ASSERT_NO_THROW(test_ibsi_glrlm_lrlgle_ave()); }
+TEST(TEST_NYXUS, TEST_IBSI_GLRLM_LRHGLE_AVE) { ASSERT_NO_THROW(test_ibsi_glrlm_lrhgle_ave()); }
 
 TEST(TEST_NYXUS, TEST_IBSI_GLRLM_GLN)
 {

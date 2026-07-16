@@ -60,6 +60,33 @@ void test_shape2d_misc_shape_features()
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE, "DIAMETER_MIN_ENCLOSING_CIRCLE");
 }
 
+// Tier-2 documented-formula conformance (NO external oracle). These features have a recognized closed
+// form but their VALUE uses Nyxus' own conventions (pixel-count area, contour perimeter, moment-fit
+// major axis), so no third-party tool reproduces the number. What we CAN pin is that the code applies
+// the published formula to its own constituents without an implementation bug -- recompute the formula
+// from AREA_PIXELS_COUNT / PERIMETER / MAJOR_AXIS_LENGTH and require an exact match. This is weaker than
+// external-oracle vetting and is registered as such (oracle=formula) in oracle_coverage.csv.
+void test_shape2d_documented_formula_conformance_no_external_oracle()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_shape2d_feature_values(fvals);
+
+	const double PI = 3.14159265358979323846;
+	const double A = fvals[static_cast<int>(Nyxus::Feature2D::AREA_PIXELS_COUNT)][0];
+	const double P = fvals[static_cast<int>(Nyxus::Feature2D::PERIMETER)][0];
+	const double major = fvals[static_cast<int>(Nyxus::Feature2D::MAJOR_AXIS_LENGTH)][0];
+
+	// CIRCULARITY = sqrt(4*pi*A) / P   (convex_hull_nontriv.cpp)
+	const double circ_formula = std::sqrt(4.0 * PI * A) / P;
+	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::CIRCULARITY)][0], circ_formula, 1e-9)
+		<< "CIRCULARITY does not match sqrt(4*pi*A)/P";
+
+	// ROUNDNESS = 4*A / (pi*major^2)   (ellipse_fitting.cpp)
+	const double round_formula = 4.0 * A / (PI * major * major);
+	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::ROUNDNESS)][0], round_formula, 1e-9)
+		<< "ROUNDNESS does not match 4A/(pi*major^2)";
+}
+
 void test_shape2d_unvetted_no_direct_oracle_radius_features()
 {
 	std::vector<std::vector<double>> fvals;
@@ -138,6 +165,61 @@ void test_remaining2d_verifiable_with_3p_builtin_oracle_caliper_features()
 	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MEDIAN, "STAT_NASSENSTEIN_DIAM_MEDIAN");
 	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_STDDEV, "STAT_NASSENSTEIN_DIAM_STDDEV");
 	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MODE, "STAT_NASSENSTEIN_DIAM_MODE");
+}
+
+// Vets the reimplemented Martin (area-bisecting chord) and Nassenstein (bottom-tangent vertical
+// chord) diameters against imea on a clean filled ellipse (a=20, b=10). See the oracle block in
+// test_remaining2d_common.h. Robust stats (min/max/mean/median) agree with imea within the
+// hull-vs-raster convention tolerance; the >0 lower bound pins that the old min+max-chord bug
+// (0-length Nassenstein diameters) is gone.
+void test_shape2d_caliper_martin_nassenstein_imea_ellipse_oracle()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_ellipse_caliper_values(fvals);
+
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MIN, "STAT_MARTIN_DIAM_MIN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MAX, "STAT_MARTIN_DIAM_MAX");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MEAN, "STAT_MARTIN_DIAM_MEAN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MEDIAN, "STAT_MARTIN_DIAM_MEDIAN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MIN, "STAT_NASSENSTEIN_DIAM_MIN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MAX, "STAT_NASSENSTEIN_DIAM_MAX");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MEAN, "STAT_NASSENSTEIN_DIAM_MEAN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MEDIAN, "STAT_NASSENSTEIN_DIAM_MEDIAN");
+
+	// Bug-gone invariant: a solid shape cannot have a 0-length diameter (the old code produced 0).
+	ASSERT_GT(fvals[static_cast<int>(Nyxus::Feature2D::STAT_MARTIN_DIAM_MIN)][0], 2.0);
+	ASSERT_GT(fvals[static_cast<int>(Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MIN)][0], 2.0);
+}
+
+// Vets the Feret diameter distribution against imea on the same filled ellipse. Feret is a correct
+// rotating-calipers implementation; robust stats (min/max/mean/median) agree with imea within the
+// hull-vs-raster convention tolerance. (MIN/MAX_FERET_ANGLE stay regression — they are a Nyxus-frame
+// angle convention with no directly comparable imea output.)
+void test_shape2d_caliper_feret_imea_ellipse_oracle()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_ellipse_caliper_values(fvals);
+
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MIN, "STAT_FERET_DIAM_MIN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MAX, "STAT_FERET_DIAM_MAX");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MEAN, "STAT_FERET_DIAM_MEAN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MEDIAN, "STAT_FERET_DIAM_MEDIAN");
+}
+
+// Vets the minimum-enclosing-circle diameter (Welzl / cv2.minEnclosingCircle) against its exact
+// geometric/imea value on two clean fixtures: ellipse a=20 -> 2a=40, circle r=15 -> 30. This is
+// centroid-independent, so it matches to <0.1%. (DIAMETER_CIRCUMSCRIBING/INSCRIBING_CIRCLE are left
+// regression: imea's centroid-to-contour-distance approximation, convention-sensitive.)
+void test_shape2d_min_enclosing_circle_imea_oracle()
+{
+	std::vector<std::vector<double>> ell;
+	calculate_ellipse_caliper_values(ell);
+	assert_caliper_close_to_imea(ell, Nyxus::Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE, "DIAMETER_MIN_ENCLOSING_CIRCLE", 0.05);
+
+	std::vector<std::vector<double>> cir;
+	calculate_circle_shape_values(cir);
+	const double d = cir[static_cast<int>(Nyxus::Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE)][0];
+	ASSERT_NEAR(d, 30.0, 30.0 * 0.05) << "circle min-enclosing nyxus=" << d << " expected~30";
 }
 
 void test_remaining2d_verifiable_with_3p_builtin_oracle_chord_stat_features()

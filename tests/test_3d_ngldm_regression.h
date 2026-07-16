@@ -7,6 +7,43 @@
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_ngldm.h"
 
+// REGRESSION / drift-guard tests -- NOT an oracle. The `d3ngldm_GT` table below has NO external
+// provenance and its numbers are NOT verified against any reference; the tests only pin current output.
+//
+// This file was renamed from test_3d_ngldm_ibsi.h to test_3d_ngldm_regression.h: SPEC §2 reserves an
+// oracle suffix like `_ibsi` for a genuine, provenance-carrying oracle, and these values are neither.
+// They have no recorded tool/version/config (SPEC 6.4 requires provenance for any oracle golden) and
+// are evaluated on the Nyxus coverage phantom tests/data/nifti/phantoms/ut_inten.nii + ut_mask57.nii
+// -- NOT the IBSI digital phantom -- so IBSI consensus values cannot apply to them in the first place.
+// (Contrast test_ngldm_ibsi.h, the 2D file, which DOES run on the IBSI digital phantom and cites IBSI
+// manual page numbers per value -- that one is a real IBSI oracle. The `_ibsi` suffix is now free for a
+// genuine 3D IBSI-phantom NGLDM oracle when one is written.)
+//
+// Verified 2026-07 with an independent MIRP NGLDM run on the SAME phantom at the SAME discretisation
+// (fixed_bin_number n=64, 3D). MIRP disagrees with every comparable value, several by an order of
+// magnitude:
+//      feature      this table        MIRP
+//      LDE               0.1          0.2559
+//      HDE             261            28.07
+//      LGLCE             0.00036      0.0322
+//      HGLCE           740          1324
+//      GLNU         115443          4350.3
+//      GLNUN             0.23          0.01585
+//      DCNU         115443         40745.0
+//      DCNUN             0.23          0.14847
+//      GLV             190           350.17
+//      DCV              86.17         11.948
+//      DCENT             5.23          8.676
+//      DCENE             0.14          0.002875
+// Harness: morph_oracle/mirp_ngldm_3d.py (offline; CI never runs it).
+//
+// => Treat the tests below as REGRESSION / drift guards only. Do NOT promote features in
+// oracle_coverage.csv to status=vetted on the strength of them passing. Promoting requires a
+// documented, config-matched external oracle (MIRP is the candidate for 3D NGLDM).
+//
+// Also note 3NGLDM_GLM (grey level mean) and 3NGLDM_DCM (dependence count mean) have no counterpart
+// anywhere: MIRP's NGLDM emits no gl_mean / dc_mean column, and the 2D table in test_ngldm_ibsi.h
+// explicitly marks GLM "--not in IBSI--". No external oracle exists for those two.
 static std::unordered_map<std::string, double> d3ngldm_GT{
 		{ "3NGLDM_LDE",	0.1 },
 		{ "3NGLDM_HDE",	261.0 },
