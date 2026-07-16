@@ -9,6 +9,7 @@
 #include "nyxus_dicom_loader.h"
 #include "dirs_and_files.h"
 #include "helpers/fsystem.h"
+#include "ome/format_detect.h"		// FIX: unified content-sniffing loader dispatch
 
 ImageLoader1x::ImageLoader1x() {}
 
@@ -18,7 +19,12 @@ bool ImageLoader1x::open (const std::string& fpath, const FpImageOptions & fpopt
 
 	try
 	{
-		if 	(fs::path(fpath).extension() == ".zarr")
+		// FIX: dispatch via detect_input_format() for parity with the other loaders (and to fix
+		// the bitwise-OR on the DICOM test). This loader carries no NIfTI backend, so Nifti still falls to the
+		// TIFF branch as before — behavior unchanged there.
+		Nyxus::InputFormat fmt = Nyxus::detect_input_format (fpath);
+
+		if 	(fmt.kind == Nyxus::ContainerKind::OmeZarr)		// FIX: was `fs::path(fpath).extension()==".zarr"`
 		{
 			#ifdef OMEZARR_SUPPORT
 			FL = std::make_unique<NyxusOmeZarrLoader<uint32_t>>(n_threads, fpath);
@@ -26,7 +32,7 @@ bool ImageLoader1x::open (const std::string& fpath, const FpImageOptions & fpopt
 			std::cout << "This version of Nyxus was not build with OmeZarr support." <<std::endl;
 			#endif
 		}
-		else if(fs::path(fpath).extension() == ".dcm" | fs::path(fpath).extension() == ".dicom"){
+		else if(fmt.kind == Nyxus::ContainerKind::Dicom){		// FIX: was bitwise `.extension()==".dcm" | ".dicom"`
 			#ifdef DICOM_SUPPORT
 			FL = std::make_unique<NyxusGrayscaleDicomLoader<uint32_t>>(n_threads, fpath);
 			#else
@@ -95,7 +101,7 @@ bool ImageLoader1x::load_tile(size_t tile_idx)
 
 	auto row = tile_idx / ntw;
 	auto col = tile_idx % ntw;
-	FL->loadTileFromFile(ptr, row, col, lyr, lvl);
+	FL->loadTileFromFile(ptr, row, col, lyr, 0/*channel*/, 0/*timeframe*/, lvl);
 
 	return true;
 }
@@ -105,7 +111,7 @@ bool ImageLoader1x::load_tile(size_t tile_row, size_t tile_col)
 	if (tile_row >= nth || tile_col >= ntw)
 		return false;
 
-	FL->loadTileFromFile(ptr, tile_row, tile_col, lyr, lvl);
+	FL->loadTileFromFile(ptr, tile_row, tile_col, lyr, 0/*channel*/, 0/*timeframe*/, lvl);
 
 	return true;
 }

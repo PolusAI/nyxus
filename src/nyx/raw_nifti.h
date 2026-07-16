@@ -101,6 +101,8 @@ public:
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
         size_t indexLayerGlobalTile,
+        [[maybe_unused]] size_t indexChannel,     // NIfTI: single channel
+        [[maybe_unused]] size_t indexTimeframe,   // whole 4D volume held in memory; T sliced by consumer
         [[maybe_unused]] size_t level) override {}
 
     // NIFTI is not tiled
@@ -223,6 +225,8 @@ public:
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
         size_t indexLayerGlobalTile,
+        [[maybe_unused]] size_t indexChannel,     // NIfTI: single channel
+        [[maybe_unused]] size_t indexTimeframe,   // whole 4D volume delivered at once; T sliced by consumer
         [[maybe_unused]] size_t level) override
     {
         tile->resize (tile_width_ * tile_height_ * tile_depth_ * numTimeFrames_);

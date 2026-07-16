@@ -4,6 +4,8 @@
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
 #include "test_contour.h"
+#include "test_ome_meta.h"		// native-OME metadata parsers / OmeAxes descriptor
+#include "test_ometiff_mechanics.h"	// OME-TIFF native (z,c,t)->IFD read (core; no USE_Z5)
 #include "test_firstorder_regression.h"
 #include "test_intensity_histogram_regression.h"
 #include "test_intensity_histogram_ibsi.h"
@@ -2509,6 +2511,10 @@ TEST(TEST_NYXUS, TEST_3D_NIFTY_DACC_CONSISTENCY) {
 	ASSERT_NO_THROW (test_3d_nifti_data_access_consistency());
 }
 
+TEST(TEST_NYXUS, TEST_FACADE_NIFTI_LOAD_VOLUME_EQUIVALENCE) {
+	ASSERT_NO_THROW (test_facade_nifti_load_volume_equivalence());
+}
+
 
 //***** OME-Zarr i/o *****
 
@@ -2538,10 +2544,147 @@ TEST(TEST_NYXUS, TEST_RAW_OMEZARR_MULTITILE) {
 	ASSERT_NO_THROW (test_raw_omezarr_multitile());
 }
 
+TEST(TEST_NYXUS, TEST_OMEZARR_5D_CHANNEL_TIME_ADDRESSING) {
+	ASSERT_NO_THROW (test_omezarr_addressing("dim5.ome.zarr", 2, 3, 4));
+}
+
+TEST(TEST_NYXUS, TEST_RAW_OMEZARR_5D_CHANNEL_TIME_ADDRESSING) {
+	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim5.ome.zarr", 2, 3, 4));
+}
+
+// All 6 legal orderings of {t,c,z}: passes only if the loader honors the NGFF
+// 'axes' metadata instead of assuming a fixed [T,C,Z,Y,X] order.
+TEST(TEST_NYXUS, TEST_OMEZARR_ALL_5D_PERMUTATIONS) {
+	ASSERT_NO_THROW (test_omezarr_all_5d_permutations());
+}
+
+// 4D (rank-4): time-only and channel-only.
+TEST(TEST_NYXUS, TEST_OMEZARR_4D_TZYX) {
+	ASSERT_NO_THROW (test_omezarr_addressing("dim4_tzyx.ome.zarr", 2, 1, 4));
+	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim4_tzyx.ome.zarr", 2, 1, 4));
+}
+TEST(TEST_NYXUS, TEST_OMEZARR_4D_CZYX) {
+	ASSERT_NO_THROW (test_omezarr_addressing("dim4_czyx.ome.zarr", 1, 3, 4));
+	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim4_czyx.ome.zarr", 1, 3, 4));
+}
+
+// End-to-end through the wired volumetric consumer (scan_trivial_wholevolume).
+TEST(TEST_NYXUS, TEST_OMEZARR_WHOLEVOLUME_CONSUMER) {
+	ASSERT_NO_THROW (test_omezarr_wholevolume_consumer("dim3_zyx.ome.zarr", 4));
+}
+
+// Facade whole-volume assembly (load_volume loops Z into one X*Y*Z buffer).
+TEST(TEST_NYXUS, TEST_OMEZARR_FACADE_VOLUME_3D) {
+	ASSERT_NO_THROW (test_omezarr_facade_volume("dim3_zyx.ome.zarr", 1, 1, 4));
+}
+TEST(TEST_NYXUS, TEST_OMEZARR_FACADE_VOLUME_5D) {
+	ASSERT_NO_THROW (test_omezarr_facade_volume("dim5.ome.zarr", 2, 3, 4));
+}
+
+// Lower-rank stores: a fixed shape[2..4] loader would crash; the axis-role loader
+// reads 3D (ZYX) and 2D (YX) correctly.
+TEST(TEST_NYXUS, TEST_OMEZARR_3D_ZYX) {
+	ASSERT_NO_THROW (test_omezarr_addressing("dim3_zyx.ome.zarr", 1, 1, 4));
+}
+
+TEST(TEST_NYXUS, TEST_RAW_OMEZARR_3D_ZYX) {
+	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim3_zyx.ome.zarr", 1, 1, 4));
+}
+
+TEST(TEST_NYXUS, TEST_OMEZARR_2D_YX) {
+	ASSERT_NO_THROW (test_omezarr_addressing("dim2_yx.ome.zarr", 1, 1, 1));
+}
+
+// No 'axes' metadata -> the loader falls back to legacy 5D TCZYX and still reads.
+TEST(TEST_NYXUS, TEST_OMEZARR_NOAXES_FALLBACK) {
+	ASSERT_NO_THROW (test_omezarr_addressing("dim5_noaxes.ome.zarr", 2, 3, 4));
+}
+
+TEST(TEST_NYXUS, TEST_RAW_OMEZARR_NOAXES_FALLBACK) {
+	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim5_noaxes.ome.zarr", 2, 3, 4));
+}
+
+// Negative: out-of-range Z/C/T plane index must throw.
+TEST(TEST_NYXUS, TEST_OMEZARR_OUT_OF_RANGE_THROWS) {
+	ASSERT_NO_THROW (test_omezarr_out_of_range_throws());
+}
+
+// Illegal / adversarial: malformed metadata must be rejected cleanly, not crash.
+TEST(TEST_NYXUS, TEST_OMEZARR_MALFORMED_THROWS) {
+	ASSERT_NO_THROW (test_omezarr_malformed_throws());
+}
+
 #endif // OMEZARR_SUPPORT
 
 
-int main(int argc, char **argv) 
+//***** OME-TIFF native (z,c,t) -> IFD read (core; runs in every build) *****
+
+TEST(TEST_NYXUS, TEST_OMETIFF_5D_CHANNEL_TIME_ADDRESSING) {
+	ASSERT_NO_THROW (test_ometiff_addressing("dim5.ome.tif", 2, 3, 4));
+}
+TEST(TEST_NYXUS, TEST_RAW_OMETIFF_5D_CHANNEL_TIME_ADDRESSING) {
+	ASSERT_NO_THROW (test_raw_ometiff_addressing("dim5.ome.tif", 2, 3, 4));
+}
+
+// All 6 legal DimensionOrder values: passes only if ifdForPlane honors DimensionOrder.
+TEST(TEST_NYXUS, TEST_OMETIFF_ALL_5D_PERMUTATIONS) {
+	ASSERT_NO_THROW (test_ometiff_all_5d_permutations());
+}
+
+// 4D (rank-4): time-only and channel-only.
+TEST(TEST_NYXUS, TEST_OMETIFF_4D_TZYX) {
+	ASSERT_NO_THROW (test_ometiff_addressing("dim4_tzyx.ome.tif", 2, 1, 4));
+	ASSERT_NO_THROW (test_raw_ometiff_addressing("dim4_tzyx.ome.tif", 2, 1, 4));
+}
+TEST(TEST_NYXUS, TEST_OMETIFF_4D_CZYX) {
+	ASSERT_NO_THROW (test_ometiff_addressing("dim4_czyx.ome.tif", 1, 3, 4));
+	ASSERT_NO_THROW (test_raw_ometiff_addressing("dim4_czyx.ome.tif", 1, 3, 4));
+}
+
+// End-to-end through the wired volumetric consumer (scan_trivial_wholevolume).
+TEST(TEST_NYXUS, TEST_OMETIFF_WHOLEVOLUME_CONSUMER) {
+	ASSERT_NO_THROW (test_ometiff_wholevolume_consumer("dim3_zyx.ome.tif", 4));
+}
+
+// Facade whole-volume assembly (load_volume loops Z into one X*Y*Z buffer).
+TEST(TEST_NYXUS, TEST_OMETIFF_FACADE_VOLUME_3D) {
+	ASSERT_NO_THROW (test_ometiff_facade_volume("dim3_zyx.ome.tif", 1, 1, 4));
+}
+TEST(TEST_NYXUS, TEST_OMETIFF_FACADE_VOLUME_5D) {
+	ASSERT_NO_THROW (test_ometiff_facade_volume("dim5.ome.tif", 2, 3, 4));
+}
+
+// Lower-rank OME-TIFF.
+TEST(TEST_NYXUS, TEST_OMETIFF_3D_ZYX) {
+	ASSERT_NO_THROW (test_ometiff_addressing("dim3_zyx.ome.tif", 1, 1, 4));
+}
+TEST(TEST_NYXUS, TEST_RAW_OMETIFF_3D_ZYX) {
+	ASSERT_NO_THROW (test_raw_ometiff_addressing("dim3_zyx.ome.tif", 1, 1, 4));
+}
+TEST(TEST_NYXUS, TEST_OMETIFF_2D_YX) {
+	ASSERT_NO_THROW (test_ometiff_addressing("dim2_yx.ome.tif", 1, 1, 1));
+}
+
+// Plain multi-page TIFF (no OME-XML): the legacy page=Z fallback must still work.
+TEST(TEST_NYXUS, TEST_OMETIFF_PLAIN_MULTIPAGE_FALLBACK) {
+	ASSERT_NO_THROW (test_ometiff_addressing("dim3_plain.tif", 1, 1, 4));
+}
+TEST(TEST_NYXUS, TEST_RAW_OMETIFF_PLAIN_MULTIPAGE_FALLBACK) {
+	ASSERT_NO_THROW (test_raw_ometiff_addressing("dim3_plain.tif", 1, 1, 4));
+}
+
+// Negative: out-of-range Z/C/T plane index must throw.
+TEST(TEST_NYXUS, TEST_OMETIFF_OUT_OF_RANGE_THROWS) {
+	ASSERT_NO_THROW (test_ometiff_out_of_range_throws());
+}
+
+// Illegal / adversarial: RGB / corrupt / missing files must be rejected cleanly.
+TEST(TEST_NYXUS, TEST_OMETIFF_MALFORMED_THROWS) {
+	ASSERT_NO_THROW (test_ometiff_malformed_throws());
+}
+
+
+int main(int argc, char **argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
   int ret = RUN_ALL_TESTS();

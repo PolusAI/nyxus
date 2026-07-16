@@ -238,7 +238,7 @@ static void calculate_fractal_blob512_feature_values(std::vector<std::vector<dou
 	size_t W = loader.fullWidth(0), H = loader.fullHeight(0);
 	size_t tw = loader.tileWidth(0), th = loader.tileHeight(0), td = loader.tileDepth(0);
 	auto tile = std::make_shared<std::vector<uint16_t>>(tw * th * td);
-	loader.loadTileFromFile(tile, 0, 0, 0, 0);	// 512x512 <= 1024 strip tile: one read
+	loader.loadTileFromFile(tile, 0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0);	// 512x512 <= 1024 strip tile: one read
 
 	std::vector<NyxusPixel> px;
 	for (size_t y = 0; y < H; y++)

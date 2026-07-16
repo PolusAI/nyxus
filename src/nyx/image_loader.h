@@ -19,6 +19,19 @@ public:
 	void close();
 	bool load_tile (size_t tile_idx);
 	bool load_tile (size_t tile_row, size_t tile_col);
+
+	// Assemble the whole X*Y*Z volume for one (channel, timeframe) into an
+	// internal buffer by looping over Z-planes. This is what lets plane-by-plane
+	// loaders (OME-Zarr, multi-page/OME-TIFF) feed the volumetric pipeline, which
+	// otherwise assumes the whole volume arrives in one read (the NIfTI model).
+	// The mask may live on a different timeframe than the intensity (the 1-mask :
+	// N-intensity case), so `mask_timeframe` is separable; the 2-arg overload uses
+	// the same frame for both.
+	bool load_volume (size_t channel, size_t timeframe, size_t mask_timeframe);
+	bool load_volume (size_t channel, size_t timeframe) { return load_volume(channel, timeframe, timeframe); }
+	const std::vector<uint32_t>& get_int_volume_buffer() const { return vol_int_; }
+	const std::vector<uint32_t>& get_seg_volume_buffer() const { return vol_seg_; }
+
 	const std::vector<uint32_t>& get_int_tile_buffer();
 	const std::vector<uint32_t>& get_seg_tile_buffer();
 	const std::shared_ptr<std::vector<uint32_t>>& get_seg_tile_sptr();
@@ -35,6 +48,13 @@ public:
 	size_t get_full_depth();
 	size_t get_inten_time();
 	size_t get_mask_time();
+
+	// Select which channel (C) / timeframe (T) plane subsequent load_tile() calls
+	// read. Default 0/0 preserves the single-channel, single-timepoint behavior.
+	void set_channel (size_t c) { cur_channel = c; }
+	void set_timeframe (size_t t) { cur_timeframe = t; }
+	size_t get_channel() const { return cur_channel; }
+	size_t get_timeframe() const { return cur_timeframe; }
 
 private:
 
@@ -64,5 +84,17 @@ private:
 
 	int lvl = 0,	// Pyramid level
 		lyr = 0;	//	Layer
+
+	size_t cur_channel = 0,		// Currently selected channel (C) plane
+		cur_timeframe = 0;		// Currently selected timeframe (T) plane
+
+	// Whole-volume (X*Y*Z) assembly buffers filled by load_volume()
+	std::vector<uint32_t> vol_int_, vol_seg_;
+
+	// Assemble one loader's X*Y*Z volume (for the given channel/timeframe) into dst,
+	// honoring that loader's own tileDepth/tileTimestamps (per-plane vs whole-4D).
+	void assemble_volume (AbstractTileLoader<uint32_t>* fl,
+		std::shared_ptr<std::vector<uint32_t>>& ptr,
+		std::vector<uint32_t>& dst, size_t channel, size_t timeframe);
 };
 
