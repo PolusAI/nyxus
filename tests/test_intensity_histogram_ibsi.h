@@ -75,10 +75,14 @@ void test_ih_dispersion_ibsi() {
 
     // ---- VAL anchored to the IBSI-vetted IDX values (design §5) ----
     double b = ih_get(fv, F::IH_BIN_SIZE);                 // binWidth
-    // NOTE: IH_INTERQUANTILE_RANGE_VAL is intentionally NOT anchored here. Its IDX
-    // counterpart floors the interpolated quantile via getIndexOf() while the _VAL is
-    // continuous, so VAL != b*IDX (a filed Nyxus flooring bug). It is vetted
-    // analytically in Task 4 instead.
+    // NOTE: IH_INTERQUANTILE_RANGE_VAL is intentionally NOT anchored here, and this is
+    // BY DESIGN, not a bug. The IQR/QCoD _IDX variants use the IBSI *discrete* grey-level
+    // percentile (getIndexOf picks the CDF-crossing bin: P25=1, P75=4 -> IQR_IDX=3, which
+    // matches the IBSI reference; IBSI names the discrete P90=4 as reference and the
+    // interpolated 4.2 as a non-reference variant). _VAL interpolates within the bin -- a
+    // Nyxus continuous extension with no IBSI counterpart. A discrete percentile is a step
+    // function of the CDF, so VAL != b*IDX inherently (forcing IDX continuous would give
+    // ~2.91 and break the IBSI oracle of 3). IQR_VAL is vetted analytically instead.
     // pure-scale spreads: VAL = b * IDX
     ASSERT_TRUE(agrees_gt(ih_get(fv,F::IH_MEAN_ABSOLUTE_DEVIATION_VAL),
                           b*ih_get(fv,F::IH_MEAN_ABSOLUTE_DEVIATION_IDX), 1e4));
@@ -125,7 +129,8 @@ void test_ih_dispersion_robust_analytic() {
     ASSERT_TRUE(agrees_gt(fv[(int)F::IH_ROBUST_MEAN_IDX][0], 1.933333333, 1e4));         // oracle=analytic
     // QCoD_VAL: not IBSI-anchorable (needs unexposed P25/P75 sum) -> analytic golden here.
     ASSERT_TRUE(agrees_gt(fv[(int)F::IH_QUANTILE_COEFFICIENT_OF_DISPERSION_VAL][0], 0.3178294574, 1e4)); // oracle=analytic
-    // IQR_VAL: not IBSI-anchorable (IQR_IDX bin-floored vs IQR_VAL interpolated) -> analytic golden here.
+    // IQR_VAL: no IBSI anchor -- IDX is the IBSI discrete percentile, VAL interpolates, so they
+    // differ by design (not a defect); vetted analytically here.
     ASSERT_TRUE(agrees_gt(fv[(int)F::IH_INTERQUANTILE_RANGE_VAL][0], 12.3, 1e4)); // oracle=analytic
 }
 
