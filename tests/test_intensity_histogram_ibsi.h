@@ -6,6 +6,7 @@
 #include "../src/nyx/features/intensity_histogram.h"
 #include "test_data.h"
 #include "test_main_nyxus.h"
+#include "test_intensity_histogram_regression.h"
 
 // Provenance: IBSI (Zwanenburg et al. 2020, arXiv:1612.07003) §3.4 digital-phantom
 // intensity-histogram consensus values. Discretisation config: FBN (fixed bin number)
@@ -13,7 +14,7 @@
 // 1-based grey-level convention, matching IBSI directly (no offset). Recorded in
 // design doc §6.4. Values sourced in Task 1.
 static const int IH_PHANTOM_NBINS = 6;
-static std::unordered_map<std::string,double> ibsi_ih_phantom_golden = {
+static const std::unordered_map<std::string,double> ibsi_ih_phantom_golden = {
     {"VARIANCE_IDX", 3.05},
     {"SKEWNESS_IDX", 1.08},
     {"EXCESS_KURTOSIS_IDX", -0.355},
@@ -38,11 +39,7 @@ static void ih_ibsi_run(std::vector<std::vector<double>>& fvals, int nbins) {
         for (size_t i = 0; i < 20; i++) msk.push_back(z[i]);
     Dataset ds; ds.dataset_props.push_back(SlideProps("",""));
     LR roidata(1);
-    Fsettings s; s.resize((int)NyxSetting::__COUNT__);
-    s[(int)NyxSetting::GREYDEPTH].ival = nbins;
-    s[(int)NyxSetting::IBSI].bval = true;
-    s[(int)NyxSetting::USEGPU].bval = false;
-    s[(int)NyxSetting::SOFTNAN].rval = -7777.0;
+    Fsettings s = ih_make_settings(nbins, /*ibsi*/ true);
     load_masked_test_roi_data(roidata, img.data(), msk.data(), img.size());
     roidata.make_nonanisotropic_aabb();
     IntensityHistogramFeatures f;
@@ -51,17 +48,15 @@ static void ih_ibsi_run(std::vector<std::vector<double>>& fvals, int nbins) {
     fvals = roidata.fvals;
 }
 
-static double ihg(const std::vector<std::vector<double>>& fv, Nyxus::Feature2D fc){ return fv[(int)fc][0]; }
-
 // IDX dispersion/index features vs IBSI intensity-histogram consensus (12 with IBSI values).
 void test_ih_dispersion_ibsi() {
     using F = Nyxus::Feature2D;
     std::vector<std::vector<double>> fv;
     ih_ibsi_run(fv, IH_PHANTOM_NBINS);
     auto chk = [&](const char* key, F fc){
-        double gt = ibsi_ih_phantom_golden[key];
-        if (std::abs(gt) < 1e-12) ASSERT_NEAR(ihg(fv,fc), gt, 1e-9) << key;
-        else ASSERT_TRUE(agrees_gt(ihg(fv,fc), gt, 100.)) << key;  // rel 1e-2 (IBSI phantom tier)
+        double gt = ibsi_ih_phantom_golden.at(key);
+        if (std::abs(gt) < 1e-12) ASSERT_NEAR(ih_get(fv,fc), gt, 1e-9) << key;
+        else ASSERT_TRUE(agrees_gt(ih_get(fv,fc), gt, 100.)) << key;  // rel 1e-2 (IBSI phantom tier)
     };
     chk("VARIANCE_IDX",                          F::IH_VARIANCE_IDX);
     chk("SKEWNESS_IDX",                          F::IH_SKEWNESS_IDX);
@@ -78,21 +73,21 @@ void test_ih_dispersion_ibsi() {
     // ROBUST_MEAN_IDX has no IBSI feature -> covered analytically in Task 4.
 
     // ---- VAL anchored to the IBSI-vetted IDX values (design §5) ----
-    double b = ihg(fv, F::IH_BIN_SIZE);                 // binWidth
+    double b = ih_get(fv, F::IH_BIN_SIZE);                 // binWidth
     // NOTE: IH_INTERQUANTILE_RANGE_VAL is intentionally NOT anchored here. Its IDX
     // counterpart floors the interpolated quantile via getIndexOf() while the _VAL is
     // continuous, so VAL != b*IDX (a filed Nyxus flooring bug). It is vetted
     // analytically in Task 4 instead.
     // pure-scale spreads: VAL = b * IDX
-    ASSERT_TRUE(agrees_gt(ihg(fv,F::IH_MEAN_ABSOLUTE_DEVIATION_VAL),
-                          b*ihg(fv,F::IH_MEAN_ABSOLUTE_DEVIATION_IDX), 1e4));
-    ASSERT_TRUE(agrees_gt(ihg(fv,F::IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_VAL),
-                          b*ihg(fv,F::IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_IDX), 1e4));
-    ASSERT_TRUE(agrees_gt(ihg(fv,F::IH_MEDIAN_ABSOLUTE_DEVIATION_VAL),
-                          b*ihg(fv,F::IH_MEDIAN_ABSOLUTE_DEVIATION_IDX), 1e4));
+    ASSERT_TRUE(agrees_gt(ih_get(fv,F::IH_MEAN_ABSOLUTE_DEVIATION_VAL),
+                          b*ih_get(fv,F::IH_MEAN_ABSOLUTE_DEVIATION_IDX), 1e4));
+    ASSERT_TRUE(agrees_gt(ih_get(fv,F::IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_VAL),
+                          b*ih_get(fv,F::IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_IDX), 1e4));
+    ASSERT_TRUE(agrees_gt(ih_get(fv,F::IH_MEDIAN_ABSOLUTE_DEVIATION_VAL),
+                          b*ih_get(fv,F::IH_MEDIAN_ABSOLUTE_DEVIATION_IDX), 1e4));
     // CoV_VAL = std_VAL / mean_VAL = b*sqrt(VARIANCE_IDX) / MEAN_VAL  (VARIANCE_IDX = IBSI anchor)
-    double cov_val_expected = b*std::sqrt(ihg(fv,F::IH_VARIANCE_IDX)) / ihg(fv,F::IH_MEAN_VAL);
-    ASSERT_TRUE(agrees_gt(ihg(fv,F::IH_COEFFICIENT_OF_VARIATION_VAL), cov_val_expected, 1e4));
+    double cov_val_expected = b*std::sqrt(ih_get(fv,F::IH_VARIANCE_IDX)) / ih_get(fv,F::IH_MEAN_VAL);
+    ASSERT_TRUE(agrees_gt(ih_get(fv,F::IH_COEFFICIENT_OF_VARIATION_VAL), cov_val_expected, 1e4));
 }
 
 // 17-px discriminating fixture: N=5 grey levels, freq {1,5,6,4,1}. The robust
@@ -113,11 +108,7 @@ static const NyxusPixel intensityHistogramRobustData[] = {
 
 void test_ih_dispersion_robust_analytic() {
     using F = Nyxus::Feature2D;
-    Fsettings s; s.resize((int)NyxSetting::__COUNT__);
-    s[(int)NyxSetting::GREYDEPTH].ival = 5;
-    s[(int)NyxSetting::IBSI].bval = true;
-    s[(int)NyxSetting::USEGPU].bval = false;
-    s[(int)NyxSetting::SOFTNAN].rval = -7777.0;
+    Fsettings s = ih_make_settings(5, /*ibsi*/ true);
     Dataset ds; ds.dataset_props.push_back(SlideProps("",""));
     LR roidata(100); roidata.slide_idx = -1;
     load_test_roi_data(roidata, intensityHistogramRobustData,
