@@ -395,7 +395,7 @@ w.writeheader(); w.writerows(rows); print("updated",n)
 
 ```bash
 git add tests/vetting/config_recipes.md tests/vetting/oracle_coverage.csv tests/vetting/coverage_report.md
-git commit -m "vetting(registry): promote 20 IH dispersion/index features (18 ibsi + 2 analytic)"
+git commit -m "vetting(registry): promote 20 IH dispersion/index features (16 ibsi + 4 analytic)"
 ```
 
 ---
