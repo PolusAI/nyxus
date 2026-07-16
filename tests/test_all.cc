@@ -819,6 +819,11 @@ TEST(TEST_NYXUS, TEST_IH_DISPERSION_IBSI)
 	ASSERT_NO_THROW(test_ih_dispersion_ibsi());
 }
 
+TEST(TEST_NYXUS, TEST_IH_DISPERSION_ROBUST_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_ih_dispersion_robust_analytic());
+}
+
 TEST(TEST_NYXUS, TEST_HU_UINT_FRIENDLY_NORMALIZATION_CT_RANGE)
 {
 	ASSERT_NO_THROW(test_hu_uint_friendly_normalization_ct_range());
