@@ -1,5 +1,6 @@
 #pragma once
 #include <gtest/gtest.h>
+#include <cmath>
 #include <unordered_map>
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/intensity_histogram.h"
@@ -75,4 +76,21 @@ void test_ih_dispersion_ibsi() {
     chk("ENTROPY_IDX",                           F::IH_ENTROPY_IDX);
     chk("UNIFORMITY_IDX",                        F::IH_UNIFORMITY_IDX);
     // ROBUST_MEAN_IDX has no IBSI feature -> covered analytically in Task 4.
+
+    // ---- VAL anchored to the IBSI-vetted IDX values (design §5) ----
+    double b = ihg(fv, F::IH_BIN_SIZE);                 // binWidth
+    // NOTE: IH_INTERQUANTILE_RANGE_VAL is intentionally NOT anchored here. Its IDX
+    // counterpart floors the interpolated quantile via getIndexOf() while the _VAL is
+    // continuous, so VAL != b*IDX (a filed Nyxus flooring bug). It is vetted
+    // analytically in Task 4 instead.
+    // pure-scale spreads: VAL = b * IDX
+    ASSERT_TRUE(agrees_gt(ihg(fv,F::IH_MEAN_ABSOLUTE_DEVIATION_VAL),
+                          b*ihg(fv,F::IH_MEAN_ABSOLUTE_DEVIATION_IDX), 1e4));
+    ASSERT_TRUE(agrees_gt(ihg(fv,F::IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_VAL),
+                          b*ihg(fv,F::IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_IDX), 1e4));
+    ASSERT_TRUE(agrees_gt(ihg(fv,F::IH_MEDIAN_ABSOLUTE_DEVIATION_VAL),
+                          b*ihg(fv,F::IH_MEDIAN_ABSOLUTE_DEVIATION_IDX), 1e4));
+    // CoV_VAL = std_VAL / mean_VAL = b*sqrt(VARIANCE_IDX) / MEAN_VAL  (VARIANCE_IDX = IBSI anchor)
+    double cov_val_expected = b*std::sqrt(ihg(fv,F::IH_VARIANCE_IDX)) / ihg(fv,F::IH_MEAN_VAL);
+    ASSERT_TRUE(agrees_gt(ihg(fv,F::IH_COEFFICIENT_OF_VARIATION_VAL), cov_val_expected, 1e4));
 }
