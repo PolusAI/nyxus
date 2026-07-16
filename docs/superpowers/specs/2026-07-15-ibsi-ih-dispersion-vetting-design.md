@@ -96,6 +96,107 @@ This is where the work concentrates and must be resolved before any golden is pi
    reconciled explicitly. The exact convention will be determined empirically (run Nyxus on the
    phantom, compare to the IBSI table) before pinning values.
 
+### 6.3 Resolution — Task 1 characterisation spike (2026-07-16)
+
+The two unknowns are now resolved empirically. A throwaway dump harness ran the IH family on the
+masked digital phantom (4 slices concatenated — IH depends only on the intensity multiset, so the
+3D-volume aggregation IBSI recommends (DHQ4) is reproduced by concatenation) and the output was
+compared against the sourced IBSI table below.
+
+**Config — `IH_PHANTOM_NBINS = 6`.** Setting `GREYDEPTH = 6` with `IBSI = true` reproduces the IBSI
+digital-phantom IH benchmark. This is FBN=6, exactly the discretisation the IBSI reference data-set
+page prescribes for the phantom ("fixed bin number discretisation of 6 bins"; equivalently FBS=1 or
+"as is"). Under FBN=6 the phantom's discretised grey levels come out `{1,3,4,6}` — identical to the
+original integer intensities — which is why the IH values equal the intensity-based (first-order)
+values. `GREYDEPTH = 1` is rejected by Nyxus and returns the soft-NaN sentinel (-7777) for the whole
+family, so it is not a usable config.
+
+**Index base — `IH_PHANTOM_INDEX_BASE = 1` (matches IBSI directly, NO offset correction).** The
+earlier 0-based speculation in §6.2 was wrong. Empirically Nyxus reports IDX in the **1-based**
+grey-level convention: `IH_MEAN_IDX = 2.149 ≈ 2.15` (the IBSI 1-based mean, not 1.15). Decisively,
+the two shift-sensitive features also match IBSI with no correction: `IH_COEFFICIENT_OF_VARIATION_IDX
+= 0.8122 ≈ 0.812` and `IH_QUANTILE_COEFFICIENT_OF_DISPERSION_IDX = 0.600 ≈ 0.6`. Had Nyxus been
+0-based, CoV would be ~1.518 and QCoD ~1.0. Consequence: Task 2 asserts **all** IDX features
+(shift-invariant AND shift-sensitive) directly against the IBSI consensus values — no index-base
+arithmetic is needed. (This agrees with the `intensity_histogram.h` header comment "...Index =
+1-based bin index" and the existing regression test's `IH_MEAN_IDX = 2.0` expectation.)
+
+**Reconciliation evidence (Nyxus IDX @ GREYDEPTH=6, IBSI mode — vs IBSI consensus):**
+
+| Feature | IBSI dig.phantom | Nyxus IDX | rel. err |
+|---|---|---|---|
+| variance | 3.05 | 3.04547 | 0.15% |
+| skewness | 1.08 | 1.08382 | 0.35% |
+| excess kurtosis | −0.355 | −0.35462 | 0.11% |
+| interquartile range | 3 | 3 | 0 |
+| range | 5 | 5 | 0 |
+| mean abs. deviation | 1.55 | 1.55223 | 0.14% |
+| robust mean abs. dev. | 1.11 | 1.11383 | 0.35% |
+| median abs. deviation | 1.15 | 1.14865 | 0.12% |
+| coefficient of variation | 0.812 | 0.812198 | 0.02% |
+| quartile coeff. dispersion | 0.6 | 0.600 | 0 |
+| entropy | 1.27 | 1.26561 | 0.35% |
+| uniformity | 0.512 | 0.512418 | 0.08% |
+| mean (loc.) | 2.15 | 2.14865 | 0.06% |
+| median / min / P10 / mode | 1 | 1 | 0 |
+| P90 | 4 | 4 | 0 |
+| maximum | 6 | 6 | 0 |
+| max hist. gradient | 8 | 8 | 0 |
+| max hist. gradient intensity | 3 | 3 | 0 |
+| min hist. gradient | −50 | −50 | 0 |
+| min hist. gradient intensity | 1 | 1 | 0 |
+
+Every feature agrees within rel 1e-2 (all ≤ 0.35%), including the shift-sensitive CoV/QCoD. No `src/`
+change was required. The scratch harness was removed; nothing test-code was committed.
+
+`_VAL` features (bin-center domain) are, as designed, a distinct Nyxus-specific representation with no
+IBSI oracle — e.g. `IH_MEAN_VAL = 2.374` (bin centers `minVal + (i+0.5)·binWidth`, binWidth = 5/6 =
+0.8333, minVal = 1). They are anchored transitively per §5, not against these IBSI numbers.
+
+### 6.4 Sourced IBSI IH goldens + provenance (for Task 2's `ibsi_ih_phantom_golden`)
+
+**Source (authoritative oracle):** Zwanenburg et al., *The Image Biomarker Standardisation
+Initiative*, arXiv:1612.07003 — Chapter 3, §3.4 "Intensity histogram features", the per-feature
+"Reference values" tables, **`dig. phantom` column**. Config: digital phantom, FBN = 6 bins
+(equivalently FBS = 1 / no discretisation), 3D-volume aggregation. Cross-checked against
+ibsi.readthedocs.io `03_Image_features.html` and the reference-data-sets page (`05_Reference_data_sets.html`,
+which states the phantom's IH discretisation). Overlapping values (mean, variance, skewness, kurtosis,
+median, IQR, range, MAD, rMAD) additionally corroborate the repo's already-vetted first-order goldens
+in `tests/test_firstorder_ibsi.h`.
+
+| IBSI feature (code) | Table | dig. phantom value | consensus |
+|---|---|---|---|
+| Mean discretised intensity (X6K6) | 3.47 | 2.15 | very strong |
+| Discretised intensity variance (CH89) | 3.48 | 3.05 | strong |
+| Discretised intensity skewness (88K1) | 3.49 | 1.08 | very strong |
+| (Excess) discretised intensity kurtosis (C3I7) | 3.50 | −0.355 | very strong |
+| Median discretised intensity (WIFQ) | 3.51 | 1 | very strong |
+| Minimum discretised intensity (1PR8) | 3.52 | 1 | very strong |
+| 10th discretised intensity percentile (GPMT) | 3.53 | 1 | very strong |
+| 90th discretised intensity percentile (OZ0C) | 3.54 | 4 (some impls give 4.2) | very strong |
+| Maximum discretised intensity (3NCY) | 3.55 | 6 | very strong |
+| Intensity histogram mode (AMMC) | 3.56 | 1 | very strong |
+| Discretised intensity interquartile range (WR0O) | 3.57 | 3 | very strong |
+| Discretised intensity range (5Z3W) | 3.58 | 5 | very strong |
+| IH mean absolute deviation (D2ZX) | 3.59 | 1.55 | very strong |
+| IH robust mean absolute deviation (WRZB) | 3.60 | 1.11 | very strong |
+| IH median absolute deviation (4RNL) | 3.61 | 1.15 | very strong |
+| IH coefficient of variation (CWYJ) | 3.62 | 0.812 | very strong |
+| IH quartile coefficient of dispersion (SLWD) | 3.63 | 0.6 | very strong |
+| Discretised intensity entropy (TLU2) | 3.64 | 1.27 | very strong |
+| Discretised intensity uniformity (BJ5W) | 3.65 | 0.512 | very strong |
+| Maximum histogram gradient (12CE) | 3.66 | 8 | very strong |
+| Maximum histogram gradient intensity (8E6O) | 3.67 | 3 | strong |
+| Minimum histogram gradient (VQB3) | 3.68 | −50 | very strong |
+| Minimum histogram gradient intensity (RHQZ) | 3.69 | 1 | strong |
+
+The 12 Task-scope dispersion/index goldens Task 2 must pin (all against the IDX variant, index base 1):
+variance 3.05, skewness 1.08, excess kurtosis −0.355, interquartile range 3, range 5, mean absolute
+deviation 1.55, robust mean absolute deviation 1.11, median absolute deviation 1.15, coefficient of
+variation 0.812, quartile coefficient of dispersion 0.6, entropy 1.27, uniformity 0.512.
+`ROBUST_MEAN_IDX` has no IBSI feature (IBSI publishes robust-MAD but not a standalone robust mean) →
+per §4 it is vetted analytically, not against an IBSI number.
+
 ## 7. Test structure (taxonomy, SPEC §6)
 
 - New oracle file **`tests/test_intensity_histogram_ibsi.h`**.
