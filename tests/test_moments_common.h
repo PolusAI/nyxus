@@ -98,6 +98,61 @@ static void calculate_2d_geomoment_feature_values(std::vector<std::vector<double
 	fvals = roidata.fvals;
 }
 
+// Thin right wedge: pixels (x,y) with 0<=x<40, 0<=y<8, 5*y <= x. Elongated AND skewed, so the
+// odd-order normalized central moments are large (eta30 ~ -0.23) and the Hu invariants h5/h6
+// discriminate the fixed calcHu_imp formulas from the historic defective ones by ~440x / ~1900x
+// the assertion tolerance -- the symmetric 48x40 rectangle fixture above cannot catch an h5/h6
+// regression at all (its odd etas vanish). Goldens: tests/vetting/oracles/gen_moments_skimage.py.
+static void load_wedge_fixture(LR& roidata)
+{
+	constexpr int width = 40;
+	constexpr int height = 8;
+
+	for (int y = 0; y < height; y++)
+		for (int x = 0; x < width; x++)
+		{
+			if (5 * y > x)
+				continue;
+			if (roidata.aux_area == 0)
+				init_label_record_3(roidata, x, y, 1);
+			else
+				update_label_record_3(roidata, x, y, 1);
+		}
+
+	for (int y = 0; y < height; y++)
+		for (int x = 0; x < width; x++)
+		{
+			if (5 * y > x)
+				continue;
+			roidata.raw_pixels.push_back(Pixel2(x, y, 1));
+		}
+
+	roidata.make_nonanisotropic_aabb();
+	roidata.aux_image_matrix.allocate(
+		roidata.aabb.get_width(),
+		roidata.aabb.get_height());
+	roidata.aux_image_matrix.calculate_from_pixelcloud(roidata.raw_pixels, roidata.aabb);
+}
+
+static void calculate_2d_wedge_geomoment_feature_values(std::vector<std::vector<double>>& fvals)
+{
+	Fsettings s = make_2d_geomoment_settings();
+
+	LR roidata(1402);
+	load_wedge_fixture(roidata);
+	roidata.initialize_fvals();
+
+	ContourFeature contour;
+	contour.calculate(roidata, s);
+	contour.save_value(roidata.fvals);
+
+	Smoms2D_feature shape_moments;
+	shape_moments.calculate(roidata, s);
+	shape_moments.save_value(roidata.fvals);
+
+	fvals = roidata.fvals;
+}
+
 static void assert_2d_geomoment_features(
 	const std::vector<std::vector<double>>& fvals,
 	const std::vector<GeomomentGoldenValue>& golden_values,

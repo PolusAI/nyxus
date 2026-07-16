@@ -1044,6 +1044,11 @@ TEST(TEST_NYXUS, TEST_2D_SHAPE_GEOMETRIC_MOMENTS_VERIFIABLE_WITH_3P_BUILTIN_ORAC
 	ASSERT_NO_THROW(test_2d_shape_geometric_moments_verifiable_with_3p_builtin_oracle());
 }
 
+TEST(TEST_NYXUS, TEST_MOMENTS_HU_WEDGE_SKIMAGE)
+{
+	ASSERT_NO_THROW(test_moments_hu_wedge_skimage());
+}
+
 TEST(TEST_NYXUS, TEST_2D_SHAPE_GEOMETRIC_MOMENTS_UNVETTED_NO_DIRECT_ORACLE)
 {
 	ASSERT_NO_THROW(test_2d_shape_geometric_moments_unvetted_no_direct_oracle());

@@ -71,19 +71,19 @@ namespace NyxusGpu
         //    (NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2)) *
         //    (pow(NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2), 2) - 3 * pow(NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3), 2)) +
         //    (3 * NormCentralMom(D, 2, 1) - NormCentralMom(D, 0, 3)) * (NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3)) *
-        //    (pow(3 * (NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2)), 2) - pow(NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3), 2));
+        //    (3 * pow(NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2), 2) - pow(NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3), 2));
         *h5 = (*nu30 - 3. * *nu12) *
             (*nu30 + *nu12) *
             (pow(*nu30 + *nu12, 2.0) - 3. * pow(*nu21 + *nu03, 2.0)) +
             (3. * *nu21 - *nu03) * (*nu21 + *nu03) *
-            (pow(3. * (*nu30 + *nu12), 2.0) - pow(*nu21 + *nu03, 2.0));
+            (3. * pow(*nu30 + *nu12, 2.0) - pow(*nu21 + *nu03, 2.0));	// FIX: was pow(3*(nu30+nu12), 2) == 9*(eta30+eta12)^2; Hu's I5 second bracket is 3*(eta30+eta12)^2 - (eta21+eta03)^2 (GPU twin of the CPU fix)
 
         // Formula: double h6 = (NormCentralMom(D, 2, 0) - NormCentralMom(D, 0, 2)) * (pow(NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2), 2) -
-        //    pow(NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3), 2)) + (4 * NormCentralMom(D, 1, 1) * (NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2)) *
-        //        NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3));
+        //    pow(NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3), 2)) + 4 * NormCentralMom(D, 1, 1) * (NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2)) *
+        //        (NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3));
         *h6 = (*nu20 - *nu02) * (pow(*nu30 + *nu12, 2.0) -
-            pow(*nu21 + *nu03, 2.0)) + (4. * *nu11 * (*nu30 + *nu12) *
-                *nu21 + *nu03);
+            pow(*nu21 + *nu03, 2.0)) +
+            4. * *nu11 * (*nu30 + *nu12) * (*nu21 + *nu03);	// FIX: was 4*nu11*(nu30+nu12)*nu21 + nu03 - precedence error left "+nu03" outside the product; Hu's I6 last term is 4*eta11*(eta30+eta12)*(eta21+eta03) (GPU twin of the CPU fix)
 
         // Formula: double h7 = (3 * NormCentralMom(D, 2, 1) - NormCentralMom(D, 0, 3)) * (NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2)) * (pow(NormCentralMom(D, 3, 0) + NormCentralMom(D, 1, 2), 2) -
         //    3 * pow(NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3), 2)) - (NormCentralMom(D, 3, 0) - 3 * NormCentralMom(D, 1, 2)) * (NormCentralMom(D, 2, 1) + NormCentralMom(D, 0, 3)) *
