@@ -77,12 +77,38 @@ def write_store(name, order, include_axes=True):
              "" if include_axes else "  [no axes -> legacy fallback]"))
 
 
+def write_bad(name, shape, axes):
+    """Write a deliberately malformed store (its 'axes' disagrees with the array)
+    so the loader must reject it cleanly, not crash."""
+    path = os.path.join(HERE, name)
+    shutil.rmtree(path, ignore_errors=True)
+    g = zarr.open_group(path, mode="w", zarr_format=2)
+    chunks = tuple(1 if i == len(shape) - 3 else s for i, s in enumerate(shape))
+    a = g.create_array("0", shape=shape, dtype="uint16", chunks=chunks, compressors=None)
+    a[:] = 0
+    g.attrs.put({"multiscales": [{"version": "0.4", "axes": axes,
+        "datasets": [{"path": "0",
+                      "coordinateTransformations": [{"type": "scale", "scale": [1.0] * len(axes)}]}]}]})
+    print("wrote %-24s shape=%s axes=%d  (MALFORMED)" % (name, list(shape), len(axes)))
+
+
 def main():
-    write_store("dim5.ome.zarr", "tczyx")
-    write_store("dim5_ctzyx.ome.zarr", "ctzyx")
+    # All 6 orderings of {t,c,z} before y,x -- the complete legal OME axis-order set.
+    for o in ["tczyx", "tzcyx", "ctzyx", "cztyx", "ztcyx", "zctyx"]:
+        write_store("dim5.ome.zarr" if o == "tczyx" else "dim5_%s.ome.zarr" % o, o)
+    # 4D (rank-4 coverage): one time-only, one channel-only.
+    write_store("dim4_tzyx.ome.zarr", "tzyx")
+    write_store("dim4_czyx.ome.zarr", "czyx")
+    # lower rank + fallback
     write_store("dim3_zyx.ome.zarr", "zyx")
     write_store("dim2_yx.ome.zarr", "yx")
     write_store("dim5_noaxes.ome.zarr", "tczyx", include_axes=False)
+    # --- illegal / adversarial: must be rejected cleanly, not crash ---
+    # 3D array but 'axes' declares 5 entries -> indexing the shape by axis role OOBs
+    write_bad("bad_axes_count.ome.zarr", (Z, Y, X), [_AX[k] for k in ("t", "c", "z", "y", "x")])
+    # axes present but none labeled x/y -> X/Y unresolvable
+    write_bad("bad_no_xy.ome.zarr", (Z, Y, X),
+              [{"name": "z", "type": "space"}, {"name": "a", "type": "space"}, {"name": "b", "type": "space"}])
 
 
 if __name__ == "__main__":

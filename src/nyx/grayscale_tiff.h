@@ -14,7 +14,8 @@
 #include <cstring>
 #include <type_traits>	// std::is_signed_v to guard signed->unsigned wraparound in loadTile
 #include <sstream>
-#include <limits.h> // for INT_MAX 
+#include <limits.h> // for INT_MAX
+#include "ome/ome_tiff_meta.h"   // parse_ome_xml -> OmeAxes (OME-TIFF plane->IFD mapping)
 
 constexpr size_t STRIP_TILE_HEIGHT = 1024;
 constexpr size_t STRIP_TILE_WIDTH = 1024;
@@ -432,6 +433,23 @@ public:
 
             fullDepth_ = TIFFNumberOfDirectories(tiff_);
 
+            // OME-TIFF: the IFDs are a (z,c,t) rasterization, not a plain Z-stack.
+            // Parse the OME-XML (IFD-0 ImageDescription) so (z,c,t) map to the right
+            // IFD and fullDepth reflects SizeZ, not the total page count.
+            {
+                char* desc = nullptr;
+                if (TIFFGetField(tiff_, TIFFTAG_IMAGEDESCRIPTION, &desc) == 1 && desc
+                    && std::string(desc).find("<OME") != std::string::npos)
+                {
+                    ome_ = Nyxus::parse_ome_xml(desc);
+                    if (ome_.valid)
+                    {
+                        is_ome_ = true;
+                        fullDepth_ = ome_.sizeZ;
+                    }
+                }
+            }
+
             tileWidth_ = std::min(fullWidth_, STRIP_TILE_WIDTH);
             tileHeight_ = std::min(fullHeight_, STRIP_TILE_HEIGHT);
             tileDepth_ = std::min(fullDepth_, STRIP_TILE_DEPTH);
@@ -475,9 +493,9 @@ public:
     void loadTileFromFile(std::shared_ptr<std::vector<DataType>> tile,
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
-        size_t indexLayerGlobalTile,
-        [[maybe_unused]] size_t indexChannel,     // multi-page TIFF: pages are Z, no C
-        [[maybe_unused]] size_t indexTimeframe,   // multi-page TIFF: no time series
+        size_t indexLayerGlobalTile,   // Z (plane page for non-OME multi-page TIFF)
+        size_t indexChannel,           // C plane (OME-TIFF only)
+        size_t indexTimeframe,         // T plane (OME-TIFF only)
         [[maybe_unused]] size_t level) override
     {
         // Get ahold of the logical (feature extraction facing) tile buffer from its smart pointer
@@ -488,6 +506,16 @@ public:
 
         buf = _TIFFmalloc(TIFFScanlineSize(tiff_));
 
+        // OME plane indices are computed into an IFD (not iterated), so validate the
+        // range explicitly — an out-of-range Z would otherwise skip the layer loop
+        // below and silently return a zero tile.
+        if (is_ome_ && (indexLayerGlobalTile >= ome_.sizeZ
+            || indexChannel >= ome_.sizeC || indexTimeframe >= ome_.sizeT))
+        {
+            _TIFFfree(buf);
+            throw std::runtime_error("NyxusGrayscaleTiffStripLoader: (z,c,t) plane out of range");
+        }
+
         size_t
             startLayer = indexLayerGlobalTile * tileDepth_,
             endLayer = std::min((indexLayerGlobalTile + 1) * tileDepth_, fullDepth_),
@@ -496,9 +524,18 @@ public:
             startCol = indexColGlobalTile * tileWidth_,
             endCol = std::min((indexColGlobalTile + 1) * tileWidth_, fullWidth_);
 
-        for (layer = startLayer; layer < endLayer; ++layer) 
+        for (layer = startLayer; layer < endLayer; ++layer)
         {
-            TIFFSetDirectory(tiff_, layer);
+            // OME-TIFF: page = (z,c,t) IFD per DimensionOrder; plain multi-page: page = Z.
+            size_t ifd = is_ome_ ? ome_.ifdForPlane(layer, indexChannel, indexTimeframe) : layer;
+            // Check the return so an out-of-range plane throws instead of silently
+            // leaving the previous directory current and reading the wrong page.
+            if (TIFFSetDirectory(tiff_, (uint16_t)ifd) != 1)
+            {
+                _TIFFfree(buf);
+                throw std::runtime_error("NyxusGrayscaleTiffStripLoader: TIFFSetDirectory(ifd="
+                    + std::to_string(ifd) + ") failed (out-of-range plane?)");
+            }
             for (row = startRow; row < endRow; row++) 
             {
                 TIFFReadScanline(tiff_, buf, row);
@@ -695,5 +732,8 @@ private:
     short
         sampleFormat_ = 0,        ///< Sample format as defined by libtiff
         bitsPerSample_ = 0;       ///< Bit Per Sample as defined by libtiff
+
+    bool is_ome_ = false;         ///< true when IFD-0 carries an OME-XML block
+    Nyxus::OmeAxes ome_;          ///< parsed OME dimensions (drives the plane->IFD map)
 
 };

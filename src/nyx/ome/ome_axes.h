@@ -130,6 +130,23 @@ namespace Nyxus
 			return -1;
 		}
 
+		// Map a (z,c,t) plane to its IFD / plane ordinal under the OME
+		// DimensionOrder (default rasterization: the axes after XY, fastest to
+		// slowest). E.g. XYZCT -> ifd = z + c*sizeZ + t*sizeZ*sizeC.
+		std::size_t ifdForPlane(std::size_t z, std::size_t c, std::size_t t) const
+		{
+			std::size_t idx = 0, stride = 1;
+			for (char ax : omeDimensionOrder)
+			{
+				if (ax == 'X' || ax == 'Y') continue;
+				std::size_t coord = (ax == 'Z') ? z : (ax == 'C') ? c : t;
+				std::size_t sz    = (ax == 'Z') ? sizeZ : (ax == 'C') ? sizeC : sizeT;
+				idx += coord * stride;
+				stride *= sz;
+			}
+			return idx;
+		}
+
 		std::size_t numberPyramidLevels() const { return levels.empty() ? 1 : levels.size(); }
 		bool isVolumetric()  const { return sizeZ > 1; }
 		bool isMultiChannel() const { return sizeC > 1; }

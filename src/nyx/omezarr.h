@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <stdexcept>
 #include "abs_tile_loader.h"
 #include "nlohmann/json.hpp"
 #include "ome/ome_zarr_meta.h"   // parse_ome_zarr -> OmeAxes (axis-role resolution)
@@ -57,8 +58,14 @@ public:
         // Resolve axis roles from the NGFF 'axes' metadata instead of assuming a
         // fixed [T,C,Z,Y,X] order. Falls back to legacy 5D TCZYX if 'axes' is absent.
         Nyxus::OmeAxes axes = Nyxus::parse_ome_zarr(file_attributes, level0Shape, dtype_str);
-        if (axes.valid && axes.storageIndexOf('X') >= 0 && axes.storageIndexOf('Y') >= 0)
+        if (axes.valid)
         {
+            // Reject self-inconsistent metadata rather than guess: if the 'axes'
+            // count disagrees with the array rank, indexing the shape by axis role
+            // would read out of bounds.
+            if (axes.storageAxes.size() != level0Shape.size())
+                throw std::runtime_error("OME-Zarr: 'axes' count " + std::to_string(axes.storageAxes.size())
+                    + " does not match array rank " + std::to_string(level0Shape.size()));
             ndim_ = axes.storageAxes.size();
             ix_ = axes.storageIndexOf('X'); iy_ = axes.storageIndexOf('Y');
             iz_ = axes.storageIndexOf('Z'); ic_ = axes.storageIndexOf('C');
@@ -67,10 +74,18 @@ public:
         }
         else
         {
+            // No usable 'axes': map by position (X,Y last; Z,C,T before) — rank-safe.
             ndim_ = level0Shape.size();
-            it_ = 0; ic_ = 1; iz_ = 2; iy_ = 3; ix_ = 4;   // legacy [T,C,Z,Y,X]
+            int n = (int)ndim_;
+            ix_ = n - 1; iy_ = n - 2;
+            iz_ = (n >= 3) ? n - 3 : -1;
+            ic_ = (n >= 4) ? n - 4 : -1;
+            it_ = (n >= 5) ? n - 5 : -1;
             n_levels_ = 1;
         }
+        // X and Y must resolve to real dimensions, else the read would index OOB.
+        if (ix_ < 0 || iy_ < 0 || (size_t)ix_ >= level0Shape.size() || (size_t)iy_ >= level0Shape.size())
+            throw std::runtime_error("OME-Zarr: cannot resolve X/Y axes from metadata");
 
         full_width_  = level0Shape[ix_];
         full_height_ = level0Shape[iy_];

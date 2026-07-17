@@ -295,6 +295,19 @@ void test_raw_omezarr_addressing(const char* store, int T, int C, int Z)
     }
 }
 
+// Every one of the 6 legal orderings of {t,c,z} before y,x must read correctly
+// (proves the axis-role resolution, not just the default TCZYX).
+void test_omezarr_all_5d_permutations()
+{
+    for (const char* s : { "dim5.ome.zarr", "dim5_tzcyx.ome.zarr", "dim5_ctzyx.ome.zarr",
+                           "dim5_cztyx.ome.zarr", "dim5_ztcyx.ome.zarr", "dim5_zctyx.ome.zarr" })
+    {
+        test_omezarr_addressing(s, 2, 3, 4);
+        test_raw_omezarr_addressing(s, 2, 3, 4);
+        if (::testing::Test::HasFatalFailure()) return;
+    }
+}
+
 // Negative: requesting a Z/C/T plane beyond the array extent must throw, not read
 // out-of-bounds / wrong data. dim5.ome.zarr has T=2, C=3, Z=4.
 void test_omezarr_out_of_range_throws()
@@ -312,6 +325,22 @@ void test_omezarr_out_of_range_throws()
     EXPECT_ANY_THROW(raw.loadTileFromFile(0, 0, 0, 99, 0, 0));
     EXPECT_ANY_THROW(raw.loadTileFromFile(0, 0, 0, 0, 99, 0));
     EXPECT_ANY_THROW(raw.loadTileFromFile(0, 0, 99, 0, 0, 0));
+}
+
+// Illegal / adversarial: self-inconsistent metadata must be rejected cleanly
+// (throw), not crash. bad_axes_count declares 5 axes for a 3D array (indexing the
+// shape by axis role would read OOB); bad_no_xy has axes but none labeled x/y.
+void test_omezarr_malformed_throws()
+{
+    for (const char* s : { "bad_axes_count.ome.zarr", "bad_no_xy.ome.zarr" })
+    {
+        fs::path ds = omezarr_data_path(s);
+        ASSERT_TRUE(fs::exists(ds)) << ds.string();
+        EXPECT_ANY_THROW(NyxusOmeZarrLoader<uint32_t>(1, ds.string())) << s;
+        EXPECT_ANY_THROW(RawOmezarrLoader(ds.string())) << s;
+    }
+    // a store path that does not exist at all
+    EXPECT_ANY_THROW(RawOmezarrLoader(omezarr_data_path("does_not_exist.ome.zarr").string()));
 }
 
 #endif // OMEZARR_SUPPORT

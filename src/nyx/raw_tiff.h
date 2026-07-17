@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "raw_format.h"
+#include "ome/ome_tiff_meta.h"   // parse_ome_xml -> OmeAxes (OME-TIFF plane->IFD mapping)
 
 class RawTiffTileLoader : public RawFormatLoader
 {
@@ -322,6 +323,23 @@ public:
 
             fullDepth_ = TIFFNumberOfDirectories(tiff_);
 
+            // OME-TIFF: the IFDs are a (z,c,t) rasterization, not a plain Z-stack.
+            // Parse the OME-XML (IFD-0 ImageDescription) so (z,c,t) map to the right
+            // IFD and fullDepth reflects SizeZ, not the total page count.
+            {
+                char* desc = nullptr;
+                if (TIFFGetField(tiff_, TIFFTAG_IMAGEDESCRIPTION, &desc) == 1 && desc
+                    && std::string(desc).find("<OME") != std::string::npos)
+                {
+                    ome_ = Nyxus::parse_ome_xml(desc);
+                    if (ome_.valid)
+                    {
+                        is_ome_ = true;
+                        fullDepth_ = ome_.sizeZ;
+                    }
+                }
+            }
+
             tileWidth_ = (std::min) (fullWidth_, STRIP_TILE_WIDTH);
             tileHeight_ = (std::min) (fullHeight_, STRIP_TILE_HEIGHT);
             tileDepth_ = (std::min) (fullDepth_, STRIP_TILE_DEPTH);
@@ -442,9 +460,9 @@ public:
     void loadTileFromFile (
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
-        size_t indexLayerGlobalTile,
-        [[maybe_unused]] size_t indexChannel,     // multi-page TIFF: pages are Z, no C
-        [[maybe_unused]] size_t indexTimeframe,   // multi-page TIFF: no time series
+        size_t indexLayerGlobalTile,   // Z (plane page for non-OME multi-page TIFF)
+        size_t indexChannel,           // C plane (OME-TIFF only)
+        size_t indexTimeframe,         // T plane (OME-TIFF only)
         [[maybe_unused]] size_t level) override
     {
         size_t
@@ -455,10 +473,14 @@ public:
             startCol = indexColGlobalTile * tileWidth_,
             endCol = std::min((indexColGlobalTile + 1) * tileWidth_, fullWidth_);
 
-        auto errcode = TIFFSetDirectory (tiff_, indexLayerGlobalTile);
+        // For OME-TIFF the target page is the (z,c,t) IFD per DimensionOrder; for a
+        // plain multi-page TIFF the page is the Z layer directly.
+        size_t ifd = is_ome_ ? ome_.ifdForPlane(indexLayerGlobalTile, indexChannel, indexTimeframe)
+                             : indexLayerGlobalTile;
+        auto errcode = TIFFSetDirectory (tiff_, (uint16_t)ifd);
         if (errcode != 1)
         {
-            std::string erm = "error " + std::to_string(errcode) + " calling TIFFSetDirectory(layer = " + std::to_string(indexLayerGlobalTile) + ")";
+            std::string erm = "error " + std::to_string(errcode) + " calling TIFFSetDirectory(ifd = " + std::to_string(ifd) + ")";
             throw (std::runtime_error(erm));
         }
 
@@ -564,6 +586,9 @@ private:
     short
         sampleFormat_ = 0,        ///< Sample format as defined by libtiff
         bitsPerSample_ = 0;       ///< Bit Per Sample as defined by libtiff
+
+    bool is_ome_ = false;         ///< true when IFD-0 carries an OME-XML block
+    Nyxus::OmeAxes ome_;          ///< parsed OME dimensions (drives the plane->IFD map)
 
     double minval, maxval;
 
