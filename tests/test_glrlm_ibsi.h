@@ -209,3 +209,51 @@ void test_ibsi_glrlm_re()
 {
     test_ibsi_glrlm_feature(Nyxus::Feature2D::GLRLM_RE, "GLRLM_RE");
 }
+
+// IBSI oracle for the angle-averaged (_AVE) joint gray-level x run-length emphasis features. Nyxus
+// stores the mean over the 4 directions in slot [0] of each _AVE feature; averaging that over the 4
+// phantom slices reproduces the IBSI 2D direction+slice-averaged consensus (the same grand mean the
+// base-feature test pins as total/16). ibsi_key indexes the shared reference table.
+void test_ibsi_glrlm_ave_feature(const Feature2D& feature_, const std::string& ibsi_key)
+{
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
+    s[(int)NyxSetting::TINY].rval = 0.0;
+    s[(int)NyxSetting::SINGLEROI].bval = false;
+    s[(int)NyxSetting::GREYDEPTH].ival = 128;
+    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
+    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::VERBOSLVL].ival = 0;
+    s[(int)NyxSetting::IBSI].bval = true;
+
+    int feature = int(feature_);
+    double total = 0;
+
+    const NyxusPixel* intens[4] = { ibsi_phantom_z1_intensity, ibsi_phantom_z2_intensity, ibsi_phantom_z3_intensity, ibsi_phantom_z4_intensity };
+    const NyxusPixel* masks[4] = { ibsi_phantom_z1_mask, ibsi_phantom_z2_mask, ibsi_phantom_z3_mask, ibsi_phantom_z4_mask };
+    const size_t counts[4] = {
+        sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel), sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel),
+        sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel), sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel) };
+
+    for (int i = 0; i < 4; i++)
+    {
+        LR roidata;
+        GLRLMFeature f;
+        load_masked_test_roi_data(roidata, intens[i], masks[i], counts[i]);
+        ASSERT_NO_THROW(f.calculate(roidata, s));
+        roidata.initialize_fvals();
+        f.save_value(roidata.fvals);
+        total += roidata.fvals[feature][0];   // _AVE stores the direction-mean in slot [0]
+    }
+
+    ASSERT_TRUE(agrees_gt(total / 4, ibsi_reference_glrlm_feature_golden_values[ibsi_key], 100.));
+}
+
+void test_ibsi_glrlm_lglre_ave()  { test_ibsi_glrlm_ave_feature(Nyxus::Feature2D::GLRLM_LGLRE_AVE,  "GLRLM_LGLRE"); }
+void test_ibsi_glrlm_hglre_ave()  { test_ibsi_glrlm_ave_feature(Nyxus::Feature2D::GLRLM_HGLRE_AVE,  "GLRLM_HGLRE"); }
+void test_ibsi_glrlm_srlgle_ave() { test_ibsi_glrlm_ave_feature(Nyxus::Feature2D::GLRLM_SRLGLE_AVE, "GLRLM_SRLGLE"); }
+void test_ibsi_glrlm_srhgle_ave() { test_ibsi_glrlm_ave_feature(Nyxus::Feature2D::GLRLM_SRHGLE_AVE, "GLRLM_SRHGLE"); }
+void test_ibsi_glrlm_lrlgle_ave() { test_ibsi_glrlm_ave_feature(Nyxus::Feature2D::GLRLM_LRLGLE_AVE, "GLRLM_LRLGLE"); }
+void test_ibsi_glrlm_lrhgle_ave() { test_ibsi_glrlm_ave_feature(Nyxus::Feature2D::GLRLM_LRHGLE_AVE, "GLRLM_LRHGLE"); }
