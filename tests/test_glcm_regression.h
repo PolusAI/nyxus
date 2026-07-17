@@ -83,8 +83,8 @@ static std::unordered_map<std::string, double> unvetted_nyxus_convention_regress
     {"GLCM_CLUTEND", 1.5639042057291665e+03},
     {"GLCM_CORRELATION", 0.000690135},
     {"GLCM_ENERGY", 0.381801},
-    {"GLCM_ENTROPY", -20.1735},
-    {"GLCM_HOM2", 6.81505},
+    {"GLCM_ENTROPY", 1.87602},   // FIX: was buggy unnormalized -20.1735; post /sum_p fix == GLCM_JE (joint entropy)
+    {"GLCM_HOM2", 0.572168},     // FIX: was buggy unnormalized 6.81505; post /sum_p fix == GLCM_IDM (homogeneity in [0,1])
     {"GLCM_INFOMEAS1", -0.184406},
     {"GLCM_INFOMEAS2", 0.495817},
     {"GLCM_JAVE", 35.5215},

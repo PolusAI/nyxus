@@ -200,6 +200,71 @@ void test_compat_3glcm_feature (const Nyxus::Feature3D& expecting_fcode, const s
     ASSERT_TRUE(agrees_gt(atot, compat_d3glcm_GT[fname], 10.));
 }
 
+// Deep-dive: verify the 7 config-sensitive 3D GLCM features equal their already-vetted twins
+// (numerically, same fixture/config), so they can be promoted by equivalence. Dumps calc_ave pairs.
+void test_3dglcm_equivalence_dump()
+{
+    auto [ipath, mpath, label] = get_3d_compat_phantom();
+    ASSERT_TRUE(fs::exists(ipath));
+    ASSERT_TRUE(fs::exists(mpath));
+
+    Environment e;
+    e.dataset.dataset_props.reserve(1);
+    SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
+    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+    e.dataset.update_dataset_props_extrema();
+    clear_slide_rois(e.uniqueLabels, e.roiData);
+    ASSERT_TRUE(gatherRoisMetrics_3D(e, 0, ipath, mpath, 0));
+    std::vector<int> batch = { label };
+    ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0));
+    ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
+
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
+    s[(int)NyxSetting::TINY].rval = 0.0;
+    s[(int)NyxSetting::SINGLEROI].bval = false;
+    s[(int)NyxSetting::GREYDEPTH].ival = 100;
+    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
+    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::VERBOSLVL].ival = 0;
+    s[(int)NyxSetting::IBSI].bval = false;
+    s[(int)NyxSetting::GLCM_GREYDEPTH].ival = -20;
+    s[(int)NyxSetting::GLCM_OFFSET].ival = 1;
+    s[(int)NyxSetting::GLCM_SPARSEINTENS].bval = true;
+
+    LR& r = e.roiData[label];
+    ASSERT_NO_THROW(r.initialize_fvals());
+    D3_GLCM_feature f;
+    ASSERT_NO_THROW(f.calculate(r, s));
+    f.save_value(r.fvals);
+
+    using F = Nyxus::Feature3D;
+    struct Pair { const char* a; F fa; const char* b; F fb; };
+    std::vector<Pair> pairs = {
+        {"3GLCM_DIS", F::GLCM_DIS, "3GLCM_DIFAVE", F::GLCM_DIFAVE},
+        {"3GLCM_ENERGY", F::GLCM_ENERGY, "3GLCM_ASM", F::GLCM_ASM},
+        {"3GLCM_ENTROPY", F::GLCM_ENTROPY, "3GLCM_JE", F::GLCM_JE},
+        {"3GLCM_HOM1", F::GLCM_HOM1, "3GLCM_ID", F::GLCM_ID},
+        {"3GLCM_HOM2", F::GLCM_HOM2, "3GLCM_IDM", F::GLCM_IDM},
+        {"3GLCM_SUMVARIANCE", F::GLCM_SUMVARIANCE, "3GLCM_CLUTEND", F::GLCM_CLUTEND},
+        {"3GLCM_VARIANCE", F::GLCM_VARIANCE, "3GLCM_JVAR", F::GLCM_JVAR},
+    };
+    for (auto& p : pairs)
+    {
+        double va = f.calc_ave(r.fvals[(int)p.fa]);
+        double vb = f.calc_ave(r.fvals[(int)p.fb]);
+        double m = std::max(std::abs(va), std::abs(vb)); if (m < 1e-12) m = 1e-12;
+        double rel = std::abs(va - vb) / m;
+        std::cout << "[3DGLCM-EQ] " << p.a << "=" << va << "  " << p.b << "=" << vb
+                  << "  rel=" << rel << (rel < 1e-6 ? "  EQUAL" : "  DIFFER") << "\n";
+        // Config-sensitive 3D GLCM features are numerically identical to their pyradiomics-vetted
+        // twins (also guards the HOM2/ENTROPY /sum_p fix: pre-fix ENTROPY!=JE, HOM2!=IDM).
+        EXPECT_NEAR(va, vb, std::abs(vb) * 1e-6 + 1e-9) << p.a << " != " << p.b;
+    }
+}
+
 void test_compat_3glcm_ACOR()
 {
     test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_ACOR, "3GLCM_ACOR");

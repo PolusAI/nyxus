@@ -31,6 +31,8 @@ static std::unordered_map<std::string, double> ibsi_reference_glcm_feature_golde
     {"GLCM_IDMN", 0.899},   // p. 74, consensus: very strong
     {"GLCM_INFOMEAS1", -0.155}, // p. 80, consensus: very strong
     {"GLCM_INFOMEAS2", 0.487},  // p. 81, consensus: very strong
+    {"GLCM_HOM2", 0.619},       // = IBSI IDM (WF0Z, p.73); PyRadiomics 'Idm' twin of GLCM_IDM
+    {"GLCM_ENTROPY", 2.05},     // = IBSI JE (TU9B, p.63); joint entropy twin of GLCM_JE
     {"GLCM_IV", 0.0567},    // p. 75, consensus: very strong
     {"GLCM_JAVE", 2.14},    // p. 62, consensus: very strong
     {"GLCM_JE", 2.05},      // p. 63, consensus: very strong
@@ -242,6 +244,16 @@ void test_ibsi_glcm_IV()
 void test_ibsi_glcm_JAVE()
 {
     test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_JAVE, "GLCM_JAVE");
+}
+
+void test_ibsi_glcm_HOM2()   // regression-fix: HOM2 == IBSI IDM once /sum_p normalization is applied
+{
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_HOM2, "GLCM_HOM2");
+}
+
+void test_ibsi_glcm_ENTROPY()   // regression-fix: ENTROPY == IBSI JE once /sum_p normalization is applied
+{
+    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_ENTROPY, "GLCM_ENTROPY");
 }
 
 void test_ibsi_glcm_JE()
