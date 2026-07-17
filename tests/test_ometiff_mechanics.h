@@ -189,6 +189,27 @@ void test_ometiff_all_5d_permutations()
     }
 }
 
+// Phase 5 negative: the whole-volume facade read must propagate an out-of-range channel
+// or timeframe as a throw (the (z,c,t)->IFD map range-guards). dim5 has C=3, T=2.
+void test_ometiff_load_volume_out_of_range()
+{
+    fs::path ds = ometiff_data_path("dim5.ome.tif");
+    ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+    SlideProps p;
+    p.fname_int = ds.string();
+    p.fname_seg = "";
+    FpImageOptions fp;
+    ImageLoader il;
+    ASSERT_TRUE(il.open(p, fp)) << ds.string();
+
+    EXPECT_ANY_THROW(il.load_volume(99, 0));   // channel out of range (C=3)
+    EXPECT_ANY_THROW(il.load_volume(0, 99));   // timeframe out of range (T=2)
+    // in-range still works
+    EXPECT_TRUE(il.load_volume(2, 1));
+    il.close();
+}
+
 // The strip loaders must ADVERTISE the OME C/T extents via numberChannels() /
 // fullTimestamps() -- what the volumetric pipeline keys off to iterate channels
 // and timeframes. A plain (non-OME) multi-page TIFF has no OME-XML, so it must keep

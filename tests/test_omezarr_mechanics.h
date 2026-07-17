@@ -440,6 +440,27 @@ void test_omezarr_ct_counts(const char* store, int T, int C, int Z)
     ASSERT_EQ(raw.fullDepth(0), (size_t)Z) << store;
 }
 
+// Phase 5 negative: the whole-volume facade read must propagate an out-of-range channel
+// or timeframe as a throw (not silently read plane 0 or OOB memory). dim5 has C=3, T=2.
+void test_omezarr_load_volume_out_of_range()
+{
+    fs::path ds = omezarr_data_path("dim5.ome.zarr");
+    ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+    SlideProps p;
+    p.fname_int = ds.string();
+    p.fname_seg = "";
+    FpImageOptions fp;
+    ImageLoader il;
+    ASSERT_TRUE(il.open(p, fp)) << ds.string();
+
+    EXPECT_ANY_THROW(il.load_volume(99, 0));   // channel out of range (C=3)
+    EXPECT_ANY_THROW(il.load_volume(0, 99));   // timeframe out of range (T=2)
+    // in-range still works
+    EXPECT_TRUE(il.load_volume(2, 1));
+    il.close();
+}
+
 // Physical calibration: the loaders must surface the OME-Zarr coordinateTransformations
 // 'scale' as physicalSizeX/Y/Z and the space-axis 'unit'. dim5_calibrated encodes
 // scale (t,c,z,y,x)=(1,1,2,0.5,0.5) micrometer -> physX=physY=0.5, physZ=2.0. An

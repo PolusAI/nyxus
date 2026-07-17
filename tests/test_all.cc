@@ -2626,6 +2626,11 @@ TEST(TEST_NYXUS, TEST_OMEZARR_PHYSICAL_CALIBRATION) {
 	ASSERT_NO_THROW (test_omezarr_physical_calibration());
 }
 
+// Negative: out-of-range channel/timeframe through the whole-volume facade must throw.
+TEST(TEST_NYXUS, TEST_OMEZARR_LOAD_VOLUME_OUT_OF_RANGE) {
+	ASSERT_NO_THROW (test_omezarr_load_volume_out_of_range());
+}
+
 // Negative: out-of-range Z/C/T plane index must throw.
 TEST(TEST_NYXUS, TEST_OMEZARR_OUT_OF_RANGE_THROWS) {
 	ASSERT_NO_THROW (test_omezarr_out_of_range_throws());
@@ -2700,6 +2705,11 @@ TEST(TEST_NYXUS, TEST_RAW_OMETIFF_PLAIN_MULTIPAGE_FALLBACK) {
 	ASSERT_NO_THROW (test_raw_ometiff_addressing("dim3_plain.tif", 1, 1, 4));
 }
 
+// Negative: out-of-range channel/timeframe through the whole-volume facade must throw.
+TEST(TEST_NYXUS, TEST_OMETIFF_LOAD_VOLUME_OUT_OF_RANGE) {
+	ASSERT_NO_THROW (test_ometiff_load_volume_out_of_range());
+}
+
 // Strip loaders advertise the OME C/T extents; the plain (non-OME) multi-page TIFF
 // keeps C=T=1 (its pages are Z-slices, not channels/timeframes).
 TEST(TEST_NYXUS, TEST_OMETIFF_CT_COUNTS) {
@@ -2720,6 +2730,47 @@ TEST(TEST_NYXUS, TEST_OMETIFF_MALFORMED_THROWS) {
 	ASSERT_NO_THROW (test_ometiff_malformed_throws());
 }
 
+
+// Phase 6 physical-calibration logic (negative + positive). resolve_slide_anisotropy
+// must NOT engage the anisotropic (resampling) path unless it's genuinely warranted:
+//   - flag off                      -> false, (1,1,1)   even with anisotropic spacing
+//   - degenerate spacing (a 0 axis) -> false, (1,1,1)   (guarded, no div-by-zero)
+//   - isotropic spacing (all equal) -> false, (1,1,1)   (nothing to correct)
+//   - out-of-range slide index      -> false, (1,1,1)   (no OOB read)
+//   - real anisotropic spacing      -> true,  ratios normalized so min == 1
+//   - explicit --aniso*             -> true,  the CLI values (win over physical)
+TEST(TEST_NYXUS, TEST_RESOLVE_SLIDE_ANISOTROPY) {
+	Environment e;
+	e.use_physical_spacing_ = true;			// opt-in on; anisoOptions stays un-customized
+	e.dataset.dataset_props.clear();
+	SlideProps p;							// ctor sets phys_x/y/z = 1.0
+	e.dataset.dataset_props.push_back(p);
+	double ax = -1, ay = -1, az = -1;
+
+	// degenerate: a zero-length axis must not divide-by-zero -> isotropic fallback
+	e.dataset.dataset_props[0].phys_x = 1.0; e.dataset.dataset_props[0].phys_y = 1.0; e.dataset.dataset_props[0].phys_z = 0.0;
+	EXPECT_FALSE(Nyxus::resolve_slide_anisotropy(e, 0, ax, ay, az));
+	EXPECT_DOUBLE_EQ(ax, 1.0); EXPECT_DOUBLE_EQ(ay, 1.0); EXPECT_DOUBLE_EQ(az, 1.0);
+
+	// isotropic but non-unit spacing -> normalized to (1,1,1) -> no anisotropic path
+	e.dataset.dataset_props[0].phys_x = 2.0; e.dataset.dataset_props[0].phys_y = 2.0; e.dataset.dataset_props[0].phys_z = 2.0;
+	EXPECT_FALSE(Nyxus::resolve_slide_anisotropy(e, 0, ax, ay, az));
+	EXPECT_DOUBLE_EQ(az, 1.0);
+
+	// out-of-range slide index -> safe (no dataset_props[99] read)
+	EXPECT_FALSE(Nyxus::resolve_slide_anisotropy(e, 99, ax, ay, az));
+	EXPECT_DOUBLE_EQ(ax, 1.0);
+
+	// genuinely anisotropic voxels (z 4x thicker) -> engage, ratio-normalized min == 1
+	e.dataset.dataset_props[0].phys_x = 0.5; e.dataset.dataset_props[0].phys_y = 0.5; e.dataset.dataset_props[0].phys_z = 2.0;
+	EXPECT_TRUE(Nyxus::resolve_slide_anisotropy(e, 0, ax, ay, az));
+	EXPECT_DOUBLE_EQ(ax, 1.0); EXPECT_DOUBLE_EQ(ay, 1.0); EXPECT_DOUBLE_EQ(az, 4.0);
+
+	// flag OFF -> never engage, even with anisotropic spacing present
+	e.use_physical_spacing_ = false;
+	EXPECT_FALSE(Nyxus::resolve_slide_anisotropy(e, 0, ax, ay, az));
+	EXPECT_DOUBLE_EQ(az, 1.0);
+}
 
 int main(int argc, char **argv)
 {
