@@ -1083,7 +1083,8 @@ class Nyxus3D:
             aniso_y,
             aniso_z,
             False,  # merge_labels: 2D-segmented only
-            preserve_hu)
+            preserve_hu,
+            use_physical_spacing)
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
@@ -1630,7 +1631,8 @@ class ImageQuality:
             aniso_y,
             aniso_z,
             False,  # merge_labels: 2D-segmented only
-            preserve_hu)
+            preserve_hu,
+            use_physical_spacing)
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
