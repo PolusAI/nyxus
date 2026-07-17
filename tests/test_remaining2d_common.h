@@ -134,6 +134,13 @@ static std::unordered_map<std::string, double> imea_ellipse_caliper_oracle{
 	{"STAT_NASSENSTEIN_DIAM_MAX", 41.0},
 	{"STAT_NASSENSTEIN_DIAM_MEAN", 25.17},
 	{"STAT_NASSENSTEIN_DIAM_MEDIAN", 21.5},
+	// Feret is a correct rotating-calipers implementation (unlike the Martin/Nassenstein bug); it
+	// agrees with imea within the same ~1-2px hull-vs-raster convention gap. Reference from imea
+	// (imea.measure_2d.statistical_length feret_diameters, dalpha=10) on the same ellipse.
+	{"STAT_FERET_DIAM_MIN", 21.0},
+	{"STAT_FERET_DIAM_MAX", 41.0},
+	{"STAT_FERET_DIAM_MEAN", 31.72},
+	{"STAT_FERET_DIAM_MEDIAN", 32.5},
 };
 
 static Fsettings make_remaining2d_settings()
@@ -300,6 +307,10 @@ static void calculate_ellipse_caliper_values(std::vector<std::vector<double>>& f
 	ConvexHullFeature hull;
 	hull.calculate(roi, s);
 	hull.save_value(roi.fvals);
+
+	CaliperFeretFeature feret;
+	feret.calculate(roi, s);
+	feret.save_value(roi.fvals);
 
 	CaliperMartinFeature martin;
 	martin.calculate(roi, s);
