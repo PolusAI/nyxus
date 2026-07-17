@@ -1724,6 +1724,13 @@ TEST(TEST_NYXUS, TEST_IBSI_GLRLM_LRHGLE)
 	ASSERT_NO_THROW(test_ibsi_glrlm_lrhgle());
 }
 
+TEST(TEST_NYXUS, TEST_IBSI_GLRLM_LGLRE_AVE)  { ASSERT_NO_THROW(test_ibsi_glrlm_lglre_ave()); }
+TEST(TEST_NYXUS, TEST_IBSI_GLRLM_HGLRE_AVE)  { ASSERT_NO_THROW(test_ibsi_glrlm_hglre_ave()); }
+TEST(TEST_NYXUS, TEST_IBSI_GLRLM_SRLGLE_AVE) { ASSERT_NO_THROW(test_ibsi_glrlm_srlgle_ave()); }
+TEST(TEST_NYXUS, TEST_IBSI_GLRLM_SRHGLE_AVE) { ASSERT_NO_THROW(test_ibsi_glrlm_srhgle_ave()); }
+TEST(TEST_NYXUS, TEST_IBSI_GLRLM_LRLGLE_AVE) { ASSERT_NO_THROW(test_ibsi_glrlm_lrlgle_ave()); }
+TEST(TEST_NYXUS, TEST_IBSI_GLRLM_LRHGLE_AVE) { ASSERT_NO_THROW(test_ibsi_glrlm_lrhgle_ave()); }
+
 TEST(TEST_NYXUS, TEST_IBSI_GLRLM_GLN)
 {
 	ASSERT_NO_THROW(test_ibsi_glrlm_gln());
