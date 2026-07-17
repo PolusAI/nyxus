@@ -2511,6 +2511,10 @@ TEST(TEST_NYXUS, TEST_3D_NIFTY_DACC_CONSISTENCY) {
 	ASSERT_NO_THROW (test_3d_nifti_data_access_consistency());
 }
 
+TEST(TEST_NYXUS, TEST_FACADE_NIFTI_LOAD_VOLUME_EQUIVALENCE) {
+	ASSERT_NO_THROW (test_facade_nifti_load_volume_equivalence());
+}
+
 
 //***** OME-Zarr i/o *****
 
