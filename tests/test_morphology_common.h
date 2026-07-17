@@ -102,6 +102,14 @@ static std::unordered_map<std::string, double> oracle_3p_shape2d_feature_golden_
 	{"GEODETIC_LENGTH", 10.0},
 	{"THICKNESS", 3.0},
 	{"EROSIONS_2_VANISH", 1.0},
+	// EXTREMA P1..P8 (X,Y) match MATLAB/Octave regionprops('Extrema') EXACTLY under the documented
+	// coordinate convention: MATLAB returns 1-based sub-pixel *corner* coords, Nyxus returns 0-based
+	// pixel *centers*. The corner is direction-specific -> the offset is per-point: left/top coords
+	// map as (matlab - 0.5), right/bottom coords as (matlab - 1.5). Verified on this 8x8 fixture by
+	// octave/matlab_oracle_tests/extrema_8x8.m: raw Extrema P1(2.5,0.5) P2(4.5,0.5) P3(6.5,2.5)
+	// P4(6.5,4.5) P5(5.5,7.5) P6(3.5,7.5) P7(0.5,4.5) P8(0.5,2.5) -> after the per-point offset ->
+	// P1(2,0) P2(3,0) P3(5,2) P4(5,3) P5(4,6) P6(3,6) P7(0,3) P8(0,2), i.e. these goldens exactly.
+	// (The earlier "~1px off" on the right/bottom coords was a harness bug: it used a uniform -0.5.)
 	{"EXTREMA_P1_X", 2.0},
 	{"EXTREMA_P1_Y", 0.0},
 	{"EXTREMA_P2_X", 3.0},
