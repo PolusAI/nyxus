@@ -1,8 +1,44 @@
+#include <algorithm>	// FIX (caliper reimpl): std::min/std::max used by the analytic chord helper
+#include <cmath>		// FIX (caliper reimpl): std::abs
+#include <vector>
 #include "caliper.h"
 #include "../environment.h"
 #include "rotation.h"
 
 using namespace Nyxus;
+
+// FIX (caliper reimpl): height of the convex hull at a vertical cut x = span of the
+// y-coordinates where the line x intersects the hull edges. Hull is stored OPEN, so the
+// wrap-around edge (last->first) is included. Inclusive edge test + min/max is robust to a
+// line passing exactly through a shared vertex (the Nassenstein contact column is a vertex).
+static double hull_height_at_x (const std::vector<Pixel2>& poly, double x)
+{
+	bool have = false;
+	double ylo = 0.0, yhi = 0.0;
+	size_t n = poly.size();
+	for (size_t i = 0; i < n; i++)
+	{
+		const Pixel2& a = poly[i];
+		const Pixel2& b = poly[(i + 1) % n];
+		double ax = a.x, bx = b.x, lo = std::min(ax, bx), hi = std::max(ax, bx);
+		if (x < lo || x > hi)
+			continue;
+		double e0, e1;
+		if (bx != ax)
+		{
+			double yv = a.y + (b.y - a.y) * (x - ax) / (bx - ax);
+			e0 = e1 = yv;
+		}
+		else	// vertical edge lying on the cut: it spans [min y, max y]
+		{
+			e0 = std::min ((double)a.y, (double)b.y);
+			e1 = std::max ((double)a.y, (double)b.y);
+		}
+		if (!have) { ylo = e0; yhi = e1; have = true; }
+		else { ylo = std::min (ylo, e0); yhi = std::max (yhi, e1); }
+	}
+	return have ? (yhi - ylo) : 0.0;
+}
 
 CaliperNassensteinFeature::CaliperNassensteinFeature() : FeatureMethod("CaliperNassensteinFeature")
 {
@@ -50,144 +86,49 @@ void CaliperNassensteinFeature::save_value (std::vector<std::vector<double>>& fv
 
 void CaliperNassensteinFeature::calculate_imp (const std::vector<Pixel2>& convex_hull, std::vector<double>& all_D)
 {
-	// Rotated convex hull
+	// FIX (caliper reimpl): the previous code was byte-identical to the (also wrong) Martin loop —
+	// two diameters cannot share one algorithm. It pushed both the shortest and longest horizontal
+	// chord per angle, so the per-angle shortest (a near-apex ~0-length chord) drove MIN and MODE to
+	// 0.0 — impossible for a solid shape. The Nassenstein diameter (Pahl/Rumpf 1973; imea reference)
+	// is a SINGLE chord per angle: the vertical chord measured at the bottom-tangent contact column.
+	// We reproduce that on the rotated convex hull: the contact is the extreme (max-y) vertex/edge,
+	// and the diameter is the hull's vertical extent at that contact column.
 	std::vector<Pixel2> CH_rot;
 	CH_rot.reserve(convex_hull.size());
 
-	// Rotate and calculate the diameter
 	all_D.clear();
 	for (float theta = 0.f; theta < 180.f; theta += rot_angle_increment)
 	{
 		Rotation::rotate_around_center(convex_hull, theta, CH_rot);
-		auto [minX, minY, maxX, maxY] = AABB::from_pixelcloud(CH_rot);
+		if (CH_rot.size() < 3)	// FIX: degenerate hull — no measurable tangent chord
+			continue;
 
-		std::vector<float> DA;	// Diameters at this angle
-
-		// Iterate y-grid
-		float stepY = (maxY - minY) / float(n_steps);
-		for (int iy = 1; iy <= n_steps; iy++)
-		{
-			float chord_y = minY + iy * stepY;
-
-			// Find convex hull segments intersecting 'y'
-			std::vector<std::pair<float, float>> X;	// intersection points
-			for (int iH = 1; iH < CH_rot.size(); iH++)
+		// FIX: bottom tangent = the max-y extreme; the contact column is the mean x of the max-y
+		// vertices (a single vertex generically, or the midpoint of a flat bottom edge)
+		double ymax = CH_rot[0].y;
+		for (auto& p : CH_rot)
+			ymax = std::max (ymax, (double)p.y);
+		double xsum = 0.0;
+		int cnt = 0;
+		for (auto& p : CH_rot)
+			if (std::abs((double)p.y - ymax) < 1e-3)
 			{
-				// The convex hull points are guaranteed to be consecutive
-				auto& a = CH_rot[iH - 1],
-					& b = CH_rot[iH];
-
-				// Chord's Y is between segment AB's Ys ?
-				if ((a.y >= chord_y && b.y <= chord_y) || (b.y >= chord_y && a.y <= chord_y))
-				{
-					auto chord_x = b.y != a.y ?
-						(b.x - a.x) * (chord_y - a.y) / (b.y - a.y) + a.x
-						: (b.y + a.y) / 2;
-					auto tup = std::make_pair(chord_x, chord_y);
-					X.push_back(tup);
-				}
+				xsum += p.x;
+				cnt++;
 			}
+		double xc = xsum / std::max(cnt, 1);
 
-			// Save the length of this chord. There must be 2 items in 'chordEnds' because we don't allow uniformative chords of zero length
-			if (X.size() >= 2)
-			{
-				// for N segments
-				auto compareFunc = [](const std::pair<float, float>& p1, const std::pair<float, float>& p2) { return p1.first < p2.first; };
-				auto idx_minX = std::distance(X.begin(), std::min_element(X.begin(), X.end(), compareFunc));
-				auto idx_maxX = std::distance(X.begin(), std::max_element(X.begin(), X.end(), compareFunc));
-				// left X and right X segments
-				auto& e1 = X[idx_minX], & e2 = X[idx_maxX];
-				auto x1 = e1.first, y1 = e1.second, x2 = e2.first, y2 = e2.second;
-				// save this chord
-				auto dist = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);	// Squared distance
-				DA.push_back(dist);
-			}
-		}
-
-		if (DA.size() > 0)
-		{
-			// Find the shortest and longest chords (diameters)
-			double minD2 = *std::min_element(DA.begin(), DA.end()),
-				maxD2 = *std::max_element(DA.begin(), DA.end()),
-				min_ = sqrt(minD2),
-				max_ = sqrt(maxD2);
-
-			// Save them
-			all_D.push_back(min_);
-			all_D.push_back(max_);
-		}
+		// FIX: Nassenstein diameter = vertical extent of the hull at the contact column
+		all_D.push_back (hull_height_at_x(CH_rot, xc));
 	}
 }
 
 void CaliperNassensteinFeature::osized_calculate (LR& r, const Fsettings& settings, ImageLoader&)
 {
-	// Rotated convex hull
-	std::vector<Pixel2> CH_rot;
-	CH_rot.reserve (r.convHull_CH.size());
-
-	// Rotate and calculate the diameter
+	// FIX (caliper reimpl): the out-of-RAM path duplicated the same defective min+max chord logic.
+	// Route it through the corrected bottom-tangent calculate_imp so both paths agree.
 	std::vector<double> all_D;
-	for (float theta = 0.f; theta < 180.f; theta += rot_angle_increment)
-	{
-		Rotation::rotate_around_center(r.convHull_CH, theta, CH_rot);
-		auto [minX, minY, maxX, maxY] = AABB::from_pixelcloud(CH_rot);
-
-		std::vector<float> DA;	// Diameters at this angle
-
-		// Iterate y-grid
-		float stepY = (maxY - minY) / float(n_steps);
-		for (int iy = 1; iy <= n_steps; iy++)
-		{
-			float chord_y = minY + iy * stepY;
-
-			// Find convex hull segments intersecting 'y'
-			std::vector<std::pair<float, float>> X;	// intersection points
-			for (int iH = 1; iH < CH_rot.size(); iH++)
-			{
-				// The convex hull points are guaranteed to be consecutive
-				auto& a = CH_rot[iH - 1],
-					& b = CH_rot[iH];
-
-				// Chord's Y is between segment AB's Ys ?
-				if ((a.y >= chord_y && b.y <= chord_y) || (b.y >= chord_y && a.y <= chord_y))
-				{
-					auto chord_x = b.y != a.y ?
-						(b.x - a.x) * (chord_y - a.y) / (b.y - a.y) + a.x
-						: (b.y + a.y) / 2;
-					auto tup = std::make_pair(chord_x, chord_y);
-					X.push_back(tup);
-				}
-			}
-
-			// Save the length of this chord. There must be 2 items in 'chordEnds' because we don't allow uniformative chords of zero length
-			if (X.size() >= 2)
-			{
-				// for N segments
-				auto compareFunc = [](const std::pair<float, float>& p1, const std::pair<float, float>& p2) { return p1.first < p2.first; };
-				auto idx_minX = std::distance(X.begin(), std::min_element(X.begin(), X.end(), compareFunc));
-				auto idx_maxX = std::distance(X.begin(), std::max_element(X.begin(), X.end(), compareFunc));
-				// left X and right X segments
-				auto& e1 = X[idx_minX], & e2 = X[idx_maxX];
-				auto x1 = e1.first, y1 = e1.second, x2 = e2.first, y2 = e2.second;
-				// save this chord
-				auto dist = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);	// Squared distance
-				DA.push_back(dist);
-			}
-		}
-
-		if (DA.size() > 0)
-		{
-			// Find the shortest and longest chords (diameters)
-			double minD2 = *std::min_element(DA.begin(), DA.end()),
-				maxD2 = *std::max_element(DA.begin(), DA.end()),
-				min_ = sqrt(minD2),
-				max_ = sqrt(maxD2);
-
-			// Save them
-			all_D.push_back(min_);
-			all_D.push_back(max_);
-		}
-	}
+	calculate_imp(r.convHull_CH, all_D);
 
 	// Process the stats
 	auto s = ComputeCommonStatistics2 (all_D);
