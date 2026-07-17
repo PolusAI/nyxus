@@ -189,6 +189,59 @@ void test_ometiff_all_5d_permutations()
     }
 }
 
+// TILED multi-plane OME-TIFF: the TILE loaders (not just the strip loaders) must map
+// (z,c,t) -> IFD. dim5_tiled.ome.tif is 5D TCZYX with one 16x16 tile per 6x8 plane.
+void test_ometiff_tiled_addressing()
+{
+    const int T = 2, C = 3, Z = 4, Y = 6, X = 8;
+    fs::path ds = ometiff_data_path("dim5_tiled.ome.tif");
+    ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+    // AbstractTileLoader stack
+    auto ldr = NyxusGrayscaleTiffTileLoader<uint32_t>(1, ds.string(), true, 0.0f, 1.0f, 1e4f, false);
+    ASSERT_EQ(ldr.fullWidth(0), (size_t)X);
+    ASSERT_EQ(ldr.fullHeight(0), (size_t)Y);
+    ASSERT_EQ(ldr.fullDepth(0), (size_t)Z);        // SizeZ, not the 24 IFDs
+    ASSERT_EQ(ldr.numberChannels(), (size_t)C);
+    ASSERT_EQ(ldr.fullTimestamps(0), (size_t)T);
+    const size_t tw = ldr.tileWidth(0);
+    auto tile = std::make_shared<std::vector<uint32_t>>(ldr.tileHeight(0) * tw, 0u);
+    for (int t = 0; t < T; ++t)
+      for (int c = 0; c < C; ++c)
+        for (int z = 0; z < Z; ++z)
+        {
+            std::fill(tile->begin(), tile->end(), 0u);
+            ASSERT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, z, c, t, 0));
+            const std::vector<uint32_t>& buf = *tile;
+            for (int y = 0; y < Y; ++y)
+              for (int x = 0; x < X; ++x)
+                ASSERT_EQ(buf[y * tw + x], ometiff_enc(x, y, z, c, t))
+                    << "tile plane (z" << z << " c" << c << " t" << t << ") at (" << x << "," << y << ")";
+        }
+    EXPECT_ANY_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 99, 0, 0));   // channel out of range
+    EXPECT_ANY_THROW(ldr.loadTileFromFile(tile, 0, 0, 99, 0, 0, 0));   // z out of range
+
+    // RawFormatLoader stack
+    auto raw = RawTiffTileLoader(ds.string());
+    ASSERT_EQ(raw.fullDepth(0), (size_t)Z);
+    ASSERT_EQ(raw.numberChannels(), (size_t)C);
+    ASSERT_EQ(raw.fullTimestamps(0), (size_t)T);
+    const size_t rw = raw.tileWidth(0);
+    for (int t = 0; t < T; ++t)
+      for (int c = 0; c < C; ++c)
+        for (int z = 0; z < Z; ++z)
+        {
+            ASSERT_NO_THROW(raw.loadTileFromFile(0, 0, z, c, t, 0));
+            for (int y = 0; y < Y; ++y)
+              for (int x = 0; x < X; ++x)
+                ASSERT_EQ(raw.get_uint32_pixel(y * rw + x), ometiff_enc(x, y, z, c, t))
+                    << "raw tile plane (z" << z << " c" << c << " t" << t << ") at (" << x << "," << y << ")";
+            raw.free_tile();
+        }
+    EXPECT_ANY_THROW(raw.loadTileFromFile(0, 0, 0, 0, 99, 0));         // timeframe out of range
+    EXPECT_ANY_THROW(raw.loadTileFromFile(0, 0, 99, 0, 0, 0));         // z out of range
+}
+
 // Regression: a single-channel mask paired with a multi-channel intensity. The mask is
 // channel-agnostic and must be REUSED for every intensity channel (not indexed at the
 // intensity's channel, which would read it out of range and drop the ROI for c>0).

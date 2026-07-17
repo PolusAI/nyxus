@@ -62,6 +62,22 @@ def write_plain(name, order):
         print("wrote %-20s axes=%-6s (plain, no OME)  IFDs=%d" % (name, order, len(tf.pages)))
 
 
+def write_tiled(name, order):
+    """A TILED multi-plane OME-TIFF (one IFD per (z,c,t) plane, each plane internally
+    tiled). tile=(16,16) makes the 6x8 plane a single tile, so the volumetric read
+    (which assembles tile (0,0) of each plane) covers the whole plane. Exercises the
+    tile-loader (z,c,t)->IFD path, distinct from the strip loaders."""
+    path = os.path.join(HERE, name)
+    data = _data_for(order)
+    tifffile.imwrite(path, data, photometric="minisblack", metadata={"axes": order},
+                     tile=(16, 16), ome=True)
+    with tifffile.TiffFile(path) as tf:
+        import re
+        dimord = re.search(r'DimensionOrder="([A-Z]+)"', tf.ome_metadata).group(1)
+        print("wrote %-20s axes=%-6s DimensionOrder=%s  IFDs=%d  tiled=%s"
+              % (name, order, dimord, len(tf.pages), tf.pages[0].is_tiled))
+
+
 def write_mask(name):
     """Single-channel, single-timeframe 3D (ZYX) label mask matching dim5's geometry.
     Used to test the 1-channel-mask : N-channel-intensity pairing: the mask is
@@ -102,6 +118,8 @@ def main():
     write_plain("dim3_plain.tif", "ZYX")
     # single-channel label mask (for the 1-mask : N-channel-intensity pairing test)
     write_mask("dim3_mask.ome.tif")
+    # TILED multi-plane OME-TIFF (5D) -> exercises the tile-loader (z,c,t)->IFD path
+    write_tiled("dim5_tiled.ome.tif", "TCZYX")
     # --- illegal / adversarial: must be rejected cleanly, not crash ---
     write_bad_rgb("bad_rgb.ome.tif")
     write_bad_corrupt("bad_corrupt.tif")

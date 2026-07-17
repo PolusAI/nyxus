@@ -2678,6 +2678,15 @@ TEST(TEST_NYXUS, TEST_OMETIFF_WHOLEVOLUME_CONSUMER_CT) {
 	ASSERT_NO_THROW (test_ometiff_wholevolume_consumer_ct("dim5.ome.tif", 2, 3, 4));
 }
 
+// TILED multi-plane OME-TIFF: the tile loaders map (z,c,t)->IFD (distinct from strip loaders).
+TEST(TEST_NYXUS, TEST_OMETIFF_TILED_ADDRESSING) {
+	ASSERT_NO_THROW (test_ometiff_tiled_addressing());
+}
+// Facade whole-volume assembly over the TILED path (open() routes tiled TIFF -> tile loader).
+TEST(TEST_NYXUS, TEST_OMETIFF_TILED_FACADE_VOLUME) {
+	ASSERT_NO_THROW (test_ometiff_facade_volume("dim5_tiled.ome.tif", 2, 3, 4));
+}
+
 // Facade whole-volume assembly (load_volume loops Z into one X*Y*Z buffer).
 TEST(TEST_NYXUS, TEST_OMETIFF_FACADE_VOLUME_3D) {
 	ASSERT_NO_THROW (test_ometiff_facade_volume("dim3_zyx.ome.tif", 1, 1, 4));
