@@ -8,6 +8,7 @@
 #include <vector>
 #include "../src/nyx/omezarr.h"
 #include "../src/nyx/raw_omezarr.h"
+#include "../src/nyx/image_loader.h"
 #include "../src/nyx/helpers/fsystem.h"
 
 // The OME-Zarr test datasets under tests/data/omezarr are generated with bfio
@@ -293,6 +294,40 @@ void test_raw_omezarr_addressing(const char* store, int T, int C, int Z)
         ASSERT_NE(p000, p010) << "channel index ignored";
         ASSERT_NE(p000, p001) << "timeframe index ignored";
     }
+}
+
+// Whole-volume assembly through the ImageLoader facade: load_volume() must stack
+// all Z-planes (per (channel,timeframe)) into one X*Y*Z buffer. This is the
+// foundation that lets the volumetric pipeline consume plane-by-plane OME-Zarr.
+void test_omezarr_facade_volume(const char* store, int T, int C, int Z)
+{
+    const int Y = 6, X = 8;
+    fs::path ds = omezarr_data_path(store);
+    ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+    SlideProps p;
+    p.fname_int = ds.string();
+    p.fname_seg = "";               // whole-slide: intensity only
+    FpImageOptions fp;
+    ImageLoader il;
+    ASSERT_TRUE(il.open(p, fp)) << ds.string();
+    ASSERT_EQ(il.get_full_width(), (size_t)X);
+    ASSERT_EQ(il.get_full_height(), (size_t)Y);
+    ASSERT_EQ(il.get_full_depth(), (size_t)Z);
+
+    for (int t = 0; t < T; ++t)
+      for (int c = 0; c < C; ++c)
+      {
+          ASSERT_TRUE(il.load_volume(c, t));
+          const std::vector<uint32_t>& vol = il.get_int_volume_buffer();
+          ASSERT_EQ(vol.size(), (size_t)X * Y * Z);
+          for (int z = 0; z < Z; ++z)
+            for (int y = 0; y < Y; ++y)
+              for (int x = 0; x < X; ++x)
+                ASSERT_EQ(vol[(size_t)z * X * Y + (size_t)y * X + x], dim5_enc(x, y, z, c, t))
+                    << store << " vol (x" << x << " y" << y << " z" << z << " c" << c << " t" << t << ")";
+      }
+    il.close();
 }
 
 // Every one of the 6 legal orderings of {t,c,z} before y,x must read correctly

@@ -19,6 +19,15 @@ public:
 	void close();
 	bool load_tile (size_t tile_idx);
 	bool load_tile (size_t tile_row, size_t tile_col);
+
+	// Assemble the whole X*Y*Z volume for one (channel, timeframe) into an
+	// internal buffer by looping over Z-planes. This is what lets plane-by-plane
+	// loaders (OME-Zarr, multi-page/OME-TIFF) feed the volumetric pipeline, which
+	// otherwise assumes the whole volume arrives in one read (the NIfTI model).
+	bool load_volume (size_t channel, size_t timeframe);
+	const std::vector<uint32_t>& get_int_volume_buffer() const { return vol_int_; }
+	const std::vector<uint32_t>& get_seg_volume_buffer() const { return vol_seg_; }
+
 	const std::vector<uint32_t>& get_int_tile_buffer();
 	const std::vector<uint32_t>& get_seg_tile_buffer();
 	const std::shared_ptr<std::vector<uint32_t>>& get_seg_tile_sptr();
@@ -74,5 +83,8 @@ private:
 
 	size_t cur_channel = 0,		// Currently selected channel (C) plane
 		cur_timeframe = 0;		// Currently selected timeframe (T) plane
+
+	// Whole-volume (X*Y*Z) assembly buffers filled by load_volume()
+	std::vector<uint32_t> vol_int_, vol_seg_;
 };
 

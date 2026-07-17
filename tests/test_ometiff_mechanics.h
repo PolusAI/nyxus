@@ -14,6 +14,7 @@
 #include <vector>
 #include "../src/nyx/grayscale_tiff.h"
 #include "../src/nyx/raw_tiff.h"
+#include "../src/nyx/image_loader.h"
 #include "../src/nyx/helpers/fsystem.h"
 
 static inline fs::path ometiff_data_path(const char* name)
@@ -81,6 +82,40 @@ void test_raw_ometiff_addressing(const char* store, int T, int C, int Z)
                     << store << " plane (z" << z << " c" << c << " t" << t << ") at (" << x << "," << y << ")";
         }
     ldr.free_tile();
+}
+
+// Whole-volume assembly through the ImageLoader facade: load_volume() stacks all
+// Z-planes (per (channel,timeframe)) into one X*Y*Z buffer -- the foundation that
+// lets the volumetric pipeline consume a multi-page OME-TIFF.
+void test_ometiff_facade_volume(const char* store, int T, int C, int Z)
+{
+    const int Y = 6, X = 8;
+    fs::path ds = ometiff_data_path(store);
+    ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+    SlideProps p;
+    p.fname_int = ds.string();
+    p.fname_seg = "";
+    FpImageOptions fp;
+    ImageLoader il;
+    ASSERT_TRUE(il.open(p, fp)) << ds.string();
+    ASSERT_EQ(il.get_full_width(), (size_t)X);
+    ASSERT_EQ(il.get_full_height(), (size_t)Y);
+    ASSERT_EQ(il.get_full_depth(), (size_t)Z);
+
+    for (int t = 0; t < T; ++t)
+      for (int c = 0; c < C; ++c)
+      {
+          ASSERT_TRUE(il.load_volume(c, t));
+          const std::vector<uint32_t>& vol = il.get_int_volume_buffer();
+          ASSERT_EQ(vol.size(), (size_t)X * Y * Z);
+          for (int z = 0; z < Z; ++z)
+            for (int y = 0; y < Y; ++y)
+              for (int x = 0; x < X; ++x)
+                ASSERT_EQ(vol[(size_t)z * X * Y + (size_t)y * X + x], ometiff_enc(x, y, z, c, t))
+                    << store << " vol (x" << x << " y" << y << " z" << z << " c" << c << " t" << t << ")";
+      }
+    il.close();
 }
 
 // Every one of the 6 legal OME DimensionOrder values (all orderings of {T,C,Z}

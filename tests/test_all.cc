@@ -2564,6 +2564,14 @@ TEST(TEST_NYXUS, TEST_OMEZARR_4D_CZYX) {
 	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim4_czyx.ome.zarr", 1, 3, 4));
 }
 
+// Facade whole-volume assembly (load_volume loops Z into one X*Y*Z buffer).
+TEST(TEST_NYXUS, TEST_OMEZARR_FACADE_VOLUME_3D) {
+	ASSERT_NO_THROW (test_omezarr_facade_volume("dim3_zyx.ome.zarr", 1, 1, 4));
+}
+TEST(TEST_NYXUS, TEST_OMEZARR_FACADE_VOLUME_5D) {
+	ASSERT_NO_THROW (test_omezarr_facade_volume("dim5.ome.zarr", 2, 3, 4));
+}
+
 // Lower-rank stores: a fixed shape[2..4] loader would crash; the axis-role loader
 // reads 3D (ZYX) and 2D (YX) correctly.
 TEST(TEST_NYXUS, TEST_OMEZARR_3D_ZYX) {
@@ -2622,6 +2630,14 @@ TEST(TEST_NYXUS, TEST_OMETIFF_4D_TZYX) {
 TEST(TEST_NYXUS, TEST_OMETIFF_4D_CZYX) {
 	ASSERT_NO_THROW (test_ometiff_addressing("dim4_czyx.ome.tif", 1, 3, 4));
 	ASSERT_NO_THROW (test_raw_ometiff_addressing("dim4_czyx.ome.tif", 1, 3, 4));
+}
+
+// Facade whole-volume assembly (load_volume loops Z into one X*Y*Z buffer).
+TEST(TEST_NYXUS, TEST_OMETIFF_FACADE_VOLUME_3D) {
+	ASSERT_NO_THROW (test_ometiff_facade_volume("dim3_zyx.ome.tif", 1, 1, 4));
+}
+TEST(TEST_NYXUS, TEST_OMETIFF_FACADE_VOLUME_5D) {
+	ASSERT_NO_THROW (test_ometiff_facade_volume("dim5.ome.tif", 2, 3, 4));
 }
 
 // Lower-rank OME-TIFF.

@@ -263,6 +263,56 @@ bool ImageLoader::load_tile (size_t tile_row, size_t tile_col)
 
 	return true;
 }
+
+bool ImageLoader::load_volume (size_t channel, size_t timeframe)
+{
+	cur_channel = channel;
+	cur_timeframe = timeframe;
+
+	const size_t sliceSize = (size_t)fw * fh;   // one Z-plane, full width*height
+	const size_t volSize = sliceSize * fd;      // the whole X*Y*Z volume
+
+	if (vol_int_.size() != volSize)
+		vol_int_.resize (volSize);
+	const bool haveSeg = (segFL != nullptr);
+	if (haveSeg && vol_seg_.size() != volSize)
+		vol_seg_.resize (volSize);
+
+	// Read each layer-tile (td planes per read) and copy its planes into the
+	// volume buffer at the right Z offset.
+	//   - Per-plane loaders (OME-Zarr, multi-page TIFF): td==1, tt==1 -> one read
+	//     per Z plane, with the timeframe already selected by the loadTileFromFile
+	//     argument. ntd == fd iterations.
+	//   - Whole-4D loaders (NIfTI): td==fd, tt==nt -> a single read yields the ENTIRE
+	//     x*y*z*t blob ([t][z][y][x], x fastest) and ignores the timeframe arg, so we
+	//     slab out the requested timeframe here (frameBase).
+	// Only the tile at (row=0,col=0) is assembled — matching the volumetric
+	// pipeline's single-tile-per-plane assumption; larger planes are the
+	// out-of-core path's concern.
+	const size_t frameStride = td * th * tw;                       // one timeframe's worth of tile buffer
+	const size_t frameBase = (tt > 1) ? timeframe * frameStride : 0; // NIfTI-style whole-4D: pick the frame
+	for (size_t lz = 0; lz < ntd; ++lz)
+	{
+		intFL->loadTileFromFile (ptrI, 0, 0, lz, channel, timeframe, lvl);
+		if (haveSeg)
+			segFL->loadTileFromFile (ptrL, 0, 0, lz, channel, timeframe, lvl);
+
+		for (size_t pz = 0; pz < td && (lz * td + pz) < fd; ++pz)
+		{
+			const size_t gz = lz * td + pz;
+			for (size_t row = 0; row < fh; ++row)
+			{
+				const size_t src = frameBase + (pz * th + row) * tw;  // plane pz, row `row`
+				const size_t dst = gz * sliceSize + row * fw;
+				std::copy (ptrI->begin() + src, ptrI->begin() + src + fw, vol_int_.begin() + dst);
+				if (haveSeg)
+					std::copy (ptrL->begin() + src, ptrL->begin() + src + fw, vol_seg_.begin() + dst);
+			}
+		}
+	}
+	return true;
+}
+
 const std::vector<uint32_t>& ImageLoader::get_int_tile_buffer()
 {
 	return *ptrI;
