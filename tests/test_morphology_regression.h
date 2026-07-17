@@ -164,6 +164,21 @@ void test_shape2d_caliper_martin_nassenstein_imea_ellipse_oracle()
 	ASSERT_GT(fvals[static_cast<int>(Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MIN)][0], 2.0);
 }
 
+// Vets the Feret diameter distribution against imea on the same filled ellipse. Feret is a correct
+// rotating-calipers implementation; robust stats (min/max/mean/median) agree with imea within the
+// hull-vs-raster convention tolerance. (MIN/MAX_FERET_ANGLE stay regression — they are a Nyxus-frame
+// angle convention with no directly comparable imea output.)
+void test_shape2d_caliper_feret_imea_ellipse_oracle()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_ellipse_caliper_values(fvals);
+
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MIN, "STAT_FERET_DIAM_MIN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MAX, "STAT_FERET_DIAM_MAX");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MEAN, "STAT_FERET_DIAM_MEAN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MEDIAN, "STAT_FERET_DIAM_MEDIAN");
+}
+
 void test_remaining2d_verifiable_with_3p_builtin_oracle_chord_stat_features()
 {
 	std::vector<std::vector<double>> fvals;
