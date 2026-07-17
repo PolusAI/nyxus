@@ -60,6 +60,33 @@ void test_shape2d_misc_shape_features()
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE, "DIAMETER_MIN_ENCLOSING_CIRCLE");
 }
 
+// Tier-2 documented-formula conformance (NO external oracle). These features have a recognized closed
+// form but their VALUE uses Nyxus' own conventions (pixel-count area, contour perimeter, moment-fit
+// major axis), so no third-party tool reproduces the number. What we CAN pin is that the code applies
+// the published formula to its own constituents without an implementation bug -- recompute the formula
+// from AREA_PIXELS_COUNT / PERIMETER / MAJOR_AXIS_LENGTH and require an exact match. This is weaker than
+// external-oracle vetting and is registered as such (oracle=formula) in oracle_coverage.csv.
+void test_shape2d_documented_formula_conformance_no_external_oracle()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_shape2d_feature_values(fvals);
+
+	const double PI = 3.14159265358979323846;
+	const double A = fvals[static_cast<int>(Nyxus::Feature2D::AREA_PIXELS_COUNT)][0];
+	const double P = fvals[static_cast<int>(Nyxus::Feature2D::PERIMETER)][0];
+	const double major = fvals[static_cast<int>(Nyxus::Feature2D::MAJOR_AXIS_LENGTH)][0];
+
+	// CIRCULARITY = sqrt(4*pi*A) / P   (convex_hull_nontriv.cpp)
+	const double circ_formula = std::sqrt(4.0 * PI * A) / P;
+	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::CIRCULARITY)][0], circ_formula, 1e-9)
+		<< "CIRCULARITY does not match sqrt(4*pi*A)/P";
+
+	// ROUNDNESS = 4*A / (pi*major^2)   (ellipse_fitting.cpp)
+	const double round_formula = 4.0 * A / (PI * major * major);
+	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::ROUNDNESS)][0], round_formula, 1e-9)
+		<< "ROUNDNESS does not match 4A/(pi*major^2)";
+}
+
 void test_shape2d_unvetted_no_direct_oracle_radius_features()
 {
 	std::vector<std::vector<double>> fvals;
