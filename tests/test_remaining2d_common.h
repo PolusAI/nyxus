@@ -11,6 +11,7 @@
 #include "../src/nyx/features/basic_morphology.h"
 #include "../src/nyx/features/caliper.h"
 #include "../src/nyx/features/chords.h"
+#include "../src/nyx/features/circle.h"
 #include "../src/nyx/features/contour.h"
 #include "../src/nyx/features/convex_hull.h"
 #include "../src/nyx/features/erosion.h"
@@ -141,6 +142,13 @@ static std::unordered_map<std::string, double> imea_ellipse_caliper_oracle{
 	{"STAT_FERET_DIAM_MAX", 41.0},
 	{"STAT_FERET_DIAM_MEAN", 31.72},
 	{"STAT_FERET_DIAM_MEDIAN", 32.5},
+	// Minimum enclosing circle (Welzl / cv2.minEnclosingCircle) is centroid-independent and matches
+	// imea/OpenCV exactly: for the ellipse a=20 its diameter = the major axis = 2a = 40. (The circle
+	// fixture's value 30 is asserted inline.) NOTE: DIAMETER_CIRCUMSCRIBING_CIRCLE and
+	// DIAMETER_INSCRIBING_CIRCLE are NOT here — they are imea's crude max/min centroid-to-contour
+	// distance approximation (not a true geometric circle), sensitive to Nyxus's contour convention +
+	// the centroid-1 offset (a symmetric circle yields 35.6/23.3, not ~30/~30), so they stay regression.
+	{"DIAMETER_MIN_ENCLOSING_CIRCLE", 40.0},
 };
 
 static Fsettings make_remaining2d_settings()
@@ -300,6 +308,10 @@ static void calculate_ellipse_caliper_values(std::vector<std::vector<double>>& f
 	roi.aux_image_matrix = ImageMatrix(roi.raw_pixels);
 	roi.initialize_fvals();
 
+	BasicMorphologyFeatures basic;	// provides CENTROID_X/Y for the circle features
+	basic.calculate(roi, s);
+	basic.save_value(roi.fvals);
+
 	ContourFeature contour;
 	contour.calculate(roi, s);
 	contour.save_value(roi.fvals);
@@ -319,6 +331,48 @@ static void calculate_ellipse_caliper_values(std::vector<std::vector<double>>& f
 	CaliperNassensteinFeature nassenstein;
 	nassenstein.calculate(roi, s);
 	nassenstein.save_value(roi.fvals);
+
+	EnclosingInscribingCircumscribingCircleFeature circle;
+	circle.calculate(roi, s);
+	circle.save_value(roi.fvals);
+
+	fvals = roi.fvals;
+}
+
+// Build a filled circle (r=15) ROI and compute basic morphology + contour + the 3 circle diameters.
+static void calculate_circle_shape_values(std::vector<std::vector<double>>& fvals)
+{
+	Fsettings s = make_remaining2d_settings();
+
+	LR roi(2);
+	const double r = 15.0, cx = 21.0, cy = 21.0;	// pad=6
+	bool first = true;
+	for (int y = 0; y <= 42; y++)
+		for (int x = 0; x <= 42; x++)
+		{
+			double dx = (x - cx) / r, dy = (y - cy) / r;
+			if (dx * dx + dy * dy <= 1.0)
+			{
+				if (first) { init_label_record_3(roi, x, y, 1); first = false; }
+				else update_label_record_3(roi, x, y, 1);
+				roi.raw_pixels.push_back(Pixel2(static_cast<size_t>(x), static_cast<size_t>(y), static_cast<PixIntens>(1)));
+			}
+		}
+	roi.make_nonanisotropic_aabb();
+	roi.aux_image_matrix = ImageMatrix(roi.raw_pixels);
+	roi.initialize_fvals();
+
+	BasicMorphologyFeatures basic;
+	basic.calculate(roi, s);
+	basic.save_value(roi.fvals);
+
+	ContourFeature contour;
+	contour.calculate(roi, s);
+	contour.save_value(roi.fvals);
+
+	EnclosingInscribingCircumscribingCircleFeature circle;
+	circle.calculate(roi, s);
+	circle.save_value(roi.fvals);
 
 	fvals = roi.fvals;
 }

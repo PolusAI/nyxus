@@ -179,6 +179,22 @@ void test_shape2d_caliper_feret_imea_ellipse_oracle()
 	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MEDIAN, "STAT_FERET_DIAM_MEDIAN");
 }
 
+// Vets the minimum-enclosing-circle diameter (Welzl / cv2.minEnclosingCircle) against its exact
+// geometric/imea value on two clean fixtures: ellipse a=20 -> 2a=40, circle r=15 -> 30. This is
+// centroid-independent, so it matches to <0.1%. (DIAMETER_CIRCUMSCRIBING/INSCRIBING_CIRCLE are left
+// regression: imea's centroid-to-contour-distance approximation, convention-sensitive.)
+void test_shape2d_min_enclosing_circle_imea_oracle()
+{
+	std::vector<std::vector<double>> ell;
+	calculate_ellipse_caliper_values(ell);
+	assert_caliper_close_to_imea(ell, Nyxus::Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE, "DIAMETER_MIN_ENCLOSING_CIRCLE", 0.05);
+
+	std::vector<std::vector<double>> cir;
+	calculate_circle_shape_values(cir);
+	const double d = cir[static_cast<int>(Nyxus::Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE)][0];
+	ASSERT_NEAR(d, 30.0, 30.0 * 0.05) << "circle min-enclosing nyxus=" << d << " expected~30";
+}
+
 void test_remaining2d_verifiable_with_3p_builtin_oracle_chord_stat_features()
 {
 	std::vector<std::vector<double>> fvals;

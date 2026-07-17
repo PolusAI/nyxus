@@ -1097,6 +1097,11 @@ TEST(TEST_NYXUS, TEST_SHAPE2D_CALIPER_FERET_IMEA_ELLIPSE_ORACLE)
 	ASSERT_NO_THROW(test_shape2d_caliper_feret_imea_ellipse_oracle());
 }
 
+TEST(TEST_NYXUS, TEST_SHAPE2D_MIN_ENCLOSING_CIRCLE_IMEA_ORACLE)
+{
+	ASSERT_NO_THROW(test_shape2d_min_enclosing_circle_imea_oracle());
+}
+
 TEST(TEST_NYXUS, TEST_REMAINING2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_CHORD_STAT_FEATURES)
 {
 	ASSERT_NO_THROW(test_remaining2d_verifiable_with_3p_builtin_oracle_chord_stat_features());
