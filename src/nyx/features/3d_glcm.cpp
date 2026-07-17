@@ -613,7 +613,12 @@ double D3_GLCM_feature::f_entropy(const SimpleMatrix<double>& P)
 
 	for (j = 0; j < Ng; j++)
 		for (i = 0; i < Ng; i++)
-			entropy += P.xy(i, j) * fast_log10(P.xy(i, j) + EPSILON) / LOG10_2;
+		{
+			// FIX: normalize by sum_p (joint probability), matching f_GLCM_JE. Was summing the
+			// UNNORMALIZED co-occurrence counts -> negative "entropy" (same bug as 2D glcm.cpp).
+			double p = P.xy(i, j) / sum_p;
+			entropy += p * fast_log10(p + EPSILON) / LOG10_2;
+		}
 
 	return -entropy;
 }
@@ -933,7 +938,9 @@ double D3_GLCM_feature::f_GLCM_HOM2(const SimpleMatrix<double>& P_matrix)
 
 	for (int x = 0; x < n_levels; x++)
 		for (int y = 0; y < n_levels; y++)
-			hom2 += P_matrix.xy(x, y) / (1.0 + (double)std::abs(x - y) * (double)std::abs(x - y));
+			// FIX: normalize by sum_p (joint probability), matching f_idm/f_GLCM_JE. Was summing the
+			// UNNORMALIZED co-occurrence counts -> homogeneity > 1 (same bug as 2D glcm.cpp).
+			hom2 += (P_matrix.xy(x, y) / sum_p) / (1.0 + (double)std::abs(x - y) * (double)std::abs(x - y));
 
 	return hom2;
 }
