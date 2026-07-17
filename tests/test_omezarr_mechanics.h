@@ -60,7 +60,7 @@ void test_omezarr_tileloader_content()
     size_t tw = ldr.tileWidth(0);
     auto tile = std::make_shared<std::vector<uint32_t>>(th * tw, 0u);
 
-    ASSERT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0));
+    ASSERT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
 
     const std::vector<uint32_t>& buf = *tile;
 
@@ -106,7 +106,7 @@ void test_omezarr_tileloader_multitile()
         for (size_t tc = 0; tc < nCols; ++tc)
         {
             std::fill(tile->begin(), tile->end(), 0u);
-            ASSERT_NO_THROW(ldr.loadTileFromFile(tile, tr, tc, 0, 0));
+            ASSERT_NO_THROW(ldr.loadTileFromFile(tile, tr, tc, 0, 0/*channel*/, 0/*timeframe*/, 0));
 
             const std::vector<uint32_t>& buf = *tile;
             const size_t row0 = tr * th;
@@ -157,7 +157,7 @@ void test_raw_omezarr_content()
     auto ldr = RawOmezarrLoader(ds.string());
     const size_t tw = ldr.tileWidth(0);
 
-    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0));
+    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
 
     // get_uint32_pixel indexes into the internal tile buffer (stride tileWidth)
     ASSERT_EQ(ldr.get_uint32_pixel(0 * tw + 0), 0u);
@@ -195,7 +195,7 @@ void test_raw_omezarr_multitile()
     {
         for (size_t tc = 0; tc < nCols; ++tc)
         {
-            ASSERT_NO_THROW(ldr.loadTileFromFile(tr, tc, 0, 0));
+            ASSERT_NO_THROW(ldr.loadTileFromFile(tr, tc, 0, 0/*channel*/, 0/*timeframe*/, 0));
             const size_t row0 = tr * th;
             const size_t col0 = tc * tw;
             const size_t validH = std::min(th, H - row0);
@@ -214,6 +214,79 @@ void test_raw_omezarr_multitile()
         }
     }
     ASSERT_EQ(total, 12681000000ull);
+}
+
+// ---------------------------------------------------------------------------
+// 5D (T,C,Z,Y,X) channel/timeframe addressability.
+//
+// dim5.ome.zarr (see gen_dim5.py) encodes every voxel as
+//   value(x,y,z,c,t) = 1 + ((((t*C + c)*Z + z)*Y + y)*X + x),  C=3,Z=4,Y=6,X=8
+// chunked one z/c/t-plane per chunk. Reading plane (z,c,t) must return exactly
+// that plane's values; a loader that ignored C/T (offset pinned to {0,0,...},
+// the pre-fix behavior) would return the c=0/t=0 plane for every (c,t).
+// ---------------------------------------------------------------------------
+
+static inline uint32_t dim5_enc(int x, int y, int z, int c, int t)
+{
+    const int C = 3, Z = 4, Y = 6, X = 8;
+    return static_cast<uint32_t>(1 + ((((t * C + c) * Z + z) * Y + y) * X + x));
+}
+
+// AbstractTileLoader stack.
+void test_omezarr_5d_channel_time_addressing()
+{
+    const int T = 2, C = 3, Z = 4, Y = 6, X = 8;
+    fs::path ds = omezarr_data_path("dim5.ome.zarr");
+    ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+    auto ldr = NyxusOmeZarrLoader<uint32_t>(1, ds.string());
+    ASSERT_EQ(ldr.fullWidth(0), (size_t)X);
+    ASSERT_EQ(ldr.fullHeight(0), (size_t)Y);
+    ASSERT_EQ(ldr.fullDepth(0), (size_t)Z);
+    const size_t tw = ldr.tileWidth(0);
+    auto tile = std::make_shared<std::vector<uint32_t>>(ldr.tileHeight(0) * tw, 0u);
+
+    for (int t = 0; t < T; ++t)
+      for (int c = 0; c < C; ++c)
+        for (int z = 0; z < Z; ++z)
+        {
+            std::fill(tile->begin(), tile->end(), 0u);
+            ASSERT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, z, c, t, 0));
+            const std::vector<uint32_t>& buf = *tile;
+            for (int y = 0; y < Y; ++y)
+              for (int x = 0; x < X; ++x)
+                ASSERT_EQ(buf[y * tw + x], dim5_enc(x, y, z, c, t))
+                    << "plane (z" << z << " c" << c << " t" << t << ") at (" << x << "," << y << ")";
+        }
+}
+
+// RawFormatLoader stack.
+void test_raw_omezarr_5d_channel_time_addressing()
+{
+    const int T = 2, C = 3, Z = 4, Y = 6, X = 8;
+    fs::path ds = omezarr_data_path("dim5.ome.zarr");
+    ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+    auto ldr = RawOmezarrLoader(ds.string());
+    const size_t tw = ldr.tileWidth(0);
+
+    for (int t = 0; t < T; ++t)
+      for (int c = 0; c < C; ++c)
+        for (int z = 0; z < Z; ++z)
+        {
+            ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, z, c, t, 0));
+            for (int y = 0; y < Y; ++y)
+              for (int x = 0; x < X; ++x)
+                ASSERT_EQ(ldr.get_uint32_pixel(y * tw + x), dim5_enc(x, y, z, c, t))
+                    << "plane (z" << z << " c" << c << " t" << t << ") at (" << x << "," << y << ")";
+        }
+
+    // The offset must actually use C/T: distinct (c,t) planes must differ.
+    ldr.loadTileFromFile(0, 0, 0, 0, 0, 0); uint32_t p000 = ldr.get_uint32_pixel(0);
+    ldr.loadTileFromFile(0, 0, 0, 1, 0, 0); uint32_t p010 = ldr.get_uint32_pixel(0);
+    ldr.loadTileFromFile(0, 0, 0, 0, 1, 0); uint32_t p001 = ldr.get_uint32_pixel(0);
+    ASSERT_NE(p000, p010) << "channel index ignored";
+    ASSERT_NE(p000, p001) << "timeframe index ignored";
 }
 
 #endif // OMEZARR_SUPPORT

@@ -101,7 +101,7 @@ bool ImageLoader1x::load_tile(size_t tile_idx)
 
 	auto row = tile_idx / ntw;
 	auto col = tile_idx % ntw;
-	FL->loadTileFromFile(ptr, row, col, lyr, lvl);
+	FL->loadTileFromFile(ptr, row, col, lyr, 0/*channel*/, 0/*timeframe*/, lvl);
 
 	return true;
 }
@@ -111,7 +111,7 @@ bool ImageLoader1x::load_tile(size_t tile_row, size_t tile_col)
 	if (tile_row >= nth || tile_col >= ntw)
 		return false;
 
-	FL->loadTileFromFile(ptr, tile_row, tile_col, lyr, lvl);
+	FL->loadTileFromFile(ptr, tile_row, tile_col, lyr, 0/*channel*/, 0/*timeframe*/, lvl);
 
 	return true;
 }

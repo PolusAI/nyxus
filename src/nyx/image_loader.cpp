@@ -241,12 +241,12 @@ bool ImageLoader::load_tile(size_t tile_idx)
 	auto tRow = tile_idx / ntw;
 	auto tCol = tile_idx % ntw;
 	
-	intFL->loadTileFromFile (ptrI, tRow, tCol, lyr, lvl);
+	intFL->loadTileFromFile (ptrI, tRow, tCol, lyr, cur_channel, cur_timeframe, lvl);
 
 	// segmentation loader is not available in wholeslide
 	if (segFL)
-		segFL->loadTileFromFile (ptrL, tRow, tCol, lyr, lvl);
-	
+		segFL->loadTileFromFile (ptrL, tRow, tCol, lyr, cur_channel, cur_timeframe, lvl);
+
 	return true;
 }
 
@@ -255,11 +255,11 @@ bool ImageLoader::load_tile (size_t tile_row, size_t tile_col)
 	if (tile_row >= nth || tile_col >= ntw)
 		return false;
 
-	intFL->loadTileFromFile (ptrI, tile_row, tile_col, lyr, lvl);
+	intFL->loadTileFromFile (ptrI, tile_row, tile_col, lyr, cur_channel, cur_timeframe, lvl);
 
 	// segmentation loader is not available in wholeslide
 	if (segFL)
-		segFL->loadTileFromFile (ptrL, tile_row, tile_col, lyr, lvl);
+		segFL->loadTileFromFile (ptrL, tile_row, tile_col, lyr, cur_channel, cur_timeframe, lvl);
 
 	return true;
 }

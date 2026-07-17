@@ -19,7 +19,9 @@ public:
     virtual void loadTileFromFile (
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
-        size_t indexLayerGlobalTile,
+        size_t indexLayerGlobalTile,   // Z
+        size_t indexChannel,           // C; 0 for single-channel data
+        size_t indexTimeframe,         // T; 0 for non-time-series data
         size_t level) = 0;
 
     virtual void free_tile() = 0;   // must follow loadTileFromFile()
@@ -49,6 +51,10 @@ public:
     [[nodiscard]] virtual size_t tileHeight(size_t level) const = 0;
 
     [[nodiscard]] virtual size_t tileDepth([[maybe_unused]] size_t level) const {
+        return 1;
+    }
+
+    [[nodiscard]] virtual size_t tileTimestamps([[maybe_unused]] size_t level) const {
         return 1;
     }
 

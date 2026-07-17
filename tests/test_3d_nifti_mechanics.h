@@ -56,7 +56,7 @@ void test_3d_nifti_data_access_consistency()
     ASSERT_NO_THROW(h = ldr1.fullHeight(0));
 
     auto t = std::make_shared<std::vector<uint32_t>> (d*w*h);
-    ASSERT_NO_THROW (ldr1.loadTileFromFile (t, 0, 0, 0, 0));
+    ASSERT_NO_THROW (ldr1.loadTileFromFile (t, 0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
 
     // stats
     std::vector<uint32_t>& databuf = *t;

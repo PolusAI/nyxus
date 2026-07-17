@@ -105,6 +105,8 @@ public:
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
         size_t indexLayerGlobalTile,
+        [[maybe_unused]] size_t indexChannel,     // plain 2D TIFF: single channel
+        [[maybe_unused]] size_t indexTimeframe,   // plain 2D TIFF: no time series
         size_t level) override
     {
         std::string err;
@@ -474,7 +476,9 @@ public:
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
         size_t indexLayerGlobalTile,
-        [[maybe_unused]] size_t level) override 
+        [[maybe_unused]] size_t indexChannel,     // multi-page TIFF: pages are Z, no C
+        [[maybe_unused]] size_t indexTimeframe,   // multi-page TIFF: no time series
+        [[maybe_unused]] size_t level) override
     {
         // Get ahold of the logical (feature extraction facing) tile buffer from its smart pointer
         std::vector<DataType>& tileDataVec = *tile;

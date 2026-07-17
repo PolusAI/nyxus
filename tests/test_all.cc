@@ -2539,6 +2539,14 @@ TEST(TEST_NYXUS, TEST_RAW_OMEZARR_MULTITILE) {
 	ASSERT_NO_THROW (test_raw_omezarr_multitile());
 }
 
+TEST(TEST_NYXUS, TEST_OMEZARR_5D_CHANNEL_TIME_ADDRESSING) {
+	ASSERT_NO_THROW (test_omezarr_5d_channel_time_addressing());
+}
+
+TEST(TEST_NYXUS, TEST_RAW_OMEZARR_5D_CHANNEL_TIME_ADDRESSING) {
+	ASSERT_NO_THROW (test_raw_omezarr_5d_channel_time_addressing());
+}
+
 #endif // OMEZARR_SUPPORT
 
 

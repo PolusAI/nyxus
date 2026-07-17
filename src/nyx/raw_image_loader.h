@@ -35,6 +35,13 @@ public:
 	size_t get_inten_time();
 	size_t get_mask_time();
 
+	// Select which channel (C) / timeframe (T) plane subsequent load_tile() calls
+	// read. Default 0/0 preserves the single-channel, single-timepoint behavior.
+	void set_channel (size_t c) { cur_channel = c; }
+	void set_timeframe (size_t t) { cur_timeframe = t; }
+	size_t get_channel() const { return cur_channel; }
+	size_t get_timeframe() const { return cur_timeframe; }
+
 	std::string get_slide_descr();
 	bool get_fp_phys_pixvoxels();
 
@@ -62,6 +69,9 @@ private:
 
 	int lvl = 0,	// Pyramid level
 		lyr = 0;	//	Layer
+
+	size_t cur_channel = 0,		// Currently selected channel (C) plane
+		cur_timeframe = 0;		// Currently selected timeframe (T) plane
 
 };
 

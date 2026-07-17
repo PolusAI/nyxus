@@ -32,12 +32,16 @@ public:
   /// @param tile Tile to load
   /// @param indexRowGlobalTile Tile's row index in the file to load
   /// @param indexColGlobalTile Tile's col index in the file to load
-  /// @param indexLayerGlobalTile Tile's layer index in the file to load
+  /// @param indexLayerGlobalTile Tile's layer (Z) index in the file to load
+  /// @param indexChannel Channel (C) index to load; 0 for single-channel data
+  /// @param indexTimeframe Time (T) index to load; 0 for non-time-series data
   /// @param level Tile's pyramidal level in the file to load
   virtual void loadTileFromFile(std::shared_ptr<std::vector<DataType>> tile,
                                 size_t indexRowGlobalTile,
                                 size_t indexColGlobalTile,
                                 size_t indexLayerGlobalTile,
+                                size_t indexChannel,
+                                size_t indexTimeframe,
                                 size_t level) = 0;
 
   /// \brief Getter to full Height

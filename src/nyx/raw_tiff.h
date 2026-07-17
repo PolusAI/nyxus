@@ -168,6 +168,8 @@ public:
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
         size_t indexLayerGlobalTile,
+        [[maybe_unused]] size_t indexChannel,     // plain 2D TIFF: single channel
+        [[maybe_unused]] size_t indexTimeframe,   // plain 2D TIFF: no time series
         size_t level) override
     {
         // Low level read TIFF bytes
@@ -441,6 +443,8 @@ public:
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
         size_t indexLayerGlobalTile,
+        [[maybe_unused]] size_t indexChannel,     // multi-page TIFF: pages are Z, no C
+        [[maybe_unused]] size_t indexTimeframe,   // multi-page TIFF: no time series
         [[maybe_unused]] size_t level) override
     {
         size_t

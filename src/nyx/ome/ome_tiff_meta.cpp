@@ -1,7 +1,7 @@
 #include "ome_tiff_meta.h"
 
 #include <cctype>
-#include <cstdlib>
+#include <charconv>
 #include <algorithm>
 #include <cmath>
 
@@ -62,26 +62,24 @@ namespace Nyxus
 			return ax;   // valid stays false
 
 		auto s = [&](const char* n, const std::string& def) { std::string v; return get_attr(pix, n, v) ? v : def; };
-		// Size reader: absent OR non-numeric OR negative OR "0" -> at least 1. OME
-		// extents are >=1; a 0 divides-by-zero the tile grid and a negative would
-		// wrap through strtoull into a huge (allocation-bombing) extent.
+		// Size reader (std::from_chars): absent / non-numeric / negative / overflow
+		// -> default; "0" -> 1. OME extents are >=1; from_chars rejects a leading
+		// '-' and overflow via errc, so no strtoull wrap or divide-by-zero leaks out.
 		auto i = [&](const char* n, std::size_t def) -> std::size_t {
 			std::string v; if (!get_attr(pix, n, v)) return def;
-			const char* p = v.c_str();
-			while (*p == ' ' || *p == '\t') ++p;
-			if (*p == '-') return def;          // reject negative before strtoull wraps it
-			char* end = nullptr; unsigned long long r = std::strtoull(p, &end, 10);
-			if (end == p) return def;           // no digits parsed -> keep default
-			return r < 1 ? std::size_t(1) : (std::size_t)r;
+			std::size_t r = 0;
+			auto [ptr, ec] = std::from_chars(v.data(), v.data() + v.size(), r);
+			if (ec != std::errc() || ptr == v.data()) return def;
+			return r < 1 ? std::size_t(1) : r;
 		};
-		// Double reader: absent OR non-numeric OR non-finite -> keep the default.
-		// Guards against a failed parse (0.0) and against strtod swallowing "NaN"/
-		// "inf" prefixes (e.g. "NaNsense" -> NaN), any of which would corrupt
-		// physical-calibration math downstream.
+		// Double reader (std::from_chars): absent / non-numeric / non-finite ->
+		// default. from_chars still accepts "nan"/"inf" prefixes (e.g. "NaNsense"),
+		// so the isfinite check keeps those out of physical-calibration math.
 		auto d = [&](const char* n, double def) -> double {
 			std::string v; if (!get_attr(pix, n, v)) return def;
-			char* end = nullptr; double r = std::strtod(v.c_str(), &end);
-			if (end == v.c_str() || !std::isfinite(r)) return def;
+			double r = 0;
+			auto [ptr, ec] = std::from_chars(v.data(), v.data() + v.size(), r);
+			if (ec != std::errc() || ptr == v.data() || !std::isfinite(r)) return def;
 			return r;
 		};
 

@@ -90,54 +90,57 @@ public:
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
         size_t indexLayerGlobalTile,
-        [[maybe_unused]] size_t level) override 
+        size_t indexChannel,        // C plane to read (offset into the channel axis)
+        size_t indexTimeframe,      // T plane to read (offset into the time axis)
+        [[maybe_unused]] size_t level) override
     {
         size_t pixel_row_index = indexRowGlobalTile*tile_height_;
         size_t pixel_col_index = indexColGlobalTile*tile_width_;
         size_t pixel_layer_index = indexLayerGlobalTile*tile_depth_;
 
-        
+
         switch (data_format_)
         {
         case 1:
-            loadTile<uint8_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<uint8_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 2:
-            loadTile<uint16_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<uint16_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 3:
-            loadTile<uint32_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<uint32_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 4:
-            loadTile<uint64_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<uint64_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 5:
-            loadTile<int8_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<int8_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 6:
-            loadTile<int16_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<int16_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 7:
-            loadTile<int32_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<int32_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 8:
-            loadTile<int64_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<int64_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 9:
-            loadTile<float>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<float>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 10:
-            loadTile<double>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<double>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         default:
-            loadTile<uint16_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<uint16_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         }
     }
-    
+
     template<typename FileType>
-    void loadTile(std::shared_ptr<std::vector<DataType>> &dest, size_t pixel_row_index, 
-                  size_t pixel_col_index, size_t pixel_layer_index) {
+    void loadTile(std::shared_ptr<std::vector<DataType>> &dest, size_t pixel_row_index,
+                  size_t pixel_col_index, size_t pixel_layer_index,
+                  size_t pixel_channel_index, size_t pixel_timeframe_index) {
         size_t data_height = tile_height_, data_width = tile_width_;
         if (pixel_row_index + data_height > full_height_) {
             data_height = full_height_ - pixel_row_index;
@@ -148,11 +151,12 @@ public:
 
         // Create a buffer to hold the read data
         std::vector<FileType> buffer(data_height * data_width);
-        
+
         // Create an ArrayView into the buffer (z5 3.0.1 uses ArrayView instead of xtensor)
+        // Axis order is still assumed [T,C,Z,Y,X] here; the OME 'axes' metadata is honored later.
         z5::types::ShapeType shape = {1, 1, 1, data_height, data_width};
         auto view = z5::multiarray::makeView(buffer.data(), shape);
-        z5::types::ShapeType offset = {0, 0, pixel_layer_index, pixel_row_index, pixel_col_index};
+        z5::types::ShapeType offset = {pixel_timeframe_index, pixel_channel_index, pixel_layer_index, pixel_row_index, pixel_col_index};
         
         // Read subarray from the cached z5 dataset
         z5::multiarray::readSubarray<FileType>(*ds_, view, offset.begin());
