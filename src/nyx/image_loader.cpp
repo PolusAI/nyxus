@@ -312,7 +312,13 @@ bool ImageLoader::load_volume (size_t channel, size_t timeframe, size_t mask_tim
 	{
 		if (vol_seg_.size() != volSize)
 			vol_seg_.resize (volSize);
-		assemble_volume (segFL, ptrL, vol_seg_, channel, mask_timeframe);  // mask may be on a different frame
+		// FIX (IO): the mask is usually channel-agnostic (a single-channel segmentation that
+		// applies to every intensity channel), so index into the mask's OWN channels only when
+		// it actually has that many; otherwise fall back to channel 0. Without this, featurizing
+		// intensity channel c>0 against a 1-channel mask read the mask out of range and dropped
+		// the ROI. Mirrors the mask_timeframe separation for the 1-mask : N-intensity case.
+		size_t mask_channel = (channel < segFL->numberChannels()) ? channel : 0;
+		assemble_volume (segFL, ptrL, vol_seg_, mask_channel, mask_timeframe);
 	}
 	return true;
 }

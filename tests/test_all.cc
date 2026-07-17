@@ -2710,6 +2710,11 @@ TEST(TEST_NYXUS, TEST_OMETIFF_LOAD_VOLUME_OUT_OF_RANGE) {
 	ASSERT_NO_THROW (test_ometiff_load_volume_out_of_range());
 }
 
+// Regression: a single-channel mask is reused across all intensity channels (not read OOB).
+TEST(TEST_NYXUS, TEST_OMETIFF_MULTICHANNEL_MASK_PAIRING) {
+	ASSERT_NO_THROW (test_ometiff_multichannel_mask_pairing());
+}
+
 // Strip loaders advertise the OME C/T extents; the plain (non-OME) multi-page TIFF
 // keeps C=T=1 (its pages are Z-slices, not channels/timeframes).
 TEST(TEST_NYXUS, TEST_OMETIFF_CT_COUNTS) {

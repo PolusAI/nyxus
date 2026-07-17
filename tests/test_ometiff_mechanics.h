@@ -189,6 +189,40 @@ void test_ometiff_all_5d_permutations()
     }
 }
 
+// Regression: a single-channel mask paired with a multi-channel intensity. The mask is
+// channel-agnostic and must be REUSED for every intensity channel (not indexed at the
+// intensity's channel, which would read it out of range and drop the ROI for c>0).
+// End-to-end this bug produced only the c=0 rows; here we assert at the facade.
+void test_ometiff_multichannel_mask_pairing()
+{
+    fs::path ipath = ometiff_data_path("dim5.ome.tif");        // intensity C=3, T=2, Z=4
+    fs::path mpath = ometiff_data_path("dim3_mask.ome.tif");   // single-channel ZYX label mask
+    ASSERT_TRUE(fs::exists(ipath)) << ipath.string();
+    ASSERT_TRUE(fs::exists(mpath)) << mpath.string();
+
+    SlideProps p;
+    p.fname_int = ipath.string();
+    p.fname_seg = mpath.string();
+    FpImageOptions fp;
+    ImageLoader il;
+    ASSERT_TRUE(il.open(p, fp)) << ipath.string();
+
+    ASSERT_TRUE(il.load_volume(0, 0));
+    const std::vector<uint32_t> seg0 = il.get_seg_volume_buffer();
+    const std::vector<uint32_t> int0 = il.get_int_volume_buffer();
+    size_t nz = 0; for (auto v : seg0) if (v) ++nz;
+    ASSERT_GT(nz, 0u) << "mask has no ROI voxels";
+
+    for (int c = 0; c < 3; ++c)
+    {
+        ASSERT_TRUE(il.load_volume(c, 0)) << "channel " << c;                       // must not throw/fail for c>0
+        ASSERT_EQ(il.get_seg_volume_buffer(), seg0) << "mask changed for channel " << c;   // reused identically
+        if (c > 0)
+            ASSERT_NE(il.get_int_volume_buffer(), int0) << "intensity channel " << c << " read c=0 data";
+    }
+    il.close();
+}
+
 // Phase 5 negative: the whole-volume facade read must propagate an out-of-range channel
 // or timeframe as a throw (the (z,c,t)->IFD map range-guards). dim5 has C=3, T=2.
 void test_ometiff_load_volume_out_of_range()

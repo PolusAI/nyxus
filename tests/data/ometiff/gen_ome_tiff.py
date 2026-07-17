@@ -62,6 +62,17 @@ def write_plain(name, order):
         print("wrote %-20s axes=%-6s (plain, no OME)  IFDs=%d" % (name, order, len(tf.pages)))
 
 
+def write_mask(name):
+    """Single-channel, single-timeframe 3D (ZYX) label mask matching dim5's geometry.
+    Used to test the 1-channel-mask : N-channel-intensity pairing: the mask is
+    channel-agnostic and must be reused for every intensity channel."""
+    path = os.path.join(HERE, name)
+    m = np.zeros((Z, Y, X), "uint16")
+    m[:, 1:5, 1:7] = 1                    # one ROI (label 1), interior so it has a real bbox
+    tifffile.imwrite(path, m, photometric="minisblack", metadata={"axes": "ZYX"}, ome=True)
+    print("wrote %-20s (single-channel ZYX label mask, ROI voxels=%d)" % (name, int(m.sum())))
+
+
 def write_bad_rgb(name):
     """RGB OME-TIFF -- nyxus is grayscale-only, so the loader must reject it."""
     path = os.path.join(HERE, name)
@@ -89,6 +100,8 @@ def main():
     write_ome("dim3_zyx.ome.tif", "ZYX")
     write_ome("dim2_yx.ome.tif", "YX")
     write_plain("dim3_plain.tif", "ZYX")
+    # single-channel label mask (for the 1-mask : N-channel-intensity pairing test)
+    write_mask("dim3_mask.ome.tif")
     # --- illegal / adversarial: must be rejected cleanly, not crash ---
     write_bad_rgb("bad_rgb.ome.tif")
     write_bad_corrupt("bad_corrupt.tif")
