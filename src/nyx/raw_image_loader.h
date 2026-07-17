@@ -34,6 +34,7 @@ public:
 	size_t get_full_depth();
 	size_t get_inten_time();
 	size_t get_mask_time();
+	size_t get_inten_channels();		// FIX (IO): number of intensity channels (>=1)
 
 	// Select which channel (C) / timeframe (T) plane subsequent load_tile() calls
 	// read. Default 0/0 preserves the single-channel, single-timepoint behavior.

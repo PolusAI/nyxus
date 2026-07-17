@@ -1,10 +1,13 @@
 #pragma once
 
-#define FTABLE_RECORD std::tuple<std::vector<std::string>,int,double,std::vector<double>>
+// FIX (IO): added a channel-position field (FTABLE_CPOS) so multi-channel OME input
+// emits a c_index column alongside t_index; FTABLE_FBEGIN shifts 3->4 accordingly.
+#define FTABLE_RECORD std::tuple<std::vector<std::string>,int,double,double,std::vector<double>>
 #define FTABLE_INTSEG   0
 #define FTABLE_ROILBL   1
 #define FTABLE_TIMEPOS  2
-#define FTABLE_FBEGIN   3
+#define FTABLE_CPOS     3
+#define FTABLE_FBEGIN   4
 #define FTABLE_SAFENAN  -0.0
 
 #ifdef USE_ARROW

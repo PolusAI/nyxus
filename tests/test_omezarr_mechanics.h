@@ -314,12 +314,42 @@ void test_omezarr_wholevolume_consumer(const char* store, int Z)
     ASSERT_TRUE(ilo.open(p, fp)) << ds.string();
 
     LR vroi;
-    ASSERT_TRUE(Nyxus::scan_trivial_wholevolume(vroi, ds.string(), ilo));
+    ASSERT_TRUE(Nyxus::scan_trivial_wholevolume(vroi, ds.string(), ilo, 0/*channel*/, 0/*timeframe*/));
 
     ASSERT_EQ(vroi.raw_pixels_3D.size(), (size_t)X * Y * Z);   // all voxels, not just plane 0 (48)
     for (const Pixel3& px : vroi.raw_pixels_3D)
         ASSERT_EQ((uint32_t)px.inten, dim5_enc((int)px.x, (int)px.y, (int)px.z, 0, 0))
             << "voxel (" << px.x << "," << px.y << "," << px.z << ")";
+    ilo.close();
+}
+
+// End-to-end through the wired volumetric consumer, but for EVERY (channel,timeframe):
+// scan_trivial_wholevolume(vroi, .., c, t) must fill the ROI's voxel cloud with the
+// encoded intensity of THAT c/t plane. Before the channel/timeframe wiring the consumer
+// always read (c=0,t=0), so any c>0 / t>0 plane would carry the wrong values.
+void test_omezarr_wholevolume_consumer_ct(const char* store, int T, int C, int Z)
+{
+    const int Y = 6, X = 8;
+    fs::path ds = omezarr_data_path(store);
+    ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+    SlideProps p;
+    p.fname_int = ds.string();
+    p.fname_seg = "";
+    FpImageOptions fp;
+    ImageLoader ilo;
+    ASSERT_TRUE(ilo.open(p, fp)) << ds.string();
+
+    for (int t = 0; t < T; ++t)
+      for (int c = 0; c < C; ++c)
+      {
+          LR vroi;
+          ASSERT_TRUE(Nyxus::scan_trivial_wholevolume(vroi, ds.string(), ilo, c, t)) << store;
+          ASSERT_EQ(vroi.raw_pixels_3D.size(), (size_t)X * Y * Z) << store;
+          for (const Pixel3& px : vroi.raw_pixels_3D)
+              ASSERT_EQ((uint32_t)px.inten, dim5_enc((int)px.x, (int)px.y, (int)px.z, c, t))
+                  << store << " (c" << c << " t" << t << ") voxel (" << px.x << "," << px.y << "," << px.z << ")";
+      }
     ilo.close();
 }
 
@@ -387,6 +417,27 @@ void test_omezarr_out_of_range_throws()
     EXPECT_ANY_THROW(raw.loadTileFromFile(0, 0, 0, 99, 0, 0));
     EXPECT_ANY_THROW(raw.loadTileFromFile(0, 0, 0, 0, 99, 0));
     EXPECT_ANY_THROW(raw.loadTileFromFile(0, 0, 99, 0, 0, 0));
+}
+
+// The loaders must ADVERTISE the real C/T extents via numberChannels() /
+// fullTimestamps(). This is what the volumetric pipeline keys off to iterate
+// channels and timeframes; before this both fell back to the base-class default
+// of 1, which pinned the pipeline to plane (c=0, t=0) regardless of the store.
+// Covers the parsed-axes path and (via dim5_noaxes) the positional fallback.
+void test_omezarr_ct_counts(const char* store, int T, int C, int Z)
+{
+    fs::path ds = omezarr_data_path(store);
+    ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+    auto ldr = NyxusOmeZarrLoader<uint32_t>(1, ds.string());
+    ASSERT_EQ(ldr.numberChannels(), (size_t)C) << store;
+    ASSERT_EQ(ldr.fullTimestamps(0), (size_t)T) << store;
+    ASSERT_EQ(ldr.fullDepth(0), (size_t)Z) << store;
+
+    auto raw = RawOmezarrLoader(ds.string());
+    ASSERT_EQ(raw.numberChannels(), (size_t)C) << store;
+    ASSERT_EQ(raw.fullTimestamps(0), (size_t)T) << store;
+    ASSERT_EQ(raw.fullDepth(0), (size_t)Z) << store;
 }
 
 // Illegal / adversarial: self-inconsistent metadata must be rejected cleanly

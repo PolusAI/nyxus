@@ -43,9 +43,9 @@ void test_3glrlm_feature (const Nyxus::Feature3D& expecting_fcode, const std::st
     // mock the 3D workflow
     Environment e;
     clear_slide_rois (e.uniqueLabels, e.roiData);
-    ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/));
+    ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/, 0/*channel*/));
     std::vector<int> batch = { label };   // expecting this roi label after metrics gathering
-    ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/));
+    ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/, 0/*channel*/));
     ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
 
     // make it find the feature code by name
@@ -85,10 +85,10 @@ void test_3glrlm_feature (const Nyxus::Feature3D& expecting_fcode, const std::st
     e.dataset.update_dataset_props_extrema();
     // (2) properties of specific ROIs sitting in 'e.uniqueLabels'
     clear_slide_rois(e.uniqueLabels, e.roiData);
-    ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/));
+    ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/, 0/*channel*/));
     // (3) voxel clouds
     std::vector<int> batch = { label };   // expecting this roi label after metrics gathering
-    ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/));
+    ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/, 0/*channel*/));
     // (4) buffers
     ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
 
@@ -210,4 +210,4 @@ void test_3glrlm_rv()
 void test_3glrlm_re()
 {
     test_3glrlm_feature(Nyxus::Feature3D::GLRLM_RE, "3GLRLM_RE");
-}
+}

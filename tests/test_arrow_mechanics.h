@@ -225,7 +225,8 @@ void test_arrow()
         string_columns.push_back(std::get<0>(row)[0]);
         string_columns.push_back(std::get<0>(row)[1]);
         numeric_columns.push_back(std::get<1>(row));    // ROI label
-        numeric_columns.push_back(std::get<2>(row));    // time
+        numeric_columns.push_back(std::get<FTABLE_TIMEPOS>(row));    // time
+        numeric_columns.push_back(std::get<FTABLE_CPOS>(row));    // channel (FIX (IO): c_index column)
         for (const auto& data : std::get<FTABLE_FBEGIN>(row)) {
             numeric_columns.push_back(data);
         }
@@ -296,7 +297,8 @@ void test_parquet() {
         string_columns.push_back(std::get<0>(row)[0]);
         string_columns.push_back(std::get<0>(row)[1]);
         numeric_columns.push_back(std::get<1>(row));    // ROI label
-        numeric_columns.push_back(std::get<2>(row));    // time
+        numeric_columns.push_back(std::get<FTABLE_TIMEPOS>(row));    // time
+        numeric_columns.push_back(std::get<FTABLE_CPOS>(row));    // channel (FIX (IO): c_index column)
         for (const auto& data : std::get<FTABLE_FBEGIN>(row)) {
             numeric_columns.push_back(data);
         }

@@ -75,11 +75,11 @@ void test_compat_3gldm_feature (const Nyxus::Feature3D & expecting_fcode, const 
 
     // properties of specific ROIs sitting in 'e.uniqueLabels'
     clear_slide_rois (e.uniqueLabels, e.roiData);
-    ASSERT_TRUE (gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/));
+    ASSERT_TRUE (gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/, 0/*channel*/));
 
     // voxel clouds
     std::vector<int> batch = { label };   // expecting this roi label after metrics gathering
-    ASSERT_TRUE (scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/));
+    ASSERT_TRUE (scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/, 0/*channel*/));
 
     // buffers
     ASSERT_NO_THROW (allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));

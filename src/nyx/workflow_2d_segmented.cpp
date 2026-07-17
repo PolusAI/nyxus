@@ -322,7 +322,7 @@ namespace Nyxus
 			if (write_apache)
 			{
 
-				auto [status, msg] = env.arrow_stream.write_arrow_file (Nyxus::get_feature_values(env, env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset));
+				auto [status, msg] = env.arrow_stream.write_arrow_file (Nyxus::get_feature_values(env, env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset, DEFAULT_T_INDEX, DEFAULT_C_INDEX));
 				if (!status) 
 				{
 					std::cerr << "Error writing Arrow file: " << msg.value() << std::endl;
@@ -332,7 +332,7 @@ namespace Nyxus
 			else 
 				if (saveOption == SaveOption::saveCSV)
 				{
-					ok = save_features_2_csv (env, ifp, lfp, outputPath, 0/*pass 0 as t_index is not used in 2D scenario*/ , env.resultOptions.need_aggregation());
+					ok = save_features_2_csv (env, ifp, lfp, outputPath, 0/*t_index unused in 2D*/, DEFAULT_C_INDEX/*channel unused in 2D*/, env.resultOptions.need_aggregation());
 
 					if (ok == false)
 					{
@@ -342,7 +342,7 @@ namespace Nyxus
 				}
 				else
 				{
-					ok = save_features_2_buffer (env.theResultsCache, env, DEFAULT_T_INDEX);
+					ok = save_features_2_buffer (env.theResultsCache, env, DEFAULT_T_INDEX, DEFAULT_C_INDEX);
 
 					if (ok == false)
 					{

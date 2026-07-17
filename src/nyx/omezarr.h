@@ -71,6 +71,10 @@ public:
             iz_ = axes.storageIndexOf('Z'); ic_ = axes.storageIndexOf('C');
             it_ = axes.storageIndexOf('T');
             n_levels_ = axes.numberPyramidLevels();
+            // FIX: advertise the real C/T extents so the pipeline iterates channels and
+            // timeframes; without this the base class default of 1 kept it on plane (c=0,t=0).
+            n_channels_ = axes.sizeC;
+            n_timeframes_ = axes.sizeT;
         }
         else
         {
@@ -82,6 +86,10 @@ public:
             ic_ = (n >= 4) ? n - 4 : -1;
             it_ = (n >= 5) ? n - 5 : -1;
             n_levels_ = 1;
+            // FIX: derive C/T extents from the positional axes so the fallback path also
+            // reports multi-channel / time-series counts (1 when the axis is absent).
+            n_channels_ = (ic_ >= 0) ? level0Shape[ic_] : 1;
+            n_timeframes_ = (it_ >= 0) ? level0Shape[it_] : 1;
         }
         // X and Y must resolve to real dimensions, else the read would index OOB.
         if (ix_ < 0 || iy_ < 0 || (size_t)ix_ >= level0Shape.size() || (size_t)iy_ >= level0Shape.size())
@@ -245,6 +253,10 @@ public:
     [[nodiscard]] short bitsPerSample() const override { return bits_per_sample_; }
     /// @brief Number of resolution (pyramid) levels declared in multiscales
     [[nodiscard]] size_t numberPyramidLevels() const override { return n_levels_; }
+    /// @brief Channel (C) extent resolved from the NGFF axes (1 if no channel axis)
+    [[nodiscard]] size_t numberChannels() const override { return n_channels_; }
+    /// @brief Time (T) extent resolved from the NGFF axes (1 if no time axis)
+    [[nodiscard]] size_t fullTimestamps([[maybe_unused]] size_t level) const override { return n_timeframes_; }
 
 private:
 
@@ -261,6 +273,8 @@ private:
     size_t ndim_ = 5;              ///< Number of on-disk dimensions (2..5)
     short bits_per_sample_ = 16;   ///< Real bit depth
     size_t n_levels_ = 1;          ///< Pyramid level count
+    size_t n_channels_ = 1;        ///< Channel (C) extent
+    size_t n_timeframes_ = 1;      ///< Time (T) extent
 
     short data_format_ = 0;
     std::unique_ptr<z5::filesystem::handle::File> zarr_ptr_;

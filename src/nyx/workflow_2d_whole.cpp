@@ -177,7 +177,7 @@ namespace Nyxus
 		// thread-safely save results of this single slide
 		if (write_apache) 
 		{
-			auto [status, msg] = save_features_2_apache_wholeslide (env, vroi, p.fname_int);
+			auto [status, msg] = save_features_2_apache_wholeslide (env, vroi, p.fname_int, 0/*t_index*/, 0/*c_index*/);
 			if (! status) 
 			{
 				std::cerr << "Error writing Arrow file: " << msg.value() << std::endl;
@@ -187,7 +187,7 @@ namespace Nyxus
 		else 
 			if (saveOption == SaveOption::saveCSV)
 			{
-				if (save_features_2_csv_wholeslide(env, vroi, p.fname_int, "", outputPath, 0 /*pass 0 as t_index is not used in 2D scenario*/) == false)
+				if (save_features_2_csv_wholeslide(env, vroi, p.fname_int, "", outputPath, 0 /*t_index unused in 2D*/, 0 /*c_index unused in 2D*/) == false)
 				{
 					std::cout << "error saving results to CSV file, details: " << __FILE__ << ":" << __LINE__ << std::endl;
 					rv = 2;
@@ -196,7 +196,7 @@ namespace Nyxus
 			else
 			{
 				// pulls feature values from 'vroi' and appends them to global object 'theResultsCache' exposed to Python API
-				if (save_features_2_buffer_wholeslide (env.theResultsCache, env, vroi, p.fname_int, "") == false)
+				if (save_features_2_buffer_wholeslide (env.theResultsCache, env, vroi, p.fname_int, "", 0/*t_index*/, 0/*c_index*/) == false)
 				{
 					std::cerr << "Error saving features to the results buffer" << std::endl;
 					rv = 2;

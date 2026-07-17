@@ -28,6 +28,7 @@ public:
 		max_roi_h = 0;
 		max_roi_d = 0;
 		inten_time = mask_time = 0;
+		inten_channels = 1;			// FIX (IO): >=1 so the channel loop runs at least once; set from the loader in scan_slide_props
 	}
 
 	// pre-ROI intensity range in DP
@@ -86,6 +87,9 @@ public:
 
 	// time series
 	size_t inten_time, mask_time;	// number of time frames
+
+	// channels (FIX (IO): number of intensity channels; drives the per-channel output rows)
+	size_t inten_channels;
 };
 
 namespace Nyxus

@@ -80,6 +80,9 @@ namespace Nyxus
 		// time
 		head.push_back (Nyxus::colname_t_index);
 
+		// channel (FIX (IO): mirrors t_index; one column per channel plane)
+		head.push_back (Nyxus::colname_c_index);
+
 		// Optional columns
 		for (auto& enabdF : F)
 		{
@@ -211,11 +214,12 @@ namespace Nyxus
 
 	bool save_features_2_csv_wholeslide (
 		Environment & env,
-		const LR & r, 
-		const std::string & ifpath, 
-		const std::string & mfpath, 
+		const LR & r,
+		const std::string & ifpath,
+		const std::string & mfpath,
 		const std::string & outdir,
-		size_t t_index)
+		size_t t_index,
+		size_t c_index)
 	{
 		std::lock_guard<std::mutex> lg (mutex1); // Lock the mutex
 
@@ -290,8 +294,8 @@ namespace Nyxus
 			// slide info
 			ssVals << ifpath << "," << mfpath;
 			
-			// ROI and time
-			ssVals << "," << r.label << "," << t_index;
+			// ROI, time and channel
+			ssVals << "," << r.label << "," << t_index << "," << c_index;
 
 			// features
 			for (auto& enabdF : F)
@@ -418,10 +422,11 @@ namespace Nyxus
 	// Saves the result of image scanning and feature calculation. Must be called after the reduction phase.
 	bool save_features_2_csv (
 		Environment & env,
-		const std::string& intFpath, 
-		const std::string& segFpath, 
+		const std::string& intFpath,
+		const std::string& segFpath,
 		const std::string& outputDir,
 		size_t t_index,
+		size_t c_index,
 		bool need_aggregation)
 	{
 		// Non-exotic formatting for compatibility with the buffer output (Python API, Apache)
@@ -490,12 +495,12 @@ namespace Nyxus
 
 		if (need_aggregation)
 		{
-			auto allres = Nyxus::get_feature_values (env, env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset);	// shape: td::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>
+			auto allres = Nyxus::get_feature_values (env, env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset, t_index, c_index);	// shape: vector<tuple<vector<string>, label, t_index, c_index, vector<double>>>
 			if (allres.size())
 			{
 				// aggregate
 				const auto& tup0 = allres[0];
-				const auto& v0 = std::get<3>(tup0);
+				const auto& v0 = std::get<FTABLE_FBEGIN>(tup0);		// FIX (IO): FBEGIN shifted 3->4 after c_index; was hard-coded std::get<3>
 				auto n_feats = v0.size();
 
 				std::vector<double> a (n_feats);
@@ -507,7 +512,7 @@ namespace Nyxus
 					// we ned to add Skipping blacklisted ROI 
 					// ...
 
-					const auto& v = std::get<3>(tup);
+					const auto& v = std::get<FTABLE_FBEGIN>(tup);		// FIX (IO): FBEGIN shifted 3->4 after c_index
 					for (size_t i = 0; i < n_feats; i++)
 					{
 						double x = v[i],
@@ -534,6 +539,9 @@ namespace Nyxus
 					ssVals << "," << a;
 				// ... ROI id
 				ssVals << "," << -1;
+				// ... time and channel (FIX (IO): the aggregate row previously omitted these,
+				// misaligning it against the header; emit both so columns line up)
+				ssVals << "," << t_index << "," << c_index;
 				// ... aggregated feature values
 				for (size_t i = 0; i < n_feats; i++)
 					ssVals << "," << a[i];
@@ -569,8 +577,8 @@ namespace Nyxus
 						ssVals << "," << a;
 				}
 
-				// ROI label and time
-				ssVals << "," << l << "," << t_index;
+				// ROI label, time and channel
+				ssVals << "," << l << "," << t_index << "," << c_index;
 
 				for (auto& enabdF : F)
 				{
@@ -761,7 +769,9 @@ namespace Nyxus
 		const FeatureSet & fset,
 		const LR & r,
 		const std::string & ifpath,
-		const std::string & mfpath)
+		const std::string & mfpath,
+		size_t t_index,
+		size_t c_index)
 	{
 		std::vector<FTABLE_RECORD> features;
 
@@ -884,7 +894,9 @@ namespace Nyxus
 		textcols.push_back ("");
 		int roilabl = r.label; // whole-slide roi #
 
-		features.push_back (std::make_tuple(textcols, roilabl, -999.88, fvals));
+		// FIX (IO): emit the real time/channel indices (was hard-coded -999.88 for time
+		// and had no channel field), so the Apache/buffer whole-slide row is addressable by (t,c).
+		features.push_back (std::make_tuple(textcols, roilabl, (double)t_index, (double)c_index, fvals));
 
 		return features;
 	}
@@ -894,7 +906,9 @@ namespace Nyxus
 		const FeatureSet & fset,
 		const Uniqueids & uniqueLabels,
 		const Roidata & roiData,
-		const Dataset & dataset)
+		const Dataset & dataset,
+		size_t t_index,
+		size_t c_index)
 	{
 		std::vector<FTABLE_RECORD> features;
 
@@ -1031,7 +1045,9 @@ namespace Nyxus
 				feature_values.push_back(vv[0]);
 			}
 
-			features.push_back (std::make_tuple(filenames, l, DEFAULT_T_INDEX, feature_values));
+			// FIX (IO): thread the real time/channel indices instead of the hard-coded
+			// DEFAULT_T_INDEX (which pinned every Apache/Parquet row to t=0,c=0).
+			features.push_back (std::make_tuple(filenames, l, (double)t_index, (double)c_index, feature_values));
 		}
 
 		return features;

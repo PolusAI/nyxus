@@ -95,6 +95,7 @@ namespace Nyxus
 		// time series
 		p.inten_time = ilo.get_inten_time();
 		p.mask_time = ilo.get_mask_time();
+		p.inten_channels = ilo.get_inten_channels();		// FIX (IO): number of channels (>=1)
 
 		// scan intensity slide's data
 
@@ -270,6 +271,7 @@ namespace Nyxus
 		// time series
 		p.inten_time = ilo.get_inten_time();
 		p.mask_time = ilo.get_mask_time();
+		p.inten_channels = ilo.get_inten_channels();		// FIX (IO): number of channels (>=1)
 
 		// scan intensity slide's data
 

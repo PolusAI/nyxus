@@ -32,7 +32,7 @@
 
 namespace Nyxus
 {
-	bool featurize_triv_wholevolume (Environment & env, size_t sidx, ImageLoader& imlo, size_t memory_limit, LR& vroi)
+	bool featurize_triv_wholevolume (Environment & env, size_t sidx, ImageLoader& imlo, size_t memory_limit, LR& vroi, size_t channel, size_t timeframe)
 	{
 		const std::string& ifpath = env.dataset.dataset_props[sidx].fname_int;
 
@@ -52,18 +52,20 @@ namespace Nyxus
 		if (env.anisoOptions.customized() == false)
 		{
 			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide()\n");
-			scan_trivial_wholevolume (vroi, ifpath, imlo);
+			scan_trivial_wholevolume (vroi, ifpath, imlo, channel, timeframe);
 		}
 		else
 		{
 			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide_ANISO()\n");
 			scan_trivial_wholevolume_anisotropic (
-				vroi, 
-				ifpath, 
-				imlo, 
+				vroi,
+				ifpath,
+				imlo,
 				env.anisoOptions.get_aniso_x(),
 				env.anisoOptions.get_aniso_y(),
-				env.anisoOptions.get_aniso_z());
+				env.anisoOptions.get_aniso_z(),
+				channel,
+				timeframe);
 		}
 
 		// allocate memory for feature helpers (image matrix, etc)
@@ -87,7 +89,7 @@ namespace Nyxus
 		return true;
 	}
 
-	bool featurize_wholevolume (Environment & env, size_t sidx, ImageLoader& imlo, LR& vroi)
+	bool featurize_wholevolume (Environment & env, size_t sidx, ImageLoader& imlo, LR& vroi, size_t channel, size_t timeframe)
 	{
 		//***** phase 1: copy ROI metrics from the slide properties, thanks to the WSI scenario
 		const SlideProps& p = env.dataset.dataset_props[sidx];
@@ -132,7 +134,7 @@ namespace Nyxus
 		}
 
 		//***** phase 2: extract features
-		featurize_triv_wholevolume (env, sidx, imlo, env.get_ram_limit(), vroi); // segmented counterpart: phase2.cpp / processTrivialRois ()
+		featurize_triv_wholevolume (env, sidx, imlo, env.get_ram_limit(), vroi, channel, timeframe); // segmented counterpart: phase2.cpp / processTrivialRois ()
 
 		return true;
 	}
@@ -158,44 +160,49 @@ namespace Nyxus
 			rv = 1;
 		}
 
-		LR vroi(1); // virtual ROI representing the whole slide ROI-labelled as '1'
+		// FIX (IO): featurize every (channel, timeframe) plane and emit one whole-slide row
+		// per plane, tagged with c_index/t_index — mirroring the segmented path. A
+		// single-channel, single-timeframe slide reports 1/1, so its output is unchanged.
+		for (size_t c = 0; c < p.inten_channels; c++)
+		  for (size_t t = 0; t < p.inten_time; t++)
+		  {
+			LR vroi(1); // virtual ROI representing the whole slide ROI-labelled as '1'
 
-		if (featurize_wholevolume (env, slide_idx, imlo, vroi) == false)	// non-wsi counterpart: processIntSegImagePair()
-		{
-			std::cerr << "Error featurizing slide " << p.fname_int << " @ " << __FILE__ << ":" << __LINE__ << "\n";
-			rv = 1;
-		}
-
-		// thread-safely save results of this single slide
-		if (write_apache)
-		{
-			auto [status, msg] = save_features_2_apache_wholeslide (env, vroi, p.fname_int);
-			if (!status)
+			if (featurize_wholevolume (env, slide_idx, imlo, vroi, c, t) == false)	// non-wsi counterpart: processIntSegImagePair()
 			{
-				std::cerr << "Error writing Arrow file: " << msg.value() << std::endl;
-				rv = 2;
+				std::cerr << "Error featurizing slide " << p.fname_int << " @ " << __FILE__ << ":" << __LINE__ << "\n";
+				rv = 1;
 			}
-		}
-		else
-			if (saveOption == SaveOption::saveCSV)
+
+			// thread-safely save results of this single (slide, channel, timeframe)
+			if (write_apache)
 			{
-				if (save_features_2_csv_wholeslide (env, vroi, p.fname_int, "", outputPath,
-					0 // pass 0 as t_index
-					) == false)
+				auto [status, msg] = save_features_2_apache_wholeslide (env, vroi, p.fname_int, t, c);
+				if (!status)
 				{
-					std::cout << "error saving results to CSV file, details: " << __FILE__ << ":" << __LINE__ << std::endl;
+					std::cerr << "Error writing Arrow file: " << msg.value() << std::endl;
 					rv = 2;
 				}
 			}
 			else
-			{
-				// pulls feature values from 'vroi' and appends them to global object 'theResultsCache' exposed to Python API
-				if (save_features_2_buffer_wholeslide (env.theResultsCache, env, vroi, p.fname_int, "") == false)
+				if (saveOption == SaveOption::saveCSV)
 				{
-					std::cerr << "Error saving features to the results buffer" << std::endl;
-					rv = 2;
+					if (save_features_2_csv_wholeslide (env, vroi, p.fname_int, "", outputPath, t, c) == false)
+					{
+						std::cout << "error saving results to CSV file, details: " << __FILE__ << ":" << __LINE__ << std::endl;
+						rv = 2;
+					}
 				}
-			}
+				else
+				{
+					// pulls feature values from 'vroi' and appends them to global object 'theResultsCache' exposed to Python API
+					if (save_features_2_buffer_wholeslide (env.theResultsCache, env, vroi, p.fname_int, "", t, c) == false)
+					{
+						std::cerr << "Error saving features to the results buffer" << std::endl;
+						rv = 2;
+					}
+				}
+		  } //- channels x timeframes
 
 		imlo.close();
 

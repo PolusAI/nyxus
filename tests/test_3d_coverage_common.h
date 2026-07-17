@@ -143,14 +143,14 @@ static Computed3DFeatureValues build_computed_3d_feature_values()
 			e.dataset.update_dataset_props_extrema();
 
 			clear_slide_rois(e.uniqueLabels, e.roiData);
-			if (!gatherRoisMetrics_3D(e, 0, ipath, mpath, 0))
+			if (!gatherRoisMetrics_3D(e, 0, ipath, mpath, 0/*t_index*/, 0/*channel*/))
 			{
 				out.setup_error = "gatherRoisMetrics_3D failed for 3D coverage phantom";
 				return false;
 			}
 
 			std::vector<int> batch = { label };
-			if (!scanTrivialRois_3D(e, batch, ipath, mpath, 0))
+			if (!scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/, 0/*channel*/))
 			{
 				out.setup_error = "scanTrivialRois_3D failed for 3D coverage phantom";
 				return false;

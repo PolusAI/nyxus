@@ -245,7 +245,7 @@ namespace Nyxus
 	// segmented 3D case (true volumetric images e.g. .nii, .nii.gz, .dcm, etc)
 	// prerequisite: 'env.theImLoader' needs to be pre-opened !
 	//
-	bool gatherRoisMetrics_3D (Environment& env, size_t sidx, const std::string& intens_fpath, const std::string& mask_fpath, size_t t_index)
+	bool gatherRoisMetrics_3D (Environment& env, size_t sidx, const std::string& intens_fpath, const std::string& mask_fpath, size_t t_index, size_t channel)
 	{
 		SlideProps & sprp = env.dataset.dataset_props [sidx];
 		if (! env.theImLoader.open(sprp, env.fpimageOptions))
@@ -284,7 +284,7 @@ namespace Nyxus
 		// real 3D volume here too — Phase-1 ROI metrics must see the same voxels the
 		// Phase-2 scan does. Mask on frame t_index (1:1) or frame 0 (1 mask : N int).
 		const size_t maskFrame = (nVoxI == nVoxM) ? t_index : 0;
-		bool ok = env.theImLoader.load_volume (0/*channel*/, t_index, maskFrame);
+		bool ok = env.theImLoader.load_volume (channel, t_index, maskFrame);
 		if (!ok)
 		{
 			std::string erm = "Error fetching tile (0,0) from I:" + intens_fpath + " M:" + mask_fpath;

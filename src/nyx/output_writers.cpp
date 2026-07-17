@@ -160,9 +160,31 @@ arrow::Status ParquetWriter::write (const std::vector<FTABLE_RECORD>& features) 
         A.push_back (A_t);
     }
 
+    //cccccccc channel (FIX (IO): mirrors the time column so multi-channel input is addressable)
+    {
+        arrow::DoubleBuilder b;
+        std::shared_ptr<arrow::Array> A_c;
+        for (int i = 0; i < num_rows; ++i)
+        {
+            append_status = b.Append (std::get<FTABLE_CPOS>(features[i]));
+            if (!append_status.ok()) {
+                // Handle read error
+                return append_status;
+            }
+        }
+
+        append_status = b.Finish (&A_c);
+        if (!append_status.ok())
+        {
+            // Handle read error
+            return append_status;
+        }
+        A.push_back (A_c);
+    }
+
     //cccccccc features
     {
-        // construct columns for each feature 
+        // construct columns for each feature
         for (int j = 0; j < std::get<FTABLE_FBEGIN>(features[0]).size(); ++j) {
 
             arrow::DoubleBuilder b;
@@ -351,9 +373,29 @@ arrow::Status ArrowIPCWriter::write (const std::vector<FTABLE_RECORD>& features)
         A.push_back (A_t);
     }
 
+    //cccccccc channel (FIX (IO): mirrors the time column so multi-channel input is addressable)
+    {
+        arrow::DoubleBuilder b;
+        std::shared_ptr<arrow::Array> A_c;
+        for (int i = 0; i < num_rows; ++i) {
+            append_status = b.Append (std::get<FTABLE_CPOS>(features[i]));
+            if (!append_status.ok()) {
+                // Handle read error
+                return append_status;
+            }
+        }
+
+        append_status = b.Finish (&A_c);
+        if (!append_status.ok()) {
+            // Handle read error
+            return append_status;
+        }
+        A.push_back (A_c);
+    }
+
     //cccccccc feature values
     {
-        // construct columns for each feature 
+        // construct columns for each feature
         for (int j = 0; j < std::get<FTABLE_FBEGIN>(features[0]).size(); ++j) {
 
             arrow::DoubleBuilder b;

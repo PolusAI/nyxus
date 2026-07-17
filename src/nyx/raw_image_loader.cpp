@@ -294,6 +294,11 @@ size_t RawImageLoader::get_mask_time()
 		return 0;	// whole-slide mode
 }
 
+size_t RawImageLoader::get_inten_channels()
+{
+	return intFL->numberChannels();		// FIX (IO): OME loaders report the real C; others default to 1
+}
+
 std::string RawImageLoader::get_slide_descr()
 {
 	std::string s = get_fp_phys_pixvoxels() ? "R-" : "N-";

@@ -501,6 +501,10 @@ public:
     [[nodiscard]] size_t fullHeight([[maybe_unused]] size_t level) const override { return fullHeight_; }
     [[nodiscard]] size_t fullWidth([[maybe_unused]] size_t level) const override { return fullWidth_; }
     [[nodiscard]] size_t fullDepth([[maybe_unused]] size_t level) const override { return fullDepth_; }
+    // FIX: advertise C/T extents from the parsed OME-XML so the volumetric pipeline
+    // iterates channels/timeframes; non-OME TIFF keeps the single-plane default of 1.
+    [[nodiscard]] size_t numberChannels() const override { return is_ome_ ? ome_.sizeC : 1; }
+    [[nodiscard]] size_t fullTimestamps([[maybe_unused]] size_t level) const override { return is_ome_ ? ome_.sizeT : 1; }
     [[nodiscard]] size_t tileWidth([[maybe_unused]] size_t level) const override { return tileWidth_; }
     [[nodiscard]] size_t tileHeight([[maybe_unused]] size_t level) const override { return tileHeight_; }
     [[nodiscard]] size_t tileDepth([[maybe_unused]] size_t level) const override { return tileDepth_; }

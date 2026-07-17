@@ -103,13 +103,42 @@ void test_ometiff_wholevolume_consumer(const char* store, int Z)
     ASSERT_TRUE(ilo.open(p, fp)) << ds.string();
 
     LR vroi;
-    ASSERT_TRUE(Nyxus::scan_trivial_wholevolume(vroi, ds.string(), ilo));
+    ASSERT_TRUE(Nyxus::scan_trivial_wholevolume(vroi, ds.string(), ilo, 0/*channel*/, 0/*timeframe*/));
 
     // every voxel of the X*Y*Z volume must be captured (not just plane z=0 -> 48)
     ASSERT_EQ(vroi.raw_pixels_3D.size(), (size_t)X * Y * Z);
     for (const Pixel3& px : vroi.raw_pixels_3D)
         ASSERT_EQ((uint32_t)px.inten, ometiff_enc((int)px.x, (int)px.y, (int)px.z, 0, 0))
             << "voxel (" << px.x << "," << px.y << "," << px.z << ")";
+    ilo.close();
+}
+
+// End-to-end through the wired volumetric consumer for EVERY (channel,timeframe):
+// scan_trivial_wholevolume(vroi, .., c, t) must fill the voxel cloud with THAT c/t
+// plane's encoded intensity (before the wiring it always read c=0,t=0).
+void test_ometiff_wholevolume_consumer_ct(const char* store, int T, int C, int Z)
+{
+    const int Y = 6, X = 8;
+    fs::path ds = ometiff_data_path(store);
+    ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+    SlideProps p;
+    p.fname_int = ds.string();
+    p.fname_seg = "";
+    FpImageOptions fp;
+    ImageLoader ilo;
+    ASSERT_TRUE(ilo.open(p, fp)) << ds.string();
+
+    for (int t = 0; t < T; ++t)
+      for (int c = 0; c < C; ++c)
+      {
+          LR vroi;
+          ASSERT_TRUE(Nyxus::scan_trivial_wholevolume(vroi, ds.string(), ilo, c, t)) << store;
+          ASSERT_EQ(vroi.raw_pixels_3D.size(), (size_t)X * Y * Z) << store;
+          for (const Pixel3& px : vroi.raw_pixels_3D)
+              ASSERT_EQ((uint32_t)px.inten, ometiff_enc((int)px.x, (int)px.y, (int)px.z, c, t))
+                  << store << " (c" << c << " t" << t << ") voxel (" << px.x << "," << px.y << "," << px.z << ")";
+      }
     ilo.close();
 }
 
@@ -158,6 +187,26 @@ void test_ometiff_all_5d_permutations()
         test_raw_ometiff_addressing(s, 2, 3, 4);
         if (::testing::Test::HasFatalFailure()) return;
     }
+}
+
+// The strip loaders must ADVERTISE the OME C/T extents via numberChannels() /
+// fullTimestamps() -- what the volumetric pipeline keys off to iterate channels
+// and timeframes. A plain (non-OME) multi-page TIFF has no OME-XML, so it must keep
+// the single-plane default of 1 for both (its pages are all Z-slices).
+void test_ometiff_ct_counts(const char* store, int T, int C, int Z)
+{
+    fs::path ds = ometiff_data_path(store);
+    ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+    auto ldr = NyxusGrayscaleTiffStripLoader<uint32_t>(1, ds.string());
+    ASSERT_EQ(ldr.numberChannels(), (size_t)C) << store;
+    ASSERT_EQ(ldr.fullTimestamps(0), (size_t)T) << store;
+    ASSERT_EQ(ldr.fullDepth(0), (size_t)Z) << store;
+
+    auto raw = RawTiffStripLoader(1, ds.string());
+    ASSERT_EQ(raw.numberChannels(), (size_t)C) << store;
+    ASSERT_EQ(raw.fullTimestamps(0), (size_t)T) << store;
+    ASSERT_EQ(raw.fullDepth(0), (size_t)Z) << store;
 }
 
 // Negative: an out-of-range Z/C/T plane maps to a non-existent IFD and must throw.

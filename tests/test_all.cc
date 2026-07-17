@@ -2574,6 +2574,11 @@ TEST(TEST_NYXUS, TEST_OMEZARR_WHOLEVOLUME_CONSUMER) {
 }
 
 // Facade whole-volume assembly (load_volume loops Z into one X*Y*Z buffer).
+// Wired consumer reads the correct plane for every (channel, timeframe), not just (0,0).
+TEST(TEST_NYXUS, TEST_OMEZARR_WHOLEVOLUME_CONSUMER_CT) {
+	ASSERT_NO_THROW (test_omezarr_wholevolume_consumer_ct("dim5.ome.zarr", 2, 3, 4));
+}
+
 TEST(TEST_NYXUS, TEST_OMEZARR_FACADE_VOLUME_3D) {
 	ASSERT_NO_THROW (test_omezarr_facade_volume("dim3_zyx.ome.zarr", 1, 1, 4));
 }
@@ -2602,6 +2607,18 @@ TEST(TEST_NYXUS, TEST_OMEZARR_NOAXES_FALLBACK) {
 
 TEST(TEST_NYXUS, TEST_RAW_OMEZARR_NOAXES_FALLBACK) {
 	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim5_noaxes.ome.zarr", 2, 3, 4));
+}
+
+// Loaders advertise the real C/T extents (numberChannels/fullTimestamps), which
+// is what activates the pipeline's channel/timeframe iteration. dim5_noaxes proves
+// the positional fallback reports counts too.
+TEST(TEST_NYXUS, TEST_OMEZARR_CT_COUNTS) {
+	ASSERT_NO_THROW (test_omezarr_ct_counts("dim5.ome.zarr", 2, 3, 4));
+	ASSERT_NO_THROW (test_omezarr_ct_counts("dim4_tzyx.ome.zarr", 2, 1, 4));
+	ASSERT_NO_THROW (test_omezarr_ct_counts("dim4_czyx.ome.zarr", 1, 3, 4));
+	ASSERT_NO_THROW (test_omezarr_ct_counts("dim3_zyx.ome.zarr", 1, 1, 4));
+	ASSERT_NO_THROW (test_omezarr_ct_counts("dim2_yx.ome.zarr", 1, 1, 1));
+	ASSERT_NO_THROW (test_omezarr_ct_counts("dim5_noaxes.ome.zarr", 2, 3, 4));
 }
 
 // Negative: out-of-range Z/C/T plane index must throw.
@@ -2646,6 +2663,11 @@ TEST(TEST_NYXUS, TEST_OMETIFF_WHOLEVOLUME_CONSUMER) {
 	ASSERT_NO_THROW (test_ometiff_wholevolume_consumer("dim3_zyx.ome.tif", 4));
 }
 
+// Wired consumer reads the correct plane for every (channel, timeframe), not just (0,0).
+TEST(TEST_NYXUS, TEST_OMETIFF_WHOLEVOLUME_CONSUMER_CT) {
+	ASSERT_NO_THROW (test_ometiff_wholevolume_consumer_ct("dim5.ome.tif", 2, 3, 4));
+}
+
 // Facade whole-volume assembly (load_volume loops Z into one X*Y*Z buffer).
 TEST(TEST_NYXUS, TEST_OMETIFF_FACADE_VOLUME_3D) {
 	ASSERT_NO_THROW (test_ometiff_facade_volume("dim3_zyx.ome.tif", 1, 1, 4));
@@ -2671,6 +2693,16 @@ TEST(TEST_NYXUS, TEST_OMETIFF_PLAIN_MULTIPAGE_FALLBACK) {
 }
 TEST(TEST_NYXUS, TEST_RAW_OMETIFF_PLAIN_MULTIPAGE_FALLBACK) {
 	ASSERT_NO_THROW (test_raw_ometiff_addressing("dim3_plain.tif", 1, 1, 4));
+}
+
+// Strip loaders advertise the OME C/T extents; the plain (non-OME) multi-page TIFF
+// keeps C=T=1 (its pages are Z-slices, not channels/timeframes).
+TEST(TEST_NYXUS, TEST_OMETIFF_CT_COUNTS) {
+	ASSERT_NO_THROW (test_ometiff_ct_counts("dim5.ome.tif", 2, 3, 4));
+	ASSERT_NO_THROW (test_ometiff_ct_counts("dim4_tzyx.ome.tif", 2, 1, 4));
+	ASSERT_NO_THROW (test_ometiff_ct_counts("dim4_czyx.ome.tif", 1, 3, 4));
+	ASSERT_NO_THROW (test_ometiff_ct_counts("dim3_zyx.ome.tif", 1, 1, 4));
+	ASSERT_NO_THROW (test_ometiff_ct_counts("dim3_plain.tif", 1, 1, 4));
 }
 
 // Negative: out-of-range Z/C/T plane index must throw.

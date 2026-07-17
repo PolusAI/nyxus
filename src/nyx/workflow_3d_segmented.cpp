@@ -32,7 +32,7 @@
 
 namespace Nyxus
 {
-	bool processIntSegImagePair_3D (Environment & env, const std::string& intens_fpath, const std::string& label_fpath, size_t filepair_index, size_t t_index, const std::vector<std::string>& z_indices)
+	bool processIntSegImagePair_3D (Environment & env, const std::string& intens_fpath, const std::string& label_fpath, size_t filepair_index, size_t t_index, size_t channel, const std::vector<std::string>& z_indices)
 	{
 		std::vector<int> trivRois, nontrivRois;
 
@@ -51,7 +51,7 @@ namespace Nyxus
 		if (z_indices.size())
 			okGather = gatherRoisMetrics_25D (env, filepair_index, intens_fpath, label_fpath, z_indices);
 		else
-			okGather = gatherRoisMetrics_3D (env, filepair_index, intens_fpath, label_fpath, t_index);
+			okGather = gatherRoisMetrics_3D (env, filepair_index, intens_fpath, label_fpath, t_index, channel);
 		if (!okGather)
 		{
 			std::string msg = "Error gathering ROI metrics from " + intens_fpath + " / " + label_fpath + "\n";
@@ -124,7 +124,7 @@ namespace Nyxus
 			if (z_indices.size())
 				processTrivialRois_25D (env, trivRois, intens_fpath, label_fpath, env.get_ram_limit(), z_indices);
 			else
-				processTrivialRois_3D (env, filepair_index, t_index, trivRois, intens_fpath, label_fpath, env.get_ram_limit());
+				processTrivialRois_3D (env, filepair_index, t_index, channel, trivRois, intens_fpath, label_fpath, env.get_ram_limit());
 		}
 
 		// Phase 3: process nontrivial (oversized) ROIs, if any
@@ -202,6 +202,10 @@ namespace Nyxus
 		// iterate intensity-mask pairs
 		for (size_t i=0; i<nf; i++)
 		{
+		  // iterate channels (FIX (IO): one row per (roi, timeframe, channel); OME loaders
+		  // now report >1 channel, so each C-plane is featurized and tagged with c_index)
+		  for (size_t c=0; c < env.dataset.dataset_props[i].inten_channels; c++)
+		  {
 			// iterate time frames
 			for (size_t t=0; t < env.dataset.dataset_props[i].inten_time; t++)
 			{
@@ -219,19 +223,19 @@ namespace Nyxus
 				// Display (1) dataset progress info and (2) file pair info
 				int digits = 2, k = (int)std::pow(10.f, digits);
 				float perCent = float(i * 100 * k / nf) / float(k);
-				VERBOSLVL1(env.get_verbosity_level(), std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << ifile.fname << " SEG: " << mfile.fname << " T:" << t << "\n")
-					
-				bool ok = processIntSegImagePair_3D (env, ifile.fdir+ifile.fname, mfile.fdir+mfile.fname, i, t, intensFiles[i].z_indices);
+				VERBOSLVL1(env.get_verbosity_level(), std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << ifile.fname << " SEG: " << mfile.fname << " C:" << c << " T:" << t << "\n")
+
+				bool ok = processIntSegImagePair_3D (env, ifile.fdir+ifile.fname, mfile.fdir+mfile.fname, i, t, c, intensFiles[i].z_indices);
 				if (ok == false)
 				{
 					std::cerr << "processIntSegImagePair() returned an error code while processing file pair " << ifile.fname << " - " << mfile.fname << '\n';
 					return 1;
 				}
 
-				// Output features
+				// Output features (tag each row with its timeframe t and channel c)
 				if (writeApache)
 				{
-					auto [status, msg] = env.arrow_stream.write_arrow_file(Nyxus::get_feature_values(env, env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset));
+					auto [status, msg] = env.arrow_stream.write_arrow_file(Nyxus::get_feature_values(env, env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset, t, c));
 					if (!status)
 					{
 						std::cout << "Error writing Arrow file: " << msg.value() << std::endl;
@@ -241,7 +245,7 @@ namespace Nyxus
 				else
 					if (saveOption == SaveOption::saveCSV)
 					{
-						if (!save_features_2_csv(env, ifile.fname, mfile.fname, outputPath, t, env.resultOptions.need_aggregation()))
+						if (!save_features_2_csv(env, ifile.fname, mfile.fname, outputPath, t, c, env.resultOptions.need_aggregation()))
 						{
 							std::cout << "error saving results to CSV file, details: " << __FILE__ << ":" << __LINE__ << std::endl;
 							return 2;
@@ -249,7 +253,7 @@ namespace Nyxus
 					}
 					else
 					{
-						if (!save_features_2_buffer(env.theResultsCache, env, t))
+						if (!save_features_2_buffer(env.theResultsCache, env, t, c))
 						{
 							std::cout << "error saving results to a buffer, details: " << __FILE__ << ":" << __LINE__ << std::endl;
 							return 2;
@@ -269,6 +273,7 @@ namespace Nyxus
 				}
 				#endif
 			} //- time frames
+		  } //- channels
 		} //- inten-mask pairs
 
 		if (writeApache)
