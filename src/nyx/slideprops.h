@@ -29,6 +29,8 @@ public:
 		max_roi_d = 0;
 		inten_time = mask_time = 0;
 		inten_channels = 1;			// FIX (IO): >=1 so the channel loop runs at least once; set from the loader in scan_slide_props
+		phys_x = phys_y = phys_z = 1.0;		// FIX (IO): physical voxel spacing (1.0 == uncalibrated); set in scan_slide_props
+		phys_unit = "";
 	}
 
 	// pre-ROI intensity range in DP
@@ -90,6 +92,11 @@ public:
 
 	// channels (FIX (IO): number of intensity channels; drives the per-channel output rows)
 	size_t inten_channels;
+
+	// physical voxel spacing (FIX (IO): OME PhysicalSize*; 1.0 == uncalibrated). Used only
+	// when --use-physical-spacing is set; also emitted as phys_x/y/z + phys_unit output columns.
+	double phys_x, phys_y, phys_z;
+	std::string phys_unit;
 };
 
 namespace Nyxus

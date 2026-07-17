@@ -74,6 +74,14 @@ public:
     return 1;
   }
 
+  /// \brief Physical voxel spacing along X/Y/Z (default 1.0 == uncalibrated).
+  /// OME loaders return the parsed PhysicalSize*; everything else stays 1.0.
+  [[nodiscard]] virtual double physicalSizeX() const { return 1.0; }
+  [[nodiscard]] virtual double physicalSizeY() const { return 1.0; }
+  [[nodiscard]] virtual double physicalSizeZ() const { return 1.0; }
+  /// \brief Physical-size unit string (e.g. "micrometer"); empty if unknown.
+  [[nodiscard]] virtual std::string physicalSizeUnit() const { return std::string(); }
+
   /// \brief Getter to tile Width
   /// @param level tile's level considered
   /// \return Tile Width

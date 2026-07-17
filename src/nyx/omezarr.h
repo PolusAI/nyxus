@@ -75,6 +75,9 @@ public:
             // timeframes; without this the base class default of 1 kept it on plane (c=0,t=0).
             n_channels_ = axes.sizeC;
             n_timeframes_ = axes.sizeT;
+            // FIX (IO): keep the parsed physical voxel spacing for opt-in calibration.
+            phys_x_ = axes.physX; phys_y_ = axes.physY; phys_z_ = axes.physZ;
+            phys_unit_ = axes.unitXY;
         }
         else
         {
@@ -257,6 +260,11 @@ public:
     [[nodiscard]] size_t numberChannels() const override { return n_channels_; }
     /// @brief Time (T) extent resolved from the NGFF axes (1 if no time axis)
     [[nodiscard]] size_t fullTimestamps([[maybe_unused]] size_t level) const override { return n_timeframes_; }
+    /// @brief Physical voxel spacing from the NGFF coordinateTransformations (1.0 if uncalibrated)
+    [[nodiscard]] double physicalSizeX() const override { return phys_x_; }
+    [[nodiscard]] double physicalSizeY() const override { return phys_y_; }
+    [[nodiscard]] double physicalSizeZ() const override { return phys_z_; }
+    [[nodiscard]] std::string physicalSizeUnit() const override { return phys_unit_; }
 
 private:
 
@@ -275,6 +283,8 @@ private:
     size_t n_levels_ = 1;          ///< Pyramid level count
     size_t n_channels_ = 1;        ///< Channel (C) extent
     size_t n_timeframes_ = 1;      ///< Time (T) extent
+    double phys_x_ = 1.0, phys_y_ = 1.0, phys_z_ = 1.0;   ///< Physical voxel spacing
+    std::string phys_unit_;        ///< Physical-size unit (e.g. "micrometer")
 
     short data_format_ = 0;
     std::unique_ptr<z5::filesystem::handle::File> zarr_ptr_;

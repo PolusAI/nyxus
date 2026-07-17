@@ -39,7 +39,11 @@ namespace Nyxus
 		colname_mask_image[] = "mask_image",
 		colname_roi_label[] = "ROI_label",
 		colname_t_index[] = "t_index",
-		colname_c_index[] = "c_index";		// FIX (IO): channel index column, mirrors t_index
+		colname_c_index[] = "c_index",		// FIX (IO): channel index column, mirrors t_index
+		colname_phys_unit[] = "phys_unit",	// FIX (IO): physical-size unit (leading string column)
+		colname_phys_x[] = "phys_x",		// FIX (IO): physical voxel spacing columns (numeric)
+		colname_phys_y[] = "phys_y",
+		colname_phys_z[] = "phys_z";
 
 	// segmented 2D workflow
 	int processDataset_2D_segmented(
@@ -86,6 +90,12 @@ namespace Nyxus
 	bool processNontrivialRois (Environment& env, const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath);
 	bool scan_trivial_wholeslide (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr);	// reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
 	bool scan_trivial_wholeslide_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y);
+
+	// FIX (IO): resolve the effective 3D voxel spacing for slide `sidx` and whether the
+	// anisotropic (resampling) scan path should run. Explicit --aniso* wins; else, when
+	// --use-physical-spacing is on, the slide's OME PhysicalSize* ratio-normalized (min=1).
+	// Returns false (and ax=ay=az=1) when the grid is effectively isotropic.
+	bool resolve_slide_anisotropy (const Environment& env, size_t sidx, double& ax, double& ay, double& az);
 
 	// FIX (IO): channel/timeframe select which C/T plane the whole-volume read assembles (was pinned to c=0,t=0)
 	bool scan_trivial_wholevolume (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, size_t channel, size_t timeframe);

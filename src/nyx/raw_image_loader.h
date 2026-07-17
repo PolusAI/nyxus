@@ -35,6 +35,10 @@ public:
 	size_t get_inten_time();
 	size_t get_mask_time();
 	size_t get_inten_channels();		// FIX (IO): number of intensity channels (>=1)
+	double get_physical_size_x();		// FIX (IO): physical voxel spacing (1.0 if uncalibrated)
+	double get_physical_size_y();
+	double get_physical_size_z();
+	std::string get_physical_size_unit();
 
 	// Select which channel (C) / timeframe (T) plane subsequent load_tile() calls
 	// read. Default 0/0 preserves the single-channel, single-timepoint behavior.

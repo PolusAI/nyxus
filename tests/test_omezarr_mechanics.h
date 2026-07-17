@@ -440,6 +440,34 @@ void test_omezarr_ct_counts(const char* store, int T, int C, int Z)
     ASSERT_EQ(raw.fullDepth(0), (size_t)Z) << store;
 }
 
+// Physical calibration: the loaders must surface the OME-Zarr coordinateTransformations
+// 'scale' as physicalSizeX/Y/Z and the space-axis 'unit'. dim5_calibrated encodes
+// scale (t,c,z,y,x)=(1,1,2,0.5,0.5) micrometer -> physX=physY=0.5, physZ=2.0. An
+// uncalibrated store (scale all 1) must report 1.0 and no unit.
+void test_omezarr_physical_calibration()
+{
+    fs::path cal = omezarr_data_path("dim5_calibrated.ome.zarr");
+    ASSERT_TRUE(fs::exists(cal)) << cal.string();
+
+    auto ldr = NyxusOmeZarrLoader<uint32_t>(1, cal.string());
+    ASSERT_DOUBLE_EQ(ldr.physicalSizeX(), 0.5);
+    ASSERT_DOUBLE_EQ(ldr.physicalSizeY(), 0.5);
+    ASSERT_DOUBLE_EQ(ldr.physicalSizeZ(), 2.0);
+    ASSERT_EQ(ldr.physicalSizeUnit(), "micrometer");
+
+    auto raw = RawOmezarrLoader(cal.string());
+    ASSERT_DOUBLE_EQ(raw.physicalSizeX(), 0.5);
+    ASSERT_DOUBLE_EQ(raw.physicalSizeY(), 0.5);
+    ASSERT_DOUBLE_EQ(raw.physicalSizeZ(), 2.0);
+    ASSERT_EQ(raw.physicalSizeUnit(), "micrometer");
+
+    // uncalibrated store: scale all 1.0 -> physical sizes default to 1.0
+    fs::path plain = omezarr_data_path("dim5.ome.zarr");
+    auto ldr2 = NyxusOmeZarrLoader<uint32_t>(1, plain.string());
+    ASSERT_DOUBLE_EQ(ldr2.physicalSizeX(), 1.0);
+    ASSERT_DOUBLE_EQ(ldr2.physicalSizeZ(), 1.0);
+}
+
 // Illegal / adversarial: self-inconsistent metadata must be rejected cleanly
 // (throw), not crash. bad_axes_count declares 5 axes for a 3D array (indexing the
 // shape by axis role would read OOB); bad_no_xy has axes but none labeled x/y.

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <string>
@@ -13,11 +14,47 @@
 
 #include "environment.h"
 #include "globals.h"
+#include "helpers/helpers.h"		// FIX (IO): Nyxus::near_eq for the physical-spacing resolver
 #include "helpers/fsystem.h"
 #include "helpers/timing.h"
 
 namespace Nyxus
 {
+	// FIX (IO): resolve the effective 3D voxel spacing for slide `sidx`. Explicit --aniso*
+	// (anisoOptions.customized()) always wins. Otherwise, when --use-physical-spacing is on,
+	// use the slide's OME PhysicalSize* ratio-normalized so the smallest axis == 1 (Nyxus's
+	// anisotropic path resamples by the multiplier, so ratios - not absolute units - are what
+	// correct for non-cubic voxels). Returns false + (1,1,1) when the grid is isotropic.
+	bool resolve_slide_anisotropy (const Environment& env, size_t sidx, double& ax, double& ay, double& az)
+	{
+		ax = ay = az = 1.0;
+
+		if (env.anisoOptions.customized())
+		{
+			ax = env.anisoOptions.get_aniso_x();
+			ay = env.anisoOptions.get_aniso_y();
+			az = env.anisoOptions.get_aniso_z();
+			return true;
+		}
+
+		if (env.use_physical_spacing() && sidx < env.dataset.dataset_props.size())
+		{
+			const SlideProps& p = env.dataset.dataset_props[sidx];
+			double sx = p.phys_x, sy = p.phys_y, sz = p.phys_z;
+			double mn = std::min(sx, std::min(sy, sz));
+			if (mn > 0.0)
+			{
+				ax = sx / mn; ay = sy / mn; az = sz / mn;
+				// only take the anisotropic path if the voxels are actually non-cubic
+				if (! (Nyxus::near_eq(ax, 1.0) && Nyxus::near_eq(ay, 1.0) && Nyxus::near_eq(az, 1.0)))
+					return true;
+			}
+			ax = ay = az = 1.0;
+		}
+
+		return false;
+	}
+
 	//
 	// Loads ROI voxels into voxel clouds
 	//
@@ -666,15 +703,14 @@ namespace Nyxus
 						std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				);
 
-				if (env.anisoOptions.customized() == false)
+				// FIX (IO): --aniso* (explicit) or opt-in OME physical spacing selects the anisotropic path
+				double ax, ay, az;
+				if (! resolve_slide_anisotropy (env, sidx, ax, ay, az))
 				{
 					scanTrivialRois_3D (env, Pending, intens_fpath, label_fpath, t_index, channel);
 				}
 				else
 				{
-					double	ax = env.anisoOptions.get_aniso_x(),
-						ay = env.anisoOptions.get_aniso_y(),
-						az = env.anisoOptions.get_aniso_z();
 					scanTrivialRois_3D_anisotropic (env, Pending, intens_fpath, label_fpath, t_index, channel, ax, ay, az);
 
 					// rescan and update ROI's AABB
@@ -732,15 +768,14 @@ namespace Nyxus
 				std::cout << ">>> (labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				);
 
-			if (env.anisoOptions.customized() == false)
+			// FIX (IO): --aniso* (explicit) or opt-in OME physical spacing selects the anisotropic path
+			double ax, ay, az;
+			if (! resolve_slide_anisotropy (env, sidx, ax, ay, az))
 			{
 				scanTrivialRois_3D (env, Pending, intens_fpath, label_fpath, t_index, channel);
 			}
 			else
 			{
-				double	ax = env.anisoOptions.get_aniso_x(),
-					ay = env.anisoOptions.get_aniso_y(),
-					az = env.anisoOptions.get_aniso_z();
 				scanTrivialRois_3D_anisotropic (env, Pending, intens_fpath, label_fpath, t_index, channel, ax, ay, az);
 
 				// rescan and update ROI's AABB

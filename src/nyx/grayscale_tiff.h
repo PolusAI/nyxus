@@ -623,6 +623,11 @@ public:
     [[nodiscard]] size_t numberChannels() const override { return is_ome_ ? ome_.sizeC : 1; }
     /// @brief Time (T) extent from OME-XML (1 for plain TIFF)
     [[nodiscard]] size_t fullTimestamps([[maybe_unused]] size_t level) const override { return is_ome_ ? ome_.sizeT : 1; }
+    // FIX (IO): physical voxel spacing from OME-XML PhysicalSize* (1.0 for plain TIFF)
+    [[nodiscard]] double physicalSizeX() const override { return is_ome_ ? ome_.physX : 1.0; }
+    [[nodiscard]] double physicalSizeY() const override { return is_ome_ ? ome_.physY : 1.0; }
+    [[nodiscard]] double physicalSizeZ() const override { return is_ome_ ? ome_.physZ : 1.0; }
+    [[nodiscard]] std::string physicalSizeUnit() const override { return is_ome_ ? ome_.unitXY : std::string(); }
 
     /// @brief Tiff tile width
     /// @param level Tiff level [not used]

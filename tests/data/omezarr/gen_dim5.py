@@ -77,6 +77,31 @@ def write_store(name, order, include_axes=True):
              "" if include_axes else "  [no axes -> legacy fallback]"))
 
 
+def write_calibrated(name, order, scale, unit):
+    """A physically calibrated store: coordinateTransformations 'scale' != 1 and the
+    space axes carry a unit, so the loader must surface physicalSize*/unit. Drives the
+    --use-physical-spacing calibration path. Same coordinate encoding as write_store."""
+    path = os.path.join(HERE, name)
+    shutil.rmtree(path, ignore_errors=True)
+    data = _data_for(order)
+    chunks = tuple(1 if a == "z" else s for a, s in zip(order, data.shape))
+
+    g = zarr.open_group(path, mode="w", zarr_format=2)
+    a = g.create_array("0", shape=data.shape, dtype=data.dtype, chunks=chunks, compressors=None)
+    a[:] = data
+
+    axes = []
+    for ax in order:
+        e = dict(_AX[ax])
+        if e["type"] == "space":
+            e["unit"] = unit
+        axes.append(e)
+    ms = {"version": "0.4", "axes": axes,
+          "datasets": [{"path": "0", "coordinateTransformations": [{"type": "scale", "scale": scale}]}]}
+    g.attrs.put({"multiscales": [ms]})
+    print("wrote %-22s (calibrated scale=%s unit=%s)" % (name, scale, unit))
+
+
 def write_bad(name, shape, axes):
     """Write a deliberately malformed store (its 'axes' disagrees with the array)
     so the loader must reject it cleanly, not crash."""
@@ -103,6 +128,9 @@ def main():
     write_store("dim3_zyx.ome.zarr", "zyx")
     write_store("dim2_yx.ome.zarr", "yx")
     write_store("dim5_noaxes.ome.zarr", "tczyx", include_axes=False)
+    # physically calibrated: anisotropic voxels (z 4x thicker than x/y after normalization).
+    # order tczyx -> scale [t,c,z,y,x] = [1,1,2.0,0.5,0.5] -> physX=0.5 physY=0.5 physZ=2.0 um.
+    write_calibrated("dim5_calibrated.ome.zarr", "tczyx", [1.0, 1.0, 2.0, 0.5, 0.5], "micrometer")
     # --- illegal / adversarial: must be rejected cleanly, not crash ---
     # 3D array but 'axes' declares 5 entries -> indexing the shape by axis role OOBs
     write_bad("bad_axes_count.ome.zarr", (Z, Y, X), [_AX[k] for k in ("t", "c", "z", "y", "x")])

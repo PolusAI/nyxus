@@ -96,6 +96,10 @@ namespace Nyxus
 		p.inten_time = ilo.get_inten_time();
 		p.mask_time = ilo.get_mask_time();
 		p.inten_channels = ilo.get_inten_channels();		// FIX (IO): number of channels (>=1)
+		p.phys_x = ilo.get_physical_size_x();				// FIX (IO): physical voxel spacing (1.0 if uncalibrated)
+		p.phys_y = ilo.get_physical_size_y();
+		p.phys_z = ilo.get_physical_size_z();
+		p.phys_unit = ilo.get_physical_size_unit();
 
 		// scan intensity slide's data
 
@@ -272,6 +276,10 @@ namespace Nyxus
 		p.inten_time = ilo.get_inten_time();
 		p.mask_time = ilo.get_mask_time();
 		p.inten_channels = ilo.get_inten_channels();		// FIX (IO): number of channels (>=1)
+		p.phys_x = ilo.get_physical_size_x();				// FIX (IO): physical voxel spacing (1.0 if uncalibrated)
+		p.phys_y = ilo.get_physical_size_y();
+		p.phys_z = ilo.get_physical_size_z();
+		p.phys_unit = ilo.get_physical_size_unit();
 
 		// scan intensity slide's data
 

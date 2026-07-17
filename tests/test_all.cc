@@ -2621,6 +2621,11 @@ TEST(TEST_NYXUS, TEST_OMEZARR_CT_COUNTS) {
 	ASSERT_NO_THROW (test_omezarr_ct_counts("dim5_noaxes.ome.zarr", 2, 3, 4));
 }
 
+// Physical calibration: loaders surface coordinateTransformations scale + unit.
+TEST(TEST_NYXUS, TEST_OMEZARR_PHYSICAL_CALIBRATION) {
+	ASSERT_NO_THROW (test_omezarr_physical_calibration());
+}
+
 // Negative: out-of-range Z/C/T plane index must throw.
 TEST(TEST_NYXUS, TEST_OMEZARR_OUT_OF_RANGE_THROWS) {
 	ASSERT_NO_THROW (test_omezarr_out_of_range_throws());

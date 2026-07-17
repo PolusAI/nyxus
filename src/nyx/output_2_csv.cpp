@@ -63,6 +63,10 @@ namespace Nyxus
 		head.push_back (Nyxus::colname_intensity_image);
 		head.push_back (Nyxus::colname_mask_image);
 
+		// Physical-size unit (FIX (IO): a leading STRING column so the Python buffer's
+		// "string columns first" reconstruction still holds; the numeric phys_x/y/z go later)
+		head.push_back (Nyxus::colname_phys_unit);
+
 		// Annotation columns
 		if (env.resultOptions.need_annotation())
 		{
@@ -82,6 +86,11 @@ namespace Nyxus
 
 		// channel (FIX (IO): mirrors t_index; one column per channel plane)
 		head.push_back (Nyxus::colname_c_index);
+
+		// physical voxel spacing (FIX (IO): numeric columns)
+		head.push_back (Nyxus::colname_phys_x);
+		head.push_back (Nyxus::colname_phys_y);
+		head.push_back (Nyxus::colname_phys_z);
 
 		// Optional columns
 		for (auto& enabdF : F)
@@ -292,10 +301,16 @@ namespace Nyxus
 			ssVals << std::fixed;
 
 			// slide info
-			ssVals << ifpath << "," << mfpath;
-			
+			// FIX (IO): physical calibration of this slide (phys_unit is a leading string column,
+			// phys_x/y/z are numeric; 1.0/"" when uncalibrated). r.slide_idx set for the vROI.
+			const SlideProps& sp = env.dataset.dataset_props[r.slide_idx];
+			ssVals << ifpath << "," << mfpath << "," << sp.phys_unit;
+
 			// ROI, time and channel
 			ssVals << "," << r.label << "," << t_index << "," << c_index;
+
+			// physical voxel spacing (numeric)
+			ssVals << "," << sp.phys_x << "," << sp.phys_y << "," << sp.phys_z;
 
 			// features
 			for (auto& enabdF : F)
@@ -526,11 +541,11 @@ namespace Nyxus
 					}
 				}
 
-				// send the aggregate as ROI #-1 to output 
+				// send the aggregate as ROI #-1 to output
 				const std::vector<std::string> & fnames = std::get<0>(tup0);
 				std::stringstream ssVals;
-				// ... slide/mask file info
-				ssVals << fnames[0] << "," << fnames[1];
+				// ... slide/mask file info + phys_unit (FIX (IO): fnames[2] is the leading unit string)
+				ssVals << fnames[0] << "," << fnames[1] << "," << fnames[2];
 				// ... annotation info
 				auto lab0 = std::get<1>(tup0);	// annotation info is per slide, so OK to grab it from the 1st ROI
 				LR& r0 = env.roiData [lab0];
@@ -542,6 +557,8 @@ namespace Nyxus
 				// ... time and channel (FIX (IO): the aggregate row previously omitted these,
 				// misaligning it against the header; emit both so columns line up)
 				ssVals << "," << t_index << "," << c_index;
+				// ... physical voxel spacing (FIX (IO): numeric columns, from the 1st ROI's tuple)
+				ssVals << "," << std::get<FTABLE_PXPOS>(tup0) << "," << std::get<FTABLE_PYPOS>(tup0) << "," << std::get<FTABLE_PZPOS>(tup0);
 				// ... aggregated feature values
 				for (size_t i = 0; i < n_feats; i++)
 					ssVals << "," << a[i];
@@ -568,7 +585,8 @@ namespace Nyxus
 				const SlideProps& sli = env.dataset.dataset_props [r.slide_idx];
 				fs::path pseg (sli.fname_seg), 
 					pint (sli.fname_int);
-				ssVals << pint.filename() << "," << pseg.filename();
+				// FIX (IO): phys_unit is a leading string column (after the file names)
+				ssVals << pint.filename() << "," << pseg.filename() << "," << sli.phys_unit;
 
 				// annotation
 				if (env.resultOptions.need_annotation())
@@ -579,6 +597,9 @@ namespace Nyxus
 
 				// ROI label, time and channel
 				ssVals << "," << l << "," << t_index << "," << c_index;
+
+				// physical voxel spacing (FIX (IO): numeric columns)
+				ssVals << "," << sli.phys_x << "," << sli.phys_y << "," << sli.phys_z;
 
 				for (auto& enabdF : F)
 				{
@@ -888,15 +909,21 @@ namespace Nyxus
 			fvals.push_back(vv[0]);
 		}
 
-		// other columns
+		// physical calibration of this slide (FIX (IO))
+		const SlideProps& sp = env.dataset.dataset_props[r.slide_idx];
+
+		// other columns (textcols[2] = phys_unit, a leading string column)
 		std::vector<std::string> textcols;
 		textcols.push_back ((fs::path(ifpath)).filename().string());
 		textcols.push_back ("");
+		textcols.push_back (sp.phys_unit);
 		int roilabl = r.label; // whole-slide roi #
 
 		// FIX (IO): emit the real time/channel indices (was hard-coded -999.88 for time
-		// and had no channel field), so the Apache/buffer whole-slide row is addressable by (t,c).
-		features.push_back (std::make_tuple(textcols, roilabl, (double)t_index, (double)c_index, fvals));
+		// and had no channel field) + physical voxel spacing, so the Apache/buffer whole-slide
+		// row is addressable by (t,c) and carries calibration.
+		features.push_back (std::make_tuple(textcols, roilabl, (double)t_index, (double)c_index,
+			sp.phys_x, sp.phys_y, sp.phys_z, fvals));
 
 		return features;
 	}
@@ -937,6 +964,7 @@ namespace Nyxus
 			std::vector<std::string> filenames;
 			filenames.push_back(pint.filename().string());
 			filenames.push_back(pseg.filename().string());
+			filenames.push_back(sli.phys_unit);		// FIX (IO): phys_unit leading string column
 
 			for (auto& enabdF : F)
 			{
@@ -1047,7 +1075,8 @@ namespace Nyxus
 
 			// FIX (IO): thread the real time/channel indices instead of the hard-coded
 			// DEFAULT_T_INDEX (which pinned every Apache/Parquet row to t=0,c=0).
-			features.push_back (std::make_tuple(filenames, l, (double)t_index, (double)c_index, feature_values));
+			features.push_back (std::make_tuple(filenames, l, (double)t_index, (double)c_index,
+				sli.phys_x, sli.phys_y, sli.phys_z, feature_values));
 		}
 
 		return features;

@@ -87,6 +87,14 @@ public:
 	float xyRes; //= 0.0,
 	float pixelSizeUm; //= 0.0;
 
+	// FIX (IO): opt-in physical-voxel-spacing calibration. When set, the 3D pipeline uses
+	// each slide's OME PhysicalSize* (ratio-normalized) as voxel spacing (anisotropy).
+	// Off by default -> today's cube-voxel behavior is unchanged. Spacing is still emitted
+	// as phys_x/y/z + phys_unit output columns regardless of this flag.
+	std::string rawUsePhysicalSpacing; //= "";
+	bool use_physical_spacing_ = false;
+	bool use_physical_spacing() const { return use_physical_spacing_; }
+
 	int get_pixel_distance();
 	void set_pixel_distance(int pixelDistance);
 	size_t get_ram_limit();

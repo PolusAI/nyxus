@@ -49,7 +49,9 @@ namespace Nyxus
 		}
 
 		// read the slide into a pixel cloud
-		if (env.anisoOptions.customized() == false)
+		// FIX (IO): --aniso* (explicit) or opt-in OME physical spacing selects the anisotropic path
+		double ax, ay, az;
+		if (! resolve_slide_anisotropy (env, sidx, ax, ay, az))
 		{
 			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide()\n");
 			scan_trivial_wholevolume (vroi, ifpath, imlo, channel, timeframe);
@@ -61,9 +63,9 @@ namespace Nyxus
 				vroi,
 				ifpath,
 				imlo,
-				env.anisoOptions.get_aniso_x(),
-				env.anisoOptions.get_aniso_y(),
-				env.anisoOptions.get_aniso_z(),
+				ax,
+				ay,
+				az,
 				channel,
 				timeframe);
 		}

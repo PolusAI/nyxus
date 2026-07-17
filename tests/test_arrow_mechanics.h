@@ -64,42 +64,34 @@ std::shared_ptr<arrow::Table> create_features_table(const std::vector<std::strin
 
     std::vector<std::shared_ptr<arrow::Field>> fields;
 
+    // FIX (IO): 3 leading string columns (intensity, mask, phys_unit) + ROI_label int32 + float64 rest
+    const int num_str_cols = 3;
     fields.push_back(arrow::field(header[0], arrow::utf8()));
     fields.push_back(arrow::field(header[1], arrow::utf8()));
-    fields.push_back(arrow::field(header[2], arrow::int32()));
+    fields.push_back(arrow::field(header[2], arrow::utf8()));
+    fields.push_back(arrow::field(header[3], arrow::int32()));
 
-    for (int i = 3; i < header.size(); ++i)
+    for (int i = 4; i < header.size(); ++i)
     {
         fields.push_back(arrow::field(header[i], arrow::float64()));
     }
 
     auto schema = arrow::schema(fields);
 
-    arrow::StringBuilder string_builder_0;
-
-    std::vector<std::string> temp_string_vec1(string_columns.size()/2);
-    std::vector<std::string> temp_string_vec2(string_columns.size()/2);
-
-    for (int i = 0; i < string_columns.size(); i+=2) {
-        temp_string_vec1[i/2] = string_columns[i];
-        temp_string_vec2[i/2] = string_columns[i+1];
-    }
-    
-    PARQUET_THROW_NOT_OK(string_builder_0.AppendValues(temp_string_vec1));
-
-    arrow::StringBuilder string_builder_1;
-    
-    PARQUET_THROW_NOT_OK(string_builder_1.AppendValues(temp_string_vec2));
-
-    std::shared_ptr<arrow::Array> array_0, array_1;
-
-    PARQUET_THROW_NOT_OK(string_builder_0.Finish(&array_0));
-    PARQUET_THROW_NOT_OK(string_builder_1.Finish(&array_1));
-
     std::vector<std::shared_ptr<arrow::Array>> arrays;
 
-    arrays.push_back(array_0);
-    arrays.push_back(array_1);
+    // de-interleave the flat string buffer (row-major, num_str_cols per row) into one array per column
+    for (int c = 0; c < num_str_cols; ++c)
+    {
+        std::vector<std::string> col(number_of_rows);
+        for (int r = 0; r < number_of_rows; ++r)
+            col[r] = string_columns[r * num_str_cols + c];
+        arrow::StringBuilder sb;
+        PARQUET_THROW_NOT_OK(sb.AppendValues(col));
+        std::shared_ptr<arrow::Array> arr;
+        PARQUET_THROW_NOT_OK(sb.Finish(&arr));
+        arrays.push_back(arr);
+    }
 
     // add labels
     arrow::Int32Builder labels_builder;
@@ -224,9 +216,13 @@ void test_arrow()
     for (const auto& row : row_data) {
         string_columns.push_back(std::get<0>(row)[0]);
         string_columns.push_back(std::get<0>(row)[1]);
+        string_columns.push_back(std::get<0>(row)[2]);    // phys_unit (FIX (IO): 3rd leading string)
         numeric_columns.push_back(std::get<1>(row));    // ROI label
         numeric_columns.push_back(std::get<FTABLE_TIMEPOS>(row));    // time
         numeric_columns.push_back(std::get<FTABLE_CPOS>(row));    // channel (FIX (IO): c_index column)
+        numeric_columns.push_back(std::get<FTABLE_PXPOS>(row));    // phys_x (FIX (IO))
+        numeric_columns.push_back(std::get<FTABLE_PYPOS>(row));    // phys_y
+        numeric_columns.push_back(std::get<FTABLE_PZPOS>(row));    // phys_z
         for (const auto& data : std::get<FTABLE_FBEGIN>(row)) {
             numeric_columns.push_back(data);
         }
@@ -296,9 +292,13 @@ void test_parquet() {
     for (const auto& row : row_data) {
         string_columns.push_back(std::get<0>(row)[0]);
         string_columns.push_back(std::get<0>(row)[1]);
+        string_columns.push_back(std::get<0>(row)[2]);    // phys_unit (FIX (IO): 3rd leading string)
         numeric_columns.push_back(std::get<1>(row));    // ROI label
         numeric_columns.push_back(std::get<FTABLE_TIMEPOS>(row));    // time
         numeric_columns.push_back(std::get<FTABLE_CPOS>(row));    // channel (FIX (IO): c_index column)
+        numeric_columns.push_back(std::get<FTABLE_PXPOS>(row));    // phys_x (FIX (IO))
+        numeric_columns.push_back(std::get<FTABLE_PYPOS>(row));    // phys_y
+        numeric_columns.push_back(std::get<FTABLE_PZPOS>(row));    // phys_z
         for (const auto& data : std::get<FTABLE_FBEGIN>(row)) {
             numeric_columns.push_back(data);
         }

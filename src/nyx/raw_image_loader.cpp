@@ -299,6 +299,26 @@ size_t RawImageLoader::get_inten_channels()
 	return intFL->numberChannels();		// FIX (IO): OME loaders report the real C; others default to 1
 }
 
+double RawImageLoader::get_physical_size_x()
+{
+	return intFL->physicalSizeX();		// FIX (IO): OME PhysicalSizeX; 1.0 if uncalibrated
+}
+
+double RawImageLoader::get_physical_size_y()
+{
+	return intFL->physicalSizeY();
+}
+
+double RawImageLoader::get_physical_size_z()
+{
+	return intFL->physicalSizeZ();
+}
+
+std::string RawImageLoader::get_physical_size_unit()
+{
+	return intFL->physicalSizeUnit();
+}
+
 std::string RawImageLoader::get_slide_descr()
 {
 	std::string s = get_fp_phys_pixvoxels() ? "R-" : "N-";

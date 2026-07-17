@@ -81,7 +81,8 @@ void initialize_environment(
     float aniso_y,
     float aniso_z,
     bool merge_labels = false,
-    bool preserve_hu = false)		// CT/HU: preserve absolute Hounsfield intensities
+    bool preserve_hu = false,		// CT/HU: preserve absolute Hounsfield intensities
+    bool use_physical_spacing = false)	// FIX (IO): opt-in OME PhysicalSize* voxel spacing (3D)
 {
     Environment & theEnvironment = Nyxus::findenv (instid);
 
@@ -103,6 +104,7 @@ void initialize_environment(
     theEnvironment.fpimageOptions.set_min_intensity(min_intensity);
     theEnvironment.fpimageOptions.set_max_intensity(max_intensity);
     theEnvironment.fpimageOptions.set_preserve_hu(preserve_hu);
+    theEnvironment.use_physical_spacing_ = use_physical_spacing;		// FIX (IO): opt-in physical spacing
 
     // Throws exception if invalid feature is passed
     theEnvironment.expand_featuregroups();

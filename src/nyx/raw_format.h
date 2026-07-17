@@ -46,6 +46,13 @@ public:
         return 1;
     }
 
+    // Physical voxel spacing along X/Y/Z (default 1.0 == uncalibrated) + unit string.
+    // OME loaders return the parsed PhysicalSize*; everything else stays 1.0 / "".
+    [[nodiscard]] virtual double physicalSizeX() const { return 1.0; }
+    [[nodiscard]] virtual double physicalSizeY() const { return 1.0; }
+    [[nodiscard]] virtual double physicalSizeZ() const { return 1.0; }
+    [[nodiscard]] virtual std::string physicalSizeUnit() const { return std::string(); }
+
     [[nodiscard]] virtual size_t tileWidth(size_t level) const = 0;
 
     [[nodiscard]] virtual size_t tileHeight(size_t level) const = 0;
