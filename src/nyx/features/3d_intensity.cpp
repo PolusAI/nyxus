@@ -136,6 +136,19 @@ void D3_VoxelIntensityFeatures::calculate (LR &r, const Fsettings& s, const Data
 		medad += std::abs(px.inten - median_);
 	val_MEDIAN_ABSOLUTE_DEVIATION = medad / n;
 
+	// FIX 3ROBUST_MEAN: was never assigned in this (trivial) path so it defaulted to 0, unlike the
+	// 2D PixelIntensityFeatures which computes it (intensity.cpp) -> port the same definition:
+	// mean of voxels within the [P10,P90] robust window (p10_/p90_ from H.get_stats() above).
+	double robustMean = 0.0;
+	size_t robustCount = 0;
+	for (auto& px : B)
+		if (px.inten >= p10_ && px.inten <= p90_)
+		{
+			robustMean += px.inten;
+			robustCount++;
+		}
+	val_ROBUST_MEAN = robustCount ? robustMean / double(robustCount) : 0.0;
+
 	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
 	double piu = (1.0 - double(r.aux_max - r.aux_min) / double(r.aux_max + r.aux_min)) * 100.0;
 	val_UNIFORMITY_PIU = piu;
@@ -259,6 +272,18 @@ void D3_VoxelIntensityFeatures::osized_calculate (LR & r, const Fsettings & s, c
 	for (auto& px : r.raw_pixels_3D)
 		medad += std::abs(px.inten - median_);
 	val_MEDIAN_ABSOLUTE_DEVIATION = medad / n;
+
+	// FIX 3ROBUST_MEAN: same omission in the out-of-core path (defaulted to 0) -> compute the
+	// mean of voxels within the [P10,P90] robust window, matching the 2D implementation.
+	double robustMean = 0.0;
+	size_t robustCount = 0;
+	for (auto& px : r.raw_pixels_3D)
+		if (px.inten >= p10_ && px.inten <= p90_)
+		{
+			robustMean += px.inten;
+			robustCount++;
+		}
+	val_ROBUST_MEAN = robustCount ? robustMean / double(robustCount) : 0.0;
 
 	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image 
 	//	intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] 

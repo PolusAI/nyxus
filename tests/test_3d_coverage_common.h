@@ -413,7 +413,7 @@ static const std::map<std::string, std::vector<double>>& unvetted_3d_local_regre
 		{ "3P75", { 2487.9072847682119 } },
 		{ "3P99", { 3002.3047021943576 } },
 		{ "3QCOD", { 0.25724851827174233 } },
-		{ "3ROBUST_MEAN", { 0 } },
+		{ "3ROBUST_MEAN", { 1977.5189642596645 } },  // FIX: baseline was pinning the bug value 0; 3ROBUST_MEAN is now computed (mean of voxels in [P10,P90]) ~ 3MEAN 1983.32, trimmed
 		{ "3SPHERICAL_DISPROPORTION", { 2.9375598657539634 } },
 		{ "3SPHERICITY", { 0.34041859424142729 } },
 		{ "3STANDARD_DEVIATION", { 584.80556406962933 } },
