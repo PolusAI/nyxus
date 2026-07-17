@@ -259,6 +259,10 @@ TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_SRLGLE) {
 	ASSERT_NO_THROW(test_compat_3GLRLM_SRLGLE());
 }
 
+TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_AVE_FEATURES) {
+	ASSERT_NO_THROW(test_compat_3glrlm_ave_features());
+}
+
 
 //***** 3D GLSZM compatibility *****
 

@@ -212,6 +212,66 @@ void test_compat_3glrlm_feature(const Nyxus::Feature3D& expecting_fcode, const s
     ASSERT_TRUE(agrees_gt(atot, compat_3glrlm_GT[fname], 10.));
 }
 
+// Vet the direction-averaged (_AVE) 3D GLRLM features vs PyRadiomics. save_value stores
+// fvals[X_AVE][0] = calc_ave(angled_X) -- exactly the quantity the base test asserts == PyRadiomics
+// (test_compat_3glrlm_feature: atot = calc_ave(fvals[X])). So reading the _AVE slot directly and
+// comparing to the same GT table is a direct PyRadiomics assertion on the _AVE feature. One workflow
+// run covers all 14 (RE_AVE / RP_AVE already vetted elsewhere).
+void test_compat_3glrlm_ave_features()
+{
+    auto [ipath, mpath, label] = get_3d_compat_phantom();
+    ASSERT_TRUE(fs::exists(ipath));
+    ASSERT_TRUE(fs::exists(mpath));
+
+    Environment e;
+    e.dataset.dataset_props.reserve(1);
+    SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
+    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+    e.dataset.update_dataset_props_extrema();
+    clear_slide_rois(e.uniqueLabels, e.roiData);
+    ASSERT_TRUE(gatherRoisMetrics_3D(e, 0, ipath, mpath, 0));
+    std::vector<int> batch = { label };
+    ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0));
+    ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
+
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
+    s[(int)NyxSetting::TINY].rval = 0.0;
+    s[(int)NyxSetting::SINGLEROI].bval = false;
+    s[(int)NyxSetting::GREYDEPTH].ival = 100;
+    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
+    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::VERBOSLVL].ival = 0;
+    s[(int)NyxSetting::IBSI].bval = false;
+    s[(int)NyxSetting::GLRLM_GREYDEPTH].ival = -20;  // radiomics binCount-based grey binning
+
+    LR& r = e.roiData[label];
+    ASSERT_NO_THROW(r.initialize_fvals());
+    D3_GLRLM_feature f;
+    ASSERT_NO_THROW(f.calculate(r, s));
+    f.save_value(r.fvals);
+
+    using F = Nyxus::Feature3D;
+    struct AvePair { F ave; const char* gt; };
+    std::vector<AvePair> aves = {
+        {F::GLRLM_GLN_AVE, "3GLRLM_GLN"},     {F::GLRLM_GLNN_AVE, "3GLRLM_GLNN"},
+        {F::GLRLM_GLV_AVE, "3GLRLM_GLV"},     {F::GLRLM_HGLRE_AVE, "3GLRLM_HGLRE"},
+        {F::GLRLM_LGLRE_AVE, "3GLRLM_LGLRE"}, {F::GLRLM_LRE_AVE, "3GLRLM_LRE"},
+        {F::GLRLM_LRHGLE_AVE, "3GLRLM_LRHGLE"}, {F::GLRLM_LRLGLE_AVE, "3GLRLM_LRLGLE"},
+        {F::GLRLM_RLN_AVE, "3GLRLM_RLN"},     {F::GLRLM_RLNN_AVE, "3GLRLM_RLNN"},
+        {F::GLRLM_RV_AVE, "3GLRLM_RV"},       {F::GLRLM_SRE_AVE, "3GLRLM_SRE"},
+        {F::GLRLM_SRHGLE_AVE, "3GLRLM_SRHGLE"}, {F::GLRLM_SRLGLE_AVE, "3GLRLM_SRLGLE"},
+    };
+    for (auto& a : aves)
+    {
+        double v = r.fvals[(int)a.ave][0];
+        ASSERT_TRUE(agrees_gt(v, compat_3glrlm_GT[a.gt], 10.)) << a.gt << "_AVE = " << v
+            << " vs pyradiomics " << compat_3glrlm_GT[a.gt];
+    }
+}
+
 void test_compat_3GLRLM_GLN() {
     test_compat_3glrlm_feature (Nyxus::Feature3D::GLRLM_GLN, "3GLRLM_GLN");
 }
