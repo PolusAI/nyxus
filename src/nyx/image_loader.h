@@ -24,7 +24,11 @@ public:
 	// internal buffer by looping over Z-planes. This is what lets plane-by-plane
 	// loaders (OME-Zarr, multi-page/OME-TIFF) feed the volumetric pipeline, which
 	// otherwise assumes the whole volume arrives in one read (the NIfTI model).
-	bool load_volume (size_t channel, size_t timeframe);
+	// The mask may live on a different timeframe than the intensity (the 1-mask :
+	// N-intensity case), so `mask_timeframe` is separable; the 2-arg overload uses
+	// the same frame for both.
+	bool load_volume (size_t channel, size_t timeframe, size_t mask_timeframe);
+	bool load_volume (size_t channel, size_t timeframe) { return load_volume(channel, timeframe, timeframe); }
 	const std::vector<uint32_t>& get_int_volume_buffer() const { return vol_int_; }
 	const std::vector<uint32_t>& get_seg_volume_buffer() const { return vol_seg_; }
 
@@ -86,5 +90,11 @@ private:
 
 	// Whole-volume (X*Y*Z) assembly buffers filled by load_volume()
 	std::vector<uint32_t> vol_int_, vol_seg_;
+
+	// Assemble one loader's X*Y*Z volume (for the given channel/timeframe) into dst,
+	// honoring that loader's own tileDepth/tileTimestamps (per-plane vs whole-4D).
+	void assemble_volume (AbstractTileLoader<uint32_t>* fl,
+		std::shared_ptr<std::vector<uint32_t>>& ptr,
+		std::vector<uint32_t>& dst, size_t channel, size_t timeframe);
 };
 

@@ -9,6 +9,7 @@
 #include "../src/nyx/omezarr.h"
 #include "../src/nyx/raw_omezarr.h"
 #include "../src/nyx/image_loader.h"
+#include "../src/nyx/globals.h"           // scan_trivial_wholevolume, LR
 #include "../src/nyx/helpers/fsystem.h"
 
 // The OME-Zarr test datasets under tests/data/omezarr are generated with bfio
@@ -294,6 +295,32 @@ void test_raw_omezarr_addressing(const char* store, int T, int C, int Z)
         ASSERT_NE(p000, p010) << "channel index ignored";
         ASSERT_NE(p000, p001) << "timeframe index ignored";
     }
+}
+
+// End-to-end through the WIRED volumetric consumer: scan_trivial_wholevolume must
+// feed the whole X*Y*Z volume (all Z planes) into the ROI's voxel cloud with the
+// correct encoded intensity -- before the wiring it read only plane z=0.
+void test_omezarr_wholevolume_consumer(const char* store, int Z)
+{
+    const int Y = 6, X = 8;
+    fs::path ds = omezarr_data_path(store);
+    ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+    SlideProps p;
+    p.fname_int = ds.string();
+    p.fname_seg = "";
+    FpImageOptions fp;
+    ImageLoader ilo;
+    ASSERT_TRUE(ilo.open(p, fp)) << ds.string();
+
+    LR vroi;
+    ASSERT_TRUE(Nyxus::scan_trivial_wholevolume(vroi, ds.string(), ilo));
+
+    ASSERT_EQ(vroi.raw_pixels_3D.size(), (size_t)X * Y * Z);   // all voxels, not just plane 0 (48)
+    for (const Pixel3& px : vroi.raw_pixels_3D)
+        ASSERT_EQ((uint32_t)px.inten, dim5_enc((int)px.x, (int)px.y, (int)px.z, 0, 0))
+            << "voxel (" << px.x << "," << px.y << "," << px.z << ")";
+    ilo.close();
 }
 
 // Whole-volume assembly through the ImageLoader facade: load_volume() must stack

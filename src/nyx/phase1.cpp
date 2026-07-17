@@ -279,47 +279,37 @@ namespace Nyxus
 
 		int cnt = 1;
 
-		// Fetch a tile 
-		bool ok = env.theImLoader.load_tile (0/*row*/ , 0/*col*/);
+		// FIX (IO): assemble the whole X*Y*Z volume for this timeframe (load_volume
+		// loops Z), so plane-by-plane loaders (OME-Zarr, multi-page/OME-TIFF) yield a
+		// real 3D volume here too — Phase-1 ROI metrics must see the same voxels the
+		// Phase-2 scan does. Mask on frame t_index (1:1) or frame 0 (1 mask : N int).
+		const size_t maskFrame = (nVoxI == nVoxM) ? t_index : 0;
+		bool ok = env.theImLoader.load_volume (0/*channel*/, t_index, maskFrame);
 		if (!ok)
 		{
 			std::string erm = "Error fetching tile (0,0) from I:" + intens_fpath + " M:" + mask_fpath;
 			#ifdef WITH_PYTHON_H
 				throw erm;
-			#endif	
+			#endif
 			std::cerr << erm << "\n";
 			return false;
 		}
 
-		// Get ahold of tile's pixel buffer
-		auto dataI = env.theImLoader.get_int_tile_buffer(),
-			dataL = env.theImLoader.get_seg_tile_buffer();
+		// Both buffers hold exactly this timeframe's X*Y*Z volume (frame already selected).
+		const std::vector<uint32_t>& dataI = env.theImLoader.get_int_volume_buffer();
+		const std::vector<uint32_t>& dataL = env.theImLoader.get_seg_volume_buffer();
 
-		size_t baseI, baseM;
-		if (nVoxI == nVoxM)
-		{
-			baseM = baseI = t_index * timeFrameSize;
-		}
-		else // nVoxI > nVoxM
-		{
-			baseM = 0;
-			baseI = t_index * timeFrameSize;
-		}
-
-		// Iterate voxels
+		// Iterate the single-frame volume's voxels
 		for (size_t i=0; i<timeFrameSize; i++)
 		{
-			size_t k = i + baseM;	// absolute index of mask voxel
-			size_t j = i + baseI;	// absolute index of intensity voxel
-									
 			// Skip non-mask pixels
-			auto label = dataL[k];
+			auto label = dataL[i];
 			if (!label)
 				continue;
 
-			int z = k / sliceSize,
-				y = (k - z*sliceSize) / w,
-				x = (k - z * sliceSize) % w;
+			int z = i / sliceSize,
+				y = (i - z*sliceSize) / w,
+				x = (i - z * sliceSize) % w;
 
 			// Skip tile buffer pixels beyond the image's bounds
 			if (x >= w || y >= h || z >= d)
@@ -330,7 +320,7 @@ namespace Nyxus
 				label = 1;
 
 			// Update pixel's ROI metrics
-			feed_pixel_2_metrics_3D (env.uniqueLabels, env.roiData, x, y, z, dataI[j], label, sidx);
+			feed_pixel_2_metrics_3D (env.uniqueLabels, env.roiData, x, y, z, dataI[i], label, sidx);
 		}
 
 #ifdef WITH_PYTHON_H

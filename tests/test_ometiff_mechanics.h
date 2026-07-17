@@ -15,6 +15,7 @@
 #include "../src/nyx/grayscale_tiff.h"
 #include "../src/nyx/raw_tiff.h"
 #include "../src/nyx/image_loader.h"
+#include "../src/nyx/globals.h"           // scan_trivial_wholevolume, LR
 #include "../src/nyx/helpers/fsystem.h"
 
 static inline fs::path ometiff_data_path(const char* name)
@@ -82,6 +83,34 @@ void test_raw_ometiff_addressing(const char* store, int T, int C, int Z)
                     << store << " plane (z" << z << " c" << c << " t" << t << ") at (" << x << "," << y << ")";
         }
     ldr.free_tile();
+}
+
+// End-to-end through the WIRED volumetric consumer: scan_trivial_wholevolume must
+// feed the whole X*Y*Z volume (all Z planes) into the ROI's voxel cloud, with the
+// correct encoded intensity. Before the wiring it read only plane z=0, so this
+// asserts the consumer fix, not just the facade.
+void test_ometiff_wholevolume_consumer(const char* store, int Z)
+{
+    const int Y = 6, X = 8;
+    fs::path ds = ometiff_data_path(store);
+    ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+    SlideProps p;
+    p.fname_int = ds.string();
+    p.fname_seg = "";
+    FpImageOptions fp;
+    ImageLoader ilo;
+    ASSERT_TRUE(ilo.open(p, fp)) << ds.string();
+
+    LR vroi;
+    ASSERT_TRUE(Nyxus::scan_trivial_wholevolume(vroi, ds.string(), ilo));
+
+    // every voxel of the X*Y*Z volume must be captured (not just plane z=0 -> 48)
+    ASSERT_EQ(vroi.raw_pixels_3D.size(), (size_t)X * Y * Z);
+    for (const Pixel3& px : vroi.raw_pixels_3D)
+        ASSERT_EQ((uint32_t)px.inten, ometiff_enc((int)px.x, (int)px.y, (int)px.z, 0, 0))
+            << "voxel (" << px.x << "," << px.y << "," << px.z << ")";
+    ilo.close();
 }
 
 // Whole-volume assembly through the ImageLoader facade: load_volume() stacks all

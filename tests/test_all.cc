@@ -2568,6 +2568,11 @@ TEST(TEST_NYXUS, TEST_OMEZARR_4D_CZYX) {
 	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim4_czyx.ome.zarr", 1, 3, 4));
 }
 
+// End-to-end through the wired volumetric consumer (scan_trivial_wholevolume).
+TEST(TEST_NYXUS, TEST_OMEZARR_WHOLEVOLUME_CONSUMER) {
+	ASSERT_NO_THROW (test_omezarr_wholevolume_consumer("dim3_zyx.ome.zarr", 4));
+}
+
 // Facade whole-volume assembly (load_volume loops Z into one X*Y*Z buffer).
 TEST(TEST_NYXUS, TEST_OMEZARR_FACADE_VOLUME_3D) {
 	ASSERT_NO_THROW (test_omezarr_facade_volume("dim3_zyx.ome.zarr", 1, 1, 4));
@@ -2634,6 +2639,11 @@ TEST(TEST_NYXUS, TEST_OMETIFF_4D_TZYX) {
 TEST(TEST_NYXUS, TEST_OMETIFF_4D_CZYX) {
 	ASSERT_NO_THROW (test_ometiff_addressing("dim4_czyx.ome.tif", 1, 3, 4));
 	ASSERT_NO_THROW (test_raw_ometiff_addressing("dim4_czyx.ome.tif", 1, 3, 4));
+}
+
+// End-to-end through the wired volumetric consumer (scan_trivial_wholevolume).
+TEST(TEST_NYXUS, TEST_OMETIFF_WHOLEVOLUME_CONSUMER) {
+	ASSERT_NO_THROW (test_ometiff_wholevolume_consumer("dim3_zyx.ome.tif", 4));
 }
 
 // Facade whole-volume assembly (load_volume loops Z into one X*Y*Z buffer).
