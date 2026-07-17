@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <string>
@@ -13,15 +14,51 @@
 
 #include "environment.h"
 #include "globals.h"
+#include "helpers/helpers.h"		// FIX (IO): Nyxus::near_eq for the physical-spacing resolver
 #include "helpers/fsystem.h"
 #include "helpers/timing.h"
 
 namespace Nyxus
 {
+	// FIX (IO): resolve the effective 3D voxel spacing for slide `sidx`. Explicit --aniso*
+	// (anisoOptions.customized()) always wins. Otherwise, when --use-physical-spacing is on,
+	// use the slide's OME PhysicalSize* ratio-normalized so the smallest axis == 1 (Nyxus's
+	// anisotropic path resamples by the multiplier, so ratios - not absolute units - are what
+	// correct for non-cubic voxels). Returns false + (1,1,1) when the grid is isotropic.
+	bool resolve_slide_anisotropy (const Environment& env, size_t sidx, double& ax, double& ay, double& az)
+	{
+		ax = ay = az = 1.0;
+
+		if (env.anisoOptions.customized())
+		{
+			ax = env.anisoOptions.get_aniso_x();
+			ay = env.anisoOptions.get_aniso_y();
+			az = env.anisoOptions.get_aniso_z();
+			return true;
+		}
+
+		if (env.use_physical_spacing() && sidx < env.dataset.dataset_props.size())
+		{
+			const SlideProps& p = env.dataset.dataset_props[sidx];
+			double sx = p.phys_x, sy = p.phys_y, sz = p.phys_z;
+			double mn = std::min(sx, std::min(sy, sz));
+			if (mn > 0.0)
+			{
+				ax = sx / mn; ay = sy / mn; az = sz / mn;
+				// only take the anisotropic path if the voxels are actually non-cubic
+				if (! (Nyxus::near_eq(ax, 1.0) && Nyxus::near_eq(ay, 1.0) && Nyxus::near_eq(az, 1.0)))
+					return true;
+			}
+			ax = ay = az = 1.0;
+		}
+
+		return false;
+	}
+
 	//
 	// Loads ROI voxels into voxel clouds
 	//
-	bool scanTrivialRois_3D (Environment & env, const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, size_t t_index)
+	bool scanTrivialRois_3D (Environment & env, const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, size_t t_index, size_t channel)
 	{
 		// Sort the batch's labels to enable binary searching in it
 		std::vector<int> whiteList = batch_labels;
@@ -89,7 +126,7 @@ namespace Nyxus
 		// read a real 3D volume. The mask sits on frame t_index (1:1) or frame 0 (the
 		// 1-mask : N-intensity case); the intensity sits on frame t_index.
 		const size_t maskFrame = (timeI == timeM) ? t_index : 0;
-		bool ok = env.theImLoader.load_volume (0/*channel*/, t_index, maskFrame);
+		bool ok = env.theImLoader.load_volume (channel, t_index, maskFrame);
 		if (!ok)
 		{
 			std::string erm = "Error fetching segmented data from " + intens_fpath + "(I) " + label_fpath + "(M)";
@@ -280,6 +317,7 @@ namespace Nyxus
 		const std::string& intens_fpath,
 		const std::string& label_fpath,
 		size_t t_index,
+		size_t channel,
 		double aniso_x,
 		double aniso_y,
 		double aniso_z)
@@ -337,7 +375,7 @@ namespace Nyxus
 		// loops Z), so plane-by-plane loaders (OME-Zarr, multi-page/OME-TIFF) read a
 		// real 3D volume here too. Mask on frame t_index (1:1) or frame 0 (1 mask : N).
 		const size_t maskFrame = (timeI == timeM) ? t_index : 0;
-		if (!env.theImLoader.load_volume (0/*channel*/, t_index, maskFrame))
+		if (!env.theImLoader.load_volume (channel, t_index, maskFrame))
 		{
 			std::string erm = "Error fetching data from file pair " + intens_fpath + "(I) " + label_fpath + "(M)";
 	#ifdef WITH_PYTHON_H
@@ -433,7 +471,9 @@ namespace Nyxus
 	bool scan_trivial_wholevolume (
 		LR& vroi,
 		const std::string& intens_fpath,
-		ImageLoader& ilo)
+		ImageLoader& ilo,
+		size_t channel,
+		size_t timeframe)
 	{
 		int lvl = 0,	// Pyramid level
 			lyr = 0;	//	Layer
@@ -446,10 +486,10 @@ namespace Nyxus
 			sliceSize = fullwidth * fullheight,
 			nVox = sliceSize * fullD;
 
-		// FIX (IO): assemble the whole X*Y*Z volume (load_volume loops Z) so plane-by-
-		// plane loaders (OME-Zarr, multi-page/OME-TIFF) read the full volume, not just
-		// plane z=0. Whole-slide is single-channel, single-timeframe.
-		if (!ilo.load_volume(0/*channel*/, 0/*timeframe*/, 0/*mask*/))
+		// FIX (IO): assemble the whole X*Y*Z volume (load_volume loops Z) for the requested
+		// (channel, timeframe) so plane-by-plane loaders (OME-Zarr, multi-page/OME-TIFF) read
+		// the full volume of THIS C/T plane, not just plane z=0 of (c=0,t=0). No mask in WSI.
+		if (!ilo.load_volume(channel, timeframe, timeframe))
 		{
 #ifdef WITH_PYTHON_H
 			throw "Error fetching tile";
@@ -495,7 +535,9 @@ namespace Nyxus
 		ImageLoader& ilo,
 		double aniso_x,
 		double aniso_y,
-		double aniso_z)
+		double aniso_z,
+		size_t channel,
+		size_t timeframe)
 	{
 		int lvl = 0,	// Pyramid level
 			lyr = 0;	//	Layer
@@ -511,9 +553,9 @@ namespace Nyxus
 			vw = (size_t) (double(fullW) * aniso_x),
 			vd = (size_t) (double(fullD) * aniso_z);
 
-		// FIX (IO): assemble the whole X*Y*Z volume (load_volume loops Z) so plane-by-
-		// plane loaders read the full volume, not just plane z=0.
-		if (! ilo.load_volume(0/*channel*/, 0/*timeframe*/, 0/*mask*/))
+		// FIX (IO): assemble the whole X*Y*Z volume (load_volume loops Z) for the requested
+		// (channel, timeframe) so plane-by-plane loaders read the full volume of this C/T plane.
+		if (! ilo.load_volume(channel, timeframe, timeframe))
 		{
 #ifdef WITH_PYTHON_H
 			throw "Error loading volume data";
@@ -630,7 +672,7 @@ namespace Nyxus
 	}
 
 
-	bool processTrivialRois_3D (Environment & env, size_t sidx, size_t t_index, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit)
+	bool processTrivialRois_3D (Environment & env, size_t sidx, size_t t_index, size_t channel, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit)
 	{
 		std::vector<int> Pending;
 		size_t batchDemand = 0;
@@ -661,16 +703,15 @@ namespace Nyxus
 						std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				);
 
-				if (env.anisoOptions.customized() == false)
+				// FIX (IO): --aniso* (explicit) or opt-in OME physical spacing selects the anisotropic path
+				double ax, ay, az;
+				if (! resolve_slide_anisotropy (env, sidx, ax, ay, az))
 				{
-					scanTrivialRois_3D (env, Pending, intens_fpath, label_fpath, t_index);
+					scanTrivialRois_3D (env, Pending, intens_fpath, label_fpath, t_index, channel);
 				}
 				else
 				{
-					double	ax = env.anisoOptions.get_aniso_x(),
-						ay = env.anisoOptions.get_aniso_y(),
-						az = env.anisoOptions.get_aniso_z();
-					scanTrivialRois_3D_anisotropic (env, Pending, intens_fpath, label_fpath, t_index, ax, ay, az);
+					scanTrivialRois_3D_anisotropic (env, Pending, intens_fpath, label_fpath, t_index, channel, ax, ay, az);
 
 					// rescan and update ROI's AABB
 					for (auto lbl : Pending)
@@ -727,16 +768,15 @@ namespace Nyxus
 				std::cout << ">>> (labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				);
 
-			if (env.anisoOptions.customized() == false)
+			// FIX (IO): --aniso* (explicit) or opt-in OME physical spacing selects the anisotropic path
+			double ax, ay, az;
+			if (! resolve_slide_anisotropy (env, sidx, ax, ay, az))
 			{
-				scanTrivialRois_3D (env, Pending, intens_fpath, label_fpath, t_index);
+				scanTrivialRois_3D (env, Pending, intens_fpath, label_fpath, t_index, channel);
 			}
 			else
 			{
-				double	ax = env.anisoOptions.get_aniso_x(),
-					ay = env.anisoOptions.get_aniso_y(),
-					az = env.anisoOptions.get_aniso_z();
-				scanTrivialRois_3D_anisotropic (env, Pending, intens_fpath, label_fpath, t_index, ax, ay, az);
+				scanTrivialRois_3D_anisotropic (env, Pending, intens_fpath, label_fpath, t_index, channel, ax, ay, az);
 
 				// rescan and update ROI's AABB
 				for (auto lbl : Pending)

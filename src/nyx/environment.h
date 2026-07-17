@@ -2,6 +2,7 @@
 
 #include <map>
 #include <string>
+#include <unordered_set>		// FIX: csv_paths_written registry (see below)
 #include <vector>
 
 #include "arrow_output_stream.h"
@@ -80,12 +81,32 @@ public:
 	std::string rawOutpType; //= ""; // Valid values: "separatecsv", "singlecsv", "arrow", "parquet"
 	bool separateCsv; //= true;
 
+	// FIX: CSV output paths already written during this run. A slide now yields one row per
+	// (channel, timeframe), and the CSV sinks are called once per plane -- but in separatecsv
+	// mode they opened the same path with "w" every time, so each plane truncated the previous
+	// and only the LAST one survived. The first write to a path truncates and renders the
+	// header; later writes append. Held per-Environment rather than in a function-static so a
+	// long-lived Python session starts each run clean instead of appending to a stale file.
+	std::unordered_set<std::string> csv_paths_written;
+
+	// True the first time `path` is written in this run (and records it).
+	bool csv_claim_first_write (const std::string& path) { return csv_paths_written.insert(path).second; }
+	void reset_csv_output_state() { csv_paths_written.clear(); }
+
 	Nyxus::SaveOption saveOption;
 
 	// x- and y- resolution in pixels per centimeter
 	std::string rawXYRes; //= "";
 	float xyRes; //= 0.0,
 	float pixelSizeUm; //= 0.0;
+
+	// FIX (IO): opt-in physical-voxel-spacing calibration. When set, the 3D pipeline uses
+	// each slide's OME PhysicalSize* (ratio-normalized) as voxel spacing (anisotropy).
+	// Off by default -> today's cube-voxel behavior is unchanged. Spacing is still emitted
+	// as phys_x/y/z + phys_unit output columns regardless of this flag.
+	std::string rawUsePhysicalSpacing; //= "";
+	bool use_physical_spacing_ = false;
+	bool use_physical_spacing() const { return use_physical_spacing_; }
 
 	int get_pixel_distance();
 	void set_pixel_distance(int pixelDistance);

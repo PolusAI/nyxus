@@ -63,6 +63,10 @@ namespace Nyxus
 		head.push_back (Nyxus::colname_intensity_image);
 		head.push_back (Nyxus::colname_mask_image);
 
+		// Physical-size unit (FIX (IO): a leading STRING column so the Python buffer's
+		// "string columns first" reconstruction still holds; the numeric phys_x/y/z go later)
+		head.push_back (Nyxus::colname_phys_unit);
+
 		// Annotation columns
 		if (env.resultOptions.need_annotation())
 		{
@@ -79,6 +83,14 @@ namespace Nyxus
 
 		// time
 		head.push_back (Nyxus::colname_t_index);
+
+		// channel (FIX (IO): mirrors t_index; one column per channel plane)
+		head.push_back (Nyxus::colname_c_index);
+
+		// physical voxel spacing (FIX (IO): numeric columns)
+		head.push_back (Nyxus::colname_phys_x);
+		head.push_back (Nyxus::colname_phys_y);
+		head.push_back (Nyxus::colname_phys_z);
 
 		// Optional columns
 		for (auto& enabdF : F)
@@ -211,11 +223,12 @@ namespace Nyxus
 
 	bool save_features_2_csv_wholeslide (
 		Environment & env,
-		const LR & r, 
-		const std::string & ifpath, 
-		const std::string & mfpath, 
+		const LR & r,
+		const std::string & ifpath,
+		const std::string & mfpath,
 		const std::string & outdir,
-		size_t t_index)
+		size_t t_index,
+		size_t c_index)
 	{
 		std::lock_guard<std::mutex> lg (mutex1); // Lock the mutex
 
@@ -224,16 +237,18 @@ namespace Nyxus
 		char rvbuf[VAL_BUF_LEN]; // real value buffer large enough to fit a float64 value in range (2.2250738585072014E-308 to 1.79769313486231570e+308)
 		const char rvfmt[] = "%g"; // instead of "%20.12f" which produces a too massive output
 
-		static bool mustRenderHeader = true;	// In 'singlecsv' scenario this flag flips from 'T' to 'F' when necessary (after the header is rendered)
-
 		// Make the file name and write mode
 		std::string fullPath = get_feature_output_fname (env, ifpath, mfpath);
 		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\t--> " << fullPath << "\n");
 
-		// Single CSV: create or continue?
-		const char* mode = "w";
-		if (!env.separateCsv)
-			mode = mustRenderHeader ? "w" : "a";
+		// FIX: create or continue, per PATH. This sink is called once per (channel, timeframe)
+		// plane, but separatecsv derives one path per slide and used to open it "w" every time,
+		// so each plane truncated the previous and the file kept only the last one. Truncate and
+		// render the header on the first write to a path, append after that -- which is what the
+		// t_index/c_index columns are for, and matches the Arrow and buffer sinks. Replaces a
+		// function-static 'mustRenderHeader' that could only express this for singlecsv.
+		const bool mustRenderHeader = env.csv_claim_first_write (fullPath);
+		const char* mode = mustRenderHeader ? "w" : "a";
 
 		// Open it
 		FILE* fp = nullptr;
@@ -272,10 +287,7 @@ namespace Nyxus
 
 			auto head_string = ssHead.str();
 			fprintf(fp, "%s\n", head_string.c_str());
-
-			// Prevent rendering the header again for another image's portion of labels
-			if (env.separateCsv == false)
-				mustRenderHeader = false;
+			// (the path is already recorded, so later writes to it append without a header)
 		}
 
 		// ********** Values
@@ -288,10 +300,16 @@ namespace Nyxus
 			ssVals << std::fixed;
 
 			// slide info
-			ssVals << ifpath << "," << mfpath;
-			
-			// ROI and time
-			ssVals << "," << r.label << "," << t_index;
+			// FIX (IO): physical calibration of this slide (phys_unit is a leading string column,
+			// phys_x/y/z are numeric; 1.0/"" when uncalibrated). r.slide_idx set for the vROI.
+			const SlideProps& sp = env.dataset.dataset_props[r.slide_idx];
+			ssVals << ifpath << "," << mfpath << "," << sp.phys_unit;
+
+			// ROI, time and channel
+			ssVals << "," << r.label << "," << t_index << "," << c_index;
+
+			// physical voxel spacing (numeric)
+			ssVals << "," << sp.phys_x << "," << sp.phys_y << "," << sp.phys_z;
 
 			// features
 			for (auto& enabdF : F)
@@ -418,10 +436,11 @@ namespace Nyxus
 	// Saves the result of image scanning and feature calculation. Must be called after the reduction phase.
 	bool save_features_2_csv (
 		Environment & env,
-		const std::string& intFpath, 
-		const std::string& segFpath, 
+		const std::string& intFpath,
+		const std::string& segFpath,
 		const std::string& outputDir,
 		size_t t_index,
+		size_t c_index,
 		bool need_aggregation)
 	{
 		// Non-exotic formatting for compatibility with the buffer output (Python API, Apache)
@@ -433,16 +452,15 @@ namespace Nyxus
 		std::vector<int> L{ env.uniqueLabels.begin(), env.uniqueLabels.end() };
 		std::sort(L.begin(), L.end());
 
-		static bool mustRenderHeader = true;	// In 'singlecsv' scenario this flag flips from 'T' to 'F' when necessary (after the header is rendered)
-
 		// Make the file name and write mode
 		std::string fullPath = get_feature_output_fname (env, intFpath, segFpath);
 		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\t--> " << fullPath << "\n");
 
-		// Single CSV: create or continue?
-		const char* mode = "w";
-		if (!env.separateCsv)
-			mode = mustRenderHeader ? "w" : "a";
+		// FIX: create or continue, per PATH -- see the whole-slide sink above. The 3D segmented
+		// workflow also calls this once per (channel, timeframe), and separatecsv truncated the
+		// file on every call, keeping only the last plane's ROI rows.
+		const bool mustRenderHeader = env.csv_claim_first_write (fullPath);
+		const char* mode = mustRenderHeader ? "w" : "a";
 
 		// Open it
 		FILE* fp = nullptr;
@@ -482,20 +500,17 @@ namespace Nyxus
 
 			auto head_string = ssHead.str();
 			fprintf(fp, "%s\n", head_string.c_str());
-
-			// Prevent rendering the header again for another image's portion of labels
-			if (env.separateCsv == false)
-				mustRenderHeader = false;
+			// (the path is already recorded, so later writes to it append without a header)
 		}
 
 		if (need_aggregation)
 		{
-			auto allres = Nyxus::get_feature_values (env, env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset);	// shape: td::vector<std::tuple<std::vector<std::string>, int, std::vector<double>>>
+			auto allres = Nyxus::get_feature_values (env, env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset, t_index, c_index);	// shape: vector<tuple<vector<string>, label, t_index, c_index, vector<double>>>
 			if (allres.size())
 			{
 				// aggregate
 				const auto& tup0 = allres[0];
-				const auto& v0 = std::get<3>(tup0);
+				const auto& v0 = std::get<FTABLE_FBEGIN>(tup0);		// FIX (IO): FBEGIN shifted 3->4 after c_index; was hard-coded std::get<3>
 				auto n_feats = v0.size();
 
 				std::vector<double> a (n_feats);
@@ -507,7 +522,7 @@ namespace Nyxus
 					// we ned to add Skipping blacklisted ROI 
 					// ...
 
-					const auto& v = std::get<3>(tup);
+					const auto& v = std::get<FTABLE_FBEGIN>(tup);		// FIX (IO): FBEGIN shifted 3->4 after c_index
 					for (size_t i = 0; i < n_feats; i++)
 					{
 						double x = v[i],
@@ -521,11 +536,11 @@ namespace Nyxus
 					}
 				}
 
-				// send the aggregate as ROI #-1 to output 
+				// send the aggregate as ROI #-1 to output
 				const std::vector<std::string> & fnames = std::get<0>(tup0);
 				std::stringstream ssVals;
-				// ... slide/mask file info
-				ssVals << fnames[0] << "," << fnames[1];
+				// ... slide/mask file info + phys_unit (FIX (IO): fnames[2] is the leading unit string)
+				ssVals << fnames[0] << "," << fnames[1] << "," << fnames[2];
 				// ... annotation info
 				auto lab0 = std::get<1>(tup0);	// annotation info is per slide, so OK to grab it from the 1st ROI
 				LR& r0 = env.roiData [lab0];
@@ -534,6 +549,11 @@ namespace Nyxus
 					ssVals << "," << a;
 				// ... ROI id
 				ssVals << "," << -1;
+				// ... time and channel (FIX (IO): the aggregate row previously omitted these,
+				// misaligning it against the header; emit both so columns line up)
+				ssVals << "," << t_index << "," << c_index;
+				// ... physical voxel spacing (FIX (IO): numeric columns, from the 1st ROI's tuple)
+				ssVals << "," << std::get<FTABLE_PXPOS>(tup0) << "," << std::get<FTABLE_PYPOS>(tup0) << "," << std::get<FTABLE_PZPOS>(tup0);
 				// ... aggregated feature values
 				for (size_t i = 0; i < n_feats; i++)
 					ssVals << "," << a[i];
@@ -560,7 +580,8 @@ namespace Nyxus
 				const SlideProps& sli = env.dataset.dataset_props [r.slide_idx];
 				fs::path pseg (sli.fname_seg), 
 					pint (sli.fname_int);
-				ssVals << pint.filename() << "," << pseg.filename();
+				// FIX (IO): phys_unit is a leading string column (after the file names)
+				ssVals << pint.filename() << "," << pseg.filename() << "," << sli.phys_unit;
 
 				// annotation
 				if (env.resultOptions.need_annotation())
@@ -569,8 +590,11 @@ namespace Nyxus
 						ssVals << "," << a;
 				}
 
-				// ROI label and time
-				ssVals << "," << l << "," << t_index;
+				// ROI label, time and channel
+				ssVals << "," << l << "," << t_index << "," << c_index;
+
+				// physical voxel spacing (FIX (IO): numeric columns)
+				ssVals << "," << sli.phys_x << "," << sli.phys_y << "," << sli.phys_z;
 
 				for (auto& enabdF : F)
 				{
@@ -761,7 +785,9 @@ namespace Nyxus
 		const FeatureSet & fset,
 		const LR & r,
 		const std::string & ifpath,
-		const std::string & mfpath)
+		const std::string & mfpath,
+		size_t t_index,
+		size_t c_index)
 	{
 		std::vector<FTABLE_RECORD> features;
 
@@ -878,13 +904,21 @@ namespace Nyxus
 			fvals.push_back(vv[0]);
 		}
 
-		// other columns
+		// physical calibration of this slide (FIX (IO))
+		const SlideProps& sp = env.dataset.dataset_props[r.slide_idx];
+
+		// other columns (textcols[2] = phys_unit, a leading string column)
 		std::vector<std::string> textcols;
 		textcols.push_back ((fs::path(ifpath)).filename().string());
 		textcols.push_back ("");
+		textcols.push_back (sp.phys_unit);
 		int roilabl = r.label; // whole-slide roi #
 
-		features.push_back (std::make_tuple(textcols, roilabl, -999.88, fvals));
+		// FIX (IO): emit the real time/channel indices (was hard-coded -999.88 for time
+		// and had no channel field) + physical voxel spacing, so the Apache/buffer whole-slide
+		// row is addressable by (t,c) and carries calibration.
+		features.push_back (std::make_tuple(textcols, roilabl, (double)t_index, (double)c_index,
+			sp.phys_x, sp.phys_y, sp.phys_z, fvals));
 
 		return features;
 	}
@@ -894,7 +928,9 @@ namespace Nyxus
 		const FeatureSet & fset,
 		const Uniqueids & uniqueLabels,
 		const Roidata & roiData,
-		const Dataset & dataset)
+		const Dataset & dataset,
+		size_t t_index,
+		size_t c_index)
 	{
 		std::vector<FTABLE_RECORD> features;
 
@@ -923,6 +959,7 @@ namespace Nyxus
 			std::vector<std::string> filenames;
 			filenames.push_back(pint.filename().string());
 			filenames.push_back(pseg.filename().string());
+			filenames.push_back(sli.phys_unit);		// FIX (IO): phys_unit leading string column
 
 			for (auto& enabdF : F)
 			{
@@ -1031,7 +1068,10 @@ namespace Nyxus
 				feature_values.push_back(vv[0]);
 			}
 
-			features.push_back (std::make_tuple(filenames, l, DEFAULT_T_INDEX, feature_values));
+			// FIX (IO): thread the real time/channel indices instead of the hard-coded
+			// DEFAULT_T_INDEX (which pinned every Apache/Parquet row to t=0,c=0).
+			features.push_back (std::make_tuple(filenames, l, (double)t_index, (double)c_index,
+				sli.phys_x, sli.phys_y, sli.phys_z, feature_values));
 		}
 
 		return features;

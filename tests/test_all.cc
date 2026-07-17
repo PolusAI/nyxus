@@ -1,8 +1,10 @@
 #define NOMINMAX	// keep Windows min/max macros from breaking dcmtk's OFvariant (DICOM tests)
 #include <gtest/gtest.h>
+#include <fstream>		// reading a written CSV back in TEST_CSV_MULTICHANNEL_NO_OVERWRITE
 #include "test_gabor_regression.h"
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
+#include "../src/nyx/ome/format_detect.h"		// detect_input_format (P1)
 #include "test_contour.h"
 #include "test_ome_meta.h"		// native-OME metadata parsers / OmeAxes descriptor
 #include "test_ometiff_mechanics.h"	// OME-TIFF native (z,c,t)->IFD read (core; no USE_Z5)
@@ -2574,6 +2576,11 @@ TEST(TEST_NYXUS, TEST_OMEZARR_WHOLEVOLUME_CONSUMER) {
 }
 
 // Facade whole-volume assembly (load_volume loops Z into one X*Y*Z buffer).
+// Wired consumer reads the correct plane for every (channel, timeframe), not just (0,0).
+TEST(TEST_NYXUS, TEST_OMEZARR_WHOLEVOLUME_CONSUMER_CT) {
+	ASSERT_NO_THROW (test_omezarr_wholevolume_consumer_ct("dim5.ome.zarr", 2, 3, 4));
+}
+
 TEST(TEST_NYXUS, TEST_OMEZARR_FACADE_VOLUME_3D) {
 	ASSERT_NO_THROW (test_omezarr_facade_volume("dim3_zyx.ome.zarr", 1, 1, 4));
 }
@@ -2595,6 +2602,71 @@ TEST(TEST_NYXUS, TEST_OMEZARR_2D_YX) {
 	ASSERT_NO_THROW (test_omezarr_addressing("dim2_yx.ome.zarr", 1, 1, 1));
 }
 
+// OME-Zarr 0.5 (Zarr v3): zarr.json metadata + 'ome'-wrapped NGFF + 0/c/... chunk keys,
+// read through the z5 Dataset API (v2/v3-agnostic). Same coordinate encoding as the v2
+// stores, so the addressing / facade / CT-count helpers apply unchanged.
+TEST(TEST_NYXUS, TEST_OMEZARR_V3) {
+	ASSERT_NO_THROW (test_omezarr_addressing("dim5_v3.ome.zarr", 2, 3, 4));
+	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim5_v3.ome.zarr", 2, 3, 4));
+}
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_FACADE_VOLUME) {
+	ASSERT_NO_THROW (test_omezarr_facade_volume("dim5_v3.ome.zarr", 2, 3, 4));
+}
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_CT_COUNTS) {
+	ASSERT_NO_THROW (test_omezarr_ct_counts("dim5_v3.ome.zarr", 2, 3, 4));
+}
+// Zstd-compressed Zarr v3 (the zarr 3.x / real-world default codec). Requires the build
+// to link libzstd (-DWITH_ZSTD); z5 decodes the bytes+zstd v3 codec pipeline.
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_ZSTD) {
+	ASSERT_NO_THROW (test_omezarr_addressing("dim5_v3_zstd.ome.zarr", 2, 3, 4));
+	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim5_v3_zstd.ome.zarr", 2, 3, 4));
+}
+
+// Sharded Zarr v3 (the ``sharding_indexed`` codec) -- how large v3 stores, including Axle's,
+// actually lay out data: many inner chunks packed into one shard object per (t,c). z5 3.x
+// reads it via ShardedDataset, chosen automatically when zarr.json carries a shard shape; the
+// nyxus loader is UNCHANGED because it reads through readSubarray, which unpacks the inner
+// chunks from the shard transparently. The fixture's inner chunk is (z,y,x)=(1,3,4) so each
+// 6x8 plane is a 2x2 grid of inner chunks living inside one shard -- the read must assemble
+// across inner-chunk boundaries within a shard. Same 1..1152 TCZYX encoding as the other v3.
+//
+// Coverage is the whole-volume facade + prescan, NOT test_omezarr_addressing: with sharding,
+// tileWidth/Height report the INNER chunk (4x3), so a single loadTileFromFile(0,0,...) reads
+// only the top-left inner chunk, not the whole plane -- the addressing helper's one-tile-per-
+// plane assumption. facade_volume assembles the full inner-chunk grid and checks every voxel,
+// which is the correct coverage for a multi-chunk store (same reason the multichunk v2 fixture
+// uses it). It drives both loadTileFromFile (abstract stack) and readSubarray under the hood.
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_SHARDED_FACADE_VOLUME) {
+	ASSERT_NO_THROW (test_omezarr_facade_volume("dim5_v3_sharded.ome.zarr", 2, 3, 4));
+}
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_SHARDED_CT_COUNTS) {
+	ASSERT_NO_THROW (test_omezarr_ct_counts("dim5_v3_sharded.ome.zarr", 2, 3, 4));
+}
+// Prescan over the sharded store (raw loader's readSubarray, driven through the inner-chunk
+// tile grid by for_each_voxel): whole-slide, so the ROI is the whole X*Y*Z volume.
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_SHARDED_PRESCAN) {
+	fs::path ip = omezarr_data_path("dim5_v3_sharded.ome.zarr");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+
+	Environment e;
+	SlideProps p (ip.string(), "");		// whole-slide: no mask
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+
+	EXPECT_DOUBLE_EQ(p.min_preroi_inten, 1.0);
+	EXPECT_DOUBLE_EQ(p.max_preroi_inten, 1152.0);
+	EXPECT_EQ(p.max_roi_area, (size_t)(8 * 6 * 4));
+}
+
+// Blosc-compressed Zarr v3 (common in real v3 stores alongside zstd). z5 decodes the
+// bytes+blosc v3 codec pipeline when built WITH_BLOSC (already required for OME-Zarr).
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_BLOSC) {
+	ASSERT_NO_THROW (test_omezarr_addressing("dim5_v3_blosc.ome.zarr", 2, 3, 4));
+	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim5_v3_blosc.ome.zarr", 2, 3, 4));
+}
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_BLOSC_FACADE_VOLUME) {
+	ASSERT_NO_THROW (test_omezarr_facade_volume("dim5_v3_blosc.ome.zarr", 2, 3, 4));
+}
+
 // No 'axes' metadata -> the loader falls back to legacy 5D TCZYX and still reads.
 TEST(TEST_NYXUS, TEST_OMEZARR_NOAXES_FALLBACK) {
 	ASSERT_NO_THROW (test_omezarr_addressing("dim5_noaxes.ome.zarr", 2, 3, 4));
@@ -2602,6 +2674,71 @@ TEST(TEST_NYXUS, TEST_OMEZARR_NOAXES_FALLBACK) {
 
 TEST(TEST_NYXUS, TEST_RAW_OMEZARR_NOAXES_FALLBACK) {
 	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim5_noaxes.ome.zarr", 2, 3, 4));
+}
+
+// Loaders advertise the real C/T extents (numberChannels/fullTimestamps), which
+// is what activates the pipeline's channel/timeframe iteration. dim5_noaxes proves
+// the positional fallback reports counts too.
+TEST(TEST_NYXUS, TEST_OMEZARR_CT_COUNTS) {
+	ASSERT_NO_THROW (test_omezarr_ct_counts("dim5.ome.zarr", 2, 3, 4));
+	ASSERT_NO_THROW (test_omezarr_ct_counts("dim4_tzyx.ome.zarr", 2, 1, 4));
+	ASSERT_NO_THROW (test_omezarr_ct_counts("dim4_czyx.ome.zarr", 1, 3, 4));
+	ASSERT_NO_THROW (test_omezarr_ct_counts("dim3_zyx.ome.zarr", 1, 1, 4));
+	ASSERT_NO_THROW (test_omezarr_ct_counts("dim2_yx.ome.zarr", 1, 1, 1));
+	ASSERT_NO_THROW (test_omezarr_ct_counts("dim5_noaxes.ome.zarr", 2, 3, 4));
+}
+
+// Physical calibration: loaders surface coordinateTransformations scale + unit.
+TEST(TEST_NYXUS, TEST_OMEZARR_PHYSICAL_CALIBRATION) {
+	ASSERT_NO_THROW (test_omezarr_physical_calibration());
+}
+
+// Multi-CHUNK plane: real OME-Zarr splits each Y/X plane across a chunk grid (typically
+// 512x512), and dim5_multichunk uses 3x4 chunks over the 6x8 plane. The volumetric read
+// must walk the whole tile grid: fetching only chunk (0,0) returns wrong data past the
+// first chunk (and over-reads its buffer). Every other fixture is one-chunk-per-plane,
+// which is why this went unnoticed. Covers ImageLoader::assemble_volume...
+TEST(TEST_NYXUS, TEST_OMEZARR_MULTICHUNK_FACADE_VOLUME) {
+	ASSERT_NO_THROW (test_omezarr_facade_volume("dim5_multichunk.ome.zarr", 2, 3, 4));
+}
+// ...and RawImageLoader::load_volume (the prescan), which had the same single-tile bug:
+// the encoded values are 1..1152 over all (c,t), and the ROI is the whole X*Y*Z volume.
+TEST(TEST_NYXUS, TEST_OMEZARR_MULTICHUNK_PRESCAN) {
+	fs::path ip = omezarr_data_path("dim5_multichunk.ome.zarr");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+
+	Environment e;
+	SlideProps p (ip.string(), "");		// whole-slide: no mask
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+
+	EXPECT_DOUBLE_EQ(p.min_preroi_inten, 1.0);
+	EXPECT_DOUBLE_EQ(p.max_preroi_inten, 1152.0);
+	EXPECT_EQ(p.max_roi_area, (size_t)(8 * 6 * 4));
+}
+
+// PARTIAL edge chunks: chunk (4,5) does not divide the 6x8 plane, so the last row-chunk is 2
+// tall and the last col-chunk is 3 wide. dim5_multichunk above (3x4 over 6x8) tiles exactly,
+// so the validH/validW seam clamp never ran on the OME-Zarr path either. Asserting the exact
+// value at every voxel is the seam check; same 1..1152 TCZYX encoding as dim5_multichunk.
+TEST(TEST_NYXUS, TEST_OMEZARR_ODDCHUNK_FACADE_VOLUME) {
+	ASSERT_NO_THROW (test_omezarr_facade_volume("dim5_oddchunk.ome.zarr", 2, 3, 4));
+}
+TEST(TEST_NYXUS, TEST_OMEZARR_ODDCHUNK_PRESCAN) {
+	fs::path ip = omezarr_data_path("dim5_oddchunk.ome.zarr");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+
+	Environment e;
+	SlideProps p (ip.string(), "");		// whole-slide: no mask
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+
+	EXPECT_DOUBLE_EQ(p.min_preroi_inten, 1.0);
+	EXPECT_DOUBLE_EQ(p.max_preroi_inten, 1152.0);
+	EXPECT_EQ(p.max_roi_area, (size_t)(8 * 6 * 4));
+}
+
+// Negative: out-of-range channel/timeframe through the whole-volume facade must throw.
+TEST(TEST_NYXUS, TEST_OMEZARR_LOAD_VOLUME_OUT_OF_RANGE) {
+	ASSERT_NO_THROW (test_omezarr_load_volume_out_of_range());
 }
 
 // Negative: out-of-range Z/C/T plane index must throw.
@@ -2612,6 +2749,31 @@ TEST(TEST_NYXUS, TEST_OMEZARR_OUT_OF_RANGE_THROWS) {
 // Illegal / adversarial: malformed metadata must be rejected cleanly, not crash.
 TEST(TEST_NYXUS, TEST_OMEZARR_MALFORMED_THROWS) {
 	ASSERT_NO_THROW (test_omezarr_malformed_throws());
+}
+
+// N1 (negative): a Zarr v3 store whose zarr.json declares a codec z5 does not support. z5's
+// readV3CodecsFromJson throws "unsupported zarr v3 codec" during metadata parse (openDataset),
+// so the loader must surface a clean error, not crash. Both loader stacks must reject it.
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_UNSUPPORTED_CODEC_THROWS) {
+	fs::path ds = omezarr_data_path("dim5_v3_badcodec.ome.zarr");
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+	EXPECT_ANY_THROW(NyxusOmeZarrLoader<uint32_t>(1, ds.string()));
+	EXPECT_ANY_THROW(RawOmezarrLoader(ds.string()));
+}
+
+// P4 (positive): the crash's positive twin on the OME-Zarr path -- a T>1 Zarr intensity paired
+// with a single-timeframe ZYX Zarr mask. Zarr never crashed (no T axis to over-index), but it
+// was never asserted. The prescan must reuse the mask across timeframes and find the ROI.
+TEST(TEST_NYXUS, TEST_OMEZARR_MULTITIMEFRAME_MASK_PRESCAN) {
+	fs::path ip = omezarr_data_path("dim5.ome.zarr");        // T=2, C=3, Z=4
+	fs::path mp = omezarr_data_path("dim3_mask.ome.zarr");   // ZYX (T=1) label mask
+	ASSERT_TRUE(fs::exists(ip) && fs::exists(mp));
+	Environment e;
+	SlideProps p (ip.string(), mp.string());
+	bool ok = false;
+	ASSERT_NO_THROW(ok = Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	EXPECT_TRUE(ok);
+	EXPECT_EQ(p.max_roi_area, (size_t)(4 * 4 * 6));
 }
 
 #endif // OMEZARR_SUPPORT
@@ -2631,6 +2793,161 @@ TEST(TEST_NYXUS, TEST_OMETIFF_ALL_5D_PERMUTATIONS) {
 	ASSERT_NO_THROW (test_ometiff_all_5d_permutations());
 }
 
+// Regression (found by the scale/stress harness): a MULTI-timeframe OME-TIFF paired with a
+// single-timeframe (ZYX) mask. The 3D prescan (RawImageLoader::for_each_voxel) reuses the
+// mask across every intensity timeframe, but read it at the intensity's timeframe -- so for
+// t>0 the TIFF mask loader addressed an IFD past its last plane and TIFFSetDirectory threw,
+// UNCAUGHT, crashing the process (0xC0000409). Zarr masks have no T axis to over-index, so
+// only TIFF crashed. dim5 is T=2,C=3,Z=4; dim3_mask is its ZYX (T=1) segmentation of one ROI
+// (label 1 over z=all, y in [1,5), x in [1,7) = 4*4*6 voxels). Pre-fix this threw.
+TEST(TEST_NYXUS, TEST_OMETIFF_MULTITIMEFRAME_MASK_PRESCAN) {
+	fs::path ip = ometiff_data_path("dim5.ome.tif");
+	fs::path mp = ometiff_data_path("dim3_mask.ome.tif");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+	ASSERT_TRUE(fs::exists(mp)) << mp.string();
+
+	Environment e;
+	SlideProps p (ip.string(), mp.string());
+	bool ok = false;
+	ASSERT_NO_THROW(ok = Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	EXPECT_TRUE(ok);
+	EXPECT_EQ(p.max_roi_area, (size_t)(4 * 4 * 6));   // z=4 * y=4 * x=6
+}
+
+// P3 (positive): the crash's regression above covers the PRESCAN (for_each_voxel); this covers
+// the FEATURIZE facade. ImageLoader::load_volume(c,t) forwards t as the mask timeframe, so with
+// a T>1 intensity and a T=1 mask, load_volume(c,1) exercises the internal mask-timeframe clamp
+// (image_loader.cpp). It must not throw, must reuse the same mask across timeframes, and must
+// read different intensity per timeframe. dim5 is T=2; dim3_mask is its ZYX (T=1) mask.
+TEST(TEST_NYXUS, TEST_OMETIFF_MULTITIMEFRAME_MASK_FACADE) {
+	fs::path ip = ometiff_data_path("dim5.ome.tif");
+	fs::path mp = ometiff_data_path("dim3_mask.ome.tif");
+	ASSERT_TRUE(fs::exists(ip) && fs::exists(mp));
+	SlideProps p; p.fname_int = ip.string(); p.fname_seg = mp.string();
+	FpImageOptions fp; ImageLoader il;
+	ASSERT_TRUE(il.open(p, fp)) << ip.string();
+
+	ASSERT_TRUE(il.load_volume(0, 0));
+	const std::vector<uint32_t> seg_t0 = il.get_seg_volume_buffer();
+	const std::vector<uint32_t> int_t0 = il.get_int_volume_buffer();
+	// timeframe 1 with a single-timeframe mask must NOT throw (clamp), reuse the mask, and
+	// deliver different intensity
+	ASSERT_TRUE(il.load_volume(0, 1));
+	EXPECT_EQ(il.get_seg_volume_buffer(), seg_t0) << "mask changed across timeframes";
+	EXPECT_NE(il.get_int_volume_buffer(), int_t0) << "intensity t=1 read t=0 data";
+	il.close();
+}
+
+// P2 (positive): OME-TIFF physical calibration -> SlideProps (the TIFF twin of the OME-Zarr
+// calibration test, and it additionally checks the scan_slide_props propagation the Zarr test
+// omits). dim5_calibrated carries PhysicalSizeX/Y=0.5, Z=2.0 micrometer in its OME-XML.
+TEST(TEST_NYXUS, TEST_OMETIFF_PHYSICAL_CALIBRATION) {
+	fs::path cal = ometiff_data_path("dim5_calibrated.ome.tif");
+	ASSERT_TRUE(fs::exists(cal)) << cal.string();
+
+	Environment e;
+	SlideProps p (cal.string(), "");
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	EXPECT_DOUBLE_EQ(p.phys_x, 0.5);
+	EXPECT_DOUBLE_EQ(p.phys_y, 0.5);
+	EXPECT_DOUBLE_EQ(p.phys_z, 2.0);
+	EXPECT_EQ(p.phys_unit, "micrometer");
+
+	// an uncalibrated OME-TIFF must default to 1.0 / no unit
+	SlideProps p2 (ometiff_data_path("dim5.ome.tif").string(), "");
+	ASSERT_TRUE(Nyxus::scan_slide_props(p2, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	EXPECT_DOUBLE_EQ(p2.phys_x, 1.0);
+	EXPECT_DOUBLE_EQ(p2.phys_z, 1.0);
+	EXPECT_TRUE(p2.phys_unit.empty());
+}
+
+// N2 (negative): a <TiffData> block maps a plane to an IFD PAST the end of the file (an
+// in-file overrun, distinct from a multi-file UUID). ifdForPlane returns 99, so the read must
+// throw cleanly at TIFFSetDirectory -- not crash and not read a wrong plane. dim5_badifd has
+// 4 z-planes; plane z3 claims IFD=99.
+TEST(TEST_NYXUS, TEST_OMETIFF_BAD_IFD_THROWS) {
+	fs::path ds = ometiff_data_path("dim5_badifd.ome.tif");
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+	SlideProps p; p.fname_int = ds.string(); p.fname_seg = "";
+	FpImageOptions fp; ImageLoader il;
+	ASSERT_TRUE(il.open(p, fp)) << ds.string();
+	// z0..z2 are fine; assembling the whole volume must hit z3's bad IFD and throw, not crash
+	EXPECT_ANY_THROW(il.load_volume(0, 0));
+	il.close();
+}
+
+// N3 (negative): an all-background (all-zero) mask -> ZERO ROIs. The prescan must complete
+// cleanly (no divide-by-zero, no garbage), reporting no ROI area, rather than crash.
+TEST(TEST_NYXUS, TEST_OMETIFF_EMPTY_MASK_ZERO_ROIS) {
+	fs::path ip = ometiff_data_path("dim5.ome.tif");
+	fs::path mp = ometiff_data_path("dim3_emptymask.ome.tif");
+	ASSERT_TRUE(fs::exists(ip) && fs::exists(mp));
+	Environment e;
+	SlideProps p (ip.string(), mp.string());
+	bool ok = false;
+	ASSERT_NO_THROW(ok = Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	EXPECT_TRUE(ok);
+	EXPECT_EQ(p.max_roi_area, (size_t)0) << "empty mask should yield no ROI";
+}
+
+// N4 (edge): a mask with MORE channels than the intensity (C=2 mask, C=1-effective use). The
+// featurize loop iterates the intensity's channels, so the extra mask channel must simply be
+// ignored (mask channel clamped to what is asked), not crash or misread. dim3_zyx (C=1) paired
+// with a C=2 label mask; the ROI is identical on both mask channels.
+TEST(TEST_NYXUS, TEST_OMETIFF_MASK_MORE_CHANNELS_THAN_INTENSITY) {
+	fs::path ip = ometiff_data_path("dim3_zyx.ome.tif");   // C=1, Z=4
+	fs::path mp = ometiff_data_path("dim4_mask_c2.ome.tif"); // C=2 label mask
+	ASSERT_TRUE(fs::exists(ip) && fs::exists(mp));
+	Environment e;
+	SlideProps p (ip.string(), mp.string());
+	bool ok = false;
+	ASSERT_NO_THROW(ok = Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	EXPECT_TRUE(ok);
+	EXPECT_EQ(p.max_roi_area, (size_t)(4 * 4 * 6));   // the one ROI, read from mask channel 0
+}
+
+// P1 (positive + negative): detect_input_format is the single dispatch point all three loader
+// stacks use; it had no direct test. Extension classification + OME content-sniff.
+TEST(TEST_NYXUS, TEST_DETECT_INPUT_FORMAT) {
+	using Nyxus::detect_input_format;
+	using Nyxus::ContainerKind;
+	// OME content present -> OmeTiff + is_ome
+	auto a = detect_input_format(ometiff_data_path("dim5.ome.tif").string());
+	EXPECT_EQ(a.kind, ContainerKind::OmeTiff);
+	EXPECT_TRUE(a.is_ome);
+	// a plain multipage TIFF (no OME-XML) -> TiffPlain, not OME
+	auto b = detect_input_format(ometiff_data_path("dim3_plain.tif").string());
+	EXPECT_EQ(b.kind, ContainerKind::TiffPlain);
+	EXPECT_FALSE(b.is_ome);
+	// extension-only kinds (no file needed / not opened)
+	EXPECT_EQ(detect_input_format("x.dcm").kind, ContainerKind::Dicom);
+	EXPECT_EQ(detect_input_format("x.nii.gz").kind, ContainerKind::Nifti);
+	// a .zarr path with no multiscales metadata -> OmeZarr kind but is_ome=false
+	auto z = detect_input_format("no_such_store.zarr");
+	EXPECT_EQ(z.kind, ContainerKind::OmeZarr);
+	EXPECT_FALSE(z.is_ome);
+}
+
+// Pyramidal OME-TIFF: every full-res plane's IFD carries downsampled levels as SubIFDs (tag
+// 330), which live OUTSIDE the main IFD chain. This must not shift full-res plane addressing:
+// TIFFNumberOfDirectories still returns Z (not Z*levels) and ifdForPlane -> main-chain IFD
+// still lands on the full-res plane. nyxus reads level 0 only; the facade check (which also
+// spans a 2x3 tile grid) asserts every full-res voxel is correct despite the SubIFDs. Z=6
+// z-stack (C=1,T=1), its own encoding.
+TEST(TEST_NYXUS, TEST_OMETIFF_PYRAMID_SUBIFD_FULLRES) {
+	ASSERT_NO_THROW (test_ometiff_multitile_facade_volume("dim5_pyramid.ome.tif", 1, 1, 6, 32, 48));
+}
+
+// Non-canonical <TiffData> plane->IFD mapping: dim5_reordered stores its planes in REVERSED
+// IFD order and declares the mapping via per-plane <TiffData IFD=..> blocks. A reader that
+// ignores TiffData and assumes contiguous-from-IFD-0 order reads the reversed plane's pixels;
+// honoring the map reads correctly. load_volume loops Z through loadTileFromFile -> ifdForPlane
+// (both loader stacks route here), so the facade check asserts the right plane per (z,c).
+// T=1,C=2,Z=3 (its own encoding). This is the OME-TIFF counterpart to what bioformats emits.
+TEST(TEST_NYXUS, TEST_OMETIFF_TIFFDATA_REORDERED) {
+	ASSERT_NO_THROW (test_ometiff_multitile_facade_volume("dim5_reordered.ome.tif", 1, 2, 3, 6, 8));
+}
+
 // 4D (rank-4): time-only and channel-only.
 TEST(TEST_NYXUS, TEST_OMETIFF_4D_TZYX) {
 	ASSERT_NO_THROW (test_ometiff_addressing("dim4_tzyx.ome.tif", 2, 1, 4));
@@ -2644,6 +2961,63 @@ TEST(TEST_NYXUS, TEST_OMETIFF_4D_CZYX) {
 // End-to-end through the wired volumetric consumer (scan_trivial_wholevolume).
 TEST(TEST_NYXUS, TEST_OMETIFF_WHOLEVOLUME_CONSUMER) {
 	ASSERT_NO_THROW (test_ometiff_wholevolume_consumer("dim3_zyx.ome.tif", 4));
+}
+
+// Wired consumer reads the correct plane for every (channel, timeframe), not just (0,0).
+TEST(TEST_NYXUS, TEST_OMETIFF_WHOLEVOLUME_CONSUMER_CT) {
+	ASSERT_NO_THROW (test_ometiff_wholevolume_consumer_ct("dim5.ome.tif", 2, 3, 4));
+}
+
+// TILED multi-plane OME-TIFF: the tile loaders map (z,c,t)->IFD (distinct from strip loaders).
+TEST(TEST_NYXUS, TEST_OMETIFF_TILED_ADDRESSING) {
+	ASSERT_NO_THROW (test_ometiff_tiled_addressing());
+}
+// Facade whole-volume assembly over the TILED path (open() routes tiled TIFF -> tile loader).
+TEST(TEST_NYXUS, TEST_OMETIFF_TILED_FACADE_VOLUME) {
+	ASSERT_NO_THROW (test_ometiff_facade_volume("dim5_tiled.ome.tif", 2, 3, 4));
+}
+// Multi-TILE planes (2x3 grid of 16x16 tiles): dim5_tiled above has ONE tile per plane, so
+// it passes even when only tile (0,0) is read. This is the OME-TIFF counterpart of
+// TEST_OMEZARR_MULTICHUNK_FACADE_VOLUME. Covers ImageLoader::assemble_volume...
+TEST(TEST_NYXUS, TEST_OMETIFF_MULTITILE_FACADE_VOLUME) {
+	ASSERT_NO_THROW (test_ometiff_multitile_facade_volume("dim5_multitile.ome.tif", 1, 2, 2, 32, 48));
+}
+// ...and RawImageLoader::for_each_voxel (the prescan), which had the same single-tile bug.
+// Encoded values run 1..6144 over all (c,t); whole-slide, so the ROI is the whole volume.
+TEST(TEST_NYXUS, TEST_OMETIFF_MULTITILE_PRESCAN) {
+	fs::path ip = ometiff_data_path("dim5_multitile.ome.tif");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+
+	Environment e;
+	SlideProps p (ip.string(), "");		// whole-slide: no mask
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+
+	EXPECT_DOUBLE_EQ(p.min_preroi_inten, 1.0);
+	EXPECT_DOUBLE_EQ(p.max_preroi_inten, 6144.0);
+	EXPECT_EQ(p.max_roi_area, (size_t)(48 * 32 * 2));
+}
+
+// PARTIAL edge tiles: 40x24 plane / 16 -> 3x2 tiles, last row-tile 8 tall, last col-tile 8
+// wide. Every multi-tile fixture above has plane dims that are exact multiples of the tile
+// size, so the validH/validW seam clamp -- min(tileDim, fullDim-offset) -- had never run.
+// Reading the exact value at every voxel checks the partial tiles are copied without garbage
+// past the seam and without over-reading the tile buffer. Encoded 1..1920 over (c in 0,1).
+TEST(TEST_NYXUS, TEST_OMETIFF_ODDTILE_FACADE_VOLUME) {
+	ASSERT_NO_THROW (test_ometiff_multitile_facade_volume("dim5_oddtile.ome.tif", 1, 2, 1, 40, 24));
+}
+// The prescan (for_each_voxel) walks the same partial grid; its slide min/max and ROI area
+// would be wrong if a partial tile were mis-clamped (a too-large validH double-counts voxels).
+TEST(TEST_NYXUS, TEST_OMETIFF_ODDTILE_PRESCAN) {
+	fs::path ip = ometiff_data_path("dim5_oddtile.ome.tif");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+
+	Environment e;
+	SlideProps p (ip.string(), "");		// whole-slide: no mask
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+
+	EXPECT_DOUBLE_EQ(p.min_preroi_inten, 1.0);
+	EXPECT_DOUBLE_EQ(p.max_preroi_inten, 1920.0);	// 1 + (((0*2+1)*1+0)*40+39)*24+23
+	EXPECT_EQ(p.max_roi_area, (size_t)(24 * 40 * 1));
 }
 
 // Facade whole-volume assembly (load_volume loops Z into one X*Y*Z buffer).
@@ -2673,6 +3047,26 @@ TEST(TEST_NYXUS, TEST_RAW_OMETIFF_PLAIN_MULTIPAGE_FALLBACK) {
 	ASSERT_NO_THROW (test_raw_ometiff_addressing("dim3_plain.tif", 1, 1, 4));
 }
 
+// Negative: out-of-range channel/timeframe through the whole-volume facade must throw.
+TEST(TEST_NYXUS, TEST_OMETIFF_LOAD_VOLUME_OUT_OF_RANGE) {
+	ASSERT_NO_THROW (test_ometiff_load_volume_out_of_range());
+}
+
+// Regression: a single-channel mask is reused across all intensity channels (not read OOB).
+TEST(TEST_NYXUS, TEST_OMETIFF_MULTICHANNEL_MASK_PAIRING) {
+	ASSERT_NO_THROW (test_ometiff_multichannel_mask_pairing());
+}
+
+// Strip loaders advertise the OME C/T extents; the plain (non-OME) multi-page TIFF
+// keeps C=T=1 (its pages are Z-slices, not channels/timeframes).
+TEST(TEST_NYXUS, TEST_OMETIFF_CT_COUNTS) {
+	ASSERT_NO_THROW (test_ometiff_ct_counts("dim5.ome.tif", 2, 3, 4));
+	ASSERT_NO_THROW (test_ometiff_ct_counts("dim4_tzyx.ome.tif", 2, 1, 4));
+	ASSERT_NO_THROW (test_ometiff_ct_counts("dim4_czyx.ome.tif", 1, 3, 4));
+	ASSERT_NO_THROW (test_ometiff_ct_counts("dim3_zyx.ome.tif", 1, 1, 4));
+	ASSERT_NO_THROW (test_ometiff_ct_counts("dim3_plain.tif", 1, 1, 4));
+}
+
 // Negative: out-of-range Z/C/T plane index must throw.
 TEST(TEST_NYXUS, TEST_OMETIFF_OUT_OF_RANGE_THROWS) {
 	ASSERT_NO_THROW (test_ometiff_out_of_range_throws());
@@ -2683,6 +3077,203 @@ TEST(TEST_NYXUS, TEST_OMETIFF_MALFORMED_THROWS) {
 	ASSERT_NO_THROW (test_ometiff_malformed_throws());
 }
 
+
+// Regression: the 3D prescan must scan the WHOLE volume of EVERY (channel, timeframe),
+// not one Z-plane of (c0,t0). dim5.ome.tif is C=3,T=2,Z=4,Y=6,X=8 encoding values 1..1152,
+// so the slide intensity range must be exactly [1, 1152]. Before the fix the prescan
+// (a) did a single load_tile(0,0) and then indexed W*H*D voxels off that ONE-plane buffer,
+// reading out of bounds (observed range 0..44,465 of garbage), and (b) covered only
+// (c0,t0) -> a range of 1..192, which under-sized intensity-indexed buffers for c>0 and
+// segfaulted. The area check guards that ROI geometry is taken from the first pass only
+// (otherwise it would be multiplied by n_channels*n_timeframes).
+TEST(TEST_NYXUS, TEST_3D_PRESCAN_SLIDE_RANGE) {
+	fs::path ip = ometiff_data_path("dim5.ome.tif");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+
+	Environment e;
+	SlideProps p (ip.string(), "");		// whole-slide: no mask
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+
+	EXPECT_EQ(p.inten_channels, (size_t)3);
+	EXPECT_EQ(p.inten_time, (size_t)2);
+	EXPECT_EQ(p.volume_d, (size_t)4);
+	// the full encoded range across ALL (c,t) -- not garbage, and not just (c0,t0)'s 1..192
+	EXPECT_DOUBLE_EQ(p.min_preroi_inten, 1.0);
+	EXPECT_DOUBLE_EQ(p.max_preroi_inten, 1152.0);
+	// geometry from the first pass only: one whole-slide ROI of exactly X*Y*Z voxels
+	EXPECT_EQ(p.max_roi_area, (size_t)(8 * 6 * 4));
+}
+
+// Regression: the 3D WHOLE-VOLUME reduce path. reduce_trivial_3d_wholevolume calls
+// D3_VoxelIntensityFeatures::extract(), which used to invoke the 2-arg calculate() -- a stub
+// that throws "illegal call" -- so EVERY 3D whole-volume featurization died before writing a
+// row. The segmented path reduces via reduce(), which passes the Dataset, so nothing covered
+// this. Mirrors featurize_wholevolume()'s vROI setup, then reduces.
+TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_REDUCE) {
+	fs::path ds = ometiff_data_path("dim3_zyx.ome.tif");	// 3D X8 Y6 Z4
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+	Environment e;
+	// enable the 3D intensity features so the reduce actually runs them
+	e.theFeatureSet.enableAll(false);
+	e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
+
+	// prescan the slide (whole-volume => no mask)
+	e.dataset.dataset_props.reserve(1);
+	SlideProps& sp = e.dataset.dataset_props.emplace_back(ds.string(), "");
+	ASSERT_TRUE(Nyxus::scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	e.dataset.update_dataset_props_extrema();
+
+	// build the vROI exactly as featurize_wholevolume() does
+	FpImageOptions fp;
+	ImageLoader ilo;
+	ASSERT_TRUE(ilo.open(sp, fp)) << ds.string();
+	LR vroi(1);
+	vroi.slide_idx = 0;
+	vroi.aux_area = sp.max_roi_area;
+	vroi.aabb.init_from_whd(sp.max_roi_w, sp.max_roi_h, sp.max_roi_d);
+	vroi.aux_min = (PixIntens)0;
+	vroi.aux_max = (PixIntens)(sp.max_preroi_inten - sp.min_preroi_inten);
+	ASSERT_NO_THROW(vroi.initialize_fvals());
+	ASSERT_TRUE(Nyxus::scan_trivial_wholevolume(vroi, ds.string(), ilo, 0/*channel*/, 0/*timeframe*/));
+	ASSERT_GT(vroi.raw_pixels_3D.size(), 0u);
+	vroi.aux_image_cube.allocate(vroi.aabb.get_width(), vroi.aabb.get_height(), vroi.aabb.get_z_depth());
+	vroi.aux_image_cube.calculate_from_pixelcloud(vroi.raw_pixels_3D, vroi.aabb);
+
+	// THE REGRESSION: this used to throw "illegal call of D3_VoxelIntensityFeatures::calculate"
+	ASSERT_NO_THROW(Nyxus::reduce_trivial_3d_wholevolume(e, vroi));
+
+	// and it must actually produce values (MAX >= MIN, both finite)
+	double vmin = vroi.get_fvals((int)Nyxus::Feature3D::MIN)[0];
+	double vmax = vroi.get_fvals((int)Nyxus::Feature3D::MAX)[0];
+	EXPECT_GE(vmax, vmin);
+	EXPECT_GT(vmax, 0.0);
+	ilo.close();
+}
+
+// Regression: separatecsv derives ONE output path per slide, but the CSV sinks are invoked
+// once per (channel, timeframe) plane and used to open that path with mode "w" every time --
+// so each plane truncated the one before it and the file ended up holding only the LAST
+// channel. Confirmed against the pre-fix build, where this file had 1 data row (c_index=1)
+// instead of 2. The t_index/c_index columns exist precisely so the planes can coexist as rows.
+TEST(TEST_NYXUS, TEST_CSV_MULTICHANNEL_NO_OVERWRITE) {
+	fs::path ds = ometiff_data_path("dim3_zyx.ome.tif");	// 3D X8 Y6 Z4
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+	fs::path outdir = fs::temp_directory_path() / "nyxus_csv_ct_test";
+	fs::remove_all(outdir);
+	fs::create_directories(outdir);
+
+	Environment e;
+	e.separateCsv = true;					// the mode that overwrote (and the default)
+	e.output_dir = outdir.string();
+	e.theFeatureSet.enableAll(false);
+	e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
+
+	e.dataset.dataset_props.reserve(1);
+	SlideProps& sp = e.dataset.dataset_props.emplace_back(ds.string(), "");
+	ASSERT_TRUE(Nyxus::scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	e.dataset.update_dataset_props_extrema();
+
+	LR vroi(1);
+	vroi.slide_idx = 0;
+	vroi.aux_area = sp.max_roi_area;
+	vroi.aabb.init_from_whd(sp.max_roi_w, sp.max_roi_h, sp.max_roi_d);
+	ASSERT_NO_THROW(vroi.initialize_fvals());
+
+	// Two channel planes of the SAME slide, exactly as the whole-volume workflow emits them
+	ASSERT_TRUE(Nyxus::save_features_2_csv_wholeslide (e, vroi, ds.string(), "", outdir.string(), 0, 0));
+	ASSERT_TRUE(Nyxus::save_features_2_csv_wholeslide (e, vroi, ds.string(), "", outdir.string(), 0, 1));
+
+	// Read the single file back
+	std::vector<std::string> lines;
+	{
+		std::ifstream f (Nyxus::get_feature_output_fname (e, ds.string(), ""));
+		ASSERT_TRUE(f.good());
+		std::string ln;
+		while (std::getline(f, ln))
+			if (!ln.empty())
+				lines.push_back(ln);
+	}
+
+	ASSERT_EQ(lines.size(), (size_t)3) << "expected 1 header + one row per channel plane";
+	EXPECT_NE(lines[0].find("\"c_index\""), std::string::npos) << "line 0 must be the header";
+	// ...and the header must appear exactly once, not once per plane
+	EXPECT_EQ(lines[1].find("\"c_index\""), std::string::npos);
+	EXPECT_EQ(lines[2].find("\"c_index\""), std::string::npos);
+
+	fs::remove_all(outdir);
+}
+
+// Phase 6 physical-calibration logic (negative + positive). resolve_slide_anisotropy
+// must NOT engage the anisotropic (resampling) path unless it's genuinely warranted:
+//   - flag off                      -> false, (1,1,1)   even with anisotropic spacing
+//   - degenerate spacing (a 0 axis) -> false, (1,1,1)   (guarded, no div-by-zero)
+//   - isotropic spacing (all equal) -> false, (1,1,1)   (nothing to correct)
+//   - out-of-range slide index      -> false, (1,1,1)   (no OOB read)
+//   - real anisotropic spacing      -> true,  ratios normalized so min == 1
+//   - explicit --aniso*             -> true,  the CLI values (win over physical)
+TEST(TEST_NYXUS, TEST_RESOLVE_SLIDE_ANISOTROPY) {
+	Environment e;
+	e.use_physical_spacing_ = true;			// opt-in on; anisoOptions stays un-customized
+	e.dataset.dataset_props.clear();
+	SlideProps p;							// ctor sets phys_x/y/z = 1.0
+	e.dataset.dataset_props.push_back(p);
+	double ax = -1, ay = -1, az = -1;
+
+	// degenerate: a zero-length axis must not divide-by-zero -> isotropic fallback
+	e.dataset.dataset_props[0].phys_x = 1.0; e.dataset.dataset_props[0].phys_y = 1.0; e.dataset.dataset_props[0].phys_z = 0.0;
+	EXPECT_FALSE(Nyxus::resolve_slide_anisotropy(e, 0, ax, ay, az));
+	EXPECT_DOUBLE_EQ(ax, 1.0); EXPECT_DOUBLE_EQ(ay, 1.0); EXPECT_DOUBLE_EQ(az, 1.0);
+
+	// isotropic but non-unit spacing -> normalized to (1,1,1) -> no anisotropic path
+	e.dataset.dataset_props[0].phys_x = 2.0; e.dataset.dataset_props[0].phys_y = 2.0; e.dataset.dataset_props[0].phys_z = 2.0;
+	EXPECT_FALSE(Nyxus::resolve_slide_anisotropy(e, 0, ax, ay, az));
+	EXPECT_DOUBLE_EQ(az, 1.0);
+
+	// out-of-range slide index -> safe (no dataset_props[99] read)
+	EXPECT_FALSE(Nyxus::resolve_slide_anisotropy(e, 99, ax, ay, az));
+	EXPECT_DOUBLE_EQ(ax, 1.0);
+
+	// genuinely anisotropic voxels (z 4x thicker) -> engage, ratio-normalized min == 1
+	e.dataset.dataset_props[0].phys_x = 0.5; e.dataset.dataset_props[0].phys_y = 0.5; e.dataset.dataset_props[0].phys_z = 2.0;
+	EXPECT_TRUE(Nyxus::resolve_slide_anisotropy(e, 0, ax, ay, az));
+	EXPECT_DOUBLE_EQ(ax, 1.0); EXPECT_DOUBLE_EQ(ay, 1.0); EXPECT_DOUBLE_EQ(az, 4.0);
+
+	// flag OFF -> never engage, even with anisotropic spacing present
+	e.use_physical_spacing_ = false;
+	EXPECT_FALSE(Nyxus::resolve_slide_anisotropy(e, 0, ax, ay, az));
+	EXPECT_DOUBLE_EQ(az, 1.0);
+}
+
+// TEST_RESOLVE_SLIDE_ANISOTROPY covers the DECISION (physical spacing -> ratios). This covers
+// that the resolved ratios actually RESCALE ROI geometry end-to-end: the 3D prescan's
+// anisotropic branch (make_anisotropic_aabb 3-arg -> AABB::apply_anisotropy) was never
+// exercised -- every other test uses make_nonanisotropic_aabb. A customized az=4 must scale the
+// ROI's z-depth ~4x while leaving x/y (ax=ay=1) unchanged; without applying anisotropy the
+// depth would be identical to the isotropic run. dim3_mask's ROI spans all Z (depth 4).
+TEST(TEST_NYXUS, TEST_3D_ANISOTROPY_RESCALES_ROI_DEPTH) {
+	fs::path ip = ometiff_data_path("dim5.ome.tif");
+	fs::path mp = ometiff_data_path("dim3_mask.ome.tif");
+	ASSERT_TRUE(fs::exists(ip) && fs::exists(mp));
+	Environment e;
+
+	SlideProps iso (ip.string(), mp.string());
+	AnisotropyOptions aniso_off;                       // un-customized -> isotropic AABB
+	ASSERT_FALSE(aniso_off.customized());
+	ASSERT_TRUE(Nyxus::scan_slide_props(iso, 3, aniso_off, e.resultOptions.need_annotation()));
+
+	SlideProps ani (ip.string(), mp.string());
+	AnisotropyOptions aniso_z4;
+	aniso_z4.set_aniso_z(4.0);                          // z 4x thicker
+	ASSERT_TRUE(aniso_z4.customized());
+	ASSERT_TRUE(Nyxus::scan_slide_props(ani, 3, aniso_z4, e.resultOptions.need_annotation()));
+
+	EXPECT_GT(ani.max_roi_d, iso.max_roi_d) << "z-anisotropy did not rescale ROI depth";
+	EXPECT_GE(ani.max_roi_d, iso.max_roi_d * 3) << "z-depth not scaled ~4x";
+	EXPECT_EQ(ani.max_roi_w, iso.max_roi_w) << "x (ax=1) must be unchanged";
+	EXPECT_EQ(ani.max_roi_h, iso.max_roi_h) << "y (ay=1) must be unchanged";
+}
 
 int main(int argc, char **argv)
 {

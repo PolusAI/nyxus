@@ -24,6 +24,29 @@
 
 #include "raw_format.h"
 
+// FIX (IO): z5 Datatype -> the "<u2"-style dtype string this loader's dispatch expects
+// (see omezarr.h). Guarded so a TU including both loaders doesn't redefine it.
+#ifndef NYXUS_ZARR_DTYPE_STRING_OF
+#define NYXUS_ZARR_DTYPE_STRING_OF
+inline std::string zarr_dtype_string_of (z5::types::Datatype dt)
+{
+    switch (dt)
+    {
+        case z5::types::uint8:   return "<u1";
+        case z5::types::uint16:  return "<u2";
+        case z5::types::uint32:  return "<u4";
+        case z5::types::uint64:  return "<u8";
+        case z5::types::int8:    return "<i1";
+        case z5::types::int16:   return "<i2";
+        case z5::types::int32:   return "<i4";
+        case z5::types::int64:   return "<i8";
+        case z5::types::float32: return "<f4";
+        case z5::types::float64: return "<f8";
+        default:                 return "<u2";
+    }
+}
+#endif // NYXUS_ZARR_DTYPE_STRING_OF
+
 class RawOmezarrLoader: public RawFormatLoader
 {
 public:
@@ -32,20 +55,22 @@ public:
     {
         // Open the file
         zarr_ptr_ = std::make_unique<z5::filesystem::handle::File>(filePath.c_str());
-        nlohmann::json file_attributes, ds_attributes;
+        nlohmann::json file_attributes;
         z5::readAttributes(*zarr_ptr_, file_attributes);
 
-        // open the highest-resolution dataset (level 0)
-        ds_name_ = file_attributes["multiscales"][0]["datasets"][0]["path"].get<std::string>();
-        const auto ds_handle = z5::filesystem::handle::Dataset(*zarr_ptr_, ds_name_);
-        fs::path metadata_path;
-        auto success = z5::filesystem::metadata_detail::getMetadataPath(ds_handle, metadata_path);
-        z5::filesystem::metadata_detail::readMetadata(metadata_path, ds_attributes);
+        // Resolve the level-0 dataset path (NGFF 0.5 nests 'multiscales' under "ome"; 0.4 has
+        // it at the attributes root).
+        const nlohmann::json& ms_root = (file_attributes.contains("ome") && file_attributes["ome"].contains("multiscales"))
+            ? file_attributes["ome"] : file_attributes;
+        ds_name_ = ms_root["multiscales"][0]["datasets"][0]["path"].get<std::string>();
 
-        std::vector<size_t> level0Shape, chunkShape;
-        for (const auto& d : ds_attributes["shape"])  level0Shape.push_back(d.get<size_t>());
-        for (const auto& d : ds_attributes["chunks"]) chunkShape.push_back(d.get<size_t>());
-        std::string dtype_str = ds_attributes["dtype"].get<std::string>();
+        // FIX (IO): open via z5 (auto-detects Zarr v2 .zarray vs v3 zarr.json, handles v3
+        // chunk-key encoding, codecs and sharding) and query shape/chunking/dtype from the
+        // Dataset object -- format-agnostic, so this reads BOTH OME-Zarr 0.4 and 0.5.
+        ds_ = z5::openDataset(*zarr_ptr_, ds_name_);
+        std::vector<size_t> level0Shape(ds_->shape().begin(), ds_->shape().end());
+        std::vector<size_t> chunkShape(ds_->defaultChunkShape().begin(), ds_->defaultChunkShape().end());
+        std::string dtype_str = zarr_dtype_string_of(ds_->getDtype());
 
         // Resolve axis roles from the NGFF 'axes' metadata instead of assuming a
         // fixed [T,C,Z,Y,X] order. Falls back to legacy 5D TCZYX if 'axes' is absent.
@@ -63,6 +88,13 @@ public:
             iz_ = axes.storageIndexOf('Z'); ic_ = axes.storageIndexOf('C');
             it_ = axes.storageIndexOf('T');
             n_levels_ = axes.numberPyramidLevels();
+            // FIX: advertise the real C/T extents so the pipeline iterates channels and
+            // timeframes; without this the base class default of 1 kept it on plane (c=0,t=0).
+            n_channels_ = axes.sizeC;
+            n_timeframes_ = axes.sizeT;
+            // FIX (IO): keep the parsed physical voxel spacing for opt-in calibration.
+            phys_x_ = axes.physX; phys_y_ = axes.physY; phys_z_ = axes.physZ;
+            phys_unit_ = axes.unitXY;
         }
         else
         {
@@ -74,6 +106,10 @@ public:
             ic_ = (n >= 4) ? n - 4 : -1;
             it_ = (n >= 5) ? n - 5 : -1;
             n_levels_ = 1;
+            // FIX: derive C/T extents from the positional axes so the fallback path also
+            // reports multi-channel / time-series counts (1 when the axis is absent).
+            n_channels_ = (ic_ >= 0) ? level0Shape[ic_] : 1;
+            n_timeframes_ = (it_ >= 0) ? level0Shape[it_] : 1;
         }
         // X and Y must resolve to real dimensions, else the read would index OOB.
         if (ix_ < 0 || iy_ < 0 || (size_t)ix_ >= level0Shape.size() || (size_t)iy_ >= level0Shape.size())
@@ -103,11 +139,6 @@ public:
 
         // allocate the buffer
         dest = std::vector<uint32_t> (tile_height_ * tile_width_);
-
-        // Open the dataset once and cache the handle. The dataset metadata is
-        // immutable for the lifetime of this loader, so there is no need to
-        // re-open (and re-parse the .zarray metadata) on every tile read.
-        ds_ = z5::openDataset(*zarr_ptr_, ds_name_);
     }
 
     ~RawOmezarrLoader() override
@@ -251,6 +282,15 @@ public:
     [[nodiscard]] short bitsPerSample() const override { return bits_per_sample_; }
     /// @brief Number of resolution (pyramid) levels declared in multiscales
     [[nodiscard]] size_t numberPyramidLevels() const override { return n_levels_; }
+    /// @brief Channel (C) extent resolved from the NGFF axes (1 if no channel axis)
+    [[nodiscard]] size_t numberChannels() const override { return n_channels_; }
+    /// @brief Time (T) extent resolved from the NGFF axes (1 if no time axis)
+    [[nodiscard]] size_t fullTimestamps([[maybe_unused]] size_t level) const override { return n_timeframes_; }
+    /// @brief Physical voxel spacing from the NGFF coordinateTransformations (1.0 if uncalibrated)
+    [[nodiscard]] double physicalSizeX() const override { return phys_x_; }
+    [[nodiscard]] double physicalSizeY() const override { return phys_y_; }
+    [[nodiscard]] double physicalSizeZ() const override { return phys_z_; }
+    [[nodiscard]] std::string physicalSizeUnit() const override { return phys_unit_; }
 
 private:
 
@@ -267,6 +307,10 @@ private:
     size_t ndim_ = 5;              ///< Number of on-disk dimensions (2..5)
     short bits_per_sample_ = 16;   ///< Real bit depth
     size_t n_levels_ = 1;          ///< Pyramid level count
+    size_t n_channels_ = 1;        ///< Channel (C) extent
+    size_t n_timeframes_ = 1;      ///< Time (T) extent
+    double phys_x_ = 1.0, phys_y_ = 1.0, phys_z_ = 1.0;   ///< Physical voxel spacing
+    std::string phys_unit_;        ///< Physical-size unit (e.g. "micrometer")
 
     short data_format_ = 0;
     std::unique_ptr<z5::filesystem::handle::File> zarr_ptr_;

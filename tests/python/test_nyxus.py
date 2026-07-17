@@ -426,10 +426,15 @@ class TestNyxus():
 
             means = cpu_features.mean(numeric_only=True)
 
-            mean_values = means.tolist()
+            # Drop the non-feature index/calibration columns by NAME so this stays correct as
+            # the output schema grows. (This used to pop the 2 leftmost columns positionally,
+            # which silently averaged c_index/phys_x/y/z into the first feature once the
+            # channel-index and physical-spacing columns were added.)
+            for _c in ("ROI_label", "time", "t_index", "c_index", "phys_x", "phys_y", "phys_z"):
+                if _c in means.index:
+                    means = means.drop(_c)
 
-            mean_values.pop(0) # get rid of leftmost ROI label column
-            mean_values.pop(0) # get rid of leftmost time column
+            mean_values = means.tolist()
 
             averaged_results = []
 

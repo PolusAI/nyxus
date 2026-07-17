@@ -57,13 +57,31 @@ public:
             TIFFGetField(tiff_, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
             TIFFGetField(tiff_, TIFFTAG_BITSPERSAMPLE, &(this->bitsPerSample_));
             TIFFGetField(tiff_, TIFFTAG_SAMPLEFORMAT, &(this->sampleFormat_));
+            // FIX (IO): default absent SAMPLEFORMAT to 1 (unsigned int), like the strip loader,
+            // so tifffile-written tiled uint OME-TIFFs (which omit the tag) read correctly.
+            if (sampleFormat_ < 1 || sampleFormat_ > 3)
+                sampleFormat_ = 1;
 
             // Test if the file is greyscale
-            if (samplesPerPixel != 1) 
+            if (samplesPerPixel != 1)
             {
                 std::string erm = "RawTiffTileLoader error: file " + filePath + " is not greyscale, SamplesPerPixel = " + std::to_string(samplesPerPixel);
                 std::cerr << erm << "\n";
                 throw (std::runtime_error(erm));
+            }
+
+            // FIX (IO): parse a tiled OME-TIFF's IFD-0 OME-XML so (z,c,t) map to the right IFD;
+            // a plain tiled TIFF stays 2D (fullDepth = directory count, usually 1).
+            fullDepth_ = TIFFNumberOfDirectories(tiff_);
+            char* desc = nullptr;
+            if (TIFFGetField(tiff_, TIFFTAG_IMAGEDESCRIPTION, &desc) && desc != nullptr)
+            {
+                ome_ = Nyxus::parse_ome_xml(desc);
+                if (ome_.valid)
+                {
+                    is_ome_ = true;
+                    fullDepth_ = ome_.sizeZ;   // depth is SizeZ, not the total IFD count (= Z*C*T)
+                }
             }
 
             // Prepare the right typed getter function
@@ -168,11 +186,23 @@ public:
     void loadTileFromFile (
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
-        size_t indexLayerGlobalTile,
-        [[maybe_unused]] size_t indexChannel,     // plain 2D TIFF: single channel
-        [[maybe_unused]] size_t indexTimeframe,   // plain 2D TIFF: no time series
+        size_t indexLayerGlobalTile,          // Z plane
+        size_t indexChannel,                  // C plane (OME); 0 for plain 2D TIFF
+        size_t indexTimeframe,                // T plane (OME); 0 for plain 2D TIFF
         size_t level) override
     {
+        // FIX (IO): select the (z,c,t) plane's IFD before reading the tile (see grayscale_tiff.h).
+        if (is_ome_ && (indexLayerGlobalTile >= ome_.sizeZ
+            || indexChannel >= ome_.sizeC || indexTimeframe >= ome_.sizeT))
+        {
+            throw std::runtime_error("RawTiffTileLoader: (z,c,t)=(" + std::to_string(indexLayerGlobalTile)
+                + "," + std::to_string(indexChannel) + "," + std::to_string(indexTimeframe) + ") out of range");
+        }
+        size_t ifd = is_ome_ ? ome_.ifdForPlane(indexLayerGlobalTile, indexChannel, indexTimeframe)
+                             : indexLayerGlobalTile;
+        if (TIFFSetDirectory(tiff_, (uint16_t)ifd) != 1)
+            throw std::runtime_error("RawTiffTileLoader: TIFFSetDirectory(ifd=" + std::to_string(ifd) + ") failed");
+
         // Low level read TIFF bytes
         auto t_szb = TIFFTileSize(tiff_);
         tiffTile = _TIFFmalloc(t_szb);
@@ -218,10 +248,18 @@ public:
 
     [[nodiscard]] size_t fullHeight([[maybe_unused]] size_t level) const { return fullHeight_; }
     [[nodiscard]] size_t fullWidth([[maybe_unused]] size_t level) const { return fullWidth_; }
+    [[nodiscard]] size_t fullDepth([[maybe_unused]] size_t level) const override { return fullDepth_; }
     [[nodiscard]] size_t tileWidth([[maybe_unused]] size_t level) const { return tileWidth_; }
     [[nodiscard]] size_t tileHeight([[maybe_unused]] size_t level) const { return tileHeight_; }
     [[nodiscard]] short bitsPerSample() const { return bitsPerSample_; }
     [[nodiscard]] size_t numberPyramidLevels() const { return 1; }
+    // FIX (IO): advertise C/T + physical spacing from the parsed OME-XML (1 / plain otherwise)
+    [[nodiscard]] size_t numberChannels() const override { return is_ome_ ? ome_.sizeC : 1; }
+    [[nodiscard]] size_t fullTimestamps([[maybe_unused]] size_t level) const override { return is_ome_ ? ome_.sizeT : 1; }
+    [[nodiscard]] double physicalSizeX() const override { return is_ome_ ? ome_.physX : 1.0; }
+    [[nodiscard]] double physicalSizeY() const override { return is_ome_ ? ome_.physY : 1.0; }
+    [[nodiscard]] double physicalSizeZ() const override { return is_ome_ ? ome_.physZ : 1.0; }
+    [[nodiscard]] std::string physicalSizeUnit() const override { return is_ome_ ? ome_.unitXY : std::string(); }
 
 private:
 
@@ -285,18 +323,22 @@ private:
     size_t
         fullHeight_ = 0,           ///< Full height in pixel
         fullWidth_ = 0,            ///< Full width in pixel
+        fullDepth_ = 1,            ///< Full depth (Z); >1 for multi-plane OME-TIFF
         tileHeight_ = 0,            ///< Tile height
         tileWidth_ = 0;             ///< Tile width
+
+    bool is_ome_ = false;          ///< true when IFD-0 carries an OME-XML block
+    Nyxus::OmeAxes ome_;           ///< parsed OME dimensions (drives the (z,c,t)->IFD map)
 
     short
         sampleFormat_ = 0,          ///< Sample format as defined by libtiff
         bitsPerSample_ = 0;         ///< Bit Per Sample as defined by libtiff
 
-    double minval, maxval; 
+    double minval, maxval;
 
     // low level buffer
     tdata_t tiffTile = nullptr;
-    size_t t_szb = 0; 
+    size_t t_szb = 0;
 };
 
 class RawTiffStripLoader : public RawFormatLoader
@@ -465,6 +507,15 @@ public:
         size_t indexTimeframe,         // T plane (OME-TIFF only)
         [[maybe_unused]] size_t level) override
     {
+        // FIX: (re)allocate lazily so this loader honors "free_tile() follows each
+        // loadTileFromFile()" -- see free_tile(). The ctor allocation covers the first read.
+        if (buf == nullptr)
+        {
+            buf = _TIFFmalloc (scanline_szb * tileHeight_);
+            if (!buf)
+                throw std::runtime_error("RawTiffStripLoader: _TIFFmalloc failed");
+        }
+
         size_t
             startLayer = indexLayerGlobalTile * tileDepth_,
             endLayer = std::min((indexLayerGlobalTile + 1) * tileDepth_, fullDepth_),
@@ -501,15 +552,33 @@ public:
     [[nodiscard]] size_t fullHeight([[maybe_unused]] size_t level) const override { return fullHeight_; }
     [[nodiscard]] size_t fullWidth([[maybe_unused]] size_t level) const override { return fullWidth_; }
     [[nodiscard]] size_t fullDepth([[maybe_unused]] size_t level) const override { return fullDepth_; }
+    // FIX: advertise C/T extents from the parsed OME-XML so the volumetric pipeline
+    // iterates channels/timeframes; non-OME TIFF keeps the single-plane default of 1.
+    [[nodiscard]] size_t numberChannels() const override { return is_ome_ ? ome_.sizeC : 1; }
+    [[nodiscard]] size_t fullTimestamps([[maybe_unused]] size_t level) const override { return is_ome_ ? ome_.sizeT : 1; }
+    // FIX (IO): physical voxel spacing from OME-XML PhysicalSize* (1.0 for plain TIFF)
+    [[nodiscard]] double physicalSizeX() const override { return is_ome_ ? ome_.physX : 1.0; }
+    [[nodiscard]] double physicalSizeY() const override { return is_ome_ ? ome_.physY : 1.0; }
+    [[nodiscard]] double physicalSizeZ() const override { return is_ome_ ? ome_.physZ : 1.0; }
+    [[nodiscard]] std::string physicalSizeUnit() const override { return is_ome_ ? ome_.unitXY : std::string(); }
     [[nodiscard]] size_t tileWidth([[maybe_unused]] size_t level) const override { return tileWidth_; }
     [[nodiscard]] size_t tileHeight([[maybe_unused]] size_t level) const override { return tileHeight_; }
     [[nodiscard]] size_t tileDepth([[maybe_unused]] size_t level) const override { return tileDepth_; }
     [[nodiscard]] short bitsPerSample() const override { return bitsPerSample_; }
     [[nodiscard]] size_t numberPyramidLevels() const override { return 1; }
 
+    // FIX: honor the RawFormatLoader contract that free_tile() follows EACH
+    // loadTileFromFile(). This buffer used to be allocated once in the ctor and never
+    // re-allocated, so a second load after a free wrote into freed memory (hit when
+    // looping Z to assemble a volume, and latent for multi-tile 2D scans which free per
+    // tile). Freeing is now idempotent and loadTileFromFile lazily re-allocates.
     void free_tile() override
     {
-        _TIFFfree(buf);
+        if (buf)
+        {
+            _TIFFfree(buf);
+            buf = nullptr;
+        }
     }
 
     uint32_t get_uint32_pixel(size_t idx) const

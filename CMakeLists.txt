@@ -279,7 +279,19 @@ if(USE_Z5)
 		include_directories (${ZLIB_INCLUDE_DIR})
 		add_definitions(-DHAVE_ZLIB)	# telling NIFTI code of zlib availability, otherwise it'll support only uncompressed NIFTI
 	endif()
-	
+
+	# zstd: the DEFAULT codec of Zarr v3 (OME-Zarr 0.5). z5's ZstdCompressor is gated by
+	# WITH_ZSTD; without it, zstd-compressed v3 chunks fail to decode. Optional: if zstd
+	# isn't found we still read uncompressed / blosc / zlib v3 stores.
+	find_library(ZSTD_LIBRARY NAMES zstd libzstd)
+	if(ZSTD_LIBRARY)
+		add_definitions(-DWITH_ZSTD)
+		list(APPEND Nyxus_LIBRARIES ${ZSTD_LIBRARY})
+		message(STATUS "zstd found (${ZSTD_LIBRARY}) -> Zarr v3 zstd codec enabled")
+	else()
+		message(STATUS "zstd not found -> Zarr v3 zstd-compressed chunks will be unsupported")
+	endif()
+
 	if(nlohmann_json_FOUND)
 		include_directories(${nlohmann_json_INCLUDE_DIR})
 	endif()
