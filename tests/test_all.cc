@@ -1102,6 +1102,11 @@ TEST(TEST_NYXUS, TEST_SHAPE2D_MIN_ENCLOSING_CIRCLE_IMEA_ORACLE)
 	ASSERT_NO_THROW(test_shape2d_min_enclosing_circle_imea_oracle());
 }
 
+TEST(TEST_NYXUS, TEST_SHAPE2D_DOCUMENTED_FORMULA_CONFORMANCE_NO_EXTERNAL_ORACLE)
+{
+	ASSERT_NO_THROW(test_shape2d_documented_formula_conformance_no_external_oracle());
+}
+
 TEST(TEST_NYXUS, TEST_REMAINING2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_CHORD_STAT_FEATURES)
 {
 	ASSERT_NO_THROW(test_remaining2d_verifiable_with_3p_builtin_oracle_chord_stat_features());
