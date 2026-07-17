@@ -308,9 +308,9 @@ static const std::map<std::string, std::vector<double>>& unvetted_3d_local_regre
 		{ "3COMPACTNESS2", { 0.039449347281835329 } },
 		{ "3COV", { 0.29486207043456802 } },
 		{ "3COVERED_IMAGE_INTENSITY_RANGE", { 1.0002043207290587 } },
-		{ "3ELONGATION", { 0.80989034437672192 } },
+		{ "3ELONGATION", { 0.84332105599389762 } },  // FIX(axis mislabel): was 0.8099; now = MIRP morph_pca_elongation
 		{ "3EXCESS_KURTOSIS", { -1.2127631603215119 } },
-		{ "3FLATNESS", { 1.1857880138204875 } },
+		{ "3FLATNESS", { 0.68299758045903847 } },  // FIX(axis mislabel): was 1.186 (>1, impossible); now = MIRP morph_pca_flatness
 		{ "3GLCM_ACOR_AVE", { 896.29490954682888 } },
 		{ "3GLCM_ASM_AVE", { 0.21714923037245615 } },
 		{ "3GLCM_CLUPROM_AVE", { 5319702.1464416385 } },
@@ -384,10 +384,10 @@ static const std::map<std::string, std::vector<double>>& unvetted_3d_local_regre
 		{ "3HYPERFLATNESS", { 3.8027657005973312 } },
 		{ "3HYPERSKEWNESS", { 0.32001332615517414 } },
 		{ "3INTEGRATED_INTENSITY", { 544286216 } },
-		{ "3LEAST_AXIS_LEN", { 104.70681271508683 } },
-		{ "3MAJOR_AXIS_LEN", { 88.301459868642283 } },
+		{ "3LEAST_AXIS_LEN", { 71.514499741981993 } },  // FIX(axis mislabel): was 104.7 (>MAJOR, impossible); now = MIRP morph_pca_least_axis
+		{ "3MAJOR_AXIS_LEN", { 104.70681271508683 } },  // FIX(axis mislabel): was 88.3; now = MIRP morph_pca_maj_axis (largest)
 		{ "3MEDIAN_ABSOLUTE_DEVIATION", { 507.12380480410445 } },
-		{ "3MINOR_AXIS_LEN", { 71.514499741981993 } },
+		{ "3MINOR_AXIS_LEN", { 88.301459868642283 } },  // FIX(axis mislabel): was 71.5; now = MIRP morph_pca_min_axis
 		{ "3MODE", { 1279 } },
 		{ "3NGLDM_DCENE", { 0.14348407632898436 } },
 		{ "3NGLDM_DCENT", { 5.2277449211654039 } },
