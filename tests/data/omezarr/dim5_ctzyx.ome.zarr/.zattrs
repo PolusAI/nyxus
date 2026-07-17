@@ -21,12 +21,12 @@
       ],
       "axes": [
         {
-          "name": "t",
-          "type": "time"
-        },
-        {
           "name": "c",
           "type": "channel"
+        },
+        {
+          "name": "t",
+          "type": "time"
         },
         {
           "name": "z",

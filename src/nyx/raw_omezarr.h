@@ -3,7 +3,9 @@
 #ifdef OMEZARR_SUPPORT
 
 #include <algorithm>
+#include <vector>
 #include "nlohmann/json.hpp"
+#include "ome/ome_zarr_meta.h"   // parse_ome_zarr -> OmeAxes (axis-role resolution)
 
 // factory functions to create files, groups and datasets
 #include "z5/factory.hxx"
@@ -32,20 +34,45 @@ public:
         nlohmann::json file_attributes, ds_attributes;
         z5::readAttributes(*zarr_ptr_, file_attributes);
 
-        // assume only one dataset is present
+        // open the highest-resolution dataset (level 0)
         ds_name_ = file_attributes["multiscales"][0]["datasets"][0]["path"].get<std::string>();
         const auto ds_handle = z5::filesystem::handle::Dataset(*zarr_ptr_, ds_name_);
         fs::path metadata_path;
         auto success = z5::filesystem::metadata_detail::getMetadataPath(ds_handle, metadata_path);
         z5::filesystem::metadata_detail::readMetadata(metadata_path, ds_attributes);
 
-        full_depth_ = ds_attributes["shape"][2].get<size_t>();
-        full_height_ = ds_attributes["shape"][3].get<size_t>();
-        full_width_ = ds_attributes["shape"][4].get<size_t>();
-        tile_depth_ = ds_attributes["chunks"][2].get<size_t>();
-        tile_height_ = ds_attributes["chunks"][3].get<size_t>();
-        tile_width_ = ds_attributes["chunks"][4].get<size_t>();
+        std::vector<size_t> level0Shape, chunkShape;
+        for (const auto& d : ds_attributes["shape"])  level0Shape.push_back(d.get<size_t>());
+        for (const auto& d : ds_attributes["chunks"]) chunkShape.push_back(d.get<size_t>());
         std::string dtype_str = ds_attributes["dtype"].get<std::string>();
+
+        // Resolve axis roles from the NGFF 'axes' metadata instead of assuming a
+        // fixed [T,C,Z,Y,X] order. Falls back to legacy 5D TCZYX if 'axes' is absent.
+        Nyxus::OmeAxes axes = Nyxus::parse_ome_zarr(file_attributes, level0Shape, dtype_str);
+        if (axes.valid && axes.storageIndexOf('X') >= 0 && axes.storageIndexOf('Y') >= 0)
+        {
+            ndim_ = axes.storageAxes.size();
+            ix_ = axes.storageIndexOf('X'); iy_ = axes.storageIndexOf('Y');
+            iz_ = axes.storageIndexOf('Z'); ic_ = axes.storageIndexOf('C');
+            it_ = axes.storageIndexOf('T');
+            n_levels_ = axes.numberPyramidLevels();
+        }
+        else
+        {
+            ndim_ = level0Shape.size();
+            it_ = 0; ic_ = 1; iz_ = 2; iy_ = 3; ix_ = 4;   // legacy [T,C,Z,Y,X]
+            n_levels_ = 1;
+        }
+
+        full_width_  = level0Shape[ix_];
+        full_height_ = level0Shape[iy_];
+        full_depth_  = (iz_ >= 0) ? level0Shape[iz_] : 1;
+        tile_width_  = chunkShape[ix_];
+        tile_height_ = chunkShape[iy_];
+        tile_depth_  = (iz_ >= 0) ? chunkShape[iz_] : 1;
+        bits_per_sample_ = Nyxus::bits_of(Nyxus::pixel_type_from_zarr_dtype(dtype_str));
+
+        // dtype -> internal format code for the read-template dispatch
         if (dtype_str == "<u1") { data_format_ = 1; } //uint8_t
         else if (dtype_str == "<u2") { data_format_ = 2; } //uint16_t
         else if (dtype_str == "<u4") { data_format_ = 3; } //uint32_t
@@ -155,11 +182,15 @@ public:
         // Create a buffer to hold the read data
         std::vector<FileType> buffer(data_height * data_width);
 
-        // Create an ArrayView into the buffer (z5 3.0.1 uses ArrayView instead of xtensor)
-        // Axis order is still assumed [T,C,Z,Y,X] here; the OME 'axes' metadata is honored later.
-        z5::types::ShapeType shape = {1, 1, 1, data_height, data_width};
+        // Build the read window by axis ROLE (honoring the resolved 'axes' order),
+        // reading one Y*X plane at the requested Z/C/T. z5 3.0.1 uses ArrayView.
+        z5::types::ShapeType shape(ndim_, 1), offset(ndim_, 0);
+        shape[iy_] = data_height; offset[iy_] = pixel_row_index;
+        shape[ix_] = data_width;  offset[ix_] = pixel_col_index;
+        if (iz_ >= 0) offset[iz_] = pixel_layer_index;
+        if (ic_ >= 0) offset[ic_] = pixel_channel_index;
+        if (it_ >= 0) offset[it_] = pixel_timeframe_index;
         auto view = z5::multiarray::makeView(buffer.data(), shape);
-        z5::types::ShapeType offset = {pixel_timeframe_index, pixel_channel_index, pixel_layer_index, pixel_row_index, pixel_col_index};
         
         // Read subarray from the cached z5 dataset
         z5::multiarray::readSubarray<FileType>(*ds_, view, offset.begin());
@@ -201,12 +232,10 @@ public:
     /// @return Tile depth
     [[nodiscard]] size_t tileDepth([[maybe_unused]] size_t level) const override { return tile_depth_; }
 
-    /// @brief Tiff bits per sample
-    /// @return Size of a sample in bits
-    [[nodiscard]] short bitsPerSample() const override { return 1; }
-    /// @brief Level accessor
-    /// @return 1
-    [[nodiscard]] size_t numberPyramidLevels() const override { return 1; }
+    /// @brief Bits per sample (resolved from the dataset dtype)
+    [[nodiscard]] short bitsPerSample() const override { return bits_per_sample_; }
+    /// @brief Number of resolution (pyramid) levels declared in multiscales
+    [[nodiscard]] size_t numberPyramidLevels() const override { return n_levels_; }
 
 private:
 
@@ -217,6 +246,12 @@ private:
         tile_width_ = 0,           ///< Tile width
         tile_height_ = 0,          ///< Tile height
         tile_depth_ = 0;           ///< Tile depth
+
+    // Storage-dimension index of each axis role (-1 if the axis is absent).
+    int ix_ = 4, iy_ = 3, iz_ = 2, ic_ = 1, it_ = 0;
+    size_t ndim_ = 5;              ///< Number of on-disk dimensions (2..5)
+    short bits_per_sample_ = 16;   ///< Real bit depth
+    size_t n_levels_ = 1;          ///< Pyramid level count
 
     short data_format_ = 0;
     std::unique_ptr<z5::filesystem::handle::File> zarr_ptr_;

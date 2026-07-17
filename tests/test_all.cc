@@ -2540,11 +2540,49 @@ TEST(TEST_NYXUS, TEST_RAW_OMEZARR_MULTITILE) {
 }
 
 TEST(TEST_NYXUS, TEST_OMEZARR_5D_CHANNEL_TIME_ADDRESSING) {
-	ASSERT_NO_THROW (test_omezarr_5d_channel_time_addressing());
+	ASSERT_NO_THROW (test_omezarr_addressing("dim5.ome.zarr", 2, 3, 4));
 }
 
 TEST(TEST_NYXUS, TEST_RAW_OMEZARR_5D_CHANNEL_TIME_ADDRESSING) {
-	ASSERT_NO_THROW (test_raw_omezarr_5d_channel_time_addressing());
+	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim5.ome.zarr", 2, 3, 4));
+}
+
+// Non-default on-disk axis order (CTZYX): passes only if the loader honors the
+// NGFF 'axes' metadata instead of assuming a fixed [T,C,Z,Y,X] order.
+TEST(TEST_NYXUS, TEST_OMEZARR_5D_NONDEFAULT_AXIS_ORDER) {
+	ASSERT_NO_THROW (test_omezarr_addressing("dim5_ctzyx.ome.zarr", 2, 3, 4));
+}
+
+TEST(TEST_NYXUS, TEST_RAW_OMEZARR_5D_NONDEFAULT_AXIS_ORDER) {
+	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim5_ctzyx.ome.zarr", 2, 3, 4));
+}
+
+// Lower-rank stores: a fixed shape[2..4] loader would crash; the axis-role loader
+// reads 3D (ZYX) and 2D (YX) correctly.
+TEST(TEST_NYXUS, TEST_OMEZARR_3D_ZYX) {
+	ASSERT_NO_THROW (test_omezarr_addressing("dim3_zyx.ome.zarr", 1, 1, 4));
+}
+
+TEST(TEST_NYXUS, TEST_RAW_OMEZARR_3D_ZYX) {
+	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim3_zyx.ome.zarr", 1, 1, 4));
+}
+
+TEST(TEST_NYXUS, TEST_OMEZARR_2D_YX) {
+	ASSERT_NO_THROW (test_omezarr_addressing("dim2_yx.ome.zarr", 1, 1, 1));
+}
+
+// No 'axes' metadata -> the loader falls back to legacy 5D TCZYX and still reads.
+TEST(TEST_NYXUS, TEST_OMEZARR_NOAXES_FALLBACK) {
+	ASSERT_NO_THROW (test_omezarr_addressing("dim5_noaxes.ome.zarr", 2, 3, 4));
+}
+
+TEST(TEST_NYXUS, TEST_RAW_OMEZARR_NOAXES_FALLBACK) {
+	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim5_noaxes.ome.zarr", 2, 3, 4));
+}
+
+// Negative: out-of-range Z/C/T plane index must throw.
+TEST(TEST_NYXUS, TEST_OMEZARR_OUT_OF_RANGE_THROWS) {
+	ASSERT_NO_THROW (test_omezarr_out_of_range_throws());
 }
 
 #endif // OMEZARR_SUPPORT

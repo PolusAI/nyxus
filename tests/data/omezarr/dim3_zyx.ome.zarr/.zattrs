@@ -11,8 +11,6 @@
               "scale": [
                 1.0,
                 1.0,
-                1.0,
-                1.0,
                 1.0
               ]
             }
@@ -20,14 +18,6 @@
         }
       ],
       "axes": [
-        {
-          "name": "t",
-          "type": "time"
-        },
-        {
-          "name": "c",
-          "type": "channel"
-        },
         {
           "name": "z",
           "type": "space"

@@ -232,11 +232,14 @@ static inline uint32_t dim5_enc(int x, int y, int z, int c, int t)
     return static_cast<uint32_t>(1 + ((((t * C + c) * Z + z) * Y + y) * X + x));
 }
 
-// AbstractTileLoader stack.
-void test_omezarr_5d_channel_time_addressing()
+// AbstractTileLoader stack. (T,C,Z) are the store's extents (X=8,Y=6 fixed). The
+// encoded value is axis-order- AND rank-invariant, so one body covers the default
+// TCZYX, the non-default CTZYX, the lower-rank 3D/2D stores, and the no-axes
+// (legacy fallback) store — all of which must return the same encoded values.
+void test_omezarr_addressing(const char* store, int T, int C, int Z)
 {
-    const int T = 2, C = 3, Z = 4, Y = 6, X = 8;
-    fs::path ds = omezarr_data_path("dim5.ome.zarr");
+    const int Y = 6, X = 8;
+    fs::path ds = omezarr_data_path(store);
     ASSERT_TRUE(fs::exists(ds)) << ds.string();
 
     auto ldr = NyxusOmeZarrLoader<uint32_t>(1, ds.string());
@@ -256,18 +259,19 @@ void test_omezarr_5d_channel_time_addressing()
             for (int y = 0; y < Y; ++y)
               for (int x = 0; x < X; ++x)
                 ASSERT_EQ(buf[y * tw + x], dim5_enc(x, y, z, c, t))
-                    << "plane (z" << z << " c" << c << " t" << t << ") at (" << x << "," << y << ")";
+                    << store << " plane (z" << z << " c" << c << " t" << t << ") at (" << x << "," << y << ")";
         }
 }
 
-// RawFormatLoader stack.
-void test_raw_omezarr_5d_channel_time_addressing()
+// RawFormatLoader stack (same coverage as above).
+void test_raw_omezarr_addressing(const char* store, int T, int C, int Z)
 {
-    const int T = 2, C = 3, Z = 4, Y = 6, X = 8;
-    fs::path ds = omezarr_data_path("dim5.ome.zarr");
+    const int Y = 6, X = 8;
+    fs::path ds = omezarr_data_path(store);
     ASSERT_TRUE(fs::exists(ds)) << ds.string();
 
     auto ldr = RawOmezarrLoader(ds.string());
+    ASSERT_EQ(ldr.fullDepth(0), (size_t)Z);
     const size_t tw = ldr.tileWidth(0);
 
     for (int t = 0; t < T; ++t)
@@ -278,15 +282,36 @@ void test_raw_omezarr_5d_channel_time_addressing()
             for (int y = 0; y < Y; ++y)
               for (int x = 0; x < X; ++x)
                 ASSERT_EQ(ldr.get_uint32_pixel(y * tw + x), dim5_enc(x, y, z, c, t))
-                    << "plane (z" << z << " c" << c << " t" << t << ") at (" << x << "," << y << ")";
+                    << store << " plane (z" << z << " c" << c << " t" << t << ") at (" << x << "," << y << ")";
         }
 
-    // The offset must actually use C/T: distinct (c,t) planes must differ.
-    ldr.loadTileFromFile(0, 0, 0, 0, 0, 0); uint32_t p000 = ldr.get_uint32_pixel(0);
-    ldr.loadTileFromFile(0, 0, 0, 1, 0, 0); uint32_t p010 = ldr.get_uint32_pixel(0);
-    ldr.loadTileFromFile(0, 0, 0, 0, 1, 0); uint32_t p001 = ldr.get_uint32_pixel(0);
-    ASSERT_NE(p000, p010) << "channel index ignored";
-    ASSERT_NE(p000, p001) << "timeframe index ignored";
+    if (C > 1 && T > 1)   // distinct (c,t) planes must differ -> the offset really uses C/T
+    {
+        ldr.loadTileFromFile(0, 0, 0, 0, 0, 0); uint32_t p000 = ldr.get_uint32_pixel(0);
+        ldr.loadTileFromFile(0, 0, 0, 1, 0, 0); uint32_t p010 = ldr.get_uint32_pixel(0);
+        ldr.loadTileFromFile(0, 0, 0, 0, 1, 0); uint32_t p001 = ldr.get_uint32_pixel(0);
+        ASSERT_NE(p000, p010) << "channel index ignored";
+        ASSERT_NE(p000, p001) << "timeframe index ignored";
+    }
+}
+
+// Negative: requesting a Z/C/T plane beyond the array extent must throw, not read
+// out-of-bounds / wrong data. dim5.ome.zarr has T=2, C=3, Z=4.
+void test_omezarr_out_of_range_throws()
+{
+    fs::path ds = omezarr_data_path("dim5.ome.zarr");
+    ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+    auto ldr = NyxusOmeZarrLoader<uint32_t>(1, ds.string());
+    auto tile = std::make_shared<std::vector<uint32_t>>(ldr.tileHeight(0) * ldr.tileWidth(0), 0u);
+    EXPECT_ANY_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 99, 0, 0));   // channel out of range
+    EXPECT_ANY_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0, 99, 0));   // timeframe out of range
+    EXPECT_ANY_THROW(ldr.loadTileFromFile(tile, 0, 0, 99, 0, 0, 0));   // z out of range
+
+    auto raw = RawOmezarrLoader(ds.string());
+    EXPECT_ANY_THROW(raw.loadTileFromFile(0, 0, 0, 99, 0, 0));
+    EXPECT_ANY_THROW(raw.loadTileFromFile(0, 0, 0, 0, 99, 0));
+    EXPECT_ANY_THROW(raw.loadTileFromFile(0, 0, 99, 0, 0, 0));
 }
 
 #endif // OMEZARR_SUPPORT
