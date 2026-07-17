@@ -140,6 +140,30 @@ void test_remaining2d_verifiable_with_3p_builtin_oracle_caliper_features()
 	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MODE, "STAT_NASSENSTEIN_DIAM_MODE");
 }
 
+// Vets the reimplemented Martin (area-bisecting chord) and Nassenstein (bottom-tangent vertical
+// chord) diameters against imea on a clean filled ellipse (a=20, b=10). See the oracle block in
+// test_remaining2d_common.h. Robust stats (min/max/mean/median) agree with imea within the
+// hull-vs-raster convention tolerance; the >0 lower bound pins that the old min+max-chord bug
+// (0-length Nassenstein diameters) is gone.
+void test_shape2d_caliper_martin_nassenstein_imea_ellipse_oracle()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_ellipse_caliper_values(fvals);
+
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MIN, "STAT_MARTIN_DIAM_MIN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MAX, "STAT_MARTIN_DIAM_MAX");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MEAN, "STAT_MARTIN_DIAM_MEAN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MEDIAN, "STAT_MARTIN_DIAM_MEDIAN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MIN, "STAT_NASSENSTEIN_DIAM_MIN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MAX, "STAT_NASSENSTEIN_DIAM_MAX");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MEAN, "STAT_NASSENSTEIN_DIAM_MEAN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MEDIAN, "STAT_NASSENSTEIN_DIAM_MEDIAN");
+
+	// Bug-gone invariant: a solid shape cannot have a 0-length diameter (the old code produced 0).
+	ASSERT_GT(fvals[static_cast<int>(Nyxus::Feature2D::STAT_MARTIN_DIAM_MIN)][0], 2.0);
+	ASSERT_GT(fvals[static_cast<int>(Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MIN)][0], 2.0);
+}
+
 void test_remaining2d_verifiable_with_3p_builtin_oracle_chord_stat_features()
 {
 	std::vector<std::vector<double>> fvals;
