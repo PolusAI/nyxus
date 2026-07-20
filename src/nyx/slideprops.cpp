@@ -283,26 +283,24 @@ namespace Nyxus
 
 		// scan intensity slide's data
 
-		bool wholeslide = p.fname_seg.empty();
-
 		double slide_I_max = (std::numeric_limits<double>::lowest)(),
 			slide_I_min = (std::numeric_limits<double>::max)();
 
 		std::unordered_set<int> U;	// unique ROI mask labels
 		std::unordered_map <int, LR> R;	// ROI data
 
-		// Read the volume. The image loader is in the open state by previously called processDataset_XX_YY ()
+		// The image loader is in the open state by previously called processDataset_XX_YY ().
+		// FIX: no whole-volume staging buffer and no flat voxel index any more -- the scan
+		// streams tiles and receives (x,y,z) directly, so sliceSize/nVox/wholeslide are gone.
 		size_t fullW = ilo.get_full_width(),
 			fullH = ilo.get_full_height(),
-			fullD = ilo.get_full_depth(),
-			sliceSize = fullW * fullH,
-			nVox = sliceSize * fullD;
+			fullD = ilo.get_full_depth();
 
 		// FIX: scan EVERY (channel, timeframe) volume, not just (0,0).
-		//  (a) load_volume() assembles the whole X*Y*Z volume by looping Z. The old single
-		//      load_tile(0,0) filled only ONE Z-plane for per-plane loaders (OME-TIFF/
-		//      OME-Zarr), so the W*H*D voxel scan below read past the tile buffer -- garbage
-		//      that corrupted the slide min/max.
+		//  (a) for_each_voxel() streams the whole X*Y*Z volume, walking each plane's tile grid.
+		//      The old single load_tile(0,0) filled only ONE tile of ONE Z-plane for per-plane
+		//      loaders (OME-TIFF/OME-Zarr), so the W*H*D voxel scan read past the tile buffer
+		//      -- garbage that corrupted the slide min/max.
 		//  (b) the pipeline featurizes every (c,t) plane, so the slide intensity range must
 		//      cover all of them. Scanning only (c0,t0) yields a range that is too small for
 		//      c>0 / t>0, and intensity-indexed buffers sized from it overflow.
@@ -314,40 +312,13 @@ namespace Nyxus
 		for (size_t scan_c = 0; scan_c < n_chan; scan_c++)
 		for (size_t scan_t = 0; scan_t < n_time; scan_t++)
 		{
-		if (!ilo.load_volume (scan_c, scan_t))
+		// Streams tile by tile -- (a) above needs the whole volume scanned, but nothing here
+		// needs it resident, and staging W*H*D doubles once per (c,t) is 4x the raw uint16
+		// volume in RAM for no benefit. for_each_voxel calls back only for in-mask voxels.
+		bool ok = ilo.for_each_voxel (scan_c, scan_t,
+			[&](size_t x, size_t y, size_t z, double dxequiv_I, uint32_t msk)
 		{
-#ifdef WITH_PYTHON_H
-			throw "Error fetching volume";
-#endif
-			std::cerr << "Error fetching volume\n";
-			return false;
-		}
-
-		// iterate abstract tiles (in a tiled slide /e.g. tiled tiff/ they correspond to physical tiles, in a nontiled slide /e.g. scanline tiff or strip tiff/ they correspond to )
-		int cnt = 1;
-
-		// iterate voxels
-		for (size_t i = 0; i < nVox; i++)
-		{
-			// Mask (FIX: read from the assembled volume, not the single-plane tile buffer)
-			uint32_t msk = 1; // wholeslide by default
-			if (!wholeslide)
-				msk = ilo.get_voxel_seg(i);
-
-			// Skip non-mask pixels
-			if (!msk)
-				continue;
-
-			int z = i / sliceSize,
-				y = (i - z * sliceSize) / fullW,
-				x = (i - z * sliceSize) % fullW;
-
-			// Skip voxels beyond the image's bounds
-			if (x >= fullW || y >= fullH || z >= fullD)
-				continue;
-
 			// dynamic range within- and off-ROI
-			double dxequiv_I = ilo.get_voxel_dpequiv(i);
 			slide_I_max = (std::max)(slide_I_max, dxequiv_I);
 			slide_I_min = (std::min)(slide_I_min, dxequiv_I);
 
@@ -369,7 +340,7 @@ namespace Nyxus
 					// Initialize basic counters
 					r.aux_area = 1;
 					r.aux_min = r.aux_max = 0; //we don't have uint-cast intensities at this moment
-					r.init_aabb_3D(x, y, z);
+					r.init_aabb_3D((int)x, (int)y, (int)z);
 
 					//		- not storing file names (r.segFname = segFile, r.intFname = intFile) but will do so in the future
 
@@ -387,7 +358,7 @@ namespace Nyxus
 					r.aux_area++;
 
 					// save
-					r.update_aabb_3D(x, y, z);
+					r.update_aabb_3D((int)x, (int)y, (int)z);
 				}
 			}
 
@@ -397,7 +368,16 @@ namespace Nyxus
 				throw pybind11::error_already_set();
 #endif
 
-		} //- all voxels
+		}); //- all voxels
+
+		if (!ok)
+		{
+#ifdef WITH_PYTHON_H
+			throw "Error fetching volume";
+#endif
+			std::cerr << "Error fetching volume\n";
+			return false;
+		}
 
 		first_pass = false;
 		} //- all (channel, timeframe) volumes

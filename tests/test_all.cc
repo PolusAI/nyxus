@@ -2646,6 +2646,29 @@ TEST(TEST_NYXUS, TEST_OMEZARR_PHYSICAL_CALIBRATION) {
 	ASSERT_NO_THROW (test_omezarr_physical_calibration());
 }
 
+// Multi-CHUNK plane: real OME-Zarr splits each Y/X plane across a chunk grid (typically
+// 512x512), and dim5_multichunk uses 3x4 chunks over the 6x8 plane. The volumetric read
+// must walk the whole tile grid: fetching only chunk (0,0) returns wrong data past the
+// first chunk (and over-reads its buffer). Every other fixture is one-chunk-per-plane,
+// which is why this went unnoticed. Covers ImageLoader::assemble_volume...
+TEST(TEST_NYXUS, TEST_OMEZARR_MULTICHUNK_FACADE_VOLUME) {
+	ASSERT_NO_THROW (test_omezarr_facade_volume("dim5_multichunk.ome.zarr", 2, 3, 4));
+}
+// ...and RawImageLoader::load_volume (the prescan), which had the same single-tile bug:
+// the encoded values are 1..1152 over all (c,t), and the ROI is the whole X*Y*Z volume.
+TEST(TEST_NYXUS, TEST_OMEZARR_MULTICHUNK_PRESCAN) {
+	fs::path ip = omezarr_data_path("dim5_multichunk.ome.zarr");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+
+	Environment e;
+	SlideProps p (ip.string(), "");		// whole-slide: no mask
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+
+	EXPECT_DOUBLE_EQ(p.min_preroi_inten, 1.0);
+	EXPECT_DOUBLE_EQ(p.max_preroi_inten, 1152.0);
+	EXPECT_EQ(p.max_roi_area, (size_t)(8 * 6 * 4));
+}
+
 // Negative: out-of-range channel/timeframe through the whole-volume facade must throw.
 TEST(TEST_NYXUS, TEST_OMEZARR_LOAD_VOLUME_OUT_OF_RANGE) {
 	ASSERT_NO_THROW (test_omezarr_load_volume_out_of_range());
@@ -2705,6 +2728,26 @@ TEST(TEST_NYXUS, TEST_OMETIFF_TILED_ADDRESSING) {
 // Facade whole-volume assembly over the TILED path (open() routes tiled TIFF -> tile loader).
 TEST(TEST_NYXUS, TEST_OMETIFF_TILED_FACADE_VOLUME) {
 	ASSERT_NO_THROW (test_ometiff_facade_volume("dim5_tiled.ome.tif", 2, 3, 4));
+}
+// Multi-TILE planes (2x3 grid of 16x16 tiles): dim5_tiled above has ONE tile per plane, so
+// it passes even when only tile (0,0) is read. This is the OME-TIFF counterpart of
+// TEST_OMEZARR_MULTICHUNK_FACADE_VOLUME. Covers ImageLoader::assemble_volume...
+TEST(TEST_NYXUS, TEST_OMETIFF_MULTITILE_FACADE_VOLUME) {
+	ASSERT_NO_THROW (test_ometiff_multitile_facade_volume());
+}
+// ...and RawImageLoader::for_each_voxel (the prescan), which had the same single-tile bug.
+// Encoded values run 1..6144 over all (c,t); whole-slide, so the ROI is the whole volume.
+TEST(TEST_NYXUS, TEST_OMETIFF_MULTITILE_PRESCAN) {
+	fs::path ip = ometiff_data_path("dim5_multitile.ome.tif");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+
+	Environment e;
+	SlideProps p (ip.string(), "");		// whole-slide: no mask
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+
+	EXPECT_DOUBLE_EQ(p.min_preroi_inten, 1.0);
+	EXPECT_DOUBLE_EQ(p.max_preroi_inten, 6144.0);
+	EXPECT_EQ(p.max_roi_area, (size_t)(48 * 32 * 2));
 }
 
 // Facade whole-volume assembly (load_volume loops Z into one X*Y*Z buffer).

@@ -21,15 +21,77 @@ public:
 	uint32_t get_cur_tile_seg_pixel(size_t pixel_idx);
 	double get_cur_tile_dpequiv_pixel(size_t idx);
 
-	// FIX: assemble the whole X*Y*Z volume by looping Z, into packed (stride = full width)
-	// buffers. The 3D prescan used to do ONE load_tile(0,0) and then index W*H*D voxels off
-	// the tile buffer -- but a per-plane loader (OME-TIFF / OME-Zarr) fills only ONE Z-plane,
-	// so everything past the first slice read out of bounds and corrupted the slide min/max.
-	// (It also assumed the tile stride equals the full width.) The volumetric counterpart of
-	// ImageLoader::load_volume; NIfTI-style whole-4D loaders are slabbed out via frameBase.
-	bool load_volume (size_t channel = 0, size_t timeframe = 0);
-	double get_voxel_dpequiv (size_t idx) const { return vol_int_[idx]; }
-	uint32_t get_voxel_seg (size_t idx) const { return vol_seg_[idx]; }
+	// FIX: visit every voxel of one (channel, timeframe) volume WITHOUT materializing it.
+	// The 3D prescan used to do ONE load_tile(0,0) and then index W*H*D voxels off the tile
+	// buffer -- but a per-plane loader (OME-TIFF / OME-Zarr) fills only ONE Z-plane, so
+	// everything past the first slice read out of bounds and corrupted the slide min/max.
+	// (It also assumed the tile stride equals the full width.) Streaming rather than filling
+	// a W*H*D staging buffer matters because the prescan repeats this for every (c,t) and
+	// only needs running min/max plus mask-driven ROI geometry: a double buffer would cost
+	// 4x the raw uint16 volume in RAM per pass and buy nothing.
+	//
+	// Walks the tile GRID of each plane, so planes spanning several tiles/chunks are handled;
+	// NIfTI-style whole-4D loaders (tileDepth == full depth) are slabbed out via frameBase.
+	// fn is invoked ONLY for in-mask voxels (msk != 0), as fn(x, y, z, intensity, msk); in
+	// whole-slide mode every voxel is in-mask with msk == 1.
+	template <typename F>
+	bool for_each_voxel (size_t channel, size_t timeframe, F&& fn)
+	{
+		const bool haveSeg = (segFL != nullptr);
+
+		// Use each loader's OWN layout: per-plane loaders (OME-Zarr, multi-page/OME-TIFF)
+		// deliver one Z-plane per read (tileDepth == 1); a whole-4D loader delivers the entire
+		// x*y*z*t blob in one read and ignores the layer arg. Mirrors ImageLoader::assemble_volume.
+		const size_t ltd = intFL->tileDepth (lvl),
+			ltt = intFL->tileTimestamps (lvl),
+			lntd = intFL->numberTileDepth (lvl),
+			lnth = intFL->numberTileHeight (lvl),
+			lntw = intFL->numberTileWidth (lvl),
+			frameStride = ltd * th * tw,
+			frameBase = (ltt > 1) ? timeframe * frameStride : 0;
+
+		// The mask is channel-agnostic unless it genuinely has that many channels
+		const size_t maskChannel = (haveSeg && channel < segFL->numberChannels()) ? channel : 0;
+
+		for (size_t lz = 0; lz < lntd; lz++)
+		{
+			for (size_t tr = 0; tr < lnth; tr++)
+			for (size_t tc = 0; tc < lntw; tc++)
+			{
+				intFL->loadTileFromFile (tr, tc, lz, channel, timeframe, lvl);
+				if (haveSeg)
+					segFL->loadTileFromFile (tr, tc, lz, maskChannel, timeframe, lvl);
+
+				const size_t row0 = tr * th, col0 = tc * tw;
+				if (row0 < fh && col0 < fw)
+				{
+					const size_t validH = (std::min) (th, fh - row0),
+						validW = (std::min) (tw, fw - col0);
+
+					for (size_t pz = 0; pz < ltd && (lz * ltd + pz) < fd; pz++)
+					{
+						const size_t gz = lz * ltd + pz;
+						for (size_t row = 0; row < validH; row++)
+							for (size_t col = 0; col < validW; col++)
+							{
+								const size_t src = frameBase + (pz * th + row) * tw + col;
+								const uint32_t msk = haveSeg ? segFL->get_uint32_pixel (src) : (uint32_t)1;
+								if (!msk)
+									continue;		// off-ROI: skip before paying for the intensity read
+								fn (col0 + col, row0 + row, gz, intFL->get_dpequiv_pixel (src), msk);
+							}
+					}
+				}
+
+				// the raw TIFF loaders malloc their tile buffer on each read (no-op elsewhere)
+				intFL->free_tile();
+				if (haveSeg)
+					segFL->free_tile();
+			}
+		}
+
+		return true;
+	}
 
 	size_t get_tile_size();
 	size_t get_num_tiles_vert();
@@ -88,9 +150,5 @@ private:
 	size_t cur_channel = 0,		// Currently selected channel (C) plane
 		cur_timeframe = 0;		// Currently selected timeframe (T) plane
 
-	// Whole-volume (X*Y*Z) assembly buffers filled by load_volume(), packed at full-width
-	// stride. vol_seg_ stays empty in whole-slide (no mask) mode.
-	std::vector<double> vol_int_;
-	std::vector<uint32_t> vol_seg_;
 };
 

@@ -176,6 +176,48 @@ void test_ometiff_facade_volume(const char* store, int T, int C, int Z)
     il.close();
 }
 
+// dim5_multitile.ome.tif carries its own (larger Y/X, smaller C/Z/T) shape because a TIFF
+// tile size must be a multiple of 16: only a plane bigger than 16x16 yields a real tile grid.
+const int MT_T = 1, MT_C = 2, MT_Z = 2, MT_Y = 32, MT_X = 48;
+
+inline uint32_t ometiff_mt_enc(int x, int y, int z, int c, int t)
+{
+    return (uint32_t)(1 + ((((t * MT_C + c) * MT_Z + z) * MT_Y + y) * MT_X + x));
+}
+
+// Multi-TILE plane: each 32x48 plane spans a 2x3 grid of 16x16 tiles, unlike every other
+// fixture (one tile/chunk per plane), so assembling a volume from tile (0,0) alone silently
+// returns wrong data outside the first 16x16 corner -- and over-reads that tile's buffer.
+void test_ometiff_multitile_facade_volume()
+{
+    fs::path ds = ometiff_data_path("dim5_multitile.ome.tif");
+    ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+    SlideProps p;
+    p.fname_int = ds.string();
+    p.fname_seg = "";
+    FpImageOptions fp;
+    ImageLoader il;
+    ASSERT_TRUE(il.open(p, fp)) << ds.string();
+    ASSERT_EQ(il.get_full_width(), (size_t)MT_X);
+    ASSERT_EQ(il.get_full_height(), (size_t)MT_Y);
+    ASSERT_EQ(il.get_full_depth(), (size_t)MT_Z);
+
+    for (int t = 0; t < MT_T; ++t)
+      for (int c = 0; c < MT_C; ++c)
+      {
+          ASSERT_TRUE(il.load_volume(c, t));
+          const std::vector<uint32_t>& vol = il.get_int_volume_buffer();
+          ASSERT_EQ(vol.size(), (size_t)MT_X * MT_Y * MT_Z);
+          for (int z = 0; z < MT_Z; ++z)
+            for (int y = 0; y < MT_Y; ++y)
+              for (int x = 0; x < MT_X; ++x)
+                ASSERT_EQ(vol[(size_t)z * MT_X * MT_Y + (size_t)y * MT_X + x], ometiff_mt_enc(x, y, z, c, t))
+                    << "dim5_multitile vol (x" << x << " y" << y << " z" << z << " c" << c << " t" << t << ")";
+      }
+    il.close();
+}
+
 // Every one of the 6 legal OME DimensionOrder values (all orderings of {T,C,Z}
 // before Y,X) must read correctly -- proves ifdForPlane honors DimensionOrder.
 void test_ometiff_all_5d_permutations()

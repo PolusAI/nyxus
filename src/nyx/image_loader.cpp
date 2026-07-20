@@ -281,17 +281,36 @@ void ImageLoader::assemble_volume (AbstractTileLoader<uint32_t>* fl,
 	const size_t frameStride = ltd * th * tw;
 	const size_t frameBase = (ltt > 1) ? timeframe * frameStride : 0;
 
+	// FIX: walk the whole tile GRID of each plane, not just tile (0,0). A plane commonly
+	// spans several tiles/chunks (OME-Zarr chunks are typically 512x512, tiled OME-TIFF
+	// 256x256), and the old code read tile (0,0) once and then copied fh*fw out of that
+	// single tile's buffer -- wrong data past the first tile plus an out-of-bounds read.
+	// Edge tiles are partial, so each tile contributes only its valid [validH x validW].
+	const size_t lnth = fl->numberTileHeight (lvl);
+	const size_t lntw = fl->numberTileWidth (lvl);
+
 	for (size_t lz = 0; lz < lntd; ++lz)
 	{
-		fl->loadTileFromFile (ptr, 0, 0, lz, channel, timeframe, lvl);
-		for (size_t pz = 0; pz < ltd && (lz * ltd + pz) < fd; ++pz)
+		for (size_t tr = 0; tr < lnth; ++tr)
+		for (size_t tc = 0; tc < lntw; ++tc)
 		{
-			const size_t gz = lz * ltd + pz;
-			for (size_t row = 0; row < fh; ++row)
+			fl->loadTileFromFile (ptr, tr, tc, lz, channel, timeframe, lvl);
+
+			const size_t row0 = tr * th, col0 = tc * tw;
+			if (row0 >= fh || col0 >= fw)
+				continue;
+			const size_t validH = (std::min) (th, fh - row0),
+				validW = (std::min) (tw, fw - col0);
+
+			for (size_t pz = 0; pz < ltd && (lz * ltd + pz) < fd; ++pz)
 			{
-				const size_t src = frameBase + (pz * th + row) * tw;
-				const size_t d = gz * sliceSize + row * fw;
-				std::copy (ptr->begin() + src, ptr->begin() + src + fw, dst.begin() + d);
+				const size_t gz = lz * ltd + pz;
+				for (size_t row = 0; row < validH; ++row)
+				{
+					const size_t src = frameBase + (pz * th + row) * tw;
+					const size_t d = gz * sliceSize + (row0 + row) * fw + col0;
+					std::copy (ptr->begin() + src, ptr->begin() + src + validW, dst.begin() + d);
+				}
 			}
 		}
 	}

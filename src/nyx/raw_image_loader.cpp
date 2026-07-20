@@ -221,59 +221,6 @@ double RawImageLoader::get_cur_tile_dpequiv_pixel (size_t idx)
 	return intFL->get_dpequiv_pixel (idx);
 }
 
-bool RawImageLoader::load_volume (size_t channel, size_t timeframe)
-{
-	const size_t sliceSize = fw * fh,
-		volSize = sliceSize * fd;
-
-	if (vol_int_.size() != volSize)
-		vol_int_.resize (volSize);
-	const bool haveSeg = (segFL != nullptr);
-	if (haveSeg && vol_seg_.size() != volSize)
-		vol_seg_.resize (volSize);
-
-	// Use each loader's OWN layout: per-plane loaders (OME-Zarr, multi-page/OME-TIFF) deliver
-	// one Z-plane per read (tileDepth==1); a whole-4D loader (NIfTI) delivers the entire
-	// x*y*z*t blob in one read and ignores the layer arg, so the requested frame is slabbed
-	// out via frameBase. Mirrors ImageLoader::assemble_volume.
-	const size_t ltd = intFL->tileDepth (lvl),
-		ltt = intFL->tileTimestamps (lvl),
-		lntd = intFL->numberTileDepth (lvl),
-		frameStride = ltd * th * tw,
-		frameBase = (ltt > 1) ? timeframe * frameStride : 0;
-
-	// The mask is channel-agnostic unless it genuinely has that many channels
-	const size_t maskChannel = (haveSeg && channel < segFL->numberChannels()) ? channel : 0;
-
-	for (size_t lz = 0; lz < lntd; lz++)
-	{
-		intFL->loadTileFromFile (0, 0, lz, channel, timeframe, lvl);
-		if (haveSeg)
-			segFL->loadTileFromFile (0, 0, lz, maskChannel, timeframe, lvl);
-
-		for (size_t pz = 0; pz < ltd && (lz * ltd + pz) < fd; pz++)
-		{
-			const size_t gz = lz * ltd + pz;
-			for (size_t row = 0; row < fh; row++)
-				for (size_t col = 0; col < fw; col++)
-				{
-					const size_t src = frameBase + (pz * th + row) * tw + col,
-						dst = gz * sliceSize + row * fw + col;
-					vol_int_[dst] = intFL->get_dpequiv_pixel (src);
-					if (haveSeg)
-						vol_seg_[dst] = segFL->get_uint32_pixel (src);
-				}
-		}
-
-		// the raw TIFF loaders malloc their tile buffer on each read (no-op elsewhere)
-		intFL->free_tile();
-		if (haveSeg)
-			segFL->free_tile();
-	}
-
-	return true;
-}
-
 size_t RawImageLoader::get_tile_size()
 {
 	return tileSize;

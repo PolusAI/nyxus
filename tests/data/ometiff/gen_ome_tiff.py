@@ -78,6 +78,29 @@ def write_tiled(name, order):
               % (name, order, dimord, len(tf.pages), tf.pages[0].is_tiled))
 
 
+# Multi-tile fixture dims. TIFF tile sizes must be multiples of 16, so the plane has to
+# exceed 16 in BOTH directions to produce a real tile grid -- hence its own (larger Y/X,
+# smaller C/Z/T) shape rather than the 6x8 plane the other fixtures share.
+MT_T, MT_C, MT_Z, MT_Y, MT_X = 1, 2, 2, 32, 48
+
+
+def write_multitile(name):
+    """A tiled OME-TIFF whose every plane spans a GRID of tiles (32x48 plane / 16x16 tile
+    -> 2x3 = 6 tiles), unlike dim5_tiled.ome.tif where a single tile covers the whole
+    plane. A volumetric read that fetches only tile (0,0) returns wrong data for
+    everything outside the first 16x16 corner. Same coordinate encoding, its own dims."""
+    t, c, z, y, x = np.meshgrid(np.arange(MT_T), np.arange(MT_C), np.arange(MT_Z),
+                                np.arange(MT_Y), np.arange(MT_X), indexing="ij")
+    data = (1 + ((((t * MT_C + c) * MT_Z + z) * MT_Y + y) * MT_X + x)).astype("uint16")
+    path = os.path.join(HERE, name)
+    tifffile.imwrite(path, data, photometric="minisblack", metadata={"axes": "TCZYX"},
+                     tile=(16, 16), ome=True)
+    with tifffile.TiffFile(path) as tf:
+        print("wrote %-24s %dx%d plane, tile grid %dx%d, IFDs=%d tiled=%s max=%d"
+              % (name, MT_Y, MT_X, -(-MT_Y // 16), -(-MT_X // 16), len(tf.pages),
+                 tf.pages[0].is_tiled, data.max()))
+
+
 def write_mask(name):
     """Single-channel, single-timeframe 3D (ZYX) label mask matching dim5's geometry.
     Used to test the 1-channel-mask : N-channel-intensity pairing: the mask is
@@ -120,6 +143,8 @@ def main():
     write_mask("dim3_mask.ome.tif")
     # TILED multi-plane OME-TIFF (5D) -> exercises the tile-loader (z,c,t)->IFD path
     write_tiled("dim5_tiled.ome.tif", "TCZYX")
+    # planes spanning a real 2x3 tile grid -> multi-tile volumetric assembly
+    write_multitile("dim5_multitile.ome.tif")
     # --- illegal / adversarial: must be rejected cleanly, not crash ---
     write_bad_rgb("bad_rgb.ome.tif")
     write_bad_corrupt("bad_corrupt.tif")
