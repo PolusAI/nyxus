@@ -18,8 +18,8 @@ static std::unordered_map<std::string, double> d3ngldm_GT{
 		{ "3NGLDM_HDHGLE",	20030.0 },
 		{ "3NGLDM_GLNU",	115443.0 },
 		{ "3NGLDM_GLNUN",	0.23 },
-		{ "3NGLDM_DCNU",	115443.0 },
-		{ "3NGLDM_DCNUN",	0.23 },
+		{ "3NGLDM_DCNU",	85056.8 },   // FIXED: was 115443 (== GLNU) -- transposed-marginal bug in 3d_ngldm.cpp
+		{ "3NGLDM_DCNUN",	0.166335 },  // FIXED: was 0.23 (== GLNUN), same bug
 		{ "3NGLDM_DCP",	1.0 },
 		{ "3NGLDM_GLM",	17.0 },
 		{ "3NGLDM_GLV",	190.0 },
