@@ -166,11 +166,12 @@ namespace Nyxus
 		const SaveOption saveOption,
 		const std::string& outputPath)
 	{
+		env.reset_csv_output_state();		// FIX: this run's CSV files start fresh (see Environment::csv_paths_written)
 
 #ifdef CHECKTIMING
 		if (Stopwatch::inclusive())
 			Stopwatch::reset();
-#endif		
+#endif
 
 		//********************** prescan ***********************
 

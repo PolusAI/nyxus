@@ -237,16 +237,18 @@ namespace Nyxus
 		char rvbuf[VAL_BUF_LEN]; // real value buffer large enough to fit a float64 value in range (2.2250738585072014E-308 to 1.79769313486231570e+308)
 		const char rvfmt[] = "%g"; // instead of "%20.12f" which produces a too massive output
 
-		static bool mustRenderHeader = true;	// In 'singlecsv' scenario this flag flips from 'T' to 'F' when necessary (after the header is rendered)
-
 		// Make the file name and write mode
 		std::string fullPath = get_feature_output_fname (env, ifpath, mfpath);
 		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\t--> " << fullPath << "\n");
 
-		// Single CSV: create or continue?
-		const char* mode = "w";
-		if (!env.separateCsv)
-			mode = mustRenderHeader ? "w" : "a";
+		// FIX: create or continue, per PATH. This sink is called once per (channel, timeframe)
+		// plane, but separatecsv derives one path per slide and used to open it "w" every time,
+		// so each plane truncated the previous and the file kept only the last one. Truncate and
+		// render the header on the first write to a path, append after that -- which is what the
+		// t_index/c_index columns are for, and matches the Arrow and buffer sinks. Replaces a
+		// function-static 'mustRenderHeader' that could only express this for singlecsv.
+		const bool mustRenderHeader = env.csv_claim_first_write (fullPath);
+		const char* mode = mustRenderHeader ? "w" : "a";
 
 		// Open it
 		FILE* fp = nullptr;
@@ -285,10 +287,7 @@ namespace Nyxus
 
 			auto head_string = ssHead.str();
 			fprintf(fp, "%s\n", head_string.c_str());
-
-			// Prevent rendering the header again for another image's portion of labels
-			if (env.separateCsv == false)
-				mustRenderHeader = false;
+			// (the path is already recorded, so later writes to it append without a header)
 		}
 
 		// ********** Values
@@ -453,16 +452,15 @@ namespace Nyxus
 		std::vector<int> L{ env.uniqueLabels.begin(), env.uniqueLabels.end() };
 		std::sort(L.begin(), L.end());
 
-		static bool mustRenderHeader = true;	// In 'singlecsv' scenario this flag flips from 'T' to 'F' when necessary (after the header is rendered)
-
 		// Make the file name and write mode
 		std::string fullPath = get_feature_output_fname (env, intFpath, segFpath);
 		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\t--> " << fullPath << "\n");
 
-		// Single CSV: create or continue?
-		const char* mode = "w";
-		if (!env.separateCsv)
-			mode = mustRenderHeader ? "w" : "a";
+		// FIX: create or continue, per PATH -- see the whole-slide sink above. The 3D segmented
+		// workflow also calls this once per (channel, timeframe), and separatecsv truncated the
+		// file on every call, keeping only the last plane's ROI rows.
+		const bool mustRenderHeader = env.csv_claim_first_write (fullPath);
+		const char* mode = mustRenderHeader ? "w" : "a";
 
 		// Open it
 		FILE* fp = nullptr;
@@ -502,10 +500,7 @@ namespace Nyxus
 
 			auto head_string = ssHead.str();
 			fprintf(fp, "%s\n", head_string.c_str());
-
-			// Prevent rendering the header again for another image's portion of labels
-			if (env.separateCsv == false)
-				mustRenderHeader = false;
+			// (the path is already recorded, so later writes to it append without a header)
 		}
 
 		if (need_aggregation)

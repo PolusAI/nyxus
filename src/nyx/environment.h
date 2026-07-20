@@ -2,6 +2,7 @@
 
 #include <map>
 #include <string>
+#include <unordered_set>		// FIX: csv_paths_written registry (see below)
 #include <vector>
 
 #include "arrow_output_stream.h"
@@ -79,6 +80,18 @@ public:
 
 	std::string rawOutpType; //= ""; // Valid values: "separatecsv", "singlecsv", "arrow", "parquet"
 	bool separateCsv; //= true;
+
+	// FIX: CSV output paths already written during this run. A slide now yields one row per
+	// (channel, timeframe), and the CSV sinks are called once per plane -- but in separatecsv
+	// mode they opened the same path with "w" every time, so each plane truncated the previous
+	// and only the LAST one survived. The first write to a path truncates and renders the
+	// header; later writes append. Held per-Environment rather than in a function-static so a
+	// long-lived Python session starts each run clean instead of appending to a stale file.
+	std::unordered_set<std::string> csv_paths_written;
+
+	// True the first time `path` is written in this run (and records it).
+	bool csv_claim_first_write (const std::string& path) { return csv_paths_written.insert(path).second; }
+	void reset_csv_output_state() { csv_paths_written.clear(); }
 
 	Nyxus::SaveOption saveOption;
 

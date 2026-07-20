@@ -219,7 +219,9 @@ namespace Nyxus
 		const SaveOption saveOption,
 		const std::string& outputPath)
 	{
-		// create a vector of blank mask file names. Blank mask counterparts 
+		env.reset_csv_output_state();		// FIX: this run's CSV files start fresh (see Environment::csv_paths_written)
+
+		// create a vector of blank mask file names. Blank mask counterparts
 		// of intensity files will serve as the condition of the whole-slide scenario in the prescan phase
 		std::vector<std::string> labelFiles (intensFiles.size());
 

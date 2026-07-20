@@ -1,5 +1,6 @@
 #define NOMINMAX	// keep Windows min/max macros from breaking dcmtk's OFvariant (DICOM tests)
 #include <gtest/gtest.h>
+#include <fstream>		// reading a written CSV back in TEST_CSV_MULTICHANNEL_NO_OVERWRITE
 #include "test_gabor_regression.h"
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
@@ -2879,6 +2880,60 @@ TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_REDUCE) {
 	EXPECT_GE(vmax, vmin);
 	EXPECT_GT(vmax, 0.0);
 	ilo.close();
+}
+
+// Regression: separatecsv derives ONE output path per slide, but the CSV sinks are invoked
+// once per (channel, timeframe) plane and used to open that path with mode "w" every time --
+// so each plane truncated the one before it and the file ended up holding only the LAST
+// channel. Confirmed against the pre-fix build, where this file had 1 data row (c_index=1)
+// instead of 2. The t_index/c_index columns exist precisely so the planes can coexist as rows.
+TEST(TEST_NYXUS, TEST_CSV_MULTICHANNEL_NO_OVERWRITE) {
+	fs::path ds = ometiff_data_path("dim3_zyx.ome.tif");	// 3D X8 Y6 Z4
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+	fs::path outdir = fs::temp_directory_path() / "nyxus_csv_ct_test";
+	fs::remove_all(outdir);
+	fs::create_directories(outdir);
+
+	Environment e;
+	e.separateCsv = true;					// the mode that overwrote (and the default)
+	e.output_dir = outdir.string();
+	e.theFeatureSet.enableAll(false);
+	e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
+
+	e.dataset.dataset_props.reserve(1);
+	SlideProps& sp = e.dataset.dataset_props.emplace_back(ds.string(), "");
+	ASSERT_TRUE(Nyxus::scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	e.dataset.update_dataset_props_extrema();
+
+	LR vroi(1);
+	vroi.slide_idx = 0;
+	vroi.aux_area = sp.max_roi_area;
+	vroi.aabb.init_from_whd(sp.max_roi_w, sp.max_roi_h, sp.max_roi_d);
+	ASSERT_NO_THROW(vroi.initialize_fvals());
+
+	// Two channel planes of the SAME slide, exactly as the whole-volume workflow emits them
+	ASSERT_TRUE(Nyxus::save_features_2_csv_wholeslide (e, vroi, ds.string(), "", outdir.string(), 0, 0));
+	ASSERT_TRUE(Nyxus::save_features_2_csv_wholeslide (e, vroi, ds.string(), "", outdir.string(), 0, 1));
+
+	// Read the single file back
+	std::vector<std::string> lines;
+	{
+		std::ifstream f (Nyxus::get_feature_output_fname (e, ds.string(), ""));
+		ASSERT_TRUE(f.good());
+		std::string ln;
+		while (std::getline(f, ln))
+			if (!ln.empty())
+				lines.push_back(ln);
+	}
+
+	ASSERT_EQ(lines.size(), (size_t)3) << "expected 1 header + one row per channel plane";
+	EXPECT_NE(lines[0].find("\"c_index\""), std::string::npos) << "line 0 must be the header";
+	// ...and the header must appear exactly once, not once per plane
+	EXPECT_EQ(lines[1].find("\"c_index\""), std::string::npos);
+	EXPECT_EQ(lines[2].find("\"c_index\""), std::string::npos);
+
+	fs::remove_all(outdir);
 }
 
 // Phase 6 physical-calibration logic (negative + positive). resolve_slide_anisotropy
