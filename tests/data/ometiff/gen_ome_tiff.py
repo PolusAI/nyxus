@@ -115,6 +115,44 @@ def write_mask(name):
     print("wrote %-20s (single-channel ZYX label mask, ROI voxels=%d)" % (name, int(m.sum())))
 
 
+def write_reordered(name):
+    """An OME-TIFF whose planes are physically stored in REVERSED IFD order, with explicit
+    <TiffData> blocks mapping each logical (z,c,t) to its scrambled IFD. This is what a reader
+    that ignores TiffData and assumes canonical (contiguous-from-IFD-0) plane order gets wrong:
+    it would read the reversed plane's pixels. Writers like bioformats emit per-plane TiffData;
+    a non-canonical mapping (or a non-zero starting IFD) is exactly where the assumption breaks.
+
+    Dims T=1,C=2,Z=3, plane 6x8, DimensionOrder XYZCT -> canonical ordinal ord = z + c*Z. The
+    logical plane with ordinal `ord` is stored at physical IFD (5 - ord). Same encoded value as
+    encoded_tczyx so the standard facade test can check it."""
+    rT, rC, rZ = 1, 2, 3
+    total = rZ * rC * rT
+    # physical IFD p holds the logical plane whose ordinal is (total-1 - p)
+    phys = np.empty((total, Y, X), "uint16")
+    tiffdata = []
+    for c in range(rC):
+        for z in range(rZ):
+            ord_ = z + c * rZ                      # canonical XYZCT ordinal (t=0)
+            ifd = (total - 1) - ord_               # reversed physical IFD
+            yy, xx = np.meshgrid(np.arange(Y), np.arange(X), indexing="ij")
+            phys[ifd] = (1 + ((((0 * rC + c) * rZ + z) * Y + yy) * X + xx)).astype("uint16")
+            tiffdata.append('<TiffData FirstC="%d" FirstT="0" FirstZ="%d" IFD="%d" PlaneCount="1"/>'
+                            % (c, z, ifd))
+    ome = ('<?xml version="1.0" encoding="UTF-8"?>'
+           '<OME xmlns="http://www.openmicroscopy.org/Schemas/OME/2016-06">'
+           '<Image ID="Image:0" Name="reordered">'
+           '<Pixels ID="Pixels:0" DimensionOrder="XYZCT" Type="uint16" '
+           'SizeX="%d" SizeY="%d" SizeZ="%d" SizeC="%d" SizeT="%d">%s'
+           '</Pixels></Image></OME>'
+           % (X, Y, rZ, rC, rT, "".join(tiffdata)))
+    path = os.path.join(HERE, name)
+    tifffile.imwrite(path, phys, description=ome, metadata=None, photometric="minisblack")
+    with tifffile.TiffFile(path) as tf:
+        got = (tf.pages[0].description or "")[:4]
+        print("wrote %-24s IFDs=%d reversed, TiffData blocks=%d, desc starts %r"
+              % (name, len(tf.pages), len(tiffdata), got))
+
+
 def write_bad_rgb(name):
     """RGB OME-TIFF -- nyxus is grayscale-only, so the loader must reject it."""
     path = os.path.join(HERE, name)
@@ -144,6 +182,8 @@ def main():
     write_plain("dim3_plain.tif", "ZYX")
     # single-channel label mask (for the 1-mask : N-channel-intensity pairing test)
     write_mask("dim3_mask.ome.tif")
+    # non-canonical <TiffData> plane->IFD mapping (planes stored reversed) -> honors TiffData
+    write_reordered("dim5_reordered.ome.tif")
     # TILED multi-plane OME-TIFF (5D) -> exercises the tile-loader (z,c,t)->IFD path
     write_tiled("dim5_tiled.ome.tif", "TCZYX")
     # planes spanning a real 2x3 tile grid -> multi-tile volumetric assembly

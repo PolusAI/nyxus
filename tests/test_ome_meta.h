@@ -58,6 +58,65 @@ TEST(OmeTiffMeta, ParsesNonDefault5D)
 	EXPECT_EQ(a.storageIndexOf('X'), 4);
 }
 
+// <TiffData> plane->IFD mapping. Base XML: XYZCT, Z=2 C=2 T=1 -> 4 planes, canonical
+// ordinal ord = z + c*2.
+static std::string tiffdata_xml(const std::string& blocks)
+{
+	return "<OME><Image><Pixels ID=\"p\" DimensionOrder=\"XYZCT\" Type=\"uint16\" "
+	       "SizeX=\"8\" SizeY=\"6\" SizeZ=\"2\" SizeC=\"2\" SizeT=\"1\">" + blocks +
+	       "</Pixels></Image></OME>";
+}
+
+// A single canonical block (tifffile's form) means contiguous-from-IFD-0 == the default, so
+// the map is left empty and ifdForPlane stays canonical.
+TEST(OmeTiffMetaTiffData, CanonicalSingleBlockStaysIdentity)
+{
+	Nyxus::OmeAxes a = Nyxus::parse_ome_xml(tiffdata_xml("<TiffData IFD=\"0\" PlaneCount=\"4\"/>"));
+	ASSERT_TRUE(a.valid);
+	EXPECT_TRUE(a.planeToIfd.empty());
+	EXPECT_FALSE(a.multiFileTiff);
+	EXPECT_EQ(a.ifdForPlane(0, 0, 0), 0u);
+	EXPECT_EQ(a.ifdForPlane(1, 1, 0), 3u);   // ord = 1 + 1*2
+}
+
+// Per-plane blocks that reverse the IFDs: ifdForPlane must return the declared IFD.
+TEST(OmeTiffMetaTiffData, ReversedPerPlaneMapping)
+{
+	Nyxus::OmeAxes a = Nyxus::parse_ome_xml(tiffdata_xml(
+		"<TiffData FirstC=\"0\" FirstZ=\"0\" FirstT=\"0\" IFD=\"3\" PlaneCount=\"1\"/>"
+		"<TiffData FirstC=\"0\" FirstZ=\"1\" FirstT=\"0\" IFD=\"2\" PlaneCount=\"1\"/>"
+		"<TiffData FirstC=\"1\" FirstZ=\"0\" FirstT=\"0\" IFD=\"1\" PlaneCount=\"1\"/>"
+		"<TiffData FirstC=\"1\" FirstZ=\"1\" FirstT=\"0\" IFD=\"0\" PlaneCount=\"1\"/>"));
+	ASSERT_TRUE(a.valid);
+	ASSERT_EQ(a.planeToIfd.size(), 4u);
+	EXPECT_EQ(a.ifdForPlane(0, 0, 0), 3u);
+	EXPECT_EQ(a.ifdForPlane(1, 0, 0), 2u);
+	EXPECT_EQ(a.ifdForPlane(0, 1, 0), 1u);
+	EXPECT_EQ(a.ifdForPlane(1, 1, 0), 0u);
+}
+
+// A non-zero starting IFD (planes contiguous but offset, e.g. a multi-image container).
+TEST(OmeTiffMetaTiffData, NonZeroStartOffsetsAllPlanes)
+{
+	Nyxus::OmeAxes a = Nyxus::parse_ome_xml(tiffdata_xml("<TiffData IFD=\"10\" PlaneCount=\"4\"/>"));
+	ASSERT_TRUE(a.valid);
+	ASSERT_EQ(a.planeToIfd.size(), 4u);
+	EXPECT_EQ(a.ifdForPlane(0, 0, 0), 10u);
+	EXPECT_EQ(a.ifdForPlane(1, 1, 0), 13u);
+}
+
+// A <TiffData> naming another file (<UUID> child) is multi-file: unsupported, flagged, and
+// that plane is left at the canonical fallback rather than pointed at a wrong local IFD.
+TEST(OmeTiffMetaTiffData, MultiFileUuidBlockFlaggedAndSkipped)
+{
+	Nyxus::OmeAxes a = Nyxus::parse_ome_xml(tiffdata_xml(
+		"<TiffData FirstC=\"0\" FirstZ=\"0\" FirstT=\"0\" IFD=\"0\">"
+		"<UUID FileName=\"other.tif\">urn:uuid:abc</UUID></TiffData>"));
+	ASSERT_TRUE(a.valid);
+	EXPECT_TRUE(a.multiFileTiff);
+	EXPECT_EQ(a.ifdForPlane(0, 0, 0), 0u);   // canonical fallback (not mapped)
+}
+
 TEST(OmeTiffMeta, Parses2DSingletonAxesCollapse)
 {
 	Nyxus::OmeAxes a = Nyxus::parse_ome_xml(kOmeXml_2d);

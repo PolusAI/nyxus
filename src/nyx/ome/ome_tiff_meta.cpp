@@ -97,6 +97,71 @@ namespace Nyxus
 			if (std::count(dord.begin(), dord.end(), c) != 1) perm = false;
 		ax.omeDimensionOrder = perm ? dord : "XYZCT";
 
+		// Explicit plane->IFD mapping from <TiffData> (OME-XML). Absent it, planes are stored
+		// contiguously from IFD 0 in DimensionOrder (the ifdForPlane default), which is what
+		// tifffile's single "<TiffData IFD=0 PlaneCount=N/>" also means -- so this only changes
+		// behavior for writers that start at a non-zero IFD or reorder planes (e.g. bioformats
+		// per-plane blocks, or a multi-image container). Each block maps PlaneCount consecutive
+		// DimensionOrder planes starting at (FirstZ,FirstC,FirstT) to consecutive IFDs from IFD.
+		{
+			const std::size_t totalPlanes = ax.sizeZ * ax.sizeC * ax.sizeT;
+			// integer attribute of a start-tag, with default (same guards as `i` above)
+			auto iat = [](const std::string& tag, const char* n, std::size_t def) -> std::size_t {
+				std::string v; if (!get_attr(tag, n, v)) return def;
+				std::size_t r = 0;
+				auto [ptr, ec] = std::from_chars(v.data(), v.data() + v.size(), r);
+				return (ec != std::errc() || ptr == v.data()) ? def : r;
+			};
+
+			bool anyTiffData = false, sawMultiFile = false;
+			std::vector<std::size_t> map;   // identity-initialized on first same-file block
+			std::size_t tp = 0;
+			while ((tp = xml.find("<TiffData", tp)) != std::string::npos)
+			{
+				char after = (tp + 9 < xml.size()) ? xml[tp + 9] : '\0';
+				if (!(after == ' ' || after == '\t' || after == '\n' || after == '\r' || after == '>' || after == '/'))
+				{ tp += 9; continue; }
+				std::size_t gt = xml.find('>', tp);
+				if (gt == std::string::npos) break;
+				const std::string tag = xml.substr(tp, gt - tp + 1);
+				anyTiffData = true;
+
+				// A <TiffData> with a <UUID> child names a plane in ANOTHER file (companion /
+				// multi-file OME-TIFF) -- unsupported here. Detect it (tag not self-closed AND a
+				// <UUID follows before </TiffData>) and skip mapping it, leaving those planes at
+				// the canonical fallback rather than pointing them at a wrong local IFD.
+				bool selfClosed = (gt > 0 && xml[gt - 1] == '/');
+				if (!selfClosed)
+				{
+					std::size_t close = xml.find("</TiffData>", gt);
+					std::size_t uuid = xml.find("<UUID", gt);
+					if (uuid != std::string::npos && (close == std::string::npos || uuid < close))
+					{ sawMultiFile = true; tp = gt + 1; continue; }
+				}
+
+				const std::size_t fz = iat(tag, "FirstZ", 0), fc = iat(tag, "FirstC", 0), ft = iat(tag, "FirstT", 0);
+				const std::size_t ifd0 = iat(tag, "IFD", 0);
+				const std::size_t startOrd = ax.canonicalPlaneOrdinal(fz, fc, ft);
+				// PlaneCount default per OME: the remaining planes from the start plane.
+				std::size_t count = iat(tag, "PlaneCount", (startOrd < totalPlanes) ? totalPlanes - startOrd : 0);
+
+				if (map.empty() && totalPlanes > 0)
+					{ map.resize(totalPlanes); for (std::size_t k = 0; k < totalPlanes; ++k) map[k] = k; }
+				for (std::size_t k = 0; k < count && (startOrd + k) < totalPlanes; ++k)
+					map[startOrd + k] = ifd0 + k;
+				tp = gt + 1;
+			}
+			ax.multiFileTiff = sawMultiFile;
+			// Only keep a non-identity map (a plain identity means canonical -> leave empty so
+			// the common no-/canonical-TiffData path stays allocation-free and obviously canonical).
+			if (anyTiffData && !map.empty())
+			{
+				bool identity = true;
+				for (std::size_t k = 0; k < map.size(); ++k) if (map[k] != k) { identity = false; break; }
+				if (!identity) ax.planeToIfd = std::move(map);
+			}
+		}
+
 		ax.dtype = pixel_type_from_ome_type(s("Type", "uint16"));
 		if (ax.dtype == PixelType::Unknown) ax.dtype = PixelType::UInt16;
 		ax.bitsPerSample = bits_of(ax.dtype);

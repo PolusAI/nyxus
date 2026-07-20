@@ -2757,6 +2757,16 @@ TEST(TEST_NYXUS, TEST_OMETIFF_ALL_5D_PERMUTATIONS) {
 	ASSERT_NO_THROW (test_ometiff_all_5d_permutations());
 }
 
+// Non-canonical <TiffData> plane->IFD mapping: dim5_reordered stores its planes in REVERSED
+// IFD order and declares the mapping via per-plane <TiffData IFD=..> blocks. A reader that
+// ignores TiffData and assumes contiguous-from-IFD-0 order reads the reversed plane's pixels;
+// honoring the map reads correctly. load_volume loops Z through loadTileFromFile -> ifdForPlane
+// (both loader stacks route here), so the facade check asserts the right plane per (z,c).
+// T=1,C=2,Z=3 (its own encoding). This is the OME-TIFF counterpart to what bioformats emits.
+TEST(TEST_NYXUS, TEST_OMETIFF_TIFFDATA_REORDERED) {
+	ASSERT_NO_THROW (test_ometiff_multitile_facade_volume("dim5_reordered.ome.tif", 1, 2, 3, 6, 8));
+}
+
 // 4D (rank-4): time-only and channel-only.
 TEST(TEST_NYXUS, TEST_OMETIFF_4D_TZYX) {
 	ASSERT_NO_THROW (test_ometiff_addressing("dim4_tzyx.ome.tif", 2, 1, 4));

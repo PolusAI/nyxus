@@ -4,9 +4,10 @@
 // <Pixels> element (SizeX/Y/Z/C/T, DimensionOrder, Type, PhysicalSize*,
 // TimeIncrement) plus <Channel> names. STL-only.
 //
-// Currently resolves dimensions + calibration + dtype. The TiffData plane->IFD
-// map and SubIFDs pyramids are not parsed yet; levels here is a single full-res
-// level.
+// Resolves dimensions + calibration + dtype + the <TiffData> plane->IFD map
+// (same-file; a <UUID> multi-file block sets OmeAxes::multiFileTiff and is left
+// at the canonical fallback). SubIFDs pyramids are not parsed yet; levels here is
+// a single full-res level.
 
 #include <string>
 #include "ome_axes.h"

@@ -120,6 +120,18 @@ namespace Nyxus
 		std::vector<OmePyramidLevel> levels;      // >=1; levels[0] full-res
 		std::vector<std::string> channelNames;    // optional (OME 'Channel'/omero)
 
+		// Explicit plane-ordinal -> IFD map from the OME <TiffData> elements, indexed by the
+		// canonical DimensionOrder ordinal (see canonicalPlaneOrdinal). Empty when the OME-XML
+		// carries no TiffData (or none that maps same-file planes), in which case the plane
+		// ordinal IS the IFD (the OME default: planes stored contiguously from IFD 0 in
+		// DimensionOrder). A writer that offsets the first IFD or reorders planes populates this.
+		std::vector<std::size_t> planeToIfd;
+
+		// True when a <TiffData> names planes in another file (a <UUID> child): companion /
+		// multi-file OME-TIFF, which this reader does not resolve. Those planes are left at the
+		// canonical fallback; the flag lets callers detect the unsupported layout.
+		bool multiFileTiff = false;
+
 		bool valid = false;   // set true by a successful parse
 
 		// Position of a label in storageAxes; -1 if absent.
@@ -130,10 +142,10 @@ namespace Nyxus
 			return -1;
 		}
 
-		// Map a (z,c,t) plane to its IFD / plane ordinal under the OME
-		// DimensionOrder (default rasterization: the axes after XY, fastest to
-		// slowest). E.g. XYZCT -> ifd = z + c*sizeZ + t*sizeZ*sizeC.
-		std::size_t ifdForPlane(std::size_t z, std::size_t c, std::size_t t) const
+		// The plane's ordinal under the OME DimensionOrder (default rasterization: the axes
+		// after XY, fastest to slowest). E.g. XYZCT -> z + c*sizeZ + t*sizeZ*sizeC. This is the
+		// IFD only when planes are stored contiguously from IFD 0; TiffData can say otherwise.
+		std::size_t canonicalPlaneOrdinal(std::size_t z, std::size_t c, std::size_t t) const
 		{
 			std::size_t idx = 0, stride = 1;
 			for (char ax : omeDimensionOrder)
@@ -145,6 +157,17 @@ namespace Nyxus
 				stride *= sz;
 			}
 			return idx;
+		}
+
+		// Map a (z,c,t) plane to the physical IFD holding its pixels. Honors an explicit
+		// <TiffData> plane->IFD map when present (writers that start at a non-zero IFD or
+		// reorder planes); otherwise falls back to the canonical ordinal.
+		std::size_t ifdForPlane(std::size_t z, std::size_t c, std::size_t t) const
+		{
+			std::size_t ord = canonicalPlaneOrdinal(z, c, t);
+			if (!planeToIfd.empty() && ord < planeToIfd.size())
+				return planeToIfd[ord];
+			return ord;
 		}
 
 		std::size_t numberPyramidLevels() const { return levels.empty() ? 1 : levels.size(); }
