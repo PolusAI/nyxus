@@ -2621,6 +2621,41 @@ TEST(TEST_NYXUS, TEST_OMEZARR_V3_ZSTD) {
 	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim5_v3_zstd.ome.zarr", 2, 3, 4));
 }
 
+// Sharded Zarr v3 (the ``sharding_indexed`` codec) -- how large v3 stores, including Axle's,
+// actually lay out data: many inner chunks packed into one shard object per (t,c). z5 3.x
+// reads it via ShardedDataset, chosen automatically when zarr.json carries a shard shape; the
+// nyxus loader is UNCHANGED because it reads through readSubarray, which unpacks the inner
+// chunks from the shard transparently. The fixture's inner chunk is (z,y,x)=(1,3,4) so each
+// 6x8 plane is a 2x2 grid of inner chunks living inside one shard -- the read must assemble
+// across inner-chunk boundaries within a shard. Same 1..1152 TCZYX encoding as the other v3.
+//
+// Coverage is the whole-volume facade + prescan, NOT test_omezarr_addressing: with sharding,
+// tileWidth/Height report the INNER chunk (4x3), so a single loadTileFromFile(0,0,...) reads
+// only the top-left inner chunk, not the whole plane -- the addressing helper's one-tile-per-
+// plane assumption. facade_volume assembles the full inner-chunk grid and checks every voxel,
+// which is the correct coverage for a multi-chunk store (same reason the multichunk v2 fixture
+// uses it). It drives both loadTileFromFile (abstract stack) and readSubarray under the hood.
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_SHARDED_FACADE_VOLUME) {
+	ASSERT_NO_THROW (test_omezarr_facade_volume("dim5_v3_sharded.ome.zarr", 2, 3, 4));
+}
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_SHARDED_CT_COUNTS) {
+	ASSERT_NO_THROW (test_omezarr_ct_counts("dim5_v3_sharded.ome.zarr", 2, 3, 4));
+}
+// Prescan over the sharded store (raw loader's readSubarray, driven through the inner-chunk
+// tile grid by for_each_voxel): whole-slide, so the ROI is the whole X*Y*Z volume.
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_SHARDED_PRESCAN) {
+	fs::path ip = omezarr_data_path("dim5_v3_sharded.ome.zarr");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+
+	Environment e;
+	SlideProps p (ip.string(), "");		// whole-slide: no mask
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+
+	EXPECT_DOUBLE_EQ(p.min_preroi_inten, 1.0);
+	EXPECT_DOUBLE_EQ(p.max_preroi_inten, 1152.0);
+	EXPECT_EQ(p.max_roi_area, (size_t)(8 * 6 * 4));
+}
+
 // No 'axes' metadata -> the loader falls back to legacy 5D TCZYX and still reads.
 TEST(TEST_NYXUS, TEST_OMEZARR_NOAXES_FALLBACK) {
 	ASSERT_NO_THROW (test_omezarr_addressing("dim5_noaxes.ome.zarr", 2, 3, 4));

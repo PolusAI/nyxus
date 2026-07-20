@@ -144,6 +144,32 @@ def write_v3(name, order, compressors=None):
     print("wrote %-24s (Zarr v3, axes=%s, compressors=%s)" % (name, order, compressors))
 
 
+def write_v3_sharded(name, order):
+    """Zarr v3 store using the ``sharding_indexed`` codec: several INNER chunks are packed
+    into one shard object on disk (one file per shard, not per chunk). This is how large v3
+    stores (incl. Axle's) actually lay out data. z5 3.x reads it transparently via
+    ShardedDataset -- the nyxus loader is unchanged, it just calls readSubarray.
+
+    Same TCZYX coordinate encoding as write_v3. Inner chunk (z,y,x)=(1,3,4) -> each 6x8 plane
+    is a 2x2 grid of inner chunks; shard (1,6,8) packs all 4 inner chunks of a plane into one
+    shard, so the read must unpack multiple inner chunks from a single shard file."""
+    path = os.path.join(HERE, name)
+    shutil.rmtree(path, ignore_errors=True)
+    data = _data_for(order)                                           # [t,c,z,y,x], order tczyx
+    inner = tuple((1 if a == "z" else 3 if a == "y" else 4 if a == "x" else 1) for a in order)
+    shards = tuple((s if a in ("y", "x", "z") else 1) for a, s in zip(order, data.shape))
+
+    g = zarr.open_group(path, mode="w", zarr_format=3)
+    a = g.create_array("0", shape=data.shape, dtype=data.dtype,
+                       chunks=inner, shards=shards, compressors=None)
+    a[:] = data
+    g.attrs["ome"] = {"version": "0.5",
+                      "multiscales": [{"axes": [_AX[ax] for ax in order],
+                                       "datasets": [{"path": "0",
+                                                     "coordinateTransformations": [{"type": "scale", "scale": [1.0] * len(order)}]}]}]}
+    print("wrote %-24s (Zarr v3 SHARDED, inner=%s shard=%s)" % (name, inner, shards))
+
+
 def write_bad(name, shape, axes):
     """Write a deliberately malformed store (its 'axes' disagrees with the array)
     so the loader must reject it cleanly, not crash."""
