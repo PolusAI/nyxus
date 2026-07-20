@@ -507,6 +507,15 @@ public:
         size_t indexTimeframe,         // T plane (OME-TIFF only)
         [[maybe_unused]] size_t level) override
     {
+        // FIX: (re)allocate lazily so this loader honors "free_tile() follows each
+        // loadTileFromFile()" -- see free_tile(). The ctor allocation covers the first read.
+        if (buf == nullptr)
+        {
+            buf = _TIFFmalloc (scanline_szb * tileHeight_);
+            if (!buf)
+                throw std::runtime_error("RawTiffStripLoader: _TIFFmalloc failed");
+        }
+
         size_t
             startLayer = indexLayerGlobalTile * tileDepth_,
             endLayer = std::min((indexLayerGlobalTile + 1) * tileDepth_, fullDepth_),
@@ -558,9 +567,18 @@ public:
     [[nodiscard]] short bitsPerSample() const override { return bitsPerSample_; }
     [[nodiscard]] size_t numberPyramidLevels() const override { return 1; }
 
+    // FIX: honor the RawFormatLoader contract that free_tile() follows EACH
+    // loadTileFromFile(). This buffer used to be allocated once in the ctor and never
+    // re-allocated, so a second load after a free wrote into freed memory (hit when
+    // looping Z to assemble a volume, and latent for multi-tile 2D scans which free per
+    // tile). Freeing is now idempotent and loadTileFromFile lazily re-allocates.
     void free_tile() override
     {
-        _TIFFfree(buf);
+        if (buf)
+        {
+            _TIFFfree(buf);
+            buf = nullptr;
+        }
     }
 
     uint32_t get_uint32_pixel(size_t idx) const

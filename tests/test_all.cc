@@ -2765,6 +2765,32 @@ TEST(TEST_NYXUS, TEST_OMETIFF_MALFORMED_THROWS) {
 }
 
 
+// Regression: the 3D prescan must scan the WHOLE volume of EVERY (channel, timeframe),
+// not one Z-plane of (c0,t0). dim5.ome.tif is C=3,T=2,Z=4,Y=6,X=8 encoding values 1..1152,
+// so the slide intensity range must be exactly [1, 1152]. Before the fix the prescan
+// (a) did a single load_tile(0,0) and then indexed W*H*D voxels off that ONE-plane buffer,
+// reading out of bounds (observed range 0..44,465 of garbage), and (b) covered only
+// (c0,t0) -> a range of 1..192, which under-sized intensity-indexed buffers for c>0 and
+// segfaulted. The area check guards that ROI geometry is taken from the first pass only
+// (otherwise it would be multiplied by n_channels*n_timeframes).
+TEST(TEST_NYXUS, TEST_3D_PRESCAN_SLIDE_RANGE) {
+	fs::path ip = ometiff_data_path("dim5.ome.tif");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+
+	Environment e;
+	SlideProps p (ip.string(), "");		// whole-slide: no mask
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+
+	EXPECT_EQ(p.inten_channels, (size_t)3);
+	EXPECT_EQ(p.inten_time, (size_t)2);
+	EXPECT_EQ(p.volume_d, (size_t)4);
+	// the full encoded range across ALL (c,t) -- not garbage, and not just (c0,t0)'s 1..192
+	EXPECT_DOUBLE_EQ(p.min_preroi_inten, 1.0);
+	EXPECT_DOUBLE_EQ(p.max_preroi_inten, 1152.0);
+	// geometry from the first pass only: one whole-slide ROI of exactly X*Y*Z voxels
+	EXPECT_EQ(p.max_roi_area, (size_t)(8 * 6 * 4));
+}
+
 // Regression: the 3D WHOLE-VOLUME reduce path. reduce_trivial_3d_wholevolume calls
 // D3_VoxelIntensityFeatures::extract(), which used to invoke the 2-arg calculate() -- a stub
 // that throws "illegal call" -- so EVERY 3D whole-volume featurization died before writing a
