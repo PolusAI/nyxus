@@ -3246,6 +3246,35 @@ TEST(TEST_NYXUS, TEST_RESOLVE_SLIDE_ANISOTROPY) {
 	EXPECT_DOUBLE_EQ(az, 1.0);
 }
 
+// TEST_RESOLVE_SLIDE_ANISOTROPY covers the DECISION (physical spacing -> ratios). This covers
+// that the resolved ratios actually RESCALE ROI geometry end-to-end: the 3D prescan's
+// anisotropic branch (make_anisotropic_aabb 3-arg -> AABB::apply_anisotropy) was never
+// exercised -- every other test uses make_nonanisotropic_aabb. A customized az=4 must scale the
+// ROI's z-depth ~4x while leaving x/y (ax=ay=1) unchanged; without applying anisotropy the
+// depth would be identical to the isotropic run. dim3_mask's ROI spans all Z (depth 4).
+TEST(TEST_NYXUS, TEST_3D_ANISOTROPY_RESCALES_ROI_DEPTH) {
+	fs::path ip = ometiff_data_path("dim5.ome.tif");
+	fs::path mp = ometiff_data_path("dim3_mask.ome.tif");
+	ASSERT_TRUE(fs::exists(ip) && fs::exists(mp));
+	Environment e;
+
+	SlideProps iso (ip.string(), mp.string());
+	AnisotropyOptions aniso_off;                       // un-customized -> isotropic AABB
+	ASSERT_FALSE(aniso_off.customized());
+	ASSERT_TRUE(Nyxus::scan_slide_props(iso, 3, aniso_off, e.resultOptions.need_annotation()));
+
+	SlideProps ani (ip.string(), mp.string());
+	AnisotropyOptions aniso_z4;
+	aniso_z4.set_aniso_z(4.0);                          // z 4x thicker
+	ASSERT_TRUE(aniso_z4.customized());
+	ASSERT_TRUE(Nyxus::scan_slide_props(ani, 3, aniso_z4, e.resultOptions.need_annotation()));
+
+	EXPECT_GT(ani.max_roi_d, iso.max_roi_d) << "z-anisotropy did not rescale ROI depth";
+	EXPECT_GE(ani.max_roi_d, iso.max_roi_d * 3) << "z-depth not scaled ~4x";
+	EXPECT_EQ(ani.max_roi_w, iso.max_roi_w) << "x (ax=1) must be unchanged";
+	EXPECT_EQ(ani.max_roi_h, iso.max_roi_h) << "y (ay=1) must be unchanged";
+}
+
 int main(int argc, char **argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
