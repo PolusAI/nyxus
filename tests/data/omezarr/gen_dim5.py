@@ -177,6 +177,10 @@ def main():
     write_v3("dim5_v3.ome.zarr", "tczyx")
     # plane split across a 2x2 chunk grid (3x4 chunks over the 6x8 plane) -> multi-tile assembly
     write_multichunk("dim5_multichunk.ome.zarr", "tczyx", 3, 4)
+    # PARTIAL edge chunks: chunk (4,5) does NOT divide the 6x8 plane, so the last row-chunk is
+    # 2 tall and the last col-chunk is 3 wide. Exercises the validH/validW seam clamp in the
+    # volumetric assembly, which every exact-multiple fixture (above) leaves untested.
+    write_multichunk("dim5_oddchunk.ome.zarr", "tczyx", 4, 5)
     # --- illegal / adversarial: must be rejected cleanly, not crash ---
     # 3D array but 'axes' declares 5 entries -> indexing the shape by axis role OOBs
     write_bad("bad_axes_count.ome.zarr", (Z, Y, X), [_AX[k] for k in ("t", "c", "z", "y", "x")])

@@ -176,21 +176,22 @@ void test_ometiff_facade_volume(const char* store, int T, int C, int Z)
     il.close();
 }
 
-// dim5_multitile.ome.tif carries its own (larger Y/X, smaller C/Z/T) shape because a TIFF
-// tile size must be a multiple of 16: only a plane bigger than 16x16 yields a real tile grid.
-const int MT_T = 1, MT_C = 2, MT_Z = 2, MT_Y = 32, MT_X = 48;
-
-inline uint32_t ometiff_mt_enc(int x, int y, int z, int c, int t)
+// The multitile fixtures carry their own (larger Y/X) shape because a TIFF tile size must be
+// a multiple of 16: only a plane bigger than 16x16 yields a real tile grid. Their coordinate
+// encoding is encoded_tczyx with each fixture's own C/Z/Y/X (see gen_ome_tiff.write_multitile).
+inline uint32_t ometiff_enc_dims(int x, int y, int z, int c, int t, int C, int Z, int Y, int X)
 {
-    return (uint32_t)(1 + ((((t * MT_C + c) * MT_Z + z) * MT_Y + y) * MT_X + x));
+    return (uint32_t)(1 + ((((t * C + c) * Z + z) * Y + y) * X + x));
 }
 
-// Multi-TILE plane: each 32x48 plane spans a 2x3 grid of 16x16 tiles, unlike every other
-// fixture (one tile/chunk per plane), so assembling a volume from tile (0,0) alone silently
-// returns wrong data outside the first 16x16 corner -- and over-reads that tile's buffer.
-void test_ometiff_multitile_facade_volume()
+// Multi-TILE plane: each plane spans a grid of 16x16 tiles, unlike every other fixture (one
+// tile/chunk per plane), so assembling a volume from tile (0,0) alone silently returns wrong
+// data outside the first 16x16 corner -- and over-reads that tile's buffer. With Y or X not a
+// multiple of 16 the last tile of the row/column is PARTIAL, exercising the validH/validW seam
+// clamp. Asserting the exact value at every voxel IS the seam check.
+void test_ometiff_multitile_facade_volume(const char* store, int T, int C, int Z, int Y, int X)
 {
-    fs::path ds = ometiff_data_path("dim5_multitile.ome.tif");
+    fs::path ds = ometiff_data_path(store);
     ASSERT_TRUE(fs::exists(ds)) << ds.string();
 
     SlideProps p;
@@ -199,21 +200,21 @@ void test_ometiff_multitile_facade_volume()
     FpImageOptions fp;
     ImageLoader il;
     ASSERT_TRUE(il.open(p, fp)) << ds.string();
-    ASSERT_EQ(il.get_full_width(), (size_t)MT_X);
-    ASSERT_EQ(il.get_full_height(), (size_t)MT_Y);
-    ASSERT_EQ(il.get_full_depth(), (size_t)MT_Z);
+    ASSERT_EQ(il.get_full_width(), (size_t)X);
+    ASSERT_EQ(il.get_full_height(), (size_t)Y);
+    ASSERT_EQ(il.get_full_depth(), (size_t)Z);
 
-    for (int t = 0; t < MT_T; ++t)
-      for (int c = 0; c < MT_C; ++c)
+    for (int t = 0; t < T; ++t)
+      for (int c = 0; c < C; ++c)
       {
           ASSERT_TRUE(il.load_volume(c, t));
           const std::vector<uint32_t>& vol = il.get_int_volume_buffer();
-          ASSERT_EQ(vol.size(), (size_t)MT_X * MT_Y * MT_Z);
-          for (int z = 0; z < MT_Z; ++z)
-            for (int y = 0; y < MT_Y; ++y)
-              for (int x = 0; x < MT_X; ++x)
-                ASSERT_EQ(vol[(size_t)z * MT_X * MT_Y + (size_t)y * MT_X + x], ometiff_mt_enc(x, y, z, c, t))
-                    << "dim5_multitile vol (x" << x << " y" << y << " z" << z << " c" << c << " t" << t << ")";
+          ASSERT_EQ(vol.size(), (size_t)X * Y * Z);
+          for (int z = 0; z < Z; ++z)
+            for (int y = 0; y < Y; ++y)
+              for (int x = 0; x < X; ++x)
+                ASSERT_EQ(vol[(size_t)z * X * Y + (size_t)y * X + x], ometiff_enc_dims(x, y, z, c, t, C, Z, Y, X))
+                    << store << " vol (x" << x << " y" << y << " z" << z << " c" << c << " t" << t << ")";
       }
     il.close();
 }

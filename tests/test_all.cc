@@ -2670,6 +2670,26 @@ TEST(TEST_NYXUS, TEST_OMEZARR_MULTICHUNK_PRESCAN) {
 	EXPECT_EQ(p.max_roi_area, (size_t)(8 * 6 * 4));
 }
 
+// PARTIAL edge chunks: chunk (4,5) does not divide the 6x8 plane, so the last row-chunk is 2
+// tall and the last col-chunk is 3 wide. dim5_multichunk above (3x4 over 6x8) tiles exactly,
+// so the validH/validW seam clamp never ran on the OME-Zarr path either. Asserting the exact
+// value at every voxel is the seam check; same 1..1152 TCZYX encoding as dim5_multichunk.
+TEST(TEST_NYXUS, TEST_OMEZARR_ODDCHUNK_FACADE_VOLUME) {
+	ASSERT_NO_THROW (test_omezarr_facade_volume("dim5_oddchunk.ome.zarr", 2, 3, 4));
+}
+TEST(TEST_NYXUS, TEST_OMEZARR_ODDCHUNK_PRESCAN) {
+	fs::path ip = omezarr_data_path("dim5_oddchunk.ome.zarr");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+
+	Environment e;
+	SlideProps p (ip.string(), "");		// whole-slide: no mask
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+
+	EXPECT_DOUBLE_EQ(p.min_preroi_inten, 1.0);
+	EXPECT_DOUBLE_EQ(p.max_preroi_inten, 1152.0);
+	EXPECT_EQ(p.max_roi_area, (size_t)(8 * 6 * 4));
+}
+
 // Negative: out-of-range channel/timeframe through the whole-volume facade must throw.
 TEST(TEST_NYXUS, TEST_OMEZARR_LOAD_VOLUME_OUT_OF_RANGE) {
 	ASSERT_NO_THROW (test_omezarr_load_volume_out_of_range());
@@ -2734,7 +2754,7 @@ TEST(TEST_NYXUS, TEST_OMETIFF_TILED_FACADE_VOLUME) {
 // it passes even when only tile (0,0) is read. This is the OME-TIFF counterpart of
 // TEST_OMEZARR_MULTICHUNK_FACADE_VOLUME. Covers ImageLoader::assemble_volume...
 TEST(TEST_NYXUS, TEST_OMETIFF_MULTITILE_FACADE_VOLUME) {
-	ASSERT_NO_THROW (test_ometiff_multitile_facade_volume());
+	ASSERT_NO_THROW (test_ometiff_multitile_facade_volume("dim5_multitile.ome.tif", 1, 2, 2, 32, 48));
 }
 // ...and RawImageLoader::for_each_voxel (the prescan), which had the same single-tile bug.
 // Encoded values run 1..6144 over all (c,t); whole-slide, so the ROI is the whole volume.
@@ -2749,6 +2769,29 @@ TEST(TEST_NYXUS, TEST_OMETIFF_MULTITILE_PRESCAN) {
 	EXPECT_DOUBLE_EQ(p.min_preroi_inten, 1.0);
 	EXPECT_DOUBLE_EQ(p.max_preroi_inten, 6144.0);
 	EXPECT_EQ(p.max_roi_area, (size_t)(48 * 32 * 2));
+}
+
+// PARTIAL edge tiles: 40x24 plane / 16 -> 3x2 tiles, last row-tile 8 tall, last col-tile 8
+// wide. Every multi-tile fixture above has plane dims that are exact multiples of the tile
+// size, so the validH/validW seam clamp -- min(tileDim, fullDim-offset) -- had never run.
+// Reading the exact value at every voxel checks the partial tiles are copied without garbage
+// past the seam and without over-reading the tile buffer. Encoded 1..1920 over (c in 0,1).
+TEST(TEST_NYXUS, TEST_OMETIFF_ODDTILE_FACADE_VOLUME) {
+	ASSERT_NO_THROW (test_ometiff_multitile_facade_volume("dim5_oddtile.ome.tif", 1, 2, 1, 40, 24));
+}
+// The prescan (for_each_voxel) walks the same partial grid; its slide min/max and ROI area
+// would be wrong if a partial tile were mis-clamped (a too-large validH double-counts voxels).
+TEST(TEST_NYXUS, TEST_OMETIFF_ODDTILE_PRESCAN) {
+	fs::path ip = ometiff_data_path("dim5_oddtile.ome.tif");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+
+	Environment e;
+	SlideProps p (ip.string(), "");		// whole-slide: no mask
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+
+	EXPECT_DOUBLE_EQ(p.min_preroi_inten, 1.0);
+	EXPECT_DOUBLE_EQ(p.max_preroi_inten, 1920.0);	// 1 + (((0*2+1)*1+0)*40+39)*24+23
+	EXPECT_EQ(p.max_roi_area, (size_t)(24 * 40 * 1));
 }
 
 // Facade whole-volume assembly (load_volume loops Z into one X*Y*Z buffer).

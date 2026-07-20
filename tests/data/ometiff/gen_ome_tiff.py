@@ -84,21 +84,24 @@ def write_tiled(name, order):
 MT_T, MT_C, MT_Z, MT_Y, MT_X = 1, 2, 2, 32, 48
 
 
-def write_multitile(name):
-    """A tiled OME-TIFF whose every plane spans a GRID of tiles (32x48 plane / 16x16 tile
-    -> 2x3 = 6 tiles), unlike dim5_tiled.ome.tif where a single tile covers the whole
-    plane. A volumetric read that fetches only tile (0,0) returns wrong data for
-    everything outside the first 16x16 corner. Same coordinate encoding, its own dims."""
-    t, c, z, y, x = np.meshgrid(np.arange(MT_T), np.arange(MT_C), np.arange(MT_Z),
-                                np.arange(MT_Y), np.arange(MT_X), indexing="ij")
-    data = (1 + ((((t * MT_C + c) * MT_Z + z) * MT_Y + y) * MT_X + x)).astype("uint16")
+def write_multitile(name, T=MT_T, C=MT_C, Z=MT_Z, Y=MT_Y, X=MT_X):
+    """A tiled OME-TIFF whose every plane spans a GRID of 16x16 tiles (default 32x48 plane
+    -> 2x3 = 6 tiles), unlike dim5_tiled.ome.tif where a single tile covers the whole plane.
+    A volumetric read that fetches only tile (0,0) returns wrong data for everything outside
+    the first 16x16 corner. Same coordinate encoding as encoded_tczyx, its own dims.
+
+    When Y or X is not a multiple of 16 the last tile of that row/column is PARTIAL, which
+    exercises the validH/validW seam clamp in the volumetric assembly."""
+    t, c, z, y, x = np.meshgrid(np.arange(T), np.arange(C), np.arange(Z),
+                                np.arange(Y), np.arange(X), indexing="ij")
+    data = (1 + ((((t * C + c) * Z + z) * Y + y) * X + x)).astype("uint16")
     path = os.path.join(HERE, name)
     tifffile.imwrite(path, data, photometric="minisblack", metadata={"axes": "TCZYX"},
                      tile=(16, 16), ome=True)
     with tifffile.TiffFile(path) as tf:
-        print("wrote %-24s %dx%d plane, tile grid %dx%d, IFDs=%d tiled=%s max=%d"
-              % (name, MT_Y, MT_X, -(-MT_Y // 16), -(-MT_X // 16), len(tf.pages),
-                 tf.pages[0].is_tiled, data.max()))
+        print("wrote %-24s %dx%d plane, tile grid %dx%d (last %dx%d), IFDs=%d tiled=%s max=%d"
+              % (name, Y, X, -(-Y // 16), -(-X // 16), Y % 16 or 16, X % 16 or 16,
+                 len(tf.pages), tf.pages[0].is_tiled, data.max()))
 
 
 def write_mask(name):
@@ -145,6 +148,9 @@ def main():
     write_tiled("dim5_tiled.ome.tif", "TCZYX")
     # planes spanning a real 2x3 tile grid -> multi-tile volumetric assembly
     write_multitile("dim5_multitile.ome.tif")
+    # PARTIAL edge tiles: 40x24 plane / 16 -> 3x2 tiles, last row-tile 8 tall, last col-tile
+    # 8 wide. Exercises the seam clamp the exact-multiple multitile fixture leaves untested.
+    write_multitile("dim5_oddtile.ome.tif", T=1, C=2, Z=1, Y=40, X=24)
     # --- illegal / adversarial: must be rejected cleanly, not crash ---
     write_bad_rgb("bad_rgb.ome.tif")
     write_bad_corrupt("bad_corrupt.tif")
