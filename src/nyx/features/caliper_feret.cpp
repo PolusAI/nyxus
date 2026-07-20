@@ -1,3 +1,4 @@
+#include <algorithm>	// FIX (caliper float-precision): std::min/std::max for the float-hull X-extent
 #include "caliper.h"
 #include "../environment.h"
 #include "../helpers/helpers.h"
@@ -79,7 +80,7 @@ void CaliperFeretFeature::save_value(std::vector<std::vector<double>>& fvals)
 void CaliperFeretFeature::calculate_angled_caliper_measurements (const std::vector<Pixel2>& convex_hull, std::vector<float>& angles, std::vector<double>& ferets)
 {
 	// Rotated convex hull
-	std::vector<Pixel2> CH_rot;
+	std::vector<Point2f> CH_rot;	// FIX (caliper float-precision): float-precision rotated hull (was integer Pixel2, truncated inward)
 	CH_rot.reserve (convex_hull.size());
 
 	// Rotate and calculate the diameter
@@ -87,8 +88,10 @@ void CaliperFeretFeature::calculate_angled_caliper_measurements (const std::vect
 	ferets.clear();
 	for (float theta = 0.f; theta <= 180.f; theta += rot_angle_increment)
 	{
-		Rotation::rotate_around_center (convex_hull, theta, CH_rot);
-		auto [minX, minY, maxX, maxY] = AABB::from_pixelcloud (CH_rot);
+		Rotation::rotate_around_center_fp (convex_hull, theta, CH_rot);	// FIX (caliper float-precision): no integer truncation
+		// FIX (caliper float-precision): min/max X directly over the float hull (AABB::from_pixelcloud takes Pixel2)
+		double minX = CH_rot[0].x, maxX = CH_rot[0].x;
+		for (auto& p : CH_rot) { minX = std::min(minX, (double)p.x); maxX = std::max(maxX, (double)p.x); }
 
 		// Save a caliper measurement orthogonal to X
 		double feret = maxX - minX;

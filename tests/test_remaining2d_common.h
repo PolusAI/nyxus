@@ -25,29 +25,37 @@
 static std::unordered_map<std::string, double> oracle_3p_remaining2d_feature_golden_values{
 	{"EROSIONS_2_VANISH_COMPLEMENT", 0.0},
 	{"MIN_FERET_ANGLE", 40.0},
-	{"MAX_FERET_ANGLE", 0.0},
-	{"STAT_FERET_DIAM_MIN", 4.0},
-	{"STAT_FERET_DIAM_MAX", 5.0},
-	{"STAT_FERET_DIAM_MEAN", 4.9473684210526319},
-	{"STAT_FERET_DIAM_MEDIAN", 5.0},
-	{"STAT_FERET_DIAM_STDDEV", 0.22329687826943606},
+	// FIX (caliper float-precision): re-pinned to the float-precision hull-rotation values (see rotation.cpp
+	// rotate_around_center_fp). The old integer-Pixel2 rotation truncated every rotated vertex inward,
+	// so these 8x8-fixture goldens shifted when the truncation was removed. MAX_FERET_ANGLE moved 0->110
+	// because the per-angle Feret ties differently once the diameters are no longer integer-quantized
+	// (the Feret angle is a regression-only Nyxus-frame convention, not oracle-vetted). MODE values are
+	// unchanged. The diameters themselves are vetted vs imea (<=10%) on the ellipse oracle below.
+	{"MAX_FERET_ANGLE", 110.0},
+	{"STAT_FERET_DIAM_MIN", 4.47301},
+	{"STAT_FERET_DIAM_MAX", 6.3222},
+	{"STAT_FERET_DIAM_MEAN", 5.40848},
+	{"STAT_FERET_DIAM_MEDIAN", 5.19615},
+	{"STAT_FERET_DIAM_STDDEV", 0.550668},
 	{"STAT_FERET_DIAM_MODE", 5.0},
 	// FIXED (caliper reimpl): Martin is now the area-bisecting chord and Nassenstein the bottom-tangent
 	// vertical chord (one diameter per angle), not the old min+max of a Y-grid of horizontal chords.
 	// The old goldens pinned the bug (Martin min 0.8, Nassenstein min/mode 0.0 — impossible for a solid
 	// shape). These are the corrected values on the 8x8 fixture; the diameters are vetted vs imea on a
 	// clean ellipse in TEST_SHAPE2D_CALIPER_MARTIN_NASSENSTEIN_IMEA_ELLIPSE_ORACLE.
-	{"STAT_MARTIN_DIAM_MIN", 4.0},
-	{"STAT_MARTIN_DIAM_MAX", 5.0},
-	{"STAT_MARTIN_DIAM_MEAN", 4.64819},
-	{"STAT_MARTIN_DIAM_MEDIAN", 4.65875},
-	{"STAT_MARTIN_DIAM_STDDEV", 0.315754},
+	// FIX (caliper float-precision): re-pinned again after the float-precision hull rotation removed the inward
+	// integer-truncation bias (MODE unchanged).
+	{"STAT_MARTIN_DIAM_MIN", 4.25885},
+	{"STAT_MARTIN_DIAM_MAX", 6.12801},
+	{"STAT_MARTIN_DIAM_MEAN", 5.01762},
+	{"STAT_MARTIN_DIAM_MEDIAN", 4.97511},
+	{"STAT_MARTIN_DIAM_STDDEV", 0.553162},
 	{"STAT_MARTIN_DIAM_MODE", 4.0},
-	{"STAT_NASSENSTEIN_DIAM_MIN", 1.0},
-	{"STAT_NASSENSTEIN_DIAM_MAX", 6.0},
-	{"STAT_NASSENSTEIN_DIAM_MEAN", 4.60324},
-	{"STAT_NASSENSTEIN_DIAM_MEDIAN", 5.0},
-	{"STAT_NASSENSTEIN_DIAM_STDDEV", 1.41327},
+	{"STAT_NASSENSTEIN_DIAM_MIN", 1.67316},
+	{"STAT_NASSENSTEIN_DIAM_MAX", 6.24165},
+	{"STAT_NASSENSTEIN_DIAM_MEAN", 4.77746},
+	{"STAT_NASSENSTEIN_DIAM_MEDIAN", 5.03857},
+	{"STAT_NASSENSTEIN_DIAM_STDDEV", 1.09628},
 	{"STAT_NASSENSTEIN_DIAM_MODE", 4.0},
 	{"MAXCHORDS_MAX", 6.0},
 	{"MAXCHORDS_MIN", 3.0},
@@ -76,7 +84,9 @@ static std::unordered_map<std::string, double> unvetted_nyxus_regression_remaini
 	// assertions below now value-compare against them (agrees_gt) so any future drift is caught.
 	{"POLYGONALITY_AVE", 2.0833333333333357},
 	{"HEXAGONALITY_AVE", 6.8823312738837217},
-	{"HEXAGONALITY_STDDEV", 0.18495557498763179},
+	// FIX (caliper float-precision): HEXAGONALITY_STDDEV re-pinned (depends on STAT_FERET_DIAM_MIN/MAX, which
+	// shifted with the float-precision hull rotation); the AVE scores stayed within tolerance.
+	{"HEXAGONALITY_STDDEV", 0.188079},
 	// FIXED (chords.cpp idxmax used iteMin): max-angle now indexes the longest chord (angle 0), not the min
 	{"MAXCHORDS_MAX_ANG", 0.0},
 	{"MAXCHORDS_MIN_ANG", 0.94247779607693793},
@@ -382,7 +392,12 @@ static void assert_caliper_close_to_imea(
 	const std::vector<std::vector<double>>& fvals,
 	Nyxus::Feature2D feature,
 	const std::string& feature_name,
-	double reltol = 0.15)
+	// FIX (caliper float-precision): tightened 0.15 -> 0.10 after the float-precision hull rotation removed the
+	// integer-truncation inward bias. Measured residuals on the a=20,b=10 ellipse: Martin 1.8-4.6%,
+	// Feret 1.4-4.8%, Nassenstein 2.4-3.7% except its bottom-tangent MIN (8.9%) and MEDIAN (6.0%). The
+	// floor is the Nassenstein MIN: a near-apex vertical tangent chord measured on the convex hull vs
+	// imea's raster - a definitional hull-vs-raster gap, not a precision loss, so 0.10 is the honest bound.
+	double reltol = 0.10)
 {
 	SCOPED_TRACE(std::string("CALIPER_VS_IMEA__") + feature_name);
 	ASSERT_TRUE(imea_ellipse_caliper_oracle.count(feature_name) > 0);
