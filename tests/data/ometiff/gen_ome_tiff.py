@@ -175,6 +175,62 @@ def write_pyramid(name):
               % (name, len(tf.pages), len(tf.series[0].levels) - 1, Yp, Xp))
 
 
+def write_calibrated_tiff(name):
+    """P2: an OME-TIFF carrying physical voxel spacing (PhysicalSizeX/Y/Z + units) in its
+    OME-XML, so the loader must surface physicalSize*/unit into SlideProps -- the TIFF twin of
+    dim5_calibrated.ome.zarr. Anisotropic: X=Y=0.5, Z=2.0 micrometer. TCZYX 2,3,4,6,8."""
+    data = _data_for("TCZYX")
+    path = os.path.join(HERE, name)
+    tifffile.imwrite(path, data, photometric="minisblack", ome=True, metadata={
+        "axes": "TCZYX", "PhysicalSizeX": 0.5, "PhysicalSizeY": 0.5, "PhysicalSizeZ": 2.0,
+        "PhysicalSizeXUnit": "micrometer", "PhysicalSizeYUnit": "micrometer",
+        "PhysicalSizeZUnit": "micrometer"})
+    print("wrote %-24s (calibrated: physX/Y=0.5 physZ=2.0 micrometer)" % name)
+
+
+def write_bad_ifd(name):
+    """N2: an OME-TIFF whose <TiffData> maps one plane to an IFD PAST the end of the file (an
+    in-file overrun, not a multi-file UUID). ifdForPlane returns it, so the read must throw
+    cleanly at TIFFSetDirectory, not crash. 4 planes stored, but plane (z3) claims IFD=99."""
+    rT, rC, rZ = 1, 1, 4
+    phys = np.empty((rZ, Y, X), "uint16")
+    yy, xx = np.meshgrid(np.arange(Y), np.arange(X), indexing="ij")
+    td = []
+    for z in range(rZ):
+        phys[z] = (1 + ((z * Y + yy) * X + xx)).astype("uint16")
+        ifd = 99 if z == rZ - 1 else z          # last plane points past EOF
+        td.append('<TiffData FirstC="0" FirstT="0" FirstZ="%d" IFD="%d" PlaneCount="1"/>' % (z, ifd))
+    ome = ('<?xml version="1.0" encoding="UTF-8"?>'
+           '<OME xmlns="http://www.openmicroscopy.org/Schemas/OME/2016-06">'
+           '<Image ID="Image:0" Name="badifd"><Pixels ID="Pixels:0" DimensionOrder="XYZCT" '
+           'Type="uint16" SizeX="%d" SizeY="%d" SizeZ="%d" SizeC="1" SizeT="1">%s'
+           '</Pixels></Image></OME>' % (X, Y, rZ, "".join(td)))
+    tifffile.imwrite(os.path.join(HERE, name), phys, description=ome, metadata=None,
+                     photometric="minisblack")
+    print("wrote %-24s (TiffData IFD=99 on plane z3 -> read must throw)" % name)
+
+
+def write_empty_mask(name):
+    """N3: an all-background (all-zero) single-channel ZYX mask. A segmented run finds ZERO
+    ROIs -- the pipeline must handle it (no ROIs, no crash), not divide-by-zero or read garbage."""
+    m = np.zeros((Z, Y, X), "uint16")
+    tifffile.imwrite(os.path.join(HERE, name), m, photometric="minisblack",
+                     metadata={"axes": "ZYX"}, ome=True)
+    print("wrote %-24s (empty mask -> 0 ROIs)" % name)
+
+
+def write_multichannel_mask(name):
+    """N4: a MULTI-channel (CZYX, C=2) label mask, to pair with single-channel intensity. The
+    featurize loop iterates the INTENSITY's channels, so the extra mask channel must simply be
+    ignored (mask channel clamped to what the intensity asks for), not crash. Same ROI on both
+    mask channels so the result is channel-independent."""
+    m = np.zeros((2, Z, Y, X), "uint16")
+    m[:, :, 1:5, 1:7] = 1
+    tifffile.imwrite(os.path.join(HERE, name), m, photometric="minisblack",
+                     metadata={"axes": "CZYX"}, ome=True)
+    print("wrote %-24s (C=2 label mask -> extra channel ignored)" % name)
+
+
 def write_bad_rgb(name):
     """RGB OME-TIFF -- nyxus is grayscale-only, so the loader must reject it."""
     path = os.path.join(HERE, name)

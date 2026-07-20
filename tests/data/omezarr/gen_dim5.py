@@ -171,6 +171,47 @@ def write_v3_sharded(name, order):
     print("wrote %-24s (Zarr v3 SHARDED, inner=%s shard=%s)" % (name, inner, shards))
 
 
+def write_label_mask(name):
+    """P4/N3: a single-channel ZYX label mask (mostly background, a few small ROIs), the
+    OME-Zarr twin of dim3_mask.ome.tif. Pairs with a T>1 Zarr intensity to exercise the
+    1-mask : N-timeframe reuse on the Zarr path (the crash's positive twin)."""
+    path = os.path.join(HERE, name)
+    shutil.rmtree(path, ignore_errors=True)
+    m = np.zeros((Z, Y, X), "uint32")
+    m[:, 1:5, 1:7] = 1                                  # one ROI (label 1), interior bbox
+    g = zarr.open_group(path, mode="w", zarr_format=2)
+    a = g.create_array("0", shape=m.shape, dtype=m.dtype, chunks=(1, Y, X), compressors=None)
+    a[:] = m
+    g.attrs.put({"multiscales": [{"version": "0.4", "axes": [_AX[c] for c in "zyx"],
+        "datasets": [{"path": "0", "coordinateTransformations": [
+            {"type": "scale", "scale": [1.0, 1.0, 1.0]}]}]}]})
+    print("wrote %-24s (ZYX label mask, ROI voxels=%d)" % (name, int(m.sum())))
+
+
+def write_v3_badcodec(name):
+    """N1: a Zarr v3 store whose zarr.json declares a codec z5 does not support. z5's
+    readV3CodecsFromJson throws 'unsupported zarr v3 codec' at openDataset (metadata parse,
+    before any data read), so the loader must surface a clean error, not crash. Written
+    uncompressed, then the codec list is patched to an unknown name."""
+    path = os.path.join(HERE, name)
+    shutil.rmtree(path, ignore_errors=True)
+    data = _data_for("tczyx")
+    chunks = tuple(1 if a == "z" else s for a, s in zip("tczyx", data.shape))
+    g = zarr.open_group(path, mode="w", zarr_format=3)
+    a = g.create_array("0", shape=data.shape, dtype=data.dtype, chunks=chunks, compressors=None)
+    a[:] = data
+    g.attrs["ome"] = {"version": "0.5", "multiscales": [{"axes": [_AX[c] for c in "tczyx"],
+        "datasets": [{"path": "0", "coordinateTransformations": [
+            {"type": "scale", "scale": [1.0] * 5}]}]}]}
+    # patch the array's zarr.json to reference an unsupported codec
+    zj_path = os.path.join(path, "0", "zarr.json")
+    zj = json.load(open(zj_path))
+    zj["codecs"] = [{"name": "bytes", "configuration": {"endian": "little"}},
+                    {"name": "bogus_codec_xyz", "configuration": {}}]
+    json.dump(zj, open(zj_path, "w"))
+    print("wrote %-24s (v3 with unsupported codec 'bogus_codec_xyz')" % name)
+
+
 def write_bad(name, shape, axes):
     """Write a deliberately malformed store (its 'axes' disagrees with the array)
     so the loader must reject it cleanly, not crash."""

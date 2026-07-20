@@ -95,6 +95,19 @@ TEST(OmeTiffMetaTiffData, ReversedPerPlaneMapping)
 	EXPECT_EQ(a.ifdForPlane(1, 1, 0), 0u);
 }
 
+// P5: PlaneCount omitted -> defaults to "the remaining planes from the start plane" (OME
+// spec). A single block with only IFD given must map every plane from that offset.
+TEST(OmeTiffMetaTiffData, OmittedPlaneCountCoversRemaining)
+{
+	Nyxus::OmeAxes a = Nyxus::parse_ome_xml(tiffdata_xml("<TiffData IFD=\"5\"/>"));
+	ASSERT_TRUE(a.valid);
+	ASSERT_EQ(a.planeToIfd.size(), 4u);          // 4 planes (Z=2,C=2)
+	EXPECT_EQ(a.ifdForPlane(0, 0, 0), 5u);       // start at IFD 5
+	EXPECT_EQ(a.ifdForPlane(1, 0, 0), 6u);
+	EXPECT_EQ(a.ifdForPlane(0, 1, 0), 7u);
+	EXPECT_EQ(a.ifdForPlane(1, 1, 0), 8u);       // all four planes mapped, consecutively
+}
+
 // A non-zero starting IFD (planes contiguous but offset, e.g. a multi-image container).
 TEST(OmeTiffMetaTiffData, NonZeroStartOffsetsAllPlanes)
 {

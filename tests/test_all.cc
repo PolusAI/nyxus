@@ -4,6 +4,7 @@
 #include "test_gabor_regression.h"
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
+#include "../src/nyx/ome/format_detect.h"		// detect_input_format (P1)
 #include "test_contour.h"
 #include "test_ome_meta.h"		// native-OME metadata parsers / OmeAxes descriptor
 #include "test_ometiff_mechanics.h"	// OME-TIFF native (z,c,t)->IFD read (core; no USE_Z5)
@@ -2750,6 +2751,31 @@ TEST(TEST_NYXUS, TEST_OMEZARR_MALFORMED_THROWS) {
 	ASSERT_NO_THROW (test_omezarr_malformed_throws());
 }
 
+// N1 (negative): a Zarr v3 store whose zarr.json declares a codec z5 does not support. z5's
+// readV3CodecsFromJson throws "unsupported zarr v3 codec" during metadata parse (openDataset),
+// so the loader must surface a clean error, not crash. Both loader stacks must reject it.
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_UNSUPPORTED_CODEC_THROWS) {
+	fs::path ds = omezarr_data_path("dim5_v3_badcodec.ome.zarr");
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+	EXPECT_ANY_THROW(NyxusOmeZarrLoader<uint32_t>(1, ds.string()));
+	EXPECT_ANY_THROW(RawOmezarrLoader(ds.string()));
+}
+
+// P4 (positive): the crash's positive twin on the OME-Zarr path -- a T>1 Zarr intensity paired
+// with a single-timeframe ZYX Zarr mask. Zarr never crashed (no T axis to over-index), but it
+// was never asserted. The prescan must reuse the mask across timeframes and find the ROI.
+TEST(TEST_NYXUS, TEST_OMEZARR_MULTITIMEFRAME_MASK_PRESCAN) {
+	fs::path ip = omezarr_data_path("dim5.ome.zarr");        // T=2, C=3, Z=4
+	fs::path mp = omezarr_data_path("dim3_mask.ome.zarr");   // ZYX (T=1) label mask
+	ASSERT_TRUE(fs::exists(ip) && fs::exists(mp));
+	Environment e;
+	SlideProps p (ip.string(), mp.string());
+	bool ok = false;
+	ASSERT_NO_THROW(ok = Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	EXPECT_TRUE(ok);
+	EXPECT_EQ(p.max_roi_area, (size_t)(4 * 4 * 6));
+}
+
 #endif // OMEZARR_SUPPORT
 
 
@@ -2765,6 +2791,141 @@ TEST(TEST_NYXUS, TEST_RAW_OMETIFF_5D_CHANNEL_TIME_ADDRESSING) {
 // All 6 legal DimensionOrder values: passes only if ifdForPlane honors DimensionOrder.
 TEST(TEST_NYXUS, TEST_OMETIFF_ALL_5D_PERMUTATIONS) {
 	ASSERT_NO_THROW (test_ometiff_all_5d_permutations());
+}
+
+// Regression (found by the scale/stress harness): a MULTI-timeframe OME-TIFF paired with a
+// single-timeframe (ZYX) mask. The 3D prescan (RawImageLoader::for_each_voxel) reuses the
+// mask across every intensity timeframe, but read it at the intensity's timeframe -- so for
+// t>0 the TIFF mask loader addressed an IFD past its last plane and TIFFSetDirectory threw,
+// UNCAUGHT, crashing the process (0xC0000409). Zarr masks have no T axis to over-index, so
+// only TIFF crashed. dim5 is T=2,C=3,Z=4; dim3_mask is its ZYX (T=1) segmentation of one ROI
+// (label 1 over z=all, y in [1,5), x in [1,7) = 4*4*6 voxels). Pre-fix this threw.
+TEST(TEST_NYXUS, TEST_OMETIFF_MULTITIMEFRAME_MASK_PRESCAN) {
+	fs::path ip = ometiff_data_path("dim5.ome.tif");
+	fs::path mp = ometiff_data_path("dim3_mask.ome.tif");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+	ASSERT_TRUE(fs::exists(mp)) << mp.string();
+
+	Environment e;
+	SlideProps p (ip.string(), mp.string());
+	bool ok = false;
+	ASSERT_NO_THROW(ok = Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	EXPECT_TRUE(ok);
+	EXPECT_EQ(p.max_roi_area, (size_t)(4 * 4 * 6));   // z=4 * y=4 * x=6
+}
+
+// P3 (positive): the crash's regression above covers the PRESCAN (for_each_voxel); this covers
+// the FEATURIZE facade. ImageLoader::load_volume(c,t) forwards t as the mask timeframe, so with
+// a T>1 intensity and a T=1 mask, load_volume(c,1) exercises the internal mask-timeframe clamp
+// (image_loader.cpp). It must not throw, must reuse the same mask across timeframes, and must
+// read different intensity per timeframe. dim5 is T=2; dim3_mask is its ZYX (T=1) mask.
+TEST(TEST_NYXUS, TEST_OMETIFF_MULTITIMEFRAME_MASK_FACADE) {
+	fs::path ip = ometiff_data_path("dim5.ome.tif");
+	fs::path mp = ometiff_data_path("dim3_mask.ome.tif");
+	ASSERT_TRUE(fs::exists(ip) && fs::exists(mp));
+	SlideProps p; p.fname_int = ip.string(); p.fname_seg = mp.string();
+	FpImageOptions fp; ImageLoader il;
+	ASSERT_TRUE(il.open(p, fp)) << ip.string();
+
+	ASSERT_TRUE(il.load_volume(0, 0));
+	const std::vector<uint32_t> seg_t0 = il.get_seg_volume_buffer();
+	const std::vector<uint32_t> int_t0 = il.get_int_volume_buffer();
+	// timeframe 1 with a single-timeframe mask must NOT throw (clamp), reuse the mask, and
+	// deliver different intensity
+	ASSERT_TRUE(il.load_volume(0, 1));
+	EXPECT_EQ(il.get_seg_volume_buffer(), seg_t0) << "mask changed across timeframes";
+	EXPECT_NE(il.get_int_volume_buffer(), int_t0) << "intensity t=1 read t=0 data";
+	il.close();
+}
+
+// P2 (positive): OME-TIFF physical calibration -> SlideProps (the TIFF twin of the OME-Zarr
+// calibration test, and it additionally checks the scan_slide_props propagation the Zarr test
+// omits). dim5_calibrated carries PhysicalSizeX/Y=0.5, Z=2.0 micrometer in its OME-XML.
+TEST(TEST_NYXUS, TEST_OMETIFF_PHYSICAL_CALIBRATION) {
+	fs::path cal = ometiff_data_path("dim5_calibrated.ome.tif");
+	ASSERT_TRUE(fs::exists(cal)) << cal.string();
+
+	Environment e;
+	SlideProps p (cal.string(), "");
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	EXPECT_DOUBLE_EQ(p.phys_x, 0.5);
+	EXPECT_DOUBLE_EQ(p.phys_y, 0.5);
+	EXPECT_DOUBLE_EQ(p.phys_z, 2.0);
+	EXPECT_EQ(p.phys_unit, "micrometer");
+
+	// an uncalibrated OME-TIFF must default to 1.0 / no unit
+	SlideProps p2 (ometiff_data_path("dim5.ome.tif").string(), "");
+	ASSERT_TRUE(Nyxus::scan_slide_props(p2, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	EXPECT_DOUBLE_EQ(p2.phys_x, 1.0);
+	EXPECT_DOUBLE_EQ(p2.phys_z, 1.0);
+	EXPECT_TRUE(p2.phys_unit.empty());
+}
+
+// N2 (negative): a <TiffData> block maps a plane to an IFD PAST the end of the file (an
+// in-file overrun, distinct from a multi-file UUID). ifdForPlane returns 99, so the read must
+// throw cleanly at TIFFSetDirectory -- not crash and not read a wrong plane. dim5_badifd has
+// 4 z-planes; plane z3 claims IFD=99.
+TEST(TEST_NYXUS, TEST_OMETIFF_BAD_IFD_THROWS) {
+	fs::path ds = ometiff_data_path("dim5_badifd.ome.tif");
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+	SlideProps p; p.fname_int = ds.string(); p.fname_seg = "";
+	FpImageOptions fp; ImageLoader il;
+	ASSERT_TRUE(il.open(p, fp)) << ds.string();
+	// z0..z2 are fine; assembling the whole volume must hit z3's bad IFD and throw, not crash
+	EXPECT_ANY_THROW(il.load_volume(0, 0));
+	il.close();
+}
+
+// N3 (negative): an all-background (all-zero) mask -> ZERO ROIs. The prescan must complete
+// cleanly (no divide-by-zero, no garbage), reporting no ROI area, rather than crash.
+TEST(TEST_NYXUS, TEST_OMETIFF_EMPTY_MASK_ZERO_ROIS) {
+	fs::path ip = ometiff_data_path("dim5.ome.tif");
+	fs::path mp = ometiff_data_path("dim3_emptymask.ome.tif");
+	ASSERT_TRUE(fs::exists(ip) && fs::exists(mp));
+	Environment e;
+	SlideProps p (ip.string(), mp.string());
+	bool ok = false;
+	ASSERT_NO_THROW(ok = Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	EXPECT_TRUE(ok);
+	EXPECT_EQ(p.max_roi_area, (size_t)0) << "empty mask should yield no ROI";
+}
+
+// N4 (edge): a mask with MORE channels than the intensity (C=2 mask, C=1-effective use). The
+// featurize loop iterates the intensity's channels, so the extra mask channel must simply be
+// ignored (mask channel clamped to what is asked), not crash or misread. dim3_zyx (C=1) paired
+// with a C=2 label mask; the ROI is identical on both mask channels.
+TEST(TEST_NYXUS, TEST_OMETIFF_MASK_MORE_CHANNELS_THAN_INTENSITY) {
+	fs::path ip = ometiff_data_path("dim3_zyx.ome.tif");   // C=1, Z=4
+	fs::path mp = ometiff_data_path("dim4_mask_c2.ome.tif"); // C=2 label mask
+	ASSERT_TRUE(fs::exists(ip) && fs::exists(mp));
+	Environment e;
+	SlideProps p (ip.string(), mp.string());
+	bool ok = false;
+	ASSERT_NO_THROW(ok = Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	EXPECT_TRUE(ok);
+	EXPECT_EQ(p.max_roi_area, (size_t)(4 * 4 * 6));   // the one ROI, read from mask channel 0
+}
+
+// P1 (positive + negative): detect_input_format is the single dispatch point all three loader
+// stacks use; it had no direct test. Extension classification + OME content-sniff.
+TEST(TEST_NYXUS, TEST_DETECT_INPUT_FORMAT) {
+	using Nyxus::detect_input_format;
+	using Nyxus::ContainerKind;
+	// OME content present -> OmeTiff + is_ome
+	auto a = detect_input_format(ometiff_data_path("dim5.ome.tif").string());
+	EXPECT_EQ(a.kind, ContainerKind::OmeTiff);
+	EXPECT_TRUE(a.is_ome);
+	// a plain multipage TIFF (no OME-XML) -> TiffPlain, not OME
+	auto b = detect_input_format(ometiff_data_path("dim3_plain.tif").string());
+	EXPECT_EQ(b.kind, ContainerKind::TiffPlain);
+	EXPECT_FALSE(b.is_ome);
+	// extension-only kinds (no file needed / not opened)
+	EXPECT_EQ(detect_input_format("x.dcm").kind, ContainerKind::Dicom);
+	EXPECT_EQ(detect_input_format("x.nii.gz").kind, ContainerKind::Nifti);
+	// a .zarr path with no multiscales metadata -> OmeZarr kind but is_ome=false
+	auto z = detect_input_format("no_such_store.zarr");
+	EXPECT_EQ(z.kind, ContainerKind::OmeZarr);
+	EXPECT_FALSE(z.is_ome);
 }
 
 // Pyramidal OME-TIFF: every full-res plane's IFD carries downsampled levels as SubIFDs (tag
