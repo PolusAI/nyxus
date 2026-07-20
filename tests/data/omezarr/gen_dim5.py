@@ -102,6 +102,26 @@ def write_calibrated(name, order, scale, unit):
     print("wrote %-22s (calibrated scale=%s unit=%s)" % (name, scale, unit))
 
 
+def write_v3(name, order, compressors=None):
+    """OME-Zarr 0.5 = Zarr **v3** store: metadata in zarr.json (not .zarray/.zattrs), the
+    NGFF block nested under an 'ome' key, chunks under 0/c/<idx>/... The nyxus loader reads
+    v3 via the z5 Dataset API (z5 3.x auto-detects v2 vs v3). Uncompressed by default so it
+    reads with the current blosc+zlib z5 build (zstd-compressed v3 would need -DWITH_ZSTD)."""
+    path = os.path.join(HERE, name)
+    shutil.rmtree(path, ignore_errors=True)
+    data = _data_for(order)
+    chunks = tuple(1 if a == "z" else s for a, s in zip(order, data.shape))
+
+    g = zarr.open_group(path, mode="w", zarr_format=3)
+    a = g.create_array("0", shape=data.shape, dtype=data.dtype, chunks=chunks, compressors=compressors)
+    a[:] = data
+    g.attrs["ome"] = {"version": "0.5",
+                      "multiscales": [{"axes": [_AX[ax] for ax in order],
+                                       "datasets": [{"path": "0",
+                                                     "coordinateTransformations": [{"type": "scale", "scale": [1.0] * len(order)}]}]}]}
+    print("wrote %-24s (Zarr v3, axes=%s, compressors=%s)" % (name, order, compressors))
+
+
 def write_bad(name, shape, axes):
     """Write a deliberately malformed store (its 'axes' disagrees with the array)
     so the loader must reject it cleanly, not crash."""
@@ -131,6 +151,8 @@ def main():
     # physically calibrated: anisotropic voxels (z 4x thicker than x/y after normalization).
     # order tczyx -> scale [t,c,z,y,x] = [1,1,2.0,0.5,0.5] -> physX=0.5 physY=0.5 physZ=2.0 um.
     write_calibrated("dim5_calibrated.ome.zarr", "tczyx", [1.0, 1.0, 2.0, 0.5, 0.5], "micrometer")
+    # OME-Zarr 0.5 (Zarr v3): same 5D TCZYX encoding, but zarr.json metadata + 'ome'-wrapped NGFF
+    write_v3("dim5_v3.ome.zarr", "tczyx")
     # --- illegal / adversarial: must be rejected cleanly, not crash ---
     # 3D array but 'axes' declares 5 entries -> indexing the shape by axis role OOBs
     write_bad("bad_axes_count.ome.zarr", (Z, Y, X), [_AX[k] for k in ("t", "c", "z", "y", "x")])

@@ -24,6 +24,29 @@
 
 #include "raw_format.h"
 
+// FIX (IO): z5 Datatype -> the "<u2"-style dtype string this loader's dispatch expects
+// (see omezarr.h). Guarded so a TU including both loaders doesn't redefine it.
+#ifndef NYXUS_ZARR_DTYPE_STRING_OF
+#define NYXUS_ZARR_DTYPE_STRING_OF
+inline std::string zarr_dtype_string_of (z5::types::Datatype dt)
+{
+    switch (dt)
+    {
+        case z5::types::uint8:   return "<u1";
+        case z5::types::uint16:  return "<u2";
+        case z5::types::uint32:  return "<u4";
+        case z5::types::uint64:  return "<u8";
+        case z5::types::int8:    return "<i1";
+        case z5::types::int16:   return "<i2";
+        case z5::types::int32:   return "<i4";
+        case z5::types::int64:   return "<i8";
+        case z5::types::float32: return "<f4";
+        case z5::types::float64: return "<f8";
+        default:                 return "<u2";
+    }
+}
+#endif // NYXUS_ZARR_DTYPE_STRING_OF
+
 class RawOmezarrLoader: public RawFormatLoader
 {
 public:
@@ -32,20 +55,22 @@ public:
     {
         // Open the file
         zarr_ptr_ = std::make_unique<z5::filesystem::handle::File>(filePath.c_str());
-        nlohmann::json file_attributes, ds_attributes;
+        nlohmann::json file_attributes;
         z5::readAttributes(*zarr_ptr_, file_attributes);
 
-        // open the highest-resolution dataset (level 0)
-        ds_name_ = file_attributes["multiscales"][0]["datasets"][0]["path"].get<std::string>();
-        const auto ds_handle = z5::filesystem::handle::Dataset(*zarr_ptr_, ds_name_);
-        fs::path metadata_path;
-        auto success = z5::filesystem::metadata_detail::getMetadataPath(ds_handle, metadata_path);
-        z5::filesystem::metadata_detail::readMetadata(metadata_path, ds_attributes);
+        // Resolve the level-0 dataset path (NGFF 0.5 nests 'multiscales' under "ome"; 0.4 has
+        // it at the attributes root).
+        const nlohmann::json& ms_root = (file_attributes.contains("ome") && file_attributes["ome"].contains("multiscales"))
+            ? file_attributes["ome"] : file_attributes;
+        ds_name_ = ms_root["multiscales"][0]["datasets"][0]["path"].get<std::string>();
 
-        std::vector<size_t> level0Shape, chunkShape;
-        for (const auto& d : ds_attributes["shape"])  level0Shape.push_back(d.get<size_t>());
-        for (const auto& d : ds_attributes["chunks"]) chunkShape.push_back(d.get<size_t>());
-        std::string dtype_str = ds_attributes["dtype"].get<std::string>();
+        // FIX (IO): open via z5 (auto-detects Zarr v2 .zarray vs v3 zarr.json, handles v3
+        // chunk-key encoding, codecs and sharding) and query shape/chunking/dtype from the
+        // Dataset object -- format-agnostic, so this reads BOTH OME-Zarr 0.4 and 0.5.
+        ds_ = z5::openDataset(*zarr_ptr_, ds_name_);
+        std::vector<size_t> level0Shape(ds_->shape().begin(), ds_->shape().end());
+        std::vector<size_t> chunkShape(ds_->defaultChunkShape().begin(), ds_->defaultChunkShape().end());
+        std::string dtype_str = zarr_dtype_string_of(ds_->getDtype());
 
         // Resolve axis roles from the NGFF 'axes' metadata instead of assuming a
         // fixed [T,C,Z,Y,X] order. Falls back to legacy 5D TCZYX if 'axes' is absent.
@@ -114,11 +139,6 @@ public:
 
         // allocate the buffer
         dest = std::vector<uint32_t> (tile_height_ * tile_width_);
-
-        // Open the dataset once and cache the handle. The dataset metadata is
-        // immutable for the lifetime of this loader, so there is no need to
-        // re-open (and re-parse the .zarray metadata) on every tile read.
-        ds_ = z5::openDataset(*zarr_ptr_, ds_name_);
     }
 
     ~RawOmezarrLoader() override

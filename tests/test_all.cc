@@ -2600,6 +2600,26 @@ TEST(TEST_NYXUS, TEST_OMEZARR_2D_YX) {
 	ASSERT_NO_THROW (test_omezarr_addressing("dim2_yx.ome.zarr", 1, 1, 1));
 }
 
+// OME-Zarr 0.5 (Zarr v3): zarr.json metadata + 'ome'-wrapped NGFF + 0/c/... chunk keys,
+// read through the z5 Dataset API (v2/v3-agnostic). Same coordinate encoding as the v2
+// stores, so the addressing / facade / CT-count helpers apply unchanged.
+TEST(TEST_NYXUS, TEST_OMEZARR_V3) {
+	ASSERT_NO_THROW (test_omezarr_addressing("dim5_v3.ome.zarr", 2, 3, 4));
+	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim5_v3.ome.zarr", 2, 3, 4));
+}
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_FACADE_VOLUME) {
+	ASSERT_NO_THROW (test_omezarr_facade_volume("dim5_v3.ome.zarr", 2, 3, 4));
+}
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_CT_COUNTS) {
+	ASSERT_NO_THROW (test_omezarr_ct_counts("dim5_v3.ome.zarr", 2, 3, 4));
+}
+// Zstd-compressed Zarr v3 (the zarr 3.x / real-world default codec). Requires the build
+// to link libzstd (-DWITH_ZSTD); z5 decodes the bytes+zstd v3 codec pipeline.
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_ZSTD) {
+	ASSERT_NO_THROW (test_omezarr_addressing("dim5_v3_zstd.ome.zarr", 2, 3, 4));
+	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim5_v3_zstd.ome.zarr", 2, 3, 4));
+}
+
 // No 'axes' metadata -> the loader falls back to legacy 5D TCZYX and still reads.
 TEST(TEST_NYXUS, TEST_OMEZARR_NOAXES_FALLBACK) {
 	ASSERT_NO_THROW (test_omezarr_addressing("dim5_noaxes.ome.zarr", 2, 3, 4));

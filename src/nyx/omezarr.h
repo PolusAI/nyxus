@@ -23,10 +23,36 @@
 // attribute functionality
 #include "z5/attributes.hxx"
 
+// FIX (IO): z5 Datatype -> the "<u2"-style dtype string this loader's dispatch expects.
+// (z5 uses '|u1'/'|i1' for the single-byte types; we normalize to '<u1'/'<i1' so the
+// existing data_format_ switch and pixel_type_from_zarr_dtype keep working for BOTH
+// Zarr v2 (.zarray dtype) and Zarr v3 (zarr.json data_type), read via the z5 Dataset API.)
+// Guarded so a TU that includes both omezarr.h and raw_omezarr.h doesn't redefine it.
+#ifndef NYXUS_ZARR_DTYPE_STRING_OF
+#define NYXUS_ZARR_DTYPE_STRING_OF
+inline std::string zarr_dtype_string_of (z5::types::Datatype dt)
+{
+    switch (dt)
+    {
+        case z5::types::uint8:   return "<u1";
+        case z5::types::uint16:  return "<u2";
+        case z5::types::uint32:  return "<u4";
+        case z5::types::uint64:  return "<u8";
+        case z5::types::int8:    return "<i1";
+        case z5::types::int16:   return "<i2";
+        case z5::types::int32:   return "<i4";
+        case z5::types::int64:   return "<i8";
+        case z5::types::float32: return "<f4";
+        case z5::types::float64: return "<f8";
+        default:                 return "<u2";
+    }
+}
+#endif // NYXUS_ZARR_DTYPE_STRING_OF
+
 /// @brief Tile Loader for OMEZarr
 /// @tparam DataType AbstractView's internal type
 template<class DataType>
-class NyxusOmeZarrLoader : public AbstractTileLoader<DataType> 
+class NyxusOmeZarrLoader : public AbstractTileLoader<DataType>
 {
 public:
 
@@ -40,20 +66,25 @@ public:
     {
         // Open the file
         zarr_ptr_ = std::make_unique<z5::filesystem::handle::File>(filePath.c_str());
-        nlohmann::json file_attributes, ds_attributes;
+        nlohmann::json file_attributes;
         z5::readAttributes(*zarr_ptr_, file_attributes);
 
-        // open the highest-resolution dataset (level 0)
-        ds_name_ = file_attributes["multiscales"][0]["datasets"][0]["path"].get<std::string>();
-        const auto ds_handle = z5::filesystem::handle::Dataset(*zarr_ptr_, ds_name_);
-        fs::path metadata_path;
-        auto success = z5::filesystem::metadata_detail::getMetadataPath(ds_handle, metadata_path);
-        z5::filesystem::metadata_detail::readMetadata(metadata_path, ds_attributes);
+        // Resolve the level-0 dataset path. NGFF 0.5 (Zarr v3) nests 'multiscales' under an
+        // "ome" key; NGFF 0.4 (Zarr v2) has it at the attributes root. (parse_ome_zarr handles
+        // both, but we need the path here to open the dataset.)
+        const nlohmann::json& ms_root = (file_attributes.contains("ome") && file_attributes["ome"].contains("multiscales"))
+            ? file_attributes["ome"] : file_attributes;
+        ds_name_ = ms_root["multiscales"][0]["datasets"][0]["path"].get<std::string>();
 
-        std::vector<size_t> level0Shape, chunkShape;
-        for (const auto& d : ds_attributes["shape"])  level0Shape.push_back(d.get<size_t>());
-        for (const auto& d : ds_attributes["chunks"]) chunkShape.push_back(d.get<size_t>());
-        std::string dtype_str = ds_attributes["dtype"].get<std::string>();
+        // FIX (IO): open the dataset via z5, which auto-detects Zarr v2 (.zarray) vs v3
+        // (zarr.json) and handles the v3 chunk-key encoding, codecs (zstd/blosc/...) and
+        // sharding. Query shape/chunking/dtype from the Dataset object (format-agnostic)
+        // instead of parsing the v2-only .zarray by hand -- this is what lets the loader read
+        // BOTH OME-Zarr 0.4 and 0.5. The dataset handle is cached (metadata is immutable).
+        ds_ = z5::openDataset(*zarr_ptr_, ds_name_);
+        std::vector<size_t> level0Shape(ds_->shape().begin(), ds_->shape().end());
+        std::vector<size_t> chunkShape(ds_->defaultChunkShape().begin(), ds_->defaultChunkShape().end());
+        std::string dtype_str = zarr_dtype_string_of(ds_->getDtype());
 
         // Resolve axis roles from the NGFF 'axes' metadata instead of assuming a
         // fixed [T,C,Z,Y,X] order. Falls back to legacy 5D TCZYX if 'axes' is absent.
@@ -119,11 +150,6 @@ public:
         else if (dtype_str == "<f4") {data_format_=9;} //float
         else if (dtype_str == "<f8") {data_format_=10;} //double
         else {data_format_=2;} //uint16_t
-
-        // Open the dataset once and cache the handle. The dataset metadata is
-        // immutable for the lifetime of this loader, so there is no need to
-        // re-open (and re-parse the .zarray metadata) on every tile read.
-        ds_ = z5::openDataset(*zarr_ptr_, ds_name_);
     }
 
     /// @brief NyxusOmeZarrLoader destructor
