@@ -50,8 +50,14 @@ public:
 			frameStride = ltd * th * tw,
 			frameBase = (ltt > 1) ? timeframe * frameStride : 0;
 
-		// The mask is channel-agnostic unless it genuinely has that many channels
+		// The mask is channel-/timeframe-agnostic unless it genuinely has that many. FIX: a
+		// single-timeframe mask (the common 1-mask : N-timeframe-intensity case) was read at
+		// the intensity's `timeframe`, so for T>1 the TIFF mask loader computed an IFD past the
+		// end (ifdForPlane with t>0) and TIFFSetDirectory threw -- uncaught here, crashing the
+		// process (0xC0000409). Clamp the mask timeframe like the channel. (Zarr masks have no
+		// T axis to over-index, so only TIFF crashed.)
 		const size_t maskChannel = (haveSeg && channel < segFL->numberChannels()) ? channel : 0;
+		const size_t maskTimeframe = (haveSeg && timeframe < segFL->fullTimestamps (lvl)) ? timeframe : 0;
 
 		for (size_t lz = 0; lz < lntd; lz++)
 		{
@@ -60,7 +66,7 @@ public:
 			{
 				intFL->loadTileFromFile (tr, tc, lz, channel, timeframe, lvl);
 				if (haveSeg)
-					segFL->loadTileFromFile (tr, tc, lz, maskChannel, timeframe, lvl);
+					segFL->loadTileFromFile (tr, tc, lz, maskChannel, maskTimeframe, lvl);
 
 				const size_t row0 = tr * th, col0 = tc * tw;
 				if (row0 < fh && col0 < fw)

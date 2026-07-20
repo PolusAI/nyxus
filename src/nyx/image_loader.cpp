@@ -337,7 +337,11 @@ bool ImageLoader::load_volume (size_t channel, size_t timeframe, size_t mask_tim
 		// intensity channel c>0 against a 1-channel mask read the mask out of range and dropped
 		// the ROI. Mirrors the mask_timeframe separation for the 1-mask : N-intensity case.
 		size_t mask_channel = (channel < segFL->numberChannels()) ? channel : 0;
-		assemble_volume (segFL, ptrL, vol_seg_, mask_channel, mask_timeframe);
+		// FIX: clamp the mask TIMEFRAME too (callers already pass 0 for a single-timeframe mask,
+		// but make load_volume self-defending like it is for the channel -- an unclamped t>0
+		// would read the TIFF mask past its last IFD and throw uncaught). Symmetric with above.
+		size_t mask_tf = (mask_timeframe < segFL->fullTimestamps (lvl)) ? mask_timeframe : 0;
+		assemble_volume (segFL, ptrL, vol_seg_, mask_channel, mask_tf);
 	}
 	return true;
 }
