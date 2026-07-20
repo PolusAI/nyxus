@@ -23,6 +23,7 @@ import shutil
 import json
 import numpy as np
 import zarr
+from zarr.codecs import BloscCodec
 
 T, C, Z, Y, X = 2, 3, 4, 6, 8
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -201,6 +202,10 @@ def main():
     write_calibrated("dim5_calibrated.ome.zarr", "tczyx", [1.0, 1.0, 2.0, 0.5, 0.5], "micrometer")
     # OME-Zarr 0.5 (Zarr v3): same 5D TCZYX encoding, but zarr.json metadata + 'ome'-wrapped NGFF
     write_v3("dim5_v3.ome.zarr", "tczyx")
+    # Zarr v3 with the BLOSC codec (common alongside zstd in real v3 stores). z5 decodes the
+    # bytes+blosc v3 pipeline when built WITH_BLOSC (already required for OME-Zarr).
+    write_v3("dim5_v3_blosc.ome.zarr", "tczyx",
+             compressors=[BloscCodec(cname="lz4", clevel=5, shuffle="shuffle")])
     # plane split across a 2x2 chunk grid (3x4 chunks over the 6x8 plane) -> multi-tile assembly
     write_multichunk("dim5_multichunk.ome.zarr", "tczyx", 3, 4)
     # PARTIAL edge chunks: chunk (4,5) does NOT divide the 6x8 plane, so the last row-chunk is

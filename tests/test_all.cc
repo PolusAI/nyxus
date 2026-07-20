@@ -2656,6 +2656,16 @@ TEST(TEST_NYXUS, TEST_OMEZARR_V3_SHARDED_PRESCAN) {
 	EXPECT_EQ(p.max_roi_area, (size_t)(8 * 6 * 4));
 }
 
+// Blosc-compressed Zarr v3 (common in real v3 stores alongside zstd). z5 decodes the
+// bytes+blosc v3 codec pipeline when built WITH_BLOSC (already required for OME-Zarr).
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_BLOSC) {
+	ASSERT_NO_THROW (test_omezarr_addressing("dim5_v3_blosc.ome.zarr", 2, 3, 4));
+	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim5_v3_blosc.ome.zarr", 2, 3, 4));
+}
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_BLOSC_FACADE_VOLUME) {
+	ASSERT_NO_THROW (test_omezarr_facade_volume("dim5_v3_blosc.ome.zarr", 2, 3, 4));
+}
+
 // No 'axes' metadata -> the loader falls back to legacy 5D TCZYX and still reads.
 TEST(TEST_NYXUS, TEST_OMEZARR_NOAXES_FALLBACK) {
 	ASSERT_NO_THROW (test_omezarr_addressing("dim5_noaxes.ome.zarr", 2, 3, 4));
@@ -2755,6 +2765,16 @@ TEST(TEST_NYXUS, TEST_RAW_OMETIFF_5D_CHANNEL_TIME_ADDRESSING) {
 // All 6 legal DimensionOrder values: passes only if ifdForPlane honors DimensionOrder.
 TEST(TEST_NYXUS, TEST_OMETIFF_ALL_5D_PERMUTATIONS) {
 	ASSERT_NO_THROW (test_ometiff_all_5d_permutations());
+}
+
+// Pyramidal OME-TIFF: every full-res plane's IFD carries downsampled levels as SubIFDs (tag
+// 330), which live OUTSIDE the main IFD chain. This must not shift full-res plane addressing:
+// TIFFNumberOfDirectories still returns Z (not Z*levels) and ifdForPlane -> main-chain IFD
+// still lands on the full-res plane. nyxus reads level 0 only; the facade check (which also
+// spans a 2x3 tile grid) asserts every full-res voxel is correct despite the SubIFDs. Z=6
+// z-stack (C=1,T=1), its own encoding.
+TEST(TEST_NYXUS, TEST_OMETIFF_PYRAMID_SUBIFD_FULLRES) {
+	ASSERT_NO_THROW (test_ometiff_multitile_facade_volume("dim5_pyramid.ome.tif", 1, 1, 6, 32, 48));
 }
 
 // Non-canonical <TiffData> plane->IFD mapping: dim5_reordered stores its planes in REVERSED

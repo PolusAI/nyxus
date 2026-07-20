@@ -153,6 +153,28 @@ def write_reordered(name):
               % (name, len(tf.pages), len(tiffdata), got))
 
 
+def write_pyramid(name):
+    """A PYRAMIDAL OME-TIFF: every full-res plane's IFD carries downsampled resolution levels
+    as SubIFDs (TIFF tag 330). SubIFDs live OUTSIDE the main IFD chain, so they must not
+    disturb full-res (z,c,t) plane addressing -- TIFFNumberOfDirectories still returns Z (not
+    Z*levels) and ifdForPlane(z,..)->main-chain IFD still lands on the full-res plane. nyxus
+    featurizes level 0 only; this fixture guards that a pyramid does not silently shift which
+    plane we read. Z=6 z-stack, 32x48, tiled 16x16 (so also multi-tile), + 2 sub-levels.
+    Full-res encoding matches ometiff_enc_dims(x,y,z,0,0,C=1,Z=6,Y=32,X=48)."""
+    Zp, Yp, Xp = 6, 32, 48
+    z, y, x = np.meshgrid(np.arange(Zp), np.arange(Yp), np.arange(Xp), indexing="ij")
+    base = (1 + ((z * Yp + y) * Xp + x)).astype("uint16")     # full-res planes
+    path = os.path.join(HERE, name)
+    opts = dict(photometric="minisblack", tile=(16, 16))
+    with tifffile.TiffWriter(path, ome=True) as tw:
+        tw.write(base, subifds=2, metadata={"axes": "ZYX"}, **opts)   # reserve 2 subifds/plane
+        tw.write(base[:, ::2, ::2], subfiletype=1, **opts)            # level 1 (16x24)
+        tw.write(base[:, ::4, ::4], subfiletype=1, **opts)            # level 2 (8x12)
+    with tifffile.TiffFile(path) as tf:
+        print("wrote %-24s main-chain IFDs=%d (=Z), sub-levels/plane=%d, %dx%d tiled"
+              % (name, len(tf.pages), len(tf.series[0].levels) - 1, Yp, Xp))
+
+
 def write_bad_rgb(name):
     """RGB OME-TIFF -- nyxus is grayscale-only, so the loader must reject it."""
     path = os.path.join(HERE, name)
@@ -184,6 +206,8 @@ def main():
     write_mask("dim3_mask.ome.tif")
     # non-canonical <TiffData> plane->IFD mapping (planes stored reversed) -> honors TiffData
     write_reordered("dim5_reordered.ome.tif")
+    # pyramidal OME-TIFF (SubIFD downsample levels) -> full-res addressing must be unaffected
+    write_pyramid("dim5_pyramid.ome.tif")
     # TILED multi-plane OME-TIFF (5D) -> exercises the tile-loader (z,c,t)->IFD path
     write_tiled("dim5_tiled.ome.tif", "TCZYX")
     # planes spanning a real 2x3 tile grid -> multi-tile volumetric assembly
