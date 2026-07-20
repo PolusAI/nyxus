@@ -1,5 +1,4 @@
-#include <algorithm>	// FIX (caliper reimpl): std::min/std::max used by the analytic chord helper
-#include <cmath>		// FIX (caliper reimpl): std::abs
+#include <algorithm>	// FIX (caliper float-precision): only std::min/std::max are used here; dropped the unused <cmath> (this TU has no std::abs)
 #include <vector>
 #include "caliper.h"
 #include "../environment.h"
@@ -12,15 +11,17 @@ using namespace Nyxus;
 // stored OPEN (no duplicated closing vertex), so we must include the wrap-around edge
 // last->first — the previous implementation omitted it. Inclusive edge test + min/max of
 // the intersection x is robust to a line passing exactly through a shared vertex.
-static double hull_width_at_y (const std::vector<Pixel2>& poly, double y)
+// FIX (caliper float-precision): operate on Point2f (float-precision rotated hull) so the chord width is not
+// quantized by the old integer-Pixel2 truncation.
+static double hull_width_at_y (const std::vector<Point2f>& poly, double y)
 {
 	bool have = false;
 	double xlo = 0.0, xhi = 0.0;
 	size_t n = poly.size();
 	for (size_t i = 0; i < n; i++)
 	{
-		const Pixel2& a = poly[i];
-		const Pixel2& b = poly[(i + 1) % n];
+		const Point2f& a = poly[i];
+		const Point2f& b = poly[(i + 1) % n];
 		double ay = a.y, by = b.y, lo = std::min(ay, by), hi = std::max(ay, by);
 		if (y < lo || y > hi)
 			continue;
@@ -93,15 +94,17 @@ void CaliperMartinFeature::calculate_imp(const std::vector<Pixel2>& convex_hull,
 	// The Martin diameter (Pahl/Rumpf 1973; imea reference) is a SINGLE chord per angle: the
 	// horizontal chord at the level that bisects the projected area (50%/50%). We reproduce that
 	// analytically on the rotated convex hull — one diameter per rotation angle.
-	std::vector<Pixel2> CH_rot;
+	std::vector<Point2f> CH_rot;	// FIX (caliper float-precision): float-precision rotated hull (was integer Pixel2)
 	CH_rot.reserve(convex_hull.size());
 
 	all_D.clear();
 	const int NGRID = 100;	// FIX: fine Y-grid for the area integral (converges well before this; see morph_oracle/caliper_proto.py)
 	for (float theta = 0.f; theta < 180.f; theta += rot_angle_increment)
 	{
-		Rotation::rotate_around_center(convex_hull, theta, CH_rot);
-		auto [minX, minY, maxX, maxY] = AABB::from_pixelcloud(CH_rot);
+		Rotation::rotate_around_center_fp(convex_hull, theta, CH_rot);	// FIX (caliper float-precision): no integer truncation
+		// FIX (caliper float-precision): min/max Y directly over the float hull (AABB::from_pixelcloud takes Pixel2)
+		double minY = CH_rot[0].y, maxY = CH_rot[0].y;
+		for (auto& p : CH_rot) { minY = std::min(minY, (double)p.y); maxY = std::max(maxY, (double)p.y); }
 		if (maxY <= minY)	// FIX: degenerate (collinear) hull at this angle — skip
 			continue;
 

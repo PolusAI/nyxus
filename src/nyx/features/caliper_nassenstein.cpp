@@ -11,15 +11,17 @@ using namespace Nyxus;
 // y-coordinates where the line x intersects the hull edges. Hull is stored OPEN, so the
 // wrap-around edge (last->first) is included. Inclusive edge test + min/max is robust to a
 // line passing exactly through a shared vertex (the Nassenstein contact column is a vertex).
-static double hull_height_at_x (const std::vector<Pixel2>& poly, double x)
+// FIX (caliper float-precision): operate on Point2f (float-precision rotated hull) so the chord height is not
+// quantized by the old integer-Pixel2 truncation.
+static double hull_height_at_x (const std::vector<Point2f>& poly, double x)
 {
 	bool have = false;
 	double ylo = 0.0, yhi = 0.0;
 	size_t n = poly.size();
 	for (size_t i = 0; i < n; i++)
 	{
-		const Pixel2& a = poly[i];
-		const Pixel2& b = poly[(i + 1) % n];
+		const Point2f& a = poly[i];
+		const Point2f& b = poly[(i + 1) % n];
 		double ax = a.x, bx = b.x, lo = std::min(ax, bx), hi = std::max(ax, bx);
 		if (x < lo || x > hi)
 			continue;
@@ -93,13 +95,13 @@ void CaliperNassensteinFeature::calculate_imp (const std::vector<Pixel2>& convex
 	// is a SINGLE chord per angle: the vertical chord measured at the bottom-tangent contact column.
 	// We reproduce that on the rotated convex hull: the contact is the extreme (max-y) vertex/edge,
 	// and the diameter is the hull's vertical extent at that contact column.
-	std::vector<Pixel2> CH_rot;
+	std::vector<Point2f> CH_rot;	// FIX (caliper float-precision): float-precision rotated hull (was integer Pixel2)
 	CH_rot.reserve(convex_hull.size());
 
 	all_D.clear();
 	for (float theta = 0.f; theta < 180.f; theta += rot_angle_increment)
 	{
-		Rotation::rotate_around_center(convex_hull, theta, CH_rot);
+		Rotation::rotate_around_center_fp(convex_hull, theta, CH_rot);	// FIX (caliper float-precision): no integer truncation
 		if (CH_rot.size() < 3)	// FIX: degenerate hull — no measurable tangent chord
 			continue;
 
