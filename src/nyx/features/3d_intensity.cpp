@@ -367,10 +367,10 @@ void D3_VoxelIntensityFeatures::reduce (size_t start, size_t end, std::vector<in
 	}
 }
 
-/*static*/ void D3_VoxelIntensityFeatures::extract (LR& r, const Fsettings& s)
+/*static*/ void D3_VoxelIntensityFeatures::extract (LR& r, const Fsettings& s, const Dataset& ds)
 {
 	D3_VoxelIntensityFeatures f;
-	f.calculate (r, s);
+	f.calculate (r, s, ds);		// FIX: was the 2-arg calculate, which is an "illegal call" stub
 	f.save_value (r.fvals);
 }
 

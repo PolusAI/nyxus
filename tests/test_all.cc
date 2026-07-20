@@ -2765,6 +2765,53 @@ TEST(TEST_NYXUS, TEST_OMETIFF_MALFORMED_THROWS) {
 }
 
 
+// Regression: the 3D WHOLE-VOLUME reduce path. reduce_trivial_3d_wholevolume calls
+// D3_VoxelIntensityFeatures::extract(), which used to invoke the 2-arg calculate() -- a stub
+// that throws "illegal call" -- so EVERY 3D whole-volume featurization died before writing a
+// row. The segmented path reduces via reduce(), which passes the Dataset, so nothing covered
+// this. Mirrors featurize_wholevolume()'s vROI setup, then reduces.
+TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_REDUCE) {
+	fs::path ds = ometiff_data_path("dim3_zyx.ome.tif");	// 3D X8 Y6 Z4
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+	Environment e;
+	// enable the 3D intensity features so the reduce actually runs them
+	e.theFeatureSet.enableAll(false);
+	e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
+
+	// prescan the slide (whole-volume => no mask)
+	e.dataset.dataset_props.reserve(1);
+	SlideProps& sp = e.dataset.dataset_props.emplace_back(ds.string(), "");
+	ASSERT_TRUE(Nyxus::scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	e.dataset.update_dataset_props_extrema();
+
+	// build the vROI exactly as featurize_wholevolume() does
+	FpImageOptions fp;
+	ImageLoader ilo;
+	ASSERT_TRUE(ilo.open(sp, fp)) << ds.string();
+	LR vroi(1);
+	vroi.slide_idx = 0;
+	vroi.aux_area = sp.max_roi_area;
+	vroi.aabb.init_from_whd(sp.max_roi_w, sp.max_roi_h, sp.max_roi_d);
+	vroi.aux_min = (PixIntens)0;
+	vroi.aux_max = (PixIntens)(sp.max_preroi_inten - sp.min_preroi_inten);
+	ASSERT_NO_THROW(vroi.initialize_fvals());
+	ASSERT_TRUE(Nyxus::scan_trivial_wholevolume(vroi, ds.string(), ilo, 0/*channel*/, 0/*timeframe*/));
+	ASSERT_GT(vroi.raw_pixels_3D.size(), 0u);
+	vroi.aux_image_cube.allocate(vroi.aabb.get_width(), vroi.aabb.get_height(), vroi.aabb.get_z_depth());
+	vroi.aux_image_cube.calculate_from_pixelcloud(vroi.raw_pixels_3D, vroi.aabb);
+
+	// THE REGRESSION: this used to throw "illegal call of D3_VoxelIntensityFeatures::calculate"
+	ASSERT_NO_THROW(Nyxus::reduce_trivial_3d_wholevolume(e, vroi));
+
+	// and it must actually produce values (MAX >= MIN, both finite)
+	double vmin = vroi.get_fvals((int)Nyxus::Feature3D::MIN)[0];
+	double vmax = vroi.get_fvals((int)Nyxus::Feature3D::MAX)[0];
+	EXPECT_GE(vmax, vmin);
+	EXPECT_GT(vmax, 0.0);
+	ilo.close();
+}
+
 // Phase 6 physical-calibration logic (negative + positive). resolve_slide_anisotropy
 // must NOT engage the anisotropic (resampling) path unless it's genuinely warranted:
 //   - flag off                      -> false, (1,1,1)   even with anisotropic spacing

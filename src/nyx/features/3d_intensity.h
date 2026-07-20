@@ -18,7 +18,12 @@ public:
 	void osized_calculate(LR& r, const Fsettings& s, const Dataset& ds, ImageLoader& ldr);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
-	static void extract (LR& r, const Fsettings& s);
+	// FIX: extract() must carry the Dataset, because calculate() needs it for
+	// COVERED_IMAGE_INTENSITY_RANGE (slide extrema via ds.dataset_props[r.slide_idx]).
+	// The old 2-arg extract called the 2-arg calculate, which is a stub that throws
+	// "illegal call" -- that broke ALL 3D whole-volume featurization (the segmented path
+	// goes through reduce(), which passes the Dataset, so it never hit this).
+	static void extract (LR& r, const Fsettings& s, const Dataset& ds);
 	void cleanup_instance();
 
 	// list dependencies of this class
