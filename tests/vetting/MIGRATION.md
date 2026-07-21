@@ -195,11 +195,15 @@ Patterns confirmed across the family:
 - **Systemic orphan finding:** `test_3d_<fam>.h` is **orphaned** (never `#include`d, tests never run)
   for **glcm, glrlm, glszm, gldm, ngtdm** (5 families, ~130 dead 3D-regression assertions). But
   **ngldm and gldzm have LIVE `test_3d_*` files** (they were `#include`d) → renamed
-  `test_3d_ngldm_ibsi.h` / `test_3d_gldzm_ibsi.h`. This inconsistency (some native 3D texture tests
+  `test_3d_ngldm_regression.h` (initially `_ibsi`; corrected in PR #385, see below) /
+  `test_3d_gldzm_ibsi.h`. This inconsistency (some native 3D texture tests
   wired, most not) is flagged for a coverage-gap triage; live 3D texture coverage otherwise comes from
   the `test_3d_<fam>_pyradiomics.h` (ex-compat) files + parameterized `test_3d_feature_coverage.h`.
-- The `test_3d_ngldm_ibsi.h` / `test_3d_gldzm_ibsi.h` kind labels are provisional (IBSI-phantom-based,
-  not fully confirmed); the rename preserved all tests regardless.
+- `test_3d_gldzm_ibsi.h`'s kind label is provisional (IBSI-phantom-based, not fully confirmed). The
+  matching NGLDM file was CORRECTED to `test_3d_ngldm_regression.h` (PR #385): its `d3ngldm_GT` table
+  has no provenance, runs on the Nyxus coverage phantom (not the IBSI digital phantom), and disagrees
+  with MIRP by up to ~10x, so it is a drift guard, not an `_ibsi` oracle. The `_ibsi` suffix is left
+  free for a genuine 3D IBSI-phantom NGLDM oracle. The rename preserved all tests regardless.
 
 **Remaining families for later waves:** moments, morphology, firstorder, intensity_histogram, neighbor,
 imq, gabor, zernike, radial — plus the cross-cutting `test_3d_feature_coverage.h` split (§4) and the

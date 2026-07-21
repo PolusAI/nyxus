@@ -44,7 +44,7 @@
 #include "test_3d_morphology_regression.h"
 #include "test_3d_morphology_matlab.h"
 #include "test_3d_gldzm_ibsi.h"
-#include "test_3d_ngldm_ibsi.h"
+#include "test_3d_ngldm_regression.h"
 #include "test_3d_firstorder_pyradiomics.h"
 #include "test_3d_glcm_pyradiomics.h"
 #include "test_3d_gldm_pyradiomics.h"
