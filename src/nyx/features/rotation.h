@@ -18,8 +18,9 @@ public:
 
 	// FIX (caliper float-precision): floating-point variant of rotate_around_center. The Pixel2 sink truncates
 	// each rotated vertex to integer (Point2<StatsInt>), snapping the hull systematically inward every
-	// angle and forcing a loose 15% caliper-vs-imea tolerance. Emitting Point2f preserves the fractional
-	// rotated coordinates (subsumes both "round instead of truncate" and "float-precision hull rotation").
+	// angle, which forced the loose 15% caliper-vs-imea tolerance the integer path needed. Emitting Point2f
+	// preserves the fractional rotated coordinates and lets the caliper tests tighten to 10% (subsumes both
+	// "round instead of truncate" and "float-precision hull rotation").
 	static void rotate_around_center_fp(
 		// [in]
 		const std::vector<Pixel2>& P,
