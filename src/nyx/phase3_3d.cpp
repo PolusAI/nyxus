@@ -15,6 +15,8 @@
 #include "features/3d_ngldm.h"
 #include "features/3d_ngtdm.h"
 #include "features/3d_glrlm.h"
+#include "features/3d_glszm.h"
+#include "features/3d_gldzm.h"
 #include "features/pixel.h"
 #include "helpers/timing.h"
 
@@ -113,7 +115,9 @@ namespace Nyxus
 						&& dynamic_cast<D3_GLDM_feature*>(f) == nullptr
 						&& dynamic_cast<D3_NGLDM_feature*>(f) == nullptr
 						&& dynamic_cast<D3_NGTDM_feature*>(f) == nullptr
-						&& dynamic_cast<D3_GLRLM_feature*>(f) == nullptr)
+						&& dynamic_cast<D3_GLRLM_feature*>(f) == nullptr
+						&& dynamic_cast<D3_GLSZM_feature*>(f) == nullptr
+						&& dynamic_cast<D3_GLDZM_feature*>(f) == nullptr)
 						throw std::runtime_error("feature '" + f->feature_info
 							+ "' is not yet supported out-of-core for oversized 3D ROIs; "
 							+ "segment into smaller ROIs, raise --ramLimit, or add RAM");

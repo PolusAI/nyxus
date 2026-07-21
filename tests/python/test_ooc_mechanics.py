@@ -184,6 +184,18 @@ def test_ooc_3d_glrlm_matches_in_ram(tmp_path):
     _ooc_vs_ram_3d(tmp_path, ["*3D_GLRLM*"])
 
 
+def test_ooc_3d_glszm_matches_in_ram(tmp_path):
+    """3D GLSZM out-of-core (streaming 26-connectivity connected-component labeling via a
+    growable union-find over a 2-plane window) must match the in-RAM path."""
+    _ooc_vs_ram_3d(tmp_path, ["*3D_GLSZM*"])
+
+
+def test_ooc_3d_gldzm_matches_in_ram(tmp_path):
+    """3D GLDZM out-of-core (streaming 6-connectivity connected-component labeling with a
+    min-distance-to-border metric per zone) must match the in-RAM path."""
+    _ooc_vs_ram_3d(tmp_path, ["*3D_GLDZM*"])
+
+
 def test_ooc_3d_partial_mask_matches_in_ram(tmp_path):
     """Same equivalence check as the whole-volume tests above, but with a non-cuboid mask so the
     ROI bbox contains background voxels -- exercises grey-level LUT construction (must include the
@@ -191,7 +203,7 @@ def test_ooc_3d_partial_mask_matches_in_ram(tmp_path):
     never triggers. Covers intensity/surface plus all four texture families in one pass."""
     _ooc_vs_ram_3d(
         tmp_path,
-        ["*3D_ALL_INTENSITY*", "*3D_ALL_MORPHOLOGY*", "*3D_GLCM*", "*3D_GLDM*", "*3D_NGLDM*", "*3D_NGTDM*", "*3D_GLRLM*"],
+        ["*3D_ALL_INTENSITY*", "*3D_ALL_MORPHOLOGY*", "*3D_GLCM*", "*3D_GLDM*", "*3D_NGLDM*", "*3D_NGTDM*", "*3D_GLRLM*", "*3D_GLSZM*", "*3D_GLDZM*"],
         pair_fn=_make_volume_pair_partial,
     )
 
