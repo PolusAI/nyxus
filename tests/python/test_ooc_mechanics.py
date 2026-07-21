@@ -115,6 +115,45 @@ def test_ooc_3d_matches_in_ram(tmp_path):
     assert not bad, "3D out-of-core intensity features diverge from in-RAM: %r" % (bad[:8],)
 
 
+def _ooc_vs_ram_3d(tmp_path, feats):
+    intp, segp = _make_volume_pair(tmp_path)
+    n_ram = nyxus.Nyxus3D(feats, ram_limit=8000)
+    df_ram = n_ram.featurize_files([intp], [segp], False)
+    n_ooc = nyxus.Nyxus3D(feats, ram_limit=1)
+    df_ooc = n_ooc.featurize_files([intp], [segp], False)
+    cols, a = _feature_cols(df_ram)
+    _, b = _feature_cols(df_ooc)
+    assert a.size > 0 and a.shape == b.shape
+    bad = [
+        (c, p, q)
+        for c, p, q in zip(cols, a, b)
+        if abs(p - q) > 1e-6 * max(abs(p), abs(q), 1.0) + 1e-9
+    ]
+    assert not bad, "3D out-of-core features diverge from in-RAM: %r" % (bad[:8],)
+
+
+def test_ooc_3d_glcm_matches_in_ram(tmp_path):
+    """3D GLCM out-of-core (13 co-occurrence matrices built over a streaming 2-plane window)
+    must match the in-RAM path."""
+    _ooc_vs_ram_3d(tmp_path, ["*3D_GLCM*"])
+
+
+def test_ooc_3d_gldm_matches_in_ram(tmp_path):
+    """3D GLDM out-of-core (dependence matrix built over a streaming 3-plane window) must match
+    the in-RAM path."""
+    _ooc_vs_ram_3d(tmp_path, ["*3D_GLDM*"])
+
+
+def test_ooc_3d_ngldm_matches_in_ram(tmp_path):
+    """3D NGLDM out-of-core (3-plane window, interior scan) must match the in-RAM path."""
+    _ooc_vs_ram_3d(tmp_path, ["*3D_NGLDM*"])
+
+
+def test_ooc_3d_ngtdm_matches_in_ram(tmp_path):
+    """3D NGTDM out-of-core (radius-window neighbourhood averages) must match the in-RAM path."""
+    _ooc_vs_ram_3d(tmp_path, ["*3D_NGTDM*"])
+
+
 def test_ooc_montage_oversized_fails_loudly():
     """The in-memory (montage) path has no out-of-core support, so an ROI whose footprint
     reaches ram_limit must fail loudly rather than emit a silent all-zero feature row."""

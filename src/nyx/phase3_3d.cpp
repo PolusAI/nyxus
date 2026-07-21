@@ -10,6 +10,10 @@
 #include "globals.h"
 #include "features/3d_intensity.h"
 #include "features/3d_surface.h"
+#include "features/3d_glcm.h"
+#include "features/3d_gldm.h"
+#include "features/3d_ngldm.h"
+#include "features/3d_ngtdm.h"
 #include "features/pixel.h"
 #include "helpers/timing.h"
 
@@ -103,7 +107,11 @@ namespace Nyxus
 					// instead of emitting wrong values. Under the CLI this logs and moves on (the
 					// supported features still compute); under Python it raises.
 					if (dynamic_cast<D3_VoxelIntensityFeatures*>(f) == nullptr
-						&& dynamic_cast<D3_SurfaceFeature*>(f) == nullptr)
+						&& dynamic_cast<D3_SurfaceFeature*>(f) == nullptr
+						&& dynamic_cast<D3_GLCM_feature*>(f) == nullptr
+						&& dynamic_cast<D3_GLDM_feature*>(f) == nullptr
+						&& dynamic_cast<D3_NGLDM_feature*>(f) == nullptr
+						&& dynamic_cast<D3_NGTDM_feature*>(f) == nullptr)
 						throw std::runtime_error("feature '" + f->feature_info
 							+ "' is not yet supported out-of-core for oversized 3D ROIs; "
 							+ "segment into smaller ROIs, raise --ramLimit, or add RAM");

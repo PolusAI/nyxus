@@ -1,6 +1,10 @@
 #include <limits.h>
+#include <algorithm>
+#include <set>
+#include <vector>
 #include "3d_ngldm.h"
 #include "../environment.h"
+#include "../helpers/helpers.h"
 
 using namespace Nyxus;
 
@@ -405,5 +409,100 @@ void D3_NGLDM_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t inte
 
 void D3_NGLDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
-	calculate (r, s);
+	// Out-of-core NGLDM. Streams the disk-backed voxel cloud through a 3-plane sliding window of
+	// dense grey-binned planes and fills the NGLD-matrix directly. Binning, interior-only scan,
+	// 24-neighbourhood and background handling mirror calc_ngld_matrix exactly; the totals and
+	// feature math (calc_rowwise_and_columnwise_totals / calc_features) are shared.
+	clear_buffers();
+
+	if (r.aux_min == r.aux_max)
+	{
+		f_LDE = f_HDE = f_LGLCE = f_HGLCE = f_LDLGLE = f_LDHGLE = f_HDLGLE = f_HDHGLE =
+		f_GLNU = f_GLNUN = f_DCNU = f_DCNUN = f_GLCM = f_GLV = f_DCM = f_DCP = f_DCV =
+		f_DCENT = f_DCENE = STNGS_NAN(s);
+		return;
+	}
+
+	const int nGrays = STNGS_NGREYS(s);
+	const bool ibsi = STNGS_IBSI(s);
+	const PixIntens range = r.aux_max;			// binning basis is [0, aux_max], as in calc_ngld_matrix
+
+	const int W = (int) r.aabb.get_width(),
+		H = (int) r.aabb.get_height(),
+		Dz = (int) r.aabb.get_z_depth();
+	const StatsInt xmin = r.aabb.get_xmin(), ymin = r.aabb.get_ymin(), zmin = r.aabb.get_zmin();
+
+	// Background grey level of the dense cube (raw 0 binned). Present in the LUT only if the ROI
+	// bbox actually contains a non-mask (background) voxel, matching unique(aux_image_cube).
+	const size_t nvox = r.raw_voxels_NT.size();
+	const bool hasBackground = nvox < (size_t) W * H * Dz;
+	const PixIntens bg = Nyxus::to_grayscale (0, 0, range, nGrays, ibsi);
+
+	// --- grey-level LUT: unique binned values over the whole cube (mask voxels + maybe background)
+	std::set<PixIntens> uniq;
+	if (hasBackground)
+		uniq.insert (bg);
+	for (size_t i = 0; i < nvox; i++)
+		uniq.insert (Nyxus::to_grayscale (r.raw_voxels_NT[i].inten, 0, range, nGrays, ibsi));
+	std::vector<PixIntens> grey_levels_LUT (uniq.begin(), uniq.end());	// std::set already sorted
+	int Ng = (int) grey_levels_LUT.size();
+
+	const int maxNr = nsh + 1;
+	SimpleMatrix<unsigned int> NGLDM;
+	NGLDM.allocate (maxNr, Ng);
+	NGLDM.fill (0);
+	int max_dep = 0;
+
+	// --- 3-plane sliding window of dense grey-binned planes (bg-initialised)
+	std::vector<std::vector<PixIntens>> ring (3);
+	int ringZ[3] = { -1, -1, -1 };
+	std::vector<Pixel3> slab;
+	auto load = [&](int lz)
+	{
+		if (lz < 0 || lz >= Dz) return;
+		int slot = lz % 3;
+		if (ringZ[slot] == lz) return;
+		std::vector<PixIntens>& pl = ring[slot];
+		pl.assign ((size_t) W * H, bg);
+		r.raw_voxels_NT.read_slab ((size_t)(zmin + lz), slab);
+		for (const auto& v : slab)
+		{
+			int lx = (int) v.x - (int) xmin, ly = (int) v.y - (int) ymin;
+			if (lx >= 0 && lx < W && ly >= 0 && ly < H)
+				pl[(size_t) ly * W + lx] = Nyxus::to_grayscale (v.inten, 0, range, nGrays, ibsi);
+		}
+		ringZ[slot] = lz;
+	};
+
+	// Interior voxels only (skip the 1-voxel margin so every voxel has all neighbours), as in
+	// calc_ngld_matrix. Background is NOT skipped.
+	for (int c = 1; c < Dz - 1; c++)
+	{
+		load (c - 1); load (c); load (c + 1);
+		const std::vector<PixIntens>& cur = ring[c % 3];
+
+		for (int y = 1; y < H - 1; y++)
+			for (int x = 1; x < W - 1; x++)
+			{
+				PixIntens cpi = cur[(size_t) y * W + x];
+				int row = (int)(std::lower_bound (grey_levels_LUT.begin(), grey_levels_LUT.end(), cpi) - grey_levels_LUT.begin());
+
+				int n_matches = 0;
+				for (int i = 0; i < nsh; i++)
+				{
+					int nz = c + shifts[i].dz, ny = y + shifts[i].dy, nx = x + shifts[i].dx;
+					if (nz < 0 || nz >= Dz || ny < 0 || ny >= H || nx < 0 || nx >= W)
+						continue;
+					if (cpi == ring[nz % 3][(size_t) ny * W + nx])
+						n_matches++;
+				}
+				NGLDM.yx (row, n_matches)++;
+				max_dep = (std::max) (max_dep, n_matches);
+			}
+	}
+	int Nr = max_dep + 1;
+
+	std::vector<double> Sg, Sr;
+	calc_rowwise_and_columnwise_totals (Sg, Sr, NGLDM, Ng, Nr);
+	calc_features (Sg, Sr, NGLDM, Nr, grey_levels_LUT, r.aux_area);
 }
