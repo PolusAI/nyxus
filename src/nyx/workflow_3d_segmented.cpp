@@ -131,7 +131,9 @@ namespace Nyxus
 		if (nontrivRois.size())
 		{
 			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "Processing oversized ROIs\n";)
-			processNontrivialRois (env, nontrivRois, intens_fpath, label_fpath);
+			// Volumetric out-of-core path: streams the voxel cloud to disk keeping z (the shared 2D
+			// processNontrivialRois scans a single plane and drops z). t_index/channel select the plane.
+			processNontrivialRois_3D (env, nontrivRois, intens_fpath, label_fpath, channel, t_index);
 		}
 
 		return true;

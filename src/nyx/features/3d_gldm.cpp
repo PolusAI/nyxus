@@ -1,8 +1,10 @@
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
+#include <set>
 #include <sstream>
 #include <unordered_set>
+#include <vector>
 #include "3d_gldm.h"
 #include "../environment.h"
 
@@ -246,7 +248,146 @@ void D3_GLDM_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t inten
 
 void D3_GLDM_feature::osized_calculate(LR& r, const Fsettings& s, ImageLoader&)
 {
-	calculate (r, s);
+	// Out-of-core GLDM. Streams the disk-backed voxel cloud through a 3-plane sliding window of
+	// dense grey-binned planes (the 26-neighbourhood spans z-1..z+1) and fills the dependence
+	// matrix P directly per voxel (no O(volume) zone list). Feature math (calc_*) is shared with
+	// the in-core path, so values are identical.
+	clear_buffers();
+
+	// intercept blank ROIs (same guard as calculate())
+	if (r.aux_min == r.aux_max)
+	{
+		fv_SDE = fv_LDE = fv_GLN = fv_DN = fv_DNN = fv_GLV = fv_DV = fv_DE =
+		fv_LGLE = fv_HGLE = fv_SDLGLE = fv_SDHGLE = fv_LDLGLE = fv_LDHGLE = STNGS_NAN(s);
+		return;
+	}
+
+	int greyInfo = STNGS_IBSI(s) ? 0 : STNGS_GLDM_GREYDEPTH(s);
+	PixIntens mn = r.aux_min, mx = r.aux_max;
+	const PixIntens bg = TextureFeature::bin_pixel (0, mn, mx, greyInfo);
+	const PixIntens zeroI = matlab_grey_binning(greyInfo) ? 1 : 0;
+
+	const int W = (int) r.aabb.get_width(),
+		H = (int) r.aabb.get_height(),
+		Dz = (int) r.aabb.get_z_depth();
+	const StatsInt xmin = r.aabb.get_xmin(), ymin = r.aabb.get_ymin(), zmin = r.aabb.get_zmin();
+
+	// --- grey levels I + matrix dimension (mirrors calculate(), which builds I from the WHOLE
+	// binned cube incl. background -- e.g. matlab binning maps raw-0 background to bin 1, and that
+	// bin must appear in I too, matching D3_GLDM_feature::calculate()'s unordered_set(D.begin(),D.end())).
+	std::set<PixIntens> uniq;
+	PixIntens maxbin = 0;
+	const size_t nvox = r.raw_voxels_NT.size();
+	const bool hasBackground = nvox < (size_t) W * H * Dz;
+	if (hasBackground && bg != 0)
+	{
+		uniq.insert (bg);
+		maxbin = bg;
+	}
+	for (size_t i = 0; i < nvox; i++)
+	{
+		PixIntens b = TextureFeature::bin_pixel (r.raw_voxels_NT[i].inten, mn, mx, greyInfo);
+		if (b > maxbin) maxbin = b;
+		if (b != 0) uniq.insert (b);
+	}
+	I.clear();
+	if (ibsi_grey_binning(greyInfo))
+	{
+		int n = (int) maxbin;
+		I.resize (n);
+		for (int i = 0; i < n; i++) I[i] = i + 1;
+	}
+	else
+		I.assign (uniq.begin(), uniq.end());		// std::set already sorted
+	Ng = (greyInfo == 0) ? (I.empty() ? 0 : (int) *std::max_element(I.begin(), I.end())) : (int) I.size();
+
+	Nd = nsh + 1;
+	P.allocate (Nd + 1, Ng + 1);
+	std::fill (P.begin(), P.end(), 0);
+	int max_Nd = 0;
+
+	// --- 3-plane sliding window of dense grey-binned planes (bg-initialised so background matches
+	//     the in-core cube), indexed by local z modulo 3
+	std::vector<std::vector<PixIntens>> ring (3);
+	int ringZ[3] = { -1, -1, -1 };
+	std::vector<Pixel3> slab;
+	auto load = [&](int lz)
+	{
+		if (lz < 0 || lz >= Dz) return;
+		int slot = lz % 3;
+		if (ringZ[slot] == lz) return;
+		std::vector<PixIntens>& pl = ring[slot];
+		pl.assign ((size_t) W * H, bg);
+		r.raw_voxels_NT.read_slab ((size_t)(zmin + lz), slab);
+		for (const auto& v : slab)
+		{
+			int lx = (int) v.x - (int) xmin, ly = (int) v.y - (int) ymin;
+			if (lx >= 0 && lx < W && ly >= 0 && ly < H)
+				pl[(size_t) ly * W + lx] = TextureFeature::bin_pixel (v.inten, mn, mx, greyInfo);
+		}
+		ringZ[slot] = lz;
+	};
+
+	const bool ibsi = STNGS_IBSI(s);
+	for (int c = 0; c < Dz; c++)
+	{
+		load (c - 1); load (c); load (c + 1);
+		const std::vector<PixIntens>& cur = ring[c % 3];
+
+		for (int y = 0; y < H; y++)
+			for (int x = 0; x < W; x++)
+			{
+				PixIntens pi = cur[(size_t) y * W + x];
+				if (pi == zeroI)
+					continue;
+
+				int nd = 1;
+				for (int i = 0; i < nsh; i++)
+				{
+					int nz = c + shifts[i].dz, ny = y + shifts[i].dy, nx = x + shifts[i].dx;
+					if (nz < 0 || nz >= Dz || ny < 0 || ny >= H || nx < 0 || nx >= W)
+						continue;
+					if (pi == ring[nz % 3][(size_t) ny * W + nx])
+						nd++;
+				}
+
+				int row = ibsi ? (int) pi - 1
+					: (int)(std::lower_bound (I.begin(), I.end(), pi) - I.begin());
+				int col = nd - 1;
+				P.xy (col, row)++;
+				max_Nd = (std::max) (max_Nd, nd);
+			}
+	}
+
+	if (greyInfo)
+		Nd = max_Nd;
+
+	Nz = 0;
+	for (auto p : P)
+		Nz += p;
+
+	if (Nz == 0)
+	{
+		fv_SDE = fv_LDE = fv_GLN = fv_DN = fv_DNN = fv_GLV = fv_DV = fv_DE =
+		fv_LGLE = fv_HGLE = fv_SDLGLE = fv_SDHGLE = fv_LDLGLE = fv_LDHGLE = STNGS_NAN(s);
+	}
+	else
+	{
+		fv_SDE = calc_SDE();
+		fv_LDE = calc_LDE();
+		fv_GLN = calc_GLN();
+		fv_DN = calc_DN();
+		fv_DNN = calc_DNN();
+		fv_GLV = calc_GLV();
+		fv_DV = calc_DV();
+		fv_DE = calc_DE();
+		fv_LGLE = calc_LGLE();
+		fv_HGLE = calc_HGLE();
+		fv_SDLGLE = calc_SDLGLE();
+		fv_SDHGLE = calc_SDHGLE();
+		fv_LDLGLE = calc_LDLGLE();
+		fv_LDHGLE = calc_LDHGLE();
+	}
 }
 
 void D3_GLDM_feature::save_value(std::vector<std::vector<double>>& fvals)

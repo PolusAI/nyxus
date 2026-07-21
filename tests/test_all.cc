@@ -4,6 +4,9 @@
 #include "test_gabor_regression.h"
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
+#include "../src/nyx/feature_method.h"		// TEST_3D_OOC_GUARD_REJECTS_UNSUPPORTED_FEATURE
+#include "../src/nyx/features/3d_intensity.h"
+#include "../src/nyx/features/3d_glcm.h"
 #include "../src/nyx/ome/format_detect.h"		// detect_input_format (P1)
 #include "test_contour.h"
 #include "test_ome_meta.h"		// native-OME metadata parsers / OmeAxes descriptor
@@ -2667,6 +2670,137 @@ TEST(TEST_NYXUS, TEST_OMEZARR_V3_BLOSC_FACADE_VOLUME) {
 	ASSERT_NO_THROW (test_omezarr_facade_volume("dim5_v3_blosc.ome.zarr", 2, 3, 4));
 }
 
+// Larger multi-SHARD-FILE Zarr v3 store (gen_dim5.py write_v3_multishard): C=2,T=1,Z=8,Y=24,X=32,
+// inner chunk (z,y,x)=(2,6,8), shard (z,y,x)=(8,12,16) -> a 2x2 GRID OF SHARD FILES per (c,t),
+// each packing 16 inner chunks (8 shard files total). Unlike dim5_v3_sharded (exactly one shard
+// per (t,c), so it only proves multiple inner chunks packed into ONE shard), this exercises the
+// volumetric assembly crossing SHARD-FILE boundaries mid-plane -- closer to a real, larger v3
+// store's layout. Own local encoding (dim5_enc's C/Z/Y/X are hardcoded to the small fixture and
+// don't apply here): value(x,y,z,c,t) = 1 + ((((t*C+c)*Z+z)*Y+y)*X+x), C=2,T=1,Z=8,Y=24,X=32.
+static inline uint32_t dim5_multishard_enc(int x, int y, int z, int c, int t)
+{
+	const int C = 2, Z = 8, Y = 24, X = 32;
+	return static_cast<uint32_t>(1 + ((((t * C + c) * Z + z) * Y + y) * X + x));
+}
+
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_MULTISHARD_FACADE_VOLUME) {
+	const int T = 1, C = 2, Z = 8, Y = 24, X = 32;
+	fs::path ds = omezarr_data_path("dim5_v3_multishard.ome.zarr");
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+	SlideProps p;
+	p.fname_int = ds.string();
+	p.fname_seg = "";
+	FpImageOptions fp;
+	ImageLoader il;
+	ASSERT_TRUE(il.open(p, fp)) << ds.string();
+	ASSERT_EQ(il.get_full_width(), (size_t)X);
+	ASSERT_EQ(il.get_full_height(), (size_t)Y);
+	ASSERT_EQ(il.get_full_depth(), (size_t)Z);
+
+	for (int t = 0; t < T; ++t)
+	  for (int c = 0; c < C; ++c)
+	  {
+	      ASSERT_TRUE(il.load_volume(c, t));
+	      const std::vector<uint32_t>& vol = il.get_int_volume_buffer();
+	      ASSERT_EQ(vol.size(), (size_t)X * Y * Z);
+	      for (int z = 0; z < Z; ++z)
+	        for (int y = 0; y < Y; ++y)
+	          for (int x = 0; x < X; ++x)
+	            ASSERT_EQ(vol[(size_t)z * X * Y + (size_t)y * X + x], dim5_multishard_enc(x, y, z, c, t))
+	                << "multishard vol (x" << x << " y" << y << " z" << z << " c" << c << " t" << t << ")";
+	  }
+	il.close();
+}
+
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_MULTISHARD_CT_COUNTS) {
+	fs::path ds = omezarr_data_path("dim5_v3_multishard.ome.zarr");
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+	auto ldr = NyxusOmeZarrLoader<uint32_t>(1, ds.string());
+	ASSERT_EQ(ldr.numberChannels(), (size_t)2);
+	ASSERT_EQ(ldr.fullTimestamps(0), (size_t)1);
+	ASSERT_EQ(ldr.fullDepth(0), (size_t)8);
+
+	auto raw = RawOmezarrLoader(ds.string());
+	ASSERT_EQ(raw.numberChannels(), (size_t)2);
+	ASSERT_EQ(raw.fullTimestamps(0), (size_t)1);
+	ASSERT_EQ(raw.fullDepth(0), (size_t)8);
+}
+
+// Prescan (raw loader's readSubarray driven across all 8 shard files) must see the full encoded
+// range across BOTH channels, and the whole-slide ROI area -- not garbage, not just channel 0.
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_MULTISHARD_PRESCAN) {
+	fs::path ip = omezarr_data_path("dim5_v3_multishard.ome.zarr");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+
+	Environment e;
+	SlideProps p (ip.string(), "");		// whole-slide: no mask
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+
+	EXPECT_DOUBLE_EQ(p.min_preroi_inten, 1.0);
+	EXPECT_DOUBLE_EQ(p.max_preroi_inten, dim5_multishard_enc(31, 23, 7, 1, 0));	// last voxel, last channel
+	EXPECT_EQ(p.max_roi_area, (size_t)(32 * 24 * 8));
+}
+
+// Zarr v3 store with a MULTI-PLANE Z chunk (chunk z-extent 3 over Z=7 -> depths 3,3,1, an UNEVEN
+// split), unsharded -- isolated regression test for a real bug found while building the multishard
+// fixture above: omezarr.h/raw_omezarr.h's loadTile() always read exactly ONE Z-plane per tile
+// (shape[iz_] left at its default of 1) regardless of the chunk's actual Z extent, so every plane
+// past the first within a multi-plane chunk silently came back zero. No existing fixture before
+// this one ever used a Z-chunk > 1. Own local encoding (dim5_enc/dim5_multishard_enc don't apply --
+// different dims): value(x,y,z,c,t) = 1 + ((((t*C+c)*Z+z)*Y+y)*X+x), C=2,T=1,Z=7,Y=6,X=8.
+static inline uint32_t dim5_zchunked_enc(int x, int y, int z, int c, int t)
+{
+	const int C = 2, Z = 7, Y = 6, X = 8;
+	return static_cast<uint32_t>(1 + ((((t * C + c) * Z + z) * Y + y) * X + x));
+}
+
+// Exercises omezarr.h's NyxusOmeZarrLoader via ImageLoader::load_volume/assemble_volume -- the
+// path that read zero past the first Z-plane of a chunk before the fix.
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_ZCHUNKED_FACADE_VOLUME) {
+	const int T = 1, C = 2, Z = 7, Y = 6, X = 8;
+	fs::path ds = omezarr_data_path("dim5_v3_zchunked.ome.zarr");
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+	SlideProps p;
+	p.fname_int = ds.string();
+	p.fname_seg = "";
+	FpImageOptions fp;
+	ImageLoader il;
+	ASSERT_TRUE(il.open(p, fp)) << ds.string();
+	ASSERT_EQ(il.get_full_depth(), (size_t)Z);
+
+	for (int t = 0; t < T; ++t)
+	  for (int c = 0; c < C; ++c)
+	  {
+	      ASSERT_TRUE(il.load_volume(c, t));
+	      const std::vector<uint32_t>& vol = il.get_int_volume_buffer();
+	      ASSERT_EQ(vol.size(), (size_t)X * Y * Z);
+	      for (int z = 0; z < Z; ++z)
+	        for (int y = 0; y < Y; ++y)
+	          for (int x = 0; x < X; ++x)
+	            ASSERT_EQ(vol[(size_t)z * X * Y + (size_t)y * X + x], dim5_zchunked_enc(x, y, z, c, t))
+	                << "zchunked vol (x" << x << " y" << y << " z" << z << " c" << c << " t" << t << ")";
+	  }
+	il.close();
+}
+
+// Exercises raw_omezarr.h's RawOmezarrLoader via RawImageLoader::for_each_voxel (the prescan path)
+// -- the OTHER consumer of the same buggy loadTile(), independently regressed here.
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_ZCHUNKED_PRESCAN) {
+	fs::path ip = omezarr_data_path("dim5_v3_zchunked.ome.zarr");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+
+	Environment e;
+	SlideProps p (ip.string(), "");		// whole-slide: no mask
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+
+	EXPECT_DOUBLE_EQ(p.min_preroi_inten, 1.0);
+	EXPECT_DOUBLE_EQ(p.max_preroi_inten, dim5_zchunked_enc(7, 5, 6, 1, 0));	// last voxel, last channel
+	EXPECT_EQ(p.max_roi_area, (size_t)(8 * 6 * 7));
+}
+
 // No 'axes' metadata -> the loader falls back to legacy 5D TCZYX and still reads.
 TEST(TEST_NYXUS, TEST_OMEZARR_NOAXES_FALLBACK) {
 	ASSERT_NO_THROW (test_omezarr_addressing("dim5_noaxes.ome.zarr", 2, 3, 4));
@@ -3149,6 +3283,161 @@ TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_REDUCE) {
 	EXPECT_GE(vmax, vmin);
 	EXPECT_GT(vmax, 0.0);
 	ilo.close();
+}
+
+// Regression: an OVERSIZED whole volume of a format that delivers plane-by-plane (e.g. OME-TIFF)
+// must now featurize SUCCESSFULLY out-of-core, producing the SAME feature values as the in-RAM
+// (fitting) run of the identical file -- not fail, and not emit a zero row. This supersedes the
+// old TEST_3D_WHOLEVOLUME_OVERSIZED_FAILS_LOUDLY premise: before workflow_3d_whole.cpp's oversized
+// branch streamed via populate_3d_voxel_cloud/run_3d_ooc_features, NO whole-volume streaming path
+// existed at all, so oversized-but-streamable volumes failed loudly (a deliberate, validated
+// fallback at the time). Now the only remaining loud-fail case is a genuinely unstreamable format
+// (whole-4D-in-one-read, e.g. NIfTI) -- see TEST_3D_WHOLEVOLUME_UNSTREAMABLE_FORMAT_FAILS_LOUDLY.
+TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_OVERSIZED_STREAMS_OOC) {
+	fs::path ds = ometiff_data_path("dim3_zyx.ome.tif");	// 3D X8 Y6 Z4
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+	auto run_and_read_row = [&](bool oversized, const fs::path& outdir) -> std::string
+	{
+		fs::remove_all(outdir); fs::create_directories(outdir);
+		Environment e;
+		e.theFeatureSet.enableAll(false);
+		e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
+		e.theFeatureSet.enableFeatures(D3_SurfaceFeature::featureset);
+		e.theFeatureSet.enableFeatures(D3_GLCM_feature::featureset);
+		// The full sequence main_nyxus.cpp runs before any workflow (theFeatureMgr.compile() ->
+		// apply_user_selection() -> init_feature_classes() -> compile_feature_settings()). Skipping
+		// theFeatureMgr setup leaves get_num_requested_features()==0, so run_3d_ooc_features's loop
+		// never executes and every feature stays at its zero-initialized default (first symptom: an
+		// all-zero OOC row). Skipping compile_feature_settings() leaves fsett_D3_* at size 0, so any
+		// STNGS_*(s) macro access (e.g. surface's STNGS_SINGLEROI) reads out of bounds -- crashed
+		// (SEH 0xc0000005) before this was added.
+		EXPECT_TRUE(e.theFeatureMgr.compile());
+		e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
+		EXPECT_TRUE(e.theFeatureMgr.init_feature_classes());
+		e.compile_feature_settings();
+		EXPECT_TRUE(e.set_ram_limit(oversized ? 0 : 64));	// 0 -> force oversized; 64 MB comfortably fits this tiny (X8 Y6 Z4) volume
+		e.output_dir = outdir.string();
+
+		std::vector<std::string> ifiles{ ds.string() };
+		auto [ok, erm] = Nyxus::processDataset_3D_wholevolume(e, ifiles, 1, Nyxus::SaveOption::saveCSV, outdir.string());
+		EXPECT_TRUE(ok) << (erm ? *erm : std::string("(no error message)"));
+
+		std::string row;
+		size_t datarows = 0;
+		for (auto& de : fs::directory_iterator(outdir))
+			if (de.path().extension() == ".csv")
+			{
+				std::ifstream f(de.path()); std::string header, ln;
+				std::getline(f, header);
+				while (std::getline(f, ln)) if (!ln.empty()) { row = ln; ++datarows; }
+			}
+		EXPECT_EQ(datarows, (size_t)1) << "expected exactly one feature row";
+		fs::remove_all(outdir);
+		return row;
+	};
+
+	std::string ooc_row = run_and_read_row(true, fs::temp_directory_path() / "nyxus_wv_ooc_test");
+	std::string ram_row = run_and_read_row(false, fs::temp_directory_path() / "nyxus_wv_ram_test");
+
+	ASSERT_FALSE(ooc_row.empty());
+	ASSERT_FALSE(ram_row.empty());
+	EXPECT_EQ(ooc_row, ram_row) << "the out-of-core whole-volume row must match the in-RAM row exactly";
+}
+
+// Regression: a whole volume whose loader delivers the ENTIRE X*Y*Z*T blob in one read (e.g.
+// NIfTI -- see ImageLoader::stream_volume_planes) cannot stream plane-by-plane, so an oversized
+// NIfTI whole volume must still fail loudly (no streaming path exists for it) rather than crash or
+// emit a silent zero row. ram_limit=0 forces oversized regardless of the fixture's actual size.
+TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_UNSTREAMABLE_FORMAT_FAILS_LOUDLY) {
+	fs::path p(__FILE__);
+	fs::path ds(p.parent_path().string() + fs::path("/data/hounsfield/ct3d_int16.nii").make_preferred().string());
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+	fs::path outdir = fs::temp_directory_path() / "nyxus_wv_nifti_ooc_test";
+	fs::remove_all(outdir); fs::create_directories(outdir);
+
+	Environment e;
+	e.theFeatureSet.enableAll(false);
+	e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
+	ASSERT_TRUE(e.theFeatureMgr.compile());
+	e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
+	ASSERT_TRUE(e.theFeatureMgr.init_feature_classes());
+	e.compile_feature_settings();
+	ASSERT_TRUE(e.set_ram_limit(0));		// force oversized regardless of this small fixture's real size
+
+	std::vector<std::string> ifiles{ ds.string() };
+	auto [ok, erm] = Nyxus::processDataset_3D_wholevolume(e, ifiles, 1, Nyxus::SaveOption::saveCSV, outdir.string());
+
+	EXPECT_FALSE(ok) << "an oversized NIfTI whole volume has no streaming path and must fail loudly";
+
+	size_t datarows = 0;
+	for (auto& de : fs::directory_iterator(outdir))
+		if (de.path().extension() == ".csv")
+		{
+			std::ifstream f(de.path()); std::string ln; size_t n = 0;
+			while (std::getline(f, ln)) if (!ln.empty()) ++n;
+			if (n) datarows += n - 1;	// minus header
+		}
+	EXPECT_EQ(datarows, (size_t)0) << "no feature row should be written for an unstreamable oversized volume";
+	fs::remove_all(outdir);
+}
+
+// Regression (found by running nyxus under a hard memory cap): the whole-volume oversized check
+// must use the 3D footprint estimator (W*H*D for the image cube), not the 2D one (W*H). The 2D
+// estimator ignores depth, so it under-counted a volume's memory by ~depth x, let oversized
+// volumes slip through the "trivial" path, and they OOM-crashed under a real memory limit even
+// with a matching --ramLimit. This pins that the 3D estimator accounts for depth (the 2D one
+// does not) so featurize_wholevolume's switch to get_ram_footprint_estimate_3D stays correct.
+TEST(TEST_NYXUS, TEST_3D_RAM_FOOTPRINT_COUNTS_DEPTH) {
+	// Two ROIs with identical W/H and voxel count, differing ONLY in bounding-box depth. This
+	// isolates depth's effect on each estimator.
+	LR flat(1);
+	flat.aabb.init_from_whd(64, 64, 1);
+	flat.aux_area = 4096;
+	LR tall(1);
+	tall.aabb.init_from_whd(64, 64, 64);
+	tall.aux_area = 4096;
+
+	// the 2D estimator's image-matrix term is W*H -> it IGNORES depth: identical for both
+	EXPECT_EQ(flat.get_ram_footprint_estimate(1), tall.get_ram_footprint_estimate(1));
+
+	// the 3D estimator's image-cube term is W*H*D -> the 64x-deeper bbox is far larger. This is
+	// the term the 2D estimator missed, which under-counted whole volumes and let them OOM.
+	EXPECT_GT(tall.get_ram_footprint_estimate_3D(1), flat.get_ram_footprint_estimate_3D(1) * 10)
+		<< "3D footprint estimator is not counting depth";
+}
+
+// Regression-guard: processNontrivialRois_3D's per-feature out-of-core dispatch
+// (phase3_3d.cpp) must throw for any 3D FeatureMethod NOT covered by is_3d_ooc_supported() --
+// otherwise a future feature added without a streaming osized_calculate would silently read
+// raw_voxels_NT (which OOC never populates for it) via the base FeatureMethod::osized_scan_whole_image
+// default, producing a wrong/zero row instead of an actionable error. Every CURRENT 3D feature class
+// is supported, so there is no live "unsupported" feature to exercise this through the normal
+// featurize path; this pins the ALLOW-LIST FUNCTION ITSELF directly, using a minimal stand-in
+// FeatureMethod that is deliberately never added to the allow-list, alongside real supported classes.
+class DummyUnsupported3DFeature : public FeatureMethod
+{
+public:
+	DummyUnsupported3DFeature() : FeatureMethod("DummyUnsupported3DFeature") {}
+	void calculate (LR&, const Fsettings&) override {}
+	void osized_add_online_pixel (size_t, size_t, uint32_t) override {}
+	void osized_calculate (LR&, const Fsettings&, ImageLoader&) override {}
+	void save_value (std::vector<std::vector<double>>&) override {}
+};
+
+TEST(TEST_NYXUS, TEST_3D_OOC_GUARD_REJECTS_UNSUPPORTED_FEATURE) {
+	DummyUnsupported3DFeature unsupported;
+	EXPECT_FALSE(Nyxus::is_3d_ooc_supported(&unsupported))
+		<< "a 3D feature class outside the allow-list must be rejected by the OOC guard";
+
+	D3_VoxelIntensityFeatures intensityFeature;
+	EXPECT_TRUE(Nyxus::is_3d_ooc_supported(&intensityFeature))
+		<< "a real streaming-supported 3D feature (intensity) must be accepted";
+
+	D3_GLCM_feature glcmFeature;
+	EXPECT_TRUE(Nyxus::is_3d_ooc_supported(&glcmFeature))
+		<< "a real streaming-supported 3D texture feature (GLCM) must be accepted";
 }
 
 // Regression: separatecsv derives ONE output path per slide, but the CSV sinks are invoked

@@ -49,6 +49,13 @@ void FeatureMethod::osized_scan_whole_image (LR& r, const Fsettings& s, ImageLoa
 	this->save_value (r.fvals);
 }
 
+// The Dataset-aware overload defaults to the Dataset-less path, so features that don't need
+// slide props are unaffected; only features that override it consume the Dataset.
+void FeatureMethod::osized_scan_whole_image (LR& r, const Fsettings& s, const Dataset& ds, ImageLoader& ldr)
+{
+	this->osized_scan_whole_image (r, s, ldr);
+}
+
 bool FeatureMethod::provides (int fcode) const
 {
 	return std::find(provided_features.begin(), provided_features.end(), (int)fcode) != provided_features.end();

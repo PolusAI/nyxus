@@ -1,6 +1,8 @@
 #pragma once
 
 #pragma once
+#include <array>
+#include <vector>
 #include "../dataset.h"
 #include "../featureset.h"
 #include "../feature_method.h"
@@ -56,8 +58,10 @@ private:
 	};	
 
 	std::vector<Simplex3> hull_complex;
-	
+
 	void build_surface (LR& r);
+	// Build the hull complex from a contour point cloud (shared by in-core + out-of-core paths)
+	void build_hull (const std::vector<std::array<float, 3>>& P);
 
 	double fval_AREA,
 		fval_AREA_2_VOLUME,

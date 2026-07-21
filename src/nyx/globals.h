@@ -18,6 +18,8 @@
 #include "results_cache.h"
 #include "roi_cache.h"
 #include "save_option.h"
+
+class FeatureMethod;	// forward decl for is_3d_ooc_supported()
 #include "arrow_output_stream.h"
 #include "nested_feature_aggregation.h" // Nested ROI
 #include "cli_nested_roi_options.h"
@@ -88,6 +90,19 @@ namespace Nyxus
 	bool processTrivialRois_25D (Environment & env, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit, const std::vector<std::string>& z_indices);
 	bool processTrivialRois_3D (Environment & env, size_t sidx, size_t t_index, size_t channel, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit);
 	bool processNontrivialRois (Environment& env, const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath);
+	bool processNontrivialRois_3D (Environment& env, const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t channel, size_t timeframe);
+	// Allow-list of 3D feature classes whose osized_calculate() streams from the disk-backed voxel
+	// cloud; used by processNontrivialRois_3D()'s per-feature out-of-core guard, and independently
+	// unit-testable (see TEST_3D_OOC_GUARD_REJECTS_UNSUPPORTED_FEATURE).
+	bool is_3d_ooc_supported (FeatureMethod* f);
+	// Streams r.raw_voxels_NT from 'imlo' plane-by-plane; when wholevolume is true every voxel is
+	// kept (no mask), otherwise only voxels matching r.label. Returns false (cloud cleared) if the
+	// loader can't deliver the volume plane-by-plane. Shared by the segmented and whole-volume
+	// out-of-core paths (processNontrivialRois_3D, workflow_3d_whole.cpp's oversized branch).
+	bool populate_3d_voxel_cloud (ImageLoader& imlo, LR& r, size_t channel, size_t timeframe, bool wholevolume);
+	// Runs every requested feature's out-of-core path over an already-populated r.raw_voxels_NT,
+	// guarded by is_3d_ooc_supported(); writes into r.fvals via save_value(). Shared the same way.
+	void run_3d_ooc_features (Environment& env, LR& r, ImageLoader& imloader);
 	bool scan_trivial_wholeslide (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr);	// reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
 	bool scan_trivial_wholeslide_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y);
 

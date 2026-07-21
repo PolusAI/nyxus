@@ -99,7 +99,9 @@ namespace Nyxus
 				try
 				{
 					const Fsettings& s = env.get_feature_settings (typeid(f));
-					f->osized_scan_whole_image (r, s, env.theImLoader);
+					// Pass the Dataset so intensity/histogram osized features reach their
+					// Dataset-aware osized_calculate; the Dataset-less overload is a guard that throws.
+					f->osized_scan_whole_image (r, s, env.dataset, env.theImLoader);
 				}
 				catch (std::exception const& e)
 				{

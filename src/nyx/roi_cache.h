@@ -7,6 +7,7 @@
 #include "features/aabb.h"
 #include "features/image_matrix.h"
 #include "features/image_matrix_nontriv.h"
+#include "features/voxel_cloud_nontriv.h"
 #include "features/image_cube.h"
 #include "features/pixel.h"
 #include "featureset.h"
@@ -50,6 +51,9 @@ public:
 	std::unordered_map<int, std::vector<size_t>> zplanes;  
 
 	OutOfRamPixelCloud raw_pixels_NT;
+	// Disk-backed 3D voxel source for oversized volumetric ROIs (populated by the 3D
+	// out-of-core scan). Keeps z, unlike raw_pixels_NT which is the 2D (z-less) cloud.
+	OutOfRamVoxelCloud raw_voxels_NT;
 	unsigned int aux_area = 0;
 	PixIntens aux_min, aux_max;
 

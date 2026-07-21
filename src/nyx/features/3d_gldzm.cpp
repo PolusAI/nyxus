@@ -1,8 +1,13 @@
+#include <algorithm>
 #include <climits>
+#include <set>
 #include <stack>
+#include <unordered_set>
+#include <vector>
 #include "../environment.h"
 #include "3d_gldzm.h"
 #include "image_cube.h"
+#include "streaming_ccl.h"
 
 
 int D3_GLDZM_feature::n_levels = 0;
@@ -571,7 +576,187 @@ void D3_GLDZM_feature::save_value (std::vector<std::vector<double>> & fvals)
 
 void D3_GLDZM_feature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {}
 
+// Out-of-core 3D GLDZM. prepare_GLDZM_matrix_kit()'s flood fill is 6-connectivity (face-adjacent
+// only -- East/West/North/South/Up/Down, no diagonals) tracking each zone's MINIMUM per-voxel
+// distance to the ROI border (zone SIZE is also tracked in-core but never actually consumed by
+// calc_gldzm_matrix, so this streaming version doesn't bother). Same streaming two-pass CCL
+// approach as GLSZM (docs/13-3d-ooc-glszm-gldzm-design.md), but with only 3 causal neighbours
+// (West, North, straight-down-Z) since 6-connectivity halves to 3, and a MIN-combining
+// LabelUnionFind instead of a size-summing one.
+//
+// dist2border() is 2D-only (scans left/right/up/down within the CURRENT Z-plane only to the
+// nearest literal-0 voxel or the plane edge) -- a limitation/convention of this implementation,
+// replicated exactly, not "fixed". It needs only the current plane's dense buffer, already
+// resident in the 2-plane window, so no extra memory cost versus GLSZM.
+//
+// Background-skip convention is GLDZM's OWN (a THIRD distinct rule, different from both GLRLM's
+// unconditional zeroI=0 and GLSZM's matlab-aware zeroI): skip a voxel ONLY when
+// ibsi_grey_binning(greyInfo) is true AND its binned value is literal 0 -- for radiomics/matlab
+// binning, background is never skipped and forms its own zone(s), exactly mirroring
+// prepare_GLDZM_matrix_kit's `if (ibsi_grey_binning(greyInfo)) if (inten==0) continue;`.
 void D3_GLDZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
-	calculate (r, s);
+	clear_buffers();
+
+	if (r.aux_min == r.aux_max)
+	{
+		f_SDE = f_LDE = f_LGLZE = f_HGLZE = f_SDLGLE = f_SDHGLE = f_LDLGLE = f_LDHGLE =
+		f_GLNU = f_GLNUN = f_ZDNU = f_ZDNUN = f_ZP = f_GLM = f_GLV = f_ZDM = f_ZDV = f_ZDE = f_GLE = STNGS_NAN(s);
+		return;
+	}
+
+	// grey-binning selection mirrors prepare_GLDZM_matrix_kit exactly: no GLDZM-specific greydepth
+	// setting exists, so it starts from the general STNGS_NGREYS(s), can be overridden by the static
+	// D3_GLDZM_feature::n_levels, then forced to 0 (IBSI/no-rescale) when STNGS_IBSI(s) is set.
+	auto greyInfo = STNGS_NGREYS(s);
+	auto greyInfo_localFeature = D3_GLDZM_feature::n_levels;
+	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
+		greyInfo = greyInfo_localFeature;
+	if (STNGS_IBSI(s))
+		greyInfo = 0;
+
+	PixIntens mn = r.aux_min, mx = r.aux_max;
+	const PixIntens bg = TextureFeature::bin_pixel (0, mn, mx, greyInfo);
+	const bool skipZero = ibsi_grey_binning (greyInfo);	// GLDZM's own rule: only skip in ibsi mode
+
+	const int W = (int) r.aabb.get_width(),
+		H = (int) r.aabb.get_height(),
+		Dz = (int) r.aabb.get_z_depth();
+	const StatsInt xmin = r.aabb.get_xmin(), ymin = r.aabb.get_ymin(), zmin = r.aabb.get_zmin();
+	const size_t nvox = r.raw_voxels_NT.size();
+	const bool hasBackground = nvox < (size_t) W * H * Dz;
+
+	// --- grey levels (mirrors prepare_GLDZM_matrix_kit: unique values of the WHOLE binned cube,
+	// incl. background, minus literal 0 -- or a dense 1..max linspace for ibsi_grey_binning)
+	std::vector<PixIntens> I;
+	if (ibsi_grey_binning (greyInfo))
+	{
+		PixIntens maxbin = 0;
+		for (size_t i = 0; i < nvox; i++)
+		{
+			PixIntens b = TextureFeature::bin_pixel (r.raw_voxels_NT[i].inten, mn, mx, greyInfo);
+			if (b > maxbin) maxbin = b;
+		}
+		I.resize (maxbin);
+		for (int i = 0; i < (int) maxbin; i++) I[i] = i + 1;
+	}
+	else
+	{
+		std::set<PixIntens> uniq;
+		if (hasBackground && bg != 0)
+			uniq.insert (bg);
+		for (size_t i = 0; i < nvox; i++)
+		{
+			PixIntens b = TextureFeature::bin_pixel (r.raw_voxels_NT[i].inten, mn, mx, greyInfo);
+			if (b != 0) uniq.insert (b);
+		}
+		I.assign (uniq.begin(), uniq.end());
+	}
+
+	// --- streaming 6-connectivity CCL over a 2-plane window, tracking min distance-to-border
+	LabelUnionFind uf;
+	std::vector<PixIntens> prevPlane, curPlane;
+	std::vector<int> prevLabel, curLabel;
+	std::vector<Pixel3> slab;
+
+	// 2D-only distance to the nearest literal-0 voxel or the plane edge, within 'plane' -- matches
+	// dist2border() exactly (1-based, min of 4 directions, clamped to >=1).
+	auto dist2border_plane = [&](const std::vector<PixIntens>& plane, int x, int y) -> long long
+	{
+		int dist2l = 0;
+		for (int x0 = x - 1; x0 >= 0; x0--)
+			if (plane[(size_t) y * W + x0] == 0 || x0 == 0) { dist2l = x - x0; break; }
+		int dist2r = 0;
+		for (int x0 = x + 1; x0 < W; x0++)
+			if (plane[(size_t) y * W + x0] == 0 || x0 == W - 1) { dist2r = x0 - x; break; }
+		int dist2t = 0;
+		for (int y0 = y - 1; y0 >= 0; y0--)
+			if (plane[(size_t) y0 * W + x] == 0 || y0 == 0) { dist2t = y - y0; break; }
+		int dist2b = 0;
+		for (int y0 = y + 1; y0 < H; y0++)
+			if (plane[(size_t) y0 * W + x] == 0 || y0 == H - 1) { dist2b = y0 - y; break; }
+		dist2l++; dist2r++; dist2t++; dist2b++;
+		long long d = (std::min) ((std::min) (dist2l, dist2r), (std::min) (dist2t, dist2b));
+		if (d == 0) d = 1;
+		return d;
+	};
+
+	for (int z = 0; z < Dz; z++)
+	{
+		curPlane.assign ((size_t) W * H, bg);
+		r.raw_voxels_NT.read_slab ((size_t)(zmin + z), slab);
+		for (const auto& v : slab)
+		{
+			int lx = (int) v.x - (int) xmin, ly = (int) v.y - (int) ymin;
+			if (lx >= 0 && lx < W && ly >= 0 && ly < H)
+				curPlane[(size_t) ly * W + lx] = TextureFeature::bin_pixel (v.inten, mn, mx, greyInfo);
+		}
+		curLabel.assign ((size_t) W * H, -1);
+
+		for (int y = 0; y < H; y++)
+			for (int x = 0; x < W; x++)
+			{
+				PixIntens pi = curPlane[(size_t) y * W + x];
+				if (skipZero && pi == 0)
+					continue;
+
+				long long d = dist2border_plane (curPlane, x, y);
+
+				int found = -1;
+				if (x > 0 && curPlane[(size_t) y * W + (x - 1)] == pi)
+				{
+					int lbl = curLabel[(size_t) y * W + (x - 1)];
+					if (lbl >= 0) found = lbl;
+				}
+				if (y > 0 && curPlane[(size_t) (y - 1) * W + x] == pi)
+				{
+					int lbl = curLabel[(size_t) (y - 1) * W + x];
+					if (lbl >= 0) found = (found < 0) ? lbl : uf.union_min (found, lbl);
+				}
+				if (z > 0 && prevPlane[(size_t) y * W + x] == pi)
+				{
+					int lbl = prevLabel[(size_t) y * W + x];
+					if (lbl >= 0) found = (found < 0) ? lbl : uf.union_min (found, lbl);
+				}
+
+				if (found < 0)
+					found = uf.make_label (pi, d);
+				else
+					uf.update_min (found, d);
+				curLabel[(size_t) y * W + x] = found;
+			}
+
+		prevPlane.swap (curPlane);
+		prevLabel.swap (curLabel);
+	}
+
+	// --- one zone per distinct root: (intensity, min distance)
+	std::vector<std::pair<PixIntens, int>> Zones;
+	std::vector<char> seenRoot (uf.num_labels(), 0);
+	for (size_t i = 0; i < uf.num_labels(); i++)
+	{
+		int rt = uf.find ((int) i);
+		if (seenRoot[rt]) continue;
+		seenRoot[rt] = 1;
+		Zones.push_back ({ uf.intensity_of (rt), (int) uf.metric (rt) });
+	}
+
+	int Ng = (int) I.size();
+	int Nd = 0;
+	for (auto& zo : Zones)
+		Nd = (std::max) (Nd, zo.second);
+
+	SimpleMatrix<unsigned int> GLDZM;
+	GLDZM.allocate (Nd, Ng);	// Ng rows, Nd columns -- matches calc_gldzm_matrix's layout
+	GLDZM.fill (0);
+	for (auto& zo : Zones)
+	{
+		int row = (int)(std::lower_bound (I.begin(), I.end(), zo.first) - I.begin());
+		int col = zo.second - 1;
+		GLDZM.yx (row, col)++;
+	}
+
+	std::vector<double> Mx, Md;
+	calc_row_and_column_sum_vectors (Mx, Md, GLDZM, Ng, Nd, I);
+	calc_features (Mx, Md, GLDZM, I, r.aux_area);
 }

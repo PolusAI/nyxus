@@ -2,6 +2,7 @@
 
 #include <array>
 #include <algorithm>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -31,6 +32,15 @@ public:
 	bool load_volume (size_t channel, size_t timeframe) { return load_volume(channel, timeframe, timeframe); }
 	const std::vector<uint32_t>& get_int_volume_buffer() const { return vol_int_; }
 	const std::vector<uint32_t>& get_seg_volume_buffer() const { return vol_seg_; }
+
+	// Stream the whole X*Y*Z volume for one (channel, timeframe) WITHOUT materializing it:
+	// one Z-plane is assembled into a reused buffer and handed to 'sink', so peak memory is
+	// two planes (intensity + mask) rather than the whole cube. This is what lets an oversized
+	// volumetric ROI be featurized out-of-core. Applies the same mask channel/timeframe clamp as
+	// load_volume (the mask is usually channel-agnostic). Returns false for a whole-4D loader
+	// (NIfTI, tileDepth>1) which delivers the entire cube in one read and cannot be streamed here.
+	bool stream_volume_planes (size_t channel, size_t timeframe, size_t mask_timeframe,
+		const std::function<void(size_t z, const std::vector<uint32_t>& int_plane, const std::vector<uint32_t>& seg_plane)>& sink);
 
 	const std::vector<uint32_t>& get_int_tile_buffer();
 	const std::vector<uint32_t>& get_seg_tile_buffer();
@@ -96,5 +106,11 @@ private:
 	void assemble_volume (AbstractTileLoader<uint32_t>* fl,
 		std::shared_ptr<std::vector<uint32_t>>& ptr,
 		std::vector<uint32_t>& dst, size_t channel, size_t timeframe);
+
+	// Assemble a single global Z-plane 'gz' (X*Y) into 'dst_plane' for a per-plane loader
+	// (tileDepth==1). The streaming counterpart of assemble_volume's inner plane fill.
+	void assemble_one_plane (AbstractTileLoader<uint32_t>* fl,
+		std::shared_ptr<std::vector<uint32_t>>& ptr,
+		std::vector<uint32_t>& dst_plane, size_t gz, size_t channel, size_t timeframe);
 };
 
