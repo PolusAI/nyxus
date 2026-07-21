@@ -305,17 +305,22 @@ void D3_NGLDM_feature::calc_features(const std::vector<double>& Sg, const std::v
 		f_GLNUN += sj * sj;	// Grey Level Non Uniformity Normalised
 	}
 
-	for (int i = 0; i < Ng; ++i)
+	// FIX (bug): DCNU/DCNUN summed the GREY-LEVEL (row) marginal s_{i.}=sum_j s_ij (outer loop over i,
+	// inner sum over j) -- byte-identical to the GLNU loop above, so DCNU==GLNU always. DCNU is the
+	// DEPENDENCE-COUNT (column) marginal: s_{.j}=sum_i s_ij, then sum_j s_{.j}^2. Transpose the loops
+	// (outer over dependence-count columns j, inner sum over grey levels i), matching the row-marginal's
+	// j in [1,Nr) convention. (The 2D twin ngldm.cpp is already correct via separate Sg/Sr arrays.)
+	for (int j = 1; j < Nr; ++j)	// FIX: outer loop is now the dependence-count column j
 	{
-		// Aggregate nonzero dependencies at each grey level
-		double si = 0;
-		for (int j = 1; j < Nr; ++j)	// note: j \in [1,Nr) due to considering only nonzero dependencies
+		// Aggregate over grey levels at each dependence count
+		double scol = 0;	// FIX: column marginal s_{.j}
+		for (int i = 0; i < Ng; ++i)	// FIX: sum over grey levels i
 		{
 			double sij = NGLDM.yx(i, j);
-			si += sij;
+			scol += sij;
 		}
-		f_DCNU += si * si;	// Dependence Count Non Uniformity
-		f_DCNUN += si * si;	// Dependence Count Non Uniformity Normalised 
+		f_DCNU += scol * scol;	// FIX: Dependence Count Non Uniformity = sum_j s_{.j}^2
+		f_DCNUN += scol * scol;	// FIX: Dependence Count Non Uniformity Normalised
 	}
 
 	for (int i = 0; i < Ng; ++i)
