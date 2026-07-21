@@ -9,6 +9,7 @@
 #include "feature_mgr.h"
 #include "globals.h"
 #include "features/3d_intensity.h"
+#include "features/3d_surface.h"
 #include "features/pixel.h"
 #include "helpers/timing.h"
 
@@ -97,11 +98,12 @@ namespace Nyxus
 
 				try
 				{
-					// Only 3D intensity/histogram stream out-of-core today. Every other 3D feature
-					// (texture, surface) would silently read the empty in-memory cube, so fail loudly
-					// per-feature instead of emitting wrong values. Under the CLI this logs and moves on
-					// (intensity still computes); under Python it raises.
-					if (dynamic_cast<D3_VoxelIntensityFeatures*>(f) == nullptr)
+					// 3D intensity/histogram and surface stream out-of-core. Every other 3D feature
+					// (texture) would silently read the empty in-memory cube, so fail loudly per-feature
+					// instead of emitting wrong values. Under the CLI this logs and moves on (the
+					// supported features still compute); under Python it raises.
+					if (dynamic_cast<D3_VoxelIntensityFeatures*>(f) == nullptr
+						&& dynamic_cast<D3_SurfaceFeature*>(f) == nullptr)
 						throw std::runtime_error("feature '" + f->feature_info
 							+ "' is not yet supported out-of-core for oversized 3D ROIs; "
 							+ "segment into smaller ROIs, raise --ramLimit, or add RAM");

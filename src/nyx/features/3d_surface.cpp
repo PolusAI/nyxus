@@ -290,6 +290,17 @@ void D3_SurfaceFeature::build_surface (LR & r)
 		}
 	}
 
+	build_hull (P);
+}
+
+// Build the convex-hull facet complex from a contour point cloud. Shared by the in-core
+// build_surface and the out-of-core osized_calculate (which collects the same contour points
+// from the disk-backed voxel cloud), so both produce an identical hull.
+void D3_SurfaceFeature::build_hull (const std::vector<std::array<float, 3>>& P)
+{
+	constexpr std::size_t dim = 3;
+	using Points = std::vector<std::array<float, dim>>;
+
 	const auto eps = 1e-10f;
 	quick_hull<typename Points::const_iterator> qh{ dim, eps };
 	qh.add_points(std::cbegin(P), std::cend(P));
@@ -517,7 +528,177 @@ void D3_SurfaceFeature::calculate (LR& r, const Fsettings& s)
 
 void D3_SurfaceFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
 
-void D3_SurfaceFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr) {}
+void D3_SurfaceFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr)
+{
+	// Out-of-core surface: stream the disk-backed voxel cloud (raw_voxels_NT) one Z-plane at a
+	// time instead of holding the whole cube (raw_pixels_3D). Per plane we extract its contour and
+	// tally exposed-face adjacencies; covariance is accumulated online. Peak memory is the
+	// collected boundary points (~surface area) plus two Z-plane occupancy bitmaps -- bounded by
+	// area, not volume. Values mirror the in-core calculate().
+	size_t n = r.raw_voxels_NT.size();
+	if (n == 0)
+	{
+		cleanup_instance();
+		return;
+	}
+
+	if (STNGS_SINGLEROI(s))
+	{
+		auto w = r.aabb.get_width(),
+			h = r.aabb.get_height(),
+			d = r.aabb.get_z_depth();
+
+		fval_AREA = 2 * (w*h + h*d + w*d);
+		fval_VOLUME_CONVEXHULL = fval_VOXEL_VOLUME = fval_MESH_VOLUME = w * h * d;
+		fval_AREA_2_VOLUME = fval_AREA / fval_VOXEL_VOLUME;
+		fval_COMPACTNESS1 = fval_VOXEL_VOLUME / std::sqrt(M_PI * fval_AREA * fval_AREA * fval_AREA);
+		fval_COMPACTNESS2 = 36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME / (fval_AREA * fval_AREA * fval_AREA);
+		fval_SPHERICAL_DISPROPORTION = fval_AREA / std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.);
+		fval_SPHERICITY = std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.) / fval_AREA;
+		fval_MAJOR_AXIS_LEN = fval_MINOR_AXIS_LEN = fval_LEAST_AXIS_LEN = fval_ELONGATION = fval_FLATNESS = 0;
+		return;
+	}
+
+	// -- VOXEL_VOLUME: same cubic-lattice ball packing, a function of voxel count only
+	double sumPackedV = double(n) * (4. / 3. * M_PI * (1. / 8.));
+	fval_VOXEL_VOLUME = sumPackedV / 0.5236;
+
+	const int W = (int) r.aabb.get_width(),
+		H = (int) r.aabb.get_height(),
+		minx = (int) r.aabb.get_xmin(),
+		miny = (int) r.aabb.get_ymin();
+	const int verb = STNGS_VERBOSLVL(s);
+
+	// Collected boundary points for the convex hull (bounded by surface area), plus the running
+	// centroid of those points (matches the in-core centroid over contour voxels).
+	std::vector<std::array<float, 3>> P;
+	double cx = 0, cy = 0, cz = 0;
+	size_t hullCloudLen = 0;
+
+	// Surface area as exposed faces = 6*N - 2*(adjacent voxel pairs). x/y adjacencies are tallied
+	// within a plane; z adjacencies between a plane and the previous one -- a 2-plane window.
+	double adjacencies = 0.0;
+	std::vector<char> prevOcc;   // occupancy bitmap of plane (z-1) over the [W x H] ROI bbox
+	long long prevZ = -2;        // z index of prevOcc; -2 = none
+
+	// Online covariance sums over all voxels
+	double sx = 0, sy = 0, sz = 0, sxx = 0, syy = 0, szz = 0, sxy = 0, sxz = 0, syz = 0;
+
+	const size_t depth = r.raw_voxels_NT.depth();
+	std::vector<Pixel3> slab;
+	for (size_t z = 0; z < depth; z++)
+	{
+		r.raw_voxels_NT.read_slab (z, slab);
+		if (slab.empty())
+			continue;
+
+		// -- contour of this plane (build over a plane-local cloud; the returned indices point
+		//    into 'slab', and the resulting boundary POINTS/order match the in-core path)
+		std::vector<size_t> planeIdx (slab.size());
+		for (size_t i = 0; i < slab.size(); i++)
+			planeIdx[i] = i;
+		std::vector<size_t> K;
+		Nyxus::build_contour_imp (K, slab, planeIdx, (int) z, W, H, minx, miny, verb);
+		for (auto ik : K)
+		{
+			const auto& v = slab[ik];
+			P.push_back (std::array<float, 3>({ (float) v.x, (float) v.y, (float) v.z }));
+			cx += v.x; cy += v.y; cz += v.z;
+			hullCloudLen++;
+		}
+
+		// -- this plane's occupancy bitmap + online covariance sums
+		std::vector<char> curOcc ((size_t) W * H, 0);
+		for (const auto& v : slab)
+		{
+			int lx = (int) v.x - minx, ly = (int) v.y - miny;
+			if (lx >= 0 && lx < W && ly >= 0 && ly < H)
+				curOcc[(size_t) ly * W + lx] = 1;
+
+			double dx = (double) v.x, dy = (double) v.y, dz = (double) v.z;
+			sx += dx; sy += dy; sz += dz;
+			sxx += dx * dx; syy += dy * dy; szz += dz * dz;
+			sxy += dx * dy; sxz += dx * dz; syz += dy * dz;
+		}
+
+		// -- adjacencies. +x / +y within this plane (each unordered in-plane pair once)
+		for (const auto& v : slab)
+		{
+			int lx = (int) v.x - minx, ly = (int) v.y - miny;
+			if (lx + 1 < W && ly >= 0 && ly < H && curOcc[(size_t) ly * W + (lx + 1)])
+				adjacencies += 1.0;
+			if (ly + 1 < H && lx >= 0 && lx < W && curOcc[(size_t) (ly + 1) * W + lx])
+				adjacencies += 1.0;
+			// +z: pair with the previous plane at the same (x,y) (each unordered z pair once)
+			if (prevZ == (long long) z - 1 && lx >= 0 && lx < W && ly >= 0 && ly < H
+				&& prevOcc[(size_t) ly * W + lx])
+				adjacencies += 1.0;
+		}
+
+		prevOcc.swap (curOcc);
+		prevZ = (long long) z;
+	}
+
+	fval_AREA = 6.0 * double(n) - 2.0 * adjacencies;
+
+	// -- convex hull from the collected boundary points
+	build_hull (P);
+
+	// -- convex hull volume via signed tetrahedra from the contour centroid
+	if (hullCloudLen)
+	{
+		cx /= double(hullCloudLen);
+		cy /= double(hullCloudLen);
+		cz /= double(hullCloudLen);
+	}
+	fval_VOLUME_CONVEXHULL = 0;
+	for (const auto& sx3 : hull_complex)
+	{
+		double d = Nyxus::det4(
+			sx3.a[0], sx3.a[1], sx3.a[2], 1,
+			sx3.b[0], sx3.b[1], sx3.b[2], 1,
+			sx3.c[0], sx3.c[1], sx3.c[2], 1,
+			cx, cy, cz, 1);
+		fval_VOLUME_CONVEXHULL += d / 6;
+	}
+
+	// -- volume-area ratio features
+	fval_MESH_VOLUME = fval_VOLUME_CONVEXHULL;
+	fval_AREA_2_VOLUME = fval_AREA / fval_VOXEL_VOLUME;
+	fval_COMPACTNESS1 = fval_VOXEL_VOLUME / std::sqrt(M_PI * fval_AREA * fval_AREA * fval_AREA);
+	fval_COMPACTNESS2 = 36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME / (fval_AREA * fval_AREA * fval_AREA);
+	fval_SPHERICAL_DISPROPORTION = fval_AREA / std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.);
+	fval_SPHERICITY = std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.) / fval_AREA;
+
+	// -- PCA axis lengths from the covariance matrix (sample covariance, matching calc_covariance:
+	//    Cov(a,b) = (Sum a*b - N*mean_a*mean_b) / (N-1))
+	double K[3][3];
+	if (n > 1)
+	{
+		double mx = sx / double(n), my = sy / double(n), mz = sz / double(n);
+		double nf = double(n) - 1.0;
+		K[0][0] = (sxx - double(n) * mx * mx) / nf;
+		K[1][1] = (syy - double(n) * my * my) / nf;
+		K[2][2] = (szz - double(n) * mz * mz) / nf;
+		K[0][1] = K[1][0] = (sxy - double(n) * mx * my) / nf;
+		K[0][2] = K[2][0] = (sxz - double(n) * mx * mz) / nf;
+		K[1][2] = K[2][1] = (syz - double(n) * my * mz) / nf;
+	}
+	else
+		K[0][0] = K[0][1] = K[0][2] = K[1][0] = K[1][1] = K[1][2] = K[2][0] = K[2][1] = K[2][2] = 0;
+
+	double L[3];
+	if (Nyxus::calc_eigvals(L, K))
+	{
+		fval_MAJOR_AXIS_LEN = 4.0 * sqrt(L[1]);
+		fval_MINOR_AXIS_LEN = 4.0 * sqrt(L[2]);
+		fval_LEAST_AXIS_LEN = 4.0 * sqrt(L[0]);
+		fval_ELONGATION = sqrt(L[2] / L[1]);
+		fval_FLATNESS = sqrt(L[0] / L[1]);
+	}
+	else
+		fval_MAJOR_AXIS_LEN = fval_MINOR_AXIS_LEN = fval_LEAST_AXIS_LEN = fval_ELONGATION = fval_FLATNESS = 0.0;
+}
 
 void D3_SurfaceFeature::save_value(std::vector<std::vector<double>>& fvals)
 {

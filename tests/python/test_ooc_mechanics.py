@@ -92,9 +92,9 @@ def _make_volume_pair(tmp_path):
 
 def test_ooc_3d_matches_in_ram(tmp_path):
     """The 3D out-of-core path (voxel cloud streamed to disk, keeping z) must produce the same
-    3D intensity features as the in-RAM path on the same volume pair."""
+    3D intensity AND surface/morphology features as the in-RAM path on the same volume pair."""
     intp, segp = _make_volume_pair(tmp_path)
-    feats = ["*3D_ALL_INTENSITY*"]
+    feats = ["*3D_ALL_INTENSITY*", "*3D_ALL_MORPHOLOGY*"]
 
     # Nyxus3D takes ram_limit in the constructor (its set_params does not expose it)
     n_ram = nyxus.Nyxus3D(feats, ram_limit=8000)  # large -> in-RAM (trivial)
