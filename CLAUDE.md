@@ -192,23 +192,41 @@ Correctness of feature values is validated against external reference
 implementations ("oracles"), not just regression snapshots. This is a
 first-class concern in this project.
 
-- `tests/vetting/oracle_coverage.csv` — the registry: one row per (dim, feature)
-  with `status` ∈ {`vetted`, `regression`, `untested`}, the `oracle` used, the
-  agreement level, config recipe, tolerance, and the backing test. A feature is
-  `vetted` only if it agrees with an allowed oracle.
-- Allowed oracles: pyradiomics, radiomicsj, mirp, matlab, cellprofiler, mitk,
-  feature2djava, wndcharm, imea, imagej, fraclac, ibsi, analytic, skimage,
-  pydicom.
-- `tests/vetting/check_coverage.py` validates the CSV and regenerates
-  `coverage_report.md` (stdlib only). `tests/vetting/oracles/` holds oracle
-  generators; `tests/vetting/audit/` holds coverage-audit tooling.
-- Oracle-backed pytest cases live in `tests/python/` (e.g.
-  `test_glcm_pyradiomics.py`, `test_gldm_pyradiomics.py`,
-  `test_fractal_dim_oracle.py`, `test_neighbors_oracle.py`,
-  `test_vetting_coverage.py`). Many texture features target IBSI conformance.
+**Tests must conform to the framework specified in `tests/vetting/`.** The
+governing documents are:
 
-When you change a feature's math, re-vet it against its oracle and update the
-registry row — don't just re-baseline a snapshot.
+- **`tests/vetting/SPEC.md`** — the authoritative spec. Defines the vocabulary,
+  the four test kinds (**oracle** / **regression** / **invariant** /
+  **mechanics**, kept in separate files), the rule that *vetting is a property of
+  a (feature × config × reference) assertion* (only oracle tests establish
+  vetting; regression tests never claim it), the tolerance policy, and the
+  authoring checklist for adding a vetted feature. Any new or changed test must
+  follow it — taxonomy, naming, tolerances, and registry update included.
+- `tests/vetting/oracle_coverage.csv` — the single source of truth: one row per
+  assertion (`feature × config_recipe × oracle`) with its `outcome`
+  (`vetted` / `regression` / `invariant` / `not_tested` / `not_implemented` /
+  `dropped_invalid`), tolerance, backing test, and benchmark. A feature counts
+  as vetted iff it has ≥1 `vetted` oracle row.
+- `tests/vetting/config_recipes.md` — the exact Nyxus + tool settings that make
+  a feature directly comparable to a reference (referenced by id from the
+  registry). `tests/vetting/matrix/<family>.md` — the config-point matrix and
+  per-cell verdict. `tests/vetting/README.md`, `TOOLS.md`, `MIGRATION.md` —
+  supporting guides.
+- Allowed oracle tokens (SPEC §4): pyradiomics, radiomicsj, skimage, mirp,
+  matlab, cellprofiler, mitk, feature2djava, wndcharm, imea, imagej, fraclac,
+  pydicom, ibsi, analytic. Oracle goldens are generated **offline** by a
+  checked-in generator (`tests/vetting/oracles/gen_<family>_<oracle>.*`) and
+  pinned with full provenance — **reference tools are never CI runtime
+  dependencies**.
+- `tests/vetting/check_coverage.py` validates the registry and regenerates
+  `coverage_report.md` (stdlib only). Naming: test files are
+  `test_<family>_<kind-or-oracle>.{h,py}` (e.g. `test_glcm_pyradiomics.py`,
+  `test_glcm_regression.h`, `test_glcm_mechanics.h`); functions carry the oracle
+  suffix so vetting status is self-evident.
+
+When you change a feature's math, re-vet it against its oracle at the recipe's
+config and update the registry row — don't just re-baseline a snapshot. A
+tolerance loose enough to pass a known-bad value is itself a test bug.
 
 ## Conventions for changes
 
@@ -222,6 +240,10 @@ registry row — don't just re-baseline a snapshot.
   push** — it mirrors CI and catches cross-test pollution.
 - The trivial (in-RAM) and non-trivial (out-of-core) implementations of a
   feature must return identical values; if you touch one, check the other.
+- **Any new or modified test must conform to the framework in
+  `tests/vetting/SPEC.md`** — correct test kind (oracle/regression/invariant/
+  mechanics), naming, tolerance policy, and an updated `oracle_coverage.csv`
+  row. See "Feature validation" above.
 
 ### Git
 
