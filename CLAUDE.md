@@ -122,42 +122,38 @@ Deps are easiest via conda (`ci-utils/envs/conda_cpp.txt` + `conda_py.txt`); set
 finds them. The README "Building from source" section has full Linux/Windows and
 Docker recipes.
 
-### On this Windows machine (verified recipe)
+### Windows (MSVC + optional CUDA)
 
 Use **MSVC**, not gcc — conda-forge Windows packages are MSVC-ABI, so a gcc
-build cannot link them. Full-feature + CUDA build:
+build cannot link them. Full-feature + CUDA build (paths below are placeholders:
+`$ENV` = your conda env prefix):
 
-1. Create the env (Miniforge at `C:\Users\dvladi\miniforge3`):
+1. Create the build env:
    ```
    conda create -n nyxus_build -c conda-forge python=3.12 \
        --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_py.txt
    ```
-2. **Pin z5py to 2.1.2**: the unpinned list pulls z5py 3.x, which renamed
-   `z5/multiarray/xtensor_access.hxx` → `array_access.hxx`; the source still
-   includes the old name (fatal C1083). Fix without touching source:
-   `conda install -n nyxus_build -c conda-forge z5py=2.1.2`.
-3. Configure with the **Ninja** generator so `nvcc` can use `cl` as its host
-   compiler (no CUDA MSBuild integration needed): run VS2022 `vcvars64.bat`
-   first, then `cmake -G Ninja -DCMAKE_CXX_COMPILER=cl -DBUILD_CLI=ON
-   -DALLEXTRAS=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=<env>\Library
-   -DNYXUS_DEP_DIR=<env>\Library ..` then `cmake --build . --config Release`.
-   MSVC / CUDA toolchain paths are recorded in the session memory
-   `windows-toolchains.md`.
-4. To run, put `<env>\Library\bin` (dependency DLLs) and the CUDA `bin` on PATH.
+2. Configure with the **Ninja** generator so `nvcc` can use `cl` as its host
+   compiler (no CUDA MSBuild integration needed): run the Visual Studio
+   `vcvars64.bat` first, then `cmake -G Ninja -DCMAKE_CXX_COMPILER=cl
+   -DBUILD_CLI=ON -DALLEXTRAS=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$ENV\Library
+   -DNYXUS_DEP_DIR=$ENV\Library ..` then `cmake --build . --config Release`.
+3. To run, put `$ENV\Library\bin` (dependency DLLs) and the CUDA toolkit `bin`
+   on PATH.
 
-**Fast Python-extension build** for running the test suite (tiff-only CPU,
-~2 min): same as above but `-DBUILD_LIB=ON -DALLEXTRAS=OFF -DUSEGPU=OFF
--DPYTHON_EXECUTABLE=<env>\python.exe -Dpybind11_DIR=<env>\Lib\site-packages\pybind11\share\cmake\pybind11`
+**Fast Python-extension build** for running the test suite (tiff-only CPU):
+same as above but `-DBUILD_LIB=ON -DALLEXTRAS=OFF -DUSEGPU=OFF
+-DPYTHON_EXECUTABLE=$ENV\python.exe -Dpybind11_DIR=$ENV\Lib\site-packages\pybind11\share\cmake\pybind11`
 and `--target backend`, with `-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE` pointed at
 `src\nyx\python\nyxus` so the `.pyd` lands in the package. With `ALLEXTRAS=OFF`
-the 7 `@pytest.mark.arrow` tests fail with "Apache Arrow functionality is not
+the `@pytest.mark.arrow` tests fail with "Apache Arrow functionality is not
 available" — expected, not a regression. To exercise Arrow/Parquet without a slow
 CUDA build, use `-DNOEXTRAS=OFF -DUSE_ARROW=ON -DUSE_Z5=OFF -DUSE_DCMTK=OFF`.
 
 > Gotcha: in a Git Bash / MSYS shell, bare `cmd` resolves to an MSYS shim that
 > silently no-ops `.bat` files and returns exit 0. Invoke `.bat` files via
-> `& "$env:ComSpec" /c <bat>` from the PowerShell tool, or full-path
-> `C:\Windows\System32\cmd.exe`.
+> `& "$env:ComSpec" /c <bat>` from the PowerShell tool, or the full-path
+> `cmd.exe` under `%SystemRoot%\System32`.
 
 ## Running tests
 
@@ -244,6 +240,13 @@ tolerance loose enough to pass a known-bad value is itself a test bug.
   `tests/vetting/SPEC.md`** — correct test kind (oracle/regression/invariant/
   mechanics), naming, tolerance policy, and an updated `oracle_coverage.csv`
   row. See "Feature validation" above.
+- **Never commit local or machine-specific content into repository files.** No
+  absolute paths (`C:\Users\...`, `/home/...`), usernames, personal install
+  locations, or references to files that live only on one machine. Use
+  placeholders instead — `$ENV` / `%CONDA_PREFIX%` for the conda prefix,
+  `<repo>`, `%SystemRoot%`, `~`. Keep machine-specific setup in a local,
+  gitignored file, never in a tracked doc. Scan every doc for these before
+  committing.
 
 ### Git
 
