@@ -309,8 +309,13 @@ void D3_VoxelIntensityFeatures::osized_calculate (LR & r, const Fsettings & s, c
 	// Kurtosis
 	val_KURTOSIS = mom.kurtosis();
 
-	// Excess kurtosis
-	val_EXCESS_KURTOSIS = val_KURTOSIS - 3;
+	// Excess kurtosis. NOTE: this is NOT val_KURTOSIS-3 -- Moments4::excess_kurtosis() has its own
+	// independent zero-variance (M2==0) guard returning exactly 0.0, whereas kurtosis() ALSO
+	// returns exactly 0.0 under that same guard; subtracting 3 from the latter wrongly yields -3.0
+	// for a degenerate (constant-intensity) ROI instead of 0.0. Only diverges from kurtosis()-3 in
+	// that degenerate case (for n>4 the two formulas are algebraically identical), which is why
+	// every non-degenerate fixture matched before this was caught by a blank-ROI OOC test.
+	val_EXCESS_KURTOSIS = mom.excess_kurtosis();
 
 	// Hyperskewness / hyperflatness: use the explicit sum-of-powers definition of the in-core
 	// calculate() (mom.hyperskewness()/hyperflatness() use a different definition and diverge).

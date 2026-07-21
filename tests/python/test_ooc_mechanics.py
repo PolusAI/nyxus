@@ -13,12 +13,15 @@ ram_limit is a process-global in Nyxus, so each test sets it explicitly on both 
 order-independent.
 """
 import os
+import pathlib
 import numpy as np
 import pytest
 
 import nyxus
 
 tifffile = pytest.importorskip("tifffile")
+
+DATA_NIFTI = pathlib.Path(__file__).resolve().parent.parent / "data" / "nifti"
 
 
 def _make_pair(tmp_path):
@@ -194,6 +197,50 @@ def test_ooc_3d_gldzm_matches_in_ram(tmp_path):
     """3D GLDZM out-of-core (streaming 6-connectivity connected-component labeling with a
     min-distance-to-border metric per zone) must match the in-RAM path."""
     _ooc_vs_ram_3d(tmp_path, ["*3D_GLDZM*"])
+
+
+def _make_volume_pair_blank(tmp_path):
+    # A degenerate ROI (constant intensity everywhere) at the same size as _make_volume_pair, so it
+    # is still classified oversized at ram_limit=1 -- exercises each osized_calculate's early-return
+    # "blank ROI" guard (aux_min==aux_max) via the out-of-core path, which no other fixture reaches
+    # (every other fixture here varies intensity). Must not crash or hang, and must match the
+    # in-RAM path's degenerate-ROI output (STNGS_NAN defaults to plain 0.0 in this build, not IEEE
+    # NaN, so the existing tolerance-based comparison in _ooc_vs_ram_3d applies unchanged).
+    Z, Y, X = 8, 90, 90
+    inten = np.full((Z, Y, X), 42, dtype=np.uint32)
+    mask = np.ones((Z, Y, X), np.uint32)
+    intp = tmp_path / "vol_int_blank.ome.tif"
+    segp = tmp_path / "vol_seg_blank.ome.tif"
+    tifffile.imwrite(str(intp), inten, metadata={"axes": "ZYX"})
+    tifffile.imwrite(str(segp), mask, metadata={"axes": "ZYX"})
+    return str(intp), str(segp)
+
+
+def test_ooc_3d_blank_matches_in_ram(tmp_path):
+    """A degenerate (constant-intensity) oversized 3D ROI must not crash and must match the in-RAM
+    path's degenerate-ROI output for intensity, surface, and all seven texture families."""
+    _ooc_vs_ram_3d(
+        tmp_path,
+        ["*3D_ALL_INTENSITY*", "*3D_ALL_MORPHOLOGY*", "*3D_GLCM*", "*3D_GLDM*", "*3D_NGLDM*", "*3D_NGTDM*", "*3D_GLRLM*", "*3D_GLSZM*", "*3D_GLDZM*"],
+        pair_fn=_make_volume_pair_blank,
+    )
+
+
+@pytest.mark.skipif(
+    not (DATA_NIFTI / "compat_int" / "compat_int_mri.nii").exists(),
+    reason="NIfTI compat fixtures not present in tests/data/nifti",
+)
+def test_ooc_3d_nifti_unsupported_format_fails_loudly():
+    """NIfTI delivers the whole X*Y*Z*T volume in one read (ImageLoader::stream_volume_planes
+    declines it, since it isn't plane-by-plane), so an oversized ROI through this loader cannot
+    stream out-of-core. Must fail loudly with an actionable message rather than crash, hang, or
+    silently emit a wrong/zero row. ram_limit=0 forces every ROI oversized regardless of its actual
+    footprint (roiFootprint >= 0 is always true), so this doesn't depend on the fixture's ROI size."""
+    intp = str(DATA_NIFTI / "compat_int" / "compat_int_mri.nii")
+    segp = str(DATA_NIFTI / "compat_seg" / "compat_seg_liver.nii")
+    n = nyxus.Nyxus3D(["*3D_ALL_INTENSITY*"], ram_limit=0)
+    with pytest.raises(Exception, match="not supported for this input format"):
+        n.featurize_files([intp], [segp], False)
 
 
 def test_ooc_3d_partial_mask_matches_in_ram(tmp_path):

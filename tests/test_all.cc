@@ -4,6 +4,9 @@
 #include "test_gabor_regression.h"
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
+#include "../src/nyx/feature_method.h"		// TEST_3D_OOC_GUARD_REJECTS_UNSUPPORTED_FEATURE
+#include "../src/nyx/features/3d_intensity.h"
+#include "../src/nyx/features/3d_glcm.h"
 #include "../src/nyx/ome/format_detect.h"		// detect_input_format (P1)
 #include "test_contour.h"
 #include "test_ome_meta.h"		// native-OME metadata parsers / OmeAxes descriptor
@@ -3211,6 +3214,38 @@ TEST(TEST_NYXUS, TEST_3D_RAM_FOOTPRINT_COUNTS_DEPTH) {
 	// the term the 2D estimator missed, which under-counted whole volumes and let them OOM.
 	EXPECT_GT(tall.get_ram_footprint_estimate_3D(1), flat.get_ram_footprint_estimate_3D(1) * 10)
 		<< "3D footprint estimator is not counting depth";
+}
+
+// Regression-guard: processNontrivialRois_3D's per-feature out-of-core dispatch
+// (phase3_3d.cpp) must throw for any 3D FeatureMethod NOT covered by is_3d_ooc_supported() --
+// otherwise a future feature added without a streaming osized_calculate would silently read
+// raw_voxels_NT (which OOC never populates for it) via the base FeatureMethod::osized_scan_whole_image
+// default, producing a wrong/zero row instead of an actionable error. Every CURRENT 3D feature class
+// is supported, so there is no live "unsupported" feature to exercise this through the normal
+// featurize path; this pins the ALLOW-LIST FUNCTION ITSELF directly, using a minimal stand-in
+// FeatureMethod that is deliberately never added to the allow-list, alongside real supported classes.
+class DummyUnsupported3DFeature : public FeatureMethod
+{
+public:
+	DummyUnsupported3DFeature() : FeatureMethod("DummyUnsupported3DFeature") {}
+	void calculate (LR&, const Fsettings&) override {}
+	void osized_add_online_pixel (size_t, size_t, uint32_t) override {}
+	void osized_calculate (LR&, const Fsettings&, ImageLoader&) override {}
+	void save_value (std::vector<std::vector<double>>&) override {}
+};
+
+TEST(TEST_NYXUS, TEST_3D_OOC_GUARD_REJECTS_UNSUPPORTED_FEATURE) {
+	DummyUnsupported3DFeature unsupported;
+	EXPECT_FALSE(Nyxus::is_3d_ooc_supported(&unsupported))
+		<< "a 3D feature class outside the allow-list must be rejected by the OOC guard";
+
+	D3_VoxelIntensityFeatures intensityFeature;
+	EXPECT_TRUE(Nyxus::is_3d_ooc_supported(&intensityFeature))
+		<< "a real streaming-supported 3D feature (intensity) must be accepted";
+
+	D3_GLCM_feature glcmFeature;
+	EXPECT_TRUE(Nyxus::is_3d_ooc_supported(&glcmFeature))
+		<< "a real streaming-supported 3D texture feature (GLCM) must be accepted";
 }
 
 // Regression: separatecsv derives ONE output path per slide, but the CSV sinks are invoked
