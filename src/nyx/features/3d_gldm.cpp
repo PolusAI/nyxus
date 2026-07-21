@@ -272,10 +272,18 @@ void D3_GLDM_feature::osized_calculate(LR& r, const Fsettings& s, ImageLoader&)
 		Dz = (int) r.aabb.get_z_depth();
 	const StatsInt xmin = r.aabb.get_xmin(), ymin = r.aabb.get_ymin(), zmin = r.aabb.get_zmin();
 
-	// --- grey levels I + matrix dimension (mirrors calculate())
+	// --- grey levels I + matrix dimension (mirrors calculate(), which builds I from the WHOLE
+	// binned cube incl. background -- e.g. matlab binning maps raw-0 background to bin 1, and that
+	// bin must appear in I too, matching D3_GLDM_feature::calculate()'s unordered_set(D.begin(),D.end())).
 	std::set<PixIntens> uniq;
 	PixIntens maxbin = 0;
 	const size_t nvox = r.raw_voxels_NT.size();
+	const bool hasBackground = nvox < (size_t) W * H * Dz;
+	if (hasBackground && bg != 0)
+	{
+		uniq.insert (bg);
+		maxbin = bg;
+	}
 	for (size_t i = 0; i < nvox; i++)
 	{
 		PixIntens b = TextureFeature::bin_pixel (r.raw_voxels_NT[i].inten, mn, mx, greyInfo);

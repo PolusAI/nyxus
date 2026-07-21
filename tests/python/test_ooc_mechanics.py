@@ -115,8 +115,32 @@ def test_ooc_3d_matches_in_ram(tmp_path):
     assert not bad, "3D out-of-core intensity features diverge from in-RAM: %r" % (bad[:8],)
 
 
-def _ooc_vs_ram_3d(tmp_path, feats):
-    intp, segp = _make_volume_pair(tmp_path)
+def _make_volume_pair_partial(tmp_path):
+    # Same intensity field as _make_volume_pair, but a non-cuboid (ellipsoid) mask that leaves
+    # background voxels INSIDE the ROI's bounding box. Out-of-core paths that build a grey-level
+    # LUT from the whole binned cube (mask + background) -- e.g. matlab binning maps the raw-0
+    # background to a nonzero bin that must still appear in the LUT -- are only exercised when the
+    # bbox actually contains background; a whole-volume mask (hasBackground == false) never does.
+    Z, Y, X = 8, 90, 90
+    z = np.arange(Z)[:, None, None]
+    y = np.arange(Y)[None, :, None]
+    x = np.arange(X)[None, None, :]
+    inten = (1 + (x % 256) + (y % 200) * 256 + z * 10000).astype(np.uint32)
+    inten = np.broadcast_to(inten, (Z, Y, X)).astype(np.uint32)
+    zz, yy, xx = np.meshgrid(np.arange(Z), np.arange(Y), np.arange(X), indexing="ij")
+    cz, cy, cx = (Z - 1) / 2.0, (Y - 1) / 2.0, (X - 1) / 2.0
+    rz, ry, rx = Z / 2.0, Y / 3.0, X / 3.0
+    inside = (((zz - cz) / rz) ** 2 + ((yy - cy) / ry) ** 2 + ((xx - cx) / rx) ** 2) <= 1.0
+    mask = inside.astype(np.uint32)
+    intp = tmp_path / "vol_int_partial.ome.tif"
+    segp = tmp_path / "vol_seg_partial.ome.tif"
+    tifffile.imwrite(str(intp), inten, metadata={"axes": "ZYX"})
+    tifffile.imwrite(str(segp), mask, metadata={"axes": "ZYX"})
+    return str(intp), str(segp)
+
+
+def _ooc_vs_ram_3d(tmp_path, feats, pair_fn=_make_volume_pair):
+    intp, segp = pair_fn(tmp_path)
     n_ram = nyxus.Nyxus3D(feats, ram_limit=8000)
     df_ram = n_ram.featurize_files([intp], [segp], False)
     n_ooc = nyxus.Nyxus3D(feats, ram_limit=1)
@@ -152,6 +176,24 @@ def test_ooc_3d_ngldm_matches_in_ram(tmp_path):
 def test_ooc_3d_ngtdm_matches_in_ram(tmp_path):
     """3D NGTDM out-of-core (radius-window neighbourhood averages) must match the in-RAM path."""
     _ooc_vs_ram_3d(tmp_path, ["*3D_NGTDM*"])
+
+
+def test_ooc_3d_glrlm_matches_in_ram(tmp_path):
+    """3D GLRLM out-of-core (in-plane runs reuse gather_rl_zones on a per-plane depth-1 cube;
+    cross-plane runs use a 2-plane carry) must match the in-RAM path."""
+    _ooc_vs_ram_3d(tmp_path, ["*3D_GLRLM*"])
+
+
+def test_ooc_3d_partial_mask_matches_in_ram(tmp_path):
+    """Same equivalence check as the whole-volume tests above, but with a non-cuboid mask so the
+    ROI bbox contains background voxels -- exercises grey-level LUT construction (must include the
+    background bin, matching each feature's whole-cube-based calculate()) that a whole-volume mask
+    never triggers. Covers intensity/surface plus all four texture families in one pass."""
+    _ooc_vs_ram_3d(
+        tmp_path,
+        ["*3D_ALL_INTENSITY*", "*3D_ALL_MORPHOLOGY*", "*3D_GLCM*", "*3D_GLDM*", "*3D_NGLDM*", "*3D_NGTDM*", "*3D_GLRLM*"],
+        pair_fn=_make_volume_pair_partial,
+    )
 
 
 def test_ooc_montage_oversized_fails_loudly():

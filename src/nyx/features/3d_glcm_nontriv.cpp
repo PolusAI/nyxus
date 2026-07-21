@@ -44,9 +44,18 @@ void D3_GLCM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 	// reproduce that so a dense plane matches a Z-slice of the binned cube exactly.
 	const PixIntens bg = TextureFeature::bin_pixel (0, mn, mx, greyInfo);
 
-	// --- pass 1: the global set of grey levels (I) + matrix dimension, as in calculateCoocMatAtAngle
+	// --- pass 1: the global set of grey levels (I) + matrix dimension, as in calculateCoocMatAtAngle,
+	// which builds I from the unique values of the WHOLE binned cube (mask + background) for the
+	// radiomics branch -- so a background bin (e.g. matlab binning maps raw-0 to bin 1) must be
+	// included too when the ROI bbox actually has background voxels.
+	const bool hasBackground = nvox < (size_t) r.aabb.get_width() * r.aabb.get_height() * r.aabb.get_z_depth();
 	std::set<PixIntens> uniq;
 	PixIntens maxbin = 0;
+	if (hasBackground && bg != 0)
+	{
+		uniq.insert (bg);
+		maxbin = bg;
+	}
 	for (size_t i = 0; i < nvox; i++)
 	{
 		Pixel3 v = r.raw_voxels_NT[i];
