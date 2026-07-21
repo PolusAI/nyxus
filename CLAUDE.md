@@ -16,7 +16,7 @@ scale by assembling ROIs that span multiple image tiles and files.
 - **CLI**: the `nyxus` executable (built with `-DBUILD_CLI=ON`).
 - **IO**: 2D from OME-TIFF, OME-Zarr, DICOM; 3D from NIFTI (compressed and
   uncompressed); in-memory NumPy arrays via the Python API.
-- Upstream is [PolusAI/nyxus](https://github.com/PolusAI/nyxus). C++17/C++20,
+- Upstream is [PolusAI/nyxus](https://github.com/PolusAI/nyxus). C++20,
   CMake build system. Version is derived from git tags via `setuptools_scm`.
 
 ## Repository layout
@@ -107,7 +107,7 @@ src/nyx/                all C++ sources
 
 ## Building
 
-C++17/20 compiler + CMake ≥ 3.20 required. Key CMake options:
+A C++20 compiler + CMake ≥ 3.20 are required. Key CMake options:
 
 | Option | Meaning |
 |---|---|
@@ -247,8 +247,9 @@ tolerance loose enough to pass a known-bad value is itself a test bug.
 
 ### Git
 
-- **Claude must never run `git commit` or `git push`.** Instead, generate the
-  exact commands for the user to run themselves.
+- `main` is branch-protected — **never commit or push to `main` directly.**
+- Claude may commit and push to non-`main` (feature/topic) branches as part of
+  an agentic workflow; final review and merge into `main` are the maintainers'.
 - **Never add a `Co-Authored-By:` trailer** (or any similar attribution line)
   to commit messages.
 
