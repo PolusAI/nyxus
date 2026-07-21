@@ -71,6 +71,50 @@ def test_ooc_2d_matches_in_ram(tmp_path):
     assert not bad, "out-of-core intensity features diverge from in-RAM: %r" % (bad[:8],)
 
 
+def _make_volume_pair(tmp_path):
+    # A 3D OME-TIFF volume (one IFD per Z) + a whole-volume mask. Z*Y*X = 8*90*90 = 64800
+    # voxels; the in-memory 3D footprint is well over 1 MB, so ram_limit=1 forces the oversized
+    # (out-of-core) volumetric path. Intensity is a deterministic, non-degenerate function of
+    # (x,y,z) so every 3D intensity feature is meaningful.
+    Z, Y, X = 8, 90, 90
+    z = np.arange(Z)[:, None, None]
+    y = np.arange(Y)[None, :, None]
+    x = np.arange(X)[None, None, :]
+    inten = (1 + (x % 256) + (y % 200) * 256 + z * 10000).astype(np.uint32)
+    inten = np.broadcast_to(inten, (Z, Y, X)).astype(np.uint32)
+    mask = np.ones((Z, Y, X), np.uint32)  # a single ROI covering the whole volume
+    intp = tmp_path / "vol_int.ome.tif"
+    segp = tmp_path / "vol_seg.ome.tif"
+    tifffile.imwrite(str(intp), inten, metadata={"axes": "ZYX"})
+    tifffile.imwrite(str(segp), mask, metadata={"axes": "ZYX"})
+    return str(intp), str(segp)
+
+
+def test_ooc_3d_matches_in_ram(tmp_path):
+    """The 3D out-of-core path (voxel cloud streamed to disk, keeping z) must produce the same
+    3D intensity features as the in-RAM path on the same volume pair."""
+    intp, segp = _make_volume_pair(tmp_path)
+    feats = ["*3D_ALL_INTENSITY*"]
+
+    # Nyxus3D takes ram_limit in the constructor (its set_params does not expose it)
+    n_ram = nyxus.Nyxus3D(feats, ram_limit=8000)  # large -> in-RAM (trivial)
+    df_ram = n_ram.featurize_files([intp], [segp], False)
+
+    n_ooc = nyxus.Nyxus3D(feats, ram_limit=1)  # 1 MB -> forces the oversized / out-of-core volumetric path
+    df_ooc = n_ooc.featurize_files([intp], [segp], False)
+
+    cols, a = _feature_cols(df_ram)
+    _, b = _feature_cols(df_ooc)
+    assert a.size > 0 and a.shape == b.shape
+
+    bad = [
+        (c, p, q)
+        for c, p, q in zip(cols, a, b)
+        if abs(p - q) > 1e-6 * max(abs(p), abs(q), 1.0) + 1e-9
+    ]
+    assert not bad, "3D out-of-core intensity features diverge from in-RAM: %r" % (bad[:8],)
+
+
 def test_ooc_montage_oversized_fails_loudly():
     """The in-memory (montage) path has no out-of-core support, so an ROI whose footprint
     reaches ram_limit must fail loudly rather than emit a silent all-zero feature row."""

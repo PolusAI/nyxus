@@ -158,6 +158,7 @@ set(SOURCE
 	src/nyx/features/hexagonality_polygonality.cpp
 	src/nyx/features/image_matrix.cpp
 	src/nyx/features/image_matrix_nontriv.cpp
+	src/nyx/features/voxel_cloud_nontriv.cpp
 	src/nyx/features/2d_geomoments.cpp
 	src/nyx/features/2d_geomoments_basic.cpp
 	src/nyx/features/2d_geomoments_basic_nt.cpp
@@ -227,6 +228,7 @@ set(SOURCE
 	src/nyx/phase2_25d.cpp
 	src/nyx/phase2_3d.cpp
 	src/nyx/phase3.cpp
+	src/nyx/phase3_3d.cpp
 	src/nyx/pixel_feed.cpp
 	src/nyx/raw_image_loader.cpp
 	src/nyx/reduce_trivial_rois.cpp

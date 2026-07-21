@@ -346,6 +346,78 @@ bool ImageLoader::load_volume (size_t channel, size_t timeframe, size_t mask_tim
 	return true;
 }
 
+void ImageLoader::assemble_one_plane (AbstractTileLoader<uint32_t>* fl,
+	std::shared_ptr<std::vector<uint32_t>>& ptr,
+	std::vector<uint32_t>& dst_plane, size_t gz, size_t channel, size_t timeframe)
+{
+	// Per-plane loader (tileDepth==1): the global Z index IS the loader's layer, and the
+	// within-slab plane offset is 0. Mirrors assemble_volume's per-tile copy for one plane.
+	const size_t ltt = fl->tileTimestamps (lvl);
+	const size_t frameStride = th * tw;   // tileDepth==1
+	const size_t frameBase = (ltt > 1) ? timeframe * frameStride : 0;
+	const size_t lnth = fl->numberTileHeight (lvl);
+	const size_t lntw = fl->numberTileWidth (lvl);
+
+	for (size_t tr = 0; tr < lnth; ++tr)
+	for (size_t tc = 0; tc < lntw; ++tc)
+	{
+		fl->loadTileFromFile (ptr, tr, tc, gz, channel, timeframe, lvl);
+
+		const size_t row0 = tr * th, col0 = tc * tw;
+		if (row0 >= fh || col0 >= fw)
+			continue;
+		const size_t validH = (std::min) (th, fh - row0),
+			validW = (std::min) (tw, fw - col0);
+
+		for (size_t row = 0; row < validH; ++row)
+		{
+			const size_t src = frameBase + row * tw;
+			const size_t d = (row0 + row) * fw + col0;
+			std::copy (ptr->begin() + src, ptr->begin() + src + validW, dst_plane.begin() + d);
+		}
+	}
+}
+
+bool ImageLoader::stream_volume_planes (size_t channel, size_t timeframe, size_t mask_timeframe,
+	const std::function<void(size_t, const std::vector<uint32_t>&, const std::vector<uint32_t>&)>& sink)
+{
+	cur_channel = channel;
+	cur_timeframe = timeframe;
+
+	// A whole-4D loader (NIfTI) hands over the entire cube in one read; there is nothing to
+	// stream plane-by-plane, so decline and let the caller fail loudly.
+	if (intFL->tileDepth (lvl) != 1)
+		return false;
+	if (segFL != nullptr && segFL->tileDepth (lvl) != 1)
+		return false;
+
+	// Mask is usually channel-agnostic and single-timeframe; clamp like load_volume does
+	size_t mask_channel = 0, mask_tf = 0;
+	if (segFL != nullptr)
+	{
+		mask_channel = (channel < segFL->numberChannels()) ? channel : 0;
+		mask_tf = (mask_timeframe < segFL->fullTimestamps (lvl)) ? mask_timeframe : 0;
+	}
+
+	const size_t sliceSize = (size_t) fw * fh;
+	std::vector<uint32_t> intPlane (sliceSize), segPlane (segFL != nullptr ? sliceSize : 0);
+
+	for (size_t gz = 0; gz < fd; ++gz)
+	{
+		std::fill (intPlane.begin(), intPlane.end(), 0u);
+		assemble_one_plane (intFL, ptrI, intPlane, gz, channel, timeframe);
+
+		if (segFL != nullptr)
+		{
+			std::fill (segPlane.begin(), segPlane.end(), 0u);
+			assemble_one_plane (segFL, ptrL, segPlane, gz, mask_channel, mask_tf);
+		}
+
+		sink (gz, intPlane, segPlane);
+	}
+	return true;
+}
+
 const std::vector<uint32_t>& ImageLoader::get_int_tile_buffer()
 {
 	return *ptrI;

@@ -88,6 +88,7 @@ namespace Nyxus
 	bool processTrivialRois_25D (Environment & env, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit, const std::vector<std::string>& z_indices);
 	bool processTrivialRois_3D (Environment & env, size_t sidx, size_t t_index, size_t channel, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit);
 	bool processNontrivialRois (Environment& env, const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath);
+	bool processNontrivialRois_3D (Environment& env, const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t channel, size_t timeframe);
 	bool scan_trivial_wholeslide (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr);	// reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
 	bool scan_trivial_wholeslide_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y);
 
