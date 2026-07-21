@@ -141,7 +141,11 @@ namespace Nyxus
 		return true;
 	}
 
-	void featurize_3d_wv_thread(
+	// FIX: return the per-thread status by VALUE (through the future) rather than writing a
+	// referenced int. A std::async worker's write through std::ref(int) is not reliably visible
+	// to the caller after future::get() here, so an oversized slide's rv=1 was silently lost and
+	// the run reported success. Returning it makes future::get() carry the status deterministically.
+	int featurize_3d_wv_thread(
 		Environment & env,
 		const std::vector<std::string>& intensFiles,
 		const std::vector<std::string>& labelFiles,
@@ -149,9 +153,9 @@ namespace Nyxus
 		size_t nf,
 		const std::string& outputPath,
 		bool write_apache,
-		Nyxus::SaveOption saveOption,
-		int& rv)
+		Nyxus::SaveOption saveOption)
 	{
+		int rv = 0;
 		SlideProps& p = env.dataset.dataset_props[slide_idx];
 
 		// scan one slide
@@ -172,8 +176,18 @@ namespace Nyxus
 
 			if (featurize_wholevolume (env, slide_idx, imlo, vroi, c, t) == false)	// non-wsi counterpart: processIntSegImagePair()
 			{
-				std::cerr << "Error featurizing slide " << p.fname_int << " @ " << __FILE__ << ":" << __LINE__ << "\n";
+				// FIX: featurize_wholevolume returns false only when the whole-volume ROI is
+				// oversized (footprint >= RAM limit). nyxus has no streaming path for the 3D
+				// texture features (their osized_calculate just rebuilds the in-memory cube), so
+				// such a volume cannot be featurized. Previously we set rv but FELL THROUGH to
+				// save the zero-initialized buffer -- emitting a row of all-0 features, i.e.
+				// silently-wrong data. Skip the save instead: fail loudly, write no row.
+				std::cerr << "Error: cannot featurize whole volume of " << p.fname_int
+					<< " (channel " << c << ", timeframe " << t << "): its in-memory footprint "
+					<< "exceeds the RAM limit. Use a segmented mask, raise --ramLimit, or run on "
+					<< "a machine with more memory. @ " << __FILE__ << ":" << __LINE__ << "\n";
 				rv = 1;
+				continue;	// do NOT emit a (misleading all-zero) row for this plane
 			}
 
 			// thread-safely save results of this single (slide, channel, timeframe)
@@ -207,6 +221,7 @@ namespace Nyxus
 		  } //- channels x timeframes
 
 		imlo.close();
+		return rv;
 
 		//
 		// Not saving nested ROI related info because this image is single-ROI (whole-slide)
@@ -285,13 +300,15 @@ namespace Nyxus
 
 		// run batches of threads
 
+		int worst_rv = 0;	// FIX: aggregate per-thread failure so an oversized/failed slide
+							// makes the whole run fail loudly (nonzero exit) instead of returning
+							// success -- the per-thread rvals were collected but never checked.
 		size_t n_jobs = (nf + n_threads - 1) / n_threads;
 		for (size_t j = 0; j < n_jobs; j++)
 		{
 			VERBOSLVL1 (env.get_verbosity_level(), std::cout << "whole-slide job " << j + 1 << "/" << n_jobs << "\n");
 
-			std::vector<std::future<void>> T;
-			std::vector<int> rvals(n_threads, 0);
+			std::vector<std::future<int>> T;
 			for (int t = 0; t < n_threads; t++)
 			{
 				size_t idx = j * n_threads + t;
@@ -311,12 +328,12 @@ namespace Nyxus
 						nf,
 						outputPath,
 						write_apache,
-						saveOption,
-						std::ref(rvals[t])));
+						saveOption));
 				}
 				else
 				{
-					featurize_3d_wv_thread(
+					// FIX: aggregate the returned status (was written through a lost reference)
+					int r = featurize_3d_wv_thread(
 						env,
 						intensFiles,
 						intensFiles,
@@ -324,14 +341,18 @@ namespace Nyxus
 						nf,
 						outputPath,
 						write_apache,
-						saveOption,
-						rvals[t]);
+						saveOption);
+					if (r > worst_rv) worst_rv = r;
 				}
 			}
 
-			// wait for all threads to complete before proceeding
+			// wait for all threads to complete, aggregating each one's returned status so an
+			// oversized/failed slide makes the whole run fail loudly (nonzero exit)
 			for (auto& f : T)
-				f.get();
+			{
+				int r = f.get();
+				if (r > worst_rv) worst_rv = r;
+			}
 
 			// allow keyboard interrupt
 			#ifdef WITH_PYTHON_H
@@ -360,6 +381,12 @@ namespace Nyxus
 		//
 		// future: free GPU cache for all participating devices
 		//
+
+		// FIX: a slide that could not be featurized (oversized whole volume) is a hard failure,
+		// not a silent success -- report it so the CLI exits nonzero and the Python API raises.
+		if (worst_rv != 0)
+			return { false, "one or more slides could not be featurized (see errors above; "
+				"an oversized whole volume needs a segmented mask, a higher --ramLimit, or more RAM)" };
 
 		return {true, std::nullopt}; // success
 	}

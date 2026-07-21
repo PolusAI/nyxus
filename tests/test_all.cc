@@ -3151,6 +3151,43 @@ TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_REDUCE) {
 	ilo.close();
 }
 
+// Regression (found by the scale/stress harness): an OVERSIZED whole volume must fail the run
+// loudly, not silently emit an all-zero feature row. nyxus has no streaming path for the 3D
+// texture features (their osized_calculate just rebuilds the in-memory cube) and several
+// features read raw_pixels_3D, so a whole volume whose footprint exceeds the RAM limit cannot
+// be featurized. Forcing ramLimit=0 makes any volume oversized. Before the fix the run returned
+// success and wrote a row of 0s; now processDataset_3D_wholevolume returns {false,...} and
+// writes no data row. (Normal-size volumes are unaffected -- see TEST_3D_WHOLEVOLUME_REDUCE.)
+TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_OVERSIZED_FAILS_LOUDLY) {
+	fs::path ds = ometiff_data_path("dim3_zyx.ome.tif");	// 3D X8 Y6 Z4
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+	fs::path outdir = fs::temp_directory_path() / "nyxus_ooc_test";
+	fs::remove_all(outdir); fs::create_directories(outdir);
+
+	Environment e;
+	e.theFeatureSet.enableAll(false);
+	e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
+	ASSERT_TRUE(e.set_ram_limit(0));		// force every whole volume oversized
+	e.output_dir = outdir.string();
+
+	std::vector<std::string> ifiles{ ds.string() };
+	auto [ok, erm] = Nyxus::processDataset_3D_wholevolume(e, ifiles, 1, Nyxus::SaveOption::saveCSV, outdir.string());
+
+	EXPECT_FALSE(ok) << "an oversized whole volume must fail the run, not succeed silently";
+
+	// no misleading data row was written -- scan every CSV the run may have produced
+	size_t datarows = 0;
+	for (auto& de : fs::directory_iterator(outdir))
+		if (de.path().extension() == ".csv")
+		{
+			std::ifstream f(de.path()); std::string ln; size_t n = 0;
+			while (std::getline(f, ln)) if (!ln.empty()) ++n;
+			if (n) datarows += n - 1;	// minus header
+		}
+	EXPECT_EQ(datarows, (size_t)0) << "no feature row should be written for an oversized volume";
+	fs::remove_all(outdir);
+}
+
 // Regression: separatecsv derives ONE output path per slide, but the CSV sinks are invoked
 // once per (channel, timeframe) plane and used to open that path with mode "w" every time --
 // so each plane truncated the one before it and the file ended up holding only the LAST
