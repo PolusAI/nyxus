@@ -41,6 +41,80 @@ namespace Nyxus
 			|| dynamic_cast<D3_GLDZM_feature*>(f) != nullptr;
 	}
 
+	/// @brief Populates r.raw_voxels_NT by streaming the volume plane-by-plane. When 'wholevolume'
+	/// is false (the segmented-ROI case), only voxels whose mask value equals r.label are kept --
+	/// segPlane must be non-empty (a real mask loader). When 'wholevolume' is true, every voxel is
+	/// kept regardless of any mask (there is none: workflow_3d_whole.cpp opens the loader with an
+	/// empty label path, so ImageLoader::stream_volume_planes's segPlane is empty in that case).
+	/// Shared by the segmented (processNontrivialRois_3D) and whole-volume out-of-core paths so
+	/// both stream through the exact same primitive. Returns false (cloud cleared) if the loader
+	/// can't deliver the volume plane-by-plane (e.g. NIfTI, a whole-4D-in-one-read format).
+	bool populate_3d_voxel_cloud (ImageLoader& imlo, LR& r, size_t channel, size_t timeframe, bool wholevolume)
+	{
+		r.raw_voxels_NT.init (r.label, "raw_voxels_NT");
+
+		const size_t W = imlo.get_full_width(),
+			H = imlo.get_full_height();
+		const uint32_t want = (uint32_t) r.label;
+
+		bool streamed = imlo.stream_volume_planes (channel, timeframe, timeframe,
+			[&](size_t z, const std::vector<uint32_t>& intPlane, const std::vector<uint32_t>& segPlane)
+			{
+				r.raw_voxels_NT.begin_slab (z);
+				for (size_t y = 0; y < H; y++)
+					for (size_t x = 0; x < W; x++)
+					{
+						size_t i = y * W + x;
+						if (wholevolume || segPlane[i] == want)
+							r.raw_voxels_NT.add_voxel (Pixel3(x, y, z, intPlane[i]));
+					}
+				r.raw_voxels_NT.end_slab (z);
+			});
+
+		if (! streamed)
+			r.raw_voxels_NT.clear();
+		return streamed;
+	}
+
+	/// @brief Runs every requested feature's out-of-core path over an already-populated
+	/// r.raw_voxels_NT, guarded by is_3d_ooc_supported(); writes results into r.fvals via
+	/// save_value(). Shared by the segmented and whole-volume out-of-core paths. 'imloader' is
+	/// passed through to match FeatureMethod's signature but is not read by any of the streaming
+	/// 3D features (they read raw_voxels_NT exclusively), so either path's own loader instance works.
+	void run_3d_ooc_features (Environment& env, LR& r, ImageLoader& imloader)
+	{
+		int nrf = env.theFeatureMgr.get_num_requested_features();
+		for (int i = 0; i < nrf; i++)
+		{
+			auto f = env.theFeatureMgr.get_feature_method (i);
+
+			try
+			{
+				// Every 3D feature that streams from raw_voxels_NT is covered by
+				// is_3d_ooc_supported(); anything else would silently read an empty cube, so fail
+				// loudly per-feature instead of emitting wrong values. Under the CLI this logs and
+				// moves on (the supported features still compute); under Python it raises.
+				if (! is_3d_ooc_supported (f))
+					throw std::runtime_error("feature '" + f->feature_info
+						+ "' is not yet supported out-of-core for oversized 3D ROIs; "
+						+ "segment into smaller ROIs, raise --ramLimit, or add RAM");
+
+				const Fsettings& s = env.get_feature_settings (typeid(f));
+				f->osized_scan_whole_image (r, s, env.dataset, imloader);
+			}
+			catch (std::exception const& e)
+			{
+				std::string erm = "Error while computing feature " + f->feature_info + " over oversized 3D ROI " + std::to_string(r.label) + " : " + e.what();
+#ifdef WITH_PYTHON_H
+				throw std::runtime_error(erm);
+#endif
+				std::cerr << erm << "\n";
+			}
+
+			f->cleanup_instance();
+		}
+	}
+
 	/// @brief Processes oversized volumetric (3D) ROIs out-of-core: streams the voxel cloud to
 	///        disk one Z-plane at a time (bounded memory) instead of holding the whole cube.
 	/// @param nontrivRoiLabels Labels of ROIs whose in-memory footprint exceeds the RAM limit
@@ -83,29 +157,8 @@ namespace Nyxus
 			// Populate the ROI's disk-backed voxel cloud by streaming the volume plane-by-plane.
 			// Only this ROI's label voxels are written; z is preserved. Peak memory is two X*Y
 			// planes (intensity + mask) plus this plane's ROI voxels, never the whole cube.
-			r.raw_voxels_NT.init (r.label, "raw_voxels_NT");
-
-			const size_t W = env.theImLoader.get_full_width(),
-				H = env.theImLoader.get_full_height();
-			const uint32_t want = (uint32_t) r.label;
-
-			bool streamed = env.theImLoader.stream_volume_planes (channel, timeframe, timeframe,
-				[&](size_t z, const std::vector<uint32_t>& intPlane, const std::vector<uint32_t>& segPlane)
-				{
-					r.raw_voxels_NT.begin_slab (z);
-					for (size_t y = 0; y < H; y++)
-						for (size_t x = 0; x < W; x++)
-						{
-							size_t i = y * W + x;
-							if (segPlane[i] == want)
-								r.raw_voxels_NT.add_voxel (Pixel3(x, y, z, intPlane[i]));
-						}
-					r.raw_voxels_NT.end_slab (z);
-				});
-
-			if (! streamed)
+			if (! populate_3d_voxel_cloud (env.theImLoader, r, channel, timeframe, /*wholevolume=*/ false))
 			{
-				r.raw_voxels_NT.clear();
 				std::string erm = "Error: out-of-core featurization of oversized 3D ROI " + std::to_string(r.label)
 					+ " is not supported for this input format (the volume is not delivered plane-by-plane). "
 					+ "Segment into smaller ROIs, raise --ramLimit, or add RAM.";
@@ -117,36 +170,7 @@ namespace Nyxus
 			}
 
 			//=== Reduce features over the streamed voxel cloud
-			int nrf = env.theFeatureMgr.get_num_requested_features();
-			for (int i = 0; i < nrf; i++)
-			{
-				auto f = env.theFeatureMgr.get_feature_method (i);
-
-				try
-				{
-					// Every 3D feature that streams from raw_voxels_NT is covered by
-					// is_3d_ooc_supported(); anything else would silently read an empty cube, so fail
-					// loudly per-feature instead of emitting wrong values. Under the CLI this logs and
-					// moves on (the supported features still compute); under Python it raises.
-					if (! is_3d_ooc_supported (f))
-						throw std::runtime_error("feature '" + f->feature_info
-							+ "' is not yet supported out-of-core for oversized 3D ROIs; "
-							+ "segment into smaller ROIs, raise --ramLimit, or add RAM");
-
-					const Fsettings& s = env.get_feature_settings (typeid(f));
-					f->osized_scan_whole_image (r, s, env.dataset, env.theImLoader);
-				}
-				catch (std::exception const& e)
-				{
-					std::string erm = "Error while computing feature " + f->feature_info + " over oversized 3D ROI " + std::to_string(r.label) + " : " + e.what();
-#ifdef WITH_PYTHON_H
-					throw std::runtime_error(erm);
-#endif
-					std::cerr << erm << "\n";
-				}
-
-				f->cleanup_instance();
-			}
+			run_3d_ooc_features (env, r, env.theImLoader);
 
 			//=== Clean the ROI's cache
 			r.raw_voxels_NT.clear();

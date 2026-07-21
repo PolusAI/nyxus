@@ -95,6 +95,14 @@ namespace Nyxus
 	// cloud; used by processNontrivialRois_3D()'s per-feature out-of-core guard, and independently
 	// unit-testable (see TEST_3D_OOC_GUARD_REJECTS_UNSUPPORTED_FEATURE).
 	bool is_3d_ooc_supported (FeatureMethod* f);
+	// Streams r.raw_voxels_NT from 'imlo' plane-by-plane; when wholevolume is true every voxel is
+	// kept (no mask), otherwise only voxels matching r.label. Returns false (cloud cleared) if the
+	// loader can't deliver the volume plane-by-plane. Shared by the segmented and whole-volume
+	// out-of-core paths (processNontrivialRois_3D, workflow_3d_whole.cpp's oversized branch).
+	bool populate_3d_voxel_cloud (ImageLoader& imlo, LR& r, size_t channel, size_t timeframe, bool wholevolume);
+	// Runs every requested feature's out-of-core path over an already-populated r.raw_voxels_NT,
+	// guarded by is_3d_ooc_supported(); writes into r.fvals via save_value(). Shared the same way.
+	void run_3d_ooc_features (Environment& env, LR& r, ImageLoader& imloader);
 	bool scan_trivial_wholeslide (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr);	// reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
 	bool scan_trivial_wholeslide_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y);
 

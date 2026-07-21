@@ -3154,31 +3154,92 @@ TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_REDUCE) {
 	ilo.close();
 }
 
-// Regression (found by the scale/stress harness): an OVERSIZED whole volume must fail the run
-// loudly, not silently emit an all-zero feature row. nyxus has no streaming path for the 3D
-// texture features (their osized_calculate just rebuilds the in-memory cube) and several
-// features read raw_pixels_3D, so a whole volume whose footprint exceeds the RAM limit cannot
-// be featurized. Forcing ramLimit=0 makes any volume oversized. Before the fix the run returned
-// success and wrote a row of 0s; now processDataset_3D_wholevolume returns {false,...} and
-// writes no data row. (Normal-size volumes are unaffected -- see TEST_3D_WHOLEVOLUME_REDUCE.)
-TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_OVERSIZED_FAILS_LOUDLY) {
+// Regression: an OVERSIZED whole volume of a format that delivers plane-by-plane (e.g. OME-TIFF)
+// must now featurize SUCCESSFULLY out-of-core, producing the SAME feature values as the in-RAM
+// (fitting) run of the identical file -- not fail, and not emit a zero row. This supersedes the
+// old TEST_3D_WHOLEVOLUME_OVERSIZED_FAILS_LOUDLY premise: before workflow_3d_whole.cpp's oversized
+// branch streamed via populate_3d_voxel_cloud/run_3d_ooc_features, NO whole-volume streaming path
+// existed at all, so oversized-but-streamable volumes failed loudly (a deliberate, validated
+// fallback at the time). Now the only remaining loud-fail case is a genuinely unstreamable format
+// (whole-4D-in-one-read, e.g. NIfTI) -- see TEST_3D_WHOLEVOLUME_UNSTREAMABLE_FORMAT_FAILS_LOUDLY.
+TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_OVERSIZED_STREAMS_OOC) {
 	fs::path ds = ometiff_data_path("dim3_zyx.ome.tif");	// 3D X8 Y6 Z4
 	ASSERT_TRUE(fs::exists(ds)) << ds.string();
-	fs::path outdir = fs::temp_directory_path() / "nyxus_ooc_test";
+
+	auto run_and_read_row = [&](bool oversized, const fs::path& outdir) -> std::string
+	{
+		fs::remove_all(outdir); fs::create_directories(outdir);
+		Environment e;
+		e.theFeatureSet.enableAll(false);
+		e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
+		e.theFeatureSet.enableFeatures(D3_SurfaceFeature::featureset);
+		e.theFeatureSet.enableFeatures(D3_GLCM_feature::featureset);
+		// The full sequence main_nyxus.cpp runs before any workflow (theFeatureMgr.compile() ->
+		// apply_user_selection() -> init_feature_classes() -> compile_feature_settings()). Skipping
+		// theFeatureMgr setup leaves get_num_requested_features()==0, so run_3d_ooc_features's loop
+		// never executes and every feature stays at its zero-initialized default (first symptom: an
+		// all-zero OOC row). Skipping compile_feature_settings() leaves fsett_D3_* at size 0, so any
+		// STNGS_*(s) macro access (e.g. surface's STNGS_SINGLEROI) reads out of bounds -- crashed
+		// (SEH 0xc0000005) before this was added.
+		EXPECT_TRUE(e.theFeatureMgr.compile());
+		e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
+		EXPECT_TRUE(e.theFeatureMgr.init_feature_classes());
+		e.compile_feature_settings();
+		EXPECT_TRUE(e.set_ram_limit(oversized ? 0 : 64));	// 0 -> force oversized; 64 MB comfortably fits this tiny (X8 Y6 Z4) volume
+		e.output_dir = outdir.string();
+
+		std::vector<std::string> ifiles{ ds.string() };
+		auto [ok, erm] = Nyxus::processDataset_3D_wholevolume(e, ifiles, 1, Nyxus::SaveOption::saveCSV, outdir.string());
+		EXPECT_TRUE(ok) << (erm ? *erm : std::string("(no error message)"));
+
+		std::string row;
+		size_t datarows = 0;
+		for (auto& de : fs::directory_iterator(outdir))
+			if (de.path().extension() == ".csv")
+			{
+				std::ifstream f(de.path()); std::string header, ln;
+				std::getline(f, header);
+				while (std::getline(f, ln)) if (!ln.empty()) { row = ln; ++datarows; }
+			}
+		EXPECT_EQ(datarows, (size_t)1) << "expected exactly one feature row";
+		fs::remove_all(outdir);
+		return row;
+	};
+
+	std::string ooc_row = run_and_read_row(true, fs::temp_directory_path() / "nyxus_wv_ooc_test");
+	std::string ram_row = run_and_read_row(false, fs::temp_directory_path() / "nyxus_wv_ram_test");
+
+	ASSERT_FALSE(ooc_row.empty());
+	ASSERT_FALSE(ram_row.empty());
+	EXPECT_EQ(ooc_row, ram_row) << "the out-of-core whole-volume row must match the in-RAM row exactly";
+}
+
+// Regression: a whole volume whose loader delivers the ENTIRE X*Y*Z*T blob in one read (e.g.
+// NIfTI -- see ImageLoader::stream_volume_planes) cannot stream plane-by-plane, so an oversized
+// NIfTI whole volume must still fail loudly (no streaming path exists for it) rather than crash or
+// emit a silent zero row. ram_limit=0 forces oversized regardless of the fixture's actual size.
+TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_UNSTREAMABLE_FORMAT_FAILS_LOUDLY) {
+	fs::path p(__FILE__);
+	fs::path ds(p.parent_path().string() + fs::path("/data/hounsfield/ct3d_int16.nii").make_preferred().string());
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+	fs::path outdir = fs::temp_directory_path() / "nyxus_wv_nifti_ooc_test";
 	fs::remove_all(outdir); fs::create_directories(outdir);
 
 	Environment e;
 	e.theFeatureSet.enableAll(false);
 	e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
-	ASSERT_TRUE(e.set_ram_limit(0));		// force every whole volume oversized
-	e.output_dir = outdir.string();
+	ASSERT_TRUE(e.theFeatureMgr.compile());
+	e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
+	ASSERT_TRUE(e.theFeatureMgr.init_feature_classes());
+	e.compile_feature_settings();
+	ASSERT_TRUE(e.set_ram_limit(0));		// force oversized regardless of this small fixture's real size
 
 	std::vector<std::string> ifiles{ ds.string() };
 	auto [ok, erm] = Nyxus::processDataset_3D_wholevolume(e, ifiles, 1, Nyxus::SaveOption::saveCSV, outdir.string());
 
-	EXPECT_FALSE(ok) << "an oversized whole volume must fail the run, not succeed silently";
+	EXPECT_FALSE(ok) << "an oversized NIfTI whole volume has no streaming path and must fail loudly";
 
-	// no misleading data row was written -- scan every CSV the run may have produced
 	size_t datarows = 0;
 	for (auto& de : fs::directory_iterator(outdir))
 		if (de.path().extension() == ".csv")
@@ -3187,7 +3248,7 @@ TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_OVERSIZED_FAILS_LOUDLY) {
 			while (std::getline(f, ln)) if (!ln.empty()) ++n;
 			if (n) datarows += n - 1;	// minus header
 		}
-	EXPECT_EQ(datarows, (size_t)0) << "no feature row should be written for an oversized volume";
+	EXPECT_EQ(datarows, (size_t)0) << "no feature row should be written for an unstreamable oversized volume";
 	fs::remove_all(outdir);
 }
 

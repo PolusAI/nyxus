@@ -363,7 +363,7 @@ void D3_SurfaceFeature::calculate (LR& r, const Fsettings& s)
 	}
 
 	// volume
-	
+
 	// (fast approximation based on cubic lattice packaging of balls)
 	double ball_r3 = 1. / 8.,	// r^3, after the anisotropy correction, lattice is expected to be cubic
 		sumPackedV = 0.0;
@@ -372,7 +372,7 @@ void D3_SurfaceFeature::calculate (LR& r, const Fsettings& s)
 	fval_VOXEL_VOLUME = sumPackedV / 0.5236;		// packaging density at kissing number = 4 (cubic lattice)
 
 	// surface
-	
+
 	// -- order z-planes' indices
 	std::vector<int> zindices;
 	for (auto& plane : r.zplanes)

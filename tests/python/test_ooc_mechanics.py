@@ -199,6 +199,44 @@ def test_ooc_3d_gldzm_matches_in_ram(tmp_path):
     _ooc_vs_ram_3d(tmp_path, ["*3D_GLDZM*"])
 
 
+def test_ooc_3d_wholevolume_streams_oob(tmp_path):
+    """The WHOLE-VOLUME (single_roi) 3D path -- Nyxus3D.featurize_directory(dir, dir, ...), i.e.
+    label_dir==intensity_dir -- used to have NO out-of-core support at all: an oversized whole
+    volume failed loudly (workflow_3d_whole.cpp). It now streams via the same
+    populate_3d_voxel_cloud/run_3d_ooc_features primitives as the segmented path. This is the
+    Python-facing equivalent of the gtest TEST_3D_WHOLEVOLUME_OVERSIZED_STREAMS_OOC: force
+    oversized with ram_limit=0 (every footprint >= 0 is always true) and compare against an
+    in-RAM run of the identical volume."""
+    Z, Y, X = 8, 90, 90
+    z = np.arange(Z)[:, None, None]
+    y = np.arange(Y)[None, :, None]
+    x = np.arange(X)[None, None, :]
+    inten = (1 + (x % 256) + (y % 200) * 256 + z * 10000).astype(np.uint32)
+    inten = np.broadcast_to(inten, (Z, Y, X)).astype(np.uint32)
+    voldir = tmp_path / "wv"
+    voldir.mkdir()
+    tifffile.imwrite(str(voldir / "vol.ome.tif"), inten, metadata={"axes": "ZYX"})
+
+    feats = ["*3D_ALL_INTENSITY*", "*3D_ALL_MORPHOLOGY*", "*3D_GLCM*"]
+
+    n_ram = nyxus.Nyxus3D(feats, ram_limit=8000)
+    df_ram = n_ram.featurize_directory(str(voldir), str(voldir), ".*")
+
+    n_ooc = nyxus.Nyxus3D(feats, ram_limit=0)  # every footprint >= 0 -> always oversized
+    df_ooc = n_ooc.featurize_directory(str(voldir), str(voldir), ".*")
+
+    cols, a = _feature_cols(df_ram)
+    _, b = _feature_cols(df_ooc)
+    assert a.size > 0 and a.shape == b.shape
+
+    bad = [
+        (c, p, q)
+        for c, p, q in zip(cols, a, b)
+        if abs(p - q) > 1e-6 * max(abs(p), abs(q), 1.0) + 1e-9
+    ]
+    assert not bad, "whole-volume out-of-core features diverge from in-RAM: %r" % (bad[:8],)
+
+
 def _make_volume_pair_blank(tmp_path):
     # A degenerate ROI (constant intensity everywhere) at the same size as _make_volume_pair, so it
     # is still classified oversized at ram_limit=1 -- exercises each osized_calculate's early-return

@@ -127,18 +127,36 @@ namespace Nyxus
 			ramLim = env.get_ram_limit();
 		if (roiFootprint >= ramLim)
 		{
-			VERBOSLVL2(env.get_verbosity_level(),
-				std::cout << "oversized slide "
+			VERBOSLVL1(env.get_verbosity_level(),
+				std::cout << "oversized whole volume "
 				<< " (S=" << vroi.aux_area
 				<< " W=" << vroi.aabb.get_width()
 				<< " H=" << vroi.aabb.get_height()
 				<< " D=" << vroi.aabb.get_z_depth()
 				<< " px footprint=" << Nyxus::virguler_ulong(roiFootprint) << " b"
-				<< ") while RAM limit is " << Nyxus::virguler_ulong(ramLim) << "\n"
+				<< ") while RAM limit is " << Nyxus::virguler_ulong(ramLim)
+				<< " -- streaming out-of-core\n"
 			);
 
-			std::cerr << p.fname_int << ": slide is non-trivial \n";
-			return false;
+			// Out-of-core whole volume: stream every voxel (no mask -- workflow_3d_whole.cpp opens
+			// the loader with an empty label path) plane-by-plane instead of holding the whole
+			// cube, mirroring the segmented ROI path (processNontrivialRois_3D). Only fails when
+			// the input format can't deliver the volume plane-by-plane (e.g. NIfTI).
+			if (! populate_3d_voxel_cloud (imlo, vroi, channel, timeframe, /*wholevolume=*/ true))
+			{
+				std::string erm = "Error: cannot featurize whole volume " + p.fname_int
+					+ " out-of-core: this input format does not deliver the volume plane-by-plane. "
+					+ "Segment into smaller ROIs, raise --ramLimit, or add RAM.";
+#ifdef WITH_PYTHON_H
+				throw std::runtime_error(erm);
+#endif
+				std::cerr << erm << "\n";
+				return false;
+			}
+
+			run_3d_ooc_features (env, vroi, imlo);
+			vroi.raw_voxels_NT.clear();
+			return true;
 		}
 
 		//***** phase 2: extract features
@@ -182,16 +200,14 @@ namespace Nyxus
 
 			if (featurize_wholevolume (env, slide_idx, imlo, vroi, c, t) == false)	// non-wsi counterpart: processIntSegImagePair()
 			{
-				// FIX: featurize_wholevolume returns false only when the whole-volume ROI is
-				// oversized (footprint >= RAM limit). nyxus has no streaming path for the 3D
-				// texture features (their osized_calculate just rebuilds the in-memory cube), so
-				// such a volume cannot be featurized. Previously we set rv but FELL THROUGH to
-				// save the zero-initialized buffer -- emitting a row of all-0 features, i.e.
+				// An oversized whole volume now streams out-of-core (see featurize_wholevolume's
+				// oversized branch), so featurize_wholevolume returns false only when that streaming
+				// itself failed -- either the input format can't deliver the volume plane-by-plane
+				// (e.g. NIfTI), or a requested feature isn't yet OOC-supported. That specific reason
+				// was already reported (thrown under Python, printed to stderr under the CLI) from
+				// inside featurize_wholevolume/run_3d_ooc_features. Previously we ALSO fell through
+				// to save the zero-initialized buffer here -- emitting a row of all-0 features, i.e.
 				// silently-wrong data. Skip the save instead: fail loudly, write no row.
-				std::cerr << "Error: cannot featurize whole volume of " << p.fname_int
-					<< " (channel " << c << ", timeframe " << t << "): its in-memory footprint "
-					<< "exceeds the RAM limit. Use a segmented mask, raise --ramLimit, or run on "
-					<< "a machine with more memory. @ " << __FILE__ << ":" << __LINE__ << "\n";
 				rv = 1;
 				continue;	// do NOT emit a (misleading all-zero) row for this plane
 			}
@@ -388,11 +404,14 @@ namespace Nyxus
 		// future: free GPU cache for all participating devices
 		//
 
-		// FIX: a slide that could not be featurized (oversized whole volume) is a hard failure,
-		// not a silent success -- report it so the CLI exits nonzero and the Python API raises.
+		// FIX: a slide that could not be featurized is a hard failure, not a silent success --
+		// report it so the CLI exits nonzero and the Python API raises. An oversized whole volume
+		// streams out-of-core now (see featurize_wholevolume), so this only fires when that
+		// streaming itself failed (input format can't deliver plane-by-plane, or an unsupported
+		// feature was requested) -- the specific reason was already reported above.
 		if (worst_rv != 0)
 			return { false, "one or more slides could not be featurized (see errors above; "
-				"an oversized whole volume needs a segmented mask, a higher --ramLimit, or more RAM)" };
+				"an unsupported format needs a segmented mask, or a smaller/plane-deliverable input)" };
 
 		return {true, std::nullopt}; // success
 	}
