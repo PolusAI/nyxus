@@ -37,7 +37,11 @@ namespace Nyxus
 		const std::string& ifpath = env.dataset.dataset_props[sidx].fname_int;
 
 		// can we process this slide ?
-		size_t footp = vroi.get_ram_footprint_estimate (1);	// 1 since single-ROI
+		// FIX: use the 3D estimator (W*H*D). The 2D one counts only W*H for the image matrix,
+		// so it under-counts a whole VOLUME's cube by a factor of the depth -> the oversized
+		// check let too-large volumes through and they OOM'd. The segmented path already uses
+		// get_ram_footprint_estimate_3D; match it. (Found by running under a hard memory cap.)
+		size_t footp = vroi.get_ram_footprint_estimate_3D (1);	// 1 since single-ROI
 		if (footp > memory_limit)
 		{
 			std::string erm = "Error: cannot process slide " + ifpath + " , reason: its memory footprint " + virguler_ulong(footp) + " exceeds available memory " + virguler_ulong(memory_limit);
@@ -117,7 +121,9 @@ namespace Nyxus
 		vroi.initialize_fvals();
 
 		// assess ROI's memory footprint and check if we can featurize it as phase 2 (trivially) ?
-		size_t roiFootprint = vroi.get_ram_footprint_estimate (1),		// 1 since single-ROI
+		// FIX: 3D estimator (W*H*D) -- the 2D one ignores depth and under-counts the volume cube,
+		// so oversized volumes slipped through and OOM'd. Matches the segmented path.
+		size_t roiFootprint = vroi.get_ram_footprint_estimate_3D (1),		// 1 since single-ROI
 			ramLim = env.get_ram_limit();
 		if (roiFootprint >= ramLim)
 		{

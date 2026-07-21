@@ -3188,6 +3188,31 @@ TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_OVERSIZED_FAILS_LOUDLY) {
 	fs::remove_all(outdir);
 }
 
+// Regression (found by running nyxus under a hard memory cap): the whole-volume oversized check
+// must use the 3D footprint estimator (W*H*D for the image cube), not the 2D one (W*H). The 2D
+// estimator ignores depth, so it under-counted a volume's memory by ~depth x, let oversized
+// volumes slip through the "trivial" path, and they OOM-crashed under a real memory limit even
+// with a matching --ramLimit. This pins that the 3D estimator accounts for depth (the 2D one
+// does not) so featurize_wholevolume's switch to get_ram_footprint_estimate_3D stays correct.
+TEST(TEST_NYXUS, TEST_3D_RAM_FOOTPRINT_COUNTS_DEPTH) {
+	// Two ROIs with identical W/H and voxel count, differing ONLY in bounding-box depth. This
+	// isolates depth's effect on each estimator.
+	LR flat(1);
+	flat.aabb.init_from_whd(64, 64, 1);
+	flat.aux_area = 4096;
+	LR tall(1);
+	tall.aabb.init_from_whd(64, 64, 64);
+	tall.aux_area = 4096;
+
+	// the 2D estimator's image-matrix term is W*H -> it IGNORES depth: identical for both
+	EXPECT_EQ(flat.get_ram_footprint_estimate(1), tall.get_ram_footprint_estimate(1));
+
+	// the 3D estimator's image-cube term is W*H*D -> the 64x-deeper bbox is far larger. This is
+	// the term the 2D estimator missed, which under-counted whole volumes and let them OOM.
+	EXPECT_GT(tall.get_ram_footprint_estimate_3D(1), flat.get_ram_footprint_estimate_3D(1) * 10)
+		<< "3D footprint estimator is not counting depth";
+}
+
 // Regression: separatecsv derives ONE output path per slide, but the CSV sinks are invoked
 // once per (channel, timeframe) plane and used to open that path with mode "w" every time --
 // so each plane truncated the one before it and the file ended up holding only the LAST
