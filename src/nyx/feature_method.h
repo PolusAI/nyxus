@@ -5,6 +5,8 @@
 #include "image_loader.h"
 #include "features/image_matrix_nontriv.h"
 
+class Dataset;	// forward decl for the Dataset-aware osized_scan_whole_image overload
+
 /// @brief Abstract class encapsulating basic feature functionality e.g. dependency on other features, dependency on helper objects, state (calculated or pending), etc.
 class FeatureMethod
 {
@@ -26,6 +28,10 @@ public:
 
 	//=== Oversized ROI
 	virtual void osized_scan_whole_image (LR& roi, const Fsettings& s, ImageLoader& ldr);
+	// Dataset-aware out-of-core dispatch. Features that need slide props (intensity,
+	// intensity-histogram) override this to reach their Dataset-taking osized_calculate; the
+	// default forwards to the Dataset-less overload so every other feature is unaffected.
+	virtual void osized_scan_whole_image (LR& roi, const Fsettings& s, const Dataset& ds, ImageLoader& ldr);
 
 	virtual void osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) = 0;	// Called each time the ROI pixel is being scanned in the raster order
 	virtual void osized_reduce() final {};	// Get rid of this method in all derived

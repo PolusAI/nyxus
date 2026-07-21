@@ -169,15 +169,14 @@ public:
 		// percentiles
 		calc_percentiles();
 
-		// robust mean
-		bin10ctr_ = bins100_ [10];
-		bin90ctr_ = bins100_ [90];
+		// robust MAD: threshold on the p10/p90 percentile values, and average the
+		// 10..90 population before accumulating deviations (mirrors the in-core overload)
 		mean1090val_ = 0.0;
 		size_t pop1090 = 0;
 		for (auto pxl : raw_data)
 		{
 			double a = double (pxl.inten);
-			if (a >= bin10ctr_ && a <= bin90ctr_)
+			if (a >= p10_ && a <= p90_)
 			{
 				mean1090val_ += a;
 				pop1090++;
@@ -186,10 +185,11 @@ public:
 		rmad_ = 0.0;
 		if (pop1090)
 		{
+			mean1090val_ /= double(pop1090);
 			for (auto pxl : raw_data)
 			{
 				double a = double(pxl.inten);
-				if (a >= bin10ctr_ && a <= bin90ctr_)
+				if (a >= p10_ && a <= p90_)
 					rmad_ += (std::fabs)(a - mean1090val_);
 			}
 			rmad_ /= double(pop1090);
