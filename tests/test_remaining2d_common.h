@@ -133,7 +133,7 @@ static std::unordered_map<std::string, std::vector<double>> oracle_3p_remaining2
 // morph_oracle/caliper_proto.py). imea (imea.measure_2d.statistical_length, dalpha=10) is the
 // reference. Nyxus rotates the convex hull and measures analytically while imea rotates the filled
 // raster, so the two agree only up to a ~1-2px hull-vs-raster convention gap (same gap already
-// accepted for Feret) — hence a 15% relative tolerance on the robust stats. The point that this pins
+// accepted for Feret) — hence a 10% relative tolerance on the robust stats. The point that this pins
 // is that the diameters are now the *correct* quantities (min > 0), not the old min+max-chord bug
 // that produced physically-impossible 0-length Nassenstein diameters.
 static std::unordered_map<std::string, double> imea_ellipse_caliper_oracle{

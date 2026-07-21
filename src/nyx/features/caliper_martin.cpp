@@ -1,4 +1,4 @@
-#include <algorithm>	// FIX (caliper float-precision): only std::min/std::max are used here; dropped the unused <cmath> (this TU has no std::abs)
+#include <algorithm>	// FIX (caliper reimpl): std::min/std::max for the analytic chord math
 #include <vector>
 #include "caliper.h"
 #include "../environment.h"
