@@ -2743,6 +2743,64 @@ TEST(TEST_NYXUS, TEST_OMEZARR_V3_MULTISHARD_PRESCAN) {
 	EXPECT_EQ(p.max_roi_area, (size_t)(32 * 24 * 8));
 }
 
+// Zarr v3 store with a MULTI-PLANE Z chunk (chunk z-extent 3 over Z=7 -> depths 3,3,1, an UNEVEN
+// split), unsharded -- isolated regression test for a real bug found while building the multishard
+// fixture above: omezarr.h/raw_omezarr.h's loadTile() always read exactly ONE Z-plane per tile
+// (shape[iz_] left at its default of 1) regardless of the chunk's actual Z extent, so every plane
+// past the first within a multi-plane chunk silently came back zero. No existing fixture before
+// this one ever used a Z-chunk > 1. Own local encoding (dim5_enc/dim5_multishard_enc don't apply --
+// different dims): value(x,y,z,c,t) = 1 + ((((t*C+c)*Z+z)*Y+y)*X+x), C=2,T=1,Z=7,Y=6,X=8.
+static inline uint32_t dim5_zchunked_enc(int x, int y, int z, int c, int t)
+{
+	const int C = 2, Z = 7, Y = 6, X = 8;
+	return static_cast<uint32_t>(1 + ((((t * C + c) * Z + z) * Y + y) * X + x));
+}
+
+// Exercises omezarr.h's NyxusOmeZarrLoader via ImageLoader::load_volume/assemble_volume -- the
+// path that read zero past the first Z-plane of a chunk before the fix.
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_ZCHUNKED_FACADE_VOLUME) {
+	const int T = 1, C = 2, Z = 7, Y = 6, X = 8;
+	fs::path ds = omezarr_data_path("dim5_v3_zchunked.ome.zarr");
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+	SlideProps p;
+	p.fname_int = ds.string();
+	p.fname_seg = "";
+	FpImageOptions fp;
+	ImageLoader il;
+	ASSERT_TRUE(il.open(p, fp)) << ds.string();
+	ASSERT_EQ(il.get_full_depth(), (size_t)Z);
+
+	for (int t = 0; t < T; ++t)
+	  for (int c = 0; c < C; ++c)
+	  {
+	      ASSERT_TRUE(il.load_volume(c, t));
+	      const std::vector<uint32_t>& vol = il.get_int_volume_buffer();
+	      ASSERT_EQ(vol.size(), (size_t)X * Y * Z);
+	      for (int z = 0; z < Z; ++z)
+	        for (int y = 0; y < Y; ++y)
+	          for (int x = 0; x < X; ++x)
+	            ASSERT_EQ(vol[(size_t)z * X * Y + (size_t)y * X + x], dim5_zchunked_enc(x, y, z, c, t))
+	                << "zchunked vol (x" << x << " y" << y << " z" << z << " c" << c << " t" << t << ")";
+	  }
+	il.close();
+}
+
+// Exercises raw_omezarr.h's RawOmezarrLoader via RawImageLoader::for_each_voxel (the prescan path)
+// -- the OTHER consumer of the same buggy loadTile(), independently regressed here.
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_ZCHUNKED_PRESCAN) {
+	fs::path ip = omezarr_data_path("dim5_v3_zchunked.ome.zarr");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+
+	Environment e;
+	SlideProps p (ip.string(), "");		// whole-slide: no mask
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+
+	EXPECT_DOUBLE_EQ(p.min_preroi_inten, 1.0);
+	EXPECT_DOUBLE_EQ(p.max_preroi_inten, dim5_zchunked_enc(7, 5, 6, 1, 0));	// last voxel, last channel
+	EXPECT_EQ(p.max_roi_area, (size_t)(8 * 6 * 7));
+}
+
 // No 'axes' metadata -> the loader falls back to legacy 5D TCZYX and still reads.
 TEST(TEST_NYXUS, TEST_OMEZARR_NOAXES_FALLBACK) {
 	ASSERT_NO_THROW (test_omezarr_addressing("dim5_noaxes.ome.zarr", 2, 3, 4));

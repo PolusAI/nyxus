@@ -227,28 +227,40 @@ public:
         if (pixel_col_index + data_width > full_width_) {
             data_width = full_width_ - pixel_col_index;
         }
+        // A chunk may span several Z-planes (tile_depth_ > 1); read its whole Z-extent in one
+        // subarray call, clamped at the last (possibly partial) chunk.
+        size_t data_depth = 1;
+        if (iz_ >= 0) {
+            data_depth = tile_depth_;
+            if (pixel_layer_index + data_depth > full_depth_)
+                data_depth = full_depth_ - pixel_layer_index;
+        }
 
         // Create a buffer to hold the read data
-        std::vector<FileType> buffer(data_height * data_width);
+        std::vector<FileType> buffer(data_height * data_width * data_depth);
 
         // Build the read window by axis ROLE (honoring the resolved 'axes' order),
-        // reading one Y*X plane at the requested Z/C/T. z5 3.0.1 uses ArrayView.
+        // reading a Z*Y*X block (data_depth Z-planes) at the requested C/T. z5 3.0.1 uses ArrayView.
         z5::types::ShapeType shape(ndim_, 1), offset(ndim_, 0);
         shape[iy_] = data_height; offset[iy_] = pixel_row_index;
         shape[ix_] = data_width;  offset[ix_] = pixel_col_index;
-        if (iz_ >= 0) offset[iz_] = pixel_layer_index;
+        if (iz_ >= 0) { shape[iz_] = data_depth; offset[iz_] = pixel_layer_index; }
         if (ic_ >= 0) offset[ic_] = pixel_channel_index;
         if (it_ >= 0) offset[it_] = pixel_timeframe_index;
         auto view = z5::multiarray::makeView(buffer.data(), shape);
-        
+
         // Read subarray from the cached z5 dataset
         z5::multiarray::readSubarray<FileType>(*ds_, view, offset.begin());
-        
-        // Copy from buffer to destination tile, handling partial tiles
-        for (size_t k = 0; k < data_height; ++k) {
-            std::copy(buffer.begin() + k * data_width, 
-                     buffer.begin() + (k + 1) * data_width, 
-                     dest->begin() + k * tile_width_);
+
+        // Copy from buffer to destination tile, handling partial tiles and multiple Z-planes
+        // (dest is laid out plane-major: plane p, row k at offset (p*tile_height_ + k)*tile_width_,
+        // matching ImageLoader::assemble_volume's/RawImageLoader::for_each_voxel's expected stride).
+        for (size_t p = 0; p < data_depth; ++p) {
+            for (size_t k = 0; k < data_height; ++k) {
+                std::copy(buffer.begin() + (p * data_height + k) * data_width,
+                         buffer.begin() + (p * data_height + k) * data_width + data_width,
+                         dest->begin() + (p * tile_height_ + k) * tile_width_);
+            }
         }
     }
 

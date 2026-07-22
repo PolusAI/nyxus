@@ -216,6 +216,38 @@ def write_v3_multishard(name):
           % (name, C, T, Z, Y, X, inner, shards, -(-Y // shards[3]), -(-X // shards[4])))
 
 
+def write_v3_zchunked(name):
+    """A Zarr v3 store with a MULTI-PLANE Z chunk (chunk z-extent > 1), unsharded -- isolates the
+    Z-chunking behavior from shard-file addressing (see write_v3_multishard for that). Every other
+    fixture in this file chunks exactly one Z-slice per chunk (see the module docstring); this one
+    deliberately doesn't, to catch readers that silently under-read past the first Z-plane of a
+    multi-plane chunk.
+
+    Own local dims: C=2, T=1, Z=7, Y=6, X=8. Chunk (z,y,x)=(3,6,8) -> 3 Z-chunks of depth 3,3,1 --
+    the UNEVEN split (Z=7 not a multiple of 3) also exercises the partial last-chunk clamp.
+    Same coordinate encoding as the rest of this file: value(x,y,z,c,t) = 1 + ((((t*C+c)*Z+z)*Y+y)*X+x).
+    """
+    path = os.path.join(HERE, name)
+    shutil.rmtree(path, ignore_errors=True)
+
+    C, T, Z, Y, X = 2, 1, 7, 6, 8
+    t, c, z, y, x = np.meshgrid(
+        np.arange(T), np.arange(C), np.arange(Z), np.arange(Y), np.arange(X), indexing="ij")
+    data = (1 + ((((t * C + c) * Z + z) * Y + y) * X + x)).astype("uint16")   # [t,c,z,y,x]
+
+    chunks = (1, 1, 3, 6, 8)
+
+    g = zarr.open_group(path, mode="w", zarr_format=3)
+    a = g.create_array("0", shape=data.shape, dtype=data.dtype, chunks=chunks, compressors=None)
+    a[:] = data
+    g.attrs["ome"] = {"version": "0.5",
+                      "multiscales": [{"axes": [_AX[ax] for ax in "tczyx"],
+                                       "datasets": [{"path": "0",
+                                                     "coordinateTransformations": [{"type": "scale", "scale": [1.0] * 5}]}]}]}
+    print("wrote %-24s (Zarr v3 Z-CHUNKED: C=%d T=%d Z=%d Y=%d X=%d, chunk=%s -> Z-chunk depths 3,3,1)"
+          % (name, C, T, Z, Y, X, chunks))
+
+
 def write_label_mask(name):
     """P4/N3: a single-channel ZYX label mask (mostly background, a few small ROIs), the
     OME-Zarr twin of dim3_mask.ome.tif. Pairs with a T>1 Zarr intensity to exercise the
@@ -295,6 +327,8 @@ def main():
     # Larger multi-shard store: a 2x2 grid of SHARD FILES per (c,t), not just multiple inner
     # chunks within one shard -- exercises crossing shard-file boundaries mid-plane.
     write_v3_multishard("dim5_v3_multishard.ome.zarr")
+    # multi-plane Z chunk (chunk z-extent 3, uneven split 3+3+1) -- isolated Z-chunking check
+    write_v3_zchunked("dim5_v3_zchunked.ome.zarr")
     # plane split across a 2x2 chunk grid (3x4 chunks over the 6x8 plane) -> multi-tile assembly
     write_multichunk("dim5_multichunk.ome.zarr", "tczyx", 3, 4)
     # PARTIAL edge chunks: chunk (4,5) does NOT divide the 6x8 plane, so the last row-chunk is
