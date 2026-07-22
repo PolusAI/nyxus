@@ -2670,6 +2670,79 @@ TEST(TEST_NYXUS, TEST_OMEZARR_V3_BLOSC_FACADE_VOLUME) {
 	ASSERT_NO_THROW (test_omezarr_facade_volume("dim5_v3_blosc.ome.zarr", 2, 3, 4));
 }
 
+// Larger multi-SHARD-FILE Zarr v3 store (gen_dim5.py write_v3_multishard): C=2,T=1,Z=8,Y=24,X=32,
+// inner chunk (z,y,x)=(2,6,8), shard (z,y,x)=(8,12,16) -> a 2x2 GRID OF SHARD FILES per (c,t),
+// each packing 16 inner chunks (8 shard files total). Unlike dim5_v3_sharded (exactly one shard
+// per (t,c), so it only proves multiple inner chunks packed into ONE shard), this exercises the
+// volumetric assembly crossing SHARD-FILE boundaries mid-plane -- closer to a real, larger v3
+// store's layout. Own local encoding (dim5_enc's C/Z/Y/X are hardcoded to the small fixture and
+// don't apply here): value(x,y,z,c,t) = 1 + ((((t*C+c)*Z+z)*Y+y)*X+x), C=2,T=1,Z=8,Y=24,X=32.
+static inline uint32_t dim5_multishard_enc(int x, int y, int z, int c, int t)
+{
+	const int C = 2, Z = 8, Y = 24, X = 32;
+	return static_cast<uint32_t>(1 + ((((t * C + c) * Z + z) * Y + y) * X + x));
+}
+
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_MULTISHARD_FACADE_VOLUME) {
+	const int T = 1, C = 2, Z = 8, Y = 24, X = 32;
+	fs::path ds = omezarr_data_path("dim5_v3_multishard.ome.zarr");
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+	SlideProps p;
+	p.fname_int = ds.string();
+	p.fname_seg = "";
+	FpImageOptions fp;
+	ImageLoader il;
+	ASSERT_TRUE(il.open(p, fp)) << ds.string();
+	ASSERT_EQ(il.get_full_width(), (size_t)X);
+	ASSERT_EQ(il.get_full_height(), (size_t)Y);
+	ASSERT_EQ(il.get_full_depth(), (size_t)Z);
+
+	for (int t = 0; t < T; ++t)
+	  for (int c = 0; c < C; ++c)
+	  {
+	      ASSERT_TRUE(il.load_volume(c, t));
+	      const std::vector<uint32_t>& vol = il.get_int_volume_buffer();
+	      ASSERT_EQ(vol.size(), (size_t)X * Y * Z);
+	      for (int z = 0; z < Z; ++z)
+	        for (int y = 0; y < Y; ++y)
+	          for (int x = 0; x < X; ++x)
+	            ASSERT_EQ(vol[(size_t)z * X * Y + (size_t)y * X + x], dim5_multishard_enc(x, y, z, c, t))
+	                << "multishard vol (x" << x << " y" << y << " z" << z << " c" << c << " t" << t << ")";
+	  }
+	il.close();
+}
+
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_MULTISHARD_CT_COUNTS) {
+	fs::path ds = omezarr_data_path("dim5_v3_multishard.ome.zarr");
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+	auto ldr = NyxusOmeZarrLoader<uint32_t>(1, ds.string());
+	ASSERT_EQ(ldr.numberChannels(), (size_t)2);
+	ASSERT_EQ(ldr.fullTimestamps(0), (size_t)1);
+	ASSERT_EQ(ldr.fullDepth(0), (size_t)8);
+
+	auto raw = RawOmezarrLoader(ds.string());
+	ASSERT_EQ(raw.numberChannels(), (size_t)2);
+	ASSERT_EQ(raw.fullTimestamps(0), (size_t)1);
+	ASSERT_EQ(raw.fullDepth(0), (size_t)8);
+}
+
+// Prescan (raw loader's readSubarray driven across all 8 shard files) must see the full encoded
+// range across BOTH channels, and the whole-slide ROI area -- not garbage, not just channel 0.
+TEST(TEST_NYXUS, TEST_OMEZARR_V3_MULTISHARD_PRESCAN) {
+	fs::path ip = omezarr_data_path("dim5_v3_multishard.ome.zarr");
+	ASSERT_TRUE(fs::exists(ip)) << ip.string();
+
+	Environment e;
+	SlideProps p (ip.string(), "");		// whole-slide: no mask
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+
+	EXPECT_DOUBLE_EQ(p.min_preroi_inten, 1.0);
+	EXPECT_DOUBLE_EQ(p.max_preroi_inten, dim5_multishard_enc(31, 23, 7, 1, 0));	// last voxel, last channel
+	EXPECT_EQ(p.max_roi_area, (size_t)(32 * 24 * 8));
+}
+
 // No 'axes' metadata -> the loader falls back to legacy 5D TCZYX and still reads.
 TEST(TEST_NYXUS, TEST_OMEZARR_NOAXES_FALLBACK) {
 	ASSERT_NO_THROW (test_omezarr_addressing("dim5_noaxes.ome.zarr", 2, 3, 4));

@@ -171,6 +171,51 @@ def write_v3_sharded(name, order):
     print("wrote %-24s (Zarr v3 SHARDED, inner=%s shard=%s)" % (name, inner, shards))
 
 
+def write_v3_multishard(name):
+    """A LARGER Zarr v3 sharded store exercising MULTIPLE SPATIAL SHARDS per (c,t) plane-volume --
+    the existing dim5_v3_sharded fixture has exactly one shard per (t,c) (the shard's y/x extent
+    equals the full plane), so it only ever proves multiple INNER CHUNKS packed into one shard
+    file. This fixture instead splits each (t,c) volume into a 2x2 grid of shards across Y and X,
+    so the volumetric assembly must cross shard-FILE boundaries mid-plane (not just inner-chunk
+    boundaries within one shard) -- closer to how a real, larger Axle v3 store is laid out.
+
+    Own local dims (not the module T/C/Z/Y/X): C=2, T=1, Z=8, Y=24, X=32.
+    Inner chunk (z,y,x)=(1,6,8) -- z-chunk MUST stay 1: this codebase's OME-Zarr readers
+    (raw_omezarr.h/omezarr.h) read exactly one Z-plane per tile regardless of what
+    tileDepth() reports (see this file's module docstring: "chunked one z-slice per
+    chunk"); a z-chunk>1 silently under-reads (proven while building this fixture --
+    a z=2 inner chunk read only its first z-plane and left the rest zero). That is a
+    separate, real chunking-granularity gap from the shard-FILE-crossing behavior this
+    fixture targets, so it's dodged here rather than fixed as a drive-by.
+    Shard (z,y,x)=(8,12,16) -> covers the full Z depth (all 8 inner z-chunks) but HALF of
+    Y and HALF of X -> a 2x2 shard grid per (c,t), each shard packing 8*(12/6)*(16/8)=32
+    inner chunks. Total: C*T*2*2 = 8 shard FILES, and the volumetric assembly must cross
+    shard-FILE boundaries mid-plane (not just inner-chunk boundaries within one shard).
+    Same coordinate encoding as the rest of this file: value(x,y,z,c,t) = 1 + ((((t*C+c)*Z+z)*Y+y)*X+x).
+    """
+    path = os.path.join(HERE, name)
+    shutil.rmtree(path, ignore_errors=True)
+
+    C, T, Z, Y, X = 2, 1, 8, 24, 32
+    t, c, z, y, x = np.meshgrid(
+        np.arange(T), np.arange(C), np.arange(Z), np.arange(Y), np.arange(X), indexing="ij")
+    data = (1 + ((((t * C + c) * Z + z) * Y + y) * X + x)).astype("uint16")   # [t,c,z,y,x]
+
+    inner = (1, 1, 1, 6, 8)
+    shards = (1, 1, 8, 12, 16)
+
+    g = zarr.open_group(path, mode="w", zarr_format=3)
+    a = g.create_array("0", shape=data.shape, dtype=data.dtype,
+                       chunks=inner, shards=shards, compressors=None)
+    a[:] = data
+    g.attrs["ome"] = {"version": "0.5",
+                      "multiscales": [{"axes": [_AX[ax] for ax in "tczyx"],
+                                       "datasets": [{"path": "0",
+                                                     "coordinateTransformations": [{"type": "scale", "scale": [1.0] * 5}]}]}]}
+    print("wrote %-24s (Zarr v3 MULTI-SHARD: C=%d T=%d Z=%d Y=%d X=%d, inner=%s shard=%s, %dx%d shard grid per c,t)"
+          % (name, C, T, Z, Y, X, inner, shards, -(-Y // shards[3]), -(-X // shards[4])))
+
+
 def write_label_mask(name):
     """P4/N3: a single-channel ZYX label mask (mostly background, a few small ROIs), the
     OME-Zarr twin of dim3_mask.ome.tif. Pairs with a T>1 Zarr intensity to exercise the
@@ -247,6 +292,9 @@ def main():
     # bytes+blosc v3 pipeline when built WITH_BLOSC (already required for OME-Zarr).
     write_v3("dim5_v3_blosc.ome.zarr", "tczyx",
              compressors=[BloscCodec(cname="lz4", clevel=5, shuffle="shuffle")])
+    # Larger multi-shard store: a 2x2 grid of SHARD FILES per (c,t), not just multiple inner
+    # chunks within one shard -- exercises crossing shard-file boundaries mid-plane.
+    write_v3_multishard("dim5_v3_multishard.ome.zarr")
     # plane split across a 2x2 chunk grid (3x4 chunks over the 6x8 plane) -> multi-tile assembly
     write_multichunk("dim5_multichunk.ome.zarr", "tczyx", 3, 4)
     # PARTIAL edge chunks: chunk (4,5) does NOT divide the 6x8 plane, so the last row-chunk is
