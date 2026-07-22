@@ -15,7 +15,7 @@ Nyxus is a feature-rich, optimized, Python/C++ application capable of analyzing 
 
 Nyxus can be used via Python or command line and is available in containerized form for reproducible execution. Nyxus computes over 450 combined intensity, texture, and morphological features at the ROI or whole image level with more in development. Key features that make Nyxus unique among other image feature extraction applications is its ability to operate at any scale, its highly validated algorithms, and its modular nature that makes the addition of new features straightforward.
 
-Currently, Nyxus can read 2D image data from OME-TIFF, OME-Zarr, and DICOM 2D Grayscale images. Nyxus also reads compressed and uncompressed NIFTI 3D files. Nyxus Python API supports featurizing in-memory 2D image data represented by NumPy arrays. 
+Currently, Nyxus can read 2D image data from OME-TIFF, OME-Zarr, and DICOM 2D Grayscale images. Nyxus reads 3D volumes from compressed and uncompressed NIFTI files, and natively from OME-TIFF and OME-Zarr (NGFF 0.4 and 0.5), including 5-dimensional (X, Y, Z, C, T) datasets whose axis order is taken from the file's own metadata rather than assumed. Nyxus Python API supports featurizing in-memory 2D image data represented by NumPy arrays. 
 
 The docs can be found at [Read the Docs](https://nyxus.readthedocs.io/en/latest/).
 
@@ -34,7 +34,7 @@ conda install nyxus -c conda-forge
 
 ## Usage
 
-The library provides class `Nyxus` for 2-dimensional TIFF, OME.TIFF, OME.ZARR, and DICOM slides and intensity-mask slide pairs, and class `Nyxus3D` for NIFTI volumes and intensity-volume volume pairs. Additionally to a single-file representation, a volume can be represented by its z-slices residing in separate 2-dimensional TIFF or ONE.TIFF slides (so called "layout A"). Slides and volumes can be featurized as all the files in a  directory filtered with a file pattern passed specified. Alternatively, explicit file name pairs and pair lists can be featurized. Alternatively, 2D and 3D NumPy arrays can be featurized. 
+The library provides class `Nyxus` for 2-dimensional TIFF, OME.TIFF, OME.ZARR, and DICOM slides and intensity-mask slide pairs, and class `Nyxus3D` for NIFTI, OME-TIFF, and OME-Zarr volumes and intensity-volume volume pairs. Additionally to a single-file representation, a volume can be represented by its z-slices residing in separate 2-dimensional TIFF or ONE.TIFF slides (so called "layout A"). Slides and volumes can be featurized as all the files in a  directory filtered with a file pattern passed specified. Alternatively, explicit file name pairs and pair lists can be featurized. Alternatively, 2D and 3D NumPy arrays can be featurized. 
 
 ### 2D usage
 
@@ -189,6 +189,25 @@ features1 = nyx.featurize_directory (idir, mdir, file_pattern=".*\.nii")
 features2 = nyx.featurize_directory (idir, mdir, file_pattern=".*\.nii\.gz")
 ```
 <u>Note on CT datasets:</u> voxel intensities recorded in the Hounsfield units are automatically read by Nyxus as 0-based values by adding the minimum value of an original file (typically -1024).
+
+Volumes are also read natively from OME-TIFF and OME-Zarr, including 5-dimensional (X, Y, Z, C, T) datasets. The axis order comes from the file's own metadata, so non-canonical layouts are addressed correctly rather than assumed to be `TCZYX`:
+
+```python
+import nyxus
+nyx = nyxus.Nyxus3D (["*3D_ALL*"])
+
+features = nyx.featurize_directory (idir, mdir, file_pattern=".*\.ome\.zarr")
+```
+
+Each channel and timeframe of a multi-channel or time-series volume is featurized as a volume of its own, and the resulting rows carry `c_index` and `t_index` columns identifying which one they came from. A single-channel mask is reused across all intensity channels.
+
+<u>Note on physical voxel spacing:</u> OME-TIFF and OME-Zarr files may declare a physical size per axis. Passing `use_physical_spacing=True` makes Nyxus use each volume's declared spacing as its voxel anisotropy, ratio-normalized so that the smallest axis is 1:
+
+```python
+nyx = nyxus.Nyxus3D (["*3D_ALL*"], use_physical_spacing=True)
+```
+
+It is off by default, so the default cubic-voxel behavior is unchanged, and explicitly specified `anisotropy_x/y/z` values take precedence over the declared spacing. The spacing actually applied is reported in the `phys_x`, `phys_y`, `phys_z`, and `phys_unit` output columns, canonicalized to micrometers so that files declaring their sizes in different units stay numerically comparable.
 
 Featurizing explicitly specified volume files is straightforward, too:
 
@@ -815,6 +834,12 @@ Applying a 1.5 x 2.0 x 2.5 anisotropy correction to all the volumes in a compres
 
 ```
 --anisox=1.5  --anisoy=2 --filePattern="*\.ome\.tiff" --features=*ALL*  --resultFname=features1 --outputType=singlecsv --intDir=/data/plate123/int --segDir=/data/plate123/seg --outDir=/output/plate123
+```
+
+Instead of stating the anisotropy explicitly, it can be derived from the physical voxel spacing that OME-TIFF and OME-Zarr volumes declare in their own metadata:
+
+```
+--use-physical-spacing=true --dim=3 --filePattern=".*\.ome\.zarr" --features=*3D_ALL* --resultFname=3d-features --outputType=singlecsv --intDir=/data/patient123/intensity --segDir=/data/patient123/masks --outDir=/output/patient123
 ```
 
 ## Nested ROIs 

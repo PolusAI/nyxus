@@ -6,7 +6,7 @@
 #include <vector>
 #include <stdexcept>
 #include "nlohmann/json.hpp"
-#include "ome/ome_zarr_meta.h"   // parse_ome_zarr -> OmeAxes (axis-role resolution)
+#include "ome/ome_zarr_layout.h"   // resolve_zarr_layout() -- shared with omezarr.h
 
 // factory functions to create files, groups and datasets
 #include "z5/factory.hxx"
@@ -24,29 +24,6 @@
 
 #include "raw_format.h"
 
-// FIX (IO): z5 Datatype -> the "<u2"-style dtype string this loader's dispatch expects
-// (see omezarr.h). Guarded so a TU including both loaders doesn't redefine it.
-#ifndef NYXUS_ZARR_DTYPE_STRING_OF
-#define NYXUS_ZARR_DTYPE_STRING_OF
-inline std::string zarr_dtype_string_of (z5::types::Datatype dt)
-{
-    switch (dt)
-    {
-        case z5::types::uint8:   return "<u1";
-        case z5::types::uint16:  return "<u2";
-        case z5::types::uint32:  return "<u4";
-        case z5::types::uint64:  return "<u8";
-        case z5::types::int8:    return "<i1";
-        case z5::types::int16:   return "<i2";
-        case z5::types::int32:   return "<i4";
-        case z5::types::int64:   return "<i8";
-        case z5::types::float32: return "<f4";
-        case z5::types::float64: return "<f8";
-        default:                 return "<u2";
-    }
-}
-#endif // NYXUS_ZARR_DTYPE_STRING_OF
-
 class RawOmezarrLoader: public RawFormatLoader
 {
 public:
@@ -58,11 +35,8 @@ public:
         nlohmann::json file_attributes;
         z5::readAttributes(*zarr_ptr_, file_attributes);
 
-        // Resolve the level-0 dataset path (NGFF 0.5 nests 'multiscales' under "ome"; 0.4 has
-        // it at the attributes root).
-        const nlohmann::json& ms_root = (file_attributes.contains("ome") && file_attributes["ome"].contains("multiscales"))
-            ? file_attributes["ome"] : file_attributes;
-        ds_name_ = ms_root["multiscales"][0]["datasets"][0]["path"].get<std::string>();
+        // Resolve the level-0 dataset path
+        ds_name_ = Nyxus::zarr_multiscales_root(file_attributes)["multiscales"][0]["datasets"][0]["path"].get<std::string>();
 
         // FIX (IO): open via z5 (auto-detects Zarr v2 .zarray vs v3 zarr.json, handles v3
         // chunk-key encoding, codecs and sharding) and query shape/chunking/dtype from the
@@ -70,72 +44,19 @@ public:
         ds_ = z5::openDataset(*zarr_ptr_, ds_name_);
         std::vector<size_t> level0Shape(ds_->shape().begin(), ds_->shape().end());
         std::vector<size_t> chunkShape(ds_->defaultChunkShape().begin(), ds_->defaultChunkShape().end());
-        std::string dtype_str = zarr_dtype_string_of(ds_->getDtype());
 
-        // Resolve axis roles from the NGFF 'axes' metadata instead of assuming a
-        // fixed [T,C,Z,Y,X] order. Falls back to legacy 5D TCZYX if 'axes' is absent.
-        Nyxus::OmeAxes axes = Nyxus::parse_ome_zarr(file_attributes, level0Shape, dtype_str);
-        if (axes.valid)
-        {
-            // Reject self-inconsistent metadata rather than guess: if the 'axes'
-            // count disagrees with the array rank, indexing the shape by axis role
-            // would read out of bounds.
-            if (axes.storageAxes.size() != level0Shape.size())
-                throw std::runtime_error("OME-Zarr: 'axes' count " + std::to_string(axes.storageAxes.size())
-                    + " does not match array rank " + std::to_string(level0Shape.size()));
-            ndim_ = axes.storageAxes.size();
-            ix_ = axes.storageIndexOf('X'); iy_ = axes.storageIndexOf('Y');
-            iz_ = axes.storageIndexOf('Z'); ic_ = axes.storageIndexOf('C');
-            it_ = axes.storageIndexOf('T');
-            n_levels_ = axes.numberPyramidLevels();
-            // FIX: advertise the real C/T extents so the pipeline iterates channels and
-            // timeframes; without this the base class default of 1 kept it on plane (c=0,t=0).
-            n_channels_ = axes.sizeC;
-            n_timeframes_ = axes.sizeT;
-            // FIX (IO): keep the parsed physical voxel spacing for opt-in calibration.
-            phys_x_ = axes.physX; phys_y_ = axes.physY; phys_z_ = axes.physZ;
-            phys_unit_ = axes.unitXY;
-        }
-        else
-        {
-            // No usable 'axes': map by position (X,Y last; Z,C,T before) — rank-safe.
-            ndim_ = level0Shape.size();
-            int n = (int)ndim_;
-            ix_ = n - 1; iy_ = n - 2;
-            iz_ = (n >= 3) ? n - 3 : -1;
-            ic_ = (n >= 4) ? n - 4 : -1;
-            it_ = (n >= 5) ? n - 5 : -1;
-            n_levels_ = 1;
-            // FIX: derive C/T extents from the positional axes so the fallback path also
-            // reports multi-channel / time-series counts (1 when the axis is absent).
-            n_channels_ = (ic_ >= 0) ? level0Shape[ic_] : 1;
-            n_timeframes_ = (it_ >= 0) ? level0Shape[it_] : 1;
-        }
-        // X and Y must resolve to real dimensions, else the read would index OOB.
-        if (ix_ < 0 || iy_ < 0 || (size_t)ix_ >= level0Shape.size() || (size_t)iy_ >= level0Shape.size())
-            throw std::runtime_error("OME-Zarr: cannot resolve X/Y axes from metadata");
-
-        full_width_  = level0Shape[ix_];
-        full_height_ = level0Shape[iy_];
-        full_depth_  = (iz_ >= 0) ? level0Shape[iz_] : 1;
-        tile_width_  = chunkShape[ix_];
-        tile_height_ = chunkShape[iy_];
-        tile_depth_  = (iz_ >= 0) ? chunkShape[iz_] : 1;
-        bits_per_sample_ = Nyxus::bits_of(Nyxus::pixel_type_from_zarr_dtype(dtype_str));
-
-        // dtype -> internal format code for the read-template dispatch
-        if (dtype_str == "<u1") { data_format_ = 1; } //uint8_t
-        else if (dtype_str == "<u2") { data_format_ = 2; } //uint16_t
-        else if (dtype_str == "<u4") { data_format_ = 3; } //uint32_t
-        else if (dtype_str == "<u8") { data_format_ = 4; } //uint16_t
-        else if (dtype_str == "<i1") { data_format_ = 5; } //int8_t
-        else if (dtype_str == "<i2") { data_format_ = 6; } //int16_t
-        else if (dtype_str == "<i4") { data_format_ = 7; } //int32_t
-        else if (dtype_str == "<i8") { data_format_ = 8; } //int64_t
-        else if (dtype_str == "<f2") { data_format_ = 9; fp_pixels_ = true; } //float
-        else if (dtype_str == "<f4") { data_format_ = 9; fp_pixels_ = true; } //float
-        else if (dtype_str == "<f8") { data_format_ = 10; fp_pixels_ = true; } //double
-        else { data_format_ = 2; } //uint16_t
+        // Axis roles, extents, chunking, calibration and pixel type, resolved from the NGFF
+        // 'axes' metadata (shared with NyxusOmeZarrLoader -- see ome/ome_zarr_layout.h)
+        Nyxus::ZarrLayout L = Nyxus::resolve_zarr_layout (file_attributes, level0Shape, chunkShape, ds_->getDtype());
+        ndim_ = L.ndim;
+        ix_ = L.ix; iy_ = L.iy; iz_ = L.iz; ic_ = L.ic; it_ = L.it;
+        full_width_ = L.full_width; full_height_ = L.full_height; full_depth_ = L.full_depth;
+        tile_width_ = L.tile_width; tile_height_ = L.tile_height; tile_depth_ = L.tile_depth;
+        n_levels_ = L.n_levels; n_channels_ = L.n_channels; n_timeframes_ = L.n_timeframes;
+        phys_x_ = L.phys_x; phys_y_ = L.phys_y; phys_z_ = L.phys_z; phys_unit_ = L.phys_unit;
+        bits_per_sample_ = L.bits_per_sample;
+        data_format_ = L.data_format;
+        fp_pixels_ = L.fp_pixels;
 
         // The buffer holds the full chunk depth (tile_depth_ planes), so callers iterating
         // pz in [0, tileDepth()) index valid data.

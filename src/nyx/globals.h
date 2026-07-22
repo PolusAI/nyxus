@@ -117,6 +117,7 @@ namespace Nyxus
 	bool scan_trivial_wholevolume_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y, double aniso_z, size_t channel, size_t timeframe);
 
 	bool scanTrivialRois_3D (Environment& env, const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, size_t t_index, size_t channel);
+	bool scanTrivialRois_3D_anisotropic (Environment& env, const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, size_t t_index, size_t channel, double aniso_x, double aniso_y, double aniso_z);
 	void dump_roi_metrics (const int dim, const std::string& output_dir, const size_t ram_limit, const std::string& seg_fpath, const Uniqueids& uniqueLabels, const Roidata& roiData);
 	void dump_roi_pixels (const int dim, const std::string& output_dir, const std::vector<int>& batch_labels, const std::string& seg_fpath, const Uniqueids& uniqueLabels, const Roidata& roiData);
 	void dump_2d_image_with_halfcontour(

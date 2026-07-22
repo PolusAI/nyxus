@@ -440,7 +440,7 @@ void test_omezarr_ct_counts(const char* store, int T, int C, int Z)
     ASSERT_EQ(raw.fullDepth(0), (size_t)Z) << store;
 }
 
-// Phase 5 negative: the whole-volume facade read must propagate an out-of-range channel
+// Negative: the whole-volume facade read must propagate an out-of-range channel
 // or timeframe as a throw (not silently read plane 0 or OOB memory). dim5 has C=3, T=2.
 void test_omezarr_load_volume_out_of_range()
 {
@@ -487,6 +487,28 @@ void test_omezarr_physical_calibration()
     auto ldr2 = NyxusOmeZarrLoader<uint32_t>(1, plain.string());
     ASSERT_DOUBLE_EQ(ldr2.physicalSizeX(), 1.0);
     ASSERT_DOUBLE_EQ(ldr2.physicalSizeZ(), 1.0);
+}
+
+// Unit canonicalization: dim5_calibrated_nm declares the SAME physical spacing as
+// dim5_calibrated above, but in nanometer (2000/500/500 nm == 2.0/0.5/0.5 um). The loader
+// must report the SAME canonicalized values and unit as the micrometer fixture -- proving
+// actual conversion happens, not just passthrough of whatever unit string the file declares.
+void test_omezarr_unit_canonicalization()
+{
+    fs::path cal_nm = omezarr_data_path("dim5_calibrated_nm.ome.zarr");
+    ASSERT_TRUE(fs::exists(cal_nm)) << cal_nm.string();
+
+    auto ldr = NyxusOmeZarrLoader<uint32_t>(1, cal_nm.string());
+    ASSERT_DOUBLE_EQ(ldr.physicalSizeX(), 0.5);
+    ASSERT_DOUBLE_EQ(ldr.physicalSizeY(), 0.5);
+    ASSERT_DOUBLE_EQ(ldr.physicalSizeZ(), 2.0);
+    ASSERT_EQ(ldr.physicalSizeUnit(), "micrometer");
+
+    auto raw = RawOmezarrLoader(cal_nm.string());
+    ASSERT_DOUBLE_EQ(raw.physicalSizeX(), 0.5);
+    ASSERT_DOUBLE_EQ(raw.physicalSizeY(), 0.5);
+    ASSERT_DOUBLE_EQ(raw.physicalSizeZ(), 2.0);
+    ASSERT_EQ(raw.physicalSizeUnit(), "micrometer");
 }
 
 // Illegal / adversarial: self-inconsistent metadata must be rejected cleanly

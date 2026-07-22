@@ -16,8 +16,8 @@ Stores (same encoding throughout; absent axes pinned to index 0):
 tifffile writes OME-TIFF as multi-page (strip) with one IFD per (z,c,t) plane in
 DimensionOrder raster order, so the loader's ifdForPlane() must reproduce that.
 
-Run with the nyxus_build env python (tifffile):
-    C:\\Users\\dvladi\\miniforge3\\envs\\nyxus_build\\python.exe gen_ome_tiff.py
+Run with a python that has tifffile (e.g. the conda build env):
+    $CONDA_PREFIX/python.exe gen_ome_tiff.py
 """
 import os
 import numpy as np
@@ -186,6 +186,21 @@ def write_calibrated_tiff(name):
         "PhysicalSizeXUnit": "micrometer", "PhysicalSizeYUnit": "micrometer",
         "PhysicalSizeZUnit": "micrometer"})
     print("wrote %-24s (calibrated: physX/Y=0.5 physZ=2.0 micrometer)" % name)
+
+
+def write_calibrated_tiff_nm(name):
+    """Same physical spacing as write_calibrated_tiff, but X/Y declared in NANOMETER and Z in
+    a THIRD unit (millimeter) -- 500 nm == 0.5 um, 0.002 mm == 2.0 um. The loader must
+    canonicalize each axis using ITS OWN declared unit and report the SAME physX/Y/Z and a
+    single "micrometer" unit as write_calibrated_tiff, proving conversion (not passthrough)
+    and that X/Y's unit isn't silently applied to Z or vice versa."""
+    data = _data_for("TCZYX")
+    path = os.path.join(HERE, name)
+    tifffile.imwrite(path, data, photometric="minisblack", ome=True, metadata={
+        "axes": "TCZYX", "PhysicalSizeX": 500.0, "PhysicalSizeY": 500.0, "PhysicalSizeZ": 0.002,
+        "PhysicalSizeXUnit": "nanometer", "PhysicalSizeYUnit": "nanometer",
+        "PhysicalSizeZUnit": "millimeter"})
+    print("wrote %-24s (calibrated: physX/Y=500nm physZ=0.002mm -> both canonicalize to 0.5/2.0 um)" % name)
 
 
 def write_bad_ifd(name):

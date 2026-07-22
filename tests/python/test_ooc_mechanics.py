@@ -23,6 +23,14 @@ tifffile = pytest.importorskip("tifffile")
 
 DATA_NIFTI = pathlib.Path(__file__).resolve().parent.parent / "data" / "nifti"
 
+# The "large" ram_limit for the in-RAM side of these comparisons. It has to clear the biggest
+# fixture footprint here (a few MB) while staying under the RAM the host actually has free:
+# Nyxus rejects a limit above available RAM and keeps the previous value, and since ram_limit is
+# a process-global, a rejected setting silently leaves an earlier test's 0/1 MB limit in place
+# and the in-RAM side then comes back oversized. A limit near a machine's total RAM therefore
+# passes on a workstation and fails on a CI runner.
+RAM_LIMIT_LARGE_MB = 1000
+
 
 def _make_pair(tmp_path):
     # Deterministic, non-degenerate: per-row offset + per-column gradient. 500x500 gives an
@@ -55,7 +63,7 @@ def test_ooc_2d_matches_in_ram(tmp_path):
     feats = ["*ALL_INTENSITY*"]
 
     n_ram = nyxus.Nyxus(feats)
-    n_ram.set_params(ram_limit=8000)  # large -> in-RAM (trivial); explicit so test is order-independent
+    n_ram.set_params(ram_limit=RAM_LIMIT_LARGE_MB)  # large -> in-RAM (trivial); explicit so test is order-independent
     df_ram = n_ram.featurize_directory(intdir, segdir)
 
     n_ooc = nyxus.Nyxus(feats)
@@ -100,7 +108,7 @@ def test_ooc_3d_matches_in_ram(tmp_path):
     feats = ["*3D_ALL_INTENSITY*", "*3D_ALL_MORPHOLOGY*"]
 
     # Nyxus3D takes ram_limit in the constructor (its set_params does not expose it)
-    n_ram = nyxus.Nyxus3D(feats, ram_limit=8000)  # large -> in-RAM (trivial)
+    n_ram = nyxus.Nyxus3D(feats, ram_limit=RAM_LIMIT_LARGE_MB)  # large -> in-RAM (trivial)
     df_ram = n_ram.featurize_files([intp], [segp], False)
 
     n_ooc = nyxus.Nyxus3D(feats, ram_limit=1)  # 1 MB -> forces the oversized / out-of-core volumetric path
@@ -144,7 +152,7 @@ def _make_volume_pair_partial(tmp_path):
 
 def _ooc_vs_ram_3d(tmp_path, feats, pair_fn=_make_volume_pair):
     intp, segp = pair_fn(tmp_path)
-    n_ram = nyxus.Nyxus3D(feats, ram_limit=8000)
+    n_ram = nyxus.Nyxus3D(feats, ram_limit=RAM_LIMIT_LARGE_MB)
     df_ram = n_ram.featurize_files([intp], [segp], False)
     n_ooc = nyxus.Nyxus3D(feats, ram_limit=1)
     df_ooc = n_ooc.featurize_files([intp], [segp], False)
@@ -219,7 +227,7 @@ def test_ooc_3d_wholevolume_streams_oob(tmp_path):
 
     feats = ["*3D_ALL_INTENSITY*", "*3D_ALL_MORPHOLOGY*", "*3D_GLCM*"]
 
-    n_ram = nyxus.Nyxus3D(feats, ram_limit=8000)
+    n_ram = nyxus.Nyxus3D(feats, ram_limit=RAM_LIMIT_LARGE_MB)
     df_ram = n_ram.featurize_directory(str(voldir), str(voldir), ".*")
 
     n_ooc = nyxus.Nyxus3D(feats, ram_limit=0)  # every footprint >= 0 -> always oversized
@@ -305,7 +313,7 @@ def test_ooc_montage_oversized_fails_loudly():
     # sanity: with a large ram_limit the montage path succeeds and is non-zero. Set it
     # explicitly (nyxus ram_limit is process-global) so this does not depend on test order.
     ok = nyxus.Nyxus(["*ALL_INTENSITY*"])
-    ok.set_params(ram_limit=8000)
+    ok.set_params(ram_limit=RAM_LIMIT_LARGE_MB)
     df_ok = ok.featurize(inten, mask, intensity_names=["I"], label_names=["M"])
     assert df_ok["MEAN"].iloc[0] > 0
 

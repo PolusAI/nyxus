@@ -335,6 +335,13 @@ void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	P.assign (Ng, 0.0);
 	Nvp = 0;
 
+	// O(1) grey-level -> matrix row, replacing the per-voxel binary search in the scan below.
+	// rowLUT[v] == lower_bound(I, v) - I.begin() for every possible (shifted) binned level (the
+	// max is I's last, sorted, entry), so the row is identical to the search it replaces.
+	std::vector<int> rowLUT ((size_t) I.back() + 1, 0);
+	for (PixIntens v = 0; v <= I.back(); v++)
+		rowLUT[v] = (int) (std::lower_bound (I.begin(), I.end(), v) - I.begin());
+
 	// --- (2*rad+1)-plane sliding window of dense grey-binned planes (shift baked in)
 	const int ringN = 2 * rad + 1;
 	std::vector<std::vector<PixIntens>> ring (ringN);
@@ -388,7 +395,7 @@ void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 				if (nd > 0)
 				{
 					double aveNeigI = neigsI / nd;
-					int row = (int)(std::lower_bound (I.begin(), I.end(), pi) - I.begin());
+					int row = rowLUT[pi];
 					N[row]++;
 					S[row] += std::abs ((double) I[row] - aveNeigI);
 					if (aveNeigI > 0.0)

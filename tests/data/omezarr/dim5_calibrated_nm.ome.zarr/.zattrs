@@ -1,0 +1,49 @@
+{
+  "multiscales": [
+    {
+      "version": "0.4",
+      "axes": [
+        {
+          "name": "t",
+          "type": "time"
+        },
+        {
+          "name": "c",
+          "type": "channel"
+        },
+        {
+          "name": "z",
+          "type": "space",
+          "unit": "nanometer"
+        },
+        {
+          "name": "y",
+          "type": "space",
+          "unit": "nanometer"
+        },
+        {
+          "name": "x",
+          "type": "space",
+          "unit": "nanometer"
+        }
+      ],
+      "datasets": [
+        {
+          "path": "0",
+          "coordinateTransformations": [
+            {
+              "type": "scale",
+              "scale": [
+                1.0,
+                1.0,
+                2000.0,
+                500.0,
+                500.0
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

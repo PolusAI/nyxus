@@ -7,6 +7,12 @@
 #include "../src/nyx/feature_method.h"		// TEST_3D_OOC_GUARD_REJECTS_UNSUPPORTED_FEATURE
 #include "../src/nyx/features/3d_intensity.h"
 #include "../src/nyx/features/3d_glcm.h"
+#include "../src/nyx/features/3d_gldm.h"		// OOC-vs-RAM equality coverage (all texture families)
+#include "../src/nyx/features/3d_glrlm.h"
+#include "../src/nyx/features/3d_glszm.h"
+#include "../src/nyx/features/3d_gldzm.h"
+#include "../src/nyx/features/3d_ngldm.h"
+#include "../src/nyx/features/3d_ngtdm.h"
 #include "../src/nyx/ome/format_detect.h"		// detect_input_format (P1)
 #include "test_contour.h"
 #include "test_ome_meta.h"		// native-OME metadata parsers / OmeAxes descriptor
@@ -2618,12 +2624,16 @@ TEST(TEST_NYXUS, TEST_OMEZARR_V3_FACADE_VOLUME) {
 TEST(TEST_NYXUS, TEST_OMEZARR_V3_CT_COUNTS) {
 	ASSERT_NO_THROW (test_omezarr_ct_counts("dim5_v3.ome.zarr", 2, 3, 4));
 }
-// Zstd-compressed Zarr v3 (the zarr 3.x / real-world default codec). Requires the build
-// to link libzstd (-DWITH_ZSTD); z5 decodes the bytes+zstd v3 codec pipeline.
+// Zstd-compressed Zarr v3 (the zarr 3.x / real-world default codec). z5 decodes the
+// bytes+zstd v3 codec pipeline only when the build found libzstd and its header, so this
+// case is compiled in on the same condition CMake uses to enable the codec; a build
+// without zstd cannot read the fixture and must not be failed for it.
+#ifdef WITH_ZSTD
 TEST(TEST_NYXUS, TEST_OMEZARR_V3_ZSTD) {
 	ASSERT_NO_THROW (test_omezarr_addressing("dim5_v3_zstd.ome.zarr", 2, 3, 4));
 	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim5_v3_zstd.ome.zarr", 2, 3, 4));
 }
+#endif
 
 // Sharded Zarr v3 (the ``sharding_indexed`` codec) -- how large v3 stores, including Axle's,
 // actually lay out data: many inner chunks packed into one shard object per (t,c). z5 3.x
@@ -2827,6 +2837,13 @@ TEST(TEST_NYXUS, TEST_OMEZARR_PHYSICAL_CALIBRATION) {
 	ASSERT_NO_THROW (test_omezarr_physical_calibration());
 }
 
+// Unit canonicalization: a nanometer-declared store must report the same physX/Y/Z and
+// "micrometer" as the equivalent micrometer-declared store above -- proves conversion, not
+// just passthrough of the raw unit string.
+TEST(TEST_NYXUS, TEST_OMEZARR_UNIT_CANONICALIZATION) {
+	ASSERT_NO_THROW (test_omezarr_unit_canonicalization());
+}
+
 // Multi-CHUNK plane: real OME-Zarr splits each Y/X plane across a chunk grid (typically
 // 512x512), and dim5_multichunk uses 3x4 chunks over the 6x8 plane. The volumetric read
 // must walk the whole tile grid: fetching only chunk (0,0) returns wrong data past the
@@ -2993,6 +3010,24 @@ TEST(TEST_NYXUS, TEST_OMETIFF_PHYSICAL_CALIBRATION) {
 	EXPECT_DOUBLE_EQ(p2.phys_x, 1.0);
 	EXPECT_DOUBLE_EQ(p2.phys_z, 1.0);
 	EXPECT_TRUE(p2.phys_unit.empty());
+}
+
+// Unit canonicalization (OME-TIFF, end-to-end through scan_slide_props): dim5_calibrated_nm
+// declares X/Y in nanometer and Z in a THIRD unit (millimeter) -- 500nm==0.5um,
+// 0.002mm==2.0um. Must report the SAME physX/Y/Z and a single "micrometer" unit as
+// dim5_calibrated above, proving each axis converts using its OWN declared unit rather than
+// X/Y's unit leaking onto Z (or vice versa).
+TEST(TEST_NYXUS, TEST_OMETIFF_UNIT_CANONICALIZATION) {
+	fs::path cal_nm = ometiff_data_path("dim5_calibrated_nm.ome.tif");
+	ASSERT_TRUE(fs::exists(cal_nm)) << cal_nm.string();
+
+	Environment e;
+	SlideProps p (cal_nm.string(), "");
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	EXPECT_DOUBLE_EQ(p.phys_x, 0.5);
+	EXPECT_DOUBLE_EQ(p.phys_y, 0.5);
+	EXPECT_DOUBLE_EQ(p.phys_z, 2.0);
+	EXPECT_EQ(p.phys_unit, "micrometer");
 }
 
 // N2 (negative): a <TiffData> block maps a plane to an IFD PAST the end of the file (an
@@ -3305,6 +3340,14 @@ TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_OVERSIZED_STREAMS_OOC) {
 		e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
 		e.theFeatureSet.enableFeatures(D3_SurfaceFeature::featureset);
 		e.theFeatureSet.enableFeatures(D3_GLCM_feature::featureset);
+		// Cover every streaming 3D texture family so the out-of-core paths are held byte-exact
+		// against the in-RAM path (not just intensity/surface/GLCM)
+		e.theFeatureSet.enableFeatures(D3_GLDM_feature::featureset);
+		e.theFeatureSet.enableFeatures(D3_GLRLM_feature::featureset);
+		e.theFeatureSet.enableFeatures(D3_GLSZM_feature::featureset);
+		e.theFeatureSet.enableFeatures(D3_GLDZM_feature::featureset);
+		e.theFeatureSet.enableFeatures(D3_NGLDM_feature::featureset);
+		e.theFeatureSet.enableFeatures(D3_NGTDM_feature::featureset);
 		// The full sequence main_nyxus.cpp runs before any workflow (theFeatureMgr.compile() ->
 		// apply_user_selection() -> init_feature_classes() -> compile_feature_settings()). Skipping
 		// theFeatureMgr setup leaves get_num_requested_features()==0, so run_3d_ooc_features's loop
@@ -3408,6 +3451,31 @@ TEST(TEST_NYXUS, TEST_3D_RAM_FOOTPRINT_COUNTS_DEPTH) {
 		<< "3D footprint estimator is not counting depth";
 }
 
+// Regression (found while chasing the anisotropic-resampling hang, TEST_3D_SEGMENTED_ANISOTROPIC_*
+// above): both footprint estimators computed (n_rois - 1) * sizeof(int) for the "neighbors" term.
+// processTrivialRois_3D (and the 2D/2.5D siblings) call this with an in-progress BATCH count
+// (Pending.size()), which is 0 on every batch's first item -- size_t(0-1) underflows to SIZE_MAX,
+// and the subsequent multiply overflows to another huge wrapped value, silently misrouting even a
+// tiny single-ROI batch through the "oversized, scan immediately" path instead of genuinely
+// batching. n_rois==0 must mean "zero other ROIs, so 0 bytes for the neighbors term", not garbage.
+TEST(TEST_NYXUS, TEST_RAM_FOOTPRINT_ESTIMATE_ZERO_ROIS_DOES_NOT_UNDERFLOW) {
+	LR r(1);
+	r.aabb.init_from_whd(8, 8, 4);
+	r.aux_area = 64;
+
+	size_t with_zero = r.get_ram_footprint_estimate(0);
+	size_t with_one = r.get_ram_footprint_estimate(1);   // (1-1)=0 neighbors bytes too -- same base cost
+	EXPECT_EQ(with_zero, with_one) << "n_rois=0 and n_rois=1 both contribute 0 neighbor bytes";
+	// sanity ceiling: a real (non-underflowed) footprint for an 8x8x4 ROI is a few KB, not
+	// anywhere near what (size_t)(0-1)*sizeof(int) would produce (~16 exabytes)
+	EXPECT_LT(with_zero, (size_t)1'000'000) << "n_rois=0 must not underflow into an astronomical value";
+
+	size_t with_zero_3d = r.get_ram_footprint_estimate_3D(0);
+	size_t with_one_3d = r.get_ram_footprint_estimate_3D(1);
+	EXPECT_EQ(with_zero_3d, with_one_3d);
+	EXPECT_LT(with_zero_3d, (size_t)1'000'000);
+}
+
 // Regression-guard: processNontrivialRois_3D's per-feature out-of-core dispatch
 // (phase3_3d.cpp) must throw for any 3D FeatureMethod NOT covered by is_3d_ooc_supported() --
 // otherwise a future feature added without a streaming osized_calculate would silently read
@@ -3494,7 +3562,7 @@ TEST(TEST_NYXUS, TEST_CSV_MULTICHANNEL_NO_OVERWRITE) {
 	fs::remove_all(outdir);
 }
 
-// Phase 6 physical-calibration logic (negative + positive). resolve_slide_anisotropy
+// Physical-calibration logic (negative + positive). resolve_slide_anisotropy
 // must NOT engage the anisotropic (resampling) path unless it's genuinely warranted:
 //   - flag off                      -> false, (1,1,1)   even with anisotropic spacing
 //   - degenerate spacing (a 0 axis) -> false, (1,1,1)   (guarded, no div-by-zero)
@@ -3562,6 +3630,152 @@ TEST(TEST_NYXUS, TEST_3D_ANISOTROPY_RESCALES_ROI_DEPTH) {
 	EXPECT_GE(ani.max_roi_d, iso.max_roi_d * 3) << "z-depth not scaled ~4x";
 	EXPECT_EQ(ani.max_roi_w, iso.max_roi_w) << "x (ax=1) must be unchanged";
 	EXPECT_EQ(ani.max_roi_h, iso.max_roi_h) << "y (ay=1) must be unchanged";
+}
+
+// Regression: the whole-volume anisotropic scan (scan_trivial_wholevolume_anisotropic)
+// previously (a) clobbered its own for-loop counter with the physical voxel index, which
+// could run far past nVox iterations before the loop's own exit condition was ever
+// satisfied again -- a hang, not just a slowdown; (b) indexed rows by fullH (height) instead
+// of fullW (width), reading wrong voxels; (c) left vroi.aabb/aux_area at the PRE-resample
+// physical values, so aux_image_cube (sized from the stale aabb) was allocated too small for
+// the resampled cloud -- an out-of-bounds write -- and MEAN (which divides by aux_area) came
+// out exactly 4x too large. Nothing exercised this combination before (every other 3D
+// anisotropy test only covers the prescan's aabb, not the actual featurize+reduce). MIN/MAX
+// are structurally invariant to nearest-neighbor upsampling, but so is MEAN under this scan's
+// truncation-based mapping (every physical voxel is duplicated the SAME number of times) --
+// so it must match the isotropic run exactly, not just "look plausible".
+TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_ANISOTROPIC_REDUCE_MATCHES_ISOTROPIC) {
+	fs::path ds = ometiff_data_path("dim3_zyx.ome.tif");	// 3D X8 Y6 Z4
+	ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+	Environment e;
+	e.theFeatureSet.enableAll(false);
+	e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
+
+	e.dataset.dataset_props.reserve(1);
+	SlideProps& sp = e.dataset.dataset_props.emplace_back(ds.string(), "");
+	ASSERT_TRUE(Nyxus::scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	e.dataset.update_dataset_props_extrema();
+	// force anisotropic calibration (z 4x thicker than x/y) regardless of the fixture's own metadata
+	sp.phys_x = 0.5; sp.phys_y = 0.5; sp.phys_z = 2.0;
+	e.use_physical_spacing_ = true;
+
+	double ax, ay, az;
+	ASSERT_TRUE(Nyxus::resolve_slide_anisotropy(e, 0, ax, ay, az));
+	ASSERT_DOUBLE_EQ(ax, 1.0); ASSERT_DOUBLE_EQ(ay, 1.0); ASSERT_DOUBLE_EQ(az, 4.0);
+
+	FpImageOptions fp;
+
+	// anisotropic run
+	ImageLoader ilo_a;
+	ASSERT_TRUE(ilo_a.open(sp, fp)) << ds.string();
+	LR vroi_a(1);
+	vroi_a.slide_idx = 0;
+	vroi_a.aux_area = sp.max_roi_area;
+	vroi_a.aabb.init_from_whd(sp.max_roi_w, sp.max_roi_h, sp.max_roi_d);
+	vroi_a.aux_min = (PixIntens)0;
+	vroi_a.aux_max = (PixIntens)(sp.max_preroi_inten - sp.min_preroi_inten);
+	ASSERT_NO_THROW(vroi_a.initialize_fvals());
+	ASSERT_TRUE(Nyxus::scan_trivial_wholevolume_anisotropic(vroi_a, ds.string(), ilo_a, ax, ay, az, 0, 0));
+	// the fix under test (mirrors workflow_3d_whole.cpp's featurize_triv_wholevolume):
+	vroi_a.aabb.update_from_voxelcloud(vroi_a.raw_pixels_3D);
+	vroi_a.aux_area = (unsigned int) vroi_a.raw_pixels_3D.size();
+	vroi_a.aux_image_cube.allocate(vroi_a.aabb.get_width(), vroi_a.aabb.get_height(), vroi_a.aabb.get_z_depth());
+	ASSERT_NO_THROW(vroi_a.aux_image_cube.calculate_from_pixelcloud(vroi_a.raw_pixels_3D, vroi_a.aabb));
+	ASSERT_NO_THROW(Nyxus::reduce_trivial_3d_wholevolume(e, vroi_a));
+	ilo_a.close();
+
+	// isotropic baseline, same fixture
+	ImageLoader ilo_i;
+	ASSERT_TRUE(ilo_i.open(sp, fp)) << ds.string();
+	LR vroi_i(1);
+	vroi_i.slide_idx = 0;
+	vroi_i.aux_area = sp.max_roi_area;
+	vroi_i.aabb.init_from_whd(sp.max_roi_w, sp.max_roi_h, sp.max_roi_d);
+	vroi_i.aux_min = (PixIntens)0;
+	vroi_i.aux_max = (PixIntens)(sp.max_preroi_inten - sp.min_preroi_inten);
+	ASSERT_NO_THROW(vroi_i.initialize_fvals());
+	ASSERT_TRUE(Nyxus::scan_trivial_wholevolume(vroi_i, ds.string(), ilo_i, 0, 0));
+	vroi_i.aux_image_cube.allocate(vroi_i.aabb.get_width(), vroi_i.aabb.get_height(), vroi_i.aabb.get_z_depth());
+	ASSERT_NO_THROW(vroi_i.aux_image_cube.calculate_from_pixelcloud(vroi_i.raw_pixels_3D, vroi_i.aabb));
+	ASSERT_NO_THROW(Nyxus::reduce_trivial_3d_wholevolume(e, vroi_i));
+	ilo_i.close();
+
+	// the resampled cloud really is ~4x bigger (z upsampled), not stuck at the physical count
+	EXPECT_GE(vroi_a.raw_pixels_3D.size(), vroi_i.raw_pixels_3D.size() * 3);
+
+	double mean_a = vroi_a.get_fvals((int)Nyxus::Feature3D::MEAN)[0];
+	double mean_i = vroi_i.get_fvals((int)Nyxus::Feature3D::MEAN)[0];
+	EXPECT_DOUBLE_EQ(mean_a, mean_i) << "MEAN must be resampling-invariant under uniform duplication";
+	EXPECT_DOUBLE_EQ(vroi_a.get_fvals((int)Nyxus::Feature3D::MIN)[0], vroi_i.get_fvals((int)Nyxus::Feature3D::MIN)[0]);
+	EXPECT_DOUBLE_EQ(vroi_a.get_fvals((int)Nyxus::Feature3D::MAX)[0], vroi_i.get_fvals((int)Nyxus::Feature3D::MAX)[0]);
+}
+
+// Regression (segmented counterpart): processTrivialRois_3D's anisotropic branch
+// (scanTrivialRois_3D_anisotropic) populates raw_pixels_3D with the RESAMPLED voxel cloud,
+// but aux_area (set during Phase 1 from the PHYSICAL, pre-resample voxel count) was never
+// updated to match -- caught in two places (the main batch loop AND the "remaining pending"
+// cleanup block are near-identical but NOT textually identical, so fixing one via a
+// find-and-replace silently missed the other). MEAN (and anything else that divides by
+// aux_area) was off by the resampling factor. aux_area must always equal the actual cloud size.
+TEST(TEST_NYXUS, TEST_3D_SEGMENTED_ANISOTROPIC_AUX_AREA_MATCHES_VOXELCLOUD) {
+	fs::path ip = ometiff_data_path("dim5.ome.tif");
+	fs::path mp = ometiff_data_path("dim3_mask.ome.tif");
+	ASSERT_TRUE(fs::exists(ip) && fs::exists(mp));
+
+	Environment e;
+	e.theFeatureSet.enableAll(false);
+	e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
+
+	e.dataset.dataset_props.reserve(1);
+	SlideProps& sp = e.dataset.dataset_props.emplace_back(ip.string(), mp.string());
+	ASSERT_TRUE(Nyxus::scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	e.dataset.update_dataset_props_extrema();
+	sp.phys_x = 0.5; sp.phys_y = 0.5; sp.phys_z = 2.0;   // force anisotropic (z 4x)
+	e.use_physical_spacing_ = true;
+
+	clear_slide_rois (e.uniqueLabels, e.roiData);
+	ASSERT_TRUE(gatherRoisMetrics_3D(e, 0, ip.string(), mp.string(), 0, 0));
+	ASSERT_GT(e.uniqueLabels.size(), 0u);
+	std::vector<int> labels (e.uniqueLabels.begin(), e.uniqueLabels.end());
+	std::unordered_map<int, unsigned int> physical_area;   // Phase 1's PRE-resample count, per label
+	for (auto lab : labels)
+	{
+		e.roiData[lab].initialize_fvals();
+		physical_area[lab] = e.roiData[lab].aux_area;
+	}
+
+	double ax, ay, az;
+	ASSERT_TRUE(Nyxus::resolve_slide_anisotropy(e, 0, ax, ay, az));
+	ASSERT_DOUBLE_EQ(az, 4.0);
+
+	// Call the scan directly (bypassing processTrivialRois_3D's batching, which has its own
+	// unrelated, pre-existing bug: get_ram_footprint_estimate(Pending.size()) underflows when
+	// Pending.size()==0 on the very first loop iteration, size_t(0-1)*sizeof(int) wrapping to
+	// an astronomical value that can route even a tiny single-ROI batch through the "oversized"
+	// immediate-scan branch unpredictably -- a separate footprint-estimation bug, not what this
+	// test targets) -- exercises the exact fix under test (see the identical logic and its
+	// rationale at both of processTrivialRois_3D's call sites in phase2_3d.cpp).
+	ASSERT_TRUE(Nyxus::scanTrivialRois_3D_anisotropic(e, labels, ip.string(), mp.string(), 0, 0, ax, ay, az));
+	for (auto lab : labels)
+	{
+		LR& r = e.roiData[lab];
+		r.aabb.update_from_voxelcloud(r.raw_pixels_3D);
+		r.aux_area = (unsigned int) r.raw_pixels_3D.size();
+	}
+
+	for (auto lab : labels)
+	{
+		LR& r = e.roiData[lab];
+		EXPECT_GT(r.raw_pixels_3D.size(), 0u) << "label " << lab;
+		EXPECT_EQ(r.aux_area, r.raw_pixels_3D.size())
+			<< "label " << lab << ": aux_area must track the RESAMPLED cloud, not the stale physical count";
+		// resampling z 4x must have grown the cloud past the PRE-resample physical count (not
+		// an exact 4x -- the rounding-based nearest-neighbor mapping under- or over-represents
+		// the boundary slice by up to one duplication step, so the growth factor isn't clean)
+		EXPECT_GT(r.raw_pixels_3D.size(), physical_area[lab])
+			<< "label " << lab << ": resampling did not grow the cloud past its physical count of " << physical_area[lab];
+	}
 }
 
 int main(int argc, char **argv)
