@@ -72,6 +72,19 @@ namespace Nyxus
 				az,
 				channel,
 				timeframe);
+
+			// vroi.aabb and aux_area were preset from the PHYSICAL slide dimensions
+			// (init_from_whd / p.max_roi_area, above in featurize_wholevolume) before the
+			// resampled voxel cloud existed; the anisotropic scan just populated
+			// raw_pixels_3D with the VIRTUAL (resampled) cloud, which is both a different
+			// extent and a different voxel COUNT. Recompute both from the actual cloud --
+			// mirrors the segmented anisotropic path's fix (processTrivialRois_3D). Without
+			// the aabb fix, aux_image_cube below is allocated too small and
+			// calculate_from_pixelcloud writes out of bounds; without the aux_area fix,
+			// every feature that divides by voxel count (e.g. MEAN) is off by the
+			// resampling factor.
+			vroi.aabb.update_from_voxelcloud (vroi.raw_pixels_3D);
+			vroi.aux_area = (unsigned int) vroi.raw_pixels_3D.size();
 		}
 
 		// allocate memory for feature helpers (image matrix, etc)

@@ -568,7 +568,7 @@ namespace Nyxus
 		const std::vector<uint32_t>& dataI = ilo.get_int_volume_buffer();
 
 		// iterate virtual voxels
-		size_t vSliceSize = vh * vw, 
+		size_t vSliceSize = vh * vw,
 			nVox = vh * vw * vd;
 		for (size_t i = 0; i < nVox; i++)
 		{
@@ -577,14 +577,18 @@ namespace Nyxus
 				y = (i - z * vSliceSize) / vw,
 				x = (i - z * vSliceSize) % vw;
 
-			// physical voxel position
-			size_t ph_x = (size_t) (double(x) / aniso_x),
-				ph_y = (size_t) (double(y) / aniso_y),
-				ph_z = (size_t) (double(z) / aniso_z);
-				i = ph_z * sliceSize + ph_y * fullH + ph_x;
+			// physical voxel position, clamped against float-rounding at the ratio boundary
+			// (own local variable -- must NOT reuse the loop counter 'i': doing so corrupted
+			// every subsequent iteration's z/y/x derivation above, since the loop's own i++
+			// then advanced by the physical stride instead of by one virtual voxel, which
+			// could run far longer than nVox iterations before (if ever) satisfying i < nVox).
+			size_t ph_x = (std::min<size_t>) ((size_t) (double(x) / aniso_x), fullW - 1),
+				ph_y = (std::min<size_t>) ((size_t) (double(y) / aniso_y), fullH - 1),
+				ph_z = (std::min<size_t>) ((size_t) (double(z) / aniso_z), fullD - 1);
+			size_t phys_i = ph_z * sliceSize + ph_y * fullW + ph_x;
 
-			// Cache this pixel 
-			feed_pixel_2_cache_3D_LR (x, y, z, dataI[i], vroi);
+			// Cache this pixel
+			feed_pixel_2_cache_3D_LR (x, y, z, dataI[phys_i], vroi);
 
 		}
 
@@ -713,11 +717,16 @@ namespace Nyxus
 				{
 					scanTrivialRois_3D_anisotropic (env, Pending, intens_fpath, label_fpath, t_index, channel, ax, ay, az);
 
-					// rescan and update ROI's AABB
+					// rescan and update ROI's AABB and voxel count -- gatherRoisMetrics_3D set
+					// aux_area from the PHYSICAL (pre-resample) voxel count; the anisotropic
+					// scan just populated raw_pixels_3D with the resampled (virtual) cloud,
+					// which is a different size. Features that divide by aux_area (e.g. MEAN)
+					// were silently off by the resampling factor without this.
 					for (auto lbl : Pending)
 					{
 						LR& r = env.roiData[lbl];
 						r.aabb.update_from_voxelcloud (r.raw_pixels_3D);
+						r.aux_area = (unsigned int) r.raw_pixels_3D.size();
 					}
 				}
 
@@ -778,11 +787,13 @@ namespace Nyxus
 			{
 				scanTrivialRois_3D_anisotropic (env, Pending, intens_fpath, label_fpath, t_index, channel, ax, ay, az);
 
-				// rescan and update ROI's AABB
+				// rescan and update ROI's AABB and voxel count -- see the identical fix (and
+				// its rationale) in the main batch loop above.
 				for (auto lbl : Pending)
 				{
 					LR& r = env.roiData[lbl];
 					r.aabb.update_from_voxelcloud(r.raw_pixels_3D);
+					r.aux_area = (unsigned int) r.raw_pixels_3D.size();
 				}
 			}
 
