@@ -3433,6 +3433,31 @@ TEST(TEST_NYXUS, TEST_3D_RAM_FOOTPRINT_COUNTS_DEPTH) {
 		<< "3D footprint estimator is not counting depth";
 }
 
+// Regression (found while chasing the anisotropic-resampling hang, TEST_3D_SEGMENTED_ANISOTROPIC_*
+// above): both footprint estimators computed (n_rois - 1) * sizeof(int) for the "neighbors" term.
+// processTrivialRois_3D (and the 2D/2.5D siblings) call this with an in-progress BATCH count
+// (Pending.size()), which is 0 on every batch's first item -- size_t(0-1) underflows to SIZE_MAX,
+// and the subsequent multiply overflows to another huge wrapped value, silently misrouting even a
+// tiny single-ROI batch through the "oversized, scan immediately" path instead of genuinely
+// batching. n_rois==0 must mean "zero other ROIs, so 0 bytes for the neighbors term", not garbage.
+TEST(TEST_NYXUS, TEST_RAM_FOOTPRINT_ESTIMATE_ZERO_ROIS_DOES_NOT_UNDERFLOW) {
+	LR r(1);
+	r.aabb.init_from_whd(8, 8, 4);
+	r.aux_area = 64;
+
+	size_t with_zero = r.get_ram_footprint_estimate(0);
+	size_t with_one = r.get_ram_footprint_estimate(1);   // (1-1)=0 neighbors bytes too -- same base cost
+	EXPECT_EQ(with_zero, with_one) << "n_rois=0 and n_rois=1 both contribute 0 neighbor bytes";
+	// sanity ceiling: a real (non-underflowed) footprint for an 8x8x4 ROI is a few KB, not
+	// anywhere near what (size_t)(0-1)*sizeof(int) would produce (~16 exabytes)
+	EXPECT_LT(with_zero, (size_t)1'000'000) << "n_rois=0 must not underflow into an astronomical value";
+
+	size_t with_zero_3d = r.get_ram_footprint_estimate_3D(0);
+	size_t with_one_3d = r.get_ram_footprint_estimate_3D(1);
+	EXPECT_EQ(with_zero_3d, with_one_3d);
+	EXPECT_LT(with_zero_3d, (size_t)1'000'000);
+}
+
 // Regression-guard: processNontrivialRois_3D's per-feature out-of-core dispatch
 // (phase3_3d.cpp) must throw for any 3D FeatureMethod NOT covered by is_3d_ooc_supported() --
 // otherwise a future feature added without a streaming osized_calculate would silently read
