@@ -690,11 +690,14 @@ void D3_SurfaceFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader
 	double L[3];
 	if (Nyxus::calc_eigvals(L, K))
 	{
-		fval_MAJOR_AXIS_LEN = 4.0 * sqrt(L[1]);
-		fval_MINOR_AXIS_LEN = 4.0 * sqrt(L[2]);
-		fval_LEAST_AXIS_LEN = 4.0 * sqrt(L[0]);
-		fval_ELONGATION = sqrt(L[2] / L[1]);
-		fval_FLATNESS = sqrt(L[0] / L[1]);
+		// calc_eigvals returns L sorted DESCENDING (L[0] largest): MAJOR<-L[0], MINOR<-L[1],
+		// LEAST<-L[2]; ELONGATION=MINOR/MAJOR=sqrt(L[1]/L[0]), FLATNESS=LEAST/MAJOR=sqrt(L[2]/L[0]).
+		// Matches MIRP/IBSI and the in-RAM calculate() path.
+		fval_MAJOR_AXIS_LEN = 4.0 * sqrt(L[0]);
+		fval_MINOR_AXIS_LEN = 4.0 * sqrt(L[1]);
+		fval_LEAST_AXIS_LEN = 4.0 * sqrt(L[2]);
+		fval_ELONGATION = sqrt(L[1] / L[0]);
+		fval_FLATNESS = sqrt(L[2] / L[0]);
 	}
 	else
 		fval_MAJOR_AXIS_LEN = fval_MINOR_AXIS_LEN = fval_LEAST_AXIS_LEN = fval_ELONGATION = fval_FLATNESS = 0.0;
