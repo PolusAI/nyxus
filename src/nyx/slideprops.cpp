@@ -145,15 +145,6 @@ namespace Nyxus
 				// Iterate pixels
 				for (size_t i = 0; i < tileSize; i++)
 				{
-					// Mask
-					uint32_t msk = 1; // wholeslide by default
-					if (!wholeslide)
-						msk = ilo.get_cur_tile_seg_pixel(i);
-
-					// Skip non-mask pixels					
-					if (!msk)
-						continue;
-
 					int y = row * th + i / tw,
 						x = col * tw + i % tw;
 
@@ -161,10 +152,23 @@ namespace Nyxus
 					if (x >= fullwidth || y >= fullheight)
 						continue;
 
-					// dynamic range within- and off-ROI
+					// dynamic range within- and off-ROI: this baseline is the "pre-ROI"
+					// (whole-slide) range COVERED_IMAGE_INTENSITY_RANGE divides by, so it must
+					// include off-mask voxels too -- gating it on msk would degenerate it to the
+					// ROI's own range for any segmented (non-whole-slide) image.
 					double dxequiv_I = ilo.get_cur_tile_dpequiv_pixel(i);
 					slide_I_max = (std::max)(slide_I_max, dxequiv_I);
 					slide_I_min = (std::min)(slide_I_min, dxequiv_I);
+
+					// Mask
+					uint32_t msk = 1; // wholeslide by default
+					if (!wholeslide)
+						msk = ilo.get_cur_tile_seg_pixel(i);
+
+					// Skip non-mask pixels for ROI geometry (their intensity is already
+					// counted in the slide-wide range above)
+					if (!msk)
+						continue;
 
 					// Update pixel's ROI metrics
 					//		- the following block mocks feed_pixel_2_metrics (x, y, dataI[i], msk, tidx)
@@ -314,13 +318,19 @@ namespace Nyxus
 		{
 		// Streams tile by tile -- (a) above needs the whole volume scanned, but nothing here
 		// needs it resident, and staging W*H*D doubles once per (c,t) is 4x the raw uint16
-		// volume in RAM for no benefit. for_each_voxel calls back only for in-mask voxels.
+		// volume in RAM for no benefit. for_each_voxel calls back for every voxel.
 		bool ok = ilo.for_each_voxel (scan_c, scan_t,
 			[&](size_t x, size_t y, size_t z, double dxequiv_I, uint32_t msk)
 		{
-			// dynamic range within- and off-ROI
+			// dynamic range within- and off-ROI: this baseline is the "pre-ROI" (whole-slide)
+			// range COVERED_IMAGE_INTENSITY_RANGE divides by, so it must include off-mask voxels
+			// too -- gating it on msk would degenerate it to the ROI's own range for any
+			// segmented (non-whole-slide) image.
 			slide_I_max = (std::max)(slide_I_max, dxequiv_I);
 			slide_I_min = (std::min)(slide_I_min, dxequiv_I);
+
+			if (!msk)
+				return;		// off-ROI voxel: only contributes to the slide-wide range above
 
 			// Update pixel's ROI metrics. FIX: geometry (labels, area, AABB) is derived from
 			// the FIRST (c,t) pass only -- the mask is the same for every channel/timeframe,

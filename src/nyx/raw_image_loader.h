@@ -32,8 +32,9 @@ public:
 	//
 	// Walks the tile GRID of each plane, so planes spanning several tiles/chunks are handled;
 	// NIfTI-style whole-4D loaders (tileDepth == full depth) are slabbed out via frameBase.
-	// fn is invoked ONLY for in-mask voxels (msk != 0), as fn(x, y, z, intensity, msk); in
-	// whole-slide mode every voxel is in-mask with msk == 1.
+	// fn is invoked for EVERY voxel, as fn(x, y, z, intensity, msk) -- msk may be 0 for an
+	// off-ROI voxel in segmented mode (the caller decides what, if anything, to do with it);
+	// in whole-slide mode every voxel is in-mask with msk == 1.
 	template <typename F>
 	bool for_each_voxel (size_t channel, size_t timeframe, F&& fn)
 	{
@@ -82,8 +83,6 @@ public:
 							{
 								const size_t src = frameBase + (pz * th + row) * tw + col;
 								const uint32_t msk = haveSeg ? segFL->get_uint32_pixel (src) : (uint32_t)1;
-								if (!msk)
-									continue;		// off-ROI: skip before paying for the intensity read
 								fn (col0 + col, row0 + row, gz, intFL->get_dpequiv_pixel (src), msk);
 							}
 					}
