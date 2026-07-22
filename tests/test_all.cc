@@ -2827,6 +2827,13 @@ TEST(TEST_NYXUS, TEST_OMEZARR_PHYSICAL_CALIBRATION) {
 	ASSERT_NO_THROW (test_omezarr_physical_calibration());
 }
 
+// Unit canonicalization: a nanometer-declared store must report the same physX/Y/Z and
+// "micrometer" as the equivalent micrometer-declared store above -- proves conversion, not
+// just passthrough of the raw unit string.
+TEST(TEST_NYXUS, TEST_OMEZARR_UNIT_CANONICALIZATION) {
+	ASSERT_NO_THROW (test_omezarr_unit_canonicalization());
+}
+
 // Multi-CHUNK plane: real OME-Zarr splits each Y/X plane across a chunk grid (typically
 // 512x512), and dim5_multichunk uses 3x4 chunks over the 6x8 plane. The volumetric read
 // must walk the whole tile grid: fetching only chunk (0,0) returns wrong data past the
@@ -2993,6 +3000,24 @@ TEST(TEST_NYXUS, TEST_OMETIFF_PHYSICAL_CALIBRATION) {
 	EXPECT_DOUBLE_EQ(p2.phys_x, 1.0);
 	EXPECT_DOUBLE_EQ(p2.phys_z, 1.0);
 	EXPECT_TRUE(p2.phys_unit.empty());
+}
+
+// Unit canonicalization (OME-TIFF, end-to-end through scan_slide_props): dim5_calibrated_nm
+// declares X/Y in nanometer and Z in a THIRD unit (millimeter) -- 500nm==0.5um,
+// 0.002mm==2.0um. Must report the SAME physX/Y/Z and a single "micrometer" unit as
+// dim5_calibrated above, proving each axis converts using its OWN declared unit rather than
+// X/Y's unit leaking onto Z (or vice versa).
+TEST(TEST_NYXUS, TEST_OMETIFF_UNIT_CANONICALIZATION) {
+	fs::path cal_nm = ometiff_data_path("dim5_calibrated_nm.ome.tif");
+	ASSERT_TRUE(fs::exists(cal_nm)) << cal_nm.string();
+
+	Environment e;
+	SlideProps p (cal_nm.string(), "");
+	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	EXPECT_DOUBLE_EQ(p.phys_x, 0.5);
+	EXPECT_DOUBLE_EQ(p.phys_y, 0.5);
+	EXPECT_DOUBLE_EQ(p.phys_z, 2.0);
+	EXPECT_EQ(p.phys_unit, "micrometer");
 }
 
 // N2 (negative): a <TiffData> block maps a plane to an IFD PAST the end of the file (an

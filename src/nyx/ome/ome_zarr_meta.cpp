@@ -79,6 +79,12 @@ namespace Nyxus
 			else oa.kind = AxisKind::Space;
 			oa.size = (k < level0Shape.size()) ? level0Shape[k] : 1;
 			oa.physical = (k < scale0.size()) ? scale0[k] : 1.0;
+			// Canonicalize space axes (X/Y/Z) to micrometer using their OWN declared unit
+			// (a Z axis calibrated in a different unit than X/Y previously reported its raw,
+			// uncomparable value under whatever label X/Y happened to carry). Time/channel
+			// axes are left alone -- a time unit like "second" isn't a length to convert.
+			if (label == 'X' || label == 'Y' || label == 'Z')
+				canonicalize_to_micrometer(oa.physical, unit);
 			oa.unit = unit;
 			ax.storageAxes.push_back(oa);
 			ax.storageOrder.push_back(label);

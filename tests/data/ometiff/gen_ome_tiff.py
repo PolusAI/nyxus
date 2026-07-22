@@ -188,6 +188,21 @@ def write_calibrated_tiff(name):
     print("wrote %-24s (calibrated: physX/Y=0.5 physZ=2.0 micrometer)" % name)
 
 
+def write_calibrated_tiff_nm(name):
+    """Same physical spacing as write_calibrated_tiff, but X/Y declared in NANOMETER and Z in
+    a THIRD unit (millimeter) -- 500 nm == 0.5 um, 0.002 mm == 2.0 um. The loader must
+    canonicalize each axis using ITS OWN declared unit and report the SAME physX/Y/Z and a
+    single "micrometer" unit as write_calibrated_tiff, proving conversion (not passthrough)
+    and that X/Y's unit isn't silently applied to Z or vice versa."""
+    data = _data_for("TCZYX")
+    path = os.path.join(HERE, name)
+    tifffile.imwrite(path, data, photometric="minisblack", ome=True, metadata={
+        "axes": "TCZYX", "PhysicalSizeX": 500.0, "PhysicalSizeY": 500.0, "PhysicalSizeZ": 0.002,
+        "PhysicalSizeXUnit": "nanometer", "PhysicalSizeYUnit": "nanometer",
+        "PhysicalSizeZUnit": "millimeter"})
+    print("wrote %-24s (calibrated: physX/Y=500nm physZ=0.002mm -> both canonicalize to 0.5/2.0 um)" % name)
+
+
 def write_bad_ifd(name):
     """N2: an OME-TIFF whose <TiffData> maps one plane to an IFD PAST the end of the file (an
     in-file overrun, not a multi-file UUID). ifdForPlane returns it, so the read must throw

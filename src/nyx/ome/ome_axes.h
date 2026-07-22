@@ -178,6 +178,35 @@ namespace Nyxus
 
 	// ---- small shared helpers ----------------------------------------------
 
+	// Length-unit -> micrometer scale factor (OME-XML/NGFF use the full UDUNITS-2 names;
+	// tolerate common short forms too, since not every writer follows the spec exactly).
+	// Returns 1.0 (no-op) for an empty/unrecognized unit -- an unrecognized unit is left
+	// as-is rather than silently misscaled, and the caller keeps the original unit string
+	// in that case so the mismatch stays visible instead of masquerading as "micrometer".
+	inline double unit_scale_to_micrometer(const std::string& unit)
+	{
+		if (unit == "meter" || unit == "metre" || unit == "m")   return 1e6;
+		if (unit == "centimeter" || unit == "centimetre" || unit == "cm") return 1e4;
+		if (unit == "millimeter" || unit == "millimetre" || unit == "mm") return 1e3;
+		if (unit == "micrometer" || unit == "micrometre" || unit == "micron" || unit == "um" || unit == "\xC2\xB5m") return 1.0;
+		if (unit == "nanometer" || unit == "nanometre" || unit == "nm") return 1e-3;
+		if (unit == "angstrom" || unit == "\xC3\x85")             return 1e-4;
+		if (unit == "picometer" || unit == "picometre" || unit == "pm") return 1e-6;
+		return 0.0;   // unrecognized (includes "" == uncalibrated)
+	}
+
+	// Canonicalize a physical-size value + its declared unit to micrometer in place.
+	// A recognized non-micrometer unit is converted and relabeled "micrometer"; an
+	// unrecognized/empty unit is left untouched (value AND unit string both unchanged).
+	inline void canonicalize_to_micrometer(double& physical, std::string& unit)
+	{
+		double scale = unit_scale_to_micrometer(unit);
+		if (scale == 0.0)
+			return;
+		physical *= scale;
+		unit = "micrometer";
+	}
+
 	inline AxisKind axis_kind_of(char label)
 	{
 		return (label == 'C') ? AxisKind::Channel : (label == 'T') ? AxisKind::Time : AxisKind::Space;

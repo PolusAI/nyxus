@@ -174,6 +174,16 @@ namespace Nyxus
 		ax.unitZ = s("PhysicalSizeZUnit", "");
 		ax.unitT = s("TimeIncrementUnit", "");
 
+		// Canonicalize each axis to micrometer using ITS OWN declared unit (X/Y share
+		// unitXY, Z has its own unitZ) -- a file that declares Z in a different unit than
+		// X/Y (or either in nm/mm/etc.) previously reported raw, uncomparable values under
+		// a unit label that only ever reflected X/Y. No-op for an already-micrometer or
+		// unrecognized/uncalibrated unit.
+		std::string unitY = ax.unitXY;
+		canonicalize_to_micrometer(ax.physX, ax.unitXY);
+		canonicalize_to_micrometer(ax.physY, unitY);
+		canonicalize_to_micrometer(ax.physZ, ax.unitZ);
+
 		// On-disk order = reverse(DimensionOrder) with singleton axes dropped
 		// (planes are XY, so the result always ends in "YX").
 		auto size_of = [&](char c) -> std::size_t {

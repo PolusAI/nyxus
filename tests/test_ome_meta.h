@@ -305,8 +305,71 @@ TEST(OmeTiffMetaBad, SizeXNotConfusedWithPhysicalSizeX)
 		"<Pixels PhysicalSizeX=\"9.9\" PhysicalSizeXUnit=\"nm\" SizeX=\"8\" SizeY=\"6\"></Pixels>");
 	ASSERT_TRUE(a.valid);
 	EXPECT_EQ(a.sizeX, 8u);
-	EXPECT_DOUBLE_EQ(a.physX, 9.9);
-	EXPECT_EQ(a.unitXY, "nm");
+	// physX/unitXY are canonicalized to micrometer (9.9 nm = 0.0099 um); see
+	// UnitCanonicalization.NanometerConvertedToMicrometer for a test dedicated to that.
+	EXPECT_DOUBLE_EQ(a.physX, 0.0099);
+	EXPECT_EQ(a.unitXY, "micrometer");
+}
+
+// canonicalize_to_micrometer / unit_scale_to_micrometer directly -- no XML/JSON parsing
+// involved, so these pin the conversion table itself independent of either format parser.
+TEST(UnitCanonicalization, KnownUnitsConvertedToMicrometer)
+{
+	struct Case { const char* unit; double input; double expected_um; };
+	const Case cases[] = {
+		{ "nanometer", 500.0, 0.5 },
+		{ "nm",        500.0, 0.5 },
+		{ "micrometer", 2.0,  2.0 },
+		{ "um",         2.0,  2.0 },
+		{ "millimeter", 0.01, 10.0 },
+		{ "mm",         0.01, 10.0 },
+		{ "centimeter", 0.001, 10.0 },
+		{ "meter",      0.000002, 2.0 },
+		{ "angstrom",   50000.0, 5.0 },
+	};
+	for (const auto& c : cases)
+	{
+		double v = c.input;
+		std::string u = c.unit;
+		Nyxus::canonicalize_to_micrometer(v, u);
+		EXPECT_NEAR(v, c.expected_um, 1e-9) << "unit=" << c.unit;
+		EXPECT_EQ(u, "micrometer") << "unit=" << c.unit;
+	}
+}
+
+TEST(UnitCanonicalization, UnrecognizedOrEmptyUnitLeftAsIs)
+{
+	for (const char* unit : { "", "furlong", "pixel" })
+	{
+		double v = 42.0;
+		std::string u = unit;
+		Nyxus::canonicalize_to_micrometer(v, u);
+		EXPECT_DOUBLE_EQ(v, 42.0) << "unit=" << unit;
+		EXPECT_EQ(u, unit) << "unit=" << unit;
+	}
+}
+
+TEST(UnitCanonicalization, OmeTiffNanometerXAndMillimeterZBothConvert)
+{
+	// X/Y declared in nanometer, Z in a DIFFERENT unit (millimeter) -- each axis must
+	// convert using its OWN declared unit, not X/Y's unit applied to Z (or vice versa).
+	Nyxus::OmeAxes a = Nyxus::parse_ome_xml(
+		"<Pixels SizeX=\"8\" SizeY=\"6\" SizeZ=\"4\" "
+		"PhysicalSizeX=\"500\" PhysicalSizeXUnit=\"nanometer\" "
+		"PhysicalSizeY=\"500\" "
+		"PhysicalSizeZ=\"0.003\" PhysicalSizeZUnit=\"millimeter\"></Pixels>");
+	ASSERT_TRUE(a.valid);
+	EXPECT_NEAR(a.physX, 0.5, 1e-9);
+	EXPECT_NEAR(a.physY, 0.5, 1e-9);
+	EXPECT_NEAR(a.physZ, 3.0, 1e-9);
+	EXPECT_EQ(a.unitXY, "micrometer");
+	EXPECT_EQ(a.unitZ, "micrometer");
+	// storageAxes mirror the canonicalized per-axis values too
+	int ix = a.storageIndexOf('X'), iy = a.storageIndexOf('Y'), iz = a.storageIndexOf('Z');
+	ASSERT_GE(ix, 0); ASSERT_GE(iy, 0); ASSERT_GE(iz, 0);
+	EXPECT_NEAR(a.storageAxes[ix].physical, 0.5, 1e-9);
+	EXPECT_NEAR(a.storageAxes[iy].physical, 0.5, 1e-9);
+	EXPECT_NEAR(a.storageAxes[iz].physical, 3.0, 1e-9);
 }
 
 TEST(OmeTiffMetaBad, WhitespaceAndNewlinesInTag)
@@ -490,5 +553,43 @@ TEST(OmeZarrMetaBad, ShorterShapeThanAxesDefaultsMissingSizes)
 	EXPECT_EQ(a.sizeC, 3u);
 	EXPECT_EQ(a.sizeY, 1u);
 	EXPECT_EQ(a.sizeX, 1u);
+}
+
+TEST(UnitCanonicalization, OmeZarrNanometerXYAndAngstromZBothConvert)
+{
+	// X/Y declared in nanometer, Z in a DIFFERENT unit (angstrom) -- each axis must
+	// convert using its OWN declared unit.
+	Nyxus::OmeAxes a = zarr_parse(
+		R"({"multiscales":[{
+			"axes":[{"name":"z","type":"space","unit":"angstrom"},
+			        {"name":"y","type":"space","unit":"nanometer"},
+			        {"name":"x","type":"space","unit":"nanometer"}],
+			"datasets":[{"path":"0","coordinateTransformations":[{"type":"scale","scale":[30000.0,500.0,500.0]}]}]}]})",
+		{4, 6, 8}, "uint16");
+	ASSERT_TRUE(a.valid);
+	EXPECT_NEAR(a.physX, 0.5, 1e-9);
+	EXPECT_NEAR(a.physY, 0.5, 1e-9);
+	EXPECT_NEAR(a.physZ, 3.0, 1e-9);
+	EXPECT_EQ(a.unitXY, "micrometer");
+	EXPECT_EQ(a.unitZ, "micrometer");
+}
+
+TEST(UnitCanonicalization, OmeZarrAlreadyMicrometerUnaffected)
+{
+	// An already-canonical store must come through byte-for-byte unchanged (no accidental
+	// double-conversion).
+	Nyxus::OmeAxes a = zarr_parse(
+		R"({"multiscales":[{
+			"axes":[{"name":"z","type":"space","unit":"micrometer"},
+			        {"name":"y","type":"space","unit":"micrometer"},
+			        {"name":"x","type":"space","unit":"micrometer"}],
+			"datasets":[{"path":"0","coordinateTransformations":[{"type":"scale","scale":[2.0,0.5,0.5]}]}]}]})",
+		{4, 6, 8}, "uint16");
+	ASSERT_TRUE(a.valid);
+	EXPECT_DOUBLE_EQ(a.physX, 0.5);
+	EXPECT_DOUBLE_EQ(a.physY, 0.5);
+	EXPECT_DOUBLE_EQ(a.physZ, 2.0);
+	EXPECT_EQ(a.unitXY, "micrometer");
+	EXPECT_EQ(a.unitZ, "micrometer");
 }
 #endif

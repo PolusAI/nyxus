@@ -318,6 +318,10 @@ def main():
     # physically calibrated: anisotropic voxels (z 4x thicker than x/y after normalization).
     # order tczyx -> scale [t,c,z,y,x] = [1,1,2.0,0.5,0.5] -> physX=0.5 physY=0.5 physZ=2.0 um.
     write_calibrated("dim5_calibrated.ome.zarr", "tczyx", [1.0, 1.0, 2.0, 0.5, 0.5], "micrometer")
+    # same physical spacing as dim5_calibrated, declared in NANOMETER instead of micrometer
+    # (2.0um=2000nm, 0.5um=500nm) -> the loader must canonicalize to the SAME physX/Y/Z/unit
+    # as dim5_calibrated, proving unit conversion (not just passthrough) actually happens.
+    write_calibrated("dim5_calibrated_nm.ome.zarr", "tczyx", [1.0, 1.0, 2000.0, 500.0, 500.0], "nanometer")
     # OME-Zarr 0.5 (Zarr v3): same 5D TCZYX encoding, but zarr.json metadata + 'ome'-wrapped NGFF
     write_v3("dim5_v3.ome.zarr", "tczyx")
     # Zarr v3 with the BLOSC codec (common alongside zstd in real v3 stores). z5 decodes the

@@ -489,6 +489,28 @@ void test_omezarr_physical_calibration()
     ASSERT_DOUBLE_EQ(ldr2.physicalSizeZ(), 1.0);
 }
 
+// Unit canonicalization: dim5_calibrated_nm declares the SAME physical spacing as
+// dim5_calibrated above, but in nanometer (2000/500/500 nm == 2.0/0.5/0.5 um). The loader
+// must report the SAME canonicalized values and unit as the micrometer fixture -- proving
+// actual conversion happens, not just passthrough of whatever unit string the file declares.
+void test_omezarr_unit_canonicalization()
+{
+    fs::path cal_nm = omezarr_data_path("dim5_calibrated_nm.ome.zarr");
+    ASSERT_TRUE(fs::exists(cal_nm)) << cal_nm.string();
+
+    auto ldr = NyxusOmeZarrLoader<uint32_t>(1, cal_nm.string());
+    ASSERT_DOUBLE_EQ(ldr.physicalSizeX(), 0.5);
+    ASSERT_DOUBLE_EQ(ldr.physicalSizeY(), 0.5);
+    ASSERT_DOUBLE_EQ(ldr.physicalSizeZ(), 2.0);
+    ASSERT_EQ(ldr.physicalSizeUnit(), "micrometer");
+
+    auto raw = RawOmezarrLoader(cal_nm.string());
+    ASSERT_DOUBLE_EQ(raw.physicalSizeX(), 0.5);
+    ASSERT_DOUBLE_EQ(raw.physicalSizeY(), 0.5);
+    ASSERT_DOUBLE_EQ(raw.physicalSizeZ(), 2.0);
+    ASSERT_EQ(raw.physicalSizeUnit(), "micrometer");
+}
+
 // Illegal / adversarial: self-inconsistent metadata must be rejected cleanly
 // (throw), not crash. bad_axes_count declares 5 axes for a 3D array (indexing the
 // shape by axis role would read OOB); bad_no_xy has axes but none labeled x/y.
