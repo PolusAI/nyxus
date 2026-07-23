@@ -2618,12 +2618,16 @@ TEST(TEST_NYXUS, TEST_OMEZARR_V3_FACADE_VOLUME) {
 TEST(TEST_NYXUS, TEST_OMEZARR_V3_CT_COUNTS) {
 	ASSERT_NO_THROW (test_omezarr_ct_counts("dim5_v3.ome.zarr", 2, 3, 4));
 }
-// Zstd-compressed Zarr v3 (the zarr 3.x / real-world default codec). Requires the build
-// to link libzstd (-DWITH_ZSTD); z5 decodes the bytes+zstd v3 codec pipeline.
+// Zstd-compressed Zarr v3 (the zarr 3.x / real-world default codec). z5 decodes the
+// bytes+zstd v3 codec pipeline only when the build found libzstd and its header, so this
+// case is compiled in on the same condition CMake uses to enable the codec; a build
+// without zstd cannot read the fixture and must not be failed for it.
+#ifdef WITH_ZSTD
 TEST(TEST_NYXUS, TEST_OMEZARR_V3_ZSTD) {
 	ASSERT_NO_THROW (test_omezarr_addressing("dim5_v3_zstd.ome.zarr", 2, 3, 4));
 	ASSERT_NO_THROW (test_raw_omezarr_addressing("dim5_v3_zstd.ome.zarr", 2, 3, 4));
 }
+#endif
 
 // Sharded Zarr v3 (the ``sharding_indexed`` codec) -- how large v3 stores, including Axle's,
 // actually lay out data: many inner chunks packed into one shard object per (t,c). z5 3.x

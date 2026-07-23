@@ -284,14 +284,20 @@ if(USE_Z5)
 
 	# zstd: the DEFAULT codec of Zarr v3 (OME-Zarr 0.5). z5's ZstdCompressor is gated by
 	# WITH_ZSTD; without it, zstd-compressed v3 chunks fail to decode. Optional: if zstd
-	# isn't found we still read uncompressed / blosc / zlib v3 stores.
+	# isn't found we still read uncompressed / blosc / zlib v3 stores. Defining WITH_ZSTD
+	# makes a z5 header include <zstd.h>, so the header must be found as well as the
+	# library -- a build environment can carry libzstd while its headers sit outside the
+	# dependency prefix, and defining the macro on the strength of the library alone turns
+	# that into a fatal include error.
 	find_library(ZSTD_LIBRARY NAMES zstd libzstd)
-	if(ZSTD_LIBRARY)
+	find_path(ZSTD_INCLUDE_DIR NAMES zstd.h)
+	if(ZSTD_LIBRARY AND ZSTD_INCLUDE_DIR)
 		add_definitions(-DWITH_ZSTD)
 		list(APPEND Nyxus_LIBRARIES ${ZSTD_LIBRARY})
+		include_directories(${ZSTD_INCLUDE_DIR})
 		message(STATUS "zstd found (${ZSTD_LIBRARY}) -> Zarr v3 zstd codec enabled")
 	else()
-		message(STATUS "zstd not found -> Zarr v3 zstd-compressed chunks will be unsupported")
+		message(STATUS "zstd not fully available (lib='${ZSTD_LIBRARY}' include='${ZSTD_INCLUDE_DIR}') -> Zarr v3 zstd-compressed chunks will be unsupported")
 	endif()
 
 	if(nlohmann_json_FOUND)
