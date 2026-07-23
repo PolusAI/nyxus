@@ -61,10 +61,9 @@ void GaborFeature::calculate (LR& r, const Fsettings& s)
 
     // Temp buffers
 
-    // --1
-    ImageMatrix e2img;
-    e2img.allocate (Im0.width, Im0.height);
-    readOnlyPixels pix_plane = e2img.ReadablePixels();
+    // --1  Real-valued filter-response image (was a PixIntens ImageMatrix, which truncated the
+    //      response magnitudes to unsigned int and floored sub-integer responses to 0).
+    std::vector<double> e2 (Im0.width * Im0.height);
 
     // --2
     std::vector<double> auxC ((Im0.width + n - 1) * (Im0.height + n - 1) * 2);
@@ -77,13 +76,15 @@ void GaborFeature::calculate (LR& r, const Fsettings& s)
     ty.resize (n + 1);
 
     // Compute the baseline score before applying high-pass Gabor filters
-    GaborEnergy (Im0, e2img.writable_data_ptr(), auxC.data(), auxG.data(), f0LP, sig2lam, gamma, M_PI_2, n);    // compromise pi/2 theta
+    GaborEnergy (Im0, e2.data(), auxC.data(), auxG.data(), f0LP, sig2lam, gamma, M_PI_2, n);    // compromise pi/2 theta
 
     // Values that we need for scoring filter responses
-    Moments2 local_stats;
-    e2img.GetStats(local_stats);
-    double maxval = local_stats.max__(), 
-        cmpval = local_stats.min__();
+    double maxval = e2[0], cmpval = e2[0];
+    for (double a : e2)
+    {
+        maxval = std::max(maxval, a);
+        cmpval = std::min(cmpval, a);
+    }
 
     // intercept blank baseline filter response
     if (maxval == cmpval)
@@ -93,29 +94,27 @@ void GaborFeature::calculate (LR& r, const Fsettings& s)
         return;
     }
 
-    // Score the baseline signal    
+    // Score the baseline signal
     unsigned long baselineScore = 0;
-    for (auto a : pix_plane)
-        if (double(a) > cmpval)
+    for (double a : e2)
+        if (a > cmpval)
             baselineScore++;
 
     // Iterate frequencies and score corresponding filter response over the baseline
     for (int i=0; i < nFreqs; i++)
     {
-        // filter response for i-th frequency
-        writeablePixels e2_pix_plane = e2img.WriteablePixels();
-        
         // -- unpack a frequency-angle pair
         const auto& ft = f0_theta_pairs[i];
         auto f0 = ft.first;
         auto theta = ft.second;
 
-        GaborEnergy (Im0, e2_pix_plane.data(), auxC.data(), auxG.data(), f0, sig2lam, gamma, theta, n);
+        // filter response for i-th frequency (overwrites e2)
+        GaborEnergy (Im0, e2.data(), auxC.data(), auxG.data(), f0, sig2lam, gamma, theta, n);
 
         // score it
         unsigned long afterGaborScore = 0;
-        for (auto a : e2_pix_plane)
-            if (double(a)/maxval > GRAYthr)
+        for (double a : e2)
+            if (a/maxval > GRAYthr)
                 afterGaborScore++;
 
         // save the score as feature value
@@ -152,10 +151,9 @@ void GaborFeature::calculate_gpu (LR& r)
     
     // Temp buffers
 
-    // --1
-    ImageMatrix e2img;
-    e2img.allocate (Im0.width, Im0.height);
-    readOnlyPixels pix_plane = e2img.ReadablePixels();
+    // --1  Real-valued filter-response image (was a PixIntens ImageMatrix, which truncated the
+    //      response magnitudes to unsigned int).
+    std::vector<double> e2 (Im0.width * Im0.height);
 
     // --2
     std::vector<double> auxC ((Im0.width + n - 1) * (Im0.height + n - 1) * 2);
@@ -168,37 +166,37 @@ void GaborFeature::calculate_gpu (LR& r)
     ty.resize (n + 1);
 
     // Compute the baseline score before applying high-pass Gabor filters
-    GaborEnergyGPU (Im0, e2img.writable_data_ptr(), auxC.data(), auxG.data(), f0LP, sig2lam, gamma, M_PI_2, n); // compromise pi/2 theta
+    GaborEnergyGPU (Im0, e2.data(), auxC.data(), auxG.data(), f0LP, sig2lam, gamma, M_PI_2, n); // compromise pi/2 theta
 
     // Values that we need for scoring filter responses
-    Moments2 local_stats;
-    e2img.GetStats(local_stats);
-    double maxval = local_stats.max__(),
-        cmpval = local_stats.min__();
+    double maxval = e2[0], cmpval = e2[0];
+    for (double a : e2)
+    {
+        maxval = std::max(maxval, a);
+        cmpval = std::min(cmpval, a);
+    }
 
-    // Score the baseline signal    
+    // Score the baseline signal
     unsigned long baselineScore = 0;
-    for (auto a : pix_plane)
-        if (double(a) > cmpval)
+    for (double a : e2)
+        if (a > cmpval)
             baselineScore++;
 
     // Iterate frequencies and score corresponding filter response over the baseline
     for (int i=0; i < nFreqs; i++)
     {
-        // filter response for i-th frequency
-        writeablePixels e2_pix_plane = e2img.WriteablePixels();
-
         // -- unpack a frequency-angle pair
         const auto& ft = f0_theta_pairs[i];
         auto f0 = ft.first;
         auto theta = ft.second;
 
-        GaborEnergyGPU (Im0, e2_pix_plane.data(), auxC.data(), auxG.data(), f0, sig2lam, gamma, theta, n);
+        // filter response for i-th frequency (overwrites e2)
+        GaborEnergyGPU (Im0, e2.data(), auxC.data(), auxG.data(), f0, sig2lam, gamma, theta, n);
 
         // score it
         unsigned long afterGaborScore = 0;
-        for (auto a : e2_pix_plane)
-            if (double(a)/maxval > GRAYthr)
+        for (double a : e2)
+            if (a/maxval > GRAYthr)
                 afterGaborScore++;
 
         // save the score as feature value
@@ -262,8 +260,9 @@ void GaborFeature::calculate_gpu_multi_filter (LR & r, size_t roiidx, GpusideCac
         thetas.push_back(ft.second);
     }
 
-    // Compute the baseline score before applying high-pass Gabor filters
-    std::vector<std::vector<PixIntens>> responses (num_filters, std::vector<PixIntens>(Im0.width * Im0.height));
+    // Compute the baseline score before applying high-pass Gabor filters.
+    // Real-valued responses (was PixIntens, which truncated the magnitudes to unsigned int).
+    std::vector<std::vector<double>> responses (num_filters, std::vector<double>(Im0.width * Im0.height));
 
     // Calculate low-passed baseline and high-passed filter responses
     //      'responses' is montage of Gabor energy of filter responses
@@ -272,8 +271,8 @@ void GaborFeature::calculate_gpu_multi_filter (LR & r, size_t roiidx, GpusideCac
     // Examine the baseline signal
 
     // we need to get these 3 values from response[0], the baseline signal
-    PixIntens maxval = 0,
-        cmpval = UINT16_MAX; // min
+    double maxval = 0.0,                                    // magnitudes are non-negative
+        cmpval = std::numeric_limits<double>::max(); // min
     size_t baselineScore = 0;
 
     size_t wh = Im0.width * Im0.height;
@@ -451,15 +450,15 @@ void GaborFeature::Gabor (double* Gex, double f0, double sig2lam, double gamma, 
 
 // Computes Gabor energy
 void GaborFeature::GaborEnergy (
-    const ImageMatrix& Im, 
-    PixIntens* out, 
-    double* auxC, 
+    const ImageMatrix& Im,
+    double* out,
+    double* auxC,
     double* Gexp,
-    double f0, 
-    double sig2lam, 
-    double gamma, 
-    double theta, 
-    int n) 
+    double f0,
+    double sig2lam,
+    double gamma,
+    double theta,
+    int n)
 {
     int n_gab = n;
 
@@ -491,19 +490,19 @@ void GaborFeature::GaborEnergy (
     conv_dud (auxC, pix_plane.data(), Gexp, Im.width, Im.height, n_gab, n_gab);
 
     decltype(Im.height) b = 0;
-    for (auto y = (int)ceil((double)n / 2); b < Im.height; y++) 
+    for (auto y = (int)ceil((double)n / 2); b < Im.height; y++)
     {
         decltype(Im.width) a = 0;
-        for (auto x = (int)ceil((double)n / 2); a < Im.width; x++) 
+        for (auto x = (int)ceil((double)n / 2); a < Im.width; x++)
         {
-            if (std::isnan(auxC[y * 2 * (Im.width + n - 1) + x * 2]) || std::isnan(auxC[y * 2 * (Im.width + n - 1) + x * 2 + 1])) 
+            if (std::isnan(auxC[y * 2 * (Im.width + n - 1) + x * 2]) || std::isnan(auxC[y * 2 * (Im.width + n - 1) + x * 2 + 1]))
             {
-                out[b * Im.width + a] = (PixIntens) std::numeric_limits<double>::quiet_NaN();
+                out[b * Im.width + a] = std::numeric_limits<double>::quiet_NaN();   // keep response real-valued (was truncated to unsigned int)
                 a++;
                 continue;
             }
 
-            out[b * Im.width + a] = (PixIntens) sqrt(pow(auxC[y * 2 * (Im.width + n - 1) + x * 2], 2) + pow(auxC[y * 2 * (Im.width + n - 1) + x * 2 + 1], 2));
+            out[b * Im.width + a] = sqrt(pow(auxC[y * 2 * (Im.width + n - 1) + x * 2], 2) + pow(auxC[y * 2 * (Im.width + n - 1) + x * 2 + 1], 2));   // real magnitude, no unsigned-int truncation
             a++;
         }
         b++;
@@ -512,15 +511,15 @@ void GaborFeature::GaborEnergy (
 
 #ifdef USE_GPU
 void GaborFeature::GaborEnergyGPU (
-    const ImageMatrix& Im, 
-    PixIntens* /* double* */ out, 
-    double* auxC, 
+    const ImageMatrix& Im,
+    double* out,
+    double* auxC,
     double* Gexp,
-    double f0, 
-    double sig2lam, 
-    double gamma, 
-    double theta, 
-    int n) 
+    double f0,
+    double sig2lam,
+    double gamma,
+    double theta,
+    int n)
 {
     int n_gab = n;
 
@@ -536,19 +535,19 @@ void GaborFeature::GaborEnergyGPU (
     }
 
     decltype(Im.height) b = 0;
-    for (auto y = (int)ceil((double)n / 2); b < Im.height; y++) 
+    for (auto y = (int)ceil((double)n / 2); b < Im.height; y++)
     {
         decltype(Im.width) a = 0;
-        for (auto x = (int)ceil((double)n / 2); a < Im.width; x++) 
+        for (auto x = (int)ceil((double)n / 2); a < Im.width; x++)
         {
-            if (std::isnan(auxC[y * 2 * (Im.width + n - 1) + x * 2]) || std::isnan(auxC[y * 2 * (Im.width + n - 1) + x * 2 + 1])) 
+            if (std::isnan(auxC[y * 2 * (Im.width + n - 1) + x * 2]) || std::isnan(auxC[y * 2 * (Im.width + n - 1) + x * 2 + 1]))
             {
-                out[b * Im.width + a] = (PixIntens) std::numeric_limits<double>::quiet_NaN();
+                out[b * Im.width + a] = std::numeric_limits<double>::quiet_NaN();   // keep response real-valued (was truncated to unsigned int)
                 a++;
                 continue;
             }
 
-            out[b * Im.width + a] = (PixIntens) sqrt(pow(auxC[y * 2 * (Im.width + n - 1) + x * 2], 2) + pow(auxC[y * 2 * (Im.width + n - 1) + x * 2 + 1], 2));
+            out[b * Im.width + a] = sqrt(pow(auxC[y * 2 * (Im.width + n - 1) + x * 2], 2) + pow(auxC[y * 2 * (Im.width + n - 1) + x * 2 + 1], 2));   // real magnitude, no unsigned-int truncation
             a++;
         }
         b++;
@@ -556,8 +555,8 @@ void GaborFeature::GaborEnergyGPU (
 }
 
 void GaborFeature::GaborEnergyGPUMultiFilter (
-    const ImageMatrix& Im, 
-    std::vector<std::vector<PixIntens>>& out,   // energy image 
+    const ImageMatrix& Im,
+    std::vector<std::vector<double>>& out,   // energy image (real-valued; was PixIntens)
     double* auxC,   // batch of filter responses in complex layout 
     double* Gexp,
     const std::vector<double>& f0s,     // f0-s matching 'thetas'
