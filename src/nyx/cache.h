@@ -132,7 +132,7 @@ public:
 	/*--extern--*/ GpuCache <cufftDoubleComplex> gabor_linear_image; // (img_plus_ker_size* n_filters); // ROI + kernel image
 	/*--extern--*/ GpuCache <cufftDoubleComplex> gabor_result; // (img_plus_ker_size* n_filters);
 	/*--extern--*/ GpuCache <cufftDoubleComplex> gabor_linear_kernel; // (img_plus_ker_size* n_filters);
-	/*--extern--*/ GpuCache <PixIntens> gabor_energy_image; // (img_plus_ker_size* n_filters);
+	/*--extern--*/ GpuCache <RealPixIntens> gabor_energy_image; // real-valued (was PixIntens, which truncated the Gabor response to unsigned int); (img_plus_ker_size* n_filters);
 
 	//
 	// these need to be called after "prescan" (phase 0)
@@ -166,7 +166,7 @@ public:
 		GpuCache <cufftDoubleComplex>& gabor_linear_image,
 		GpuCache <cufftDoubleComplex>& gabor_result,
 		GpuCache <cufftDoubleComplex>& gabor_linear_kernel,
-		GpuCache <PixIntens>& gabor_energy,
+		GpuCache <RealPixIntens>& gabor_energy,
 		// in
 		bool needContour,
 		bool needErosion,
@@ -193,7 +193,7 @@ public:
 		GpuCache <cufftDoubleComplex>& gabor_linear_image,
 		GpuCache <cufftDoubleComplex>& gabor_result,
 		GpuCache <cufftDoubleComplex>& gabor_linear_kernel,
-		GpuCache <PixIntens>& gabor_energy_image
+		GpuCache <RealPixIntens>& gabor_energy_image
 	);
 
 	// these need to be called in "reduce_trivial"

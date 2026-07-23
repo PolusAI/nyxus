@@ -40,6 +40,10 @@ void GaborFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
     double cmp_a = max0 * GRAYthr;
 
+    // NOTE (pre-existing, separate from the response-truncation fix): originalScore is the baseline
+    // score and must be the count of baseline pixels above the baseline minimum (as the trivial
+    // calculate() computes it), but it is left at 0 here, so every fvals[i] below divides by ~0.
+    // The out-of-core Gabor path needs the baseline min + count wired in to match the in-RAM path.
     size_t originalScore = 0;
     for (int i=0; i < nF; i++)
     {
@@ -128,7 +132,7 @@ void GaborFeature::GaborEnergy_NT2 (
         for (auto y = xy0, b = 0; b < winY; y++, b++)
             for (auto x = xy0, a = 0; a < winX; x++, a++)
             {
-                auto inten = (PixIntens)sqrt(pow(auxC[y * 2 * (winX + n - 1) + x * 2], 2) + pow(auxC[y * 2 * (winX + n - 1) + x * 2 + 1], 2));
+                double inten = sqrt(pow(auxC[y * 2 * (winX + n - 1) + x * 2], 2) + pow(auxC[y * 2 * (winX + n - 1) + x * 2 + 1], 2));   // real magnitude, no unsigned-int truncation
                 // Calculate requested summary
                 if (max_or_threshold)
                     max_val = std::max(max_val, double(inten));
@@ -163,7 +167,7 @@ void GaborFeature::GaborEnergy_NT2 (
             for (auto y = xy0, b = 0; b < height; y++, b++)
                 for (auto x = xy0, a = 0; a < width; x++, a++)
                 {
-                    auto inten = (PixIntens)sqrt(pow(auxC[y * 2 * (winX + n - 1) + x * 2], 2) + pow(auxC[y * 2 * (winX + n - 1) + x * 2 + 1], 2));
+                    double inten = sqrt(pow(auxC[y * 2 * (winX + n - 1) + x * 2], 2) + pow(auxC[y * 2 * (winX + n - 1) + x * 2 + 1], 2));   // real magnitude, no unsigned-int truncation
                     // Calculate requested summary
                     if (max_or_threshold)
                         max_val = std::max(max_val, double(inten));
