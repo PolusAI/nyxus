@@ -92,33 +92,34 @@ private:
     // Buffers for Gabor amplitudes. Used by method Gabor()
     std::vector<double> tx, ty;
 
-    // Computes Gabor energy 
+    // Computes Gabor energy. 'out' holds real-valued filter-response magnitudes, kept as double
+    // to avoid the precision loss of the former PixIntens (unsigned int) truncation.
     void GaborEnergy (
-        const ImageMatrix& Im, 
-        PixIntens* out, 
-        double* auxC, 
-        double* Gex, 
-        double f0, 
-        double sig2lam, 
-        double gamma, 
-        double theta, 
+        const ImageMatrix& Im,
+        double* out,
+        double* auxC,
+        double* Gex,
+        double f0,
+        double sig2lam,
+        double gamma,
+        double theta,
         int n);
 
     #ifdef USE_GPU
     void GaborEnergyGPU (
-        const ImageMatrix& Im, 
-        PixIntens* /* double* */ out, 
-        double* auxC, 
-        double* Gex, 
-        double f0, 
-        double sig2lam, 
-        double gamma, 
-        double theta, 
+        const ImageMatrix& Im,
+        double* out,
+        double* auxC,
+        double* Gex,
+        double f0,
+        double sig2lam,
+        double gamma,
+        double theta,
         int n);
 
     void GaborEnergyGPUMultiFilter(
         const ImageMatrix& Im,
-        std::vector<std::vector<PixIntens>>& out,
+        std::vector<std::vector<double>>& out,
         double* auxC,
         double* Gexp,
         const std::vector<double>& f0,     // frequencies matching 'thetas'

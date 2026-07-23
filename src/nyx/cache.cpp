@@ -96,7 +96,7 @@
 		GpuCache <cufftDoubleComplex>& gabor_linear_image,	// gabor
 		GpuCache <cufftDoubleComplex>& gabor_result,
 		GpuCache <cufftDoubleComplex>& gabor_linear_kernel,
-		GpuCache <PixIntens>& gabor_energy_image,
+		GpuCache <RealPixIntens>& gabor_energy_image,
 		// in
 		bool needContour,
 		bool needErosion,
@@ -356,7 +356,7 @@
 		GpuCache <cufftDoubleComplex>& gabor_linear_image,
 		GpuCache <cufftDoubleComplex>& gabor_result,
 		GpuCache <cufftDoubleComplex>& gabor_linear_kernel,
-		GpuCache <PixIntens>& gabor_energy_image)
+		GpuCache <RealPixIntens>& gabor_energy_image)
 	{
 		// clouds 
 
