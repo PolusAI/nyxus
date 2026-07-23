@@ -71,7 +71,10 @@ def test_covered_intensity_range_3d_segmented(tmp_path):
     tifffile.imwrite(str(intp), inten, metadata={"axes": "ZYX"})
     tifffile.imwrite(str(segp), mask, metadata={"axes": "ZYX"})
 
-    n = nyxus.Nyxus3D(["*3D_ALL_INTENSITY*"], ram_limit=8000)
+    # Well above this small fixture's footprint, but under the RAM a host actually has free:
+    # Nyxus rejects a limit above available RAM and keeps the previous process-global value,
+    # so a limit near a machine's total RAM passes on a workstation and fails on a CI runner.
+    n = nyxus.Nyxus3D(["*3D_ALL_INTENSITY*"], ram_limit=1000)
     df = n.featurize_files([str(intp)], [str(segp)], False)
 
     roi = inten[mask.astype(bool)]
