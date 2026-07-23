@@ -254,7 +254,10 @@ void FocusScoreFeature::laplacian(const std::vector<PixIntens>& image, std::vect
 
                     if(ii >= 0 && ii < m_image && jj >= 0 && jj < n_image &&
                        ikFlip >= 0 && jkFlip >=0 && ikFlip < m_kernel && jkFlip < n_kernel){
-                        out[i* n_image + j] += image[ii * n_image + jj] * kernel[ikFlip * n_kernel + jkFlip];
+                        // Cast the pixel to double before multiplying: image is PixIntens (unsigned),
+                        // so the negative kernel weights (e.g. -4) were converted to a huge unsigned
+                        // value, wrapping the Laplacian (focus score reached ~1e18 from the overflow).
+                        out[i* n_image + j] += (double)image[ii * n_image + jj] * kernel[ikFlip * n_kernel + jkFlip];
                     }
                 }
             }
