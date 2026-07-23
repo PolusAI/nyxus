@@ -99,8 +99,11 @@ static std::unordered_map<std::string, double> oracle_3p_shape2d_feature_golden_
 	{"DIAMETER_EQUAL_PERIMETER", 8.57365809435587},
 	{"DIAMETER_CIRCUMSCRIBING_CIRCLE", 12.3317073399088},
 	{"DIAMETER_INSCRIBING_CIRCLE", 0.828486893405308},
-	{"GEODETIC_LENGTH", 10.0},
-	{"THICKNESS", 3.0},
+	// Real-valued rectangle-model roots after the geo_len_thickness.cpp perimeter-truncation fix
+	// (were the integer-truncated 10.0 / 3.0). Now vetted by analytic conformance in
+	// test_shape2d_documented_formula_conformance_no_external_oracle.
+	{"GEODETIC_LENGTH", 11.13182483477333},
+	{"THICKNESS", 2.3356458070362205},
 	{"EROSIONS_2_VANISH", 1.0},
 	// EXTREMA P1..P8 (X,Y) match MATLAB/Octave regionprops('Extrema') EXACTLY under the documented
 	// coordinate convention: MATLAB returns 1-based sub-pixel *corner* coords, Nyxus returns 0-based

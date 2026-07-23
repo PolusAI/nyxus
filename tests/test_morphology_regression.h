@@ -34,7 +34,8 @@ void test_shape2d_ellipse_features()
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::MINOR_AXIS_LENGTH, "MINOR_AXIS_LENGTH");
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::ELONGATION, "ELONGATION");
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::ECCENTRICITY, "ECCENTRICITY");
-	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::ORIENTATION, "ORIENTATION");
+	// ORIENTATION is vetted vs scikit-image in test_morphology_skimage.h; ROUNDNESS is vetted by
+	// documented-formula conformance in test_shape2d_documented_formula_conformance_no_external_oracle.
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::ROUNDNESS, "ROUNDNESS");
 }
 
@@ -85,6 +86,25 @@ void test_shape2d_documented_formula_conformance_no_external_oracle()
 	const double round_formula = 4.0 * A / (PI * major * major);
 	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::ROUNDNESS)][0], round_formula, 1e-9)
 		<< "ROUNDNESS does not match 4A/(pi*major^2)";
+
+	// DIAMETER_EQUAL_PERIMETER = P / pi   (contour.cpp) -- diameter of the circle with the same
+	// perimeter. Pure double arithmetic on the vetted PERIMETER, so it conforms exactly.
+	const double dep_formula = P / PI;
+	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::DIAMETER_EQUAL_PERIMETER)][0], dep_formula, 1e-9)
+		<< "DIAMETER_EQUAL_PERIMETER does not match PERIMETER/pi";
+
+	// GEODETIC_LENGTH / THICKNESS: the two side lengths of the rectangle with the same area and
+	// perimeter (geo_len_thickness.cpp), i.e. the roots of x^2 - (P/2)x + A = 0. After the perimeter
+	// size_t-truncation fix these are real-valued, so they conform to the documented formula exactly.
+	double disc = P * P / 16.0 - A;
+	if (disc < 0.0)
+		disc = 0.0;
+	const double geodetic_formula = P / 4.0 + std::sqrt(disc);
+	const double thickness_formula = P / 2.0 - geodetic_formula;
+	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::GEODETIC_LENGTH)][0], geodetic_formula, 1e-9)
+		<< "GEODETIC_LENGTH does not match P/4 + sqrt(P^2/16 - A)";
+	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::THICKNESS)][0], thickness_formula, 1e-9)
+		<< "THICKNESS does not match P/2 - GEODETIC_LENGTH";
 }
 
 void test_shape2d_unvetted_no_direct_oracle_radius_features()
@@ -97,13 +117,8 @@ void test_shape2d_unvetted_no_direct_oracle_radius_features()
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::ROI_RADIUS_MEDIAN, "ROI_RADIUS_MEDIAN");
 }
 
-void test_shape2d_verifiable_with_3p_builtin_oracle_contour_diameter_equal_perimeter()
-{
-	std::vector<std::vector<double>> fvals;
-	calculate_shape2d_feature_values(fvals);
-
-	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::DIAMETER_EQUAL_PERIMETER, "DIAMETER_EQUAL_PERIMETER");
-}
+// DIAMETER_EQUAL_PERIMETER is now vetted by documented-formula conformance (P/pi) in
+// test_shape2d_documented_formula_conformance_no_external_oracle.
 
 void test_shape2d_verifiable_with_3p_builtin_oracle_fractal_circle_features()
 {
@@ -116,14 +131,9 @@ void test_shape2d_verifiable_with_3p_builtin_oracle_fractal_circle_features()
 	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::DIAMETER_INSCRIBING_CIRCLE, "DIAMETER_INSCRIBING_CIRCLE");
 }
 
-void test_shape2d_verifiable_with_3p_builtin_oracle_geodetic_thickness_erosion_features()
-{
-	std::vector<std::vector<double>> fvals;
-	calculate_shape2d_feature_values(fvals);
-	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::GEODETIC_LENGTH, "GEODETIC_LENGTH");
-	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::THICKNESS, "THICKNESS");
-	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EROSIONS_2_VANISH, "EROSIONS_2_VANISH");
-}
+// GEODETIC_LENGTH + THICKNESS are now vetted by documented-formula conformance (rectangle roots) in
+// test_shape2d_documented_formula_conformance_no_external_oracle, after the geo_len_thickness.cpp
+// perimeter-truncation fix. EROSIONS_2_VANISH is vetted vs scikit-image in test_morphology_skimage.h.
 
 // ---------------------------------------------------------------------------------------------------
 // Migrated from test_2d_remaining_features.h (Wave 6): erosion-complement, caliper (feret/martin/
