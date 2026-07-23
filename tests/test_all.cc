@@ -3544,7 +3544,7 @@ TEST(TEST_NYXUS, TEST_CSV_MULTICHANNEL_NO_OVERWRITE) {
 	fs::remove_all(outdir);
 }
 
-// Phase 6 physical-calibration logic (negative + positive). resolve_slide_anisotropy
+// Physical-calibration logic (negative + positive). resolve_slide_anisotropy
 // must NOT engage the anisotropic (resampling) path unless it's genuinely warranted:
 //   - flag off                      -> false, (1,1,1)   even with anisotropic spacing
 //   - degenerate spacing (a 0 axis) -> false, (1,1,1)   (guarded, no div-by-zero)

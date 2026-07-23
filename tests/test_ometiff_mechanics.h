@@ -319,7 +319,7 @@ void test_ometiff_multichannel_mask_pairing()
     il.close();
 }
 
-// Phase 5 negative: the whole-volume facade read must propagate an out-of-range channel
+// Negative: the whole-volume facade read must propagate an out-of-range channel
 // or timeframe as a throw (the (z,c,t)->IFD map range-guards). dim5 has C=3, T=2.
 void test_ometiff_load_volume_out_of_range()
 {

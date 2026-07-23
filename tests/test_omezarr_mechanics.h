@@ -440,7 +440,7 @@ void test_omezarr_ct_counts(const char* store, int T, int C, int Z)
     ASSERT_EQ(raw.fullDepth(0), (size_t)Z) << store;
 }
 
-// Phase 5 negative: the whole-volume facade read must propagate an out-of-range channel
+// Negative: the whole-volume facade read must propagate an out-of-range channel
 // or timeframe as a throw (not silently read plane 0 or OOB memory). dim5 has C=3, T=2.
 void test_omezarr_load_volume_out_of_range()
 {

@@ -16,8 +16,8 @@ Stores (same encoding throughout; absent axes pinned to index 0):
 tifffile writes OME-TIFF as multi-page (strip) with one IFD per (z,c,t) plane in
 DimensionOrder raster order, so the loader's ifdForPlane() must reproduce that.
 
-Run with the nyxus_build env python (tifffile):
-    C:\\Users\\dvladi\\miniforge3\\envs\\nyxus_build\\python.exe gen_ome_tiff.py
+Run with a python that has tifffile (e.g. the conda build env):
+    $CONDA_PREFIX/python.exe gen_ome_tiff.py
 """
 import os
 import numpy as np

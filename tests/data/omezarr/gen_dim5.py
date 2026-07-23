@@ -15,8 +15,8 @@ Stores (same encoding throughout; absent axes are pinned to index 0):
 All chunked one z-slice per chunk and written UNCOMPRESSED (compressor=None) so
 they read with header-only z5 (no blosc/zlib link).
 
-Run with the nyxus_build env python (zarr 3.x):
-    C:\\Users\\dvladi\\miniforge3\\envs\\nyxus_build\\python.exe gen_dim5.py
+Run with a python that has zarr 3.x (e.g. the conda build env):
+    $CONDA_PREFIX/python.exe gen_dim5.py
 """
 import os
 import shutil
