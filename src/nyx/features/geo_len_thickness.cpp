@@ -16,20 +16,23 @@ GeodeticLengthThicknessFeature::GeodeticLengthThicknessFeature() : FeatureMethod
 
 void GeodeticLengthThicknessFeature::calculate (LR& r, const Fsettings& s)
 {
-	size_t roiArea = r.aux_area,
+	// Keep perimeter as a real number: assigning it into size_t truncated the fractional part and
+	// forced integer division below, so geodetic_length/thickness deviated from the rectangle-model
+	// formula (e.g. ~11% on the 8x8 shape2d fixture: geodetic 10.0 instead of ~11.13).
+	double roiArea = r.aux_area,
 		roiPerimeter = r.fvals[(int)Feature2D::PERIMETER][0];
 
-	double SqRootTmp = roiPerimeter * roiPerimeter / 16 - (double)roiArea;
+	double SqRootTmp = roiPerimeter * roiPerimeter / 16.0 - roiArea;
 
 	// Make sure value under SqRootTmp is always positive
-	if (SqRootTmp < 0) 
+	if (SqRootTmp < 0)
 		SqRootTmp = 0;
 
 	// Calculate geodetic_length with pq-formula (see above):
-	geodetic_length = roiPerimeter / 4 + sqrt(SqRootTmp);
+	geodetic_length = roiPerimeter / 4.0 + sqrt(SqRootTmp);
 
 	// Calculate thickness by rewriting Equation (2):
-	thickness = roiPerimeter / 2 - geodetic_length;
+	thickness = roiPerimeter / 2.0 - geodetic_length;
 }
 
 void GeodeticLengthThicknessFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
