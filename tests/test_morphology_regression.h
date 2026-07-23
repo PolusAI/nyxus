@@ -89,17 +89,9 @@ void test_shape2d_verifiable_with_3p_builtin_oracle_fractal_circle_features()
 	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::DIAMETER_INSCRIBING_CIRCLE, "DIAMETER_INSCRIBING_CIRCLE");
 }
 
-void test_shape2d_verifiable_with_3p_builtin_oracle_geodetic_thickness_erosion_features()
-{
-	std::vector<std::vector<double>> fvals;
-	calculate_shape2d_feature_values(fvals);
-	// GEODETIC_LENGTH stays regression: geo_len_thickness.cpp truncates PERIMETER to size_t and uses
-	// integer division, so its value (10.0) deviates ~11% from the real-valued rectangle formula
-	// (~11.13); vetting it analytically would bake in the truncation. THICKNESS is vetted vs imea.
-	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::GEODETIC_LENGTH, "GEODETIC_LENGTH");
-	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::THICKNESS, "THICKNESS");
-	// EROSIONS_2_VANISH is now vetted vs scikit-image (square(3)) in test_morphology_skimage.h.
-}
+// GEODETIC_LENGTH + THICKNESS are now vetted against imea's geodeticlength_and_thickness (the same
+// DIN ISO 9276-6 rectangle model) in test_morphology_imea.h, after the geo_len_thickness.cpp
+// perimeter-truncation fix. EROSIONS_2_VANISH is vetted vs scikit-image in test_morphology_skimage.h.
 
 // ---------------------------------------------------------------------------------------------------
 // Migrated from test_2d_remaining_features.h (Wave 6): erosion-complement, caliper (feret/martin/
