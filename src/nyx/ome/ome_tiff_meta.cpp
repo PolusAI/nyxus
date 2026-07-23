@@ -4,6 +4,8 @@
 #include <charconv>
 #include <algorithm>
 #include <cmath>
+#include <locale>
+#include <sstream>
 
 namespace Nyxus
 {
@@ -72,14 +74,21 @@ namespace Nyxus
 			if (ec != std::errc() || ptr == v.data()) return def;
 			return r < 1 ? std::size_t(1) : r;
 		};
-		// Double reader (std::from_chars): absent / non-numeric / non-finite ->
-		// default. from_chars still accepts "nan"/"inf" prefixes (e.g. "NaNsense"),
-		// so the isfinite check keeps those out of physical-calibration math.
+		// Double reader: absent / non-numeric / non-finite -> default. libc++ provides
+		// std::from_chars for integral types only (its floating-point overloads are
+		// deleted or constrained to is_integral), so the double form does not compile
+		// there; a stream imbued with the classic locale reads the same value on every
+		// standard library and, unlike strtod, ignores the host's LC_NUMERIC, which a
+		// process embedding the library may have set to a comma-decimal locale.
+		// "nan"/"inf" prefixes (e.g. "NaNsense") still parse, so the isfinite check
+		// keeps those out of physical-calibration math.
 		auto d = [&](const char* n, double def) -> double {
 			std::string v; if (!get_attr(pix, n, v)) return def;
+			std::istringstream is(v);
+			is.imbue(std::locale::classic());
 			double r = 0;
-			auto [ptr, ec] = std::from_chars(v.data(), v.data() + v.size(), r);
-			if (ec != std::errc() || ptr == v.data() || !std::isfinite(r)) return def;
+			is >> r;
+			if (is.fail() || !std::isfinite(r)) return def;
 			return r;
 		};
 

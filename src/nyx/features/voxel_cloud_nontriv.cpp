@@ -1,6 +1,8 @@
 #include <errno.h>
+#include <algorithm>
 #include <cstring>
 #include <iostream>
+#include <stdexcept>
 #include <sstream>
 #include <thread>
 #include "../environment.h"
