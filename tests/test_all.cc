@@ -700,13 +700,13 @@ TEST(TEST_NYXUS, TEST_3NGLDM_DCENE) {
 }
 
 
-//***** Gabor regression ***** 
+//***** Gabor (vetted vs scikit-image) *****
 
-TEST(TEST_NYXUS, TEST_UNVETTED_NO_DIRECT_ORACLE_GABOR){
-    test_unvetted_no_direct_oracle_gabor();
+TEST(TEST_NYXUS, TEST_GABOR_SKIMAGE){
+    test_gabor_skimage();
 
     #ifdef USE_GPU
-        test_unvetted_no_direct_oracle_gabor(true);
+        test_gabor_skimage(true);
     #endif
 }
 

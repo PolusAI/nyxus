@@ -289,7 +289,7 @@ namespace CuGabor {
     // Assumes parallelism by pixels of the result (non-padded E montage).
     __global__ void kerCalcEnergy(
         // out
-        PixIntens* nonpadded_e_montage,  // montage of smaller (nonpadded) images of size ROI_w*ROI_h
+        RealPixIntens* nonpadded_e_montage,  // real-valued energy montage (was PixIntens, which truncated to unsigned int); float is 4 bytes like PixIntens so device/host buffer sizes are unchanged
         // in
         cufftDoubleComplex* padded_montage, // montage of complex
         size_t skipBig,
