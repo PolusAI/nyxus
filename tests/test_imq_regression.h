@@ -15,17 +15,22 @@
 /* GLCM dissimilarity and correlation for image quality are handled in GLCM tests */
 
 void test_focus_score_feature() {
-    
+
     FocusScoreFeature f;
-    double truth_value = 2.810e18;
+    // FOCUS_SCORE = variance of the Laplacian magnitude, vetted vs scipy (gen_imq_analytic.py).
+    // Was 2.810e18: focus_score.cpp multiplied PixIntens (unsigned) by the negative kernel weights,
+    // wrapping the Laplacian; now cast to double.
+    double truth_value = 12.109375;
 
     test_feature(f, Nyxus::FeatureIMQ::FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
 
 void test_local_focus_score_feature() {
-    
+
     FocusScoreFeature f;
-    double truth_value = 7.57639;
+    // LOCAL_FOCUS_SCORE = variance of the Laplacian of the top-left h/2 x w/2 tile / 4, vetted vs
+    // scipy (gen_imq_analytic.py). Was 7.57639 (same overflow bug as FOCUS_SCORE).
+    double truth_value = 2.6805555555555554;
 
     test_feature(f, Nyxus::FeatureIMQ::LOCAL_FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
