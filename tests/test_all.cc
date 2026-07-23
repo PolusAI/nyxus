@@ -19,6 +19,8 @@
 #include "test_remaining2d_common.h"
 #include "test_zernike_regression.h"
 #include "test_neighbor_regression.h"
+#include "test_neighbor_cellprofiler.h"
+#include "test_neighbor_analytic.h"
 #include "test_initialization_mechanics.h"
 #include "test_glcm_ibsi.h"
 #include "test_gldm_ibsi.h"
@@ -1147,14 +1149,14 @@ TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_CLOSEST_NEIGHBORS)
 	ASSERT_NO_THROW(test_neighborhood2d_closest_neighbors());
 }
 
-TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_UNVETTED_NO_DIRECT_ORACLE_CLOSEST_NEIGHBOR_ANGLES)
+TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_CELLPROFILER_COUNTS_FIRST_DISTANCE)
 {
-	ASSERT_NO_THROW(test_neighborhood2d_unvetted_no_direct_oracle_closest_neighbor_angles());
+	ASSERT_NO_THROW(test_neighborhood2d_cellprofiler_counts_and_first_distance());
 }
 
-TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_UNVETTED_NO_DIRECT_ORACLE_ANGLE_STATS)
+TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_ANALYTIC_SECOND_DISTANCE_AND_ANGLES)
 {
-	ASSERT_NO_THROW(test_neighborhood2d_unvetted_no_direct_oracle_neighbor_angle_stats());
+	ASSERT_NO_THROW(test_neighborhood2d_analytic_second_distance_and_angles());
 }
 
 

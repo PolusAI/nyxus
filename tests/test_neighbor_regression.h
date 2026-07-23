@@ -47,43 +47,11 @@ static std::unordered_map<int, std::unordered_map<std::string, double>> unvetted
 	}}
 };
 
-static std::unordered_map<int, std::unordered_map<std::string, double>> unvetted_nyxus_regression_neighbor2d_angle_feature_golden_values_by_label{
-	{1, {
-		{"CLOSEST_NEIGHBOR1_ANG", 0.0},
-		{"CLOSEST_NEIGHBOR2_ANG", 191.30993247402},
-		{"ANG_BW_NEIGHBORS_MEAN", 132.172516881495},
-		{"ANG_BW_NEIGHBORS_STDDEV", 115.230018010206},
-		{"ANG_BW_NEIGHBORS_MODE", 0.0},
-	}},
-	{2, {
-		{"CLOSEST_NEIGHBOR1_ANG", 11.3099324740202},
-		{"CLOSEST_NEIGHBOR2_ANG", 0.0},
-		{"ANG_BW_NEIGHBORS_MEAN", 11.3099324740202},
-		{"ANG_BW_NEIGHBORS_STDDEV", 0.0},
-		{"ANG_BW_NEIGHBORS_MODE", 11.0},
-	}},
-	{3, {
-		{"CLOSEST_NEIGHBOR1_ANG", 78.6900675259798},
-		{"CLOSEST_NEIGHBOR2_ANG", 0.0},
-		{"ANG_BW_NEIGHBORS_MEAN", 78.6900675259798},
-		{"ANG_BW_NEIGHBORS_STDDEV", 0.0},
-		{"ANG_BW_NEIGHBORS_MODE", 79.0},
-	}},
-	{4, {
-		{"CLOSEST_NEIGHBOR1_ANG", 180.0},
-		{"CLOSEST_NEIGHBOR2_ANG", 0.0},
-		{"ANG_BW_NEIGHBORS_MEAN", 180.0},
-		{"ANG_BW_NEIGHBORS_STDDEV", 0.0},
-		{"ANG_BW_NEIGHBORS_MODE", 180.0},
-	}},
-	{5, {
-		{"CLOSEST_NEIGHBOR1_ANG", 258.69006752598},
-		{"CLOSEST_NEIGHBOR2_ANG", 0.0},
-		{"ANG_BW_NEIGHBORS_MEAN", 258.69006752598},
-		{"ANG_BW_NEIGHBORS_STDDEV", 0.0},
-		{"ANG_BW_NEIGHBORS_MODE", 259.0},
-	}}
-};
+// NOTE: the closest-neighbor angles and the angle-between-neighbors stats are now
+// vetted at tight tolerance by the ANALYTIC oracle in test_neighbor_analytic.h
+// (independent numpy recomputation of Nyxus' atan2 direction-angle formulas); the
+// second-closest distance likewise. This regression file keeps only the fixture
+// builder + the PERCENT_TOUCHING snapshot (the one feature with no promotable oracle).
 
 static Fsettings make_neighbors2d_settings()
 {
@@ -154,19 +122,6 @@ static void assert_neighbor2d_feature(
 	ASSERT_TRUE(agrees_gt(roiData.at(label).fvals[static_cast<int>(feature)][0], unvetted_nyxus_regression_neighbor2d_distance_feature_golden_values_by_label[label][feature_name], frac_tolerance));
 }
 
-static void assert_unvetted_no_direct_oracle_neighbor2d_feature(
-	const std::unordered_map<int, LR>& roiData,
-	int label,
-	Nyxus::Feature2D feature,
-	const std::string& feature_name,
-	double frac_tolerance = 1000.0)
-{
-	SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
-	ASSERT_TRUE(unvetted_nyxus_regression_neighbor2d_angle_feature_golden_values_by_label.count(label) > 0);
-	ASSERT_TRUE(unvetted_nyxus_regression_neighbor2d_angle_feature_golden_values_by_label[label].count(feature_name) > 0);
-	ASSERT_TRUE(agrees_gt(roiData.at(label).fvals[static_cast<int>(feature)][0], unvetted_nyxus_regression_neighbor2d_angle_feature_golden_values_by_label[label][feature_name], frac_tolerance));
-}
-
 void test_neighborhood2d_counts_and_touching()
 {
 	std::unordered_map<int, LR> roiData;
@@ -211,27 +166,3 @@ void test_neighborhood2d_closest_neighbors()
 	}
 }
 
-void test_neighborhood2d_unvetted_no_direct_oracle_closest_neighbor_angles()
-{
-	std::unordered_map<int, LR> roiData;
-	calculate_neighborhood2d_feature_values(roiData);
-
-	for (int label : {1, 2, 3, 4, 5})
-	{
-		assert_unvetted_no_direct_oracle_neighbor2d_feature(roiData, label, Nyxus::Feature2D::CLOSEST_NEIGHBOR1_ANG, "CLOSEST_NEIGHBOR1_ANG");
-		assert_unvetted_no_direct_oracle_neighbor2d_feature(roiData, label, Nyxus::Feature2D::CLOSEST_NEIGHBOR2_ANG, "CLOSEST_NEIGHBOR2_ANG");
-	}
-}
-
-void test_neighborhood2d_unvetted_no_direct_oracle_neighbor_angle_stats()
-{
-	std::unordered_map<int, LR> roiData;
-	calculate_neighborhood2d_feature_values(roiData);
-
-	for (int label : {1, 2, 3, 4, 5})
-	{
-		assert_unvetted_no_direct_oracle_neighbor2d_feature(roiData, label, Nyxus::Feature2D::ANG_BW_NEIGHBORS_MEAN, "ANG_BW_NEIGHBORS_MEAN");
-		assert_unvetted_no_direct_oracle_neighbor2d_feature(roiData, label, Nyxus::Feature2D::ANG_BW_NEIGHBORS_STDDEV, "ANG_BW_NEIGHBORS_STDDEV");
-		assert_unvetted_no_direct_oracle_neighbor2d_feature(roiData, label, Nyxus::Feature2D::ANG_BW_NEIGHBORS_MODE, "ANG_BW_NEIGHBORS_MODE");
-	}
-}
