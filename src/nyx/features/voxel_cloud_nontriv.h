@@ -71,7 +71,10 @@ private:
 	// Block read cache so linear consumers (get_at/operator[]/iterator, histogram) do one bulk
 	// fread per block instead of an fseek + 4 freads per voxel -- the latter made the out-of-core
 	// intensity/histogram passes ~25x slower than the in-RAM path. One block resident (bounded).
-	static const size_t BLK_RECORDS = 65536;
+	// constexpr (implicitly inline in C++17+) so ODR-uses like (std::min)(BLK_RECORDS, ...),
+	// which bind it to a const&, don't need a separate out-of-line definition -- GCC errors
+	// on the missing definition at link time where MSVC silently tolerates it.
+	static constexpr size_t BLK_RECORDS = 65536;
 	mutable std::vector<char> blk_buf;
 	mutable long long blk_first = -1;	// index of first cached record; -1 = cache empty
 	mutable size_t blk_count = 0;
