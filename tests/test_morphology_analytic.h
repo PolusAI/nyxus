@@ -30,5 +30,7 @@ void test_shape2d_documented_formula_conformance_analytic()
 		<< "ROUNDNESS does not match 4A/(pi*major^2)";
 
 	// DIAMETER_EQUAL_PERIMETER (= P/pi) is vetted against the third-party imea implementation of the
-	// same ISO transform in test_morphology_imea.h, so it is not re-derived here.
+	// same ISO transform in test_morphology_imea.h, so it is not re-derived here. GEODETIC_LENGTH and
+	// THICKNESS (the rectangle-model roots P/4 +- sqrt(P^2/16 - A)) are vetted the same way, against
+	// imea's geodeticlength_and_thickness, so they are not re-derived here either.
 }
