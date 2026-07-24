@@ -25,12 +25,14 @@ namespace Nyxus
 
 	bool save_features_2_buffer_wholeslide (
 		// out
-		ResultsCache & rescache, 
+		ResultsCache & rescache,
 		// in
 		Environment & env,
 		const LR & r,
 		const std::string& ifpath,
-		const std::string& mfpath)
+		const std::string& mfpath,
+		size_t t_index,
+		size_t c_index)
 	{
 		std::lock_guard<std::mutex> lg (mx1);
 
@@ -44,7 +46,11 @@ namespace Nyxus
 
 		if (fill_header)
 		{
-			rescache.add_to_header({ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label, Nyxus::colname_t_index });
+			// FIX (IO): phys_unit is a leading STRING column (kept with intensity/mask so the
+			// Python "string columns first" split still works); phys_x/y/z are numeric.
+			rescache.add_to_header({ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_phys_unit,
+				Nyxus::colname_roi_label, Nyxus::colname_t_index, Nyxus::colname_c_index,
+				Nyxus::colname_phys_x, Nyxus::colname_phys_y, Nyxus::colname_phys_z });
 
 			for (auto& enabdF : F)
 			{
@@ -178,11 +184,19 @@ namespace Nyxus
 
 		rescache.inc_num_rows();
 
-		// - slide info
+		// - slide info + phys_unit (FIX (IO): 3rd leading string column)
+		const SlideProps& sp = env.dataset.dataset_props[r.slide_idx];
 		rescache.add_string (ifpath);
 		rescache.add_string (mfpath);
+		rescache.add_string (sp.phys_unit);
 		rescache.add_numeric (r.label);
-		rescache.add_numeric (DEFAULT_T_INDEX);
+		// FIX (IO): emit the real time/channel indices (was hard-coded DEFAULT_T_INDEX with no channel)
+		rescache.add_numeric ((double)t_index);
+		rescache.add_numeric ((double)c_index);
+		// FIX (IO): physical voxel spacing (numeric columns)
+		rescache.add_numeric (sp.phys_x);
+		rescache.add_numeric (sp.phys_y);
+		rescache.add_numeric (sp.phys_z);
 
 		// - features
 		for (auto& enabdF : F)
@@ -300,7 +314,7 @@ namespace Nyxus
 	}
 
 	/// @brief Copies ROIs' feature values into a ResultsCache structure that will then shape them as a table
-	bool save_features_2_buffer (ResultsCache& rescache, Environment & env, size_t t_index)
+	bool save_features_2_buffer (ResultsCache& rescache, Environment & env, size_t t_index, size_t c_index)
 	{
 		std::vector<int> L{ env.uniqueLabels.begin(), env.uniqueLabels.end() };
 		std::sort(L.begin(), L.end());
@@ -313,7 +327,11 @@ namespace Nyxus
 		// -- Header
 		if (fill_header)
 		{
-			rescache.add_to_header({ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_roi_label, Nyxus::colname_t_index });
+			// FIX (IO): phys_unit is a leading STRING column (kept with intensity/mask so the
+			// Python "string columns first" split still works); phys_x/y/z are numeric.
+			rescache.add_to_header({ Nyxus::colname_intensity_image, Nyxus::colname_mask_image, Nyxus::colname_phys_unit,
+				Nyxus::colname_roi_label, Nyxus::colname_t_index, Nyxus::colname_c_index,
+				Nyxus::colname_phys_x, Nyxus::colname_phys_y, Nyxus::colname_phys_z });
 
 			for (auto& enabdF : F)
 			{
@@ -463,8 +481,13 @@ namespace Nyxus
 
 			rescache.add_string (intfname);
 			rescache.add_string (segfname);
+			rescache.add_string (slide.phys_unit);		// FIX (IO): 3rd leading string column
 			rescache.add_numeric (l);
-			rescache.add_numeric (t_index);
+			rescache.add_numeric ((double)t_index);
+			rescache.add_numeric ((double)c_index);		// FIX (IO): channel index column, mirrors t_index
+			rescache.add_numeric (slide.phys_x);		// FIX (IO): physical voxel spacing (numeric)
+			rescache.add_numeric (slide.phys_y);
+			rescache.add_numeric (slide.phys_z);
 
 			for (auto& enabdF : F)
 			{

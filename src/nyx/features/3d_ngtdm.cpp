@@ -274,144 +274,142 @@ void D3_NGTDM_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t inte
 
 void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
-	// Clear variables
+	// Out-of-core NGTDM. Streams the disk-backed voxel cloud through a (2*radius+1)-plane sliding
+	// window of dense grey-binned planes, reproducing calculate() exactly: unique-over-cube grey
+	// levels (incl background), the "+1 if min level is 0" shift, the radius neighbourhood average
+	// (which includes background neighbours), then N/S/P and the shared feature math (calc_*).
 	clear_buffers();
+	I.clear();
 
-	// Check if the ROI is degenerate (equal intensity)
-	if (r.aux_min == r.aux_max)
+	int greyInfo = STNGS_IBSI(s) ? 0 : STNGS_NGTDM_GREYDEPTH(s);
+	bool ibsi = STNGS_IBSI(s);
+	PixIntens mn = r.aux_min, mx = r.aux_max;
+	const PixIntens bg = TextureFeature::bin_pixel (0, mn, mx, greyInfo);
+
+	const int W = (int) r.aabb.get_width(),
+		H = (int) r.aabb.get_height(),
+		Dz = (int) r.aabb.get_z_depth();
+	const StatsInt xmin = r.aabb.get_xmin(), ymin = r.aabb.get_ymin(), zmin = r.aabb.get_zmin();
+
+	// --- unique binned levels over the whole cube (mask + background if the bbox has any)
+	const size_t nvox = r.raw_voxels_NT.size();
+	const bool hasBackground = nvox < (size_t) W * H * Dz;
+	std::unordered_set<PixIntens> U;
+	if (hasBackground)
+		U.insert (bg);
+	PixIntens maxbin = hasBackground ? bg : 0;
+	for (size_t i = 0; i < nvox; i++)
 	{
-		bad_roi_data = true;
+		PixIntens b = TextureFeature::bin_pixel (r.raw_voxels_NT[i].inten, mn, mx, greyInfo);
+		U.insert (b);
+		if (b > maxbin) maxbin = b;
+	}
+	Ngp = (int) U.size();
+
+	// --- grey levels I: IBSI uses a linspace [0, max]; otherwise the unique set. Then sort.
+	if (ibsi)
+		for (PixIntens i = 0; i <= maxbin; i++)
+			I.push_back (i);
+	else
+		I.assign (U.begin(), U.end());
+	std::sort (I.begin(), I.end());
+
+	// --- "+1 if min level is 0" shift (applied to I and every voxel value)
+	const bool shift = (!I.empty() && I[0] == 0);
+	if (shift)
+		for (auto& x : I) x += 1;
+	const PixIntens bgv = bg + (shift ? 1 : 0);				// background value in the shifted planes
+	const PixIntens zeroI = matlab_grey_binning(greyInfo) ? 1 : 0;
+
+	// is binned data informative?
+	if (I.size() < 2)
+	{
+		_coarseness = _contrast = _busyness = _complexity = _strength = STNGS_NAN(s);
 		return;
 	}
 
-	// Prepare ROI's intensity range for normalize_I()
-	PixIntens piRange = r.aux_max - r.aux_min;
+	const int rad = STNGS_NGTDM_RADIUS(s);
+	Ng = (int) I.size();
+	N.assign (Ng, 0);
+	S.assign (Ng, 0.0);
+	P.assign (Ng, 0.0);
+	Nvp = 0;
 
-	// Make a list of intensity clusters (zones)
-	using AveNeighborhoodInte = std::pair<PixIntens, double>;	// Pairs of (intensity, average intensity of all 8 neighbors)
-	std::vector<AveNeighborhoodInte> Z;
+	// O(1) grey-level -> matrix row, replacing the per-voxel binary search in the scan below.
+	// rowLUT[v] == lower_bound(I, v) - I.begin() for every possible (shifted) binned level (the
+	// max is I's last, sorted, entry), so the row is identical to the search it replaces.
+	std::vector<int> rowLUT ((size_t) I.back() + 1, 0);
+	for (PixIntens v = 0; v <= I.back(); v++)
+		rowLUT[v] = (int) (std::lower_bound (I.begin(), I.end(), v) - I.begin());
 
-	// While scanning clusters, learn unique intensities 
-	std::unordered_set<PixIntens> U;
-
-	// ROI image
-	WriteImageMatrix_nontriv D("D3_NGTDM_feature_osized_calculate_D", r.label);
-	D.allocate_from_cloud(r.raw_pixels_NT, r.aabb, false);
-
-	// Gather zones
-	unsigned int nGrays = STNGS_NGTDM_GREYDEPTH(s);	 // former theEnvironment.get_coarse_gray_depth()
-	for (int row = 0; row < D.get_height(); row++)
-		for (int col = 0; col < D.get_width(); col++)
-		{
-			// Find a non-blank pixel 
-			PixIntens pi = Nyxus::to_grayscale(D.yx(row, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-			if (pi == 0)
-				continue;
-
-			// Update unique intensities
-			U.insert(pi);
-
-			// Evaluate the neighborhood
-			double neigsI = 0;
-
-			int nd = 0;	// Number of dependencies
-
-			if (D.safe(row - 1, col) && D.yx(row - 1, col) != 0)	// North
-			{
-				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-				nd++;
-			}
-
-			if (D.safe(row - 1, col + 1) && D.yx(row - 1, col + 1) != 0)	// North-East
-			{
-				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-				nd++;
-			}
-
-			if (D.safe(row, col + 1) && D.yx(row, col + 1) != 0)	// East
-			{
-				neigsI += Nyxus::to_grayscale(D.yx(row, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-				nd++;
-			}
-			if (D.safe(row + 1, col + 1) && D.yx(row + 1, col + 1) != 0)	// South-East
-			{
-				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-				nd++;
-			}
-			if (D.safe(row + 1, col) && D.yx(row + 1, col) != 0)	// South
-			{
-				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-				nd++;
-			}
-			if (D.safe(row + 1, col - 1) && D.yx(row + 1, col - 1) != 0)	// South-West
-			{
-				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-				nd++;
-			}
-			if (D.safe(row, col - 1) && D.yx(row, col - 1) != 0)	// West
-			{
-				neigsI += Nyxus::to_grayscale(D.yx(row, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-				nd++;
-			}
-			if (D.safe(row - 1, col - 1) && D.yx(row - 1, col - 1) != 0)	// North-West
-			{
-				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-				nd++;
-			}
-
-			// Save the intensity's average neighborhood intensity
-			if (nd > 0)
-			{
-				neigsI /= nd;
-				AveNeighborhoodInte z = { pi, neigsI };
-				Z.push_back(z);
-			}
-		}
-
-	// Fill the matrix
-
-	Ng = (int) U.size();
-	Ngp = (int) U.size();
-
-	// --allocate the matrix
-	P.resize (Ng, 0);
-	S.resize (Ng, 0);
-	N.resize (Ng, 0);
-
-	// --Set to vector to be able to know each intensity's index
-	std::vector<PixIntens> I(U.begin(), U.end());
-	std::sort(I.begin(), I.end());	// Optional
-
-	// --Calculate N and S
-	for (auto& z : Z)
+	// --- (2*rad+1)-plane sliding window of dense grey-binned planes (shift baked in)
+	const int ringN = 2 * rad + 1;
+	std::vector<std::vector<PixIntens>> ring (ringN);
+	std::vector<int> ringZ (ringN, -1);
+	std::vector<Pixel3> slab;
+	auto load = [&](int lz)
 	{
-		// row
-		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = (STNGS_IBSI(s)) ?
-			z.first : int(iter - I.begin());
-		// col
-		int col = (int)z.second;	// 1-based
-		// increment
-		N[row]++;
-		// --S
-		PixIntens pi = row;
-		double aveNeigI = z.second;
-		S[row] += std::abs(pi - aveNeigI);
-		// --Nvp
-		if (aveNeigI > 0.0)
-			Nvp++;
+		if (lz < 0 || lz >= Dz) return;
+		int slot = lz % ringN;
+		if (ringZ[slot] == lz) return;
+		std::vector<PixIntens>& pl = ring[slot];
+		pl.assign ((size_t) W * H, bgv);
+		r.raw_voxels_NT.read_slab ((size_t)(zmin + lz), slab);
+		for (const auto& v : slab)
+		{
+			int lx = (int) v.x - (int) xmin, ly = (int) v.y - (int) ymin;
+			if (lx >= 0 && lx < W && ly >= 0 && ly < H)
+				pl[(size_t) ly * W + lx] = TextureFeature::bin_pixel (v.inten, mn, mx, greyInfo) + (shift ? 1 : 0);
+		}
+		ringZ[slot] = lz;
+	};
+
+	for (int c = 0; c < Dz; c++)
+	{
+		for (int lz = c - rad; lz <= c + rad; lz++)
+			load (lz);
+		const std::vector<PixIntens>& cur = ring[c % ringN];
+
+		for (int y = 0; y < H; y++)
+			for (int x = 0; x < W; x++)
+			{
+				PixIntens pi = cur[(size_t) y * W + x];
+				if (pi == zeroI)			// skip background/off-mask voxels
+					continue;
+
+				double neigsI = 0;
+				int nd = 0;
+				for (int dz = -rad; dz <= rad; dz++)
+					for (int dy = -rad; dy <= rad; dy++)
+						for (int dx = -rad; dx <= rad; dx++)
+						{
+							if (dz == 0 && dy == 0 && dx == 0)
+								continue;
+							int nz = c + dz, ny = y + dy, nx = x + dx;
+							if (nz < 0 || nz >= Dz || ny < 0 || ny >= H || nx < 0 || nx >= W)
+								continue;
+							neigsI += ring[nz % ringN][(size_t) ny * W + nx];
+							nd++;
+						}
+
+				if (nd > 0)
+				{
+					double aveNeigI = neigsI / nd;
+					int row = rowLUT[pi];
+					N[row]++;
+					S[row] += std::abs ((double) I[row] - aveNeigI);
+					if (aveNeigI > 0.0)
+						Nvp++;
+				}
+			}
 	}
 
-	// --Calculate Nvc (sum of N)
 	Nvc = 0;
-	for (int i = 0; i < N.size(); i++)
+	for (size_t i = 0; i < N.size(); i++)
 		Nvc += N[i];
+	for (size_t i = 0; i < N.size(); i++)
+		P[i] = (Nvc > 0) ? (double) N[i] / Nvc : 0.0;
 
-	// --Calculate P
-	for (int i = 0; i < N.size(); i++)
-		P[i] = (double)N[i] / Nvc;
-
-	// Calculate features
 	_coarseness = calc_Coarseness();
 	_contrast = calc_Contrast();
 	_busyness = calc_Busyness();

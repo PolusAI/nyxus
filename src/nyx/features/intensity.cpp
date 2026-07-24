@@ -269,8 +269,10 @@ void PixelIntensityFeatures::osized_calculate (LR& r, const Fsettings& stng, con
 	// --MAD, VARIANCE, STDDEV, COV
 	double mad = 0.0,
 		var = 0.0;
-	for (auto& px : r.raw_pixels)
+	// out-of-core: dispersion is accumulated from the disk-backed pixel cloud
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)
 	{
+		Pixel2 px = r.raw_pixels_NT[i];
 		double diff = px.inten - mean_;
 		mad += std::abs(diff);
 		var += diff * diff;
@@ -323,12 +325,16 @@ void PixelIntensityFeatures::osized_calculate (LR& r, const Fsettings& stng, con
 
 	// Median absolute deviation
 	double medad = 0.0;
-	for (auto& px : r.raw_pixels)
+	// out-of-core: read from the disk-backed pixel cloud
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)
+	{
+		Pixel2 px = r.raw_pixels_NT[i];
 		medad += std::abs(px.inten - median_);
+	}
 	val_MEDIAN_ABSOLUTE_DEVIATION = medad / n;
 
-	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image 
-	//	intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] 
+	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image
+	//	intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/]
 	//	and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
 	double piu = (1.0 - double(r.aux_max - r.aux_min) / double(r.aux_max + r.aux_min)) * 100.0;
 	val_UNIFORMITY_PIU = piu;
@@ -349,11 +355,19 @@ void PixelIntensityFeatures::osized_calculate (LR& r, const Fsettings& stng, con
 	// Excess kurtosis
 	val_EXCESS_KURTOSIS = val_KURTOSIS - 3;
 
-	// Hyperskewness hs = E[x-mean].^5 / std(x).^5
-	val_HYPERSKEWNESS = mom.hyperskewness();
-
-	// Hyperflatness hf = E[x-mean].^6 / std(x).^6
-	val_HYPERFLATNESS = mom.hyperflatness();
+	// Hyperskewness / Hyperflatness from explicit central moments over the disk-backed cloud,
+	// matching the in-core path's sum-of-powers definition rather than the Moments4 variant
+	double sumPow5 = 0, sumPow6 = 0;
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)
+	{
+		double diff = double(r.raw_pixels_NT[i].inten) - mean_;
+		sumPow5 += std::pow(diff, 5.);
+		sumPow6 += std::pow(diff, 6.);
+	}
+	double denom5 = n * std::pow(val_STANDARD_DEVIATION, 5.);
+	val_HYPERSKEWNESS = denom5 == 0. ? 0. : sumPow5 / denom5;
+	double denom6 = n * std::pow(val_STANDARD_DEVIATION, 6.);
+	val_HYPERFLATNESS = denom6 == 0. ? 0. : sumPow6 / denom6;
 }
 
 void PixelIntensityFeatures::save_value(std::vector<std::vector<double>>& fvals)

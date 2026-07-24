@@ -84,6 +84,10 @@ public:
 	void osized_add_online_pixel (size_t x, size_t y, uint32_t intensity);
 	void osized_calculate (LR& roi, const Fsettings& s, const Dataset& dataset, ImageLoader& ldr);
 	void osized_calculate (LR& roi, const Fsettings& s, ImageLoader& ldr) { throw std::runtime_error("illegal use of IntensityHistogramFeatures::osized_calculate()"); }
+	// Out-of-core dispatch for the intensity histogram: route to the Dataset-taking
+	// osized_calculate. The Dataset-less overload above is a guard that throws, so the base
+	// osized_scan_whole_image cannot be used for this feature.
+	void osized_scan_whole_image (LR& roi, const Fsettings& s, const Dataset& ds, ImageLoader& ldr) override { osized_calculate (roi, s, ds, ldr); save_value (roi.fvals); }
 	void save_value (std::vector<std::vector<double>>& feature_vals);
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings& settings, const Dataset& dataset);
 	static void extract (LR& roi, const Fsettings& settings, const Dataset& dataset);

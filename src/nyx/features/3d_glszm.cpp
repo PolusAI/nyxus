@@ -1,9 +1,11 @@
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
+#include <set>
 #include <sstream>
 #include <unordered_set>
 #include "3d_glszm.h"
+#include "streaming_ccl.h"
 #include "../environment.h"
 #include "../helpers/timing.h"
 
@@ -36,9 +38,197 @@ D3_GLSZM_feature::D3_GLSZM_feature() : FeatureMethod("D3_GLSZM_feature")
 
 void D3_GLSZM_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} // Not supporting
 
+// Out-of-core 3D GLSZM. gather_size_zones() is a full 26-connectivity flood fill that greedily
+// walks a zone (with explicit backtracking via 'history') and marks voxels VISITED -- workable
+// in-core but assumes the whole cube is resident, since a zone can wander in any direction and
+// therefore its final size isn't known until the whole volume has been explored.
+//
+// This streams a standard two-pass ("raster scan") connected-component labeling: process Z-planes
+// in ascending order, and within each plane voxels in raster (row,col) order, checking only
+// CAUSAL neighbours -- those already fully labeled by the scan order. For 26-connectivity that is
+// 4 same-plane neighbours (West, North, North-West, North-East) plus all 9 neighbours in the
+// previous (fully resolved) plane -- 13 of the 26, exactly the causal half. The symmetric "future"
+// neighbours are not missed: they get discovered from the OTHER voxel's perspective once the scan
+// reaches it. A growable union-find (LabelUnionFind, streaming_ccl.h) merges labels that turn out
+// to belong to the same zone and accumulates each zone's voxel count (summed on union), so the
+// final size is known the instant the volume finishes streaming -- no second voxel pass needed.
+// Peak memory is a 2-plane label window (O(area)) plus the label table (bounded by zone count,
+// worst case O(volume) for pathological data -- the same class of bound already accepted for
+// GLRLM's per-row run-length histograms).
 void D3_GLSZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
-	calculate (r, s);
+	clear_buffers();
+
+	if (r.aux_min == r.aux_max)
+	{
+		invalidate (STNGS_NAN(s));
+		return;
+	}
+
+	int greyInfo = STNGS_GLSZM_GREYDEPTH(s);
+	if (STNGS_IBSI(s)) greyInfo = 0;
+	PixIntens mn = r.aux_min, mx = r.aux_max;
+	const PixIntens bg = TextureFeature::bin_pixel (0, mn, mx, greyInfo);
+	// Background/skip value: matlab-aware, matching THIS feature's own convention (calculate()'s
+	// zeroI) -- NOT GLRLM's hardcoded 0, which is a different feature's own quirk.
+	const PixIntens zeroI = matlab_grey_binning (greyInfo) ? 1 : 0;
+
+	const int W = (int) r.aabb.get_width(),
+		H = (int) r.aabb.get_height(),
+		Dz = (int) r.aabb.get_z_depth();
+	const StatsInt xmin = r.aabb.get_xmin(), ymin = r.aabb.get_ymin(), zmin = r.aabb.get_zmin();
+	const size_t nvox = r.raw_voxels_NT.size();
+	const bool hasBackground = nvox < (size_t) W * H * Dz;
+
+	// --- grey levels I (mirrors calculate(): ibsi_grey_binning(greyInfo) numeric check for
+	// construction -- NOT the STNGS_IBSI(s) compliance flag, which calculate() reserves for row
+	// lookup below; conflating the two was the exact bug found and fixed in GLRLM).
+	I.clear();
+	if (ibsi_grey_binning (greyInfo))
+	{
+		PixIntens maxbin = 0;
+		for (size_t i = 0; i < nvox; i++)
+		{
+			PixIntens b = TextureFeature::bin_pixel (r.raw_voxels_NT[i].inten, mn, mx, greyInfo);
+			if (b > maxbin) maxbin = b;
+		}
+		I.resize (maxbin);
+		for (int i = 0; i < (int) maxbin; i++) I[i] = i + 1;
+	}
+	else
+	{
+		std::set<PixIntens> uniq;
+		if (hasBackground && bg != 0)
+			uniq.insert (bg);
+		for (size_t i = 0; i < nvox; i++)
+		{
+			PixIntens b = TextureFeature::bin_pixel (r.raw_voxels_NT[i].inten, mn, mx, greyInfo);
+			if (b != 0) uniq.insert (b);
+		}
+		I.assign (uniq.begin(), uniq.end());
+	}
+	const bool ibsiRow = STNGS_IBSI(s);
+	auto row_of = [&](PixIntens pi) -> int
+	{
+		return ibsiRow ? (int) pi - 1 : (int)(std::lower_bound (I.begin(), I.end(), pi) - I.begin());
+	};
+
+	// --- streaming 26-connectivity CCL over a 2-plane window
+	LabelUnionFind uf;
+	std::vector<PixIntens> prevPlane, curPlane;
+	std::vector<int> prevLabel, curLabel;
+	std::vector<Pixel3> slab;
+
+	static const int SAME_PLANE_CAUSAL[4][2] = { {0,-1}, {-1,0}, {-1,-1}, {-1,1} };	// dy,dx
+
+	for (int z = 0; z < Dz; z++)
+	{
+		curPlane.assign ((size_t) W * H, bg);
+		r.raw_voxels_NT.read_slab ((size_t)(zmin + z), slab);
+		for (const auto& v : slab)
+		{
+			int lx = (int) v.x - (int) xmin, ly = (int) v.y - (int) ymin;
+			if (lx >= 0 && lx < W && ly >= 0 && ly < H)
+				curPlane[(size_t) ly * W + lx] = TextureFeature::bin_pixel (v.inten, mn, mx, greyInfo);
+		}
+		curLabel.assign ((size_t) W * H, -1);
+
+		for (int y = 0; y < H; y++)
+			for (int x = 0; x < W; x++)
+			{
+				PixIntens pi = curPlane[(size_t) y * W + x];
+				if (pi == zeroI)
+					continue;
+
+				int found = -1;
+				for (auto& d : SAME_PLANE_CAUSAL)
+				{
+					int ny = y + d[0], nx = x + d[1];
+					if (ny < 0 || ny >= H || nx < 0 || nx >= W) continue;
+					if (curPlane[(size_t) ny * W + nx] != pi) continue;
+					int lbl = curLabel[(size_t) ny * W + nx];
+					if (lbl < 0) continue;
+					found = (found < 0) ? lbl : uf.union_sum (found, lbl);
+				}
+				if (z > 0)
+				{
+					for (int dy = -1; dy <= 1; dy++)
+						for (int dx = -1; dx <= 1; dx++)
+						{
+							int ny = y + dy, nx = x + dx;
+							if (ny < 0 || ny >= H || nx < 0 || nx >= W) continue;
+							if (prevPlane[(size_t) ny * W + nx] != pi) continue;
+							int lbl = prevLabel[(size_t) ny * W + nx];
+							if (lbl < 0) continue;
+							found = (found < 0) ? lbl : uf.union_sum (found, lbl);
+						}
+				}
+
+				if (found < 0)
+					found = uf.make_label (pi, 1);
+				else
+					uf.add_sum (found, 1);
+				curLabel[(size_t) y * W + x] = found;
+			}
+
+		prevPlane.swap (curPlane);
+		prevLabel.swap (curLabel);
+	}
+
+	// --- one zone per distinct root
+	std::vector<std::pair<PixIntens, int>> Zones;
+	std::vector<char> seenRoot (uf.num_labels(), 0);
+	for (size_t i = 0; i < uf.num_labels(); i++)
+	{
+		int rt = uf.find ((int) i);
+		if (seenRoot[rt]) continue;
+		seenRoot[rt] = 1;
+		Zones.push_back ({ uf.intensity_of (rt), (int) uf.metric (rt) });
+	}
+
+	int maxZoneArea = 0;
+	for (auto& zo : Zones)
+		maxZoneArea = (std::max) (maxZoneArea, zo.second);
+
+	Ng = (int) I.size();
+	Ns = maxZoneArea;
+	Nz = (int) Zones.size();
+	Np = (int) nvox;
+
+	P.allocate (Ns, Ng);
+	P.fill (0);
+	for (auto& zo : Zones)
+	{
+		int row = row_of (zo.first);
+		int col = zo.second - 1;
+		P.xy (col, row)++;
+	}
+
+	sum_p = 0;
+	for (auto a : P) sum_p += a;
+	if (sum_p == 0)
+	{
+		invalidate (STNGS_NAN(s));
+		return;
+	}
+
+	calc_sums_of_P();
+	fv_SAE = calc_SAE();
+	fv_LAE = calc_LAE();
+	fv_GLN = calc_GLN();
+	fv_GLNN = calc_GLNN();
+	fv_SZN = calc_SZN();
+	fv_SZNN = calc_SZNN();
+	fv_ZP = calc_ZP();
+	fv_GLV = calc_GLV();
+	fv_ZV = calc_ZV();
+	fv_ZE = calc_ZE();
+	fv_LGLZE = calc_LGLZE();
+	fv_HGLZE = calc_HGLZE();
+	fv_SALGLE = calc_SALGLE();
+	fv_SAHGLE = calc_SAHGLE();
+	fv_LALGLE = calc_LALGLE();
+	fv_LAHGLE = calc_LAHGLE();
 }
 
 /*static*/ void D3_GLSZM_feature::gather_size_zones (std::vector<std::pair<PixIntens, int>> & Zones, SimpleCube <PixIntens> & D, PixIntens zeroI)

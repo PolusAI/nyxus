@@ -3,8 +3,11 @@
 #ifdef OMEZARR_SUPPORT
 
 #include <algorithm>
+#include <vector>
+#include <stdexcept>
 #include "abs_tile_loader.h"
 #include "nlohmann/json.hpp"
+#include "ome/ome_zarr_layout.h"   // resolve_zarr_layout() -- shared with raw_omezarr.h
 
 // factory functions to create files, groups and datasets
 #include "z5/factory.hxx"
@@ -23,7 +26,7 @@
 /// @brief Tile Loader for OMEZarr
 /// @tparam DataType AbstractView's internal type
 template<class DataType>
-class NyxusOmeZarrLoader : public AbstractTileLoader<DataType> 
+class NyxusOmeZarrLoader : public AbstractTileLoader<DataType>
 {
 public:
 
@@ -37,40 +40,32 @@ public:
     {
         // Open the file
         zarr_ptr_ = std::make_unique<z5::filesystem::handle::File>(filePath.c_str());
-        nlohmann::json file_attributes, ds_attributes;
+        nlohmann::json file_attributes;
         z5::readAttributes(*zarr_ptr_, file_attributes);
 
-        // assume only one dataset is present
-        ds_name_ = file_attributes["multiscales"][0]["datasets"][0]["path"].get<std::string>();
-        const auto ds_handle = z5::filesystem::handle::Dataset(*zarr_ptr_, ds_name_);
-        fs::path metadata_path;
-        auto success = z5::filesystem::metadata_detail::getMetadataPath(ds_handle, metadata_path);
-        z5::filesystem::metadata_detail::readMetadata(metadata_path, ds_attributes);
-        
-        full_depth_ = ds_attributes["shape"][2].get<size_t>();
-        full_height_ = ds_attributes["shape"][3].get<size_t>();
-        full_width_ = ds_attributes["shape"][4].get<size_t>();
-        tile_depth_ = ds_attributes["chunks"][2].get<size_t>();
-        tile_height_ = ds_attributes["chunks"][3].get<size_t>();
-        tile_width_ = ds_attributes["chunks"][4].get<size_t>();
-        std::string dtype_str = ds_attributes["dtype"].get<std::string>();
-        if      (dtype_str == "<u1") {data_format_=1;} //uint8_t
-        else if (dtype_str == "<u2") {data_format_=2;} //uint16_t
-        else if (dtype_str == "<u4") {data_format_=3;} //uint32_t
-        else if (dtype_str == "<u8") {data_format_=4;} //uint16_t
-        else if (dtype_str == "<i1") {data_format_=5;} //int8_t
-        else if (dtype_str == "<i2") {data_format_=6;} //int16_t
-        else if (dtype_str == "<i4") {data_format_=7;} //int32_t
-        else if (dtype_str == "<i8") {data_format_=8;} //int64_t
-        else if (dtype_str == "<f2") {data_format_=9;} //float
-        else if (dtype_str == "<f4") {data_format_=9;} //float
-        else if (dtype_str == "<f8") {data_format_=10;} //double
-        else {data_format_=2;} //uint16_t
+        // Resolve the level-0 dataset path (needed here to open the dataset)
+        ds_name_ = Nyxus::zarr_multiscales_root(file_attributes)["multiscales"][0]["datasets"][0]["path"].get<std::string>();
 
-        // Open the dataset once and cache the handle. The dataset metadata is
-        // immutable for the lifetime of this loader, so there is no need to
-        // re-open (and re-parse the .zarray metadata) on every tile read.
+        // FIX (IO): open the dataset via z5, which auto-detects Zarr v2 (.zarray) vs v3
+        // (zarr.json) and handles the v3 chunk-key encoding, codecs (zstd/blosc/...) and
+        // sharding. Query shape/chunking/dtype from the Dataset object (format-agnostic)
+        // instead of parsing the v2-only .zarray by hand -- this is what lets the loader read
+        // BOTH OME-Zarr 0.4 and 0.5. The dataset handle is cached (metadata is immutable).
         ds_ = z5::openDataset(*zarr_ptr_, ds_name_);
+        std::vector<size_t> level0Shape(ds_->shape().begin(), ds_->shape().end());
+        std::vector<size_t> chunkShape(ds_->defaultChunkShape().begin(), ds_->defaultChunkShape().end());
+
+        // Axis roles, extents, chunking, calibration and pixel type, resolved from the NGFF
+        // 'axes' metadata (shared with RawOmezarrLoader -- see ome/ome_zarr_layout.h)
+        Nyxus::ZarrLayout L = Nyxus::resolve_zarr_layout (file_attributes, level0Shape, chunkShape, ds_->getDtype());
+        ndim_ = L.ndim;
+        ix_ = L.ix; iy_ = L.iy; iz_ = L.iz; ic_ = L.ic; it_ = L.it;
+        full_width_ = L.full_width; full_height_ = L.full_height; full_depth_ = L.full_depth;
+        tile_width_ = L.tile_width; tile_height_ = L.tile_height; tile_depth_ = L.tile_depth;
+        n_levels_ = L.n_levels; n_channels_ = L.n_channels; n_timeframes_ = L.n_timeframes;
+        phys_x_ = L.phys_x; phys_y_ = L.phys_y; phys_z_ = L.phys_z; phys_unit_ = L.phys_unit;
+        bits_per_sample_ = L.bits_per_sample;
+        data_format_ = L.data_format;
     }
 
     /// @brief NyxusOmeZarrLoader destructor
@@ -90,54 +85,57 @@ public:
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
         size_t indexLayerGlobalTile,
-        [[maybe_unused]] size_t level) override 
+        size_t indexChannel,        // C plane to read (offset into the channel axis)
+        size_t indexTimeframe,      // T plane to read (offset into the time axis)
+        [[maybe_unused]] size_t level) override
     {
         size_t pixel_row_index = indexRowGlobalTile*tile_height_;
         size_t pixel_col_index = indexColGlobalTile*tile_width_;
         size_t pixel_layer_index = indexLayerGlobalTile*tile_depth_;
 
-        
+
         switch (data_format_)
         {
         case 1:
-            loadTile<uint8_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<uint8_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 2:
-            loadTile<uint16_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<uint16_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 3:
-            loadTile<uint32_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<uint32_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 4:
-            loadTile<uint64_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<uint64_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 5:
-            loadTile<int8_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<int8_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 6:
-            loadTile<int16_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<int16_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 7:
-            loadTile<int32_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<int32_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 8:
-            loadTile<int64_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<int64_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 9:
-            loadTile<float>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<float>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         case 10:
-            loadTile<double>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<double>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         default:
-            loadTile<uint16_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index);
+            loadTile<uint16_t>(tile, pixel_row_index, pixel_col_index, pixel_layer_index, indexChannel, indexTimeframe);
             break;
         }
     }
-    
+
     template<typename FileType>
-    void loadTile(std::shared_ptr<std::vector<DataType>> &dest, size_t pixel_row_index, 
-                  size_t pixel_col_index, size_t pixel_layer_index) {
+    void loadTile(std::shared_ptr<std::vector<DataType>> &dest, size_t pixel_row_index,
+                  size_t pixel_col_index, size_t pixel_layer_index,
+                  size_t pixel_channel_index, size_t pixel_timeframe_index) {
         size_t data_height = tile_height_, data_width = tile_width_;
         if (pixel_row_index + data_height > full_height_) {
             data_height = full_height_ - pixel_row_index;
@@ -145,23 +143,40 @@ public:
         if (pixel_col_index + data_width > full_width_) {
             data_width = full_width_ - pixel_col_index;
         }
+        // A chunk may span several Z-planes (tile_depth_ > 1); read its whole Z-extent in one
+        // subarray call, clamped at the last (possibly partial) chunk.
+        size_t data_depth = 1;
+        if (iz_ >= 0) {
+            data_depth = tile_depth_;
+            if (pixel_layer_index + data_depth > full_depth_)
+                data_depth = full_depth_ - pixel_layer_index;
+        }
 
         // Create a buffer to hold the read data
-        std::vector<FileType> buffer(data_height * data_width);
-        
-        // Create an ArrayView into the buffer (z5 3.0.1 uses ArrayView instead of xtensor)
-        z5::types::ShapeType shape = {1, 1, 1, data_height, data_width};
+        std::vector<FileType> buffer(data_height * data_width * data_depth);
+
+        // Build the read window by axis ROLE (honoring the resolved 'axes' order),
+        // reading a Z*Y*X block (data_depth Z-planes) at the requested C/T. z5 3.0.1 uses ArrayView.
+        z5::types::ShapeType shape(ndim_, 1), offset(ndim_, 0);
+        shape[iy_] = data_height; offset[iy_] = pixel_row_index;
+        shape[ix_] = data_width;  offset[ix_] = pixel_col_index;
+        if (iz_ >= 0) { shape[iz_] = data_depth; offset[iz_] = pixel_layer_index; }
+        if (ic_ >= 0) offset[ic_] = pixel_channel_index;
+        if (it_ >= 0) offset[it_] = pixel_timeframe_index;
         auto view = z5::multiarray::makeView(buffer.data(), shape);
-        z5::types::ShapeType offset = {0, 0, pixel_layer_index, pixel_row_index, pixel_col_index};
-        
+
         // Read subarray from the cached z5 dataset
         z5::multiarray::readSubarray<FileType>(*ds_, view, offset.begin());
-        
-        // Copy from buffer to destination tile, handling partial tiles
-        for (size_t k = 0; k < data_height; ++k) {
-            std::copy(buffer.begin() + k * data_width, 
-                     buffer.begin() + (k + 1) * data_width, 
-                     dest->begin() + k * tile_width_);
+
+        // Copy from buffer to destination tile, handling partial tiles and multiple Z-planes
+        // (dest is laid out plane-major: plane p, row k at offset (p*tile_height_ + k)*tile_width_,
+        // matching ImageLoader::assemble_volume's/RawImageLoader::for_each_voxel's expected stride).
+        for (size_t p = 0; p < data_depth; ++p) {
+            for (size_t k = 0; k < data_height; ++k) {
+                std::copy(buffer.begin() + (p * data_height + k) * data_width,
+                         buffer.begin() + (p * data_height + k) * data_width + data_width,
+                         dest->begin() + (p * tile_height_ + k) * tile_width_);
+            }
         }
     }
 
@@ -191,12 +206,19 @@ public:
     /// @return Tile depth
     [[nodiscard]] size_t tileDepth([[maybe_unused]] size_t level) const override { return tile_depth_; }
 
-    /// @brief Tiff bits per sample
-    /// @return Size of a sample in bits
-    [[nodiscard]] short bitsPerSample() const override { return 1; }
-    /// @brief Level accessor
-    /// @return 1
-    [[nodiscard]] size_t numberPyramidLevels() const override { return 1; }
+    /// @brief Bits per sample (resolved from the dataset dtype)
+    [[nodiscard]] short bitsPerSample() const override { return bits_per_sample_; }
+    /// @brief Number of resolution (pyramid) levels declared in multiscales
+    [[nodiscard]] size_t numberPyramidLevels() const override { return n_levels_; }
+    /// @brief Channel (C) extent resolved from the NGFF axes (1 if no channel axis)
+    [[nodiscard]] size_t numberChannels() const override { return n_channels_; }
+    /// @brief Time (T) extent resolved from the NGFF axes (1 if no time axis)
+    [[nodiscard]] size_t fullTimestamps([[maybe_unused]] size_t level) const override { return n_timeframes_; }
+    /// @brief Physical voxel spacing from the NGFF coordinateTransformations (1.0 if uncalibrated)
+    [[nodiscard]] double physicalSizeX() const override { return phys_x_; }
+    [[nodiscard]] double physicalSizeY() const override { return phys_y_; }
+    [[nodiscard]] double physicalSizeZ() const override { return phys_z_; }
+    [[nodiscard]] std::string physicalSizeUnit() const override { return phys_unit_; }
 
 private:
 
@@ -207,6 +229,16 @@ private:
         tile_width_ = 0,           ///< Tile width
         tile_height_ = 0,          ///< Tile height
         tile_depth_ = 0;           ///< Tile depth
+
+    // Storage-dimension index of each axis role (-1 if the axis is absent).
+    int ix_ = 4, iy_ = 3, iz_ = 2, ic_ = 1, it_ = 0;
+    size_t ndim_ = 5;              ///< Number of on-disk dimensions (2..5)
+    short bits_per_sample_ = 16;   ///< Real bit depth
+    size_t n_levels_ = 1;          ///< Pyramid level count
+    size_t n_channels_ = 1;        ///< Channel (C) extent
+    size_t n_timeframes_ = 1;      ///< Time (T) extent
+    double phys_x_ = 1.0, phys_y_ = 1.0, phys_z_ = 1.0;   ///< Physical voxel spacing
+    std::string phys_unit_;        ///< Physical-size unit (e.g. "micrometer")
 
     short data_format_ = 0;
     std::unique_ptr<z5::filesystem::handle::File> zarr_ptr_;

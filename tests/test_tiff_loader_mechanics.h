@@ -83,7 +83,7 @@ inline void test_uint32_strip_tiff_loader()
         auto tile = std::make_shared<std::vector<uint32_t>>(tw * th * td);
 
         // Single tile at (row,col,layer,level) = (0,0,0,0) covers this small image.
-        loader.loadTileFromFile(tile, 0, 0, 0, 0);
+        loader.loadTileFromFile(tile, 0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0);
 
         for (uint32_t y = 0; y < h; ++y)
             for (uint32_t x = 0; x < w; ++x)

@@ -32,12 +32,16 @@ public:
   /// @param tile Tile to load
   /// @param indexRowGlobalTile Tile's row index in the file to load
   /// @param indexColGlobalTile Tile's col index in the file to load
-  /// @param indexLayerGlobalTile Tile's layer index in the file to load
+  /// @param indexLayerGlobalTile Tile's layer (Z) index in the file to load
+  /// @param indexChannel Channel (C) index to load; 0 for single-channel data
+  /// @param indexTimeframe Time (T) index to load; 0 for non-time-series data
   /// @param level Tile's pyramidal level in the file to load
   virtual void loadTileFromFile(std::shared_ptr<std::vector<DataType>> tile,
                                 size_t indexRowGlobalTile,
                                 size_t indexColGlobalTile,
                                 size_t indexLayerGlobalTile,
+                                size_t indexChannel,
+                                size_t indexTimeframe,
                                 size_t level) = 0;
 
   /// \brief Getter to full Height
@@ -69,6 +73,14 @@ public:
   [[nodiscard]] virtual size_t numberChannels() const {
     return 1;
   }
+
+  /// \brief Physical voxel spacing along X/Y/Z (default 1.0 == uncalibrated).
+  /// OME loaders return the parsed PhysicalSize*; everything else stays 1.0.
+  [[nodiscard]] virtual double physicalSizeX() const { return 1.0; }
+  [[nodiscard]] virtual double physicalSizeY() const { return 1.0; }
+  [[nodiscard]] virtual double physicalSizeZ() const { return 1.0; }
+  /// \brief Physical-size unit string (e.g. "micrometer"); empty if unknown.
+  [[nodiscard]] virtual std::string physicalSizeUnit() const { return std::string(); }
 
   /// \brief Getter to tile Width
   /// @param level tile's level considered

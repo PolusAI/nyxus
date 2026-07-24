@@ -17,21 +17,28 @@ bool LR::nontrivial_roi (size_t n_rois, size_t limit)
 
 size_t LR::get_ram_footprint_estimate (size_t n_slide_rois) const
 {
+	// n_slide_rois==0 means zero OTHER rois to ever hold as neighbors, so that term is 0 bytes --
+	// not (size_t)(0-1)*sizeof(int), which underflows to SIZE_MAX and then overflows the multiply
+	// to another huge wrapped value. A caller passing an in-progress batch count (which starts at
+	// 0) hits this on every batch's first item.
+	size_t neighborsBytes = (n_slide_rois > 0) ? (n_slide_rois - 1) * sizeof(int) : 0;
 	size_t sz =
 		int(Nyxus::FeatureIMQ::_COUNT_) * 10 * sizeof(double) + // feature values (approximately 10 each)
 		aabb.get_width() * aabb.get_height() * sizeof(Pixel2) +	// image matrix
 		aux_area * sizeof(Pixel2) +	// raw pixels
-		(n_slide_rois - 1) * sizeof(int);	// neighbors
+		neighborsBytes;
 	return sz;
 }
 
 size_t LR::get_ram_footprint_estimate_3D (size_t n_volume_rois) const
 {
+	// see get_ram_footprint_estimate() above for why n==0 is guarded rather than left to underflow
+	size_t neighborsBytes = (n_volume_rois > 0) ? (n_volume_rois - 1) * sizeof(int) : 0;
 	size_t sz =
 		int(Nyxus::FeatureIMQ::_COUNT_) * 10 * sizeof(double) + // feature values (approximately 10 each)
 		aabb.get_width() * aabb.get_height() * aabb.get_z_depth() * sizeof(Pixel2) +	// image matrix
 		aux_area * sizeof(Pixel2) +	// raw pixels
-		(n_volume_rois - 1) * sizeof(int);	// neighbors
+		neighborsBytes;
 	return sz;
 }
 

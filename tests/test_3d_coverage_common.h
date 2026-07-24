@@ -143,14 +143,14 @@ static Computed3DFeatureValues build_computed_3d_feature_values()
 			e.dataset.update_dataset_props_extrema();
 
 			clear_slide_rois(e.uniqueLabels, e.roiData);
-			if (!gatherRoisMetrics_3D(e, 0, ipath, mpath, 0))
+			if (!gatherRoisMetrics_3D(e, 0, ipath, mpath, 0/*t_index*/, 0/*channel*/))
 			{
 				out.setup_error = "gatherRoisMetrics_3D failed for 3D coverage phantom";
 				return false;
 			}
 
 			std::vector<int> batch = { label };
-			if (!scanTrivialRois_3D(e, batch, ipath, mpath, 0))
+			if (!scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/, 0/*channel*/))
 			{
 				out.setup_error = "scanTrivialRois_3D failed for 3D coverage phantom";
 				return false;
@@ -307,7 +307,7 @@ static const std::map<std::string, std::vector<double>>& unvetted_3d_local_regre
 		{ "3COMPACTNESS1", { 0.010537043861899255 } },
 		{ "3COMPACTNESS2", { 0.039449347281835329 } },
 		{ "3COV", { 0.29486207043456802 } },
-		{ "3COVERED_IMAGE_INTENSITY_RANGE", { 1.0002043207290587 } },
+		{ "3COVERED_IMAGE_INTENSITY_RANGE", { 0.66137566137566139 } },
 		{ "3ELONGATION", { 0.84332105599389762 } },  // FIX(axis mislabel): was 0.8099; now = MIRP morph_pca_elongation
 		{ "3EXCESS_KURTOSIS", { -1.2127631603215119 } },
 		{ "3FLATNESS", { 0.68299758045903847 } },  // FIX(axis mislabel): was 1.186 (>1, impossible); now = MIRP morph_pca_flatness

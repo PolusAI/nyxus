@@ -127,6 +127,10 @@ set(SOURCE
 	src/nyx/raw_tiff.h
 	# sources
 	src/nyx/3rdparty/dsyevj3.cpp
+	# native OME metadata parsing + unified format detection
+	src/nyx/ome/format_detect.cpp
+	src/nyx/ome/ome_tiff_meta.cpp
+	src/nyx/ome/ome_zarr_meta.cpp
 	src/nyx/features/basic_morphology.cpp
 	src/nyx/features/caliper_feret.cpp
 	src/nyx/features/caliper_martin.cpp
@@ -154,6 +158,7 @@ set(SOURCE
 	src/nyx/features/hexagonality_polygonality.cpp
 	src/nyx/features/image_matrix.cpp
 	src/nyx/features/image_matrix_nontriv.cpp
+	src/nyx/features/voxel_cloud_nontriv.cpp
 	src/nyx/features/2d_geomoments.cpp
 	src/nyx/features/2d_geomoments_basic.cpp
 	src/nyx/features/2d_geomoments_basic_nt.cpp
@@ -223,6 +228,7 @@ set(SOURCE
 	src/nyx/phase2_25d.cpp
 	src/nyx/phase2_3d.cpp
 	src/nyx/phase3.cpp
+	src/nyx/phase3_3d.cpp
 	src/nyx/pixel_feed.cpp
 	src/nyx/raw_image_loader.cpp
 	src/nyx/reduce_trivial_rois.cpp
@@ -275,7 +281,25 @@ if(USE_Z5)
 		include_directories (${ZLIB_INCLUDE_DIR})
 		add_definitions(-DHAVE_ZLIB)	# telling NIFTI code of zlib availability, otherwise it'll support only uncompressed NIFTI
 	endif()
-	
+
+	# zstd: the DEFAULT codec of Zarr v3 (OME-Zarr 0.5). z5's ZstdCompressor is gated by
+	# WITH_ZSTD; without it, zstd-compressed v3 chunks fail to decode. Optional: if zstd
+	# isn't found we still read uncompressed / blosc / zlib v3 stores. Defining WITH_ZSTD
+	# makes a z5 header include <zstd.h>, so the header must be found as well as the
+	# library -- a build environment can carry libzstd while its headers sit outside the
+	# dependency prefix, and defining the macro on the strength of the library alone turns
+	# that into a fatal include error.
+	find_library(ZSTD_LIBRARY NAMES zstd libzstd)
+	find_path(ZSTD_INCLUDE_DIR NAMES zstd.h)
+	if(ZSTD_LIBRARY AND ZSTD_INCLUDE_DIR)
+		add_definitions(-DWITH_ZSTD)
+		list(APPEND Nyxus_LIBRARIES ${ZSTD_LIBRARY})
+		include_directories(${ZSTD_INCLUDE_DIR})
+		message(STATUS "zstd found (${ZSTD_LIBRARY}) -> Zarr v3 zstd codec enabled")
+	else()
+		message(STATUS "zstd not fully available (lib='${ZSTD_LIBRARY}' include='${ZSTD_INCLUDE_DIR}') -> Zarr v3 zstd-compressed chunks will be unsupported")
+	endif()
+
 	if(nlohmann_json_FOUND)
 		include_directories(${nlohmann_json_INCLUDE_DIR})
 	endif()
