@@ -43,6 +43,7 @@ void OutOfRamVoxelCloud::init (unsigned int _roi_label, const std::string& name)
 	n_items = 0;
 	slab_first.clear();
 	slab_count.clear();
+	slab_open = false;
 	invalidate_cache();
 
 	auto tid = std::this_thread::get_id();
@@ -79,12 +80,13 @@ void OutOfRamVoxelCloud::clear()
 	}
 	slab_first.clear();
 	slab_count.clear();
+	slab_open = false;
 	invalidate_cache();
 }
 
 void OutOfRamVoxelCloud::begin_slab (size_t z)
 {
-	// Planes arrive in ascending order; grow the index so slab_first[z]/slab_count[z] are addressable
+	// Grow the index so slab_first[z]/slab_count[z] are addressable
 	if (slab_first.size() <= z)
 	{
 		slab_first.resize (z + 1, n_items);
@@ -92,6 +94,9 @@ void OutOfRamVoxelCloud::begin_slab (size_t z)
 	}
 	slab_first[z] = n_items;
 	slab_count[z] = 0;
+	// Remember which plane is open so add_voxel() counts into it explicitly
+	cur_slab = z;
+	slab_open = true;
 }
 
 void OutOfRamVoxelCloud::add_voxel (const Pixel3& v)
@@ -104,15 +109,15 @@ void OutOfRamVoxelCloud::add_voxel (const Pixel3& v)
 	fwrite ((const void*) &(v.inten), sizeof(v.inten), 1, pF);
 
 	n_items++;
-	if (!slab_count.empty())
-		slab_count.back()++;
+	// Credit the voxel to the plane begin_slab() opened, not to the index's last entry -- the
+	// two coincide only while planes arrive in strictly ascending z
+	if (slab_open)
+		slab_count[cur_slab]++;
 
 	// A write past the cached block would make it stale; the population phase never interleaves
 	// reads, so this just holds the cache empty until the first read.
 	invalidate_cache();
 }
-
-void OutOfRamVoxelCloud::end_slab (size_t /*z*/) {}
 
 size_t OutOfRamVoxelCloud::size() const
 {
@@ -163,20 +168,4 @@ void OutOfRamVoxelCloud::read_slab (size_t z, std::vector<Pixel3>& out) const
 		return;
 	}
 	read_range (slab_first[z], slab_count[z], out);
-}
-
-void OutOfRamVoxelCloud::read_slab_window (size_t z0, size_t z1, std::vector<Pixel3>& out) const
-{
-	// Contiguous on disk because records are Z-sorted: one range spans planes z0..z1
-	if (slab_first.empty() || z0 >= slab_first.size())
-	{
-		out.clear();
-		return;
-	}
-	size_t zi = (z1 < slab_first.size()) ? z1 : slab_first.size() - 1;
-	size_t first = slab_first[z0];
-	size_t count = 0;
-	for (size_t z = z0; z <= zi; z++)
-		count += slab_count[z];
-	read_range (first, count, out);
 }

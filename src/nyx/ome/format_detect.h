@@ -18,9 +18,14 @@ namespace Nyxus
 		bool is_ome = false;    // OME metadata actually present (OME-XML / NGFF multiscales)
 	};
 
-	// Classify by big-extension, then content-sniff: OME-XML in TIFF IFD-0
-	// ImageDescription, or NGFF `multiscales` in a Zarr group. Never throws.
-	InputFormat detect_input_format(const std::string& path);
+	// Which loader backend handles this path, from the big-extension alone -- TIFF flavors are
+	// reported as TiffPlain because a single TIFF loader serves both. This is what the loader
+	// dispatch sites use: it opens nothing, so it stays cheap even though ImageLoader::open()
+	// is called once per oversized ROI. Never throws.
+	ContainerKind detect_container_family (const std::string& path);
 
-	const char* to_string(ContainerKind k);
+	// Classify by big-extension, then content-sniff: OME-XML in TIFF IFD-0
+	// ImageDescription, or NGFF `multiscales` in a Zarr group. Distinguishes OmeTiff from
+	// TiffPlain and reports is_ome, at the cost of opening the file. Never throws.
+	InputFormat detect_input_format(const std::string& path);
 }

@@ -12,17 +12,28 @@
 
 namespace Nyxus
 {
-	const char* to_string(ContainerKind k)
+	// Big-extension classification, with TIFF flavors left undifferentiated. This is all the
+	// loader dispatch needs, and it touches no file content.
+	static ContainerKind kind_of_extension (const std::string& path)
 	{
-		switch (k)
-		{
-			case ContainerKind::TiffPlain: return "TiffPlain";
-			case ContainerKind::OmeTiff:   return "OmeTiff";
-			case ContainerKind::OmeZarr:   return "OmeZarr";
-			case ContainerKind::Dicom:     return "Dicom";
-			case ContainerKind::Nifti:     return "Nifti";
-			default:                       return "Unknown";
-		}
+		std::string ext = Nyxus::get_big_extension(path);
+		std::transform(ext.begin(), ext.end(), ext.begin(),
+			[](unsigned char c) { return (char)std::tolower(c); });
+
+		if (ext == ".zarr" || ext == ".ome.zarr")
+			return ContainerKind::OmeZarr;
+		if (ext == ".dcm" || ext == ".dicom")
+			return ContainerKind::Dicom;
+		if (ext == ".nii" || ext == ".nii.gz")
+			return ContainerKind::Nifti;
+
+		// Everything else is a TIFF flavor (.tif/.tiff/.ome.tif/.ome.tiff/.tf2/.tf8/.btf).
+		return ContainerKind::TiffPlain;
+	}
+
+	ContainerKind detect_container_family (const std::string& path)
+	{
+		return kind_of_extension (path);
 	}
 
 	// Does this TIFF carry an OME-XML block in IFD-0's ImageDescription?
@@ -69,20 +80,18 @@ namespace Nyxus
 
 	InputFormat detect_input_format(const std::string& path)
 	{
-		std::string ext = Nyxus::get_big_extension(path);
-		std::transform(ext.begin(), ext.end(), ext.begin(),
-			[](unsigned char c) { return (char)std::tolower(c); });
-
-		if (ext == ".zarr" || ext == ".ome.zarr")
-			return { ContainerKind::OmeZarr, zarr_has_multiscales(path) };
-		if (ext == ".dcm" || ext == ".dicom")
-			return { ContainerKind::Dicom, false };
-		if (ext == ".nii" || ext == ".nii.gz")
-			return { ContainerKind::Nifti, false };
-
-		// Everything else is a TIFF flavor (.tif/.tiff/.ome.tif/.ome.tiff/.tf2/.tf8/.btf).
-		if (tiff_is_ome(path))
-			return { ContainerKind::OmeTiff, true };
-		return { ContainerKind::TiffPlain, false };
+		switch (kind_of_extension (path))
+		{
+			case ContainerKind::OmeZarr:
+				return { ContainerKind::OmeZarr, zarr_has_multiscales(path) };
+			case ContainerKind::Dicom:
+				return { ContainerKind::Dicom, false };
+			case ContainerKind::Nifti:
+				return { ContainerKind::Nifti, false };
+			default:
+				// TIFF: only the content sniff can tell an OME-TIFF from a plain one
+				return tiff_is_ome(path) ? InputFormat{ ContainerKind::OmeTiff, true }
+					: InputFormat{ ContainerKind::TiffPlain, false };
+		}
 	}
 }

@@ -43,17 +43,13 @@ void FeatureMethod::add_dependencies(const std::initializer_list<Nyxus::Feature3
 		dependencies.push_back((int)f);
 }
 
-void FeatureMethod::osized_scan_whole_image (LR& r, const Fsettings& s, ImageLoader& ldr)
+// Default out-of-core dispatch: ignore the Dataset and run the Dataset-less osized_calculate,
+// so features that don't need slide props are unaffected; only features that do (intensity,
+// intensity-histogram) override this and consume the Dataset.
+void FeatureMethod::osized_scan_whole_image (LR& r, const Fsettings& s, const Dataset& ds, ImageLoader& ldr)
 {
 	this->osized_calculate (r, s, ldr);
 	this->save_value (r.fvals);
-}
-
-// The Dataset-aware overload defaults to the Dataset-less path, so features that don't need
-// slide props are unaffected; only features that override it consume the Dataset.
-void FeatureMethod::osized_scan_whole_image (LR& r, const Fsettings& s, const Dataset& ds, ImageLoader& ldr)
-{
-	this->osized_scan_whole_image (r, s, ldr);
 }
 
 bool FeatureMethod::provides (int fcode) const

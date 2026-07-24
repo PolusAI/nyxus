@@ -1,4 +1,4 @@
-#define NOMINMAX
+﻿#define NOMINMAX
 #include <iostream>
 #include "nyxus_dicom_loader.h"
 #include "image_loader.h"
@@ -8,7 +8,7 @@
 #include "dirs_and_files.h"
 #include "helpers/fsystem.h"
 #include "raw_nifti.h"
-#include "ome/format_detect.h"		// FIX: unified content-sniffing loader dispatch
+#include "ome/format_detect.h"		// FIX: unified loader dispatch
 
 ImageLoader::ImageLoader() {}
 
@@ -23,11 +23,11 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
   
 	try 
 	{
-		// FIX: classify by detect_input_format() (extension + OME content sniff) instead of
-		// raw extension compares, so dispatch is identical across all 3 loaders and OME is recognized.
-		Nyxus::InputFormat fmt = Nyxus::detect_input_format (int_fpath);
+		// FIX: classify by detect_container_family() instead of raw extension compares, so
+		// dispatch is identical across all 3 loaders.
+		Nyxus::ContainerKind fmt = Nyxus::detect_container_family (int_fpath);
 
-		if (fmt.kind == Nyxus::ContainerKind::OmeZarr)		// FIX: was `ext==".zarr"||".ome.zarr"`
+		if (fmt == Nyxus::ContainerKind::OmeZarr)		// FIX: was `ext==".zarr"||".ome.zarr"`
 		{
 			#ifdef OMEZARR_SUPPORT
 				intFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, int_fpath);
@@ -40,12 +40,12 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 			#endif
 		}
 		else
-			if (fmt.kind == Nyxus::ContainerKind::Dicom)		// FIX: was `ext==".dcm"||".dicom"`
+			if (fmt == Nyxus::ContainerKind::Dicom)		// FIX: was `ext==".dcm"||".dicom"`
 			{
 				#ifdef DICOM_SUPPORT
 					// HU offset base must be the scanned (HU-domain) slide min. In preserve_hu
 					// mode the slope-1 map bypasses fp min/max/dr, so we must NOT take
-					// fpopts.min_intensity() (defaults to 0 when --fpimgmin is absent) — that
+					// fpopts.min_intensity() (defaults to 0 when --fpimgmin is absent) â€” that
 					// would clamp every negative HU to 0. Only the non-HU float path uses the
 					// fp override min.
 					intFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, int_fpath,
@@ -60,7 +60,7 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 					#endif
 			}
 			else
-				if (fmt.kind == Nyxus::ContainerKind::Nifti)		// FIX: was `ext==".nii"||".nii.gz"`
+				if (fmt == Nyxus::ContainerKind::Nifti)		// FIX: was `ext==".nii"||".nii.gz"`
 				{
 					intFL = new NiftiLoader<uint32_t> (int_fpath,
 							(fpopts.preserve_hu() || fpopts.empty()) ? p.min_preroi_inten : (double)fpopts.min_intensity(),		// HU offset base = scanned HU-domain slide min; ignore fp min in preserve_hu mode (else negative HU clamps to 0)
@@ -74,7 +74,7 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 					double fpmin = p.min_preroi_inten,
 						fpmax = p.max_preroi_inten;
 					// Only the non-HU float path honors the fp override min/max. In preserve_hu
-					// mode fpmin is the HU offset base and must stay the scanned slide min —
+					// mode fpmin is the HU offset base and must stay the scanned slide min â€”
 					// taking fpopts.min_intensity() (0 by default) would clamp every negative
 					// HU to 0. hu_offset() ignores fpmax entirely.
 					if (! fpopts.empty() && ! fpopts.preserve_hu())
@@ -136,11 +136,11 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 
 	try 
 	{
-		// FIX: unify seg dispatch with detect_input_format(). Defect fixed: the seg path only
+		// FIX: unify seg dispatch with detect_container_family(). Defect fixed: the seg path only
 		// matched ".zarr", so a ".ome.zarr" mask mis-routed to the TIFF path (intensity path matched both).
-		Nyxus::InputFormat fmt = Nyxus::detect_input_format (seg_fpath);
+		Nyxus::ContainerKind fmt = Nyxus::detect_container_family (seg_fpath);
 
-		if (fmt.kind == Nyxus::ContainerKind::OmeZarr)		// FIX: was `ext==".zarr"` only (dropped .ome.zarr)
+		if (fmt == Nyxus::ContainerKind::OmeZarr)		// FIX: was `ext==".zarr"` only (dropped .ome.zarr)
 		{
 			#ifdef OMEZARR_SUPPORT
 				segFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, seg_fpath);
@@ -149,7 +149,7 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 			#endif
 		}
 		else
-			if (fmt.kind == Nyxus::ContainerKind::Dicom)		// FIX: was `ext==".dcm"||".dicom"`
+			if (fmt == Nyxus::ContainerKind::Dicom)		// FIX: was `ext==".dcm"||".dicom"`
 			{
 				#ifdef DICOM_SUPPORT
 					segFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, seg_fpath);
@@ -158,7 +158,7 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 				#endif
 			}
 			else
-				if (fmt.kind == Nyxus::ContainerKind::Nifti)		// FIX: was `ext==".nii"||".nii.gz"`
+				if (fmt == Nyxus::ContainerKind::Nifti)		// FIX: was `ext==".nii"||".nii.gz"`
 				{
 					segFL = new NiftiLoader <uint32_t> (seg_fpath);
 				}

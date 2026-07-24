@@ -106,6 +106,19 @@ void D3_GLCM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 	const int off = D3_GLCM_feature::offset;
 	const bool sym = D3_GLCM_feature::symmetric_glcm;
 
+	// O(1) grey-level -> matrix row, replacing the per-pair binary search in the hot add_pair loop
+	// (radiomics is the only binning branch that indexes I by value; the others use pi-1 directly).
+	// rowLUT[v] == lower_bound(I, v) - I.begin() for every possible binned level, so the row is
+	// identical to the search it replaces.
+	const bool radiomics = radiomics_grey_binning(greyInfo);
+	std::vector<int> rowLUT;
+	if (radiomics)
+	{
+		rowLUT.assign ((size_t) maxbin + 1, 0);
+		for (PixIntens v = 0; v <= maxbin; v++)
+			rowLUT[v] = (int) (std::lower_bound (I.begin(), I.end(), v) - I.begin());
+	}
+
 	// Count one (base, neighbor) grey-level pair into matrix M, mirroring calculateCoocMatAtAngle:
 	// GLCM.xy(idx(neighbor), idx(base)), plus the symmetric transpose for radiomics/ibsi/symmetric.
 	auto add_pair = [&](SimpleMatrix<double>& M, PixIntens lvl_base, PixIntens lvl_nbr)
@@ -114,16 +127,16 @@ void D3_GLCM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 			if (lvl_nbr == 0 || lvl_base == 0)
 				return;
 		int a = (int) lvl_nbr, b = (int) lvl_base;
-		if (radiomics_grey_binning(greyInfo))
+		if (radiomics)
 		{
 			if (a == 0 || b == 0)
 				return;
-			a = (int) (std::lower_bound (I.begin(), I.end(), (PixIntens) a) - I.begin());
-			b = (int) (std::lower_bound (I.begin(), I.end(), (PixIntens) b) - I.begin());
+			a = rowLUT[a];
+			b = rowLUT[b];
 		}
 		else { a -= 1; b -= 1; }
 		M.xy (a, b) += 1.0;
-		if (sym || radiomics_grey_binning(greyInfo) || ibsi_grey_binning(greyInfo))
+		if (sym || radiomics || ibsi_grey_binning(greyInfo))
 			M.xy (b, a) += 1.0;
 	};
 
@@ -191,10 +204,11 @@ void D3_GLCM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 		}
 	}
 
-	// --- per-direction feature values from the accumulated matrices (shared finalize)
+	// --- per-direction feature values from the accumulated matrices (shared finalize).
+	// Move each matrix into P_matrix rather than copy it -- mats[k] is not reused afterwards.
 	for (int k = 0; k < 13; k++)
 	{
-		P_matrix = mats[k];
+		P_matrix = std::move (mats[k]);
 		sum_p = 0;
 		for (double a : P_matrix) sum_p += a;
 		finalize_angle (soft_nan);

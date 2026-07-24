@@ -364,11 +364,11 @@ void D3_SurfaceFeature::calculate (LR& r, const Fsettings& s)
 
 	// volume
 
-	// (fast approximation based on cubic lattice packaging of balls)
-	double ball_r3 = 1. / 8.,	// r^3, after the anisotropy correction, lattice is expected to be cubic
-		sumPackedV = 0.0;
-	for (const auto& vox : r.raw_pixels_3D)
-		sumPackedV += 4. / 3. * M_PI * ball_r3;
+	// (fast approximation based on cubic lattice packaging of balls). The per-voxel packed
+	// volume is a constant, so the whole sum is voxel_count * that constant (the out-of-core
+	// path already computes it closed-form; match it here instead of an O(n) accumulation).
+	double ball_r3 = 1. / 8.;	// r^3, after the anisotropy correction, lattice is expected to be cubic
+	double sumPackedV = double(r.raw_pixels_3D.size()) * (4. / 3. * M_PI * ball_r3);
 	fval_VOXEL_VOLUME = sumPackedV / 0.5236;		// packaging density at kissing number = 4 (cubic lattice)
 
 	// surface

@@ -453,6 +453,18 @@ void D3_NGLDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	NGLDM.fill (0);
 	int max_dep = 0;
 
+	// O(1) grey-level -> matrix row, replacing the per-voxel binary search in the scan below.
+	// rowLUT[v] == lower_bound(grey_levels_LUT, v) for every possible binned level (the max is
+	// the last, sorted, entry), so the row is identical to the search it replaces.
+	std::vector<int> rowLUT;
+	if (Ng > 0)
+	{
+		const PixIntens maxbin = grey_levels_LUT.back();
+		rowLUT.assign ((size_t) maxbin + 1, 0);
+		for (PixIntens v = 0; v <= maxbin; v++)
+			rowLUT[v] = (int) (std::lower_bound (grey_levels_LUT.begin(), grey_levels_LUT.end(), v) - grey_levels_LUT.begin());
+	}
+
 	// --- 3-plane sliding window of dense grey-binned planes (bg-initialised)
 	std::vector<std::vector<PixIntens>> ring (3);
 	int ringZ[3] = { -1, -1, -1 };
@@ -485,7 +497,7 @@ void D3_NGLDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 			for (int x = 1; x < W - 1; x++)
 			{
 				PixIntens cpi = cur[(size_t) y * W + x];
-				int row = (int)(std::lower_bound (grey_levels_LUT.begin(), grey_levels_LUT.end(), cpi) - grey_levels_LUT.begin());
+				int row = rowLUT[cpi];
 
 				int n_matches = 0;
 				for (int i = 0; i < nsh; i++)

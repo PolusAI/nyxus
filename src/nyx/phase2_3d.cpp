@@ -475,9 +475,6 @@ namespace Nyxus
 		size_t channel,
 		size_t timeframe)
 	{
-		int lvl = 0,	// Pyramid level
-			lyr = 0;	//	Layer
-
 		// Read the tiffs
 
 		size_t fullwidth = ilo.get_full_width(),
@@ -539,9 +536,6 @@ namespace Nyxus
 		size_t channel,
 		size_t timeframe)
 	{
-		int lvl = 0,	// Pyramid level
-			lyr = 0;	//	Layer
-
 		// Read the tiffs
 
 		size_t fullW = ilo.get_full_width(),

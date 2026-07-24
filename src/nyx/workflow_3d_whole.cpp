@@ -256,13 +256,12 @@ namespace Nyxus
 		  } //- channels x timeframes
 
 		imlo.close();
-		return rv;
 
 		//
 		// Not saving nested ROI related info because this image is single-ROI (whole-slide)
 		//
 
-		rv = 0; // success
+		return rv;
 	}
 
 

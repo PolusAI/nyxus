@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 
 #define NOMINMAX 
 
@@ -9,7 +9,7 @@
 #include "raw_nifti.h"
 #include "raw_omezarr.h"
 #include "raw_tiff.h"
-#include "ome/format_detect.h"		// FIX: unified content-sniffing loader dispatch
+#include "ome/format_detect.h"		// FIX: unified loader dispatch
 
 RawImageLoader::RawImageLoader() {}
 
@@ -17,11 +17,11 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 {
 	try
 	{
-		// FIX: classify via detect_input_format(). Defects fixed: (1) matched only ".zarr" so
+		// FIX: classify via detect_container_family(). Defects fixed: (1) matched only ".zarr" so
 		// ".ome.zarr" mis-routed to TIFF; (2) `ext==".dcm" | ext==".dicom"` used bitwise-OR (works by luck).
-		Nyxus::InputFormat fmt = Nyxus::detect_input_format (int_fpath);
+		Nyxus::ContainerKind fmt = Nyxus::detect_container_family (int_fpath);
 
-		if (fmt.kind == Nyxus::ContainerKind::OmeZarr)		// FIX: was `ext==".zarr"` only (dropped .ome.zarr)
+		if (fmt == Nyxus::ContainerKind::OmeZarr)		// FIX: was `ext==".zarr"` only (dropped .ome.zarr)
 		{
 #ifdef OMEZARR_SUPPORT
 			intFL = new RawOmezarrLoader (int_fpath);
@@ -30,7 +30,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 #endif
 		}
 		else
-			if (fmt.kind == Nyxus::ContainerKind::Dicom) {		// FIX: was bitwise `ext==".dcm" | ext==".dicom"`
+			if (fmt == Nyxus::ContainerKind::Dicom) {		// FIX: was bitwise `ext==".dcm" | ext==".dicom"`
 #ifdef DICOM_SUPPORT
 			intFL = new RawDicomLoader (int_fpath, preserve_hu);		// CT/HU: scan in Hounsfield domain
 #else
@@ -38,7 +38,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 #endif
 		}
 			else
-				if (fmt.kind == Nyxus::ContainerKind::Nifti)		// FIX: was `ext==".nii"||".nii.gz"`
+				if (fmt == Nyxus::ContainerKind::Nifti)		// FIX: was `ext==".nii"||".nii.gz"`
 				{
 					intFL = new RawNiftiLoader (int_fpath, preserve_hu);		// FIX: CT/HU: scan in Hounsfield domain (matches DICOM)
 				}
@@ -85,10 +85,10 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 	// segmented slide
 
 	try {
-		// FIX: unified seg dispatch — same defects as the intensity path (".ome.zarr" dropped,
-		// bitwise-OR on the DICOM test) fixed here via detect_input_format().
-		Nyxus::InputFormat fmt = Nyxus::detect_input_format (seg_fpath);
-		if (fmt.kind == Nyxus::ContainerKind::OmeZarr)		// FIX: was `ext==".zarr"` only (dropped .ome.zarr)
+		// FIX: unified seg dispatch â€” same defects as the intensity path (".ome.zarr" dropped,
+		// bitwise-OR on the DICOM test) fixed here via detect_container_family().
+		Nyxus::ContainerKind fmt = Nyxus::detect_container_family (seg_fpath);
+		if (fmt == Nyxus::ContainerKind::OmeZarr)		// FIX: was `ext==".zarr"` only (dropped .ome.zarr)
 		{
 #ifdef OMEZARR_SUPPORT
 			segFL = new RawOmezarrLoader (seg_fpath);
@@ -97,7 +97,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 #endif
 		}
 		else
-			if (fmt.kind == Nyxus::ContainerKind::Dicom)		// FIX: was bitwise `ext==".dcm" | ext==".dicom"`
+			if (fmt == Nyxus::ContainerKind::Dicom)		// FIX: was bitwise `ext==".dcm" | ext==".dicom"`
 			{
 #ifdef DICOM_SUPPORT
 				segFL = new RawDicomLoader (seg_fpath);
@@ -106,7 +106,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 #endif
 			}
 			else
-				if (fmt.kind == Nyxus::ContainerKind::Nifti)		// FIX: was `ext==".nii"||".nii.gz"`
+				if (fmt == Nyxus::ContainerKind::Nifti)		// FIX: was `ext==".nii"||".nii.gz"`
 				{
 					segFL = new RawNiftiLoader (seg_fpath);
 				}

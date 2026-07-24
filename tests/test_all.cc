@@ -7,6 +7,12 @@
 #include "../src/nyx/feature_method.h"		// TEST_3D_OOC_GUARD_REJECTS_UNSUPPORTED_FEATURE
 #include "../src/nyx/features/3d_intensity.h"
 #include "../src/nyx/features/3d_glcm.h"
+#include "../src/nyx/features/3d_gldm.h"		// OOC-vs-RAM equality coverage (all texture families)
+#include "../src/nyx/features/3d_glrlm.h"
+#include "../src/nyx/features/3d_glszm.h"
+#include "../src/nyx/features/3d_gldzm.h"
+#include "../src/nyx/features/3d_ngldm.h"
+#include "../src/nyx/features/3d_ngtdm.h"
 #include "../src/nyx/ome/format_detect.h"		// detect_input_format (P1)
 #include "test_contour.h"
 #include "test_ome_meta.h"		// native-OME metadata parsers / OmeAxes descriptor
@@ -3334,6 +3340,14 @@ TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_OVERSIZED_STREAMS_OOC) {
 		e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
 		e.theFeatureSet.enableFeatures(D3_SurfaceFeature::featureset);
 		e.theFeatureSet.enableFeatures(D3_GLCM_feature::featureset);
+		// Cover every streaming 3D texture family so the out-of-core paths are held byte-exact
+		// against the in-RAM path (not just intensity/surface/GLCM)
+		e.theFeatureSet.enableFeatures(D3_GLDM_feature::featureset);
+		e.theFeatureSet.enableFeatures(D3_GLRLM_feature::featureset);
+		e.theFeatureSet.enableFeatures(D3_GLSZM_feature::featureset);
+		e.theFeatureSet.enableFeatures(D3_GLDZM_feature::featureset);
+		e.theFeatureSet.enableFeatures(D3_NGLDM_feature::featureset);
+		e.theFeatureSet.enableFeatures(D3_NGTDM_feature::featureset);
 		// The full sequence main_nyxus.cpp runs before any workflow (theFeatureMgr.compile() ->
 		// apply_user_selection() -> init_feature_classes() -> compile_feature_settings()). Skipping
 		// theFeatureMgr setup leaves get_num_requested_features()==0, so run_3d_ooc_features's loop

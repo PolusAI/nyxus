@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 
 #define NOMINMAX
 
@@ -9,7 +9,7 @@
 #include "nyxus_dicom_loader.h"
 #include "dirs_and_files.h"
 #include "helpers/fsystem.h"
-#include "ome/format_detect.h"		// FIX: unified content-sniffing loader dispatch
+#include "ome/format_detect.h"		// FIX: unified loader dispatch
 
 ImageLoader1x::ImageLoader1x() {}
 
@@ -19,12 +19,12 @@ bool ImageLoader1x::open (const std::string& fpath, const FpImageOptions & fpopt
 
 	try
 	{
-		// FIX: dispatch via detect_input_format() for parity with the other loaders (and to fix
+		// FIX: dispatch via detect_container_family() for parity with the other loaders (and to fix
 		// the bitwise-OR on the DICOM test). This loader carries no NIfTI backend, so Nifti still falls to the
-		// TIFF branch as before — behavior unchanged there.
-		Nyxus::InputFormat fmt = Nyxus::detect_input_format (fpath);
+		// TIFF branch as before â€” behavior unchanged there.
+		Nyxus::ContainerKind fmt = Nyxus::detect_container_family (fpath);
 
-		if 	(fmt.kind == Nyxus::ContainerKind::OmeZarr)		// FIX: was `fs::path(fpath).extension()==".zarr"`
+		if 	(fmt == Nyxus::ContainerKind::OmeZarr)		// FIX: was `fs::path(fpath).extension()==".zarr"`
 		{
 			#ifdef OMEZARR_SUPPORT
 			FL = std::make_unique<NyxusOmeZarrLoader<uint32_t>>(n_threads, fpath);
@@ -32,7 +32,7 @@ bool ImageLoader1x::open (const std::string& fpath, const FpImageOptions & fpopt
 			std::cout << "This version of Nyxus was not build with OmeZarr support." <<std::endl;
 			#endif
 		}
-		else if(fmt.kind == Nyxus::ContainerKind::Dicom){		// FIX: was bitwise `.extension()==".dcm" | ".dicom"`
+		else if(fmt == Nyxus::ContainerKind::Dicom){		// FIX: was bitwise `.extension()==".dcm" | ".dicom"`
 			#ifdef DICOM_SUPPORT
 			FL = std::make_unique<NyxusGrayscaleDicomLoader<uint32_t>>(n_threads, fpath);
 			#else

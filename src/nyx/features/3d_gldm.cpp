@@ -306,6 +306,13 @@ void D3_GLDM_feature::osized_calculate(LR& r, const Fsettings& s, ImageLoader&)
 	std::fill (P.begin(), P.end(), 0);
 	int max_Nd = 0;
 
+	// O(1) grey-level -> matrix row, replacing the per-voxel binary search in the scan below.
+	// rowLUT[v] == lower_bound(I, v) - I.begin() for every possible binned level, so the row is
+	// identical to the search it replaces (used only by the non-IBSI branch; IBSI uses pi-1).
+	std::vector<int> rowLUT ((size_t) maxbin + 1, 0);
+	for (PixIntens v = 0; v <= maxbin; v++)
+		rowLUT[v] = (int) (std::lower_bound (I.begin(), I.end(), v) - I.begin());
+
 	// --- 3-plane sliding window of dense grey-binned planes (bg-initialised so background matches
 	//     the in-core cube), indexed by local z modulo 3
 	std::vector<std::vector<PixIntens>> ring (3);
@@ -351,8 +358,7 @@ void D3_GLDM_feature::osized_calculate(LR& r, const Fsettings& s, ImageLoader&)
 						nd++;
 				}
 
-				int row = ibsi ? (int) pi - 1
-					: (int)(std::lower_bound (I.begin(), I.end(), pi) - I.begin());
+				int row = ibsi ? (int) pi - 1 : rowLUT[pi];
 				int col = nd - 1;
 				P.xy (col, row)++;
 				max_Nd = (std::max) (max_Nd, nd);

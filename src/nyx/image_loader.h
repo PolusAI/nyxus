@@ -59,13 +59,6 @@ public:
 	size_t get_inten_time();
 	size_t get_mask_time();
 
-	// Select which channel (C) / timeframe (T) plane subsequent load_tile() calls
-	// read. Default 0/0 preserves the single-channel, single-timepoint behavior.
-	void set_channel (size_t c) { cur_channel = c; }
-	void set_timeframe (size_t t) { cur_timeframe = t; }
-	size_t get_channel() const { return cur_channel; }
-	size_t get_timeframe() const { return cur_timeframe; }
-
 private:
 
 	AbstractTileLoader<uint32_t> *segFL = nullptr, *intFL = nullptr; 
@@ -95,8 +88,11 @@ private:
 	int lvl = 0,	// Pyramid level
 		lyr = 0;	//	Layer
 
-	size_t cur_channel = 0,		// Currently selected channel (C) plane
-		cur_timeframe = 0;		// Currently selected timeframe (T) plane
+	// Channel (C) / timeframe (T) plane that load_tile() reads. Set by load_volume() /
+	// stream_volume_planes(), which take the plane as an argument; 0/0 (the single-channel,
+	// single-timepoint case) until then.
+	size_t cur_channel = 0,
+		cur_timeframe = 0;
 
 	// Whole-volume (X*Y*Z) assembly buffers filled by load_volume()
 	std::vector<uint32_t> vol_int_, vol_seg_;

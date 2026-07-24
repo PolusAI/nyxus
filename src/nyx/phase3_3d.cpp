@@ -71,7 +71,6 @@ namespace Nyxus
 						if (wholevolume || segPlane[i] == want)
 							r.raw_voxels_NT.add_voxel (Pixel3(x, y, z, intPlane[i]));
 					}
-				r.raw_voxels_NT.end_slab (z);
 			});
 
 		if (! streamed)
