@@ -145,6 +145,8 @@ private:
 		bool normalize);
 
 	void extract_texture_features_at_angle (int dx, int dy, int dz, const SimpleCube<PixIntens> & grays, PixIntens min_val, PixIntens max_val, int n_greys, bool ibsi, double soft_nan);
+	// Compute this angle's features from the already-built P_matrix (shared by in-core + out-of-core)
+	void finalize_angle (double soft_nan);
 
 	void calculateCoocMatAtAngle(
 		// out

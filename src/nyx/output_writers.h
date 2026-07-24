@@ -1,10 +1,21 @@
 #pragma once
 
-#define FTABLE_RECORD std::tuple<std::vector<std::string>,int,double,std::vector<double>>
+// FIX (IO): the record carries the index/calibration columns before the feature block:
+//   [0] text columns  = {intensity_image, mask_image, phys_unit}  (all leading strings,
+//                        so the Python buffer's "strings first" reconstruction still holds)
+//   [1] ROI label (int)
+//   [2] t_index, [3] c_index, [4..6] phys_x/phys_y/phys_z (physical voxel spacing)
+//   [7..] feature values
+// c_index was added for per-channel OME output; phys_* for physical calibration.
+#define FTABLE_RECORD std::tuple<std::vector<std::string>,int,double,double,double,double,double,std::vector<double>>
 #define FTABLE_INTSEG   0
 #define FTABLE_ROILBL   1
 #define FTABLE_TIMEPOS  2
-#define FTABLE_FBEGIN   3
+#define FTABLE_CPOS     3
+#define FTABLE_PXPOS    4
+#define FTABLE_PYPOS    5
+#define FTABLE_PZPOS    6
+#define FTABLE_FBEGIN   7
 #define FTABLE_SAFENAN  -0.0
 
 #ifdef USE_ARROW

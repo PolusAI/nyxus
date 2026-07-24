@@ -33,7 +33,10 @@ namespace Nyxus
 {
 	bool scan_slide_props_montage(SlideProps& p, int dim, const AnisotropyOptions& aniso);
 
-	bool processIntSegImagePairInMemory (Environment & env, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label, int pair_index, const std::string& intens_name, const std::string& seg_name, std::vector<int> unprocessed_rois)
+	// unprocessed_rois is an OUT parameter: the in-memory montage pipeline has no out-of-core
+	// path, so ROIs whose footprint reaches the RAM limit are returned to the caller to be
+	// reported as an error, instead of being dropped and emitting an all-zero feature row.
+	bool processIntSegImagePairInMemory (Environment & env, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& intens, const py::array_t<unsigned int, py::array::c_style | py::array::forcecast>& label, int pair_index, const std::string& intens_name, const std::string& seg_name, std::vector<int>& unprocessed_rois)
 	{
 		std::vector<int> trivRoiLabels;
 
@@ -147,13 +150,13 @@ namespace Nyxus
 
 			if (write_apache) 
 			{
-				auto [status, msg] = env.arrow_stream.write_arrow_file (Nyxus::get_feature_values(env, env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset));
-				if (!status) 
+				auto [status, msg] = env.arrow_stream.write_arrow_file (Nyxus::get_feature_values(env, env.theFeatureSet, env.uniqueLabels, env.roiData, env.dataset, DEFAULT_T_INDEX, DEFAULT_C_INDEX));
+				if (!status)
 					return { "error writing Arrow file: " + msg.value() };
-			} 
-			else 
+			}
+			else
 			{
-				if (! save_features_2_buffer(env.theResultsCache, env, DEFAULT_T_INDEX))
+				if (! save_features_2_buffer(env.theResultsCache, env, DEFAULT_T_INDEX, DEFAULT_C_INDEX))
 					return { "error saving results to a buffer" };
 			}
 

@@ -9,6 +9,7 @@
 #include "raw_nifti.h"
 #include "raw_omezarr.h"
 #include "raw_tiff.h"
+#include "ome/format_detect.h"		// FIX: unified content-sniffing loader dispatch
 
 RawImageLoader::RawImageLoader() {}
 
@@ -16,9 +17,11 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 {
 	try
 	{
-		std::string ext = Nyxus::get_big_extension(int_fpath);
+		// FIX: classify via detect_input_format(). Defects fixed: (1) matched only ".zarr" so
+		// ".ome.zarr" mis-routed to TIFF; (2) `ext==".dcm" | ext==".dicom"` used bitwise-OR (works by luck).
+		Nyxus::InputFormat fmt = Nyxus::detect_input_format (int_fpath);
 
-		if (ext == ".zarr")
+		if (fmt.kind == Nyxus::ContainerKind::OmeZarr)		// FIX: was `ext==".zarr"` only (dropped .ome.zarr)
 		{
 #ifdef OMEZARR_SUPPORT
 			intFL = new RawOmezarrLoader (int_fpath);
@@ -26,8 +29,8 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 			std::cout << "This version of Nyxus was not build with OmeZarr support." << std::endl;
 #endif
 		}
-		else 
-			if (ext == ".dcm" | ext == ".dicom") {
+		else
+			if (fmt.kind == Nyxus::ContainerKind::Dicom) {		// FIX: was bitwise `ext==".dcm" | ext==".dicom"`
 #ifdef DICOM_SUPPORT
 			intFL = new RawDicomLoader (int_fpath, preserve_hu);		// CT/HU: scan in Hounsfield domain
 #else
@@ -35,7 +38,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 #endif
 		}
 			else
-				if (ext == ".nii" || ext == ".nii.gz")
+				if (fmt.kind == Nyxus::ContainerKind::Nifti)		// FIX: was `ext==".nii"||".nii.gz"`
 				{
 					intFL = new RawNiftiLoader (int_fpath, preserve_hu);		// FIX: CT/HU: scan in Hounsfield domain (matches DICOM)
 				}
@@ -82,8 +85,10 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 	// segmented slide
 
 	try {
-		std::string ext = Nyxus::get_big_extension(seg_fpath);
-		if (ext == ".zarr")
+		// FIX: unified seg dispatch — same defects as the intensity path (".ome.zarr" dropped,
+		// bitwise-OR on the DICOM test) fixed here via detect_input_format().
+		Nyxus::InputFormat fmt = Nyxus::detect_input_format (seg_fpath);
+		if (fmt.kind == Nyxus::ContainerKind::OmeZarr)		// FIX: was `ext==".zarr"` only (dropped .ome.zarr)
 		{
 #ifdef OMEZARR_SUPPORT
 			segFL = new RawOmezarrLoader (seg_fpath);
@@ -91,8 +96,8 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 			std::cout << "This version of Nyxus was not build with OmeZarr support." << std::endl;
 #endif
 		}
-		else 
-			if (ext == ".dcm" | ext == ".dicom") 
+		else
+			if (fmt.kind == Nyxus::ContainerKind::Dicom)		// FIX: was bitwise `ext==".dcm" | ext==".dicom"`
 			{
 #ifdef DICOM_SUPPORT
 				segFL = new RawDicomLoader (seg_fpath);
@@ -101,7 +106,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 #endif
 			}
 			else
-				if (ext == ".nii" || ext == ".nii.gz")
+				if (fmt.kind == Nyxus::ContainerKind::Nifti)		// FIX: was `ext==".nii"||".nii.gz"`
 				{
 					segFL = new RawNiftiLoader (seg_fpath);
 				}
@@ -183,11 +188,11 @@ bool RawImageLoader::load_tile(size_t tile_idx)
 	auto row = tile_idx / ntw;
 	auto col = tile_idx % ntw;
 
-	intFL->loadTileFromFile (row, col, lyr, lvl);
+	intFL->loadTileFromFile (row, col, lyr, cur_channel, cur_timeframe, lvl);
 
 	// segmentation loader is not available in wholeslide
 	if (segFL)
-		segFL->loadTileFromFile (row, col, lyr, lvl);
+		segFL->loadTileFromFile (row, col, lyr, cur_channel, cur_timeframe, lvl);
 
 	return true;
 }
@@ -197,12 +202,12 @@ bool RawImageLoader::load_tile(size_t tile_row, size_t tile_col)
 	if (tile_row >= nth || tile_col >= ntw)
 		return false;
 
-	intFL->loadTileFromFile (tile_row, tile_col, lyr, lvl);
-	
+	intFL->loadTileFromFile (tile_row, tile_col, lyr, cur_channel, cur_timeframe, lvl);
+
 	// segmentation loader is not available in wholeslide
 	if (segFL)
-		segFL->loadTileFromFile (tile_row, tile_col, lyr, lvl);
-	
+		segFL->loadTileFromFile (tile_row, tile_col, lyr, cur_channel, cur_timeframe, lvl);
+
 	return true;
 }
 
@@ -287,6 +292,31 @@ size_t RawImageLoader::get_mask_time()
 		return segFL->fullTimestamps(0);	// masked mode
 	else
 		return 0;	// whole-slide mode
+}
+
+size_t RawImageLoader::get_inten_channels()
+{
+	return intFL->numberChannels();		// FIX (IO): OME loaders report the real C; others default to 1
+}
+
+double RawImageLoader::get_physical_size_x()
+{
+	return intFL->physicalSizeX();		// FIX (IO): OME PhysicalSizeX; 1.0 if uncalibrated
+}
+
+double RawImageLoader::get_physical_size_y()
+{
+	return intFL->physicalSizeY();
+}
+
+double RawImageLoader::get_physical_size_z()
+{
+	return intFL->physicalSizeZ();
+}
+
+std::string RawImageLoader::get_physical_size_unit()
+{
+	return intFL->physicalSizeUnit();
 }
 
 std::string RawImageLoader::get_slide_descr()

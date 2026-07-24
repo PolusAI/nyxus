@@ -18,6 +18,8 @@
 #include "results_cache.h"
 #include "roi_cache.h"
 #include "save_option.h"
+
+class FeatureMethod;	// forward decl for is_3d_ooc_supported()
 #include "arrow_output_stream.h"
 #include "nested_feature_aggregation.h" // Nested ROI
 #include "cli_nested_roi_options.h"
@@ -38,7 +40,12 @@ namespace Nyxus
 	const char colname_intensity_image[] = "intensity_image",
 		colname_mask_image[] = "mask_image",
 		colname_roi_label[] = "ROI_label",
-		colname_t_index[] = "t_index";
+		colname_t_index[] = "t_index",
+		colname_c_index[] = "c_index",		// FIX (IO): channel index column, mirrors t_index
+		colname_phys_unit[] = "phys_unit",	// FIX (IO): physical-size unit (leading string column)
+		colname_phys_x[] = "phys_x",		// FIX (IO): physical voxel spacing columns (numeric)
+		colname_phys_y[] = "phys_y",
+		colname_phys_z[] = "phys_z";
 
 	// segmented 2D workflow
 	int processDataset_2D_segmented(
@@ -78,18 +85,39 @@ namespace Nyxus
 	bool gatherRoisMetrics(int slide_idx, const std::string& intens_fpath, const std::string& label_fpath, Environment & env, ImageLoader & L);
 	bool gather_wholeslide_metrics(const std::string& intens_fpath, ImageLoader& L, LR& roi);
 	bool gatherRoisMetrics_25D (Environment& env, size_t sidx, const std::string& intens_fpath, const std::string& mask_fpath, const std::vector<std::string>& z_indices);
-	bool gatherRoisMetrics_3D (Environment& env, size_t sidx, const std::string& intens_fpath, const std::string& mask_fpath, size_t t_index);
+	bool gatherRoisMetrics_3D (Environment& env, size_t sidx, const std::string& intens_fpath, const std::string& mask_fpath, size_t t_index, size_t channel);
 	bool processTrivialRois (Environment& env, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit);
 	bool processTrivialRois_25D (Environment & env, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit, const std::vector<std::string>& z_indices);
-	bool processTrivialRois_3D (Environment & env, size_t sidx, size_t t_index, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit);
+	bool processTrivialRois_3D (Environment & env, size_t sidx, size_t t_index, size_t channel, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit);
 	bool processNontrivialRois (Environment& env, const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath);
+	bool processNontrivialRois_3D (Environment& env, const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t channel, size_t timeframe);
+	// Allow-list of 3D feature classes whose osized_calculate() streams from the disk-backed voxel
+	// cloud; used by processNontrivialRois_3D()'s per-feature out-of-core guard, and independently
+	// unit-testable (see TEST_3D_OOC_GUARD_REJECTS_UNSUPPORTED_FEATURE).
+	bool is_3d_ooc_supported (FeatureMethod* f);
+	// Streams r.raw_voxels_NT from 'imlo' plane-by-plane; when wholevolume is true every voxel is
+	// kept (no mask), otherwise only voxels matching r.label. Returns false (cloud cleared) if the
+	// loader can't deliver the volume plane-by-plane. Shared by the segmented and whole-volume
+	// out-of-core paths (processNontrivialRois_3D, workflow_3d_whole.cpp's oversized branch).
+	bool populate_3d_voxel_cloud (ImageLoader& imlo, LR& r, size_t channel, size_t timeframe, bool wholevolume);
+	// Runs every requested feature's out-of-core path over an already-populated r.raw_voxels_NT,
+	// guarded by is_3d_ooc_supported(); writes into r.fvals via save_value(). Shared the same way.
+	void run_3d_ooc_features (Environment& env, LR& r, ImageLoader& imloader);
 	bool scan_trivial_wholeslide (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr);	// reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
 	bool scan_trivial_wholeslide_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y);
 
-	bool scan_trivial_wholevolume (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr);	
-	bool scan_trivial_wholevolume_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y, double aniso_z);
+	// FIX (IO): resolve the effective 3D voxel spacing for slide `sidx` and whether the
+	// anisotropic (resampling) scan path should run. Explicit --aniso* wins; else, when
+	// --use-physical-spacing is on, the slide's OME PhysicalSize* ratio-normalized (min=1).
+	// Returns false (and ax=ay=az=1) when the grid is effectively isotropic.
+	bool resolve_slide_anisotropy (const Environment& env, size_t sidx, double& ax, double& ay, double& az);
 
-	bool scanTrivialRois_3D (Environment& env, const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, size_t t_index);
+	// FIX (IO): channel/timeframe select which C/T plane the whole-volume read assembles (was pinned to c=0,t=0)
+	bool scan_trivial_wholevolume (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, size_t channel, size_t timeframe);
+	bool scan_trivial_wholevolume_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y, double aniso_z, size_t channel, size_t timeframe);
+
+	bool scanTrivialRois_3D (Environment& env, const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, size_t t_index, size_t channel);
+	bool scanTrivialRois_3D_anisotropic (Environment& env, const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, size_t t_index, size_t channel, double aniso_x, double aniso_y, double aniso_z);
 	void dump_roi_metrics (const int dim, const std::string& output_dir, const size_t ram_limit, const std::string& seg_fpath, const Uniqueids& uniqueLabels, const Roidata& roiData);
 	void dump_roi_pixels (const int dim, const std::string& output_dir, const std::vector<int>& batch_labels, const std::string& seg_fpath, const Uniqueids& uniqueLabels, const Roidata& roiData);
 	void dump_2d_image_with_halfcontour(
@@ -132,30 +160,37 @@ namespace Nyxus
 	// 2 scenarios of saving a result of feature calculation of a label-intensity file pair: saving to a CSV-file and saving to a matrix to be later consumed by a Python endpoint
 	std::string get_feature_output_fname (Environment& env, const std::string& intFpath, const std::string& segFpath);
 	extern const std::vector<std::string> mandatory_output_columns;
-	bool save_features_2_csv (Environment & env, const std::string & intFpath, const std::string & segFpath, const std::string & outputDir, size_t t_index, bool need_aggregation);
-	bool save_features_2_csv_wholeslide (Environment & env, const LR & r, const std::string & ifpath, const std::string & mfpath, const std::string & outdir, size_t t_index);
-	bool save_features_2_buffer (ResultsCache &results_cache, Environment &env, size_t t_index);
+	// FIX (IO): thread c_index alongside t_index so the output carries the channel column
+	bool save_features_2_csv (Environment & env, const std::string & intFpath, const std::string & segFpath, const std::string & outputDir, size_t t_index, size_t c_index, bool need_aggregation);
+	bool save_features_2_csv_wholeslide (Environment & env, const LR & r, const std::string & ifpath, const std::string & mfpath, const std::string & outdir, size_t t_index, size_t c_index);
+	bool save_features_2_buffer (ResultsCache &results_cache, Environment &env, size_t t_index, size_t c_index);
 	bool save_features_2_buffer_wholeslide(
 		ResultsCache& rescache,
-		Environment& env, 
+		Environment& env,
 		const LR& r,
 		const std::string& ifpath,
-		const std::string& mfpath);
-	std::tuple<bool, std::optional<std::string>> save_features_2_apache_wholeslide (Environment & env, const LR & wsi_roi, const std::string & wsi_path);
+		const std::string& mfpath,
+		size_t t_index,
+		size_t c_index);
+	std::tuple<bool, std::optional<std::string>> save_features_2_apache_wholeslide (Environment & env, const LR & wsi_roi, const std::string & wsi_path, size_t t_index, size_t c_index);
 
 	std::vector<FTABLE_RECORD> get_feature_values (
 		Environment & env,
 		const FeatureSet & user_selected_features,
 		const Uniqueids & uniqueLabels,
 		const Roidata & roiData,
-		const Dataset & dataset);
+		const Dataset & dataset,
+		size_t t_index,
+		size_t c_index);
 
 	std::vector<FTABLE_RECORD> get_feature_values_roi (
 		Environment & env,
 		const FeatureSet & fset,
 		const LR& r,
 		const std::string & ifpath,
-		const std::string & mfpath);
+		const std::string & mfpath,
+		size_t t_index,
+		size_t c_index);
 
 	std::vector<std::string> get_header (Environment & env);
 	std::string get_arrow_filename(const std::string& output_path, const std::string& default_filename, const SaveOption& arrow_file_type);

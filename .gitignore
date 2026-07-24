@@ -566,3 +566,8 @@ cython_debug/
 # setuptools-scm generated version file
 src/nyx/python/nyxus/_version.py
 .planning/
+
+# Feature tables written by the test suites into the tree
+NyxusFeatures.arrow
+NyxusFeatures.parquet
+NyxusFeatures.csv

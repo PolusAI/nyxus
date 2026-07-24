@@ -18,11 +18,14 @@ arrow::Status ParquetWriter::setup(const std::vector<std::string>& header) {
     std::vector<std::shared_ptr<arrow::Field>> fields;
 
 
+    // FIX (IO): schema is [intensity, mask, phys_unit] (utf8) + ROI_label (int32) + the rest
+    // (t_index, c_index, phys_x/y/z, features) as float64 - matches get_header's column order.
     fields.push_back(arrow::field(header[0], arrow::utf8()));
     fields.push_back(arrow::field(header[1], arrow::utf8()));
-    fields.push_back(arrow::field(header[2], arrow::int32()));
+    fields.push_back(arrow::field(header[2], arrow::utf8()));
+    fields.push_back(arrow::field(header[3], arrow::int32()));
 
-    for (int i = 3; i < header.size(); ++i)
+    for (int i = 4; i < header.size(); ++i)
     {
         fields.push_back(arrow::field(header[i], arrow::float64()));
     }
@@ -114,6 +117,19 @@ arrow::Status ParquetWriter::write (const std::vector<FTABLE_RECORD>& features) 
         }
 
         A.push_back (A_s);
+
+        //cccccccc phys_unit (FIX (IO): 3rd leading string column)
+        b.Reset();
+        std::shared_ptr<arrow::Array> A_pu;
+        for (int i = 0; i < num_rows; ++i) {
+            append_status = b.Append (std::get<FTABLE_INTSEG>(features[i])[2]);
+            if (!append_status.ok())
+                return append_status;
+        }
+        append_status = b.Finish (&A_pu);
+        if (!append_status.ok())
+            return append_status;
+        A.push_back (A_pu);
     }
 
     //cccccccc ROI label
@@ -160,9 +176,51 @@ arrow::Status ParquetWriter::write (const std::vector<FTABLE_RECORD>& features) 
         A.push_back (A_t);
     }
 
+    //cccccccc channel (FIX (IO): mirrors the time column so multi-channel input is addressable)
+    {
+        arrow::DoubleBuilder b;
+        std::shared_ptr<arrow::Array> A_c;
+        for (int i = 0; i < num_rows; ++i)
+        {
+            append_status = b.Append (std::get<FTABLE_CPOS>(features[i]));
+            if (!append_status.ok()) {
+                // Handle read error
+                return append_status;
+            }
+        }
+
+        append_status = b.Finish (&A_c);
+        if (!append_status.ok())
+        {
+            // Handle read error
+            return append_status;
+        }
+        A.push_back (A_c);
+    }
+
+    //cccccccc physical voxel spacing (FIX (IO): phys_x/y/z numeric columns)
+    for (int axis = FTABLE_PXPOS; axis <= FTABLE_PZPOS; ++axis)
+    {
+        arrow::DoubleBuilder b;
+        std::shared_ptr<arrow::Array> A_ps;
+        for (int i = 0; i < num_rows; ++i)
+        {
+            double v = (axis == FTABLE_PXPOS) ? std::get<FTABLE_PXPOS>(features[i])
+                     : (axis == FTABLE_PYPOS) ? std::get<FTABLE_PYPOS>(features[i])
+                     :                          std::get<FTABLE_PZPOS>(features[i]);
+            append_status = b.Append (v);
+            if (!append_status.ok())
+                return append_status;
+        }
+        append_status = b.Finish (&A_ps);
+        if (!append_status.ok())
+            return append_status;
+        A.push_back (A_ps);
+    }
+
     //cccccccc features
     {
-        // construct columns for each feature 
+        // construct columns for each feature
         for (int j = 0; j < std::get<FTABLE_FBEGIN>(features[0]).size(); ++j) {
 
             arrow::DoubleBuilder b;
@@ -225,11 +283,13 @@ arrow::Status ArrowIPCWriter::setup(const std::vector<std::string>& header) {
     std::vector<std::shared_ptr<arrow::Field>> fields;
 
 
-    fields.push_back(arrow::field("intensity_image", arrow::utf8()));
-    fields.push_back(arrow::field("mask_image", arrow::utf8()));
-    fields.push_back(arrow::field("ROI_label", arrow::int32()));
+    // FIX (IO): [intensity, mask, phys_unit] (utf8) + ROI_label (int32) + float64 rest
+    fields.push_back(arrow::field(header[0], arrow::utf8()));
+    fields.push_back(arrow::field(header[1], arrow::utf8()));
+    fields.push_back(arrow::field(header[2], arrow::utf8()));
+    fields.push_back(arrow::field(header[3], arrow::int32()));
 
-    for (int i = 3; i < header.size(); ++i)
+    for (int i = 4; i < header.size(); ++i)
     {
         fields.push_back(arrow::field(header[i], arrow::float64()));
     }
@@ -306,6 +366,19 @@ arrow::Status ArrowIPCWriter::write (const std::vector<FTABLE_RECORD>& features)
         }
 
         A.push_back (A_s);
+
+        //cccccccc phys_unit (FIX (IO): 3rd leading string column)
+        b.Reset();
+        std::shared_ptr<arrow::Array> A_pu;
+        for (int i = 0; i < num_rows; ++i) {
+            append_status = b.Append (std::get<FTABLE_INTSEG>(features[i])[2]);
+            if (!append_status.ok())
+                return append_status;
+        }
+        append_status = b.Finish (&A_pu);
+        if (!append_status.ok())
+            return append_status;
+        A.push_back (A_pu);
     }
 
     //cccccccc ROI label
@@ -351,9 +424,49 @@ arrow::Status ArrowIPCWriter::write (const std::vector<FTABLE_RECORD>& features)
         A.push_back (A_t);
     }
 
+    //cccccccc channel (FIX (IO): mirrors the time column so multi-channel input is addressable)
+    {
+        arrow::DoubleBuilder b;
+        std::shared_ptr<arrow::Array> A_c;
+        for (int i = 0; i < num_rows; ++i) {
+            append_status = b.Append (std::get<FTABLE_CPOS>(features[i]));
+            if (!append_status.ok()) {
+                // Handle read error
+                return append_status;
+            }
+        }
+
+        append_status = b.Finish (&A_c);
+        if (!append_status.ok()) {
+            // Handle read error
+            return append_status;
+        }
+        A.push_back (A_c);
+    }
+
+    //cccccccc physical voxel spacing (FIX (IO): phys_x/y/z numeric columns)
+    for (int axis = FTABLE_PXPOS; axis <= FTABLE_PZPOS; ++axis)
+    {
+        arrow::DoubleBuilder b;
+        std::shared_ptr<arrow::Array> A_ps;
+        for (int i = 0; i < num_rows; ++i)
+        {
+            double v = (axis == FTABLE_PXPOS) ? std::get<FTABLE_PXPOS>(features[i])
+                     : (axis == FTABLE_PYPOS) ? std::get<FTABLE_PYPOS>(features[i])
+                     :                          std::get<FTABLE_PZPOS>(features[i]);
+            append_status = b.Append (v);
+            if (!append_status.ok())
+                return append_status;
+        }
+        append_status = b.Finish (&A_ps);
+        if (!append_status.ok())
+            return append_status;
+        A.push_back (A_ps);
+    }
+
     //cccccccc feature values
     {
-        // construct columns for each feature 
+        // construct columns for each feature
         for (int j = 0; j < std::get<FTABLE_FBEGIN>(features[0]).size(); ++j) {
 
             arrow::DoubleBuilder b;

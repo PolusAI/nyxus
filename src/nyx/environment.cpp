@@ -473,6 +473,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			|| find_string_argument(i, clo_FPIMAGE_MIN, fpimageOptions.raw_min_intensity)
 			|| find_string_argument(i, clo_FPIMAGE_MAX, fpimageOptions.raw_max_intensity)
 			|| find_string_argument(i, clo_PRESERVE_HU, fpimageOptions.raw_preserve_hu)		// CT/HU mode
+			|| find_string_argument(i, clo_USE_PHYSICAL_SPACING, rawUsePhysicalSpacing)		// FIX (IO): opt-in physical voxel spacing
 			|| find_string_argument(i, clo_RESULTFNAME, nyxus_result_fname)
 			|| find_string_argument(i, clo_CLI_DIM, raw_dim)
 
@@ -797,6 +798,14 @@ bool Environment::parse_cmdline(int argc, char** argv)
 			std::cerr << ermsg << "\n";
 			return false;
 		}
+	}
+
+	//==== Parse opt-in physical-spacing flag (FIX (IO); default false)
+	if (!rawUsePhysicalSpacing.empty())
+	{
+		std::string v = rawUsePhysicalSpacing;
+		std::transform(v.begin(), v.end(), v.begin(), ::tolower);
+		use_physical_spacing_ = (v == "true" || v == "t" || v == "1" || v == "on" || v == "yes");
 	}
 
 	//==== Parse exclusive-inclusive timing

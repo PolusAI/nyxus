@@ -11,6 +11,7 @@
 #include "../helpers/helpers.h"
 #include "pixel.h"
 #include "image_matrix_nontriv.h"
+#include "voxel_cloud_nontriv.h"
 
 using HistoItem = unsigned int;
 
@@ -169,15 +170,14 @@ public:
 		// percentiles
 		calc_percentiles();
 
-		// robust mean
-		bin10ctr_ = bins100_ [10];
-		bin90ctr_ = bins100_ [90];
+		// robust MAD: threshold on the p10/p90 percentile values, and average the
+		// 10..90 population before accumulating deviations (mirrors the in-core overload)
 		mean1090val_ = 0.0;
 		size_t pop1090 = 0;
 		for (auto pxl : raw_data)
 		{
 			double a = double (pxl.inten);
-			if (a >= bin10ctr_ && a <= bin90ctr_)
+			if (a >= p10_ && a <= p90_)
 			{
 				mean1090val_ += a;
 				pop1090++;
@@ -186,10 +186,102 @@ public:
 		rmad_ = 0.0;
 		if (pop1090)
 		{
+			mean1090val_ /= double(pop1090);
 			for (auto pxl : raw_data)
 			{
 				double a = double(pxl.inten);
-				if (a >= bin10ctr_ && a <= bin90ctr_)
+				if (a >= p10_ && a <= p90_)
+					rmad_ += (std::fabs)(a - mean1090val_);
+			}
+			rmad_ /= double(pop1090);
+		}
+	}
+
+	// Out-of-core 3D voxel-cloud overload: identical math to the OutOfRamPixelCloud overload
+	// (the disk-backed 2D cloud), sourcing intensities from the disk-backed 3D voxel cloud so
+	// an oversized volumetric ROI's histogram streams instead of holding the cube.
+	void initialize (int n_cust_bins, HistoItem min_value, HistoItem max_value, const OutOfRamVoxelCloud& raw_data)
+	{
+		// safety
+		int n_custBins = std::abs(n_cust_bins);
+
+		pop_ = raw_data.size();
+
+		// Allocate
+		// -- "percentile"
+		bins100_.reserve(100);
+		for (int i = 0; i < 100 + 1; i++)
+			bins100_.push_back(0);
+		// -- "uint8"
+		bins_cust_.reserve(n_custBins);
+		for (int i = 0; i < n_custBins + 1; i++)
+			bins_cust_.push_back(0);
+
+		// Cache min/max
+		minVal_ = min_value;
+		maxVal_ = max_value;
+		auto valRange = maxVal_ - minVal_;
+
+		// unique values
+		for (auto s : raw_data)
+			U_.push_back (s.inten);
+
+		// Build the "percentile" histogram
+		binW100_ = double(valRange) / 100.;
+		for (auto s : raw_data)
+		{
+			HistoItem h = s.inten;
+			double realIdx = double(h - minVal_) / binW100_;
+			int idx = std::isnan(realIdx) ? 0 : int(realIdx);
+			(bins100_[idx])++;
+		}
+
+		// -- Fix the special last bin
+		bins100_[100 - 1] += bins100_[100];
+		bins100_[100] = 0;
+
+		// Build the "uint8" histogram
+		binWcust_ = double(valRange) / double(n_custBins-1);
+		for (auto s : raw_data)
+		{
+			HistoItem h = Nyxus::to_grayscale(s.inten, minVal_, valRange, n_custBins);
+			bins_cust_[h] = bins_cust_[h] + 1;
+		}
+
+		// -- Fix the special last bin
+		bins_cust_[n_custBins - 1] += bins_cust_[n_custBins];
+		bins_cust_[n_custBins] = 0;
+
+		// Mean calculation
+		meanVal_ = 0;
+		for (auto s : raw_data)
+			meanVal_ += double(s.inten);
+		meanVal_ /= double(pop_);
+
+		// percentiles
+		calc_percentiles();
+
+		// robust MAD: threshold on the p10/p90 percentile values, and average the
+		// 10..90 population before accumulating deviations (mirrors the in-core overload)
+		mean1090val_ = 0.0;
+		size_t pop1090 = 0;
+		for (auto pxl : raw_data)
+		{
+			double a = double (pxl.inten);
+			if (a >= p10_ && a <= p90_)
+			{
+				mean1090val_ += a;
+				pop1090++;
+			}
+		}
+		rmad_ = 0.0;
+		if (pop1090)
+		{
+			mean1090val_ /= double(pop1090);
+			for (auto pxl : raw_data)
+			{
+				double a = double(pxl.inten);
+				if (a >= p10_ && a <= p90_)
 					rmad_ += (std::fabs)(a - mean1090val_);
 			}
 			rmad_ /= double(pop1090);

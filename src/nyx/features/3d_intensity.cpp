@@ -209,14 +209,19 @@ void D3_VoxelIntensityFeatures::osized_calculate (LR & r, const Fsettings & s, c
 	double energy = 0.0;
 	double cen_x = 0.0,
 		cen_y = 0.0,
+		cen_z = 0.0,
 		integInten = 0.0;
-	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)
+	// Stream voxels off disk (raw_voxels_NT) rather than holding the cube (raw_pixels_3D)
+	// or reading the 2D z-less cloud (raw_pixels_NT). Values are unchanged - intensity
+	// statistics are per-voxel scalars, so a linear pass over the disk-backed cloud suffices.
+	for (size_t i = 0; i < r.raw_voxels_NT.size(); i++)
 	{
-		Pixel2 px = r.raw_pixels_NT[i];
+		Pixel3 px = r.raw_voxels_NT[i];
 		mean_ += px.inten;
 		energy += px.inten * px.inten;
 		cen_x += px.x;
 		cen_y += px.y;
+		cen_z += px.z;
 		integInten += px.inten;
 	}
 	mean_ /= n;
@@ -228,9 +233,9 @@ void D3_VoxelIntensityFeatures::osized_calculate (LR & r, const Fsettings & s, c
 	// --MAD, VARIANCE, STDDEV, COV
 	double mad = 0.0,
 		var = 0.0;
-	for (auto& px : r.raw_pixels_3D)
+	for (size_t i = 0; i < r.raw_voxels_NT.size(); i++)
 	{
-		double diff = px.inten - mean_;
+		double diff = r.raw_voxels_NT[i].inten - mean_;
 		mad += std::abs(diff);
 		var += diff * diff;
 	}
@@ -251,7 +256,7 @@ void D3_VoxelIntensityFeatures::osized_calculate (LR & r, const Fsettings & s, c
 	// P10, 25, 75, 90, IQR, QCOD, RMAD, entropy, uniformity
 	int n_greybins = STNGS_NGREYS(s);
 	TrivialHistogram H;
-	H.initialize (n_greybins, r.aux_min, r.aux_max, r.raw_pixels_NT);
+	H.initialize (n_greybins, r.aux_min, r.aux_max, r.raw_voxels_NT);
 	auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
 	val_MEDIAN = median_;
 	val_P01 = p01_;
@@ -269,20 +274,23 @@ void D3_VoxelIntensityFeatures::osized_calculate (LR & r, const Fsettings & s, c
 
 	// Median absolute deviation
 	double medad = 0.0;
-	for (auto& px : r.raw_pixels_3D)
-		medad += std::abs(px.inten - median_);
+	for (size_t i = 0; i < r.raw_voxels_NT.size(); i++)
+		medad += std::abs(double(r.raw_voxels_NT[i].inten) - median_);
 	val_MEDIAN_ABSOLUTE_DEVIATION = medad / n;
 
 	// FIX 3ROBUST_MEAN: same omission in the out-of-core path (defaulted to 0) -> compute the
 	// mean of voxels within the [P10,P90] robust window, matching the 2D implementation.
 	double robustMean = 0.0;
 	size_t robustCount = 0;
-	for (auto& px : r.raw_pixels_3D)
-		if (px.inten >= p10_ && px.inten <= p90_)
+	for (size_t i = 0; i < r.raw_voxels_NT.size(); i++)
+	{
+		double inten = r.raw_voxels_NT[i].inten;
+		if (inten >= p10_ && inten <= p90_)
 		{
-			robustMean += px.inten;
+			robustMean += inten;
 			robustCount++;
 		}
+	}
 	val_ROBUST_MEAN = robustCount ? robustMean / double(robustCount) : 0.0;
 
 	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image 
@@ -293,25 +301,35 @@ void D3_VoxelIntensityFeatures::osized_calculate (LR & r, const Fsettings & s, c
 
 	// Skewness
 	Moments4 mom;
-	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)
-	{
-		Pixel2 px = r.raw_pixels_NT[i];
-		mom.add(px.inten);
-	}
+	for (size_t i = 0; i < r.raw_voxels_NT.size(); i++)
+		mom.add(r.raw_voxels_NT[i].inten);
 
 	val_SKEWNESS = mom.skewness();
 
 	// Kurtosis
 	val_KURTOSIS = mom.kurtosis();
 
-	// Excess kurtosis
-	val_EXCESS_KURTOSIS = val_KURTOSIS - 3;
+	// Excess kurtosis. NOTE: this is NOT val_KURTOSIS-3 -- Moments4::excess_kurtosis() has its own
+	// independent zero-variance (M2==0) guard returning exactly 0.0, whereas kurtosis() ALSO
+	// returns exactly 0.0 under that same guard; subtracting 3 from the latter wrongly yields -3.0
+	// for a degenerate (constant-intensity) ROI instead of 0.0. Only diverges from kurtosis()-3 in
+	// that degenerate case (for n>4 the two formulas are algebraically identical), which is why
+	// every non-degenerate fixture matched before this was caught by a blank-ROI OOC test.
+	val_EXCESS_KURTOSIS = mom.excess_kurtosis();
 
-	// Hyperskewness hs = E[x-mean].^5 / std(x).^5
-	val_HYPERSKEWNESS = mom.hyperskewness();
-
-	// Hyperflatness hf = E[x-mean].^6 / std(x).^6
-	val_HYPERFLATNESS = mom.hyperflatness();
+	// Hyperskewness / hyperflatness: use the explicit sum-of-powers definition of the in-core
+	// calculate() (mom.hyperskewness()/hyperflatness() use a different definition and diverge).
+	double sumPow5 = 0, sumPow6 = 0;
+	for (size_t i = 0; i < r.raw_voxels_NT.size(); i++)
+	{
+		double diff = double(r.raw_voxels_NT[i].inten) - mean_;
+		sumPow5 += std::pow(diff, 5.);
+		sumPow6 += std::pow(diff, 6.);
+	}
+	double denomHS = (n * std::pow(val_STANDARD_DEVIATION, 5.));
+	val_HYPERSKEWNESS = denomHS == 0. ? 0. : sumPow5 / denomHS;
+	double denomHF = (n * std::pow(val_STANDARD_DEVIATION, 6.));
+	val_HYPERFLATNESS = denomHF == 0. ? 0. : sumPow6 / denomHF;
 }
 
 void D3_VoxelIntensityFeatures::save_value(std::vector<std::vector<double>>& fvals)
@@ -367,10 +385,10 @@ void D3_VoxelIntensityFeatures::reduce (size_t start, size_t end, std::vector<in
 	}
 }
 
-/*static*/ void D3_VoxelIntensityFeatures::extract (LR& r, const Fsettings& s)
+/*static*/ void D3_VoxelIntensityFeatures::extract (LR& r, const Fsettings& s, const Dataset& ds)
 {
 	D3_VoxelIntensityFeatures f;
-	f.calculate (r, s);
+	f.calculate (r, s, ds);		// FIX: was the 2-arg calculate, which is an "illegal call" stub
 	f.save_value (r.fvals);
 }
 

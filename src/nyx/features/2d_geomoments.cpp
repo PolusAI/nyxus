@@ -27,9 +27,15 @@ void Imoms2D_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t inten
     BasicGeomoms2D::osized_add_online_pixel(x, y, intensity);
 }
 
-void Imoms2D_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr)
+void Imoms2D_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
-    BasicGeomoms2D::osized_calculate (r, s, ldr);
+    // Materialize the ROI's pixel cloud from the disk-backed one and reuse this class's own
+    // calculate(), which applies the intensity intenfunction. The shared
+    // BasicGeomoms2D::osized_calculate dropped that intenfunction entirely, so intensity and shape
+    // moments were both computed intensity-weighted and disagreed with the trivial path.
+    r.rebuild_raw_pixels_from_cloud();
+
+    calculate (r, s);
 }
 
 void Imoms2D_feature::extract (LR& r, const Fsettings& s)
@@ -342,9 +348,15 @@ void Smoms2D_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t inten
     BasicGeomoms2D::osized_add_online_pixel(x, y, intensity);
 }
 
-void Smoms2D_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr)
+void Smoms2D_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
-    BasicGeomoms2D::osized_calculate (r, s, ldr);
+    // Materialize the ROI's pixel cloud from the disk-backed one and reuse this class's own
+    // calculate(), which applies the shape intenfunction (every pixel counts as 1). The shared
+    // BasicGeomoms2D::osized_calculate dropped that intenfunction and summed raw intensities, so
+    // e.g. SPAT_MOMENT_00 returned the intensity sum instead of the ROI area.
+    r.rebuild_raw_pixels_from_cloud();
+
+    calculate (r, s);
 }
 
 void Smoms2D_feature::extract (LR& r, const Fsettings& s)

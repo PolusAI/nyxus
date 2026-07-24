@@ -7,6 +7,7 @@
 #include "features/aabb.h"
 #include "features/image_matrix.h"
 #include "features/image_matrix_nontriv.h"
+#include "features/voxel_cloud_nontriv.h"
 #include "features/image_cube.h"
 #include "features/pixel.h"
 #include "featureset.h"
@@ -43,6 +44,12 @@ public:
 	bool caching_permitted();
 	void clear_pixels_cache();
 
+	// Materialize an oversized ROI's pixel data from its disk-backed cloud (raw_pixels_NT). A
+	// feature's out-of-core path uses these to reuse its in-RAM calculate(), which the trivial ==
+	// out-of-core equality invariant requires it to agree with.
+	void rebuild_raw_pixels_from_cloud();
+	void rebuild_aux_image_matrix_from_cloud();
+
 	bool blacklisted = false;
 
 	std::vector <Pixel2> raw_pixels;
@@ -50,6 +57,9 @@ public:
 	std::unordered_map<int, std::vector<size_t>> zplanes;  
 
 	OutOfRamPixelCloud raw_pixels_NT;
+	// Disk-backed 3D voxel source for oversized volumetric ROIs (populated by the 3D
+	// out-of-core scan). Keeps z, unlike raw_pixels_NT which is the 2D (z-less) cloud.
+	OutOfRamVoxelCloud raw_voxels_NT;
 	unsigned int aux_area = 0;
 	PixIntens aux_min, aux_max;
 

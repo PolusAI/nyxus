@@ -56,44 +56,12 @@ PixelIntensityFeatures::PixelIntensityFeatures() : FeatureMethod("PixelIntensity
 
 void PixelIntensityFeatures::calculate (LR& r, const Fsettings & fsett, const Dataset & ds)
 {
-	// intercept blank ROIs
-	if (r.aux_max == r.aux_min)
-	{
-		val_MEAN =
-			val_MEDIAN =
-			val_MIN =
-			val_MAX = r.aux_min;
-		val_RANGE = 0;
-
-		val_INTEGRATED_INTENSITY =
-			val_COVERED_IMAGE_INTENSITY_RANGE =
-			val_STANDARD_DEVIATION =
-			val_STANDARD_ERROR =
-			val_SKEWNESS =
-			val_KURTOSIS =
-			val_EXCESS_KURTOSIS =
-			val_HYPERSKEWNESS =
-			val_HYPERFLATNESS =
-			val_MEAN_ABSOLUTE_DEVIATION =
-			val_MEDIAN_ABSOLUTE_DEVIATION =
-			val_ENERGY =
-			val_ROOT_MEAN_SQUARED =
-			val_ENTROPY =
-			val_MODE =
-			val_UNIFORMITY =
-			val_UNIFORMITY_PIU =
-			val_P01 = val_P10 = val_P25 = val_P75 = val_P90 = val_P99 =
-			val_QCOD =
-			val_INTERQUARTILE_RANGE =
-			val_ROBUST_MEAN =
-			val_ROBUST_MEAN_ABSOLUTE_DEVIATION =
-			val_COV =
-			val_STANDARD_DEVIATION_BIASED =
-			val_VARIANCE =
-			val_VARIANCE_BIASED = fsett[(int)NyxSetting::SOFTNAN].rval; // former theEnvironment.resultOptions.noval();
-
-		return;
-	}
+	// A constant-intensity ROI (aux_max == aux_min) used to be intercepted here, keeping only
+	// MEAN/MEDIAN/MIN/MAX/RANGE and setting every other feature to the soft-NAN sentinel. That
+	// discarded values which are perfectly well defined on a constant ROI (INTEGRATED_INTENSITY,
+	// ENERGY, MODE, ROOT_MEAN_SQUARED, the percentiles, and the zero-valued dispersion measures)
+	// and disagreed with the out-of-core path, which computes them. The general code below handles
+	// a constant ROI correctly, so the interception is gone.
 
 	// --MIN, MAX
 	val_MIN = r.aux_min;
@@ -269,8 +237,10 @@ void PixelIntensityFeatures::osized_calculate (LR& r, const Fsettings& stng, con
 	// --MAD, VARIANCE, STDDEV, COV
 	double mad = 0.0,
 		var = 0.0;
-	for (auto& px : r.raw_pixels)
+	// out-of-core: dispersion is accumulated from the disk-backed pixel cloud
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)
 	{
+		Pixel2 px = r.raw_pixels_NT[i];
 		double diff = px.inten - mean_;
 		mad += std::abs(diff);
 		var += diff * diff;
@@ -323,12 +293,16 @@ void PixelIntensityFeatures::osized_calculate (LR& r, const Fsettings& stng, con
 
 	// Median absolute deviation
 	double medad = 0.0;
-	for (auto& px : r.raw_pixels)
+	// out-of-core: read from the disk-backed pixel cloud
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)
+	{
+		Pixel2 px = r.raw_pixels_NT[i];
 		medad += std::abs(px.inten - median_);
+	}
 	val_MEDIAN_ABSOLUTE_DEVIATION = medad / n;
 
-	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image 
-	//	intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] 
+	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image
+	//	intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/]
 	//	and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
 	double piu = (1.0 - double(r.aux_max - r.aux_min) / double(r.aux_max + r.aux_min)) * 100.0;
 	val_UNIFORMITY_PIU = piu;
@@ -346,14 +320,24 @@ void PixelIntensityFeatures::osized_calculate (LR& r, const Fsettings& stng, con
 	// Kurtosis
 	val_KURTOSIS = mom.kurtosis();
 
-	// Excess kurtosis
-	val_EXCESS_KURTOSIS = val_KURTOSIS - 3;
+	// Excess kurtosis -- via Moments4 like the in-core path, not val_KURTOSIS-3. The two agree on
+	// ordinary data but not on a constant ROI, where kurtosis and excess kurtosis are each guarded
+	// to 0 independently, so subtracting 3 yielded -3 out-of-core against 0 in-core.
+	val_EXCESS_KURTOSIS = mom.excess_kurtosis();
 
-	// Hyperskewness hs = E[x-mean].^5 / std(x).^5
-	val_HYPERSKEWNESS = mom.hyperskewness();
-
-	// Hyperflatness hf = E[x-mean].^6 / std(x).^6
-	val_HYPERFLATNESS = mom.hyperflatness();
+	// Hyperskewness / Hyperflatness from explicit central moments over the disk-backed cloud,
+	// matching the in-core path's sum-of-powers definition rather than the Moments4 variant
+	double sumPow5 = 0, sumPow6 = 0;
+	for (size_t i = 0; i < r.raw_pixels_NT.size(); i++)
+	{
+		double diff = double(r.raw_pixels_NT[i].inten) - mean_;
+		sumPow5 += std::pow(diff, 5.);
+		sumPow6 += std::pow(diff, 6.);
+	}
+	double denom5 = n * std::pow(val_STANDARD_DEVIATION, 5.);
+	val_HYPERSKEWNESS = denom5 == 0. ? 0. : sumPow5 / denom5;
+	double denom6 = n * std::pow(val_STANDARD_DEVIATION, 6.);
+	val_HYPERFLATNESS = denom6 == 0. ? 0. : sumPow6 / denom6;
 }
 
 void PixelIntensityFeatures::save_value(std::vector<std::vector<double>>& fvals)

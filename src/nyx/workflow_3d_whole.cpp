@@ -32,12 +32,16 @@
 
 namespace Nyxus
 {
-	bool featurize_triv_wholevolume (Environment & env, size_t sidx, ImageLoader& imlo, size_t memory_limit, LR& vroi)
+	bool featurize_triv_wholevolume (Environment & env, size_t sidx, ImageLoader& imlo, size_t memory_limit, LR& vroi, size_t channel, size_t timeframe)
 	{
 		const std::string& ifpath = env.dataset.dataset_props[sidx].fname_int;
 
 		// can we process this slide ?
-		size_t footp = vroi.get_ram_footprint_estimate (1);	// 1 since single-ROI
+		// FIX: use the 3D estimator (W*H*D). The 2D one counts only W*H for the image matrix,
+		// so it under-counts a whole VOLUME's cube by a factor of the depth -> the oversized
+		// check let too-large volumes through and they OOM'd. The segmented path already uses
+		// get_ram_footprint_estimate_3D; match it. (Found by running under a hard memory cap.)
+		size_t footp = vroi.get_ram_footprint_estimate_3D (1);	// 1 since single-ROI
 		if (footp > memory_limit)
 		{
 			std::string erm = "Error: cannot process slide " + ifpath + " , reason: its memory footprint " + virguler_ulong(footp) + " exceeds available memory " + virguler_ulong(memory_limit);
@@ -49,21 +53,38 @@ namespace Nyxus
 		}
 
 		// read the slide into a pixel cloud
-		if (env.anisoOptions.customized() == false)
+		// FIX (IO): --aniso* (explicit) or opt-in OME physical spacing selects the anisotropic path
+		double ax, ay, az;
+		if (! resolve_slide_anisotropy (env, sidx, ax, ay, az))
 		{
 			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide()\n");
-			scan_trivial_wholevolume (vroi, ifpath, imlo);
+			scan_trivial_wholevolume (vroi, ifpath, imlo, channel, timeframe);
 		}
 		else
 		{
 			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide_ANISO()\n");
 			scan_trivial_wholevolume_anisotropic (
-				vroi, 
-				ifpath, 
-				imlo, 
-				env.anisoOptions.get_aniso_x(),
-				env.anisoOptions.get_aniso_y(),
-				env.anisoOptions.get_aniso_z());
+				vroi,
+				ifpath,
+				imlo,
+				ax,
+				ay,
+				az,
+				channel,
+				timeframe);
+
+			// vroi.aabb and aux_area were preset from the PHYSICAL slide dimensions
+			// (init_from_whd / p.max_roi_area, above in featurize_wholevolume) before the
+			// resampled voxel cloud existed; the anisotropic scan just populated
+			// raw_pixels_3D with the VIRTUAL (resampled) cloud, which is both a different
+			// extent and a different voxel COUNT. Recompute both from the actual cloud --
+			// mirrors the segmented anisotropic path's fix (processTrivialRois_3D). Without
+			// the aabb fix, aux_image_cube below is allocated too small and
+			// calculate_from_pixelcloud writes out of bounds; without the aux_area fix,
+			// every feature that divides by voxel count (e.g. MEAN) is off by the
+			// resampling factor.
+			vroi.aabb.update_from_voxelcloud (vroi.raw_pixels_3D);
+			vroi.aux_area = (unsigned int) vroi.raw_pixels_3D.size();
 		}
 
 		// allocate memory for feature helpers (image matrix, etc)
@@ -87,7 +108,7 @@ namespace Nyxus
 		return true;
 	}
 
-	bool featurize_wholevolume (Environment & env, size_t sidx, ImageLoader& imlo, LR& vroi)
+	bool featurize_wholevolume (Environment & env, size_t sidx, ImageLoader& imlo, LR& vroi, size_t channel, size_t timeframe)
 	{
 		//***** phase 1: copy ROI metrics from the slide properties, thanks to the WSI scenario
 		const SlideProps& p = env.dataset.dataset_props[sidx];
@@ -113,31 +134,55 @@ namespace Nyxus
 		vroi.initialize_fvals();
 
 		// assess ROI's memory footprint and check if we can featurize it as phase 2 (trivially) ?
-		size_t roiFootprint = vroi.get_ram_footprint_estimate (1),		// 1 since single-ROI
+		// FIX: 3D estimator (W*H*D) -- the 2D one ignores depth and under-counts the volume cube,
+		// so oversized volumes slipped through and OOM'd. Matches the segmented path.
+		size_t roiFootprint = vroi.get_ram_footprint_estimate_3D (1),		// 1 since single-ROI
 			ramLim = env.get_ram_limit();
 		if (roiFootprint >= ramLim)
 		{
-			VERBOSLVL2(env.get_verbosity_level(),
-				std::cout << "oversized slide "
+			VERBOSLVL1(env.get_verbosity_level(),
+				std::cout << "oversized whole volume "
 				<< " (S=" << vroi.aux_area
 				<< " W=" << vroi.aabb.get_width()
 				<< " H=" << vroi.aabb.get_height()
 				<< " D=" << vroi.aabb.get_z_depth()
 				<< " px footprint=" << Nyxus::virguler_ulong(roiFootprint) << " b"
-				<< ") while RAM limit is " << Nyxus::virguler_ulong(ramLim) << "\n"
+				<< ") while RAM limit is " << Nyxus::virguler_ulong(ramLim)
+				<< " -- streaming out-of-core\n"
 			);
 
-			std::cerr << p.fname_int << ": slide is non-trivial \n";
-			return false;
+			// Out-of-core whole volume: stream every voxel (no mask -- workflow_3d_whole.cpp opens
+			// the loader with an empty label path) plane-by-plane instead of holding the whole
+			// cube, mirroring the segmented ROI path (processNontrivialRois_3D). Only fails when
+			// the input format can't deliver the volume plane-by-plane (e.g. NIfTI).
+			if (! populate_3d_voxel_cloud (imlo, vroi, channel, timeframe, /*wholevolume=*/ true))
+			{
+				std::string erm = "Error: cannot featurize whole volume " + p.fname_int
+					+ " out-of-core: this input format does not deliver the volume plane-by-plane. "
+					+ "Segment into smaller ROIs, raise --ramLimit, or add RAM.";
+#ifdef WITH_PYTHON_H
+				throw std::runtime_error(erm);
+#endif
+				std::cerr << erm << "\n";
+				return false;
+			}
+
+			run_3d_ooc_features (env, vroi, imlo);
+			vroi.raw_voxels_NT.clear();
+			return true;
 		}
 
 		//***** phase 2: extract features
-		featurize_triv_wholevolume (env, sidx, imlo, env.get_ram_limit(), vroi); // segmented counterpart: phase2.cpp / processTrivialRois ()
+		featurize_triv_wholevolume (env, sidx, imlo, env.get_ram_limit(), vroi, channel, timeframe); // segmented counterpart: phase2.cpp / processTrivialRois ()
 
 		return true;
 	}
 
-	void featurize_3d_wv_thread(
+	// FIX: return the per-thread status by VALUE (through the future) rather than writing a
+	// referenced int. A std::async worker's write through std::ref(int) is not reliably visible
+	// to the caller after future::get() here, so an oversized slide's rv=1 was silently lost and
+	// the run reported success. Returning it makes future::get() carry the status deterministically.
+	int featurize_3d_wv_thread(
 		Environment & env,
 		const std::vector<std::string>& intensFiles,
 		const std::vector<std::string>& labelFiles,
@@ -145,9 +190,9 @@ namespace Nyxus
 		size_t nf,
 		const std::string& outputPath,
 		bool write_apache,
-		Nyxus::SaveOption saveOption,
-		int& rv)
+		Nyxus::SaveOption saveOption)
 	{
+		int rv = 0;
 		SlideProps& p = env.dataset.dataset_props[slide_idx];
 
 		// scan one slide
@@ -158,46 +203,60 @@ namespace Nyxus
 			rv = 1;
 		}
 
-		LR vroi(1); // virtual ROI representing the whole slide ROI-labelled as '1'
+		// FIX (IO): featurize every (channel, timeframe) plane and emit one whole-slide row
+		// per plane, tagged with c_index/t_index — mirroring the segmented path. A
+		// single-channel, single-timeframe slide reports 1/1, so its output is unchanged.
+		for (size_t c = 0; c < p.inten_channels; c++)
+		  for (size_t t = 0; t < p.inten_time; t++)
+		  {
+			LR vroi(1); // virtual ROI representing the whole slide ROI-labelled as '1'
 
-		if (featurize_wholevolume (env, slide_idx, imlo, vroi) == false)	// non-wsi counterpart: processIntSegImagePair()
-		{
-			std::cerr << "Error featurizing slide " << p.fname_int << " @ " << __FILE__ << ":" << __LINE__ << "\n";
-			rv = 1;
-		}
-
-		// thread-safely save results of this single slide
-		if (write_apache)
-		{
-			auto [status, msg] = save_features_2_apache_wholeslide (env, vroi, p.fname_int);
-			if (!status)
+			if (featurize_wholevolume (env, slide_idx, imlo, vroi, c, t) == false)	// non-wsi counterpart: processIntSegImagePair()
 			{
-				std::cerr << "Error writing Arrow file: " << msg.value() << std::endl;
-				rv = 2;
+				// An oversized whole volume now streams out-of-core (see featurize_wholevolume's
+				// oversized branch), so featurize_wholevolume returns false only when that streaming
+				// itself failed -- either the input format can't deliver the volume plane-by-plane
+				// (e.g. NIfTI), or a requested feature isn't yet OOC-supported. That specific reason
+				// was already reported (thrown under Python, printed to stderr under the CLI) from
+				// inside featurize_wholevolume/run_3d_ooc_features. Previously we ALSO fell through
+				// to save the zero-initialized buffer here -- emitting a row of all-0 features, i.e.
+				// silently-wrong data. Skip the save instead: fail loudly, write no row.
+				rv = 1;
+				continue;	// do NOT emit a (misleading all-zero) row for this plane
 			}
-		}
-		else
-			if (saveOption == SaveOption::saveCSV)
+
+			// thread-safely save results of this single (slide, channel, timeframe)
+			if (write_apache)
 			{
-				if (save_features_2_csv_wholeslide (env, vroi, p.fname_int, "", outputPath,
-					0 // pass 0 as t_index
-					) == false)
+				auto [status, msg] = save_features_2_apache_wholeslide (env, vroi, p.fname_int, t, c);
+				if (!status)
 				{
-					std::cout << "error saving results to CSV file, details: " << __FILE__ << ":" << __LINE__ << std::endl;
+					std::cerr << "Error writing Arrow file: " << msg.value() << std::endl;
 					rv = 2;
 				}
 			}
 			else
-			{
-				// pulls feature values from 'vroi' and appends them to global object 'theResultsCache' exposed to Python API
-				if (save_features_2_buffer_wholeslide (env.theResultsCache, env, vroi, p.fname_int, "") == false)
+				if (saveOption == SaveOption::saveCSV)
 				{
-					std::cerr << "Error saving features to the results buffer" << std::endl;
-					rv = 2;
+					if (save_features_2_csv_wholeslide (env, vroi, p.fname_int, "", outputPath, t, c) == false)
+					{
+						std::cout << "error saving results to CSV file, details: " << __FILE__ << ":" << __LINE__ << std::endl;
+						rv = 2;
+					}
 				}
-			}
+				else
+				{
+					// pulls feature values from 'vroi' and appends them to global object 'theResultsCache' exposed to Python API
+					if (save_features_2_buffer_wholeslide (env.theResultsCache, env, vroi, p.fname_int, "", t, c) == false)
+					{
+						std::cerr << "Error saving features to the results buffer" << std::endl;
+						rv = 2;
+					}
+				}
+		  } //- channels x timeframes
 
 		imlo.close();
+		return rv;
 
 		//
 		// Not saving nested ROI related info because this image is single-ROI (whole-slide)
@@ -215,6 +274,8 @@ namespace Nyxus
 		const SaveOption saveOption,
 		const std::string& outputPath)
 	{
+		env.reset_csv_output_state();		// FIX: this run's CSV files start fresh (see Environment::csv_paths_written)
+
 		//**** prescan all files
 
 		size_t nf = intensFiles.size();
@@ -274,13 +335,15 @@ namespace Nyxus
 
 		// run batches of threads
 
+		int worst_rv = 0;	// FIX: aggregate per-thread failure so an oversized/failed slide
+							// makes the whole run fail loudly (nonzero exit) instead of returning
+							// success -- the per-thread rvals were collected but never checked.
 		size_t n_jobs = (nf + n_threads - 1) / n_threads;
 		for (size_t j = 0; j < n_jobs; j++)
 		{
 			VERBOSLVL1 (env.get_verbosity_level(), std::cout << "whole-slide job " << j + 1 << "/" << n_jobs << "\n");
 
-			std::vector<std::future<void>> T;
-			std::vector<int> rvals(n_threads, 0);
+			std::vector<std::future<int>> T;
 			for (int t = 0; t < n_threads; t++)
 			{
 				size_t idx = j * n_threads + t;
@@ -300,12 +363,12 @@ namespace Nyxus
 						nf,
 						outputPath,
 						write_apache,
-						saveOption,
-						std::ref(rvals[t])));
+						saveOption));
 				}
 				else
 				{
-					featurize_3d_wv_thread(
+					// FIX: aggregate the returned status (was written through a lost reference)
+					int r = featurize_3d_wv_thread(
 						env,
 						intensFiles,
 						intensFiles,
@@ -313,14 +376,18 @@ namespace Nyxus
 						nf,
 						outputPath,
 						write_apache,
-						saveOption,
-						rvals[t]);
+						saveOption);
+					if (r > worst_rv) worst_rv = r;
 				}
 			}
 
-			// wait for all threads to complete before proceeding
+			// wait for all threads to complete, aggregating each one's returned status so an
+			// oversized/failed slide makes the whole run fail loudly (nonzero exit)
 			for (auto& f : T)
-				f.get();
+			{
+				int r = f.get();
+				if (r > worst_rv) worst_rv = r;
+			}
 
 			// allow keyboard interrupt
 			#ifdef WITH_PYTHON_H
@@ -349,6 +416,15 @@ namespace Nyxus
 		//
 		// future: free GPU cache for all participating devices
 		//
+
+		// FIX: a slide that could not be featurized is a hard failure, not a silent success --
+		// report it so the CLI exits nonzero and the Python API raises. An oversized whole volume
+		// streams out-of-core now (see featurize_wholevolume), so this only fires when that
+		// streaming itself failed (input format can't deliver plane-by-plane, or an unsupported
+		// feature was requested) -- the specific reason was already reported above.
+		if (worst_rv != 0)
+			return { false, "one or more slides could not be featurized (see errors above; "
+				"an unsupported format needs a segmented mask, or a smaller/plane-deliverable input)" };
 
 		return {true, std::nullopt}; // success
 	}

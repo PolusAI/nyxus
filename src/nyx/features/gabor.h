@@ -130,29 +130,6 @@ private:
         GpusideCache & devside);
     #endif
 
-    //=== Nontrivial ROIs ===
-
-    void GaborEnergy_NT2 (
-        WriteImageMatrix_nontriv& Im,
-        double* Gexp,
-        double f0,
-        double sig2lam,
-        double gamma,
-        double theta,
-        int n, 
-        bool max_or_threshold,
-        double threshold, 
-        double & max_val, 
-        size_t & cnt);
-
-    void conv_dud_NT (
-        double* C,
-        WriteImageMatrix_nontriv& A,
-        double* B,
-        int na, int ma, int nb, int mb);
-
-    void GetStats_NT (WriteImageMatrix_nontriv& I, Moments2& moments2);
-
     // members referenced from init_class()
     static void create_filterbank();
     static int n_bank_filters;

@@ -142,19 +142,6 @@ public:
 
 private:
 
-	void Extract_Texture_Features2_NT (int angle, WriteImageMatrix_nontriv& grays, int offset, PixIntens min_val, PixIntens max_val, bool ibsi);
-	void calculateCoocMatAtAngle_NT(
-		// out
-		SimpleMatrix<double>& matrix,
-		// in
-		int dx,
-		int dy,
-		WriteImageMatrix_nontriv& grays,
-		PixIntens min_val,
-		PixIntens max_val,
-		bool normalize,
-		bool ibsi);
-
 	void Extract_Texture_Features2 (const Fsettings& settings, int angle, const ImageMatrix& grays, int offset, PixIntens min_val, PixIntens max_val);
 
 	void calculateCoocMatAtAngle(

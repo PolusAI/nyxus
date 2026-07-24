@@ -16,9 +16,17 @@ public:
 	void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
 	void osized_calculate(LR& r, const Fsettings& s, ImageLoader& ldr) { throw std::runtime_error("illegal call of D3_VoxelIntensityFeatures::osized_calculate(LR&, const Fsettings&, ImageLoader&)"); }
 	void osized_calculate(LR& r, const Fsettings& s, const Dataset& ds, ImageLoader& ldr);
+	// The Dataset-less osized_calculate is a throwing guard, so the out-of-core dispatch must
+	// reach the Dataset-aware overload here (COVERED_IMAGE_INTENSITY_RANGE needs slide props).
+	void osized_scan_whole_image (LR& roi, const Fsettings& s, const Dataset& ds, ImageLoader& ldr) override { osized_calculate (roi, s, ds, ldr); save_value (roi.fvals); }
 	void save_value(std::vector<std::vector<double>>& feature_vals);
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
-	static void extract (LR& r, const Fsettings& s);
+	// FIX: extract() must carry the Dataset, because calculate() needs it for
+	// COVERED_IMAGE_INTENSITY_RANGE (slide extrema via ds.dataset_props[r.slide_idx]).
+	// The old 2-arg extract called the 2-arg calculate, which is a stub that throws
+	// "illegal call" -- that broke ALL 3D whole-volume featurization (the segmented path
+	// goes through reduce(), which passes the Dataset, so it never hit this).
+	static void extract (LR& r, const Fsettings& s, const Dataset& ds);
 	void cleanup_instance();
 
 	// list dependencies of this class
