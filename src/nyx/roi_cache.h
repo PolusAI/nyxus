@@ -44,6 +44,12 @@ public:
 	bool caching_permitted();
 	void clear_pixels_cache();
 
+	// Materialize an oversized ROI's pixel data from its disk-backed cloud (raw_pixels_NT). A
+	// feature's out-of-core path uses these to reuse its in-RAM calculate(), which the trivial ==
+	// out-of-core equality invariant requires it to agree with.
+	void rebuild_raw_pixels_from_cloud();
+	void rebuild_aux_image_matrix_from_cloud();
+
 	bool blacklisted = false;
 
 	std::vector <Pixel2> raw_pixels;

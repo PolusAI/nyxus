@@ -85,6 +85,25 @@ void LR::clear_pixels_cache()
 	recycle_aux_obj(RAW_PIXELS);
 }
 
+void LR::rebuild_raw_pixels_from_cloud()
+{
+	raw_pixels.clear();
+	raw_pixels.reserve (raw_pixels_NT.size());
+	for (size_t i = 0; i < raw_pixels_NT.size(); i++)
+		raw_pixels.push_back (raw_pixels_NT.get_at(i));
+}
+
+void LR::rebuild_aux_image_matrix_from_cloud()
+{
+	std::vector<Pixel2> cloud;
+	cloud.reserve (raw_pixels_NT.size());
+	for (size_t i = 0; i < raw_pixels_NT.size(); i++)
+		cloud.push_back (raw_pixels_NT.get_at(i));
+
+	aux_image_matrix.allocate (aabb.get_width(), aabb.get_height());	// calculate_from_pixelcloud reshapes but does not allocate; size the buffer first
+	aux_image_matrix.calculate_from_pixelcloud (cloud, aabb);
+}
+
 std::vector<StatsReal> LR::get_fvals (int fcode) const
 {
 	return fvals[fcode];

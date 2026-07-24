@@ -212,149 +212,16 @@ void NGTDMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensit
 
 void NGTDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
-	// Clear variables
-	clear_buffers();
+	// The oversized ROI is fully materialized here regardless, so rebuild its dense image from the
+	// disk-backed pixel cloud and reuse the identical in-RAM calculate(). The previous bespoke
+	// streaming re-implementation had drifted from calculate(): it binned intensities with
+	// to_grayscale() instead of TextureFeature::bin_intensities(), and indexed the NGTDM N/S/P
+	// vectors by raw grey level in the IBSI branch, which ran off the end of vectors sized to the
+	// unique-intensity count (an out-of-bounds access that crashed) and produced values that
+	// disagreed with the trivial path. Delegating guarantees trivial == out-of-core.
+	r.rebuild_aux_image_matrix_from_cloud();
 
-	// Check if the ROI is degenerate (equal intensity)
-	if (r.aux_min == r.aux_max)
-	{
-		bad_roi_data = true;
-		return;
-	}
-
-	// Prepare ROI's intensity range for normalize_I()
-	PixIntens piRange = r.aux_max - r.aux_min;
-
-	// Make a list of intensity clusters (zones)
-	using AveNeighborhoodInte = std::pair<PixIntens, double>;	// Pairs of (intensity, average intensity of all 8 neighbors)
-	std::vector<AveNeighborhoodInte> Z;
-
-	// While scanning clusters, learn unique intensities 
-	std::unordered_set<PixIntens> U;
-
-	// ROI image
-	WriteImageMatrix_nontriv D ("NGTDMFeature_osized_calculate_D", r.label);
-	D.allocate_from_cloud (r.raw_pixels_NT, r.aabb, false);
-
-	// Gather zones
-	unsigned int nGrays = STNGS_NGREYS(s);	// former theEnvironment.get_coarse_gray_depth()
-	for (int row = 0; row < D.get_height(); row++)
-		for (int col = 0; col < D.get_width(); col++)
-		{
-			// Find a non-blank pixel 
-			PixIntens pi = Nyxus::to_grayscale(D.yx(row, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-			if (pi == 0)
-				continue;
-
-			// Update unique intensities
-			U.insert(pi);
-
-			// Evaluate the neighborhood
-			double neigsI = 0;
-
-			int nd = 0;	// Number of dependencies
-
-			if (D.safe(row - 1, col) && D.yx(row - 1, col) != 0)	// North
-			{
-				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-				nd++;
-			}
-
-			if (D.safe(row - 1, col + 1) && D.yx(row - 1, col + 1) != 0)	// North-East
-			{
-				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-				nd++;
-			}
-
-			if (D.safe(row, col + 1) && D.yx(row, col + 1) != 0)	// East
-			{
-				neigsI += Nyxus::to_grayscale(D.yx(row, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-				nd++;
-			}
-			if (D.safe(row + 1, col + 1) && D.yx(row + 1, col + 1) != 0)	// South-East
-			{
-				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-				nd++;
-			}
-			if (D.safe(row + 1, col) && D.yx(row + 1, col) != 0)	// South
-			{
-				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-				nd++;
-			}
-			if (D.safe(row + 1, col - 1) && D.yx(row + 1, col - 1) != 0)	// South-West
-			{
-				neigsI += Nyxus::to_grayscale(D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-				nd++;
-			}
-			if (D.safe(row, col - 1) && D.yx(row, col - 1) != 0)	// West
-			{
-				neigsI += Nyxus::to_grayscale(D.yx(row, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-				nd++;
-			}
-			if (D.safe(row - 1, col - 1) && D.yx(row - 1, col - 1) != 0)	// North-West
-			{
-				neigsI += Nyxus::to_grayscale(D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));
-				nd++;
-			}
-
-			// Save the intensity's average neighborhood intensity
-			if (nd > 0) 
-			{
-				neigsI /= nd;
-				AveNeighborhoodInte z = { pi, neigsI };
-				Z.push_back(z);
-			}
-		}
-
-	// Fill the matrix
-
-	Ng = (int)U.size();
-	Ngp = (int)U.size();
-
-	// --allocate the matrix
-	P.resize(Ng + 1, 0);
-	S.resize(Ng + 1, 0);
-	N.resize(Ng + 1, 0);
-
-	// --Set to vector to be able to know each intensity's index
-	std::vector<PixIntens> I(U.begin(), U.end());
-	std::sort(I.begin(), I.end());	// Optional
-
-	// --Calculate N and S
-	for (auto& z : Z)
-	{
-		// row
-		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = (STNGS_IBSI(s)) ?
-			z.first : int(iter - I.begin());
-		// col
-		int col = (int)z.second;	// 1-based
-		// increment
-		N[row]++;
-		// --S
-		PixIntens pi = row;
-		double aveNeigI = z.second;
-		S[row] += std::abs(pi - aveNeigI);
-		// --Nvp
-		if (aveNeigI > 0.0)
-			Nvp++;
-	}
-
-	// --Calculate Nvc (sum of N)
-	Nvc = 0;
-	for (int i = 0; i < N.size(); i++)
-		Nvc += N[i];
-
-	// --Calculate P
-	for (int i = 0; i < N.size(); i++)
-		P[i] = (double)N[i] / Nvc;
-
-	// Calculate features
-	_coarseness = calc_Coarseness();
-	_contrast = calc_Contrast();
-	_busyness = calc_Busyness();
-	_complexity = calc_Complexity();
-	_strength = calc_Strength();
+	calculate (r, s);
 }
 
 // Coarseness

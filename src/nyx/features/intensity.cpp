@@ -56,44 +56,12 @@ PixelIntensityFeatures::PixelIntensityFeatures() : FeatureMethod("PixelIntensity
 
 void PixelIntensityFeatures::calculate (LR& r, const Fsettings & fsett, const Dataset & ds)
 {
-	// intercept blank ROIs
-	if (r.aux_max == r.aux_min)
-	{
-		val_MEAN =
-			val_MEDIAN =
-			val_MIN =
-			val_MAX = r.aux_min;
-		val_RANGE = 0;
-
-		val_INTEGRATED_INTENSITY =
-			val_COVERED_IMAGE_INTENSITY_RANGE =
-			val_STANDARD_DEVIATION =
-			val_STANDARD_ERROR =
-			val_SKEWNESS =
-			val_KURTOSIS =
-			val_EXCESS_KURTOSIS =
-			val_HYPERSKEWNESS =
-			val_HYPERFLATNESS =
-			val_MEAN_ABSOLUTE_DEVIATION =
-			val_MEDIAN_ABSOLUTE_DEVIATION =
-			val_ENERGY =
-			val_ROOT_MEAN_SQUARED =
-			val_ENTROPY =
-			val_MODE =
-			val_UNIFORMITY =
-			val_UNIFORMITY_PIU =
-			val_P01 = val_P10 = val_P25 = val_P75 = val_P90 = val_P99 =
-			val_QCOD =
-			val_INTERQUARTILE_RANGE =
-			val_ROBUST_MEAN =
-			val_ROBUST_MEAN_ABSOLUTE_DEVIATION =
-			val_COV =
-			val_STANDARD_DEVIATION_BIASED =
-			val_VARIANCE =
-			val_VARIANCE_BIASED = fsett[(int)NyxSetting::SOFTNAN].rval; // former theEnvironment.resultOptions.noval();
-
-		return;
-	}
+	// A constant-intensity ROI (aux_max == aux_min) used to be intercepted here, keeping only
+	// MEAN/MEDIAN/MIN/MAX/RANGE and setting every other feature to the soft-NAN sentinel. That
+	// discarded values which are perfectly well defined on a constant ROI (INTEGRATED_INTENSITY,
+	// ENERGY, MODE, ROOT_MEAN_SQUARED, the percentiles, and the zero-valued dispersion measures)
+	// and disagreed with the out-of-core path, which computes them. The general code below handles
+	// a constant ROI correctly, so the interception is gone.
 
 	// --MIN, MAX
 	val_MIN = r.aux_min;
@@ -352,8 +320,10 @@ void PixelIntensityFeatures::osized_calculate (LR& r, const Fsettings& stng, con
 	// Kurtosis
 	val_KURTOSIS = mom.kurtosis();
 
-	// Excess kurtosis
-	val_EXCESS_KURTOSIS = val_KURTOSIS - 3;
+	// Excess kurtosis -- via Moments4 like the in-core path, not val_KURTOSIS-3. The two agree on
+	// ordinary data but not on a constant ROI, where kurtosis and excess kurtosis are each guarded
+	// to 0 independently, so subtracting 3 yielded -3 out-of-core against 0 in-core.
+	val_EXCESS_KURTOSIS = mom.excess_kurtosis();
 
 	// Hyperskewness / Hyperflatness from explicit central moments over the disk-backed cloud,
 	// matching the in-core path's sum-of-powers definition rather than the Moments4 variant
