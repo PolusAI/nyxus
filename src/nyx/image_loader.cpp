@@ -8,7 +8,7 @@
 #include "dirs_and_files.h"
 #include "helpers/fsystem.h"
 #include "raw_nifti.h"
-#include "ome/format_detect.h"		// FIX: unified loader dispatch
+#include "ome/format_detect.h"		// container-family classification for loader dispatch
 
 ImageLoader::ImageLoader() {}
 
@@ -23,11 +23,10 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
   
 	try 
 	{
-		// FIX: classify by detect_container_family() instead of raw extension compares, so
-		// dispatch is identical across all 3 loaders.
+		// Classify by container family so loader dispatch is identical across all loaders.
 		Nyxus::ContainerKind fmt = Nyxus::detect_container_family (int_fpath);
 
-		if (fmt == Nyxus::ContainerKind::OmeZarr)		// FIX: was `ext==".zarr"||".ome.zarr"`
+		if (fmt == Nyxus::ContainerKind::OmeZarr)
 		{
 			#ifdef OMEZARR_SUPPORT
 				intFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, int_fpath);
@@ -40,7 +39,7 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 			#endif
 		}
 		else
-			if (fmt == Nyxus::ContainerKind::Dicom)		// FIX: was `ext==".dcm"||".dicom"`
+			if (fmt == Nyxus::ContainerKind::Dicom)
 			{
 				#ifdef DICOM_SUPPORT
 					// HU offset base must be the scanned (HU-domain) slide min. In preserve_hu
@@ -60,7 +59,7 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 					#endif
 			}
 			else
-				if (fmt == Nyxus::ContainerKind::Nifti)		// FIX: was `ext==".nii"||".nii.gz"`
+				if (fmt == Nyxus::ContainerKind::Nifti)
 				{
 					intFL = new NiftiLoader<uint32_t> (int_fpath,
 							(fpopts.preserve_hu() || fpopts.empty()) ? p.min_preroi_inten : (double)fpopts.min_intensity(),		// HU offset base = scanned HU-domain slide min; ignore fp min in preserve_hu mode (else negative HU clamps to 0)
@@ -136,11 +135,11 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 
 	try 
 	{
-		// FIX: unify seg dispatch with detect_container_family(). Defect fixed: the seg path only
-		// matched ".zarr", so a ".ome.zarr" mask mis-routed to the TIFF path (intensity path matched both).
+		// The mask is classified by the same container family as the intensity, so an
+		// .ome.zarr mask routes to the Zarr loader (not the TIFF fallback).
 		Nyxus::ContainerKind fmt = Nyxus::detect_container_family (seg_fpath);
 
-		if (fmt == Nyxus::ContainerKind::OmeZarr)		// FIX: was `ext==".zarr"` only (dropped .ome.zarr)
+		if (fmt == Nyxus::ContainerKind::OmeZarr)
 		{
 			#ifdef OMEZARR_SUPPORT
 				segFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, seg_fpath);
@@ -149,16 +148,16 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 			#endif
 		}
 		else
-			if (fmt == Nyxus::ContainerKind::Dicom)		// FIX: was `ext==".dcm"||".dicom"`
+			if (fmt == Nyxus::ContainerKind::Dicom)
 			{
 				#ifdef DICOM_SUPPORT
 					segFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, seg_fpath);
 				#else
-					std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl; 
+					std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl;
 				#endif
 			}
 			else
-				if (fmt == Nyxus::ContainerKind::Nifti)		// FIX: was `ext==".nii"||".nii.gz"`
+				if (fmt == Nyxus::ContainerKind::Nifti)
 				{
 					segFL = new NiftiLoader <uint32_t> (seg_fpath);
 				}

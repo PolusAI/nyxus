@@ -298,11 +298,11 @@ void D3_VoxelIntensityFeatures::osized_calculate (LR & r, const Fsettings & s, c
 	val_UNIFORMITY_PIU = piu;
 
 	// --- Pass 3: the percentile-dependent scalars in one sweep -- median absolute deviation,
-	// robust mean (FIX 3ROBUST_MEAN: the OOC path used to default this to 0; mean of voxels in the
-	// [P10,P90] window, matching the 2D implementation), and the hyperskewness/hyperflatness
-	// sum-of-powers (the in-core calculate()'s explicit definition; mom.hyperskewness()/
-	// hyperflatness() use a different definition and diverge). Each accumulator sums in the same
-	// voxel order as when these were three separate passes, so the values are unchanged.
+	// robust mean (mean of voxels in the [P10,P90] window, matching the 2D implementation), and
+	// the hyperskewness/hyperflatness sum-of-powers (the in-core calculate()'s explicit
+	// definition; Moments4::hyperskewness()/hyperflatness() use a different definition and
+	// diverge). Each accumulator sums in the same voxel order as when these were three separate
+	// passes, so the values are unchanged.
 	double medad = 0.0;
 	double robustMean = 0.0;
 	size_t robustCount = 0;
