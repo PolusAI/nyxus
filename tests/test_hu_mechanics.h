@@ -75,7 +75,7 @@ static std::vector<uint32_t> hu_load_tile0(const char* fixture, bool preserve_hu
 
     size_t th = ldr.tileHeight(0), tw = ldr.tileWidth(0);
     auto tile = std::make_shared<std::vector<uint32_t>>(th * tw, 0u);
-    EXPECT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0));
+    EXPECT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
     return *tile;
 }
 
@@ -124,7 +124,7 @@ static std::vector<uint32_t> hu_load_dicom_tile0(const char* fixture, bool prese
     NyxusGrayscaleDicomLoader<uint32_t> ldr(1, ds.string(), fpmin, preserve_hu);
     size_t th = ldr.tileHeight(0), tw = ldr.tileWidth(0);
     auto tile = std::make_shared<std::vector<uint32_t>>(th * tw, 0u);
-    EXPECT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0));
+    EXPECT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
     return *tile;
 }
 
