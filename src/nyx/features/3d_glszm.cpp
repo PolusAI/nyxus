@@ -532,7 +532,7 @@ void D3_GLSZM_feature::calculate (LR& r, const Fsettings& s)
 
 	Ng = STNGS_IBSI(s) ? *std::max_element (I.begin(), I.end()) : I.size();	// former Environment::ibsi_compliance
 	Ns = maxZoneArea;
-	Nz = (int) Zones.size();
+	Nz = static_cast<int>(Zones.size());
 	Np = nnzVoxels;
 
 	// --allocate GLSZ-matrix
@@ -606,7 +606,7 @@ void D3_GLSZM_feature::calc_sums_of_P()
 	// Aggregate by grayscale level
 	for (int i = 1; i <= Ng; ++i)
 	{
-		double inten = (double)I[i - 1];
+		double inten = static_cast<double>(I[i - 1]);
 		double sum = 0;
 		for (int j = 1; j <= /*Ns*/P.width(); ++j)
 		{
@@ -646,22 +646,22 @@ void D3_GLSZM_feature::calc_sums_of_P()
 
 void D3_GLSZM_feature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature3D::GLSZM_SAE][0] = fv_SAE;
-	fvals[(int)Feature3D::GLSZM_LAE][0] = fv_LAE;
-	fvals[(int)Feature3D::GLSZM_GLN][0] = fv_GLN;
-	fvals[(int)Feature3D::GLSZM_GLNN][0] = fv_GLNN;
-	fvals[(int)Feature3D::GLSZM_SZN][0] = fv_SZN;
-	fvals[(int)Feature3D::GLSZM_SZNN][0] = fv_SZNN;
-	fvals[(int)Feature3D::GLSZM_ZP][0] = fv_ZP;
-	fvals[(int)Feature3D::GLSZM_GLV][0] = fv_GLV;
-	fvals[(int)Feature3D::GLSZM_ZV][0] = fv_ZV;
-	fvals[(int)Feature3D::GLSZM_ZE][0] = fv_ZE;
-	fvals[(int)Feature3D::GLSZM_LGLZE][0] = fv_LGLZE;
-	fvals[(int)Feature3D::GLSZM_HGLZE][0] = fv_HGLZE;
-	fvals[(int)Feature3D::GLSZM_SALGLE][0] = fv_SALGLE;
-	fvals[(int)Feature3D::GLSZM_SAHGLE][0] = fv_SAHGLE;
-	fvals[(int)Feature3D::GLSZM_LALGLE][0] = fv_LALGLE;
-	fvals[(int)Feature3D::GLSZM_LAHGLE][0] = fv_LAHGLE;
+	fvals[static_cast<int>(Feature3D::GLSZM_SAE)][0] = fv_SAE;
+	fvals[static_cast<int>(Feature3D::GLSZM_LAE)][0] = fv_LAE;
+	fvals[static_cast<int>(Feature3D::GLSZM_GLN)][0] = fv_GLN;
+	fvals[static_cast<int>(Feature3D::GLSZM_GLNN)][0] = fv_GLNN;
+	fvals[static_cast<int>(Feature3D::GLSZM_SZN)][0] = fv_SZN;
+	fvals[static_cast<int>(Feature3D::GLSZM_SZNN)][0] = fv_SZNN;
+	fvals[static_cast<int>(Feature3D::GLSZM_ZP)][0] = fv_ZP;
+	fvals[static_cast<int>(Feature3D::GLSZM_GLV)][0] = fv_GLV;
+	fvals[static_cast<int>(Feature3D::GLSZM_ZV)][0] = fv_ZV;
+	fvals[static_cast<int>(Feature3D::GLSZM_ZE)][0] = fv_ZE;
+	fvals[static_cast<int>(Feature3D::GLSZM_LGLZE)][0] = fv_LGLZE;
+	fvals[static_cast<int>(Feature3D::GLSZM_HGLZE)][0] = fv_HGLZE;
+	fvals[static_cast<int>(Feature3D::GLSZM_SALGLE)][0] = fv_SALGLE;
+	fvals[static_cast<int>(Feature3D::GLSZM_SAHGLE)][0] = fv_SAHGLE;
+	fvals[static_cast<int>(Feature3D::GLSZM_LALGLE)][0] = fv_LALGLE;
+	fvals[static_cast<int>(Feature3D::GLSZM_LAHGLE)][0] = fv_LAHGLE;
 }
 
 // 1. Small Area Emphasis
@@ -787,7 +787,7 @@ double D3_GLSZM_feature::calc_GLV()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double)I[i - 1];
+		double inten = static_cast<double>(I[i - 1]);
 		for (int j = 1; j <= Ns; j++)
 		{
 			double d2 = (inten - mu_GLV) * (inten - mu_GLV);
@@ -828,7 +828,7 @@ double D3_GLSZM_feature::calc_LGLZE()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double)I[i - 1];
+		double inten = static_cast<double>(I[i - 1]);
 		f += si[i] / (inten * inten);
 	}
 
@@ -843,7 +843,7 @@ double D3_GLSZM_feature::calc_HGLZE()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double)I[i - 1];
+		double inten = static_cast<double>(I[i - 1]);
 		f += si[i] * (inten * inten);
 	}
 

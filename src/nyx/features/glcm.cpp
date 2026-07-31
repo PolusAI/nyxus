@@ -22,7 +22,7 @@ void GLCMFeature::calculate (LR& r, const Fsettings& s)
 	// (We need to smart-select the greyInfo rather than just theEnvironment.get_coarse_gray_depth())
 	int nGreys = STNGS_GLCM_GREYDEPTH(s),
 		offset = STNGS_GLCM_OFFSET(s);
-	double softNAN = s[(int)NyxSetting::SOFTNAN].rval;
+	double softNAN = s[static_cast<int>(NyxSetting::SOFTNAN)].rval;
 
 	auto binnedMin = bin_pixel(r.aux_min, r.aux_min, r.aux_max, nGreys);
 	auto binnedMax = bin_pixel(r.aux_max, r.aux_min, r.aux_max, nGreys);
@@ -32,65 +32,65 @@ void GLCMFeature::calculate (LR& r, const Fsettings& s)
 
 		// assign it to each angled feature value 
 		auto n = angles.size();
-		r.fvals[(int)Feature2D::GLCM_ASM].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_ACOR].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_CLUPROM].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_CLUSHADE].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_CLUTEND].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_CONTRAST].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_CORRELATION].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_DIFAVE].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_DIFENTRO].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_DIFVAR].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_DIS].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_ENERGY].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_ENTROPY].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_HOM1].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_HOM2].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_IDMN].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_ID].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_IDN].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_INFOMEAS1].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_INFOMEAS2].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_IDM].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_IV].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_JAVE].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_JE].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_JMAX].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_JVAR].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_SUMAVERAGE].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_SUMENTROPY].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_SUMVARIANCE].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_VARIANCE].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_ASM_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_ACOR_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_CLUPROM_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_CLUSHADE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_CLUTEND_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_CONTRAST_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_CORRELATION_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_DIFAVE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_DIFENTRO_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_DIFVAR_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_DIS_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_ENERGY_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_ENTROPY_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_HOM1_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_ID_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_IDN_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_IDM_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_IDMN_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_IV_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_JAVE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_JE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_INFOMEAS1_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_INFOMEAS2_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_JMAX_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_JVAR_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_SUMAVERAGE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_SUMENTROPY_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_SUMVARIANCE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_VARIANCE_AVE][0] = w;
+		r.fvals[static_cast<int>(Feature2D::GLCM_ASM)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_ACOR)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_CLUPROM)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_CLUSHADE)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_CLUTEND)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_CONTRAST)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_CORRELATION)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_DIFAVE)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_DIFENTRO)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_DIFVAR)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_DIS)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_ENERGY)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_ENTROPY)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_HOM1)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_HOM2)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_IDMN)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_ID)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_IDN)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_INFOMEAS1)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_INFOMEAS2)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_IDM)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_IV)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_JAVE)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_JE)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_JMAX)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_JVAR)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_SUMAVERAGE)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_SUMENTROPY)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_SUMVARIANCE)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_VARIANCE)].assign(n, w);
+		r.fvals[static_cast<int>(Feature2D::GLCM_ASM_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_ACOR_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_CLUPROM_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_CLUSHADE_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_CLUTEND_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_CONTRAST_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_CORRELATION_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_DIFAVE_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_DIFENTRO_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_DIFVAR_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_DIS_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_ENERGY_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_ENTROPY_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_HOM1_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_ID_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_IDN_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_IDM_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_IDMN_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_IV_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_JAVE_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_JE_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_INFOMEAS1_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_INFOMEAS2_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_JMAX_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_JVAR_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_SUMAVERAGE_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_SUMENTROPY_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_SUMVARIANCE_AVE)][0] =
+			r.fvals[static_cast<int>(Feature2D::GLCM_VARIANCE_AVE)][0] = w;
 		return;
 	}
 
@@ -142,69 +142,69 @@ void GLCMFeature::copyfvals(AngledFeatures& dst, const AngledFeatures& src)
 
 void GLCMFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	copyfvals(fvals[(int)Feature2D::GLCM_ASM], fvals_ASM);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_ASM)], fvals_ASM);
 
-	copyfvals(fvals[(int)Feature2D::GLCM_ACOR], fvals_acor);
-	copyfvals(fvals[(int)Feature2D::GLCM_ACOR], fvals_acor);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_ACOR)], fvals_acor);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_ACOR)], fvals_acor);
 
-	copyfvals(fvals[(int)Feature2D::GLCM_CLUPROM], fvals_cluprom);
-	copyfvals(fvals[(int)Feature2D::GLCM_CLUSHADE], fvals_clushade);
-	copyfvals(fvals[(int)Feature2D::GLCM_CLUTEND], fvals_clutend);
-	copyfvals(fvals[(int)Feature2D::GLCM_CONTRAST], fvals_contrast);
-	copyfvals(fvals[(int)Feature2D::GLCM_CORRELATION], fvals_correlation);
-	copyfvals(fvals[(int)Feature2D::GLCM_DIFAVE], fvals_diff_avg);
-	copyfvals(fvals[(int)Feature2D::GLCM_DIFVAR], fvals_diff_var);
-	copyfvals(fvals[(int)Feature2D::GLCM_DIFENTRO], fvals_diff_entropy);
-	copyfvals(fvals[(int)Feature2D::GLCM_DIS], fvals_dis);
-	copyfvals(fvals[(int)Feature2D::GLCM_ENERGY], fvals_energy);
-	copyfvals(fvals[(int)Feature2D::GLCM_ENTROPY], fvals_entropy);
-	copyfvals(fvals[(int)Feature2D::GLCM_HOM1], fvals_homo);
-	copyfvals(fvals[(int)Feature2D::GLCM_HOM2], fvals_hom2);
-	copyfvals(fvals[(int)Feature2D::GLCM_ID], fvals_id);
-	copyfvals(fvals[(int)Feature2D::GLCM_IDN], fvals_idn);
-	copyfvals(fvals[(int)Feature2D::GLCM_IDM], fvals_IDM);
-	copyfvals(fvals[(int)Feature2D::GLCM_IDMN], fvals_idmn);
-	copyfvals(fvals[(int)Feature2D::GLCM_INFOMEAS1], fvals_meas_corr1);
-	copyfvals(fvals[(int)Feature2D::GLCM_INFOMEAS2], fvals_meas_corr2);
-	copyfvals(fvals[(int)Feature2D::GLCM_IV], fvals_iv);
-	copyfvals(fvals[(int)Feature2D::GLCM_JAVE], fvals_jave);
-	copyfvals(fvals[(int)Feature2D::GLCM_JE], fvals_je);
-	copyfvals(fvals[(int)Feature2D::GLCM_JMAX], fvals_jmax);
-	copyfvals(fvals[(int)Feature2D::GLCM_JVAR], fvals_jvar);
-	copyfvals(fvals[(int)Feature2D::GLCM_SUMAVERAGE], fvals_sum_avg);
-	copyfvals(fvals[(int)Feature2D::GLCM_SUMVARIANCE], fvals_sum_var);
-	copyfvals(fvals[(int)Feature2D::GLCM_SUMENTROPY], fvals_sum_entropy);
-	copyfvals(fvals[(int)Feature2D::GLCM_VARIANCE], fvals_variance);
-	fvals[(int)Feature2D::GLCM_ASM_AVE][0] = calc_ave(fvals_ASM);
-	fvals[(int)Feature2D::GLCM_ACOR_AVE][0] = calc_ave(fvals_acor);
-	fvals[(int)Feature2D::GLCM_CLUPROM_AVE][0] = calc_ave(fvals_cluprom);
-	fvals[(int)Feature2D::GLCM_CLUSHADE_AVE][0] = calc_ave(fvals_clushade);
-	fvals[(int)Feature2D::GLCM_CLUTEND_AVE][0] = calc_ave(fvals_clutend);
-	fvals[(int)Feature2D::GLCM_CONTRAST_AVE][0] = calc_ave(fvals_contrast);
-	fvals[(int)Feature2D::GLCM_CORRELATION_AVE][0] = calc_ave(fvals_correlation);
-	fvals[(int)Feature2D::GLCM_DIFAVE_AVE][0] = calc_ave(fvals_diff_avg);
-	fvals[(int)Feature2D::GLCM_DIFVAR_AVE][0] = calc_ave(fvals_diff_var);
-	fvals[(int)Feature2D::GLCM_DIFENTRO_AVE][0] = calc_ave(fvals_diff_entropy);
-	fvals[(int)Feature2D::GLCM_DIS_AVE][0] = calc_ave(fvals_dis);
-	fvals[(int)Feature2D::GLCM_ENERGY_AVE][0] = calc_ave(fvals_energy);
-	fvals[(int)Feature2D::GLCM_ENTROPY_AVE][0] = calc_ave(fvals_entropy);
-	fvals[(int)Feature2D::GLCM_HOM1_AVE][0] = calc_ave(fvals_homo);
-	fvals[(int)Feature2D::GLCM_ID_AVE][0] = calc_ave(fvals_id);
-	fvals[(int)Feature2D::GLCM_IDN_AVE][0] = calc_ave(fvals_idn);
-	fvals[(int)Feature2D::GLCM_IDM_AVE][0] = calc_ave(fvals_IDM);
-	fvals[(int)Feature2D::GLCM_IDMN_AVE][0] = calc_ave(fvals_idmn);
-	fvals[(int)Feature2D::GLCM_IV_AVE][0] = calc_ave(fvals_iv);
-	fvals[(int)Feature2D::GLCM_JAVE_AVE][0] = calc_ave(fvals_jave);
-	fvals[(int)Feature2D::GLCM_JE_AVE][0] = calc_ave(fvals_je);
-	fvals[(int)Feature2D::GLCM_INFOMEAS1_AVE][0] = calc_ave(fvals_meas_corr1);
-	fvals[(int)Feature2D::GLCM_INFOMEAS2_AVE][0] = calc_ave(fvals_meas_corr2);
-	fvals[(int)Feature2D::GLCM_VARIANCE_AVE][0] = calc_ave(fvals_variance);
-	fvals[(int)Feature2D::GLCM_JMAX_AVE][0] = calc_ave(fvals_jmax);
-	fvals[(int)Feature2D::GLCM_JVAR_AVE][0] = calc_ave(fvals_jvar);
-	fvals[(int)Feature2D::GLCM_SUMAVERAGE_AVE][0] = calc_ave(fvals_sum_avg);
-	fvals[(int)Feature2D::GLCM_SUMVARIANCE_AVE][0] = calc_ave(fvals_sum_var);
-	fvals[(int)Feature2D::GLCM_SUMENTROPY_AVE][0] = calc_ave(fvals_sum_entropy);
-	fvals[(int)Feature2D::GLCM_VARIANCE_AVE][0] = calc_ave(fvals_variance);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_CLUPROM)], fvals_cluprom);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_CLUSHADE)], fvals_clushade);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_CLUTEND)], fvals_clutend);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_CONTRAST)], fvals_contrast);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_CORRELATION)], fvals_correlation);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_DIFAVE)], fvals_diff_avg);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_DIFVAR)], fvals_diff_var);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_DIFENTRO)], fvals_diff_entropy);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_DIS)], fvals_dis);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_ENERGY)], fvals_energy);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_ENTROPY)], fvals_entropy);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_HOM1)], fvals_homo);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_HOM2)], fvals_hom2);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_ID)], fvals_id);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_IDN)], fvals_idn);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_IDM)], fvals_IDM);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_IDMN)], fvals_idmn);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_INFOMEAS1)], fvals_meas_corr1);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_INFOMEAS2)], fvals_meas_corr2);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_IV)], fvals_iv);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_JAVE)], fvals_jave);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_JE)], fvals_je);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_JMAX)], fvals_jmax);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_JVAR)], fvals_jvar);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_SUMAVERAGE)], fvals_sum_avg);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_SUMVARIANCE)], fvals_sum_var);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_SUMENTROPY)], fvals_sum_entropy);
+	copyfvals(fvals[static_cast<int>(Feature2D::GLCM_VARIANCE)], fvals_variance);
+	fvals[static_cast<int>(Feature2D::GLCM_ASM_AVE)][0] = calc_ave(fvals_ASM);
+	fvals[static_cast<int>(Feature2D::GLCM_ACOR_AVE)][0] = calc_ave(fvals_acor);
+	fvals[static_cast<int>(Feature2D::GLCM_CLUPROM_AVE)][0] = calc_ave(fvals_cluprom);
+	fvals[static_cast<int>(Feature2D::GLCM_CLUSHADE_AVE)][0] = calc_ave(fvals_clushade);
+	fvals[static_cast<int>(Feature2D::GLCM_CLUTEND_AVE)][0] = calc_ave(fvals_clutend);
+	fvals[static_cast<int>(Feature2D::GLCM_CONTRAST_AVE)][0] = calc_ave(fvals_contrast);
+	fvals[static_cast<int>(Feature2D::GLCM_CORRELATION_AVE)][0] = calc_ave(fvals_correlation);
+	fvals[static_cast<int>(Feature2D::GLCM_DIFAVE_AVE)][0] = calc_ave(fvals_diff_avg);
+	fvals[static_cast<int>(Feature2D::GLCM_DIFVAR_AVE)][0] = calc_ave(fvals_diff_var);
+	fvals[static_cast<int>(Feature2D::GLCM_DIFENTRO_AVE)][0] = calc_ave(fvals_diff_entropy);
+	fvals[static_cast<int>(Feature2D::GLCM_DIS_AVE)][0] = calc_ave(fvals_dis);
+	fvals[static_cast<int>(Feature2D::GLCM_ENERGY_AVE)][0] = calc_ave(fvals_energy);
+	fvals[static_cast<int>(Feature2D::GLCM_ENTROPY_AVE)][0] = calc_ave(fvals_entropy);
+	fvals[static_cast<int>(Feature2D::GLCM_HOM1_AVE)][0] = calc_ave(fvals_homo);
+	fvals[static_cast<int>(Feature2D::GLCM_ID_AVE)][0] = calc_ave(fvals_id);
+	fvals[static_cast<int>(Feature2D::GLCM_IDN_AVE)][0] = calc_ave(fvals_idn);
+	fvals[static_cast<int>(Feature2D::GLCM_IDM_AVE)][0] = calc_ave(fvals_IDM);
+	fvals[static_cast<int>(Feature2D::GLCM_IDMN_AVE)][0] = calc_ave(fvals_idmn);
+	fvals[static_cast<int>(Feature2D::GLCM_IV_AVE)][0] = calc_ave(fvals_iv);
+	fvals[static_cast<int>(Feature2D::GLCM_JAVE_AVE)][0] = calc_ave(fvals_jave);
+	fvals[static_cast<int>(Feature2D::GLCM_JE_AVE)][0] = calc_ave(fvals_je);
+	fvals[static_cast<int>(Feature2D::GLCM_INFOMEAS1_AVE)][0] = calc_ave(fvals_meas_corr1);
+	fvals[static_cast<int>(Feature2D::GLCM_INFOMEAS2_AVE)][0] = calc_ave(fvals_meas_corr2);
+	fvals[static_cast<int>(Feature2D::GLCM_VARIANCE_AVE)][0] = calc_ave(fvals_variance);
+	fvals[static_cast<int>(Feature2D::GLCM_JMAX_AVE)][0] = calc_ave(fvals_jmax);
+	fvals[static_cast<int>(Feature2D::GLCM_JVAR_AVE)][0] = calc_ave(fvals_jvar);
+	fvals[static_cast<int>(Feature2D::GLCM_SUMAVERAGE_AVE)][0] = calc_ave(fvals_sum_avg);
+	fvals[static_cast<int>(Feature2D::GLCM_SUMVARIANCE_AVE)][0] = calc_ave(fvals_sum_var);
+	fvals[static_cast<int>(Feature2D::GLCM_SUMENTROPY_AVE)][0] = calc_ave(fvals_sum_entropy);
+	fvals[static_cast<int>(Feature2D::GLCM_VARIANCE_AVE)][0] = calc_ave(fvals_variance);
 }
 
 void GLCMFeature::extract (LR& r, const Fsettings& s)
@@ -259,7 +259,7 @@ void GLCMFeature::Extract_Texture_Features2 (const Fsettings& s, int angle, cons
 	// Blank cooc-matrix? -- no point to use it, assign each feature value '0' and return.
 	if (sum_p == 0)
 	{
-		double _ = s[(int)NyxSetting::SOFTNAN].rval;
+		double _ = s[static_cast<int>(NyxSetting::SOFTNAN)].rval;
 		fvals_ASM.push_back(_);
 		fvals_acor.push_back(_);
 		fvals_cluprom.push_back(_);
@@ -303,7 +303,7 @@ void GLCMFeature::Extract_Texture_Features2 (const Fsettings& s, int angle, cons
 	// Compute Haralick statistics 
 	fvals_ASM.push_back (f_asm(P_matrix));
 	fvals_contrast.push_back (f_contrast(P_matrix));
-	fvals_correlation.push_back (f_corr(s[(int)NyxSetting::SOFTNAN].rval));
+	fvals_correlation.push_back (f_corr(s[static_cast<int>(NyxSetting::SOFTNAN)].rval));
 	fvals_energy.push_back (f_energy(P_matrix));
 	fvals_homo.push_back (f_homogeneity());
 	fvals_variance.push_back (f_var(P_matrix));
@@ -314,7 +314,7 @@ void GLCMFeature::Extract_Texture_Features2 (const Fsettings& s, int angle, cons
 	fvals_diff_var.push_back (f_dvar(P_matrix));
 	fvals_diff_entropy.push_back (f_dentropy(P_matrix));
 	fvals_diff_avg.push_back (f_difference_avg());
-	fvals_meas_corr1.push_back (f_info_meas_corr1(P_matrix, s[(int)NyxSetting::SOFTNAN].rval));
+	fvals_meas_corr1.push_back (f_info_meas_corr1(P_matrix, s[static_cast<int>(NyxSetting::SOFTNAN)].rval));
 	fvals_meas_corr2.push_back (f_info_meas_corr2(P_matrix));
 	fvals_acor.push_back (f_GLCM_ACOR(P_matrix));
 	fvals_cluprom.push_back (f_GLCM_CLUPROM());
@@ -351,8 +351,8 @@ void GLCMFeature::calculateCoocMatAtAngle(
 	PixIntens grays_min_val,
 	PixIntens grays_max_val)
 {
-	int nGreys = s[(int)NyxSetting::GREYDEPTH].ival;
-	bool ibsi = s[(int)NyxSetting::IBSI].bval;
+	int nGreys = s[static_cast<int>(NyxSetting::GREYDEPTH)].ival;
+	bool ibsi = s[static_cast<int>(NyxSetting::IBSI)].bval;
 
 	//--- grey bining ---
 	int rows = grays.height,
@@ -394,7 +394,7 @@ void GLCMFeature::calculateCoocMatAtAngle(
 		I.assign(U.begin(), U.end());
 		std::sort(I.begin(), I.end());
 
-		GLCM.allocate((int)I.size(), (int)I.size());
+		GLCM.allocate(static_cast<int>(I.size()), static_cast<int>(I.size()));
 	}
 	else
 		if (matlab_grey_binning(greyInfo))
@@ -939,7 +939,7 @@ double GLCMFeature::f_homogeneity()
 
 	for (int r = 0; r < Ng; r++)
 		for (int c = 0; c < Ng; c++)
-			homogeneity += P_matrix.yx(r,c) / sum_p / (1.0 + (double)std::abs(r - c));
+			homogeneity += P_matrix.yx(r,c) / sum_p / (1.0 + static_cast<double>(std::abs(r - c)));
 
 	return homogeneity;
 }
@@ -954,10 +954,10 @@ double GLCMFeature::f_GLCM_ACOR(const SimpleMatrix<double>& P)
 
 	for (int x = 0; x < Ng; x++)
 	{
-		double xval = (double) I[x];
+		double xval = static_cast<double>(I[x]);
 		for (int y = 0; y < Ng; y++)
 		{
-			double yval = (double) I[y];
+			double yval = static_cast<double>(I[y]);
 			f += P.xy(x, y) * xval * yval;
 		}
 	}
@@ -1066,7 +1066,7 @@ double GLCMFeature::f_GLCM_HOM2(const SimpleMatrix<double>& P_matrix)
 		for (int y = 0; y < n_levels; y++)
 			// FIX: normalize by sum_p (joint probability), matching f_idm/f_GLCM_JE. Was summing the
 			// UNNORMALIZED co-occurrence counts -> homogeneity > 1 (e.g. 14.79 on the IBSI phantom).
-			hom2 += (P_matrix.xy(x, y) / sum_p) / (1.0 + (double)std::abs(x - y) * (double)std::abs(x - y));
+			hom2 += (P_matrix.xy(x, y) / sum_p) / (1.0 + static_cast<double>(std::abs(x - y) )* static_cast<double>(std::abs(x - y)));
 
 	return hom2;
 }

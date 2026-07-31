@@ -144,13 +144,13 @@ namespace CuGabor {
 
         int n[2] = { row_size, col_size };
 
-        auto ok = cudaMalloc((void**)&d_image, sizeof(CuComplex) * size * batch_size);
+        auto ok = cudaMalloc(reinterpret_cast<void**>(&d_image), sizeof(CuComplex) * size * batch_size);
         CHECKERR(ok);
 
-        ok = cudaMalloc((void**)&d_result, sizeof(CuComplex) * size * batch_size);
+        ok = cudaMalloc(reinterpret_cast<void**>(&d_result), sizeof(CuComplex) * size * batch_size);
         CHECKERR(ok);
 
-        ok = cudaMalloc((void**)&d_kernel, sizeof(CuComplex) * size * batch_size);
+        ok = cudaMalloc(reinterpret_cast<void**>(&d_kernel), sizeof(CuComplex) * size * batch_size);
         CHECKERR(ok);
 
         // copy data to GPU
@@ -501,7 +501,7 @@ namespace CuGabor {
     {
         auto szb = sizeof(dev_filterbank[0]) * filterbank_len_all_batches;
 
-        auto ok = cudaMalloc((void**)dev_filterbank, szb);
+        auto ok = cudaMalloc(reinterpret_cast<void**>(dev_filterbank), szb);
         CHECKERR(ok);
 
         ok = cudaMemcpy(*dev_filterbank, ho_filterbank, szb, cudaMemcpyHostToDevice);

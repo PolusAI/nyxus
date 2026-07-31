@@ -190,7 +190,7 @@ namespace NyxusGpu
 
         double* d_idata = g_idata,
             * d_odata = nullptr;
-        cudaMalloc((void**)&d_odata, numBlocks * sizeof(d_odata[0]));
+        cudaMalloc(reinterpret_cast<void**>(&d_odata), numBlocks * sizeof(d_odata[0]));
         
         //std::vector<double> odata(numBlocks, 0.0);
         //double* h_odata = odata.data();

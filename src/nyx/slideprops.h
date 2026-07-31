@@ -52,17 +52,17 @@ public:
 			// slope-1 offset map: u = round(x - floor(min)). e.g. min=-1024 => HU -1024->0, 0->1024, 3071->4095
 			double y = x - std::floor(min_preroi_inten);
 			if (y < 0.0) y = 0.0;			// clamp rare sub-min outliers to 0 (stay in unsigned range)
-			return (unsigned int) std::llround(y);
+			return static_cast<unsigned int>(std::llround(y));
 		}
 		if (fp_phys_pivoxels)
 		{
 			double y = x < min_preroi_inten ? min_preroi_inten : x;
 			y = y > max_preroi_inten ? max_preroi_inten : y;
 			y = uint_dynrange * (y - min_preroi_inten) / (max_preroi_inten - min_preroi_inten);
-			return (unsigned int)y;
+			return static_cast<unsigned int>(y);
 		}
 		else
-			return (unsigned int) x;
+			return static_cast<unsigned int>(x);
 	}
 
 	// geometric

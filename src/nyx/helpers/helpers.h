@@ -113,7 +113,7 @@ namespace Nyxus
 			return false;
 		
 		// Successful conversion, return its result
-		result = (int)res;
+		result = static_cast<int>(res);
 		return true;
 	}
 
@@ -242,9 +242,9 @@ namespace Nyxus
 	{
 		if (a <= 1)
 			return 1;
-		unsigned int x = (unsigned int)(a - 1);
+		unsigned int x = static_cast<unsigned int>((a - 1));
 		x |= x >> 1; x |= x >> 2; x |= x >> 4; x |= x >> 8; x |= x >> 16;
-		return (int)(x + 1);
+		return static_cast<int>((x + 1));
 	}
 
 	inline void print_curve(const std::vector<std::pair<int, int>>& curve, const std::string& name)
@@ -282,7 +282,7 @@ namespace Nyxus
 
 	inline double fast_log10 (double _x)  // compute log2(x) by reducing x to [0.75, 1.5)
 	{
-		float x = (float)_x;
+		float x = static_cast<float>(_x);
 
 		// a*(x-1)^2 + b*(x-1) approximates log2(x) when 0.75 <= x < 1.5
 		const float a = -.6296735f;
@@ -340,7 +340,7 @@ namespace Nyxus
 			return i;
 		
 		double pi = ((double(i-min_i) / double(i_range) * double(n_levels)));
-		unsigned int new_pi = (unsigned int)pi;
+		unsigned int new_pi = static_cast<unsigned int>(pi);
 		return new_pi;
 	}
 
@@ -449,10 +449,10 @@ namespace Nyxus
 			return "<BIGGEST>";
 
 		// integer part
-		size_t y = (size_t) std::abs(x);
+		size_t y = static_cast<size_t>(std::abs(x));
 
 		// fractional part ("123.4567" -> "4567")
-		double f = x - (int) x;
+		double f = x - static_cast<int>(x);
 		std::string s = std::signbit(x) ? "-" : "";
 		std::string frac = f==0.0 ? "0.0" : std::to_string(f);
 		if (frac.length()>=1)

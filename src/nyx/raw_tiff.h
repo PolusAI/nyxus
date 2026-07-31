@@ -237,7 +237,7 @@ private:
                 {
                     size_t logOffs = r * tileWidth_ + c,
                         physOffs = r * tileWidth_ + c;
-                    FileType x = *(((FileType*)src) + physOffs);
+                    FileType x = *((static_cast<const FileType*>(src)) + physOffs);
                     minval = (std::min) (double(x), minval);
                     maxval = (std::max) (double(x), maxval);
                 }
@@ -248,7 +248,7 @@ private:
                 size_t n = tileHeight_ * tileWidth_;
                 for (size_t i = 0; i < n; i++)
                 {
-                    FileType x = *(((FileType*)src) + i);
+                    FileType x = *((static_cast<const FileType*>(src)) + i);
                     minval = (std::min)(double(x), minval);
                     maxval = (std::max)(double(x), maxval);
                 }
@@ -258,15 +258,15 @@ private:
     template<typename FileType>
     static uint32_t get_uint32_pixel_imp (tdata_t src, size_t idx)
     {
-        FileType x = *(((FileType*)src) + idx);
-        return (uint32_t) x;
+        FileType x = *((static_cast<const FileType*>(src)) + idx);
+        return static_cast<uint32_t>(x);
     }
 
     template<typename FileType>
     static double get_dp_pixel_imp (tdata_t src, size_t idx)
     {
-        FileType x = *(((FileType*)src) + idx);
-        return (double) x;
+        FileType x = *((static_cast<const FileType*>(src)) + idx);
+        return static_cast<double>(x);
     }
 
     double (*get_dpequiv_pixel_typeresolved) (tdata_t src, size_t idx) = nullptr;
@@ -518,7 +518,7 @@ private:
 
             // - Informative zone of the strip
             if (layer < fullDepth_ && row < fullHeight_ && col < fullWidth_)
-                x = ((FileType*)(src))[col];
+                x = (static_cast<const FileType*>(src))[col];
 
             minval = (std::min)(double(x), minval);
             maxval = (std::max)(double(x), maxval);
@@ -528,15 +528,15 @@ private:
     template<typename FileType>
     static uint32_t get_uint32_pixel_imp(tdata_t src, size_t idx)
     {
-        FileType x = *(((FileType*)src) + idx);
-        return (uint32_t)x;
+        FileType x = *((static_cast<const FileType*>(src)) + idx);
+        return static_cast<uint32_t>(x);
     }
 
     template<typename FileType>
     static double get_dp_pixel_imp(tdata_t src, size_t idx)
     {
-        FileType x = *(((FileType*)src) + idx);
-        return (double)x;
+        FileType x = *((static_cast<const FileType*>(src)) + idx);
+        return static_cast<double>(x);
     }
 
     double (*get_dpequiv_pixel_typeresolved) (tdata_t src, size_t idx) = nullptr;

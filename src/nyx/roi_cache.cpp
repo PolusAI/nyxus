@@ -85,7 +85,7 @@ std::vector<StatsReal> LR::get_fvals (int fcode) const
 
 void LR::initialize_fvals()
 {
-	fvals.resize ((int)Nyxus::FeatureIMQ::_COUNT_);
+	fvals.resize (static_cast<int>(Nyxus::FeatureIMQ::_COUNT_));
 	for (auto& valVec : fvals)
 		valVec.push_back(0.0);
 }

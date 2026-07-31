@@ -24,7 +24,7 @@ public:
 	// list dependencies of this class
 	static bool required (const FeatureSet& fs);
 
-	const constexpr static std::initializer_list<Nyxus::Feature3D> featureset =
+	static constexpr std::initializer_list<Nyxus::Feature3D> featureset =
 	{
 			Nyxus::Feature3D::COV,
 			Nyxus::Feature3D::COVERED_IMAGE_INTENSITY_RANGE,

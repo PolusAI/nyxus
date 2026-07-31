@@ -43,7 +43,7 @@ bool GaborFeature::required(const FeatureSet& fs)
 void GaborFeature::calculate (LR& r, const Fsettings& s)
 {
     // Number of frequencies (feature values) calculated
-    int nFreqs = (int) GaborFeature::f0_theta_pairs.size();
+    int nFreqs = static_cast<int>(GaborFeature::f0_theta_pairs.size());
 
     // Prepare the feature value buffer
     if (fvals.size() != nFreqs)
@@ -118,7 +118,7 @@ void GaborFeature::calculate (LR& r, const Fsettings& s)
                 afterGaborScore++;
 
         // save the score as feature value
-        fvals[i] = (double)afterGaborScore / (double)baselineScore;
+        fvals[i] = static_cast<double>(afterGaborScore )/ static_cast<double>(baselineScore);
     }
 }
 
@@ -132,7 +132,7 @@ namespace CuGabor
 void GaborFeature::calculate_gpu (LR& r)
 {
     // Number of frequencies (feature values) calculated
-    int nFreqs = (int)GaborFeature::f0_theta_pairs.size();
+    int nFreqs = static_cast<int>(GaborFeature::f0_theta_pairs.size());
 
     // Prepare the feature value buffer
     if (fvals.size() != nFreqs)
@@ -200,14 +200,14 @@ void GaborFeature::calculate_gpu (LR& r)
                 afterGaborScore++;
 
         // save the score as feature value
-        fvals[i] = (double)afterGaborScore / (double)baselineScore;
+        fvals[i] = static_cast<double>(afterGaborScore )/ static_cast<double>(baselineScore);
     }
 }
 
 void GaborFeature::calculate_gpu_multi_filter (LR & r, size_t roiidx, GpusideCache & devsideCache)
 {
     // Number of frequencies (feature values) calculated
-    int nFreqs = (int)GaborFeature::f0_theta_pairs.size();
+    int nFreqs = static_cast<int>(GaborFeature::f0_theta_pairs.size());
 
     // Prepare the feature value buffer
     if (fvals.size() != nFreqs)
@@ -303,7 +303,7 @@ void GaborFeature::calculate_gpu_multi_filter (LR & r, size_t roiidx, GpusideCac
                 afterGaborScore++;
         }
         // save the score as feature value
-        fvals[k - 1] = (double)afterGaborScore / (double)baselineScore;
+        fvals[k - 1] = static_cast<double>(afterGaborScore )/ static_cast<double>(baselineScore);
     }
 
 }
@@ -311,12 +311,12 @@ void GaborFeature::calculate_gpu_multi_filter (LR & r, size_t roiidx, GpusideCac
 
 void GaborFeature::save_value(std::vector<std::vector<double>>& feature_vals)
 {
-    int nFreqs = (int) GaborFeature::f0_theta_pairs.size();
+    int nFreqs = static_cast<int>(GaborFeature::f0_theta_pairs.size());
 
-    if (feature_vals[(int)Feature2D::GABOR].size() != nFreqs)
-        feature_vals[(int)Feature2D::GABOR].resize(fvals.size());
+    if (feature_vals[static_cast<int>(Feature2D::GABOR)].size() != nFreqs)
+        feature_vals[static_cast<int>(Feature2D::GABOR)].resize(fvals.size());
     for (int i=0; i < nFreqs; i++)
-        feature_vals[(int)Feature2D::GABOR][i] = fvals[i];
+        feature_vals[static_cast<int>(Feature2D::GABOR)][i] = fvals[i];
 }
 
 // conv_dud -- producing a double-valued image by convolving an unsigned int valued image with double-valued kernel
@@ -490,10 +490,10 @@ void GaborFeature::GaborEnergy (
     conv_dud (auxC, pix_plane.data(), Gexp, Im.width, Im.height, n_gab, n_gab);
 
     decltype(Im.height) b = 0;
-    for (auto y = (int)ceil((double)n / 2); b < Im.height; y++)
+    for (auto y = static_cast<int>(ceil(static_cast<double>(n) / 2)); b < Im.height; y++) 
     {
         decltype(Im.width) a = 0;
-        for (auto x = (int)ceil((double)n / 2); a < Im.width; x++)
+        for (auto x = static_cast<int>(ceil(static_cast<double>(n) / 2)); a < Im.width; x++) 
         {
             if (std::isnan(auxC[y * 2 * (Im.width + n - 1) + x * 2]) || std::isnan(auxC[y * 2 * (Im.width + n - 1) + x * 2 + 1]))
             {
@@ -535,10 +535,10 @@ void GaborFeature::GaborEnergyGPU (
     }
 
     decltype(Im.height) b = 0;
-    for (auto y = (int)ceil((double)n / 2); b < Im.height; y++)
+    for (auto y = static_cast<int>(ceil(static_cast<double>(n) / 2)); b < Im.height; y++) 
     {
         decltype(Im.width) a = 0;
-        for (auto x = (int)ceil((double)n / 2); a < Im.width; x++)
+        for (auto x = static_cast<int>(ceil(static_cast<double>(n) / 2)); a < Im.width; x++) 
         {
             if (std::isnan(auxC[y * 2 * (Im.width + n - 1) + x * 2]) || std::isnan(auxC[y * 2 * (Im.width + n - 1) + x * 2 + 1]))
             {
@@ -664,7 +664,7 @@ void GaborFeature::create_filterbank()
     }
 
     // allocate the conv kernels buffer
-    GaborFeature::n_bank_filters = (int)freqs.size();
+    GaborFeature::n_bank_filters = static_cast<int>(freqs.size());
     GaborFeature::filterbank.resize(GaborFeature::n_bank_filters);
     for (auto& f : GaborFeature::filterbank)
         f.resize (2 * GaborFeature::n * GaborFeature::n * GaborFeature::n_bank_filters);

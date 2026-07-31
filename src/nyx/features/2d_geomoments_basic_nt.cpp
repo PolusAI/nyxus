@@ -31,7 +31,7 @@ void BasicGeomoms2D::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
         double dist = std::sqrt(mind2);
 
         // adjusted intensity
-        PixIntens wi = PixIntens((double)p.inten / (dist + weighting_epsilon));
+        PixIntens wi = PixIntens(static_cast<double>(p.inten )/ (dist + weighting_epsilon));
 
         // save
         Pixel2 p_weighted = p;
@@ -76,7 +76,7 @@ double BasicGeomoms2D::normRawMom(const pixcloud_NT& cloud, int p, int q)
 {
     double stddev = centralMom(cloud, 2, 2);
     int w = std::max(q, p);
-    double normCoef = pow(stddev, (double)w);
+    double normCoef = pow(stddev, static_cast<double>(w));
     double cmPQ = centralMom(cloud, p, q);
     double retval = cmPQ / normCoef;
     return retval;

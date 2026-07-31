@@ -56,9 +56,9 @@ struct Pixel2 : public Point2i
 	Pixel2() : Point2(0, 0), inten(0) {}
 	Pixel2 (StatsInt x_, StatsInt y_, PixIntens i_) : Point2(x_, y_), inten(i_) {}
 	Pixel2 (int x_, int y_, PixIntens i_) : Point2(x_, y_), inten(i_) {}
-	Pixel2 (float x_, float y_, PixIntens i_) : Point2((StatsInt)x_, (StatsInt)y_), inten(i_) {}
-	Pixel2 (size_t x_, size_t y_, double i_) : Point2((StatsInt)x_, (StatsInt)y_), inten((PixIntens)i_) {}
-	Pixel2 (size_t x_, size_t y_, PixIntens i_) : Point2((StatsInt)x_, (StatsInt)y_), inten(i_) {}
+	Pixel2 (float x_, float y_, PixIntens i_) : Point2(static_cast<StatsInt>(x_), static_cast<StatsInt>(y_)), inten(i_) {}
+	Pixel2 (size_t x_, size_t y_, double i_) : Point2(static_cast<StatsInt>(x_), static_cast<StatsInt>(y_)), inten(static_cast<PixIntens>(i_)) {}
+	Pixel2 (size_t x_, size_t y_, PixIntens i_) : Point2(static_cast<StatsInt>(x_), static_cast<StatsInt>(y_)), inten(i_) {}
 
 	bool operator == (const Pixel2& p2)
 	{
@@ -91,7 +91,7 @@ struct Pixel2 : public Point2i
 	}
 	operator Point2f () const 
 	{ 
-		Point2f p((float)this->x, (float)this->y); 
+		Point2f p(static_cast<float>(this->x), static_cast<float>(this->y)); 
 		return p; 
 	}
 
@@ -198,9 +198,9 @@ struct Pixel3 : public Point3i
 	Pixel3() : Point3(0, 0, 0), inten(0) {}
 	Pixel3(StatsInt x_, StatsInt y_, StatsInt z_, PixIntens i_) : Point3(x_, y_, z_), inten(i_) {}
 	Pixel3(int x_, int y_, int z_, PixIntens i_) : Point3(x_, y_,z_), inten(i_) {}
-	Pixel3(float x_, float y_, float z_, PixIntens i_) : Point3((StatsInt)x_, (StatsInt)y_, (StatsInt)z_), inten(i_) {}
-	Pixel3(size_t x_, size_t y_, size_t z_, double i_) : Point3((StatsInt)x_, (StatsInt)y_, (StatsInt)z_), inten((PixIntens)i_) {}
-	Pixel3(size_t x_, size_t y_, size_t z_, PixIntens i_) : Point3((StatsInt)x_, (StatsInt)y_, (StatsInt)z_), inten(i_) {}
+	Pixel3(float x_, float y_, float z_, PixIntens i_) : Point3(static_cast<StatsInt>(x_), static_cast<StatsInt>(y_), static_cast<StatsInt>(z_)), inten(i_) {}
+	Pixel3(size_t x_, size_t y_, size_t z_, double i_) : Point3(static_cast<StatsInt>(x_), static_cast<StatsInt>(y_), static_cast<StatsInt>(z_)), inten(static_cast<PixIntens>(i_)) {}
+	Pixel3(size_t x_, size_t y_, size_t z_, PixIntens i_) : Point3(static_cast<StatsInt>(x_), static_cast<StatsInt>(y_), static_cast<StatsInt>(z_)), inten(i_) {}
 
 	bool operator == (const Pixel3& p)
 	{

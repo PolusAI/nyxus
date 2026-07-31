@@ -264,13 +264,13 @@ std::optional<std::string> Environment::get_metaparam (double & p_val, const std
 			{
 				// interpret eq_sides[1] as int
 				int ival = STNGS_GLCM_GREYDEPTH(fsett_GLCM);
-				p_val = (double)ival;
+				p_val = static_cast<double>(ival);
 			}
 			else if (ppath[1] == "offset")
 			{
 				// interpret eq_sides[1] as int
 				int ival = STNGS_GLCM_OFFSET(fsett_GLCM);
-				p_val = (double)ival;
+				p_val = static_cast<double>(ival);
 			}
 			else
 			{
@@ -285,25 +285,25 @@ std::optional<std::string> Environment::get_metaparam (double & p_val, const std
 			{
 				// interpret eq_sides[1] as int
 				int ival = STNGS_GLCM_GREYDEPTH(fsett_GLCM);
-				p_val = (double) ival;
+				p_val = static_cast<double>(ival);
 			}
 			else if (ppath[1] == "offset")
 			{
 				// interpret eq_sides[1] as int
 				int ival = STNGS_GLCM_OFFSET(fsett_GLCM);
-				p_val = (double)ival;
+				p_val = static_cast<double>(ival);
 			}
 			else if (ppath[1] == "numang")
 			{
 				// interpret eq_sides[1] as int
 				int ival = STNGS_GLCM_NUMANG(fsett_GLCM);
-				p_val = (double)ival;
+				p_val = static_cast<double>(ival);
 			}
 			else if (ppath[1] == "sparseintensities")
 			{
 				// interpret eq_sides[1] as boolean
 				bool bval = STNGS_GLCM_SPARSEINTENS(fsett_GLCM);
-				p_val = (double)bval;
+				p_val = static_cast<double>(bval);
 			}
 			else
 			{
@@ -317,7 +317,7 @@ std::optional<std::string> Environment::get_metaparam (double & p_val, const std
 			{
 				// interpret eq_sides[1] as int
 				int ival = STNGS_GLDM_GREYDEPTH (fsett_D3_GLDM);
-				p_val = (double)ival;
+				p_val = static_cast<double>(ival);
 			}
 			else
 			{
@@ -331,14 +331,14 @@ std::optional<std::string> Environment::get_metaparam (double & p_val, const std
 			{
 				// interpret eq_sides[1] as int
 				int ival = STNGS_NGTDM_GREYDEPTH (fsett_D3_NGTDM);
-				p_val = (double)ival;
+				p_val = static_cast<double>(ival);
 			}
 			else
 			if (ppath[1] == "radius")
 			{
 				// interpret eq_sides[1] as int
 				int ival = STNGS_NGTDM_RADIUS (fsett_D3_NGTDM);
-				p_val = (double)ival;
+				p_val = static_cast<double>(ival);
 			}			
 			else
 			{
@@ -352,7 +352,7 @@ std::optional<std::string> Environment::get_metaparam (double & p_val, const std
 			{
 				// interpret eq_sides[1] as int
 				int ival = STNGS_GLRLM_GREYDEPTH (fsett_D3_GLRLM);
-				p_val = (double)ival;
+				p_val = static_cast<double>(ival);
 			}
 			else
 			{
@@ -366,7 +366,7 @@ std::optional<std::string> Environment::get_metaparam (double & p_val, const std
 			{
 				// interpret eq_sides[1] as int
 				int ival = STNGS_GLSZM_GREYDEPTH (fsett_D3_GLSZM);
-				p_val = (double)ival;
+				p_val = static_cast<double>(ival);
 			}
 			else
 			{

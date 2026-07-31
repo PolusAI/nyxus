@@ -356,25 +356,25 @@ void NGLDMfeature::calc_features (const std::vector<double>& Sg, const std::vect
 
 void NGLDMfeature::save_value (std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::NGLDM_LDE][0] = f_LDE;
-	fvals[(int)Feature2D::NGLDM_HDE][0] = f_HDE;
-	fvals[(int)Feature2D::NGLDM_LGLCE][0] = f_LGLCE;
-	fvals[(int)Feature2D::NGLDM_HGLCE][0] = f_HGLCE;
-	fvals[(int)Feature2D::NGLDM_LDLGLE][0] = f_LDLGLE;
-	fvals[(int)Feature2D::NGLDM_LDHGLE][0] = f_LDHGLE;
-	fvals[(int)Feature2D::NGLDM_HDLGLE][0] = f_HDLGLE;
-	fvals[(int)Feature2D::NGLDM_HDHGLE][0] = f_HDHGLE;
-	fvals[(int)Feature2D::NGLDM_GLNU][0] = f_GLNU;
-	fvals[(int)Feature2D::NGLDM_GLNUN][0] = f_GLNUN;
-	fvals[(int)Feature2D::NGLDM_DCNU][0] = f_DCNU;
-	fvals[(int)Feature2D::NGLDM_DCNUN][0] = f_DCNUN;
-	fvals[(int)Feature2D::NGLDM_GLM][0] = f_GLCM;
-	fvals[(int)Feature2D::NGLDM_GLV][0] = f_GLV;
-	fvals[(int)Feature2D::NGLDM_DCM][0] = f_DCM;
-	fvals[(int)Feature2D::NGLDM_DCP][0] = f_DCP;
-	fvals[(int)Feature2D::NGLDM_DCV][0] = f_DCV;
-	fvals[(int)Feature2D::NGLDM_DCENT][0] = f_DCENT;
-	fvals[(int)Feature2D::NGLDM_DCENE][0] = f_DCENE;
+	fvals[static_cast<int>(Feature2D::NGLDM_LDE)][0] = f_LDE;
+	fvals[static_cast<int>(Feature2D::NGLDM_HDE)][0] = f_HDE;
+	fvals[static_cast<int>(Feature2D::NGLDM_LGLCE)][0] = f_LGLCE;
+	fvals[static_cast<int>(Feature2D::NGLDM_HGLCE)][0] = f_HGLCE;
+	fvals[static_cast<int>(Feature2D::NGLDM_LDLGLE)][0] = f_LDLGLE;
+	fvals[static_cast<int>(Feature2D::NGLDM_LDHGLE)][0] = f_LDHGLE;
+	fvals[static_cast<int>(Feature2D::NGLDM_HDLGLE)][0] = f_HDLGLE;
+	fvals[static_cast<int>(Feature2D::NGLDM_HDHGLE)][0] = f_HDHGLE;
+	fvals[static_cast<int>(Feature2D::NGLDM_GLNU)][0] = f_GLNU;
+	fvals[static_cast<int>(Feature2D::NGLDM_GLNUN)][0] = f_GLNUN;
+	fvals[static_cast<int>(Feature2D::NGLDM_DCNU)][0] = f_DCNU;
+	fvals[static_cast<int>(Feature2D::NGLDM_DCNUN)][0] = f_DCNUN;
+	fvals[static_cast<int>(Feature2D::NGLDM_GLM)][0] = f_GLCM;
+	fvals[static_cast<int>(Feature2D::NGLDM_GLV)][0] = f_GLV;
+	fvals[static_cast<int>(Feature2D::NGLDM_DCM)][0] = f_DCM;
+	fvals[static_cast<int>(Feature2D::NGLDM_DCP)][0] = f_DCP;
+	fvals[static_cast<int>(Feature2D::NGLDM_DCV)][0] = f_DCV;
+	fvals[static_cast<int>(Feature2D::NGLDM_DCENT)][0] = f_DCENT;
+	fvals[static_cast<int>(Feature2D::NGLDM_DCENE)][0] = f_DCENE;
 }
 
 void NGLDMfeature::extract (LR& r, const Fsettings& s)

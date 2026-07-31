@@ -15,7 +15,7 @@ class SharpnessFeature: public FeatureMethod
 {
 public:
 
-    const constexpr static std::initializer_list<Nyxus::FeatureIMQ> featureset = { Nyxus::FeatureIMQ::SHARPNESS };
+    static constexpr std::initializer_list<Nyxus::FeatureIMQ> featureset = { Nyxus::FeatureIMQ::SHARPNESS };
 
     SharpnessFeature();
 

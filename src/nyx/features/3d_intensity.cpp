@@ -25,7 +25,7 @@ PixIntens to_grayscale_radiomix(PixIntens x, PixIntens min__, PixIntens max__, i
 	if (x)
 	{
 		double binW = double(max__ - min__) / double(binCount);
-		PixIntens y = (PixIntens)(double(x - min__) / binW + 1);
+		PixIntens y = static_cast<PixIntens>((double(x - min__) / binW + 1));
 		if (y > binCount)
 			y = binCount;	// the last bin is +1 unit wider
 		return y;
@@ -316,43 +316,43 @@ void D3_VoxelIntensityFeatures::osized_calculate (LR & r, const Fsettings & s, c
 
 void D3_VoxelIntensityFeatures::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature3D::INTEGRATED_INTENSITY][0] = val_INTEGRATED_INTENSITY;
-	fvals[(int)Feature3D::MEAN][0] = val_MEAN;
-	fvals[(int)Feature3D::MEDIAN][0] = val_MEDIAN;
-	fvals[(int)Feature3D::MIN][0] = val_MIN;
-	fvals[(int)Feature3D::MAX][0] = val_MAX;
-	fvals[(int)Feature3D::RANGE][0] = val_RANGE;
-	fvals[(int)Feature3D::COVERED_IMAGE_INTENSITY_RANGE][0] = val_COVERED_IMAGE_INTENSITY_RANGE;
-	fvals[(int)Feature3D::STANDARD_DEVIATION][0] = val_STANDARD_DEVIATION;
-	fvals[(int)Feature3D::STANDARD_ERROR][0] = val_STANDARD_ERROR;
-	fvals[(int)Feature3D::SKEWNESS][0] = val_SKEWNESS;
-	fvals[(int)Feature3D::KURTOSIS][0] = val_KURTOSIS;
-	fvals[(int)Feature3D::EXCESS_KURTOSIS][0] = val_EXCESS_KURTOSIS;
-	fvals[(int)Feature3D::HYPERSKEWNESS][0] = val_HYPERSKEWNESS;
-	fvals[(int)Feature3D::HYPERFLATNESS][0] = val_HYPERFLATNESS;
-	fvals[(int)Feature3D::MEAN_ABSOLUTE_DEVIATION][0] = val_MEAN_ABSOLUTE_DEVIATION;
-	fvals[(int)Feature3D::MEDIAN_ABSOLUTE_DEVIATION][0] = val_MEDIAN_ABSOLUTE_DEVIATION;
-	fvals[(int)Feature3D::ENERGY][0] = val_ENERGY;
-	fvals[(int)Feature3D::ROOT_MEAN_SQUARED][0] = val_ROOT_MEAN_SQUARED;
-	fvals[(int)Feature3D::ENTROPY][0] = val_ENTROPY;
-	fvals[(int)Feature3D::MODE][0] = val_MODE;
-	fvals[(int)Feature3D::UNIFORMITY][0] = val_UNIFORMITY;
-	fvals[(int)Feature3D::UNIFORMITY_PIU][0] = val_UNIFORMITY_PIU;
-	fvals[(int)Feature3D::P01][0] = val_P01;
-	fvals[(int)Feature3D::P10][0] = val_P10;
-	fvals[(int)Feature3D::P25][0] = val_P25;
-	fvals[(int)Feature3D::P75][0] = val_P75;
-	fvals[(int)Feature3D::P90][0] = val_P90;
-	fvals[(int)Feature3D::P99][0] = val_P99;
-	fvals[(int)Feature3D::QCOD][0] = val_QCOD;
-	fvals[(int)Feature3D::INTERQUARTILE_RANGE][0] = val_INTERQUARTILE_RANGE;
-	fvals[(int)Feature3D::QCOD][0] = val_QCOD;
-	fvals[(int)Feature3D::ROBUST_MEAN][0] = val_ROBUST_MEAN;
-	fvals[(int)Feature3D::ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = val_ROBUST_MEAN_ABSOLUTE_DEVIATION;
-	fvals[(int)Feature3D::COV][0] = val_COV;
-	fvals[(int)Feature3D::STANDARD_DEVIATION_BIASED][0] = val_STANDARD_DEVIATION_BIASED;
-	fvals[(int)Feature3D::VARIANCE][0] = val_VARIANCE;
-	fvals[(int)Feature3D::VARIANCE_BIASED][0] = val_VARIANCE_BIASED;
+	fvals[static_cast<int>(Feature3D::INTEGRATED_INTENSITY)][0] = val_INTEGRATED_INTENSITY;
+	fvals[static_cast<int>(Feature3D::MEAN)][0] = val_MEAN;
+	fvals[static_cast<int>(Feature3D::MEDIAN)][0] = val_MEDIAN;
+	fvals[static_cast<int>(Feature3D::MIN)][0] = val_MIN;
+	fvals[static_cast<int>(Feature3D::MAX)][0] = val_MAX;
+	fvals[static_cast<int>(Feature3D::RANGE)][0] = val_RANGE;
+	fvals[static_cast<int>(Feature3D::COVERED_IMAGE_INTENSITY_RANGE)][0] = val_COVERED_IMAGE_INTENSITY_RANGE;
+	fvals[static_cast<int>(Feature3D::STANDARD_DEVIATION)][0] = val_STANDARD_DEVIATION;
+	fvals[static_cast<int>(Feature3D::STANDARD_ERROR)][0] = val_STANDARD_ERROR;
+	fvals[static_cast<int>(Feature3D::SKEWNESS)][0] = val_SKEWNESS;
+	fvals[static_cast<int>(Feature3D::KURTOSIS)][0] = val_KURTOSIS;
+	fvals[static_cast<int>(Feature3D::EXCESS_KURTOSIS)][0] = val_EXCESS_KURTOSIS;
+	fvals[static_cast<int>(Feature3D::HYPERSKEWNESS)][0] = val_HYPERSKEWNESS;
+	fvals[static_cast<int>(Feature3D::HYPERFLATNESS)][0] = val_HYPERFLATNESS;
+	fvals[static_cast<int>(Feature3D::MEAN_ABSOLUTE_DEVIATION)][0] = val_MEAN_ABSOLUTE_DEVIATION;
+	fvals[static_cast<int>(Feature3D::MEDIAN_ABSOLUTE_DEVIATION)][0] = val_MEDIAN_ABSOLUTE_DEVIATION;
+	fvals[static_cast<int>(Feature3D::ENERGY)][0] = val_ENERGY;
+	fvals[static_cast<int>(Feature3D::ROOT_MEAN_SQUARED)][0] = val_ROOT_MEAN_SQUARED;
+	fvals[static_cast<int>(Feature3D::ENTROPY)][0] = val_ENTROPY;
+	fvals[static_cast<int>(Feature3D::MODE)][0] = val_MODE;
+	fvals[static_cast<int>(Feature3D::UNIFORMITY)][0] = val_UNIFORMITY;
+	fvals[static_cast<int>(Feature3D::UNIFORMITY_PIU)][0] = val_UNIFORMITY_PIU;
+	fvals[static_cast<int>(Feature3D::P01)][0] = val_P01;
+	fvals[static_cast<int>(Feature3D::P10)][0] = val_P10;
+	fvals[static_cast<int>(Feature3D::P25)][0] = val_P25;
+	fvals[static_cast<int>(Feature3D::P75)][0] = val_P75;
+	fvals[static_cast<int>(Feature3D::P90)][0] = val_P90;
+	fvals[static_cast<int>(Feature3D::P99)][0] = val_P99;
+	fvals[static_cast<int>(Feature3D::QCOD)][0] = val_QCOD;
+	fvals[static_cast<int>(Feature3D::INTERQUARTILE_RANGE)][0] = val_INTERQUARTILE_RANGE;
+	fvals[static_cast<int>(Feature3D::QCOD)][0] = val_QCOD;
+	fvals[static_cast<int>(Feature3D::ROBUST_MEAN)][0] = val_ROBUST_MEAN;
+	fvals[static_cast<int>(Feature3D::ROBUST_MEAN_ABSOLUTE_DEVIATION)][0] = val_ROBUST_MEAN_ABSOLUTE_DEVIATION;
+	fvals[static_cast<int>(Feature3D::COV)][0] = val_COV;
+	fvals[static_cast<int>(Feature3D::STANDARD_DEVIATION_BIASED)][0] = val_STANDARD_DEVIATION_BIASED;
+	fvals[static_cast<int>(Feature3D::VARIANCE)][0] = val_VARIANCE;
+	fvals[static_cast<int>(Feature3D::VARIANCE_BIASED)][0] = val_VARIANCE_BIASED;
 }
 
 void D3_VoxelIntensityFeatures::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds)

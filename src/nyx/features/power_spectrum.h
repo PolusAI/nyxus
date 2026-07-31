@@ -14,7 +14,7 @@ class PowerSpectrumFeature: public FeatureMethod
 {
 public:
 
-    const constexpr static std::initializer_list<Nyxus::FeatureIMQ> featureset = { Nyxus::FeatureIMQ::FOCUS_SCORE };
+    static constexpr std::initializer_list<Nyxus::FeatureIMQ> featureset = { Nyxus::FeatureIMQ::FOCUS_SCORE };
 
     PowerSpectrumFeature();
 

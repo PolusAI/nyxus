@@ -25,7 +25,7 @@ void ErosionPixelsFeature::calculate (LR& r, const Fsettings& s)
 		minx = r.aabb.get_xmin(),
 		miny = r.aabb.get_ymin();
 	
-	SimpleMatrix<PixIntens> I2((int)width, (int)height);
+	SimpleMatrix<PixIntens> I2(static_cast<int>(width), static_cast<int>(height));
 
 	for (auto px : r.raw_pixels)
 	{
@@ -37,8 +37,8 @@ void ErosionPixelsFeature::calculate (LR& r, const Fsettings& s)
 	}
 
 	// structural element's half-width and height
-	auto halfHeight = (int)floor(SE_R / 2);
-	auto halfWidth = (int)floor(SE_C / 2);
+	auto halfHeight = static_cast<int>(floor(SE_R / 2));
+	auto halfWidth = static_cast<int>(floor(SE_C / 2));
 
 	// Initialize output image
 	std::vector<PixIntens> Nv;
@@ -121,8 +121,8 @@ void ErosionPixelsFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoa
 	WriteImageMatrix_nontriv I2("I2", r.label);
 	I2.allocate_from_cloud (r.raw_pixels_NT, r.aabb, true);
 
-	auto halfHeight = (int)floor(SE_R / 2);
-	auto halfWidth = (int)floor(SE_C / 2);
+	auto halfHeight = static_cast<int>(floor(SE_R / 2));
+	auto halfWidth = static_cast<int>(floor(SE_C / 2));
 
 	// Initialize output image
 	std::vector<PixIntens> Nv;
@@ -195,7 +195,7 @@ void ErosionPixelsFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoa
 
 void ErosionPixelsFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::EROSIONS_2_VANISH][0] = numErosions;
+	fvals[static_cast<int>(Feature2D::EROSIONS_2_VANISH)][0] = numErosions;
 }
 
 void ErosionPixelsFeature::extract (LR& r, const Fsettings& s)

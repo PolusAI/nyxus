@@ -13,7 +13,7 @@ class ExtremaFeature: public FeatureMethod
 {
 public:
 
-	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+	static constexpr std::initializer_list<Nyxus::Feature2D> featureset =
 	{
 		Nyxus::Feature2D::EXTREMA_P1_Y,
 		Nyxus::Feature2D::EXTREMA_P1_X,

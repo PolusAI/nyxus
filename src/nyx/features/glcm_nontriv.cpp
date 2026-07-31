@@ -132,7 +132,7 @@ void GLCMFeature::calculateCoocMatAtAngle_NT(
 	bool normalize,
 	bool ibsi)
 {
-	matrix.allocate ((int)I.size(), (int)I.size());
+	matrix.allocate (static_cast<int>(I.size()), static_cast<int>(I.size()));
 	matrix.fill (0.0);
 
 	int count = 0;	// normalizing factor 
@@ -161,8 +161,8 @@ void GLCMFeature::calculateCoocMatAtAngle_NT(
 				// Cast intensities on the 1-n_levels scale
 				if (ibsi == false)
 				{
-					x = GLCMFeature::cast_to_range(raw_lvl_x, min_val, max_val, 1, (int)I.size()) - 1;
-					y = GLCMFeature::cast_to_range(raw_lvl_y, min_val, max_val, 1, (int)I.size()) - 1;
+					x = GLCMFeature::cast_to_range(raw_lvl_x, min_val, max_val, 1, static_cast<int>(I.size())) - 1;
+					y = GLCMFeature::cast_to_range(raw_lvl_y, min_val, max_val, 1, static_cast<int>(I.size())) - 1;
 				}
 
 				// Increment the symmetric count
@@ -174,8 +174,8 @@ void GLCMFeature::calculateCoocMatAtAngle_NT(
 
 	// calculate sum of P for feature calculations
 	sum_p = 0;
-	for (int i = 0; i < (int)I.size(); ++i)
-		for (int j = 0; j < (int)I.size(); ++j)
+	for (int i = 0; i < static_cast<int>(I.size()); ++i)
+		for (int j = 0; j < static_cast<int>(I.size()); ++j)
 			sum_p += matrix.xy(i, j);
 
 	// Normalize the matrix
@@ -183,8 +183,8 @@ void GLCMFeature::calculateCoocMatAtAngle_NT(
 		return;
 
 	double realCnt = count;
-	for (int i = 0; i < (int)I.size(); i++)
-		for (int j = 0; j < (int)I.size(); j++)
+	for (int i = 0; i < static_cast<int>(I.size()); i++)
+		for (int j = 0; j < static_cast<int>(I.size()); j++)
 			matrix.xy(i, j) /= (realCnt + EPSILON);
 }
 

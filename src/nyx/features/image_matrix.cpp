@@ -146,7 +146,7 @@ void ImageMatrix::histogram(double* bins, unsigned short nbins, bool imhist, con
 		// similar to the Matlab imhist 
 		h_min = 0;
 		int bits = sizeof(PixIntens) * 8;
-		h_max = pow((double)2, bits) - 1;
+		h_max = pow(static_cast<double>(2), bits) - 1;
 	}
 	else if (in_stats.n() > 0) 
 	{
@@ -161,7 +161,7 @@ void ImageMatrix::histogram(double* bins, unsigned short nbins, bool imhist, con
 		h_min = local_stats.min__();
 		h_max = local_stats.max__();
 	}
-	if (h_max - h_min > 0) h_scale = (double)nbins / double(h_max - h_min);
+	if (h_max - h_min > 0) h_scale = static_cast<double>(nbins )/ double(h_max - h_min);
 	else h_scale = 0;
 
 	// initialize the bins, invicem "memset(bins, 0, nbins * sizeof(double))"
@@ -174,7 +174,7 @@ void ImageMatrix::histogram(double* bins, unsigned short nbins, bool imhist, con
 		val = pix_plane[a];  
 		if (std::isnan(val)) 
 			continue;
-		bin = (unsigned long)(((val - h_min) * h_scale));
+		bin = static_cast<unsigned long>((((val - h_min) * h_scale)));
 		if (bin >= nbins) bin = nbins - 1;
 		bins[bin] += 1.0;
 	}
@@ -196,7 +196,7 @@ void ImageMatrix::apply_distance_to_contour_weights (const std::vector<Pixel2>& 
 			r = p.y - original_aabb.get_ymin();
 		
 		// Weighted intensity
-		PixIntens wi = PixIntens((double)_pix_plane.yx(r, c) / (dist + epsilon));
+		PixIntens wi = PixIntens(static_cast<double>(_pix_plane.yx(r, c) )/ (dist + epsilon));
 		
 		_pix_plane.yx(r,c) = wi;
 	}
@@ -264,7 +264,7 @@ void apply_dist2contour_weighting(
 		double dist = std::sqrt(mind2);
 
 		// adjusted intensity
-		PixIntens wi = PixIntens((double)p.inten / (dist + epsilon));
+		PixIntens wi = PixIntens(static_cast<double>(p.inten )/ (dist + epsilon));
 
 		// save
 		p.inten = wi;

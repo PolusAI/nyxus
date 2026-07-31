@@ -99,7 +99,7 @@ template <typename T>
 void r2r_fft2d_inplace(std::vector<T> &xi, const fft_dir &dir)
 {   
     DJ_ASSERT((xi.size() & (xi.size() - 1)) == 0 && "invalid input size");
-    int cnt2 = (int)xi.size();   // NxN
+    int cnt2 = static_cast<int>(xi.size());   // NxN
     int msb = findMSB(cnt2) / 2; // lg2(N) = lg2(sqrt(NxN))
     int cnt = 1 << msb;          // N = 2^lg2(N)
     T nrm = T(1) / T(cnt);

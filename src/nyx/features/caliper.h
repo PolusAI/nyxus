@@ -11,7 +11,7 @@
 class CaliperNassensteinFeature : public FeatureMethod
 {
 public:
-	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+	static constexpr std::initializer_list<Nyxus::Feature2D> featureset =
 	{
 		Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MIN,
 		Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MAX,
@@ -48,7 +48,7 @@ private:
 class CaliperFeretFeature : public FeatureMethod
 {
 public:
-	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset = 
+	static constexpr std::initializer_list<Nyxus::Feature2D> featureset = 
 	{
 		Nyxus::Feature2D::MIN_FERET_ANGLE,
 		Nyxus::Feature2D::MAX_FERET_ANGLE,
@@ -95,7 +95,7 @@ private:
 class CaliperMartinFeature : public FeatureMethod
 {
 public:
-	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+	static constexpr std::initializer_list<Nyxus::Feature2D> featureset =
 	{
 		Nyxus::Feature2D::STAT_MARTIN_DIAM_MIN,
 		Nyxus::Feature2D::STAT_MARTIN_DIAM_MAX,

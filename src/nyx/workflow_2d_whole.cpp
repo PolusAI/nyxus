@@ -103,13 +103,13 @@ namespace Nyxus
 			// same offset domain as the loaded pixels (as workflow_3d_whole already does), instead
 			// of casting a negative HU straight to PixIntens and wrapping.
 			double off = std::floor (p.min_preroi_inten);
-			vroi.aux_min = (PixIntens) std::llround (p.min_preroi_inten - off);
-			vroi.aux_max = (PixIntens) std::llround (p.max_preroi_inten - off);
+			vroi.aux_min = static_cast<PixIntens>(std::llround (p.min_preroi_inten - off));
+			vroi.aux_max = static_cast<PixIntens>(std::llround (p.max_preroi_inten - off));
 		}
 		else
 		{
-			vroi.aux_min = (PixIntens) p.fp_phys_pivoxels ? 0 : (PixIntens) p.min_preroi_inten;
-			vroi.aux_max = (PixIntens) p.fp_phys_pivoxels ? (PixIntens) env.fpimageOptions.target_dyn_range() : (PixIntens) p.max_preroi_inten;
+			vroi.aux_min = static_cast<PixIntens>(p.fp_phys_pivoxels )? 0 : static_cast<PixIntens>(p.min_preroi_inten);
+			vroi.aux_max = static_cast<PixIntens>(p.fp_phys_pivoxels )? static_cast<PixIntens>(env.fpimageOptions.target_dyn_range() ): static_cast<PixIntens>(p.max_preroi_inten);
 		}
 
 		// fix the AABB with respect to anisotropy

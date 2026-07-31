@@ -190,7 +190,7 @@ void D3_GLRLM_feature::calculate (LR& r, const Fsettings& s)
 
 		int Ng = STNGS_IBSI(s) ? *std::max_element(I.begin(), I.end()) : I.size();
 		int Nr = maxZoneArea;
-		int Nz = (int) Zones.size();
+		int Nz = static_cast<int>(Zones.size());
 		size_t Np = r.raw_pixels_3D.size();
 
 		// --allocate the matrix
@@ -286,40 +286,40 @@ void D3_GLRLM_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t inte
 
 void D3_GLRLM_feature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature3D::GLRLM_SRE] = angled_SRE;
-	fvals[(int)Feature3D::GLRLM_LRE] = angled_LRE;
-	fvals[(int)Feature3D::GLRLM_GLN] = angled_GLN;
-	fvals[(int)Feature3D::GLRLM_GLNN] = angled_GLNN;
-	fvals[(int)Feature3D::GLRLM_RLN] = angled_RLN;
-	fvals[(int)Feature3D::GLRLM_RLNN] = angled_RLNN;
-	fvals[(int)Feature3D::GLRLM_RP] = angled_RP;
-	fvals[(int)Feature3D::GLRLM_GLV] = angled_GLV;
-	fvals[(int)Feature3D::GLRLM_RV] = angled_RV;
-	fvals[(int)Feature3D::GLRLM_RE] = angled_RE;
-	fvals[(int)Feature3D::GLRLM_LGLRE] = angled_LGLRE;
-	fvals[(int)Feature3D::GLRLM_HGLRE] = angled_HGLRE;
-	fvals[(int)Feature3D::GLRLM_SRLGLE] = angled_SRLGLE;
-	fvals[(int)Feature3D::GLRLM_SRHGLE] = angled_SRHGLE;
-	fvals[(int)Feature3D::GLRLM_LRLGLE] = angled_LRLGLE;
-	fvals[(int)Feature3D::GLRLM_LRHGLE] = angled_LRHGLE;
+	fvals[static_cast<int>(Feature3D::GLRLM_SRE)] = angled_SRE;
+	fvals[static_cast<int>(Feature3D::GLRLM_LRE)] = angled_LRE;
+	fvals[static_cast<int>(Feature3D::GLRLM_GLN)] = angled_GLN;
+	fvals[static_cast<int>(Feature3D::GLRLM_GLNN)] = angled_GLNN;
+	fvals[static_cast<int>(Feature3D::GLRLM_RLN)] = angled_RLN;
+	fvals[static_cast<int>(Feature3D::GLRLM_RLNN)] = angled_RLNN;
+	fvals[static_cast<int>(Feature3D::GLRLM_RP)] = angled_RP;
+	fvals[static_cast<int>(Feature3D::GLRLM_GLV)] = angled_GLV;
+	fvals[static_cast<int>(Feature3D::GLRLM_RV)] = angled_RV;
+	fvals[static_cast<int>(Feature3D::GLRLM_RE)] = angled_RE;
+	fvals[static_cast<int>(Feature3D::GLRLM_LGLRE)] = angled_LGLRE;
+	fvals[static_cast<int>(Feature3D::GLRLM_HGLRE)] = angled_HGLRE;
+	fvals[static_cast<int>(Feature3D::GLRLM_SRLGLE)] = angled_SRLGLE;
+	fvals[static_cast<int>(Feature3D::GLRLM_SRHGLE)] = angled_SRHGLE;
+	fvals[static_cast<int>(Feature3D::GLRLM_LRLGLE)] = angled_LRLGLE;
+	fvals[static_cast<int>(Feature3D::GLRLM_LRHGLE)] = angled_LRHGLE;
 
 	// -- averages --
-	fvals[(int)Feature3D::GLRLM_SRE_AVE][0] = calc_ave(angled_SRE);
-	fvals[(int)Feature3D::GLRLM_LRE_AVE][0] = calc_ave(angled_LRE);
-	fvals[(int)Feature3D::GLRLM_GLN_AVE][0] = calc_ave(angled_GLN);
-	fvals[(int)Feature3D::GLRLM_GLNN_AVE][0] = calc_ave(angled_GLNN);
-	fvals[(int)Feature3D::GLRLM_RLN_AVE][0] = calc_ave(angled_RLN);
-	fvals[(int)Feature3D::GLRLM_RLNN_AVE][0] = calc_ave(angled_RLNN);
-	fvals[(int)Feature3D::GLRLM_RP_AVE][0] = calc_ave(angled_RP);
-	fvals[(int)Feature3D::GLRLM_GLV_AVE][0] = calc_ave(angled_GLV);
-	fvals[(int)Feature3D::GLRLM_RV_AVE][0] = calc_ave(angled_RV);
-	fvals[(int)Feature3D::GLRLM_RE_AVE][0] = calc_ave(angled_RE);
-	fvals[(int)Feature3D::GLRLM_LGLRE_AVE][0] = calc_ave(angled_LGLRE);
-	fvals[(int)Feature3D::GLRLM_HGLRE_AVE][0] = calc_ave(angled_HGLRE);
-	fvals[(int)Feature3D::GLRLM_SRLGLE_AVE][0] = calc_ave(angled_SRLGLE);
-	fvals[(int)Feature3D::GLRLM_SRHGLE_AVE][0] = calc_ave(angled_SRHGLE);
-	fvals[(int)Feature3D::GLRLM_LRLGLE_AVE][0] = calc_ave(angled_LRLGLE);
-	fvals[(int)Feature3D::GLRLM_LRHGLE_AVE][0] = calc_ave(angled_LRHGLE);
+	fvals[static_cast<int>(Feature3D::GLRLM_SRE_AVE)][0] = calc_ave(angled_SRE);
+	fvals[static_cast<int>(Feature3D::GLRLM_LRE_AVE)][0] = calc_ave(angled_LRE);
+	fvals[static_cast<int>(Feature3D::GLRLM_GLN_AVE)][0] = calc_ave(angled_GLN);
+	fvals[static_cast<int>(Feature3D::GLRLM_GLNN_AVE)][0] = calc_ave(angled_GLNN);
+	fvals[static_cast<int>(Feature3D::GLRLM_RLN_AVE)][0] = calc_ave(angled_RLN);
+	fvals[static_cast<int>(Feature3D::GLRLM_RLNN_AVE)][0] = calc_ave(angled_RLNN);
+	fvals[static_cast<int>(Feature3D::GLRLM_RP_AVE)][0] = calc_ave(angled_RP);
+	fvals[static_cast<int>(Feature3D::GLRLM_GLV_AVE)][0] = calc_ave(angled_GLV);
+	fvals[static_cast<int>(Feature3D::GLRLM_RV_AVE)][0] = calc_ave(angled_RV);
+	fvals[static_cast<int>(Feature3D::GLRLM_RE_AVE)][0] = calc_ave(angled_RE);
+	fvals[static_cast<int>(Feature3D::GLRLM_LGLRE_AVE)][0] = calc_ave(angled_LGLRE);
+	fvals[static_cast<int>(Feature3D::GLRLM_HGLRE_AVE)][0] = calc_ave(angled_HGLRE);
+	fvals[static_cast<int>(Feature3D::GLRLM_SRLGLE_AVE)][0] = calc_ave(angled_SRLGLE);
+	fvals[static_cast<int>(Feature3D::GLRLM_SRHGLE_AVE)][0] = calc_ave(angled_SRHGLE);
+	fvals[static_cast<int>(Feature3D::GLRLM_LRLGLE_AVE)][0] = calc_ave(angled_LRLGLE);
+	fvals[static_cast<int>(Feature3D::GLRLM_LRHGLE_AVE)][0] = calc_ave(angled_LRHGLE);
 }
 
 // 1. Short Run Emphasis 

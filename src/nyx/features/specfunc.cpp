@@ -970,7 +970,7 @@ psi_n_xg0(const int n, const double x, gsl_sf_result* result)
         gsl_sf_result ln_nf;
         gsl_sf_result hzeta;
         int stat_hz = gsl_sf_hzeta_e(n + 1.0, x, &hzeta);
-        int stat_nf = gsl_sf_lnfact_e((unsigned int)n, &ln_nf);
+        int stat_nf = gsl_sf_lnfact_e(static_cast<unsigned int>(n), &ln_nf);
         int stat_e = gsl_sf_exp_mult_err_e(ln_nf.val, ln_nf.err,
             hzeta.val, hzeta.err,
             result);
@@ -994,7 +994,7 @@ int gsl_sf_psi_1_e(const double x, gsl_sf_result* result)
     else if (x > -5.0)
     {
         /* Abramowitz + Stegun 6.4.6 */
-        int M = (int)-floor(x);
+        int M = static_cast<int>(-floor(x));
         double fx = x + M;
         double sum = 0.0;
         int m;
@@ -1074,7 +1074,7 @@ int gsl_sf_psi_n_e(const int n, const double x, gsl_sf_result* result)
         gsl_sf_result ln_nf;
         gsl_sf_result hzeta;
         int stat_hz = gsl_sf_hzeta_e(n + 1.0, x, &hzeta);
-        int stat_nf = gsl_sf_lnfact_e((unsigned int)n, &ln_nf);
+        int stat_nf = gsl_sf_lnfact_e(static_cast<unsigned int>(n), &ln_nf);
         int stat_e = gsl_sf_exp_mult_err_e(ln_nf.val, ln_nf.err,
             hzeta.val, hzeta.err,
             result);
@@ -1378,7 +1378,7 @@ gamma_xgthalf(const double x, gsl_sf_result* result)
         return GSL_SUCCESS;
     }
     else if (x <= (GSL_SF_FACT_NMAX + 1.0) && x == floor(x)) {
-        int n = (int)floor(x);
+        int n = static_cast<int>(floor(x));
         result->val = fact_table[n - 1].f;
         result->err = GSL_DBL_EPSILON * result->val;
         return GSL_SUCCESS;
@@ -1507,7 +1507,7 @@ int gsl_sf_lngamma_sgn_e(double x, gsl_sf_result* result_lg, double* sgn)
                 GSL_ERROR("error", GSL_EROUND);
             }
             else {
-                int N = -(int)(x - 0.5);
+                int N = -static_cast<int>((x - 0.5));
                 double eps = x + N;
                 return lngamma_sgn_sing(N, eps, result_lg, sgn);
             }
@@ -1580,7 +1580,7 @@ int gsl_sf_lngamma_e(double x, gsl_sf_result* result)
                 GSL_ERROR("error", GSL_EROUND);
             }
             else {
-                int N = -(int)(x - 0.5);
+                int N = -static_cast<int>((x - 0.5));
                 double eps = x + N;
                 double sgn;
                 return lngamma_sgn_sing(N, eps, result, &sgn);
@@ -1673,7 +1673,7 @@ int gsl_sf_choose_e(unsigned int n, unsigned int m, gsl_sf_result* result)
             unsigned int k;
 
             for (k = n; k >= m + 1; k--) {
-                double tk = (double)k / (double)(k - m);
+                double tk = static_cast<double>(k )/ static_cast<double>((k - m));
                 if (tk > GSL_DBL_MAX / prod) {
                     OVERFLOW_ERROR(result);
                 }
@@ -1701,7 +1701,7 @@ int
 gsl_sf_gamma_e(const double x, gsl_sf_result* result)
 {
     if (x < 0.5) {
-        int rint_x = (int)floor(x + 0.5);
+        int rint_x = static_cast<int>(floor(x + 0.5));
         double f_x = x - rint_x;
         double sgn_gamma = (GSL_IS_EVEN(rint_x) ? 1.0 : -1.0);
         double sin_term = sgn_gamma * sin(M_PI * f_x) / M_PI;

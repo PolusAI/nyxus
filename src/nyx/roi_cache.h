@@ -30,7 +30,7 @@ enum RoiDataCacheItem
 class LR: public BasicLR
 {
 public:
-	static constexpr const RoiDataCacheItem CachedObjects[] = { RAW_PIXELS,	CONTOUR, CONVEX_HULL, IMAGE_MATRIX, NEIGHBOR_ROI_LABELS };
+	static constexpr RoiDataCacheItem CachedObjects[] = { RAW_PIXELS,	CONTOUR, CONVEX_HULL, IMAGE_MATRIX, NEIGHBOR_ROI_LABELS };
 
 	LR (int roi_label);
 	LR() : BasicLR(-1) {}	

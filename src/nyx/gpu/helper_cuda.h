@@ -838,7 +838,7 @@ inline int gpuGetMaxGflopsDeviceId() {
                     exit(EXIT_FAILURE);
                 }
             }
-            uint64_t compute_perf = (uint64_t)multiProcessorCount * sm_per_multiproc * clockRate;
+            uint64_t compute_perf = static_cast<uint64_t>(multiProcessorCount )* sm_per_multiproc * clockRate;
 
             if (compute_perf > max_compute_perf) {
                 max_compute_perf = compute_perf;

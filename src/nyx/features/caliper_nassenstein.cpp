@@ -33,8 +33,8 @@ static double hull_height_at_x (const std::vector<Point2f>& poly, double x)
 		}
 		else	// vertical edge lying on the cut: it spans [min y, max y]
 		{
-			e0 = std::min ((double)a.y, (double)b.y);
-			e1 = std::max ((double)a.y, (double)b.y);
+			e0 = std::min (static_cast<double>(a.y), static_cast<double>(b.y));
+			e1 = std::max (static_cast<double>(a.y), static_cast<double>(b.y));
 		}
 		if (!have) { ylo = e0; yhi = e1; have = true; }
 		else { ylo = std::min (ylo, e0); yhi = std::max (yhi, e1); }
@@ -58,7 +58,7 @@ void CaliperNassensteinFeature::calculate (LR& r, const Fsettings& settings)
 		_mean =
 		_median =
 		_stdev =
-		_mode = settings [(int)NyxSetting::SOFTNAN].rval;	// former theEnvironment.resultOptions.noval()
+		_mode = settings [static_cast<int>(NyxSetting::SOFTNAN)].rval;	// former theEnvironment.resultOptions.noval()
 		
 		return;
 	}
@@ -68,22 +68,22 @@ void CaliperNassensteinFeature::calculate (LR& r, const Fsettings& settings)
 
 	auto s = ComputeCommonStatistics2(allD);
 
-	_min = (double)s.min;
-	_max = (double)s.max;
+	_min = static_cast<double>(s.min);
+	_max = static_cast<double>(s.max);
 	_mean = s.mean;
 	_median = s.median;
 	_stdev = s.stdev;
-	_mode = (double)s.mode;
+	_mode = static_cast<double>(s.mode);
 }
 
 void CaliperNassensteinFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::STAT_NASSENSTEIN_DIAM_MIN][0] = _min;
-	fvals[(int)Feature2D::STAT_NASSENSTEIN_DIAM_MAX][0] = _max;
-	fvals[(int)Feature2D::STAT_NASSENSTEIN_DIAM_MEAN][0] = _mean;
-	fvals[(int)Feature2D::STAT_NASSENSTEIN_DIAM_MEDIAN][0] = _median;
-	fvals[(int)Feature2D::STAT_NASSENSTEIN_DIAM_STDDEV][0] = _stdev;
-	fvals[(int)Feature2D::STAT_NASSENSTEIN_DIAM_MODE][0] = _mode;
+	fvals[static_cast<int>(Feature2D::STAT_NASSENSTEIN_DIAM_MIN)][0] = _min;
+	fvals[static_cast<int>(Feature2D::STAT_NASSENSTEIN_DIAM_MAX)][0] = _max;
+	fvals[static_cast<int>(Feature2D::STAT_NASSENSTEIN_DIAM_MEAN)][0] = _mean;
+	fvals[static_cast<int>(Feature2D::STAT_NASSENSTEIN_DIAM_MEDIAN)][0] = _median;
+	fvals[static_cast<int>(Feature2D::STAT_NASSENSTEIN_DIAM_STDDEV)][0] = _stdev;
+	fvals[static_cast<int>(Feature2D::STAT_NASSENSTEIN_DIAM_MODE)][0] = _mode;
 }
 
 void CaliperNassensteinFeature::calculate_imp (const std::vector<Pixel2>& convex_hull, std::vector<double>& all_D)
@@ -109,11 +109,11 @@ void CaliperNassensteinFeature::calculate_imp (const std::vector<Pixel2>& convex
 		// vertices (a single vertex generically, or the midpoint of a flat bottom edge)
 		double ymax = CH_rot[0].y;
 		for (auto& p : CH_rot)
-			ymax = std::max (ymax, (double)p.y);
+			ymax = std::max (ymax, static_cast<double>(p.y));
 		double xsum = 0.0;
 		int cnt = 0;
 		for (auto& p : CH_rot)
-			if (std::abs((double)p.y - ymax) < 1e-3)
+			if (std::abs(static_cast<double>(p.y )- ymax) < 1e-3)
 			{
 				xsum += p.x;
 				cnt++;
@@ -135,12 +135,12 @@ void CaliperNassensteinFeature::osized_calculate (LR& r, const Fsettings& settin
 	// Process the stats
 	auto s = ComputeCommonStatistics2 (all_D);
 
-	_min = (double)s.min;
-	_max = (double)s.max;
+	_min = static_cast<double>(s.min);
+	_max = static_cast<double>(s.max);
 	_mean = s.mean;
 	_median = s.median;
 	_stdev = s.stdev;
-	_mode = (double)s.mode;
+	_mode = static_cast<double>(s.mode);
 }
 
 void CaliperNassensteinFeature::extract (LR& r, const Fsettings& s)

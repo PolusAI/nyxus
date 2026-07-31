@@ -208,15 +208,15 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 		enable = false;
 	}
 
-	if ((Fgroup2D)fgcode == Fgroup2D::FG2_ALL)
+	if (static_cast<Fgroup2D>(fgcode )== Fgroup2D::FG2_ALL)
 	{
 		// enable just the 2D part of the feature set
-		for (int i = (int) Nyxus::Feature2D::_FIRST_; i < (int) Nyxus::Feature2D::_COUNT_; i++)
+		for (int i = static_cast<int>(Nyxus::Feature2D::_FIRST_); i < static_cast<int>(Nyxus::Feature2D::_COUNT_); i++)
 			theFeatureSet.enableFeature (i);
 		return true; 
 	}
 
-	if ((Fgroup2D)fgcode == Fgroup2D::FG2_WHOLESLIDE)
+	if (static_cast<Fgroup2D>(fgcode )== Fgroup2D::FG2_WHOLESLIDE)
 	{
 		theFeatureSet.enableFeatures (ContourFeature::featureset, enable);
 		theFeatureSet.enableFeatures (PixelIntensityFeatures::featureset, enable);
@@ -233,25 +233,25 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 		return true;
 	}
 
-	if ((Fgroup2D) fgcode == Fgroup2D::FG2_NEIG)
+	if (static_cast<Fgroup2D>(fgcode )== Fgroup2D::FG2_NEIG)
 	{
 		theFeatureSet.enableFeatures (NeighborsFeature::featureset, enable);
 		return true;
 	}
 
-	if ((Fgroup2D) fgcode == Fgroup2D::FG2_INTENSITY)
+	if (static_cast<Fgroup2D>(fgcode )== Fgroup2D::FG2_INTENSITY)
 	{
 		theFeatureSet.enableFeatures (PixelIntensityFeatures::featureset, enable);
 		return true;
 	}
-	if ((Fgroup2D) fgcode == Fgroup2D::FG2_IH)
+	if (static_cast<Fgroup2D>(fgcode )== Fgroup2D::FG2_IH)
 	{
 		// IBSI intensity-histogram family. Requested here; if IBSI mode is off it
 		// gets stripped at the end of expand_featuregroups() (available only in IBSI mode).
 		theFeatureSet.enableFeatures (IntensityHistogramFeatures::featureset, enable);
 		return true;
 	}
-	if ((Fgroup2D) fgcode == Fgroup2D::FG2_MORPHOLOGY)
+	if (static_cast<Fgroup2D>(fgcode )== Fgroup2D::FG2_MORPHOLOGY)
 	{
 		theFeatureSet.enableFeatures (BasicMorphologyFeatures::featureset, enable);
 		theFeatureSet.enableFeatures (EnclosingInscribingCircumscribingCircleFeature::featureset, enable);
@@ -272,61 +272,61 @@ bool Environment::expand_2D_featuregroup (const std::string & s)
 
 		return true;
 	}
-	if ((Fgroup2D)fgcode == Fgroup2D::FG2_BASIC_MORPHOLOGY)
+	if (static_cast<Fgroup2D>(fgcode )== Fgroup2D::FG2_BASIC_MORPHOLOGY)
 	{
 		theFeatureSet.enableFeatures (BasicMorphologyFeatures::featureset, enable);
 		return true;
 	}
-	if ((Fgroup2D)fgcode == Fgroup2D::FG2_GLCM)
+	if (static_cast<Fgroup2D>(fgcode )== Fgroup2D::FG2_GLCM)
 	{
 		theFeatureSet.enableFeatures (GLCMFeature::featureset, enable);
 		return true;
 	}
-	if ((Fgroup2D)fgcode == Fgroup2D::FG2_GLRLM)
+	if (static_cast<Fgroup2D>(fgcode )== Fgroup2D::FG2_GLRLM)
 	{
 		theFeatureSet.enableFeatures (GLRLMFeature::featureset, enable);
 		return true;
 	}
-	if ((Fgroup2D)fgcode == Fgroup2D::FG2_GLDZM)
+	if (static_cast<Fgroup2D>(fgcode )== Fgroup2D::FG2_GLDZM)
 	{
 		theFeatureSet.enableFeatures (GLDZMFeature::featureset, enable);
 		return true;
 	}
-	if ((Fgroup2D)fgcode == Fgroup2D::FG2_GLSZM)
+	if (static_cast<Fgroup2D>(fgcode )== Fgroup2D::FG2_GLSZM)
 	{
 		theFeatureSet.enableFeatures (GLSZMFeature::featureset, enable);
 		return true;
 	}
-	if ((Fgroup2D)fgcode == Fgroup2D::FG2_GLDM)
+	if (static_cast<Fgroup2D>(fgcode )== Fgroup2D::FG2_GLDM)
 	{
 		theFeatureSet.enableFeatures(GLDMFeature::featureset, enable);
 		return true;
 	}
-	if ((Fgroup2D)fgcode == Fgroup2D::FG2_NGLDM)
+	if (static_cast<Fgroup2D>(fgcode )== Fgroup2D::FG2_NGLDM)
 	{
 		theFeatureSet.enableFeatures (NGLDMfeature::featureset, enable);
 		return true;
 	}
-	if ((Fgroup2D)fgcode == Fgroup2D::FG2_NGTDM)
+	if (static_cast<Fgroup2D>(fgcode )== Fgroup2D::FG2_NGTDM)
 	{
 		theFeatureSet.enableFeatures (NGTDMFeature::featureset, enable);
 		return true;
 	}
 
-	if ((Fgroup2D)fgcode == Fgroup2D::FG2_GEOMOMENTS)
+	if (static_cast<Fgroup2D>(fgcode )== Fgroup2D::FG2_GEOMOMENTS)
 	{
 		theFeatureSet.enableFeatures (Smoms2D_feature::featureset, enable);
 		theFeatureSet.enableFeatures (Imoms2D_feature::featureset, enable);
 		return true;
 	}
 
-	if ((Fgroup2D)fgcode == Fgroup2D::FG2_GEOMOMENTS_I)
+	if (static_cast<Fgroup2D>(fgcode )== Fgroup2D::FG2_GEOMOMENTS_I)
 	{
 		theFeatureSet.enableFeatures (Imoms2D_feature::featureset, enable);
 		return true;
 	}
 
-	if ((Fgroup2D)fgcode == Fgroup2D::FG2_GEOMOMENTS_S)
+	if (static_cast<Fgroup2D>(fgcode )== Fgroup2D::FG2_GEOMOMENTS_S)
 	{
 		theFeatureSet.enableFeatures (Smoms2D_feature::featureset, enable);
 		return true;
@@ -353,7 +353,7 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 	}
 
 	// mutually exclusive groups:
-	if ((Fgroup3D)fgcode == Fgroup3D::FG3_ALL)
+	if (static_cast<Fgroup3D>(fgcode )== Fgroup3D::FG3_ALL)
 	{
 		theFeatureSet.enableFeatures (D3_VoxelIntensityFeatures::featureset, enable);
 		theFeatureSet.enableFeatures (D3_SurfaceFeature::featureset, enable);
@@ -368,19 +368,19 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 		return true;
 	}
 
-	if ((Fgroup3D)fgcode == Fgroup3D::FG3_INTENSITY)
+	if (static_cast<Fgroup3D>(fgcode )== Fgroup3D::FG3_INTENSITY)
 	{
 		theFeatureSet.enableFeatures (D3_VoxelIntensityFeatures::featureset, enable);
 		return true;
 	}
 
-	if ((Fgroup3D)fgcode == Fgroup3D::FG3_MORPHOLOGY)
+	if (static_cast<Fgroup3D>(fgcode )== Fgroup3D::FG3_MORPHOLOGY)
 	{
 		theFeatureSet.enableFeatures (D3_SurfaceFeature::featureset, enable);
 		return true;
 	}
 
-	if ((Fgroup3D)fgcode == Fgroup3D::FG3_TEXTURE)
+	if (static_cast<Fgroup3D>(fgcode )== Fgroup3D::FG3_TEXTURE)
 	{
 		theFeatureSet.enableFeatures (D3_GLCM_feature::featureset, enable);
 		theFeatureSet.enableFeatures (D3_GLDM_feature::featureset, enable);
@@ -392,43 +392,43 @@ bool Environment::expand_3D_featuregroup (const std::string& s)
 		return true;
 	}
 
-	if ((Fgroup3D)fgcode == Fgroup3D::FG3_GLCM)
+	if (static_cast<Fgroup3D>(fgcode )== Fgroup3D::FG3_GLCM)
 	{
 		theFeatureSet.enableFeatures (D3_GLCM_feature::featureset, enable);
 		return true;
 	}
 
-	if ((Fgroup3D)fgcode == Fgroup3D::FG3_GLDM)
+	if (static_cast<Fgroup3D>(fgcode )== Fgroup3D::FG3_GLDM)
 	{
 		theFeatureSet.enableFeatures (D3_GLDM_feature::featureset, enable);
 		return true;
 	}
 
-	if ((Fgroup3D)fgcode == Fgroup3D::FG3_NGLDM)
+	if (static_cast<Fgroup3D>(fgcode )== Fgroup3D::FG3_NGLDM)
 	{
 		theFeatureSet.enableFeatures (D3_NGLDM_feature::featureset, enable);
 		return true;
 	}
 
-	if ((Fgroup3D)fgcode == Fgroup3D::FG3_NGTDM)
+	if (static_cast<Fgroup3D>(fgcode )== Fgroup3D::FG3_NGTDM)
 	{
 		theFeatureSet.enableFeatures (D3_NGTDM_feature::featureset, enable);
 		return true;
 	}
 
-	if ((Fgroup3D)fgcode == Fgroup3D::FG3_GLDZM)
+	if (static_cast<Fgroup3D>(fgcode )== Fgroup3D::FG3_GLDZM)
 	{
 		theFeatureSet.enableFeatures (D3_GLDZM_feature::featureset, enable);
 		return true;
 	}
 
-	if ((Fgroup3D)fgcode == Fgroup3D::FG3_GLSZM)
+	if (static_cast<Fgroup3D>(fgcode )== Fgroup3D::FG3_GLSZM)
 	{
 		theFeatureSet.enableFeatures (D3_GLSZM_feature::featureset, enable);
 		return true;
 	}	
 	
-	if ((Fgroup3D)fgcode == Fgroup3D::FG3_GLRLM)
+	if (static_cast<Fgroup3D>(fgcode )== Fgroup3D::FG3_GLRLM)
 	{
 		theFeatureSet.enableFeatures (D3_GLRLM_feature::featureset, enable);
 		return true;
@@ -713,26 +713,26 @@ void Environment::compile_feature_settings()
 		{
 			auto& s = wrapd_s.get();
 			s.clear();
-			s.resize((int)NyxSetting::__COUNT__);
-			s[(int)NyxSetting::SOFTNAN].rval = resultOptions.noval();
-			s[(int)NyxSetting::TINY].rval = resultOptions.tiny();
-			s[(int)NyxSetting::SINGLEROI].bval = singleROI;
-			s[(int)NyxSetting::GREYDEPTH].ival = get_coarse_gray_depth();
-			s[(int)NyxSetting::PIXELSIZEUM].rval = pixelSizeUm;
-			s[(int)NyxSetting::PIXELDISTANCE].ival = get_pixel_distance();
-			s[(int)NyxSetting::USEGPU].bval = using_gpu();
-			s[(int)NyxSetting::VERBOSLVL].ival = get_verbosity_level();
-			s[(int)NyxSetting::IBSI].bval = ibsi_compliance;
+			s.resize(static_cast<int>(NyxSetting::__COUNT__));
+			s[static_cast<int>(NyxSetting::SOFTNAN)].rval = resultOptions.noval();
+			s[static_cast<int>(NyxSetting::TINY)].rval = resultOptions.tiny();
+			s[static_cast<int>(NyxSetting::SINGLEROI)].bval = singleROI;
+			s[static_cast<int>(NyxSetting::GREYDEPTH)].ival = get_coarse_gray_depth();
+			s[static_cast<int>(NyxSetting::PIXELSIZEUM)].rval = pixelSizeUm;
+			s[static_cast<int>(NyxSetting::PIXELDISTANCE)].ival = get_pixel_distance();
+			s[static_cast<int>(NyxSetting::USEGPU)].bval = using_gpu();
+			s[static_cast<int>(NyxSetting::VERBOSLVL)].ival = get_verbosity_level();
+			s[static_cast<int>(NyxSetting::IBSI)].bval = ibsi_compliance;
 			// GLCM-specific defaults (otherwise zero-initialised). GLCM_OFFSET=0 would make
 			// dx=dy=0 -> every pixel co-occurs with itself -> degenerate diagonal matrix
 			// (CONTRAST=0). Default the co-occurrence distance to 1 (IBSI delta=1).
-			s[(int)NyxSetting::GLCM_OFFSET].ival = 1;
-			s[(int)NyxSetting::GLCM_GREYDEPTH].ival = get_coarse_gray_depth();
-			s[(int)NyxSetting::GLCM_NUMANG].ival = (int)GLCMFeature::angles.size();
-			s[(int)NyxSetting::FPIMG_TARGET_DR].rval = fpimageOptions.target_dyn_range();
-			s[(int)NyxSetting::FPIMG_MIN].rval = fpimageOptions.min_intensity();
-			s[(int)NyxSetting::FPIMG_MAX].rval = fpimageOptions.max_intensity();
-			s[(int)NyxSetting::FPIMG_ACTIVE].bval = ! fpimageOptions.empty();
+			s[static_cast<int>(NyxSetting::GLCM_OFFSET)].ival = 1;
+			s[static_cast<int>(NyxSetting::GLCM_GREYDEPTH)].ival = get_coarse_gray_depth();
+			s[static_cast<int>(NyxSetting::GLCM_NUMANG)].ival = static_cast<int>(GLCMFeature::angles.size());
+			s[static_cast<int>(NyxSetting::FPIMG_TARGET_DR)].rval = fpimageOptions.target_dyn_range();
+			s[static_cast<int>(NyxSetting::FPIMG_MIN)].rval = fpimageOptions.min_intensity();
+			s[static_cast<int>(NyxSetting::FPIMG_MAX)].rval = fpimageOptions.max_intensity();
+			s[static_cast<int>(NyxSetting::FPIMG_ACTIVE)].bval = ! fpimageOptions.empty();
 		}
 }
 
@@ -742,7 +742,7 @@ void Environment::refresh_feature_settings_singleroi()
 	{
 		auto& s = wrapd_s.get();
 		if (!s.empty())
-			s[(int)NyxSetting::SINGLEROI].bval = singleROI;
+			s[static_cast<int>(NyxSetting::SINGLEROI)].bval = singleROI;
 	}
 }
 

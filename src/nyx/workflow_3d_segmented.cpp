@@ -217,7 +217,7 @@ namespace Nyxus
 			   // -- empty indicating a 3D case (.nii, .dcm, etc)
 			   
 				// Display (1) dataset progress info and (2) file pair info
-				int digits = 2, k = (int)std::pow(10.f, digits);
+				int digits = 2, k = static_cast<int>(std::pow(10.f, digits));
 				float perCent = float(i * 100 * k / nf) / float(k);
 				VERBOSLVL1(env.get_verbosity_level(), std::cout << "[ " << std::setw(digits + 2) << perCent << "% ]\t" << " INT: " << ifile.fname << " SEG: " << mfile.fname << " T:" << t << "\n")
 					

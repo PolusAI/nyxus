@@ -201,7 +201,7 @@ double Pixel2::dist_to_segment (const Pixel2 & p1, const Pixel2 & p2) const
 
 	double h = dx * dx + dy * dy;
 	if (h <= 0)
-		return (double)INT_MAX;
+		return static_cast<double>(INT_MAX);
 
 	double retval = std::fabs(dy*this->x - dx*this->y + p2.x*p1.y - p2.y*p1.x) / sqrt(h);
 	return retval;
@@ -226,8 +226,8 @@ double Pixel2::sqdist(const Pixel2& px) const
 
 double Pixel2::sqdist(int x, int y) const
 {
-	double dx = (double)x - double(this->x),
-		dy = (double)y - double(this->y);
+	double dx = static_cast<double>(x )- double(this->x),
+		dy = static_cast<double>(y )- double(this->y);
 	double retval = dx * dx + dy * dy;
 	return retval;
 }
@@ -251,7 +251,7 @@ double Pixel2::sqdist(int x, int y) const
 	std::vector<std::vector<double>> table;
 	for (auto vox : cloud)
 	{
-		std::vector<double> voxRow = { (double)vox.x - ccx, (double)vox.y - ccy, (double)vox.z - ccz };
+		std::vector<double> voxRow = { static_cast<double>(vox.x )- ccx, static_cast<double>(vox.y )- ccy, static_cast<double>(vox.z )- ccz };
 		table.push_back({ voxRow });
 	}
 

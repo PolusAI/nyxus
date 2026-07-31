@@ -10,37 +10,37 @@ FeatureMethod::~FeatureMethod(){}
 void FeatureMethod::provide_features (const std::initializer_list<Nyxus::Feature2D> & F)
 {
 	for (auto f : F)
-		provided_features.push_back((int)f);
+		provided_features.push_back(static_cast<int>(f));
 }
 
 void FeatureMethod::provide_features (const std::initializer_list<Nyxus::FeatureIMQ> & F)
 {
 	for (auto f : F)
-		provided_features.push_back((int)f);
+		provided_features.push_back(static_cast<int>(f));
 }
 
 void FeatureMethod::provide_features (const std::initializer_list<Nyxus::Feature3D> & F)
 {
 	for (auto f : F)
-		provided_features.push_back((int)f);
+		provided_features.push_back(static_cast<int>(f));
 }
 
 void FeatureMethod::add_dependencies (const std::initializer_list<Nyxus::Feature2D>& F)
 {
 	for (auto f : F)
-		dependencies.push_back((int)f);
+		dependencies.push_back(static_cast<int>(f));
 }
 
 void FeatureMethod::add_dependencies (const std::initializer_list<Nyxus::FeatureIMQ>& F)
 {
 	for (auto f : F)
-		dependencies.push_back((int)f);
+		dependencies.push_back(static_cast<int>(f));
 }
 
 void FeatureMethod::add_dependencies(const std::initializer_list<Nyxus::Feature3D>& F)
 {
 	for (auto f : F)
-		dependencies.push_back((int)f);
+		dependencies.push_back(static_cast<int>(f));
 }
 
 void FeatureMethod::osized_scan_whole_image (LR& r, const Fsettings& s, ImageLoader& ldr)
@@ -51,20 +51,20 @@ void FeatureMethod::osized_scan_whole_image (LR& r, const Fsettings& s, ImageLoa
 
 bool FeatureMethod::provides (int fcode) const
 {
-	return std::find(provided_features.begin(), provided_features.end(), (int)fcode) != provided_features.end();
+	return std::find(provided_features.begin(), provided_features.end(), static_cast<int>(fcode)) != provided_features.end();
 }
 
 bool FeatureMethod::depends (Nyxus::Feature2D fcode)
 {
-	return std::find (dependencies.begin(), dependencies.end(), (int)fcode) != dependencies.end();
+	return std::find (dependencies.begin(), dependencies.end(), static_cast<int>(fcode)) != dependencies.end();
 }
 
 bool FeatureMethod::depends (Nyxus::FeatureIMQ fcode)
 {
-	return std::find (dependencies.begin(), dependencies.end(), (int)fcode) != dependencies.end();
+	return std::find (dependencies.begin(), dependencies.end(), static_cast<int>(fcode)) != dependencies.end();
 }
 
 bool FeatureMethod::depends (Nyxus::Feature3D fcode)
 {
-	return std::find(dependencies.begin(), dependencies.end(), (int)fcode) != dependencies.end();
+	return std::find(dependencies.begin(), dependencies.end(), static_cast<int>(fcode)) != dependencies.end();
 }

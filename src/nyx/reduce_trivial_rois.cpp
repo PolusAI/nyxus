@@ -267,7 +267,7 @@ namespace Nyxus
 				size_t gbl = env.devCache.gpu_batch_len;		// former NyxusGpu::gpu_batch_len
 				// Cache ROI clouds and contours
 				size_t nrois = L.size();
-				int nb = std::ceil ((float)nrois / (float)gbl);	
+				int nb = std::ceil (static_cast<float>(nrois )/ static_cast<float>(gbl));	
 				for (int b = 0; b < nb; b++)
 				{
 					size_t off_this_batch = b * gbl;

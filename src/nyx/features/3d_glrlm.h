@@ -21,7 +21,7 @@ public:
 
 	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
 	// in the feature group nickname expansion, and in the feature value output 
-	const constexpr static std::initializer_list<Nyxus::Feature3D> featureset =
+	static constexpr std::initializer_list<Nyxus::Feature3D> featureset =
 	{
 		Nyxus::Feature3D::GLRLM_SRE,		// Short Run Emphasis 
 		Nyxus::Feature3D::GLRLM_LRE,		// Long Run Emphasis 
@@ -59,7 +59,7 @@ public:
 	};
 
 	// Features implemented by this class that do not require vector-like angled output. Instead, they are output as a single values
-	const constexpr static std::initializer_list<Nyxus::Feature3D> nonAngledFeatures =
+	static constexpr std::initializer_list<Nyxus::Feature3D> nonAngledFeatures =
 	{
 		Nyxus::Feature3D::GLRLM_SRE_AVE,
 		Nyxus::Feature3D::GLRLM_LRE_AVE,

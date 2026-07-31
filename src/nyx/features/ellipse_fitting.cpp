@@ -27,9 +27,9 @@ void EllipseFittingFeature::calculate (LR& r, const Fsettings& s)
 {
 	// Idea: calculate normalized second central moments for the region. 1/12 is the normalized second central moment of a pixel with unit length.
 
-	double centroid_x = r.fvals[(int)Feature2D::CENTROID_X][0],
-		centroid_y = r.fvals[(int)Feature2D::CENTROID_Y][0],
-		area = r.fvals[(int)Feature2D::AREA_PIXELS_COUNT][0];
+	double centroid_x = r.fvals[static_cast<int>(Feature2D::CENTROID_X)][0],
+		centroid_y = r.fvals[static_cast<int>(Feature2D::CENTROID_Y)][0],
+		area = r.fvals[static_cast<int>(Feature2D::AREA_PIXELS_COUNT)][0];
 
 	double xSquaredTmp = 0, 
 		ySquaredTmp = 0, 
@@ -44,7 +44,7 @@ void EllipseFittingFeature::calculate (LR& r, const Fsettings& s)
 		xySquaredTmp += diffX * diffY;
 	}
 
-	double n = (double) r.raw_pixels.size();
+	double n = static_cast<double>(r.raw_pixels.size());
 	double uxx = xSquaredTmp / n + 1. / 12.;
 	double uyy = ySquaredTmp / n + 1. / 12.;
 	double uxy = xySquaredTmp / n;
@@ -136,9 +136,9 @@ void EllipseFittingFeature::osized_calculate (LR& r, const Fsettings& s, ImageLo
 {
 	// Idea: calculate normalized second central moments for the region. 1/12 is the normalized second central moment of a pixel with unit length.
 
-	double centroid_x = r.fvals[(int)Feature2D::CENTROID_X][0],
-		centroid_y = r.fvals[(int)Feature2D::CENTROID_Y][0],
-		area = r.fvals[(int)Feature2D::AREA_PIXELS_COUNT][0];
+	double centroid_x = r.fvals[static_cast<int>(Feature2D::CENTROID_X)][0],
+		centroid_y = r.fvals[static_cast<int>(Feature2D::CENTROID_Y)][0],
+		area = r.fvals[static_cast<int>(Feature2D::AREA_PIXELS_COUNT)][0];
 
 	double xSquaredTmp = 0, 
 		ySquaredTmp = 0, 
@@ -153,7 +153,7 @@ void EllipseFittingFeature::osized_calculate (LR& r, const Fsettings& s, ImageLo
 		xySquaredTmp += diffX * diffY;
 	}
 
-	double n = (double) r.raw_pixels_NT.size();
+	double n = static_cast<double>(r.raw_pixels_NT.size());
 	double uxx = xSquaredTmp / n + 1. / 12.;
 	double uyy = ySquaredTmp / n + 1. / 12.;
 	double uxy = xySquaredTmp / n;
@@ -192,10 +192,10 @@ void EllipseFittingFeature::osized_calculate (LR& r, const Fsettings& s, ImageLo
 
 void EllipseFittingFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::MAJOR_AXIS_LENGTH][0] = get_major_axis_length();
-	fvals[(int)Feature2D::MINOR_AXIS_LENGTH][0] = get_minor_axis_length();
-	fvals[(int)Feature2D::ECCENTRICITY][0] = get_eccentricity();
-	fvals[(int)Feature2D::ELONGATION][0] = get_elongation();
-	fvals[(int)Feature2D::ORIENTATION][0] = get_orientation();
-	fvals[(int)Feature2D::ROUNDNESS][0] = get_roundness();
+	fvals[static_cast<int>(Feature2D::MAJOR_AXIS_LENGTH)][0] = get_major_axis_length();
+	fvals[static_cast<int>(Feature2D::MINOR_AXIS_LENGTH)][0] = get_minor_axis_length();
+	fvals[static_cast<int>(Feature2D::ECCENTRICITY)][0] = get_eccentricity();
+	fvals[static_cast<int>(Feature2D::ELONGATION)][0] = get_elongation();
+	fvals[static_cast<int>(Feature2D::ORIENTATION)][0] = get_orientation();
+	fvals[static_cast<int>(Feature2D::ROUNDNESS)][0] = get_roundness();
 }

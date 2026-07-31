@@ -150,7 +150,7 @@ void D3_GLDM_feature::calculate (LR& r, const Fsettings& s)
 	}
 
 	//==== Fill the matrix
-	Ng = greyInfo == 0 ? *std::max_element(I.begin(), I.end()) : (int)I.size();
+	Ng = greyInfo == 0 ? *std::max_element(I.begin(), I.end()) : static_cast<int>(I.size());
 	Nd = nsh + 1;	// (z +1, 0, -1) * (xy N, NE, E, SE, S, SW, W, NW) + zero
 
 	// --allocate the matrix
@@ -251,20 +251,20 @@ void D3_GLDM_feature::osized_calculate(LR& r, const Fsettings& s, ImageLoader&)
 
 void D3_GLDM_feature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature3D::GLDM_SDE][0] = fv_SDE;
-	fvals[(int)Feature3D::GLDM_LDE][0] = fv_LDE;
-	fvals[(int)Feature3D::GLDM_GLN][0] = fv_GLN;
-	fvals[(int)Feature3D::GLDM_DN][0] = fv_DN;
-	fvals[(int)Feature3D::GLDM_DNN][0] = fv_DNN;
-	fvals[(int)Feature3D::GLDM_GLV][0] = fv_GLV;
-	fvals[(int)Feature3D::GLDM_DV][0] = fv_DV;
-	fvals[(int)Feature3D::GLDM_DE][0] = fv_DE;
-	fvals[(int)Feature3D::GLDM_LGLE][0] = fv_LGLE;
-	fvals[(int)Feature3D::GLDM_HGLE][0] = fv_HGLE;
-	fvals[(int)Feature3D::GLDM_SDLGLE][0] = fv_SDLGLE;
-	fvals[(int)Feature3D::GLDM_SDHGLE][0] = fv_SDHGLE;
-	fvals[(int)Feature3D::GLDM_LDLGLE][0] = fv_LDLGLE;
-	fvals[(int)Feature3D::GLDM_LDHGLE][0] = fv_LDHGLE;
+	fvals[static_cast<int>(Feature3D::GLDM_SDE)][0] = fv_SDE;
+	fvals[static_cast<int>(Feature3D::GLDM_LDE)][0] = fv_LDE;
+	fvals[static_cast<int>(Feature3D::GLDM_GLN)][0] = fv_GLN;
+	fvals[static_cast<int>(Feature3D::GLDM_DN)][0] = fv_DN;
+	fvals[static_cast<int>(Feature3D::GLDM_DNN)][0] = fv_DNN;
+	fvals[static_cast<int>(Feature3D::GLDM_GLV)][0] = fv_GLV;
+	fvals[static_cast<int>(Feature3D::GLDM_DV)][0] = fv_DV;
+	fvals[static_cast<int>(Feature3D::GLDM_DE)][0] = fv_DE;
+	fvals[static_cast<int>(Feature3D::GLDM_LGLE)][0] = fv_LGLE;
+	fvals[static_cast<int>(Feature3D::GLDM_HGLE)][0] = fv_HGLE;
+	fvals[static_cast<int>(Feature3D::GLDM_SDLGLE)][0] = fv_SDLGLE;
+	fvals[static_cast<int>(Feature3D::GLDM_SDHGLE)][0] = fv_SDHGLE;
+	fvals[static_cast<int>(Feature3D::GLDM_LDLGLE)][0] = fv_LDLGLE;
+	fvals[static_cast<int>(Feature3D::GLDM_LDHGLE)][0] = fv_LDHGLE;
 }
 
 // 1. Small Dependence Emphasis(SDE)
@@ -363,7 +363,7 @@ double D3_GLDM_feature::calc_GLV()
 	double mu = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double)I[i - 1];
+		double inten = static_cast<double>(I[i - 1]);
 		for (int j = 1; j <= Nd; j++)
 		{
 			mu += P.matlab(i, j) / double(Nz) * inten;
@@ -373,7 +373,7 @@ double D3_GLDM_feature::calc_GLV()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double)I[i - 1];
+		double inten = static_cast<double>(I[i - 1]);
 		for (int j = 1; j <= Nd; j++)
 		{
 			double mu2 = (inten - mu) * (inten - mu);
@@ -430,7 +430,7 @@ double D3_GLDM_feature::calc_LGLE()
 	double sum_i = 0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten2 = (double)I[i - 1];
+		double inten2 = static_cast<double>(I[i - 1]);
 		inten2 *= inten2;
 		double sum_j = 0;
 		for (int j = 1; j <= Nd; j++)
@@ -457,7 +457,7 @@ double D3_GLDM_feature::calc_HGLE()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double)I[i - 1];
+		double inten = static_cast<double>(I[i - 1]);
 		f += si[i - 1] * inten * inten;
 	}
 
@@ -471,7 +471,7 @@ double D3_GLDM_feature::calc_SDLGLE()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double)I[i - 1];
+		double inten = static_cast<double>(I[i - 1]);
 		for (int j = 1; j <= Nd; j++)
 		{
 			f += P.matlab(i, j) / double(inten * inten * j * j);
@@ -487,7 +487,7 @@ double D3_GLDM_feature::calc_SDHGLE()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double)I[i - 1];
+		double inten = static_cast<double>(I[i - 1]);
 		for (int j = 1; j <= Nd; j++)
 		{
 			f += P.matlab(i, j) * (inten * inten) / double(j * j);
@@ -503,7 +503,7 @@ double D3_GLDM_feature::calc_LDLGLE()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double)I[i - 1];
+		double inten = static_cast<double>(I[i - 1]);
 		for (int j = 1; j <= Nd; j++)
 		{
 			f += P.matlab(i, j) * double(j * j) / (inten * inten);
@@ -519,7 +519,7 @@ double D3_GLDM_feature::calc_LDHGLE()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double)I[i - 1];
+		double inten = static_cast<double>(I[i - 1]);
 		for (int j = 1; j <= Nd; j++)
 		{
 			f += P.matlab(i, j) * double(inten * inten * j * j);

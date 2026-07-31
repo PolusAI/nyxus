@@ -22,7 +22,7 @@ public:
 
 	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
 	// in the feature group nickname expansion, and in the feature value output 
-	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset = 
+	static constexpr std::initializer_list<Nyxus::Feature2D> featureset = 
 	{ 
 		Nyxus::Feature2D::GLSZM_SAE,		// Small Area Emphasis
 		Nyxus::Feature2D::GLSZM_LAE,		// Large Area Emphasis

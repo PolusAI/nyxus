@@ -21,7 +21,7 @@ public:
 	static void extract (LR& r, const Fsettings& s);
 	static bool required(const FeatureSet& fs);
 
-	const constexpr static std::initializer_list<Nyxus::Feature3D> featureset =
+	static constexpr std::initializer_list<Nyxus::Feature3D> featureset =
 	{
 		Nyxus::Feature3D::AREA,
 		Nyxus::Feature3D::AREA_2_VOLUME,

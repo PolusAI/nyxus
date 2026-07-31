@@ -1347,8 +1347,8 @@ typedef struct { unsigned char r,g,b; } rgb_byte ;
 #define XYZT_TO_TIME(xyzt)        ( (xyzt) & 0x38 )
 
 #undef  SPACE_TIME_TO_XYZT
-#define SPACE_TIME_TO_XYZT(ss,tt) (  (((char)(ss)) & 0x07)   \
-                                   | (((char)(tt)) & 0x38) )
+#define SPACE_TIME_TO_XYZT(ss,tt) (  ((static_cast<char>((ss))) & 0x07)   \
+                                   | ((static_cast<char>((tt))) & 0x38) )
 
 /*---------------------------------------------------------------------------*/
 /* MRI-SPECIFIC SPATIAL AND TEMPORAL INFORMATION:
@@ -1445,9 +1445,9 @@ typedef struct { unsigned char r,g,b; } rgb_byte ;
 #define DIM_INFO_TO_SLICE_DIM(di)  ( ((di) >> 4) & 0x03 )
 
 #undef  FPS_INTO_DIM_INFO
-#define FPS_INTO_DIM_INFO(fd,pd,sd) ( ( ( ((char)(fd)) & 0x03)      ) |  \
-                                      ( ( ((char)(pd)) & 0x03) << 2 ) |  \
-                                      ( ( ((char)(sd)) & 0x03) << 4 )  )
+#define FPS_INTO_DIM_INFO(fd,pd,sd) ( ( ( (static_cast<char>((fd))) & 0x03)      ) |  \
+                                      ( ( (static_cast<char>((pd))) & 0x03) << 2 ) |  \
+                                      ( ( (static_cast<char>((sd))) & 0x03) << 4 )  )
 
 /*! \defgroup NIFTI1_SLICE_ORDER
     \brief nifti1 slice order codes, describing the acquisition order

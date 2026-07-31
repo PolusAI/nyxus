@@ -20,7 +20,7 @@ void GeodeticLengthThicknessFeature::calculate (LR& r, const Fsettings& s)
 	// forced integer division below, so geodetic_length/thickness deviated from the rectangle-model
 	// formula (e.g. ~11% on the 8x8 shape2d fixture: geodetic 10.0 instead of ~11.13).
 	double roiArea = r.aux_area,
-		roiPerimeter = r.fvals[(int)Feature2D::PERIMETER][0];
+		roiPerimeter = r.fvals[static_cast<int>(Feature2D::PERIMETER)][0];
 
 	double SqRootTmp = roiPerimeter * roiPerimeter / 16.0 - roiArea;
 
@@ -44,8 +44,8 @@ void GeodeticLengthThicknessFeature::osized_add_online_pixel (size_t x, size_t y
 
 void GeodeticLengthThicknessFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::GEODETIC_LENGTH][0] = geodetic_length;
-	fvals[(int)Feature2D::THICKNESS][0] = thickness;
+	fvals[static_cast<int>(Feature2D::GEODETIC_LENGTH)][0] = geodetic_length;
+	fvals[static_cast<int>(Feature2D::THICKNESS)][0] = thickness;
 }
 
 void GeodeticLengthThicknessFeature::extract (LR& r, const Fsettings& s)

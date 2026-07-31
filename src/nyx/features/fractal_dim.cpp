@@ -34,7 +34,7 @@ void FractalDimensionFeature::calculate_boxcount_fdim (LR & r)
 	// those are cheap to shift. So auto-switch:
 	//   - large ROI  -> single origin grid via the padded mask matrix (fast early-exit tile scan)
 	//   - small ROI  -> shift the grid over a few origins and take the minimum box count
-	int bigSide = (int)std::max(r.aabb.get_width(), r.aabb.get_height());
+	int bigSide = static_cast<int>(std::max(r.aabb.get_width(), r.aabb.get_height()));
 	int paddedSide = Nyxus::ceil_pow2(bigSide);
 
 	std::vector<std::pair<double, double>> coverage;
@@ -71,7 +71,7 @@ void FractalDimensionFeature::calculate_boxcount_fdim (LR & r)
 		for (int s = paddedSide; s > 1; s >>= 1, --shift)
 		{
 			int span = (paddedSide >> shift) + 2;	// boxes per axis (+slack for the origin shift)
-			occ.assign((size_t)span * span, 0);
+			occ.assign(static_cast<size_t>(span )* span, 0);
 			int best = -1;
 			for (int oyi = 0; oyi < n_off; oyi++)
 				for (int oxi = 0; oxi < n_off; oxi++)
@@ -80,15 +80,15 @@ void FractalDimensionFeature::calculate_boxcount_fdim (LR & r)
 					int cnt = 0;
 					for (const Pixel2& p : px)
 					{
-						int col = (int)(p.x - xmin + ox) >> shift;
-						int row = (int)(p.y - ymin + oy) >> shift;
-						size_t idx = (size_t)row * span + col;
+						int col = static_cast<int>((p.x - xmin + ox) )>> shift;
+						int row = static_cast<int>((p.y - ymin + oy) )>> shift;
+						size_t idx = static_cast<size_t>(row )* span + col;
 						if (!occ[idx]) { occ[idx] = 1; cnt++; }
 					}
 					if (best < 0 || cnt < best)
 						best = cnt;
 					if (oyi + 1 < n_off || oxi + 1 < n_off)
-						std::fill(occ.begin(), occ.end(), (char)0);	// reset for next origin
+						std::fill(occ.begin(), occ.end(), static_cast<char>(0));	// reset for next origin
 				}
 			coverage.push_back({ double(s), double(best) });
 		}
@@ -201,8 +201,8 @@ void FractalDimensionFeature::osized_calculate (LR& r, const Fsettings& s, Image
 
 void FractalDimensionFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::FRACT_DIM_BOXCOUNT][0] = box_count_fd;
-	fvals[(int)Feature2D::FRACT_DIM_PERIMETER][0] = perim_fd;
+	fvals[static_cast<int>(Feature2D::FRACT_DIM_BOXCOUNT)][0] = box_count_fd;
+	fvals[static_cast<int>(Feature2D::FRACT_DIM_PERIMETER)][0] = perim_fd;
 }
 
 void FractalDimensionFeature::extract (LR& r, const Fsettings& s)

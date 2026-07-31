@@ -25,8 +25,8 @@ static long hull_boundary_points (const std::vector<Pixel2>& v)
 	{
 		const Pixel2& p1 = v[i];
 		const Pixel2& p2 = v[(i + 1) % n];
-		long dx = (long)p2.x - (long)p1.x; if (dx < 0) dx = -dx;
-		long dy = (long)p2.y - (long)p1.y; if (dy < 0) dy = -dy;
+		long dx = static_cast<long>(p2.x )- static_cast<long>(p1.x); if (dx < 0) dx = -dx;
+		long dy = static_cast<long>(p2.y )- static_cast<long>(p1.y); if (dy < 0) dy = -dy;
 		B += std::gcd(dx, dy);
 	}
 	return B;
@@ -40,9 +40,9 @@ ConvexHullFeature::ConvexHullFeature() : FeatureMethod("ConvexHullFeature")
 
 void ConvexHullFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals [(int)Feature2D::CONVEX_HULL_AREA][0] = area;
-	fvals [(int)Feature2D::SOLIDITY][0] = solidity;
-	fvals [(int)Feature2D::CIRCULARITY][0] = circularity;
+	fvals [static_cast<int>(Feature2D::CONVEX_HULL_AREA)][0] = area;
+	fvals [static_cast<int>(Feature2D::SOLIDITY)][0] = solidity;
+	fvals [static_cast<int>(Feature2D::CIRCULARITY)][0] = circularity;
 }
 
 void ConvexHullFeature::cleanup_instance()
@@ -59,7 +59,7 @@ void ConvexHullFeature::calculate (LR& r, const Fsettings& s)
 	// measured on the same basis as the ROI (pixel count) -> SOLIDITY <= 1.
 	double s_hull = polygon_area(r.convHull_CH) + hull_boundary_points(r.convHull_CH) / 2.0 + 1.0,
 		s_roi = r.raw_pixels.size(),
-		p = r.fvals[(int)Feature2D::PERIMETER][0];
+		p = r.fvals[static_cast<int>(Feature2D::PERIMETER)][0];
 	area = s_hull;
 	solidity = (s_hull > 0.0) ? s_roi / s_hull : 0.0;
 	circularity = sqrt(4.0 * M_PI * s_roi / (p*p));
@@ -220,7 +220,7 @@ void ConvexHullFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader
 	// Calculate related features (Pick's-theorem pixel-count-equivalent hull area; see calculate())
 	double s_hull = polygon_area(r.convHull_CH) + hull_boundary_points(r.convHull_CH) / 2.0 + 1.0,
 		s_roi = r.raw_pixels_NT.size(),
-		p = r.fvals[(int)Feature2D::PERIMETER][0];
+		p = r.fvals[static_cast<int>(Feature2D::PERIMETER)][0];
 	area = s_hull;
 	solidity = (s_hull > 0.0) ? s_roi / s_hull : 0.0;
 	circularity = sqrt(4.0 * M_PI * s_roi / (p * p));

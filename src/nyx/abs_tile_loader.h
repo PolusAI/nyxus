@@ -106,19 +106,19 @@ public:
   /// @param level Level asked [default 0]
   /// @return Number tiles in height for a level
   [[nodiscard]] size_t numberTileHeight(size_t level = 0) const {
-    return (size_t) std::ceil((double) (fullHeight(level)) / tileHeight(level));
+    return static_cast<size_t>(std::ceil(static_cast<double>((fullHeight(level)) )/ tileHeight(level)));
   }
   /// @brief Number tiles in width accessor for a level
   /// @param level Level asked [default 0]
   /// @return Number tiles in width for a level
   [[nodiscard]] size_t numberTileWidth(size_t level = 0) const {
-    return (size_t) std::ceil((double) (fullWidth(level)) / tileWidth(level));
+    return static_cast<size_t>(std::ceil(static_cast<double>((fullWidth(level)) )/ tileWidth(level)));
   }
 
   /// @brief Number tiles in depth accessor for a level
   /// @param level Level asked [default 0]
   /// @return Number tiles in depth for a level
   [[nodiscard]] size_t numberTileDepth(size_t level = 0) const {
-    return (size_t) std::ceil((double) (fullDepth(level)) / tileDepth(level));
+    return static_cast<size_t>(std::ceil(static_cast<double>((fullDepth(level)) )/ tileDepth(level)));
   }
 };

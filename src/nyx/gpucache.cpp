@@ -102,11 +102,11 @@ bool GpuCache<Pixel2>::alloc (size_t total_len__, size_t num_rois__)
 
 	// allocate on device
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	if (! GpusideCache::allocate_on_device ((void**)&devbuffer, szb))
+	if (! GpusideCache::allocate_on_device (reinterpret_cast<void**>(&devbuffer), szb))
 		return false;
 
 	szb = num_rois * sizeof(dev_offsets[0]);
-	if (! GpusideCache::allocate_on_device ((void**)&dev_offsets, szb))
+	if (! GpusideCache::allocate_on_device (reinterpret_cast<void**>(&dev_offsets), szb))
 		return false;
 
 	// allocate on host	
@@ -114,10 +114,10 @@ bool GpuCache<Pixel2>::alloc (size_t total_len__, size_t num_rois__)
 	hobuffer = (Pixel2*) std::malloc(total_len * sizeof(hobuffer[0])); 
 	if (!hobuffer) return false;
 	
-	ho_lengths = (size_t*) std::malloc(num_rois * sizeof(ho_lengths[0])); 
+	ho_lengths = static_cast<size_t*>(std::malloc(num_rois * sizeof(ho_lengths[0]))); 
 	if (!ho_lengths) return false;
 
-	ho_offsets = (size_t*) std::malloc(num_rois * sizeof(ho_offsets[0])); 
+	ho_offsets = static_cast<size_t*>(std::malloc(num_rois * sizeof(ho_offsets[0]))); 
 	
 	return true;
 }
@@ -145,7 +145,7 @@ bool GpuCache<gpureal>::alloc(size_t roi_buf_len, size_t num_rois__)
 
 	// allocate on device
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	if (!GpusideCache::allocate_on_device((void**)&devbuffer, szb))
+	if (!GpusideCache::allocate_on_device(reinterpret_cast<void**>(&devbuffer), szb))
 		return false;
 
 	//		not allocating dev_offsets
@@ -164,11 +164,11 @@ template<>
 bool GpuCache<Pixel2>::upload()
 {
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	if (!GpusideCache::upload_on_device((void*)devbuffer, (void*)hobuffer, szb))
+	if (!GpusideCache::upload_on_device(static_cast<void*>(devbuffer), static_cast<void*>(hobuffer), szb))
 		return false;
 
 	szb = num_rois * sizeof(dev_offsets[0]);
-	if (!GpusideCache::upload_on_device((void*)dev_offsets, (void*)ho_offsets, szb))
+	if (!GpusideCache::upload_on_device(static_cast<void*>(dev_offsets), static_cast<void*>(ho_offsets), szb))
 		return false;
 
 	return true;
@@ -178,7 +178,7 @@ template<>
 bool GpuCache<gpureal>::download()
 {
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	if (!GpusideCache::download_on_host ((void*)hobuffer, (void*)devbuffer, szb))
+	if (!GpusideCache::download_on_host (static_cast<void*>(hobuffer), static_cast<void*>(devbuffer), szb))
 		return false;
 
 	return true;
@@ -232,7 +232,7 @@ bool GpuCache<cufftDoubleComplex>::alloc(size_t roi_buf_len, size_t num_rois__)
 
 	// allocate on device
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	if (!GpusideCache::allocate_on_device((void**)&devbuffer, szb))
+	if (!GpusideCache::allocate_on_device(reinterpret_cast<void**>(&devbuffer), szb))
 		return false;
 
 	//		not allocating dev_offsets
@@ -244,7 +244,7 @@ template<>
 bool GpuCache<cufftDoubleComplex>::download()
 {
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	if (!GpusideCache::download_on_host((void*)hobuffer, (void*)devbuffer, szb))
+	if (!GpusideCache::download_on_host(static_cast<void*>(hobuffer), static_cast<void*>(devbuffer), szb))
 		return false;
 
 	return true;
@@ -291,14 +291,14 @@ bool GpuCache<PixIntens>::alloc(size_t roi_buf_len, size_t num_rois__)
 	total_len = roi_buf_len * num_rois;
 
 	// allocate on host	
-	hobuffer = (PixIntens*) std::malloc(total_len * sizeof(hobuffer[0])); 
+	hobuffer = static_cast<PixIntens*>(std::malloc(total_len * sizeof(hobuffer[0]))); 
 
 	//		not allocating ho_lengths
 	//		not allocating ho_offsets
 
 	// allocate on device
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	if (!GpusideCache::allocate_on_device((void**)&devbuffer, szb))
+	if (!GpusideCache::allocate_on_device(reinterpret_cast<void**>(&devbuffer), szb))
 		return false;
 
 	return true;
@@ -347,14 +347,14 @@ bool GpuCache<float>::alloc(size_t roi_buf_len, size_t num_rois__)
 	total_len = roi_buf_len * num_rois;
 
 	// allocate on host	
-	hobuffer = (float*)std::malloc(total_len * sizeof(hobuffer[0])); 
+	hobuffer = static_cast<float*>(std::malloc(total_len * sizeof(hobuffer[0]))); 
 
 	//		not allocating ho_lengths 
 	//		not allocating ho_offsets 
 
 	// allocate on device
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	if (!GpusideCache::allocate_on_device((void**)&devbuffer, szb))
+	if (!GpusideCache::allocate_on_device(reinterpret_cast<void**>(&devbuffer), szb))
 		return false;
 
 	return true;
@@ -364,7 +364,7 @@ template<>
 bool GpuCache<float>::download()
 {
 	size_t szb = total_len * sizeof(devbuffer[0]);
-	if (!GpusideCache::download_on_host((void*)hobuffer, (void*)devbuffer, szb))
+	if (!GpusideCache::download_on_host(static_cast<void*>(hobuffer), static_cast<void*>(devbuffer), szb))
 		return false;
 
 	return true;

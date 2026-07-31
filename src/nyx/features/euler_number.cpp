@@ -99,7 +99,7 @@ long EulerNumberFeature::calculate_euler (std::vector<unsigned char> & arr, int 
 
 void EulerNumberFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::EULER_NUMBER][0] = euler_number;
+	fvals[static_cast<int>(Feature2D::EULER_NUMBER)][0] = euler_number;
 }
 
 void EulerNumberFeature::extract (LR& r, const Fsettings& s)

@@ -46,7 +46,7 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 					// would clamp every negative HU to 0. Only the non-HU float path uses the
 					// fp override min.
 					intFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, int_fpath,
-						(fpopts.preserve_hu() || fpopts.empty()) ? p.min_preroi_inten : (double)fpopts.min_intensity(),
+						(fpopts.preserve_hu() || fpopts.empty()) ? p.min_preroi_inten : static_cast<double>(fpopts.min_intensity()),
 						fpopts.preserve_hu());
 				#else
 					std::string erm = "This version of Nyxus was not build with DICOM support";
@@ -60,7 +60,7 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 				if (ext == ".nii" || ext == ".nii.gz")
 				{
 					intFL = new NiftiLoader<uint32_t> (int_fpath,
-							(fpopts.preserve_hu() || fpopts.empty()) ? p.min_preroi_inten : (double)fpopts.min_intensity(),		// HU offset base = scanned HU-domain slide min; ignore fp min in preserve_hu mode (else negative HU clamps to 0)
+							(fpopts.preserve_hu() || fpopts.empty()) ? p.min_preroi_inten : static_cast<double>(fpopts.min_intensity()),		// HU offset base = scanned HU-domain slide min; ignore fp min in preserve_hu mode (else negative HU clamps to 0)
 							fpopts.preserve_hu());		// CT/HU mode: offset-preserving map (matches DICOM/TIFF)
 				}
 				else 

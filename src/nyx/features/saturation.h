@@ -12,7 +12,7 @@ class SaturationFeature : public FeatureMethod
 
 public:
 
-    const constexpr static std::initializer_list<Nyxus::FeatureIMQ> featureset = { Nyxus::FeatureIMQ::MIN_SATURATION, Nyxus::FeatureIMQ::MAX_SATURATION};
+    static constexpr std::initializer_list<Nyxus::FeatureIMQ> featureset = { Nyxus::FeatureIMQ::MIN_SATURATION, Nyxus::FeatureIMQ::MAX_SATURATION};
 
     SaturationFeature();
 

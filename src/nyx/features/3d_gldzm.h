@@ -14,7 +14,7 @@ class D3_GLDZM_feature : public FeatureMethod, public TextureFeature
 public:
 
 	// features implemented by this class
-	const constexpr static std::initializer_list<Nyxus::Feature3D> featureset =
+	static constexpr std::initializer_list<Nyxus::Feature3D> featureset =
 	{
 		Nyxus::Feature3D::GLDZM_SDE,		// Small Distance Emphasis
 		Nyxus::Feature3D::GLDZM_LDE,		// Large Distance Emphasis

@@ -84,8 +84,8 @@ void FocusScoreFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader
 
 void FocusScoreFeature::save_value(std::vector<std::vector<double>>& feature_vals) {
     
-    feature_vals[(int)FeatureIMQ::FOCUS_SCORE][0] = focus_score_;
-    feature_vals[(int)FeatureIMQ::LOCAL_FOCUS_SCORE][0] = local_focus_score_;
+    feature_vals[static_cast<int>(FeatureIMQ::FOCUS_SCORE)][0] = focus_score_;
+    feature_vals[static_cast<int>(FeatureIMQ::LOCAL_FOCUS_SCORE)][0] = local_focus_score_;
 
 }
 
@@ -110,7 +110,7 @@ double FocusScoreFeature::get_focus_score_NT(WriteImageMatrix_nontriv& Im, int k
 
     auto width = Im.get_width(),
         height = Im.get_height(); 
-    auto xy0 = (int)ceil(double(n) / 2.);
+    auto xy0 = static_cast<int>(ceil(double(n) / 2.));
 
     // Window (N-fold kernel size)
     int winX = n * 10, 

@@ -207,10 +207,10 @@ namespace Nyxus
 			fullheight = ldr.get_full_height();
 
 		// virtual slide properties
-		size_t vh = (size_t) (double(fullheight) * sf_y),
-			vw = (size_t) (double(fullwidth) * sf_x),
-			vth = (size_t)(double(th) * sf_y),
-			vtw = (size_t)(double(tw) * sf_x);
+		size_t vh = static_cast<size_t>((double(fullheight) * sf_y)),
+			vw = static_cast<size_t>((double(fullwidth) * sf_x)),
+			vth = static_cast<size_t>((double(th) * sf_y)),
+			vtw = static_cast<size_t>((double(tw) * sf_x));
 
 		// current tile to skip tile reloads
 		size_t curt_x = 999, curt_y = 999;
@@ -369,10 +369,10 @@ namespace Nyxus
 			fullheight = ldr.get_full_height();
 
 		// virtual slide properties
-		size_t vh = (size_t)(double(fullheight) * aniso_y),
-			vw = (size_t)(double(fullwidth) * aniso_x),
-			vth = (size_t)(double(th) * aniso_y),
-			vtw = (size_t)(double(tw) * aniso_x);
+		size_t vh = static_cast<size_t>((double(fullheight) * aniso_y)),
+			vw = static_cast<size_t>((double(fullwidth) * aniso_x)),
+			vth = static_cast<size_t>((double(th) * aniso_y)),
+			vtw = static_cast<size_t>((double(tw) * aniso_x));
 
 		// current tile to skip tile reloads
 		size_t curt_x = 999, curt_y = 999;

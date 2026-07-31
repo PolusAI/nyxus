@@ -268,10 +268,10 @@ private:
                     {
                         // rescale stored -> true HU, then slope-1 offset by floor(global HU min);
                         // negatives (below the offset base) clamp to 0 instead of wrapping.
-                        double hu = rescaleSlope_ * (double)buffer[i] + rescaleIntercept_;
+                        double hu = rescaleSlope_ * static_cast<double>(buffer[i] )+ rescaleIntercept_;
                         double y = hu - std::floor(fpmin_);
                         if (y < 0.0) y = 0.0;
-                        *(dest+i) = (DataType) std::llround(y);
+                        *(dest+i) = static_cast<DataType>(std::llround(y));
                     }
                     else
                         *(dest+i) = static_cast<DataType>(buffer[i]);

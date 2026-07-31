@@ -12,7 +12,7 @@
 class ErosionPixelsFeature: public FeatureMethod
 {
 public:
-	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+	static constexpr std::initializer_list<Nyxus::Feature2D> featureset =
 	{
 		Nyxus::Feature2D::EROSIONS_2_VANISH, 
 		Nyxus::Feature2D::EROSIONS_2_VANISH_COMPLEMENT

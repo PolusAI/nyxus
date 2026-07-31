@@ -67,8 +67,8 @@ void SaturationFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader
 
 void SaturationFeature::save_value(std::vector<std::vector<double>>& feature_vals) {
     
-    feature_vals[(int)FeatureIMQ::MAX_SATURATION][0] = max_saturation_;
-    feature_vals[(int)FeatureIMQ::MIN_SATURATION][0] = min_saturation_;
+    feature_vals[static_cast<int>(FeatureIMQ::MAX_SATURATION)][0] = max_saturation_;
+    feature_vals[static_cast<int>(FeatureIMQ::MIN_SATURATION)][0] = min_saturation_;
 }
 
 std::tuple<double, double> SaturationFeature::get_percent_max_pixels(const ImageMatrix& Im) {

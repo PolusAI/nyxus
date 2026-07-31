@@ -50,11 +50,11 @@ void ZernikeFeature::osized_add_online_pixel (size_t x, size_t y, uint32_t inten
 
 void ZernikeFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::ZERNIKE2D].clear();
+	fvals[static_cast<int>(Feature2D::ZERNIKE2D)].clear();
 	for (int i=0; i<ZernikeFeature::NUM_FEATURE_VALS; i++)
 	{
 		auto f = coeffs[i];
-		fvals[(int)Feature2D::ZERNIKE2D].push_back(f);
+		fvals[static_cast<int>(Feature2D::ZERNIKE2D)].push_back(f);
 	}
 }
 
@@ -96,8 +96,8 @@ void ZernikeFeature::mb_Znl (double* X, double* Y, double* P, int size, double D
 				{
 					for (m = 0; m <= (n - l) / 2; m++) 
 					{
-						LUT[theLUT] = pow((double)-1.0, (double)m) * ((long double)gsl_sf_fact(n - m) / ((long double)gsl_sf_fact(m) * (long double)gsl_sf_fact((n - 2 * m + l) / 2) *
-							(long double)gsl_sf_fact((n - 2 * m - l) / 2)));
+						LUT[theLUT] = pow(static_cast<double>(-1.0), static_cast<double>(m)) * (static_cast<long double>(gsl_sf_fact(n - m) )/ (static_cast<long double>(gsl_sf_fact(m) )* static_cast<long double>(gsl_sf_fact((n - 2 * m + l) / 2) )*
+							static_cast<long double>(gsl_sf_fact((n - 2 * m - l) / 2))));
 						theLUT++;
 					}
 					n_s[theZ] = n;
@@ -139,7 +139,7 @@ void ZernikeFeature::mb_Znl (double* X, double* Y, double* P, int size, double D
 			Vnl = complex<double>(0.0, 0.0);
 			for (m = 0; m <= (n - l) / 2; m++) 
 			{
-				Vnl += (polar(1.0, l * atan2yx) * LUT[theLUT] * pow(sqr_x2y2, (double)(n - 2 * m)));
+				Vnl += (polar(1.0, l * atan2yx) * LUT[theLUT] * pow(sqr_x2y2, static_cast<double>((n - 2 * m))));
 				theLUT++;
 			}
 			sum[theZ] += (conj(Vnl) * p);
@@ -160,7 +160,7 @@ void ZernikeFeature::mb_Znl (double* X, double* Y, double* P, int size, double D
 
 /*
   Algorithms for fast computation of Zernike moments and their numerical stability
-  Chandan Singh and Ekta Walia, Image and Vision Computing 29 (2011) 251–259
+  Chandan Singh and Ekta Walia, Image and Vision Computing 29 (2011) 251ï¿½259
 
   Implemented from pseudo-code by Ilya Goldberg 2011-04-27
   This code is 10x faster than the previous code, and 50x faster than previous unoptimized code.
@@ -186,14 +186,14 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 	//--alternatively-- N = Im.width > Im.height ? Im.width : Im.height; //MM: This change is needed for bounding box implementations to ensure disk is covering the entire area of the Image
 
 	if (order > 0) 
-		L = (int)order;
+		L = static_cast<int>(order);
 	else 
 		L = 15;
 	assert(L < MAX_L);
 
 	if (!(rad > 0.0)) 
 		rad = N;
-	D = (int)(rad * 2);
+	D = static_cast<int>((rad * 2));
 
 	static double H1[MAX_L][MAX_L];
 	static double H2[MAX_L][MAX_L];
@@ -216,7 +216,7 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 	for (i = 0; i < cols; i++)
 		for (j = 0; j < rows; j++) 
 		{
-			if (std::isnan((double)I_pix_plane.yx(j, i))) 
+			if (std::isnan(static_cast<double>(I_pix_plane.yx(j, i)))) 
 				continue; //MM
 			intensity = INTEN(I_pix_plane.yx(j,i));
 			sum += intensity;
@@ -236,9 +236,9 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 			{
 				if (n != m) 
 				{
-					H3[n][m] = -(double)(4.0 * (m + 2.0) * (m + 1.0)) / (double)((n + m + 2.0) * (n - m));
-					H2[n][m] = ((double)(H3[n][m] * (n + m + 4.0) * (n - m - 2.0)) / (double)(4.0 * (m + 3.0))) + (m + 2.0);
-					H1[n][m] = ((double)((m + 4.0) * (m + 3.0)) / 2.0) - ((m + 4.0) * H2[n][m]) + ((double)(H3[n][m] * (n + m + 6.0) * (n - m - 4.0)) / 8.0);
+					H3[n][m] = -static_cast<double>((4.0 * (m + 2.0) * (m + 1.0)) )/ static_cast<double>(((n + m + 2.0) * (n - m)));
+					H2[n][m] = (static_cast<double>((H3[n][m] * (n + m + 4.0) * (n - m - 2.0)) )/ static_cast<double>((4.0 * (m + 3.0)))) + (m + 2.0);
+					H1[n][m] = (static_cast<double>(((m + 4.0) * (m + 3.0)) )/ 2.0) - ((m + 4.0) * H2[n][m]) + (static_cast<double>((H3[n][m] * (n + m + 6.0) * (n - m - 4.0)) )/ 8.0);
 				}
 			}
 		}
@@ -262,7 +262,7 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 		x = (i + 1 - m10_m00) / rad;
 		for (j = 0; j < rows; j++) 
 		{
-			if (std::isnan((double)I_pix_plane.yx(j, i))) 
+			if (std::isnan(static_cast<double>(I_pix_plane.yx(j, i)))) 
 				continue; //MM
 
 		// In the paper, the center of the unit circle was the center of the image

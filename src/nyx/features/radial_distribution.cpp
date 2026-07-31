@@ -187,9 +187,9 @@ void RadialDistributionFeature::osized_calculate (LR& r, const Fsettings& s, Ima
 
 void RadialDistributionFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::FRAC_AT_D] = values_FracAtD;
-	fvals[(int)Feature2D::MEAN_FRAC] = values_MeanFrac;
-	fvals[(int)Feature2D::RADIAL_CV] = values_RadialCV;
+	fvals[static_cast<int>(Feature2D::FRAC_AT_D)] = values_FracAtD;
+	fvals[static_cast<int>(Feature2D::MEAN_FRAC)] = values_MeanFrac;
+	fvals[static_cast<int>(Feature2D::RADIAL_CV)] = values_RadialCV;
 }
 
 void RadialDistributionFeature::extract (LR& r, const Fsettings& s)

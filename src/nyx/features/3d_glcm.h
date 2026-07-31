@@ -14,7 +14,7 @@ public:
 
 	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
 	// in the feature group nickname expansion, and in the feature value output 
-	const constexpr static std::initializer_list<Nyxus::Feature3D> featureset =
+	static constexpr std::initializer_list<Nyxus::Feature3D> featureset =
 	{
 		Nyxus::Feature3D::GLCM_ACOR,		// Autocorrelation, IBSI # QWB0
 		Nyxus::Feature3D::GLCM_ASM,		// Angular second moment	IBSI # 8ZQL
@@ -78,7 +78,7 @@ public:
 	};
 
 	// Features implemented by this class that do not require vector-like angled output. Instead, they are output as a single values
-	const constexpr static std::initializer_list<Nyxus::Feature3D> nonAngledFeatures =
+	static constexpr std::initializer_list<Nyxus::Feature3D> nonAngledFeatures =
 	{
 		Nyxus::Feature3D::GLCM_ASM_AVE,
 		Nyxus::Feature3D::GLCM_ACOR_AVE,
@@ -164,7 +164,7 @@ private:
 
 	static inline int cast_to_range(PixIntens orig_I, PixIntens min_orig_I, PixIntens max_orig_I, int min_target_I, int max_target_I)
 	{
-		int target_I = (int)(double(orig_I - min_orig_I) / double(max_orig_I - min_orig_I) * double(max_target_I - min_target_I) + min_target_I);
+		int target_I = static_cast<int>((double(orig_I - min_orig_I) / double(max_orig_I - min_orig_I) * double(max_target_I - min_target_I) + min_target_I));
 		return target_I;
 	}
 

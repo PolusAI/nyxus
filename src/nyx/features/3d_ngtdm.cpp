@@ -155,7 +155,7 @@ int nsh = sizeof(shifts) / sizeof(ShiftToNeighbor);
 		row = int(lower - I.begin());
 
 		// col
-		int col = (int)z.second;	// 1-based
+		int col = static_cast<int>(z.second);	// 1-based
 		// increment
 		N[row]++;
 		// --S
@@ -170,7 +170,7 @@ int nsh = sizeof(shifts) / sizeof(ShiftToNeighbor);
 	// --Calculate Nvc (sum of N)
 	double Nvc = 0;
 	for (int i = 0; i < N.size(); i++)
-		Nvc += (double) N[i];
+		Nvc += static_cast<double>(N[i]);
 
 	// --Calculate P
 	for (int i = 0; i < N.size(); i++)
@@ -249,8 +249,8 @@ void D3_NGTDM_feature::calculate (LR& r, const Fsettings& s)
 	// fill the NGTD-matrix
 
 	// --dimensions
-	Ng = (int)I.size();	
-	Ngp = (int)U.size();
+	Ng = static_cast<int>(I.size());	
+	Ngp = static_cast<int>(U.size());
 	Nvp = D3_NGTDM_feature::calc_NGTDM (N, P, S, Z, I);
 
 	// Calculate features
@@ -263,11 +263,11 @@ void D3_NGTDM_feature::calculate (LR& r, const Fsettings& s)
 
 void D3_NGTDM_feature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature3D::NGTDM_COARSENESS][0] = _coarseness;
-	fvals[(int)Feature3D::NGTDM_CONTRAST][0] = _contrast;
-	fvals[(int)Feature3D::NGTDM_BUSYNESS][0] = _busyness;
-	fvals[(int)Feature3D::NGTDM_COMPLEXITY][0] = _complexity;
-	fvals[(int)Feature3D::NGTDM_STRENGTH][0] = _strength;
+	fvals[static_cast<int>(Feature3D::NGTDM_COARSENESS)][0] = _coarseness;
+	fvals[static_cast<int>(Feature3D::NGTDM_CONTRAST)][0] = _contrast;
+	fvals[static_cast<int>(Feature3D::NGTDM_BUSYNESS)][0] = _busyness;
+	fvals[static_cast<int>(Feature3D::NGTDM_COMPLEXITY)][0] = _complexity;
+	fvals[static_cast<int>(Feature3D::NGTDM_STRENGTH)][0] = _strength;
 }
 
 void D3_NGTDM_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} // Not supporting
@@ -370,8 +370,8 @@ void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 
 	// Fill the matrix
 
-	Ng = (int) U.size();
-	Ngp = (int) U.size();
+	Ng = static_cast<int>(U.size());
+	Ngp = static_cast<int>(U.size());
 
 	// --allocate the matrix
 	P.resize (Ng, 0);
@@ -390,7 +390,7 @@ void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 		int row = (STNGS_IBSI(s)) ?
 			z.first : int(iter - I.begin());
 		// col
-		int col = (int)z.second;	// 1-based
+		int col = static_cast<int>(z.second);	// 1-based
 		// increment
 		N[row]++;
 		// --S
@@ -409,7 +409,7 @@ void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 
 	// --Calculate P
 	for (int i = 0; i < N.size(); i++)
-		P[i] = (double)N[i] / Nvc;
+		P[i] = static_cast<double>(N[i] )/ Nvc;
 
 	// Calculate features
 	_coarseness = calc_Coarseness();
@@ -434,10 +434,10 @@ double D3_NGTDM_feature::calc_Contrast()
 	double sum = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double ival = (double)I[i - 1];
+		double ival = static_cast<double>(I[i - 1]);
 		for (int j = 1; j <= Ng; j++)
 		{
-			double jval = (double)I[j - 1];
+			double jval = static_cast<double>(I[j - 1]);
 			double tmp = P[i - 1] * P[j - 1] * (ival - jval) * (ival - jval);
 			sum += tmp;
 		}
@@ -472,10 +472,10 @@ double D3_NGTDM_feature::calc_Busyness()
 	double sum2 = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double ival = (double)I[i - 1];
+		double ival = static_cast<double>(I[i - 1]);
 		for (int j = 1; j <= Ng; j++)
 		{
-			double jval = (double)I[j - 1];
+			double jval = static_cast<double>(I[j - 1]);
 			if (P[i - 1] != 0 && P[j - 1] != 0)
 			{
 				double tmp = P[i - 1] * ival - P[j - 1] * jval;
@@ -496,10 +496,10 @@ double D3_NGTDM_feature::calc_Complexity()
 	double sum = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double ival = (double)I[i - 1];
+		double ival = static_cast<double>(I[i - 1]);
 		for (int j = 1; j <= Ng; j++)
 		{
-			double jval = (double)I[j - 1];
+			double jval = static_cast<double>(I[j - 1]);
 			if (P[i - 1] != 0 && P[j - 1] != 0)
 			{
 				sum += std::abs(ival - jval) * (P[i - 1] * S[i - 1] + P[j - 1] * S[j - 1]) / (P[i - 1] + P[j - 1]);
@@ -516,10 +516,10 @@ double D3_NGTDM_feature::calc_Strength()
 	double sum1 = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double ival = (double)I[i - 1];
+		double ival = static_cast<double>(I[i - 1]);
 		for (int j = 1; j <= Ng; j++)
 		{
-			double jval = (double)I[j - 1];
+			double jval = static_cast<double>(I[j - 1]);
 			if (P[i - 1] != 0 && P[j - 1] != 0)
 			{
 				sum1 += (P[i - 1] + P[j - 1]) * (ival - jval) * (ival - jval);

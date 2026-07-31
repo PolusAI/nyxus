@@ -48,7 +48,7 @@ bool SharpnessFeature::required(const FeatureSet& fs)
 }
 
 void SharpnessFeature::save_value(std::vector<std::vector<double>>& feature_vals) {
-    feature_vals[(int)FeatureIMQ::SHARPNESS][0] = sharpness_;
+    feature_vals[static_cast<int>(FeatureIMQ::SHARPNESS)][0] = sharpness_;
 }
 
  void SharpnessFeature::remove_padding(std::vector<double>& img, int img_row, int img_col, int row_padding, int col_padding) {
@@ -131,7 +131,7 @@ void SharpnessFeature::median_blur(const std::vector<unsigned int>& img, std::ve
             std::sort(window.begin(), window.end());
 
             // Get the median value
-            int median_index = std::floor((double)window.size() / 2);
+            int median_index = std::floor(static_cast<double>(window.size() )/ 2);
 
             blurred_img_out[i * padded_cols + j] = window[median_index];
         }

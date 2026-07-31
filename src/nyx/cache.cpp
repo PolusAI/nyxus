@@ -193,17 +193,17 @@
 			using_moments = true;
 
 			// moments / real intensities
-			OKDETL(allocate_on_device((void**)realintens, sizeof(RealPixIntens) * batch_roi_cloud_len), "allocate_on_device(moments1)");
+			OKDETL(allocate_on_device(reinterpret_cast<void**>(realintens), sizeof(RealPixIntens) * batch_roi_cloud_len), "allocate_on_device(moments1)");
 
 			// moments / pre-reduce
-			OKDETL(allocate_on_device((void**)prereduce, sizeof(double) * batch_roi_cloud_len * 16), "allocate_on_device(moments2)");	// 16 is the max number of simultaneous totals calculated by a kernel, e.g. RM00-33
+			OKDETL(allocate_on_device(reinterpret_cast<void**>(prereduce), sizeof(double) * batch_roi_cloud_len * 16), "allocate_on_device(moments2)");	// 16 is the max number of simultaneous totals calculated by a kernel, e.g. RM00-33
 
 			// moments / intermediate
 			OKDETL(intermediate.alloc(GpusideState::__COUNT__, batch_len), "allocate_on_device(moments3)");
 
 			// moments / CUB DeviceReduce's temp buffer
 			OKDETL(devicereduce_evaluate_buffer_szb(devicereduce_buf_szb, batch_roi_cloud_len), "allocate_on_device(moments4)");
-			OKDETL(allocate_on_device((void**)devicereduce_buf, devicereduce_buf_szb), "allocate_on_device(moments5)");
+			OKDETL(allocate_on_device(reinterpret_cast<void**>(devicereduce_buf), devicereduce_buf_szb), "allocate_on_device(moments5)");
 		}
 
 		// erosion / image matrices 1 and 2
@@ -214,9 +214,9 @@
 
 			// imat1 is shared by erosion and Gabor
 			if (!*imat1)
-				OKDETL(allocate_on_device((void**)imat1, sizeof(imat1[0]) * roi_w * roi_h), "allocate_on_device(eros1)");
+				OKDETL(allocate_on_device(reinterpret_cast<void**>(imat1), sizeof(imat1[0]) * roi_w * roi_h), "allocate_on_device(eros1)");
 
-			OKDETL(allocate_on_device((void**)imat2, sizeof(imat2[0]) * roi_w * roi_h), "allocate_on_device(eros2)");
+			OKDETL(allocate_on_device(reinterpret_cast<void**>(imat2), sizeof(imat2[0]) * roi_w * roi_h), "allocate_on_device(eros2)");
 		}
 
 		// Gabor
@@ -227,7 +227,7 @@
 
 			// imat1 is shared by erosion and Gabor
 			if (!*imat1)
-				OKDETL(allocate_on_device((void**)imat1, sizeof(imat1[0]) * roi_w * roi_h), "allocate_on_device(gabor)");
+				OKDETL(allocate_on_device(reinterpret_cast<void**>(imat1), sizeof(imat1[0]) * roi_w * roi_h), "allocate_on_device(gabor)");
 
 			size_t gabTotlen = (roi_w + gabor_ker_side - 1) * (roi_h + gabor_ker_side - 1) * n_gabFilters;
 			OKDETL(gabor_linear_image.alloc(gabTotlen, 1), "gabor_linear_image.alloc()");

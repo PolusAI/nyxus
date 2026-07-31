@@ -12,7 +12,7 @@ GaborFeature::GaborFeature() : FeatureMethod("GaborFeature")
 
 void GaborFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
-    int nF = (int)GaborFeature::f0_theta_pairs.size();
+    int nF = static_cast<int>(GaborFeature::f0_theta_pairs.size());
 
     if (fvals.size() != nF)
         fvals.resize(nF);
@@ -57,7 +57,7 @@ void GaborFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
         size_t afterGaborScore = 0;
         GaborEnergy_NT2 (Im0, auxG.data(), f0, sig2lam, gamma, theta, n, false/*request count*/, cmp_a/*threshold*/, max0/*out*/, afterGaborScore/*out*/);
-        fvals[i] = (double)afterGaborScore / ((double)originalScore + STNGS_TINY(s));   // former theEnvironment.resultOptions.tiny()
+        fvals[i] = static_cast<double>(afterGaborScore )/ (static_cast<double>(originalScore )+ STNGS_TINY(s));   // former theEnvironment.resultOptions.tiny()
 
         if (STNGS_VERBOSLVL(s) == 3)     // former VERBOSLVL3
             std::cout << "\t\tfeature [" << i << "] = " << fvals[i] << "\n";
@@ -100,7 +100,7 @@ void GaborFeature::GaborEnergy_NT2 (
     // Helpful temps
     auto width = Im.get_width(),
         height = Im.get_height();
-    auto xy0 = (int)ceil(double(n) / 2.);
+    auto xy0 = static_cast<int>(ceil(double(n) / 2.));
 
     // Window (N-fold kernel size)
     int winX = n * 10, 

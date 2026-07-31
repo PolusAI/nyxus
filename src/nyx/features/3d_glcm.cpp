@@ -113,66 +113,66 @@ void D3_GLCM_feature::copyfvals(AngledFeatures& dst, const AngledFeatures& src)
 
 void D3_GLCM_feature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	copyfvals(fvals[(int)Feature3D::GLCM_ASM], fvals_ASM);
-	copyfvals(fvals[(int)Feature3D::GLCM_ACOR], fvals_acor);
-	copyfvals(fvals[(int)Feature3D::GLCM_CLUPROM], fvals_cluprom);
-	copyfvals(fvals[(int)Feature3D::GLCM_CLUSHADE], fvals_clushade);
-	copyfvals(fvals[(int)Feature3D::GLCM_CLUTEND], fvals_clutend);
-	copyfvals(fvals[(int)Feature3D::GLCM_CONTRAST], fvals_contrast);
-	copyfvals(fvals[(int)Feature3D::GLCM_CORRELATION], fvals_correlation);
-	copyfvals(fvals[(int)Feature3D::GLCM_DIFAVE], fvals_diff_avg);
-	copyfvals(fvals[(int)Feature3D::GLCM_DIFVAR], fvals_diff_var);
-	copyfvals(fvals[(int)Feature3D::GLCM_DIFENTRO], fvals_diff_entropy);
-	copyfvals(fvals[(int)Feature3D::GLCM_DIS], fvals_dis);
-	copyfvals(fvals[(int)Feature3D::GLCM_ENERGY], fvals_energy);
-	copyfvals(fvals[(int)Feature3D::GLCM_ENTROPY], fvals_entropy);
-	copyfvals(fvals[(int)Feature3D::GLCM_HOM1], fvals_homo);
-	copyfvals(fvals[(int)Feature3D::GLCM_HOM2], fvals_hom2);
-	copyfvals(fvals[(int)Feature3D::GLCM_ID], fvals_id);
-	copyfvals(fvals[(int)Feature3D::GLCM_IDN], fvals_idn);
-	copyfvals(fvals[(int)Feature3D::GLCM_IDM], fvals_IDM);
-	copyfvals(fvals[(int)Feature3D::GLCM_IDMN], fvals_idmn);
-	copyfvals(fvals[(int)Feature3D::GLCM_INFOMEAS1], fvals_meas_corr1);
-	copyfvals(fvals[(int)Feature3D::GLCM_INFOMEAS2], fvals_meas_corr2);
-	copyfvals(fvals[(int)Feature3D::GLCM_IV], fvals_iv);
-	copyfvals(fvals[(int)Feature3D::GLCM_JAVE], fvals_jave);
-	copyfvals(fvals[(int)Feature3D::GLCM_JE], fvals_je);
-	copyfvals(fvals[(int)Feature3D::GLCM_JMAX], fvals_jmax);
-	copyfvals(fvals[(int)Feature3D::GLCM_JVAR], fvals_jvar);
-	copyfvals(fvals[(int)Feature3D::GLCM_SUMAVERAGE], fvals_sum_avg);
-	copyfvals(fvals[(int)Feature3D::GLCM_SUMVARIANCE], fvals_sum_var);
-	copyfvals(fvals[(int)Feature3D::GLCM_SUMENTROPY], fvals_sum_entropy);
-	copyfvals(fvals[(int)Feature3D::GLCM_VARIANCE], fvals_variance);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_ASM)], fvals_ASM);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_ACOR)], fvals_acor);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_CLUPROM)], fvals_cluprom);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_CLUSHADE)], fvals_clushade);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_CLUTEND)], fvals_clutend);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_CONTRAST)], fvals_contrast);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_CORRELATION)], fvals_correlation);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_DIFAVE)], fvals_diff_avg);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_DIFVAR)], fvals_diff_var);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_DIFENTRO)], fvals_diff_entropy);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_DIS)], fvals_dis);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_ENERGY)], fvals_energy);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_ENTROPY)], fvals_entropy);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_HOM1)], fvals_homo);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_HOM2)], fvals_hom2);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_ID)], fvals_id);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_IDN)], fvals_idn);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_IDM)], fvals_IDM);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_IDMN)], fvals_idmn);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_INFOMEAS1)], fvals_meas_corr1);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_INFOMEAS2)], fvals_meas_corr2);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_IV)], fvals_iv);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_JAVE)], fvals_jave);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_JE)], fvals_je);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_JMAX)], fvals_jmax);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_JVAR)], fvals_jvar);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_SUMAVERAGE)], fvals_sum_avg);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_SUMVARIANCE)], fvals_sum_var);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_SUMENTROPY)], fvals_sum_entropy);
+	copyfvals(fvals[static_cast<int>(Feature3D::GLCM_VARIANCE)], fvals_variance);
 
-	fvals[(int)Feature3D::GLCM_ASM_AVE][0] = calc_ave(fvals_ASM);
-	fvals[(int)Feature3D::GLCM_ACOR_AVE][0] = calc_ave(fvals_acor);
-	fvals[(int)Feature3D::GLCM_CLUPROM_AVE][0] = calc_ave(fvals_cluprom);
-	fvals[(int)Feature3D::GLCM_CLUSHADE_AVE][0] = calc_ave(fvals_clushade);
-	fvals[(int)Feature3D::GLCM_CLUTEND_AVE][0] = calc_ave(fvals_clutend);
-	fvals[(int)Feature3D::GLCM_CONTRAST_AVE][0] = calc_ave(fvals_contrast);
-	fvals[(int)Feature3D::GLCM_CORRELATION_AVE][0] = calc_ave(fvals_correlation);
-	fvals[(int)Feature3D::GLCM_DIFAVE_AVE][0] = calc_ave(fvals_diff_avg);
-	fvals[(int)Feature3D::GLCM_DIFVAR_AVE][0] = calc_ave(fvals_diff_var);
-	fvals[(int)Feature3D::GLCM_DIFENTRO_AVE][0] = calc_ave(fvals_diff_entropy);
-	fvals[(int)Feature3D::GLCM_DIS_AVE][0] = calc_ave(fvals_dis);
-	fvals[(int)Feature3D::GLCM_ENERGY_AVE][0] = calc_ave(fvals_energy);
-	fvals[(int)Feature3D::GLCM_ENTROPY_AVE][0] = calc_ave(fvals_entropy);
-	fvals[(int)Feature3D::GLCM_HOM1_AVE][0] = calc_ave(fvals_homo);
-	fvals[(int)Feature3D::GLCM_ID_AVE][0] = calc_ave(fvals_id);
-	fvals[(int)Feature3D::GLCM_IDN_AVE][0] = calc_ave(fvals_idn);
-	fvals[(int)Feature3D::GLCM_IDM_AVE][0] = calc_ave(fvals_IDM);
-	fvals[(int)Feature3D::GLCM_IDMN_AVE][0] = calc_ave(fvals_idmn);
-	fvals[(int)Feature3D::GLCM_IV_AVE][0] = calc_ave(fvals_iv);
-	fvals[(int)Feature3D::GLCM_JAVE_AVE][0] = calc_ave(fvals_jave);
-	fvals[(int)Feature3D::GLCM_JE_AVE][0] = calc_ave(fvals_je);
-	fvals[(int)Feature3D::GLCM_INFOMEAS1_AVE][0] = calc_ave(fvals_meas_corr1);
-	fvals[(int)Feature3D::GLCM_INFOMEAS2_AVE][0] = calc_ave(fvals_meas_corr2);
-	fvals[(int)Feature3D::GLCM_VARIANCE_AVE][0] = calc_ave(fvals_variance);
-	fvals[(int)Feature3D::GLCM_JMAX_AVE][0] = calc_ave(fvals_jmax);
-	fvals[(int)Feature3D::GLCM_JVAR_AVE][0] = calc_ave(fvals_jvar);
-	fvals[(int)Feature3D::GLCM_SUMAVERAGE_AVE][0] = calc_ave(fvals_sum_avg);
-	fvals[(int)Feature3D::GLCM_SUMVARIANCE_AVE][0] = calc_ave(fvals_sum_var);
-	fvals[(int)Feature3D::GLCM_SUMENTROPY_AVE][0] = calc_ave(fvals_sum_entropy);
+	fvals[static_cast<int>(Feature3D::GLCM_ASM_AVE)][0] = calc_ave(fvals_ASM);
+	fvals[static_cast<int>(Feature3D::GLCM_ACOR_AVE)][0] = calc_ave(fvals_acor);
+	fvals[static_cast<int>(Feature3D::GLCM_CLUPROM_AVE)][0] = calc_ave(fvals_cluprom);
+	fvals[static_cast<int>(Feature3D::GLCM_CLUSHADE_AVE)][0] = calc_ave(fvals_clushade);
+	fvals[static_cast<int>(Feature3D::GLCM_CLUTEND_AVE)][0] = calc_ave(fvals_clutend);
+	fvals[static_cast<int>(Feature3D::GLCM_CONTRAST_AVE)][0] = calc_ave(fvals_contrast);
+	fvals[static_cast<int>(Feature3D::GLCM_CORRELATION_AVE)][0] = calc_ave(fvals_correlation);
+	fvals[static_cast<int>(Feature3D::GLCM_DIFAVE_AVE)][0] = calc_ave(fvals_diff_avg);
+	fvals[static_cast<int>(Feature3D::GLCM_DIFVAR_AVE)][0] = calc_ave(fvals_diff_var);
+	fvals[static_cast<int>(Feature3D::GLCM_DIFENTRO_AVE)][0] = calc_ave(fvals_diff_entropy);
+	fvals[static_cast<int>(Feature3D::GLCM_DIS_AVE)][0] = calc_ave(fvals_dis);
+	fvals[static_cast<int>(Feature3D::GLCM_ENERGY_AVE)][0] = calc_ave(fvals_energy);
+	fvals[static_cast<int>(Feature3D::GLCM_ENTROPY_AVE)][0] = calc_ave(fvals_entropy);
+	fvals[static_cast<int>(Feature3D::GLCM_HOM1_AVE)][0] = calc_ave(fvals_homo);
+	fvals[static_cast<int>(Feature3D::GLCM_ID_AVE)][0] = calc_ave(fvals_id);
+	fvals[static_cast<int>(Feature3D::GLCM_IDN_AVE)][0] = calc_ave(fvals_idn);
+	fvals[static_cast<int>(Feature3D::GLCM_IDM_AVE)][0] = calc_ave(fvals_IDM);
+	fvals[static_cast<int>(Feature3D::GLCM_IDMN_AVE)][0] = calc_ave(fvals_idmn);
+	fvals[static_cast<int>(Feature3D::GLCM_IV_AVE)][0] = calc_ave(fvals_iv);
+	fvals[static_cast<int>(Feature3D::GLCM_JAVE_AVE)][0] = calc_ave(fvals_jave);
+	fvals[static_cast<int>(Feature3D::GLCM_JE_AVE)][0] = calc_ave(fvals_je);
+	fvals[static_cast<int>(Feature3D::GLCM_INFOMEAS1_AVE)][0] = calc_ave(fvals_meas_corr1);
+	fvals[static_cast<int>(Feature3D::GLCM_INFOMEAS2_AVE)][0] = calc_ave(fvals_meas_corr2);
+	fvals[static_cast<int>(Feature3D::GLCM_VARIANCE_AVE)][0] = calc_ave(fvals_variance);
+	fvals[static_cast<int>(Feature3D::GLCM_JMAX_AVE)][0] = calc_ave(fvals_jmax);
+	fvals[static_cast<int>(Feature3D::GLCM_JVAR_AVE)][0] = calc_ave(fvals_jvar);
+	fvals[static_cast<int>(Feature3D::GLCM_SUMAVERAGE_AVE)][0] = calc_ave(fvals_sum_avg);
+	fvals[static_cast<int>(Feature3D::GLCM_SUMVARIANCE_AVE)][0] = calc_ave(fvals_sum_var);
+	fvals[static_cast<int>(Feature3D::GLCM_SUMENTROPY_AVE)][0] = calc_ave(fvals_sum_entropy);
   //xxxx deprecated in PyR xxxx	fvals[(int)Feature3D::GLCM_VARIANCE_AVE][0] = calc_ave(fvals_variance);
 }
 
@@ -291,7 +291,7 @@ void D3_GLCM_feature::calculateCoocMatAtAngle(
 		I.assign(U.begin(), U.end());
 		std::sort(I.begin(), I.end());
 
-		GLCM.allocate((int)I.size(), (int)I.size());
+		GLCM.allocate(static_cast<int>(I.size()), static_cast<int>(I.size()));
 	}
 	else
 		if (matlab_grey_binning(greyInfo))
@@ -819,7 +819,7 @@ double D3_GLCM_feature::f_homogeneity()
 
 	for (int r = 0; r < Ng; r++)
 		for (int c = 0; c < Ng; c++)
-			homogeneity += P_matrix.yx(r, c) / sum_p / (1.0 + (double)std::abs(r - c));
+			homogeneity += P_matrix.yx(r, c) / sum_p / (1.0 + static_cast<double>(std::abs(r - c)));
 
 	return homogeneity;
 }
@@ -834,10 +834,10 @@ double D3_GLCM_feature::f_GLCM_ACOR(const SimpleMatrix<double>& P)
 
 	for (int x = 0; x < Ng; x++)
 	{
-		double xval = (double)I[x];
+		double xval = static_cast<double>(I[x]);
 		for (int y = 0; y < Ng; y++)
 		{
-			double yval = (double)I[y];
+			double yval = static_cast<double>(I[y]);
 			f += P.xy(x, y) * xval * yval;
 		}
 	}
@@ -940,7 +940,7 @@ double D3_GLCM_feature::f_GLCM_HOM2(const SimpleMatrix<double>& P_matrix)
 		for (int y = 0; y < n_levels; y++)
 			// FIX: normalize by sum_p (joint probability), matching f_idm/f_GLCM_JE. Was summing the
 			// UNNORMALIZED co-occurrence counts -> homogeneity > 1 (same bug as 2D glcm.cpp).
-			hom2 += (P_matrix.xy(x, y) / sum_p) / (1.0 + (double)std::abs(x - y) * (double)std::abs(x - y));
+			hom2 += (P_matrix.xy(x, y) / sum_p) / (1.0 + static_cast<double>(std::abs(x - y) )* static_cast<double>(std::abs(x - y)));
 
 	return hom2;
 }

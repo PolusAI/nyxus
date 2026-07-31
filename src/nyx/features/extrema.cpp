@@ -31,27 +31,27 @@ void ExtremaFeature::calculate (LR& r, const Fsettings& s)
 	for (Pixel2 p : r.raw_pixels)
 	{
 		// Find leftmost and rightmost x-pixels of the top 
-		if (p.y == TopMost && (TopMost_MostLeft == -1 || p.x < (StatsInt)TopMost_MostLeft))
+		if (p.y == TopMost && (TopMost_MostLeft == -1 || p.x < static_cast<StatsInt>(TopMost_MostLeft)))
 			TopMost_MostLeft = p.x;
-		if (p.y == TopMost && (TopMost_MostRight == -1 || p.x > (StatsInt)TopMost_MostRight))
+		if (p.y == TopMost && (TopMost_MostRight == -1 || p.x > static_cast<StatsInt>(TopMost_MostRight)))
 			TopMost_MostRight = p.x;
 
 		// Find leftmost and rightmost x-pixels of the bottom
-		if (p.y == Lowest && (Lowest_MostLeft == -1 || p.x < (StatsInt)Lowest_MostLeft))
+		if (p.y == Lowest && (Lowest_MostLeft == -1 || p.x < static_cast<StatsInt>(Lowest_MostLeft)))
 			Lowest_MostLeft = p.x;
-		if (p.y == Lowest && (Lowest_MostRight == -1 || p.x > (StatsInt)Lowest_MostRight))
+		if (p.y == Lowest && (Lowest_MostRight == -1 || p.x > static_cast<StatsInt>(Lowest_MostRight)))
 			Lowest_MostRight = p.x;
 
 		// Find top and bottom y-pixels of the leftmost
-		if (p.x == LeftMost && (LeftMost_Top == -1 || p.y < (StatsInt)LeftMost_Top))
+		if (p.x == LeftMost && (LeftMost_Top == -1 || p.y < static_cast<StatsInt>(LeftMost_Top)))
 			LeftMost_Top = p.y;
-		if (p.x == LeftMost && (LeftMost_Bottom == -1 || p.y > (StatsInt)LeftMost_Bottom))
+		if (p.x == LeftMost && (LeftMost_Bottom == -1 || p.y > static_cast<StatsInt>(LeftMost_Bottom)))
 			LeftMost_Bottom = p.y;
 
 		// Find top and bottom y-pixels of the rightmost
-		if (p.x == RightMost && (RightMost_Top == -1 || p.y < (StatsInt)RightMost_Top))
+		if (p.x == RightMost && (RightMost_Top == -1 || p.y < static_cast<StatsInt>(RightMost_Top)))
 			RightMost_Top = p.y;
-		if (p.x == RightMost && (RightMost_Bottom == -1 || p.y > (StatsInt)RightMost_Bottom))
+		if (p.x == RightMost && (RightMost_Bottom == -1 || p.y > static_cast<StatsInt>(RightMost_Bottom)))
 			RightMost_Bottom = p.y;
 	}
 
@@ -94,27 +94,27 @@ void ExtremaFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& i
 		Pixel2 p = r.raw_pixels_NT.get_at(i);
 
 		// Find leftmost and rightmost x-pixels of the top 
-		if (p.y == TopMost && (TopMost_MostLeft == -1 || p.x < (StatsInt)TopMost_MostLeft))
+		if (p.y == TopMost && (TopMost_MostLeft == -1 || p.x < static_cast<StatsInt>(TopMost_MostLeft)))
 			TopMost_MostLeft = p.x;
-		if (p.y == TopMost && (TopMost_MostRight == -1 || p.x > (StatsInt)TopMost_MostRight))
+		if (p.y == TopMost && (TopMost_MostRight == -1 || p.x > static_cast<StatsInt>(TopMost_MostRight)))
 			TopMost_MostRight = p.x;
 
 		// Find leftmost and rightmost x-pixels of the bottom
-		if (p.y == Lowest && (Lowest_MostLeft == -1 || p.x < (StatsInt)Lowest_MostLeft))
+		if (p.y == Lowest && (Lowest_MostLeft == -1 || p.x < static_cast<StatsInt>(Lowest_MostLeft)))
 			Lowest_MostLeft = p.x;
-		if (p.y == Lowest && (Lowest_MostRight == -1 || p.x > (StatsInt)Lowest_MostRight))
+		if (p.y == Lowest && (Lowest_MostRight == -1 || p.x > static_cast<StatsInt>(Lowest_MostRight)))
 			Lowest_MostRight = p.x;
 
 		// Find top and bottom y-pixels of the leftmost
-		if (p.x == LeftMost && (LeftMost_Top == -1 || p.y < (StatsInt)LeftMost_Top))
+		if (p.x == LeftMost && (LeftMost_Top == -1 || p.y < static_cast<StatsInt>(LeftMost_Top)))
 			LeftMost_Top = p.y;
-		if (p.x == LeftMost && (LeftMost_Bottom == -1 || p.y > (StatsInt)LeftMost_Bottom))
+		if (p.x == LeftMost && (LeftMost_Bottom == -1 || p.y > static_cast<StatsInt>(LeftMost_Bottom)))
 			LeftMost_Bottom = p.y;
 
 		// Find top and bottom y-pixels of the rightmost
-		if (p.x == RightMost && (RightMost_Top == -1 || p.y < (StatsInt)RightMost_Top))
+		if (p.x == RightMost && (RightMost_Top == -1 || p.y < static_cast<StatsInt>(RightMost_Top)))
 			RightMost_Top = p.y;
-		if (p.x == RightMost && (RightMost_Bottom == -1 || p.y > (StatsInt)RightMost_Bottom))
+		if (p.x == RightMost && (RightMost_Bottom == -1 || p.y > static_cast<StatsInt>(RightMost_Bottom)))
 			RightMost_Bottom = p.y;
 	}
 
@@ -153,22 +153,22 @@ std::tuple<int, int, int, int, int, int, int, int, int, int, int, int, int, int,
 
 void ExtremaFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
-	fvals [(int)Feature2D::EXTREMA_P1_Y][0] = y1;
-	fvals [(int)Feature2D::EXTREMA_P1_X][0] = x1;
-	fvals [(int)Feature2D::EXTREMA_P2_Y][0] = y2;
-	fvals [(int)Feature2D::EXTREMA_P2_X][0] = x2;
-	fvals [(int)Feature2D::EXTREMA_P3_Y][0] = y3;
-	fvals [(int)Feature2D::EXTREMA_P3_X][0] = x3;
-	fvals [(int)Feature2D::EXTREMA_P4_Y][0] = y4;
-	fvals [(int)Feature2D::EXTREMA_P4_X][0] = x4;
-	fvals [(int)Feature2D::EXTREMA_P5_Y][0] = y5;
-	fvals [(int)Feature2D::EXTREMA_P5_X][0] = x5;
-	fvals [(int)Feature2D::EXTREMA_P6_Y][0] = y6;
-	fvals [(int)Feature2D::EXTREMA_P6_X][0] = x6;
-	fvals [(int)Feature2D::EXTREMA_P7_Y][0] = y7;
-	fvals [(int)Feature2D::EXTREMA_P7_X][0] = x7;
-	fvals [(int)Feature2D::EXTREMA_P8_Y][0] = y8;
-	fvals [(int)Feature2D::EXTREMA_P8_X][0] = x8;
+	fvals [static_cast<int>(Feature2D::EXTREMA_P1_Y)][0] = y1;
+	fvals [static_cast<int>(Feature2D::EXTREMA_P1_X)][0] = x1;
+	fvals [static_cast<int>(Feature2D::EXTREMA_P2_Y)][0] = y2;
+	fvals [static_cast<int>(Feature2D::EXTREMA_P2_X)][0] = x2;
+	fvals [static_cast<int>(Feature2D::EXTREMA_P3_Y)][0] = y3;
+	fvals [static_cast<int>(Feature2D::EXTREMA_P3_X)][0] = x3;
+	fvals [static_cast<int>(Feature2D::EXTREMA_P4_Y)][0] = y4;
+	fvals [static_cast<int>(Feature2D::EXTREMA_P4_X)][0] = x4;
+	fvals [static_cast<int>(Feature2D::EXTREMA_P5_Y)][0] = y5;
+	fvals [static_cast<int>(Feature2D::EXTREMA_P5_X)][0] = x5;
+	fvals [static_cast<int>(Feature2D::EXTREMA_P6_Y)][0] = y6;
+	fvals [static_cast<int>(Feature2D::EXTREMA_P6_X)][0] = x6;
+	fvals [static_cast<int>(Feature2D::EXTREMA_P7_Y)][0] = y7;
+	fvals [static_cast<int>(Feature2D::EXTREMA_P7_X)][0] = x7;
+	fvals [static_cast<int>(Feature2D::EXTREMA_P8_Y)][0] = y8;
+	fvals [static_cast<int>(Feature2D::EXTREMA_P8_X)][0] = x8;
 }
 
 void ExtremaFeature::extract (LR& r, const Fsettings& s)

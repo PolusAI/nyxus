@@ -293,7 +293,7 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 	//==== Fill the zonal metric matrix
 
 	// -- number of discrete intensity values in the image
-	Ng = (int)I.size();
+	Ng = static_cast<int>(I.size());
 
 	// -- max zone distance to ROI or image border
 	Nd = 0;
@@ -319,7 +319,7 @@ void D3_GLDZM_feature::calc_gldzm_matrix (SimpleMatrix<unsigned int>& GLDZM, con
 	{
 		// row. Gray tones are sparse so we need to find indices of tones in 'Z' and use them as rows of P-matrix
 		auto iter = std::find(I.begin(), I.end(), std::get<0>(z));
-		int row = (int)(iter - I.begin());
+		int row = static_cast<int>((iter - I.begin()));
 		// column (a distance). Distances are dense \in [1,Nd]
 		int col = std::get<1>(z) - 1;	// 0-based => -1
 		auto& k = GLDZM.yx(row, col);
@@ -421,7 +421,7 @@ template <class Imgmatrx> void D3_GLDZM_feature::calc_features (const std::vecto
 
 	for (int d_ = 0; d_ < Nd; d_++)
 	{
-		double d = (double)(d_ + 1);
+		double d = static_cast<double>((d_ + 1));
 		double m = Md[d_];
 		f_SDE += m / d / d;			// Small Distance Emphasis = \frac{1}{N_s} \sum_d \frac{m_d}{d^2}
 		f_LDE += d * d * m;			// Large Distance Emphasis = \frac{1}{N_s} \sum_d d^2 m_d 
@@ -440,7 +440,7 @@ template <class Imgmatrx> void D3_GLDZM_feature::calc_features (const std::vecto
 		if (greysLUT[g] == 0)
 			continue;
 
-		double g_ = (double)greysLUT[g];
+		double g_ = static_cast<double>(greysLUT[g]);
 		double x = Mx[g];
 		f_LGLZE += x / (g_ * g_);	// Low Grey Level Emphasis = \frac{1}{N_s} \sum_x \frac{m_x}{x^2}
 		f_HGLZE += (g_ * g_) * x;	// High Grey Level Emphasis = \frac{1}{N_s} \sum_x x^2 m_x
@@ -458,7 +458,7 @@ template <class Imgmatrx> void D3_GLDZM_feature::calc_features (const std::vecto
 			if (greysLUT[g] == 0)
 				continue;
 
-			double g_ = (double)greysLUT[g],
+			double g_ = static_cast<double>(greysLUT[g]),
 				d_ = double(d + 1);
 			double p = P.yx(g, d);
 			f_SDLGLE += p / g_ / g_ / d_ / d_;	// Small Distance Low Grey Level Emphasis = \frac{1}{N_s} \sum_x \sum_d \frac{ m_{x,d}}{x^2 d^2}
@@ -490,12 +490,12 @@ template <class Imgmatrx> void D3_GLDZM_feature::calc_features (const std::vecto
 
 			// Grey Level Variance = \sum_x \sum_d \left(x - \mu_x \right)^2 p_{x,d}
 			double p = P.yx(g, d) / Ns,
-				x = (double)greysLUT[g],
+				x = static_cast<double>(greysLUT[g]),
 				dif = x - f_GLM;
 			f_GLV += dif * dif * p;
 
 			// Zone Distance Variance} = \sum_x \sum_d \left(d - \mu_d \right)^2 p_{x,d} 
-			double d_ = (double)(d + 1);
+			double d_ = static_cast<double>((d + 1));
 			dif = d_ - f_ZDM;
 			f_ZDV += dif * dif * p;
 		}
@@ -549,24 +549,24 @@ void D3_GLDZM_feature::calculate (LR& r, const Fsettings& s)
 
 void D3_GLDZM_feature::save_value (std::vector<std::vector<double>> & fvals)
 {
-	fvals[(int)Nyxus::Feature3D::GLDZM_SDE][0] = f_SDE;
-	fvals[(int)Nyxus::Feature3D::GLDZM_LDE][0] = f_LDE;
-	fvals[(int)Nyxus::Feature3D::GLDZM_LGLZE][0] = f_LGLZE;
-	fvals[(int)Nyxus::Feature3D::GLDZM_HGLZE][0] = f_HGLZE;
-	fvals[(int)Nyxus::Feature3D::GLDZM_SDLGLE][0] = f_SDLGLE;
-	fvals[(int)Nyxus::Feature3D::GLDZM_SDHGLE][0] = f_SDHGLE;
-	fvals[(int)Nyxus::Feature3D::GLDZM_LDLGLE][0] = f_LDLGLE;
-	fvals[(int)Nyxus::Feature3D::GLDZM_LDHGLE][0] = f_LDHGLE;
-	fvals[(int)Nyxus::Feature3D::GLDZM_GLNU][0] = f_GLNU;
-	fvals[(int)Nyxus::Feature3D::GLDZM_GLNUN][0] = f_GLNUN;
-	fvals[(int)Nyxus::Feature3D::GLDZM_ZDNU][0] = f_ZDNU;
-	fvals[(int)Nyxus::Feature3D::GLDZM_ZDNUN][0] = f_ZDNUN;
-	fvals[(int)Nyxus::Feature3D::GLDZM_ZP][0] = f_ZP;
-	fvals[(int)Nyxus::Feature3D::GLDZM_GLM][0] = f_GLM;
-	fvals[(int)Nyxus::Feature3D::GLDZM_GLV][0] = f_GLV;
-	fvals[(int)Nyxus::Feature3D::GLDZM_ZDM][0] = f_ZDM;
-	fvals[(int)Nyxus::Feature3D::GLDZM_ZDV][0] = f_ZDV;
-	fvals[(int)Nyxus::Feature3D::GLDZM_ZDE][0] = f_ZDE;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_SDE)][0] = f_SDE;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_LDE)][0] = f_LDE;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_LGLZE)][0] = f_LGLZE;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_HGLZE)][0] = f_HGLZE;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_SDLGLE)][0] = f_SDLGLE;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_SDHGLE)][0] = f_SDHGLE;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_LDLGLE)][0] = f_LDLGLE;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_LDHGLE)][0] = f_LDHGLE;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_GLNU)][0] = f_GLNU;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_GLNUN)][0] = f_GLNUN;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_ZDNU)][0] = f_ZDNU;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_ZDNUN)][0] = f_ZDNUN;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_ZP)][0] = f_ZP;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_GLM)][0] = f_GLM;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_GLV)][0] = f_GLV;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_ZDM)][0] = f_ZDM;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_ZDV)][0] = f_ZDV;
+	fvals[static_cast<int>(Nyxus::Feature3D::GLDZM_ZDE)][0] = f_ZDE;
 }
 
 void D3_GLDZM_feature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {}

@@ -134,7 +134,7 @@ public:
 
     double get_dpequiv_pixel (size_t idx) const
     {
-        double rv = (double) dest[idx];
+        double rv = static_cast<double>(dest[idx]);
         return rv;    
     }
 

@@ -164,7 +164,7 @@ public:
 	size_t get_height();
 	size_t get_chlen(size_t x);
 	bool safe(size_t y, size_t x) const;
-	PixIntens operator[] (size_t idx) { return (PixIntens) get_at(idx); }
+	PixIntens operator[] (size_t idx) { return static_cast<PixIntens>(get_at(idx)); }
 	void check_non_empty();
 	std::string info();
 

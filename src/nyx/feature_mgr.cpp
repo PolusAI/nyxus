@@ -39,7 +39,7 @@ bool FeatureManager::compile()
 // After compiling, returns the number of user-requested features
 int FeatureManager::get_num_requested_features()
 {
-	return (int) user_requested_features.size();
+	return static_cast<int>(user_requested_features.size());
 }
 
 // Returns the pointer to a feature method instance
@@ -60,7 +60,7 @@ bool FeatureManager::check_11_correspondence()
 	bool success = true;
 
 	// check the 2D featureset	//xxxx what about 3D and IMQ?
-	for (int i_fcode = 0; i_fcode < (int) Nyxus::Feature2D::_COUNT_; i_fcode++)
+	for (int i_fcode = 0; i_fcode < static_cast<int>(Nyxus::Feature2D::_COUNT_); i_fcode++)
 	{
 		int nProviders = 0;
 		for (const auto fm : full_featureset)
@@ -75,12 +75,12 @@ bool FeatureManager::check_11_correspondence()
 			if (nProviders > 1)	// error - ambiguous provider (as a class 'XYZ_feature') of a feature (as a code)
 			{
 				success = false;
-				std::cout << "Error: ambiguous provider of feature " << fset.findFeatureNameByCode((Feature2D)i_fcode) << " (code " << i_fcode << ").  (Feature is provided by multiple feature methods.) \n";
+				std::cout << "Error: ambiguous provider of feature " << fset.findFeatureNameByCode(static_cast<Feature2D>(i_fcode)) << " (code " << i_fcode << ").  (Feature is provided by multiple feature methods.) \n";
 			}
 			else	// error - no providers
 			{
 				success = false;
-				std::cout << "Error: feature " << fset.findFeatureNameByCode((Feature2D)i_fcode) << " (code " << i_fcode << ") is not provided by any feature method. Check constructor of class FeatureManager\n";
+				std::cout << "Error: feature " << fset.findFeatureNameByCode(static_cast<Feature2D>(i_fcode)) << " (code " << i_fcode << ") is not provided by any feature method. Check constructor of class FeatureManager\n";
 			}
 	}
 
@@ -116,7 +116,7 @@ bool FeatureManager::gather_dependencies ()
 		// Show the user method's extended dependencies 
 		for (auto fcode : extendedDependencies)
 		{
-			std::string fn = fcode < (int)Feature2D::_COUNT_ ? fset.findFeatureNameByCode((Feature2D)fcode) : fset.findFeatureNameByCode((Feature3D)fcode);
+			std::string fn = fcode < static_cast<int>(Feature2D::_COUNT_ )? fset.findFeatureNameByCode(static_cast<Feature2D>(fcode)) : fset.findFeatureNameByCode(static_cast<Feature3D>(fcode));
 			std::cout << "\t" << fn << "\n";
 		}
 #endif
@@ -167,7 +167,7 @@ int FeatureManager::get_num_fmethods_dependencies (const FeatureMethod * fm, std
 		// No provider?
 		if (providerFM == nullptr)
 		{
-			std::cout << "Error: no registered provider for feature " << (int)fcode << " referenced as dependency by feature method " << fm->feature_info << "\n";
+			std::cout << "Error: no registered provider for feature " << static_cast<int>(fcode )<< " referenced as dependency by feature method " << fm->feature_info << "\n";
 		}
 
 		// Analyze the child
@@ -212,10 +212,10 @@ void FeatureManager::build_user_requested_set (FeatureSet & fset)
 		// first, save feature methods of fm's dependencies
 		for (auto depend_fc : fm->dependencies)
 		{
-			FeatureMethod* depend_fm = get_feature_method_by_code ((int)depend_fc);
+			FeatureMethod* depend_fm = get_feature_method_by_code (static_cast<int>(depend_fc));
 
 			if (depend_fm == nullptr)
-				throw (std::runtime_error("Feature " + std::to_string((int)depend_fc) + " is not provided by any feature method. Check constructor of class FeatureManager"));
+				throw (std::runtime_error("Feature " + std::to_string(static_cast<int>(depend_fc)) + " is not provided by any feature method. Check constructor of class FeatureManager"));
 
 			// save this fm if it's not yet saved
 			if (std::find(user_requested_features.begin(), user_requested_features.end(), depend_fm) == user_requested_features.end())

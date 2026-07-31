@@ -56,7 +56,7 @@ void PowerSpectrumFeature::parallel_process_1_batch (size_t firstitem, size_t la
 
 void PowerSpectrumFeature::save_value(std::vector<std::vector<double>>& feature_vals) {
 
-    feature_vals[(int)FeatureIMQ::POWER_SPECTRUM_SLOPE][0] = slope_;
+    feature_vals[static_cast<int>(FeatureIMQ::POWER_SPECTRUM_SLOPE)][0] = slope_;
 
 }
 
@@ -122,7 +122,7 @@ void PowerSpectrumFeature::invariant(const std::vector<unsigned int>& image, std
     double median = out[n];
 
     for (int i = 0; i < image.size(); ++i) {
-        out[i] = (double)image[i] / median;
+        out[i] = static_cast<double>(image[i] )/ median;
     }
 }
 

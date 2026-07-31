@@ -21,8 +21,8 @@ void BasicMorphologyFeatures::calculate (LR& r, const Fsettings& sett)
 	double n = r.aux_area;
 
 	// --AREA
-	double xyres = sett[(int)NyxSetting::XYRES].rval,
-		pxsize = sett[(int)NyxSetting::PIXELSIZEUM].rval;
+	double xyres = sett[static_cast<int>(NyxSetting::XYRES)].rval,
+		pxsize = sett[static_cast<int>(NyxSetting::PIXELSIZEUM)].rval;
 	val_AREA_PIXELS_COUNT = n;
 	if (xyres > 0.0)	// former theEnvironment.xyRes
 			val_AREA_UM2  = n * std::pow(pxsize, 2);	// former theEnvironment.pixelSizeUm
@@ -98,8 +98,8 @@ void BasicMorphologyFeatures::osized_calculate (LR& r, const Fsettings& s, Image
 	double n = r.aux_area;
 
 	// --AREA
-	double xyres = s[(int)NyxSetting::XYRES].rval,
-		pxsize = s[(int)NyxSetting::PIXELSIZEUM].rval;
+	double xyres = s[static_cast<int>(NyxSetting::XYRES)].rval,
+		pxsize = s[static_cast<int>(NyxSetting::PIXELSIZEUM)].rval;
 	val_AREA_PIXELS_COUNT = n;
 	if (xyres > 0.0)
 		val_AREA_UM2 = n * std::pow(pxsize, 2);
@@ -173,21 +173,21 @@ void BasicMorphologyFeatures::osized_calculate (LR& r, const Fsettings& s, Image
 
 void BasicMorphologyFeatures::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::AREA_PIXELS_COUNT][0] = val_AREA_PIXELS_COUNT;
-	fvals[(int)Feature2D::AREA_UM2][0] = val_AREA_UM2;
-	fvals[(int)Feature2D::ASPECT_RATIO][0] = val_ASPECT_RATIO;
-	fvals[(int)Feature2D::BBOX_XMIN][0] = val_BBOX_XMIN;
-	fvals[(int)Feature2D::BBOX_YMIN][0] = val_BBOX_YMIN;
-	fvals[(int)Feature2D::BBOX_WIDTH][0] = val_BBOX_WIDTH;
-	fvals[(int)Feature2D::BBOX_HEIGHT][0] = val_BBOX_HEIGHT;
-	fvals[(int)Feature2D::CENTROID_X][0] = val_CENTROID_X;
-	fvals[(int)Feature2D::CENTROID_Y][0] = val_CENTROID_Y;
-	fvals[(int)Feature2D::COMPACTNESS][0] = val_COMPACTNESS;
-	fvals[(int)Feature2D::DIAMETER_EQUAL_AREA][0] = val_DIAMETER_EQUAL_AREA;
-	fvals[(int)Feature2D::EXTENT][0] = val_EXTENT;
-	fvals[(int)Feature2D::MASS_DISPLACEMENT][0] = val_MASS_DISPLACEMENT;
-	fvals[(int)Feature2D::WEIGHTED_CENTROID_X][0] = val_WEIGHTED_CENTROID_X;
-	fvals[(int)Feature2D::WEIGHTED_CENTROID_Y][0] = val_WEIGHTED_CENTROID_Y;
+	fvals[static_cast<int>(Feature2D::AREA_PIXELS_COUNT)][0] = val_AREA_PIXELS_COUNT;
+	fvals[static_cast<int>(Feature2D::AREA_UM2)][0] = val_AREA_UM2;
+	fvals[static_cast<int>(Feature2D::ASPECT_RATIO)][0] = val_ASPECT_RATIO;
+	fvals[static_cast<int>(Feature2D::BBOX_XMIN)][0] = val_BBOX_XMIN;
+	fvals[static_cast<int>(Feature2D::BBOX_YMIN)][0] = val_BBOX_YMIN;
+	fvals[static_cast<int>(Feature2D::BBOX_WIDTH)][0] = val_BBOX_WIDTH;
+	fvals[static_cast<int>(Feature2D::BBOX_HEIGHT)][0] = val_BBOX_HEIGHT;
+	fvals[static_cast<int>(Feature2D::CENTROID_X)][0] = val_CENTROID_X;
+	fvals[static_cast<int>(Feature2D::CENTROID_Y)][0] = val_CENTROID_Y;
+	fvals[static_cast<int>(Feature2D::COMPACTNESS)][0] = val_COMPACTNESS;
+	fvals[static_cast<int>(Feature2D::DIAMETER_EQUAL_AREA)][0] = val_DIAMETER_EQUAL_AREA;
+	fvals[static_cast<int>(Feature2D::EXTENT)][0] = val_EXTENT;
+	fvals[static_cast<int>(Feature2D::MASS_DISPLACEMENT)][0] = val_MASS_DISPLACEMENT;
+	fvals[static_cast<int>(Feature2D::WEIGHTED_CENTROID_X)][0] = val_WEIGHTED_CENTROID_X;
+	fvals[static_cast<int>(Feature2D::WEIGHTED_CENTROID_Y)][0] = val_WEIGHTED_CENTROID_Y;
 }
 
 void BasicMorphologyFeatures::extract (LR & r, const Fsettings & s)

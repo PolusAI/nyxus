@@ -51,7 +51,7 @@ double ren_stdev(double arr[], int size) {
     mean = ren_average(arr, size);
 
     for (i = 0; i < size; ++i) {
-        sum += (arr[i] - mean) * (arr[i] - mean) / ((double)size - 1);
+        sum += (arr[i] - mean) * (arr[i] - mean) / (static_cast<double>(size )- 1);
     }
     if (sqrt( sum) != sqrt( sum) ) sum = 0;
     return sqrt( sum);
@@ -87,7 +87,7 @@ double ren_skew(double arr[], int size) {
         sum1 += (arr[i] - mean) * (arr[i] - mean) * (arr[i] - mean);
         sum2 += (arr[i] - mean) * (arr[i] - mean);
     }
-    skew = (1 / ((double)size) * sum1) / (pow(1 / ((double)size - 1) * sum2, 1.5)); 
+    skew = (1 / (static_cast<double>(size)) * sum1) / (pow(1 / (static_cast<double>(size )- 1) * sum2, 1.5)); 
     if (skew != skew ) skew = 0; 
     return (skew);
 }
@@ -100,8 +100,8 @@ double ren_kurt(double arr[], int size) {
     double mean = ren_average(arr, size);
 
     for (i = 0; i < size; ++i) {
-        sum1 += (arr[i] - mean) * (arr[i] - mean) * (arr[i] - mean) * (arr[i] - mean) / ((double)size);
-        sum2 += (arr[i] - mean) * (arr[i] - mean) / ((double)size);
+        sum1 += (arr[i] - mean) * (arr[i] - mean) * (arr[i] - mean) * (arr[i] - mean) / (static_cast<double>(size));
+        sum2 += (arr[i] - mean) * (arr[i] - mean) / (static_cast<double>(size));
     }
     kurt =  sum1 / (sum2 * sum2) - 3 ; 
     if (kurt != kurt ) kurt = 0 ;
@@ -617,52 +617,52 @@ nifti_image* copy_nifti_as_float16(nifti_image* nii) {
     if (nii->datatype == 2) {  // NIFTI_TYPE_UINT8
         uint8_t* nii_data = static_cast<uint8_t*>(nii->data);
         for (int i = 0; i < nr_voxels; ++i) {
-            *(nii_new_data + i) = (short)((double) (*(nii_data + i) * 1000));
+            *(nii_new_data + i) = static_cast<short>((static_cast<double>((*(nii_data + i) * 1000))));
         }
     } else if (nii->datatype == 512) {  // NIFTI_TYPE_UINT16
         uint16_t* nii_data = static_cast<uint16_t*>(nii->data);
         for (int i = 0; i < nr_voxels; ++i) {
-            *(nii_new_data + i) = (short)((double) (*(nii_data + i) * 1000));
+            *(nii_new_data + i) = static_cast<short>((static_cast<double>((*(nii_data + i) * 1000))));
         }
     } else if (nii->datatype == 768) {  // NIFTI_TYPE_UINT32
         uint32_t* nii_data = static_cast<uint32_t*>(nii->data);
         for (int i = 0; i < nr_voxels; ++i) {
-            *(nii_new_data + i) = (short)((double) (*(nii_data + i) * 1000));
+            *(nii_new_data + i) = static_cast<short>((static_cast<double>((*(nii_data + i) * 1000))));
         }
     } else if (nii->datatype == 1280) {  // NIFTI_TYPE_UINT64
         uint64_t* nii_data = static_cast<uint64_t*>(nii->data);
         for (int i = 0; i < nr_voxels; ++i) {
-            *(nii_new_data + i) = (short)((double) (*(nii_data + i) * 1000));
+            *(nii_new_data + i) = static_cast<short>((static_cast<double>((*(nii_data + i) * 1000))));
         }
     } else if (nii->datatype == 256) {  // NIFTI_TYPE_INT8
         int8_t* nii_data = static_cast<int8_t*>(nii->data);
         for (int i = 0; i < nr_voxels; ++i) {
-            *(nii_new_data + i) = (short)((double) (*(nii_data + i) * 1000));
+            *(nii_new_data + i) = static_cast<short>((static_cast<double>((*(nii_data + i) * 1000))));
         }
     } else if (nii->datatype == 4) {  // NIFTI_TYPE_INT16
         int16_t* nii_data = static_cast<int16_t*>(nii->data);
         for (int i = 0; i < nr_voxels; ++i) {
-            *(nii_new_data + i) = (short)((double) (*(nii_data + i) * 1000));
+            *(nii_new_data + i) = static_cast<short>((static_cast<double>((*(nii_data + i) * 1000))));
         }
     } else if (nii->datatype == 8) {  // NIFTI_TYPE_INT32
         int32_t* nii_data = static_cast<int32_t*>(nii->data);
         for (int i = 0; i < nr_voxels; ++i) {
-            *(nii_new_data + i) = (short)((double) (*(nii_data + i) * 1000));
+            *(nii_new_data + i) = static_cast<short>((static_cast<double>((*(nii_data + i) * 1000))));
         }
     } else if (nii->datatype == 1024) {  // NIFTI_TYPE_INT64
         int64_t* nii_data = static_cast<int64_t*>(nii->data);
         for (int i = 0; i < nr_voxels; ++i) {
-            *(nii_new_data + i) = (short)((double) (*(nii_data + i) * 1000));
+            *(nii_new_data + i) = static_cast<short>((static_cast<double>((*(nii_data + i) * 1000))));
         }
     } else if (nii->datatype == 16) {  // NIFTI_TYPE_FLOAT32
         float* nii_data = static_cast<float*>(nii->data);
         for (int i = 0; i < nr_voxels; ++i) {
-            *(nii_new_data + i) = (short)((double) (*(nii_data + i) * 1000));
+            *(nii_new_data + i) = static_cast<short>((static_cast<double>((*(nii_data + i) * 1000))));
         }
     } else if (nii->datatype == 64) {  // NIFTI_TYPE_FLOAT64
         double* nii_data = static_cast<double*>(nii->data);
         for (int i = 0; i < nr_voxels; ++i) {
-            *(nii_new_data + i) = (short)((double) (*(nii_data + i) * 1000));
+            *(nii_new_data + i) = static_cast<short>((static_cast<double>((*(nii_data + i) * 1000))));
         }
     } else {
         cout << "Warning! Unrecognized nifti data type!" << endl;
@@ -1092,7 +1092,7 @@ void ln_smooth_gaussian_iterative_3D(float* data_in,
 
     int data_size = nx * ny * nz * nt;
 
-    float* data_temp = (float*)malloc(data_size * sizeof(float));
+    float* data_temp = static_cast<float*>(malloc(data_size * sizeof(float)));
 
     // Compute Gaussian weights
     float w_0 = ln_gaussian(0, fwhm);
@@ -1264,8 +1264,8 @@ void ln_compute_hessian_3D(const float* data_in, float* data_shorthessian,
     float FWHM = 1.0;
 
     // Allocate memory (NOTE: I have prioritized RAM optimization)
-    float* data_grad_1st = (float*)malloc(data_size * sizeof(float));
-    float* data_grad_2nd = (float*)malloc(data_size * sizeof(float));
+    float* data_grad_1st = static_cast<float*>(malloc(data_size * sizeof(float)));
+    float* data_grad_2nd = static_cast<float*>(malloc(data_size * sizeof(float)));
 
     // x 
     ln_compute_gradients_3D_over_x(data_in, data_grad_1st, nx, ny, nz, nt);
@@ -1654,9 +1654,9 @@ void ln_compute_divergence_3D(float* data_out, const float* data_gra1, const flo
                               const int nx, const int ny, const int nz, const int nt) {
     int data_size = nx * ny * nz * nt;
 
-    float* data_out1 = (float*)malloc(data_size * sizeof(float));
-    float* data_out2 = (float*)malloc(data_size * sizeof(float));
-    float* data_out3 = (float*)malloc(data_size * sizeof(float));
+    float* data_out1 = static_cast<float*>(malloc(data_size * sizeof(float)));
+    float* data_out2 = static_cast<float*>(malloc(data_size * sizeof(float)));
+    float* data_out3 = static_cast<float*>(malloc(data_size * sizeof(float)));
 
     ln_compute_gradients_3D_over_x(data_gra1, data_out1, nx, ny, nz, nt);
     ln_compute_gradients_3D_over_y(data_gra2, data_out2, nx, ny, nz, nt);

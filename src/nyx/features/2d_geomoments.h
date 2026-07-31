@@ -114,7 +114,7 @@ class Imoms2D_feature : public BasicGeomoms2D, public FeatureMethod
 {
 public:
 
-    const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+    static constexpr std::initializer_list<Nyxus::Feature2D> featureset =
     {
         // -- intensity raw moments
         Nyxus::Feature2D::IMOM_RM_00,
@@ -262,7 +262,7 @@ class Smoms2D_feature : public BasicGeomoms2D, public FeatureMethod
 {
 public:
 
-    const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+    static constexpr std::initializer_list<Nyxus::Feature2D> featureset =
     {
         // Spatial (raw) moments
         Nyxus::Feature2D::SPAT_MOMENT_00,

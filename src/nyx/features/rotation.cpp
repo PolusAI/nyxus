@@ -29,7 +29,7 @@ void Rotation::rotate_around_center(
 	{
 		double x_rot = (p.x - cx) * c - (p.y - cy) * s + cx;
 		double y_rot = (p.y - cy) * c + (p.x - cx) * s + cy;
-		Pixel2 p_rot ((float)x_rot, (float)y_rot, p.inten);
+		Pixel2 p_rot (static_cast<float>(x_rot), static_cast<float>(y_rot), p.inten);
 		P_rot.push_back (p_rot);
 	}
 }
@@ -63,7 +63,7 @@ void Rotation::rotate_around_center_fp (
 		double y_rot = (p.y - cy) * c + (p.x - cx) * s + cy;
 		// FIX (caliper float-precision): store the rotated vertex in floating point (Point2f) instead of the
 		// integer Pixel2 that truncated it inward - the caliper chord math then integrates on exact coords.
-		P_rot.push_back (Point2f ((float)x_rot, (float)y_rot));
+		P_rot.push_back (Point2f (static_cast<float>(x_rot), static_cast<float>(y_rot)));
 	}
 }
 
@@ -85,7 +85,7 @@ void Rotation::rotate_cloud (
 	{
 		double x_rot = (p.x - cx) * c - (p.y - cy) * s + cx;
 		double y_rot = (p.y - cy) * c + (p.x - cx) * s + cy;
-		Pixel2 p_rot((float)x_rot, (float)y_rot, p.inten);
+		Pixel2 p_rot(static_cast<float>(x_rot), static_cast<float>(y_rot), p.inten);
 		P_rot.push_back(p_rot);
 	}
 }
@@ -106,7 +106,7 @@ void Rotation::rotate_cloud_NT (
 	{
 		double x_rot = (p.x - cx) * c - (p.y - cy) * s + cx;
 		double y_rot = (p.y - cy) * c + (p.x - cx) * s + cy;
-		Pixel2 p_rot((float)x_rot, (float)y_rot, p.inten);
+		Pixel2 p_rot(static_cast<float>(x_rot), static_cast<float>(y_rot), p.inten);
 		rotated_cloud.add_pixel (p_rot);
 	}
 }

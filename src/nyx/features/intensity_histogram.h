@@ -24,7 +24,7 @@ class IntensityHistogramFeatures : public FeatureMethod
 {
 public:
 
-	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+	static constexpr std::initializer_list<Nyxus::Feature2D> featureset =
 	{
 		// "...Value" family (20)
 		Nyxus::Feature2D::IH_MEAN_VAL,

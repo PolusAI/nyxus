@@ -33,8 +33,8 @@ static double hull_width_at_y (const std::vector<Point2f>& poly, double y)
 		}
 		else	// horizontal edge lying on the cut: it spans [min x, max x]
 		{
-			e0 = std::min ((double)a.x, (double)b.x);
-			e1 = std::max ((double)a.x, (double)b.x);
+			e0 = std::min (static_cast<double>(a.x), static_cast<double>(b.x));
+			e1 = std::max (static_cast<double>(a.x), static_cast<double>(b.x));
 		}
 		if (!have) { xlo = e0; xhi = e1; have = true; }
 		else { xlo = std::min (xlo, e0); xhi = std::max (xhi, e1); }
@@ -58,7 +58,7 @@ void CaliperMartinFeature::calculate (LR& r, const Fsettings& settings)
 		_mean =
 		_median =
 		_stdev =
-		_mode = settings[(int)NyxSetting::SOFTNAN].rval;	// former theEnvironment.resultOptions.noval()
+		_mode = settings[static_cast<int>(NyxSetting::SOFTNAN)].rval;	// former theEnvironment.resultOptions.noval()
 
 		return;
 	}
@@ -68,22 +68,22 @@ void CaliperMartinFeature::calculate (LR& r, const Fsettings& settings)
 
 	auto s = ComputeCommonStatistics2(allD);
 
-	_min = (double)s.min;
-	_max = (double)s.max;
+	_min = static_cast<double>(s.min);
+	_max = static_cast<double>(s.max);
 	_mean = s.mean;
 	_median = s.median;
 	_stdev = s.stdev;
-	_mode = (double)s.mode;
+	_mode = static_cast<double>(s.mode);
 }
 
 void CaliperMartinFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::STAT_MARTIN_DIAM_MIN][0] = _min;
-	fvals[(int)Feature2D::STAT_MARTIN_DIAM_MAX][0] = _max;
-	fvals[(int)Feature2D::STAT_MARTIN_DIAM_MEAN][0] = _mean;
-	fvals[(int)Feature2D::STAT_MARTIN_DIAM_MEDIAN][0] = _median;
-	fvals[(int)Feature2D::STAT_MARTIN_DIAM_STDDEV][0] = _stdev;
-	fvals[(int)Feature2D::STAT_MARTIN_DIAM_MODE][0] = _mode;
+	fvals[static_cast<int>(Feature2D::STAT_MARTIN_DIAM_MIN)][0] = _min;
+	fvals[static_cast<int>(Feature2D::STAT_MARTIN_DIAM_MAX)][0] = _max;
+	fvals[static_cast<int>(Feature2D::STAT_MARTIN_DIAM_MEAN)][0] = _mean;
+	fvals[static_cast<int>(Feature2D::STAT_MARTIN_DIAM_MEDIAN)][0] = _median;
+	fvals[static_cast<int>(Feature2D::STAT_MARTIN_DIAM_STDDEV)][0] = _stdev;
+	fvals[static_cast<int>(Feature2D::STAT_MARTIN_DIAM_MODE)][0] = _mode;
 }
 
 void CaliperMartinFeature::calculate_imp(const std::vector<Pixel2>& convex_hull, std::vector<double>& all_D)
@@ -104,7 +104,7 @@ void CaliperMartinFeature::calculate_imp(const std::vector<Pixel2>& convex_hull,
 		Rotation::rotate_around_center_fp(convex_hull, theta, CH_rot);	// FIX (caliper float-precision): no integer truncation
 		// FIX (caliper float-precision): min/max Y directly over the float hull (AABB::from_pixelcloud takes Pixel2)
 		double minY = CH_rot[0].y, maxY = CH_rot[0].y;
-		for (auto& p : CH_rot) { minY = std::min(minY, (double)p.y); maxY = std::max(maxY, (double)p.y); }
+		for (auto& p : CH_rot) { minY = std::min(minY, static_cast<double>(p.y)); maxY = std::max(maxY, static_cast<double>(p.y)); }
 		if (maxY <= minY)	// FIX: degenerate (collinear) hull at this angle — skip
 			continue;
 
@@ -146,12 +146,12 @@ void CaliperMartinFeature::osized_calculate (LR& r, const Fsettings& settings, I
 	// Process the stats
 	auto s = ComputeCommonStatistics2(all_D);
 
-	_min = (double)s.min;
-	_max = (double)s.max;
+	_min = static_cast<double>(s.min);
+	_max = static_cast<double>(s.max);
 	_mean = s.mean;
 	_median = s.median;
 	_stdev = s.stdev;
-	_mode = (double)s.mode;
+	_mode = static_cast<double>(s.mode);
 }
 
 void CaliperMartinFeature::extract (LR& r, const Fsettings& s)

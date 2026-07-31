@@ -100,8 +100,8 @@ namespace Nyxus
 
 		// tell ROI the actual uint rynamic range or greybinned one depending on the slide's low-level properties
 		// with the Hounsfield adjustment
-		vroi.aux_min = (PixIntens) (p.min_preroi_inten - p.min_preroi_inten); // in CT datasets p.min_preroi_inten can be -1024.0
-		vroi.aux_max = (PixIntens) (p.max_preroi_inten - p.min_preroi_inten);
+		vroi.aux_min = static_cast<PixIntens>((p.min_preroi_inten - p.min_preroi_inten)); // in CT datasets p.min_preroi_inten can be -1024.0
+		vroi.aux_max = static_cast<PixIntens>((p.max_preroi_inten - p.min_preroi_inten));
 
 		// fix the AABB with respect to anisotropy
 		if (env.anisoOptions.customized() == false)

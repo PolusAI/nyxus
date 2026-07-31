@@ -9,7 +9,7 @@ class BasicMorphologyFeatures : public FeatureMethod
 {
 public:
 
-	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+	static constexpr std::initializer_list<Nyxus::Feature2D> featureset =
 	{
 		Nyxus::Feature2D::AREA_PIXELS_COUNT,
 		Nyxus::Feature2D::AREA_UM2,

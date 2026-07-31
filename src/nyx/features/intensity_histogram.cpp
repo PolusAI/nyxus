@@ -23,7 +23,7 @@ void IntensityHistogramFeatures::fill_invalid (double nan_val)
 	result_.clear();
 	result_.reserve (featureset.size());
 	for (auto fc : featureset)
-		result_.push_back ({ (int)fc, nan_val });
+		result_.push_back ({ static_cast<int>(fc), nan_val });
 }
 
 // IBSI Intensity Histogram core: all 46 features are derived from a single N-bin
@@ -37,18 +37,18 @@ void IntensityHistogramFeatures::compute (const Pixelcloud& pixels, double minVa
 
 	// --- Build the N-bin frequency histogram (bin index = floor((v-min)/binW)
 	//     clamped to [0,N-1]; v==max folds into the last bin).
-	std::vector<double> freq ((size_t)N, 0.0);
+	std::vector<double> freq (static_cast<size_t>(N), 0.0);
 	const size_t M = pixels.size();
 	for (size_t j = 0; j < M; j++)
 	{
-		double v = poffset + pscale * (double) pixels[j].inten;
-		int idx = (int) std::floor ((v - minVal) / binWidth);
+		double v = poffset + pscale * static_cast<double>(pixels[j].inten);
+		int idx = static_cast<int>(std::floor ((v - minVal) / binWidth));
 		if (idx < 0) idx = 0;
 		if (idx >= N) idx = N - 1;
-		freq[(size_t)idx] += 1.0;
+		freq[static_cast<size_t>(idx)] += 1.0;
 	}
 
-	const double totalFrequency = (double) count;
+	const double totalFrequency = static_cast<double>(count);
 
 	// bin geometry
 	auto binMin    = [&](int i) { return minVal + double(i) * binWidth; };
@@ -58,7 +58,7 @@ void IntensityHistogramFeatures::compute (const Pixelcloud& pixels, double minVa
 	// Bin index (0-based) of an arbitrary value
 	auto getIndexOf = [&](double value) -> int
 	{
-		int idx = (int) std::floor ((value - minVal) / binWidth);
+		int idx = static_cast<int>(std::floor ((value - minVal) / binWidth));
 		if (idx < 0) idx = 0;
 		if (idx >= N) idx = N - 1;
 		return idx;
@@ -73,7 +73,7 @@ void IntensityHistogramFeatures::compute (const Pixelcloud& pixels, double minVa
 			int n = 0; p_n = 0.0;
 			do
 			{
-				f_n = freq[(size_t)n];
+				f_n = freq[static_cast<size_t>(n)];
 				cumulated += f_n;
 				p_n_prev = p_n;
 				p_n = cumulated / totalFrequency;
@@ -88,7 +88,7 @@ void IntensityHistogramFeatures::compute (const Pixelcloud& pixels, double minVa
 			int n = N - 1, m = 0; p_n = 1.0;
 			do
 			{
-				f_n = freq[(size_t)n];
+				f_n = freq[static_cast<size_t>(n)];
 				cumulated += f_n;
 				p_n_prev = p_n;
 				p_n = 1.0 - cumulated / totalFrequency;
@@ -109,7 +109,7 @@ void IntensityHistogramFeatures::compute (const Pixelcloud& pixels, double minVa
 		int bin = 0;
 		while (total <= half && bin < N)
 		{
-			total += freq[(size_t)bin];
+			total += freq[static_cast<size_t>(bin)];
 			++bin;
 		}
 		--bin;
@@ -132,7 +132,7 @@ void IntensityHistogramFeatures::compute (const Pixelcloud& pixels, double minVa
 	double robustMeanValue = 0.0, robustMeanIndex = 0.0, robustCount = 0.0;
 	for (int i = 0; i < N; i++)
 	{
-		double f = freq[(size_t)i];
+		double f = freq[static_cast<size_t>(i)];
 		double probability = f / totalFrequency;
 		double voxelValue = binCenter (i);
 
@@ -169,7 +169,7 @@ void IntensityHistogramFeatures::compute (const Pixelcloud& pixels, double minVa
 
 	for (int i = 0; i < N; i++)
 	{
-		double f = freq[(size_t)i];
+		double f = freq[static_cast<size_t>(i)];
 		double probability = f / totalFrequency;
 		double voxelValue = binCenter (i);
 
@@ -209,9 +209,9 @@ void IntensityHistogramFeatures::compute (const Pixelcloud& pixels, double minVa
 		if (i == 0)
 			gradient = freq[1] - freq[0];
 		else if (i == N - 1)
-			gradient = freq[(size_t)i] - freq[(size_t)(i - 1)];
+			gradient = freq[static_cast<size_t>(i)] - freq[static_cast<size_t>((i - 1))];
 		else
-			gradient = (freq[(size_t)(i + 1)] - freq[(size_t)(i - 1)]) / 2.0;
+			gradient = (freq[static_cast<size_t>((i + 1))] - freq[static_cast<size_t>((i - 1))]) / 2.0;
 
 		if (gradient > maximumGradientValue)
 		{
@@ -294,7 +294,7 @@ void IntensityHistogramFeatures::compute (const Pixelcloud& pixels, double minVa
 	result_.reserve (featureset.size());
 	int k = 0;
 	for (auto fc : featureset)
-		result_.push_back ({ (int)fc, out[k++] });
+		result_.push_back ({ static_cast<int>(fc), out[k++] });
 }
 
 void IntensityHistogramFeatures::calculate (LR& r, const Fsettings& s, const Dataset& ds)

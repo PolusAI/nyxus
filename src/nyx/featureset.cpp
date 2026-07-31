@@ -988,7 +988,7 @@ bool FeatureSet::find_2D_FeatureByString (
 	if (it_f == Nyxus::UserFacingFeatureNames.end())
 		return false;
 
-	f = enable * (int) it_f->second;
+	f = enable * static_cast<int>(it_f->second);
 
 	return true;
 }
@@ -1015,7 +1015,7 @@ bool FeatureSet::find_2D_GroupByString (
 	if (itr == Nyxus::UserFacing2dFeaturegroupNames.end())
 		return false;
 
-	grpCode = enable * (int) itr->second;
+	grpCode = enable * static_cast<int>(itr->second);
 
 	return true;
 }
@@ -1043,7 +1043,7 @@ bool FeatureSet::find_3D_FeatureByString (const std::string & name, int & f)
 	if (it_f == Nyxus::UserFacing_3D_featureNames.end())
 		return false;
 
-	f = enable * (int)it_f->second;
+	f = enable * static_cast<int>(it_f->second);
 
 	return true;
 }
@@ -1068,7 +1068,7 @@ bool FeatureSet::find_3D_GroupByString (const std::string & name, int & grpCode)
 	if (itr == Nyxus::UserFacing3dFeaturegroupNames.end())
 		return false;
 
-	grpCode = enable * (int)itr->second;
+	grpCode = enable * static_cast<int>(itr->second);
 
 	return true;
 }
@@ -1087,7 +1087,7 @@ bool FeatureSet::find_IMQ_FeatureByString (const std::string & name, int & f)
 	if (it_f == Nyxus::UserFacingIMQFeatureNames.end())
 		return false;
 
-	f = (int) it_f->second;
+	f = static_cast<int>(it_f->second);
 	return true;
 }
 
@@ -1105,7 +1105,7 @@ bool FeatureSet::find_IMQ_GroupByString (const std::string & name, int & grpCode
 	if (itr == Nyxus::UserFacingIMQFeaturegroupNames.end())
 		return false;
 
-	grpCode = (int) itr->second;
+	grpCode = static_cast<int>(itr->second);
 	return true;
 }
 
@@ -1157,7 +1157,7 @@ std::string FeatureSet::findGroupNameByCode (Fgroup2D code)
 		return result->first;
 
 	// Not found
-	return "UNNAMED_FEATURE_GROUP_" + std::to_string((int)code);
+	return "UNNAMED_FEATURE_GROUP_" + std::to_string(static_cast<int>(code));
 }
 
 std::string FeatureSet::findGroupNameByCode (Fgroup3D code)
@@ -1174,7 +1174,7 @@ std::string FeatureSet::findGroupNameByCode (Fgroup3D code)
 		return result->first;
 
 	// Not found
-	return "UNNAMED_FEATURE_GROUP_" + std::to_string((int)code);
+	return "UNNAMED_FEATURE_GROUP_" + std::to_string(static_cast<int>(code));
 }
 
 std::string FeatureSet::findGroupNameByCode (FgroupIMQ code)
@@ -1191,7 +1191,7 @@ std::string FeatureSet::findGroupNameByCode (FgroupIMQ code)
 		return result->first;
 
 	// Not found
-	return "UNNAMED_FEATURE_GROUP_" + std::to_string((int)code);
+	return "UNNAMED_FEATURE_GROUP_" + std::to_string(static_cast<int>(code));
 }
 
 // Relying on RVO rather than std::move
@@ -1200,7 +1200,7 @@ std::vector<std::tuple<std::string, int>> FeatureSet::getEnabledFeatures() const
 	std::vector<std::tuple<std::string, int>> F;
 
 	// 2D features
-	for (int i = 0; i < (int) Nyxus::Feature2D::_COUNT_; i++)
+	for (int i = 0; i < static_cast<int>(Nyxus::Feature2D::_COUNT_); i++)
 	{
 		if (m_enabledFeatures[i])
 		{
@@ -1208,7 +1208,7 @@ std::vector<std::tuple<std::string, int>> FeatureSet::getEnabledFeatures() const
 			std::string fname = "2D-feature" + std::to_string(i);	// name feature<number> will indicate a number of a missing user-facing feature name, if any
 			for (const auto& f : Nyxus::UserFacingFeatureNames)
 			{
-				if (f.second == (Nyxus::Feature2D) i)
+				if (f.second == static_cast<Nyxus::Feature2D>(i))
 				{
 					fname = f.first;
 					break;
@@ -1222,7 +1222,7 @@ std::vector<std::tuple<std::string, int>> FeatureSet::getEnabledFeatures() const
 	}
 
 	// 3D features
-	for (int i = (int) Nyxus::Feature2D::_COUNT_; i < (int) Nyxus::Feature3D::_COUNT_; i++)
+	for (int i = static_cast<int>(Nyxus::Feature2D::_COUNT_); i < static_cast<int>(Nyxus::Feature3D::_COUNT_); i++)
 	{
 		if (m_enabledFeatures[i])
 		{
@@ -1230,7 +1230,7 @@ std::vector<std::tuple<std::string, int>> FeatureSet::getEnabledFeatures() const
 			std::string fname = "3D-feature" + std::to_string(i);	// name feature<number> will indicate a number of a missing user-facing feature name, if any
 			for (const auto& f : Nyxus::UserFacing_3D_featureNames)
 			{
-				if (f.second == (Nyxus::Feature3D) i)
+				if (f.second == static_cast<Nyxus::Feature3D>(i))
 				{
 					fname = f.first;
 					break;
@@ -1244,7 +1244,7 @@ std::vector<std::tuple<std::string, int>> FeatureSet::getEnabledFeatures() const
 	}
 
 	// Image Quality features
-	for (int i = (int) Nyxus::Feature3D::_COUNT_; i < (int) Nyxus::FeatureIMQ::_COUNT_; i++)
+	for (int i = static_cast<int>(Nyxus::Feature3D::_COUNT_); i < static_cast<int>(Nyxus::FeatureIMQ::_COUNT_); i++)
 	{
 		if (m_enabledFeatures[i])
 		{
@@ -1252,7 +1252,7 @@ std::vector<std::tuple<std::string, int>> FeatureSet::getEnabledFeatures() const
 			std::string fname = "IMQ-feature" + std::to_string(i);	// name feature<number> will indicate a number of a missing user-facing feature name, if any
 			for (const auto& f : Nyxus::UserFacingIMQFeatureNames)
 			{
-				if (f.second == (Nyxus::FeatureIMQ) i)
+				if (f.second == static_cast<Nyxus::FeatureIMQ>(i))
 				{
 					fname = f.first;
 					break;

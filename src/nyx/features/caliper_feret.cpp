@@ -25,7 +25,7 @@ void CaliperFeretFeature::calculate (LR& r, const Fsettings& s)
 		_mean =
 		_median =
 		_stdev =
-		_mode = s[(int)NyxSetting::SOFTNAN].rval; // former theEnvironment.resultOptions.noval()
+		_mode = s[static_cast<int>(NyxSetting::SOFTNAN)].rval; // former theEnvironment.resultOptions.noval()
 
 		return;
 	}
@@ -61,20 +61,20 @@ void CaliperFeretFeature::calculate (LR& r, const Fsettings& s)
 		_mean =
 		_median =
 		_stdev =
-		_mode = s[(int)NyxSetting::SOFTNAN].rval;	// former theEnvironment.resultOptions.noval()
+		_mode = s[static_cast<int>(NyxSetting::SOFTNAN)].rval;	// former theEnvironment.resultOptions.noval()
 	}
 }
 
 void CaliperFeretFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::MIN_FERET_ANGLE][0] = minFeretAngle;
-	fvals[(int)Feature2D::MAX_FERET_ANGLE][0] = maxFeretAngle;
-	fvals[(int)Feature2D::STAT_FERET_DIAM_MIN][0] = _min;
-	fvals[(int)Feature2D::STAT_FERET_DIAM_MAX][0] = _max;
-	fvals[(int)Feature2D::STAT_FERET_DIAM_MEAN][0] = _mean;
-	fvals[(int)Feature2D::STAT_FERET_DIAM_MEDIAN][0] = _median;
-	fvals[(int)Feature2D::STAT_FERET_DIAM_STDDEV][0] = _stdev;
-	fvals[(int)Feature2D::STAT_FERET_DIAM_MODE][0] = _mode;
+	fvals[static_cast<int>(Feature2D::MIN_FERET_ANGLE)][0] = minFeretAngle;
+	fvals[static_cast<int>(Feature2D::MAX_FERET_ANGLE)][0] = maxFeretAngle;
+	fvals[static_cast<int>(Feature2D::STAT_FERET_DIAM_MIN)][0] = _min;
+	fvals[static_cast<int>(Feature2D::STAT_FERET_DIAM_MAX)][0] = _max;
+	fvals[static_cast<int>(Feature2D::STAT_FERET_DIAM_MEAN)][0] = _mean;
+	fvals[static_cast<int>(Feature2D::STAT_FERET_DIAM_MEDIAN)][0] = _median;
+	fvals[static_cast<int>(Feature2D::STAT_FERET_DIAM_STDDEV)][0] = _stdev;
+	fvals[static_cast<int>(Feature2D::STAT_FERET_DIAM_MODE)][0] = _mode;
 }
 
 void CaliperFeretFeature::calculate_angled_caliper_measurements (const std::vector<Pixel2>& convex_hull, std::vector<float>& angles, std::vector<double>& ferets)
@@ -91,7 +91,7 @@ void CaliperFeretFeature::calculate_angled_caliper_measurements (const std::vect
 		Rotation::rotate_around_center_fp (convex_hull, theta, CH_rot);	// FIX (caliper float-precision): no integer truncation
 		// FIX (caliper float-precision): min/max X directly over the float hull (AABB::from_pixelcloud takes Pixel2)
 		double minX = CH_rot[0].x, maxX = CH_rot[0].x;
-		for (auto& p : CH_rot) { minX = std::min(minX, (double)p.x); maxX = std::max(maxX, (double)p.x); }
+		for (auto& p : CH_rot) { minX = std::min(minX, static_cast<double>(p.x)); maxX = std::max(maxX, static_cast<double>(p.x)); }
 
 		// Save a caliper measurement orthogonal to X
 		double feret = maxX - minX;

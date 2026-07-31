@@ -31,13 +31,13 @@ void HexagonalityPolygonalityFeature::calculate (LR& r, const Fsettings& s)
     //      Dispersion of hexagonality_score relative to its mean.
     //
 
-    size_t neighbors = r.fvals[(int)Feature2D::NUM_NEIGHBORS][0];
+    size_t neighbors = r.fvals[static_cast<int>(Feature2D::NUM_NEIGHBORS)][0];
     double area = r.aux_area; 
-    double perimeter = r.fvals[(int)Feature2D::PERIMETER][0];
-    double area_hull = r.fvals[(int)Feature2D::CONVEX_HULL_AREA][0];
+    double perimeter = r.fvals[static_cast<int>(Feature2D::PERIMETER)][0];
+    double area_hull = r.fvals[static_cast<int>(Feature2D::CONVEX_HULL_AREA)][0];
     double perim_hull = 6 * sqrt(area_hull / (1.5 * sqrt(3)));
-    double min_feret_diam = r.fvals[(int)Feature2D::STAT_FERET_DIAM_MIN][0];
-    double max_feret_diam = r.fvals[(int)Feature2D::STAT_FERET_DIAM_MAX][0];
+    double min_feret_diam = r.fvals[static_cast<int>(Feature2D::STAT_FERET_DIAM_MIN)][0];
+    double max_feret_diam = r.fvals[static_cast<int>(Feature2D::STAT_FERET_DIAM_MAX)][0];
     double perimeter_neighbors;
 
     if (neighbors == 0)
@@ -174,9 +174,9 @@ void HexagonalityPolygonalityFeature::osized_calculate (LR& r, const Fsettings& 
 
 void HexagonalityPolygonalityFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-    fvals[(int)Feature2D::POLYGONALITY_AVE][0] = polyAve;
-    fvals[(int)Feature2D::HEXAGONALITY_AVE][0] = hexAve;
-    fvals[(int)Feature2D::HEXAGONALITY_STDDEV][0] = hexSd;
+    fvals[static_cast<int>(Feature2D::POLYGONALITY_AVE)][0] = polyAve;
+    fvals[static_cast<int>(Feature2D::HEXAGONALITY_AVE)][0] = hexAve;
+    fvals[static_cast<int>(Feature2D::HEXAGONALITY_STDDEV)][0] = hexSd;
 }
 
 void HexagonalityPolygonalityFeature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
@@ -199,7 +199,7 @@ void HexagonalityPolygonalityFeature::parallel_process_1_batch (size_t start, si
         }
 
         // Feasibility check #2
-        if (r.multicontour_.empty() || r.multicontour_[0].empty() || r.fvals[(int)Feature2D::CONVEX_HULL_AREA][0] == 0 || r.fvals[(int)Feature2D::NUM_NEIGHBORS][0] == 0)
+        if (r.multicontour_.empty() || r.multicontour_[0].empty() || r.fvals[static_cast<int>(Feature2D::CONVEX_HULL_AREA)][0] == 0 || r.fvals[static_cast<int>(Feature2D::NUM_NEIGHBORS)][0] == 0)
         {
             // Explicitly assign dummy yet valid values to indicate that features weren't calculated. Better than NAN - less data cleaning before training
             HexagonalityPolygonalityFeature hexpo;

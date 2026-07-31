@@ -202,7 +202,7 @@ public:
         // in the HU domain (matches the loader offset + float_domain_map reconstruction).
         if (preserve_hu_ && idx < hu_tile_.size())
             return hu_tile_ [idx];
-        double rv = (double) tile [idx];
+        double rv = static_cast<double>(tile [idx]);
         return rv;
     }
 
@@ -290,7 +290,7 @@ private:
                     // In HU mode keep the TRUE Hounsfield value (rescaled from the signed/unsigned
                     // stored pixel) so the slide scan computes an HU-domain min/max, not the wrapped uint.
                     if (preserve_hu_)
-                        hu_tile_[i] = rescaleSlope_ * (double)buffer[i] + rescaleIntercept_;
+                        hu_tile_[i] = rescaleSlope_ * static_cast<double>(buffer[i] )+ rescaleIntercept_;
                 }
             }
             else {

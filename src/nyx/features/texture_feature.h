@@ -16,7 +16,7 @@ public:
 
 	static inline int cast_to_range(PixIntens orig_I, PixIntens min_orig_I, PixIntens max_orig_I, int min_target_I, int max_target_I)
 	{
-		int target_I = (int)(double(orig_I - min_orig_I) / double(max_orig_I - min_orig_I) * double(max_target_I - min_target_I) + min_target_I);
+		int target_I = static_cast<int>((double(orig_I - min_orig_I) / double(max_orig_I - min_orig_I) * double(max_target_I - min_target_I) + min_target_I));
 		return target_I;
 	}
 
@@ -108,7 +108,7 @@ public:
 		if (x)
 		{
 			double binW = double(max__ - min__) / double(binCount);
-			PixIntens y = (PixIntens) (double(x - min__) / binW + 1);
+			PixIntens y = static_cast<PixIntens>((double(x - min__) / binW + 1));
 			if (y > binCount)
 				y = binCount;	// the last bin is +1 unit wider
 			return y;
@@ -155,7 +155,7 @@ private:
 
 		// scale
 		double scaled_real_i = std::floor(slope * double(i) + intercept);
-		PixIntens scaled_i = (PixIntens) scaled_real_i;
+		PixIntens scaled_i = static_cast<PixIntens>(scaled_real_i);
 
 		// clip values outside the range
 		if (scaled_i > cached_n_levels)
@@ -174,10 +174,10 @@ private:
 
 		// scale
 		double scaled_real_i = std::floor(slope_ * double(x) + intercept_);
-		unsigned int scaled_i = (unsigned int)scaled_real_i;
+		unsigned int scaled_i = static_cast<unsigned int>(scaled_real_i);
 
 		// clip values outside the range
-		if (scaled_i > (PixIntens) n_levels)
+		if (scaled_i > static_cast<PixIntens>(n_levels))
 			scaled_i = n_levels;
 		if (scaled_i < 1)
 			scaled_i = 1;

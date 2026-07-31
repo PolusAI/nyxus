@@ -31,14 +31,14 @@ Statistics ComputeCommonStatistics2 (std::vector<double> & Data)
     output.stdev = sqrt(sumSqrd / Data.size());
 
     //Make a Histogram
-    int intMax = (int)ceil(output.max);
-    int intMin = (int)floor(output.min);
+    int intMax = static_cast<int>(ceil(output.max));
+    int intMin = static_cast<int>(floor(output.min));
     int binCounts = intMax - intMin + 1;
 
     std::vector<int> histBins(binCounts, 0); //--Avoid pointers-- int* histBins = new int[binCounts];
 
     for (int i = 0; i < binCounts; ++i) histBins[i] = 0;
-    for (int i = 0; i < Data.size(); i++) ++histBins[(int)Data[i] - intMin];
+    for (int i = 0; i < Data.size(); i++) ++histBins[static_cast<int>(Data[i] )- intMin];
 
     double MaxValue = 0;
     int maxBinIndex = -1;

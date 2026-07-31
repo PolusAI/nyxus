@@ -396,14 +396,14 @@ namespace Nyxus
 		for (const auto& pair : R)
 		{
 			const LR& r = pair.second;
-			maxArea = (std::max)(maxArea, (size_t)r.aux_area);
+			maxArea = (std::max)(maxArea, static_cast<size_t>(r.aux_area));
 			const AABB& bb = r.aabb;
 			auto w = bb.get_width();
 			auto h = bb.get_height();
 			auto d = bb.get_z_depth();
-			max_w = (std::max)(max_w, (size_t)w);
-			max_h = (std::max)(max_h, (size_t)h);
-			max_d = (std::max)(max_d, (size_t)d);
+			max_w = (std::max)(max_w, static_cast<size_t>(w));
+			max_h = (std::max)(max_h, static_cast<size_t>(h));
+			max_d = (std::max)(max_d, static_cast<size_t>(d));
 		}
 
 		p.slide_w = fullW;

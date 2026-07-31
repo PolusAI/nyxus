@@ -643,7 +643,7 @@ namespace Nyxus
 	enum class Feature3D
 	{
 		// Intensity
-		COV = (int) Feature2D::_COUNT_,
+		COV = static_cast<int>(Feature2D::_COUNT_),
 		COVERED_IMAGE_INTENSITY_RANGE,
 		ENERGY,
 		ENTROPY,
@@ -919,7 +919,7 @@ namespace Nyxus
 
 	enum class FeatureIMQ {
 		// Image Quality features
-		FOCUS_SCORE = (int) Feature3D::_COUNT_,
+		FOCUS_SCORE = static_cast<int>(Feature3D::_COUNT_),
 		LOCAL_FOCUS_SCORE,
 		POWER_SPECTRUM_SLOPE,
 		MAX_SATURATION,
@@ -956,7 +956,7 @@ namespace Nyxus
 	
 	enum class Fgroup3D
 	{
-		FG3_ALL = (int) Fgroup2D::_COUNT_,
+		FG3_ALL = static_cast<int>(Fgroup2D::_COUNT_),
 		FG3_INTENSITY,
 		FG3_MORPHOLOGY,
 		FG3_TEXTURE,			// 3D_GLCM + 3D_GLRLM + 3D_GLSZM + etc
@@ -976,7 +976,7 @@ namespace Nyxus
 
 	enum class FgroupIMQ
 	{
-		ALL_IMQ= (int) Fgroup3D::_COUNT_,
+		ALL_IMQ= static_cast<int>(Fgroup3D::_COUNT_),
 
 		__COUNT_
 	};
@@ -1005,21 +1005,21 @@ public:
 	void disableFeatures(const std::initializer_list<Nyxus::Feature2D>& desiredFeatures)
 	{
 		for (auto f : desiredFeatures)
-			m_enabledFeatures[(int)f] = false;
+			m_enabledFeatures[static_cast<int>(f)] = false;
 	}
 	void enableFeatures(const std::initializer_list<Nyxus::Feature2D>& F, bool enable=true) 
 	{
 		for (auto f : F)
-			m_enabledFeatures[(int)f] = enable;
+			m_enabledFeatures[static_cast<int>(f)] = enable;
 	}
 	void enableFeatures(const std::initializer_list<Nyxus::Feature3D>& F, bool enable = true)
 	{
 		for (auto f : F)
-			m_enabledFeatures[(int)f] = enable;
+			m_enabledFeatures[static_cast<int>(f)] = enable;
 	}
 	void enableFeatures(const std::initializer_list<Nyxus::FeatureIMQ>& desiredFeatures) {
 		for (auto f : desiredFeatures)
-			m_enabledFeatures[(int)f] = true;
+			m_enabledFeatures[static_cast<int>(f)] = true;
 	}
 	void enableFeature (int fcode)
 	{
@@ -1032,88 +1032,88 @@ public:
 	}
 	void enablePixelIntenStats() {
 		enableAll(false);
-		m_enabledFeatures[(int)Nyxus::Feature2D::MEAN] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::MEDIAN] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::MIN] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::MAX] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::RANGE] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::COVERED_IMAGE_INTENSITY_RANGE] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::STANDARD_DEVIATION] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::SKEWNESS] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::KURTOSIS] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::EXCESS_KURTOSIS] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::MEAN_ABSOLUTE_DEVIATION] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::MEDIAN_ABSOLUTE_DEVIATION] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::ENERGY] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::ROOT_MEAN_SQUARED] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::ENTROPY] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::MODE] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::UNIFORMITY] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::P10] = 
-			m_enabledFeatures[(int)Nyxus::Feature2D::P25] = 
-			m_enabledFeatures[(int)Nyxus::Feature2D::P75] = 
-			m_enabledFeatures[(int)Nyxus::Feature2D::P90] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::QCOD] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::INTERQUARTILE_RANGE] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::ROBUST_MEAN] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::ROBUST_MEAN_ABSOLUTE_DEVIATION] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::COV] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::WEIGHTED_CENTROID_Y] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::WEIGHTED_CENTROID_X] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::MASS_DISPLACEMENT] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::STANDARD_DEVIATION_BIASED] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::VARIANCE] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::VARIANCE_BIASED] = true;
+		m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::MEAN)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::MEDIAN)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::MIN)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::MAX)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::RANGE)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::COVERED_IMAGE_INTENSITY_RANGE)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::STANDARD_DEVIATION)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::SKEWNESS)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::KURTOSIS)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::EXCESS_KURTOSIS)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::MEAN_ABSOLUTE_DEVIATION)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::MEDIAN_ABSOLUTE_DEVIATION)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::ENERGY)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::ROOT_MEAN_SQUARED)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::ENTROPY)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::MODE)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::UNIFORMITY)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::P10)] = 
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::P25)] = 
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::P75)] = 
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::P90)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::QCOD)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::INTERQUARTILE_RANGE)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::ROBUST_MEAN)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::ROBUST_MEAN_ABSOLUTE_DEVIATION)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::COV)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::WEIGHTED_CENTROID_Y)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::WEIGHTED_CENTROID_X)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::MASS_DISPLACEMENT)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::STANDARD_DEVIATION_BIASED)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::VARIANCE)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::VARIANCE_BIASED)] = true;
 	}
 	void enableBoundingBox() {
 		enableAll(false);
-		m_enabledFeatures[(int)Nyxus::Feature2D::BBOX_YMIN] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::BBOX_XMIN] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::BBOX_HEIGHT] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::BBOX_WIDTH] = true;
+		m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::BBOX_YMIN)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::BBOX_XMIN)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::BBOX_HEIGHT)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::BBOX_WIDTH)] = true;
 	}
 	void enableFeret() {
 		enableAll(false);
-			m_enabledFeatures[(int)Nyxus::Feature2D::MIN_FERET_ANGLE] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::MAX_FERET_ANGLE] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::STAT_FERET_DIAM_MIN] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::STAT_FERET_DIAM_MAX] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::STAT_FERET_DIAM_MEAN] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::STAT_FERET_DIAM_MEDIAN] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::STAT_FERET_DIAM_STDDEV] =
-			m_enabledFeatures[(int)Nyxus::Feature2D::STAT_FERET_DIAM_MODE] = true;
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::MIN_FERET_ANGLE)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::MAX_FERET_ANGLE)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::STAT_FERET_DIAM_MIN)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::STAT_FERET_DIAM_MAX)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::STAT_FERET_DIAM_MEAN)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::STAT_FERET_DIAM_MEDIAN)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::STAT_FERET_DIAM_STDDEV)] =
+			m_enabledFeatures[static_cast<int>(Nyxus::Feature2D::STAT_FERET_DIAM_MODE)] = true;
 	}
 	bool isEnabled (Nyxus::Feature2D fc) const
 	{ 
-		return fc < Nyxus::Feature2D::_COUNT_ ? m_enabledFeatures[(int)fc] : false;
+		return fc < Nyxus::Feature2D::_COUNT_ ? m_enabledFeatures[static_cast<int>(fc)] : false;
 	}
 	bool isEnabled (Nyxus::Feature3D fc) const
 	{ 
-		return fc < Nyxus::Feature3D::_COUNT_ ? m_enabledFeatures[(int)fc] : false;
+		return fc < Nyxus::Feature3D::_COUNT_ ? m_enabledFeatures[static_cast<int>(fc)] : false;
 	}
 	bool isEnabled (Nyxus::FeatureIMQ fc) const
 	{ 
-		return fc < Nyxus::FeatureIMQ::_COUNT_ ? m_enabledFeatures[(int)fc] : false;
+		return fc < Nyxus::FeatureIMQ::_COUNT_ ? m_enabledFeatures[static_cast<int>(fc)] : false;
 	}
 
 	bool anyEnabled (const std::initializer_list<Nyxus::Feature2D>& F) const
 	{
 		for (auto f : F)
-			if (m_enabledFeatures[(int)f])
+			if (m_enabledFeatures[static_cast<int>(f)])
 				return true;
 		return false;
 	}
 	bool anyEnabled (const std::initializer_list<Nyxus::Feature3D>& F) const
 	{
 		for (auto f : F)
-			if (m_enabledFeatures[(int)f])
+			if (m_enabledFeatures[static_cast<int>(f)])
 				return true;
 		return false;
 	}
 	bool anyEnabled (const std::initializer_list<Nyxus::FeatureIMQ>& F) const
 	{
 		for (auto f : F)
-			if (m_enabledFeatures[(int)f])
+			if (m_enabledFeatures[static_cast<int>(f)])
 				return true;
 		return false;
 	}
@@ -1125,17 +1125,17 @@ public:
 		if (dim == 2)
 		{
 			// regular features
-			for (int i = (int) Nyxus::Feature2D::_FIRST_; i < (int) Nyxus::Feature2D::_COUNT_ ; i++)
+			for (int i = static_cast<int>(Nyxus::Feature2D::_FIRST_); i < static_cast<int>(Nyxus::Feature2D::_COUNT_ ); i++)
 				if (m_enabledFeatures[i])
 					cnt++;
 			// quality features
-			for (int i = (int) Nyxus::FeatureIMQ::_FIRST_; i < (int) Nyxus::FeatureIMQ::_COUNT_; i++)
+			for (int i = static_cast<int>(Nyxus::FeatureIMQ::_FIRST_); i < static_cast<int>(Nyxus::FeatureIMQ::_COUNT_); i++)
 				if (m_enabledFeatures[i])
 					cnt++;
 		}
 		else // 3D
 		{
-			for (int i = (int)Nyxus::Feature3D::_FIRST_; i < (int) Nyxus::Feature3D::_COUNT_; i++)
+			for (int i = static_cast<int>(Nyxus::Feature3D::_FIRST_); i < static_cast<int>(Nyxus::Feature3D::_COUNT_); i++)
 				if (m_enabledFeatures[i])
 					cnt++;
 		}
@@ -1162,7 +1162,7 @@ public:
 	std::vector<std::tuple<std::string, int>> getEnabledFeatures() const;
 
 private:
-	bool m_enabledFeatures [(int) Nyxus::FeatureIMQ::_COUNT_];
+	bool m_enabledFeatures [static_cast<int>(Nyxus::FeatureIMQ::_COUNT_)];
 };
 
 namespace Nyxus

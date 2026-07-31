@@ -192,17 +192,17 @@ namespace Nyxus
 			fullH = env.theImLoader.get_full_height(),
 			fullD = env.theImLoader.get_full_depth();
 
-		size_t vD = (size_t)(double(fullD) * aniso_z);	// virtual depth
+		size_t vD = static_cast<size_t>((double(fullD) * aniso_z));	// virtual depth
 
 		for (size_t vz = 0; vz < vD; vz++)
 		{
 			size_t z = size_t(double(vz) / aniso_z);	// physical z
 
 			// virtual slide properties
-			size_t vh = (size_t)(double(fullH) * aniso_y),
-				vw = (size_t)(double(fullW) * aniso_x),
-				vth = (size_t)(double(th) * aniso_y),
-				vtw = (size_t)(double(tw) * aniso_x);
+			size_t vh = static_cast<size_t>((double(fullH) * aniso_y)),
+				vw = static_cast<size_t>((double(fullW) * aniso_x)),
+				vth = static_cast<size_t>((double(th) * aniso_y)),
+				vtw = static_cast<size_t>((double(tw) * aniso_x));
 
 			// current tile to skip tile reloads
 			size_t curt_x = 999, curt_y = 999;
@@ -527,9 +527,9 @@ namespace Nyxus
 			fullD = ilo.get_full_depth(),
 			sliceSize = fullW * fullH;
 
-		size_t vh = (size_t) (double(fullH) * aniso_y),
-			vw = (size_t) (double(fullW) * aniso_x),
-			vd = (size_t) (double(fullD) * aniso_z);
+		size_t vh = static_cast<size_t>((double(fullH) * aniso_y)),
+			vw = static_cast<size_t>((double(fullW) * aniso_x)),
+			vd = static_cast<size_t>((double(fullD) * aniso_z));
 
 		// in the 3D case tiling is a formality, so fetch the only tile in the file
 		if (! ilo.load_tile(0, 0))
@@ -555,9 +555,9 @@ namespace Nyxus
 				x = (i - z * vSliceSize) % vw;
 
 			// physical voxel position
-			size_t ph_x = (size_t) (double(x) / aniso_x),
-				ph_y = (size_t) (double(y) / aniso_y),
-				ph_z = (size_t) (double(z) / aniso_z);
+			size_t ph_x = static_cast<size_t>((double(x) / aniso_x)),
+				ph_y = static_cast<size_t>((double(y) / aniso_y)),
+				ph_z = static_cast<size_t>((double(z) / aniso_z));
 				i = ph_z * sliceSize + ph_y * fullH + ph_x;
 
 			// Cache this pixel 
@@ -593,10 +593,10 @@ namespace Nyxus
 			fullheight = ldr.get_full_height();
 
 		// virtual slide properties
-		size_t vh = (size_t)(double(fullheight) * aniso_y),
-			vw = (size_t)(double(fullwidth) * aniso_x),
-			vth = (size_t)(double(th) * aniso_y),
-			vtw = (size_t)(double(tw) * aniso_x);
+		size_t vh = static_cast<size_t>((double(fullheight) * aniso_y)),
+			vw = static_cast<size_t>((double(fullwidth) * aniso_x)),
+			vth = static_cast<size_t>((double(th) * aniso_y)),
+			vtw = static_cast<size_t>((double(tw) * aniso_x));
 
 		// current tile to skip tile reloads
 		size_t curt_x = 999, curt_y = 999;

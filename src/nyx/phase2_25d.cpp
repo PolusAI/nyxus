@@ -147,7 +147,7 @@ namespace Nyxus
 		int lvl = 0,	// pyramid level
 			lyr = 0;	//	layer
 
-		size_t vD = (size_t)(double(z_indices.size()) * aniso_z);	// virtual depth
+		size_t vD = static_cast<size_t>((double(z_indices.size()) * aniso_z));	// virtual depth
 
 		for (size_t vz = 0; vz < vD; vz++)
 		{
@@ -178,10 +178,10 @@ namespace Nyxus
 				fullheight = env.theImLoader.get_full_height();
 
 			// virtual slide properties
-			size_t vh = (size_t)(double(fullheight) * aniso_y),
-				vw = (size_t)(double(fullwidth) * aniso_x),
-				vth = (size_t)(double(th) * aniso_y),
-				vtw = (size_t)(double(tw) * aniso_x);
+			size_t vh = static_cast<size_t>((double(fullheight) * aniso_y)),
+				vw = static_cast<size_t>((double(fullwidth) * aniso_x)),
+				vth = static_cast<size_t>((double(th) * aniso_y)),
+				vtw = static_cast<size_t>((double(tw) * aniso_x));
 
 			// current tile to skip tile reloads
 			size_t curt_x = 999, curt_y = 999;

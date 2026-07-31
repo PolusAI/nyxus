@@ -327,7 +327,7 @@ double OOR_ReadMatrix::get_at (size_t pixel_row, size_t pixel_col) const
 	auto& dataI = imloader.get_int_tile_buffer();
 	size_t idx = imloader.get_within_tile_idx(pixel_row, pixel_col);
 	auto val = dataI[idx];
-	return (double)val;
+	return static_cast<double>(val);
 }
 
 double OOR_ReadMatrix::get_at(size_t idx) const
@@ -382,7 +382,7 @@ double ReadImageMatrix_nontriv::get_at (ImageLoader& imloader, size_t pixel_row,
 	auto& dataI = imloader.get_int_tile_buffer();
 	size_t idx = imloader.get_within_tile_idx (pixel_row, pixel_col);
 	auto val = dataI[idx];
-	return (double)val;
+	return static_cast<double>(val);
 }
 
 double ReadImageMatrix_nontriv::get_at (ImageLoader& imloader, size_t idx)

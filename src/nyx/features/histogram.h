@@ -359,7 +359,7 @@ private:
 		if (n % 2 != 0)
 		{
 			HistoItem median = raw_I[n / 2];
-			return (double)median;
+			return static_cast<double>(median);
 		}
 		else
 		{

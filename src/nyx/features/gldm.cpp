@@ -167,7 +167,7 @@ void GLDMFeature::calculate (LR& r, const Fsettings& s)
 
 
 	//==== Fill the matrix
-	Ng = greyInfo==0 ? *std::max_element(I.begin(), I.end()) : (int) I.size();
+	Ng = greyInfo==0 ? *std::max_element(I.begin(), I.end()) : static_cast<int>(I.size());
 	Nd = 8 + 1;	// N, NE, E, SE, S, SW, W, NW + zero
 
 	// --allocate the matrix
@@ -296,14 +296,14 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 				continue;
 
 			// Find a non-blank pixel
-			PixIntens pi = Nyxus::to_grayscale((unsigned int) D.yx(row, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));		// former Environment::ibsi_compliance
+			PixIntens pi = Nyxus::to_grayscale(static_cast<unsigned int>(D.yx(row, col)), r.aux_min, piRange, nGrays, STNGS_IBSI(s));		// former Environment::ibsi_compliance
 
 			// Count dependencies. Only ROI pixels (raw != 0) are valid neighbours.
 			int nd = 1;	// Number of dependencies
 			PixIntens piQ; // Pixel intensity of questionn
 			if (D.safe(row - 1, col) && D.yx(row - 1, col) != 0) {
 
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// North
+				piQ = Nyxus::to_grayscale(static_cast<unsigned int>(D.yx(row - 1, col)), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// North
 
 				if (piQ == pi)
 					nd++;
@@ -311,7 +311,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 			if (D.safe(row - 1, col + 1) && D.yx(row - 1, col + 1) != 0) {
 
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// North-East
+				piQ = Nyxus::to_grayscale(static_cast<unsigned int>(D.yx(row - 1, col + 1)), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// North-East
 
 				if (piQ == pi)
 					nd++;
@@ -319,7 +319,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 			if (D.safe(row, col + 1) && D.yx(row, col + 1) != 0) {
 
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// East
+				piQ = Nyxus::to_grayscale(static_cast<unsigned int>(D.yx(row, col + 1)), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// East
 
 				if (piQ == pi)
 					nd++;
@@ -327,7 +327,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 			if (D.safe(row + 1, col + 1) && D.yx(row + 1, col + 1) != 0) {
 
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// South-East
+				piQ = Nyxus::to_grayscale(static_cast<unsigned int>(D.yx(row + 1, col + 1)), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// South-East
 
 				if (piQ == pi)
 					nd++;
@@ -335,7 +335,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 			if (D.safe(row + 1, col) && D.yx(row + 1, col) != 0) {
 
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));		// South
+				piQ = Nyxus::to_grayscale(static_cast<unsigned int>(D.yx(row + 1, col)), r.aux_min, piRange, nGrays, STNGS_IBSI(s));		// South
 
 				if (piQ == pi)
 					nd++;
@@ -343,7 +343,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 			if (D.safe(row + 1, col - 1) && D.yx(row + 1, col - 1) != 0) {
 
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// South-West
+				piQ = Nyxus::to_grayscale(static_cast<unsigned int>(D.yx(row + 1, col - 1)), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// South-West
 
 				if (piQ == pi)
 					nd++;
@@ -351,7 +351,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 			if (D.safe(row, col - 1) && D.yx(row, col - 1) != 0) {
 
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));		// West
+				piQ = Nyxus::to_grayscale(static_cast<unsigned int>(D.yx(row, col - 1)), r.aux_min, piRange, nGrays, STNGS_IBSI(s));		// West
 
 				if (piQ == pi)
 					nd++;
@@ -359,7 +359,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 			if (D.safe(row - 1, col - 1) && D.yx(row - 1, col - 1) != 0) {
 
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// North-West
+				piQ = Nyxus::to_grayscale(static_cast<unsigned int>(D.yx(row - 1, col - 1)), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// North-West
 
 				if (piQ == pi)
 					nd++;
@@ -374,7 +374,7 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 		}
 
 	//==== Fill the matrix
-	Ng = (int) U.size();
+	Ng = static_cast<int>(U.size());
 	Nd = 8 + 1;	// N, NE, E, SE, S, SW, W, NW + zero
 	Nz = (decltype(Nz))Z.size();
 
@@ -410,20 +410,20 @@ void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 void GLDMFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::GLDM_SDE][0] = fv_SDE;
-	fvals[(int)Feature2D::GLDM_LDE][0] = fv_LDE;
-	fvals[(int)Feature2D::GLDM_GLN][0] = fv_GLN;
-	fvals[(int)Feature2D::GLDM_DN][0] = fv_DN;
-	fvals[(int)Feature2D::GLDM_DNN][0] = fv_DNN;
-	fvals[(int)Feature2D::GLDM_GLV][0] = fv_GLV;
-	fvals[(int)Feature2D::GLDM_DV][0] = fv_DV;
-	fvals[(int)Feature2D::GLDM_DE][0] = fv_DE;
-	fvals[(int)Feature2D::GLDM_LGLE][0] = fv_LGLE;
-	fvals[(int)Feature2D::GLDM_HGLE][0] = fv_HGLE;
-	fvals[(int)Feature2D::GLDM_SDLGLE][0] = fv_SDLGLE;
-	fvals[(int)Feature2D::GLDM_SDHGLE][0] = fv_SDHGLE;
-	fvals[(int)Feature2D::GLDM_LDLGLE][0] = fv_LDLGLE;
-	fvals[(int)Feature2D::GLDM_LDHGLE][0] = fv_LDHGLE;
+	fvals[static_cast<int>(Feature2D::GLDM_SDE)][0] = fv_SDE;
+	fvals[static_cast<int>(Feature2D::GLDM_LDE)][0] = fv_LDE;
+	fvals[static_cast<int>(Feature2D::GLDM_GLN)][0] = fv_GLN;
+	fvals[static_cast<int>(Feature2D::GLDM_DN)][0] = fv_DN;
+	fvals[static_cast<int>(Feature2D::GLDM_DNN)][0] = fv_DNN;
+	fvals[static_cast<int>(Feature2D::GLDM_GLV)][0] = fv_GLV;
+	fvals[static_cast<int>(Feature2D::GLDM_DV)][0] = fv_DV;
+	fvals[static_cast<int>(Feature2D::GLDM_DE)][0] = fv_DE;
+	fvals[static_cast<int>(Feature2D::GLDM_LGLE)][0] = fv_LGLE;
+	fvals[static_cast<int>(Feature2D::GLDM_HGLE)][0] = fv_HGLE;
+	fvals[static_cast<int>(Feature2D::GLDM_SDLGLE)][0] = fv_SDLGLE;
+	fvals[static_cast<int>(Feature2D::GLDM_SDHGLE)][0] = fv_SDHGLE;
+	fvals[static_cast<int>(Feature2D::GLDM_LDLGLE)][0] = fv_LDLGLE;
+	fvals[static_cast<int>(Feature2D::GLDM_LDHGLE)][0] = fv_LDHGLE;
 }
 
 // 1. Small Dependence Emphasis(SDE)
@@ -522,7 +522,7 @@ double GLDMFeature::calc_GLV()
 	double mu = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double) I[i-1];
+		double inten = static_cast<double>(I[i-1]);
 		for (int j = 1; j <= Nd; j++)
 		{
 			mu += P.matlab(i, j) / double(Nz) * inten;
@@ -532,7 +532,7 @@ double GLDMFeature::calc_GLV()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double) I[i-1];
+		double inten = static_cast<double>(I[i-1]);
 		for (int j = 1; j <= Nd; j++)
 		{
 			double mu2 = (inten - mu) * (inten - mu);
@@ -589,7 +589,7 @@ double GLDMFeature::calc_LGLE()
 	double sum_i = 0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten2 = (double) I[i-1];
+		double inten2 = static_cast<double>(I[i-1]);
 		inten2 *= inten2;
 		double sum_j = 0;
 		for (int j = 1; j <= Nd; j++)
@@ -616,7 +616,7 @@ double GLDMFeature::calc_HGLE()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double) I[i-1];
+		double inten = static_cast<double>(I[i-1]);
 		f +=  si[i-1] * inten * inten;
 	}
 
@@ -630,7 +630,7 @@ double GLDMFeature::calc_SDLGLE()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double) I[i-1];
+		double inten = static_cast<double>(I[i-1]);
 		for (int j = 1; j <= Nd; j++)
 		{
 			f += P.matlab(i, j) / double(inten * inten * j * j);
@@ -646,7 +646,7 @@ double GLDMFeature::calc_SDHGLE()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double) I[i-1];
+		double inten = static_cast<double>(I[i-1]);
 		for (int j = 1; j <= Nd; j++)
 		{
 			f += P.matlab(i, j) * (inten * inten) / double(j*j);
@@ -662,7 +662,7 @@ double GLDMFeature::calc_LDLGLE()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double) I[i-1];
+		double inten = static_cast<double>(I[i-1]);
 		for (int j = 1; j <= Nd; j++)
 		{
 			f += P.matlab(i, j) * double(j * j) / (inten * inten);
@@ -678,7 +678,7 @@ double GLDMFeature::calc_LDHGLE()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double)I[i - 1];
+		double inten = static_cast<double>(I[i - 1]);
 		for (int j = 1; j <= Nd; j++)
 		{
 			f += P.matlab(i, j) * double(inten * inten * j * j);

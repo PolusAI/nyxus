@@ -27,8 +27,8 @@ public:
 
         // FIX: HU rescale (used only in preserve_hu mode): true value = slope*stored + intercept.
         // Per NIfTI spec scl_slope==0 means "no scaling", so fall back to an identity transform.
-        scl_slope_ = (nii_->scl_slope != 0.0) ? (double)nii_->scl_slope : 1.0;
-        scl_inter_ = (nii_->scl_slope != 0.0) ? (double)nii_->scl_inter : 0.0;
+        scl_slope_ = (nii_->scl_slope != 0.0) ? static_cast<double>(nii_->scl_slope ): 1.0;
+        scl_inter_ = (nii_->scl_slope != 0.0) ? static_cast<double>(nii_->scl_inter ): 0.0;
 
         switch (nii_->datatype)
         {
@@ -109,15 +109,15 @@ public:
     template<typename FileType>
     static uint32_t get_uint32_pixel_imp (const void* src, size_t idx)
     {
-        FileType x = *(((FileType*)src) + idx);
-        return (uint32_t)x;
+        FileType x = *((static_cast<const FileType*>(src)) + idx);
+        return static_cast<uint32_t>(x);
     }
 
     template<typename FileType>
     static double get_dp_pixel_imp (const void* src, size_t idx)
     {
-        FileType x = *(((FileType*)src) + idx);
-        return (double)x;
+        FileType x = *((static_cast<const FileType*>(src)) + idx);
+        return static_cast<double>(x);
     }
 
     uint32_t get_uint32_pixel (size_t idx) const
@@ -241,8 +241,8 @@ public:
         }
 
         // FIX: HU rescale for this read (used only in preserve_hu mode); scl_slope==0 => identity.
-        cur_scl_slope_ = (nii->scl_slope != 0.0) ? (double)nii->scl_slope : 1.0;
-        cur_scl_inter_ = (nii->scl_slope != 0.0) ? (double)nii->scl_inter : 0.0;
+        cur_scl_slope_ = (nii->scl_slope != 0.0) ? static_cast<double>(nii->scl_slope ): 1.0;
+        cur_scl_inter_ = (nii->scl_slope != 0.0) ? static_cast<double>(nii->scl_inter ): 0.0;
 
         // cache
         if (nii->datatype == 2) {  // NIFTI_TYPE_UINT8
@@ -342,7 +342,7 @@ private:
            double base = std::floor (hu_min_base_);
            for (size_t i = 0; i < n; ++i)
            {
-               double hu = cur_scl_slope_ * (double)houbuf[i] + cur_scl_inter_;
+               double hu = cur_scl_slope_ * static_cast<double>(houbuf[i] )+ cur_scl_inter_;
                double y = hu - base;
                if (y < 0.0) y = 0.0;
                nyxbuf[i] = static_cast<til>(std::llround(y));

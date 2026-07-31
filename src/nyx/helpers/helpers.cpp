@@ -51,12 +51,12 @@ namespace Nyxus
 	double calc_mean (const std::vector<double>& X)
 	{
 		double sum = std::accumulate(X.begin(), X.end(), 0.0);
-		return sum / (double) X.size();
+		return sum / static_cast<double>(X.size());
 	}
 
 	double calc_covariance (const std::vector<double>& data1, double mean1, const std::vector<double>& data2, double mean2)
 	{
-		double normfactor = (double)(data1.size() - 1),  // sample covariance
+		double normfactor = static_cast<double>((data1.size() - 1)),  // sample covariance
 			sum_of_products = 0.0;
 
 		for (size_t i = 0; i < data1.size(); i++)

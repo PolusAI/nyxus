@@ -14,7 +14,7 @@
 class RoiRadiusFeature: public FeatureMethod
 {
 public:
-	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+	static constexpr std::initializer_list<Nyxus::Feature2D> featureset =
 	{
 		Nyxus::Feature2D::ROI_RADIUS_MEAN,
 		Nyxus::Feature2D::ROI_RADIUS_MAX,

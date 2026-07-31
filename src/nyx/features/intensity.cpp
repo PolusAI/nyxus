@@ -90,7 +90,7 @@ void PixelIntensityFeatures::calculate (LR& r, const Fsettings & fsett, const Da
 			val_COV =
 			val_STANDARD_DEVIATION_BIASED =
 			val_VARIANCE =
-			val_VARIANCE_BIASED = fsett[(int)NyxSetting::SOFTNAN].rval; // former theEnvironment.resultOptions.noval();
+			val_VARIANCE_BIASED = fsett[static_cast<int>(NyxSetting::SOFTNAN)].rval; // former theEnvironment.resultOptions.noval();
 
 		return;
 	}
@@ -358,48 +358,48 @@ void PixelIntensityFeatures::osized_calculate (LR& r, const Fsettings& stng, con
 
 void PixelIntensityFeatures::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::INTEGRATED_INTENSITY][0] = val_INTEGRATED_INTENSITY;
-	fvals[(int)Feature2D::MEAN][0] = val_MEAN;
-	fvals[(int)Feature2D::MEDIAN][0] = val_MEDIAN;
-	fvals[(int)Feature2D::MIN][0] = val_MIN;
-	fvals[(int)Feature2D::MAX][0] = val_MAX;
-	fvals[(int)Feature2D::RANGE][0] = val_RANGE;
-	fvals[(int)Feature2D::COVERED_IMAGE_INTENSITY_RANGE][0] = val_COVERED_IMAGE_INTENSITY_RANGE;
-	fvals[(int)Feature2D::STANDARD_DEVIATION][0] = val_STANDARD_DEVIATION;
-	fvals[(int)Feature2D::STANDARD_ERROR][0] = val_STANDARD_ERROR;
-	fvals[(int)Feature2D::SKEWNESS][0] = val_SKEWNESS;
-	fvals[(int)Feature2D::KURTOSIS][0] = val_KURTOSIS;
-	fvals[(int)Feature2D::EXCESS_KURTOSIS][0] = val_EXCESS_KURTOSIS;
-	fvals[(int)Feature2D::HYPERSKEWNESS][0] = val_HYPERSKEWNESS;
-	fvals[(int)Feature2D::HYPERFLATNESS][0] = val_HYPERFLATNESS;
-	fvals[(int)Feature2D::MEAN_ABSOLUTE_DEVIATION][0] = val_MEAN_ABSOLUTE_DEVIATION;
-	fvals[(int)Feature2D::MEDIAN_ABSOLUTE_DEVIATION][0] = val_MEDIAN_ABSOLUTE_DEVIATION;
-	fvals[(int)Feature2D::ENERGY][0] = val_ENERGY;
-	fvals[(int)Feature2D::ROOT_MEAN_SQUARED][0] = val_ROOT_MEAN_SQUARED;
-	fvals[(int)Feature2D::ENTROPY][0] = val_ENTROPY;
-	fvals[(int)Feature2D::MODE][0] = val_MODE;
-	fvals[(int)Feature2D::UNIFORMITY][0] = val_UNIFORMITY;
-	fvals[(int)Feature2D::UNIFORMITY_PIU][0] = val_UNIFORMITY_PIU;
-	fvals[(int)Feature2D::P01][0] = val_P01;
-	fvals[(int)Feature2D::P10][0] = val_P10;
-	fvals[(int)Feature2D::P25][0] = val_P25;
-	fvals[(int)Feature2D::P75][0] = val_P75;
-	fvals[(int)Feature2D::P90][0] = val_P90;
-	fvals[(int)Feature2D::P99][0] = val_P99;
-	fvals[(int)Feature2D::QCOD][0] = val_QCOD;
-	fvals[(int)Feature2D::INTERQUARTILE_RANGE][0] = val_INTERQUARTILE_RANGE;
-	fvals[(int)Feature2D::QCOD][0] = val_QCOD;
-	fvals[(int)Feature2D::ROBUST_MEAN][0] = val_ROBUST_MEAN;
-	fvals[(int)Feature2D::ROBUST_MEAN_ABSOLUTE_DEVIATION][0] = val_ROBUST_MEAN_ABSOLUTE_DEVIATION;
-	fvals[(int)Feature2D::COV][0] = val_COV;
-	fvals[(int)Feature2D::STANDARD_DEVIATION_BIASED][0] = val_STANDARD_DEVIATION_BIASED;
-	fvals[(int)Feature2D::VARIANCE][0] = val_VARIANCE;
-	fvals[(int)Feature2D::VARIANCE_BIASED][0] = val_VARIANCE_BIASED;
+	fvals[static_cast<int>(Feature2D::INTEGRATED_INTENSITY)][0] = val_INTEGRATED_INTENSITY;
+	fvals[static_cast<int>(Feature2D::MEAN)][0] = val_MEAN;
+	fvals[static_cast<int>(Feature2D::MEDIAN)][0] = val_MEDIAN;
+	fvals[static_cast<int>(Feature2D::MIN)][0] = val_MIN;
+	fvals[static_cast<int>(Feature2D::MAX)][0] = val_MAX;
+	fvals[static_cast<int>(Feature2D::RANGE)][0] = val_RANGE;
+	fvals[static_cast<int>(Feature2D::COVERED_IMAGE_INTENSITY_RANGE)][0] = val_COVERED_IMAGE_INTENSITY_RANGE;
+	fvals[static_cast<int>(Feature2D::STANDARD_DEVIATION)][0] = val_STANDARD_DEVIATION;
+	fvals[static_cast<int>(Feature2D::STANDARD_ERROR)][0] = val_STANDARD_ERROR;
+	fvals[static_cast<int>(Feature2D::SKEWNESS)][0] = val_SKEWNESS;
+	fvals[static_cast<int>(Feature2D::KURTOSIS)][0] = val_KURTOSIS;
+	fvals[static_cast<int>(Feature2D::EXCESS_KURTOSIS)][0] = val_EXCESS_KURTOSIS;
+	fvals[static_cast<int>(Feature2D::HYPERSKEWNESS)][0] = val_HYPERSKEWNESS;
+	fvals[static_cast<int>(Feature2D::HYPERFLATNESS)][0] = val_HYPERFLATNESS;
+	fvals[static_cast<int>(Feature2D::MEAN_ABSOLUTE_DEVIATION)][0] = val_MEAN_ABSOLUTE_DEVIATION;
+	fvals[static_cast<int>(Feature2D::MEDIAN_ABSOLUTE_DEVIATION)][0] = val_MEDIAN_ABSOLUTE_DEVIATION;
+	fvals[static_cast<int>(Feature2D::ENERGY)][0] = val_ENERGY;
+	fvals[static_cast<int>(Feature2D::ROOT_MEAN_SQUARED)][0] = val_ROOT_MEAN_SQUARED;
+	fvals[static_cast<int>(Feature2D::ENTROPY)][0] = val_ENTROPY;
+	fvals[static_cast<int>(Feature2D::MODE)][0] = val_MODE;
+	fvals[static_cast<int>(Feature2D::UNIFORMITY)][0] = val_UNIFORMITY;
+	fvals[static_cast<int>(Feature2D::UNIFORMITY_PIU)][0] = val_UNIFORMITY_PIU;
+	fvals[static_cast<int>(Feature2D::P01)][0] = val_P01;
+	fvals[static_cast<int>(Feature2D::P10)][0] = val_P10;
+	fvals[static_cast<int>(Feature2D::P25)][0] = val_P25;
+	fvals[static_cast<int>(Feature2D::P75)][0] = val_P75;
+	fvals[static_cast<int>(Feature2D::P90)][0] = val_P90;
+	fvals[static_cast<int>(Feature2D::P99)][0] = val_P99;
+	fvals[static_cast<int>(Feature2D::QCOD)][0] = val_QCOD;
+	fvals[static_cast<int>(Feature2D::INTERQUARTILE_RANGE)][0] = val_INTERQUARTILE_RANGE;
+	fvals[static_cast<int>(Feature2D::QCOD)][0] = val_QCOD;
+	fvals[static_cast<int>(Feature2D::ROBUST_MEAN)][0] = val_ROBUST_MEAN;
+	fvals[static_cast<int>(Feature2D::ROBUST_MEAN_ABSOLUTE_DEVIATION)][0] = val_ROBUST_MEAN_ABSOLUTE_DEVIATION;
+	fvals[static_cast<int>(Feature2D::COV)][0] = val_COV;
+	fvals[static_cast<int>(Feature2D::STANDARD_DEVIATION_BIASED)][0] = val_STANDARD_DEVIATION_BIASED;
+	fvals[static_cast<int>(Feature2D::VARIANCE)][0] = val_VARIANCE;
+	fvals[static_cast<int>(Feature2D::VARIANCE_BIASED)][0] = val_VARIANCE_BIASED;
 
 	// Multi-valued: one frequency per histogram bin. assign() grows the inner
 	// vector from its default size of 1 to the bin count (empty for blank ROIs;
 	// the CSV writer pads to the bin count with zeros).
-	fvals[(int)Feature2D::HISTOGRAM].assign (val_HISTOGRAM.begin(), val_HISTOGRAM.end());
+	fvals[static_cast<int>(Feature2D::HISTOGRAM)].assign (val_HISTOGRAM.begin(), val_HISTOGRAM.end());
 }
 
 void PixelIntensityFeatures::extract (LR& r, const Fsettings & fs, const Dataset & ds)

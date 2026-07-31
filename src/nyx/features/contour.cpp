@@ -196,8 +196,8 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 	std::vector<Pixel2> cands10;
 	for (const Pixel2& px : unordered)
 	{
-		auto dx = std::fabs((int)px.x - (int)tip.x),
-			dy = std::fabs((int)px.y - (int)tip.y);
+		auto dx = std::fabs(static_cast<int>(px.x )- static_cast<int>(tip.x)),
+			dy = std::fabs(static_cast<int>(px.y )- static_cast<int>(tip.y));
 		if (dx+dy>1)
 			continue;
 		cands10.push_back (px);
@@ -212,8 +212,8 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 
 	for (const Pixel2& px : unordered)
 	{
-		auto dx = std::fabs((int)px.x - (int)tip.x),
-			dy = std::fabs((int)px.y - (int)tip.y);
+		auto dx = std::fabs(static_cast<int>(px.x )- static_cast<int>(tip.x)),
+			dy = std::fabs(static_cast<int>(px.y )- static_cast<int>(tip.y));
 		if (dx==1 && dy==1)
 			cands11.push_back(px);
 	}
@@ -846,8 +846,8 @@ void ContourFeature::buildRegularContour_nontriv (LR& r, const Fsettings& s)
 		for (Pixel2& px : unordered)
 		{
 			//	--test for proximity and skio non-neighbors
-			auto dx = std::fabs((int)px.x - (int)pxTip.x),
-				dy = std::fabs((int)px.y - (int)pxTip.y);
+			auto dx = std::fabs(static_cast<int>(px.x )- static_cast<int>(pxTip.x)),
+				dy = std::fabs(static_cast<int>(px.y )- static_cast<int>(pxTip.y));
 			if (dx > 1 || dy > 1)
 				continue;	// not a neighbor of pxTip
 
@@ -857,12 +857,12 @@ void ContourFeature::buildRegularContour_nontriv (LR& r, const Fsettings& s)
 
 		if (!cands.empty())
 		{
-			int distMin = (int)pxTip.sqdist(cands[0]);
+			int distMin = static_cast<int>(pxTip.sqdist(cands[0]));
 			int idxMin = 0;
 			for (int i = 1; i < cands.size(); i++)
 			{
 				Pixel2& px = cands[i];
-				int dist = (int)pxTip.sqdist(cands[i]);
+				int dist = static_cast<int>(pxTip.sqdist(cands[i]));
 				if (dist < distMin)
 				{
 					idxMin = i;
@@ -996,7 +996,7 @@ void ContourFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& i
 	r.merge_multicontour(K);
 
 	//=== Calculate the features
-	fval_PERIMETER = (StatsInt) K.size();
+	fval_PERIMETER = static_cast<StatsInt>(K.size());
 	fval_DIAMETER_EQUAL_PERIMETER = fval_PERIMETER / M_PI;
 	auto [cmin, cmax, cmean, cstddev] = calc_min_max_mean_stddev_intensity (K);
 	fval_EDGE_MEAN_INTENSITY = cmean;
@@ -1011,13 +1011,13 @@ void ContourFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& i
 
 void ContourFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::PERIMETER][0] = fval_PERIMETER;
-	fvals[(int)Feature2D::DIAMETER_EQUAL_PERIMETER][0] = fval_DIAMETER_EQUAL_PERIMETER;
-	fvals[(int)Feature2D::EDGE_MEAN_INTENSITY][0] = fval_EDGE_MEAN_INTENSITY;
-	fvals[(int)Feature2D::EDGE_STDDEV_INTENSITY][0] = fval_EDGE_STDDEV_INTENSITY;
-	fvals[(int)Feature2D::EDGE_MAX_INTENSITY][0] = fval_EDGE_MAX_INTENSITY;
-	fvals[(int)Feature2D::EDGE_MIN_INTENSITY][0] = fval_EDGE_MIN_INTENSITY;
-	fvals[(int)Feature2D::EDGE_INTEGRATED_INTENSITY][0] = fval_EDGE_INTEGRATEDINTENSITY;
+	fvals[static_cast<int>(Feature2D::PERIMETER)][0] = fval_PERIMETER;
+	fvals[static_cast<int>(Feature2D::DIAMETER_EQUAL_PERIMETER)][0] = fval_DIAMETER_EQUAL_PERIMETER;
+	fvals[static_cast<int>(Feature2D::EDGE_MEAN_INTENSITY)][0] = fval_EDGE_MEAN_INTENSITY;
+	fvals[static_cast<int>(Feature2D::EDGE_STDDEV_INTENSITY)][0] = fval_EDGE_STDDEV_INTENSITY;
+	fvals[static_cast<int>(Feature2D::EDGE_MAX_INTENSITY)][0] = fval_EDGE_MAX_INTENSITY;
+	fvals[static_cast<int>(Feature2D::EDGE_MIN_INTENSITY)][0] = fval_EDGE_MIN_INTENSITY;
+	fvals[static_cast<int>(Feature2D::EDGE_INTEGRATED_INTENSITY)][0] = fval_EDGE_INTEGRATEDINTENSITY;
 }
 
 void ContourFeature::cleanup_instance()

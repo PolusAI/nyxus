@@ -13,7 +13,7 @@ class EllipseFittingFeature: public FeatureMethod
 {
 public:
 
-	const constexpr static std::initializer_list<Nyxus::Feature2D> featureset =
+	static constexpr std::initializer_list<Nyxus::Feature2D> featureset =
 	{
 		Nyxus::Feature2D::MAJOR_AXIS_LENGTH,
 		Nyxus::Feature2D::MINOR_AXIS_LENGTH,

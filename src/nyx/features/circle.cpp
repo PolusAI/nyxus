@@ -15,14 +15,14 @@ void EnclosingInscribingCircumscribingCircleFeature::calculate (LR& r, const Fse
     r.merge_multicontour(K);
 
     d_minEnclo = calculate_min_enclosing_circle_diam (K);
-    std::tie(d_inscr, d_circum) = calculate_inscribing_circumscribing_circle (K, r.fvals[(int)Feature2D::CENTROID_X][0], r.fvals[(int)Feature2D::CENTROID_Y][0]);
+    std::tie(d_inscr, d_circum) = calculate_inscribing_circumscribing_circle (K, r.fvals[static_cast<int>(Feature2D::CENTROID_X)][0], r.fvals[static_cast<int>(Feature2D::CENTROID_Y)][0]);
 }
 
 void EnclosingInscribingCircumscribingCircleFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-    fvals[(int)Nyxus::Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE][0] = d_minEnclo;
-    fvals[(int)Nyxus::Feature2D::DIAMETER_INSCRIBING_CIRCLE][0] = d_inscr;
-    fvals[(int)Nyxus::Feature2D::DIAMETER_CIRCUMSCRIBING_CIRCLE][0] = d_circum;
+    fvals[static_cast<int>(Nyxus::Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE)][0] = d_minEnclo;
+    fvals[static_cast<int>(Nyxus::Feature2D::DIAMETER_INSCRIBING_CIRCLE)][0] = d_inscr;
+    fvals[static_cast<int>(Nyxus::Feature2D::DIAMETER_CIRCUMSCRIBING_CIRCLE)][0] = d_circum;
 }
 
 double EnclosingInscribingCircumscribingCircleFeature::calculate_min_enclosing_circle_diam (std::vector<Pixel2>& Contour)
@@ -77,25 +77,25 @@ void EnclosingInscribingCircumscribingCircleFeature::findCircle3pts (const std::
     }
     float cx = (c1 * v2.y - c2 * v1.y) / det;
     float cy = (v1.x * c2 - v2.x * c1) / det;
-    center.x = (float)cx;
-    center.y = (float)cy;
+    center.x = static_cast<float>(cx);
+    center.y = static_cast<float>(cy);
     cx -= pts[0].x;
     cy -= pts[0].y;
-    radius = (float)(std::sqrt(cx * cx + cy * cy)) + EPS;
+    radius = static_cast<float>((std::sqrt(cx * cx + cy * cy)) )+ EPS;
 }
 
 void EnclosingInscribingCircumscribingCircleFeature::findThirdPoint (const std::vector<Pixel2>& pts, int i, int j, Point2f& center, float& radius)
 {
-    center.x = (float)(pts[j].x + pts[i].x) / 2.0f;
-    center.y = (float)(pts[j].y + pts[i].y) / 2.0f;
-    float dx = (float)(pts[j].x - pts[i].x);
-    float dy = (float)(pts[j].y - pts[i].y);
-    radius = (float)normL2(Point2f(dx, dy)) / 2.0f + EPS;
+    center.x = static_cast<float>((pts[j].x + pts[i].x) )/ 2.0f;
+    center.y = static_cast<float>((pts[j].y + pts[i].y) )/ 2.0f;
+    float dx = static_cast<float>((pts[j].x - pts[i].x));
+    float dy = static_cast<float>((pts[j].y - pts[i].y));
+    radius = static_cast<float>(normL2(Point2f(dx, dy)) )/ 2.0f + EPS;
 
     for (int k = 0; k < j; k++)
     {
-        dx = center.x - (float)pts[k].x;
-        dy = center.y - (float)pts[k].y;
+        dx = center.x - static_cast<float>(pts[k].x);
+        dy = center.y - static_cast<float>(pts[k].y);
         if (normL2(Point2f(dx, dy)) < radius)
             continue;
         else
@@ -117,16 +117,16 @@ void EnclosingInscribingCircumscribingCircleFeature::findThirdPoint (const std::
 
 void EnclosingInscribingCircumscribingCircleFeature::findSecondPoint (const std::vector<Pixel2>& pts, int i, Point2f& center, float& radius)
 {
-    center.x = (float)(pts[0].x + pts[i].x) / 2.0f;
-    center.y = (float)(pts[0].y + pts[i].y) / 2.0f;
-    float dx = (float)(pts[0].x - pts[i].x);
-    float dy = (float)(pts[0].y - pts[i].y);
-    radius = (float)normL2(Point2f(dx, dy)) / 2.0f + EPS;
+    center.x = static_cast<float>((pts[0].x + pts[i].x) )/ 2.0f;
+    center.y = static_cast<float>((pts[0].y + pts[i].y) )/ 2.0f;
+    float dx = static_cast<float>((pts[0].x - pts[i].x));
+    float dy = static_cast<float>((pts[0].y - pts[i].y));
+    radius = static_cast<float>(normL2(Point2f(dx, dy)) )/ 2.0f + EPS;
 
     for (int j = 1; j < i; j++)
     {
-        dx = center.x - (float)pts[j].x;
-        dy = center.y - (float)pts[j].y;
+        dx = center.x - static_cast<float>(pts[j].x);
+        dy = center.y - static_cast<float>(pts[j].y);
         if (normL2(Point2f(dx, dy)) < radius)
             continue;
         else
@@ -144,18 +144,18 @@ void EnclosingInscribingCircumscribingCircleFeature::findSecondPoint (const std:
 
 void EnclosingInscribingCircumscribingCircleFeature::findMinEnclosingCircle (const std::vector<Pixel2>& contour, Point2f& center, float& radius)
 {
-    center.x = (float)(contour[0].x + contour[1].x) / 2.0f;
-    center.y = (float)(contour[0].y + contour[1].y) / 2.0f;
-    float dx = (float)(contour[0].x - contour[1].x),
-        dy = (float)(contour[0].y - contour[1].y);
-    radius = (float)normL2(Point2f(dx, dy)) / 2.0f + EPS;
+    center.x = static_cast<float>((contour[0].x + contour[1].x) )/ 2.0f;
+    center.y = static_cast<float>((contour[0].y + contour[1].y) )/ 2.0f;
+    float dx = static_cast<float>((contour[0].x - contour[1].x)),
+        dy = static_cast<float>((contour[0].y - contour[1].y));
+    radius = static_cast<float>(normL2(Point2f(dx, dy)) )/ 2.0f + EPS;
 
     auto count = contour.size();
     for (auto i = 2; i < count; i++)
     {
-        dx = (float)contour[i].x - center.x;
-        dy = (float)contour[i].y - center.y;
-        float d = (float)normL2(Point2f(dx, dy));
+        dx = static_cast<float>(contour[i].x )- center.x;
+        dy = static_cast<float>(contour[i].y )- center.y;
+        float d = static_cast<float>(normL2(Point2f(dx, dy)));
         if (d < radius)
             continue;
         else
@@ -190,17 +190,17 @@ void EnclosingInscribingCircumscribingCircleFeature::minEnclosingCircle(
     {
         case 1:
         {
-            _center = Point2f ((float)Contour[0].x, (float)Contour[0].y);   //(is_float) ? ptsf[0] : Point2f((float)ptsi[0].x, (float)ptsi[0].y);
+            _center = Point2f (static_cast<float>(Contour[0].x), static_cast<float>(Contour[0].y));   //(is_float) ? ptsf[0] : Point2f((float)ptsi[0].x, (float)ptsi[0].y);
             _radius = EPS;
             break;
         }
         case 2:
         {
-            Point2f p1 = Point2f ((float)Contour[0].x, (float)Contour[0].y);   //(is_float) ? ptsf[0] : Point2f((float)ptsi[0].x, (float)ptsi[0].y);
-            Point2f p2 = Point2f ((float)Contour[1].x, (float)Contour[1].y);    //(is_float) ? ptsf[1] : Point2f((float)ptsi[1].x, (float)ptsi[1].y);
+            Point2f p1 = Point2f (static_cast<float>(Contour[0].x), static_cast<float>(Contour[0].y));   //(is_float) ? ptsf[0] : Point2f((float)ptsi[0].x, (float)ptsi[0].y);
+            Point2f p2 = Point2f (static_cast<float>(Contour[1].x), static_cast<float>(Contour[1].y));    //(is_float) ? ptsf[1] : Point2f((float)ptsi[1].x, (float)ptsi[1].y);
             _center.x = (p1.x + p2.x) / 2.0f;
             _center.y = (p1.y + p2.y) / 2.0f;
-            _radius = (float)(normL2(p1 - p2) / 2.0) + EPS;
+            _radius = static_cast<float>((normL2(p1 - p2) / 2.0) )+ EPS;
             break;
         }
         default:

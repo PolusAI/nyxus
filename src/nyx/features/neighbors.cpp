@@ -113,10 +113,10 @@ void parallel_process_1_batch_of_collision_pairs (
 			continue;
 
 		// Save partial statis of r1's touching pixel stats
-		r1.fvals[(int)Feature2D::PERCENT_TOUCHING][0] += n_touchingOuterPixels;
+		r1.fvals[static_cast<int>(Feature2D::PERCENT_TOUCHING)][0] += n_touchingOuterPixels;
 
 		// Definitely neighbors
-		r1.fvals[(int)Feature2D::NUM_NEIGHBORS][0]++;
+		r1.fvals[static_cast<int>(Feature2D::NUM_NEIGHBORS)][0]++;
 		r1.aux_neighboring_labels.push_back(l2);
 	}
 }

@@ -138,7 +138,7 @@ void D3_NGLDM_feature::calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int&
 
 				// Get a dense index value for sparse binned intensity cpi_
 				auto iter = std::find(U.begin(), U.end(), cpi_);
-				int row = (int)(iter - U.begin());
+				int row = static_cast<int>((iter - U.begin()));
 
 				// Having pixel (x,y) as the center, iterate pixels of the neighborhood and update its histogram 
 				int n_matches = 0;	// (y,x)'s dependency -- the number of matches of center pixel (y,x)'s intensity in its neighborhood
@@ -361,25 +361,25 @@ void D3_NGLDM_feature::calc_features(const std::vector<double>& Sg, const std::v
 
 void D3_NGLDM_feature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature3D::NGLDM_LDE][0] = f_LDE;
-	fvals[(int)Feature3D::NGLDM_HDE][0] = f_HDE;
-	fvals[(int)Feature3D::NGLDM_LGLCE][0] = f_LGLCE;
-	fvals[(int)Feature3D::NGLDM_HGLCE][0] = f_HGLCE;
-	fvals[(int)Feature3D::NGLDM_LDLGLE][0] = f_LDLGLE;
-	fvals[(int)Feature3D::NGLDM_LDHGLE][0] = f_LDHGLE;
-	fvals[(int)Feature3D::NGLDM_HDLGLE][0] = f_HDLGLE;
-	fvals[(int)Feature3D::NGLDM_HDHGLE][0] = f_HDHGLE;
-	fvals[(int)Feature3D::NGLDM_GLNU][0] = f_GLNU;
-	fvals[(int)Feature3D::NGLDM_GLNUN][0] = f_GLNUN;
-	fvals[(int)Feature3D::NGLDM_DCNU][0] = f_DCNU;
-	fvals[(int)Feature3D::NGLDM_DCNUN][0] = f_DCNUN;
-	fvals[(int)Feature3D::NGLDM_GLM][0] = f_GLCM;
-	fvals[(int)Feature3D::NGLDM_GLV][0] = f_GLV;
-	fvals[(int)Feature3D::NGLDM_DCM][0] = f_DCM;
-	fvals[(int)Feature3D::NGLDM_DCP][0] = f_DCP;
-	fvals[(int)Feature3D::NGLDM_DCV][0] = f_DCV;
-	fvals[(int)Feature3D::NGLDM_DCENT][0] = f_DCENT;
-	fvals[(int)Feature3D::NGLDM_DCENE][0] = f_DCENE;
+	fvals[static_cast<int>(Feature3D::NGLDM_LDE)][0] = f_LDE;
+	fvals[static_cast<int>(Feature3D::NGLDM_HDE)][0] = f_HDE;
+	fvals[static_cast<int>(Feature3D::NGLDM_LGLCE)][0] = f_LGLCE;
+	fvals[static_cast<int>(Feature3D::NGLDM_HGLCE)][0] = f_HGLCE;
+	fvals[static_cast<int>(Feature3D::NGLDM_LDLGLE)][0] = f_LDLGLE;
+	fvals[static_cast<int>(Feature3D::NGLDM_LDHGLE)][0] = f_LDHGLE;
+	fvals[static_cast<int>(Feature3D::NGLDM_HDLGLE)][0] = f_HDLGLE;
+	fvals[static_cast<int>(Feature3D::NGLDM_HDHGLE)][0] = f_HDHGLE;
+	fvals[static_cast<int>(Feature3D::NGLDM_GLNU)][0] = f_GLNU;
+	fvals[static_cast<int>(Feature3D::NGLDM_GLNUN)][0] = f_GLNUN;
+	fvals[static_cast<int>(Feature3D::NGLDM_DCNU)][0] = f_DCNU;
+	fvals[static_cast<int>(Feature3D::NGLDM_DCNUN)][0] = f_DCNUN;
+	fvals[static_cast<int>(Feature3D::NGLDM_GLM)][0] = f_GLCM;
+	fvals[static_cast<int>(Feature3D::NGLDM_GLV)][0] = f_GLV;
+	fvals[static_cast<int>(Feature3D::NGLDM_DCM)][0] = f_DCM;
+	fvals[static_cast<int>(Feature3D::NGLDM_DCP)][0] = f_DCP;
+	fvals[static_cast<int>(Feature3D::NGLDM_DCV)][0] = f_DCV;
+	fvals[static_cast<int>(Feature3D::NGLDM_DCENT)][0] = f_DCENT;
+	fvals[static_cast<int>(Feature3D::NGLDM_DCENE)][0] = f_DCENE;
 }
 
 void D3_NGLDM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)

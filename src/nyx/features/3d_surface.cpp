@@ -286,7 +286,7 @@ void D3_SurfaceFeature::build_surface (LR & r)
 		for (auto ip : plane)
 		{
 			auto v = r.raw_pixels_3D[ip];
-			P.push_back (std::array<float, 3>({ (float)v.x, (float)v.y, (float)v.z }));
+			P.push_back (std::array<float, 3>({ static_cast<float>(v.x), static_cast<float>(v.y), static_cast<float>(v.z )}));
 		}
 	}
 
@@ -521,21 +521,21 @@ void D3_SurfaceFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader
 
 void D3_SurfaceFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Nyxus::Feature3D::AREA][0] = fval_AREA;
-	fvals[(int)Nyxus::Feature3D::AREA_2_VOLUME][0] = fval_AREA_2_VOLUME;
-	fvals[(int)Nyxus::Feature3D::COMPACTNESS1][0] = fval_COMPACTNESS1;
-	fvals[(int)Nyxus::Feature3D::COMPACTNESS2][0] = fval_COMPACTNESS2;
-	fvals[(int)Nyxus::Feature3D::MESH_VOLUME][0] = fval_MESH_VOLUME;
-	fvals[(int)Nyxus::Feature3D::SPHERICAL_DISPROPORTION][0] = fval_SPHERICAL_DISPROPORTION;
-	fvals[(int)Nyxus::Feature3D::SPHERICITY][0] = fval_SPHERICITY;
-	fvals[(int)Nyxus::Feature3D::VOLUME_CONVEXHULL][0] = fval_VOLUME_CONVEXHULL;
-	fvals[(int)Nyxus::Feature3D::VOXEL_VOLUME][0] = fval_VOXEL_VOLUME;
+	fvals[static_cast<int>(Nyxus::Feature3D::AREA)][0] = fval_AREA;
+	fvals[static_cast<int>(Nyxus::Feature3D::AREA_2_VOLUME)][0] = fval_AREA_2_VOLUME;
+	fvals[static_cast<int>(Nyxus::Feature3D::COMPACTNESS1)][0] = fval_COMPACTNESS1;
+	fvals[static_cast<int>(Nyxus::Feature3D::COMPACTNESS2)][0] = fval_COMPACTNESS2;
+	fvals[static_cast<int>(Nyxus::Feature3D::MESH_VOLUME)][0] = fval_MESH_VOLUME;
+	fvals[static_cast<int>(Nyxus::Feature3D::SPHERICAL_DISPROPORTION)][0] = fval_SPHERICAL_DISPROPORTION;
+	fvals[static_cast<int>(Nyxus::Feature3D::SPHERICITY)][0] = fval_SPHERICITY;
+	fvals[static_cast<int>(Nyxus::Feature3D::VOLUME_CONVEXHULL)][0] = fval_VOLUME_CONVEXHULL;
+	fvals[static_cast<int>(Nyxus::Feature3D::VOXEL_VOLUME)][0] = fval_VOXEL_VOLUME;
 
-	fvals[(int)Nyxus::Feature3D::MAJOR_AXIS_LEN][0] = fval_MAJOR_AXIS_LEN;
-	fvals[(int)Nyxus::Feature3D::MINOR_AXIS_LEN][0] = fval_MINOR_AXIS_LEN;
-	fvals[(int)Nyxus::Feature3D::LEAST_AXIS_LEN][0] = fval_LEAST_AXIS_LEN;
-	fvals[(int)Nyxus::Feature3D::ELONGATION][0] = fval_ELONGATION;
-	fvals[(int)Nyxus::Feature3D::FLATNESS][0] = fval_FLATNESS;
+	fvals[static_cast<int>(Nyxus::Feature3D::MAJOR_AXIS_LEN)][0] = fval_MAJOR_AXIS_LEN;
+	fvals[static_cast<int>(Nyxus::Feature3D::MINOR_AXIS_LEN)][0] = fval_MINOR_AXIS_LEN;
+	fvals[static_cast<int>(Nyxus::Feature3D::LEAST_AXIS_LEN)][0] = fval_LEAST_AXIS_LEN;
+	fvals[static_cast<int>(Nyxus::Feature3D::ELONGATION)][0] = fval_ELONGATION;
+	fvals[static_cast<int>(Nyxus::Feature3D::FLATNESS)][0] = fval_FLATNESS;
 }
 
 void D3_SurfaceFeature::cleanup_instance()

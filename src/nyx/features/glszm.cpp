@@ -176,9 +176,9 @@ void GLSZMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 
 	//==== Fill the SZ-matrix
 
-	Ng = (int)U.size();
+	Ng = static_cast<int>(U.size());
 	Ns = maxZoneArea;
-	Nz = (int)Z.size();
+	Nz = static_cast<int>(Z.size());
 	Np = count;
 
 	// --Set to vector to be able to know each intensity's index
@@ -367,7 +367,7 @@ void GLSZMFeature::calculate (LR& r, const Fsettings& s)
 
 	Ng = STNGS_IBSI(s) ? *std::max_element(I.begin(), I.end()) : I.size();
 	Ns = height * width;
-	Nz = (int)Z.size();
+	Nz = static_cast<int>(Z.size());
 	Np = count;
 
 	// --allocate the matrix
@@ -515,7 +515,7 @@ void GLSZMFeature::calc_sums_of_P()
 	// Aggregate by grayscale level
 	for (int i = 1; i <= Ng; ++i)
 	{
-		double inten = (double) I[i-1];
+		double inten = static_cast<double>(I[i-1]);
 		double sum = 0;
 		for (int j = 1; j <= Ns; ++j)
 		{
@@ -555,22 +555,22 @@ void GLSZMFeature::calc_sums_of_P()
 
 void GLSZMFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::GLSZM_SAE][0] = fv_SAE;
-	fvals[(int)Feature2D::GLSZM_LAE][0] = fv_LAE;
-	fvals[(int)Feature2D::GLSZM_GLN][0] = fv_GLN;
-	fvals[(int)Feature2D::GLSZM_GLNN][0] = fv_GLNN;
-	fvals[(int)Feature2D::GLSZM_SZN][0] = fv_SZN;
-	fvals[(int)Feature2D::GLSZM_SZNN][0] = fv_SZNN;
-	fvals[(int)Feature2D::GLSZM_ZP][0] = fv_ZP;
-	fvals[(int)Feature2D::GLSZM_GLV][0] = fv_GLV;
-	fvals[(int)Feature2D::GLSZM_ZV][0] = fv_ZV;
-	fvals[(int)Feature2D::GLSZM_ZE][0] = fv_ZE;
-	fvals[(int)Feature2D::GLSZM_LGLZE][0] = fv_LGLZE;
-	fvals[(int)Feature2D::GLSZM_HGLZE][0] = fv_HGLZE;
-	fvals[(int)Feature2D::GLSZM_SALGLE][0] = fv_SALGLE;
-	fvals[(int)Feature2D::GLSZM_SAHGLE][0] = fv_SAHGLE;
-	fvals[(int)Feature2D::GLSZM_LALGLE][0] = fv_LALGLE;
-	fvals[(int)Feature2D::GLSZM_LAHGLE][0] = fv_LAHGLE;
+	fvals[static_cast<int>(Feature2D::GLSZM_SAE)][0] = fv_SAE;
+	fvals[static_cast<int>(Feature2D::GLSZM_LAE)][0] = fv_LAE;
+	fvals[static_cast<int>(Feature2D::GLSZM_GLN)][0] = fv_GLN;
+	fvals[static_cast<int>(Feature2D::GLSZM_GLNN)][0] = fv_GLNN;
+	fvals[static_cast<int>(Feature2D::GLSZM_SZN)][0] = fv_SZN;
+	fvals[static_cast<int>(Feature2D::GLSZM_SZNN)][0] = fv_SZNN;
+	fvals[static_cast<int>(Feature2D::GLSZM_ZP)][0] = fv_ZP;
+	fvals[static_cast<int>(Feature2D::GLSZM_GLV)][0] = fv_GLV;
+	fvals[static_cast<int>(Feature2D::GLSZM_ZV)][0] = fv_ZV;
+	fvals[static_cast<int>(Feature2D::GLSZM_ZE)][0] = fv_ZE;
+	fvals[static_cast<int>(Feature2D::GLSZM_LGLZE)][0] = fv_LGLZE;
+	fvals[static_cast<int>(Feature2D::GLSZM_HGLZE)][0] = fv_HGLZE;
+	fvals[static_cast<int>(Feature2D::GLSZM_SALGLE)][0] = fv_SALGLE;
+	fvals[static_cast<int>(Feature2D::GLSZM_SAHGLE)][0] = fv_SAHGLE;
+	fvals[static_cast<int>(Feature2D::GLSZM_LALGLE)][0] = fv_LALGLE;
+	fvals[static_cast<int>(Feature2D::GLSZM_LAHGLE)][0] = fv_LAHGLE;
 }
 
 // 1. Small Area Emphasis
@@ -674,7 +674,7 @@ double GLSZMFeature::calc_GLV()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double) I[i-1];
+		double inten = static_cast<double>(I[i-1]);
 		for (int j = 1; j <= Ns; j++)
 		{
 			double d2 = (inten - mu_GLV) * (inten - mu_GLV);
@@ -715,7 +715,7 @@ double GLSZMFeature::calc_LGLZE()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double)I[i - 1];
+		double inten = static_cast<double>(I[i - 1]);
 		f += si[i] / (inten * inten);
 	}
 
@@ -730,7 +730,7 @@ double GLSZMFeature::calc_HGLZE()
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double) I[i-1];
+		double inten = static_cast<double>(I[i-1]);
 		f += si[i] * (inten * inten);
 	}
 

@@ -241,9 +241,9 @@ private:
             auto row = i / tileWidth_,
                 col = i % tileHeight_;
             if (col < fullWidth_ && row < fullHeight_)
-                dest->data()[i] = (DataType)((FileType*)(src))[i];
+                dest->data()[i] = static_cast<DataType>((static_cast<const FileType*>(src))[i]);
             else
-                dest->data()[i] = (DataType)0;  // Zero-fill gaps
+                dest->data()[i] = static_cast<DataType>(0);  // Zero-fill gaps
         }
     }
     #endif
@@ -278,13 +278,13 @@ private:
                     // (-1024 -> ~4.29e9), blowing up the max-intensity-driven grey-bin/histogram allocation
                     // (macOS segfault; garbage MIN/MAX/MEAN elsewhere). Keep the clamp confined to the else
                     // branch so preserve_hu still retains negatives via hu_offset.
-                    FileType v = *(((FileType*)src) + physOffs);
+                    FileType v = *((static_cast<const FileType*>(src)) + physOffs);
                     if (preserve_hu)
-                        *(dest + logOffs) = hu_offset ((double)v);
+                        *(dest + logOffs) = hu_offset (static_cast<double>(v));
                     else
                     {
                         if constexpr (std::is_signed_v<FileType>) if (v < 0) v = 0;
-                        *(dest + logOffs) = (DataType) v;
+                        *(dest + logOffs) = static_cast<DataType>(v);
                     }
                 }
         }
@@ -298,13 +298,13 @@ private:
                     // FIX(#373): clamp negatives of a signed integer file type before the unsigned cast so int16
                     // CT (negative HU) doesn't wrap to ~4.29e9; confined to the else branch so preserve_hu keeps
                     // negatives via hu_offset.
-                    FileType v = *(((FileType*)src) + i);
+                    FileType v = *((static_cast<const FileType*>(src)) + i);
                     if (preserve_hu)
-                        *(dest + i) = hu_offset ((double)v);
+                        *(dest + i) = hu_offset (static_cast<double>(v));
                     else
                     {
                         if constexpr (std::is_signed_v<FileType>) if (v < 0) v = 0;
-                        *(dest + i) = (DataType) v;
+                        *(dest + i) = static_cast<DataType>(v);
                     }
                 }
             }
@@ -336,7 +336,7 @@ private:
                         physOffs = r * tileWidth_ + c;
 
                     // Prevent real-valued intensities smaller than 1.0 from being cast to integer 0
-                    auto tmp1 = * (((FileType*)src) + physOffs);    // real-valued raw (uncast) intensity e.g. 0.0724
+                    auto tmp1 = * ((static_cast<const FileType*>(src)) + physOffs);    // real-valued raw (uncast) intensity e.g. 0.0724
                     *(dest + logOffs) = map_real_intensity (tmp1);
                 }
         }
@@ -347,7 +347,7 @@ private:
                 for (size_t i = 0; i < n; i++)
                 {
                     // Prevent real-valued intensities smaller than 1.0 from being cast to integer 0
-                    auto tmp1 = * (((FileType*)src) + i);           // real-valued intensity e.g. 0.0724
+                    auto tmp1 = * ((static_cast<const FileType*>(src)) + i);           // real-valued intensity e.g. 0.0724
                     *(dest + i) = map_real_intensity (tmp1);
                 }
             }
@@ -381,9 +381,9 @@ private:
     // clamping sub-min outliers (incl. negative CT values) to 0 instead of wrapping.
     DataType hu_offset (double x) const
     {
-        double y = x - std::floor ((double)floatpt_image_min_intensity);
+        double y = x - std::floor (static_cast<double>(floatpt_image_min_intensity));
         if (y < 0.0) y = 0.0;
-        return (DataType) std::llround (y);
+        return static_cast<DataType>(std::llround (y));
     }
 
     // Map one real-valued pixel to the integer feature domain, honoring HU mode.
@@ -393,9 +393,9 @@ private:
     {
         if (preserve_hu)
             return hu_offset (x);
-        double t = x < floatpt_image_min_intensity ? (double)floatpt_image_min_intensity : x;
-        t = t > floatpt_image_max_intensity ? (double)floatpt_image_max_intensity : t;
-        return (DataType)(floatpt_image_target_dyn_range * (t - floatpt_image_min_intensity) / (floatpt_image_max_intensity - floatpt_image_min_intensity));
+        double t = x < floatpt_image_min_intensity ? static_cast<double>(floatpt_image_min_intensity ): x;
+        t = t > floatpt_image_max_intensity ? static_cast<double>(floatpt_image_max_intensity ): t;
+        return static_cast<DataType>((floatpt_image_target_dyn_range * (t - floatpt_image_min_intensity) / (floatpt_image_max_intensity - floatpt_image_min_intensity)));
     }
 
 };
@@ -618,11 +618,11 @@ private:
         for (size_t col = startCol; col < endCol; col++) 
         {
             // Logic to prevent "noise" in images whose dimensions are smaller than the default tile buffer size 1024x1024
-            DataType dataItem = (DataType) 0;    // Zero-fill gaps
+            DataType dataItem = static_cast<DataType>(0);    // Zero-fill gaps
 
             // - Informative zone of the strip
             if (layer < fullDepth_ && row < fullHeight_ && col < fullWidth_)
-                dataItem = (DataType)((FileType*)(src))[col];
+                dataItem = static_cast<DataType>((static_cast<const FileType*>(src))[col]);
             
             // - Save the informative or zero-filled value
             dest->data()[
@@ -655,7 +655,7 @@ private:
         for (size_t col = start_col; col < end_col; col++)
         {
             // Logic to prevent "noise" in images whose dimensions are smaller than the default tile buffer size 1024x1024
-            DataType dataItem = (DataType) 0;    // Zero-fill gaps
+            DataType dataItem = static_cast<DataType>(0);    // Zero-fill gaps
 
             // - Informative zone of the strip
             if (layer < fullDepth_ && row < fullHeight_ && col < fullWidth_)
@@ -664,9 +664,9 @@ private:
                 // the cast to the unsigned pipeline type, so -1024 doesn't wrap to ~4.29e9 and blow up the
                 // max-intensity-sized grey-bin/histogram allocation (macOS segfault). This is the
                 // strip-loader twin of the tile-loader guard; proper HU handling is the preserve_hu path.
-                FileType v = ((FileType*)(src))[col];
+                FileType v = (static_cast<const FileType*>(src))[col];
                 if constexpr (std::is_signed_v<FileType>) if (v < 0) v = 0;
-                dataItem = (DataType) v;
+                dataItem = static_cast<DataType>(v);
             }
             
             // - Save the informative or zero-filled value

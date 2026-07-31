@@ -19,7 +19,7 @@ public:
 
 	// Codes of features implemented by this class. Used in feature manager's mechanisms, 
 	// in the feature group nickname expansion, and in the feature value output 
-	const constexpr static std::initializer_list<Nyxus::Feature3D> featureset =
+	static constexpr std::initializer_list<Nyxus::Feature3D> featureset =
 	{
 		Nyxus::Feature3D::GLDM_SDE,		// Small Dependence Emphasis
 		Nyxus::Feature3D::GLDM_LDE,		// Large Dependence Emphasis

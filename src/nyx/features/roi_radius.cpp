@@ -69,9 +69,9 @@ void RoiRadiusFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 
 void RoiRadiusFeature::save_value (std::vector<std::vector<double>>& fvals)
 {
-	fvals[(int)Feature2D::ROI_RADIUS_MEAN][0] = mean_r;
-	fvals[(int)Feature2D::ROI_RADIUS_MAX][0] = max_r;
-	fvals[(int)Feature2D::ROI_RADIUS_MEDIAN][0] = median_r;
+	fvals[static_cast<int>(Feature2D::ROI_RADIUS_MEAN)][0] = mean_r;
+	fvals[static_cast<int>(Feature2D::ROI_RADIUS_MAX)][0] = max_r;
+	fvals[static_cast<int>(Feature2D::ROI_RADIUS_MEDIAN)][0] = median_r;
 }
 
 void RoiRadiusFeature::extract (LR& r, const Fsettings& s)
