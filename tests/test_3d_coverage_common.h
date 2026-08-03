@@ -392,8 +392,8 @@ static const std::map<std::string, std::vector<double>>& unvetted_3d_local_regre
 		{ "3NGLDM_DCENE", { 0.14348407632898436 } },
 		{ "3NGLDM_DCENT", { 5.2277449211654039 } },
 		{ "3NGLDM_DCM", { 13.485998122653307 } },
-		{ "3NGLDM_DCNU", { 115443.18172715895 } },
-		{ "3NGLDM_DCNUN", { 0.22575716076180957 } },
+		{ "3NGLDM_DCNU", { 85056.840050062572 } },   // dependence-count (column) marginal; distinct from GLNU's grey-level marginal
+		{ "3NGLDM_DCNUN", { 0.16633455892143026 } },
 		{ "3NGLDM_DCP", { 1 } },
 		{ "3NGLDM_DCV", { 86.17064428912758 } },
 		{ "3NGLDM_GLM", { 16.955115769712151 } },
