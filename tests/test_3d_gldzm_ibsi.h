@@ -7,6 +7,32 @@
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_gldzm.h"
 
+// PROVENANCE: UNKNOWN -- these are NOT IBSI consensus values and this is NOT an oracle table.
+//
+// Despite the "_ibsi" filename, the numbers below have no recorded tool/version/config (SPEC 6.4
+// requires provenance for any oracle golden) and they are evaluated on the Nyxus coverage phantom
+// tests/data/nifti/phantoms/ut_inten.nii + ut_mask57.nii -- NOT the IBSI digital phantom -- so IBSI
+// consensus values cannot apply to them in the first place.
+//
+// Verified 2026-07 with an independent MIRP GLDZM run (MIRP implements IBSI GLDZM; pyradiomics has no
+// GLDZM at all) on the SAME phantom at the SAME discretisation (fixed_bin_number n=64, 3D). MIRP
+// disagrees with every value here, several by an order of magnitude:
+//      feature   this table     MIRP
+//      LDE           314.0      11.235
+//      SDE            0.0224     0.382
+//      ZDV           79.7        3.246
+//      ZP             0.47       0.270
+//      ZDE           10.23       7.505
+// Harness: morph_oracle/mirp_gldzm_3d.py (offline; CI never runs it).
+//
+// => Treat the tests below as REGRESSION / drift guards only. Do NOT promote features in
+// oracle_coverage.csv to status=vetted on the strength of them passing. Promoting requires a
+// documented, config-matched external oracle (MIRP is the candidate for GLDZM).
+//
+// Also note 3GLDZM_ZDM (zone-distance MEAN) is a Nyxus-specific feature with no counterpart at all:
+// IBSI's GLDZM set has no zone-distance mean and MIRP emits only dzm_zd_var / dzm_zd_entr. Its 222
+// below is additionally self-inconsistent (the same distribution's variance is 79.7 => std ~8.9, so a
+// mean of 222 is impossible; Nyxus computes 15.31).
 static std::unordered_map<std::string, double> d3gldzm_GT{
 	{"3GLDZM_SDE",		0.0224},
 	{"3GLDZM_LDE",       314.0},
