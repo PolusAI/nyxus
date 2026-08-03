@@ -29,8 +29,8 @@
 //      HGLCE           740          1324
 //      GLNU         115443          4350.3
 //      GLNUN             0.23          0.01585
-//      DCNU         115443         40745.0
-//      DCNUN             0.23          0.14847
+//      DCNU          85056.8       40745.0
+//      DCNUN             0.166335      0.14847
 //      GLV             190           350.17
 //      DCV              86.17         11.948
 //      DCENT             5.23          8.676
@@ -55,8 +55,8 @@ static std::unordered_map<std::string, double> d3ngldm_GT{
 		{ "3NGLDM_HDHGLE",	20030.0 },
 		{ "3NGLDM_GLNU",	115443.0 },
 		{ "3NGLDM_GLNUN",	0.23 },
-		{ "3NGLDM_DCNU",	115443.0 },
-		{ "3NGLDM_DCNUN",	0.23 },
+		{ "3NGLDM_DCNU",	85056.8 },
+		{ "3NGLDM_DCNUN",	0.166335 },
 		{ "3NGLDM_DCP",	1.0 },
 		{ "3NGLDM_GLM",	17.0 },
 		{ "3NGLDM_GLV",	190.0 },
