@@ -45,7 +45,7 @@ Consequences:
 | **Mechanics** | Does the plumbing work (gating, defaults, I/O)? | No | `_mechanics` |
 
 `<oracle>` ∈ the §4 tokens: { `pyradiomics`, `radiomicsj`, `skimage`, `mirp`, `matlab`, `cellprofiler`, `mitk`,
-`feature2djava`, `wndcharm`, `imea`, `imagej`, `fraclac`, `pydicom`, `ibsi`, `analytic` }.
+`feature2djava`, `wndcharm`, `imea`, `imagej`, `fraclac`, `pydicom`, `opencv`, `ibsi`, `analytic` }.
 
 A single feature family (e.g. GLCM) typically has: one oracle file per reference that covers it,
 plus one regression file. Correctness lives in the oracle files; the regression file is a pure
@@ -112,6 +112,7 @@ churn names).
 | `fraclac` | FracLac (ImageJ plugin) | fractal dimension (box-count) | Java / macro |
 | `mirp` | MIRP | texture, first-order, shape (IBSI-compliant) | Python |
 | `pydicom` | pydicom 3.0.2 | DICOM decode + `RescaleSlope`/`RescaleIntercept` → true HU (CT) | Python |
+| `opencv` | OpenCV 4.13 (`cv2`) | image-quality focus measures (`cv2.Laplacian(...).var()`), filters/convolution | Python |
 | `ibsi` | IBSI reference tables | texture + first-order consensus values | hardcoded |
 | `analytic` | closed-form / hand-computed | any (on tiny fixtures) | in-test |
 
@@ -127,6 +128,12 @@ Notes:
 - scikit-image (`skimage`) is an accepted mainstream oracle (added 2026-07; covers image
   moments, shape descriptors). `mahotas`, `DIPlib`, and `Centrosome` are NOT accepted — features
   only they cover remain regression/analytic.
+- **`opencv`** is the reference for the focus/blur measures Nyxus took from the imaging literature
+  rather than from radiomics: `FOCUS_SCORE` is the Pech-Pacheco et al. (2000) variance of the
+  Laplacian, which is exactly `cv2.Laplacian(img, cv2.CV_64F, ksize=1).var()`. Prefer it over
+  `skimage.filters.laplace`, whose border mode is not settable to zero padding. Note that
+  CellProfiler publishes features *named* `FocusScore`/`LocalFocusScore` that are a different
+  statistic (normalized variance of the raw image) — same name, not an oracle for these.
 - **`pydicom`** is the reference DICOM reader for CT / Hounsfield Units: it decodes the stored
   pixels and applies `RescaleSlope`/`RescaleIntercept` to true HU. It vets the `--preserve-hu` path —
   the loader-pixel values and the first-order HU stats (MIN/MAX/MEAN/INTEGRATED) on a real

@@ -1,5 +1,7 @@
 #include "focus_score.h"
 
+#include <numeric>  // std::reduce / std::transform_reduce used by variance()
+
 using namespace Nyxus;
 
 int FocusScoreFeature::kernel[9] = { 0, 1, 0, 
@@ -254,7 +256,10 @@ void FocusScoreFeature::laplacian(const std::vector<PixIntens>& image, std::vect
 
                     if(ii >= 0 && ii < m_image && jj >= 0 && jj < n_image &&
                        ikFlip >= 0 && jkFlip >=0 && ikFlip < m_kernel && jkFlip < n_kernel){
-                        out[i* n_image + j] += image[ii * n_image + jj] * kernel[ikFlip * n_kernel + jkFlip];
+                        // Cast the pixel to double before multiplying: image is PixIntens (unsigned),
+                        // so the negative kernel weights (e.g. -4) were converted to a huge unsigned
+                        // value, wrapping the Laplacian (focus score reached ~1e18 from the overflow).
+                        out[i* n_image + j] += static_cast<double>(image[ii * n_image + jj]) * kernel[ikFlip * n_kernel + jkFlip];
                     }
                 }
             }
@@ -264,11 +269,14 @@ void FocusScoreFeature::laplacian(const std::vector<PixIntens>& image, std::vect
 
 double FocusScoreFeature::variance(const std::vector<double>& image) {
 
-    double abs_image_mean = std::transform_reduce(image.begin(), image.end(), 0.0, std::plus<>(), [](double val) { 
-        return std::abs(val); 
-    }) / image.size();
+    // Population variance of the signed Laplacian, mean((x - mean(x))^2) -- the
+    // Pech-Pacheco focus measure, matching cv2.Laplacian(img, CV_64F).var(). The
+    // absolute value is deliberately not taken: Var(|X|) = E[X^2] - E[|X|]^2 is a
+    // different, smaller statistic whenever mean(x) != 0, and zero padding at the ROI
+    // border keeps mean(x) away from 0.
+    double image_mean = std::reduce(image.begin(), image.end(), 0.0) / image.size();
 
-    return std::transform_reduce(image.begin(), image.end(), 0.0, std::plus<>(), [abs_image_mean](double pix) {
-        return std::pow(std::abs(pix) - abs_image_mean, 2);
+    return std::transform_reduce(image.begin(), image.end(), 0.0, std::plus<>(), [image_mean](double pix) {
+        return std::pow(pix - image_mean, 2);
     }) / image.size();
 }

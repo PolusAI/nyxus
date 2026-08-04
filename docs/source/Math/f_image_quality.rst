@@ -26,10 +26,11 @@ For the default value of :math:`\text{ksize}=1`, the kernel becomes
     1 & -4 & 1\\
     0 & 1 & 0 \end{bmatrix}.
 
-The filtering uses a reflective border condition. For example, given the matrix
+The filtering uses a zero border condition: kernel taps that fall outside the image are dropped,
+which is equivalent to padding the image with zeros. For example, given the matrix
 
 .. math::
-    
+
     \begin{bmatrix}
     1 & 2 & 3\\
     4 & 5 & 6\\
@@ -38,29 +39,36 @@ The filtering uses a reflective border condition. For example, given the matrix
 the padded matrix becomes
 
 .. math::
-    
-    \begin{bmatrix}
-    9 & 8 & 7 & 8 & 9 & 8 & 7\\
-    6 & 5 & 4 & 5 & 6 & 5 & 4\\
-    3 & 2 & 1 & 2 & 3 & 2 & 1\\
-    6 & 5 & 4 & 5 & 6 & 5 & 4\\
-    9 & 8 & 7 & 8 & 9 & 8 & 7\\
-    6 & 5 & 4 & 5 & 6 & 5 & 4\\
-    3 & 2 & 1 & 2 & 3 & 2 & 1\end{bmatrix}.
 
-After calculating the Laplacian of the image, the focus score is given by the variance of the filtered image :math:`x` is
-defined by 
+    \begin{bmatrix}
+    0 & 0 & 0 & 0 & 0\\
+    0 & 1 & 2 & 3 & 0\\
+    0 & 4 & 5 & 6 & 0\\
+    0 & 7 & 8 & 9 & 0\\
+    0 & 0 & 0 & 0 & 0\end{bmatrix}.
+
+This is the same convention as ``cv2.Laplacian(image, cv2.CV_64F, ksize=1,
+borderType=cv2.BORDER_CONSTANT)``.
+
+After calculating the Laplacian of the image, the focus score is given by the population variance of
+the signed filtered image :math:`x`,
 
 .. math::
-    
-    \text{variance}(x) = \frac{\sum_i(x_i - \text{mean}(x))}{(\text{length}(x) - 1)}
+
+    \text{variance}(x) = \frac{\sum_i(x_i - \text{mean}(x))^2}{\text{length}(x)}
+
+which is the Pech-Pacheco et al. (2000) variance-of-the-Laplacian focus measure, i.e.
+``cv2.Laplacian(image, cv2.CV_64F, ksize=1).var()``. The variance is taken over the signed
+Laplacian, not over its magnitude: :math:`\text{Var}(|x|)` is a different, smaller statistic
+whenever :math:`\text{mean}(x) \neq 0`, which the zero border condition guarantees.
 
 Local Focus Score
 -----------
 
-Local Focus Score is calculated the same way as Focus Score. However, the focus score is calculated for each tile 
-of the image, where the number of tiles are determined by the input parameter `scale`. The image is divided into
-:math:`\text{scale}^2` non-overlapping tiles and the mean and median values of the tiles are returned.
+Local Focus Score is calculated the same way as Focus Score, but on non-overlapping tiles of
+:math:`\text{height}/\text{scale}` by :math:`\text{width}/\text{scale}` pixels, summed and divided by
+:math:`\text{scale}^2`. Note that the tile loop's bound stops one tile short in each direction, so
+for the default :math:`\text{scale}=2` only the top-left tile currently contributes.
 
 GLCM Correlation and Dissimilarity
 ----------------------------------
