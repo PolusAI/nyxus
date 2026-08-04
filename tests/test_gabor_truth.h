@@ -9,11 +9,16 @@
 //      'gabor_sig2lam' : 0.8
 //      'gabor_thold' : 0.025
 //
-// These values are VETTED by an independent scikit-image reimplementation of the Gabor
-// pipeline (tests/vetting/oracles/gen_gabor_skimage.py): a canonical Gabor kernel
-// (== skimage.filters.gabor_kernel with frequency=f0/2pi, sigma_x=sig2lam*2pi/f0,
-// sigma_y=sigma_x/gamma), L1-normalized, full-convolved, cropped, and scored the same way.
-// The oracle reproduces every value below to machine precision.
+// These values are VETTED against scikit-image 0.26.0 by an independent reimplementation of
+// the Gabor pipeline (tests/vetting/oracles/gen_gabor_skimage.py). The oracle's filters come
+// from skimage.filters.gabor_kernel itself -- frequency=f0/2pi, sigma_x=sig2lam*2pi/f0,
+// sigma_y=sigma_x/gamma, offset=0 -- cropped to the Nyxus n x n grid, L1-normalized,
+// full-convolved, cropped and scored the same way. The one exception is the f0=0 baseline
+// filter, which gabor_kernel cannot express (frequency=0); at f0=0 the envelope and carrier
+// are both identically 1, so that filter is the flat window derived in closed form.
+// The oracle reproduces every value below exactly: max |diff| = 0.000e+00 over all 16.
+//
+// Asserted at the SPEC 7 same-definition-oracle tier, rel 1e-3 (see test_gabor_skimage.cc).
 //
 // Updated after the gabor.cpp response-truncation fix: the filter-response magnitudes are
 // now kept real-valued (double) instead of being truncated to PixIntens (unsigned int),
