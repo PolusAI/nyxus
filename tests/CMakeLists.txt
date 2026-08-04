@@ -14,7 +14,7 @@ endforeach()
 
 set(TEST_SRC
 	test_all.cc
-	test_gabor_regression.cc
+	test_gabor_skimage.cc
 	${TEST_SOURCE_FILES}
 )
 # NOTE: individual test_*.h headers are intentionally NOT listed here. They are pulled in via #include

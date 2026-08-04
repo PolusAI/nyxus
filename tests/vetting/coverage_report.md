@@ -8,7 +8,7 @@ regression: 143  untested: 0
 | family | total | vetted | regression | untested |
 |---|---|---|---|---|
 | firstorder | 72 | 71 | 1 | 0 |
-| gabor | 1 | 0 | 1 | 0 |
+| gabor | 1 | 1 | 0 | 0 |
 | glcm | 118 | 118 | 0 | 0 |
 | gldm | 28 | 28 | 0 | 0 |
 | gldzm | 36 | 18 | 18 | 0 |

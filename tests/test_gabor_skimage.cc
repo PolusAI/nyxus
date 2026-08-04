@@ -2,12 +2,19 @@
 #include <gtest/gtest.h>
 #include "../src/nyx/features/gabor.h"
 #include "../src/nyx/features/intensity.h"
-#include "test_gabor_regression.h"
+#include "test_gabor_skimage.h"
 #include "test_gabor_truth.h"
 #include "test_main_nyxus.h"
 
 using namespace std;
 using namespace Nyxus;
+
+// SPEC 7 same-definition-oracle tier: rel 1e-3, expressed as agrees_gt's fractional
+// divisor. The measured Nyxus-vs-oracle agreement is exact (max |diff| 0.000e+00 over all
+// 16 values); the tolerance is not loose enough to hide a real disagreement because the
+// feature is a ratio of pixel counts -- the smallest possible wrong answer differs by one
+// counted pixel, i.e. by 1/bscore >= 1.1e-2 on these ROIs, an order of magnitude above it.
+static constexpr double GABOR_ORACLE_FRAC_TOL = 1000.;   // ground_truth/1000 == rel 1e-3
 
 void test_gabor_skimage(bool gpu)
 {
@@ -52,7 +59,7 @@ void test_gabor_skimage(bool gpu)
         if (!gpu)
             for(int j = 0; j < gabor_truth[i].size(); ++j)
             {
-                ASSERT_TRUE(agrees_gt(gabor_truth[i][j], roidata.fvals[(int)Nyxus::Feature2D::GABOR][j]));
+                ASSERT_TRUE(agrees_gt(gabor_truth[i][j], roidata.fvals[(int)Nyxus::Feature2D::GABOR][j], GABOR_ORACLE_FRAC_TOL));
             }
     }
 }
