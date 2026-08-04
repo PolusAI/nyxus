@@ -42,6 +42,8 @@
 #include "test_roi_blacklist_mechanics.h"
 #include "test_tiff_loader_mechanics.h"
 #include "test_imq_regression.h"
+#include "test_imq_opencv.h"
+#include "test_imq_cellprofiler.h"
 #include "test_3d_nifti_mechanics.h"
 #include "test_omezarr_mechanics.h"
 #include "test_3d_morphology_common.h"
@@ -2477,29 +2479,29 @@ TEST(TEST_NYXUS, TEST_NGTDM_STRENGTH)
 	ASSERT_NO_THROW(test_ngtdm_strength());
 }
 
-TEST(TEST_IMAGE_QUALITY, TEST_FOCUS_SCORE) 
+TEST(TEST_IMAGE_QUALITY, TEST_FOCUS_SCORE_OPENCV)
 {
-	ASSERT_NO_THROW(test_focus_score_feature());
+	ASSERT_NO_THROW(test_focus_score_opencv());
 }
 
-TEST(TEST_IMAGE_QUALITY, TEST_LOCAL_FOCUS_SCORE) 
+TEST(TEST_IMAGE_QUALITY, TEST_LOCAL_FOCUS_SCORE_OPENCV)
 {
-	ASSERT_NO_THROW(test_local_focus_score_feature());
+	ASSERT_NO_THROW(test_local_focus_score_opencv());
 }
 
-TEST(TEST_IMAGE_QUALITY, TEST_POWER_SPECTRUM) 
+TEST(TEST_IMAGE_QUALITY, TEST_POWER_SPECTRUM)
 {
 	ASSERT_NO_THROW(test_power_spectrum_feature());
 }
 
-TEST(TEST_IMAGE_QUALITY, TEST_MIN_SATURATION) 
+TEST(TEST_IMAGE_QUALITY, TEST_MIN_SATURATION_CELLPROFILER)
 {
-	ASSERT_NO_THROW(test_min_saturation_feature());
+	ASSERT_NO_THROW(test_min_saturation_cellprofiler());
 }
 
-TEST(TEST_IMAGE_QUALITY, TEST_MAX_SATURATION) 
+TEST(TEST_IMAGE_QUALITY, TEST_MAX_SATURATION_CELLPROFILER)
 {
-	ASSERT_NO_THROW(test_max_saturation_feature());
+	ASSERT_NO_THROW(test_max_saturation_cellprofiler());
 }
 
 TEST(TEST_IMAGE_QUALITY, TEST_SHARPNESS) 
