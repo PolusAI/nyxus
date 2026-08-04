@@ -11,6 +11,8 @@
 #include "test_hu_mechanics.h"
 #include "test_morphology_features.h"
 #include "test_morphology_regression.h"
+#include "test_morphology_analytic.h"
+#include "test_morphology_imea.h"
 #include "test_morphology_skimage.h"
 #include "test_morphology_matlab.h"
 #include "test_morphology_fraclac.h"
@@ -1104,9 +1106,14 @@ TEST(TEST_NYXUS, TEST_SHAPE2D_MIN_ENCLOSING_CIRCLE_IMEA_ORACLE)
 	ASSERT_NO_THROW(test_shape2d_min_enclosing_circle_imea_oracle());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_DOCUMENTED_FORMULA_CONFORMANCE_NO_EXTERNAL_ORACLE)
+TEST(TEST_NYXUS, TEST_SHAPE2D_DOCUMENTED_FORMULA_CONFORMANCE_ANALYTIC)
 {
-	ASSERT_NO_THROW(test_shape2d_documented_formula_conformance_no_external_oracle());
+	ASSERT_NO_THROW(test_shape2d_documented_formula_conformance_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_SHAPE2D_DIAMETER_EQUAL_PERIMETER_IMEA)
+{
+	ASSERT_NO_THROW(test_shape2d_diameter_equal_perimeter_imea());
 }
 
 TEST(TEST_NYXUS, TEST_REMAINING2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_CHORD_STAT_FEATURES)

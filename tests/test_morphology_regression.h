@@ -35,7 +35,7 @@ void test_shape2d_ellipse_features()
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::ELONGATION, "ELONGATION");
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::ECCENTRICITY, "ECCENTRICITY");
 	// ORIENTATION is vetted vs scikit-image in test_morphology_skimage.h; ROUNDNESS is vetted by
-	// documented-formula conformance in test_shape2d_documented_formula_conformance_no_external_oracle.
+	// documented-formula conformance in test_morphology_analytic.h. The snapshot below is drift-only.
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::ROUNDNESS, "ROUNDNESS");
 }
 
@@ -61,38 +61,9 @@ void test_shape2d_misc_shape_features()
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE, "DIAMETER_MIN_ENCLOSING_CIRCLE");
 }
 
-// Tier-2 documented-formula conformance (NO external oracle). These features have a recognized closed
-// form but their VALUE uses Nyxus' own conventions (pixel-count area, contour perimeter, moment-fit
-// major axis), so no third-party tool reproduces the number. What we CAN pin is that the code applies
-// the published formula to its own constituents without an implementation bug -- recompute the formula
-// from AREA_PIXELS_COUNT / PERIMETER / MAJOR_AXIS_LENGTH and require an exact match. This is weaker than
-// external-oracle vetting and is registered as such (oracle=formula) in oracle_coverage.csv.
-void test_shape2d_documented_formula_conformance_no_external_oracle()
-{
-	std::vector<std::vector<double>> fvals;
-	calculate_shape2d_feature_values(fvals);
-
-	const double PI = 3.14159265358979323846;
-	const double A = fvals[static_cast<int>(Nyxus::Feature2D::AREA_PIXELS_COUNT)][0];
-	const double P = fvals[static_cast<int>(Nyxus::Feature2D::PERIMETER)][0];
-	const double major = fvals[static_cast<int>(Nyxus::Feature2D::MAJOR_AXIS_LENGTH)][0];
-
-	// CIRCULARITY = sqrt(4*pi*A) / P   (convex_hull_nontriv.cpp)
-	const double circ_formula = std::sqrt(4.0 * PI * A) / P;
-	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::CIRCULARITY)][0], circ_formula, 1e-9)
-		<< "CIRCULARITY does not match sqrt(4*pi*A)/P";
-
-	// ROUNDNESS = 4*A / (pi*major^2)   (ellipse_fitting.cpp)
-	const double round_formula = 4.0 * A / (PI * major * major);
-	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::ROUNDNESS)][0], round_formula, 1e-9)
-		<< "ROUNDNESS does not match 4A/(pi*major^2)";
-
-	// DIAMETER_EQUAL_PERIMETER = P / pi   (contour.cpp) -- diameter of the circle with the same
-	// perimeter. Pure double arithmetic on the vetted PERIMETER, so it conforms exactly.
-	const double dep_formula = P / PI;
-	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::DIAMETER_EQUAL_PERIMETER)][0], dep_formula, 1e-9)
-		<< "DIAMETER_EQUAL_PERIMETER does not match PERIMETER/pi";
-}
+// Documented-formula conformance for CIRCULARITY/ROUNDNESS is a correctness claim, so it lives in the
+// oracle file test_morphology_analytic.h, not here -- this file is a snapshot drift guard and claims
+// nothing (SPEC 2).
 
 void test_shape2d_unvetted_no_direct_oracle_radius_features()
 {
@@ -104,8 +75,8 @@ void test_shape2d_unvetted_no_direct_oracle_radius_features()
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::ROI_RADIUS_MEDIAN, "ROI_RADIUS_MEDIAN");
 }
 
-// DIAMETER_EQUAL_PERIMETER is now vetted by documented-formula conformance (P/pi) in
-// test_shape2d_documented_formula_conformance_no_external_oracle.
+// DIAMETER_EQUAL_PERIMETER is now vetted against imea's perimeter_equal_diameter (the same ISO
+// perimeter/pi transform) in test_morphology_imea.h.
 
 void test_shape2d_verifiable_with_3p_builtin_oracle_fractal_circle_features()
 {
