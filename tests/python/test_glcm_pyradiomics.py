@@ -1,6 +1,6 @@
 """Regression / bug-exposure tests for 2D feature defects found during oracle validation
 (2026-06). These exercise the PRODUCTION featurize() path on ROIs *with background* and at
-the DEFAULT settings - the conditions the C++ unit tests miss (test_glcm.h hard-codes
+the DEFAULT settings - the conditions the C++ unit tests miss (test_glcm_regression.h hard-codes
 offset=1 on a fully-masked phantom, which hid the GLCM defect).
 
 This module covers the GLCM co-occurrence-offset default (bug #1) and GLCM background
@@ -97,7 +97,7 @@ def test_glcm_background_not_counted():
 def test_glcm_acor_family_ibsi_oracle():
     """PR #356 review (Comment 2): ACOR, SUMAVERAGE, IDN, IDMN depend on the *absolute* grey-level
     values / Ng (unlike CONTRAST, which depends only on |i-j|). Under the MATLAB-binning path
-    (ibsi=False, the config tests/test_glcm.h uses) those absolute levels are re-mapped, so these
+    (ibsi=False, the config tests/test_glcm_regression.h uses) those absolute levels are re-mapped, so these
     four DIVERGE from PyRadiomics by up to ~43% (ACOR) and are NOT oracle-vetted there. They ARE
     genuinely third-party-vetted on the IBSI path (symmetric matrix + identity binning), which this
     test pins tightly.

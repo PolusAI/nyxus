@@ -4,6 +4,11 @@ the DEFAULT settings - the conditions the C++ unit tests miss.
 
 This module covers the neighbor closest-distance/angle (fix #12) and PERCENT_TOUCHING
 dedupe/adjacency (fix #13) defects.
+
+
+TAXONOMY: regression (SPEC §2). Bug-exposure / production-path drift guards for neighbor
+features — not an external-tool oracle module. Oracle claims live in
+test_neighbor_analytic.h / test_neighbor_cellprofiler.h.
 """
 import numpy as np
 import nyxus

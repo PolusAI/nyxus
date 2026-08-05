@@ -1,5 +1,9 @@
 #pragma once
 
+// TAXONOMY: regression harness (SPEC §2). Shared 3D parameterized sweep formerly
+// named test_3d_regression_common.h — folds the Wave-9 inventory into regression
+// (embedded 3P GT pins + unvetted local snapshots). Not an oracle suite.
+
 #include <algorithm>
 #include <cmath>
 #include <cctype>

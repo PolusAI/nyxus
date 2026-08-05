@@ -7,8 +7,8 @@ Tier is assigned by which file references the feature:
   test_ibsi_*            -> ibsi        (external reference numbers)
   test_compat_3d_*       -> pyradiomics (pyradiomics reference)
   test_*_oracle.{py,h}   -> pyradiomics / analytic (named external / closed-form)
-  test_intensity_histogram, test_feature_oracle, test_convex_hull_invariants,
-  test_fractal_dim_oracle, test_gabor_truth -> analytic
+  test_intensity_histogram, test_morphology_regression, test_convex_hull_invariants,
+  test_morphology_fraclac, test_gabor_truth -> analytic
   harness/loader/driver files -> skipped (not evidence of a value check)
   everything else        -> regression  (self-snapshot golden numbers)
 
@@ -27,7 +27,7 @@ def file_tier(b):
     if b.startswith("test_compat_3d_"):   return "pyradiomics"
     if b in ("test_glcm_oracle.py", "test_gldm_oracle.py",
              "test_glcm_oracle.h", "test_gldm_oracle.h"): return "pyradiomics"
-    if b in ("test_fractal_dim_oracle.py", "test_feature_oracle.py",
+    if b in ("test_morphology_fraclac.py", "test_morphology_regression.py",
              "test_convex_hull_invariants.py",
              "test_intensity_histogram.py", "test_intensity_histogram.h",
              "test_gabor_truth.h"):        return "analytic"

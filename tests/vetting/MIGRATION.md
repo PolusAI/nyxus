@@ -55,16 +55,16 @@ Naming: `test_[3d_]<family>_<kind>.{h,py}`, one kind per file (SPEC §2). `<kind
 | Family | n (v/r/u) | Oracles | Current files | → Target files |
 |---|---|---|---|---|
 | **moments** | 180 (78/102/0) | skimage | `test_2d_geometric_moments.h` | `test_moments_skimage.h`, `test_moments_regression.h` |
-| **glcm** ✅ DONE (Wave 2) | 118 (72/46/0) | pyradiomics, matlab, mirp | `test_glcm.h`, `test_glcm_oracle.h`, `test_ibsi_glcm.h`, `test_compat_3d_glcm.h`, `test_glcm_oracle.py` (+orphan `test_3d_glcm.h`) | `test_glcm_regression.h`, `test_glcm_mechanics.h`, `test_glcm_ibsi.h`, `test_3d_glcm_pyradiomics.h`, `test_glcm_pyradiomics.py` |
-| **morphology** | 113 (39/74/0) | matlab, cellprofiler, skimage, imea | `test_shape_morphology_2d.h`, `test_2d_remaining_features.h`, `test_3d_shape.h`, `test_feature_oracle.py`, `test_convex_hull_invariants.py`, `test_fractal_dim_oracle.py` | `test_morphology_matlab.h`, `test_morphology_cellprofiler.h`, `test_morphology_skimage.h`, `test_morphology_imea.h`, `test_morphology_regression.h`, `test_morphology_invariant.py`, `test_3d_morphology_*.h` |
-| **firstorder** | 72 (51/21/0) | matlab, pyradiomics | `test_pixel_intensity_features.h`, `test_ibsi_intensity.h`, `test_3d_inten.h`, `test_compat_3d_fo_radiomics.h` | `test_firstorder_matlab.h`, `test_firstorder_pyradiomics.h`, `test_firstorder_regression.h`, `test_3d_firstorder_pyradiomics.h`, `test_3d_firstorder_regression.h` |
-| **glrlm** | 64 (38/26/0) | pyradiomics, mirp | `test_glrlm.h`, `test_ibsi_glrlm.h`, `test_3d_glrlm.h`, `test_compat_3d_glrlm.h` | `test_glrlm_pyradiomics.h`, `test_glrlm_regression.h`, `test_3d_glrlm_pyradiomics.h`, `test_3d_glrlm_mirp.h`, `test_3d_glrlm_regression.h` |
+| **glcm** ✅ DONE (Wave 2) | 118 (72/46/0) | pyradiomics, matlab, mirp | `test_glcm.h`, `test_glcm_oracle.h`, `test_ibsi_glcm.h`, `test_compat_3d_glcm.h`, `test_glcm_oracle.py` (+orphan `test_3d_glcm_regression.h`) | `test_glcm_regression.h`, `test_glcm_mechanics.h`, `test_glcm_ibsi.h`, `test_3d_glcm_pyradiomics.h`, `test_glcm_pyradiomics.py` |
+| **morphology** | 113 (39/74/0) | matlab, cellprofiler, skimage, imea | `test_shape_morphology_2d.h`, `test_2d_remaining_features.h`, `test_3d_shape.h`, `test_morphology_regression.py`, `test_convex_hull_invariants.py`, `test_morphology_fraclac.py` | `test_morphology_matlab.h`, `test_morphology_cellprofiler.h`, `test_morphology_skimage.h`, `test_morphology_imea.h`, `test_morphology_regression.h`, `test_morphology_invariant.py`, `test_3d_morphology_*.h` |
+| **firstorder** | 72 (51/21/0) | matlab, pyradiomics | `test_pixel_intensity_features.h`, `test_ibsi_intensity.h`, `test_3d_firstorder_regression.h`, `test_compat_3d_fo_radiomics.h` | `test_firstorder_matlab.h`, `test_firstorder_pyradiomics.h`, `test_firstorder_regression.h`, `test_3d_firstorder_pyradiomics.h`, `test_3d_firstorder_regression.h` |
+| **glrlm** | 64 (38/26/0) | pyradiomics, mirp | `test_glrlm.h`, `test_ibsi_glrlm.h`, `test_3d_glrlm_regression.h`, `test_compat_3d_glrlm.h` | `test_glrlm_pyradiomics.h`, `test_glrlm_regression.h`, `test_3d_glrlm_pyradiomics.h`, `test_3d_glrlm_mirp.h`, `test_3d_glrlm_regression.h` |
 | **intensity_histogram** | 52 (26/5/**21**) | analytic | `test_intensity_histogram.h`, `test_intensity_histogram.py`, `test_2d_remaining_features.h` | `test_intensity_histogram_analytic.h`, `test_intensity_histogram_regression.h` (+ **21 untested → needs decision**) |
 | **ngldm** | 38 (20/18/0) | mirp | `test_ibsi_ngldm.h`, `test_3d_ngldm.h` | `test_ngldm_mirp.h`, `test_3d_ngldm_mirp.h`, `test_3d_ngldm_regression.h` |
 | **gldzm** | 36 (17/19/0) | mirp | `test_ibsi_gldzm.h`, `test_3d_gldzm.h` | `test_gldzm_mirp.h`, `test_gldzm_regression.h`, `test_3d_gldzm_regression.h` |
-| **glszm** | 32 (26/6/0) | pyradiomics | `test_glszm.h`, `test_ibsi_glszm.h`, `test_3d_glszm.h`, `test_compat_3d_glszm.h` | `test_glszm_pyradiomics.h`, `test_glszm_regression.h`, `test_3d_glszm_pyradiomics.h` |
-| **gldm** | 28 (14/14/0) | pyradiomics | `test_gldm.h`, `test_gldm_oracle.h`, `test_ibsi_gldm.h`, `test_3d_gldm.h`, `test_compat_3d_gldm.h`, `test_gldm_oracle.py` | `test_gldm_pyradiomics.h`, `test_gldm_regression.h`, `test_3d_gldm_pyradiomics.h`, `test_gldm_pyradiomics.py` |
-| **ngtdm** | 10 (10/0/0) | pyradiomics | `test_ngtdm.h`, `test_ibsi_ngtdm.h`, `test_3d_ngtdm.h`, `test_compat_3d_ngtdm.h` | `test_ngtdm_pyradiomics.h`, `test_3d_ngtdm_pyradiomics.h` |
+| **glszm** | 32 (26/6/0) | pyradiomics | `test_glszm.h`, `test_ibsi_glszm.h`, `test_3d_glszm_regression.h`, `test_compat_3d_glszm.h` | `test_glszm_pyradiomics.h`, `test_glszm_regression.h`, `test_3d_glszm_pyradiomics.h` |
+| **gldm** | 28 (14/14/0) | pyradiomics | `test_gldm.h`, `test_gldm_oracle.h`, `test_ibsi_gldm.h`, `test_3d_gldm_regression.h`, `test_compat_3d_gldm.h`, `test_gldm_oracle.py` | `test_gldm_pyradiomics.h`, `test_gldm_regression.h`, `test_3d_gldm_pyradiomics.h`, `test_gldm_pyradiomics.py` |
+| **ngtdm** | 10 (10/0/0) | pyradiomics | `test_ngtdm.h`, `test_ibsi_ngtdm.h`, `test_3d_ngtdm_regression.h`, `test_compat_3d_ngtdm.h` | `test_ngtdm_pyradiomics.h`, `test_3d_ngtdm_pyradiomics.h` |
 | **neighbor** | 9 (2/7/0) | cellprofiler | `test_neighbors_2d.h` | `test_neighbor_cellprofiler.h`, `test_neighbor_regression.h` |
 | **imq** | 6 (0/6/0) | — | `test_image_quality.h` | `test_imq_regression.h` |
 
@@ -169,7 +169,7 @@ Three corrections to the original map surfaced during execution:
    There is no C++ `test_glcm_pyradiomics.h`/`test_glcm_matlab.h`; the C++ GLCM files are
    regression/mechanics/ibsi snapshots, and the 2D pyradiomics/matlab vetting lives in Python/offline.
    (The registry's `target_test` for those 2D rows is aspirational until such oracle assertions exist.)
-3. **`test_3d_glcm.h` is orphaned** — not `#include`d in `test_all.cc`; its 26 `test_3glcm_*` functions
+3. **`test_3d_glcm_regression.h` is orphaned** — not `#include`d in `test_all.cc`; its 26 `test_3glcm_*` functions
    never run. Left untouched and flagged in the registry `notes` (decision A). Live 3D-GLCM coverage
    comes from `test_3d_glcm_pyradiomics.h` (ex-`test_compat_3d_glcm.h`) + parameterized
    `test_3d_feature_coverage.h`. A later triage decides delete-vs-wire-in.
@@ -196,10 +196,10 @@ Patterns confirmed across the family:
   for **glcm, glrlm, glszm, gldm, ngtdm** (5 families, ~130 dead 3D-regression assertions). But
   **ngldm and gldzm have LIVE `test_3d_*` files** (they were `#include`d) → renamed
   `test_3d_ngldm_regression.h` (initially `_ibsi`; corrected in PR #385, see below) /
-  `test_3d_gldzm_ibsi.h`. This inconsistency (some native 3D texture tests
+  `test_3d_gldzm_regression.h`. This inconsistency (some native 3D texture tests
   wired, most not) is flagged for a coverage-gap triage; live 3D texture coverage otherwise comes from
   the `test_3d_<fam>_pyradiomics.h` (ex-compat) files + parameterized `test_3d_feature_coverage.h`.
-- `test_3d_gldzm_ibsi.h`'s kind label is provisional (IBSI-phantom-based, not fully confirmed). The
+- `test_3d_gldzm_regression.h`'s kind label is provisional (IBSI-phantom-based, not fully confirmed). The
   matching NGLDM file was CORRECTED to `test_3d_ngldm_regression.h` (PR #385): its `d3ngldm_GT` table
   has no provenance, runs on the Nyxus coverage phantom (not the IBSI digital phantom), and disagrees
   with MIRP by up to ~10x, so it is a drift guard, not an `_ibsi` oracle. The `_ibsi` suffix is left
@@ -218,7 +218,7 @@ Migrated: **firstorder, intensity_histogram, moments, neighbor, imq**. Verified 
 
 - **firstorder** (family not in the filenames): `test_pixel_intensity_features.h` →
   `test_firstorder_regression.h`; `test_ibsi_intensity.h` → `test_firstorder_ibsi.h`;
-  `test_compat_3d_fo_radiomics.h` → `test_3d_firstorder_pyradiomics.h`. `test_3d_inten.h` is
+  `test_compat_3d_fo_radiomics.h` → `test_3d_firstorder_pyradiomics.h`. `test_3d_firstorder_regression.h` is
   **orphaned** (not `#include`d) → left + flagged (decision A).
 - **intensity_histogram** → `test_intensity_histogram_regression.h`; **neighbor** →
   `test_neighbor_regression.h`; **imq** → `test_imq_regression.h`. (Conservative `_regression` labels
@@ -322,7 +322,7 @@ TU, so the common header keeps the forward declaration. Verified: **696/696 — 
 The biggest and most delicate migration. This file is not a per-family oracle test but a **parameterized
 completeness sweep**: `INSTANTIATE_TEST_SUITE_P` over all 213 user-facing 3D features (94 with an embedded
 3rd-party oracle + 119 local-regression), plus a global count-guard. Split per family (§6.5):
-- `test_3d_coverage_common.h` (`git mv` from `test_3d_feature_coverage.h`): the whole shared harness
+- `test_3d_regression_common.h` (`git mv` from `test_3d_feature_coverage.h`): the whole shared harness
   (`build_computed_3d_feature_values` cache, GT maps, assert helpers), the two `TestWithParam` fixtures
   and their `TEST_P` bodies, the `TEST_3D_FEATURE_COVERAGE_COUNTS` guard, plus new
   `feature_3d_family_table()` / `family_of_3d_feature()` / `feature_3d_cases_for_family()` helpers that

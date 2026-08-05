@@ -73,7 +73,7 @@ IH_P90_IDX | coverage | test_intensity_histogram.h
 IH_MODE_IDX | coverage | test_intensity_histogram.h
 IH_P10_VAL | coverage | test_intensity_histogram.h
 IH_P90_VAL | coverage | test_intensity_histogram.h
-PERIMETER | other3p:matlab | test_morphology_features.h
+PERIMETER | other3p:matlab | test_morphology_matlab_perimeter.h
 AREA_PIXELS_COUNT | regression | test_shape_morphology_2d.h
 AREA_UM2 | regression | test_shape_morphology_2d.h
 CENTROID_X | regression | test_shape_morphology_2d.h

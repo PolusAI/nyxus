@@ -3,6 +3,10 @@
 the DEFAULT settings - the conditions the C++ unit tests miss.
 
 This module covers the chords max-angle / AC-vs-MC defect (bug #16).
+
+
+TAXONOMY: regression (SPEC §2). Bug-exposure / production-path drift guards for morphology
+chords defects found during oracle validation — not an external-tool oracle module.
 """
 import re
 from pathlib import Path

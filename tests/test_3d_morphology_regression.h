@@ -39,3 +39,24 @@ void test_3shape_volumeconvhull() {
 void test_3shape_voxelvolume() {
     test_3shape_feature ("3VOXEL_VOLUME", Feature3D::VOXEL_VOLUME);
 }
+
+// --- folded from former test_3d_*_coverage.h (Wave-9 parameterized suites) ---
+#include "test_3d_regression_common.h"
+
+// Per-family slice of the 3D regression sweep (Wave 9). The shared harness, the two parameterized
+// fixtures, their TEST_P bodies, and the global count-guard live in test_3d_regression_common.h; this
+// file only re-instantiates the two suites for the "morphology" family. Every public 3D feature is
+// classified into exactly one family (first-match on the calculator featuresets), so the per-family
+// instantiations together reproduce the original 94-embedded + 119-unvetted split with no drift.
+
+INSTANTIATE_TEST_SUITE_P(
+	MORPHOLOGY_WITH_3P_EMBEDDED_GT,
+	Test3DFeature_WITH_3P_EMBEDDED_GT,
+	testing::ValuesIn(feature_3d_cases_for_family("morphology", true)),
+	sanitize_3d_feature_test_name);
+
+INSTANTIATE_TEST_SUITE_P(
+	MORPHOLOGY_UNVETTED_LOCAL_REGRESSION,
+	Test3DFeature_UNVETTED_LOCAL_REGRESSION,
+	testing::ValuesIn(feature_3d_cases_for_family("morphology", false)),
+	sanitize_3d_feature_test_name);

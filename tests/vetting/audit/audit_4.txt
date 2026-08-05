@@ -1,7 +1,7 @@
-FRACT_DIM_BOXCOUNT | analytic | test_fractal_dim_oracle.py
-FRACT_DIM_BOXCOUNT | imagej | test_fractal_dim_oracle.py
-FRACT_DIM_PERIMETER | analytic | test_fractal_dim_oracle.py
-FRACT_DIM_PERIMETER | imagej | test_fractal_dim_oracle.py
+FRACT_DIM_BOXCOUNT | analytic | test_morphology_fraclac.py
+FRACT_DIM_BOXCOUNT | imagej | test_morphology_fraclac.py
+FRACT_DIM_PERIMETER | analytic | test_morphology_fraclac.py
+FRACT_DIM_PERIMETER | imagej | test_morphology_fraclac.py
 GLCM_CONTRAST | analytic | test_glcm_oracle.py
 GLCM_CONTRAST | pyradiomics | test_glcm_oracle.py
 GLCM_ACOR | pyradiomics | test_glcm_oracle.py
@@ -12,10 +12,10 @@ GLDM_LDE | pyradiomics | test_gldm_oracle.py
 GLDM_GLN | pyradiomics | test_gldm_oracle.py
 GLDM_DN | pyradiomics | test_gldm_oracle.py
 SOLIDITY | analytic | test_convex_hull_invariants.py
-MAXCHORDS_MAX_ANG | analytic | test_feature_oracle.py
-MAXCHORDS_MIN_ANG | analytic | test_feature_oracle.py
-ALLCHORDS_MAX_ANG | analytic | test_feature_oracle.py
-ALLCHORDS_MIN_ANG | analytic | test_feature_oracle.py
+MAXCHORDS_MAX_ANG | analytic | test_morphology_regression.py
+MAXCHORDS_MIN_ANG | analytic | test_morphology_regression.py
+ALLCHORDS_MAX_ANG | analytic | test_morphology_regression.py
+ALLCHORDS_MIN_ANG | analytic | test_morphology_regression.py
 IH_NUM_BINS | analytic | test_intensity_histogram.py
 IH_BIN_SIZE | analytic | test_intensity_histogram.py
 IH_MINIMUM_VAL | analytic | test_intensity_histogram.py

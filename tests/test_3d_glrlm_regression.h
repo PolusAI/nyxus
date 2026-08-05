@@ -1,0 +1,237 @@
+#pragma once
+
+// TAXONOMY: regression snapshot (SPEC §2). Not currently #included from test_all.cc
+// (orphaned legacy GT table; live 3D GLRLM oracle is test_3d_glrlm_pyradiomics.h).
+
+#include <gtest/gtest.h>
+#include <unordered_map> 
+#include "../src/nyx/environment.h"
+#include "../src/nyx/featureset.h"
+#include "../src/nyx/roi_cache.h"
+#include "../src/nyx/features/3d_glrlm.h"
+
+// dig. phantom values for intensity based features
+// Calculated at 100 grey levels
+static std::unordered_map<std::string, float> d3glrlm_GT{
+    {"3GLRLM_SRE", 0.84},
+    {"3GLRLM_LRE", 40.8},
+    {"3GLRLM_LGLRE", 0.072},
+    {"3GLRLM_HGLRE", 1922.0},
+    {"3GLRLM_SRLGLE", 0.007},
+    {"3GLRLM_SRHGLE", 1771.8},
+    {"3GLRLM_LRLGLE", 37.4},
+    {"3GLRLM_LRHGLE", 5678.4},
+    {"3GLRLM_GLN", 5811.0},
+    {"3GLRLM_GLNN", 0.026},
+    {"3GLRLM_RLN", 154513.0},
+    {"3GLRLM_RLNN", 0.68},
+    {"3GLRLM_RP", 0.83},
+    {"3GLRLM_GLV", 254.9},
+    {"3GLRLM_RV", 34.9},
+    {"3GLRLM_RE", 6.4}
+};
+
+static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
+
+void test_3glrlm_feature (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+{
+#if 0
+    Fsettings s;
+
+    // get segment info
+    auto [ipath, mpath, label] = get_3d_segmented_phantom();
+    ASSERT_TRUE(fs::exists(ipath));
+    ASSERT_TRUE(fs::exists(mpath));
+
+    // mock the 3D workflow
+    Environment e;
+    clear_slide_rois (e.uniqueLabels, e.roiData);
+    ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/));
+    std::vector<int> batch = { label };   // expecting this roi label after metrics gathering
+    ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/));
+    ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
+
+    // make it find the feature code by name
+    int fcode = -1;
+    ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(fname, fcode));
+    // ... and that it's the feature we expect
+    ASSERT_TRUE((int)expecting_fcode == fcode);
+
+    // set feature's state
+    Environment::ibsi_compliance = false;
+
+    // extract the feature
+    LR& r = e.roiData[label];
+    ASSERT_NO_THROW(r.initialize_fvals());
+    D3_GLRLM_feature f;
+    ASSERT_NO_THROW(f.calculate(r, s));
+    f.save_value(r.fvals);
+
+    // aggregate all the angles
+    double atot = r.fvals[fcode][0];
+
+    // verdict
+    ASSERT_TRUE(agrees_gt(atot, d3glrlm_GT[fname], 10.));
+#endif
+
+    // get segment info
+    auto [ipath, mpath, label] = get_3d_segmented_phantom();
+    ASSERT_TRUE(fs::exists(ipath));
+    ASSERT_TRUE(fs::exists(mpath));
+
+    // mock the 3D workflow
+    Environment e;
+    // (1) slide -> dataset -> prescan 
+    e.dataset.dataset_props.reserve(1);
+    SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
+    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+    e.dataset.update_dataset_props_extrema();
+    // (2) properties of specific ROIs sitting in 'e.uniqueLabels'
+    clear_slide_rois(e.uniqueLabels, e.roiData);
+    ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/));
+    // (3) voxel clouds
+    std::vector<int> batch = { label };   // expecting this roi label after metrics gathering
+    ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/));
+    // (4) buffers
+    ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
+
+    // (5) feature settings
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
+    s[(int)NyxSetting::TINY].rval = 0.0;
+    s[(int)NyxSetting::SINGLEROI].bval = false;
+    s[(int)NyxSetting::GREYDEPTH].ival = 64;
+    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
+    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::VERBOSLVL].ival = 0;
+    s[(int)NyxSetting::IBSI].bval = false;
+    //
+
+    // (6) feature extraction
+
+    // make it find the feature code by name
+    int fcode = -1;
+    ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(fname, fcode));
+    // ... and that it's the feature we expect
+    ASSERT_TRUE((int)expecting_fcode == fcode);
+
+    // extract the feature
+    LR& r = e.roiData[label];
+    ASSERT_NO_THROW(r.initialize_fvals());
+    D3_GLRLM_feature f;
+    ASSERT_NO_THROW(f.calculate(r, s));
+
+    // (6) saving values
+
+    f.save_value(r.fvals);
+
+    // we have just 1 value, no need to aggregate subfeatures
+    double atot = r.fvals[fcode][0];
+
+    // verdict
+    ASSERT_TRUE(agrees_gt(atot, d3glrlm_GT[fname], 10.));
+
+}
+
+void test_3glrlm_sre()
+{
+    test_3glrlm_feature (Nyxus::Feature3D::GLRLM_SRE, "3GLRLM_SRE");
+}
+
+void test_3glrlm_lre()
+{
+    test_3glrlm_feature(Nyxus::Feature3D::GLRLM_LRE, "3GLRLM_LRE");
+}
+
+void test_3glrlm_lglre()
+{
+    test_3glrlm_feature(Nyxus::Feature3D::GLRLM_LGLRE, "3GLRLM_LGLRE");
+}
+
+void test_3glrlm_hglre()
+{
+    test_3glrlm_feature(Nyxus::Feature3D::GLRLM_HGLRE, "3GLRLM_HGLRE");
+}
+
+void test_3glrlm_srlgle()
+{
+    test_3glrlm_feature(Nyxus::Feature3D::GLRLM_SRLGLE, "3GLRLM_SRLGLE");
+}
+
+void test_3glrlm_srhgle()
+{
+    test_3glrlm_feature(Nyxus::Feature3D::GLRLM_SRHGLE, "3GLRLM_SRHGLE");
+}
+
+void test_3glrlm_lrlgle()
+{
+    test_3glrlm_feature(Nyxus::Feature3D::GLRLM_LRLGLE, "3GLRLM_LRLGLE");
+}
+
+void test_3glrlm_lrhgle()
+{
+    test_3glrlm_feature(Nyxus::Feature3D::GLRLM_LRHGLE, "3GLRLM_LRHGLE");
+}
+
+void test_3glrlm_gln()
+{
+    test_3glrlm_feature(Nyxus::Feature3D::GLRLM_GLN, "3GLRLM_GLN");
+}
+
+void test_3glrlm_glnn()
+{
+    test_3glrlm_feature(Nyxus::Feature3D::GLRLM_GLNN, "3GLRLM_GLNN");
+}
+
+void test_3glrlm_rln()
+{
+    test_3glrlm_feature(Nyxus::Feature3D::GLRLM_RLN, "3GLRLM_RLN");
+}
+
+void test_3glrlm_rlnn()
+{
+    test_3glrlm_feature(Nyxus::Feature3D::GLRLM_RLNN, "3GLRLM_RLNN");
+}
+
+void test_3glrlm_rp()
+{
+    test_3glrlm_feature(Nyxus::Feature3D::GLRLM_RP, "3GLRLM_RP");
+}
+
+void test_3glrlm_glv()
+{
+    test_3glrlm_feature(Nyxus::Feature3D::GLRLM_GLV, "3GLRLM_GLV");
+}
+
+void test_3glrlm_rv()
+{
+    test_3glrlm_feature(Nyxus::Feature3D::GLRLM_RV, "3GLRLM_RV");
+}
+
+void test_3glrlm_re()
+{
+    test_3glrlm_feature(Nyxus::Feature3D::GLRLM_RE, "3GLRLM_RE");
+}
+
+// --- folded from former test_3d_*_coverage.h (Wave-9 parameterized suites) ---
+#include "test_3d_regression_common.h"
+
+// Per-family slice of the 3D regression sweep (Wave 9). The shared harness, the two parameterized
+// fixtures, their TEST_P bodies, and the global count-guard live in test_3d_regression_common.h; this
+// file only re-instantiates the two suites for the "glrlm" family. Every public 3D feature is
+// classified into exactly one family (first-match on the calculator featuresets), so the per-family
+// instantiations together reproduce the original 94-embedded + 119-unvetted split with no drift.
+
+INSTANTIATE_TEST_SUITE_P(
+	GLRLM_WITH_3P_EMBEDDED_GT,
+	Test3DFeature_WITH_3P_EMBEDDED_GT,
+	testing::ValuesIn(feature_3d_cases_for_family("glrlm", true)),
+	sanitize_3d_feature_test_name);
+
+INSTANTIATE_TEST_SUITE_P(
+	GLRLM_UNVETTED_LOCAL_REGRESSION,
+	Test3DFeature_UNVETTED_LOCAL_REGRESSION,
+	testing::ValuesIn(feature_3d_cases_for_family("glrlm", false)),
+	sanitize_3d_feature_test_name);

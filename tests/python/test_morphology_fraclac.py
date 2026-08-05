@@ -6,6 +6,10 @@ FRACT_DIM_BOXCOUNT and FRACT_DIM_PERIMETER are checked two ways:
   - a large arbitrary ROI (tests/data/fractal_blob512_seg.ome.tif) vs offline ImageJ/FracLac
     oracles: box count of the filled ROI (same method), and box count of its edge vs the
     Richardson divider perimeter (cross-method, same boundary dimension).
+
+
+TAXONOMY: oracle=fraclac (+analytic shapes) (SPEC §2/§6). Production-path fractal-dimension
+checks; companion C++ oracle is test_morphology_fraclac.h.
 """
 import math
 from pathlib import Path
