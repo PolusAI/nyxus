@@ -70,7 +70,7 @@ static std::tuple<std::string, std::string, int> get_3d_compat_fo_phantom()
     return { ipath, mpath, 1 };
 }
 
-void test_compat_radiomics_3fo_feature (const Nyxus::Feature3D &expected_fcode, const std::string &fname)
+void assert_compat_radiomics_3fo_feature (const Nyxus::Feature3D &expected_fcode, const std::string &fname)
 {
     // (1) prepare
 

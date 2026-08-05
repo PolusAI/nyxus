@@ -5,35 +5,34 @@
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/3d_gldm.h"
+#include "../src/nyx/features/3d_glszm.h"
 
-// Feature values calculated on intensity ut_inten.nii and mask ut_inten.nii, label 57:
-// (100 grey levels, offset 1, and asymmetric cooc matrix)
-static std::unordered_map<std::string, float> d3gldm_GT
-{
-    {"3GLDM_SDE", 0.26},
-    {"3GLDM_LDE", 34.77},
-    {"3GLDM_LGLE", 0.26},
-    {"3GLDM_HGLE", 1957.2},
-    {"3GLDM_SDLGLE", 0.00014},
-    {"3GLDM_SDHGLE", 617.0},
-    {"3GLDM_LDLGLE", 0.044},
-    {"3GLDM_LDHGLE", 41214.0},
-    {"3GLDM_GLN", 6481.0},
-    {"3GLDM_DN", 32498.0},
-    {"3GLDM_DNN", 0.118},
-    {"3GLDM_GLV", 153.1},
-    {"3GLDM_DV", 13.6},
-    {"3GLDM_DE", 8.4}
+// dig. phantom values for intensity based features
+// Calculated at 100 grey levels
+static std::unordered_map<std::string, float> d3glszm_GT{
+    {"3GLSZM_SAE",  0.6},
+    {"3GLSZM_LAE",  1377.1},
+    {"3GLSZM_LGLZE",    0.0005},
+    {"3GLSZM_HGLZE",    2485.9},
+    {"3GLSZM_SALGLE",   0.0003},
+    {"3GLSZM_SAHGLE",   1592.0},
+    {"3GLSZM_LALGLE",   1.9},
+    {"3GLSZM_LAHGLE",   1.24578e+06},
+    {"3GLSZM_GLN",  2037.0},
+    {"3GLSZM_GLNN", 0.03},
+    {"3GLSZM_SZN",  24582.1},
+    {"3GLSZM_SZNN", 0.36},
+    {"3GLSZM_ZP",   0.275},
+    {"3GLSZM_GLV",  106.5},
+    {"3GLSZM_ZV",   1362.3},
+    {"3GLSZM_ZE",   7.44}
 };
 
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
-void test_3gldm_feature (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+void assert_3glszm_feature (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
 #if 0
-    Fsettings s;
-
     // get segment info
     auto [ipath, mpath, label] = get_3d_segmented_phantom();
     ASSERT_TRUE(fs::exists(ipath));
@@ -59,7 +58,8 @@ void test_3gldm_feature (const Nyxus::Feature3D& expecting_fcode, const std::str
     // extract the feature
     LR& r = e.roiData[label];
     ASSERT_NO_THROW(r.initialize_fvals());
-    D3_GLDM_feature f;
+    D3_GLSZM_feature f;
+    Fsettings s;
     ASSERT_NO_THROW(f.calculate(r, s));
     f.save_value(r.fvals);
 
@@ -67,9 +67,8 @@ void test_3gldm_feature (const Nyxus::Feature3D& expecting_fcode, const std::str
     double atot = r.fvals[fcode][0];
 
     // verdict
-    ASSERT_TRUE(agrees_gt(atot, d3gldm_GT[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, d3glszm_GT[fname], 10.));
 #endif
-
     // get segment info
     auto [ipath, mpath, label] = get_3d_segmented_phantom();
     ASSERT_TRUE(fs::exists(ipath));
@@ -116,7 +115,7 @@ void test_3gldm_feature (const Nyxus::Feature3D& expecting_fcode, const std::str
     // extract the feature
     LR& r = e.roiData[label];
     ASSERT_NO_THROW(r.initialize_fvals());
-    D3_GLDM_feature f;
+    D3_GLSZM_feature f;
     ASSERT_NO_THROW(f.calculate(r, s));
 
     // (6) saving values
@@ -127,77 +126,87 @@ void test_3gldm_feature (const Nyxus::Feature3D& expecting_fcode, const std::str
     double atot = r.fvals[fcode][0];
 
     // verdict
-    ASSERT_TRUE(agrees_gt(atot, d3gldm_GT[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, d3glszm_GT[fname], 10.));
 
 }
 
-void test_3gldm_sde()
+void test_3d_glszm_sae_regression()
 {
-    test_3gldm_feature(Nyxus::Feature3D::GLDM_SDE, "3GLDM_SDE");
+    assert_3glszm_feature(Nyxus::Feature3D::GLSZM_SAE, "3GLSZM_SAE");
 }
 
-void test_3gldm_lde()
+void test_3d_glszm_lae_regression()
 {
-    test_3gldm_feature(Nyxus::Feature3D::GLDM_LDE, "3GLDM_LDE");
+    assert_3glszm_feature(Nyxus::Feature3D::GLSZM_LAE, "3GLSZM_LAE");
 }
 
-void test_3gldm_lgle()
+void test_3d_glszm_lglze_regression()
 {
-    test_3gldm_feature(Nyxus::Feature3D::GLDM_SDE, "3GLDM_SDE");
+    assert_3glszm_feature(Nyxus::Feature3D::GLSZM_LGLZE, "3GLSZM_LGLZE");
 }
 
-void test_3gldm_hgle()
+void test_3d_glszm_hglze_regression()
 {
-    test_3gldm_feature(Nyxus::Feature3D::GLDM_HGLE, "3GLDM_HGLE");
+    assert_3glszm_feature(Nyxus::Feature3D::GLSZM_HGLZE, "3GLSZM_HGLZE");
 }
 
-void test_3gldm_sdlgle()
+void test_3d_glszm_salgle_regression()
 {
-    test_3gldm_feature(Nyxus::Feature3D::GLDM_SDLGLE, "3GLDM_SDLGLE");
+    assert_3glszm_feature(Nyxus::Feature3D::GLSZM_SALGLE, "3GLSZM_SALGLE");
 }
 
-void test_3gldm_sdhgle()
+void test_3d_glszm_sahgle_regression()
 {
-    test_3gldm_feature(Nyxus::Feature3D::GLDM_SDHGLE, "3GLDM_SDHGLE");
+    assert_3glszm_feature(Nyxus::Feature3D::GLSZM_SAHGLE, "3GLSZM_SAHGLE");
 }
 
-void test_3gldm_ldlgle()
+void test_3d_glszm_lalgle_regression()
 {
-    test_3gldm_feature(Nyxus::Feature3D::GLDM_LDLGLE, "3GLDM_LDLGLE");
+    assert_3glszm_feature(Nyxus::Feature3D::GLSZM_LALGLE, "3GLSZM_LALGLE");
 }
 
-void test_3gldm_ldhgle()
+void test_3d_glszm_lahgle_regression()
 {
-    test_3gldm_feature(Nyxus::Feature3D::GLDM_LDHGLE, "3GLDM_LDHGLE");
+    assert_3glszm_feature(Nyxus::Feature3D::GLSZM_LAHGLE, "3GLSZM_LAHGLE");
 }
 
-void test_3gldm_gln()
+void test_3d_glszm_gln_regression()
 {
-    test_3gldm_feature(Nyxus::Feature3D::GLDM_GLN, "3GLDM_GLN");
+    assert_3glszm_feature(Nyxus::Feature3D::GLSZM_GLN, "3GLSZM_GLN");
 }
 
-void test_3gldm_dn()
+void test_3d_glszm_glnn_regression()
 {
-    test_3gldm_feature(Nyxus::Feature3D::GLDM_DN, "3GLDM_DN");
+    assert_3glszm_feature(Nyxus::Feature3D::GLSZM_GLNN, "3GLSZM_GLNN");
 }
 
-void test_3gldm_dnn()
+void test_3d_glszm_szn_regression()
 {
-    test_3gldm_feature(Nyxus::Feature3D::GLDM_DNN, "3GLDM_DNN");
+    assert_3glszm_feature(Nyxus::Feature3D::GLSZM_SZN, "3GLSZM_SZN");
 }
 
-void test_3gldm_glv()
+void test_3d_glszm_sznn_regression()
 {
-    test_3gldm_feature(Nyxus::Feature3D::GLDM_GLV, "3GLDM_GLV");
+    assert_3glszm_feature(Nyxus::Feature3D::GLSZM_SZNN, "3GLSZM_SZNN");
 }
 
-void test_3gldm_dv()
+void test_3d_glszm_zp_regression()
 {
-    test_3gldm_feature(Nyxus::Feature3D::GLDM_DV, "3GLDM_DV");
+    assert_3glszm_feature(Nyxus::Feature3D::GLSZM_ZP, "3GLSZM_ZP");
 }
 
-void test_3gldm_de()
+void test_3d_glszm_glv_regression()
 {
-    test_3gldm_feature(Nyxus::Feature3D::GLDM_DE, "3GLDM_DE");
+    assert_3glszm_feature(Nyxus::Feature3D::GLSZM_GLV, "3GLSZM_GLV");
+}
+
+void test_3d_glszm_zv_regression()
+{
+    assert_3glszm_feature(Nyxus::Feature3D::GLSZM_ZV, "3GLSZM_ZV");
+}
+
+void test_3d_glszm_ze_regression()
+{
+    assert_3glszm_feature(Nyxus::Feature3D::GLSZM_ZE, "3GLSZM_ZE");
 }
 

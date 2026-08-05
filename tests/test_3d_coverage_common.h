@@ -453,17 +453,17 @@ static void assert_matlab_regionprops3_shape_agreement(const Feature3DCoverageCa
 static void assert_embedded_3p_oracle_agreement(const Feature3DCoverageCase& c)
 {
 	if (compat_d3_fo_radiomics_GT.find(c.name) != compat_d3_fo_radiomics_GT.end())
-		test_compat_radiomics_3fo_feature(c.code, c.name);
+		assert_compat_radiomics_3fo_feature(c.code, c.name);
 	else if (compat_d3glcm_GT.find(c.name) != compat_d3glcm_GT.end())
-		test_compat_3glcm_feature(c.code, c.name);
+		assert_compat_3glcm_feature(c.code, c.name);
 	else if (compat_3gldm_GT.find(c.name) != compat_3gldm_GT.end())
-		test_compat_3gldm_feature(c.code, c.name);
+		assert_compat_3gldm_feature(c.code, c.name);
 	else if (compat_3glrlm_GT.find(c.name) != compat_3glrlm_GT.end())
-		test_compat_3glrlm_feature(c.code, c.name);
+		assert_compat_3glrlm_feature(c.code, c.name);
 	else if (compat_3glszm_GT.find(c.name) != compat_3glszm_GT.end())
-		test_compat_3glszm_feature(c.code, c.name);
+		assert_compat_3glszm_feature(c.code, c.name);
 	else if (compat_3ngtdm_GT.find(c.name) != compat_3ngtdm_GT.end())
-		test_compat_3ngtdm_feature(c.code, c.name);
+		assert_compat_3ngtdm_feature(c.code, c.name);
 	else if (matlab_regionprops3_shape_gt().find(c.name) != matlab_regionprops3_shape_gt().end())
 		assert_matlab_regionprops3_shape_agreement(c);
 	else

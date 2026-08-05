@@ -10,6 +10,8 @@ the actual test migration/rollout happens after the spec is approved and merged.
 |------|------|
 | [`SPEC.md`](SPEC.md) | The framework spec — assertion-based vetting model, the four test kinds (oracle / regression / invariant / mechanics), the per-assertion coverage registry with the "vetted by ≥1 oracle" metric, config-matching recipes, the config-matrix → valid/invalid triage, naming conventions, tolerance policy, authoring checklist. |
 | [`TOOLS.md`](TOOLS.md) | How to stand up each oracle tool locally (Docker or Python venv; MATLAB excluded) — per-tool setup, feasibility, coverage-by-family, rollout order. From one research pass per tool. |
+| [`check_coverage.py`](check_coverage.py) | Validates `oracle_coverage.csv` (statuses, oracle tokens, registry↔tree drift) and regenerates `coverage_report.md`. `--check` fails in CI. |
+| [`check_test_names.py`](check_test_names.py) | Enforces the SPEC §6.1 file-name and §6.2 function-name conventions over the whole test tree, including gtest case names. `--check` fails in CI. |
 | [`audit/`](audit/) | Baseline coverage audit of the current test tree (see below). Seeds the registry. |
 | [`oracles/`](oracles/) | Oracle golden-generators. Currently `fraclac/` (headless shifting-grid box-count macro). Grows per tool during rollout. |
 

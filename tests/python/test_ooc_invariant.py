@@ -70,7 +70,7 @@ def _feature_cols(df):
     return cols, df[cols].to_numpy(dtype=float).ravel()
 
 
-def test_ooc_2d_matches_in_ram(tmp_path):
+def test_ooc_2d_matches_in_ram_invariant(tmp_path):
     intdir, segdir = _make_pair(tmp_path)
     feats = ["*ALL_INTENSITY*"]
 
@@ -155,7 +155,7 @@ def _ooc_vs_ram_2d(tmp_path, feats, const=None, size=128):
     assert not bad, "2D out-of-core features diverge from in-RAM: %r" % (bad[:8],)
 
 
-def test_ooc_2d_texture_matches_in_ram(tmp_path):
+def test_ooc_2d_texture_matches_in_ram_invariant(tmp_path):
     """All seven 2D texture families out-of-core must match the in-RAM path. Each of these used to
     bin intensities with to_grayscale() instead of TextureFeature::bin_intensities(), so GLCM threw,
     GLRLM/NGTDM indexed out of bounds and crashed, and GLSZM/GLDM/GLDZM returned wrong values."""
@@ -165,27 +165,27 @@ def test_ooc_2d_texture_matches_in_ram(tmp_path):
     )
 
 
-def test_ooc_2d_moments_matches_in_ram(tmp_path):
+def test_ooc_2d_moments_matches_in_ram_invariant(tmp_path):
     """2D geometric moments out-of-core must match in-RAM. Intensity- and shape-moments used to
     share one osized_calculate that dropped the intenfunction, so shape moments summed raw
     intensities (SPAT_MOMENT_00 returned the intensity sum rather than the ROI area)."""
     _ooc_vs_ram_2d(tmp_path, ["*GEOMOMS*"])
 
 
-def test_ooc_2d_gabor_matches_in_ram(tmp_path):
+def test_ooc_2d_gabor_matches_in_ram_invariant(tmp_path):
     """Gabor out-of-core must match in-RAM. Its streaming variant never assigned the
     'originalScore' baseline, so each frequency was divided by the tiny-number floor and returned an
     astronomically large value instead of a ratio in [0,1]."""
     _ooc_vs_ram_2d(tmp_path, ["GABOR"])
 
 
-def test_ooc_2d_morphology_matches_in_ram(tmp_path):
+def test_ooc_2d_morphology_matches_in_ram_invariant(tmp_path):
     """2D morphology out-of-core must match in-RAM. Chords used to step over columns instead of
     scanning every one, reporting shorter max/min/median chord lengths than the in-RAM path."""
     _ooc_vs_ram_2d(tmp_path, ["*ALL_MORPHOLOGY*"])
 
 
-def test_ooc_2d_zernike_matches_in_ram(tmp_path):
+def test_ooc_2d_zernike_matches_in_ram_invariant(tmp_path):
     """Zernike out-of-core must match in-RAM on an ordinary ROI as well as on the degenerate one
     covered below (its streaming variant lacked calculate()'s constant-ROI guard)."""
     _ooc_vs_ram_2d(tmp_path, ["ZERNIKE2D"])
@@ -198,7 +198,7 @@ ALL_2D_FEATURE_GROUPS = [
 ]
 
 
-def test_ooc_2d_blank_matches_in_ram(tmp_path):
+def test_ooc_2d_blank_matches_in_ram_invariant(tmp_path):
     """A degenerate (constant-intensity) 2D ROI, across every 2D feature group at once. This is the
     case each feature's blank-ROI guard covers, and the one the bespoke out-of-core bodies used to
     get wrong in their own ways:
@@ -214,7 +214,7 @@ def test_ooc_2d_blank_matches_in_ram(tmp_path):
     _ooc_vs_ram_2d(tmp_path, ALL_2D_FEATURE_GROUPS, const=42)
 
 
-def test_ooc_2d_all_groups_match_in_ram(tmp_path):
+def test_ooc_2d_all_groups_match_in_ram_invariant(tmp_path):
     """The whole 2D feature surface at once on an ordinary ROI -- the umbrella guard for the
     trivial == out-of-core invariant."""
     _ooc_vs_ram_2d(tmp_path, ALL_2D_FEATURE_GROUPS)
@@ -242,7 +242,7 @@ def _make_pair_2d_two_rois(tmp_path, size=128):
     return str(intdir) + os.sep, str(segdir) + os.sep
 
 
-def test_ooc_2d_two_rois_no_state_leak(tmp_path):
+def test_ooc_2d_two_rois_no_state_leak_invariant(tmp_path):
     """A non-degenerate ROI and a degenerate (constant) ROI in the same image, all feature groups.
     The out-of-core feature loop reuses one persistent feature-method instance across ROIs (unlike
     the in-RAM path, which uses a fresh instance per ROI), so a feature that only pads-rather-than-

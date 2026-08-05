@@ -29,7 +29,7 @@ static std::unordered_map<std::string, double> ibsi_reference_intensity_feature_
     {"ROOT_MEAN_SQUARED", 2.77}
 };
 
-void test_intensity_feature(const Feature2D& feature, const std::string& feature_name, bool round = false) {
+void assert_intensity_feature(const Feature2D& feature, const std::string& feature_name, bool round = false) {
     std::vector<NyxusPixel> combined_image;
     std::vector<NyxusPixel> combined_mask;
 
@@ -84,71 +84,71 @@ void test_intensity_feature(const Feature2D& feature, const std::string& feature
     ASSERT_TRUE(agrees_gt(total, ibsi_reference_intensity_feature_golden_values[feature_name], 100.));
 }
 
-void test_ibsi_mean_intensity()
+void test_firstorder_mean_ibsi()
 {
-    test_intensity_feature(Nyxus::Feature2D::MEAN, "MEAN");
+    assert_intensity_feature(Nyxus::Feature2D::MEAN, "MEAN");
 }
 
-void test_ibsi_skewness_intensity()
+void test_firstorder_skewness_ibsi()
 {
-    test_intensity_feature(Nyxus::Feature2D::SKEWNESS, "SKEWNESS");
+    assert_intensity_feature(Nyxus::Feature2D::SKEWNESS, "SKEWNESS");
 }
 
-void test_ibsi_kurtosis_intensity()
+void test_firstorder_kurtosis_ibsi()
 {
-    test_intensity_feature(Nyxus::Feature2D::EXCESS_KURTOSIS, "EXCESS_KURTOSIS");
+    assert_intensity_feature(Nyxus::Feature2D::EXCESS_KURTOSIS, "EXCESS_KURTOSIS");
 }
 
-void test_ibsi_median_intensity()
+void test_firstorder_median_ibsi()
 {
-    test_intensity_feature(Nyxus::Feature2D::MEDIAN, "MEDIAN");
+    assert_intensity_feature(Nyxus::Feature2D::MEDIAN, "MEDIAN");
 }
 
-void test_ibsi_minimum_intensity()
+void test_firstorder_minimum_ibsi()
 {
-    test_intensity_feature(Nyxus::Feature2D::MIN, "MINIMUM");
+    assert_intensity_feature(Nyxus::Feature2D::MIN, "MINIMUM");
 }
 
-void test_ibsi_p10_intensity()
+void test_firstorder_p10_ibsi()
 {
-    test_intensity_feature(Nyxus::Feature2D::P10, "P10");
+    assert_intensity_feature(Nyxus::Feature2D::P10, "P10");
 }
 
 // As noted in ibsi documentation, P90 can vary based on implementation from 4-4.2
 // therefore, we round the result
-void test_ibsi_p90_intensity()
+void test_firstorder_p90_ibsi()
 {
-    test_intensity_feature(Nyxus::Feature2D::P90, "P90", true);
+    assert_intensity_feature(Nyxus::Feature2D::P90, "P90", true);
 }
 
-void test_ibsi_interquartile_intensity()
+void test_firstorder_interquartile_ibsi()
 {
-    test_intensity_feature(Nyxus::Feature2D::INTERQUARTILE_RANGE, "INTERQUARTILE");
+    assert_intensity_feature(Nyxus::Feature2D::INTERQUARTILE_RANGE, "INTERQUARTILE");
 }
 
-void test_ibsi_range_intensity()
+void test_firstorder_range_ibsi()
 {
-    test_intensity_feature(Nyxus::Feature2D::RANGE, "RANGE");
+    assert_intensity_feature(Nyxus::Feature2D::RANGE, "RANGE");
 }
 
-void test_ibsi_mean_absolute_deviation_intensity()
+void test_firstorder_mean_absolute_deviation_ibsi()
 {
-    test_intensity_feature(Nyxus::Feature2D::MEAN_ABSOLUTE_DEVIATION, "MEAN_ABSOLUTE_DEVIATION");
+    assert_intensity_feature(Nyxus::Feature2D::MEAN_ABSOLUTE_DEVIATION, "MEAN_ABSOLUTE_DEVIATION");
 }
 
 /* This feature needs to be updated to pass test
-void test_ibsi_robust_mean_absolute_deviation_intensity()
+void test_firstorder_robust_mean_absolute_deviation_ibsi()
 {
-    test_intensity_feature(Nyxus::Feature2D::ROBUST_MEAN_ABSOLUTE_DEVIATION, "ROBUST_MEAN_ABSOLUTE_DEVIATION");
+    assert_intensity_feature(Nyxus::Feature2D::ROBUST_MEAN_ABSOLUTE_DEVIATION, "ROBUST_MEAN_ABSOLUTE_DEVIATION");
 }
 */
 
-void test_ibsi_energy_intensity()
+void test_firstorder_energy_ibsi()
 {
-    test_intensity_feature(Nyxus::Feature2D::ENERGY, "ENERGY");
+    assert_intensity_feature(Nyxus::Feature2D::ENERGY, "ENERGY");
 }
 
-void test_ibsi_root_mean_squared_intensity()
+void test_firstorder_root_mean_squared_ibsi()
 {
-    test_intensity_feature(Nyxus::Feature2D::ROOT_MEAN_SQUARED, "ROOT_MEAN_SQUARED");
+    assert_intensity_feature(Nyxus::Feature2D::ROOT_MEAN_SQUARED, "ROOT_MEAN_SQUARED");
 }

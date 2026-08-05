@@ -50,7 +50,7 @@ static void ih_ibsi_run(std::vector<std::vector<double>>& fvals, int nbins) {
 }
 
 // IDX dispersion/index features vs IBSI intensity-histogram consensus (12 with IBSI values).
-void test_ih_dispersion_ibsi() {
+void test_intensity_histogram_dispersion_ibsi() {
     using F = Nyxus::Feature2D;
     std::vector<std::vector<double>> fv;
     ih_ibsi_run(fv, IH_PHANTOM_NBINS);
@@ -102,7 +102,7 @@ void test_ih_dispersion_ibsi() {
 // of intensity_histogram.cpp -- covers the 4 oracle=analytic features that have
 // no clean IBSI/VAL-vs-IDX anchor: the robust-mean pair (no IBSI feature exists
 // for ROBUST_MEAN_IDX/VAL) and QCoD_VAL/IQR_VAL (not IBSI-anchorable; see notes
-// in test_ih_dispersion_ibsi() above).
+// in test_intensity_histogram_dispersion_ibsi() above).
 static const NyxusPixel intensityHistogramRobustData[] = {
     {0,0,0},
     {1,0,10},{2,0,10},{3,0,10},{4,0,10},{5,0,10},
@@ -111,7 +111,7 @@ static const NyxusPixel intensityHistogramRobustData[] = {
     {16,0,40}
 };
 
-void test_ih_dispersion_robust_analytic() {
+void test_intensity_histogram_dispersion_robust_analytic() {
     using F = Nyxus::Feature2D;
     Fsettings s = ih_make_settings(5, /*ibsi*/ true);
     Dataset ds; ds.dataset_props.push_back(SlideProps("",""));
@@ -169,7 +169,7 @@ void test_ih_dispersion_robust_analytic() {
 //   i=7 -> floor(6/6*3)=floor(3.0) = 3 -> folds into bin (N-1)=2
 // Expected per-bin COUNTS: bin0=2 (the two 1's), bin1=1 (the 3), bin2=2 (the 5 and the folded 7).
 //   => expected = [2, 1, 2]   (sum = 5 = population; these are raw counts, not probabilities)
-void test_ih_histogram_analytic()
+void test_intensity_histogram_bin_counts_analytic()
 {
     using F = Nyxus::Feature2D;
     const int N = 3;

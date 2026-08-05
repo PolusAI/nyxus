@@ -102,7 +102,7 @@ static double ih_get(const std::vector<std::vector<double>>& fvals, Nyxus::Featu
 }
 
 // 1) Integer-domain values vs exact hand-computed ground truth.
-void test_ih_integer_domain_values()
+void test_intensity_histogram_integer_domain_values_regression()
 {
     std::vector<std::vector<double>> fv;
     ih_run(fv, ih_make_settings(/*nbins*/ 3, /*ibsi*/ true));
@@ -138,7 +138,7 @@ void test_ih_integer_domain_values()
 }
 
 // 2) Every "...Index" feature lands inside [1, N]; percentiles inside [min,max].
-void test_ih_index_and_percentile_bounds()
+void test_intensity_histogram_index_and_percentile_bounds_regression()
 {
     const int N = 3;
     std::vector<std::vector<double>> fv;
@@ -160,7 +160,7 @@ void test_ih_index_and_percentile_bounds()
 }
 
 // 3) IBSI gate: with IBSI off the family returns the soft-NaN sentinel for all 46.
-void test_ih_ibsi_gate_off_returns_nan()
+void test_intensity_histogram_ibsi_gate_off_returns_nan_regression()
 {
     const double sentinel = -7777.0;
     std::vector<std::vector<double>> fv;
@@ -177,7 +177,7 @@ void test_ih_ibsi_gate_off_returns_nan()
 //    (Per-bin features like mean/entropy can shift when a pixel sits exactly on a
 //    bin boundary because float binning is not bit-exact there — that is an inherent
 //    floating-point effect, not a domain-mapping error, so it is not asserted here.)
-void test_ih_float_domain_reconstruction()
+void test_intensity_histogram_float_domain_reconstruction_regression()
 {
     Fsettings s = ih_make_settings(3, true);
     s[(int)NyxSetting::FPIMG_ACTIVE].bval = true;
@@ -206,7 +206,7 @@ void test_ih_float_domain_reconstruction()
 //     This exercises the reconstruction with a NEGATIVE offset — the exact regime
 //     Hounsfield-Unit preservation targets (water=0, air=-1000) and which the
 //     original fpmin=0 test never covered.
-void test_ih_float_domain_reconstruction_negative_min()
+void test_intensity_histogram_float_domain_reconstruction_negative_min_regression()
 {
     Fsettings s = ih_make_settings(3, true);
     s[(int)NyxSetting::FPIMG_ACTIVE].bval = true;
@@ -230,7 +230,7 @@ void test_ih_float_domain_reconstruction_negative_min()
 //       IH_MINIMUM = -1024 + 1 = -1023 ; IH_MAXIMUM = -1024 + 7 = -1017
 //       IH_RANGE = 6 ; IH_BIN_SIZE = 6/3 = 2  (integer grey spacing preserved)
 //     i.e. features are reported back in absolute Hounsfield units.
-void test_ih_float_domain_reconstruction_preserve_hu()
+void test_intensity_histogram_float_domain_reconstruction_preserve_hu_regression()
 {
     Fsettings s = ih_make_settings(3, true);   // FPIMG knobs irrelevant in HU mode
     std::vector<std::vector<double>> fv;
@@ -252,7 +252,7 @@ void test_ih_float_domain_reconstruction_preserve_hu()
 //       IH_MINIMUM = -1024 + 1 = -1023 (NOT 0 + 1 = 1, the pre-fix clamp).
 //     Before the fix, poffset=floor(FPIMG_MIN=0)=0 shifted every value up by 1024
 //     and every negative HU was mis-mapped / clamped to 0 at load time.
-void test_ih_float_domain_reconstruction_preserve_hu_fpactive()
+void test_intensity_histogram_float_domain_reconstruction_preserve_hu_fpactive_regression()
 {
     Fsettings s = ih_make_settings(3, true);
     s[(int)NyxSetting::FPIMG_ACTIVE].bval = true;    // fp options supplied alongside --preserve-hu
@@ -270,7 +270,7 @@ void test_ih_float_domain_reconstruction_preserve_hu_fpactive()
 }
 
 // 5) required(): the class is only "required" when at least one IH feature is enabled.
-void test_ih_required_predicate()
+void test_intensity_histogram_required_predicate_regression()
 {
     FeatureSet fs;
     fs.enableAll(false);
@@ -286,7 +286,7 @@ void test_ih_required_predicate()
 // pending wiring. Shared fixture/oracle-data lives in test_remaining2d_common.h.
 // ---------------------------------------------------------------------------------------------------
 
-void test_remaining2d_unvetted_no_direct_oracle_radial_distribution_features()
+void test_intensity_histogram_radial_distribution_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_remaining2d_shape_feature_values(fvals);

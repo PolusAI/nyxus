@@ -42,7 +42,7 @@ static std::string unvetted_nyxus_regression_glrlm_feature_golden_key(const std:
     return feature_name;
 }
 
-void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_name) 
+void assert_glrlm_feature(const Feature2D& feature_, const std::string& feature_name) 
 {
     // featue settings for this particular test
     Fsettings s;
@@ -166,162 +166,162 @@ void test_glrlm_feature(const Feature2D& feature_, const std::string& feature_na
     ASSERT_TRUE(agrees_gt(total / divisor, unvetted_nyxus_regression_glrlm_feature_golden_values[truth_key], 100.));
 }
 
-void test_glrlm_sre()
+void test_glrlm_sre_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_SRE, "GLRLM_SRE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_SRE, "GLRLM_SRE");
 }
 
-void test_glrlm_lre()
+void test_glrlm_lre_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_LRE, "GLRLM_LRE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_LRE, "GLRLM_LRE");
 }
 
-void test_glrlm_lglre()
+void test_glrlm_lglre_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_LGLRE, "GLRLM_LGLRE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_LGLRE, "GLRLM_LGLRE");
 }
 
-void test_glrlm_hglre()
+void test_glrlm_hglre_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_HGLRE, "GLRLM_HGLRE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_HGLRE, "GLRLM_HGLRE");
 }   
 
-void test_glrlm_srlgle()
+void test_glrlm_srlgle_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_SRLGLE, "GLRLM_SRLGLE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_SRLGLE, "GLRLM_SRLGLE");
 }
 
-void test_glrlm_srhgle()
+void test_glrlm_srhgle_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_SRHGLE, "GLRLM_SRHGLE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_SRHGLE, "GLRLM_SRHGLE");
 }
 
-void test_glrlm_lrlgle()
+void test_glrlm_lrlgle_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_LRLGLE, "GLRLM_LRLGLE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_LRLGLE, "GLRLM_LRLGLE");
 }
 
-void test_glrlm_lrhgle()
+void test_glrlm_lrhgle_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_LRHGLE, "GLRLM_LRHGLE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_LRHGLE, "GLRLM_LRHGLE");
 }
 
-void test_glrlm_gln()
+void test_glrlm_gln_regression()
 {   
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_GLN, "GLRLM_GLN");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_GLN, "GLRLM_GLN");
 }
 
-void test_glrlm_glnn()
+void test_glrlm_glnn_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_GLNN, "GLRLM_GLNN");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_GLNN, "GLRLM_GLNN");
 }
 
-void test_glrlm_rln()
+void test_glrlm_rln_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RLN, "GLRLM_RLN");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_RLN, "GLRLM_RLN");
 }
 
-void test_glrlm_rlnn()
+void test_glrlm_rlnn_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RLNN, "GLRLM_RLNN");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_RLNN, "GLRLM_RLNN");
 }
 
-void test_glrlm_rp()
+void test_glrlm_rp_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RP, "GLRLM_RP");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_RP, "GLRLM_RP");
 }
 
-void test_glrlm_glv()
+void test_glrlm_glv_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_GLV, "GLRLM_GLV");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_GLV, "GLRLM_GLV");
 }
 
-void test_glrlm_rv()
+void test_glrlm_rv_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RV, "GLRLM_RV");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_RV, "GLRLM_RV");
 }
 
-void test_glrlm_re()
+void test_glrlm_re_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RE, "GLRLM_RE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_RE, "GLRLM_RE");
 }
 
-void test_glrlm_sre_ave()
+void test_glrlm_sre_ave_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_SRE_AVE, "GLRLM_SRE_AVE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_SRE_AVE, "GLRLM_SRE_AVE");
 }
 
-void test_glrlm_lre_ave()
+void test_glrlm_lre_ave_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_LRE_AVE, "GLRLM_LRE_AVE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_LRE_AVE, "GLRLM_LRE_AVE");
 }
 
-void test_glrlm_gln_ave()
+void test_glrlm_gln_ave_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_GLN_AVE, "GLRLM_GLN_AVE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_GLN_AVE, "GLRLM_GLN_AVE");
 }
 
-void test_glrlm_glnn_ave()
+void test_glrlm_glnn_ave_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_GLNN_AVE, "GLRLM_GLNN_AVE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_GLNN_AVE, "GLRLM_GLNN_AVE");
 }
 
-void test_glrlm_rln_ave()
+void test_glrlm_rln_ave_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RLN_AVE, "GLRLM_RLN_AVE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_RLN_AVE, "GLRLM_RLN_AVE");
 }
 
-void test_glrlm_rlnn_ave()
+void test_glrlm_rlnn_ave_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RLNN_AVE, "GLRLM_RLNN_AVE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_RLNN_AVE, "GLRLM_RLNN_AVE");
 }
 
-void test_glrlm_rp_ave()
+void test_glrlm_rp_ave_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RP_AVE, "GLRLM_RP_AVE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_RP_AVE, "GLRLM_RP_AVE");
 }
 
-void test_glrlm_glv_ave()
+void test_glrlm_glv_ave_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_GLV_AVE, "GLRLM_GLV_AVE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_GLV_AVE, "GLRLM_GLV_AVE");
 }
 
-void test_glrlm_rv_ave()
+void test_glrlm_rv_ave_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RV_AVE, "GLRLM_RV_AVE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_RV_AVE, "GLRLM_RV_AVE");
 }
 
-void test_glrlm_re_ave()
+void test_glrlm_re_ave_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_RE_AVE, "GLRLM_RE_AVE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_RE_AVE, "GLRLM_RE_AVE");
 }
 
-void test_glrlm_lglre_ave()
+void test_glrlm_lglre_ave_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_LGLRE_AVE, "GLRLM_LGLRE_AVE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_LGLRE_AVE, "GLRLM_LGLRE_AVE");
 }
 
-void test_glrlm_hglre_ave()
+void test_glrlm_hglre_ave_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_HGLRE_AVE, "GLRLM_HGLRE_AVE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_HGLRE_AVE, "GLRLM_HGLRE_AVE");
 }
 
-void test_glrlm_srlgle_ave()
+void test_glrlm_srlgle_ave_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_SRLGLE_AVE, "GLRLM_SRLGLE_AVE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_SRLGLE_AVE, "GLRLM_SRLGLE_AVE");
 }
 
-void test_glrlm_srhgle_ave()
+void test_glrlm_srhgle_ave_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_SRHGLE_AVE, "GLRLM_SRHGLE_AVE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_SRHGLE_AVE, "GLRLM_SRHGLE_AVE");
 }
 
-void test_glrlm_lrlgle_ave()
+void test_glrlm_lrlgle_ave_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_LRLGLE_AVE, "GLRLM_LRLGLE_AVE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_LRLGLE_AVE, "GLRLM_LRLGLE_AVE");
 }
 
-void test_glrlm_lrhgle_ave()
+void test_glrlm_lrhgle_ave_regression()
 {
-    test_glrlm_feature(Nyxus::Feature2D::GLRLM_LRHGLE_AVE, "GLRLM_LRHGLE_AVE");
+    assert_glrlm_feature(Nyxus::Feature2D::GLRLM_LRHGLE_AVE, "GLRLM_LRHGLE_AVE");
 }

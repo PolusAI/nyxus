@@ -43,7 +43,7 @@ static std::unordered_map<std::string, double> ibsi_reference_glcm_feature_golde
     {"GLCM_SUMVARIANCE", 5.47}  // p. 67, consensus: very strong
 };
 
-void test_ibsi_glcm_feature(const Feature2D& feature_, const std::string& feature_name) 
+void assert_ibsi_glcm_feature(const Feature2D& feature_, const std::string& feature_name) 
 {
     // featue settings for this particular test
     Fsettings s;
@@ -151,141 +151,141 @@ void test_ibsi_glcm_feature(const Feature2D& feature_, const std::string& featur
     ASSERT_TRUE(agrees_gt(total / 16, ibsi_reference_glcm_feature_golden_values[feature_name], 100.));
 }
 
-void test_ibsi_glcm_ACOR()
+void test_glcm_acor_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_ACOR, "GLCM_ACOR");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_ACOR, "GLCM_ACOR");
 }
 
-void test_ibsi_glcm_CLUPROM()
+void test_glcm_cluprom_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_CLUPROM, "GLCM_CLUPROM");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_CLUPROM, "GLCM_CLUPROM");
 }
 
-void test_ibsi_glcm_CLUSHADE()
+void test_glcm_clushade_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_CLUSHADE, "GLCM_CLUSHADE");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_CLUSHADE, "GLCM_CLUSHADE");
 }
 
-void test_ibsi_glcm_CLUTEND()
+void test_glcm_clutend_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_CLUTEND, "GLCM_CLUTEND");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_CLUTEND, "GLCM_CLUTEND");
 }
 
-void test_ibsi_glcm_difference_average()
+void test_glcm_difference_average_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_DIFAVE, "GLCM_DIFAVE");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_DIFAVE, "GLCM_DIFAVE");
 }
 
-void test_ibsi_glcm_difference_entropy()
+void test_glcm_difference_entropy_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_DIFENTRO, "GLCM_DIFENTRO");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_DIFENTRO, "GLCM_DIFENTRO");
 }
 
-void test_ibsi_glcm_difference_variance()
+void test_glcm_difference_variance_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_DIFVAR, "GLCM_DIFVAR");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_DIFVAR, "GLCM_DIFVAR");
 }
 
-void test_ibsi_glcm_DIS()
+void test_glcm_dis_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_DIS, "GLCM_DIS");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_DIS, "GLCM_DIS");
 }
 
-void test_ibsi_glcm_ID()
+void test_glcm_id_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_ID, "GLCM_ID");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_ID, "GLCM_ID");
 }
 
-void test_ibsi_glcm_IDN()
+void test_glcm_idn_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_IDN, "GLCM_IDN");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_IDN, "GLCM_IDN");
 }
 
-void test_ibsi_glcm_IDM()
+void test_glcm_idm_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_IDM, "GLCM_IDM");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_IDM, "GLCM_IDM");
 }
 
-void test_ibsi_glcm_IDMN()
+void test_glcm_idmn_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_IDMN, "GLCM_IDMN");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_IDMN, "GLCM_IDMN");
 }
 
-void test_ibsi_glcm_angular_2d_moment()
+void test_glcm_angular_2d_moment_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_ASM, "GLCM_ASM");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_ASM, "GLCM_ASM");
 }
 
-void test_ibsi_glcm_contrast()
+void test_glcm_contrast_ibsi()
 {
-   test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_CONTRAST, "GLCM_CONTRAST");
+   assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_CONTRAST, "GLCM_CONTRAST");
 }
 
-void test_ibsi_glcm_correlation()
+void test_glcm_correlation_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_CORRELATION, "GLCM_CORRELATION");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_CORRELATION, "GLCM_CORRELATION");
 }
 
-void test_ibsi_glcm_infomeas1()
+void test_glcm_infomeas1_ibsi()
 {
-   test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_INFOMEAS1, "GLCM_INFOMEAS1");
+   assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_INFOMEAS1, "GLCM_INFOMEAS1");
 }
 
-void test_ibsi_glcm_infomeas2()
+void test_glcm_infomeas2_ibsi()
 {
-   test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_INFOMEAS2, "GLCM_INFOMEAS2");
+   assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_INFOMEAS2, "GLCM_INFOMEAS2");
 }
 
-void test_ibsi_glcm_IV()
+void test_glcm_iv_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_IV, "GLCM_IV");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_IV, "GLCM_IV");
 }
 
-void test_ibsi_glcm_JAVE()
+void test_glcm_jave_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_JAVE, "GLCM_JAVE");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_JAVE, "GLCM_JAVE");
 }
 
-void test_ibsi_glcm_HOM2()   // regression-fix: HOM2 == IBSI IDM once /sum_p normalization is applied
+void test_glcm_hom2_ibsi()   // regression-fix: HOM2 == IBSI IDM once /sum_p normalization is applied
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_HOM2, "GLCM_HOM2");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_HOM2, "GLCM_HOM2");
 }
 
-void test_ibsi_glcm_ENTROPY()   // regression-fix: ENTROPY == IBSI JE once /sum_p normalization is applied
+void test_glcm_entropy_ibsi()   // regression-fix: ENTROPY == IBSI JE once /sum_p normalization is applied
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_ENTROPY, "GLCM_ENTROPY");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_ENTROPY, "GLCM_ENTROPY");
 }
 
-void test_ibsi_glcm_JE()
+void test_glcm_je_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_JE, "GLCM_JE");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_JE, "GLCM_JE");
 }
 
-void test_ibsi_glcm_JMAX()
+void test_glcm_jmax_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_JMAX, "GLCM_JMAX");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_JMAX, "GLCM_JMAX");
 }
 
-void test_ibsi_glcm_JVAR()
+void test_glcm_jvar_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_JVAR, "GLCM_JVAR");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_JVAR, "GLCM_JVAR");
 }
 
-void test_ibsi_glcm_inversed_difference_moment() {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_IDM, "GLCM_IDM");
+void test_glcm_inversed_difference_moment_ibsi() {
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_IDM, "GLCM_IDM");
 }
 
-void test_ibsi_glcm_sum_average()
+void test_glcm_sum_average_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_SUMAVERAGE, "GLCM_SUMAVERAGE");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_SUMAVERAGE, "GLCM_SUMAVERAGE");
 }
 
-void test_ibsi_glcm_sum_entropy()
+void test_glcm_sum_entropy_ibsi()
 {
-   test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_SUMENTROPY, "GLCM_SUMENTROPY");
+   assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_SUMENTROPY, "GLCM_SUMENTROPY");
 }
 
-void test_ibsi_glcm_sum_variance()
+void test_glcm_sum_variance_ibsi()
 {
-    test_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_SUMVARIANCE, "GLCM_SUMVARIANCE");
+    assert_ibsi_glcm_feature(Nyxus::Feature2D::GLCM_SUMVARIANCE, "GLCM_SUMVARIANCE");
 }

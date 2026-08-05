@@ -30,7 +30,7 @@ static std::unordered_map<std::string, double> ibsi_reference_gldm_feature_golde
 };
 
 
-void test_ibsi_gldm_feature(const Feature2D& feature_, const std::string& feature_name) 
+void assert_ibsi_gldm_feature(const Feature2D& feature_, const std::string& feature_name) 
 {
     // featue settings for this particular test
     Fsettings s;
@@ -119,72 +119,72 @@ void test_ibsi_gldm_feature(const Feature2D& feature_, const std::string& featur
     ASSERT_TRUE(agrees_gt(total/4, ibsi_reference_gldm_feature_golden_values[feature_name], 100.));
 }
 
-void test_ibsi_gldm_sde()
+void test_gldm_sde_ibsi()
 {
-    test_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_SDE, "GLDM_SDE");
+    assert_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_SDE, "GLDM_SDE");
 }
 
-void test_ibsi_gldm_lde()
+void test_gldm_lde_ibsi()
 {
-   test_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_LDE, "GLDM_LDE");
+   assert_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_LDE, "GLDM_LDE");
 }
 
-void test_ibsi_gldm_lgle()
+void test_gldm_lgle_ibsi()
 {
-   test_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_LGLE, "GLDM_LGLE");
+   assert_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_LGLE, "GLDM_LGLE");
 }
 
-void test_ibsi_gldm_hgle()
+void test_gldm_hgle_ibsi()
 {
-    test_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_HGLE, "GLDM_HGLE");
+    assert_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_HGLE, "GLDM_HGLE");
 }
 
-void test_ibsi_gldm_sdlgle()
+void test_gldm_sdlgle_ibsi()
 {
-    test_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_SDLGLE, "GLDM_SDLGLE");
+    assert_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_SDLGLE, "GLDM_SDLGLE");
 }
 
-void test_ibsi_gldm_sdhgle()
+void test_gldm_sdhgle_ibsi()
 {
-    test_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_SDHGLE, "GLDM_SDHGLE");
+    assert_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_SDHGLE, "GLDM_SDHGLE");
 }
 
-void test_ibsi_gldm_ldlgle()
+void test_gldm_ldlgle_ibsi()
 {
-    test_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_LDLGLE, "GLDM_LDLGLE");
+    assert_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_LDLGLE, "GLDM_LDLGLE");
 }
 
-void test_ibsi_gldm_ldhgle()
+void test_gldm_ldhgle_ibsi()
 {
-    test_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_LDHGLE, "GLDM_LDHGLE");
+    assert_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_LDHGLE, "GLDM_LDHGLE");
 }
 
-void test_ibsi_gldm_gln()
+void test_gldm_gln_ibsi()
 {
-   test_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_GLN, "GLDM_GLN");
+   assert_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_GLN, "GLDM_GLN");
 }
 
-void test_ibsi_gldm_dn()
+void test_gldm_dn_ibsi()
 {
-    test_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_DN, "GLDM_DN");
+    assert_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_DN, "GLDM_DN");
 }
 
-void test_ibsi_gldm_dnn()
+void test_gldm_dnn_ibsi()
 {
-    test_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_DNN, "GLDM_DNN");
+    assert_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_DNN, "GLDM_DNN");
 }
 
-void test_ibsi_gldm_glv()
+void test_gldm_glv_ibsi()
 {
-    test_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_GLV, "GLDM_GLV");
+    assert_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_GLV, "GLDM_GLV");
 }
 
-void test_ibsi_gldm_dv()
+void test_gldm_dv_ibsi()
 {
-    test_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_DV, "GLDM_DV");
+    assert_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_DV, "GLDM_DV");
 }
 
-void test_ibsi_gldm_de()
+void test_gldm_de_ibsi()
 {
-    test_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_DE, "GLDM_DE");
+    assert_ibsi_gldm_feature(Nyxus::Feature2D::GLDM_DE, "GLDM_DE");
 }

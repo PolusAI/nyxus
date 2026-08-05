@@ -48,7 +48,7 @@ static void calculate_pixel_intensity_feature_values(
     fvals = roidata.fvals;
 }
 
-void test_pixel_intensity_integrated_intensity()
+void test_firstorder_integrated_intensity_regression()
 {
     // Feed data to the ROI
     Dataset ds;
@@ -80,7 +80,7 @@ void test_pixel_intensity_integrated_intensity()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::INTEGRATED_INTENSITY][0], 5015224));
 }
 
-void test_pixel_intensity_min_max_range()
+void test_firstorder_min_max_range_regression()
 {
     // Feed data to the ROI
     Dataset ds;
@@ -108,7 +108,7 @@ void test_pixel_intensity_min_max_range()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::RANGE][0], 53011));
 }
 
-void test_pixel_intensity_mean()
+void test_firstorder_mean_regression()
 {
     // Feed data to the ROI
     Dataset ds;
@@ -134,7 +134,7 @@ void test_pixel_intensity_mean()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::MEAN][0], 3.256638961038961e+04));
 }
 
-void test_pixel_intensity_median()
+void test_firstorder_median_regression()
 {
     // Feed data to the ROI
     Dataset ds;
@@ -160,7 +160,7 @@ void test_pixel_intensity_median()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::MEDIAN][0], 2.980350000000000e+04));
 }
 
-void test_pixel_intensity_mode()
+void test_firstorder_mode_regression()
 {
     // Feed data to the ROI
     Dataset ds;
@@ -186,7 +186,7 @@ void test_pixel_intensity_mode()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::MODE][0], 19552));
 }
 
-void test_pixel_intensity_standard_deviation()
+void test_firstorder_standard_deviation_regression()
 {
     // Feed data to the ROI
     Dataset ds;
@@ -212,7 +212,7 @@ void test_pixel_intensity_standard_deviation()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::STANDARD_DEVIATION][0], 1.473096831710767e+04));
 }
 
-void test_pixel_intensity_skewness()
+void test_firstorder_skewness_regression()
 {
     // Feed data to the ROI
     Dataset ds;
@@ -238,7 +238,7 @@ void test_pixel_intensity_skewness()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::SKEWNESS][0], 0.450256759704494));
 }
 
-void test_pixel_intensity_kurtosis()
+void test_firstorder_kurtosis_regression()
 {
     std::vector<std::vector<double>> fvals;
     calculate_pixel_intensity_feature_values(fvals);
@@ -246,7 +246,7 @@ void test_pixel_intensity_kurtosis()
     ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::EXCESS_KURTOSIS][0], 1.927888720710090 - 3));
 }
 
-void test_pixel_intensity_pearson_kurtosis()
+void test_firstorder_pearson_kurtosis_regression()
 {
     std::vector<std::vector<double>> fvals;
     calculate_pixel_intensity_feature_values(fvals);
@@ -254,7 +254,7 @@ void test_pixel_intensity_pearson_kurtosis()
     ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::KURTOSIS][0], 1.927888720710090));
 }
 
-void test_pixel_intensity_verifiable_with_3p_builtin_oracle_hyperskewness()
+void test_firstorder_hyperskewness_regression()
 {
     SCOPED_TRACE("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__HYPERSKEWNESS");
 
@@ -282,7 +282,7 @@ void test_pixel_intensity_verifiable_with_3p_builtin_oracle_hyperskewness()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::HYPERSKEWNESS][0], oracle_3p_builtin_hyperskewness_feature_golden_value));
 }
 
-void test_pixel_intensity_verifiable_with_3p_builtin_oracle_hyperflatness()
+void test_firstorder_hyperflatness_regression()
 {
     SCOPED_TRACE("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__HYPERFLATNESS");
 
@@ -310,7 +310,7 @@ void test_pixel_intensity_verifiable_with_3p_builtin_oracle_hyperflatness()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::HYPERFLATNESS][0], oracle_3p_builtin_hyperflatness_feature_golden_value));
 }
 
-void test_pixel_intensity_mean_absolute_deviation()
+void test_firstorder_mean_absolute_deviation_regression()
 {
     // Feed data to the ROI
     Dataset ds;
@@ -336,7 +336,7 @@ void test_pixel_intensity_mean_absolute_deviation()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::MEAN_ABSOLUTE_DEVIATION][0], 1.283308449991567e+04));
 }
 
-void test_pixel_intensity_robust_mean_absolute_deviation()
+void test_firstorder_robust_mean_absolute_deviation_regression()
 {
     std::vector<std::vector<double>> fvals;
     calculate_pixel_intensity_feature_values(fvals);
@@ -344,7 +344,7 @@ void test_pixel_intensity_robust_mean_absolute_deviation()
     ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::ROBUST_MEAN_ABSOLUTE_DEVIATION][0], 1.044061849600000e+04));
 }
 
-void test_pixel_intensity_standard_error()
+void test_firstorder_standard_error_regression()
 {
     // Feed data to the ROI
     Dataset ds;
@@ -370,7 +370,7 @@ void test_pixel_intensity_standard_error()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::STANDARD_ERROR][0], 1.187055255225567e+03));
 }
 
-void test_pixel_intensity_root_mean_squared()
+void test_firstorder_root_mean_squared_regression()
 {
     // Feed data to the ROI
     Dataset ds;
@@ -396,7 +396,7 @@ void test_pixel_intensity_root_mean_squared()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::ROOT_MEAN_SQUARED][0], 3.572341052638121e+04));
 }
 
-void test_pixel_intensity_entropy()
+void test_firstorder_entropy_regression()
 {
     // Feed data to the ROI
     Dataset ds;
@@ -428,7 +428,7 @@ void test_pixel_intensity_entropy()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::ENTROPY][0], 4.12733));
 }
 
-void test_pixel_intensity_energy()
+void test_firstorder_energy_regression()
 {
     // Feed data to the ROI
     Dataset ds;
@@ -454,7 +454,7 @@ void test_pixel_intensity_energy()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::ENERGY][0], 1.965289571840000e+11));
 }
 
-void test_pixel_intensity_uniformity()
+void test_firstorder_uniformity_regression()
 {
     // Feed data to the ROI
     Dataset ds;
@@ -486,7 +486,7 @@ void test_pixel_intensity_uniformity()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::UNIFORMITY][0], oracle_3p_matlab_uniformity_feature_golden_value, 100)); // Using 1% tolerance vs MATLAB
 }
 
-void test_pixel_intensity_verifiable_with_3p_builtin_oracle_uniformity_piu()
+void test_firstorder_uniformity_piu_regression()
 {
     SCOPED_TRACE("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__UNIFORMITY_PIU");
 
@@ -517,7 +517,7 @@ void test_pixel_intensity_verifiable_with_3p_builtin_oracle_uniformity_piu()
     ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::UNIFORMITY_PIU][0], oracle_3p_builtin_uniformity_piu_feature_golden_value));
 }
 
-void test_pixel_intensity_percentiles_iqr()
+void test_firstorder_percentiles_iqr_regression()
 {
     std::vector<std::vector<double>> fvals;
     calculate_pixel_intensity_feature_values(fvals);
@@ -531,7 +531,7 @@ void test_pixel_intensity_percentiles_iqr()
     ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::INTERQUARTILE_RANGE][0], 2.672637916666667e+04));
 }
 
-void test_pixel_intensity_cov()
+void test_firstorder_cov_regression()
 {
     std::vector<std::vector<double>> fvals;
     calculate_pixel_intensity_feature_values(fvals);
@@ -539,7 +539,7 @@ void test_pixel_intensity_cov()
     ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::COV][0], 4.523365498399634e-01));
 }
 
-void test_pixel_intensity_verifiable_with_3p_builtin_oracle_covered_image_intensity_range()
+void test_firstorder_covered_image_range_regression()
 {
     SCOPED_TRACE("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__COVERED_IMAGE_INTENSITY_RANGE");
 
@@ -549,7 +549,7 @@ void test_pixel_intensity_verifiable_with_3p_builtin_oracle_covered_image_intens
     ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::COVERED_IMAGE_INTENSITY_RANGE][0], oracle_3p_builtin_covered_image_intensity_range_feature_golden_value));
 }
 
-void test_pixel_intensity_median_absolute_deviation()
+void test_firstorder_median_absolute_deviation_regression()
 {
     std::vector<std::vector<double>> fvals;
     calculate_pixel_intensity_feature_values(fvals);
@@ -557,7 +557,7 @@ void test_pixel_intensity_median_absolute_deviation()
     ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::MEDIAN_ABSOLUTE_DEVIATION][0], 1.269384415584416e+04));
 }
 
-void test_pixel_intensity_qcod()
+void test_firstorder_qcod_regression()
 {
     std::vector<std::vector<double>> fvals;
     calculate_pixel_intensity_feature_values(fvals);
@@ -565,7 +565,7 @@ void test_pixel_intensity_qcod()
     ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::QCOD][0], 4.119607630640470e-01));
 }
 
-void test_pixel_intensity_verifiable_with_3p_builtin_oracle_robust_mean()
+void test_firstorder_robust_mean_regression()
 {
     SCOPED_TRACE("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__ROBUST_MEAN");
 
@@ -575,7 +575,7 @@ void test_pixel_intensity_verifiable_with_3p_builtin_oracle_robust_mean()
     ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::ROBUST_MEAN][0], oracle_3p_builtin_robust_mean_feature_golden_value));
 }
 
-void test_pixel_intensity_standard_deviation_biased()
+void test_firstorder_standard_deviation_biased_regression()
 {
     std::vector<std::vector<double>> fvals;
     calculate_pixel_intensity_feature_values(fvals);
@@ -583,7 +583,7 @@ void test_pixel_intensity_standard_deviation_biased()
     ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::STANDARD_DEVIATION_BIASED][0], 1.468306260221863e+04));
 }
 
-void test_pixel_intensity_variance()
+void test_firstorder_variance_regression()
 {
     std::vector<std::vector<double>> fvals;
     calculate_pixel_intensity_feature_values(fvals);
@@ -591,7 +591,7 @@ void test_pixel_intensity_variance()
     ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::VARIANCE][0], 2.170014275596299e+08));
 }
 
-void test_pixel_intensity_variance_biased()
+void test_firstorder_variance_biased_regression()
 {
     std::vector<std::vector<double>> fvals;
     calculate_pixel_intensity_feature_values(fvals);

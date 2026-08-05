@@ -51,7 +51,7 @@ static std::unordered_map<std::string, double> compat_3glszm_GT
     {"3GLSZM_ZV", 692.5573282855598}  // Case-1_original_glszm_ZoneVariance
 };
 
-void test_compat_3glszm_feature (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+void assert_compat_3glszm_feature (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
     // (1) prepare
 
@@ -128,7 +128,7 @@ void test_compat_3glszm_feature (const Nyxus::Feature3D& expecting_fcode, const 
     ASSERT_TRUE (agrees_gt(atot, compat_3glszm_GT[fname], 10.));
 }
 
-void test_glsz_matrix_correctness()
+void test_3d_glszm_matrix_correctness_pyradiomics()
 {
     // data
 
@@ -205,84 +205,84 @@ void test_glsz_matrix_correctness()
     ASSERT_TRUE(P.yx(3,0)==2);     ASSERT_TRUE(P.yx(3,1)==0);   ASSERT_TRUE(P.yx(3,2)==1);
 }
 
-void test_compat_3glszm_sae()
+void test_3d_glszm_sae_pyradiomics()
 {
-    test_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_SAE, "3GLSZM_SAE");
+    assert_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_SAE, "3GLSZM_SAE");
 }
 
-void test_compat_3glszm_lae()
+void test_3d_glszm_lae_pyradiomics()
 {
-    test_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_LAE, "3GLSZM_LAE");
+    assert_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_LAE, "3GLSZM_LAE");
 }
 
-void test_compat_3glszm_lglze()
+void test_3d_glszm_lglze_pyradiomics()
 {
-    test_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_LGLZE, "3GLSZM_LGLZE");
+    assert_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_LGLZE, "3GLSZM_LGLZE");
 }
 
-void test_compat_3glszm_hglze()
+void test_3d_glszm_hglze_pyradiomics()
 {
-    test_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_HGLZE, "3GLSZM_HGLZE");
+    assert_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_HGLZE, "3GLSZM_HGLZE");
 }
 
-void test_compat_3glszm_salgle()
+void test_3d_glszm_salgle_pyradiomics()
 {
-    test_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_SALGLE, "3GLSZM_SALGLE");
+    assert_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_SALGLE, "3GLSZM_SALGLE");
 }
 
-void test_compat_3glszm_sahgle()
+void test_3d_glszm_sahgle_pyradiomics()
 {
-    test_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_SAHGLE, "3GLSZM_SAHGLE");
+    assert_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_SAHGLE, "3GLSZM_SAHGLE");
 }
 
-void test_compat_3glszm_lalgle()
+void test_3d_glszm_lalgle_pyradiomics()
 {
-    test_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_LALGLE, "3GLSZM_LALGLE");
+    assert_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_LALGLE, "3GLSZM_LALGLE");
 }
 
-void test_compat_3glszm_lahgle()
+void test_3d_glszm_lahgle_pyradiomics()
 {
-    test_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_LAHGLE, "3GLSZM_LAHGLE");
+    assert_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_LAHGLE, "3GLSZM_LAHGLE");
 }
 
-void test_compat_3glszm_gln()
+void test_3d_glszm_gln_pyradiomics()
 {
-    test_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_GLN, "3GLSZM_GLN");
+    assert_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_GLN, "3GLSZM_GLN");
 }
 
-void test_compat_3glszm_glnn()
+void test_3d_glszm_glnn_pyradiomics()
 {
-    test_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_GLNN, "3GLSZM_GLNN");
+    assert_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_GLNN, "3GLSZM_GLNN");
 }
 
-void test_compat_3glszm_szn()
+void test_3d_glszm_szn_pyradiomics()
 {
-    test_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_SZN, "3GLSZM_SZN");
+    assert_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_SZN, "3GLSZM_SZN");
 }
 
-void test_compat_3glszm_sznn()
+void test_3d_glszm_sznn_pyradiomics()
 {
-    test_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_SZNN, "3GLSZM_SZNN");
+    assert_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_SZNN, "3GLSZM_SZNN");
 }
 
-void test_compat_3glszm_zp()
+void test_3d_glszm_zp_pyradiomics()
 {
-    test_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_ZP, "3GLSZM_ZP");
+    assert_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_ZP, "3GLSZM_ZP");
 }
 
-void test_compat_3glszm_glv()
+void test_3d_glszm_glv_pyradiomics()
 {
-    test_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_GLV, "3GLSZM_GLV");
+    assert_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_GLV, "3GLSZM_GLV");
 }
 
-void test_compat_3glszm_zv()
+void test_3d_glszm_zv_pyradiomics()
 {
-    test_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_ZV, "3GLSZM_ZV");
+    assert_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_ZV, "3GLSZM_ZV");
 }
 
-void test_compat_3glszm_ze()
+void test_3d_glszm_ze_pyradiomics()
 {
-    test_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_ZE, "3GLSZM_ZE");
+    assert_compat_3glszm_feature (Nyxus::Feature3D::GLSZM_ZE, "3GLSZM_ZE");
 }
 
 

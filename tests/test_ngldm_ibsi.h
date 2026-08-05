@@ -45,7 +45,7 @@ static std::unordered_map<std::string, double> unvetted_nyxus_regression_ngldm_f
 // Tests calculating the NGLD-matrix with the IBSI mode enabled, using IBSI-provided ground truth
 //
 
-void test_ibsi_ngld_matrix_ibsi ()
+void assert_ngldm_matrix_ibsi_mode ()
 {
     // Load a test image
     LR roidata;
@@ -95,7 +95,7 @@ void test_ibsi_ngld_matrix_ibsi ()
 // Tests calculating the NGLD-matrix with the IBSI mode disabled, using community-provided ground truth
 //
 
-void test_ibsi_ngld_matrix_nonibsi()
+void assert_ngldm_matrix_nonibsi_mode()
 {
     // Load a test image
     LR roidata;
@@ -141,7 +141,7 @@ void test_ibsi_ngld_matrix_nonibsi()
     ASSERT_TRUE(n_mismatches == 0);
 }
 
-void test_ibsi_ngldm_feature(
+void assert_ibsi_ngldm_feature(
     const Feature2D& feature_,
     const std::string& feature_name,
     const std::unordered_map<std::string, double>& feature_reference_values,
@@ -244,127 +244,127 @@ void test_ibsi_ngldm_feature(
     ASSERT_TRUE(agrees_gt(aveTotal, feature_reference_values.at(feature_name), 2.));
 }
 
-void test_ibsi_ngldm_ibsi_reference_feature(const Feature2D& feature_, const std::string& feature_name)
+void assert_ibsi_ngldm_ibsi_reference_feature(const Feature2D& feature_, const std::string& feature_name)
 {
-	test_ibsi_ngldm_feature(
+	assert_ibsi_ngldm_feature(
 		feature_,
 		feature_name,
 		ibsi_reference_ngldm_feature_reference_values,
 		"VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
 }
 
-void test_ibsi_ngldm_unvetted_nyxus_regression_feature(const Feature2D& feature_, const std::string& feature_name)
+void assert_ibsi_ngldm_unvetted_nyxus_regression_feature(const Feature2D& feature_, const std::string& feature_name)
 {
-	test_ibsi_ngldm_feature(
+	assert_ibsi_ngldm_feature(
 		feature_,
 		feature_name,
 		unvetted_nyxus_regression_ngldm_feature_reference_values,
 		"UNVETTED_NO_DIRECT_ORACLE__");
 }
 
-void test_ibsi_NGLDM_matrix_correctness_IBSI()
+void test_ngldm_matrix_correctness_ibsi()
 {
-    test_ibsi_ngld_matrix_ibsi();
+    assert_ngldm_matrix_ibsi_mode();
 }
 
-void test_ibsi_NGLDM_matrix_correctness_NONIBSI()
+void test_ngldm_matrix_correctness_nonibsi_mode_ibsi()
 {
-    test_ibsi_ngld_matrix_nonibsi();
+    assert_ngldm_matrix_nonibsi_mode();
 }
 
-void test_ibsi_NGLDM_LDE()
+void test_ngldm_lde_ibsi()
 {
-	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_LDE, "NGLDM_LDE");
+	assert_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_LDE, "NGLDM_LDE");
 }
 
-void test_ibsi_NGLDM_HDE()
+void test_ngldm_hde_ibsi()
 {
-	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_HDE, "NGLDM_HDE");
+	assert_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_HDE, "NGLDM_HDE");
 }
 
-void test_ibsi_NGLDM_LGLCE()
+void test_ngldm_lglce_ibsi()
 {
-	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_LGLCE, "NGLDM_LGLCE");
+	assert_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_LGLCE, "NGLDM_LGLCE");
 }
 
-void test_ibsi_NGLDM_HGLCE()
+void test_ngldm_hglce_ibsi()
 {
-	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_HGLCE, "NGLDM_HGLCE");
+	assert_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_HGLCE, "NGLDM_HGLCE");
 }
 
-void test_ibsi_NGLDM_LDLGLE()
+void test_ngldm_ldlgle_ibsi()
 {
-	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_LDLGLE, "NGLDM_LDLGLE");
+	assert_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_LDLGLE, "NGLDM_LDLGLE");
 }
 
-void test_ibsi_NGLDM_LDHGLE()
+void test_ngldm_ldhgle_ibsi()
 {
-	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_LDHGLE, "NGLDM_LDHGLE");
+	assert_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_LDHGLE, "NGLDM_LDHGLE");
 }
 
-void test_ibsi_NGLDM_HDLGLE()
+void test_ngldm_hdlgle_ibsi()
 {
-	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_HDLGLE, "NGLDM_HDLGLE");
+	assert_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_HDLGLE, "NGLDM_HDLGLE");
 }
 
-void test_ibsi_NGLDM_HDHGLE()
+void test_ngldm_hdhgle_ibsi()
 {
-	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_HDHGLE, "NGLDM_HDHGLE");
+	assert_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_HDHGLE, "NGLDM_HDHGLE");
 }
 
-void test_ibsi_NGLDM_GLNU()
+void test_ngldm_glnu_ibsi()
 {
-	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_GLNU, "NGLDM_GLNU");
+	assert_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_GLNU, "NGLDM_GLNU");
 }
 
-void test_ibsi_NGLDM_GLNUN()
+void test_ngldm_glnun_ibsi()
 {
-	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_GLNUN, "NGLDM_GLNUN");
+	assert_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_GLNUN, "NGLDM_GLNUN");
 }
 
-void test_ibsi_NGLDM_DCNU()
+void test_ngldm_dcnu_ibsi()
 {
-	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCNU, "NGLDM_DCNU");
+	assert_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCNU, "NGLDM_DCNU");
 }
 
-void test_ibsi_NGLDM_DCNUN()
+void test_ngldm_dcnun_ibsi()
 {
-	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCNUN, "NGLDM_DCNUN");
+	assert_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCNUN, "NGLDM_DCNUN");
 }
 
-void test_ibsi_NGLDM_DCP()
+void test_ngldm_dcp_ibsi()
 {
-	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCP, "NGLDM_DCP");
+	assert_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCP, "NGLDM_DCP");
 }
 
-void test_ibsi_NGLDM_unvetted_no_direct_oracle_GLM()
+void test_ngldm_glm_regression()
 {
-	test_ibsi_ngldm_unvetted_nyxus_regression_feature(Nyxus::Feature2D::NGLDM_GLM, "NGLDM_GLM");
+	assert_ibsi_ngldm_unvetted_nyxus_regression_feature(Nyxus::Feature2D::NGLDM_GLM, "NGLDM_GLM");
 }
 
-void test_ibsi_NGLDM_GLV()
+void test_ngldm_glv_ibsi()
 {
-	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_GLV, "NGLDM_GLV");
+	assert_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_GLV, "NGLDM_GLV");
 }
 
-void test_ibsi_NGLDM_unvetted_no_direct_oracle_DCM()
+void test_ngldm_dcm_regression()
 {
-	test_ibsi_ngldm_unvetted_nyxus_regression_feature(Nyxus::Feature2D::NGLDM_DCM, "NGLDM_DCM");
+	assert_ibsi_ngldm_unvetted_nyxus_regression_feature(Nyxus::Feature2D::NGLDM_DCM, "NGLDM_DCM");
 }
 
-void test_ibsi_NGLDM_DCV()
+void test_ngldm_dcv_ibsi()
 {
-	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCV, "NGLDM_DCV");
+	assert_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCV, "NGLDM_DCV");
 }
 
-void test_ibsi_NGLDM_DCENT()
+void test_ngldm_dcent_ibsi()
 {
-	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCENT, "NGLDM_DCENT");
+	assert_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCENT, "NGLDM_DCENT");
 }
 
-void test_ibsi_NGLDM_DCENE()
+void test_ngldm_dcene_ibsi()
 {
-	test_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCENE, "NGLDM_DCENE");
+	assert_ibsi_ngldm_ibsi_reference_feature(Nyxus::Feature2D::NGLDM_DCENE, "NGLDM_DCENE");
 }
 
 

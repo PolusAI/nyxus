@@ -8,7 +8,7 @@
 // Shared fixture/oracle-data lives in test_remaining2d_common.h.
 // ---------------------------------------------------------------------------------------------------
 
-void test_remaining2d_verifiable_with_3p_builtin_oracle_zernike2d_feature()
+void test_zernike_moments_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_remaining2d_shape_feature_values(fvals);

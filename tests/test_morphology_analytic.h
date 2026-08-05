@@ -9,7 +9,7 @@
 // from AREA_PIXELS_COUNT / PERIMETER / MAJOR_AXIS_LENGTH and require an exact match. This is weaker
 // than external-oracle vetting, and it is a correctness claim, so per SPEC 2 it lives in this
 // `_analytic` oracle file rather than in test_morphology_regression.h (which claims nothing).
-void test_shape2d_documented_formula_conformance_analytic()
+void test_morphology_documented_formula_conformance_analytic()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_shape2d_feature_values(fvals);

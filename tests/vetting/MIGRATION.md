@@ -365,6 +365,77 @@ here. The `test_nyxus.py` API-assertion split (§6.3) is a Python-side follow-up
 All C++ test files now follow the `test_[3d_]<family>_<kind>.{h}` / `test_<area>_mechanics.h` taxonomy.
 `coverage_report.md` regenerated.
 
+## 5.19 Wave 11 (function names + the last file names, §6.1/§6.2) — executed
+
+Waves 2–10 conformed the *file* names; the *function* names still carried the legacy vocabulary
+(`test_compat_3glcm_ACOR`, `test_ibsi_glcm_JVAR`, `test_pixel_intensity_mean`,
+`test_shape2d_verifiable_with_3p_builtin_oracle_extrema_features`). This wave applied §6.2 to every
+test function and finished the §6.1 stragglers. Verified: **full gtest suite 722/722 pass**, the
+`TEST()` case count in `test_all.cc` is **517 before and after** with 517 unique names, and
+**82/82 non-Arrow pytest tests pass** (the 7 `test_nyxus.py` Arrow tests need `USE_ARROW=ON`,
+absent from the local build; untouched by this wave).
+
+**Functions — 616 renamed** to `test_[3d_]<family>[_<subject>]_<kind>`:
+- legacy prefixes dropped now that the kind is a suffix: `compat_` (pyradiomics compat files),
+  `ibsi_`, `pixel_intensity_` → `firstorder_`, `shape2d_`/`3shape_` → `morphology_`/`3d_morphology_`,
+  `neighborhood2d_` → `neighbor_`, `ih_` → `intensity_histogram_`, `3<fam>_` → `3d_<fam>_`.
+- the **claim phrases in names are gone**: `verifiable_with_3p_builtin_oracle` and
+  `unvetted_no_direct_oracle` were exactly the "contradictory labels on the same value" §1 warns
+  about. The kind suffix now carries that information, and where the old name claimed a 3rd-party
+  oracle the registry had settled as snapshot-only, the function is now plainly `_regression`.
+- gtest case names are `UPPER(function)` for all 517 cases (96 had drifted from their function),
+  and the 6 IMQ cases moved from the ad-hoc `TEST_IMAGE_QUALITY` suite to `TEST_NYXUS` per §6.2.
+- two source typos fixed in passing: `test_3shape_sprericaldisproportion`,
+  `test_3inten_dobustmad`.
+
+**Helpers — 41 renamed off the `test_` prefix** to the tree's existing `assert_*` convention
+(`assert_glcm_feature`, `assert_ibsi_ngldm_feature`, `assert_3d_morphology_feature`,
+`assert_feature`, `assert_gldzm_matrix_ibsi`, `assert_ngldm_matrix_{ibsi,nonibsi}_mode`, …). This is
+what makes the rule checkable: every remaining `test_*` function is a test.
+
+**Files — the last 18 renames.** The 6 orphaned `test_3d_<fam>.h` snapshot files →
+`test_3d_<fam>_regression.h` (`test_3d_inten.h` → `test_3d_firstorder_regression.h`);
+`test_contour.h` → `test_contour_analytic.h`; `test_feature_calculation.h` →
+`test_feature_calculation_common.h` (it is a shared template helper, not a test file);
+`test_morphology_features.h` deleted, its single MATLAB-`bwperim` PERIMETER test folded into
+`test_morphology_matlab.h`. Python: `test_convex_hull_invariants.py` →
+`test_morphology_invariant.py`, `test_feature_oracle.py` → `test_morphology_regression.py`,
+`test_fractal_dim_oracle.py` → `test_morphology_fraclac.py`, `test_neighbors_oracle.py` →
+`test_neighbor_regression.py`, `test_hounsfield{,_nifti}.py` → `test_hu{,_nifti}_regression.py`,
+`test_intensity_histogram.py` → `test_intensity_histogram_analytic.py`,
+`test_signed_int16_loader.py` / `test_tiff_loader.py` → `*_mechanics.py`,
+`test_vetting_coverage.py` → `test_vetting_mechanics.py`.
+
+**Kind-impure files (4 functions moved, 15 flagged).** Moved where the target file already existed:
+the 3 imea caliper/min-enclosing-circle oracles `test_morphology_regression.h` →
+`test_morphology_imea.h`, and the closed-form PERCENT_TOUCHING case `test_neighbor_regression.h` →
+`test_neighbor_analytic.h`. The remaining 15 (2 analytic IH in `_ibsi`, 2 snapshot NGLDM in `_ibsi`,
+and the Python riders) stay put because the split first needs their shared fixture extracted into a
+`_common` file; each is listed with a reason in `check_test_names.py:KIND_EXCEPTIONS` — an explicit,
+reviewable list rather than a silently misleading name.
+
+**Enforcement (new).** `tests/vetting/check_test_names.py --check` fails on any §6.1/§6.2
+violation; wired into CI (`build_and_test_ubuntu.yml`) and pytest
+(`test_vetting_test_tree_names_conform_to_spec_mechanics`, plus a self-test that the checker
+actually rejects a bad name). Current tree: **0 violations.**
+
+**Deliberately untouched (follow-ups):**
+- `test_nyxus.py` (88 API assertions, 3 classes, many families) — needs the §4 by-family
+  `_mechanics` split, not a rename; grandfathered in the checker.
+- The `_coverage.h` sweep internals still use legacy claim vocabulary in the parameterized
+  identifiers (`Test3DFeature_WITH_3P_EMBEDDED_GT`, `..._UNVETTED_LOCAL_REGRESSION`) — the *file*
+  names conform; the fixture/instantiation names are a later cleanup.
+- 10 `assert_*` helpers in the `_common` headers likewise still read
+  `assert_verifiable_with_3p_builtin_oracle_*` / `assert_unvetted_no_direct_oracle_*`. §6.2 governs
+  test names, not helper names, and these strings also feed the assertion messages, so they are left
+  for a pass that renames the message labels with them.
+- `tests/vetting/audit/` was left byte-for-byte alone: it is a point-in-time baseline, so rewriting
+  old test names inside it would falsify the record.
+- **Two dead tests surfaced** (defined, never registered in `test_all.cc`, so they have never run):
+  `test_3d_glcm_jvar_pyradiomics` and `test_firstorder_robust_mean_absolute_deviation_ibsi`. Renamed
+  with the rest but left unwired — wiring them in is a behavioral change (they may fail) and belongs
+  in a triage, not a rename.
+
 ---
 
 ## 6. Reconciliation decisions (RESOLVED)

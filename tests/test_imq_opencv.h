@@ -31,26 +31,26 @@
 #include "../src/nyx/environment.h"
 #include "test_data.h"
 #include "test_main_nyxus.h"
-#include "test_feature_calculation.h"
+#include "test_feature_calculation_common.h"
 
 #include "../src/nyx/features/focus_score.h"
 
-void test_focus_score_opencv() {
+void test_imq_focus_score_opencv() {
 
     FocusScoreFeature f;
     // cv2 4.13.0: cv2.Laplacian(roi, cv2.CV_64F, ksize=1, borderType=cv2.BORDER_CONSTANT).var()
     // gen_imq_opencv.py; tolerance rel=1e-3 (same definition, different summation order).
     double truth_value = 34.95659722222222;
 
-    test_feature(f, Nyxus::FeatureIMQ::FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+    assert_feature(f, Nyxus::FeatureIMQ::FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
 
-void test_local_focus_score_opencv() {
+void test_imq_local_focus_score_opencv() {
 
     FocusScoreFeature f;
     // cv2 4.13.0: the same Laplacian call on the top-left h/2 x w/2 tile, / scale^2.
     // gen_imq_opencv.py; tolerance rel=1e-3.
     double truth_value = 7.57638888888889;
 
-    test_feature(f, Nyxus::FeatureIMQ::LOCAL_FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+    assert_feature(f, Nyxus::FeatureIMQ::LOCAL_FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };

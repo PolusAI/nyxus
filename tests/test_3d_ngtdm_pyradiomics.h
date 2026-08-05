@@ -58,7 +58,7 @@ static std::unordered_map<std::string, double> compat_3ngtdm_GT
     {"3NGTDM_STRENGTH", 1.245800596888454}          // Case-1_original_ngtdm_Strength
 };
 
-void test_compat_3ngtdm_feature (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+void assert_compat_3ngtdm_feature (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
     // (1) prepare
 
@@ -135,7 +135,7 @@ void test_compat_3ngtdm_feature (const Nyxus::Feature3D& expecting_fcode, const 
     ASSERT_TRUE (agrees_gt(x1[0], x2, 10.));
 }
 
-void test_ngtd_matrix_correctness()
+void test_3d_ngtdm_matrix_correctness_pyradiomics()
 {
     // data (data and gt source: pyradiomics web page)
 
@@ -186,23 +186,23 @@ void test_ngtd_matrix_correctness()
     ASSERT_TRUE(agrees_gt(S[0], 13.35, 1));     ASSERT_TRUE(agrees_gt(S[1], 2.0, 1));       ASSERT_TRUE(agrees_gt(S[2], 3.03, 1));      ASSERT_TRUE(agrees_gt(S[3], 10.075, 1));
 }
 
-void test_compat_3NGTDM_BUSYNESS() {
-    test_compat_3ngtdm_feature (Nyxus::Feature3D::NGTDM_BUSYNESS, "3NGTDM_BUSYNESS");
+void test_3d_ngtdm_busyness_pyradiomics() {
+    assert_compat_3ngtdm_feature (Nyxus::Feature3D::NGTDM_BUSYNESS, "3NGTDM_BUSYNESS");
 }
 
-void test_compat_3NGTDM_COARSENESS() {
-    test_compat_3ngtdm_feature(Nyxus::Feature3D::NGTDM_COARSENESS, "3NGTDM_COARSENESS");
+void test_3d_ngtdm_coarseness_pyradiomics() {
+    assert_compat_3ngtdm_feature(Nyxus::Feature3D::NGTDM_COARSENESS, "3NGTDM_COARSENESS");
 }
 
-void test_compat_3NGTDM_COMPLEXITY() {
-    test_compat_3ngtdm_feature(Nyxus::Feature3D::NGTDM_COMPLEXITY, "3NGTDM_COMPLEXITY");
+void test_3d_ngtdm_complexity_pyradiomics() {
+    assert_compat_3ngtdm_feature(Nyxus::Feature3D::NGTDM_COMPLEXITY, "3NGTDM_COMPLEXITY");
 }
 
-void test_compat_3NGTDM_CONTRAST() {
-    test_compat_3ngtdm_feature(Nyxus::Feature3D::NGTDM_CONTRAST, "3NGTDM_CONTRAST");
+void test_3d_ngtdm_contrast_pyradiomics() {
+    assert_compat_3ngtdm_feature(Nyxus::Feature3D::NGTDM_CONTRAST, "3NGTDM_CONTRAST");
 }
 
-void test_compat_3NGTDM_STRENGTH() {
-    test_compat_3ngtdm_feature(Nyxus::Feature3D::NGTDM_STRENGTH, "3NGTDM_STRENGTH");
+void test_3d_ngtdm_strength_pyradiomics() {
+    assert_compat_3ngtdm_feature(Nyxus::Feature3D::NGTDM_STRENGTH, "3NGTDM_STRENGTH");
 }
 

@@ -250,7 +250,7 @@ what's true** (measured agreement). Worked GLCM cells:
 ## 6. Naming conventions
 
 ### 6.1 Test files
-`test_<family>_<kind-or-oracle>.{h,py}`
+`test_[3d_]<family>_<kind-or-oracle>.{h,py}`
 
 - Oracle: `test_glcm_pyradiomics.py`, `test_glcm_ibsi.h`, `test_morphology_imea.py`
 - Regression: `test_glcm_regression.h`
@@ -260,16 +260,70 @@ what's true** (measured agreement). Worked GLCM cells:
 (Existing `test_ibsi_glcm.h` → `test_glcm_ibsi.h`, `test_glcm.h` → `test_glcm_regression.h`,
 `test_compat_3d_glcm.h` → `test_glcm3d_pyradiomics.h`. Renames are acceptable.)
 
+Two suffixes name files that hold **no assertions of their own** and therefore carry no kind:
+
+| suffix | what it is | why it has no kind |
+|--------|-----------|--------------------|
+| `_common.{h,py}` | shared fixture: golden tables, settings builders, `assert_*` helpers, `#pragma once` | it asserts nothing; the kind belongs to the files that include it. Exists because sibling kind-files compile into one TU (`test_all.cc`) and would otherwise duplicate the fixture (ODR) |
+| `_coverage.h` | parameterized completeness sweep over every public feature of one family | the embedded reference value varies per row (pyradiomics/mirp/… or a local snapshot), so no single token describes the file |
+
+Pure harness/fixture files that predate the convention keep their names (§6.3) and are listed
+explicitly in the checker: `test_all.cc`, `test_data.{h,py}`, `test_main_nyxus.h`,
+`test_dsb2018_data.h`, `test_gabor_truth.h`, `test_tissuenet_data.py`.
+
 ### 6.2 Test functions / gtest cases
-`test_<family>[_<subject>]_<oracle>` — the oracle suffix makes vetting status self-evident:
+`test_[3d_]<family>[_<subject>]_<oracle>` — the oracle suffix makes vetting status self-evident:
 
 - `test_glcm_ave_pyradiomics` — GLCM angle-averaged vs PyRadiomics
-- `test_ih_dispersion_analytic` — intensity-histogram dispersion vs closed form
+- `test_intensity_histogram_dispersion_analytic` — IH dispersion vs closed form
 - `test_morphology_basic_imea` — area/perimeter/diameters vs imea
 - `test_zernike_wndcharm` — Zernike moments vs WND-CHARM (Nyxus-lineage oracle)
 - `test_glcm_regression` — snapshot drift guard (no oracle)
+- `test_3d_gldzm_glnu_ibsi` — 3D functions mirror the `3d_` file prefix, not the `3GLDZM_` enum
 
-gtest macro name = uppercased function, prefixed `TEST_NYXUS.` per existing convention.
+gtest macro name = uppercased function, prefixed `TEST_NYXUS.` per existing convention. The rule
+covers pytest functions and test-class methods identically.
+
+**A function's suffix states the kind of *its own* assertion**, so it normally equals its file's
+kind. Where it cannot (the assertion belongs to another kind but shares an un-extracted fixture),
+the honest function name wins over file purity and the function is listed, with a reason, in
+`check_test_names.py:KIND_EXCEPTIONS` — never renamed to claim an oracle it does not have.
+
+**Enforced, not aspirational.** `tests/vetting/check_test_names.py --check` fails on any violation
+of §6.1/§6.2; it runs in CI and as `test_vetting_test_tree_names_conform_to_spec_mechanics`.
+
+#### 6.2.1 `test_*` vs `assert_*` vs fixture builders
+
+Three kinds of function live in a test file, and only the first is a *test*:
+
+| prefix | role | registered as a gtest case | signature | name carries a kind |
+|--------|------|---------------------------|-----------|---------------------|
+| `test_*` | **one assertion subject** — "feature X at config Y matches Z" | yes, via `TEST()` | zero-arg | **required** |
+| `assert_*` | **the shared machinery** that checks any such subject | never | takes arguments | **must not** |
+| `calculate_*` / `make_*` | fixture: compute feature values, build a settings vector | never | either | n/a (asserts nothing) |
+
+```cpp
+void assert_glcm_feature(const Feature2D& f, const std::string& name) { /* settings, golden, compare */ }
+void test_glcm_acor_regression() { assert_glcm_feature(Feature2D::GLCM_ACOR, "GLCM_ACOR"); }
+// test_all.cc:
+TEST(TEST_NYXUS, TEST_GLCM_ACOR_REGRESSION) { ASSERT_NO_THROW(test_glcm_acor_regression()); }
+```
+
+Why the prefixes differ rather than everything being `test_*`:
+
+- **Only `test_*` names are claims.** Per §1, vetting is a property of a specific
+  (feature × config × reference) assertion. `test_glcm_acor_regression` *is* such an assertion: it
+  appears in the run output, is filterable, can pass or fail on its own, and is what the registry's
+  `test_name` column points at. A helper has no subject, so a kind suffix on it would assert nothing.
+- **One helper serves several kinds.** `assert_ibsi_ngldm_feature` backs both IBSI-vetted and
+  snapshot-only NGLDM tests; any oracle token in its name would be false for half its callers.
+- **It makes the rule mechanically checkable.** Because helpers are `assert_*`, "every `test_*`
+  function is a test and must end in a kind token" needs no exemptions — a misnamed new test cannot
+  hide behind an arity carve-out.
+
+A helper that takes no arguments still uses `assert_*` if it is not registered as a case
+(`assert_gldzm_matrix_ibsi`, `assert_ngldm_matrix_nonibsi_mode`), since "is it a test?" must be
+answerable from the name alone.
 
 ### 6.3 Benchmark / fixture data
 Names must describe **shape + salient property + provenance**, not opaque indices.

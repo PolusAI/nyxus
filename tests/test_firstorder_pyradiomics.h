@@ -91,7 +91,7 @@ static void assert_fo_pyradiomics(const std::vector<std::vector<double>>& fvals,
         oracle_pyradiomics_firstorder_tol.at(name))) << name;
 }
 
-void test_firstorder_pyradiomics_oracle()
+void test_firstorder_pyradiomics()
 {
     std::vector<std::vector<double>> fvals;
     compute_firstorder_pyradiomics_recipe(fvals);

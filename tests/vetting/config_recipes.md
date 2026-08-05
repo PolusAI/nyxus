@@ -33,7 +33,7 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 - `IH_*_IDX` vet directly against IBSI IH consensus (index/grey-level domain). `IH_*_VAL` are the
   same statistics over bin centers = affine transform of the IDX distribution (VAL = binWidth·IDX
   for spreads; +minVal offset for locations), so they are anchored to the IBSI-vetted IDX values.
-  `ROBUST_MEAN_*` have no IBSI feature -> analytic (see test_ih_dispersion_robust_analytic).
+  `ROBUST_MEAN_*` have no IBSI feature -> analytic (see test_intensity_histogram_dispersion_robust_analytic).
 
 ## moments.skimage_regionprops
 - scikit-image `regionprops` moments. Caveats: skimage transposes row/col indices (skimage m[i,j] =

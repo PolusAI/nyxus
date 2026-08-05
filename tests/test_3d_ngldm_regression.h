@@ -68,7 +68,7 @@ static std::unordered_map<std::string, double> d3ngldm_GT{
 
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
-void test_3ngldm_feature (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
+void assert_3ngldm_feature (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
 {
 #if 0
 	// get segment info
@@ -169,80 +169,80 @@ void test_3ngldm_feature (const std::string& fname, const Nyxus::Feature3D& expe
 
 }
 
-void test_3ngldm_lde() {
-	test_3ngldm_feature ("3NGLDM_LDE", Feature3D::NGLDM_LDE);
+void test_3d_ngldm_lde_regression() {
+	assert_3ngldm_feature ("3NGLDM_LDE", Feature3D::NGLDM_LDE);
 }
 
-void test_3ngldm_hde() {
-	test_3ngldm_feature ("3NGLDM_HDE", Feature3D::NGLDM_HDE);
+void test_3d_ngldm_hde_regression() {
+	assert_3ngldm_feature ("3NGLDM_HDE", Feature3D::NGLDM_HDE);
 }
 
-void test_3ngldm_lglce() {
-	test_3ngldm_feature ("3NGLDM_LGLCE", Feature3D::NGLDM_LGLCE);
+void test_3d_ngldm_lglce_regression() {
+	assert_3ngldm_feature ("3NGLDM_LGLCE", Feature3D::NGLDM_LGLCE);
 }
 
-void test_3ngldm_hglce() {
-	test_3ngldm_feature ("3NGLDM_HGLCE", Feature3D::NGLDM_HGLCE);
+void test_3d_ngldm_hglce_regression() {
+	assert_3ngldm_feature ("3NGLDM_HGLCE", Feature3D::NGLDM_HGLCE);
 }
 
-void test_3ngldm_ldlgle() {
-	test_3ngldm_feature ("3NGLDM_LDLGLE", Feature3D::NGLDM_LDLGLE);
+void test_3d_ngldm_ldlgle_regression() {
+	assert_3ngldm_feature ("3NGLDM_LDLGLE", Feature3D::NGLDM_LDLGLE);
 }
 
-void test_3ngldm_ldhgle() {
-	test_3ngldm_feature ("3NGLDM_LDHGLE", Feature3D::NGLDM_LDHGLE);
+void test_3d_ngldm_ldhgle_regression() {
+	assert_3ngldm_feature ("3NGLDM_LDHGLE", Feature3D::NGLDM_LDHGLE);
 }
 
-void test_3ngldm_hdlgle() {
-	test_3ngldm_feature ("3NGLDM_HDLGLE", Feature3D::NGLDM_HDLGLE);
+void test_3d_ngldm_hdlgle_regression() {
+	assert_3ngldm_feature ("3NGLDM_HDLGLE", Feature3D::NGLDM_HDLGLE);
 }
 
-void test_3ngldm_hdhgle() {
-	test_3ngldm_feature ("3NGLDM_HDHGLE", Feature3D::NGLDM_HDHGLE);
+void test_3d_ngldm_hdhgle_regression() {
+	assert_3ngldm_feature ("3NGLDM_HDHGLE", Feature3D::NGLDM_HDHGLE);
 }
 
-void test_3ngldm_glnu() {
-	test_3ngldm_feature("3NGLDM_GLNU", Feature3D::NGLDM_GLNU);
+void test_3d_ngldm_glnu_regression() {
+	assert_3ngldm_feature("3NGLDM_GLNU", Feature3D::NGLDM_GLNU);
 }
 
-void test_3ngldm_glnun() {
-	test_3ngldm_feature ("3NGLDM_GLNUN", Feature3D::NGLDM_GLNUN);
+void test_3d_ngldm_glnun_regression() {
+	assert_3ngldm_feature ("3NGLDM_GLNUN", Feature3D::NGLDM_GLNUN);
 }
 
-void test_3ngldm_dcnu() {
-	test_3ngldm_feature ("3NGLDM_DCNU", Feature3D::NGLDM_DCNU);
+void test_3d_ngldm_dcnu_regression() {
+	assert_3ngldm_feature ("3NGLDM_DCNU", Feature3D::NGLDM_DCNU);
 }
 
-void test_3ngldm_dcnun() {
-	test_3ngldm_feature ("3NGLDM_DCNUN", Feature3D::NGLDM_DCNUN);
+void test_3d_ngldm_dcnun_regression() {
+	assert_3ngldm_feature ("3NGLDM_DCNUN", Feature3D::NGLDM_DCNUN);
 }
 
-void test_3ngldm_dcp() {
-	test_3ngldm_feature ("3NGLDM_DCP", Feature3D::NGLDM_DCP);
+void test_3d_ngldm_dcp_regression() {
+	assert_3ngldm_feature ("3NGLDM_DCP", Feature3D::NGLDM_DCP);
 }
 
-void test_3ngldm_glm() {
-	test_3ngldm_feature ("3NGLDM_GLM", Feature3D::NGLDM_GLM);
+void test_3d_ngldm_glm_regression() {
+	assert_3ngldm_feature ("3NGLDM_GLM", Feature3D::NGLDM_GLM);
 }
 
-void test_3ngldm_glv() {
-	test_3ngldm_feature ("3NGLDM_GLV", Feature3D::NGLDM_GLV);
+void test_3d_ngldm_glv_regression() {
+	assert_3ngldm_feature ("3NGLDM_GLV", Feature3D::NGLDM_GLV);
 }
 
-void test_3ngldm_dcm() {
-	test_3ngldm_feature ("3NGLDM_DCM", Feature3D::NGLDM_DCM);
+void test_3d_ngldm_dcm_regression() {
+	assert_3ngldm_feature ("3NGLDM_DCM", Feature3D::NGLDM_DCM);
 }
 
-void test_3ngldm_dcv() {
-	test_3ngldm_feature ("3NGLDM_DCV", Feature3D::NGLDM_DCV);
+void test_3d_ngldm_dcv_regression() {
+	assert_3ngldm_feature ("3NGLDM_DCV", Feature3D::NGLDM_DCV);
 }
 
-void test_3ngldm_dcent() {
-	test_3ngldm_feature ("3NGLDM_DCENT", Feature3D::NGLDM_DCENT);
+void test_3d_ngldm_dcent_regression() {
+	assert_3ngldm_feature ("3NGLDM_DCENT", Feature3D::NGLDM_DCENT);
 }
 
-void test_3ngldm_dcene() {
-	test_3ngldm_feature ("3NGLDM_DCENE", Feature3D::NGLDM_DCENE);
+void test_3d_ngldm_dcene_regression() {
+	assert_3ngldm_feature ("3NGLDM_DCENE", Feature3D::NGLDM_DCENE);
 }
 
 

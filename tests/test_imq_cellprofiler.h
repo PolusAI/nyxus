@@ -30,26 +30,26 @@
 #include "../src/nyx/environment.h"
 #include "test_data.h"
 #include "test_main_nyxus.h"
-#include "test_feature_calculation.h"
+#include "test_feature_calculation_common.h"
 
 #include "../src/nyx/features/saturation.h"
 
-void test_min_saturation_cellprofiler() {
+void test_imq_min_saturation_cellprofiler() {
 
     SaturationFeature f;
     // CellProfiler 4.2.8 MeasureImageQuality: Image_ImageQuality_PercentMinimal / 100
     // = 18/96. gen_imq_cellprofiler.py; tolerance rel=1e-3 (agreement is exact).
     double truth_value = 0.1875;
 
-    test_feature(f, Nyxus::FeatureIMQ::MIN_SATURATION, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+    assert_feature(f, Nyxus::FeatureIMQ::MIN_SATURATION, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
 
-void test_max_saturation_cellprofiler() {
+void test_imq_max_saturation_cellprofiler() {
 
     SaturationFeature f;
     // CellProfiler 4.2.8 MeasureImageQuality: Image_ImageQuality_PercentMaximal / 100
     // = 16/96. gen_imq_cellprofiler.py; tolerance rel=1e-3 (agreement is exact).
     double truth_value = 0.16666666666666666;
 
-    test_feature(f, Nyxus::FeatureIMQ::MAX_SATURATION, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+    assert_feature(f, Nyxus::FeatureIMQ::MAX_SATURATION, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };

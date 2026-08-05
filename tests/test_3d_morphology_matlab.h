@@ -10,11 +10,11 @@
 // Shared fixture lives in test_3d_morphology_common.h.
 // ---------------------------------------------------------------------------------------------------
 
-void test_3shape_meshvolume() {
-    test_3shape_feature ("3MESH_VOLUME", Feature3D::MESH_VOLUME);
+void test_3d_morphology_mesh_volume_matlab() {
+    assert_3d_morphology_feature ("3MESH_VOLUME", Feature3D::MESH_VOLUME);
 }
 
-void test_3shape_covmatrix_and_eigenvals() {
+void test_3d_morphology_covmatrix_and_eigenvals_matlab() {
     std::vector<Pixel3> cloud =
     {
         // layout: X, Y, Z, intensity

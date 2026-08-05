@@ -23,7 +23,7 @@
 // (mask == intensity), so no off-ROI background ever lands inside the bounding box. This test
 // uses a concave ROI - a 3x3 ring with a background hole in the centre - so the bounding box
 // genuinely contains a background pixel, exactly the production condition.
-inline void test_gldm_bug_background_excluded()
+inline void test_gldm_bug_background_excluded_mechanics()
 {
     // ---- feature settings: MATLAB grey binning (128 levels), non-IBSI - the production default
     Fsettings s;

@@ -34,7 +34,7 @@ def _featurize(preserve_hu):
     return {c: float(df[c].iloc[0]) for c in FEATS}
 
 
-def test_preserve_hu_nifti_offset_domain_values():
+def test_hu_nifti_preserve_offset_domain_values_regression():
     # HU rescale (slope 2, intercept -1024) then offset by floor(HU min): u = 2*stored + 400.
     # stored -200..311 -> u 0..1022, mean 511, sum 261632 over the 512 voxels.
     f = _featurize(True)
@@ -44,14 +44,14 @@ def test_preserve_hu_nifti_offset_domain_values():
     assert f["3INTEGRATED_INTENSITY"] == pytest.approx(261632.0)
 
 
-def test_preserve_hu_nifti_no_wraparound():
+def test_hu_nifti_preserve_no_wraparound_regression():
     # The negative signed int16 values must not wrap into billions on the unsigned cast.
     f = _featurize(True)
     assert 0.0 <= f["3MIN"] < f["3MAX"] < 1e6
     assert f["3MEAN"] < 1e6
 
 
-def test_preserve_hu_nifti_applies_rescale():
+def test_hu_nifti_preserve_applies_rescale_regression():
     # With the flag off the loader keeps raw-stored (shifted) values and ignores scl_slope, so the
     # non-unit slope makes the two modes diverge: HU MAX 1022 vs raw-shift MAX 511.
     on = _featurize(True)

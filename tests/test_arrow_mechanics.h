@@ -176,7 +176,7 @@ bool are_tables_equal(const arrow::Table& table1, const arrow::Table& table2) {
     return true;
 }
 
-void test_arrow() 
+void test_arrow_mechanics() 
 {
     auto temp = fs::temp_directory_path() / "nyxus_temp/";
 
@@ -247,7 +247,7 @@ void test_arrow()
     }
 }
 
-void test_parquet() {
+void test_arrow_parquet_mechanics() {
 
     auto temp = fs::temp_directory_path() / "nyxus_temp/";
 

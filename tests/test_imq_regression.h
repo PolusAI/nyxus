@@ -7,7 +7,7 @@
 #include "../src/nyx/environment.h"
 #include "test_data.h"
 #include "test_main_nyxus.h"
-#include "test_feature_calculation.h"
+#include "test_feature_calculation_common.h"
 
 #include "../src/nyx/features/power_spectrum.h"
 #include "../src/nyx/features/sharpness.h"
@@ -18,19 +18,19 @@
    FOCUS_SCORE / LOCAL_FOCUS_SCORE are vetted in test_imq_opencv.h,
    MIN_SATURATION / MAX_SATURATION in test_imq_cellprofiler.h. */
 
-void test_power_spectrum_feature() {
+void test_imq_power_spectrum_regression() {
 
     PowerSpectrumFeature f;
     double truth_value = 0.0;
 
-    test_feature(f, Nyxus::FeatureIMQ::POWER_SPECTRUM_SLOPE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+    assert_feature(f, Nyxus::FeatureIMQ::POWER_SPECTRUM_SLOPE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
 
 
-void test_sharpness_feature() {
+void test_imq_sharpness_regression() {
 
     SharpnessFeature f;
     double truth_value = 2.19047;
 
-    test_feature(f, Nyxus::FeatureIMQ::SHARPNESS, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+    assert_feature(f, Nyxus::FeatureIMQ::SHARPNESS, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
