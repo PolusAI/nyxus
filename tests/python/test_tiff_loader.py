@@ -89,14 +89,21 @@ def test_uint32_tiff_from_disk_matches_in_memory(tmp_path):
 
     feats = ["MAX", "MIN", "INTEGRATED_INTENSITY", "MEAN", "MEDIAN", "RANGE"]
 
-    from_disk = nyxus.Nyxus(features=feats, n_feature_calc_threads=1).featurize_files(
+    # nyxus ram_limit is a process-global; an earlier out-of-core test can leave it at 0, which
+    # makes even this 3x4 ROI "oversized" -- and the in-memory (montage) path has no out-of-core
+    # support, so it would raise instead of featurizing. Set it explicitly on both paths so this
+    # loader comparison is order-independent and runs in-RAM. 1 MB is far above the tiny footprint
+    # yet always settable (never rejected for exceeding available RAM).
+    n_disk = nyxus.Nyxus(features=feats, n_feature_calc_threads=1)
+    n_disk.set_params(ram_limit=1)
+    from_disk = n_disk.featurize_files(
         intensity_files=[str(int_dir / "img.tif")],
         mask_files=[str(seg_dir / "img.tif")],
         single_roi=False,
     )
-    in_memory = nyxus.Nyxus(features=feats, n_feature_calc_threads=1).featurize(
-        inten, mask
-    )
+    n_mem = nyxus.Nyxus(features=feats, n_feature_calc_threads=1)
+    n_mem.set_params(ram_limit=1)
+    in_memory = n_mem.featurize(inten, mask)
 
     for col in feats:
         assert np.isclose(

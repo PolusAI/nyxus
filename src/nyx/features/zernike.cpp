@@ -160,7 +160,7 @@ void ZernikeFeature::mb_Znl (double* X, double* Y, double* P, int size, double D
 
 /*
   Algorithms for fast computation of Zernike moments and their numerical stability
-  Chandan Singh and Ekta Walia, Image and Vision Computing 29 (2011) 251–259
+  Chandan Singh and Ekta Walia, Image and Vision Computing 29 (2011) 251ï¿½259
 
   Implemented from pseudo-code by Ilya Goldberg 2011-04-27
   This code is 10x faster than the previous code, and 50x faster than previous unoptimized code.
@@ -347,7 +347,11 @@ void ZernikeFeature::calculate (LR& r, const Fsettings& s)
 	// intercept blank ROIs
 	if (r.aux_min == r.aux_max)
 	{
-		coeffs.resize(ZernikeFeature::NUM_FEATURE_VALS, STNGS_NAN(s)); // former theEnvironment.resultOptions.noval())
+		// assign(), not resize(): this feature method instance is reused across ROIs on the
+		// out-of-core path, so coeffs may already hold NUM_FEATURE_VALS moments from a previous
+		// (non-degenerate) ROI. resize() to the same length is a no-op that would leave those stale
+		// values in place and report them here; assign() overwrites every element with the sentinel.
+		coeffs.assign(ZernikeFeature::NUM_FEATURE_VALS, STNGS_NAN(s));
 		return;
 	}
 

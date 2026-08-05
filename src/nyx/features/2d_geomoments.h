@@ -19,7 +19,6 @@
 
 using pixcloud = std::vector <Pixel2>;          // cloud of pixels
 using reintenvec = std::vector <RealPixIntens>;   // cloud of pixel intensities
-using pixcloud_NT = OutOfRamPixelCloud;
 
 typedef double (*intenfunction) (double inten);
 
@@ -32,7 +31,6 @@ public:
 
     void calculate (LR& r, const Fsettings& s, intenfunction ifun);
     void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} // Not supporting online for image moments
-    void osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr);
 
 protected:
 
@@ -73,22 +71,6 @@ protected:
     void calcWeightedNormCentralMoms(const pixcloud& cloud, const reintenvec& realintens);
     void calcHuInvariants(const pixcloud& cloud);
     void calcWeightedHuInvariants(const pixcloud& cloud, const reintenvec& real_valued_intensities);
-
-    // Non-trivial ROI
-    double moment(const pixcloud_NT& cloud, int p, int q);
-    void calcOrigins(const pixcloud_NT& cloud);
-    double centralMom(const pixcloud_NT& c, int p, int q);
-    double normRawMom(const pixcloud_NT& cloud, int p, int q);
-    double normCentralMom(const pixcloud_NT& c, int p, int q);
-    std::tuple<double, double, double, double, double, double, double> calcHuInvariants_imp(const pixcloud_NT& cloud);
-    void calcRawMoments(const pixcloud_NT& cloud);
-    void calcNormRawMoments(const pixcloud_NT& cloud);
-    void calcNormCentralMoments(const pixcloud_NT& cloud);
-    void calcWeightedRawMoments(const pixcloud_NT& cloud);
-    void calcCentralMoments(const pixcloud_NT& cloud);
-    void calcWeightedCentralMoments(const pixcloud_NT& cloud);
-    void calcHuInvariants(const pixcloud_NT& cloud);
-    void calcWeightedHuInvariants(const pixcloud_NT& cloud);
 
     // helpers
 

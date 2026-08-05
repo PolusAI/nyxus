@@ -262,150 +262,15 @@ void GLDMFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity
 
 void GLDMFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
-	clear_buffers();
+	// The oversized ROI is fully materialized here regardless, so rebuild its dense image from the
+	// disk-backed pixel cloud and reuse the identical in-RAM calculate(). The previous bespoke
+	// streaming re-implementation had drifted from calculate() -- it binned intensities with
+	// to_grayscale() instead of TextureFeature::bin_intensities(), so the dependence scan matched
+	// no grey levels and every feature came back 0 instead of the trivial path's value.
+	// Delegating guarantees trivial == out-of-core.
+	r.rebuild_aux_image_matrix_from_cloud();
 
-	if (r.aux_min == r.aux_max)
-		return;
-
-	//==== Make a list of intensity clusters (zones)
-	using ACluster = std::pair<PixIntens, int>;	// Pairs of (intensity,number_of_neighbors)
-	std::vector<ACluster> Z;
-
-	//==== While scanning clusters, learn unique intensities 
-	std::unordered_set<PixIntens> U;
-
-	WriteImageMatrix_nontriv D("GLDMFeature-osized_calculate-D", r.label);
-	D.allocate_from_cloud(r.raw_pixels_NT, r.aabb, false);
-
-	// Prepare ROI's intensity range for normalize_I()
-	PixIntens piRange = r.aux_max - r.aux_min;
-
-	unsigned int nGrays = STNGS_NGREYS(s); // former theEnvironment.get_coarse_gray_depth()
-
-	size_t height = D.get_height(),
-		width = D.get_width();
-
-	// Gather zones
-	for (size_t row = 0; row < height; row++)
-		for (size_t col = 0; col < width; col++)
-		{
-			// Skip background by the ORIGINAL intensity (raw cloud value 0); to_grayscale()
-			// on a 0 underflows (0 - aux_min on unsigned) and would not be 0, so a 'pi==0'
-			// guard cannot reject background here. Mirror the trivial path / GLCM fix.
-			if (D.yx(row, col) == 0)
-				continue;
-
-			// Find a non-blank pixel
-			PixIntens pi = Nyxus::to_grayscale((unsigned int) D.yx(row, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));		// former Environment::ibsi_compliance
-
-			// Count dependencies. Only ROI pixels (raw != 0) are valid neighbours.
-			int nd = 1;	// Number of dependencies
-			PixIntens piQ; // Pixel intensity of questionn
-			if (D.safe(row - 1, col) && D.yx(row - 1, col) != 0) {
-
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// North
-
-				if (piQ == pi)
-					nd++;
-			}
-
-			if (D.safe(row - 1, col + 1) && D.yx(row - 1, col + 1) != 0) {
-
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// North-East
-
-				if (piQ == pi)
-					nd++;
-			}
-
-			if (D.safe(row, col + 1) && D.yx(row, col + 1) != 0) {
-
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// East
-
-				if (piQ == pi)
-					nd++;
-			}
-
-			if (D.safe(row + 1, col + 1) && D.yx(row + 1, col + 1) != 0) {
-
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col + 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// South-East
-
-				if (piQ == pi)
-					nd++;
-			}
-
-			if (D.safe(row + 1, col) && D.yx(row + 1, col) != 0) {
-
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col), r.aux_min, piRange, nGrays, STNGS_IBSI(s));		// South
-
-				if (piQ == pi)
-					nd++;
-			}
-
-			if (D.safe(row + 1, col - 1) && D.yx(row + 1, col - 1) != 0) {
-
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row + 1, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// South-West
-
-				if (piQ == pi)
-					nd++;
-			}
-
-			if (D.safe(row, col - 1) && D.yx(row, col - 1) != 0) {
-
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));		// West
-
-				if (piQ == pi)
-					nd++;
-			}
-
-			if (D.safe(row - 1, col - 1) && D.yx(row - 1, col - 1) != 0) {
-
-				piQ = Nyxus::to_grayscale((unsigned int) D.yx(row - 1, col - 1), r.aux_min, piRange, nGrays, STNGS_IBSI(s));	// North-West
-
-				if (piQ == pi)
-					nd++;
-			}
-
-			// Save the intensity's dependency
-			ACluster clu = { pi, nd };
-			Z.push_back(clu);
-
-			// Update unique intensities
-			U.insert(pi);
-		}
-
-	//==== Fill the matrix
-	Ng = (int) U.size();
-	Nd = 8 + 1;	// N, NE, E, SE, S, SW, W, NW + zero
-	Nz = (decltype(Nz))Z.size();
-
-	// --allocate the matrix
-	P.allocate(Nd + 1, Ng + 1);
-
-	// --Set to vector to be able to know each intensity's index
-	std::vector<PixIntens> I(U.begin(), U.end());
-	std::sort(I.begin(), I.end());	// Optional
-
-	// --iterate zones and fill the matrix
-	for (auto& z : Z)
-	{
-		// row
-		auto iter = std::find(I.begin(), I.end(), z.first);
-		int row = STNGS_IBSI(s) ? z.first - 1 : int(iter - I.begin());
-		// col
-		int col = z.second - 1;	// 1-based
-		// increment
-		auto& k = P.xy(col, row);
-		k++;
-	}
-
-	Nz = 0;
-	for (int i = 1; i <= Ng; i++)
-	{
-		for (int j = 1; j <= Nd; j++)
-		{
-			Nz += P.matlab(i, j);
-		}
-	}
+	calculate (r, s);
 }
 
 void GLDMFeature::save_value(std::vector<std::vector<double>>& fvals)

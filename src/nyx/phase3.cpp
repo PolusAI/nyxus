@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <limits>
 #include <string>
 #include <vector>
 #include <map>
@@ -56,6 +58,13 @@ namespace Nyxus
 			// Initialize ROI's pixel cache
 			r.raw_pixels_NT.init (r.label, "raw_pixels_NT");
 
+			// Recompute the ROI's intensity extrema from the pixels actually streamed here, so each
+			// out-of-core feature's degenerate-ROI guard (aux_min == aux_max) keys off this ROI's real
+			// pixels instead of a scalar carried over from phase 1. A segmented ROI's extrema equal its
+			// pixel min/max, so ordinary ROIs are unchanged; this only corrects a stale scalar.
+			r.aux_min = (std::numeric_limits<PixIntens>::max)();
+			r.aux_max = 0;
+
 			// Iterate ROI's tiles and scan pixels
 			size_t nth = env.theImLoader.get_num_tiles_hor(),
 				ntv = env.theImLoader.get_num_tiles_vert();
@@ -83,6 +92,10 @@ namespace Nyxus
 						int y = row * th + i / tw,
 							x = col * tw + i % tw;
 
+						// Track the streamed extrema (see the aux_min/aux_max reset above)
+						r.aux_min = (std::min)(r.aux_min, (PixIntens)intens);
+						r.aux_max = (std::max)(r.aux_max, (PixIntens)intens);
+
 						// Feed the pixel to online features and helper objects
 						r.raw_pixels_NT.add_pixel(Pixel2(x, y, intens));
 					}
@@ -99,7 +112,9 @@ namespace Nyxus
 				try
 				{
 					const Fsettings& s = env.get_feature_settings (typeid(f));
-					f->osized_scan_whole_image (r, s, env.theImLoader);
+					// Pass the Dataset so intensity/histogram osized features reach their
+					// Dataset-aware osized_calculate; the Dataset-less overload is a guard that throws.
+					f->osized_scan_whole_image (r, s, env.dataset, env.theImLoader);
 				}
 				catch (std::exception const& e)
 				{
