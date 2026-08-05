@@ -156,7 +156,6 @@ set(SOURCE
 	src/nyx/features/image_matrix_nontriv.cpp
 	src/nyx/features/2d_geomoments.cpp
 	src/nyx/features/2d_geomoments_basic.cpp
-	src/nyx/features/2d_geomoments_basic_nt.cpp
 	src/nyx/features/3d_intensity.cpp
 	src/nyx/features/3d_gldzm.cpp
 	src/nyx/features/3d_glcm.cpp
