@@ -30,7 +30,7 @@ static std::unordered_map<std::string, double> unvetted_nyxus_regression_gldm_fe
 };
 
 /// @brief Smoke test of GLDM
-void test_gldm_feature(const Feature2D& feature, const std::string& feature_name) 
+void assert_gldm_feature_regression(const Feature2D& feature, const std::string& feature_name) 
 {
     // featue settings for this particular test
     Fsettings s;
@@ -63,72 +63,72 @@ void test_gldm_feature(const Feature2D& feature, const std::string& feature_name
     f.save_value(roidata.fvals);
 }
 
-void test_gldm_sde()
+void test_gldm_sde_regression()
 {
-    test_gldm_feature(Nyxus::Feature2D::GLDM_SDE, "GLDM_SDE");
+    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_SDE, "GLDM_SDE");
 }
 
-void test_gldm_lde()
+void test_gldm_lde_regression()
 {
-   test_gldm_feature(Nyxus::Feature2D::GLDM_LDE, "GLDM_LDE");
+   assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_LDE, "GLDM_LDE");
 }
 
-void test_gldm_lgle()
+void test_gldm_lgle_regression()
 {
-   test_gldm_feature(Nyxus::Feature2D::GLDM_LGLE, "GLDM_LGLE");
+   assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_LGLE, "GLDM_LGLE");
 }
 
-void test_gldm_hgle()
+void test_gldm_hgle_regression()
 {
-    test_gldm_feature(Nyxus::Feature2D::GLDM_HGLE, "GLDM_HGLE");
+    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_HGLE, "GLDM_HGLE");
 }
 
-void test_gldm_sdlgle()
+void test_gldm_sdlgle_regression()
 {
-    test_gldm_feature(Nyxus::Feature2D::GLDM_SDLGLE, "GLDM_SDLGLE");    
+    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_SDLGLE, "GLDM_SDLGLE");    
 }
 
-void test_gldm_sdhgle()
+void test_gldm_sdhgle_regression()
 {
-    test_gldm_feature(Nyxus::Feature2D::GLDM_SDHGLE, "GLDM_SDHGLE");
+    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_SDHGLE, "GLDM_SDHGLE");
 }
 
-void test_gldm_ldlgle()
+void test_gldm_ldlgle_regression()
 {
-    test_gldm_feature(Nyxus::Feature2D::GLDM_LDLGLE, "GLDM_LDLGLE");
+    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_LDLGLE, "GLDM_LDLGLE");
 }
 
-void test_gldm_ldhgle()
+void test_gldm_ldhgle_regression()
 {
-    test_gldm_feature(Nyxus::Feature2D::GLDM_LDHGLE, "GLDM_LDHGLE");
+    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_LDHGLE, "GLDM_LDHGLE");
 }
 
-void test_gldm_gln()
+void test_gldm_gln_regression()
 {
-   test_gldm_feature(Nyxus::Feature2D::GLDM_GLN, "GLDM_GLN");
+   assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_GLN, "GLDM_GLN");
 }
 
-void test_gldm_dn()
+void test_gldm_dn_regression()
 {
-    test_gldm_feature(Nyxus::Feature2D::GLDM_DN, "GLDM_DN");
+    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_DN, "GLDM_DN");
 }
 
-void test_gldm_dnn()
+void test_gldm_dnn_regression()
 {
-    test_gldm_feature(Nyxus::Feature2D::GLDM_DNN, "GLDM_DNN");
+    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_DNN, "GLDM_DNN");
 }
 
-void test_gldm_glv()
+void test_gldm_glv_regression()
 {
-    test_gldm_feature(Nyxus::Feature2D::GLDM_GLV, "GLDM_GLV");
+    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_GLV, "GLDM_GLV");
 }
 
-void test_gldm_dv()
+void test_gldm_dv_regression()
 {
-    test_gldm_feature(Nyxus::Feature2D::GLDM_DV, "GLDM_DV");
+    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_DV, "GLDM_DV");
 }
 
-void test_gldm_de()
+void test_gldm_de_regression()
 {
-    test_gldm_feature(Nyxus::Feature2D::GLDM_DE, "GLDM_DE");
+    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_DE, "GLDM_DE");
 }
