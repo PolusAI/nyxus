@@ -62,17 +62,17 @@ state in `notes` that the HU / loader configs are deliberately out of the per-fe
 ### A.3 The mirror image — registry references to files that do not exist
 
 `target_test` is the reorg destination, so a dangling entry is **backlog, not error**: it names where
-an assertion is to be written or moved. 256 refs across 17 filenames.
+an assertion is to be written or moved. **204 refs across 14 filenames** (was 256 across 17; the gldm
+and firstorder waves closed `test_3d_gldm_regression.h`, `test_firstorder_matlab.h` and
+`test_3d_firstorder_regression.h`).
 
 | target file named by the registry | rows waiting | family |
 |---|---:|---|
 | `test_glcm_pyradiomics.h` | 34 | glcm |
-| `test_firstorder_matlab.h` | 33 | firstorder |
 | `test_3d_glcm_regression.h` | 31 | glcm (3D) |
 | `test_intensity_histogram_analytic.h` | 26 | intensity_histogram |
 | `test_glrlm_pyradiomics.h` | 20 | glrlm |
 | `test_ngldm_mirp.h` | 19 | ngldm |
-| `test_3d_firstorder_regression.h` | 19 | firstorder (3D) |
 | `test_gldzm_mirp.h` | 17 | gldzm |
 | `test_3d_gldzm_regression.h` | 18 | gldzm (3D) |
 | `test_glcm_matlab.h` | 10 | glcm |
@@ -91,7 +91,7 @@ Per family, how much of the destination map is already in place:
 
 | family | rows | target exists | dangling | no target set |
 |---|---:|---:|---:|---:|
-| gldm | 28 | **28** | 0 | 0 |
+| gldm ✅ | 28 | **28** | 0 | 0 |
 | moments | 180 | **180** | 0 | 0 |
 | neighbor | 9 | **9** | 0 | 0 |
 | imq | 6 | **6** | 0 | 0 |
@@ -100,14 +100,15 @@ Per family, how much of the destination map is already in place:
 | glrlm | 64 | 42 | 22 | 0 |
 | glszm | 32 | 22 | 10 | 0 |
 | ngldm | 38 | 18 | 20 | 0 |
-| firstorder | 72 | 20 | 52 | 0 |
+| firstorder ✅ | 72 | **72** | 0 | 0 |
 | glcm | 118 | 38 | 80 | 0 |
 | ngtdm | 10 | 5 | 5 | 0 |
 | gldzm | 36 | 1 | 35 | 0 |
 | intensity_histogram | 47 | 1 | 26 | 20 |
 
-**`gldm` is the natural first family for this rollout**: all 28 rows already name existing target
-files, so no new destination has to be invented and the wave is a pure rename.
+**Done so far:** `gldm` (Wave 11, pure rename — all targets already existed) and `firstorder`
+(Wave 12, which had to *create* `test_firstorder_matlab.h` and move 26 assertions into it, because
+column J named a file that did not exist).
 
 ---
 
@@ -120,7 +121,7 @@ They compile nowhere, so they cannot even fail.
 
 | file | dead functions |
 |---|---:|
-| `test_3d_inten.h` | 36 |
+| `test_3d_firstorder_regression.h` | 36 |
 | `test_3d_glcm.h` | 25 |
 | `test_3d_glrlm.h` | 16 |
 | `test_3d_glszm.h` | 16 |
@@ -136,7 +137,7 @@ behavioural decision (they may fail on first run) and belongs to each family's w
 | file | function |
 |---|---|
 | `test_3d_glcm_pyradiomics.h` | `test_compat_3glcm_JVAR` |
-| `test_firstorder_ibsi.h` | `test_ibsi_robust_mean_absolute_deviation_intensity` |
+| `test_firstorder_ibsi.h` | `test_firstorder_robust_mean_absolute_deviation_ibsi` |
 
 Both are complete assertions with no `TEST()` entry — a missing registration, most likely an
 oversight when the surrounding cases were added. Enabling them may fail, so treat as triage.
@@ -166,6 +167,34 @@ so a green local run is not a green matrix.
 - `test_nyxus.py` — one case is skipped on Python 3.12, one is `skip_ci`.
 
 ---
+
+## C. Oracle assertions with no recorded provenance
+
+SPEC §6.4 requires tool + version + exact config + generator path at every pinned oracle golden.
+Surfaced by Wave 12 and not yet satisfied:
+
+| site | assertions | what is missing |
+|---|---:|---|
+| `test_firstorder_matlab.h` | 34 | all 34 are MATLAB values (`oracle_3p_matlab_*` named the tool, `oracle_3p_builtin_*` meant MATLAB's built-ins). Missing: MATLAB version, exact config, generator path — the numbers are here, the reproduction recipe is not |
+| `test_3d_firstorder_regression.h` | 36 | `d3inten_GT` values also come from MATLAB, but the map says nothing about it, and 18 of these features are `oracle=matlab` while the file name says `_regression` — see §D |
+
+Closing these means writing tool + version + config + generator down at each assertion site, ideally
+by regenerating through the Octave harness so the values become reproducible. The values themselves are
+MATLAB's — it is their reproduction recipe that is absent.
+
+## D. Registry rows that contradict themselves
+
+Found while placing assertions by column J. Each needs a registry decision, not a code change:
+
+| row | `oracle` (E) | `target_test` (J) | what the tree actually holds |
+|---|---|---|---|
+| 2D `UNIFORMITY` | pyradiomics | `test_firstorder_regression.h` | a **MATLAB** golden (0.0647664, 1% tier, comment "vs MATLAB"). Kept in `test_firstorder_matlab.h`: obeying column J here would put a third-party reference value in a file named `_regression`. Fix by setting `oracle=matlab`, or by producing a pyradiomics golden and moving it. |
+| 2D `ENTROPY` | pyradiomics | `test_firstorder_regression.h` | a bare snapshot. A vetted row pointing at a regression file states that its own oracle assertion does not exist yet. |
+| 3D firstorder ×18 | matlab | `test_3d_firstorder_regression.h` | **MATLAB values** in `d3inten_GT`, in a file column J names `_regression`. Unlike ENTROPY this is not a missing oracle — the oracle values are there. **Decision (2026-08-06): leave both as they are** — column J stays authoritative and the file keeps its name, so the mismatch is recorded here rather than acted on. Resolving it later means either renaming the file to `test_3d_firstorder_matlab.h` and repointing these 18 rows, or accepting `_regression` as the destination for externally-vetted values. Note the same map also serves the 17 `oracle=pyradiomics` 3D rows, so a rename would additionally call for a second (matlab) row per SPEC §3. |
+
+The general form: **a `vetted` row whose `target_test` names a `_regression` file** is asserting that
+its oracle evidence lives outside the tree. That is legitimate but should be explicit — a `source` or
+`notes` entry saying "external harness" — rather than inferable only by opening the file.
 
 ## Summary
 
