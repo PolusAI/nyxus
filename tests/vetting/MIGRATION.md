@@ -63,7 +63,7 @@ Naming: `test_[3d_]<family>_<kind>.{h,py}`, one kind per file (SPEC §2). `<kind
 | **ngldm** | 38 (20/18/0) | mirp | `test_ibsi_ngldm.h`, `test_3d_ngldm.h` | `test_ngldm_mirp.h`, `test_3d_ngldm_mirp.h`, `test_3d_ngldm_regression.h` |
 | **gldzm** | 36 (17/19/0) | mirp | `test_ibsi_gldzm.h`, `test_3d_gldzm.h` | `test_gldzm_mirp.h`, `test_gldzm_regression.h`, `test_3d_gldzm_regression.h` |
 | **glszm** | 32 (26/6/0) | pyradiomics | `test_glszm.h`, `test_ibsi_glszm.h`, `test_3d_glszm.h`, `test_compat_3d_glszm.h` | `test_glszm_pyradiomics.h`, `test_glszm_regression.h`, `test_3d_glszm_pyradiomics.h` |
-| **gldm** | 28 (14/14/0) | pyradiomics | `test_gldm.h`, `test_gldm_oracle.h`, `test_ibsi_gldm.h`, `test_3d_gldm.h`, `test_compat_3d_gldm.h`, `test_gldm_oracle.py` | `test_gldm_pyradiomics.h`, `test_gldm_regression.h`, `test_3d_gldm_pyradiomics.h`, `test_gldm_pyradiomics.py` |
+| **gldm** | 28 (14/14/0) | pyradiomics | `test_gldm.h`, `test_gldm_oracle.h`, `test_ibsi_gldm.h`, `test_3d_gldm_regression.h`, `test_compat_3d_gldm.h`, `test_gldm_oracle.py` | `test_gldm_pyradiomics.h`, `test_gldm_regression.h`, `test_3d_gldm_pyradiomics.h`, `test_gldm_pyradiomics.py` |
 | **ngtdm** | 10 (10/0/0) | pyradiomics | `test_ngtdm.h`, `test_ibsi_ngtdm.h`, `test_3d_ngtdm.h`, `test_compat_3d_ngtdm.h` | `test_ngtdm_pyradiomics.h`, `test_3d_ngtdm_pyradiomics.h` |
 | **neighbor** | 9 (2/7/0) | cellprofiler | `test_neighbors_2d.h` | `test_neighbor_cellprofiler.h`, `test_neighbor_regression.h` |
 | **imq** | 6 (0/6/0) | — | `test_image_quality.h` | `test_imq_regression.h` |
@@ -364,6 +364,45 @@ here. The `test_nyxus.py` API-assertion split (§6.3) is a Python-side follow-up
 
 All C++ test files now follow the `test_[3d_]<family>_<kind>.{h}` / `test_<area>_mechanics.h` taxonomy.
 `coverage_report.md` regenerated.
+
+## 5.19 Baseline for the function-name waves — `not_covered.md`
+
+Waves 2–10 conformed the *file* names; the *function* names still carry the pre-spec vocabulary
+(`test_ibsi_gldm_sde`, `test_compat_3GLDM_DE`, `test_3gldm_sde`), so a reader cannot tell an oracle
+assertion from a snapshot without opening the file. The remaining waves fix that family by family,
+driven by `oracle_coverage.csv` (§6.2).
+
+Before starting, two exact inventories were taken and recorded in
+[`not_covered.md`](not_covered.md): test files no registry row references (25 files / 58 functions, of
+which 7 do assert feature values and are genuine `current_test` gaps), and tests that never execute
+(112 functions in six never-`#include`d files, 2 defined-but-unregistered, 13 build-flag-gated). That
+document also tabulates, per family, how much of the `target_test` destination map already exists —
+which is how the family order for these waves is chosen.
+
+## 5.20 Wave 11 (gldm function names, §6.2) — executed
+
+`gldm` first because all 28 of its registry rows already name existing target files
+(`test_gldm_ibsi.h` for the 14 2D `oracle=ibsi` rows, `test_3d_gldm_pyradiomics.h` for the 14 3D
+`oracle=pyradiomics` rows), so no destination had to be invented and the wave is a pure rename.
+Verified: **full gtest suite 722/722 — no tests dropped**, 43 gldm cases run (14 ibsi + 14 regression
++ 14 pyradiomics + 1 mechanics); pytest 82 passed / 7 pre-existing Arrow failures / 1 skipped,
+unchanged from the base.
+
+- **43 functions renamed** to `test_[3d_]gldm_<subject>_<kind>`: `test_ibsi_gldm_sde` →
+  `test_gldm_sde_ibsi`, `test_gldm_sde` → `test_gldm_sde_regression`, `test_compat_3GLDM_DE` →
+  `test_3d_gldm_de_pyradiomics`, `test_3gldm_sde` → `test_3d_gldm_sde_regression`,
+  `test_gldm_bug_background_excluded` → `…_mechanics`, and the pytest case →
+  `test_gldm_background_not_counted_pyradiomics`. The `compat` prefix is dropped because the kind
+  suffix now carries what it meant (the PyRadiomics comparison).
+- **gtest case names** are `UPPER(function)` for all 43.
+- **5 helpers off the `test_` prefix**, since only a registered zero-arg function is a test:
+  `assert_gldm_feature_ibsi`, `assert_gldm_feature_regression`,
+  `assert_3d_gldm_feature_pyradiomics`, `assert_3d_gldm_feature_regression`.
+- **1 file rename:** `test_3d_gldm.h` → `test_3d_gldm_regression.h` (§6.1 — it carried no kind).
+  Registry `current_test` repointed on all 28 rows.
+- **Left for triage, recorded in `not_covered.md` §B.1:** that file is still not `#include`d in
+  `test_all.cc`, so its 14 snapshot assertions have never run. Wiring them in is a behavioural change
+  (they may fail), so it is not part of a rename wave.
 
 ---
 

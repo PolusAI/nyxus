@@ -343,60 +343,60 @@ TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_ZE) {
 
 //***** 3D GLDM compatibility *****
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_DE) {
-	ASSERT_NO_THROW (test_compat_3GLDM_DE());
+TEST(TEST_NYXUS, TEST_3D_GLDM_DE_PYRADIOMICS) {
+	ASSERT_NO_THROW (test_3d_gldm_de_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_DN) {
-	ASSERT_NO_THROW (test_compat_3GLDM_DN()); 
+TEST(TEST_NYXUS, TEST_3D_GLDM_DN_PYRADIOMICS) {
+	ASSERT_NO_THROW (test_3d_gldm_dn_pyradiomics()); 
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_DNN) {
-	ASSERT_NO_THROW (test_compat_3GLDM_DNN());
+TEST(TEST_NYXUS, TEST_3D_GLDM_DNN_PYRADIOMICS) {
+	ASSERT_NO_THROW (test_3d_gldm_dnn_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_DV) {
-	ASSERT_NO_THROW (test_compat_3GLDM_DV());
+TEST(TEST_NYXUS, TEST_3D_GLDM_DV_PYRADIOMICS) {
+	ASSERT_NO_THROW (test_3d_gldm_dv_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_GLN) {
-	ASSERT_NO_THROW (test_compat_3GLDM_GLN());
+TEST(TEST_NYXUS, TEST_3D_GLDM_GLN_PYRADIOMICS) {
+	ASSERT_NO_THROW (test_3d_gldm_gln_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_GLV) {
-	ASSERT_NO_THROW (test_compat_3GLDM_GLV());
+TEST(TEST_NYXUS, TEST_3D_GLDM_GLV_PYRADIOMICS) {
+	ASSERT_NO_THROW (test_3d_gldm_glv_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_HGLE) { 
-	ASSERT_NO_THROW (test_compat_3GLDM_HGLE());
+TEST(TEST_NYXUS, TEST_3D_GLDM_HGLE_PYRADIOMICS) { 
+	ASSERT_NO_THROW (test_3d_gldm_hgle_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_LDE) { 
-	ASSERT_NO_THROW (test_compat_3GLDM_LDE());
+TEST(TEST_NYXUS, TEST_3D_GLDM_LDE_PYRADIOMICS) { 
+	ASSERT_NO_THROW (test_3d_gldm_lde_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_LDHGLE) { 
-	ASSERT_NO_THROW (test_compat_3GLDM_LDHGLE());
+TEST(TEST_NYXUS, TEST_3D_GLDM_LDHGLE_PYRADIOMICS) { 
+	ASSERT_NO_THROW (test_3d_gldm_ldhgle_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_LDLGLE) { 
-	ASSERT_NO_THROW (test_compat_3GLDM_LDLGLE());
+TEST(TEST_NYXUS, TEST_3D_GLDM_LDLGLE_PYRADIOMICS) { 
+	ASSERT_NO_THROW (test_3d_gldm_ldlgle_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_LGLE) { 
-	ASSERT_NO_THROW (test_compat_3GLDM_LGLE());
+TEST(TEST_NYXUS, TEST_3D_GLDM_LGLE_PYRADIOMICS) { 
+	ASSERT_NO_THROW (test_3d_gldm_lgle_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_SDE) { 
-	ASSERT_NO_THROW (test_compat_3GLDM_SDE());
+TEST(TEST_NYXUS, TEST_3D_GLDM_SDE_PYRADIOMICS) { 
+	ASSERT_NO_THROW (test_3d_gldm_sde_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_SDHGLE) { 
-	ASSERT_NO_THROW (test_compat_3GLDM_SDHGLE());
+TEST(TEST_NYXUS, TEST_3D_GLDM_SDHGLE_PYRADIOMICS) { 
+	ASSERT_NO_THROW (test_3d_gldm_sdhgle_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLDM_SDLGLE) { 
-	ASSERT_NO_THROW (test_compat_3GLDM_SDLGLE());
+TEST(TEST_NYXUS, TEST_3D_GLDM_SDLGLE_PYRADIOMICS) { 
+	ASSERT_NO_THROW (test_3d_gldm_sdlgle_pyradiomics());
 }
 
 //***** 3D GLCM compatibility *****
@@ -1646,74 +1646,74 @@ TEST(TEST_NYXUS, TEST_GLCM_BUG_OFFSET_DEFAULT)
 
 //***** IBSI tests of GLDM *****
 
-TEST(TEST_NYXUS, TEST_IBSI_GLDM_SDE) 
+TEST(TEST_NYXUS, TEST_GLDM_SDE_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_gldm_sde());
+	ASSERT_NO_THROW(test_gldm_sde_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLDM_LDE) 
+TEST(TEST_NYXUS, TEST_GLDM_LDE_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_gldm_lde());
+	ASSERT_NO_THROW(test_gldm_lde_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLDM_LGLE) 
+TEST(TEST_NYXUS, TEST_GLDM_LGLE_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_gldm_lgle());
+	ASSERT_NO_THROW(test_gldm_lgle_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLDM_HGLE) 
+TEST(TEST_NYXUS, TEST_GLDM_HGLE_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_gldm_hgle());
+	ASSERT_NO_THROW(test_gldm_hgle_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLDM_SDLGLE) 
+TEST(TEST_NYXUS, TEST_GLDM_SDLGLE_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_gldm_sdlgle());
+	ASSERT_NO_THROW(test_gldm_sdlgle_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLDM_SDHGLE) 
+TEST(TEST_NYXUS, TEST_GLDM_SDHGLE_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_gldm_sdhgle());
+	ASSERT_NO_THROW(test_gldm_sdhgle_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLDM_LDLGLE) 
+TEST(TEST_NYXUS, TEST_GLDM_LDLGLE_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_gldm_ldlgle());
+	ASSERT_NO_THROW(test_gldm_ldlgle_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLDM_LDHGLE) 
+TEST(TEST_NYXUS, TEST_GLDM_LDHGLE_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_gldm_ldhgle());
+	ASSERT_NO_THROW(test_gldm_ldhgle_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLDM_GLN) 
+TEST(TEST_NYXUS, TEST_GLDM_GLN_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_gldm_gln());
+	ASSERT_NO_THROW(test_gldm_gln_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLDM_DN) 
+TEST(TEST_NYXUS, TEST_GLDM_DN_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_gldm_dn());
+	ASSERT_NO_THROW(test_gldm_dn_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLDM_DNN) 
+TEST(TEST_NYXUS, TEST_GLDM_DNN_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_gldm_dnn());
+	ASSERT_NO_THROW(test_gldm_dnn_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLDM_GLV) 
+TEST(TEST_NYXUS, TEST_GLDM_GLV_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_gldm_glv());
+	ASSERT_NO_THROW(test_gldm_glv_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLDM_DV) 
+TEST(TEST_NYXUS, TEST_GLDM_DV_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_gldm_dv());
+	ASSERT_NO_THROW(test_gldm_dv_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLDM_DE) 
+TEST(TEST_NYXUS, TEST_GLDM_DE_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_gldm_de());
+	ASSERT_NO_THROW(test_gldm_de_ibsi());
 }
 
 
@@ -2047,80 +2047,80 @@ TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_ROOT_MEAN_SQUARED)
 
 //***** 2D GLDM regression ***** 
 
-TEST(TEST_NYXUS, TEST_GLDM_SDE) 
+TEST(TEST_NYXUS, TEST_GLDM_SDE_REGRESSION) 
 {
-	ASSERT_NO_THROW(test_gldm_sde());
+	ASSERT_NO_THROW(test_gldm_sde_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLDM_LDE) 
+TEST(TEST_NYXUS, TEST_GLDM_LDE_REGRESSION) 
 {
-	ASSERT_NO_THROW(test_gldm_lde());
+	ASSERT_NO_THROW(test_gldm_lde_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLDM_LGLE) 
+TEST(TEST_NYXUS, TEST_GLDM_LGLE_REGRESSION) 
 {
-	ASSERT_NO_THROW(test_gldm_lgle());
+	ASSERT_NO_THROW(test_gldm_lgle_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLDM_HGLE) 
+TEST(TEST_NYXUS, TEST_GLDM_HGLE_REGRESSION) 
 {
-	ASSERT_NO_THROW(test_gldm_hgle());
+	ASSERT_NO_THROW(test_gldm_hgle_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLDM_SDLGLE) 
+TEST(TEST_NYXUS, TEST_GLDM_SDLGLE_REGRESSION) 
 {
-	ASSERT_NO_THROW(test_gldm_sdlgle());
+	ASSERT_NO_THROW(test_gldm_sdlgle_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLDM_SDHGLE) 
+TEST(TEST_NYXUS, TEST_GLDM_SDHGLE_REGRESSION) 
 {
-	ASSERT_NO_THROW(test_gldm_sdhgle());
+	ASSERT_NO_THROW(test_gldm_sdhgle_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLDM_LDLGLE) 
+TEST(TEST_NYXUS, TEST_GLDM_LDLGLE_REGRESSION) 
 {
-	ASSERT_NO_THROW(test_gldm_ldlgle());
+	ASSERT_NO_THROW(test_gldm_ldlgle_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLDM_LDHGLE) 
+TEST(TEST_NYXUS, TEST_GLDM_LDHGLE_REGRESSION) 
 {
-	ASSERT_NO_THROW(test_gldm_ldhgle());
+	ASSERT_NO_THROW(test_gldm_ldhgle_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLDM_GLN) 
+TEST(TEST_NYXUS, TEST_GLDM_GLN_REGRESSION) 
 {
-	ASSERT_NO_THROW(test_gldm_gln());
+	ASSERT_NO_THROW(test_gldm_gln_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLDM_DN) 
+TEST(TEST_NYXUS, TEST_GLDM_DN_REGRESSION) 
 {
-	ASSERT_NO_THROW(test_gldm_dn());
+	ASSERT_NO_THROW(test_gldm_dn_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLDM_DNN) 
+TEST(TEST_NYXUS, TEST_GLDM_DNN_REGRESSION) 
 {
-	ASSERT_NO_THROW(test_gldm_dnn());
+	ASSERT_NO_THROW(test_gldm_dnn_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLDM_GLV) 
+TEST(TEST_NYXUS, TEST_GLDM_GLV_REGRESSION) 
 {
-	ASSERT_NO_THROW(test_gldm_glv());
+	ASSERT_NO_THROW(test_gldm_glv_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLDM_DV) 
+TEST(TEST_NYXUS, TEST_GLDM_DV_REGRESSION) 
 {
-	ASSERT_NO_THROW(test_gldm_dv());
+	ASSERT_NO_THROW(test_gldm_dv_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLDM_DE) 
+TEST(TEST_NYXUS, TEST_GLDM_DE_REGRESSION) 
 {
-	ASSERT_NO_THROW(test_gldm_de());
+	ASSERT_NO_THROW(test_gldm_de_regression());
 }
 
 // Bug #14b: background inside a concave ROI's bounding box must not enter the dependence matrix
-TEST(TEST_NYXUS, TEST_GLDM_BUG_BACKGROUND_EXCLUDED)
+TEST(TEST_NYXUS, TEST_GLDM_BUG_BACKGROUND_EXCLUDED_MECHANICS)
 {
-	ASSERT_NO_THROW(test_gldm_bug_background_excluded());
+	ASSERT_NO_THROW(test_gldm_bug_background_excluded_mechanics());
 }
 
 

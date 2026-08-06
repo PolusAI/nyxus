@@ -47,7 +47,7 @@ def _one(features, inten, label, **kw):
 
 
 # ============================ GLDM ==========================================
-def test_gldm_background_not_counted():
+def test_gldm_background_not_counted_pyradiomics():
     """Bug #14b (FIXED): the MATLAB binning path maps background (0) -> level 1; the GLDM zone
     loop's `pi==0` guard tests the BINNED value, so background voxels in the bounding box were
     counted as zones AND as dependent neighbours - inflating Nz (154 -> 234 on this ROI) and every
