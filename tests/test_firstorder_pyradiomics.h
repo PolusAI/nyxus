@@ -25,6 +25,7 @@
 #include "../src/nyx/features/intensity.h"
 #include "test_data.h"
 #include "test_main_nyxus.h"
+#include "test_firstorder_common.h"
 
 using namespace Nyxus;
 
@@ -91,7 +92,7 @@ static void assert_fo_pyradiomics(const std::vector<std::vector<double>>& fvals,
         oracle_pyradiomics_firstorder_tol.at(name))) << name;
 }
 
-void test_firstorder_pyradiomics_oracle()
+void test_firstorder_pyradiomics()
 {
     std::vector<std::vector<double>> fvals;
     compute_firstorder_pyradiomics_recipe(fvals);
@@ -113,4 +114,13 @@ void test_firstorder_pyradiomics_oracle()
     assert_fo_pyradiomics(fvals, Nyxus::Feature2D::P90, "P90");
     assert_fo_pyradiomics(fvals, Nyxus::Feature2D::ENTROPY, "ENTROPY");
     assert_fo_pyradiomics(fvals, Nyxus::Feature2D::UNIFORMITY, "UNIFORMITY");
+}
+
+
+void test_firstorder_robust_mean_absolute_deviation_pyradiomics()
+{
+    std::vector<std::vector<double>> fvals;
+    calculate_pixel_intensity_feature_values(fvals);
+
+    ASSERT_TRUE(agrees_gt(fvals[(int)Nyxus::Feature2D::ROBUST_MEAN_ABSOLUTE_DEVIATION][0], 1.044061849600000e+04));
 }

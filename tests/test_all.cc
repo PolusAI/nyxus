@@ -4,7 +4,9 @@
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
 #include "test_contour.h"
+#include "test_firstorder_common.h"
 #include "test_firstorder_regression.h"
+#include "test_firstorder_matlab.h"
 #include "test_intensity_histogram_regression.h"
 #include "test_intensity_histogram_ibsi.h"
 #include "test_hu_analytic.h"
@@ -99,72 +101,72 @@ TEST(TEST_NYXUS, TEST_CONTOUR_MULTI_2) {
 
 //***** first-order compatibility *****
 
-TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3P10) {
-	ASSERT_NO_THROW(test_compat_radiomics_3fo_feature(Nyxus::Feature3D::P10, "3P10"));
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_P10_PYRADIOMICS) {
+	ASSERT_NO_THROW(assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::P10, "3P10"));
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3P90) {
-	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::P90, "3P90"));
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_P90_PYRADIOMICS) {
+	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::P90, "3P90"));
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3ENERGY) {
-	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::ENERGY, "3ENERGY"));
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_ENERGY_PYRADIOMICS) {
+	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::ENERGY, "3ENERGY"));
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3ENTROPY) {
-	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::ENTROPY, "3ENTROPY"));
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_ENTROPY_PYRADIOMICS) {
+	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::ENTROPY, "3ENTROPY"));
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3INTERQUARTILE_RANGE) {
-	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::INTERQUARTILE_RANGE, "3INTERQUARTILE_RANGE"));
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_INTERQUARTILE_RANGE_PYRADIOMICS) {
+	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::INTERQUARTILE_RANGE, "3INTERQUARTILE_RANGE"));
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3KURTOSIS) {
-	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::KURTOSIS, "3KURTOSIS"));
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_KURTOSIS_PYRADIOMICS) {
+	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::KURTOSIS, "3KURTOSIS"));
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3MAX) {
-	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::MAX, "3MAX"));
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MAX_PYRADIOMICS) {
+	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::MAX, "3MAX"));
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3MEAN_ABSOLUTE_DEVIATION) {
-	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::MEAN_ABSOLUTE_DEVIATION, "3MEAN_ABSOLUTE_DEVIATION"));
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MEAN_ABSOLUTE_DEVIATION_PYRADIOMICS) {
+	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::MEAN_ABSOLUTE_DEVIATION, "3MEAN_ABSOLUTE_DEVIATION"));
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3MEAN) {
-	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::MEAN, "3MEAN"));
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MEAN_PYRADIOMICS) {
+	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::MEAN, "3MEAN"));
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3MEDIAN) {
-	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::MEDIAN, "3MEDIAN"));
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MEDIAN_PYRADIOMICS) {
+	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::MEDIAN, "3MEDIAN"));
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3MIN) {
-	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::MIN, "3MIN"));
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MIN_PYRADIOMICS) {
+	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::MIN, "3MIN"));
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3RANGE) {
-	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::RANGE, "3RANGE"));
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_RANGE_PYRADIOMICS) {
+	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::RANGE, "3RANGE"));
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3ROBUST_MEAN_ABSOLUTE_DEVIATION) {
-	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::ROBUST_MEAN_ABSOLUTE_DEVIATION, "3ROBUST_MEAN_ABSOLUTE_DEVIATION"));
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_ROBUST_MEAN_ABSOLUTE_DEVIATION_PYRADIOMICS) {
+	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::ROBUST_MEAN_ABSOLUTE_DEVIATION, "3ROBUST_MEAN_ABSOLUTE_DEVIATION"));
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3ROOT_MEAN_SQUARED) {
-	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::ROOT_MEAN_SQUARED, "3ROOT_MEAN_SQUARED"));
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_ROOT_MEAN_SQUARED_PYRADIOMICS) {
+	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::ROOT_MEAN_SQUARED, "3ROOT_MEAN_SQUARED"));
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3SKEWNESS) {
-	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::SKEWNESS, "3SKEWNESS"));
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_SKEWNESS_PYRADIOMICS) {
+	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::SKEWNESS, "3SKEWNESS"));
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3UNIFORMITY) {
-	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::UNIFORMITY, "3UNIFORMITY"));
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_UNIFORMITY_PYRADIOMICS) {
+	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::UNIFORMITY, "3UNIFORMITY"));
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3FO_RADIOMICS_3VARIANCE) {
-	ASSERT_NO_THROW (test_compat_radiomics_3fo_feature(Nyxus::Feature3D::VARIANCE, "3VARIANCE"));
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_VARIANCE_PYRADIOMICS) {
+	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::VARIANCE, "3VARIANCE"));
 }
 
 
@@ -736,54 +738,9 @@ TEST(TEST_NYXUS, TEST_INITIALIZATION) {
 
 //***** Pixel intensity features ***** 
 
-TEST(TEST_NYXUS, TEST_FIRSTORDER_PYRADIOMICS_ORACLE)
+TEST(TEST_NYXUS, TEST_FIRSTORDER_PYRADIOMICS)
 {
-	ASSERT_NO_THROW(test_firstorder_pyradiomics_oracle());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_INTEGRATED_INTENSITY)
-{
-	ASSERT_NO_THROW(test_pixel_intensity_integrated_intensity());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_MIN_MAX_RANGE) 
-{
-	ASSERT_NO_THROW(test_pixel_intensity_min_max_range());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_MEAN) 
-{
-	ASSERT_NO_THROW(test_pixel_intensity_mean());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_COV)
-{
-	ASSERT_NO_THROW(test_pixel_intensity_cov());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_MEDIAN) 
-{
-	ASSERT_NO_THROW(test_pixel_intensity_median());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_MODE) 
-{
-	ASSERT_NO_THROW(test_pixel_intensity_mode());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_STDDEV) 
-{
-	ASSERT_NO_THROW(test_pixel_intensity_standard_deviation());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_STDDEV_BIASED)
-{
-	ASSERT_NO_THROW(test_pixel_intensity_standard_deviation_biased());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VARIANCE)
-{
-	ASSERT_NO_THROW(test_pixel_intensity_variance());
+	ASSERT_NO_THROW(test_firstorder_pyradiomics());
 }
 
 //***** IBSI Intensity Histogram (IH) family *****
@@ -900,101 +857,15 @@ TEST(TEST_NYXUS, TEST_HU_LOADER_DICOM_CT_SMALL_BASELINE)
 }
 #endif
 
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VARIANCE_BIASED)
+TEST(TEST_NYXUS, TEST_FIRSTORDER_ROBUST_MEAN_ABSOLUTE_DEVIATION_PYRADIOMICS)
 {
-	ASSERT_NO_THROW(test_pixel_intensity_variance_biased());
+	ASSERT_NO_THROW(test_firstorder_robust_mean_absolute_deviation_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_SKEWNESS) 
+TEST(TEST_NYXUS, TEST_FIRSTORDER_ENTROPY_REGRESSION) 
 {
-	ASSERT_NO_THROW(test_pixel_intensity_skewness());
+	ASSERT_NO_THROW(test_firstorder_entropy_regression());
 }
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_EXCESS_KURTOSIS)
-{
-	ASSERT_NO_THROW(test_pixel_intensity_kurtosis());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_KURTOSIS)
-{
-	ASSERT_NO_THROW(test_pixel_intensity_pearson_kurtosis());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_HYPERSKEWNESS)
-{
-	ASSERT_NO_THROW(test_pixel_intensity_verifiable_with_3p_builtin_oracle_hyperskewness());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_HYPERFLATNESS)
-{
-	ASSERT_NO_THROW(test_pixel_intensity_verifiable_with_3p_builtin_oracle_hyperflatness());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_MAD) 
-{
-	ASSERT_NO_THROW(test_pixel_intensity_mean_absolute_deviation());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_MEDIAN_ABSOLUTE_DEVIATION)
-{
-	ASSERT_NO_THROW(test_pixel_intensity_median_absolute_deviation());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_ROBUST_MEAN)
-{
-	ASSERT_NO_THROW(test_pixel_intensity_verifiable_with_3p_builtin_oracle_robust_mean());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_ROBUST_MAD)
-{
-	ASSERT_NO_THROW(test_pixel_intensity_robust_mean_absolute_deviation());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_STANDARD_ERROR) 
-{
-	ASSERT_NO_THROW(test_pixel_intensity_standard_error());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_RMS) 
-{
-	ASSERT_NO_THROW(test_pixel_intensity_root_mean_squared());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_ENTROPY) 
-{
-	ASSERT_NO_THROW(test_pixel_intensity_entropy());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_ENERGY) 
-{
-	ASSERT_NO_THROW(test_pixel_intensity_energy());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_UNIFORMITY) 
-{
-	ASSERT_NO_THROW(test_pixel_intensity_uniformity());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_UNIFORMITY_PIU)
-{
-	ASSERT_NO_THROW(test_pixel_intensity_verifiable_with_3p_builtin_oracle_uniformity_piu());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_PERCENTILES_IQR)
-{
-	ASSERT_NO_THROW(test_pixel_intensity_percentiles_iqr());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_QCOD)
-{
-	ASSERT_NO_THROW(test_pixel_intensity_qcod());
-}
-
-TEST(TEST_NYXUS, TEST_PIXEL_INTENSITY_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_COVERED_IMAGE_INTENSITY_RANGE)
-{
-	ASSERT_NO_THROW(test_pixel_intensity_verifiable_with_3p_builtin_oracle_covered_image_intensity_range());
-}
-
 
 //***** Morphology features ***** 
 
@@ -1984,66 +1855,205 @@ TEST(TEST_NYXUS, TEST_IBSI_NGLDM_DCENE)
 
 //***** 2D intensity ***** 
 
-TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_MEAN) 
+TEST(TEST_NYXUS, TEST_FIRSTORDER_MEAN_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_mean_intensity());
+	ASSERT_NO_THROW(test_firstorder_mean_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_SKEWNESS) 
+TEST(TEST_NYXUS, TEST_FIRSTORDER_SKEWNESS_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_skewness_intensity());
+	ASSERT_NO_THROW(test_firstorder_skewness_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_KURTOSIS) 
+TEST(TEST_NYXUS, TEST_FIRSTORDER_KURTOSIS_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_kurtosis_intensity());
+	ASSERT_NO_THROW(test_firstorder_kurtosis_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_MEDIAN) 
+TEST(TEST_NYXUS, TEST_FIRSTORDER_MEDIAN_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_median_intensity());
+	ASSERT_NO_THROW(test_firstorder_median_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_MINIMUM) 
+TEST(TEST_NYXUS, TEST_FIRSTORDER_MINIMUM_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_minimum_intensity());
+	ASSERT_NO_THROW(test_firstorder_minimum_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_P10) 
+TEST(TEST_NYXUS, TEST_FIRSTORDER_P10_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_p10_intensity());
+	ASSERT_NO_THROW(test_firstorder_p10_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_P90) 
+TEST(TEST_NYXUS, TEST_FIRSTORDER_P90_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_p90_intensity());
+	ASSERT_NO_THROW(test_firstorder_p90_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_INTERQUARTILE) 
+TEST(TEST_NYXUS, TEST_FIRSTORDER_INTERQUARTILE_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_interquartile_intensity());
+	ASSERT_NO_THROW(test_firstorder_interquartile_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_RANGE) 
+TEST(TEST_NYXUS, TEST_FIRSTORDER_RANGE_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_range_intensity());
+	ASSERT_NO_THROW(test_firstorder_range_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_MEAN_ABSOLUTE_DEVIATION) 
+TEST(TEST_NYXUS, TEST_FIRSTORDER_MEAN_ABSOLUTE_DEVIATION_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_mean_absolute_deviation_intensity());
+	ASSERT_NO_THROW(test_firstorder_mean_absolute_deviation_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_ENERGY) 
+TEST(TEST_NYXUS, TEST_FIRSTORDER_ENERGY_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_energy_intensity());
+	ASSERT_NO_THROW(test_firstorder_energy_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_INTENSITY_ROOT_MEAN_SQUARED) 
+TEST(TEST_NYXUS, TEST_FIRSTORDER_ROOT_MEAN_SQUARED_IBSI) 
 {
-	ASSERT_NO_THROW(test_ibsi_root_mean_squared_intensity());
+	ASSERT_NO_THROW(test_firstorder_root_mean_squared_ibsi());
 }
 
+
+//***** 2D first-order vs MATLAB (oracle_coverage.csv: oracle=matlab, target_test=test_firstorder_matlab.h) *****
+
+TEST(TEST_NYXUS, TEST_FIRSTORDER_HYPERSKEWNESS_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_hyperskewness_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_HYPERFLATNESS_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_hyperflatness_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_UNIFORMITY_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_uniformity_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_UNIFORMITY_PIU_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_uniformity_piu_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_COVERED_IMAGE_INTENSITY_RANGE_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_covered_image_intensity_range_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_ROBUST_MEAN_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_robust_mean_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_INTEGRATED_INTENSITY_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_integrated_intensity_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_MIN_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_min_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_MAX_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_max_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_RANGE_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_range_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_MEAN_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_mean_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_MEDIAN_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_median_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_MODE_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_mode_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_STANDARD_DEVIATION_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_standard_deviation_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_SKEWNESS_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_skewness_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_EXCESS_KURTOSIS_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_excess_kurtosis_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_KURTOSIS_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_kurtosis_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_MEAN_ABSOLUTE_DEVIATION_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_mean_absolute_deviation_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_STANDARD_ERROR_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_standard_error_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_ROOT_MEAN_SQUARED_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_root_mean_squared_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_ENERGY_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_energy_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_P01_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_p01_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_P10_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_p10_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_P25_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_p25_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_P75_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_p75_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_P90_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_p90_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_P99_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_p99_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_INTERQUARTILE_RANGE_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_interquartile_range_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_COV_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_cov_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_MEDIAN_ABSOLUTE_DEVIATION_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_median_absolute_deviation_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_QCOD_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_qcod_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_STANDARD_DEVIATION_BIASED_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_standard_deviation_biased_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_VARIANCE_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_variance_matlab());
+}
+TEST(TEST_NYXUS, TEST_FIRSTORDER_VARIANCE_BIASED_MATLAB)
+{
+	ASSERT_NO_THROW(test_firstorder_variance_biased_matlab());
+}
 
 //***** 2D GLDM regression ***** 
 
