@@ -453,7 +453,7 @@ static void assert_matlab_regionprops3_shape_agreement(const Feature3DCoverageCa
 static void assert_embedded_3p_oracle_agreement(const Feature3DCoverageCase& c)
 {
 	if (compat_d3_fo_radiomics_GT.find(c.name) != compat_d3_fo_radiomics_GT.end())
-		test_compat_radiomics_3fo_feature(c.code, c.name);
+		assert_3d_firstorder_feature_pyradiomics(c.code, c.name);
 	else if (compat_d3glcm_GT.find(c.name) != compat_d3glcm_GT.end())
 		test_compat_3glcm_feature(c.code, c.name);
 	else if (compat_3gldm_GT.find(c.name) != compat_3gldm_GT.end())

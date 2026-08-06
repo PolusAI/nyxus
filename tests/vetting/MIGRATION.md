@@ -63,7 +63,7 @@ Naming: `test_[3d_]<family>_<kind>.{h,py}`, one kind per file (SPEC §2). `<kind
 | **ngldm** | 38 (20/18/0) | mirp | `test_ibsi_ngldm.h`, `test_3d_ngldm.h` | `test_ngldm_mirp.h`, `test_3d_ngldm_mirp.h`, `test_3d_ngldm_regression.h` |
 | **gldzm** | 36 (17/19/0) | mirp | `test_ibsi_gldzm.h`, `test_3d_gldzm.h` | `test_gldzm_mirp.h`, `test_gldzm_regression.h`, `test_3d_gldzm_regression.h` |
 | **glszm** | 32 (26/6/0) | pyradiomics | `test_glszm.h`, `test_ibsi_glszm.h`, `test_3d_glszm.h`, `test_compat_3d_glszm.h` | `test_glszm_pyradiomics.h`, `test_glszm_regression.h`, `test_3d_glszm_pyradiomics.h` |
-| **gldm** | 28 (14/14/0) | pyradiomics | `test_gldm.h`, `test_gldm_oracle.h`, `test_ibsi_gldm.h`, `test_3d_gldm_regression.h`, `test_compat_3d_gldm.h`, `test_gldm_oracle.py` | `test_gldm_pyradiomics.h`, `test_gldm_regression.h`, `test_3d_gldm_pyradiomics.h`, `test_gldm_pyradiomics.py` |
+| **gldm** | 28 (14/14/0) | pyradiomics | `test_gldm.h`, `test_gldm_oracle.h`, `test_ibsi_gldm.h`, `test_3d_gldm.h`, `test_compat_3d_gldm.h`, `test_gldm_oracle.py` | `test_gldm_pyradiomics.h`, `test_gldm_regression.h`, `test_3d_gldm_pyradiomics.h`, `test_gldm_pyradiomics.py` |
 | **ngtdm** | 10 (10/0/0) | pyradiomics | `test_ngtdm.h`, `test_ibsi_ngtdm.h`, `test_3d_ngtdm.h`, `test_compat_3d_ngtdm.h` | `test_ngtdm_pyradiomics.h`, `test_3d_ngtdm_pyradiomics.h` |
 | **neighbor** | 9 (2/7/0) | cellprofiler | `test_neighbors_2d.h` | `test_neighbor_cellprofiler.h`, `test_neighbor_regression.h` |
 | **imq** | 6 (0/6/0) | — | `test_image_quality.h` | `test_imq_regression.h` |
@@ -403,6 +403,80 @@ unchanged from the base.
 - **Left for triage, recorded in `not_covered.md` §B.1:** that file is still not `#include`d in
   `test_all.cc`, so its 14 snapshot assertions have never run. Wiring them in is a behavioural change
   (they may fail), so it is not part of a rename wave.
+
+## 5.21 Wave 12 (firstorder — placed by registry column, not by inertia) — executed
+
+The rule this wave applied, stated explicitly because Wave 11 did not apply it fully: for every row,
+**`status` (D) + `oracle` (E) decide the function suffix, and `target_test` (J) decides the file**.
+Where an assertion already existed in the wrong file, it was *moved*, not just renamed. Verified:
+**gtest 722/722 — no tests dropped**, 58 firstorder cases (unchanged), pytest unchanged.
+
+Placement before → after, for the 72 firstorder rows:
+
+| file | before | after | why |
+|---|---:|---:|---|
+| `test_firstorder_matlab.h` | did not exist | **26** | the 33 2D `oracle=matlab` rows name it in column J |
+| `test_firstorder_pyradiomics.h` | 1 | **2** | `ROBUST_MEAN_ABSOLUTE_DEVIATION` names it |
+| `test_firstorder_ibsi.h` | 13 | 13 | already correct |
+| `test_firstorder_regression.h` | 28 | **1** | only `ENTROPY` names it in column J |
+| `test_firstorder_common.h` | — | fixture | shared `calculate_pixel_intensity_feature_values`, so an oracle file never includes a regression file |
+
+- **78 functions renamed** to `test_[3d_]firstorder_<subject>_<kind>`: `test_ibsi_mean_intensity` →
+  `test_firstorder_mean_ibsi`, `test_pixel_intensity_mean` → `test_firstorder_mean_matlab`,
+  `test_3inten_cov` → `test_3d_firstorder_cov_regression`, and the 17 inline 3D cases →
+  `TEST_3D_FIRSTORDER_<F>_PYRADIOMICS`. 19 case names whose word order differed from their function
+  (`TEST_IBSI_INTENSITY_MEAN`, `TEST_PIXEL_INTENSITY_MAD`, …) were corrected to `UPPER(function)`.
+- **The six oracle goldens that were hiding in the regression file** are the reason this wave moved
+  code rather than only renaming: `oracle_3p_matlab_uniformity_feature_golden_value` (asserted at the
+  1% cross-tool tier with the comment "vs MATLAB") plus five `oracle_3p_builtin_*` constants for
+  HYPERSKEWNESS, HYPERFLATNESS, UNIFORMITY_PIU, COVERED_IMAGE_INTENSITY_RANGE and ROBUST_MEAN — all
+  five of which are in the registry's 33 `oracle=matlab` rows. Third-party reference values in a
+  file whose name claims "snapshot" is exactly the mislabelling SPEC §1 forbids.
+- `test_3d_inten.h` → `test_3d_firstorder_regression.h` (§6.1, and column J of 19 3D rows).
+- `current_test` repointed on 36 rows + the 125 `test_3d_inten.h` references.
+- **firstorder is now fully placed: 72/72 rows have an existing `target_test`** (was 20/72). The
+  tree-wide backlog drops from 256 dangling refs to 204.
+
+**`test_firstorder_matlab.h` follows the `test_firstorder_ibsi.h` trait.** The goldens arrived as six
+ad-hoc `static constexpr double oracle_3p_{matlab,builtin}_<feature>_feature_golden_value` constants
+plus 28 literals inlined in test bodies, each body rebuilding the same canonical ROI. Restructured to
+match the IBSI file exactly: **one keyed map** (`matlab_reference_firstorder_feature_golden_values`,
+34 entries), **one `assert_firstorder_feature_matlab()` helper** that computes the ROI once, and **one
+one-line test per feature**. Consequence: the 26 multi-feature functions became **34 per-feature
+cases** (`min_max_range` → `min` / `max` / `range`, `percentiles_iqr` → `p01`…`p99` +
+`interquartile_range`), so the suite goes **722 → 730**. Nothing was dropped; assertion count is
+unchanged and each feature is now individually named and reportable, matching the registry's
+one-row-per-feature model.
+
+Two features keep an explicit config at the assertion site, which is what SPEC §5 calls a config
+recipe — collapsing them onto the default fixture made them fail, and that failure is the reason the
+recipe is now recorded in the test rather than implied:
+- `UNIFORMITY` is histogram-based, so MATLAB only matches at `GREYDEPTH=20` with the IBSI path off.
+- `COVERED_IMAGE_INTENSITY_RANGE` is a fraction of the **slide** dynamic range, so the fixture needs
+  slide props (slide 0 spanning 0..65535).
+
+**These are MATLAB values; what is missing is the record, not the origin.** All 34 goldens in
+`test_firstorder_matlab.h` came from MATLAB — that is what `oracle=matlab` states, and the pre-rename
+constant names said it too (`oracle_3p_matlab_*` named the tool; `oracle_3p_builtin_*` meant MATLAB's
+built-in statistics functions). What no golden carries is the SPEC §6.4 record: MATLAB version, exact
+config, generator path. The file header says so, and `not_covered.md` §C tracks writing it down —
+ideally by regenerating through the Octave harness (§5.13) so the numbers are reproducible rather than
+merely trusted. The same holds for `d3inten_GT` in the 3D file.
+
+**One registry row is self-contradictory and was NOT propagated.** `2D UNIFORMITY` reads
+`oracle=pyradiomics` with `target_test=test_firstorder_regression.h`, yet the only in-tree golden for
+it is MATLAB's (0.0647664, asserted at the 1% tier with the comment "vs MATLAB"). Following column J
+literally would have put a MATLAB reference value in a file whose name claims "snapshot" — restating
+the mislabelling this wave exists to remove. The assertion therefore stays in
+`test_firstorder_matlab.h` as `test_firstorder_uniformity_matlab`, `current_test` records that, and the
+row is flagged in `not_covered.md` for reconciliation: either its `oracle` should read `matlab`, or its
+`target_test` should name the pyradiomics file and a pyradiomics golden has to be produced.
+
+**Registry-file hazard worth recording:** `oracle_coverage.csv` contains 16 `CR CR LF` sequences and
+19 lone `CR`s (present on `main`, not introduced here). Python's `csv` module with `newline=""` reads
+those as extra empty records — a full-file rewrite through `csv.writer` therefore *destroys* rows.
+Edit this file with line-level substitutions, or read it the way `check_coverage.py` does (plain
+`open()`, which yields the correct 758 rows).
 
 ---
 
