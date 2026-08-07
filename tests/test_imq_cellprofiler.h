@@ -34,7 +34,7 @@
 
 #include "../src/nyx/features/saturation.h"
 
-void test_min_saturation_cellprofiler() {
+void test_imq_min_saturation_cellprofiler() {
 
     SaturationFeature f;
     // CellProfiler 4.2.8 MeasureImageQuality: Image_ImageQuality_PercentMinimal / 100
@@ -44,7 +44,7 @@ void test_min_saturation_cellprofiler() {
     test_feature(f, Nyxus::FeatureIMQ::MIN_SATURATION, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
 
-void test_max_saturation_cellprofiler() {
+void test_imq_max_saturation_cellprofiler() {
 
     SaturationFeature f;
     // CellProfiler 4.2.8 MeasureImageQuality: Image_ImageQuality_PercentMaximal / 100

@@ -2489,34 +2489,34 @@ TEST(TEST_NYXUS, TEST_NGTDM_STRENGTH)
 	ASSERT_NO_THROW(test_ngtdm_strength());
 }
 
-TEST(TEST_IMAGE_QUALITY, TEST_FOCUS_SCORE_OPENCV)
+TEST(TEST_NYXUS, TEST_IMQ_FOCUS_SCORE_OPENCV)
 {
-	ASSERT_NO_THROW(test_focus_score_opencv());
+	ASSERT_NO_THROW(test_imq_focus_score_opencv());
 }
 
-TEST(TEST_IMAGE_QUALITY, TEST_LOCAL_FOCUS_SCORE_OPENCV)
+TEST(TEST_NYXUS, TEST_IMQ_LOCAL_FOCUS_SCORE_OPENCV)
 {
-	ASSERT_NO_THROW(test_local_focus_score_opencv());
+	ASSERT_NO_THROW(test_imq_local_focus_score_opencv());
 }
 
-TEST(TEST_IMAGE_QUALITY, TEST_POWER_SPECTRUM)
+TEST(TEST_NYXUS, TEST_IMQ_POWER_SPECTRUM_SLOPE_REGRESSION)
 {
-	ASSERT_NO_THROW(test_power_spectrum_feature());
+	ASSERT_NO_THROW(test_imq_power_spectrum_slope_regression());
 }
 
-TEST(TEST_IMAGE_QUALITY, TEST_MIN_SATURATION_CELLPROFILER)
+TEST(TEST_NYXUS, TEST_IMQ_MIN_SATURATION_CELLPROFILER)
 {
-	ASSERT_NO_THROW(test_min_saturation_cellprofiler());
+	ASSERT_NO_THROW(test_imq_min_saturation_cellprofiler());
 }
 
-TEST(TEST_IMAGE_QUALITY, TEST_MAX_SATURATION_CELLPROFILER)
+TEST(TEST_NYXUS, TEST_IMQ_MAX_SATURATION_CELLPROFILER)
 {
-	ASSERT_NO_THROW(test_max_saturation_cellprofiler());
+	ASSERT_NO_THROW(test_imq_max_saturation_cellprofiler());
 }
 
-TEST(TEST_IMAGE_QUALITY, TEST_SHARPNESS) 
+TEST(TEST_NYXUS, TEST_IMQ_SHARPNESS_REGRESSION) 
 {
-	ASSERT_NO_THROW(test_sharpness_feature());
+	ASSERT_NO_THROW(test_imq_sharpness_regression());
 }
 
 

@@ -575,6 +575,27 @@ Worth noting for later waves: a file named `*_oracle.py` is not evidence of an o
 carry that name (`test_feature_oracle.py`, `test_fractal_dim_oracle.py`, `test_glcm/gldm_pyradiomics.py`
 were already renamed) and each needs the same read-the-assertions check before its family's wave.
 
+## 5.26 Wave 16 (imq) — executed
+
+All 6 rows already named a consistent `target_test` and each file already held the right kind, so this
+was names only. Verified: **gtest 730/730**, 6 imq cases, and the suite count drops **15 → 14**.
+
+- **6 functions gained the family prefix** the rest of the tree uses: `test_focus_score_opencv` →
+  `test_imq_focus_score_opencv`, `test_min/max_saturation_cellprofiler` → `test_imq_*`. The two
+  snapshots also lost the meaningless `_feature` tail for a kind: `test_power_spectrum_feature` →
+  `test_imq_power_spectrum_slope_regression`, `test_sharpness_feature` →
+  `test_imq_sharpness_regression`.
+- **The ad-hoc `TEST_IMAGE_QUALITY` gtest suite is folded into `TEST_NYXUS`** (§6.2 fixes one suite
+  name for the whole tree). It was the only second suite, so `--gtest_filter=TEST_NYXUS.*` had been
+  silently skipping all 6 image-quality cases; anyone filtering that way now gets them.
+- Four registry `notes` cite gtest case names in prose (e.g. "in test_imq_opencv.h
+  (TEST_FOCUS_SCORE_OPENCV)"); those citations were updated with the renames. No structural column
+  changed, so `coverage_report.md` is untouched.
+
+This family is also the tidiest illustration of what the suffix buys: 4 of its 6 features are vetted
+(2 opencv, 2 cellprofiler) and 2 are snapshots, and the test names now say which is which without
+opening a file.
+
 ---
 
 ## 6. Reconciliation decisions (RESOLVED)

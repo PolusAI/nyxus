@@ -18,7 +18,7 @@
    FOCUS_SCORE / LOCAL_FOCUS_SCORE are vetted in test_imq_opencv.h,
    MIN_SATURATION / MAX_SATURATION in test_imq_cellprofiler.h. */
 
-void test_power_spectrum_feature() {
+void test_imq_power_spectrum_slope_regression() {
 
     PowerSpectrumFeature f;
     double truth_value = 0.0;
@@ -27,7 +27,7 @@ void test_power_spectrum_feature() {
 };
 
 
-void test_sharpness_feature() {
+void test_imq_sharpness_regression() {
 
     SharpnessFeature f;
     double truth_value = 2.19047;

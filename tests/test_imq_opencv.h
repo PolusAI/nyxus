@@ -35,7 +35,7 @@
 
 #include "../src/nyx/features/focus_score.h"
 
-void test_focus_score_opencv() {
+void test_imq_focus_score_opencv() {
 
     FocusScoreFeature f;
     // cv2 4.13.0: cv2.Laplacian(roi, cv2.CV_64F, ksize=1, borderType=cv2.BORDER_CONSTANT).var()
@@ -45,7 +45,7 @@ void test_focus_score_opencv() {
     test_feature(f, Nyxus::FeatureIMQ::FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
 
-void test_local_focus_score_opencv() {
+void test_imq_local_focus_score_opencv() {
 
     FocusScoreFeature f;
     // cv2 4.13.0: the same Laplacian call on the top-left h/2 x w/2 tile, / scale^2.
