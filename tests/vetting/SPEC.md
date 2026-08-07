@@ -271,6 +271,12 @@ what's true** (measured agreement). Worked GLCM cells:
 
 gtest macro name = uppercased function, prefixed `TEST_NYXUS.` per existing convention.
 
+**Enforced, not aspirational.** `tests/vetting/check_test_names.py --check` fails on any
+violation of §6.1/§6.2 — file names, function suffixes, helper prefixes, gtest suite and case
+names. It runs in CI beside `check_coverage.py` and as a pytest case, with a second case that
+plants one defect of each class and requires the checker to report them, so it cannot decay
+into a no-op.
+
 ### 6.2.1 Which file an assertion belongs in — read the registry columns in this order
 
 `oracle_coverage.csv` carries both a verdict (`status`, `oracle`) and a destination (`target_test`).

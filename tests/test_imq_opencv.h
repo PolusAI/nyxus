@@ -42,7 +42,7 @@ void test_imq_focus_score_opencv() {
     // gen_imq_opencv.py; tolerance rel=1e-3 (same definition, different summation order).
     double truth_value = 34.95659722222222;
 
-    test_feature(f, Nyxus::FeatureIMQ::FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+    assert_feature(f, Nyxus::FeatureIMQ::FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
 
 void test_imq_local_focus_score_opencv() {
@@ -52,5 +52,5 @@ void test_imq_local_focus_score_opencv() {
     // gen_imq_opencv.py; tolerance rel=1e-3.
     double truth_value = 7.57638888888889;
 
-    test_feature(f, Nyxus::FeatureIMQ::LOCAL_FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+    assert_feature(f, Nyxus::FeatureIMQ::LOCAL_FOCUS_SCORE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };

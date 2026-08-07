@@ -849,6 +849,29 @@ One false positive was caught and reverted in the plumbing sweep: `test_nyxus.py
 grandfathered (§4: its 88 API assertions need a by-family `_mechanics` split, not a rename), so it
 must not be touched by a name sweep at all.
 
+## 5.36 Wave 27 (enforcement) — executed; the rollout is complete
+
+`tests/vetting/check_test_names.py` checks SPEC §6.1/§6.2 mechanically: file names, function kind
+suffixes, the `assert_*` helper rule, one gtest suite, and case = `UPPER(function)`. It runs
+`--check` in CI beside `check_coverage.py`, and as two pytest cases — one asserting the tree is clean,
+one planting a defect of each class and requiring the checker to report it, so the lint cannot decay
+into a no-op. Verified by mutation: the tree test passes clean, **fails** when a kind suffix is
+removed from one function, and passes again when restored.
+
+**Three violations existed when the checker was first run, and were fixed rather than excepted:**
+the `test_feature` template helper → `assert_feature`, and the two IH gating assertions
+(`..._gate_off_returns_nan`, `..._required_predicate`) → a new `test_intensity_histogram_mechanics.h`,
+since they assert *gating* rather than feature values.
+
+**`KIND_EXCEPTIONS` shrank from 15 to 10.** Five of the ported entries were resolved by the waves
+themselves — the IH analytic pair now lives in a real `_analytic.h`, the neighbor closed-form case
+moved to `_analytic.h`, and the two NGLDM snapshots to `_regression.h`. Each of the remaining ten was
+re-derived by removing it and confirming the checker complains, so the list contains no dead entries;
+all ten are riders in a Python module whose kind is set by its majority.
+
+**Final state of the tree:** 107 files, 668 test functions and 526 gtest cases, **zero** violations.
+gtest 731/731, pytest 82 passed / 1 skipped (7 Arrow failures need `USE_ARROW=ON`).
+
 ---
 
 ## 6. Reconciliation decisions (RESOLVED)
