@@ -8,6 +8,7 @@
 #include "test_firstorder_regression.h"
 #include "test_firstorder_matlab.h"
 #include "test_intensity_histogram_regression.h"
+#include "test_intensity_histogram_mechanics.h"
 #include "test_intensity_histogram_ibsi.h"
 #include "test_intensity_histogram_analytic.h"
 #include "test_hu_analytic.h"

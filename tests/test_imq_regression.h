@@ -23,7 +23,7 @@ void test_imq_power_spectrum_slope_regression() {
     PowerSpectrumFeature f;
     double truth_value = 0.0;
 
-    test_feature(f, Nyxus::FeatureIMQ::POWER_SPECTRUM_SLOPE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+    assert_feature(f, Nyxus::FeatureIMQ::POWER_SPECTRUM_SLOPE, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
 
 
@@ -32,5 +32,5 @@ void test_imq_sharpness_regression() {
     SharpnessFeature f;
     double truth_value = 2.19047;
 
-    test_feature(f, Nyxus::FeatureIMQ::SHARPNESS, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
+    assert_feature(f, Nyxus::FeatureIMQ::SHARPNESS, 1, im_quality_intensity, im_quality_mask, sizeof(im_quality_mask) / sizeof(NyxusPixel), truth_value);
 };
