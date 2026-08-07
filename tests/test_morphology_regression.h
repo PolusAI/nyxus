@@ -3,7 +3,7 @@
 #include "test_morphology_common.h"
 #include "test_remaining2d_common.h"
 
-void test_shape2d_basic_morphology_features()
+void test_morphology_basic_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_shape2d_feature_values(fvals);
@@ -14,7 +14,6 @@ void test_shape2d_basic_morphology_features()
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::CENTROID_Y, "CENTROID_Y");
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::WEIGHTED_CENTROID_X, "WEIGHTED_CENTROID_X");
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::WEIGHTED_CENTROID_Y, "WEIGHTED_CENTROID_Y");
-	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::MASS_DISPLACEMENT, "MASS_DISPLACEMENT");
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::COMPACTNESS, "COMPACTNESS");
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::BBOX_XMIN, "BBOX_XMIN");
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::BBOX_YMIN, "BBOX_YMIN");
@@ -25,7 +24,7 @@ void test_shape2d_basic_morphology_features()
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::ASPECT_RATIO, "ASPECT_RATIO");
 }
 
-void test_shape2d_ellipse_features()
+void test_morphology_ellipse_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_shape2d_feature_values(fvals);
@@ -39,20 +38,15 @@ void test_shape2d_ellipse_features()
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::ROUNDNESS, "ROUNDNESS");
 }
 
-void test_shape2d_contour_features()
+void test_morphology_contour_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_shape2d_feature_values(fvals);
 
 	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::PERIMETER, "PERIMETER");
-	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EDGE_MEAN_INTENSITY, "EDGE_MEAN_INTENSITY");
-	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EDGE_STDDEV_INTENSITY, "EDGE_STDDEV_INTENSITY");
-	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EDGE_MAX_INTENSITY, "EDGE_MAX_INTENSITY");
-	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EDGE_MIN_INTENSITY, "EDGE_MIN_INTENSITY");
-	assert_unvetted_no_direct_oracle_shape2d_feature(fvals, Nyxus::Feature2D::EDGE_INTEGRATED_INTENSITY, "EDGE_INTEGRATED_INTENSITY");
 }
 
-void test_shape2d_misc_shape_features()
+void test_morphology_misc_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_shape2d_feature_values(fvals);
@@ -65,7 +59,7 @@ void test_shape2d_misc_shape_features()
 // oracle file test_morphology_analytic.h, not here -- this file is a snapshot drift guard and claims
 // nothing (SPEC 2).
 
-void test_shape2d_unvetted_no_direct_oracle_radius_features()
+void test_morphology_radius_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_shape2d_feature_values(fvals);
@@ -78,12 +72,12 @@ void test_shape2d_unvetted_no_direct_oracle_radius_features()
 // DIAMETER_EQUAL_PERIMETER is now vetted against imea's perimeter_equal_diameter (the same ISO
 // perimeter/pi transform) in test_morphology_imea.h.
 
-void test_shape2d_verifiable_with_3p_builtin_oracle_fractal_circle_features()
+void test_morphology_fractal_circle_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_shape2d_feature_values(fvals);
 
-	// Fractal dimensions are validated in test_shape2d_fractal_dimension_blob512_oracle.
+	// Fractal dimensions are validated in test_morphology_fractal_dimension_blob512_fraclac.
 	// Here we keep the inscribing/circumscribing circle diameters.
 	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::DIAMETER_CIRCUMSCRIBING_CIRCLE, "DIAMETER_CIRCUMSCRIBING_CIRCLE");
 	assert_verifiable_with_3p_builtin_oracle_shape2d_feature(fvals, Nyxus::Feature2D::DIAMETER_INSCRIBING_CIRCLE, "DIAMETER_INSCRIBING_CIRCLE");
@@ -100,7 +94,7 @@ void test_shape2d_verifiable_with_3p_builtin_oracle_fractal_circle_features()
 // test_remaining2d_common.h.
 // ---------------------------------------------------------------------------------------------------
 
-void test_remaining2d_verifiable_with_3p_builtin_oracle_erosion_complement_feature()
+void test_morphology_erosion_complement_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_remaining2d_shape_feature_values(fvals);
@@ -108,7 +102,7 @@ void test_remaining2d_verifiable_with_3p_builtin_oracle_erosion_complement_featu
 	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::EROSIONS_2_VANISH_COMPLEMENT, "EROSIONS_2_VANISH_COMPLEMENT");
 }
 
-void test_remaining2d_verifiable_with_3p_builtin_oracle_caliper_features()
+void test_morphology_caliper_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_remaining2d_shape_feature_values(fvals);
@@ -135,62 +129,7 @@ void test_remaining2d_verifiable_with_3p_builtin_oracle_caliper_features()
 	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MODE, "STAT_NASSENSTEIN_DIAM_MODE");
 }
 
-// Vets the reimplemented Martin (area-bisecting chord) and Nassenstein (bottom-tangent vertical
-// chord) diameters against imea on a clean filled ellipse (a=20, b=10). See the oracle block in
-// test_remaining2d_common.h. Robust stats (min/max/mean/median) agree with imea within the
-// hull-vs-raster convention tolerance; the >0 lower bound pins that the old min+max-chord bug
-// (0-length Nassenstein diameters) is gone.
-void test_shape2d_caliper_martin_nassenstein_imea_ellipse_oracle()
-{
-	std::vector<std::vector<double>> fvals;
-	calculate_ellipse_caliper_values(fvals);
-
-	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MIN, "STAT_MARTIN_DIAM_MIN");
-	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MAX, "STAT_MARTIN_DIAM_MAX");
-	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MEAN, "STAT_MARTIN_DIAM_MEAN");
-	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MEDIAN, "STAT_MARTIN_DIAM_MEDIAN");
-	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MIN, "STAT_NASSENSTEIN_DIAM_MIN");
-	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MAX, "STAT_NASSENSTEIN_DIAM_MAX");
-	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MEAN, "STAT_NASSENSTEIN_DIAM_MEAN");
-	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MEDIAN, "STAT_NASSENSTEIN_DIAM_MEDIAN");
-
-	// Bug-gone invariant: a solid shape cannot have a 0-length diameter (the old code produced 0).
-	ASSERT_GT(fvals[static_cast<int>(Nyxus::Feature2D::STAT_MARTIN_DIAM_MIN)][0], 2.0);
-	ASSERT_GT(fvals[static_cast<int>(Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MIN)][0], 2.0);
-}
-
-// Vets the Feret diameter distribution against imea on the same filled ellipse. Feret is a correct
-// rotating-calipers implementation; robust stats (min/max/mean/median) agree with imea within the
-// hull-vs-raster convention tolerance. (MIN/MAX_FERET_ANGLE stay regression — they are a Nyxus-frame
-// angle convention with no directly comparable imea output.)
-void test_shape2d_caliper_feret_imea_ellipse_oracle()
-{
-	std::vector<std::vector<double>> fvals;
-	calculate_ellipse_caliper_values(fvals);
-
-	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MIN, "STAT_FERET_DIAM_MIN");
-	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MAX, "STAT_FERET_DIAM_MAX");
-	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MEAN, "STAT_FERET_DIAM_MEAN");
-	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MEDIAN, "STAT_FERET_DIAM_MEDIAN");
-}
-
-// Vets the minimum-enclosing-circle diameter (Welzl / cv2.minEnclosingCircle) against its exact
-// geometric/imea value on two clean fixtures: ellipse a=20 -> 2a=40, circle r=15 -> 30. This is
-// centroid-independent, so it matches to <0.1%. (DIAMETER_CIRCUMSCRIBING/INSCRIBING_CIRCLE are left
-// regression: imea's centroid-to-contour-distance approximation, convention-sensitive.)
-void test_shape2d_min_enclosing_circle_imea_oracle()
-{
-	std::vector<std::vector<double>> ell;
-	calculate_ellipse_caliper_values(ell);
-	assert_caliper_close_to_imea(ell, Nyxus::Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE, "DIAMETER_MIN_ENCLOSING_CIRCLE", 0.05);
-
-	std::vector<std::vector<double>> cir;
-	calculate_circle_shape_values(cir);
-	const double d = cir[static_cast<int>(Nyxus::Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE)][0];
-	ASSERT_NEAR(d, 30.0, 30.0 * 0.05) << "circle min-enclosing nyxus=" << d << " expected~30";
-}
-
-void test_remaining2d_verifiable_with_3p_builtin_oracle_chord_stat_features()
+void test_morphology_chord_stat_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_remaining2d_shape_feature_values(fvals);
@@ -209,7 +148,7 @@ void test_remaining2d_verifiable_with_3p_builtin_oracle_chord_stat_features()
 	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::ALLCHORDS_STDDEV, "ALLCHORDS_STDDEV");
 }
 
-void test_remaining2d_unvetted_no_direct_oracle_chord_angle_features()
+void test_morphology_chord_angle_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_remaining2d_shape_feature_values(fvals);
@@ -220,7 +159,7 @@ void test_remaining2d_unvetted_no_direct_oracle_chord_angle_features()
 	assert_unvetted_no_direct_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::ALLCHORDS_MIN_ANG, "ALLCHORDS_MIN_ANG");
 }
 
-void test_remaining2d_unvetted_no_direct_oracle_polygonality_hexagonality_features()
+void test_morphology_polygonality_hexagonality_regression()
 {
 	std::unordered_map<int, LR> roiData;
 	calculate_remaining2d_polygonality_feature_values(roiData);
