@@ -21,7 +21,7 @@ static std::unordered_map<std::string, double> unvetted_nyxus_regression_ngtdm_f
     {"NGTDM_STRENGTH", 52.076642}
 };
 
-void test_ngtdm_feature(const Feature2D& feature_, const std::string& feature_name) 
+void assert_ngtdm_feature_regression(const Feature2D& feature_, const std::string& feature_name) 
 {
     // featue settings for this particular test
     Fsettings s;
@@ -114,27 +114,27 @@ void test_ngtdm_feature(const Feature2D& feature_, const std::string& feature_na
     ASSERT_TRUE(agrees_gt(total/4, unvetted_nyxus_regression_ngtdm_feature_golden_values[feature_name], 100.));
 }
 
-void test_ngtdm_coarseness()
+void test_ngtdm_coarseness_regression()
 {
-    test_ngtdm_feature(Nyxus::Feature2D::NGTDM_COARSENESS, "NGTDM_COARSENESS");
+    assert_ngtdm_feature_regression(Nyxus::Feature2D::NGTDM_COARSENESS, "NGTDM_COARSENESS");
 }
 
-void test_ngtdm_contrast()
+void test_ngtdm_contrast_regression()
 {
-    test_ngtdm_feature(Nyxus::Feature2D::NGTDM_CONTRAST, "NGTDM_CONTRAST");
+    assert_ngtdm_feature_regression(Nyxus::Feature2D::NGTDM_CONTRAST, "NGTDM_CONTRAST");
 }
 
-void test_ngtdm_busyness()
+void test_ngtdm_busyness_regression()
 {
-    test_ngtdm_feature(Nyxus::Feature2D::NGTDM_BUSYNESS, "NGTDM_BUSYNESS");
+    assert_ngtdm_feature_regression(Nyxus::Feature2D::NGTDM_BUSYNESS, "NGTDM_BUSYNESS");
 }
 
-void test_ngtdm_complexity()
+void test_ngtdm_complexity_regression()
 {   
-    test_ngtdm_feature(Nyxus::Feature2D::NGTDM_COMPLEXITY, "NGTDM_COMPLEXITY");
+    assert_ngtdm_feature_regression(Nyxus::Feature2D::NGTDM_COMPLEXITY, "NGTDM_COMPLEXITY");
 }
 
-void test_ngtdm_strength()
+void test_ngtdm_strength_regression()
 {
-    test_ngtdm_feature(Nyxus::Feature2D::NGTDM_STRENGTH, "NGTDM_STRENGTH");
+    assert_ngtdm_feature_regression(Nyxus::Feature2D::NGTDM_STRENGTH, "NGTDM_STRENGTH");
 }

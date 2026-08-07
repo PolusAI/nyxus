@@ -19,7 +19,7 @@ static std::unordered_map<std::string, float> d3ngtdm_GT {
 
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
-void test_3ngtdm_feature(const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+void assert_3d_ngtdm_feature_regression(const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
 #if 0
     // get segment info
@@ -120,28 +120,28 @@ void test_3ngtdm_feature(const Nyxus::Feature3D& expecting_fcode, const std::str
 
 }
 
-void test_3ngtdm_coarseness()
+void test_3d_ngtdm_coarseness_regression()
 {
-    test_3ngtdm_feature(Nyxus::Feature3D::NGTDM_COARSENESS, "3NGTDM_COARSENESS");
+    assert_3d_ngtdm_feature_regression(Nyxus::Feature3D::NGTDM_COARSENESS, "3NGTDM_COARSENESS");
 }
 
-void test_3ngtdm_contrast()
+void test_3d_ngtdm_contrast_regression()
 {
-    test_3ngtdm_feature(Nyxus::Feature3D::NGTDM_CONTRAST, "3NGTDM_CONTRAST");
+    assert_3d_ngtdm_feature_regression(Nyxus::Feature3D::NGTDM_CONTRAST, "3NGTDM_CONTRAST");
 }
 
-void test_3ngtdm_busyness()
+void test_3d_ngtdm_busyness_regression()
 {
-    test_3ngtdm_feature(Nyxus::Feature3D::NGTDM_BUSYNESS, "3NGTDM_BUSYNESS");
+    assert_3d_ngtdm_feature_regression(Nyxus::Feature3D::NGTDM_BUSYNESS, "3NGTDM_BUSYNESS");
 }
 
-void test_3ngtdm_complexity()
+void test_3d_ngtdm_complexity_regression()
 {
-    test_3ngtdm_feature(Nyxus::Feature3D::NGTDM_COMPLEXITY, "3NGTDM_COMPLEXITY");
+    assert_3d_ngtdm_feature_regression(Nyxus::Feature3D::NGTDM_COMPLEXITY, "3NGTDM_COMPLEXITY");
 }
 
-void test_3ngtdm_strength()
+void test_3d_ngtdm_strength_regression()
 {
-    test_3ngtdm_feature(Nyxus::Feature3D::NGTDM_STRENGTH, "3NGTDM_STRENGTH");
+    assert_3d_ngtdm_feature_regression(Nyxus::Feature3D::NGTDM_STRENGTH, "3NGTDM_STRENGTH");
 }
 
