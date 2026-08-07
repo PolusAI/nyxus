@@ -748,6 +748,46 @@ rest of the `_IDX`/`_VAL` dispersion variants still need closed-form assertions,
 work rather than renaming. This family remains the largest gap in the tree: 47 rows, 4 oracle
 assertions.
 
+## 5.33 Wave 23 (morphology) — executed
+
+Widest oracle spread in the tree — matlab, skimage, imea, fraclac, analytic and cellprofiler all
+appear in one family's 113 rows. 43 functions renamed. Verified: **gtest 730/730**, 37
+morphology/contour cases (5 imea + 4 matlab + 2 skimage + 1 fraclac + 6 analytic + 19 regression),
+pytest 8/8 across the three renamed modules.
+
+- **3 imea oracle functions moved** out of `test_morphology_regression.h` into
+  `test_morphology_imea.h`: the Martin/Nassenstein, Feret and min-enclosing-circle caliper tests,
+  13 assertions comparing against a real `imea_ellipse_caliper_oracle` table (imea
+  `measure_2d.statistical_length`, dalpha=10, documented tolerance 0.10 with per-diameter residuals
+  written out). Third-party reference values in a file named `_regression`, exactly the firstorder
+  pattern.
+- **`test_contour.h` → `test_contour_analytic.h`** — its goldens are hand-derived contour geometry.
+  Two case names also stopped being opaque: `TEST_CONTOUR_MULTI_1`/`_2` →
+  `..._MULTI_DISCONNECTED_ANALYTIC` / `..._MULTI_CONNECTED_ANALYTIC`.
+
+**The three `*_oracle.py` files split three different ways** — the read-the-assertions check from
+the neighbor wave, applied and again worth it:
+
+| file | asserts | renamed to |
+|---|---|---|
+| `test_feature_oracle.py` | `MAXCHORDS_MAX_ANG != MIN_ANG` — a relation, no reference value | `test_morphology_invariant.py` |
+| `test_convex_hull_invariants.py` | `SOLIDITY <= 1` — a bound | `test_morphology_hull_invariant.py` |
+| `test_fractal_dim_oracle.py` | box-count vs **ImageJ/FracLac** goldens (1.8706, 1.0493) *and* closed-form dimensions for square/line/Sierpinski/Koch | `test_morphology_fraclac.py`, methods split `_fraclac` vs `_analytic` |
+
+Only the third was an oracle, and it is two kinds at once.
+
+**`test_morphology_cellprofiler.h` created** for the 6 rows column J names (the 5 `EDGE_*` edge
+intensities and `MASS_DISPLACEMENT`). They were asserted inside two *mixed-kind* functions —
+`test_morphology_contour_regression` (5 `EDGE_*` beside `PERIMETER`) and
+`test_morphology_basic_regression` (`MASS_DISPLACEMENT` among 14 others) — so the split is **per
+feature, not per function**, and the regression functions keep the features that are genuinely theirs.
+
+The shared golden map is still called `unvetted_nyxus_regression_shape2d_feature_golden_values` and
+carries no CellProfiler version, config or generator. **The registry is the authority on what vets a
+feature; a stale table name is not evidence against it.** The missing SPEC §6.4 provenance record is
+tracked in `not_covered.md` §C, and renaming golden tables is deferred to a pass that handles them
+across the whole tree.
+
 ---
 
 ## 6. Reconciliation decisions (RESOLVED)

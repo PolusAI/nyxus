@@ -14,7 +14,7 @@
 //      BW_noholes = imfill(imread('circles.png'), "holes");
 //      nnz(bwperim(BW_noholes))    % returns 846
 //
-void test_morphology_perimeter()
+void test_morphology_perimeter_matlab()
 {
     // featue settings for this particular test
     Fsettings s;

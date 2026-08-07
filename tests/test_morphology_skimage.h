@@ -2,7 +2,7 @@
 
 #include "test_morphology_common.h"
 
-void test_shape2d_convex_hull_features()
+void test_morphology_convex_hull_skimage()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_shape2d_feature_values(fvals);
@@ -21,7 +21,7 @@ void test_shape2d_convex_hull_features()
 // the AXIS LENGTHS differ ~1.4%, which is why MAJOR/MINOR/ECCENTRICITY stay regression).
 // EROSIONS_2_VANISH: Nyxus' 3x3 (8-connected) structuring element == skimage square(3); the count (1)
 // matches, and disk(1)/4-connected gives 2, so the test also pins the connectivity convention.
-void test_shape2d_skimage_orientation_and_erosions()
+void test_morphology_orientation_and_erosions_skimage()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_shape2d_feature_values(fvals);

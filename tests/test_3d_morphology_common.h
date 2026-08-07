@@ -21,7 +21,7 @@ static std::unordered_map<std::string, double> d3shape_GT{
 
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
-void test_3shape_feature (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
+void assert_3d_morphology_feature (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
 {
 #if 0
 

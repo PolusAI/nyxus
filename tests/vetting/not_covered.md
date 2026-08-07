@@ -54,7 +54,7 @@ omission matters:
 | `test_hu_mechanics.h` | 8 | loader-level HU preservation (TIFF / DICOM / float) | plumbing, but it pins values |
 | `test_signed_int16_loader.py` | 2 | MIN/MAX/MEAN do not wrap for signed int16 | guards a wrap bug that silently corrupted values |
 | `test_tiff_loader.py` | 2 | pixel values and feature equality for uint32 strip TIFFs | guards a heap over-read that corrupted values |
-| `test_contour.h` | 5 | contour tracing (pixel counts / connectivity) | underlies `PERIMETER`, but asserts geometry rather than a feature |
+| `test_contour_analytic.h` | 5 | contour tracing (pixel counts / connectivity) | underlies `PERIMETER`, but asserts geometry rather than a feature |
 
 **Decision needed per row:** either add these files to `current_test` for the features they touch, or
 state in `notes` that the HU / loader configs are deliberately out of the per-feature registry.
@@ -161,7 +161,7 @@ so a green local run is not a green matrix.
 
 - `test_hounsfield.py`, `test_hounsfield_nifti.py`, `test_hu_ct_small_pydicom.py` — module-level
   `skipif` when their committed fixtures are absent.
-- `test_feature_oracle.py`, `test_glcm_pyradiomics.py`, `test_gldm_pyradiomics.py` — skip when the
+- `test_morphology_invariant.py`, `test_glcm_pyradiomics.py`, `test_gldm_pyradiomics.py` — skip when the
   canonical ROI cannot be parsed out of `test_data.h`. **A skip here silently removes an oracle
   assertion**; these should fail rather than skip, since the fixture is committed.
 - `test_nyxus.py` — one case is skipped on Python 3.12, one is `skip_ci`.
@@ -177,6 +177,8 @@ Surfaced by Wave 12 and not yet satisfied:
 |---|---:|---|
 | `test_firstorder_matlab.h` | 34 | all 34 are MATLAB values (`oracle_3p_matlab_*` named the tool, `oracle_3p_builtin_*` meant MATLAB's built-ins). Missing: MATLAB version, exact config, generator path — the numbers are here, the reproduction recipe is not |
 | `test_3d_firstorder_matlab.h` | 36 | `d3inten_GT` values also come from MATLAB, but the map says nothing about it, and 18 of these features are `oracle=matlab` while the file name says `_regression` — see §D |
+
+| `test_morphology_cellprofiler.h` | 6 | the 5 `EDGE_*` + `MASS_DISPLACEMENT` read their values from `unvetted_nyxus_regression_shape2d_feature_golden_values` in `test_morphology_common.h` — a map whose name still says snapshot. The registry vets these against CellProfiler; the map carries no version, config or generator, and renaming golden tables tree-wide is a separate pass. |
 
 Closing these means writing tool + version + config + generator down at each assertion site, ideally
 by regenerating through the Octave harness so the values become reproducible. The values themselves are

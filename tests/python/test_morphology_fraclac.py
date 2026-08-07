@@ -108,7 +108,7 @@ def _koch_snowflake(depth=5, size=1400):
     ("straight_line",       _line(),                 1.0),
     ("sierpinski_triangle", _sierpinski_triangle(),  math.log(3) / math.log(2)),
 ])
-def test_boxcount_recovers_known_dimension(name, mask, truth):
+def test_morphology_boxcount_known_dimension_analytic(name, mask, truth):
     """nyxus FRACT_DIM_BOXCOUNT must recover the analytic box-counting dimension
     (matches the ImageJ/FracLac oracle). Before the grid-alignment fix the square read
     ~1.75 and the Sierpinski triangle ~1.39; both now land on truth."""
@@ -117,13 +117,13 @@ def test_boxcount_recovers_known_dimension(name, mask, truth):
 
 
 # ============================ perimeter oracle ==============================
-def test_perimeter_disk_is_smooth():
+def test_morphology_perimeter_disk_analytic():
     """A disk has a smooth (non-fractal) boundary -> divider dimension -> 1.0."""
     _, pf = _fd(_disk())
     assert abs(pf - 1.0) < 0.05, f"disk perimeter D {pf:.3f} vs 1.0"
 
 
-def test_perimeter_koch_snowflake():
+def test_morphology_perimeter_koch_snowflake_analytic():
     """Koch snowflake boundary: divider dimension = log4/log3 = 1.2619."""
     truth = math.log(4) / math.log(3)
     _, pf = _fd(_koch_snowflake())
@@ -139,7 +139,7 @@ ORACLE_PERIMETER_EDGE = 1.0493  # vetted by ImageJ/FracLac edge box-count: cross
 _FIXTURE = str(Path(__file__).resolve().parent.parent / "data" / "fractal_blob512_seg.ome.tif")
 
 
-def test_arbitrary_roi_matches_oracle():
+def test_morphology_fractal_dim_blob512_fraclac():
     """Large arbitrary ROI read from the committed OME-TIFF (production file path):
       - box-count matches the same-method box-count oracle tightly (1%);
       - the divider perimeter matches the cross-method edge box-count oracle (3%)."""

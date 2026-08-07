@@ -42,7 +42,7 @@ static std::unordered_map<std::string, double> oracle_3p_remaining2d_feature_gol
 	// vertical chord (one diameter per angle), not the old min+max of a Y-grid of horizontal chords.
 	// The old goldens pinned the bug (Martin min 0.8, Nassenstein min/mode 0.0 — impossible for a solid
 	// shape). These are the corrected values on the 8x8 fixture; the diameters are vetted vs imea on a
-	// clean ellipse in TEST_SHAPE2D_CALIPER_MARTIN_NASSENSTEIN_IMEA_ELLIPSE_ORACLE.
+	// clean ellipse in TEST_MORPHOLOGY_CALIPER_MARTIN_NASSENSTEIN_IMEA.
 	// FIX (caliper float-precision): re-pinned again after the float-precision hull rotation removed the inward
 	// integer-truncation bias (MODE unchanged).
 	{"STAT_MARTIN_DIAM_MIN", 4.25885},

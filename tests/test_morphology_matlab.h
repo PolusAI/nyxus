@@ -2,7 +2,7 @@
 
 #include "test_morphology_common.h"
 
-void test_shape2d_verifiable_with_3p_builtin_oracle_extrema_features()
+void test_morphology_extrema_matlab()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_shape2d_feature_values(fvals);
