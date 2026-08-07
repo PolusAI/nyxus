@@ -56,7 +56,7 @@ static inline void nyxus_ut_write_uint32_strip_tiff(
     TIFFClose(t);
 }
 
-inline void test_uint32_strip_tiff_loader()
+inline void test_tiff_loader_uint32_strip_mechanics()
 {
     const uint32_t w = 5, h = 3;
     // Values past 16-bit and past 2^31 (incl. UINT32_MAX) so a mis-typed read shows up.

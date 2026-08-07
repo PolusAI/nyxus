@@ -10,7 +10,7 @@
 #include "../src/nyx/cache.h"
 #include "../src/nyx/globals.h"
 
-void test_initialization() 
+void test_initialization_mechanics() 
 {
     Nyxus::Roidata roiData;
     CpusideCache hostCache;

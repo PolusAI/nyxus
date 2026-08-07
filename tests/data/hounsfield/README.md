@@ -20,7 +20,7 @@ against stays auditable.
 
 ## 3D NIfTI fixtures
 
-Used by `tests/python/test_hounsfield_nifti.py` to verify `preserve_hu` through the 3D NIfTI
+Used by `tests/python/test_hu_nifti_regression.py` to verify `preserve_hu` through the 3D NIfTI
 loader path (`RawNiftiLoader`/`NiftiLoader`).
 
 | File | Type | Notes |

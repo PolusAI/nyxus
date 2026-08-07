@@ -34,7 +34,7 @@ def _featurize(preserve_hu, inten=INTEN):
     return {c: float(df[c].iloc[0]) for c in FEATS}
 
 
-def test_preserve_hu_offset_domain_values():
+def test_hu_preserve_offset_domain_values_regression():
     # Offset-domain: pixel(idx) = idx*8, idx 0..255 -> MIN 0, MAX 2040, MEAN 1020.
     f = _featurize(True)
     assert f["MIN"] == pytest.approx(0.0)
@@ -43,14 +43,14 @@ def test_preserve_hu_offset_domain_values():
     assert f["INTEGRATED_INTENSITY"] == pytest.approx(1020.0 * 256)
 
 
-def test_preserve_hu_no_wraparound():
+def test_hu_preserve_no_wraparound_regression():
     # The whole point: negative CT values must not wrap into billions.
     f = _featurize(True)
     assert f["MIN"] < f["MAX"] < 1e6
     assert f["MEAN"] < 1e6
 
 
-def test_preserve_hu_differs_from_default_mapping():
+def test_hu_preserve_differs_from_default_mapping_regression():
     # On a FLOAT CT image both mappings are well-defined and must DIFFER:
     #   preserve_hu=True  -> slope-1 offset domain          (MEAN 1020)
     #   preserve_hu=False -> min-max rescale into [0, DR]    (MEAN ~5000)
@@ -58,7 +58,7 @@ def test_preserve_hu_differs_from_default_mapping():
     # instead casts -1024 to unsigned and wraps to ~4.29e9, and pushing those absurd
     # intensities through the pipeline can SEGFAULT on some platforms (macOS) -- which
     # is exactly the breakage --preserve-hu exists to prevent. So we do NOT featurize
-    # that path here; the correct-HU values are pinned in test_preserve_hu_offset_domain_values.
+    # that path here; the correct-HU values are pinned in test_hu_preserve_offset_domain_values_regression.
     on = _featurize(True, FLOAT)
     off = _featurize(False, FLOAT)
     assert on["MEAN"] != pytest.approx(off["MEAN"])

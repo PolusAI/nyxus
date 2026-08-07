@@ -30,7 +30,7 @@
 #include "../src/nyx/environment.h"
 #include "test_data.h"
 #include "test_main_nyxus.h"
-#include "test_feature_calculation.h"
+#include "test_feature_calculation_common.h"
 
 #include "../src/nyx/features/saturation.h"
 

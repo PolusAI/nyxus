@@ -13,13 +13,13 @@
 //   1) --preserve-hu option parsing into the preserve_hu() flag;
 //   2) the TIFF/DICOM loader I/O path applying the HU offset mapping correctly.
 // The numeric feature behavior these switch on is vetted in test_hu_analytic.h
-// (analytic) and test_hu_ct_small_pydicom.py (pydicom oracle).
+// (analytic) and test_hu_ct_small_values_pydicom.py (pydicom oracle).
 // ---------------------------------------------------------------------------
 
 // FpImageOptions parses the --preserve-hu raw string into the preserve_hu() flag
 // via Nyxus::parse_as_bool (accepts TRUE/FALSE/T/F, case-insensitive).
 // Default is off; empty leaves it off; a non-boolean is a parse error.
-void test_hu_fpimage_options_parse()
+void test_hu_fpimage_options_parse_mechanics()
 {
     FpImageOptions off;
     ASSERT_TRUE(off.parse_input());
@@ -80,7 +80,7 @@ static std::vector<uint32_t> hu_load_tile0(const char* fixture, bool preserve_hu
 }
 
 // HU mode on signed int16 CT: value+1024 == idx*8, negatives do NOT wrap.
-void test_hu_loader_int16_preserve()
+void test_hu_loader_int16_preserve_mechanics()
 {
     auto buf = hu_load_tile0("ct_int16.tif", /*preserve_hu*/ true, -1024.0, 1016.0, 10000.0);
     const size_t tw = 16;
@@ -91,7 +91,7 @@ void test_hu_loader_int16_preserve()
 }
 
 // HU mode on float32 CT: same offset mapping through the real-intensity path.
-void test_hu_loader_float_preserve()
+void test_hu_loader_float_preserve_mechanics()
 {
     auto buf = hu_load_tile0("ct_float.tif", /*preserve_hu*/ true, -1024.0, 1016.0, 10000.0);
     const size_t tw = 16;
@@ -103,7 +103,7 @@ void test_hu_loader_float_preserve()
 
 // Non-HU baseline on the float fixture: min-max rescale into [0, DR] unchanged.
 // buf = DR*(value+1024)/2040 = idx*8*10000/2040; exact at chosen indices.
-void test_hu_loader_float_nonpreserve_baseline()
+void test_hu_loader_float_nonpreserve_baseline_mechanics()
 {
     auto buf = hu_load_tile0("ct_float.tif", /*preserve_hu*/ false, -1024.0, 1016.0, 10000.0);
     const size_t tw = 16;
@@ -130,7 +130,7 @@ static std::vector<uint32_t> hu_load_dicom_tile0(const char* fixture, bool prese
 
 // Textbook CT: unsigned uint16 stored with RescaleIntercept=-1024. The loader must
 // rescale (HU = stored - 1024) THEN offset by floor(-1024), giving idx*8.
-void test_hu_loader_dicom_u16_preserve()
+void test_hu_loader_dicom_u16_preserve_mechanics()
 {
     auto buf = hu_load_dicom_tile0("ct_u16.dcm", /*preserve_hu*/ true, -1024.0);
     const size_t tw = 16;
@@ -141,7 +141,7 @@ void test_hu_loader_dicom_u16_preserve()
 }
 
 // Signed int16 stored (intercept 0): negative stored values must NOT wrap.
-void test_hu_loader_dicom_i16_preserve()
+void test_hu_loader_dicom_i16_preserve_mechanics()
 {
     auto buf = hu_load_dicom_tile0("ct_i16.dcm", /*preserve_hu*/ true, -1024.0);
     const size_t tw = 16;
@@ -154,7 +154,7 @@ void test_hu_loader_dicom_i16_preserve()
 // RescaleSlope=1, RescaleIntercept=-1024, HU range -896..1167. With the scanned
 // HU min (-896) as the offset base, the loader yields HU - floor(-896) = HU + 896.
 // Reference values computed independently with pydicom (see data/hounsfield/README.md).
-void test_hu_loader_dicom_ct_small_preserve()
+void test_hu_loader_dicom_ct_small_preserve_mechanics()
 {
     auto buf = hu_load_dicom_tile0("ct_small.dcm", /*preserve_hu*/ true, -896.0);
     const size_t tw = 128;
@@ -165,7 +165,7 @@ void test_hu_loader_dicom_ct_small_preserve()
 }
 
 // Same real slice WITHOUT HU mode: raw stored values, no rescale/offset (baseline).
-void test_hu_loader_dicom_ct_small_baseline()
+void test_hu_loader_dicom_ct_small_baseline_mechanics()
 {
     auto buf = hu_load_dicom_tile0("ct_small.dcm", /*preserve_hu*/ false, 0.0);
     const size_t tw = 128;

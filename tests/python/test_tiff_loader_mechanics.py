@@ -41,7 +41,7 @@ def _write_strip_tiff(path, arr):
     tifffile.imwrite(str(path), arr)
 
 
-def test_uint32_strip_tiff_pixels_read_correctly(tmp_path):
+def test_tiff_loader_uint32_strip_pixels_mechanics(tmp_path):
     """A uint32 strip TIFF loaded from disk yields the exact input statistics."""
     int_dir = tmp_path / "int"
     seg_dir = tmp_path / "seg"
@@ -71,7 +71,7 @@ def test_uint32_strip_tiff_pixels_read_correctly(tmp_path):
     assert np.isclose(f.at[0, "MEAN"], float(inten.mean()), rtol=1e-9)
 
 
-def test_uint32_tiff_from_disk_matches_in_memory(tmp_path):
+def test_tiff_loader_uint32_from_disk_matches_memory_mechanics(tmp_path):
     """The file loader must read the same values as the in-memory numpy path.
 
     Nyxus.featurize(numpy) never uses the tile loader, so it is a correct oracle:

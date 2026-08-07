@@ -33,7 +33,7 @@ def _set_ram_limit_mb(nyx, mb):
     )
 
 
-def test_ooc_montage_oversized_fails_loudly():
+def test_ooc_montage_oversized_fails_loudly_mechanics():
     """The in-memory (montage) path has no out-of-core support, so an ROI whose footprint
     reaches ram_limit must fail loudly rather than emit a silent all-zero feature row."""
     Y, X = 300, 300
