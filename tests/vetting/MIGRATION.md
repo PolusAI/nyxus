@@ -596,6 +596,27 @@ This family is also the tidiest illustration of what the suffix buys: 4 of its 6
 (2 opencv, 2 cellprofiler) and 2 are snapshots, and the test names now say which is which without
 opening a file.
 
+## 5.27 Wave 17 (ngtdm) — executed
+
+First family of the "orphan 3D snapshot + dangling 2D oracle" shape that glszm, glrlm, gldzm and
+ngldm all repeat, so it sets the pattern. Verified: **gtest 730/730**, 16 live ngtdm cases
+(5 ibsi + 5 regression + 6 pyradiomics).
+
+- **21 functions renamed**: `test_ibsi_ngtdm_<f>` → `test_ngtdm_<f>_ibsi`, `test_ngtdm_<f>` →
+  `test_ngtdm_<f>_regression`, `test_compat_3NGTDM_<F>` → `test_3d_ngtdm_<f>_pyradiomics`,
+  `test_3ngtdm_<f>` → `test_3d_ngtdm_<f>_regression`, and `test_ngtd_matrix_correctness` →
+  `test_3d_ngtdm_matrix_correctness_pyradiomics` (its case name had also lost the trailing `M`).
+- **4 helpers → `assert_*`**, one per file.
+- **`test_3d_ngtdm.h` → `test_3d_ngtdm_regression.h`** (§6.1: it carried no kind). Still not
+  `#include`d, so its 5 assertions remain dead — recorded in `not_covered.md` §B.1, not fixed here.
+
+**The 5 2D rows stay backlog by decision.** All five say `oracle=pyradiomics` with
+`target_test=test_ngtdm_pyradiomics.h`, and no such file or golden exists anywhere in the tree — the
+2D NGTDM oracle assertions have not been written. Per SPEC §6.2.1 a rename wave cannot manufacture an
+oracle, so the assertions stay in `test_ngtdm_ibsi.h` / `_regression.h` where their values actually
+come from, and the rows keep pointing at the file that has to be written. Unlike firstorder — where
+the MATLAB values were already in the tree and only needed relocating — there is nothing to move.
+
 ---
 
 ## 6. Reconciliation decisions (RESOLVED)

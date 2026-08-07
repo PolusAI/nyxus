@@ -463,7 +463,7 @@ static void assert_embedded_3p_oracle_agreement(const Feature3DCoverageCase& c)
 	else if (compat_3glszm_GT.find(c.name) != compat_3glszm_GT.end())
 		test_compat_3glszm_feature(c.code, c.name);
 	else if (compat_3ngtdm_GT.find(c.name) != compat_3ngtdm_GT.end())
-		test_compat_3ngtdm_feature(c.code, c.name);
+		assert_3d_ngtdm_feature_pyradiomics(c.code, c.name);
 	else if (matlab_regionprops3_shape_gt().find(c.name) != matlab_regionprops3_shape_gt().end())
 		assert_matlab_regionprops3_shape_agreement(c);
 	else
