@@ -455,7 +455,7 @@ static void assert_embedded_3p_oracle_agreement(const Feature3DCoverageCase& c)
 	if (compat_d3_fo_radiomics_GT.find(c.name) != compat_d3_fo_radiomics_GT.end())
 		assert_3d_firstorder_feature_pyradiomics(c.code, c.name);
 	else if (compat_d3glcm_GT.find(c.name) != compat_d3glcm_GT.end())
-		test_compat_3glcm_feature(c.code, c.name);
+		assert_3d_glcm_feature_pyradiomics(c.code, c.name);
 	else if (compat_3gldm_GT.find(c.name) != compat_3gldm_GT.end())
 		assert_3d_gldm_feature_pyradiomics(c.code, c.name);
 	else if (compat_3glrlm_GT.find(c.name) != compat_3glrlm_GT.end())

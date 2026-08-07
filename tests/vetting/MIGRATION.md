@@ -788,6 +788,51 @@ feature; a stale table name is not evidence against it.** The missing SPEC §6.4
 tracked in `not_covered.md` §C, and renaming golden tables is deferred to a pass that handles them
 across the whole tree.
 
+## 5.34 Wave 24 (glcm) — executed
+
+The largest family: 140 functions, 118 rows, six files. Verified: **gtest 731/731**, 111 glcm cases
+(28 ibsi + 10 matlab + 23 pyradiomics + 43 regression + 1 mechanics).
+
+- **`test_glcm_matlab.h` created** for the 10 rows column J names — `ASM`, `CONTRAST`,
+  `CORRELATION`, `ENERGY`, `HOM1` and their `_AVE` twins. Each was a one-feature function in
+  `test_glcm_regression.h`, so they moved whole. The config is the family default (GREYDEPTH=100,
+  offset 1, asymmetric matrix) — the path MATLAB `graycomatrix`/`graycoprops` is matched on, which is
+  why these ten and not the IBSI-path features.
+- **`test_3d_glcm.h` → `test_3d_glcm_regression.h`**, satisfying column J for 29 3D rows. Still not
+  `#include`d, so its 25 assertions remain dead (§B.1).
+- **6 rows repointed to `test_glcm_pyradiomics.py`** (`ID`, `IDN`, `IDM`, `IDMN` and two `_AVE`
+  twins) — the Python oracle genuinely asserts those against PyRadiomics. The other 28 keep pointing
+  at the unwritten `test_glcm_pyradiomics.h`: repointing all 34 would have manufactured a claim for
+  28 features the `.py` never touches. **glcm's dangling targets drop 80 → 33.**
+- **140 functions renamed**; 4 helpers → `assert_*`.
+
+**A blind spot in the case-name check, found in review.** Six `_AVE` functions
+(`test_glcm_DIFAVE_AVE`, `..._DIFENTRO_AVE`, `..._DIFVAR_AVE`, `..._SUMAVERAGE_AVE`,
+`..._SUMENTROPY_AVE`, `..._SUMVARIANCE_AVE`) kept their pre-spec mixed-case names with no kind
+suffix. They passed the `case == UPPER(function)` check *trivially*, because the function name was
+already uppercase - that check verifies function-to-case agreement, not whether the function follows
+the convention, so a function that is simply never renamed satisfies it. Renamed to match their own
+non-`_AVE` siblings in the same file (`test_glcm_difference_average_ave_regression`, not the
+abbreviated `difave`). The checker added in Wave 27 tests the convention directly and would have
+caught these.
+
+**A `current_test` reference that was never true.** `test_glcm.h` sat in `current_test` on three
+rows and named a file Wave 2 had renamed. The obvious fix is to repoint it - but the three rows are
+the *first-order* `ENERGY`, `ENTROPY` and `VARIANCE`, and `test_glcm_regression.h` asserts only
+`Feature2D::GLCM_ENERGY`/`GLCM_ENTROPY`/`GLCM_VARIANCE`, never the bare first-order features. The
+reference was a name-collision artifact of the original audit scan, so it is **removed**, not
+renamed. Tree-wide, `current_test` now has zero references to nonexistent files.
+
+**A fourth case-name defect class:** 8 cases carried a spurious `DIFFERENCE_` prefix —
+`TEST_IBSI_GLCM_DIFFERENCE_ID`, `..._IDN`, `..._IDM`, `..._IDMN` and their `COMPAT_3GLCM` twins. ID,
+IDN, IDM and IDMN are *inverse-difference* features; the cases named them as difference features,
+which are the separate `DIFAVE`/`DIFENTRO`/`DIFVAR` set asserted in the same file. Also
+`TEST_IBSI_CONTRAST` was missing its family entirely.
+
+Running tally of case-name defects the `UPPER(function)` rule has surfaced: dropped `M` in three
+families, lowercase names, a feature that does not exist (`SALGLZE`), a stray `MATRIX_` infix, and
+now a wrong feature-class prefix. None was findable by reading a single file.
+
 ---
 
 ## 6. Reconciliation decisions (RESOLVED)
