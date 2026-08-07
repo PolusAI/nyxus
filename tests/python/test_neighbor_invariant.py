@@ -18,7 +18,7 @@ def _run(features, inten, label, **kw):
 
 
 # ============================ NEIGHBORS =====================================
-def test_neighbor_distance_and_percent_touching():
+def test_neighbor_distance_and_percent_touching_invariant():
     """Fixes #12 (closest-neighbor dist/ang need CENTROID, now forced when neighbor features are
     requested - reduce_trivial_rois.cpp) and #13 (PERCENT_TOUCHING deduped + adjacency-based, was
     >100% because per-neighbor touch counts were summed - neighbors.cpp). Two 4x4 squares separated
@@ -35,7 +35,7 @@ def test_neighbor_distance_and_percent_touching():
     assert (df["PERCENT_TOUCHING"] == 0.0).all()           # 2px gap -> not touching (adjacency-based)
 
 
-def test_percent_touching_fully_enclosed_is_100():
+def test_neighbor_percent_touching_fully_enclosed_invariant():
     """exact_min_sqdist touch fix: a ROI completely surrounded by face-adjacent neighbors has
     EVERY contour pixel 8-adjacent to a neighbor, so PERCENT_TOUCHING must be exactly 100. The approximate
     min_sqdist v2 (hill-descent on the closed contour) overestimated some pixels min distance and reported
