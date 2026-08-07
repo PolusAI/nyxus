@@ -15,7 +15,7 @@
 
 #include <gtest/gtest.h>
 
-#include "test_neighbor_regression.h"  // shared fixture builder calculate_neighborhood2d_feature_values
+#include "test_neighbor_regression.h"  // shared fixture builder calculate_neighbor_feature_values
 
 static std::unordered_map<int, std::unordered_map<std::string, double>> neighbor2d_analytic_golden_by_label{
 	{1, {
@@ -72,10 +72,10 @@ static void assert_neighbor2d_analytic(
 		neighbor2d_analytic_golden_by_label[label][feature_name], 1e-4);
 }
 
-void test_neighborhood2d_second_distance_and_angles_analytic()
+void test_neighbor_second_distance_and_angles_analytic()
 {
 	std::unordered_map<int, LR> roiData;
-	calculate_neighborhood2d_feature_values(roiData);
+	calculate_neighbor_feature_values(roiData);
 
 	for (int label : {1, 2, 3, 4, 5})
 	{
@@ -86,4 +86,24 @@ void test_neighborhood2d_second_distance_and_angles_analytic()
 		assert_neighbor2d_analytic(roiData, label, Nyxus::Feature2D::ANG_BW_NEIGHBORS_STDDEV, "ANG_BW_NEIGHBORS_STDDEV");
 		assert_neighbor2d_analytic(roiData, label, Nyxus::Feature2D::ANG_BW_NEIGHBORS_MODE, "ANG_BW_NEIGHBORS_MODE");
 	}
+}
+
+// ANALYTIC oracle (closed form) for the exact_min_sqdist touch fix: a ROI that is completely surrounded by
+// neighbors on every side has *every* contour pixel 8-adjacent to some neighbor, so PERCENT_TOUCHING
+// must equal exactly 100. Label 1 (the 3x3 center block) is such a ROI in this scene. The approximate
+// min_sqdist v2 returned 87.5 (missed one pixel's true adjacency); the exact scan returns 100. Also
+// checks the hard bound PERCENT_TOUCHING <= 100 for all ROIs (the deduped-mask invariant).
+void test_neighbor_percent_touching_enclosed_analytic()
+{
+	std::unordered_map<int, LR> roiData;
+	calculate_neighbor_feature_values(roiData);
+
+	const int ptIdx = static_cast<int>(Nyxus::Feature2D::PERCENT_TOUCHING);
+
+	// Closed form: fully-enclosed ROI => 100% of contour touches.
+	ASSERT_NEAR(roiData.at(1).fvals[ptIdx][0], 100.0, 1e-9);
+
+	// Invariant bound for every ROI.
+	for (int label : {1, 2, 3, 4, 5})
+		ASSERT_LE(roiData.at(label).fvals[ptIdx][0], 100.0 + 1e-9);
 }

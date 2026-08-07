@@ -1014,29 +1014,29 @@ TEST(TEST_NYXUS, TEST_ZERNIKE_MOMENTS_REGRESSION)
 	ASSERT_NO_THROW(test_zernike_moments_regression());
 }
 
-TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_COUNTS_TOUCHING)
+TEST(TEST_NYXUS, TEST_NEIGHBOR_COUNTS_AND_TOUCHING_REGRESSION)
 {
-	ASSERT_NO_THROW(test_neighborhood2d_counts_and_touching());
+	ASSERT_NO_THROW(test_neighbor_counts_and_touching_regression());
 }
 
-TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_PERCENT_TOUCHING_ENCLOSED_ANALYTIC)
+TEST(TEST_NYXUS, TEST_NEIGHBOR_PERCENT_TOUCHING_ENCLOSED_ANALYTIC)
 {
-	ASSERT_NO_THROW(test_neighborhood2d_percent_touching_enclosed_analytic());
+	ASSERT_NO_THROW(test_neighbor_percent_touching_enclosed_analytic());
 }
 
-TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_CLOSEST_NEIGHBORS)
+TEST(TEST_NYXUS, TEST_NEIGHBOR_CLOSEST_NEIGHBORS_REGRESSION)
 {
-	ASSERT_NO_THROW(test_neighborhood2d_closest_neighbors());
+	ASSERT_NO_THROW(test_neighbor_closest_neighbors_regression());
 }
 
-TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_COUNTS_AND_FIRST_DISTANCE_CELLPROFILER)
+TEST(TEST_NYXUS, TEST_NEIGHBOR_COUNTS_AND_FIRST_DISTANCE_CELLPROFILER)
 {
-	ASSERT_NO_THROW(test_neighborhood2d_counts_and_first_distance_cellprofiler());
+	ASSERT_NO_THROW(test_neighbor_counts_and_first_distance_cellprofiler());
 }
 
-TEST(TEST_NYXUS, TEST_NEIGHBORHOOD2D_SECOND_DISTANCE_AND_ANGLES_ANALYTIC)
+TEST(TEST_NYXUS, TEST_NEIGHBOR_SECOND_DISTANCE_AND_ANGLES_ANALYTIC)
 {
-	ASSERT_NO_THROW(test_neighborhood2d_second_distance_and_angles_analytic());
+	ASSERT_NO_THROW(test_neighbor_second_distance_and_angles_analytic());
 }
 
 

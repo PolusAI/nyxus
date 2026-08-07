@@ -554,6 +554,27 @@ the only tool that computes Zernike moments, so ZERNIKE2D has **no** accepted or
 identifiers and every failure message said it was third-party-verified. The 0/1 vetted in
 `coverage_report.md` and the test names now agree. Verified: **gtest 730/730**.
 
+## 5.25 Wave 15 (neighbor) — executed
+
+All 9 rows already named a consistent `target_test`, so this is a rename plus one placement fix.
+Verified: **gtest 730/730**, 5 neighbor cases, pytest unchanged.
+
+- **7 functions renamed** `test_neighborhood2d_*` → `test_neighbor_*_<kind>`, matching the registry's
+  family token; the shared fixture builder followed (`calculate_neighbor_feature_values`).
+- **One assertion moved:** `test_neighbor_percent_touching_enclosed_analytic` is a closed-form case
+  (an ROI enclosed on all sides must be exactly 100% touching) that sat in the regression file →
+  `test_neighbor_analytic.h`, joining the other analytic neighbor assertions.
+- **`test_neighbors_oracle.py` was misfiled by its own name and by `not_covered.md` §A.2**, which
+  called it an oracle-grade test invisible to the registry. It asserts bounds and relations
+  (`PERCENT_TOUCHING <= 100`, `> 0` distances, `== 100` for an enclosed ROI) — an **invariant**, not a
+  comparison against CellProfiler. Renamed `test_neighbor_invariant.py`, its two functions given the
+  `_invariant` suffix, and added to `current_test` on the 3 rows it bounds. The genuine CellProfiler
+  oracle is the C++ `test_neighbor_cellprofiler.h`, which was already correct.
+
+Worth noting for later waves: a file named `*_oracle.py` is not evidence of an oracle. Three more
+carry that name (`test_feature_oracle.py`, `test_fractal_dim_oracle.py`, `test_glcm/gldm_pyradiomics.py`
+were already renamed) and each needs the same read-the-assertions check before its family's wave.
+
 ---
 
 ## 6. Reconciliation decisions (RESOLVED)
