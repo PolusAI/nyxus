@@ -49,7 +49,7 @@ def _featurize():
     return {c: float(df[c].iloc[0]) for c in FEATS}
 
 
-def test_hu_ct_small_pydicom():
+def test_hu_ct_small_values_pydicom():
     """Reconstructed absolute HU (offset + floor(HU_min)) == pydicom HU stats."""
     o = _featurize()
 
@@ -63,7 +63,7 @@ def test_hu_ct_small_pydicom():
     assert o["INTEGRATED_INTENSITY"] + N * OFFSET_BASE == pytest.approx(HU_INTEGRATED)
 
 
-def test_hu_ct_small_pydicom_no_wraparound():
+def test_hu_ct_small_no_wraparound_pydicom():
     """Real signed CT (negative HU) must not wrap into billions on the unsigned cast."""
     o = _featurize()
     assert 0.0 <= o["MIN"] < o["MAX"] < 1e6

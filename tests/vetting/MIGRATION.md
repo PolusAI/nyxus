@@ -81,7 +81,7 @@ These aren't single-family and can't be renamed 1:1 — they must be **split by 
 - **`test_shape_morphology_2d.h`** (mega, ~56 features) — fans out into 7 morphology targets (matlab/cellprofiler/skimage/imea/regression) by feature.
 - **`test_nyxus.py`** (88 assertions) — API/plumbing across families → belongs in **`_mechanics`** files, not oracle/regression.
 - **`test_2d_remaining_features.h`** — spans morphology + neighbor + histogram; split by family.
-- Harness/fixtures (`test_main_nyxus.h`, `test_data.h`, `test_dsb2018_data.h`, `test_tissuenet_data.py`) and pure I/O mechanics (`test_tiff_loader.*`, `test_omezarr.h`, `test_arrow*.h`, `test_3d_nifti.h`, `test_initialization.h`, `test_roi_blacklist.h`, `test_feature_calculation.h`) are **out of the family taxonomy** — keep as-is or move under a `_mechanics` convention (decision below).
+- Harness/fixtures (`test_main_nyxus.h`, `test_data.h`, `test_dsb2018_data.h`, `test_tissuenet_data.py`) and pure I/O mechanics (`test_tiff_loader.*`, `test_omezarr.h`, `test_arrow*.h`, `test_3d_nifti.h`, `test_initialization.h`, `test_roi_blacklist.h`, `test_feature_calculation_common.h`) are **out of the family taxonomy** — keep as-is or move under a `_mechanics` convention (decision below).
 
 ---
 
@@ -815,6 +815,39 @@ which are the separate `DIFAVE`/`DIFENTRO`/`DIFVAR` set asserted in the same fil
 Running tally of case-name defects the `UPPER(function)` rule has surfaced: dropped `M` in three
 families, lowercase names, a feature that does not exist (`SALGLZE`), a stray `MATRIX_` infix, and
 now a wrong feature-class prefix. None was findable by reading a single file.
+
+## 5.35 Waves 25-26 (hu, plumbing) — executed; the tree now conforms
+
+The last two rename waves, both decision-free: neither family has registry rows, so nothing had to be
+placed — only kinds assigned. Verified: **gtest 731/731**, pytest unchanged.
+
+- **hu (19 functions):** `_analytic` for the three closed-form assertions on the uint-friendly HU
+  mapping, `_mechanics` for the eight loader tests, `_regression` for the Python offset-domain
+  snapshots, `_pydicom` for the two that compare against pydicom-decoded CT values.
+  `test_hounsfield{,_nifti}.py` → `test_hu{,_nifti}_regression.py`; the fixture README's references
+  followed.
+- **plumbing (33 functions):** arrow, omezarr, tiff-loader, initialization, roi-blacklist, 3d-nifti,
+  ooc and the vetting self-tests, all `_mechanics` except the nine out-of-core equality checks, which
+  are `_invariant`. Six parameterized arrow helpers → `assert_arrow_file_naming_case_N`.
+- **The last five drifted case names** were corrected here, including a misspelling that had survived
+  since the file was written: `TEST_3D_NIFTY_LOADER` / `TEST_3D_NIFTY_DACC_CONSISTENCY` →
+  `TEST_3D_NIFTI_*` (the format is NIfTI, and the *file* was already spelled correctly).
+- **The last two non-conforming files:** `test_morphology_features.h` held a single MATLAB-`bwperim`
+  PERIMETER test and was folded into `test_morphology_matlab.h`; `test_feature_calculation.h` →
+  `test_feature_calculation_common.h` (a shared template helper, asserts nothing itself).
+
+**Tree-wide conformance, measured:**
+
+| | checked | non-conforming |
+|---|---:|---:|
+| test files (SPEC §6.1) | 107 | **0** |
+| test functions (SPEC §6.2) | 668 | **0** |
+| gtest cases = `UPPER(function)`, suite `TEST_NYXUS` | 526 (526 unique) | **0** |
+
+One false positive was caught and reverted in the plumbing sweep: `test_nyxus.py` passes the string
+`"test_parquet"` as an output *filename*, not a test name. It is the one file the rollout leaves
+grandfathered (§4: its 88 API assertions need a by-family `_mechanics` split, not a rename), so it
+must not be touched by a name sweep at all.
 
 ---
 

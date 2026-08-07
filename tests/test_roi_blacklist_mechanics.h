@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 #include "../src/nyx/environment.h"
 
-void test_roi_blacklist () 
+void test_roi_blacklist_mechanics () 
 {
     //=== Test global blacklists
 

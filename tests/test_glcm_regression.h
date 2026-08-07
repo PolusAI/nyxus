@@ -402,17 +402,17 @@ void test_glcm_clutend_ave_regression()
     assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_CLUTEND_AVE, "GLCM_CLUTEND_AVE");
 }
 
-void test_glcm_DIFAVE_AVE()
+void test_glcm_difference_average_ave_regression()
 {
     assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_DIFAVE_AVE, "GLCM_DIFAVE_AVE");
 }
 
-void test_glcm_DIFENTRO_AVE()
+void test_glcm_difference_entropy_ave_regression()
 {
     assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_DIFENTRO_AVE, "GLCM_DIFENTRO_AVE");
 }
 
-void test_glcm_DIFVAR_AVE()
+void test_glcm_difference_variance_ave_regression()
 {
     assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_DIFVAR_AVE, "GLCM_DIFVAR_AVE");
 }
@@ -487,17 +487,17 @@ void test_glcm_jvar_ave_regression()
     assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_JVAR_AVE, "GLCM_JVAR_AVE");
 }
 
-void test_glcm_SUMAVERAGE_AVE()
+void test_glcm_sum_average_ave_regression()
 {
     assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_SUMAVERAGE_AVE, "GLCM_SUMAVERAGE_AVE");
 }
 
-void test_glcm_SUMENTROPY_AVE()
+void test_glcm_sum_entropy_ave_regression()
 {
     assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_SUMENTROPY_AVE, "GLCM_SUMENTROPY_AVE");
 }
 
-void test_glcm_SUMVARIANCE_AVE()
+void test_glcm_sum_variance_ave_regression()
 {
     assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_SUMVARIANCE_AVE, "GLCM_SUMVARIANCE_AVE");
 }

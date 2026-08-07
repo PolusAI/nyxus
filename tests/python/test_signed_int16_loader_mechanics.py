@@ -23,7 +23,7 @@ def _write_pair(tmp_path, inten, lab):
     return [str(ip)], [str(sp)]
 
 
-def test_signed_int16_negatives_do_not_wrap(tmp_path):
+def test_signed_int16_loader_negatives_do_not_wrap_mechanics(tmp_path):
     H, W = 16, 16
     inten = np.full((H, W), -1024, np.int16)   # negative Hounsfield units across the ROI
     inten[6:10, 6:10] = 40                      # a patch of positive intensity
@@ -41,7 +41,7 @@ def test_signed_int16_negatives_do_not_wrap(tmp_path):
     assert r["MEAN"] == pytest.approx((0 * 240 + 40 * 16) / 256)
 
 
-def test_unsigned_int16_is_unaffected(tmp_path):
+def test_signed_int16_loader_unsigned_unaffected_mechanics(tmp_path):
     """The clamp must not touch valid unsigned data."""
     H, W = 16, 16
     inten = np.zeros((H, W), np.uint16)
