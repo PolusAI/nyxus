@@ -271,6 +271,28 @@ what's true** (measured agreement). Worked GLCM cells:
 
 gtest macro name = uppercased function, prefixed `TEST_NYXUS.` per existing convention.
 
+### 6.2.1 Which file an assertion belongs in — read the registry columns in this order
+
+`oracle_coverage.csv` carries both a verdict (`status`, `oracle`) and a destination (`target_test`).
+They can disagree, because verdicts were corrected over time while `target_test` kept the value it was
+seeded with. **The verdict wins:**
+
+1. `status=vetted` with `oracle=X` → the assertion belongs in `test_[3d_]<family>_X.{h,py}`, and the
+   function ends in `_X`. A `target_test` naming a `_regression` file for such a row is stale.
+2. `status=regression` (no oracle) → `test_[3d_]<family>_regression.{h,py}`, function ends
+   `_regression`.
+3. `target_test` decides only when it is consistent with 1-2 — then it is the authority on *which*
+   file (e.g. which of several oracle files, or a `.py` rather than a `.h`).
+
+Two checks before moving anything, both learned the hard way:
+
+- **Does the destination already assert it?** Often the assertion was migrated in an earlier wave and
+  only the registry is stale — then repoint the registry and move no code (Wave 13: all 40 rows).
+- **Do the values support the claim?** Moving a pinned Nyxus snapshot into a `_<oracle>` file
+  manufactures a vetting claim the numbers do not back. Where the reference tool has no golden in the
+  tree at all (MIRP today), the assertion stays where it is and the row is recorded as backlog — a
+  rename wave cannot invent an oracle.
+
 ### 6.3 Benchmark / fixture data
 Names must describe **shape + salient property + provenance**, not opaque indices.
 
