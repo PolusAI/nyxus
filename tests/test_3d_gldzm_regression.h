@@ -9,7 +9,8 @@
 
 // PROVENANCE: UNKNOWN -- these are NOT IBSI consensus values and this is NOT an oracle table.
 //
-// Despite the "_ibsi" filename, the numbers below have no recorded tool/version/config (SPEC 6.4
+// The file was named test_3d_gldzm_ibsi.h until the SPEC 6.1/6.2 naming wave acted on this note and
+// renamed it _regression, which is what the registry's 18 rows say (status=regression). The numbers below have no recorded tool/version/config (SPEC 6.4
 // requires provenance for any oracle golden) and they are evaluated on the Nyxus coverage phantom
 // tests/data/nifti/phantoms/ut_inten.nii + ut_mask57.nii -- NOT the IBSI digital phantom -- so IBSI
 // consensus values cannot apply to them in the first place.
@@ -56,7 +57,7 @@ static std::unordered_map<std::string, double> d3gldzm_GT{
 
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
-void test_3gldzm_feature (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+void assert_3d_gldzm_feature_regression (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
 #if 0
 	// get segment info
@@ -157,71 +158,71 @@ void test_3gldzm_feature (const Nyxus::Feature3D& expecting_fcode, const std::st
 
 }
 
-void test_3GLDZM_SDE() {
-	test_3gldzm_feature (Nyxus::Feature3D::GLDZM_SDE, "3GLDZM_SDE");
+void test_3d_gldzm_sde_regression() {
+	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_SDE, "3GLDZM_SDE");
 }
 
-void test_3GLDZM_LDE() {
-	test_3gldzm_feature (Nyxus::Feature3D::GLDZM_LDE, "3GLDZM_LDE");
+void test_3d_gldzm_lde_regression() {
+	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_LDE, "3GLDZM_LDE");
 }
 
-void test_3GLDZM_LGLZE() {
-	test_3gldzm_feature (Nyxus::Feature3D::GLDZM_LGLZE, "3GLDZM_LGLZE");
+void test_3d_gldzm_lglze_regression() {
+	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_LGLZE, "3GLDZM_LGLZE");
 }
 
-void test_3GLDZM_HGLZE() {
-	test_3gldzm_feature (Nyxus::Feature3D::GLDZM_HGLZE, "3GLDZM_HGLZE");
+void test_3d_gldzm_hglze_regression() {
+	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_HGLZE, "3GLDZM_HGLZE");
 }
 
-void test_3GLDZM_SDLGLE() {
-	test_3gldzm_feature(Nyxus::Feature3D::GLDZM_SDLGLE, "3GLDZM_SDLGLE");
+void test_3d_gldzm_sdlgle_regression() {
+	assert_3d_gldzm_feature_regression(Nyxus::Feature3D::GLDZM_SDLGLE, "3GLDZM_SDLGLE");
 }
 
-void test_3GLDZM_SDHGLE() {
-	test_3gldzm_feature (Nyxus::Feature3D::GLDZM_SDHGLE, "3GLDZM_SDHGLE");
+void test_3d_gldzm_sdhgle_regression() {
+	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_SDHGLE, "3GLDZM_SDHGLE");
 }
 
-void test_3GLDZM_LDLGLE() {
-	test_3gldzm_feature (Nyxus::Feature3D::GLDZM_LDLGLE, "3GLDZM_LDLGLE");
+void test_3d_gldzm_ldlgle_regression() {
+	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_LDLGLE, "3GLDZM_LDLGLE");
 }
 
-void test_3GLDZM_LDHGLE() {
-	test_3gldzm_feature (Nyxus::Feature3D::GLDZM_LDHGLE, "3GLDZM_LDHGLE");
+void test_3d_gldzm_ldhgle_regression() {
+	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_LDHGLE, "3GLDZM_LDHGLE");
 }
 
-void test_3GLDZM_GLNU() {
-	test_3gldzm_feature (Nyxus::Feature3D::GLDZM_GLNU, "3GLDZM_GLNU");
+void test_3d_gldzm_glnu_regression() {
+	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_GLNU, "3GLDZM_GLNU");
 }
 
-void test_3GLDZM_GLNUN() {
-	test_3gldzm_feature (Nyxus::Feature3D::GLDZM_GLNUN, "3GLDZM_GLNUN");
+void test_3d_gldzm_glnun_regression() {
+	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_GLNUN, "3GLDZM_GLNUN");
 }
 
-void test_3GLDZM_ZDNU() {
-	test_3gldzm_feature (Nyxus::Feature3D::GLDZM_ZDNU, "3GLDZM_ZDNU");
+void test_3d_gldzm_zdnu_regression() {
+	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_ZDNU, "3GLDZM_ZDNU");
 }
 
-void test_3GLDZM_ZDNUN() {
-	test_3gldzm_feature (Nyxus::Feature3D::GLDZM_ZDNUN, "3GLDZM_ZDNUN");
+void test_3d_gldzm_zdnun_regression() {
+	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_ZDNUN, "3GLDZM_ZDNUN");
 }
 
-void test_3GLDZM_ZP() {
-	test_3gldzm_feature (Nyxus::Feature3D::GLDZM_ZP, "3GLDZM_ZP");
+void test_3d_gldzm_zp_regression() {
+	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_ZP, "3GLDZM_ZP");
 }
 
-void test_3GLDZM_GLM() {
-	test_3gldzm_feature (Nyxus::Feature3D::GLDZM_GLM, "3GLDZM_GLM");
+void test_3d_gldzm_glm_regression() {
+	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_GLM, "3GLDZM_GLM");
 }
 
-void test_3GLDZM_GLV() {
-	test_3gldzm_feature (Nyxus::Feature3D::GLDZM_GLV, "3GLDZM_GLV");
+void test_3d_gldzm_glv_regression() {
+	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_GLV, "3GLDZM_GLV");
 }
 
-void test_3GLDZM_ZDV() {
-	test_3gldzm_feature (Nyxus::Feature3D::GLDZM_ZDV, "3GLDZM_ZDV");
+void test_3d_gldzm_zdv_regression() {
+	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_ZDV, "3GLDZM_ZDV");
 }
 
-void test_3GLDZM_ZDE() {
-	test_3gldzm_feature (Nyxus::Feature3D::GLDZM_ZDE, "3GLDZM_ZDE");
+void test_3d_gldzm_zde_regression() {
+	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_ZDE, "3GLDZM_ZDE");
 }
 

@@ -666,6 +666,34 @@ them as `UPPER(function)` is what surfaced all three.
 tree) and 2 3D `oracle=mirp` (`test_3d_glrlm_mirp.h`; MIRP has no goldens anywhere — 44 rows across
 four families wait on it).
 
+## 5.30 Wave 20 (gldzm) — executed
+
+37 functions across two files, and the one wave in this series that **renames a file away from an
+oracle token**. Verified: **gtest 730/730**, 36 gldzm cases (19 ibsi + 17 regression).
+
+- **`test_3d_gldzm_ibsi.h` → `test_3d_gldzm_regression.h`.** The file already carried a
+  `PROVENANCE: UNKNOWN` header from an earlier investigation stating that its values are *not* IBSI
+  consensus: they have no recorded tool/version/config, they are computed on the Nyxus coverage
+  phantom rather than the IBSI digital phantom (so IBSI values cannot apply), and an independent MIRP
+  run disagrees with every one of them — LDE 314.0 vs 11.235, ZDV 79.7 vs 3.246. The registry agrees:
+  all 18 3D rows are `status=regression` targeting `test_3d_gldzm_regression.h`. This wave simply
+  acted on a note that had been sitting in the file, and the header now explains the current name
+  instead of excusing the old one.
+- **37 functions renamed**, `test_ibsi_GLDZM_<F>` → `test_gldzm_<f>_ibsi`, `test_3GLDZM_<F>` →
+  `test_3d_gldzm_<f>_regression`; 4 helpers → `assert_*`, one of them (`assert_gldzm_matrix_ibsi`)
+  a zero-arg helper that was never registered and so had looked like a dead test.
+
+**A third case-name defect class:** 17 of the 2D cases carried a stray `MATRIX_` infix
+(`TEST_GLDZM_MATRIX_LDE`, `TEST_GLDZM_MATRIX_ZP`, …) although they assert *feature values*; the
+matrix itself has its own `matrix_correctness` case. Two of the family's cases were also inconsistent
+with the rest (`TEST_GLDZM_SDE` without the infix). Deriving case = `UPPER(function)` normalised all
+18.
+
+**The 17 2D `oracle=mirp` rows stay backlog** — MIRP has no goldens in the tree. Note the asymmetry
+this leaves: 2D GLDZM has exactly **one** vetted-and-asserted feature (`GLDZM_ZDV`, ibsi), the other
+17 wait on MIRP, and all 18 3D features are snapshots. `coverage_report.md`'s 18/36 for this family is
+the registry's own count and is unchanged by the rename.
+
 ---
 
 ## 6. Reconciliation decisions (RESOLVED)
