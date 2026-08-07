@@ -20,7 +20,7 @@ static std::unordered_map<std::string, double> ibsi_reference_ngtdm_feature_gold
     {"NGTDM_STRENGTH", 2.88}
 };
 
-void test_ibsi_ngtdm_feature (const Feature2D& feature_, const std::string& feature_name) 
+void assert_ngtdm_feature_ibsi (const Feature2D& feature_, const std::string& feature_name) 
 {
     // featue settings for this particular test
     Fsettings s;
@@ -113,27 +113,27 @@ void test_ibsi_ngtdm_feature (const Feature2D& feature_, const std::string& feat
     ASSERT_TRUE(agrees_gt(ave, ibsi_reference_ngtdm_feature_golden_values[feature_name], 100.));
 }
 
-void test_ibsi_ngtdm_coarseness()
+void test_ngtdm_coarseness_ibsi()
 {
-    test_ibsi_ngtdm_feature(Nyxus::Feature2D::NGTDM_COARSENESS, "NGTDM_COARSENESS");
+    assert_ngtdm_feature_ibsi(Nyxus::Feature2D::NGTDM_COARSENESS, "NGTDM_COARSENESS");
 }
 
-void test_ibsi_ngtdm_contrast()
+void test_ngtdm_contrast_ibsi()
 {
-    test_ibsi_ngtdm_feature(Nyxus::Feature2D::NGTDM_CONTRAST, "NGTDM_CONTRAST");
+    assert_ngtdm_feature_ibsi(Nyxus::Feature2D::NGTDM_CONTRAST, "NGTDM_CONTRAST");
 }
 
-void test_ibsi_ngtdm_busyness()
+void test_ngtdm_busyness_ibsi()
 {
-    test_ibsi_ngtdm_feature(Nyxus::Feature2D::NGTDM_BUSYNESS, "NGTDM_BUSYNESS");
+    assert_ngtdm_feature_ibsi(Nyxus::Feature2D::NGTDM_BUSYNESS, "NGTDM_BUSYNESS");
 }
 
-void test_ibsi_ngtdm_complexity()
+void test_ngtdm_complexity_ibsi()
 {   
-    test_ibsi_ngtdm_feature(Nyxus::Feature2D::NGTDM_COMPLEXITY, "NGTDM_COMPLEXITY");
+    assert_ngtdm_feature_ibsi(Nyxus::Feature2D::NGTDM_COMPLEXITY, "NGTDM_COMPLEXITY");
 }
 
-void test_ibsi_ngtdm_strength()
+void test_ngtdm_strength_ibsi()
 {
-    test_ibsi_ngtdm_feature(Nyxus::Feature2D::NGTDM_STRENGTH, "NGTDM_STRENGTH");
+    assert_ngtdm_feature_ibsi(Nyxus::Feature2D::NGTDM_STRENGTH, "NGTDM_STRENGTH");
 }

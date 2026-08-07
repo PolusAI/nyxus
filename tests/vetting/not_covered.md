@@ -126,7 +126,7 @@ They compile nowhere, so they cannot even fail.
 | `test_3d_glrlm.h` | 16 |
 | `test_3d_glszm.h` | 16 |
 | `test_3d_gldm_regression.h` | 14 |
-| `test_3d_ngtdm.h` | 5 |
+| `test_3d_ngtdm_regression.h` | 5 |
 
 All six are listed in `current_test` for their families' rows — so the registry currently credits
 coverage to assertions that have never executed. Whether to wire them in or delete them is a
