@@ -30,7 +30,7 @@ static std::unordered_map<std::string, double> ibsi_reference_glrlm_feature_gold
     {"GLRLM_RE", 2.17}
 };
 
-void test_ibsi_glrlm_feature(const Feature2D& feature_, const std::string& feature_name) 
+void assert_glrlm_feature_ibsi(const Feature2D& feature_, const std::string& feature_name) 
 {
     // featue settings for this particular test
     Fsettings s;
@@ -130,91 +130,91 @@ void test_ibsi_glrlm_feature(const Feature2D& feature_, const std::string& featu
     ASSERT_TRUE(agrees_gt(total/16, ibsi_reference_glrlm_feature_golden_values[feature_name], 100.));
 }
 
-void test_ibsi_glrlm_sre()
+void test_glrlm_sre_ibsi()
 {
-    test_ibsi_glrlm_feature(Nyxus::Feature2D::GLRLM_SRE, "GLRLM_SRE");
+    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_SRE, "GLRLM_SRE");
 }
 
-void test_ibsi_glrlm_lre()
+void test_glrlm_lre_ibsi()
 {
-    test_ibsi_glrlm_feature(Nyxus::Feature2D::GLRLM_LRE, "GLRLM_LRE");
+    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_LRE, "GLRLM_LRE");
 }
 
-void test_ibsi_glrlm_lglre()
+void test_glrlm_lglre_ibsi()
 {
-    test_ibsi_glrlm_feature(Nyxus::Feature2D::GLRLM_LGLRE, "GLRLM_LGLRE");
+    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_LGLRE, "GLRLM_LGLRE");
 }
 
-void test_ibsi_glrlm_hglre()
+void test_glrlm_hglre_ibsi()
 {
-    test_ibsi_glrlm_feature(Nyxus::Feature2D::GLRLM_HGLRE, "GLRLM_HGLRE");
+    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_HGLRE, "GLRLM_HGLRE");
 }   
 
-void test_ibsi_glrlm_srlgle()
+void test_glrlm_srlgle_ibsi()
 {
-    test_ibsi_glrlm_feature(Nyxus::Feature2D::GLRLM_SRLGLE, "GLRLM_SRLGLE");
+    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_SRLGLE, "GLRLM_SRLGLE");
 }
 
-void test_ibsi_glrlm_srhgle()
+void test_glrlm_srhgle_ibsi()
 {
-    test_ibsi_glrlm_feature(Nyxus::Feature2D::GLRLM_SRHGLE, "GLRLM_SRHGLE");
+    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_SRHGLE, "GLRLM_SRHGLE");
 }
 
-void test_ibsi_glrlm_lrlgle()
+void test_glrlm_lrlgle_ibsi()
 {
-    test_ibsi_glrlm_feature(Nyxus::Feature2D::GLRLM_LRLGLE, "GLRLM_LRLGLE");
+    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_LRLGLE, "GLRLM_LRLGLE");
 }
 
-void test_ibsi_glrlm_lrhgle()
+void test_glrlm_lrhgle_ibsi()
 {
-    test_ibsi_glrlm_feature(Nyxus::Feature2D::GLRLM_LRHGLE, "GLRLM_LRHGLE");
+    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_LRHGLE, "GLRLM_LRHGLE");
 }
 
-void test_ibsi_glrlm_gln()
+void test_glrlm_gln_ibsi()
 {   
-    test_ibsi_glrlm_feature(Nyxus::Feature2D::GLRLM_GLN, "GLRLM_GLN");
+    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_GLN, "GLRLM_GLN");
 }
 
-void test_ibsi_glrlm_glnn()
+void test_glrlm_glnn_ibsi()
 {
-    test_ibsi_glrlm_feature(Nyxus::Feature2D::GLRLM_GLNN, "GLRLM_GLNN");
+    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_GLNN, "GLRLM_GLNN");
 }
 
-void test_ibsi_glrlm_rln()
+void test_glrlm_rln_ibsi()
 {
-    test_ibsi_glrlm_feature(Nyxus::Feature2D::GLRLM_RLN, "GLRLM_RLN");
+    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_RLN, "GLRLM_RLN");
 }
 
-void test_ibsi_glrlm_rlnn()
+void test_glrlm_rlnn_ibsi()
 {
-    test_ibsi_glrlm_feature(Nyxus::Feature2D::GLRLM_RLNN, "GLRLM_RLNN");
+    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_RLNN, "GLRLM_RLNN");
 }
 
-void test_ibsi_glrlm_rp()
+void test_glrlm_rp_ibsi()
 {
-    test_ibsi_glrlm_feature(Nyxus::Feature2D::GLRLM_RP, "GLRLM_RP");
+    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_RP, "GLRLM_RP");
 }
 
-void test_ibsi_glrlm_glv()
+void test_glrlm_glv_ibsi()
 {
-    test_ibsi_glrlm_feature(Nyxus::Feature2D::GLRLM_GLV, "GLRLM_GLV");
+    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_GLV, "GLRLM_GLV");
 }
 
-void test_ibsi_glrlm_rv()
+void test_glrlm_rv_ibsi()
 {
-    test_ibsi_glrlm_feature(Nyxus::Feature2D::GLRLM_RV, "GLRLM_RV");
+    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_RV, "GLRLM_RV");
 }
 
-void test_ibsi_glrlm_re()
+void test_glrlm_re_ibsi()
 {
-    test_ibsi_glrlm_feature(Nyxus::Feature2D::GLRLM_RE, "GLRLM_RE");
+    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_RE, "GLRLM_RE");
 }
 
 // IBSI oracle for the angle-averaged (_AVE) joint gray-level x run-length emphasis features. Nyxus
 // stores the mean over the 4 directions in slot [0] of each _AVE feature; averaging that over the 4
 // phantom slices reproduces the IBSI 2D direction+slice-averaged consensus (the same grand mean the
 // base-feature test pins as total/16). ibsi_key indexes the shared reference table.
-void test_ibsi_glrlm_ave_feature(const Feature2D& feature_, const std::string& ibsi_key)
+void assert_glrlm_ave_feature_ibsi(const Feature2D& feature_, const std::string& ibsi_key)
 {
     Fsettings s;
     s.resize((int)NyxSetting::__COUNT__);
@@ -251,9 +251,9 @@ void test_ibsi_glrlm_ave_feature(const Feature2D& feature_, const std::string& i
     ASSERT_TRUE(agrees_gt(total / 4, ibsi_reference_glrlm_feature_golden_values[ibsi_key], 100.));
 }
 
-void test_ibsi_glrlm_lglre_ave()  { test_ibsi_glrlm_ave_feature(Nyxus::Feature2D::GLRLM_LGLRE_AVE,  "GLRLM_LGLRE"); }
-void test_ibsi_glrlm_hglre_ave()  { test_ibsi_glrlm_ave_feature(Nyxus::Feature2D::GLRLM_HGLRE_AVE,  "GLRLM_HGLRE"); }
-void test_ibsi_glrlm_srlgle_ave() { test_ibsi_glrlm_ave_feature(Nyxus::Feature2D::GLRLM_SRLGLE_AVE, "GLRLM_SRLGLE"); }
-void test_ibsi_glrlm_srhgle_ave() { test_ibsi_glrlm_ave_feature(Nyxus::Feature2D::GLRLM_SRHGLE_AVE, "GLRLM_SRHGLE"); }
-void test_ibsi_glrlm_lrlgle_ave() { test_ibsi_glrlm_ave_feature(Nyxus::Feature2D::GLRLM_LRLGLE_AVE, "GLRLM_LRLGLE"); }
-void test_ibsi_glrlm_lrhgle_ave() { test_ibsi_glrlm_ave_feature(Nyxus::Feature2D::GLRLM_LRHGLE_AVE, "GLRLM_LRHGLE"); }
+void test_glrlm_lglre_ave_ibsi()  { assert_glrlm_ave_feature_ibsi(Nyxus::Feature2D::GLRLM_LGLRE_AVE,  "GLRLM_LGLRE"); }
+void test_glrlm_hglre_ave_ibsi()  { assert_glrlm_ave_feature_ibsi(Nyxus::Feature2D::GLRLM_HGLRE_AVE,  "GLRLM_HGLRE"); }
+void test_glrlm_srlgle_ave_ibsi() { assert_glrlm_ave_feature_ibsi(Nyxus::Feature2D::GLRLM_SRLGLE_AVE, "GLRLM_SRLGLE"); }
+void test_glrlm_srhgle_ave_ibsi() { assert_glrlm_ave_feature_ibsi(Nyxus::Feature2D::GLRLM_SRHGLE_AVE, "GLRLM_SRHGLE"); }
+void test_glrlm_lrlgle_ave_ibsi() { assert_glrlm_ave_feature_ibsi(Nyxus::Feature2D::GLRLM_LRLGLE_AVE, "GLRLM_LRLGLE"); }
+void test_glrlm_lrhgle_ave_ibsi() { assert_glrlm_ave_feature_ibsi(Nyxus::Feature2D::GLRLM_LRHGLE_AVE, "GLRLM_LRHGLE"); }

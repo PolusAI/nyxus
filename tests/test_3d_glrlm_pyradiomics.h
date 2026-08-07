@@ -51,7 +51,7 @@ static std::unordered_map<std::string, double> compat_3glrlm_GT
     {"3GLRLM_SRLGLE", 0.011465297979291003} // Case-1_original_glrlm_ShortRunLowGrayLevelEmphasis
 };
 
-void test_glrl_matrix_correctness()
+void test_3d_glrlm_matrix_correctness_pyradiomics()
 {
     // data (data and gt source: pyradiomics web page)
 
@@ -135,7 +135,7 @@ void test_glrl_matrix_correctness()
     ASSERT_TRUE(P.yx(4, 0) == 3);     ASSERT_TRUE(P.yx(4, 1) == 0);   ASSERT_TRUE(P.yx(4, 2) == 0);
 }
 
-void test_compat_3glrlm_feature(const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+void assert_3d_glrlm_feature_pyradiomics(const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
     // (1) prepare
 
@@ -214,10 +214,10 @@ void test_compat_3glrlm_feature(const Nyxus::Feature3D& expecting_fcode, const s
 
 // Vet the direction-averaged (_AVE) 3D GLRLM features vs PyRadiomics. save_value stores
 // fvals[X_AVE][0] = calc_ave(angled_X) -- exactly the quantity the base test asserts == PyRadiomics
-// (test_compat_3glrlm_feature: atot = calc_ave(fvals[X])). So reading the _AVE slot directly and
+// (assert_3d_glrlm_feature_pyradiomics: atot = calc_ave(fvals[X])). So reading the _AVE slot directly and
 // comparing to the same GT table is a direct PyRadiomics assertion on the _AVE feature. One workflow
 // run covers all 14 (RE_AVE / RP_AVE already vetted elsewhere).
-void test_compat_3glrlm_ave_features()
+void test_3d_glrlm_ave_pyradiomics()
 {
     auto [ipath, mpath, label] = get_3d_compat_phantom();
     ASSERT_TRUE(fs::exists(ipath));
@@ -272,68 +272,68 @@ void test_compat_3glrlm_ave_features()
     }
 }
 
-void test_compat_3GLRLM_GLN() {
-    test_compat_3glrlm_feature (Nyxus::Feature3D::GLRLM_GLN, "3GLRLM_GLN");
+void test_3d_glrlm_gln_pyradiomics() {
+    assert_3d_glrlm_feature_pyradiomics (Nyxus::Feature3D::GLRLM_GLN, "3GLRLM_GLN");
 }
 
-void test_compat_3GLRLM_GLNN() {
-    test_compat_3glrlm_feature (Nyxus::Feature3D::GLRLM_GLNN, "3GLRLM_GLNN");
+void test_3d_glrlm_glnn_pyradiomics() {
+    assert_3d_glrlm_feature_pyradiomics (Nyxus::Feature3D::GLRLM_GLNN, "3GLRLM_GLNN");
 }
 
-void test_compat_3GLRLM_GLV() {
-    test_compat_3glrlm_feature (Nyxus::Feature3D::GLRLM_GLV, "3GLRLM_GLV");
+void test_3d_glrlm_glv_pyradiomics() {
+    assert_3d_glrlm_feature_pyradiomics (Nyxus::Feature3D::GLRLM_GLV, "3GLRLM_GLV");
 }
 
-void test_compat_3GLRLM_HGLRE() {
-    test_compat_3glrlm_feature (Nyxus::Feature3D::GLRLM_HGLRE, "3GLRLM_HGLRE");
+void test_3d_glrlm_hglre_pyradiomics() {
+    assert_3d_glrlm_feature_pyradiomics (Nyxus::Feature3D::GLRLM_HGLRE, "3GLRLM_HGLRE");
 }
 
-void test_compat_3GLRLM_LRE() {
-    test_compat_3glrlm_feature (Nyxus::Feature3D::GLRLM_LRE, "3GLRLM_LRE");
+void test_3d_glrlm_lre_pyradiomics() {
+    assert_3d_glrlm_feature_pyradiomics (Nyxus::Feature3D::GLRLM_LRE, "3GLRLM_LRE");
 }
 
-void test_compat_3GLRLM_LRHGLE() {
-    test_compat_3glrlm_feature (Nyxus::Feature3D::GLRLM_LRHGLE, "3GLRLM_LRHGLE");
+void test_3d_glrlm_lrhgle_pyradiomics() {
+    assert_3d_glrlm_feature_pyradiomics (Nyxus::Feature3D::GLRLM_LRHGLE, "3GLRLM_LRHGLE");
 }
 
-void test_compat_3GLRLM_LRLGLE() {
-    test_compat_3glrlm_feature (Nyxus::Feature3D::GLRLM_LRLGLE, "3GLRLM_LRLGLE");
+void test_3d_glrlm_lrlgle_pyradiomics() {
+    assert_3d_glrlm_feature_pyradiomics (Nyxus::Feature3D::GLRLM_LRLGLE, "3GLRLM_LRLGLE");
 }
 
-void test_compat_3GLRLM_LGLRE() {
-    test_compat_3glrlm_feature (Nyxus::Feature3D::GLRLM_LGLRE, "3GLRLM_LGLRE");
+void test_3d_glrlm_lglre_pyradiomics() {
+    assert_3d_glrlm_feature_pyradiomics (Nyxus::Feature3D::GLRLM_LGLRE, "3GLRLM_LGLRE");
 }
 
-void test_compat_3GLRLM_RE() {
-    test_compat_3glrlm_feature (Nyxus::Feature3D::GLRLM_RE, "3GLRLM_RE");
+void test_3d_glrlm_re_pyradiomics() {
+    assert_3d_glrlm_feature_pyradiomics (Nyxus::Feature3D::GLRLM_RE, "3GLRLM_RE");
 }
 
-void test_compat_3GLRLM_RLN() {
-    test_compat_3glrlm_feature (Nyxus::Feature3D::GLRLM_RLN, "3GLRLM_RLN");
+void test_3d_glrlm_rln_pyradiomics() {
+    assert_3d_glrlm_feature_pyradiomics (Nyxus::Feature3D::GLRLM_RLN, "3GLRLM_RLN");
 }
 
-void test_compat_3GLRLM_RLNN() {
-    test_compat_3glrlm_feature (Nyxus::Feature3D::GLRLM_RLNN, "3GLRLM_RLNN");
+void test_3d_glrlm_rlnn_pyradiomics() {
+    assert_3d_glrlm_feature_pyradiomics (Nyxus::Feature3D::GLRLM_RLNN, "3GLRLM_RLNN");
 }
 
-void test_compat_3GLRLM_RP() {
-    test_compat_3glrlm_feature (Nyxus::Feature3D::GLRLM_RP, "3GLRLM_RP");
+void test_3d_glrlm_rp_pyradiomics() {
+    assert_3d_glrlm_feature_pyradiomics (Nyxus::Feature3D::GLRLM_RP, "3GLRLM_RP");
 }
 
-void test_compat_3GLRLM_RV() {
-    test_compat_3glrlm_feature (Nyxus::Feature3D::GLRLM_RV, "3GLRLM_RV");
+void test_3d_glrlm_rv_pyradiomics() {
+    assert_3d_glrlm_feature_pyradiomics (Nyxus::Feature3D::GLRLM_RV, "3GLRLM_RV");
 }
 
-void test_compat_3GLRLM_SRE() {
-    test_compat_3glrlm_feature (Nyxus::Feature3D::GLRLM_SRE, "3GLRLM_SRE");
+void test_3d_glrlm_sre_pyradiomics() {
+    assert_3d_glrlm_feature_pyradiomics (Nyxus::Feature3D::GLRLM_SRE, "3GLRLM_SRE");
 }
 
-void test_compat_3GLRLM_SRHGLE() {
-    test_compat_3glrlm_feature (Nyxus::Feature3D::GLRLM_SRHGLE, "3GLRLM_SRHGLE");
+void test_3d_glrlm_srhgle_pyradiomics() {
+    assert_3d_glrlm_feature_pyradiomics (Nyxus::Feature3D::GLRLM_SRHGLE, "3GLRLM_SRHGLE");
 }
 
-void test_compat_3GLRLM_SRLGLE() {
-    test_compat_3glrlm_feature (Nyxus::Feature3D::GLRLM_SRLGLE, "3GLRLM_SRLGLE");
+void test_3d_glrlm_srlgle_pyradiomics() {
+    assert_3d_glrlm_feature_pyradiomics (Nyxus::Feature3D::GLRLM_SRLGLE, "3GLRLM_SRLGLE");
 }
 
 
