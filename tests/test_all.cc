@@ -274,72 +274,72 @@ TEST(TEST_NYXUS, TEST_COMPAT_3GLRLM_AVE_FEATURES) {
 
 //***** 3D GLSZM compatibility *****
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLSZ_MATRIX_CORRECTNESS) {
-	ASSERT_NO_THROW (test_glsz_matrix_correctness());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_MATRIX_CORRECTNESS_PYRADIOMICS) {
+	ASSERT_NO_THROW (test_3d_glszm_matrix_correctness_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_SAE) {
-	ASSERT_NO_THROW(test_compat_3glszm_sae());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_SAE_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_glszm_sae_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_LAE) {
-	ASSERT_NO_THROW(test_compat_3glszm_lae());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_LAE_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_glszm_lae_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_LGLZE) {
-	ASSERT_NO_THROW(test_compat_3glszm_lglze());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_LGLZE_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_glszm_lglze_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_HGLZE) {
-	ASSERT_NO_THROW(test_compat_3glszm_hglze());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_HGLZE_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_glszm_hglze_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_SALGLZE) {
-	ASSERT_NO_THROW(test_compat_3glszm_salgle());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_SALGLE_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_glszm_salgle_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_SAHGLZE) {
-	ASSERT_NO_THROW(test_compat_3glszm_sahgle());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_SAHGLE_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_glszm_sahgle_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_LALGLE) {
-	ASSERT_NO_THROW(test_compat_3glszm_lalgle());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_LALGLE_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_glszm_lalgle_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_LAHGLE) {
-	ASSERT_NO_THROW(test_compat_3glszm_lahgle());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_LAHGLE_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_glszm_lahgle_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_gln) {
-	ASSERT_NO_THROW(test_compat_3glszm_gln());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_GLN_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_glszm_gln_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_glnn) {
-	ASSERT_NO_THROW(test_compat_3glszm_glnn());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_GLNN_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_glszm_glnn_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_szn) {
-	ASSERT_NO_THROW(test_compat_3glszm_szn());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_SZN_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_glszm_szn_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_SZNN) {
-	ASSERT_NO_THROW(test_compat_3glszm_sznn());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_SZNN_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_glszm_sznn_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_ZP) {
-	ASSERT_NO_THROW(test_compat_3glszm_zp());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_ZP_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_glszm_zp_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_GLV) {
-	ASSERT_NO_THROW(test_compat_3glszm_glv());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_GLV_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_glszm_glv_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_ZV) {
-	ASSERT_NO_THROW(test_compat_3glszm_zv());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_ZV_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_glszm_zv_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_COMPAT_3GLSZM_ZE) {
-	ASSERT_NO_THROW(test_compat_3glszm_ze());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_ZE_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_glszm_ze_pyradiomics());
 }
 
 
@@ -1680,68 +1680,68 @@ TEST(TEST_NYXUS, TEST_IBSI_GLRLM_RE)
 
 //***** IBSI tests of GLSZM ***** 
 
-TEST(TEST_NYXUS, TEST_IBSI_GLSZM_SAE) {
-	ASSERT_NO_THROW(test_ibsi_glszm_sae());
+TEST(TEST_NYXUS, TEST_GLSZM_SAE_IBSI) {
+	ASSERT_NO_THROW(test_glszm_sae_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLSZM_LAE) {
-	ASSERT_NO_THROW(test_ibsi_glszm_lae());
+TEST(TEST_NYXUS, TEST_GLSZM_LAE_IBSI) {
+	ASSERT_NO_THROW(test_glszm_lae_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLSZM_LGLZE) {
-	ASSERT_NO_THROW(test_ibsi_glszm_lglze());
+TEST(TEST_NYXUS, TEST_GLSZM_LGLZE_IBSI) {
+	ASSERT_NO_THROW(test_glszm_lglze_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLSZM_HGLZE) {
-	ASSERT_NO_THROW(test_ibsi_glszm_hglze());
+TEST(TEST_NYXUS, TEST_GLSZM_HGLZE_IBSI) {
+	ASSERT_NO_THROW(test_glszm_hglze_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLSZM_SALGLZE) {
-	ASSERT_NO_THROW(test_ibsi_glszm_salgle());
+TEST(TEST_NYXUS, TEST_GLSZM_SALGLE_IBSI) {
+	ASSERT_NO_THROW(test_glszm_salgle_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLSZM_SAHGLZE) {
-	ASSERT_NO_THROW(test_ibsi_glszm_sahgle());
+TEST(TEST_NYXUS, TEST_GLSZM_SAHGLE_IBSI) {
+	ASSERT_NO_THROW(test_glszm_sahgle_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLSZM_LALGLE) {
-	ASSERT_NO_THROW(test_ibsi_glszm_lalgle());
+TEST(TEST_NYXUS, TEST_GLSZM_LALGLE_IBSI) {
+	ASSERT_NO_THROW(test_glszm_lalgle_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLSZM_LAHGLE) {
-	ASSERT_NO_THROW(test_ibsi_glszm_lahgle());
+TEST(TEST_NYXUS, TEST_GLSZM_LAHGLE_IBSI) {
+	ASSERT_NO_THROW(test_glszm_lahgle_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLSZM_gln) {
-	ASSERT_NO_THROW(test_ibsi_glszm_gln());
+TEST(TEST_NYXUS, TEST_GLSZM_GLN_IBSI) {
+	ASSERT_NO_THROW(test_glszm_gln_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLSZM_glnn) {
-	ASSERT_NO_THROW(test_ibsi_glszm_glnn());
+TEST(TEST_NYXUS, TEST_GLSZM_GLNN_IBSI) {
+	ASSERT_NO_THROW(test_glszm_glnn_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLSZM_szn) {
-	ASSERT_NO_THROW(test_ibsi_glszm_szn());
+TEST(TEST_NYXUS, TEST_GLSZM_SZN_IBSI) {
+	ASSERT_NO_THROW(test_glszm_szn_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLSZM_SZNN) {
-	ASSERT_NO_THROW(test_ibsi_glszm_sznn());
+TEST(TEST_NYXUS, TEST_GLSZM_SZNN_IBSI) {
+	ASSERT_NO_THROW(test_glszm_sznn_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLSZM_ZP) {
-	ASSERT_NO_THROW(test_ibsi_glszm_zp());
+TEST(TEST_NYXUS, TEST_GLSZM_ZP_IBSI) {
+	ASSERT_NO_THROW(test_glszm_zp_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLSZM_GLV) {
-	ASSERT_NO_THROW(test_ibsi_glszm_glv());
+TEST(TEST_NYXUS, TEST_GLSZM_GLV_IBSI) {
+	ASSERT_NO_THROW(test_glszm_glv_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLSZM_ZV) {
-	ASSERT_NO_THROW(test_ibsi_glszm_zv());
+TEST(TEST_NYXUS, TEST_GLSZM_ZV_IBSI) {
+	ASSERT_NO_THROW(test_glszm_zv_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IBSI_GLSZM_ZE) {
-	ASSERT_NO_THROW(test_ibsi_glszm_ze());
+TEST(TEST_NYXUS, TEST_GLSZM_ZE_IBSI) {
+	ASSERT_NO_THROW(test_glszm_ze_ibsi());
 }
 
 
@@ -2397,68 +2397,68 @@ TEST(TEST_NYXUS, TEST_GLDZM_MATRIX_ZDE)
 
 //***** 2D GLSZM regression ***** 
 
-TEST(TEST_NYXUS, TEST_GLSZM_SAE) {
-	ASSERT_NO_THROW(test_glszm_sae());
+TEST(TEST_NYXUS, TEST_GLSZM_SAE_REGRESSION) {
+	ASSERT_NO_THROW(test_glszm_sae_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLSZM_LAE) {
-	ASSERT_NO_THROW(test_glszm_lae());
+TEST(TEST_NYXUS, TEST_GLSZM_LAE_REGRESSION) {
+	ASSERT_NO_THROW(test_glszm_lae_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLSZM_LGLZE) {
-	ASSERT_NO_THROW(test_glszm_lglze());
+TEST(TEST_NYXUS, TEST_GLSZM_LGLZE_REGRESSION) {
+	ASSERT_NO_THROW(test_glszm_lglze_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLSZM_HGLZE) {
-	ASSERT_NO_THROW(test_glszm_hglze());
+TEST(TEST_NYXUS, TEST_GLSZM_HGLZE_REGRESSION) {
+	ASSERT_NO_THROW(test_glszm_hglze_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLSZM_SALGLZE) {
-	ASSERT_NO_THROW(test_glszm_salgle());
+TEST(TEST_NYXUS, TEST_GLSZM_SALGLE_REGRESSION) {
+	ASSERT_NO_THROW(test_glszm_salgle_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLSZM_SAHGLZE) {
-	ASSERT_NO_THROW(test_glszm_sahgle());
+TEST(TEST_NYXUS, TEST_GLSZM_SAHGLE_REGRESSION) {
+	ASSERT_NO_THROW(test_glszm_sahgle_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLSZM_LALGLE) {
-	ASSERT_NO_THROW(test_glszm_lalgle());
+TEST(TEST_NYXUS, TEST_GLSZM_LALGLE_REGRESSION) {
+	ASSERT_NO_THROW(test_glszm_lalgle_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLSZM_LAHGLE) {
-	ASSERT_NO_THROW(test_glszm_lahgle());
+TEST(TEST_NYXUS, TEST_GLSZM_LAHGLE_REGRESSION) {
+	ASSERT_NO_THROW(test_glszm_lahgle_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLSZM_gln) {
-	ASSERT_NO_THROW(test_glszm_gln());
+TEST(TEST_NYXUS, TEST_GLSZM_GLN_REGRESSION) {
+	ASSERT_NO_THROW(test_glszm_gln_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLSZM_glnn) {
-	ASSERT_NO_THROW(test_glszm_glnn());
+TEST(TEST_NYXUS, TEST_GLSZM_GLNN_REGRESSION) {
+	ASSERT_NO_THROW(test_glszm_glnn_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLSZM_szn) {
-	ASSERT_NO_THROW(test_glszm_szn());
+TEST(TEST_NYXUS, TEST_GLSZM_SZN_REGRESSION) {
+	ASSERT_NO_THROW(test_glszm_szn_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLSZM_SZNN) {
-	ASSERT_NO_THROW(test_glszm_sznn());
+TEST(TEST_NYXUS, TEST_GLSZM_SZNN_REGRESSION) {
+	ASSERT_NO_THROW(test_glszm_sznn_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLSZM_ZP) {
-	ASSERT_NO_THROW(test_glszm_zp());
+TEST(TEST_NYXUS, TEST_GLSZM_ZP_REGRESSION) {
+	ASSERT_NO_THROW(test_glszm_zp_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLSZM_GLV) {
-	ASSERT_NO_THROW(test_glszm_glv());
+TEST(TEST_NYXUS, TEST_GLSZM_GLV_REGRESSION) {
+	ASSERT_NO_THROW(test_glszm_glv_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLSZM_ZV) {
-	ASSERT_NO_THROW(test_glszm_zv());
+TEST(TEST_NYXUS, TEST_GLSZM_ZV_REGRESSION) {
+	ASSERT_NO_THROW(test_glszm_zv_regression());
 }
 
-TEST(TEST_NYXUS, TEST_GLSZM_ZE) {
-	ASSERT_NO_THROW(test_glszm_ze());
+TEST(TEST_NYXUS, TEST_GLSZM_ZE_REGRESSION) {
+	ASSERT_NO_THROW(test_glszm_ze_regression());
 }
 
 
