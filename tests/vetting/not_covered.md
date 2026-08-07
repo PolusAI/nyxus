@@ -64,7 +64,7 @@ state in `notes` that the HU / loader configs are deliberately out of the per-fe
 `target_test` is the reorg destination, so a dangling entry is **backlog, not error**: it names where
 an assertion is to be written or moved. **204 refs across 14 filenames** (was 256 across 17; the gldm
 and firstorder waves closed `test_3d_gldm_regression.h`, `test_firstorder_matlab.h` and
-`test_3d_firstorder_regression.h`).
+`test_3d_firstorder_matlab.h`).
 
 | target file named by the registry | rows waiting | family |
 |---|---:|---|
@@ -121,7 +121,7 @@ They compile nowhere, so they cannot even fail.
 
 | file | dead functions |
 |---|---:|
-| `test_3d_firstorder_regression.h` | 36 |
+| `test_3d_firstorder_matlab.h` | 36 |
 | `test_3d_glcm.h` | 25 |
 | `test_3d_glrlm.h` | 16 |
 | `test_3d_glszm.h` | 16 |
@@ -176,7 +176,7 @@ Surfaced by Wave 12 and not yet satisfied:
 | site | assertions | what is missing |
 |---|---:|---|
 | `test_firstorder_matlab.h` | 34 | all 34 are MATLAB values (`oracle_3p_matlab_*` named the tool, `oracle_3p_builtin_*` meant MATLAB's built-ins). Missing: MATLAB version, exact config, generator path — the numbers are here, the reproduction recipe is not |
-| `test_3d_firstorder_regression.h` | 36 | `d3inten_GT` values also come from MATLAB, but the map says nothing about it, and 18 of these features are `oracle=matlab` while the file name says `_regression` — see §D |
+| `test_3d_firstorder_matlab.h` | 36 | `d3inten_GT` values also come from MATLAB, but the map says nothing about it, and 18 of these features are `oracle=matlab` while the file name says `_regression` — see §D |
 
 Closing these means writing tool + version + config + generator down at each assertion site, ideally
 by regenerating through the Octave harness so the values become reproducible. The values themselves are
@@ -188,9 +188,10 @@ Found while placing assertions by column J. Each needs a registry decision, not 
 
 | row | `oracle` (E) | `target_test` (J) | what the tree actually holds |
 |---|---|---|---|
-| 2D `UNIFORMITY` | pyradiomics | `test_firstorder_regression.h` | a **MATLAB** golden (0.0647664, 1% tier, comment "vs MATLAB"). Kept in `test_firstorder_matlab.h`: obeying column J here would put a third-party reference value in a file named `_regression`. Fix by setting `oracle=matlab`, or by producing a pyradiomics golden and moving it. |
-| 2D `ENTROPY` | pyradiomics | `test_firstorder_regression.h` | a bare snapshot. A vetted row pointing at a regression file states that its own oracle assertion does not exist yet. |
-| 3D firstorder ×18 | matlab | `test_3d_firstorder_regression.h` | **MATLAB values** in `d3inten_GT`, in a file column J names `_regression`. Unlike ENTROPY this is not a missing oracle — the oracle values are there. **Decision (2026-08-06): leave both as they are** — column J stays authoritative and the file keeps its name, so the mismatch is recorded here rather than acted on. Resolving it later means either renaming the file to `test_3d_firstorder_matlab.h` and repointing these 18 rows, or accepting `_regression` as the destination for externally-vetted values. Note the same map also serves the 17 `oracle=pyradiomics` 3D rows, so a rename would additionally call for a second (matlab) row per SPEC §3. |
+| 2D `UNIFORMITY` | pyradiomics | `test_firstorder_regression.h` | **RESOLVED.** A pyradiomics assertion already exists in `test_firstorder_pyradiomics.h`, so column J was stale: repointed there, no code moved. The MATLAB-valued assertion in `test_firstorder_matlab.h` is a *second* assertion at the MATLAB config and needs its own row per SPEC §3. |
+| 2D `ENTROPY` | pyradiomics | `test_firstorder_regression.h` | **RESOLVED.** Also already asserted in `test_firstorder_pyradiomics.h`; column J repointed, no code moved. The snapshot in the regression file is the drift guard on the default config. |
+| 2D `moments` ×40 | skimage | `test_moments_regression.h` | **RESOLVED in Wave 13.** All 40 were already asserted in `test_moments_skimage.h`; only the registry was stale, so `target_test` was repointed there and no code moved. This is the common case of the class: the assertion was migrated in an earlier wave and column J was never updated. |
+| 3D firstorder x18 | matlab | `test_3d_firstorder_regression.h` | **RESOLVED under SPEC 6.2.1** (this reverses the earlier "leave it" call, which assumed column J was authoritative). `d3inten_GT` holds MATLAB values, so the file is now `test_3d_firstorder_matlab.h` with 36 `_matlab` functions and the 18 rows point there. Two carry-overs: the file is still not `#include`d (B.1), and the same map also covers 17 `oracle=pyradiomics` features plus 1 regression-only one, which per SPEC 3 need a second (matlab) row each. |
 
 The general form: **a `vetted` row whose `target_test` names a `_regression` file** is asserting that
 its oracle evidence lives outside the tree. That is legitimate but should be explicit — a `source` or
