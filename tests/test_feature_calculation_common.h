@@ -11,7 +11,7 @@
 namespace Nyxus
 {
     template <class T, class S, class F>
-    void test_feature(const T& feature_object,
+    void assert_feature(const T& feature_object,
                     const F& feature_name,
                     const int num_feautures, 
                     const NyxusPixel* intensity_data, 

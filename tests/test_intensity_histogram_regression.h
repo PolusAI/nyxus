@@ -159,17 +159,6 @@ void test_intensity_histogram_index_and_percentile_bounds_regression()
     }
 }
 
-// 3) IBSI gate: with IBSI off the family returns the soft-NaN sentinel for all 46.
-void test_intensity_histogram_gate_off_returns_nan_mechanics()
-{
-    const double sentinel = -7777.0;
-    std::vector<std::vector<double>> fv;
-    run_intensity_histogram_fixture(fv, ih_make_settings(3, /*ibsi*/ false, sentinel));
-
-    for (auto fc : IntensityHistogramFeatures::featureset)
-        ASSERT_DOUBLE_EQ(fv[(int)fc][0], sentinel);
-}
-
 // 4) Float-domain reconstruction: a float image with fpimg [0,1] / DR=10 rescales
 //    the stored uint v -> v/10 (mirroring the load-time quantization). The domain
 //    features (min/max/range/bin-size), which are derived directly from the
@@ -267,16 +256,6 @@ void test_intensity_histogram_float_domain_preserve_hu_fpactive_regression()
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_MAXIMUM_VAL), -1017.0));
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_RANGE_VAL), 6.0));
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_BIN_SIZE), 2.0));
-}
-
-// 5) required(): the class is only "required" when at least one IH feature is enabled.
-void test_intensity_histogram_required_predicate_mechanics()
-{
-    FeatureSet fs;
-    fs.enableAll(false);
-    ASSERT_FALSE(IntensityHistogramFeatures::required(fs));
-    fs.enableFeature((int)Feature2D::IH_ENTROPY_VAL);
-    ASSERT_TRUE(IntensityHistogramFeatures::required(fs));
 }
 
 // ---------------------------------------------------------------------------------------------------

@@ -4,6 +4,11 @@ _SCRIPT = _HERE.parent / "vetting" / "check_coverage.py"
 _spec = importlib.util.spec_from_file_location("check_coverage", _SCRIPT)
 cc = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(cc)
 
+_NAMES = _HERE.parent / "vetting" / "check_test_names.py"
+_nspec = importlib.util.spec_from_file_location("check_test_names", _NAMES)
+ctn = importlib.util.module_from_spec(_nspec); _nspec.loader.exec_module(ctn)
+_REPO = _HERE.parents[1]
+
 def _write(tmp_path, rows):
     p = tmp_path / "reg.csv"
     cols = ["dim","feature","family","status","oracle","agreement","config_recipe",
@@ -61,3 +66,31 @@ def test_vetting_drift_and_main_write_mechanics(tmp_path):
 def test_vetting_main_check_fails_on_bad_row_mechanics(tmp_path):
     path = _write(tmp_path, [{"dim":"2D","feature":"A","family":"x","status":"bad","oracle":""}])
     assert cc.main(["--check", "--registry", path]) == 1
+
+# ---- SPEC 6.1/6.2 test-naming conventions (tests/vetting/check_test_names.py) ----
+
+def test_vetting_tree_names_conform_to_spec_mechanics():
+    """Every test file, test function and gtest case must satisfy SPEC 6.1/6.2. A new test whose
+    name does not end in a kind/oracle token fails here, at write time rather than at review time."""
+    violations = ctn.check(_REPO)
+    assert violations == [], chr(10).join(violations)
+
+
+def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
+    """The checker must actually fail on each defect class - a lint that cannot fail is not a lint.
+    Plants one of each and requires all four to be reported."""
+    (tmp_path / "tests" / "python").mkdir(parents=True)
+    (tmp_path / "tests" / "test_all.cc").write_text("", encoding="utf-8")
+    (tmp_path / "tests" / "test_glcm.h").write_text("", encoding="utf-8")
+    (tmp_path / "tests" / "test_glcm_regression.h").write_text(
+        "void test_glcm_contrast() {}", encoding="utf-8")
+    (tmp_path / "tests" / "test_gldm_ibsi.h").write_text(
+        "void test_gldm_sde_regression() {}", encoding="utf-8")
+    (tmp_path / "tests" / "test_ngtdm_regression.h").write_text(
+        "void test_helper(int x) {}", encoding="utf-8")
+
+    errs = ctn.check(tmp_path)
+    assert any("test_glcm.h" in e and "SPEC 6.1" in e for e in errs)          # file, no kind
+    assert any("test_glcm_contrast" in e and "SPEC 6.2" in e for e in errs)   # function, no kind
+    assert any("test_gldm_sde_regression" in e and "SPEC 2" in e for e in errs)  # wrong kind for file
+    assert any("test_helper" in e and "assert_*" in e for e in errs)          # helper as test_
