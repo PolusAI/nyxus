@@ -22,7 +22,7 @@ IH_SEG = np.array([[[1, 1, 1, 1, 1]]], dtype=np.int32)
 
 class TestIntensityHistogram:
 
-    def test_ih_requires_ibsi(self):
+    def test_intensity_histogram_requires_ibsi_mechanics(self):
         # With IBSI off the IH family is stripped; MEAN keeps the request non-empty.
         nyx = nyxus.Nyxus(features=["*ALL_IH*", "MEAN"], ibsi=False, coarse_gray_depth=3)
         df = nyx.featurize(IH_INT, IH_SEG)
@@ -30,14 +30,14 @@ class TestIntensityHistogram:
         assert len(ih_cols) == 0
         assert "MEAN" in df.columns
 
-    def test_ih_enabled_with_ibsi(self):
+    def test_intensity_histogram_enabled_with_ibsi_mechanics(self):
         # With IBSI on, *ALL_IH* emits all 46 IH_* columns.
         nyx = nyxus.Nyxus(features=["*ALL_IH*"], ibsi=True, coarse_gray_depth=3)
         df = nyx.featurize(IH_INT, IH_SEG)
         ih_cols = [c for c in df.columns if c.startswith("IH_")]
         assert len(ih_cols) == 46
 
-    def test_ih_values_integer_domain(self):
+    def test_intensity_histogram_values_integer_domain_analytic(self):
         nyx = nyxus.Nyxus(features=["*ALL_IH*"], ibsi=True, coarse_gray_depth=3)
         df = nyx.featurize(IH_INT, IH_SEG)
         assert df.shape[0] == 1
@@ -62,7 +62,7 @@ class TestIntensityHistogram:
         assert math.isclose(row["IH_MAX_GRADIENT"], 1.0, rel_tol=1e-6)
         assert math.isclose(row["IH_MIN_GRADIENT"], -1.0, rel_tol=1e-6)
 
-    def test_ih_index_features_within_bins(self):
+    def test_intensity_histogram_index_features_within_bins_invariant(self):
         N = 3
         nyx = nyxus.Nyxus(features=["*ALL_IH*"], ibsi=True, coarse_gray_depth=N)
         df = nyx.featurize(IH_INT, IH_SEG)
@@ -78,17 +78,17 @@ class TestMergeRois:
     INT = np.array([[[1, 1, 3, 5, 7, 2, 4, 6]]], dtype=np.int32)
     SEG = np.array([[[1, 1, 1, 1, 1, 2, 2, 2]]], dtype=np.int32)
 
-    def test_per_label_default(self):
+    def test_intensity_histogram_mergerois_per_label_default_mechanics(self):
         nyx = nyxus.Nyxus(features=["MEAN"])
         df = nyx.featurize(self.INT, self.SEG)
         assert df.shape[0] == 2   # one row per label
 
-    def test_mergerois_collapses_to_one_roi(self):
+    def test_intensity_histogram_mergerois_collapses_to_one_roi_mechanics(self):
         nyx = nyxus.Nyxus(features=["MEAN"], mergerois=True)
         df = nyx.featurize(self.INT, self.SEG)
         assert df.shape[0] == 1   # all foreground merged into a single ROI
 
-    def test_mergerois_excludes_background(self):
+    def test_intensity_histogram_mergerois_excludes_background_mechanics(self):
         # background (label 0) must stay excluded after merging
         seg_with_bg = np.array([[[1, 1, 0, 0, 2, 2, 2, 2]]], dtype=np.int32)
         intens = np.array([[[5, 5, 9, 9, 5, 5, 5, 5]]], dtype=np.int32)

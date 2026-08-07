@@ -718,6 +718,36 @@ oracle in the tree is `ibsi`, not `mirp`. Per the placement rule the assertions 
 values come from; whether those rows should read `oracle=ibsi` (already satisfied) or keep waiting
 for a MIRP cross-check is a registry decision — added to `not_covered.md` §D.
 
+## 5.32 Wave 22 (intensity_histogram) — executed
+
+19 functions, and the second oracle-file creation. Verified: **gtest 730/730**, 12 IH/radial cases,
+pytest 7/7 in the renamed module.
+
+- **`test_intensity_histogram_analytic.h` created** — column J names it for 26 of the family's rows
+  and it did not exist. Two closed-form assertions moved into it out of the `_ibsi` file:
+  `test_intensity_histogram_dispersion_robust_analytic` and `..._bin_counts_analytic`. Both carry
+  their own hand-derivable fixtures (the robust-dispersion pixel array moved with them), so neither
+  depends on the IBSI phantom runner they were sitting beside. The file that keeps the `_ibsi` name
+  now holds exactly one assertion, against IBSI consensus values on the IBSI digital phantom.
+- **19 functions renamed**, `test_ih_*` → `test_intensity_histogram_*_<kind>`, and both fixture
+  runners to `run_intensity_histogram[_ibsi]_fixture`.
+- **Two functions are `_mechanics`, not `_regression`**: `..._gate_off_returns_nan` and
+  `..._required_predicate` assert gating behaviour (IH features return NaN unless `ibsi=true`), not
+  feature values.
+- **The radial function moves out of the family's names**:
+  `test_remaining2d_unvetted_no_direct_oracle_radial_distribution_features` →
+  `test_radial_distribution_regression`. Its three features (`FRAC_AT_D`, `MEAN_FRAC`, `RADIAL_CV`)
+  are `family=radial` in the registry, but column J names the IH regression file, so the assertion
+  stays where it is and only the name stops claiming otherwise.
+- `tests/python/test_intensity_histogram.py` → `test_intensity_histogram_analytic.py`; its 7 methods
+  split `_mechanics` (gating, `--mergerois` API) from `_analytic` (the hand-computed histogram) and
+  `_invariant` (index features within bin range).
+
+**24 of the 26 analytic rows remain backlog.** The two assertions written here cover a subset; the
+rest of the `_IDX`/`_VAL` dispersion variants still need closed-form assertions, which is vetting
+work rather than renaming. This family remains the largest gap in the tree: 47 rows, 4 oracle
+assertions.
+
 ---
 
 ## 6. Reconciliation decisions (RESOLVED)
