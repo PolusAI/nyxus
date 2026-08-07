@@ -14,14 +14,14 @@ def _write(tmp_path, rows):
             w.writerow({c: r.get(c, "") for c in cols})
     return str(p)
 
-def test_valid_registry_has_no_errors(tmp_path):
+def test_vetting_valid_registry_has_no_errors_mechanics(tmp_path):
     path = _write(tmp_path, [
         {"dim":"2D","feature":"GLCM_CONTRAST","family":"glcm","status":"vetted","oracle":"pyradiomics"},
         {"dim":"2D","feature":"ROUNDNESS","family":"morphology","status":"regression","oracle":""},
     ])
     assert cc.validate_rows(cc.load_registry(path)) == []
 
-def test_bad_status_and_token_and_invariant_flagged(tmp_path):
+def test_vetting_bad_status_and_token_flagged_mechanics(tmp_path):
     path = _write(tmp_path, [
         {"dim":"2D","feature":"A","family":"x","status":"maybe","oracle":""},          # bad status
         {"dim":"2D","feature":"B","family":"x","status":"vetted","oracle":"mahotas"},   # token not allowed
@@ -32,7 +32,7 @@ def test_bad_status_and_token_and_invariant_flagged(tmp_path):
     assert len(errs) == 4
     assert any("maybe" in e for e in errs) and any("mahotas" in e for e in errs)
 
-def test_coverage_stats_and_report(tmp_path):
+def test_vetting_coverage_stats_and_report_mechanics(tmp_path):
     path = _write(tmp_path, [
         {"dim":"2D","feature":"A","family":"glcm","status":"vetted","oracle":"pyradiomics"},
         {"dim":"2D","feature":"B","family":"glcm","status":"regression","oracle":""},
@@ -46,7 +46,7 @@ def test_coverage_stats_and_report(tmp_path):
     assert rep.startswith("# Nyxus Oracle-Vetting Coverage")
     assert "Features vetted by >=1 oracle: 1/3" in rep
 
-def test_drift_and_main_write(tmp_path):
+def test_vetting_drift_and_main_write_mechanics(tmp_path):
     path = _write(tmp_path, [
         {"dim":"2D","feature":"A","family":"glcm","status":"vetted","oracle":"pyradiomics",
          "target_test":"test_glcm_pyradiomics.h"},
@@ -58,6 +58,6 @@ def test_drift_and_main_write(tmp_path):
     assert rc == 0 and (tmp_path / "coverage_report.md").exists()
     assert "Features vetted" in (tmp_path / "coverage_report.md").read_text()
 
-def test_main_check_fails_on_bad_row(tmp_path):
+def test_vetting_main_check_fails_on_bad_row_mechanics(tmp_path):
     path = _write(tmp_path, [{"dim":"2D","feature":"A","family":"x","status":"bad","oracle":""}])
     assert cc.main(["--check", "--registry", path]) == 1

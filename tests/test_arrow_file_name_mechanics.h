@@ -26,14 +26,14 @@ Case 5: 	/foo/bar.ext	does not exist in fs  	this is a file, check if ext is cor
 Case 6:		empty									default filename with proper ext
 */
 
-void test_file_naming_case_1 (const fs::path& temp_dir);
-void test_file_naming_case_2 (const fs::path& temp_dir);
-void test_file_naming_case_3 (const fs::path& temp_dir);
-void test_file_naming_case_4 (const fs::path& temp_dir);
-void test_file_naming_case_5 (const fs::path& temp_dir);
-void test_file_naming_case_6 (const fs::path& temp_dir);
+void assert_arrow_file_naming_case_1 (const fs::path& temp_dir);
+void assert_arrow_file_naming_case_2 (const fs::path& temp_dir);
+void assert_arrow_file_naming_case_3 (const fs::path& temp_dir);
+void assert_arrow_file_naming_case_4 (const fs::path& temp_dir);
+void assert_arrow_file_naming_case_5 (const fs::path& temp_dir);
+void assert_arrow_file_naming_case_6 (const fs::path& temp_dir);
 
-void test_file_naming () {
+void test_arrow_file_naming_mechanics () {
     auto temp = fs::temp_directory_path() / "nyxus_temp/";
 
     if (!fs::exists(temp)) {
@@ -44,12 +44,12 @@ void test_file_naming () {
         }
     }
 
-    test_file_naming_case_1(temp);
-    test_file_naming_case_2(temp);
-    test_file_naming_case_3(temp);
-    test_file_naming_case_4(temp);
-    test_file_naming_case_5(temp);
-    test_file_naming_case_6(temp);
+    assert_arrow_file_naming_case_1(temp);
+    assert_arrow_file_naming_case_2(temp);
+    assert_arrow_file_naming_case_3(temp);
+    assert_arrow_file_naming_case_4(temp);
+    assert_arrow_file_naming_case_5(temp);
+    assert_arrow_file_naming_case_6(temp);
 
     auto num_deleted = fs::remove_all(temp);
 
@@ -58,7 +58,7 @@ void test_file_naming () {
     }
 }
 
-void test_file_naming_case_1 (const fs::path& temp_dir) {
+void assert_arrow_file_naming_case_1 (const fs::path& temp_dir) {
 
     fs::path output_path = temp_dir/"foo1/";
 
@@ -87,7 +87,7 @@ void test_file_naming_case_1 (const fs::path& temp_dir) {
     ASSERT_TRUE(result == expected);
 }
 
-void test_file_naming_case_2 (const fs::path& temp_dir) {
+void assert_arrow_file_naming_case_2 (const fs::path& temp_dir) {
 
     fs::path output_path = temp_dir / "foo2/";
 
@@ -108,7 +108,7 @@ void test_file_naming_case_2 (const fs::path& temp_dir) {
     ASSERT_TRUE(result == expected);
 }
 
-void test_file_naming_case_3 (const fs::path& temp_dir) {
+void assert_arrow_file_naming_case_3 (const fs::path& temp_dir) {
     fs::path output_path = temp_dir/"foo3/bar3/";
 
     auto result = get_arrow_filename(output_path.string(), "NyxusFeatures", SaveOption::saveArrowIPC);
@@ -118,7 +118,7 @@ void test_file_naming_case_3 (const fs::path& temp_dir) {
     ASSERT_TRUE(result == expected);
 }
 
-void test_file_naming_case_4 (const fs::path& temp_dir) {
+void assert_arrow_file_naming_case_4 (const fs::path& temp_dir) {
 
     fs::path output_path = temp_dir / "foo4/";
 
@@ -148,7 +148,7 @@ void test_file_naming_case_4 (const fs::path& temp_dir) {
     
 }
 
-void test_file_naming_case_5 (const fs::path& temp_dir) {
+void assert_arrow_file_naming_case_5 (const fs::path& temp_dir) {
     fs::path output_path = temp_dir / "foo4/";
 
     if (!fs::exists(output_path)) {
@@ -168,7 +168,7 @@ void test_file_naming_case_5 (const fs::path& temp_dir) {
     ASSERT_TRUE(result == expected);
 }
 
-void test_file_naming_case_6 (const fs::path& temp_dir) {
+void assert_arrow_file_naming_case_6 (const fs::path& temp_dir) {
 
     auto result = get_arrow_filename("", "NyxusFeatures", SaveOption::saveArrowIPC);
 

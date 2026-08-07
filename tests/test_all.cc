@@ -12,7 +12,6 @@
 #include "test_intensity_histogram_analytic.h"
 #include "test_hu_analytic.h"
 #include "test_hu_mechanics.h"
-#include "test_morphology_features.h"
 #include "test_morphology_regression.h"
 #include "test_morphology_analytic.h"
 #include "test_morphology_imea.h"
@@ -504,16 +503,16 @@ TEST(TEST_NYXUS, TEST_3D_GLCM_SUM_ENTROPY_PYRADIOMICS) {
 
 #ifdef USE_ARROW
 
-TEST(TEST_NYXUS, TEST_ARROW_FILE_NAME) {
-	test_file_naming();
+TEST(TEST_NYXUS, TEST_ARROW_FILE_NAMING_MECHANICS) {
+	test_arrow_file_naming_mechanics();
 }
 
-TEST(TEST_NYXUS, TEST_ARROW) {
-	test_arrow();
+TEST(TEST_NYXUS, TEST_ARROW_IPC_MECHANICS) {
+	test_arrow_ipc_mechanics();
 }
 
-TEST(TEST_NYXUS, TEST_PARQUET) {
-	test_parquet();
+TEST(TEST_NYXUS, TEST_ARROW_PARQUET_MECHANICS) {
+	test_arrow_parquet_mechanics();
 }
 
 #endif
@@ -725,18 +724,18 @@ TEST(TEST_NYXUS, TEST_GABOR_SKIMAGE){
 
 //***** helper functionality ***** 
 
-TEST(TEST_NYXUS, TEST_ROI_BLACKLISTING)
+TEST(TEST_NYXUS, TEST_ROI_BLACKLIST_MECHANICS)
 {
-	ASSERT_NO_THROW(test_roi_blacklist());
+	ASSERT_NO_THROW(test_roi_blacklist_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_TIFF_UINT32_STRIP_LOADER)
+TEST(TEST_NYXUS, TEST_TIFF_LOADER_UINT32_STRIP_MECHANICS)
 {
-	ASSERT_NO_THROW(test_uint32_strip_tiff_loader());
+	ASSERT_NO_THROW(test_tiff_loader_uint32_strip_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_INITIALIZATION) {
-	test_initialization();
+TEST(TEST_NYXUS, TEST_INITIALIZATION_MECHANICS) {
+	test_initialization_mechanics();
 }
 
 
@@ -804,60 +803,60 @@ TEST(TEST_NYXUS, TEST_INTENSITY_HISTOGRAM_BIN_COUNTS_ANALYTIC)
 	ASSERT_NO_THROW(test_intensity_histogram_bin_counts_analytic());
 }
 
-TEST(TEST_NYXUS, TEST_HU_UINT_FRIENDLY_NORMALIZATION_CT_RANGE)
+TEST(TEST_NYXUS, TEST_HU_UINT_FRIENDLY_NORMALIZATION_CT_RANGE_ANALYTIC)
 {
-	ASSERT_NO_THROW(test_hu_uint_friendly_normalization_ct_range());
+	ASSERT_NO_THROW(test_hu_uint_friendly_normalization_ct_range_analytic());
 }
 
-TEST(TEST_NYXUS, TEST_HU_UINT_FRIENDLY_RAWCAST_NONNEGATIVE)
+TEST(TEST_NYXUS, TEST_HU_UINT_FRIENDLY_RAWCAST_NONNEGATIVE_ANALYTIC)
 {
-	ASSERT_NO_THROW(test_hu_uint_friendly_rawcast_nonnegative());
+	ASSERT_NO_THROW(test_hu_uint_friendly_rawcast_nonnegative_analytic());
 }
 
-TEST(TEST_NYXUS, TEST_HU_UINT_FRIENDLY_PRESERVE_OFFSET)
+TEST(TEST_NYXUS, TEST_HU_UINT_FRIENDLY_PRESERVE_OFFSET_ANALYTIC)
 {
-	ASSERT_NO_THROW(test_hu_uint_friendly_preserve_offset());
+	ASSERT_NO_THROW(test_hu_uint_friendly_preserve_offset_analytic());
 }
 
-TEST(TEST_NYXUS, TEST_HU_FPIMAGE_OPTIONS_PARSE)
+TEST(TEST_NYXUS, TEST_HU_FPIMAGE_OPTIONS_PARSE_MECHANICS)
 {
-	ASSERT_NO_THROW(test_hu_fpimage_options_parse());
+	ASSERT_NO_THROW(test_hu_fpimage_options_parse_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_HU_LOADER_INT16_PRESERVE)
+TEST(TEST_NYXUS, TEST_HU_LOADER_INT16_PRESERVE_MECHANICS)
 {
-	ASSERT_NO_THROW(test_hu_loader_int16_preserve());
+	ASSERT_NO_THROW(test_hu_loader_int16_preserve_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_HU_LOADER_FLOAT_PRESERVE)
+TEST(TEST_NYXUS, TEST_HU_LOADER_FLOAT_PRESERVE_MECHANICS)
 {
-	ASSERT_NO_THROW(test_hu_loader_float_preserve());
+	ASSERT_NO_THROW(test_hu_loader_float_preserve_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_HU_LOADER_FLOAT_NONPRESERVE_BASELINE)
+TEST(TEST_NYXUS, TEST_HU_LOADER_FLOAT_NONPRESERVE_BASELINE_MECHANICS)
 {
-	ASSERT_NO_THROW(test_hu_loader_float_nonpreserve_baseline());
+	ASSERT_NO_THROW(test_hu_loader_float_nonpreserve_baseline_mechanics());
 }
 
 #ifdef DICOM_SUPPORT
-TEST(TEST_NYXUS, TEST_HU_LOADER_DICOM_U16_PRESERVE)
+TEST(TEST_NYXUS, TEST_HU_LOADER_DICOM_U16_PRESERVE_MECHANICS)
 {
-	ASSERT_NO_THROW(test_hu_loader_dicom_u16_preserve());
+	ASSERT_NO_THROW(test_hu_loader_dicom_u16_preserve_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_HU_LOADER_DICOM_I16_PRESERVE)
+TEST(TEST_NYXUS, TEST_HU_LOADER_DICOM_I16_PRESERVE_MECHANICS)
 {
-	ASSERT_NO_THROW(test_hu_loader_dicom_i16_preserve());
+	ASSERT_NO_THROW(test_hu_loader_dicom_i16_preserve_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_HU_LOADER_DICOM_CT_SMALL_PRESERVE)
+TEST(TEST_NYXUS, TEST_HU_LOADER_DICOM_CT_SMALL_PRESERVE_MECHANICS)
 {
-	ASSERT_NO_THROW(test_hu_loader_dicom_ct_small_preserve());
+	ASSERT_NO_THROW(test_hu_loader_dicom_ct_small_preserve_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_HU_LOADER_DICOM_CT_SMALL_BASELINE)
+TEST(TEST_NYXUS, TEST_HU_LOADER_DICOM_CT_SMALL_BASELINE_MECHANICS)
 {
-	ASSERT_NO_THROW(test_hu_loader_dicom_ct_small_baseline());
+	ASSERT_NO_THROW(test_hu_loader_dicom_ct_small_baseline_mechanics());
 }
 #endif
 
@@ -2526,12 +2525,12 @@ TEST(TEST_NYXUS, TEST_IMQ_SHARPNESS_REGRESSION)
 
 //***** 3D i/o ***** 
 
-TEST(TEST_NYXUS, TEST_3D_NIFTY_LOADER) {
-	ASSERT_NO_THROW (test_3d_nifti_loader());
+TEST(TEST_NYXUS, TEST_3D_NIFTI_LOADER_MECHANICS) {
+	ASSERT_NO_THROW (test_3d_nifti_loader_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_3D_NIFTY_DACC_CONSISTENCY) {
-	ASSERT_NO_THROW (test_3d_nifti_data_access_consistency());
+TEST(TEST_NYXUS, TEST_3D_NIFTI_DATA_ACCESS_CONSISTENCY_MECHANICS) {
+	ASSERT_NO_THROW (test_3d_nifti_data_access_consistency_mechanics());
 }
 
 
@@ -2539,28 +2538,28 @@ TEST(TEST_NYXUS, TEST_3D_NIFTY_DACC_CONSISTENCY) {
 
 #ifdef OMEZARR_SUPPORT
 
-TEST(TEST_NYXUS, TEST_OMEZARR_TILELOADER_GEOMETRY) {
-	ASSERT_NO_THROW (test_omezarr_tileloader_geometry());
+TEST(TEST_NYXUS, TEST_OMEZARR_TILELOADER_GEOMETRY_MECHANICS) {
+	ASSERT_NO_THROW (test_omezarr_tileloader_geometry_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_OMEZARR_TILELOADER_CONTENT) {
-	ASSERT_NO_THROW (test_omezarr_tileloader_content());
+TEST(TEST_NYXUS, TEST_OMEZARR_TILELOADER_CONTENT_MECHANICS) {
+	ASSERT_NO_THROW (test_omezarr_tileloader_content_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_OMEZARR_TILELOADER_MULTITILE) {
-	ASSERT_NO_THROW (test_omezarr_tileloader_multitile());
+TEST(TEST_NYXUS, TEST_OMEZARR_TILELOADER_MULTITILE_MECHANICS) {
+	ASSERT_NO_THROW (test_omezarr_tileloader_multitile_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_RAW_OMEZARR_GEOMETRY) {
-	ASSERT_NO_THROW (test_raw_omezarr_geometry());
+TEST(TEST_NYXUS, TEST_OMEZARR_RAW_GEOMETRY_MECHANICS) {
+	ASSERT_NO_THROW (test_omezarr_raw_geometry_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_RAW_OMEZARR_CONTENT) {
-	ASSERT_NO_THROW (test_raw_omezarr_content());
+TEST(TEST_NYXUS, TEST_OMEZARR_RAW_CONTENT_MECHANICS) {
+	ASSERT_NO_THROW (test_omezarr_raw_content_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_RAW_OMEZARR_MULTITILE) {
-	ASSERT_NO_THROW (test_raw_omezarr_multitile());
+TEST(TEST_NYXUS, TEST_OMEZARR_RAW_MULTITILE_MECHANICS) {
+	ASSERT_NO_THROW (test_omezarr_raw_multitile_mechanics());
 }
 
 #endif // OMEZARR_SUPPORT

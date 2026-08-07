@@ -48,7 +48,7 @@ def _one(features, inten, label, **kw):
 
 
 # ============================ GLCM ==========================================
-def test_glcm_contrast_nonzero_by_default():
+def test_glcm_contrast_nonzero_by_default_mechanics():
     """Bug #1 (FIXED): glcm/offset defaulted to 0 -> dx=dy=0 -> CONTRAST=0 for any image.
     A horizontal intensity ramp must have nonzero 0deg contrast and zero 90deg contrast."""
     H, W = 9, 9
@@ -61,7 +61,7 @@ def test_glcm_contrast_nonzero_by_default():
     assert row["GLCM_CONTRAST_90"] == pytest.approx(0.0, abs=1e-9), "constant columns -> 90deg contrast 0"
 
 
-def test_glcm_background_not_counted():
+def test_glcm_background_not_counted_pyradiomics():
     """Bug #2 (FIXED): the MATLAB binning path mapped background (0) -> level 1 and counted it,
     polluting the matrix with spurious diagonal mass. This only manifests for a CONCAVE ROI
     (background inside the bounding box). On the canonical irregular ROI, quantized to 1..64 so
@@ -94,7 +94,7 @@ def test_glcm_background_not_counted():
         "~99 background-polluted value that bug #2 produced"
 
 
-def test_glcm_acor_family_ibsi_oracle():
+def test_glcm_acor_family_pyradiomics():
     """PR #356 review (Comment 2): ACOR, SUMAVERAGE, IDN, IDMN depend on the *absolute* grey-level
     values / Ng (unlike CONTRAST, which depends only on |i-j|). Under the MATLAB-binning path
     (ibsi=False, the config tests/test_glcm.h uses) those absolute levels are re-mapped, so these

@@ -36,9 +36,9 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 | `test_tiff_loader_mechanics.h` | 1 | uint32 strip loader |
 | `test_ooc_invariant.py` | 9 | out-of-core == in-RAM equality; spans all features, per-feature rows would be meaningless |
 | `test_ooc_mechanics.py` | 1 | oversized-montage failure path |
-| `test_vetting_coverage.py` | 5 | self-test of `check_coverage.py` |
+| `test_vetting_mechanics.py` | 5 | self-test of `check_coverage.py` |
 | `test_3d_coverage_common.h`, `test_3d_morphology_common.h`, `test_moments_common.h`, `test_morphology_common.h`, `test_remaining2d_common.h` | 0 | shared fixtures; the kind belongs to the files that include them |
-| `test_feature_calculation.h` | 0 | shared `test_feature` template helper |
+| `test_feature_calculation_common.h` | 0 | shared `test_feature` template helper |
 
 ### A.2 Assert feature values but no row lists them — real gaps (7 files)
 
@@ -48,12 +48,12 @@ omission matters:
 | file | functions | what it asserts | why it matters |
 |---|---:|---|---|
 | ~~`test_neighbors_oracle.py`~~ | 2 | `PERCENT_TOUCHING`, `NUM_NEIGHBORS`, closest-neighbor distance on the production `featurize()` path | **CLOSED in Wave 15.** On inspection it asserts bounds and relations (`<= 100`, `> 0`, `== 100` for an enclosed ROI), not oracle values — so it is an `_invariant`, not the CellProfiler oracle assumed here. Renamed `test_neighbor_invariant.py` and added to `current_test` on the 3 rows it covers. |
-| `test_hounsfield.py` | 3 | first-order MIN/MAX/MEAN/INTEGRATED in `--preserve-hu` mode | a second config for existing firstorder rows (SPEC §1 "vetted on config A") — no row records it |
-| `test_hounsfield_nifti.py` | 3 | the same on a 3D NIfTI volume with `scl_slope`/`scl_inter` | ditto, 3D |
+| `test_hu_regression.py` | 3 | first-order MIN/MAX/MEAN/INTEGRATED in `--preserve-hu` mode | a second config for existing firstorder rows (SPEC §1 "vetted on config A") — no row records it |
+| `test_hu_nifti_regression.py` | 3 | the same on a 3D NIfTI volume with `scl_slope`/`scl_inter` | ditto, 3D |
 | `test_hu_analytic.h` | 3 | closed form of the HU offset mapping (`uint_friendly_inten`) | analytic assertion with no row |
 | `test_hu_mechanics.h` | 8 | loader-level HU preservation (TIFF / DICOM / float) | plumbing, but it pins values |
-| `test_signed_int16_loader.py` | 2 | MIN/MAX/MEAN do not wrap for signed int16 | guards a wrap bug that silently corrupted values |
-| `test_tiff_loader.py` | 2 | pixel values and feature equality for uint32 strip TIFFs | guards a heap over-read that corrupted values |
+| `test_signed_int16_loader_mechanics.py` | 2 | MIN/MAX/MEAN do not wrap for signed int16 | guards a wrap bug that silently corrupted values |
+| `test_tiff_loader_mechanics.py` | 2 | pixel values and feature equality for uint32 strip TIFFs | guards a heap over-read that corrupted values |
 | `test_contour_analytic.h` | 5 | contour tracing (pixel counts / connectivity) | underlies `PERIMETER`, but asserts geometry rather than a feature |
 
 **Decision needed per row:** either add these files to `current_test` for the features they touch, or
@@ -163,13 +163,13 @@ so a green local run is not a green matrix.
 
 | flag | cases |
 |---|---|
-| `USE_ARROW` | `TEST_ARROW`, `TEST_PARQUET`, `TEST_ARROW_FILE_NAME` |
+| `USE_ARROW` | `TEST_ARROW_IPC_MECHANICS`, `TEST_ARROW_PARQUET_MECHANICS`, `TEST_ARROW_FILE_NAME` |
 | `OMEZARR_SUPPORT` | `TEST_OMEZARR_TILELOADER_{GEOMETRY,CONTENT,MULTITILE}`, `TEST_RAW_OMEZARR_{GEOMETRY,CONTENT,MULTITILE}` |
 | `DICOM_SUPPORT` | `TEST_HU_LOADER_DICOM_{U16,I16}_PRESERVE`, `TEST_HU_LOADER_DICOM_CT_SMALL_{PRESERVE,BASELINE}` |
 
 ### B.4 Python tests skipped at runtime
 
-- `test_hounsfield.py`, `test_hounsfield_nifti.py`, `test_hu_ct_small_pydicom.py` — module-level
+- `test_hu_regression.py`, `test_hu_nifti_regression.py`, `test_hu_ct_small_values_pydicom.py` — module-level
   `skipif` when their committed fixtures are absent.
 - `test_morphology_invariant.py`, `test_glcm_pyradiomics.py`, `test_gldm_pyradiomics.py` — skip when the
   canonical ROI cannot be parsed out of `test_data.h`. **A skip here silently removes an oracle

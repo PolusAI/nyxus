@@ -32,7 +32,7 @@ static inline fs::path omezarr_data_path(const char* name)
 // ---------------------------------------------------------------------------
 
 // Geometry: dimensions and chunk/tile sizes are read correctly from metadata.
-void test_omezarr_tileloader_geometry()
+void test_omezarr_tileloader_geometry_mechanics()
 {
     fs::path ds = omezarr_data_path("test.ome.zarr");
     ASSERT_TRUE(fs::exists(ds));
@@ -49,7 +49,7 @@ void test_omezarr_tileloader_geometry()
 }
 
 // Content: read the single tile and verify exact pixel values and the checksum.
-void test_omezarr_tileloader_content()
+void test_omezarr_tileloader_content_mechanics()
 {
     fs::path ds = omezarr_data_path("test.ome.zarr");
     ASSERT_TRUE(fs::exists(ds));
@@ -79,7 +79,7 @@ void test_omezarr_tileloader_content()
 }
 
 // Multi-tile: 2x2 tile grid with partial edge tiles.
-void test_omezarr_tileloader_multitile()
+void test_omezarr_tileloader_multitile_mechanics()
 {
     fs::path ds = omezarr_data_path("multi.ome.zarr");
     ASSERT_TRUE(fs::exists(ds));
@@ -135,7 +135,7 @@ void test_omezarr_tileloader_multitile()
 // RawOmezarrLoader (RawFormatLoader) tests
 // ---------------------------------------------------------------------------
 
-void test_raw_omezarr_geometry()
+void test_omezarr_raw_geometry_mechanics()
 {
     fs::path ds = omezarr_data_path("test.ome.zarr");
     ASSERT_TRUE(fs::exists(ds));
@@ -149,7 +149,7 @@ void test_raw_omezarr_geometry()
     ASSERT_EQ(ldr.tileWidth(0), 1024u);
 }
 
-void test_raw_omezarr_content()
+void test_omezarr_raw_content_mechanics()
 {
     fs::path ds = omezarr_data_path("test.ome.zarr");
     ASSERT_TRUE(fs::exists(ds));
@@ -176,7 +176,7 @@ void test_raw_omezarr_content()
 }
 
 // Multi-tile read through the RawFormatLoader path, including partial tiles.
-void test_raw_omezarr_multitile()
+void test_omezarr_raw_multitile_mechanics()
 {
     fs::path ds = omezarr_data_path("multi.ome.zarr");
     ASSERT_TRUE(fs::exists(ds));

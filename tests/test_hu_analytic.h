@@ -25,7 +25,7 @@
 
 // fp_phys_pivoxels==true: min-max normalization over a CT-like HU span.
 // min=-1024, max=3071, DR=10000  ->  u = 10000*(x+1024)/4095, clamped.
-void test_hu_uint_friendly_normalization_ct_range()
+void test_hu_uint_friendly_normalization_ct_range_analytic()
 {
     SlideProps p("", "");
     p.fp_phys_pivoxels = true;
@@ -44,7 +44,7 @@ void test_hu_uint_friendly_normalization_ct_range()
 // well-defined; assert those. (Negative HU through this branch is undefined /
 // wraps — that broken CT case is deliberately NOT asserted here; it is the
 // defect HU preservation addresses.)
-void test_hu_uint_friendly_rawcast_nonnegative()
+void test_hu_uint_friendly_rawcast_nonnegative_analytic()
 {
     SlideProps p("", "");
     p.fp_phys_pivoxels = false;   // min/max unused on this branch
@@ -58,7 +58,7 @@ void test_hu_uint_friendly_rawcast_nonnegative()
 // preserve_hu==true: slope-1 offset map u = round(x - floor(min)), 1 HU == 1 grey
 // level. min=-1024 => offset -1024: air/min -> 0, water 0 -> 1024, bone 3071 -> 4095.
 // dynrange is intentionally ignored on this branch. Negative HU no longer wraps.
-void test_hu_uint_friendly_preserve_offset()
+void test_hu_uint_friendly_preserve_offset_analytic()
 {
     SlideProps p("", "");
     p.preserve_hu = true;
