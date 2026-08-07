@@ -16,7 +16,7 @@
 // pixel co-occurs with itself -> a purely diagonal matrix -> CONTRAST = 0, CORRELATION = 1 for
 // any image. The existing test_glcm.h cases never caught this because they hard-code
 // GLCM_OFFSET = 1 (and run on a fully-masked phantom). This test exercises the real default.
-inline void test_glcm_bug_offset_default_is_one()
+inline void test_glcm_bug_offset_default_is_one_mechanics()
 {
     Environment e;
     e.set_coarse_gray_depth(64);

@@ -83,9 +83,14 @@ and firstorder waves closed `test_3d_gldm_regression.h`, `test_firstorder_matlab
 | `test_3d_glrlm_mirp.h` | 2 | glrlm (3D) |
 | `test_3d_ngldm_mirp.h` | 1 | ngldm (3D) |
 
-One genuine error, separate from the backlog: **`test_glcm.h` still appears in `current_test` on 3
-rows** although Wave 2 renamed it to `test_glcm_regression.h`. `current_test` must track renames —
-that is the one registry obligation a rename wave owes.
+One genuine error, separate from the backlog: **`test_glcm.h` appeared in `current_test` on 3 rows**
+although Wave 2 renamed it to `test_glcm_regression.h`. **CLOSED in the glcm wave — but not by
+repointing it.** The three rows are the *first-order* `ENERGY`, `ENTROPY` and `VARIANCE`, and
+`test_glcm_regression.h` asserts only `Feature2D::GLCM_ENERGY`/`GLCM_ENTROPY`/`GLCM_VARIANCE`, never
+the bare first-order features. The reference was a name-collision artifact of the original audit scan,
+so it was removed rather than renamed; each row already lists the first-order files that do assert it.
+`current_test` must track renames — but a reference has to be checked for meaning before it is
+carried forward, or a rename wave will preserve a claim that was never true.
 
 Per family, how much of the destination map is already in place:
 
@@ -116,19 +121,24 @@ column J named a file that did not exist).
 
 ### B.1 In files `test_all.cc` never includes — 112 functions, zero execution
 
-Six 3D snapshot files were written but never wired in (MIGRATION §5.10 "systemic orphan finding").
+Seven 3D snapshot files were written but never wired in (MIGRATION §5.10 "systemic orphan finding").
 They compile nowhere, so they cannot even fail.
 
 | file | dead functions |
 |---|---:|
-| `test_3d_firstorder_matlab.h` | 36 |
-| `test_3d_glcm.h` | 25 |
+| `test_3d_firstorder_matlab.h` | 35 |
+| `test_3d_glcm_regression.h` | 25 |
 | `test_3d_glrlm_regression.h` | 16 |
 | `test_3d_glszm_regression.h` | 16 |
 | `test_3d_gldm_regression.h` | 14 |
 | `test_3d_ngtdm_regression.h` | 5 |
+| `test_3d_firstorder_regression.h` | 1 |
 
-All six are listed in `current_test` for their families' rows — so the registry currently credits
+The file count is seven rather than six because `3COVERED_IMAGE_INTENSITY_RANGE` — the only 3D
+first-order feature with `status=regression` — was split out of `test_3d_firstorder_matlab.h` into its
+own file. Both halves remain unwired, so the total is unchanged at 112.
+
+All seven are listed in `current_test` for their families' rows — so the registry currently credits
 coverage to assertions that have never executed. Whether to wire them in or delete them is a
 behavioural decision (they may fail on first run) and belongs to each family's wave, not to a rename.
 
@@ -136,7 +146,7 @@ behavioural decision (they may fail on first run) and belongs to each family's w
 
 | file | function |
 |---|---|
-| `test_3d_glcm_pyradiomics.h` | `test_compat_3glcm_JVAR` |
+| `test_3d_glcm_pyradiomics.h` | `test_3d_glcm_jvar_pyradiomics` |
 | `test_firstorder_ibsi.h` | `test_firstorder_robust_mean_absolute_deviation_ibsi` |
 
 Both are complete assertions with no `TEST()` entry — a missing registration, most likely an
@@ -176,7 +186,7 @@ Surfaced by Wave 12 and not yet satisfied:
 | site | assertions | what is missing |
 |---|---:|---|
 | `test_firstorder_matlab.h` | 34 | all 34 are MATLAB values (`oracle_3p_matlab_*` named the tool, `oracle_3p_builtin_*` meant MATLAB's built-ins). Missing: MATLAB version, exact config, generator path — the numbers are here, the reproduction recipe is not |
-| `test_3d_firstorder_matlab.h` | 36 | `d3inten_GT` values also come from MATLAB, but the map says nothing about it, and 18 of these features are `oracle=matlab` while the file name says `_regression` — see §D |
+| `test_3d_firstorder_matlab.h` | 35 | `d3inten_GT` values also come from MATLAB, but the map says nothing about it. The 36th assertion moved to `test_3d_firstorder_regression.h`, which reads the same map — so the gap covers both files |
 
 | `test_morphology_cellprofiler.h` | 6 | the 5 `EDGE_*` + `MASS_DISPLACEMENT` read their values from `unvetted_nyxus_regression_shape2d_feature_golden_values` in `test_morphology_common.h` — a map whose name still says snapshot. The registry vets these against CellProfiler; the map carries no version, config or generator, and renaming golden tables tree-wide is a separate pass. |
 
@@ -194,7 +204,7 @@ Found while placing assertions by column J. Each needs a registry decision, not 
 | 2D `ENTROPY` | pyradiomics | `test_firstorder_regression.h` | **RESOLVED.** Also already asserted in `test_firstorder_pyradiomics.h`; column J repointed, no code moved. The snapshot in the regression file is the drift guard on the default config. |
 | 2D `moments` ×40 | skimage | `test_moments_regression.h` | **RESOLVED in Wave 13.** All 40 were already asserted in `test_moments_skimage.h`; only the registry was stale, so `target_test` was repointed there and no code moved. This is the common case of the class: the assertion was migrated in an earlier wave and column J was never updated. |
 | 2D `ngldm` x19 | mirp | `test_ngldm_mirp.h` | The tree holds **IBSI** goldens for 17 of these 19 features, cited page-by-page against the IBSI documentation in `test_ngldm_ibsi.h`; the other two (`GLM`, `DCM`) are explicitly *not* IBSI features and are now snapshots in `test_ngldm_regression.h`. So the in-tree 2D NGLDM oracle is `ibsi`, not `mirp`. Either these rows should read `oracle=ibsi` (already satisfied, 17 of them), or MIRP is wanted as a second opinion per SPEC 3 and the rows stay backlog until it is run. |
-| 3D firstorder x18 | matlab | `test_3d_firstorder_regression.h` | **RESOLVED under SPEC 6.2.1** (this reverses the earlier "leave it" call, which assumed column J was authoritative). `d3inten_GT` holds MATLAB values, so the file is now `test_3d_firstorder_matlab.h` with 36 `_matlab` functions and the 18 rows point there. Two carry-overs: the file is still not `#include`d (B.1), and the same map also covers 17 `oracle=pyradiomics` features plus 1 regression-only one, which per SPEC 3 need a second (matlab) row each. |
+| 3D firstorder x18 | matlab | `test_3d_firstorder_regression.h` | **RESOLVED under SPEC 6.2.1** (this reverses the earlier "leave it" call, which assumed column J was authoritative). `d3inten_GT` holds MATLAB values, so the file is now `test_3d_firstorder_matlab.h` with 35 `_matlab` functions and the 18 rows point there. The 36th, `3COVERED_IMAGE_INTENSITY_RANGE`, is the one regression-only feature and was split into `test_3d_firstorder_regression.h`. Two carry-overs: neither file is `#include`d (B.1), and the same map also covers 17 `oracle=pyradiomics` features which per SPEC 3 need a second (matlab) row each. |
 
 The general form: **a `vetted` row whose `target_test` names a `_regression` file** is asserting that
 its oracle evidence lives outside the tree. That is legitimate but should be explicit — a `source` or

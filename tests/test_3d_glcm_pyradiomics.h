@@ -121,7 +121,7 @@ static std::tuple<std::string, std::string, int> get_3d_compat_phantom()
     return { ipath, mpath, 1 };
 }
 
-void test_compat_3glcm_feature (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+void assert_3d_glcm_feature_pyradiomics (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
     // (1) prepare
     
@@ -202,7 +202,7 @@ void test_compat_3glcm_feature (const Nyxus::Feature3D& expecting_fcode, const s
 
 // Deep-dive: verify the 7 config-sensitive 3D GLCM features equal their already-vetted twins
 // (numerically, same fixture/config), so they can be promoted by equivalence. Dumps calc_ave pairs.
-void test_3dglcm_equivalence_dump()
+void test_3d_glcm_equivalence_dump_pyradiomics()
 {
     auto [ipath, mpath, label] = get_3d_compat_phantom();
     ASSERT_TRUE(fs::exists(ipath));
@@ -265,119 +265,119 @@ void test_3dglcm_equivalence_dump()
     }
 }
 
-void test_compat_3glcm_ACOR()
+void test_3d_glcm_acor_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_ACOR, "3GLCM_ACOR");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_ACOR, "3GLCM_ACOR");
 }
 
-void test_compat_3glcm_angular_2d_moment()
+void test_3d_glcm_asm_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_ASM, "3GLCM_ASM");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_ASM, "3GLCM_ASM");
 }
 
-void test_compat_3glcm_CLUPROM()
+void test_3d_glcm_cluprom_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_CLUPROM, "3GLCM_CLUPROM");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_CLUPROM, "3GLCM_CLUPROM");
 }
 
-void test_compat_3glcm_CLUSHADE()
+void test_3d_glcm_clushade_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_CLUSHADE, "3GLCM_CLUSHADE");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_CLUSHADE, "3GLCM_CLUSHADE");
 }
 
-void test_compat_3glcm_CLUTEND()
+void test_3d_glcm_clutend_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_CLUTEND, "3GLCM_CLUTEND");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_CLUTEND, "3GLCM_CLUTEND");
 }
 
-void test_compat_3glcm_contrast()
+void test_3d_glcm_contrast_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_CONTRAST, "3GLCM_CONTRAST");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_CONTRAST, "3GLCM_CONTRAST");
 }
 
-void test_compat_3glcm_correlation()
+void test_3d_glcm_correlation_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_CORRELATION, "3GLCM_CORRELATION");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_CORRELATION, "3GLCM_CORRELATION");
 }
 
-void test_compat_3glcm_difference_average()
+void test_3d_glcm_difference_average_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_DIFAVE, "3GLCM_DIFAVE");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_DIFAVE, "3GLCM_DIFAVE");
 }
 
-void test_compat_3glcm_difference_entropy()
+void test_3d_glcm_difference_entropy_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_DIFENTRO, "3GLCM_DIFENTRO");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_DIFENTRO, "3GLCM_DIFENTRO");
 }
 
-void test_compat_3glcm_difference_variance()
+void test_3d_glcm_difference_variance_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_DIFVAR, "3GLCM_DIFVAR");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_DIFVAR, "3GLCM_DIFVAR");
 }
 
-void test_compat_3glcm_ID()
+void test_3d_glcm_id_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_ID, "3GLCM_ID");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_ID, "3GLCM_ID");
 }
 
-void test_compat_3glcm_IDN()
+void test_3d_glcm_idn_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_IDN, "3GLCM_IDN");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_IDN, "3GLCM_IDN");
 }
 
-void test_compat_3glcm_IDM()
+void test_3d_glcm_idm_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_IDM, "3GLCM_IDM");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_IDM, "3GLCM_IDM");
 }
 
-void test_compat_3glcm_IDMN()
+void test_3d_glcm_idmn_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_IDMN, "3GLCM_IDMN");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_IDMN, "3GLCM_IDMN");
 }
 
-void test_compat_3glcm_infomeas1()
+void test_3d_glcm_infomeas1_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_INFOMEAS1, "3GLCM_INFOMEAS1");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_INFOMEAS1, "3GLCM_INFOMEAS1");
 }
 
-void test_compat_3glcm_infomeas2()
+void test_3d_glcm_infomeas2_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_INFOMEAS2, "3GLCM_INFOMEAS2");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_INFOMEAS2, "3GLCM_INFOMEAS2");
 }
 
-void test_compat_3glcm_IV()
+void test_3d_glcm_iv_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_IV, "3GLCM_IV");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_IV, "3GLCM_IV");
 }
 
-void test_compat_3glcm_JAVE()
+void test_3d_glcm_jave_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_JAVE, "3GLCM_JAVE");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_JAVE, "3GLCM_JAVE");
 }
 
-void test_compat_3glcm_JE()
+void test_3d_glcm_je_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_JE, "3GLCM_JE");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_JE, "3GLCM_JE");
 }
 
-void test_compat_3glcm_JMAX()
+void test_3d_glcm_jmax_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_JMAX, "3GLCM_JMAX");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_JMAX, "3GLCM_JMAX");
 }
 
-void test_compat_3glcm_JVAR()
+void test_3d_glcm_jvar_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_JVAR, "3GLCM_JVAR");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_JVAR, "3GLCM_JVAR");
 }
 
-void test_compat_3glcm_sum_average()
+void test_3d_glcm_sum_average_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_SUMAVERAGE, "3GLCM_SUMAVERAGE");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_SUMAVERAGE, "3GLCM_SUMAVERAGE");
 }
 
-void test_compat_3glcm_sum_entropy()
+void test_3d_glcm_sum_entropy_pyradiomics()
 {
-    test_compat_3glcm_feature (Nyxus::Feature3D::GLCM_SUMENTROPY, "3GLCM_SUMENTROPY");
+    assert_3d_glcm_feature_pyradiomics (Nyxus::Feature3D::GLCM_SUMENTROPY, "3GLCM_SUMENTROPY");
 }
 
 
