@@ -109,7 +109,11 @@ static std::unordered_map<std::string, std::vector<double>> unvetted_nyxus_regre
 	}},
 };
 
-static std::unordered_map<std::string, std::vector<double>> oracle_3p_remaining2d_vector_feature_golden_values{
+// ZERNIKE2D golden vector. Named for what it is: a pinned Nyxus snapshot, not a third-party
+// oracle. The registry (MIGRATION 6.1) does not accept mahotas, the only tool that computes
+// Zernike moments, so ZERNIKE2D is regression-only and this table and its assert are named to
+// match. Sole key: ZERNIKE2D.
+static std::unordered_map<std::string, std::vector<double>> nyxus_regression_zernike_vector_golden_values{
 	{"ZERNIKE2D", {
 		0.02049738595695693, 0.035831084484416686, 0.073953766599300461,
 		0.035435050265597692, 0.092323797445497555, 0.011030627605166297,
@@ -481,16 +485,16 @@ static void assert_unvetted_no_direct_oracle_remaining2d_vector_feature(
 		ASSERT_NEAR(actual[i], golden_values[i], abs_tolerance) << feature_name << "[" << i << "]";
 }
 
-static void assert_verifiable_with_3p_builtin_oracle_remaining2d_vector_feature(
+static void assert_zernike_vector_feature_regression(
 	const std::vector<std::vector<double>>& fvals,
 	Nyxus::Feature2D feature,
 	const std::string& feature_name,
 	double abs_tolerance = 1e-9)
 {
-	SCOPED_TRACE(std::string("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__") + feature_name);
-	ASSERT_TRUE(oracle_3p_remaining2d_vector_feature_golden_values.count(feature_name) > 0);
+	SCOPED_TRACE(std::string("REGRESSION__") + feature_name);
+	ASSERT_TRUE(nyxus_regression_zernike_vector_golden_values.count(feature_name) > 0);
 	const auto& actual = fvals[static_cast<int>(feature)];
-	const auto& golden_values = oracle_3p_remaining2d_vector_feature_golden_values[feature_name];
+	const auto& golden_values = nyxus_regression_zernike_vector_golden_values[feature_name];
 	ASSERT_EQ(actual.size(), golden_values.size());
 	for (size_t i = 0; i < golden_values.size(); ++i)
 		ASSERT_NEAR(actual[i], golden_values[i], abs_tolerance) << feature_name << "[" << i << "]";
