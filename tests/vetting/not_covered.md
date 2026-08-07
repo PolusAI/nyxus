@@ -142,7 +142,7 @@ behavioural decision (they may fail on first run) and belongs to each family's w
 Both are complete assertions with no `TEST()` entry — a missing registration, most likely an
 oversight when the surrounding cases were added. Enabling them may fail, so treat as triage.
 
-Not dead, listed to avoid double-counting: `test_ibsi_gldzm_matrix`,
+Not dead, listed to avoid double-counting: `assert_gldzm_matrix_ibsi`,
 `test_ibsi_ngld_matrix_ibsi`, `test_ibsi_ngld_matrix_nonibsi` take no arguments and have no `TEST()`
 of their own, but each is called by a registered case — they are helpers wearing a `test_` prefix.
 
