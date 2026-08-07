@@ -57,7 +57,7 @@ Naming: `test_[3d_]<family>_<kind>.{h,py}`, one kind per file (SPEC §2). `<kind
 | **moments** | 180 (78/102/0) | skimage | `test_2d_geometric_moments.h` | `test_moments_skimage.h`, `test_moments_regression.h` |
 | **glcm** ✅ DONE (Wave 2) | 118 (72/46/0) | pyradiomics, matlab, mirp | `test_glcm.h`, `test_glcm_oracle.h`, `test_ibsi_glcm.h`, `test_compat_3d_glcm.h`, `test_glcm_oracle.py` (+orphan `test_3d_glcm.h`) | `test_glcm_regression.h`, `test_glcm_mechanics.h`, `test_glcm_ibsi.h`, `test_3d_glcm_pyradiomics.h`, `test_glcm_pyradiomics.py` |
 | **morphology** | 113 (39/74/0) | matlab, cellprofiler, skimage, imea | `test_shape_morphology_2d.h`, `test_2d_remaining_features.h`, `test_3d_shape.h`, `test_feature_oracle.py`, `test_convex_hull_invariants.py`, `test_fractal_dim_oracle.py` | `test_morphology_matlab.h`, `test_morphology_cellprofiler.h`, `test_morphology_skimage.h`, `test_morphology_imea.h`, `test_morphology_regression.h`, `test_morphology_invariant.py`, `test_3d_morphology_*.h` |
-| **firstorder** | 72 (51/21/0) | matlab, pyradiomics | `test_pixel_intensity_features.h`, `test_ibsi_intensity.h`, `test_3d_inten.h`, `test_compat_3d_fo_radiomics.h` | `test_firstorder_matlab.h`, `test_firstorder_pyradiomics.h`, `test_firstorder_regression.h`, `test_3d_firstorder_pyradiomics.h`, `test_3d_firstorder_regression.h` |
+| **firstorder** | 72 (51/21/0) | matlab, pyradiomics | `test_pixel_intensity_features.h`, `test_ibsi_intensity.h`, `test_3d_inten.h`, `test_compat_3d_fo_radiomics.h` | `test_firstorder_matlab.h`, `test_firstorder_pyradiomics.h`, `test_firstorder_regression.h`, `test_3d_firstorder_pyradiomics.h`, `test_3d_firstorder_matlab.h` |
 | **glrlm** | 64 (38/26/0) | pyradiomics, mirp | `test_glrlm.h`, `test_ibsi_glrlm.h`, `test_3d_glrlm.h`, `test_compat_3d_glrlm.h` | `test_glrlm_pyradiomics.h`, `test_glrlm_regression.h`, `test_3d_glrlm_pyradiomics.h`, `test_3d_glrlm_mirp.h`, `test_3d_glrlm_regression.h` |
 | **intensity_histogram** | 52 (26/5/**21**) | analytic | `test_intensity_histogram.h`, `test_intensity_histogram.py`, `test_2d_remaining_features.h` | `test_intensity_histogram_analytic.h`, `test_intensity_histogram_regression.h` (+ **21 untested → needs decision**) |
 | **ngldm** | 38 (20/18/0) | mirp | `test_ibsi_ngldm.h`, `test_3d_ngldm.h` | `test_ngldm_mirp.h`, `test_3d_ngldm_mirp.h`, `test_3d_ngldm_regression.h` |
@@ -423,7 +423,7 @@ Placement before → after, for the 72 firstorder rows:
 
 - **78 functions renamed** to `test_[3d_]firstorder_<subject>_<kind>`: `test_ibsi_mean_intensity` →
   `test_firstorder_mean_ibsi`, `test_pixel_intensity_mean` → `test_firstorder_mean_matlab`,
-  `test_3inten_cov` → `test_3d_firstorder_cov_regression`, and the 17 inline 3D cases →
+  `test_3inten_cov` → `test_3d_firstorder_cov_matlab`, and the 17 inline 3D cases →
   `TEST_3D_FIRSTORDER_<F>_PYRADIOMICS`. 19 case names whose word order differed from their function
   (`TEST_IBSI_INTENSITY_MEAN`, `TEST_PIXEL_INTENSITY_MAD`, …) were corrected to `UPPER(function)`.
 - **The six oracle goldens that were hiding in the regression file** are the reason this wave moved
@@ -432,7 +432,7 @@ Placement before → after, for the 72 firstorder rows:
   HYPERSKEWNESS, HYPERFLATNESS, UNIFORMITY_PIU, COVERED_IMAGE_INTENSITY_RANGE and ROBUST_MEAN — all
   five of which are in the registry's 33 `oracle=matlab` rows. Third-party reference values in a
   file whose name claims "snapshot" is exactly the mislabelling SPEC §1 forbids.
-- `test_3d_inten.h` → `test_3d_firstorder_regression.h` (§6.1, and column J of 19 3D rows).
+- `test_3d_inten.h` → `test_3d_firstorder_matlab.h` (§6.1, and column J of 19 3D rows).
 - `current_test` repointed on 36 rows + the 125 `test_3d_inten.h` references.
 - **firstorder is now fully placed: 72/72 rows have an existing `target_test`** (was 20/72). The
   tree-wide backlog drops from 256 dangling refs to 204.
@@ -477,6 +477,64 @@ row is flagged in `not_covered.md` for reconciliation: either its `oracle` shoul
 those as extra empty records — a full-file rewrite through `csv.writer` therefore *destroys* rows.
 Edit this file with line-level substitutions, or read it the way `check_coverage.py` does (plain
 `open()`, which yields the correct 758 rows).
+
+## 5.22 Wave 13 (moments) — executed
+
+First of the remaining family-per-commit waves. moments needed no placement work at all: all 180 rows
+already name an existing `target_test`, and neither file hides an oracle golden (the regression file's
+tables are `unvetted_nyxus_regression_*`, the oracle file's are `oracle_3p_*` from
+`gen_moments_skimage.py`). So this is the pure-rename case: 4 functions, no moves.
+
+- `test_2d_shape_geometric_moments_verifiable_with_3p_builtin_oracle` → `test_moments_shape_skimage`
+- `test_2d_intensity_geometric_moments_verifiable_with_3p_builtin_oracle` → `test_moments_intensity_skimage`
+- `test_2d_shape_geometric_moments_unvetted_no_direct_oracle` → `test_moments_shape_regression`
+- `test_2d_intensity_geometric_moments_unvetted_no_direct_oracle` → `test_moments_intensity_regression`
+- `test_moments_hu_wedge_skimage` already conformed; all 5 gtest case names are `UPPER(function)`.
+
+Four functions cover 180 features here, the widest assertion-to-feature ratio in the tree — which is why
+the family's coverage cannot be read off the test names and has to come from the registry.
+
+**Registry repointed, no code moved.** 40 of the 180 rows are `vetted` by skimage while column J still
+named `test_moments_regression.h`. Checking the tree settled it: **all 40 are already asserted in
+`test_moments_skimage.h`** — the assertions were migrated in Wave 4 and column J was never updated. So
+the fix is a registry repoint of those 40 rows, not a code move, and moments now has zero
+contradictions: 118 rows `vetted`→skimage file, 62 `regression`→regression file.
+
+This is what fixed the placement rule for every later wave (SPEC §6.2.1): **columns D+E decide the file**, and
+column J is only trustworthy when it agrees with them, because status/oracle were corrected over time
+while `target_test` kept its original value. Verified: **gtest 730/730**, 5 moments cases, pytest
+unchanged.
+
+## 5.23 Placement rule correction — status+oracle over target_test
+
+Waves 11-12 placed assertions by `target_test` (column J). That is wrong wherever J disagrees with
+`status`+`oracle`: the verdict columns were corrected as features were vetted, while `target_test` kept
+the value it was seeded with in Phase 1. **A `vetted` row with `oracle=X` belongs in
+`test_[3d_]<family>_X`, and a stale J saying `_regression` does not override that** (SPEC §6.2.1).
+
+Measured across the registry: **133 vetted rows sat in a file whose kind contradicts their oracle.**
+Applying the rule to the families already migrated brought that to 73, all of which belong to families
+whose waves have not run yet (glcm 46, morphology 26, intensity_histogram 1) and will be placed
+correctly when they do.
+
+What the rule actually required, once the tree was checked, was mostly *registry* fixes — because the
+assertions had already been migrated in earlier waves and only column J was stale:
+
+| rows | expectation | reality | action |
+|---|---|---|---|
+| moments ×40 (skimage) | move out of the regression file | all 40 already asserted in `test_moments_skimage.h` | repoint J, **no code moved** |
+| firstorder 2D ×2 (pyradiomics: ENTROPY, UNIFORMITY) | move to the pyradiomics file | both already asserted there | repoint J, **no code moved** |
+| firstorder 3D ×18 (matlab) | move to a matlab file | only assertions are the MATLAB-valued `d3inten_GT` | **renamed** `test_3d_firstorder_regression.h` → `test_3d_firstorder_matlab.h`, 36 functions + helper → `_matlab` |
+
+Two regression rows pointing at *oracle* files were corrected in the same pass (`PERCENT_TOUCHING` →
+`test_neighbor_regression.h`, `3COVERED_IMAGE_INTENSITY_RANGE` → `test_3d_firstorder_regression.h`), so
+the contradiction count in that direction is now zero.
+
+**The lesson for the remaining waves:** before moving anything, check whether the destination already
+asserts the feature — the usual answer is yes, and then the fix is one registry cell, not a code move.
+And where the reference tool has no golden in the tree at all (MIRP: 44 rows), nothing moves: a rename
+wave cannot manufacture an oracle. Verified after the correction: **gtest 730/730**, registry check
+clean, 758 rows intact.
 
 ---
 

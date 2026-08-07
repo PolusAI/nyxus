@@ -134,14 +134,14 @@ void test_moments_hu_wedge_skimage()
 	assert_2d_geomoment_features(fvals, wedge_shape_hu_skimage_golden_values, "VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
 }
 
-void test_2d_shape_geometric_moments_verifiable_with_3p_builtin_oracle()
+void test_moments_shape_skimage()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_2d_geomoment_feature_values(fvals);
 	assert_2d_geomoment_features(fvals, oracle_3p_shape_geomoment_feature_golden_values, "VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
 }
 
-void test_2d_intensity_geometric_moments_verifiable_with_3p_builtin_oracle()
+void test_moments_intensity_skimage()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_2d_geomoment_feature_values(fvals);

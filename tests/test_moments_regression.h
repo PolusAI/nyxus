@@ -102,14 +102,14 @@ static const std::vector<GeomomentGoldenValue> unvetted_nyxus_regression_intensi
 	{Nyxus::Feature2D::IMOM_WHU7, "IMOM_WHU7", -5.6202519491182231e-24},
 };
 
-void test_2d_shape_geometric_moments_unvetted_no_direct_oracle()
+void test_moments_shape_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_2d_geomoment_feature_values(fvals);
 	assert_2d_geomoment_features(fvals, unvetted_nyxus_regression_shape_geomoment_feature_golden_values, "UNVETTED_NO_DIRECT_ORACLE__");
 }
 
-void test_2d_intensity_geometric_moments_unvetted_no_direct_oracle()
+void test_moments_intensity_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_2d_geomoment_feature_values(fvals);
