@@ -536,6 +536,24 @@ And where the reference tool has no golden in the tree at all (MIRP: 44 rows), n
 wave cannot manufacture an oracle. Verified after the correction: **gtest 730/730**, registry check
 clean, 758 rows intact.
 
+## 5.24 Wave 14 (zernike) — executed
+
+One feature, one function, and a registry that was already self-consistent (`ZERNIKE2D` is
+`status=regression` with `target_test=test_zernike_regression.h`, and that is where it lives). The
+work was entirely in the names, which claimed the opposite of the registry's decision:
+
+- `test_remaining2d_verifiable_with_3p_builtin_oracle_zernike2d_feature` → `test_zernike_moments_regression`
+- `assert_verifiable_with_3p_builtin_oracle_remaining2d_vector_feature` → `assert_zernike_vector_feature_regression`
+- `oracle_3p_remaining2d_vector_feature_golden_values` → `nyxus_regression_zernike_vector_golden_values`
+- its `SCOPED_TRACE` label `VERIFIABLE_WITH_3P_BUILTIN_ORACLE__` → `REGRESSION__`
+
+The helper and table were safe to rename outright because **`ZERNIKE2D` is their only key and only
+caller** — checked before touching them; the near-identical `assert_unvetted_no_direct_oracle_*` twin
+serves the radial features and was left alone. This one mattered beyond tidiness: §6.1 rejects mahotas,
+the only tool that computes Zernike moments, so ZERNIKE2D has **no** accepted oracle — yet four
+identifiers and every failure message said it was third-party-verified. The 0/1 vetted in
+`coverage_report.md` and the test names now agree. Verified: **gtest 730/730**.
+
 ---
 
 ## 6. Reconciliation decisions (RESOLVED)
