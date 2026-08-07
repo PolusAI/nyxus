@@ -617,6 +617,31 @@ oracle, so the assertions stay in `test_ngtdm_ibsi.h` / `_regression.h` where th
 come from, and the rows keep pointing at the file that has to be written. Unlike firstorder — where
 the MATLAB values were already in the tree and only needed relocating — there is nothing to move.
 
+## 5.28 Wave 18 (glszm) — executed
+
+Same shape as ngtdm at three times the size: 65 functions across four files. Verified:
+**gtest 730/730**, 49 live glszm cases (16 ibsi + 16 regression + 17 pyradiomics).
+
+- **65 functions renamed** to `test_[3d_]glszm_<subject>_<kind>` (`test_ibsi_glszm_<f>` → `_ibsi`,
+  `test_glszm_<f>` → `_regression`, `test_compat_3glszm_<f>` → `test_3d_glszm_<f>_pyradiomics`,
+  `test_3glszm_<f>` → `test_3d_glszm_<f>_regression`), 4 helpers → `assert_*`, and
+  `test_glsz_matrix_correctness` → `test_3d_glszm_matrix_correctness_pyradiomics` (its case name had
+  also dropped the trailing `M`, as ngtdm's had).
+- **`test_3d_glszm.h` → `test_3d_glszm_regression.h`**; still not `#include`d, so its 16 assertions
+  stay dead (`not_covered.md` §B.1).
+
+**Two case-name defects found by making case = `UPPER(function)`**, both invisible while the names
+were hand-written:
+1. **Six cases were partly lowercase** — `TEST_GLSZM_gln`, `TEST_GLSZM_glnn`, `TEST_GLSZM_szn` and
+   their `TEST_IBSI_*` / `TEST_COMPAT_3GLSZM_*` twins. A `--gtest_filter` written in the obvious
+   uppercase never matched them.
+2. **Four cases named a feature that does not exist**: `SALGLZE` / `SAHGLZE`, where `featureset.h` and
+   the assertions themselves say `GLSZM_SALGLE` / `GLSZM_SAHGLE`. Failure output would have named the
+   wrong feature.
+
+**The 10 2D `oracle=pyradiomics` rows stay backlog** (same as ngtdm): `test_glszm_pyradiomics.h` has
+no golden anywhere in the tree, so there is nothing to move.
+
 ---
 
 ## 6. Reconciliation decisions (RESOLVED)
