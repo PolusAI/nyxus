@@ -9,6 +9,7 @@
 #include "test_firstorder_matlab.h"
 #include "test_intensity_histogram_regression.h"
 #include "test_intensity_histogram_ibsi.h"
+#include "test_intensity_histogram_analytic.h"
 #include "test_hu_analytic.h"
 #include "test_hu_mechanics.h"
 #include "test_morphology_features.h"
@@ -746,59 +747,59 @@ TEST(TEST_NYXUS, TEST_FIRSTORDER_PYRADIOMICS)
 
 //***** IBSI Intensity Histogram (IH) family *****
 
-TEST(TEST_NYXUS, TEST_IH_INTEGER_DOMAIN_VALUES)
+TEST(TEST_NYXUS, TEST_INTENSITY_HISTOGRAM_INTEGER_DOMAIN_VALUES_REGRESSION)
 {
-	ASSERT_NO_THROW(test_ih_integer_domain_values());
+	ASSERT_NO_THROW(test_intensity_histogram_integer_domain_values_regression());
 }
 
-TEST(TEST_NYXUS, TEST_IH_INDEX_AND_PERCENTILE_BOUNDS)
+TEST(TEST_NYXUS, TEST_INTENSITY_HISTOGRAM_INDEX_AND_PERCENTILE_BOUNDS_REGRESSION)
 {
-	ASSERT_NO_THROW(test_ih_index_and_percentile_bounds());
+	ASSERT_NO_THROW(test_intensity_histogram_index_and_percentile_bounds_regression());
 }
 
-TEST(TEST_NYXUS, TEST_IH_IBSI_GATE_OFF_RETURNS_NAN)
+TEST(TEST_NYXUS, TEST_INTENSITY_HISTOGRAM_GATE_OFF_RETURNS_NAN_MECHANICS)
 {
-	ASSERT_NO_THROW(test_ih_ibsi_gate_off_returns_nan());
+	ASSERT_NO_THROW(test_intensity_histogram_gate_off_returns_nan_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_IH_FLOAT_DOMAIN_RECONSTRUCTION)
+TEST(TEST_NYXUS, TEST_INTENSITY_HISTOGRAM_FLOAT_DOMAIN_REGRESSION)
 {
-	ASSERT_NO_THROW(test_ih_float_domain_reconstruction());
+	ASSERT_NO_THROW(test_intensity_histogram_float_domain_regression());
 }
 
-TEST(TEST_NYXUS, TEST_IH_FLOAT_DOMAIN_RECONSTRUCTION_NEGATIVE_MIN)
+TEST(TEST_NYXUS, TEST_INTENSITY_HISTOGRAM_FLOAT_DOMAIN_NEGATIVE_MIN_REGRESSION)
 {
-	ASSERT_NO_THROW(test_ih_float_domain_reconstruction_negative_min());
+	ASSERT_NO_THROW(test_intensity_histogram_float_domain_negative_min_regression());
 }
 
-TEST(TEST_NYXUS, TEST_IH_FLOAT_DOMAIN_RECONSTRUCTION_PRESERVE_HU)
+TEST(TEST_NYXUS, TEST_INTENSITY_HISTOGRAM_FLOAT_DOMAIN_PRESERVE_HU_REGRESSION)
 {
-	ASSERT_NO_THROW(test_ih_float_domain_reconstruction_preserve_hu());
+	ASSERT_NO_THROW(test_intensity_histogram_float_domain_preserve_hu_regression());
 }
 
-TEST(TEST_NYXUS, TEST_IH_FLOAT_DOMAIN_RECONSTRUCTION_PRESERVE_HU_FPACTIVE)
+TEST(TEST_NYXUS, TEST_INTENSITY_HISTOGRAM_FLOAT_DOMAIN_PRESERVE_HU_FPACTIVE_REGRESSION)
 {
-	ASSERT_NO_THROW(test_ih_float_domain_reconstruction_preserve_hu_fpactive());
+	ASSERT_NO_THROW(test_intensity_histogram_float_domain_preserve_hu_fpactive_regression());
 }
 
-TEST(TEST_NYXUS, TEST_IH_REQUIRED_PREDICATE)
+TEST(TEST_NYXUS, TEST_INTENSITY_HISTOGRAM_REQUIRED_PREDICATE_MECHANICS)
 {
-	ASSERT_NO_THROW(test_ih_required_predicate());
+	ASSERT_NO_THROW(test_intensity_histogram_required_predicate_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_IH_DISPERSION_IBSI)
+TEST(TEST_NYXUS, TEST_INTENSITY_HISTOGRAM_DISPERSION_IBSI)
 {
-	ASSERT_NO_THROW(test_ih_dispersion_ibsi());
+	ASSERT_NO_THROW(test_intensity_histogram_dispersion_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_IH_DISPERSION_ROBUST_ANALYTIC)
+TEST(TEST_NYXUS, TEST_INTENSITY_HISTOGRAM_DISPERSION_ROBUST_ANALYTIC)
 {
-	ASSERT_NO_THROW(test_ih_dispersion_robust_analytic());
+	ASSERT_NO_THROW(test_intensity_histogram_dispersion_robust_analytic());
 }
 
-TEST(TEST_NYXUS, TEST_IH_HISTOGRAM_ANALYTIC)
+TEST(TEST_NYXUS, TEST_INTENSITY_HISTOGRAM_BIN_COUNTS_ANALYTIC)
 {
-	ASSERT_NO_THROW(test_ih_histogram_analytic());
+	ASSERT_NO_THROW(test_intensity_histogram_bin_counts_analytic());
 }
 
 TEST(TEST_NYXUS, TEST_HU_UINT_FRIENDLY_NORMALIZATION_CT_RANGE)
@@ -1005,9 +1006,9 @@ TEST(TEST_NYXUS, TEST_REMAINING2D_UNVETTED_NO_DIRECT_ORACLE_POLYGONALITY_HEXAGON
 	ASSERT_NO_THROW(test_remaining2d_unvetted_no_direct_oracle_polygonality_hexagonality_features());
 }
 
-TEST(TEST_NYXUS, TEST_REMAINING2D_UNVETTED_NO_DIRECT_ORACLE_RADIAL_DISTRIBUTION)
+TEST(TEST_NYXUS, TEST_RADIAL_DISTRIBUTION_REGRESSION)
 {
-	ASSERT_NO_THROW(test_remaining2d_unvetted_no_direct_oracle_radial_distribution_features());
+	ASSERT_NO_THROW(test_radial_distribution_regression());
 }
 
 TEST(TEST_NYXUS, TEST_ZERNIKE_MOMENTS_REGRESSION)
