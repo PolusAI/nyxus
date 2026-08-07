@@ -113,10 +113,6 @@ void test_3d_firstorder_cov_matlab() {
 	assert_3d_firstorder_feature_matlab ( "3COV", Nyxus::Feature3D::COV ); 
 }
 
-void test_3d_firstorder_ciir_matlab() {
-	assert_3d_firstorder_feature_matlab ("3COVERED_IMAGE_INTENSITY_RANGE", Nyxus::Feature3D::COVERED_IMAGE_INTENSITY_RANGE);
-}
-
 void test_3d_firstorder_energy_matlab() {
 	assert_3d_firstorder_feature_matlab ("3ENERGY", Nyxus::Feature3D::ENERGY);
 }

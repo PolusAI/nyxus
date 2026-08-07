@@ -122,7 +122,7 @@ They compile nowhere, so they cannot even fail.
 | file | dead functions |
 |---|---:|
 | `test_3d_firstorder_matlab.h` | 36 |
-| `test_3d_glcm.h` | 25 |
+| `test_3d_glcm_regression.h` | 25 |
 | `test_3d_glrlm_regression.h` | 16 |
 | `test_3d_glszm_regression.h` | 16 |
 | `test_3d_gldm_regression.h` | 14 |
@@ -136,7 +136,7 @@ behavioural decision (they may fail on first run) and belongs to each family's w
 
 | file | function |
 |---|---|
-| `test_3d_glcm_pyradiomics.h` | `test_compat_3glcm_JVAR` |
+| `test_3d_glcm_pyradiomics.h` | `test_3d_glcm_jvar_pyradiomics` |
 | `test_firstorder_ibsi.h` | `test_firstorder_robust_mean_absolute_deviation_ibsi` |
 
 Both are complete assertions with no `TEST()` entry — a missing registration, most likely an
