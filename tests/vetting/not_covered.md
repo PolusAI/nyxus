@@ -123,7 +123,7 @@ They compile nowhere, so they cannot even fail.
 |---|---:|
 | `test_3d_firstorder_matlab.h` | 36 |
 | `test_3d_glcm.h` | 25 |
-| `test_3d_glrlm.h` | 16 |
+| `test_3d_glrlm_regression.h` | 16 |
 | `test_3d_glszm_regression.h` | 16 |
 | `test_3d_gldm_regression.h` | 14 |
 | `test_3d_ngtdm_regression.h` | 5 |

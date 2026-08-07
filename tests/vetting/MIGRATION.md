@@ -642,6 +642,30 @@ were hand-written:
 **The 10 2D `oracle=pyradiomics` rows stay backlog** (same as ngtdm): `test_glszm_pyradiomics.h` has
 no golden anywhere in the tree, so there is nothing to move.
 
+## 5.29 Wave 19 (glrlm) — executed
+
+Largest family of this shape: 88 functions across four files, with two extras the previous three did
+not have — angle-averaged `_ave` variants in both the ibsi and regression files, and a second ibsi
+helper for them. Verified: **gtest 730/730**, 72 live glrlm cases (22 ibsi + 32 regression +
+18 pyradiomics).
+
+- **88 functions renamed** to `test_[3d_]glrlm_<subject>[_ave]_<kind>`; the `_ave` marker stays in the
+  subject position, so `test_ibsi_glrlm_lglre_ave` → `test_glrlm_lglre_ave_ibsi`.
+- **5 helpers → `assert_*`**, including the second ibsi one (`assert_glrlm_ave_feature_ibsi`).
+- `test_compat_3glrlm_ave_features` → `test_3d_glrlm_ave_pyradiomics` and
+  `test_glrl_matrix_correctness` → `test_3d_glrlm_matrix_correctness_pyradiomics`.
+- **`test_3d_glrlm.h` → `test_3d_glrlm_regression.h`**; still unwired, 16 assertions stay dead (§B.1).
+
+**The dropped-`M` typo is now confirmed systemic.** All three matrix-correctness cases carried it —
+`TEST_3NGTD_MATRIX_CORRECTNESS`, `TEST_COMPAT_3GLSZ_MATRIX_CORRECTNESS`,
+`TEST_COMPAT_3GLRL_MATRIX_CORRECTNESS` — each naming a matrix that is not the family's
+(`NGTD`/`GLSZ`/`GLRL` instead of `NGTDM`/`GLSZM`/`GLRLM`). Hand-written case names drift; deriving
+them as `UPPER(function)` is what surfaced all three.
+
+**22 rows stay backlog**: 20 2D `oracle=pyradiomics` (`test_glrlm_pyradiomics.h`, no golden in the
+tree) and 2 3D `oracle=mirp` (`test_3d_glrlm_mirp.h`; MIRP has no goldens anywhere — 44 rows across
+four families wait on it).
+
 ---
 
 ## 6. Reconciliation decisions (RESOLVED)
