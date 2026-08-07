@@ -143,7 +143,7 @@ Both are complete assertions with no `TEST()` entry — a missing registration, 
 oversight when the surrounding cases were added. Enabling them may fail, so treat as triage.
 
 Not dead, listed to avoid double-counting: `assert_gldzm_matrix_ibsi`,
-`test_ibsi_ngld_matrix_ibsi`, `test_ibsi_ngld_matrix_nonibsi` take no arguments and have no `TEST()`
+`assert_ngldm_matrix_ibsi_mode`, `assert_ngldm_matrix_nonibsi_mode` take no arguments and have no `TEST()`
 of their own, but each is called by a registered case — they are helpers wearing a `test_` prefix.
 
 ### B.3 Registered but excluded by a build flag — 13 cases
@@ -191,6 +191,7 @@ Found while placing assertions by column J. Each needs a registry decision, not 
 | 2D `UNIFORMITY` | pyradiomics | `test_firstorder_regression.h` | **RESOLVED.** A pyradiomics assertion already exists in `test_firstorder_pyradiomics.h`, so column J was stale: repointed there, no code moved. The MATLAB-valued assertion in `test_firstorder_matlab.h` is a *second* assertion at the MATLAB config and needs its own row per SPEC §3. |
 | 2D `ENTROPY` | pyradiomics | `test_firstorder_regression.h` | **RESOLVED.** Also already asserted in `test_firstorder_pyradiomics.h`; column J repointed, no code moved. The snapshot in the regression file is the drift guard on the default config. |
 | 2D `moments` ×40 | skimage | `test_moments_regression.h` | **RESOLVED in Wave 13.** All 40 were already asserted in `test_moments_skimage.h`; only the registry was stale, so `target_test` was repointed there and no code moved. This is the common case of the class: the assertion was migrated in an earlier wave and column J was never updated. |
+| 2D `ngldm` x19 | mirp | `test_ngldm_mirp.h` | The tree holds **IBSI** goldens for 17 of these 19 features, cited page-by-page against the IBSI documentation in `test_ngldm_ibsi.h`; the other two (`GLM`, `DCM`) are explicitly *not* IBSI features and are now snapshots in `test_ngldm_regression.h`. So the in-tree 2D NGLDM oracle is `ibsi`, not `mirp`. Either these rows should read `oracle=ibsi` (already satisfied, 17 of them), or MIRP is wanted as a second opinion per SPEC 3 and the rows stay backlog until it is run. |
 | 3D firstorder x18 | matlab | `test_3d_firstorder_regression.h` | **RESOLVED under SPEC 6.2.1** (this reverses the earlier "leave it" call, which assumed column J was authoritative). `d3inten_GT` holds MATLAB values, so the file is now `test_3d_firstorder_matlab.h` with 36 `_matlab` functions and the 18 rows point there. Two carry-overs: the file is still not `#include`d (B.1), and the same map also covers 17 `oracle=pyradiomics` features plus 1 regression-only one, which per SPEC 3 need a second (matlab) row each. |
 
 The general form: **a `vetted` row whose `target_test` names a `_regression` file** is asserting that

@@ -694,6 +694,30 @@ this leaves: 2D GLDZM has exactly **one** vetted-and-asserted feature (`GLDZM_ZD
 17 wait on MIRP, and all 18 3D features are snapshots. `coverage_report.md`'s 18/36 for this family is
 the registry's own count and is unchanged by the rename.
 
+## 5.31 Wave 21 (ngldm) — executed
+
+42 functions, and the first **split of an oracle file** in this series. Verified: **gtest 730/730**,
+40 ngldm cases (19 ibsi + 21 regression).
+
+- **`test_ngldm_regression.h` created.** `NGLDM_GLM` and `NGLDM_DCM` are Nyxus mean-style rows with
+  no counterpart in the IBSI NGLDM table — the source says so in a comment (`--not in IBSI--` beside
+  the two commented-out entries) and their goldens are pinned Nyxus output in a table already named
+  `unvetted_nyxus_regression_*`. They nevertheless sat in `test_ngldm_ibsi.h`. SPEC §2 keeps one kind
+  per file, so they moved out with the snapshot table and helper they use; the two functions lose the
+  `unvetted_no_direct_oracle` claim phrase for a plain `_regression` suffix.
+- **42 functions renamed**; 5 helpers → `assert_*`, two of which
+  (`assert_ngldm_matrix_{ibsi,nonibsi}_mode`) were zero-arg helpers never registered as cases, so
+  `not_covered.md` §B.2 had counted them as dead tests.
+- All 40 case names were already `UPPER(function)` after the function renames — the first family in
+  this series with no case-name defect at all.
+
+**Registry discrepancy recorded, not acted on.** All 19 2D rows read `oracle=mirp` targeting
+`test_ngldm_mirp.h`, yet the tree holds **IBSI** goldens for 17 of them (cited page-by-page against
+the IBSI documentation) and the remaining two are the non-IBSI snapshots above. So the 2D NGLDM
+oracle in the tree is `ibsi`, not `mirp`. Per the placement rule the assertions stay where their
+values come from; whether those rows should read `oracle=ibsi` (already satisfied) or keep waiting
+for a MIRP cross-check is a registry decision — added to `not_covered.md` §D.
+
 ---
 
 ## 6. Reconciliation decisions (RESOLVED)
