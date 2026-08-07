@@ -70,7 +70,7 @@ static Fsettings make_neighbors2d_settings()
 	return s;
 }
 
-static void calculate_neighborhood2d_feature_values(std::unordered_map<int, LR>& roiData)
+static void calculate_neighbor_feature_values(std::unordered_map<int, LR>& roiData)
 {
 	Fsettings s = make_neighbors2d_settings();
 	std::unordered_set<int> uniqueLabels;
@@ -122,10 +122,10 @@ static void assert_neighbor2d_feature(
 	ASSERT_TRUE(agrees_gt(roiData.at(label).fvals[static_cast<int>(feature)][0], unvetted_nyxus_regression_neighbor2d_distance_feature_golden_values_by_label[label][feature_name], frac_tolerance));
 }
 
-void test_neighborhood2d_counts_and_touching()
+void test_neighbor_counts_and_touching_regression()
 {
 	std::unordered_map<int, LR> roiData;
-	calculate_neighborhood2d_feature_values(roiData);
+	calculate_neighbor_feature_values(roiData);
 
 	for (int label : {1, 2, 3, 4, 5})
 	{
@@ -134,30 +134,10 @@ void test_neighborhood2d_counts_and_touching()
 	}
 }
 
-// ANALYTIC oracle (closed form) for the exact_min_sqdist touch fix: a ROI that is completely surrounded by
-// neighbors on every side has *every* contour pixel 8-adjacent to some neighbor, so PERCENT_TOUCHING
-// must equal exactly 100. Label 1 (the 3x3 center block) is such a ROI in this scene. The approximate
-// min_sqdist v2 returned 87.5 (missed one pixel's true adjacency); the exact scan returns 100. Also
-// checks the hard bound PERCENT_TOUCHING <= 100 for all ROIs (the deduped-mask invariant).
-void test_neighborhood2d_percent_touching_enclosed_analytic()
+void test_neighbor_closest_neighbors_regression()
 {
 	std::unordered_map<int, LR> roiData;
-	calculate_neighborhood2d_feature_values(roiData);
-
-	const int ptIdx = static_cast<int>(Nyxus::Feature2D::PERCENT_TOUCHING);
-
-	// Closed form: fully-enclosed ROI => 100% of contour touches.
-	ASSERT_NEAR(roiData.at(1).fvals[ptIdx][0], 100.0, 1e-9);
-
-	// Invariant bound for every ROI.
-	for (int label : {1, 2, 3, 4, 5})
-		ASSERT_LE(roiData.at(label).fvals[ptIdx][0], 100.0 + 1e-9);
-}
-
-void test_neighborhood2d_closest_neighbors()
-{
-	std::unordered_map<int, LR> roiData;
-	calculate_neighborhood2d_feature_values(roiData);
+	calculate_neighbor_feature_values(roiData);
 
 	for (int label : {1, 2, 3, 4, 5})
 	{

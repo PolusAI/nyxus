@@ -14,7 +14,7 @@
 
 #include <gtest/gtest.h>
 
-#include "test_neighbor_regression.h"  // shared fixture builder calculate_neighborhood2d_feature_values
+#include "test_neighbor_regression.h"  // shared fixture builder calculate_neighbor_feature_values
 
 static std::unordered_map<int, std::unordered_map<std::string, double>> neighbor2d_cellprofiler_golden_by_label{
 	{1, {{"NUM_NEIGHBORS", 4.0}, {"CLOSEST_NEIGHBOR1_DIST", 2.5}}},
@@ -36,10 +36,10 @@ static void assert_neighbor2d_cellprofiler(
 		neighbor2d_cellprofiler_golden_by_label[label][feature_name], 1e-4);
 }
 
-void test_neighborhood2d_counts_and_first_distance_cellprofiler()
+void test_neighbor_counts_and_first_distance_cellprofiler()
 {
 	std::unordered_map<int, LR> roiData;
-	calculate_neighborhood2d_feature_values(roiData);
+	calculate_neighbor_feature_values(roiData);
 
 	for (int label : {1, 2, 3, 4, 5})
 	{

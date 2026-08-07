@@ -47,7 +47,7 @@ omission matters:
 
 | file | functions | what it asserts | why it matters |
 |---|---:|---|---|
-| `test_neighbors_oracle.py` | 2 | `PERCENT_TOUCHING`, closest-neighbor distance on the production `featurize()` path | **an oracle-grade test invisible to the registry**; the neighbor rows list only the C++ files |
+| ~~`test_neighbors_oracle.py`~~ | 2 | `PERCENT_TOUCHING`, `NUM_NEIGHBORS`, closest-neighbor distance on the production `featurize()` path | **CLOSED in Wave 15.** On inspection it asserts bounds and relations (`<= 100`, `> 0`, `== 100` for an enclosed ROI), not oracle values — so it is an `_invariant`, not the CellProfiler oracle assumed here. Renamed `test_neighbor_invariant.py` and added to `current_test` on the 3 rows it covers. |
 | `test_hounsfield.py` | 3 | first-order MIN/MAX/MEAN/INTEGRATED in `--preserve-hu` mode | a second config for existing firstorder rows (SPEC §1 "vetted on config A") — no row records it |
 | `test_hounsfield_nifti.py` | 3 | the same on a 3D NIfTI volume with `scl_slope`/`scl_inter` | ditto, 3D |
 | `test_hu_analytic.h` | 3 | closed form of the HU offset mapping (`uint_friendly_inten`) | analytic assertion with no row |
