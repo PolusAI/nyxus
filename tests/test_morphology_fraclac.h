@@ -2,7 +2,7 @@
 
 #include "test_morphology_common.h"
 
-void test_shape2d_fractal_dimension_blob512_oracle()
+void test_morphology_fractal_dimension_blob512_fraclac()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_fractal_blob512_feature_values(fvals);

@@ -3,7 +3,7 @@
 #include "test_gabor_skimage.h"
 #include "../src/nyx/environment.h"
 #include "../src/nyx/globals.h"
-#include "test_contour.h"
+#include "test_contour_analytic.h"
 #include "test_firstorder_common.h"
 #include "test_firstorder_regression.h"
 #include "test_firstorder_matlab.h"
@@ -18,6 +18,7 @@
 #include "test_morphology_imea.h"
 #include "test_morphology_skimage.h"
 #include "test_morphology_matlab.h"
+#include "test_morphology_cellprofiler.h"
 #include "test_morphology_fraclac.h"
 #include "test_moments_skimage.h"
 #include "test_moments_regression.h"
@@ -80,24 +81,24 @@
 
 //***** 2D contour and multicontour *****
 
-TEST(TEST_NYXUS, TEST_CONTOUR_MULTI_1) {
-	ASSERT_NO_THROW(test_contour_multi_disconnected());
+TEST(TEST_NYXUS, TEST_CONTOUR_MULTI_DISCONNECTED_ANALYTIC) {
+	ASSERT_NO_THROW(test_contour_multi_disconnected_analytic());
 }
 
-TEST(TEST_NYXUS, TEST_CONTOUR_SINGLE) {
-	ASSERT_NO_THROW(test_contour_single());
+TEST(TEST_NYXUS, TEST_CONTOUR_SINGLE_ANALYTIC) {
+	ASSERT_NO_THROW(test_contour_single_analytic());
 }
 
-TEST(TEST_NYXUS, TEST_CONTOUR_SINGLE_TAILED) {
-	ASSERT_NO_THROW(test_contour_single_tailed());
+TEST(TEST_NYXUS, TEST_CONTOUR_SINGLE_TAILED_ANALYTIC) {
+	ASSERT_NO_THROW(test_contour_single_tailed_analytic());
 }
 
-TEST(TEST_NYXUS, TEST_CONTOUR_VOID) {
-	ASSERT_NO_THROW(test_contour_void());
+TEST(TEST_NYXUS, TEST_CONTOUR_VOID_ANALYTIC) {
+	ASSERT_NO_THROW(test_contour_void_analytic());
 }
 
-TEST(TEST_NYXUS, TEST_CONTOUR_MULTI_2) {
-	ASSERT_NO_THROW(test_contour_multi_connected());
+TEST(TEST_NYXUS, TEST_CONTOUR_MULTI_CONNECTED_ANALYTIC) {
+	ASSERT_NO_THROW(test_contour_multi_connected_analytic());
 }
 
 
@@ -519,44 +520,44 @@ TEST(TEST_NYXUS, TEST_PARQUET) {
 
 //***** 3D shape *****
 
-TEST(TEST_NYXUS, TEST_3SHAPE_3MESH_VOLUME) {
-	ASSERT_NO_THROW(test_3shape_meshvolume());
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_MESH_VOLUME_MATLAB) {
+	ASSERT_NO_THROW(test_3d_morphology_mesh_volume_matlab());
 }
 
-TEST(TEST_NYXUS, TEST_3SHAPE_3AREA) {
-	ASSERT_NO_THROW(test_3shape_area());
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_AREA_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_morphology_area_regression());
 }
 
-TEST(TEST_NYXUS, TEST_3SHAPE_3AREA_2_VOLUME) {
-	ASSERT_NO_THROW(test_3shape_area2volume());
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_AREA_2_VOLUME_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_morphology_area_2_volume_regression());
 }
 
-TEST(TEST_NYXUS, TEST_3SHAPE_3COMPACTNESS1) {
-	ASSERT_NO_THROW(test_3shape_compactness1());
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_COMPACTNESS1_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_morphology_compactness1_regression());
 }
 
-TEST(TEST_NYXUS, TEST_3SHAPE_3COMPACTNESS2) {
-	ASSERT_NO_THROW(test_3shape_compactness2());
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_COMPACTNESS2_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_morphology_compactness2_regression());
 }
 
-TEST(TEST_NYXUS, TEST_3SHAPE_3SPHERICAL_DISPROPORTION) {
-	ASSERT_NO_THROW(test_3shape_sprericaldisproportion());
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SPHERICAL_DISPROPORTION_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_morphology_spherical_disproportion_regression());
 }
 
-TEST(TEST_NYXUS, TEST_3SHAPE_3SPHERICITY) {
-	ASSERT_NO_THROW(test_3shape_sphericity());
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SPHERICITY_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_morphology_sphericity_regression());
 }
 
-TEST(TEST_NYXUS, TEST_3SHAPE_3VOLUME_CONVEXHULL) {
-	ASSERT_NO_THROW(test_3shape_volumeconvhull());
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOLUME_CONVEX_HULL_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_morphology_volume_convex_hull_regression());
 }
 
-TEST(TEST_NYXUS, TEST_3SHAPE_3VOXEL_VOLUME) {
-	ASSERT_NO_THROW(test_3shape_voxelvolume());
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOXEL_VOLUME_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_morphology_voxel_volume_regression());
 }
 
-TEST(TEST_NYXUS, TEST_3SHAPE_COVMATRIX_AND_EIGENVALS) {
-	ASSERT_NO_THROW(test_3shape_covmatrix_and_eigenvals());
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_COVMATRIX_AND_EIGENVALS_MATLAB) {
+	ASSERT_NO_THROW(test_3d_morphology_covmatrix_and_eigenvals_matlab());
 }
 
 
@@ -871,59 +872,59 @@ TEST(TEST_NYXUS, TEST_FIRSTORDER_ENTROPY_REGRESSION)
 
 //***** Morphology features ***** 
 
-TEST(TEST_NYXUS, TEST_MORPHOLOGY_PERIMETER) 
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_PERIMETER_MATLAB) 
 {
-	ASSERT_NO_THROW(test_morphology_perimeter());
+	ASSERT_NO_THROW(test_morphology_perimeter_matlab());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_BASIC_MORPHOLOGY_FEATURES)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_BASIC_REGRESSION)
 {
-	ASSERT_NO_THROW(test_shape2d_basic_morphology_features());
+	ASSERT_NO_THROW(test_morphology_basic_regression());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_ELLIPSE_FEATURES)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_ELLIPSE_REGRESSION)
 {
-	ASSERT_NO_THROW(test_shape2d_ellipse_features());
+	ASSERT_NO_THROW(test_morphology_ellipse_regression());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_CONTOUR_FEATURES)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_CONTOUR_REGRESSION)
 {
-	ASSERT_NO_THROW(test_shape2d_contour_features());
+	ASSERT_NO_THROW(test_morphology_contour_regression());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_CONVEX_HULL_FEATURES)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_CONVEX_HULL_SKIMAGE)
 {
-	ASSERT_NO_THROW(test_shape2d_convex_hull_features());
+	ASSERT_NO_THROW(test_morphology_convex_hull_skimage());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_SKIMAGE_ORIENTATION_AND_EROSIONS)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_ORIENTATION_AND_EROSIONS_SKIMAGE)
 {
-	ASSERT_NO_THROW(test_shape2d_skimage_orientation_and_erosions());
+	ASSERT_NO_THROW(test_morphology_orientation_and_erosions_skimage());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_EXTREMA_FEATURES)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_EXTREMA_MATLAB)
 {
-	ASSERT_NO_THROW(test_shape2d_verifiable_with_3p_builtin_oracle_extrema_features());
+	ASSERT_NO_THROW(test_morphology_extrema_matlab());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_MISC_FEATURES)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_MISC_REGRESSION)
 {
-	ASSERT_NO_THROW(test_shape2d_misc_shape_features());
+	ASSERT_NO_THROW(test_morphology_misc_regression());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_FRACTAL_CIRCLE_FEATURES)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_FRACTAL_CIRCLE_REGRESSION)
 {
-	ASSERT_NO_THROW(test_shape2d_verifiable_with_3p_builtin_oracle_fractal_circle_features());
+	ASSERT_NO_THROW(test_morphology_fractal_circle_regression());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_FRACTAL_DIMENSION_BLOB512_ORACLE)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_FRACTAL_DIMENSION_BLOB512_FRACLAC)
 {
-	ASSERT_NO_THROW(test_shape2d_fractal_dimension_blob512_oracle());
+	ASSERT_NO_THROW(test_morphology_fractal_dimension_blob512_fraclac());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_UNVETTED_NO_DIRECT_ORACLE_RADIUS_FEATURES)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_RADIUS_REGRESSION)
 {
-	ASSERT_NO_THROW(test_shape2d_unvetted_no_direct_oracle_radius_features());
+	ASSERT_NO_THROW(test_morphology_radius_regression());
 }
 
 TEST(TEST_NYXUS, TEST_MOMENTS_SHAPE_SKIMAGE)
@@ -951,59 +952,59 @@ TEST(TEST_NYXUS, TEST_MOMENTS_INTENSITY_REGRESSION)
 	ASSERT_NO_THROW(test_moments_intensity_regression());
 }
 
-TEST(TEST_NYXUS, TEST_REMAINING2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_EROSION_COMPLEMENT)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_EROSION_COMPLEMENT_REGRESSION)
 {
-	ASSERT_NO_THROW(test_remaining2d_verifiable_with_3p_builtin_oracle_erosion_complement_feature());
+	ASSERT_NO_THROW(test_morphology_erosion_complement_regression());
 }
 
-TEST(TEST_NYXUS, TEST_REMAINING2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_CALIPER_FEATURES)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_CALIPER_REGRESSION)
 {
-	ASSERT_NO_THROW(test_remaining2d_verifiable_with_3p_builtin_oracle_caliper_features());
+	ASSERT_NO_THROW(test_morphology_caliper_regression());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_CALIPER_MARTIN_NASSENSTEIN_IMEA_ELLIPSE_ORACLE)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_CALIPER_MARTIN_NASSENSTEIN_IMEA)
 {
-	ASSERT_NO_THROW(test_shape2d_caliper_martin_nassenstein_imea_ellipse_oracle());
+	ASSERT_NO_THROW(test_morphology_caliper_martin_nassenstein_imea());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_CALIPER_FERET_IMEA_ELLIPSE_ORACLE)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_CALIPER_FERET_IMEA)
 {
-	ASSERT_NO_THROW(test_shape2d_caliper_feret_imea_ellipse_oracle());
+	ASSERT_NO_THROW(test_morphology_caliper_feret_imea());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_MIN_ENCLOSING_CIRCLE_IMEA_ORACLE)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_MIN_ENCLOSING_CIRCLE_IMEA)
 {
-	ASSERT_NO_THROW(test_shape2d_min_enclosing_circle_imea_oracle());
+	ASSERT_NO_THROW(test_morphology_min_enclosing_circle_imea());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_DOCUMENTED_FORMULA_CONFORMANCE_ANALYTIC)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_DOCUMENTED_FORMULA_CONFORMANCE_ANALYTIC)
 {
-	ASSERT_NO_THROW(test_shape2d_documented_formula_conformance_analytic());
+	ASSERT_NO_THROW(test_morphology_documented_formula_conformance_analytic());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_DIAMETER_EQUAL_PERIMETER_IMEA)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_DIAMETER_EQUAL_PERIMETER_IMEA)
 {
-	ASSERT_NO_THROW(test_shape2d_diameter_equal_perimeter_imea());
+	ASSERT_NO_THROW(test_morphology_diameter_equal_perimeter_imea());
 }
 
-TEST(TEST_NYXUS, TEST_SHAPE2D_GEODETIC_LENGTH_THICKNESS_IMEA)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_GEODETIC_LENGTH_THICKNESS_IMEA)
 {
-	ASSERT_NO_THROW(test_shape2d_geodetic_length_thickness_imea());
+	ASSERT_NO_THROW(test_morphology_geodetic_length_thickness_imea());
 }
 
-TEST(TEST_NYXUS, TEST_REMAINING2D_VERIFIABLE_WITH_3P_BUILTIN_ORACLE_CHORD_STAT_FEATURES)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_CHORD_STAT_REGRESSION)
 {
-	ASSERT_NO_THROW(test_remaining2d_verifiable_with_3p_builtin_oracle_chord_stat_features());
+	ASSERT_NO_THROW(test_morphology_chord_stat_regression());
 }
 
-TEST(TEST_NYXUS, TEST_REMAINING2D_UNVETTED_NO_DIRECT_ORACLE_CHORD_ANGLE_FEATURES)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_CHORD_ANGLE_REGRESSION)
 {
-	ASSERT_NO_THROW(test_remaining2d_unvetted_no_direct_oracle_chord_angle_features());
+	ASSERT_NO_THROW(test_morphology_chord_angle_regression());
 }
 
-TEST(TEST_NYXUS, TEST_REMAINING2D_UNVETTED_NO_DIRECT_ORACLE_POLYGONALITY_HEXAGONALITY)
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_POLYGONALITY_HEXAGONALITY_REGRESSION)
 {
-	ASSERT_NO_THROW(test_remaining2d_unvetted_no_direct_oracle_polygonality_hexagonality_features());
+	ASSERT_NO_THROW(test_morphology_polygonality_hexagonality_regression());
 }
 
 TEST(TEST_NYXUS, TEST_RADIAL_DISTRIBUTION_REGRESSION)
@@ -2569,4 +2570,9 @@ int main(int argc, char **argv)
   ::testing::InitGoogleTest(&argc, argv);
   int ret = RUN_ALL_TESTS();
   return ret;
+}
+
+TEST(TEST_NYXUS, TEST_MORPHOLOGY_EDGE_INTENSITY_CELLPROFILER)
+{
+	ASSERT_NO_THROW(test_morphology_edge_intensity_cellprofiler());
 }

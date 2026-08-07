@@ -46,7 +46,7 @@ def _one(features, inten, label, **kw):
 
 
 # ============================ CHORDS ========================================
-def test_chord_max_angle_distinct_from_min():
+def test_morphology_chord_max_angle_distinct_from_min_invariant():
     """Bug #16 (FIXED): chords.cpp computed the max-chord angle index from iteMin
     (`idxmax = distance(begin, iteMin)`), so MAXCHORDS_MAX_ANG was ALWAYS equal to
     MAXCHORDS_MIN_ANG (same copy-paste error for ALLCHORDS). When the longest and shortest

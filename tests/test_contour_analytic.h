@@ -5,7 +5,7 @@
 #include "test_data.h"
 #include "../src/nyx/features/contour.h"
 
-void test_contour_single_tailed()
+void test_contour_single_tailed_analytic()
 {
 	const int w = 21, h = 20;
 	std::vector<PixIntens> I =
@@ -46,7 +46,7 @@ void test_contour_single_tailed()
 	ASSERT_TRUE(multic.size() == 1);
 }
 
-void test_contour_void()
+void test_contour_void_analytic()
 {
 	const int w = 10, h = 11;
 	const std::vector<PixIntens> I =
@@ -69,7 +69,7 @@ void test_contour_void()
 	ASSERT_TRUE (multic.size() == 0);
 }
 
-void test_contour_single()
+void test_contour_single_analytic()
 {
 	const int w = 10, h = 11;
 	const std::vector<PixIntens> I = 
@@ -92,7 +92,7 @@ void test_contour_single()
 	ASSERT_TRUE (multiC.size() == 1);
 }
 
-void test_contour_multi_disconnected()
+void test_contour_multi_disconnected_analytic()
 {
 	const int w = 59, h = 47;
 	const std::vector<PixIntens> I =
@@ -155,7 +155,7 @@ void test_contour_multi_disconnected()
 	ASSERT_TRUE(multic.size() == 4);
 }
 
-void test_contour_multi_connected()
+void test_contour_multi_connected_analytic()
 {
 	const int w = 59, h = 47;
 	const std::vector<PixIntens> I =

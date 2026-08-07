@@ -71,7 +71,7 @@ def _blob():
 
 
 # ============================ CONVEX HULL / SOLIDITY ========================
-def test_solidity_le_one():
+def test_morphology_solidity_le_one_invariant():
     """Proposed fix #6 (Pick's-theorem pixel-count hull area): SOLIDITY = ROI area / hull area
     must be <= 1. The bare shoelace hull area runs through pixel CENTRES and under-counts
     coverage, so for small/elongated ROIs it fell below the ROI pixel count -> SOLIDITY > 1

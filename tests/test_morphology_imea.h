@@ -1,6 +1,7 @@
 #pragma once
 
 #include "test_morphology_common.h"
+#include "test_remaining2d_common.h"   // imea_ellipse_caliper_oracle + assert_caliper_close_to_imea
 
 // DIAMETER_EQUAL_PERIMETER vetted vs imea (tests/vetting/oracles/gen_morphology_imea.py).
 //
@@ -15,7 +16,7 @@
 // diameter_equal_perimeter on this fixture is 4.0288 -- it does NOT agree with Nyxus, and the whole
 // gap is inherited from PERIMETER, which stays a regression row of its own. What is pinned here is
 // that Nyxus' derived diameter is the ISO quantity a third-party package computes from the same input.
-void test_shape2d_diameter_equal_perimeter_imea()
+void test_morphology_diameter_equal_perimeter_imea()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_shape2d_feature_values(fvals);
@@ -43,7 +44,7 @@ void test_shape2d_diameter_equal_perimeter_imea()
 // and 0.83). The whole gap is inherited from PERIMETER, which stays a regression row of its own. What
 // is pinned here is that Nyxus' two side lengths are the ISO quantities a third-party package computes
 // from the same two inputs -- the same scope as the DIAMETER_EQUAL_PERIMETER claim above.
-void test_shape2d_geodetic_length_thickness_imea()
+void test_morphology_geodetic_length_thickness_imea()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_shape2d_feature_values(fvals);
@@ -55,4 +56,57 @@ void test_shape2d_geodetic_length_thickness_imea()
 		<< "GEODETIC_LENGTH does not match imea geodeticlength_and_thickness(AREA, PERIMETER)";
 	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::THICKNESS)][0], imea_thickness, 1e-9)
 		<< "THICKNESS does not match imea geodeticlength_and_thickness(AREA, PERIMETER)";
+}
+
+// Vets the reimplemented Martin (area-bisecting chord) and Nassenstein (bottom-tangent vertical
+// chord) diameters against imea on a clean filled ellipse (a=20, b=10). See the oracle block in
+// test_remaining2d_common.h. Robust stats (min/max/mean/median) agree with imea within the
+// hull-vs-raster convention tolerance; the >0 lower bound pins that the old min+max-chord bug
+// (0-length Nassenstein diameters) is gone.
+void test_morphology_caliper_martin_nassenstein_imea()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_ellipse_caliper_values(fvals);
+
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MIN, "STAT_MARTIN_DIAM_MIN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MAX, "STAT_MARTIN_DIAM_MAX");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MEAN, "STAT_MARTIN_DIAM_MEAN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MEDIAN, "STAT_MARTIN_DIAM_MEDIAN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MIN, "STAT_NASSENSTEIN_DIAM_MIN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MAX, "STAT_NASSENSTEIN_DIAM_MAX");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MEAN, "STAT_NASSENSTEIN_DIAM_MEAN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MEDIAN, "STAT_NASSENSTEIN_DIAM_MEDIAN");
+
+	// Bug-gone invariant: a solid shape cannot have a 0-length diameter (the old code produced 0).
+	ASSERT_GT(fvals[static_cast<int>(Nyxus::Feature2D::STAT_MARTIN_DIAM_MIN)][0], 2.0);
+	ASSERT_GT(fvals[static_cast<int>(Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MIN)][0], 2.0);
+}
+// Vets the Feret diameter distribution against imea on the same filled ellipse. Feret is a correct
+// rotating-calipers implementation; robust stats (min/max/mean/median) agree with imea within the
+// hull-vs-raster convention tolerance. (MIN/MAX_FERET_ANGLE stay regression — they are a Nyxus-frame
+// angle convention with no directly comparable imea output.)
+void test_morphology_caliper_feret_imea()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_ellipse_caliper_values(fvals);
+
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MIN, "STAT_FERET_DIAM_MIN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MAX, "STAT_FERET_DIAM_MAX");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MEAN, "STAT_FERET_DIAM_MEAN");
+	assert_caliper_close_to_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MEDIAN, "STAT_FERET_DIAM_MEDIAN");
+}
+// Vets the minimum-enclosing-circle diameter (Welzl / cv2.minEnclosingCircle) against its exact
+// geometric/imea value on two clean fixtures: ellipse a=20 -> 2a=40, circle r=15 -> 30. This is
+// centroid-independent, so it matches to <0.1%. (DIAMETER_CIRCUMSCRIBING/INSCRIBING_CIRCLE are left
+// regression: imea's centroid-to-contour-distance approximation, convention-sensitive.)
+void test_morphology_min_enclosing_circle_imea()
+{
+	std::vector<std::vector<double>> ell;
+	calculate_ellipse_caliper_values(ell);
+	assert_caliper_close_to_imea(ell, Nyxus::Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE, "DIAMETER_MIN_ENCLOSING_CIRCLE", 0.05);
+
+	std::vector<std::vector<double>> cir;
+	calculate_circle_shape_values(cir);
+	const double d = cir[static_cast<int>(Nyxus::Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE)][0];
+	ASSERT_NEAR(d, 30.0, 30.0 * 0.05) << "circle min-enclosing nyxus=" << d << " expected~30";
 }
