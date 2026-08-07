@@ -30,7 +30,7 @@ static std::unordered_map<std::string, float> d3glszm_GT{
 
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
-void test_3glszm_feature (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+void assert_3d_glszm_feature_regression (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
 #if 0
     // get segment info
@@ -130,83 +130,83 @@ void test_3glszm_feature (const Nyxus::Feature3D& expecting_fcode, const std::st
 
 }
 
-void test_3glszm_sae()
+void test_3d_glszm_sae_regression()
 {
-    test_3glszm_feature(Nyxus::Feature3D::GLSZM_SAE, "3GLSZM_SAE");
+    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_SAE, "3GLSZM_SAE");
 }
 
-void test_3glszm_lae()
+void test_3d_glszm_lae_regression()
 {
-    test_3glszm_feature(Nyxus::Feature3D::GLSZM_LAE, "3GLSZM_LAE");
+    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_LAE, "3GLSZM_LAE");
 }
 
-void test_3glszm_lglze()
+void test_3d_glszm_lglze_regression()
 {
-    test_3glszm_feature(Nyxus::Feature3D::GLSZM_LGLZE, "3GLSZM_LGLZE");
+    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_LGLZE, "3GLSZM_LGLZE");
 }
 
-void test_3glszm_hglze()
+void test_3d_glszm_hglze_regression()
 {
-    test_3glszm_feature(Nyxus::Feature3D::GLSZM_HGLZE, "3GLSZM_HGLZE");
+    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_HGLZE, "3GLSZM_HGLZE");
 }
 
-void test_3glszm_salgle()
+void test_3d_glszm_salgle_regression()
 {
-    test_3glszm_feature(Nyxus::Feature3D::GLSZM_SALGLE, "3GLSZM_SALGLE");
+    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_SALGLE, "3GLSZM_SALGLE");
 }
 
-void test_3glszm_sahgle()
+void test_3d_glszm_sahgle_regression()
 {
-    test_3glszm_feature(Nyxus::Feature3D::GLSZM_SAHGLE, "3GLSZM_SAHGLE");
+    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_SAHGLE, "3GLSZM_SAHGLE");
 }
 
-void test_3glszm_lalgle()
+void test_3d_glszm_lalgle_regression()
 {
-    test_3glszm_feature(Nyxus::Feature3D::GLSZM_LALGLE, "3GLSZM_LALGLE");
+    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_LALGLE, "3GLSZM_LALGLE");
 }
 
-void test_3glszm_lahgle()
+void test_3d_glszm_lahgle_regression()
 {
-    test_3glszm_feature(Nyxus::Feature3D::GLSZM_LAHGLE, "3GLSZM_LAHGLE");
+    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_LAHGLE, "3GLSZM_LAHGLE");
 }
 
-void test_3glszm_gln()
+void test_3d_glszm_gln_regression()
 {
-    test_3glszm_feature(Nyxus::Feature3D::GLSZM_GLN, "3GLSZM_GLN");
+    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_GLN, "3GLSZM_GLN");
 }
 
-void test_3glszm_glnn()
+void test_3d_glszm_glnn_regression()
 {
-    test_3glszm_feature(Nyxus::Feature3D::GLSZM_GLNN, "3GLSZM_GLNN");
+    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_GLNN, "3GLSZM_GLNN");
 }
 
-void test_3glszm_szn()
+void test_3d_glszm_szn_regression()
 {
-    test_3glszm_feature(Nyxus::Feature3D::GLSZM_SZN, "3GLSZM_SZN");
+    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_SZN, "3GLSZM_SZN");
 }
 
-void test_3glszm_sznn()
+void test_3d_glszm_sznn_regression()
 {
-    test_3glszm_feature(Nyxus::Feature3D::GLSZM_SZNN, "3GLSZM_SZNN");
+    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_SZNN, "3GLSZM_SZNN");
 }
 
-void test_3glszm_zp()
+void test_3d_glszm_zp_regression()
 {
-    test_3glszm_feature(Nyxus::Feature3D::GLSZM_ZP, "3GLSZM_ZP");
+    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_ZP, "3GLSZM_ZP");
 }
 
-void test_3glszm_glv()
+void test_3d_glszm_glv_regression()
 {
-    test_3glszm_feature(Nyxus::Feature3D::GLSZM_GLV, "3GLSZM_GLV");
+    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_GLV, "3GLSZM_GLV");
 }
 
-void test_3glszm_zv()
+void test_3d_glszm_zv_regression()
 {
-    test_3glszm_feature(Nyxus::Feature3D::GLSZM_ZV, "3GLSZM_ZV");
+    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_ZV, "3GLSZM_ZV");
 }
 
-void test_3glszm_ze()
+void test_3d_glszm_ze_regression()
 {
-    test_3glszm_feature(Nyxus::Feature3D::GLSZM_ZE, "3GLSZM_ZE");
+    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_ZE, "3GLSZM_ZE");
 }
 
