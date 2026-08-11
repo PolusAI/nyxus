@@ -715,10 +715,10 @@ TEST(TEST_NYXUS, TEST_3D_NGLDM_DCENE_REGRESSION) {
 //***** Gabor (vetted vs scikit-image) *****
 
 TEST(TEST_NYXUS, TEST_2D_GABOR_SKIMAGE){
-    test_2d_gabor_skimage();
+    assert_2d_gabor_skimage();
 
     #ifdef USE_GPU
-        test_2d_gabor_skimage(true);
+        assert_2d_gabor_skimage(true);
     #endif
 }
 
@@ -1006,6 +1006,11 @@ TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_CHORD_ANGLE_REGRESSION)
 TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_POLYGONALITY_HEXAGONALITY_REGRESSION)
 {
 	ASSERT_NO_THROW(test_2d_morphology_polygonality_hexagonality_regression());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_EDGE_INTENSITY_CELLPROFILER)
+{
+	ASSERT_NO_THROW(test_2d_morphology_edge_intensity_cellprofiler());
 }
 
 TEST(TEST_NYXUS, TEST_2D_RADIAL_DISTRIBUTION_REGRESSION)
@@ -2566,14 +2571,9 @@ TEST(TEST_NYXUS, TEST_2D_OMEZARR_RAW_MULTITILE_MECHANICS) {
 #endif // OMEZARR_SUPPORT
 
 
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
   int ret = RUN_ALL_TESTS();
   return ret;
-}
-
-TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_EDGE_INTENSITY_CELLPROFILER)
-{
-	ASSERT_NO_THROW(test_2d_morphology_edge_intensity_cellprofiler());
 }
