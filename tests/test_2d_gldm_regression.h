@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <gtest/gtest.h>
 
@@ -9,28 +9,35 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
-#include <unordered_map> 
+#include "test_ref_vals.h"
 
-// values for each feature produced by Nyxus on 01/18/23 after IBSI updates
-static std::unordered_map<std::string, double> unvetted_nyxus_regression_gldm_feature_golden_values {
-    {"GLDM_SDE", 0.419444},
-    {"GLDM_LDE", 4.33864},
-    {"GLDM_LGLE", 0.419444},
-    {"GLDM_HGLE", 4.6233},
-    {"GLDM_SDLGLE", 0.15421},
-    {"GLDM_SDHGLE", 2.49861},
-    {"GLDM_LDLGLE", 2.83137},
-    {"GLDM_LDHGLE", 14.4415},
-    {"GLDM_GLN", 3.37992},
-    {"GLDM_DN", 3.70606},
-    {"GLDM_DNN", 0.526864},
-    {"GLDM_GLV", 0.634569},
-    {"GLDM_DV", 0.286155},
-    {"GLDM_DE", 1.84336}
+// Pinned Nyxus output on the cat2500 fixture at the settings assert_gldm_feature_regression uses
+// (GREYDEPTH=128, PIXELDISTANCE=5, ibsi=false). SPEC 2 regression tier: a drift guard, no oracle
+// claim -- GLDM 2D is vetted against IBSI in test_2d_gldm_ibsi.h, not here.
+//
+// Originally recorded 01/18/23 after the IBSI updates, but never read: the helper below computed
+// the features and returned without comparing anything, so these 14 numbers sat unused and all 14
+// cases passed as long as calculate() did not throw. Re-derived from current output when the
+// comparison was added, so the table now states what Nyxus actually produces.
+static ref_vals_map<double> gldm_2d_regression_ref_vals {
+    {"GLDM_SDE", 0.43899590049484488},
+    {"GLDM_LDE", 24.932266009852217},
+    {"GLDM_LGLE", 0.01175642780523556},
+    {"GLDM_HGLE", 11512.041256157636},
+    {"GLDM_SDLGLE", 0.011708932179969746},
+    {"GLDM_SDHGLE", 2715.4140745395039},
+    {"GLDM_LDLGLE", 0.013334084084609749},
+    {"GLDM_LDHGLE", 400134.37623152707},
+    {"GLDM_GLN", 453.0615763546798},
+    {"GLDM_DN", 378.68719211822662},
+    {"GLDM_DNN", 0.23318176854570605},
+    {"GLDM_GLV", 1896.8138388307173},
+    {"GLDM_DV", 8.4758547890024012},
+    {"GLDM_DE", 5.3430148357241016}
 };
 
-/// @brief Smoke test of GLDM
-void assert_gldm_feature_regression(const Feature2D& feature, const std::string& feature_name) 
+/// @brief Pins one GLDM feature against its recorded value on the cat2500 fixture
+void assert_gldm_feature_regression(const Feature2D& feature_, const std::string& feature_name)
 {
     // featue settings for this particular test
     Fsettings s;
@@ -44,8 +51,14 @@ void assert_gldm_feature_regression(const Feature2D& feature, const std::string&
     s[(int)NyxSetting::USEGPU].bval = false;
     s[(int)NyxSetting::VERBOSLVL].ival = 0;
     s[(int)NyxSetting::IBSI].bval = false;
-    //    
-    
+    //
+
+    int feature = int(feature_);
+
+    // a missing key would otherwise make this case silently assert nothing
+    ASSERT_TRUE(gldm_2d_regression_ref_vals.count(feature_name) > 0) << feature_name;
+    const double ref = gldm_2d_regression_ref_vals.at(feature_name);
+
     LR roidata;
 
     // Calculate features
@@ -59,8 +72,11 @@ void assert_gldm_feature_regression(const Feature2D& feature, const std::string&
     // Initialize per-ROI feature value buffer with zeros
     roidata.initialize_fvals();
 
-    // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
+    // Retrieve values of the features implemented by class 'GLDMFeature' into ROI's feature buffer
     f.save_value(roidata.fvals);
+
+    // Compare against the pinned value. Without this the whole file was a smoke test.
+    ASSERT_TRUE(agrees_gt(roidata.fvals[feature][0], ref)) << feature_name;
 }
 
 void test_2d_gldm_sde_regression()
@@ -132,3 +148,4 @@ void test_2d_gldm_de_regression()
 {
     assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_DE, "GLDM_DE");
 }
+
