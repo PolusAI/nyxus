@@ -70,6 +70,8 @@ DIM_AGNOSTIC = {
     "test_hu_analytic.h": "closed form of the scalar SlideProps::uint_friendly_inten map",
     "test_feature_calculation_common.h": "the assert_feature template, used from both dims",
     "test_vetting_mechanics.py": "self-test of check_coverage.py / check_test_names.py",
+    "test_environment_lifecycle_mechanics.py":
+        "instance -> Environment binding in the bindings; no image dimensionality involved",
     # imq carries its own dimension: dim=IMQ in oracle_coverage.csv, not 2D/3D
     "test_imq_opencv.h": "dim=IMQ in the registry",
     "test_imq_cellprofiler.h": "dim=IMQ in the registry",

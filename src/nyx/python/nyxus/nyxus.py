@@ -1,5 +1,6 @@
 from .backend import (
     initialize_environment,
+    release_environment_imp,
     featurize_directory_imp,
     featurize_directory_3D_imp,
     featurize_montage_imp,
@@ -141,6 +142,17 @@ class Nyxus:
     anisotropy_y: float (optional, default 1.0)
         Y-dimension scale factor
     """
+
+    def __del__(self):
+        # The backend keys this instance's settings on id(self), which is the object's
+        # address -- and CPython hands that same address to the next object it allocates.
+        # An entry left behind after this object dies is inherited wholesale by that next
+        # instance, which would then silently start with our ram_limit, feature list, gpu
+        # flag or ibsi mode. Drop it here rather than leave the address dirty.
+        try:
+            release_environment_imp(id(self))
+        except Exception:
+            pass    # interpreter shutdown may already have torn the backend module down
 
     def __init__(
         self,
@@ -988,6 +1000,17 @@ class Nyxus3D:
         Z-dimension scale factor
     """
 
+    def __del__(self):
+        # The backend keys this instance's settings on id(self), which is the object's
+        # address -- and CPython hands that same address to the next object it allocates.
+        # An entry left behind after this object dies is inherited wholesale by that next
+        # instance, which would then silently start with our ram_limit, feature list, gpu
+        # flag or ibsi mode. Drop it here rather than leave the address dirty.
+        try:
+            release_environment_imp(id(self))
+        except Exception:
+            pass    # interpreter shutdown may already have torn the backend module down
+
     def __init__(
         self,
         features: List[str],
@@ -1536,6 +1559,17 @@ class ImageQuality:
     anisotropy_y: float (optional, default 1.0)
         Y-dimension scale factor
     """
+
+    def __del__(self):
+        # The backend keys this instance's settings on id(self), which is the object's
+        # address -- and CPython hands that same address to the next object it allocates.
+        # An entry left behind after this object dies is inherited wholesale by that next
+        # instance, which would then silently start with our ram_limit, feature list, gpu
+        # flag or ibsi mode. Drop it here rather than leave the address dirty.
+        try:
+            release_environment_imp(id(self))
+        except Exception:
+            pass    # interpreter shutdown may already have torn the backend module down
 
     def __init__(
         self,
@@ -2221,6 +2255,17 @@ class Nested:
  
     df = nn.featurize(rels, features)
     """
+
+    def __del__(self):
+        # The backend keys this instance's settings on id(self), which is the object's
+        # address -- and CPython hands that same address to the next object it allocates.
+        # An entry left behind after this object dies is inherited wholesale by that next
+        # instance, which would then silently start with our ram_limit, feature list, gpu
+        # flag or ibsi mode. Drop it here rather than leave the address dirty.
+        try:
+            release_environment_imp(id(self))
+        except Exception:
+            pass    # interpreter shutdown may already have torn the backend module down
 
     def __init__(self, aggregate: Optional[list] = []):
         

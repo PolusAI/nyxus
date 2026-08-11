@@ -34,6 +34,17 @@ namespace Nyxus {
         return env;
     }
 
+    // Forget an instance's Environment. instid is the Python id(), i.e. the object's address,
+    // and CPython reuses an address as soon as the object is freed. An entry left behind after
+    // its object dies is therefore not merely a leak: the next Nyxus allocated at that address
+    // makes findenv() return the dead instance's Environment, silently inheriting its settings
+    // (ram_limit, feature list, gpu flag, ibsi mode). Python calls this from __del__.
+    void releaseenv (uint64_t instid)
+    {
+        Nyxus::pynyxus_cache.erase (instid);
+        Nyxus::unique_pynyxus_ids.erase (instid);
+    }
+
 };
 
 using ParameterTypes = std::variant<int, float, double, unsigned int, std::vector<double>, std::vector<std::string>>;
@@ -1080,6 +1091,7 @@ PYBIND11_MODULE(backend, m)
 {
     m.doc() = "Nyxus";
     m.def("initialize_environment",     &initialize_environment,    "Environment initialization");
+    m.def("release_environment_imp",    &Nyxus::releaseenv,         "Forget an instance's environment (called from __del__; id(self) is reused by CPython)");
     m.def("featurize_directory_imp",    &featurize_directory_imp,   "Calculate features of images defined by intensity and mask image collection directories");
     m.def("featurize_directory_3D_imp", &featurize_directory_3D_imp,    "Calculate 3D features of images defined by intensity and mask image collection directories");
     m.def("featurize_montage_imp",      &featurize_montage_imp,     "Calculate features of images defined by intensity and mask image collection directories");
