@@ -5,7 +5,6 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <vector>
 
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/basic_morphology.h"
@@ -13,8 +12,9 @@
 #include "../src/nyx/features/neighbors.h"
 #include "test_data.h"
 #include "test_main_nyxus.h"
+#include "test_ref_vals.h"
 
-static std::unordered_map<int, std::unordered_map<std::string, double>> unvetted_nyxus_regression_neighbor2d_distance_feature_golden_values_by_label{
+static ref_vals_map_by_label<double> neighbor_2d_regression_ref_vals_by_label{
 	{1, {
 		{"NUM_NEIGHBORS", 4.0},
 		{"PERCENT_TOUCHING", 100.0},   // exact_min_sqdist: all 8 contour pixels of the fully-enclosed 3x3 ROI touch a neighbor; was 87.5 (7/8) because the approximate min_sqdist overestimated one pixel's min distance and missed its true 8-adjacency
@@ -117,9 +117,9 @@ static void assert_neighbor2d_feature(
 	const std::string& feature_name,
 	double frac_tolerance = 1000.0)
 {
-	ASSERT_TRUE(unvetted_nyxus_regression_neighbor2d_distance_feature_golden_values_by_label.count(label) > 0);
-	ASSERT_TRUE(unvetted_nyxus_regression_neighbor2d_distance_feature_golden_values_by_label[label].count(feature_name) > 0);
-	ASSERT_TRUE(agrees_gt(roiData.at(label).fvals[static_cast<int>(feature)][0], unvetted_nyxus_regression_neighbor2d_distance_feature_golden_values_by_label[label][feature_name], frac_tolerance));
+	ASSERT_TRUE(neighbor_2d_regression_ref_vals_by_label.count(label) > 0);
+	ASSERT_TRUE(neighbor_2d_regression_ref_vals_by_label[label].count(feature_name) > 0);
+	ASSERT_TRUE(agrees_gt(roiData.at(label).fvals[static_cast<int>(feature)][0], neighbor_2d_regression_ref_vals_by_label[label][feature_name], frac_tolerance));
 }
 
 void test_2d_neighbor_counts_and_touching_regression()

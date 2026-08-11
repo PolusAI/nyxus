@@ -1,15 +1,15 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <unordered_map> 
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_glszm.h"
+#include "test_ref_vals.h"
 
 // dig. phantom values for intensity based features
 // Calculated at 100 grey levels
-static std::unordered_map<std::string, float> d3glszm_GT{
+static ref_vals_map<float> glszm_3d_regression_ref_vals{
     {"3GLSZM_SAE",  0.6},
     {"3GLSZM_LAE",  1377.1},
     {"3GLSZM_LGLZE",    0.0005},
@@ -67,7 +67,7 @@ void assert_3d_glszm_feature_regression (const Nyxus::Feature3D& expecting_fcode
     double atot = r.fvals[fcode][0];
 
     // verdict
-    ASSERT_TRUE(agrees_gt(atot, d3glszm_GT[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, glszm_3d_regression_ref_vals[fname], 10.));
 #endif
     // get segment info
     auto [ipath, mpath, label] = get_3d_segmented_phantom();
@@ -126,7 +126,7 @@ void assert_3d_glszm_feature_regression (const Nyxus::Feature3D& expecting_fcode
     double atot = r.fvals[fcode][0];
 
     // verdict
-    ASSERT_TRUE(agrees_gt(atot, d3glszm_GT[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, glszm_3d_regression_ref_vals[fname], 10.));
 
 }
 

@@ -1,13 +1,13 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <unordered_map> 
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_ngldm.h"
+#include "test_ref_vals.h"
 
-// REGRESSION / drift-guard tests -- NOT an oracle. The `d3ngldm_GT` table below has NO external
+// REGRESSION / drift-guard tests -- NOT an oracle. The `ngldm_3d_regression_ref_vals` table below has NO external
 // provenance and its numbers are NOT verified against any reference; the tests only pin current output.
 //
 // This file was renamed from test_3d_ngldm_ibsi.h to test_3d_ngldm_regression.h: SPEC §2 reserves an
@@ -44,7 +44,7 @@
 // Also note 3NGLDM_GLM (grey level mean) and 3NGLDM_DCM (dependence count mean) have no counterpart
 // anywhere: MIRP's NGLDM emits no gl_mean / dc_mean column, and the 2D table in test_2d_ngldm_ibsi.h
 // explicitly marks GLM "--not in IBSI--". No external oracle exists for those two.
-static std::unordered_map<std::string, double> d3ngldm_GT{
+static ref_vals_map<double> ngldm_3d_regression_ref_vals{
 		{ "3NGLDM_LDE",	0.1 },
 		{ "3NGLDM_HDE",	261.0 },
 		{ "3NGLDM_LGLCE",	0.00036 },
@@ -105,7 +105,7 @@ void assert_3d_ngldm_feature_regression (const std::string& fname, const Nyxus::
 	double atot = r.fvals[fcode][0];
 
 	// verdict
-	ASSERT_TRUE(agrees_gt(atot, d3ngldm_GT[fname], 10.));
+	ASSERT_TRUE(agrees_gt(atot, ngldm_3d_regression_ref_vals[fname], 10.));
 #endif
 
 	// get segment info
@@ -165,7 +165,7 @@ void assert_3d_ngldm_feature_regression (const std::string& fname, const Nyxus::
 	double atot = r.fvals[fcode][0];
 
 	// verdict
-	ASSERT_TRUE(agrees_gt(atot, d3ngldm_GT[fname], 10.));
+	ASSERT_TRUE(agrees_gt(atot, ngldm_3d_regression_ref_vals[fname], 10.));
 
 }
 

@@ -8,10 +8,10 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
-#include <unordered_map> 
+#include "test_ref_vals.h"
 
 // dig. phantom values for intensity based features
-static std::unordered_map<std::string, double> ibsi_reference_intensity_feature_golden_values {
+static ref_vals_map<double> firstorder_2d_ibsi_ref_vals {
     {"MEAN", 2.15},
     {"VARIANCE", 3.05},
     {"SKEWNESS", 1.08},
@@ -81,7 +81,7 @@ void assert_firstorder_feature_ibsi(const Feature2D& feature, const std::string&
 
     if (round) total = std::round(total);
 
-    ASSERT_TRUE(agrees_gt(total, ibsi_reference_intensity_feature_golden_values[feature_name], 100.));
+    ASSERT_TRUE(agrees_gt(total, firstorder_2d_ibsi_ref_vals[feature_name], 100.));
 }
 
 void test_2d_firstorder_mean_ibsi()

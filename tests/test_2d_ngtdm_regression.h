@@ -9,11 +9,11 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
-#include <unordered_map> 
+#include "test_ref_vals.h"
 
 // dig. phantom values for intensity based features
 // Calculated at grey scalefactlr 100
-static std::unordered_map<std::string, double> unvetted_nyxus_regression_ngtdm_feature_golden_values {
+static ref_vals_map<double> ngtdm_2d_regression_ref_vals {
     {"NGTDM_COARSENESS", 0.008374068},
     {"NGTDM_CONTRAST", 3169.92908},
     {"NGTDM_BUSYNESS", 1.444571},
@@ -111,7 +111,7 @@ void assert_ngtdm_feature_regression(const Feature2D& feature_, const std::strin
     total += roidata3.fvals[feature][0];
 
     // Verdict
-    ASSERT_TRUE(agrees_gt(total/4, unvetted_nyxus_regression_ngtdm_feature_golden_values[feature_name], 100.));
+    ASSERT_TRUE(agrees_gt(total/4, ngtdm_2d_regression_ref_vals[feature_name], 100.));
 }
 
 void test_2d_ngtdm_coarseness_regression()

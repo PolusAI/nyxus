@@ -222,7 +222,7 @@ def main():
     m_t, mu_t, nu_t, hu_t = full_stack(tri)
     b5_t, b6_t = hu_buggy_h5_h6(nu_t)
 
-    print("-- goldens for test_2d_moments_skimage.h (wedge_shape_hu_skimage_golden_values) --")
+    print("-- goldens for test_2d_moments_skimage.h (moments_2d_skimage_wedge_hu_ref_vals) --")
     print(f"  area (SPAT_MOMENT_00)    = {m_t[0, 0]!r}")
     print(f"  SPAT_MOMENT_10           = {m_t[1, 0]!r}")
     print(f"  SPAT_MOMENT_01           = {m_t[0, 1]!r}")

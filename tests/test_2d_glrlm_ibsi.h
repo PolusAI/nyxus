@@ -8,10 +8,10 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
-#include <unordered_map> 
+#include "test_ref_vals.h"
 
 // dig. phantom values for intensity based features
-static std::unordered_map<std::string, double> ibsi_reference_glrlm_feature_golden_values {
+static ref_vals_map<double> glrlm_2d_ibsi_ref_vals {
     {"GLRLM_SRE", 0.641},
     {"GLRLM_LRE", 3.78},
     {"GLRLM_LGLRE", 0.604},
@@ -127,7 +127,7 @@ void assert_glrlm_feature_ibsi(const Feature2D& feature_, const std::string& fea
     total += roidata3.fvals[feature][3];
 
     // Verdict
-    ASSERT_TRUE(agrees_gt(total/16, ibsi_reference_glrlm_feature_golden_values[feature_name], 100.));
+    ASSERT_TRUE(agrees_gt(total/16, glrlm_2d_ibsi_ref_vals[feature_name], 100.));
 }
 
 void test_2d_glrlm_sre_ibsi()
@@ -248,7 +248,7 @@ void assert_glrlm_ave_feature_ibsi(const Feature2D& feature_, const std::string&
         total += roidata.fvals[feature][0];   // _AVE stores the direction-mean in slot [0]
     }
 
-    ASSERT_TRUE(agrees_gt(total / 4, ibsi_reference_glrlm_feature_golden_values[ibsi_key], 100.));
+    ASSERT_TRUE(agrees_gt(total / 4, glrlm_2d_ibsi_ref_vals[ibsi_key], 100.));
 }
 
 void test_2d_glrlm_lglre_ave_ibsi()  { assert_glrlm_ave_feature_ibsi(Nyxus::Feature2D::GLRLM_LGLRE_AVE,  "GLRLM_LGLRE"); }

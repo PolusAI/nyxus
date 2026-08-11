@@ -1,15 +1,15 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <unordered_map> 
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_ngtdm.h"
+#include "test_ref_vals.h"
 
 // dig. phantom values for intensity based features
 // Calculated at grey scalefactlr 100
-static std::unordered_map<std::string, float> d3ngtdm_GT {
+static ref_vals_map<float> ngtdm_3d_regression_ref_vals {
     {"3NGTDM_COARSENESS",   0.00004},
     {"3NGTDM_CONTRAST",     0.66},
     {"3NGTDM_BUSYNESS",     46.0},
@@ -56,7 +56,7 @@ void assert_3d_ngtdm_feature_regression(const Nyxus::Feature3D& expecting_fcode,
     double atot = r.fvals[fcode][0];
 
     // verdict
-    ASSERT_TRUE(agrees_gt(atot, d3ngtdm_GT[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, ngtdm_3d_regression_ref_vals[fname], 10.));
 #endif
 
     // get segment info
@@ -116,7 +116,7 @@ void assert_3d_ngtdm_feature_regression(const Nyxus::Feature3D& expecting_fcode,
     double atot = r.fvals[fcode][0];
 
     // verdict
-    ASSERT_TRUE(agrees_gt(atot, d3ngtdm_GT[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, ngtdm_3d_regression_ref_vals[fname], 10.));
 
 }
 

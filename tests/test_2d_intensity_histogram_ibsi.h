@@ -15,7 +15,7 @@
 // 1-based grey-level convention, matching IBSI directly (no offset). Recorded in
 // design doc §6.4. Values sourced in Task 1.
 static const int IH_PHANTOM_NBINS = 6;
-static const std::unordered_map<std::string,double> ibsi_ih_phantom_golden = {
+static const std::unordered_map<std::string,double> intensity_histogram_2d_ibsi_ref_vals = {
     {"VARIANCE_IDX", 3.05},
     {"SKEWNESS_IDX", 1.08},
     {"EXCESS_KURTOSIS_IDX", -0.355},
@@ -55,7 +55,7 @@ void test_2d_intensity_histogram_dispersion_ibsi() {
     std::vector<std::vector<double>> fv;
     run_intensity_histogram_ibsi_fixture(fv, IH_PHANTOM_NBINS);
     auto chk = [&](const char* key, F fc){
-        double gt = ibsi_ih_phantom_golden.at(key);
+        double gt = intensity_histogram_2d_ibsi_ref_vals.at(key);
         if (std::abs(gt) < 1e-12) ASSERT_NEAR(ih_get(fv,fc), gt, 1e-9) << key;
         else ASSERT_TRUE(agrees_gt(ih_get(fv,fc), gt, 100.)) << key;  // rel 1e-2 (IBSI phantom tier)
     };

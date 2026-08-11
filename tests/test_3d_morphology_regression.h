@@ -4,8 +4,8 @@
 
 // ---------------------------------------------------------------------------------------------------
 // Migrated from test_3d_shape.h (Wave 8). The eight 3D shape features whose GT is a self-referential
-// snapshot (agrees_gt vs d3shape_GT at 10% tolerance) -> test_3d_morphology_regression.h per registry
-// target_test. Shared fixture (d3shape_GT, assert_3d_morphology_feature) lives in test_3d_morphology_common.h.
+// snapshot (agrees_gt vs morphology_3d_regression_ref_vals at 10% tolerance) -> test_3d_morphology_regression.h per registry
+// target_test. Shared fixture (morphology_3d_regression_ref_vals, assert_3d_morphology_feature) lives in test_3d_morphology_common.h.
 // ---------------------------------------------------------------------------------------------------
 
 void test_3d_morphology_area_regression() {

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <unordered_map> 
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
@@ -9,6 +8,7 @@
 #include "../src/nyx/raw_nifti.h"
 
 #include "../src/nyx/helpers/fsystem.h"
+#include "test_ref_vals.h"
 
 // Feature values calculated on intensity ut_inten.nii and mask ut_inten.nii, label 57:
 // (100 grey levels, offset 1, and asymmetric cooc matrix)
@@ -55,7 +55,7 @@
 //        - 'SumSquares'
 //
 
-static std::unordered_map<std::string, double> compat_d3glcm_GT
+static ref_vals_map<double> glcm_3d_pyradiomics_ref_vals
 {
     {"3GLCM_ACOR", 122.14708306342365},         // Case-1_original_glcm_Autocorrelation
     {"3GLCM_ASM", 0.0143339715631298},          // Case-1_original_glcm_JointEnergy
@@ -126,8 +126,8 @@ void assert_3d_glcm_feature_pyradiomics (const Nyxus::Feature3D& expecting_fcode
     // (1) prepare
     
     // check that requested feature exists
-    auto iter = compat_d3glcm_GT.find(fname);
-    ASSERT_TRUE(iter != compat_d3glcm_GT.end());
+    auto iter = glcm_3d_pyradiomics_ref_vals.find(fname);
+    ASSERT_TRUE(iter != glcm_3d_pyradiomics_ref_vals.end());
 
     // get segment info
     auto [ipath, mpath, label] = get_3d_compat_phantom();
@@ -197,7 +197,7 @@ void assert_3d_glcm_feature_pyradiomics (const Nyxus::Feature3D& expecting_fcode
     double atot = f.calc_ave (r.fvals[fcode]);
 
     // (8) verdict
-    ASSERT_TRUE(agrees_gt(atot, compat_d3glcm_GT[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, glcm_3d_pyradiomics_ref_vals[fname], 10.));
 }
 
 // Deep-dive: verify the 7 config-sensitive 3D GLCM features equal their already-vetted twins

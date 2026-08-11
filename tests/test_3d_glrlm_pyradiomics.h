@@ -1,13 +1,13 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <unordered_map> 
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_glrlm.h"
 #include "../src/nyx/raw_nifti.h"
 #include "../src/nyx/helpers/fsystem.h"
+#include "test_ref_vals.h"
 
 // Feature values calculated on intensity ut_inten.nii and mask ut_inten.nii, label 57:
 // (100 grey levels, offset 1, and asymmetric cooc matrix)
@@ -31,7 +31,7 @@
 //      glrlm:
 //
 
-static std::unordered_map<std::string, double> compat_3glrlm_GT
+static ref_vals_map<double> glrlm_3d_pyradiomics_ref_vals
 {
     {"3GLRLM_GLN", 406.68709120394277},     // Case-1_original_glrlm_GrayLevelNonUniformity
     {"3GLRLM_GLNN", 0.09722976558135092},   // Case-1_original_glrlm_GrayLevelNonUniformityNormalized
@@ -140,8 +140,8 @@ void assert_3d_glrlm_feature_pyradiomics(const Nyxus::Feature3D& expecting_fcode
     // (1) prepare
 
     // check that requested feature exists
-    auto iter = compat_3glrlm_GT.find(fname);
-    ASSERT_TRUE(iter != compat_3glrlm_GT.end());
+    auto iter = glrlm_3d_pyradiomics_ref_vals.find(fname);
+    ASSERT_TRUE(iter != glrlm_3d_pyradiomics_ref_vals.end());
 
     // get segment info
     auto [ipath, mpath, label] = get_3d_compat_phantom();
@@ -209,7 +209,7 @@ void assert_3d_glrlm_feature_pyradiomics(const Nyxus::Feature3D& expecting_fcode
     double atot = f.calc_ave (r.fvals[fcode]);
 
     // (8) verdict
-    ASSERT_TRUE(agrees_gt(atot, compat_3glrlm_GT[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, glrlm_3d_pyradiomics_ref_vals[fname], 10.));
 }
 
 // Vet the direction-averaged (_AVE) 3D GLRLM features vs PyRadiomics. save_value stores
@@ -267,8 +267,8 @@ void test_3d_glrlm_ave_pyradiomics()
     for (auto& a : aves)
     {
         double v = r.fvals[(int)a.ave][0];
-        ASSERT_TRUE(agrees_gt(v, compat_3glrlm_GT[a.gt], 10.)) << a.gt << "_AVE = " << v
-            << " vs pyradiomics " << compat_3glrlm_GT[a.gt];
+        ASSERT_TRUE(agrees_gt(v, glrlm_3d_pyradiomics_ref_vals[a.gt], 10.)) << a.gt << "_AVE = " << v
+            << " vs pyradiomics " << glrlm_3d_pyradiomics_ref_vals[a.gt];
     }
 }
 

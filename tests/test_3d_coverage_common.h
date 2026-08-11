@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <cmath>
 #include <cctype>
 #include <limits>
@@ -272,12 +271,12 @@ static const std::set<std::string>& embedded_3p_gt_feature_names()
 			for (const auto& kv : m)
 				out.insert(kv.first);
 		};
-		add_keys(compat_d3_fo_radiomics_GT);
-		add_keys(compat_d3glcm_GT);
-		add_keys(compat_3gldm_GT);
-		add_keys(compat_3glrlm_GT);
-		add_keys(compat_3glszm_GT);
-		add_keys(compat_3ngtdm_GT);
+		add_keys(firstorder_3d_pyradiomics_ref_vals);
+		add_keys(glcm_3d_pyradiomics_ref_vals);
+		add_keys(gldm_3d_pyradiomics_ref_vals);
+		add_keys(glrlm_3d_pyradiomics_ref_vals);
+		add_keys(glszm_3d_pyradiomics_ref_vals);
+		add_keys(ngtdm_3d_pyradiomics_ref_vals);
 		// MATLAB R2025b regionprops3 built-ins are embedded here as vetted status.
 		// 3AREA is intentionally excluded: regionprops3 SurfaceArea differs by >10%.
 		// Nyxus currently aliases 3MESH_VOLUME to the convex-hull volume.
@@ -452,17 +451,17 @@ static void assert_matlab_regionprops3_shape_agreement(const Feature3DCoverageCa
 
 static void assert_embedded_3p_oracle_agreement(const Feature3DCoverageCase& c)
 {
-	if (compat_d3_fo_radiomics_GT.find(c.name) != compat_d3_fo_radiomics_GT.end())
+	if (firstorder_3d_pyradiomics_ref_vals.find(c.name) != firstorder_3d_pyradiomics_ref_vals.end())
 		assert_3d_firstorder_feature_pyradiomics(c.code, c.name);
-	else if (compat_d3glcm_GT.find(c.name) != compat_d3glcm_GT.end())
+	else if (glcm_3d_pyradiomics_ref_vals.find(c.name) != glcm_3d_pyradiomics_ref_vals.end())
 		assert_3d_glcm_feature_pyradiomics(c.code, c.name);
-	else if (compat_3gldm_GT.find(c.name) != compat_3gldm_GT.end())
+	else if (gldm_3d_pyradiomics_ref_vals.find(c.name) != gldm_3d_pyradiomics_ref_vals.end())
 		assert_3d_gldm_feature_pyradiomics(c.code, c.name);
-	else if (compat_3glrlm_GT.find(c.name) != compat_3glrlm_GT.end())
+	else if (glrlm_3d_pyradiomics_ref_vals.find(c.name) != glrlm_3d_pyradiomics_ref_vals.end())
 		assert_3d_glrlm_feature_pyradiomics(c.code, c.name);
-	else if (compat_3glszm_GT.find(c.name) != compat_3glszm_GT.end())
+	else if (glszm_3d_pyradiomics_ref_vals.find(c.name) != glszm_3d_pyradiomics_ref_vals.end())
 		assert_3d_glszm_feature_pyradiomics(c.code, c.name);
-	else if (compat_3ngtdm_GT.find(c.name) != compat_3ngtdm_GT.end())
+	else if (ngtdm_3d_pyradiomics_ref_vals.find(c.name) != ngtdm_3d_pyradiomics_ref_vals.end())
 		assert_3d_ngtdm_feature_pyradiomics(c.code, c.name);
 	else if (matlab_regionprops3_shape_gt().find(c.name) != matlab_regionprops3_shape_gt().end())
 		assert_matlab_regionprops3_shape_agreement(c);

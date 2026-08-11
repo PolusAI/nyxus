@@ -1,13 +1,13 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <unordered_map> 
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_surface.h"
+#include "test_ref_vals.h"
 
-static std::unordered_map<std::string, double> d3shape_GT{
+static ref_vals_map<double> morphology_3d_regression_ref_vals{
     { "3AREA",  58457 },
     { "3AREA_2_VOLUME", 0.21 },
     { "3COMPACTNESS1",  0.011 },
@@ -59,7 +59,7 @@ void assert_3d_morphology_feature (const std::string& fname, const Nyxus::Featur
     double atot = r.fvals[fcode][0];
 
     // verdict
-    ASSERT_TRUE(agrees_gt(atot, d3shape_GT[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, morphology_3d_regression_ref_vals[fname], 10.));
 
     *********************************
 #endif
@@ -121,7 +121,7 @@ void assert_3d_morphology_feature (const std::string& fname, const Nyxus::Featur
     double atot = r.fvals[fcode][0];
 
     // verdict
-    ASSERT_TRUE(agrees_gt(atot, d3shape_GT[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, morphology_3d_regression_ref_vals[fname], 10.));
 }
 
 // The ten test functions that used to live here have been distributed to their taxonomy homes

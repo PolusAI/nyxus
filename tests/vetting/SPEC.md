@@ -332,6 +332,39 @@ Data files: `<modality>_<content>[_<label>].<ext>` — e.g. `mri_liver_seg.nii`,
 Each benchmark has a one-line registry entry in `tests/vetting/benchmarks.md`: id, shape, why it
 exists, which recipes/tests use it.
 
+### 6.3.1 Golden reference tables
+`<family>_<dim>_<oracle>_ref_vals` — the same three facts as the file name (§6.1), in the same
+order, so a table and the file that holds it read alike:
+
+- `gldm_2d_regression_ref_vals`, `glcm_2d_ibsi_ref_vals`, `firstorder_3d_matlab_ref_vals`
+
+Three qualifiers, used only when needed:
+
+| Situation | Suffix | Example |
+|---|---|---|
+| Several tables share one family/dim/oracle | `_<subject>` before `_ref_vals` | `moments_2d_skimage_shape_ref_vals` |
+| Per-feature tolerances beside the values | `_ref_tols` | `firstorder_2d_pyradiomics_ref_tols` |
+| Values keyed by ROI label, not feature | `_ref_vals_by_label` | `neighbor_2d_cellprofiler_ref_vals_by_label` |
+
+**The oracle in the name is the table's own, not its file's.** A table in a `_common.h` shared
+header takes the oracle of the assertions that read it — `morphology_2d_fraclac_ref_vals` lives in
+`test_2d_morphology_common.h` because `test_2d_morphology_fraclac.h` is what consumes it. A name
+claiming an oracle the numbers do not come from is the same defect as a `_<oracle>` test function
+asserting a snapshot (§6.2.1).
+
+A table's name is a claim, so `_regression` in it means the numbers are pinned Nyxus output and
+establish no vetting, exactly as for test functions (§1). It follows that **one table holds one
+oracle**: a table mixing imea-vetted keys with snapshot keys has no honest `<oracle>` to put in its
+name, and the fix is to split it, not to pick the majority.
+
+**Enforced.** `check_test_names.py` applies this to every file-scope table whose name contains
+`golden`, `oracle`, `reference`, `_gt`, `ref_vals` or `ref_tols` — a set that deliberately includes
+the conforming suffixes, so a table cannot drift back to an old name without tripping the check.
+It rejects a missing suffix, a missing dim token, and an `<oracle>` segment that is not a §4 token
+(`glcm_2d_mahotas_ref_vals` fails, since the registry does not accept mahotas). Tables that do not
+conform yet live in `TABLE_EXCEPTIONS` with the reason, the same way `KIND_EXCEPTIONS` and
+`DIM_AGNOSTIC` carry theirs; an entry there is a piece of tracked work, not a permanent waiver.
+
 ### 6.4 Golden provenance (mandatory)
 Every pinned oracle golden must record, at its definition site: **tool + version + exact config +
 generator script path**. Generators live in `tests/vetting/oracles/gen_<family>_<oracle>.py` and are

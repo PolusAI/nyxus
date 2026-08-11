@@ -50,6 +50,7 @@ FIXTURES = {
     "test_all.cc",              # the gtest translation unit
     "test_data.h", "test_main_nyxus.h", "test_dsb2018_data.h", "test_gabor_truth.h",
     "test_data.py", "test_tissuenet_data.py",
+    "test_ref_vals.h",          # the SPEC 6.3.1 table aliases; declares types, asserts nothing
 }
 # files that predate the convention and are tracked as follow-ups (MIGRATION.md 5.19)
 GRANDFATHERED = {
@@ -107,6 +108,33 @@ KIND_EXCEPTIONS = {
         "closed-form Koch dimension log4/log3; rides along in the fraclac module",
 }
 
+# SPEC 6.3.1 golden reference tables: <family>_<dim>_<oracle>[_<subject>]_ref_vals
+TABLE_SUFFIXES = ("_ref_vals_by_label", "_ref_tols", "_ref_vals")
+
+# A file-scope table holding reference data announces itself with one of these in its name. Any
+# such table must satisfy 6.3.1 - which also means a conforming table cannot quietly drift back
+# to an old-style name, because _ref_vals is itself a trigger.
+TABLE_MARKERS = ("golden", "_gt", "oracle", "reference", "ref_vals", "ref_tols")
+
+# Tables that do not conform yet, with the reason. Empty: every table names one family, one
+# dimension and one oracle. An entry here is tracked work, not a waiver - the four that were
+# listed were all split by the oracle their registry rows record, rather than renamed to whichever
+# oracle happened to cover most of their keys.
+TABLE_EXCEPTIONS = {}
+
+# The SPEC 6.3.1 aliases from test_ref_vals.h. A declaration spelled with one of these IS a
+# reference table whatever it is named, which is what makes the name rule below apply to the
+# complete set rather than only to tables that already sound like one.
+TABLE_ALIASES = ("ref_vals_map_by_label", "ref_vals_map", "ref_vals_list")
+
+# file-scope declaration (column 0; function locals are always indented in this tree). The brace
+# often sits on the next line, so the initialiser is checked by the caller.
+TABLE_DECL = re.compile(
+    r"^(?:static[ \t]+)?(?:const[ \t]+)?(?:inline[ \t]+)?"
+    r"(?:(?:" + "|".join(TABLE_ALIASES) + r")[ \t]*<.*>"
+    r"|std::(?:unordered_)?(?:map|multimap|vector|array|set)[ \t]*<.*>|auto)"
+    r"[ \t]+([A-Za-z_]\w*)[ \t]*(?:=|\{)?[ \t]*$")
+
 CPP_DEF = re.compile(
     r"^[ \t]*(?:static[ \t]+)?(?:inline[ \t]+)?void[ \t]+(test_[A-Za-z0-9_]*)[ \t]*\(([^)]*)\)", re.M)
 PY_DEF = re.compile(r"^[ \t]*def[ \t]+(test_[A-Za-z0-9_]*)[ \t]*\(", re.M)
@@ -149,6 +177,29 @@ def fn_dim(fn):
     """-> the dim token a test function declares, or None if it declares none."""
     parts = fn.split("_")
     return parts[1] if len(parts) > 1 and parts[1] in DIMS else None
+
+
+def table_violation(name):
+    """-> why `name` breaks SPEC 6.3.1, or None if it conforms.
+
+    <family>_<dim>_<oracle>[_<subject>]_ref_vals. family may itself contain underscores
+    (intensity_histogram), so the dim token is what splits the name rather than a field count.
+    """
+    suffix = next((s for s in TABLE_SUFFIXES if name.endswith(s)), None)
+    if not suffix:
+        return ("does not end in %s (SPEC 6.3.1)" % " / ".join(TABLE_SUFFIXES))
+    stem = name[: -len(suffix)]
+    dim = next((d for d in DIMS if ("_%s_" % d) in stem), None)
+    if not dim:
+        return "carries no _2d_/_3d_ dim token (SPEC 6.3.1)"
+    family, _, rest = stem.partition("_%s_" % dim)
+    if not family:
+        return "names no family before the dim token (SPEC 6.3.1)"
+    oracle = rest.split("_")[0]
+    if oracle not in KINDS:
+        return ("'%s' is not an oracle or kind token; the segment after the dim states where the "
+                "numbers came from (SPEC 6.3.1)" % oracle)
+    return None
 
 
 def check(root):
@@ -248,6 +299,33 @@ def check(root):
         elif case.rsplit("_", 1)[-1].lower() not in KINDS:
             errors.append(f"test_all.cc: TEST case {case} does not end in a kind/oracle "
                           f"token (SPEC 6.2)")
+
+    # ---- 6.3.1 golden reference tables ----
+    for p in files:
+        if p.suffix == ".py":
+            continue
+        lines = read(p).splitlines()
+        for i, line in enumerate(lines):
+            if not line or line[0] in " \t/#":
+                continue                      # indented -> function local; / or # -> comment
+            m = TABLE_DECL.match(line.rstrip())
+            if not m:
+                continue
+            nxt = next((l.strip() for l in lines[i + 1:i + 3] if l.strip()), "")
+            if not (line.rstrip().endswith(("=", "{")) or nxt.startswith(("{", "="))):
+                continue                      # a declaration, not a table with an initialiser
+            name = m.group(1)
+            # A table declares itself either by TYPE (one of the 6.3.1 aliases - authoritative,
+            # a badly named table cannot hide from it) or, for anything not yet converted, by
+            # carrying a reference-data word in its name.
+            by_type = any(a in line for a in TABLE_ALIASES)
+            if not by_type and not any(k in name.lower() for k in TABLE_MARKERS):
+                continue                      # a fixture/helper, not reference data
+            if name in TABLE_EXCEPTIONS:
+                continue
+            why = table_violation(name)
+            if why:
+                errors.append(f"{p.name}: golden table {name} {why}")
     return errors
 
 

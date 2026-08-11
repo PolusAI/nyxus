@@ -142,6 +142,24 @@ All seven are listed in `current_test` for their families' rows — so the regis
 coverage to assertions that have never executed. Whether to wire them in or delete them is a
 behavioural decision (they may fail on first run) and belongs to each family's wave, not to a rename.
 
+### B.1.1 Wired, registered, and asserting nothing — CLOSED for gldm
+
+A fourth way a test can fail to test: it runs, it is registered, and it compares nothing.
+`test_2d_gldm_regression.h` held 14 cases and a 14-entry golden table, and
+`assert_gldm_feature_regression()` computed the feature, called `save_value()` and returned — no
+comparison. All 14 passed as long as `calculate()` did not throw, and the table was referenced
+exactly once, by its own declaration. **Closed:** the comparison was added and the table renamed
+`gldm_2d_regression_ref_vals` per §6.3.1.
+
+The pinned numbers did not survive contact: all 14 failed on first run. They dated from 01/18/23
+and matched neither current output nor the IBSI table next door, and two different features
+(`GLDM_SDE`, `GLDM_LGLE`) carried the identical value `0.419444` — a table nothing reads is a table
+nothing corrects. They were re-derived from current output at full precision, so the file is now an
+honest drift guard on the `cat2500` fixture, which no other GLDM test covers.
+
+Worth a sweep rather than a spot fix: any `assert_*` helper whose body ends without an
+`ASSERT_`/`EXPECT_` on a value has this shape.
+
 ### B.2 In wired files but never registered — 2 functions
 
 | file | function |
@@ -186,9 +204,9 @@ Surfaced by Wave 12 and not yet satisfied:
 | site | assertions | what is missing |
 |---|---:|---|
 | `test_2d_firstorder_matlab.h` | 34 | all 34 are MATLAB values (`oracle_3p_matlab_*` named the tool, `oracle_3p_builtin_*` meant MATLAB's built-ins). Missing: MATLAB version, exact config, generator path — the numbers are here, the reproduction recipe is not |
-| `test_3d_firstorder_matlab.h` | 35 | `d3inten_GT` values also come from MATLAB, but the map says nothing about it. The 36th assertion moved to `test_3d_firstorder_regression.h`, which reads the same map — so the gap covers both files |
+| `test_3d_firstorder_matlab.h` | 35 | `firstorder_3d_matlab_ref_vals` values also come from MATLAB, but the map says nothing about it. The 36th assertion moved to `test_3d_firstorder_regression.h`, which reads the same map — so the gap covers both files |
 
-| `test_2d_morphology_cellprofiler.h` | 6 | the 5 `EDGE_*` + `MASS_DISPLACEMENT` read their values from `unvetted_nyxus_regression_shape2d_feature_golden_values` in `test_2d_morphology_common.h` — a map whose name still says snapshot. The registry vets these against CellProfiler; the map carries no version, config or generator, and renaming golden tables tree-wide is a separate pass. |
+| `test_2d_morphology_cellprofiler.h` | 6 | the 5 `EDGE_*` + `MASS_DISPLACEMENT` read their values from `morphology_2d_regression_ref_vals` in `test_2d_morphology_common.h` — a map whose name still says snapshot. The registry vets these against CellProfiler; the map carries no version, config or generator, and renaming golden tables tree-wide is a separate pass. |
 
 Closing these means writing tool + version + config + generator down at each assertion site, ideally
 by regenerating through the Octave harness so the values become reproducible. The values themselves are
@@ -204,7 +222,7 @@ Found while placing assertions by column J. Each needs a registry decision, not 
 | 2D `ENTROPY` | pyradiomics | `test_2d_firstorder_regression.h` | **RESOLVED.** Also already asserted in `test_2d_firstorder_pyradiomics.h`; column J repointed, no code moved. The snapshot in the regression file is the drift guard on the default config. |
 | 2D `moments` ×40 | skimage | `test_2d_moments_regression.h` | **RESOLVED in Wave 13.** All 40 were already asserted in `test_2d_moments_skimage.h`; only the registry was stale, so `target_test` was repointed there and no code moved. This is the common case of the class: the assertion was migrated in an earlier wave and column J was never updated. |
 | 2D `ngldm` x19 | mirp | `test_2d_ngldm_mirp.h` | The tree holds **IBSI** goldens for 17 of these 19 features, cited page-by-page against the IBSI documentation in `test_2d_ngldm_ibsi.h`; the other two (`GLM`, `DCM`) are explicitly *not* IBSI features and are now snapshots in `test_2d_ngldm_regression.h`. So the in-tree 2D NGLDM oracle is `ibsi`, not `mirp`. Either these rows should read `oracle=ibsi` (already satisfied, 17 of them), or MIRP is wanted as a second opinion per SPEC 3 and the rows stay backlog until it is run. |
-| 3D firstorder x18 | matlab | `test_3d_firstorder_regression.h` | **RESOLVED under SPEC 6.2.1** (this reverses the earlier "leave it" call, which assumed column J was authoritative). `d3inten_GT` holds MATLAB values, so the file is now `test_3d_firstorder_matlab.h` with 35 `_matlab` functions and the 18 rows point there. The 36th, `3COVERED_IMAGE_INTENSITY_RANGE`, is the one regression-only feature and was split into `test_3d_firstorder_regression.h`. Two carry-overs: neither file is `#include`d (B.1), and the same map also covers 17 `oracle=pyradiomics` features which per SPEC 3 need a second (matlab) row each. |
+| 3D firstorder x18 | matlab | `test_3d_firstorder_regression.h` | **RESOLVED under SPEC 6.2.1** (this reverses the earlier "leave it" call, which assumed column J was authoritative). `firstorder_3d_matlab_ref_vals` holds MATLAB values, so the file is now `test_3d_firstorder_matlab.h` with 35 `_matlab` functions and the 18 rows point there. The 36th, `3COVERED_IMAGE_INTENSITY_RANGE`, is the one regression-only feature and was split into `test_3d_firstorder_regression.h`. Two carry-overs: neither file is `#include`d (B.1), and the same map also covers 17 `oracle=pyradiomics` features which per SPEC 3 need a second (matlab) row each. |
 
 The general form: **a `vetted` row whose `target_test` names a `_regression` file** is asserting that
 its oracle evidence lives outside the tree. That is legitimate but should be explicit — a `source` or

@@ -9,11 +9,11 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
-#include <unordered_map> 
+#include "test_ref_vals.h"
 
 // dig. phantom values for intensity based features
 // Calculated at 100 grey levels
-static std::unordered_map<std::string, double> unvetted_nyxus_regression_glszm_feature_golden_values {
+static ref_vals_map<double> glszm_2d_regression_ref_vals {
     {"GLSZM_SAE", 0.38873},
     {"GLSZM_LAE", 32.5},
     {"GLSZM_LGLZE", 0.1962550},
@@ -116,7 +116,7 @@ void assert_glszm_feature_regression(const Feature2D& feature_, const std::strin
     total += roidata3.fvals[feature][0];
 
     // Verdict
-    ASSERT_TRUE(agrees_gt(total/4, unvetted_nyxus_regression_glszm_feature_golden_values[feature_name], 100.));
+    ASSERT_TRUE(agrees_gt(total/4, glszm_2d_regression_ref_vals[feature_name], 100.));
 }
 
 void test_2d_glszm_sae_regression()

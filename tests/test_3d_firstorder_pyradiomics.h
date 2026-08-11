@@ -1,13 +1,13 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <unordered_map> 
 #include "../src/nyx/helpers/fsystem.h"
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_intensity.h"
 #include "../src/nyx/raw_nifti.h"
+#include "test_ref_vals.h"
 
 // Feature values calculated on intensity ut_inten.nii and mask ut_inten.nii, label 57:
 // (100 grey levels, offset 1, and asymmetric cooc matrix)
@@ -31,7 +31,7 @@
 //      fo:
 //
 
-static std::unordered_map<std::string, double> compat_d3_fo_radiomics_GT
+static ref_vals_map<double> firstorder_3d_pyradiomics_ref_vals
 {
     {"3P10", 362.0}, // Case-1_original_firstorder_10Percentile
     {"3P90", 527.0}, // Case-1_original_firstorder_90Percentile
@@ -75,8 +75,8 @@ void assert_3d_firstorder_feature_pyradiomics (const Nyxus::Feature3D &expected_
     // (1) prepare
 
     // check that requested feature exists
-    auto iter = compat_d3_fo_radiomics_GT.find(fname);
-    ASSERT_TRUE (iter != compat_d3_fo_radiomics_GT.end());
+    auto iter = firstorder_3d_pyradiomics_ref_vals.find(fname);
+    ASSERT_TRUE (iter != firstorder_3d_pyradiomics_ref_vals.end());
 
     // check availability of GT for the requested feature
     auto [ipath, mpath, label] = get_3d_compat_fo_phantom();
@@ -137,7 +137,7 @@ void assert_3d_firstorder_feature_pyradiomics (const Nyxus::Feature3D &expected_
     f.save_value (r.fvals);
 
     // (7) verdict
-    ASSERT_TRUE (agrees_gt(r.fvals[fcode][0], compat_d3_fo_radiomics_GT[fname], 10.));
+    ASSERT_TRUE (agrees_gt(r.fvals[fcode][0], firstorder_3d_pyradiomics_ref_vals[fname], 10.));
 }
 
 
