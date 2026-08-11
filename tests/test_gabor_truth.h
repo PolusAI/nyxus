@@ -18,7 +18,7 @@
 // are both identically 1, so that filter is the flat window derived in closed form.
 // The oracle reproduces every value below exactly: max |diff| = 0.000e+00 over all 16.
 //
-// Asserted at the SPEC 7 same-definition-oracle tier, rel 1e-3 (see test_gabor_skimage.cc).
+// Asserted at the SPEC 7 same-definition-oracle tier, rel 1e-3 (see test_2d_gabor_skimage.cc).
 //
 // Updated after the gabor.cpp response-truncation fix: the filter-response magnitudes are
 // now kept real-valued (double) instead of being truncated to PixIntens (unsigned int),

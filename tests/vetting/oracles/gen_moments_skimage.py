@@ -1,5 +1,5 @@
-"""OFFLINE golden generator for the Hu-invariant goldens in test_moments_skimage.h /
-test_moments_regression.h (SPEC 6.4), refreshed for the calcHu_imp h5/h6 formula fix.
+"""OFFLINE golden generator for the Hu-invariant goldens in test_2d_moments_skimage.h /
+test_2d_moments_regression.h (SPEC 6.4), refreshed for the calcHu_imp h5/h6 formula fix.
 
 Context. Nyxus's calcHu_imp had two formula defects (both also present in the _nt and CUDA
 twins, fixed together):
@@ -11,7 +11,7 @@ twins, fixed together):
     WT_NORM_CTR_MOM_03, IMOM_WHU6 == IMOM_WNCM_03.)
 
 This generator:
-  A. Rebuilds the pinned 48x40 rectangle fixture of test_moments_common.h, recomputes every
+  A. Rebuilds the pinned 48x40 rectangle fixture of test_2d_moments_common.h, recomputes every
      moment family with scikit-image in Nyxus's coordinate convention, verifies all goldens
      UNAFFECTED by the fix still match (validating that the oracle reproduces Nyxus's
      conventions), verifies the OLD h5/h6 goldens equal the buggy formulas (closing the loop
@@ -46,7 +46,7 @@ def rect_shape():
 
 
 def rect_intensity():
-    """test_moments_common.h: I(x,y) = 10 + 3x + 5y + (x*y)%7, A[x, y] convention."""
+    """test_2d_moments_common.h: I(x,y) = 10 + 3x + 5y + (x*y)%7, A[x, y] convention."""
     a = np.zeros((W, H), dtype=np.float64)
     for x in range(W):
         for y in range(H):
@@ -118,7 +118,7 @@ def main():
     all_ok = True
 
     # ---------------------------------------------------------------- A. rectangle fixture
-    print("=== A. 48x40 rectangle fixture (test_moments_common.h) ===")
+    print("=== A. 48x40 rectangle fixture (test_2d_moments_common.h) ===")
     shp = rect_shape()
     inten = rect_intensity()
 
@@ -126,7 +126,7 @@ def main():
     m_i, mu_i, nu_i, hu_i = full_stack(inten)
 
     print("-- validation: goldens UNAFFECTED by the h5/h6 fix (oracle must reproduce them) --")
-    # shape: raw + central + eta + Hu 1-4,7 (test_moments_skimage.h)
+    # shape: raw + central + eta + Hu 1-4,7 (test_2d_moments_skimage.h)
     for name, got, pinned in [
         ("SPAT_MOMENT_00", m_s[0, 0], 1920.0),
         ("SPAT_MOMENT_10", m_s[1, 0], 45120.0),
@@ -141,7 +141,7 @@ def main():
         ("HU_M4", hu_s[3], 0.0),
         ("HU_M6", hu_s[5], 0.0),
         ("HU_M7", hu_s[6], 0.0),  # pinned -2.36e-10 is summation noise; oracle exact 0
-        # intensity: raw + central + eta + Hu 1-4 (test_moments_skimage.h)
+        # intensity: raw + central + eta + Hu 1-4 (test_2d_moments_skimage.h)
         ("IMOM_RM_00", m_i[0, 0], 346635.0),
         ("IMOM_RM_10", m_i[1, 0], 9253494.0),
         ("IMOM_CM_20", mu_i[2, 0], 62976163.595638104),
@@ -162,14 +162,14 @@ def main():
     all_ok &= check("IMOM_HU5(buggy)", b5_i, -2.1393783155778043e-23, tol=1e-6)
     all_ok &= check("IMOM_HU6(buggy)", b6_i, -2.3976723312959013e-06, tol=1e-6)
 
-    print("-- corrected goldens for test_moments_skimage.h --")
+    print("-- corrected goldens for test_2d_moments_skimage.h --")
     print(f"  HU_M5    = {hu_s[4]!r}   (was 4.598098572281346e-10 summation noise; oracle exact 0)")
     print(f"  IMOM_HU5 = {hu_i[4]!r}")
     print(f"  IMOM_HU6 = {hu_i[5]!r}")
 
     # ---------------------------------------------------------------- B. weighted (regression)
     print("\n=== B. weighted Hu snapshots from PINNED Nyxus eta (no external W-weighting oracle) ===")
-    # WT_NORM_CTR_MOM_* pinned in test_moments_regression.h
+    # WT_NORM_CTR_MOM_* pinned in test_2d_moments_regression.h
     nu_w = nu_matrix_from_pinned({
         (0, 2): 0.017193451534902194,
         (0, 3): 0.00465210928951103,
@@ -189,11 +189,11 @@ def main():
     all_ok &= check("WEIGHTED_HU_M7", hu_w[6], -1.3078000499389243e-09, tol=1e-6)
     all_ok &= check("WEIGHTED_HU_M5(buggy)", b5_w, -4.0924793325555725e-09, tol=1e-6)
     all_ok &= check("WEIGHTED_HU_M6(buggy)", b6_w, 0.004652261067232659, tol=1e-6)
-    print("-- corrected snapshots for test_moments_regression.h --")
+    print("-- corrected snapshots for test_2d_moments_regression.h --")
     print(f"  WEIGHTED_HU_M5 = {hu_w[4]!r}")
     print(f"  WEIGHTED_HU_M6 = {hu_w[5]!r}")
 
-    # IMOM_WNCM_* pinned in test_moments_regression.h
+    # IMOM_WNCM_* pinned in test_2d_moments_regression.h
     nu_iw = nu_matrix_from_pinned({
         (0, 2): 0.00011186764375543395,
         (0, 3): 4.6265447913743816e-07,
@@ -212,7 +212,7 @@ def main():
     all_ok &= check("IMOM_WHU7", hu_iw[6], -5.6202519491182231e-24, tol=1e-6)
     all_ok &= check("IMOM_WHU5(buggy)", b5_iw, -5.2494915279842729e-24, tol=1e-6)
     all_ok &= check("IMOM_WHU6(buggy)", b6_iw, 4.6265447915851515e-07, tol=1e-6)
-    print("-- corrected snapshots for test_moments_regression.h --")
+    print("-- corrected snapshots for test_2d_moments_regression.h --")
     print(f"  IMOM_WHU5 = {hu_iw[4]!r}")
     print(f"  IMOM_WHU6 = {hu_iw[5]!r}")
 
@@ -222,7 +222,7 @@ def main():
     m_t, mu_t, nu_t, hu_t = full_stack(tri)
     b5_t, b6_t = hu_buggy_h5_h6(nu_t)
 
-    print("-- goldens for test_moments_skimage.h (wedge_shape_hu_skimage_golden_values) --")
+    print("-- goldens for test_2d_moments_skimage.h (wedge_shape_hu_skimage_golden_values) --")
     print(f"  area (SPAT_MOMENT_00)    = {m_t[0, 0]!r}")
     print(f"  SPAT_MOMENT_10           = {m_t[1, 0]!r}")
     print(f"  SPAT_MOMENT_01           = {m_t[0, 1]!r}")

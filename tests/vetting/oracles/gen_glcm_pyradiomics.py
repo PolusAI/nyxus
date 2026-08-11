@@ -1,4 +1,4 @@
-"""OFFLINE golden generator for test_glcm_pyradiomics.h (SPEC 6.4).
+"""OFFLINE golden generator for test_2d_glcm_pyradiomics.h (SPEC 6.4).
 
 Runs PyRadiomics on the pinned GLCM fixture under recipe glcm.pyradiomics_symmetric and prints the
 golden values to paste into the oracle test. Run offline; CI never invokes it.

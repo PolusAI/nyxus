@@ -1,7 +1,7 @@
 """OFFLINE analytic oracle for the 2D neighbor angle/second-distance features
 (SPEC 4, oracle=analytic). Independently reimplements Nyxus' documented
 closed-form neighbor geometry in numpy and validates that it reproduces the
-goldens pinned in test_neighbor_regression.h.
+goldens pinned in test_2d_neighbor_regression.h.
 
 Which features this vets (6):
     CLOSEST_NEIGHBOR2_DIST
@@ -48,7 +48,7 @@ SCENE = [
 RADIUS = 1  # pixel_distance
 TOL = 1e-9  # validation gate vs pinned goldens (gtest itself uses a loose frac bound)
 
-# pinned goldens from test_neighbor_regression.h (the values this oracle must reproduce)
+# pinned goldens from test_2d_neighbor_regression.h (the values this oracle must reproduce)
 PINNED = {
     1: {"CLOSEST_NEIGHBOR2_DIST": 2.54950975679639, "CLOSEST_NEIGHBOR1_ANG": 0.0,
         "CLOSEST_NEIGHBOR2_ANG": 191.30993247402, "ANG_BW_NEIGHBORS_MEAN": 132.172516881495,
@@ -136,7 +136,7 @@ def compute():
 def main():
     got = compute()
     all_ok = True
-    print("=== neighbor analytic oracle vs pinned goldens (test_neighbor_regression.h) ===")
+    print("=== neighbor analytic oracle vs pinned goldens (test_2d_neighbor_regression.h) ===")
     for l in sorted(PINNED):
         for k in sorted(PINNED[l]):
             o, p = got[l][k], PINNED[l][k]

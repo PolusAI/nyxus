@@ -20,7 +20,7 @@
 //   * preserve_hu == true      : slope-1 offset u = round(x - floor(min)), so
 //     1 HU == 1 grey level and negative CT no longer wraps.
 //
-// (Mechanics of the CLI/option plumbing live in test_hu_mechanics.h.)
+// (Mechanics of the CLI/option plumbing live in test_2d_hu_mechanics.h.)
 // ---------------------------------------------------------------------------
 
 // fp_phys_pivoxels==true: min-max normalization over a CT-like HU span.

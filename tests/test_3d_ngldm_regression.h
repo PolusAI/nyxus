@@ -15,7 +15,7 @@
 // They have no recorded tool/version/config (SPEC 6.4 requires provenance for any oracle golden) and
 // are evaluated on the Nyxus coverage phantom tests/data/nifti/phantoms/ut_inten.nii + ut_mask57.nii
 // -- NOT the IBSI digital phantom -- so IBSI consensus values cannot apply to them in the first place.
-// (Contrast test_ngldm_ibsi.h, the 2D file, which DOES run on the IBSI digital phantom and cites IBSI
+// (Contrast test_2d_ngldm_ibsi.h, the 2D file, which DOES run on the IBSI digital phantom and cites IBSI
 // manual page numbers per value -- that one is a real IBSI oracle. The `_ibsi` suffix is now free for a
 // genuine 3D IBSI-phantom NGLDM oracle when one is written.)
 //
@@ -42,7 +42,7 @@
 // documented, config-matched external oracle (MIRP is the candidate for 3D NGLDM).
 //
 // Also note 3NGLDM_GLM (grey level mean) and 3NGLDM_DCM (dependence count mean) have no counterpart
-// anywhere: MIRP's NGLDM emits no gl_mean / dc_mean column, and the 2D table in test_ngldm_ibsi.h
+// anywhere: MIRP's NGLDM emits no gl_mean / dc_mean column, and the 2D table in test_2d_ngldm_ibsi.h
 // explicitly marks GLM "--not in IBSI--". No external oracle exists for those two.
 static std::unordered_map<std::string, double> d3ngldm_GT{
 		{ "3NGLDM_LDE",	0.1 },

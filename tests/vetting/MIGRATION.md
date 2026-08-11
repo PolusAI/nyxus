@@ -891,6 +891,53 @@ gtest 731/731, pytest 82 passed / 1 skipped (7 Arrow failures need `USE_ARROW=ON
 
 ---
 
+## 5.37 Wave 28 (dim token) — executed
+
+Waves 1-27 made the *kind* of every assertion evident from its name. They left the *dimension*
+evident only for 3D, which had carried a `3d_` token since the `test_compat_3d_*` split, while 2D was
+the unmarked default. That asymmetry is the one this wave removes: `2d` and `3d` are now both
+mandatory, so a name states which implementation an assertion covers.
+
+**Why the absence of a token was not good enough.** Nyxus computes `glcm` from `glcm.cpp` in 2D and
+`3d_glcm.cpp` in 3D — different code, different oracles, independently vetted. Reading
+`test_glcm_ibsi.h` you had to know that "no token" meant 2D, and nothing stopped a 3D assertion from
+being added to it. `dim` is the registry's first column for exactly this reason; the file names now
+agree with it.
+
+**Scope: dimension-specific, not merely non-3D.** The token marks tests whose subject has a
+dimension, which is wider than the feature families — `test_hu_regression.py` reads a 2D TIFF and
+`test_hu_nifti_regression.py` a 3D volume, and only the second was named for it (now
+`test_2d_hu_regression.py` / `test_3d_hu_nifti_regression.py`). The TIFF/int16 loader and
+out-of-core suites are 2D likewise. Genuinely dimension-independent tests take no token: the
+Arrow/Parquet writers, environment init, ROI blacklisting, the `uint_friendly_inten` closed form,
+and the framework's self-test. That is now a *claim*, not an omission — the ten of them are listed
+in `check_test_names.py`'s `DIM_AGNOSTIC` with a per-file reason, so an unmarked new 2D file fails
+the lint instead of passing by default. `imq` is among them: its registry `dim` is `IMQ`, and it
+names its own dimension already.
+
+**61 files and 411 functions renamed**, with their gtest cases and every `current_test`/`target_test`
+reference. Six registry `target_test` entries name 2D destinations not yet written
+(`test_2d_glcm_pyradiomics.h`, `test_2d_ngldm_mirp.h`, …); they took the token too, or the registry
+would point backlog work at names the spec rejects. One entry, `test_hu_ct_small_values_pydicom.py`,
+was a *function* name in a file-name column — corrected to `test_2d_hu_ct_small_pydicom.py`.
+
+**Two files were not rewritten, deliberately.** `tests/vetting/audit/**` is a frozen scan artifact
+and this document is a wave-by-wave narrative; both record what earlier waves saw. Substituting
+today's names into them would make Wave 2 read as having renamed `test_glcm.h` to a file that did
+not exist for another 26 waves. They keep their historical names, as they already did for every
+prior rename.
+
+`check_test_names.py` gained the rule (`file_dim`, `fn_dim`, `DIM_AGNOSTIC`) and the self-test grew
+from four planted defect classes to six — a file with no dim token, and a `test_3d_*` function
+inside a `test_2d_*` file. Verified by mutation: dropping `2d_` from one function in
+`test_2d_glcm_ibsi.h` fails the tree test, and restoring it passes.
+
+**Final state of the tree:** 108 files (60 `2d`, 30 `3d`, 18 untagged: 10 declared
+dimension-independent + 8 fixtures/harness), 672 in-taxonomy test functions, 526 gtest cases,
+**zero** violations from both checkers.
+
+---
+
 ## 6. Reconciliation decisions (RESOLVED)
 
 1. **SPEC §4 oracle-token set** — add **`skimage`** (mainstream; 60+ moment features + circularity).

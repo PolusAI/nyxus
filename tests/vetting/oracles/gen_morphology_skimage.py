@@ -1,7 +1,7 @@
 """OFFLINE scikit-image oracle for the 2D morphology features ORIENTATION and
 EROSIONS_2_VANISH (SPEC 4, oracle=skimage), on the 8x8 shape2d fixture
 (shape2d_morphology_mask, test_data.h). Validates the goldens pinned in
-test_morphology_skimage.h.
+test_2d_morphology_skimage.h.
 
 ORIENTATION -- skimage.measure.regionprops(...).orientation is the angle of the
   major axis measured from the ROW (axis-0) direction, CCW, radians. Nyxus measures
@@ -32,7 +32,7 @@ ROWS = [
 ]
 MASK = np.array([[int(c) for c in r] for r in ROWS], dtype=np.uint8)
 
-# Nyxus goldens (test_morphology_common.h)
+# Nyxus goldens (test_2d_morphology_common.h)
 NYX = {"ORIENTATION": 70.4173944984207, "EROSIONS_2_VANISH": 1.0}
 TOL_ANG = 1e-3   # degrees
 TOL_CNT = 0

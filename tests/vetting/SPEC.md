@@ -250,32 +250,47 @@ what's true** (measured agreement). Worked GLCM cells:
 ## 6. Naming conventions
 
 ### 6.1 Test files
-`test_<family>_<kind-or-oracle>.{h,py}`
+`test_<dim>_<family>_<kind-or-oracle>.{h,py}`
 
-- Oracle: `test_glcm_pyradiomics.py`, `test_glcm_ibsi.h`, `test_morphology_imea.py`
-- Regression: `test_glcm_regression.h`
-- Invariant: `test_convexhull_invariant.py`
-- Mechanics: `test_glcm_mechanics.h`
+- Oracle: `test_2d_glcm_pyradiomics.py`, `test_2d_glcm_ibsi.h`, `test_3d_glcm_pyradiomics.h`
+- Regression: `test_2d_glcm_regression.h`, `test_3d_glszm_regression.h`
+- Invariant: `test_2d_morphology_hull_invariant.py`
+- Mechanics: `test_2d_glcm_mechanics.h`, `test_3d_nifti_mechanics.h`
 
-(Existing `test_ibsi_glcm.h` → `test_glcm_ibsi.h`, `test_glcm.h` → `test_glcm_regression.h`,
-`test_compat_3d_glcm.h` → `test_glcm3d_pyradiomics.h`. Renames are acceptable.)
+**`<dim>` is `2d` or `3d`, and it is mandatory.** Nyxus computes the same family in both
+dimensions from different code (`glcm.cpp` vs `3d_glcm.cpp`) against different oracles, so a
+name without the token says which family an assertion covers but not which implementation —
+and `dim` is the registry's first column precisely because a `(feature × config × oracle)` row
+is meaningless without it. A file whose subject genuinely has no image dimensionality — the
+Arrow/Parquet writers, environment init, ROI blacklisting, the framework's own self-tests —
+takes no token; that absence is the claim that the test is dimension-independent, so it is
+checked rather than assumed (see the checker's `DIM_AGNOSTIC` list, each entry with a reason).
+
+Two families sit outside the `2d`/`3d` split: `imq` (image quality) carries `IMQ` in the
+registry's `dim` column, and it names its own dimension, so `test_imq_opencv.h` takes no
+token. Fixtures, data tables and the gtest translation unit are named by §6.3, not by this
+rule — `test_data.h`, `test_gabor_truth.h`, `test_all.cc`.
 
 ### 6.2 Test functions / gtest cases
-`test_<family>[_<subject>]_<oracle>` — the oracle suffix makes vetting status self-evident:
+`test_<dim>_<family>[_<subject>]_<oracle>` — the dim token says which implementation, the
+oracle suffix makes vetting status self-evident:
 
-- `test_glcm_ave_pyradiomics` — GLCM angle-averaged vs PyRadiomics
-- `test_ih_dispersion_analytic` — intensity-histogram dispersion vs closed form
-- `test_morphology_basic_imea` — area/perimeter/diameters vs imea
-- `test_zernike_wndcharm` — Zernike moments vs WND-CHARM (Nyxus-lineage oracle)
-- `test_glcm_regression` — snapshot drift guard (no oracle)
+- `test_2d_glcm_ave_pyradiomics` — 2D GLCM angle-averaged vs PyRadiomics
+- `test_3d_glcm_contrast_pyradiomics` — the 3D implementation of the same family
+- `test_2d_intensity_histogram_dispersion_analytic` — IH dispersion vs closed form
+- `test_2d_morphology_basic_imea` — area/perimeter/diameters vs imea
+- `test_2d_glcm_regression` — snapshot drift guard (no oracle)
+
+A function's dim token must match its file's: a `test_3d_*` function in a `test_2d_*` file is
+the same category of error as a `_regression` function in an `_ibsi` file.
 
 gtest macro name = uppercased function, prefixed `TEST_NYXUS.` per existing convention.
 
 **Enforced, not aspirational.** `tests/vetting/check_test_names.py --check` fails on any
-violation of §6.1/§6.2 — file names, function suffixes, helper prefixes, gtest suite and case
-names. It runs in CI beside `check_coverage.py` and as a pytest case, with a second case that
-plants one defect of each class and requires the checker to report them, so it cannot decay
-into a no-op.
+violation of §6.1/§6.2 — dim tokens, file names, function suffixes, helper prefixes, gtest
+suite and case names. It runs in CI beside `check_coverage.py` and as a pytest case, with a
+second case that plants one defect of each class and requires the checker to report them, so
+it cannot decay into a no-op.
 
 ### 6.2.1 Which file an assertion belongs in — read the registry columns in this order
 
@@ -283,9 +298,11 @@ into a no-op.
 They can disagree, because verdicts were corrected over time while `target_test` kept the value it was
 seeded with. **The verdict wins:**
 
-1. `status=vetted` with `oracle=X` → the assertion belongs in `test_[3d_]<family>_X.{h,py}`, and the
+The row's `dim` column fixes the file's dim token (§6.1), so only the kind is in question:
+
+1. `status=vetted` with `oracle=X` → the assertion belongs in `test_<dim>_<family>_X.{h,py}`, and the
    function ends in `_X`. A `target_test` naming a `_regression` file for such a row is stale.
-2. `status=regression` (no oracle) → `test_[3d_]<family>_regression.{h,py}`, function ends
+2. `status=regression` (no oracle) → `test_<dim>_<family>_regression.{h,py}`, function ends
    `_regression`.
 3. `target_test` decides only when it is consistent with 1-2 — then it is the authority on *which*
    file (e.g. which of several oracle files, or a `.py` rather than a `.h`).

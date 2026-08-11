@@ -54,7 +54,7 @@ def test_vetting_coverage_stats_and_report_mechanics(tmp_path):
 def test_vetting_drift_and_main_write_mechanics(tmp_path):
     path = _write(tmp_path, [
         {"dim":"2D","feature":"A","family":"glcm","status":"vetted","oracle":"pyradiomics",
-         "target_test":"test_glcm_pyradiomics.h"},
+         "target_test":"test_2d_glcm_pyradiomics.h"},
     ])
     # target file does not exist -> one drift warning
     assert len(cc.drift_warnings(cc.load_registry(path), str(tmp_path))) == 1
@@ -78,19 +78,25 @@ def test_vetting_tree_names_conform_to_spec_mechanics():
 
 def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
     """The checker must actually fail on each defect class - a lint that cannot fail is not a lint.
-    Plants one of each and requires all four to be reported."""
+    Plants one of each and requires all six to be reported. Each planted file isolates a single
+    defect, so an assertion failing here names the rule that stopped being enforced."""
     (tmp_path / "tests" / "python").mkdir(parents=True)
     (tmp_path / "tests" / "test_all.cc").write_text("", encoding="utf-8")
-    (tmp_path / "tests" / "test_glcm.h").write_text("", encoding="utf-8")
-    (tmp_path / "tests" / "test_glcm_regression.h").write_text(
-        "void test_glcm_contrast() {}", encoding="utf-8")
-    (tmp_path / "tests" / "test_gldm_ibsi.h").write_text(
-        "void test_gldm_sde_regression() {}", encoding="utf-8")
-    (tmp_path / "tests" / "test_ngtdm_regression.h").write_text(
+    (tmp_path / "tests" / "test_2d_glcm.h").write_text("", encoding="utf-8")
+    (tmp_path / "tests" / "test_glcm_regression.h").write_text("", encoding="utf-8")
+    (tmp_path / "tests" / "test_2d_glcm_regression.h").write_text(
+        "void test_2d_glcm_contrast() {}", encoding="utf-8")
+    (tmp_path / "tests" / "test_2d_gldm_ibsi.h").write_text(
+        "void test_2d_gldm_sde_regression() {}", encoding="utf-8")
+    (tmp_path / "tests" / "test_2d_ngldm_ibsi.h").write_text(
+        "void test_3d_ngldm_sde_ibsi() {}", encoding="utf-8")
+    (tmp_path / "tests" / "test_2d_ngtdm_regression.h").write_text(
         "void test_helper(int x) {}", encoding="utf-8")
 
     errs = ctn.check(tmp_path)
-    assert any("test_glcm.h" in e and "SPEC 6.1" in e for e in errs)          # file, no kind
-    assert any("test_glcm_contrast" in e and "SPEC 6.2" in e for e in errs)   # function, no kind
-    assert any("test_gldm_sde_regression" in e and "SPEC 2" in e for e in errs)  # wrong kind for file
+    assert any("test_2d_glcm.h" in e and "SPEC 6.1" in e for e in errs)       # file, no kind
+    assert any("test_glcm_regression.h" in e and "dim token" in e for e in errs)  # file, no dim
+    assert any("test_2d_glcm_contrast" in e and "kind/oracle" in e for e in errs)  # function, no kind
+    assert any("test_2d_gldm_sde_regression" in e and "SPEC 2" in e for e in errs)  # wrong kind for file
+    assert any("test_3d_ngldm_sde_ibsi" in e and "_2d_ dim token" in e for e in errs)  # wrong dim for file
     assert any("test_helper" in e and "assert_*" in e for e in errs)          # helper as test_
